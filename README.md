@@ -1,1 +1,1 @@
-# contract-design-language
+# contract-model-language
