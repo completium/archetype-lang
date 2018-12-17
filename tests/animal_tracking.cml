@@ -1,0 +1,50 @@
+model animal_tracking
+
+enum animal
+ | Sheep
+ | Cattle
+ | Pig
+ | Other
+
+states movement =
+ | In_field
+ | In_transit
+
+asset animal identified by id = {
+ id       : string;
+ status   : movement;
+ typ      : animal;
+ location : field ref;
+}
+
+asset field identified by name = {
+   name     : string;
+   business : business ref;
+}
+
+asset business identified by id = {
+  id              : string;
+  incomingAnimals : animal set;
+}
+
+transaction transit = {
+   args = {
+      animal        : animal;
+      toField       : field;
+   }
+   transition animal.status from In_field to In_transit;
+   action :
+      toField.business.incomingAnimals.add animal;
+}
+
+transaction arrival = {
+   args = {
+      animal        : animal;
+      toField       : field;
+   }
+   transition animal.status from In_transit to In_field;
+   action :
+      animal.field := toField,
+      toField.business.incomingAnimals.remove animal;
+
+}

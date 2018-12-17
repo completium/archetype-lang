@@ -1,0 +1,49 @@
+model escrow
+
+role buyer
+
+role[%transferable] debitor = buyer
+
+role seller
+
+role[%transferable] creditor = seller
+
+role oracle
+
+value[%traceable] price tez from buyer to creditor
+
+value[%traceable] [%mutable_signed [buyer, debitor] (instate Created)]
+     penalty tez from seller to debitor = 0.1 * price
+
+(* transaction deadline *)
+value date[%mutable (buyer or seller) (instate Created)] deadline
+
+(* state machine *)
+states
+ | Created initial
+ | Aborted
+ | Confirmed
+ | Canceled
+ | Transferred
+
+transition abort from Created to Aborted = {
+  called by buyer or seller;
+}
+
+transaction[%signedbyall [buyer, seller]] confirm = {
+  transition from Created to Confirmed;
+  condition : check (price + penalty);
+}
+
+transition transfer from Confirmed to Transferred = {
+   called by oracle;
+   condition : before deadline;
+   action    : transfer price, transfer back penalty;
+}
+
+transition cancel from Confirmed to Canceled = {
+   called by oracle;
+   action : transfer penalty, transfer back price;
+}
+
+assert (instate Transferred -> check 0)

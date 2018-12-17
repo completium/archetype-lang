@@ -1,0 +1,77 @@
+model miles_with_expiration
+
+role admin
+
+role owner
+
+role[%transferable] validator
+
+asset mile identified by id {
+   id         : string;
+   amount     : uint;
+   expiration : date;
+   owner      : owner;
+}
+
+transaction add = {
+   args : {
+     mile : mile;
+   }
+   called by validator;
+   action : mile.add token;
+}
+
+transaction consume = {
+  args : {
+     owner : owner;
+     value : uint;
+  }
+  called by validator;
+
+  condition :
+     mile.when(owner = owner and expiration > now()).sum(amount) >= value;
+
+  assert : forall m : removed.mile,
+             m.owner = owner and m.expiration >= now;
+
+  assert : before.mile.when(owner = owner).sum(amount) =
+            after.mile.when(owner = owner).sum(amount) + value;
+
+  assert : is_empty added.mile
+
+  assert : invariant stable.mile.when(owner = owner).proj_other( amount );
+
+  assert : invariant stable.mile.when(owner <> owner);
+
+  assert : forall m : removed.mile,
+             forall o : stable.mile,
+                m.expiration <= o.expiration
+
+  action :
+     let ref remainder = value in
+     for (m in mile.when(owner = owner and expiration >= now)
+                    .sort(asc(expiration))) {
+          if (m.amount >= remainder) {
+             m.amount  -= remainder,
+             remainder = 0,
+             break
+          } else {
+             remainder -= m.amount,
+             mile.remove t
+          }
+     },
+     assert (remainder = 0);
+   }
+}
+
+transaction clear_expired = {
+  called by admin;
+
+  assert : forall m : removed.mile, m.expiration < now;
+
+  assert : is_empty added.mile;
+
+  assert : invariant stable.mile;
+
+  action : mile.removeif (expiration < now());
+}

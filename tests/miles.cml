@@ -1,0 +1,33 @@
+model miles
+
+role owner
+
+role[%transferable] validator
+
+asset account identified by account {
+  owner   : owner;
+  amount  : uint;
+}
+
+transaction add = {
+   args : {
+     owner : owner;
+     value : uint;
+   }
+   called by validator;
+   action : account.update owner { amount += value } { amount = 0 }
+}
+
+transaction consume = {
+   args : {
+     owner : owner;
+     value : uint;
+   }
+   called by validator;
+   condition : (account.get owner).amount >= value;
+
+   assert : (before.account.get owner).amount =
+            (after.account.get owner).amount + value;
+
+   action : (account.get owner).amount -= value;
+}

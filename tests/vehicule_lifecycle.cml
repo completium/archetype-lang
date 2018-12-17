@@ -1,0 +1,93 @@
+model vehicle_lifecycle
+
+asset owner as role = {
+  fn : string;
+  ln : string;
+}
+
+states order_state =
+  | Placed                      initial
+  | Scheduled_for_manufacture
+  | Vin_assigned
+  | Owner_assigned
+  | Delivered
+
+asset vehicledetail
+
+asset order = {
+   status       : order_sate;
+   manufacturer : manufacturer ref;
+   orderer      : owner ref;
+   details      : vehicledetail ref;
+}
+
+states vehicle_state =
+  | Off_the_road               initial
+  | Active
+  | Scrapped
+
+asset vehicle identified by vin = {
+   vin          : string;
+   status       : vehicle_state;
+   owner        : owner ref;
+   detail       : vehicledetail;
+   color        : string;
+}
+
+transaction placeOrder = {
+   args = {
+     neworder : order;
+   }
+   called by : neworder.orderer;
+   action : order.add neworder;
+}
+
+transaction assign_vin = {
+   args = {
+     order      : order;
+     vin        : string;
+     detail     : vehicledetail;
+   }
+   called by : order.orderer;
+   transition from order.Placed to order.Vin_assigned;
+   action : vehicule.add { vin = vin; detail = detail; }
+}
+
+transaction assign_owner = {
+   args = {
+     order      : order;
+   }
+   transition from order.any to order.Owner_assigned;
+   action :
+    (* set vehicule state *)
+    order.vehicule.state := Active,
+    (* set vehicule owner *)
+    order.vehicule.owner := order.orderer;
+}
+
+transaction vehiculeTransfer  = {
+   args = {
+     buyer     : owner;
+     vehicule  : vehicule;
+   }
+   called by [%delegable] vehicule.owner;
+   action : vehicule.owner := buyer;
+}
+
+transaction scrapVehicle = {
+   args = {
+      vehicule : vehicule;
+   }
+   called by vehicle.owner;
+   transition from [Off_the_road | Active] to Scrapped;
+}
+
+transaction scrapVehiclebyColor = {
+   args = {
+      color : string;
+   }
+   action :
+     for (v in vehicule.when (vehicule.color = color)) {
+        v.state := Scrapped
+     };
+}

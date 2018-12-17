@@ -1,0 +1,8 @@
+*~
+ast.cmo
+ident.cmo
+intern.cmo
+lexer.cmo
+parser.cmo
+print.cmo
+bin/compilator

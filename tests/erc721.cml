@@ -1,0 +1,28 @@
+use roleDelegation
+use transactionDelegation
+
+model erc721
+
+constant name string
+
+constant total uint
+
+constant symbol string
+
+role [%delegable] owner
+
+asset token = {
+  owner : owner;
+}
+
+
+transaction transfer = {
+  args = {
+    newowner : owner;
+    token : token;
+  }
+
+  called by [%delegable] token.owner;
+
+  action : token.owner := newowner;
+}

@@ -1,0 +1,44 @@
+model perishable
+
+enum productType
+ | Bananas
+ | Apples
+ | Pears
+ | Peaches
+ | Coffee
+
+enum shipmentStatus
+ | Created
+ | In_transit
+ | Arrived
+
+asset grower as role
+asset importer as role
+asset importer as role
+
+asset contract = {
+  grower          : grower;
+  shipper         : shipper;
+  importer        : importer;
+  arrivalDateTime : date;
+  unitPrice       : float;
+}
+
+
+asset shipment = {
+  type     : productType;
+  status   : shipmentStatus;
+  count    : uint;
+  contract : contract;
+}
+
+
+transaction payOut = {
+   args = {
+      shipment : shipment;
+      arrival  : date;
+   }
+   transition shipment.status from In_transit to Arrived;
+   action :
+
+}

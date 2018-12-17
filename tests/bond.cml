@@ -1,0 +1,34 @@
+model bond
+
+enum couponType
+ | Fixed
+ | Floated
+
+enum period
+ | Day
+ | Week
+ | Month
+ | Year
+
+asset issuer as role = {
+  name : string;
+}
+
+asset paymentFrequency = {
+  periodMultiplier : unit;
+  period           : period;
+}
+
+asset bond = {
+  couponType       : couponType;
+  paymentFrequency : paymentFrequency;
+  issuer           : issuer ref;
+}
+
+transaction publish = {
+   args = {
+      bond : bond;
+   }
+   called by : bond.issuer;  (* see acl file *)
+   action : bond.add bond;
+}
