@@ -1,10 +1,22 @@
-all: build
+# -*- Makefile -*-
+
+# --------------------------------------------------------------------
+.PHONY: all merlin build build-deps run clean
+
+# --------------------------------------------------------------------
+all: build merlin
 
 build:
-	cd src && make all
+	$(MAKE) -C src compiler.exe
+
+merlin:
+	$(MAKE) -C src merlin
+
+run:
+	$(MAKE) -C src run
+
+clean:
+	$(MAKE) -C src clean
 
 build-deps:
 	opam install dune menhir
-
-clean:
-	   cd src && make clean

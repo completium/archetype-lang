@@ -1,6 +1,5 @@
 /* parser */
 %{
-  open Ident
   open Ast
 %}
 %token USE
@@ -22,7 +21,7 @@
 %token <string> IDENT
 %token <int> NUMBER
 %token EOF
-%type <model> main
+%type <Ast.model> main
 %start main
 %%
 
@@ -52,10 +51,10 @@ constant:
 | CONSTANT x=ident y=ident { Tconstant (x, y) }
 
 role:
-| ROLE ext=option(extention) x=ident { Trole x }
+| ROLE _ext=option(extention) x=ident { Trole x }
 
 asset:
-| ASSET x=ident id=option(IDENTIFIED BY y=ident { y }) EQUAL fields=braced(fields)
+| ASSET x=ident _id=option(IDENTIFIED BY y=ident { y }) EQUAL fields=braced(fields)
     { Tasset (x, fields) }
 
 %inline fields:
