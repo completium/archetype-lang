@@ -22,53 +22,57 @@
 %token <string> IDENT
 %token <int> NUMBER
 %token EOF
-%start <model> main
+%type <model> main
+%start main
 %%
 
-main: implementation EOF { $1 }
+main:
+| impl=implementation EOF { impl }
 
-implementation: entities { Imodel $1 }
+implementation:
+| e=entities { Imodel e }
 
-entities:
- | entity entities { $1 :: $2 }
- | entity          { [ $1 ] }
+%inline entities:
+| xs=entity+ { xs }
 
 entity:
- | use      { $1 }
- | model    { $1 }
- | constant { $1 }
- | role     { $1 }
- | asset    { $1 }
+ | x=use      { x }
+ | x=model    { x }
+ | x=constant { x }
+ | x=role     { x }
+ | x=asset    { x }
 
 use:
-USE IDENT { Tuse $2 }
+| USE x=ident { Tuse x }
 
 model:
-MODEL IDENT { Tmodel $2 }
+| MODEL x=ident { Tmodel x }
 
 constant:
-CONSTANT IDENT IDENT { Tconstant ($2, $3) }
+| CONSTANT x=ident y=ident { Tconstant (x, y) }
 
 role:
-| ROLE extention IDENT { Trole $3 }
-| ROLE IDENT           { Trole $2 }
+| ROLE ext=option(extention) x=ident { Trole x }
 
 asset:
-| ASSET IDENT IDENTIFIED BY IDENT EQUAL LBRACE fields RBRACE { Tasset ($2, $8) }
-| ASSET IDENT EQUAL LBRACE fields RBRACE { Tasset ($2, $5) }
+| ASSET x=ident id=option(IDENTIFIED BY y=ident { y }) EQUAL fields=braced(fields)
+    { Tasset (x, fields) }
 
-fields:
-| field fields { $1 :: $2 }
-| field        { [ $1 ] }
+%inline fields:
+| xs=field+ { xs }
 
 field:
-| IDENT COLON IDENT REF SEMI_COLON { Tfield ($1, $3) }
-| IDENT COLON IDENT SEMI_COLON     { Tfield ($1, $3) }
+| x=ident COLON y=ident boption(REF) SEMI_COLON
+    { Tfield (x, y) }
 
 extention:
-BEGIN_EXTENTION idents RBRACKET { $2 }
+| BEGIN_EXTENTION ids=idents RBRACKET { ids }
 
+%inline ident:
+| x=IDENT { x }
 
-idents:
- | IDENT idents { $1 :: $2 }
- | IDENT        { [ $1 ] }
+%inline idents:
+| xs=ident+ { xs }
+
+%inline braced(X):
+| LBRACE x=X RBRACE { x }
