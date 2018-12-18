@@ -1,5 +1,4 @@
 open Ast
-open Ident
 
 let field_to_str f =
 match f with
@@ -13,7 +12,6 @@ match e with
 | Trole id -> "role " ^ id
 | Tasset (id, fields) -> "asset " ^ id ^ " = {" ^ (List.fold_left (fun s e -> (s ^ "\n  " ^ (field_to_str e))) "" fields) ^ "\n}"
 | Textension l -> "[%" ^ (List.fold_left (fun s e -> (s ^ " " ^ e)) "" l) ^ "]"
-| _ -> ""
 
 let model_to_str m =
 match m with

@@ -1,7 +1,3 @@
-open Lexer
-open Parser
-open Ast
-
 let str_to_model buff =
   try
     Parser.main Lexer.token buff

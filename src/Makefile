@@ -1,36 +1,25 @@
-CAMLC=ocamlc -g -rectypes
-MENHIR=menhir
-OCAMLLEX=ocamllex
+# -*- Makefile -*-
 
-.SUFFIXES: .ml .mli .cmo .cmi .cmx .mll .mly
+# --------------------------------------------------------------------
+.PHONY: all run clean merlin __force__
 
-SRC = ident.ml ast.ml print.ml parser.ml lexer.ml intern.ml main.ml
+PROFILE  ?= dev
+COMPILER := compiler.exe
 
-OBJS = $(SRC:.ml=.cmo)
+# --------------------------------------------------------------------
+all: $(COMPILER) .merlin
 
-INCLUDES=.
-
-.mll.ml:
-	$(OCAMLLEX) $<
-	rm -f lexer.mli
-
-.mly.ml:
-	$(MENHIR) $<
-	rm -f parser.mli
-
-.ml.cmo:
-	$(CAMLC) -c $<
-
-.mli.cmi:
-	$(CAMLC) -c $<
-
-compilator: lexer.ml parser.ml $(OBJS)
-	$(CAMLC) $(OBJS) -o compilator && cp -f compilator ../bin/
-
-all: compilator
+run:
+	dune exec ./$(COMPILER)
 
 clean:
-	rm -fr *~ \#*
-	rm -fr *.cm[aoi]
-	rm -fr lexer.ml parser.ml
-	rm -f compilator
+	dune clean
+
+merlin: .merlin
+
+# --------------------------------------------------------------------
+%.exe: __force__
+	dune build --profile=$(PROFILE) $@
+
+.merlin: __force__
+	dune build --profile=$(PROFILE) $@

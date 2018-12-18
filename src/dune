@@ -1,0 +1,11 @@
+(env
+  (dev
+    (flags (:standard -g -w Y -w Z -w -23 -w +28 -w +33)))
+  (release
+    (flags (:standard))))
+
+(ocamllex lexer)
+(menhir (flags --explain) (modules parser))
+
+(executable
+  (modes native) (name compiler))
