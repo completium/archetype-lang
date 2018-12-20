@@ -1,15 +1,27 @@
+(* -------------------------------------------------------------------- *)
 open Ident
+open Location
 
-type field =
-  | Tfield of ident * ident        (** field *)
+(* -------------------------------------------------------------------- *)
+type lident = ident loced
 
-type entity =
-  | Tuse of ident                  (** use *)
-  | Tmodel of ident                (** model *)
-  | Tconstant of ident * ident     (** constant *)
-  | Trole of ident                 (** role *)
-  | Tasset of ident * field list   (** asset *)
-  | Textension of ident list       (** extension *)
+(* -------------------------------------------------------------------- *)
+type field_r =
+  | Tfield of lident * lident   (** field *)
 
+and field = field_r loced
+
+(* -------------------------------------------------------------------- *)
+type entity_r =
+  | Tuse       of lident              (** use *)
+  | Tmodel     of lident              (** model *)
+  | Tconstant  of lident * lident     (** constant *)
+  | Trole      of lident              (** role *)
+  | Tasset     of lident * field list (** asset *)
+  | Textension of lident list         (** extension *)
+
+and entity = entity_r loced
+
+(* -------------------------------------------------------------------- *)
 type model =
   | Imodel of entity list
