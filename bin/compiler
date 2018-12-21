@@ -1,6 +1,0 @@
-#! /bin/bash
-
-exec dune exec \
-     --root="$(dirname $0)/../src" \
-     --display=quiet \
-     ./compiler.exe "$@"
