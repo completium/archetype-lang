@@ -2,7 +2,11 @@
 %{
   open Ast
   open Location
+  open Parseutils
+
+  let error ?loc code = raise (ParseError (loc, code))
 %}
+
 %token USE
 %token MODEL
 %token CONSTANT
@@ -19,15 +23,23 @@
 %token EQUAL
 %token COLON
 %token SEMI_COLON
+%token EOF
+
 %token <string> IDENT
 %token <int> NUMBER
-%token EOF
+
 %type <Ast.model> main
+
 %start main
+
 %%
 
 main:
-| impl=implementation EOF { impl }
+| impl=implementation EOF
+    { impl }
+
+| x=loc(error)
+    { error ~loc:(loc x) PE_Unknown }
 
 implementation:
 | e=entities { Imodel e }
