@@ -9,5 +9,5 @@
 
 (executable
   (modes     native)
-  (libraries batteries)
+  (libraries batteries menhirLib)
   (name      compiler))
