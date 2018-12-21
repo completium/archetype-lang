@@ -1,9 +1,28 @@
+(* -------------------------------------------------------------------- *)
+open Core
 
-open Intern
-open Print
+(* -------------------------------------------------------------------- *)
+let parse_and_print (filename, channel) =
+  let model = Io.parse_model ~name:filename channel in
+  Format.printf "%a@." Print.pp_model model
 
-let _ =
-  let stdinbuf = Lexing.from_channel stdin in
-  let model = str_to_model stdinbuf in
-  let output = model_to_str model in
-  print_string output
+(* -------------------------------------------------------------------- *)
+let main () =
+  try
+    let filename, channel, dispose =
+      if Array.length Sys.argv > 1 then
+        let filename = Sys.argv.(1) in
+        (filename, open_in filename, true)
+      else ("<stdin>", stdin, false)
+    in
+
+    finally
+      (fun () -> if dispose then close_in channel)
+      parse_and_print (filename, channel)
+
+  with Parseutils.ParseError exn ->
+    Format.eprintf "%a@." Parseutils.pp_parse_error exn;
+    exit 1
+
+(* -------------------------------------------------------------------- *)
+let _ = main ()

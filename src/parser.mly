@@ -1,7 +1,12 @@
 /* parser */
 %{
   open Ast
+  open Location
+  open Parseutils
+
+  let error ?loc code = raise (ParseError (loc, code))
 %}
+
 %token USE
 %token MODEL
 %token CONSTANT
@@ -18,15 +23,23 @@
 %token EQUAL
 %token COLON
 %token SEMI_COLON
+%token EOF
+
 %token <string> IDENT
 %token <int> NUMBER
-%token EOF
+
 %type <Ast.model> main
+
 %start main
+
 %%
 
 main:
-| impl=implementation EOF { impl }
+| impl=implementation EOF
+    { impl }
+
+| x=loc(error)
+    { error ~loc:(loc x) PE_Unknown }
 
 implementation:
 | e=entities { Imodel e }
@@ -34,12 +47,15 @@ implementation:
 %inline entities:
 | xs=entity+ { xs }
 
-entity:
+entity_r:
  | x=use      { x }
  | x=model    { x }
  | x=constant { x }
  | x=role     { x }
  | x=asset    { x }
+
+%inline entity:
+| e=loc(entity_r) { e }
 
 use:
 | USE x=ident { Tuse x }
@@ -54,24 +70,34 @@ role:
 | ROLE _ext=option(extention) x=ident { Trole x }
 
 asset:
-| ASSET x=ident _id=option(IDENTIFIED BY y=ident { y }) EQUAL fields=braced(fields)
+| ASSET x=ident _id=option(IDENTIFIED BY y=ident { y })
+    EQUAL fields=braced(fields)
     { Tasset (x, fields) }
 
 %inline fields:
 | xs=field+ { xs }
 
-field:
+field_r:
 | x=ident COLON y=ident boption(REF) SEMI_COLON
     { Tfield (x, y) }
+
+%inline field:
+| f=loc(field_r) { f }
 
 extention:
 | BEGIN_EXTENTION ids=idents RBRACKET { ids }
 
 %inline ident:
-| x=IDENT { x }
+| x=loc(IDENT) { x }
 
 %inline idents:
 | xs=ident+ { xs }
 
 %inline braced(X):
 | LBRACE x=X RBRACE { x }
+
+%inline loc(X):
+| x=X {
+    { pldesc = x;
+      plloc  = Location.make $startpos $endpos; }
+  }
