@@ -26,14 +26,27 @@ rule token = parse
   | "by"                  { BY }
   | "ref"                 { REF }
   | "asset"               { ASSET }
-  | "[%"                  { BEGIN_EXTENTION }
+  | "enum"                { ENUM }
+  | "states"              { STATES }
+  | "ensure"              { ENSURE }
+  | "transition"          { TRANSITION }
+  | "transaction"         { TRANSACTION }
+  | "("                   { LPAREN }
+  | ")"                   { RPAREN }
+  | "[%"                  { BEGIN_EXTENSION }
   | "["                   { LBRACKET }
   | "]"                   { RBRACKET }
   | "{"                   { LBRACE }
   | "}"                   { RBRACE }
   | "="                   { EQUAL }
+  | ","                   { COMMA }
   | ":"                   { COLON }
   | ";"                   { SEMI_COLON }
+  | "|"                   { PIPE }
+  | "."                   { DOT }
+  | ":="                  { COLONEQUAL }
+  | "+="                  { PLUSEQ }
+  | "-="                  { MINUSEQ }
   | ident as s            { IDENT s }
   | digit+ as d           { NUMBER (int_of_string d) } (* FIXME: overflow *)
   | eof                   { EOF }

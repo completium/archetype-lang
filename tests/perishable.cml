@@ -1,13 +1,13 @@
 model perishable
 
-enum productType
+enum productType =
  | Bananas
  | Apples
  | Pears
  | Peaches
  | Coffee
 
-enum shipmentStatus
+enum shipmentStatus =
  | Created
  | In_transit
  | Arrived

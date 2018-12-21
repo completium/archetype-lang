@@ -15,14 +15,27 @@
 %token BY
 %token REF
 %token ASSET
-%token BEGIN_EXTENTION
+%token ENUM
+%token STATES
+%token ENSURE
+%token TRANSITION
+%token TRANSACTION
+%token LPAREN
+%token RPAREN
+%token BEGIN_EXTENSION
 %token LBRACKET
 %token RBRACKET
 %token LBRACE
 %token RBRACE
 %token EQUAL
+%token COMMA
 %token COLON
 %token SEMI_COLON
+%token PIPE
+%token DOT
+%token COLONEQUAL
+%token PLUSEQ
+%token MINUSEQ
 %token EOF
 
 %token <string> IDENT
@@ -45,17 +58,19 @@ implementation:
 | e=entities { Imodel e }
 
 %inline entities:
-| xs=entity+ { xs }
+| xs=declaration+ { xs }
 
-entity_r:
+declaration_r:
  | x=use      { x }
  | x=model    { x }
  | x=constant { x }
  | x=role     { x }
+ | x=enum     { x }
+ | x=states   { x }
  | x=asset    { x }
 
-%inline entity:
-| e=loc(entity_r) { e }
+%inline declaration:
+| e=loc(declaration_r) { e }
 
 use:
 | USE x=ident { Tuse x }
@@ -67,12 +82,27 @@ constant:
 | CONSTANT x=ident y=ident { Tconstant (x, y) }
 
 role:
-| ROLE _ext=option(extention) x=ident { Trole x }
+| ROLE _ext=option(extension) x=ident { Trole x }
+
+enum:
+| ENUM x=ident EQUAL xs=pipe_idents {Tenum (x, xs)}
+
+states:
+| STATES x=ident_equal? xs=pipe_idents {Tstates (x, xs)}
+
+%inline ident_equal:
+| x=ident EQUAL { x }
+
+%inline pipe_idents:
+| xs=pipe_ident+ { xs }
+
+%inline pipe_ident:
+| PIPE x=ident { x }
 
 asset:
 | ASSET x=ident _id=option(IDENTIFIED BY y=ident { y })
     EQUAL fields=braced(fields)
-    { Tasset (x, fields) }
+        { Tasset (x, fields) }
 
 %inline fields:
 | xs=field+ { xs }
@@ -84,14 +114,17 @@ field_r:
 %inline field:
 | f=loc(field_r) { f }
 
-extention:
-| BEGIN_EXTENTION ids=idents RBRACKET { ids }
+extension:
+| BEGIN_EXTENSION ids=idents RBRACKET { ids }
 
 %inline ident:
 | x=loc(IDENT) { x }
 
 %inline idents:
 | xs=ident+ { xs }
+
+%inline paren(X):
+| LPAREN x=X RPAREN { x }
 
 %inline braced(X):
 | LBRACE x=X RBRACE { x }

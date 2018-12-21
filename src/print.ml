@@ -33,6 +33,15 @@ let pp_entity fmt { pldesc = e } =
   | Trole id ->
       Format.fprintf fmt "role %a" pp_id id
 
+  | Tenum (id, ids) ->
+      Format.fprintf fmt "enum %a =\n  | %a" pp_id id (pp_list "\n  | " pp_id) ids
+
+  | Tstates (None, ids) ->
+      Format.fprintf fmt "states\n  | %a" (pp_list "\n  | " pp_id) ids
+
+  | Tstates (Some id, ids) ->
+      Format.fprintf fmt "states %a =\n  | %a" pp_id id (pp_list "\n  | " pp_id) ids
+
   | Tasset (id, fields) ->
       Format.fprintf fmt "assert %a = {@[<v 2>]@,%a@]}"
         pp_id id (pp_list "@," pp_field) fields
