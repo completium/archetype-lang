@@ -8,4 +8,6 @@
 (menhir (flags --explain) (modules parser))
 
 (executable
-  (modes native) (name compiler))
+  (modes     native)
+  (libraries batteries)
+  (name      compiler))
