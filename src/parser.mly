@@ -245,7 +245,8 @@ action:
  | ACTION COLON xs=statements SEMI_COLON { Taction xs }
 
 %inline statements:
-| xs=statement+ { xs }
+ | x=statement xs=statement+ { x :: xs }
+ | x=statement { [x] }
 
 %inline statement:
  | e=loc(statement_r) { e }
