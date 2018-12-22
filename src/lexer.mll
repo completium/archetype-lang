@@ -21,9 +21,12 @@ rule token = parse
   | "use"                 { USE }
   | "model"               { MODEL }
   | "constant"            { CONSTANT }
+  | "value"               { VALUE }
   | "role"                { ROLE }
   | "identified"          { IDENTIFIED }
   | "by"                  { BY }
+  | "from"                { FROM }
+  | "to"                  { TO }
   | "ref"                 { REF }
   | "asset"               { ASSET }
   | "enum"                { ENUM }
@@ -31,6 +34,14 @@ rule token = parse
   | "ensure"              { ENSURE }
   | "transition"          { TRANSITION }
   | "transaction"         { TRANSACTION }
+  | "args"                { ARGS }
+  | "called"              { CALLED }
+  | "condition"           { CONDITION }
+  | "action"              { ACTION }
+  | "if"                  { IF }
+  | "else"                { ELSE }
+  | "for"                 { FOR }
+  | "in"                  { IN }
   | "("                   { LPAREN }
   | ")"                   { RPAREN }
   | "[%"                  { BEGIN_EXTENSION }
@@ -45,8 +56,26 @@ rule token = parse
   | "|"                   { PIPE }
   | "."                   { DOT }
   | ":="                  { COLONEQUAL }
-  | "+="                  { PLUSEQ }
-  | "-="                  { MINUSEQ }
+  | "+="                  { PLUSEQUAL }
+  | "-="                  { MINUSEQUAL }
+  | "*="                  { MULTEQUAL }
+  | "/="                  { DIVEQUAL }
+  | "&="                  { ANDEQUAL }
+  | "|="                  { OREQUAL }
+  | "and"                 { AND }
+  | "or"                  { OR }
+  | "not"                 { NOT }
+  | "->"                  { IMPLY }
+  | "<->"                 { EQUIV }
+  | "<>"                  { NEQUAL }
+  | "<"                   { LESS }
+  | "<="                  { LESSEQUAL }
+  | ">"                   { GREATER }
+  | ">="                  { GREATEREQUAL }
+  | "+"                   { PLUS }
+  | "-"                   { MINUS }
+  | "*"                   { MULT }
+  | "/"                   { DIV }
   | ident as s            { IDENT s }
   | digit+ as d           { NUMBER (int_of_string d) } (* FIXME: overflow *)
   | eof                   { EOF }

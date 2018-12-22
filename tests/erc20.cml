@@ -16,17 +16,13 @@ asset tokenHolder identified by holder = {
 }
 
 transaction transfer = {
-
   args = {
     creditor : tokenHolder ref;
     quantity : uint;
   }
-
-  called by tokenHolder.holder;
-
+(*  called by tokenHolder.holder;
+  ensure : before.tokenHolder.sum(tokens) = after.tokenHolder.sum(tokens);
   action :
-    creditor.tokens +:= quantity,
-    (tokenHolder.get caller).tokens -:= quantity
-
-  assert : () (* sum tokens before = sum tokens after *)
+    creditor.tokens += quantity,
+    (tokenHolder.get caller).tokens -= quantity;*)
 }

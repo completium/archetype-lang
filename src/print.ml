@@ -16,42 +16,53 @@ let pp_id fmt (id : lident) =
 (* -------------------------------------------------------------------- *)
 let pp_field fmt { pldesc = f } =
   match f with
-  | Tfield (id, typ) -> Format.fprintf fmt "%a : %a" pp_id id pp_id typ
+  | Ffield (id, typ) -> Format.fprintf fmt "%a : %a;" pp_id id pp_id typ
+
+let pp_extension fmt { pldesc = e } =
+  match e with
+  | Eextension (id, _) -> Format.fprintf fmt "[%%%a]" pp_id id
 
 (* -------------------------------------------------------------------- *)
-let pp_entity fmt { pldesc = e } =
+let pp_declaration fmt { pldesc = e } =
   match e with
-  | Tuse id ->
+  | Duse id ->
       Format.fprintf fmt "use %a" pp_id id
 
-  | Tmodel id ->
+  | Dmodel id ->
       Format.fprintf fmt "model %a" pp_id id
 
-  | Tconstant (id, typ) ->
+  | Dconstant (id, typ, _) ->
       Format.fprintf fmt "constant %a %a" pp_id id pp_id typ
 
-  | Trole id ->
+  | Dvalue (id, typ, _) ->
+      Format.fprintf fmt "value %a %a" pp_id id pp_id typ
+
+  | Drole (id, _,  _) ->
       Format.fprintf fmt "role %a" pp_id id
 
-  | Tenum (id, ids) ->
+  | Denum (id, ids) ->
       Format.fprintf fmt "enum %a =\n  | %a" pp_id id (pp_list "\n  | " pp_id) ids
 
-  | Tstates (None, ids) ->
+  | Dstates (None, ids) ->
       Format.fprintf fmt "states\n  | %a" (pp_list "\n  | " pp_id) ids
 
-  | Tstates (Some id, ids) ->
+  | Dstates (Some id, ids) ->
       Format.fprintf fmt "states %a =\n  | %a" pp_id id (pp_list "\n  | " pp_id) ids
 
-  | Tasset (id, fields) ->
-      Format.fprintf fmt "assert %a = {@[<v 2>]@,%a@]}"
+  | Dasset (id, fields) ->
+      Format.fprintf fmt "asset %a = {@[<v 2>]@,%a@]}"
         pp_id id (pp_list "@," pp_field) fields
 
-  | Textension ids ->
-      Format.fprintf fmt "[%%%a]" (pp_list "@ " pp_id) ids
+  | Dtransition (id, from, _to, _) ->
+      Format.fprintf fmt "transition %a from %a to %a = {}" pp_id id pp_id from pp_id _to
+
+  | Dtransaction (id, _) ->
+      Format.fprintf fmt "transaction %a = {}" pp_id id
+
 
 (* -------------------------------------------------------------------- *)
-let pp_model fmt (Imodel es) =
-  Format.fprintf fmt "%a" (pp_list "@," pp_entity) es
+let pp_model fmt (Mmodel es) =
+  Format.fprintf fmt "%a" (pp_list "@," pp_declaration) es
 
 (* -------------------------------------------------------------------- *)
 let string_of__of_pp pp x =
@@ -59,5 +70,5 @@ let string_of__of_pp pp x =
 
 (* -------------------------------------------------------------------- *)
 let field_to_str  = string_of__of_pp pp_field
-let entity_to_str = string_of__of_pp pp_entity
+let entity_to_str = string_of__of_pp pp_declaration
 let model_to_str  = string_of__of_pp pp_model
