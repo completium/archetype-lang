@@ -18,6 +18,7 @@
 %token TO
 %token REF
 %token ASSET
+%token ASSERT
 %token ENUM
 %token STATES
 %token ENSURE
@@ -117,6 +118,7 @@ declaration_r:
  | x=role        { x }
  | x=enum        { x }
  | x=states      { x }
+ | x=dassert     { x }
  | x=asset       { x }
  | x=transition  { x }
  | x=transaction { x }
@@ -134,7 +136,7 @@ constant:
 | CONSTANT exts=option(extensions) x=ident y=ident { Dconstant (x, y, exts) }
 
 value:
-| VALUE exts=option(extensions) x=ident y=ident { Dvalue (x, y, exts) }
+| VALUE x=ident exts=option(extensions) y=ident { Dvalue (x, y, exts) }
 
 role:
 | ROLE exts=option(extensions) x=ident dv=default_value? { Drole (x, dv, exts) }
@@ -162,6 +164,9 @@ enum:
 
 states:
 | STATES x=ident_equal? xs=pipe_idents {Dstates (x, xs)}
+
+dassert:
+| ASSERT x=paren(expr) { Dassert x }
 
 %inline ident_equal:
 | x=ident EQUAL { x }
@@ -230,7 +235,7 @@ args:
  | ARGS EQUAL fields=braced(fields) { Targs fields }
 
 calledby:
- | CALLED BY x=expr SEMI_COLON { Tcalledby x }
+ | CALLED BY exts=option(extensions) x=expr SEMI_COLON { Tcalledby (x, exts) }
 
 ensure:
  | ENSURE COLON x=expr SEMI_COLON { Tensure x }

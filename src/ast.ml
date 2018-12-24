@@ -46,6 +46,12 @@ type expr_r =
 and expr = expr_r loced
 
 (* -------------------------------------------------------------------- *)
+type extension_r =
+ | Eextension of lident * expr list option (** extension *)
+
+and extension = extension_r loced
+
+(* -------------------------------------------------------------------- *)
 type field_r =
   | Ffield of lident * lident   (** field *)
 
@@ -71,20 +77,14 @@ and instr = instr_r loced
 
 (* -------------------------------------------------------------------- *)
 type transitem_r =
-  | Targs of field list            (** args *)
-  | Tcalledby of expr              (** called by *)
-  | Tensure of expr                (** ensure *)
-  | Tcondition of expr             (** condition *)
-  | Ttransition of lident * lident (** transition  *)
-  | Taction of instr list      (** action  *)
+  | Targs of field list                           (** args *)
+  | Tcalledby of expr * extension list option     (** called by *)
+  | Tensure of expr                               (** ensure *)
+  | Tcondition of expr                            (** condition *)
+  | Ttransition of lident * lident                (** transition  *)
+  | Taction of instr list                         (** action  *)
 
 and transitem = transitem_r loced
-
-(* -------------------------------------------------------------------- *)
-type extension_r =
- | Eextension of lident * expr list option (** extension *)
-
-and extension = extension_r loced
 
 (* -------------------------------------------------------------------- *)
 type declaration_r =
@@ -96,6 +96,7 @@ type declaration_r =
   | Denum        of lident * lident list                          (** enum *)
   | Dstates      of lident option * lident list                   (** states *)
   | Dasset       of lident * field list                           (** asset *)
+  | Dassert      of expr                                          (** assert *)
   | Dtransition  of lident * lident * lident * transitem list     (** transition *)
   | Dtransaction of lident * transitem list                       (** transaction *)
 

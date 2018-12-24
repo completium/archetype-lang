@@ -29,6 +29,7 @@ rule token = parse
   | "to"                  { TO }
   | "ref"                 { REF }
   | "asset"               { ASSET }
+  | "assert"              { ASSERT }
   | "enum"                { ENUM }
   | "states"              { STATES }
   | "ensure"              { ENSURE }

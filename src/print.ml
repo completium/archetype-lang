@@ -19,6 +19,7 @@ let pp_ident fmt { pldesc = e } =
   | Isimple id -> Format.fprintf fmt "%a" pp_id id
   | Idouble (id, _) -> Format.fprintf fmt "%a" pp_id id
 
+
 (* -------------------------------------------------------------------- *)
 let logical_operator_to_str op =
 match op with
@@ -82,10 +83,19 @@ let rec pp_expr fmt { pldesc = e } =
       Format.fprintf fmt "[%a]"
         (pp_list "@," pp_expr) values
 
+
+(* -------------------------------------------------------------------- *)
+let pp_extension fmt { pldesc = e } =
+  match e with
+  | Eextension (id, Some args) -> Format.fprintf fmt "[%%%a %a]" pp_id id (pp_list "@," pp_expr) args
+  | Eextension (id, _) -> Format.fprintf fmt "[%%%a]" pp_id id
+
+
 (* -------------------------------------------------------------------- *)
 let pp_field fmt { pldesc = f } =
   match f with
   | Ffield (id, typ) -> Format.fprintf fmt "%a : %a;" pp_id id pp_id typ
+
 
 (* -------------------------------------------------------------------- *)
 let assignment_operator_to_str op =
@@ -121,6 +131,7 @@ let rec pp_instr fmt { pldesc = s } =
       Format.fprintf fmt "%a"
         pp_expr e
 
+
 (* -------------------------------------------------------------------- *)
 let pp_transitem fmt { pldesc = t } =
   match t with
@@ -128,7 +139,7 @@ let pp_transitem fmt { pldesc = t } =
       Format.fprintf fmt "args = {@[<v 2>]@,%a@]}\n"
         (pp_list "@," pp_field) fields
 
-  | Tcalledby e ->
+  | Tcalledby (e, _exts) ->
       Format.fprintf fmt "called by %a;\n"
         pp_expr e
 
@@ -146,12 +157,6 @@ let pp_transitem fmt { pldesc = t } =
 
   | Taction instrs ->
       Format.fprintf fmt "action:\n %a" (pp_list "@," pp_instr) instrs
-
-(* -------------------------------------------------------------------- *)
-let pp_extension fmt { pldesc = e } =
-  match e with
-  | Eextension (id, Some args) -> Format.fprintf fmt "[%%%a %a]" pp_id id (pp_list "@," pp_expr) args
-  | Eextension (id, _) -> Format.fprintf fmt "[%%%a]" pp_id id
 
 
 (* -------------------------------------------------------------------- *)
@@ -187,6 +192,10 @@ let pp_declaration fmt { pldesc = e } =
       Format.fprintf fmt "asset %a = {@[<v 2>]@,%a@]}\n"
         pp_id id (pp_list "@," pp_field) fields
 
+  | Dassert e ->
+      Format.fprintf fmt "assert (%a)\n"
+        pp_expr e
+
   | Dtransition (id, from, _to, _) ->
       Format.fprintf fmt "transition %a from %a to %a\n"
         pp_id id pp_id from pp_id _to
@@ -207,9 +216,9 @@ let string_of__of_pp pp x =
 (* -------------------------------------------------------------------- *)
 let ident_to_str  = string_of__of_pp pp_ident
 let expr_to_str  = string_of__of_pp pp_expr
+let extension_to_str = string_of__of_pp pp_extension
 let field_to_str  = string_of__of_pp pp_field
 let instr_to_str = string_of__of_pp pp_instr
 let transitem_to_str = string_of__of_pp pp_transitem
-let extension_to_str = string_of__of_pp pp_extension
 let declaration_to_str = string_of__of_pp pp_declaration
 let model_to_str  = string_of__of_pp pp_model
