@@ -112,10 +112,12 @@ module EscrowTx
     requires { caller e = e.buyer }
     (* cml 'transferred' property *)
     requires { transferred e = e.price }
+    (* generic uint constraints *)
+    requires { balance e + transferred e <= max_uint32 }
     (* cml global assert *)
     requires { e.state = Transferred -> balance e = 0 }
     ensures  { e.state = Transferred -> balance e = 0 }
-    ensures  { balance e = old (balance e) + (transferred e) }
+    ensures  { balance e = old (balance e) + e.price }
     ensures  { e.state = old e.state }
     = update_balance e;
       empty
@@ -128,10 +130,12 @@ module EscrowTx
     requires { caller e = e.seller }
     (* cml 'transferred' property *)
     requires { transferred e = e.penalty }
+    (* generic uint constraints *)
+    requires { balance e + transferred e <= max_uint32 }
     (* cml global assert *)
 (*    requires { e.state = Transferred -> balance e = 0 }*)
     ensures  { e.state = Transferred -> balance e = 0 }
-    ensures { balance e = old (balance e) + (transferred e) }
+    ensures { balance e = old (balance e) + e.penalty }
     = update_balance e;
       empty
 
