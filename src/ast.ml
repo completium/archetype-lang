@@ -6,30 +6,32 @@ open Location
 type lident = ident loced
 
 (* -------------------------------------------------------------------- *)
+type ident_r =
+  | Isimple of lident
+  | Idouble of lident * lident
+
+and ident_t = ident_r loced
+
+(* -------------------------------------------------------------------- *)
 type logical_operator =
-| And
-| Or
-| Imply
-| Equiv
+  | And
+  | Or
+  | Imply
+  | Equiv
 
 type comparison_operator =
-| Equal
-| Nequal
-| Gt
-| Ge
-| Lt
-| Le
-
-type assign_operator =
-| Assign
-| PlusAssign
-| MinusAssign
+  | Equal
+  | Nequal
+  | Gt
+  | Ge
+  | Lt
+  | Le
 
 type arithmetic_operator =
-| Plus
-| Minus
-| Mult
-| Div
+  | Plus
+  | Minus
+  | Mult
+  | Div
 
 type expr_r =
   | Eterm of lident * expr list option
@@ -51,30 +53,30 @@ and field = field_r loced
 
 (* -------------------------------------------------------------------- *)
 type assignment_operator =
-| Assign
-| PlusAssign
-| MinusAssign
-| MultAssign
-| DivAssign
-| AndAssign
-| OrAssign
+  | Assign
+  | PlusAssign
+  | MinusAssign
+  | MultAssign
+  | DivAssign
+  | AndAssign
+  | OrAssign
 
-type statement_r =
+type instr_r =
   | Sassign of assignment_operator * expr * expr
-  | Sif of expr * statement list * statement list option
-  | Sfor of lident * expr * statement list
+  | Sif of expr * instr list * instr list option
+  | Sfor of lident * expr * instr list
   | Scall of expr
 
-and statement = statement_r loced
+and instr = instr_r loced
 
 (* -------------------------------------------------------------------- *)
 type transitem_r =
-  | Targs of field list          (** args *)
-  | Tcalledby of expr            (** called by *)
-  | Tensure of expr              (** ensure *)
-  | Tcondition of expr           (** condition *)
+  | Targs of field list            (** args *)
+  | Tcalledby of expr              (** called by *)
+  | Tensure of expr                (** ensure *)
+  | Tcondition of expr             (** condition *)
   | Ttransition of lident * lident (** transition  *)
-  | Taction of statement list    (** action  *)
+  | Taction of instr list      (** action  *)
 
 and transitem = transitem_r loced
 

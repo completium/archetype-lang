@@ -242,22 +242,30 @@ transition_item:
  | TRANSITION FROM x=ident TO y=ident SEMI_COLON { Ttransition (x, y) }
 
 action:
- | ACTION COLON xs=statements SEMI_COLON { Taction xs }
+ | ACTION COLON xs=code SEMI_COLON { Taction xs }
 
-%inline statements:
- | x=statement xs=statement+ { x :: xs }
- | x=statement { [x] }
+%inline code:
+ | x=instr xs=comma_instr+ { x::xs }
+ | x=instr { [x] }
 
-%inline statement:
- | e=loc(statement_r) { e }
+%inline comma_instr:
+ | COMMA x=instr { x }
 
-statement_r:
- | x=assign_statement { x }
- | x=if_statement     { x }
- | x=for_statement    { x }
- | x=call_statement   { x }
 
-assign_statement:
+%inline instrs:
+ | x=instr xs=instr+ { x :: xs }
+ | x=instr { [x] }
+
+%inline instr:
+ | e=loc(instr_r) { e }
+
+instr_r:
+ | x=assign_instr { x }
+ | x=if_instr     { x }
+ | x=for_instr    { x }
+ | x=call_instr   { x }
+
+assign_instr:
  | x=expr op=assignment_operator y=expr { Sassign (op, x, y) }
 
 %inline assignment_operator:
@@ -278,16 +286,16 @@ expr_r:
  | x=dot_expr           { x }
  | x=term               { x }
 
-if_statement:
- | IF c=paren(expr) t=braced(statements) e=else_statement? { Sif (c, t, e) }
+if_instr:
+ | IF c=paren(expr) t=braced(instrs) e=else_instr? { Sif (c, t, e) }
 
-%inline else_statement:
- | ELSE x=braced(statements) { x }
+%inline else_instr:
+ | ELSE x=braced(instrs) { x }
 
-for_statement:
- | FOR LPAREN x=ident IN y=expr RPAREN body=braced(statements) { Sfor (x, y, body) }
+for_instr:
+ | FOR LPAREN x=ident IN y=expr RPAREN body=braced(instrs) { Sfor (x, y, body) }
 
-call_statement:
+call_instr:
  | x=loc(term) { Scall x }
 
 %inline exprs:
