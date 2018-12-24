@@ -1,0 +1,68 @@
+theory Cml
+  use import int.Int
+  use import mach.int.UInt32
+  use import list.List
+
+  (* default type mapping *)
+  type role    = int
+  type address = int
+  type uint    = uint32
+  type tez     = uint32
+  type date    = uint32
+
+  (* currency transfer during transaction *)
+  type transfer = {
+     destination : address;
+     amount      : tez;
+  }
+
+  type transfers = list transfer
+
+  let empty : transfers = Nil
+
+end
+
+(* Escrow storage definition *)
+module Escrow
+  use Cml
+  type states = Created | Aborted | Confirmed | Canceled | Transferred
+
+  type env = {
+     mutable buyer    : role;
+     mutable debitor  : role;
+     mutable seller   : role;
+     mutable creditor : role;
+     mutable oracle   : role;
+     mutable price    : tez;
+     mutable penalty  : tez;
+     mutable deadline : date;
+     mutable state    : states;
+     (* built-in *)
+     mutable balance_ : uint;
+     caller_          : address;
+  }
+
+  function balance (e: env) : tez = e.balance_
+  function caller (e : env) : address = e.caller_
+
+end
+
+(* Escrow Transactions *)
+module EscrowTx
+
+  use import Cml
+  use import Escrow
+
+  (* transition from Created to Aborted *)
+  let abort (e : env) : transfers
+    requires { e.state = Created }
+    requires {
+         caller e = e.buyer
+      \/ caller e = e.seller
+    }
+    requires { e.state = Transferred -> balance e = 0 }
+    ensures  { e.state = Aborted }
+    ensures  { e.state = Transferred -> balance e = 0 }
+    = e.state <- Aborted; empty
+
+end
