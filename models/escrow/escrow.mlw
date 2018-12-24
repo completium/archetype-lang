@@ -139,12 +139,15 @@ module EscrowTx
   (* transition from Confirmed to Transferred *)
   let transfer (e : env) : transfers
     requires { e.state = Confirmed }
+    (*********************************************************)
+    (* !! Manually inserted precondition                     *)
+    (*********************************************************)
     requires { balance e = e.price + e.penalty }
     (* cml global assert *)
     requires { e.state = Transferred -> balance e = 0 }
     ensures  { e.state = Transferred -> balance e = 0 }
   =  e.state <- Transferred;
-     let ops = exec_transfer e e.seller e.price empty in
-     exec_transfer e e.buyer e.penalty ops
+     let tr = exec_transfer e e.seller e.price empty in
+     exec_transfer e e.buyer e.penalty tr
 
 end
