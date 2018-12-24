@@ -62,7 +62,7 @@ module Escrow
   function now (e : env) : date = e.now_
 
   let update_balance (e : env)
-    requires { transferred e + balance e <= max_uint32 }
+    requires { transferred e + balance e <= max_uint }
     ensures  { balance e = old (balance e) + (transferred e)}
     ensures  { e.state = old e.state }
   =
@@ -113,7 +113,7 @@ module EscrowTx
     (* cml 'transferred' property *)
     requires { transferred e = e.price }
     (* generic uint constraints *)
-    requires { balance e + transferred e <= max_uint32 }
+    requires { balance e + transferred e <= max_uint }
     (* cml global assert *)
     requires { e.state = Transferred -> balance e = 0 }
     ensures  { e.state = Transferred -> balance e = 0 }
@@ -131,7 +131,7 @@ module EscrowTx
     (* cml 'transferred' property *)
     requires { transferred e = e.penalty }
     (* generic uint constraints *)
-    requires { balance e + transferred e <= max_uint32 }
+    requires { balance e + transferred e <= max_uint }
     (* cml global assert *)
     requires { e.state = Transferred -> balance e = 0 }
     ensures  { e.state = Transferred -> balance e = 0 }
