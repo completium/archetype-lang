@@ -10,6 +10,8 @@ theory Cml
   type tez     = uint32
   type date    = int
 
+  constant max_uint : int = UInt32.max_uint32
+
   (* currency transfer during transaction *)
   type transfer = {
      destination : address;
@@ -48,21 +50,29 @@ module Escrow
      (* transaction env *)
      transferred_     : tez;
      caller_          : address;
+     now_             : date;
   }
 
   function balance (e: env) : tez = e.balance_
 
   function transferred (e : env) : tez = e.transferred_
 
-  let update_balance (e : env) =
+  function caller (e : env) : address = e.caller_
+
+  function now (e : env) : date = e.now_
+
+  let update_balance (e : env)
+    requires { transferred e + balance e <= max_uint32 }
+    ensures  { balance e = old (balance e) + (transferred e)}
+    ensures  { e.state = old e.state }
+  =
     let sum = e.balance_ + e.transferred_ in
     e.balance_ <- sum
-
-  function caller (e : env) : address = e.caller_
 
   let exec_transfer (e : env) (a : address) (c : tez) (ops : transfers) : transfers
     requires { c <= balance e }
     ensures  { old (balance e) = (balance e) + c }
+    ensures  { e.state = old e.state }
   =
     e.balance_ <- e.balance_ - c;
     let transfer = { destination = a; amount = c } in
@@ -105,7 +115,8 @@ module EscrowTx
     (* cml global assert *)
     requires { e.state = Transferred -> balance e = 0 }
     ensures  { e.state = Transferred -> balance e = 0 }
-    ensures { balance e = old (balance e) + (transferred e) }
+    ensures  { balance e = old (balance e) + (transferred e) }
+    ensures  { e.state = old e.state }
     = update_balance e;
       empty
 
@@ -118,7 +129,7 @@ module EscrowTx
     (* cml 'transferred' property *)
     requires { transferred e = e.penalty }
     (* cml global assert *)
-    requires { e.state = Transferred -> balance e = 0 }
+(*    requires { e.state = Transferred -> balance e = 0 }*)
     ensures  { e.state = Transferred -> balance e = 0 }
     ensures { balance e = old (balance e) + (transferred e) }
     = update_balance e;
@@ -139,9 +150,8 @@ module EscrowTx
   (* transition from Confirmed to Transferred *)
   let transfer (e : env) : transfers
     requires { e.state = Confirmed }
-    (*********************************************************)
-    (* !! Manually inserted precondition                     *)
-    (*********************************************************)
+    requires { now e <= e.deadline }
+    (* !! Manually inserted precondition *)
     requires { balance e = e.price + e.penalty }
     (* cml global assert *)
     requires { e.state = Transferred -> balance e = 0 }
