@@ -152,7 +152,9 @@ let rec pp_instr fmt { pldesc = s } =
 
   | Iletin (id, e, body) ->
       Format.fprintf fmt "let %a = %a in %a"
-        pp_id id pp_expr e (pp_list "@," pp_instr) body
+        pp_id id
+        pp_expr e
+        (pp_list "@," pp_instr) body
 
   | Iif (cond, _then, _else) ->
       Format.fprintf fmt "if (%a) {%a}"

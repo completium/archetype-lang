@@ -57,7 +57,7 @@ transaction vote = {
 
 transition bury from Voting to Buried = {
    condition : after deadline;
-   action    : (*let nbvotesMax = ballot.max(nbvotes) in toto;*)
+   action    : let nbvotesMax = ballot.max(nbvotes) in
                for (b in ballot)  {
                  if (b.nbvotes = nbvotesMax) {
                     winner.add { val := b.val; }

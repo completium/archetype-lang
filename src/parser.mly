@@ -329,7 +329,7 @@ expr_r:
  | x=term               { x }
 
 letin_instr:
- | LET x=ident EQUAL e=expr IN b=braced(instrs) { Iletin (x, e, b) }
+ | LET x=ident EQUAL e=expr IN b=instrs { Iletin (x, e, b) }
 
 if_instr:
  | IF c=paren(expr) t=braced(instrs) e=else_instr? { Iif (c, t, e) }
