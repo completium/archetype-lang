@@ -4,30 +4,30 @@ role owner
 
 role[%transferable] validator
 
-asset account identified by account {
+asset account identified by account = {
   owner   : owner;
   amount  : uint;
 }
 
 transaction add = {
-   args : {
+   args = {
      owner : owner;
-     value : uint;
+     val : uint;
    }
    called by validator;
-   action : account.update owner { amount += value } { amount = 0 }
+   action : account.update owner { amount += val } { amount = 0 }
 }
 
 transaction consume = {
    args : {
      owner : owner;
-     value : uint;
+     val : uint;
    }
    called by validator;
-   condition : (account.get owner).amount >= value;
+   condition : (account.get owner).amount >= val;
 
    assert : (before.account.get owner).amount =
-            (after.account.get owner).amount + value;
+            (after.account.get owner).amount + val;
 
-   action : (account.get owner).amount -= value;
+   action : (account.get owner).amount -= val;
 }
