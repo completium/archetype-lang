@@ -66,6 +66,14 @@ match op with
 let pp_assignment_operator fmt op =
  Format.fprintf fmt "%s" (assignment_operator_to_str op)
 
+let quantifier_to_str op =
+match op with
+  | Forall -> "forall"
+  | Exists -> "exists"
+
+let pp_quantifier fmt op =
+ Format.fprintf fmt "%s" (quantifier_to_str op)
+
 let rec pp_expr fmt { pldesc = e } =
   match e with
   | Eterm (id, _args) ->
@@ -101,7 +109,15 @@ let rec pp_expr fmt { pldesc = e } =
         (pp_list "@," pp_expr) values
 
   | EassignFields l ->
-      Format.fprintf fmt "{%a}" (pp_list " " pp_assignment_field) l
+      Format.fprintf fmt "{%a}"
+        (pp_list " " pp_assignment_field) l
+
+  | Equantifier (q, id, t, body) ->
+      Format.fprintf fmt "%a %a : %a, %a"
+        pp_quantifier q
+        pp_id id
+        pp_expr t
+        pp_expr body
 
 and pp_literal fmt lit =
   match lit with
@@ -130,25 +146,29 @@ let pp_field fmt { pldesc = f } =
 (* -------------------------------------------------------------------- *)
 let rec pp_instr fmt { pldesc = s } =
   match s with
-  | Sassign (op, lhs, rhs) ->
+  | Iassign (op, lhs, rhs) ->
       Format.fprintf fmt "%a %a %a"
         pp_expr lhs pp_assignment_operator op pp_expr rhs
 
-  | Sif (cond, _then, _else) ->
+  | Iletin (id, e, body) ->
+      Format.fprintf fmt "let %a = %a in %a"
+        pp_id id pp_expr e (pp_list "@," pp_instr) body
+
+  | Iif (cond, _then, _else) ->
       Format.fprintf fmt "if (%a) {%a}"
         pp_expr cond
         (pp_list "@," pp_instr) _then
        (*match _else with | _ -> Format.fprintf fmt ""*)
 
-  | Sfor (id, expr, body) ->
+  | Ifor (id, expr, body) ->
       Format.fprintf fmt "for (%a in %a) {%a}"
         pp_id id pp_expr expr (pp_list "@," pp_instr) body
 
-  | Scall e ->
+  | Icall e ->
       Format.fprintf fmt "%a"
         pp_expr e
 
-  | Sassert e ->
+  | Iassert e ->
       Format.fprintf fmt "assert (%a);"
         pp_expr e
 
@@ -202,14 +222,16 @@ let pp_declaration fmt { pldesc = e } =
       Format.fprintf fmt "enum %a =\n  | %a"
         pp_id id (pp_list "\n  | " pp_id) ids
 
-  | Dstates (None, ids) ->
-      Format.fprintf fmt "states\n  | %a" (pp_list "\n  | " pp_id) ids
+  | Dstates (None, _ids) ->
+      Format.fprintf fmt ""
+(*      Format.fprintf fmt "states\n  | %a" (pp_list "\n  | " pp_id) ids*)
 
-  | Dstates (Some id, ids) ->
-      Format.fprintf fmt "states %a =\n  | %a"
-        pp_id id (pp_list "\n  | " pp_id) ids
+  | Dstates (Some _id, _ids) ->
+      Format.fprintf fmt ""
+(*      Format.fprintf fmt "states %a =\n  | %a"
+        pp_id id (pp_list "\n  | " pp_id) ids*)
 
-  | Dasset (id, fields) ->
+  | Dasset (id, fields, _op) ->
       Format.fprintf fmt "asset %a = {@[<v 2>]@,%a@]}\n"
         pp_id id (pp_list "@," pp_field) fields
 

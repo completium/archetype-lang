@@ -10,18 +10,18 @@ value date[%mutable chairperson (instate Created)] deadline
 
 assert (startdate < deadline)
 
-asset voter as role identified by address {
+asset voter as role identified by address = {
   address : address;
   hasVoted : boolean;
 }
 
-asset ballot identified by value {
-  value   : string;
+asset ballot identified by val = {
+  val   : string;
   nbvotes : uint;
 }
 
-asset winner {
-  value : string;
+asset winner = {
+  val : string;
 }
 
 (* state machine *)
@@ -31,43 +31,44 @@ states
  | Buried
 
 transaction register = {
-   args : {
+   args = {
      voter : address;
    }
    called by   chairperson;
    condition : instate Created;
-   action    : voter.add {address = voter; hasVoted = false;};
+   action    : voter.add {address := voter; hasVoted := false;};
 }
-transition start from Created to Vote {
+
+transition start from Created to Vote = {
    condition : after startDate;
 }
 
 transaction vote = {
-   args : {
-     value : string;
+   args = {
+     val : string;
    }
    called by voter;
    condition : instate Voting
                and (voter.get (Caller.address)).hasVoted = false;
 
    action    : (voter.get (Caller.address)).hasVoted := true,
-               ballot.update value { nbvotes += 1 } { nbvotes = 0 }
+               ballot.update val { nbvotes += 1; } { nbvotes := 0; };
 }
 
-transition bury from Voting to Buried {
+transition bury from Voting to Buried = {
    condition : after deadline;
-   action    : let nbvotesMax = ballot.max(nbvotes) in
+   action    : (*let nbvotesMax = ballot.max(nbvotes) in toto;*)
                for (b in ballot)  {
                  if (b.nbvotes = nbvotesMax) {
-                    winner.add {value = b.value}
+                    winner.add { val := b.val; }
                  }
-               }
+               };
 }
 
-assert (voter.when(voter.hasVoted = true).count() = ballot.sum(nbvotes))
+assert (voter.when(voter.hasVoted = true).count = ballot.sum(nbvotes))
 
-assert (or (instate Create) (instate Voting) -> is_empty winner)
+assert ((instate Create) or (instate Voting) -> is_empty winner)
 
 assert (forall w : winner,
           forall b : ballot,
-            b.nbvotes <= ballot.get(w.value).nbvotes)
+             b.nbvotes <= ballot.get(w.val).nbvotes)

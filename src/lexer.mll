@@ -26,6 +26,7 @@ rule token = parse
   | "role"                { ROLE }
   | "identified"          { IDENTIFIED }
   | "by"                  { BY }
+  | "as"                  { AS }
   | "from"                { FROM }
   | "to"                  { TO }
   | "ref"                 { REF }
@@ -33,6 +34,7 @@ rule token = parse
   | "assert"              { ASSERT }
   | "enum"                { ENUM }
   | "states"              { STATES }
+  | "initial"             { INITIAL }
   | "ensure"              { ENSURE }
   | "transition"          { TRANSITION }
   | "transaction"         { TRANSACTION }
@@ -40,6 +42,7 @@ rule token = parse
   | "called"              { CALLED }
   | "condition"           { CONDITION }
   | "action"              { ACTION }
+  | "let"                  { LET }
   | "if"                  { IF }
   | "else"                { ELSE }
   | "for"                 { FOR }
@@ -67,6 +70,8 @@ rule token = parse
   | "and"                 { AND }
   | "or"                  { OR }
   | "not"                 { NOT }
+  | "forall"              { FORALL }
+  | "exists"              { EXISTS }
   | "->"                  { IMPLY }
   | "<->"                 { EQUIV }
   | "<>"                  { NEQUAL }

@@ -42,6 +42,10 @@ type assignment_operator =
   | AndAssign
   | OrAssign
 
+type quantifier =
+  | Forall
+  | Exists
+
 type expr_r =
   | Eterm of ident_t * expr list option
   | Eliteral of literal
@@ -52,6 +56,7 @@ type expr_r =
   | Earithmetic of arithmetic_operator * expr * expr
   | Earray of expr list
   | EassignFields of assignment_field list
+  | Equantifier of quantifier * lident * expr * expr
 
 and literal =
   | Lnumber of int
@@ -76,11 +81,12 @@ and field = field_r loced
 
 (* -------------------------------------------------------------------- *)
 type instr_r =
-  | Sassign of assignment_operator * expr * expr
-  | Sif of expr * instr list * instr list option
-  | Sfor of lident * expr * instr list
-  | Scall of expr
-  | Sassert of expr
+  | Iassign of assignment_operator * expr * expr
+  | Iletin of lident * expr * instr list
+  | Iif of expr * instr list * instr list option
+  | Ifor of lident * expr * instr list
+  | Icall of expr
+  | Iassert of expr
 
 and instr = instr_r loced
 
@@ -97,17 +103,24 @@ and transitem = transitem_r loced
 
 (* -------------------------------------------------------------------- *)
 type declaration_r =
-  | Duse         of lident                                        (** use *)
-  | Dmodel       of lident                                        (** model *)
-  | Dconstant    of lident * lident * extension list option       (** constant *)
-  | Dvalue       of lident * lident * extension list option       (** value *)
-  | Drole        of lident * expr option * extension list option  (** role *)
-  | Denum        of lident * lident list                          (** enum *)
-  | Dstates      of lident option * lident list                   (** states *)
-  | Dasset       of lident * field list                           (** asset *)
-  | Dassert      of expr                                          (** assert *)
-  | Dtransition  of lident * lident * lident * transitem list     (** transition *)
-  | Dtransaction of lident * transitem list                       (** transaction *)
+  | Duse         of lident                                              (** use *)
+  | Dmodel       of lident                                              (** model *)
+  | Dconstant    of lident * lident * extension list option             (** constant *)
+  | Dvalue       of lident * lident * extension list option             (** value *)
+  | Drole        of lident * expr option * extension list option        (** role *)
+  | Denum        of lident * lident list                                (** enum *)
+  | Dstates      of lident option * (lident * state_option list option) list (** states *)
+  | Dasset       of lident * field list * asset_option list option      (** asset *)
+  | Dassert      of expr                                                (** assert *)
+  | Dtransition  of lident * lident * lident * transitem list           (** transition *)
+  | Dtransaction of lident * transitem list                             (** transaction *)
+
+and asset_option =
+  | AOasrole
+  | AOidentifiedby of lident
+
+and state_option =
+  | SOinitial
 
 and declaration = declaration_r loced
 

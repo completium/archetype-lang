@@ -14,6 +14,7 @@
 %token ROLE
 %token IDENTIFIED
 %token BY
+%token AS
 %token FROM
 %token TO
 %token REF
@@ -21,6 +22,7 @@
 %token ASSERT
 %token ENUM
 %token STATES
+%token INITIAL
 %token ENSURE
 %token TRANSITION
 %token TRANSACTION
@@ -28,6 +30,7 @@
 %token CALLED
 %token CONDITION
 %token ACTION
+%token LET
 %token IF
 %token ELSE
 %token FOR
@@ -55,6 +58,8 @@
 %token AND
 %token OR
 %token NOT
+%token FORALL
+%token EXISTS
 %token IMPLY
 %token EQUIV
 %token NEQUAL
@@ -164,7 +169,7 @@ enum:
 | ENUM x=ident EQUAL xs=pipe_idents {Denum (x, xs)}
 
 states:
-| STATES x=ident_equal? xs=pipe_idents {Dstates (x, xs)}
+| STATES x=ident_equal? xs=pipe_ident_options {Dstates (x, xs)}
 
 dassert:
 | ASSERT x=paren(expr) { Dassert x }
@@ -185,10 +190,29 @@ dassert:
 %inline pipe_ident:
 | PIPE x=ident { x }
 
+%inline pipe_ident_options:
+| xs=pipe_ident_option+ { xs }
+
+%inline pipe_ident_option:
+| PIPE x=ident opts=state_options? { (x, opts) }
+
+%inline state_options:
+| xs=state_option+ { xs }
+
+state_option:
+| INITIAL { SOinitial }
+
 asset:
-| ASSET x=ident _id=option(IDENTIFIED BY y=ident { y })
-    EQUAL fields=braced(fields)
-        { Dasset (x, fields) }
+| ASSET x=ident opts=asset_options?
+      EQUAL fields=braced(fields)
+          { Dasset (x, fields, opts) }
+
+%inline asset_options:
+| xs=asset_option+ { xs }
+
+asset_option:
+| AS ROLE               { AOasrole }
+| IDENTIFIED BY x=ident { AOidentifiedby x }
 
 %inline fields:
 | xs=field+ { xs }
@@ -274,13 +298,14 @@ action:
 
 instr_r:
  | x=assign_instr { x }
+ | x=letin_instr  { x }
  | x=if_instr     { x }
  | x=for_instr    { x }
  | x=call_instr   { x }
  | x=assert_instr { x }
 
 assign_instr:
- | x=expr op=assignment_operator y=expr { Sassign (op, x, y) }
+ | x=expr op=assignment_operator y=expr { Iassign (op, x, y) }
 
 %inline assignment_operator:
  | COLONEQUAL { Assign }
@@ -300,22 +325,33 @@ expr_r:
  | x=dot_expr           { x }
  | x=assign_fields      { x }
  | x=literal_expr       { x }
+ | x=quantifier_expr    { x }
  | x=term               { x }
 
+letin_instr:
+ | LET x=ident EQUAL e=expr IN b=braced(instrs) { Iletin (x, e, b) }
+
 if_instr:
- | IF c=paren(expr) t=braced(instrs) e=else_instr? { Sif (c, t, e) }
+ | IF c=paren(expr) t=braced(instrs) e=else_instr? { Iif (c, t, e) }
 
 %inline else_instr:
  | ELSE x=braced(instrs) { x }
 
 for_instr:
- | FOR LPAREN x=ident IN y=expr RPAREN body=braced(instrs) { Sfor (x, y, body) }
+ | FOR LPAREN x=ident IN y=expr RPAREN body=braced(instrs) { Ifor (x, y, body) }
 
 call_instr:
- | x=loc(term) { Scall x }
+ | x=loc(term) { Icall x }
 
 assert_instr:
- | ASSERT x=paren(expr) { Sassert x }
+ | ASSERT x=paren(expr) { Iassert x }
+
+quantifier_expr:
+ | q=quantifier x=ident COLON y=expr COMMA z=expr {Equantifier (q, x, y, z)}
+
+%inline quantifier:
+ | FORALL { Forall }
+ | EXISTS { Exists }
 
 %inline exprs:
  | xs=expr+ { xs }
