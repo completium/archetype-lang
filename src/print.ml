@@ -53,11 +53,28 @@ match op with
 let pp_arithmetic_operator fmt op =
  Format.fprintf fmt "%s" (arithmetic_operator_to_str op)
 
+let assignment_operator_to_str op =
+match op with
+  | Assign      -> ":="
+  | PlusAssign  -> "+="
+  | MinusAssign -> "-="
+  | MultAssign  -> "*="
+  | DivAssign   -> "/="
+  | AndAssign   -> "&="
+  | OrAssign    -> "|="
+
+let pp_assignment_operator fmt op =
+ Format.fprintf fmt "%s" (assignment_operator_to_str op)
+
 let rec pp_expr fmt { pldesc = e } =
   match e with
   | Eterm (id, _args) ->
       Format.fprintf fmt "%a"
-        pp_id id (*pp_list "@," pp_expr) args*)
+        pp_ident id (*pp_list "@," pp_expr) args*)
+
+  | Eliteral x ->
+      Format.fprintf fmt "%a"
+        pp_literal x
 
   | Edot (lhs, rhs) ->
       Format.fprintf fmt "%a.%a"
@@ -83,6 +100,19 @@ let rec pp_expr fmt { pldesc = e } =
       Format.fprintf fmt "[%a]"
         (pp_list "@," pp_expr) values
 
+  | EassignFields l ->
+      Format.fprintf fmt "{%a}" (pp_list " " pp_assignment_field) l
+
+and pp_literal fmt lit =
+  match lit with
+  | Lnumber n -> Format.fprintf fmt "%d" n
+  | Lstring s -> Format.fprintf fmt "%s" s
+
+and pp_assignment_field fmt f =
+  match f with
+  | AassignField (op, id, e) ->
+      Format.fprintf fmt "%a %a %a;"
+        pp_ident id pp_assignment_operator op pp_expr e
 
 (* -------------------------------------------------------------------- *)
 let pp_extension fmt { pldesc = e } =
@@ -98,19 +128,6 @@ let pp_field fmt { pldesc = f } =
 
 
 (* -------------------------------------------------------------------- *)
-let assignment_operator_to_str op =
-match op with
-| Assign      -> ":="
-| PlusAssign  -> "+="
-| MinusAssign -> "-="
-| MultAssign  -> "*="
-| DivAssign   -> "/="
-| AndAssign   -> "&="
-| OrAssign    -> "|="
-
-let pp_assignment_operator fmt op =
- Format.fprintf fmt "%s" (assignment_operator_to_str op)
-
 let rec pp_instr fmt { pldesc = s } =
   match s with
   | Sassign (op, lhs, rhs) ->
@@ -129,6 +146,10 @@ let rec pp_instr fmt { pldesc = s } =
 
   | Scall e ->
       Format.fprintf fmt "%a"
+        pp_expr e
+
+  | Sassert e ->
+      Format.fprintf fmt "assert (%a);"
         pp_expr e
 
 

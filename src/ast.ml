@@ -7,8 +7,8 @@ type lident = ident loced
 
 (* -------------------------------------------------------------------- *)
 type ident_r =
-  | Isimple of lident
   | Idouble of lident * lident
+  | Isimple of lident
 
 and ident_t = ident_r loced
 
@@ -33,15 +33,32 @@ type arithmetic_operator =
   | Mult
   | Div
 
+type assignment_operator =
+  | Assign
+  | PlusAssign
+  | MinusAssign
+  | MultAssign
+  | DivAssign
+  | AndAssign
+  | OrAssign
+
 type expr_r =
-  | Eterm of lident * expr list option
+  | Eterm of ident_t * expr list option
+  | Eliteral of literal
   | Edot of expr * expr
   | Elogical of logical_operator * expr * expr
   | Enot of expr
   | Ecomparison of comparison_operator * expr * expr
   | Earithmetic of arithmetic_operator * expr * expr
   | Earray of expr list
+  | EassignFields of assignment_field list
 
+and literal =
+  | Lnumber of int
+  | Lstring of string
+
+and assignment_field =
+  | AassignField of assignment_operator * ident_t * expr
 
 and expr = expr_r loced
 
@@ -58,20 +75,12 @@ type field_r =
 and field = field_r loced
 
 (* -------------------------------------------------------------------- *)
-type assignment_operator =
-  | Assign
-  | PlusAssign
-  | MinusAssign
-  | MultAssign
-  | DivAssign
-  | AndAssign
-  | OrAssign
-
 type instr_r =
   | Sassign of assignment_operator * expr * expr
   | Sif of expr * instr list * instr list option
   | Sfor of lident * expr * instr list
   | Scall of expr
+  | Sassert of expr
 
 and instr = instr_r loced
 

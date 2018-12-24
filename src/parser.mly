@@ -69,6 +69,7 @@
 %token EOF
 
 %token <string> IDENT
+%token <string> STRING
 %token <int> NUMBER
 
 %type <Ast.model> main
@@ -167,6 +168,13 @@ states:
 
 dassert:
 | ASSERT x=paren(expr) { Dassert x }
+
+%inline ident_t:
+| e=loc(ident_r) { e }
+
+%inline ident_r:
+ | x=ident DOT y=ident { Idouble (x, y) }
+ | x=ident             { Isimple x }
 
 %inline ident_equal:
 | x=ident EQUAL { x }
@@ -269,6 +277,7 @@ instr_r:
  | x=if_instr     { x }
  | x=for_instr    { x }
  | x=call_instr   { x }
+ | x=assert_instr { x }
 
 assign_instr:
  | x=expr op=assignment_operator y=expr { Sassign (op, x, y) }
@@ -289,6 +298,8 @@ expr_r:
  | x=arithmetic_expr    { x }
  | x=array_expr         { x }
  | x=dot_expr           { x }
+ | x=assign_fields      { x }
+ | x=literal_expr       { x }
  | x=term               { x }
 
 if_instr:
@@ -303,14 +314,24 @@ for_instr:
 call_instr:
  | x=loc(term) { Scall x }
 
+assert_instr:
+ | ASSERT x=paren(expr) { Sassert x }
+
 %inline exprs:
  | xs=expr+ { xs }
 
 %inline expr:
  | e=loc(expr_r) { e }
 
+literal_expr:
+ | x=literal { Eliteral x }
+
+literal:
+ | x=NUMBER { Lnumber x }
+ | x=STRING { Lstring x }
+
 term:
- | x=ident xs=exprs? { Eterm (x, xs) }
+ | x=ident_t xs=exprs? { Eterm (x, xs) }
 
 logical_expr:
  | x=expr op=logical_operator y=expr { Elogical (op, x, y) }
@@ -358,3 +379,12 @@ array_expr:
 
 dot_expr:
  | x=expr DOT y=expr { Edot (x, y) }
+
+assign_fields:
+ | xs=braced(assign_fieldss) { EassignFields xs }
+
+%inline assign_fieldss:
+ | xs=assign_field+ { xs }
+
+%inline assign_field:
+ | id=ident_t op=assignment_operator e=expr SEMI_COLON { AassignField (op, id, e) }

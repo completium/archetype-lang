@@ -18,6 +18,7 @@ rule token = parse
   | newline               { Lexing.new_line lexbuf; token lexbuf }
   | blank+                { token lexbuf }
   | "(*"                  { comment lexbuf; token lexbuf }
+  | "\""                  { STRING (Buffer.contents (string (Buffer.create 0) lexbuf)) }
   | "use"                 { USE }
   | "model"               { MODEL }
   | "constant"            { CONSTANT }
@@ -90,3 +91,12 @@ and comment = parse
   | "(*" { comment lexbuf; comment lexbuf }
   | _    { comment lexbuf }
   | eof  { lex_error lexbuf "unterminated comment" }
+
+and string buf = parse
+  | "\""          { buf }
+  | "\\n"         { Buffer.add_char buf '\n'; string buf lexbuf }
+  | "\\r"         { Buffer.add_char buf '\r'; string buf lexbuf }
+  | "\\" (_ as c) { Buffer.add_char buf c   ; string buf lexbuf }
+  | newline       { Buffer.add_string buf (Lexing.lexeme lexbuf); string buf lexbuf }
+  | _ as c        { Buffer.add_char buf c   ; string buf lexbuf }
+  | eof           { lex_error lexbuf "unterminated string"  }
