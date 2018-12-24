@@ -154,6 +154,7 @@ module EscrowTx
   (* transition from Confirmed to Transferred *)
   let transfer (e : env) : transfers
     requires { e.state = Confirmed }
+    requires { caller e = e.oracle }
     requires { now e <= e.deadline }
     (* !! Manually inserted precondition *)
     requires { balance e = e.price + e.penalty }
