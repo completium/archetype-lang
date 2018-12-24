@@ -39,6 +39,4 @@ transaction payOut = {
       arrival  : date;
    }
    transition shipment.status from In_transit to Arrived;
-   action :
-
 }

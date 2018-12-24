@@ -6,7 +6,7 @@ role owner
 
 role[%transferable] validator
 
-asset mile identified by id {
+asset mile identified by id = {
    id         : string;
    amount     : uint;
    expiration : date;
@@ -14,7 +14,7 @@ asset mile identified by id {
 }
 
 transaction add = {
-   args : {
+   args = {
      mile : mile;
    }
    called by validator;
@@ -22,38 +22,38 @@ transaction add = {
 }
 
 transaction consume = {
-  args : {
+  args = {
      owner : owner;
-     value : uint;
+     val : uint;
   }
   called by validator;
 
   condition :
-     mile.when(owner = owner and expiration > now()).sum(amount) >= value;
+     mile.when(owner = owner and expiration > now).sum(amount) >= val;
 
-  assert : forall m : removed.mile,
+  ensure : forall m : removed.mile,
              m.owner = owner and m.expiration >= now;
 
-  assert : before.mile.when(owner = owner).sum(amount) =
-            after.mile.when(owner = owner).sum(amount) + value;
+  ensure : before.mile.when(owner = owner).sum(amount) =
+            after.mile.when(owner = owner).sum(amount) + val;
 
-  assert : is_empty added.mile
+  ensure : is_empty added.mile;
 
-  assert : invariant stable.mile.when(owner = owner).proj_other( amount );
+  ensure : invariant stable.mile.when(owner = owner).proj_other( amount );
 
-  assert : invariant stable.mile.when(owner <> owner);
+  ensure : invariant stable.mile.when(owner <> owner);
 
-  assert : forall m : removed.mile,
+  ensure : forall m : removed.mile,
              forall o : stable.mile,
-                m.expiration <= o.expiration
+                m.expiration <= o.expiration;
 
   action :
-     let ref remainder = value in
+     let remainder = val in
      for (m in mile.when(owner = owner and expiration >= now)
                     .sort(asc(expiration))) {
           if (m.amount >= remainder) {
              m.amount  -= remainder,
-             remainder = 0,
+             remainder := 0,
              break
           } else {
              remainder -= m.amount,
@@ -61,17 +61,16 @@ transaction consume = {
           }
      },
      assert (remainder = 0);
-   }
 }
 
 transaction clear_expired = {
   called by admin;
 
-  assert : forall m : removed.mile, m.expiration < now;
+  ensure : forall m : removed.mile, m.expiration < now;
 
-  assert : is_empty added.mile;
+  ensure : is_empty added.mile;
 
-  assert : invariant stable.mile;
+  ensure : invariant stable.mile;
 
-  action : mile.removeif (expiration < now());
+  action : mile.removeif (expiration < now);
 }

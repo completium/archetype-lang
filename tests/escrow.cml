@@ -16,7 +16,7 @@ value[%traceable] [%mutable_signed [buyer, debitor] (instate Created)]
      penalty tez from seller to debitor = 0.1 * price
 
 (* transaction deadline *)
-value date[%mutable (buyer or seller) (instate Created)] deadline
+value[%mutable (buyer or seller) (instate Created)] date deadline
 
 (* state machine *)
 states

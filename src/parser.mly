@@ -142,7 +142,16 @@ constant:
 | CONSTANT exts=option(extensions) x=ident y=ident { Dconstant (x, y, exts) }
 
 value:
-| VALUE x=ident exts=option(extensions) y=ident { Dvalue (x, y, exts) }
+| VALUE exts=extensions? x=ident y=ident z=option(value_options)
+    dv=default_value?
+      { Dvalue (x, y, z, dv, exts) }
+
+%inline value_options:
+| xs=value_option+ { xs }
+
+value_option:
+| x=from_value { VOfrom x }
+| x=to_value   { VOto x }
 
 role:
 | ROLE exts=option(extensions) x=ident dv=default_value? { Drole (x, dv, exts) }
@@ -243,11 +252,15 @@ field_r:
   }
 
 transition:
-  TRANSITION x=ident FROM y=ident TO z=ident
-    EQUAL xs=braced(transitems) { Dtransition (x, y, z, xs) }
+  TRANSITION exts=option(extensions) x=ident
+    y=from_value z=to_value
+      EQUAL xs=braced(transitems)
+        { Dtransition (x, y, z, xs, exts) }
 
 transaction:
-    TRANSACTION x=ident EQUAL xs=braced(transitems) { Dtransaction (x, xs) }
+  TRANSACTION exts=option(extensions) x=ident
+    EQUAL xs=braced(transitems)
+      { Dtransaction (x, xs, exts) }
 
 %inline transitems:
  | xs=transitem+ { xs }
@@ -329,16 +342,16 @@ expr_r:
  | x=term               { x }
 
 letin_instr:
- | LET x=ident EQUAL e=expr IN b=instrs { Iletin (x, e, b) }
+ | LET x=ident EQUAL e=expr IN b=code { Iletin (x, e, b) }
 
 if_instr:
- | IF c=paren(expr) t=braced(instrs) e=else_instr? { Iif (c, t, e) }
+ | IF c=paren(expr) t=braced(code) e=else_instr? { Iif (c, t, e) }
 
 %inline else_instr:
- | ELSE x=braced(instrs) { x }
+ | ELSE x=braced(code) { x }
 
 for_instr:
- | FOR LPAREN x=ident IN y=expr RPAREN body=braced(instrs) { Ifor (x, y, body) }
+ | FOR LPAREN x=ident IN y=expr RPAREN body=braced(code) { Ifor (x, y, body) }
 
 call_instr:
  | x=loc(term) { Icall x }

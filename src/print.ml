@@ -214,7 +214,7 @@ let pp_declaration fmt { pldesc = e } =
   | Dconstant (id, typ, _) ->
       Format.fprintf fmt "constant %a %a\n" pp_id id pp_id typ
 
-  | Dvalue (id, typ, _) ->
+  | Dvalue (id, typ, _, _, _) ->
       Format.fprintf fmt "value %a %a\n" pp_id id pp_id typ
 
   | Drole (id, _val, _exts) ->
@@ -241,11 +241,11 @@ let pp_declaration fmt { pldesc = e } =
       Format.fprintf fmt "assert (%a)\n"
         pp_expr e
 
-  | Dtransition (id, from, _to, _) ->
+  | Dtransition (id, from, _to, _, _) ->
       Format.fprintf fmt "transition %a from %a to %a\n"
         pp_id id pp_id from pp_id _to
 
-  | Dtransaction (id, items) ->
+  | Dtransaction (id, items, _) ->
       Format.fprintf fmt "transaction %a = {@[<v 2>]@,%a@}\n"
         pp_id id (pp_list "@," pp_transitem) items
 

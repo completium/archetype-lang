@@ -106,14 +106,18 @@ type declaration_r =
   | Duse         of lident                                              (** use *)
   | Dmodel       of lident                                              (** model *)
   | Dconstant    of lident * lident * extension list option             (** constant *)
-  | Dvalue       of lident * lident * extension list option             (** value *)
+  | Dvalue       of lident * lident * value_option list option * expr option * extension list option             (** value *)
   | Drole        of lident * expr option * extension list option        (** role *)
   | Denum        of lident * lident list                                (** enum *)
   | Dstates      of lident option * (lident * state_option list option) list (** states *)
   | Dasset       of lident * field list * asset_option list option      (** asset *)
   | Dassert      of expr                                                (** assert *)
-  | Dtransition  of lident * lident * lident * transitem list           (** transition *)
-  | Dtransaction of lident * transitem list                             (** transaction *)
+  | Dtransition  of lident * lident * lident * transitem list * extension list option           (** transition *)
+  | Dtransaction of lident * transitem list * extension list option                             (** transaction *)
+
+and value_option =
+  | VOfrom of lident
+  | VOto of lident
 
 and asset_option =
   | AOasrole

@@ -12,7 +12,9 @@ states order_state =
   | Owner_assigned
   | Delivered
 
-asset vehicledetail
+asset vehicledetail = {
+  id : string;
+}
 
 asset order = {
    status       : order_sate;
@@ -38,7 +40,7 @@ transaction placeOrder = {
    args = {
      neworder : order;
    }
-   called by : neworder.orderer;
+   called by neworder.orderer;
    action : order.add neworder;
 }
 
@@ -48,7 +50,7 @@ transaction assign_vin = {
      vin        : string;
      detail     : vehicledetail;
    }
-   called by : order.orderer;
+   called by order.orderer;
    transition from order.Placed to order.Vin_assigned;
    action : vehicule.add { vin = vin; detail = detail; }
 }
