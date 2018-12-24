@@ -133,7 +133,7 @@ module EscrowTx
     (* generic uint constraints *)
     requires { balance e + transferred e <= max_uint32 }
     (* cml global assert *)
-(*    requires { e.state = Transferred -> balance e = 0 }*)
+    requires { e.state = Transferred -> balance e = 0 }
     ensures  { e.state = Transferred -> balance e = 0 }
     ensures { balance e = old (balance e) + e.penalty }
     = update_balance e;
