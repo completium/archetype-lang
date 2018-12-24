@@ -60,7 +60,10 @@ module Escrow
 
   function caller (e : env) : address = e.caller_
 
-  let exec_transfer (e : env) (a : address) (c : tez) (ops : transfers) : transfers =
+  let exec_transfer (e : env) (a : address) (c : tez) (ops : transfers) : transfers
+    requires { c <= balance e }
+    ensures  { old (balance e) = (balance e) + c }
+  =
     e.balance_ <- e.balance_ - c;
     let transfer = { destination = a; amount = c } in
     ops ++ (Cons transfer Nil)
@@ -136,6 +139,7 @@ module EscrowTx
   (* transition from Confirmed to Transferred *)
   let transfer (e : env) : transfers
     requires { e.state = Confirmed }
+    requires { balance e = e.price + e.penalty }
     (* cml global assert *)
     requires { e.state = Transferred -> balance e = 0 }
     ensures  { e.state = Transferred -> balance e = 0 }
