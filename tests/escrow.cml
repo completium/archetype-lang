@@ -35,7 +35,7 @@ transaction[%signedbyall [buyer, seller]] confirm = {
   condition : check (price + penalty);
 }
 
-transition transfer from Confirmed to Transferred = {
+transition transfer_ from Confirmed to Transferred = {
    called by oracle;
    condition : before deadline;
    action    : transfer price, transfer back penalty;

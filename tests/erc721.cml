@@ -16,7 +16,7 @@ asset token = {
 }
 
 
-transaction transfer = {
+transaction transfer_ = {
   args = {
     newowner : owner;
     token : token;

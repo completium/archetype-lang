@@ -1,10 +1,10 @@
 model bond
 
-enum couponType
+enum couponType =
  | Fixed
  | Floated
 
-enum period
+enum period =
  | Day
  | Week
  | Month
@@ -29,6 +29,6 @@ transaction publish = {
    args = {
       bond : bond;
    }
-   called by : bond.issuer;  (* see acl file *)
+   called by bond.issuer;  (* see acl file *)
    action : bond.add bond;
 }

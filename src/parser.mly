@@ -18,6 +18,11 @@
 %token FROM
 %token TO
 %token REF
+%token COLLECTION
+%token QUEUE
+%token STACK
+%token SET
+%token SUBSET
 %token ASSET
 %token ASSERT
 %token ENUM
@@ -35,6 +40,8 @@
 %token ELSE
 %token FOR
 %token IN
+%token TRANSFER
+%token BACK
 %token LPAREN
 %token RPAREN
 %token BEGIN_EXTENSION
@@ -46,6 +53,7 @@
 %token COMMA
 %token COLON
 %token SEMI_COLON
+%token PERCENT
 %token PIPE
 %token DOT
 %token COLONEQUAL
@@ -76,10 +84,11 @@
 %token <string> IDENT
 %token <string> STRING
 %token <int> NUMBER
+%token <float> FLOAT
 
 %type <Ast.model> main
 
-%left DOT
+%nonassoc DOT
 
 %left AND
 %left OR
@@ -98,7 +107,6 @@
 %left DIV
 
 %start main
-
 
 
 %%
@@ -128,6 +136,7 @@ declaration_r:
  | x=asset       { x }
  | x=transition  { x }
  | x=transaction { x }
+ | x=dextension  { x }
 
 %inline declaration:
 | e=loc(declaration_r) { e }
@@ -160,10 +169,13 @@ role:
 | EQUAL x=expr { x }
 
 %inline from_value:
-| FROM x=ident { x }
+| FROM x=expr { x }
 
 %inline to_value:
-| TO x=ident { x }
+| TO x=expr { x }
+
+dextension:
+|PERCENT x=ident xs=option(exprs) { Dextension (x, xs) }
 
 %inline extensions:
 | xs=extension+ { xs }
@@ -191,7 +203,21 @@ dassert:
  | x=ident             { Isimple x }
 
 %inline ident_equal:
-| x=ident EQUAL { x }
+ | x=ident EQUAL { x }
+
+%inline type_t:
+| e=loc(type_r) { e }
+
+%inline type_r:
+| x=ident c=container { Tcontainer (x, c)}
+| x=ident             { Tref x }
+
+container:
+| COLLECTION { Collection }
+| QUEUE      { Queue }
+| STACK      { Stack }
+| SET        { Set }
+| SUBSET     { Subset }
 
 %inline pipe_idents:
 | xs=pipe_ident+ { xs }
@@ -213,8 +239,11 @@ state_option:
 
 asset:
 | ASSET x=ident opts=asset_options?
-      EQUAL fields=braced(fields)
+      fields=asset_fields?
           { Dasset (x, fields, opts) }
+
+%inline asset_fields:
+| EQUAL fields=braced(fields) { fields}
 
 %inline asset_options:
 | xs=asset_option+ { xs }
@@ -227,8 +256,8 @@ asset_option:
 | xs=field+ { xs }
 
 field_r:
-| x=ident COLON y=ident boption(REF) SEMI_COLON
-    { Ffield (x, y) }
+| x=ident exts=option(extensions) COLON y=type_t boption(REF) SEMI_COLON
+    { Ffield (x, y, exts) }
 
 %inline field:
 | f=loc(field_r) { f }
@@ -289,7 +318,10 @@ condition:
  | CONDITION COLON x=expr SEMI_COLON { Tcondition x }
 
 transition_item:
- | TRANSITION FROM x=ident TO y=ident SEMI_COLON { Ttransition (x, y) }
+ | TRANSITION id=ident_t?
+     x=from_value
+         y=to_value SEMI_COLON
+             { Ttransition (x, y, id) }
 
 action:
  | ACTION COLON xs=code SEMI_COLON { Taction xs }
@@ -310,12 +342,13 @@ action:
  | e=loc(instr_r) { e }
 
 instr_r:
- | x=assign_instr { x }
- | x=letin_instr  { x }
- | x=if_instr     { x }
- | x=for_instr    { x }
- | x=call_instr   { x }
- | x=assert_instr { x }
+ | x=assign_instr   { x }
+ | x=letin_instr    { x }
+ | x=if_instr       { x }
+ | x=for_instr      { x }
+ | x=transfer_instr { x }
+ | x=call_instr     { x }
+ | x=assert_instr   { x }
 
 assign_instr:
  | x=expr op=assignment_operator y=expr { Iassign (op, x, y) }
@@ -330,7 +363,6 @@ assign_instr:
  | OREQUAL    { OrAssign }
 
 expr_r:
- | x=paren(expr_r)      { x }
  | x=logical_expr       { x }
  | x=comparison_expr    { x }
  | x=arithmetic_expr    { x }
@@ -340,6 +372,8 @@ expr_r:
  | x=literal_expr       { x }
  | x=quantifier_expr    { x }
  | x=term               { x }
+ | x=call_expr          { x }
+ | x=paren(expr_r)      { x }
 
 letin_instr:
  | LET x=ident EQUAL e=expr IN b=code { Iletin (x, e, b) }
@@ -353,8 +387,15 @@ if_instr:
 for_instr:
  | FOR LPAREN x=ident IN y=expr RPAREN body=braced(code) { Ifor (x, y, body) }
 
+transfer_instr:
+ | TRANSFER _b=option(BACK) x=expr y=to_value? { Itransfer (x, None, y) }
+
 call_instr:
- | x=loc(term) { Icall x }
+ | x=expr xs=call_args { Icall (x, xs) }
+
+%inline call_args:
+ | LPAREN RPAREN { [] }
+ | xs=exprs      { xs }
 
 assert_instr:
  | ASSERT x=paren(expr) { Iassert x }
@@ -377,10 +418,21 @@ literal_expr:
 
 literal:
  | x=NUMBER { Lnumber x }
+ | x=FLOAT  { Lfloat x }
  | x=STRING { Lstring x }
 
 term:
- | x=ident_t xs=exprs? { Eterm (x, xs) }
+ | x=ident { Eterm x }
+
+lterm:
+ | x=loc(term) { x }
+
+call_expr:
+ | x=call_e xs=call_args { Ecall (x, xs) }
+
+%inline call_e:
+ | x=loc(term)   { x }
+ | x=paren(expr) { x }
 
 logical_expr:
  | x=expr op=logical_operator y=expr { Elogical (op, x, y) }
@@ -427,7 +479,26 @@ array_expr:
  | COMMA x=expr { x }
 
 dot_expr:
- | x=expr DOT y=expr { Edot (x, y) }
+ | x=dot_expr2 DOT y=lterm      { Edot (x, y) }
+
+dot_expr2:
+ | x=loc(dot_expr3)    { x }
+ | x=simple_expr  { x }
+
+dot_expr3:
+ | x=dot_expr2 DOT y=simple_expr { Edot (x, y) }
+
+simple_expr:
+ | x=loc(simple_call)    { x }
+ | x=lterm               { x }
+ | x=paren(expr)         { x }
+
+%inline simple_call:
+ | x=lterm arg=zero_or_one_arg   { Ecall (x, arg) }
+
+%inline zero_or_one_arg:
+ | LPAREN RPAREN { []  }
+ | x=paren(expr) { [x] }
 
 assign_fields:
  | xs=braced(assign_fieldss) { EassignFields xs }

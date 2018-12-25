@@ -52,7 +52,7 @@ transaction assign_vin = {
    }
    called by order.orderer;
    transition from order.Placed to order.Vin_assigned;
-   action : vehicule.add { vin = vin; detail = detail; }
+   action : vehicule.add { vin := vin; detail := detail; };
 }
 
 transaction assign_owner = {
@@ -81,7 +81,7 @@ transaction scrapVehicle = {
       vehicule : vehicule;
    }
    called by vehicle.owner;
-   transition from [Off_the_road | Active] to Scrapped;
+   transition from (Off_the_road or Active) to Scrapped;
 }
 
 transaction scrapVehiclebyColor = {

@@ -14,7 +14,7 @@ role competitor
 
 role oracle
 
-asset submission {
+asset submission = {
   competitor : competitor;
   score      : uint;
   date       : date;
@@ -28,41 +28,41 @@ states
  | Done
  | Closed
 
-transition confirm from Created to InProgress {
+transition confirm from Created to InProgress = {
    condition : after startdate;
 }
 
 transaction submit = {
-   args : {
+   args = {
      competitor              : competitor;
      score[%signedby oracle] : uint;
    }
    condition : instate InProgress;
-   action    : submission.add { competitor = competitor;
-                                score = score;
-                                date = now(); };
+   action    : submission.add { competitor := competitor;
+                                score := score;
+                                date := now; };
 }
 
-transition decide from InProgress to Done {
+transition decide from InProgress to Done = {
    condition : after deadline;
    action :
          let sorted = submission.sort(asc(date)).sort(desc(score)) in
-         if (sorted.count() >= 3) {
+         if (sorted.count >= 3) {
            let first  = sorted.get(0) in
            let second = sorted.get(1) in
            let third  = sorted.get(2) in
            transfer (prize * 0.5) to first.competitor,
            transfer (prize * 0.3) to second.competitor,
            transfer (prize * 0.2) to third.competitor
-         } else if (sorted.count() >= 2) {
+         } else { if (sorted.count >= 2) {
            let first  = sorted.get(0) in
            let second = sorted.get(1) in
            transfer (prize * 0.6) to first.competitor,
            transfer (prize * 0.4) to second.competitor
-         } else if (sorted.count() >= 1) {
+         } else {if (sorted.count >= 1) {
            let first  = sorted.get(0) in
            transfer prize to first.competitor
-         } else transfer back prize
+         } else {transfer back prize}}};
 }
 
 assert (instate Done -> check 0)

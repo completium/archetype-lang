@@ -11,6 +11,7 @@
 let blank   = [' ' '\t' '\r']
 let newline = '\n'
 let digit   = ['0'-'9']
+let float = ['0'-'9']+ '.' ['0'-'9']+
 let ident   = ['a'-'z' 'A'-'Z'] ['a'-'z' 'A'-'Z' '0'-'9' '_']*
 
 (* -------------------------------------------------------------------- *)
@@ -30,6 +31,11 @@ rule token = parse
   | "from"                { FROM }
   | "to"                  { TO }
   | "ref"                 { REF }
+  | "collection"          { COLLECTION }
+  | "queue"               { QUEUE }
+  | "stack"               { STACK }
+  | "set"                 { SET }
+  | "subset"              { SUBSET }
   | "asset"               { ASSET }
   | "assert"              { ASSERT }
   | "enum"                { ENUM }
@@ -42,11 +48,13 @@ rule token = parse
   | "called"              { CALLED }
   | "condition"           { CONDITION }
   | "action"              { ACTION }
-  | "let"                  { LET }
+  | "let"                 { LET }
   | "if"                  { IF }
   | "else"                { ELSE }
   | "for"                 { FOR }
   | "in"                  { IN }
+  | "transfer"            { TRANSFER }
+  | "back"                { BACK }
   | "("                   { LPAREN }
   | ")"                   { RPAREN }
   | "[%"                  { BEGIN_EXTENSION }
@@ -58,6 +66,7 @@ rule token = parse
   | ","                   { COMMA }
   | ":"                   { COLON }
   | ";"                   { SEMI_COLON }
+  | "%"                   { PERCENT }
   | "|"                   { PIPE }
   | "."                   { DOT }
   | ":="                  { COLONEQUAL }
@@ -84,6 +93,7 @@ rule token = parse
   | "*"                   { MULT }
   | "/"                   { DIV }
   | ident as s            { IDENT s }
+  | float as f            { FLOAT (float_of_string f) }
   | digit+ as d           { NUMBER (int_of_string d) } (* FIXME: overflow *)
   | eof                   { EOF }
   | _ as c                {

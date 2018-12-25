@@ -33,8 +33,7 @@ transaction transit = {
       toField       : field;
    }
    transition animal.status from In_field to In_transit;
-   action :
-      toField.business.incomingAnimals.add animal;
+   action : toField.business.incomingAnimals.add animal;
 }
 
 transaction arrival = {

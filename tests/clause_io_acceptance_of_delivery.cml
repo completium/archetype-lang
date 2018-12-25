@@ -18,7 +18,7 @@ value incentiveS  tez from receiver = 0.2 * payment
 %traceable (payment + incentiveR) (receiver)
 %traceable (incentiveS) (shipper)
 
-states =
+states
  | Created initial
  | Aborted
  | Signed
@@ -49,7 +49,7 @@ transaction confirm = {
   called by receiver;
   transition from Signed to Delivered;
   action :
-       deliveryDate := now (),
+       deliveryDate := now,
        transfer back incentiveR,
        transfer payment,
        transfer back incentiveS;
@@ -57,10 +57,10 @@ transaction confirm = {
 
 transition success from Delivered to Success = {
   called by shipper;
-  condition : after (deliverydate + businessDays)
+  condition : after (deliverydate + businessDays);
 }
 
 transition fail from Delivered to Fail = {
   called by receiver;
-  condition : before (deliverydate + businessDays)
+  condition : before (deliverydate + businessDays);
 }

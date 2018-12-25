@@ -16,8 +16,25 @@ let pp_id fmt (id : lident) =
 (* -------------------------------------------------------------------- *)
 let pp_ident fmt { pldesc = e } =
   match e with
-  | Isimple id -> Format.fprintf fmt "%a" pp_id id
-  | Idouble (id, _) -> Format.fprintf fmt "%a" pp_id id
+  | Isimple x -> Format.fprintf fmt "%a" pp_id x
+  | Idouble (x, y) -> Format.fprintf fmt "%a.%a" pp_id x pp_id y
+
+(* -------------------------------------------------------------------- *)
+let container_to_str c =
+match c with
+  | Collection -> "collection"
+  | Queue -> "queue"
+  | Stack -> "stack"
+  | Set -> "set"
+  | Subset -> "subset"
+
+let pp_container fmt c =
+ Format.fprintf fmt "%s" (container_to_str c)
+
+let pp_type fmt { pldesc = e } =
+  match e with
+  | Tref x -> Format.fprintf fmt "%a" pp_id x
+  | Tcontainer (x, y) -> Format.fprintf fmt "%a %a" pp_id x pp_container y
 
 
 (* -------------------------------------------------------------------- *)
@@ -76,9 +93,13 @@ let pp_quantifier fmt op =
 
 let rec pp_expr fmt { pldesc = e } =
   match e with
-  | Eterm (id, _args) ->
+  | Eterm id ->
       Format.fprintf fmt "%a"
-        pp_ident id (*pp_list "@," pp_expr) args*)
+        pp_id id (*pp_list "@," pp_expr) args*)
+
+  | Ecall (e, args) ->
+      Format.fprintf fmt "%a %a"
+        pp_expr e (pp_list "@," pp_expr) args
 
   | Eliteral x ->
       Format.fprintf fmt "%a"
@@ -122,6 +143,7 @@ let rec pp_expr fmt { pldesc = e } =
 and pp_literal fmt lit =
   match lit with
   | Lnumber n -> Format.fprintf fmt "%d" n
+  | Lfloat  f -> Format.fprintf fmt "%f" f
   | Lstring s -> Format.fprintf fmt "%s" s
 
 and pp_assignment_field fmt f =
@@ -140,7 +162,7 @@ let pp_extension fmt { pldesc = e } =
 (* -------------------------------------------------------------------- *)
 let pp_field fmt { pldesc = f } =
   match f with
-  | Ffield (id, typ) -> Format.fprintf fmt "%a : %a;" pp_id id pp_id typ
+  | Ffield (id, typ, _) -> Format.fprintf fmt "%a : %a;" pp_id id pp_type typ
 
 
 (* -------------------------------------------------------------------- *)
@@ -166,7 +188,11 @@ let rec pp_instr fmt { pldesc = s } =
       Format.fprintf fmt "for (%a in %a) {%a}"
         pp_id id pp_expr expr (pp_list "@," pp_instr) body
 
-  | Icall e ->
+  | Itransfer (x, _, _) ->
+      Format.fprintf fmt "transfer %a"
+        pp_expr x
+
+  | Icall (e, _args) ->
       Format.fprintf fmt "%a"
         pp_expr e
 
@@ -194,9 +220,9 @@ let pp_transitem fmt { pldesc = t } =
       Format.fprintf fmt "condition: %a;\n"
         pp_expr e
 
-  | Ttransition (from, _to) ->
+  | Ttransition (from, _to, _) ->
       Format.fprintf fmt "transition from %a to %a;"
-        pp_id from pp_id _to
+        pp_expr from pp_expr _to
 
   | Taction instrs ->
       Format.fprintf fmt "action:\n %a" (pp_list "@," pp_instr) instrs
@@ -233,9 +259,13 @@ let pp_declaration fmt { pldesc = e } =
 (*      Format.fprintf fmt "states %a =\n  | %a"
         pp_id id (pp_list "\n  | " pp_id) ids*)
 
-  | Dasset (id, fields, _op) ->
+  | Dasset (id, Some fields, _op) ->
       Format.fprintf fmt "asset %a = {@[<v 2>]@,%a@]}\n"
         pp_id id (pp_list "@," pp_field) fields
+
+  | Dasset (id, None, _op) ->
+      Format.fprintf fmt "asset %a\n"
+        pp_id id
 
   | Dassert e ->
       Format.fprintf fmt "assert (%a)\n"
@@ -243,11 +273,15 @@ let pp_declaration fmt { pldesc = e } =
 
   | Dtransition (id, from, _to, _, _) ->
       Format.fprintf fmt "transition %a from %a to %a\n"
-        pp_id id pp_id from pp_id _to
+        pp_id id pp_expr from pp_expr _to
 
   | Dtransaction (id, items, _) ->
       Format.fprintf fmt "transaction %a = {@[<v 2>]@,%a@}\n"
         pp_id id (pp_list "@," pp_transitem) items
+
+  | Dextension (id, _) ->
+      Format.fprintf fmt "%%%a\n"
+        pp_id id
 
 
 (* -------------------------------------------------------------------- *)
@@ -260,6 +294,7 @@ let string_of__of_pp pp x =
 
 (* -------------------------------------------------------------------- *)
 let ident_to_str  = string_of__of_pp pp_ident
+let type_to_str  = string_of__of_pp pp_type
 let expr_to_str  = string_of__of_pp pp_expr
 let extension_to_str = string_of__of_pp pp_extension
 let field_to_str  = string_of__of_pp pp_field
