@@ -38,6 +38,7 @@ rule token = parse
   | "subset"              { SUBSET }
   | "asset"               { ASSET }
   | "assert"              { ASSERT }
+  | "object"              { OBJECT }
   | "enum"                { ENUM }
   | "states"              { STATES }
   | "initial"             { INITIAL }

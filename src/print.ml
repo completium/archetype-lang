@@ -144,7 +144,7 @@ and pp_literal fmt lit =
   match lit with
   | Lnumber n -> Format.fprintf fmt "%d" n
   | Lfloat  f -> Format.fprintf fmt "%f" f
-  | Lstring s -> Format.fprintf fmt "%s" s
+  | Lstring s -> Format.fprintf fmt "\"%s\"" s
 
 and pp_assignment_field fmt f =
   match f with
@@ -190,6 +190,10 @@ let rec pp_instr fmt { pldesc = s } =
 
   | Itransfer (x, _, _) ->
       Format.fprintf fmt "transfer %a"
+        pp_expr x
+
+  | Itransition x ->
+      Format.fprintf fmt "transition to %a"
         pp_expr x
 
   | Icall (e, _args) ->
@@ -274,6 +278,10 @@ let pp_declaration fmt { pldesc = e } =
   | Dassert e ->
       Format.fprintf fmt "assert (%a)\n"
         pp_expr e
+
+  | Dobject (id, e, _) ->
+      Format.fprintf fmt "object %a %a\n"
+        pp_id id pp_expr e
 
   | Dtransition (id, from, _to, _, _) ->
       Format.fprintf fmt "transition %a from %a to %a\n"

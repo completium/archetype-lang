@@ -25,6 +25,7 @@
 %token SUBSET
 %token ASSET
 %token ASSERT
+%token OBJECT
 %token ENUM
 %token STATES
 %token INITIAL
@@ -133,7 +134,8 @@ declaration_r:
  | x=role        { x }
  | x=enum        { x }
  | x=states      { x }
- | x=dassert     { x }
+ | x=assert_decl { x }
+ | x=object_decl { x }
  | x=asset       { x }
  | x=transition  { x }
  | x=transaction { x }
@@ -193,8 +195,11 @@ enum:
 states:
 | STATES x=ident_equal? xs=pipe_ident_options {Dstates (x, xs)}
 
-dassert:
+assert_decl:
 | ASSERT x=paren(expr) { Dassert x }
+
+object_decl:
+| OBJECT exts=extensions? x=ident y=expr { Dobject (x, y, exts) }
 
 %inline ident_t:
 | e=loc(ident_r) { e }
@@ -347,13 +352,14 @@ action:
  | e=loc(instr_r) { e }
 
 instr_r:
- | x=assign_instr   { x }
- | x=letin_instr    { x }
- | x=if_instr       { x }
- | x=for_instr      { x }
- | x=transfer_instr { x }
- | x=call_instr     { x }
- | x=assert_instr   { x }
+ | x=assign_instr     { x }
+ | x=letin_instr      { x }
+ | x=if_instr         { x }
+ | x=for_instr        { x }
+ | x=transfer_instr   { x }
+ | x=transition_instr { x }
+ | x=call_instr       { x }
+ | x=assert_instr     { x }
 
 assign_instr:
  | x=expr op=assignment_operator y=expr { Iassign (op, x, y) }
@@ -394,6 +400,9 @@ for_instr:
 
 transfer_instr:
  | TRANSFER _b=option(BACK) x=expr y=to_value? { Itransfer (x, None, y) }
+
+transition_instr:
+ | TRANSITION TO x=expr { Itransition x }
 
 call_instr:
  | x=expr xs=call_args { Icall (x, xs) }
