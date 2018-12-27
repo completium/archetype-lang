@@ -45,36 +45,36 @@ module Asset
 
   predicate le (a1 a2 : asset) = kle (akey a1) (akey a2)
 
-  type assets = private {
+  type collection = private {
     ghost mutable coll : set asset;
     ghost mutable keys : set key;
   }
 
-  val mem (a : asset) (c : assets) : bool
+  val mem (a : asset) (c : collection) : bool
   reads { a, c }
   ensures { result = true <-> Fset.mem (akey a) c.keys }
 
-  val add (a : asset) (c : assets) : unit
+  val add (a : asset) (c : collection) : unit
   writes { c.coll }
   writes { c.keys }
   ensures { old (not (Fset.mem (akey a) c.keys)) ->
           c.coll = add a (old c.coll) /\ c.keys = add (akey a) (old c.keys)}
 
-  function get (key : key) (c : assets) : asset
+  function get (key : key) (c : collection) : asset
 
   (* get is injective *)
-  axiom uniq_key : forall k1 k2:key. forall c:assets.
+  axiom uniq_key : forall k1 k2:key. forall c:collection.
         get k1 c = get k2 c -> k1 = k2
 
   clone list.Sorted as Sorted with type t = asset, predicate le = le
 
-  val when (p : asset -> bool) (c : assets) : list asset
+  val when (p : asset -> bool) (c : collection) : list asset
   reads { c }
   ensures { forall a:asset. Mem.mem a result -> p a }
   ensures { Sorted.sorted result }
 end
 
-(* Escrow storage definition *)
+(* Miles storage definition *)
 module Miles
 
   use Cml
@@ -105,7 +105,7 @@ module Miles
   (* Owner ********************************************************************)
   type owner = {
      owner_id        : int;
-     mutable miles   : Mile.assets;
+     mutable miles   : Mile.collection;
   }
 
   function owner_key (o : owner) : int = o.owner_id
@@ -121,8 +121,8 @@ module Miles
   type env = {
      (* contract storage *)
      mutable admin     : role;
-     miles_coll        : Mile.assets;
-     owner_coll        : Owner.assets;
+     miles_coll        : Mile.collection;
+     owner_coll        : Owner.collection;
      (* contract built-in storage *)
      mutable balance_  : tez;
      (* transaction env *)
