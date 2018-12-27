@@ -1,0 +1,159 @@
+theory Cml
+  use int.Int
+  use mach.int.UInt32
+  use list.List
+
+  (* default type mapping *)
+  type role    = int
+  type address = int
+  type uint    = uint32
+  type tez     = uint32
+  type date    = int
+
+  constant max_uint : int = UInt32.max_uint32
+
+  (* currency transfer during transaction *)
+  type transfer = {
+     destination_ : address;
+     amount_      : tez;
+  }
+
+  type transfers = list transfer
+
+  let empty : transfers = Nil
+
+end
+
+(* asset collection theory *)
+module Asset
+
+  use set.Fset
+  use list.List
+  use list.Mem
+
+  type key
+
+  type sort
+
+  type asset
+
+  function akey (a : asset) : key
+
+  function asort (a : asset) : sort
+
+  predicate kle (k1 k2 : key)
+
+  predicate le (a1 a2 : asset) = kle (akey a1) (akey a2)
+
+  type assets = private {
+    ghost mutable coll : set asset;
+    ghost mutable keys : set key;
+  }
+
+  val mem (a : asset) (c : assets) : bool
+  reads { a, c }
+  ensures { result = true <-> Fset.mem (akey a) c.keys }
+
+  val add (a : asset) (c : assets) : unit
+  writes { c.coll }
+  writes { c.keys }
+  ensures { old (not (Fset.mem (akey a) c.keys)) ->
+          c.coll = add a (old c.coll) /\ c.keys = add (akey a) (old c.keys)}
+
+  function get (key : key) (c : assets) : asset
+
+  (* get is injective *)
+  axiom uniq_key : forall k1 k2:key. forall c:assets.
+        get k1 c = get k2 c -> k1 = k2
+
+  clone list.Sorted as Sorted with type t = asset, predicate le = le
+
+  val when (p : asset -> bool) (c : assets) : list asset
+  reads { c }
+  ensures { forall a:asset. Mem.mem a result -> p a }
+  ensures { Sorted.sorted result }
+end
+
+(* Escrow storage definition *)
+module Miles
+
+  use Cml
+  use int.Int
+  use mach.int.UInt32
+  use list.List
+  use list.Append
+  use Asset
+
+  (* Mile *********************************************************************)
+  type mile = {
+     mile_id        : int;
+     mutable amount : uint;
+     expiration     : date;
+  }
+
+  function mile_key (m : mile) : int = m.mile_id
+  function mile_sort (m : mile) : date = m.expiration
+
+  (* declare mile as an Asset *)
+  clone Asset as Mile with type      key   = int,
+                           type      sort  = date,
+                           type      asset = mile,
+                           function  akey  = mile_key,
+                           function  asort = mile_sort,
+                           predicate kle   = (<=)
+
+  (* Owner ********************************************************************)
+  type owner = {
+     owner_id        : int;
+     mutable miles   : Mile.assets;
+  }
+
+  function owner_key (o : owner) : int = o.owner_id
+
+  (* declare mile as an Asset *)
+  clone Asset as Owner with type      key   = int,
+                            type      sort  = int,
+                            type      asset = owner,
+                            function  akey  = owner_key,
+                            function  asort = owner_key,
+                            predicate kle = (<=)
+
+  type env = {
+     (* contract storage *)
+     mutable admin     : role;
+     miles_coll        : Mile.assets;
+     owner_coll        : Owner.assets;
+     (* contract built-in storage *)
+     mutable balance_  : tez;
+     (* transaction env *)
+     transferred_      : tez;
+     caller_           : address;
+     now_              : date;
+  }
+
+  function balance (e: env) : tez = e.balance_
+
+  function transferred (e : env) : tez = e.transferred_
+
+  function caller (e : env) : address = e.caller_
+
+  function now (e : env) : date = e.now_
+
+  let update_balance (e : env)
+    requires { transferred e + balance e <= max_uint }
+    ensures  { balance e = old (balance e) + (transferred e)}
+    (*ensures  { e.state = old e.state }*)
+  =
+    let sum = e.balance_ + e.transferred_ in
+    e.balance_ <- sum
+
+  let exec_transfer (e : env) (a : address) (c : tez) (ops : transfers) : transfers
+    requires { c <= balance e }
+    ensures  { old (balance e) = (balance e) + c }
+    (*ensures  { e.state = old e.state }*)
+  =
+    e.balance_ <- e.balance_ - c;
+    let transfer = { destination_ = a; amount_ = c } in
+    ops ++ (Cons transfer Nil)
+
+end

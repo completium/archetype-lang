@@ -156,7 +156,7 @@ module EscrowTx
     requires { e.state = Confirmed }
     requires { caller e = e.oracle }
     requires { now e <= e.deadline }
-    (* !! Prpagated precondition from 'confirm' transaction *)
+    (* !! Propagated precondition from 'confirm' transaction *)
     requires { balance e = e.price + e.penalty }
     (* cml global assert *)
     requires { e.state = Transferred -> balance e = 0 }
