@@ -19,4 +19,4 @@ clean:
 	$(MAKE) -C src clean
 
 build-deps:
-	opam install dune menhir
+	opam install dune menhir batteries
