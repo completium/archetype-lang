@@ -13,7 +13,7 @@
 (setq cml-highlights
       '(
         ("model\\|constant\\|role\\|asset\\|value\\|states\\|enum\\|transaction"   . font-lock-constant-face)
-        ("assert\\|called by\\|args\\|condition\\|ensure\\|as role\\|identified by\\|action\\|transition\\|from\\|to" . font-lock-function-name-face)
+        ("assert\\|called by\\|args\\|condition\\|ensure\\|as role\\|identified by\\|action\\|transferred\\|transition\\|from\\|to" . font-lock-function-name-face)
         )
       )
 

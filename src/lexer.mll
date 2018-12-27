@@ -47,6 +47,7 @@ rule token = parse
   | "args"                { ARGS }
   | "called"              { CALLED }
   | "condition"           { CONDITION }
+  | "transferred"         { TRANSFERRED }
   | "action"              { ACTION }
   | "let"                 { LET }
   | "if"                  { IF }

@@ -113,7 +113,8 @@ type transitem_r =
   | Tcalledby of expr * extension list option     (** called by *)
   | Tensure of expr                               (** ensure *)
   | Tcondition of expr                            (** condition *)
-  | Ttransition of expr * expr * ident_t option    (** transition  *)
+  | Ttransferred of expr                          (** transferred *)
+  | Ttransition of expr * expr * ident_t option   (** transition  *)
   | Taction of instr list                         (** action  *)
 
 and transitem = transitem_r loced

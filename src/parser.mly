@@ -34,6 +34,7 @@
 %token ARGS
 %token CALLED
 %token CONDITION
+%token TRANSFERRED
 %token ACTION
 %token LET
 %token IF
@@ -302,6 +303,7 @@ transitem_r:
  | x=calledby         { x }
  | x=ensure           { x }
  | x=condition        { x }
+ | x=transferred      { x }
  | x=transition_item  { x }
  | x=action           { x }
 
@@ -316,6 +318,9 @@ ensure:
 
 condition:
  | CONDITION COLON x=expr SEMI_COLON { Tcondition x }
+
+transferred:
+ | TRANSFERRED COLON x=expr SEMI_COLON { Ttransferred x }
 
 transition_item:
  | TRANSITION id=ident_t?

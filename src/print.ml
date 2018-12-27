@@ -220,6 +220,10 @@ let pp_transitem fmt { pldesc = t } =
       Format.fprintf fmt "condition: %a;\n"
         pp_expr e
 
+  | Ttransferred e ->
+      Format.fprintf fmt "transferred: %a;\n"
+        pp_expr e
+
   | Ttransition (from, _to, _) ->
       Format.fprintf fmt "transition from %a to %a;"
         pp_expr from pp_expr _to
