@@ -90,24 +90,39 @@ theory Asset
     ghost mutable keys : set key;
   }
 
-  val mem (a : asset) (c : collection) : bool
-  reads { a, c }
-  ensures { result = true <-> Fset.mem (akey a) c.keys }
+  (* member of collection predicate *)
+  function mem (a : asset) (c : collection) : bool
 
+  axiom mem_keys : forall c:collection, a:asset.
+       mem a c <-> Fset.mem (akey a) c.keys
+
+  axiom mem_coll : forall c:collection, a:asset.
+       mem a c <-> Fset.mem a c.coll
+
+  axiom keys_coll : forall c:collection, a:asset.
+       Fset.mem (akey a) c.keys <-> Fset.mem a c.coll
+
+  (* addition of asset *)
   val add (a : asset) (c : collection) : unit
   writes { c.coll }
   writes { c.keys }
   ensures { old (not (Fset.mem (akey a) c.keys)) ->
           c.coll = add a (old c.coll) /\ c.keys = add (akey a) (old c.keys)}
 
+  (* get an asset from asset key *)
   function get (key : key) (c : collection) : asset
 
   (* get is injective *)
-  axiom uniq_key : forall k1 k2:key. forall c:collection.
+  axiom inj_get : forall k1 k2:key. forall c:collection.
         get k1 c = get k2 c -> k1 = k2
+
+  (* get is surjective *)
+  axiom surj_get : forall c:collection, a:asset.
+        mem a c -> exists k:key. get k c = a
 
   clone list.Sorted as Sorted with type t = asset, predicate le = le
 
+  (* filter collection *)
   val when (p : asset -> bool) (c : collection) : list asset
   reads { c }
   ensures { forall a:asset. Mem.mem a result -> p a }

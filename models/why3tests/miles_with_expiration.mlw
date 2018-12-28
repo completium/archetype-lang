@@ -11,7 +11,7 @@ module Miles
      mile_id        : int;
      mutable amount : uint;
      expiration     : date;
-  } invariant { amount >= 0 }
+  } invariant { amount > 0 }
 
   function mile_key (m : mile) : int = m.mile_id
   function mile_sort (m : mile) : date = m.expiration
@@ -38,8 +38,19 @@ module Miles
                                 type      asset = owner,
                                 function  akey  = owner_key,
                                 function  asort = owner_key,
-                                predicate kle = (<=)
+                                predicate kle   = (<=)
 
   (****************************************************************************)
+
+  type storage = {
+    mutable mile_coll   : Mile.collection;
+    mutable owner_coll  : Owner.collection;
+  }
+
+  function is_mile (m : mile) (s : storage) : bool  = Mile.mem m s.mile_coll
+  function is_owner (o : owner) (s : storage) : bool = Owner.mem o s.owner_coll
+
+  axiom miles_partition : forall s:storage, m:mile.
+           is_mile m s <-> (exists o:owner. is_owner o s /\ Mile.mem m o.miles)
 
 end
