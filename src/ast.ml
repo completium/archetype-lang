@@ -127,6 +127,7 @@ type declaration_r =
   | Dasset       of lident * field list option * asset_option list option          (** asset *)
   | Dassert      of expr                                                           (** assert *)
   | Dobject      of lident * expr * extension list option
+  | Dkey         of lident * expr * extension list option
   | Dtransition  of lident * expr * expr * transitem list * extension list option  (** transition *)
   | Dtransaction of lident * transitem list * extension list option                (** transaction *)
   | Dextension   of lident * expr list option                                      (** extension *)

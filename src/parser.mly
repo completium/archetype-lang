@@ -27,6 +27,8 @@
 %token ASSET
 %token ASSERT
 %token OBJECT
+%token KEY
+%token OF
 %token ENUM
 %token STATES
 %token INITIAL
@@ -138,6 +140,7 @@ declaration_r:
  | x=states      { x }
  | x=assert_decl { x }
  | x=object_decl { x }
+ | x=key_decl    { x }
  | x=asset       { x }
  | x=transition  { x }
  | x=transaction { x }
@@ -202,6 +205,9 @@ assert_decl:
 
 object_decl:
 | OBJECT exts=extensions? x=ident y=expr { Dobject (x, y, exts) }
+
+key_decl:
+| KEY exts=extensions? x=ident OF y=expr { Dkey (x, y, exts) }
 
 %inline ident_equal:
  | x=ident EQUAL { x }

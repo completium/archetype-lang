@@ -278,6 +278,10 @@ let pp_declaration fmt { pldesc = e } =
       Format.fprintf fmt "object %a %a\n"
         pp_id id pp_expr e
 
+  | Dkey (id, e, _) ->
+      Format.fprintf fmt "key %a of %a\n"
+        pp_id id pp_expr e
+
   | Dtransition (id, from, _to, _, _) ->
       Format.fprintf fmt "transition %a from %a to %a\n"
         pp_id id pp_expr from pp_expr _to
