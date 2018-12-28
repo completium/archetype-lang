@@ -59,6 +59,7 @@ type expr_r =
   | Ecall of expr * expr list
   | Eliteral of literal
   | Edot of expr * expr
+  | Enamespace of lident * expr
   | Efun of lident list * expr
   | Elogical of logical_operator * expr * expr
   | Enot of expr
@@ -132,6 +133,7 @@ type declaration_r =
   | Dtransition  of lident * expr * expr * transitem list * extension list option  (** transition *)
   | Dtransaction of lident * transitem list * extension list option                (** transaction *)
   | Dextension   of lident * expr list option                                      (** extension *)
+  | Dnamespace   of lident * declaration list                                      (** namespace *)
 
 and value_option =
   | VOfrom of expr
@@ -148,5 +150,8 @@ and state_option =
 and declaration = declaration_r loced
 
 (* -------------------------------------------------------------------- *)
-type model =
+type model_r =
   | Mmodel of declaration list
+  | Mmodelextension of lident * declaration list * declaration list
+
+and model = model_r loced

@@ -1,0 +1,23 @@
+model extension signedbyall (
+  transaction[%signedbyall roles] aTransaction
+) = {
+
+  asset signer_<%aTransaction> = {
+    signer    : address;
+    hasSigned : boolean;
+  } init with {
+    for (r in roles) {
+      signer_<%aTransaction>.add {signer = r; hasSigned = false;}
+    }
+  }
+
+  transaction sign_<%aTransaction> = {
+    action : (signer.get Caller.address).hasSigned := true;
+  }
+
+  transaction aTransaction = {
+    condition: signer_<%aTransaction>.when(hasSigned = true).count()
+               = signer_<%aTransaction>.count();
+  }
+
+}

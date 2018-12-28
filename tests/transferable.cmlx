@@ -1,0 +1,23 @@
+model extension transferable (
+
+  role[%transferable] aRole
+
+) = {
+
+  role aRole
+
+  role <%aRole>_tmp
+
+  transaction assign_new_<%aRole> = {
+    args = {
+      newrole : <%aRole>tmp;
+    }
+    called by aRole;
+    action : <%aRole>_tmp := newrole;
+  }
+
+  transaction confirm_<%aRole> = {
+    called by <%aRole>tmp;
+    action : aRole := <%aRole>tmp;
+  }
+}

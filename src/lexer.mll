@@ -11,9 +11,9 @@
 let blank   = [' ' '\t' '\r']
 let newline = '\n'
 let digit   = ['0'-'9']
-let float = ['0'-'9']+ '.' ['0'-'9']+
-let ident   = ['a'-'z' 'A'-'Z'] ['a'-'z' 'A'-'Z' '0'-'9' '_']*
-
+let float   = ['0'-'9']+ '.' ['0'-'9']+
+let var     = "<%" ['a'-'z' 'A'-'Z'] ['a'-'z' 'A'-'Z' '0'-'9' '_' ]* '>'
+let ident   = (['a'-'z' 'A'-'Z'] | var)  (['a'-'z' 'A'-'Z' '0'-'9' '_' ] | var)*
 (* -------------------------------------------------------------------- *)
 rule token = parse
   | newline               { Lexing.new_line lexbuf; token lexbuf }
@@ -65,9 +65,12 @@ rule token = parse
   | "in"                  { IN }
   | "transfer"            { TRANSFER }
   | "back"                { BACK }
+  | "extension"           { EXTENSION }
+  | "namespace"           { NAMESPACE }
+  | "::"                  { COLONCOLON }
   | "("                   { LPAREN }
   | ")"                   { RPAREN }
-  | "[%"                  { BEGIN_EXTENSION }
+  | "[%"                  { LBRACKETPERCENT }
   | "["                   { LBRACKET }
   | "]"                   { RBRACKET }
   | "{"                   { LBRACE }

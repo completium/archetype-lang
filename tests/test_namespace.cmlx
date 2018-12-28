@@ -1,0 +1,14 @@
+model extension test_namespace (
+
+  value[%test_namespace] avalue type
+
+) = {
+
+  value avalue type
+
+  assert(a::myvalue = 1)
+
+  namespace myspace {
+    value myvalue uint = 1
+  }
+}

@@ -100,6 +100,10 @@ let rec pp_expr fmt { pldesc = e } =
       Format.fprintf fmt "%a"
         pp_literal x
 
+  | Enamespace (id, x) ->
+      Format.fprintf fmt "%a::%a"
+        pp_id id pp_expr x
+
   | Edot (lhs, rhs) ->
       Format.fprintf fmt "%a.%a"
         pp_expr lhs pp_expr rhs
@@ -236,7 +240,7 @@ let pp_transitem fmt { pldesc = t } =
 
 
 (* -------------------------------------------------------------------- *)
-let pp_declaration fmt { pldesc = e } =
+let rec pp_declaration fmt { pldesc = e } =
   match e with
   | Duse id ->
       Format.fprintf fmt "use %a\n" pp_id id
@@ -298,10 +302,23 @@ let pp_declaration fmt { pldesc = e } =
       Format.fprintf fmt "%%%a\n"
         pp_id id
 
+  | Dnamespace (id, ds) ->
+      Format.fprintf fmt "namespace %a { %a }\n"
+         pp_id id
+        (pp_list "@,\n" pp_declaration) ds
+
 
 (* -------------------------------------------------------------------- *)
-let pp_model fmt (Mmodel es) =
+let pp_model fmt { pldesc = m } =
+  match m with
+| Mmodel es ->
   Format.fprintf fmt "%a" (pp_list "@,\n" pp_declaration) es
+| Mmodelextension (id, ds, es) ->
+  Format.fprintf fmt "model extension %a (%a) = {%a}"
+     pp_id id
+    (pp_list "@,\n" pp_declaration) ds
+    (pp_list "@,\n" pp_declaration) es
+
 
 (* -------------------------------------------------------------------- *)
 let string_of__of_pp pp x =

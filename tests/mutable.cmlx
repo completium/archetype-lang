@@ -1,0 +1,17 @@
+model extension mutable (
+
+  value[%mutable arole cond] avalue type
+
+) = {
+
+  value avalue type
+
+  transaction set_<%avalue> = {
+    args = {
+        newvalue : type;
+    }
+    called by arole;
+    condition : cond;
+    action : avalue := newvalue;
+  }
+}

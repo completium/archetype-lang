@@ -52,9 +52,12 @@
 %token IN
 %token TRANSFER
 %token BACK
+%token EXTENSION
+%token NAMESPACE
+%token COLONCOLON
 %token LPAREN
 %token RPAREN
-%token BEGIN_EXTENSION
+%token LBRACKETPERCENT
 %token LBRACKET
 %token RBRACKET
 %token LBRACE
@@ -120,17 +123,26 @@
 %%
 
 main:
-| impl=implementation EOF
-    { impl }
+ | x=loc(model_r) { x }
+ | x=loc(error)
+     { error ~loc:(loc x) PE_Unknown }
 
-| x=loc(error)
-    { error ~loc:(loc x) PE_Unknown }
+model_r:
+ | x=implementation_model EOF { x }
+ | x=model_extension      EOF { x }
 
-implementation:
-| x=declarations { Mmodel x }
+model_extension:
+ | MODEL EXTENSION id=ident xs=paren(declarations) EQUAL ys=braced(declarations)
+     { Mmodelextension (id, xs, ys) }
+
+implementation_model:
+ | x=declarations { Mmodel x }
 
 %inline declarations:
 | xs=declaration+ { xs }
+
+%inline declaration:
+| e=loc(declaration_r) { e }
 
 declaration_r:
  | x=use         { x }
@@ -147,9 +159,7 @@ declaration_r:
  | x=transition  { x }
  | x=transaction { x }
  | x=dextension  { x }
-
-%inline declaration:
-| e=loc(declaration_r) { e }
+ | x=namespace   { x }
 
 use:
 | USE x=ident { Duse x }
@@ -194,7 +204,10 @@ dextension:
 | e=loc(extension_r) { e }
 
 extension_r:
-| BEGIN_EXTENSION x=ident xs=option(exprs) RBRACKET { Eextension (x, xs) }
+| LBRACKETPERCENT x=ident xs=option(exprs) RBRACKET { Eextension (x, xs) }
+
+namespace:
+| NAMESPACE x=ident xs=braced(declarations) { Dnamespace (x, xs) }
 
 enum:
 | ENUM x=ident EQUAL xs=pipe_idents {Denum (x, xs)}
@@ -394,6 +407,7 @@ expr_r:
  | x=comparison_expr    { x }
  | x=arithmetic_expr    { x }
  | x=array_expr         { x }
+ | x=namespace_expr     { x }
  | x=dot_expr           { x }
  | x=fun_expr           { x }
  | x=assign_fields      { x }
@@ -510,6 +524,9 @@ call_expr:
  | x=lterm         { x }
  | x=loc(dot_expr) { x }
  | x=paren(expr)   { x }
+
+namespace_expr:
+ | id=ident COLONCOLON x=expr   { Enamespace (id, x) }
 
 dot_expr:
  | x=dot_expr2 DOT y=lterm      { Edot (x, y) }

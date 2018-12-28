@@ -1,0 +1,22 @@
+model extension signedby (
+  role arole
+
+  object[%signedby arole] anObject
+
+  transaction aTransaction = {
+    args = {
+      obj : anObject;
+    }
+  }
+
+) = {
+
+  key key_<%arole> of oracle
+
+  transaction aTransaction = {
+    args = {
+      signed_<%obj>: signature;
+    }
+    condition : check_signature obj signed_<%obj> key_<%arole>;
+  }
+}
