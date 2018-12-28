@@ -27,7 +27,7 @@ states
  | Fail
 
 transaction[%signedbyall [shipper, receiver]] sign = {
-   condition : check (payment + incentiveR + incentiveS);
+   condition : balance = payment + incentiveR + incentiveS;
    transition from Created to Signed;
 }
 

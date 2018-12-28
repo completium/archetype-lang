@@ -94,8 +94,6 @@
 
 %type <Ast.model> main
 
-%nonassoc DOT
-
 %left AND
 %left OR
 %right IMPLY
@@ -480,9 +478,6 @@ array_expr:
 %inline sep_comma_exprs:
  | x=expr xs=comma_expr+ { x :: xs }
  | x=expr { [x] }
-
-%inline comma_exprs:
- | xs=comma_expr+ { xs }
 
 %inline comma_expr:
  | COMMA x=expr { x }
