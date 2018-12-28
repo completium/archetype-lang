@@ -124,7 +124,7 @@ type declaration_r =
   | Drole        of lident * expr option * extension list option                   (** role *)
   | Denum        of lident * lident list                                           (** enum *)
   | Dstates      of lident option * (lident * state_option list option) list       (** states *)
-  | Dasset       of lident * field list option * asset_option list option          (** asset *)
+  | Dasset       of lident * field list option * expr list option * asset_option list option         (** asset *)
   | Dassert      of expr                                                           (** assert *)
   | Dobject      of lident * expr * extension list option
   | Dkey         of lident * expr * extension list option
@@ -139,6 +139,7 @@ and value_option =
 and asset_option =
   | AOasrole
   | AOidentifiedby of lident
+  | AOsortedby of lident
 
 and state_option =
   | SOinitial

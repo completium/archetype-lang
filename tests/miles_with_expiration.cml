@@ -1,77 +1,90 @@
 model miles_with_expiration
 
-role admin
+role[%transferable] admin
 
-role owner
-
-role[%transferable] validator
-
-asset mile identified by id = {
+(* id is a string because it is generated off-chain *)
+asset mile identified by id sorted by expiration = {
    id         : string;
    amount     : uint;
    expiration : date;
-   owner      : owner;
+} with { amount > 0 }
+
+(* a partition ensures there is no direct access to mile collection *)
+asset owner as role identified by addr = {
+   addr  : address;
+   miles : mile partition; (* injective (owner x mile) *)
 }
 
 transaction add = {
    args = {
-     mile : mile;
+     owner       : address;
+     newmile     : mile;
    }
-   called by validator;
-   action : mile.add token;
+   called by admin;
+   action    : aaa := a;
+(*       owner.addifnotexist owner { miles := void; },
+       (* transaction must fail if mile already exists *)
+       (owner.get owner).miles.add newmile "mile already exists";*)
 }
 
 transaction consume = {
   args = {
-     owner : owner;
+     owner : address;
      val : uint;
   }
-  called by validator;
+  called by admin;
 
   condition :
-     mile.when(owner = owner and expiration > now).sum(amount) >= val;
+     (owner.get owner).miles.when(mile.expiration > now).sum(amount)
+           >= val;
 
-  ensure : forall m : removed.mile,
-             m.owner = owner and m.expiration >= now;
+  ensure : forall m : removed miles,
+             in m (before (owner.miles)) and m.expiration >= now;
 
-  ensure : before.mile.when(owner = owner).sum(amount) =
-            after.mile.when(owner = owner).sum(amount) + val;
+  ensure : before ((owner.get owner).miles.sum(amount)) =
+           ((owner.get owner).miles.sum(amount)) + val;
 
   ensure : is_empty added.mile;
 
-  ensure : invariant stable.mile.when(owner = owner).proj_other( amount );
+  ensure : invariant (mile.project(not mile.amount));
 
-  ensure : invariant stable.mile.when(owner <> owner);
+  ensure : invariant ((owner.when(owner.owner <> owner)).miles)
 
-  ensure : forall m : removed.mile,
-             forall o : stable.mile,
+  ensure : forall m : removed mile,
+             forall o : stable mile,
                 m.expiration <= o.expiration;
 
   action :
      let remainder = val in
-     for (m in mile.when(owner = owner and expiration >= now)
-                    .sort(asc(expiration))) {
-          if (m.amount >= remainder)
-          then {
+     let owner = owner.get owner in
+     for (m in owner.miles.when(expiration >= now)) {
+          if (m.amount >= remainder) {
              m.amount  -= remainder,
              remainder := 0,
+             if (m.amount = 0) {
+               owner.miles.remove m
+             },
              break
           } else {
              remainder -= m.amount,
-             mile.remove t
+             owner.miles.remove m
           }
      },
      assert (remainder = 0);
+   }
 }
+
+(* this ensures that any mile was added with the ‘add’ transaction *)
+ensure { mile = Collection.fold (fun u o => union u o.miles) void owner }
 
 transaction clear_expired = {
   called by admin;
 
-  ensure : forall m : removed.mile, m.expiration < now;
+  ensure : forall m : removed mile, m.expiration < now;
 
-  ensure : is_empty added.mile;
+  ensure : is_empty (added mile);
 
-  ensure : invariant stable.mile;
+  ensure : invariant mile;
 
-  action : mile.removeif (expiration < now);
+  action : mile.removeif (expiration < now());
 }

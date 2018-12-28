@@ -26,6 +26,7 @@ rule token = parse
   | "value"               { VALUE }
   | "role"                { ROLE }
   | "identified"          { IDENTIFIED }
+  | "sorted"              { SORTED }
   | "by"                  { BY }
   | "as"                  { AS }
   | "from"                { FROM }
@@ -38,6 +39,7 @@ rule token = parse
   | "subset"              { SUBSET }
   | "partition"           { PARTITION }
   | "asset"               { ASSET }
+  | "with"                { WITH }
   | "assert"              { ASSERT }
   | "object"              { OBJECT }
   | "key"                 { KEY }

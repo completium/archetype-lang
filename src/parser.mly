@@ -13,6 +13,7 @@
 %token VALUE
 %token ROLE
 %token IDENTIFIED
+%token SORTED
 %token BY
 %token AS
 %token FROM
@@ -25,6 +26,7 @@
 %token SUBSET
 %token PARTITION
 %token ASSET
+%token WITH
 %token ASSERT
 %token OBJECT
 %token KEY
@@ -245,8 +247,15 @@ state_option:
 
 asset:
 | ASSET x=ident opts=asset_options?
-      fields=asset_fields?
-          { Dasset (x, fields, opts) }
+        fields=asset_fields?
+            cs=asset_constraints?
+          { Dasset (x, fields, cs, opts) }
+
+%inline asset_constraints:
+ | xs=asset_constraint+ { xs }
+
+%inline asset_constraint:
+ | WITH x=braced(expr) { x }
 
 %inline asset_fields:
 | EQUAL fields=braced(fields) { fields}
@@ -257,6 +266,7 @@ asset:
 asset_option:
 | AS ROLE               { AOasrole }
 | IDENTIFIED BY x=ident { AOidentifiedby x }
+| SORTED BY x=ident     { AOsortedby x }
 
 %inline fields:
 | xs=field+ { xs }
