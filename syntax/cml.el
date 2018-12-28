@@ -14,7 +14,7 @@
 
 (defconst cml-font-lock-keywords-1
   (list
-   `(,(cml-regexp-opt '("use" "model" "constant" "value" "role" "asset" "value" "states" "enum" "transaction" "object" "key")) . font-lock-type-face)
+   `(,(cml-regexp-opt '("use" "model" "constant" "value" "role" "asset" "value" "states" "enum" "transition" "transaction" "object" "key")) . font-lock-type-face)
    `(,(cml-regexp-opt '("identified" "by" "as" "from" "to" "ref" "collection" "queue" "stack" "set" "subset" "partition" "asset" "assert" "object" "initial" "ensure" "args" "called" "condition" "transferred" "action" "let" "if" "then" "else" "for" "in" "of" "transfer" "back" "and" "or" "not" "forall" "exists")) . font-lock-keyword-face))
   "Minimal highlighting for Cml mode")
 
