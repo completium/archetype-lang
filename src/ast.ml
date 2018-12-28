@@ -6,13 +6,6 @@ open Location
 type lident = ident loced
 
 (* -------------------------------------------------------------------- *)
-type ident_r =
-  | Idouble of lident * lident
-  | Isimple of lident
-
-and ident_t = ident_r loced
-
-(* -------------------------------------------------------------------- *)
 type container =
   | Collection
   | Queue
@@ -80,7 +73,7 @@ and literal =
   | Lstring of string
 
 and assignment_field =
-  | AassignField of assignment_operator * ident_t * expr
+  | AassignField of assignment_operator * expr * expr
 
 and expr = expr_r loced
 
@@ -104,7 +97,7 @@ type instr_r =
   | Ifor of lident * expr * code
   | Itransfer of expr * bool option * expr option
   | Itransition of expr
-  | Icall of expr * expr list
+  | Icall of expr
   | Iassert of expr
 and code = instr list
 
@@ -117,7 +110,7 @@ type transitem_r =
   | Tensure of expr                               (** ensure *)
   | Tcondition of expr                            (** condition *)
   | Ttransferred of expr                          (** transferred *)
-  | Ttransition of expr * expr * ident_t option   (** transition  *)
+  | Ttransition of expr * expr * expr option      (** transition  *)
   | Taction of instr list                         (** action  *)
 
 and transitem = transitem_r loced

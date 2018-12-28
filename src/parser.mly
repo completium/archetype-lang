@@ -203,13 +203,6 @@ assert_decl:
 object_decl:
 | OBJECT exts=extensions? x=ident y=expr { Dobject (x, y, exts) }
 
-%inline ident_t:
-| e=loc(ident_r) { e }
-
-%inline ident_r:
- | x=ident DOT y=ident { Idouble (x, y) }
- | x=ident             { Isimple x }
-
 %inline ident_equal:
  | x=ident EQUAL { x }
 
@@ -331,7 +324,7 @@ transferred:
  | TRANSFERRED COLON x=expr SEMI_COLON { Ttransferred x }
 
 transition_item:
- | TRANSITION id=ident_t?
+ | TRANSITION id=expr?
      x=from_value
          y=to_value SEMI_COLON
              { Ttransition (x, y, id) }
@@ -412,11 +405,7 @@ transition_instr:
  | TRANSITION TO x=expr { Itransition x }
 
 call_instr:
- | x=expr xs=call_args { Icall (x, xs) }
-
-%inline call_args:
- | LPAREN RPAREN { [] }
- | xs=exprs      { xs }
+ | x=loc(call_expr) { Icall x }
 
 assert_instr:
  | ASSERT x=paren(expr) { Iassert x }
@@ -447,13 +436,6 @@ term:
 
 lterm:
  | x=loc(term) { x }
-
-call_expr:
- | x=call_e xs=call_args { Ecall (x, xs) }
-
-%inline call_e:
- | x=loc(term)   { x }
- | x=paren(expr) { x }
 
 logical_expr:
  | x=expr op=logical_operator y=expr { Elogical (op, x, y) }
@@ -499,14 +481,27 @@ array_expr:
 %inline comma_expr:
  | COMMA x=expr { x }
 
+call_expr:
+ | x=call_e xs=call_args { Ecall (x, xs) }
+
+ %inline call_args:
+ | LPAREN RPAREN { [] }
+/* | x=expr        { [x] }*/
+ | xs=exprs      { xs }
+
+%inline call_e:
+ | x=lterm         { x }
+ | x=loc(dot_expr) { x }
+ | x=paren(expr)   { x }
+
 dot_expr:
  | x=dot_expr2 DOT y=lterm      { Edot (x, y) }
 
 dot_expr2:
  | x=loc(dot_expr3)    { x }
- | x=simple_expr  { x }
+ | x=simple_expr       { x }
 
-dot_expr3:
+%inline dot_expr3:
  | x=dot_expr2 DOT y=simple_expr { Edot (x, y) }
 
 simple_expr:
@@ -528,4 +523,4 @@ assign_fields:
  | xs=assign_field+ { xs }
 
 %inline assign_field:
- | id=ident_t op=assignment_operator e=expr SEMI_COLON { AassignField (op, id, e) }
+ | id=expr op=assignment_operator e=expr SEMI_COLON { AassignField (op, id, e) }

@@ -14,12 +14,6 @@ let pp_id fmt (id : lident) =
   Format.fprintf fmt "%s" (unloc id)
 
 (* -------------------------------------------------------------------- *)
-let pp_ident fmt { pldesc = e } =
-  match e with
-  | Isimple x -> Format.fprintf fmt "%a" pp_id x
-  | Idouble (x, y) -> Format.fprintf fmt "%a.%a" pp_id x pp_id y
-
-(* -------------------------------------------------------------------- *)
 let container_to_str c =
 match c with
   | Collection -> "collection"
@@ -151,7 +145,7 @@ and pp_assignment_field fmt f =
   match f with
   | AassignField (op, id, e) ->
       Format.fprintf fmt "%a %a %a;"
-        pp_ident id pp_assignment_operator op pp_expr e
+        pp_expr id pp_assignment_operator op pp_expr e
 
 (* -------------------------------------------------------------------- *)
 let pp_extension fmt { pldesc = e } =
@@ -197,7 +191,7 @@ let rec pp_instr fmt { pldesc = s } =
       Format.fprintf fmt "transition to %a"
         pp_expr x
 
-  | Icall (e, _args) ->
+  | Icall e ->
       Format.fprintf fmt "%a"
         pp_expr e
 
@@ -306,7 +300,6 @@ let string_of__of_pp pp x =
   Format.asprintf "%a" pp x
 
 (* -------------------------------------------------------------------- *)
-let ident_to_str  = string_of__of_pp pp_ident
 let type_to_str  = string_of__of_pp pp_type
 let expr_to_str  = string_of__of_pp pp_expr
 let extension_to_str = string_of__of_pp pp_extension
