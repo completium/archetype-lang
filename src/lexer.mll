@@ -36,6 +36,7 @@ rule token = parse
   | "stack"               { STACK }
   | "set"                 { SET }
   | "subset"              { SUBSET }
+  | "partition"           { PARTITION }
   | "asset"               { ASSET }
   | "assert"              { ASSERT }
   | "object"              { OBJECT }

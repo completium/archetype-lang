@@ -19,6 +19,7 @@ type container =
   | Stack
   | Set
   | Subset
+  | Partition
 
 type type_r =
   | Tref of lident

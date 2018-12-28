@@ -51,7 +51,8 @@ transaction consume = {
      let remainder = val in
      for (m in mile.when(owner = owner and expiration >= now)
                     .sort(asc(expiration))) {
-          if (m.amount >= remainder) {
+          if (m.amount >= remainder)
+          then {
              m.amount  -= remainder,
              remainder := 0,
              break

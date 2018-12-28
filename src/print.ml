@@ -27,6 +27,7 @@ match c with
   | Stack -> "stack"
   | Set -> "set"
   | Subset -> "subset"
+  | Partition -> "partition"
 
 let pp_container fmt c =
  Format.fprintf fmt "%s" (container_to_str c)

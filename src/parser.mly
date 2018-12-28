@@ -23,6 +23,7 @@
 %token STACK
 %token SET
 %token SUBSET
+%token PARTITION
 %token ASSET
 %token ASSERT
 %token OBJECT
@@ -225,6 +226,7 @@ container:
 | STACK      { Stack }
 | SET        { Set }
 | SUBSET     { Subset }
+| PARTITION  { Partition }
 
 %inline pipe_idents:
 | xs=pipe_ident+ { xs }
