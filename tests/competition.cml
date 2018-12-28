@@ -47,7 +47,8 @@ transition decide from InProgress to Done = {
    condition : after deadline;
    action :
          let sorted = submission.sort(asc(date)).sort(desc(score)) in
-         if (sorted.count >= 3) {
+         if (sorted.count >= 3)
+         then {
            let first  = sorted.get(0) in
            let second = sorted.get(1) in
            let third  = sorted.get(2) in

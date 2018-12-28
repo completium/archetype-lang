@@ -6,19 +6,13 @@ open Location
 type lident = ident loced
 
 (* -------------------------------------------------------------------- *)
-type ident_r =
-  | Idouble of lident * lident
-  | Isimple of lident
-
-and ident_t = ident_r loced
-
-(* -------------------------------------------------------------------- *)
 type container =
   | Collection
   | Queue
   | Stack
   | Set
   | Subset
+  | Partition
 
 type type_r =
   | Tref of lident
@@ -79,7 +73,7 @@ and literal =
   | Lstring of string
 
 and assignment_field =
-  | AassignField of assignment_operator * ident_t * expr
+  | AassignField of assignment_operator * expr * expr
 
 and expr = expr_r loced
 
@@ -98,12 +92,14 @@ and field = field_r loced
 (* -------------------------------------------------------------------- *)
 type instr_r =
   | Iassign of assignment_operator * expr * expr
-  | Iletin of lident * expr * instr list
-  | Iif of expr * instr list * instr list option
-  | Ifor of lident * expr * instr list
+  | Iletin of lident * expr * code
+  | Iif of expr * code * code option
+  | Ifor of lident * expr * code
   | Itransfer of expr * bool option * expr option
-  | Icall of expr * expr list
+  | Itransition of expr
+  | Icall of expr
   | Iassert of expr
+and code = instr list
 
 and instr = instr_r loced
 
@@ -113,7 +109,8 @@ type transitem_r =
   | Tcalledby of expr * extension list option     (** called by *)
   | Tensure of expr                               (** ensure *)
   | Tcondition of expr                            (** condition *)
-  | Ttransition of expr * expr * ident_t option    (** transition  *)
+  | Ttransferred of expr                          (** transferred *)
+  | Ttransition of expr * expr * expr option      (** transition  *)
   | Taction of instr list                         (** action  *)
 
 and transitem = transitem_r loced
@@ -124,14 +121,16 @@ type declaration_r =
   | Dmodel       of lident                                              (** model *)
   | Dconstant    of lident * lident * extension list option             (** constant *)
   | Dvalue       of lident * lident * value_option list option * expr option * extension list option             (** value *)
-  | Drole        of lident * expr option * extension list option        (** role *)
-  | Denum        of lident * lident list                                (** enum *)
-  | Dstates      of lident option * (lident * state_option list option) list (** states *)
-  | Dasset       of lident * field list option * asset_option list option      (** asset *)
-  | Dassert      of expr                                                (** assert *)
-  | Dtransition  of lident * expr * expr * transitem list * extension list option           (** transition *)
-  | Dtransaction of lident * transitem list * extension list option                             (** transaction *)
-  | Dextension   of lident * expr list option                           (** extension *)
+  | Drole        of lident * expr option * extension list option                   (** role *)
+  | Denum        of lident * lident list                                           (** enum *)
+  | Dstates      of lident option * (lident * state_option list option) list       (** states *)
+  | Dasset       of lident * field list option * asset_option list option          (** asset *)
+  | Dassert      of expr                                                           (** assert *)
+  | Dobject      of lident * expr * extension list option
+  | Dkey         of lident * expr * extension list option
+  | Dtransition  of lident * expr * expr * transitem list * extension list option  (** transition *)
+  | Dtransaction of lident * transitem list * extension list option                (** transaction *)
+  | Dextension   of lident * expr list option                                      (** extension *)
 
 and value_option =
   | VOfrom of expr

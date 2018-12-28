@@ -1,0 +1,66 @@
+model escrow
+
+role buyer
+
+role[%transferable] debitor = buyer
+
+role seller
+
+role[%transferable] creditor = seller
+
+role oracle
+
+value[%traceable] price tez from buyer to creditor
+
+value[%traceable] [%mutable_signed [buyer, debitor] (instate Created)]
+     penalty tez from seller to debitor = 0.1 * price
+
+(* transaction deadline *)
+value[%mutable (buyer or seller) (instate Created)] deadline date
+
+(* state machine *)
+states
+ | Created initial
+ | Aborted
+ | Confirmed
+ | Canceled
+ | Transferred
+
+transition abort from Created to Aborted = {
+  called by buyer or seller;
+}
+
+transaction[%signedbyall [buyer, seller]] confirm = {
+  transition from Created to Confirmed;
+  condition : balance = price + penalty;
+}
+
+(* type taskStatus = {
+     date : date;
+     status : string of [ “OK” | “KO” ]
+   }
+*)
+object[%signedby oracle] taskStatus "https://oracle.io/tskstat.schema.json"
+
+transaction finalize = {
+   args = {
+      task : taskStatus;
+   }
+   action:
+     if task.date before deadline and task.status = "OK"
+     then {
+        transfer price,
+        transfer back penalty,
+        transition to Transferred
+     } else {
+        transfer penalty,
+        transfer back price,
+        transition to Canceled
+     };
+}
+
+assert (instate Transferred or instate Canceled -> balance = 0)
+
+assert (instate Transferred or instate Canceled -> needs oracle)
+
+assert (instate Transferred -> receives buyer = price)

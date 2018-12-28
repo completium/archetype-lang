@@ -14,12 +14,6 @@ let pp_id fmt (id : lident) =
   Format.fprintf fmt "%s" (unloc id)
 
 (* -------------------------------------------------------------------- *)
-let pp_ident fmt { pldesc = e } =
-  match e with
-  | Isimple x -> Format.fprintf fmt "%a" pp_id x
-  | Idouble (x, y) -> Format.fprintf fmt "%a.%a" pp_id x pp_id y
-
-(* -------------------------------------------------------------------- *)
 let container_to_str c =
 match c with
   | Collection -> "collection"
@@ -27,6 +21,7 @@ match c with
   | Stack -> "stack"
   | Set -> "set"
   | Subset -> "subset"
+  | Partition -> "partition"
 
 let pp_container fmt c =
  Format.fprintf fmt "%s" (container_to_str c)
@@ -144,13 +139,13 @@ and pp_literal fmt lit =
   match lit with
   | Lnumber n -> Format.fprintf fmt "%d" n
   | Lfloat  f -> Format.fprintf fmt "%f" f
-  | Lstring s -> Format.fprintf fmt "%s" s
+  | Lstring s -> Format.fprintf fmt "\"%s\"" s
 
 and pp_assignment_field fmt f =
   match f with
   | AassignField (op, id, e) ->
       Format.fprintf fmt "%a %a %a;"
-        pp_ident id pp_assignment_operator op pp_expr e
+        pp_expr id pp_assignment_operator op pp_expr e
 
 (* -------------------------------------------------------------------- *)
 let pp_extension fmt { pldesc = e } =
@@ -179,7 +174,7 @@ let rec pp_instr fmt { pldesc = s } =
         (pp_list "@," pp_instr) body
 
   | Iif (cond, _then, _else) ->
-      Format.fprintf fmt "if (%a) {%a}"
+      Format.fprintf fmt "if %a then {%a}"
         pp_expr cond
         (pp_list "@," pp_instr) _then
        (*match _else with | _ -> Format.fprintf fmt ""*)
@@ -192,7 +187,11 @@ let rec pp_instr fmt { pldesc = s } =
       Format.fprintf fmt "transfer %a"
         pp_expr x
 
-  | Icall (e, _args) ->
+  | Itransition x ->
+      Format.fprintf fmt "transition to %a"
+        pp_expr x
+
+  | Icall e ->
       Format.fprintf fmt "%a"
         pp_expr e
 
@@ -218,6 +217,10 @@ let pp_transitem fmt { pldesc = t } =
 
   | Tcondition e ->
       Format.fprintf fmt "condition: %a;\n"
+        pp_expr e
+
+  | Ttransferred e ->
+      Format.fprintf fmt "transferred: %a;\n"
         pp_expr e
 
   | Ttransition (from, _to, _) ->
@@ -271,6 +274,14 @@ let pp_declaration fmt { pldesc = e } =
       Format.fprintf fmt "assert (%a)\n"
         pp_expr e
 
+  | Dobject (id, e, _) ->
+      Format.fprintf fmt "object %a %a\n"
+        pp_id id pp_expr e
+
+  | Dkey (id, e, _) ->
+      Format.fprintf fmt "key %a of %a\n"
+        pp_id id pp_expr e
+
   | Dtransition (id, from, _to, _, _) ->
       Format.fprintf fmt "transition %a from %a to %a\n"
         pp_id id pp_expr from pp_expr _to
@@ -293,7 +304,6 @@ let string_of__of_pp pp x =
   Format.asprintf "%a" pp x
 
 (* -------------------------------------------------------------------- *)
-let ident_to_str  = string_of__of_pp pp_ident
 let type_to_str  = string_of__of_pp pp_type
 let expr_to_str  = string_of__of_pp pp_expr
 let extension_to_str = string_of__of_pp pp_extension

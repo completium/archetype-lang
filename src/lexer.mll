@@ -36,8 +36,12 @@ rule token = parse
   | "stack"               { STACK }
   | "set"                 { SET }
   | "subset"              { SUBSET }
+  | "partition"           { PARTITION }
   | "asset"               { ASSET }
   | "assert"              { ASSERT }
+  | "object"              { OBJECT }
+  | "key"                 { KEY }
+  | "of"                  { OF }
   | "enum"                { ENUM }
   | "states"              { STATES }
   | "initial"             { INITIAL }
@@ -47,9 +51,11 @@ rule token = parse
   | "args"                { ARGS }
   | "called"              { CALLED }
   | "condition"           { CONDITION }
+  | "transferred"         { TRANSFERRED }
   | "action"              { ACTION }
   | "let"                 { LET }
   | "if"                  { IF }
+  | "then"                { THEN }
   | "else"                { ELSE }
   | "for"                 { FOR }
   | "in"                  { IN }
