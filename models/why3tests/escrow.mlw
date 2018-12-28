@@ -1,41 +1,14 @@
-theory Cml
-  use int.Int
-  use mach.int.UInt32
-  use list.List
-
-  (* default type mapping *)
-  type role    = int
-  type address = int
-  type uint    = uint32
-  type tez     = uint32
-  type date    = int
-
-  constant max_uint : int = UInt32.max_uint32
-
-  (* currency transfer during transaction *)
-  type transfer = {
-     destination : address;
-     amount      : tez;
-  }
-
-  type transfers = list transfer
-
-  let empty : transfers = Nil
-
-end
-
-(* Escrow storage definition *)
 module Escrow
-  use Cml
+
   use int.Int
-  use mach.int.UInt32
-  use list.List
-  use list.Append
+
+  use cml.Types
+  use cml.Contract
 
   type states = Created | Aborted | Confirmed | Canceled | Transferred
 
-  type env = {
-     (* contract storage *)
+  (* contract storage *)
+  type storage = {
      mutable buyer    : role;
      mutable debitor  : role;
      mutable seller   : role;
@@ -45,124 +18,82 @@ module Escrow
      mutable penalty  : tez;
      mutable deadline : date;
      mutable state    : states;
-     (* contract built-in storage *)
-     mutable balance_ : tez;
-     (* transaction env *)
-     transferred_     : tez;
-     caller_          : address;
-     now_             : date;
   }
 
-  function balance (e: env) : tez = e.balance_
-
-  function transferred (e : env) : tez = e.transferred_
-
-  function caller (e : env) : address = e.caller_
-
-  function now (e : env) : date = e.now_
-
-  let update_balance (e : env)
-    requires { transferred e + balance e <= max_uint }
-    ensures  { balance e = old (balance e) + (transferred e)}
-    ensures  { e.state = old e.state }
-  =
-    let sum = e.balance_ + e.transferred_ in
-    e.balance_ <- sum
-
-  let exec_transfer (e : env) (a : address) (c : tez) (ops : transfers) : transfers
-    requires { c <= balance e }
-    ensures  { old (balance e) = (balance e) + c }
-    ensures  { e.state = old e.state }
-  =
-    e.balance_ <- e.balance_ - c;
-    let transfer = { destination = a; amount = c } in
-    ops ++ (Cons transfer Nil)
-
-end
-
-(* Escrow Transactions *)
-module EscrowTx
-
-  use int.Int
-  use mach.int.UInt32
-
-  use Cml
-  use Escrow
-
   (* transition from Created to Aborted *)
-  let abort (e : env) : transfers
+  let abort (e : env) (s : storage) : transfers
     (* cml 'transition' property '*)
-    requires { e.state = Created }
+    requires { s.state = Created }
     (* cml 'called by' property '*)
     requires {
-         caller e = e.buyer
-      \/ caller e = e.seller
+         caller e = s.buyer
+      \/ caller e = s.seller
     }
     (* cml global assert *)
-    requires { e.state = Transferred -> balance e = 0 }
-    ensures  { e.state = Transferred -> balance e = 0 }
-    = e.state <- Aborted;
+    requires { s.state = Transferred -> balance e = 0 }
+    ensures  { s.state = Transferred -> balance e = 0 }
+    = s.state <- Aborted;
       empty
 
   (* transfer price *)
-  let transfer_price (e : env) : transfers
+  let transfer_price (e : env) (s : storage) : transfers
     (* cml 'transition' property '*)
-    requires { e.state = Created }
+    requires { s.state = Created }
     (* cml 'called by' property '*)
-    requires { caller e = e.buyer }
+    requires { caller e = s.buyer }
     (* cml 'transferred' property *)
-    requires { transferred e = e.price }
+    requires { transferred e = s.price }
     (* generic uint constraints *)
     requires { balance e + transferred e <= max_uint }
     (* cml global assert *)
-    requires { e.state = Transferred -> balance e = 0 }
-    ensures  { e.state = Transferred -> balance e = 0 }
-    ensures  { balance e = old (balance e) + e.price }
-    ensures  { e.state = old e.state }
+    requires { s.state = Transferred -> balance e = 0 }
+    ensures  { s.state = Transferred -> balance e = 0 }
+    ensures  { balance e = old (balance e) + s.price }
+    ensures  { s.state = old s.state }
     = update_balance e;
       empty
 
   (* transfer penalty *)
-  let transfer_penalty (e : env) : transfers
+  let transfer_penalty (e : env) (s : storage) : transfers
     (* cml 'transition' property '*)
-    requires { e.state = Created }
+    requires { s.state = Created }
     (* cml 'called by' property '*)
-    requires { caller e = e.seller }
+    requires { caller e = s.seller }
     (* cml 'transferred' property *)
-    requires { transferred e = e.penalty }
+    requires { transferred e = s.penalty }
     (* generic uint constraints *)
     requires { balance e + transferred e <= max_uint }
     (* cml global assert *)
-    requires { e.state = Transferred -> balance e = 0 }
-    ensures  { e.state = Transferred -> balance e = 0 }
-    ensures { balance e = old (balance e) + e.penalty }
+    requires { s.state = Transferred -> balance e = 0 }
+    ensures  { s.state = Transferred -> balance e = 0 }
+    ensures { balance e = old (balance e) + s.penalty }
     = update_balance e;
       empty
 
   (* transition from Created to Confirm *)
-  let confirm (e : env) : transfers
+  let confirm (e : env) (s : storage) : transfers
     (* cml 'transition' property '*)
-    requires { e.state = Created }
+    requires { s.state = Created }
     (* cml 'condition' property '*)
-    requires { balance e = e.price + e.penalty }
+    requires { balance e = s.price + s.penalty }
     (* cml global assert *)
-    requires { e.state = Transferred -> balance e = 0 }
-    ensures  { e.state = Transferred -> balance e = 0 }
-    = e.state <- Confirmed;
+    requires { s.state = Transferred -> balance e = 0 }
+    ensures  { s.state = Transferred -> balance e = 0 }
+    = s.state <- Confirmed;
       empty
 
   (* transition from Confirmed to Transferred *)
-  let transfer (e : env) : transfers
-    requires { e.state = Confirmed }
-    requires { caller e = e.oracle }
-    requires { now e <= e.deadline }
+  let transfer (e : env) (s : storage) : transfers
+    requires { s.state = Confirmed }
+    requires { caller e = s.oracle }
+    requires { now e <= s.deadline }
     (* !! Propagated precondition from 'confirm' transaction *)
-    requires { balance e = e.price + e.penalty }
+    requires { balance e = s.price + s.penalty }
     (* cml global assert *)
-    requires { e.state = Transferred -> balance e = 0 }
-    ensures  { e.state = Transferred -> balance e = 0 }
-  =  e.state <- Transferred;
-     let tr = exec_transfer e e.seller e.price empty in
-     exec_transfer e e.buyer e.penalty tr
+    requires { s.state = Transferred -> balance e = 0 }
+    ensures  { s.state = Transferred -> balance e = 0 }
+  =  s.state <- Transferred;
+     let tr = exec_transfer e s.seller s.price empty in
+     exec_transfer e s.buyer s.penalty tr
 
 end
