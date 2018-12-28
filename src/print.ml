@@ -207,6 +207,9 @@ let rec pp_instr fmt { pldesc = s } =
       Format.fprintf fmt "assert (%a);"
         pp_expr e
 
+  | Ibreak ->
+      Format.fprintf fmt "break"
+
 
 (* -------------------------------------------------------------------- *)
 let pp_transitem fmt { pldesc = t } =

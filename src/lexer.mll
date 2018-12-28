@@ -63,6 +63,7 @@ rule token = parse
   | "else"                { ELSE }
   | "for"                 { FOR }
   | "in"                  { IN }
+  | "break"               { BREAK }
   | "transfer"            { TRANSFER }
   | "back"                { BACK }
   | "extension"           { EXTENSION }

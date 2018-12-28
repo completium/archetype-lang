@@ -50,6 +50,7 @@
 %token ELSE
 %token FOR
 %token IN
+%token BREAK
 %token TRANSFER
 %token BACK
 %token EXTENSION
@@ -389,6 +390,7 @@ instr_r:
  | x=transition_instr { x }
  | x=call_instr       { x }
  | x=assert_instr     { x }
+ | x=break_instr      { x }
 
 assign_instr:
  | x=expr op=assignment_operator y=expr { Iassign (op, x, y) }
@@ -440,6 +442,9 @@ call_instr:
 
 assert_instr:
  | ASSERT x=paren(expr) { Iassert x }
+
+break_instr:
+ | BREAK { Ibreak }
 
 quantifier_expr:
  | q=quantifier x=ident COLON y=expr COMMA z=expr {Equantifier (q, x, y, z)}

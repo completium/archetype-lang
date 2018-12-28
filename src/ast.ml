@@ -101,6 +101,7 @@ type instr_r =
   | Itransition of expr
   | Icall of expr
   | Iassert of expr
+  | Ibreak
 and code = instr list
 
 and instr = instr_r loced
