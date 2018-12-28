@@ -10,12 +10,21 @@
         synTable))
 
 (defun cml-regexp-opt (l)
-  (regexp-opt l 'words))
+  (regexp-opt l 'symbols))
+
+;;(setq cml-ext-regexp "\\[%*[a-z A-z][a-z A-z _]+\\]")
+(setq cml-ext-regexp "\\[%[^]]*\\]")
+(setq cml-var-regexp "<%[a-z A-z][a-z A-z _]+>")
+
 
 (defconst cml-font-lock-keywords-1
   (list
    `(,(cml-regexp-opt '("use" "model" "extension" "constant" "value" "role" "asset" "value" "states" "enum" "transition" "transaction" "object" "key" "namespace")) . font-lock-type-face)
-   `(,(cml-regexp-opt '("identified" "sorted" "by" "as" "from" "to" "with" "ref" "fun" "=>" "collection" "queue" "stack" "set" "subset" "partition" "asset" "assert" "object" "initial" "ensure" "args" "called" "condition" "transferred" "action" "let" "if" "then" "else" "for" "in" "of" "transfer" "back" "and" "or" "not" "forall" "exists")) . font-lock-keyword-face))
+   `(,(cml-regexp-opt '("identified" "sorted" "by" "as" "from" "to" "with" "ref" "fun" "=>" "collection" "queue" "stack" "set" "subset" "partition" "asset" "assert" "object" "initial" "ensure" "args" "called" "condition" "transferred" "action" "let" "if" "then" "else" "for" "in" "of" "transfer" "back" "and" "or" "not" "forall" "exists")) . font-lock-keyword-face)
+   `(,cml-ext-regexp . font-lock-preprocessor-face)
+   `(,cml-var-regexp . font-lock-variable-name-face)
+
+   )
   "Minimal highlighting for Cml mode")
 
 (defvar cml-font-lock-keywords cml-font-lock-keywords-1
