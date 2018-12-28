@@ -104,6 +104,10 @@ let rec pp_expr fmt { pldesc = e } =
       Format.fprintf fmt "%a.%a"
         pp_expr lhs pp_expr rhs
 
+  | Efun (ids, x) ->
+      Format.fprintf fmt "fun %a => %a"
+        (pp_list " " pp_id) ids pp_expr x
+
   | Elogical (op, lhs, rhs) ->
       Format.fprintf fmt "%a %a %a"
         pp_expr lhs pp_logical_operator op pp_expr rhs

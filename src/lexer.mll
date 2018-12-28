@@ -32,6 +32,8 @@ rule token = parse
   | "from"                { FROM }
   | "to"                  { TO }
   | "ref"                 { REF }
+  | "fun"                 { FUN }
+  | "=>"                  { EQUALGREATER }
   | "collection"          { COLLECTION }
   | "queue"               { QUEUE }
   | "stack"               { STACK }

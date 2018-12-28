@@ -59,6 +59,7 @@ type expr_r =
   | Ecall of expr * expr list
   | Eliteral of literal
   | Edot of expr * expr
+  | Efun of lident list * expr
   | Elogical of logical_operator * expr * expr
   | Enot of expr
   | Ecomparison of comparison_operator * expr * expr

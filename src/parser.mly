@@ -19,6 +19,8 @@
 %token FROM
 %token TO
 %token REF
+%token FUN
+%token EQUALGREATER
 %token COLLECTION
 %token QUEUE
 %token STACK
@@ -393,6 +395,7 @@ expr_r:
  | x=arithmetic_expr    { x }
  | x=array_expr         { x }
  | x=dot_expr           { x }
+ | x=fun_expr           { x }
  | x=assign_fields      { x }
  | x=literal_expr       { x }
  | x=quantifier_expr    { x }
@@ -491,6 +494,9 @@ array_expr:
 
 %inline comma_expr:
  | COMMA x=expr { x }
+
+fun_expr:
+ | FUN ids=idents EQUALGREATER x=expr { Efun (ids, x) }
 
 call_expr:
  | x=call_e xs=call_args { Ecall (x, xs) }
