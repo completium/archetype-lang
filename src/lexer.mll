@@ -52,6 +52,7 @@ rule token = parse
   | "action"              { ACTION }
   | "let"                 { LET }
   | "if"                  { IF }
+  | "then"                { THEN }
   | "else"                { ELSE }
   | "for"                 { FOR }
   | "in"                  { IN }

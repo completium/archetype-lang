@@ -39,6 +39,7 @@
 %token ACTION
 %token LET
 %token IF
+%token THEN
 %token ELSE
 %token FOR
 %token IN
@@ -336,6 +337,10 @@ transition_item:
 action:
  | ACTION COLON xs=code SEMI_COLON { Taction xs }
 
+%inline bcode:
+ | xs=braced(code)  { xs }
+/* | x=instr          { [x] }*/
+
 %inline code:
  | x=instr xs=comma_instr+ { x::xs }
  | x=instr { [x] }
@@ -390,13 +395,13 @@ letin_instr:
  | LET x=ident EQUAL e=expr IN b=code { Iletin (x, e, b) }
 
 if_instr:
- | IF c=paren(expr) t=braced(code) e=else_instr? { Iif (c, t, e) }
+ | IF c=expr THEN t=bcode e=else_instr? { Iif (c, t, e) }
 
 %inline else_instr:
- | ELSE x=braced(code) { x }
+ | ELSE x=bcode { x }
 
 for_instr:
- | FOR LPAREN x=ident IN y=expr RPAREN body=braced(code) { Ifor (x, y, body) }
+ | FOR LPAREN x=ident IN y=expr RPAREN body=bcode { Ifor (x, y, body) }
 
 transfer_instr:
  | TRANSFER _b=option(BACK) x=expr y=to_value? { Itransfer (x, None, y) }

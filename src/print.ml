@@ -179,7 +179,7 @@ let rec pp_instr fmt { pldesc = s } =
         (pp_list "@," pp_instr) body
 
   | Iif (cond, _then, _else) ->
-      Format.fprintf fmt "if (%a) {%a}"
+      Format.fprintf fmt "if %a then {%a}"
         pp_expr cond
         (pp_list "@," pp_instr) _then
        (*match _else with | _ -> Format.fprintf fmt ""*)

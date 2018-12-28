@@ -98,13 +98,14 @@ and field = field_r loced
 (* -------------------------------------------------------------------- *)
 type instr_r =
   | Iassign of assignment_operator * expr * expr
-  | Iletin of lident * expr * instr list
-  | Iif of expr * instr list * instr list option
-  | Ifor of lident * expr * instr list
+  | Iletin of lident * expr * code
+  | Iif of expr * code * code option
+  | Ifor of lident * expr * code
   | Itransfer of expr * bool option * expr option
   | Itransition of expr
   | Icall of expr * expr list
   | Iassert of expr
+and code = instr list
 
 and instr = instr_r loced
 
