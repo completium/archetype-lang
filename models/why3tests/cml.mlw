@@ -12,6 +12,8 @@ theory Types
 
   constant max_uint : int = UInt32.max_uint32
 
+  exception Break
+
 end
 
 theory Contract
@@ -70,6 +72,7 @@ theory Asset
   use set.Fset
   use list.List
   use list.Mem
+  use int.Int
 
   type key
 
@@ -123,9 +126,30 @@ theory Asset
   clone list.Sorted as Sorted with type t = asset, predicate le = le
 
   (* filter collection *)
-  val when (p : asset -> bool) (c : collection) : list asset
-  reads { c }
-  ensures { forall a:asset. Mem.mem a result -> p a }
-  ensures { Sorted.sorted result }
+  function when (p : asset -> bool) (c : collection) : list asset
+
+  axiom when_prop : forall c:collection, p:(asset -> bool), a:asset.
+        Mem.mem a (when p c) -> p a
+
+  axiom when_sorted : forall c:collection, p:(asset -> bool).
+        Sorted.sorted (when p c)
+
+  (* sum over asset collection/list *)
+  function to_list (c : collection) : list asset = when (fun _ -> true) c
+
+  function fold_sum (a : int) (f : asset -> int) (l : list asset) : int =
+     match l with
+     | Nil -> a
+     | Cons h tl -> fold_sum (a + f h) f tl
+     end
+
+  function sum (f : asset -> int) (c : collection) : int =
+    let l = to_list c in
+    fold_sum 0 f l
+
+  function sum_list (f : asset -> int) (l : list asset) : int =
+    fold_sum 0 f l
+
+  (* fold over asset collection/list *)
 
 end
