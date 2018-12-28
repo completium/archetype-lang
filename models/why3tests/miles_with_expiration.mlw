@@ -1,12 +1,17 @@
 module Miles
 
   use int.Int
+  use mach.int.UInt32
+  use list.List
+  use list.Length
+  use ref.Ref
 
   use cml.Types
   use cml.Contract
   use cml.Asset
 
   (* Mile *********************************************************************)
+
   type mile = {
      mile_id        : int;
      mutable amount : uint;
@@ -15,6 +20,8 @@ module Miles
 
   function mile_key (m : mile) : int = m.mile_id
   function mile_sort (m : mile) : date = m.expiration
+
+  function get_amount (m : mile) : uint = m.amount
 
   (* declare mile as an Asset *)
   clone cml.Asset as Mile with type      key   = int,
@@ -25,12 +32,13 @@ module Miles
                                predicate kle   = (<=)
 
   (* Owner ********************************************************************)
+
   type owner = {
-     owner_id        : int;
+     addr            : address;
      mutable miles   : Mile.collection;
   }
 
-  function owner_key (o : owner) : int = o.owner_id
+  function owner_key (o : owner) : int = o.addr
 
   (* declare mile as an Asset *)
   clone cml.Asset as Owner with type      key   = int,
@@ -40,7 +48,7 @@ module Miles
                                 function  asort = owner_key,
                                 predicate kle   = (<=)
 
-  (****************************************************************************)
+  (* Storage *****************************************************************)
 
   type storage = {
     mutable mile_coll   : Mile.collection;
@@ -50,7 +58,42 @@ module Miles
   function is_mile (m : mile) (s : storage) : bool  = Mile.mem m s.mile_coll
   function is_owner (o : owner) (s : storage) : bool = Owner.mem o s.owner_coll
 
+  function get_owner (addr : address) (s : storage) : owner = Owner.get addr s.owner_coll
+
+  (* partition property *)
   axiom miles_partition : forall s:storage, m:mile.
            is_mile m s <-> (exists o:owner. is_owner o s /\ Mile.mem m o.miles)
+
+  (* Transactions  ***********************************************************)
+
+  let consume (e : env) (s : storage) (owner : address) (nbmiles : int) : transfers
+  requires {
+     let o = get_owner owner s in
+     let l = Mile.when (fun m -> m.expiration > now e) o.miles in
+     Mile.sum_list (fun m -> to_int (get_amount m)) l >= nbmiles
+  }
+  = let remainder = ref nbmiles in
+    let o = get_owner owner s in
+    let l = Mile.when (fun m -> m.expiration > now e) o.miles in
+    try
+       for i = 0 to length l do
+          let m = l[i] in
+          if m.amount > !remainder
+          then
+             (remainder := 0;
+              m.amount <- m.amount - !remainder;
+              raise Break)
+          else if m.amount = !remainder
+          then
+             (remainder := 0;
+              Mile.remove m o.miles;
+              raise Break)
+          else
+             (remainder := !remainder - m.amount;
+             Mile.remove m o.miles)
+       done
+    with Break -> unit;
+    assert { !remainder = 0 };
+    empty
 
 end
