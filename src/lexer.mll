@@ -96,6 +96,8 @@ rule token = parse
   | "not"                 { NOT }
   | "forall"              { FORALL }
   | "exists"              { EXISTS }
+  | "true"                { TRUE }
+  | "false"               { FALSE }
   | "->"                  { IMPLY }
   | "<->"                 { EQUIV }
   | "<>"                  { NEQUAL }

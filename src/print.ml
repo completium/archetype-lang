@@ -148,6 +148,7 @@ and pp_literal fmt lit =
   | Lnumber n -> Format.fprintf fmt "%d" n
   | Lfloat  f -> Format.fprintf fmt "%f" f
   | Lstring s -> Format.fprintf fmt "\"%s\"" s
+  | Lbool   b -> Format.fprintf fmt "%s" (if b then "true" else "false")
 
 and pp_assignment_field fmt f =
   match f with

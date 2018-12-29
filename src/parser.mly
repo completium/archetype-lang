@@ -83,6 +83,8 @@
 %token NOT
 %token FORALL
 %token EXISTS
+%token TRUE
+%token FALSE
 %token IMPLY
 %token EQUIV
 %token NEQUAL
@@ -468,9 +470,14 @@ literal_expr:
  | x=literal { Eliteral x }
 
 literal:
- | x=NUMBER { Lnumber x }
- | x=FLOAT  { Lfloat x }
- | x=STRING { Lstring x }
+ | x=NUMBER     { Lnumber x }
+ | x=FLOAT      { Lfloat  x }
+ | x=STRING     { Lstring x }
+ | x=bool_value { Lbool   x }
+
+%inline bool_value:
+ | TRUE  { true }
+ | FALSE { false }
 
 term:
  | x=ident { Eterm x }

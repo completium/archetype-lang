@@ -73,6 +73,7 @@ and literal =
   | Lnumber of int
   | Lfloat  of float
   | Lstring of string
+  | Lbool   of bool
 
 and assignment_field =
   | AassignField of assignment_operator * expr * expr
