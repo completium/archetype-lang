@@ -34,6 +34,7 @@ rule token = parse
   | "ref"                 { REF }
   | "fun"                 { FUN }
   | "=>"                  { EQUALGREATER }
+  | "initialized"         { INITIALIZED }
   | "collection"          { COLLECTION }
   | "queue"               { QUEUE }
   | "stack"               { STACK }

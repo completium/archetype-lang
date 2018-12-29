@@ -123,11 +123,11 @@ type declaration_r =
   | Duse         of lident                                              (** use *)
   | Dmodel       of lident                                              (** model *)
   | Dconstant    of lident * lident * extension list option             (** constant *)
-  | Dvalue       of lident * lident * value_option list option * expr option * extension list option             (** value *)
+  | Dvalue       of lident * lident * value_option list option * expr option * extension list option       (** value *)
   | Drole        of lident * expr option * extension list option                   (** role *)
   | Denum        of lident * lident list                                           (** enum *)
   | Dstates      of lident option * (lident * state_option list option) list       (** states *)
-  | Dasset       of lident * field list option * expr list option * asset_option list option         (** asset *)
+  | Dasset       of lident * field list option * expr list option * asset_option list option * code option (** asset *)
   | Dassert      of expr                                                           (** assert *)
   | Dobject      of lident * expr * extension list option
   | Dkey         of lident * expr * extension list option

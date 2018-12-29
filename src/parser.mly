@@ -21,6 +21,7 @@
 %token REF
 %token FUN
 %token EQUALGREATER
+%token INITIALIZED
 %token COLLECTION
 %token QUEUE
 %token STACK
@@ -265,7 +266,8 @@ asset:
 | ASSET x=ident opts=asset_options?
         fields=asset_fields?
             cs=asset_constraints?
-          { Dasset (x, fields, cs, opts) }
+                init=init_asset?
+          { Dasset (x, fields, cs, opts, init) }
 
 %inline asset_constraints:
  | xs=asset_constraint+ { xs }
@@ -278,6 +280,9 @@ asset:
 
 %inline asset_options:
 | xs=asset_option+ { xs }
+
+%inline init_asset:
+| INITIALIZED BY x=braced(code) { x }
 
 asset_option:
 | AS ROLE               { AOasrole }
