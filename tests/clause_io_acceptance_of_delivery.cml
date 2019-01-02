@@ -11,9 +11,9 @@ value deliveryDate date
 value businessDays day
 
 (* extra blockchain incentives *)
-value incentiveR  tez from receiver = payment
+value incentiveR  tez from receiver := payment
 
-value incentiveS  tez from receiver = 0.2 * payment
+value incentiveS  tez from receiver := 0.2 * payment
 
 %traceable (payment + incentiveR) (receiver)
 %traceable (incentiveS) (shipper)

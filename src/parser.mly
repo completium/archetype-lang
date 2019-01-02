@@ -190,7 +190,7 @@ role:
 | ROLE exts=option(extensions) x=ident dv=default_value? { Drole (x, dv, exts) }
 
 %inline default_value:
-| EQUAL x=expr { x }
+| COLONEQUAL x=expr { x }
 
 %inline from_value:
 | FROM x=expr { x }

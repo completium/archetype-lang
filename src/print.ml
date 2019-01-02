@@ -18,6 +18,19 @@ let pp_option pp fmt x =
   match x with None -> () | Some x -> pp fmt x
 
 (* -------------------------------------------------------------------- *)
+let pp_enclose pre post pp fmt x =
+  Format.fprintf fmt "%(%)%a%(%)" pre pp x post
+
+let pp_prefix pre pp fmt x =
+  pp_enclose pre "" pp fmt x
+
+let pp_postfix post pp fmt x =
+  pp_enclose "" post pp fmt x
+
+let pp_paren pp fmt x =
+  pp_enclose "(" ")" pp fmt x
+
+(* -------------------------------------------------------------------- *)
 let container_to_str c =
 match c with
   | Collection -> "collection"
@@ -163,8 +176,10 @@ and pp_assignment_field fmt f =
 (* -------------------------------------------------------------------- *)
 let pp_extension fmt { pldesc = e } =
   match e with
-  | Eextension (id, Some args) -> Format.fprintf fmt "[%%%a %a]" pp_id id (pp_list "@," pp_expr) args
-  | Eextension (id, _) -> Format.fprintf fmt "[%%%a]" pp_id id
+  | Eextension (id, args) ->
+        Format.fprintf fmt "[%%%a%a]"
+        pp_id id
+        (pp_option (pp_prefix " " (pp_list " " pp_expr))) args
 
 
 (* -------------------------------------------------------------------- *)
@@ -248,6 +263,25 @@ let pp_transitem fmt { pldesc = t } =
 
 
 (* -------------------------------------------------------------------- *)
+let state_option_to_str opt =
+match opt with
+  | SOinitial  -> "initial"
+
+let pp_state_option fmt opt =
+ Format.fprintf fmt "%s" (state_option_to_str opt)
+
+let pp_ident_state_option fmt item =
+  match item with
+  | (id, opts) ->
+      Format.fprintf fmt "%a%a"
+      pp_id id
+      (pp_option (pp_prefix " " (pp_list " " pp_state_option))) opts
+
+let pp_value_option fmt opt =
+match opt with
+  | VOfrom e -> Format.fprintf fmt "from %a" pp_expr e
+  | VOto   e -> Format.fprintf fmt "to %a"   pp_expr e
+
 let rec pp_declaration fmt { pldesc = e } =
   match e with
   | Duse id ->
@@ -262,30 +296,34 @@ let rec pp_declaration fmt { pldesc = e } =
           pp_id id
           pp_id typ
 
-  | Dvalue (id, typ, _, _, exts) ->
-      Format.fprintf fmt "value%a %a %a\n"
+  | Dvalue (id, typ, opts, dv, exts) ->
+      Format.fprintf fmt "value%a %a %a%a%a\n"
           (pp_option (pp_list " " pp_extension)) exts
           pp_id id
           pp_id typ
+          (pp_option (pp_prefix " " (pp_list " " pp_value_option))) opts
+          (pp_option (pp_prefix " := " pp_expr)) dv
 
-  | Drole (id, _val, exts) ->
-      Format.fprintf fmt "role%a %a\n"
+  | Drole (id, dv, exts) ->
+      Format.fprintf fmt "role%a %a%a\n"
           (pp_option (pp_list " " pp_extension)) exts
            pp_id id
+          (pp_option (pp_prefix " := " pp_expr)) dv
 
   | Denum (id, ids) ->
-      Format.fprintf fmt "enum %a =\n  | %a"
-        pp_id id (pp_list "\n  | " pp_id) ids
+      Format.fprintf fmt "enum %a =\n@[<v 2>%a@]"
+        pp_id id
+        (pp_list "\n" (pp_prefix "| " pp_id)) ids
 
   | Dstates (id, ids) ->
-      Format.fprintf fmt "states %a\n  | %a"
-        (pp_option pp_id) id
-        (pp_list "\n  | " pp_id)
-           (List.fold_left (fun x e -> match e with | (s, _) -> s::x) [] ids)
+      Format.fprintf fmt "states%a\n@[<v 2>%a@]"
+        (pp_option (pp_enclose " " " =" pp_id)) id
+        (pp_list "\n" (pp_prefix "| " pp_ident_state_option)) ids
 
   | Dasset (id, Some fields, _, _op, _init) ->
       Format.fprintf fmt "asset %a = {@[<v 2>]@,%a@]}\n"
-        pp_id id (pp_list "@," pp_field) fields
+        pp_id id
+        (pp_list "@," pp_field) fields
 
   | Dasset (id, None, _, _op, _init) ->
       Format.fprintf fmt "asset %a\n"
