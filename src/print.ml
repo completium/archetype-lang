@@ -14,6 +14,10 @@ let pp_id fmt (id : lident) =
   Format.fprintf fmt "%s" (unloc id)
 
 (* -------------------------------------------------------------------- *)
+let pp_option pp fmt x =
+  match x with None -> () | Some x -> pp fmt x
+
+(* -------------------------------------------------------------------- *)
 let container_to_str c =
 match c with
   | Collection -> "collection"
@@ -252,27 +256,32 @@ let rec pp_declaration fmt { pldesc = e } =
   | Dmodel id ->
       Format.fprintf fmt "model %a\n" pp_id id
 
-  | Dconstant (id, typ, _) ->
-      Format.fprintf fmt "constant %a %a\n" pp_id id pp_id typ
+  | Dconstant (id, typ, exts) ->
+      Format.fprintf fmt "constant%a %a %a\n"
+          (pp_option (pp_list " " pp_extension)) exts
+          pp_id id
+          pp_id typ
 
-  | Dvalue (id, typ, _, _, _) ->
-      Format.fprintf fmt "value %a %a\n" pp_id id pp_id typ
+  | Dvalue (id, typ, _, _, exts) ->
+      Format.fprintf fmt "value%a %a %a\n"
+          (pp_option (pp_list " " pp_extension)) exts
+          pp_id id
+          pp_id typ
 
-  | Drole (id, _val, _exts) ->
-      Format.fprintf fmt "role %a\n" pp_id id
+  | Drole (id, _val, exts) ->
+      Format.fprintf fmt "role%a %a\n"
+          (pp_option (pp_list " " pp_extension)) exts
+           pp_id id
 
   | Denum (id, ids) ->
       Format.fprintf fmt "enum %a =\n  | %a"
         pp_id id (pp_list "\n  | " pp_id) ids
 
-  | Dstates (None, _ids) ->
-      Format.fprintf fmt ""
-(*      Format.fprintf fmt "states\n  | %a" (pp_list "\n  | " pp_id) ids*)
-
-  | Dstates (Some _id, _ids) ->
-      Format.fprintf fmt ""
-(*      Format.fprintf fmt "states %a =\n  | %a"
-        pp_id id (pp_list "\n  | " pp_id) ids*)
+  | Dstates (id, ids) ->
+      Format.fprintf fmt "states %a\n  | %a"
+        (pp_option pp_id) id
+        (pp_list "\n  | " pp_id)
+           (List.fold_left (fun x e -> match e with | (s, _) -> s::x) [] ids)
 
   | Dasset (id, Some fields, _, _op, _init) ->
       Format.fprintf fmt "asset %a = {@[<v 2>]@,%a@]}\n"
