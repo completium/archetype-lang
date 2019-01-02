@@ -89,30 +89,19 @@ theory Asset
 
   predicate le (a1 a2 : asset) = kle (akey a1) (akey a2)
 
-  type collection =  {
-    assets : set asset;     (* asset -> bool *)
-    keys   : map key asset; (* key -> asset  *)
-  }
+  type collection =  set asset
 
   (* member of collection predicate *)
-  function mem (a : asset) (c : collection) : bool = Set.mem a c.assets
+  function mem (a : asset) (c : collection) : bool = Set.mem a c
 
   (* addition of asset *)
-  let ghost add (a : asset) (c : collection) : collection =
-  let newc = {
-     assets = Set.add a c.assets;
-     keys = Map.set c.keys (akey a) a;
-  } in newc
-
-  (* get an asset from asset key *)
-  let ghost function get (key : key) (c : collection) : asset = Map.get c.keys key
+  let ghost add (a : asset) (c : collection) : collection = Set.add a c
 
   (* remove from collection *)
-  let ghost remove (a : asset) (c : collection) : collection =
-  let newc = {
-     assets = Set.remove a c.assets;
-     keys = c.keys; (* how to remove from a map ? *)
-  } in newc
+  let ghost remove (a : asset) (c : collection) : collection = Set.remove a c;
+
+  (* get an asset from asset key *)
+  function get (key : key) (c : collection) : asset
 
   (* get is injective *)
   axiom Inj_get : forall k1 k2:key. forall c:collection.
@@ -162,14 +151,8 @@ theory Asset
     (forall k : int. i <= k < j -> f c1 k = f c2 k) -> sum c1 f i j = sum c2 f i j
 
   (* set operations *)
-  function diff (a b:collection) : collection =
-    let d = Set.diff a.assets b.assets in
-    { assets = d;
-      keys   = a.keys; }
+  function diff (a b:collection) : collection = Set.diff a b
 
-  function inter (a b:collection) : collection =
-    let d = Set.inter a.assets b.assets in
-    { assets = d;
-      keys   = a.keys; }
+  function inter (a b:collection) : collection = Set.inter a b
 
 end

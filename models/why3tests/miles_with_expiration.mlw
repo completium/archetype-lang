@@ -99,7 +99,7 @@ module Miles
     let o = get_owner owner s in
     let l = Mile.when (filter_expiration (now e)) o.miles in
     try
-       for i = 0 to length l do
+       for i = 0 to length l - 1 do
        invariant { forall m:mile.
      Mile.mem m (Mile.diff (old s.mile_coll) s.mile_coll) -> m.expiration > (now e) }
           let m = l[i] in
@@ -119,7 +119,7 @@ module Miles
        done
     with Break -> ()
     end;
-    assert { !remainder = 0 };
+    (*assert { !remainder = 0 };*)
     empty
 
 end
