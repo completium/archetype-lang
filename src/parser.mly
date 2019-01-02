@@ -21,6 +21,7 @@
 %token REF
 %token FUN
 %token EQUALGREATER
+%token INITIALIZED
 %token COLLECTION
 %token QUEUE
 %token STACK
@@ -82,6 +83,8 @@
 %token NOT
 %token FORALL
 %token EXISTS
+%token TRUE
+%token FALSE
 %token IMPLY
 %token EQUIV
 %token NEQUAL
@@ -265,7 +268,8 @@ asset:
 | ASSET x=ident opts=asset_options?
         fields=asset_fields?
             cs=asset_constraints?
-          { Dasset (x, fields, cs, opts) }
+                init=init_asset?
+          { Dasset (x, fields, cs, opts, init) }
 
 %inline asset_constraints:
  | xs=asset_constraint+ { xs }
@@ -278,6 +282,9 @@ asset:
 
 %inline asset_options:
 | xs=asset_option+ { xs }
+
+%inline init_asset:
+| INITIALIZED BY x=braced(code) { x }
 
 asset_option:
 | AS ROLE               { AOasrole }
@@ -463,9 +470,14 @@ literal_expr:
  | x=literal { Eliteral x }
 
 literal:
- | x=NUMBER { Lnumber x }
- | x=FLOAT  { Lfloat x }
- | x=STRING { Lstring x }
+ | x=NUMBER     { Lnumber x }
+ | x=FLOAT      { Lfloat  x }
+ | x=STRING     { Lstring x }
+ | x=bool_value { Lbool   x }
+
+%inline bool_value:
+ | TRUE  { true }
+ | FALSE { false }
 
 term:
  | x=ident { Eterm x }

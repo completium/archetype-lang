@@ -34,6 +34,7 @@ rule token = parse
   | "ref"                 { REF }
   | "fun"                 { FUN }
   | "=>"                  { EQUALGREATER }
+  | "initialized"         { INITIALIZED }
   | "collection"          { COLLECTION }
   | "queue"               { QUEUE }
   | "stack"               { STACK }
@@ -95,6 +96,8 @@ rule token = parse
   | "not"                 { NOT }
   | "forall"              { FORALL }
   | "exists"              { EXISTS }
+  | "true"                { TRUE }
+  | "false"               { FALSE }
   | "->"                  { IMPLY }
   | "<->"                 { EQUIV }
   | "<>"                  { NEQUAL }
