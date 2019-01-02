@@ -66,8 +66,9 @@ module Miles
     } in
     s.owner_coll <- Owner.add new_o s.owner_coll
 
-  let ghost set_amount (m : mile) (a : int) (s : storage) : unit =
-    let new_m = {
+  let ghost set_amount (m : mile) (a : int) (s : storage) : unit
+  requires { a > 0 }
+  = let new_m = {
       mile_id    = mile_key m;
       amount     = a;
       expiration = m.expiration;
@@ -89,11 +90,18 @@ module Miles
      let l = Mile.when (filter_expiration (now e)) o.miles in
      Mile.sum l get_amount 0 (length l) >= nbmiles
   }
+
+  ensures { forall m:mile.
+     Mile.mem m (Mile.diff (old s.mile_coll) s.mile_coll) -> m.expiration > (now e)
+  }
+
   = let remainder = ref nbmiles in
     let o = get_owner owner s in
     let l = Mile.when (filter_expiration (now e)) o.miles in
     try
        for i = 0 to length l do
+       invariant { forall m:mile.
+     Mile.mem m (Mile.diff (old s.mile_coll) s.mile_coll) -> m.expiration > (now e) }
           let m = l[i] in
           if m.amount > !remainder
           then

@@ -120,7 +120,7 @@ theory Asset
 
   (* get is surjective *)
   axiom Surj_get : forall c:collection, a:asset.
-        mem a c -> exists k:key. get k c = a
+        mem a c <-> exists k:key. get k c = a
 
   clone array.Sorted as SortedAsset with type elt = asset, predicate le = le
 
@@ -160,5 +160,16 @@ theory Asset
   lemma Sum_eq :
     forall c1 c2 : array asset, f:array asset -> int -> int, i j : int.
     (forall k : int. i <= k < j -> f c1 k = f c2 k) -> sum c1 f i j = sum c2 f i j
+
+  (* set operations *)
+  function diff (a b:collection) : collection =
+    let d = Set.diff a.assets b.assets in
+    { assets = d;
+      keys   = a.keys; }
+
+  function inter (a b:collection) : collection =
+    let d = Set.inter a.assets b.assets in
+    { assets = d;
+      keys   = a.keys; }
 
 end
