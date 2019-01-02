@@ -69,10 +69,11 @@ end
 
 theory Asset
 
-  use set.Fset
-  use list.List
-  use list.Mem
   use int.Int
+  use set.Set
+  use map.Map
+  use array.Array
+  use array.Sorted
 
   type key
 
@@ -88,68 +89,76 @@ theory Asset
 
   predicate le (a1 a2 : asset) = kle (akey a1) (akey a2)
 
-  type collection = private {
-    ghost mutable coll : set asset;
-    ghost mutable keys : set key;
+  type collection =  {
+    assets : set asset;     (* asset -> bool *)
+    keys   : map key asset; (* key -> asset  *)
   }
 
   (* member of collection predicate *)
-  function mem (a : asset) (c : collection) : bool
-
-  axiom mem_keys : forall c:collection, a:asset.
-       mem a c <-> Fset.mem (akey a) c.keys
-
-  axiom mem_coll : forall c:collection, a:asset.
-       mem a c <-> Fset.mem a c.coll
-
-  axiom keys_coll : forall c:collection, a:asset.
-       Fset.mem (akey a) c.keys <-> Fset.mem a c.coll
+  function mem (a : asset) (c : collection) : bool = Set.mem a c.assets
 
   (* addition of asset *)
-  val add (a : asset) (c : collection) : unit
-  writes { c.coll }
-  writes { c.keys }
-  ensures { old (not (Fset.mem (akey a) c.keys)) ->
-          c.coll = add a (old c.coll) /\ c.keys = add (akey a) (old c.keys)}
+  let ghost add (a : asset) (c : collection) : collection =
+  let newc = {
+     assets = Set.add a c.assets;
+     keys = Map.set c.keys (akey a) a;
+  } in newc
 
   (* get an asset from asset key *)
-  function get (key : key) (c : collection) : asset
+  let ghost function get (key : key) (c : collection) : asset = Map.get c.keys key
+
+  (* remove from collection *)
+  let ghost remove (a : asset) (c : collection) : collection =
+  let newc = {
+     assets = Set.remove a c.assets;
+     keys = c.keys; (* how to remove from a map ? *)
+  } in newc
 
   (* get is injective *)
-  axiom inj_get : forall k1 k2:key. forall c:collection.
+  axiom Inj_get : forall k1 k2:key. forall c:collection.
         get k1 c = get k2 c -> k1 = k2
 
   (* get is surjective *)
-  axiom surj_get : forall c:collection, a:asset.
+  axiom Surj_get : forall c:collection, a:asset.
         mem a c -> exists k:key. get k c = a
 
-  clone list.Sorted as Sorted with type t = asset, predicate le = le
+  clone array.Sorted as SortedAsset with type elt = asset, predicate le = le
 
   (* filter collection *)
-  function when (p : asset -> bool) (c : collection) : list asset
+  function when (p : asset -> bool) (c : collection) : array asset
 
-  axiom when_prop : forall c:collection, p:(asset -> bool), a:asset.
-        Mem.mem a (when p c) -> p a
+  axiom When_mem : forall p:(asset -> bool), c:collection, i:int.
+    let l = when p c  in
+    0 <= i < length l -> mem l[i] c
 
-  axiom when_sorted : forall c:collection, p:(asset -> bool).
-        Sorted.sorted (when p c)
+  axiom When_verify : forall p:(asset -> bool), a:asset, c:collection, i:int.
+    let l = when p c in
+    0 <= i < length l -> a = l[i] -> p a
 
-  (* sum over asset collection/list *)
-  function to_list (c : collection) : list asset = when (fun _ -> true) c
+  axiom When_sorted : forall p:(asset -> bool), c:collection.
+    let l = when p c in
+    SortedAsset.sorted l
 
-  function fold_sum (a : int) (f : asset -> int) (l : list asset) : int =
-     match l with
-     | Nil -> a
-     | Cons h tl -> fold_sum (a + f h) f tl
-     end
+  (* sum over an array of asset (see sum.Sum) *)
+  function sum (array asset) (array asset -> int -> int) int int : int
 
-  function sum (f : asset -> int) (c : collection) : int =
-    let l = to_list c in
-    fold_sum 0 f l
+  axiom Sum_def_empty :
+    forall c : array asset, f:array asset -> int -> int, i j : int. j <= i -> sum c f i j = 0
 
-  function sum_list (f : asset -> int) (l : list asset) : int =
-    fold_sum 0 f l
+  axiom Sum_def_non_empty :
+    forall c: array asset, f:array asset -> int -> int, i j : int.
+    i < j -> sum c f i j = f c i + sum c f (i+1) j
 
-  (* fold over asset collection/list *)
+  lemma Sum_right_extension:
+    forall c : array asset, f:array asset -> int -> int, i j : int.
+    i < j -> sum c f i j = sum c f i (j-1) + f c (j-1)
+
+  lemma Sum_transitivity :
+    forall c : array asset, f:array asset -> int -> int, i k j : int. i <= k <= j ->
+    sum c f i j = sum c f i k + sum c f k j
+
+  lemma Sum_eq :
+    forall c1 c2 : array asset, f:array asset -> int -> int, i j : int.
+    (forall k : int. i <= k < j -> f c1 k = f c2 k) -> sum c1 f i j = sum c2 f i j
 
 end

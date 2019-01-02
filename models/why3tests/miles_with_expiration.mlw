@@ -2,9 +2,8 @@ module Miles
 
   use int.Int
   use mach.int.UInt32
-  use list.List
-  use list.Length
   use ref.Ref
+  use array.Array
 
   use cml.Types
   use cml.Contract
@@ -14,15 +13,15 @@ module Miles
 
   type mile = {
      mile_id        : int;
-     mutable amount : uint;
+     amount         : int;
      expiration     : date;
   } invariant { amount > 0 }
 
   function mile_key (m : mile) : int = m.mile_id
   function mile_sort (m : mile) : date = m.expiration
 
-  function get_amount (m : mile) : uint = m.amount
-
+  function get_amount (c:array mile) (i : int) : int = let mile = c[i] in
+                                                        mile.amount
   (* declare mile as an Asset *)
   clone cml.Asset as Mile with type      key   = int,
                                type      sort  = date,
@@ -34,8 +33,8 @@ module Miles
   (* Owner ********************************************************************)
 
   type owner = {
-     addr            : address;
-     mutable miles   : Mile.collection;
+     addr    : address;
+     miles   : Mile.collection;
   }
 
   function owner_key (o : owner) : int = o.addr
@@ -60,39 +59,58 @@ module Miles
 
   function get_owner (addr : address) (s : storage) : owner = Owner.get addr s.owner_coll
 
+  let ghost set_miles (o : owner) (c : Mile.collection) (s : storage) : unit =
+    let new_o = {
+      addr  = o.addr;
+      miles = c;
+    } in
+    s.owner_coll <- Owner.add new_o s.owner_coll
+
+  let ghost set_amount (m : mile) (a : int) (s : storage) : unit =
+    let new_m = {
+      mile_id    = mile_key m;
+      amount     = a;
+      expiration = m.expiration;
+    } in
+    s.mile_coll <- Mile.add new_m s.mile_coll
+
   (* partition property *)
   axiom miles_partition : forall s:storage, m:mile.
            is_mile m s <-> (exists o:owner. is_owner o s /\ Mile.mem m o.miles)
 
   (* Transactions  ***********************************************************)
 
-  let consume (e : env) (s : storage) (owner : address) (nbmiles : int) : transfers
+  function filter_expiration (d : date) (m : mile) : bool = m.expiration > d
+
+  let ghost consume (e : env) (s : storage) (owner : address) (nbmiles : int) : transfers
+  requires { nbmiles > 0 }
   requires {
      let o = get_owner owner s in
-     let l = Mile.when (fun m -> m.expiration > now e) o.miles in
-     Mile.sum_list (fun m -> to_int (get_amount m)) l >= nbmiles
+     let l = Mile.when (filter_expiration (now e)) o.miles in
+     Mile.sum l get_amount 0 (length l) >= nbmiles
   }
   = let remainder = ref nbmiles in
     let o = get_owner owner s in
-    let l = Mile.when (fun m -> m.expiration > now e) o.miles in
+    let l = Mile.when (filter_expiration (now e)) o.miles in
     try
        for i = 0 to length l do
           let m = l[i] in
           if m.amount > !remainder
           then
              (remainder := 0;
-              m.amount <- m.amount - !remainder;
+              set_amount m (m.amount - !remainder) s;
               raise Break)
           else if m.amount = !remainder
           then
              (remainder := 0;
-              Mile.remove m o.miles;
+              set_miles o (Mile.remove m o.miles) s;
               raise Break)
           else
              (remainder := !remainder - m.amount;
-             Mile.remove m o.miles)
+              set_miles o (Mile.remove m o.miles) s)
        done
-    with Break -> unit;
+    with Break -> ()
+    end;
     assert { !remainder = 0 };
     empty
 
