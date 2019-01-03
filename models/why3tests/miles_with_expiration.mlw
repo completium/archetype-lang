@@ -102,6 +102,7 @@ module Miles
        for i = 0 to length l - 1 do
        invariant { forall m:mile.
      Mile.mem m (Mile.diff (old s.mile_coll) s.mile_coll) -> m.expiration > (now e) }
+       (*invariant { !remainder = nbmiles - (Mile.sum l get_amount 0 i) }*)
           let m = l[i] in
           if m.amount > !remainder
           then

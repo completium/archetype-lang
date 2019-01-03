@@ -132,7 +132,8 @@ theory Asset
   function sum (array asset) (array asset -> int -> int) int int : int
 
   axiom Sum_def_empty :
-    forall c : array asset, f:array asset -> int -> int, i j : int. j <= i -> sum c f i j = 0
+    forall c : array asset, f:array asset -> int -> int, i j : int.
+    j <= i -> sum c f i j = 0
 
   axiom Sum_def_non_empty :
     forall c: array asset, f:array asset -> int -> int, i j : int.
