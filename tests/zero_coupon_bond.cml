@@ -1,0 +1,35 @@
+model zero_coupon_bond
+
+role issuer (* seller ‘Alice’ *)
+
+role owner  (* buyer ‘Bob’; receives 11 tez in one-year *)
+
+value price tez from owner := 10
+
+value payment tez from issuer to owner := 1.1 * price
+
+value deadline date
+
+states
+  | Created initial (* Created phase enables *)
+  | Confirmed
+  | Transfered
+
+transaction load_owner = {
+   transferred[%exact] : price;
+}
+
+transaction load_issuer = {
+   called by issuer;
+   transferred[%exact] : payment - price;
+}
+
+transition confirm from Created to Confirmed = {
+   condition : balance = payment;
+   action    : deadline := now;
+}
+
+transition pay from Confirmed to Created = {
+   condition : after deadline;
+   action    : transfer payment;
+}
