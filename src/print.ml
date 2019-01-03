@@ -234,33 +234,40 @@ let rec pp_instr fmt { pldesc = s } =
 (* -------------------------------------------------------------------- *)
 let pp_transitem fmt { pldesc = t } =
   match t with
-  | Targs fields ->
-      Format.fprintf fmt "args = {@[<v 2>]@,%a@]}\n"
+  | Targs (fields, exts) ->
+      Format.fprintf fmt "args%a = {@[<v 2>]@,%a@]}\n"
+        (pp_option (pp_list " " pp_extension)) exts
         (pp_list "@," pp_field) fields
 
-  | Tcalledby (e, _exts) ->
-      Format.fprintf fmt "called by %a;\n"
+  | Tcalledby (e, exts) ->
+      Format.fprintf fmt "called by%a %a;\n"
+        (pp_option (pp_list " " pp_extension)) exts
         pp_expr e
 
-  | Tensure e ->
-      Format.fprintf fmt "ensure: %a;\n"
+  | Tensure (e, exts) ->
+      Format.fprintf fmt "ensure%a: %a;\n"
+        (pp_option (pp_list " " pp_extension)) exts
         pp_expr e
 
-  | Tcondition e ->
-      Format.fprintf fmt "condition: %a;\n"
+  | Tcondition (e, exts) ->
+      Format.fprintf fmt "condition%a: %a;\n"
+        (pp_option (pp_list " " pp_extension)) exts
         pp_expr e
 
-  | Ttransferred e ->
-      Format.fprintf fmt "transferred: %a;\n"
+  | Ttransferred (e, exts) ->
+      Format.fprintf fmt "transferred%a: %a;\n"
+        (pp_option (pp_list " " pp_extension)) exts
         pp_expr e
 
-  | Ttransition (from, _to, _) ->
-      Format.fprintf fmt "transition from %a to %a;"
+  | Ttransition (from, _to, _, exts) ->
+      Format.fprintf fmt "transition from%a %a to %a;"
+        (pp_option (pp_list " " pp_extension)) exts
         pp_expr from pp_expr _to
 
-  | Taction instrs ->
-      Format.fprintf fmt "action:\n %a" (pp_list "@," pp_instr) instrs
-
+  | Taction (instrs, exts) ->
+      Format.fprintf fmt "action%a:\n %a"
+        (pp_option (pp_list " " pp_extension)) exts
+        (pp_list "@," pp_instr) instrs
 
 (* -------------------------------------------------------------------- *)
 let state_option_to_str opt =

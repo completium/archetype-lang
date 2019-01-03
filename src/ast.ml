@@ -109,13 +109,13 @@ and instr = instr_r loced
 
 (* -------------------------------------------------------------------- *)
 type transitem_r =
-  | Targs of field list                           (** args *)
-  | Tcalledby of expr * extension list option     (** called by *)
-  | Tensure of expr                               (** ensure *)
-  | Tcondition of expr                            (** condition *)
-  | Ttransferred of expr                          (** transferred *)
-  | Ttransition of expr * expr * expr option      (** transition  *)
-  | Taction of instr list                         (** action  *)
+  | Targs of field list * extension list option                      (** args *)
+  | Tcalledby of expr * extension list option                        (** called by *)
+  | Tensure of expr * extension list option                          (** ensure *)
+  | Tcondition of expr * extension list option                       (** condition *)
+  | Ttransferred of expr * extension list option                     (** transferred *)
+  | Ttransition of expr * expr * expr option * extension list option (** transition  *)
+  | Taction of instr list * extension list option                    (** action  *)
 
 and transitem = transitem_r loced
 

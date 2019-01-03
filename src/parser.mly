@@ -346,28 +346,29 @@ transitem_r:
  | x=action           { x }
 
 args:
- | ARGS EQUAL fields=braced(fields) { Targs fields }
+ | ARGS exts=option(extensions) EQUAL fields=braced(fields) { Targs (fields, exts) }
 
 calledby:
  | CALLED BY exts=option(extensions) x=expr SEMI_COLON { Tcalledby (x, exts) }
 
 ensure:
- | ENSURE COLON x=expr SEMI_COLON { Tensure x }
+ | ENSURE exts=option(extensions) COLON x=expr SEMI_COLON { Tensure (x, exts) }
 
 condition:
- | CONDITION COLON x=expr SEMI_COLON { Tcondition x }
+ | CONDITION exts=option(extensions) COLON x=expr SEMI_COLON { Tcondition (x, exts) }
 
 transferred:
- | TRANSFERRED COLON x=expr SEMI_COLON { Ttransferred x }
+ | TRANSFERRED exts=option(extensions) COLON x=expr SEMI_COLON { Ttransferred (x, exts) }
 
 transition_item:
  | TRANSITION id=expr?
+     exts=option(extensions)
      x=from_value
          y=to_value SEMI_COLON
-             { Ttransition (x, y, id) }
+             { Ttransition (x, y, id, exts) }
 
 action:
- | ACTION COLON xs=code SEMI_COLON { Taction xs }
+ | ACTION exts=option(extensions) COLON xs=code SEMI_COLON { Taction (xs, exts) }
 
 %inline bcode:
  | xs=braced(code)  { xs }
