@@ -41,8 +41,8 @@ transaction consume = {
   ensure : forall m : removed miles,
              in m (before (owner.miles)) and m.expiration >= now;
 
-  ensure : before ((owner.get owner).miles.sum(amount)) =
-           ((owner.get owner).miles.sum(amount)) + val;
+  ensure : let o = owner.get owner in
+           before o.miles.sum(amount) = (o.miles.sum(amount)) + val;
 
   ensure : is_empty added.mile;
 

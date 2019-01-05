@@ -419,12 +419,13 @@ expr_r:
  | x=array_expr         { x }
  | x=namespace_expr     { x }
  | x=dot_expr           { x }
+ | x=call_expr          { x }
  | x=fun_expr           { x }
  | x=assign_fields      { x }
  | x=literal_expr       { x }
  | x=quantifier_expr    { x }
+ | x=letin_expr         { x }
  | x=term               { x }
- | x=call_expr          { x }
  | x=paren(expr_r)      { x }
 
 letin_instr:
@@ -456,6 +457,9 @@ break_instr:
 
 quantifier_expr:
  | q=quantifier x=ident COLON y=expr COMMA z=expr {Equantifier (q, x, y, z)}
+
+letin_expr:
+ | LET x=ident EQUAL e=expr IN b=expr { Eletin (x, e, b) }
 
 %inline quantifier:
  | FORALL { Forall }

@@ -160,6 +160,12 @@ let rec pp_expr fmt { pldesc = e } =
         pp_expr t
         pp_expr body
 
+  | Eletin (id, e, body) ->
+      Format.fprintf fmt "let %a = %a in %a"
+        pp_id id
+        pp_expr e
+        pp_expr body
+
 and pp_literal fmt lit =
   match lit with
   | Lnumber n -> Format.fprintf fmt "%d" n

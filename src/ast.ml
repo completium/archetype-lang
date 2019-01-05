@@ -68,6 +68,7 @@ type expr_r =
   | Earray of expr list
   | EassignFields of assignment_field list
   | Equantifier of quantifier * lident * expr * expr
+  | Eletin of lident * expr * expr
 
 and literal =
   | Lnumber of int
