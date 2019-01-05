@@ -99,7 +99,7 @@ type instr_r =
   | Iletin of lident * expr * code
   | Iif of expr * code * code option
   | Ifor of lident * expr * code
-  | Itransfer of expr * bool option * expr option
+  | Itransfer of expr * bool * expr option
   | Itransition of expr
   | Icall of expr
   | Iassert of expr

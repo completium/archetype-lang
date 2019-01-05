@@ -441,7 +441,7 @@ for_instr:
  | FOR LPAREN x=ident IN y=expr RPAREN body=bcode { Ifor (x, y, body) }
 
 transfer_instr:
- | TRANSFER _b=option(BACK) x=expr y=to_value? { Itransfer (x, None, y) }
+ | TRANSFER back=boption(BACK) x=expr y=to_value? { Itransfer (x, back, y) }
 
 transition_instr:
  | TRANSITION TO x=expr { Itransition x }
