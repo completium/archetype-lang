@@ -82,6 +82,14 @@ match op with
 let pp_arithmetic_operator fmt op =
  Format.fprintf fmt "%s" (arithmetic_operator_to_str op)
 
+let unary_operator_to_str op =
+match op with
+  | Uplus   -> "+"
+  | Uminus  -> "-"
+
+let pp_unary_operator fmt op =
+ Format.fprintf fmt "%s" (unary_operator_to_str op)
+
 let assignment_operator_to_str op =
 match op with
   | Assign      -> ":="
@@ -144,11 +152,20 @@ let rec pp_expr fmt { pldesc = e } =
 
   | Ecomparison (op, lhs, rhs) ->
       Format.fprintf fmt "%a %a %a"
-        pp_expr lhs pp_comparison_operator op pp_expr rhs
+        pp_expr lhs
+        pp_comparison_operator op
+        pp_expr rhs
 
   | Earithmetic (op, lhs, rhs) ->
       Format.fprintf fmt "%a %a %a"
-        pp_expr lhs pp_arithmetic_operator op pp_expr rhs
+        pp_expr lhs
+        pp_arithmetic_operator op
+        pp_expr rhs
+
+  | Eunary (op, e) ->
+      Format.fprintf fmt "%a %a"
+       pp_unary_operator op
+       pp_expr e
 
   | Earray values ->
       Format.fprintf fmt "[%a]"

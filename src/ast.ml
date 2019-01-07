@@ -41,6 +41,10 @@ type arithmetic_operator =
   | Mult
   | Div
 
+type unary_operator =
+  | Uplus
+  | Uminus
+
 type assignment_operator =
   | Assign
   | PlusAssign
@@ -65,6 +69,7 @@ type expr_r =
   | Enot of expr
   | Ecomparison of comparison_operator * expr * expr
   | Earithmetic of arithmetic_operator * expr * expr
+  | Eunary of unary_operator * expr
   | Earray of expr list
   | EassignFields of assignment_field list
   | Equantifier of quantifier * lident * expr * expr

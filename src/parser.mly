@@ -416,6 +416,7 @@ expr_r:
  | x=logical_expr       { x }
  | x=comparison_expr    { x }
  | x=arithmetic_expr    { x }
+ | x=unary_expr         { x }
  | x=array_expr         { x }
  | x=namespace_expr     { x }
  | x=dot_expr           { x }
@@ -500,11 +501,14 @@ logical_expr:
  | IMPLY { Imply }
  | EQUIV { Or }
 
+comparison_expr:
+ | x=expr op=comparison_operator y=expr { Ecomparison (op, x, y) }
+
 arithmetic_expr:
  | x=expr op=arithmetic_operator y=expr { Earithmetic (op, x, y) }
 
-comparison_expr:
- | x=expr op=comparison_operator y=expr { Ecomparison (op, x, y) }
+unary_expr:
+ | op=unary_operator x=expr             { Eunary (op, x) }
 
 %inline comparison_operator:
  | EQUAL        { Equal }
@@ -519,6 +523,10 @@ comparison_expr:
  | MINUS   { Minus }
  | MULT    { Mult }
  | DIV     { Div }
+
+%inline unary_operator:
+ | PLUS    { Uplus }
+ | MINUS   { Uminus }
 
 array_expr:
  | LBRACKET xs=sep_comma_exprs RBRACKET { Earray xs }
