@@ -63,30 +63,17 @@ module Miles
 
   function get_owner (addr : address) (s : storage) : owner = Owner.get addr s.owner_col
 
-  let ghost remove_miles (o : owner) (m : mile) (s:storage) : unit =
+  val ghost remove_miles (o : owner) (m : mile) (s:storage) : unit
     requires { Mile.mem m s.mile_col }
     ensures  { old (Mile.sum_col s.mile_col mile_amount) =
       (Mile.sum_col s.mile_col mile_amount) + mile_amount m }
     ensures  { (Mile.diff (old s.mile_col) s.mile_col)  = Set.singleton m }
-    (* s.mile_col is synchronized because miles is a partition *)
-    s.mile_col <- Mile.remove m s.mile_col;
-    let new_o = {
-      addr  = o.addr;
-      miles = Mile.remove m o.miles;
-    } in
-    (* overwrite previous owner *)
-    s.owner_col <- Owner.add new_o s.owner_col
 
-  let ghost set_amount (m : mile) (a : int) (s : storage) : unit
+  val ghost set_amount (m : mile) (a : int) (s : storage) : unit
+  requires { Mile.mem m s.mile_col }
   requires { a > 0 }
-  =
-    let new_m = {
-      mile_id    = mile_key m;
-      amount     = a;
-      expiration = m.expiration;
-    } in
-    s.mile_col <- Mile.add new_m s.mile_col
-
+  ensures  { old (Mile.sum_col s.mile_col mile_amount) =
+      (Mile.sum_col s.mile_col mile_amount) - a + mile_amount m }
 
   (* partition property *)
   axiom miles_partition : forall s:storage, o:owner, m:mile.
@@ -108,12 +95,11 @@ module Miles
      Mile.mem m (Mile.diff (old s.mile_col) s.mile_col) -> m.expiration > (now e)
   }
 
-(*  ensures {
-     old (Mile.sum_col s.mile_col get_amount) = (Mile.sum_col s.mile_col get_amount) + nbmiles
-  }*)
+  ensures {
+     old (Mile.sum_col s.mile_col mile_amount) = (Mile.sum_col s.mile_col mile_amount) + nbmiles
+  }
 
   = let remainder = ref nbmiles in
-    let last = ref 0 in
     let o = get_owner owner s in
     let l = Mile.when (filter_expiration (now e)) o.miles in
     try
@@ -130,22 +116,19 @@ module Miles
           then
              (remainder := 0;
               set_amount m (m.amount - !remainder) s;
-              last := i;
               raise Break)
           else if m.amount = !remainder
           then
              (remainder := 0;
               remove_miles o m s;
-              last := i;
               raise Break)
           else
              (remainder := !remainder - m.amount;
-              remove_miles o m s;
-              last := i)
-       done
+              remove_miles o m s)
+       done;
     with Break -> assert { !remainder = 0 }; ()
     end;
-    (*assert { !remainder = 0 };*)
+    assert { !remainder = 0 };
     empty
 
 end
