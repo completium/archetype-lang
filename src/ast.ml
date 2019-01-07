@@ -68,6 +68,7 @@ type expr_r =
   | Earray of expr list
   | EassignFields of assignment_field list
   | Equantifier of quantifier * lident * expr * expr
+  | Eletin of lident * expr * expr
 
 and literal =
   | Lnumber of int
@@ -98,7 +99,7 @@ type instr_r =
   | Iletin of lident * expr * code
   | Iif of expr * code * code option
   | Ifor of lident * expr * code
-  | Itransfer of expr * bool option * expr option
+  | Itransfer of expr * bool * expr option
   | Itransition of expr
   | Icall of expr
   | Iassert of expr
@@ -109,13 +110,13 @@ and instr = instr_r loced
 
 (* -------------------------------------------------------------------- *)
 type transitem_r =
-  | Targs of field list                           (** args *)
-  | Tcalledby of expr * extension list option     (** called by *)
-  | Tensure of expr                               (** ensure *)
-  | Tcondition of expr                            (** condition *)
-  | Ttransferred of expr                          (** transferred *)
-  | Ttransition of expr * expr * expr option      (** transition  *)
-  | Taction of instr list                         (** action  *)
+  | Targs of field list * extension list option                      (** args *)
+  | Tcalledby of expr * extension list option                        (** called by *)
+  | Tensure of expr * extension list option                          (** ensure *)
+  | Tcondition of expr * extension list option                       (** condition *)
+  | Ttransferred of expr * extension list option                     (** transferred *)
+  | Ttransition of expr * expr * expr option * extension list option (** transition  *)
+  | Taction of instr list * extension list option                    (** action  *)
 
 and transitem = transitem_r loced
 

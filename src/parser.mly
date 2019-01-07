@@ -346,28 +346,29 @@ transitem_r:
  | x=action           { x }
 
 args:
- | ARGS EQUAL fields=braced(fields) { Targs fields }
+ | ARGS exts=option(extensions) EQUAL fields=braced(fields) { Targs (fields, exts) }
 
 calledby:
  | CALLED BY exts=option(extensions) x=expr SEMI_COLON { Tcalledby (x, exts) }
 
 ensure:
- | ENSURE COLON x=expr SEMI_COLON { Tensure x }
+ | ENSURE exts=option(extensions) COLON x=expr SEMI_COLON { Tensure (x, exts) }
 
 condition:
- | CONDITION COLON x=expr SEMI_COLON { Tcondition x }
+ | CONDITION exts=option(extensions) COLON x=expr SEMI_COLON { Tcondition (x, exts) }
 
 transferred:
- | TRANSFERRED COLON x=expr SEMI_COLON { Ttransferred x }
+ | TRANSFERRED exts=option(extensions) COLON x=expr SEMI_COLON { Ttransferred (x, exts) }
 
 transition_item:
  | TRANSITION id=expr?
+     exts=option(extensions)
      x=from_value
          y=to_value SEMI_COLON
-             { Ttransition (x, y, id) }
+             { Ttransition (x, y, id, exts) }
 
 action:
- | ACTION COLON xs=code SEMI_COLON { Taction xs }
+ | ACTION exts=option(extensions) COLON xs=code SEMI_COLON { Taction (xs, exts) }
 
 %inline bcode:
  | xs=braced(code)  { xs }
@@ -418,12 +419,13 @@ expr_r:
  | x=array_expr         { x }
  | x=namespace_expr     { x }
  | x=dot_expr           { x }
+ | x=call_expr          { x }
  | x=fun_expr           { x }
  | x=assign_fields      { x }
  | x=literal_expr       { x }
  | x=quantifier_expr    { x }
+ | x=letin_expr         { x }
  | x=term               { x }
- | x=call_expr          { x }
  | x=paren(expr_r)      { x }
 
 letin_instr:
@@ -439,7 +441,7 @@ for_instr:
  | FOR LPAREN x=ident IN y=expr RPAREN body=bcode { Ifor (x, y, body) }
 
 transfer_instr:
- | TRANSFER _b=option(BACK) x=expr y=to_value? { Itransfer (x, None, y) }
+ | TRANSFER back=boption(BACK) x=expr y=to_value? { Itransfer (x, back, y) }
 
 transition_instr:
  | TRANSITION TO x=expr { Itransition x }
@@ -455,6 +457,9 @@ break_instr:
 
 quantifier_expr:
  | q=quantifier x=ident COLON y=expr COMMA z=expr {Equantifier (q, x, y, z)}
+
+letin_expr:
+ | LET x=ident EQUAL e=expr IN b=expr { Eletin (x, e, b) }
 
 %inline quantifier:
  | FORALL { Forall }
