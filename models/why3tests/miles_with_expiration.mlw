@@ -17,8 +17,10 @@ module Miles
      expiration     : date;
   } invariant { amount > 0 }
 
-  function mile_key (m : mile) : int = m.mile_id
-  function mile_sort (m : mile) : date = m.expiration
+  (* projections *)
+  function mile_key    (m : mile) : int  = m.mile_id
+  function mile_amount (m : mile) : int  = m.amount
+  function mile_sort   (m : mile) : date = m.expiration
 
   function get_amount (c:array mile) (i : int) : int = let mile = c[i] in
                                                         mile.amount
@@ -37,7 +39,9 @@ module Miles
      miles   : Mile.collection;
   }
 
-  function owner_key (o : owner) : int = o.addr
+  (* projections *)
+  function owner_key   (o : owner) : int             = o.addr
+  function owner_miles (o : owner) : Mile.collection = o.miles
 
   (* declare mile as an Asset *)
   clone cml.Asset as Owner with type      key   = int,
@@ -50,34 +54,43 @@ module Miles
   (* Storage *****************************************************************)
 
   type storage = {
-    mutable mile_coll   : Mile.collection;
-    mutable owner_coll  : Owner.collection;
+    mutable mile_col   : Mile.collection;
+    mutable owner_col  : Owner.collection;
   }
 
-  function is_mile (m : mile) (s : storage) : bool  = Mile.mem m s.mile_coll
-  function is_owner (o : owner) (s : storage) : bool = Owner.mem o s.owner_coll
+  function is_mile (m : mile) (s : storage) : bool  = Mile.mem m s.mile_col
+  function is_owner (o : owner) (s : storage) : bool = Owner.mem o s.owner_col
 
-  function get_owner (addr : address) (s : storage) : owner = Owner.get addr s.owner_coll
+  function get_owner (addr : address) (s : storage) : owner = Owner.get addr s.owner_col
 
-  let ghost set_miles (o : owner) (c : Mile.collection) (s : storage) : unit =
+  let ghost remove_miles (o : owner) (m : mile) (s:storage) : unit =
+    requires { Mile.mem m s.mile_col }
+    ensures  { old (Mile.sum_col s.mile_col mile_amount) =
+      (Mile.sum_col s.mile_col mile_amount) + mile_amount m }
+    ensures  { (Mile.diff (old s.mile_col) s.mile_col)  = Set.singleton m }
+    (* s.mile_col is synchronized because miles is a partition *)
+    s.mile_col <- Mile.remove m s.mile_col;
     let new_o = {
       addr  = o.addr;
-      miles = c;
+      miles = Mile.remove m o.miles;
     } in
-    s.owner_coll <- Owner.add new_o s.owner_coll
+    (* overwrite previous owner *)
+    s.owner_col <- Owner.add new_o s.owner_col
 
   let ghost set_amount (m : mile) (a : int) (s : storage) : unit
   requires { a > 0 }
-  = let new_m = {
+  =
+    let new_m = {
       mile_id    = mile_key m;
       amount     = a;
       expiration = m.expiration;
     } in
-    s.mile_coll <- Mile.add new_m s.mile_coll
+    s.mile_col <- Mile.add new_m s.mile_col
+
 
   (* partition property *)
-  axiom miles_partition : forall s:storage, m:mile.
-           is_mile m s <-> (exists o:owner. is_owner o s /\ Mile.mem m o.miles)
+  axiom miles_partition : forall s:storage, o:owner, m:mile.
+           is_mile m s <-> (is_owner o s /\ Mile.mem m o.miles)
 
   (* Transactions  ***********************************************************)
 
@@ -92,33 +105,45 @@ module Miles
   }
 
   ensures { forall m:mile.
-     Mile.mem m (Mile.diff (old s.mile_coll) s.mile_coll) -> m.expiration > (now e)
+     Mile.mem m (Mile.diff (old s.mile_col) s.mile_col) -> m.expiration > (now e)
   }
 
+(*  ensures {
+     old (Mile.sum_col s.mile_col get_amount) = (Mile.sum_col s.mile_col get_amount) + nbmiles
+  }*)
+
   = let remainder = ref nbmiles in
+    let last = ref 0 in
     let o = get_owner owner s in
     let l = Mile.when (filter_expiration (now e)) o.miles in
     try
        for i = 0 to length l - 1 do
        invariant { forall m:mile.
-     Mile.mem m (Mile.diff (old s.mile_coll) s.mile_coll) -> m.expiration > (now e) }
-       (*invariant { !remainder = nbmiles - (Mile.sum l get_amount 0 i) }*)
+          Mile.mem m (Mile.diff (old s.mile_col) s.mile_col) -> m.expiration > (now e)
+       }
+       invariant { nbmiles = (Mile.sum l get_amount 0 i) + !remainder }
+       invariant { old (Mile.sum_col s.mile_col mile_amount) =
+          (Mile.sum_col s.mile_col mile_amount) + (Mile.sum l get_amount 0 i)}
+       invariant { !remainder >= 0 }
           let m = l[i] in
           if m.amount > !remainder
           then
              (remainder := 0;
               set_amount m (m.amount - !remainder) s;
+              last := i;
               raise Break)
           else if m.amount = !remainder
           then
              (remainder := 0;
-              set_miles o (Mile.remove m o.miles) s;
+              remove_miles o m s;
+              last := i;
               raise Break)
           else
              (remainder := !remainder - m.amount;
-              set_miles o (Mile.remove m o.miles) s)
+              remove_miles o m s;
+              last := i)
        done
-    with Break -> ()
+    with Break -> assert { !remainder = 0 }; ()
     end;
     (*assert { !remainder = 0 };*)
     empty

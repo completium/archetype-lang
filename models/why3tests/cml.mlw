@@ -89,7 +89,7 @@ theory Asset
 
   predicate le (a1 a2 : asset) = kle (akey a1) (akey a2)
 
-  type collection =  set asset
+  type collection = set asset
 
   (* member of collection predicate *)
   function mem (a : asset) (c : collection) : bool = Set.mem a c
@@ -128,7 +128,8 @@ theory Asset
     let l = when p c in
     SortedAsset.sorted l
 
-  (* sum over an array of asset (see sum.Sum) *)
+  (* sum over an array of assets (see sum.Sum)
+     here the f function is passed as an argument of type array asset -> int -> int *)
   function sum (array asset) (array asset -> int -> int) int int : int
 
   axiom Sum_def_empty :
@@ -150,6 +151,29 @@ theory Asset
   lemma Sum_eq :
     forall c1 c2 : array asset, f:array asset -> int -> int, i j : int.
     (forall k : int. i <= k < j -> f c1 k = f c2 k) -> sum c1 f i j = sum c2 f i j
+
+  (* sum on collection : this is set version of Sum.sum *)
+  function sum_col (c:collection) (f:asset -> int) : int
+
+  axiom Sum_col_def_empty :
+    forall c : collection, f:asset -> int.
+    is_empty c -> sum_col c f = 0
+
+  axiom Sum_col_def_non_empty_remove_mem :
+    forall c: collection, a:asset, f:asset -> int.
+    not (is_empty c) -> mem a c -> sum_col c f = (sum_col (remove a c) f) + f a
+
+  axiom Sum_col_def_non_empty_remove_non_mem :
+    forall c: collection, a:asset, f:asset -> int.
+    not (is_empty c) -> not (mem a c) -> sum_col c f = (sum_col (remove a c) f)
+
+  axiom Sum_col_def_non_empty_add_mem :
+    forall c: collection, a:asset, f:asset -> int.
+    not (is_empty c) -> mem a c -> sum_col (add a c) f = (sum_col c f)
+
+  axiom Sum_col_def_non_empty_add_non_mem :
+    forall c: collection, a:asset, f:asset -> int.
+    not (is_empty c) -> not (mem a c) -> sum_col (add a c) f = (sum_col c f) + f a
 
   (* set operations *)
   function diff (a b:collection) : collection = Set.diff a b
