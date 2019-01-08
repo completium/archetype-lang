@@ -63,22 +63,33 @@ module Miles
 
   function get_owner (addr : address) (s : storage) : owner = Owner.get addr s.owner_col
 
-  val ghost remove_miles (o : owner) (m : mile) (s:storage) : unit
+  let ghost remove_miles (o : owner) (m : mile) (s:storage) : unit
     requires { Mile.mem m s.mile_col }
-    ensures  { old (Mile.sum_col s.mile_col mile_amount) =
+    ensures  { Mile.sum_col (old s).mile_col mile_amount =
       (Mile.sum_col s.mile_col mile_amount) + mile_amount m }
-    ensures  { (Mile.diff (old s.mile_col) s.mile_col)  = Set.singleton m }
+    ensures  { Mile.diff (old s).mile_col s.mile_col = Set.singleton m } =
+    s.mile_col <- Mile.remove m s.mile_col
 
-  val ghost set_amount (m : mile) (a : int) (s : storage) : unit
+  let ghost set_amount (m : mile) (a : int) (s : storage) : unit
   requires { Mile.mem m s.mile_col }
   requires { a > 0 }
-  ensures  { old (Mile.sum_col s.mile_col mile_amount) =
-      (Mile.sum_col s.mile_col mile_amount) - a + mile_amount m }
+  ensures  { Mile.sum_col (old s).mile_col mile_amount =
+      (Mile.sum_col s.mile_col mile_amount) - a + mile_amount m } =
+    let new_m = {
+        mile_id = mile_key m;
+        amount  = a;
+        expiration = mile_sort m;
+    } in
+    s.mile_col <- Mile.remove m s.mile_col;
+    s.mile_col <- Mile.add new_m s.mile_col
 
   (* partition property *)
-  axiom miles_partition : forall s:storage, o:owner, m:mile.
+(*  axiom miles_partition : forall s:storage, o:owner, m:mile.
            is_mile m s <-> (is_owner o s /\ Mile.mem m o.miles)
 
+  axiom miles_subset : forall s:storage, o:owner.
+           Set.subset o.miles s.mile_col
+*)
   (* Transactions  ***********************************************************)
 
   function filter_expiration (d : date) (m : mile) : bool = m.expiration > d
@@ -92,23 +103,23 @@ module Miles
   }
 
   ensures { forall m:mile.
-     Mile.mem m (Mile.diff (old s.mile_col) s.mile_col) -> m.expiration > (now e)
+     Mile.mem m (Mile.diff (old s).mile_col s.mile_col) -> m.expiration > (now e)
   }
 
   ensures {
-     old (Mile.sum_col s.mile_col mile_amount) = (Mile.sum_col s.mile_col mile_amount) + nbmiles
+     Mile.sum_col (old s).mile_col mile_amount = (Mile.sum_col s.mile_col mile_amount) + nbmiles
   }
 
   = let remainder = ref nbmiles in
     let o = get_owner owner s in
-    let l = Mile.when (filter_expiration (now e)) o.miles in
+    let l = Mile.when (filter_expiration (now e)) s.mile_col in
     try
        for i = 0 to length l - 1 do
        invariant { forall m:mile.
-          Mile.mem m (Mile.diff (old s.mile_col) s.mile_col) -> m.expiration > (now e)
+          Mile.mem m (Mile.diff (old s).mile_col s.mile_col) -> m.expiration > (now e)
        }
        invariant { nbmiles = (Mile.sum l get_amount 0 i) + !remainder }
-       invariant { old (Mile.sum_col s.mile_col mile_amount) =
+       invariant { Mile.sum_col (old s).mile_col mile_amount =
           (Mile.sum_col s.mile_col mile_amount) + (Mile.sum l get_amount 0 i)}
        invariant { !remainder >= 0 }
           let m = l[i] in
