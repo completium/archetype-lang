@@ -381,11 +381,6 @@ action:
 %inline comma_instr:
  | COMMA x=instr { x }
 
-
-%inline instrs:
- | x=instr xs=instr+ { x :: xs }
- | x=instr { [x] }
-
 %inline instr:
  | e=loc(instr_r) { e }
 
@@ -545,15 +540,15 @@ fun_expr:
 call_expr:
  | x=call_e xs=call_args { Ecall (x, xs) }
 
- %inline call_args:
+%inline call_args:
  | LPAREN RPAREN { [] }
-/* | x=expr        { [x] }*/
- | xs=exprs      { xs }
+ | x=expr        { [x] }
 
 %inline call_e:
- | x=lterm         { x }
- | x=loc(dot_expr) { x }
- | x=paren(expr)   { x }
+ | x=lterm          { x }
+ | x=loc(dot_expr)  { x }
+ | x=loc(call_expr) { x }
+ | x=paren(expr)    { x }
 
 namespace_expr:
  | id=ident COLONCOLON x=expr   { Enamespace (id, x) }
