@@ -295,8 +295,10 @@ asset_option:
 | xs=field+ { xs }
 
 field_r:
-| x=ident exts=option(extensions) COLON y=type_t boption(REF) SEMI_COLON
-    { Ffield (x, y, exts) }
+| x=ident exts=option(extensions)
+      COLON y=type_t boption(REF)
+          dv=default_value? SEMI_COLON
+    { Ffield (x, y, dv, exts) }
 
 %inline field:
 | f=loc(field_r) { f }

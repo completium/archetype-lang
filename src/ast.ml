@@ -94,7 +94,7 @@ and extension = extension_r loced
 
 (* -------------------------------------------------------------------- *)
 type field_r =
-  | Ffield of lident * type_t * extension list option   (** field *)
+  | Ffield of lident * type_t * expr option * extension list option   (** field *)
 
 and field = field_r loced
 

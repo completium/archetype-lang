@@ -213,7 +213,12 @@ let pp_extension fmt { pldesc = e } =
 (* -------------------------------------------------------------------- *)
 let pp_field fmt { pldesc = f } =
   match f with
-  | Ffield (id, typ, _) -> Format.fprintf fmt "%a : %a;" pp_id id pp_type typ
+  | Ffield (id, typ, dv, exts) ->
+      Format.fprintf fmt "%a%a : %a%a;"
+        pp_id id
+        (pp_option (pp_list " " pp_extension)) exts
+        pp_type typ
+        (pp_option (pp_prefix " := " pp_expr)) dv
 
 
 (* -------------------------------------------------------------------- *)
