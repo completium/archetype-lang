@@ -117,10 +117,10 @@ let rec pp_expr fmt { pldesc = e } =
       Format.fprintf fmt "%a"
         pp_id id
 
-  | Ecall (e, args) ->
-      Format.fprintf fmt "%a %a"
+  | Eapp (e, arg) ->
+      Format.fprintf fmt "%a%a"
         pp_expr e
-        (pp_list "@," pp_expr) args
+        (pp_option (pp_prefix " " pp_expr)) arg
 
   | Eliteral x ->
       Format.fprintf fmt "%a"
@@ -256,7 +256,7 @@ let rec pp_instr fmt { pldesc = s } =
       Format.fprintf fmt "transition to %a"
         pp_expr x
 
-  | Icall e ->
+  | Iapp e ->
       Format.fprintf fmt "%a"
         pp_expr e
 
@@ -377,8 +377,8 @@ let rec pp_declaration fmt { pldesc = e } =
         pp_id id
         (pp_option (pp_prefix " " (pp_list " @," pp_asset_option))) opts
         (pp_option (pp_list "@," pp_field)) fields
-        (pp_option (pp_enclose " with {" "}" (pp_list " @," pp_expr))) cs
-        (pp_option (pp_enclose " initialized by {" "}" (pp_list "@," pp_instr))) init
+        (pp_option (pp_list " @," (pp_enclose " with { " " }" pp_expr))) cs
+        (pp_option (pp_enclose " initialized by { " " }" (pp_list "@," pp_instr))) init
 
   | Dassert e ->
       Format.fprintf fmt "assert (%a)\n"

@@ -60,7 +60,7 @@ type quantifier =
 
 type expr_r =
   | Eterm of lident
-  | Ecall of expr * expr list
+  | Eapp of expr * expr option
   | Eliteral of literal
   | Edot of expr * expr
   | Enamespace of lident * expr
@@ -106,7 +106,7 @@ type instr_r =
   | Ifor of lident * expr * code
   | Itransfer of expr * bool * expr option
   | Itransition of expr
-  | Icall of expr
+  | Iapp of expr
   | Iassert of expr
   | Ibreak
 and code = instr list
