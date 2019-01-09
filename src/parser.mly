@@ -105,8 +105,8 @@
 
 %type <Ast.model> main
 
-%left AND
 %left OR
+%left AND
 %right IMPLY
 %left EQUIV
 
@@ -193,10 +193,10 @@ role:
 | COLONEQUAL x=expr { x }
 
 %inline from_value:
-| FROM x=expr { x }
+| FROM x=dot_expr { x }
 
 %inline to_value:
-| TO x=expr { x }
+| TO x=dot_expr { x }
 
 dextension:
 |PERCENT x=ident xs=option(exprs) { Dextension (x, xs) }
@@ -536,12 +536,12 @@ unary_expr_r:
  | x=loc(app_expr_r) { x }
 
 app_expr_r:
- | x=dot_expr a=app_arg { Eapp (x, a) }
+ | x=app_expr a=app_arg { Eapp (x, a) }
  | x=dot_expr_r         { x }
 
 %inline app_arg:
  | LPAREN RPAREN   { None }
- | x=basic_expr    { Some x }
+ | x=dot_expr    { Some x }
 
 %inline dot_expr:
  | x=loc(dot_expr_r) { x }
@@ -566,7 +566,8 @@ basic_expr_r:
  | x=namespace_expr     { x }
  | x=array_expr         { x }
  | x=assign_fields      { x }
- | x=simple_expr_r      { x }
+ | x=term_r             { x }
+ | x=paren(expr_r)      { x }
 
  %inline simple_expr:
  | x=loc(simple_expr_r) { x }
