@@ -199,7 +199,7 @@ role:
 | TO x=dot_expr { x }
 
 dextension:
-|PERCENT x=ident xs=option(exprs) { Dextension (x, xs) }
+|PERCENT x=ident xs=option(dot_exprs) { Dextension (x, xs) }
 
 %inline extensions:
 | xs=extension+ { xs }
@@ -208,7 +208,7 @@ dextension:
 | e=loc(extension_r) { e }
 
 extension_r:
-| LBRACKETPERCENT x=ident xs=option(basic_exprs) RBRACKET { Eextension (x, xs) }
+| LBRACKETPERCENT x=ident xs=option(dot_exprs) RBRACKET { Eextension (x, xs) }
 
 namespace:
 | NAMESPACE x=ident xs=braced(declarations) { Dnamespace (x, xs) }
@@ -436,6 +436,9 @@ assert_instr:
 break_instr:
  | BREAK { Ibreak }
 
+%inline dot_exprs:
+ | xs=dot_expr+ { xs }
+
 %inline exprs:
  | xs=expr+ { xs }
 
@@ -541,7 +544,7 @@ app_expr_r:
 
 %inline app_arg:
  | LPAREN RPAREN   { None }
- | x=dot_expr    { Some x }
+ | x=dot_expr      { Some x }
 
 %inline dot_expr:
  | x=loc(dot_expr_r) { x }
@@ -556,7 +559,6 @@ dot_expr_r:
 dot_expr2_r:
  | x=dot_expr2 DOT y=simple_expr { Edot (x, y) }
  | x=simple_expr_r { x }
-
 
 %inline basic_expr:
  | e=loc(basic_expr_r) { e }
@@ -573,7 +575,7 @@ basic_expr_r:
  | x=loc(simple_expr_r) { x }
 
 simple_expr_r:
- | x=simple_app_r     { x }
+ (* | x=simple_app_r     { x }*)
  | x=term_r           { x }
  | x=paren(expr_r)    { x }
 
