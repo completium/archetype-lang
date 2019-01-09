@@ -24,6 +24,7 @@ theory Contract
   use mach.int.UInt32
   use list.List
   use list.Append
+  use set.Fset
 
   (* currency transfer during transaction *)
   type transfer = {
@@ -65,87 +66,5 @@ theory Contract
     e.balance_ <- e.balance_ - c;
     let transfer = { destination = a; amount = c } in
     ops ++ (Cons transfer Nil)
-
-end
-
-theory Asset
-
-  use int.Int
-  use set.Set
-  use map.Map
-  use array.Array
-  use array.Sorted
-
-  type storage
-
-  type asset (* aka key *)
-
-  predicate le (a1 a2 : asset)
-
-  type collection = set asset
-
-  clone array.Sorted as SortedAsset with type elt = asset, predicate le = le
-
-  (* filter collection *)
-  function when (p :storage -> asset -> bool) (c : collection) : array asset
-
-  axiom When_mem : forall p:(storage -> asset -> bool), c:collection, i:int.
-    let l = when p c  in
-    0 <= i < length l -> mem l[i] c
-
-  axiom When_verify : forall s:storage, p:(storage -> asset -> bool), a:asset, c:collection, i:int.
-    let l = when p c in
-    0 <= i < length l -> a = l[i] -> p s a
-
-  axiom When_sorted : forall p:(storage -> asset -> bool), c:collection.
-    let l = when p c in
-    SortedAsset.sorted l
-
-  (* sum over an array of assets (see sum.Sum)
-     here the f function is passed as an argument of type array asset -> int -> int *)
-  function sum (array asset) (storage -> array asset -> int -> int) int int : int
-
-  axiom Sum_def_empty :
-    forall a : array asset, f:storage -> array asset -> int -> int, i j : int.
-    j <= i -> sum a f i j = 0
-
-  axiom Sum_def_non_empty :
-    forall s : storage, a: array asset, f:storage -> array asset -> int -> int, i j : int.
-    i < j -> sum a f i j = f s a i + sum a f (i+1) j
-
-  lemma Sum_right_extension:
-    forall s : storage, a : array asset, f:storage -> array asset -> int -> int, i j : int.
-    i < j -> sum a f i j = sum a f i (j-1) + f s a (j-1)
-
-  lemma Sum_transitivity :
-    forall a : array asset, f:storage -> array asset -> int -> int, i k j : int.
-    i <= k <= j -> sum a f i j = sum a f i k + sum a f k j
-
-  lemma Sum_eq :
-    forall s : storage, a1 a2 : array asset, f:storage -> array asset -> int -> int, i j : int.
-    (forall k : int. i <= k < j -> f s a1 k = f s a2 k) -> sum a1 f i j = sum a2 f i j
-
-  (* sum on collection : this is set version of Sum.sum *)
-  function sum_col (c:collection) (f:storage -> asset -> int) : int
-
-  axiom Sum_col_def_empty :
-    forall c : collection, f:storage -> asset -> int.
-    is_empty c -> sum_col c f = 0
-
-  axiom Sum_col_def_non_empty_remove_mem :
-    forall s : storage, c: collection, a:asset, f:storage -> asset -> int.
-    not (is_empty c) -> mem a c -> sum_col c f = (sum_col (remove a c) f) + f s a
-
-  axiom Sum_col_def_non_empty_remove_non_mem :
-    forall c: collection, a:asset, f:storage -> asset -> int.
-    not (is_empty c) -> not (mem a c) -> sum_col c f = (sum_col (remove a c) f)
-
-  axiom Sum_col_def_non_empty_add_mem :
-    forall c: collection, a:asset, f:storage -> asset -> int.
-    not (is_empty c) -> mem a c -> sum_col (add a c) f = (sum_col c f)
-
-  axiom Sum_col_def_non_empty_add_non_mem :
-    forall s : storage, c: collection, a:asset, f:storage -> asset -> int.
-    not (is_empty c) -> not (mem a c) -> sum_col (add a c) f = (sum_col c f) + f s a
 
 end
