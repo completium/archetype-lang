@@ -324,13 +324,17 @@ field_r:
 transition:
   TRANSITION exts=option(extensions) x=ident
     y=from_value z=to_value
-      EQUAL xs=braced(transitems)
+      xs=transitems_eq
         { Dtransition (x, y, z, xs, exts) }
 
 transaction:
   TRANSACTION exts=option(extensions) x=ident
-    EQUAL xs=braced(transitems)
+    xs=transitems_eq
       { Dtransaction (x, xs, exts) }
+
+%inline transitems_eq:
+| { [] }
+| EQUAL xs=braced(transitems) { xs }
 
 %inline transitems:
  | xs=transitem+ { xs }

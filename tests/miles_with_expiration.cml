@@ -21,11 +21,12 @@ transaction add = {
      newmile     : mile;
    }
    called by admin;
-   action    : aaa := a;
-(*       owner.addifnotexist owner { miles := void; },
+   action    :
+       owner.addifnotexist owner { miles := void; },
        (* transaction must fail if mile already exists *)
-       (owner.get owner).miles.add newmile "mile already exists";*)
+       (owner.get owner).miles.add newmile "mile already exists";
 }
+
 
 transaction consume = {
   args = {
@@ -39,7 +40,7 @@ transaction consume = {
            >= val;
 
   ensure : forall m : removed miles,
-             in m (before (owner.miles)) and m.expiration >= now;
+             mem m (before (owner.miles)) and m.expiration >= now;
 
   ensure : let o = owner.get owner in
            before o.miles.sum(amount) = (o.miles.sum(amount)) + val;
@@ -48,7 +49,7 @@ transaction consume = {
 
   ensure : invariant (mile.project(not mile.amount));
 
-  ensure : invariant ((owner.when(owner.owner <> owner)).miles)
+  ensure : invariant (owner.when(owner.owner <> owner).miles);
 
   ensure : forall m : removed mile,
              forall o : stable mile,
@@ -72,11 +73,10 @@ transaction consume = {
           }
      },
      assert (remainder = 0);
-   }
 }
 
 (* this ensures that any mile was added with the ‘add’ transaction *)
-ensure { mile = Collection.fold (fun u o => union u o.miles) void owner }
+assert (mile = Collection.fold (fun u o => union u o.miles) void owner)
 
 transaction clear_expired = {
   called by admin;

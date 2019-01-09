@@ -1,7 +1,7 @@
 model extension signedby (
   role arole
 
-  object[%signedby arole] anObject
+  object[%signedby arole] anObject aType
 
   transaction aTransaction = {
     args = {

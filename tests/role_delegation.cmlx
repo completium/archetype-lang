@@ -1,6 +1,6 @@
 model extension roleDelegation (
 
-  role [%delegable] aRole;
+  role [%delegable] aRole
 
   asset anAsset = {
     arole : aRole;
@@ -15,7 +15,7 @@ model extension roleDelegation (
 
 ) = {
 
-  role aRole;
+  role aRole
 
   asset <%aRole>Operators identified by arole = {
     arole      : aRole;
@@ -46,7 +46,7 @@ model extension roleDelegation (
      }
      condition: (<%aRole>Operators.get anasset.arole).operators.contains
                      caller.address;
-     called by: [%none];
+     called by none;
   }
 
 }
