@@ -60,7 +60,7 @@ type quantifier =
 
 type expr_r =
   | Eterm of lident
-  | Ecall of expr * expr list
+  | Eapp of expr * expr option
   | Eliteral of literal
   | Edot of expr * expr
   | Enamespace of lident * expr
@@ -94,7 +94,7 @@ and extension = extension_r loced
 
 (* -------------------------------------------------------------------- *)
 type field_r =
-  | Ffield of lident * type_t * extension list option   (** field *)
+  | Ffield of lident * type_t * expr option * extension list option   (** field *)
 
 and field = field_r loced
 
@@ -106,7 +106,7 @@ type instr_r =
   | Ifor of lident * expr * code
   | Itransfer of expr * bool * expr option
   | Itransition of expr
-  | Icall of expr
+  | Iapp of expr
   | Iassert of expr
   | Ibreak
 and code = instr list
