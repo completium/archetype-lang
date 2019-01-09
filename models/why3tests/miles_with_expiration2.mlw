@@ -37,7 +37,7 @@ module Miles
   requires { mem m s.miles }
   ensures  { sum (old s).miles (get_amount (old s)) =
       (sum s.miles (get_amount s)) + get_amount s m }
-  ensures  { forall m1:mile. mem m1 (old s).miles -> m1 <> m /\ mem m1 s.miles }
+  ensures  { forall x:mile. mem x s.miles <-> (mem x (old s).miles /\ x <> m) }
   = s.miles <- remove m s.miles
 
   let ghost set_amount (m : mile) (a : int) (s : storage) : unit
@@ -45,6 +45,7 @@ module Miles
   requires { a > 0 }
   ensures  { sum (old s).miles (get_amount (old s)) =
       (sum s.miles (get_amount s)) - a + get_amount (old s) m }
+  ensures { (old s).miles = s.miles }
   = s.mile_amounts <- s.mile_amounts[ m <- a ]
 
   (* Transactions  ***********************************************************)
@@ -72,12 +73,12 @@ module Miles
     let l = filter_by_expiration s (now e) s.miles in
     try
        for i = 0 to (cardinal l) - 1 do
-       invariant { mem (nth i l) s.miles }
+       invariant { forall k:int. i <= k < cardinal l -> mem (nth k l) s.miles }
+       invariant { subset (diff (old s).miles s.miles) l }
        invariant { forall m:mile.
           mem m (diff (old s).miles s.miles) -> get_expiration s m > (now e)
        }
-       invariant { sum (old s).miles (get_amount (old s)) =
-          (sum s.miles (get_amount s)) + nbmiles - !remainder }
+       invariant { sum (diff (old s.miles) s.miles) (get_amount (old s)) + !remainder = nbmiles }
        invariant { !remainder >= 0 }
           let m = nth i l in
           if get_amount s m > !remainder

@@ -25,6 +25,7 @@ theory Contract
   use list.List
   use list.Append
   use set.Fset
+  use set.FsetNth
 
   (* currency transfer during transaction *)
   type transfer = {
@@ -66,5 +67,11 @@ theory Contract
     e.balance_ <- e.balance_ - c;
     let transfer = { destination = a; amount = c } in
     ops ++ (Cons transfer Nil)
+
+  (* UTILS *********************************************************************)
+
+  axiom Elem_singleton : forall x e : 'a. mem x (singleton e) -> x = e
+
+  axiom Nth_elem : forall i : int, s : set 'a. 0 <= i < cardinal s -> mem (nth i s) s
 
 end
