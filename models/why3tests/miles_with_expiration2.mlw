@@ -78,7 +78,7 @@ module Miles
        invariant { forall m:mile.
           mem m (diff (old s).miles s.miles) -> get_expiration s m > (now e)
        }
-       invariant { sum (diff (old s.miles) s.miles) (get_amount (old s)) + !remainder = nbmiles }
+       invariant { sum (old s.miles) (get_amount (old s)) - sum s.miles (get_amount s) + !remainder = nbmiles }
        invariant { !remainder >= 0 }
           let m = nth i l in
           if get_amount s m > !remainder

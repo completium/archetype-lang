@@ -26,6 +26,7 @@ theory Contract
   use list.Append
   use set.Fset
   use set.FsetNth
+  use set.FsetSum
 
   (* currency transfer during transaction *)
   type transfer = {
@@ -70,7 +71,7 @@ theory Contract
 
   (* UTILS *********************************************************************)
 
-  axiom Elem_singleton : forall x e : 'a. mem x (singleton e) -> x = e
+  axiom Diff_ident : forall s : set 'a. diff s s = Fset.empty
 
   axiom Nth_elem : forall i : int, s : set 'a. 0 <= i < cardinal s -> mem (nth i s) s
 
