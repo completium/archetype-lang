@@ -402,7 +402,7 @@ instr_r:
  | x=break_instr      { x }
 
 assign_instr:
- | x=expr op=assignment_operator y=expr { Iassign (op, x, y) }
+ | x=dot_expr op=assignment_operator y=expr { Iassign (op, x, y) }
 
 %inline assignment_operator:
  | COLONEQUAL { Assign }
@@ -579,7 +579,6 @@ basic_expr_r:
  | x=loc(simple_expr_r) { x }
 
 simple_expr_r:
- (* | x=simple_app_r     { x }*)
  | x=term_r           { x }
  | x=paren(expr_r)    { x }
 

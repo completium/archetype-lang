@@ -59,17 +59,23 @@ transaction consume = {
      let remainder = val in
      let o = owner.get owner in
      for (m in o.miles.when(expiration >= now)) {
-          if (m.amount > remainder) {
+          if (m.amount > remainder)
+          then {
              remainder := 0,
              m.amount  -= remainder,
              break
-          } else if (m.amount = remainder) {
-             remainder := 0,
-             o.miles.remove m,
-             break
-          } else {
-             remainder -= m.amount,
-             o.miles.remove m
+          }
+          else {
+             if (m.amount = remainder)
+             then {
+                remainder := 0,
+                o.miles.remove m,
+                break
+             }
+             else {
+                remainder -= m.amount,
+                o.miles.remove m
+             }
           }
      },
      assert (remainder = 0);
