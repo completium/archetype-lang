@@ -26,6 +26,7 @@ type logical_operator =
   | Or
   | Imply
   | Equiv
+  | Not
 
 type comparison_operator =
   | Equal
@@ -46,7 +47,6 @@ type unary_operator =
   | Uminus
 
 type assignment_operator =
-  | Assign
   | PlusAssign
   | MinusAssign
   | MultAssign
@@ -58,33 +58,36 @@ type quantifier =
   | Forall
   | Exists
 
+type operator = [
+  | `Logical of logical_operator
+  | `Arith   of arithmetic_operator
+  | `Cmp     of comparison_operator
+  | `Unary   of unary_operator
+]
+
+type name = lident option * lident
+
 type expr_r =
-  | Eterm of lident
-  | Eapp of expr * expr option
-  | Eliteral of literal
-  | Edot of expr * expr
-  | Enamespace of lident * expr
-  | Efun of lident list * expr
-  | Elogical of logical_operator * expr * expr
-  | Enot of expr
-  | Ecomparison of comparison_operator * expr * expr
-  | Earithmetic of arithmetic_operator * expr * expr
-  | Eunary of unary_operator * expr
-  | Earray of expr list
-  | EassignFields of assignment_field list
-  | Equantifier of quantifier * lident * expr * expr
-  | Eletin of lident * expr * expr
+  | Eterm         of name
+  | Eop           of operator
+  | Eapp          of expr * expr list
+  | Eletin        of lident * expr * expr
+  | Eseq          of expr * expr
+  | Eliteral      of literal
+  | Edot          of expr * lident
+  | Efun          of (lident * typ_ option) list * expr
+  | Earray        of expr list
+  | Eassign       of expr * assignment_operator option * expr
+  | Equantifier   of quantifier * (lident * typ_ option) * expr
 
 and literal =
-  | Lnumber of int
+  | Lnumber of Big_int.big_int
   | Lfloat  of float
   | Lstring of string
   | Lbool   of bool
 
-and assignment_field =
-  | AassignField of assignment_operator * expr * expr
-
 and expr = expr_r loced
+and typ_ = expr
 
 (* -------------------------------------------------------------------- *)
 type extension_r =

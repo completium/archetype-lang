@@ -103,26 +103,21 @@
 %token <int> NUMBER
 %token <float> FLOAT
 
-%type <Ast.model> main
+%right IMPLY
+%nonassoc EQUIV
 
 %left OR
 %left AND
-%right IMPLY
-%left EQUIV
 
-%left NEQUAL
-%left GREATER
-%left GREATEREQUAL
-%left LESS
-%left LESSEQUAL
+%nonassoc EQUAL NEQUAL
+%nonassoc GREATER GREATEREQUAL LESS LESSEQUAL
 
-%left PLUS
-%left MINUS
-%left MULT
-%left DIV
+%left PLUS MINUS
+%left MULT DIV
+
+%type <Ast.model> main
 
 %start main
-
 
 %%
 
@@ -199,7 +194,7 @@ role:
 | TO x=dot_expr { x }
 
 dextension:
-|PERCENT x=ident xs=option(dot_exprs) { Dextension (x, xs) }
+| PERCENT x=ident xs=option(dot_exprs) { Dextension (x, xs) }
 
 %inline extensions:
 | xs=extension+ { xs }
@@ -468,12 +463,6 @@ term:
 term_r:
  | x=ident { Eterm x }
 
-%inline logical_operator:
- | AND   { And }
- | OR    { Or }
- | IMPLY { Imply }
- | EQUIV { Or }
-
 %inline quantifier:
  | FORALL { Forall }
  | EXISTS { Exists }
@@ -482,68 +471,47 @@ term_r:
  | e=loc(expr_r) { e }
 
 expr_r:
- | x=decl_expr_r { x }
+ | LET x=ident EQUAL e=logical_expr IN b=decl_expr
+     { Eletin (x, e, b) }
 
-%inline decl_expr:
- | e=loc(decl_expr_r) { e }
+ | q=quantifier x=ident COLON y=logical_expr COMMA z=decl_expr
+     { Equantifier (q, x, y, z)}
 
-decl_expr_r:
- | LET x=ident EQUAL e=logical_expr IN b=decl_expr             { Eletin (x, e, b) }
- | q=quantifier x=ident COLON y=logical_expr COMMA z=decl_expr { Equantifier (q, x, y, z)}
- | x=fun_expr_r         { x }
+ | e1=expr op=loc(operator) e2=expr
+     { Eapp (loced (loc op) (Eop (unloc op), [e1; e2]) }
 
-%inline fun_expr:
- | e=loc(fun_expr_r) { e }
+ | NOT e=expr
+     { Eapp (Not, [e]) }
 
-fun_expr_r:
- | FUN ids=idents EQUALGREATER x=fun_expr { Efun (ids, x) }
- | x=logical_expr_r { x }
+ | FUN ids=idents EQUALGREATER x=fun_expr
+     { Efun (ids, x) }
 
-%inline logical_expr:
- | e=loc(logical_expr_r) { e }
-
-logical_expr_r:
- | x=logical_expr op=logical_operator y=comparison_expr { Elogical (op, x, y) }
- | NOT x=comparison_expr                                { Enot x }
- | x=comparison_expr_r                                  { x }
-
-%inline comparison_expr:
- | e=loc(comparison_expr_r) { e }
-
-comparison_expr_r:
- | x=comparison_expr op=comparison_operator y=arithmetic_pm_expr { Ecomparison (op, x, y) }
- | x=arithmetic_pm_expr_r { x }
-
-%inline arithmetic_pm_expr:
- | e=loc(arithmetic_pm_expr_r) { e }
-
-arithmetic_pm_expr_r:
- | x=arithmetic_pm_expr
-       op=arithmetic_operator_plus_minus
-            y=arithmetic_md_expr { Earithmetic (op, x, y) }
- | x=arithmetic_md_expr_r          { x }
-
-%inline arithmetic_md_expr:
- | e=loc(arithmetic_md_expr_r) { e }
-
-arithmetic_md_expr_r:
- | x=arithmetic_md_expr
-       op=arithmetic_operator_mult_div
-            y=unary_expr { Earithmetic (op, x, y) }
  | x=unary_expr_r          { x }
 
-%inline unary_expr:
- | e=loc(unary_expr_r) { e }
-
-unary_expr_r:
  | op=unary_operator x=app_expr { Eunary (op, x) }
- | x=app_expr_r                 { x }
 
-%inline app_expr:
- | x=loc(app_expr_r) { x }
+ | x=app_expr a=app_arg { Eapp (x, a) }
+
+ | x=dot_expr2 DOT y=term      { Edot (x, y) }
+
+ | x=basic_expr_r { x }
+
+ | x=dot_expr2 DOT y=simple_expr { Edot (x, y) }
+
+ | x=literal_expr       { x }
+
+ | x=namespace_expr     { x }
+
+ | x=array_expr         { x }
+
+ | x=assign_fields      { x }
+
+ | x=term_r             { x }
+
+ | x=paren(expr_r)      { x }
+
 
 app_expr_r:
- | x=app_expr a=app_arg { Eapp (x, a) }
  | x=dot_expr_r         { x }
 
 %inline app_arg:
@@ -554,26 +522,17 @@ app_expr_r:
  | x=loc(dot_expr_r) { x }
 
 dot_expr_r:
- | x=dot_expr2 DOT y=term      { Edot (x, y) }
- | x=basic_expr_r { x }
 
 %inline dot_expr2:
  | x=loc(dot_expr2_r) { x }
 
 dot_expr2_r:
- | x=dot_expr2 DOT y=simple_expr { Edot (x, y) }
  | x=simple_expr_r { x }
 
 %inline basic_expr:
  | e=loc(basic_expr_r) { e }
 
 basic_expr_r:
- | x=literal_expr       { x }
- | x=namespace_expr     { x }
- | x=array_expr         { x }
- | x=assign_fields      { x }
- | x=term_r             { x }
- | x=paren(expr_r)      { x }
 
  %inline simple_expr:
  | x=loc(simple_expr_r) { x }
@@ -600,28 +559,25 @@ simple_expr_r:
  | LESS         { Lt }
  | LESSEQUAL    { Le }
 
-%inline arithmetic_operator_plus_minus :
+%inline arithmetic_operator:
  | PLUS    { Plus }
  | MINUS   { Minus }
-
-%inline arithmetic_operator_mult_div :
- | MULT    { Mult }
- | DIV     { Div }
 
 %inline unary_operator:
  | PLUS    { Uplus }
  | MINUS   { Uminus }
 
-array_expr:
- | LBRACKET xs=sep_comma_exprs RBRACKET { Earray xs }
- | LBRACKET RBRACKET                    { Earray [] }
+%inline logical_operator:
+ | AND   { And }
+ | OR    { Or }
+ | IMPLY { Imply }
+ | EQUIV { Or }
 
-%inline sep_comma_exprs:
- | x=expr xs=comma_expr+ { x :: xs }
- | x=expr { [x] }
-
-%inline comma_expr:
- | COMMA x=expr { x }
+%inline operator
+| op=comparison_operator { op }
+| op=logical_operator    { op }
+| op=unary_operator      { op }
+| op=arithmetic_operator { op }
 
 namespace_expr:
  | id=ident COLONCOLON x=expr   { Enamespace (id, x) }
