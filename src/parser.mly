@@ -1,6 +1,6 @@
 /* parser */
 %{
-  open Ast
+  open ParseTree
   open Location
   open Parseutils
 
@@ -100,7 +100,7 @@
 
 %token <string> IDENT
 %token <string> STRING
-%token <int> NUMBER
+%token <Big_int.big_int> NUMBER
 %token <float> FLOAT
 
 %right IMPLY
@@ -115,11 +115,27 @@
 %left PLUS MINUS
 %left MULT DIV
 
-%type <Ast.model> main
+%type <ParseTree.model> main
 
 %start main
 
 %%
+
+%inline loc(X):
+| x=X {
+    { pldesc = x;
+      plloc  = Location.make $startpos $endpos; }
+  }
+
+%inline paren(X):
+| LPAREN x=X RPAREN { x }
+
+%inline braced(X):
+| LBRACE x=X RBRACE { x }
+
+%inline bracket(X):
+| LBRACKET x=X RBRACKET { x }
+
 
 main:
  | x=loc(model_r) { x }
@@ -188,13 +204,13 @@ role:
 | COLONEQUAL x=expr { x }
 
 %inline from_value:
-| FROM x=dot_expr { x }
+| FROM x=expr { x }
 
 %inline to_value:
-| TO x=dot_expr { x }
+| TO x=expr { x }
 
 dextension:
-| PERCENT x=ident xs=option(dot_exprs) { Dextension (x, xs) }
+| PERCENT x=ident xs=list(simple_expr)? { Dextension (x, xs) }
 
 %inline extensions:
 | xs=extension+ { xs }
@@ -203,7 +219,7 @@ dextension:
 | e=loc(extension_r) { e }
 
 extension_r:
-| LBRACKETPERCENT x=ident xs=option(dot_exprs) RBRACKET { Eextension (x, xs) }
+| LBRACKETPERCENT x=ident xs=option(simple_expr+) RBRACKET { Eextension (x, xs) }
 
 namespace:
 | NAMESPACE x=ident xs=braced(declarations) { Dnamespace (x, xs) }
@@ -279,7 +295,7 @@ asset:
 | xs=asset_option+ { xs }
 
 %inline init_asset:
-| INITIALIZED BY x=braced(code) { x }
+| INITIALIZED BY x=braced(instr) { x }
 
 asset_option:
 | AS ROLE               { AOasrole }
@@ -303,18 +319,6 @@ field_r:
 
 %inline idents:
 | xs=ident+ { xs }
-
-%inline paren(X):
-| LPAREN x=X RPAREN { x }
-
-%inline braced(X):
-| LBRACE x=X RBRACE { x }
-
-%inline loc(X):
-| x=X {
-    { pldesc = x;
-      plloc  = Location.make $startpos $endpos; }
-  }
 
 transition:
   TRANSITION exts=option(extensions) x=ident
@@ -369,38 +373,47 @@ transition_item:
              { Ttransition (x, y, id, exts) }
 
 action:
- | ACTION exts=option(extensions) COLON xs=code SEMI_COLON { Taction (xs, exts) }
-
-%inline bcode:
- | xs=braced(code)  { xs }
-/* | x=instr          { [x] }*/
-
-%inline code:
- | x=instr xs=comma_instr+ { x::xs }
- | x=instr { [x] }
-
-%inline comma_instr:
- | COMMA x=instr { x }
+ | ACTION exts=option(extensions) COLON xs=instr SEMI_COLON { Taction (xs, exts) }
 
 %inline instr:
  | e=loc(instr_r) { e }
 
 instr_r:
- | x=assign_instr     { x }
- | x=letin_instr      { x }
- | x=if_instr         { x }
- | x=for_instr        { x }
- | x=transfer_instr   { x }
- | x=transition_instr { x }
- | x=app_instr        { x }
- | x=assert_instr     { x }
- | x=break_instr      { x }
+ | x=expr op=assignment_operator y=expr
+     { Iassign (op, x, y) }
 
-assign_instr:
- | x=dot_expr op=assignment_operator y=expr { Iassign (op, x, y) }
+ | LET x=ident EQUAL e=expr IN b=instr
+     { Iletin (x, e, b) }
+
+ | IF c=expr THEN t=instr e=else_instr?
+     { Iif (c, t, e) }
+
+ | FOR LPAREN x=ident IN y=expr RPAREN body=instr
+     { Ifor (x, y, body) }
+
+ | TRANSFER back=boption(BACK) x=expr y=to_value?
+     { Itransfer (x, back, y) }
+
+ | TRANSITION TO x=expr
+     { Itransition x }
+
+ | x=expr
+     { Iexpr x }
+
+ | x=instr COMMA y=instr
+     { Iseq (x, y) }
+
+ | ASSERT x=paren(expr)
+     { Iassert x }
+
+ | BREAK
+     { Ibreak }
+
+ | x=braced(instr_r)
+     { x }
 
 %inline assignment_operator:
- | COLONEQUAL { Assign }
+ | COLONEQUAL { SimpleAssign }
  | PLUSEQUAL  { PlusAssign }
  | MINUSEQUAL { MinusAssign }
  | MULTEQUAL  { MultAssign }
@@ -408,44 +421,72 @@ assign_instr:
  | ANDEQUAL   { AndAssign }
  | OREQUAL    { OrAssign }
 
-letin_instr:
- | LET x=ident EQUAL e=expr IN b=code { Iletin (x, e, b) }
-
-if_instr:
- | IF c=expr THEN t=bcode e=else_instr? { Iif (c, t, e) }
-
 %inline else_instr:
- | ELSE x=bcode { x }
+ | ELSE x=instr { x }
 
-for_instr:
- | FOR LPAREN x=ident IN y=expr RPAREN body=bcode { Ifor (x, y, body) }
 
-transfer_instr:
- | TRANSFER back=boption(BACK) x=expr y=to_value? { Itransfer (x, back, y) }
+%inline expr:
+ | e=loc(expr_r) { e }
 
-transition_instr:
- | TRANSITION TO x=expr { Itransition x }
+expr_r:
+ | q=quantifier x=ident_typ COMMA y=expr
+     { Equantifier (q, x, y)}
 
-app_instr:
- | x=app_expr { Iapp x }
+ | LET x=ident_typ EQUAL e=expr IN y=expr
+     { Eletin (x, e, y) }
 
-assert_instr:
- | ASSERT x=paren(expr) { Iassert x }
+ | FUN xs=ident_typs EQUALGREATER x=expr
+     { Efun (xs, x) }
 
-break_instr:
- | BREAK { Ibreak }
+ | e1=expr COMMA e2=expr
+     { Eseq (e1, e2) }
 
-%inline dot_exprs:
- | xs=dot_expr+ { xs }
+ | e1=expr op=loc(bin_operator) e2=expr
+     { Eapp ( mkloc (loc op) (Eop (unloc op)), [e1; e2]) }
 
-%inline exprs:
- | xs=expr+ { xs }
+ | op=loc(un_operator) x=expr
+     { Eapp ( mkloc (loc op) (Eop (unloc op)), [x]) }
 
-%inline basic_exprs:
- | xs=basic_expr+ { xs }
+ | x=simple_expr a=app_args
+     { Eapp (x, a) }
 
-literal_expr:
- | x=literal { Eliteral x }
+ | x=expr DOT y=ident
+     { Edot (x, y) }
+
+ | x=simple_expr_r
+     { x }
+
+%inline app_args:
+ | LPAREN RPAREN     { [] }
+ | xs=simple_expr+   { xs }
+
+%inline simple_expr:
+ | x=loc(simple_expr_r) { x }
+
+simple_expr_r:
+ | x=braced(instr)
+     { Einstr x}
+
+ | x=bracket(separated_list(COMMA, simple_expr))
+     { Earray x }
+
+ | x=literal
+     { Eliteral x }
+
+ | n=prefix_namespace? x=ident
+     { Eterm (n, x) }
+
+ | x=paren(expr_r)
+     { x }
+
+%inline ident_typs:
+ | xs=ident_typ+     { xs }
+
+%inline ident_typ:
+ | id=ident x=typ_?    { (id, x) }
+
+%inline typ_:
+ | COLON x=expr        { x }
 
 literal:
  | x=NUMBER     { Lnumber x }
@@ -461,95 +502,20 @@ term:
  | x=loc(term_r) { x }
 
 term_r:
- | x=ident { Eterm x }
+ | n=prefix_namespace? x=ident { Eterm (n, x) }
+
+%inline prefix_namespace:
+  x=ident COLONCOLON { x }
 
 %inline quantifier:
  | FORALL { Forall }
  | EXISTS { Exists }
 
-%inline expr:
- | e=loc(expr_r) { e }
-
-expr_r:
- | LET x=ident EQUAL e=logical_expr IN b=decl_expr
-     { Eletin (x, e, b) }
-
- | q=quantifier x=ident COLON y=logical_expr COMMA z=decl_expr
-     { Equantifier (q, x, y, z)}
-
- | e1=expr op=loc(operator) e2=expr
-     { Eapp (loced (loc op) (Eop (unloc op), [e1; e2]) }
-
- | NOT e=expr
-     { Eapp (Not, [e]) }
-
- | FUN ids=idents EQUALGREATER x=fun_expr
-     { Efun (ids, x) }
-
- | x=unary_expr_r          { x }
-
- | op=unary_operator x=app_expr { Eunary (op, x) }
-
- | x=app_expr a=app_arg { Eapp (x, a) }
-
- | x=dot_expr2 DOT y=term      { Edot (x, y) }
-
- | x=basic_expr_r { x }
-
- | x=dot_expr2 DOT y=simple_expr { Edot (x, y) }
-
- | x=literal_expr       { x }
-
- | x=namespace_expr     { x }
-
- | x=array_expr         { x }
-
- | x=assign_fields      { x }
-
- | x=term_r             { x }
-
- | x=paren(expr_r)      { x }
-
-
-app_expr_r:
- | x=dot_expr_r         { x }
-
-%inline app_arg:
- | LPAREN RPAREN   { None }
- | x=dot_expr      { Some x }
-
-%inline dot_expr:
- | x=loc(dot_expr_r) { x }
-
-dot_expr_r:
-
-%inline dot_expr2:
- | x=loc(dot_expr2_r) { x }
-
-dot_expr2_r:
- | x=simple_expr_r { x }
-
-%inline basic_expr:
- | e=loc(basic_expr_r) { e }
-
-basic_expr_r:
-
- %inline simple_expr:
- | x=loc(simple_expr_r) { x }
-
-simple_expr_r:
- | x=term_r           { x }
- | x=paren(expr_r)    { x }
-
-%inline simple_app:
- | x=loc(simple_app_r) { x }
-
-%inline simple_app_r:
- | x=term a=app_arg2   { Eapp (x, a) }
-
-%inline app_arg2:
- | LPAREN RPAREN   { None }
- | x=paren(expr)   { Some x }
+%inline logical_operator:
+ | AND   { And }
+ | OR    { Or }
+ | IMPLY { Imply }
+ | EQUIV { Equiv }
 
 %inline comparison_operator:
  | EQUAL        { Equal }
@@ -562,34 +528,24 @@ simple_expr_r:
 %inline arithmetic_operator:
  | PLUS    { Plus }
  | MINUS   { Minus }
+ | MULT    { Mult }
+ | DIV     { Div }
 
 %inline unary_operator:
  | PLUS    { Uplus }
  | MINUS   { Uminus }
+ | NOT     { Not }
 
-%inline logical_operator:
- | AND   { And }
- | OR    { Or }
- | IMPLY { Imply }
- | EQUIV { Or }
-
-%inline operator
+%inline operator:
 | op=comparison_operator { op }
 | op=logical_operator    { op }
 | op=unary_operator      { op }
 | op=arithmetic_operator { op }
 
-namespace_expr:
- | id=ident COLONCOLON x=expr   { Enamespace (id, x) }
+%inline bin_operator:
+| op=logical_operator    { `Logical op }
+| op=comparison_operator { `Cmp op }
+| op=arithmetic_operator { `Arith op }
 
-assign_fields:
- | xs=braced(assign_fieldss) { EassignFields xs }
-
-%inline assign_fieldss:
- | xs=assign_field+ { xs }
-
-%inline assign_field:
- | e=assign_field_r { e }
-
-assign_field_r:
- | id=expr op=assignment_operator e=expr SEMI_COLON { AassignField (op, id, e) }
+%inline un_operator:
+| op=unary_operator      { `Unary op }

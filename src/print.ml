@@ -1,7 +1,7 @@
 (* -------------------------------------------------------------------- *)
 open Core
 open Location
-open Ast
+open ParseTree
 
 (* -------------------------------------------------------------------- *)
 let pp_list sep pp =
@@ -57,9 +57,6 @@ match op with
   | Imply -> "->"
   | Equiv -> "<->"
 
-let pp_logical_operator fmt op =
- Format.fprintf fmt "%s" (logical_operator_to_str op)
-
 let comparison_operator_to_str op =
 match op with
   | Equal  -> "="
@@ -69,9 +66,6 @@ match op with
   | Lt     -> "<"
   | Le     -> "<="
 
-let pp_comparison_operator fmt op =
- Format.fprintf fmt "%s" (comparison_operator_to_str op)
-
 let arithmetic_operator_to_str op =
 match op with
   | Plus   -> "+"
@@ -79,26 +73,31 @@ match op with
   | Mult   -> "*"
   | Div    -> "/"
 
-let pp_arithmetic_operator fmt op =
- Format.fprintf fmt "%s" (arithmetic_operator_to_str op)
-
 let unary_operator_to_str op =
 match op with
   | Uplus   -> "+"
   | Uminus  -> "-"
+  | Not     -> "not"
 
-let pp_unary_operator fmt op =
- Format.fprintf fmt "%s" (unary_operator_to_str op)
+let operator_to_str op =
+match op with
+  | `Logical o -> logical_operator_to_str o
+  | `Cmp o     -> comparison_operator_to_str o
+  | `Arith o   -> arithmetic_operator_to_str o
+  | `Unary o   -> unary_operator_to_str o
+
+let pp_operator fmt op =
+ Format.fprintf fmt "%s" (operator_to_str op)
 
 let assignment_operator_to_str op =
 match op with
-  | Assign      -> ":="
-  | PlusAssign  -> "+="
-  | MinusAssign -> "-="
-  | MultAssign  -> "*="
-  | DivAssign   -> "/="
-  | AndAssign   -> "&="
-  | OrAssign    -> "|="
+  | SimpleAssign -> ":="
+  | PlusAssign   -> "+="
+  | MinusAssign  -> "-="
+  | MultAssign   -> "*="
+  | DivAssign    -> "/="
+  | AndAssign    -> "&="
+  | OrAssign     -> "|="
 
 let pp_assignment_operator fmt op =
  Format.fprintf fmt "%s" (assignment_operator_to_str op)
@@ -109,109 +108,85 @@ match op with
   | Exists -> "exists"
 
 let pp_quantifier fmt op =
- Format.fprintf fmt "%s" (quantifier_to_str op)
+  Format.fprintf fmt "%s" (quantifier_to_str op)
 
 let rec pp_expr fmt { pldesc = e } =
   match e with
-  | Eterm id ->
-      Format.fprintf fmt "%a"
-        pp_id id
-
-  | Eapp (e, arg) ->
+  | Eterm (e, id) ->
       Format.fprintf fmt "%a%a"
-        pp_expr e
-        (pp_option (pp_prefix " " pp_expr)) arg
+        (pp_option (pp_postfix "::" pp_id)) e
+         pp_id id
+
+  | Eop op ->
+      Format.fprintf fmt "%a"
+         pp_operator op
 
   | Eliteral x ->
       Format.fprintf fmt "%a"
         pp_literal x
 
-  | Enamespace (id, x) ->
-      Format.fprintf fmt "%a::%a"
-        pp_id id
-        pp_expr x
-
-  | Edot (lhs, rhs) ->
-      Format.fprintf fmt "%a.%a"
-        pp_expr lhs pp_expr rhs
-
-  | Efun (ids, x) ->
-      Format.fprintf fmt "fun %a => %a"
-        (pp_list " " pp_id) ids
-        pp_expr x
-
-  | Elogical (op, lhs, rhs) ->
-      Format.fprintf fmt "%a %a %a"
-        pp_expr lhs
-        pp_logical_operator op
-        pp_expr rhs
-
-  | Enot e ->
-      Format.fprintf fmt "not %a"
-        pp_expr e
-
-  | Ecomparison (op, lhs, rhs) ->
-      Format.fprintf fmt "%a %a %a"
-        pp_expr lhs
-        pp_comparison_operator op
-        pp_expr rhs
-
-  | Earithmetic (op, lhs, rhs) ->
-      Format.fprintf fmt "%a %a %a"
-        pp_expr lhs
-        pp_arithmetic_operator op
-        pp_expr rhs
-
-  | Eunary (op, e) ->
-      Format.fprintf fmt "%a %a"
-       pp_unary_operator op
-       pp_expr e
-
   | Earray values ->
       Format.fprintf fmt "[%a]"
         (pp_list "@," pp_expr) values
 
-  | EassignFields l ->
-      Format.fprintf fmt "{%a}"
-        (pp_list " " pp_assignment_field) l
+  | Einstr x ->
+      Format.fprintf fmt "%a"
+        pp_instr x
 
-  | Equantifier (q, id, t, body) ->
-      Format.fprintf fmt "%a %a : %a, %a"
-        pp_quantifier q
-        pp_id id
-        pp_expr t
-        pp_expr body
+  | Edot (lhs, rhs) ->
+      Format.fprintf fmt "%a.%a"
+        pp_expr lhs
+        pp_id rhs
 
-  | Eletin (id, e, body) ->
+  | Eapp (e, args) ->
+      Format.fprintf fmt "%a%a"
+        pp_expr e
+        pp_args args
+
+  | Eseq (x, y) ->
+      Format.fprintf fmt "%a, %a"
+        pp_expr x
+        pp_expr y
+
+  | Efun (id_ts, x) ->
+      Format.fprintf fmt "fun %a => %a"
+        (pp_list " " pp_ident_typ) id_ts
+        pp_expr x
+
+  | Eletin (id_t, e, body) ->
       Format.fprintf fmt "let %a = %a in %a"
-        pp_id id
+        pp_ident_typ id_t
         pp_expr e
         pp_expr body
 
+  | Equantifier (q, id_t, body) ->
+      Format.fprintf fmt "%a %a, %a"
+        pp_quantifier q
+        pp_ident_typ id_t
+        pp_expr body
+
+
 and pp_literal fmt lit =
   match lit with
-  | Lnumber n -> Format.fprintf fmt "%d" n
+  | Lnumber n -> Format.fprintf fmt "%s" (Big_int.string_of_big_int n)
   | Lfloat  f -> Format.fprintf fmt "%f" f
   | Lstring s -> Format.fprintf fmt "\"%s\"" s
   | Lbool   b -> Format.fprintf fmt "%s" (if b then "true" else "false")
 
-and pp_assignment_field fmt f =
-  match f with
-  | AassignField (op, id, e) ->
-      Format.fprintf fmt "%a %a %a"
-        pp_expr id pp_assignment_operator op pp_expr e
+and pp_ident_typ fmt a =
+match a with
+| (x, y) ->
+  Format.fprintf fmt "%a%a"
+  pp_id x
+  (pp_option (pp_prefix " : " pp_expr)) y
+
+and pp_args fmt args =
+match args with
+| [] -> Format.fprintf fmt "()"
+| _ -> (pp_enclose " (" ")" (pp_list ", " pp_expr)) fmt args
 
 (* -------------------------------------------------------------------- *)
-let pp_extension fmt { pldesc = e } =
-  match e with
-  | Eextension (id, args) ->
-        Format.fprintf fmt "[%%%a%a]"
-        pp_id id
-        (pp_option (pp_prefix " " (pp_list " " pp_expr))) args
-
-
-(* -------------------------------------------------------------------- *)
-let pp_field fmt { pldesc = f } =
+and pp_field fmt { pldesc = f } =
   match f with
   | Ffield (id, typ, dv, exts) ->
       Format.fprintf fmt "%a%a : %a%a;"
@@ -220,9 +195,16 @@ let pp_field fmt { pldesc = f } =
         pp_type typ
         (pp_option (pp_prefix " := " pp_expr)) dv
 
+(* -------------------------------------------------------------------- *)
+and pp_extension fmt { pldesc = e } =
+  match e with
+  | Eextension (id, args) ->
+        Format.fprintf fmt "[%%%a%a]"
+        pp_id id
+        (pp_option (pp_prefix " " (pp_list " " pp_expr))) args
 
 (* -------------------------------------------------------------------- *)
-let rec pp_instr fmt { pldesc = s } =
+and pp_instr fmt { pldesc = s } =
   match s with
   | Iassign (op, lhs, rhs) ->
       Format.fprintf fmt "%a %a %a"
@@ -234,17 +216,17 @@ let rec pp_instr fmt { pldesc = s } =
       Format.fprintf fmt "let %a = %a in %a"
         pp_id id
         pp_expr e
-        (pp_list "@," pp_instr) body
+        pp_instr body
 
-  | Iif (cond, _then, _else) ->
+  | Iif (cond, then_, else_) ->
       Format.fprintf fmt "if %a then {%a}%a"
         pp_expr cond
-        (pp_list "@," pp_instr) _then
-        (pp_option (pp_enclose " else {" "}" (pp_list "@," pp_instr))) _else
+        pp_instr then_
+        (pp_option (pp_enclose " else {" "}" pp_instr)) else_
 
   | Ifor (id, expr, body) ->
       Format.fprintf fmt "for (%a in %a) {%a}"
-        pp_id id pp_expr expr (pp_list "@," pp_instr) body
+        pp_id id pp_expr expr pp_instr body
 
   | Itransfer (x, back, to_value) ->
       Format.fprintf fmt "transfer%s %a%a"
@@ -256,7 +238,7 @@ let rec pp_instr fmt { pldesc = s } =
       Format.fprintf fmt "transition to %a"
         pp_expr x
 
-  | Iapp e ->
+  | Iexpr e ->
       Format.fprintf fmt "%a"
         pp_expr e
 
@@ -264,9 +246,13 @@ let rec pp_instr fmt { pldesc = s } =
       Format.fprintf fmt "assert (%a)"
         pp_expr e
 
+  | Iseq (x, y) ->
+      Format.fprintf fmt "%a, %a"
+        pp_instr x
+        pp_instr y
+
   | Ibreak ->
       Format.fprintf fmt "break"
-
 
 (* -------------------------------------------------------------------- *)
 let pp_transitem fmt { pldesc = t } =
@@ -303,10 +289,10 @@ let pp_transitem fmt { pldesc = t } =
         pp_expr from
         pp_expr _to
 
-  | Taction (instrs, exts) ->
+  | Taction (instr, exts) ->
       Format.fprintf fmt "action%a:\n %a"
         (pp_option (pp_list " " pp_extension)) exts
-        (pp_list "@," pp_instr) instrs
+        pp_instr instr
 
 (* -------------------------------------------------------------------- *)
 let state_option_to_str opt =
@@ -378,7 +364,7 @@ let rec pp_declaration fmt { pldesc = e } =
         (pp_option (pp_prefix " " (pp_list " @," pp_asset_option))) opts
         (pp_option (pp_list "@," pp_field)) fields
         (pp_option (pp_list " @," (pp_enclose " with { " " }" pp_expr))) cs
-        (pp_option (pp_enclose " initialized by { " " }" (pp_list "@," pp_instr))) init
+        (pp_option (pp_enclose " initialized by { " " }" pp_instr)) init
 
   | Dassert e ->
       Format.fprintf fmt "assert (%a)\n"

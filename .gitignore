@@ -1,4 +1,5 @@
 *~
+tests/*.out
 ast.cmo
 ident.cmo
 intern.cmo

@@ -26,7 +26,6 @@ type logical_operator =
   | Or
   | Imply
   | Equiv
-  | Not
 
 type comparison_operator =
   | Equal
@@ -45,8 +44,10 @@ type arithmetic_operator =
 type unary_operator =
   | Uplus
   | Uminus
+  | Not
 
 type assignment_operator =
+  | SimpleAssign
   | PlusAssign
   | MinusAssign
   | MultAssign
@@ -60,8 +61,8 @@ type quantifier =
 
 type operator = [
   | `Logical of logical_operator
-  | `Arith   of arithmetic_operator
   | `Cmp     of comparison_operator
+  | `Arith   of arithmetic_operator
   | `Unary   of unary_operator
 ]
 
@@ -70,15 +71,15 @@ type name = lident option * lident
 type expr_r =
   | Eterm         of name
   | Eop           of operator
-  | Eapp          of expr * expr list
-  | Eletin        of lident * expr * expr
-  | Eseq          of expr * expr
   | Eliteral      of literal
-  | Edot          of expr * lident
-  | Efun          of (lident * typ_ option) list * expr
   | Earray        of expr list
-  | Eassign       of expr * assignment_operator option * expr
-  | Equantifier   of quantifier * (lident * typ_ option) * expr
+  | Einstr        of instr
+  | Edot          of expr * lident
+  | Eapp          of expr * expr list
+  | Eseq          of expr * expr
+  | Efun          of lident_typ list * expr
+  | Eletin        of lident_typ * expr * expr
+  | Equantifier   of quantifier * lident_typ * expr
 
 and literal =
   | Lnumber of Big_int.big_int
@@ -88,6 +89,21 @@ and literal =
 
 and expr = expr_r loced
 and typ_ = expr
+and lident_typ = lident * typ_ option
+
+and instr_r =
+  | Iassign of assignment_operator * expr * expr
+  | Iletin of lident * expr * instr
+  | Iif of expr * instr * instr option
+  | Ifor of lident * expr * instr
+  | Itransfer of expr * bool * expr option
+  | Itransition of expr
+  | Iexpr of expr
+  | Iassert of expr
+  | Iseq of instr * instr
+  | Ibreak
+
+and instr = instr_r loced
 
 (* -------------------------------------------------------------------- *)
 type extension_r =
@@ -102,21 +118,6 @@ type field_r =
 and field = field_r loced
 
 (* -------------------------------------------------------------------- *)
-type instr_r =
-  | Iassign of assignment_operator * expr * expr
-  | Iletin of lident * expr * code
-  | Iif of expr * code * code option
-  | Ifor of lident * expr * code
-  | Itransfer of expr * bool * expr option
-  | Itransition of expr
-  | Iapp of expr
-  | Iassert of expr
-  | Ibreak
-and code = instr list
-
-and instr = instr_r loced
-
-(* -------------------------------------------------------------------- *)
 type transitem_r =
   | Targs of field list * extension list option                      (** args *)
   | Tcalledby of expr * extension list option                        (** called by *)
@@ -124,7 +125,7 @@ type transitem_r =
   | Tcondition of expr * extension list option                       (** condition *)
   | Ttransferred of expr * extension list option                     (** transferred *)
   | Ttransition of expr * expr * expr option * extension list option (** transition  *)
-  | Taction of instr list * extension list option                    (** action  *)
+  | Taction of instr * extension list option                         (** action  *)
 
 and transitem = transitem_r loced
 
@@ -137,7 +138,7 @@ type declaration_r =
   | Drole        of lident * expr option * extension list option                   (** role *)
   | Denum        of lident * lident list                                           (** enum *)
   | Dstates      of lident option * (lident * state_option list option) list       (** states *)
-  | Dasset       of lident * field list option * expr list option * asset_option list option * code option (** asset *)
+  | Dasset       of lident * field list option * expr list option * asset_option list option * instr option (** asset *)
   | Dassert      of expr                                                           (** assert *)
   | Dobject      of lident * expr * extension list option
   | Dkey         of lident * expr * extension list option

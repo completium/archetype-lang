@@ -10,65 +10,65 @@
   let keywords = Hashtbl.create 0
 
   let keywords_ =
-    [ "use"                 , USE
-    ; "model"               , MODEL
-    ; "constant"            , CONSTANT
-    ; "value"               , VALUE
-    ; "role"                , ROLE
-    ; "identified"          , IDENTIFIED
-    ; "sorted"              , SORTED
-    ; "by"                  , BY
-    ; "as"                  , AS
-    ; "from"                , FROM
-    ; "to"                  , TO
-    ; "ref"                 , REF
-    ; "fun"                 , FUN
-    ; "initialized"         , INITIALIZED
-    ; "collection"          , COLLECTION
-    ; "queue"               , QUEUE
-    ; "stack"               , STACK
-    ; "set"                 , SET
-    ; "subset"              , SUBSET
-    ; "partition"           , PARTITION
-    ; "asset"               , ASSET
-    ; "with"                , WITH
-    ; "assert"              , ASSERT
-    ; "object"              , OBJECT
-    ; "key"                 , KEY
-    ; "of"                  , OF
-    ; "enum"                , ENUM
-    ; "states"              , STATES
-    ; "initial"             , INITIAL
-    ; "ensure"              , ENSURE
-    ; "transition"          , TRANSITION
-    ; "transaction"         , TRANSACTION
-    ; "args"                , ARGS
-    ; "called"              , CALLED
-    ; "condition"           , CONDITION
-    ; "transferred"         , TRANSFERRED
-    ; "action"              , ACTION
-    ; "let"                 , LET
-    ; "if"                  , IF
-    ; "then"                , THEN
-    ; "else"                , ELSE
-    ; "for"                 , FOR
-    ; "in"                  , IN
-    ; "break"               , BREAK
-    ; "transfer"            , TRANSFER
-    ; "back"                , BACK
-    ; "extension"           , EXTENSION
-    ; "namespace"           , NAMESPACE
-    ; "and"                 , AND
-    ; "or"                  , OR
-    ; "not"                 , NOT
-    ; "forall"              , FORALL
-    ; "exists"              , EXISTS
-    ; "true"                , TRUE
-    ; "false"               , FALSE
+    [ "use"                 , USE            ;
+      "model"               , MODEL          ;
+      "constant"            , CONSTANT       ;
+      "value"               , VALUE          ;
+      "role"                , ROLE           ;
+      "identified"          , IDENTIFIED     ;
+      "sorted"              , SORTED         ;
+      "by"                  , BY             ;
+      "as"                  , AS             ;
+      "from"                , FROM           ;
+      "to"                  , TO             ;
+      "ref"                 , REF            ;
+      "fun"                 , FUN            ;
+      "initialized"         , INITIALIZED    ;
+      "collection"          , COLLECTION     ;
+      "queue"               , QUEUE          ;
+      "stack"               , STACK          ;
+      "set"                 , SET            ;
+      "subset"              , SUBSET         ;
+      "partition"           , PARTITION      ;
+      "asset"               , ASSET          ;
+      "with"                , WITH           ;
+      "assert"              , ASSERT         ;
+      "object"              , OBJECT         ;
+      "key"                 , KEY            ;
+      "of"                  , OF             ;
+      "enum"                , ENUM           ;
+      "states"              , STATES         ;
+      "initial"             , INITIAL        ;
+      "ensure"              , ENSURE         ;
+      "transition"          , TRANSITION     ;
+      "transaction"         , TRANSACTION    ;
+      "args"                , ARGS           ;
+      "called"              , CALLED         ;
+      "condition"           , CONDITION      ;
+      "transferred"         , TRANSFERRED    ;
+      "action"              , ACTION         ;
+      "let"                 , LET            ;
+      "if"                  , IF             ;
+      "then"                , THEN           ;
+      "else"                , ELSE           ;
+      "for"                 , FOR            ;
+      "in"                  , IN             ;
+      "break"               , BREAK          ;
+      "transfer"            , TRANSFER       ;
+      "back"                , BACK           ;
+      "extension"           , EXTENSION      ;
+      "namespace"           , NAMESPACE      ;
+      "and"                 , AND            ;
+      "or"                  , OR             ;
+      "not"                 , NOT            ;
+      "forall"              , FORALL         ;
+      "exists"              , EXISTS         ;
+      "true"                , TRUE           ;
+      "false"               , FALSE
     ]
 
   let () =
-    List.iter (fun (k, v) -> Hashtbl.addkeywrods k v) keywords_
+    List.iter (fun (k, v) -> Hashtbl.add keywords k v) keywords_
 }
 
 (* -------------------------------------------------------------------- *)
@@ -84,10 +84,9 @@ rule token = parse
   | newline               { Lexing.new_line lexbuf; token lexbuf }
   | blank+                { token lexbuf }
 
-  | ident as s            { try  Hashtbl.find keywords id
-                            with Not_found -> IDENT s }
+  | ident as id            { try  Hashtbl.find keywords id with Not_found -> IDENT id }
   | float as f            { FLOAT (float_of_string f) }
-  | digit+ as d           { NUMBER (Big_int.big_int_of_string d) }
+  | digit+ as n           { NUMBER (Big_int.big_int_of_string n) }
 
 
   | "(*"                  { comment lexbuf; token lexbuf }
