@@ -295,7 +295,7 @@ asset:
 | xs=asset_option+ { xs }
 
 %inline init_asset:
-| INITIALIZED BY x=braced(instr) { x }
+| INITIALIZED BY x=braced(expr) { x }
 
 asset_option:
 | AS ROLE               { AOasrole }
@@ -373,44 +373,7 @@ transition_item:
              { Ttransition (x, y, id, exts) }
 
 action:
- | ACTION exts=option(extensions) COLON xs=instr SEMI_COLON { Taction (xs, exts) }
-
-%inline instr:
- | e=loc(instr_r) { e }
-
-instr_r:
- | x=expr op=assignment_operator y=expr
-     { Iassign (op, x, y) }
-
- | LET x=ident EQUAL e=expr IN b=instr
-     { Iletin (x, e, b) }
-
- | IF c=expr THEN t=instr e=else_instr?
-     { Iif (c, t, e) }
-
- | FOR LPAREN x=ident IN y=expr RPAREN body=instr
-     { Ifor (x, y, body) }
-
- | TRANSFER back=boption(BACK) x=expr y=to_value?
-     { Itransfer (x, back, y) }
-
- | TRANSITION TO x=expr
-     { Itransition x }
-
- | x=expr
-     { Iexpr x }
-
- | x=instr COMMA y=instr
-     { Iseq (x, y) }
-
- | ASSERT x=paren(expr)
-     { Iassert x }
-
- | BREAK
-     { Ibreak }
-
- | x=braced(instr_r)
-     { x }
+ | ACTION exts=option(extensions) COLON xs=expr SEMI_COLON { Taction (xs, exts) }
 
 %inline assignment_operator:
  | COLONEQUAL { SimpleAssign }
@@ -420,10 +383,6 @@ instr_r:
  | DIVEQUAL   { DivAssign }
  | ANDEQUAL   { AndAssign }
  | OREQUAL    { OrAssign }
-
-%inline else_instr:
- | ELSE x=instr { x }
-
 
 %inline expr:
  | e=loc(expr_r) { e }
@@ -441,11 +400,29 @@ expr_r:
  | e1=expr COMMA e2=expr
      { Eseq (e1, e2) }
 
+ | ASSERT x=paren(expr)
+     { Eassert x }
+
+ | FOR LPAREN x=ident IN y=expr RPAREN body=expr
+     { Efor (x, y, body) }
+
+ | BREAK
+     { Ebreak }
+
  | IF c=expr THEN t=expr
      { Eif (c, t, None) }
 
  | IF c=expr THEN t=expr ELSE e=expr
      { Eif (c, t, Some e) }
+
+ | x=expr op=assignment_operator y=expr
+     { Eassign (op, x, y) }
+
+ | TRANSITION TO x=expr
+     { Etransition x }
+
+ | TRANSFER back=boption(BACK) x=expr y=to_value?
+     { Etransfer (x, back, y) }
 
  | e1=expr op=loc(bin_operator) e2=expr
      { Eapp ( mkloc (loc op) (Eop (unloc op)), [e1; e2]) }
@@ -455,6 +432,9 @@ expr_r:
 
  | x=simple_expr a=app_args
      { Eapp (x, a) }
+
+ | xs=braced(assign_field_r+)
+     { EassignFields xs }
 
  | x=expr DOT y=ident
      { Edot (x, y) }
@@ -470,9 +450,6 @@ expr_r:
  | x=loc(simple_expr_r) { x }
 
 simple_expr_r:
- | x=braced(instr)
-     { Einstr x}
-
  | x=bracket(separated_list(COMMA, simple_expr))
      { Earray x }
 
@@ -512,6 +489,14 @@ term_r:
 
 %inline prefix_namespace:
   x=ident COLONCOLON { x }
+
+assign_field_r:
+ | id=dot_ident op=assignment_operator e=expr SEMI_COLON
+   { AassignField (op, id, e) }
+
+%inline dot_ident:
+ | x=ident DOT y=ident { (Some x, y) }
+ | x=ident             { (None, x) }
 
 %inline quantifier:
  | FORALL { Forall }
