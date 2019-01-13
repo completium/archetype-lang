@@ -76,6 +76,7 @@ type expr_r =
   | Einstr        of instr
   | Edot          of expr * lident
   | Eapp          of expr * expr list
+  | Eif           of expr * expr * expr option
   | Eseq          of expr * expr
   | Efun          of lident_typ list * expr
   | Eletin        of lident_typ * expr * expr

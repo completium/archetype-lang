@@ -441,6 +441,12 @@ expr_r:
  | e1=expr COMMA e2=expr
      { Eseq (e1, e2) }
 
+ | IF c=expr THEN t=expr
+     { Eif (c, t, None) }
+
+ | IF c=expr THEN t=expr ELSE e=expr
+     { Eif (c, t, Some e) }
+
  | e1=expr op=loc(bin_operator) e2=expr
      { Eapp ( mkloc (loc op) (Eop (unloc op)), [e1; e2]) }
 

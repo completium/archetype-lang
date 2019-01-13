@@ -148,6 +148,12 @@ let rec pp_expr fmt { pldesc = e } =
         pp_expr x
         pp_expr y
 
+  | Eif (cond, then_, else_) ->
+      Format.fprintf fmt "if %a then {%a}%a"
+        pp_expr cond
+        pp_expr then_
+        (pp_option (pp_prefix " else " pp_expr)) else_
+
   | Efun (id_ts, x) ->
       Format.fprintf fmt "fun %a => %a"
         (pp_list " " pp_ident_typ) id_ts
