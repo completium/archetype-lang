@@ -18,5 +18,8 @@ run:
 clean:
 	$(MAKE) -C src clean
 
+check:
+	./check.sh
+
 build-deps:
 	opam install dune menhir batteries
