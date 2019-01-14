@@ -127,7 +127,7 @@ let rec pp_expr fmt { pldesc = e } =
 
   | Earray values ->
       Format.fprintf fmt "[%a]"
-        (pp_list "@," pp_expr) values
+        (pp_list ", " pp_expr) values
 
   | Edot (lhs, rhs) ->
       Format.fprintf fmt "%a.%a"
@@ -137,6 +137,12 @@ let rec pp_expr fmt { pldesc = e } =
   | EassignFields l ->
       Format.fprintf fmt "{%a}"
         (pp_list " " pp_assignment_field) l
+
+  | Eapp ({pldesc = Eop op}, [a; b]) ->
+      Format.fprintf fmt "%a %a %a"
+        pp_expr a
+        pp_operator op
+        pp_expr b
 
   | Eapp (e, args) ->
       Format.fprintf fmt "%a%a"
@@ -160,7 +166,7 @@ let rec pp_expr fmt { pldesc = e } =
         pp_expr rhs
 
   | Eif (cond, then_, else_) ->
-      Format.fprintf fmt "if %a then {%a}%a"
+      Format.fprintf fmt "if %a then (%a)%a"
         pp_expr cond
         pp_expr then_
         (pp_option (pp_prefix " else " pp_expr)) else_
@@ -169,7 +175,7 @@ let rec pp_expr fmt { pldesc = e } =
       Format.fprintf fmt "break"
 
   | Efor (id, expr, body) ->
-      Format.fprintf fmt "for (%a in %a) {%a}"
+      Format.fprintf fmt "for (%a in %a) (%a)"
         pp_id id
         pp_expr expr
         pp_expr body
@@ -233,7 +239,7 @@ match a with
 and pp_args fmt args =
 match args with
 | [] -> Format.fprintf fmt "()"
-| _ -> (pp_enclose " (" ")" (pp_list ", " pp_expr)) fmt args
+| _ -> Format.fprintf fmt " %a" (pp_list " " pp_expr) args
 
 (* -------------------------------------------------------------------- *)
 and pp_field fmt { pldesc = f } =
@@ -257,7 +263,7 @@ and pp_extension fmt { pldesc = e } =
 let pp_transitem fmt { pldesc = t } =
   match t with
   | Targs (fields, exts) ->
-      Format.fprintf fmt "args%a = {@[<v 2>]@,%a@]}\n"
+      Format.fprintf fmt "args%a = {%a}\n"
         (pp_option (pp_list " " pp_extension)) exts
         (pp_list "@," pp_field) fields
 
@@ -289,7 +295,7 @@ let pp_transitem fmt { pldesc = t } =
         pp_expr _to
 
   | Taction (e, exts) ->
-      Format.fprintf fmt "action%a:\n %a"
+      Format.fprintf fmt "action%a:\n %a;"
         (pp_option (pp_list " " pp_extension)) exts
         pp_expr e
 
@@ -348,20 +354,20 @@ let rec pp_declaration fmt { pldesc = e } =
           (pp_option (pp_prefix " := " pp_expr)) dv
 
   | Denum (id, ids) ->
-      Format.fprintf fmt "enum %a =\n@[<v 2>%a@]"
+      Format.fprintf fmt "enum %a =\n@[<v 2>@]%a"
         pp_id id
         (pp_list "\n" (pp_prefix "| " pp_id)) ids
 
   | Dstates (id, ids) ->
-      Format.fprintf fmt "states%a\n@[<v 2>%a@]"
+      Format.fprintf fmt "states%a\n@[<v 2>@]%a"
         (pp_option (pp_enclose " " " =" pp_id)) id
         (pp_list "\n" (pp_prefix "| " pp_ident_state_option)) ids
 
   | Dasset (id, fields, cs, opts, init) ->
-      Format.fprintf fmt "asset %a%a = {@[<v 2>]@,%a}%a%a\n"
+      Format.fprintf fmt "asset %a%a%a%a%a\n"
         pp_id id
         (pp_option (pp_prefix " " (pp_list " @," pp_asset_option))) opts
-        (pp_option (pp_list "@," pp_field)) fields
+        (pp_option (pp_enclose " = { " " }" (pp_list "@," pp_field))) fields
         (pp_option (pp_list " @," (pp_enclose " with { " " }" pp_expr))) cs
         (pp_option (pp_enclose " initialized by { " " }" pp_expr)) init
 
@@ -390,7 +396,7 @@ let rec pp_declaration fmt { pldesc = e } =
         (pp_list "@," pp_transitem) items
 
   | Dtransaction (id, items, exts) ->
-      Format.fprintf fmt "transaction%a %a = {@[<v 2>]@,%a@}\n"
+      Format.fprintf fmt "transaction%a %a = {%a}\n"
         (pp_option (pp_list " " pp_extension)) exts
         pp_id id
         (pp_list "@," pp_transitem) items
@@ -403,7 +409,7 @@ let rec pp_declaration fmt { pldesc = e } =
   | Dnamespace (id, ds) ->
       Format.fprintf fmt "namespace %a { %a }\n"
          pp_id id
-        (pp_list "@[<v 2>]@,\n" pp_declaration) ds
+        (pp_list "\n" pp_declaration) ds
 
 
 (* -------------------------------------------------------------------- *)

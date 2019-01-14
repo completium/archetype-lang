@@ -48,33 +48,33 @@ transition decide from InProgress to Done = {
    action :
          let sorted_submissions = submission.sort(asc(date)).sort(desc(score)) in
          if (sorted_submissions.count >= 3)
-         then {
+         then (
            let first  = sorted_submissions.get(0) in
            let second = sorted_submissions.get(1) in
            let third  = sorted_submissions.get(2) in
            transfer (prize * 0.5) to first.competitor,
            transfer (prize * 0.3) to second.competitor,
            transfer (prize * 0.2) to third.competitor
-         }
-         else {
+         )
+         else (
            if (sorted_submissions.count >= 2)
-           then {
+           then (
              let first  = sorted_submissions.get(0) in
              let second = sorted_submissions.get(1) in
              transfer (prize * 0.6) to first.competitor,
              transfer (prize * 0.4) to second.competitor
-           }
-           else {
+           )
+           else (
              if (sorted_submissions.count >= 1)
-             then {
+             then (
                let first  = sorted_submissions.get(0) in
                transfer prize to first.competitor
-             }
-             else {
+             )
+             else (
                transfer back prize
-             }
-           }
-         };
+             )
+           )
+         );
 }
 
 assert (instate Done -> check 0)

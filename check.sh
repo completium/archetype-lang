@@ -27,6 +27,7 @@ process () {
         NB_ERR=$((${NB_ERR} + 1))
         NB_OUT=$((${NB_OUT} + 1))
     fi
+    rm -f $OUT
 }
 
 printf '%-48s%s\n' '' '  PARSE   PRINT'

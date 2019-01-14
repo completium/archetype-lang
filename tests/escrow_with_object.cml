@@ -48,15 +48,15 @@ transaction finalize = {
    }
    action:
      if task.date before deadline and task.status = "OK"
-     then {
+     then (
         transfer price,
         transfer back penalty,
         transition to Transferred
-     } else {
+     ) else (
         transfer penalty,
         transfer back price,
         transition to Canceled
-     };
+     );
 }
 
 assert (instate Transferred or instate Canceled -> balance = 0)

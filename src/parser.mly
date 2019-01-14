@@ -103,6 +103,10 @@
 %token <Big_int.big_int> NUMBER
 %token <float> FLOAT
 
+%nonassoc COMMA
+
+%nonassoc COLONEQUAL PLUSEQUAL MINUSEQUAL MULTEQUAL DIVEQUAL ANDEQUAL OREQUAL
+
 %right IMPLY
 %nonassoc EQUIV
 
@@ -317,9 +321,6 @@ field_r:
 %inline ident:
 | x=loc(IDENT) { x }
 
-%inline idents:
-| xs=ident+ { xs }
-
 transition:
   TRANSITION exts=option(extensions) x=ident
     y=from_value z=to_value
@@ -433,12 +434,6 @@ expr_r:
  | x=simple_expr a=app_args
      { Eapp (x, a) }
 
- | xs=braced(assign_field_r+)
-     { EassignFields xs }
-
- | x=expr DOT y=ident
-     { Edot (x, y) }
-
  | x=simple_expr_r
      { x }
 
@@ -450,14 +445,23 @@ expr_r:
  | x=loc(simple_expr_r) { x }
 
 simple_expr_r:
+ | x=simple_expr DOT y=ident
+     { Edot (x, y) }
+
+ | xs=braced(assign_field_r+)
+     { EassignFields xs }
+
  | x=bracket(separated_list(COMMA, simple_expr))
      { Earray x }
 
  | x=literal
      { Eliteral x }
 
- | n=prefix_namespace? x=ident
-     { Eterm (n, x) }
+ | n=ident COLONCOLON x=ident
+     { Eterm (Some n, x) }
+
+ | x=ident
+     { Eterm (None, x) }
 
  | x=paren(expr_r)
      { x }
@@ -480,15 +484,6 @@ literal:
 %inline bool_value:
  | TRUE  { true }
  | FALSE { false }
-
-term:
- | x=loc(term_r) { x }
-
-term_r:
- | n=prefix_namespace? x=ident { Eterm (n, x) }
-
-%inline prefix_namespace:
-  x=ident COLONCOLON { x }
 
 assign_field_r:
  | id=dot_ident op=assignment_operator e=expr SEMI_COLON
@@ -526,12 +521,6 @@ assign_field_r:
  | PLUS    { Uplus }
  | MINUS   { Uminus }
  | NOT     { Not }
-
-%inline operator:
-| op=comparison_operator { op }
-| op=logical_operator    { op }
-| op=unary_operator      { op }
-| op=arithmetic_operator { op }
 
 %inline bin_operator:
 | op=logical_operator    { `Logical op }

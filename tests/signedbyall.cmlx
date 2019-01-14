@@ -6,9 +6,9 @@ model extension signedbyall (
     signer    : address;
     hasSigned : boolean;
   } initialized by {
-    for (r in roles) {
+    for (r in roles) (
       signer_<%aTransaction>.add {signer := r; hasSigned := false;}
-    }
+    )
   }
 
   transaction sign_<%aTransaction> = {
