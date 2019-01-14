@@ -103,6 +103,9 @@
 %token <Big_int.big_int> NUMBER
 %token <float> FLOAT
 
+%nonassoc FROM TO IN EQUALGREATER
+%right THEN ELSE
+
 %left COMMA
 
 %nonassoc COLONEQUAL PLUSEQUAL MINUSEQUAL MULTEQUAL DIVEQUAL ANDEQUAL OREQUAL
@@ -118,6 +121,8 @@
 
 %left PLUS MINUS
 %left MULT DIV
+
+%right NOT
 
 %type <ParseTree.model> main
 
