@@ -70,8 +70,8 @@ end
 theory Asset
 
   use int.Int
-  use set.Set
-  use map.Map
+  use set.Fset
+(*  use map.Map*)
   use array.Array
   use array.Sorted
 
@@ -92,13 +92,13 @@ theory Asset
   type collection = set asset
 
   (* member of collection predicate *)
-  function mem (a : asset) (c : collection) : bool = Set.mem a c
+  function mem (a : asset) (c : collection) : bool = Fset.mem a c
 
   (* addition of asset *)
-  let ghost add (a : asset) (c : collection) : collection = Set.add a c
+  let add (a : asset) (c : collection) : collection = Fset.add a c
 
   (* remove from collection *)
-  let ghost remove (a : asset) (c : collection) : collection = Set.remove a c;
+  let remove (a : asset) (c : collection) : collection = Fset.remove a c;
 
   (* get an asset from asset key *)
   function get (key : key) (c : collection) : asset
@@ -176,8 +176,12 @@ theory Asset
     not (is_empty c) -> not (mem a c) -> sum_col (add a c) f = (sum_col c f) + f a
 
   (* set operations *)
-  function diff (a b:collection) : collection = Set.diff a b
+  function diff (a b:collection) : collection = Fset.diff a b
 
-  function inter (a b:collection) : collection = Set.inter a b
+  function inter (a b:collection) : collection = Fset.inter a b
+
+  (* utils *)
+  axiom When_elem : forall s : set asset, f : asset -> bool, i : int.
+    let l = when f s in 0 <= i < length l -> Fset.mem l[i] s
 
 end

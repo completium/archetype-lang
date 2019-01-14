@@ -27,6 +27,7 @@ theory Contract
   use set.Fset
   use set.FsetNth
   use set.FsetSum
+  use array.Array
 
   (* currency transfer during transaction *)
   type transfer = {
@@ -75,7 +76,31 @@ theory Contract
 
   axiom Nth_elem : forall i : int, s : set 'a. 0 <= i < cardinal s -> mem (nth i s) s
 
-  (*  axiom Subset_sum : forall s1 s2 : set 'a, f : 'a -> int, e : 'a.
-     f e >= 0 -> subset s1 s1 -> sum s1 f <= sum s2 f*)
+  axiom Subset_sum : forall s1 s2 : set 'a, f : 'a -> int, e : 'a.
+     f e >= 0 -> subset s1 s1 -> sum s1 f <= sum s2 f
+
+  (* sum over an array of assets (see sum.Sum)
+     here the f function is passed as an argument of type array asset -> int -> int *)
+  function sum (array 'a) (array 'a -> int -> int) int int : int
+
+  axiom Sum_def_empty :
+    forall c : array 'a, f:array 'a -> int -> int, i j : int.
+    j <= i -> sum c f i j = 0
+
+  axiom Sum_def_non_empty :
+    forall c: array 'a, f:array 'a -> int -> int, i j : int.
+    i < j -> sum c f i j = f c i + sum c f (i+1) j
+
+  lemma Sum_right_extension:
+    forall c : array 'a, f:array 'a -> int -> int, i j : int.
+    i < j -> sum c f i j = sum c f i (j-1) + f c (j-1)
+
+  lemma Sum_transitivity :
+    forall c : array 'a, f:array 'a -> int -> int, i k j : int. i <= k <= j ->
+    sum c f i j = sum c f i k + sum c f k j
+
+  lemma Sum_eq :
+    forall c1 c2 : array 'a, f:array 'a -> int -> int, i j : int.
+    (forall k : int. i <= k < j -> f c1 k = f c2 k) -> sum c1 f i j = sum c2 f i j
 
 end
