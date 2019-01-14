@@ -254,9 +254,10 @@ key_decl:
 %inline type_t:
 | e=loc(type_r) { e }
 
-%inline type_r:
-| x=ident c=container { Tcontainer (x, c)}
-| x=ident             { Tref x }
+type_r:
+| x=type_t c=container { Tcontainer (x, c) }
+| x=ident y=type_t     { Tstate (x, y) }
+| x=ident              { Tref x }
 
 container:
 | COLLECTION { Collection }
@@ -483,11 +484,11 @@ simple_expr_r:
  | xs=ident_typ+     { xs }
 
 %inline ident_typ:
- | id=ident x=typ_?    { (id, x) }
+ | id=ident x=with_type?
+     { (id, x) }
 
-%inline typ_:
- | COLON x=simple_with_app_expr
-     { x }
+%inline with_type:
+ | COLON x=type_t { x }
 
 literal:
  | x=NUMBER     { Lnumber x }

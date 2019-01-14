@@ -34,19 +34,38 @@ let pp_paren pp fmt x =
 let container_to_str c =
 match c with
   | Collection -> "collection"
-  | Queue -> "queue"
-  | Stack -> "stack"
-  | Set -> "set"
-  | Subset -> "subset"
-  | Partition -> "partition"
+  | Queue      -> "queue"
+  | Stack      -> "stack"
+  | Set        -> "set"
+  | Subset     -> "subset"
+  | Partition  -> "partition"
 
 let pp_container fmt c =
  Format.fprintf fmt "%s" (container_to_str c)
 
-let pp_type fmt { pldesc = e } =
+let rec pp_type fmt { pldesc = e } =
   match e with
-  | Tref x -> Format.fprintf fmt "%a" pp_id x
-  | Tcontainer (x, y) -> Format.fprintf fmt "%a %a" pp_id x pp_container y
+  | Tref x ->
+      Format.fprintf fmt
+        "%a"
+         pp_id x
+
+  | Tcontainer (x, y) ->
+      Format.fprintf fmt
+        "%a %a"
+           pp_type x
+           pp_container y
+
+  | Tstate (x, y) ->
+      Format.fprintf fmt
+        "%a %a"
+           pp_id x
+           pp_type y
+
+  | Tnuplet l ->
+      Format.fprintf fmt
+        "%a"
+           (pp_list ",@" pp_type) l
 
 
 (* -------------------------------------------------------------------- *)
@@ -234,7 +253,7 @@ match a with
 | (x, y) ->
   Format.fprintf fmt "%a%a"
   pp_id x
-  (pp_option (pp_prefix " : " pp_expr)) y
+  (pp_option (pp_prefix " : " pp_type)) y
 
 and pp_args fmt args =
 match args with

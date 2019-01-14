@@ -16,7 +16,9 @@ type container =
 
 type type_r =
   | Tref of lident
-  | Tcontainer of lident * container
+  | Tcontainer of type_t * container
+  | Tstate of lident * type_t
+  | Tnuplet of type_t list
 
 and type_t = type_r loced
 
@@ -98,8 +100,7 @@ and assignment_field =
   | AassignField of assignment_operator * (lident option * lident) * expr
 
 and expr = expr_r loced
-and typ_ = expr
-and lident_typ = lident * typ_ option
+and lident_typ = lident * type_t option
 
 (* -------------------------------------------------------------------- *)
 type extension_r =

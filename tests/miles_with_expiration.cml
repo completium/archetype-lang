@@ -39,7 +39,7 @@ transaction consume = {
      (owner.get owner).miles.when(mile.expiration > now).sum(amount)
            >= val;
 
-  ensure : forall m : removed miles,
+  ensure : forall m : removed mile,
              mem m (before (owner.miles)) and m.expiration >= now;
 
   ensure : let o = owner.get owner in

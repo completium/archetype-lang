@@ -64,7 +64,7 @@
       "forall"              , FORALL         ;
       "exists"              , EXISTS         ;
       "true"                , TRUE           ;
-      "false"               , FALSE
+      "false"               , FALSE          ;
     ]
 
   let () =
