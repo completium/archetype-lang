@@ -3,16 +3,15 @@ module Miles
   use int.Int
   use mach.int.UInt32
   use ref.Ref
-  use array.Array
-
-  use cml2.Types
-  use cml2.Contract
-
   use map.Map
   use set.FsetComprehension
   use set.FsetSum
   use set.FsetNth
-  use map.Map
+  use sum.Sum
+  use array.Array
+
+  use cml3.Types
+  use cml3.Contract
 
   type mile = key
   type owner = key
@@ -29,31 +28,33 @@ module Miles
   function get_amount (s : storage) (m : mile) : int = Map.get s.mile_amounts m
   function get_expiration (s : storage) (m : mile) : date = Map.get s.mile_expirations m
 
+  function get_arr_amount (s : storage) (a : array mile) (i : int) : int =
+  Map.get s.mile_amounts a[i]
+
   function get_owner (s : storage) (a : address) : owner = a
   function get_miles (s : storage) (o : owner) : set mile = Map.get s.owner_miles o
 
-  let ghost remove_miles (*(o : owner)*) (m : mile) (s:storage) : unit
+  let remove_miles (*(o : owner)*) (m : mile) (s:storage) : unit
   requires { mem m s.miles }
-  ensures  { sum (old s).miles (get_amount (old s)) =
-      (sum s.miles (get_amount s)) + get_amount s m }
-  ensures  { get_amount (old s) m = get_amount s m }
+  ensures  { FsetSum.sum (old s).miles (get_amount (old s)) =
+      (FsetSum.sum s.miles (get_amount s)) + get_amount s m }
   ensures  { forall x:mile. mem x s.miles <-> (mem x (old s).miles /\ x <> m) }
   = s.miles <- remove m s.miles
 
   let ghost set_amount (m : mile) (a : int) (s : storage) : unit
   requires { mem m s.miles }
   requires { a > 0 }
-  ensures  { sum (old s).miles (get_amount (old s)) =
-      (sum s.miles (get_amount s)) - a + get_amount (old s) m }
+  ensures  { FsetSum.sum (old s).miles (get_amount (old s)) =
+      (FsetSum.sum s.miles (get_amount s)) - a + get_amount (old s) m }
   ensures { (old s).miles = s.miles }
-  = s.mile_amounts <- s.mile_amounts[ m <- a ]
+  = s.mile_amounts <- Map.set s.mile_amounts m a
 
   (* Transactions  ***********************************************************)
 
- val function filter_by_expiration (s : storage) (d : date) (miles : set mile) : set mile
+ val function filter_by_expiration (s : storage) (d:date) (miles : set mile) : array mile
   reads { s, d, miles }
-  ensures { forall m:mile. mem m result -> get_expiration s m > d }
-  ensures { subset result miles }
+  ensures { forall i : int. 0 <= i < length result -> get_expiration s result[i] > d }
+  ensures { forall i : int. 0 <= i < length result -> mem result[i] miles }
 
   let ghost consume (e : env) (s : storage) (owner : address) (nbmiles : int) : transfers
   requires { nbmiles > 0 }
@@ -61,33 +62,27 @@ module Miles
   requires {
      (*let o = get_owner s owner in*)
      let l = filter_by_expiration s (now e) s.miles in
-     sum l (get_amount s) >= nbmiles
+     Contract.sum l (get_arr_amount s) 0 (length l) >= nbmiles
   }
   ensures { forall m:mile.
      mem m (diff (old s).miles s.miles) -> get_expiration s m > (now e)
   }
-  ensures {
-     sum (old s).miles (get_amount (old s)) = (sum s.miles (get_amount s)) + nbmiles
-  }
+  ensures { FsetSum.sum (old s).miles (get_amount (old s)) =
+            (FsetSum.sum s.miles (get_amount s)) + nbmiles }
   = let remainder = ref nbmiles in
     (*let o = get_owner s owner in*)
     let l = filter_by_expiration s (now e) s.miles in
-    let acc = ref empty in
     (* this is a array accumulator *)
-    for i = 0 to (cardinal l) - 1 do
-    invariant { forall k:int. i <= k < cardinal l -> mem (nth k l) s.miles }
-    invariant { subset (diff (old s).miles s.miles) l }
+    for i = 0 to (length l) - 1 do
+    invariant { forall k:int. i <= k < length l -> mem l[k] s.miles }
     invariant { forall m:mile.
        mem m (diff (old s).miles s.miles) -> get_expiration s m > (now e)
     }
     invariant { !remainder > 0 ->
-                 sum (old s.miles) (get_amount (old s)) - sum s.miles (get_amount s) + !remainder = nbmiles }
-    invariant { subset !acc l }
-    invariant { sum !acc (get_amount (old s)) = sum !acc (get_amount s) }
-    invariant { !remainder <= sum l (get_amount (old s)) - sum (!acc) (get_amount s) }
+                 FsetSum.sum (old s.miles) (get_amount (old s)) - FsetSum.sum s.miles (get_amount s) + !remainder = nbmiles }
+    invariant { !remainder <= Contract.sum l (get_arr_amount s) i (length l) }
     invariant { !remainder >= 0 }
-      let m = nth i l in
-      acc := add m !acc;
+      let m = l[i] in
       if !remainder > 0
       then
         if get_amount s m > !remainder
