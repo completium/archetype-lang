@@ -16,7 +16,7 @@ model extension signedbyall (
   }
 
   transaction aTransaction = {
-    condition: signer_<%aTransaction>.when(hasSigned = true).count()
+    condition: (signer_<%aTransaction>.when(hasSigned = true)).count()
                = signer_<%aTransaction>.count();
   }
 

@@ -103,7 +103,7 @@
 %token <Big_int.big_int> NUMBER
 %token <float> FLOAT
 
-%nonassoc COMMA
+%left COMMA
 
 %nonassoc COLONEQUAL PLUSEQUAL MINUSEQUAL MULTEQUAL DIVEQUAL ANDEQUAL OREQUAL
 
@@ -214,7 +214,7 @@ role:
 | TO x=expr { x }
 
 dextension:
-| PERCENT x=ident xs=list(simple_expr)? { Dextension (x, xs) }
+| PERCENT x=ident xs=nonempty_list(simple_expr)? { Dextension (x, xs) }
 
 %inline extensions:
 | xs=extension+ { xs }
@@ -431,6 +431,13 @@ expr_r:
  | op=loc(un_operator) x=expr
      { Eapp ( mkloc (loc op) (Eop (unloc op)), [x]) }
 
+ | x=simple_with_app_expr_r
+     { x }
+
+%inline simple_with_app_expr:
+ | x=loc(simple_with_app_expr_r) { x }
+
+%inline simple_with_app_expr_r:
  | x=simple_expr a=app_args
      { Eapp (x, a) }
 
@@ -440,6 +447,7 @@ expr_r:
 %inline app_args:
  | LPAREN RPAREN     { [] }
  | xs=simple_expr+   { xs }
+
 
 %inline simple_expr:
  | x=loc(simple_expr_r) { x }
@@ -473,7 +481,8 @@ simple_expr_r:
  | id=ident x=typ_?    { (id, x) }
 
 %inline typ_:
- | COLON x=expr        { x }
+ | COLON x=simple_with_app_expr
+     { x }
 
 literal:
  | x=NUMBER     { Lnumber x }

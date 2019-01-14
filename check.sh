@@ -49,7 +49,7 @@ else
     echo -e "\033[31mErrors of parse: ${NB_ERR} \033[0m"
 fi
 
-if [ ${NB_ERR} -eq 0 ]; then
+if [ ${NB_OUT} -eq 0 ]; then
     echo "all generated print files compile."
 else
     echo -e "\033[31mErrors of print : ${NB_OUT} \033[0m"
