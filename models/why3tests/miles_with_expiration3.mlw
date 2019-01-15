@@ -69,6 +69,13 @@ module Miles
   }
   ensures { FsetSum.sum (old s).miles (get_amount (old s)) =
             (FsetSum.sum s.miles (get_amount s)) + nbmiles }
+
+  ensures { Fset.is_empty (Fset.diff s.miles (old s).miles) }
+
+  (* cml 'invariant (mile.project(not mile.amount))) *)
+  ensures { forall m : mile. Fset.mem m s.miles /\ Fset.mem m (old s).miles ->
+    get_expiration s m = get_expiration (old s) m }
+
   = let remainder = ref nbmiles in
     (*let o = get_owner s owner in*)
     let l = filter_by_expiration s (now e) s.miles in
