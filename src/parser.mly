@@ -256,7 +256,7 @@ key_decl:
 
 type_r:
 | x=type_t c=container { Tcontainer (x, c) }
-| x=ident y=type_t     { Tstate (x, y) }
+| x=ident y=type_t     { Tvset (x, y) }
 | x=ident              { Tref x }
 
 container:

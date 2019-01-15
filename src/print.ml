@@ -56,7 +56,7 @@ let rec pp_type fmt { pldesc = e } =
            pp_type x
            pp_container y
 
-  | Tstate (x, y) ->
+  | Tvset (x, y) ->
       Format.fprintf fmt
         "%a %a"
            pp_id x

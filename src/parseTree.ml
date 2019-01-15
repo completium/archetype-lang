@@ -17,7 +17,7 @@ type container =
 type type_r =
   | Tref of lident
   | Tcontainer of type_t * container
-  | Tstate of lident * type_t
+  | Tvset of lident * type_t
   | Tnuplet of type_t list
 
 and type_t = type_r loced
