@@ -1,6 +1,6 @@
 /* parser */
 %{
-  open Ast
+  open ParseTree
   open Location
   open Parseutils
 
@@ -100,31 +100,50 @@
 
 %token <string> IDENT
 %token <string> STRING
-%token <int> NUMBER
+%token <Big_int.big_int> NUMBER
 %token <float> FLOAT
 
-%type <Ast.model> main
+%nonassoc FROM TO IN EQUALGREATER
+%right THEN ELSE
+
+%left COMMA
+
+%nonassoc COLONEQUAL PLUSEQUAL MINUSEQUAL MULTEQUAL DIVEQUAL ANDEQUAL OREQUAL
+
+%right IMPLY
+%nonassoc EQUIV
 
 %left OR
 %left AND
-%right IMPLY
-%left EQUIV
 
-%left NEQUAL
-%left GREATER
-%left GREATEREQUAL
-%left LESS
-%left LESSEQUAL
+%nonassoc EQUAL NEQUAL
+%nonassoc GREATER GREATEREQUAL LESS LESSEQUAL
 
-%left PLUS
-%left MINUS
-%left MULT
-%left DIV
+%left PLUS MINUS
+%left MULT DIV
+
+%right NOT
+
+%type <ParseTree.model> main
 
 %start main
 
-
 %%
+
+%inline loc(X):
+| x=X {
+    { pldesc = x;
+      plloc  = Location.make $startpos $endpos; }
+  }
+
+%inline paren(X):
+| LPAREN x=X RPAREN { x }
+
+%inline braced(X):
+| LBRACE x=X RBRACE { x }
+
+%inline bracket(X):
+| LBRACKET x=X RBRACKET { x }
 
 main:
  | x=loc(model_r) { x }
@@ -193,13 +212,13 @@ role:
 | COLONEQUAL x=expr { x }
 
 %inline from_value:
-| FROM x=dot_expr { x }
+| FROM x=expr { x }
 
 %inline to_value:
-| TO x=dot_expr { x }
+| TO x=expr { x }
 
 dextension:
-|PERCENT x=ident xs=option(dot_exprs) { Dextension (x, xs) }
+| PERCENT x=ident xs=nonempty_list(simple_expr)? { Dextension (x, xs) }
 
 %inline extensions:
 | xs=extension+ { xs }
@@ -208,7 +227,7 @@ dextension:
 | e=loc(extension_r) { e }
 
 extension_r:
-| LBRACKETPERCENT x=ident xs=option(dot_exprs) RBRACKET { Eextension (x, xs) }
+| LBRACKETPERCENT x=ident xs=option(simple_expr+) RBRACKET { Eextension (x, xs) }
 
 namespace:
 | NAMESPACE x=ident xs=braced(declarations) { Dnamespace (x, xs) }
@@ -234,9 +253,13 @@ key_decl:
 %inline type_t:
 | e=loc(type_r) { e }
 
-%inline type_r:
-| x=ident c=container { Tcontainer (x, c)}
-| x=ident             { Tref x }
+type_r:
+| x=ident                     { Tref x }
+| x=type_t c=container        { Tcontainer (x, c) }
+| x=ident y=type_t            { Tvset (x, y) }
+| x=type_t IMPLY y=type_t     { Tapp (x, y) }
+/*| xs=separated_nonempty_list(MULT, type_t2) { Tnuplet (xs) }*/
+| x=paren(type_r)             { x }
 
 container:
 | COLLECTION { Collection }
@@ -284,7 +307,7 @@ asset:
 | xs=asset_option+ { xs }
 
 %inline init_asset:
-| INITIALIZED BY x=braced(code) { x }
+| INITIALIZED BY x=braced(expr) { x }
 
 asset_option:
 | AS ROLE               { AOasrole }
@@ -305,21 +328,6 @@ field_r:
 
 %inline ident:
 | x=loc(IDENT) { x }
-
-%inline idents:
-| xs=ident+ { xs }
-
-%inline paren(X):
-| LPAREN x=X RPAREN { x }
-
-%inline braced(X):
-| LBRACE x=X RBRACE { x }
-
-%inline loc(X):
-| x=X {
-    { pldesc = x;
-      plloc  = Location.make $startpos $endpos; }
-  }
 
 transition:
   TRANSITION exts=option(extensions) x=ident
@@ -374,38 +382,10 @@ transition_item:
              { Ttransition (x, y, id, exts) }
 
 action:
- | ACTION exts=option(extensions) COLON xs=code SEMI_COLON { Taction (xs, exts) }
-
-%inline bcode:
- | xs=braced(code)  { xs }
-/* | x=instr          { [x] }*/
-
-%inline code:
- | x=instr xs=comma_instr+ { x::xs }
- | x=instr { [x] }
-
-%inline comma_instr:
- | COMMA x=instr { x }
-
-%inline instr:
- | e=loc(instr_r) { e }
-
-instr_r:
- | x=assign_instr     { x }
- | x=letin_instr      { x }
- | x=if_instr         { x }
- | x=for_instr        { x }
- | x=transfer_instr   { x }
- | x=transition_instr { x }
- | x=app_instr        { x }
- | x=assert_instr     { x }
- | x=break_instr      { x }
-
-assign_instr:
- | x=dot_expr op=assignment_operator y=expr { Iassign (op, x, y) }
+ | ACTION exts=option(extensions) COLON xs=expr SEMI_COLON { Taction (xs, exts) }
 
 %inline assignment_operator:
- | COLONEQUAL { Assign }
+ | COLONEQUAL { SimpleAssign }
  | PLUSEQUAL  { PlusAssign }
  | MINUSEQUAL { MinusAssign }
  | MULTEQUAL  { MultAssign }
@@ -413,44 +393,101 @@ assign_instr:
  | ANDEQUAL   { AndAssign }
  | OREQUAL    { OrAssign }
 
-letin_instr:
- | LET x=ident EQUAL e=expr IN b=code { Iletin (x, e, b) }
+%inline expr:
+ | e=loc(expr_r) { e }
 
-if_instr:
- | IF c=expr THEN t=bcode e=else_instr? { Iif (c, t, e) }
+expr_r:
+ | q=quantifier x=ident_typ COMMA y=expr
+     { Equantifier (q, x, y)}
 
-%inline else_instr:
- | ELSE x=bcode { x }
+ | LET x=ident_typ EQUAL e=expr IN y=expr
+     { Eletin (x, e, y) }
 
-for_instr:
- | FOR LPAREN x=ident IN y=expr RPAREN body=bcode { Ifor (x, y, body) }
+ | FUN xs=ident_typs EQUALGREATER x=expr
+     { Efun (xs, x) }
 
-transfer_instr:
- | TRANSFER back=boption(BACK) x=expr y=to_value? { Itransfer (x, back, y) }
+ | e1=expr COMMA e2=expr
+     { Eseq (e1, e2) }
 
-transition_instr:
- | TRANSITION TO x=expr { Itransition x }
+ | ASSERT x=paren(expr)
+     { Eassert x }
 
-app_instr:
- | x=app_expr { Iapp x }
+ | FOR LPAREN x=ident IN y=expr RPAREN body=expr
+     { Efor (x, y, body) }
 
-assert_instr:
- | ASSERT x=paren(expr) { Iassert x }
+ | BREAK
+     { Ebreak }
 
-break_instr:
- | BREAK { Ibreak }
+ | IF c=expr THEN t=expr
+     { Eif (c, t, None) }
 
-%inline dot_exprs:
- | xs=dot_expr+ { xs }
+ | IF c=expr THEN t=expr ELSE e=expr
+     { Eif (c, t, Some e) }
 
-%inline exprs:
- | xs=expr+ { xs }
+ | x=expr op=assignment_operator y=expr
+     { Eassign (op, x, y) }
 
-%inline basic_exprs:
- | xs=basic_expr+ { xs }
+ | TRANSITION TO x=expr
+     { Etransition x }
 
-literal_expr:
- | x=literal { Eliteral x }
+ | TRANSFER back=boption(BACK) x=expr y=to_value?
+     { Etransfer (x, back, y) }
+
+ | e1=expr op=loc(bin_operator) e2=expr
+     { Eapp ( mkloc (loc op) (Eop (unloc op)), [e1; e2]) }
+
+ | op=loc(un_operator) x=expr
+     { Eapp ( mkloc (loc op) (Eop (unloc op)), [x]) }
+
+ | x=simple_with_app_expr_r
+     { x }
+
+%inline simple_with_app_expr_r:
+ | x=simple_expr a=app_args
+     { Eapp (x, a) }
+
+ | x=simple_expr_r
+     { x }
+
+%inline app_args:
+ | LPAREN RPAREN     { [] }
+ | xs=simple_expr+   { xs }
+
+
+%inline simple_expr:
+ | x=loc(simple_expr_r) { x }
+
+simple_expr_r:
+ | x=simple_expr DOT y=ident
+     { Edot (x, y) }
+
+ | xs=braced(assign_field_r+)
+     { EassignFields xs }
+
+ | x=bracket(separated_list(COMMA, simple_expr))
+     { Earray x }
+
+ | x=literal
+     { Eliteral x }
+
+ | n=ident COLONCOLON x=ident
+     { Eterm (Some n, x) }
+
+ | x=ident
+     { Eterm (None, x) }
+
+ | x=paren(expr_r)
+     { x }
+
+%inline ident_typs:
+ | xs=ident_typ+     { xs }
+
+%inline ident_typ:
+ | id=ident x=with_type?
+     { (id, x) }
+
+%inline with_type:
+ | COLON x=type_t { x }
 
 literal:
  | x=NUMBER     { Lnumber x }
@@ -462,135 +499,23 @@ literal:
  | TRUE  { true }
  | FALSE { false }
 
-term:
- | x=loc(term_r) { x }
+assign_field_r:
+ | id=dot_ident op=assignment_operator e=expr SEMI_COLON
+   { AassignField (op, id, e) }
 
-term_r:
- | x=ident { Eterm x }
-
-%inline logical_operator:
- | AND   { And }
- | OR    { Or }
- | IMPLY { Imply }
- | EQUIV { Or }
+%inline dot_ident:
+ | x=ident DOT y=ident { (Some x, y) }
+ | x=ident             { (None, x) }
 
 %inline quantifier:
  | FORALL { Forall }
  | EXISTS { Exists }
 
-%inline expr:
- | e=loc(expr_r) { e }
-
-expr_r:
- | x=decl_expr_r { x }
-
-%inline decl_expr:
- | e=loc(decl_expr_r) { e }
-
-decl_expr_r:
- | LET x=ident EQUAL e=logical_expr IN b=decl_expr             { Eletin (x, e, b) }
- | q=quantifier x=ident COLON y=logical_expr COMMA z=decl_expr { Equantifier (q, x, y, z)}
- | x=fun_expr_r         { x }
-
-%inline fun_expr:
- | e=loc(fun_expr_r) { e }
-
-fun_expr_r:
- | FUN ids=idents EQUALGREATER x=fun_expr { Efun (ids, x) }
- | x=logical_expr_r { x }
-
-%inline logical_expr:
- | e=loc(logical_expr_r) { e }
-
-logical_expr_r:
- | x=logical_expr op=logical_operator y=comparison_expr { Elogical (op, x, y) }
- | NOT x=comparison_expr                                { Enot x }
- | x=comparison_expr_r                                  { x }
-
-%inline comparison_expr:
- | e=loc(comparison_expr_r) { e }
-
-comparison_expr_r:
- | x=comparison_expr op=comparison_operator y=arithmetic_pm_expr { Ecomparison (op, x, y) }
- | x=arithmetic_pm_expr_r { x }
-
-%inline arithmetic_pm_expr:
- | e=loc(arithmetic_pm_expr_r) { e }
-
-arithmetic_pm_expr_r:
- | x=arithmetic_pm_expr
-       op=arithmetic_operator_plus_minus
-            y=arithmetic_md_expr { Earithmetic (op, x, y) }
- | x=arithmetic_md_expr_r          { x }
-
-%inline arithmetic_md_expr:
- | e=loc(arithmetic_md_expr_r) { e }
-
-arithmetic_md_expr_r:
- | x=arithmetic_md_expr
-       op=arithmetic_operator_mult_div
-            y=unary_expr { Earithmetic (op, x, y) }
- | x=unary_expr_r          { x }
-
-%inline unary_expr:
- | e=loc(unary_expr_r) { e }
-
-unary_expr_r:
- | op=unary_operator x=app_expr { Eunary (op, x) }
- | x=app_expr_r                 { x }
-
-%inline app_expr:
- | x=loc(app_expr_r) { x }
-
-app_expr_r:
- | x=app_expr a=app_arg { Eapp (x, a) }
- | x=dot_expr_r         { x }
-
-%inline app_arg:
- | LPAREN RPAREN   { None }
- | x=dot_expr      { Some x }
-
-%inline dot_expr:
- | x=loc(dot_expr_r) { x }
-
-dot_expr_r:
- | x=dot_expr2 DOT y=term      { Edot (x, y) }
- | x=basic_expr_r { x }
-
-%inline dot_expr2:
- | x=loc(dot_expr2_r) { x }
-
-dot_expr2_r:
- | x=dot_expr2 DOT y=simple_expr { Edot (x, y) }
- | x=simple_expr_r { x }
-
-%inline basic_expr:
- | e=loc(basic_expr_r) { e }
-
-basic_expr_r:
- | x=literal_expr       { x }
- | x=namespace_expr     { x }
- | x=array_expr         { x }
- | x=assign_fields      { x }
- | x=term_r             { x }
- | x=paren(expr_r)      { x }
-
- %inline simple_expr:
- | x=loc(simple_expr_r) { x }
-
-simple_expr_r:
- | x=term_r           { x }
- | x=paren(expr_r)    { x }
-
-%inline simple_app:
- | x=loc(simple_app_r) { x }
-
-%inline simple_app_r:
- | x=term a=app_arg2   { Eapp (x, a) }
-
-%inline app_arg2:
- | LPAREN RPAREN   { None }
- | x=paren(expr)   { Some x }
+%inline logical_operator:
+ | AND   { And }
+ | OR    { Or }
+ | IMPLY { Imply }
+ | EQUIV { Equiv }
 
 %inline comparison_operator:
  | EQUAL        { Equal }
@@ -600,40 +525,21 @@ simple_expr_r:
  | LESS         { Lt }
  | LESSEQUAL    { Le }
 
-%inline arithmetic_operator_plus_minus :
+%inline arithmetic_operator:
  | PLUS    { Plus }
  | MINUS   { Minus }
-
-%inline arithmetic_operator_mult_div :
  | MULT    { Mult }
  | DIV     { Div }
 
 %inline unary_operator:
  | PLUS    { Uplus }
  | MINUS   { Uminus }
+ | NOT     { Not }
 
-array_expr:
- | LBRACKET xs=sep_comma_exprs RBRACKET { Earray xs }
- | LBRACKET RBRACKET                    { Earray [] }
+%inline bin_operator:
+| op=logical_operator    { `Logical op }
+| op=comparison_operator { `Cmp op }
+| op=arithmetic_operator { `Arith op }
 
-%inline sep_comma_exprs:
- | x=expr xs=comma_expr+ { x :: xs }
- | x=expr { [x] }
-
-%inline comma_expr:
- | COMMA x=expr { x }
-
-namespace_expr:
- | id=ident COLONCOLON x=expr   { Enamespace (id, x) }
-
-assign_fields:
- | xs=braced(assign_fieldss) { EassignFields xs }
-
-%inline assign_fieldss:
- | xs=assign_field+ { xs }
-
-%inline assign_field:
- | e=assign_field_r { e }
-
-assign_field_r:
- | id=expr op=assignment_operator e=expr SEMI_COLON { AassignField (op, id, e) }
+%inline un_operator:
+| op=unary_operator      { `Unary op }

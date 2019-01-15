@@ -16,7 +16,10 @@ type container =
 
 type type_r =
   | Tref of lident
-  | Tcontainer of lident * container
+  | Tcontainer of type_t * container
+  | Tvset of lident * type_t
+  | Tapp of type_t * type_t
+  | Tnuplet of type_t list
 
 and type_t = type_r loced
 
@@ -44,9 +47,10 @@ type arithmetic_operator =
 type unary_operator =
   | Uplus
   | Uminus
+  | Not
 
 type assignment_operator =
-  | Assign
+  | SimpleAssign
   | PlusAssign
   | MinusAssign
   | MultAssign
@@ -58,33 +62,46 @@ type quantifier =
   | Forall
   | Exists
 
+type operator = [
+  | `Logical of logical_operator
+  | `Cmp     of comparison_operator
+  | `Arith   of arithmetic_operator
+  | `Unary   of unary_operator
+]
+
+type name = lident option * lident
+
 type expr_r =
-  | Eterm of lident
-  | Eapp of expr * expr option
-  | Eliteral of literal
-  | Edot of expr * expr
-  | Enamespace of lident * expr
-  | Efun of lident list * expr
-  | Elogical of logical_operator * expr * expr
-  | Enot of expr
-  | Ecomparison of comparison_operator * expr * expr
-  | Earithmetic of arithmetic_operator * expr * expr
-  | Eunary of unary_operator * expr
-  | Earray of expr list
+  | Eterm         of name
+  | Eop           of operator
+  | Eliteral      of literal
+  | Earray        of expr list
+  | Edot          of expr * lident
   | EassignFields of assignment_field list
-  | Equantifier of quantifier * lident * expr * expr
-  | Eletin of lident * expr * expr
+  | Eapp          of expr * expr list
+  | Etransfer     of expr * bool * expr option
+  | Etransition   of expr
+  | Eassign       of assignment_operator * expr * expr
+  | Eif           of expr * expr * expr option
+  | Ebreak
+  | Efor          of lident * expr * expr
+  | Eassert       of expr
+  | Eseq          of expr * expr
+  | Efun          of lident_typ list * expr
+  | Eletin        of lident_typ * expr * expr
+  | Equantifier   of quantifier * lident_typ * expr
 
 and literal =
-  | Lnumber of int
+  | Lnumber of Big_int.big_int
   | Lfloat  of float
   | Lstring of string
   | Lbool   of bool
 
 and assignment_field =
-  | AassignField of assignment_operator * expr * expr
+  | AassignField of assignment_operator * (lident option * lident) * expr
 
 and expr = expr_r loced
+and lident_typ = lident * type_t option
 
 (* -------------------------------------------------------------------- *)
 type extension_r =
@@ -99,21 +116,6 @@ type field_r =
 and field = field_r loced
 
 (* -------------------------------------------------------------------- *)
-type instr_r =
-  | Iassign of assignment_operator * expr * expr
-  | Iletin of lident * expr * code
-  | Iif of expr * code * code option
-  | Ifor of lident * expr * code
-  | Itransfer of expr * bool * expr option
-  | Itransition of expr
-  | Iapp of expr
-  | Iassert of expr
-  | Ibreak
-and code = instr list
-
-and instr = instr_r loced
-
-(* -------------------------------------------------------------------- *)
 type transitem_r =
   | Targs of field list * extension list option                      (** args *)
   | Tcalledby of expr * extension list option                        (** called by *)
@@ -121,7 +123,7 @@ type transitem_r =
   | Tcondition of expr * extension list option                       (** condition *)
   | Ttransferred of expr * extension list option                     (** transferred *)
   | Ttransition of expr * expr * expr option * extension list option (** transition  *)
-  | Taction of instr list * extension list option                    (** action  *)
+  | Taction of expr * extension list option                          (** action  *)
 
 and transitem = transitem_r loced
 
@@ -134,7 +136,7 @@ type declaration_r =
   | Drole        of lident * expr option * extension list option                   (** role *)
   | Denum        of lident * lident list                                           (** enum *)
   | Dstates      of lident option * (lident * state_option list option) list       (** states *)
-  | Dasset       of lident * field list option * expr list option * asset_option list option * code option (** asset *)
+  | Dasset       of lident * field list option * expr list option * asset_option list option * expr option (** asset *)
   | Dassert      of expr                                                           (** assert *)
   | Dobject      of lident * expr * extension list option
   | Dkey         of lident * expr * extension list option

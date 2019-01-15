@@ -39,7 +39,7 @@ transaction consume = {
      (owner.get owner).miles.when(mile.expiration > now).sum(amount)
            >= val;
 
-  ensure : forall m : removed miles,
+  ensure : forall m : removed mile,
              mem m (before (owner.miles)) and m.expiration >= now;
 
   ensure : let o = owner.get owner in
@@ -58,26 +58,26 @@ transaction consume = {
   action :
      let remainder = val in
      let o = owner.get owner in
-     for (m in o.miles.when(expiration >= now)) {
+     for (m in o.miles.when(expiration >= now)) (
           if (m.amount > remainder)
-          then {
+          then (
              remainder := 0,
              m.amount  -= remainder,
              break
-          }
-          else {
+          )
+          else (
              if (m.amount = remainder)
-             then {
+             then (
                 remainder := 0,
                 o.miles.remove m,
                 break
-             }
-             else {
+             )
+             else (
                 remainder -= m.amount,
                 o.miles.remove m
-             }
-          }
-     },
+             )
+          )
+     ),
      assert (remainder = 0);
 }
 

@@ -82,5 +82,5 @@ let unlocs x = List.map unloc x
 let lmap (f : 'a -> 'b) (x : 'a loced) =
   { x with pldesc = f x.pldesc }
 
-let mkloc (loc : t) (x : 'a) : 'a loced =
+let mkloc loc (x : 'a) : 'a loced =
   { plloc = loc; pldesc = x; }
