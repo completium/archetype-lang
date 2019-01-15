@@ -145,7 +145,6 @@
 %inline bracket(X):
 | LBRACKET x=X RBRACKET { x }
 
-
 main:
  | x=loc(model_r) { x }
  | x=loc(error)
@@ -255,9 +254,12 @@ key_decl:
 | e=loc(type_r) { e }
 
 type_r:
-| x=type_t c=container { Tcontainer (x, c) }
-| x=ident y=type_t     { Tvset (x, y) }
-| x=ident              { Tref x }
+| x=ident                     { Tref x }
+| x=type_t c=container        { Tcontainer (x, c) }
+| x=ident y=type_t            { Tvset (x, y) }
+| x=type_t IMPLY y=type_t     { Tapp (x, y) }
+/*| xs=separated_nonempty_list(MULT, type_t2) { Tnuplet (xs) }*/
+| x=paren(type_r)             { x }
 
 container:
 | COLLECTION { Collection }
@@ -439,9 +441,6 @@ expr_r:
 
  | x=simple_with_app_expr_r
      { x }
-
-%inline simple_with_app_expr:
- | x=loc(simple_with_app_expr_r) { x }
 
 %inline simple_with_app_expr_r:
  | x=simple_expr a=app_args

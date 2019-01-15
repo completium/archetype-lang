@@ -62,10 +62,16 @@ let rec pp_type fmt { pldesc = e } =
            pp_id x
            pp_type y
 
+  | Tapp (x, y) ->
+      Format.fprintf fmt
+        "%a -> %a"
+           pp_type x
+           pp_type y
+
   | Tnuplet l ->
       Format.fprintf fmt
         "%a"
-           (pp_list ",@" pp_type) l
+           (pp_list " * " pp_type) l
 
 
 (* -------------------------------------------------------------------- *)
