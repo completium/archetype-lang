@@ -112,9 +112,9 @@ module Collection
 
   type collection 'value = int -> 'value
 
-  function get (f: collection 'value) (x: int) : 'value = f x
+  let function get (f: collection 'value) (x: int) : 'value = f x
 
-  let set (f: collection 'value) (x: int) (v: 'value) : collection 'value =
+  let function set (f: collection 'value) (x: int) (v: 'value) : collection 'value =
     fun (y : int) -> if y = x then v else f y
 
 (*  let ([]) (f: map 'value) (x: int) : 'value = f x

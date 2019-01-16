@@ -28,8 +28,8 @@ module Miles
   }
 
   let function get_mile   (s : storage) (k : key)  : mile = k
-  let function get_amount (s : storage) (m : mile) : int = Map.get s.mile_amounts m
-  let function get_expiration (s : storage) (m : mile) : date = Map.get s.mile_expirations m
+  let function get_amount (s : storage) (m : mile) : int = Collection.get s.mile_amounts m
+  let function get_expiration (s : storage) (m : mile) : date = Collection.get s.mile_expirations m
 
   function get_arr_amount (s : storage) (a : array mile) (i : int) : int =
   Map.get s.mile_amounts a[i]
@@ -40,6 +40,7 @@ module Miles
   = Map.get s.owner_miles o
 
   (* Owner.miles is a partition of s.miles *)
+
   axiom Owners_miles_part_1 : forall s : storage, m : mile, o : owner.
     Fset.mem o s.owners ->
     let miles = get_miles s o in
