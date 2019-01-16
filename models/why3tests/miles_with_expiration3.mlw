@@ -32,7 +32,20 @@ module Miles
   Map.get s.mile_amounts a[i]
 
   function get_owner (s : storage) (a : address) : owner = a
-  function get_miles (s : storage) (o : owner) : set mile = Map.get s.owner_miles o
+
+  function get_miles (s : storage) (o : owner) : set mile
+  = Map.get s.owner_miles o
+
+  (* Owner.miles is a partition of s.miles *)
+  axiom Owners_miles_part_1 : forall s : storage, m : mile, o : owner.
+    Fset.mem o s.owners ->
+    let miles = get_miles s o in
+    Fset.mem m miles -> Fset.mem m s.miles
+
+  axiom Owners_miles_part_2 : forall s : storage, m : mile.
+    exists o : owner.
+    let miles = get_miles s o in
+    Fset.mem m s.miles -> Fset.mem m miles
 
   let remove_miles (*(o : owner)*) (m : mile) (s:storage) : unit
   requires { mem m s.miles }
@@ -58,6 +71,7 @@ module Miles
 
   let ghost consume (e : env) (s : storage) (owner : address) (nbmiles : int) : transfers
   requires { nbmiles > 0 }
+  ensures { let o = get_owner s owner in Fset.mem o s.owners }
   requires { forall m : mile, s : storage. get_amount s m > 0 }
   requires {
      (*let o = get_owner s owner in*)
@@ -77,8 +91,9 @@ module Miles
     get_expiration s m = get_expiration (old s) m }
 
   = let remainder = ref nbmiles in
-    (*let o = get_owner s owner in*)
-    let l = filter_by_expiration s (now e) s.miles in
+    let o = get_owner s owner in
+    let miles = get_miles s o in
+    let l = filter_by_expiration s (now e) miles in
     try
       for i = 0 to (length l) - 1 do
       (* helps for the membership precondition of set_amouunt: *)
