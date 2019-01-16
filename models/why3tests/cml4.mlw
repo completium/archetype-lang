@@ -1,0 +1,124 @@
+theory Types
+
+  use int.Int
+  use mach.int.UInt32
+
+  (* default type mapping *)
+  type key     = int
+  type role    = int
+  type address = int
+  type uint    = uint32
+  type tez     = uint32
+  type date    = int
+
+  constant max_uint : int = UInt32.max_uint32
+
+  exception Break
+
+end
+
+theory Contract
+
+  use Types
+  use int.Int
+  use mach.int.UInt32
+  use list.List
+  use list.Append
+  use set.Fset
+  use set.FsetNth
+  use set.FsetSum
+  use array.Array
+
+  (* currency transfer during transaction *)
+  type transfer = {
+     destination : address;
+     amount      : tez;
+  }
+
+  type transfers = list transfer
+
+  let empty : transfers = Nil
+
+  type env = {
+     mutable balance_ : tez;
+     (* transaction env *)
+     transferred_     : tez;
+     caller_          : address;
+     now_             : date;
+  }
+
+  let function balance (e: env) : tez = e.balance_
+
+  let function transferred (e : env) : tez = e.transferred_
+
+  let function caller (e : env) : address = e.caller_
+
+  let function now (e : env) : date = e.now_
+
+  let update_balance (e : env)
+    requires { transferred e + balance e <= max_uint }
+    ensures  { balance e = old (balance e) + (transferred e)}
+  =
+    let sum = e.balance_ + e.transferred_ in
+    e.balance_ <- sum
+
+  let exec_transfer (e : env) (a : address) (c : tez) (ops : transfers) : transfers
+    requires { c <= balance e }
+    ensures  { old (balance e) = (balance e) + c }
+  =
+    e.balance_ <- e.balance_ - c;
+    let transfer = { destination = a; amount = c } in
+    ops ++ (Cons transfer Nil)
+
+  (* UTILS *********************************************************************)
+
+  axiom Diff_ident : forall s : set 'a. diff s s = Fset.empty
+
+  axiom Nth_elem : forall i : int, s : set 'a. 0 <= i < cardinal s -> mem (nth i s) s
+
+  axiom Subset_sum : forall s1 s2 : set 'a, f : 'a -> int, e : 'a.
+     f e >= 0 -> subset s1 s1 -> sum s1 f <= sum s2 f
+
+  (* sum over an array of assets (see sum.Sum)
+     here the f function is passed as an argument of type array asset -> int -> int *)
+  function sum (array 'a) (array 'a -> int -> int) int int : int
+
+  axiom Sum_def_empty :
+    forall c : array 'a, f:array 'a -> int -> int, i j : int.
+    j <= i -> sum c f i j = 0
+
+  axiom Sum_def_non_empty :
+    forall c: array 'a, f:array 'a -> int -> int, i j : int.
+    i < j -> sum c f i j = f c i + sum c f (i+1) j
+
+  lemma Sum_right_extension:
+    forall c : array 'a, f:array 'a -> int -> int, i j : int.
+    i < j -> sum c f i j = sum c f i (j-1) + f c (j-1)
+
+  lemma Sum_transitivity :
+    forall c : array 'a, f:array 'a -> int -> int, i k j : int. i <= k <= j ->
+    sum c f i j = sum c f i k + sum c f k j
+
+  lemma Sum_eq :
+    forall c1 c2 : array 'a, f:array 'a -> int -> int, i j : int.
+    (forall k : int. i <= k < j -> f c1 k = f c2 k) -> sum c1 f i j = sum c2 f i j
+
+end
+
+(* non ghost map *)
+module Collection
+
+  use import int.Int
+
+  type collection 'value = int -> 'value
+
+  function get (f: collection 'value) (x: int) : 'value = f x
+
+  let set (f: collection 'value) (x: int) (v: 'value) : collection 'value =
+    fun (y : int) -> if y = x then v else f y
+
+(*  let ([]) (f: map 'value) (x: int) : 'value = f x
+    let ([<-]) (f: map 'value) (x: int) (v: 'value) : map 'value = set f x v
+*)
+
+end
