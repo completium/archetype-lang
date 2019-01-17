@@ -44,7 +44,7 @@ module Miles
 
   (* Owner.miles is a partition of s.miles *)
 
-(*  axiom Owners_miles_part_1 : forall s : storage, m : mile, o : owner.
+  axiom Owners_miles_part_1 : forall s : storage, m : mile, o : owner.
     Fset.mem o s.owners ->
     let miles = get_miles s o in
     Fset.mem m miles -> Fset.mem m s.miles
@@ -52,7 +52,7 @@ module Miles
   axiom Owners_miles_part_2 : forall s : storage, m : mile.
     exists o : owner.
     let miles = get_miles s o in
-    Fset.mem m s.miles -> Fset.mem m miles*)
+    Fset.mem m s.miles -> Fset.mem m miles
 
   let remove_miles (*(o : owner)*) (m : mile) (s:storage) : unit
   requires { mem m s.miles }
