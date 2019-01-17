@@ -77,7 +77,7 @@ theory Contract
   axiom Nth_elem : forall i : int, s : set 'a. 0 <= i < cardinal s -> mem (nth i s) s
 
   axiom Subset_sum : forall s1 s2 : set 'a, f : 'a -> int, e : 'a.
-     f e >= 0 -> subset s1 s1 -> sum s1 f <= sum s2 f
+     f e >= 0 -> subset s1 s2 -> sum s1 f <= sum s2 f
 
   (* sum over an array of assets (see sum.Sum)
      here the f function is passed as an argument of type array asset -> int -> int *)
@@ -102,6 +102,19 @@ theory Contract
   lemma Sum_eq :
     forall c1 c2 : array 'a, f:array 'a -> int -> int, i j : int.
     (forall k : int. i <= k < j -> f c1 k = f c2 k) -> sum c1 f i j = sum c2 f i j
+
+(*  axiom Sum_monotonicity : forall s : set 'a,
+                                  a : array 'a,
+                                  f : 'a -> int,
+                                  g : array 'a -> int -> int,
+                                  i : int,
+                                  j : int.
+  forall e : 'a. f e >= 0 ->
+  forall k : int. f a[k] = g a k ->
+  0 <= i < length a ->
+  0 <= j < length a ->
+  sum a g i j <= FsetSum.sum s f*)
+
 
 end
 

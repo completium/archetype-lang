@@ -27,6 +27,9 @@ module Miles
     mutable owner_miles      : collection (set mile);
   }
 
+  axiom Amount_gt0 : forall s : storage, m : mile.
+  Collection.get s.mile_amounts m > 0
+
   let function get_mile   (s : storage) (k : key)  : mile = k
   let function get_amount (s : storage) (m : mile) : int = Collection.get s.mile_amounts m
   let function get_expiration (s : storage) (m : mile) : date = Collection.get s.mile_expirations m
@@ -78,9 +81,10 @@ module Miles
   requires { let o = get_owner s owner in Fset.mem o s.owners }
   requires { forall m : mile, s : storage. get_amount s m > 0 }
   requires {
-     (*let o = get_owner s owner in*)
-     let l = filter_by_expiration s (now e) s.miles in
-     Contract.sum l (get_arr_amount s) 0 (length l -1) >= nbmiles
+     let o = get_owner s owner in
+     let miles = get_miles s o in
+     let l = filter_by_expiration s (now e) miles in
+     Contract.sum l (get_arr_amount s) 0 (length l) >= nbmiles
   }
   ensures { forall m:mile.
      mem m (diff (old s).miles s.miles) -> get_expiration s m > (now e)
@@ -107,11 +111,16 @@ module Miles
          mem m (diff (old s).miles s.miles) -> exists k:int. 0 <= k < i /\ l[k] = m }
       (* remainder bounds: *)
       invariant { 0 <= !remainder <= Contract.sum l (get_arr_amount s) i (length l) }
+      (* right amount spent invariant *)
+      invariant { FsetSum.sum (old s).miles (get_amount (old s)) =
+        FsetSum.sum s.miles (get_amount s) + nbmiles - !remainder }
+      (* no added mile *)
+      invariant   { Fset.is_empty (Fset.diff s.miles (old s).miles) }
         let m = l[i] in
         if get_amount s m > !remainder
         then
-          (remainder := 0;
-           set_amount m (get_amount s m - !remainder) s;
+          (set_amount m (get_amount s m - !remainder) s;
+           remainder := 0;
            raise Break)
         else if get_amount s m = !remainder
         then
