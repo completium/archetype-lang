@@ -103,19 +103,6 @@ theory Contract
     forall c1 c2 : array 'a, f:array 'a -> int -> int, i j : int.
     (forall k : int. i <= k < j -> f c1 k = f c2 k) -> sum c1 f i j = sum c2 f i j
 
-(*  axiom Sum_monotonicity : forall s : set 'a,
-                                  a : array 'a,
-                                  f : 'a -> int,
-                                  g : array 'a -> int -> int,
-                                  i : int,
-                                  j : int.
-  forall e : 'a. f e >= 0 ->
-  forall k : int. f a[k] = g a k ->
-  0 <= i < length a ->
-  0 <= j < length a ->
-  sum a g i j <= FsetSum.sum s f*)
-
-
 end
 
 (* non ghost map *)
@@ -129,9 +116,5 @@ module Collection
 
   let function set (f: collection 'value) (x: int) (v: 'value) : collection 'value =
     fun (y : int) -> if y = x then v else f y
-
-(*  let ([]) (f: map 'value) (x: int) : 'value = f x
-    let ([<-]) (f: map 'value) (x: int) (v: 'value) : map 'value = set f x v
-*)
 
 end
