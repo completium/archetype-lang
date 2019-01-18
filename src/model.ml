@@ -17,6 +17,14 @@ type transfer = {
     tto  : role;
 }
 
+type container =
+  | Collection
+  | Queue
+  | Stack
+  | Set
+  | Subset
+  | Partition
+
 type vtyp =
   | VTint
   | VTuint
@@ -24,10 +32,17 @@ type vtyp =
   | VTdate
   | VTcurrency    of currency * transfer option
 
+type typ_ =
+  | Tbuiltin of vtyp
+  | Tasset of ident
+  | Tcontainer of typ_ * container
+  | Tapp of typ_ * typ_
+  | Tnuplet of typ_ list
+
 (* basic value *)
 type bval =
-  | BVint          of int
-  | BVuint         of int
+  | BVint          of Big_int.big_int
+  | BVuint         of Big_int.big_int
   | BVfloat        of float
   | BVdate         of string (* todo : plus Bat.date *)
   | BVcurrency     of float
@@ -45,12 +60,72 @@ type value = {
 
 type arg = decl
 
-type prog =
-  | Ifthen
-and cond = int
-and calc = int
+type logical_operator =
+  | And
+  | Or
+  | Imply
+  | Equiv
 
-type pred = int
+type comparison_operator =
+  | Equal
+  | Nequal
+  | Gt
+  | Ge
+  | Lt
+  | Le
+
+type assignment_operator =
+  | SimpleAssign
+  | PlusAssign
+  | MinusAssign
+  | MultAssign
+  | DivAssign
+  | AndAssign
+  | OrAssign
+
+type arithmetic_operator =
+  | Plus
+  | Minus
+  | Mult
+  | Div
+
+type collection = int
+
+type reference =
+| Pvar of ident
+| Pfield of ident * ident
+
+type prog =
+  | Pletin of ident * typ_ * calc
+  | PIf of cond * prog * prog option
+  | PFor of ident * collection * prog
+  | PAssign of assignment_operator * reference * calc
+  | PTransfer
+  | PTransition
+  | PSeq of prog list
+and cond =
+  | Plogical of logical_operator * cond * cond
+  | Pnot of cond
+  | Pcomparaison of comparison_operator * cond * cond
+  | Pcalc of calc
+and calc =
+  | Parithmetic of arithmetic_operator
+  | Pref of reference
+  | Pliteral of bval
+
+type quantifier =
+  | Forall
+  | Exists
+
+type term =
+  | Tletin of ident * typ_ * term
+  | Tquantifer of quantifier * ident * typ_ * term
+  | Timply of term * term
+  | Tapp of term * term list
+  | Tlambda of ident * typ_ * term
+  | Tvar of ident
+  | Tliteral of bval
+
 
 type transaction = {
     name         : ident;
@@ -78,7 +153,7 @@ type asset = {
     sort         : ident list option;
     role         : bool;
     init         : prog;
-    preds        : pred list
+    preds        : term list
 }
 
 type enum = {
@@ -94,5 +169,5 @@ type model = {
     transactions : transaction list;
     stmachines   : stmachine list;
     enums        : enum list;
-    preds        : pred list;
+    preds        : term list;
 }
