@@ -4,6 +4,7 @@ theory Types
   use mach.int.UInt32
 
   (* default type mapping *)
+  type key     = int
   type role    = int
   type address = int
   type uint    = uint32
@@ -23,6 +24,10 @@ theory Contract
   use mach.int.UInt32
   use list.List
   use list.Append
+  use set.Fset
+  use set.FsetNth
+  use set.FsetSum
+  use array.Array
 
   (* currency transfer during transaction *)
   type transfer = {
@@ -42,13 +47,13 @@ theory Contract
      now_             : date;
   }
 
-  function balance (e: env) : tez = e.balance_
+  let function balance (e: env) : tez = e.balance_
 
-  function transferred (e : env) : tez = e.transferred_
+  let function transferred (e : env) : tez = e.transferred_
 
-  function caller (e : env) : address = e.caller_
+  let function caller (e : env) : address = e.caller_
 
-  function now (e : env) : date = e.now_
+  let function now (e : env) : date = e.now_
 
   let update_balance (e : env)
     requires { transferred e + balance e <= max_uint }
@@ -65,123 +70,84 @@ theory Contract
     let transfer = { destination = a; amount = c } in
     ops ++ (Cons transfer Nil)
 
+  (* utils *)
+
+  axiom Diff_ident : forall s : set 'a. diff s s = Fset.empty
+
+  axiom Nth_elem : forall i : int, s : set 'a. 0 <= i < cardinal s -> mem (nth i s) s
+
 end
 
-theory Asset
+(* non ghost map *)
+module Collection
 
   use int.Int
-  use set.Fset
-(*  use map.Map*)
+
+  type collection 'value = int -> 'value
+
+  let function get (f: collection 'value) (x: int) : 'value = f x
+
+  let function set (f: collection 'value) (x: int) (v: 'value) : collection 'value =
+    fun (y : int) -> if y = x then v else f y
+
+end
+
+module Sum
+
+  use int.Int
   use array.Array
-  use array.Sorted
 
-  type key
-
-  type sort
+  type storage
 
   type asset
 
-  function akey (a : asset) : key
+  function f storage (array asset) int : int
 
-  function asort (a : asset) : sort
-
-  predicate kle (k1 k2 : key)
-
-  predicate le (a1 a2 : asset) = kle (akey a1) (akey a2)
-
-  type collection = set asset
-
-  (* member of collection predicate *)
-  function mem (a : asset) (c : collection) : bool = Fset.mem a c
-
-  (* addition of asset *)
-  let add (a : asset) (c : collection) : collection = Fset.add a c
-
-  (* remove from collection *)
-  let remove (a : asset) (c : collection) : collection = Fset.remove a c;
-
-  (* get an asset from asset key *)
-  function get (key : key) (c : collection) : asset
-
-  (* get is injective *)
-  axiom Inj_get : forall k1 k2:key. forall c:collection.
-        get k1 c = get k2 c -> k1 = k2
-
-  (* get is surjective *)
-  axiom Surj_get : forall c:collection, a:asset.
-        mem a c <-> exists k:key. get k c = a
-
-  clone array.Sorted as SortedAsset with type elt = asset, predicate le = le
-
-  (* filter collection *)
-  function when (p : asset -> bool) (c : collection) : array asset
-
-  axiom When_mem : forall p:(asset -> bool), c:collection, i:int.
-    let l = when p c  in
-    0 <= i < length l -> mem l[i] c
-
-  axiom When_verify : forall p:(asset -> bool), a:asset, c:collection, i:int.
-    let l = when p c in
-    0 <= i < length l -> a = l[i] -> p a
-
-  axiom When_sorted : forall p:(asset -> bool), c:collection.
-    let l = when p c in
-    SortedAsset.sorted l
-
-  (* sum over an array of assets (see sum.Sum)
-     here the f function is passed as an argument of type array asset -> int -> int *)
-  function sum (array asset) (array asset -> int -> int) int int : int
+  function sum (array asset) int int : int
 
   axiom Sum_def_empty :
-    forall c : array asset, f:array asset -> int -> int, i j : int.
-    j <= i -> sum c f i j = 0
+    forall c : array asset, i j : int.
+    j <= i -> sum c i j = 0
 
   axiom Sum_def_non_empty :
-    forall c: array asset, f:array asset -> int -> int, i j : int.
-    i < j -> sum c f i j = f c i + sum c f (i+1) j
+    forall s : storage, c: array asset, i j : int.
+    i < j -> sum c i j = f s c i + sum c (i+1) j
 
   lemma Sum_right_extension:
-    forall c : array asset, f:array asset -> int -> int, i j : int.
-    i < j -> sum c f i j = sum c f i (j-1) + f c (j-1)
+    forall s : storage, c : array asset, i j : int.
+    i < j -> sum c i j = sum c i (j-1) + f s c (j-1)
 
   lemma Sum_transitivity :
-    forall c : array asset, f:array asset -> int -> int, i k j : int. i <= k <= j ->
-    sum c f i j = sum c f i k + sum c f k j
+    forall c : array asset, i k j : int. i <= k <= j ->
+    sum c i j = sum c i k + sum c k j
 
   lemma Sum_eq :
-    forall c1 c2 : array asset, f:array asset -> int -> int, i j : int.
-    (forall k : int. i <= k < j -> f c1 k = f c2 k) -> sum c1 f i j = sum c2 f i j
+    forall s : storage, c1 c2 : array asset, i j : int.
+    (forall k : int. i <= k < j -> f s c1 k = f s c2 k) -> sum c1 i j = sum c2 i j
 
-  (* sum on collection : this is set version of Sum.sum *)
-  function sum_col (c:collection) (f:asset -> int) : int
+end
 
-  axiom Sum_col_def_empty :
-    forall c : collection, f:asset -> int.
-    is_empty c -> sum_col c f = 0
+module When
 
-  axiom Sum_col_def_non_empty_remove_mem :
-    forall c: collection, a:asset, f:asset -> int.
-    not (is_empty c) -> mem a c -> sum_col c f = (sum_col (remove a c) f) + f a
+  use array.Array
+  use set.Fset
+  use int.Int
 
-  axiom Sum_col_def_non_empty_remove_non_mem :
-    forall c: collection, a:asset, f:asset -> int.
-    not (is_empty c) -> not (mem a c) -> sum_col c f = (sum_col (remove a c) f)
+  type storage
+  type env
+  type asset
 
-  axiom Sum_col_def_non_empty_add_mem :
-    forall c: collection, a:asset, f:asset -> int.
-    not (is_empty c) -> mem a c -> sum_col (add a c) f = (sum_col c f)
+  val function filter env storage asset : bool
 
-  axiom Sum_col_def_non_empty_add_non_mem :
-    forall c: collection, a:asset, f:asset -> int.
-    not (is_empty c) -> not (mem a c) -> sum_col (add a c) f = (sum_col c f) + f a
+  val function when (set asset) : array asset
 
-  (* set operations *)
-  function diff (a b:collection) : collection = Fset.diff a b
+  axiom When_filter : forall e : env, s : storage, c : set asset, set i : int.
+    0 <= i < length (when c) -> filter e s (when c)[i]
 
-  function inter (a b:collection) : collection = Fset.inter a b
+  axiom When_mem : forall  c : set asset, set i : int.
+    0 <= i < length (when c) -> mem (when c)[i] c
 
-  (* utils *)
-  axiom When_elem : forall s : set asset, f : asset -> bool, i : int.
-    let l = when f s in 0 <= i < length l -> Fset.mem l[i] s
+  axiom When_inj : forall c : set asset, i j : int.
+    i <> j -> (when c)[i] <> (when c)[j]
 
 end

@@ -27,6 +27,7 @@ theory Contract
   use set.Fset
   use set.FsetNth
   use set.FsetSum
+  use array.Array
 
   (* currency transfer during transaction *)
   type transfer = {
@@ -46,13 +47,13 @@ theory Contract
      now_             : date;
   }
 
-  function balance (e: env) : tez = e.balance_
+  let function balance (e: env) : tez = e.balance_
 
-  function transferred (e : env) : tez = e.transferred_
+  let function transferred (e : env) : tez = e.transferred_
 
-  function caller (e : env) : address = e.caller_
+  let function caller (e : env) : address = e.caller_
 
-  function now (e : env) : date = e.now_
+  let function now (e : env) : date = e.now_
 
   let update_balance (e : env)
     requires { transferred e + balance e <= max_uint }
@@ -69,13 +70,84 @@ theory Contract
     let transfer = { destination = a; amount = c } in
     ops ++ (Cons transfer Nil)
 
-  (* UTILS *********************************************************************)
+  (* utils *)
 
   axiom Diff_ident : forall s : set 'a. diff s s = Fset.empty
 
   axiom Nth_elem : forall i : int, s : set 'a. 0 <= i < cardinal s -> mem (nth i s) s
 
-  (*  axiom Subset_sum : forall s1 s2 : set 'a, f : 'a -> int, e : 'a.
-     f e >= 0 -> subset s1 s1 -> sum s1 f <= sum s2 f*)
+end
+
+(* non ghost map *)
+module Collection
+
+  use int.Int
+
+  type collection 'value = int -> 'value
+
+  let function get (f: collection 'value) (x: int) : 'value = f x
+
+  let function set (f: collection 'value) (x: int) (v: 'value) : collection 'value =
+    fun (y : int) -> if y = x then v else f y
+
+end
+
+module Sum
+
+  use int.Int
+  use array.Array
+
+  type storage
+
+  type asset
+
+  function f storage (array asset) int : int
+
+  function sum (array asset) int int : int
+
+  axiom Sum_def_empty :
+    forall c : array asset, i j : int.
+    j <= i -> sum c i j = 0
+
+  axiom Sum_def_non_empty :
+    forall s : storage, c: array asset, i j : int.
+    i < j -> sum c i j = f s c i + sum c (i+1) j
+
+  lemma Sum_right_extension:
+    forall s : storage, c : array asset, i j : int.
+    i < j -> sum c i j = sum c i (j-1) + f s c (j-1)
+
+  lemma Sum_transitivity :
+    forall c : array asset, i k j : int. i <= k <= j ->
+    sum c i j = sum c i k + sum c k j
+
+  lemma Sum_eq :
+    forall s : storage, c1 c2 : array asset, i j : int.
+    (forall k : int. i <= k < j -> f s c1 k = f s c2 k) -> sum c1 i j = sum c2 i j
+
+end
+
+module When
+
+  use array.Array
+  use set.Fset
+  use int.Int
+
+  type storage
+  type env
+  type asset
+
+  val function filter env storage asset : bool
+
+  val function when (set asset) : array asset
+
+  axiom When_filter : forall e : env, s : storage, c : set asset, set i : int.
+    0 <= i < length (when c) -> filter e s (when c)[i]
+
+  axiom When_mem : forall  c : set asset, set i : int.
+    0 <= i < length (when c) -> mem (when c)[i] c
+
+  axiom When_inj : forall c : set asset, i j : int.
+    i <> j -> (when c)[i] <> (when c)[j]
 
 end

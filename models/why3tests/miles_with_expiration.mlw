@@ -3,145 +3,149 @@ module Miles
   use int.Int
   use mach.int.UInt32
   use ref.Ref
+
   use set.Fset
-  use array.Array
+  use set.FsetComprehension
+  use set.FsetSum
+  use set.FsetNth
+  use sum.Sum
 
   use cml.Types
   use cml.Contract
-  use cml.Asset
+  use cml.Collection
 
-  (* Mile *********************************************************************)
+  use array.Array
 
-  type mile = {
-     mile_id        : int;
-     amount         : int;
-     expiration     : date;
-  } invariant { amount > 0 }
-
-  (* projections *)
-  function mile_key    (m : mile) : int  = m.mile_id
-  function mile_amount (m : mile) : int  = m.amount
-  function mile_sort   (m : mile) : date = m.expiration
-
-  function get_amount (c:array mile) (i : int) : int = let mile = c[i] in
-                                                        mile.amount
-  (* declare mile as an Asset *)
-  clone cml.Asset as Mile with type      key   = int,
-                               type      sort  = date,
-                               type      asset = mile,
-                               function  akey  = mile_key,
-                               function  asort = mile_sort,
-                               predicate kle   = (<=)
-
-  (* Owner ********************************************************************)
-
-  type owner = {
-     addr    : address;
-     miles   : Mile.collection;
-  }
-
-  (* projections *)
-  function owner_key   (o : owner) : int             = o.addr
-  function owner_miles (o : owner) : Mile.collection = o.miles
-
-  (* declare mile as an Asset *)
-  clone cml.Asset as Owner with type      key   = int,
-                                type      sort  = int,
-                                type      asset = owner,
-                                function  akey  = owner_key,
-                                function  asort = owner_key,
-                                predicate kle   = (<=)
-
-  (* Storage *****************************************************************)
+  type mile = key
+  type owner = key
 
   type storage = {
-    mutable milec   : Mile.collection;
-    mutable ownerc  : Owner.collection;
+    mutable miles            : set mile;
+    mutable mile_amounts     : collection int;
+    mutable mile_expirations : collection date;
+    mutable owners           : set owner;
+    mutable owner_miles      : collection (set mile);
   }
 
-  function is_mile (m : mile) (s : storage) : bool  = Mile.mem m s.milec
-  function is_owner (o : owner) (s : storage) : bool = Owner.mem o s.ownerc
+  axiom Amount_gt0 : forall s : storage, m : mile.
+  Collection.get s.mile_amounts m > 0
 
-  function get_owner (addr : address) (s : storage) : owner = Owner.get addr s.ownerc
+  let function get_mile   (s : storage) (k : key)  : mile = k
+  let function get_amount (s : storage) (m : mile) : int = Collection.get s.mile_amounts m
+  let function get_expiration (s : storage) (m : mile) : date = Collection.get s.mile_expirations m
+
+  let function get_owner (s : storage) (a : address) : owner = a
+
+  let function get_miles (s : storage) (o : owner) : set mile
+  = Map.get s.owner_miles o
+
+  (* Owner.miles is a partition of s.miles *)
+
+  axiom Owners_miles_part_1 : forall s : storage, m : mile, o : owner.
+    Fset.mem o s.owners ->
+    let miles = get_miles s o in
+    Fset.mem m miles -> Fset.mem m s.miles
+
+  axiom Owners_miles_part_2 : forall s : storage, m : mile.
+    exists o : owner.
+    let miles = get_miles s o in
+    Fset.mem m s.miles -> Fset.mem m miles
 
   let remove_miles (o : owner) (m : mile) (s:storage) : unit
-    requires { Mile.mem m s.milec }
-    ensures  { Mile.sum_col (old s).milec mile_amount =
-      (Mile.sum_col s.milec mile_amount) + mile_amount m }
-    ensures  { Mile.diff (old s).milec s.milec = Fset.singleton m } =
-    s.milec <- Mile.remove m s.milec
+  requires { mem m s.miles }
+  ensures  { FsetSum.sum (old s).miles (get_amount (old s)) =
+      (FsetSum.sum s.miles (get_amount s)) + get_amount s m }
+  ensures  { forall x:mile. mem x s.miles <-> (mem x (old s).miles /\ x <> m) }
+  =
+    s.miles       <- Fset.remove m s.miles;
+    let miles = get_miles s o in
+    let new_miles = remove m miles in
+    s.owner_miles <- Collection.set s.owner_miles o new_miles
 
-  let ghost set_amount (m : mile) (a : int) (s : storage) : unit
-  requires { Mile.mem m s.milec }
+  let set_amount (m : mile) (a : int) (s : storage) : unit
+  requires { mem m s.miles }
   requires { a > 0 }
-  ensures  { Mile.sum_col (old s).milec mile_amount =
-      (Mile.sum_col s.milec mile_amount) - a + mile_amount m } =
-    let new_m = {
-        mile_id = mile_key m;
-        amount  = a;
-        expiration = mile_sort m;
-    } in
-    s.milec <- Mile.remove m s.milec;
-    s.milec <- Mile.add new_m s.milec
+  ensures  { FsetSum.sum (old s).miles (get_amount (old s)) =
+      (FsetSum.sum s.miles (get_amount s)) - a + get_amount (old s) m }
+  ensures { (old s).miles = s.miles }
+  = s.mile_amounts <- Collection.set s.mile_amounts m a
 
-  (* partition property *)
-(*  axiom miles_partition : forall s:storage, o:owner, m:mile.
-           is_mile m s <-> (is_owner o s /\ Mile.mem m o.miles)
-
-  axiom miles_subset : forall s:storage, o:owner.
-           Set.subset o.miles s.miles
-*)
   (* Transactions  ***********************************************************)
 
-  function by_expiration (d : date) (m : mile) : bool = m.expiration > d
+  (* when filter *)
+  val function filter_by_expiration (s : storage) (d:date) (miles : set mile) : array mile
+  reads { s, d, miles }
+  ensures { forall i : int. 0 <= i < length result -> get_expiration s result[i] > d }
+  ensures { forall i : int. 0 <= i < length result -> mem result[i] miles }
+  ensures { forall i j : int. i <> j -> result[i] <> result[j] }
 
-  let ghost consume (e : env) (s : storage) (owner : address) (nbmiles : int) : transfers
+  (* sum of amounts *)
+  function get_array_amount (s : storage) (a : array key) (i : int) : int =
+  get_amount s a[i]
+
+  clone cml.Sum as Amounts with type     storage = storage,
+                                type     asset   = mile,
+                                function f       = get_array_amount
+
+  let consume (e : env) (s : storage) (owner : address) (nbmiles : int) : transfers
   requires { nbmiles > 0 }
+  requires { let o = get_owner s owner in Fset.mem o s.owners }
+  requires { forall m : mile, s : storage. get_amount s m > 0 }
   requires {
-     let o = get_owner owner s in
-     let l = Mile.when (by_expiration (now e)) o.miles in
-     Mile.sum l get_amount 0 (length l) >= nbmiles
+     let o = get_owner s owner in
+     let miles = get_miles s o in
+     let l = Filter.when miles in
+     Amounts.sum l 0 (length l) >= nbmiles
   }
-
   ensures { forall m:mile.
-     Mile.mem m (Mile.diff (old s).milec s.milec) -> m.expiration > (now e)
+     mem m (diff (old s).miles s.miles) -> get_expiration s m > (now e)
   }
+  ensures { FsetSum.sum (old s).miles (get_amount (old s)) =
+            (FsetSum.sum s.miles (get_amount s)) + nbmiles }
 
-  ensures {
-     Mile.sum_col (old s).milec mile_amount = (Mile.sum_col s.milec mile_amount) + nbmiles
-  }
+  ensures { Fset.is_empty (Fset.diff s.miles (old s).miles) }
+
+  (* cml 'invariant (mile.project(not mile.amount))) *)
+  ensures { forall m : mile. Fset.mem m s.miles /\ Fset.mem m (old s).miles ->
+    get_expiration s m = get_expiration (old s) m }
 
   = let remainder = ref nbmiles in
-    let o = get_owner owner s in
-    let l = Mile.when (by_expiration (now e)) s.milec in
+    let o = get_owner s owner in
+    let miles = get_miles s o in
+    let l = Filter.when miles in
     try
-       for i = 0 to length l - 1 do
-       invariant { forall k:int. 0 <= k < length l -> Mile.mem l[i] s.milec }
-       invariant { forall m:mile.
-          Mile.mem m (Mile.diff (old s).milec s.milec) -> m.expiration > (now e)
-       }
-       invariant { nbmiles = (Mile.sum l get_amount 0 i) + !remainder }
-       invariant { Mile.sum_col (old s).milec mile_amount =
-          (Mile.sum_col s.milec mile_amount) + (Mile.sum l get_amount 0 i) }
-       invariant { !remainder >= 0 }
-          let m = l[i] in
-          if m.amount > !remainder
-          then
-             (remainder := 0;
-              set_amount m (m.amount - !remainder) s;
-              raise Break)
-          else if m.amount = !remainder
-          then
-             (remainder := 0;
-              remove_miles o m s;
-              raise Break)
-          else
-             (remainder := !remainder - m.amount;
-              remove_miles o m s)
-       done;
+      for i = 0 to (length l) - 1 do
+      (* helps for the membership precondition of set_amouunt: *)
+      invariant { forall k:int. i <= k < length l -> mem l[k] s.miles }
+      (* removed miles are in l: *)
+      invariant {  forall m:mile.
+         mem m (diff (old s).miles s.miles) -> exists k:int. 0 <= k < i /\ l[k] = m }
+      (* remainder bounds: *)
+      invariant { 0 <= !remainder <= Amounts.sum l i (length l) }
+      (* right amount spent invariant *)
+      invariant { FsetSum.sum (old s).miles (get_amount (old s)) =
+        FsetSum.sum s.miles (get_amount s) + nbmiles - !remainder }
+      (* no added mile *)
+      invariant   { Fset.is_empty (Fset.diff s.miles (old s).miles) }
+        let m = l[i] in
+        if get_amount s m > !remainder
+        then
+          (
+          set_amount m (get_amount s m - !remainder) s;
+          remainder := 0;
+           raise Break)
+        else if get_amount s m = !remainder
+        then
+          (remainder := 0;
+           remove_miles o m s;
+           raise Break)
+        else
+          (remainder := !remainder - get_amount s m;
+           remove_miles o m s)
+      done;
     with Break -> assert { !remainder = 0 }; ()
     end;
     assert { !remainder = 0 };
-    empty
+    Contract.empty
 
 end
