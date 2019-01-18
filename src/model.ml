@@ -32,12 +32,23 @@ type vtyp =
   | VTdate
   | VTcurrency    of currency * transfer option
 
-type typ_ =
-  | Tbuiltin of vtyp
+type ptyp =
   | Tasset of ident
-  | Tcontainer of typ_ * container
-  | Tapp of typ_ * typ_
-  | Tnuplet of typ_ list
+  | Tbuiltin of vtyp
+  | Tcontainer of ptyp * container
+  | Tapp of ptyp * ptyp
+  | Tnuplet of ptyp list
+
+type vset =
+  | VSremoved
+  | VSadded
+  | VSstable
+  | VSbefore
+  | VSafter
+
+type ltyp =
+  | LTprog of ptyp
+  | LTvset of vset * ltyp
 
 (* basic value *)
 type bval =
@@ -92,39 +103,42 @@ type arithmetic_operator =
 type collection = int
 
 type reference =
-| Pvar of ident
-| Pfield of ident * ident
+  | Rvar of ident
+  | Rfield of ident * ident
 
-type prog =
-  | Pletin of ident * typ_ * calc
-  | PIf of cond * prog * prog option
-  | PFor of ident * collection * prog
-  | PAssign of assignment_operator * reference * calc
+type pterm =
+  | Pletin of ident * ptyp * pterm
+  | PIf of pterm * pterm * pterm option
+  | PFor of ident * collection * pterm
+  | PAssign of assignment_operator * reference * pterm
   | PTransfer
   | PTransition
-  | PSeq of prog list
-and cond =
-  | Plogical of logical_operator * cond * cond
-  | Pnot of cond
-  | Pcomparaison of comparison_operator * cond * cond
-  | Pcalc of calc
-and calc =
-  | Parithmetic of arithmetic_operator
+  | Pbreak
+  | PSeq of pterm list
+  | Plogical of logical_operator * pterm * pterm
+  | Pnot of pterm
+  | Pcomparaison of comparison_operator * pterm * pterm
+  | Parithmetic of arithmetic_operator * pterm * pterm
   | Pref of reference
   | Pliteral of bval
+  | Papp of pterm * pterm list
+  | PLambda of ident * ptyp * pterm
+
+type cond = pterm
 
 type quantifier =
   | Forall
   | Exists
 
-type term =
-  | Tletin of ident * typ_ * term
-  | Tquantifer of quantifier * ident * typ_ * term
-  | Timply of term * term
-  | Tapp of term * term list
-  | Tlambda of ident * typ_ * term
-  | Tvar of ident
-  | Tliteral of bval
+type lterm =
+  | Lletin of ident * ltyp * lterm
+  | Lquantifer of quantifier * ident * ltyp * lterm
+  | Limply of lterm * lterm
+  | Lapp of lterm * lterm list
+  | Llambda of ident * ltyp * lterm
+  | Lconst of ident
+  | Lrel of ident
+  | Lliteral of bval
 
 
 type transaction = {
@@ -132,9 +146,9 @@ type transaction = {
     args         : arg list;
     calledby     : rexpr;
     condition    : cond;
-    transferred  : calc;
+    transferred  : cond;
     transition   : ident * ident * ident; (* state * state from * state to *)
-    action       : prog;
+    action       : pterm;
 }
 
 type state = ident
@@ -152,7 +166,7 @@ type asset = {
     key          : ident;
     sort         : ident list option;
     role         : bool;
-    init         : prog;
+    init         : pterm;
     preds        : term list
 }
 
