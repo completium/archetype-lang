@@ -1,23 +1,22 @@
-(* -------------------------------------------------------------------- *)
+(* -------------------------------------------------------------------------- *)
 open Core
 open Location
 open ParseTree
 
-(* -------------------------------------------------------------------- *)
+(* -------------------------------------------------------------------------- *)
 let pp_list sep pp =
   Format.pp_print_list
     ~pp_sep:(fun fmt () -> Format.fprintf fmt "%(%)" sep)
     pp
 
-(* -------------------------------------------------------------------- *)
+(* -------------------------------------------------------------------------- *)
 let pp_id fmt (id : lident) =
   Format.fprintf fmt "%s" (unloc id)
 
-(* -------------------------------------------------------------------- *)
+(* -------------------------------------------------------------------------- *)
 let pp_option pp fmt x =
   match x with None -> () | Some x -> pp fmt x
 
-(* -------------------------------------------------------------------- *)
 let pp_enclose pre post pp fmt x =
   Format.fprintf fmt "%(%)%a%(%)" pre pp x post
 
@@ -30,7 +29,76 @@ let pp_postfix post pp fmt x =
 let pp_paren pp fmt x =
   pp_enclose "(" ")" pp fmt x
 
-(* -------------------------------------------------------------------- *)
+let pp_if c pp1 pp2 fmt x =
+  match c with
+  | true  -> Format.fprintf fmt "%a" pp1 x
+  | false -> Format.fprintf fmt "%a" pp2 x
+
+let pp_maybe c tx pp fmt x =
+  pp_if c (tx pp) pp fmt x
+
+let pp_maybe_paren c pp =
+  pp_maybe c pp_paren pp
+
+(* -------------------------------------------------------------------------- *)
+type assoc  = Left | Right | NonAssoc
+type pos    = Left | Right | Infix | None
+
+let precedences_ =
+[
+  "=>",  (10,  NonAssoc);
+  ",",   (20,  Left);
+
+  ":=",  (30,  NonAssoc);
+  "+=",  (30,  NonAssoc);
+  "-=",  (30,  NonAssoc);
+  "*=",  (30,  NonAssoc);
+  "/=",  (30,  NonAssoc);
+  "&=",  (30,  NonAssoc);
+  "|=",  (30,  NonAssoc);
+
+  "->",  (40,  Right);
+  "<->", (50,  NonAssoc);
+
+  "and", (60,  Left);
+  "or",  (70,  Left);
+
+  "=",   (80,  NonAssoc);
+  "<>",  (80,  NonAssoc);
+
+  ">",   (90,  NonAssoc);
+  ">=",  (90,  NonAssoc);
+  "<",   (90,  NonAssoc);
+  "<=",  (90,  NonAssoc);
+
+  "+",   (100, NonAssoc);
+  "-",   (100, NonAssoc);
+
+  "*",   (110, NonAssoc);
+  "/",   (110, NonAssoc);
+
+  ".",   (120, Right);
+
+  "::",  (130, NonAssoc);
+]
+
+let precedences = Hashtbl.create 0
+
+let () =
+List.iter (fun (k, v) -> Hashtbl.add precedences k v) precedences_
+
+let get_precedence name =
+try let res = Hashtbl.find precedences name in Some res with Not_found -> None
+
+let maybe_paren outer inner pp =
+let c =
+match (outer, inner) with
+| (_, (_, NonAssoc)) -> true
+| _ -> false
+in pp_maybe_paren c pp
+
+
+(* -------------------------------------------------------------------------- *)
 let container_to_str c =
 match c with
   | Collection -> "collection"
@@ -70,11 +138,11 @@ let rec pp_type fmt { pldesc = e } =
 
   | Tnuplet l ->
       Format.fprintf fmt
-        "%a"
+        "(%a)"
            (pp_list " * " pp_type) l
 
 
-(* -------------------------------------------------------------------- *)
+(* -------------------------------------------------------------------------- *)
 let logical_operator_to_str op =
 match op with
   | And   -> "and"
@@ -141,7 +209,6 @@ let rec pp_expr fmt { pldesc = e } =
       Format.fprintf fmt "%a%a"
         (pp_option (pp_postfix "::" pp_id)) e
          pp_id id
-
   | Eop op ->
       Format.fprintf fmt "%a"
          pp_operator op
@@ -164,6 +231,7 @@ let rec pp_expr fmt { pldesc = e } =
         (pp_list " " pp_assignment_field) l
 
   | Eapp ({pldesc = Eop op}, [a; b]) ->
+      let _prec = get_precedence (operator_to_str op) in
       Format.fprintf fmt "%a %a %a"
         pp_expr a
         pp_operator op
@@ -266,7 +334,7 @@ match args with
 | [] -> Format.fprintf fmt "()"
 | _ -> Format.fprintf fmt " %a" (pp_list " " pp_expr) args
 
-(* -------------------------------------------------------------------- *)
+(* -------------------------------------------------------------------------- *)
 and pp_field fmt { pldesc = f } =
   match f with
   | Ffield (id, typ, dv, exts) ->
@@ -276,7 +344,7 @@ and pp_field fmt { pldesc = f } =
         pp_type typ
         (pp_option (pp_prefix " := " pp_expr)) dv
 
-(* -------------------------------------------------------------------- *)
+(* -------------------------------------------------------------------------- *)
 and pp_extension fmt { pldesc = e } =
   match e with
   | Eextension (id, args) ->
@@ -284,7 +352,7 @@ and pp_extension fmt { pldesc = e } =
         pp_id id
         (pp_option (pp_prefix " " (pp_list " " pp_expr))) args
 
-(* -------------------------------------------------------------------- *)
+(* -------------------------------------------------------------------------- *)
 let pp_transitem fmt { pldesc = t } =
   match t with
   | Targs (fields, exts) ->
@@ -324,7 +392,7 @@ let pp_transitem fmt { pldesc = t } =
         (pp_option (pp_list " " pp_extension)) exts
         pp_expr e
 
-(* -------------------------------------------------------------------- *)
+(* -------------------------------------------------------------------------- *)
 let state_option_to_str opt =
 match opt with
   | SOinitial  -> "initial"
@@ -437,7 +505,7 @@ let rec pp_declaration fmt { pldesc = e } =
         (pp_list "\n" pp_declaration) ds
 
 
-(* -------------------------------------------------------------------- *)
+(* -------------------------------------------------------------------------- *)
 let pp_model fmt { pldesc = m } =
   match m with
 | Mmodel es ->
@@ -449,11 +517,11 @@ let pp_model fmt { pldesc = m } =
     (pp_list "@,\n" pp_declaration) es
 
 
-(* -------------------------------------------------------------------- *)
+(* -------------------------------------------------------------------------- *)
 let string_of__of_pp pp x =
   Format.asprintf "%a" pp x
 
-(* -------------------------------------------------------------------- *)
+(* -------------------------------------------------------------------------- *)
 let type_to_str  = string_of__of_pp pp_type
 let expr_to_str  = string_of__of_pp pp_expr
 let extension_to_str = string_of__of_pp pp_extension
