@@ -61,15 +61,15 @@ transaction consume = {
      for (m in o.miles.when(expiration >= now)) (
           if (m.amount > remainder)
           then (
-             remainder := 0,
              m.amount  -= remainder,
+             remainder := 0,
              break
           )
           else (
              if (m.amount = remainder)
              then (
-                remainder := 0,
                 o.miles.remove m,
+                remainder := 0,
                 break
              )
              else (
