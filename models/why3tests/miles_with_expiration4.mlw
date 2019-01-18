@@ -35,7 +35,7 @@ module Miles
   let function get_expiration (s : storage) (m : mile) : date = Collection.get s.mile_expirations m
 
   function get_arr_amount (s : storage) (a : array mile) (i : int) : int =
-  Map.get s.mile_amounts a[i]
+  get_amount s a[i]
 
   let function get_owner (s : storage) (a : address) : owner = a
 
@@ -54,12 +54,16 @@ module Miles
     let miles = get_miles s o in
     Fset.mem m s.miles -> Fset.mem m miles
 
-  let remove_miles (*(o : owner)*) (m : mile) (s:storage) : unit
+  let remove_miles (o : owner) (m : mile) (s:storage) : unit
   requires { mem m s.miles }
   ensures  { FsetSum.sum (old s).miles (get_amount (old s)) =
       (FsetSum.sum s.miles (get_amount s)) + get_amount s m }
   ensures  { forall x:mile. mem x s.miles <-> (mem x (old s).miles /\ x <> m) }
-  = s.miles <- remove m s.miles
+  =
+    s.miles       <- Fset.remove m s.miles;
+    let miles = get_miles s o in
+    let new_miles = remove m miles in
+    s.owner_miles <- Collection.set s.owner_miles o new_miles
 
   let set_amount (m : mile) (a : int) (s : storage) : unit
   requires { mem m s.miles }
@@ -75,6 +79,14 @@ module Miles
   reads { s, d, miles }
   ensures { forall i : int. 0 <= i < length result -> get_expiration s result[i] > d }
   ensures { forall i : int. 0 <= i < length result -> mem result[i] miles }
+  ensures { forall i j : int. i <> j -> result[i] <> result[j] }
+
+  meta "compute_max_steps" 1_000_000
+
+  axiom Sum_def_specific :  forall s : storage, a : array mile, i : int.
+    0 < i < length a ->
+    Contract.sum a (get_arr_amount s) i (length a) =
+    Contract.sum a (get_arr_amount s) (i-1) (length a) - (get_arr_amount s a (i-1))
 
   let consume (e : env) (s : storage) (owner : address) (nbmiles : int) : transfers
   requires { nbmiles > 0 }
@@ -119,17 +131,18 @@ module Miles
         let m = l[i] in
         if get_amount s m > !remainder
         then
-          (set_amount m (get_amount s m - !remainder) s;
-           remainder := 0;
+          (
+          set_amount m (get_amount s m - !remainder) s;
+          remainder := 0;
            raise Break)
         else if get_amount s m = !remainder
         then
           (remainder := 0;
-           remove_miles (*o*) m s;
+           remove_miles o m s;
            raise Break)
         else
           (remainder := !remainder - get_amount s m;
-           remove_miles (*o*) m s)
+           remove_miles o m s)
       done;
     with Break -> assert { !remainder = 0 }; ()
     end;
