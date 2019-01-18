@@ -7,7 +7,7 @@
 (ocamllex lexer)
 (menhir (flags --explain) (modules parser))
 
-(executable
+(executables
   (modes     native)
-  (libraries batteries menhirLib)
-  (name      compiler))
+  (libraries batteries menhirLib why3)
+  (names     compiler genwhy3))

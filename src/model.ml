@@ -106,6 +106,33 @@ type reference =
   | Rvar of ident
   | Rfield of ident * ident
 
+type const =
+  | Cnth
+  | Cclear
+  | Cwhen
+  | Cremoveif
+  | Csort
+  | Ccount
+  | Csum
+  | Cmax
+  | Cmin
+  | Cenqueue
+  | Cdequeue
+  | Cpush
+  | Cpop
+  | Cadd
+  | Cremove
+  | Cget
+  | Ccontains
+  | Cupdate
+
+type signature = {
+  name : const;
+  arrity: int;
+  return: ptyp;
+  args: ptyp list;
+}
+
 type pterm =
   | Pletin of ident * ptyp * pterm
   | PIf of pterm * pterm * pterm option
@@ -123,6 +150,7 @@ type pterm =
   | Pliteral of bval
   | Papp of pterm * pterm list
   | PLambda of ident * ptyp * pterm
+  | Pconst of signature
 
 type cond = pterm
 
@@ -167,7 +195,7 @@ type asset = {
     sort         : ident list option;
     role         : bool;
     init         : pterm;
-    preds        : term list
+    preds        : lterm list
 }
 
 type enum = {
@@ -183,5 +211,5 @@ type model = {
     transactions : transaction list;
     stmachines   : stmachine list;
     enums        : enum list;
-    preds        : term list;
+    preds        : lterm list;
 }

@@ -5,9 +5,10 @@
 
 PROFILE  ?= dev
 COMPILER := compiler.exe
+GENWHY3 := genwhy3.exe
 
 # --------------------------------------------------------------------
-all: $(COMPILER) .merlin
+all: $(COMPILER) $(GENWHY3) .merlin
 
 run:
 	dune exec ./$(COMPILER)
