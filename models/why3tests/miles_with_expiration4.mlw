@@ -34,9 +34,6 @@ module Miles
   let function get_amount (s : storage) (m : mile) : int = Collection.get s.mile_amounts m
   let function get_expiration (s : storage) (m : mile) : date = Collection.get s.mile_expirations m
 
-  function get_arr_amount (s : storage) (a : array mile) (i : int) : int =
-  get_amount s a[i]
-
   let function get_owner (s : storage) (a : address) : owner = a
 
   let function get_miles (s : storage) (o : owner) : set mile
@@ -75,18 +72,20 @@ module Miles
 
   (* Transactions  ***********************************************************)
 
- val function filter_by_expiration (s : storage) (d:date) (miles : set mile) : array mile
+  (* when filter *)
+  val function filter_by_expiration (s : storage) (d:date) (miles : set mile) : array mile
   reads { s, d, miles }
   ensures { forall i : int. 0 <= i < length result -> get_expiration s result[i] > d }
   ensures { forall i : int. 0 <= i < length result -> mem result[i] miles }
   ensures { forall i j : int. i <> j -> result[i] <> result[j] }
 
-  meta "compute_max_steps" 1_000_000
+  (* sum of amounts *)
+  function get_array_amount (s : storage) (a : array key) (i : int) : int =
+  get_amount s a[i]
 
-  axiom Sum_def_specific :  forall s : storage, a : array mile, i : int.
-    0 < i < length a ->
-    Contract.sum a (get_arr_amount s) i (length a) =
-    Contract.sum a (get_arr_amount s) (i-1) (length a) - (get_arr_amount s a (i-1))
+  clone cml4.Sum as Amounts  with type storage = storage,
+                             type key     = key,
+                             function f   = get_array_amount
 
   let consume (e : env) (s : storage) (owner : address) (nbmiles : int) : transfers
   requires { nbmiles > 0 }
@@ -96,7 +95,7 @@ module Miles
      let o = get_owner s owner in
      let miles = get_miles s o in
      let l = filter_by_expiration s (now e) miles in
-     Contract.sum l (get_arr_amount s) 0 (length l) >= nbmiles
+     Amounts.sum l 0 (length l) >= nbmiles
   }
   ensures { forall m:mile.
      mem m (diff (old s).miles s.miles) -> get_expiration s m > (now e)
@@ -122,7 +121,7 @@ module Miles
       invariant {  forall m:mile.
          mem m (diff (old s).miles s.miles) -> exists k:int. 0 <= k < i /\ l[k] = m }
       (* remainder bounds: *)
-      invariant { 0 <= !remainder <= Contract.sum l (get_arr_amount s) i (length l) }
+      invariant { 0 <= !remainder <= Amounts.sum l i (length l) }
       (* right amount spent invariant *)
       invariant { FsetSum.sum (old s).miles (get_amount (old s)) =
         FsetSum.sum s.miles (get_amount s) + nbmiles - !remainder }
