@@ -7,7 +7,7 @@
 all: build merlin
 
 build:
-	$(MAKE) -C src compiler.exe
+	$(MAKE) -C src compiler.exe genwhy3.exe
 
 merlin:
 	$(MAKE) -C src merlin
@@ -22,4 +22,4 @@ check:
 	./check.sh
 
 build-deps:
-	opam install dune menhir batteries
+	opam install dune menhir batteries why3
