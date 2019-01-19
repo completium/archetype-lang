@@ -23,7 +23,7 @@ let mk_mile_asset () = {
     init = None;
     preds =
       let zero = Plit (BVint Big_int.zero_big_int) in
-      Some [Pcomparaison (Gt,(Pref (Rfield (Rasset "mile","amount"))),zero)];
+      Some [Pcomp (Gt,(Pref (Rfield (Rasset "mile","amount"))),zero)];
   }
 
 let mk_owner_asset () = {
@@ -42,7 +42,7 @@ let mk_owner_asset () = {
     preds = None;
   }
 
-let mk_add_transaction = {
+let mk_add_transaction () = {
     name = "add";
     args = [ { name = "owner";
                typ  = Tbuiltin VTaddress;
@@ -64,7 +64,7 @@ let mk_add_transaction = {
        Pletin ("lvar0",getowner, Tasset "owner",
                Papp (Pconst Cadd, [Pref (Rfield (Rvar ("lvar0"),"miles"));
                                    Pref (Rvar "newmile");
-                                   Pliteral (BVstring "mile already exists")]))
+                                   Plit (BVstring "mile already exists")]))
       ]);
   }
 
@@ -84,31 +84,32 @@ let mk_consume_transaction () = {
       let s = when o.miles f in
       sum s amount >= val
      *)
-    condition =
+    condition = (
       let getowner = Papp (Pconst Cget,[Pref (Rasset "owner");Pref (Rvar "owner")]) in
       let filter = Pcomp (Gt,Pref (Rfield (Rasset "mile","expiration")),
                                  Pconst Cnow) in
       let set = Papp (Pconst Cwhen, [ Pref (Rfield (Rvar "o","mile")); filter]) in
-      let sum = Papp (Pconst Csum, [Pref (Pvar "s");Pref (Pfield (Rasset "mile","amount"))]) in
-      Some [Pletin ("o",getowner, Tasset "owner",
+      let sum = Papp (Pconst Csum, [Pref (Rvar "s");Pref (Rfield (Rasset "mile","amount"))]) in
+      let cond = Pcomp (Ge, sum, Pref (Rvar "val")) in
+      Some (Pletin ("o", getowner, Tasset "owner",
             Pletin ("s", set, Tcontainer (Tasset "mile", Set),
-            Pcomp (Ge,sum,Pref (Rvar "val"))))];
+            cond))));
     transferred = None;
     transition = None;
-    ensures =
+    ensures = (
       let exp = Lquantifer (Forall, "m", LTvset (VSremoved,LTprog (Tasset "mile")),
-        Lapp (Lconst Cand,[
-              Lapp (Lconst Cmem,[Lref (Rvar "m");Lref (Rfield (Rasset "owner","miles"))]);
-              Llogical (Ge,Lref (Rfield(Rvar "m","expiration")),Lconst Cnow)])) in
-      let getowner = Lapp (Lconst Cget,[Pref (Rasset "owner");Pref (Rvar "owner")]) in
+        Llog (And,
+              Lapp (Lconst Cmem,[Lref (Rvar "m");Lref (Rfield (Rasset "owner","miles"))]),
+              Lcomp (Ge,Lref (Rfield(Rvar "m","expiration")),Lconst Cnow))) in
+      let getowner = Lapp (Lconst Cget,[Lref (Rasset "owner");Lref (Rvar "owner")]) in
       let sumamount = Lapp (Lconst Csum,[Lref (Rfield (Rvar "o","amount"))]) in
       let sumval = Larith (Plus,sumamount,Lref (Rvar "val")) in
       let rightamount =
         Lletin ("o",getowner, LTprog (Tasset "owner"),
-                Lcomp (Lconst Equal,Lapp (Lconst Cbefore,[sumamount]),sumval)
+                Lcomp (Equal,Lapp (Lconst Cbefore,[sumamount]),sumval)
           ) in
-      Some [exp;rightamount];
-    action =
+      Some [exp;rightamount]);
+    action = (
       let zero = BVint Big_int.zero_big_int in
       let filter = Pcomp (Gt,Pref (Rfield (Rasset "mile","expiration")),
                                  Pconst Cnow) in
@@ -119,18 +120,19 @@ let mk_consume_transaction () = {
                       Passign (SimpleAssign,Rvar "r",Plit zero);
                       Pbreak
                     ] in
-      let cond2 = Pcomp (Eq,Pref (Rfield (Rvar "m","amount")),Pref (Rvar "r")) in
+      let cond2 = Pcomp (Equal,Pref (Rfield (Rvar "m","amount")),Pref (Rvar "r")) in
       let then2 = Pseq [
-                      Papp (Pconst Cremove, Rfield (Rvar "o","miles"), Pref (Rvar "m"));
+                      Papp (Pconst Cremove, [Pref (Rfield (Rvar "o","miles")); Pref (Rvar "m")]);
                       Passign (SimpleAssign,Rvar "r",Plit zero);
                       Pbreak
                     ]in
       let then3 = Pseq [
-                      Passign (MinusAssign, Pref (Rvar "r"), Rfield (Rvar "m","amount"));
-                      Papp (Pconst Cremove, Rfield (Rvar "o","miles"), Pref (Rvar "m"));
+                      Passign (MinusAssign, Rvar "r", Pref (Rfield (Rvar "m","amount")));
+                      Papp (Pconst Cremove, [Pref (Rfield (Rvar "o","miles")); Pref (Rvar "m")]);
                       Pbreak
                     ] in
-      let asert = Lcomp (Eq,Lref (Rvar "r"),Llit zero) in
+      let asert = Lcomp (Equal,Lref (Rvar "r"),Llit zero) in
+      let getowner = Papp (Pconst Cget,[Pref (Rasset "owner");Pref (Rvar "owner")]) in
       let p =
         Pletin ("r",Pref (Rvar "val"),Tbuiltin VTint,
         Pletin ("o",getowner,Tasset "owner",
@@ -146,7 +148,7 @@ let mk_consume_transaction () = {
         )))));
         Passert (asert)
         ]))) in
-        Some p;
+        Some p);
   }
 
 let mk_miles_model () = {

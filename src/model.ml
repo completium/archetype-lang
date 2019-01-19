@@ -153,7 +153,7 @@ type lterm =
   | Lletin of ident * lterm * ltyp * lterm
   | Lapp of lterm * lterm list
   | Llambda of ident * ltyp * lterm
-  | Llogical of logical_operator * lterm * lterm
+  | Llog of logical_operator * lterm * lterm
   (* mutualize below with pterm ? *)
   | Lcomp of comparison_operator * lterm * lterm
   | Larith of arithmetic_operator * lterm * lterm
