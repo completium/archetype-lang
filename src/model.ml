@@ -231,3 +231,5 @@ type model = {
     enums        : enum list;
     preds        : lterm list;
 }
+
+let get_asset_ids m = List.map (fun (a : asset) -> a.name) m.assets

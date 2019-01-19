@@ -12,6 +12,7 @@ let use th1 th2 =
     (Theory.use_export (Theory.open_scope th1 name.Ident.id_string) th2)
     ~import:true
 
+(* TODO : use of Ref FsetSum Array should be decided based on transactions' action *)
 let add_use env theory =
   let int_theory = Env.read_theory env ["int"] "Int" in
   (*let int_theory : Theory.theory = Env.read_theory env ["mach";"int"] "UInt32" in*)
@@ -32,10 +33,17 @@ let add_use env theory =
   let theory = use theory ngmap_theory in
   theory
 
-(*let add_types theory m =
-  let
-  let decl = Decl.create_data_decl [] in
-  Theory.add_decl theory decl*)
+let add_asset_ty_decl id key theo =
+  let id = Ident.id_fresh id in
+  let tys = Ty.create_tysymbol id [] (Ty.Alias (Ty.ty_app key [])) in
+  let decl = Decl.create_ty_decl tys in
+  Theory.add_decl theo decl
+
+let add_asset_types env theory m =
+  let types_theory = Env.read_theory env ["cml"] "Types" in
+  let key = Theory.ns_find_ts types_theory.Theory.th_export ["key"] in
+  let asset_ids = get_asset_ids m in
+  List.fold_left (fun theo id -> add_asset_ty_decl id key theo) theory asset_ids
 
 let mk_loadpath main = (Whyconf.loadpath main) @ ["/home/dev/cml/models/why3tests/"]
 
@@ -46,6 +54,7 @@ let mk_theory (m : model) =
  let env : Env.env = Env.create_env (Whyconf.loadpath main) in
  let theory = Theory.create_theory (Ident.id_fresh m.name) in
  let theory = add_use env theory in
+ let theory = add_asset_types env theory m in
  Theory.close_theory theory
 
 let config : Whyconf.config = Whyconf.read_config None
