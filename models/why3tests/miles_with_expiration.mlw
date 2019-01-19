@@ -1,14 +1,11 @@
-module Miles
+theory Miles
 
   use int.Int
-  use mach.int.UInt32
+  (*use mach.int.UInt32*)
   use ref.Ref
 
   use set.Fset
-  use set.FsetComprehension
   use set.FsetSum
-  use set.FsetNth
-  use sum.Sum
 
   use cml.Types
   use cml.Contract
@@ -94,7 +91,7 @@ module Miles
   requires {
      let o = get_owner s owner in
      let miles = get_miles s o in
-     let l = Filter.when miles in
+     let l = filter_by_expiration s (now e) miles in
      Amounts.sum l 0 (length l) >= nbmiles
   }
   ensures { forall m:mile.
@@ -112,7 +109,7 @@ module Miles
   = let remainder = ref nbmiles in
     let o = get_owner s owner in
     let miles = get_miles s o in
-    let l = Filter.when miles in
+    let l = filter_by_expiration s (now e) miles in
     try
       for i = 0 to (length l) - 1 do
       (* helps for the membership precondition of set_amouunt: *)

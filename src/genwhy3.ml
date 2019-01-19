@@ -1,7 +1,52 @@
 (* opening the Why3 library *)
 open Why3
 open Format
+open Model
 open Miles
+
+(* helper function: [use th1 th2] insert the equivalent of a
+   "use import th2" in theory th1 under construction *)
+let use th1 th2 =
+  let name = th2.Theory.th_name in
+  Theory.close_scope
+    (Theory.use_export (Theory.open_scope th1 name.Ident.id_string) th2)
+    ~import:true
+
+let add_use env theory =
+  let int_theory = Env.read_theory env ["int"] "Int" in
+  (*let int_theory : Theory.theory = Env.read_theory env ["mach";"int"] "UInt32" in*)
+  let ref_theory = Env.read_theory env ["ref"] "Ref" in
+  let fset_theory = Env.read_theory env ["set"] "Fset" in
+  let fsetsum_theory = Env.read_theory env ["set"] "FsetSum" in
+  let array_theory = Env.read_theory env ["array"] "Array" in
+  let types_theory = Env.read_theory env ["cml"] "Types" in
+  let contract_theory = Env.read_theory env ["cml"] "Contract" in
+  let ngmap_theory = Env.read_theory env ["cml"] "Ngmap" in
+  let theory = use theory int_theory in
+  let theory = use theory ref_theory in
+  let theory = use theory fset_theory in
+  let theory = use theory fsetsum_theory in
+  let theory = use theory array_theory in
+  let theory = use theory types_theory in
+  let theory = use theory contract_theory in
+  let theory = use theory ngmap_theory in
+  theory
+
+(*let add_types theory m =
+  let
+  let decl = Decl.create_data_decl [] in
+  Theory.add_decl theory decl*)
+
+let mk_loadpath main = (Whyconf.loadpath main) @ ["/home/dev/cml/models/why3tests/"]
+
+let mk_theory (m : model) =
+ let config : Whyconf.config = Whyconf.read_config None in
+ let main : Whyconf.main = Whyconf.get_main config in
+ let main = Whyconf.set_loadpath main (mk_loadpath main) in
+ let env : Env.env = Env.create_env (Whyconf.loadpath main) in
+ let theory = Theory.create_theory (Ident.id_fresh m.name) in
+ let theory = add_use env theory in
+ Theory.close_theory theory
 
 let config : Whyconf.config = Whyconf.read_config None
 let main : Whyconf.main = Whyconf.get_main config
@@ -44,7 +89,7 @@ let x_times_x : Term.term = Term.t_app_infer mult_symbol [x;x]
 let fmla4_aux : Term.term = Term.ps_app ge_symbol [x_times_x;zero]
 let fmla4 : Term.term = Term.t_forall_close [var_x] [] fmla4_aux
 
-let goal_id1 : Decl.prsymbol = Decl.create_prsymbol (Ident.id_fresh "goal1")
+let goal_id1 = Decl.create_prsymbol (Ident.id_fresh "goal1")
 let goal_id2 = Decl.create_prsymbol (Ident.id_fresh "goal2")
 let goal_id3 = Decl.create_prsymbol (Ident.id_fresh "goal3")
 let goal_id4 = Decl.create_prsymbol (Ident.id_fresh "goal4")
@@ -82,7 +127,9 @@ let my_theory : Theory.theory_uc = Theory.add_decl my_theory decl_goal4
 
 let my_theory : Theory.theory = Theory.close_theory my_theory
 
-let main () = printf "@[my new theory is as follows:@\n@\n%a@]@."
-              Pretty.print_theory my_theory
+let pr_theo theo = printf "@[my new theory is as follows:@\n@\n%a@]@."
+              Pretty.print_theory theo
 
-let _ = main (); let _ = mk_miles_model () in ()
+let _ =
+  pr_theo my_theory;
+  pr_theo (mk_theory (mk_miles_model ()))
