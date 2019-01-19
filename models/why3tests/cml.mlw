@@ -79,15 +79,15 @@ theory Contract
 end
 
 (* non ghost map *)
-module Collection
+module Ngmap
 
   use int.Int
 
-  type collection 'value = int -> 'value
+  type ngmap 'value = int -> 'value
 
-  let function get (f: collection 'value) (x: int) : 'value = f x
+  let function get (f: ngmap 'value) (x: int) : 'value = f x
 
-  let function set (f: collection 'value) (x: int) (v: 'value) : collection 'value =
+  let function set (f: ngmap 'value) (x: int) (v: 'value) : ngmap 'value =
     fun (y : int) -> if y = x then v else f y
 
 end
@@ -124,30 +124,5 @@ module Sum
   lemma Sum_eq :
     forall s : storage, c1 c2 : array asset, i j : int.
     (forall k : int. i <= k < j -> f s c1 k = f s c2 k) -> sum c1 i j = sum c2 i j
-
-end
-
-module When
-
-  use array.Array
-  use set.Fset
-  use int.Int
-
-  type storage
-  type env
-  type asset
-
-  val function filter env storage asset : bool
-
-  val function when (set asset) : array asset
-
-  axiom When_filter : forall e : env, s : storage, c : set asset, set i : int.
-    0 <= i < length (when c) -> filter e s (when c)[i]
-
-  axiom When_mem : forall  c : set asset, set i : int.
-    0 <= i < length (when c) -> mem (when c)[i] c
-
-  axiom When_inj : forall c : set asset, i j : int.
-    i <> j -> (when c)[i] <> (when c)[j]
 
 end

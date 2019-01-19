@@ -4,9 +4,10 @@ type ident = string
 type role = {
     name         : ident;
     default      : rexpr option;
-} and rexpr =
+  }
+and rexpr =
   | Ror of rexpr * rexpr
-  | Rrole of role
+  | Rrole of ident
 
 type currency =
   | Tez
@@ -30,6 +31,8 @@ type vtyp =
   | VTuint
   | VTfloat
   | VTdate
+  | VTstring
+  | VTaddress
   | VTcurrency    of currency * transfer option
 
 type ptyp =
@@ -56,11 +59,12 @@ type bval =
   | BVuint         of Big_int.big_int
   | BVfloat        of float
   | BVdate         of string (* todo : plus Bat.date *)
+  | BVstring       of string
   | BVcurrency     of float
 
 type decl = {
     name         : ident;
-    typ          : vtyp;
+    typ          : ptyp;
     default      : bval option;
 }
 
@@ -104,7 +108,8 @@ type collection = int
 
 type reference =
   | Rvar of ident
-  | Rfield of ident * ident
+  | Rfield of reference * ident
+  | Rasset of ident
 
 type const =
   | Cnth
@@ -121,10 +126,15 @@ type const =
   | Cpush
   | Cpop
   | Cadd
+  | Caddifnotexist
   | Cremove
   | Cget
   | Ccontains
   | Cupdate
+  | Cvoid
+  | Cnow
+  | Cmem
+  | Cbefore
 
 type signature = {
   name : const;
@@ -134,23 +144,24 @@ type signature = {
 }
 
 type pterm =
-  | Pletin of ident * ptyp * pterm
-  | PIf of pterm * pterm * pterm option
-  | PFor of ident * collection * pterm
-  | PAssign of assignment_operator * reference * pterm
-  | PTransfer
-  | PTransition
+  | Pif of pterm * pterm * pterm option
+  | Pfor of ident * collection * pterm
+  | Passign of assignment_operator * reference * pterm
+  | Ptransfer
+  | Ptransition
   | Pbreak
-  | PSeq of pterm list
-  | Plogical of logical_operator * pterm * pterm
+  | Pseq of pterm list
   | Pnot of pterm
-  | Pcomparaison of comparison_operator * pterm * pterm
-  | Parithmetic of arithmetic_operator * pterm * pterm
-  | Pref of reference
-  | Pliteral of bval
+  | Pletin of ident * pterm * ptyp * pterm
   | Papp of pterm * pterm list
-  | PLambda of ident * ptyp * pterm
-  | Pconst of signature
+  | Plambda of ident * ptyp * pterm
+  | Plogical of logical_operator * pterm * pterm
+  (* mutualize below with lterm ? *)
+  | Pcomp of comparison_operator * pterm * pterm
+  | Parith of arithmetic_operator * pterm * pterm
+  | Pref of reference
+  | Plit of bval
+  | Pconst of const
 
 type cond = pterm
 
@@ -159,24 +170,29 @@ type quantifier =
   | Exists
 
 type lterm =
-  | Lletin of ident * ltyp * lterm
   | Lquantifer of quantifier * ident * ltyp * lterm
   | Limply of lterm * lterm
+  | Lrel of ident
+  | Lletin of ident * lterm * ltyp * lterm
   | Lapp of lterm * lterm list
   | Llambda of ident * ltyp * lterm
-  | Lconst of ident
-  | Lrel of ident
-  | Lliteral of bval
-
+  | Llogical of logical_operator * lterm * lterm
+  (* mutualize below with pterm ? *)
+  | Lcomp of comparison_operator * lterm * lterm
+  | Larith of arithmetic_operator * lterm * lterm
+  | Lref of reference
+  | Llit of bval
+  | Lconst of const
 
 type transaction = {
     name         : ident;
     args         : arg list;
-    calledby     : rexpr;
-    condition    : cond;
-    transferred  : cond;
-    transition   : ident * ident * ident; (* state * state from * state to *)
-    action       : pterm;
+    calledby     : rexpr option;
+    condition    : cond option;
+    transferred  : cond option;
+    transition   : (ident * ident * ident) option; (* state * state from * state to *)
+    ensures      : lterm list option;
+    action       : pterm option;
 }
 
 type state = ident
@@ -194,8 +210,8 @@ type asset = {
     key          : ident;
     sort         : ident list option;
     role         : bool;
-    init         : pterm;
-    preds        : lterm list
+    init         : pterm option;
+    preds        : pterm list option;
 }
 
 type enum = {
