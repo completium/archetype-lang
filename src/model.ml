@@ -104,8 +104,6 @@ type arithmetic_operator =
   | Mult
   | Div
 
-type collection = int
-
 type reference =
   | Rvar of ident
   | Rfield of reference * ident
@@ -143,15 +141,38 @@ type signature = {
   args: ptyp list;
 }
 
+type quantifier =
+  | Forall
+  | Exists
+
+type lterm =
+  | Lquantifer of quantifier * ident * ltyp * lterm
+  | Limply of lterm * lterm
+  | Lrel of ident
+  (* below is common entries with lterm *)
+  | Lletin of ident * lterm * ltyp * lterm
+  | Lapp of lterm * lterm list
+  | Llambda of ident * ltyp * lterm
+  | Llogical of logical_operator * lterm * lterm
+  (* mutualize below with pterm ? *)
+  | Lcomp of comparison_operator * lterm * lterm
+  | Larith of arithmetic_operator * lterm * lterm
+  | Lref of reference
+  | Llit of bval
+  | Lconst of const
+
 type pterm =
+  (* program specific *)
   | Pif of pterm * pterm * pterm option
-  | Pfor of ident * collection * pterm
+  | Pfor of ident * pterm * pterm
   | Passign of assignment_operator * reference * pterm
   | Ptransfer
   | Ptransition
   | Pbreak
   | Pseq of pterm list
   | Pnot of pterm
+  | Passert of lterm
+  (* below is common entries with lterm *)
   | Pletin of ident * pterm * ptyp * pterm
   | Papp of pterm * pterm list
   | Plambda of ident * ptyp * pterm
@@ -164,25 +185,6 @@ type pterm =
   | Pconst of const
 
 type cond = pterm
-
-type quantifier =
-  | Forall
-  | Exists
-
-type lterm =
-  | Lquantifer of quantifier * ident * ltyp * lterm
-  | Limply of lterm * lterm
-  | Lrel of ident
-  | Lletin of ident * lterm * ltyp * lterm
-  | Lapp of lterm * lterm list
-  | Llambda of ident * ltyp * lterm
-  | Llogical of logical_operator * lterm * lterm
-  (* mutualize below with pterm ? *)
-  | Lcomp of comparison_operator * lterm * lterm
-  | Larith of arithmetic_operator * lterm * lterm
-  | Lref of reference
-  | Llit of bval
-  | Lconst of const
 
 type transaction = {
     name         : ident;

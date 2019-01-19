@@ -22,7 +22,7 @@ let mk_mile_asset () = {
     role = false;
     init = None;
     preds =
-      let zero = Pliteral (BVint Big_int.zero_big_int) in
+      let zero = Plit (BVint Big_int.zero_big_int) in
       Some [Pcomparaison (Gt,(Pref (Rfield (Rasset "mile","amount"))),zero)];
   }
 
@@ -86,13 +86,13 @@ let mk_consume_transaction () = {
      *)
     condition =
       let getowner = Papp (Pconst Cget,[Pref (Rasset "owner");Pref (Rvar "owner")]) in
-      let filter = Pcomparaison (Gt,Pref (Rfield (Rasset "mile","expiration")),
+      let filter = Pcomp (Gt,Pref (Rfield (Rasset "mile","expiration")),
                                  Pconst Cnow) in
       let set = Papp (Pconst Cwhen, [ Pref (Rfield (Rvar "o","mile")); filter]) in
       let sum = Papp (Pconst Csum, [Pref (Pvar "s");Pref (Pfield (Rasset "mile","amount"))]) in
       Some [Pletin ("o",getowner, Tasset "owner",
             Pletin ("s", set, Tcontainer (Tasset "mile", Set),
-            Pcomparaison (Ge,sum,Pref (Rvar "val"))))];
+            Pcomp (Ge,sum,Pref (Rvar "val"))))];
     transferred = None;
     transition = None;
     ensures =
@@ -100,10 +100,53 @@ let mk_consume_transaction () = {
         Lapp (Lconst Cand,[
               Lapp (Lconst Cmem,[Lref (Rvar "m");Lref (Rfield (Rasset "owner","miles"))]);
               Llogical (Ge,Lref (Rfield(Rvar "m","expiration")),Lconst Cnow)])) in
-      (*let getowner = Lapp (Lconst Cget,[Pref (Rasset "owner");Pref (Rvar "owner")]) in
-      let rightamount = Lletin ("o",getowner, LTprog (Tasset "owner"),)*)
-      Some [exp];
-    action = None;
+      let getowner = Lapp (Lconst Cget,[Pref (Rasset "owner");Pref (Rvar "owner")]) in
+      let sumamount = Lapp (Lconst Csum,[Lref (Rfield (Rvar "o","amount"))]) in
+      let sumval = Larith (Plus,sumamount,Lref (Rvar "val")) in
+      let rightamount =
+        Lletin ("o",getowner, LTprog (Tasset "owner"),
+                Lcomp (Lconst Equal,Lapp (Lconst Cbefore,[sumamount]),sumval)
+          ) in
+      Some [exp;rightamount];
+    action =
+      let zero = BVint Big_int.zero_big_int in
+      let filter = Pcomp (Gt,Pref (Rfield (Rasset "mile","expiration")),
+                                 Pconst Cnow) in
+      let set = Papp (Pconst Cwhen, [ Pref (Rfield (Rvar "o","mile")); filter]) in
+      let cond1 = Pcomp (Gt,Pref (Rfield (Rvar "m","amount")),Pref (Rvar "r")) in
+      let then1 = Pseq [
+                      Passign (MinusAssign, Rfield (Rvar "m","amount"),Pref (Rvar "r"));
+                      Passign (SimpleAssign,Rvar "r",Plit zero);
+                      Pbreak
+                    ] in
+      let cond2 = Pcomp (Eq,Pref (Rfield (Rvar "m","amount")),Pref (Rvar "r")) in
+      let then2 = Pseq [
+                      Papp (Pconst Cremove, Rfield (Rvar "o","miles"), Pref (Rvar "m"));
+                      Passign (SimpleAssign,Rvar "r",Plit zero);
+                      Pbreak
+                    ]in
+      let then3 = Pseq [
+                      Passign (MinusAssign, Pref (Rvar "r"), Rfield (Rvar "m","amount"));
+                      Papp (Pconst Cremove, Rfield (Rvar "o","miles"), Pref (Rvar "m"));
+                      Pbreak
+                    ] in
+      let asert = Lcomp (Eq,Lref (Rvar "r"),Llit zero) in
+      let p =
+        Pletin ("r",Pref (Rvar "val"),Tbuiltin VTint,
+        Pletin ("o",getowner,Tasset "owner",
+        Pletin ("s",set,Tcontainer (Tasset "mile", Set),
+        Pseq [
+        Pfor ("i",Pref (Rvar "s"),
+          Pif (cond1,
+           then1,
+          Some (Pif (cond2,
+           then2,
+          Some (
+           then3
+        )))));
+        Passert (asert)
+        ]))) in
+        Some p;
   }
 
 let mk_miles_model () = {
