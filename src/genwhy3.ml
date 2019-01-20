@@ -5,7 +5,7 @@ open Model
 open Miles
 
 (* adapt according to system ? *)
-let cmlw_loadpath = "/home/dev/contract-model-language/models/why3tests/"
+let cmlw_loadpath = "/home/dev/cml-lang/models/why3tests/"
 
 (* helper function: [use th1 th2] insert the equivalent of a
    "use import th2" in theory th1 under construction *)
