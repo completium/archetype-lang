@@ -232,4 +232,4 @@ type model = {
     preds        : lterm list;
 }
 
-let get_asset_ids m = List.map (fun (a : asset) -> a.name) m.assets
+let get_asset_names m = List.map (fun (a : asset) -> a.name) m.assets

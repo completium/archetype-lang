@@ -4,6 +4,9 @@ open Format
 open Model
 open Miles
 
+(* adapt according to system ? *)
+let cmlw_loadpath = "/home/dev/contract-model-language/models/why3tests/"
+
 (* helper function: [use th1 th2] insert the equivalent of a
    "use import th2" in theory th1 under construction *)
 let use th1 th2 =
@@ -14,24 +17,18 @@ let use th1 th2 =
 
 (* TODO : use of Ref FsetSum Array should be decided based on transactions' action *)
 let add_use env theory =
-  let int_theory = Env.read_theory env ["int"] "Int" in
-  (*let int_theory : Theory.theory = Env.read_theory env ["mach";"int"] "UInt32" in*)
-  let ref_theory = Env.read_theory env ["ref"] "Ref" in
-  let fset_theory = Env.read_theory env ["set"] "Fset" in
-  let fsetsum_theory = Env.read_theory env ["set"] "FsetSum" in
-  let array_theory = Env.read_theory env ["array"] "Array" in
-  let types_theory = Env.read_theory env ["cml"] "Types" in
-  let contract_theory = Env.read_theory env ["cml"] "Contract" in
-  let ngmap_theory = Env.read_theory env ["cml"] "Ngmap" in
-  let theory = use theory int_theory in
-  let theory = use theory ref_theory in
-  let theory = use theory fset_theory in
-  let theory = use theory fsetsum_theory in
-  let theory = use theory array_theory in
-  let theory = use theory types_theory in
-  let theory = use theory contract_theory in
-  let theory = use theory ngmap_theory in
-  theory
+  let theolibs = [ ["int"],   "Int";
+                   ["ref"],   "Ref";
+                   ["set"],   "Fset";
+                   ["set"],   "FsetSum";
+                   ["array"], "Array";
+                   ["cml"],   "Types";
+                   ["cml"],   "Contract";
+                   ["cml"],   "Ngmap" ] in
+  List.fold_left (fun theo (path,lib) ->
+      let theolib = Env.read_theory env path lib in
+      use theo theolib
+    ) theory theolibs
 
 let add_asset_ty_decl id key theo =
   let id = Ident.id_fresh id in
@@ -39,13 +36,15 @@ let add_asset_ty_decl id key theo =
   let decl = Decl.create_ty_decl tys in
   Theory.add_decl theo decl
 
-let add_asset_types env theory m =
+let get_key_type env =
   let types_theory = Env.read_theory env ["cml"] "Types" in
-  let key = Theory.ns_find_ts types_theory.Theory.th_export ["key"] in
-  let asset_ids = get_asset_ids m in
-  List.fold_left (fun theo id -> add_asset_ty_decl id key theo) theory asset_ids
+  Theory.ns_find_ts types_theory.Theory.th_export ["key"]
 
-let mk_loadpath main = (Whyconf.loadpath main) @ ["/home/dev/cml/models/why3tests/"]
+let add_asset_types env theory m =
+  let key = get_key_type env in
+  List.fold_left (fun theo id -> add_asset_ty_decl id key theo) theory (get_asset_names m)
+
+let mk_loadpath main = (Whyconf.loadpath main) @ [cmlw_loadpath]
 
 let mk_theory (m : model) =
  let config : Whyconf.config = Whyconf.read_config None in
