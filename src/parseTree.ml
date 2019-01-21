@@ -84,7 +84,7 @@ type expr_r =
   | Eassign       of assignment_operator * expr * expr
   | Eif           of expr * expr * expr option
   | Ebreak
-  | Efor          of lident * expr * expr
+  | Efor          of lident * expr * expr * expr list option
   | Eassert       of expr
   | Eseq          of expr * expr
   | Efun          of lident_typ list * expr

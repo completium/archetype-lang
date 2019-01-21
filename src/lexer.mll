@@ -40,6 +40,7 @@
       "states"              , STATES         ;
       "initial"             , INITIAL        ;
       "ensure"              , ENSURE         ;
+      "invariant"           , INVARIANT      ;
       "transition"          , TRANSITION     ;
       "transaction"         , TRANSACTION    ;
       "args"                , ARGS           ;

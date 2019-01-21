@@ -267,9 +267,10 @@ let rec pp_expr fmt { pldesc = e } =
   | Ebreak ->
       Format.fprintf fmt "break"
 
-  | Efor (id, expr, body) ->
-      Format.fprintf fmt "for (%a in %a) (%a)"
+  | Efor (id, expr, body, invariants) ->
+      Format.fprintf fmt "for (%a in %a)%a (%a)"
         pp_id id
+        (pp_option (pp_list "\n" (pp_enclose " invariant (" ")" pp_expr))) invariants
         pp_expr expr
         pp_expr body
 
