@@ -26,7 +26,6 @@
 %token QUEUE
 %token STACK
 %token SET
-%token SUBSET
 %token PARTITION
 %token ASSET
 %token WITH
@@ -267,7 +266,6 @@ container:
 | QUEUE      { Queue }
 | STACK      { Stack }
 | SET        { Set }
-| SUBSET     { Subset }
 | PARTITION  { Partition }
 
 %inline pipe_idents:

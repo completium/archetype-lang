@@ -28,7 +28,6 @@
       "queue"               , QUEUE          ;
       "stack"               , STACK          ;
       "set"                 , SET            ;
-      "subset"              , SUBSET         ;
       "partition"           , PARTITION      ;
       "asset"               , ASSET          ;
       "with"                , WITH           ;

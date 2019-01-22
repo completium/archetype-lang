@@ -105,7 +105,6 @@ match c with
   | Queue      -> "queue"
   | Stack      -> "stack"
   | Set        -> "set"
-  | Subset     -> "subset"
   | Partition  -> "partition"
 
 let pp_container fmt c =

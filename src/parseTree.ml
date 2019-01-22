@@ -11,7 +11,6 @@ type container =
   | Queue
   | Stack
   | Set
-  | Subset
   | Partition
 
 type type_r =
