@@ -5,14 +5,11 @@ module Miles
   use ref.Ref
 
   use set.Fset
-  use set.FsetComprehension
   use set.FsetSum
-  use set.FsetNth
-  use sum.Sum
 
-  use cml.Types
-  use cml.Contract
-  use cml.Collection
+  use cml2.Types
+  use cml2.Contract
+  use cml2.Ngmap
 
   use array.Array
 
@@ -21,18 +18,18 @@ module Miles
 
   type storage = {
     mutable miles            : set mile;
-    mutable mile_amounts     : collection int;
-    mutable mile_expirations : collection date;
+    mutable mile_amounts     : ngmap int;
+    mutable mile_expirations : ngmap date;
     mutable owners           : set owner;
-    mutable owner_miles      : collection (set mile);
+    mutable owner_miles      : ngmap (set mile);
   }
 
   axiom Amount_gt0 : forall s : storage, m : mile.
-  Collection.get s.mile_amounts m > 0
+  Ngmap.get s.mile_amounts m > 0
 
   let function get_mile   (s : storage) (k : key)  : mile = k
-  let function get_amount (s : storage) (m : mile) : int = Collection.get s.mile_amounts m
-  let function get_expiration (s : storage) (m : mile) : date = Collection.get s.mile_expirations m
+  let function get_amount (s : storage) (m : mile) : int = Ngmap.get s.mile_amounts m
+  let function get_expiration (s : storage) (m : mile) : date = Ngmap.get s.mile_expirations m
 
   let function get_owner (s : storage) (a : address) : owner = a
 
@@ -60,7 +57,7 @@ module Miles
     s.miles       <- Fset.remove m s.miles;
     let miles = get_miles s o in
     let new_miles = remove m miles in
-    s.owner_miles <- Collection.set s.owner_miles o new_miles
+    s.owner_miles <- Ngmap.set s.owner_miles o new_miles
 
   let set_amount (m : mile) (a : int) (s : storage) : unit
   requires { mem m s.miles }
@@ -68,26 +65,39 @@ module Miles
   ensures  { FsetSum.sum (old s).miles (get_amount (old s)) =
       (FsetSum.sum s.miles (get_amount s)) - a + get_amount (old s) m }
   ensures { (old s).miles = s.miles }
-  = s.mile_amounts <- Collection.set s.mile_amounts m a
+  = s.mile_amounts <- Ngmap.set s.mile_amounts m a
 
   (* Transactions  ***********************************************************)
 
   (* when filter *)
-  val function by_expiration (e : env) (s : storage) (m : mile) : bool
-  ensures { result <-> get_expiration s m > now e }
+  let function by_expiration (e : env) (s : storage) (m : mile) : bool
+  reads { e, s }
+  =
+  get_expiration s m > now e
 
-  clone cml.When as Filter with type env     = env,
-                                type storage = storage,
-                                type asset   = mile,
-                                val  filter  = by_expiration
+  use set.FsetNth
+
+  val function when (e : env) (s : storage)
+      (c : set mile) : array mile
+  reads { e, s, c }
+  ensures { forall i : int. 0 <= i < length result -> by_expiration e s result[i] }
+  ensures { forall i : int. 0 <= i < length result -> mem result[i] c }
+  ensures { forall i j : int. i <> j -> result[i] <> result[j] }
+  (*=
+    let res = ref (make 0 0) in
+    for i = 0 to cardinal c do
+      let v = nth i c in
+      if by_expiration e s v then res := append !res (make 1 v)
+    done;
+    !res*)
 
   (* sum of amounts *)
   function get_array_amount (s : storage) (a : array key) (i : int) : int =
   get_amount s a[i]
 
   clone cml.Sum as Amounts  with type     storage = storage,
-                                  type     asset   = mile,
-                                  function f       = get_array_amount
+                                 type     asset   = mile,
+                                 function f       = get_array_amount
 
   let consume (e : env) (s : storage) (owner : address) (nbmiles : int) : transfers
   requires { nbmiles > 0 }
@@ -96,7 +106,8 @@ module Miles
   requires {
      let o = get_owner s owner in
      let miles = get_miles s o in
-     let l = Filter.when miles in
+     let l = when e s miles
+     in
      Amounts.sum l 0 (length l) >= nbmiles
   }
   ensures { forall m:mile.
@@ -115,7 +126,8 @@ module Miles
   = let remainder = ref nbmiles in
     let o = get_owner s owner in
     let miles = get_miles s o in
-    let l = Filter.when miles in
+    let l = when e s miles
+    in
     try
       for i = 0 to (length l) - 1 do
       (* helps for the membership precondition of set_amouunt: *)
@@ -129,7 +141,7 @@ module Miles
       invariant { FsetSum.sum (old s).miles (get_amount (old s)) =
         FsetSum.sum s.miles (get_amount s) + nbmiles - !remainder }
       (* no added mile *)
-      invariant   { Fset.is_empty (Fset.diff s.miles (old s).miles) }
+      invariant { Fset.is_empty (Fset.diff s.miles (old s).miles) }
         let m = l[i] in
         if get_amount s m > !remainder
         then
@@ -144,7 +156,7 @@ module Miles
            raise Break)
         else
           (remainder := !remainder - get_amount s m;
-           remove_miles o m s)
+          remove_miles o m s)
       done;
     with Break -> assert { !remainder = 0 }; ()
     end;
