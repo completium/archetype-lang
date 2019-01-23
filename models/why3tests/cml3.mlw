@@ -14,6 +14,7 @@ theory Types
   constant max_uint : int = UInt32.max_uint32
 
   exception Break
+  exception NotFound
 
 end
 
@@ -70,12 +71,6 @@ theory Contract
     let transfer = { destination = a; amount = c } in
     ops ++ (Cons transfer Nil)
 
-  (* utils *)
-
-  axiom Diff_ident : forall s : set 'a. diff s s = Fset.empty
-
-  axiom Nth_elem : forall i : int, s : set 'a. 0 <= i < cardinal s -> mem (nth i s) s
-
 end
 
 (* non ghost map *)
@@ -92,37 +87,101 @@ module Ngmap
 
 end
 
-module Sum
+(* Set with :
+   mem
+   lenght
+   add
+   remove
+   diff
+   nth
+  implemented with list type
+ *)
+theory Asset
+
+  use list.List
+  use list.Length
+  use list.Elements
+  use list.Append
+  use list.Nth
+  use set.Fset
+  use option.Option
+  use int.Int
+
+  use Types
+  use Contract
+  use Ngmap
+
+  predicate mem (a : 'a) (c : list 'a) = Mem.mem a c
+
+  let function length (c : list 'a) = length c
+
+  let function add (a : 'a) (c : list 'a) = c ++ (Cons a Nil)
+
+  let rec function remove (a : 'a)
+                          (eq : 'a -> 'a -> bool)
+                          (c : list 'a) : list 'a
+  =
+     match c with
+     | Nil -> Nil
+     | Cons e tl ->
+       if eq e a
+       then remove a eq tl
+       else Cons e (remove a eq tl)
+     end
+
+  let ghost function diff (c1 c2 : list 'a)
+  = Fset.diff (elements c1) (elements c2)
+
+  let ghost function subset (c1 c2 : list 'a)
+  = Fset.subset (elements c1) (elements c2)
+
+  predicate is_empty (c : list 'a) = forall m : 'a. not (mem m c)
+
+  let function nth (i : int) (default : 'a) (c : list 'a) : 'a
+  requires { 0 <= i < length c }
+  = match nth i c with
+    | Some v -> v
+    | None -> default
+    end
+
+  (* should not be ghost *)
+  let ghost function sum (c : list 'a) (f : 'a -> int)
+  = FsetSum.sum (elements c) f
+
+end
+
+theory Sum
 
   use int.Int
-  use array.Array
+  use list.List
+
+  use Asset
 
   type storage
-
   type asset
 
-  function f storage (array asset) int : int
+  function f storage (list asset) int : int
 
-  function sum (array asset) int int : int
+  function sum (list asset) int int : int
 
   axiom Sum_def_empty :
-    forall c : array asset, i j : int.
+    forall c : list asset, i j : int.
     j <= i -> sum c i j = 0
 
   axiom Sum_def_non_empty :
-    forall s : storage, c: array asset, i j : int.
+    forall s : storage, c: list asset, i j : int.
     i < j -> sum c i j = f s c i + sum c (i+1) j
 
   lemma Sum_right_extension:
-    forall s : storage, c : array asset, i j : int.
+    forall s : storage, c : list asset, i j : int.
     i < j -> sum c i j = sum c i (j-1) + f s c (j-1)
 
   lemma Sum_transitivity :
-    forall c : array asset, i k j : int. i <= k <= j ->
+    forall c : list asset, i k j : int. i <= k <= j ->
     sum c i j = sum c i k + sum c k j
 
   lemma Sum_eq :
-    forall s : storage, c1 c2 : array asset, i j : int.
+    forall s : storage, c1 c2 : list asset, i j : int.
     (forall k : int. i <= k < j -> f s c1 k = f s c2 k) -> sum c1 i j = sum c2 i j
 
 end
