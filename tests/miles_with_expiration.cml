@@ -47,9 +47,9 @@ transaction consume = {
 
   ensure : is_empty added.mile;
 
-  ensure : invariant (mile.project(not mile.amount));
+  ensure : novariant (mile.project(not mile.amount));
 
-  ensure : invariant (owner.when(owner.owner <> owner).miles);
+  ensure : novariant (owner.when(owner.owner <> owner).miles);
 
   ensure : forall m : removed mile,
              forall o : stable mile,
@@ -58,7 +58,14 @@ transaction consume = {
   action :
      let remainder = val in
      let o = owner.get owner in
-     for (m in o.miles.when(expiration >= now)) (
+     for (m in o.miles.when(expiration >= now))
+     (* remainder has a decreasing upper bound *)
+     invariant (0 <= remainder and remainder <= to_iter.sum(amount))
+     (* removed miles *)
+     invariant (in_subset (removed miles) (o.miles.when(expiration >= now)))
+     (* right amount consumed *)
+     invariant (before miles.sum(amount) = miles.sum(amount) + nbmiles - remainder)
+     (
           if (m.amount > remainder)
           then (
              m.amount  -= remainder,
@@ -91,7 +98,7 @@ transaction clear_expired = {
 
   ensure : is_empty (added mile);
 
-  ensure : invariant mile;
+  ensure : novariant mile;
 
   action : mile.removeif (expiration < now());
 }

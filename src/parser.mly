@@ -38,6 +38,7 @@
 %token STATES
 %token INITIAL
 %token ENSURE
+%token INVARIANT
 %token TRANSITION
 %token TRANSACTION
 %token ARGS
@@ -412,8 +413,8 @@ expr_r:
  | ASSERT x=paren(expr)
      { Eassert x }
 
- | FOR LPAREN x=ident IN y=expr RPAREN body=expr
-     { Efor (x, y, body) }
+ | FOR LPAREN x=ident IN y=expr RPAREN is=invariants? body=expr
+     { Efor (x, y, body, is) }
 
  | BREAK
      { Ebreak }
@@ -441,6 +442,12 @@ expr_r:
 
  | x=simple_with_app_expr_r
      { x }
+
+%inline invariants:
+ | xs=invariant+   { xs }
+
+%inline invariant:
+ | INVARIANT x=paren(expr){ x }
 
 %inline simple_with_app_expr_r:
  | x=simple_expr a=app_args
