@@ -154,19 +154,21 @@ let[@inline] mile_set_amount (params : storage * string * nat) =
   let s = s.mile_amount <- Map.add k v s.mile_amount in
   s
 
-let[@inline] when (params : ('a -> bool) * ('a list)) =
-  let f = get params 0 in
-  let l = get params 1 in
+let[@inline] when (params : storage * ((storage * 'a) -> bool) * ('a list)) =
+  let s = get params 0 in
+  let f = get params 1 in
+  let l = get params 2 in
   List.fold (fun (e, acc) ->
-      if f e
+      if f (s, e)
       then e::acc
       else acc
     ) l []
 
-let[@inline] sum_nat (params : ('a -> nat) * ('a list)) =
-  let f = get params 0 in
-  let l = get params 1 in
-  List.fold (fun (e, acc) -> f e + acc) l (0:nat)
+let[@inline] sum_nat (params : storage * ((storage * 'a) -> nat) * ('a list)) =
+  let s = get params 0 in
+  let f = get params 1 in
+  let l = get params 2 in
+  List.fold (fun (e, acc) -> f (s, e) + acc) l (0:nat)
 
 (* TRANSACTIONS ****)
 
@@ -197,14 +199,14 @@ let%entry consume (params : address * nat) s =
   let val_ = params.(1) in
   let o = get_owner_addr (s, owner) in
   let m = get_owner_miles (s, o) in
-  let l = when ((fun k -> by_expiration (s, k)), m) in
-  let sum_amount = sum_nat ((fun k -> get_mile_amount (s, k)), l) in
+  let l = when (s, by_expiration, m) in
+  let sum_amount = sum_nat (s, get_mile_amount, l) in
   if not (sum_amount >= val_)
   then Current.failwith ("consume: condition 1 fails.");
   let remainder = val_ in
   let o = get_owner_addr (s, owner) in
   let m = get_owner_miles (s, o) in
-  let l = when ((fun k -> by_expiration (s, k)), m) in
+  let l = when (s, by_expiration, m) in
   let (ops, s, remainder, o) =
     List.fold (fun (k,(ops, s, remainder, o)) ->
         if remainder > (0:nat)
