@@ -1,5 +1,6 @@
 (* opening the Why3 library *)
 open Why3
+open Ptree
 open Format
 open Model
 open Miles
@@ -46,6 +47,19 @@ let add_asset_types env theory m =
 
 let mk_loadpath main = (Whyconf.loadpath main) @ [cmlw_loadpath]
 
+(*let add_storage_type _env theory m =
+  let _fields = get_asset_fields m in
+  let _tys =  Ty.create_tysymbol (Ident.id_fresh "storage") [] Ty.NoDef in
+  let ty = (Ty.ty_var (Ty.create_tvsymbol (Ident.id_fresh "int"))) in
+  let _constrs =
+    List.map (fun (name,fname,_) ->
+
+        (Term.create_fsymbol (Ident.id_fresh (name^"_"^fname)) [] ty,[])
+      ) _fields in
+  Theory.add_data_decl theory [_tys, [Term.fs_bool_true,[]; Term.fs_bool_false,[]]]
+  let storage = Decl.create_data_decl [tys,constrs] in
+  Theory.add_decl theory storage*)
+
 let mk_theory (m : model) =
  let config : Whyconf.config = Whyconf.read_config None in
  let main : Whyconf.main = Whyconf.get_main config in
@@ -54,6 +68,7 @@ let mk_theory (m : model) =
  let theory = Theory.create_theory (Ident.id_fresh m.name) in
  let theory = add_use env theory in
  let theory = add_asset_types env theory m in
+ (*let theory = add_storage_type env theory m in*)
  Theory.close_theory theory
 
 let config : Whyconf.config = Whyconf.read_config None
@@ -138,6 +153,128 @@ let my_theory : Theory.theory = Theory.close_theory my_theory
 let pr_theo theo = printf "@[my new theory is as follows:@\n@\n%a@]@."
               Pretty.print_theory theo
 
+(* TYPING *)
+
+let mk_ident s = { id_str = s; id_ats = []; id_loc = Loc.dummy_position }
+
+let mk_expr e = { expr_desc = e; expr_loc = Loc.dummy_position }
+
+let mk_term t = { term_desc = t; term_loc = Loc.dummy_position }
+
+let mk_pat p = { pat_desc = p; pat_loc = Loc.dummy_position }
+let pat_var id = mk_pat (Pvar id)
+
+let mk_var id = mk_term (Tident (Qident id))
+
+let param0 = [Loc.dummy_position, None, false, Some (PTtuple [])]
+let param1 id ty = [Loc.dummy_position, Some id, false, Some ty]
+
+let mk_tconst s =
+  mk_term
+    (Tconst
+       Number.(ConstInt { ic_negative = false ;
+                          ic_abs = int_literal_dec s }))
+
+let mk_econst s =
+  mk_expr
+    (Econst
+       Number.(ConstInt { ic_negative = false ;
+                          ic_abs = int_literal_dec s }))
+
+let mk_tapp f l = mk_term (Tidapp(f,l))
+
+let mk_eapp f l = mk_expr (Eidapp(f,l))
+
+let mk_evar x = mk_expr(Eident(Qident x))
+
+let mk_qid l =
+  let rec aux l =
+    match l with
+      | [] -> assert false
+      | [x] -> Qident(mk_ident x)
+      | x::r -> Qdot(aux r,mk_ident x)
+  in
+  aux (List.rev l)
+
+let use_import (f, m) =
+  let m = mk_ident m in
+  let loc = Loc.dummy_position in
+  Typing.open_scope loc m;
+  Typing.add_decl loc (Ptree.Duse (Qdot (Qident (mk_ident f), m)));
+  Typing.close_scope loc ~import:true
+
+let eq_symb = mk_qid [Ident.op_infix "="]
+let int_type_id = mk_qid ["int"]
+let int_type = PTtyapp(int_type_id,[])
+let mul_int = mk_qid ["Int";Ident.op_infix "*"]
+
+let d1 : Ptree.decl =
+  let id_x = mk_ident "x" in
+  let pre = mk_tapp eq_symb [mk_var id_x; mk_tconst "6"] in
+  let result = mk_ident "result" in
+  let post = mk_tapp eq_symb [mk_var result; mk_tconst "42"] in
+  let spec = {
+    sp_pre = [pre];
+    sp_post = [Loc.dummy_position,[pat_var result,post]];
+    sp_xpost = [];
+    sp_reads = [];
+    sp_writes = [];
+    sp_alias = [];
+    sp_variant = [];
+    sp_checkrw = false;
+    sp_diverge = false;
+    sp_partial = false;
+  }
+  in
+  let body = mk_eapp mul_int [mk_evar id_x; mk_econst "7"] in
+  let f1 =
+    Efun(param1 id_x int_type, None, Ity.MaskVisible, spec, body)
+  in
+  Dlet(mk_ident "f1",false,Expr.RKnone, mk_expr f1)
+
+let test_typing () =
+  let config : Whyconf.config = Whyconf.read_config None in
+  let main : Whyconf.main = Whyconf.get_main config in
+  let main = Whyconf.set_loadpath main (mk_loadpath main) in
+  let env : Env.env = Env.create_env (Whyconf.loadpath main) in
+
+  let () = Typing.open_file env [] (* empty pathname *) in
+  let () = Typing.open_module (mk_ident "Miles_with_expiration") in
+  let () = use_import ("int","Int") in
+  let d1 : Ptree.decl =
+    let id_x = mk_ident "x" in
+    let pre = mk_tapp eq_symb [mk_var id_x; mk_tconst "6"] in
+    let result = mk_ident "result" in
+    let post = mk_tapp eq_symb [mk_var result; mk_tconst "42"] in
+    let spec = {
+        sp_pre = [pre];
+        sp_post = [Loc.dummy_position,[pat_var result,post]];
+        sp_xpost = [];
+        sp_reads = [];
+        sp_writes = [];
+        sp_alias = [];
+        sp_variant = [];
+        sp_checkrw = false;
+        sp_diverge = false;
+        sp_partial = false;
+      }
+    in
+    let body = mk_eapp mul_int [mk_evar id_x; mk_econst "7"] in
+    let f1 =
+      Efun(param1 id_x int_type, None, Ity.MaskVisible, spec, body)
+    in
+    Dlet(mk_ident "f1",false,Expr.RKnone, mk_expr f1) in
+  (try Typing.add_decl Loc.dummy_position d1
+  with e ->
+    Format.printf "Exception raised during typing of d:@ %a@."
+       Exn_printer.exn_printer e);
+  let () = Typing.close_module Loc.dummy_position in
+  let mods : Pmodule.pmodule Wstdlib.Mstr.t = Typing.close_file () in
+  Wstdlib.Mstr.iter (fun _ m ->
+      pr_theo m.Pmodule.mod_theory)
+    mods
+
 let _ =
   pr_theo my_theory;
-  pr_theo (mk_theory (mk_miles_model ()))
+  pr_theo (mk_theory (mk_miles_model ()));
+  test_typing ()

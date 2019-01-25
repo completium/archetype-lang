@@ -148,8 +148,8 @@ type quantifier =
 type lterm =
   | Lquantifer of quantifier * ident * ltyp * lterm
   | Limply of lterm * lterm
-  | Lrel of ident
   (* below is common entries with lterm *)
+  | Lrel of int
   | Lletin of ident * lterm * ltyp * lterm
   | Lapp of lterm * lterm list
   | Llambda of ident * ltyp * lterm
@@ -173,6 +173,7 @@ type pterm =
   | Pnot of pterm
   | Passert of lterm
   (* below is common entries with lterm *)
+  | Prel of int
   | Pletin of ident * pterm * ptyp * pterm
   | Papp of pterm * pterm list
   | Plambda of ident * ptyp * pterm
@@ -233,3 +234,12 @@ type model = {
 }
 
 let get_asset_names m = List.map (fun (a : asset) -> a.name) m.assets
+
+(* returns a list of triplet : asset name, field name, field type *)
+let get_asset_fields m =
+  List.fold_left (fun acc (a : asset) ->
+      let id = a.name in
+      List.fold_left (fun acc (arg : decl) ->
+          acc @ [id, arg.name, arg.typ]
+        ) acc a.args
+    ) [] m.assets
