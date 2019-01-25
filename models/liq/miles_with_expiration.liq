@@ -9,7 +9,7 @@ let[@inline] now () = Current.time ()
 let[@inline] empty_ops = ([] : operation list)
 
 (* insertion sort *)
-let[@inline] sort cmp l = l
+let[@inline] sort (cmp, l) = l
 (*  let rec insert v l =
     match l with
     | [] -> [ v ]
@@ -20,30 +20,30 @@ let[@inline] sort cmp l = l
     | e::t -> insert e (sort t) in
   sort l*)
 
-let[@inline] nat_sub (a : nat) (b : nat) =
+let[@inline] nat_sub ((a : nat), (b : nat)) =
   match%nat a - b with
   | Plus v -> v
   | Minus _ -> Current.failwith "nat_sub result is not a nat."
 
-let cmp s1 s2 = if s1 < s2 then -1 else if s1 > s2 then 1 else 0
+let[@inline] cmp (s1, s2) = if s1 < s2 then -1 else if s1 > s2 then 1 else 0
 
-let mem k l =
+let[@inline] mem (k, l) =
   List.fold (fun (e,acc) ->
       match acc with
       | Some _ -> acc
       | None ->
-         if cmp e k = 0
+         if cmp (e, k) = 0
          then Some e
          else acc
     ) l None
 
-let append l1 l2 =
+let[@inline] append (l1, l2) =
   let l = List.fold (fun (e,acc) ->
       e::acc
     ) l1 l2 in
-  sort cmp l
+  sort (cmp, l)
 
-let add a l = sort cmp a::l
+let[@inline] add (a, l) = sort (cmp, a::l)
 
 (* STORAGE ****)
 
@@ -72,7 +72,7 @@ let[@inline] get_admin (s : storage) = s.admin
 let[@inline] get_admin_tmp (s : storage) = s.admin_tmp
 
 let[@inline] get_miles_id ((s : storage), (k : string)) =
-  match mem k s.miles_id with
+  match mem (k, s.miles_id) with
   | Some v -> v
   | None -> Current.failwith "get_miles_id: not found"
 
@@ -96,7 +96,7 @@ let[@inline] get_owner_addr ((s : storage), (k : address)) =
   then k
   else Current.failwith "get_owner: not found"
 
-let owner_addifnotexist ((s : storage), (k : address), (m : string list)) =
+let[@inline] owner_addifnotexist ((s : storage), (k : address), (m : string list)) =
   let s =
     if not (Set.mem k s.owner_addr)
     then
@@ -104,10 +104,10 @@ let owner_addifnotexist ((s : storage), (k : address), (m : string list)) =
       s
     else s in
   let s = s.owner_miles <- Map.add k m s.owner_miles in
-  let s = s.miles_id <- append s.miles_id m in
+  let s = s.miles_id <- append(s.miles_id, m) in
   s
 
-let owner_add_miles ((s : storage), (k : address), (i : string), (a : nat), (e : timestamp)) =
+let[@inline] owner_add_miles ((s : storage), (k : address), (i : string), (a : nat), (e : timestamp)) =
    if not (Set.mem k s.owner_addr)
     then
       Current.failwith "owner_add_miles: not found";
@@ -115,8 +115,8 @@ let owner_add_miles ((s : storage), (k : address), (i : string), (a : nat), (e :
      match Map.find k s.owner_miles with
      | Some miles -> miles
      | None ->  Current.failwith "owner_add_miles: not found critical" in
-   let s = s.owner_miles <- Map.add k (add i tmp1) s.owner_miles in
-   let s = s.miles_id <- add i s.miles_id in
+   let s = s.owner_miles <- Map.add k (add (i, tmp1)) s.owner_miles in
+   let s = s.miles_id <- add(i, s.miles_id) in
    let s = s.miles_amount <- Map.add i a s.miles_amount in
    let s = s.miles_expiration <- Map.add i e s.miles_expiration in
    s
