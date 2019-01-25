@@ -22,9 +22,9 @@ transaction add = {
    }
    called by admin;
    action    :
-       owner.addifnotexist owner { miles := void; },
+       owner.addifnotexist owner { miles := empty; },
        (* transaction must fail if mile already exists *)
-       (owner.get owner).miles.add newmile "mile already exists";
+       (owner.get owner).miles.add newmile;
 }
 
 
