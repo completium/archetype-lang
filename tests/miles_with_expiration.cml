@@ -36,7 +36,7 @@ transaction consume = {
   called by admin;
 
   condition :
-     (owner.get owner).miles.when(mile.expiration > now).sum(amount)
+     (owner.get owner).miles.when(mile.expiration >= now).sum(amount)
            >= val;
 
   ensure : forall m : removed mile,
