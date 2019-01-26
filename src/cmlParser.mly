@@ -43,7 +43,6 @@
 %token ARGS
 %token CALLED
 %token CONDITION
-%token TRANSFERRED
 %token ACTION
 %token LET
 %token IF
@@ -103,6 +102,8 @@
 %token <Big_int.big_int> NUMBER
 %token <float> FLOAT
 %token <string> ADDRESS
+%token <string> DURATION
+%token <string> DATE
 
 %nonassoc FROM TO IN EQUALGREATER
 %right THEN ELSE
@@ -355,7 +356,6 @@ transitem_r:
  | x=calledby         { x }
  | x=ensure           { x }
  | x=condition        { x }
- | x=transferred      { x }
  | x=transition_item  { x }
  | x=action           { x }
 
@@ -370,9 +370,6 @@ ensure:
 
 condition:
  | CONDITION exts=option(extensions) COLON x=expr SEMI_COLON { Tcondition (x, exts) }
-
-transferred:
- | TRANSFERRED exts=option(extensions) COLON x=expr SEMI_COLON { Ttransferred (x, exts) }
 
 transition_item:
  | TRANSITION id=expr?
@@ -501,6 +498,8 @@ literal:
  | x=STRING     { Lstring  x }
  | x=ADDRESS    { Laddress x }
  | x=bool_value { Lbool    x }
+ | x=DURATION   { Lduration x }
+ | x=DATE       { Ldate x }
 
 %inline bool_value:
  | TRUE  { true }

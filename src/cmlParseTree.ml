@@ -92,11 +92,13 @@ type expr_r =
   | Equantifier   of quantifier * lident_typ * expr
 
 and literal =
-  | Lnumber  of Big_int.big_int
-  | Lfloat   of float
-  | Laddress of string
-  | Lstring  of string
-  | Lbool    of bool
+  | Lnumber   of Big_int.big_int
+  | Lfloat    of float
+  | Laddress  of string
+  | Lstring   of string
+  | Lbool     of bool
+  | Lduration of string
+  | Ldate     of string
 
 and assignment_field =
   | AassignField of assignment_operator * (lident option * lident) * expr
@@ -122,7 +124,6 @@ type transitem_r =
   | Tcalledby of expr * extension list option                        (** called by *)
   | Tensure of expr * extension list option                          (** ensure *)
   | Tcondition of expr * extension list option                       (** condition *)
-  | Ttransferred of expr * extension list option                     (** transferred *)
   | Ttransition of expr * expr * expr option * extension list option (** transition  *)
   | Taction of expr * extension list option                          (** action  *)
 

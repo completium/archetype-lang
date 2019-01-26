@@ -303,11 +303,13 @@ let rec pp_expr fmt { pldesc = e } =
 
 and pp_literal fmt lit =
   match lit with
-  | Lnumber  n -> Format.fprintf fmt "%s" (Big_int.string_of_big_int n)
-  | Lfloat   f -> Format.fprintf fmt "%f" f
-  | Laddress a -> Format.fprintf fmt "@%s" a
-  | Lstring  s -> Format.fprintf fmt "\"%s\"" s
-  | Lbool    b -> Format.fprintf fmt "%s" (if b then "true" else "false")
+  | Lnumber   n -> Format.fprintf fmt "%s" (Big_int.string_of_big_int n)
+  | Lfloat    f -> Format.fprintf fmt "%f" f
+  | Laddress  a -> Format.fprintf fmt "@%s" a
+  | Lstring   s -> Format.fprintf fmt "\"%s\"" s
+  | Lbool     b -> Format.fprintf fmt "%s" (if b then "true" else "false")
+  | Lduration d -> Format.fprintf fmt "%s" d
+  | Ldate     d -> Format.fprintf fmt "%s" d
 
 and pp_assignment_field fmt f =
   match f with
@@ -374,11 +376,6 @@ let pp_transitem fmt { pldesc = t } =
 
   | Tcondition (e, exts) ->
       Format.fprintf fmt "condition%a: %a;\n"
-        (pp_option (pp_list " " pp_extension)) exts
-        pp_expr e
-
-  | Ttransferred (e, exts) ->
-      Format.fprintf fmt "transferred%a: %a;\n"
         (pp_option (pp_list " " pp_extension)) exts
         pp_expr e
 

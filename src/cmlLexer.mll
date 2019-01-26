@@ -45,7 +45,6 @@
       "args"                , ARGS           ;
       "called"              , CALLED         ;
       "condition"           , CONDITION      ;
-      "transferred"         , TRANSFERRED    ;
       "action"              , ACTION         ;
       "let"                 , LET            ;
       "if"                  , IF             ;
@@ -75,10 +74,15 @@
 let blank   = [' ' '\t' '\r']
 let newline = '\n'
 let digit   = ['0'-'9']
-let float   = ['0'-'9']+ '.' ['0'-'9']+
+let float   = digit+ '.' digit+
 let var     = "<%" ['a'-'z' 'A'-'Z'] ['a'-'z' 'A'-'Z' '0'-'9' '_' ]* '>'
-let address = '@'['a'-'z' 'A'-'Z' '0'-'9' '_' ]+
 let ident   = (['a'-'z' 'A'-'Z'] | var)  (['a'-'z' 'A'-'Z' '0'-'9' '_' ] | var)*
+let address = '@'['a'-'z' 'A'-'Z' '0'-'9' '_' ]+
+let duration = (digit+ 'y')? (digit+ 'M')? (digit+ 'w')? (digit+ 'd')? (digit+ 'h')? (digit+ 'm')? (digit+ 's')?
+let day      = digit digit digit digit '-' digit digit '-' digit digit
+let hour     = digit digit ':' digit digit ( ':' digit digit )?
+let timezone = ('+' digit digit ':' digit digit | 'Z')
+let date     = day ('T' hour ( timezone )?)?
 
 (* -------------------------------------------------------------------- *)
 rule token = parse
@@ -89,6 +93,8 @@ rule token = parse
   | float as f            { FLOAT (float_of_string f) }
   | digit+ as n           { NUMBER (Big_int.big_int_of_string n) }
   | address as a          { ADDRESS (String.sub a 1 ((String.length a) - 1)) }
+  | duration as d         { DURATION (d) }
+  | date as d             { DATE (d) }
 
 
   | "(*"                  { comment lexbuf; token lexbuf }
