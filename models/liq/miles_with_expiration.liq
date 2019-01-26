@@ -27,7 +27,7 @@ let[@inline] nat_sub ((a : nat), (b : nat)) =
 
 let[@inline] cmp (s1, s2) = if s1 < s2 then -1 else if s1 > s2 then 1 else 0
 
-let[@inline] mem (k, l) =
+let[@inline] list_mem (k, l) =
   List.fold (fun (e,acc) ->
       match acc with
       | Some _ -> acc
@@ -37,15 +37,15 @@ let[@inline] mem (k, l) =
          else acc
     ) l None
 
-let[@inline] append (l1, l2) =
+let[@inline] list_append (l1, l2) =
   let l = List.fold (fun (e,acc) ->
       e::acc
     ) l1 l2 in
   sort (cmp, l)
 
-let[@inline] add (a, l) = sort (cmp, a::l)
+let[@inline] list_add (a, l) = sort (cmp, a::l)
 
-let[@inline] remove (a, l) =
+let[@inline] list_remove (a, l) =
   let l =
     List.fold (fun (e, acc) ->
         if cmp (e, a) = 0
@@ -53,6 +53,22 @@ let[@inline] remove (a, l) =
         else e::acc
       ) l [] in
   sort (cmp, l)
+
+let[@inline] when (params : 's * (('s * 'a) -> bool) * ('a list)) =
+  let s = get params 0 in
+  let f = get params 1 in
+  let l = get params 2 in
+  List.fold (fun (e, acc) ->
+      if f (s, e)
+      then e::acc
+      else acc
+    ) l []
+
+let[@inline] sum_nat (params : 's * (('s * 'a) -> nat) * ('a list)) =
+  let s = get params 0 in
+  let f = get params 1 in
+  let l = get params 2 in
+  List.fold (fun (e, acc) -> f (s, e) + acc) l (0:nat)
 
 (* STORAGE ****)
 
@@ -83,7 +99,7 @@ let[@inline] get_admin_tmp (s : storage) = s.admin_tmp
 let[@inline] get_mile_id (params : storage * string) =
   let s = get params 0 in
   let k = get params 1 in
-  match mem (k, s.mile_id) with
+  match list_mem (k, s.mile_id) with
   | Some v -> v
   | None -> Current.failwith "get_mile_id: not found"
 
@@ -126,7 +142,7 @@ let[@inline] owner_addifnotexist (params : storage * address * string list) =
       s
     else s in
   let s = s.owner_miles <- Map.add k m s.owner_miles in
-  let s = s.mile_id <- append(s.mile_id, m) in
+  let s = s.mile_id <- list_append(s.mile_id, m) in
   s
 
 let[@inline] owner_add_miles (params : storage * address * string * nat * timestamp) =
@@ -142,8 +158,8 @@ let[@inline] owner_add_miles (params : storage * address * string * nat * timest
     match Map.find k s.owner_miles with
     | Some miles -> miles
     | None ->  Current.failwith "owner_add_miles: not found critical" in
-  let s = s.owner_miles <- Map.add k (add (i, tmp1)) s.owner_miles in
-  let s = s.mile_id <- add (i, s.mile_id) in
+  let s = s.owner_miles <- Map.add k (list_add (i, tmp1)) s.owner_miles in
+  let s = s.mile_id <- list_add (i, s.mile_id) in
   let s = s.mile_amount <- Map.add i a s.mile_amount in
   let s = s.mile_expiration <- Map.add i e s.mile_expiration in
   s
@@ -159,8 +175,8 @@ let[@inline] owner_remove_miles (params : storage * address * string)  =
     match Map.find o s.owner_miles with
     | Some miles -> miles
     | None ->  Current.failwith "owner_add_miles: not found critical" in
-  let s = s.owner_miles <- Map.add o (remove (m, tmp1)) s.owner_miles in
-  let s = s.mile_id <- remove (m, s.mile_id) in
+  let s = s.owner_miles <- Map.add o (list_remove (m, tmp1)) s.owner_miles in
+  let s = s.mile_id <- list_remove (m, s.mile_id) in
   let s = s.mile_amount <- Map.remove m s.mile_amount in
   let s = s.mile_expiration <- Map.remove m s.mile_expiration in
   s
@@ -172,25 +188,10 @@ let[@inline] mile_set_amount (params : storage * string * nat) =
   let s = s.mile_amount <- Map.add k v s.mile_amount in
   s
 
-let[@inline] when (params : storage * ((storage * 'a) -> bool) * ('a list)) =
-  let s = get params 0 in
-  let f = get params 1 in
-  let l = get params 2 in
-  List.fold (fun (e, acc) ->
-      if f (s, e)
-      then e::acc
-      else acc
-    ) l []
-
-let[@inline] sum_nat (params : storage * ((storage * 'a) -> nat) * ('a list)) =
-  let s = get params 0 in
-  let f = get params 1 in
-  let l = get params 2 in
-  List.fold (fun (e, acc) -> f (s, e) + acc) l (0:nat)
-
 (* TRANSACTIONS ****)
 
 let%entry add (params : address * string * nat * timestamp) s =
+  let ops        = empty_ops in
   let caller     = get_caller () in
   let owner      = get params 0 in
   let id         = get params 1 in
@@ -198,7 +199,7 @@ let%entry add (params : address * string * nat * timestamp) s =
   let expiration = get params 3 in
   if (caller <> get_admin s)
   then (Current.failwith ("Caller is not allowed to call this function."));
-  let ops, s = empty_ops, owner_addifnotexist (s, owner, []) in
+  let ops, s = ops, owner_addifnotexist (s, owner, []) in
   let ops, s = ops, owner_add_miles (s, owner, id, amount, expiration) in
   ops, s
 
@@ -210,11 +211,11 @@ let[@inline] by_expiration (params : storage * string) =
 let%entry consume (params : address * nat) s =
   let ops = empty_ops in
   let caller = get_caller () in
-  let now    = now () in
+  let now = now () in
   if (caller <> get_admin s)
   then (Current.failwith ("consume: called by fails."));
-  let owner  = params.(0) in
-  let val_ = params.(1) in
+  let owner = get params 0 in
+  let val_ = get params 1 in
   let o = get_owner_addr (s, owner) in
   let m = get_owner_miles (s, o) in
   let l = when (s, by_expiration, m) in
@@ -226,7 +227,13 @@ let%entry consume (params : address * nat) s =
   let m = get_owner_miles (s, o) in
   let l = when (s, by_expiration, m) in
   let (ops, s, remainder, o) =
-    List.fold (fun (k,(ops, s, remainder, o)) ->
+    List.fold (fun arg ->
+        let k = get arg 0 in
+        let acc = get arg 1 in
+        let ops = get acc 0 in
+        let s = get acc 1 in
+        let remainder = get acc 2 in
+        let o = get acc 3 in
         if remainder > (0:nat)
         then
           if get_mile_amount (s, k) > remainder

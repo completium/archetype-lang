@@ -10,6 +10,7 @@ use liq.Map
 use liq.Set
 use liq.Msg
 use liq.Current
+use liq.Contract
 
 type storage = {
   admin : address;
@@ -25,10 +26,10 @@ let init (s : storage) (admin : address) : storage = {
   admin = admin;
   admin_tmp = admin;
   mile_id = Nil;
-  mile_amount = empty_map_str_nat;
-  mile_expiration = empty_map_str_tim;
-  owner_addr = empty_set_add;
-  owner_miles = empty_map_add_strl;
+  mile_amount = empty_map_str_nat ();
+  mile_expiration = empty_map_str_tim ();
+  owner_addr = empty_set_add ();
+  owner_miles = empty_map_add_strl ();
 }
 
 let get_admin (s : storage) = s.admin
@@ -40,7 +41,7 @@ let get_mile_id (params : (storage, string)) =
   let k = get_1_2 params in
   match List.mem (k, s.mile_id) with
   | Some v -> v
-  | None -> Current.failwith not_found
+  | None -> Current.failwith (not_found ())
   end
 
 let get_mile_amount (params : (storage, string)) =
@@ -48,7 +49,7 @@ let get_mile_amount (params : (storage, string)) =
   let k = get_1_2 params in
   match Map.find k s.mile_amount with
   | Some v -> v
-  | None -> Current.failwith not_found
+  | None -> Current.failwith (not_found ())
   end
 
 let get_mile_expiration (params : (storage, string)) =
@@ -56,7 +57,7 @@ let get_mile_expiration (params : (storage, string)) =
   let k = get_1_2 params in
   match Map.find k s.mile_expiration with
   | Some v -> v
-  | None -> Current.failwith not_found
+  | None -> Current.failwith (not_found ())
   end
 
 let get_owner_miles (params : (storage, address)) =
@@ -64,7 +65,7 @@ let get_owner_miles (params : (storage, address)) =
   let k = get_1_2 params in
   match Map.find k s.owner_miles with
   | Some v -> v
-  | None -> Current.failwith not_found
+  | None -> Current.failwith (not_found ())
   end
 
 let get_owner_addr (params : (storage, address)) =
@@ -72,7 +73,7 @@ let get_owner_addr (params : (storage, address)) =
   let k = get_1_2 params in
   if Set.mem k s.owner_addr
   then k
-  else Current.failwith not_found
+  else Current.failwith (not_found ())
 
 let owner_addifnotexist (params : (storage, address, list string)) =
   let s = get_0_3 params in
@@ -87,3 +88,116 @@ let owner_addifnotexist (params : (storage, address, list string)) =
   let s = update_storage s s.owner_miles (Map.add k m s.owner_miles) in
   let s = update_storage s s.mile_id (append (s.mile_id, m)) in
   s
+
+let owner_add_miles (params : (storage, address, string, nat, timestamp)) =
+  let s = get_0_5 params in
+  let k = get_1_5 params in
+  let i = get_2_5 params in
+  let a = get_3_5 params in
+  let e = get_4_5 params in
+  if not (Set.mem k s.owner_addr)
+   then
+     Current.failwith (not_found ());
+  let tmp1 =
+    match Map.find k s.owner_miles with
+    | Some miles -> miles
+    | None ->  Current.failwith (not_found ())
+    end in
+  let s = update_storage s s.owner_miles (Map.add k (List.add (i, tmp1)) s.owner_miles) in
+  let s = update_storage s s.mile_id (List.add (i, s.mile_id)) in
+  let s = update_storage s s.mile_amount (Map.add i a s.mile_amount) in
+  let s = update_storage s s.mile_expiration (Map.add i e s.mile_expiration) in
+  s
+
+let owner_remove_miles (params : (storage, address, string))  =
+  let s = get_0_3 params in
+  let o = get_1_3 params in
+  let m = get_2_3 params in
+  if not (Set.mem o s.owner_addr)
+    then
+      Current.failwith (not_found ());
+  let tmp1 =
+    match Map.find o s.owner_miles with
+    | Some miles -> miles
+    | None ->  Current.failwith (not_found ())
+    end in
+  let s = update_storage s s.owner_miles (Map.add o (List.remove (m, tmp1)) s.owner_miles) in
+  let s = update_storage s s.mile_id (List.remove (m, s.mile_id)) in
+  let s = update_storage s s.mile_amount (Map.remove m s.mile_amount) in
+  let s = update_storage s s.mile_expiration (Map.remove m s.mile_expiration) in
+  s
+
+let mile_set_amount (params : (storage, string, nat)) =
+  let s = get_0_3 params in
+  let k = get_1_3 params in
+  let v = get_2_3 params in
+  let s = update_storage s s.mile_amount (Map.add k v s.mile_amount) in
+  s
+
+(* TRANSACTIONS ****)
+
+let add (params : (address, string, nat, timestamp)) s =
+  let ops        = empty_ops in
+  let caller     = get_caller () in
+  let owner      = get_0_4 params in
+  let id         = get_1_4 params in
+  let amount     = get_2_4 params in
+  let expiration = get_3_4 params in
+  if (add_nq caller (get_admin s))
+  then Current.failwith (not_found ());
+  let ops, s = ops, owner_addifnotexist (s, owner, Nil) in
+  let ops, s = ops, owner_add_miles (s, owner, id, amount, expiration) in
+  ops, s
+
+let by_expiration = fun (params : (storage, string)) ->
+  let s = get_0_2 params in
+  let k = get_1_2 params in
+  tim_ge (get_mile_expiration (s, k)) (now ())
+
+let consume (params : (address, nat)) (s : storage) =
+  let ops    = empty_ops in
+  let caller = get_caller () in
+  let now    = now () in
+  if (add_nq caller (get_admin s))
+  then Current.failwith (not_found ());
+  let owner = get_0_2 params in
+  let val_ =  get_1_2 params in
+  let o = get_owner_addr (s, owner) in
+  let m = get_owner_miles (s, o) in
+  let l = list_when (s, by_expiration, m) in
+  let sum_amount = sum_nat (s, get_mile_amount, l) in
+  if not (nat_ge sum_amount val_)
+  then Current.failwith (not_found ());
+  let remainder = val_ in
+  let o = get_owner_addr (s, owner) in
+  let m = get_owner_miles (s, o) in
+  let l = list_when (s, by_expiration, m) in
+  let (ops, s, remainder, o) =
+    List.fold (fun arg ->
+        let k = get_0_2 arg in
+        let acc = get_1_2 arg in
+        let ops = get_0_4 acc in
+        let s   = get_1_4 acc in
+        let remainder = get_2_4 acc in
+        let o = get_3_4 acc in
+        if nat_gt remainder (nat_zero ())
+        then
+          if nat_gt (get_mile_amount (s, k)) remainder
+          then
+            let s = mile_set_amount (s, k, (nat_sub (get_mile_amount (s, k), remainder))) in
+            let remainder = (nat_zero ()) in
+            (ops, s, remainder, o)
+          else
+            if nat_eq (get_mile_amount (s, k)) remainder
+            then
+              let s = owner_remove_miles (s, o, k) in
+              let remainder = (nat_zero ()) in
+              (ops, s, remainder, o)
+            else
+              let remainder = nat_sub (remainder, (get_mile_amount (s, k))) in
+              let s = owner_remove_miles (s, o, k) in
+              (ops, s, remainder, o)
+        else
+          (ops, s, remainder, o)
+      ) l (ops, s, remainder, o) in
+  (ops, s)

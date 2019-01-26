@@ -28,7 +28,10 @@ theory Nat
   val nat_lt nat nat : bool
 
   val nat_plus  nat nat : nat
-  val nat_sub   nat nat : nat
+  val nat_sub (nat, nat) : nat
+
+  val nat_zero () : nat
+  val nat_one  () : nat
 
   val mk_nat Int.int : nat
 
@@ -97,6 +100,21 @@ theory Utils
   let get_3_5 (v : ('a , 'b , 'c , 'd , 'e)) : 'd = let (_,_,_,d,_) = v in d
   let get_4_5 (v : ('a , 'b , 'c , 'd , 'e)) : 'e = let (_,_,_,_,e) = v in e
 
+  let get_0_6 (v : ('a , 'b , 'c , 'd , 'e, 'f)) : 'a = let (a,_,_,_,_,_) = v in a
+  let get_1_6 (v : ('a , 'b , 'c , 'd , 'e, 'f)) : 'b = let (_,b,_,_,_,_) = v in b
+  let get_2_6 (v : ('a , 'b , 'c , 'd , 'e, 'f)) : 'c = let (_,_,c,_,_,_) = v in c
+  let get_3_6 (v : ('a , 'b , 'c , 'd , 'e, 'f)) : 'd = let (_,_,_,d,_,_) = v in d
+  let get_4_6 (v : ('a , 'b , 'c , 'd , 'e, 'f)) : 'e = let (_,_,_,_,e,_) = v in e
+  let get_5_6 (v : ('a , 'b , 'c , 'd , 'e, 'f)) : 'f = let (_,_,_,_,_,f) = v in f
+
+  let get_0_7 (v : ('a , 'b , 'c , 'd , 'e, 'f, 'g)) : 'a = let (a,_,_,_,_,_,_) = v in a
+  let get_1_7 (v : ('a , 'b , 'c , 'd , 'e, 'f, 'g)) : 'b = let (_,b,_,_,_,_,_) = v in b
+  let get_2_7 (v : ('a , 'b , 'c , 'd , 'e, 'f, 'g)) : 'c = let (_,_,c,_,_,_,_) = v in c
+  let get_3_7 (v : ('a , 'b , 'c , 'd , 'e, 'f, 'g)) : 'd = let (_,_,_,d,_,_,_) = v in d
+  let get_4_7 (v : ('a , 'b , 'c , 'd , 'e, 'f, 'g)) : 'e = let (_,_,_,_,e,_,_) = v in e
+  let get_5_7 (v : ('a , 'b , 'c , 'd , 'e, 'f, 'g)) : 'f = let (_,_,_,_,_,f,_) = v in f
+  let get_6_7 (v : ('a , 'b , 'c , 'd , 'e, 'f, 'g)) : 'g = let (_,_,_,_,_,_,g) = v in g
+
   (* storage update *)
   val update_storage 's 'a 'a : 's
 
@@ -106,7 +124,7 @@ theory Msg
 
   type msg
 
-  val not_found : msg
+  val not_found unit : msg
 
 end
 
@@ -120,6 +138,10 @@ theory Current
   val time     unit   : timestamp
 
   val failwith msg  : 'a
+
+  let get_caller = sender
+
+  let now = time
 
 end
 
@@ -138,7 +160,9 @@ theory List
 
   val append (list 'a, list 'a) : list 'a
 
-  val when ('s, ('s , 'a) -> bool, list 'a) : list 'a
+  val fold (('e, 'acc) -> 'acc) (list 'e) 'acc : 'acc
+
+  val list_when ('s, ('s , 'a) -> bool, list 'a) : list 'a
 
   val sum_nat ('s, ('s , 'a) -> nat, list 'a) : nat
 
@@ -168,33 +192,35 @@ theory Map
 
   val add 'a 'b (map 'a 'b) : map 'a 'b
 
-  val empty_map_str_int : map string int
-  val empty_map_str_nat : map string nat
-  val empty_map_str_tim : map string timestamp
-  val empty_map_str_add : map string address
-  val empty_map_str_str : map string string
-  val empty_map_str_tez : map string tez
+  val remove 'a (map 'a 'b) : map 'a 'b
 
-  val empty_map_add_int : map address int
-  val empty_map_add_nat : map address nat
-  val empty_map_add_tim : map address timestamp
-  val empty_map_add_add : map address address
-  val empty_map_add_str : map address string
-  val empty_map_add_tez : map address tez
+  val empty_map_str_int unit : map string int
+  val empty_map_str_nat unit : map string nat
+  val empty_map_str_tim unit : map string timestamp
+  val empty_map_str_add unit : map string address
+  val empty_map_str_str unit : map string string
+  val empty_map_str_tez unit : map string tez
 
-  val empty_map_str_intl : map string (list int)
-  val empty_map_str_natl : map string (list nat)
-  val empty_map_str_timl : map string (list timestamp)
-  val empty_map_str_addl : map string (list address)
-  val empty_map_str_strl : map string (list string)
-  val empty_map_str_tezl : map string (list tez)
+  val empty_map_add_int unit : map address int
+  val empty_map_add_nat unit : map address nat
+  val empty_map_add_tim unit : map address timestamp
+  val empty_map_add_add unit : map address address
+  val empty_map_add_str unit : map address string
+  val empty_map_add_tez unit : map address tez
 
-  val empty_map_add_intl : map address (list int)
-  val empty_map_add_natl : map address (list nat)
-  val empty_map_add_timl : map address (list timestamp)
-  val empty_map_add_addl : map address (list address)
-  val empty_map_add_strl : map address (list string)
-  val empty_map_add_tezl : map address (list tez)
+  val empty_map_str_intl unit : map string (list int)
+  val empty_map_str_natl unit : map string (list nat)
+  val empty_map_str_timl unit : map string (list timestamp)
+  val empty_map_str_addl unit : map string (list address)
+  val empty_map_str_strl unit : map string (list string)
+  val empty_map_str_tezl unit : map string (list tez)
+
+  val empty_map_add_intl unit : map address (list int)
+  val empty_map_add_natl unit : map address (list nat)
+  val empty_map_add_timl unit : map address (list timestamp)
+  val empty_map_add_addl unit : map address (list address)
+  val empty_map_add_strl unit : map address (list string)
+  val empty_map_add_tezl unit : map address (list tez)
 
 end
 
@@ -208,12 +234,14 @@ theory Set
 
   val add 'a (set 'a) : set 'a
 
-  val empty_set_int : set int
-  val empty_set_nat : set nat
-  val empty_set_tim : set timestamp
-  val empty_set_add : set address
-  val empty_set_str : set string
-  val empty_set_tez : set tez
+  val remove 'a (set 'a) : set 'a
+
+  val empty_set_int unit : set int
+  val empty_set_nat unit : set nat
+  val empty_set_tim unit : set timestamp
+  val empty_set_add unit : set address
+  val empty_set_str unit : set string
+  val empty_set_tez unit : set tez
 
 end
 
