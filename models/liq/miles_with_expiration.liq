@@ -101,14 +101,14 @@ let[@inline] get_mile_expiration (params : storage * string) =
   | Some v -> v
   | None -> Current.failwith "get_mile_expiration: not found"
 
-let[@inline] get_owner_miles (params : storage * string) =
+let[@inline] get_owner_miles (params : storage * address) =
   let s = get params 0 in
   let k = get params 1 in
   match Map.find k s.owner_miles with
   | Some v -> v
   | None -> Current.failwith "get_owner_miles: not found"
 
-let[@inline] get_owner_addr (params : storage * string) =
+let[@inline] get_owner_addr (params : storage * address) =
   let s = get params 0 in
   let k = get params 1 in
   if Set.mem k s.owner_addr
@@ -131,9 +131,10 @@ let[@inline] owner_addifnotexist (params : storage * address * string list) =
 
 let[@inline] owner_add_miles (params : storage * address * string * nat * timestamp) =
   let s = get params 0 in
-  let i = get params 1 in
-  let a = get params 2 in
-  let e = get params 3 in
+  let k = get params 1 in
+  let i = get params 2 in
+  let a = get params 3 in
+  let e = get params 4 in
   if not (Set.mem k s.owner_addr)
    then
      Current.failwith "owner_add_miles: not found";
