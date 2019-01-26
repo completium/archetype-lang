@@ -42,6 +42,7 @@ type arithmetic_operator =
   | Minus
   | Mult
   | Div
+  | Modulo
 
 type unary_operator =
   | Uplus

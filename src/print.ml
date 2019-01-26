@@ -164,6 +164,7 @@ match op with
   | Minus  -> "-"
   | Mult   -> "*"
   | Div    -> "/"
+  | Modulo -> "%"
 
 let unary_operator_to_str op =
 match op with

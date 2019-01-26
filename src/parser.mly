@@ -535,6 +535,7 @@ assign_field_r:
  | MINUS   { Minus }
  | MULT    { Mult }
  | DIV     { Div }
+ | PERCENT { Modulo }
 
 %inline unary_operator:
  | PLUS    { Uplus }
