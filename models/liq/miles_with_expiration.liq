@@ -59,9 +59,9 @@ let[@inline] remove (a, l) =
 type storage = {
   admin            : address;
   admin_tmp        : address;
-  mile_id         : string list;
-  mile_amount     : (string, nat) map;
-  mile_expiration : (string, timestamp) map;
+  mile_id          : string list;
+  mile_amount      : (string, nat) map;
+  mile_expiration  : (string, timestamp) map;
   owner_addr       : address set;
   owner_miles      : (address, string list) map;
 }
@@ -80,32 +80,45 @@ let[@inline] get_admin (s : storage) = s.admin
 
 let[@inline] get_admin_tmp (s : storage) = s.admin_tmp
 
-let[@inline] get_mile_id ((s : storage), (k : string)) =
+let[@inline] get_mile_id (params : storage * string) =
+  let s = get params 0 in
+  let k = get params 1 in
   match mem (k, s.mile_id) with
   | Some v -> v
   | None -> Current.failwith "get_mile_id: not found"
 
-let[@inline] get_mile_amount ((s : storage), (k : string)) =
+let[@inline] get_mile_amount (params : storage * string) =
+  let s = get params 0 in
+  let k = get params 1 in
   match Map.find k s.mile_amount with
   | Some v -> v
   | None -> Current.failwith "get_mile_amount: not found"
 
-let[@inline] get_mile_expiration ((s : storage), (k : string)) =
+let[@inline] get_mile_expiration (params : storage * string) =
+  let s = get params 0 in
+  let k = get params 1 in
   match Map.find k s.mile_expiration with
   | Some v -> v
   | None -> Current.failwith "get_mile_expiration: not found"
 
-let[@inline] get_owner_miles ((s : storage), (k : address)) =
+let[@inline] get_owner_miles (params : storage * string) =
+  let s = get params 0 in
+  let k = get params 1 in
   match Map.find k s.owner_miles with
   | Some v -> v
   | None -> Current.failwith "get_owner_miles: not found"
 
-let[@inline] get_owner_addr ((s : storage), (k : address)) =
+let[@inline] get_owner_addr (params : storage * string) =
+  let s = get params 0 in
+  let k = get params 1 in
   if Set.mem k s.owner_addr
   then k
   else Current.failwith "get_owner: not found"
 
-let[@inline] owner_addifnotexist ((s : storage), (k : address), (m : string list)) =
+let[@inline] owner_addifnotexist (params : storage * address * string list) =
+  let s = get params 0 in
+  let k = get params 1 in
+  let m = get params 2 in
   let s =
     if not (Set.mem k s.owner_addr)
     then
@@ -116,19 +129,23 @@ let[@inline] owner_addifnotexist ((s : storage), (k : address), (m : string list
   let s = s.mile_id <- append(s.mile_id, m) in
   s
 
-let[@inline] owner_add_miles ((s : storage), (k : address), (i : string), (a : nat), (e : timestamp)) =
-   if not (Set.mem k s.owner_addr)
-    then
-      Current.failwith "owner_add_miles: not found";
-   let tmp1 =
-     match Map.find k s.owner_miles with
-     | Some miles -> miles
-     | None ->  Current.failwith "owner_add_miles: not found critical" in
-   let s = s.owner_miles <- Map.add k (add (i, tmp1)) s.owner_miles in
-   let s = s.mile_id <- add (i, s.mile_id) in
-   let s = s.mile_amount <- Map.add i a s.mile_amount in
-   let s = s.mile_expiration <- Map.add i e s.mile_expiration in
-   s
+let[@inline] owner_add_miles (params : storage * address * string * nat * timestamp) =
+  let s = get params 0 in
+  let i = get params 1 in
+  let a = get params 2 in
+  let e = get params 3 in
+  if not (Set.mem k s.owner_addr)
+   then
+     Current.failwith "owner_add_miles: not found";
+  let tmp1 =
+    match Map.find k s.owner_miles with
+    | Some miles -> miles
+    | None ->  Current.failwith "owner_add_miles: not found critical" in
+  let s = s.owner_miles <- Map.add k (add (i, tmp1)) s.owner_miles in
+  let s = s.mile_id <- add (i, s.mile_id) in
+  let s = s.mile_amount <- Map.add i a s.mile_amount in
+  let s = s.mile_expiration <- Map.add i e s.mile_expiration in
+  s
 
 let[@inline] owner_remove_miles (params : storage * address * string)  =
   let s = get params 0 in
