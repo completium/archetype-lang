@@ -16,7 +16,7 @@ asset grower as role
 asset importer as role
 asset importer as role
 
-asset contract = {
+asset p_contract = {
   grower          : grower;
   shipper         : shipper;
   importer        : importer;
@@ -29,7 +29,7 @@ asset shipment = {
   type     : productType;
   status   : shipmentStatus;
   count    : uint;
-  contract : contract;
+  p_c      : p_contract;
 }
 
 

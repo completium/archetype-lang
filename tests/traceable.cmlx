@@ -15,6 +15,6 @@ model extension traceable (
 
   transaction transfer_<%anamount> = {
     called by fromP;
-    transferred : anamount;
+    condition: transferred = anamount;
   }
 }

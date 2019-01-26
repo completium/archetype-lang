@@ -21,7 +21,7 @@ states
   | Confirmed       (* owner has purchased bond *)
   | Transferred
 
-transition from Created to Insured = {
+transition insure from Created to Insured = {
     called by insurance;
 }
 

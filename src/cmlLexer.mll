@@ -57,6 +57,7 @@
       "back"                , BACK           ;
       "extension"           , EXTENSION      ;
       "namespace"           , NAMESPACE      ;
+      "contract"            , CONTRACT       ;
       "and"                 , AND            ;
       "or"                  , OR             ;
       "not"                 , NOT            ;

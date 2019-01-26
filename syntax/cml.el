@@ -25,8 +25,9 @@
    `(,cml-ext-regexp . font-lock-preprocessor-face)
    `(,cml-var-regexp . font-lock-variable-name-face)
    `(,cml-address-regexp . font-lock-builtin-face)
+   `(,(cml-regexp-opt '("state" "now" "transferred")) . font-lock-constant-face)
    `(,(cml-regexp-opt '("use" "model" "extension" "constant" "value" "role" "asset" "value" "states" "enum" "transition" "transaction" "object" "key" "namespace" "contract")) . font-lock-type-face)
-   `(,(cml-regexp-opt '("identified" "sorted" "by" "as" "from" "to" "with" "ref" "fun" "=>" "initialized" "collection" "queue" "stack" "set" "partition" "asset" "object" "initial" "args" "called" "condition" "transferred" "action" "let" "if" "then" "else" "for" "in" "break" "of" "transfer" "back")) . font-lock-keyword-face)
+   `(,(cml-regexp-opt '("identified" "sorted" "by" "as" "from" "to" "with" "ref" "fun" "=>" "initialized" "collection" "queue" "stack" "set" "partition" "asset" "object" "initial" "args" "called" "condition" "action" "let" "if" "then" "else" "for" "in" "break" "of" "transfer" "back")) . font-lock-keyword-face)
    `(,(cml-regexp-opt '("and" "or" "not" "->" "<->" "forall" "exists" "ensure" "assert" "invariant" "true" "false")) . font-lock-doc-face)
 
    )

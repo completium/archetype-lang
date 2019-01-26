@@ -55,6 +55,7 @@
 %token BACK
 %token EXTENSION
 %token NAMESPACE
+%token CONTRACT
 %token COLONCOLON
 %token LPAREN
 %token RPAREN
@@ -185,6 +186,7 @@ declaration_r:
  | x=transaction { x }
  | x=dextension  { x }
  | x=namespace   { x }
+ | x=contract    { x }
 
 use:
 | USE x=ident { Duse x }
@@ -234,6 +236,18 @@ extension_r:
 namespace:
 | NAMESPACE x=ident xs=braced(declarations) { Dnamespace (x, xs) }
 
+contract:
+| CONTRACT exts=option(extensions) x=ident EQUAL
+    xs=braced(signatures)
+      dv=default_value?
+         { Dcontract (x, xs, dv, exts) }
+
+%inline signatures:
+| xs=signature+ { xs }
+
+signature:
+| TRANSACTION x=ident COLON xs=types SEMI_COLON { Ssignature (x, xs) }
+
 enum:
 | ENUM x=ident EQUAL xs=pipe_idents {Denum (x, xs)}
 
@@ -250,7 +264,10 @@ key_decl:
 | KEY exts=extensions? x=ident OF y=expr { Dkey (x, y, exts) }
 
 %inline ident_equal:
- | x=ident EQUAL { x }
+| x=ident EQUAL { x }
+
+%inline types:
+| xs=type_t+ { xs }
 
 %inline type_t:
 | e=loc(type_r) { e }

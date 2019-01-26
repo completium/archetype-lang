@@ -417,6 +417,14 @@ match opt with
   | AOidentifiedby id -> Format.fprintf fmt "identified by %a" pp_id id
   | AOsortedby id  -> Format.fprintf fmt "sorted by %a" pp_id id
 
+let pp_signature fmt s =
+match s with
+  | Ssignature (id, xs) ->
+      Format.fprintf fmt "transaction %a : %a;\n"
+        pp_id id
+        (pp_list " " pp_type) xs
+
+
 let rec pp_declaration fmt { pldesc = e } =
   match e with
   | Duse id ->
@@ -502,6 +510,13 @@ let rec pp_declaration fmt { pldesc = e } =
       Format.fprintf fmt "namespace %a { %a }\n"
          pp_id id
         (pp_list "\n" pp_declaration) ds
+
+  | Dcontract (id, xs, dv, exts) ->
+      Format.fprintf fmt "contract%a %a = { %a } %a\n"
+          (pp_option (pp_list " " pp_extension)) exts
+           pp_id id
+           (pp_list " " pp_signature) xs
+          (pp_option (pp_prefix " := " pp_expr)) dv
 
 
 (* -------------------------------------------------------------------------- *)

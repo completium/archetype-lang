@@ -146,6 +146,7 @@ type declaration_r =
   | Dtransaction of lident * transitem list * extension list option                (** transaction *)
   | Dextension   of lident * expr list option                                      (** extension *)
   | Dnamespace   of lident * declaration list                                      (** namespace *)
+  | Dcontract    of lident * signature list * expr option * extension list option  (** contract *)
 
 and value_option =
   | VOfrom of expr
@@ -158,6 +159,9 @@ and asset_option =
 
 and state_option =
   | SOinitial
+
+and signature =
+  | Ssignature of lident * type_t list
 
 and declaration = declaration_r loced
 
