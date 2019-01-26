@@ -191,6 +191,7 @@ let[@inline] sum_nat (params : storage * ((storage * 'a) -> nat) * ('a list)) =
 (* TRANSACTIONS ****)
 
 let%entry add (params : address * string * nat * timestamp) s =
+  let ops        = empty_ops in
   let caller     = get_caller () in
   let owner      = get params 0 in
   let id         = get params 1 in
@@ -198,7 +199,7 @@ let%entry add (params : address * string * nat * timestamp) s =
   let expiration = get params 3 in
   if (caller <> get_admin s)
   then (Current.failwith ("Caller is not allowed to call this function."));
-  let ops, s = empty_ops, owner_addifnotexist (s, owner, []) in
+  let ops, s = ops, owner_addifnotexist (s, owner, []) in
   let ops, s = ops, owner_add_miles (s, owner, id, amount, expiration) in
   ops, s
 
@@ -210,11 +211,11 @@ let[@inline] by_expiration (params : storage * string) =
 let%entry consume (params : address * nat) s =
   let ops = empty_ops in
   let caller = get_caller () in
-  let now    = now () in
+  let now = now () in
   if (caller <> get_admin s)
   then (Current.failwith ("consume: called by fails."));
-  let owner  = params.(0) in
-  let val_ = params.(1) in
+  let owner = get params 0 in
+  let val_ = get params 1 in
   let o = get_owner_addr (s, owner) in
   let m = get_owner_miles (s, o) in
   let l = when (s, by_expiration, m) in
@@ -226,7 +227,13 @@ let%entry consume (params : address * nat) s =
   let m = get_owner_miles (s, o) in
   let l = when (s, by_expiration, m) in
   let (ops, s, remainder, o) =
-    List.fold (fun (k,(ops, s, remainder, o)) ->
+    List.fold (fun arg ->
+        let k = get arg 0 in
+        let acc = get arg 1 in
+        let ops = get acc 0 in
+        let s = get acc 1 in
+        let remainder = get acc 2 in
+        let o = get acc 3 in
         if remainder > (0:nat)
         then
           if get_mile_amount (s, k) > remainder

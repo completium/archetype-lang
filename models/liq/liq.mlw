@@ -28,7 +28,10 @@ theory Nat
   val nat_lt nat nat : bool
 
   val nat_plus  nat nat : nat
-  val nat_sub   nat nat : nat
+  val nat_sub (nat, nat) : nat
+
+  val nat_zero : nat
+  val nat_one  : nat
 
   val mk_nat Int.int : nat
 
@@ -97,6 +100,22 @@ theory Utils
   let get_3_5 (v : ('a , 'b , 'c , 'd , 'e)) : 'd = let (_,_,_,d,_) = v in d
   let get_4_5 (v : ('a , 'b , 'c , 'd , 'e)) : 'e = let (_,_,_,_,e) = v in e
 
+  let get_0_6 (v : ('a , 'b , 'c , 'd , 'e, 'f)) : 'a = let (a,_,_,_,_,_) = v in a
+  let get_1_6 (v : ('a , 'b , 'c , 'd , 'e, 'f)) : 'b = let (_,b,_,_,_,_) = v in b
+  let get_2_6 (v : ('a , 'b , 'c , 'd , 'e, 'f)) : 'c = let (_,_,c,_,_,_) = v in c
+  let get_3_6 (v : ('a , 'b , 'c , 'd , 'e, 'f)) : 'd = let (_,_,_,d,_,_) = v in d
+  let get_4_6 (v : ('a , 'b , 'c , 'd , 'e, 'f)) : 'e = let (_,_,_,_,e,_) = v in e
+  let get_5_6 (v : ('a , 'b , 'c , 'd , 'e, 'f)) : 'f = let (_,_,_,_,_,f) = v in f
+
+  let get_0_7 (v : ('a , 'b , 'c , 'd , 'e, 'f, 'g)) : 'a = let (a,_,_,_,_,_,_) = v in a
+  let get_1_7 (v : ('a , 'b , 'c , 'd , 'e, 'f, 'g)) : 'b = let (_,b,_,_,_,_,_) = v in b
+  let get_2_7 (v : ('a , 'b , 'c , 'd , 'e, 'f, 'g)) : 'c = let (_,_,c,_,_,_,_) = v in c
+  let get_3_7 (v : ('a , 'b , 'c , 'd , 'e, 'f, 'g)) : 'd = let (_,_,_,d,_,_,_) = v in d
+  let get_4_7 (v : ('a , 'b , 'c , 'd , 'e, 'f, 'g)) : 'e = let (_,_,_,_,e,_,_) = v in e
+  let get_5_7 (v : ('a , 'b , 'c , 'd , 'e, 'f, 'g)) : 'f = let (_,_,_,_,_,f,_) = v in f
+  let get_6_7 (v : ('a , 'b , 'c , 'd , 'e, 'f, 'g)) : 'g = let (_,_,_,_,_,_,g) = v in g
+
+
   (* storage update *)
   val update_storage 's 'a 'a : 's
 
@@ -121,6 +140,10 @@ theory Current
 
   val failwith msg  : 'a
 
+  let get_caller = sender
+
+  let now  = time
+
 end
 
 theory List
@@ -137,6 +160,8 @@ theory List
   val remove ('a, list 'a) : list 'a
 
   val append (list 'a, list 'a) : list 'a
+
+  val fold (('e, 'acc) -> 'acc) (list 'e) 'acc : 'acc
 
   val when ('s, ('s , 'a) -> bool, list 'a) : list 'a
 
@@ -167,6 +192,8 @@ theory Map
   val find 'a (map 'a 'b) : option 'b
 
   val add 'a 'b (map 'a 'b) : map 'a 'b
+
+  val remove 'a (map 'a 'b) : map 'a 'b
 
   val empty_map_str_int : map string int
   val empty_map_str_nat : map string nat
