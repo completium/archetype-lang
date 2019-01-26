@@ -2,7 +2,7 @@
 open Why3
 open Ptree
 open Format
-open Model
+open CmlModel
 open Miles
 
 (* adapt according to system ? *)

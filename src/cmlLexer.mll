@@ -1,11 +1,11 @@
 (* Lexer *)
 {
-  open Core
-  open Parser
+  open CmlCore
+  open CmlParser
 
   let lex_error lexbuf msg =
-    let loc = Location.of_lexbuf lexbuf in
-    raise (Parseutils.ParseError (Some loc, PE_LexicalError msg))
+    let loc = CmlLocation.of_lexbuf lexbuf in
+    raise (CmlParseUtils.ParseError (Some loc, PE_LexicalError msg))
 
   let keywords = Hashtbl.create 0
 

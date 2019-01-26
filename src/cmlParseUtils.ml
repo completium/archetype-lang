@@ -1,12 +1,12 @@
 (* -------------------------------------------------------------------- *)
-open Core
+open CmlCore
 
 (* -------------------------------------------------------------------- *)
 type perror =
   | PE_LexicalError of string
   | PE_Unknown
 
-exception ParseError of (Location.t option * perror)
+exception ParseError of (CmlLocation.t option * perror)
 
 (* -------------------------------------------------------------------- *)
 let pp_perror fmt = function
@@ -24,7 +24,7 @@ let pp_parse_error fmt (loc, ppe) =
 
   | Some loc ->
       Format.fprintf fmt "%s: %a"
-        (Location.tostring loc) pp_perror ppe
+        (CmlLocation.tostring loc) pp_perror ppe
 
 (* -------------------------------------------------------------------- *)
 let string_of_perror ppe =

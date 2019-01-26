@@ -1,8 +1,8 @@
 /* parser */
 %{
-  open ParseTree
-  open Location
-  open Parseutils
+  open CmlParseTree
+  open CmlLocation
+  open CmlParseUtils
 
   let error ?loc code = raise (ParseError (loc, code))
 %}
@@ -124,7 +124,7 @@
 
 %right NOT
 
-%type <ParseTree.model> main
+%type <CmlParseTree.model> main
 
 %start main
 
@@ -133,7 +133,7 @@
 %inline loc(X):
 | x=X {
     { pldesc = x;
-      plloc  = Location.make $startpos $endpos; }
+      plloc  = CmlLocation.make $startpos $endpos; }
   }
 
 %inline paren(X):

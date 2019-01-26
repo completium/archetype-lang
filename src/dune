@@ -4,8 +4,8 @@
   (release
     (flags (:standard))))
 
-(ocamllex lexer)
-(menhir (flags --explain) (modules parser))
+(ocamllex cmlLexer)
+(menhir (flags --explain) (modules cmlParser))
 
 (executables
   (modes     native)

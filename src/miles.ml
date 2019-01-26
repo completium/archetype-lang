@@ -1,4 +1,4 @@
-open Model
+open CmlModel
 
 let mk_admin_role () = {
     name = "admin";
