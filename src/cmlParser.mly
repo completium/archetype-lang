@@ -102,6 +102,7 @@
 %token <string> STRING
 %token <Big_int.big_int> NUMBER
 %token <float> FLOAT
+%token <string> ADDRESS
 
 %nonassoc FROM TO IN EQUALGREATER
 %right THEN ELSE
@@ -495,10 +496,11 @@ simple_expr_r:
  | COLON x=type_t { x }
 
 literal:
- | x=NUMBER     { Lnumber x }
- | x=FLOAT      { Lfloat  x }
- | x=STRING     { Lstring x }
- | x=bool_value { Lbool   x }
+ | x=NUMBER     { Lnumber  x }
+ | x=FLOAT      { Lfloat   x }
+ | x=STRING     { Lstring  x }
+ | x=ADDRESS    { Laddress x }
+ | x=bool_value { Lbool    x }
 
 %inline bool_value:
  | TRUE  { true }

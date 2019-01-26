@@ -77,6 +77,7 @@ let newline = '\n'
 let digit   = ['0'-'9']
 let float   = ['0'-'9']+ '.' ['0'-'9']+
 let var     = "<%" ['a'-'z' 'A'-'Z'] ['a'-'z' 'A'-'Z' '0'-'9' '_' ]* '>'
+let address = '@'['a'-'z' 'A'-'Z' '0'-'9' '_' ]+
 let ident   = (['a'-'z' 'A'-'Z'] | var)  (['a'-'z' 'A'-'Z' '0'-'9' '_' ] | var)*
 
 (* -------------------------------------------------------------------- *)
@@ -87,6 +88,7 @@ rule token = parse
   | ident as id            { try  Hashtbl.find keywords id with Not_found -> IDENT id }
   | float as f            { FLOAT (float_of_string f) }
   | digit+ as n           { NUMBER (Big_int.big_int_of_string n) }
+  | address as a          { ADDRESS (String.sub a 1 ((String.length a) - 1)) }
 
 
   | "(*"                  { comment lexbuf; token lexbuf }

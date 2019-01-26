@@ -92,10 +92,11 @@ type expr_r =
   | Equantifier   of quantifier * lident_typ * expr
 
 and literal =
-  | Lnumber of Big_int.big_int
-  | Lfloat  of float
-  | Lstring of string
-  | Lbool   of bool
+  | Lnumber  of Big_int.big_int
+  | Lfloat   of float
+  | Laddress of string
+  | Lstring  of string
+  | Lbool    of bool
 
 and assignment_field =
   | AassignField of assignment_operator * (lident option * lident) * expr

@@ -303,10 +303,11 @@ let rec pp_expr fmt { pldesc = e } =
 
 and pp_literal fmt lit =
   match lit with
-  | Lnumber n -> Format.fprintf fmt "%s" (Big_int.string_of_big_int n)
-  | Lfloat  f -> Format.fprintf fmt "%f" f
-  | Lstring s -> Format.fprintf fmt "\"%s\"" s
-  | Lbool   b -> Format.fprintf fmt "%s" (if b then "true" else "false")
+  | Lnumber  n -> Format.fprintf fmt "%s" (Big_int.string_of_big_int n)
+  | Lfloat   f -> Format.fprintf fmt "%f" f
+  | Laddress a -> Format.fprintf fmt "@%s" a
+  | Lstring  s -> Format.fprintf fmt "\"%s\"" s
+  | Lbool    b -> Format.fprintf fmt "%s" (if b then "true" else "false")
 
 and pp_assignment_field fmt f =
   match f with
