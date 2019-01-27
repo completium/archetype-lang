@@ -9,6 +9,9 @@ all: build merlin
 build:
 	$(MAKE) -C src compiler.exe genwhy3.exe
 
+extract:
+	$(MAKE) -C src/liq extract.exe
+
 merlin:
 	$(MAKE) -C src merlin
 

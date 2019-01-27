@@ -4,8 +4,6 @@ open Wstdlib
 open Pmodule
 open Compile
 
-let () = Pdriver.register_printer "liquidity" Liq_printer.liq_printer
-
 let translate_module =
   let memo = Ident.Hid.create 16 in
   fun m ->
@@ -23,7 +21,7 @@ let print_mdecls ?fname m mdecls deps =
   let dname = "liq.drv" in
   let driver = Pdriver.load_driver env dname [] in
   let pargs, printer = Pdriver.lookup_printer driver in
-  let fg = printer.Pdriver.file_gen in
+  let _fg = printer.Pdriver.file_gen in
   let pr = printer.Pdriver.decl_printer in
   let test_decl_not_driver decl =
     let decl_name = Mltree.get_decl_name decl in
@@ -55,7 +53,7 @@ let _ =
   let config = Whyconf.read_config None in
   let main = Whyconf.get_main config in
   let env = Env.create_env (Whyconf.loadpath main) in
-  let fname = "miles_with_expiration.mlw" in
+  let fname = "/home/dev/cml-lang/models/mlw/miles_with_expiration.mlw" in
   let cin = open_in fname in
   let mm = Env.read_channel Pmodule.mlw_language env fname cin in
   close_in cin;

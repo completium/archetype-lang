@@ -1,0 +1,10 @@
+(env
+  (dev
+    (flags (:standard -g -I /home/dev/why3-1.0.0/src/core  -I /home/dev/why3-1.0.0/src/util  -I /home/dev/why3-1.0.0/src/mlw )))
+  (release
+    (flags (:standard))))
+
+(executables
+  (modes     native)
+  (libraries batteries menhirLib why3)
+  (names     extract))
