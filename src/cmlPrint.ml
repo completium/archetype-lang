@@ -303,10 +303,13 @@ let rec pp_expr fmt { pldesc = e } =
 
 and pp_literal fmt lit =
   match lit with
-  | Lnumber n -> Format.fprintf fmt "%s" (Big_int.string_of_big_int n)
-  | Lfloat  f -> Format.fprintf fmt "%f" f
-  | Lstring s -> Format.fprintf fmt "\"%s\"" s
-  | Lbool   b -> Format.fprintf fmt "%s" (if b then "true" else "false")
+  | Lnumber   n -> Format.fprintf fmt "%s" (Big_int.string_of_big_int n)
+  | Lfloat    f -> Format.fprintf fmt "%f" f
+  | Laddress  a -> Format.fprintf fmt "@%s" a
+  | Lstring   s -> Format.fprintf fmt "\"%s\"" s
+  | Lbool     b -> Format.fprintf fmt "%s" (if b then "true" else "false")
+  | Lduration d -> Format.fprintf fmt "%s" d
+  | Ldate     d -> Format.fprintf fmt "%s" d
 
 and pp_assignment_field fmt f =
   match f with
@@ -376,11 +379,6 @@ let pp_transitem fmt { pldesc = t } =
         (pp_option (pp_list " " pp_extension)) exts
         pp_expr e
 
-  | Ttransferred (e, exts) ->
-      Format.fprintf fmt "transferred%a: %a;\n"
-        (pp_option (pp_list " " pp_extension)) exts
-        pp_expr e
-
   | Ttransition (from, _to, id, exts) ->
       Format.fprintf fmt "transition%a%a from %a to %a;"
         (pp_option (pp_list " " pp_extension)) exts
@@ -418,6 +416,14 @@ match opt with
   | AOasrole -> Format.fprintf fmt "as role"
   | AOidentifiedby id -> Format.fprintf fmt "identified by %a" pp_id id
   | AOsortedby id  -> Format.fprintf fmt "sorted by %a" pp_id id
+
+let pp_signature fmt s =
+match s with
+  | Ssignature (id, xs) ->
+      Format.fprintf fmt "transaction %a : %a;\n"
+        pp_id id
+        (pp_list " " pp_type) xs
+
 
 let rec pp_declaration fmt { pldesc = e } =
   match e with
@@ -504,6 +510,13 @@ let rec pp_declaration fmt { pldesc = e } =
       Format.fprintf fmt "namespace %a { %a }\n"
          pp_id id
         (pp_list "\n" pp_declaration) ds
+
+  | Dcontract (id, xs, dv, exts) ->
+      Format.fprintf fmt "contract%a %a = { %a } %a\n"
+          (pp_option (pp_list " " pp_extension)) exts
+           pp_id id
+           (pp_list " " pp_signature) xs
+          (pp_option (pp_prefix " := " pp_expr)) dv
 
 
 (* -------------------------------------------------------------------------- *)

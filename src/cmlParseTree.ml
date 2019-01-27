@@ -92,10 +92,13 @@ type expr_r =
   | Equantifier   of quantifier * lident_typ * expr
 
 and literal =
-  | Lnumber of Big_int.big_int
-  | Lfloat  of float
-  | Lstring of string
-  | Lbool   of bool
+  | Lnumber   of Big_int.big_int
+  | Lfloat    of float
+  | Laddress  of string
+  | Lstring   of string
+  | Lbool     of bool
+  | Lduration of string
+  | Ldate     of string
 
 and assignment_field =
   | AassignField of assignment_operator * (lident option * lident) * expr
@@ -121,7 +124,6 @@ type transitem_r =
   | Tcalledby of expr * extension list option                        (** called by *)
   | Tensure of expr * extension list option                          (** ensure *)
   | Tcondition of expr * extension list option                       (** condition *)
-  | Ttransferred of expr * extension list option                     (** transferred *)
   | Ttransition of expr * expr * expr option * extension list option (** transition  *)
   | Taction of expr * extension list option                          (** action  *)
 
@@ -144,6 +146,7 @@ type declaration_r =
   | Dtransaction of lident * transitem list * extension list option                (** transaction *)
   | Dextension   of lident * expr list option                                      (** extension *)
   | Dnamespace   of lident * declaration list                                      (** namespace *)
+  | Dcontract    of lident * signature list * expr option * extension list option  (** contract *)
 
 and value_option =
   | VOfrom of expr
@@ -156,6 +159,9 @@ and asset_option =
 
 and state_option =
   | SOinitial
+
+and signature =
+  | Ssignature of lident * type_t list
 
 and declaration = declaration_r loced
 

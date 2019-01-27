@@ -43,7 +43,6 @@
 %token ARGS
 %token CALLED
 %token CONDITION
-%token TRANSFERRED
 %token ACTION
 %token LET
 %token IF
@@ -56,6 +55,7 @@
 %token BACK
 %token EXTENSION
 %token NAMESPACE
+%token CONTRACT
 %token COLONCOLON
 %token LPAREN
 %token RPAREN
@@ -102,6 +102,9 @@
 %token <string> STRING
 %token <Big_int.big_int> NUMBER
 %token <float> FLOAT
+%token <string> ADDRESS
+%token <string> DURATION
+%token <string> DATE
 
 %nonassoc FROM TO IN EQUALGREATER
 %right THEN ELSE
@@ -183,6 +186,7 @@ declaration_r:
  | x=transaction { x }
  | x=dextension  { x }
  | x=namespace   { x }
+ | x=contract    { x }
 
 use:
 | USE x=ident { Duse x }
@@ -232,6 +236,18 @@ extension_r:
 namespace:
 | NAMESPACE x=ident xs=braced(declarations) { Dnamespace (x, xs) }
 
+contract:
+| CONTRACT exts=option(extensions) x=ident EQUAL
+    xs=braced(signatures)
+      dv=default_value?
+         { Dcontract (x, xs, dv, exts) }
+
+%inline signatures:
+| xs=signature+ { xs }
+
+signature:
+| TRANSACTION x=ident COLON xs=types SEMI_COLON { Ssignature (x, xs) }
+
 enum:
 | ENUM x=ident EQUAL xs=pipe_idents {Denum (x, xs)}
 
@@ -248,7 +264,10 @@ key_decl:
 | KEY exts=extensions? x=ident OF y=expr { Dkey (x, y, exts) }
 
 %inline ident_equal:
- | x=ident EQUAL { x }
+| x=ident EQUAL { x }
+
+%inline types:
+| xs=type_t+ { xs }
 
 %inline type_t:
 | e=loc(type_r) { e }
@@ -354,7 +373,6 @@ transitem_r:
  | x=calledby         { x }
  | x=ensure           { x }
  | x=condition        { x }
- | x=transferred      { x }
  | x=transition_item  { x }
  | x=action           { x }
 
@@ -369,9 +387,6 @@ ensure:
 
 condition:
  | CONDITION exts=option(extensions) COLON x=expr SEMI_COLON { Tcondition (x, exts) }
-
-transferred:
- | TRANSFERRED exts=option(extensions) COLON x=expr SEMI_COLON { Ttransferred (x, exts) }
 
 transition_item:
  | TRANSITION id=expr?
@@ -495,10 +510,13 @@ simple_expr_r:
  | COLON x=type_t { x }
 
 literal:
- | x=NUMBER     { Lnumber x }
- | x=FLOAT      { Lfloat  x }
- | x=STRING     { Lstring x }
- | x=bool_value { Lbool   x }
+ | x=NUMBER     { Lnumber  x }
+ | x=FLOAT      { Lfloat   x }
+ | x=STRING     { Lstring  x }
+ | x=ADDRESS    { Laddress x }
+ | x=bool_value { Lbool    x }
+ | x=DURATION   { Lduration x }
+ | x=DATE       { Ldate x }
 
 %inline bool_value:
  | TRUE  { true }

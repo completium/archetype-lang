@@ -1,10 +1,13 @@
-model zero_coupon_bond
+model zero_coupon_bond_with_insurance
 
 role issuer := @tz1KksC8RvjUWAbXYJuNrUbontHGor25Cztk (* seller ‘Alice’ *)
 
 role owner := @tz1KmuhR6P52hw6xs5P69BXJYAURaznhvN1k
 (* buyer ‘Bob’; receives 11 xtz in one-year *)
 
+contract insurance = {
+   transaction pay : address tez;
+} := @KT1GabhR5P52hw6xs5P69BXJYAURaznhvN1k
 
 value price xtz from owner := 10
 
@@ -14,8 +17,13 @@ value maturity date
 
 states
   | Created initial (* Created phase enables *)
+  | Insured         (* Guarantee Fund has accepted issuer *)
   | Confirmed       (* owner has purchased bond *)
   | Transferred
+
+transition insure from Created to Insured = {
+    called by insurance;
+}
 
 transition confirm from Insured to Confirmed = {
    condition : transferred = price;
@@ -24,16 +32,10 @@ transition confirm from Insured to Confirmed = {
    ensure : balance = 0;
 }
 
-transaction repay = {
-   called by issuer;
-   condition : transferred = payment;
-}
-
-transaction collect = {
+transition collect from Confirmed to Transferred = {
    called by owner;
    condition : now > maturity;
-   action    :
-    if balance >= payment
-    then (transfer balance to owner,
-          state := Transferred);
+   action    : if balance >= payment
+               then transfer balance to owner
+               else guarantee_fund.pay owner payment;
 }
