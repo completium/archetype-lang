@@ -135,7 +135,7 @@ let rec pp_type fmt { pldesc = e } =
            pp_type x
            pp_type y
 
-  | Tnuplet l ->
+  | Ttuple l ->
       Format.fprintf fmt
         "(%a)"
            (pp_list " * " pp_type) l

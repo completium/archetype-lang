@@ -273,12 +273,24 @@ key_decl:
 | e=loc(type_r) { e }
 
 type_r:
-| x=ident                     { Tref x }
-| x=type_t c=container        { Tcontainer (x, c) }
-| x=ident y=type_t            { Tvset (x, y) }
-| x=type_t IMPLY y=type_t     { Tapp (x, y) }
-/*| xs=separated_nonempty_list(MULT, type_t2) { Tnuplet (xs) }*/
-| x=paren(type_r)             { x }
+| x=type_s xs=type_tuples { Ttuple (x::xs) }
+| x=type_s_unloc          { x }
+
+%inline type_s:
+| x=loc(type_s_unloc)     { x }
+
+type_s_unloc:
+| x=ident                 { Tref x }
+| x=type_s c=container    { Tcontainer (x, c) }
+| x=ident y=type_s        { Tvset (x, y) }
+| x=type_s IMPLY y=type_s { Tapp (x, y) }
+| x=paren(type_r)         { x }
+
+%inline type_tuples:
+| xs=type_tuple+ { xs }
+
+%inline type_tuple:
+| MULT x=type_s { x }
 
 container:
 | COLLECTION { Collection }
