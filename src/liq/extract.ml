@@ -5,6 +5,8 @@ open Pmodule
 open Compile
 
 let liqmlw_path = "/home/dev/cml-lang/src/liq"
+let dname = "/home/dev/cml-lang/src/liq/liq.drv"
+let fname = "/home/dev/cml-lang/models/liq/miles_with_expiration.liq.mlw"
 
 let mk_loadpath main = (Whyconf.loadpath main) @ [liqmlw_path]
 
@@ -24,8 +26,6 @@ let translate_module =
 
 let print_mdecls ?fname m mdecls deps =
   Pdriver.register_printer "liquidity" Liq_printer.liq_printer;
-  (*let dname = "/home/dev/.opam/cml/.opam-switch/sources/why3.1.1.1/drivers/ocaml64.drv" in*)
-  let dname = "/home/dev/cml-lang/src/liq/liq.drv" in
   let driver = Pdriver.load_driver env dname [] in
   let pargs, printer = Pdriver.lookup_printer driver in
   (*let _fg = printer.Pdriver.file_gen in*)
@@ -57,7 +57,6 @@ let print_mdecls ?fname m mdecls deps =
   else false
 
 let _ =
-  let fname = "/home/dev/cml-lang/models/liq/miles_with_expiration.liq.mlw" in
   let cin = open_in fname in
   print_endline "cin opened.";
   let mm = Env.read_channel Pmodule.mlw_language env fname cin in
