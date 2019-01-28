@@ -20,6 +20,7 @@ run:
 
 clean:
 	$(MAKE) -C src clean
+	$(MAKE) -C src/liq clean
 
 check:
 	./check.sh

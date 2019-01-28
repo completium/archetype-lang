@@ -1,6 +1,6 @@
 (env
   (dev
-    (flags (:standard -g -I /home/dev/why3-1.0.0/src/core  -I /home/dev/why3-1.0.0/src/util  -I /home/dev/why3-1.0.0/src/mlw )))
+    (flags (:standard -g -w Y -w Z -w -9 -w -23 -w +28 -w +33)))
   (release
     (flags (:standard))))
 
