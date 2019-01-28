@@ -4,7 +4,7 @@
   (release
     (flags (:standard))))
 
-(executables
-  (modes     native)
+(executable
+  (modes     byte)
   (libraries batteries menhirLib why3)
-  (names     extract))
+  (name     extract))
