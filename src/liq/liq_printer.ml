@@ -1,6 +1,7 @@
 (** Printer for liquidity code ;
     copied and adapted from why3 ocaml_print.ml *)
 
+open Why3
 open Compile
 open Format
 open Ident
@@ -530,7 +531,6 @@ module Print = struct
           (print_uident info) xs.xs_name (print_ty ~paren:true info) t
           (print_expr info) e
     | Eignore e -> fprintf fmt "ignore (%a)" (print_expr info) e
-    | _ -> ()
 
   and print_branch info fmt (p, e) =
     fprintf fmt "@[<hov 2>| %a ->@ @[%a@]@]"
@@ -602,7 +602,7 @@ module Print = struct
   let rec is_signature_decl info = function
     | Dtype _ -> true
     | Dlet (Lany _) -> true
-(*    | Dval _ -> true*)
+    | Dval _ -> true
     | Dlet _ -> false
     | Dexn _ -> true
     | Dmodule (_, dl) -> is_signature info dl
@@ -629,8 +629,8 @@ module Print = struct
   let rec print_decl ?(functor_arg=false) info fmt = function
     | Dlet ldef ->
         print_let_def info ~functor_arg fmt ldef
-(*    | Dval (pv, ty) ->
-        print_top_val info ~functor_arg fmt (pv, ty)*)
+    | Dval (pv, ty) ->
+        print_top_val info ~functor_arg fmt (pv, ty)
     | Dtype dl ->
         print_list_next newline (print_type_decl info) fmt dl
     | Dexn (xs, None) ->
@@ -704,4 +704,4 @@ let liq_printer =
     interf_printer  = None;
     prelude_printer = print_empty_prelude }
 
-let () = Pdriver.register_printer "liquidity" liq_printer
+    (*let () = Pdriver.register_printer "liquidity" liq_printer*)

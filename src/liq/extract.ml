@@ -4,6 +4,14 @@ open Wstdlib
 open Pmodule
 open Compile
 
+let liqmlw_path = "/home/dev/cml-lang/src/liq"
+
+let mk_loadpath main = (Whyconf.loadpath main) @ [liqmlw_path]
+
+let config = Whyconf.read_config None
+let main = Whyconf.get_main config
+let env = Env.create_env (mk_loadpath main)
+
 let translate_module =
   let memo = Ident.Hid.create 16 in
   fun m ->
@@ -15,13 +23,12 @@ let translate_module =
       pm
 
 let print_mdecls ?fname m mdecls deps =
-  let config = Whyconf.read_config None in
-  let main = Whyconf.get_main config in
-  let env = Env.create_env (Whyconf.loadpath main) in
-  let dname = "liq.drv" in
+  Pdriver.register_printer "liquidity" Liq_printer.liq_printer;
+  (*let dname = "/home/dev/.opam/cml/.opam-switch/sources/why3.1.1.1/drivers/ocaml64.drv" in*)
+  let dname = "/home/dev/cml-lang/src/liq/liq.drv" in
   let driver = Pdriver.load_driver env dname [] in
   let pargs, printer = Pdriver.lookup_printer driver in
-  let _fg = printer.Pdriver.file_gen in
+  (*let _fg = printer.Pdriver.file_gen in*)
   let pr = printer.Pdriver.decl_printer in
   let test_decl_not_driver decl =
     let decl_name = Mltree.get_decl_name decl in
@@ -50,12 +57,11 @@ let print_mdecls ?fname m mdecls deps =
   else false
 
 let _ =
-  let config = Whyconf.read_config None in
-  let main = Whyconf.get_main config in
-  let env = Env.create_env (Whyconf.loadpath main) in
-  let fname = "/home/dev/cml-lang/models/mlw/miles_with_expiration.mlw" in
+  let fname = "/home/dev/cml-lang/models/liq/miles_with_expiration.liq.mlw" in
   let cin = open_in fname in
+  print_endline "cin opened.";
   let mm = Env.read_channel Pmodule.mlw_language env fname cin in
+  print_endline "channel read.";
   close_in cin;
   let extract_to =
     let memo = Ident.Hid.create 16 in

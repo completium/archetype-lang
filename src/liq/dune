@@ -6,5 +6,5 @@
 
 (executable
   (modes     byte)
-  (libraries batteries menhirLib why3)
-  (name     extract))
+  (libraries why3)
+  (name      extract))
