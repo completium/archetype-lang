@@ -18,7 +18,7 @@ type type_r =
   | Tcontainer of type_t * container
   | Tvset of lident * type_t
   | Tapp of type_t * type_t
-  | Tnuplet of type_t list
+  | Ttuple of type_t list
 
 and type_t = type_r loced
 

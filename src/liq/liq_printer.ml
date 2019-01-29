@@ -1,5 +1,4 @@
-(** Printer for liquidity code ;
-    copied and adapted from why3 ocaml_print.ml *)
+(* Printer for liquidity code : adapted from why3 ocaml_print.ml *)
 
 open Why3
 open Compile
@@ -703,5 +702,3 @@ let liq_printer =
     interf_gen      = Some mli_gen;
     interf_printer  = None;
     prelude_printer = print_empty_prelude }
-
-    (*let () = Pdriver.register_printer "liquidity" liq_printer*)
