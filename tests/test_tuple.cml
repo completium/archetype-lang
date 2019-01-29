@@ -1,0 +1,3 @@
+asset my_asset = {
+  attribute : uint * string;
+}
