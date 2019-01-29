@@ -69,9 +69,9 @@ let print_mdecls ?fname m mdecls deps =
 let _ =
   Liq_printer.set_entries miles_entries;
   let cin = open_in fname in
-  print_endline "cin opened.";
+  Printf.fprintf Pervasives.stderr "cin opened.\n";
   let mm = Env.read_channel Pmodule.mlw_language env fname cin in
-  print_endline "channel read.";
+  Printf.fprintf Pervasives.stderr "channel read.\n";
   close_in cin;
   let extract_to =
     let memo = Ident.Hid.create 16 in
