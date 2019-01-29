@@ -1,4 +1,5 @@
-(* Printer for liquidity code : adapted from why3 ocaml_print.ml *)
+(** Printer for liquidity code ;
+    copied and adapted from why3 ocaml_print.ml *)
 
 open Why3
 open Compile
@@ -14,6 +15,37 @@ open Pmodule
 open Wstdlib
 open Pdecl
 open Printer
+
+type liq_entries = {
+    init     : string option;
+    entries  : string list;
+    inlines  : string list;
+  }
+
+type entry_typ = Init | Entry | Inline | NotAnEntry
+
+let empty_entries : liq_entries = {
+    init    = None;
+    entries = [];
+    inlines = [];
+  }
+
+let entries = ref empty_entries
+
+let set_entries e = entries := e
+
+let get_entry_typ id =
+  let id_str = id.id_string in
+  if List.mem id_str !entries.entries then Entry
+  else if List.mem id_str !entries.inlines then Inline
+  else
+    begin
+      match !entries.init with
+      | Some v when compare id_str v = 0 -> Init
+      | _ -> NotAnEntry
+    end
+
+let print_str fmt s = fprintf fmt "%s" s
 
 type info = {
   info_syn          : syntax_map;
@@ -125,7 +157,7 @@ module Print = struct
       fprintf fmt "%s.%a" m (print_path ~sanitizer) (q, id)
     with
     | Not_found ->
-        let s = id_unique ~sanitizer iprinter id in
+       let s = id_unique ~sanitizer iprinter id in
         fprintf fmt "%s" s
     | Local ->
         let _, _, q =
@@ -352,7 +384,8 @@ module Print = struct
     | _, None, [] ->
         (print_lident info) fmt rs.rs_name
     | _, _, tl ->
-        fprintf fmt "@[<hov 2>%a %a@]"
+       (*print_endline ("apply***"^rs.rs_name.id_string^" "^(string_of_int (List.length tl)));*)
+       fprintf fmt "@[<hov 2>%a %a@]"
           (print_lident info) rs.rs_name
           (print_apply_args info) (tl, rs.rs_cty.cty_args)
   (* (print_list space (print_expr ~paren:true info)) tl *)
@@ -383,7 +416,14 @@ module Print = struct
         fprintf fmt "@[<hov 2>let %a =@ %a@]"
           (print_lident info) (pv_name pv) (print_expr info) e
     | Lsym (rs, res, args, ef) ->
-        fprintf fmt "@[<hov 2>let %a @[%a@] : %a@ =@ @[%a@]@]"
+       let entry_mod =
+         match get_entry_typ rs.rs_name with
+         | Init -> "%init"
+         | Entry -> "%entry"
+         | Inline -> "[@inline]"
+         | NotAnEntry -> "" in
+        fprintf fmt "@[<hov 2>let%a %a @[%a@] : %a@ =@ @[%a@]@]"
+          print_str entry_mod
           (print_lident info) rs.rs_name
           (print_list space (print_vs_arg info)) args
           (print_ty info) res (print_expr info) ef;
@@ -702,3 +742,5 @@ let liq_printer =
     interf_gen      = Some mli_gen;
     interf_printer  = None;
     prelude_printer = print_empty_prelude }
+
+    (*let () = Pdriver.register_printer "liquidity" liq_printer*)

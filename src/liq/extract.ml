@@ -7,6 +7,16 @@ open Compile
 let liqmlw_path = "/home/dev/cml-lang/src/liq"
 let dname = "/home/dev/cml-lang/src/liq/liq.drv"
 let fname = "/home/dev/cml-lang/models/liq/miles_with_expiration.liq.mlw"
+let miles_entries = {
+    Liq_printer.init = Some "init";
+    Liq_printer.entries = ["add"; "consume"];
+    Liq_printer.inlines =
+      ["get_admin"; "get_admin_tmp"; "get_mile_id"; "get_mile_amount";
+       "get_mile_expiration"; "get_owner_miles"; "get_owner_addr";
+       "owner_addifnotexist"; "owner_add_miles"; "owner_remove_miles";
+       "mile_set_amount"; "mile_set_amount"; "by_expiration"
+      ];
+  }
 
 let mk_loadpath main = (Whyconf.loadpath main) @ [liqmlw_path]
 
@@ -39,7 +49,7 @@ let print_mdecls ?fname m mdecls deps =
     Ident.Mid.mem m.mod_theory.Theory.th_name pargs.Pdriver.thprelude in
   if List.exists test_decl_not_driver mdecls || prelude_exists
   then begin
-      let flat = false (*opt_modu_flat = Flat*) in
+      let flat = true (*opt_modu_flat = Flat*) in
       (*let thname = m.mod_theory.Theory.th_name in*)
       let cout, old = stdout, None in (*get_cout_old fg m ?fname in*)
       let fmt = formatter_of_out_channel cout in
@@ -57,6 +67,7 @@ let print_mdecls ?fname m mdecls deps =
   else false
 
 let _ =
+  Liq_printer.set_entries miles_entries;
   let cin = open_in fname in
   print_endline "cin opened.";
   let mm = Env.read_channel Pmodule.mlw_language env fname cin in
