@@ -1,7 +1,7 @@
 TEZOS_CLIENT=~/tezos/tezos-client
 LIQUIDITY=liquidity
 
-SRC=miles_with_expiration.liq
+SRC=miles_with_expiration_from_mlw.liq
 OUT=$(SRC).tz
 
 $(OUT):

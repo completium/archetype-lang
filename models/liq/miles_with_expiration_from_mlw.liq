@@ -2,8 +2,6 @@
 
 (* CONS PRELUDE ****)
 
-let[@inline] upd (f1,f2) = f1 <- f2
-
 let[@inline] get_caller () = Current.sender ()
 
 let[@inline] now () = Current.time ()
@@ -56,7 +54,7 @@ let[@inline] list_remove (a, l) =
       ) l [] in
   sort (cmp, l)
 
-let[@inline] when (params : 's * (('s * 'a) -> bool) * ('a list)) =
+let[@inline] list_when (params : 's * (('s * 'a) -> bool) * ('a list)) =
   let s = get params 0 in
   let f = get params 1 in
   let l = get params 2 in
@@ -71,8 +69,6 @@ let[@inline] sum_nat (params : 's * (('s * 'a) -> nat) * ('a list)) =
   let f = get params 1 in
   let l = get params 2 in
   List.fold (fun (e, acc) -> f (s, e) + acc) l (0:nat)
-
-
 type storage = {
   admin: address;
   admin_tmp: address;
@@ -96,7 +92,7 @@ let[@inline] get_admin_tmp (s: storage) : address = s.admin_tmp
 let[@inline] get_mile_id (params: storage * string) : string =
   let s = get params 0 in
   let k = get params 1 in
-  begin match mem ((k, s.mile_id)) with
+  begin match list_mem ((k, s.mile_id)) with
   | Some v -> v
   | None -> Current.failwith ("not found")
   end
@@ -140,14 +136,15 @@ let[@inline] owner_addifnotexist (params: storage * address * (string list)) : s
   let m = get params 2 in
   let s1 =
     if not (Set.mem k (s.owner_addr)) then begin
-      let s2 = upd (s.owner_addr) (Set.add k (s.owner_addr)) in s2 end
+      let s2 = s.owner_addr <- Set.add k (s.owner_addr) in s2 end
     else
     begin
       s end in
-  let s2 = upd (s1.owner_miles) (Map.add k m (s1.owner_miles)) in
-  let s3 = upd (s2.mile_id) (append ((s2.mile_id, m))) in s3
+  let s2 = s1.owner_miles <- Map.add k m (s1.owner_miles) in
+  let s3 = s2.mile_id <- list_append ((s2.mile_id, m)) in s3
 
-let[@inline] owner_add_miles (params: storage * address * string * nat * timestamp) : storage
+let[@inline] owner_add_miles (params:
+                             storage * address * string * nat * timestamp) : storage
   =
   let s = get params 0 in
   let k = get params 1 in
@@ -159,12 +156,13 @@ let[@inline] owner_add_miles (params: storage * address * string * nat * timesta
     | Some miles -> miles
     | None -> Current.failwith ("not found")
     end in
-  let s1 = upd (s.owner_miles) (Map.add k (add ((i, tmp1))) (s.owner_miles)) in
-  let s2 = upd (s1.mile_id) (add ((i, s1.mile_id))) in
-  let s3 = upd (s2.mile_amount) (Map.add i a (s2.mile_amount)) in
-  let s4 = upd (s3.mile_expiration) (Map.add i e (s3.mile_expiration)) in s4
+  let s1 = s.owner_miles <- Map.add k (list_add ((i, tmp1))) (s.owner_miles) in
+  let s2 = s1.mile_id <- list_add ((i, s1.mile_id)) in
+  let s3 = s2.mile_amount <- Map.add i a (s2.mile_amount) in
+  let s4 = s3.mile_expiration <- Map.add i e (s3.mile_expiration) in s4
 
-let[@inline] owner_remove_miles (params: storage * address * string) : storage =
+let[@inline] owner_remove_miles (params: storage * address * string) : storage
+  =
   let s = get params 0 in
   let o = get params 1 in
   let m = get params 2 in
@@ -174,18 +172,18 @@ let[@inline] owner_remove_miles (params: storage * address * string) : storage =
     | None -> Current.failwith ("not found")
     end in
   let s1 =
-    upd (s.owner_miles) (Map.add o (remove ((m, tmp1))) (s.owner_miles)) in
-  let s2 = upd (s1.mile_id) (remove ((m, s1.mile_id))) in
-  let s3 = upd (s2.mile_amount) (Map.remove m (s2.mile_amount)) in
-  let s4 = upd (s3.mile_expiration) (Map.remove m (s3.mile_expiration)) in s4
+    s.owner_miles <- Map.add o (list_remove ((m, tmp1))) (s.owner_miles) in
+  let s2 = s1.mile_id <- list_remove ((m, s1.mile_id)) in
+  let s3 = s2.mile_amount <- Map.remove m (s2.mile_amount) in
+  let s4 = s3.mile_expiration <- Map.remove m (s3.mile_expiration) in s4
 
 let[@inline] mile_set_amount (params: storage * string * nat) : storage =
   let s = get params 0 in
   let k = get params 1 in
   let v = get params 2 in
-  let s1 = upd (s.mile_amount) (Map.add k v (s.mile_amount)) in s1
+  let s1 = s.mile_amount <- Map.add k v (s.mile_amount) in s1
 
-let%entry add1 (params: address * string * nat * timestamp) (s: storage) :
+let%entry add (params: address * string * nat * timestamp) (s: storage) : 
   (operation list) * storage =
   let ops = empty_ops in
   let caller = get_caller () in
@@ -201,20 +199,20 @@ let[@inline] by_expiration (params: storage * string) : bool =
   let s = get params 0 in
   let k = get params 1 in (get_mile_expiration ((s, k))) >= (now ())
 
-let%entry consume (params: address * nat) (s: storage) : (operation list) * storage
-  =
+let%entry consume (params: address * nat) (s: storage) : (operation list) *
+                                                         storage =
   let ops = empty_ops in
   let caller = get_caller () in
   let owner = get params 0 in
   let val_ = get params 1 in
   let o = get_owner_addr ((s, owner)) in
   let m = get_owner_miles ((s, o)) in
-  let l = when1 ((s, by_expiration, m)) in
-  let sum_amount = sum_nat ((s, get_mile_amount (), l)) in
+  let l = list_when ((s, by_expiration, m)) in
+  let sum_amount = sum_nat ((s, get_mile_amount, l)) in
   let remainder = val_ in
   let o1 = get_owner_addr ((s, owner)) in
   let m1 = get_owner_miles ((s, o1)) in
-  let l1 = when1 ((s, by_expiration, m1)) in
+  let l1 = list_when ((s, by_expiration, m1)) in
   let (ops3, s3, remainder1, o2) =
   List.fold (fun (arg: string * ((operation list) * storage * nat * address)) ->
                let k = get arg 0 in
@@ -223,8 +221,8 @@ let%entry consume (params: address * nat) (s: storage) : (operation list) * stor
                let s4 = get acc 1 in
                let remainder2 = get acc 2 in
                let o3 = get acc 3 in
-               if nat_gt remainder2 ((0:nat)) then begin
-                 if nat_gt (get_mile_amount ((s4, k))) remainder2 then begin
+               if remainder2 > ((0:nat)) then begin
+                 if (get_mile_amount ((s4, k))) > remainder2 then begin
                    let s5 =
                      mile_set_amount ((s4, k,
                                       nat_sub ((get_mile_amount ((s4, k)),
@@ -245,3 +243,4 @@ let%entry consume (params: address * nat) (s: storage) : (operation list) * stor
                begin
                  (ops4, s4, remainder2, o3) end) l1 ((ops, s, remainder, o1)) in
   (ops3, s3)
+
