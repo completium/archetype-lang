@@ -358,6 +358,8 @@ module Print = struct
           query_syntax info.info_syn rs.rs_name, pvl with
     | Some s, _, [{e_node = Econst _}] ->
         syntax_arguments s print_constant fmt pvl
+    | _, Some s, _  when compare rs.rs_name.id_string "update_storage" = 0 ->
+        syntax_arguments s (print_expr ~paren:false info) fmt pvl;
     | _, Some s, _ (* when is_local_id info rs.rs_name  *)->
         syntax_arguments s (print_expr ~paren:true info) fmt pvl;
     | _, None, [t] when is_rs_tuple rs ->
