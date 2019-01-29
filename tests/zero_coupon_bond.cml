@@ -17,7 +17,7 @@ states
   | Confirmed       (* owner has purchased bond *)
   | Transferred
 
-transition confirm from Insured to Confirmed = {
+transition confirm from Created to Confirmed = {
    condition : transferred = price;
    action : maturity := now + 1y,
             transfer price to issuer;
