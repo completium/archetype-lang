@@ -12,6 +12,9 @@ build:
 extract:
 	$(MAKE) -C src/liq extract.exe
 
+plugin:
+	$(MAKE) -C src plugin.exe
+
 merlin:
 	$(MAKE) -C src merlin
 

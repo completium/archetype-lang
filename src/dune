@@ -10,4 +10,4 @@
 (executables
   (modes     native)
   (libraries batteries menhirLib why3)
-  (names     compiler genwhy3))
+  (names     compiler genwhy3 plugin))
