@@ -106,6 +106,9 @@
 %token <string> DURATION
 %token <string> DATE
 
+%nonassoc prec_decl
+%nonassoc prec_for prec_transfer
+
 %nonassoc FROM TO IN EQUALGREATER
 %right THEN ELSE
 
@@ -123,9 +126,12 @@
 %nonassoc GREATER GREATEREQUAL LESS LESSEQUAL
 
 %left PLUS MINUS
-%left MULT DIV
+%left MULT DIV PERCENT
 
 %right NOT
+
+%right STACK SET QUEUE PARTITION COLLECTION
+%nonassoc above_coll
 
 %type <CmlParseTree.model> main
 
@@ -258,16 +264,16 @@ assert_decl:
 | ASSERT x=paren(expr) { Dassert x }
 
 object_decl:
-| OBJECT exts=extensions? x=ident y=expr { Dobject (x, y, exts) }
+| OBJECT exts=extensions? x=ident y=expr { Dobject (x, y, exts) } %prec prec_decl
 
 key_decl:
-| KEY exts=extensions? x=ident OF y=expr { Dkey (x, y, exts) }
+| KEY exts=extensions? x=ident OF y=expr { Dkey (x, y, exts) } %prec prec_decl
 
 %inline ident_equal:
 | x=ident EQUAL { x }
 
-%inline types:
-| xs=type_t+ { xs }
+types:
+| xs=separated_nonempty_list(COMMA, type_t) { xs }
 
 %inline type_t:
 | e=loc(type_r) { e }
@@ -275,6 +281,7 @@ key_decl:
 type_r:
 | x=type_s xs=type_tuples { Ttuple (x::xs) }
 | x=type_s_unloc          { x }
+| x=type_t IMPLY y=type_t { Tapp (x, y) }
 
 %inline type_s:
 | x=loc(type_s_unloc)     { x }
@@ -282,8 +289,8 @@ type_r:
 type_s_unloc:
 | x=ident                 { Tref x }
 | x=type_s c=container    { Tcontainer (x, c) }
-| x=ident y=type_s        { Tvset (x, y) }
-| x=type_s IMPLY y=type_s { Tapp (x, y) }
+| x=ident y=type_s %prec above_coll
+                          { Tvset (x, y) }
 | x=paren(type_r)         { x }
 
 %inline type_tuples:
@@ -292,7 +299,7 @@ type_s_unloc:
 %inline type_tuple:
 | MULT x=type_s { x }
 
-container:
+%inline container:
 | COLLECTION { Collection }
 | QUEUE      { Queue }
 | STACK      { Stack }
@@ -423,10 +430,10 @@ action:
  | e=loc(expr_r) { e }
 
 expr_r:
- | q=quantifier x=ident_typ COMMA y=expr
+ | q=quantifier x=ident_typ1 COMMA y=expr
      { Equantifier (q, x, y)}
 
- | LET x=ident_typ EQUAL e=expr IN y=expr
+ | LET x=ident_typ1 EQUAL e=expr IN y=expr
      { Eletin (x, e, y) }
 
  | FUN xs=ident_typs EQUALGREATER x=expr
@@ -438,7 +445,7 @@ expr_r:
  | ASSERT x=paren(expr)
      { Eassert x }
 
- | FOR LPAREN x=ident IN y=expr RPAREN is=invariants? body=expr
+ | FOR LPAREN x=ident IN y=expr RPAREN is=invariants? body=expr %prec prec_for
      { Efor (x, y, body, is) }
 
  | BREAK
@@ -456,7 +463,7 @@ expr_r:
  | TRANSITION TO x=expr
      { Etransition x }
 
- | TRANSFER back=boption(BACK) x=expr y=to_value?
+ | TRANSFER back=boption(BACK) x=expr y=ioption(to_value) %prec prec_transfer
      { Etransfer (x, back, y) }
 
  | e1=expr op=loc(bin_operator) e2=expr
@@ -512,14 +519,22 @@ simple_expr_r:
      { x }
 
 %inline ident_typs:
- | xs=ident_typ+     { xs }
+ | xs=ident+ COLON ty=type_t
+     { List.map (fun x -> (x, Some ty)) xs }
+
+ | xs=ident_typ+
+     { List.flatten xs }
 
 %inline ident_typ:
- | id=ident x=with_type?
-     { (id, x) }
+ | id=ident
+     { [(id, None)] }
 
-%inline with_type:
- | COLON x=type_t { x }
+ | LPAREN ids=ident+ COLON ty=type_t RPAREN
+     { List.map (fun id -> (id, Some ty)) ids }
+
+%inline ident_typ1:
+ | id=ident ty=option(COLON ty=type_t { ty })
+     { (id, ty) }
 
 literal:
  | x=NUMBER     { Lnumber  x }
