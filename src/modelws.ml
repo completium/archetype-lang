@@ -1,4 +1,4 @@
-open CmlModel
+open Model
 
 type require =
   | Membership

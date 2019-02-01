@@ -1,7 +1,7 @@
 (* -------------------------------------------------------------------- *)
-open CmlCore
+open Core
 
-module P = CmlParser
+module P = Parser
 module L = Lexing
 
 (* -------------------------------------------------------------------- *)
@@ -21,7 +21,7 @@ let lexbuf_from_channel = fun name channel ->
 
 (* -------------------------------------------------------------------- *)
 let lexer (lexbuf : L.lexbuf) =
-  let token = CmlLexer.token lexbuf in
+  let token = Lexer.token lexbuf in
   (token, L.lexeme_start_p lexbuf, L.lexeme_end_p lexbuf)
 
 (* -------------------------------------------------------------------- *)

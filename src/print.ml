@@ -1,7 +1,7 @@
 (* -------------------------------------------------------------------------- *)
-open CmlCore
-open CmlLocation
-open CmlParseTree
+open Core
+open Location
+open ParseTree
 
 (* -------------------------------------------------------------------------- *)
 let pp_list sep pp =

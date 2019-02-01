@@ -1,10 +1,10 @@
 (* -------------------------------------------------------------------- *)
-open CmlCore
+open Core
 
 (* -------------------------------------------------------------------- *)
 let parse_and_print (filename, channel) =
-  let model = CmlIo.parse_model ~name:filename channel in
-  Format.printf "%a@." CmlPrint.pp_model model
+  let model = Io.parse_model ~name:filename channel in
+  Format.printf "%a@." Print.pp_model model
 
 (* -------------------------------------------------------------------- *)
 let main () =
@@ -20,8 +20,8 @@ let main () =
       (fun () -> if dispose then close_in channel)
       parse_and_print (filename, channel)
 
-  with CmlParseUtils.ParseError exn ->
-    Format.eprintf "%a@." CmlParseUtils.pp_parse_error exn;
+  with ParseUtils.ParseError exn ->
+    Format.eprintf "%a@." ParseUtils.pp_parse_error exn;
     exit 1
 
 (* -------------------------------------------------------------------- *)
