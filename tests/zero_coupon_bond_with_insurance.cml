@@ -37,5 +37,5 @@ transition collect from Confirmed to Transferred = {
    condition : now > maturity;
    action    : if balance >= payment
                then transfer balance to owner
-               else guarantee_fund.pay owner payment;
+               else insurance.pay owner payment;
 }
