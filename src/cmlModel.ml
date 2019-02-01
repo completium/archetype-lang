@@ -29,7 +29,6 @@ type container =
 type vtyp =
   | VTint
   | VTuint
-  | VTfloat
   | VTdate
   | VTstring
   | VTaddress
