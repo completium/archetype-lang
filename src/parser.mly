@@ -123,6 +123,7 @@
 %left AND
 
 %nonassoc EQUAL NEQUAL
+%nonassoc prec_order
 %nonassoc GREATER GREATEREQUAL LESS LESSEQUAL
 
 %left PLUS MINUS
@@ -466,14 +467,29 @@ expr_r:
  | TRANSFER back=boption(BACK) x=expr y=ioption(to_value) %prec prec_transfer
      { Etransfer (x, back, y) }
 
+ | x=order_operations %prec prec_order { x }
+
  | e1=expr op=loc(bin_operator) e2=expr
-     { Eapp ( mkloc (loc op) (Eop (unloc op)), [e1; e2]) }
+     { let loc = Location.make $startpos $endpos in
+       Eapp ( mkloc loc (Eop (unloc op)), [e1; e2]) }
 
  | op=loc(un_operator) x=expr
-     { Eapp ( mkloc (loc op) (Eop (unloc op)), [x]) }
+     { let loc = Location.make $startpos $endpos in
+       Eapp ( mkloc loc (Eop (unloc op)), [x]) }
 
  | x=simple_with_app_expr_r
      { x }
+
+order_operation:
+ | e1=expr op=loc(ord_operator) e2=expr
+     { let loc = Location.make $startpos $endpos in
+       Eapp ( mkloc loc (Eop (unloc op)), [e1; e2]) }
+
+order_operations:
+ | e=order_operation { e }
+ | e1=loc(order_operations) op=loc(ord_operator) e2=expr
+    { let loc = Location.make $startpos $endpos in
+       Eapp ( mkloc loc (Eop (unloc op)), [e1; e2]) }
 
 %inline invariants:
  | xs=invariant+   { xs }
@@ -570,10 +586,12 @@ assign_field_r:
 %inline comparison_operator:
  | EQUAL        { Equal }
  | NEQUAL       { Nequal }
- | GREATER      { Gt }
- | GREATEREQUAL { Ge }
+
+%inline ordering_operator:
  | LESS         { Lt }
  | LESSEQUAL    { Le }
+ | GREATER      { Gt }
+ | GREATEREQUAL { Ge }
 
 %inline arithmetic_operator:
  | PLUS    { Plus }
@@ -594,3 +612,6 @@ assign_field_r:
 
 %inline un_operator:
 | op=unary_operator      { `Unary op }
+
+%inline ord_operator:
+| op=ordering_operator   { `Cmp op }
