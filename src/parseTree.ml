@@ -122,9 +122,9 @@ and field = field_r loced
 type transitem_r =
   | Targs of field list * extension list option                      (** args *)
   | Tcalledby of expr * extension list option                        (** called by *)
-  | Tensure of expr * extension list option                          (** ensure *)
   | Tcondition of expr * extension list option                       (** condition *)
   | Ttransition of expr * expr * expr option * extension list option (** transition  *)
+  | Tspecification of expr list * extension list option              (** specification *)
   | Taction of expr * extension list option                          (** action  *)
 
 and transitem = transitem_r loced

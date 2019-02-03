@@ -20,85 +20,97 @@ transaction add = {
      owner       : address;
      newmile     : mile;
    }
+
    called by admin;
-   action    :
+
+   (* this ensures that any mile was added with the ‘add’ transaction *)
+   specification = {
+      mile = Collection.fold (fun u o => union u o.miles) void owner;
+      mile = Collection.union(miles) owner
+   }
+
+   action = {
        owner.addifnotexist owner { miles := empty; },
        (* transaction must fail if mile already exists *)
-       (owner.get owner).miles.add newmile;
+       (owner.get owner).miles.add newmile
+   }
 }
-
 
 transaction consume = {
+
   args = {
-     owner : address;
-     val : uint;
+     ow   : address;
+     val  : uint;
   }
+
+  specification = {
+
+       let o = owner.get owner in
+       o.miles.sum(amount) = before o.miles.sum(amount) - val;
+
+       (* sanity checks *)
+       forall m : removed miles,
+       contains m (before (owner.miles)) and m.expiration >= now;
+
+       is_empty added.mile;
+
+       idem (mile.project(not mile.amount));
+
+       idem ((owner.when(owner.owner <> owner)).miles);
+
+       forall m : removed mile,
+             forall o : fixed mile,
+                m.expiration <= o.expiration
+  }
+
   called by admin;
 
-  condition :
-     (owner.get owner).miles.when(mile.expiration >= now).sum(amount)
-           >= val;
+  condition: (by_expiration ow).sum(amount) >= val;
 
-  ensure : forall m : removed mile,
-             mem m (before (owner.miles)) and m.expiration >= now;
+(*  function by_expiration o = o.miles.when(mile.expiration > now)*)
 
-  ensure : let o = owner.get owner in
-           before o.miles.sum(amount) = (o.miles.sum(amount)) + val;
-
-  ensure : is_empty added.mile;
-
-  ensure : idem (mile.project(not mile.amount));
-
-  ensure : idem (owner.when(owner.owner <> owner).miles);
-
-  ensure : forall m : removed mile,
-             forall o : fixed mile,
-                m.expiration <= o.expiration;
-
-  action :
+  action = {
      let remainder = val in
-     let o = owner.get owner in
-     for (m in o.miles.when(expiration >= now))
-     (* remainder has a decreasing upper bound *)
-     invariant (0 <= remainder and remainder <= to_iter.sum(amount))
-     (* removed miles *)
-     invariant (subset (removed miles) (o.miles.when(expiration >= now)))
-     (* right amount consumed *)
-     invariant (before miles.sum(amount) = miles.sum(amount) + nbmiles - remainder)
+     for (m in by_expiration o)
+     invariant = {
+          (* remainder has a decreasing upper bound *)
+          0 <= remainder <= to_iter.sum(amount);
+          (* removed miles *)
+          (subset (removed miles) (o.miles.when(expiration >= now)));
+          (* right amount consumed *)
+          before miles.sum(amount) = miles.sum(amount) + nbmiles - remainder
+     }
      (
-          if (m.amount > remainder)
-          then (
-             m.amount  -= remainder,
-             remainder := 0,
-             break
-          )
-          else (
-             if (m.amount = remainder)
-             then (
-                o.miles.remove m,
-                remainder := 0,
-                break
-             )
-             else (
-                remainder -= m.amount,
-                o.miles.remove m
-             )
-          )
+       if m.amount > remainder
+       then (
+         remainder := 0,  (* this should be after instruction below
+                             this is to demonstrate verification
+                             capacity to not verify contract in this
+                             state *)
+         m.amount -= remainder,
+         break
+       )
+       else if m.amount = remainder
+            then (
+              remainder := 0,
+              o.miles.remove m,
+              break)
+            else (
+              remainder -= m.amount,
+              o.miles.remove m)
      ),
-     assert (remainder = 0);
+     assert (remainder = 0)
+   }
 }
-
-(* this ensures that any mile was added with the ‘add’ transaction *)
-assert (mile = Collection.fold (fun u o => union u o.miles) void owner)
 
 transaction clear_expired = {
   called by admin;
 
-  ensure : forall m : removed mile, m.expiration < now;
+  specification = {
+     forall m : removed mile, m.expiration < now;
+     is_empty (added mile);
+     idem mile
+  }
 
-  ensure : is_empty (added mile);
-
-  ensure : idem mile;
-
-  action : mile.removeif (expiration < now());
+  action = { mile.removeif (expiration < now) }
 }

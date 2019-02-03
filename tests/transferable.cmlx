@@ -13,11 +13,11 @@ model extension transferable (
       newrole : <%aRole>tmp;
     }
     called by aRole;
-    action : <%aRole>_tmp := newrole;
+    action = { <%aRole>_tmp := newrole }
   }
 
   transaction confirm_<%aRole> = {
     called by <%aRole>tmp;
-    action : aRole := <%aRole>tmp;
+    action = { aRole := <%aRole>tmp }
   }
 }

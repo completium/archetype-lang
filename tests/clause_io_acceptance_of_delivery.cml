@@ -33,26 +33,31 @@ transaction[%signedbyall [shipper, receiver]] sign = {
 
 transition unilateral_abort from Created to Aborted = {
    called by shipper or receiver;
-   action : transfer back incentiveR,
-            transfer back payment,
-            transfer back incentiveS;
+   action = {
+     transfer back incentiveR,
+     transfer back payment,
+     transfer back incentiveS
+   }
 }
 
 transition[%signedbyall [shipper, receiver]] abort from Signed to Aborted = {
    called by shipper or receiver;
-   action : transfer back incentiveR,
-            transfer back payment,
-            transfer back incentiveS;
+   action = {
+     transfer back incentiveR,
+     transfer back payment,
+     transfer back incentiveS
+   }
 }
 
 transaction confirm = {
   called by receiver;
   transition from Signed to Delivered;
-  action :
-       deliveryDate := now,
-       transfer back incentiveR,
-       transfer payment,
-       transfer back incentiveS;
+  action = {
+     deliveryDate := now,
+     transfer back incentiveR,
+     transfer payment,
+     transfer back incentiveS
+  }
 }
 
 transition success from Delivered to Success = {

@@ -36,13 +36,13 @@
 %token ENUM
 %token STATES
 %token INITIAL
-%token ENSURE
 %token INVARIANT
 %token TRANSITION
 %token TRANSACTION
 %token ARGS
 %token CALLED
 %token CONDITION
+%token SPECIFICATION
 %token ACTION
 %token LET
 %token IF
@@ -391,9 +391,9 @@ transaction:
 transitem_r:
  | x=args             { x }
  | x=calledby         { x }
- | x=ensure           { x }
  | x=condition        { x }
  | x=transition_item  { x }
+ | x=specification    { x }
  | x=action           { x }
 
 args:
@@ -401,9 +401,6 @@ args:
 
 calledby:
  | CALLED BY exts=option(extensions) x=expr SEMI_COLON { Tcalledby (x, exts) }
-
-ensure:
- | ENSURE exts=option(extensions) COLON x=expr SEMI_COLON { Tensure (x, exts) }
 
 condition:
  | CONDITION exts=option(extensions) COLON x=expr SEMI_COLON { Tcondition (x, exts) }
@@ -415,8 +412,13 @@ transition_item:
          y=to_value SEMI_COLON
              { Ttransition (x, y, id, exts) }
 
+specification:
+ | SPECIFICATION exts=option(extensions) EQUAL
+     xs=braced(separated_nonempty_list(SEMI_COLON, expr))
+       { Tspecification (xs, exts) }
+
 action:
- | ACTION exts=option(extensions) COLON xs=expr SEMI_COLON { Taction (xs, exts) }
+ | ACTION exts=option(extensions) EQUAL xs=braced(expr) { Taction (xs, exts) }
 
 %inline assignment_operator:
  | COLONEQUAL { SimpleAssign }
@@ -446,7 +448,7 @@ expr_r:
  | ASSERT x=paren(expr)
      { Eassert x }
 
- | FOR LPAREN x=ident IN y=expr RPAREN is=invariants? body=expr %prec prec_for
+ | FOR LPAREN x=ident IN y=expr RPAREN is=invariant? body=expr %prec prec_for
      { Efor (x, y, body, is) }
 
  | BREAK
@@ -491,11 +493,8 @@ order_operations:
     { let loc = Location.make $startpos $endpos in
        Eapp ( mkloc loc (Eop (unloc op)), [e1; e2]) }
 
-%inline invariants:
- | xs=invariant+   { xs }
-
 %inline invariant:
- | INVARIANT x=paren(expr){ x }
+ | INVARIANT EQUAL xs=braced(separated_nonempty_list(SEMI_COLON, expr)) { xs }
 
 %inline simple_with_app_expr_r:
  | x=simple_expr a=app_args

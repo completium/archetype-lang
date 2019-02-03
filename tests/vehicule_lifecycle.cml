@@ -41,7 +41,7 @@ transaction placeOrder = {
      neworder : order;
    }
    called by neworder.orderer;
-   action : order.add neworder;
+   action = { order.add neworder }
 }
 
 transaction assign_vin = {
@@ -52,7 +52,9 @@ transaction assign_vin = {
    }
    called by order.orderer;
    transition from order.Placed to order.Vin_assigned;
-   action : vehicule.add { vin := vin; detail := detail; };
+   action = {
+     vehicule.add { vin := vin; detail := detail; }
+   }
 }
 
 transaction assign_owner = {
@@ -60,11 +62,12 @@ transaction assign_owner = {
      order      : order;
    }
    transition from order.any to order.Owner_assigned;
-   action :
-    (* set vehicule state *)
-    order.vehicule.state := Active,
-    (* set vehicule owner *)
-    order.vehicule.owner := order.orderer;
+   action = {
+     (* set vehicule state *)
+     order.vehicule.state := Active,
+     (* set vehicule owner *)
+     order.vehicule.owner := order.orderer
+   }
 }
 
 transaction vehiculeTransfer  = {
@@ -73,7 +76,7 @@ transaction vehiculeTransfer  = {
      vehicule  : vehicule;
    }
    called by [%delegable] vehicule.owner;
-   action : vehicule.owner := buyer;
+   action = { vehicule.owner := buyer }
 }
 
 transaction scrapVehicle = {
@@ -88,8 +91,9 @@ transaction scrapVehiclebyColor = {
    args = {
       color : string;
    }
-   action :
+   action = {
      for (v in vehicule.when (vehicule.color = color)) (
         v.state := Scrapped
-     );
+     )
+   }
 }

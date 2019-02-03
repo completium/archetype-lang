@@ -12,6 +12,6 @@ model extension mutable (
     }
     called by arole;
     condition : cond;
-    action : avalue := newvalue;
+    action = { avalue := newvalue }
   }
 }

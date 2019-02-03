@@ -28,7 +28,7 @@ model extension roleDelegation (
        operator : address;
      }
      called by arole;
-     action : (<%aRole>Operators.get owner).operators.add operator;
+     action = { (<%aRole>Operators.get owner).operators.add operator }
   }
 
   transaction rmDelegate<%aRole> = {
@@ -37,7 +37,7 @@ model extension roleDelegation (
        operator  : address;
      }
      called by arole;
-     action: (<%aRole>Operators.get owner).operators.remove operator;
+     action = { (<%aRole>Operators.get owner).operators.remove operator }
   }
 
   transaction aTransaction = {

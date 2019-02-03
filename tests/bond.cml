@@ -22,7 +22,7 @@ asset paymentFrequency = {
 asset bond = {
   couponType       : couponType;
   paymentFrequency : paymentFrequency;
-  issuer           : issuer ref;
+  issuer           : issuer;
 }
 
 transaction publish = {
@@ -30,5 +30,5 @@ transaction publish = {
       bond : bond;
    }
    called by bond.issuer;  (* see acl file *)
-   action : bond.add bond;
+   action = { bond.add bond }
 }

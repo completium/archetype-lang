@@ -15,7 +15,9 @@ transaction add = {
      val : uint;
    }
    called by validator;
-   action : account.update owner { amount += val; } { amount := 0; };
+   action = {
+     account.update owner { amount += val; } { amount := 0; }
+   }
 }
 
 transaction consume = {
@@ -26,8 +28,10 @@ transaction consume = {
    called by validator;
    condition : (account.get owner).amount >= val;
 
-   ensure : (before.account.get owner).amount =
-             (after.account.get owner).amount + val;
+   specification = {
+     (before.account.get owner).amount =
+             (after.account.get owner).amount + val
+   }
 
-   action : (account.get owner).amount -= val;
+   action = { (account.get owner).amount -= val }
 }

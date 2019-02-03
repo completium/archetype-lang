@@ -270,7 +270,7 @@ let rec pp_expr fmt { pldesc = e } =
   | Efor (id, expr, body, invariants) ->
       Format.fprintf fmt "for (%a in %a)%a (%a)"
         pp_id id
-        (pp_option (pp_list "\n" (pp_enclose " invariant (" ")" pp_expr))) invariants
+        (pp_option (pp_enclose " invariant = {" "}" (pp_list ";\n" pp_expr))) invariants
         pp_expr expr
         pp_expr body
 
@@ -369,11 +369,6 @@ let pp_transitem fmt { pldesc = t } =
         (pp_option (pp_list " " pp_extension)) exts
         pp_expr e
 
-  | Tensure (e, exts) ->
-      Format.fprintf fmt "ensure%a: %a;\n"
-        (pp_option (pp_list " " pp_extension)) exts
-        pp_expr e
-
   | Tcondition (e, exts) ->
       Format.fprintf fmt "condition%a: %a;\n"
         (pp_option (pp_list " " pp_extension)) exts
@@ -386,8 +381,13 @@ let pp_transitem fmt { pldesc = t } =
         pp_expr from
         pp_expr _to
 
+  | Tspecification (xs, exts) ->
+      Format.fprintf fmt "specification%a = {%a}\n"
+       (pp_option (pp_list " " pp_extension)) exts
+       (pp_list "; " pp_expr) xs
+
   | Taction (e, exts) ->
-      Format.fprintf fmt "action%a:\n %a;"
+      Format.fprintf fmt "action%a = {%a}\n"
         (pp_option (pp_list " " pp_extension)) exts
         pp_expr e
 

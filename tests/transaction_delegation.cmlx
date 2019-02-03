@@ -16,9 +16,10 @@ model extension transactionDelegation (
 ) = {
 
   transaction aTransaction = {
-    action:
+    action = {
       <%aTransaction>_space::Operator.remove
-      (<%aTransaction>_space::Operator.get anasset);
+      (<%aTransaction>_space::Operator.get anasset)
+    }
   }
 
   namespace <%aTransaction>_space {
@@ -32,7 +33,7 @@ model extension transactionDelegation (
         Operator : Operator;
       }
       called by Operator.anasset.arole;
-      action: Operator.add Operator;
+      action = { Operator.add Operator }
     }
 
     transaction rmDelegate = {
@@ -40,7 +41,7 @@ model extension transactionDelegation (
         Operator : Operator;
       }
       called by Operator.anasset.arole;
-      action : Operator.remove Operator;
+      action = { Operator.remove Operator }
     }
 
     transaction from_addr = {
@@ -49,7 +50,7 @@ model extension transactionDelegation (
       }
       condition:
         (Operator.get anasset).operator = caller.address;
-      action : Operator.remove (Operator.get anasset);
+      action = { Operator.remove (Operator.get anasset) }
     }
   }
 

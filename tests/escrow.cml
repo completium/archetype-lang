@@ -36,14 +36,20 @@ transaction[%signedbyall [buyer, seller]] confirm = {
 }
 
 transition transfer_ from Confirmed to Transferred = {
-   called by oracle;
-   condition : before deadline;
-   action    : transfer price, transfer back penalty;
+  called by oracle;
+  condition : before deadline;
+  action = {
+    transfer price,
+    transfer back penalty
+  }
 }
 
 transition cancel from Confirmed to Canceled = {
-   called by oracle;
-   action : transfer penalty, transfer back price;
+  called by oracle;
+  action = {
+    transfer penalty,
+    transfer back price
+  }
 }
 
 assert (instate Transferred -> check 0)

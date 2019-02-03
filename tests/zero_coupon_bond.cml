@@ -19,9 +19,11 @@ states
 
 transition confirm from Created to Confirmed = {
    condition : transferred = price;
-   action : maturity := now + 1y,
-            transfer price to issuer;
-   ensure : balance = 0;
+   specification = { balance = 0 }
+   action = {
+     maturity := now + 1y,
+     transfer price to issuer
+   }
 }
 
 transaction repay = {
@@ -32,8 +34,9 @@ transaction repay = {
 transaction collect = {
    called by owner;
    condition : now > maturity;
-   action    :
-    if balance >= payment
-    then (transfer balance to owner,
-          state := Transferred);
+   action = {
+     if balance >= payment
+     then (transfer balance to owner,
+           state := Transferred)
+   }
 }

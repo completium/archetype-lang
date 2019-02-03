@@ -36,7 +36,9 @@ transaction register = {
    }
    called by   chairperson;
    condition : instate Created;
-   action    : voter.add {address := voter; hasVoted := false;};
+   action = {
+     voter.add {address := voter; hasVoted := false;}
+   }
 }
 
 transition start from Created to Vote = {
@@ -51,17 +53,21 @@ transaction vote = {
    condition : instate Voting
                and (voter.get (Caller.address)).hasVoted = false;
 
-   action    : (voter.get (Caller.address)).hasVoted := true,
-               ballot.update val { nbvotes += 1; } { nbvotes := 0; };
+   action = {
+     (voter.get (Caller.address)).hasVoted := true,
+     ballot.update val { nbvotes += 1; } { nbvotes := 0; }
+   }
 }
 
 transition bury from Voting to Buried = {
    condition : after deadline;
-   action    : let nbvotesMax = ballot.max(nbvotes) in
-               for (b in ballot) (
-                 if (b.nbvotes = nbvotesMax)
-                 then winner.add { val := b.val; }
-               );
+   action = {
+     let nbvotesMax = ballot.max(nbvotes) in
+     for (b in ballot) (
+       if (b.nbvotes = nbvotesMax)
+       then winner.add { val := b.val; }
+     )
+   }
 }
 
 assert (voter.when(voter.hasVoted = true).count = ballot.sum(nbvotes))

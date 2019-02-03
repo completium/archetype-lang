@@ -11,7 +11,7 @@ model extension mutable_signed (
       newvalue : type;
     }
     condition: cond;
-    action : avalue := newvalue;
+    action = { avalue := newvalue }
   }
 
 }

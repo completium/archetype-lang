@@ -38,13 +38,13 @@
       "enum"                , ENUM           ;
       "states"              , STATES         ;
       "initial"             , INITIAL        ;
-      "ensure"              , ENSURE         ;
       "invariant"           , INVARIANT      ;
       "transition"          , TRANSITION     ;
       "transaction"         , TRANSACTION    ;
       "args"                , ARGS           ;
       "called"              , CALLED         ;
       "condition"           , CONDITION      ;
+      "specification"       , SPECIFICATION  ;
       "action"              , ACTION         ;
       "let"                 , LET            ;
       "if"                  , IF             ;

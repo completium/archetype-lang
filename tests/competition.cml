@@ -38,14 +38,16 @@ transaction submit = {
      score[%signedby oracle] : uint;
    }
    condition : instate InProgress;
-   action    : submission.add { competitor := competitor;
-                                score := score;
-                                date := now; };
+   action = {
+     submission.add { competitor := competitor;
+                      score := score;
+                      date := now; }
+   }
 }
 
 transition decide from InProgress to Done = {
    condition : after deadline;
-   action :
+   action = {
          let sorted_submissions = submission.sort(asc(date)).sort(desc(score)) in
          if (sorted_submissions.count >= 3)
          then (
@@ -74,7 +76,8 @@ transition decide from InProgress to Done = {
                transfer back prize
              )
            )
-         );
+         )
+     }
 }
 
 assert (instate Done -> check 0)
