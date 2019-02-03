@@ -203,7 +203,9 @@ model:
 | MODEL x=ident { Dmodel x }
 
 constant:
-| CONSTANT exts=option(extensions) x=ident y=ident { Dconstant (x, y, exts) }
+| CONSTANT exts=option(extensions) x=ident y=ident
+    dv=default_value?
+      { Dconstant (x, y, dv, exts) }
 
 value:
 | VALUE exts=extensions? x=ident y=ident z=option(value_options)

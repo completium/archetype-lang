@@ -453,11 +453,12 @@ let rec pp_declaration fmt { pldesc = e } =
   | Dmodel id ->
       Format.fprintf fmt "model %a\n" pp_id id
 
-  | Dconstant (id, typ, exts) ->
-      Format.fprintf fmt "constant%a %a %a\n"
+  | Dconstant (id, typ, dv, exts) ->
+      Format.fprintf fmt "constant%a %a %a%a\n"
           (pp_option (pp_list " " pp_extension)) exts
           pp_id id
           pp_id typ
+          (pp_option (pp_prefix " := " pp_expr)) dv
 
   | Dvalue (id, typ, opts, dv, exts) ->
       Format.fprintf fmt "value%a %a %a%a%a\n"

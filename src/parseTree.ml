@@ -134,7 +134,7 @@ and transitem = transitem_r loced
 type declaration_r =
   | Duse         of lident                                              (** use *)
   | Dmodel       of lident                                              (** model *)
-  | Dconstant    of lident * lident * extension list option             (** constant *)
+  | Dconstant    of lident * lident * expr option * extension list option             (** constant *)
   | Dvalue       of lident * lident * value_option list option * expr option * extension list option       (** value *)
   | Drole        of lident * expr option * extension list option                   (** role *)
   | Denum        of lident * lident list                                           (** enum *)

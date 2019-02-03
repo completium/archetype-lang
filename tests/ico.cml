@@ -1,0 +1,158 @@
+model bcd_ico
+
+constant symbol string := "BCDT"
+constant decimals int := 18
+
+(* contribution thresholds *)
+value[%mutable owner (state = Init)] min_contribution xtz := 0.001
+value[%mutable owner (state = Init)] max_contribution_silver xtz := 10
+
+
+(* bcd token data *)
+value[%mutable owner (state = Init)] max_bcd_to_sell int := 100000000
+value[%mutable owner (state = Init)] exchange_rate_bcd_xtz int := 13000
+
+
+(* round caps *)
+value[%mutable owner (state = Init)] soft_cap xtz := 1800
+value[%mutable owner (state = Init)] presales_cap xtz := 1800
+value[%mutable owner (state = Init)] round1_cap xtz := 3600
+
+(* presales_cap + 1600 *)
+
+
+(* Number tokens sent, eth raised, … *)
+value nb_bcd_sold int := 0
+value nb_xtz_raised int := 0
+
+
+(* Roles *)
+role[%transferable] owner
+role whitelister
+role reserve
+role community
+
+
+(* contributor *)
+enum whitelist =
+ | Silver
+ | Gold
+
+(*asset[@add @remove owner (state = Init)] contributor identified by id = {*)
+asset contributor identified by id = {
+  id: address;
+  list: whitelist;
+  contrib: int := 0;
+} with { contrib >= 0 }
+
+
+states
+| Init initial     (* ICO isn't started yet, initial state *)
+| PresaleRunning   (* Presale has started *)
+| PresaleFinished  (* Presale has ended   *)
+| Round1Running    (* Round 1 has started *)
+| Round1Finished   (* Round 1 has ended   *)
+| Round2Running    (* Round 2 has started *)
+| Round2Finished   (* Round 2 has ended   *)
+
+
+transaction contribute = {
+   condition : contributor.contains caller;
+   condition : is_running ();
+   condition : transferred >= min_contribution;
+   condition : let c = contributor.get caller in
+               not (c.list = Silver and transferred >= max_contrib_silver);
+
+   function is_running () =
+       state = PresalesRunning
+    or state = Round1Running
+    or state = Round2Running
+
+   function get_rate () =
+     let coeff =
+        if state = PresalesRunning
+        then 1.2
+        else if state = Round1Running
+        then 1.1
+        else 1
+     in
+     coeff * exchange_rate_xtz_bcd
+
+
+   function get_remaining_xtz_to_raise () =
+     if state = PresalesRunning or state = PresalesFinished
+     then presales_cap - nb_xtz_raised
+     else if state = Round1Running or state = Round1Finished
+     then round1_cap - nb_xtz_raised
+     else (* round 2 *)
+       let remaining_bcd = max_bcd_to_sell - nb_bcd_sold in
+       remaining_bcd / exchange_rate_bcd_xtz
+
+
+   function get_finished_state () =
+     if state = PresalesRunning
+     then state := PresalesFinished
+     else if state = Round1Running
+     then state := Round1Finished
+     else if state = Round2Running
+     then state := Round2Finished
+
+   action = {
+     (* cap contribution to max_contrib if necessary *)
+     let contrib = transferred in
+     if    c.list = Silver
+       and c.contrib + contrib >= max_contrib_silver
+     then contrib := max_contrib_silver - c.contrib,
+
+     (* cap contribution to round cap if necessary *)
+     let remaining_xtz = get_remaining_xtz_to_raise () in
+     if remaining_xtz <= contrib
+     then (
+       contrib := remaining_xtz,
+       transition_to_finished ()
+     ),
+
+     (* convert contribution to nb of bcd tokens *)
+     let rate = get_rate () in
+     let nb_tokens  = contrib * rate in
+
+     (* update ico stats *)
+     nb_bcd_sold   += nb_tokens,
+     nb_xtz_raised += contrib,
+
+     (* update caller’s contribution *)
+     c.contrib     += contrib,
+
+     (* syntaxic sugar for contributor.update caller { contrib += contrib } *)
+
+     if contrib <= transferred
+     then transfer (transferred - contrib) to caller
+
+   }
+
+}
+
+
+transaction withdraw = {
+
+  specification = {
+
+     (* withdraw only once : how to specify that you can withdraw
+        only once ? Say that withdraw is idempotent ?
+        forall n : uint, call withraw n = call withdraw 1 ?
+     *)
+     test
+  }
+
+  condition : (contributor.get caller).contribution > 0;
+  condition : nb_xtz_raised <= soft_cap;
+
+  action = {
+
+     let c = contributor.get caller in
+     transfer c.contribution caller,
+     (* do not forget this *)
+     c.contribution := 0
+  }
+
+}
