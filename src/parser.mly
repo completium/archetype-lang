@@ -44,6 +44,7 @@
 %token CONDITION
 %token SPECIFICATION
 %token ACTION
+%token FUNCTION
 %token LET
 %token IF
 %token THEN
@@ -395,6 +396,7 @@ transitem_r:
  | x=transition_item  { x }
  | x=specification    { x }
  | x=action           { x }
+ | x=function_item    { x }
 
 args:
  | ARGS exts=option(extensions) EQUAL fields=braced(fields) { Targs (fields, exts) }
@@ -419,6 +421,22 @@ specification:
 
 action:
  | ACTION exts=option(extensions) EQUAL xs=braced(expr) { Taction (xs, exts) }
+
+function_item:
+ | FUNCTION id=ident xs=function_args
+     r=function_return? EQUAL b=expr
+       { Tfunction (id, xs, r, b) }
+
+%inline function_return:
+ | COLON ty=type_t { ty }
+
+%inline function_args:
+ | LPAREN RPAREN     { [] }
+ | xs=function_arg+  { xs }
+
+%inline function_arg:
+ | id=ident                               { (id, None) }
+ | LPAREN id=ident COLON ty=type_t RPAREN { (id, Some ty) }
 
 %inline assignment_operator:
  | COLONEQUAL { SimpleAssign }

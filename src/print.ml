@@ -338,6 +338,19 @@ match args with
 | [] -> Format.fprintf fmt "()"
 | _ -> Format.fprintf fmt " %a" (pp_list " " pp_expr) args
 
+and pp_fun_ident_typ fmt (arg : lident_typ) =
+match arg with
+| (x, None) -> Format.fprintf fmt "%a" pp_id x
+| (x, Some y) ->
+    Format.fprintf fmt "(%a : %a)"
+    pp_id x
+    pp_type y
+
+and pp_fun_args fmt args =
+match args with
+| [] -> Format.fprintf fmt "()"
+| _ -> Format.fprintf fmt "%a" (pp_list " " pp_fun_ident_typ) args
+
 (* -------------------------------------------------------------------------- *)
 and pp_field fmt { pldesc = f } =
   match f with
@@ -390,6 +403,13 @@ let pp_transitem fmt { pldesc = t } =
       Format.fprintf fmt "action%a = {%a}\n"
         (pp_option (pp_list " " pp_extension)) exts
         pp_expr e
+
+  | Tfunction (id, args, r, b) ->
+      Format.fprintf fmt "function %a %a%a = %a\n"
+        pp_id id
+        pp_fun_args args
+        (pp_option (pp_prefix " : " pp_type)) r
+        pp_expr b
 
 (* -------------------------------------------------------------------------- *)
 let state_option_to_str opt =

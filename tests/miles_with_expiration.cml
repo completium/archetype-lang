@@ -67,7 +67,7 @@ transaction consume = {
 
   condition: (by_expiration ow).sum(amount) >= val;
 
-(*  function by_expiration o = o.miles.when(mile.expiration > now)*)
+  function by_expiration o = o.miles.when(mile.expiration > now)
 
   action = {
      let remainder = val in

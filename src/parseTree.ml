@@ -126,6 +126,7 @@ type transitem_r =
   | Ttransition of expr * expr * expr option * extension list option (** transition  *)
   | Tspecification of expr list * extension list option              (** specification *)
   | Taction of expr * extension list option                          (** action  *)
+  | Tfunction of lident * lident_typ list * type_t option * expr     (** function *)
 
 and transitem = transitem_r loced
 

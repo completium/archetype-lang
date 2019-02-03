@@ -46,6 +46,7 @@
       "condition"           , CONDITION      ;
       "specification"       , SPECIFICATION  ;
       "action"              , ACTION         ;
+      "function"            , FUNCTION       ;
       "let"                 , LET            ;
       "if"                  , IF             ;
       "then"                , THEN           ;
