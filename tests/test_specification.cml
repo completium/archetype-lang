@@ -1,0 +1,6 @@
+transaction tr = {
+  specification = {
+    s1 : forall x, P x -> y;
+    exists x, P x and P y
+  }
+}

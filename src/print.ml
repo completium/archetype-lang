@@ -383,6 +383,14 @@ and pp_extension fmt { pldesc = e } =
         (pp_option (pp_prefix " " (pp_list " " pp_expr))) args
 
 (* -------------------------------------------------------------------------- *)
+let pp_specification fmt (s : specification) =
+match s with
+| Sspecification (None, y)   -> Format.fprintf fmt "%a" pp_expr y
+| Sspecification (Some x, y) ->
+    Format.fprintf fmt "%a : %a"
+    pp_id x
+    pp_expr y
+
 let pp_transitem fmt { pldesc = t } =
   match t with
   | Targs (fields, exts) ->
@@ -410,12 +418,13 @@ let pp_transitem fmt { pldesc = t } =
   | Tspecification (xs, exts) ->
       Format.fprintf fmt "specification%a = {@\n@[<v 2>  %a@]@\n}"
        (pp_option (pp_list " " pp_extension)) exts
-       (pp_list "; " pp_expr) xs
+       (pp_list "; " pp_specification) xs
 
   | Taction (e, exts) ->
       Format.fprintf fmt "action%a = {@\n@[<v 2>  %a@]@\n}"
         (pp_option (pp_list " " pp_extension)) exts
         pp_expr e
+
 
 (* -------------------------------------------------------------------------- *)
 let state_option_to_str opt =

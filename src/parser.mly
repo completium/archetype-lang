@@ -426,8 +426,12 @@ transition_item:
 
 specification:
  | SPECIFICATION exts=option(extensions) EQUAL
-     xs=braced(separated_nonempty_list(SEMI_COLON, expr))
+     xs=braced(separated_nonempty_list(SEMI_COLON, specification_item))
        { Tspecification (xs, exts) }
+
+%inline specification_item:
+ | id=ident COLON e=expr { Sspecification (Some id, e) }
+ | e=expr { Sspecification (None, e) }
 
 action:
  | ACTION exts=option(extensions) EQUAL xs=braced(expr) { Taction (xs, exts) }

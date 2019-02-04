@@ -124,10 +124,13 @@ type transitem_r =
   | Tcalledby of expr * extension list option                        (** called by *)
   | Tcondition of expr * extension list option                       (** condition *)
   | Ttransition of expr * expr * expr option * extension list option (** transition  *)
-  | Tspecification of expr list * extension list option              (** specification *)
+  | Tspecification of specification list * extension list option     (** specification *)
   | Taction of expr * extension list option                          (** action  *)
 
 and transitem = transitem_r loced
+
+and specification =
+  | Sspecification of lident option * expr
 
 (* -------------------------------------------------------------------- *)
 type declaration_r =
