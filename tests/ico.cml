@@ -38,8 +38,7 @@ enum whitelist =
  | Silver
  | Gold
 
-(*asset[@add @remove owner (state = Init)] contributor identified by id = {*)
-asset contributor identified by id = {
+asset[@add @remove owner (state = Init)] contributor identified by id = {
   id: address;
   list: whitelist;
   contrib: int := 0;

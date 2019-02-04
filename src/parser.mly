@@ -57,6 +57,9 @@
 %token EXTENSION
 %token NAMESPACE
 %token CONTRACT
+%token AT_ADD
+%token AT_REMOVE
+%token AT_UPDATE
 %token COLONCOLON
 %token LPAREN
 %token RPAREN
@@ -335,11 +338,11 @@ state_option:
 | INITIAL { SOinitial }
 
 asset:
-| ASSET x=ident opts=asset_options?
+| ASSET ops=bracket(asset_operation)? x=ident opts=asset_options?
         fields=asset_fields?
             cs=asset_constraints?
                 init=init_asset?
-          { Dasset (x, fields, cs, opts, init) }
+          { Dasset (x, fields, cs, opts, init, ops) }
 
 %inline asset_constraints:
  | xs=asset_constraint+ { xs }
@@ -634,3 +637,11 @@ assign_field_r:
 
 %inline ord_operator:
 | op=ordering_operator   { `Cmp op }
+
+%inline asset_operation_enum:
+| AT_ADD    { AOadd }
+| AT_REMOVE { AOremove }
+| AT_UPDATE { AOupdate }
+
+%inline asset_operation:
+| xs=asset_operation_enum+ args=option(simple_expr+) { AssetOperation (xs, args) }

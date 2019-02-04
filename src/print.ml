@@ -450,6 +450,20 @@ match s with
         pp_id id
         (pp_list " " pp_type) xs
 
+let operation_enum_to_str e =
+match e with
+  | AOadd    -> "@add"
+  | AOremove -> "@remove"
+  | AOupdate -> "@update"
+
+let pp_asset_operation_enum fmt e =
+ Format.fprintf fmt "%s" (operation_enum_to_str e)
+
+let pp_asset_operation fmt (e : asset_operation) =
+match e with
+| AssetOperation (x, y) -> Format.fprintf fmt "[%a%a]"
+(pp_list " " pp_asset_operation_enum) x
+(pp_option (pp_prefix " " (pp_list " " pp_expr))) y
 
 let rec pp_declaration fmt { pldesc = e } =
   match e with
@@ -490,8 +504,9 @@ let rec pp_declaration fmt { pldesc = e } =
         (pp_option (pp_enclose " " " =" pp_id)) id
         (pp_list "\n" (pp_prefix "| " pp_ident_state_option)) ids
 
-  | Dasset (id, fields, cs, opts, init) ->
-      Format.fprintf fmt "asset %a%a%a%a%a"
+  | Dasset (id, fields, cs, opts, init, ops) ->
+      Format.fprintf fmt "asset%a %a%a%a%a%a"
+        (pp_option pp_asset_operation) ops
         pp_id id
         (pp_option (pp_prefix " " (pp_list " @," pp_asset_option))) opts
         (pp_option (pp_enclose " = { " " }" (pp_list "@," pp_field))) fields

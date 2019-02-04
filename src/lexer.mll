@@ -91,7 +91,10 @@ rule token = parse
   | newline               { Lexing.new_line lexbuf; token lexbuf }
   | blank+                { token lexbuf }
 
-  | ident as id            { try  Hashtbl.find keywords id with Not_found -> IDENT id }
+  | "@add"                { AT_ADD }
+  | "@remove"             { AT_REMOVE }
+  | "@update"             { AT_UPDATE }
+  | ident as id           { try  Hashtbl.find keywords id with Not_found -> IDENT id }
   | float as f            { FLOAT (float_of_string f) }
   | digit+ as n           { NUMBER (Big_int.big_int_of_string n) }
   | address as a          { ADDRESS (String.sub a 1 ((String.length a) - 1)) }
