@@ -417,13 +417,6 @@ let pp_transitem fmt { pldesc = t } =
         (pp_option (pp_list " " pp_extension)) exts
         pp_expr e
 
-  | Tfunction (id, args, r, b) ->
-      Format.fprintf fmt "function %a %a%a = %a"
-        pp_id id
-        pp_fun_args args
-        (pp_option (pp_prefix " : " pp_type)) r
-        pp_expr b
-
 (* -------------------------------------------------------------------------- *)
 let state_option_to_str opt =
 match opt with
@@ -552,6 +545,12 @@ let rec pp_declaration fmt { pldesc = e } =
            (pp_list " " pp_signature) xs
           (pp_option (pp_prefix " := " pp_expr)) dv
 
+  | Dfunction (id, args, r, b) ->
+      Format.fprintf fmt "function %a %a%a = %a"
+        pp_id id
+        pp_fun_args args
+        (pp_option (pp_prefix " : " pp_type)) r
+        pp_expr b
 
 (* -------------------------------------------------------------------------- *)
 let pp_model fmt { pldesc = m } =

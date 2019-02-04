@@ -179,22 +179,23 @@ implementation_model:
 | e=loc(declaration_r) { e }
 
 declaration_r:
- | x=use         { x }
- | x=model       { x }
- | x=constant    { x }
- | x=value       { x }
- | x=role        { x }
- | x=enum        { x }
- | x=states      { x }
- | x=assert_decl { x }
- | x=object_decl { x }
- | x=key_decl    { x }
- | x=asset       { x }
- | x=transition  { x }
- | x=transaction { x }
- | x=dextension  { x }
- | x=namespace   { x }
- | x=contract    { x }
+ | x=use           { x }
+ | x=model         { x }
+ | x=constant      { x }
+ | x=value         { x }
+ | x=role          { x }
+ | x=enum          { x }
+ | x=states        { x }
+ | x=assert_decl   { x }
+ | x=object_decl   { x }
+ | x=key_decl      { x }
+ | x=asset         { x }
+ | x=transition    { x }
+ | x=transaction   { x }
+ | x=dextension    { x }
+ | x=namespace     { x }
+ | x=contract      { x }
+ | x=function_decl { x }
 
 use:
 | USE x=ident { Duse x }
@@ -257,6 +258,11 @@ contract:
 
 signature:
 | TRANSACTION x=ident COLON xs=types SEMI_COLON { Ssignature (x, xs) }
+
+function_decl:
+ | FUNCTION id=ident xs=function_args
+     r=function_return? EQUAL b=expr
+       { Dfunction (id, xs, r, b) }
 
 enum:
 | ENUM x=ident EQUAL xs=pipe_idents {Denum (x, xs)}
@@ -398,7 +404,6 @@ transitem_r:
  | x=transition_item  { x }
  | x=specification    { x }
  | x=action           { x }
- | x=function_item    { x }
 
 args:
  | ARGS exts=option(extensions) EQUAL fields=braced(fields) { Targs (fields, exts) }
@@ -423,11 +428,6 @@ specification:
 
 action:
  | ACTION exts=option(extensions) EQUAL xs=braced(expr) { Taction (xs, exts) }
-
-function_item:
- | FUNCTION id=ident xs=function_args
-     r=function_return? EQUAL b=expr
-       { Tfunction (id, xs, r, b) }
 
 %inline function_return:
  | COLON ty=type_t { ty }

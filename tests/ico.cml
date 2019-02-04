@@ -56,46 +56,45 @@ states
 | Round2Finished   (* Round 2 has ended   *)
 
 
+function is_running () =
+    state = PresalesRunning
+ or state = Round1Running
+ or state = Round2Running
+
+function get_rate () =
+  let coeff =
+     if state = PresalesRunning
+     then 1.2
+     else if state = Round1Running
+     then 1.1
+     else 1
+  in
+  coeff * exchange_rate_xtz_bcd
+
+function get_remaining_xtz_to_raise () =
+  if state = PresalesRunning or state = PresalesFinished
+  then presales_cap - nb_xtz_raised
+  else if state = Round1Running or state = Round1Finished
+  then round1_cap - nb_xtz_raised
+  else (* round 2 *)
+    let remaining_bcd = max_bcd_to_sell - nb_bcd_sold in
+    remaining_bcd / exchange_rate_bcd_xtz
+
+function get_finished_state () =
+  if state = PresalesRunning
+  then state := PresalesFinished
+  else if state = Round1Running
+  then state := Round1Finished
+  else if state = Round2Running
+  then state := Round2Finished
+
+
 transaction contribute = {
    condition : contributor.contains caller;
    condition : is_running ();
    condition : transferred >= min_contribution;
    condition : let c = contributor.get caller in
                not (c.list = Silver and transferred >= max_contrib_silver);
-
-   function is_running () =
-       state = PresalesRunning
-    or state = Round1Running
-    or state = Round2Running
-
-   function get_rate () =
-     let coeff =
-        if state = PresalesRunning
-        then 1.2
-        else if state = Round1Running
-        then 1.1
-        else 1
-     in
-     coeff * exchange_rate_xtz_bcd
-
-
-   function get_remaining_xtz_to_raise () =
-     if state = PresalesRunning or state = PresalesFinished
-     then presales_cap - nb_xtz_raised
-     else if state = Round1Running or state = Round1Finished
-     then round1_cap - nb_xtz_raised
-     else (* round 2 *)
-       let remaining_bcd = max_bcd_to_sell - nb_bcd_sold in
-       remaining_bcd / exchange_rate_bcd_xtz
-
-
-   function get_finished_state () =
-     if state = PresalesRunning
-     then state := PresalesFinished
-     else if state = Round1Running
-     then state := Round1Finished
-     else if state = Round2Running
-     then state := Round2Finished
 
    action = {
      (* cap contribution to max_contrib if necessary *)

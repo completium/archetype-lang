@@ -36,6 +36,8 @@ transaction add = {
    }
 }
 
+function by_expiration o = o.miles.when(mile.expiration > now)
+
 transaction consume = {
 
   args = {
@@ -66,8 +68,6 @@ transaction consume = {
   called by admin;
 
   condition: (by_expiration ow).sum(amount) >= val;
-
-  function by_expiration o = o.miles.when(mile.expiration > now)
 
   action = {
      let remainder = val in
