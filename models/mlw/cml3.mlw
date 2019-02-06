@@ -185,3 +185,35 @@ theory Sum
     (forall k : int. i <= k < j -> f s c1 k = f s c2 k) -> sum c1 i j = sum c2 i j
 
 end
+
+
+theory When
+
+  use Contract
+  use list.List
+  use set.Fset
+
+  use Asset
+
+  type storage
+  type asset
+
+  function filter env storage asset : bool
+
+  val function when (e : env) (s : storage)
+                        (c : list asset) : list asset
+  ensures { forall e : env, s : storage, a : asset.
+                mem a result <-> filter e s a }
+  ensures { subset result c }
+  ensures { forall i j : int. i <> j -> not ((nth i result) = (nth j result)) }
+(*  =
+  match c with
+  | Nil -> Nil
+  | Cons a tl ->
+    if filter e s a
+    then Cons a (when e s tl)
+    else when e s tl
+  end*)
+
+
+end

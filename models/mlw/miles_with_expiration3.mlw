@@ -71,19 +71,9 @@ module Miles
   reads { e, s }
   get_expiration s m > now e
 
-  let rec function when (e : env) (s : storage)
-                        (c : list mile) : list mile
-  ensures { forall e : env, s : storage, a : mile. mem a result <-> by_expiration e s a }
-  ensures { subset result c }
-  ensures { forall i j : int. i <> j -> not ((nth i result) = (nth j result)) }
-  =
-  match c with
-  | Nil -> Nil
-  | Cons a tl ->
-    if by_expiration e s a
-    then Cons a (when e s tl)
-    else when e s tl
-  end
+  clone cml3.When as Expiration   with type     storage = storage,
+                                       type     asset   = mile,
+                                       function filter  = by_expiration
 
   (* sum of amounts *)
   let function get_coll_amount (s : storage) (c : list mile) (i : int) : int =
@@ -100,7 +90,7 @@ module Miles
   requires {
      let o = get_owner s owner in
      let miles = get_miles s o in
-     let l = when e s miles in
+     let l = Expiration.when e s miles in
      Amounts.sum l 0 (length l) >= nbmiles
   }
   ensures { forall m:mile.
@@ -119,7 +109,7 @@ module Miles
   = let remainder = ref nbmiles in
     let o = get_owner s owner in
     let miles = get_miles s o in
-    let l = when e s miles in
+    let l = Expiration.when e s miles in
     try
       for i = 0 to (length l) - 1 do
       (* helps for the membership precondition of set_amouunt: *)
