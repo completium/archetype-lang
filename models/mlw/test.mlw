@@ -1,0 +1,17 @@
+module Test
+
+  use int.Int
+
+  type storage = {
+    mutable       value   : int;
+    ghost mutable counter : int;
+  } invariant { counter <= 1 }
+    by { value = 1; counter = 0 }
+
+  let only_once (s : storage) : unit =
+   if s.value > 0
+   then (
+     s.value <- 0;
+     ghost (s.counter <- s.counter +1))
+
+end
