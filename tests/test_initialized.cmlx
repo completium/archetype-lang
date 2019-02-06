@@ -1,11 +1,11 @@
 model extension testInitialized (
-  value[%testInitialized] aValue string
+  variable[%testInitialized] aVariable string
 ) = {
 
   asset test_<%aTransaction> = {
-    myvalue : string;
+    myvariable : string;
   } initialized by {
-    myvalue := "a_string"
+    myvariable := "a_string"
   }
 
 }

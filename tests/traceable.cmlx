@@ -4,14 +4,14 @@ model extension traceable (
 
   role toP
 
-  value[%traceable] anamount tez from fromP to toP
+  variable[%traceable] anamount tez from fromP to toP
 ) = {
 
   role fromP
 
   role toP
 
-  value anamount tez from participant to toP
+  variable anamount tez from participant to toP
 
   transaction transfer_<%anamount> = {
     called by fromP;

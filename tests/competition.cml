@@ -3,12 +3,12 @@ model competition
 role[%transferable] organiser
 
 (* start date *)
-value[%mutable organiser (instate Created)] date startdate
+variable[%mutable organiser (instate Created)] date startdate
 
 (* deadline *)
-value[%mutable organiser (instate Created)] date deadline
+variable[%mutable organiser (instate Created)] date deadline
 
-value[%traceable] prize tez from organizer
+variable[%traceable] prize tez from organizer
 
 role competitor
 

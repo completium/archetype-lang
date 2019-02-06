@@ -6,11 +6,11 @@ role owner := @tz1KmuhR6P52hw6xs5P69BXJYAURaznhvN1k
 (* buyer ‘Bob’; receives 11 xtz in one-year *)
 
 
-value price xtz from owner := 10
+variable price xtz from owner := 10
 
-value payment xtz from issuer to owner := 11
+variable payment xtz from issuer to owner := 11
 
-value maturity date
+variable maturity date
 
 states
   | Created initial (* Created phase enables *)

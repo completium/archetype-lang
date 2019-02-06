@@ -9,11 +9,11 @@ contract insurance = {
    transaction pay : address tez;
 } := @KT1GabhR5P52hw6xs5P69BXJYAURaznhvN1k
 
-value price xtz from owner := 10
+variable price xtz from owner := 10
 
-value payment xtz from issuer to owner := 11
+variable payment xtz from issuer to owner := 11
 
-value maturity date
+variable maturity date
 
 states
   | Created initial (* Created phase enables *)

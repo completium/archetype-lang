@@ -3,10 +3,10 @@ model governance
 role[%transferable] chairperson
 
 (* vote start *)
-value[%mutable chairperson (instate Created)] date startDate
+variable[%mutable chairperson (instate Created)] date startDate
 
 (* vote deadline *)
-value[%mutable chairperson (instate Created)] date deadline
+variable[%mutable chairperson (instate Created)] date deadline
 
 assert (startdate < deadline)
 

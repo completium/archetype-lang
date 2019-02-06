@@ -13,7 +13,7 @@
     [ "use"                 , USE            ;
       "model"               , MODEL          ;
       "constant"            , CONSTANT       ;
-      "value"               , VALUE          ;
+      "variable"            , VARIABLE       ;
       "role"                , ROLE           ;
       "identified"          , IDENTIFIED     ;
       "sorted"              , SORTED         ;

@@ -10,7 +10,7 @@
 %token USE
 %token MODEL
 %token CONSTANT
-%token VALUE
+%token VARIABLE
 %token ROLE
 %token IDENTIFIED
 %token SORTED
@@ -185,7 +185,7 @@ declaration_r:
  | x=use           { x }
  | x=model         { x }
  | x=constant      { x }
- | x=value         { x }
+ | x=variable      { x }
  | x=role          { x }
  | x=enum          { x }
  | x=states        { x }
@@ -211,10 +211,10 @@ constant:
     dv=default_value?
       { Dconstant (x, y, dv, exts) }
 
-value:
-| VALUE exts=extensions? x=ident y=ident z=option(value_options)
+variable:
+| VARIABLE exts=extensions? x=ident y=ident z=option(value_options)
     dv=default_value?
-      { Dvalue (x, y, z, dv, exts) }
+      { Dvariable (x, y, z, dv, exts) }
 
 %inline value_options:
 | xs=value_option+ { xs }
