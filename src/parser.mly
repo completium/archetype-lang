@@ -227,7 +227,7 @@ role:
 | ROLE exts=option(extensions) x=ident dv=default_value? { Drole (x, dv, exts) }
 
 %inline default_value:
-| COLONEQUAL x=expr { x }
+| EQUAL x=expr { x }
 
 %inline from_value:
 | FROM x=expr { x }
@@ -271,7 +271,7 @@ enum:
 | ENUM x=ident EQUAL xs=pipe_idents {Denum (x, xs)}
 
 states:
-| STATES x=ident_equal? xs=pipe_ident_options {Dstates (x, xs)}
+| STATES x=ident? EQUAL xs=pipe_ident_options {Dstates (x, xs)}
 
 assert_decl:
 | ASSERT x=paren(expr) { Dassert x }
@@ -281,9 +281,6 @@ object_decl:
 
 key_decl:
 | KEY exts=extensions? x=ident OF y=expr { Dkey (x, y, exts) } %prec prec_decl
-
-%inline ident_equal:
-| x=ident EQUAL { x }
 
 types:
 | xs=separated_nonempty_list(COMMA, type_t) { xs }

@@ -1,29 +1,29 @@
 model bcd_ico
 
-constant symbol string := "BCDT"
-constant decimals int := 18
+constant symbol string = "BCDT"
+constant decimals int = 18
 
 (* contribution thresholds *)
-variable[%mutable owner (state = Init)] min_contribution xtz := 0.001
-variable[%mutable owner (state = Init)] max_contribution_silver xtz := 10
+variable[%mutable owner (state = Init)] min_contribution xtz = 0.001
+variable[%mutable owner (state = Init)] max_contribution_silver xtz = 10
 
 
 (* bcd token data *)
-variable[%mutable owner (state = Init)] max_bcd_to_sell int := 100000000
-variable[%mutable owner (state = Init)] exchange_rate_bcd_xtz int := 13000
+variable[%mutable owner (state = Init)] max_bcd_to_sell int = 100000000
+variable[%mutable owner (state = Init)] exchange_rate_bcd_xtz int = 13000
 
 
 (* round caps *)
-variable[%mutable owner (state = Init)] soft_cap xtz := 1800
-variable[%mutable owner (state = Init)] presales_cap xtz := 1800
-variable[%mutable owner (state = Init)] round1_cap xtz := 3600
+variable[%mutable owner (state = Init)] soft_cap xtz = 1800
+variable[%mutable owner (state = Init)] presales_cap xtz = 1800
+variable[%mutable owner (state = Init)] round1_cap xtz = 3600
 
 (* presales_cap + 1600 *)
 
 
 (* Number tokens sent, eth raised, … *)
-variable nb_bcd_sold int := 0
-variable nb_xtz_raised int := 0
+variable nb_bcd_sold int = 0
+variable nb_xtz_raised int = 0
 
 
 (* Roles *)
@@ -41,11 +41,11 @@ enum whitelist =
 asset[@add @remove owner (state = Init)] contributor identified by id = {
   id: address;
   list: whitelist;
-  contrib: int := 0;
+  contrib: int = 0;
 } with { contrib >= 0 }
 
 
-states
+states =
 | Init initial     (* ICO isn't started yet, initial state *)
 | PresaleRunning   (* Presale has started *)
 | PresaleFinished  (* Presale has ended   *)

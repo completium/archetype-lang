@@ -279,8 +279,8 @@ let rec pp_expr fmt { pldesc = e } =
   | Efor (id, expr, body, invariants) ->
       Format.fprintf fmt "for (%a in %a)%a (@\n@[<v 2>  %a@]@\n)"
         pp_id id
-        (pp_option (pp_enclose " invariant = {" "}" (pp_list ";@\n" pp_expr))) invariants
         pp_expr expr
+        (pp_option (pp_enclose " invariant = {" "}" (pp_list ";@\n" pp_expr))) invariants
         pp_expr body
 
   | Eassert e ->
@@ -487,7 +487,7 @@ let rec pp_declaration fmt { pldesc = e } =
           (pp_option (pp_list " " pp_extension)) exts
           pp_id id
           pp_id typ
-          (pp_option (pp_prefix " := " pp_expr)) dv
+          (pp_option (pp_prefix " = " pp_expr)) dv
 
   | Dvariable (id, typ, opts, dv, exts) ->
       Format.fprintf fmt "variable%a %a %a%a%a"
@@ -495,13 +495,13 @@ let rec pp_declaration fmt { pldesc = e } =
           pp_id id
           pp_id typ
           (pp_option (pp_prefix " " (pp_list " " pp_value_option))) opts
-          (pp_option (pp_prefix " := " pp_expr)) dv
+          (pp_option (pp_prefix " = " pp_expr)) dv
 
   | Drole (id, dv, exts) ->
       Format.fprintf fmt "role%a %a%a"
           (pp_option (pp_list " " pp_extension)) exts
            pp_id id
-          (pp_option (pp_prefix " := " pp_expr)) dv
+          (pp_option (pp_prefix " = " pp_expr)) dv
 
   | Denum (id, ids) ->
       Format.fprintf fmt "enum %a =\n@[<v 2>@]%a"
@@ -509,8 +509,8 @@ let rec pp_declaration fmt { pldesc = e } =
         (pp_list "\n" (pp_prefix "| " pp_id)) ids
 
   | Dstates (id, ids) ->
-      Format.fprintf fmt "states%a@\n@[<v 2>@]%a"
-        (pp_option (pp_enclose " " " =" pp_id)) id
+      Format.fprintf fmt "states%a =@\n@[<v 2>@]%a"
+        (pp_option (pp_prefix " " pp_id)) id
         (pp_list "\n" (pp_prefix "| " pp_ident_state_option)) ids
 
   | Dasset (id, fields, cs, opts, init, ops) ->
@@ -563,11 +563,11 @@ let rec pp_declaration fmt { pldesc = e } =
         (pp_list "\n" pp_declaration) ds
 
   | Dcontract (id, xs, dv, exts) ->
-      Format.fprintf fmt "contract%a %a = {@\n@[<v 2>  %a@]@\n} %a"
+      Format.fprintf fmt "contract%a %a = {@\n@[<v 2>  %a@]@\n}%a"
           (pp_option (pp_list " " pp_extension)) exts
            pp_id id
            (pp_list " " pp_signature) xs
-          (pp_option (pp_prefix " := " pp_expr)) dv
+          (pp_option (pp_prefix " = " pp_expr)) dv
 
   | Dfunction (id, args, r, b) ->
       Format.fprintf fmt "function %a %a%a = %a"

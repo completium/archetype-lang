@@ -9,6 +9,6 @@ model extension test_namespace (
   assert(a::myvariable = 1)
 
   namespace myspace {
-    variable myvariable uint := 1
+    variable myvariable uint = 1
   }
 }

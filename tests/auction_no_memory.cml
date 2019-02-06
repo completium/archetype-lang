@@ -1,9 +1,9 @@
 model auction_no_memory
 
-value bid xtz := 0
-value incumbent address
+variable bid xtz := 0
+variable incumbent address
 
-value deadline date = 2019-01-01T00:00:00
+variable deadline date = 2019-01-01T00:00:00
 
 transaction place_bid = {
    args id : address; b  : xtz

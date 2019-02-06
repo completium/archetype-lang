@@ -1,13 +1,13 @@
 model auction
 
-value max_bid xtz = 0
+variable max_bid xtz = 0
 
 asset bid identified by incumbent = {
   incumbent : address;
   val : xtz
 }
 
-value deadline date = 2019-01-01T00:00:00
+variable deadline date = 2019-01-01T00:00:00
 
 
 transaction place_bid = {

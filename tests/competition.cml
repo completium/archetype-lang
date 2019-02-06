@@ -22,7 +22,7 @@ asset submission = {
 
 
 (* state machine *)
-states
+states =
  | Created initial
  | InProgress
  | Done

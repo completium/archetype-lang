@@ -25,7 +25,7 @@ asset winner = {
 }
 
 (* state machine *)
-states
+states =
  | Created initial
  | Voting
  | Buried

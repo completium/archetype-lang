@@ -1,8 +1,8 @@
 model zero_coupon_bond
 
-role issuer := @tz1KksC8RvjUWAbXYJuNrUbontHGor25Cztk (* seller ‘Alice’ *)
+role issuer = @tz1KksC8RvjUWAbXYJuNrUbontHGor25Cztk (* seller ‘Alice’ *)
 
-role owner := @tz1KmuhR6P52hw6xs5P69BXJYAURaznhvN1k
+role owner = @tz1KmuhR6P52hw6xs5P69BXJYAURaznhvN1k
 (* buyer ‘Bob’; receives 11 xtz in one-year *)
 
 
@@ -12,7 +12,7 @@ variable payment xtz from issuer to owner := 11
 
 variable maturity date
 
-states
+states =
   | Created initial (* Created phase enables *)
   | Confirmed       (* owner has purchased bond *)
   | Transferred
