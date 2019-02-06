@@ -1,11 +1,11 @@
 asset my_asset_simple identified by str = {
   str : string;
-  i : uint;
+  i : uint
 } with { i >= 1 }
 
 asset my_asset as role sorted by i = {
   i : uint;
-  mycollection : my_asset_simple set;
+  mycollection : my_asset_simple set
 } initialized by {
   i := 0
 }

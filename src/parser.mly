@@ -37,14 +37,14 @@
 %token STATES
 %token INITIAL
 %token INVARIANT
-%token TRANSITION
 %token TRANSACTION
-%token ARGS
 %token CALLED
 %token CONDITION
+%token TRANSITION
 %token SPECIFICATION
 %token ACTION
 %token FUNCTION
+%token SHADOW
 %token LET
 %token IF
 %token THEN
@@ -182,23 +182,22 @@ implementation_model:
 | e=loc(declaration_r) { e }
 
 declaration_r:
- | x=use           { x }
- | x=model         { x }
- | x=constant      { x }
- | x=variable      { x }
- | x=role          { x }
- | x=enum          { x }
- | x=states        { x }
- | x=assert_decl   { x }
- | x=object_decl   { x }
- | x=key_decl      { x }
- | x=asset         { x }
- | x=transition    { x }
- | x=transaction   { x }
- | x=dextension    { x }
- | x=namespace     { x }
- | x=contract      { x }
- | x=function_decl { x }
+ | x=use                { x }
+ | x=model              { x }
+ | x=constant           { x }
+ | x=variable           { x }
+ | x=role               { x }
+ | x=enum               { x }
+ | x=states             { x }
+ | x=object_decl        { x }
+ | x=key_decl           { x }
+ | x=asset              { x }
+ | x=transaction        { x }
+ | x=dextension         { x }
+ | x=namespace          { x }
+ | x=contract           { x }
+ | x=function_decl      { x }
+ | x=specification_decl { x }
 
 use:
 | USE x=ident { Duse x }
@@ -260,21 +259,47 @@ contract:
 | xs=signature+ { xs }
 
 signature:
-| TRANSACTION x=ident COLON xs=types SEMI_COLON { Ssignature (x, xs) }
+| TRANSACTION x=ident COLON xs=types { Ssignature (x, xs) }
+
+function_item:
+ | FUNCTION id=ident xs=function_args
+     r=function_return? EQUAL b=expr
+       { Tfunction (id, xs, r, b) }
 
 function_decl:
  | FUNCTION id=ident xs=function_args
      r=function_return? EQUAL b=expr
        { Dfunction (id, xs, r, b) }
 
+specification:
+ | SPECIFICATION exts=option(extensions)
+/*     _sv=specification_variables*/
+     sa=specification_action?
+     xs=named_items
+       { Tspecification (xs, sa, exts) }
+
+specification_decl:
+ | SPECIFICATION exts=option(extensions)
+/*     _sv=specification_variables*/
+     sa=specification_action?
+     xs=braced(named_items)
+       { Dspecification (xs, sa, exts) }
+
+%inline specification_variables:
+ | { None}
+ | xs=specification_variable+ { Some xs }
+
+%inline specification_variable :
+ | SHADOW e=variable SEMI_COLON { e }
+
+%inline specification_action:
+ | SHADOW ACTION e=expr SEMI_COLON { e }
+
 enum:
 | ENUM x=ident EQUAL xs=pipe_idents {Denum (x, xs)}
 
 states:
 | STATES x=ident? EQUAL xs=pipe_ident_options {Dstates (x, xs)}
-
-assert_decl:
-| ASSERT x=paren(expr) { Dassert x }
 
 object_decl:
 | OBJECT exts=extensions? x=ident y=expr { Dobject (x, y, exts) } %prec prec_decl
@@ -348,7 +373,7 @@ asset:
  | WITH x=braced(expr) { x }
 
 %inline asset_fields:
-| EQUAL fields=braced(fields) { fields}
+| EQUAL fields=braced(fields) { fields }
 
 %inline asset_options:
 | xs=asset_option+ { xs }
@@ -362,12 +387,12 @@ asset_option:
 | SORTED BY x=ident     { AOsortedby x }
 
 %inline fields:
-| xs=field+ { xs }
+| xs=separated_nonempty_list(SEMI_COLON, field) { xs }
 
 field_r:
 | x=ident exts=option(extensions)
       COLON y=type_t boption(REF)
-          dv=default_value? SEMI_COLON
+          dv=default_value?
     { Ffield (x, y, dv, exts) }
 
 %inline field:
@@ -376,16 +401,10 @@ field_r:
 %inline ident:
 | x=loc(IDENT) { x }
 
-transition:
-  TRANSITION exts=option(extensions) x=ident
-    y=from_value z=to_value
-      xs=transitems_eq
-        { Dtransition (x, y, z, xs, exts) }
-
 transaction:
   TRANSACTION exts=option(extensions) x=ident
-    xs=transitems_eq
-      { Dtransaction (x, xs, exts) }
+    args=function_args xs=transitems_eq
+      { Dtransaction (x, args, xs, exts) }
 
 %inline transitems_eq:
 | { [] }
@@ -398,60 +417,76 @@ transaction:
  | e=loc(transitem_r) { e }
 
 transitem_r:
- | x=args             { x }
  | x=calledby         { x }
  | x=condition        { x }
  | x=transition_item  { x }
+ | x=function_item    { x }
  | x=specification    { x }
+ | x=invariant        { x }
  | x=action           { x }
 
-args:
- | ARGS exts=option(extensions) EQUAL fields=braced(fields) { Targs (fields, exts) }
-
 calledby:
- | CALLED BY exts=option(extensions) x=expr SEMI_COLON { Tcalledby (x, exts) }
+ | CALLED BY exts=option(extensions) x=expr { Tcalledby (x, exts) }
 
 condition:
- | CONDITION exts=option(extensions) COLON x=expr SEMI_COLON { Tcondition (x, exts) }
+ | CONDITION exts=option(extensions) xs=named_items
+       { Tcondition (xs, exts) }
 
 transition_item:
  | TRANSITION id=expr?
      exts=option(extensions)
      x=from_value
-         y=to_value SEMI_COLON
+         y=to_value
              { Ttransition (x, y, id, exts) }
 
-specification:
- | SPECIFICATION exts=option(extensions) EQUAL
-     xs=braced(separated_nonempty_list(SEMI_COLON, specification_item))
-       { Tspecification (xs, exts) }
+invariant:
+ | INVARIANT exts=option(extensions)
+     id=ident xs=named_items
+       { Tinvariant (id, xs, exts) }
 
-%inline specification_item:
- | id=ident COLON e=expr { Sspecification (Some id, e) }
- | e=expr { Sspecification (None, e) }
+%inline named_items:
+ | xs=separated_nonempty_list(SEMI_COLON, named_item) { xs }
+
+%inline named_item:
+ | id=prefix_name e=expr { (Some id, e) }
+ | e=expr                { (None, e) }
 
 action:
- | ACTION exts=option(extensions) EQUAL xs=braced(expr) { Taction (xs, exts) }
+ | ACTION exts=option(extensions) xs=loc(expr_extended) { Taction (xs, exts) }
 
 %inline function_return:
  | COLON ty=type_t { ty }
 
 %inline function_args:
- | LPAREN RPAREN     { [] }
+ |                   { [] }
  | xs=function_arg+  { xs }
 
 %inline function_arg:
- | id=ident                               { (id, None) }
- | LPAREN id=ident COLON ty=type_t RPAREN { (id, Some ty) }
+ | id=ident exts=option(extensions)
+     { (id, None, exts) }
+
+ | LPAREN id=ident exts=option(extensions)
+     COLON ty=type_t RPAREN
+       { (id, Some ty, exts) }
+
+%inline assignment_value_operator:
+ | EQUAL                  { ValueAssign }
+ | op=assignment_operator { op }
 
 %inline assignment_operator:
- | COLONEQUAL { SimpleAssign }
- | PLUSEQUAL  { PlusAssign }
- | MINUSEQUAL { MinusAssign }
- | MULTEQUAL  { MultAssign }
- | DIVEQUAL   { DivAssign }
- | ANDEQUAL   { AndAssign }
- | OREQUAL    { OrAssign }
+ | COLONEQUAL  { SimpleAssign }
+ | PLUSEQUAL   { PlusAssign }
+ | MINUSEQUAL  { MinusAssign }
+ | MULTEQUAL   { MultAssign }
+ | DIVEQUAL    { DivAssign }
+ | ANDEQUAL    { AndAssign }
+ | OREQUAL     { OrAssign }
+
+
+expr_extended:
+ | e1=expr SEMI_COLON e2=loc(expr_extended)
+   { Eseq (e1, e2) }
+ | e=expr_r { e }
 
 %inline expr:
  | e=loc(expr_r) { e }
@@ -466,17 +501,14 @@ expr_r:
  | FUN xs=ident_typs EQUALGREATER x=expr
      { Efun (xs, x) }
 
- | e1=expr COMMA e2=expr
-     { Eseq (e1, e2) }
-
  | ASSERT x=paren(expr)
      { Eassert x }
 
- | FOR LPAREN x=ident IN y=expr RPAREN is=invariant? body=expr %prec prec_for
-     { Efor (x, y, body, is) }
-
  | BREAK
      { Ebreak }
+
+ | label=ident? FOR LPAREN x=ident IN y=expr RPAREN body=expr %prec prec_for
+     { Efor (x, y, body, label) }
 
  | IF c=expr THEN t=expr
      { Eif (c, t, None) }
@@ -486,9 +518,6 @@ expr_r:
 
  | x=expr op=assignment_operator y=expr
      { Eassign (op, x, y) }
-
- | TRANSITION TO x=expr
-     { Etransition x }
 
  | TRANSFER back=boption(BACK) x=expr y=ioption(to_value) %prec prec_transfer
      { Etransfer (x, back, y) }
@@ -503,7 +532,10 @@ expr_r:
      { let loc = Location.make $startpos $endpos in
        Eapp ( mkloc loc (Eop (unloc op)), [x]) }
 
- | x=simple_with_app_expr_r
+ | x=simple_expr a=app_args
+     { Eapp (x, a) }
+
+ | x=simple_expr_r
      { x }
 
 order_operation:
@@ -517,20 +549,12 @@ order_operations:
     { let loc = Location.make $startpos $endpos in
        Eapp ( mkloc loc (Eop (unloc op)), [e1; e2]) }
 
-%inline invariant:
- | INVARIANT EQUAL xs=braced(separated_nonempty_list(SEMI_COLON, expr)) { xs }
-
-%inline simple_with_app_expr_r:
- | x=simple_expr a=app_args
-     { Eapp (x, a) }
-
- | x=simple_expr_r
-     { x }
+prefix_name:
+ | id=ident COLON { id }
 
 %inline app_args:
  | LPAREN RPAREN     { [] }
  | xs=simple_expr+   { xs }
-
 
 %inline simple_expr:
  | x=loc(simple_expr_r) { x }
@@ -539,7 +563,7 @@ simple_expr_r:
  | x=simple_expr DOT y=ident
      { Edot (x, y) }
 
- | xs=braced(assign_field_r+)
+ | xs=braced(separated_nonempty_list(SEMI_COLON, assign_field_r))
      { EassignFields xs }
 
  | x=bracket(separated_list(COMMA, simple_expr))
@@ -554,26 +578,26 @@ simple_expr_r:
  | x=ident
      { Eterm (None, x) }
 
- | x=paren(expr_r)
+ | x=paren(expr_extended)
      { x }
 
 %inline ident_typs:
  | xs=ident+ COLON ty=type_t
-     { List.map (fun x -> (x, Some ty)) xs }
+     { List.map (fun x -> (x, Some ty, None)) xs }
 
  | xs=ident_typ+
      { List.flatten xs }
 
 %inline ident_typ:
  | id=ident
-     { [(id, None)] }
+     { [(id, None, None)] }
 
  | LPAREN ids=ident+ COLON ty=type_t RPAREN
-     { List.map (fun id -> (id, Some ty)) ids }
+     { List.map (fun id -> (id, Some ty, None)) ids }
 
 %inline ident_typ1:
  | id=ident ty=option(COLON ty=type_t { ty })
-     { (id, ty) }
+     { (id, ty, None) }
 
 literal:
  | x=NUMBER     { Lnumber  x }
@@ -589,7 +613,7 @@ literal:
  | FALSE { false }
 
 assign_field_r:
- | id=dot_ident op=assignment_operator e=expr SEMI_COLON
+ | id=dot_ident op=assignment_value_operator e=expr
    { AassignField (op, id, e) }
 
 %inline dot_ident:

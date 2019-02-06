@@ -6,9 +6,9 @@ role owner = @tz1KmuhR6P52hw6xs5P69BXJYAURaznhvN1k
 (* buyer ‘Bob’; receives 11 xtz in one-year *)
 
 
-variable price xtz from owner := 10
+variable price xtz from owner = 10
 
-variable payment xtz from issuer to owner := 11
+variable payment xtz from issuer to owner = 11
 
 variable maturity date
 
@@ -17,26 +17,27 @@ states =
   | Confirmed       (* owner has purchased bond *)
   | Transferred
 
-transition confirm from Created to Confirmed = {
-   condition : transferred = price;
-   specification = { balance = 0 }
-   action = {
-     maturity := now + 1y,
+transaction confirm = {
+   condition transferred = price
+   transition from Created to Confirmed
+   specification
+     balance = 0
+
+   action
+     maturity := now + 1y;
      transfer price to issuer
-   }
 }
 
 transaction repay = {
-   called by issuer;
-   condition : transferred = payment;
+   called by issuer
+   condition transferred = payment
 }
 
 transaction collect = {
-   called by owner;
-   condition : now > maturity;
-   action = {
+   called by owner
+   condition now > maturity
+   action
      if balance >= payment
-     then (transfer balance to owner,
+     then (transfer balance to owner;
            state := Transferred)
-   }
 }

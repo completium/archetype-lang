@@ -13,17 +13,15 @@ transaction place_bid = {
 }
 
 (*Users need to exhibit proof they are not the winner to reclaim their bid*)
-transaction reclaim = {
-  args witness : address
-
+transaction reclaim (witness : address) = {
   condition
     c1 : now < deadline;
     c2 : let bc = (bid.get caller).val in
          let bw = (bid.get witness).val in
          bc < bw
 
-   action
-     transfer (bid.get caller).val to caller
+  action
+    transfer (bid.get caller).val to caller
 }
 
 specification {

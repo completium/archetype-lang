@@ -6,12 +6,10 @@ model extension mutable_signed (
 
   variable avariable type
 
-  transaction[%signedbyall roles] set_<%avariable> = {
-    args = {
-      newvariable : type;
-    }
-    condition: cond;
-    action = { avariable := newvariable }
+  transaction[%signedbyall roles] set_<%avariable> (newvariable : type) = {
+    condition cond
+    action
+      avariable := newvariable
   }
 
 }

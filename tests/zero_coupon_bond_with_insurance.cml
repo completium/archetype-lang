@@ -6,7 +6,7 @@ role owner = @tz1KmuhR6P52hw6xs5P69BXJYAURaznhvN1k
 (* buyer ‘Bob’; receives 11 xtz in one-year *)
 
 contract insurance = {
-   transaction pay : address tez;
+   transaction pay : address tez
 } = @KT1GabhR5P52hw6xs5P69BXJYAURaznhvN1k
 
 variable price xtz from owner = 10
@@ -21,25 +21,28 @@ states =
   | Confirmed       (* owner has purchased bond *)
   | Transferred
 
-transition insure from Created to Insured = {
-    called by insurance;
+transaction insure = {
+  called by insurance
+  transition from Created to Insured
 }
 
-transition confirm from Insured to Confirmed = {
-   condition : transferred = price;
-   specification = { balance = 0 }
-   action = {
-     maturity := now + 1y,
+transaction confirm = {
+   condition transferred = price
+   transition from Insured to Confirmed
+   specification
+     balance = 0
+
+   action
+     maturity := now + 1y;
      transfer price to issuer
-   }
 }
 
-transition collect from Confirmed to Transferred = {
-   called by owner;
-   condition : now > maturity;
-   action = {
+transaction collect = {
+   called by owner
+   condition now > maturity
+   transition from Confirmed to Transferred
+   action
      if balance >= payment
      then transfer balance to owner
      else insurance.pay owner payment
-   }
 }

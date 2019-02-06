@@ -11,24 +11,21 @@ enum period =
  | Year
 
 asset issuer as role = {
-  name : string;
+  name : string
 }
 
 asset paymentFrequency = {
   periodMultiplier : unit;
-  period           : period;
+  period           : period
 }
 
 asset bond = {
   couponType       : couponType;
   paymentFrequency : paymentFrequency;
-  issuer           : issuer;
+  issuer           : issuer
 }
 
-transaction publish = {
-   args = {
-      bond : bond;
-   }
-   called by bond.issuer;  (* see acl file *)
-   action = { bond.add bond }
+transaction publish (bond : bond) = {
+   called by bond.issuer  (* see acl file *)
+   action bond.add bond
 }

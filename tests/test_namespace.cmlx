@@ -6,7 +6,9 @@ model extension test_namespace (
 
   variable avariable type
 
-  assert(a::myvariable = 1)
+  specification {
+    a::myvariable = 1
+  }
 
   namespace myspace {
     variable myvariable uint = 1

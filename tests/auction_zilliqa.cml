@@ -3,14 +3,16 @@ model auction_zilliqa
 variable highest_bid xtz = 0
 variable highest_bidder address = 0
 
-variable beneficiary address = …
+variable beneficiary address = @tz1KmuhR6P52hw6xs5P69BXJYAURaznhvN1k
 
 asset pending_returns identified by incumbent = {
   incumbent   : address;
-  val         : xtz;
+  val         : xtz
 }
 
-states = Open initial | Closed
+states =
+| Open initial
+| Closed
 
 variable auction_start date = 2019-01-01T00:00:00
 variable auction_end   date = 2019-02-01T00:00:00

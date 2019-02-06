@@ -12,21 +12,16 @@ role[%delegable] holder
 
 asset tokenHolder identified by holder = {
   holder : holder;
-  tokens : uint;
+  tokens : uint
 }
 
-transaction transfer_ = {
-  args = {
-    creditor : tokenHolder;
-    quantity : uint;
-  }
-  called by tokenHolder.holder;
-  specification = {
+transaction transfer_ (creditor : tokenHolder) (quantity : uint) = {
+  called by tokenHolder.holder
+  specification
     sum(tokens) = sum(tokens);
     before.tokenHolder.sum(tokens) = after.tokenHolder.sum(tokens)
-  }
-  action = {
-    creditor.tokens += quantity,
+
+  action
+    creditor.tokens += quantity;
     (tokenHolder.get caller).tokens -= quantity
-  }
 }

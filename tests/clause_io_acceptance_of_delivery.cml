@@ -4,7 +4,7 @@ role shipper
 
 role receiver
 
-variable payment     tez from receiver to shipper
+variable payment tez from receiver to shipper
 
 variable deliveryDate date
 
@@ -27,45 +27,48 @@ states =
  | Fail
 
 transaction[%signedbyall [shipper, receiver]] sign = {
-   condition : balance = payment + incentiveR + incentiveS;
-   transition from Created to Signed;
+   condition balance = payment + incentiveR + incentiveS
+   transition from Created to Signed
 }
 
-transition unilateral_abort from Created to Aborted = {
-   called by shipper or receiver;
-   action = {
-     transfer back incentiveR,
-     transfer back payment,
+transaction unilateral_abort = {
+   called by shipper or receiver
+   transition from Created to Aborted
+
+   action
+     transfer back incentiveR;
+     transfer back payment;
      transfer back incentiveS
-   }
 }
 
-transition[%signedbyall [shipper, receiver]] abort from Signed to Aborted = {
-   called by shipper or receiver;
-   action = {
-     transfer back incentiveR,
-     transfer back payment,
+transaction[%signedbyall [shipper, receiver]] abort = {
+   called by shipper or receiver
+   transition from Signed to Aborted
+
+   action
+     transfer back incentiveR;
+     transfer back payment;
      transfer back incentiveS
-   }
 }
 
 transaction confirm = {
-  called by receiver;
-  transition from Signed to Delivered;
-  action = {
-     deliveryDate := now,
-     transfer back incentiveR,
-     transfer payment,
+  called by receiver
+  transition from Signed to Delivered
+  action
+     deliveryDate := now;
+     transfer back incentiveR;
+     transfer payment;
      transfer back incentiveS
-  }
 }
 
-transition success from Delivered to Success = {
-  called by shipper;
-  condition : after (deliverydate + businessDays);
+transaction success = {
+  called by shipper
+  transition from Delivered to Success
+  condition now < (deliverydate + businessDays)
 }
 
-transition fail from Delivered to Fail = {
-  called by receiver;
-  condition : before (deliverydate + businessDays);
+transaction fail = {
+  called by receiver
+  transition from Delivered to Fail
+  condition now > deliverydate + businessDays
 }

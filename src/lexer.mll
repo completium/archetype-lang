@@ -41,12 +41,12 @@
       "invariant"           , INVARIANT      ;
       "transition"          , TRANSITION     ;
       "transaction"         , TRANSACTION    ;
-      "args"                , ARGS           ;
       "called"              , CALLED         ;
       "condition"           , CONDITION      ;
       "specification"       , SPECIFICATION  ;
       "action"              , ACTION         ;
       "function"            , FUNCTION       ;
+      "shadow"              , SHADOW         ;
       "let"                 , LET            ;
       "if"                  , IF             ;
       "then"                , THEN           ;

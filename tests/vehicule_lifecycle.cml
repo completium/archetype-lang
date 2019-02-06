@@ -2,7 +2,7 @@ model vehicle_lifecycle
 
 asset owner as role = {
   fn : string;
-  ln : string;
+  ln : string
 }
 
 states order_state =
@@ -13,14 +13,14 @@ states order_state =
   | Delivered
 
 asset vehicledetail = {
-  id : string;
+  id : string
 }
 
 asset order = {
    status       : order_sate;
-   manufacturer : manufacturer ref;
-   orderer      : owner ref;
-   details      : vehicledetail ref;
+   manufacturer : manufacturer;
+   orderer      : owner;
+   details      : vehicledetail
 }
 
 states vehicle_state =
@@ -31,69 +31,45 @@ states vehicle_state =
 asset vehicle identified by vin = {
    vin          : string;
    status       : vehicle_state;
-   owner        : owner ref;
+   owner        : owner;
    detail       : vehicledetail;
-   color        : string;
+   color        : string
 }
 
-transaction placeOrder = {
-   args = {
-     neworder : order;
-   }
-   called by neworder.orderer;
-   action = { order.add neworder }
+transaction placeOrder (neworder : order) = {
+   called by neworder.orderer
+   action order.add neworder
 }
 
-transaction assign_vin = {
-   args = {
-     order      : order;
-     vin        : string;
-     detail     : vehicledetail;
-   }
-   called by order.orderer;
-   transition from order.Placed to order.Vin_assigned;
-   action = {
-     vehicule.add { vin := vin; detail := detail; }
-   }
+transaction assign_vin (order : order) (vin : string) (detail : vehicledetail) = {
+   called by order.orderer
+   transition from order.Placed to order.Vin_assigned
+   action
+     vehicule.add { vin = vin; detail = detail }
 }
 
-transaction assign_owner = {
-   args = {
-     order      : order;
-   }
-   transition from order.any to order.Owner_assigned;
-   action = {
+transaction assign_owner (order : order) = {
+   transition from order.any to order.Owner_assigned
+   action
      (* set vehicule state *)
-     order.vehicule.state := Active,
+     order.vehicule.state := Active;
      (* set vehicule owner *)
      order.vehicule.owner := order.orderer
-   }
 }
 
-transaction vehiculeTransfer  = {
-   args = {
-     buyer     : owner;
-     vehicule  : vehicule;
-   }
-   called by [%delegable] vehicule.owner;
-   action = { vehicule.owner := buyer }
+transaction vehiculeTransfer (buyer : owner) (vehicule : vehicule) = {
+   called by [%delegable] vehicule.owner
+   action vehicule.owner := buyer
 }
 
-transaction scrapVehicle = {
-   args = {
-      vehicule : vehicule;
-   }
-   called by vehicle.owner;
-   transition from (Off_the_road or Active) to Scrapped;
+transaction scrapVehicle (vehicule : vehicule) = {
+   called by vehicle.owner
+   transition from (Off_the_road or Active) to Scrapped
 }
 
-transaction scrapVehiclebyColor = {
-   args = {
-      color : string;
-   }
-   action = {
+transaction scrapVehiclebyColor (color : string) = {
+   action
      for (v in vehicule.when (vehicule.color = color)) (
         v.state := Scrapped
      )
-   }
 }
