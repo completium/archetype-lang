@@ -1,14 +1,16 @@
 model extension test_namespace (
 
-  value[%test_namespace] avalue type
+  variable[%test_namespace] avariable type
 
 ) = {
 
-  value avalue type
+  variable avariable type
 
-  assert(a::myvalue = 1)
+  specification {
+    a::myvariable = 1
+  }
 
   namespace myspace {
-    value myvalue uint := 1
+    variable myvariable uint = 1
   }
 }

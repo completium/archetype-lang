@@ -1,0 +1,16 @@
+model auction_no_memory
+
+variable bid xtz = 0
+variable incumbent address
+
+variable deadline date = 2019-01-01T00:00:00
+
+transaction place_bid (id : address) (b : xtz) = {
+   condition
+      c1 : now < deadline;
+      c2 : b > bid
+
+   action
+      incumbent := caller;
+      bid := transferred
+}

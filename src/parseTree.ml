@@ -50,6 +50,7 @@ type unary_operator =
   | Not
 
 type assignment_operator =
+  | ValueAssign
   | SimpleAssign
   | PlusAssign
   | MinusAssign
@@ -80,11 +81,10 @@ type expr_r =
   | EassignFields of assignment_field list
   | Eapp          of expr * expr list
   | Etransfer     of expr * bool * expr option
-  | Etransition   of expr
   | Eassign       of assignment_operator * expr * expr
   | Eif           of expr * expr * expr option
   | Ebreak
-  | Efor          of lident * expr * expr * expr list option
+  | Efor          of lident * expr * expr * lident option
   | Eassert       of expr
   | Eseq          of expr * expr
   | Efun          of lident_typ list * expr
@@ -104,13 +104,15 @@ and assignment_field =
   | AassignField of assignment_operator * (lident option * lident) * expr
 
 and expr = expr_r loced
-and lident_typ = lident * type_t option
+and lident_typ = lident * type_t option * extension list option
 
 (* -------------------------------------------------------------------- *)
-type extension_r =
+and extension_r =
  | Eextension of lident * expr list option (** extension *)
 
 and extension = extension_r loced
+
+and exts = extension list option
 
 (* -------------------------------------------------------------------- *)
 type field_r =
@@ -120,37 +122,39 @@ and field = field_r loced
 
 (* -------------------------------------------------------------------- *)
 type transitem_r =
-  | Targs of field list * extension list option                      (** args *)
   | Tcalledby of expr * extension list option                        (** called by *)
-  | Tcondition of expr * extension list option                       (** condition *)
+  | Tcondition of named_item list * extension list option            (** condition *)
   | Ttransition of expr * expr * expr option * extension list option (** transition  *)
-  | Tspecification of specification list * extension list option     (** specification *)
+  | Tfunction of lident * args * type_t option * expr                (** function *)
+  | Tspecification of named_item list * expr option * exts           (** specification *)
+  | Tinvariant of lident * named_item list * extension list option   (** invariant *)
   | Taction of expr * extension list option                          (** action  *)
 
 and transitem = transitem_r loced
 
-and specification =
-  | Sspecification of lident option * expr
+and named_item = lident option * expr
+
+and args = lident_typ list
+
 
 (* -------------------------------------------------------------------- *)
 type declaration_r =
-  | Duse         of lident                                              (** use *)
-  | Dmodel       of lident                                              (** model *)
-  | Dconstant    of lident * lident * expr option * extension list option             (** constant *)
-  | Dvalue       of lident * lident * value_option list option * expr option * extension list option       (** value *)
-  | Drole        of lident * expr option * extension list option                   (** role *)
-  | Denum        of lident * lident list                                           (** enum *)
-  | Dstates      of lident option * (lident * state_option list option) list       (** states *)
-  | Dasset       of lident * field list option * expr list option * asset_option list option * expr option * asset_operation option (** asset *)
-  | Dassert      of expr                                                           (** assert *)
-  | Dobject      of lident * expr * extension list option
-  | Dkey         of lident * expr * extension list option
-  | Dtransition  of lident * expr * expr * transitem list * extension list option  (** transition *)
-  | Dtransaction of lident * transitem list * extension list option                (** transaction *)
-  | Dextension   of lident * expr list option                                      (** extension *)
-  | Dnamespace   of lident * declaration list                                      (** namespace *)
-  | Dcontract    of lident * signature list * expr option * extension list option  (** contract *)
-  | Dfunction    of lident * lident_typ list * type_t option * expr                (** function *)
+  | Duse           of lident                                              (** use *)
+  | Dmodel         of lident                                              (** model *)
+  | Dconstant      of lident * lident * expr option * exts                (** constant *)
+  | Dvariable      of lident * lident * value_option list option * expr option * exts       (** variable *)
+  | Drole          of lident * expr option * exts                                    (** role *)
+  | Denum          of lident * lident list                                           (** enum *)
+  | Dstates        of lident option * (lident * state_option list option) list       (** states *)
+  | Dasset         of lident * field list option * expr list option * asset_option list option * expr option * asset_operation option (** asset *)
+  | Dobject        of lident * expr * exts                             (** object *)
+  | Dkey           of lident * expr * exts                             (** key *)
+  | Dtransaction   of lident * args * transitem list * exts            (** transaction *)
+  | Dextension     of lident * expr list option                        (** extension *)
+  | Dnamespace     of lident * declaration list                        (** namespace *)
+  | Dcontract      of lident * signature list * expr option * exts     (** contract *)
+  | Dfunction      of lident * args * type_t option * expr             (** function *)
+  | Dspecification of named_item list * expr option * exts             (** specification *)
 
 and value_option =
   | VOfrom of expr

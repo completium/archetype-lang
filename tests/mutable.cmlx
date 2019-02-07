@@ -1,17 +1,15 @@
 model extension mutable (
 
-  value[%mutable arole cond] avalue type
+  variable[%mutable arole cond] avariable type
 
 ) = {
 
-  value avalue type
+  variable avariable type
 
-  transaction set_<%avalue> = {
-    args = {
-        newvalue : type;
-    }
-    called by arole;
-    condition : cond;
-    action = { avalue := newvalue }
+  transaction set_<%avariable> (newvariable : type) = {
+    called by arole
+    condition cond
+    action
+      avariable := newvariable
   }
 }

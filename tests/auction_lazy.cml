@@ -1,0 +1,30 @@
+model auction_lazy
+
+asset bid identified by incumbent = {
+  incumbent : address;
+  val : xtz
+}
+
+variable deadline date = 2019-01-01T00:00:00
+
+transaction place_bid = {
+  condition now < deadline
+  action bid.add { incumbent = caller; val = transferred }
+}
+
+(*Users need to exhibit proof they are not the winner to reclaim their bid*)
+transaction reclaim (witness : address) = {
+  condition
+    c1 : now < deadline;
+    c2 : let bc = (bid.get caller).val in
+         let bw = (bid.get witness).val in
+         bc < bw
+
+  action
+    transfer (bid.get caller).val to caller
+}
+
+specification {
+  forall a : address,
+  bid.contains a -> balance > (bid.get a).val
+}

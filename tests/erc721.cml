@@ -12,17 +12,11 @@ constant symbol string
 role [%delegable] owner
 
 asset token = {
-  owner : owner;
+  owner : owner
 }
 
-
-transaction transfer_ = {
-  args = {
-    newowner : owner;
-    token : token;
-  }
-
-  called by [%delegable] token.owner;
-
-  action = { token.owner := newowner }
+transaction transfer_ (newowner : owner) (token : token) = {
+  called by [%delegable] token.owner
+  action
+    token.owner := newowner
 }

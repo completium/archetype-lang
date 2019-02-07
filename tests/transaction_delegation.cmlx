@@ -3,54 +3,46 @@ model extension transactionDelegation (
   role aRole
 
   asset anAsset = {
-    arole : aRole;
+    arole : aRole
   }
 
-  transaction aTransaction = {
-    args = {
-      anasset : anAsset;
-    }
-    called by [%delegable] anAsset.arole;
+  transaction aTransaction (anasset : anAsset) = {
+    called by [%delegable] anAsset.arole
   }
 
 ) = {
 
   transaction aTransaction = {
-    action = {
+    action
       <%aTransaction>_space::Operator.remove
       (<%aTransaction>_space::Operator.get anasset)
-    }
   }
 
   namespace <%aTransaction>_space {
     asset Operator identified by anasset = {
       anasset  : anAsset;
-      operator : address;
+      operator : address
     }
 
-    transaction setDelegate = {
-      args = {
-        Operator : Operator;
-      }
-      called by Operator.anasset.arole;
-      action = { Operator.add Operator }
+    transaction setDelegate (Operator : Operator) = {
+      called by Operator.anasset.arole
+      action
+        Operator.add Operator
     }
 
-    transaction rmDelegate = {
-      args = {
-        Operator : Operator;
-      }
-      called by Operator.anasset.arole;
-      action = { Operator.remove Operator }
+    transaction rmDelegate (Operator : Operator) = {
+      called by Operator.anasset.arole
+
+      action
+        Operator.remove Operator
     }
 
-    transaction from_addr = {
-      args = {
-        anasset  : anAsset;
-      }
-      condition:
-        (Operator.get anasset).operator = caller.address;
-      action = { Operator.remove (Operator.get anasset) }
+    transaction from_addr (anasset : anAsset) = {
+      condition
+        (Operator.get anasset).operator = caller.address
+
+      action
+        Operator.remove (Operator.get anasset)
     }
   }
 

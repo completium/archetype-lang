@@ -3,14 +3,11 @@ model extension roleDelegation (
   role [%delegable] aRole
 
   asset anAsset = {
-    arole : aRole;
+    arole : aRole
   }
 
-  transaction aTransaction = {
-     args = {
-       anasset : anAsset;
-     }
-     called by anAsset.arole;
+  transaction aTransaction (anasset : anAsset) = {
+     called by anAsset.arole
   }
 
 ) = {
@@ -19,34 +16,25 @@ model extension roleDelegation (
 
   asset <%aRole>Operators identified by arole = {
     arole      : aRole;
-    operators  : address set;
+    operators  : address set
   }
 
-  transaction setDelegate<%aRole> = {
-     args = {
-       arole    : aRole;
-       operator : address;
-     }
-     called by arole;
-     action = { (<%aRole>Operators.get owner).operators.add operator }
+  transaction setDelegate<%aRole> (arole : aRole) (operator : address) = {
+     called by arole
+     action
+       (<%aRole>Operators.get owner).operators.add operator
   }
 
-  transaction rmDelegate<%aRole> = {
-     args = {
-       afield    : arole;
-       operator  : address;
-     }
-     called by arole;
-     action = { (<%aRole>Operators.get owner).operators.remove operator }
+  transaction rmDelegate<%aRole> (afield : arole) (operator : address) = {
+     called by arole
+     action
+       (<%aRole>Operators.get owner).operators.remove operator
   }
 
-  transaction aTransaction = {
-     args = {
-       anasset : anAsset;
-     }
-     condition: (<%aRole>Operators.get anasset.arole).operators.contains
-                     caller.address;
-     called by none;
+  transaction aTransaction (anasset : anAsset) = {
+     condition (<%aRole>Operators.get anasset.arole).operators.contains
+                     caller.address
+     called by none
   }
 
 }

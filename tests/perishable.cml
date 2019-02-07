@@ -21,7 +21,7 @@ asset p_contract = {
   shipper         : shipper;
   importer        : importer;
   arrivalDateTime : date;
-  unitPrice       : float;
+  unitPrice       : float
 }
 
 
@@ -29,14 +29,10 @@ asset shipment = {
   type     : productType;
   status   : shipmentStatus;
   count    : uint;
-  p_c      : p_contract;
+  p_c      : p_contract
 }
 
 
-transaction payOut = {
-   args = {
-      shipment : shipment;
-      arrival  : date;
-   }
-   transition shipment.status from In_transit to Arrived;
+transaction payOut (shipment : shipment) (arrival : date) = {
+   transition shipment.status from In_transit to Arrived
 }
