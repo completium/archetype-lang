@@ -63,7 +63,7 @@ transaction consume (ow : address) (val : uint) = {
 
   action
      let remainder = val in
-     (loop for (m in by_expiration o) (
+     loop for (m in by_expiration o) (
        if m.amount > remainder
        then (
          remainder := 0;  (* this should be after instruction below
@@ -79,7 +79,7 @@ transaction consume (ow : address) (val : uint) = {
          break
        ) else (
          remainder -= m.amount;
-         o.miles.remove m));
+         o.miles.remove m);
      assert (remainder = 0))
 }
 

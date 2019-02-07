@@ -44,7 +44,7 @@
 %token SPECIFICATION
 %token ACTION
 %token FUNCTION
-%token SHADOW
+%token ENSURE
 %token LET
 %token IF
 %token THEN
@@ -273,27 +273,36 @@ function_decl:
 
 specification:
  | SPECIFICATION exts=option(extensions)
-/*     _sv=specification_variables*/
-     sa=specification_action?
      xs=named_items
-       { Tspecification (xs, sa, exts) }
+       { Tspecification (None, None, None, xs, exts) }
+
+ | SPECIFICATION exts=option(extensions)
+     sv=specification_variables
+     sa=specification_action?
+     si=specification_invariant?
+     se=specification_ensure
+       { Tspecification (sv, sa, si, se, exts) }
 
 specification_decl:
  | SPECIFICATION exts=option(extensions)
-/*     _sv=specification_variables*/
-     sa=specification_action?
      xs=braced(named_items)
-       { Dspecification (xs, sa, exts) }
+       { Dspecification (xs, exts) }
 
 %inline specification_variables:
- | { None}
+ | { None }
  | xs=specification_variable+ { Some xs }
 
 %inline specification_variable :
- | SHADOW e=variable SEMI_COLON { e }
+ | VARIABLE id=ident typ=type_t dv=default_value? { (id, typ, dv) }
 
 %inline specification_action:
- | SHADOW ACTION e=expr SEMI_COLON { e }
+ | ACTION e=expr { e }
+
+%inline specification_invariant:
+ | INVARIANT xs=named_items { xs }
+
+%inline specification_ensure:
+ | ENSURE xs=named_items { xs }
 
 enum:
 | ENUM x=ident EQUAL xs=pipe_idents {Denum (x, xs)}

@@ -122,19 +122,24 @@ and field = field_r loced
 
 (* -------------------------------------------------------------------- *)
 type transitem_r =
-  | Tcalledby of expr * extension list option                        (** called by *)
-  | Tcondition of named_item list * extension list option            (** condition *)
-  | Ttransition of expr * expr * expr option * extension list option (** transition  *)
-  | Tfunction of lident * args * type_t option * expr                (** function *)
-  | Tspecification of named_item list * expr option * exts           (** specification *)
-  | Tinvariant of lident * named_item list * extension list option   (** invariant *)
-  | Taction of expr * extension list option                          (** action  *)
+  | Tcalledby of expr * extension list option                                (** called by *)
+  | Tcondition of named_item list * extension list option                    (** condition *)
+  | Ttransition of expr * expr * expr option * extension list option         (** transition  *)
+  | Tfunction of lident * args * type_t option * expr                        (** function *)
+  | Tspecification of s_variable * s_action * s_invariant * s_ensure * exts  (** specification *)
+  | Tinvariant of lident * named_item list * extension list option           (** invariant *)
+  | Taction of expr * extension list option                                  (** action  *)
 
 and transitem = transitem_r loced
 
 and named_item = lident option * expr
 
 and args = lident_typ list
+
+and s_variable = (lident * type_t * expr option) list option
+and s_action = expr option
+and s_invariant = named_item list option
+and s_ensure = named_item list
 
 
 (* -------------------------------------------------------------------- *)
@@ -154,7 +159,7 @@ type declaration_r =
   | Dnamespace     of lident * declaration list                        (** namespace *)
   | Dcontract      of lident * signature list * expr option * exts     (** contract *)
   | Dfunction      of lident * args * type_t option * expr             (** function *)
-  | Dspecification of named_item list * expr option * exts             (** specification *)
+  | Dspecification of named_item list * exts                           (** specification *)
 
 and value_option =
   | VOfrom of expr

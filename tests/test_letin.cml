@@ -1,0 +1,8 @@
+transaction tr = {
+  action
+    for (i in list) (
+      let x = toto in
+      toto;
+      tata
+      )
+}

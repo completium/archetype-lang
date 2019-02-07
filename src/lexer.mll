@@ -46,7 +46,7 @@
       "specification"       , SPECIFICATION  ;
       "action"              , ACTION         ;
       "function"            , FUNCTION       ;
-      "shadow"              , SHADOW         ;
+      "ensure"              , ENSURE         ;
       "let"                 , LET            ;
       "if"                  , IF             ;
       "then"                , THEN           ;

@@ -27,7 +27,7 @@
    `(,cml-address-regexp . font-lock-builtin-face)
    `(,(cml-regexp-opt '("state" "now" "transferred" "caller" "fail" "balance")) . font-lock-constant-face)
    `(,(cml-regexp-opt '("use" "model" "extension" "constant" "variable" "role" "asset" "states" "enum" "transaction" "function" "object" "key" "namespace" "contract")) . font-lock-type-face)
-   `(,(cml-regexp-opt '("identified" "sorted" "by" "as" "from" "to" "with" "ref" "fun" "=>" "initialized" "collection" "queue" "stack" "set" "partition" "asset" "object" "initial" "args" "called" "transition" "condition" "action" "specification" "invariant" "shadow" "let" "if" "then" "else" "for" "in" "break" "of" "transfer" "back")) . font-lock-keyword-face)
+   `(,(cml-regexp-opt '("identified" "sorted" "by" "as" "from" "to" "with" "ref" "fun" "=>" "initialized" "collection" "queue" "stack" "set" "partition" "asset" "object" "initial" "args" "called" "transition" "condition" "action" "specification" "invariant" "ensure" "let" "if" "then" "else" "for" "in" "break" "of" "transfer" "back")) . font-lock-keyword-face)
    `(,(cml-regexp-opt '("and" "or" "not" "->" "<->" "forall" "exists" "assert" "true" "false")) . font-lock-doc-face)
 
    )

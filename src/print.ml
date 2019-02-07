@@ -392,6 +392,14 @@ match s with
     pp_id x
     pp_expr y
 
+let pp_specification_variable fmt (sv : (lident * type_t * expr option)) =
+match sv with
+| (id, typ, dv) ->
+    Format.fprintf fmt "variable %a %a%a"
+        pp_id id
+        pp_type typ
+        (pp_option (pp_prefix " = " pp_expr)) dv
+
 let pp_transitem fmt { pldesc = t } =
   match t with
   | Tcalledby (e, exts) ->
@@ -418,10 +426,18 @@ let pp_transitem fmt { pldesc = t } =
         (pp_option (pp_prefix " : " pp_type)) r
         pp_expr b
 
-  | Tspecification (xs, _, exts) ->
+  | Tspecification (None, None, None, se, exts) ->
       Format.fprintf fmt "specification%a@\n@[<v 2>  %a@]@\n"
        (pp_option (pp_list " " pp_extension)) exts
-       (pp_list "; " pp_named_item) xs
+       (pp_list "; " pp_named_item) se
+
+   | Tspecification (sv, sa, si, se, exts) ->
+      Format.fprintf fmt "specification%a@\n@[<v 2>  %a@]@\n@[<v 2>  %a@]@\n@[<v 2>  %a@]@\n@[<v 2>  %a@]"
+       (pp_option (pp_list " " pp_extension)) exts
+       (pp_option (pp_list "@\n" pp_specification_variable)) sv
+       (pp_option (pp_prefix "action@\n  " pp_expr)) sa
+       (pp_option (pp_prefix "invariant@\n  " (pp_list ";@\n  " pp_named_item))) si
+       (pp_prefix "ensure@\n  " (pp_list ";@\n  " pp_named_item)) se
 
   | Tinvariant (id, xs, exts) ->
       Format.fprintf fmt "invariant%a %a@\n@[<v 2>  %a@]@\n"
@@ -574,7 +590,7 @@ let rec pp_declaration fmt { pldesc = e } =
         (pp_option (pp_prefix " : " pp_type)) r
         pp_expr b
 
-  | Dspecification (xs, _, exts) ->
+  | Dspecification (xs, exts) ->
       Format.fprintf fmt "specification%a {@\n@[<v 2>  %a@]@\n}"
         (pp_option (pp_list " " pp_extension)) exts
         (pp_list ";@\n" pp_named_item) xs
