@@ -31,7 +31,10 @@ module Test2
     mutable value : int;
             state : states;
     ghost mutable counter : int;
-  } invariant { counter <= 1 }
+  } invariant { state = Closed ->
+                value > 0 ->
+                counter = 0 }
+    invariant { counter <= 1 }
     by { value = 10; state = Open; counter = 0 }
 
   let is_open s =
@@ -50,11 +53,6 @@ module Test2
   if is_open s
   then
    (s.value <- 10)
-
-  axiom state_only_closed : forall s : storage.
-        s.state = Closed  ->
-        s.value > 0 ->
-        s.counter = 0
 
   let only_once (s : storage)
   =
