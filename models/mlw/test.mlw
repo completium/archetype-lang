@@ -8,10 +8,44 @@ module Test
   } invariant { counter <= 1 }
     by { value = 1; counter = 0 }
 
+  (* should it be a lemma ? *)
   axiom init : forall s : storage. s.value > 0 -> s.counter < 1
 
   let only_once (s : storage) : unit
   =
+   if s.value > 0
+   then (
+     s.value <- 0;
+     ghost (s.counter <- s.counter +1))
+
+end
+
+(* this test adds a state variable *)
+module Test2
+
+  use int.Int
+
+  type states = Open | Closed
+
+  type storage = {
+    mutable value : int;
+            state : states;
+    ghost mutable counter : int;
+  }
+
+  let is_closed s =
+    match s.state with
+    | Closed -> true
+    | _ -> false
+    end
+
+  axiom state_closed : forall s : storage. s.state = Closed -> s.counter = 0
+
+  let only_once (s : storage)
+  ensures { s.counter <= 1 }
+  =
+   if is_closed s
+   then
    if s.value > 0
    then (
      s.value <- 0;
