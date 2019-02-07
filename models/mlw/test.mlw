@@ -9,7 +9,7 @@ module Test
     by { value = 1; counter = 0 }
 
   (* should it be a lemma ? *)
-  axiom init : forall s : storage. s.value > 0 -> s.counter < 1
+  axiom init : forall s : storage. s.value > 0 -> s.counter = 0
 
   let only_once (s : storage) : unit
   =
@@ -31,7 +31,14 @@ module Test2
     mutable value : int;
             state : states;
     ghost mutable counter : int;
-  }
+  } invariant { counter <= 1 }
+    by { value = 10; state = Open; counter = 0 }
+
+  let is_open s =
+    match s.state with
+    | Open -> true
+    | _ -> false
+    end
 
   let is_closed s =
     match s.state with
@@ -39,16 +46,24 @@ module Test2
     | _ -> false
     end
 
-  axiom state_closed : forall s : storage. s.state = Closed -> s.counter = 0
+  let call_in_open (s : storage) =
+  if is_open s
+  then
+   (s.value <- 10)
+
+  axiom state_only_closed : forall s : storage.
+        s.state = Closed  ->
+        s.value > 0 ->
+        s.counter = 0
 
   let only_once (s : storage)
-  ensures { s.counter <= 1 }
   =
    if is_closed s
    then
-   if s.value > 0
-   then (
-     s.value <- 0;
-     ghost (s.counter <- s.counter +1))
+     if s.value > 0
+     then (
+       s.value <- 0;
+       ghost (s.counter <- s.counter +1)
+     )
 
 end
