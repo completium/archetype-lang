@@ -25,6 +25,7 @@
    `(,cml-ext-regexp . font-lock-preprocessor-face)
    `(,cml-var-regexp . font-lock-variable-name-face)
    `(,cml-address-regexp . font-lock-builtin-face)
+   ;; logical function : "mem" "idem" "before" "after" "fixed" "subset"
    `(,(cml-regexp-opt '("state" "now" "transferred" "caller" "fail" "balance")) . font-lock-constant-face)
    `(,(cml-regexp-opt '("use" "model" "extension" "constant" "variable" "role" "asset" "states" "enum" "transaction" "function" "object" "key" "namespace" "contract")) . font-lock-type-face)
    `(,(cml-regexp-opt '("identified" "sorted" "by" "as" "from" "to" "with" "ref" "fun" "=>" "initialized" "collection" "queue" "stack" "set" "partition" "asset" "object" "initial" "args" "called" "transition" "condition" "action" "specification" "invariant" "ensure" "let" "if" "then" "else" "for" "in" "break" "of" "transfer" "back")) . font-lock-keyword-face)

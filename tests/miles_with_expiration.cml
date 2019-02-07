@@ -15,24 +15,24 @@ asset owner as role identified by addr = {
    miles : mile partition (* injective (owner x mile) *)
 }
 
-transaction add (owner : address) (newmile : mile) = {
+transaction add (ow : address) (newmile : mile) = {
    called by admin
 
    action
-     owner.addifnotexist owner { miles = empty };
+     owner.addifnotexist ow { miles = empty };
      (* transaction must fail if mile already exists *)
-     (owner.get owner).miles.add newmile
+     (owner.get ow).miles.add newmile
 }
 
 transaction consume (ow : address) (val : uint) = {
   specification
 
        p1 : let o = owner.get owner in
-       o.miles.sum(amount) = before o.miles.sum(amount) - val;
+            o.miles.sum(amount) = before o.miles.sum(amount) - val;
 
        (* sanity checks *)
        p2 : forall m : removed miles,
-       mem m (before (owner.miles)) and m.expiration >= now;
+              mem m (before (owner.miles)) and m.expiration >= now;
 
        p3 : is_empty added.mile;
 
@@ -73,7 +73,7 @@ transaction consume (ow : address) (val : uint) = {
          m.amount  -= remainder;
          break
        ) else if (m.amount = remainder)
-              then (
+         then (
          remainder := 0;
          o.miles.remove m;
          break

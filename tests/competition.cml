@@ -3,12 +3,12 @@ model competition
 role[%transferable] organiser
 
 (* start date *)
-variable[%mutable organiser (instate Created)] date startdate
+variable[%mutable organiser (instate Created)] startdate date
 
 (* deadline *)
-variable[%mutable organiser (instate Created)] date deadline
+variable[%mutable organiser (instate Created)] deadline date
 
-variable[%traceable] prize tez from organizer
+variable[%traceable] prize tez from organizer := 3500
 
 role competitor
 
@@ -41,21 +41,22 @@ transaction submit (competitor : competitor) (score[%signedby oracle] : uint) = 
 }
 
 transaction decide = {
-   transition from InProgress to Done
    condition after deadline
+   transition from InProgress to Done
    action
      let sorted_submissions = submission.sort(asc(date)).sort(desc(score)) in
-     if (sorted_submissions.count >= 3)
+     if (sorted_submissions.count() >= 3)
      then (
        let first  = sorted_submissions.get(0) in
        let second = sorted_submissions.get(1) in
        let third  = sorted_submissions.get(2) in
        transfer (prize * 0.5) to first.competitor;
        transfer (prize * 0.3) to second.competitor;
-       transfer (prize * 0.2) to third.competitor
+       transfer (prize * 0.2) to third.competitor;
+       transfer (prize - q1 - q2 - q3) to organizer
      )
      else (
-       if (sorted_submissions.count >= 2)
+       if (sorted_submissions.count() >= 2)
        then (
          let first  = sorted_submissions.get(0) in
          let second = sorted_submissions.get(1) in
@@ -63,7 +64,7 @@ transaction decide = {
          transfer (prize * 0.4) to second.competitor
        )
        else (
-         if (sorted_submissions.count >= 1)
+         if (sorted_submissions.count() >= 1)
          then (
            let first  = sorted_submissions.get(0) in
            transfer prize to first.competitor
