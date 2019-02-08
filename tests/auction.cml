@@ -1,10 +1,10 @@
 model auction
 
-variable max_bid xtz = 0
+variable max_bid tez = 0
 
 asset bid identified by incumbent = {
   incumbent : address;
-  value : xtz
+  value : tez
 }
 
 variable deadline date = 2019-01-01T00:00:00

@@ -3,12 +3,12 @@ model zero_coupon_bond
 role issuer = @tz1KksC8RvjUWAbXYJuNrUbontHGor25Cztk (* seller ‘Alice’ *)
 
 role owner = @tz1KmuhR6P52hw6xs5P69BXJYAURaznhvN1k
-(* buyer ‘Bob’; receives 11 xtz in one-year *)
+(* buyer ‘Bob’; receives 11 tez in one-year *)
 
 
-variable price xtz from owner = 10
+variable price tez from owner = 10
 
-variable payment xtz from issuer to owner = 11 * price
+variable payment tez from issuer to owner = 11 * price
 
 variable maturity date
 

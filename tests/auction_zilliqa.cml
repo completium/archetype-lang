@@ -1,13 +1,13 @@
 model auction_zilliqa
 
-variable highest_bid xtz = 0
+variable highest_bid tez = 0
 variable highest_bidder address = 0
 
 variable beneficiary address = @tz1KmuhR6P52hw6xs5P69BXJYAURaznhvN1k
 
 asset pending_returns identified by incumbent = {
   incumbent   : address;
-  val         : xtz
+  val         : tez
 }
 
 states =
