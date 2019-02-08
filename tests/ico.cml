@@ -122,30 +122,18 @@ transaction contribute = {
 
 }
 
+(* the onlyonce extension specifies that withdraw action can be
+  executed only once, that is a contributor can withdraw only once. *)
 
-transaction withdraw = {
-  specification
-    variable call_count int = 0
-    action call_count += 1
-    invariant
-      state = Round2Finished ->
-      nb_xtz_raised <= soft_cap ->
-      (contributor.get caller).contribution > 0 ->
-      call_count = 0;
+transaction[%onlyonce] withdraw = {
+ condition
+   c1 : state = Round2Finished;
+   c2 : nb_xtz_raised <= soft_cap;
+   c3 : (contributor.get caller).contribution > 0
 
-      call_count <= 1
-    ensure
-      (contributor.get caller).contribution = 0
-
-  condition
-    c1 : state = Round2Finished;
-    c2 : nb_xtz_raised <= soft_cap;
-    c3 : (contributor.get caller).contribution > 0
-
-  action
-    let c = contributor.get caller in
-    transfer c.contribution caller;
-    (* do not forget this *)
-    c.contribution := 0
-
+ action
+   let c = contributor.get caller in
+   transfer c.contribution caller;
+   (* do not forget this *)
+   c.contribution := 0
 }
