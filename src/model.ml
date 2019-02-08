@@ -128,12 +128,6 @@ type const =
   | Cmem
   | Cbefore
 
-type reference =
-  | Rconst of const
-  | Rvar of ident
-  | Rfield of reference * ident
-  | Rasset of ident
-
 type signature = {
   name : const;
   arrity: int;
@@ -157,15 +151,18 @@ type lterm =
   (* mutualize below with pterm ? *)
   | Lcomp of comparison_operator * lterm * lterm
   | Larith of arithmetic_operator * lterm * lterm
-  | Lref of reference
+  | Lvar of ident
+  | Lfield of ident
+  | Lasset of ident
   | Llit of bval
+  | Ldot of lterm * lterm
   | Lconst of const
 
 type pterm =
   (* program specific *)
   | Pif of pterm * pterm * pterm option
   | Pfor of ident * pterm * pterm
-  | Passign of assignment_operator * reference * pterm
+  | Passign of assignment_operator * pterm * pterm
   | Ptransfer
   | Ptransition
   | Pbreak
@@ -181,8 +178,11 @@ type pterm =
   (* mutualize below with lterm ? *)
   | Pcomp of comparison_operator * pterm * pterm
   | Parith of arithmetic_operator * pterm * pterm
-  | Pref of reference
+  | Pvar of ident
+  | Pfield of ident
+  | Passet of ident
   | Plit of bval
+  | Pdot of pterm * pterm
   | Pconst of const
 
 type cond = pterm

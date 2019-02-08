@@ -23,7 +23,7 @@ let mk_mile_asset () = {
     init = None;
     preds =
       let zero = Plit (BVint Big_int.zero_big_int) in
-      Some [Pcomp (Gt,(Pref (Rfield (Rasset "mile","amount"))),zero)];
+      Some [Pcomp (Gt,(Pdot (Passet "mile", Pfield "amount")),zero)];
   }
 
 let mk_owner_asset () = {
@@ -57,13 +57,13 @@ let mk_add_transaction () : transaction = {
     transition = None;
     spec = None;
     action =
-      let assign = Passign (SimpleAssign,Rfield (Rasset "owner","miles"),Pconst Cvoid) in
-      let getowner = Papp (Pconst Cget,[Pref (Rasset "owner");Pref (Rvar "owner")]) in
+      let assign = Passign (SimpleAssign, Pdot (Passet "owner", Pfield "miles"),Pconst Cvoid) in
+      let getowner = Papp (Pconst Cget,[Passet "owner"; Pvar "owner"]) in
       Some (Pseq [
-       Papp (Pconst Caddifnotexist, [Pref (Rasset "owner"); assign]);
+       Papp (Pconst Caddifnotexist, [Passet "owner"; assign]);
        Pletin ("lvar0",getowner, Tasset "owner",
-               Papp (Pconst Cadd, [Pref (Rfield (Rvar ("lvar0"),"miles"));
-                                   Pref (Rvar "newmile");
+               Papp (Pconst Cadd, [Pdot (Pvar "lvar0", Pfield "miles");
+                                   Pvar "newmile";
                                    Plit (BVstring "mile already exists")]))
       ]);
   }
@@ -85,12 +85,12 @@ let mk_consume_transaction () : transaction = {
       sum s amount >= val
      *)
     condition = (
-      let getowner = Papp (Pconst Cget,[Pref (Rasset "owner");Pref (Rvar "owner")]) in
-      let filter = Pcomp (Gt,Pref (Rfield (Rasset "mile","expiration")),
+      let getowner = Papp (Pconst Cget,[Passet "owner";Pvar "owner"]) in
+      let filter = Pcomp (Gt,Pdot (Passet "mile",Pfield "expiration"),
                                  Pconst Cnow) in
-      let set = Papp (Pconst Cwhen, [ Pref (Rfield (Rvar "o","mile")); filter]) in
-      let sum = Papp (Pconst Csum, [Pref (Rvar "s");Pref (Rfield (Rasset "mile","amount"))]) in
-      let cond = Pcomp (Ge, sum, Pref (Rvar "val")) in
+      let set = Papp (Pconst Cwhen, [ Pdot (Pvar "o", Pfield "miles"); filter]) in
+      let sum = Papp (Pconst Csum, [Pvar "s";Pdot (Passet "mile", Pfield "amount")]) in
+      let cond = Pcomp (Ge, sum, Pvar "val") in
       Some (Pletin ("o", getowner, Tasset "owner",
             Pletin ("s", set, Tcontainer (Tasset "mile", Set),
             cond))));
@@ -103,11 +103,11 @@ let mk_consume_transaction () : transaction = {
         ensures =
                 let exp = Lquantifer (Forall, "m", LTvset (VSremoved,LTprog (Tasset "mile")),
         Llog (And,
-              Lapp (Lconst Cmem,[Lref (Rvar "m");Lref (Rfield (Rasset "owner","miles"))]),
-              Lcomp (Ge,Lref (Rfield(Rvar "m","expiration")),Lconst Cnow))) in
-      let getowner = Lapp (Lconst Cget,[Lref (Rasset "owner");Lref (Rvar "owner")]) in
-      let sumamount = Lapp (Lconst Csum,[Lref (Rfield (Rvar "o","amount"))]) in
-      let sumval = Larith (Plus,sumamount,Lref (Rvar "val")) in
+              Lapp (Lconst Cmem,[Lvar "m";Ldot (Lasset "owner", Lfield "miles")]),
+              Lcomp (Ge,Ldot (Lvar "m", Lfield "expiration"),Lconst Cnow))) in
+      let getowner = Lapp (Lconst Cget,[Lasset "owner";Lfield "owner"]) in
+      let sumamount = Lapp (Lconst Csum,[Ldot (Lvar "o", Lfield "amount")]) in
+      let sumval = Larith (Plus,sumamount,Lvar "val") in
       let rightamount =
         Lletin ("o",getowner, Some (LTprog (Tasset "owner")),
                 Lcomp (Equal,Lapp (Lconst Cbefore,[sumamount]),sumval)
@@ -116,34 +116,34 @@ let mk_consume_transaction () : transaction = {
       };
     action = (
       let zero = BVint Big_int.zero_big_int in
-      let filter = Pcomp (Gt,Pref (Rfield (Rasset "mile","expiration")),
+      let filter = Pcomp (Gt,Pdot (Passet "mile", Pfield "expiration"),
                                  Pconst Cnow) in
-      let set = Papp (Pconst Cwhen, [ Pref (Rfield (Rvar "o","mile")); filter]) in
-      let cond1 = Pcomp (Gt,Pref (Rfield (Rvar "m","amount")),Pref (Rvar "r")) in
+      let set = Papp (Pconst Cwhen, [ Pdot (Pvar "o", Pfield "miles"); filter]) in
+      let cond1 = Pcomp (Gt,Pdot (Pvar "m", Pfield "amount"), Pvar "r") in
       let then1 = Pseq [
-                      Passign (MinusAssign, Rfield (Rvar "m","amount"),Pref (Rvar "r"));
-                      Passign (SimpleAssign,Rvar "r",Plit zero);
+                      Passign (MinusAssign, Pdot (Pvar "m", Pfield "amount"),Pvar "r");
+                      Passign (SimpleAssign,Pvar "r",Plit zero);
                       Pbreak
                     ] in
-      let cond2 = Pcomp (Equal,Pref (Rfield (Rvar "m","amount")),Pref (Rvar "r")) in
+      let cond2 = Pcomp (Equal,Pdot (Pvar "m", Pfield "amount"),Pvar "r") in
       let then2 = Pseq [
-                      Papp (Pconst Cremove, [Pref (Rfield (Rvar "o","miles")); Pref (Rvar "m")]);
-                      Passign (SimpleAssign,Rvar "r",Plit zero);
+                      Papp (Pconst Cremove, [Pdot (Pvar "o", Pfield "miles"); Pvar "m"]);
+                      Passign (SimpleAssign, Pvar "r",Plit zero);
                       Pbreak
                     ]in
       let then3 = Pseq [
-                      Passign (MinusAssign, Rvar "r", Pref (Rfield (Rvar "m","amount")));
-                      Papp (Pconst Cremove, [Pref (Rfield (Rvar "o","miles")); Pref (Rvar "m")]);
+                      Passign (MinusAssign, Pvar "r", Pdot (Pvar "m", Pfield "amount"));
+                      Papp (Pconst Cremove, [Pdot (Pvar "o", Pfield "miles"); Pvar "m"]);
                       Pbreak
                     ] in
-      let asert = Lcomp (Equal,Lref (Rvar "r"),Llit zero) in
-      let getowner = Papp (Pconst Cget,[Pref (Rasset "owner");Pref (Rvar "owner")]) in
+      let asert = Lcomp (Equal, Lvar "r", Llit zero) in
+      let getowner = Papp (Pconst Cget,[Passet "owner";Pvar "owner"]) in
       let p =
-        Pletin ("r",Pref (Rvar "val"),Tbuiltin VTint,
-        Pletin ("o",getowner,Tasset "owner",
-        Pletin ("s",set,Tcontainer (Tasset "mile", Set),
+        Pletin ("r", Pvar "val", Tbuiltin VTint,
+        Pletin ("o", getowner, Tasset "owner",
+        Pletin ("s", set, Tcontainer (Tasset "mile", Set),
         Pseq [
-        Pfor ("i",Pref (Rvar "s"),
+        Pfor ("i",Pvar "s",
           Pif (cond1,
            then1,
           Some (Pif (cond2,
