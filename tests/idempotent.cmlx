@@ -1,0 +1,19 @@
+model extension idempotent (
+
+  transaction[%onlyonce] tr
+
+) = {
+
+  transaction tr = {
+    specification
+      variable call_count int = 0
+      action
+        call_count += 1
+      invariant
+        i1 : conditions -> call_count = 0;
+        i2 : call_count <= 1
+      ensure
+        none
+   }
+
+}

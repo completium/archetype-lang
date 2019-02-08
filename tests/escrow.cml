@@ -10,10 +10,10 @@ role[%transferable] creditor = seller
 
 role oracle
 
-variable[%traceable] price tez from buyer to creditor
+variable[%traceable] price xtz from buyer to creditor
 
 variable[%traceable] [%mutable_signed [buyer, debitor] (state = Created)]
-     penalty tez from seller to debitor = 0.1 * price
+     penalty xtz from seller to debitor = 0.1 * price
 
 (* transaction deadline *)
 variable[%mutable (buyer or seller) (instate Created)] deadline date

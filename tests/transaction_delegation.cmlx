@@ -39,7 +39,7 @@ model extension transactionDelegation (
 
     transaction from_addr (anasset : anAsset) = {
       condition
-        (Operator.get anasset).operator = caller.address
+        (Operator.get anasset).operator = caller
 
       action
         Operator.remove (Operator.get anasset)

@@ -8,7 +8,7 @@ variable[%mutable organiser (instate Created)] startdate date
 (* deadline *)
 variable[%mutable organiser (instate Created)] deadline date
 
-variable[%traceable] prize tez from organizer := 3500
+variable[%traceable] prize xtz from organizer := 3500
 
 role competitor
 

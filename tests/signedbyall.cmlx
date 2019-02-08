@@ -6,9 +6,8 @@ model extension signedbyall (
     signer    : address;
     hasSigned : boolean
   } initialized by {
-    for (r in roles) (
+    for (r in roles)
       signer_<%aTransaction>.add {signer = r; hasSigned = false}
-    )
   }
 
   transaction sign_<%aTransaction> = {
@@ -18,6 +17,7 @@ model extension signedbyall (
 
   transaction aTransaction = {
     condition
+      conditions;
       (signer_<%aTransaction>.when(hasSigned = true)).count() = signer_<%aTransaction>.count()
   }
 

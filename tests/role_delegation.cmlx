@@ -32,8 +32,8 @@ model extension roleDelegation (
   }
 
   transaction aTransaction (anasset : anAsset) = {
-     condition (<%aRole>Operators.get anasset.arole).operators.contains
-                     caller.address
+     condition
+       (<%aRole>Operators.get anasset.arole).operators.contains caller
      called by none
   }
 
