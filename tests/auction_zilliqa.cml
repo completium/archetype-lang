@@ -17,6 +17,18 @@ states =
 variable auction_start date = 2019-01-01T00:00:00
 variable auction_end   date = 2019-02-01T00:00:00
 
+specification {
+
+  highest_is_not_pending :
+    not (pending_return.contains highest_bidder);
+
+  highest_is_highest :
+    forall pr : prending_return,
+      pr.val <= highest_bid and pr.incumbent <> highest_bidder
+
+}
+
+
 transaction place_bid = {
 
    condition auction_start <= now <= auction_end

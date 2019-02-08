@@ -14,7 +14,7 @@ asset animal identified by id = {
  id       : string;
  status   : movement;
  typ      : animal;
- location : field ref
+ location : field
 }
 
 asset field identified by name = {

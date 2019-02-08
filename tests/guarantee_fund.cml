@@ -1,0 +1,28 @@
+model guarantee_fund
+
+role admin
+
+asset insured_contract identified by addr = {
+  addr : address;
+  max_transfer : xtz
+}
+
+transaction credit = {
+  called by admin
+  condition transferred > 0
+}
+
+transaction add_contract (contract_ : insured_contract) = {
+  called by admin
+  action
+    insured_contract.addifnotexist contract_
+}
+
+transaction pay (recipient : address) (amount : xtz) = {
+  condition
+    c1 : insured_contract.contains caller;
+    c2 : amount <= (insured_contract.get caller).max_transfer
+
+  action
+    transfer amount to recipient
+}

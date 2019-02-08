@@ -11,38 +11,45 @@ contract insurance = {
 
 variable price xtz from owner = 10
 
-variable payment xtz from issuer to owner = 11
+variable payment xtz from issuer to owner = 11 * price
 
 variable maturity date
 
 states =
-  | Created initial (* Created phase enables *)
-  | Insured         (* Guarantee Fund has accepted issuer *)
-  | Confirmed       (* owner has purchased bond *)
-  | Transferred
+ | Created initial
+ | Insured (* Guarantee Fund has accepted issuer *)
+ | Confirmed (* owner has purchased bond *)
+ | Repaid (* issuer has transferred payment to contract *)
+ | Collected (* owner has collected payment *)
 
-transaction insure = {
+transaction insured = {
   called by insurance
   transition from Created to Insured
 }
 
 transaction confirm = {
-   condition transferred = price
-   transition from Insured to Confirmed
-   specification
-     balance = 0
+  condition transferred = price
+  specification
+    balance = 0
+  transition from Insured to Confirmed
+  action
+    maturity := now + 1Y;
+    transfer price to issuer
+ }
 
-   action
-     maturity := now + 1y;
-     transfer price to issuer
+
+transaction repay = {
+  called by issuer
+  transition from Confirmed to Repaid
+  condition transferred = payment
 }
 
 transaction collect = {
-   called by owner
-   condition now > maturity
-   transition from Confirmed to Transferred
-   action
-     if balance >= payment
-     then transfer balance to owner
-     else insurance.pay owner payment
+  called by owner
+  condition now > maturity
+  transition from Repaid to Collected
+  action
+    if balance >= payment
+    then transfer balance to owner
+    else guarantee_fund.pay owner payment
 }

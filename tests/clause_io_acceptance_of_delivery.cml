@@ -64,11 +64,11 @@ transaction confirm = {
 transaction success = {
   called by shipper
   transition from Delivered to Success
-  condition now < (deliverydate + businessDays)
+  condition now > (deliverydate + businessDays)
 }
 
 transaction fail = {
   called by receiver
   transition from Delivered to Fail
-  condition now > deliverydate + businessDays
+  condition now <= deliverydate + businessDays
 }

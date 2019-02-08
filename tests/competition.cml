@@ -41,40 +41,38 @@ transaction submit (competitor : competitor) (score[%signedby oracle] : uint) = 
 }
 
 transaction decide = {
-   condition after deadline
-   transition from InProgress to Done
-   action
-     let sorted_submissions = submission.sort(asc(date)).sort(desc(score)) in
-     if (sorted_submissions.count() >= 3)
-     then (
-       let first  = sorted_submissions.get(0) in
-       let second = sorted_submissions.get(1) in
-       let third  = sorted_submissions.get(2) in
-       transfer (prize * 0.5) to first.competitor;
-       transfer (prize * 0.3) to second.competitor;
-       transfer (prize * 0.2) to third.competitor;
-       transfer (prize - q1 - q2 - q3) to organizer
-     )
-     else (
-       if (sorted_submissions.count() >= 2)
-       then (
-         let first  = sorted_submissions.get(0) in
-         let second = sorted_submissions.get(1) in
-         transfer (prize * 0.6) to first.competitor;
-         transfer (prize * 0.4) to second.competitor
-       )
-       else (
-         if (sorted_submissions.count() >= 1)
-         then (
-           let first  = sorted_submissions.get(0) in
-           transfer prize to first.competitor
-         )
-         else (
-           transfer back prize
-         )
-       )
-     )
-   }
+
+  condition now > deadline
+  transition from InProgress to Done
+  action
+    let submissions = submission.sort(asc(date)).sort(desc(score)) in
+      if submissions.count() >= 3
+      then (
+        let first = submissions.nth(0) in
+        let second = submissions.nth(1) in
+        let third = submissions.nth(2) in
+        let q1 = 0.5 * prize in
+        let q2 = 0.3 * prize in
+        let q3 = 0.2 * prize in
+        transfer q1 to first.competitor;
+        transfer q2 to second.competitor;
+        transfer q3 to third.competitor;
+        transfer (prize - q1 - q2 - q3) to organizer)
+        else if (submissions.count() >= 2)
+             then (
+               let first = submissions.nth(0) in
+               let second = submissions.nth(1) in
+               let q1 = 0.6 * prize in
+               let q2 = 0.4 * prize in
+               transfer q1 to first.competitor;
+               transfer q2 to second.competitor;
+               transfer (prize - q1 - q2) to organizer)
+             else if (submissions.count() >= 1)
+               then (
+                 let first = submissions.nth(0) in
+                 transfer prize to first.competitor)
+               else transfer back prize
+}
 
 specification {
   state = Done -> balance = 0

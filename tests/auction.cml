@@ -4,7 +4,7 @@ variable max_bid xtz = 0
 
 asset bid identified by incumbent = {
   incumbent : address;
-  val : xtz
+  value : xtz
 }
 
 variable deadline date = 2019-01-01T00:00:00

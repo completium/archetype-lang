@@ -8,36 +8,37 @@ role owner = @tz1KmuhR6P52hw6xs5P69BXJYAURaznhvN1k
 
 variable price xtz from owner = 10
 
-variable payment xtz from issuer to owner = 11
+variable payment xtz from issuer to owner = 11 * price
 
 variable maturity date
 
 states =
-  | Created initial (* Created phase enables *)
-  | Confirmed       (* owner has purchased bond *)
-  | Transferred
+  | Created initial
+  | Confirmed (* owner has purchased bond *)
+  | Repaid    (* issuer has transferred payment to contract *)
+  | Collected (* owner has collected payment *)
 
 transaction confirm = {
-   condition transferred = price
-   transition from Created to Confirmed
-   specification
+  condition transferred = price
+  specification
      balance = 0
-
-   action
-     maturity := now + 1y;
-     transfer price to issuer
+  transition from Insured to Confirmed
+  action
+    maturity := now + 1Y;
+    transfer price to issuer
 }
 
 transaction repay = {
-   called by issuer
-   condition transferred = payment
+  called by issuer
+  condition transferred = payment
+  transition from Confirmed to Repaid
 }
 
 transaction collect = {
-   called by owner
-   condition now > maturity
-   action
-     if balance >= payment
-     then (transfer balance to owner;
-           state := Transferred)
+ called by owner
+ condition now >= maturity
+ transition from Repaid to Collected
+ action
+   if balance >= payment
+   then transfer balance to owner
 }
