@@ -52,7 +52,7 @@ type ltyp =
   | LTprog of ptyp
   | LTvset of vset * ltyp
 
-(* basic value *)
+(* basic variable *)
 type bval =
   | BVint          of Big_int.big_int
   | BVuint         of Big_int.big_int
@@ -63,11 +63,11 @@ type bval =
 
 type decl = {
     name         : ident;
-    typ          : ptyp;
+    typ          : ptyp option;
     default      : bval option;
 }
 
-type value = {
+type variable = {
     decl         : decl;
     constant     : bool;
 }
@@ -103,11 +103,6 @@ type arithmetic_operator =
   | Mult
   | Div
 
-type reference =
-  | Rvar of ident
-  | Rfield of reference * ident
-  | Rasset of ident
-
 type const =
   | Cnth
   | Cclear
@@ -133,6 +128,12 @@ type const =
   | Cmem
   | Cbefore
 
+type reference =
+  | Rconst of const
+  | Rvar of ident
+  | Rfield of reference * ident
+  | Rasset of ident
+
 type signature = {
   name : const;
   arrity: int;
@@ -149,9 +150,9 @@ type lterm =
   | Limply of lterm * lterm
   (* below is common entries with lterm *)
   | Lrel of int
-  | Lletin of ident * lterm * ltyp * lterm
+  | Lletin of ident * lterm * ltyp option * lterm
   | Lapp of lterm * lterm list
-  | Llambda of ident * ltyp * lterm
+  | Llambda of ident * ltyp option * lterm
   | Llog of logical_operator * lterm * lterm
   (* mutualize below with pterm ? *)
   | Lcomp of comparison_operator * lterm * lterm
@@ -186,6 +187,15 @@ type pterm =
 
 type cond = pterm
 
+type label_lterm = (ident option * lterm)
+
+type specification = {
+    variables  : variable list;
+    action     : pterm option;
+    invariants : label_lterm list;
+    ensures    : label_lterm list;
+  }
+
 type transaction = {
     name         : ident;
     args         : arg list;
@@ -193,7 +203,7 @@ type transaction = {
     condition    : cond option;
     transferred  : cond option;
     transition   : (ident * ident * ident) option; (* state * state from * state to *)
-    ensures      : lterm list option;
+    spec         : specification option;
     action       : pterm option;
 }
 
@@ -221,15 +231,23 @@ type enum = {
     vals         : ident list;
 }
 
+type function_ = {
+    name         : ident;
+    args         : arg list;
+    return       : ptyp option;
+    body         : pterm;
+  }
+
 type model = {
     name         : ident;
     roles        : role list;
-    values       : value list;
+    variables    : variable list;
     assets       : asset list;
+    functions    : function_ list;
     transactions : transaction list;
     stmachines   : stmachine list;
     enums        : enum list;
-    preds        : lterm list;
+    spec         : specification option;
 }
 
 let get_asset_names m = List.map (fun (a : asset) -> a.name) m.assets

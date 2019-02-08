@@ -198,22 +198,21 @@ theory When
   type storage
   type asset
 
-  function filter env storage asset : bool
+  val function test env {storage} {asset} : bool
 
-  val function when (e : env) (s : storage)
-                        (c : list asset) : list asset
+  let rec function when (e : env) (s : storage) (c : list asset) : list asset
   ensures { forall e : env, s : storage, a : asset.
-                mem a result <-> filter e s a }
+                mem a result <-> test e s a }
   ensures { subset result c }
   ensures { forall i j : int. i <> j -> not ((nth i result) = (nth j result)) }
-(*  =
+  =
   match c with
   | Nil -> Nil
   | Cons a tl ->
-    if filter e s a
+    if test e s a
     then Cons a (when e s tl)
     else when e s tl
-  end*)
+  end
 
 
 end

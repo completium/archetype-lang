@@ -8,13 +8,13 @@ let mk_admin_role () = {
 let mk_mile_asset () = {
     name = "mile";
     args = [ { name = "id";
-               typ  = Tbuiltin VTstring;
+               typ  = Some (Tbuiltin VTstring);
                default = None;
            };{ name = "amount";
-               typ  = Tbuiltin VTuint;
+               typ  = Some (Tbuiltin VTuint);
                default = None;
            };{ name = "expiration";
-               typ  = Tbuiltin VTstring;
+               typ  = Some (Tbuiltin VTstring);
                default = None;
              };];
     key = "id";
@@ -29,10 +29,10 @@ let mk_mile_asset () = {
 let mk_owner_asset () = {
     name = "owner";
     args = [ { name = "addr";
-               typ  = Tbuiltin VTaddress;
+               typ  = Some (Tbuiltin VTaddress);
                default = None;
            };{ name = "miles";
-               typ  = Tcontainer (Tasset "mile",Partition);
+               typ  = Some (Tcontainer (Tasset "mile",Partition));
                default = None;
            };];
     key = "addr";
@@ -42,20 +42,20 @@ let mk_owner_asset () = {
     preds = None;
   }
 
-let mk_add_transaction () = {
+let mk_add_transaction () : transaction = {
     name = "add";
     args = [ { name = "owner";
-               typ  = Tbuiltin VTaddress;
+               typ  = Some (Tbuiltin VTaddress);
                default = None;
            };{ name = "newmile";
-               typ  = Tasset "mile";
+               typ  = Some (Tasset "mile");
                default = None;
            } ];
     calledby  = Some (Rrole "admin");
     condition = None;
     transferred = None;
     transition = None;
-    ensures = None;
+    spec = None;
     action =
       let assign = Passign (SimpleAssign,Rfield (Rasset "owner","miles"),Pconst Cvoid) in
       let getowner = Papp (Pconst Cget,[Pref (Rasset "owner");Pref (Rvar "owner")]) in
@@ -68,13 +68,13 @@ let mk_add_transaction () = {
       ]);
   }
 
-let mk_consume_transaction () = {
+let mk_consume_transaction () : transaction = {
     name = "consume";
     args = [ { name = "owner";
-               typ  = Tbuiltin VTaddress;
+               typ  = Some (Tbuiltin VTaddress);
                default = None;
            };{ name = "val";
-               typ  = Tbuiltin VTint;
+               typ  = Some (Tbuiltin VTint);
                default = None;
            } ];
     calledby  = Some (Rrole "admin");
@@ -96,8 +96,12 @@ let mk_consume_transaction () = {
             cond))));
     transferred = None;
     transition = None;
-    ensures = (
-      let exp = Lquantifer (Forall, "m", LTvset (VSremoved,LTprog (Tasset "mile")),
+    spec = Some {
+        variables = [];
+        action    = None;
+        invariants = [];
+        ensures =
+                let exp = Lquantifer (Forall, "m", LTvset (VSremoved,LTprog (Tasset "mile")),
         Llog (And,
               Lapp (Lconst Cmem,[Lref (Rvar "m");Lref (Rfield (Rasset "owner","miles"))]),
               Lcomp (Ge,Lref (Rfield(Rvar "m","expiration")),Lconst Cnow))) in
@@ -105,10 +109,11 @@ let mk_consume_transaction () = {
       let sumamount = Lapp (Lconst Csum,[Lref (Rfield (Rvar "o","amount"))]) in
       let sumval = Larith (Plus,sumamount,Lref (Rvar "val")) in
       let rightamount =
-        Lletin ("o",getowner, LTprog (Tasset "owner"),
+        Lletin ("o",getowner, Some (LTprog (Tasset "owner")),
                 Lcomp (Equal,Lapp (Lconst Cbefore,[sumamount]),sumval)
           ) in
-      Some [exp;rightamount]);
+          [(None, exp);(None, rightamount)]
+      };
     action = (
       let zero = BVint Big_int.zero_big_int in
       let filter = Pcomp (Gt,Pref (Rfield (Rasset "mile","expiration")),
@@ -152,12 +157,13 @@ let mk_consume_transaction () = {
   }
 
 let mk_miles_model () = {
-    name         = "miles_with_expiration";
-    roles        = [ mk_admin_role () ];
-    values       = [];
-    assets       = [mk_mile_asset (); mk_owner_asset ()];
-    transactions = [mk_add_transaction ()];
-    stmachines   = [];
-    enums        = [];
-    preds        = [];
+    name          = "miles_with_expiration";
+    roles         = [ mk_admin_role () ];
+    variables     = [];
+    assets        = [mk_mile_asset (); mk_owner_asset ()];
+    functions     = [];
+    transactions  = [mk_add_transaction ()];
+    stmachines    = [];
+    enums         = [];
+    spec          = None;
   }

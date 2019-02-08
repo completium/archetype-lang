@@ -73,7 +73,10 @@ module Miles
 
   clone cml3.When as Expiration   with type     storage = storage,
                                        type     asset   = mile,
-                                       function filter  = by_expiration
+                                       val      test    = by_expiration
+
+  let filter (e : env) (s : ref storage) (m : list mile) =
+    Expiration.when e !s m
 
   (* sum of amounts *)
   let function get_coll_amount (s : storage) (c : list mile) (i : int) : int =
@@ -90,7 +93,7 @@ module Miles
   requires {
      let o = get_owner s owner in
      let miles = get_miles s o in
-     let l = Expiration.when e s miles in
+     let l =  e s miles in
      Amounts.sum l 0 (length l) >= nbmiles
   }
   ensures { forall m:mile.
@@ -109,7 +112,7 @@ module Miles
   = let remainder = ref nbmiles in
     let o = get_owner s owner in
     let miles = get_miles s o in
-    let l = Expiration.when e s miles in
+    let l = filter e (ref s) miles in
     try
       for i = 0 to (length l) - 1 do
       (* helps for the membership precondition of set_amouunt: *)
