@@ -84,3 +84,6 @@ let lmap (f : 'a -> 'b) (x : 'a loced) =
 
 let mkloc loc (x : 'a) : 'a loced =
   { plloc = loc; pldesc = x; }
+
+let mkdummy (x : 'a) : 'a loced =
+  mkloc dummy x

@@ -1,4 +1,5 @@
 (* opening the Why3 library *)
+open Location
 open Why3
 open Ptree
 open Format
@@ -65,7 +66,7 @@ let mk_theory (m : model) =
  let main : Whyconf.main = Whyconf.get_main config in
  let main = Whyconf.set_loadpath main (mk_loadpath main) in
  let env : Env.env = Env.create_env (Whyconf.loadpath main) in
- let theory = Theory.create_theory (Ident.id_fresh m.name) in
+ let theory = Theory.create_theory (Ident.id_fresh (unloc ((unloc m).name))) in
  let theory = add_use env theory in
  let theory = add_asset_types env theory m in
  (*let theory = add_storage_type env theory m in*)

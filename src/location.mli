@@ -24,8 +24,9 @@ val tostring : t -> string
 (* -------------------------------------------------------------------- *)
 type 'a loced = { plloc : t; pldesc : 'a; }
 
-val mkloc  : t -> 'a -> 'a loced
-val loc    : 'a loced -> t
-val unloc  : 'a loced -> 'a
-val unlocs : ('a loced) list -> 'a list
-val lmap   : ('a -> 'b) -> 'a loced -> 'b loced
+val mkloc   : t -> 'a -> 'a loced
+val loc     : 'a loced -> t
+val unloc   : 'a loced -> 'a
+val unlocs  : ('a loced) list -> 'a list
+val lmap    : ('a -> 'b) -> 'a loced -> 'b loced
+val mkdummy : 'a -> 'a loced

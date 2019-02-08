@@ -1,13 +1,15 @@
+open Location
 
 type ident = string
+type lident = ident loced
 
 type role = {
-    name         : ident;
+    name         : lident;
     default      : rexpr option;
   }
 and rexpr =
   | Ror of rexpr * rexpr
-  | Rrole of ident
+  | Rrole of lident
 
 type currency =
   | Tez
@@ -32,14 +34,7 @@ type vtyp =
   | VTdate
   | VTstring
   | VTaddress
-  | VTcurrency    of currency * transfer option
-
-type ptyp =
-  | Tasset of ident
-  | Tbuiltin of vtyp
-  | Tcontainer of ptyp * container
-  | Tapp of ptyp * ptyp
-  | Tnuplet of ptyp list
+  | VTcurrency of currency * transfer option
 
 type vset =
   | VSremoved
@@ -48,12 +43,23 @@ type vset =
   | VSbefore
   | VSafter
 
-type ltyp =
+type ptyp_unloc =
+  | Tasset of lident
+  | Tbuiltin of vtyp
+  | Tcontainer of ptyp * container
+  | Tapp of ptyp * ptyp
+  | Tnuplet of ptyp list
+
+and ptyp = ptyp_unloc loced
+
+type ltyp_unloc =
   | LTprog of ptyp
   | LTvset of vset * ltyp
 
+and ltyp = ltyp_unloc loced
+
 (* basic variable *)
-type bval =
+type bval_unloc =
   | BVint          of Big_int.big_int
   | BVuint         of Big_int.big_int
   | BVfloat        of float
@@ -61,11 +67,15 @@ type bval =
   | BVstring       of string
   | BVcurrency     of float
 
-type decl = {
-    name         : ident;
+and bval = bval_unloc loced
+
+type decl_unloc = {
+    name         : lident;
     typ          : ptyp option;
     default      : bval option;
 }
+
+and decl = decl_unloc loced
 
 type variable = {
     decl         : decl;
@@ -128,40 +138,44 @@ type const =
   | Cmem
   | Cbefore
 
-type signature = {
+type signature_unloc = {
   name : const;
   arrity: int;
   return: ptyp;
   args: ptyp list;
 }
 
+and signature = signature_unloc loced
+
 type quantifier =
   | Forall
   | Exists
 
-type lterm =
-  | Lquantifer of quantifier * ident * ltyp * lterm
+type lterm_unloc =
+  | Lquantifer of quantifier * lident * ltyp * lterm
   | Limply of lterm * lterm
   (* below is common entries with lterm *)
   | Lrel of int
-  | Lletin of ident * lterm * ltyp option * lterm
+  | Lletin of lident * lterm * ltyp option * lterm
   | Lapp of lterm * lterm list
-  | Llambda of ident * ltyp option * lterm
+  | Llambda of lident * ltyp option * lterm
   | Llog of logical_operator * lterm * lterm
   (* mutualize below with pterm ? *)
   | Lcomp of comparison_operator * lterm * lterm
   | Larith of arithmetic_operator * lterm * lterm
-  | Lvar of ident
-  | Lfield of ident
-  | Lasset of ident
+  | Lvar of lident
+  | Lfield of lident
+  | Lasset of lident
   | Llit of bval
   | Ldot of lterm * lterm
   | Lconst of const
 
-type pterm =
+and lterm = lterm_unloc loced
+
+type pterm_unloc  =
   (* program specific *)
   | Pif of pterm * pterm * pterm option
-  | Pfor of ident * pterm * pterm
+  | Pfor of lident * pterm * pterm
   | Passign of assignment_operator * pterm * pterm
   | Ptransfer
   | Ptransition
@@ -171,75 +185,87 @@ type pterm =
   | Passert of lterm
   (* below is common entries with lterm *)
   | Prel of int
-  | Pletin of ident * pterm * ptyp * pterm
+  | Pletin of lident * pterm * ptyp * pterm
   | Papp of pterm * pterm list
-  | Plambda of ident * ptyp * pterm
+  | Plambda of lident * ptyp * pterm
   | Plogical of logical_operator * pterm * pterm
   (* mutualize below with lterm ? *)
   | Pcomp of comparison_operator * pterm * pterm
   | Parith of arithmetic_operator * pterm * pterm
-  | Pvar of ident
-  | Pfield of ident
-  | Passet of ident
+  | Pvar of lident
+  | Pfield of lident
+  | Passet of lident
   | Plit of bval
   | Pdot of pterm * pterm
   | Pconst of const
 
+and pterm = pterm_unloc loced
+
 type cond = pterm
 
-type label_lterm = (ident option * lterm)
+type label_lterm = (lident option * lterm)
 
-type specification = {
+type specification_unloc = {
     variables  : variable list;
     action     : pterm option;
     invariants : label_lterm list;
     ensures    : label_lterm list;
   }
 
-type transaction = {
-    name         : ident;
+and specification = specification_unloc loced
+
+type transaction_unloc = {
+    name         : lident;
     args         : arg list;
     calledby     : rexpr option;
     condition    : cond option;
     transferred  : cond option;
-    transition   : (ident * ident * ident) option; (* state * state from * state to *)
+    transition   : (lident * lident * lident) option; (* state * state from * state to *)
     spec         : specification option;
     action       : pterm option;
 }
 
-type state = ident
+and transaction = transaction_unloc loced
+
+type state = lident
 
 type stmachine = {
-    name         : ident;
+    name         : lident;
     states       : state list;
     initial      : state;
-    transitions  : ident list; (* transaction name list *)
+    transitions  : lident list; (* transaction name list *)
 }
 
-type asset = {
-    name         : ident;
+type asset_unloc = {
+    name         : lident;
     args         : arg list;
-    key          : ident;
-    sort         : ident list option;
+    key          : lident;
+    sort         : lident list option;
     role         : bool;
     init         : pterm option;
     preds        : pterm list option;
 }
 
-type enum = {
-    name         : ident;
-    vals         : ident list;
+and asset = asset_unloc loced
+
+type enum_unloc = {
+  name : lident;
+  vals : lident list;
 }
 
-type function_ = {
-    name         : ident;
+and enum = enum_unloc loced
+
+type function_unloc = {
+    name         : lident;
     args         : arg list;
     return       : ptyp option;
     body         : pterm;
   }
 
-type model = {
-    name         : ident;
+and function_ = function_unloc loced
+
+type model_unloc = {
+    name         : lident;
     roles        : role list;
     variables    : variable list;
     assets       : asset list;
@@ -250,13 +276,16 @@ type model = {
     spec         : specification option;
 }
 
-let get_asset_names m = List.map (fun (a : asset) -> a.name) m.assets
+and model = model_unloc loced
+
+let get_asset_names m =
+List.map (fun (a : asset) -> (unloc (unloc a).name)) (unloc m).assets
 
 (* returns a list of triplet : asset name, field name, field type *)
 let get_asset_fields m =
   List.fold_left (fun acc (a : asset) ->
-      let id = a.name in
+      let id = (unloc a).name in
       List.fold_left (fun acc (arg : decl) ->
-          acc @ [id, arg.name, arg.typ]
-        ) acc a.args
+          acc @ [id, (unloc arg).name, (unloc arg).typ]
+        ) acc (unloc a).args
     ) [] m.assets
