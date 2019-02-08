@@ -148,7 +148,12 @@
 | x=X {
     { pldesc = x;
       plloc  = Location.make $startpos $endpos; }
-  }
+      }
+
+snl(separator, X):
+  x = X { [ x ] }
+| x = X; separator { [ x ] }
+| x = X; separator; xs = snl(separator, X) { x :: xs }
 
 %inline paren(X):
 | LPAREN x=X RPAREN { x }
@@ -351,16 +356,13 @@ type_s_unloc:
 | PARTITION  { Partition }
 
 %inline pipe_idents:
-| xs=pipe_ident+ { xs }
-
-%inline pipe_ident:
-| PIPE x=ident { x }
+| PIPE? xs=separated_nonempty_list(PIPE, ident) { xs }
 
 %inline pipe_ident_options:
-| xs=pipe_ident_option+ { xs }
+| PIPE? xs=separated_nonempty_list(PIPE, pipe_ident_option) { xs }
 
 %inline pipe_ident_option:
-| PIPE x=ident opts=state_options? { (x, opts) }
+| x=ident opts=state_options? { (x, opts) }
 
 %inline state_options:
 | xs=state_option+ { xs }
@@ -396,7 +398,7 @@ asset_option:
 | SORTED BY x=ident     { AOsortedby x }
 
 %inline fields:
-| xs=separated_nonempty_list(SEMI_COLON, field) { xs }
+| xs=snl(SEMI_COLON, field) { xs }
 
 field_r:
 | x=ident exts=option(extensions)
