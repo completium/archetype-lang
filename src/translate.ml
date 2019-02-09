@@ -2,9 +2,10 @@ open Location
 open Model
 open ParseTree
 
-exception ModelError of string
+exception ModelError of string * Location.t
 
 let get_name_model (pt : ParseTree.model) : lident =
+  let loc = loc pt in
   let ptu = Location.unloc pt in
   match ptu with
   | Mmodel decls ->
@@ -12,23 +13,24 @@ let get_name_model (pt : ParseTree.model) : lident =
            let decl_u = Location.unloc i in
            match decl_u with
            | Dmodel id -> (match acc with
-               | None -> Some (Location.unloc id)
-               | _ -> raise (ModelError "only one name can be set to model."))
+               | None -> Some (unloc id)
+               | _ -> raise (ModelError ("only one name can be set to model.", loc)))
            | _ -> acc)) None decls
      in
       match res with
       | Some id -> (dumloc id)
-      | _ -> raise (ModelError "no name for model found."))
-  | _ -> raise (ModelError "only ParseTree.model can be translated into Model.model.")
+      | _ -> raise (ModelError ("no name for model found.", loc)))
+  | _ -> raise (ModelError ("only ParseTree.model can be translated into Model.model.", loc))
 
 let to_rexpr e =
+  let loc = loc e in
   let value = unloc e in
   match value with
   | Eliteral l -> (
       match l with
       | Laddress a -> Raddress a
-      | _ -> raise (ModelError "a") )
-  | _ -> raise (ModelError "a")
+      | _ -> raise (ModelError ("only address is supported", loc)) )
+  | _ -> raise (ModelError ("wrong type", loc))
 
 let with_option f v =
   match v with
