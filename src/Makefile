@@ -10,7 +10,7 @@ GENMODEL := genmodel.exe
 MODELWS  := modelws.exe
 
 # --------------------------------------------------------------------
-all: $(COMPILER) $(GENWHY3) $(EXTRACTMODEL) $(MODELWS) .merlin
+all: $(COMPILER) $(GENWHY3) $(GENMODEL) $(MODELWS) .merlin
 
 run:
 	dune exec ./$(COMPILER)

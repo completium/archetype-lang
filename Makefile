@@ -7,10 +7,13 @@
 all: build merlin
 
 build:
-	$(MAKE) -C src compiler.exe genmodel.exe genwhy3.exe genmodel.exe modelws.exe
+	$(MAKE) -C src compiler.exe genmodel.exe modelws.exe
 
 extract:
 	$(MAKE) -C src/liq extract.exe
+
+genwhy3:
+	$(MAKE) -C src genwhy3.exe
 
 merlin:
 	$(MAKE) -C src merlin
