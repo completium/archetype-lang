@@ -7,7 +7,7 @@
 all: build merlin
 
 build:
-	$(MAKE) -C src compiler.exe genmodel.exe modelws.exe
+	$(MAKE) -C src compiler.exe genmodelws.exe
 
 extract:
 	$(MAKE) -C src/liq extract.exe

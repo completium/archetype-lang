@@ -179,7 +179,3 @@ let model_to_modelws (m : model) : model_with_storage = {
     storage = mk_storage (unloc m);
     transactions = [];
   }
-
-let _ =
-  let modelws = model_to_modelws (Miles.mk_miles_model()) in
-  Format.printf "%a\n" pp_model_with_storage modelws
