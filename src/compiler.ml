@@ -12,7 +12,7 @@ exception E_arg
 let compile_and_print (filename, channel) =
   let pt = Io.parse_model ~name:filename channel in
   if !opt_parse
-  then Format.printf "%a@." Print.pp_model pt
+  then Format.printf "%a@." Printer.pp_model pt
   else (
     let model = Translate.parseTree_to_model pt in
     if !opt_model

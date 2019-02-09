@@ -151,7 +151,9 @@ let vt_to_ft var =
     end
   | None -> raise (VarNoType (loc var.decl))
 
-let mk_variable (var : variable) = {
+let mk_variable (var : variable) =
+  let var = unloc var in
+  {
   asset   = None;
   name    = (unloc var.decl).name;
   typ     = vt_to_ft var;

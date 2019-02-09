@@ -14,6 +14,7 @@ and rexpr =
   | Ror of rexpr * rexpr
   | Rrole of lident
   | Raddress of string
+  | Rasset of lident * lident
 [@@deriving show {with_path = false}]
 
 type role = role_unloc loced
@@ -82,10 +83,13 @@ type big_int = Big_int.big_int
 type bval_unloc =
   | BVint          of big_int
   | BVuint         of big_int
-  | BVfloat        of float
+  | BVbool         of bool
+  | BVfloat        of string
   | BVdate         of string (* todo : plus Bat.date *)
   | BVstring       of string
-  | BVcurrency     of float
+  | BVcurrency     of string
+  | BVaddress      of string
+  | BVduration     of string
 [@@deriving show {with_path = false}]
 
 and bval = bval_unloc loced
@@ -99,10 +103,13 @@ type decl_unloc = {
 
 and decl = decl_unloc loced
 
-type variable = {
+type variable_unloc = {
     decl         : decl;
     constant     : bool;
 }
+[@@deriving show {with_path = false}]
+
+type variable = variable_unloc loced
 [@@deriving show {with_path = false}]
 
 type arg = decl
