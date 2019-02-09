@@ -3,7 +3,6 @@ open Model
 
 type require =
   | Membership
-  | UserDefined of lterm (* comes from asset invariant *)
 
 type ensure =
   | Remove (*  ensures  { forall x:mile. mem x s.miles <-> (mem x (old s).miles /\ x <> m) } *)
@@ -34,11 +33,12 @@ type storage_field = {
     name  : lident;
     typ   : storage_field_type;
     ghost : bool;
+    value : pterm; (* initial value *)
     ops   : storage_field_operation list;
   }
 
 type storage = {
-    fields : storage_field list;
+    fields     : storage_field list;
     invariants : lterm list;
   }
 
@@ -59,8 +59,21 @@ type model_with_storage = {
     transactions : transaction list;
   }
 
+let mk_storage_fields (asset : asset)  =
+  let name = (unloc asset).name in
+  List.fold_left (fun acc arg ->
+      acc @ [mk_storage_field name arg]
+    ) [] (unloc asset).args
+
+let mk_storage m =
+  let fields =
+    List.fold_left (fun acc asset ->
+        acc @ (mk_storage_fields asset)
+      ) [] m.assets in
+  { empty_storage with fields = fields }
+
 let model_to_modelws (m : model) : model_with_storage = {
     name = (unloc m).name;
-    storage = empty_storage;
+    storage = mk_storage (unloc m);
     transactions = [];
   }

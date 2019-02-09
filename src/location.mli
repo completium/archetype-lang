@@ -22,7 +22,11 @@ val mergeall : t list -> t
 val tostring : t -> string
 
 (* -------------------------------------------------------------------- *)
-type 'a loced = { plloc : t; pldesc : 'a; }
+type 'a loced = {
+  plloc : t [@opaque];
+  pldesc : 'a;
+}
+[@@deriving show]
 
 val mkloc   : t -> 'a -> 'a loced
 val loc     : 'a loced -> t
