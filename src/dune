@@ -8,7 +8,7 @@
 (menhir (flags --explain) (modules parser))
 
 (executables
-  (modes     native)
+  (modes     byte)
   (preprocess
     (pps ppx_deriving.std)
   )
