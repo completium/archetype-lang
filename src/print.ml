@@ -119,7 +119,7 @@ match c with
 let pp_container fmt c =
  Format.fprintf fmt "%s" (container_to_str c)
 
-let rec pp_type fmt { pldesc = e } =
+let rec pp_type fmt { pldesc = e; _ } =
   match e with
   | Tref x ->
       Format.fprintf fmt
@@ -213,7 +213,7 @@ match op with
 let pp_quantifier fmt op =
   Format.fprintf fmt "%s" (quantifier_to_str op)
 
-let rec pp_expr fmt { pldesc = e } =
+let rec pp_expr fmt { pldesc = e; _ } =
   match e with
   | Eterm (e, id) ->
       Format.fprintf fmt "%a%a"
@@ -240,7 +240,7 @@ let rec pp_expr fmt { pldesc = e } =
       Format.fprintf fmt "{%a}"
         (pp_list ";@ " pp_assignment_field) l
 
-  | Eapp ({pldesc = Eop op}, [a; b]) ->
+  | Eapp ({pldesc = Eop op; _}, [a; b]) ->
       let _prec = get_precedence (operator_to_str op) in
       Format.fprintf fmt "%a %a %a"
         pp_expr a
@@ -364,7 +364,7 @@ match args with
 | _ -> Format.fprintf fmt " %a" (pp_list " " pp_fun_ident_typ) args
 
 (* -------------------------------------------------------------------------- *)
-and pp_field fmt { pldesc = f } =
+and pp_field fmt { pldesc = f; _ } =
   match f with
   | Ffield (id, typ, dv, exts) ->
       Format.fprintf fmt "%a%a : %a%a"
@@ -374,7 +374,7 @@ and pp_field fmt { pldesc = f } =
         (pp_option (pp_prefix " := " pp_expr)) dv
 
 (* -------------------------------------------------------------------------- *)
-and pp_extension fmt { pldesc = e } =
+and pp_extension fmt { pldesc = e; _ } =
   match e with
   | Eextension (id, args) ->
         Format.fprintf fmt "[%%%a%a]"
@@ -400,7 +400,7 @@ match sv with
         pp_type typ
         (pp_option (pp_prefix " = " pp_expr)) dv
 
-let pp_transitem fmt { pldesc = t } =
+let pp_transitem fmt { pldesc = t; _ } =
   match t with
   | Tcalledby (e, exts) ->
       Format.fprintf fmt "called by%a %a"
@@ -499,7 +499,7 @@ match e with
 (pp_list " " pp_asset_operation_enum) x
 (pp_option (pp_prefix " " (pp_list " " pp_expr))) y
 
-let rec pp_declaration fmt { pldesc = e } =
+let rec pp_declaration fmt { pldesc = e; _ } =
   match e with
   | Duse id ->
       Format.fprintf fmt "use %a" pp_id id
@@ -596,7 +596,7 @@ let rec pp_declaration fmt { pldesc = e } =
         (pp_list ";@\n" pp_named_item) xs
 
 (* -------------------------------------------------------------------------- *)
-let pp_model fmt { pldesc = m } =
+let pp_model fmt { pldesc = m; _ } =
   match m with
 | Mmodel es ->
   Format.fprintf fmt "%a" (pp_list "@,\n" pp_declaration) es

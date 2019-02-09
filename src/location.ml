@@ -10,6 +10,7 @@ type t = {
   loc_bchar : int;
   loc_echar : int;
 }
+[@@deriving show]
 
 let dummy : t = {
   loc_fname = "";
@@ -72,7 +73,11 @@ let tostring (p : t) =
     spos
 
 (* -------------------------------------------------------------------- *)
-type 'a loced = { plloc : t; pldesc : 'a; }
+type 'a loced = {
+  plloc : t;
+  pldesc : 'a;
+}
+[@@deriving show]
 
 (* -------------------------------------------------------------------- *)
 let loc    x = x.plloc

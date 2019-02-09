@@ -1,6 +1,6 @@
 (env
   (dev
-    (flags (:standard -g -w Y -w Z -w -9 -w -23 -w +28 -w +33)))
+    (flags (:standard -g -w Y -w Z -w -9 -w -23 -w +28 -w +33 -w -32)))
   (release
     (flags (:standard))))
 
@@ -9,5 +9,8 @@
 
 (executables
   (modes     native)
-  (libraries batteries menhirLib why3)
-  (names     compiler genwhy3))
+  (preprocess
+    (pps ppx_deriving.std)
+  )
+  (libraries batteries menhirLib why3 ppx_deriving)
+  (names     compiler genwhy3 genmodel))

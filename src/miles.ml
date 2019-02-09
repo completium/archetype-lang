@@ -1,4 +1,3 @@
-open Location
 open Model
 
 let mk_admin_role () = {
@@ -24,7 +23,7 @@ let mk_mile_asset () =
     role = false;
     init = None;
     preds =
-      let zero = Plit (mkdummy (BVint Big_int.zero_big_int)) in
+      let zero = Plit (mkdummy (BVint 0(*Big_int.zero_big_int*))) in
       Some [
             (mkdummy (Pcomp (Gt, (mkdummy (Pdot ((mkdummy (Passet (mkdummy "mile"))), (mkdummy (Pfield (mkdummy "amount")))))), mkdummy zero)))];
   } in
@@ -151,7 +150,7 @@ let mk_consume_transaction () : transaction =
           [(None, mkdummy exp);(None, mkdummy rightamount)]
       }));
     action = (
-      let zero = BVint Big_int.zero_big_int in
+      let zero = BVint 0(*Big_int.zero_big_int*) in
       let filter = mkdummy (Pcomp (Gt, mkdummy (Pdot (mkdummy (Passet (mkdummy "mile")), mkdummy (Pfield (mkdummy "expiration")))),
                                  mkdummy (Pconst Cnow))) in
       let set = mkdummy (Papp (mkdummy (Pconst Cwhen), [ mkdummy (Pdot (mkdummy (Pvar (mkdummy "o")), mkdummy (Pfield (mkdummy "miles")))); filter])) in

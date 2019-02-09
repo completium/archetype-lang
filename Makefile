@@ -7,7 +7,7 @@
 all: build merlin
 
 build:
-	$(MAKE) -C src compiler.exe genwhy3.exe
+	$(MAKE) -C src compiler.exe genwhy3.exe genmodel.exe
 
 extract:
 	$(MAKE) -C src/liq extract.exe
@@ -26,4 +26,4 @@ check:
 	./check.sh
 
 build-deps:
-	opam install dune menhir batteries why3
+	opam install dune menhir batteries why3 ppx_deriving
