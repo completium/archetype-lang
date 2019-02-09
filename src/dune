@@ -13,4 +13,4 @@
     (pps ppx_deriving.std)
   )
   (libraries batteries menhirLib why3 ppx_deriving)
-  (names     compiler genwhy3 genmodel))
+  (names     compiler genwhy3 genmodel modelws))

@@ -32,16 +32,11 @@ let to_rexpr e =
       | _ -> raise (ModelError ("only address is supported", loc)) )
   | _ -> raise (ModelError ("wrong type", loc))
 
-let with_option f v =
-  match v with
-  | Some e -> Some (f e)
-  | None -> None
-
 let get_roles decls =
   List.fold_left ( fun acc i -> (
     let decl_u = Location.unloc i in
       match decl_u with
-        | Drole (id, dv, _) -> {name = id; default = (with_option to_rexpr dv)}::acc
+        | Drole (id, dv, _) -> {name = id; default = BatOption.map to_rexpr dv}::acc
         | _ -> acc)) [] decls
 
 

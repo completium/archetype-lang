@@ -1,9 +1,9 @@
-open Ident
 open Location
 open Model
 
 type require =
   | Membership
+[@@deriving show {with_path = false}]
 
 type ensure =
   | Remove (*  ensures  { forall x:mile. mem x s.miles <-> (mem x (old s).miles /\ x <> m) } *)
@@ -11,24 +11,28 @@ type ensure =
   | Sum
   | Min
   | Max
+[@@deriving show {with_path = false}]
 
 type storage_field_operation_type =
   | Get
   | Set
   | Add
   | Remove
+[@@deriving show {with_path = false}]
 
 type storage_field_operation = {
     typ      : storage_field_operation_type;
     requires : require list;
     ensures  : ensure list;
   }
+[@@deriving show {with_path = false}]
 
 type storage_field_type =
   | Var      of vtyp
   | KeySet   of lident * vtyp
   | ValueMap of vtyp (* field type *)
   | CollMap  of lident * vtyp (* collection asset lident*)
+[@@deriving show {with_path = false}]
 
 type storage_field = {
     asset   : lident;
@@ -38,11 +42,13 @@ type storage_field = {
     default : bval option; (* initial value *)
     ops     : storage_field_operation list;
   }
+[@@deriving show {with_path = false}]
 
 type storage = {
     fields     : storage_field list;
     invariants : lterm list;
   }
+[@@deriving show {with_path = false}]
 
 let empty_storage = { fields = []; invariants = [] }
 
@@ -52,14 +58,17 @@ type transaction_unloc = {
     requires     : require list;
     spec         : specification option;
 }
+[@@deriving show {with_path = false}]
 
 type transaction = transaction_unloc loced
+[@@deriving show {with_path = false}]
 
 type model_with_storage = {
-    name : lident;
-    storage : storage;
+    name         : lident;
+    storage      : storage;
     transactions : transaction list;
-  }
+}
+[@@deriving show {with_path = false}]
 
 (* type mapping exceptions : asset name, field name, type location *)
 exception InvalidKeyType of lident * lident * Location.t
@@ -124,3 +133,7 @@ let model_to_modelws (m : model) : model_with_storage = {
     storage = mk_storage (unloc m);
     transactions = [];
   }
+
+let _ =
+  let modelws = model_to_modelws (Miles.mk_miles_model()) in
+  Format.printf "%a\n" pp_model_with_storage modelws

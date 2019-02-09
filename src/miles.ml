@@ -16,7 +16,7 @@ let mk_mile_asset () =
                typ  = Some (dumloc (Tbuiltin VTuint));
                default = None;
            }; dumloc{ name = dumloc "expiration";
-               typ  = Some (dumloc (Tbuiltin VTstring));
+               typ  = Some (dumloc (Tbuiltin VTdate));
                default = None;
              };];
     key = dumloc "id";
