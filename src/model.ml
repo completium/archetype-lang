@@ -13,6 +13,7 @@ type role = {
 and rexpr =
   | Ror of rexpr * rexpr
   | Rrole of lident
+  | Raddress of string
 [@@deriving show]
 
 type currency =

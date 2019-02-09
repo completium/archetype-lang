@@ -73,10 +73,11 @@ let tostring (p : t) =
 
 (* -------------------------------------------------------------------- *)
 type 'a loced = {
-  plloc : t [@opaque];
+  plloc : t;
   pldesc : 'a;
 }
-[@@deriving show]
+
+let pp_loced pp fmt (x : 'a loced) = Format.fprintf fmt "%a" pp x.pldesc
 
 let loc    x = x.plloc
 let unloc  x = x.pldesc

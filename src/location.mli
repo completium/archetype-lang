@@ -23,11 +23,11 @@ val tostring : t -> string
 
 (* -------------------------------------------------------------------- *)
 type 'a loced = {
-  plloc : t [@opaque];
+  plloc : t;
   pldesc : 'a;
 }
-[@@deriving show]
 
+val pp_loced : (Format.formatter -> 'a -> unit) -> Format.formatter -> 'a loced -> unit
 val mkloc   : t -> 'a -> 'a loced
 val loc     : 'a loced -> t
 val unloc   : 'a loced -> 'a
