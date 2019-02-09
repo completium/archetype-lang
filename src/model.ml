@@ -71,12 +71,13 @@ type ltyp_unloc =
 and ltyp = ltyp_unloc loced
 [@@deriving show]
 
+let pp_big_int fmt n = Format.fprintf fmt "%s" (Big_int.string_of_big_int n)
+type big_int = Big_int.big_int
+
 (* basic variable *)
 type bval_unloc =
-(*  | BVint          of Big_int.big_int [@printer fun fmt -> fprintf fmt "%s" Big_int.string_of_big_int]
-    | BVuint         of Big_int.big_int*)
-  | BVint          of int
-  | BVuint         of int
+  | BVint          of big_int
+  | BVuint         of big_int
   | BVfloat        of float
   | BVdate         of string (* todo : plus Bat.date *)
   | BVstring       of string
