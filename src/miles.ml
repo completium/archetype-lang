@@ -24,7 +24,7 @@ let mk_mile_asset () =
     role = false;
     init = None;
     preds =
-      let zero = Plit (dumloc (BVint 0(*Big_int.zero_big_int*))) in
+      let zero = Plit (dumloc (BVint Big_int.zero_big_int)) in
       Some [
             (dumloc (Pcomp (Gt, (dumloc (Pdot ((dumloc (Passet (dumloc "mile"))), (dumloc (Pfield (dumloc "amount")))))), dumloc zero)))];
   } in
@@ -151,7 +151,7 @@ let mk_consume_transaction () : transaction =
           [(None, dumloc exp);(None, dumloc rightamount)]
       }));
     action = (
-      let zero = BVint 0(*Big_int.zero_big_int*) in
+      let zero = BVint Big_int.zero_big_int in
       let filter = dumloc (Pcomp (Gt, dumloc (Pdot (dumloc (Passet (dumloc "mile")), dumloc (Pfield (dumloc "expiration")))),
                                  dumloc (Pconst Cnow))) in
       let set = dumloc (Papp (dumloc (Pconst Cwhen), [ dumloc (Pdot (dumloc (Pvar (dumloc "o")), dumloc (Pfield (dumloc "miles")))); filter])) in
