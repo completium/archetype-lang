@@ -7,12 +7,12 @@ NB_OUT="0"
 process () {
     printf '%-50s' $1
     OUT=$i.out
-    $BIN $i > $OUT 2> /dev/null
+    $BIN -P $i > $OUT 2> /dev/null
     RET=`echo $?`
     if [ ${RET} -eq 0 ]; then
 	echo -ne "\033[32m OK \033[0m"
 
-        $BIN $OUT > /dev/null 2> /dev/null
+        $BIN -P $OUT > /dev/null 2> /dev/null
         RET=`echo $?`
         if [ ${RET} -eq 0 ]; then
 	    echo -e "    \033[32m OK \033[0m"
