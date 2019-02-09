@@ -61,7 +61,7 @@ type ptyp_unloc =
   | Tbuiltin of vtyp
   | Tcontainer of ptyp * container
   | Tapp of ptyp * ptyp
-  | Tnuplet of ptyp list
+  | Ttuple of ptyp list
 [@@deriving show {with_path = false}]
 
 and ptyp = ptyp_unloc loced

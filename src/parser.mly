@@ -105,7 +105,7 @@
 %token <string> IDENT
 %token <string> STRING
 %token <Big_int.big_int> NUMBER
-%token <float> FLOAT
+%token <string> FLOAT
 %token <string> ADDRESS
 %token <string> DURATION
 %token <string> DATE

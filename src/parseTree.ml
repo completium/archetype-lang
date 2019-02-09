@@ -93,7 +93,7 @@ type expr_r =
 
 and literal =
   | Lnumber   of Big_int.big_int
-  | Lfloat    of float
+  | Lfloat    of string
   | Laddress  of string
   | Lstring   of string
   | Lbool     of bool
