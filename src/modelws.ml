@@ -1,3 +1,4 @@
+open Location
 open Model
 
 type require =
@@ -24,35 +25,42 @@ type storage_field_operation = {
   }
 
 type storage_field_type =
-  | KeySet   of ident
+  | KeySet   of lident
   | ValueMap of vtyp (* field type *)
-  | CollMap  of ident (* collection asset ident*)
+  | CollMap  of lident (* collection asset lident*)
 
 type storage_field = {
-    asset : ident;
-    name  : ident;
+    asset : lident;
+    name  : lident;
     typ   : storage_field_type;
+    ghost : bool;
     ops   : storage_field_operation list;
   }
 
-type storage = storage_field list
+type storage = {
+    fields : storage_field list;
+    invariants : lterm list;
+  }
 
-type transaction = {
-    name         : ident;
+let empty_storage = { fields = []; invariants = [] }
+
+type transaction_unloc = {
+    name         : lident;
     args         : arg list;
     requires     : require list;
-    ensures      : ensure list;
-    action       : pterm option;
+    spec         : specification option;
 }
 
+type transaction = transaction_unloc loced
+
 type model_with_storage = {
-    name : ident;
+    name : lident;
     storage : storage;
     transactions : transaction list;
   }
 
 let model_to_modelws (m : model) : model_with_storage = {
-    name = m.name;
-    storage = [];
+    name = (unloc m).name;
+    storage = empty_storage;
     transactions = [];
   }
