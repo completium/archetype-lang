@@ -2,30 +2,30 @@ open Location
 open Ident
 
 type lident = ident loced
-[@@deriving show]
+[@@deriving show {with_path = false}]
 
 type role = {
     name         : lident;
     default      : rexpr option;
   }
-[@@deriving show]
+[@@deriving show {with_path = false}]
 
 and rexpr =
   | Ror of rexpr * rexpr
   | Rrole of lident
   | Raddress of string
-[@@deriving show]
+[@@deriving show {with_path = false}]
 
 type currency =
   | Tez
   | Mutez
-[@@deriving show]
+[@@deriving show {with_path = false}]
 
 type transfer = {
     from : role;
     tto  : role;
 }
-[@@deriving show]
+[@@deriving show {with_path = false}]
 
 type container =
   | Collection
@@ -34,7 +34,7 @@ type container =
   | Set
   | Subset
   | Partition
-[@@deriving show]
+[@@deriving show {with_path = false}]
 
 type vtyp =
   | VTint
@@ -43,7 +43,7 @@ type vtyp =
   | VTstring
   | VTaddress
   | VTcurrency of currency * transfer option
-[@@deriving show]
+[@@deriving show {with_path = false}]
 
 type vset =
   | VSremoved
@@ -51,7 +51,7 @@ type vset =
   | VSstable
   | VSbefore
   | VSafter
-[@@deriving show]
+[@@deriving show {with_path = false}]
 
 type ptyp_unloc =
   | Tasset of lident
@@ -59,18 +59,18 @@ type ptyp_unloc =
   | Tcontainer of ptyp * container
   | Tapp of ptyp * ptyp
   | Tnuplet of ptyp list
-[@@deriving show]
+[@@deriving show {with_path = false}]
 
 and ptyp = ptyp_unloc loced
-[@@deriving show]
+[@@deriving show {with_path = false}]
 
 type ltyp_unloc =
   | LTprog of ptyp
   | LTvset of vset * ltyp
-[@@deriving show]
+[@@deriving show {with_path = false}]
 
 and ltyp = ltyp_unloc loced
-[@@deriving show]
+[@@deriving show {with_path = false}]
 
 let pp_big_int fmt n = Format.fprintf fmt "%s" (Big_int.string_of_big_int n)
 type big_int = Big_int.big_int
@@ -83,7 +83,7 @@ type bval_unloc =
   | BVdate         of string (* todo : plus Bat.date *)
   | BVstring       of string
   | BVcurrency     of float
-[@@deriving show]
+[@@deriving show {with_path = false}]
 
 and bval = bval_unloc loced
 
@@ -92,7 +92,7 @@ type decl_unloc = {
     typ          : ptyp option;
     default      : bval option;
 }
-[@@deriving show]
+[@@deriving show {with_path = false}]
 
 and decl = decl_unloc loced
 
@@ -100,17 +100,17 @@ type variable = {
     decl         : decl;
     constant     : bool;
 }
-[@@deriving show]
+[@@deriving show {with_path = false}]
 
 type arg = decl
-[@@deriving show]
+[@@deriving show {with_path = false}]
 
 type logical_operator =
   | And
   | Or
   | Imply
   | Equiv
-[@@deriving show]
+[@@deriving show {with_path = false}]
 
 type comparison_operator =
   | Equal
@@ -119,7 +119,7 @@ type comparison_operator =
   | Ge
   | Lt
   | Le
-[@@deriving show]
+[@@deriving show {with_path = false}]
 
 type assignment_operator =
   | SimpleAssign
@@ -129,14 +129,14 @@ type assignment_operator =
   | DivAssign
   | AndAssign
   | OrAssign
-[@@deriving show]
+[@@deriving show {with_path = false}]
 
 type arithmetic_operator =
   | Plus
   | Minus
   | Mult
   | Div
-[@@deriving show]
+[@@deriving show {with_path = false}]
 
 type const =
   | Cnth
@@ -162,7 +162,7 @@ type const =
   | Cnow
   | Cmem
   | Cbefore
-[@@deriving show]
+[@@deriving show {with_path = false}]
 
 type signature_unloc = {
   name : const;
@@ -170,14 +170,14 @@ type signature_unloc = {
   return: ptyp;
   args: ptyp list;
 }
-[@@deriving show]
+[@@deriving show {with_path = false}]
 
 and signature = signature_unloc loced
 
 type quantifier =
   | Forall
   | Exists
-[@@deriving show]
+[@@deriving show {with_path = false}]
 
 type lterm_unloc =
   | Lquantifer of quantifier * lident * ltyp * lterm
@@ -197,7 +197,7 @@ type lterm_unloc =
   | Llit of bval
   | Ldot of lterm * lterm
   | Lconst of const
-[@@deriving show]
+[@@deriving show {with_path = false}]
 
 and lterm = lterm_unloc loced
 
@@ -227,16 +227,16 @@ type pterm_unloc  =
   | Plit of bval
   | Pdot of pterm * pterm
   | Pconst of const
-[@@deriving show]
+[@@deriving show {with_path = false}]
 
 and pterm = pterm_unloc loced
-[@@deriving show]
+[@@deriving show {with_path = false}]
 
 type cond = pterm
-[@@deriving show]
+[@@deriving show {with_path = false}]
 
 type label_lterm = (lident option * lterm)
-[@@deriving show]
+[@@deriving show {with_path = false}]
 
 type specification_unloc = {
     variables  : variable list;
@@ -244,10 +244,10 @@ type specification_unloc = {
     invariants : label_lterm list;
     ensures    : label_lterm list;
   }
-[@@deriving show]
+[@@deriving show {with_path = false}]
 
 and specification = specification_unloc loced
-[@@deriving show]
+[@@deriving show {with_path = false}]
 
 type transaction_unloc = {
     name         : lident;
@@ -259,13 +259,13 @@ type transaction_unloc = {
     spec         : specification option;
     action       : pterm option;
 }
-[@@deriving show]
+[@@deriving show {with_path = false}]
 
 and transaction = transaction_unloc loced
-[@@deriving show]
+[@@deriving show {with_path = false}]
 
 type state = lident
-[@@deriving show]
+[@@deriving show {with_path = false}]
 
 type stmachine = {
     name         : lident;
@@ -273,7 +273,7 @@ type stmachine = {
     initial      : state;
     transitions  : lident list; (* transaction name list *)
 }
-[@@deriving show]
+[@@deriving show {with_path = false}]
 
 type asset_unloc = {
     name         : lident;
@@ -284,7 +284,7 @@ type asset_unloc = {
     init         : pterm option;
     preds        : pterm list option;
 }
-[@@deriving show]
+[@@deriving show {with_path = false}]
 
 and asset = asset_unloc loced
 
@@ -292,7 +292,7 @@ type enum_unloc = {
   name : lident;
   vals : lident list;
 }
-[@@deriving show]
+[@@deriving show {with_path = false}]
 
 and enum = enum_unloc loced
 
@@ -302,7 +302,7 @@ type function_unloc = {
     return       : ptyp option;
     body         : pterm;
   }
-[@@deriving show]
+[@@deriving show {with_path = false}]
 
 and function_ = function_unloc loced
 
@@ -317,7 +317,7 @@ type model_unloc = {
     enums        : enum list;
     spec         : specification option;
 }
-[@@deriving show]
+[@@deriving show {with_path = false}]
 
 and model = model_unloc loced
 
