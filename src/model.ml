@@ -4,7 +4,7 @@ open Ident
 type lident = ident loced
 [@@deriving show {with_path = false}]
 
-type role = {
+type role_unloc = {
     name         : lident;
     default      : rexpr option;
   }
@@ -14,6 +14,9 @@ and rexpr =
   | Ror of rexpr * rexpr
   | Rrole of lident
   | Raddress of string
+[@@deriving show {with_path = false}]
+
+type role = role_unloc loced
 [@@deriving show {with_path = false}]
 
 type currency =

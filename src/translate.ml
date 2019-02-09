@@ -36,8 +36,10 @@ let get_roles decls =
   List.fold_left ( fun acc i -> (
     let decl_u = Location.unloc i in
       match decl_u with
-        | Drole (id, dv, _) -> {name = id; default = BatOption.map to_rexpr dv}::acc
-        | _ -> acc)) [] decls
+      | Drole (id, dv, _) ->
+        (mkloc (loc i) {name = id; default = BatOption.map to_rexpr dv})::acc
+      | _ -> acc)
+    ) [] decls
 
 
 let parseTree_to_model (pt : ParseTree.model) : Model.model =

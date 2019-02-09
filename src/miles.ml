@@ -1,7 +1,7 @@
 open Model
 open Location
 
-let mk_admin_role () = {
+let mk_admin_role () = dumloc {
     name = dumloc "admin";
     default = None;
   }

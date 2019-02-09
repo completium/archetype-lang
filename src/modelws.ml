@@ -35,7 +35,7 @@ type storage_field_type =
 [@@deriving show {with_path = false}]
 
 type storage_field = {
-    asset   : lident;
+    asset   : lident option;
     name    : lident;
     typ     : storage_field_type;
     ghost   : bool;
@@ -95,6 +95,12 @@ let aft_to_sft aname fname iskey (typ : ptyp) =
 
 exception NoFieldType of lident
 
+let mk_asset_field aname fname =
+  let loc = loc fname in
+  let name = unloc aname in
+  let field = unloc fname in
+  { plloc = loc; pldesc = name^"_"^field }
+
 let mk_storage_field name iskey (arg : decl) =
   let fname = (unloc arg).name in
   let typ =
@@ -104,8 +110,8 @@ let mk_storage_field name iskey (arg : decl) =
   in
   let typ = aft_to_sft name fname iskey typ in
   [{
-    asset   = name;
-    name    = (unloc arg).name;
+    asset   = Some name;
+    name    = mk_asset_field name (unloc arg).name;
     typ     = typ;
     ghost   = false;
     default = (unloc arg).default;
@@ -121,11 +127,51 @@ let mk_storage_fields (asset : asset)  =
       acc @ (mk_storage_field name iskey arg)
     ) [] asset.args
 
+exception VarNoType of Location.t
+exception UnsupportedVartype of Location.t
+
+(* variable type to field type *)
+let vt_to_ft var =
+  match (unloc var.decl).typ with
+  | Some t ->
+    begin
+      match unloc t with
+      | Tbuiltin vt -> Var vt
+      | _ -> raise (UnsupportedVartype (loc var.decl))
+    end
+  | None -> raise (VarNoType (loc var.decl))
+
+let mk_variable (var : variable) = {
+  asset   = None;
+  name    = (unloc var.decl).name;
+  typ     = vt_to_ft var;
+  ghost   = false;
+  default = (unloc var.decl).default;
+  ops     = []
+}
+
+(* maps *)
+let mk_role_default (r : role) =
+  match (unloc r).default with
+  | Some (Raddress a) -> Some (mkloc (loc r) (BVstring a))
+  | _ -> None
+
+let mk_role_var (role : role) = {
+  asset   = None;
+  name    = (unloc role).name;
+  typ     = Var VTaddress;
+  ghost   = false;
+  default = mk_role_default role;
+  ops     = []
+}
+
 let mk_storage m =
   let fields =
-    List.fold_left (fun acc asset ->
-        acc @ (mk_storage_fields asset)
-      ) [] m.assets in
+    m.roles
+    |> List.fold_left (fun acc r -> acc @ [mk_role_var r]) []
+    |> fun x -> List.fold_left (fun acc var -> acc @ [mk_variable var]) x m.variables
+    |> fun x -> List.fold_left (fun acc a -> acc @ (mk_storage_fields a)) x m.assets
+  in
   { empty_storage with fields = fields }
 
 let model_to_modelws (m : model) : model_with_storage = {
