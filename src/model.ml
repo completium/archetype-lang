@@ -319,8 +319,11 @@ type model_unloc = {
 
 and model = model_unloc loced
 
-let get_asset_names m =
-List.map (fun (a : asset) -> (unloc (unloc a).name)) (unloc m).assets
+let get_decl_id (a : decl)     = a |> unloc |> fun x -> x.name |> unloc
+
+let get_asset_name (a : asset) = a |> unloc |> fun x -> x.name |> unloc
+
+let get_asset_names m = (unloc m).assets |> List.map get_asset_name
 
 (* returns a list of triplet : asset name, field name, field type *)
 let get_asset_fields m =
