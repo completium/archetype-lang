@@ -33,4 +33,4 @@ val loc     : 'a loced -> t
 val unloc   : 'a loced -> 'a
 val unlocs  : ('a loced) list -> 'a list
 val lmap    : ('a -> 'b) -> 'a loced -> 'b loced
-val mkdummy : 'a -> 'a loced
+val dumloc  : 'a -> 'a loced

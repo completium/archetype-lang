@@ -17,7 +17,7 @@ let get_name_model (pt : ParseTree.model) : lident =
            | _ -> acc)) None decls
      in
       match res with
-      | Some id -> (mkdummy id)
+      | Some id -> (dumloc id)
       | _ -> raise (ModelError "no name for model found."))
   | _ -> raise (ModelError "only ParseTree.model can be translated into Model.model.")
 

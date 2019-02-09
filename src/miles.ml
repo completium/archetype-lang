@@ -2,98 +2,98 @@ open Model
 open Location
 
 let mk_admin_role () = {
-    name = mkdummy "admin";
+    name = dumloc "admin";
     default = None;
   }
 
 let mk_mile_asset () =
     let desc : asset_unloc = {
-    name = mkdummy "mile";
-    args = [  mkdummy { name = mkdummy "id";
-               typ  = Some (mkdummy (Tbuiltin VTstring));
+    name = dumloc "mile";
+    args = [  dumloc { name = dumloc "id";
+               typ  = Some (dumloc (Tbuiltin VTstring));
                default = None;
-           }; mkdummy { name = mkdummy "amount";
-               typ  = Some (mkdummy (Tbuiltin VTuint));
+           }; dumloc { name = dumloc "amount";
+               typ  = Some (dumloc (Tbuiltin VTuint));
                default = None;
-           }; mkdummy{ name = mkdummy "expiration";
-               typ  = Some (mkdummy (Tbuiltin VTstring));
+           }; dumloc{ name = dumloc "expiration";
+               typ  = Some (dumloc (Tbuiltin VTstring));
                default = None;
              };];
-    key = mkdummy "id";
-    sort = Some [ (mkdummy "expiration") ];
+    key = dumloc "id";
+    sort = Some [ (dumloc "expiration") ];
     role = false;
     init = None;
     preds =
-      let zero = Plit (mkdummy (BVint 0(*Big_int.zero_big_int*))) in
+      let zero = Plit (dumloc (BVint 0(*Big_int.zero_big_int*))) in
       Some [
-            (mkdummy (Pcomp (Gt, (mkdummy (Pdot ((mkdummy (Passet (mkdummy "mile"))), (mkdummy (Pfield (mkdummy "amount")))))), mkdummy zero)))];
+            (dumloc (Pcomp (Gt, (dumloc (Pdot ((dumloc (Passet (dumloc "mile"))), (dumloc (Pfield (dumloc "amount")))))), dumloc zero)))];
   } in
-  mkdummy desc
+  dumloc desc
 
 let mk_owner_asset () =
     let desc : asset_unloc = {
-    name = mkdummy "owner";
-    args = [ mkdummy { name = mkdummy "addr";
-               typ  = Some (mkdummy (Tbuiltin VTaddress));
+    name = dumloc "owner";
+    args = [ dumloc { name = dumloc "addr";
+               typ  = Some (dumloc (Tbuiltin VTaddress));
                default = None;
-           }; mkdummy { name = mkdummy "miles";
-               typ  = Some (mkdummy (Tcontainer (mkdummy (Tasset (mkdummy "mile")),Partition)));
+           }; dumloc { name = dumloc "miles";
+               typ  = Some (dumloc (Tcontainer (dumloc (Tasset (dumloc "mile")),Partition)));
                default = None;
            };];
-    key = mkdummy "addr";
+    key = dumloc "addr";
     sort = None;
     role = true;
     init = None;
     preds = None;
-  } in mkdummy desc
+  } in dumloc desc
 
 let mk_add_transaction () : transaction =
 let desc : transaction_unloc = {
-    name = mkdummy "add";
-    args = [ mkdummy { name = mkdummy "owner";
-               typ  = Some (mkdummy (Tbuiltin VTaddress));
+    name = dumloc "add";
+    args = [ dumloc { name = dumloc "owner";
+               typ  = Some (dumloc (Tbuiltin VTaddress));
                default = None;
-           };mkdummy { name = mkdummy "newmile";
-               typ  = Some (mkdummy (Tasset (mkdummy "mile")));
+           };dumloc { name = dumloc "newmile";
+               typ  = Some (dumloc (Tasset (dumloc "mile")));
                default = None;
            } ];
-    calledby  = Some (Rrole (mkdummy "admin"));
+    calledby  = Some (Rrole (dumloc "admin"));
     condition = None;
     transferred = None;
     transition = None;
     spec = None;
     action =
       let assign =
-         mkdummy (Passign (
+         dumloc (Passign (
            SimpleAssign,
-           mkdummy (Pdot (
-             (mkdummy (Passet (mkdummy "owner"))),
-             (mkdummy (Pfield (mkdummy "miles"))))),
-           mkdummy (Pconst Cvoid))) in
-      let getowner = mkdummy (Papp (mkdummy (Pconst Cget),
-                             [mkdummy (Passet (mkdummy "owner"));
-                              mkdummy (Pvar (mkdummy "owner"))])) in
-      Some (mkdummy (Pseq [
-       mkdummy (Papp (mkdummy (Pconst (Caddifnotexist)), [mkdummy (Passet (mkdummy "owner")); assign]));
-       mkdummy (Pletin ((mkdummy "lvar0"), getowner, mkdummy (Tasset (mkdummy "owner")),
-               mkdummy (Papp (mkdummy (Pconst Cadd),
-                              [mkdummy (Pdot (mkdummy (Pvar (mkdummy "lvar0")), mkdummy (Pfield (mkdummy "miles"))));
-                               mkdummy (Pvar (mkdummy "newmile"));
-                               mkdummy (Plit (mkdummy (BVstring "mile already exists")))]))))
+           dumloc (Pdot (
+             (dumloc (Passet (dumloc "owner"))),
+             (dumloc (Pfield (dumloc "miles"))))),
+           dumloc (Pconst Cvoid))) in
+      let getowner = dumloc (Papp (dumloc (Pconst Cget),
+                             [dumloc (Passet (dumloc "owner"));
+                              dumloc (Pvar (dumloc "owner"))])) in
+      Some (dumloc (Pseq [
+       dumloc (Papp (dumloc (Pconst (Caddifnotexist)), [dumloc (Passet (dumloc "owner")); assign]));
+       dumloc (Pletin ((dumloc "lvar0"), getowner, dumloc (Tasset (dumloc "owner")),
+               dumloc (Papp (dumloc (Pconst Cadd),
+                              [dumloc (Pdot (dumloc (Pvar (dumloc "lvar0")), dumloc (Pfield (dumloc "miles"))));
+                               dumloc (Pvar (dumloc "newmile"));
+                               dumloc (Plit (dumloc (BVstring "mile already exists")))]))))
       ]));
-  } in mkdummy desc
+  } in dumloc desc
 
 let mk_consume_transaction () : transaction =
     let desc : transaction_unloc = {
-    name = mkdummy "consume";
-    args = [ mkdummy { name = mkdummy "owner";
-               typ  = Some (mkdummy (Tbuiltin VTaddress));
+    name = dumloc "consume";
+    args = [ dumloc { name = dumloc "owner";
+               typ  = Some (dumloc (Tbuiltin VTaddress));
                default = None;
-           }; mkdummy { name = mkdummy "val";
-               typ  = Some (mkdummy (Tbuiltin VTint));
+           }; dumloc { name = dumloc "val";
+               typ  = Some (dumloc (Tbuiltin VTint));
                default = None;
            } ];
-    calledby  = Some (Rrole (mkdummy "admin"));
+    calledby  = Some (Rrole (dumloc "admin"));
     (*(owner.get owner).miles.when(mile.expiration > now).sum(amount) >= val;
       let o = get owner owner in
       let f = mile.expiration > now in
@@ -101,119 +101,119 @@ let mk_consume_transaction () : transaction =
       sum s amount >= val
      *)
     condition = (
-      let getowner = mkdummy (Papp (mkdummy (Pconst Cget),
-                                   [mkdummy (Passet (mkdummy "owner"));
-                                    mkdummy (Pvar   (mkdummy "owner"))])) in
-      let filter = mkdummy (Pcomp (Gt,
-                          mkdummy (Pdot (mkdummy (Passet (mkdummy "mile")),
-                                         mkdummy (Pfield (mkdummy "expiration")))),
-                          mkdummy (Pconst Cnow))) in
-      let set = mkdummy (Papp (mkdummy (Pconst Cwhen),
-                               [ mkdummy (Pdot (mkdummy (Pvar (mkdummy "o")),
-                                 mkdummy (Pfield (mkdummy "miles"))));
+      let getowner = dumloc (Papp (dumloc (Pconst Cget),
+                                   [dumloc (Passet (dumloc "owner"));
+                                    dumloc (Pvar   (dumloc "owner"))])) in
+      let filter = dumloc (Pcomp (Gt,
+                          dumloc (Pdot (dumloc (Passet (dumloc "mile")),
+                                         dumloc (Pfield (dumloc "expiration")))),
+                          dumloc (Pconst Cnow))) in
+      let set = dumloc (Papp (dumloc (Pconst Cwhen),
+                               [ dumloc (Pdot (dumloc (Pvar (dumloc "o")),
+                                 dumloc (Pfield (dumloc "miles"))));
                                  filter])) in
-      let sum = mkdummy (Papp (mkdummy (Pconst Csum),
-                              [mkdummy (Pvar (mkdummy "s"));
-                               mkdummy (Pdot (mkdummy (Passet (mkdummy "mile")),
-                               mkdummy (Pfield (mkdummy "amount"))))])) in
-      let cond = mkdummy (Pcomp (Ge, sum, mkdummy (Pvar (mkdummy "val")))) in
-      Some (mkdummy (Pletin (mkdummy "o", getowner, (mkdummy (Tasset (mkdummy "owner"))),
-            mkdummy (Pletin (mkdummy "s", set, mkdummy (Tcontainer (mkdummy (Tasset (mkdummy "mile")), Set)),
+      let sum = dumloc (Papp (dumloc (Pconst Csum),
+                              [dumloc (Pvar (dumloc "s"));
+                               dumloc (Pdot (dumloc (Passet (dumloc "mile")),
+                               dumloc (Pfield (dumloc "amount"))))])) in
+      let cond = dumloc (Pcomp (Ge, sum, dumloc (Pvar (dumloc "val")))) in
+      Some (dumloc (Pletin (dumloc "o", getowner, (dumloc (Tasset (dumloc "owner"))),
+            dumloc (Pletin (dumloc "s", set, dumloc (Tcontainer (dumloc (Tasset (dumloc "mile")), Set)),
             cond))))));
     transferred = None;
     transition = None;
-    spec = Some (mkdummy ({
+    spec = Some (dumloc ({
         variables = [];
         action    = None;
         invariants = [];
         ensures =
-          let exp = Lquantifer (Forall, mkdummy "m", mkdummy (LTvset (VSremoved,
-                                                                      mkdummy (LTprog (mkdummy (Tasset (mkdummy "mile")))))),
-        mkdummy (Llog (And,
-              mkdummy (Lapp (mkdummy (Lconst Cmem),[mkdummy (Lvar (mkdummy "m"));
-                                                    mkdummy (Ldot (mkdummy (Lasset (mkdummy ("owner"))),
-                                                                   mkdummy (Lfield (mkdummy ("miles")))))])),
-              mkdummy (Lcomp (Ge,
-                              mkdummy (Ldot (mkdummy (Lvar (mkdummy "m")),
-                                             mkdummy (Lfield (mkdummy "expiration")))),
-                              mkdummy (Lconst Cnow)))))) in
-      let getowner = mkdummy (Lapp (mkdummy (Lconst Cget),
-                           [mkdummy (Lasset (mkdummy "owner"));
-                            mkdummy (Lfield (mkdummy "owner"))])) in
-      let sumamount = mkdummy (Lapp (mkdummy (Lconst Csum),
-                            [mkdummy (Ldot (mkdummy (Lvar (mkdummy "o")),
-                                            mkdummy (Lfield (mkdummy "amount"))))])) in
-      let sumval = mkdummy (Larith (Plus, sumamount, mkdummy (Lvar (mkdummy "val")))) in
+          let exp = Lquantifer (Forall, dumloc "m", dumloc (LTvset (VSremoved,
+                                                                      dumloc (LTprog (dumloc (Tasset (dumloc "mile")))))),
+        dumloc (Llog (And,
+              dumloc (Lapp (dumloc (Lconst Cmem),[dumloc (Lvar (dumloc "m"));
+                                                    dumloc (Ldot (dumloc (Lasset (dumloc ("owner"))),
+                                                                   dumloc (Lfield (dumloc ("miles")))))])),
+              dumloc (Lcomp (Ge,
+                              dumloc (Ldot (dumloc (Lvar (dumloc "m")),
+                                             dumloc (Lfield (dumloc "expiration")))),
+                              dumloc (Lconst Cnow)))))) in
+      let getowner = dumloc (Lapp (dumloc (Lconst Cget),
+                           [dumloc (Lasset (dumloc "owner"));
+                            dumloc (Lfield (dumloc "owner"))])) in
+      let sumamount = dumloc (Lapp (dumloc (Lconst Csum),
+                            [dumloc (Ldot (dumloc (Lvar (dumloc "o")),
+                                            dumloc (Lfield (dumloc "amount"))))])) in
+      let sumval = dumloc (Larith (Plus, sumamount, dumloc (Lvar (dumloc "val")))) in
       let rightamount =
-        Lletin (mkdummy "o", getowner, Some (mkdummy (LTprog (mkdummy (Tasset (mkdummy "owner"))))),
-                mkdummy (Lcomp (Equal, mkdummy (Lapp (mkdummy (Lconst Cbefore),[sumamount])),sumval))
+        Lletin (dumloc "o", getowner, Some (dumloc (LTprog (dumloc (Tasset (dumloc "owner"))))),
+                dumloc (Lcomp (Equal, dumloc (Lapp (dumloc (Lconst Cbefore),[sumamount])),sumval))
           ) in
-          [(None, mkdummy exp);(None, mkdummy rightamount)]
+          [(None, dumloc exp);(None, dumloc rightamount)]
       }));
     action = (
       let zero = BVint 0(*Big_int.zero_big_int*) in
-      let filter = mkdummy (Pcomp (Gt, mkdummy (Pdot (mkdummy (Passet (mkdummy "mile")), mkdummy (Pfield (mkdummy "expiration")))),
-                                 mkdummy (Pconst Cnow))) in
-      let set = mkdummy (Papp (mkdummy (Pconst Cwhen), [ mkdummy (Pdot (mkdummy (Pvar (mkdummy "o")), mkdummy (Pfield (mkdummy "miles")))); filter])) in
-      let cond1 = mkdummy (Pcomp (Gt,
-                         mkdummy (Pdot (mkdummy (Pvar (mkdummy "m")),
-                                       (mkdummy (Pfield (mkdummy "amount"))))),
-                         mkdummy (Pvar (mkdummy "r")))) in
-      let then1 = mkdummy (Pseq [
-                      mkdummy (Passign (MinusAssign, mkdummy (Pdot (mkdummy (Pvar (mkdummy "m")),
-                                                              mkdummy (Pfield (mkdummy "amount")))), mkdummy (Pvar (mkdummy "r"))));
-                      mkdummy (Passign (SimpleAssign, mkdummy (Pvar (mkdummy "r")), mkdummy (Plit (mkdummy zero))));
-                      mkdummy Pbreak
+      let filter = dumloc (Pcomp (Gt, dumloc (Pdot (dumloc (Passet (dumloc "mile")), dumloc (Pfield (dumloc "expiration")))),
+                                 dumloc (Pconst Cnow))) in
+      let set = dumloc (Papp (dumloc (Pconst Cwhen), [ dumloc (Pdot (dumloc (Pvar (dumloc "o")), dumloc (Pfield (dumloc "miles")))); filter])) in
+      let cond1 = dumloc (Pcomp (Gt,
+                         dumloc (Pdot (dumloc (Pvar (dumloc "m")),
+                                       (dumloc (Pfield (dumloc "amount"))))),
+                         dumloc (Pvar (dumloc "r")))) in
+      let then1 = dumloc (Pseq [
+                      dumloc (Passign (MinusAssign, dumloc (Pdot (dumloc (Pvar (dumloc "m")),
+                                                              dumloc (Pfield (dumloc "amount")))), dumloc (Pvar (dumloc "r"))));
+                      dumloc (Passign (SimpleAssign, dumloc (Pvar (dumloc "r")), dumloc (Plit (dumloc zero))));
+                      dumloc Pbreak
                     ]) in
-      let cond2 = mkdummy (Pcomp (Equal,
-                         mkdummy (Pdot (mkdummy (Pvar (mkdummy "m")),
-                                        mkdummy (Pfield (mkdummy "amount")))),
-                         mkdummy (Pvar (mkdummy "r")))) in
-      let then2 = mkdummy (Pseq [
-                      mkdummy (Papp (mkdummy (Pconst Cremove),
-                                     [mkdummy (Pdot (mkdummy (Pvar (mkdummy "o")),
-                                                     mkdummy (Pfield (mkdummy "miles"))));
-                                      mkdummy (Pvar (mkdummy "m"))]));
-                      mkdummy (Passign (SimpleAssign,
-                                        mkdummy (Pvar (mkdummy "r")),
-                                        mkdummy (Plit (mkdummy zero))));
-                      mkdummy Pbreak
+      let cond2 = dumloc (Pcomp (Equal,
+                         dumloc (Pdot (dumloc (Pvar (dumloc "m")),
+                                        dumloc (Pfield (dumloc "amount")))),
+                         dumloc (Pvar (dumloc "r")))) in
+      let then2 = dumloc (Pseq [
+                      dumloc (Papp (dumloc (Pconst Cremove),
+                                     [dumloc (Pdot (dumloc (Pvar (dumloc "o")),
+                                                     dumloc (Pfield (dumloc "miles"))));
+                                      dumloc (Pvar (dumloc "m"))]));
+                      dumloc (Passign (SimpleAssign,
+                                        dumloc (Pvar (dumloc "r")),
+                                        dumloc (Plit (dumloc zero))));
+                      dumloc Pbreak
                     ]) in
-      let then3 = mkdummy (Pseq [
-                      mkdummy (Passign (MinusAssign,
-                                        mkdummy (Pvar (mkdummy "r")),
-                                        mkdummy (Pdot (mkdummy (Pvar (mkdummy "m")),
-                                                       mkdummy (Pfield (mkdummy "amount"))))));
-                      mkdummy (Papp (mkdummy (Pconst Cremove),
-                                     [mkdummy (Pdot (mkdummy (Pvar (mkdummy "o")),
-                                                     mkdummy (Pfield (mkdummy "miles"))));
-                                     mkdummy (Pvar (mkdummy "m"))]));
-                      mkdummy Pbreak
+      let then3 = dumloc (Pseq [
+                      dumloc (Passign (MinusAssign,
+                                        dumloc (Pvar (dumloc "r")),
+                                        dumloc (Pdot (dumloc (Pvar (dumloc "m")),
+                                                       dumloc (Pfield (dumloc "amount"))))));
+                      dumloc (Papp (dumloc (Pconst Cremove),
+                                     [dumloc (Pdot (dumloc (Pvar (dumloc "o")),
+                                                     dumloc (Pfield (dumloc "miles"))));
+                                     dumloc (Pvar (dumloc "m"))]));
+                      dumloc Pbreak
                     ]) in
-      let asert = mkdummy (Lcomp (Equal, mkdummy (Lvar (mkdummy "r")), mkdummy (Llit (mkdummy zero)))) in
-      let getowner = mkdummy (Papp (mkdummy (Pconst Cget),[mkdummy (Passet (mkdummy "owner")); mkdummy (Pvar (mkdummy "owner"))])) in
+      let asert = dumloc (Lcomp (Equal, dumloc (Lvar (dumloc "r")), dumloc (Llit (dumloc zero)))) in
+      let getowner = dumloc (Papp (dumloc (Pconst Cget),[dumloc (Passet (dumloc "owner")); dumloc (Pvar (dumloc "owner"))])) in
       let p =
-        mkdummy (Pletin (mkdummy "r", mkdummy (Pvar (mkdummy "val")), mkdummy (Tbuiltin VTint),
-        mkdummy (Pletin (mkdummy "o", getowner, mkdummy (Tasset (mkdummy "owner")),
-        mkdummy (Pletin (mkdummy "s", set, mkdummy (Tcontainer (mkdummy (Tasset (mkdummy "mile")), Set)),
-                                                   mkdummy (Pseq [
+        dumloc (Pletin (dumloc "r", dumloc (Pvar (dumloc "val")), dumloc (Tbuiltin VTint),
+        dumloc (Pletin (dumloc "o", getowner, dumloc (Tasset (dumloc "owner")),
+        dumloc (Pletin (dumloc "s", set, dumloc (Tcontainer (dumloc (Tasset (dumloc "mile")), Set)),
+                                                   dumloc (Pseq [
 
-        mkdummy (Pfor (mkdummy "i", mkdummy (Pvar (mkdummy "s")),
-          mkdummy (Pif (cond1,
+        dumloc (Pfor (dumloc "i", dumloc (Pvar (dumloc "s")),
+          dumloc (Pif (cond1,
            then1,
-          Some (mkdummy (Pif (cond2,
+          Some (dumloc (Pif (cond2,
            then2,
           Some (
            then3
         ))))))));
-        mkdummy (Passert (asert))
+        dumloc (Passert (asert))
 
         ]))))))) in
         Some p);
-  } in mkdummy desc
+  } in dumloc desc
 
-let mk_miles_model () = mkdummy {
-    name          = mkdummy "miles_with_expiration";
+let mk_miles_model () = dumloc {
+    name          = dumloc "miles_with_expiration";
     roles         = [ mk_admin_role () ];
     variables     = [];
     assets        = [mk_mile_asset (); mk_owner_asset ()];

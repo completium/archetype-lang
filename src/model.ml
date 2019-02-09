@@ -1,21 +1,6 @@
 open Location
 open Ident
 
-(*
-type 'a loced = {
-  pldesc : 'a;
-}
-[@@deriving show]
-
-let unloc  x = x.pldesc
-
-let mkloc (x : 'a) : 'a loced =
-  { pldesc = x; }
-
-let mkdummy (x : 'a) : 'a loced =
-  mkloc x
-*)
-
 type lident = ident loced
 [@@deriving show]
 
