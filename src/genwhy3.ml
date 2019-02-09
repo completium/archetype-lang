@@ -1,5 +1,5 @@
 (* opening the Why3 library *)
-(*open Location*)
+open Location
 open Why3
 open Ptree
 open Format

@@ -1,4 +1,5 @@
 open Model
+open Location
 
 let mk_admin_role () = {
     name = mkdummy "admin";

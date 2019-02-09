@@ -10,7 +10,6 @@ type t = {
   loc_bchar : int;
   loc_echar : int;
 }
-[@@deriving show]
 
 let dummy : t = {
   loc_fname = "";
@@ -74,12 +73,11 @@ let tostring (p : t) =
 
 (* -------------------------------------------------------------------- *)
 type 'a loced = {
-  plloc : t;
+  plloc : t [@opaque];
   pldesc : 'a;
 }
 [@@deriving show]
 
-(* -------------------------------------------------------------------- *)
 let loc    x = x.plloc
 let unloc  x = x.pldesc
 let unlocs x = List.map unloc x

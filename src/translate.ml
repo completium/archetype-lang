@@ -1,9 +1,10 @@
+open Location
 open Model
 open ParseTree
 
 exception ModelError of string
 
-let get_name_model (pt : ParseTree.model) : Model.lident =
+let get_name_model (pt : ParseTree.model) : lident =
   let ptu = Location.unloc pt in
   match ptu with
   | Mmodel decls ->
@@ -16,12 +17,12 @@ let get_name_model (pt : ParseTree.model) : Model.lident =
            | _ -> acc)) None decls
      in
       match res with
-      | Some id -> (Model.mkdummy id)
+      | Some id -> (mkdummy id)
       | _ -> raise (ModelError "no name for model found."))
   | _ -> raise (ModelError "only ParseTree.model can be translated into Model.model.")
 
 let parseTree_to_model (pt : ParseTree.model) : Model.model =
-  Model.mkdummy {
+  mkloc (loc pt) {
     name          = get_name_model pt;
     roles         = [];
     variables     = [];

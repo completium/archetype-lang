@@ -1,5 +1,7 @@
+open Location
 open Ident
 
+(*
 type 'a loced = {
   pldesc : 'a;
 }
@@ -12,6 +14,7 @@ let mkloc (x : 'a) : 'a loced =
 
 let mkdummy (x : 'a) : 'a loced =
   mkloc x
+*)
 
 type lident = ident loced
 [@@deriving show]
@@ -21,6 +24,7 @@ type role = {
     default      : rexpr option;
   }
 [@@deriving show]
+
 and rexpr =
   | Ror of rexpr * rexpr
   | Rrole of lident
