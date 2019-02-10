@@ -146,8 +146,8 @@ and s_ensure = named_item list
 type declaration_r =
   | Duse           of lident                                              (** use *)
   | Dmodel         of lident                                              (** model *)
-  | Dconstant      of lident * lident * expr option * exts                (** constant *)
-  | Dvariable      of lident * lident * value_option list option * expr option * exts       (** variable *)
+  | Dconstant      of lident * type_t * expr option * exts                (** constant *)
+  | Dvariable      of lident * type_t * value_option list option * expr option * exts       (** variable *)
   | Drole          of lident * expr option * exts                                    (** role *)
   | Denum          of lident * lident list                                           (** enum *)
   | Dstates        of lident option * (lident * state_option list option) list       (** states *)

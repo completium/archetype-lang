@@ -106,13 +106,6 @@ let rec mk_ptyp e =
 
 let lident_to_ptyp id = mkloc (loc id) (Tasset id) (* FIXME: complete with other type *)
 
-let mk_decl_for_var loc ((id, typ, dv) : (lident * lident * expr option)) =
-  mkloc loc {
-    name = id;
-    typ = Some (lident_to_ptyp typ);
-    default = BatOption.map mk_bval dv;
-  }
-
 let mk_decl loc ((id, typ, dv) : (lident * type_t * expr option)) =
   mkloc loc {
     name = id;
@@ -126,9 +119,9 @@ let get_variables decls =
        let decl_u = Location.unloc i in
        match decl_u with
        | Dconstant (id, typ, dv, _) ->
-         mkloc loc {decl = mk_decl_for_var loc (id, typ, dv); constant = true }::acc
+         mkloc loc {decl = mk_decl loc (id, typ, dv); constant = true }::acc
        | Dvariable (id, typ, _, dv, _) ->
-         mkloc loc {decl = mk_decl_for_var loc (id, typ, dv); constant = false }::acc
+         mkloc loc {decl = mk_decl loc (id, typ, dv); constant = false }::acc
        | _ -> acc)
     ) [] decls
 

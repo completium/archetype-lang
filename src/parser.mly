@@ -211,12 +211,15 @@ model:
 | MODEL x=ident { Dmodel x }
 
 constant:
-| CONSTANT exts=option(extensions) x=ident y=ident
+| CONSTANT exts=option(extensions) x=ident y=loc(type_ref)
     dv=default_value?
-      { Dconstant (x, y, dv, exts) }
+       { Dconstant (x, y, dv, exts) }
+
+%inline type_ref:
+| x=ident {Tref x}
 
 variable:
-| VARIABLE exts=extensions? x=ident y=ident z=option(value_options)
+| VARIABLE exts=extensions? x=ident y=loc(type_ref) z=option(value_options)
     dv=default_value?
       { Dvariable (x, y, z, dv, exts) }
 

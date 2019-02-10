@@ -511,14 +511,14 @@ let rec pp_declaration fmt { pldesc = e; _ } =
       Format.fprintf fmt "constant%a %a %a%a"
           (pp_option (pp_list " " pp_extension)) exts
           pp_id id
-          pp_id typ
+          pp_type typ
           (pp_option (pp_prefix " = " pp_expr)) dv
 
   | Dvariable (id, typ, opts, dv, exts) ->
       Format.fprintf fmt "variable%a %a %a%a%a"
           (pp_option (pp_list " " pp_extension)) exts
           pp_id id
-          pp_id typ
+          pp_type typ
           (pp_option (pp_prefix " " (pp_list " " pp_value_option))) opts
           (pp_option (pp_prefix " = " pp_expr)) dv
 
