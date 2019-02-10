@@ -69,13 +69,13 @@ let desc : transaction_unloc = {
            dumloc (Pdot (
              (dumloc (Passet (dumloc "owner"))),
              (dumloc (Pfield (dumloc "miles"))))),
-           dumloc (Pconst Cvoid))) in
+           dumloc (Pconst Cnone))) in
       let getowner = dumloc (Papp (dumloc (Pconst Cget),
                              [dumloc (Passet (dumloc "owner"));
                               dumloc (Pvar (dumloc "owner"))])) in
       Some (dumloc (Pseq [
        dumloc (Papp (dumloc (Pconst (Caddifnotexist)), [dumloc (Passet (dumloc "owner")); assign]));
-       dumloc (Pletin ((dumloc "lvar0"), getowner, dumloc (Tasset (dumloc "owner")),
+       dumloc (Pletin ((dumloc "lvar0"), getowner, Some (dumloc (Tasset (dumloc "owner"))),
                dumloc (Papp (dumloc (Pconst Cadd),
                               [dumloc (Pdot (dumloc (Pvar (dumloc "lvar0")), dumloc (Pfield (dumloc "miles"))));
                                dumloc (Pvar (dumloc "newmile"));
@@ -117,8 +117,8 @@ let mk_consume_transaction () : transaction =
                                dumloc (Pdot (dumloc (Passet (dumloc "mile")),
                                dumloc (Pfield (dumloc "amount"))))])) in
       let cond = dumloc (Pcomp (Ge, sum, dumloc (Pvar (dumloc "val")))) in
-      Some (dumloc (Pletin (dumloc "o", getowner, (dumloc (Tasset (dumloc "owner"))),
-            dumloc (Pletin (dumloc "s", set, dumloc (Tcontainer (dumloc (Tasset (dumloc "mile")), Set)),
+      Some (dumloc (Pletin (dumloc "o", getowner, Some (dumloc (Tasset (dumloc "owner"))),
+            dumloc (Pletin (dumloc "s", set, Some (dumloc (Tcontainer (dumloc (Tasset (dumloc "mile")), Set))),
             cond))))));
     transferred = None;
     transition = None;
@@ -193,9 +193,9 @@ let mk_consume_transaction () : transaction =
       let asert = dumloc (Lcomp (Equal, dumloc (Lvar (dumloc "r")), dumloc (Llit (dumloc zero)))) in
       let getowner = dumloc (Papp (dumloc (Pconst Cget),[dumloc (Passet (dumloc "owner")); dumloc (Pvar (dumloc "owner"))])) in
       let p =
-        dumloc (Pletin (dumloc "r", dumloc (Pvar (dumloc "val")), dumloc (Tbuiltin VTint),
-        dumloc (Pletin (dumloc "o", getowner, dumloc (Tasset (dumloc "owner")),
-        dumloc (Pletin (dumloc "s", set, dumloc (Tcontainer (dumloc (Tasset (dumloc "mile")), Set)),
+        dumloc (Pletin (dumloc "r", dumloc (Pvar (dumloc "val")), Some (dumloc (Tbuiltin VTint)),
+        dumloc (Pletin (dumloc "o", getowner, Some (dumloc (Tasset (dumloc "owner"))),
+        dumloc (Pletin (dumloc "s", set, Some (dumloc (Tcontainer (dumloc (Tasset (dumloc "mile")), Set))),
                                                    dumloc (Pseq [
 
         dumloc (Pfor (dumloc "i", dumloc (Pvar (dumloc "s")),

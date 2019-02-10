@@ -134,6 +134,7 @@ type comparison_operator =
 [@@deriving show {with_path = false}]
 
 type assignment_operator =
+  | ValueAssign
   | SimpleAssign
   | PlusAssign
   | MinusAssign
@@ -151,6 +152,17 @@ type arithmetic_operator =
 [@@deriving show {with_path = false}]
 
 type const =
+  (* constant *)
+  | Cstate
+  | Cnow
+  | Ctransferred
+  | Ccaller
+  | Cfail
+  | Cbalance
+  | Cconditions
+  | Cactions
+  | Cnone
+  (* function *)
   | Cnth
   | Cclear
   | Cwhen
@@ -170,10 +182,14 @@ type const =
   | Cget
   | Ccontains
   | Cupdate
-  | Cvoid
-  | Cnow
   | Cmem
+  (* vset *)
   | Cbefore
+  | Cafter
+  | Cfixed
+  | Cadded
+  | Cremoved
+
 [@@deriving show {with_path = false}]
 
 type signature_unloc = {
@@ -226,7 +242,7 @@ type pterm_unloc  =
   | Passert of lterm
   (* below is common entries with lterm *)
   | Prel of int
-  | Pletin of lident * pterm * ptyp * pterm
+  | Pletin of lident * pterm * ptyp option * pterm
   | Papp of pterm * pterm list
   | Plambda of lident * ptyp * pterm
   | Plogical of logical_operator * pterm * pterm
