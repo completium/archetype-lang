@@ -91,3 +91,5 @@ let mkloc loc (x : 'a) : 'a loced =
 
 let dumloc (x : 'a) : 'a loced =
   mkloc dummy x
+
+let deloc x = x.plloc, x.pldesc

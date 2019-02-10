@@ -44,6 +44,7 @@ type vtyp =
   | VTint
   | VTuint
   | VTdate
+  | VTduration
   | VTstring
   | VTaddress
   | VTcurrency of currency * transfer option
