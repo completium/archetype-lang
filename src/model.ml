@@ -85,6 +85,7 @@ type bval_unloc =
   | BVint          of big_int
   | BVuint         of big_int
   | BVbool         of bool
+  | BVenum         of string
   | BVfloat        of string
   | BVdate         of string (* todo : plus Bat.date *)
   | BVstring       of string

@@ -28,6 +28,7 @@ type storage_field_operation = {
 [@@deriving show {with_path = false}]
 
 type storage_field_type =
+  | Enum     of lident
   | Var      of vtyp
   | KeySet   of lident * vtyp
   | ValueMap of vtyp (* field type *)
@@ -63,20 +64,55 @@ type transaction_unloc = {
 type transaction = transaction_unloc loced
 [@@deriving show {with_path = false}]
 
-type model_with_storage = {
-    name         : lident;
-    storage      : storage;
-    transactions : transaction list;
+type enum = {
+  name   : lident;
+  values : lident list;
 }
 [@@deriving show {with_path = false}]
+
+type model_with_storage = {
+  name         : lident;
+  enums        : enum list;
+  storage      : storage;
+  transactions : transaction list;
+}
+[@@deriving show {with_path = false}]
+
+(* type mapping exceptions : asset name, field name, type location *)
+exception InvalidKeyType     of lident * lident * Location.t
+exception UnsupportedType    of lident * lident * Location.t
+exception VarNoType          of Location.t
+exception UnsupportedVartype of Location.t
+exception NoFieldType        of lident
 
 type info = {
   key_types : (string * vtyp) list; (* asset name, key type *)
 }
 
-(* type mapping exceptions : asset name, field name, type location *)
-exception InvalidKeyType of lident * lident * Location.t
-exception UnsupportedType of lident * lident * Location.t
+let get_key_type (a : asset) =
+  let assetid = get_asset_name a in
+  let keyid = a |> unloc |> fun x -> x.key |> unloc in
+  let rec rec_get_key = function
+    | arg::tl ->
+      if compare keyid (get_decl_id arg) = 0
+      then
+        let typ =
+          match (unloc arg).typ with
+          | Some t ->
+            begin
+              match unloc t with
+              | Tbuiltin typ -> typ
+              | _ -> raise (UnsupportedVartype (loc t))
+            end
+          | None   -> raise (NoFieldType (unloc arg).name)
+        in (assetid, typ)
+      else rec_get_key tl
+    | [] -> raise Not_found in
+  a |> unloc |> fun x -> x.args |> rec_get_key
+
+let mk_info m =
+  let kt = m.assets |> List.fold_left (fun acc a -> acc @ [get_key_type a]) [] in
+  { key_types = kt }
 
 let get_key_type fname key_types =
   let id = unloc fname in
@@ -102,8 +138,6 @@ let aft_to_sft info aname fname iskey (typ : ptyp) =
      | _ -> raise (UnsupportedType (aname,fname,loc))
      end
   | _ -> raise (UnsupportedType (aname,fname,loc))
-
-exception NoFieldType of lident
 
 let mk_asset_field aname fname =
   let loc = loc fname in
@@ -136,9 +170,6 @@ let mk_storage_fields info (asset : asset)  =
       let iskey = compare (unloc key) (get_decl_id arg) = 0 in
       acc @ (mk_storage_field info name iskey arg)
     ) [] asset.args
-
-exception VarNoType of Location.t
-exception UnsupportedVartype of Location.t
 
 (* variable type to field type *)
 let vt_to_ft var =
@@ -177,41 +208,31 @@ let mk_role_var (role : role) = {
   ops     = []
 }
 
-let get_key_type (a : asset) =
-  let assetid = get_asset_name a in
-  let keyid = a |> unloc |> fun x -> x.key |> unloc in
-  let rec rec_get_key = function
-    | arg::tl ->
-      if compare keyid (get_decl_id arg) = 0
-      then
-        let typ =
-          match (unloc arg).typ with
-          | Some t ->
-            begin
-              match unloc t with
-              | Tbuiltin typ -> typ
-              | _ -> raise (UnsupportedVartype (loc t))
-            end
-          | None   -> raise (NoFieldType (unloc arg).name)
-        in (assetid, typ)
-      else rec_get_key tl
-    | [] -> raise Not_found in
-  a |> unloc |> fun x -> x.args |> rec_get_key
+let mk_state_var (stm : stmachine) = {
+  asset   = None;
+  name    = stm.name;
+  typ     = Enum stm.name;
+  ghost   = false;
+  default = Some (mkloc (loc stm.initial) (BVenum (unloc stm.initial)));
+  ops     = []
+}
 
-let mk_storage m =
-  let kt = m.assets |> List.fold_left (fun acc a -> acc @ [get_key_type a]) [] in
-  let info = { key_types = kt } in
-  let fields =
-    m.roles
-    |> List.fold_left (fun acc r -> acc @ [mk_role_var r]) []
+let mk_storage info m =
+  let fields = m.stmachines
+    |> List.fold_left (fun acc stm -> acc @ [mk_state_var stm]) []
+    |> fun x -> List.fold_left (fun acc r -> acc @ [mk_role_var r]) x m.roles
     |> fun x -> List.fold_left (fun acc var -> acc @ [mk_variable var]) x m.variables
-    |> fun x -> List.fold_left (fun acc a ->
-                    acc @ (mk_storage_fields info a)) x m.assets
+    |> fun x ->
+    List.fold_left (fun acc a ->
+        acc @ (mk_storage_fields info a)
+      ) x m.assets
   in
   { empty_storage with fields = fields }
 
-let model_to_modelws (m : model) : model_with_storage = {
+let model_to_modelws (m : model) : model_with_storage =
+  let info = mk_info (unloc m) in {
     name = (unloc m).name;
-    storage = mk_storage (unloc m);
+    enums = [];
+    storage = mk_storage info (unloc m);
     transactions = [];
   }
