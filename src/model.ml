@@ -295,12 +295,15 @@ and transaction = transaction_unloc loced
 type state = lident
 [@@deriving show {with_path = false}]
 
-type stmachine = {
+type stmachine_unloc = {
     name         : lident;
     states       : state list;
     initial      : state;
     transitions  : lident list; (* transaction name list *)
 }
+[@@deriving show {with_path = false}]
+
+type stmachine = stmachine_unloc loced
 [@@deriving show {with_path = false}]
 
 type asset_unloc = {

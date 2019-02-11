@@ -88,4 +88,4 @@ let _ =
           end
         else Ident.Hid.find memo name in
   let do_m _ m = ignore (extract_to ~fname m []) in
-  Mstr.iter do_m mm
+  Mstr.iter do_m mm)

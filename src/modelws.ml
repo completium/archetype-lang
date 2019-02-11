@@ -64,10 +64,13 @@ type transaction_unloc = {
 type transaction = transaction_unloc loced
 [@@deriving show {with_path = false}]
 
-type enum = {
+type enum_unloc = {
   name   : lident;
   values : lident list;
 }
+[@@deriving show {with_path = false}]
+
+type enum = enum_unloc loced
 [@@deriving show {with_path = false}]
 
 type model_with_storage = {
@@ -210,10 +213,10 @@ let mk_role_var (role : role) = {
 
 let mk_state_var (stm : stmachine) = {
   asset   = None;
-  name    = stm.name;
-  typ     = Enum stm.name;
+  name    = (unloc stm).name;
+  typ     = Enum (unloc stm).name;
   ghost   = false;
-  default = Some (mkloc (loc stm.initial) (BVenum (unloc stm.initial)));
+  default = Some (mkloc (loc (unloc stm).initial) (BVenum (unloc (unloc stm).initial)));
   ops     = []
 }
 
@@ -229,10 +232,17 @@ let mk_storage info m =
   in
   { empty_storage with fields = fields }
 
+let mk_enums _ m = m.stmachines |> List.fold_left (fun acc (stmachine : stmachine) ->
+    acc @ [
+      mkloc (loc stmachine) { name   = (unloc stmachine).name;
+                              values = (unloc stmachine).states; }
+    ]
+  ) []
+
 let model_to_modelws (m : model) : model_with_storage =
   let info = mk_info (unloc m) in {
-    name = (unloc m).name;
-    enums = [];
-    storage = mk_storage info (unloc m);
+    name         = (unloc m).name;
+    enums        = mk_enums info (unloc m);
+    storage      = mk_storage info (unloc m);
     transactions = [];
   }
