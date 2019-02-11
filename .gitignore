@@ -7,3 +7,5 @@ lexer.cmo
 parser.cmo
 print.cmo
 bin/compilator
+src/*.cm*
+src/*.o
