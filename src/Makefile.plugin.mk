@@ -42,6 +42,7 @@ SRC = \
   printer.ml \
   translate.ml \
   miles.ml \
+  liq_printer.ml \
   w3plugin.ml
 
 OBJS = $(SRC:.ml=.cmx)

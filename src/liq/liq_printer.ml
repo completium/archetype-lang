@@ -84,7 +84,7 @@ module Print = struct
      "exception"; "external"; "false"; "for"; "fun"; "function";
      "functor"; "if"; "in"; "include"; "inherit"; "initializer";
      "land"; "lazy"; "let"; "lor"; "lsl"; "lsr"; "lxor"; "match";
-     "method"; "mod"; "module"; "mutable"; "new"; "object"; "of";
+     "method"; "mod"; "module"; (*"mutable";*) "new"; "object"; "of";
      "open"; "or"; "private"; "rec"; "sig"; "struct"; "then"; "to";
      "true"; "try"; "type"; "val"; "virtual"; "when"; "while"; "with";
      "raise";]
@@ -616,7 +616,7 @@ module Print = struct
       | l -> fprintf fmt "@[<hov 4>| %a of %a@]" (print_uident info) id
                (print_list star (print_ty ~paren:false info)) l in
     let print_field fmt (is_mutable, id, ty) =
-      fprintf fmt "%s%a: @[%a@];" (if is_mutable then "mutable " else "")
+      fprintf fmt "%s%a: @[%a@];" (if is_mutable then (*"mutable "*)"" else "")
         (print_lident info) id (print_ty ~paren:false info) ty in
     let print_def fmt = function
       | None ->
@@ -732,8 +732,8 @@ let ng suffix ?fname m =
   let path     = m.mod_theory.th_path in
   (module_name ?fname path mod_name) ^ suffix
 
-let file_gen = ng ".ml"
-let mli_gen = ng ".mli"
+let file_gen = ng ".liq"
+let mli_gen = ng ".liq"
 
 open Pdriver
 

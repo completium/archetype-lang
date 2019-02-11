@@ -68,4 +68,5 @@ let read_channel env path file (c: in_channel) =
 
 let () =
   Env.register_format mlw_language "cml_lang" ["cml"] read_channel
-    ~desc:"cml format"
+    ~desc:"cml format";
+  Pdriver.register_printer "liquidity" Liq_printer.liq_printer
