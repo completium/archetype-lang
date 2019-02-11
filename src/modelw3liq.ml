@@ -5,13 +5,14 @@ open Location
 open Why3
 open Ptree
 
-let loc (a : 'a loced) : Loc.position =
-  let l      = loc a in
+let loc (a : 'a Location.loced) : Loc.position =
+  let l      = Location.loc a in
   let fname  = l.loc_fname in
   let line   = (fst l.loc_start) in
   let startp = (snd l.loc_start) in
   let endp   = (snd l.loc_end)   in
-  (fname, line, startp, endp)
+  Loc.user_position fname line startp endp
+
 
 let mk_ident s       = { id_str = unloc s; id_ats = []; id_loc = loc s }
 
@@ -78,7 +79,7 @@ let vtyp_to_ident vt =
     | VTcurrency (Mutez,_) -> "tez" in
   str_to_ident s Loc.dummy_position
 
-let rec mk_ptyp = function
+let mk_ptyp = function
   | Enum     lid        -> PTtyvar (mk_ident lid)
   | Var      vt         -> PTtyvar (vtyp_to_ident vt)
   | KeySet   (_,vt)     ->
@@ -114,7 +115,7 @@ let mk_storage_decl (storage : storage) =
   }]
 
 (* returns a list of definition *)
-let modelws_to_modelmlwliq (m : model_with_storage) =
+let modelws_to_modelw3liq (m : model_with_storage) =
   []
   |> fun x -> List.fold_left (fun acc e -> acc @ [mk_enum_decl e]) x m.enums
   |> fun x -> x @ [mk_storage_decl m.storage]

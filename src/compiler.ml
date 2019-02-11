@@ -4,6 +4,7 @@ open Core
 let opt_parse = ref false
 let opt_model = ref false
 let opt_modelws = ref false
+let opt_modelw3liq = ref false
 
 exception Compiler_error
 exception E_arg
@@ -21,7 +22,10 @@ let compile_and_print (filename, channel) =
       let modelws = Modelws.model_to_modelws model in
       if !opt_modelws
       then Format.printf "%a\n" Modelws.pp_model_with_storage modelws
-    ))
+      else (
+        let _modelw3liq= Modelw3liq.modelws_to_modelw3liq modelws in
+        if !opt_modelw3liq then () else ()
+    )))
 
 (* -------------------------------------------------------------------- *)
 let main () =
