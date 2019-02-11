@@ -31,11 +31,12 @@ type storage_field_type =
   | Enum     of lident
   | Var      of vtyp
   | KeySet   of lident * vtyp
-  | ValueMap of vtyp (* field type *)
-  | CollMap  of lident * vtyp (* collection asset lident*)
+  | ValueMap of lident * vtyp * vtyp (* aname, asset type, value type *)
+  (* aname, asset type, asset name, value type *)
+  | CollMap  of lident * vtyp * lident * vtyp
 [@@deriving show {with_path = false}]
 
-type storage_field = {
+type storage_field_unloc = {
     asset   : lident option;
     name    : lident;
     typ     : storage_field_type;
@@ -43,6 +44,9 @@ type storage_field = {
     default : bval option; (* initial value *)
     ops     : storage_field_operation list;
   }
+[@@deriving show {with_path = false}]
+
+type storage_field = storage_field_unloc loced
 [@@deriving show {with_path = false}]
 
 type storage = {
@@ -130,14 +134,16 @@ let aft_to_sft info aname fname iskey (typ : ptyp) =
   match iskey, typ with
   | true, Tbuiltin typ -> KeySet (aname,typ)
   | true, _ -> raise (InvalidKeyType (aname,fname,loc))
-  | false, Tbuiltin typ -> ValueMap typ
+  | false, Tbuiltin typ -> ValueMap (aname, get_key_type aname info.key_types, typ)
   (* what is the vtyp of the asset ? *)
-  | false, Tasset id -> ValueMap (get_key_type id info.key_types)
+  | false, Tasset id -> ValueMap (aname, get_key_type id info.key_types,
+                                  get_key_type id info.key_types)
   | false, Tcontainer (ptyp,_) ->
      begin
      match unloc ptyp with
      (* what is the vtyp of the asset ? *)
-     | Tasset id -> CollMap (aname, (get_key_type id info.key_types))
+       | Tasset id -> CollMap (aname, (get_key_type aname info.key_types),
+                               id, (get_key_type id info.key_types))
      | _ -> raise (UnsupportedType (aname,fname,loc))
      end
   | _ -> raise (UnsupportedType (aname,fname,loc))
@@ -156,7 +162,7 @@ let mk_storage_field info name iskey (arg : decl) =
     | None   -> raise (NoFieldType name)
   in
   let typ = aft_to_sft info name fname iskey typ in
-  [{
+  [ mkloc (loc arg) {
     asset   = Some name;
     name    = mk_asset_field name (unloc arg).name;
     typ     = typ;
@@ -186,8 +192,9 @@ let vt_to_ft var =
   | None -> raise (VarNoType (loc var.decl))
 
 let mk_variable (var : variable) =
+  let l   = loc var in
   let var = unloc var in
-  {
+  mkloc l {
   asset   = None;
   name    = (unloc var.decl).name;
   typ     = vt_to_ft var;
@@ -202,7 +209,8 @@ let mk_role_default (r : role) =
   | Some (Raddress a) -> Some (mkloc (loc r) (BVstring a))
   | _ -> None
 
-let mk_role_var (role : role) = {
+let mk_role_var (role : role) =
+  mkloc (loc role) {
   asset   = None;
   name    = (unloc role).name;
   typ     = Var VTaddress;
@@ -211,7 +219,7 @@ let mk_role_var (role : role) = {
   ops     = []
 }
 
-let mk_state_var (stm : stmachine) = {
+let mk_state_var (stm : stmachine) = mkloc (loc ((unloc stm).name)) {
   asset   = None;
   name    = (unloc stm).name;
   typ     = Enum (unloc stm).name;
