@@ -13,44 +13,16 @@ let loc (a : 'a Location.loced) : Loc.position =
   let endp   = (snd l.loc_end)   in
   Loc.user_position fname line startp endp
 
-
 let mk_ident s       = { id_str = unloc s; id_ats = []; id_loc = loc s }
 
-let str_to_ident s l = { id_str = s; id_ats = []; id_loc = l }
-
-(*let mk_expr e l = { expr_desc = unloc e; expr_loc = loc l }
-
-let mk_term t l = { term_desc = unloc t; term_loc = loc l }
-
-let mk_pat p l = { pat_desc = p; pat_loc = loc l }
-
-let pat_var id = mk_pat (Pvar id)
-
-let mk_var (id : lident) = mk_term (Tident (Qident (unloc id))) (loc id)
-
-let param0 = [Loc.dummy_position, None, false, Some (PTtuple [])]
-
-let param1 id ty = [Loc.dummy_position, Some id, false, Some ty]
-
-let mk_tconst s =
-  mk_term
-    (Tconst
-       Number.(ConstInt { ic_negative = false ;
-                          ic_abs = int_literal_dec s }))
-
-let mk_econst s =
-  mk_expr
-    (Econst
-       Number.(ConstInt { ic_negative = false ;
-                          ic_abs = int_literal_dec s }))
-
-let mk_tapp f l = mk_term (Tidapp(f,l))
-
-let mk_eapp f l = mk_expr (Eidapp(f,l))
-
-let mk_evar x = mk_expr(Eident(Qident x))
-
-*)
+let mk_qid l =
+  let rec aux l =
+    match l with
+      | [] -> assert false
+      | [x] -> Qident(mk_ident x)
+      | x::r -> Qdot(aux r,mk_ident x)
+  in
+  aux (List.rev l)
 
 let mk_enum_vals = List.map (fun id -> loc id, mk_ident id, [])
 
@@ -66,9 +38,9 @@ let mk_enum_decl (enum : Modelws.enum) =
     td_def = TDalgebraic (mk_enum_vals (unloc enum).values);
   }]
 
-let vtyp_to_ident vt =
-  let s =
-    match vt with
+let lident_to_typ s = PTtyapp (mk_qid [s],[])
+
+let vtyp_to_str = function
     | VTint                -> "int"
     | VTuint               -> "uint"
     | VTdate               -> "timestamp"
@@ -76,21 +48,26 @@ let vtyp_to_ident vt =
     | VTstring             -> "string";
     | VTaddress            -> "address";
     | VTcurrency (Tez,_)   -> "tez"
-    | VTcurrency (Mutez,_) -> "tez" in
-  str_to_ident s Loc.dummy_position
+    | VTcurrency (Mutez,_) -> "tez"
+
+let str_to_lident = mkloc Location.dummy
+
+let str_to_ident s = { id_str = s; id_ats = []; id_loc = Loc.dummy_position }
+
+let vtyp_to_ident vt = vt |> vtyp_to_str |> str_to_ident
 
 let mk_ptyp = function
-  | Enum     lid        -> PTtyvar (mk_ident lid)
-  | Var      vt         -> PTtyvar (vtyp_to_ident vt)
+  | Enum     lid        -> lident_to_typ lid
+  | Var      vt         -> vt |> vtyp_to_str |> str_to_lident |> lident_to_typ
   | KeySet   (_,vt)     ->
-    let listid =  str_to_ident "list" Loc.dummy_position in
-    PTtyapp (Qident listid, [PTtyvar (vtyp_to_ident vt)])
+    let listid =  str_to_ident "list" in
+    PTtyapp (Qident listid, [PTtyvar (str_to_ident (vtyp_to_str vt))])
   | ValueMap (_, vtf, vtt) ->
-    let mapid  = str_to_ident "map" Loc.dummy_position in
+    let mapid  = str_to_ident "map" in
     PTtyapp (Qident mapid, [PTtyvar (vtyp_to_ident vtf); PTtyvar (vtyp_to_ident vtt)])
   | CollMap  (_,vtf,_,vtt) ->
-    let listid = str_to_ident "list" Loc.dummy_position in
-    let mapid  = str_to_ident "map"  Loc.dummy_position in
+    let listid = str_to_ident "list" in
+    let mapid  = str_to_ident "map"  in
     PTtyapp (Qident mapid, [PTtyvar (vtyp_to_ident vtf);
                             PTtyapp (Qident listid, [PTtyvar (vtyp_to_ident vtt)])])
 
