@@ -30,6 +30,7 @@ run:
 	$(MAKE) -C src run
 
 clean:
+	$(MAKE) -f Makefile.plugin.mk -C src clean
 	$(MAKE) -C src clean
 	$(MAKE) -C src/liq clean
 
