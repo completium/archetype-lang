@@ -49,7 +49,7 @@ SRC = \
 OBJS = $(SRC:.ml=.cmx)
 
 plugin: $(OBJS)
-	ocamlopt -shared -o cml.cmxs $(OBJS)
+	ocamlopt -shared -o cml.cmxs $(OBJS) /home/guillaume/.opam/cml/lib/batteries/batteries.cmxa
 
 #dune build --profile=$(PROFILE) w3plugin.cmxs
 
@@ -57,5 +57,6 @@ clean:
 	dune clean
 	rm -fr *~ \#*
 	rm -fr *.cm[aoix]
+	rm -fr *.cmxs
 	rm -fr *.o
 	rm -fr lexer.ml parser.ml

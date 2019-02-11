@@ -1,4 +1,3 @@
-open CmlLib
 open Why3
 open Pmodule
 open Ptree
