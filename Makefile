@@ -10,6 +10,7 @@ build: plugin compiler genmodelws
 
 compiler:
 	$(MAKE) -C src compiler.exe genmodelws.exe
+	cp -f ./src/_build/default/compiler.exe .
 
 plugin:
 	$(MAKE) -f Makefile.plugin.mk -C src plugin

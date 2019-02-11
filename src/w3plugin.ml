@@ -44,6 +44,7 @@ let read_channel env path file (c: in_channel) =
     ["option", "Option";
      "liq", "Utils";
      "liq", "Int";
+     "liq", "Uint";
      "liq", "Nat";
      "liq", "Address";
      "liq", "Timestamp";

@@ -37,6 +37,12 @@ theory Nat
 
 end
 
+theory Uint
+
+  type uint
+
+end
+
 theory Address
 
   type address
