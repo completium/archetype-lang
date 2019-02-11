@@ -1,6 +1,5 @@
 (* Lexer *)
 {
-  open Core
   open Parser
 
   let lex_error lexbuf msg =

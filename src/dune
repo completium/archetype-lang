@@ -7,28 +7,26 @@
 (ocamllex lexer)
 (menhir (flags --explain) (modules parser))
 
-(library
-  (name cmlLib)
-  (preprocess
-    (pps ppx_deriving.std)
-  )
-  (modules translate location core io model ident parseTree parser lexer parseUtils model modelws modelw3liq printer miles)
-  (libraries batteries menhirLib why3 ppx_deriving)
-)
+;;(library
+;;  (name cmlLib)
+;;  (preprocess
+;;    (pps ppx_deriving.std)
+;;  )
+;;  (ppx_runtime_libraries ppx_deriving)
+;;  (modules translate location core io model ident parseTree parser lexer parseUtils model modelws modelw3liq printer miles)
+;;  (libraries batteries menhirLib why3 ppx_deriving)
+;;)
 
 (library
   (name w3plugin)
-  (preprocess
-    (pps ppx_deriving.std)
-  )
-  (modules w3plugin)
-  (libraries cmlLib batteries menhirLib why3 ppx_deriving)
+  (modules w3plugin translate location core io model ident parseTree parser lexer parseUtils model modelws modelw3liq printer miles)
+  (libraries menhirLib why3)
 )
 
-(executables
-  (preprocess
-    (pps ppx_deriving.std)
-  )
-  (modules compiler genwhy3 genmodelws)
-  (libraries cmlLib batteries menhirLib why3 ppx_deriving)
-  (names     compiler genwhy3 genmodelws))
+;;(executables
+;;  (preprocess
+;;    (pps ppx_deriving.std)
+;;  )
+;;  (modules compiler genwhy3 genmodelws)
+;;  (libraries cmlLib batteries menhirLib why3 ppx_deriving)
+;;  (names     compiler genwhy3 genmodelws))

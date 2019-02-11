@@ -1,4 +1,3 @@
-open CmlLib
 open Why3
 open Pmodule
 open Ptree
@@ -27,7 +26,6 @@ let translate dl =
   List.iter (Typing.add_decl Loc.dummy_position) modelw3liq
 
 let read_channel env path file (c: in_channel) =
-  let c = BatIO.input_channel c in
   let f = Io.parse_model ~name:file c in
   Debug.dprintf debug "%s parsed successfully.@." file;
   let file = Filename.basename file in
