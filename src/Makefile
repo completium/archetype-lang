@@ -14,6 +14,9 @@ all: $(COMPILER) $(GENWHY3) $(GENMODELWS) .merlin
 run:
 	dune exec ./$(COMPILER)
 
+plugin:
+	dune build --profile=$(PROFILE) w3plugin.cmxs
+
 clean:
 	dune clean
 
@@ -21,6 +24,9 @@ merlin: .merlin
 
 # --------------------------------------------------------------------
 %.exe: __force__
+	dune build --profile=$(PROFILE) $@
+
+%.cmxs: __force__
 	dune build --profile=$(PROFILE) $@
 
 .merlin: __force__

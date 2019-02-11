@@ -6,8 +6,16 @@
 # --------------------------------------------------------------------
 all: build merlin
 
-build:
+build: plugin compiler genmodelws
+
+compiler:
 	$(MAKE) -C src compiler.exe genmodelws.exe
+
+plugin:
+	$(MAKE) -C src w3plugin.cmxs
+
+genmodelws:
+	$(MAKE) -C src genmodelws.exe
 
 extract:
 	$(MAKE) -C src/liq extract.exe
