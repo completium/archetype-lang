@@ -47,6 +47,7 @@ let read_channel env path file (c: in_channel) =
      "liq", "Nat";
      "liq", "Address";
      "liq", "Timestamp";
+     "liq", "Tez";
      "liq", "String";
      "liq", "List";
      "liq", "Map";

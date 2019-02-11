@@ -1,10 +1,8 @@
-# -*- Makefile -*-
-
 # --------------------------------------------------------------------
 .PHONY: all clean
 
 OCAMLC=ocamlc -g -rectypes
-INCLUDES= -I /home/guillaume/.opam/cml/lib/batteries -I /home/guillaume/.opam/cml/lib/menhirLib -I /home/guillaume/.opam/cml/lib/why3
+INCLUDES= -I /home/dev/.opam/cml/lib/batteries -I /home/dev/.opam/cml/lib/menhirLib -I /home/dev/.opam/cml/lib/why3
 OCAMLOPT=ocamlopt
 OCAMLDEP=ocamldep
 MENHIR=menhir
