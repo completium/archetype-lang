@@ -12,7 +12,7 @@ compiler:
 	$(MAKE) -C src compiler.exe genmodelws.exe
 
 plugin:
-	$(MAKE) -C src w3plugin.cmxs
+	$(MAKE) -f Makefile.plugin.mk -C src plugin
 
 genmodelws:
 	$(MAKE) -C src genmodelws.exe
