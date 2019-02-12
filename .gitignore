@@ -9,3 +9,5 @@ print.cmo
 bin/compilator
 src/*.cm*
 src/*.o
+*.exe
+*.cm*

@@ -26,7 +26,7 @@
     (pps ppx_deriving.std)
   )
   (library_flags (-linkall))
-  (modules w3plugin)
+  (modules liq_printer w3plugin)
   (libraries batteries cmlLib menhirLib why3 ppx_deriving)
 )
 

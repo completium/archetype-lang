@@ -13,7 +13,9 @@ compiler:
 	cp -f ./src/_build/default/compiler.exe .
 
 plugin:
+	$(MAKE) -C src cmlLib plugin
 	$(MAKE) -f Makefile.plugin.mk -C src plugin
+	cp -f ./src/_build/default/cml.cmxs .
 
 genmodelws:
 	$(MAKE) -C src genmodelws.exe
