@@ -1,0 +1,19 @@
+(env
+  (dev
+    (flags (:standard -g -w Y -w Z -w -9 -w -23 -w +28 -w +33 -I /home/dev/why3-1.1.1/src/util -I /home/dev/why3-1.1.1/src/core -I /home/dev/why3-1.1.1/src/mlw -I /home/dev/why3-1.1.1/src/driver)))
+  (release
+    (flags (:standard))))
+
+(library
+  (name ptree)
+  (preprocess
+    (pps ppx_deriving.std)
+  )
+  (modules ptree)
+  (libraries why3)
+)
+
+(executables
+  (modes     byte)
+  (libraries why3 ptree)
+  (names     genwhy3))

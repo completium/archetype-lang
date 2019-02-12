@@ -11,3 +11,4 @@ src/*.cm*
 src/*.o
 *.exe
 *.cm*
+.merlin
