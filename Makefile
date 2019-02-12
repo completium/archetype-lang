@@ -6,10 +6,10 @@
 # --------------------------------------------------------------------
 all: build merlin
 
-build: plugin compiler genmodelws
+build: plugin compiler
 
 compiler:
-	$(MAKE) -C src compiler.exe genmodelws.exe
+	$(MAKE) -C src compiler.exe
 	cp -f ./src/_build/default/compiler.exe .
 
 plugin:
@@ -17,14 +17,8 @@ plugin:
 	$(MAKE) -C src -f Makefile.plugin.mk plugin
 	cp -f ./src/_build/default/cml.cmxs ./why3/plugin/
 
-genmodelws:
-	$(MAKE) -C src genmodelws.exe
-
 extract:
 	$(MAKE) -C src/liq extract.exe
-
-genwhy3:
-	$(MAKE) -C src genwhy3.exe
 
 merlin:
 	$(MAKE) -C src merlin

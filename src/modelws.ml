@@ -206,8 +206,7 @@ let mk_enums _ m = m.stmachines |> List.fold_left (fun acc (stmachine : stmachin
     ]
   ) []
 
-let model_to_modelws (m : model) : model_with_storage =
-  let info = mk_info (unloc m) in {
+let model_to_modelws (info : info) (m : model) : model_with_storage = {
     name         = (unloc m).name;
     enums        = mk_enums info (unloc m);
     storage      = mk_storage info (unloc m);

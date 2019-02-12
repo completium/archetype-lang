@@ -1,4 +1,5 @@
 open Model
+open Modelinfo
 open Modelws
 open Location
 
@@ -157,10 +158,10 @@ let mk_init_fields info args fs : (lident * initval) list =
 let mk_init_storage (s : storage) =
   let args = mk_init_args s.fields in
   let fields = mk_init_fields s.fields in
-*)
+  *)
 
 (* returns a list of definition *)
-let modelws_to_modelw3liq (m : model_with_storage) =
+let modelws_to_modelw3liq (_info : info) (m : model_with_storage) =
   []
   |> fun x -> List.fold_left (fun acc e -> acc @ [mk_enum_decl e]) x m.enums
   |> fun x -> x @ [mk_storage_decl m.storage]

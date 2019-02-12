@@ -18,8 +18,9 @@ let mk_id ~loc name =
 
 let translate dl =
   let model = Translate.parseTree_to_model dl in
-  let modelws = Modelws.model_to_modelws model in
-  let modelw3liq = Modelw3liq.modelws_to_modelw3liq modelws in
+  let info = Modelinfo.mk_info (Location.unloc model) in
+  let modelws = Modelws.model_to_modelws info model in
+  let modelw3liq = Modelw3liq.modelws_to_modelw3liq info modelws in
   List.iter (Typing.add_decl Loc.dummy_position) modelw3liq
 
 let read_channel env path file (c: in_channel) =

@@ -17,14 +17,15 @@ let compile_and_print (filename, channel) =
   then Format.printf "%a@." Printer.pp_model pt
   else (
     let model = Translate.parseTree_to_model pt in
+    let info  = Modelinfo.mk_info (Location.unloc model) in
     if !opt_model
     then Format.printf "%a\n" Model.pp_model model
     else (
-      let modelws = Modelws.model_to_modelws model in
+      let modelws = Modelws.model_to_modelws info model in
       if !opt_modelws
       then Format.printf "%a\n" Modelws.pp_model_with_storage modelws
       else (
-        let _modelw3liq= Modelw3liq.modelws_to_modelw3liq modelws in
+        let _modelw3liq= Modelw3liq.modelws_to_modelw3liq info modelws in
         if !opt_modelw3liq then () else ()
     )))
 
