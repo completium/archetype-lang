@@ -1,9 +1,11 @@
+model test_asset
+
 asset my_asset_simple identified by str = {
   str : string;
   i : uint
 } with { i >= 1 }
 
-asset my_asset as role sorted by i = {
+asset my_asset identified by i = {
   i : uint;
   mycollection : my_asset_simple set
 } initialized by {

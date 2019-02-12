@@ -6,6 +6,19 @@ open Location
 open Why3
 open Ptree
 
+let empty_spec = {
+    sp_pre = [];
+    sp_post = [];
+    sp_xpost = [];
+    sp_reads = [];
+    sp_writes = [];
+    sp_alias = [];
+    sp_variant = [];
+    sp_checkrw = false;
+    sp_diverge = false;
+    sp_partial = false;
+  }
+
 let loc (a : 'a Location.loced) : Loc.position =
   let l      = Location.loc a in
   let fname  = l.loc_fname in
@@ -14,7 +27,9 @@ let loc (a : 'a Location.loced) : Loc.position =
   let endp   = (snd l.loc_end)   in
   Loc.user_position fname line startp endp
 
-let mk_ident s       = { id_str = unloc s; id_ats = []; id_loc = loc s }
+let mk_expr e = { expr_desc = e; expr_loc = Loc.dummy_position }
+
+let mk_ident s = { id_str = unloc s; id_ats = []; id_loc = loc s }
 
 let mk_qid l =
   let rec aux l =
@@ -25,7 +40,23 @@ let mk_qid l =
   in
   aux (List.rev l)
 
+let mk_econst s =
+  mk_expr
+    (Econst
+       Number.(ConstInt { ic_negative = false ;
+                          ic_abs = int_literal_dec s }))
+
+let str_to_eident (s : string list) = s
+  |> List.map (fun x -> mkloc Location.dummy x)
+  |> fun x -> Eident (mk_qid x)
+
+let str_to_eidapp (s : string list) l = s
+  |> List.map (fun x -> mkloc Location.dummy x)
+  |> fun x -> Eidapp ((mk_qid x),l)
+
 let mk_enum_vals = List.map (fun id -> loc id, mk_ident id, [])
+
+let mk_evar x = mk_expr(Eident(mk_qid [x]))
 
 let mk_enum_decl (enum : Modelws.enum) =
   Dtype [{
@@ -96,7 +127,6 @@ let mk_storage_decl (storage : storage) =
   }]
 
 (* storage init generation *)
-    (*
 let mk_init_args info fs : (lident * storage_field_type) list =
   List.fold_left (fun acc f ->
       let f = unloc f in
@@ -104,7 +134,7 @@ let mk_init_args info fs : (lident * storage_field_type) list =
       | None ->
         begin
           match  f.typ with
-          | Enum id when info.is_state id -> acc
+          | Enum id when (is_state info id) -> acc
           | KeySet _ -> acc
           | ValueMap _ -> acc
           | CollMap _ -> acc
@@ -146,7 +176,7 @@ let mk_init_fields info args fs : (lident * initval) list =
            then Iinput f.name
            else (* not an input, no default value : depends on type *)
              match f.typ with
-             | Enum id               -> Ienum (info.get_initial_state id)
+             | Enum id               -> Ienum (get_initial_state info id)
              | Var vt                -> Ival (mkloc Location.dummy (mk_init_val vt))
              | KeySet (_,vt)         -> Iemptyc (Emptylist vt)
              | ValueMap (_,vtf,vtt)  -> Iemptyc (EmptyMap (vtf,vtt))
@@ -155,13 +185,67 @@ let mk_init_fields info args fs : (lident * initval) list =
          acc @ [f.name, init]
     ) [] fs
 
-let mk_init_storage (s : storage) =
-  let args = mk_init_args s.fields in
-  let fields = mk_init_fields s.fields in
-  *)
+let bval_to_expr = function
+  | BVint      v -> mk_econst (Big_int.string_of_big_int v)
+  | BVuint     v -> mk_econst (Big_int.string_of_big_int v)
+  | BVbool     v -> mk_expr (if v then Etrue else Efalse)
+  | BVenum     v -> raise (CannotConvert v)
+  | BVfloat    v -> raise (CannotConvert v)
+  | BVdate     v -> raise (CannotConvert v)
+  | BVstring   _ -> raise (StringUnsupported)
+  | BVcurrency v -> mk_econst v
+  | BVaddress  v -> mk_econst v
+  | BVduration v -> mk_econst v
+
+let vtyp_to_acronym = function
+  | VTbool       -> "bol"
+  | VTint        -> "int"
+  | VTuint       -> "unt"
+  | VTdate       -> "tim"
+  | VTduration   -> "dur"
+  | VTstring     -> "str"
+  | VTaddress    -> "add"
+  | VTcurrency _ -> "tez"
+
+let empty_cont_to_expr = function
+  | Emptylist    _         -> mk_expr (str_to_eident ["Nil"])
+  | EmptyMap     (vtf,vtt) ->
+    let suffix = (vtyp_to_acronym vtf)^"_"^(vtyp_to_acronym vtt) in
+    mk_expr (str_to_eidapp ["empty_map_"^suffix] [mk_expr (Etuple [])])
+  | EmptySet     vt        ->
+    let suffix = vtyp_to_acronym vt in
+    mk_expr (str_to_eidapp ["empty_set_"^suffix] [mk_expr (Etuple [])])
+  | EmptyCollMap (vtf,vtt) ->
+    let suffix = (vtyp_to_acronym vtf)^"_"^(vtyp_to_acronym vtt) in
+    mk_expr (str_to_eidapp ["empty_map_"^suffix^"l"] [mk_expr (Etuple [])])
+
+let mk_init_body (fields : (lident * initval) list) : expr =
+  let fields = fields |> List.map (fun (id,init) ->
+      mk_qid [id], match init with
+        | Ienum id   -> mk_expr (Eident (mk_qid [id]))
+        | Ival bv    -> bval_to_expr (unloc bv)
+        | Iemptyc ec -> empty_cont_to_expr ec
+        | Iinput id  -> mk_evar id) in
+  mk_expr (Erecord fields)
+
+let mk_fun_decl id args body =
+  let args = List.map (fun (id, sty) ->
+      let id = mk_ident id in
+      let ty = mk_ptyp sty in
+      Loc.dummy_position, Some id, false, Some ty
+    ) args in
+  let f = Efun(args, None, Ity.MaskVisible, empty_spec, body) in
+  Dlet(str_to_ident id, false, Expr.RKnone, mk_expr f)
+
+let mk_init_storage info (s : storage) =
+  let args = mk_init_args info s.fields in
+  let fields = mk_init_fields info args s.fields in
+  let body = mk_init_body fields in
+  mk_fun_decl "init" args body
 
 (* returns a list of definition *)
-let modelws_to_modelw3liq (_info : info) (m : model_with_storage) =
+let modelws_to_modelw3liq (info : info) (m : model_with_storage) =
   []
   |> fun x -> List.fold_left (fun acc e -> acc @ [mk_enum_decl e]) x m.enums
   |> fun x -> x @ [mk_storage_decl m.storage]
+  |> fun x -> x @ [mk_init_storage info m.storage]

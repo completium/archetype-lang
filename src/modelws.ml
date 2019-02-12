@@ -93,16 +93,16 @@ let aft_to_sft info aname fname iskey (typ : ptyp) =
   match iskey, typ with
   | true, Tbuiltin typ -> KeySet (aname,typ)
   | true, _ -> raise (InvalidKeyType (aname,fname,loc))
-  | false, Tbuiltin typ -> ValueMap (aname, get_key_type aname info.key_types, typ)
+  | false, Tbuiltin typ -> ValueMap (aname, get_key_type aname info, typ)
   (* what is the vtyp of the asset ? *)
-  | false, Tasset id -> ValueMap (aname, get_key_type id info.key_types,
-                                  get_key_type id info.key_types)
+  | false, Tasset id -> ValueMap (aname, get_key_type id info,
+                                  get_key_type id info)
   | false, Tcontainer (ptyp,_) ->
      begin
      match unloc ptyp with
      (* what is the vtyp of the asset ? *)
-       | Tasset id -> CollMap (aname, (get_key_type aname info.key_types),
-                               id, (get_key_type id info.key_types))
+       | Tasset id -> CollMap (aname, (get_key_type aname info),
+                               id, (get_key_type id info))
      | _ -> raise (UnsupportedType (aname,fname,loc))
      end
   | _ -> raise (UnsupportedType (aname,fname,loc))

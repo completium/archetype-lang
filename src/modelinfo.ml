@@ -7,6 +7,8 @@ exception UnsupportedType    of lident * lident * Location.t
 exception VarNoType          of Location.t
 exception UnsupportedVartype of Location.t
 exception NoFieldType        of lident
+exception CannotConvert      of string
+exception StringUnsupported
 
 type info = {
   key_types : (string * vtyp) list; (* asset name, key type *)
@@ -37,8 +39,14 @@ let mk_info m =
   let kt = m.assets |> List.fold_left (fun acc a -> acc @ [get_key_type a]) [] in
   { key_types = kt }
 
-let get_key_type fname key_types =
+let get_key_type fname info =
   let id = unloc fname in
-  if List.mem_assoc id key_types
-  then List.assoc id key_types
+  if List.mem_assoc id info.key_types
+  then List.assoc id info.key_types
   else raise Not_found
+
+(* TODO *)
+let is_state _info _id = false
+
+(* TODO *)
+let get_initial_state _info _id = mkloc Location.dummy ""
