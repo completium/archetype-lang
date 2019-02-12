@@ -452,12 +452,9 @@ let pp_transitem fmt { pldesc = t; _ } =
 
 
 (* -------------------------------------------------------------------------- *)
-let state_option_to_str opt =
-match opt with
-  | SOinitial  -> "initial"
-
-let pp_state_option fmt opt =
- Format.fprintf fmt "%s" (state_option_to_str opt)
+let pp_state_option fmt = function
+  | SOinitial  -> Format.fprintf fmt "initial"
+  | SOspecification xs -> Format.fprintf fmt "with {%a}" (pp_list ";@\n" pp_named_item) xs
 
 let pp_ident_state_option fmt item =
   match item with

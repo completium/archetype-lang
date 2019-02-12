@@ -172,6 +172,7 @@ and asset_option =
 
 and state_option =
   | SOinitial
+  | SOspecification of named_item list
 
 and signature =
   | Ssignature of lident * type_t list

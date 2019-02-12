@@ -371,7 +371,8 @@ type_s_unloc:
 | xs=state_option+ { xs }
 
 state_option:
-| INITIAL { SOinitial }
+| INITIAL                     { SOinitial }
+| WITH xs=braced(named_items) { SOspecification xs }
 
 asset:
 | ASSET ops=bracket(asset_operation)? x=ident opts=asset_options?
