@@ -13,10 +13,9 @@
   (preprocess
     (pps ppx_deriving.std)
   )
-
 (library_flags (-linkall))
   (modules core ident location parseUtils parseTree parser lexer io model modelws modelw3liq printer translate miles)
-  (libraries batteries menhirLib why3 ppx_deriving)
+  (libraries menhirLib why3 ppx_deriving)
 )
 
 (library
@@ -27,7 +26,7 @@
   )
   (library_flags (-linkall))
   (modules liq_printer w3plugin)
-  (libraries batteries cmlLib menhirLib why3 ppx_deriving)
+  (libraries cmlLib menhirLib why3 ppx_deriving)
 )
 
 (executables

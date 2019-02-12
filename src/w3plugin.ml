@@ -4,10 +4,6 @@ open Pmodule
 open Ptree
 open Wstdlib
 
-let liqmlw_path = "/home/dev/cml-lang/src/liq"
-
-let mk_loadpath main = (Whyconf.loadpath main) @ [liqmlw_path]
-
 let debug = Debug.register_flag "cml"
   ~desc:"cml plugin debug flag"
 

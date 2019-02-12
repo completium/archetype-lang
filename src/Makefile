@@ -16,7 +16,7 @@ cmlLib:
 	dune build --profile=$(PROFILE) cmlLib.cmxa
 
 plugin:
-	dune build --profile=$(PROFILE) w3plugin.cmxa
+	dune build --profile=$(PROFILE) w3plugin.cmxs
 
 clean:
 	dune clean
