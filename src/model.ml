@@ -193,15 +193,14 @@ type const =
 
 [@@deriving show {with_path = false}]
 
-type signature_unloc = {
+type signature = {
   name : const;
   arrity: int;
   return: ptyp;
   args: ptyp list;
+  loc: Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]
-
-and signature = signature_unloc loced
 
 type quantifier =
   | Forall
@@ -264,18 +263,20 @@ and pterm = pterm_unloc loced
 type cond = pterm
 [@@deriving show {with_path = false}]
 
-type label_lterm = (lident option * lterm)
+type label_lterm = {
+  label : lident option;
+  term : lterm;
+  loc  : Location.t [@opaque];
+}
 [@@deriving show {with_path = false}]
 
-type specification_unloc = {
+type specification = {
     variables  : variable list;
     action     : pterm option;
     invariants : label_lterm list;
     ensures    : label_lterm list;
+    loc        : Location.t [@opaque];
   }
-[@@deriving show {with_path = false}]
-
-and specification = specification_unloc loced
 [@@deriving show {with_path = false}]
 
 type transaction_unloc = {
@@ -293,26 +294,19 @@ type transaction_unloc = {
 and transaction = transaction_unloc loced
 [@@deriving show {with_path = false}]
 
-(*type state = {
+type state_item = {
   name : lident;
   initial : bool;
-  specifications : specification option;
-  (*  loc : Location.t;*)
-}
-  [@@deriving show {with_path = false}]*)
-
-type state = lident
-[@@deriving show {with_path = false}]
-
-type stmachine_unloc = {
-    name         : lident;
-    states       : state list;
-    initial      : state;
-    transitions  : lident list; (* transaction name list *)
+  specs : specification option;
+  loc : Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]
 
-type stmachine = stmachine_unloc loced
+type state = {
+  name : lident;
+  items : state_item list;
+  loc : Location.t [@opaque];
+}
 [@@deriving show {with_path = false}]
 
 type asset_unloc = {
@@ -353,10 +347,9 @@ type model_unloc = {
     assets       : asset list;
     functions    : function_ list;
     transactions : transaction list;
-    stmachines   : stmachine list;
     states       : state list;
     enums        : enum list;
-    spec         : specification option;
+    specs        : specification list option;
 }
 [@@deriving show {with_path = false}]
 

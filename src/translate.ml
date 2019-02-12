@@ -10,6 +10,7 @@ let map_option f = function
 
 let builtin_type str =
   match str with
+  | "bool" -> Some VTbool
   | "int" -> Some VTint
   | "uint" -> Some VTuint
   | "date" -> Some VTdate
@@ -141,6 +142,13 @@ let rec mk_pexpr e =
     | Efun (_args, _body) -> Plit (mkloc loc (BVstring "TODO"))
     | Eletin ((i, typ, _), init, body) -> Pletin (i, mk_pexpr init, map_option mk_ptyp typ, mk_pexpr body)
     | Equantifier _ -> raise (ModelError ("mk_pexpr: quantifier is not allowed in pblock", loc)))
+
+let to_label_lterm (label, lexp) =
+  {
+    label = label;
+    term = mk_lexpr lexp;
+    loc = dummy;
+  }
 
 let get_name_model (pt : ParseTree.model) : lident =
   let loc = loc pt in
@@ -279,6 +287,31 @@ let get_functions decls =
        | _ -> acc)
     ) [] decls
 
+let get_transaction_args args =
+  List.fold_left (fun acc i ->
+      let name, typ, _ = i in
+      mk_decl dummy (name, typ, None)::acc
+    ) [] args
+
+
+let get_transactions decls =
+  List.fold_left (fun acc i ->
+      (let loc, v = deloc i in
+       match v with
+       | Dtransaction (name, _args, _items, _) ->
+         mkloc loc {
+           name = name;
+           args = [];
+           calledby = None;
+           condition = None;
+           transferred = None;
+           transition = None;
+           spec = None;
+           action = None;
+         }::acc
+       | _ -> acc)
+    ) [] decls
+
 let get_enums decls =
   List.fold_left ( fun acc i ->
       (let loc = loc i in
@@ -289,26 +322,57 @@ let get_enums decls =
                     vals = list }::acc
        | _ -> acc)
     ) [] decls
+
+let is_state_initial = function
+  | None -> false
+  | Some opts ->
+  List.fold_left (fun acc i ->
+      match i with
+      | SOinitial -> true
+      | _ -> acc
+    ) false opts
+
+let get_state_specifications (opts : state_option list) : Model.specification =
+  let es = List.fold_left (fun acc i ->
+          match i with
+          | SOspecification xs -> List.map to_label_lterm xs @ acc
+          | _ -> acc
+        ) [] opts in
+    {
+      variables = [];
+      action = None;
+      invariants = [];
+      ensures = es;
+      loc = dummy;
+    }
+
+let get_states_items items =
+  List.fold_left (fun acc i ->
+      (let (name, opts) = i in
+        {name = name;
+         initial = is_state_initial opts;
+         specs = map_option get_state_specifications opts;
+         loc = Location.dummy;
+       }::acc)) [] items
 
 let get_states decls =
-  List.fold_left ( fun acc i ->
-      (let _loc = loc i in
-       let decl_u = Location.unloc i in
-       match decl_u with
-(*       | Dstate (name, list) -> acc
-         mkloc loc {name = name;
-                    vals = list }::acc*)
+  List.fold_left (fun acc i ->
+      (let loc, v = deloc i in
+       match v with
+       | Dstates (name, items) ->
+         {name = (match name with | None -> dumloc "_global" | Some a -> a);
+          items = get_states_items items;
+          loc = loc;}::acc
        | _ -> acc)
     ) [] decls
 
 let get_enums decls =
   List.fold_left ( fun acc i ->
-      (let loc = loc i in
-       let decl_u = Location.unloc i in
+      (let loc, decl_u = deloc i in
        match decl_u with
        | Denum (name, list) ->
          mkloc loc {name = name;
-                    vals = list }::acc
+          vals = list}::acc
        | _ -> acc)
     ) [] decls
 
@@ -324,9 +388,8 @@ let parseTree_to_model (pt : ParseTree.model) : Model.model =
     variables     = get_variables decls;
     assets        = get_assets decls;
     functions     = get_functions decls;
-    transactions  = [];
-    stmachines    = [];
+    transactions  = get_transactions decls;
     states        = get_states decls;
     enums         = get_enums decls;
-    spec          = None;
+    specs         = None;
   }
