@@ -10,9 +10,10 @@ build: plugin compiler genmodelws
 
 compiler:
 	$(MAKE) -C src compiler.exe genmodelws.exe
+	cp -f ./src/_build/default/compiler.exe .
 
 plugin:
-	$(MAKE) -C src w3plugin.cmxs
+	$(MAKE) -f Makefile.plugin.mk -C src plugin
 
 genmodelws:
 	$(MAKE) -C src genmodelws.exe
@@ -30,6 +31,7 @@ run:
 	$(MAKE) -C src run
 
 clean:
+	$(MAKE) -f Makefile.plugin.mk -C src clean
 	$(MAKE) -C src clean
 	$(MAKE) -C src/liq clean
 

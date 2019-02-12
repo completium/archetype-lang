@@ -4,6 +4,10 @@ open ParseTree
 
 exception ModelError of string * Location.t
 
+let map_option f = function
+  | Some x -> Some (f x)
+  | None -> None
+
 let builtin_type str =
   match str with
   | "int" -> Some VTint
@@ -126,7 +130,7 @@ let rec mk_pexpr e =
     | Eapp (_f, _args) -> Plit (mkloc loc (BVstring "TODO"))
     | Etransfer (_e, _b, _a) -> Plit (mkloc loc (BVstring "TODO"))
     | Eassign (op, lhs, rhs) -> Passign (to_assignment_operator op, mk_pexpr lhs, mk_pexpr rhs)
-    | Eif (cond, then_, else_) -> Pif (mk_pexpr cond, mk_pexpr then_, BatOption.map mk_pexpr else_)
+    | Eif (cond, then_, else_) -> Pif (mk_pexpr cond, mk_pexpr then_, map_option mk_pexpr else_)
     | Ebreak -> Pbreak
     | Efor (i, e, body, _name) -> Pfor (i, mk_pexpr e, mk_pexpr body)
     | Eassert e -> Passert (mk_lexpr e)
@@ -135,7 +139,7 @@ let rec mk_pexpr e =
                (let a = mk_pexpr rhs in match a with | {pldesc = Pseq la; _} -> la | _ -> [a]) in
        Pseq l)
     | Efun (_args, _body) -> Plit (mkloc loc (BVstring "TODO"))
-    | Eletin ((i, typ, _), init, body) -> Pletin (i, mk_pexpr init, BatOption.map mk_ptyp typ, mk_pexpr body)
+    | Eletin ((i, typ, _), init, body) -> Pletin (i, mk_pexpr init, map_option mk_ptyp typ, mk_pexpr body)
     | Equantifier _ -> raise (ModelError ("mk_pexpr: quantifier is not allowed in pblock", loc)))
 
 let get_name_model (pt : ParseTree.model) : lident =
@@ -174,7 +178,7 @@ let get_roles decls =
        let decl_u = Location.unloc i in
        match decl_u with
        | Drole (id, dv, _) ->
-         (mkloc loc {name = id; default = BatOption.map to_rexpr dv})::acc
+         (mkloc loc {name = id; default = map_option to_rexpr dv})::acc
        | _ -> acc)
     ) [] decls
 
@@ -197,7 +201,7 @@ let mk_decl loc ((id, typ, dv) : (lident * type_t * expr option)) =
   mkloc loc {
     name = id;
     typ = Some (mk_ptyp typ);
-    default = BatOption.map mk_bval dv;
+    default = map_option mk_bval dv;
   }
 
 let get_variables decls =
@@ -249,7 +253,7 @@ let mk_asset loc ((id, fields, _cs, opts, init, _ops) : (lident * field list opt
     key = get_asset_key opts;
     sort = None;
     role = is_asset_role opts;
-    init = BatOption.map mk_pterm init;
+    init = map_option mk_pterm init;
     preds = None;
   }
 
@@ -270,7 +274,7 @@ let get_functions decls =
        | Dfunction (name, _args, typ, body) ->
          mkloc loc {name = name;
                     args = [];
-                    return = BatOption.map mk_ptyp typ;
+                    return = map_option mk_ptyp typ;
                     body = mk_pexpr body }::acc
        | _ -> acc)
     ) [] decls

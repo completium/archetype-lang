@@ -56,20 +56,22 @@ let str_to_ident s = { id_str = s; id_ats = []; id_loc = Loc.dummy_position }
 
 let vtyp_to_ident vt = vt |> vtyp_to_str |> str_to_ident
 
+let vtyp_to_mlwtyp vt = vt |> vtyp_to_str |> str_to_lident |> lident_to_typ
+
 let mk_ptyp = function
   | Enum     lid        -> lident_to_typ lid
-  | Var      vt         -> vt |> vtyp_to_str |> str_to_lident |> lident_to_typ
+  | Var      vt         -> vt |> vtyp_to_mlwtyp
   | KeySet   (_,vt)     ->
     let listid =  str_to_ident "list" in
-    PTtyapp (Qident listid, [PTtyvar (str_to_ident (vtyp_to_str vt))])
+    PTtyapp (Qident listid, [vtyp_to_mlwtyp vt])
   | ValueMap (_, vtf, vtt) ->
     let mapid  = str_to_ident "map" in
-    PTtyapp (Qident mapid, [PTtyvar (vtyp_to_ident vtf); PTtyvar (vtyp_to_ident vtt)])
+    PTtyapp (Qident mapid, [vtyp_to_mlwtyp vtf; vtyp_to_mlwtyp vtt])
   | CollMap  (_,vtf,_,vtt) ->
     let listid = str_to_ident "list" in
     let mapid  = str_to_ident "map"  in
-    PTtyapp (Qident mapid, [PTtyvar (vtyp_to_ident vtf);
-                            PTtyapp (Qident listid, [PTtyvar (vtyp_to_ident vtt)])])
+    PTtyapp (Qident mapid, [vtyp_to_mlwtyp vtf;
+                            PTtyapp (Qident listid, [vtyp_to_mlwtyp vtt])])
 
 let mk_storage_field (f : storage_field) : field = {
   f_loc     = loc f;

@@ -1,8 +1,8 @@
 (* -------------------------------------------------------------------- *)
-include BatPervasives
+(*include BatPervasives*)
 
 (* -------------------------------------------------------------------- *)
-module String  = BatString
+(*module String  = BatString
 module List    = List
 module Int     = BatInt
 module Ord     = BatOrd
@@ -11,7 +11,7 @@ module Map     = BatMap
 module Num     = BatNum
 module Opt     = BatOption
 module IO      = BatIO
-module Lexing  = BatLexing
+  module Lexing  = BatLexing*)
 
 (* -------------------------------------------------------------------- *)
 module Format = struct

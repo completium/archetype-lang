@@ -1,4 +1,3 @@
-open CmlLib
 open Why3
 open Pmodule
 open Ptree
@@ -27,7 +26,6 @@ let translate dl =
   List.iter (Typing.add_decl Loc.dummy_position) modelw3liq
 
 let read_channel env path file (c: in_channel) =
-  let c = BatIO.input_channel c in
   let f = Io.parse_model ~name:file c in
   Debug.dprintf debug "%s parsed successfully.@." file;
   let file = Filename.basename file in
@@ -46,9 +44,11 @@ let read_channel env path file (c: in_channel) =
     ["option", "Option";
      "liq", "Utils";
      "liq", "Int";
+     "liq", "Uint";
      "liq", "Nat";
      "liq", "Address";
      "liq", "Timestamp";
+     "liq", "Tez";
      "liq", "String";
      "liq", "List";
      "liq", "Map";
@@ -68,4 +68,5 @@ let read_channel env path file (c: in_channel) =
 
 let () =
   Env.register_format mlw_language "cml_lang" ["cml"] read_channel
-    ~desc:"cml format"
+    ~desc:"cml format";
+  Pdriver.register_printer "liquidity" Liq_printer.liq_printer
