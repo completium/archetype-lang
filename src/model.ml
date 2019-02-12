@@ -293,6 +293,14 @@ type transaction_unloc = {
 and transaction = transaction_unloc loced
 [@@deriving show {with_path = false}]
 
+(*type state = {
+  name : lident;
+  initial : bool;
+  specifications : specification option;
+  (*  loc : Location.t;*)
+}
+  [@@deriving show {with_path = false}]*)
+
 type state = lident
 [@@deriving show {with_path = false}]
 
@@ -346,6 +354,7 @@ type model_unloc = {
     functions    : function_ list;
     transactions : transaction list;
     stmachines   : stmachine list;
+    states       : state list;
     enums        : enum list;
     spec         : specification option;
 }

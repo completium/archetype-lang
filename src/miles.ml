@@ -220,6 +220,7 @@ let mk_miles_model () = dumloc {
     functions     = [];
     transactions  = [mk_add_transaction ()];
     stmachines    = [];
+    states        = [];
     enums         = [];
     spec          = None;
   }

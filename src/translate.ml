@@ -290,6 +290,28 @@ let get_enums decls =
        | _ -> acc)
     ) [] decls
 
+let get_states decls =
+  List.fold_left ( fun acc i ->
+      (let _loc = loc i in
+       let decl_u = Location.unloc i in
+       match decl_u with
+(*       | Dstate (name, list) -> acc
+         mkloc loc {name = name;
+                    vals = list }::acc*)
+       | _ -> acc)
+    ) [] decls
+
+let get_enums decls =
+  List.fold_left ( fun acc i ->
+      (let loc = loc i in
+       let decl_u = Location.unloc i in
+       match decl_u with
+       | Denum (name, list) ->
+         mkloc loc {name = name;
+                    vals = list }::acc
+       | _ -> acc)
+    ) [] decls
+
 let parseTree_to_model (pt : ParseTree.model) : Model.model =
   let ptu = Location.unloc pt in
   let decls = match ptu with
@@ -304,6 +326,7 @@ let parseTree_to_model (pt : ParseTree.model) : Model.model =
     functions     = get_functions decls;
     transactions  = [];
     stmachines    = [];
+    states        = get_states decls;
     enums         = get_enums decls;
     spec          = None;
   }
