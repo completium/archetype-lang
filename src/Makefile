@@ -5,17 +5,18 @@
 
 PROFILE  ?= dev
 COMPILER := compiler.exe
-GENWHY3  := genwhy3.exe
-MODELWS  := genmodelws.exe
 
 # --------------------------------------------------------------------
-all: $(COMPILER) $(GENWHY3) $(GENMODELWS) .merlin
+all: $(COMPILER) cmlLib plugin .merlin
 
 run:
 	dune exec ./$(COMPILER)
 
+cmlLib:
+	dune build --profile=$(PROFILE) cmlLib.cmxa
+
 plugin:
-	dune build --profile=$(PROFILE) w3plugin.cmxs
+	dune build --profile=$(PROFILE) w3plugin.cmxa
 
 clean:
 	dune clean

@@ -8,24 +8,29 @@
 (menhir (flags --explain) (modules parser))
 
 (library
+  (modes native)
   (name cmlLib)
   (preprocess
     (pps ppx_deriving.std)
   )
-  (modules translate location core io model ident parseTree parser lexer parseUtils model modelws modelw3liq printer miles)
+  (library_flags (-linkall))
+  (modules core ident location parseUtils parseTree parser lexer io model modelws modelw3liq printer translate miles)
   (libraries batteries menhirLib why3 ppx_deriving)
 )
 
 (library
+  (modes native)
   (name w3plugin)
   (preprocess
     (pps ppx_deriving.std)
   )
+  (library_flags (-linkall))
   (modules w3plugin)
-  (libraries cmlLib batteries menhirLib why3 ppx_deriving)
+  (libraries batteries cmlLib menhirLib why3 ppx_deriving)
 )
 
 (executables
+  (modes native)
   (preprocess
     (pps ppx_deriving.std)
   )
