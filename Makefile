@@ -6,7 +6,7 @@
 # --------------------------------------------------------------------
 all: build merlin
 
-build: plugin compiler
+build: compiler
 
 compiler:
 	$(MAKE) -C src compiler.exe
