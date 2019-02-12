@@ -2,10 +2,6 @@
 
 printer "liquidity"
 
-theory BuiltIn
-  syntax type int "Z.t"
-  syntax predicate  (=)   "%1 = %2"
-end
 
 module HighOrd
   syntax type (->) "%1 -> %2"
@@ -34,13 +30,6 @@ theory bool.Bool
   syntax function xorb  "%1 <> %2"
   syntax function notb  "not %1"
   syntax function implb "not %1 || %2"
-end
-
-theory list.List
-  syntax type     list "%1 list"
-  syntax function Nil  "[]"
-  syntax function Cons "%1 :: %2"
-  syntax predicate is_nil "%1 = []"
 end
 
 module liq.Nat

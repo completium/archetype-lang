@@ -65,7 +65,7 @@ let main () =
   | ParseUtils.ParseError exn ->
     Format.eprintf "%a@." ParseUtils.pp_parse_error exn; exit 1
   | Compiler_error -> Arg.usage arg_list arg_usage; exit 1
-  | Modelws.UnsupportedVartype l ->
+  | Modelinfo.UnsupportedVartype l ->
     Printf.eprintf "Unsupported var type at %s.\n"  (Location.tostring l); exit 1
 
 (* -------------------------------------------------------------------- *)

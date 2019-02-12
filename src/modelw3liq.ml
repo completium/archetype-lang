@@ -41,14 +41,15 @@ let mk_enum_decl (enum : Modelws.enum) =
 let lident_to_typ s = PTtyapp (mk_qid [s],[])
 
 let vtyp_to_str = function
-    | VTint                -> "int"
-    | VTuint               -> "uint"
-    | VTdate               -> "timestamp"
-    | VTduration           -> "uint";
-    | VTstring             -> "string";
-    | VTaddress            -> "address";
-    | VTcurrency (Tez,_)   -> "tez"
-    | VTcurrency (Mutez,_) -> "tez"
+  | VTbool               -> "bool"
+  | VTint                -> "int"
+  | VTuint               -> "uint"
+  | VTdate               -> "timestamp"
+  | VTduration           -> "uint";
+  | VTstring             -> "string";
+  | VTaddress            -> "address";
+  | VTcurrency (Tez,_)   -> "tez"
+  | VTcurrency (Mutez,_) -> "tez"
 
 let str_to_lident = mkloc Location.dummy
 
@@ -92,6 +93,71 @@ let mk_storage_decl (storage : storage) =
     td_wit = [];
     td_def = TDrecord (List.map mk_storage_field storage.fields);
   }]
+
+(* storage init generation *)
+    (*
+let mk_init_args info fs : (lident * storage_field_type) list =
+  List.fold_left (fun acc f ->
+      let f = unloc f in
+      match f.default with
+      | None ->
+        begin
+          match  f.typ with
+          | Enum id when info.is_state id -> acc
+          | KeySet _ -> acc
+          | ValueMap _ -> acc
+          | CollMap _ -> acc
+          | _ as t -> acc @ [f.name, t]
+        end
+      | _ -> acc
+    ) [] fs
+
+type empty_container =
+  | Emptylist     of vtyp
+  | EmptyMap      of vtyp * vtyp
+  | EmptySet      of vtyp
+  | EmptyCollMap  of vtyp * vtyp
+
+type initval =
+  | Ienum   of lident
+  | Ival    of bval
+  | Iemptyc of empty_container
+  | Iinput  of lident
+
+let mk_init_val = function
+  | VTbool       -> BVbool false
+  | VTint        -> BVint Big_int.zero_big_int
+  | VTuint       -> BVint Big_int.zero_big_int
+  | VTdate       -> BVdate "1970-01-01T00:00:00Z"
+  | VTduration   -> BVduration "0s"
+  | VTstring     -> BVstring ""
+  | VTaddress    -> BVaddress "@none"
+  | VTcurrency _ -> BVcurrency "0"
+
+let mk_init_fields info args fs : (lident * initval) list =
+  List.fold_left (fun acc f ->
+      let f = unloc f in
+      match f.default with
+      | Some bv -> acc @ [f.name, Ival bv]
+      | None ->
+         let init =
+           if List.mem_assoc f.name args
+           then Iinput f.name
+           else (* not an input, no default value : depends on type *)
+             match f.typ with
+             | Enum id               -> Ienum (info.get_initial_state id)
+             | Var vt                -> Ival (mkloc Location.dummy (mk_init_val vt))
+             | KeySet (_,vt)         -> Iemptyc (Emptylist vt)
+             | ValueMap (_,vtf,vtt)  -> Iemptyc (EmptyMap (vtf,vtt))
+             | CollMap (_,vtf,_,vtt) -> Iemptyc (EmptyCollMap (vtf,vtt))
+         in
+         acc @ [f.name, init]
+    ) [] fs
+
+let mk_init_storage (s : storage) =
+  let args = mk_init_args s.fields in
+  let fields = mk_init_fields s.fields in
+*)
 
 (* returns a list of definition *)
 let modelws_to_modelw3liq (m : model_with_storage) =

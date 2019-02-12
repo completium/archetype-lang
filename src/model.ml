@@ -41,6 +41,7 @@ type container =
 [@@deriving show {with_path = false}]
 
 type vtyp =
+  | VTbool
   | VTint
   | VTuint
   | VTdate

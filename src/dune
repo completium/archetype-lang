@@ -14,7 +14,7 @@
     (pps ppx_deriving.std)
   )
 (library_flags (-linkall))
-  (modules core ident location parseUtils parseTree parser lexer io model modelws modelw3liq printer translate miles)
+  (modules core ident location parseUtils parseTree parser lexer io model modelinfo modelws modelw3liq printer translate miles)
   (libraries menhirLib why3 ppx_deriving)
 )
 
