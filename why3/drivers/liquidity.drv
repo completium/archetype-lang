@@ -119,6 +119,8 @@ module liq.List
 
   syntax val remove "list_remove %1"
 
+  syntax val Nil "[]"
+
 end
 
 module liq.Map
