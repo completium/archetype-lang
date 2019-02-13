@@ -178,18 +178,22 @@ let mk_role_var (role : role) =
   ops     = []
 }
 
-let mk_state_var (stm : stmachine) = mkloc (loc ((unloc stm).name)) {
+let mk_initial_state info (st : state) =
+  let init = get_initial_state info st.name in
+  mkloc (loc init) (BVenum (unloc init))
+
+let mk_state_var info (st : state) = mkloc (st.loc) {
   asset   = None;
-  name    = (unloc stm).name;
-  typ     = Enum (unloc stm).name;
+  name    = st.name;
+  typ     = Enum st.name;
   ghost   = false;
-  default = Some (mkloc (loc (unloc stm).initial) (BVenum (unloc (unloc stm).initial)));
+  default = Some (mk_initial_state info st);
   ops     = []
 }
 
 let mk_storage info m =
-  let fields = m.stmachines
-    |> List.fold_left (fun acc stm -> acc @ [mk_state_var stm]) []
+  let fields = m.states
+    |> List.fold_left (fun acc st -> acc @ [mk_state_var info st]) []
     |> fun x -> List.fold_left (fun acc r -> acc @ [mk_role_var r]) x m.roles
     |> fun x -> List.fold_left (fun acc var -> acc @ [mk_variable var]) x m.variables
     |> fun x ->
@@ -199,10 +203,12 @@ let mk_storage info m =
   in
   { empty_storage with fields = fields }
 
-let mk_enums _ m = m.stmachines |> List.fold_left (fun acc (stmachine : stmachine) ->
+let mk_enum (items : state_item list) = List.map (fun (it : state_item) -> it.name) items
+
+let mk_enums _ m = m.states |> List.fold_left (fun acc (st : state) ->
     acc @ [
-      mkloc (loc stmachine) { name   = (unloc stmachine).name;
-                              values = (unloc stmachine).states; }
+      mkloc (st.loc) { name   = st.name;
+                       values = mk_enum st.items; }
     ]
   ) []
 

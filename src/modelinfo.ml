@@ -9,9 +9,12 @@ exception UnsupportedVartype of Location.t
 exception NoFieldType        of lident
 exception CannotConvert      of string
 exception StringUnsupported
+exception ExpectsOneInitialState of lident
+exception NotFound           of string
 
 type info = {
-  key_types : (string * vtyp) list; (* asset name, key type *)
+  key_types  : (string * vtyp) list; (* asset name, key type *)
+  state_init : (string * lident) list; (* state name, initial value *)
 }
 
 let get_key_type (a : asset) =
@@ -35,9 +38,15 @@ let get_key_type (a : asset) =
     | [] -> raise Not_found in
   a |> unloc |> fun x -> x.args |> rec_get_key
 
+let get_state_init (s : state) =
+  match  List.filter (fun it -> it.initial) s.items with
+  | [init] -> (unloc s.name, init.name)
+  | _ -> raise (ExpectsOneInitialState (s.name))
+
 let mk_info m =
   let kt = m.assets |> List.fold_left (fun acc a -> acc @ [get_key_type a]) [] in
-  { key_types = kt }
+  let si = m.states |> List.fold_left (fun acc s -> acc @ [get_state_init s]) [] in
+  { key_types = kt; state_init = si; }
 
 let get_key_type fname info =
   let id = unloc fname in
@@ -46,7 +55,12 @@ let get_key_type fname info =
   else raise Not_found
 
 (* TODO *)
-let is_state _info _id = false
+let is_state info id = List.mem_assoc (unloc id) info.state_init
 
 (* TODO *)
-let get_initial_state _info _id = mkloc Location.dummy ""
+let get_initial_state info id =
+  if List.mem_assoc (unloc id) info.state_init
+  then
+    List.assoc (unloc id) info.state_init
+  else
+    raise (NotFound (unloc id))
