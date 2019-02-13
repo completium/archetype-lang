@@ -190,7 +190,6 @@ type const =
   | Cfixed
   | Cadded
   | Cremoved
-
 [@@deriving show {with_path = false}]
 
 type signature = {
@@ -263,11 +262,17 @@ and pterm = pterm_unloc loced
 type cond = pterm
 [@@deriving show {with_path = false}]
 
-type label_lterm = {
+type 'a label_term = {
   label : lident option;
-  term : lterm;
+  term : 'a;
   loc  : Location.t [@opaque];
 }
+[@@deriving show {with_path = false}]
+
+type label_pterm = pterm label_term
+[@@deriving show {with_path = false}]
+
+type label_lterm = lterm label_term
 [@@deriving show {with_path = false}]
 
 type specification = {
@@ -279,13 +284,14 @@ type specification = {
   }
 [@@deriving show {with_path = false}]
 
+type name = lident option * lident
+
 type transaction_unloc = {
     name         : lident;
     args         : arg list;
     calledby     : rexpr option;
-    condition    : cond option;
-    transferred  : cond option;
-    transition   : (lident * lident * lident) option; (* state * state from * state to *)
+    condition    : label_pterm list option;
+    transition   : (lident * lident * (lident * lident) option) option; (* from * to * fied *)
     spec         : specification option;
     action       : pterm option;
 }
@@ -310,13 +316,13 @@ type state = {
 [@@deriving show {with_path = false}]
 
 type asset_unloc = {
-    name         : lident;
-    args         : arg list;
-    key          : lident;
-    sort         : lident list option;
-    role         : bool;
-    init         : pterm option;
-    preds        : pterm list option;
+    name  : lident;
+    args  : arg list;
+    key   : lident;
+    sort  : lident list option;
+    role  : bool;
+    init  : pterm option;
+    preds : pterm list option;
 }
 [@@deriving show {with_path = false}]
 
@@ -331,11 +337,11 @@ type enum_unloc = {
 and enum = enum_unloc loced
 
 type function_unloc = {
-    name         : lident;
-    args         : arg list;
-    return       : ptyp option;
-    body         : pterm;
-  }
+  name         : lident;
+  args         : arg list;
+  return       : ptyp option;
+  body         : pterm;
+}
 [@@deriving show {with_path = false}]
 
 and function_ = function_unloc loced
@@ -349,7 +355,7 @@ type model_unloc = {
     transactions : transaction list;
     states       : state list;
     enums        : enum list;
-    specs        : specification list option;
+    specs        : specification list;
 }
 [@@deriving show {with_path = false}]
 
