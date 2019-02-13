@@ -32,6 +32,11 @@ process () {
 
 printf '%-48s%s\n' '' '  PARSE   PRINT'
 
+for i in contracts/*.cml; do
+  process $i
+done
+
+echo ""
 for i in tests/*.cml; do
   process $i
 done

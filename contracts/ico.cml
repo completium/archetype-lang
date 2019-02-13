@@ -1,4 +1,4 @@
-model bcd_ico
+model ico
 
 constant symbol string = "BCDT"
 

@@ -1,5 +1,3 @@
-use roleDelegation
-
 model erc20
 
 constant name string

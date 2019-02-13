@@ -1,4 +1,4 @@
-model escrow
+model escrow_with_object
 
 role buyer
 

@@ -1,6 +1,3 @@
-use roleDelegation
-use transactionDelegation
-
 model erc721
 
 constant name string
