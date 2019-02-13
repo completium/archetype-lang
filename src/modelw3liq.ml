@@ -64,7 +64,7 @@ let mk_enum_decl (enum : Modelws.enum) =
     td_ident = mk_ident (unloc enum).name;
     td_params = [];
     td_vis = Public;
-    td_mut = true;
+    td_mut = false;
     td_inv = [];
     td_wit = [];
     td_def = TDalgebraic (mk_enum_vals (unloc enum).values);
@@ -189,7 +189,7 @@ let bval_to_expr = function
   | BVint      v -> mk_econst (Big_int.string_of_big_int v)
   | BVuint     v -> mk_econst (Big_int.string_of_big_int v)
   | BVbool     v -> mk_expr (if v then Etrue else Efalse)
-  | BVenum     v -> raise (CannotConvert v)
+  | BVenum     v -> mk_expr (str_to_eident [v])
   | BVfloat    v -> raise (CannotConvert v)
   | BVdate     v -> raise (CannotConvert v)
   | BVstring   _ -> raise (StringUnsupported)
