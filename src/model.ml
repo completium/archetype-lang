@@ -20,6 +20,15 @@ and rexpr =
 type role = role_unloc loced
 [@@deriving show {with_path = false}]
 
+type sexpr_unloc =
+  | Sref of lident
+  | Sor of sexpr * sexpr
+  | Sany
+[@@deriving show {with_path = false}]
+
+and sexpr = sexpr_unloc loced
+[@@deriving show {with_path = false}]
+
 type currency =
   | Tez
   | Mutez

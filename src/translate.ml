@@ -203,6 +203,13 @@ let to_rexpr e =
   (*  | Eapp ({pldesc = {pldesc = Eop}, args, _}) ->*)
   | _ -> raise (ModelError ("wrong type for ", loc))
 
+let to_sexpr (e : expr) : sexpr =
+  let loc, v = deloc e in
+  match v with
+  | Eterm (None, id) -> mkloc loc (Sref id)
+  (*  | Eapp ({pldesc = {pldesc = Eop}, args, _}) ->*)
+  | _ -> raise (ModelError ("wrong type for ", loc))
+
 let get_roles decls =
   List.fold_left ( fun acc i ->
       (let loc = loc i in
