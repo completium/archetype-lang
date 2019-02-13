@@ -15,7 +15,7 @@ exception NotFound           of string
 type info = {
   key_types   : (string * vtyp) list;           (* asset name, key type         *)
   state_init  : (string * lident) list;         (* state name, initial value    *)
-  dummy_vars  : (string * (string * vtyp)) list (* value, (variable name, vtyp) *)
+  dummy_vars  : (string * (string * vtyp)) list (* variable name, (value, vtyp) *)
 }
 
 let get_key_type (a : asset) =
@@ -56,9 +56,9 @@ let default_to_dummy acc = function
   | Some default ->
     begin
       match unloc default with
-      | BVdate    s -> acc @ [s,(fresh_dummy (),VTdate)]
-      | BVaddress s -> acc @ [s,(fresh_dummy (),VTaddress)]
-      | BVstring  s -> acc @ [s,(fresh_dummy (),VTstring)]
+      | BVdate    s -> acc @ [fresh_dummy (),(s, VTdate)]
+      | BVaddress s -> acc @ [fresh_dummy (),(s, VTaddress)]
+      | BVstring  s -> acc @ [fresh_dummy (),(s, VTstring)]
       | _ -> acc
     end
   | None -> acc
@@ -100,9 +100,10 @@ let get_initial_state info id =
   else
     raise (NotFound (unloc id))
 
-let get_dummy_for info v =
-  if List.mem_assoc v info.dummy_vars
-  then
-    let (name,_) = List.assoc v info.dummy_vars in
-    name
-  else raise (NotFound v)
+let get_dummy_for info value =
+  let rec get l =
+    match l with
+    | (n,(v,_))::_ when compare v value = 0 -> n
+    | _::tl -> get tl
+    | [] -> raise (NotFound value) in
+  get info.dummy_vars

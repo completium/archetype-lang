@@ -20,6 +20,7 @@ type liq_entries = {
     init     : string option;
     entries  : string list;
     inlines  : string list;
+    dummies  : (string * string) list (* var name, value *)
   }
 
 type entry_typ = Init | Entry | Inline | NotAnEntry
@@ -28,6 +29,7 @@ let empty_entries : liq_entries = {
     init    = None;
     entries = [];
     inlines = [];
+    dummies = [];
   }
 
 let entries = ref empty_entries
@@ -46,6 +48,9 @@ let get_entry_typ id =
     end
 
 let print_str fmt s = fprintf fmt "%s" s
+
+let is_dummy pv = List.mem_assoc pv.pv_vs.vs_name.id_string !entries.dummies
+let dummy_to_val pv = List.assoc pv.pv_vs.vs_name.id_string !entries.dummies
 
 type info = {
   info_syn          : syntax_map;
@@ -414,6 +419,7 @@ module Print = struct
         (print_expr info) e
 
   and print_let_def ?(functor_arg=false) info fmt = function
+    | Lvar (pv, _) when is_dummy pv -> ()
     | Lvar (pv, e) ->
         fprintf fmt "@[<hov 2>let %a =@ %a@]"
           (print_lident info) (pv_name pv) (print_expr info) e
@@ -464,9 +470,12 @@ module Print = struct
           | _ -> assert false in
         (match query_syntax info.info_literal id with
          | Some s -> syntax_arguments s print_constant fmt [e]
-         | None when n = "0" -> fprintf fmt "Z.zero"
+         | None -> fprintf fmt "%s" n)
+(*         | None when n = "0" -> fprintf fmt "Z.zero"
          | None when n = "1" -> fprintf fmt "Z.one"
-         | None   -> fprintf fmt (protect_on paren "Z.of_string \"%s\"") n)
+           | None   -> fprintf fmt (protect_on paren "Z.of_string \"%s\"") n) *)
+    | Evar pvs when is_dummy pvs ->
+        fprintf fmt "%s" (dummy_to_val pvs)
     | Evar pvs ->
         (print_lident info) fmt (pv_name pvs)
     | Elet (let_def, e) ->

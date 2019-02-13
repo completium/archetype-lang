@@ -75,9 +75,9 @@ let lident_to_typ s = PTtyapp (mk_qid [s],[])
 let vtyp_to_str = function
   | VTbool               -> "bool"
   | VTint                -> "int"
-  | VTuint               -> "uint"
+  | VTuint               -> "nat"
   | VTdate               -> "timestamp"
-  | VTduration           -> "uint";
+  | VTduration           -> "nat";
   | VTstring             -> "string";
   | VTaddress            -> "address";
   | VTcurrency (Tez,_)   -> "tez"
@@ -156,14 +156,14 @@ type initval =
   | Iinput  of lident
 
 let mk_init_val = function
-  | VTbool       -> BVbool false
-  | VTint        -> BVint Big_int.zero_big_int
-  | VTuint       -> BVint Big_int.zero_big_int
-  | VTdate       -> BVdate "1970-01-01T00:00:00Z"
-  | VTduration   -> BVduration "0s"
-  | VTstring     -> BVstring ""
-  | VTaddress    -> BVaddress "@none"
-  | VTcurrency _ -> BVcurrency "0"
+  | VTbool           -> BVbool false
+  | VTint            -> BVint Big_int.zero_big_int
+  | VTuint           -> BVint Big_int.zero_big_int
+  | VTdate           -> BVdate "1970-01-01T00:00:00Z"
+  | VTduration       -> BVduration "0s"
+  | VTstring         -> BVstring ""
+  | VTaddress        -> BVaddress "@none"
+  | VTcurrency (c,_) -> BVcurrency (c,Big_int.zero_big_int)
 
 let mk_init_fields info args fs : (lident * initval) list =
   List.fold_left (fun acc f ->
@@ -186,21 +186,24 @@ let mk_init_fields info args fs : (lident * initval) list =
     ) [] fs
 
 let bval_to_expr info = function
-  | BVint      v -> mk_econst (Big_int.string_of_big_int v)
-  | BVuint     v -> mk_econst (Big_int.string_of_big_int v)
+  | BVint      v ->
+    mk_expr (str_to_eidapp ["mkint"] [mk_econst (Big_int.string_of_big_int v)])
+  | BVuint     v ->
+    mk_expr (str_to_eidapp ["mknat"] [mk_econst (Big_int.string_of_big_int v)])
   | BVbool     v -> mk_expr (if v then Etrue else Efalse)
   | BVenum     v -> mk_expr (str_to_eident [v])
   | BVfloat    v -> raise (CannotConvert v)
   | BVdate     v -> mk_expr (str_to_eident [get_dummy_for info v])
   | BVstring   _ -> raise (StringUnsupported)
-  | BVcurrency v -> mk_expr (str_to_eidapp ["mktez"] [mk_econst v])
+  | BVcurrency (_,v) ->
+    mk_expr (str_to_eidapp ["mktez"] [mk_econst (Big_int.string_of_big_int v)])
   | BVaddress  v -> mk_econst v
   | BVduration v -> mk_econst v
 
 let vtyp_to_acronym = function
   | VTbool       -> "bol"
   | VTint        -> "int"
-  | VTuint       -> "unt"
+  | VTuint       -> "nat"
   | VTdate       -> "tim"
   | VTduration   -> "dur"
   | VTstring     -> "str"
@@ -243,18 +246,24 @@ let mk_init_storage info (s : storage) =
   let body = mk_init_body info fields in
   mk_fun_decl "init" args body
 
-let mk_dummy_decl (_,(name,vt)) =
-  Dlogic [{
-      ld_loc =  Loc.dummy_position;
-      ld_ident = str_to_ident name;
-      ld_params = [];
-      ld_type = Some (vtyp_to_mlwtyp vt);
-      ld_def = None;
-    }]
+let vt_to_mk = function
+  | VTaddress -> "mkaddress"
+  | VTstring  -> "mkstring"
+  | VTdate    -> "mktimestamp"
+  | _ -> raise (NotFound "vt_to_ml")
+
+let mk_dummy_decl (name,(_,vt)) =
+  let body = mk_expr (str_to_eidapp [vt_to_mk vt] [mk_expr (Etuple [])]) in
+  let f = Efun ([], None, Ity.MaskVisible, empty_spec, body) in
+  Dlet(str_to_ident name, false, Expr.RKnone, mk_expr f)
 
 (* returns a list of definition *)
 let modelws_to_modelw3liq (info : info) (m : model_with_storage) =
-  Liq_printer.set_entries { Liq_printer.empty_entries with init = Some "init" };
+  Liq_printer.set_entries
+    { Liq_printer.empty_entries with
+      init = Some "init";
+      dummies = List.map (fun (n,(v,_)) -> (n,v)) info.dummy_vars;
+    };
   []
   |> fun x -> List.fold_left (fun acc d -> acc @ [mk_dummy_decl d]) x info.dummy_vars
   |> fun x -> List.fold_left (fun acc e -> acc @ [mk_enum_decl e]) x m.enums

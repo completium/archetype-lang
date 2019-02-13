@@ -32,6 +32,10 @@ theory bool.Bool
   syntax function implb "not %1 || %2"
 end
 
+module liq.Int
+  syntax val mkint      "%1:int"
+end
+
 module liq.Nat
 
   syntax val nat_eq    "%1 = %2"
@@ -45,6 +49,10 @@ module liq.Nat
   syntax val nat_gt    "%1 > %2"
   syntax val nat_lt    "%1 < %2"
 
+end
+
+module liq.Tez
+  syntax val mktez     "%1tz:tez"
 end
 
 module liq.Address
@@ -122,7 +130,6 @@ module liq.Map
   syntax val remove     "Map.remove %1 %2"
 
   syntax val empty_map_str_int  "Map : (string, int) map"
-  syntax val empty_map_str_unt  "Map : (string, uint) map"
   syntax val empty_map_str_nat  "Map : (string, nat) map"
   syntax val empty_map_str_tim  "Map : (string, timestamp) map"
   syntax val empty_map_str_add  "Map : (string, address) map"
@@ -130,7 +137,6 @@ module liq.Map
   syntax val empty_map_str_tez  "Map : (string, tez) map"
 
   syntax val empty_map_add_int  "Map : (address, int) map"
-  syntax val empty_map_add_unt  "Map : (address, uint) map"
   syntax val empty_map_add_nat  "Map : (address, nat) map"
   syntax val empty_map_add_tim  "Map : (address, timestamp) map"
   syntax val empty_map_add_add  "Map : (address, address) map"
@@ -138,7 +144,6 @@ module liq.Map
   syntax val empty_map_add_tez  "Map : (address, tez) map"
 
   syntax val empty_map_str_intl "Map : (string, int list) map"
-  syntax val empty_map_str_untl "Map : (string, uint list) map"
   syntax val empty_map_str_natl "Map : (string, nat list) map"
   syntax val empty_map_str_timl "Map : (string, timestamp list) map"
   syntax val empty_map_str_addl "Map : (string, address list) map"
@@ -146,7 +151,6 @@ module liq.Map
   syntax val empty_map_str_tezl "Map : (string, tez list) map"
 
   syntax val empty_map_add_intl "Map : (address, int list) map"
-  syntax val empty_map_add_untl "Map : (address, uint list) map"
   syntax val empty_map_add_natl "Map : (address, nat list) map"
   syntax val empty_map_add_timl "Map : (address, timestamp list) map"
   syntax val empty_map_add_addl "Map : (address, address list) map"
@@ -164,7 +168,6 @@ module liq.Set
   syntax val remove  "Set.remove %1 %2"
 
   syntax val empty_set_int "Set : int set"
-  syntax val empty_set_unt "Set : uint set"
   syntax val empty_set_nat "Set : nat set"
   syntax val empty_set_tim "Set : timestamp set"
   syntax val empty_set_add "Set : address set"
