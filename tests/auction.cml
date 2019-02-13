@@ -1,6 +1,7 @@
 model auction
 
-variable max_bid tez = 0
+(*variable max_bid tez = 0*)
+variable max_bid int = 0
 
 asset bid identified by incumbent = {
   incumbent : address;

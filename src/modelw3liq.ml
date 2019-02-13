@@ -163,7 +163,7 @@ let mk_init_val = function
   | VTduration   -> BVduration "0s"
   | VTstring     -> BVstring ""
   | VTaddress    -> BVaddress "@none"
-  | VTcurrency _ -> BVcurrency "0"
+  | VTcurrency _ -> BVcurrency "mktez 0"
 
 let mk_init_fields info args fs : (lident * initval) list =
   List.fold_left (fun acc f ->
@@ -185,15 +185,15 @@ let mk_init_fields info args fs : (lident * initval) list =
          acc @ [f.name, init]
     ) [] fs
 
-let bval_to_expr = function
+let bval_to_expr info = function
   | BVint      v -> mk_econst (Big_int.string_of_big_int v)
   | BVuint     v -> mk_econst (Big_int.string_of_big_int v)
   | BVbool     v -> mk_expr (if v then Etrue else Efalse)
   | BVenum     v -> mk_expr (str_to_eident [v])
   | BVfloat    v -> raise (CannotConvert v)
-  | BVdate     v -> raise (CannotConvert v)
+  | BVdate     v -> mk_expr (str_to_eident [get_dummy_for info v])
   | BVstring   _ -> raise (StringUnsupported)
-  | BVcurrency v -> mk_econst v
+  | BVcurrency v -> mk_expr (str_to_eidapp ["mktez"] [mk_econst v])
   | BVaddress  v -> mk_econst v
   | BVduration v -> mk_econst v
 
@@ -219,11 +219,11 @@ let empty_cont_to_expr = function
     let suffix = (vtyp_to_acronym vtf)^"_"^(vtyp_to_acronym vtt) in
     mk_expr (str_to_eidapp ["empty_map_"^suffix^"l"] [mk_expr (Etuple [])])
 
-let mk_init_body (fields : (lident * initval) list) : expr =
+let mk_init_body info (fields : (lident * initval) list) : expr =
   let fields = fields |> List.map (fun (id,init) ->
       mk_qid [id], match init with
         | Ienum id   -> mk_expr (Eident (mk_qid [id]))
-        | Ival bv    -> bval_to_expr (unloc bv)
+        | Ival bv    -> bval_to_expr info (unloc bv)
         | Iemptyc ec -> empty_cont_to_expr ec
         | Iinput id  -> mk_evar id) in
   mk_expr (Erecord fields)
@@ -240,13 +240,23 @@ let mk_fun_decl id args body =
 let mk_init_storage info (s : storage) =
   let args = mk_init_args info s.fields in
   let fields = mk_init_fields info args s.fields in
-  let body = mk_init_body fields in
+  let body = mk_init_body info fields in
   mk_fun_decl "init" args body
+
+let mk_dummy_decl (_,(name,vt)) =
+  Dlogic [{
+      ld_loc =  Loc.dummy_position;
+      ld_ident = str_to_ident name;
+      ld_params = [];
+      ld_type = Some (vtyp_to_mlwtyp vt);
+      ld_def = None;
+    }]
 
 (* returns a list of definition *)
 let modelws_to_modelw3liq (info : info) (m : model_with_storage) =
   Liq_printer.set_entries { Liq_printer.empty_entries with init = Some "init" };
   []
+  |> fun x -> List.fold_left (fun acc d -> acc @ [mk_dummy_decl d]) x info.dummy_vars
   |> fun x -> List.fold_left (fun acc e -> acc @ [mk_enum_decl e]) x m.enums
   |> fun x -> x @ [mk_storage_decl m.storage]
   |> fun x -> x @ [mk_init_storage info m.storage]

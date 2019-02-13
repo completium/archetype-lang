@@ -13,8 +13,9 @@ exception ExpectsOneInitialState of lident
 exception NotFound           of string
 
 type info = {
-  key_types  : (string * vtyp) list; (* asset name, key type *)
-  state_init : (string * lident) list; (* state name, initial value *)
+  key_types   : (string * vtyp) list;           (* asset name, key type         *)
+  state_init  : (string * lident) list;         (* state name, initial value    *)
+  dummy_vars  : (string * (string * vtyp)) list (* value, (variable name, vtyp) *)
 }
 
 let get_key_type (a : asset) =
@@ -43,10 +44,46 @@ let get_state_init (s : state) =
   | [init] -> (unloc s.name, init.name)
   | _ -> raise (ExpectsOneInitialState (s.name))
 
+(* retrieve string and datetime constant values and create dummy variable
+   which won't be printed out *)
+let dummy_counter = ref 0
+
+let fresh_dummy () =
+  dummy_counter := !dummy_counter + 1;
+  "_dummy_var_"^(string_of_int (!dummy_counter))
+
+let default_to_dummy acc = function
+  | Some default ->
+    begin
+      match unloc default with
+      | BVdate    s -> acc @ [s,(fresh_dummy (),VTdate)]
+      | BVaddress s -> acc @ [s,(fresh_dummy (),VTaddress)]
+      | BVstring  s -> acc @ [s,(fresh_dummy (),VTstring)]
+      | _ -> acc
+    end
+  | None -> acc
+
+let mk_dummy_variables (m : model_unloc) : (string * (string * vtyp)) list =
+  (* look in model variables and asset fields *)
+  m.variables |>
+  List.fold_left (fun acc v ->
+      let value = v |> unloc |> fun x -> x.decl |> unloc |> fun x -> x.default in
+      default_to_dummy acc value
+    ) []
+  |> fun x -> List.fold_left (fun acc (a : asset) ->
+      let fields = (unloc a).args in
+      List.fold_left (fun acc f ->
+          let decl = unloc f in
+          default_to_dummy acc decl.default
+        ) acc fields
+    ) x m.assets
+(* TODO : scan transactions *)
+
 let mk_info m =
   let kt = m.assets |> List.fold_left (fun acc a -> acc @ [get_key_type a]) [] in
   let si = m.states |> List.fold_left (fun acc s -> acc @ [get_state_init s]) [] in
-  { key_types = kt; state_init = si; }
+  let vr = m |> mk_dummy_variables in
+  { key_types = kt; state_init = si; dummy_vars = vr }
 
 let get_key_type fname info =
   let id = unloc fname in
@@ -54,13 +91,18 @@ let get_key_type fname info =
   then List.assoc id info.key_types
   else raise Not_found
 
-(* TODO *)
 let is_state info id = List.mem_assoc (unloc id) info.state_init
 
-(* TODO *)
 let get_initial_state info id =
   if List.mem_assoc (unloc id) info.state_init
   then
     List.assoc (unloc id) info.state_init
   else
     raise (NotFound (unloc id))
+
+let get_dummy_for info v =
+  if List.mem_assoc v info.dummy_vars
+  then
+    let (name,_) = List.assoc v info.dummy_vars in
+    name
+  else raise (NotFound v)

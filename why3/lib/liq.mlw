@@ -68,7 +68,11 @@ end
 
 theory Tez
 
+  use int.Int
+
   type tez
+
+  val mktez int : tez
 
 end
 
