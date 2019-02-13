@@ -245,6 +245,7 @@ let mk_init_storage info (s : storage) =
 
 (* returns a list of definition *)
 let modelws_to_modelw3liq (info : info) (m : model_with_storage) =
+  Liq_printer.set_entries { Liq_printer.empty_entries with init = Some "init" };
   []
   |> fun x -> List.fold_left (fun acc e -> acc @ [mk_enum_decl e]) x m.enums
   |> fun x -> x @ [mk_storage_decl m.storage]
