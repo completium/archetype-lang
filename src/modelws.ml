@@ -165,7 +165,7 @@ let mk_variable (var : variable) =
 (* maps *)
 let mk_role_default (r : role) =
   match (unloc r).default with
-  | Some (Raddress a) -> Some (mkloc (loc r) (BVstring a))
+  | Some (Raddress a) -> Some (mkloc (loc r) (BVaddress a))
   | _ -> None
 
 let mk_role_var (role : role) =

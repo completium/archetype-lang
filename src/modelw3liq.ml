@@ -197,7 +197,7 @@ let bval_to_expr info = function
   | BVstring   _ -> raise (StringUnsupported)
   | BVcurrency (_,v) ->
     mk_expr (str_to_eidapp ["mktez"] [mk_econst (Big_int.string_of_big_int v)])
-  | BVaddress  v -> mk_econst v
+  | BVaddress  v -> mk_expr (str_to_eident [get_dummy_for info v])
   | BVduration v -> mk_econst v
 
 let vtyp_to_acronym = function

@@ -77,6 +77,12 @@ let mk_dummy_variables (m : model_unloc) : (string * (string * vtyp)) list =
           default_to_dummy acc decl.default
         ) acc fields
     ) x m.assets
+  |> fun x -> List.fold_left (fun acc (r : role) ->
+      let r = unloc r in
+      match r.default with
+      | Some (Raddress a) -> acc @ [fresh_dummy (), (a, VTaddress)]
+      | _ -> acc
+    ) x m.roles
 (* TODO : scan transactions *)
 
 let mk_info m =
@@ -105,5 +111,5 @@ let get_dummy_for info value =
     match l with
     | (n,(v,_))::_ when compare v value = 0 -> n
     | _::tl -> get tl
-    | [] -> raise (NotFound value) in
+    | [] -> raise (NotFound (value^" in "^(String.concat "\n" (List.map (fun (n,(v,_)) -> n^" "^v) info.dummy_vars)))) in
   get info.dummy_vars
