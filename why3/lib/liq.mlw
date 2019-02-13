@@ -9,7 +9,7 @@ theory Int
   val int_gt int int : bool
   val int_lt int int : bool
 
-  val mkint int : int
+  val toint int : int
 
 end
 
@@ -33,7 +33,7 @@ theory Nat
   val nat_zero () : nat
   val nat_one  () : nat
 
-  val mknat Int.int : nat
+  val tonat Int.int : nat
 
 end
 
@@ -41,6 +41,7 @@ theory Address
 
   type address
 
+  val toaddress address : address
   val mkaddress unit : address
 
   val add_eq address address : bool
@@ -70,7 +71,7 @@ theory Tez
 
   type tez
 
-  val mktez int : tez
+  val totez int : tez
 
 end
 

@@ -187,17 +187,18 @@ let mk_init_fields info args fs : (lident * initval) list =
 
 let bval_to_expr info = function
   | BVint      v ->
-    mk_expr (str_to_eidapp ["mkint"] [mk_econst (Big_int.string_of_big_int v)])
+    mk_expr (str_to_eidapp ["toint"] [mk_econst (Big_int.string_of_big_int v)])
   | BVuint     v ->
-    mk_expr (str_to_eidapp ["mknat"] [mk_econst (Big_int.string_of_big_int v)])
+    mk_expr (str_to_eidapp ["tonat"] [mk_econst (Big_int.string_of_big_int v)])
   | BVbool     v -> mk_expr (if v then Etrue else Efalse)
   | BVenum     v -> mk_expr (str_to_eident [v])
   | BVfloat    v -> raise (CannotConvert v)
   | BVdate     v -> mk_expr (str_to_eident [get_dummy_for info v])
   | BVstring   _ -> raise (StringUnsupported)
   | BVcurrency (_,v) ->
-    mk_expr (str_to_eidapp ["mktez"] [mk_econst (Big_int.string_of_big_int v)])
-  | BVaddress  v -> mk_expr (str_to_eident [get_dummy_for info v])
+    mk_expr (str_to_eidapp ["totez"] [mk_econst (Big_int.string_of_big_int v)])
+  | BVaddress  v ->
+    mk_expr (str_to_eidapp ["toaddress"] [mk_expr (str_to_eident [get_dummy_for info v])])
   | BVduration v -> mk_econst v
 
 let vtyp_to_acronym = function

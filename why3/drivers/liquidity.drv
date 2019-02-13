@@ -33,16 +33,17 @@ theory bool.Bool
 end
 
 module liq.Int
-  syntax val mkint      "%1:int"
+  syntax val toint      "%1:int"
 end
 
 module liq.Nat
 
-  syntax val nat_eq    "%1 = %2"
-  syntax val nat_nq   "%1 <> %2"
-
+  syntax val tonat     "%1:nat"
   syntax val nat_zero  "(0:nat)"
   syntax val nat_one   "(1:nat)"
+
+  syntax val nat_eq    "%1 = %2"
+  syntax val nat_nq   "%1 <> %2"
 
   syntax val nat_ge    "%1 >= %2"
   syntax val nat_le    "%1 <= %2"
@@ -52,12 +53,16 @@ module liq.Nat
 end
 
 module liq.Tez
-  syntax val mktez     "%1tz:tez"
+  syntax val totez     "%1tz:tez"
 end
 
 module liq.Address
+
+  syntax val toaddress "%1:address"
+
   syntax val add_eq    "%1 = %2"
   syntax val add_nq    "%1 <> %2"
+
 end
 
 module liq.Timestamp

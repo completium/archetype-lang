@@ -65,24 +65,24 @@ let default_to_dummy acc = function
 
 let mk_dummy_variables (m : model_unloc) : (string * (string * vtyp)) list =
   (* look in model variables and asset fields *)
-  m.variables |>
-  List.fold_left (fun acc v ->
+  m.variables
+  |> List.fold_left (fun acc v ->
       let value = v |> unloc |> fun x -> x.decl |> unloc |> fun x -> x.default in
       default_to_dummy acc value
     ) []
-  |> fun x -> List.fold_left (fun acc (a : asset) ->
+  |> (fun x -> List.fold_left (fun acc (a : asset) ->
       let fields = (unloc a).args in
       List.fold_left (fun acc f ->
           let decl = unloc f in
           default_to_dummy acc decl.default
         ) acc fields
-    ) x m.assets
-  |> fun x -> List.fold_left (fun acc (r : role) ->
+    ) x m.assets)
+  |> (fun x -> List.fold_left (fun acc (r : role) ->
       let r = unloc r in
       match r.default with
       | Some (Raddress a) -> acc @ [fresh_dummy (), (a, VTaddress)]
       | _ -> acc
-    ) x m.roles
+    ) x m.roles)
 (* TODO : scan transactions *)
 
 let mk_info m =
