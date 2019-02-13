@@ -106,6 +106,7 @@
 %token <string> STRING
 %token <Big_int.big_int> NUMBER
 %token <string> FLOAT
+%token <Big_int.big_int> TZ
 %token <string> ADDRESS
 %token <string> DURATION
 %token <string> DATE
@@ -617,6 +618,7 @@ simple_expr_r:
 literal:
  | x=NUMBER     { Lnumber  x }
  | x=FLOAT      { Lfloat   x }
+ | x=TZ         { Ltz      x }
  | x=STRING     { Lstring  x }
  | x=ADDRESS    { Laddress x }
  | x=bool_value { Lbool    x }

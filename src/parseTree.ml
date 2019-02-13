@@ -94,6 +94,7 @@ type expr_r =
 and literal =
   | Lnumber   of Big_int.big_int
   | Lfloat    of string
+  | Ltz       of Big_int.big_int
   | Laddress  of string
   | Lstring   of string
   | Lbool     of bool

@@ -46,6 +46,7 @@ let to_const str =
   | "conditions" -> Some Cconditions
   | "actions" -> Some Cactions
   | "none" -> Some Cnone
+  | "any" -> Some Cany
   (* function *)
   | "nth" -> Some Cnth
   | "clear" -> Some Cclear
@@ -117,6 +118,7 @@ let to_bval l =
   | Lbool b -> BVbool b
   | Lduration s -> BVduration s
   | Ldate s -> BVdate s
+  | Ltz n -> BVcurrency (Tez, n)
 
 let mk_lexpr e =
   let loc, v = deloc e in

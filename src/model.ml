@@ -90,7 +90,7 @@ type bval_unloc =
   | BVfloat        of string
   | BVdate         of string (* todo : plus Bat.date *)
   | BVstring       of string
-  | BVcurrency     of string
+  | BVcurrency     of currency * big_int
   | BVaddress      of string
   | BVduration     of string
 [@@deriving show {with_path = false}]
@@ -163,6 +163,7 @@ type const =
   | Cconditions
   | Cactions
   | Cnone
+  | Cany
   (* function *)
   | Cnth
   | Cclear

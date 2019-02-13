@@ -319,6 +319,7 @@ and pp_literal fmt lit =
   match lit with
   | Lnumber   n -> Format.fprintf fmt "%s" (Big_int.string_of_big_int n)
   | Lfloat    f -> Format.fprintf fmt "%s" f
+  | Ltz       n -> Format.fprintf fmt "%stz" (Big_int.string_of_big_int n)
   | Laddress  a -> Format.fprintf fmt "@%s" a
   | Lstring   s -> Format.fprintf fmt "\"%s\"" s
   | Lbool     b -> Format.fprintf fmt "%s" (if b then "true" else "false")

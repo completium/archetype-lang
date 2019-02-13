@@ -76,6 +76,7 @@ let blank   = [' ' '\t' '\r']
 let newline = '\n'
 let digit   = ['0'-'9']
 let float   = digit+ '.' digit+
+let tz      = digit+ "tz"
 let var     = "<%" ['a'-'z' 'A'-'Z'] ['a'-'z' 'A'-'Z' '0'-'9' '_' ]* '>'
 let ident   = (['a'-'z' 'A'-'Z'] | var)  (['a'-'z' 'A'-'Z' '0'-'9' '_' ] | var)*
 let address = '@'['a'-'z' 'A'-'Z' '0'-'9' '_' ]+
@@ -94,6 +95,7 @@ rule token = parse
   | "@remove"             { AT_REMOVE }
   | "@update"             { AT_UPDATE }
   | ident as id           { try  Hashtbl.find keywords id with Not_found -> IDENT id }
+  | tz as t               { TZ (Big_int.big_int_of_string (String.sub t 0 ((String.length t) - 2))) }
   | float as f            { FLOAT (f) }
   | digit+ as n           { NUMBER (Big_int.big_int_of_string n) }
   | address as a          { ADDRESS (String.sub a 1 ((String.length a) - 1)) }
