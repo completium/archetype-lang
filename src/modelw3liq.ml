@@ -163,7 +163,7 @@ let mk_init_val = function
   | VTduration   -> BVduration "0s"
   | VTstring     -> BVstring ""
   | VTaddress    -> BVaddress "@none"
-  | VTcurrency _ -> BVcurrency "mktez 0"
+  | VTcurrency _ -> BVcurrency "0"
 
 let mk_init_fields info args fs : (lident * initval) list =
   List.fold_left (fun acc f ->
