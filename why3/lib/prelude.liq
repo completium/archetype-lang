@@ -9,7 +9,7 @@ let[@inline] now () = Current.time ()
 let[@inline] empty_ops = ([] : operation list)
 
 (* insertion sort *)
-let[@inline] sort (cmp, l) = l
+(*let[@inline] sort (cmp, l) = l*)
 (*  let rec insert v l =
     match l with
     | [] -> [ v ]
@@ -20,7 +20,7 @@ let[@inline] sort (cmp, l) = l
     | e::t -> insert e (sort t) in
   sort l*)
 
-let[@inline] nat_sub ((a : nat), (b : nat)) =
+(*let[@inline] nat_sub ((a : nat), (b : nat)) =
   match%nat a - b with
   | Plus v -> v
   | Minus _ -> Current.failwith "nat_sub result is not a nat."
@@ -68,4 +68,4 @@ let[@inline] sum_nat (params : 's * (('s * 'a) -> nat) * ('a list)) =
   let s = get params 0 in
   let f = get params 1 in
   let l = get params 2 in
-  List.fold (fun (e, acc) -> f (s, e) + acc) l (0:nat)
+  List.fold (fun (e, acc) -> f (s, e) + acc) l (0:nat) *)
