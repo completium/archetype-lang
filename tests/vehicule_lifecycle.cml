@@ -43,13 +43,13 @@ transaction placeOrder (neworder : order) = {
 
 transaction assign_vin (order : order) (vin : string) (detail : vehicledetail) = {
    called by order.orderer
-   transition from order.Placed to order.Vin_assigned
+   transition order.status from Placed to Vin_assigned
    action
      vehicule.add { vin = vin; detail = detail }
 }
 
 transaction assign_owner (order : order) = {
-   transition from order.any to order.Owner_assigned
+   transition order.status from any to Owner_assigned
    action
      (* set vehicule state *)
      order.vehicule.state := Active;
@@ -64,7 +64,7 @@ transaction vehiculeTransfer (buyer : owner) (vehicule : vehicule) = {
 
 transaction scrapVehicle (vehicule : vehicule) = {
    called by vehicle.owner
-   transition from (Off_the_road or Active) to Scrapped
+   transition vehicle.status from (Off_the_road or Active) to Scrapped
 }
 
 transaction scrapVehiclebyColor (color : string) = {
