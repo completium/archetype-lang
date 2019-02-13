@@ -143,10 +143,17 @@ let rec mk_pexpr e =
     | Eletin ((i, typ, _), init, body) -> Pletin (i, mk_pexpr init, map_option mk_ptyp typ, mk_pexpr body)
     | Equantifier _ -> raise (ModelError ("mk_pexpr: quantifier is not allowed in pblock", loc)))
 
-let to_label_lterm (label, lexp) =
+let to_label_lterm (label, lexpr) : label_lterm =
   {
     label = label;
-    term = mk_lexpr lexp;
+    term = mk_lexpr lexpr;
+    loc = dummy;
+  }
+
+let to_label_pterm (label, pexpr) : label_pterm =
+  {
+    label = label;
+    term = mk_pexpr pexpr;
     loc = dummy;
   }
 
@@ -205,10 +212,10 @@ let mk_bval e =
      | Eliteral l -> to_bval l
      | _ -> raise (ModelError ("mk_bval: wrong type for ", loc)))
 
-let mk_decl loc ((id, typ, dv) : (lident * type_t * expr option)) =
+let mk_decl loc ((id, typ, dv) : (lident * type_t option * expr option)) =
   mkloc loc {
     name = id;
-    typ = Some (mk_ptyp typ);
+    typ = map_option mk_ptyp typ;
     default = map_option mk_bval dv;
   }
 
@@ -218,9 +225,9 @@ let get_variables decls =
        let decl_u = Location.unloc i in
        match decl_u with
        | Dconstant (id, typ, dv, _) ->
-         mkloc loc {decl = mk_decl loc (id, typ, dv); constant = true }::acc
+         mkloc loc {decl = mk_decl loc (id, Some typ, dv); constant = true }::acc
        | Dvariable (id, typ, _, dv, _) ->
-         mkloc loc {decl = mk_decl loc (id, typ, dv); constant = false }::acc
+         mkloc loc {decl = mk_decl loc (id, Some typ, dv); constant = false }::acc
        | _ -> acc)
     ) [] decls
 
@@ -251,7 +258,7 @@ let get_asset_fields fields =
       | Some fields -> (List.fold_left (fun acc i ->
           let loc, v = deloc i in
           match v with
-          | Ffield (id, typ, dv, _) -> mk_decl loc (id, typ, dv)::acc
+          | Ffield (id, typ, dv, _) -> mk_decl loc (id, Some typ, dv)::acc
         ) [] fields)
 
 let mk_asset loc ((id, fields, _cs, opts, init, _ops) : (lident * field list option * expr list option * asset_option list option * expr option * asset_operation option)) =
@@ -287,27 +294,76 @@ let get_functions decls =
        | _ -> acc)
     ) [] decls
 
-let get_transaction_args args =
-  List.fold_left (fun acc i ->
+let get_transaction_args (args : ParseTree.args)  =
+  List.fold_left (fun acc (i : lident_typ) ->
       let name, typ, _ = i in
       mk_decl dummy (name, typ, None)::acc
     ) [] args
 
+let to_rexpr_calledby (e : ParseTree.expr) : rexpr =
+  let loc, v = deloc e in
+  match v with
+  | Eterm (None, id) -> Rasset (dumloc "", id)
+  | Eterm (Some a, id) -> Rasset (a, id)
+  | _ -> raise (ModelError ("type error: called by", loc))
+
+let get_transaction_calledby items : rexpr option =
+  List.fold_left (fun acc i ->
+      let loc, v = deloc i in
+      match v with
+      | Tcalledby (e, _) ->
+        (match acc with
+        | None -> Some (to_rexpr_calledby e)
+        | _ -> raise (ModelError ("several called by found", loc)))
+      | _ -> acc
+    ) None items
+
+let get_transaction_condition items : label_pterm list option =
+  List.fold_left (fun acc i ->
+      let loc, v = deloc i in
+      match v with
+      | Tcondition (items, _) ->
+        (match acc with
+         | None -> (Some (List.map (fun a -> let b, c = a in (to_label_pterm (b, c))) items))
+         | _ -> raise (ModelError ("several condition found", loc)))
+      | _ -> acc
+    ) None items
+
+let get_transaction_action items : pterm option =
+  List.fold_left (fun acc i ->
+      let loc, v = deloc i in
+      match v with
+      | Taction (e, _) ->
+        (match acc with
+         | None -> Some (mk_pexpr e)
+         | _ -> raise (ModelError ("several action found", loc)))
+      | _ -> acc
+    ) None items
+
+let get_transaction_transition items : (lident * lident * (lident * lident) option) option =
+  List.fold_left (fun acc i ->
+      let loc, v = deloc i in
+      match v with
+      | Ttransition (from, to_, _id,  _) ->
+        (match acc with
+         | None -> Some (from, to_, None)
+         | _ -> raise (ModelError ("several transition found", loc)))
+      | _ -> acc
+    ) None items
 
 let get_transactions decls =
   List.fold_left (fun acc i ->
       (let loc, v = deloc i in
        match v with
-       | Dtransaction (name, _args, _items, _) ->
+       | Dtransaction (name, args, items, _) ->
          mkloc loc {
            name = name;
-           args = [];
-           calledby = None;
-           condition = None;
-           transferred = None;
-           transition = None;
+           args = get_transaction_args args;
+           calledby = get_transaction_calledby items;
+           condition = get_transaction_condition items;
+           transition = get_transaction_transition items;
            spec = None;
-           action = None;
+           action = get_transaction_action items;
          }::acc
        | _ -> acc)
     ) [] decls
@@ -376,6 +432,15 @@ let get_enums decls =
        | _ -> acc)
     ) [] decls
 
+let get_specs decls =
+  List.fold_left ( fun acc i ->
+      (let _loc, decl_u = deloc i in
+       match decl_u with
+       | Dspecification (_items, _) ->
+         acc
+       | _ -> acc)
+    ) [] decls
+
 let parseTree_to_model (pt : ParseTree.model) : Model.model =
   let ptu = Location.unloc pt in
   let decls = match ptu with
@@ -391,5 +456,5 @@ let parseTree_to_model (pt : ParseTree.model) : Model.model =
     transactions  = get_transactions decls;
     states        = get_states decls;
     enums         = get_enums decls;
-    specs         = None;
+    specs         = get_specs decls;
   }

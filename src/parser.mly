@@ -448,10 +448,10 @@ condition:
        { Tcondition (xs, exts) }
 
 transition_item:
- | TRANSITION id=expr?
+ | TRANSITION id=dot_ident?
      exts=option(extensions)
-     x=from_value
-         y=to_value
+       FROM x=ident
+         TO y=ident
              { Ttransition (x, y, id, exts) }
 
 invariant:

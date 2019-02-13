@@ -16,6 +16,10 @@ let pp_list sep pp =
 let pp_id fmt (id : lident) =
   Format.fprintf fmt "%s" (unloc id)
 
+let pp_name fmt = function
+  | (None, id) -> Format.fprintf fmt "%s" (unloc id)
+  | (Some a, id) -> Format.fprintf fmt "%s.%s" (unloc a) (unloc id)
+
 (* -------------------------------------------------------------------------- *)
 let is_none x =
   match x with None -> true | _ -> false
@@ -415,9 +419,9 @@ let pp_transitem fmt { pldesc = t; _ } =
   | Ttransition (from, _to, id, exts) ->
       Format.fprintf fmt "transition%a%a from %a to %a"
         (pp_option (pp_list " " pp_extension)) exts
-        (pp_option (pp_prefix " " pp_expr)) id
-        pp_expr from
-        pp_expr _to
+        (pp_option (pp_prefix " " pp_name)) id
+        pp_id from
+        pp_id _to
 
   | Tfunction (id, args, r, b) ->
       Format.fprintf fmt "function %a %a%a = %a"
