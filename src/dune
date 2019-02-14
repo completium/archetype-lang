@@ -8,7 +8,6 @@
 (menhir (flags --explain) (modules parser))
 
 (library
-  (modes native)
   (name cmlLib)
   (preprocess
     (pps ppx_deriving.std)
@@ -19,7 +18,6 @@
 )
 
 (library
-  (modes native)
   (name w3plugin)
   (preprocess
     (pps ppx_deriving.std)
@@ -29,11 +27,10 @@
   (libraries cmlLib menhirLib why3 ppx_deriving)
 )
 
-(executables
-  (modes native)
+(executable
   (preprocess
     (pps ppx_deriving.std)
   )
   (modules compiler)
   (libraries cmlLib menhirLib why3 ppx_deriving)
-  (names     compiler))
+  (name     compiler))

@@ -451,7 +451,7 @@ condition:
 transition_item:
  | TRANSITION id=dot_ident?
      exts=option(extensions)
-       FROM x=ident
+       FROM x=expr
          TO y=ident
              { Ttransition (x, y, id, exts) }
 

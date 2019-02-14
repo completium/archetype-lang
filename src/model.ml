@@ -87,19 +87,16 @@ type ltyp_unloc =
 and ltyp = ltyp_unloc loced
 [@@deriving show {with_path = false}]
 
-let pp_big_int fmt n = Format.fprintf fmt "%s" (Big_int.string_of_big_int n)
-type big_int = Big_int.big_int
-
 (* basic variable *)
 type bval_unloc =
-  | BVint          of big_int
-  | BVuint         of big_int
+  | BVint          of Core.big_int
+  | BVuint         of Core.big_int
   | BVbool         of bool
   | BVenum         of string
   | BVfloat        of string
   | BVdate         of string (* todo : plus Bat.date *)
   | BVstring       of string
-  | BVcurrency     of currency * big_int
+  | BVcurrency     of currency * Core.big_int
   | BVaddress      of string
   | BVduration     of string
 [@@deriving show {with_path = false}]
@@ -301,7 +298,7 @@ type transaction_unloc = {
     args         : arg list;
     calledby     : rexpr option;
     condition    : label_pterm list option;
-    transition   : (lident * lident * (lident * lident) option) option; (* from * to * fied *)
+    transition   : (sexpr * lident * (lident * lident) option) option; (* from * to * fied *)
     spec         : specification option;
     action       : pterm option;
 }

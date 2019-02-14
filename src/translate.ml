@@ -191,23 +191,39 @@ let get_name_model (pt : ParseTree.model) : lident =
       | _ -> raise (ModelError ("no name for model found.", loc)))
   | _ -> raise (ModelError ("only ParseTree.model can be translated into Model.model.", loc))
 
-let to_rexpr e =
+let to_rexpr_dv_role e =
   let loc, v = deloc e in
   match v with
   | Eliteral l -> (
       match l with
       | Laddress a -> Raddress a
       | _ -> raise (ModelError ("only address is supported", loc)) )
-  | Eterm (None, id) -> Rrole id
-  | Eterm (Some a, id) -> Rasset (a, id)
+  | Eterm (_, id) -> Rrole id
   (*  | Eapp ({pldesc = {pldesc = Eop}, args, _}) ->*)
   | _ -> raise (ModelError ("wrong type for ", loc))
 
-let to_sexpr (e : expr) : sexpr =
+let rec to_rexpr_calledby (e : ParseTree.expr) : rexpr =
   let loc, v = deloc e in
   match v with
-  | Eterm (None, id) -> mkloc loc (Sref id)
-  (*  | Eapp ({pldesc = {pldesc = Eop}, args, _}) ->*)
+  | Eterm (None, id) -> Rasset (dumloc "", id)
+  | Edot (_, id) -> Rasset (id, id)
+  | Eapp ({pldesc = Eop (`Logical Or); _}, args) ->
+    ( let lhs = to_rexpr_calledby (List.nth args 0) in
+      let rhs = to_rexpr_calledby (List.nth args 1) in
+      Ror (lhs, rhs))
+  | _ -> raise (ModelError ("type error: called by", loc))
+
+let rec to_sexpr (e : expr) : Model.sexpr =
+  let loc, v = deloc e in
+  match v with
+  | Eterm (None, id) -> mkloc loc (
+      match id |> unloc |> to_const with
+      | Some Cany -> Sany
+      | _ -> Sref id)
+  | Eapp ({pldesc = Eop (`Logical Or); _}, args) ->
+    ( let lhs = to_sexpr (List.nth args 0) in
+      let rhs = to_sexpr (List.nth args 1) in
+      mkloc loc (Sor (lhs, rhs)))
   | _ -> raise (ModelError ("wrong type for ", loc))
 
 let get_roles decls =
@@ -216,7 +232,7 @@ let get_roles decls =
        let decl_u = Location.unloc i in
        match decl_u with
        | Drole (id, dv, _) ->
-         (mkloc loc {name = id; default = map_option to_rexpr dv})::acc
+         (mkloc loc {name = id; default = map_option to_rexpr_dv_role dv})::acc
        | _ -> acc)
     ) [] decls
 
@@ -323,13 +339,6 @@ let get_transaction_args (args : ParseTree.args)  =
       mk_decl dummy (name, typ, None)::acc
     ) [] args
 
-let to_rexpr_calledby (e : ParseTree.expr) : rexpr =
-  let loc, v = deloc e in
-  match v with
-  | Eterm (None, id) -> Rasset (dumloc "", id)
-  | Eterm (Some a, id) -> Rasset (a, id)
-  | _ -> raise (ModelError ("type error: called by", loc))
-
 let get_transaction_calledby items : rexpr option =
   List.fold_left (fun acc i ->
       let loc, v = deloc i in
@@ -363,13 +372,13 @@ let get_transaction_action items : pterm option =
       | _ -> acc
     ) None items
 
-let get_transaction_transition items : (lident * lident * (lident * lident) option) option =
+let get_transaction_transition items =
   List.fold_left (fun acc i ->
       let loc, v = deloc i in
       match v with
       | Ttransition (from, to_, _id,  _) ->
         (match acc with
-         | None -> Some (from, to_, None)
+         | None -> Some (to_sexpr from, to_, None)
          | _ -> raise (ModelError ("several transition found", loc)))
       | _ -> acc
     ) None items

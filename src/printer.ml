@@ -421,7 +421,7 @@ let pp_transitem fmt { pldesc = t; _ } =
       Format.fprintf fmt "transition%a%a from %a to %a"
         (pp_option (pp_list " " pp_extension)) exts
         (pp_option (pp_prefix " " pp_name)) id
-        pp_id from
+        pp_expr from
         pp_id _to
 
   | Tfunction (id, args, r, b) ->
