@@ -299,7 +299,7 @@ specification_decl:
 
 %inline specification_variables:
  | { None }
- | xs=specification_variable+ { Some xs }
+ | xs=loc(specification_variable)+ { Some xs }
 
 %inline specification_variable :
  | VARIABLE id=ident typ=type_t dv=default_value? { (id, typ, dv) }

@@ -22,6 +22,10 @@ let map_option f = function
   | Some x -> Some (f x)
   | None -> None
 
+let map_list = function
+  | Some l -> l
+  | None -> []
+
 let builtin_type str =
   match str with
   | "bool" -> Some VTbool
@@ -120,14 +124,15 @@ let to_bval l =
   | Ldate s -> BVdate s
   | Ltz n -> BVcurrency (Tez, n)
 
-let mk_lexpr e =
+let mk_lterm (e : expr) : lterm =
   let loc, v = deloc e in
-  mkloc loc (match v with
-      | Eliteral l -> Llit (mkloc loc (to_bval l))
-      | _ -> Llit (mkloc loc (BVstring "TODO"))
-    )
+  mkloc loc (
+    match v with
+    | Eliteral l -> Llit (mkloc loc (to_bval l))
+    | _ -> Llit (mkloc loc (BVstring "TODO"))
+  )
 
-let rec mk_pexpr e =
+let rec mk_pterm e =
   let loc, v = deloc e in
   mkloc loc (
     match v with
@@ -146,30 +151,30 @@ let rec mk_pexpr e =
     | EassignFields _l -> Plit (mkloc loc (BVstring "TODO"))
     | Eapp (_f, _args) -> Plit (mkloc loc (BVstring "TODO"))
     | Etransfer (_e, _b, _a) -> Plit (mkloc loc (BVstring "TODO"))
-    | Eassign (op, lhs, rhs) -> Passign (to_assignment_operator op, mk_pexpr lhs, mk_pexpr rhs)
-    | Eif (cond, then_, else_) -> Pif (mk_pexpr cond, mk_pexpr then_, map_option mk_pexpr else_)
+    | Eassign (op, lhs, rhs) -> Passign (to_assignment_operator op, mk_pterm lhs, mk_pterm rhs)
+    | Eif (cond, then_, else_) -> Pif (mk_pterm cond, mk_pterm then_, map_option mk_pterm else_)
     | Ebreak -> Pbreak
-    | Efor (i, e, body, _name) -> Pfor (i, mk_pexpr e, mk_pexpr body)
-    | Eassert e -> Passert (mk_lexpr e)
+    | Efor (i, e, body, _name) -> Pfor (i, mk_pterm e, mk_pterm body)
+    | Eassert e -> Passert (mk_lterm e)
     | Eseq (lhs, rhs) ->
-      (let l = (let a = mk_pexpr lhs in match a with | {pldesc = Pseq la; _} -> la | _ -> [a]) @
-               (let a = mk_pexpr rhs in match a with | {pldesc = Pseq la; _} -> la | _ -> [a]) in
+      (let l = (let a = mk_pterm lhs in match a with | {pldesc = Pseq la; _} -> la | _ -> [a]) @
+               (let a = mk_pterm rhs in match a with | {pldesc = Pseq la; _} -> la | _ -> [a]) in
        Pseq l)
     | Efun (_args, _body) -> Plit (mkloc loc (BVstring "TODO"))
-    | Eletin ((i, typ, _), init, body) -> Pletin (i, mk_pexpr init, map_option mk_ptyp typ, mk_pexpr body)
-    | Equantifier _ -> raise (ModelError ("mk_pexpr: quantifier is not allowed in pblock", loc)))
+    | Eletin ((i, typ, _), init, body) -> Pletin (i, mk_pterm init, map_option mk_ptyp typ, mk_pterm body)
+    | Equantifier _ -> raise (ModelError ("mk_pterm: quantifier is not allowed in pblock", loc)))
 
-let to_label_lterm (label, lexpr) : label_lterm =
+let to_label_lterm (label, lterm) : label_lterm =
   {
     label = label;
-    term = mk_lexpr lexpr;
+    term = mk_lterm lterm;
     loc = dummy;
   }
 
-let to_label_pterm (label, pexpr) : label_pterm =
+let to_label_pterm (label, pterm) : label_pterm =
   {
     label = label;
-    term = mk_pexpr pexpr;
+    term = mk_pterm pterm;
     loc = dummy;
   }
 
@@ -236,7 +241,7 @@ let get_roles decls =
        | _ -> acc)
     ) [] decls
 
-let mk_pterm e = (* TODO *)
+let mk_pterm (e :expr) : pterm = (* TODO *)
   let loc = loc e in
   let v = unloc e in
   mkloc loc
@@ -251,12 +256,39 @@ let mk_bval e =
      | Eliteral l -> to_bval l
      | _ -> raise (ModelError ("mk_bval: wrong type for ", loc)))
 
+let mk_label_term mk item =
+  let (name, v) = item in {
+    label = name;
+    term = v |> mk;
+    loc = v |> loc;
+  }
+
+let mk_label_lterm =
+  mk_label_term mk_lterm
+
 let mk_decl loc ((id, typ, dv) : (lident * type_t option * expr option)) =
   mkloc loc {
     name = id;
     typ = map_option mk_ptyp typ;
     default = map_option mk_bval dv;
   }
+
+let mk_spec loc (vars : (lident * type_t * expr option) loced list option) action (invs : named_item list option) items = {
+  variables = List.fold_left
+      (fun acc i ->
+         let loc, (id, typ, dv) = deloc i in
+         (mkloc loc {
+           decl = mk_decl loc (id, Some typ, dv);
+           constant = false;
+         })::acc) [] (vars |> map_list);
+  action = map_option mk_pterm action;
+  invariants = List.map mk_label_lterm (map_list invs);
+  ensures = List.map mk_label_lterm items;
+  loc = loc;
+}
+
+let mk_simple_spec loc items =
+  mk_spec loc None None None items
 
 let get_variables decls =
   List.fold_left ( fun acc i ->
@@ -329,7 +361,7 @@ let get_functions decls =
          mkloc loc {name = name;
                     args = [];
                     return = map_option mk_ptyp typ;
-                    body = mk_pexpr body }::acc
+                    body = mk_pterm body }::acc
        | _ -> acc)
     ) [] decls
 
@@ -367,7 +399,7 @@ let get_transaction_action items : pterm option =
       match v with
       | Taction (e, _) ->
         (match acc with
-         | None -> Some (mk_pexpr e)
+         | None -> Some (mk_pterm e)
          | _ -> raise (ModelError ("several action found", loc)))
       | _ -> acc
     ) None items
@@ -383,6 +415,17 @@ let get_transaction_transition items =
       | _ -> acc
     ) None items
 
+let get_transaction_specification items =
+  List.fold_left (fun acc i ->
+      let loc, v = deloc i in
+      match v with
+      | Tspecification (vars, action, invs, ensure, _) ->
+        (match acc with
+         | None -> Some (mk_spec loc vars action invs ensure)
+         | _ -> raise (ModelError ("several specification found", loc)))
+      | _ -> acc
+    ) None items
+
 let get_transactions decls =
   List.fold_left (fun acc i ->
       (let loc, v = deloc i in
@@ -394,7 +437,7 @@ let get_transactions decls =
            calledby = get_transaction_calledby items;
            condition = get_transaction_condition items;
            transition = get_transaction_transition items;
-           spec = None;
+           spec = get_transaction_specification items;
            action = get_transaction_action items;
          }::acc
        | _ -> acc)
@@ -466,10 +509,10 @@ let get_enums decls =
 
 let get_specs decls =
   List.fold_left ( fun acc i ->
-      (let _loc, decl_u = deloc i in
+      (let loc, decl_u = deloc i in
        match decl_u with
-       | Dspecification (_items, _) ->
-         acc
+       | Dspecification (items, _) ->
+         (mk_simple_spec loc items)::acc
        | _ -> acc)
     ) [] decls
 

@@ -397,9 +397,9 @@ match s with
     pp_id x
     pp_expr y
 
-let pp_specification_variable fmt (sv : (lident * type_t * expr option)) =
+let pp_specification_variable fmt (sv : (lident * type_t * expr option) loced) =
 match sv with
-| (id, typ, dv) ->
+| {pldesc = (id, typ, dv); _} ->
     Format.fprintf fmt "variable %a %a%a"
         pp_id id
         pp_type typ
