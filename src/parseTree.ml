@@ -164,7 +164,7 @@ and named_item = lident option * expr
 and args = lident_typ list
 [@@deriving show {with_path = false}]
 
-and s_variable = (lident * type_t * expr option) list option
+and s_variable = (lident * type_t * expr option) loced list option
 [@@deriving show {with_path = false}]
 
 and s_action = expr option

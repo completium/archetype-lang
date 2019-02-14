@@ -7,7 +7,7 @@ enum animal =
  | Other
 
 states movement =
- | In_field
+ | In_field initial
  | In_transit
 
 asset animal identified by id = {

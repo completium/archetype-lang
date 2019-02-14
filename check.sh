@@ -91,7 +91,7 @@ else
 fi
 
 if [ ${NB_STR} -eq 0 ]; then
-    echo "all contracts have been converte into model with storage successfully."
+    echo "all contracts have been converted into model with storage successfully."
 else
-    echo -e "\033[31mErrors of transalation : ${NB_MOD} \033[0m"
+    echo -e "\033[31mErrors of conversion to model with storage : ${NB_STR} \033[0m"
 fi

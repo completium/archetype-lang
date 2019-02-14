@@ -222,7 +222,7 @@ let mk_enums _ m = m.states |> List.fold_left (fun acc (st : state) ->
 (* Field operations compilation *)
 
 (* TODO *)
-let compile_field_operation _mws (f : storage_field) = []
+let compile_field_operation _mws (_f : storage_field) = []
 
 let compile_operations mws =  {
   mws with
