@@ -32,7 +32,7 @@ type storage_field_type =
   | Enum     of lident
   | Var      of vtyp
   | KeySet   of lident * vtyp
-  | ValueMap of lident * vtyp * vtyp (* aname, asset type, value type *)
+  | ValueMap of lident * vtyp * vtyp (* aname, asset key type, value type *)
   (* aname, asset type, asset name, value type *)
   | CollMap  of lident * vtyp * lident * vtyp
 [@@deriving show {with_path = false}]
@@ -82,6 +82,7 @@ type model_with_storage = {
   name         : lident;
   enums        : enum list;
   storage      : storage;
+  functions    : function_ list;
   transactions : transaction list;
 }
 [@@deriving show {with_path = false}]
@@ -216,5 +217,6 @@ let model_to_modelws (info : info) (m : model) : model_with_storage = {
     name         = (unloc m).name;
     enums        = mk_enums info (unloc m);
     storage      = mk_storage info (unloc m);
+    functions    = [];
     transactions = [];
   }

@@ -91,30 +91,55 @@ let vtyp_to_ident vt = vt |> vtyp_to_str |> str_to_ident
 
 let vtyp_to_mlwtyp vt = vt |> vtyp_to_str |> str_to_lident |> lident_to_typ
 
-let mk_ptyp = function
-  | Enum     lid        -> lident_to_typ lid
-  | Var      vt         -> vt |> vtyp_to_mlwtyp
-  | KeySet   (_,vt)     ->
-    let listid =  str_to_ident "list" in
-    PTtyapp (Qident listid, [vtyp_to_mlwtyp vt])
-  | ValueMap (_, vtf, vtt) ->
-    let mapid  = str_to_ident "map" in
-    PTtyapp (Qident mapid, [vtyp_to_mlwtyp vtf; vtyp_to_mlwtyp vtt])
-  | CollMap  (_,vtf,_,vtt) ->
-    let listid = str_to_ident "list" in
-    let mapid  = str_to_ident "map"  in
-    PTtyapp (Qident mapid, [vtyp_to_mlwtyp vtf;
-                            PTtyapp (Qident listid, [vtyp_to_mlwtyp vtt])])
+type field_storage =
+  | Fenum of lident
+  | Ftyp  of vtyp
+  | Flist of vtyp
+  | Fset  of vtyp
+  | Fmap  of vtyp * field_storage
 
-let mk_storage_field (f : storage_field) : field = {
-  f_loc     = loc f;
-  f_ident   = mk_ident (unloc f).name;
-  f_pty     = mk_ptyp (unloc f).typ;
-  f_mutable = true;
-  f_ghost   = (unloc f).ghost;
+type field_storage_policy = {
+  ftyps   : (lident * field_storage) list;
 }
 
-let mk_storage_decl (storage : storage) =
+(* This should be modulated/optimized according to asset usage in tx actions *)
+let sf_to_fs = function
+  | Enum id               -> Fenum id
+  | Var  vt               -> Ftyp vt
+  | KeySet (_,vt)         -> Flist vt
+  | ValueMap (_,vtf,vtt)  -> Fmap (vtf,Ftyp vtt)
+  | CollMap (_,vtf,_,vtt) -> Fmap (vtf, Flist vtt)
+
+let rec field_storage_to_ptyp = function
+  | Fenum lid -> lident_to_typ lid
+  | Ftyp vt   -> vt |> vtyp_to_mlwtyp
+  | Flist vt  ->
+    let listid =  str_to_ident "list" in
+    PTtyapp (Qident listid, [vtyp_to_mlwtyp vt])
+  | Fset vt   ->
+    let listid =  str_to_ident "set" in
+    PTtyapp (Qident listid, [vtyp_to_mlwtyp vt])
+  | Fmap (vt,fs) ->
+    let mapid  = str_to_ident "map"  in
+    PTtyapp (Qident mapid, [vtyp_to_mlwtyp vt; field_storage_to_ptyp fs])
+
+let mk_field_typ   (f : storage_field) = ((unloc f).name, sf_to_fs (unloc f).typ)
+
+let mk_field_storage_policy storage = {
+  ftyps   = List.map mk_field_typ storage.fields;
+}
+
+let mk_storage_field (p : field_storage_policy) (f : storage_field) : field =
+  let loc = loc f in
+  let (f : storage_field_unloc) = unloc f in {
+  f_loc     = loc;
+  f_ident   = mk_ident f.name;
+  f_pty     = field_storage_to_ptyp (List.assoc f.name p.ftyps);
+  f_mutable = true;
+  f_ghost   = f.ghost;
+}
+
+let mk_storage_decl (p : field_storage_policy) (storage : storage) =
   Dtype [{
     td_loc = Loc.dummy_position;
     td_ident = { id_str = "storage"; id_ats = []; id_loc = Loc.dummy_position } ;
@@ -123,11 +148,11 @@ let mk_storage_decl (storage : storage) =
     td_mut = true;
     td_inv = [];
     td_wit = [];
-    td_def = TDrecord (List.map mk_storage_field storage.fields);
+    td_def = TDrecord (List.map (mk_storage_field p) storage.fields);
   }]
 
 (* storage init generation *)
-let mk_init_args info fs : (lident * storage_field_type) list =
+let mk_init_args p info fs : (lident * field_storage) list =
   List.fold_left (fun acc f ->
       let f = unloc f in
       match f.default with
@@ -138,7 +163,7 @@ let mk_init_args info fs : (lident * storage_field_type) list =
           | KeySet _ -> acc
           | ValueMap _ -> acc
           | CollMap _ -> acc
-          | _ as t -> acc @ [f.name, t]
+          | _ -> acc @ [f.name, List.assoc f.name p.ftyps]
         end
       | _ -> acc
     ) [] fs
@@ -233,9 +258,9 @@ let mk_init_body info (fields : (lident * initval) list) : expr =
   mk_expr (Erecord fields)
 
 let mk_fun_decl id args body =
-  let args = List.map (fun (id, sty) ->
+  let args = List.map (fun (id, st) ->
       let id = mk_ident id in
-      let ty = mk_ptyp sty in
+      let ty = field_storage_to_ptyp st in
       Loc.dummy_position, Some id, false, Some ty
     ) args in
   let args =
@@ -245,8 +270,8 @@ let mk_fun_decl id args body =
   let f = Efun(args, None, Ity.MaskVisible, empty_spec, body) in
   Dlet(str_to_ident id, false, Expr.RKnone, mk_expr f)
 
-let mk_init_storage info (s : storage) =
-  let args = mk_init_args info s.fields in
+let mk_init_storage p info (s : storage) =
+  let args = mk_init_args p info s.fields in
   let fields = mk_init_fields info args s.fields in
   let body = mk_init_body info fields in
   mk_fun_decl "init" args body
@@ -269,8 +294,9 @@ let modelws_to_modelw3liq (info : info) (m : model_with_storage) =
       init = Some "init";
       dummies = List.map (fun (n,(v,_)) -> (n,v)) info.dummy_vars;
     };
+  let storage_policy = mk_field_storage_policy m.storage in
   []
   |> fun x -> List.fold_left (fun acc d -> acc @ [mk_dummy_decl d]) x info.dummy_vars
   |> fun x -> List.fold_left (fun acc e -> acc @ [mk_enum_decl e]) x m.enums
-  |> fun x -> x @ [mk_storage_decl m.storage]
-  |> fun x -> x @ [mk_init_storage info m.storage]
+  |> fun x -> x @ [mk_storage_decl storage_policy m.storage]
+  |> fun x -> x @ [mk_init_storage storage_policy info m.storage]
