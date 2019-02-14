@@ -10,12 +10,12 @@ build: plugin compiler
 
 compiler:
 	$(MAKE) -C src compiler.exe
-	cp -f _build/default/src/compiler.exe .
+	cp -f src/_build/default/compiler.exe .
 
 plugin:
 	$(MAKE) -C src cmlLib plugin
 	$(MAKE) -C src -f Makefile.plugin.mk plugin
-	cp -f _build/default/src/cml.cmxs ./why3/plugin/
+	cp -f src/_build/default/cml.cmxs ./why3/plugin/
 
 extract:
 	$(MAKE) -C src/liq extract.exe
