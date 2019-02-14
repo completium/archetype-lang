@@ -18,14 +18,20 @@ type storage_field_operation_type =
   | Get
   | Set
   | Add
+  | Addnofail
   | Remove
+  | Removenofail
+  | Addasset
+  | Removeasset
 [@@deriving show {with_path = false}]
 
 type storage_field_operation = {
-    typ      : storage_field_operation_type;
-    requires : require list;
-    ensures  : ensure list;
-  }
+  name     : lident;
+  typ      : storage_field_operation_type;
+  actions  : storage_field_operation list;
+  requires : require list;
+  ensures  : ensure list;
+}
 [@@deriving show {with_path = false}]
 
 type storage_field_type =
@@ -213,10 +219,30 @@ let mk_enums _ m = m.states |> List.fold_left (fun acc (st : state) ->
     ]
   ) []
 
-let model_to_modelws (info : info) (m : model) : model_with_storage = {
+(* Field operations compilation *)
+
+(* TODO *)
+let compile_field_operation _mws (f : storage_field) = []
+
+let compile_operations mws =  {
+  mws with
+  storage = {
+    mws.storage with
+    fields =
+      List.map (fun f ->
+          mkloc (loc f) {
+            (unloc f) with
+            ops = compile_field_operation mws f
+          }
+        ) mws.storage.fields
+  }
+}
+
+let model_to_modelws (info : info) (m : model) : model_with_storage =
+  {
     name         = (unloc m).name;
     enums        = mk_enums info (unloc m);
     storage      = mk_storage info (unloc m);
     functions    = [];
     transactions = [];
-  }
+  } |> compile_operations
