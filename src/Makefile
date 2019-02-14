@@ -9,16 +9,19 @@ COMPILER := compiler.exe
 # --------------------------------------------------------------------
 all: $(COMPILER) cmlLib plugin .merlin
 
-run:
+run: __force__
 	dune exec ./$(COMPILER)
 
-cmlLib:
+compiler: __force__
 	dune build --profile=$(PROFILE) cmlLib.cmxa
 
-plugin:
+cmlLib: __force__
+	dune build --profile=$(PROFILE) cmlLib.cmxa
+
+plugin: __force__
 	dune build --profile=$(PROFILE) w3plugin.cmxs
 
-clean:
+clean: __force__
 	dune clean
 
 merlin: .merlin

@@ -4,20 +4,18 @@ open Ident
 type lident = ident loced
 [@@deriving show {with_path = false}]
 
-type role_unloc = {
-    name         : lident;
-    default      : rexpr option;
-  }
-[@@deriving show {with_path = false}]
-
-and rexpr =
+type rexpr =
   | Ror of rexpr * rexpr
   | Rrole of lident
   | Raddress of string
   | Rasset of lident * lident
 [@@deriving show {with_path = false}]
 
-type role = role_unloc loced
+type role = {
+  name    : lident;
+  default : rexpr option;
+  loc     : Location.t [@opaque];
+}
 [@@deriving show {with_path = false}]
 
 type sexpr_unloc =
@@ -35,8 +33,8 @@ type currency =
 [@@deriving show {with_path = false}]
 
 type transfer = {
-    from : role;
-    tto  : role;
+  from : role;
+  tto  : role;
 }
 [@@deriving show {with_path = false}]
 
@@ -103,22 +101,19 @@ type bval_unloc =
 
 and bval = bval_unloc loced
 
-type decl_unloc = {
-    name         : lident;
-    typ          : ptyp option;
-    default      : bval option;
+type decl = {
+  name    : lident;
+  typ     : ptyp option;
+  default : bval option;
+  loc     : Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]
 
-and decl = decl_unloc loced
-
-type variable_unloc = {
+type variable = {
     decl         : decl;
     constant     : bool;
+    loc : Location.t [@opaque];
 }
-[@@deriving show {with_path = false}]
-
-type variable = variable_unloc loced
 [@@deriving show {with_path = false}]
 
 type arg = decl
@@ -293,7 +288,7 @@ type specification = {
 
 type name = lident option * lident
 
-type transaction_unloc = {
+type transaction = {
     name         : lident;
     args         : arg list;
     calledby     : rexpr option;
@@ -301,10 +296,8 @@ type transaction_unloc = {
     transition   : (sexpr * lident * (lident * lident) option) option; (* from * to * fied *)
     spec         : specification option;
     action       : pterm option;
+    loc          : Location.t [@opaque];
 }
-[@@deriving show {with_path = false}]
-
-and transaction = transaction_unloc loced
 [@@deriving show {with_path = false}]
 
 type state_item = {
@@ -322,7 +315,7 @@ type state = {
 }
 [@@deriving show {with_path = false}]
 
-type asset_unloc = {
+type asset = {
     name  : lident;
     args  : arg list;
     key   : lident;
@@ -330,28 +323,25 @@ type asset_unloc = {
     role  : bool;
     init  : pterm option;
     preds : pterm list option;
+    loc   : Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]
 
-and asset = asset_unloc loced
-
-type enum_unloc = {
+type enum = {
   name : lident;
   vals : lident list;
+  loc  : Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]
 
-and enum = enum_unloc loced
-
-type function_unloc = {
+type function_ = {
   name         : lident;
   args         : arg list;
   return       : ptyp option;
   body         : pterm;
+  loc          : Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]
-
-and function_ = function_unloc loced
 
 type model_unloc = {
     name         : lident;
@@ -368,17 +358,17 @@ type model_unloc = {
 
 and model = model_unloc loced
 
-let get_decl_id (a : decl)     = a |> unloc |> fun x -> x.name |> unloc
+let get_decl_id (a : decl) = a |> fun x -> x.name |> unloc
 
-let get_asset_name (a : asset) = a |> unloc |> fun x -> x.name |> unloc
+let get_asset_name (a : asset) = a |> fun x -> x.name |> unloc
 
 let get_asset_names m = (unloc m).assets |> List.map get_asset_name
 
 (* returns a list of triplet : asset name, field name, field type *)
 let get_asset_fields m =
   List.fold_left (fun acc (a : asset) ->
-      let id = (unloc a).name in
+      let id = a.name in
       List.fold_left (fun acc (arg : decl) ->
-          acc @ [id, (unloc arg).name, (unloc arg).typ]
-        ) acc (unloc a).args
+          acc @ [id, arg.name, arg.typ]
+        ) acc a.args
     ) [] m.assets

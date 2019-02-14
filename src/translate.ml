@@ -237,7 +237,7 @@ let get_roles decls =
        let decl_u = Location.unloc i in
        match decl_u with
        | Drole (id, dv, _) ->
-         (mkloc loc {name = id; default = map_option to_rexpr_dv_role dv})::acc
+         {name = id; default = map_option to_rexpr_dv_role dv; loc = loc}::acc
        | _ -> acc)
     ) [] decls
 
@@ -267,19 +267,21 @@ let mk_label_lterm =
   mk_label_term mk_lterm
 
 let mk_decl loc ((id, typ, dv) : (lident * type_t option * expr option)) =
-  mkloc loc {
+  {
     name = id;
     typ = map_option mk_ptyp typ;
     default = map_option mk_bval dv;
+    loc = loc;
   }
 
 let mk_spec loc (vars : (lident * type_t * expr option) loced list option) action (invs : named_item list option) items = {
   variables = List.fold_left
       (fun acc i ->
          let loc, (id, typ, dv) = deloc i in
-         (mkloc loc {
+         ({
            decl = mk_decl loc (id, Some typ, dv);
            constant = false;
+           loc = loc;
          })::acc) [] (vars |> map_list);
   action = map_option mk_pterm action;
   invariants = List.map mk_label_lterm (map_list invs);
@@ -296,9 +298,9 @@ let get_variables decls =
        let decl_u = Location.unloc i in
        match decl_u with
        | Dconstant (id, typ, dv, _) ->
-         mkloc loc {decl = mk_decl loc (id, Some typ, dv); constant = true }::acc
+         {decl = mk_decl loc (id, Some typ, dv); constant = true; loc = loc }::acc
        | Dvariable (id, typ, _, dv, _) ->
-         mkloc loc {decl = mk_decl loc (id, Some typ, dv); constant = false }::acc
+         {decl = mk_decl loc (id, Some typ, dv); constant = false; loc = loc }::acc
        | _ -> acc)
     ) [] decls
 
@@ -332,23 +334,21 @@ let get_asset_fields fields =
           | Ffield (id, typ, dv, _) -> mk_decl loc (id, Some typ, dv)::acc
         ) [] fields)
 
-let mk_asset loc ((id, fields, _cs, opts, init, _ops) : (lident * field list option * expr list option * asset_option list option * expr option * asset_operation option)) =
-  mkloc loc {
-    name = id;
-    args = get_asset_fields fields;
-    key = get_asset_key opts;
-    sort = None;
-    role = is_asset_role opts;
-    init = map_option mk_pterm init;
-    preds = None;
-  }
-
 let get_assets decls =
   List.fold_left ( fun acc i ->
-      (let loc = loc i in
-       let decl_u = Location.unloc i in
+      (let loc, decl_u = Location.deloc i in
        match decl_u with
-       | Dasset (id, fields, cs, opts, init, ops) -> mk_asset loc (id, fields, cs, opts, init, ops)::acc
+       | Dasset (id, fields, _cs, opts, init, _ops) ->
+         ({
+           name = id;
+           args = get_asset_fields fields;
+           key = get_asset_key opts;
+           sort = None;
+           role = is_asset_role opts;
+           init = map_option mk_pterm init;
+           preds = None;
+           loc = loc;
+         })::acc
        | _ -> acc)
     ) [] decls
 
@@ -358,10 +358,11 @@ let get_functions decls =
        let decl_u = Location.unloc i in
        match decl_u with
        | Dfunction (name, _args, typ, body) ->
-         mkloc loc {name = name;
-                    args = [];
-                    return = map_option mk_ptyp typ;
-                    body = mk_pterm body }::acc
+         {name = name;
+          args = [];
+          return = map_option mk_ptyp typ;
+          body = mk_pterm body;
+          loc = loc;}::acc
        | _ -> acc)
     ) [] decls
 
@@ -431,7 +432,7 @@ let get_transactions decls =
       (let loc, v = deloc i in
        match v with
        | Dtransaction (name, args, items, _) ->
-         mkloc loc {
+         {
            name = name;
            args = get_transaction_args args;
            calledby = get_transaction_calledby items;
@@ -439,6 +440,7 @@ let get_transactions decls =
            transition = get_transaction_transition items;
            spec = get_transaction_specification items;
            action = get_transaction_action items;
+           loc = loc;
          }::acc
        | _ -> acc)
     ) [] decls
@@ -449,8 +451,9 @@ let get_enums decls =
        let decl_u = Location.unloc i in
        match decl_u with
        | Denum (name, list) ->
-         mkloc loc {name = name;
-                    vals = list }::acc
+         {name = name;
+          vals = list;
+          loc = loc;}::acc
        | _ -> acc)
     ) [] decls
 
@@ -502,8 +505,9 @@ let get_enums decls =
       (let loc, decl_u = deloc i in
        match decl_u with
        | Denum (name, list) ->
-         mkloc loc {name = name;
-          vals = list}::acc
+         {name = name;
+          vals = list;
+          loc = loc;}::acc
        | _ -> acc)
     ) [] decls
 

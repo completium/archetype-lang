@@ -121,24 +121,23 @@ let mk_asset_field aname fname =
   { plloc = loc; pldesc = name^"_"^field }
 
 let mk_storage_field info name iskey (arg : decl) =
-  let fname = (unloc arg).name in
+  let fname = arg.name in
   let typ =
-    match (unloc arg).typ with
+    match arg.typ with
     | Some t -> t
     | None   -> raise (NoFieldType name)
   in
   let typ = aft_to_sft info name fname iskey typ in
-  [ mkloc (loc arg) {
+  [ mkloc arg.loc {
     asset   = Some name;
-    name    = mk_asset_field name (unloc arg).name;
+    name    = mk_asset_field name arg.name;
     typ     = typ;
     ghost   = false;
-    default = (unloc arg).default;
+    default = arg.default;
     ops     = []
   }]
 
 let mk_storage_fields info (asset : asset)  =
-  let asset = unloc asset in
   let name = asset.name in
   let key = asset.key in
   List.fold_left (fun acc arg ->
@@ -148,37 +147,36 @@ let mk_storage_fields info (asset : asset)  =
 
 (* variable type to field type *)
 let vt_to_ft var =
-  match (unloc var.decl).typ with
+  match var.decl.typ with
   | Some t ->
     begin
       match unloc t with
       | Tbuiltin vt -> Var vt
-      | _ -> raise (UnsupportedVartype (loc var.decl))
+      | _ -> raise (UnsupportedVartype var.decl.loc)
     end
-  | None -> raise (VarNoType (loc var.decl))
+  | None -> raise (VarNoType var.decl.loc)
 
 let mk_variable (var : variable) =
-  let l   = loc var in
-  let var = unloc var in
+  let l   = var.loc in
   mkloc l {
   asset   = None;
-  name    = (unloc var.decl).name;
+  name    = var.decl.name;
   typ     = vt_to_ft var;
   ghost   = false;
-  default = (unloc var.decl).default;
+  default = var.decl.default;
   ops     = []
 }
 
 (* maps *)
 let mk_role_default (r : role) =
-  match (unloc r).default with
-  | Some (Raddress a) -> Some (mkloc (loc r) (BVaddress a))
+  match r.default with
+  | Some (Raddress a) -> Some (mkloc (r.loc) (BVaddress a))
   | _ -> None
 
 let mk_role_var (role : role) =
-  mkloc (loc role) {
+  mkloc role.loc {
   asset   = None;
-  name    = (unloc role).name;
+  name    = role.name;
   typ     = Var VTaddress;
   ghost   = false;
   default = mk_role_default role;

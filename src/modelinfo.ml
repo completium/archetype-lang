@@ -20,24 +20,24 @@ type info = {
 
 let get_key_type (a : asset) =
   let assetid = get_asset_name a in
-  let keyid = a |> unloc |> fun x -> x.key |> unloc in
+  let keyid = a |> fun x -> x.key |> unloc in
   let rec rec_get_key = function
     | arg::tl ->
       if compare keyid (get_decl_id arg) = 0
       then
         let typ =
-          match (unloc arg).typ with
+          match arg.typ with
           | Some t ->
             begin
               match unloc t with
               | Tbuiltin typ -> typ
               | _ -> raise (UnsupportedVartype (loc t))
             end
-          | None   -> raise (NoFieldType (unloc arg).name)
+          | None   -> raise (NoFieldType arg.name)
         in (assetid, typ)
       else rec_get_key tl
     | [] -> raise Not_found in
-  a |> unloc |> fun x -> x.args |> rec_get_key
+  a |> fun x -> x.args |> rec_get_key
 
 let get_state_init (s : state) =
   match  List.filter (fun it -> it.initial) s.items with
@@ -67,18 +67,17 @@ let mk_dummy_variables (m : model_unloc) : (string * (string * vtyp)) list =
   (* look in model variables and asset fields *)
   m.variables
   |> List.fold_left (fun acc v ->
-      let value = v |> unloc |> fun x -> x.decl |> unloc |> fun x -> x.default in
+      let value = v |> fun x -> x.decl |> fun x -> x.default in
       default_to_dummy acc value
     ) []
   |> (fun x -> List.fold_left (fun acc (a : asset) ->
-      let fields = (unloc a).args in
+      let fields = a.args in
       List.fold_left (fun acc f ->
-          let decl = unloc f in
+          let decl = f in
           default_to_dummy acc decl.default
         ) acc fields
     ) x m.assets)
   |> (fun x -> List.fold_left (fun acc (r : role) ->
-      let r = unloc r in
       match r.default with
       | Some (Raddress a) -> acc @ [fresh_dummy (), (a, VTaddress)]
       | _ -> acc
