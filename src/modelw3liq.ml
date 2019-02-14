@@ -287,6 +287,8 @@ let mk_dummy_decl (name,(_,vt)) =
   let f = Efun ([], None, Ity.MaskVisible, empty_spec, body) in
   Dlet(str_to_ident name, false, Expr.RKnone, mk_expr f)
 
+let sfop_to_decl _p _op = []
+
 (* returns a list of definition *)
 let modelws_to_modelw3liq (info : info) (m : model_with_storage) =
   Liq_printer.set_entries
@@ -296,7 +298,11 @@ let modelws_to_modelw3liq (info : info) (m : model_with_storage) =
     };
   let storage_policy = mk_field_storage_policy m.storage in
   []
-  |> fun x -> List.fold_left (fun acc d -> acc @ [mk_dummy_decl d]) x info.dummy_vars
-  |> fun x -> List.fold_left (fun acc e -> acc @ [mk_enum_decl e]) x m.enums
-  |> fun x -> x @ [mk_storage_decl storage_policy m.storage]
-  |> fun x -> x @ [mk_init_storage storage_policy info m.storage]
+  |> (fun x -> List.fold_left (fun acc d -> acc @ [mk_dummy_decl d]) x info.dummy_vars)
+  |> (fun x -> List.fold_left (fun acc e -> acc @ [mk_enum_decl e]) x m.enums)
+  |> (fun x -> x @ [mk_storage_decl storage_policy m.storage])
+  |> (fun x -> x @ [mk_init_storage storage_policy info m.storage])
+  |> (fun x -> List.fold_left (fun acc f ->
+      List.fold_left (fun acc op ->
+          acc @ (sfop_to_decl storage_policy op)) acc (unloc f).ops
+    ) x m.storage.fields)

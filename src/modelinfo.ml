@@ -90,6 +90,10 @@ let mk_info m =
   let vr = m |> mk_dummy_variables in
   { key_types = kt; state_init = si; dummy_vars = vr }
 
+let is_key fname info =
+  let id = unloc fname in
+  List.mem_assoc id info.key_types
+
 let get_key_type fname info =
   let id = unloc fname in
   if List.mem_assoc id info.key_types

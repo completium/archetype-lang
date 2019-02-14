@@ -219,10 +219,23 @@ let mk_enums _ m = m.states |> List.fold_left (fun acc (st : state) ->
 
 (* Field operations compilation *)
 
-(* TODO *)
-let compile_field_operation _mws (_f : storage_field) = []
+let mk_operation n a = {
+  name = n;
+  typ = a;
+  actions = [];
+  requires = [];
+  ensures = [];
+}
 
-let compile_operations mws =  {
+(* TODO *)
+let compile_field_operation info _mws (f : storage_field) =
+  let f = unloc f in
+  match (is_key f.name info), f.typ with
+  | false, Enum _ | false, Var _ | false, ValueMap _ ->
+   List.map (mk_operation f.name) [Get;Set]
+  | _ -> []
+
+let compile_operations info mws =  {
   mws with
   storage = {
     mws.storage with
@@ -230,7 +243,7 @@ let compile_operations mws =  {
       List.map (fun f ->
           mkloc (loc f) {
             (unloc f) with
-            ops = compile_field_operation mws f
+            ops = compile_field_operation info mws f
           }
         ) mws.storage.fields
   }
@@ -243,4 +256,4 @@ let model_to_modelws (info : info) (m : model) : model_with_storage =
     storage      = mk_storage info (unloc m);
     functions    = [];
     transactions = [];
-  } |> compile_operations
+  } |> compile_operations info
