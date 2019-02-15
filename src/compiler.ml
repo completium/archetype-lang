@@ -42,7 +42,8 @@ let main () =
       "-PP", Arg.Set opt_pretty_print, " Pretty print";
       "-P", Arg.Set opt_parse, " Print raw parse tree";
       "-M", Arg.Set opt_model, " Print raw model";
-      "-W", Arg.Set opt_modelws, " Print raw model_with_storage"
+      "-W", Arg.Set opt_modelws, " Print raw model_with_storage";
+      "-L", Arg.Set opt_modelw3liq, " Execute w3 tree generation for liquidity"
     ] in
   let arg_usage = String.concat "\n" [
       "compiler [OPTIONS] FILE";

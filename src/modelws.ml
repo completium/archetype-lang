@@ -238,7 +238,7 @@ let mk_operation n a = {
 let compile_field_operation info _mws (f : storage_field) =
   match (is_key f.name info), f.typ with
   | false, Enum _ | false, Var _ | false, ValueMap _ ->
-   List.map (mk_operation f.name) [Get;Set]
+    List.map (mk_operation f.name) [Get;Set]
   | _ -> []
 
 let compile_operations info mws =  {
@@ -317,13 +317,15 @@ let field_to_getset _info (f : storage_field) (op : storage_field_operation) =
       dummy_function with
       name = lstr ("set_"^n);
       args = List.map mk_arg ["s",None; "v",None ];
-      body = loc_pterm (Papp (Pvar "update_storage",[Papp (Pvar n,[Pvar "s"]); Pvar "v"]));
+      body = loc_pterm (Papp (Pvar "update_storage",[Pvar "s";
+                                                     Papp (Pvar n, [Pvar "s"]);
+                                                     Pvar "v"]));
     }
   (* simply apply field name to argument "s" *)
   (* Papp (Pvar (unloc (f.name)),[Pvar "s"])*)
   | _ -> dummy_function
 
-let mk_getset info (mws : model_with_storage) = {
+let mk_getset_functions info (mws : model_with_storage) = {
   mws with
   functions = mws.functions @ (
       List.fold_left (
@@ -344,4 +346,4 @@ let model_to_modelws (info : info) (m : model) : model_with_storage =
     transactions = [];
   }
   |> (compile_operations info)
-  |> (mk_getset info)
+  |> (mk_getset_functions info)

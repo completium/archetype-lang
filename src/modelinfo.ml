@@ -11,6 +11,7 @@ exception CannotConvert      of string
 exception StringUnsupported
 exception ExpectsOneInitialState of lident
 exception NotFound           of string
+exception Anomaly            of string
 
 type info = {
   key_types   : (string * vtyp) list;           (* asset name, key type         *)

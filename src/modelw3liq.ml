@@ -138,7 +138,7 @@ let mk_storage_field (p : field_storage_policy) (f : storage_field) : field = {
   f_loc     = loc2loc (f.loc);
   f_ident   = mk_ident f.name;
   f_pty     = field_storage_to_ptyp (List.assoc f.name p.ftyps);
-  f_mutable = true;
+  f_mutable = false;
   f_ghost   = f.ghost;
 }
 
@@ -148,7 +148,7 @@ let mk_storage_decl (p : field_storage_policy) (storage : storage) =
     td_ident = { id_str = "storage"; id_ats = []; id_loc = Loc.dummy_position } ;
     td_params = [];
     td_vis = Public;
-    td_mut = true;
+    td_mut = false;
     td_inv = [];
     td_wit = [];
     td_def = TDrecord (List.map (mk_storage_field p) storage.fields);
@@ -288,55 +288,60 @@ let mk_dummy_decl (name,(_,vt)) =
   let f = Efun ([], None, Ity.MaskVisible, empty_spec, body) in
   Dlet(str_to_ident name, false, Expr.RKnone, mk_expr f)
 
-let mk_get_enum_val id =
-  let sid = str_to_ident "s" in
-  let args = [Loc.dummy_position, Some sid, false, None] in
-  let body = mk_expr (Eidapp ((mk_qid [id]),[mk_expr (str_to_eident ["s"])]))  in
-  let f = Efun(args, None, Ity.MaskVisible, empty_spec, body) in
-  [Dlet(str_to_ident ("get_"^(unloc id)), false, Expr.RKnone, mk_expr f)]
+(* generate functions *)
+let field_type_to_mlwtyp (t:storage_field_type) = t |> sf_to_fs |> field_storage_to_ptyp
 
-let mk_get_typ_val = mk_get_enum_val
+let is_var (p : Modelws.pterm) =
+  match unloc p with
+  | Pvar _ -> true
+  | _ -> false
 
-(* adds storage type first *)
-let mk_arg_tuple vts =
-  PTtuple ([lident_to_typ (mkloc Location.dummy "storage")]@
-           (List.map field_storage_to_ptyp vts))
+let dest_var (p : Modelws.pterm) : lident =
+  match unloc p with
+  | Pvar id -> id
+  | _ -> raise (Anomaly "dest_var")
 
-let mk_get_param i nb =
-  let get_param = "get_"^(string_of_int i)^"_"^(string_of_int nb) in
-  let get_param_lident = mkloc Location.dummy get_param in
-  mk_expr (Eidapp ((mk_qid [get_param_lident]),[mk_expr (str_to_eident ["s"])]))
+let is_lambda (p : Modelws.pterm) =
+  match unloc p with
+  | Plambda _ -> true
+  | _ -> false
 
-let add_body_decls body ids =
-  let nb_ids = List.length ids in
-  let rec add_decl i l =
-    match l with
-    | [] -> body
-    | [id] ->
-      mk_expr (Elet (str_to_ident id,false,Expr.RKnone, mk_get_param i nb_ids, body))
-    | id::tl ->
-      mk_expr (Elet (str_to_ident id,
-                     false,
-                     Expr.RKnone,
-                     mk_get_param i nb_ids,
-                     add_decl (succ i) tl)) in
-  add_decl 0 ids
+let dest_lambda (p : Modelws.pterm) =
+  match unloc p with
+  | Plambda (id,t,b) -> (id,t,b)
+  | _ -> raise (Anomaly "dest_var")
 
-let mk_fun_tuple id args body =
-  let typ = mk_arg_tuple (snd (List.split args)) in
-  let binder = Loc.dummy_position, Some (str_to_ident "params"), false, Some typ in
-  let body = add_body_decls body (["s"]@(fst (List.split args))) in
-  let f = Efun([binder], None, Ity.MaskVisible, empty_spec, body) in
-  Dlet(str_to_ident id, false, Expr.RKnone, mk_expr f)
+let rec pterm_to_expr (p : Modelws.pterm) =  {
+  expr_desc =
+    begin
+      match unloc p with
+      | Pvar id -> Eident (mk_qid [id])
+      | Papp (f, l) when is_var f ->
+        let fid =  dest_var f in
+        Eidapp (mk_qid [fid], List.map pterm_to_expr l)
+      | Plambda (i,t,b) -> mk_efun [] (loc p) i t b
+      | _ -> raise (Anomaly "pterm_to_expr")
+    end;
+  expr_loc = loc p
+}
+and mk_efun args l i t b =
+  let t = Translate.map_option field_type_to_mlwtyp t in
+  let args = args @ [l, Some (mk_ident i), false, t] in
+  if is_lambda b
+  then
+    let (i,t,b) = dest_lambda b in
+    mk_efun args (loc b) i t b
+  else Efun (args, None, Ity.MaskVisible, empty_spec, pterm_to_expr b)
 
-let sfop_to_decl (p : field_storage_policy) (op : storage_field_operation) =
-  match op.typ, get_storage_typ op.name p with
-  | Get, Fenum _ -> mk_get_enum_val op.name
-  | Get, Ftyp _  -> mk_get_typ_val op.name
-(*  | Set, Fenum id -> mk_get_enum_val id
-  | Set, Ftyp vt  -> mk_get_typ_val p.name vt
-*)
-  | _,_ -> []
+let rec mk_lambda (args : storage_field_type gen_decl list) body : Modelws.pterm =
+  match args with
+  | [a]   -> mkloc a.loc (Plambda (a.name, a.typ, body))
+  | a::tl -> mkloc a.loc (Plambda (a.name, a.typ, mk_lambda tl body))
+  | []    -> body
+
+let mk_function_decl (f : function_ws) =
+  let body = mk_lambda f.args f.body in
+  Dlet (mk_ident f.name, false, Expr.RKnone, pterm_to_expr body)
 
 (* returns a list of definition *)
 let modelws_to_modelw3liq (info : info) (m : model_with_storage) =
@@ -351,7 +356,4 @@ let modelws_to_modelw3liq (info : info) (m : model_with_storage) =
   |> (fun x -> List.fold_left (fun acc e -> acc @ [mk_enum_decl e]) x m.enums)
   |> (fun x -> x @ [mk_storage_decl storage_policy m.storage])
   |> (fun x -> x @ [mk_init_storage storage_policy info m.storage])
-  |> (fun x -> List.fold_left (fun acc f ->
-      List.fold_left (fun acc op ->
-          acc @ (sfop_to_decl storage_policy op)) acc f.ops
-    ) x m.storage.fields)
+  |> (fun x -> List.fold_left (fun acc f -> acc @ [mk_function_decl f]) x m.functions)
