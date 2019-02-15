@@ -115,9 +115,7 @@ and literal =
   | Ldate     of string
 [@@deriving show {with_path = false}]
 
-and assignment_field =
-  | AassignField of assignment_operator * (lident option * lident) * expr
-[@@deriving show {with_path = false}]
+and assignment_field = assignment_operator * (lident option * lident) * expr
 
 and expr = expr_r loced
 [@@deriving show {with_path = false}]

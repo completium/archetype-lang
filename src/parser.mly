@@ -631,7 +631,7 @@ literal:
 
 assign_field_r:
  | id=dot_ident op=assignment_value_operator e=expr
-   { AassignField (op, id, e) }
+   { (op, id, e) }
 
 %inline dot_ident:
  | x=ident DOT y=ident { (Some x, y) }

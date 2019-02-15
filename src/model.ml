@@ -64,6 +64,7 @@ type vset =
   | VSstable
   | VSbefore
   | VSafter
+  | VSfixed
 [@@deriving show {with_path = false}]
 
 type ptyp_unloc =
@@ -218,20 +219,24 @@ type quantifier =
 [@@deriving show {with_path = false}]
 
 type lterm_unloc =
-  | Lquantifer of quantifier * lident * ltyp * lterm
+  | Lquantifer of quantifier * lident * ltyp option * lterm
   | Limply of lterm * lterm
   (* below is common entries with lterm *)
   | Lrel of int
   | Lletin of lident * lterm * ltyp option * lterm
+  | Lseq of lterm list
+  | Lnot of lterm
   | Lapp of lterm * lterm list
   | Llambda of lident * ltyp option * lterm
-  | Llog of logical_operator * lterm * lterm
+  | Llogical of logical_operator * lterm * lterm
   (* mutualize below with pterm ? *)
   | Lcomp of comparison_operator * lterm * lterm
   | Larith of arithmetic_operator * lterm * lterm
+  | Luarith of unary_arithmetic_operator * lterm
   | Lvar of lident
   | Lfield of lident
   | Lasset of lident
+  | Larray of lterm list
   | Llit of bval
   | Ldot of lterm * lterm
   | Lconst of const
@@ -244,6 +249,7 @@ type 'typ gen_pterm_unloc  =
   | Pif of 'typ gen_pterm * 'typ gen_pterm * ('typ gen_pterm) option
   | Pfor of lident * 'typ gen_pterm * 'typ gen_pterm
   | Passign of assignment_operator * 'typ gen_pterm * 'typ gen_pterm
+  | Pfassign of (assignment_operator * (lident option * lident) * ('typ gen_pterm)) list
   | Ptransfer of 'typ gen_pterm * bool * ident option
   | Ptransition
   | Pbreak

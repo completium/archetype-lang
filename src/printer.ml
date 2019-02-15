@@ -326,13 +326,11 @@ and pp_literal fmt lit =
   | Lduration d -> Format.fprintf fmt "%s" d
   | Ldate     d -> Format.fprintf fmt "%s" d
 
-and pp_assignment_field fmt f =
-  match f with
-  | AassignField (op, id, e) ->
-      Format.fprintf fmt "%a %a %a"
-        pp_ident_ident id
-        pp_assignment_operator op
-        pp_expr e
+and pp_assignment_field fmt (op, id, e) =
+  Format.fprintf fmt "%a %a %a"
+    pp_ident_ident id
+    pp_assignment_operator op
+    pp_expr e
 
 and pp_ident_ident fmt a =
 match a with

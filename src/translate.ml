@@ -124,6 +124,10 @@ let to_assignment_operator (op : ParseTree.assignment_operator) : Model.assignme
   | AndAssign -> AndAssign
   | OrAssign -> OrAssign
 
+let to_quantifier (op : ParseTree.quantifier) : Model.quantifier =
+  match op with
+  | Forall -> Forall
+  | Exists -> Exists
 
 let to_vset id =
   let loc, v = deloc id in
@@ -133,6 +137,7 @@ let to_vset id =
   | "stable" -> VSstable
   | "before" -> VSbefore
   | "after" -> VSafter
+  | "fixed" -> VSfixed
   | _ -> raise (ModelError (Format.sprintf "cannot convert %s to vset" v, loc))
 
 let rec mk_ptyp e : ptyp =
@@ -167,13 +172,66 @@ let to_bval l =
   | Ldate s -> BVdate s
   | Ltz n -> BVcurrency (Tez, n)
 
-let mk_lterm (e : expr) : lterm =
+let mk_lterm_id (id : lident) =
+  let c = id |> unloc |> to_const in
+  match c with
+  | Some d -> Lconst d
+  | None -> Lvar id
+
+let rec mk_lterm (e : expr) : lterm =
   let loc, v = deloc e in
   mkloc loc (
     match v with
+    | Eterm t -> (match t with
+        | (Some _a, _e) -> Llit (mkloc loc (BVstring "TODO: Namespace"))
+        | (None, e) -> mk_lterm_id e)
+
+    | Eop _ -> raise (ModelError ("operation error", loc))
     | Eliteral l -> Llit (mkloc loc (to_bval l))
-    | _ -> Llit (mkloc loc (BVstring "TODO: mk_lterm"))
-  )
+    | Earray l -> Larray (List.map mk_lterm l)
+    | Edot (e, i) -> Ldot (mk_lterm e, mkloc (i |> Location.loc) (mk_lterm_id i))
+    | EassignFields _l -> raise (ModelError ("assignment fields are not allowed in logical block", loc))
+    | Eapp ({pldesc=Eop op; _}, [lhs; rhs]) ->
+      (
+        match op with
+        | `Logical Imply -> Limply   (mk_lterm lhs, mk_lterm rhs)
+        | `Logical o     -> Llogical (to_logical_operator o, mk_lterm lhs, mk_lterm rhs)
+        | `Cmp o         -> Lcomp    (to_comparison_operator o, mk_lterm lhs, mk_lterm rhs)
+        | `Arith o       -> Larith   (to_arithmetic_operator o, mk_lterm lhs, mk_lterm rhs)
+        | _ -> raise (ModelError ("binary operation not valid", loc))
+      )
+    | Eapp ({pldesc=Eop op; _}, [e]) ->
+      (
+        match op with
+        | `Unary Not -> Lnot (mk_lterm e)
+        | `Unary Uplus -> Luarith (Uplus, mk_lterm e)
+        | `Unary Uminus -> Luarith (Uminus, mk_lterm e)
+        | _ -> raise (ModelError ("unary operation not valid", loc))
+      )
+    | Eapp (f, args) -> Lapp (mk_lterm f, List.map mk_lterm args)
+    | Etransfer (_a, _, _dest) -> raise (ModelError ("\"transfer\" is not allowed in logical block", loc))
+    | Eassign (_, _, _) -> raise (ModelError ("assignment is not allowed in logical block", loc))
+    | Eif (_cond, _then_, _else_) -> raise (ModelError ("\"if\" is not allowed in logical block", loc))
+    | Ebreak -> raise (ModelError ("\"break\" is not allowed in logical block", loc))
+    | Efor (_, _, _, _) -> raise (ModelError ("\"for\" is not allowed in logical block", loc))
+    | Eassert _ -> raise (ModelError ("\"assert\" is not allowed in logical block", loc))
+    | Eseq (lhs, rhs) ->
+      (let l = (let a = mk_lterm lhs in match a with | {pldesc = Lseq la; _} -> la | _ -> [a]) @
+               (let a = mk_lterm rhs in match a with | {pldesc = Lseq la; _} -> la | _ -> [a]) in
+       Lseq l)
+    | Efun (args, body) ->
+      (
+        match List.rev args with
+       | [] -> raise (ModelError ("no argument in lamda", loc))
+       | (ia, it, _)::t ->
+           List.fold_left (
+           fun acc i ->
+             let id, typ, _ = i in
+             Llambda (id, map_option mk_ltyp typ, mkloc dummy acc)
+           ) (Llambda (ia, map_option mk_ltyp it, mk_lterm body)) t)
+    | Eletin ((i, typ, _), init, body) -> Lletin (i, mk_lterm init,
+                                                  map_option mk_ltyp typ, mk_lterm body)
+    | Equantifier (q, (id, t, _), e) -> Lquantifer (to_quantifier q, id, map_option mk_ltyp t, mk_lterm e))
 
 let mk_pterm_id (id : lident) : ptyp gen_pterm_unloc =
   let c = id |> unloc |> to_const in
@@ -186,21 +244,26 @@ let rec mk_pterm e : pterm =
   mkloc loc (
     match v with
     | Eterm t -> (match t with
-        | (Some a, e) -> Pdot (mkloc (Location.loc a) (Passet a), mkloc (Location.loc e) (Pfield e))
+        | (Some _a, _e) -> Plit (mkloc loc (BVstring "TODO: Namespace"))
         | (None, e) -> mk_pterm_id e)
 
     | Eop _ -> raise (ModelError ("operation error", loc))
     | Eliteral l -> Plit (mkloc loc (to_bval l))
     | Earray l -> Parray (List.map mk_pterm l)
     | Edot (e, i) -> Pdot (mk_pterm e, mkloc (i |> Location.loc) (mk_pterm_id i))
-    | EassignFields _l -> Plit (mkloc loc (BVstring "TODO: EassignFields"))
-    | Eapp ({pldesc=Eop op; _}, [lhs; rhs]) ->
+    | EassignFields l ->
+      Pfassign (List.map
+                  (fun (i : ParseTree.assignment_field) : (Model.assignment_operator * (lident option * lident) * ('typ gen_pterm))->
+                     let (op, (a, f), e) = i in
+                     (to_assignment_operator op, (a, f), mk_pterm e)) l)
+    | Eapp ({pldesc=Eop op; plloc=locop}, [lhs; rhs]) ->
       (
         match op with
+        | `Logical Imply -> raise (ModelError ("Imply operator is not allowed in programming block", locop))
         | `Logical o -> Plogical (to_logical_operator o, mk_pterm lhs, mk_pterm rhs)
         | `Cmp o     -> Pcomp    (to_comparison_operator o, mk_pterm lhs, mk_pterm rhs)
         | `Arith o   -> Parith   (to_arithmetic_operator o, mk_pterm lhs, mk_pterm rhs)
-        | _ -> raise (ModelError ("binary operation not valid", loc))
+        | _ -> raise (ModelError ("binary operation not valid", locop))
       )
     | Eapp ({pldesc=Eop op; _}, [e]) ->
       (
@@ -233,7 +296,7 @@ let rec mk_pterm e : pterm =
            ) (Plambda (ia, map_option mk_ptyp it, mk_pterm body)) t)
     | Eletin ((i, typ, _), init, body) -> Pletin (i, mk_pterm init,
                                                   map_option mk_ptyp typ, mk_pterm body)
-    | Equantifier _ -> raise (ModelError ("Quantifier is not allowed in programming block", loc)))
+    | Equantifier _ -> raise (ModelError ("Quantifiers are not allowed in programming block", loc)))
 
 let to_label_lterm (label, lterm) : label_lterm =
   {
