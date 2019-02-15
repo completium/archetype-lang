@@ -110,9 +110,9 @@ type decl = {
 [@@deriving show {with_path = false}]
 
 type variable = {
-    decl         : decl;
-    constant     : bool;
-    loc : Location.t [@opaque];
+  decl         : decl;
+  constant     : bool;
+  loc : Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]
 
@@ -151,6 +151,12 @@ type arithmetic_operator =
   | Minus
   | Mult
   | Div
+  | Modulo
+[@@deriving show {with_path = false}]
+
+type unary_arithmetic_operator =
+  | Uplus
+  | Uminus
 [@@deriving show {with_path = false}]
 
 type const =
@@ -235,7 +241,7 @@ type pterm_unloc  =
   | Pif of pterm * pterm * pterm option
   | Pfor of lident * pterm * pterm
   | Passign of assignment_operator * pterm * pterm
-  | Ptransfer
+  | Ptransfer of pterm * bool * ident option
   | Ptransition
   | Pbreak
   | Pseq of pterm list
@@ -245,14 +251,16 @@ type pterm_unloc  =
   | Prel of int
   | Pletin of lident * pterm * ptyp option * pterm
   | Papp of pterm * pterm list
-  | Plambda of lident * ptyp * pterm
+  | Plambda of lident * ptyp option * pterm
   | Plogical of logical_operator * pterm * pterm
   (* mutualize below with lterm ? *)
   | Pcomp of comparison_operator * pterm * pterm
   | Parith of arithmetic_operator * pterm * pterm
+  | Puarith of unary_arithmetic_operator * pterm
   | Pvar of lident
   | Pfield of lident
   | Passet of lident
+  | Parray of pterm list
   | Plit of bval
   | Pdot of pterm * pterm
   | Pconst of const
@@ -278,25 +286,25 @@ type label_lterm = lterm label_term
 [@@deriving show {with_path = false}]
 
 type specification = {
-    variables  : variable list;
-    action     : pterm option;
-    invariants : label_lterm list;
-    ensures    : label_lterm list;
-    loc        : Location.t [@opaque];
-  }
+  variables  : variable list;
+  action     : pterm option;
+  invariants : label_lterm list;
+  ensures    : label_lterm list;
+  loc        : Location.t [@opaque];
+}
 [@@deriving show {with_path = false}]
 
 type name = lident option * lident
 
 type transaction = {
-    name         : lident;
-    args         : arg list;
-    calledby     : rexpr option;
-    condition    : label_pterm list option;
-    transition   : (sexpr * lident * (lident * lident) option) option; (* from * to * fied *)
-    spec         : specification option;
-    action       : pterm option;
-    loc          : Location.t [@opaque];
+  name         : lident;
+  args         : arg list;
+  calledby     : rexpr option;
+  condition    : label_pterm list option;
+  transition   : (sexpr * lident * (lident * lident) option) option; (* from * to * fied *)
+  spec         : specification option;
+  action       : pterm option;
+  loc          : Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]
 
@@ -316,14 +324,14 @@ type state = {
 [@@deriving show {with_path = false}]
 
 type asset = {
-    name  : lident;
-    args  : arg list;
-    key   : lident;
-    sort  : lident list option;
-    role  : bool;
-    init  : pterm option;
-    preds : pterm list option;
-    loc   : Location.t [@opaque];
+  name  : lident;
+  args  : arg list;
+  key   : lident;
+  sort  : lident list option;
+  role  : bool;
+  init  : pterm option;
+  preds : pterm list option;
+  loc   : Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]
 
@@ -344,15 +352,15 @@ type function_ = {
 [@@deriving show {with_path = false}]
 
 type model_unloc = {
-    name         : lident;
-    roles        : role list;
-    variables    : variable list;
-    assets       : asset list;
-    functions    : function_ list;
-    transactions : transaction list;
-    states       : state list;
-    enums        : enum list;
-    specs        : specification list;
+  name         : lident;
+  roles        : role list;
+  variables    : variable list;
+  assets       : asset list;
+  functions    : function_ list;
+  transactions : transaction list;
+  states       : state list;
+  enums        : enum list;
+  specs        : specification list;
 }
 [@@deriving show {with_path = false}]
 

@@ -88,6 +88,31 @@ let container_to_container (c : ParseTree.container) : Model.container =
   | Set -> Set
   | Partition -> Partition
 
+
+let to_logical_operator (op : ParseTree.logical_operator) : Model.logical_operator =
+  match op with
+  | And -> And
+  | Or -> Or
+  | Imply -> Imply
+  | Equiv -> Equiv
+
+let to_comparison_operator (op : ParseTree.comparison_operator) : Model.comparison_operator =
+  match op with
+  | Equal  -> Equal
+  | Nequal -> Nequal
+  | Gt     -> Gt
+  | Ge     -> Ge
+  | Lt     -> Lt
+  | Le     -> Le
+
+let to_arithmetic_operator (op : ParseTree.arithmetic_operator) : Model.arithmetic_operator =
+  match op with
+  | Plus   -> Plus
+  | Minus  -> Minus
+  | Mult   -> Mult
+  | Div    -> Div
+  | Modulo -> Modulo
+
 let to_assignment_operator (op : ParseTree.assignment_operator) : Model.assignment_operator =
   match op with
   | ValueAssign -> ValueAssign
@@ -99,19 +124,37 @@ let to_assignment_operator (op : ParseTree.assignment_operator) : Model.assignme
   | AndAssign -> AndAssign
   | OrAssign -> OrAssign
 
+
+let to_vset id =
+  let loc, v = deloc id in
+  match v with
+  | "removed" -> VSremoved
+  | "added" -> VSadded
+  | "stable" -> VSstable
+  | "before" -> VSbefore
+  | "after" -> VSafter
+  | _ -> raise (ModelError (Format.sprintf "cannot convert %s to vset" v, loc))
+
 let rec mk_ptyp e =
   let loc, v = deloc e in
   mkloc loc
     (match v with
-     | Tref v -> (let b = builtin_type (unloc v) in
-                  match b with
-                  | Some u -> Tbuiltin u
-                  | None -> Tasset v)
+     | Tref v ->
+       (let b = builtin_type (unloc v) in
+        match b with
+        | Some u -> Tbuiltin u
+        | None -> Tasset v)
      | Tcontainer (t, container) -> Tcontainer ((mk_ptyp t), container_to_container container)
      | Tapp (f, v) -> Tapp (mk_ptyp f, mk_ptyp v)
      | Ttuple l -> Ttuple (List.map mk_ptyp l)
      | _ -> raise (ModelError ("mk_ptyp: unsupported type ", loc)))
-(*   | Tvset (vs, t) -> *)
+
+let rec mk_ltyp e : ltyp=
+  let loc, v = deloc e in
+  mkloc loc
+    (match v with
+     | Tvset (vs, t) -> LTvset (to_vset vs, mk_ltyp t)
+     | _ -> LTprog (mk_ptyp e))
 
 let to_bval l =
   match l with
@@ -129,8 +172,14 @@ let mk_lterm (e : expr) : lterm =
   mkloc loc (
     match v with
     | Eliteral l -> Llit (mkloc loc (to_bval l))
-    | _ -> Llit (mkloc loc (BVstring "TODO"))
+    | _ -> Llit (mkloc loc (BVstring "TODO: mk_lterm"))
   )
+
+let mk_pterm_id (id : lident) =
+  let c = id |> unloc |> to_const in
+  match c with
+  | Some d -> Pconst d
+  | None -> Pvar id
 
 let rec mk_pterm e =
   let loc, v = deloc e in
@@ -138,19 +187,31 @@ let rec mk_pterm e =
     match v with
     | Eterm t -> (match t with
         | (Some a, e) -> Pdot (mkloc (Location.loc a) (Passet a), mkloc (Location.loc e) (Pfield e))
-        | (None, e) -> (
-            let c = to_const (unloc e) in
-            match c with
-            | Some d -> Pconst d
-            | None -> Pvar e))
+        | (None, e) -> mk_pterm_id e)
 
-    | Eop _op -> Plit (mkloc loc (BVstring "TODO"))
+    | Eop _ -> raise (ModelError ("operation error", loc))
     | Eliteral l -> Plit (mkloc loc (to_bval l))
-    | Earray _l -> Plit (mkloc loc (BVstring "TODO"))
-    | Edot (_e, _i) -> Plit (mkloc loc (BVstring "TODO"))
-    | EassignFields _l -> Plit (mkloc loc (BVstring "TODO"))
-    | Eapp (_f, _args) -> Plit (mkloc loc (BVstring "TODO"))
-    | Etransfer (_e, _b, _a) -> Plit (mkloc loc (BVstring "TODO"))
+    | Earray l -> Parray (List.map mk_pterm l)
+    | Edot (e, i) -> Pdot (mk_pterm e, mkloc (i |> Location.loc) (mk_pterm_id i))
+    | EassignFields _l -> Plit (mkloc loc (BVstring "TODO: EassignFields"))
+    | Eapp ({pldesc=Eop op; _}, [lhs; rhs]) ->
+      (
+        match op with
+        | `Logical o -> Plogical (to_logical_operator o, mk_pterm lhs, mk_pterm rhs)
+        | `Cmp o     -> Pcomp    (to_comparison_operator o, mk_pterm lhs, mk_pterm rhs)
+        | `Arith o   -> Parith   (to_arithmetic_operator o, mk_pterm lhs, mk_pterm rhs)
+        | _ -> raise (ModelError ("binary operation not valid", loc))
+      )
+    | Eapp ({pldesc=Eop op; _}, [e]) ->
+      (
+        match op with
+        | `Unary Not -> Pnot (mk_pterm e)
+        | `Unary Uplus -> Puarith (Uplus, mk_pterm e)
+        | `Unary Uminus -> Puarith (Uminus, mk_pterm e)
+        | _ -> raise (ModelError ("unary operation not valid", loc))
+      )
+    | Eapp (f, args) -> Papp (mk_pterm f, List.map mk_pterm args)
+    | Etransfer (a, back, _dest) -> Ptransfer (mk_pterm a, back, None)
     | Eassign (op, lhs, rhs) -> Passign (to_assignment_operator op, mk_pterm lhs, mk_pterm rhs)
     | Eif (cond, then_, else_) -> Pif (mk_pterm cond, mk_pterm then_, map_option mk_pterm else_)
     | Ebreak -> Pbreak
@@ -160,9 +221,18 @@ let rec mk_pterm e =
       (let l = (let a = mk_pterm lhs in match a with | {pldesc = Pseq la; _} -> la | _ -> [a]) @
                (let a = mk_pterm rhs in match a with | {pldesc = Pseq la; _} -> la | _ -> [a]) in
        Pseq l)
-    | Efun (_args, _body) -> Plit (mkloc loc (BVstring "TODO"))
+    | Efun (args, body) ->
+      (
+        match List.rev args with
+       | [] -> raise (ModelError ("no argument in lamda", loc))
+       | (ia, it, _)::t ->
+           List.fold_left (
+           fun acc i ->
+             let id, typ, _ = i in
+             Plambda (id, map_option mk_ptyp typ, mkloc dummy acc)
+           ) (Plambda (ia, map_option mk_ptyp it, mk_pterm body)) t)
     | Eletin ((i, typ, _), init, body) -> Pletin (i, mk_pterm init, map_option mk_ptyp typ, mk_pterm body)
-    | Equantifier _ -> raise (ModelError ("mk_pterm: quantifier is not allowed in pblock", loc)))
+    | Equantifier _ -> raise (ModelError ("Quantifier is not allowed in programming block", loc)))
 
 let to_label_lterm (label, lterm) : label_lterm =
   {
@@ -240,14 +310,6 @@ let get_roles decls =
          {name = id; default = map_option to_rexpr_dv_role dv; loc = loc}::acc
        | _ -> acc)
     ) [] decls
-
-let mk_pterm (e :expr) : pterm = (* TODO *)
-  let loc = loc e in
-  let v = unloc e in
-  mkloc loc
-    (match v with
-     | Ebreak -> Pbreak
-     | _ -> Pvar (dumloc "TODO") )
 
 let mk_bval e =
   let loc, v = deloc e in
