@@ -218,6 +218,28 @@ type quantifier =
   | Exists
 [@@deriving show {with_path = false}]
 
+type 'id qualid =
+  | Qident of 'id
+  | Qdot of 'id qualid * 'id
+[@@deriving show {with_path = false}]
+
+type ('id,'typ,'pattern) pattern_unloc =
+  | Pwild
+  | Pvar of 'id
+  | Papp of 'id qualid * 'pattern list
+  | Prec of ('id qualid * 'pattern) list
+  | Ptuple of 'pattern list
+  | Pas of 'pattern * 'id * bool
+  | Por of 'pattern * 'pattern
+  | Pcast of 'pattern * 'typ
+  | Pscope of 'id qualid * 'pattern
+  | Pparen of 'pattern
+  | Pghost of 'pattern
+[@@deriving show {with_path = false}]
+
+and ('id,'typ) pattern = ('id, 'typ, ('id, 'typ) pattern) pattern_unloc loced
+[@@deriving show {with_path = false}]
+
 type lterm_unloc =
   | Lquantifer of quantifier * lident * ltyp option * lterm
   | Limply of lterm * lterm
@@ -250,12 +272,14 @@ type ('id,'typ,'term) poly_pterm  =
   | Pfor of 'id * 'term * 'term
   | Passign of assignment_operator * 'term * 'term
   | Pfassign of (assignment_operator * ('id option * 'id) * 'term) list
-  | Ptransfer of 'term * bool * ident option
+  | Ptransfer of 'term * bool * lident option
   | Ptransition
   | Pbreak
   | Pseq of ('term) list
   | Pnot of 'term
   | Passert of lterm
+  | Pmatchwith of 'term * (('id,'typ) pattern * 'term) list
+  | Precord of ('id qualid * 'term) list
   (* below is common entries with lterm *)
   | Prel of int
   | Pletin of 'id * ('term) * ('typ option) * ('term)

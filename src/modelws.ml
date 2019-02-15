@@ -259,6 +259,26 @@ type basic_pterm = (string,storage_field_type,basic_pterm) poly_pterm
 
 let lstr s = mkloc Location.dummy s
 
+let rec loc_qualid (q : string qualid) : lident qualid =
+  match q with
+  | Qident s -> Qident (lstr s)
+  | Qdot (q, s) -> Qdot (loc_qualid q, lstr s)
+
+let rec loc_pattern p =
+  mkloc Location.dummy (
+    match unloc p with
+    | Pwild -> Pwild
+    | Pvar s -> Pvar (lstr s)
+    | Papp (q, l) -> Papp (loc_qualid q, List.map loc_pattern l)
+    | Prec l -> Prec (List.map (fun (i, p) -> (loc_qualid i, loc_pattern p)) l)
+    | Ptuple l -> Ptuple (List.map loc_pattern l)
+    | Pas (p, o, g) -> Pas (loc_pattern p, lstr o, g)
+    | Por (lhs, rhs) -> Por (loc_pattern lhs, loc_pattern rhs)
+    | Pcast (p, t) -> Pcast (loc_pattern p, t)
+    | Pscope (q, p) -> Pscope (loc_qualid q, loc_pattern p)
+    | Pparen p -> Pparen (loc_pattern p)
+    | Pghost p -> Pghost (loc_pattern p))
+
 let rec loc_pterm (p : basic_pterm) : pterm =
   mkloc Location.dummy (
     match p with
@@ -274,6 +294,8 @@ let rec loc_pterm (p : basic_pterm) : pterm =
     | Pseq l -> Model.Pseq (List.map loc_pterm l)
     | Pnot e -> Model.Pnot (loc_pterm e)
     | Passert l -> Model.Passert l
+    | Pmatchwith (e, l) -> Model.Pmatchwith (loc_pterm e, List.map (fun (p, e) -> (loc_pattern p, loc_pterm e)) l)
+    | Precord l -> Model.Precord (List.map (fun (q, t) -> (loc_qualid q, loc_pterm t) ) l)
     (* below is common entries with lterm *)
     | Prel i -> Model.Prel i
     | Pletin (i,v,t,b) -> Model.Pletin (lstr i,loc_pterm v, t, loc_pterm b)
