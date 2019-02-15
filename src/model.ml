@@ -249,7 +249,7 @@ type ('id,'typ) gen_pterm_unloc  =
   | Pif of ('id,'typ) gen_pterm * ('id,'typ) gen_pterm * (('id,'typ) gen_pterm) option
   | Pfor of 'id * ('id,'typ) gen_pterm * ('id,'typ) gen_pterm
   | Passign of assignment_operator * ('id,'typ) gen_pterm * ('id,'typ) gen_pterm
-  | Pfassign of (assignment_operator * ('id option * 'id) * ('typ gen_pterm)) list
+  | Pfassign of (assignment_operator * ('id option * 'id) * (('id, 'typ) gen_pterm)) list
   | Ptransfer of ('id,'typ) gen_pterm * bool * ident option
   | Ptransition
   | Pbreak

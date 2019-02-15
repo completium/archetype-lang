@@ -253,7 +253,7 @@ let rec mk_pterm e : pterm =
     | Edot (e, i) -> Pdot (mk_pterm e, mkloc (i |> Location.loc) (mk_pterm_id i))
     | EassignFields l ->
       Pfassign (List.map
-                  (fun (i : ParseTree.assignment_field) : (Model.assignment_operator * (lident option * lident) * ('typ gen_pterm))->
+                  (fun i ->
                      let (op, (a, f), e) = i in
                      (to_assignment_operator op, (a, f), mk_pterm e)) l)
     | Eapp ({pldesc=Eop op; plloc=locop}, [lhs; rhs]) ->
