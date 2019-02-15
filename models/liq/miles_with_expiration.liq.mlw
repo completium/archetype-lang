@@ -32,7 +32,7 @@ let init (s : storage) (admin : address) : storage = {
   owner_miles = empty_map_add_strl ();
 }
 
-let get_admin (s : storage) = s.admin
+let get_admin (s : storage) = admin s
 
 let get_admin_tmp (s : storage) = s.admin_tmp
 

@@ -84,11 +84,14 @@ type enum_unloc = {
 type enum = enum_unloc loced
 [@@deriving show {with_path = false}]
 
+type function_ws = storage_field_type gen_function
+[@@deriving show {with_path = false}]
+
 type model_with_storage = {
   name         : lident;
   enums        : enum list;
   storage      : storage;
-  functions    : function_ list;
+  functions    : function_ws list;
   transactions : transaction list;
 }
 [@@deriving show {with_path = false}]
@@ -187,9 +190,12 @@ let mk_initial_state info (st : state) =
   let init = get_initial_state info st.name in
   mkloc (loc init) (BVenum (unloc init))
 
+let mk_state_name n =
+  mkloc (loc n) ((unloc n)^"_st")
+
 let mk_state_var info (st : state) = mkloc (st.loc) {
   asset   = None;
-  name    = st.name;
+  name    = mk_state_name st.name;
   typ     = Enum st.name;
   ghost   = false;
   default = Some (mk_initial_state info st);
@@ -249,6 +255,29 @@ let compile_operations info mws =  {
   }
 }
 
+let mk_getset_args _info _f _op = []
+let mk_getset_body _info _f _op = Pbreak
+
+let field_to_getset info (f : storage_field_unloc) op : function_ws = {
+    name = f.name;
+    args = mk_getset_args info f op;
+    return = None;
+    body = mkloc Location.dummy (mk_getset_body info f op);
+    loc = Location.dummy;
+  }
+
+let mk_getset info (mws : model_with_storage) = {
+  mws with
+  functions = mws.functions @ (
+      List.fold_left (
+        fun acc f ->
+          List.fold_left (
+            fun acc op -> acc @ [field_to_getset info (unloc f) op]
+          ) acc (unloc f).ops
+      ) [] mws.storage.fields
+    )
+}
+
 let model_to_modelws (info : info) (m : model) : model_with_storage =
   {
     name         = (unloc m).name;
@@ -256,4 +285,6 @@ let model_to_modelws (info : info) (m : model) : model_with_storage =
     storage      = mk_storage info (unloc m);
     functions    = [];
     transactions = [];
-  } |> compile_operations info
+  }
+  |> (compile_operations info)
+  |> (mk_getset info)

@@ -102,6 +102,8 @@ type field_storage_policy = {
   ftyps   : (lident * field_storage) list;
 }
 
+let get_storage_typ fname p = List.assoc fname p.ftyps
+
 (* This should be modulated/optimized according to asset usage in tx actions *)
 let sf_to_fs = function
   | Enum id               -> Fenum id
@@ -287,7 +289,55 @@ let mk_dummy_decl (name,(_,vt)) =
   let f = Efun ([], None, Ity.MaskVisible, empty_spec, body) in
   Dlet(str_to_ident name, false, Expr.RKnone, mk_expr f)
 
-let sfop_to_decl _p _op = []
+let mk_get_enum_val id =
+  let sid = str_to_ident "s" in
+  let args = [Loc.dummy_position, Some sid, false, None] in
+  let body = mk_expr (Eidapp ((mk_qid [id]),[mk_expr (str_to_eident ["s"])]))  in
+  let f = Efun(args, None, Ity.MaskVisible, empty_spec, body) in
+  [Dlet(str_to_ident ("get_"^(unloc id)), false, Expr.RKnone, mk_expr f)]
+
+let mk_get_typ_val = mk_get_enum_val
+
+(* adds storage type first *)
+let mk_arg_tuple vts =
+  PTtuple ([lident_to_typ (mkloc Location.dummy "storage")]@
+           (List.map field_storage_to_ptyp vts))
+
+let mk_get_param i nb =
+  let get_param = "get_"^(string_of_int i)^"_"^(string_of_int nb) in
+  let get_param_lident = mkloc Location.dummy get_param in
+  mk_expr (Eidapp ((mk_qid [get_param_lident]),[mk_expr (str_to_eident ["s"])]))
+
+let add_body_decls body ids =
+  let nb_ids = List.length ids in
+  let rec add_decl i l =
+    match l with
+    | [] -> body
+    | [id] ->
+      mk_expr (Elet (str_to_ident id,false,Expr.RKnone, mk_get_param i nb_ids, body))
+    | id::tl ->
+      mk_expr (Elet (str_to_ident id,
+                     false,
+                     Expr.RKnone,
+                     mk_get_param i nb_ids,
+                     add_decl (succ i) tl)) in
+  add_decl 0 ids
+
+let mk_fun_tuple id args body =
+  let typ = mk_arg_tuple (snd (List.split args)) in
+  let binder = Loc.dummy_position, Some (str_to_ident "params"), false, Some typ in
+  let body = add_body_decls body (["s"]@(fst (List.split args))) in
+  let f = Efun([binder], None, Ity.MaskVisible, empty_spec, body) in
+  Dlet(str_to_ident id, false, Expr.RKnone, mk_expr f)
+
+let sfop_to_decl (p : field_storage_policy) (op : storage_field_operation) =
+  match op.typ, get_storage_typ op.name p with
+  | Get, Fenum _ -> mk_get_enum_val op.name
+  | Get, Ftyp _  -> mk_get_typ_val op.name
+(*  | Set, Fenum id -> mk_get_enum_val id
+  | Set, Ftyp vt  -> mk_get_typ_val p.name vt
+*)
+  | _,_ -> []
 
 (* returns a list of definition *)
 let modelws_to_modelw3liq (info : info) (m : model_with_storage) =

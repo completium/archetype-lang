@@ -101,12 +101,15 @@ type bval_unloc =
 
 and bval = bval_unloc loced
 
-type decl = {
+type 'typ gen_decl = {
   name    : lident;
-  typ     : ptyp option;
+  typ     : 'typ option;
   default : bval option;
   loc     : Location.t [@opaque];
 }
+[@@deriving show {with_path = false}]
+
+type decl = ptyp gen_decl
 [@@deriving show {with_path = false}]
 
 type variable = {
@@ -230,35 +233,38 @@ type lterm_unloc =
 
 and lterm = lterm_unloc loced
 
-type pterm_unloc  =
+type 'typ gen_pterm_unloc  =
   (* program specific *)
-  | Pif of pterm * pterm * pterm option
-  | Pfor of lident * pterm * pterm
-  | Passign of assignment_operator * pterm * pterm
+  | Pif of 'typ gen_pterm * 'typ gen_pterm * ('typ gen_pterm) option
+  | Pfor of lident * 'typ gen_pterm * 'typ gen_pterm
+  | Passign of assignment_operator * 'typ gen_pterm * 'typ gen_pterm
   | Ptransfer
   | Ptransition
   | Pbreak
-  | Pseq of pterm list
-  | Pnot of pterm
+  | Pseq of ('typ gen_pterm) list
+  | Pnot of 'typ gen_pterm
   | Passert of lterm
   (* below is common entries with lterm *)
   | Prel of int
-  | Pletin of lident * pterm * ptyp option * pterm
-  | Papp of pterm * pterm list
-  | Plambda of lident * ptyp * pterm
-  | Plogical of logical_operator * pterm * pterm
+  | Pletin of lident * 'typ gen_pterm * 'typ option * 'typ gen_pterm
+  | Papp of 'typ gen_pterm * ('typ gen_pterm) list
+  | Plambda of lident * 'typ * 'typ gen_pterm
+  | Plogical of logical_operator * 'typ gen_pterm * 'typ gen_pterm
   (* mutualize below with lterm ? *)
-  | Pcomp of comparison_operator * pterm * pterm
-  | Parith of arithmetic_operator * pterm * pterm
+  | Pcomp of comparison_operator * 'typ gen_pterm * 'typ gen_pterm
+  | Parith of arithmetic_operator * 'typ gen_pterm * 'typ gen_pterm
   | Pvar of lident
   | Pfield of lident
   | Passet of lident
   | Plit of bval
-  | Pdot of pterm * pterm
+  | Pdot of 'typ gen_pterm * 'typ gen_pterm
   | Pconst of const
 [@@deriving show {with_path = false}]
 
-and pterm = pterm_unloc loced
+and 'typ gen_pterm = ('typ gen_pterm_unloc) loced
+[@@deriving show {with_path = false}]
+
+type pterm = ptyp gen_pterm
 [@@deriving show {with_path = false}]
 
 type cond = pterm
@@ -334,13 +340,16 @@ type enum = {
 }
 [@@deriving show {with_path = false}]
 
-type function_ = {
+type 'typ gen_function = {
   name         : lident;
-  args         : arg list;
-  return       : ptyp option;
-  body         : pterm;
+  args         : ('typ gen_decl) list;
+  return       : 'typ option;
+  body         : 'typ gen_pterm;
   loc          : Location.t [@opaque];
 }
+[@@deriving show {with_path = false}]
+
+type function_ = ptyp gen_function
 [@@deriving show {with_path = false}]
 
 type model_unloc = {
