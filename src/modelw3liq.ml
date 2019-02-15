@@ -320,6 +320,7 @@ let rec pterm_to_expr (p : Modelws.pterm) =  {
         let fid =  dest_var f in
         Eidapp (mk_qid [fid], List.map pterm_to_expr l)
       | Plambda (i,t,b) -> mk_efun [] (loc p) i t b
+      (* TODO : continue mapping *)
       | _ -> raise (Anomaly "pterm_to_expr")
     end;
   expr_loc = loc p
