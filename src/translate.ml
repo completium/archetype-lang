@@ -135,7 +135,7 @@ let to_vset id =
   | "after" -> VSafter
   | _ -> raise (ModelError (Format.sprintf "cannot convert %s to vset" v, loc))
 
-let rec mk_ptyp e =
+let rec mk_ptyp e : ptyp =
   let loc, v = deloc e in
   mkloc loc
     (match v with
@@ -175,13 +175,13 @@ let mk_lterm (e : expr) : lterm =
     | _ -> Llit (mkloc loc (BVstring "TODO: mk_lterm"))
   )
 
-let mk_pterm_id (id : lident) =
+let mk_pterm_id (id : lident) : ptyp gen_pterm_unloc =
   let c = id |> unloc |> to_const in
   match c with
   | Some d -> Pconst d
   | None -> Pvar id
 
-let rec mk_pterm e =
+let rec mk_pterm e : pterm =
   let loc, v = deloc e in
   mkloc loc (
     match v with
@@ -231,7 +231,8 @@ let rec mk_pterm e =
              let id, typ, _ = i in
              Plambda (id, map_option mk_ptyp typ, mkloc dummy acc)
            ) (Plambda (ia, map_option mk_ptyp it, mk_pterm body)) t)
-    | Eletin ((i, typ, _), init, body) -> Pletin (i, mk_pterm init, map_option mk_ptyp typ, mk_pterm body)
+    | Eletin ((i, typ, _), init, body) -> Pletin (i, mk_pterm init,
+                                                  map_option mk_ptyp typ, mk_pterm body)
     | Equantifier _ -> raise (ModelError ("Quantifier is not allowed in programming block", loc)))
 
 let to_label_lterm (label, lterm) : label_lterm =

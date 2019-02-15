@@ -244,7 +244,7 @@ type 'typ gen_pterm_unloc  =
   | Pif of 'typ gen_pterm * 'typ gen_pterm * ('typ gen_pterm) option
   | Pfor of lident * 'typ gen_pterm * 'typ gen_pterm
   | Passign of assignment_operator * 'typ gen_pterm * 'typ gen_pterm
-  | Ptransfer 'typ gen_pterm * bool * ident option
+  | Ptransfer of 'typ gen_pterm * bool * ident option
   | Ptransition
   | Pbreak
   | Pseq of ('typ gen_pterm) list
@@ -252,9 +252,9 @@ type 'typ gen_pterm_unloc  =
   | Passert of lterm
   (* below is common entries with lterm *)
   | Prel of int
-  | Pletin of lident * 'typ gen_pterm * 'typ option * 'typ gen_pterm
+  | Pletin of lident * ('typ gen_pterm) * ('typ option) * ('typ gen_pterm)
   | Papp of 'typ gen_pterm * ('typ gen_pterm) list
-  | Plambda of lident * 'typ * 'typ gen_pterm
+  | Plambda of lident * 'typ option * 'typ gen_pterm
   | Plogical of logical_operator * 'typ gen_pterm * 'typ gen_pterm
   (* mutualize below with lterm ? *)
   | Pcomp of comparison_operator * 'typ gen_pterm * 'typ gen_pterm
@@ -263,7 +263,7 @@ type 'typ gen_pterm_unloc  =
   | Pvar of lident
   | Pfield of lident
   | Passet of lident
-  | Parray of pterm list
+  | Parray of ('typ gen_pterm) list
   | Plit of bval
   | Pdot of 'typ gen_pterm * 'typ gen_pterm
   | Pconst of const
