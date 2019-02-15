@@ -1,5 +1,6 @@
 open Location
 open Model
+open Ident
 open Modelinfo
 
 type require =
@@ -43,17 +44,15 @@ type storage_field_type =
   | CollMap  of lident * vtyp * lident * vtyp
 [@@deriving show {with_path = false}]
 
-type storage_field_unloc = {
+type storage_field = {
     asset   : lident option;
     name    : lident;
     typ     : storage_field_type;
     ghost   : bool;
     default : bval option; (* initial value *)
     ops     : storage_field_operation list;
+    loc     : Location.t [@opaque]
   }
-[@@deriving show {with_path = false}]
-
-type storage_field = storage_field_unloc loced
 [@@deriving show {with_path = false}]
 
 type storage = {
@@ -84,7 +83,13 @@ type enum_unloc = {
 type enum = enum_unloc loced
 [@@deriving show {with_path = false}]
 
-type function_ws = storage_field_type gen_function
+type pterm = (lident,storage_field_type) gen_pterm
+[@@deriving show {with_path = false}]
+
+type pterm_unloc = (lident,storage_field_type) gen_pterm_unloc
+[@@deriving show {with_path = false}]
+
+type function_ws = (lident,storage_field_type) gen_function
 [@@deriving show {with_path = false}]
 
 type model_with_storage = {
@@ -130,14 +135,14 @@ let mk_storage_field info name iskey (arg : decl) =
     | Some t -> t
     | None   -> raise (NoFieldType name)
   in
-  let typ = aft_to_sft info name fname iskey typ in
-  [ mkloc arg.loc {
+  let typ = aft_to_sft info name fname iskey typ in [{
     asset   = Some name;
     name    = mk_asset_field name arg.name;
     typ     = typ;
     ghost   = false;
     default = arg.default;
-    ops     = []
+    ops     = [];
+    loc     = arg.loc
   }]
 
 let mk_storage_fields info (asset : asset)  =
@@ -159,15 +164,14 @@ let vt_to_ft var =
     end
   | None -> raise (VarNoType var.decl.loc)
 
-let mk_variable (var : variable) =
-  let l   = var.loc in
-  mkloc l {
+let mk_variable (var : variable) = {
   asset   = None;
   name    = var.decl.name;
   typ     = vt_to_ft var;
   ghost   = false;
   default = var.decl.default;
-  ops     = []
+  ops     = [];
+  loc     = var.loc;
 }
 
 (* maps *)
@@ -176,14 +180,14 @@ let mk_role_default (r : role) =
   | Some (Raddress a) -> Some (mkloc (r.loc) (BVaddress a))
   | _ -> None
 
-let mk_role_var (role : role) =
-  mkloc role.loc {
+let mk_role_var (role : role) = {
   asset   = None;
   name    = role.name;
   typ     = Var VTaddress;
   ghost   = false;
   default = mk_role_default role;
-  ops     = []
+  ops     = [];
+  loc     = role.loc;
 }
 
 let mk_initial_state info (st : state) =
@@ -193,13 +197,14 @@ let mk_initial_state info (st : state) =
 let mk_state_name n =
   mkloc (loc n) ((unloc n)^"_st")
 
-let mk_state_var info (st : state) = mkloc (st.loc) {
+let mk_state_var info (st : state) = {
   asset   = None;
   name    = mk_state_name st.name;
   typ     = Enum st.name;
   ghost   = false;
   default = Some (mk_initial_state info st);
-  ops     = []
+  ops     = [];
+  loc     = st.loc;
 }
 
 let mk_storage info m =
@@ -235,7 +240,6 @@ let mk_operation n a = {
 
 (* TODO *)
 let compile_field_operation info _mws (f : storage_field) =
-  let f = unloc f in
   match (is_key f.name info), f.typ with
   | false, Enum _ | false, Var _ | false, ValueMap _ ->
    List.map (mk_operation f.name) [Get;Set]
@@ -246,25 +250,107 @@ let compile_operations info mws =  {
   storage = {
     mws.storage with
     fields =
-      List.map (fun f ->
-          mkloc (loc f) {
-            (unloc f) with
+      List.map (fun f -> {
+            f with
             ops = compile_field_operation info mws f
           }
         ) mws.storage.fields
   }
 }
 
-let mk_getset_args _info _f _op = []
-let mk_getset_body _info _f _op = Pbreak
+(* this is a basic pterm without loc easier to use when building ml term *)
+type basic_pterm =
+  (* program specific *)
+  | Pif of basic_pterm * basic_pterm * (basic_pterm) option
+  | Pfor of string * basic_pterm * basic_pterm
+  | Passign of assignment_operator * basic_pterm * basic_pterm
+  | Ptransfer of basic_pterm * bool * ident option
+  | Ptransition
+  | Pbreak
+  | Pseq of (basic_pterm) list
+  | Pnot of basic_pterm
+  | Passert of lterm
+  (* below is common entries with lterm *)
+  | Prel of int
+  | Pletin of string * (basic_pterm) * (storage_field_type option) * (basic_pterm)
+  | Papp of basic_pterm * (basic_pterm) list
+  | Plambda of string * storage_field_type option * basic_pterm
+  | Plogical of logical_operator * basic_pterm * basic_pterm
+  (* mutualize below with lterm ? *)
+  | Pcomp of comparison_operator * basic_pterm * basic_pterm
+  | Parith of arithmetic_operator * basic_pterm * basic_pterm
+  | Puarith of unary_arithmetic_operator * basic_pterm
+  | Pvar of string
+  | Pfield of string
+  | Passet of string
+  | Parray of (basic_pterm) list
+  | Plit of bval
+  | Pdot of basic_pterm * basic_pterm
+  | Pconst of const
 
-let field_to_getset info (f : storage_field_unloc) op : function_ws = {
-    name = f.name;
-    args = mk_getset_args info f op;
-    return = None;
-    body = mkloc Location.dummy (mk_getset_body info f op);
-    loc = Location.dummy;
-  }
+let lstr s = mkloc Location.dummy s
+
+let rec loc_pterm (p : basic_pterm) : pterm =
+  mkloc Location.dummy (
+    match p with
+    | Pif (c,t, Some e) -> Model.Pif (loc_pterm c, loc_pterm t, Some (loc_pterm e))
+    | Pif (c,t, None) -> Model.Pif (loc_pterm c, loc_pterm t, None)
+    | Pfor (id, c, b) -> Model.Pfor (lstr id, loc_pterm c, loc_pterm b)
+    | Passign (a, f, t) -> Model.Passign (a, loc_pterm f, loc_pterm t)
+    | Ptransfer (f, b, i) -> Model.Ptransfer (loc_pterm f, b, i)
+    | Ptransition -> Model.Ptransition
+    | Pbreak -> Model.Pbreak
+    | Pseq l -> Model.Pseq (List.map loc_pterm l)
+    | Pnot e -> Model.Pnot (loc_pterm e)
+    | Passert l -> Model.Passert l
+    (* below is common entries with lterm *)
+    | Prel i -> Model.Prel i
+    | Pletin (i,v,t,b) -> Model.Pletin (lstr i,loc_pterm v, t, loc_pterm b)
+    | Papp (f,a) -> Model.Papp (loc_pterm f, List.map loc_pterm a)
+    | Plambda (i,t, b) -> Model.Plambda (lstr i, t, loc_pterm b)
+    | Plogical (o,l,r) -> Model.Plogical (o, loc_pterm l, loc_pterm r)
+    (* mutualize below with lterm ? *)
+    | Pcomp (o,l,r) -> Model.Pcomp (o, loc_pterm l, loc_pterm r)
+    | Parith (o,l,r) -> Model.Parith (o, loc_pterm l, loc_pterm r)
+    | Puarith (u,e) -> Model.Puarith (u, loc_pterm e)
+    | Pvar i -> Model.Pvar (lstr i)
+    | Pfield i -> Model.Pfield (lstr i)
+    | Passet i -> Model.Passet (lstr i)
+    | Parray l -> Model.Parray (List.map loc_pterm l)
+    | Plit v -> Model.Plit v
+    | Pdot (l,r) -> Model.Pdot (loc_pterm l, loc_pterm r)
+    | Pconst c -> Model.Pconst c
+  )
+
+let dummy_function = {
+  name   = lstr "";
+  args   = [];
+  return = None;
+  body   = loc_pterm Pbreak;
+  loc    = Location.dummy;
+}
+
+let mk_arg (s,t) = { name = lstr s ; typ = t; default = None ; loc = Location.dummy }
+
+let field_to_getset _info (f : storage_field) (op : storage_field_operation) =
+  match f.asset, op.typ with
+  | None, Get -> (* simply apply field name to argument "s" *)
+    let n = unloc (f.name) in {
+      dummy_function with
+      name = lstr ("get_"^n);
+      args = [mk_arg ("s",None)];
+      body = loc_pterm (Papp (Pvar n,[Pvar "s"]))
+    }
+  | None, Set ->
+    let n = unloc (f.name) in {
+      dummy_function with
+      name = lstr ("set_"^n);
+      args = List.map mk_arg ["s",None; "v",None ];
+      body = loc_pterm (Papp (Pvar "update_storage",[Papp (Pvar n,[Pvar "s"]); Pvar "v"]));
+    }
+  (* simply apply field name to argument "s" *)
+  (* Papp (Pvar (unloc (f.name)),[Pvar "s"])*)
+  | _ -> dummy_function
 
 let mk_getset info (mws : model_with_storage) = {
   mws with
@@ -272,8 +358,8 @@ let mk_getset info (mws : model_with_storage) = {
       List.fold_left (
         fun acc f ->
           List.fold_left (
-            fun acc op -> acc @ [field_to_getset info (unloc f) op]
-          ) acc (unloc f).ops
+            fun acc op -> acc @ [field_to_getset info f op]
+          ) acc f.ops
       ) [] mws.storage.fields
     )
 }

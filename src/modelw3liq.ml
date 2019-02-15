@@ -19,13 +19,16 @@ let empty_spec = {
     sp_partial = false;
   }
 
-let loc (a : 'a Location.loced) : Loc.position =
-  let l      = Location.loc a in
+let loc2loc (l : Location.t) : Loc.position =
   let fname  = l.loc_fname in
   let line   = (fst l.loc_start) in
   let startp = (snd l.loc_start) in
   let endp   = (snd l.loc_end)   in
   Loc.user_position fname line startp endp
+
+let loc (a : 'a loced) : Loc.position =
+  let l = Location.loc a in
+  loc2loc l
 
 let mk_expr e = { expr_desc = e; expr_loc = Loc.dummy_position }
 
@@ -125,16 +128,14 @@ let rec field_storage_to_ptyp = function
     let mapid  = str_to_ident "map"  in
     PTtyapp (Qident mapid, [vtyp_to_mlwtyp vt; field_storage_to_ptyp fs])
 
-let mk_field_typ   (f : storage_field) = ((unloc f).name, sf_to_fs (unloc f).typ)
+let mk_field_typ   (f : storage_field) = (f.name, sf_to_fs f.typ)
 
 let mk_field_storage_policy storage = {
   ftyps   = List.map mk_field_typ storage.fields;
 }
 
-let mk_storage_field (p : field_storage_policy) (f : storage_field) : field =
-  let loc = loc f in
-  let (f : storage_field_unloc) = unloc f in {
-  f_loc     = loc;
+let mk_storage_field (p : field_storage_policy) (f : storage_field) : field = {
+  f_loc     = loc2loc (f.loc);
   f_ident   = mk_ident f.name;
   f_pty     = field_storage_to_ptyp (List.assoc f.name p.ftyps);
   f_mutable = true;
@@ -156,7 +157,6 @@ let mk_storage_decl (p : field_storage_policy) (storage : storage) =
 (* storage init generation *)
 let mk_init_args p info fs : (lident * field_storage) list =
   List.fold_left (fun acc f ->
-      let f = unloc f in
       match f.default with
       | None ->
         begin
@@ -194,7 +194,6 @@ let mk_init_val = function
 
 let mk_init_fields info args fs : (lident * initval) list =
   List.fold_left (fun acc f ->
-      let f = unloc f in
       match f.default with
       | Some bv -> acc @ [f.name, Ival bv]
       | None ->
@@ -354,5 +353,5 @@ let modelws_to_modelw3liq (info : info) (m : model_with_storage) =
   |> (fun x -> x @ [mk_init_storage storage_policy info m.storage])
   |> (fun x -> List.fold_left (fun acc f ->
       List.fold_left (fun acc op ->
-          acc @ (sfop_to_decl storage_policy op)) acc (unloc f).ops
+          acc @ (sfop_to_decl storage_policy op)) acc f.ops
     ) x m.storage.fields)

@@ -175,7 +175,7 @@ let mk_lterm (e : expr) : lterm =
     | _ -> Llit (mkloc loc (BVstring "TODO: mk_lterm"))
   )
 
-let mk_pterm_id (id : lident) : ptyp gen_pterm_unloc =
+let mk_pterm_id (id : lident) : (lident,ptyp) gen_pterm_unloc =
   let c = id |> unloc |> to_const in
   match c with
   | Some d -> Pconst d

@@ -239,40 +239,40 @@ type lterm_unloc =
 
 and lterm = lterm_unloc loced
 
-type 'typ gen_pterm_unloc  =
+type ('id,'typ) gen_pterm_unloc  =
   (* program specific *)
-  | Pif of 'typ gen_pterm * 'typ gen_pterm * ('typ gen_pterm) option
-  | Pfor of lident * 'typ gen_pterm * 'typ gen_pterm
-  | Passign of assignment_operator * 'typ gen_pterm * 'typ gen_pterm
-  | Ptransfer of 'typ gen_pterm * bool * ident option
+  | Pif of ('id,'typ) gen_pterm * ('id,'typ) gen_pterm * (('id,'typ) gen_pterm) option
+  | Pfor of 'id * ('id,'typ) gen_pterm * ('id,'typ) gen_pterm
+  | Passign of assignment_operator * ('id,'typ) gen_pterm * ('id,'typ) gen_pterm
+  | Ptransfer of ('id,'typ) gen_pterm * bool * ident option
   | Ptransition
   | Pbreak
-  | Pseq of ('typ gen_pterm) list
-  | Pnot of 'typ gen_pterm
+  | Pseq of (('id,'typ) gen_pterm) list
+  | Pnot of ('id,'typ) gen_pterm
   | Passert of lterm
   (* below is common entries with lterm *)
   | Prel of int
-  | Pletin of lident * ('typ gen_pterm) * ('typ option) * ('typ gen_pterm)
-  | Papp of 'typ gen_pterm * ('typ gen_pterm) list
-  | Plambda of lident * 'typ option * 'typ gen_pterm
-  | Plogical of logical_operator * 'typ gen_pterm * 'typ gen_pterm
+  | Pletin of 'id * (('id,'typ) gen_pterm) * ('typ option) * (('id,'typ) gen_pterm)
+  | Papp of ('id,'typ) gen_pterm * (('id,'typ) gen_pterm) list
+  | Plambda of 'id * 'typ option * ('id,'typ) gen_pterm
+  | Plogical of logical_operator * ('id,'typ) gen_pterm * ('id,'typ) gen_pterm
   (* mutualize below with lterm ? *)
-  | Pcomp of comparison_operator * 'typ gen_pterm * 'typ gen_pterm
-  | Parith of arithmetic_operator * 'typ gen_pterm * 'typ gen_pterm
-  | Puarith of unary_arithmetic_operator * 'typ gen_pterm
-  | Pvar of lident
-  | Pfield of lident
-  | Passet of lident
-  | Parray of ('typ gen_pterm) list
+  | Pcomp of comparison_operator * ('id,'typ) gen_pterm * ('id,'typ) gen_pterm
+  | Parith of arithmetic_operator * ('id,'typ) gen_pterm * ('id,'typ) gen_pterm
+  | Puarith of unary_arithmetic_operator * ('id,'typ) gen_pterm
+  | Pvar of 'id
+  | Pfield of 'id
+  | Passet of 'id
+  | Parray of (('id,'typ) gen_pterm) list
   | Plit of bval
-  | Pdot of 'typ gen_pterm * 'typ gen_pterm
+  | Pdot of ('id,'typ) gen_pterm * ('id,'typ) gen_pterm
   | Pconst of const
 [@@deriving show {with_path = false}]
 
-and 'typ gen_pterm = ('typ gen_pterm_unloc) loced
+and ('id,'typ) gen_pterm = (('id,'typ) gen_pterm_unloc) loced
 [@@deriving show {with_path = false}]
 
-type pterm = ptyp gen_pterm
+type pterm = (lident,ptyp) gen_pterm
 [@@deriving show {with_path = false}]
 
 type cond = pterm
@@ -348,16 +348,16 @@ type enum = {
 }
 [@@deriving show {with_path = false}]
 
-type 'typ gen_function = {
+type ('id,'typ) gen_function = {
   name         : lident;
   args         : ('typ gen_decl) list;
   return       : 'typ option;
-  body         : 'typ gen_pterm;
+  body         : ('id,'typ) gen_pterm;
   loc          : Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]
 
-type function_ = ptyp gen_function
+type function_ = (lident,ptyp) gen_function
 [@@deriving show {with_path = false}]
 
 type model_unloc = {
