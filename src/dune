@@ -1,8 +1,8 @@
 (env
   (dev
-    (flags (:standard -g -w Y -w Z -w -9 -w -23 -w +28 -w +33 -w -32)))
+    (flags (:standard -rectypes -g -w Y -w Z -w -9 -w -23 -w +28 -w +33 -w -32)))
   (release
-    (flags (:standard))))
+    (flags (:standard -rectypes))))
 
 (ocamllex lexer)
 (menhir (flags --explain) (modules parser))

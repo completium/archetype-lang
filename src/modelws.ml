@@ -1,6 +1,5 @@
 open Location
 open Model
-open Ident
 open Modelinfo
 
 type require =
@@ -83,13 +82,10 @@ type enum_unloc = {
 type enum = enum_unloc loced
 [@@deriving show {with_path = false}]
 
-type pterm = (lident,storage_field_type) gen_pterm
+type pterm = (lident,storage_field_type,pterm) poly_pterm loced
 [@@deriving show {with_path = false}]
 
-type pterm_unloc = (lident,storage_field_type) gen_pterm_unloc
-[@@deriving show {with_path = false}]
-
-type function_ws = (lident,storage_field_type) gen_function
+type function_ws = (lident,storage_field_type, pterm) gen_function
 [@@deriving show {with_path = false}]
 
 type model_with_storage = {
@@ -259,34 +255,7 @@ let compile_operations info mws =  {
 }
 
 (* this is a basic pterm without loc easier to use when building ml term *)
-type basic_pterm =
-  (* program specific *)
-  | Pif of basic_pterm * basic_pterm * (basic_pterm) option
-  | Pfor of string * basic_pterm * basic_pterm
-  | Passign of assignment_operator * basic_pterm * basic_pterm
-  | Ptransfer of basic_pterm * bool * ident option
-  | Ptransition
-  | Pbreak
-  | Pseq of (basic_pterm) list
-  | Pnot of basic_pterm
-  | Passert of lterm
-  (* below is common entries with lterm *)
-  | Prel of int
-  | Pletin of string * (basic_pterm) * (storage_field_type option) * (basic_pterm)
-  | Papp of basic_pterm * (basic_pterm) list
-  | Plambda of string * storage_field_type option * basic_pterm
-  | Plogical of logical_operator * basic_pterm * basic_pterm
-  (* mutualize below with lterm ? *)
-  | Pcomp of comparison_operator * basic_pterm * basic_pterm
-  | Parith of arithmetic_operator * basic_pterm * basic_pterm
-  | Puarith of unary_arithmetic_operator * basic_pterm
-  | Pvar of string
-  | Pfield of string
-  | Passet of string
-  | Parray of (basic_pterm) list
-  | Plit of bval
-  | Pdot of basic_pterm * basic_pterm
-  | Pconst of const
+type basic_pterm = (string,storage_field_type,basic_pterm) poly_pterm
 
 let lstr s = mkloc Location.dummy s
 
@@ -297,6 +266,8 @@ let rec loc_pterm (p : basic_pterm) : pterm =
     | Pif (c,t, None) -> Model.Pif (loc_pterm c, loc_pterm t, None)
     | Pfor (id, c, b) -> Model.Pfor (lstr id, loc_pterm c, loc_pterm b)
     | Passign (a, f, t) -> Model.Passign (a, loc_pterm f, loc_pterm t)
+    | Pfassign l -> Pfassign (List.map (fun (a, (i,j), v) ->
+        (a, (Translate.map_option lstr i, lstr j), loc_pterm v)) l)
     | Ptransfer (f, b, i) -> Model.Ptransfer (loc_pterm f, b, i)
     | Ptransition -> Model.Ptransition
     | Pbreak -> Model.Pbreak

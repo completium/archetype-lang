@@ -233,7 +233,7 @@ let rec mk_lterm (e : expr) : lterm =
                                                   map_option mk_ltyp typ, mk_lterm body)
     | Equantifier (q, (id, t, _), e) -> Lquantifer (to_quantifier q, id, map_option mk_ltyp t, mk_lterm e))
 
-let mk_pterm_id (id : lident) : (lident,ptyp) gen_pterm_unloc =
+let mk_pterm_id (id : lident) : (Model.lident,ptyp,pterm) poly_pterm =
   let c = id |> unloc |> to_const in
   match c with
   | Some d -> Pconst d
