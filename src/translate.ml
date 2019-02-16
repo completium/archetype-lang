@@ -8,16 +8,6 @@ type info = {
   assets : string list
 }
 
-let extract_info (decls : declaration list) =
-  let assets = List.fold_left (fun acc i -> (
-        let v = i |> unloc in
-        match v with
-        | Dasset (id, _, _, _, _, _) -> (unloc id)::acc
-        | _ -> acc)) [] decls in
-  {
-    assets = assets;
-  }
-
 let map_option f = function
   | Some x -> Some (f x)
   | None -> None
@@ -651,8 +641,6 @@ let parseTree_to_model (pt : ParseTree.model) : Model.model =
   let decls = match ptu with
   | Mmodel decls -> decls
   | _ -> [] in
-
-  let _info = extract_info decls in
 
   mkloc (loc pt) {
     name          = get_name_model pt;

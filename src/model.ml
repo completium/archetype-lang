@@ -291,8 +291,6 @@ type ('id,'typ,'pattern,'term) poly_pterm  =
   | Parith of arithmetic_operator * 'term * 'term
   | Puarith of unary_arithmetic_operator * 'term
   | Pvar of 'id
-  | Pfield of 'id
-  | Passet of 'id
   | Parray of ('term) list
   | Plit of bval
   | Pdot of 'term * 'term

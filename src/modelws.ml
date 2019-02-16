@@ -322,8 +322,6 @@ let rec loc_pterm (p : basic_pterm) : pterm =
     | Parith (o,l,r) -> Model.Parith (o, loc_pterm l, loc_pterm r)
     | Puarith (u,e) -> Model.Puarith (u, loc_pterm e)
     | Pvar i -> Model.Pvar (lstr i)
-    | Pfield i -> Model.Pfield (lstr i)
-    | Passet i -> Model.Passet (lstr i)
     | Parray l -> Model.Parray (List.map loc_pterm l)
     | Plit v -> Model.Plit v
     | Pdot (l,r) -> Model.Pdot (loc_pterm l, loc_pterm r)
