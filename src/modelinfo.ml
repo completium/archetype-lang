@@ -32,7 +32,7 @@ let get_key_type (a : asset) =
             begin
               match unloc t with
               | Tbuiltin typ -> typ
-              | _ -> raise (UnsupportedVartype (loc t))
+              | _ -> raise (InvalidKeyType (a.name,arg.name,(loc t)))
             end
           | None   -> raise (NoFieldType arg.name)
         in (assetid, typ)

@@ -224,20 +224,20 @@ type 'id qualid =
 [@@deriving show {with_path = false}]
 
 type ('id,'typ,'pattern) pattern_unloc =
-  | Pwild
-  | Pvar of 'id
-  | Papp of 'id qualid * 'pattern list
-  | Prec of ('id qualid * 'pattern) list
-  | Ptuple of 'pattern list
-  | Pas of 'pattern * 'id * bool
-  | Por of 'pattern * 'pattern
-  | Pcast of 'pattern * 'typ
-  | Pscope of 'id qualid * 'pattern
-  | Pparen of 'pattern
-  | Pghost of 'pattern
+  | Mwild
+  | Mvar of 'id
+  | Mapp of 'id qualid * 'pattern list
+  | Mrec of ('id qualid * 'pattern) list
+  | Mtuple of 'pattern list
+  | Mas of 'pattern * 'id * bool
+  | Mor of 'pattern * 'pattern
+  | Mcast of 'pattern * 'typ
+  | Mscope of 'id qualid * 'pattern
+  | Mparen of 'pattern
+  | Mghost of 'pattern
 [@@deriving show {with_path = false}]
 
-and ('id,'typ) pattern = ('id, 'typ, ('id, 'typ) pattern) pattern_unloc loced
+type pattern = (lident,ptyp,pattern) pattern_unloc loced
 [@@deriving show {with_path = false}]
 
 type lterm_unloc =
@@ -266,7 +266,7 @@ type lterm_unloc =
 
 and lterm = lterm_unloc loced
 
-type ('id,'typ,'term) poly_pterm  =
+type ('id,'typ,'pattern,'term) poly_pterm  =
   (* program specific *)
   | Pif of 'term * 'term * ('term) option
   | Pfor of 'id * 'term * 'term
@@ -278,7 +278,7 @@ type ('id,'typ,'term) poly_pterm  =
   | Pseq of ('term) list
   | Pnot of 'term
   | Passert of lterm
-  | Pmatchwith of 'term * (('id,'typ) pattern * 'term) list
+  | Pmatchwith of 'term * ('pattern * 'term) list
   | Precord of ('id qualid * 'term) list
   (* below is common entries with lterm *)
   | Prel of int
@@ -299,7 +299,7 @@ type ('id,'typ,'term) poly_pterm  =
   | Pconst of const
 [@@deriving show {with_path = false}]
 
-type pterm = ((lident,ptyp,pterm) poly_pterm) loced
+type pterm = ((lident,ptyp,pattern,pterm) poly_pterm) loced
 [@@deriving show {with_path = false}]
 
 type cond = pterm
@@ -375,16 +375,16 @@ type enum = {
 }
 [@@deriving show {with_path = false}]
 
-type ('id,'typ,'term) gen_function = {
+type ('id,'typ,'pattern,'term) gen_function = {
   name         : lident;
   args         : ('typ gen_decl) list;
   return       : 'typ option;
-  body         : ('id,'typ,'term) poly_pterm loced;
+  body         : ('id,'typ,'pattern,'term) poly_pterm loced;
   loc          : Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]
 
-type function_ = (lident,ptyp,pterm) gen_function
+type function_ = (lident,ptyp,pattern,pterm) gen_function
 [@@deriving show {with_path = false}]
 
 type model_unloc = {

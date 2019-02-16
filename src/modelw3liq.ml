@@ -90,33 +90,10 @@ let str_to_lident = mkloc Location.dummy
 
 let str_to_ident s = { id_str = s; id_ats = []; id_loc = Loc.dummy_position }
 
-let vtyp_to_ident vt = vt |> vtyp_to_str |> str_to_ident
-
 let vtyp_to_mlwtyp vt = vt |> vtyp_to_str |> str_to_lident |> lident_to_typ
 
-type field_storage =
-  | Fenum of lident
-  | Ftyp  of vtyp
-  | Flist of vtyp
-  | Fset  of vtyp
-  | Fmap  of vtyp * field_storage
-
-type field_storage_policy = {
-  ftyps   : (lident * field_storage) list;
-}
-
-let get_storage_typ fname p = List.assoc fname p.ftyps
-
-(* This should be modulated/optimized according to asset usage in tx actions *)
-let sf_to_fs = function
-  | Enum id               -> Fenum id
-  | Var  vt               -> Ftyp vt
-  | KeySet (_,vt)         -> Flist vt
-  | ValueMap (_,vtf,vtt)  -> Fmap (vtf,Ftyp vtt)
-  | CollMap (_,vtf,_,vtt) -> Fmap (vtf, Flist vtt)
-
 let rec field_storage_to_ptyp = function
-  | Fenum lid -> lident_to_typ lid
+  | Flocal lid -> lident_to_typ lid
   | Ftyp vt   -> vt |> vtyp_to_mlwtyp
   | Flist vt  ->
     let listid =  str_to_ident "list" in
@@ -127,22 +104,17 @@ let rec field_storage_to_ptyp = function
   | Fmap (vt,fs) ->
     let mapid  = str_to_ident "map"  in
     PTtyapp (Qident mapid, [vtyp_to_mlwtyp vt; field_storage_to_ptyp fs])
+  | Ftuple l     -> PTtuple (List.map field_storage_to_ptyp l)
 
-let mk_field_typ   (f : storage_field) = (f.name, sf_to_fs f.typ)
-
-let mk_field_storage_policy storage = {
-  ftyps   = List.map mk_field_typ storage.fields;
-}
-
-let mk_storage_field (p : field_storage_policy) (f : storage_field) : field = {
+let mk_storage_field (f : storage_field) : field = {
   f_loc     = loc2loc (f.loc);
   f_ident   = mk_ident f.name;
-  f_pty     = field_storage_to_ptyp (List.assoc f.name p.ftyps);
+  f_pty     = field_storage_to_ptyp f.typ;
   f_mutable = false;
   f_ghost   = f.ghost;
 }
 
-let mk_storage_decl (p : field_storage_policy) (storage : storage) =
+let mk_storage_decl (storage : storage) =
   Dtype [{
     td_loc = Loc.dummy_position;
     td_ident = { id_str = "storage"; id_ats = []; id_loc = Loc.dummy_position } ;
@@ -151,21 +123,20 @@ let mk_storage_decl (p : field_storage_policy) (storage : storage) =
     td_mut = false;
     td_inv = [];
     td_wit = [];
-    td_def = TDrecord (List.map (mk_storage_field p) storage.fields);
+    td_def = TDrecord (List.map mk_storage_field storage.fields);
   }]
 
 (* storage init generation *)
-let mk_init_args p info fs : (lident * field_storage) list =
+let mk_init_args info fs : (lident * storage_field_type) list =
   List.fold_left (fun acc f ->
       match f.default with
-      | None ->
+      | None -> (* no default value : decide which one to pass as argument *)
         begin
-          match  f.typ with
-          | Enum id when (is_state info id) -> acc
-          | KeySet _ -> acc
-          | ValueMap _ -> acc
-          | CollMap _ -> acc
-          | _ -> acc @ [f.name, List.assoc f.name p.ftyps]
+          match f.typ with
+          | Flocal id when (is_state info id) -> acc (* state has its own initial value *)
+          | Flist _ -> acc
+          | Fmap _ -> acc
+          | _ -> acc @ [f.name, f.typ]
         end
       | _ -> acc
     ) [] fs
@@ -202,11 +173,12 @@ let mk_init_fields info args fs : (lident * initval) list =
            then Iinput f.name
            else (* not an input, no default value : depends on type *)
              match f.typ with
-             | Enum id               -> Ienum (get_initial_state info id)
-             | Var vt                -> Ival (mkloc Location.dummy (mk_init_val vt))
-             | KeySet (_,vt)         -> Iemptyc (Emptylist vt)
-             | ValueMap (_,vtf,vtt)  -> Iemptyc (EmptyMap (vtf,vtt))
-             | CollMap (_,vtf,_,vtt) -> Iemptyc (EmptyCollMap (vtf,vtt))
+             | Flocal id             -> Ienum (get_initial_state info id)
+             | Ftyp vt               -> Ival (mkloc Location.dummy (mk_init_val vt))
+             | Flist vt              -> Iemptyc (Emptylist vt)
+             | Fmap (vtf, Flist vtt) -> Iemptyc (EmptyCollMap (vtf,vtt))
+             | Fmap (vtf, Ftyp vtt)  -> Iemptyc (EmptyMap (vtf,vtt))
+             | _                     -> raise (Anomaly "mk_init_fields")
          in
          acc @ [f.name, init]
     ) [] fs
@@ -271,8 +243,8 @@ let mk_fun_decl id args body =
   let f = Efun(args, None, Ity.MaskVisible, empty_spec, body) in
   Dlet(str_to_ident id, false, Expr.RKnone, mk_expr f)
 
-let mk_init_storage p info (s : storage) =
-  let args = mk_init_args p info s.fields in
+let mk_init_storage info (s : storage) =
+  let args = mk_init_args info s.fields in
   let fields = mk_init_fields info args s.fields in
   let body = mk_init_body info fields in
   mk_fun_decl "init" args body
@@ -289,7 +261,7 @@ let mk_dummy_decl (name,(_,vt)) =
   Dlet(str_to_ident name, false, Expr.RKnone, mk_expr f)
 
 (* generate functions *)
-let field_type_to_mlwtyp (t:storage_field_type) = t |> sf_to_fs |> field_storage_to_ptyp
+let field_type_to_mlwtyp (t:storage_field_type) = t |> field_storage_to_ptyp
 
 let is_var (p : Modelws.pterm) =
   match unloc p with
@@ -321,7 +293,7 @@ let rec pterm_to_expr (p : Modelws.pterm) =  {
         Eidapp (mk_qid [fid], List.map pterm_to_expr l)
       | Plambda (i,t,b) -> mk_efun [] (loc p) i t b
       (* TODO : continue mapping *)
-      | _ -> raise (Anomaly "pterm_to_expr")
+      | _ -> raise (Anomaly ("pterm_to_expr"))
     end;
   expr_loc = loc p
 }
@@ -351,10 +323,9 @@ let modelws_to_modelw3liq (info : info) (m : model_with_storage) =
       init = Some "init";
       dummies = List.map (fun (n,(v,_)) -> (n,v)) info.dummy_vars;
     };
-  let storage_policy = mk_field_storage_policy m.storage in
   []
   |> (fun x -> List.fold_left (fun acc d -> acc @ [mk_dummy_decl d]) x info.dummy_vars)
   |> (fun x -> List.fold_left (fun acc e -> acc @ [mk_enum_decl e]) x m.enums)
-  |> (fun x -> x @ [mk_storage_decl storage_policy m.storage])
-  |> (fun x -> x @ [mk_init_storage storage_policy info m.storage])
+  |> (fun x -> x @ [mk_storage_decl m.storage])
+  |> (fun x -> x @ [mk_init_storage info m.storage])
   |> (fun x -> List.fold_left (fun acc f -> acc @ [mk_function_decl f]) x m.functions)

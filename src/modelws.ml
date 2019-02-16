@@ -35,12 +35,12 @@ type storage_field_operation = {
 [@@deriving show {with_path = false}]
 
 type storage_field_type =
-  | Enum     of lident
-  | Var      of vtyp
-  | KeySet   of lident * vtyp
-  | ValueMap of lident * vtyp * vtyp (* aname, asset key type, value type *)
-  (* aname, asset type, asset name, value type *)
-  | CollMap  of lident * vtyp * lident * vtyp
+  | Flocal of lident (* enum, state *)
+  | Ftyp   of vtyp
+  | Flist  of vtyp
+  | Fset   of vtyp
+  | Fmap   of vtyp * storage_field_type
+  | Ftuple of storage_field_type list
 [@@deriving show {with_path = false}]
 
 type storage_field = {
@@ -82,10 +82,13 @@ type enum_unloc = {
 type enum = enum_unloc loced
 [@@deriving show {with_path = false}]
 
-type pterm = (lident,storage_field_type,pterm) poly_pterm loced
+type pattern = (lident,storage_field_type,pattern) pattern_unloc loced
 [@@deriving show {with_path = false}]
 
-type function_ws = (lident,storage_field_type, pterm) gen_function
+type pterm = (lident,storage_field_type,pattern,pterm) poly_pterm loced
+[@@deriving show {with_path = false}]
+
+type function_ws = (lident,storage_field_type,pattern,pterm) gen_function
 [@@deriving show {with_path = false}]
 
 type model_with_storage = {
@@ -98,23 +101,29 @@ type model_with_storage = {
 [@@deriving show {with_path = false}]
 
 (* asset field type to storage field type *)
+(* This should be modulated/optimized according to asset usage in tx actions *)
 let aft_to_sft info aname fname iskey (typ : ptyp) =
   let loc = loc typ in
   let typ = unloc typ in
   match iskey, typ with
-  | true, Tbuiltin typ -> KeySet (aname,typ)
-  | true, _ -> raise (InvalidKeyType (aname,fname,loc))
-  | false, Tbuiltin typ -> ValueMap (aname, get_key_type aname info, typ)
-  (* what is the vtyp of the asset ? *)
-  | false, Tasset id -> ValueMap (aname, get_key_type id info,
-                                  get_key_type id info)
+  (* an asset key with a basic type *)
+  | true , Tbuiltin vt         -> Flist vt
+  (* an asset key with an extravagant type *)
+  | true , _                   -> raise (InvalidKeyType (aname,fname,loc))
+  (* an asset field with a basic type *)
+  | false, Tbuiltin vt         -> Fmap (get_key_type aname info, Ftyp vt)
+  (* an asset field with another(?) asset type TODO : check that asset are different
+  *)
+  | false, Tasset id           -> Fmap (get_key_type id info,
+                                        Ftyp (get_key_type id info))
+  (* an asset field which is a container of another asset *)
   | false, Tcontainer (ptyp,_) ->
      begin
      match unloc ptyp with
      (* what is the vtyp of the asset ? *)
-       | Tasset id -> CollMap (aname, (get_key_type aname info),
-                               id, (get_key_type id info))
-     | _ -> raise (UnsupportedType (aname,fname,loc))
+       | Tasset id             -> Fmap (get_key_type aname info,
+                                        Flist (get_key_type id info))
+       | _                     -> raise (UnsupportedType (aname,fname,loc))
      end
   | _ -> raise (UnsupportedType (aname,fname,loc))
 
@@ -155,7 +164,7 @@ let vt_to_ft var =
   | Some t ->
     begin
       match unloc t with
-      | Tbuiltin vt -> Var vt
+      | Tbuiltin vt -> Ftyp vt
       | _ -> raise (UnsupportedVartype var.decl.loc)
     end
   | None -> raise (VarNoType var.decl.loc)
@@ -179,7 +188,7 @@ let mk_role_default (r : role) =
 let mk_role_var (role : role) = {
   asset   = None;
   name    = role.name;
-  typ     = Var VTaddress;
+  typ     = Ftyp VTaddress;
   ghost   = false;
   default = mk_role_default role;
   ops     = [];
@@ -196,7 +205,7 @@ let mk_state_name n =
 let mk_state_var info (st : state) = {
   asset   = None;
   name    = mk_state_name st.name;
-  typ     = Enum st.name;
+  typ     = Flocal st.name;
   ghost   = false;
   default = Some (mk_initial_state info st);
   ops     = [];
@@ -236,9 +245,11 @@ let mk_operation n a = {
 
 (* TODO *)
 let compile_field_operation info _mws (f : storage_field) =
-  match (is_key f.name info), f.typ with
-  | false, Enum _ | false, Var _ | false, ValueMap _ ->
+  match f.asset, is_key f.name info, f.typ with
+  | None, false, Flocal _ | None, false, Ftyp _ | None, false, Fmap (_, Ftyp _) ->
     List.map (mk_operation f.name) [Get;Set]
+  | Some _, true, Ftyp _ ->
+    List.map (mk_operation f.name) [(*Get*)]
   | _ -> []
 
 let compile_operations info mws =  {
@@ -255,7 +266,8 @@ let compile_operations info mws =  {
 }
 
 (* this is a basic pterm without loc easier to use when building ml term *)
-type basic_pterm = (string,storage_field_type,basic_pterm) poly_pterm
+type basic_pattern = (string,storage_field_type,basic_pattern) pattern_unloc
+type basic_pterm = (string,storage_field_type,basic_pattern,basic_pterm) poly_pterm
 
 let lstr s = mkloc Location.dummy s
 
@@ -264,20 +276,20 @@ let rec loc_qualid (q : string qualid) : lident qualid =
   | Qident s -> Qident (lstr s)
   | Qdot (q, s) -> Qdot (loc_qualid q, lstr s)
 
-let rec loc_pattern p =
+let rec loc_pattern (p : basic_pattern) : pattern =
   mkloc Location.dummy (
-    match unloc p with
-    | Pwild -> Pwild
-    | Pvar s -> Pvar (lstr s)
-    | Papp (q, l) -> Papp (loc_qualid q, List.map loc_pattern l)
-    | Prec l -> Prec (List.map (fun (i, p) -> (loc_qualid i, loc_pattern p)) l)
-    | Ptuple l -> Ptuple (List.map loc_pattern l)
-    | Pas (p, o, g) -> Pas (loc_pattern p, lstr o, g)
-    | Por (lhs, rhs) -> Por (loc_pattern lhs, loc_pattern rhs)
-    | Pcast (p, t) -> Pcast (loc_pattern p, t)
-    | Pscope (q, p) -> Pscope (loc_qualid q, loc_pattern p)
-    | Pparen p -> Pparen (loc_pattern p)
-    | Pghost p -> Pghost (loc_pattern p))
+    match p with
+    | Mwild -> Mwild
+    | Mvar s -> Mvar (lstr s)
+    | Mapp (q, l) -> Mapp (loc_qualid q, List.map loc_pattern l)
+    | Mrec l -> Mrec (List.map (fun (i, p) -> (loc_qualid i, loc_pattern p)) l)
+    | Mtuple l -> Mtuple (List.map loc_pattern l)
+    | Mas (p, o, g) -> Mas (loc_pattern p, lstr o, g)
+    | Mor (lhs, rhs) -> Mor (loc_pattern lhs, loc_pattern rhs)
+    | Mcast (p, t) -> Mcast (loc_pattern p, t)
+    | Mscope (q, p) -> Mscope (loc_qualid q, loc_pattern p)
+    | Mparen p -> Mparen (loc_pattern p)
+    | Mghost p -> Mghost (loc_pattern p))
 
 let rec loc_pterm (p : basic_pterm) : pterm =
   mkloc Location.dummy (
@@ -325,16 +337,16 @@ let dummy_function = {
 
 let mk_arg (s,t) = { name = lstr s ; typ = t; default = None ; loc = Location.dummy }
 
-let field_to_getset _info (f : storage_field) (op : storage_field_operation) =
-  match f.asset, op.typ with
-  | None, Get -> (* simply apply field name to argument "s" *)
+let field_to_getset info (f : storage_field) (op : storage_field_operation) =
+  match f.typ, is_key f.name info, op.typ with
+  | Ftyp _, false, Get -> (* simply apply field name to argument "s" *)
     let n = unloc (f.name) in {
       dummy_function with
       name = lstr ("get_"^n);
       args = [mk_arg ("s",None)];
       body = loc_pterm (Papp (Pvar n,[Pvar "s"]))
     }
-  | None, Set ->
+  | Ftyp _, false, Set ->
     let n = unloc (f.name) in {
       dummy_function with
       name = lstr ("set_"^n);
@@ -343,8 +355,21 @@ let field_to_getset _info (f : storage_field) (op : storage_field_operation) =
                                                      Papp (Pvar n, [Pvar "s"]);
                                                      Pvar "v"]));
     }
-  (* simply apply field name to argument "s" *)
-  (* Papp (Pvar (unloc (f.name)),[Pvar "s"])*)
+  | Flist vt, true, Get ->
+    let n = unloc (f.name) in {
+      dummy_function with
+      name = lstr ("get_"^n);
+      args = List.map mk_arg ["p",Some (Ftuple [Flocal (lstr "storage"); Ftyp vt])];
+      body = loc_pterm (
+          Pletin ("s",Papp (Pvar "get_0_2",[Pvar "p"]),None,
+          Pletin ("v",Papp (Pvar "get_1_2",[Pvar "p"]),None,
+          Pmatchwith (Papp (Pdot (Pvar "List",Pvar "find"),[Papp (Pvar n,[Pvar "s"])]) ,[
+                      (Mapp (Qident "Some",[Mvar "k"]), Pvar "k");
+                      (Mapp (Qident "None",[]),  Papp (Pdot (Pvar "Current",Pvar "failwith"),[Papp (Pvar "not_found",[])]));
+                    ]
+                 ))
+        ));
+    }
   | _ -> dummy_function
 
 let mk_getset_functions info (mws : model_with_storage) = {
