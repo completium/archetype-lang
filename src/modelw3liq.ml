@@ -310,20 +310,20 @@ and mk_efun args l i t b =
 and to_regbranch r : reg_branch =
   let pat, e = r in
   (mk_pattern pat, pterm_to_expr e)
-and mk_pattern (p : (lident, storage_field_type) Model.pattern) : Ptree.pattern =
+and mk_pattern (p : Modelws.pattern) : Ptree.pattern =
   { pat_desc = (
       match unloc p with
-        | Pwild -> Pwild
-        | Pvar i -> Pvar (mk_ident i)
-        | Papp (q, l) -> Papp (mk_qualid q, List.map mk_pattern l)
-        | Prec l -> Prec (List.map (fun (q, p) -> (mk_qualid q, mk_pattern p)) l)
-        | Ptuple l -> Ptuple (List.map mk_pattern l)
-        | Pas (p, i, b) -> Pas (mk_pattern p, mk_ident i, b)
-        | Por (lhs, rhs) -> Por (mk_pattern lhs, mk_pattern rhs)
-        | Pcast (p, t) -> Pcast (mk_pattern p, field_type_to_mlwtyp t)
-        | Pscope (q, p) -> Pscope (mk_qualid q, mk_pattern p)
-        | Pparen p -> Pparen (mk_pattern p)
-        | Pghost p -> Pghost (mk_pattern p)
+        | Mwild -> Pwild
+        | Mvar i -> Pvar (mk_ident i)
+        | Mapp (q, l) -> Papp (mk_qualid q, List.map mk_pattern l)
+        | Mrec l -> Prec (List.map (fun (q, p) -> (mk_qualid q, mk_pattern p)) l)
+        | Mtuple l -> Ptuple (List.map mk_pattern l)
+        | Mas (p, i, b) -> Pas (mk_pattern p, mk_ident i, b)
+        | Mor (lhs, rhs) -> Por (mk_pattern lhs, mk_pattern rhs)
+        | Mcast (p, t) -> Pcast (mk_pattern p, field_type_to_mlwtyp t)
+        | Mscope (q, p) -> Pscope (mk_qualid q, mk_pattern p)
+        | Mparen p -> Pparen (mk_pattern p)
+        | Mghost p -> Pghost (mk_pattern p)
     );
     pat_loc = Loc.dummy_position;
 }
