@@ -370,7 +370,9 @@ let field_to_getset info (f : storage_field) (op : storage_field_operation) =
         body = loc_pterm (
             Pletin ("s",Papp (Pvar "get_0_2",[Pvar "p"]),None,
             Pletin ("v",Papp (Pvar "get_1_2",[Pvar "p"]),None,
-            Pmatchwith (Papp (Pdot (Pvar "List",Pvar "mem"),[Papp (Pvar n,[Pvar "s"])]) ,[
+            Pmatchwith (Papp (Pdot (Pvar "List",Pvar "mem"),
+                              [Ptuple[Pvar "v";
+                                      Papp (Pvar n,[Pvar "s"])]]) ,[
                (Mapp (Qident "Some",[Mvar "k"]), Pvar "k");
                (Mapp (Qident "None",[]),  Papp (Pdot (Pvar "Current",Pvar "failwith"),
                                                 [Papp (Pvar "not_found",[])]));

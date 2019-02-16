@@ -323,14 +323,20 @@ let rec pterm_to_expr (p : Modelws.pterm) =  {
       | Pvar id -> Eident (mk_qid [id])
       | Papp (f, l) when is_var f ->
         let fid =  dest_var f in
-        Eidapp (mk_qid [fid], List.map pterm_to_expr l)
+        let l = if List.length l = 0
+          then [mk_unit ()]
+          else List.map pterm_to_expr l in
+        Eidapp (mk_qid [fid], l)
       | Papp (f, l) when is_dot f ->
         let (m,r) =  dest_dot f in
         if is_var m && is_var r
         then
           let mid = dest_var m in
           let rid = dest_var r in
-          Eidapp (mk_qid [mid;rid], List.map pterm_to_expr l)
+        let l = if List.length l = 0
+          then [mk_unit ()]
+          else List.map pterm_to_expr l in
+          Eidapp (mk_qid [mid;rid], l)
         else raise (Anomaly ("pterm_to_expr : "^(Modelws.show_pterm p)))
       | Plambda (i,t,b) -> mk_efun [] (loc p) i t b
       | Pmatchwith (e, l) -> Ematch (pterm_to_expr e, List.map to_regbranch l, [])
