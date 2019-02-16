@@ -665,3 +665,8 @@ let parseTree_to_model (pt : ParseTree.model) : Model.model =
     enums         = get_enums decls;
     specs         = get_specs decls;
   }
+
+let string_to_pterm (str : string) : Model.pterm =
+  let lb = Lexing.from_string str in
+  let pt = Parser.start_expr Lexer.token lb in
+  mk_pterm pt

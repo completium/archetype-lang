@@ -140,8 +140,9 @@
 %nonassoc above_coll
 
 %type <ParseTree.model> main
+%type <ParseTree.expr> start_expr
 
-%start main
+%start main start_expr
 
 %%
 
@@ -164,6 +165,11 @@ snl(separator, X):
 
 %inline bracket(X):
 | LBRACKET x=X RBRACKET { x }
+
+start_expr:
+| x=expr EOF { x }
+| x=loc(error)
+      { error ~loc:(loc x) PE_Unknown }
 
 main:
  | x=loc(model_r) { x }

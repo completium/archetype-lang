@@ -42,6 +42,15 @@ process () {
 	        echo -ne "    \033[31m KO \033[0m"
                 NB_STR=$((${NB_STR} + 1))
             fi
+
+            $BIN -L $i > /dev/null 2> /dev/null
+            RET=`echo $?`
+            if [ ${RET} -eq 0 ]; then
+	        echo -ne "    \033[32m OK \033[0m"
+            else
+	        echo -ne "    \033[31m KO \033[0m"
+                NB_LIQ=$((${NB_LIQ} + 1))
+            fi
         fi
 
         echo ""
@@ -54,7 +63,7 @@ process () {
     rm -f $OUT
 }
 
-printf '%-48s%s\n' '' '  PARSE   PRINT   MODEL   W_STORAGE'
+printf '%-48s%s\n' '' '  PARSE   PRINT   MODEL   W_STR   LIQ'
 
 for i in contracts/*.cml; do
   process $i
@@ -94,4 +103,10 @@ if [ ${NB_STR} -eq 0 ]; then
     echo "all contracts have been converted into model with storage successfully."
 else
     echo -e "\033[31mErrors of conversion to model with storage : ${NB_STR} \033[0m"
+fi
+
+if [ ${NB_STR} -eq 0 ]; then
+    echo "all contracts have been transcoded into liquidity successfully."
+else
+    echo -e "\033[31mErrors of transcoding into liquidity : ${NB_LIQ} \033[0m"
 fi

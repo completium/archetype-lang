@@ -7,6 +7,7 @@ let opt_parse = ref false
 let opt_model = ref false
 let opt_modelws = ref false
 let opt_modelw3liq = ref false
+let opt_pterm = ref false
 
 exception Compiler_error
 exception E_arg
@@ -29,8 +30,10 @@ let compile_and_print (filename, channel) =
       if !opt_modelws
       then Format.printf "%a\n" Modelws.pp_model_with_storage modelws
       else (
-        let _modelw3liq= Modelw3liq.modelws_to_modelw3liq info modelws in
-        if !opt_modelw3liq then () else ()
+        let _modelw3liq = Modelw3liq.modelws_to_modelw3liq info modelws in
+        if !opt_modelw3liq
+        then ()(*Extract.print modelw3liq*)
+        else ()
     ))))
 
 let close dispose channel =
@@ -43,7 +46,8 @@ let main () =
       "-P", Arg.Set opt_parse, " Print raw parse tree";
       "-M", Arg.Set opt_model, " Print raw model";
       "-W", Arg.Set opt_modelws, " Print raw model_with_storage";
-      "-L", Arg.Set opt_modelw3liq, " Execute w3 tree generation for liquidity"
+      "-L", Arg.Set opt_modelw3liq, " Execute w3 tree generation for liquidity";
+      "-T", Arg.Set opt_pterm, " Print pterm"
     ] in
   let arg_usage = String.concat "\n" [
       "compiler [OPTIONS] FILE";
@@ -61,8 +65,13 @@ let main () =
     | _ -> ("<stdin>", stdin, false) in
 
   try
-
-    compile_and_print (filename, channel);
+    if !opt_pterm
+    then (
+      let str = input_line channel in
+      let pterm = Translate.string_to_pterm str in
+      Format.printf "%a\n" Model.pp_pterm pterm
+    )
+    else compile_and_print (filename, channel);
     close dispose channel
 
 (*    let filename, channel, dispose =

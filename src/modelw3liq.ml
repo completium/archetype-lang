@@ -283,8 +283,9 @@ let dest_lambda (p : Modelws.pterm) =
   | Plambda (id,t,b) -> (id,t,b)
   | _ -> raise (Anomaly "dest_var")
 
+
 let rec pterm_to_expr (p : Modelws.pterm) =  {
-  expr_desc =
+    expr_desc =
     begin
       match unloc p with
       | Pvar id -> Eident (mk_qid [id])
@@ -292,6 +293,7 @@ let rec pterm_to_expr (p : Modelws.pterm) =  {
         let fid =  dest_var f in
         Eidapp (mk_qid [fid], List.map pterm_to_expr l)
       | Plambda (i,t,b) -> mk_efun [] (loc p) i t b
+      | Pmatchwith (e, l) -> Ematch (pterm_to_expr e, List.map to_regbranch l, [])
       (* TODO : continue mapping *)
       | _ -> raise (Anomaly ("pterm_to_expr"))
     end;
@@ -305,6 +307,30 @@ and mk_efun args l i t b =
     let (i,t,b) = dest_lambda b in
     mk_efun args (loc b) i t b
   else Efun (args, None, Ity.MaskVisible, empty_spec, pterm_to_expr b)
+and to_regbranch r : reg_branch =
+  let pat, e = r in
+  (mk_pattern pat, pterm_to_expr e)
+and mk_pattern (p : (lident, storage_field_type) Model.pattern) : Ptree.pattern =
+  { pat_desc = (
+      match unloc p with
+        | Pwild -> Pwild
+        | Pvar i -> Pvar (mk_ident i)
+        | Papp (q, l) -> Papp (mk_qualid q, List.map mk_pattern l)
+        | Prec l -> Prec (List.map (fun (q, p) -> (mk_qualid q, mk_pattern p)) l)
+        | Ptuple l -> Ptuple (List.map mk_pattern l)
+        | Pas (p, i, b) -> Pas (mk_pattern p, mk_ident i, b)
+        | Por (lhs, rhs) -> Por (mk_pattern lhs, mk_pattern rhs)
+        | Pcast (p, t) -> Pcast (mk_pattern p, field_type_to_mlwtyp t)
+        | Pscope (q, p) -> Pscope (mk_qualid q, mk_pattern p)
+        | Pparen p -> Pparen (mk_pattern p)
+        | Pghost p -> Pghost (mk_pattern p)
+    );
+    pat_loc = Loc.dummy_position;
+}
+and mk_qualid (q : lident Model.qualid) : Ptree.qualid =
+  match q with
+  | Qident i -> Qident (mk_ident i)
+  | Qdot (q, i) -> Qdot (mk_qualid q, mk_ident i)
 
 let rec mk_lambda (args : storage_field_type gen_decl list) body : Modelws.pterm =
   match args with
