@@ -283,11 +283,33 @@ let dest_lambda (p : Modelws.pterm) =
   | Plambda (id,t,b) -> (id,t,b)
   | _ -> raise (Anomaly "dest_var")
 
+let to_big_int (n : Big_int.big_int) : BigInt.t =
+  let str = Big_int.string_of_big_int n in
+  BigInt.of_string str
 
 let rec pterm_to_expr (p : Modelws.pterm) =  {
-    expr_desc =
+  expr_desc =
     begin
       match unloc p with
+      | Plit lit ->
+        (match unloc lit with
+        | BVbool true -> Etrue
+        | BVbool false -> Efalse
+        | BVint n -> Econst (ConstInt (Number.int_const_of_big_int (to_big_int n)))
+        | BVuint n -> Econst (ConstInt (Number.int_const_of_big_int (to_big_int n)))
+        | _ -> raise (Anomaly ("pterm_to_expr: literal")))
+      | Pnot e -> Enot (pterm_to_expr e)
+      | Plogical (op, lhs, rhs) ->
+        (match op with
+         | And -> Eand (pterm_to_expr lhs, pterm_to_expr rhs)
+         | Or -> Eor (pterm_to_expr lhs, pterm_to_expr rhs)
+         | _ -> raise (Anomaly ("pterm_to_expr: logical")))
+      | Pif (cond, then_, else_) ->
+        Eif (pterm_to_expr cond,
+             pterm_to_expr then_,
+             match else_ with
+             | Some e ->  pterm_to_expr e
+             | _ -> mk_unit())
       | Pvar id -> Eident (mk_qid [id])
       | Papp (f, l) when is_var f ->
         let fid =  dest_var f in
@@ -299,6 +321,7 @@ let rec pterm_to_expr (p : Modelws.pterm) =  {
     end;
   expr_loc = loc p
 }
+
 and mk_efun args l i t b =
   let t = Translate.map_option field_type_to_mlwtyp t in
   let args = args @ [l, Some (mk_ident i), false, t] in
@@ -331,6 +354,11 @@ and mk_qualid (q : lident Model.qualid) : Ptree.qualid =
   match q with
   | Qident i -> Qident (mk_ident i)
   | Qdot (q, i) -> Qdot (mk_qualid q, mk_ident i)
+
+and mk_unit () = {
+  expr_desc = Etuple [];
+  expr_loc = Loc.dummy_position;
+}
 
 let rec mk_lambda (args : storage_field_type gen_decl list) body : Modelws.pterm =
   match args with
