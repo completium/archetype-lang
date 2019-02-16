@@ -297,6 +297,7 @@ type ('id,'typ,'pattern,'term) poly_pterm  =
   | Plit of bval
   | Pdot of 'term * 'term
   | Pconst of const
+  | Ptuple of ('term) list
 [@@deriving show {with_path = false}]
 
 type pterm = ((lident,ptyp,pattern,pterm) poly_pterm) loced

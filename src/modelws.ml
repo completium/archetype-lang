@@ -328,6 +328,7 @@ let rec loc_pterm (p : basic_pterm) : pterm =
     | Plit v -> Model.Plit v
     | Pdot (l,r) -> Model.Pdot (loc_pterm l, loc_pterm r)
     | Pconst c -> Model.Pconst c
+    | Ptuple l -> Model.Ptuple (List.map loc_pterm l)
   )
 
 let dummy_function = {

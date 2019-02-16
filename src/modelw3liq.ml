@@ -335,6 +335,7 @@ let rec pterm_to_expr (p : Modelws.pterm) =  {
       | Plambda (i,t,b) -> mk_efun [] (loc p) i t b
       | Pmatchwith (e, l) -> Ematch (pterm_to_expr e, List.map to_regbranch l, [])
       | Pletin (n,v,_,b) -> Elet (mk_ident n, false, Expr.RKnone, pterm_to_expr v, pterm_to_expr b)
+      | Ptuple l -> Etuple (List.map pterm_to_expr l)
       (* TODO : continue mapping *)
       | _ -> raise (Anomaly ("pterm_to_expr : "^(Modelws.show_pterm p)))
     end;
