@@ -75,7 +75,7 @@ for i in tests/*.cml; do
 done
 
 echo ""
-for i in tests/*.cmlx; do
+for i in extensions/*.cmlx; do
   process $i
 done
 
