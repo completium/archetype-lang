@@ -245,11 +245,14 @@ let mk_operation n a = {
 
 (* TODO *)
 let compile_field_operation info _mws (f : storage_field) =
-  match f.asset, is_key f.name info, f.typ with
-  | None, false, Flocal _ | None, false, Ftyp _ | None, false, Fmap (_, Ftyp _) ->
+  match f.asset, f.typ with
+  | None, Flocal _ | None, Ftyp _ | None, Fmap (_, Ftyp _) ->
     List.map (mk_operation f.name) [Get;Set]
-  | Some _, true, Ftyp _ ->
-    List.map (mk_operation f.name) [(*Get*)]
+  | Some aname, Flist _ ->
+    if is_key aname info
+    then
+      List.map (mk_operation f.name) [Get]
+    else []
   | _ -> []
 
 let compile_operations info mws =  {
@@ -338,8 +341,8 @@ let dummy_function = {
 let mk_arg (s,t) = { name = lstr s ; typ = t; default = None ; loc = Location.dummy }
 
 let field_to_getset info (f : storage_field) (op : storage_field_operation) =
-  match f.typ, is_key f.name info, op.typ with
-  | Ftyp _, false, Get | Flocal _, false, Get ->
+  match f.typ, f.asset, op.typ with
+  | Ftyp _, None, Get | Flocal _, None, Get ->
     (* simply apply field name to argument "s" *)
     let n = unloc (f.name) in {
       dummy_function with
@@ -347,7 +350,7 @@ let field_to_getset info (f : storage_field) (op : storage_field_operation) =
       args = [mk_arg ("s",None)];
       body = loc_pterm (Papp (Pvar n,[Pvar "s"]))
     }
-  | Ftyp _, false, Set | Flocal _, false, Set ->
+  | Ftyp _, None, Set | Flocal _, None, Set ->
     let n = unloc (f.name) in {
       dummy_function with
       name = lstr ("set_"^n);
@@ -356,21 +359,25 @@ let field_to_getset info (f : storage_field) (op : storage_field_operation) =
                                                      Papp (Pvar n, [Pvar "s"]);
                                                      Pvar "v"]));
     }
-  | Flist vt, true, Get ->
-    let n = unloc (f.name) in {
-      dummy_function with
-      name = lstr ("get_"^n);
-      args = List.map mk_arg ["p",Some (Ftuple [Flocal (lstr "storage"); Ftyp vt])];
-      body = loc_pterm (
-          Pletin ("s",Papp (Pvar "get_0_2",[Pvar "p"]),None,
-          Pletin ("v",Papp (Pvar "get_1_2",[Pvar "p"]),None,
-          Pmatchwith (Papp (Pdot (Pvar "List",Pvar "find"),[Papp (Pvar n,[Pvar "s"])]) ,[
-                      (Mapp (Qident "Some",[Mvar "k"]), Pvar "k");
-                      (Mapp (Qident "None",[]),  Papp (Pdot (Pvar "Current",Pvar "failwith"),[Papp (Pvar "not_found",[])]));
-                    ]
-                 ))
-        ));
-    }
+  | Flist vt, Some a, Get ->
+    if  is_key a info
+    then
+      let n = unloc (f.name) in {
+        dummy_function with
+        name = lstr ("get_"^n);
+        args = List.map mk_arg ["p",Some (Ftuple [Flocal (lstr "storage"); Ftyp vt])];
+        body = loc_pterm (
+            Pletin ("s",Papp (Pvar "get_0_2",[Pvar "p"]),None,
+            Pletin ("v",Papp (Pvar "get_1_2",[Pvar "p"]),None,
+            Pmatchwith (Papp (Pdot (Pvar "List",Pvar "find"),[Papp (Pvar n,[Pvar "s"])]) ,[
+               (Mapp (Qident "Some",[Mvar "k"]), Pvar "k");
+               (Mapp (Qident "None",[]),  Papp (Pdot (Pvar "Current",Pvar "failwith"),
+                                                [Papp (Pvar "not_found",[])]));
+            ]
+            ))
+                   ));
+      }
+    else raise (Anomaly ("field_to_getset : "^(unloc (f.name))))
   | _ -> raise (Anomaly ("field_to_getset : "^(unloc (f.name))))
 
 let mk_getset_functions info (mws : model_with_storage) = {

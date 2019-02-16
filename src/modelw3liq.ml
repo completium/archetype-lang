@@ -273,6 +273,16 @@ let dest_var (p : Modelws.pterm) : lident =
   | Pvar id -> id
   | _ -> raise (Anomaly "dest_var")
 
+let is_dot (p : Modelws.pterm) =
+  match unloc p with
+  | Pdot _ -> true
+  | _ -> false
+
+let dest_dot (p : Modelws.pterm) =
+  match unloc p with
+  | Pdot (l,r) -> (l,r)
+  | _ -> raise (Anomaly "dest_dot")
+
 let is_lambda (p : Modelws.pterm) =
   match unloc p with
   | Plambda _ -> true
@@ -314,8 +324,17 @@ let rec pterm_to_expr (p : Modelws.pterm) =  {
       | Papp (f, l) when is_var f ->
         let fid =  dest_var f in
         Eidapp (mk_qid [fid], List.map pterm_to_expr l)
+      | Papp (f, l) when is_dot f ->
+        let (m,r) =  dest_dot f in
+        if is_var m && is_var r
+        then
+          let mid = dest_var m in
+          let rid = dest_var r in
+          Eidapp (mk_qid [mid;rid], List.map pterm_to_expr l)
+        else raise (Anomaly ("pterm_to_expr : "^(Modelws.show_pterm p)))
       | Plambda (i,t,b) -> mk_efun [] (loc p) i t b
       | Pmatchwith (e, l) -> Ematch (pterm_to_expr e, List.map to_regbranch l, [])
+      | Pletin (n,v,_,b) -> Elet (mk_ident n, false, Expr.RKnone, pterm_to_expr v, pterm_to_expr b)
       (* TODO : continue mapping *)
       | _ -> raise (Anomaly ("pterm_to_expr : "^(Modelws.show_pterm p)))
     end;

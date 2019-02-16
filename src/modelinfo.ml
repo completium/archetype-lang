@@ -18,6 +18,7 @@ type info = {
   state_init  : (string * lident) list;         (* state name, initial value    *)
   dummy_vars  : (string * (string * vtyp)) list (* variable name, (value, vtyp) *)
 }
+[@@deriving show {with_path = false}]
 
 let get_key_type (a : asset) =
   let assetid = get_asset_name a in
