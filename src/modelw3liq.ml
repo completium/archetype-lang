@@ -295,7 +295,7 @@ let rec pterm_to_expr (p : Modelws.pterm) =  {
       | Plambda (i,t,b) -> mk_efun [] (loc p) i t b
       | Pmatchwith (e, l) -> Ematch (pterm_to_expr e, List.map to_regbranch l, [])
       (* TODO : continue mapping *)
-      | _ -> raise (Anomaly ("pterm_to_expr"))
+      | _ -> raise (Anomaly ("pterm_to_expr : "^(Modelws.show_pterm p)))
     end;
   expr_loc = loc p
 }

@@ -339,14 +339,15 @@ let mk_arg (s,t) = { name = lstr s ; typ = t; default = None ; loc = Location.du
 
 let field_to_getset info (f : storage_field) (op : storage_field_operation) =
   match f.typ, is_key f.name info, op.typ with
-  | Ftyp _, false, Get -> (* simply apply field name to argument "s" *)
+  | Ftyp _, false, Get | Flocal _, false, Get ->
+    (* simply apply field name to argument "s" *)
     let n = unloc (f.name) in {
       dummy_function with
       name = lstr ("get_"^n);
       args = [mk_arg ("s",None)];
       body = loc_pterm (Papp (Pvar n,[Pvar "s"]))
     }
-  | Ftyp _, false, Set ->
+  | Ftyp _, false, Set | Flocal _, false, Set ->
     let n = unloc (f.name) in {
       dummy_function with
       name = lstr ("set_"^n);
@@ -370,7 +371,7 @@ let field_to_getset info (f : storage_field) (op : storage_field_operation) =
                  ))
         ));
     }
-  | _ -> dummy_function
+  | _ -> raise (Anomaly ("field_to_getset : "^(unloc (f.name))))
 
 let mk_getset_functions info (mws : model_with_storage) = {
   mws with
