@@ -299,6 +299,8 @@ let to_big_int (n : Big_int.big_int) : BigInt.t =
   let str = Big_int.string_of_big_int n in
   BigInt.of_string str
 
+let op_infix  s = "infix " ^ s
+
 let rec pterm_to_expr (p : Modelws.pterm) =  {
   expr_desc =
     begin
@@ -316,6 +318,24 @@ let rec pterm_to_expr (p : Modelws.pterm) =  {
          | And -> Eand (pterm_to_expr lhs, pterm_to_expr rhs)
          | Or -> Eor (pterm_to_expr lhs, pterm_to_expr rhs)
          | _ -> raise (Anomaly ("pterm_to_expr: logical")))
+      | Parith (op, lhs, rhs) ->
+        (let l = pterm_to_expr lhs in
+         let r = pterm_to_expr rhs in
+         Eidapp (Qident (
+         (match op with
+         | Plus -> "+"
+         | Minus -> "-"
+         | Mult -> "*"
+         | Div -> "/"
+         | Modulo -> "%"
+         (*| _ -> raise (Anomaly ("pterm_to_expr: arith"))*)
+         ) |> op_infix |> dumloc |> mk_ident), [l; r]))
+      | Puarith (op, p) ->
+        let e = pterm_to_expr p in
+        Eidapp (Qident (
+         (match op with
+         | Uplus -> "+"
+         | Uminus -> "-" ) |> op_infix |> dumloc |> mk_ident), [e])
       | Pif (cond, then_, else_) ->
         Eif (pterm_to_expr cond,
              pterm_to_expr then_,
