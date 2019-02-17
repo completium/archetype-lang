@@ -28,7 +28,6 @@ type storage_field_operation_type =
 type storage_field_operation = {
   name     : lident;
   typ      : storage_field_operation_type;
-  actions  : storage_field_operation list;
   requires : require list;
   ensures  : ensure list;
 }
@@ -102,10 +101,10 @@ type model_with_storage = {
 
 (* asset field type to storage field type *)
 (* This should be modulated/optimized according to asset usage in tx actions *)
-let aft_to_sft info aname fname iskey (typ : ptyp) =
+let aft_to_sft info aname fname (typ : ptyp) =
   let loc = loc typ in
   let typ = unloc typ in
-  match iskey, typ with
+  match is_key fname info, typ with
   (* an asset key with a basic type *)
   | true , Tbuiltin vt         -> Flist vt
   (* an asset key with an extravagant type *)
@@ -138,14 +137,14 @@ let mk_default_field (b : bval option) : Model.pterm option =
     (fun x -> mkloc (loc x) (Plit x))
     b
 
-let mk_storage_field info name iskey (arg : decl) =
+let mk_storage_field info name (arg : decl) =
   let fname = arg.name in
   let typ =
     match arg.typ with
     | Some t -> t
-    | None   -> raise (NoFieldType name)
+    | None   -> raise (ExpectedVarType name)
   in
-  let typ = aft_to_sft info name fname iskey typ in [{
+  let typ = aft_to_sft info name fname typ in [{
     asset   = Some name;
     name    = mk_asset_field name arg.name;
     typ     = typ;
@@ -157,11 +156,7 @@ let mk_storage_field info name iskey (arg : decl) =
 
 let mk_storage_fields info (asset : asset)  =
   let name = asset.name in
-  let key = asset.key in
-  List.fold_left (fun acc arg ->
-      let iskey = compare (unloc key) (get_decl_id arg) = 0 in
-      acc @ (mk_storage_field info name iskey arg)
-    ) [] asset.args
+  List.fold_left (fun acc arg -> acc @ (mk_storage_field info name arg)) [] asset.args
 
 (* variable type to field type *)
 let vt_to_ft var =
@@ -241,10 +236,9 @@ let mk_enums _ m = m.states |> List.fold_left (fun acc (st : state) ->
 
 (* Field operations compilation *)
 
-let mk_operation n a = {
+let mk_operation n t = {
   name = n;
-  typ = a;
-  actions = [];
+  typ = t;
   requires = [];
   ensures = [];
 }
@@ -257,7 +251,11 @@ let compile_field_operation info _mws (f : storage_field) =
   | Some aname, Flist _ ->
     if is_key aname info
     then
-      List.map (mk_operation f.name) [Get]
+      List.map (mk_operation f.name) [Get;Add;Remove]
+    else []
+  | Some _, Fmap (_, Flist _) ->
+    if is_partition f.name info
+    then List.map (mk_operation f.name) [Get;Addasset;Removeasset]
     else []
   | _ -> []
 
@@ -370,8 +368,8 @@ let field_to_getset info (f : storage_field) (op : storage_field_operation) =
                                                      Papp (Pvar n, [Pvar "s"]);
                                                      Pvar "v"]));
     }
-  | Flist vt, Some a, Get ->
-    if  is_key a info
+  | Flist vt, Some _, Get ->
+    if is_key f.name info
     then
       let n = unloc (f.name) in {
         dummy_function with

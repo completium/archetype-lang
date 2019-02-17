@@ -2,26 +2,27 @@ open Location
 open Model
 
 (* type mapping exceptions : asset name, field name, type location *)
-exception InvalidKeyType     of lident * lident * Location.t
-exception UnsupportedType    of lident * lident * Location.t
-exception VarNoType          of Location.t
-exception UnsupportedVartype of Location.t
-exception NoFieldType        of lident
-exception CannotConvert      of string
+exception InvalidKeyType         of lident * lident * Location.t
+exception UnsupportedType        of lident * lident * Location.t
+exception VarNoType              of Location.t
+exception UnsupportedVartype     of Location.t
+exception ExpectedVarType        of lident
+exception CannotConvert          of string
 exception StringUnsupported
 exception ExpectsOneInitialState of lident
-exception NotFound           of string
-exception Anomaly            of string
+exception NotFound               of string
+exception Anomaly                of string
 
 type info = {
-  key_types   : (string * vtyp) list;           (* asset name, key type         *)
-  state_init  : (string * lident) list;         (* state name, initial value    *)
-  dummy_vars  : (string * (string * vtyp)) list (* variable name, (value, vtyp) *)
+  key_types   : (string * vtyp) list;                  (* key name, key type            *)
+  asset_vars  : (string * (string * ptyp) list) list;  (* asset name,(field name, type) *)
+  partitions  : (string * string) list;                (* partition field, asset name   *)
+  state_init  : (string * lident) list;                (* state name, initial value     *)
+  dummy_vars  : (string * (string * vtyp)) list        (* variable name, (value, vtyp)  *)
 }
 [@@deriving show {with_path = false}]
 
 let get_key_type (a : asset) =
-  let assetid = get_asset_name a in
   let keyid = a |> fun x -> x.key |> unloc in
   let rec rec_get_key = function
     | arg::tl ->
@@ -35,8 +36,8 @@ let get_key_type (a : asset) =
               | Tbuiltin typ -> typ
               | _ -> raise (InvalidKeyType (a.name,arg.name,(loc t)))
             end
-          | None   -> raise (NoFieldType arg.name)
-        in (assetid, typ)
+          | None   -> raise (ExpectedVarType arg.name)
+        in (keyid, typ)
       else rec_get_key tl
     | [] -> raise Not_found in
   a |> fun x -> x.args |> rec_get_key
@@ -94,11 +95,52 @@ let mk_dummy_variables (m : model_unloc) : (string * (string * vtyp)) list =
     ) x m.roles)
 (* TODO : scan transactions *)
 
+let get_asset_vars (a : asset) : (string * ptyp) list =
+  let keyid = a |> fun x -> x.key |> unloc in
+  let rec rec_get_vars acc = function
+    | arg :: tl ->
+      if compare keyid (get_decl_id arg) = 0
+      then rec_get_vars acc tl
+      else
+        let t =
+          match arg.typ with
+          | Some t -> t
+          | None   -> raise (ExpectedVarType a.name)
+        in
+        rec_get_vars (acc @ [get_decl_id arg, t]) tl
+    | [] -> acc in
+  a |> fun x -> x.args |> rec_get_vars []
+
+let get_partitions (a : asset) : (string * string) list =
+  let rec rec_get_p acc = function
+    | arg :: tl ->
+      begin
+        match arg.typ with
+        | Some typ ->
+          begin
+            match unloc typ with
+            | (Tcontainer (typ,Partition)) ->
+              begin
+                match unloc typ with
+                | Tasset id ->
+                  let fid = unloc arg.name in
+                  rec_get_p (acc @ [fid,unloc id]) tl
+                | _ -> rec_get_p acc tl
+              end
+            | _ -> rec_get_p acc tl
+          end
+        | _ -> rec_get_p acc tl
+      end
+    | [] -> acc in
+  rec_get_p [] a.args
+
 let mk_info m =
   let kt = m.assets |> List.fold_left (fun acc a -> acc @ [get_key_type a]) [] in
   let si = m.states |> List.fold_left (fun acc s -> acc @ [get_state_init s]) [] in
   let vr = m |> mk_dummy_variables in
-  { key_types = kt; state_init = si; dummy_vars = vr }
+  let av = m.assets |> List.map (fun a -> get_asset_name a, get_asset_vars a) in
+  let pa = m.assets |> List.fold_left (fun acc a -> acc @ (get_partitions a)) [] in
+  { key_types = kt; asset_vars = av; partitions = pa; state_init = si; dummy_vars = vr }
 
 let is_key fname info =
   let id = unloc fname in
@@ -126,3 +168,5 @@ let get_dummy_for info value =
     | _::tl -> get tl
     | [] -> raise (NotFound (value^" in "^(String.concat "\n" (List.map (fun (n,(v,_)) -> n^" "^v) info.dummy_vars)))) in
   get info.dummy_vars
+
+let is_partition id info = List.mem_assoc (unloc id) info.partitions

@@ -406,6 +406,7 @@ let modelws_to_modelw3liq (info : info) (m : model_with_storage) =
       init = Some "init";
       dummies = List.map (fun (n,(v,_)) -> (n,v)) info.dummy_vars;
     };
+  Format.printf "%a\n" Modelinfo.pp_info info;
   []
   |> (fun x -> List.fold_left (fun acc d -> acc @ [mk_dummy_decl d]) x info.dummy_vars)
   |> (fun x -> List.fold_left (fun acc e -> acc @ [mk_enum_decl e]) x m.enums)
