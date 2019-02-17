@@ -101,10 +101,10 @@ type model_with_storage = {
 
 (* asset field type to storage field type *)
 (* This should be modulated/optimized according to asset usage in tx actions *)
-let aft_to_sft info aname fname (typ : ptyp) =
+let aft_to_sft info aname iskey fname (typ : ptyp) =
   let loc = loc typ in
   let typ = unloc typ in
-  match is_key fname info, typ with
+  match iskey, typ with
   (* an asset key with a basic type *)
   | true , Tbuiltin vt         -> Flist vt
   (* an asset key with an extravagant type *)
@@ -137,14 +137,14 @@ let mk_default_field (b : bval option) : Model.pterm option =
     (fun x -> mkloc (loc x) (Plit x))
     b
 
-let mk_storage_field info name (arg : decl) =
+let mk_storage_field info iskey name (arg : decl) =
   let fname = arg.name in
   let typ =
     match arg.typ with
     | Some t -> t
     | None   -> raise (ExpectedVarType name)
   in
-  let typ = aft_to_sft info name fname typ in [{
+  let typ = aft_to_sft info name iskey fname typ in [{
     asset   = Some name;
     name    = mk_asset_field name arg.name;
     typ     = typ;
@@ -156,7 +156,10 @@ let mk_storage_field info name (arg : decl) =
 
 let mk_storage_fields info (asset : asset)  =
   let name = asset.name in
-  List.fold_left (fun acc arg -> acc @ (mk_storage_field info name arg)) [] asset.args
+  List.fold_left (fun acc (arg : decl) ->
+      let iskey = compare (unloc (arg.name)) (unloc (asset.key)) = 0 in
+      acc @ (mk_storage_field info iskey name arg)
+    ) [] asset.args
 
 (* variable type to field type *)
 let vt_to_ft var =
@@ -249,13 +252,15 @@ let compile_field_operation info _mws (f : storage_field) =
   | None, Flocal _ | None, Ftyp _ | None, Fmap (_, Ftyp _) ->
     List.map (mk_operation f.name) [Get;Set]
   | Some aname, Flist _ ->
-    if is_key aname info
+    if is_key aname f.name info
     then
-      List.map (mk_operation f.name) [Get;Add;Remove]
+      List.map (mk_operation f.name) [Get(*;Add;Remove*)]
     else []
+  | Some _, Fmap (_, Ftyp _) ->
+    List.map (mk_operation f.name) [(*Get;Set*)]
   | Some _, Fmap (_, Flist _) ->
     if is_partition f.name info
-    then List.map (mk_operation f.name) [Get;Addasset;Removeasset]
+    then List.map (mk_operation f.name) [(*Get;Addasset;Removeasset*)]
     else []
   | _ -> []
 
@@ -368,8 +373,8 @@ let field_to_getset info (f : storage_field) (op : storage_field_operation) =
                                                      Papp (Pvar n, [Pvar "s"]);
                                                      Pvar "v"]));
     }
-  | Flist vt, Some _, Get ->
-    if is_key f.name info
+  | Flist vt, Some a, Get ->
+    if is_key a f.name info
     then
       let n = unloc (f.name) in {
         dummy_function with

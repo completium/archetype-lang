@@ -14,16 +14,17 @@ exception NotFound               of string
 exception Anomaly                of string
 
 type info = {
-  key_types   : (string * vtyp) list;                  (* key name, key type            *)
-  asset_vars  : (string * (string * ptyp) list) list;  (* asset name,(field name, type) *)
-  partitions  : (string * string) list;                (* partition field, asset name   *)
-  state_init  : (string * lident) list;                (* state name, initial value     *)
-  dummy_vars  : (string * (string * vtyp)) list        (* variable name, (value, vtyp)  *)
+  key_types   : (string * (string * vtyp)) list;      (* asset name,(key name,key type) *)
+  asset_vars  : (string * (string * ptyp) list) list; (* asset name,(field name, type)  *)
+  partitions  : (string * string) list;               (* partition field, asset name    *)
+  state_init  : (string * lident) list;               (* state name, initial value      *)
+  dummy_vars  : (string * (string * vtyp)) list       (* variable name, (value, vtyp)   *)
 }
 [@@deriving show {with_path = false}]
 
 let get_key_type (a : asset) =
   let keyid = a |> fun x -> x.key |> unloc in
+  let aname = a.name |> unloc in
   let rec rec_get_key = function
     | arg::tl ->
       if compare keyid (get_decl_id arg) = 0
@@ -37,9 +38,9 @@ let get_key_type (a : asset) =
               | _ -> raise (InvalidKeyType (a.name,arg.name,(loc t)))
             end
           | None   -> raise (ExpectedVarType arg.name)
-        in (keyid, typ)
+        in (aname, (keyid, typ))
       else rec_get_key tl
-    | [] -> raise Not_found in
+    | [] -> raise (NotFound "get_key_type") in
   a |> fun x -> x.args |> rec_get_key
 
 let get_state_init (s : state) =
@@ -142,15 +143,19 @@ let mk_info m =
   let pa = m.assets |> List.fold_left (fun acc a -> acc @ (get_partitions a)) [] in
   { key_types = kt; asset_vars = av; partitions = pa; state_init = si; dummy_vars = vr }
 
-let is_key fname info =
-  let id = unloc fname in
-  List.mem_assoc id info.key_types
-
-let get_key_type fname info =
-  let id = unloc fname in
+let is_key aname fname info =
+  let id = unloc aname in
   if List.mem_assoc id info.key_types
-  then List.assoc id info.key_types
-  else raise Not_found
+  then
+    let n,_ = List.assoc id info.key_types in
+    compare (unloc fname) n = 0
+  else false
+
+let get_key_type aname info =
+  let id = unloc aname in
+  if List.mem_assoc id info.key_types
+  then let _,t = List.assoc id info.key_types in t
+  else raise (NotFound ("get_key_type "^id))
 
 let is_state info id = List.mem_assoc (unloc id) info.state_init
 
