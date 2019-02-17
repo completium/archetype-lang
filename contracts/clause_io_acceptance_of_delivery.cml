@@ -11,9 +11,9 @@ variable deliveryDate date
 variable businessDays day
 
 (* extra blockchain incentives *)
-variable incentiveR  tez from receiver = payment
+variable incentiveR tez from receiver = payment
 
-variable incentiveS  tez from receiver = 0.2 * payment
+variable incentiveS tez from receiver = 0.2 * payment
 
 %traceable (payment + incentiveR) (receiver)
 %traceable (incentiveS) (shipper)

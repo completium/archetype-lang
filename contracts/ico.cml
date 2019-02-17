@@ -54,10 +54,37 @@ states =
 | Round2Running    (* Round 2 has started *)
 | Round2Finished   (* Round 2 has ended   *)
 
+
 function is_running =
-    state = PresalesRunning
- or state = Round1Running
- or state = Round2Running
+  match state with
+  | PresalesRunning | Round1Running | Round2Running -> true
+  | _ -> false
+  end
+
+
+function get_rate =
+  let coeff = (match state with
+  | PresalesRunning -> 1.2
+  | Round1Running   -> 1.1
+  | _               -> 1
+  end) in
+  coeff * exchange_rate_tez_bcd
+
+function get_remaining_tez_to_raise =
+  match state with
+  | PresalesRunning | PresalesFinished -> presales_cap - nb_tez_raised
+  | Round1Running   | Round1Finished   -> round1_cap - nb_tez_raised
+  | _ -> (let remaining_bcd = max_bcd_to_sell - nb_bcd_sold in
+          remaining_bcd / exchange_rate_bcd_tez)
+  end
+
+function transition_to_finished =
+  match state with
+  | PresalesRunning -> state := PresalesFinished
+  | Round1Running   -> state := Round1Finished
+  | Round1Finished  -> state := Round2Running
+  | _               -> state := Round2Finished
+  end
 
 function get_rate =
   let coeff =

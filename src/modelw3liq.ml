@@ -386,7 +386,7 @@ and mk_unit () = {
   expr_loc = Loc.dummy_position;
 }
 
-let rec mk_lambda (args : storage_field_type gen_decl list) body : Modelws.pterm =
+let rec mk_lambda (args : (storage_field_type,bval) gen_decl list) body : Modelws.pterm =
   match args with
   | [a]   -> mkloc a.loc (Plambda (a.name, a.typ, body))
   | a::tl -> mkloc a.loc (Plambda (a.name, a.typ, mk_lambda tl body))

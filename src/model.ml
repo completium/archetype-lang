@@ -102,25 +102,15 @@ type bval_unloc =
 
 and bval = bval_unloc loced
 
-type 'typ gen_decl = {
+type ('typ,'term) gen_decl = {
   name    : lident;
   typ     : 'typ option;
-  default : bval option;
+  default : 'term option;
   loc     : Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]
 
-type decl = ptyp gen_decl
-[@@deriving show {with_path = false}]
-
-type variable = {
-  decl         : decl;
-  constant     : bool;
-  loc : Location.t [@opaque];
-}
-[@@deriving show {with_path = false}]
-
-type arg = decl
+type decl = (ptyp, bval) gen_decl
 [@@deriving show {with_path = false}]
 
 type logical_operator =
@@ -303,6 +293,16 @@ type pterm = ((lident,ptyp,pattern,pterm) poly_pterm) loced
 type cond = pterm
 [@@deriving show {with_path = false}]
 
+type variable = {
+  decl         : decl;
+  constant     : bool;
+  loc : Location.t [@opaque];
+}
+[@@deriving show {with_path = false}]
+
+type arg = decl
+[@@deriving show {with_path = false}]
+
 type 'a label_term = {
   label : lident option;
   term : 'a;
@@ -375,7 +375,7 @@ type enum = {
 
 type ('id,'typ,'pattern,'term) gen_function = {
   name         : lident;
-  args         : ('typ gen_decl) list;
+  args         : (('typ, bval) gen_decl) list;
   return       : 'typ option;
   body         : ('id,'typ,'pattern,'term) poly_pterm loced;
   loc          : Location.t [@opaque];
