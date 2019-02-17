@@ -274,6 +274,11 @@ type basic_pterm = (string,storage_field_type,basic_pattern,basic_pterm) poly_pt
 
 let lstr s = mkloc Location.dummy s
 
+let rec mk_qualid q =
+  match q with
+  | Qident i -> Qident (lstr i)
+  | Qdot (b, i) -> Qdot (mk_qualid b, lstr i)
+
 let rec loc_qualid (q : string qualid) : lident qualid =
   match q with
   | Qident s -> Qident (lstr s)
@@ -303,8 +308,7 @@ let rec loc_pterm (p : basic_pterm) : pterm =
     | Passign (a, f, t) -> Model.Passign (a, loc_pterm f, loc_pterm t)
     | Pfassign l -> Pfassign (List.map (fun (a, (i,j), v) ->
         (a, (Translate.map_option lstr i, lstr j), loc_pterm v)) l)
-    | Ptransfer (f, b, i) -> Model.Ptransfer (loc_pterm f, b, i)
-    | Ptransition -> Model.Ptransition
+    | Ptransfer (f, b, q) -> Model.Ptransfer (loc_pterm f, b, Translate.map_option mk_qualid q)
     | Pbreak -> Model.Pbreak
     | Pseq l -> Model.Pseq (List.map loc_pterm l)
     | Pnot e -> Model.Pnot (loc_pterm e)

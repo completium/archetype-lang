@@ -28,7 +28,9 @@
 %token SET
 %token PARTITION
 %token ASSET
+%token MATCH
 %token WITH
+%token END
 %token ASSERT
 %token OBJECT
 %token KEY
@@ -100,6 +102,7 @@
 %token MINUS
 %token MULT
 %token DIV
+%token UNDERSCORE
 %token EOF
 
 %token <string> IDENT
@@ -114,7 +117,7 @@
 %nonassoc prec_decl
 %nonassoc prec_for prec_transfer
 
-%nonassoc FROM TO IN EQUALGREATER
+%nonassoc TO IN EQUALGREATER
 %right THEN ELSE
 
 %left COMMA
@@ -244,10 +247,10 @@ role:
 | EQUAL x=expr { x }
 
 %inline from_value:
-| FROM x=expr { x }
+| FROM x=qualid { x }
 
 %inline to_value:
-| TO x=expr { x }
+| TO x=qualid { x }
 
 dextension:
 | PERCENT x=ident xs=nonempty_list(simple_expr)? { Dextension (x, xs) }
@@ -510,6 +513,23 @@ expr_extended:
    { Eseq (e1, e2) }
  | e=expr_r { e }
 
+qualid:
+ | i=ident              { Qident i }
+ | x=qualid DOT i=ident { Qdot (x, i) }
+
+%inline branchs:
+ | xs=branch+ { xs }
+
+branch:
+ | xs=patterns IMPLY x=expr { (xs, x) }
+
+%inline patterns:
+ | xs=loc(pattern)+ { xs }
+
+pattern:
+  | PIPE UNDERSCORE { Pwild }
+  | PIPE i=ident    { Pref i }
+
 %inline expr:
  | e=loc(expr_r) { e }
 
@@ -537,6 +557,8 @@ expr_r:
 
  | IF c=expr THEN t=expr ELSE e=expr
      { Eif (c, t, Some e) }
+
+ | MATCH x=expr WITH xs=branchs END { Ematchwith (x, xs) }
 
  | x=expr op=assignment_operator y=expr
      { Eassign (op, x, y) }

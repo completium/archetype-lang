@@ -81,7 +81,20 @@ type operator = [
 ]
 [@@deriving show {with_path = false}]
 
+type qualid =
+  | Qident of lident
+  | Qdot of qualid * lident
+[@@deriving show {with_path = false}]
+
 type name = lident option * lident
+[@@deriving show {with_path = false}]
+
+type pattern_unloc =
+  | Pwild
+  | Pref of lident
+[@@deriving show {with_path = false}]
+
+type pattern = pattern_unloc loced
 [@@deriving show {with_path = false}]
 
 type expr_r =
@@ -92,7 +105,7 @@ type expr_r =
   | Edot          of expr * lident
   | EassignFields of assignment_field list
   | Eapp          of expr * expr list
-  | Etransfer     of expr * bool * expr option
+  | Etransfer     of expr * bool * qualid option
   | Eassign       of assignment_operator * expr * expr
   | Eif           of expr * expr * expr option
   | Ebreak
@@ -101,6 +114,7 @@ type expr_r =
   | Eseq          of expr * expr
   | Efun          of lident_typ list * expr
   | Eletin        of lident_typ * expr * expr
+  | Ematchwith    of expr * (pattern list * expr) list
   | Equantifier   of quantifier * lident_typ * expr
 [@@deriving show {with_path = false}]
 
@@ -195,8 +209,8 @@ type declaration_r =
 [@@deriving show {with_path = false}]
 
 and value_option =
-  | VOfrom of expr
-  | VOto of expr
+  | VOfrom of qualid
+  | VOto of qualid
 [@@deriving show {with_path = false}]
 
 and asset_option =

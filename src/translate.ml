@@ -221,22 +221,32 @@ let rec mk_lterm (e : expr) : lterm =
            ) (Llambda (ia, map_option mk_ltyp it, mk_lterm body)) t)
     | Eletin ((i, typ, _), init, body) -> Lletin (i, mk_lterm init,
                                                   map_option mk_ltyp typ, mk_lterm body)
+    | Ematchwith _ -> raise (ModelError ("match with is not allowed in logical block", loc))
     | Equantifier (q, (id, t, _), e) -> Lquantifer (to_quantifier q, id, map_option mk_ltyp t, mk_lterm e))
 
-let mk_pterm_id (id : lident) : (Model.lident,ptyp,pattern,pterm) poly_pterm =
+let rec mk_qualid (q : ParseTree.qualid) : lident Model.qualid =
+  match q with
+  | Qident i -> Qident i
+  | Qdot (q, i) -> Qdot (mk_qualid q, i)
+
+let mk_pterm_id id =
   let c = id |> unloc |> to_const in
   match c with
   | Some d -> Pconst d
   | None -> Pvar id
 
-let rec mk_pterm e : pterm =
+let mk_pattern pt : Model.pattern =
+  let loc, v = deloc pt in
+  mkloc loc (match v with
+  | Pwild -> Mwild
+  | Pref i -> Mvar i)
+
+let rec mk_pterm (e : expr) : pterm =
   let loc, v = deloc e in
-  mkloc loc (
+  mkloc loc  (
     match v with
     | Eterm t -> (match t with
-        | (Some _a, _e) -> Plit (mkloc loc (BVstring "TODO: Namespace"))
-        | (None, e) -> mk_pterm_id e)
-
+        | (_, e) -> mk_pterm_id e)
     | Eop _ -> raise (ModelError ("operation error", loc))
     | Eliteral l -> Plit (mkloc loc (to_bval l))
     | Earray l -> Parray (List.map mk_pterm l)
@@ -264,7 +274,7 @@ let rec mk_pterm e : pterm =
         | _ -> raise (ModelError ("unary operation not valid", loc))
       )
     | Eapp (f, args) -> Papp (mk_pterm f, List.map mk_pterm args)
-    | Etransfer (a, back, _dest) -> Ptransfer (mk_pterm a, back, None)
+    | Etransfer (a, back, dest) -> Ptransfer (mk_pterm a, back, map_option mk_qualid dest)
     | Eassign (op, lhs, rhs) -> Passign (to_assignment_operator op, mk_pterm lhs, mk_pterm rhs)
     | Eif (cond, then_, else_) -> Pif (mk_pterm cond, mk_pterm then_, map_option mk_pterm else_)
     | Ebreak -> Pbreak
@@ -286,7 +296,14 @@ let rec mk_pterm e : pterm =
            ) (Plambda (ia, map_option mk_ptyp it, mk_pterm body)) t)
     | Eletin ((i, typ, _), init, body) -> Pletin (i, mk_pterm init,
                                                   map_option mk_ptyp typ, mk_pterm body)
+    | Ematchwith (e, l) ->
+      let ll = List.fold_left
+                    (fun acc (pts, e) -> (
+                        (List.map (fun x -> (mk_pattern x, mk_pterm e)) pts)@acc
+                        )) [] l in
+      Pmatchwith (mk_pterm e, ll)
     | Equantifier _ -> raise (ModelError ("Quantifiers are not allowed in programming block", loc)))
+
 
 let to_label_lterm (label, lterm) : label_lterm =
   {

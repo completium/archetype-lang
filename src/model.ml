@@ -272,8 +272,7 @@ type ('id,'typ,'pattern,'term) poly_pterm  =
   | Pfor of 'id * 'term * 'term
   | Passign of assignment_operator * 'term * 'term
   | Pfassign of (assignment_operator * ('id option * 'id) * 'term) list
-  | Ptransfer of 'term * bool * lident option
-  | Ptransition
+  | Ptransfer of 'term * bool * 'id qualid option
   | Pbreak
   | Pseq of ('term) list
   | Pnot of 'term

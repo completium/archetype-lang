@@ -209,6 +209,13 @@ match op with
 let pp_assignment_operator fmt op =
  Format.fprintf fmt "%s" (assignment_operator_to_str op)
 
+let pp_qualid fmt (q : ParseTree.qualid) =
+  match q with
+  | Qident i -> Format.fprintf fmt "%a" pp_id i
+  | Qdot (q, i) -> Format.fprintf fmt "%a.%a"
+                     pp_qualid q
+                     pp_id i
+
 let quantifier_to_str op =
 match op with
   | Forall -> "forall"
@@ -216,6 +223,11 @@ match op with
 
 let pp_quantifier fmt op =
   Format.fprintf fmt "%s" (quantifier_to_str op)
+
+let pp_pattern fmt p =
+  match unloc p with
+  | Pwild ->  Format.fprintf fmt "_"
+  | Pref i ->  Format.fprintf fmt "%a" pp_id i
 
 let rec pp_expr fmt { pldesc = e; _ } =
   match e with
@@ -260,7 +272,7 @@ let rec pp_expr fmt { pldesc = e; _ } =
       Format.fprintf fmt "transfer%s %a%a"
         (if back then " back" else "")
         pp_expr x
-        (pp_option (pp_prefix " to " pp_expr)) to_value
+        (pp_option (pp_prefix " to " pp_qualid)) to_value
 
   | Eassign (op, lhs, rhs) ->
       Format.fprintf fmt "%a %a %a"
@@ -273,6 +285,10 @@ let rec pp_expr fmt { pldesc = e; _ } =
         pp_expr cond
         pp_expr then_
         pp_else else_
+
+  | Ematchwith (x, _xs) ->
+      Format.fprintf fmt "match %a with@\n"
+        pp_expr x
 
   | Ebreak ->
       Format.fprintf fmt "break"
@@ -468,8 +484,8 @@ let pp_ident_state_option fmt item =
 
 let pp_value_option fmt opt =
 match opt with
-  | VOfrom e -> Format.fprintf fmt "from %a" pp_expr e
-  | VOto   e -> Format.fprintf fmt "to %a"   pp_expr e
+  | VOfrom e -> Format.fprintf fmt "from %a" pp_qualid e
+  | VOto   e -> Format.fprintf fmt "to %a"   pp_qualid e
 
 let pp_asset_option fmt opt =
 match opt with

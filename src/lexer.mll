@@ -29,7 +29,9 @@
       "set"                 , SET            ;
       "partition"           , PARTITION      ;
       "asset"               , ASSET          ;
+      "match"               , MATCH          ;
       "with"                , WITH           ;
+      "end"                 , END            ;
       "assert"              , ASSERT         ;
       "object"              , OBJECT         ;
       "key"                 , KEY            ;
@@ -139,6 +141,7 @@ rule token = parse
   | "-"                   { MINUS }
   | "*"                   { MULT }
   | "/"                   { DIV }
+  | "_"                   { UNDERSCORE }
   | eof                   { EOF }
   | _ as c                {
       lex_error lexbuf (Printf.sprintf "unexpected char: %c" c)
