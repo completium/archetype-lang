@@ -236,7 +236,7 @@ type lterm_unloc =
   (* below is common entries with lterm *)
   | Lrel of int
   | Lletin of lident * lterm * ltyp option * lterm
-  | Lseq of lterm list
+  | Lseq of lterm * lterm
   | Lnot of lterm
   | Lapp of lterm * lterm list
   | Llambda of lident * ltyp option * lterm
@@ -264,7 +264,7 @@ type ('id,'typ,'pattern,'term) poly_pterm  =
   | Pfassign of (assignment_operator * ('id option * 'id) * 'term) list
   | Ptransfer of 'term * bool * 'id qualid option
   | Pbreak
-  | Pseq of ('term) list
+  | Pseq of 'term * 'term
   | Pnot of 'term
   | Passert of lterm
   | Pmatchwith of 'term * ('pattern * 'term) list

@@ -205,10 +205,7 @@ let rec mk_lterm (e : expr) : lterm =
     | Ebreak -> raise (ModelError ("\"break\" is not allowed in logical block", loc))
     | Efor (_, _, _, _) -> raise (ModelError ("\"for\" is not allowed in logical block", loc))
     | Eassert _ -> raise (ModelError ("\"assert\" is not allowed in logical block", loc))
-    | Eseq (lhs, rhs) ->
-      (let l = (let a = mk_lterm lhs in match a with | {pldesc = Lseq la; _} -> la | _ -> [a]) @
-               (let a = mk_lterm rhs in match a with | {pldesc = Lseq la; _} -> la | _ -> [a]) in
-       Lseq l)
+    | Eseq (lhs, rhs) -> Lseq (mk_lterm lhs, mk_lterm rhs)
     | Efun (args, body) ->
       (
         match List.rev args with
@@ -280,10 +277,7 @@ let rec mk_pterm (e : expr) : pterm =
     | Ebreak -> Pbreak
     | Efor (i, e, body, _name) -> Pfor (i, mk_pterm e, mk_pterm body)
     | Eassert e -> Passert (mk_lterm e)
-    | Eseq (lhs, rhs) ->
-      (let l = (let a = mk_pterm lhs in match a with | {pldesc = Pseq la; _} -> la | _ -> [a]) @
-               (let a = mk_pterm rhs in match a with | {pldesc = Pseq la; _} -> la | _ -> [a]) in
-       Pseq l)
+    | Eseq (lhs, rhs) -> Pseq (mk_pterm lhs, mk_pterm rhs)
     | Efun (args, body) ->
       (
         match List.rev args with

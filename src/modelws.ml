@@ -318,7 +318,7 @@ let rec loc_pterm (p : basic_pterm) : pterm =
         (a, (Translate.map_option lstr i, lstr j), loc_pterm v)) l)
     | Ptransfer (f, b, q) -> Model.Ptransfer (loc_pterm f, b, Translate.map_option mk_qualid q)
     | Pbreak -> Model.Pbreak
-    | Pseq l -> Model.Pseq (List.map loc_pterm l)
+    | Pseq (lhs, rhs) -> Model.Pseq (loc_pterm lhs, loc_pterm rhs)
     | Pnot e -> Model.Pnot (loc_pterm e)
     | Passert l -> Model.Passert l
     | Pmatchwith (e, l) -> Model.Pmatchwith (loc_pterm e, List.map (fun (p, e) -> (loc_pattern p, loc_pterm e)) l)
