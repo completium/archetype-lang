@@ -48,7 +48,7 @@ type storage_field = {
     name    : lident;
     typ     : storage_field_type;
     ghost   : bool;
-    default : bval option; (* initial value *)
+    default : pterm option; (* initial value *)
     ops     : storage_field_operation list;
     loc     : Location.t [@opaque]
   }
@@ -133,6 +133,11 @@ let mk_asset_field aname fname =
   let field = unloc fname in
   { plloc = loc; pldesc = name^"_"^field }
 
+let mk_default_field (b : bval option) : Model.pterm option =
+    Translate.map_option
+    (fun x -> mkloc (loc x) (Plit x))
+    b
+
 let mk_storage_field info name iskey (arg : decl) =
   let fname = arg.name in
   let typ =
@@ -145,7 +150,7 @@ let mk_storage_field info name iskey (arg : decl) =
     name    = mk_asset_field name arg.name;
     typ     = typ;
     ghost   = false;
-    default = arg.default;
+    default = mk_default_field arg.default;
     ops     = [];
     loc     = arg.loc
   }]
@@ -169,7 +174,8 @@ let vt_to_ft var =
     end
   | None -> raise (VarNoType var.decl.loc)
 
-let mk_variable (var : variable) = {
+let mk_variable (var : variable) =
+  {
   asset   = None;
   name    = var.decl.name;
   typ     = vt_to_ft var;
@@ -182,7 +188,7 @@ let mk_variable (var : variable) = {
 (* maps *)
 let mk_role_default (r : role) =
   match r.default with
-  | Some (Raddress a) -> Some (mkloc (r.loc) (BVaddress a))
+  | Some (Raddress a) -> Some (mkloc (r.loc) (Plit (mkloc (r.loc) (BVaddress a))))
   | _ -> None
 
 let mk_role_var (role : role) = {
@@ -197,7 +203,7 @@ let mk_role_var (role : role) = {
 
 let mk_initial_state info (st : state) =
   let init = get_initial_state info st.name in
-  mkloc (loc init) (BVenum (unloc init))
+  mkloc (loc init) (Plit (mkloc (loc init) (BVenum (unloc init))))
 
 let mk_state_name n =
   mkloc (loc n) ((unloc n)^"_st")
@@ -273,6 +279,8 @@ type basic_pattern = (string,storage_field_type,basic_pattern) pattern_unloc
 type basic_pterm = (string,storage_field_type,basic_pattern,basic_pterm) poly_pterm
 
 let lstr s = mkloc Location.dummy s
+
+let lit_to_pterm l = mkloc (loc l) (Plit l)
 
 let rec mk_qualid q =
   match q with

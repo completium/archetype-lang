@@ -407,12 +407,20 @@ let mk_decl loc ((id, typ, dv) : (lident * type_t option * expr option)) =
     loc = loc;
   }
 
+let mk_decl_pterm loc ((id, typ, dv) : (lident * type_t option * expr option)) =
+  {
+    name = id;
+    typ = map_option mk_ptyp typ;
+    default = map_option mk_pterm dv;
+    loc = loc;
+  }
+
 let mk_spec loc (vars : (lident * type_t * expr option) loced list option) action (invs : named_item list option) items = {
   variables = List.fold_left
       (fun acc i ->
          let loc, (id, typ, dv) = deloc i in
          ({
-           decl = mk_decl loc (id, Some typ, dv);
+           decl = mk_decl_pterm loc (id, Some typ, dv);
            constant = false;
            loc = loc;
          })::acc) [] (vars |> map_list);
@@ -431,9 +439,9 @@ let get_variables decls =
        let decl_u = Location.unloc i in
        match decl_u with
        | Dconstant (id, typ, dv, _) ->
-         {decl = mk_decl loc (id, Some typ, dv); constant = true; loc = loc }::acc
+         {decl = mk_decl_pterm loc (id, Some typ, dv); constant = true; loc = loc }::acc
        | Dvariable (id, typ, _, dv, _) ->
-         {decl = mk_decl loc (id, Some typ, dv); constant = false; loc = loc }::acc
+         {decl = mk_decl_pterm loc (id, Some typ, dv); constant = false; loc = loc }::acc
        | _ -> acc)
     ) [] decls
 

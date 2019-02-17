@@ -226,8 +226,8 @@ let pp_quantifier fmt op =
 
 let pp_pattern fmt p =
   match unloc p with
-  | Pwild ->  Format.fprintf fmt "_"
-  | Pref i ->  Format.fprintf fmt "%a" pp_id i
+  | Pwild ->  Format.fprintf fmt "| _"
+  | Pref i ->  Format.fprintf fmt "| %a" pp_id i
 
 let rec pp_expr fmt { pldesc = e; _ } =
   match e with
@@ -286,9 +286,10 @@ let rec pp_expr fmt { pldesc = e; _ } =
         pp_expr then_
         pp_else else_
 
-  | Ematchwith (x, _xs) ->
-      Format.fprintf fmt "match %a with@\n"
+  | Ematchwith (x, xs) ->
+      Format.fprintf fmt "match %a with@\n%a@\nend"
         pp_expr x
+        (pp_list "@\n" pp_branch) xs
 
   | Ebreak ->
       Format.fprintf fmt "break"
@@ -367,6 +368,11 @@ and pp_args fmt args =
 match args with
 | [] -> Format.fprintf fmt "()"
 | _ -> Format.fprintf fmt " %a" (pp_list " " pp_expr) args
+
+and pp_branch fmt (pts, e) =
+  Format.fprintf fmt "%a -> %a"
+    (pp_list " " pp_pattern) pts
+    pp_expr e
 
 and pp_fun_ident_typ fmt (arg : lident_typ) =
 match arg with

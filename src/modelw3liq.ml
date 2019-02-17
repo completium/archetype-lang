@@ -166,7 +166,9 @@ let mk_init_val = function
 let mk_init_fields info args fs : (lident * initval) list =
   List.fold_left (fun acc f ->
       match f.default with
-      | Some bv -> acc @ [f.name, Ival bv]
+      | Some bv -> acc @ [f.name, match unloc bv with
+        | Plit l -> Ival l
+        | _ -> raise (Anomaly "mk_init_fields")]
       | None ->
          let init =
            if List.mem_assoc f.name args

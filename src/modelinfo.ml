@@ -54,13 +54,21 @@ let fresh_dummy () =
   dummy_counter := !dummy_counter + 1;
   "_dummy_var_"^(string_of_int (!dummy_counter))
 
+let lit_dummy_val acc = function
+  | BVdate    s -> acc @ [fresh_dummy (),(s, VTdate)]
+  | BVaddress s -> acc @ [fresh_dummy (),(s, VTaddress)]
+  | BVstring  s -> acc @ [fresh_dummy (),(s, VTstring)]
+  | _ -> acc
+
+let default_to_dummy_val acc = function
+  | Some default -> lit_dummy_val acc (unloc default)
+  | None -> acc
+
 let default_to_dummy acc = function
   | Some default ->
     begin
       match unloc default with
-      | BVdate    s -> acc @ [fresh_dummy (),(s, VTdate)]
-      | BVaddress s -> acc @ [fresh_dummy (),(s, VTaddress)]
-      | BVstring  s -> acc @ [fresh_dummy (),(s, VTstring)]
+      | Plit l -> lit_dummy_val acc (unloc l)
       | _ -> acc
     end
   | None -> acc
@@ -76,7 +84,7 @@ let mk_dummy_variables (m : model_unloc) : (string * (string * vtyp)) list =
       let fields = a.args in
       List.fold_left (fun acc f ->
           let decl = f in
-          default_to_dummy acc decl.default
+          default_to_dummy_val acc decl.default
         ) acc fields
     ) x m.assets)
   |> (fun x -> List.fold_left (fun acc (r : role) ->
