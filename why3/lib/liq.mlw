@@ -47,6 +47,8 @@ theory Address
   val add_eq address address : bool
   val add_nq address address : bool
 
+  val default_address : address
+
 end
 
 theory Timestamp

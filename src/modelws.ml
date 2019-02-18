@@ -255,7 +255,7 @@ let compile_field_operation info _mws (f : storage_field) =
     (*print_endline ("asset : "^(unloc aname)^"; field : "^(unloc (f.name)));*)
     if is_key aname f.name info
     then
-      List.map (mk_operation f.name) [Get;Add;(*Remove*)]
+      List.map (mk_operation f.name) [Get;Add;Remove]
     else []
   | Some _, Fmap (_, Ftyp _) ->
     List.map (mk_operation f.name) [(*Get;Set*)]
@@ -266,7 +266,7 @@ let compile_field_operation info _mws (f : storage_field) =
       | Tcontainer (t, Partition) ->
         begin
           match unloc t with
-          | Tasset ca -> List.map (mk_operation f.name) [Addasset ca(*; Removeasset ca*)]
+          | Tasset ca -> List.map (mk_operation f.name) [Addasset ca; Removeasset ca]
           | _ -> []
         end
       | _ -> []
@@ -396,6 +396,17 @@ let mk_field_add p v = function
     Papp (Pdot(Pvar "Map",Pvar "add"), [Pvar "k"; Pvar p; sv])
   | _ -> raise (Anomaly ("mk_field_add "^p^" "^v))
 
+let mk_field_remove p v = function
+  | Flist _ ->
+    (* List.add (p, s.v) *)
+    let sv = Papp (Pvar v,[Pvar "s"]) in
+    Papp (Pdot(Pvar "List",Pvar "remove"),[Ptuple [Pvar p; sv]])
+  | Fmap _ ->
+    (* Map.add p0 p s.v *)
+    let sv = Papp (Pvar v,[Pvar "s"]) in
+    Papp (Pdot(Pvar "Map",Pvar "remove"), [Pvar p; sv])
+  | _ -> raise (Anomaly ("mk_field_add "^p^" "^v))
+
 let field_to_getset info (f : storage_field) (op : storage_field_operation) =
   match f.typ, f.asset, op.typ with
   | Ftyp _, None, Get | Flocal _, None, Get ->
@@ -479,6 +490,49 @@ let field_to_getset info (f : storage_field) (op : storage_field_operation) =
                    ));
       }
     else raise (Anomaly ("field_to_getset : "^(unloc (f.name))))
+  | Flist vt, Some a, Remove ->
+    (*  let s = get p 0 in
+        let k = get p 1 in
+        let s = s.mile_id <- list_remove ((k, s.mile_id)) in
+        let s = s.mile_amount <- Map.remove k (s.mile_amount) in
+        let s = s.mile_expiration <- Map.remove k (s.mile_expiration) in s3
+        end
+    *)
+    if is_key a f.name info
+    then
+      let nb = "2" in
+      let rms = ["s",Papp (Pvar "update_storage",
+                            [Pvar "s";
+                             Papp (Pvar (unloc (f.name)), [Pvar "s"]);
+                             mk_field_remove "k" (unloc (f.name)) (Flist vt)
+                            ]),None
+      ] @ (List.map (fun v ->
+          let typ = (aft_to_sft info a false a) (get_asset_var_typ a v info) in
+          "s",Papp (Pvar "update_storage",[Pvar "s";
+                                           Papp (Pvar v, [Pvar "s"]);
+                                           mk_field_remove "k" v typ
+                                          ]),None
+        ) (get_asset_vars a info)) in
+      let n = unloc (f.name) in {
+        dummy_function with
+        name = lstr ("remove_"^n);
+        args = List.map mk_arg ["p",
+                                Some (Ftuple ([Flocal (lstr "storage"); Ftyp vt]))];
+        body = loc_pterm (
+            Pletin ("s",Papp (Pvar ("get_0_"^nb),[Pvar "p"]),None,
+            Pletin ("k",Papp (Pvar ("get_1_"^nb),[Pvar "p"]),None,
+            (Pmatchwith (Papp (Pdot (Pvar "List",Pvar "mem"),
+                               [Ptuple[Pvar "k";
+                                       Papp (Pvar n,[Pvar "s"])]]) ,[
+                           (Mapp (Qident "None",[]),
+                            Papp (Pdot (Pvar "Current",Pvar "failwith"),
+                                  [Papp (Pvar "not_found",[])]));
+                           (Mapp (Qident "Some",[Mwild]), mk_letin rms (Pvar "s"));
+            ]
+            )))
+                   ));
+      }
+    else raise (Anomaly ("field_to_getset : "^(unloc (f.name))))
   | Fmap (vtf, Flist vtt), Some _ (*a*), Addasset ca ->
     (* let add_asset (p : (storage, asset key, contained asset key, ...)) =
        let s  = get_0_n p in
@@ -525,6 +579,57 @@ let field_to_getset info (f : storage_field) (op : storage_field_operation) =
            Pletin ("s",Papp (Pvar add_asset_n,[Ptuple ([Pvar "s";Pvar "a"]@args)]),None,
            Pletin ("v",
                    Papp (Pdot(Pvar "List",Pvar "add"),[Ptuple [Pvar "a";Pvar "v"]]),None,
+           Pletin ("s",
+                   Papp (Pvar "update_storage", [
+                       Pvar "s";
+                       Papp (Pvar fn,[Pvar "s"]);
+                       Papp (Pdot(Pvar "Map",Pvar "add"),[Pvar "k";
+                                                          Pvar "v";
+                                                          Papp (Pvar fn,[Pvar "s"])])]
+                     ), None,
+           Pvar "s"
+             ))))
+                    ])
+        )))));
+    }
+  | Fmap (vtf, Flist vtt), Some _ (*a*), Removeasset ca ->
+    (* let remove_asset (p : (storage, asset key, contained asset key)) =
+       let s  = get_0_n p in
+       let k  = get_1_n p in
+       let ak = get_2_n p in
+       // check whether key is valid
+       match Map.find k s.asset_field with
+       | None -> Current.failwith "not found"
+       | Some v ->
+         // will fail if ak already present
+         let s = remove_asset (s, ak, ...) in
+         let v = List.remove ak v in
+         let s = s.asset_field <- new_list in
+         s
+    *)
+    let fn = unloc (f.name) in
+    let rm_asset_n = "remove_"^(get_key_name ca info) in
+    let nb = "3" in
+    let mapfind = Papp (Pdot(Pvar "Map",Pvar "find"),[Pvar "k";
+                                                      Papp (Pvar fn,[Pvar "s"])]) in
+    { dummy_function with
+      name = lstr ("remove_"^(unloc (f.name))^"_"^(unloc ca));
+      args = List.map mk_arg ["p", Some (Ftuple (
+          [Flocal (lstr "storage"); Ftyp vtf; Ftyp vtt]))
+        ];
+      body = loc_pterm (
+          Pletin ("s",Papp (Pvar ("get_0_"^nb),[Pvar "p"]),None,
+          Pletin ("k",Papp (Pvar ("get_1_"^nb),[Pvar "p"]),None,
+          Pletin ("a",Papp (Pvar ("get_2_"^nb),[Pvar "p"]),None,
+          (Pmatchwith (mapfind,[
+          (* None -> Current.failwith "not found "*)
+          (Mapp (Qident "None",[]), Papp (Pdot (Pvar "Current",Pvar "failwith"),
+                                           [Papp (Pvar "not_found",[])]));
+          (* Some v -> ... *)
+          (Mapp (Qident "Some",[Mvar "v"]),
+           Pletin ("s",Papp (Pvar rm_asset_n,[Ptuple ([Pvar "s";Pvar "a"])]),None,
+           Pletin ("v",
+                   Papp (Pdot(Pvar "List",Pvar "remove"),[Ptuple [Pvar "a";Pvar "v"]]),None,
            Pletin ("s",
                    Papp (Pvar "update_storage", [
                        Pvar "s";
