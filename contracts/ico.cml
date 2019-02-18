@@ -80,38 +80,11 @@ function get_remaining_tez_to_raise =
 
 function transition_to_finished =
   match state with
-  | PresalesRunning -> state := PresalesFinished
-  | Round1Running   -> state := Round1Finished
-  | Round1Finished  -> state := Round2Running
-  | _               -> state := Round2Finished
+  | PresalesRunning -> PresalesFinished
+  | Round1Running   -> Round1Finished
+  | Round1Finished  -> Round2Running
+  | _               -> Round2Finished
   end
-
-function get_rate =
-  let coeff =
-     if state = PresalesRunning
-     then 1.2
-     else if state = Round1Running
-     then 1.1
-     else 1
-  in
-  coeff * exchange_rate_tez_bcd
-
-function get_remaining_tez_to_raise =
-  if state = PresalesRunning or state = PresalesFinished
-  then presales_cap - nb_tez_raised
-  else if state = Round1Running or state = Round1Finished
-  then round1_cap - nb_tez_raised
-  else (* round 2 *)
-    let remaining_bcd = max_bcd_to_sell - nb_bcd_sold in
-    remaining_bcd / exchange_rate_bcd_tez
-
-function transition_to_finished =
-  if state = PresalesRunning
-  then state := PresalesFinished
-  else if state = Round1Running
-  then state := Round1Finished
-  else if state = Round2Running
-  then state := Round2Finished
 
 transaction contribute = {
    condition
@@ -132,7 +105,7 @@ transaction contribute = {
      if remaining_tez <= contrib
      then (
        contrib := remaining_tez;
-       transition_to_finished ()
+       state := transition_to_finished ()
      );
      (* convert contribution to nb of bcd tokens *)
      let rate = get_rate () in
