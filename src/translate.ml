@@ -463,14 +463,14 @@ let is_asset_role opts =
 let get_asset_fields fields =
     match fields with
       | None -> []
-      | Some fields -> (List.fold_left (fun acc i ->
+      | Some fields -> (List.fold_right (fun i acc ->
           let loc, v = deloc i in
           match v with
           | Ffield (id, typ, dv, _) -> mk_decl loc (id, Some typ, dv)::acc
-        ) [] (List.rev fields))
+        ) fields [])
 
 let get_assets decls =
-  List.fold_left ( fun acc i ->
+  List.fold_right ( fun i acc ->
       (let loc, decl_u = Location.deloc i in
        match decl_u with
        | Dasset (id, fields, _cs, opts, init, _ops) ->
@@ -485,10 +485,10 @@ let get_assets decls =
            loc = loc;
          })::acc
        | _ -> acc)
-    ) [] (List.rev decls)
+    ) decls []
 
 let get_functions decls =
-  List.fold_left ( fun acc i ->
+  List.fold_right ( fun i acc ->
       (let loc = loc i in
        let decl_u = Location.unloc i in
        match decl_u with
@@ -499,7 +499,7 @@ let get_functions decls =
           body = mk_pterm body;
           loc = loc;}::acc
        | _ -> acc)
-    ) [] decls
+    ) decls []
 
 let get_transaction_args (args : ParseTree.args)  =
   List.fold_left (fun acc (i : lident_typ) ->
