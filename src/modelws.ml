@@ -252,9 +252,10 @@ let compile_field_operation info _mws (f : storage_field) =
   | None, Flocal _ | None, Ftyp _ | None, Fmap (_, Ftyp _) ->
     List.map (mk_operation f.name) [Get;Set]
   | Some aname, Flist _ ->
+    (*print_endline ("asset : "^(unloc aname)^"; field : "^(unloc (f.name)));*)
     if is_key aname f.name info
     then
-      List.map (mk_operation f.name) [Get(*;Add;Remove*)]
+      List.map (mk_operation f.name) [Get;Add;(*Remove*)]
     else []
   | Some _, Fmap (_, Ftyp _) ->
     List.map (mk_operation f.name) [(*Get;Set*)]
@@ -354,6 +355,39 @@ let dummy_function = {
 
 let mk_arg (s,t) = { name = lstr s ; typ = t; default = None ; loc = Location.dummy }
 
+let mk_letin params body =
+  let rec mkl = function
+    | (i,b,t) :: tl -> Pletin (i,b,t,mkl tl)
+    | [] -> body in
+  mkl params
+
+let mk_typs (f : storage_field) a info =
+  (get_asset_vars_typs a info) |>
+  List.map (aft_to_sft info a false f.name) |>
+  List.map (fun t ->
+      match t with
+      | Fmap (_, ft) -> ft
+      | _ -> raise (UnsupportedVartype f.loc)
+    )
+
+(* k : key value
+   p : the param (for ex. 'p2')
+   v : is the field name
+   note that :
+   "s" is the storage
+   "v" is the k value
+*)
+let mk_field_add p v = function
+  | Flist _ ->
+    (* List.add (p, s.v) *)
+    let sv = Papp (Pvar v,[Pvar "s"]) in
+    Papp (Pdot(Pvar "List",Pvar "add"),[Ptuple [Pvar p; sv]])
+  | Fmap _ ->
+    (* Map.add p0 p s.v *)
+    let sv = Papp (Pvar v,[Pvar "s"]) in
+    Papp (Pdot(Pvar "Map",Pvar "add"), [Pvar "k"; Pvar p; sv])
+  | _ -> raise (Anomaly ("mk_field_add "^p^" "^v))
+
 let field_to_getset info (f : storage_field) (op : storage_field_operation) =
   match f.typ, f.asset, op.typ with
   | Ftyp _, None, Get | Flocal _, None, Get ->
@@ -394,6 +428,49 @@ let field_to_getset info (f : storage_field) (op : storage_field_operation) =
                    ));
       }
     else raise (Anomaly ("field_to_getset : "^(unloc (f.name))))
+  | Flist vt, Some a, Add ->
+    if is_key a f.name info
+    then
+      let typs = mk_typs f a info in
+      let nb = string_of_int ((List.length typs)+2) in
+      let params = List.mapi (fun i _ ->
+          let si = string_of_int i in
+          let sip2 = string_of_int (i+2) in
+          "p"^si,Papp (Pvar ("get_"^sip2^"_"^nb),[Pvar "p"]),None
+        ) typs in
+      let adds = ["s",Papp (Pvar "update_storage",
+                            [Pvar "s";
+                             Papp (Pvar (unloc (f.name)), [Pvar "s"]);
+                             mk_field_add "k" (unloc (f.name)) (Flist vt)
+                            ]),None
+      ] @ (List.mapi (fun i v ->
+          let param = "p"^(string_of_int i) in
+          let typ = (aft_to_sft info a false a) (get_asset_var_typ a v info) in
+          "s",Papp (Pvar "update_storage",[Pvar "s";
+                                           Papp (Pvar v, [Pvar "s"]);
+                                           mk_field_add param v typ
+                                          ]),None
+        ) (get_asset_vars a info)) in
+      let n = unloc (f.name) in {
+        dummy_function with
+        name = lstr ("add_"^n);
+        args = List.map mk_arg ["p",
+                                Some (Ftuple ([Flocal (lstr "storage"); Ftyp vt]@typs))];
+        body = loc_pterm (
+            Pletin ("s",Papp (Pvar ("get_0_"^nb),[Pvar "p"]),None,
+            Pletin ("k",Papp (Pvar ("get_1_"^nb),[Pvar "p"]),None,
+            mk_letin params (Pmatchwith (Papp (Pdot (Pvar "List",Pvar "mem"),
+                              [Ptuple[Pvar "k";
+                                      Papp (Pvar n,[Pvar "s"])]]) ,[
+                                           (Mapp (Qident "Some",[Mwild]),
+                                            Papp (Pdot (Pvar "Current",Pvar "failwith"),
+                                                  [Papp (Pvar "already_exists",[])]));
+               (Mapp (Qident "None",[]), mk_letin adds (Pvar "s"));
+            ]
+            )))
+                   ));
+      }
+    else raise (Anomaly ("field_to_getset : "^(unloc (f.name))))
   | _ -> raise (Anomaly ("field_to_getset : "^(unloc (f.name))))
 
 let mk_getset_functions info (mws : model_with_storage) = {
@@ -409,6 +486,7 @@ let mk_getset_functions info (mws : model_with_storage) = {
 }
 
 let model_to_modelws (info : info) (m : model) : model_with_storage =
+  (*Format.printf "%a\n" Modelinfo.pp_info info;*)
   {
     name         = (unloc m).name;
     enums        = mk_enums info (unloc m);

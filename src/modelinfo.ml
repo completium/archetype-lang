@@ -14,11 +14,11 @@ exception NotFound               of string
 exception Anomaly                of string
 
 type info = {
-  key_types   : (string * (string * vtyp)) list;      (* asset name,(key name,key type) *)
+  key_types   : (string * (string * vtyp))      list; (* asset name,(key name,key type) *)
   asset_vars  : (string * (string * ptyp) list) list; (* asset name,(field name, type)  *)
-  partitions  : (string * string) list;               (* partition field, asset name    *)
-  state_init  : (string * lident) list;               (* state name, initial value      *)
-  dummy_vars  : (string * (string * vtyp)) list       (* variable name, (value, vtyp)   *)
+  partitions  : (string * string)               list; (* partition field, asset name    *)
+  state_init  : (string * lident)               list; (* state name, initial value      *)
+  dummy_vars  : (string * (string * vtyp))      list; (* variable name, (value, vtyp)   *)
 }
 [@@deriving show {with_path = false}]
 
@@ -38,7 +38,7 @@ let get_key_type (a : asset) =
               | _ -> raise (InvalidKeyType (a.name,arg.name,(loc t)))
             end
           | None   -> raise (ExpectedVarType arg.name)
-        in (aname, (keyid, typ))
+        in (aname, (aname^"_"^keyid, typ))
       else rec_get_key tl
     | [] -> raise (NotFound "get_key_type") in
   a |> fun x -> x.args |> rec_get_key
@@ -108,7 +108,7 @@ let get_asset_vars (a : asset) : (string * ptyp) list =
           | Some t -> t
           | None   -> raise (ExpectedVarType a.name)
         in
-        rec_get_vars (acc @ [get_decl_id arg, t]) tl
+        rec_get_vars (acc @ [(unloc a.name)^"_"^get_decl_id arg, t]) tl
     | [] -> acc in
   a |> fun x -> x.args |> rec_get_vars []
 
@@ -151,6 +151,12 @@ let is_key aname fname info =
     compare (unloc fname) n = 0
   else false
 
+let get_key_name aname info =
+  let id = unloc aname in
+  if List.mem_assoc id info.key_types
+  then let n,_ = List.assoc id info.key_types in n
+  else raise (NotFound ("get_key_name "^id))
+
 let get_key_type aname info =
   let id = unloc aname in
   if List.mem_assoc id info.key_types
@@ -175,3 +181,25 @@ let get_dummy_for info value =
   get info.dummy_vars
 
 let is_partition id info = List.mem_assoc (unloc id) info.partitions
+
+let get_asset_vars_typs aname info =
+  let a = unloc aname in
+  if List.mem_assoc a info.asset_vars
+  then snd (List.split (List.assoc a info.asset_vars))
+  else raise (NotFound a)
+
+let get_asset_vars aname info =
+  let a = unloc aname in
+  if List.mem_assoc a info.asset_vars
+  then fst (List.split (List.assoc a info.asset_vars))
+  else raise (NotFound a)
+
+let get_asset_var_typ aname var info =
+  let a = unloc aname in
+  if List.mem_assoc a info.asset_vars
+  then
+    let types = List.assoc a info.asset_vars in
+    if List.mem_assoc var types
+    then List.assoc var types
+    else raise (NotFound var)
+  else raise (NotFound a)

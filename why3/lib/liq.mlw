@@ -133,7 +133,8 @@ theory Msg
 
   type msg
 
-  val not_found unit : msg
+  val not_found      unit : msg
+  val already_exists unit : msg
 
 end
 
