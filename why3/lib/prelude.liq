@@ -4,4 +4,4 @@ let[@inline] get_caller () = Current.sender ()
 
 let[@inline] now () = Current.time ()
 
-let[@inline] empty_ops = [] : operation list
+let[@inline] empty_ops = [] : (operation list)
