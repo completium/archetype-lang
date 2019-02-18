@@ -467,7 +467,7 @@ let get_asset_fields fields =
           let loc, v = deloc i in
           match v with
           | Ffield (id, typ, dv, _) -> mk_decl loc (id, Some typ, dv)::acc
-        ) [] fields)
+        ) [] (List.rev fields))
 
 let get_assets decls =
   List.fold_left ( fun acc i ->
@@ -485,7 +485,7 @@ let get_assets decls =
            loc = loc;
          })::acc
        | _ -> acc)
-    ) [] decls
+    ) [] (List.rev decls)
 
 let get_functions decls =
   List.fold_left ( fun acc i ->

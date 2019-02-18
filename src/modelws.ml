@@ -21,8 +21,8 @@ type storage_field_operation_type =
   | Addnofail
   | Remove
   | Removenofail
-  | Addasset
-  | Removeasset
+  | Addasset     of lident
+  | Removeasset  of lident
 [@@deriving show {with_path = false}]
 
 type storage_field_operation = {
@@ -259,10 +259,18 @@ let compile_field_operation info _mws (f : storage_field) =
     else []
   | Some _, Fmap (_, Ftyp _) ->
     List.map (mk_operation f.name) [(*Get;Set*)]
-  | Some _, Fmap (_, Flist _) ->
-    if is_partition f.name info
-    then List.map (mk_operation f.name) [(*Get;Addasset;Removeasset*)]
-    else []
+  | Some a, Fmap (_, Flist _) ->
+    let typ = unloc (get_asset_var_typ a (unloc f.name) info) in
+    begin
+      match typ with
+      | Tcontainer (t, Partition) ->
+        begin
+          match unloc t with
+          | Tasset ca -> List.map (mk_operation f.name) [Addasset ca(*; Removeasset ca*)]
+          | _ -> []
+        end
+      | _ -> []
+    end
   | _ -> []
 
 let compile_operations info mws =  {
@@ -471,6 +479,65 @@ let field_to_getset info (f : storage_field) (op : storage_field_operation) =
                    ));
       }
     else raise (Anomaly ("field_to_getset : "^(unloc (f.name))))
+  | Fmap (vtf, Flist vtt), Some _ (*a*), Addasset ca ->
+    (* let add_asset (p : (storage, asset key, contained asset key, ...)) =
+       let s  = get_0_n p in
+       let k  = get_1_n p in
+       let ak = get_2_n p in
+       ...
+       // check whether key is valid
+       match Map.find k s.asset_field with
+       | None -> Current.failwith "not found"
+       | Some v ->
+         // will fail if ak already present
+         let s = add_asset (s, ak, ...) in
+         let v = List.add ak v in
+         let s = s.asset_field <- new_list in
+         s
+    *)
+    let fn = unloc (f.name) in
+    let add_asset_n = "add_"^(get_key_name ca info) in
+    let typs = mk_typs f ca info in
+    let nb = string_of_int ((List.length typs)+3) in
+    let params = List.mapi (fun i _ ->
+          let si = string_of_int i in
+          let sip3 = string_of_int (i+3) in
+          "p"^si,Papp (Pvar ("get_"^sip3^"_"^nb),[Pvar "p"]),None
+      ) typs in
+    let args = List.mapi (fun i _ -> Pvar ("p"^(string_of_int i))) typs in
+    let mapfind = Papp (Pdot(Pvar "Map",Pvar "find"),[Pvar "k";
+                                                      Papp (Pvar fn,[Pvar "s"])]) in
+    { dummy_function with
+      name = lstr ("add_"^(unloc (f.name))^"_"^(unloc ca));
+      args = List.map mk_arg ["p", Some (Ftuple (
+          [Flocal (lstr "storage"); Ftyp vtf; Ftyp vtt]@typs))
+        ];
+      body = loc_pterm (
+          Pletin ("s",Papp (Pvar ("get_0_"^nb),[Pvar "p"]),None,
+          Pletin ("k",Papp (Pvar ("get_1_"^nb),[Pvar "p"]),None,
+          Pletin ("a",Papp (Pvar ("get_2_"^nb),[Pvar "p"]),None,
+          mk_letin params (Pmatchwith (mapfind,[
+          (* None -> Current.failwith "not found "*)
+          (Mapp (Qident "None",[]), Papp (Pdot (Pvar "Current",Pvar "failwith"),
+                                           [Papp (Pvar "not_found",[])]));
+          (* Some v -> ... *)
+          (Mapp (Qident "Some",[Mvar "v"]),
+           Pletin ("s",Papp (Pvar add_asset_n,[Ptuple ([Pvar "s";Pvar "a"]@args)]),None,
+           Pletin ("v",
+                   Papp (Pdot(Pvar "List",Pvar "add"),[Ptuple [Pvar "a";Pvar "v"]]),None,
+           Pletin ("s",
+                   Papp (Pvar "update_storage", [
+                       Pvar "s";
+                       Papp (Pvar fn,[Pvar "s"]);
+                       Papp (Pdot(Pvar "Map",Pvar "add"),[Pvar "k";
+                                                          Pvar "v";
+                                                          Papp (Pvar fn,[Pvar "s"])])]
+                     ), None,
+           Pvar "s"
+             ))))
+                    ])
+        )))));
+    }
   | _ -> raise (Anomaly ("field_to_getset : "^(unloc (f.name))))
 
 let mk_getset_functions info (mws : model_with_storage) = {
