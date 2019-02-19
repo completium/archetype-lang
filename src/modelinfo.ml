@@ -13,7 +13,11 @@ exception ExpectsOneInitialState of lident
 exception NotFound               of string
 exception Anomaly                of string
 
+type storage_policy = Record | MappedRecord | Flat
+[@@deriving show {with_path = false}]
+
 type info = {
+  assets_pol  : (string * storage_policy)       list; (* asset name, storage policy     *)
   key_types   : (string * (string * vtyp))      list; (* asset name,(key name,key type) *)
   asset_vars  : (string * (string * ptyp) list) list; (* asset name,(field name, type)  *)
   partitions  : (string * string)               list; (* partition field, asset name    *)
@@ -136,12 +140,19 @@ let get_partitions (a : asset) : (string * string) list =
   rec_get_p [] a.args
 
 let mk_info m =
+  let ap = m.assets |> List.map (fun (a:asset) -> (unloc a.name),Flat) in
   let kt = m.assets |> List.fold_left (fun acc a -> acc @ [get_key_type a]) [] in
   let si = m.states |> List.fold_left (fun acc s -> acc @ [get_state_init s]) [] in
   let vr = m |> mk_dummy_variables in
   let av = m.assets |> List.map (fun a -> get_asset_name a, get_asset_vars a) in
   let pa = m.assets |> List.fold_left (fun acc a -> acc @ (get_partitions a)) [] in
-  { key_types = kt; asset_vars = av; partitions = pa; state_init = si; dummy_vars = vr }
+  {
+    assets_pol = ap;
+    key_types = kt;
+    asset_vars = av;
+    partitions = pa;
+    state_init = si;
+    dummy_vars = vr }
 
 let is_key aname fname info =
   let id = unloc aname in

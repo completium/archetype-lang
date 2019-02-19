@@ -81,6 +81,13 @@ type enum_unloc = {
 type enum = enum_unloc loced
 [@@deriving show {with_path = false}]
 
+type record = {
+  name   : lident;
+  values : decl list;
+  loc    : Location.t [@opaque]
+}
+[@@deriving show {with_path = false}]
+
 type pattern = (lident,storage_field_type,pattern) pattern_unloc loced
 [@@deriving show {with_path = false}]
 
@@ -93,6 +100,7 @@ type function_ws = (lident,storage_field_type,pattern,pterm) gen_function
 type model_with_storage = {
   name         : lident;
   enums        : enum list;
+  records      : record list;
   storage      : storage;
   functions    : function_ws list;
   transactions : transaction list;
@@ -662,6 +670,7 @@ let model_to_modelws (info : info) (m : model) : model_with_storage =
   {
     name         = (unloc m).name;
     enums        = mk_enums info (unloc m);
+    records      = [];
     storage      = mk_storage info (unloc m);
     functions    = [];
     transactions = [];
