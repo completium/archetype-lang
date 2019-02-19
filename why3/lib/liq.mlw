@@ -206,6 +206,8 @@ theory Map
 
   val remove 'a (map 'a 'b) : map 'a 'b
 
+  val empty_map unit : map 'a 'b
+
   val empty_map_str_int unit : map string int
   val empty_map_str_nat unit : map string nat
   val empty_map_str_tim unit : map string timestamp

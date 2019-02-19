@@ -34,7 +34,7 @@ type storage_field_operation = {
 [@@deriving show {with_path = false}]
 
 type storage_field_type =
-  | Flocal of lident (* enum, state *)
+  | Flocal of lident (* enum, state, record *)
   | Ftyp   of vtyp
   | Flist  of vtyp
   | Fset   of vtyp
