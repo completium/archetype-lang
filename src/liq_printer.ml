@@ -52,6 +52,18 @@ let print_str fmt s = fprintf fmt "%s" s
 let is_dummy pv = List.mem_assoc pv.pv_vs.vs_name.id_string !entries.dummies
 let dummy_to_val pv = List.assoc pv.pv_vs.vs_name.id_string !entries.dummies
 
+let ity_to_ty (t : Mltree.ity) : Mltree.ty =
+  let rec to_ty (t : Ity.ity) : Mltree.ty =
+    match t with
+    | { ity_node = Ityapp ({its_ts = ts}, a, _) } ->
+      Tapp (ts.ts_name, List.map (fun x -> to_ty x) a)
+    | { ity_node = Ityvar ts } -> Tvar ts
+    | _ -> raise (Modelinfo.Anomaly "1:ity_to_ty")
+  in
+  match t with
+  | I t -> to_ty t
+  | _ -> raise (Modelinfo.Anomaly "2:ity_to_ty")
+
 type info = {
   info_syn          : syntax_map;
   info_convert      : syntax_map;
@@ -347,7 +359,7 @@ module Print = struct
         print_apply_args info fmt (exprl, [])
     | [], _ -> ()
 
-  and print_apply info rs fmt pvl =
+  and print_apply e info rs fmt pvl =
     let isfield =
       match rs.rs_field with
       | None   -> false
@@ -362,11 +374,15 @@ module Print = struct
     match query_syntax info.info_convert rs.rs_name,
           query_syntax info.info_syn rs.rs_name, pvl with
     | Some s, _, [{e_node = Econst _}] ->
-        syntax_arguments s print_constant fmt pvl
+      syntax_arguments s print_constant fmt pvl
     | _, Some s, _  when compare rs.rs_name.id_string "update_storage" = 0 ->
         syntax_arguments s (print_expr ~paren:false info) fmt pvl;
-    | _, Some s, _ (* when is_local_id info rs.rs_name  *)->
-        syntax_arguments s (print_expr ~paren:true info) fmt pvl;
+    | _, Some s, _ when compare s "empty_map" = 0 ->
+      fprintf fmt "Map : %a"  (print_ty info) (ity_to_ty e.e_ity);
+    | _, Some s, _ when compare s "empty_set" = 0 ->
+      fprintf fmt "Set : %a"  (print_ty info) (ity_to_ty e.e_ity);
+    | _, Some s, _ (* when is_local_id info rs.rs_name  *) ->
+      syntax_arguments s (print_expr ~paren:true info) fmt pvl;
     | _, None, [t] when is_rs_tuple rs ->
         fprintf fmt "@[%a@]" (print_expr info) t
     | _, None, tl when is_rs_tuple rs ->
@@ -489,14 +505,14 @@ module Print = struct
     | Eapp (rs, []) when rs_equal rs rs_false ->
         fprintf fmt "false"
     | Eapp (rs, [])  -> (* avoids parenthesis around values *)
-        fprintf fmt "%a" (print_apply info rs) []
+        fprintf fmt "%a" (print_apply e info rs) []
     | Eapp (rs, pvl) ->
         begin match query_syntax info.info_convert rs.rs_name, pvl with
           | Some s, [{e_node = Econst _}] ->
-              syntax_arguments s print_constant fmt pvl
+            syntax_arguments s print_constant fmt pvl
           | _ ->
               fprintf fmt (protect_on paren "%a")
-                (print_apply info rs) pvl end
+                (print_apply e info rs) pvl end
     | Ematch (e1, [p, e2], []) ->
         fprintf fmt (protect_on paren "let %a =@ %a in@ %a")
           (print_pat info) p (print_expr info) e1 (print_expr info) e2

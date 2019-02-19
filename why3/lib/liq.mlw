@@ -208,34 +208,6 @@ theory Map
 
   val empty_map unit : map 'a 'b
 
-  val empty_map_str_int unit : map string int
-  val empty_map_str_nat unit : map string nat
-  val empty_map_str_tim unit : map string timestamp
-  val empty_map_str_add unit : map string address
-  val empty_map_str_str unit : map string string
-  val empty_map_str_tez unit : map string tez
-
-  val empty_map_add_int unit : map address int
-  val empty_map_add_nat unit : map address nat
-  val empty_map_add_tim unit : map address timestamp
-  val empty_map_add_add unit : map address address
-  val empty_map_add_str unit : map address string
-  val empty_map_add_tez unit : map address tez
-
-  val empty_map_str_intl unit : map string (list int)
-  val empty_map_str_natl unit : map string (list nat)
-  val empty_map_str_timl unit : map string (list timestamp)
-  val empty_map_str_addl unit : map string (list address)
-  val empty_map_str_strl unit : map string (list string)
-  val empty_map_str_tezl unit : map string (list tez)
-
-  val empty_map_add_intl unit : map address (list int)
-  val empty_map_add_natl unit : map address (list nat)
-  val empty_map_add_timl unit : map address (list timestamp)
-  val empty_map_add_addl unit : map address (list address)
-  val empty_map_add_strl unit : map address (list string)
-  val empty_map_add_tezl unit : map address (list tez)
-
 end
 
 theory Set
@@ -250,12 +222,7 @@ theory Set
 
   val remove 'a (set 'a) : set 'a
 
-  val empty_set_int unit : set int
-  val empty_set_nat unit : set nat
-  val empty_set_tim unit : set timestamp
-  val empty_set_add unit : set address
-  val empty_set_str unit : set string
-  val empty_set_tez unit : set tez
+  val empty_set unit : set 'a
 
 end
 

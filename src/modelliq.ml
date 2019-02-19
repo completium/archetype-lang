@@ -213,15 +213,12 @@ let vtyp_to_acronym = function
 
 let empty_cont_to_expr = function
   | Emptylist    _         -> mk_expr (str_to_eident ["Nil"])
-  | EmptyMap     (vtf,vtt) ->
-    let suffix = (vtyp_to_acronym vtf)^"_"^(vtyp_to_acronym vtt) in
-    mk_expr (str_to_eidapp ["empty_map_"^suffix] [mk_expr (Etuple [])])
-  | EmptySet     vt        ->
-    let suffix = vtyp_to_acronym vt in
-    mk_expr (str_to_eidapp ["empty_set_"^suffix] [mk_expr (Etuple [])])
-  | EmptyCollMap (vtf,vtt) ->
-    let suffix = (vtyp_to_acronym vtf)^"_"^(vtyp_to_acronym vtt) in
-    mk_expr (str_to_eidapp ["empty_map_"^suffix^"l"] [mk_expr (Etuple [])])
+  | EmptyMap     (_,_) ->
+    mk_expr (str_to_eidapp ["empty_map"] [mk_expr (Etuple [])])
+  | EmptySet     _         ->
+    mk_expr (str_to_eidapp ["empty_set"] [mk_expr (Etuple [])])
+  | EmptyCollMap (_,_) ->
+    mk_expr (str_to_eidapp ["empty_map"] [mk_expr (Etuple [])])
 
 let mk_init_body info (fields : (lident * initval) list) : expr =
   let fields = fields |> List.map (fun (id,init) ->
