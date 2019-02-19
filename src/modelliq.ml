@@ -420,7 +420,7 @@ let mk_function_decl (f : function_ws) =
   Dlet (mk_ident f.name, false, Expr.RKnone, pterm_to_expr body)
 
 (* returns a list of definition *)
-let modelws_to_modelw3liq (info : info) (m : model_with_storage) =
+let modelws_to_modelliq (info : info) (m : model_with_storage) =
   Liq_printer.set_entries
     { !Liq_printer.entries with
       init = Some "init";

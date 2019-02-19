@@ -20,8 +20,8 @@ let translate dl =
   let model = Translate.parseTree_to_model dl in
   let info = Modelinfo.mk_info (Location.unloc model) in
   let modelws = Modelws.model_to_modelws info model in
-  let modelw3liq = Modelw3liq.modelws_to_modelw3liq info modelws in
-  List.iter (Typing.add_decl Loc.dummy_position) modelw3liq
+  let modelliq = Modelliq.modelws_to_modelliq info modelws in
+  List.iter (Typing.add_decl Loc.dummy_position) modelliq
 
 let read_channel env path file (c: in_channel) =
   let f = Io.parse_model ~name:file c in
