@@ -100,6 +100,7 @@ let mk_dummy_variables (m : model_unloc) : (string * (string * vtyp)) list =
     ) x m.roles)
 (* TODO : scan transactions *)
 
+
 let get_asset_vars (a : asset) : (string * ptyp) list =
   let keyid = a |> fun x -> x.key |> unloc in
   let rec rec_get_vars acc = function
@@ -114,7 +115,7 @@ let get_asset_vars (a : asset) : (string * ptyp) list =
         in
         rec_get_vars (acc @ [(unloc a.name)^"_"^get_decl_id arg, t]) tl
     | [] -> acc in
-  a |> fun x -> x.args |> rec_get_vars []
+  a.args |> rec_get_vars []
 
 let get_partitions (a : asset) : (string * string) list =
   let rec rec_get_p acc = function
