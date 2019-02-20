@@ -10,11 +10,15 @@ exception ExpectedVarType        of lident
 exception CannotConvert          of string
 exception StringUnsupported
 exception ExpectsOneInitialState of lident
+exception UnsupportedPolicy      of string * string
 exception NotFound               of string
 exception Anomaly                of string
 
 type storage_policy = Record | MappedRecord | Flat
 [@@deriving show {with_path = false}]
+
+let storage_policy = ref Flat
+
 
 type info = {
   assets_pol  : (string * storage_policy)       list; (* asset name, storage policy     *)
@@ -100,7 +104,6 @@ let mk_dummy_variables (m : model_unloc) : (string * (string * vtyp)) list =
     ) x m.roles)
 (* TODO : scan transactions *)
 
-
 let get_asset_vars (a : asset) : (string * ptyp) list =
   let keyid = a |> fun x -> x.key |> unloc in
   let rec rec_get_vars acc = function
@@ -141,7 +144,7 @@ let get_partitions (a : asset) : (string * string) list =
   rec_get_p [] a.args
 
 let mk_info m =
-  let ap = m.assets |> List.map (fun (a:asset) -> (unloc a.name),Flat) in
+  let ap = m.assets |> List.map (fun (a:asset) -> (unloc a.name), !storage_policy) in
   let kt = m.assets |> List.fold_left (fun acc a -> acc @ [get_key_type a]) [] in
   let si = m.states |> List.fold_left (fun acc s -> acc @ [get_state_init s]) [] in
   let vr = m |> mk_dummy_variables in
@@ -215,3 +218,9 @@ let get_asset_var_typ aname var info =
     then List.assoc var types
     else raise (NotFound var)
   else raise (NotFound a)
+
+let get_asset_policy aname info =
+  let id = unloc aname in
+  if List.mem_assoc id info.assets_pol
+  then List.assoc id info.assets_pol
+  else raise (NotFound ("get_asset_policy "^id))

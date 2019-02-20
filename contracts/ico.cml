@@ -45,7 +45,7 @@ asset[@add @remove @update owner (state = Init)]
    contrib      : int = 0
 } with { contrib >= 0 }
 
-states =
+states[%incr_mutable_st owner] =
 | Init initial     (* ICO isn't started yet, initial state *)
 | PresaleRunning   (* Presale has started *)
 | PresaleFinished  (* Presale has ended   *)
@@ -87,6 +87,12 @@ function transition_to_finished =
   end
 
 transaction contribute = {
+
+   specification
+     p1 :
+       let c = contributor.get caller in
+       transferred = transferred_to(caller) + c.contrib - (old c.contrib)
+
    condition
       contributor.contains caller;
       is_running ();

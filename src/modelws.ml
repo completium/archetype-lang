@@ -145,6 +145,18 @@ let mk_default_field (b : bval option) : Model.pterm option =
     (fun x -> mkloc (loc x) (Plit x))
     b
 
+let mk_storage_simple_asset _info (asset : asset)  =
+  let name = asset.name in
+  [{
+    asset   = Some name;
+    name    = mk_asset_field name name;
+    typ     = Flocal name;
+    ghost   = false;
+    default = None;
+    ops     = [];
+    loc     = asset.loc
+  }]
+
 let mk_storage_field info iskey name (arg : decl) =
   let fname = arg.name in
   let typ =
@@ -168,6 +180,15 @@ let mk_storage_fields info (asset : asset)  =
       let iskey = compare (unloc (arg.name)) (unloc (asset.key)) = 0 in
       acc @ (mk_storage_field info iskey name arg)
     ) [] asset.args
+
+let mk_storage_asset info (asset : asset)  =
+  let name = asset.name in
+  let policy = Modelinfo.get_asset_policy name info in
+  match policy with
+  | MappedRecord -> mk_storage_simple_asset info asset
+  | Flat -> mk_storage_fields info asset
+  | _ -> raise (UnsupportedPolicy ("mk_storage_fields", show_storage_policy policy))
+
 
 (* variable type to field type *)
 let vt_to_ft var =
@@ -231,7 +252,7 @@ let mk_storage info m =
     |> fun x -> List.fold_left (fun acc var -> acc @ [mk_variable var]) x m.variables
     |> fun x ->
     List.fold_left (fun acc a ->
-        acc @ (mk_storage_fields info a)
+        acc @ (mk_storage_asset info a)
       ) x m.assets
   in
   { empty_storage with fields = fields }

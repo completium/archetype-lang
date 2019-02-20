@@ -44,17 +44,17 @@ transaction[%signedbyall [buyer, seller]] confirm = {
 object[%signedby oracle] taskStatus "https://oracle.io/tskstat.schema.json"
 
 transaction finalize (task : taskStatus) = {
-  action
-    if task.date <= deadline and task.status = "OK"
-    then (
+  transition from any
+   to Transferred
+   when task.date <= deadline and task.status
+   with action (
        transfer price;
-       transfer back penalty;
-       state := Transferred
-    )
-    else (
+       transfer back penalty
+     )
+   to Canceled
+   with action (
        transfer penalty;
-       transfer back price;
-       state := Canceled
+       transfer back price
     )
 }
 

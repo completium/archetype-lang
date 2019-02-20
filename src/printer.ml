@@ -557,8 +557,9 @@ let rec pp_declaration fmt { pldesc = e; _ } =
         pp_id id
         (pp_list "\n" (pp_prefix "| " pp_id)) ids
 
-  | Dstates (id, ids) ->
-      Format.fprintf fmt "states%a =@\n@[<v 2>@]%a"
+  | Dstates (id, ids, exts) ->
+      Format.fprintf fmt "states%a%a =@\n@[<v 2>@]%a"
+        (pp_option (pp_list " " pp_extension)) exts
         (pp_option (pp_prefix " " pp_id)) id
         (pp_list "\n" (pp_prefix "| " pp_ident_state_option)) ids
 

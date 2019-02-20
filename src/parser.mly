@@ -326,7 +326,7 @@ enum:
 | ENUM x=ident EQUAL xs=pipe_idents {Denum (x, xs)}
 
 states:
-| STATES x=ident? EQUAL xs=pipe_ident_options {Dstates (x, xs)}
+| STATES exts=extensions? x=ident? EQUAL xs=pipe_ident_options {Dstates (x, xs, exts)}
 
 object_decl:
 | OBJECT exts=extensions? x=ident y=expr { Dobject (x, y, exts) } %prec prec_decl

@@ -11,6 +11,7 @@ let opt_pterm = ref false
 
 exception Compiler_error
 exception E_arg
+exception ArgError of string
 
 (* -------------------------------------------------------------------- *)
 let compile_and_print (filename, channel) =
@@ -47,7 +48,18 @@ let main () =
       "-M", Arg.Set opt_model, " Print raw model";
       "-W", Arg.Set opt_modelws, " Print raw model_with_storage";
       "-L", Arg.Set opt_modelliq, " Execute w3 tree generation for liquidity";
-      "-T", Arg.Set opt_pterm, " Print pterm"
+      "-T", Arg.Set opt_pterm, " Print pterm";
+      "--storage-policy",
+      Arg.String (fun s -> match s with
+          | "flat" -> Modelinfo.storage_policy := Flat
+          | "mappedrecord" -> Modelinfo.storage_policy := MappedRecord
+          | "record" -> Modelinfo.storage_policy := Record
+          |  s ->
+            Format.eprintf
+              "Unknown policy %s (use flat, mappedrecord, record)@." s;
+            exit 2),
+      " Set storage policy";
+      "-PP", Arg.Set opt_pterm, " Print pterm"
     ] in
   let arg_usage = String.concat "\n" [
       "compiler [OPTIONS] FILE";
@@ -89,6 +101,10 @@ let main () =
   | Compiler_error ->
     close dispose channel;
     Arg.usage arg_list arg_usage;
+    exit 1
+  | ArgError s ->
+    close dispose channel;
+    Printf.eprintf "%s.\n" s;
     exit 1
   | Translate.ModelError (msg, l) ->
     close dispose channel;
