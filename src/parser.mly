@@ -218,7 +218,7 @@ use:
 | USE x=ident { Duse x }
 
 model:
-| MODEL x=ident { Dmodel x }
+| MODEL exts=option(extensions) x=ident { Dmodel (x, exts) }
 
 constant:
 | CONSTANT exts=option(extensions) x=ident y=loc(type_ref)

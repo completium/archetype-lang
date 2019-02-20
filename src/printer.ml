@@ -524,10 +524,12 @@ match e with
 let rec pp_declaration fmt { pldesc = e; _ } =
   match e with
   | Duse id ->
-      Format.fprintf fmt "use %a" pp_id id
+    Format.fprintf fmt "use %a" pp_id id
 
-  | Dmodel id ->
-      Format.fprintf fmt "model %a" pp_id id
+  | Dmodel (id, exts) ->
+    Format.fprintf fmt "model%a %a"
+      (pp_option (pp_list " " pp_extension)) exts
+      pp_id id
 
   | Dconstant (id, typ, dv, exts) ->
       Format.fprintf fmt "constant%a %a %a%a"

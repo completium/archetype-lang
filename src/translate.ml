@@ -321,7 +321,7 @@ let get_name_model (pt : ParseTree.model) : lident =
     (let res = List.fold_left (fun acc i -> (
            let decl_u = Location.unloc i in
            match decl_u with
-           | Dmodel id -> (match acc with
+           | Dmodel (id, _exts) -> (match acc with
                | None -> Some (unloc id)
                | _ -> raise (ModelError ("only one name can be set to model.", loc)))
            | _ -> acc)) None decls

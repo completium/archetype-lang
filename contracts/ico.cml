@@ -1,4 +1,4 @@
-model ico
+model[%erc20] ico
 
 constant symbol string = "BCDT"
 
