@@ -1,0 +1,13 @@
+model extension mutable_enum (
+
+  states[%mutable_enum arole] anenum
+
+) = {
+
+  transaction set_state_<%a> (new_val : anenum) = {
+
+    called by arole
+    condition state <= new_state
+    action    anenum := new_val
+  }
+}

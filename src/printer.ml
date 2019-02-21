@@ -567,7 +567,7 @@ let rec pp_declaration fmt { pldesc = e; _ } =
       Format.fprintf fmt "states%a%a =@\n@[<v 2>@]%a"
         (pp_option (pp_list " " pp_extension)) exts
         (pp_option (pp_prefix " " pp_id)) id
-        (pp_list "\n" (pp_prefix "| " pp_ident_state_option)) ids
+        (pp_option (pp_list "\n" (pp_prefix "| " pp_ident_state_option))) ids
 
   | Dasset (id, fields, cs, opts, init, ops) ->
       Format.fprintf fmt "asset%a %a%a%a%a%a"

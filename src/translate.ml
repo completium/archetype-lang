@@ -628,7 +628,7 @@ let get_states decls =
   List.fold_left (fun acc i ->
       (let loc, v = deloc i in
        match v with
-       | Dstates (name, items, _exts) ->
+       | Dstates (name, Some items, _exts) ->
          {name = (match name with | None -> dumloc "_global" | Some a -> a);
           items = get_states_items items;
           loc = loc;}::acc
