@@ -140,17 +140,22 @@ let mk_asset_field aname fname =
   let field = unloc fname in
   { plloc = loc; pldesc = name^"_"^field }
 
+let mk_asset_field_simple fname =
+  let loc, name = deloc fname in
+  { plloc = loc; pldesc = name^"_col" }
+
 let mk_default_field (b : bval option) : Model.pterm option =
     Translate.map_option
     (fun x -> mkloc (loc x) (Plit x))
     b
 
-let mk_storage_simple_asset _info (asset : asset)  =
+let mk_storage_simple_asset info (asset : asset)  =
+  let vtyp_key = Modelinfo.get_key_type asset.name info in
   let name = asset.name in
   [{
     asset   = Some name;
-    name    = mk_asset_field name name;
-    typ     = Flocal name;
+    name    = mk_asset_field_simple name;
+    typ     = Fmap (vtyp_key, Flocal name);
     ghost   = false;
     default = None;
     ops     = [];
@@ -265,6 +270,32 @@ let mk_enums _ m = m.states |> List.fold_left (fun acc (st : state) ->
                        values = mk_enum st.items; }
     ]
   ) []
+
+(* Records building*)
+
+let mk_fields_record _info (a : asset) =
+  let key_name = unloc a.key in
+  List.fold_right (
+    fun (i : decl) acc ->
+      if (String.compare key_name (i.name |> unloc) <> 0)
+      then i::acc
+      else acc) a.args []
+
+let mk_record info (a : Model.asset) : record =
+  {
+    name = a.name;
+    values = mk_fields_record info a;
+    loc = a.loc;
+  }
+
+let mk_records info m =
+  List.fold_right (fun (a : Model.asset) acc ->
+      let policy = Modelinfo.get_asset_policy a.name info in
+      match policy with
+      | MappedRecord -> (mk_record info a)::acc
+      | _ -> acc
+    ) m.assets []
+
 
 (* Field operations compilation *)
 
@@ -688,11 +719,12 @@ let mk_getset_functions info (mws : model_with_storage) = {
 
 let model_to_modelws (info : info) (m : model) : model_with_storage =
   (*Format.printf "%a\n" Modelinfo.pp_info info;*)
+  let m = unloc m in
   {
-    name         = (unloc m).name;
-    enums        = mk_enums info (unloc m);
-    records      = [];
-    storage      = mk_storage info (unloc m);
+    name         = m.name;
+    enums        = mk_enums info m;
+    records      = mk_records info m;
+    storage      = mk_storage info m;
     functions    = [];
     transactions = [];
   }
