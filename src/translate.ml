@@ -221,7 +221,7 @@ let rec mk_lterm (e : expr) : lterm =
     | Ematchwith _ -> raise (ModelError ("match with is not allowed in logical block", loc))
     | Equantifier (q, (id, t, _), e) -> Lquantifer (to_quantifier q, id, map_option mk_ltyp t, mk_lterm e))
 
-let rec mk_qualid (q : ParseTree.qualid) : lident Model.qualid =
+let rec mk_qualid (q : ParseTree.qualid) : liqualid =
   match q with
   | Qident i -> Qident i
   | Qdot (q, i) -> Qdot (mk_qualid q, i)
@@ -381,6 +381,7 @@ let mk_bval e =
   mkloc loc
     (match v with
      | Eliteral l -> to_bval l
+     | Eterm (None, id) -> BVenum (unloc id)
      | _ -> raise (ModelError ("mk_bval: wrong type for ", loc)))
 
 let mk_label_term mk item =
@@ -544,9 +545,14 @@ let get_transaction_transition items =
   List.fold_left (fun acc i ->
       let loc, v = deloc i in
       match v with
-      | Ttransition (from, _, _id,  _) ->
+      | Ttransition (id, from, to_, _) ->
         (match acc with
-         | None -> Some (to_sexpr from, dumloc "todo", None)
+         | None -> Some (map_option mk_qualid id,
+                         to_sexpr from,
+                         List.fold_right (
+                           fun (to_, cond, action) acc -> (to_,
+                                                           map_option mk_pterm cond,
+                                                           map_option mk_pterm action)::acc) to_ [])
          | _ -> raise (ModelError ("several transition found", loc)))
       | _ -> acc
     ) None items

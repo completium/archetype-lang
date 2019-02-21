@@ -443,10 +443,10 @@ let pp_transitem fmt { pldesc = t; _ } =
        (pp_option (pp_list " " pp_extension)) exts
        (pp_list ";@\n" pp_named_item) xs
 
-  | Ttransition (from, lto, id, exts) ->
+  | Ttransition (id, from, lto, exts) ->
       Format.fprintf fmt "transition%a%a from %a@\n%a"
+        (pp_option (pp_prefix " " pp_qualid)) id
         (pp_option (pp_list " " pp_extension)) exts
-        (pp_option (pp_prefix " " pp_name)) id
         pp_expr from
         (pp_list "@\n" pp_to) lto
 

@@ -213,6 +213,9 @@ type 'id qualid =
   | Qdot of 'id qualid * 'id
 [@@deriving show {with_path = false}]
 
+type liqualid = lident qualid
+[@@deriving show {with_path = false}]
+
 type ('id,'typ,'pattern) pattern_unloc =
   | Mwild
   | Mvar of 'id
@@ -332,7 +335,7 @@ type transaction = {
   args         : arg list;
   calledby     : rexpr option;
   condition    : label_pterm list option;
-  transition   : (sexpr * lident * (lident * lident) option) option; (* from * to * fied *)
+  transition   : (liqualid option * sexpr * (lident * pterm option * pterm option) list) option; (* id * from * (to, condition, action)) *)
   spec         : specification option;
   action       : pterm option;
   loc          : Location.t [@opaque];

@@ -473,11 +473,11 @@ transition_to_item:
  | xs=transition_to_item+ { xs }
 
 transition_item:
- | TRANSITION id=dot_ident?
+ | TRANSITION id=qualid?
      exts=option(extensions)
        FROM x=expr
          y=transition_to
-             { Ttransition (x, y, id, exts) }
+             { Ttransition (id, x, y, exts) }
 
 invariant:
  | INVARIANT exts=option(extensions)
