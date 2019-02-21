@@ -417,6 +417,12 @@ match s with
     pp_id x
     pp_expr y
 
+let pp_to fmt ((to_, when_, action) : (lident * expr option * expr option)) =
+  Format.fprintf fmt "to %a@\n%a%a"
+    pp_id to_
+    (pp_option (pp_enclose "by condition " "@\n" pp_expr)) when_
+    (pp_option (pp_enclose "with action (" ")@\n" pp_expr)) action
+
 let pp_specification_variable fmt (sv : (lident * type_t * expr option) loced) =
 match sv with
 | {pldesc = (id, typ, dv); _} ->
@@ -437,12 +443,12 @@ let pp_transitem fmt { pldesc = t; _ } =
        (pp_option (pp_list " " pp_extension)) exts
        (pp_list ";@\n" pp_named_item) xs
 
-  | Ttransition (from, _to, id, exts) ->
-      Format.fprintf fmt "transition%a%a from %a to %a"
+  | Ttransition (from, lto, id, exts) ->
+      Format.fprintf fmt "transition%a%a from %a@\n%a"
         (pp_option (pp_list " " pp_extension)) exts
         (pp_option (pp_prefix " " pp_name)) id
         pp_expr from
-        pp_id _to
+        (pp_list "@\n" pp_to) lto
 
   | Tfunction (id, args, r, b) ->
       Format.fprintf fmt "function %a %a%a = %a"

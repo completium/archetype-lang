@@ -160,7 +160,7 @@ and field = field_r loced
 type transitem_r =
   | Tcalledby of expr * extension list option                                (** called by *)
   | Tcondition of named_item list * extension list option                    (** condition *)
-  | Ttransition of expr * lident * name option * extension list option       (** transition  *)
+  | Ttransition of expr * (lident * expr option * expr option) list * name option * extension list option       (** transition  *)
   | Tfunction of lident * args * type_t option * expr                        (** function *)
   | Tspecification of s_variable * s_action * s_invariant * s_ensure * exts  (** specification *)
   | Tinvariant of lident * named_item list * extension list option           (** invariant *)

@@ -457,11 +457,23 @@ condition:
  | CONDITION exts=option(extensions) xs=named_items
        { Tcondition (xs, exts) }
 
+%inline condition_value:
+| BY CONDITION x=expr { x }
+
+%inline with_action:
+| WITH ACTION x=expr { x }
+
+transition_to_item:
+| TO x=ident y=condition_value? z=with_action? { (x, y, z) }
+
+%inline transition_to:
+ | xs=transition_to_item+ { xs }
+
 transition_item:
  | TRANSITION id=dot_ident?
      exts=option(extensions)
        FROM x=expr
-         TO y=ident
+         y=transition_to
              { Ttransition (x, y, id, exts) }
 
 invariant:

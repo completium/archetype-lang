@@ -544,9 +544,9 @@ let get_transaction_transition items =
   List.fold_left (fun acc i ->
       let loc, v = deloc i in
       match v with
-      | Ttransition (from, to_, _id,  _) ->
+      | Ttransition (from, _, _id,  _) ->
         (match acc with
-         | None -> Some (to_sexpr from, to_, None)
+         | None -> Some (to_sexpr from, dumloc "todo", None)
          | _ -> raise (ModelError ("several transition found", loc)))
       | _ -> acc
     ) None items
