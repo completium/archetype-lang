@@ -10,6 +10,5 @@ bin/compilator
 src/*.cm*
 src/*.o
 *.exe
-*.cm*
 .merlin
 test.liq

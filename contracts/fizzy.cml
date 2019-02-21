@@ -1,0 +1,66 @@
+model fizzy
+
+role creator
+
+enum status =
+  | Created
+  | Before (* flight landed before the limit *)
+  | After (* flight landed after the limit *)
+  | Cancelled (* cancelled by the user *)
+  | FlightCancelled (* flight cancelled by the air company *)
+  | Redirected (* flight redirected *)
+  | Diverted (* flight diverted *)
+
+asset insurance = {
+  productid : string;
+  limit : date;
+  premium : tez;
+  indemnity : tez;
+  stat : status = Created;
+}
+
+asset[@add creator none] flight identified by id = {
+ id : string;
+ insurances : insurance partition;
+}
+
+transaction addflightinsurance (fi : string) (* flight id *)
+                               (li : date)
+                               (pre : tez)
+                               (ind : tez)
+                               (pro : string) = {
+ called by creator
+ action
+   flight.addifnotexist { id = fi };
+   let f = flight.get id in
+   f.insurances.add { productid = pro;
+                      limit = li;
+                      premium = pre;
+                      indemnity = ind }
+
+}
+
+(* data should be signed by oracle ... *)
+transaction updatestatus (fi : string) (arrival : date) = {
+  called by creator
+  action
+    let f = flight.get id in
+    for (i in f.insurances)
+      match i.status with
+      | Created ->
+        if arrival > i.limit
+        then i.status := After
+      | _ -> none
+      end
+}
+
+transaction manual (fi : string) (pr : string) (newst : status) = {
+  called by creator
+  action
+    let f = flight.get fi in
+    for (i in f.insurances.when (product = pr))
+      match i.status with
+      | Created -> i.status := newst
+      | _ -> none
+      end
+}
