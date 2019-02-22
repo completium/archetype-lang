@@ -43,6 +43,11 @@ let mk_qid l =
   in
   aux (List.rev l)
 
+let rec mk_qualid (q : Model.liqualid) : Ptree.qualid =
+  match q with
+  | Qident i -> Qident (mk_ident i)
+  | Qdot (a,i) -> Qdot (mk_qualid a, mk_ident i)
+
 let mk_econst s =
   mk_expr
     (Econst
@@ -126,9 +131,37 @@ let mk_storage_decl (storage : storage) =
     td_def = TDrecord (List.map mk_storage_field storage.fields);
   }]
 
+(* records generation *)
+
+let remove_option (o : 'a option) : 'a =
+  match o with
+  | Some v -> v
+  | None -> raise (Anomaly ("remove_option"))
+
+let mk_value_field (d : record_field_type) : field = {
+  f_loc     = loc2loc (d.loc);
+  f_ident   = mk_ident d.name;
+  f_pty     = field_storage_to_ptyp d.typ_;
+  f_mutable = false;
+  f_ghost   = false;
+}
+
+let mk_records (records : record list) =
+  List.map (fun (x : record) ->
+  Dtype [{
+    td_loc = Loc.dummy_position;
+    td_ident = { id_str = x.name |> unloc; id_ats = []; id_loc = loc x.name } ;
+    td_params = [];
+    td_vis = Public;
+    td_mut = false;
+    td_inv = [];
+    td_wit = [];
+    td_def = TDrecord (List.map mk_value_field x.values);
+  }]) records
+
 (* storage init generation *)
-let mk_init_args info fs : (lident * storage_field_type) list =
-  List.fold_left (fun acc f ->
+let mk_init_args info (fs : storage_field list) : (lident * storage_field_type) list =
+  List.fold_left (fun acc (f : storage_field) ->
       match f.default with
       | None -> (* no default value : decide which one to pass as argument *)
         begin
@@ -142,10 +175,10 @@ let mk_init_args info fs : (lident * storage_field_type) list =
     ) [] fs
 
 type empty_container =
-  | Emptylist     of vtyp
-  | EmptyMap      of vtyp * vtyp
-  | EmptySet      of vtyp
-  | EmptyCollMap  of vtyp * vtyp
+  | Emptylist     of storage_field_type
+  | EmptyMap      of storage_field_type * storage_field_type
+  | EmptySet      of storage_field_type
+  | EmptyCollMap  of storage_field_type * storage_field_type
 
 type initval =
   | Ienum   of lident
@@ -163,8 +196,8 @@ let mk_init_val = function
   | VTaddress        -> BVaddress "@none"
   | VTcurrency (c,_) -> BVcurrency (c,Big_int.zero_big_int)
 
-let mk_init_fields info args fs : (lident * initval) list =
-  List.fold_left (fun acc f ->
+let mk_init_fields info args (fs : storage_field list) : (lident * initval) list =
+  List.fold_left (fun acc (f : storage_field) ->
       match f.default with
       | Some bv -> acc @ [f.name, match unloc bv with
         | Plit l -> Ival l
@@ -177,9 +210,9 @@ let mk_init_fields info args fs : (lident * initval) list =
              match f.typ with
              | Flocal id             -> Ienum (get_initial_state info id)
              | Ftyp vt               -> Ival (mkloc Location.dummy (mk_init_val vt))
-             | Flist vt              -> Iemptyc (Emptylist vt)
-             | Fmap (vtf, Flist vtt) -> Iemptyc (EmptyCollMap (vtf,vtt))
-             | Fmap (vtf, Ftyp vtt)  -> Iemptyc (EmptyMap (vtf,vtt))
+             | Flist vt              -> Iemptyc (Emptylist (Ftyp vt))
+             | Fmap (vtf, Flist vtt) -> Iemptyc (EmptyCollMap (Ftyp vtf, Ftyp vtt))
+             | Fmap (vtf, ftyp)      -> Iemptyc (EmptyMap (Ftyp vtf, ftyp))
              | _                     -> raise (Anomaly "mk_init_fields")
          in
          acc @ [f.name, init]
@@ -362,6 +395,7 @@ let rec pterm_to_expr (p : Modelws.pterm) =  {
       | Pletin (n,v,_,b) -> Elet (mk_ident n, false, Expr.RKnone, pterm_to_expr v, pterm_to_expr b)
       | Ptuple l -> Etuple (List.map pterm_to_expr l)
       | Pseq (lhs, rhs) -> Esequence (pterm_to_expr lhs, pterm_to_expr rhs)
+      | Precord l -> Erecord (List.map (fun (i, e) -> (mk_qualid i, pterm_to_expr e)) l)
       (* TODO : continue mapping *)
       | _ -> raise (Anomaly ("pterm_to_expr : "^(Modelws.show_pterm p)))
     end;
@@ -427,6 +461,7 @@ let modelws_to_modelliq (info : info) (m : model_with_storage) =
   []
   |> (fun x -> List.fold_left (fun acc d -> acc @ [mk_dummy_decl d]) x info.dummy_vars)
   |> (fun x -> List.fold_left (fun acc e -> acc @ [mk_enum_decl e]) x m.enums)
+  |> (fun x -> x @ mk_records m.records)
   |> (fun x -> x @ [mk_storage_decl m.storage])
   |> (fun x -> x @ [mk_init_storage info m.storage])
   |> (fun x -> List.fold_left (fun acc f -> acc @ [mk_function_decl f]) x m.functions)

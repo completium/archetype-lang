@@ -81,9 +81,17 @@ type enum_unloc = {
 type enum = enum_unloc loced
 [@@deriving show {with_path = false}]
 
+type record_field_type = {
+  name    : lident;
+  typ_    : storage_field_type;
+  default : Model.bval option;
+  loc     : Location.t [@opaque];
+}
+[@@deriving show {with_path = false}]
+
 type record = {
   name   : lident;
-  values : decl list;
+  values : record_field_type list;
   loc    : Location.t [@opaque]
 }
 [@@deriving show {with_path = false}]
@@ -273,12 +281,41 @@ let mk_enums _ m = m.states |> List.fold_left (fun acc (st : state) ->
 
 (* Records building*)
 
+let ptyp_to_vtyp = function
+  | Tbuiltin b -> b
+  | Tasset _a -> VTstring (* TODO *)
+  | _ -> raise (Anomaly "to_storage_type")
+
+let rec to_storage_type (_ptyp : ptyp option) : storage_field_type =
+  match _ptyp with
+  | Some v -> (
+      match unloc v with
+      | Tbuiltin b -> Ftyp b
+      | Tasset a -> Flocal a
+      | Tcontainer (t, c) ->
+        (
+          let v = ptyp_to_vtyp (unloc t) in
+          match c with
+           | Collection | Queue | Stack | Partition -> Flist v
+           | Set | Subset -> Fset v)
+      | Ttuple l -> Ftuple (List.map (fun x -> to_storage_type (Some x)) l)
+      | _ -> raise (Anomaly "to_storage_type1")
+    )
+  | None -> raise (Anomaly "to_storage_type2")
+
+let to_storage_decl (d : decl) : record_field_type = {
+  name = d.name;
+  typ_ = to_storage_type d.typ;
+  default = d.default;
+  loc = d.loc;
+}
+
 let mk_fields_record _info (a : asset) =
   let key_name = unloc a.key in
   List.fold_right (
     fun (i : decl) acc ->
       if (String.compare key_name (i.name |> unloc) <> 0)
-      then i::acc
+      then (to_storage_decl i)::acc
       else acc) a.args []
 
 let mk_record info (a : Model.asset) : record =

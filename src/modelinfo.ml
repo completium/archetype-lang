@@ -17,7 +17,8 @@ exception Anomaly                of string
 type storage_policy = Record | MappedRecord | Flat
 [@@deriving show {with_path = false}]
 
-let storage_policy = ref Flat
+let storage_policy = ref MappedRecord
+(*let storage_policy = ref Flat*)
 
 
 type info = {
