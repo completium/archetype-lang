@@ -1,11 +1,13 @@
 #! /bin/bash
 
 BIN=./compiler.exe
+EXTRACT=./extract.sh
 NB_ERR="0"
 NB_OUT="0"
 NB_MOD="0"
 NB_STR="0"
 NB_LIQ="0"
+NB_EXT="0"
 
 process () {
     printf '%-50s' $1
@@ -51,6 +53,15 @@ process () {
 	        echo -ne "    \033[31m KO \033[0m"
                 NB_LIQ=$((${NB_LIQ} + 1))
             fi
+
+            $EXTRACT $i > /dev/null 2> /dev/null
+            RET=`echo $?`
+            if [ ${RET} -eq 0 ]; then
+	        echo -ne "    \033[32m OK \033[0m"
+            else
+	        echo -ne "    \033[31m KO \033[0m"
+                NB_EXT=$((${NB_EXT} + 1))
+            fi
         fi
 
         echo ""
@@ -63,7 +74,7 @@ process () {
     rm -f $OUT
 }
 
-printf '%-48s%s\n' '' '  PARSE   MODEL   W_STR   LIQ'
+printf '%-48s%s\n' '' '  PARSE   MODEL   W_STR   MAP   EXTRACT'
 
 for i in contracts/*.cml; do
   process $i
@@ -105,8 +116,14 @@ else
     echo -e "\033[31mErrors of conversion to model with storage : ${NB_STR} \033[0m"
 fi
 
-if [ ${NB_STR} -eq 0 ]; then
+if [ ${NB_LIQ} -eq 0 ]; then
+    echo "all contracts have been mapped into liquidity mltree successfully."
+else
+    echo -e "\033[31mErrors of liquidity mltree mapping : ${NB_EXT} \033[0m"
+fi
+
+if [ ${NB_EXT} -eq 0 ]; then
     echo "all contracts have been transcoded into liquidity successfully."
 else
-    echo -e "\033[31mErrors of transcoding into liquidity : ${NB_LIQ} \033[0m"
+    echo -e "\033[31mErrors of transcoding into liquidity : ${NB_EXT} \033[0m"
 fi
