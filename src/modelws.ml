@@ -198,9 +198,8 @@ let mk_storage_asset info (asset : asset)  =
   let name = asset.name in
   let policy = Modelinfo.get_asset_policy name info in
   match policy with
-  | MappedRecord -> mk_storage_simple_asset info asset
+  | Record -> mk_storage_simple_asset info asset
   | Flat -> mk_storage_fields info asset
-  | _ -> raise (UnsupportedPolicy ("mk_storage_fields", show_storage_policy policy))
 
 
 (* variable type to field type *)
@@ -329,10 +328,9 @@ let mk_records info m =
   List.fold_right (fun (a : Model.asset) acc ->
       let policy = Modelinfo.get_asset_policy a.name info in
       match policy with
-      | MappedRecord -> (mk_record info a)::acc
+      | Record -> (mk_record info a)::acc
       | _ -> acc
     ) m.assets []
-
 
 (* Field operations compilation *)
 
@@ -368,6 +366,8 @@ let compile_field_operation info _mws (f : storage_field) =
         end
       | _ -> []
     end
+  | Some _, Fmap (_, Flocal _) ->
+    List.map (mk_operation f.name) [Get]
   | _ -> []
 
 let compile_operations info mws =  {
@@ -740,13 +740,32 @@ let field_to_getset info (f : storage_field) (op : storage_field_operation) =
                     ])
         )))));
     }
+  | Fmap (_vtf, Flocal name_asset), _, _ ->
+    (* simply apply field name to argument "s" *)
+    let key_type = get_key_type name_asset info in
+    let _key_id = get_key_id name_asset info in
+    let n = unloc name_asset in {
+      dummy_function with
+      name = lstr ("get_"^n);
+      args = List.map mk_arg ["p",Some (Ftuple [Flocal (lstr "storage"); Ftyp key_type])];
+      body = loc_pterm (
+          Pletin ("s",Papp (Pvar "get_0_2",[Pvar "p"]),None,
+          Pletin ("v",Papp (Pvar "get_1_2",[Pvar "p"]),None,
+          Pmatchwith (Papp (Pdot (Pvar "Map",Pvar "find"),
+          [Pvar "v"; Pdot(Pvar "s", Pvar (n ^ "_col"))]) ,[
+          (Mapp (Qident "Some",[Mvar "k"]), Pvar "k");
+          (Mapp (Qident "None",[]),  Papp (Pdot (Pvar "Current",Pvar "failwith"),
+                                     [Papp (Pvar "not_found",[])]))])
+                 )))
+    }
+
   | _ -> raise (Anomaly ("field_to_getset : "^(unloc (f.name))))
 
 let mk_getset_functions info (mws : model_with_storage) = {
   mws with
   functions = mws.functions @ (
       List.fold_left (
-        fun acc f ->
+        fun acc (f : storage_field) ->
           List.fold_left (
             fun acc op -> acc @ [field_to_getset info f op]
           ) acc f.ops

@@ -52,11 +52,10 @@ let main () =
       "--storage-policy",
       Arg.String (fun s -> match s with
           | "flat" -> Modelinfo.storage_policy := Flat
-          | "mappedrecord" -> Modelinfo.storage_policy := MappedRecord
           | "record" -> Modelinfo.storage_policy := Record
           |  s ->
             Format.eprintf
-              "Unknown policy %s (use flat, mappedrecord, record)@." s;
+              "Unknown policy %s (use record, flat)@." s;
             exit 2),
       " Set storage policy";
       "-PP", Arg.Set opt_pterm, " Print pterm"

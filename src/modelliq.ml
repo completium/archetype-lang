@@ -396,6 +396,22 @@ let rec pterm_to_expr (p : Modelws.pterm) =  {
       | Ptuple l -> Etuple (List.map pterm_to_expr l)
       | Pseq (lhs, rhs) -> Esequence (pterm_to_expr lhs, pterm_to_expr rhs)
       | Precord l -> Erecord (List.map (fun (i, e) -> (mk_qualid i, pterm_to_expr e)) l)
+      | Pdot (x, y) ->
+        (
+          let to_qualid (x : (pterm * pterm)) : Ptree.qualid =
+            let rec to_quald (z : pterm) : Ptree.qualid =
+              match unloc z with
+              | Pvar i -> Qident (mk_ident i)
+              | Pdot (a, {pldesc = Pvar b; _}) -> Qdot(to_quald a, mk_ident b)
+              | _ -> raise (Anomaly "to_quald: cannot convert to qualid ") in
+            let x, y = x in
+            match unloc y with
+            | Pvar b -> Qdot (to_quald x, mk_ident b)
+            | _ -> raise (Anomaly "to_qualid: cannot convert to qualid ") in
+          Eident (to_qualid (x, y))
+        )
+
+
       (* TODO : continue mapping *)
       | _ -> raise (Anomaly ("pterm_to_expr : "^(Modelws.show_pterm p)))
     end;
