@@ -36,8 +36,8 @@ type storage_field_operation = {
 type storage_field_type =
   | Flocal of lident (* enum, state, record *)
   | Ftyp   of vtyp
-  | Flist  of vtyp
-  | Fset   of vtyp
+  | Flist  of storage_field_type
+  | Fset   of storage_field_type
   | Fmap   of vtyp * storage_field_type
   | Ftuple of storage_field_type list
 [@@deriving show {with_path = false}]
@@ -122,7 +122,7 @@ let aft_to_sft info aname iskey fname (typ : ptyp) =
   let typ = unloc typ in
   match iskey, typ with
   (* an asset key with a basic type *)
-  | true , Tbuiltin vt         -> Flist vt
+  | true , Tbuiltin vt         -> Flist (Ftyp vt)
   (* an asset key with an extravagant type *)
   | true , _                   -> raise (InvalidKeyType (aname,fname,loc))
   (* an asset field with a basic type *)
@@ -137,7 +137,7 @@ let aft_to_sft info aname iskey fname (typ : ptyp) =
      match unloc ptyp with
      (* what is the vtyp of the asset ? *)
        | Tasset id             -> Fmap (get_key_type aname info,
-                                        Flist (get_key_type id info))
+                                        Flist (Ftyp (get_key_type id info)))
        | _                     -> raise (UnsupportedType (aname,fname,loc))
      end
   | _ -> raise (UnsupportedType (aname,fname,loc))
@@ -294,10 +294,10 @@ let rec to_storage_type (_ptyp : ptyp option) : storage_field_type =
       | Tasset a -> Flocal a
       | Tcontainer (t, c) ->
         (
-          let v = ptyp_to_vtyp (unloc t) in
+          let t = to_storage_type (Some t) in
           match c with
-           | Collection | Queue | Stack | Partition -> Flist v
-           | Set | Subset -> Fset v)
+           | Collection | Queue | Stack | Partition -> Flist t
+           | Set | Subset -> Fset t)
       | Ttuple l -> Ftuple (List.map (fun x -> to_storage_type (Some x)) l)
       | _ -> raise (Anomaly "to_storage_type1")
     )
@@ -529,7 +529,7 @@ let field_to_getset info (f : storage_field) (op : storage_field_operation) =
       let n = unloc (f.name) in {
         dummy_function with
         name = lstr ("get_"^n);
-        args = List.map mk_arg ["p",Some (Ftuple [Flocal (lstr "storage"); Ftyp vt])];
+        args = List.map mk_arg ["p",Some (Ftuple [Flocal (lstr "storage"); vt])];
         body = loc_pterm (
             Pletin ("s",Papp (Pvar "get_0_2",[Pvar "p"]),None,
             Pletin ("v",Papp (Pvar "get_1_2",[Pvar "p"]),None,
@@ -571,7 +571,7 @@ let field_to_getset info (f : storage_field) (op : storage_field_operation) =
         dummy_function with
         name = lstr ("add_"^n);
         args = List.map mk_arg ["p",
-                                Some (Ftuple ([Flocal (lstr "storage"); Ftyp vt]@typs))];
+                                Some (Ftuple ([Flocal (lstr "storage"); vt]@typs))];
         body = loc_pterm (
             Pletin ("s",Papp (Pvar ("get_0_"^nb),[Pvar "p"]),None,
             Pletin ("k",Papp (Pvar ("get_1_"^nb),[Pvar "p"]),None,
@@ -614,7 +614,7 @@ let field_to_getset info (f : storage_field) (op : storage_field_operation) =
         dummy_function with
         name = lstr ("remove_"^n);
         args = List.map mk_arg ["p",
-                                Some (Ftuple ([Flocal (lstr "storage"); Ftyp vt]))];
+                                Some (Ftuple ([Flocal (lstr "storage"); vt]))];
         body = loc_pterm (
             Pletin ("s",Papp (Pvar ("get_0_"^nb),[Pvar "p"]),None,
             Pletin ("k",Papp (Pvar ("get_1_"^nb),[Pvar "p"]),None,
@@ -661,7 +661,7 @@ let field_to_getset info (f : storage_field) (op : storage_field_operation) =
     { dummy_function with
       name = lstr ("add_"^(unloc (f.name))^"_"^(unloc ca));
       args = List.map mk_arg ["p", Some (Ftuple (
-          [Flocal (lstr "storage"); Ftyp vtf; Ftyp vtt]@typs))
+          [Flocal (lstr "storage"); Ftyp vtf; vtt]@typs))
         ];
       body = loc_pterm (
           Pletin ("s",Papp (Pvar ("get_0_"^nb),[Pvar "p"]),None,
@@ -712,7 +712,7 @@ let field_to_getset info (f : storage_field) (op : storage_field_operation) =
     { dummy_function with
       name = lstr ("remove_"^(unloc (f.name))^"_"^(unloc ca));
       args = List.map mk_arg ["p", Some (Ftuple (
-          [Flocal (lstr "storage"); Ftyp vtf; Ftyp vtt]))
+          [Flocal (lstr "storage"); Ftyp vtf; vtt]))
         ];
       body = loc_pterm (
           Pletin ("s",Papp (Pvar ("get_0_"^nb),[Pvar "p"]),None,

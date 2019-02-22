@@ -102,10 +102,10 @@ let rec field_storage_to_ptyp = function
   | Ftyp vt   -> vt |> vtyp_to_mlwtyp
   | Flist vt  ->
     let listid =  str_to_ident "list" in
-    PTtyapp (Qident listid, [vtyp_to_mlwtyp vt])
+    PTtyapp (Qident listid, [field_storage_to_ptyp vt])
   | Fset vt   ->
     let listid =  str_to_ident "set" in
-    PTtyapp (Qident listid, [vtyp_to_mlwtyp vt])
+    PTtyapp (Qident listid, [field_storage_to_ptyp vt])
   | Fmap (vt,fs) ->
     let mapid  = str_to_ident "map"  in
     PTtyapp (Qident mapid, [vtyp_to_mlwtyp vt; field_storage_to_ptyp fs])
@@ -210,8 +210,8 @@ let mk_init_fields info args (fs : storage_field list) : (lident * initval) list
              match f.typ with
              | Flocal id             -> Ienum (get_initial_state info id)
              | Ftyp vt               -> Ival (mkloc Location.dummy (mk_init_val vt))
-             | Flist vt              -> Iemptyc (Emptylist (Ftyp vt))
-             | Fmap (vtf, Flist vtt) -> Iemptyc (EmptyCollMap (Ftyp vtf, Ftyp vtt))
+             | Flist vt              -> Iemptyc (Emptylist vt)
+             | Fmap (vtf, Flist vtt) -> Iemptyc (EmptyCollMap (Ftyp vtf, vtt))
              | Fmap (vtf, ftyp)      -> Iemptyc (EmptyMap (Ftyp vtf, ftyp))
              | _                     -> raise (Anomaly "mk_init_fields")
          in
