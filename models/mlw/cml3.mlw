@@ -87,13 +87,7 @@ module Ngmap
 
 end
 
-(* Set with :
-   mem
-   lenght
-   add
-   remove
-   diff
-   nth
+(* Set with : mem length add remove diff nth
   implemented with list type
  *)
 theory Asset

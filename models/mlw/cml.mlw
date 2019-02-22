@@ -10,6 +10,7 @@ theory Types
   type uint    = uint32
   type tez     = uint32
   type date    = int
+  type string  = int
 
   constant max_uint : int = UInt32.max_uint32
 
