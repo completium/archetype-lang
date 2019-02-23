@@ -61,8 +61,10 @@ let[@inline] add_owner_miles (p : storage * string * mile * (address * owner)) :
   let owner = get p 3 in
   let owner_key = get owner 0 in
   let owner_value = get owner 1 in
+  if (Map.mem mile_key s.mile_col)
+  then failwith "mile already exists.";
+  let s = s.mile_col <- Map.update mile_key (Some mile) s.mile_col in
   s.owner_col <- Map.update owner_key (Some (mile_key::owner_value)) s.owner_col
-
 
 let%entry add (p : address * string * nat * timestamp) (s : storage) =
   let ow = get p 0 in
