@@ -12,6 +12,12 @@
 (defvar cml-mode-map nil
   "Keymap for Cml major mode")
 
+(defvar cml-keywords
+  '("use" "model" "constant" "variable" "role" "identified" "sorted" "by" "as" "from" "to" "ref" "fun" "initialized" "collection" "queue" "stack" "set" "partition" "asset" "match" "with" "end" "assert" "object" "key" "of" "enum" "states" "initial" "invariant" "transition" "transaction" "called" "condition" "specification" "action" "function" "ensure" "let" "if" "then" "else" "for" "in" "break" "transfer" "back" "extension" "namespace" "contract" "and" "or" "not" "forall" "exists" "true" "false"))
+
+(defvar cml-constants
+  '("state" "now" "transferred" "caller" "fail" "balance" "conditions" "actions" "none" "any" "transfer" "mem" "idem" "before" "after" "fixed" "subset"))
+
 (defun cml-regexp-opt (l)
   (regexp-opt l 'symbols))
 
@@ -21,6 +27,7 @@
 (setq cml-address-regexp "@[0-9 a-z A-z _]+")
 (setq cml-number-regexp "[0-9]+")
 (setq cml-float-regexp "[0-9]+\\.[0-9]+")
+(setq cml-label-regexp "^[ ]*[a-zA-z][a-zA-z0-9_]+[ ]*\\:[ ]+")
 ;;(setq cml-date-regexp "(-?(?:[1-9][0-9]*)?[0-9]{4})-(1[0-2]|0[1-9])-(3[01]|0[1-9]|[12][0-9])T(2[0-3]|[01][0-9]):([0-5][0-9]):([0-5][0-9])(.[0-9]+)?(Z)?")
 ;;(setq cml-duration-regexp "[0-9]+Y")
 ;;(setq cml-date-regexp
@@ -42,10 +49,16 @@
 ;;   `(,cml-number-regexp . font-lock-builtin-face)
 ;;   `(,cml-float-regexp . font-lock-builtin-face)
    ;; logical function : "mem" "idem" "before" "after" "fixed" "subset"
-   `(,(cml-regexp-opt '("state" "now" "transferred" "caller" "fail" "balance" "conditions" "actions" "none" "any")) . font-lock-constant-face)
-   `(,(cml-regexp-opt '("use" "model" "extension" "constant" "variable" "role" "asset" "states" "enum" "transaction" "function" "object" "key" "namespace" "contract")) . font-lock-type-face)
-   `(,(cml-regexp-opt '("identified" "sorted" "by" "as" "from" "to" "match" "with" "end" "ref" "fun" "=>" "initialized" "collection" "queue" "stack" "set" "partition" "asset" "object" "initial" "args" "called" "transition" "condition" "action" "specification" "invariant" "ensure" "let" "if" "then" "else" "for" "in" "break" "of" "transfer" "back")) . font-lock-keyword-face)
-   `(,(cml-regexp-opt '("and" "or" "not" "->" "<->" "forall" "exists" "assert" "true" "false")) . font-lock-doc-face)
+   `(,cml-label-regexp . font-lock-preprocessor-face)
+
+   `( ,(cml-regexp-opt cml-keywords) . font-lock-keyword-face)
+   `( ,(cml-regexp-opt cml-constants) . font-lock-constant-face)
+
+
+;;   `(,(cml-regexp-opt '("state" "now" "transferred" "caller" "fail" "balance" "conditions" "actions" "none" "any" "transfer")) . font-lock-constant-face)
+;;   `(,(cml-regexp-opt '("use" "model" "extension" "constant" "variable" "role" "asset" "states" "enum" "transaction" "function" "object" "key" "namespace" "contract")) . font-lock-type-face)
+;;   `(,(cml-regexp-opt '("identified" "sorted" "by" "as" "from" "to" "match" "with" "end" "ref" "fun" "=>" "initialized" "collection" "queue" "stack" "set" "partition" "asset" "object" "initial" "args" "called" "transition" "condition" "action" "specification" "invariant" "ensure" "let" "if" "then" "else" "for" "in" "break" "of" "back")) . font-lock-keyword-face)
+;;   `(,(cml-regexp-opt '("and" "or" "not" "->" "<->" "forall" "exists" "assert" "true" "false")) . font-lock-doc-face)
 
    )
   "Minimal highlighting for cml mode")
@@ -57,15 +70,64 @@
   "How many spaces to indent in cml mode.")
 (make-variable-buffer-local 'cml-indent)
 
-
 (defun cml-indent-line ()
-  "Indent current line as cml logic"
   (interactive)
-  (save-excursion
-    (beginning-of-line)
-    (if (looking-at "model")  ; Check for rule 1
-        (indent-line-to 0)
-      )))
+  (setq cur-col (current-column))
+  (beginning-of-line)
+  (if (bobp)
+      (indent-line-to 0)
+    (let ((idt nil) cur-indent (cur-line (+ (count-lines 1 (point)) 1)) (cur-is nil))
+      (save-excursion
+        (progn
+          (if (looking-at "^}.*$")
+              (progn
+                (re-search-backward "{")
+                (forward-line -1)
+                (setq cur-indent (current-column ))
+                (setq idt 1)
+                )
+            )
+
+          (forward-line -1)
+          (while (looking-at "^$")
+            (progn
+              (forward-line -1)
+              )
+            )
+          (if (or (looking-at ".*{$")
+                  (looking-at ".*specification.*$")
+                  (looking-at ".*action.*$"))
+              (progn
+                (setq cur-indent (+ (current-indentation) default-tab-width))
+                (setq idt 1)
+                )
+            )
+          (if (not idt)
+              (progn
+                (setq cur-indent (current-indentation))
+                (setq idt 1)
+                )
+            )
+          )
+        )
+      (let ((d))
+        (progn
+          (setq d (- cur-col (current-indentation)))
+          (if idt
+              (indent-line-to cur-indent)
+            (indent-line-to 0)
+            )
+          (if (> d 0)
+              (forward-char d)
+            )
+          (if (< (current-column) cur-indent)
+              (move-to-column cur-indent)
+            )
+          )
+        )
+      )
+    )
+  )
 
 (define-derived-mode cml-mode fundamental-mode "cml"
   "major mode for editing cml language code."
