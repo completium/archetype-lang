@@ -10,6 +10,7 @@ theory Types
   type uint    = uint32
   type tez     = uint32
   type date    = int
+  type string  = int
 
   constant max_uint : int = UInt32.max_uint32
 
@@ -74,15 +75,15 @@ theory Contract
 end
 
 (* non ghost map *)
-module Ngmap
+module Map
 
   use int.Int
 
-  type ngmap 'value = int -> 'value
+  type map 'value = int -> 'value
 
-  let function get (f: ngmap 'value) (x: int) : 'value = f x
+  let function get (f: map 'value) (x: int) : 'value = f x
 
-  let function set (f: ngmap 'value) (x: int) (v: 'value) : ngmap 'value =
+  let function set (f: map 'value) (x: int) (v: 'value) : map 'value =
     fun (y : int) -> if y = x then v else f y
 
 end
@@ -103,13 +104,25 @@ theory Asset
 
   use Types
   use Contract
-  use Ngmap
+  use Map
 
-  predicate mem (a : 'a) (c : list 'a) = Mem.mem a c
+  let rec predicate mem (k : int) (a : list int) : bool =
+    match a with
+    | Cons e tl ->
+      if e = k
+      then true
+      else mem k tl
+    | Nil -> false
+    end
 
   let function length (c : list 'a) = length c
 
   let function add (a : 'a) (c : list 'a) = c ++ (Cons a Nil)
+
+  let addifnotexist (a : int) (c : list int) : list int =
+  if mem a c
+  then c
+  else c ++ (Cons a Nil)
 
   let rec function remove (a : 'a)
                           (eq : 'a -> 'a -> bool)
@@ -129,7 +142,7 @@ theory Asset
   let ghost function subset (c1 c2 : list 'a)
   = Fset.subset (elements c1) (elements c2)
 
-  predicate is_empty (c : list 'a) = forall m : 'a. not (mem m c)
+  predicate is_empty (c : list int) = forall m : int. not (mem m c)
 
   let function nth (i : int) (default : 'a) (c : list 'a) : 'a
   requires { 0 <= i < length c }
@@ -141,6 +154,14 @@ theory Asset
   (* should not be ghost *)
   let ghost function sum (c : list 'a) (f : 'a -> int)
   = FsetSum.sum (elements c) f
+
+  let rec fold (f : {'a} -> 'k -> 'a)
+               (acc : {'a})
+               (l : list 'k) : 'a =
+  match l with
+  | Cons e tl -> fold f (f acc e) tl
+  | Nil -> acc
+  end
 
 end
 
@@ -181,7 +202,7 @@ theory Sum
 end
 
 
-theory When
+(*theory When
 
   use Contract
   use list.List
@@ -209,4 +230,4 @@ theory When
   end
 
 
-end
+end*)

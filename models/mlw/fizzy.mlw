@@ -1,0 +1,105 @@
+theory Fizzy
+
+  use cml3.Contract
+  use cml3.Types
+  use cml3.Map
+  use cml3.Asset
+  use int.Int
+  use list.List
+
+  type status =
+  | Created
+  | Before
+  | After
+  | Cancelled
+  | FlightCancelled
+  | Redirected
+  | Diverted
+
+ type storage = {
+           owner        : address;
+   (* internal insruance key generator *)
+   ikey         : int;
+   (* asset key lists  *)
+   insurances   : list string;
+   flights      : list string;
+   (* insurance fields *)
+   limit        : map date;
+   premium      : map tez;
+   indemnity    : map tez;
+   stat         : map status;
+   productid    : map string;
+   (* flight fields *)
+   finsurances  : map (list string);
+ } (*with { owner = 0; ikey = 0; insurances = Nil; flights = Nil; }*)
+
+ let addflightinsurance  (e   : env)
+                         (s   : storage)
+                         (fi  : string)
+                         (li  : date)
+                         (pre : tez)
+                         (ind : tez)
+                         (pro : string) : (env, storage)
+   =
+   if caller e = s.owner
+   then
+     let f = fi in
+     let s = { s with
+       flights = addifnotexist fi s.flights;
+       (* add insurance *)
+       insurances = add s.ikey s.insurances;
+       limit      = set s.limit f li;
+       premium    = set s.premium f pre;
+       indemnity  = set s.indemnity f ind;
+       stat       = set s.stat f Created;
+       productid  = set s.productid f pro;
+       (* update finsurance *)
+       finsurances = set s.finsurances fi (add s.ikey (get s.finsurances f));
+       ikey        = s.ikey + 1
+    } in (e,s)
+  else (e,s)
+
+ let updatestatus (e: {env})
+                  (s: {storage})
+                  (fk : string)
+                  (arrival : date) : (env, storage) diverges =
+   if caller e = s.owner
+   then
+     let (e,s) = fold (fun acc k ->
+       match get s.stat k with
+       | Created ->
+         let (e,s) = acc in
+         if arrival > (get s.limit k)
+         then
+           let s = { s with
+             stat = set s.stat k After
+           } in
+           (e,s)
+         else acc
+       | _ -> acc
+       end
+     ) (e,s) (get s.finsurances fk) in
+     (e,s)
+   else (e, s)
+
+ let manual (e  : {env})
+            (s  : {storage})
+            (fk : string)
+            (pr : string)
+            (st : status) : (env, storage) =
+ if caller e = s.owner
+ then
+   let (e,s) =
+     fold (fun acc k ->
+       match get s.stat k with
+       | Created ->
+         let s = { s with
+          stat = set s.stat k st;
+         } in (e,s)
+       | _ -> (e,s)
+       end
+     ) (e,s) (get s.finsurances fk) in
+   (e,s)
+ else (e,s)
+
+end
