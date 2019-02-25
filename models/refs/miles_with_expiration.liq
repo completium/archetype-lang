@@ -22,11 +22,11 @@ let[@inline] get_admin (s: storage) : address = s.admin
 
 let[@inline] set_admin (s: storage) (v: address) : storage = s.admin <- v
 
-let[@inline] get_mile (p: storage * string) : mile =
+let[@inline] get_mile (p: storage * string) : (string * mile) =
   let s = get p 0 in
   let v = get p 1 in
   begin match Map.find v (s.mile_col) with
-    | Some k -> k
+    | Some k -> (v, k)
     | None -> Current.failwith ("not found")
   end
 
@@ -36,15 +36,17 @@ let mk_mile (p : nat * timestamp) : mile =
     expiration = get p 1;
   }
 
-let[@inline] get_owner (p: storage * address) : owner =
+let[@inline] get_owner (p: storage * address) : (address * owner) =
   let s = get p 0 in
   let v = get p 1 in
   begin match Map.find v (s.owner_col) with
-    | Some k -> k
+    | Some k -> (v, k)
     | None -> Current.failwith ("not found")
   end
 
 let mk_owner (p : string list) : owner = p
+
+let to_key (x, _) = x
 
 let[@inline] addifnotexists_owner (p: storage * address * string list) : storage =
   let s = get p 0 in
@@ -59,7 +61,7 @@ let[@inline] add_owner_miles (p : storage * string * mile * address) : storage =
   let mile_key = get p 1 in
   let mile = get p 2 in
   let owner_key = get p 3 in
-  let owner = get_owner (s, owner_key) in
+  let owner_key, owner = get_owner (s, owner_key) in
   if (Map.mem mile_key s.mile_col)
   then failwith "mile already exists.";
   let s = s.mile_col <- Map.update mile_key (Some mile) s.mile_col in
@@ -73,5 +75,5 @@ let%entry add (p : address * string * nat * timestamp) (s : storage) =
   let newmile = mk_mile (newmile_amount, newmile_expiration) in
 
   let s = addifnotexists_owner (s, ow, []) in
-  let s = add_owner_miles (s, newmile_key, newmile, ow) in
+  let s = add_owner_miles (s, newmile_key, newmile, to_key (get_owner (s, ow))) in
   (empty_ops, s)
