@@ -6,6 +6,39 @@ theory Fizzy
   use cml3.Asset
   use int.Int
   use list.List
+  use list.Append
+  use option.Option
+
+  (* TRACES ********************************************************************)
+
+  type entry =
+  | Addflightinsurance
+  | Updatestatus
+  | Manual
+
+  (* asset type is built with asset key value *)
+  type asset =
+  | Insurance string
+  | Flight string
+
+  type field =
+  | Limit
+  | Premium
+  | Indemnity
+  | Stat
+  | Product
+  | Insurances
+
+  type action =
+  | Add
+  | Rm
+  | Get
+  | Update (list field)
+  | Loop
+
+  type traces = list (entry, asset, action)
+
+  (* ************************************************************************ *)
 
   type status =
   | Created
@@ -39,8 +72,9 @@ theory Fizzy
                          (li  : date)
                          (pre : tez)
                          (ind : tez)
-                         (pro : string) : (env, storage)
+                         (pro : string) : (traces, env, storage)
    =
+   let tr = Nil in
    if caller e = s.owner
    then
      let f = fi in
@@ -56,50 +90,58 @@ theory Fizzy
        (* update finsurance *)
        finsurances = set s.finsurances fi (add s.ikey (get s.finsurances f));
        ikey        = s.ikey + 1
-    } in (e,s)
-  else (e,s)
+    } in
+    let tr = tr ++ (Cons (Addflightinsurance, Insurance (s.ikey-1), Add) Nil) in
+    let tr = tr ++ (Cons (Addflightinsurance, Flight f, Add) Nil) in
+    (tr,e,s)
+  else (tr,e,s)
 
  let updatestatus (e: {env})
                   (s: {storage})
                   (fk : string)
-                  (arrival : date) : (env, storage) diverges =
+                  (arrival : date) : (traces, env, storage) diverges =
+   let tr = Nil in
    if caller e = s.owner
    then
-     let (e,s) = fold (fun acc k ->
+     let (tr, e, s) = fold (fun acc k ->
        match get s.stat k with
        | Created ->
-         let (e,s) = acc in
+         let (tr, e, s) = acc in
          if arrival > (get s.limit k)
          then
            let s = { s with
              stat = set s.stat k After
            } in
-           (e,s)
+           let tr = tr ++ (Cons (Updatestatus, Insurance k, Update (Cons Stat Nil)) Nil) in
+           (tr,e,s)
          else acc
        | _ -> acc
        end
-     ) (e,s) (get s.finsurances fk) in
-     (e,s)
-   else (e, s)
+     ) (tr, e, s) (get s.finsurances fk) in
+     (tr, e, s)
+   else (tr, e, s)
 
  let manual (e  : {env})
             (s  : {storage})
             (fk : string)
             (pr : string)
-            (st : status) : (env, storage) =
+            (st : status) : (traces, env, storage) =
+ let tr = Nil in
  if caller e = s.owner
  then
-   let (e,s) =
+   let (tr, e, s) =
      fold (fun acc k ->
        match get s.stat k with
        | Created ->
          let s = { s with
           stat = set s.stat k st;
-         } in (e,s)
-       | _ -> (e,s)
+         } in
+         let tr = tr ++ (Cons (Manual, Insurance k, Update (Cons Stat Nil)) Nil) in
+         (tr, e, s)
+       | _ -> (tr, e, s)
        end
-     ) (e,s) (get s.finsurances fk) in
-   (e,s)
- else (e,s)
+     ) (tr, e, s) (get s.finsurances fk) in
+   (tr, e, s)
+ else (tr, e, s)
 
 end
