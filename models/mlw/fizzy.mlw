@@ -116,36 +116,43 @@ theory Fizzy
     let tr = tr ++ mk_trace Addflightinsurance (Insurance (s.ikey-1)) Add in
     let tr = tr ++ mk_trace Addflightinsurance (Flight f) Add in
     (tr, ops, s)
-  else (tr, ops, s)
+  else (tr, Nil, s)
+
+ let updatestatus_loop1 acc k
+ ensures {
+   let _,tr_old,_ = acc in
+   let _,tr,_     = result in
+   tr = tr_old
+ }
+ =
+   let (tr, ops, s) = acc in
+   match get s.stat k with
+   | Created ->
+     let (tr, ops, s) = acc in
+     if (*arrival*) 1 > get s.limit k
+     then
+       let s = { s with
+         stat = set s.stat k After
+       } in
+       let tr = tr ++ mk_trace Updatestatus (Insurance k) (Update Stat) in
+       (tr, ops, s)
+     else (tr, ops, s)
+   | _ -> (tr, ops, s)
+   end
 
  let updatestatus (e: {env})
                   (s: {storage})
                   (fk : string)
                   (arrival : date) : (traces, transfers, storage)
-   ensures { let tr,_,_ = result in
+   ensures { let tr, _, _  = result in
              forall a:action. action_performed_by e tr a s.owner }
-   ensures { let _,ops,_ = result in is_void ops  }
+   ensures { let _, ops, _ = result in is_void ops  }
    =
    let tr = Nil in
    let ops = Nil in
    if caller e = s.owner
    then
-     let (tr, ops, s) = fold (fun acc k ->
-       let (tr, ops, s) = acc in
-       match get s.stat k with
-       | Created ->
-         let (tr, ops, s) = acc in
-         if arrival > (get s.limit k)
-         then
-           let s = { s with
-             stat = set s.stat k After
-           } in
-           let tr = tr ++ mk_trace Updatestatus (Insurance k) (Update Stat) in
-           (tr, ops, s)
-         else (tr, ops, s)
-       | _ -> (tr, ops, s)
-       end
-     ) (tr, ops, s) (get s.finsurances fk) in
+     let (tr, ops, s) = fold updatestatus_loop1 (tr, ops, s) (get s.finsurances fk) in
      (tr, ops, s)
    else (tr, ops, s)
 
@@ -156,7 +163,7 @@ theory Fizzy
             (st : status) : (traces, transfers, storage)
    ensures { let tr,_,_ = result in
              forall a:action. action_performed_by e tr a s.owner }
-   ensures { let _,ops,_ = result in is_void ops  }
+   ensures { let _,ops,_ = result in is_void ops }
    =
    let ops = Nil in
    let tr = Nil in
