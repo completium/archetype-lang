@@ -157,7 +157,8 @@ theory Asset
 
   let rec fold (f : {'a} -> 'k -> 'a)
                (acc : {'a})
-               (l : list 'k) : 'a =
+               (l : list 'k) : 'a
+  variant { l } =
   match l with
   | Cons e tl -> fold f (f acc e) tl
   | Nil -> acc

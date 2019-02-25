@@ -125,7 +125,7 @@ theory Fizzy
    ensures { let tr,_,_ = result in
              forall a:action. action_performed_by e tr a s.owner }
    ensures { let _,ops,_ = result in is_void ops  }
-   diverges =
+   =
    let tr = Nil in
    let ops = Nil in
    if caller e = s.owner
@@ -157,7 +157,7 @@ theory Fizzy
    ensures { let tr,_,_ = result in
              forall a:action. action_performed_by e tr a s.owner }
    ensures { let _,ops,_ = result in is_void ops  }
-   diverges =
+   =
    let ops = Nil in
    let tr = Nil in
    if caller e = s.owner
