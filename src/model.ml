@@ -330,16 +330,20 @@ type specification = {
 
 type name = lident option * lident
 
-type transaction = {
+type ('id,'typ,'pattern,'term) gen_transaction = {
   name         : lident;
-  args         : arg list;
+  args         : (('typ, bval) gen_decl) list;
   calledby     : rexpr option;
   condition    : label_pterm list option;
-  transition   : (liqualid option * sexpr * (lident * pterm option * pterm option) list) option; (* id * from * (to, condition, action)) *)
+  transition   : (liqualid option * sexpr * (lident * pterm option * pterm option) list) option;
+                 (*            id *  from * (    to *    condition *       action)) *)
   spec         : specification option;
-  action       : pterm option;
+  action       : ('id,'typ,'pattern,'term) poly_pterm loced option;
   loc          : Location.t [@opaque];
 }
+[@@deriving show {with_path = false}]
+
+type transaction = (lident,ptyp,pattern,pterm) gen_transaction
 [@@deriving show {with_path = false}]
 
 type state_item = {

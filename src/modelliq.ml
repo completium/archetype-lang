@@ -244,8 +244,10 @@ let vtyp_to_acronym = function
   | VTaddress    -> "add"
   | VTcurrency _ -> "tez"
 
+let mk_empty_list() = mk_expr (str_to_eident ["Nil"])
+
 let empty_cont_to_expr = function
-  | Emptylist    _         -> mk_expr (str_to_eident ["Nil"])
+  | Emptylist    _         -> mk_empty_list()
   | EmptyMap     (_,_) ->
     mk_expr (str_to_eidapp ["empty_map"] [mk_expr (Etuple [])])
   | EmptySet     _         ->
@@ -410,8 +412,6 @@ let rec pterm_to_expr (p : Modelws.pterm) =  {
             | _ -> raise (Anomaly "to_qualid: cannot convert to qualid ") in
           Eident (to_qualid (x, y))
         )
-
-
       (* TODO : continue mapping *)
       | _ -> raise (Anomaly ("pterm_to_expr : "^(Modelws.show_pterm p)))
     end;
@@ -462,8 +462,18 @@ let rec mk_lambda (args : (storage_field_type,bval) gen_decl list) body : Modelw
   | a::tl -> mkloc a.loc (Plambda (a.name, a.typ, mk_lambda tl body))
   | []    -> body
 
+let mk_empty_ops () =
+  Dlet(str_to_ident "empty_ops", false, Expr.RKnone, mk_empty_list())
+
 let mk_function_decl (f : function_ws) =
   let body = mk_lambda f.args f.body in
+  Dlet (mk_ident f.name, false, Expr.RKnone, pterm_to_expr body)
+
+let mk_transaction (f : transaction_ws) =
+  let action = match f.action with
+    | None -> raise (Modelinfo.UnsupportedFeature "no action in transaction")
+    | Some e -> e in
+  let body = mk_lambda f.args action in
   Dlet (mk_ident f.name, false, Expr.RKnone, pterm_to_expr body)
 
 (* returns a list of definition *)
@@ -471,13 +481,16 @@ let modelws_to_modelliq (info : info) (m : model_with_storage) =
   Liq_printer.set_entries
     { !Liq_printer.entries with
       init = Some "init";
+      entries = List.map (fun (x : transaction_ws) -> unloc (x.name)) m.transactions;
       inlines = List.map (fun (x : function_ws) -> unloc (x.name)) m.functions;
       dummies = List.map (fun (n,(v,_)) -> (n,v)) info.dummy_vars;
     };
   []
+  (*  |> (fun x -> x @ [mk_empty_ops()])*)
   |> (fun x -> List.fold_left (fun acc d -> acc @ [mk_dummy_decl d]) x info.dummy_vars)
   |> (fun x -> List.fold_left (fun acc e -> acc @ [mk_enum_decl e]) x m.enums)
   |> (fun x -> x @ mk_records m.records)
   |> (fun x -> x @ [mk_storage_decl m.storage])
   |> (fun x -> x @ [mk_init_storage info m.storage])
   |> (fun x -> List.fold_left (fun acc f -> acc @ [mk_function_decl f]) x m.functions)
+  |> (fun x -> List.fold_left (fun acc f -> acc @ [mk_transaction f]) x m.transactions);

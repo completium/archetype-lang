@@ -61,15 +61,14 @@ type storage = {
 
 let empty_storage = { fields = []; invariants = [] }
 
-type transaction_unloc = {
+type transaction = {
     name         : lident;
-    args         : arg list;
+    args         : ((storage_field_type, bval) gen_decl) list;
     requires     : require list;
     spec         : specification option;
+    body         : pterm;
+    loc          : Location.t [@opaque];
 }
-[@@deriving show {with_path = false}]
-
-type transaction = transaction_unloc loced
 [@@deriving show {with_path = false}]
 
 type enum_unloc = {
@@ -105,13 +104,16 @@ type pterm = (lident,storage_field_type,pattern,pterm) poly_pterm loced
 type function_ws = (lident,storage_field_type,pattern,pterm) gen_function
 [@@deriving show {with_path = false}]
 
+type transaction_ws = (lident,storage_field_type,pattern,pterm) gen_transaction
+[@@deriving show {with_path = false}]
+
 type model_with_storage = {
   name         : lident;
   enums        : enum list;
   records      : record list;
   storage      : storage;
   functions    : function_ws list;
-  transactions : transaction list;
+  transactions : transaction_ws list;
 }
 [@@deriving show {with_path = false}]
 
@@ -773,6 +775,39 @@ let mk_getset_functions info (mws : model_with_storage) = {
     )
 }
 
+let mk_transaction name args spec action loc : transaction_ws = {
+  name         = name;
+  args         = args;
+  calledby     = None;
+  condition    = None;
+  transition   = None;
+  spec         = spec;
+  action       = action;
+  loc          = loc;
+  }
+
+let mk_common_functions _info (mws : model_with_storage) = {
+  mws with
+  functions = mws.functions(* @ (
+      mk_now_function()
+                              )*)
+}
+
+let transaction_to_transaction_ws _info (t : Model.transaction) : transaction_ws =
+  let name = t.name in
+  let args = List.map mk_arg [("p", Some (Flocal (lstr "unit"))); (* compute real args *)
+                              ("s", Some (Flocal (lstr "storage")))] in
+  let act = loc_pterm (Ptuple[Pvar "empty_ops"; Pvar "s"]) in
+  mk_transaction name args None (Some act) dummy
+
+let mk_transactions info (m : model_unloc)  mws = {
+  mws with
+  transactions = mws.transactions @ (
+      List.fold_left (fun acc (t : Model.transaction) -> (transaction_to_transaction_ws info t)::acc)
+        [] m.transactions
+    )
+}
+
 let model_to_modelws (info : info) (m : model) : model_with_storage =
   (*Format.printf "%a\n" Modelinfo.pp_info info;*)
   let m = unloc m in
@@ -785,4 +820,6 @@ let model_to_modelws (info : info) (m : model) : model_with_storage =
     transactions = [];
   }
   |> (compile_operations info)
+  |> (mk_common_functions info)
   |> (mk_getset_functions info)
+  |> (mk_transactions info m)

@@ -11,6 +11,7 @@ exception CannotConvert          of string
 exception StringUnsupported
 exception ExpectsOneInitialState of lident
 exception UnsupportedPolicy      of string * string
+exception UnsupportedFeature     of string
 exception NotFound               of string
 exception Anomaly                of string
 

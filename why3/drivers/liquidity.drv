@@ -2,6 +2,8 @@
 
 printer "liquidity"
 
+prelude "[%%version 0.5]\n
+let[@inline] empty_ops = ([] : operation list)"
 
 module HighOrd
   syntax type (->) "%1 -> %2"
