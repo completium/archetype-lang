@@ -506,7 +506,7 @@ let get_transaction_args (args : ParseTree.args)  =
   List.fold_left (fun acc (i : lident_typ) ->
       let name, typ, _ = i in
       mk_decl dummy (name, typ, None)::acc
-    ) [] args
+    ) [] (args |> List.rev)
 
 let get_transaction_calledby items : rexpr option =
   List.fold_left (fun acc i ->
@@ -573,7 +573,7 @@ let get_transactions decls =
       (let loc, v = deloc i in
        match v with
        | Dtransaction (name, args, items, _) ->
-         {
+         acc @ [{
            name = name;
            args = get_transaction_args args;
            calledby = get_transaction_calledby items;
@@ -582,7 +582,7 @@ let get_transactions decls =
            spec = get_transaction_specification items;
            action = get_transaction_action items;
            loc = loc;
-         }::acc
+         }]
        | _ -> acc)
     ) [] decls
 

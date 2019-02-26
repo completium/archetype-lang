@@ -208,6 +208,12 @@ let get_dummy_for info value =
 
 let is_partition id info = List.mem_assoc (unloc id) info.partitions
 
+let get_asset_vars_id_typs aname info =
+  let a = unloc aname in
+  if List.mem_assoc a info.asset_vars
+  then List.assoc a info.asset_vars
+  else raise (NotFound a)
+
 let get_asset_vars_typs aname info =
   let a = unloc aname in
   if List.mem_assoc a info.asset_vars

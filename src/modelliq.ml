@@ -350,6 +350,18 @@ let rec pterm_to_expr (p : Modelws.pterm) =  {
          | And -> Eand (pterm_to_expr lhs, pterm_to_expr rhs)
          | Or -> Eor (pterm_to_expr lhs, pterm_to_expr rhs)
          | _ -> raise (Anomaly ("pterm_to_expr: logical")))
+      | Pcomp (op, lhs, rhs) ->
+        (let l = pterm_to_expr lhs in
+         let r = pterm_to_expr rhs in
+         Eidapp (Qident (
+         (match op with
+           | Equal -> "="
+           | Nequal -> "<>"
+           | Gt -> ">"
+           | Ge -> ">="
+           | Lt -> "<"
+           | Le -> "<="
+         ) |> op_infix |> dumloc |> mk_ident), [l; r]))
       | Parith (op, lhs, rhs) ->
         (let l = pterm_to_expr lhs in
          let r = pterm_to_expr rhs in
