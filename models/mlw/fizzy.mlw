@@ -7,6 +7,7 @@ theory Fizzy
   use int.Int
   use list.List
   use list.Append
+  use list.List
   use option.Option
   use list.Mem
 
@@ -51,8 +52,8 @@ theory Fizzy
     action = c;
   }) Nil
 
-  predicate action_performed_by (e : env) (tr : traces) (a : action) (p : address) =
-    (forall x. Mem.mem x tr -> action x = a -> caller e = p)
+  predicate action_performed_by (e : env) (x : trace) (a : action) (p : address) =
+            action x = a /\ caller e = p
 
   predicate is_void (l : list 'a) = l = Nil
 
@@ -92,7 +93,8 @@ theory Fizzy
                          (ind : tez)
                          (pro : string) : (traces, transfers, storage)
    ensures { let tr,_,_ = result in
-             forall a:action. action_performed_by e tr a s.owner  }
+             forall x : trace. Mem.mem x tr ->
+             exists a:action. action_performed_by e x a s.owner  }
    ensures { let _,ops,_ = result in is_void ops  }
    =
    let tr = Nil in
@@ -118,12 +120,18 @@ theory Fizzy
     (tr, ops, s)
   else (tr, Nil, s)
 
-  let rec updatestatus_loop1 (arrival: date)
+  let rec updatestatus_loop1 (e : env) (arrival: date)
                             (acc : (traces, transfers, storage))
                             (l : list string)
    variant { l }
    requires { let _, ops, _ = acc in is_void ops }
+   requires { let tr,_,s = acc in
+              forall x : trace. Mem.mem x tr ->
+              exists a:action. action_performed_by e x a s.owner }
    ensures  { let _, ops, _ = result in is_void ops }
+   ensures  { let tr, _, s  = result in
+              forall x : trace. Mem.mem x tr ->
+              exists a:action. action_performed_by e x a s.owner }
    =
    match l with
    | Cons k tl ->
@@ -142,7 +150,7 @@ theory Fizzy
           else (tr, ops, s)
         | _ -> (tr, ops, s)
         end) in
-     updatestatus_loop1 arrival acc tl
+     updatestatus_loop1 e arrival acc tl
    | Nil -> acc
    end
 
@@ -150,24 +158,32 @@ theory Fizzy
                    (s: {storage})
                    (fk : string)
                    (arrival : date) : (traces, transfers, storage)
-   ensures { let tr, _, _  = result in
-             forall a:action. action_performed_by e tr a s.owner }
+   ensures {  let tr, _, s  = result in
+              forall x : trace. Mem.mem x tr ->
+              exists a:action. action_performed_by e x a s.owner }
    ensures { let _, ops, _ = result in is_void ops  }
    =
    let tr = Nil in
    let ops = Nil in
    if caller e = s.owner
    then
-     let (tr, ops, s) = updatestatus_loop1 arrival (tr, ops, s) (get s.finsurances fk) in
+     let (tr, ops, s) =
+     updatestatus_loop1 e arrival (tr, ops, s) (get s.finsurances fk) in
      (tr, ops, s)
    else (tr, ops, s)
 
- let rec manual_loop1 (st : status)
+ let rec manual_loop1 (e:env) (st : status)
                   (acc : (traces, transfers, storage))
                   (l : list string) : (traces, transfers, storage)
    variant  { l }
+   requires { let tr,_,s = acc in
+              forall x : trace. Mem.mem x tr ->
+              exists a:action. action_performed_by e x a s.owner }
    requires { let _,ops,_ = acc in is_void ops }
    ensures  { let _,ops,_ = result in is_void ops }
+   ensures { let tr,_,s = result in
+             forall x : trace. Mem.mem x tr ->
+             exists a:action. action_performed_by e x a s.owner }
    =
    match l with
    | Cons k tl ->
@@ -182,7 +198,7 @@ theory Fizzy
             (tr, ops, s)
           | _ -> (tr, ops, s)
          end) in
-     manual_loop1 st acc tl
+     manual_loop1 e st acc tl
    | Nil -> acc
    end
 
@@ -191,14 +207,15 @@ theory Fizzy
             (fk : string)
             (st : status) : (traces, transfers, storage)
    ensures { let tr,_,_ = result in
-             forall a:action. action_performed_by e tr a s.owner }
+             forall x : trace. Mem.mem x tr ->
+             exists a:action. action_performed_by e x a s.owner }
    ensures { let _,ops,_ = result in is_void ops }
    =
    let ops = Nil in
    let tr = Nil in
    if caller e = s.owner
    then
-     let (tr, ops, s) = manual_loop1 st (tr, ops, s) (get s.finsurances fk) in
+     let (tr, ops, s) = manual_loop1 e st (tr, ops, s) (get s.finsurances fk) in
      (tr, ops, s)
    else (tr, ops, s)
 
