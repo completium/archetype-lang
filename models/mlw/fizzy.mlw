@@ -52,6 +52,9 @@ theory Fizzy
     action = c;
   }) Nil
 
+  predicate performed_only_by  (tr : traces) (e : env)  (a:action) (r:address) =
+  forall x:trace. action x = a -> Mem.mem x tr -> caller e = r
+
   predicate is_void (l : list 'a) = l = Nil
 
   (* ************************************************************************ *)
@@ -86,9 +89,7 @@ theory Fizzy
    mutable ops          : transfers;
  } (*with { owner = 0; ikey = 0; insurances = Nil; flights = Nil;  }*)
    invariant { is_void ops }
-   invariant { forall a:action, x:trace. action x = a -> Mem.mem x tr ->
-               caller e = owner
-             }
+   invariant { forall a:action. performed_only_by tr e a owner }
 
  let addflightinsurance (s   : storage)
                         (fi  : string)
