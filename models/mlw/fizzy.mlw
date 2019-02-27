@@ -52,8 +52,8 @@ theory Fizzy
     action = c;
   }) Nil
 
-  predicate action_performed_only_by (e : env) (x : trace) (a : action) (p : address) =
-            action x = a /\ caller e = p
+  predicate performed_only_by  (tr : traces) (e : env)  (a:action) (r:address) =
+  forall x:trace. action x = a -> Mem.mem x tr -> caller e = r
 
   predicate is_void (l : list 'a) = l = Nil
 
@@ -69,156 +69,93 @@ theory Fizzy
   | Diverted
 
  type storage = {
-           owner        : address;
+   mutable owner        : address;
    (* internal insruance key generator *)
-   ikey         : int;
+   mutable ikey         : int;
    (* asset key lists  *)
-   insurances   : list string;
-   flights      : list string;
+   mutable insurances   : list string;
+   mutable flights      : list string;
    (* insurance fields *)
-   limit        : map date;
-   premium      : map tez;
-   indemnity    : map tez;
-   stat         : map status;
-   productid    : map string;
+   mutable limit        : map date;
+   mutable premium      : map tez;
+   mutable indemnity    : map tez;
+   mutable stat         : map status;
+   mutable productid    : map string;
    (* flight fields *)
-   finsurances  : map (list string);
- } (*with { owner = 0; ikey = 0; insurances = Nil; flights = Nil; }*)
+   mutable finsurances  : map (list string);
+   (* others *)
+   mutable e            : env;
+   mutable tr           : traces;
+   mutable ops          : transfers;
+ } (*with { owner = 0; ikey = 0; insurances = Nil; flights = Nil;  }*)
+   invariant { is_void ops }
+   invariant { forall a:action. performed_only_by tr e a owner }
 
- let addflightinsurance  (e   : env)
-                         (s   : storage)
-                         (fi  : string)
-                         (li  : date)
-                         (pre : tez)
-                         (ind : tez)
-                         (pro : string) : (traces, transfers, storage)
-   ensures { let tr,_,_ = result in
-             forall x : trace. Mem.mem x tr ->
-             exists a:action. action_performed_only_by e x a s.owner  }
-   ensures { let _,ops,_ = result in is_void ops  }
+ let addflightinsurance (s   : storage)
+                        (fi  : string)
+                        (li  : date)
+                        (pre : tez)
+                        (ind : tez)
+                        (pro : string) : unit
    =
-   let tr = Nil in
-   let ops = Nil in
-   if caller e = s.owner
-   then
+   if caller s.e = s.owner
+   then (
      let f = fi in
-     let s = { s with
-       flights = addifnotexist fi s.flights;
-       (* add insurance *)
-       insurances = add s.ikey s.insurances;
-       limit      = set s.limit f li;
-       premium    = set s.premium f pre;
-       indemnity  = set s.indemnity f ind;
-       stat       = set s.stat f Created;
-       productid  = set s.productid f pro;
-       (* update finsurance *)
-       finsurances = set s.finsurances fi (add s.ikey (get s.finsurances f));
-       ikey        = s.ikey + 1
-    } in
-    let tr = tr ++ mk_trace Addflightinsurance (Insurance (s.ikey-1)) Add in
-    let tr = tr ++ mk_trace Addflightinsurance (Flight f) Add in
-    (tr, ops, s)
-  else (tr, Nil, s)
+     s.flights <- addifnotexist fi s.flights;
+     (* add insurance *)
+     s.insurances <- add s.ikey s.insurances;
+     s.limit      <- set s.limit f li;
+     s.premium    <- set s.premium f pre;
+     s.indemnity  <- set s.indemnity f ind;
+     s.stat       <- set s.stat f Created;
+     s.productid  <- set s.productid f pro;
+     (* update finsurance *)
+     s.finsurances <- set s.finsurances fi (add s.ikey (get s.finsurances f));
+     s.ikey        <- s.ikey + 1;
+     s.tr          <- s.tr ++ mk_trace Addflightinsurance (Insurance (s.ikey-1)) Add;
+     s.tr          <- s.tr ++ mk_trace Addflightinsurance (Flight f) Add)
+   else ()
 
-  let rec updatestatus_loop1 (e : env) (arrival: date)
-                            (acc : (traces, transfers, storage))
-                            (l : list string)
-   variant { l }
-   requires { let _, _, s = acc in caller e = s.owner }
-   requires { let _, ops, _ = acc in is_void ops }
-   requires { let tr,_,s = acc in
-              forall x : trace. Mem.mem x tr ->
-              exists a:action. action_performed_only_by e x a s.owner }
-   ensures  { let _, ops, _ = result in is_void ops }
-   ensures  { let tr, _, s  = result in
-              forall x : trace. Mem.mem x tr ->
-              exists a:action. action_performed_only_by e x a s.owner }
-   =
-   match l with
-   | Cons k tl ->
-     let acc =
-       (let (tr, ops, s) = acc in
-        match get s.stat k with
-        | Created ->
-          let (tr, ops, s) = acc in
-          if arrival > get s.limit k
-          then
-            let s = { s with
-              stat = set s.stat k After
-            } in
-            let tr = tr ++ mk_trace Updatestatus (Insurance k) (Update Stat) in
-            (tr, ops, s)
-          else (tr, ops, s)
-        | _ -> (tr, ops, s)
-        end) in
-     updatestatus_loop1 e arrival acc tl
-   | Nil -> acc
-   end
+ let updatestatus (s       : storage)
+                  (fk      : string)
+                  (arrival : string) : unit
+ raises { NotFound }
+ =
+ if caller s.e = s.owner
+ then
+   let l = get s.finsurances fk in
+   for i=0 to (length l) - 1 do
+     let k = nth i l in
+     match get s.stat k with
+     | Created ->
+       if arrival > get s.limit k
+       then (
+         s.stat <- set s.stat k After;
+         s.tr   <- s.tr ++ mk_trace Updatestatus (Insurance k) (Update Stat);
+       )
+       else ()
+     | _ -> ()
+     end
+   done
+ else ()
 
-  let updatestatus (e: {env})
-                   (s: {storage})
-                   (fk : string)
-                   (arrival : date) : (traces, transfers, storage)
-   ensures {  let tr, _, s  = result in
-              forall x : trace. Mem.mem x tr ->
-              exists a:action. action_performed_only_by e x a s.owner }
-   ensures { let _, ops, _ = result in is_void ops  }
-   =
-   let tr = Nil in
-   let ops = Nil in
-   if caller e = s.owner
-   then
-     let (tr, ops, s) =
-     updatestatus_loop1 e arrival (tr, ops, s) (get s.finsurances fk) in
-     (tr, ops, s)
-   else (tr, ops, s)
-
- let rec manual_loop1 (e:env) (st : status)
-                  (acc : (traces, transfers, storage))
-                  (l : list string) : (traces, transfers, storage)
-   variant  { l }
-   requires { let _, _, s = acc in caller e = s.owner }
-   requires { let tr,_,s = acc in
-              forall x : trace. Mem.mem x tr ->
-              exists a:action. action_performed_only_by e x a s.owner }
-   requires { let _,ops,_ = acc in is_void ops }
-   ensures  { let _,ops,_ = result in is_void ops }
-   ensures { let tr,_,s = result in
-             forall x : trace. Mem.mem x tr ->
-             exists a:action. action_performed_only_by e x a s.owner }
-   =
-   match l with
-   | Cons k tl ->
-       let acc =
-         (let (tr, ops, s) = acc in
-          match get s.stat k with
-          | Created ->
-            let s = { s with
-              stat = set s.stat k st;
-            } in
-            let tr = tr ++ mk_trace Manual (Insurance k) (Update Stat) in
-            (tr, ops, s)
-          | _ -> (tr, ops, s)
-         end) in
-     manual_loop1 e st acc tl
-   | Nil -> acc
-   end
-
- let manual (e  : {env})
-            (s  : {storage})
-            (fk : string)
-            (st : status) : (traces, transfers, storage)
-   ensures { let tr,_,_ = result in
-             forall x : trace. Mem.mem x tr ->
-             exists a:action. action_performed_only_by e x a s.owner }
-   ensures { let _,ops,_ = result in is_void ops }
-   =
-   let ops = Nil in
-   let tr = Nil in
-   if caller e = s.owner
-   then
-     let (tr, ops, s) = manual_loop1 e st (tr, ops, s) (get s.finsurances fk) in
-     (tr, ops, s)
-   else (tr, ops, s)
+ let manual       (s   : storage)
+                  (fk  : string)
+                  (st  : status) : unit
+ raises { NotFound }
+ =
+ if caller s.e = s.owner
+ then
+   let l = get s.finsurances fk in
+   for i=0 to (length l) - 1 do
+     let k = nth i l in
+     match get s.stat k with
+     | Created ->
+       s.stat <- set s.stat k st;
+       s.tr   <- s.tr ++ mk_trace Updatestatus (Insurance k) (Update Stat);
+     | _ -> ()
+     end
+   done
+ else ()
 
 end
