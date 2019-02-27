@@ -98,6 +98,7 @@ theory Asset
   use list.Elements
   use list.Append
   use list.Nth
+  use list.Mem
   use set.Fset
   use option.Option
   use int.Int
@@ -155,6 +156,7 @@ theory Asset
   let ghost function sum (c : list 'a) (f : 'a -> int)
   = FsetSum.sum (elements c) f
 
+  (* not really used *)
   let rec fold (f : {'a} -> 'k -> 'a)
                (acc : {'a})
                (l : list 'k) : 'a
@@ -163,6 +165,9 @@ theory Asset
   | Cons e tl -> fold f (f acc e) tl
   | Nil -> acc
   end
+
+  (*axiom split_mem : forall l : list 'a, x y : 'a.
+   Mem.mem x l \/ x = y <-> Mem.mem x (l ++ (Cons y Nil))*)
 
 end
 

@@ -52,7 +52,7 @@ theory Fizzy
     action = c;
   }) Nil
 
-  predicate action_performed_by (e : env) (x : trace) (a : action) (p : address) =
+  predicate action_performed_only_by (e : env) (x : trace) (a : action) (p : address) =
             action x = a /\ caller e = p
 
   predicate is_void (l : list 'a) = l = Nil
@@ -94,7 +94,7 @@ theory Fizzy
                          (pro : string) : (traces, transfers, storage)
    ensures { let tr,_,_ = result in
              forall x : trace. Mem.mem x tr ->
-             exists a:action. action_performed_by e x a s.owner  }
+             exists a:action. action_performed_only_by e x a s.owner  }
    ensures { let _,ops,_ = result in is_void ops  }
    =
    let tr = Nil in
@@ -124,14 +124,15 @@ theory Fizzy
                             (acc : (traces, transfers, storage))
                             (l : list string)
    variant { l }
+   requires { let _, _, s = acc in caller e = s.owner }
    requires { let _, ops, _ = acc in is_void ops }
    requires { let tr,_,s = acc in
               forall x : trace. Mem.mem x tr ->
-              exists a:action. action_performed_by e x a s.owner }
+              exists a:action. action_performed_only_by e x a s.owner }
    ensures  { let _, ops, _ = result in is_void ops }
    ensures  { let tr, _, s  = result in
               forall x : trace. Mem.mem x tr ->
-              exists a:action. action_performed_by e x a s.owner }
+              exists a:action. action_performed_only_by e x a s.owner }
    =
    match l with
    | Cons k tl ->
@@ -160,7 +161,7 @@ theory Fizzy
                    (arrival : date) : (traces, transfers, storage)
    ensures {  let tr, _, s  = result in
               forall x : trace. Mem.mem x tr ->
-              exists a:action. action_performed_by e x a s.owner }
+              exists a:action. action_performed_only_by e x a s.owner }
    ensures { let _, ops, _ = result in is_void ops  }
    =
    let tr = Nil in
@@ -176,14 +177,15 @@ theory Fizzy
                   (acc : (traces, transfers, storage))
                   (l : list string) : (traces, transfers, storage)
    variant  { l }
+   requires { let _, _, s = acc in caller e = s.owner }
    requires { let tr,_,s = acc in
               forall x : trace. Mem.mem x tr ->
-              exists a:action. action_performed_by e x a s.owner }
+              exists a:action. action_performed_only_by e x a s.owner }
    requires { let _,ops,_ = acc in is_void ops }
    ensures  { let _,ops,_ = result in is_void ops }
    ensures { let tr,_,s = result in
              forall x : trace. Mem.mem x tr ->
-             exists a:action. action_performed_by e x a s.owner }
+             exists a:action. action_performed_only_by e x a s.owner }
    =
    match l with
    | Cons k tl ->
@@ -208,7 +210,7 @@ theory Fizzy
             (st : status) : (traces, transfers, storage)
    ensures { let tr,_,_ = result in
              forall x : trace. Mem.mem x tr ->
-             exists a:action. action_performed_by e x a s.owner }
+             exists a:action. action_performed_only_by e x a s.owner }
    ensures { let _,ops,_ = result in is_void ops }
    =
    let ops = Nil in
