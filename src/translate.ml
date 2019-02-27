@@ -1,20 +1,13 @@
 open Location
 open Model
 open ParseTree
+open Tools
 
 exception ModelError of string * Location.t
 
 type info = {
   assets : string list
 }
-
-let map_option f = function
-  | Some x -> Some (f x)
-  | None -> None
-
-let map_list = function
-  | Some l -> l
-  | None -> []
 
 let builtin_type str =
   match str with
