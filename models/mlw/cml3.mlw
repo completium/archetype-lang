@@ -145,11 +145,12 @@ theory Asset
 
   predicate is_empty (c : list int) = forall m : int. not (mem m c)
 
-  let function nth (i : int) (default : 'a) (c : list 'a) : 'a
+  let nth (i : int) (c : list 'a) : 'a
+  raises { NotFound }
   requires { 0 <= i < length c }
   = match nth i c with
     | Some v -> v
-    | None -> default
+    | None -> raise NotFound
     end
 
   (* should not be ghost *)
