@@ -55,7 +55,7 @@ theory Fizzy
   predicate performed_only_by  (tr : traces) (e : env)  (a:action) (r:address) =
   forall x:trace. action x = a -> Mem.mem x tr -> caller e = r
 
-  predicate may_perform (tr : traces) (tx1 tx2:entry) (a:action) =
+  predicate may_perform (tr : traces) (tx1 tx2:option entry) (a:action) =
   forall x:trace. Mem.mem x tr -> tx1 = tx2 -> action x = a
 
   predicate is_empty (l : list 'a) = l = Nil
@@ -90,14 +90,16 @@ theory Fizzy
    mutable e            : env;
    mutable ops          : transfers;
    mutable tr           : traces;
-   mutable ename        : entry;
- } (*with { owner = 0; ikey = 0; insurances = Nil; flights = Nil;
-          ops = Nil; tr = Nil; ename;
-   }*)
+   mutable ename        : option entry;
+ }
    invariant { forall a:action. performed_only_by tr e a owner }
-   invariant { forall tx:entry. ename = tx -> is_empty ops }
-   invariant { may_perform tr ename Updatestatus (Update Stat) }
-   invariant { may_perform tr ename Manual (Update Stat) }
+   invariant { forall tx:entry. ename = Some tx -> is_empty ops }
+   invariant { may_perform tr ename (Some Updatestatus) (Update Stat) }
+   invariant { may_perform tr ename (Some Manual) (Update Stat) }
+   by { owner = 0; ikey = 0; insurances = Nil; flights = Nil;
+        limit = const 0; premium = const 0; indemnity = const 0;
+        stat = const Created; productid = const 0; finsurances = const Nil;
+        e = empty_env (); ops = Nil; tr = Nil; ename = None }
 (*   invariant { forall x:trace. Mem.mem x tr ->
                action x = Update Stat /\ ename = Updatestatus }*)
 
@@ -113,7 +115,7 @@ theory Fizzy
  raises { NotFound }
  =
  match s.ename with
- | Addflightinsurance ->
+ | Some Addflightinsurance ->
    if caller s.e = s.owner
    then (
      let f = fi in
@@ -131,13 +133,13 @@ theory Fizzy
      s.tr          <- s.tr ++ mk_trace Addflightinsurance (Insurance (s.ikey-1)) Add;
      s.tr          <- s.tr ++ mk_trace Addflightinsurance (Flight f) Add)
    else ()
-  | Updatestatus ->
+  | Some Updatestatus ->
    if caller s.e = s.owner
    then
      let l = get s.finsurances fk in
      for i=0 to (length l) - 1 do
-     invariant { may_perform s.tr s.ename Updatestatus (Update Stat) }
-     invariant { may_perform s.tr s.ename Manual (Update Stat) }
+     invariant { may_perform s.tr s.ename (Some Updatestatus) (Update Stat) }
+     invariant { may_perform s.tr s.ename (Some Manual) (Update Stat) }
        let k = nth i l in
        match get s.stat k with
        | Created ->
@@ -151,13 +153,13 @@ theory Fizzy
        end
      done
    else ()
- | Manual ->
+ | Some Manual ->
    if caller s.e = s.owner
    then
      let l = get s.finsurances fk in
      for i=0 to (length l) - 1 do
-     invariant { may_perform s.tr s.ename Updatestatus (Update Stat) }
-     invariant { may_perform s.tr s.ename Manual (Update Stat) }
+     invariant { may_perform s.tr s.ename (Some Updatestatus) (Update Stat) }
+     invariant { may_perform s.tr s.ename (Some Manual) (Update Stat) }
        let k = nth i l in
        match get s.stat k with
        | Created ->
@@ -167,6 +169,7 @@ theory Fizzy
        end
      done
    else ()
+ | None -> ()
  end
 
 (*

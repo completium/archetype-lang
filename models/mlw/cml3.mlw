@@ -49,6 +49,8 @@ theory Contract
      now_             : date;
   }
 
+  let empty_env () : env = { balance_ = 0; transferred_ = 0; caller_ = 0; now_ = 0 }
+
   let function balance (e: env) : tez = e.balance_
 
   let function transferred (e : env) : tez = e.transferred_
@@ -85,6 +87,8 @@ module Map
 
   let function set (f: map 'value) (x: int) (v: 'value) : map 'value =
     fun (y : int) -> if y = x then v else f y
+
+  let function const (v : 'value) : map 'value = fun _ -> v
 
 end
 
