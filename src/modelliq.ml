@@ -2,6 +2,7 @@ open Model
 open Modelinfo
 open Modelws
 open Location
+open Tools
 
 open Why3
 open Ptree
@@ -431,7 +432,7 @@ let rec pterm_to_expr (p : Modelws.pterm) =  {
 }
 
 and mk_efun args l i t b =
-  let t = Translate.map_option field_type_to_mlwtyp t in
+  let t = map_option field_type_to_mlwtyp t in
   let args = args @ [l, Some (mk_ident i), false, t] in
   if is_lambda b
   then

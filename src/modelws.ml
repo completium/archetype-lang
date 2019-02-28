@@ -1,6 +1,7 @@
 open Location
 open Model
 open Modelinfo
+open Tools
 
 type require =
   | Membership
@@ -62,12 +63,12 @@ type storage = {
 let empty_storage = { fields = []; invariants = [] }
 
 type transaction = {
-    name         : lident;
-    args         : ((storage_field_type, bval) gen_decl) list;
-    requires     : require list;
-    spec         : specification option;
-    body         : pterm;
-    loc          : Location.t [@opaque];
+  name         : lident;
+  args         : ((storage_field_type, bval) gen_decl) list;
+  requires     : require list;
+  spec         : specification option;
+  body         : pterm;
+  loc          : Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]
 
@@ -117,6 +118,12 @@ type model_with_storage = {
 }
 [@@deriving show {with_path = false}]
 
+type asset_function =
+  | Get of string
+  | AddAsset of string
+  | Addifnotexist of string
+  | AddList of string * string
+
 (* asset field type to storage field type *)
 (* This should be modulated/optimized according to asset usage in tx actions *)
 let aft_to_sft info aname iskey fname (typ : ptyp) =
@@ -155,7 +162,7 @@ let mk_asset_field_simple fname =
   { plloc = loc; pldesc = name^"_col" }
 
 let mk_default_field (b : bval option) : Model.pterm option =
-    Translate.map_option
+    map_option
     (fun x -> mkloc (loc x) (Plit x))
     b
 
@@ -393,11 +400,6 @@ let lstr s = mkloc Location.dummy s
 
 let lit_to_pterm l = mkloc (loc l) (Plit l)
 
-let rec mk_qualid q =
-  match q with
-  | Qident i -> Qident (lstr i)
-  | Qdot (b, i) -> Qdot (mk_qualid b, lstr i)
-
 let rec loc_qualid (q : string qualid) : lident qualid =
   match q with
   | Qident s -> Qident (lstr s)
@@ -418,39 +420,25 @@ let rec loc_pattern (p : basic_pattern) : pattern =
     | Mparen p -> Mparen (loc_pattern p)
     | Mghost p -> Mghost (loc_pattern p))
 
+let gen_mapper_pterm p f =
+  Model.poly_pterm_map
+    p
+    (fun x -> unloc x)
+    (fun x y -> mkloc (Location.loc x) y)
+    f
+    id
+    id
+    id
+
 let rec loc_pterm (p : basic_pterm) : pterm =
-  mkloc Location.dummy (
-    match p with
-    | Pif (c,t, Some e) -> Model.Pif (loc_pterm c, loc_pterm t, Some (loc_pterm e))
-    | Pif (c,t, None) -> Model.Pif (loc_pterm c, loc_pterm t, None)
-    | Pfor (id, c, b) -> Model.Pfor (lstr id, loc_pterm c, loc_pterm b)
-    | Passign (a, f, t) -> Model.Passign (a, loc_pterm f, loc_pterm t)
-    | Pfassign l -> Pfassign (List.map (fun (a, (i,j), v) ->
-        (a, (Translate.map_option lstr i, lstr j), loc_pterm v)) l)
-    | Ptransfer (f, b, q) -> Model.Ptransfer (loc_pterm f, b, Translate.map_option mk_qualid q)
-    | Pbreak -> Model.Pbreak
-    | Pseq (lhs, rhs) -> Model.Pseq (loc_pterm lhs, loc_pterm rhs)
-    | Pnot e -> Model.Pnot (loc_pterm e)
-    | Passert l -> Model.Passert l
-    | Pmatchwith (e, l) -> Model.Pmatchwith (loc_pterm e, List.map (fun (p, e) -> (loc_pattern p, loc_pterm e)) l)
-    | Precord l -> Model.Precord (List.map (fun (q, t) -> (loc_qualid q, loc_pterm t) ) l)
-    (* below is common entries with lterm *)
-    | Prel i -> Model.Prel i
-    | Pletin (i,v,t,b) -> Model.Pletin (lstr i,loc_pterm v, t, loc_pterm b)
-    | Papp (f,a) -> Model.Papp (loc_pterm f, List.map loc_pterm a)
-    | Plambda (i,t, b) -> Model.Plambda (lstr i, t, loc_pterm b)
-    | Plogical (o,l,r) -> Model.Plogical (o, loc_pterm l, loc_pterm r)
-    (* mutualize below with lterm ? *)
-    | Pcomp (o,l,r) -> Model.Pcomp (o, loc_pterm l, loc_pterm r)
-    | Parith (o,l,r) -> Model.Parith (o, loc_pterm l, loc_pterm r)
-    | Puarith (u,e) -> Model.Puarith (u, loc_pterm e)
-    | Pvar i -> Model.Pvar (lstr i)
-    | Parray l -> Model.Parray (List.map loc_pterm l)
-    | Plit v -> Model.Plit v
-    | Pdot (l,r) -> Model.Pdot (loc_pterm l, loc_pterm r)
-    | Pconst c -> Model.Pconst c
-    | Ptuple l -> Model.Ptuple (List.map loc_pterm l)
-  )
+  Model.poly_pterm_map
+    p
+    (fun x -> x)
+    (fun _x y -> mkloc (Location.dummy) y)
+    loc_pterm
+    lstr
+    loc_qualid
+    loc_pattern
 
 let dummy_function = {
   name   = lstr "";
@@ -818,12 +806,56 @@ let compute_s_args info (t : Model.transaction) =
             |> List.split in
     (ids, (Some (Ftuple args))))
 
+let is_get_asset (e, args) =
+  if List.length args <> 1 then false
+  else
+    match unloc e with
+    | Pdot (a, b) -> (
+        match unloc a, unloc b with
+        | Pvar _, Pconst Cget -> true
+        | _ -> false
+      )
+    | _ -> false
+
+let extract_get_asset (e, args) =
+  let asset_name =
+    match unloc e with
+    | Pdot (a, b) -> (
+        match unloc a, unloc b with
+        | Pvar a, Pconst Cget -> unloc a
+        | _ -> raise (Anomaly("is_get_asset"))
+      )
+    | _ -> raise (Anomaly("is_get_asset")) in
+
+  let arg = match args with
+    | [a] -> a
+    | _ -> raise (Anomaly("is_get_asset")) in
+  (asset_name, arg)
+
+let dest_get_asset (asset_name, arg) f =
+  dumloc (Papp(dumloc (Pvar (dumloc ("get_" ^ asset_name))), [f arg]))
+
+let replace_dot_expr a =
+  let rec myreplace acc p =
+    match unloc p with
+    | Papp (e, args) when is_get_asset (e, args) ->
+      (
+        let asset_name, arg = extract_get_asset (e, args) in
+        dest_get_asset (asset_name, arg) (myreplace acc)
+      )
+    | _ -> gen_mapper_pterm p (myreplace acc) in
+  a |> myreplace []
+
 let transaction_to_transaction_ws info (t : Model.transaction) : transaction_ws =
   let name = t.name in
   let ids, args = compute_s_args info t in
   let args = List.map mk_arg [("p", args);
                               ("s", Some (Flocal (lstr "storage")))] in
   let nb = ids |> List.length |> string_of_int in
+  let action = Tools.get t.action in
+  Format.eprintf "%a\n" Model.pp_pterm action;
+  let action = replace_dot_expr action in
+  Format.eprintf "--\n%a\n" Model.pp_pterm action;
   let act = loc_pterm (
       List.fold_right
         (fun x acc -> Pletin (x, Papp (Pvar ("get_0_"^nb),[Pvar "p"]),None,acc))
@@ -831,6 +863,7 @@ let transaction_to_transaction_ws info (t : Model.transaction) : transaction_ws 
         (Ptuple[Pvar "empty_ops"; Pvar "s"])
     ) in
   mk_transaction name args None (Some act) dummy
+
 
 let mk_transactions info (m : model_unloc)  mws = {
   mws with
@@ -851,7 +884,6 @@ let model_to_modelws (info : info) (m : model) : model_with_storage =
     functions    = [];
     transactions = [];
   }
-  |> (compile_operations info)
-  |> (mk_common_functions info)
-  |> (mk_getset_functions info)
+  (*|> (compile_operations info)*)
+  (*  |> (mk_getset_functions info)*)
   |> (mk_transactions info m)
