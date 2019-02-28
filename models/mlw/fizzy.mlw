@@ -55,7 +55,7 @@ theory Fizzy
   predicate performed_only_by  (tr : traces) (e : env)  (a:action) (r:address) =
   forall x:trace. action x = a -> Mem.mem x tr -> caller e = r
 
-  predicate is_void (l : list 'a) = l = Nil
+  predicate is_empty (l : list 'a) = l = Nil
 
   (* ************************************************************************ *)
 
@@ -85,11 +85,13 @@ theory Fizzy
    mutable finsurances  : map (list string);
    (* others *)
    mutable e            : env;
-   mutable tr           : traces;
    mutable ops          : transfers;
+   mutable ghost tr           : traces;
+   mutable ghost ename        : entry;
  } (*with { owner = 0; ikey = 0; insurances = Nil; flights = Nil;  }*)
-   invariant { is_void ops }
+   invariant { is_empty ops }
    invariant { forall a:action. performed_only_by tr e a owner }
+   invariant { forall tx:entry. ename = tx -> is_empty ops }
 
  let addflightinsurance (s   : storage)
                         (fi  : string)
@@ -98,6 +100,7 @@ theory Fizzy
                         (ind : tez)
                         (pro : string) : unit
    =
+   ghost ( s.ename <- Addflightinsurance );
    if caller s.e = s.owner
    then (
      let f = fi in
@@ -112,8 +115,10 @@ theory Fizzy
      (* update finsurance *)
      s.finsurances <- set s.finsurances fi (add s.ikey (get s.finsurances f));
      s.ikey        <- s.ikey + 1;
-     s.tr          <- s.tr ++ mk_trace Addflightinsurance (Insurance (s.ikey-1)) Add;
-     s.tr          <- s.tr ++ mk_trace Addflightinsurance (Flight f) Add)
+     ghost (
+       s.tr          <- s.tr ++ mk_trace Addflightinsurance (Insurance (s.ikey-1)) Add;
+       s.tr          <- s.tr ++ mk_trace Addflightinsurance (Flight f) Add)
+     )
    else ()
 
  let updatestatus (s       : storage)
@@ -121,6 +126,7 @@ theory Fizzy
                   (arrival : string) : unit
  raises { NotFound }
  =
+ ghost ( s.ename <- Updatestatus );
  if caller s.e = s.owner
  then
    let l = get s.finsurances fk in
@@ -131,7 +137,9 @@ theory Fizzy
        if arrival > get s.limit k
        then (
          s.stat <- set s.stat k After;
-         s.tr   <- s.tr ++ mk_trace Updatestatus (Insurance k) (Update Stat);
+         ghost (
+           s.tr   <- s.tr ++ mk_trace Updatestatus (Insurance k) (Update Stat)
+         );
        )
        else ()
      | _ -> ()
@@ -144,6 +152,7 @@ theory Fizzy
                   (st  : status) : unit
  raises { NotFound }
  =
+ ghost ( s.ename <- Manual );
  if caller s.e = s.owner
  then
    let l = get s.finsurances fk in
@@ -152,7 +161,9 @@ theory Fizzy
      match get s.stat k with
      | Created ->
        s.stat <- set s.stat k st;
-       s.tr   <- s.tr ++ mk_trace Updatestatus (Insurance k) (Update Stat);
+       ghost (
+         s.tr   <- s.tr ++ mk_trace Updatestatus (Insurance k) (Update Stat)
+       );
      | _ -> ()
      end
    done
