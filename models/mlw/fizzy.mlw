@@ -52,15 +52,15 @@ theory Fizzy
     action = c;
   }) Nil
 
-  predicate performed_only_by  (tr : traces) (e : env)  (a:action) (r:address) =
+  predicate performed_by_role  (tr : traces) (e : env)  (a:action) (r:address) =
   forall x:trace. action x = a -> Mem.mem x tr -> caller e = r
 
-  predicate may_perform (tr : traces) (tx1 tx2:option entry) (a:action) =
-  forall x:trace. Mem.mem x tr -> tx1 = tx2 -> action x = a
+  predicate performed_by_tx (tr : traces) (tx1 tx2:option entry) (a:action) =
+  forall x:trace. Mem.mem x tr -> action x = a -> tx1 = tx2
 
   predicate is_empty (l : list 'a) = l = Nil
 
-  (* ************************************************************************ *)
+  (* CONTRACT ******************************************************************)
 
   type status =
   | Created
@@ -92,16 +92,26 @@ theory Fizzy
    mutable tr           : traces;
    mutable ename        : option entry;
  }
-   invariant { forall a:action. performed_only_by tr e a owner }
+   invariant { forall a:action. performed_by_role tr e a owner }
    invariant { forall tx:entry. ename = Some tx -> is_empty ops }
+
+   invariant { forall tx:entry, x:trace. Mem.mem x tr ->
+                                         Some tx = ename ->
+                                         action x = Update Stat ->
+                                         tx = Updatestatus \/ tx = Manual }
+
+(* invariant { not (may_perform tr ename (Some Addflightinsurance) (Update Stat)) }
    invariant { may_perform tr ename (Some Updatestatus) (Update Stat) }
-   invariant { may_perform tr ename (Some Manual) (Update Stat) }
+   invariant { may_perform tr ename (Some Manual) (Update Stat) }  *)
+
+(* invariant { not (forall tx:entry, x:trace. Mem.mem x tr ->
+                                              action x = Update Stat ->
+                                              tx = Updatestatus) } *)
+
    by { owner = 0; ikey = 0; insurances = Nil; flights = Nil;
         limit = const 0; premium = const 0; indemnity = const 0;
         stat = const Created; productid = const 0; finsurances = const Nil;
         e = empty_env (); ops = Nil; tr = Nil; ename = None }
-(*   invariant { forall x:trace. Mem.mem x tr ->
-               action x = Update Stat /\ ename = Updatestatus }*)
 
  let all_entries (s   : storage)
                  (fi  : string)
@@ -138,8 +148,17 @@ theory Fizzy
    then
      let l = get s.finsurances fk in
      for i=0 to (length l) - 1 do
-     invariant { may_perform s.tr s.ename (Some Updatestatus) (Update Stat) }
-     invariant { may_perform s.tr s.ename (Some Manual) (Update Stat) }
+     invariant { forall tx:entry, x:trace. Mem.mem x s.tr ->
+                                           Some tx = s.ename ->
+                                           action x = Update Stat ->
+                                           tx = Updatestatus \/ tx = Manual }
+
+(*     invariant { not (forall tx:entry, x:trace. Mem.mem x s.tr ->
+                                                action x = Update Stat ->
+                                                tx = Updatestatus) } *)
+
+(*     invariant { may_perform s.tr s.ename (Some Updatestatus) (Update Stat) }
+       invariant { may_perform s.tr s.ename (Some Manual) (Update Stat) } *)
        let k = nth i l in
        match get s.stat k with
        | Created ->
@@ -158,8 +177,17 @@ theory Fizzy
    then
      let l = get s.finsurances fk in
      for i=0 to (length l) - 1 do
-     invariant { may_perform s.tr s.ename (Some Updatestatus) (Update Stat) }
-     invariant { may_perform s.tr s.ename (Some Manual) (Update Stat) }
+       invariant { forall tx:entry, x:trace. Mem.mem x s.tr ->
+                                             Some tx = s.ename ->
+                                             action x = Update Stat ->
+                                             tx = Updatestatus \/ tx = Manual }
+
+(*     invariant { not (forall tx:entry, x:trace. Mem.mem x s.tr ->
+                                                action x = Update Stat ->
+                                                tx = Updatestatus) } *)
+
+(*     invariant { may_perform s.tr s.ename (Some Updatestatus) (Update Stat) }
+       invariant { may_perform s.tr s.ename (Some Manual) (Update Stat) } *)
        let k = nth i l in
        match get s.stat k with
        | Created ->

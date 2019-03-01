@@ -171,8 +171,8 @@ theory Asset
   | Nil -> acc
   end
 
-  (*axiom split_mem : forall l : list 'a, x y : 'a.
-   Mem.mem x l \/ x = y <-> Mem.mem x (l ++ (Cons y Nil))*)
+  axiom split_mem : forall l : list 'a, x y : 'a.
+   Mem.mem x l \/ x = y <-> Mem.mem x (l ++ (Cons y Nil))
 
 end
 
