@@ -109,7 +109,7 @@ theory Fizzy
 
    invariant { forall tx:entry, x:trace. Mem.mem x tr ->
                                          Some tx = ename ->
-                                         action x = Update Stat ->
+                                         Mem.mem (action x) (Cons (Update Stat) Nil) ->
                                          Mem.mem tx (Cons Updatestatus (Cons Manual Nil)) }
 
 (*   invariant { not (forall tx:entry, x:trace. Mem.mem x tr ->
@@ -164,7 +164,7 @@ theory Fizzy
      for i=0 to (length l) - 1 do
      invariant { forall tx:entry, x:trace. Mem.mem x s.tr ->
                                            Some tx = s.ename ->
-                                           action x = Update Stat ->
+                                           Mem.mem (action x) (Cons (Update Stat) Nil) ->
                                            Mem.mem tx (Cons Updatestatus (Cons Manual Nil)) }
 
 (*     invariant { not (forall tx:entry, x:trace. Mem.mem x s.tr ->
@@ -194,7 +194,7 @@ theory Fizzy
      for i=0 to (length l) - 1 do
        invariant { forall tx:entry, x:trace. Mem.mem x s.tr ->
                                              Some tx = s.ename ->
-                                             action x = Update Stat ->
+                                             Mem.mem (action x) (Cons (Update Stat) Nil) ->
                                              Mem.mem tx (Cons Updatestatus (Cons Manual Nil)) }
 
 (*       invariant { not (forall tx:entry, x:trace. Mem.mem x s.tr ->
