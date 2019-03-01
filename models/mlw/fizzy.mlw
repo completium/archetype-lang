@@ -52,8 +52,8 @@ theory Fizzy
     action = c;
   }) Nil
 
-  predicate performed_by_role  (tr : traces) (e : env)  (a:action) (r:address) =
-  forall x:trace. action x = a -> Mem.mem x tr -> caller e = r
+  predicate performed_by_role  (tr : traces) (e : env)  (a: list action) (r:list address) =
+  forall x:trace. Mem.mem (action x) a -> Mem.mem x tr -> Mem.mem (caller e) r
 
   predicate performed_by_tx (tr : traces) (tx2 : option entry) (tx1 : entry) (a:action) (l : list entry) =
   forall x:trace. Mem.mem x tr ->
@@ -101,7 +101,7 @@ theory Fizzy
    mutable tr           : traces;
    mutable ename        : option entry;
  }
-   invariant { forall a:action. performed_by_role tr e a owner }
+   invariant { forall a:action. performed_by_role tr e (Cons a Nil) (Cons owner Nil) }
    invariant { forall tx:entry. ename = Some tx -> is_empty ops }
 
 (*   invariant { forall tx:entry.
