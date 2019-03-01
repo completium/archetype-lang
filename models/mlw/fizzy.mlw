@@ -55,8 +55,17 @@ theory Fizzy
   predicate performed_by_role  (tr : traces) (e : env)  (a:action) (r:address) =
   forall x:trace. action x = a -> Mem.mem x tr -> caller e = r
 
-  predicate performed_by_tx (tr : traces) (tx1 tx2:option entry) (a:action) =
-  forall x:trace. Mem.mem x tr -> action x = a -> tx1 = tx2
+  predicate performed_by_tx (tr : traces) (tx2 : option entry) (tx1 : entry) (a:action) (l : list entry) =
+  forall x:trace. Mem.mem x tr ->
+                  Some tx1 = tx2 ->
+                  action x = a ->
+                  Mem.mem tx1 l
+
+(*x:trace. Mem.mem x s.tr ->
+           Some tx = s.ename ->
+           action x = Update Stat ->
+           Mem.mem tx (Cons Updatestatus (Cons Manual Nil))*)
+
 
   predicate is_empty (l : list 'a) = l = Nil
 
@@ -95,18 +104,23 @@ theory Fizzy
    invariant { forall a:action. performed_by_role tr e a owner }
    invariant { forall tx:entry. ename = Some tx -> is_empty ops }
 
+(*   invariant { forall tx:entry.
+               performed_by_tx tr ename tx (Update Stat) (Cons Updatestatus (Cons Manual Nil)) }*)
+
    invariant { forall tx:entry, x:trace. Mem.mem x tr ->
                                          Some tx = ename ->
                                          action x = Update Stat ->
-                                         tx = Updatestatus \/ tx = Manual }
+                                         Mem.mem tx (Cons Updatestatus (Cons Manual Nil)) }
+
+(*   invariant { not (forall tx:entry, x:trace. Mem.mem x tr ->
+                                         Some tx = ename ->
+                                         action x = Update Stat ->
+                                         tx = Updatestatus) }*)
+
 
 (* invariant { not (may_perform tr ename (Some Addflightinsurance) (Update Stat)) }
    invariant { may_perform tr ename (Some Updatestatus) (Update Stat) }
    invariant { may_perform tr ename (Some Manual) (Update Stat) }  *)
-
-(* invariant { not (forall tx:entry, x:trace. Mem.mem x tr ->
-                                              action x = Update Stat ->
-                                              tx = Updatestatus) } *)
 
    by { owner = 0; ikey = 0; insurances = Nil; flights = Nil;
         limit = const 0; premium = const 0; indemnity = const 0;
@@ -151,11 +165,12 @@ theory Fizzy
      invariant { forall tx:entry, x:trace. Mem.mem x s.tr ->
                                            Some tx = s.ename ->
                                            action x = Update Stat ->
-                                           tx = Updatestatus \/ tx = Manual }
+                                           Mem.mem tx (Cons Updatestatus (Cons Manual Nil)) }
 
 (*     invariant { not (forall tx:entry, x:trace. Mem.mem x s.tr ->
-                                                action x = Update Stat ->
-                                                tx = Updatestatus) } *)
+                                         Some tx = s.ename ->
+                                         action x = Update Stat ->
+                                         tx = Updatestatus) }*)
 
 (*     invariant { may_perform s.tr s.ename (Some Updatestatus) (Update Stat) }
        invariant { may_perform s.tr s.ename (Some Manual) (Update Stat) } *)
@@ -180,11 +195,12 @@ theory Fizzy
        invariant { forall tx:entry, x:trace. Mem.mem x s.tr ->
                                              Some tx = s.ename ->
                                              action x = Update Stat ->
-                                             tx = Updatestatus \/ tx = Manual }
+                                             Mem.mem tx (Cons Updatestatus (Cons Manual Nil)) }
 
-(*     invariant { not (forall tx:entry, x:trace. Mem.mem x s.tr ->
-                                                action x = Update Stat ->
-                                                tx = Updatestatus) } *)
+(*       invariant { not (forall tx:entry, x:trace. Mem.mem x s.tr ->
+                                         Some tx = s.ename ->
+                                         action x = Update Stat ->
+                                         tx = Updatestatus) }*)
 
 (*     invariant { may_perform s.tr s.ename (Some Updatestatus) (Update Stat) }
        invariant { may_perform s.tr s.ename (Some Manual) (Update Stat) } *)
