@@ -625,7 +625,7 @@ simple_expr_r:
  | xs=braced(separated_nonempty_list(SEMI_COLON, assign_field_r))
      { EassignFields xs }
 
- | x=bracket(separated_list(COMMA, simple_expr))
+ | x=bracket(separated_list(COMMA, expr))
      { Earray x }
 
  | x=literal

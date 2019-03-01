@@ -2,65 +2,76 @@ model fizzy
 
 role creator
 
-enum status =
-  | Created
-  | Before (* flight landed before the limit *)
-  | After (* flight landed after the limit *)
-  | Cancelled (* cancelled by the user *)
-  | FlightCancelled (* flight cancelled by the air company *)
-  | Redirected (* flight redirected *)
-  | Diverted (* flight diverted *)
+enum status = 
+| Created         
+| Before           (* flight landed before the limit      *)
+| After            (* flight landed after the limit       *)
+| Cancelled        (* cancelled by the user               *)
+| FlightCancelled  (* flight cancelled by the air company *)
+| Redirected       (* flight redirected                   *)
+| Diverted         (* flight diverted                     *)
 
 asset insurance = {
   productid : string;
-  limit : date;
-  premium : tez;
+  limit     : date;
+  premium   : tez;
   indemnity : tez;
-  stat : status = Created;
-}
+  stat      : status = Created;
+} 
 
 asset[@add creator none] flight identified by id = {
- id : string;
- insurances : insurance partition;
+  id         : string;
+  insurances : insurance partition;
 }
 
 transaction addflightinsurance (fi : string) (* flight id *)
-                               (li : date)
-                               (pre : tez)
-                               (ind : tez)
-                               (pro : string) = {
- called by creator
- action
-   flight.addifnotexist { id = fi };
-   let f = flight.get id in
-   f.insurances.add { productid = pro;
-                      limit = li;
-                      premium = pre;
-                      indemnity = ind }
+                               (i : insurance) = {
+    called by creator
 
+    action 
+      flight.addifnotexist { id = fi };
+      let f = flight.get id in
+      f.insurances.add i
 }
 
 (* data should be signed by oracle ... *)
 transaction updatestatus (fi : string) (arrival : date) = {
-  called by creator
-  action
-    let f = flight.get id in
-    for (i in f.insurances)
-      match i.status with
-      | Created ->
-        if arrival > i.limit
-        then i.status := After
-      | _ -> none
-      end
+
+    called by creator
+
+    action 
+      let f = flight.get id in
+      for (i in f.insurances)
+        match i.status with
+        | Created -> 
+           if arrival > i.limit
+           then i.status := After
+        | _ -> none
+        end
 }
 
 transaction manual (fi : string) (pr : string) (newst : status) = {
-  called by creator
-  action
-    let f = flight.get fi in
-    for (i in f.insurances.when (product = pr))
-      match i.status with
-      | Created -> i.status := newst
-      | _ -> none
-      end
+   
+    called by creator
+
+    action 
+      let f = flight.get fi in
+      for (i in f.insurances.when (product = pr))
+        match i.status with
+         | Created -> i.status := newst
+         | _ -> none
+        end
 }
+
+specification {
+   (* any action on storage is performed only by the owner *)
+   s1 : forall a:aaction, performed_by_role [a] [owner];
+
+   (* this contract does not transfer any tez *)
+   s2 : forall tx:atransaction, is_empty (transfers_by_tx tx);
+
+   (* transaction “updatestatus” is not the only one to potentially 
+      perform an update of insurance status *)
+   s3 : perform_by_tx [update stat] [updatestatus, manual]
+}
+
