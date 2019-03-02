@@ -194,7 +194,10 @@ let rec mk_lterm (e : expr) : lterm =
     | Eapp (f, args) -> Lapp (mk_lterm f, List.map mk_lterm args)
     | Etransfer (_a, _, _dest) -> raise (ModelError ("\"transfer\" is not allowed in logical block", loc))
     | Eassign (_, _, _) -> raise (ModelError ("assignment is not allowed in logical block", loc))
-    | Eif (_cond, _then_, _else_) -> raise (ModelError ("\"if\" is not allowed in logical block", loc))
+    | Eif (cond, then_, None) -> Limply (mk_lterm cond, mk_lterm then_)
+    | Eif (cond, then_, Some else_) -> Llogical (And,
+                                                 mkloc loc (Limply (mk_lterm cond, mk_lterm then_)),
+                                                 mkloc loc (Limply (mkloc (Location.loc cond) (Lnot (mk_lterm cond)), mk_lterm else_)))
     | Ebreak -> raise (ModelError ("\"break\" is not allowed in logical block", loc))
     | Efor (_, _, _, _) -> raise (ModelError ("\"for\" is not allowed in logical block", loc))
     | Eassert _ -> raise (ModelError ("\"assert\" is not allowed in logical block", loc))

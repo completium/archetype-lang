@@ -118,12 +118,6 @@ type model_with_storage = {
 }
 [@@deriving show {with_path = false}]
 
-type asset_function =
-  | Get of string
-  | AddAsset of string
-  | Addifnotexist of string
-  | AddList of string * string
-
 (* asset field type to storage field type *)
 (* This should be modulated/optimized according to asset usage in tx actions *)
 let aft_to_sft info aname iskey fname (typ : ptyp) =
@@ -420,25 +414,29 @@ let rec loc_pattern (p : basic_pattern) : pattern =
     | Mparen p -> Mparen (loc_pattern p)
     | Mghost p -> Mghost (loc_pattern p))
 
-let gen_mapper_pterm p f =
-  Model.poly_pterm_map
-    p
-    (fun x -> unloc x)
-    (fun x y -> mkloc (Location.loc x) y)
-    f
-    id
-    id
-    id
-
 let rec loc_pterm (p : basic_pterm) : pterm =
   Model.poly_pterm_map
-    p
-    (fun x -> x)
-    (fun _x y -> mkloc (Location.dummy) y)
-    loc_pterm
+    (fun x -> mkloc (Location.dummy) x)
     lstr
-    loc_qualid
+    id
     loc_pattern
+    loc_pterm
+    loc_qualid
+    p
+
+let rec unloc_qualid = function
+  | Qident i -> Qident (unloc i)
+  | Qdot (a, b) -> Qdot (unloc_qualid a, unloc b)
+
+let rec unloc_pterm (p : Model.pterm) =
+  p |> unloc |>
+  Model.poly_pterm_map
+    id
+    unloc
+    id
+    id
+    unloc_pterm
+    unloc_qualid
 
 let dummy_function = {
   name   = lstr "";
@@ -446,6 +444,17 @@ let dummy_function = {
   return = None;
   body   = loc_pterm Pbreak;
   loc    = Location.dummy;
+}
+
+let dummy_transaction = {
+  name         = lstr "";
+  args         = [];
+  calledby     = None;
+  condition    = None;
+  transition   = None;
+  spec         = None;
+  action       = None;
+  loc          = Location.dummy;
 }
 
 let mk_arg (s,t) = { name = lstr s ; typ = t; default = None ; loc = Location.dummy }
@@ -763,48 +772,30 @@ let mk_getset_functions info (mws : model_with_storage) = {
     )
 }
 
-let mk_transaction name args spec action loc : transaction_ws = {
-  name         = name;
-  args         = args;
-  calledby     = None;
-  condition    = None;
-  transition   = None;
-  spec         = spec;
-  action       = action;
-  loc          = loc;
+let flat_model_to_modelws (info : info) (m : model) : model_with_storage =
+  let m = unloc m in
+  {
+    name         = m.name;
+    enums        = mk_enums info m;
+    records      = mk_records info m;
+    storage      = mk_storage info m;
+    functions    = [];
+    transactions = [];
   }
+  |> (compile_operations info)
+  |> (mk_getset_functions info)
 
-let mk_common_functions _info (mws : model_with_storage) = {
-  mws with
-  functions = mws.functions(* @ (
-      mk_now_function()
-                              )*)
-}
 
-let to_arg info (arg : (ptyp, bval) gen_decl) : (string * storage_field_type) list =
-  let arg_name = unloc arg.name in
-  let rec to_arg_rec prefix typ =
-    match typ |> unloc with
-    | Tasset lident ->
-      let asset_args = List.fold_left (fun acc ((_s, i) : string * ptyp) ->
-          (to_arg_rec ((unloc lident) ^ "_") i)@acc)
-          [] (get_asset_vars_id_typs lident info) in
-      [get_key_id lident info, Ftyp (get_key_type lident info)] @ asset_args
-    | Tbuiltin vtb -> [(prefix ^ arg_name, Ftyp vtb)]
-    | _ -> raise Tools.Unsupported_yet in
-  let typ = Tools.get arg.typ in
-  to_arg_rec "" typ
 
-let compute_s_args info (t : Model.transaction) =
-  let args = t.args in
-  if List.length args = 0
-  then ([], Some (Flocal (lstr "unit")))
-  else (
-    let ids, args = args
-            |> List.map (fun i -> to_arg info i)
-            |> List.flatten
-            |> List.split in
-    (ids, (Some (Ftuple args))))
+
+(* record policy process *)
+
+type asset_function =
+  | Get of string
+  | AddAsset of string
+  | Addifnotexist of string
+  | AddList of string * string
+[@@deriving show {with_path = false}]
 
 let is_get_asset (e, args) =
   if List.length args <> 1 then false
@@ -835,55 +826,139 @@ let extract_get_asset (e, args) =
 let dest_get_asset (asset_name, arg) f =
   dumloc (Papp(dumloc (Pvar (dumloc ("get_" ^ asset_name))), [f arg]))
 
+let rec gen_mapper_pterm f p =
+  Model.poly_pterm_map
+    (fun x -> mkloc (Location.loc p) x)
+    id
+    id
+    id
+    (gen_mapper_pterm f)
+    id
+    (unloc p)
+
 let replace_dot_expr a =
-  let rec myreplace acc p =
+  let rec myreplace p =
     match unloc p with
     | Papp (e, args) when is_get_asset (e, args) ->
       (
         let asset_name, arg = extract_get_asset (e, args) in
-        dest_get_asset (asset_name, arg) (myreplace acc)
+        dest_get_asset (asset_name, arg) myreplace
       )
-    | _ -> gen_mapper_pterm p (myreplace acc) in
-  a |> myreplace []
+    | _ -> gen_mapper_pterm myreplace p in
+  a |> myreplace
 
-let transaction_to_transaction_ws info (t : Model.transaction) : transaction_ws =
-  let name = t.name in
-  let ids, args = compute_s_args info t in
+let extract_asset_function (p : Model.pterm) =
+  poly_pterm_fold (fun acc x ->
+      match x with
+      | Papp (Pvar app_name, _) -> Format.eprintf "%s\n" app_name; (Get app_name)::acc
+      | _ -> acc) [] (p |> unloc_pterm)
+
+
+let mk_get_asset name = {
+  dummy_function with
+  name = lstr ("get_" ^ name);
+  args = [mk_arg ("s",None)];
+  body = loc_pterm (Papp (Pvar name, [Pvar "s"]))
+}
+
+let mk_add_asset name = mk_get_asset name
+let mk_addifnotexists asset_name = mk_get_asset asset_name
+let mk_add_list asset_name _field_name = mk_get_asset asset_name
+
+let generate_asset_functions (l : asset_function list) : function_ws list =
+  List.map (fun x ->
+      match x with
+      | Get asset_name -> mk_get_asset asset_name
+      | AddAsset asset_name -> mk_add_asset asset_name
+      | Addifnotexist asset_name -> mk_addifnotexists asset_name
+      | AddList (asset_name, field_name) -> mk_add_list asset_name field_name) l
+
+
+let to_arg info (arg : (ptyp, bval) gen_decl) : (string * storage_field_type) list =
+  let arg_name = unloc arg.name in
+  let rec to_arg_rec prefix typ =
+    match typ |> unloc with
+    | Tasset lident ->
+      let asset_args = List.fold_left (fun acc ((_s, i) : string * ptyp) ->
+          (to_arg_rec ((unloc lident) ^ "_") i)@acc)
+          [] (get_asset_vars_id_typs lident info) in
+      [get_key_id lident info, Ftyp (get_key_type lident info)] @ asset_args
+    | Tbuiltin vtb -> [(prefix ^ arg_name, Ftyp vtb)]
+    | _ -> raise Tools.Unsupported_yet in
+  let typ = Tools.get arg.typ in
+  to_arg_rec "" typ
+
+let compute_s_args info (t : Model.transaction) =
+  let args = t.args in
+  if List.length args = 0
+  then ([], Some (Flocal (lstr "unit")), [])
+  else (
+    let ids, args = args
+            |> List.map (fun i -> to_arg info i)
+            |> List.flatten
+            |> List.split in
+    (ids, (Some (Ftuple args)), []))
+
+let transform_transaction (info : info) (t : Model.transaction) : transaction_ws * asset_function list =
+  let ids, args, _binds = compute_s_args info t in
   let args = List.map mk_arg [("p", args);
                               ("s", Some (Flocal (lstr "storage")))] in
   let nb = ids |> List.length |> string_of_int in
   let action = Tools.get t.action in
-  Format.eprintf "%a\n" Model.pp_pterm action;
+  (*  Format.eprintf "%a\n" Model.pp_pterm action;*)
   let action = replace_dot_expr action in
-  Format.eprintf "--\n%a\n" Model.pp_pterm action;
-  let act = loc_pterm (
+  (*  Format.eprintf "--\n%a\n" Model.pp_pterm action;*)
+  let asset_functions = extract_asset_function action in
+  (*  Format.eprintf "%d\n" (List.length asset_functions);*)
+  (*  List.iter (fun x -> Format.eprintf "%s\n" (show_asset_function x)) asset_functions;*)
+  (*  let action = Ptuple[Pvar "empty_ops"; Pvar "s"] in*)
+  (*  let action = dumloc (Pseq (action, loc_pterm (Ptuple[Pvar "empty_ops"; Pvar "s"]))) in*)
+  let action = Ptuple[Pvar "empty_ops"; Pvar "s"] in
+  let action = loc_pterm (
       List.fold_right
         (fun x acc -> Pletin (x, Papp (Pvar ("get_0_"^nb),[Pvar "p"]),None,acc))
-        ids
-        (Ptuple[Pvar "empty_ops"; Pvar "s"])
-    ) in
-  mk_transaction name args None (Some act) dummy
+        ids action) in
 
+  let t, asset_functions = {
+    dummy_transaction with
+    name         = t.name;
+    args         = args;
+    calledby     = None;
+    condition    = None;
+    transition   = None;
+    spec         = None;
+    action       = Some action;
+    loc          = Location.dummy;
+  }, asset_functions in
+  (t, asset_functions)
 
-let mk_transactions info (m : model_unloc)  mws = {
-  mws with
-  transactions = mws.transactions @ (
-      List.fold_left (fun acc (t : Model.transaction) -> (transaction_to_transaction_ws info t)::acc)
-        [] (m.transactions |> (fun l -> [List.nth l 0]))
-    )
-}
+let transform_transactions (info : info) (m : model_unloc) : (transaction_ws list * asset_function list) =
+  List.fold_left (fun (trs, assfuns) (t : Model.transaction) ->
+      let a, b = transform_transaction info t in
+      (a::trs, b @ assfuns))
+    ([], []) (m.transactions |> (fun l -> [List.nth l 0]))
 
-let model_to_modelws (info : info) (m : model) : model_with_storage =
-  (*Format.printf "%a\n" Modelinfo.pp_info info;*)
-  let m = unloc m in
+let fun_trans (info : info) (m : model_unloc) (mws : model_with_storage) : model_with_storage =
+  let (transactions, list) : (transaction_ws list * asset_function list) = transform_transactions info m in
+  let functions : function_ws list = generate_asset_functions list in
+  { mws with
+    functions = functions @ mws.functions;
+    transactions = transactions @ mws.transactions;
+  }
+
+let record_model_to_modelws (info : info) (m : model) : model_with_storage =
+  let m_unloc = unloc m in
   {
-    name         = m.name;
-    enums        = mk_enums info m;
-    records      = mk_records info m;
-    storage      = mk_storage info m;
+    name         = m_unloc.name;
+    enums        = mk_enums info m_unloc;
+    records      = mk_records info m_unloc;
+    storage      = mk_storage info m_unloc;
     functions    = [];
     transactions = [];
   }
-  (*|> (compile_operations info)*)
-  (*  |> (mk_getset_functions info)*)
-  |> (mk_transactions info m)
+  |> (fun_trans info m_unloc)
+
+let model_to_modelws (info : info) (m : model) : model_with_storage =
+  (match !Modelinfo.storage_policy with
+  | Record -> record_model_to_modelws
+  | Flat -> flat_model_to_modelws) info m
