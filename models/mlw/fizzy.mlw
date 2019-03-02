@@ -8,6 +8,7 @@ theory Fizzy
   use list.List
   use list.Append
   use list.List
+  use list.Nth
   use option.Option
   use list.Mem
 
@@ -132,6 +133,16 @@ theory Fizzy
         stat = const Created; productid = const 0; finsurances = const Nil;
         e = empty_env (); ops = Nil; tr = Nil; ename = None }
 
+ let function get_transfer_amount (s : {storage}) (l : {list transfer}) (i : int) : int
+ = match Nth.nth i l with
+   | Some t -> t.amount
+   | None   -> 0
+   end
+
+ clone cml3.Sum as Transfers with type storage = storage,
+                                  type t       = transfer,
+                                  function f   = get_transfer_amount
+
  let all_entries (s   : storage)
                  (fi  : string)
                  (li  : date)
@@ -143,7 +154,8 @@ theory Fizzy
                  (st  : status): unit
  raises  { NotFound }
  ensures { forall a:action. performed_by_role s.tr s.e (Cons a Nil) (Cons s.owner Nil) }
- ensures { forall tx:entry. s.ename = Some tx -> is_empty s.ops }
+ ensures { forall tx:entry. Some tx = s.ename ->
+           Transfers.sum s.ops 0 (length s.ops) = 0 }
  ensures { forall tx:entry, x:trace. Mem.mem x s.tr ->
                                      Some tx = s.ename ->
                                      Mem.mem (action x) (Cons (Update Stat) Nil) ->
@@ -177,7 +189,9 @@ theory Fizzy
      let l = get s.finsurances fk in
      for i=0 to (length l) - 1 do
      invariant { forall a:action. performed_by_role s.tr s.e (Cons a Nil) (Cons s.owner Nil) }
-     invariant { forall tx:entry. s.ename = Some tx -> is_empty s.ops }
+     invariant { forall tx:entry. Some tx = s.ename ->
+                 Transfers.sum s.ops 0 (length s.ops) = 0 }
+
      invariant { forall tx:entry, x:trace. Mem.mem x s.tr ->
                                            Some tx = s.ename ->
                                            Mem.mem (action x) (Cons (Update Stat) Nil) ->
@@ -190,7 +204,7 @@ theory Fizzy
 
 (*     invariant { may_perform s.tr s.ename (Some Updatestatus) (Update Stat) }
        invariant { may_perform s.tr s.ename (Some Manual) (Update Stat) } *)
-       let k = nth i l in
+       let k = Asset.nth i l in
        match get s.stat k with
        | Created ->
          if arrival > get s.limit k
@@ -209,7 +223,9 @@ theory Fizzy
      let l = get s.finsurances fk in
      for i=0 to (length l) - 1 do
      invariant { forall a:action. performed_by_role s.tr s.e (Cons a Nil) (Cons s.owner Nil) }
-     invariant { forall tx:entry. s.ename = Some tx -> is_empty s.ops }
+     invariant { forall tx:entry. Some tx = s.ename ->
+                 Transfers.sum s.ops 0 (length s.ops) = 0 }
+
      invariant { forall tx:entry, x:trace. Mem.mem x s.tr ->
                                            Some tx = s.ename ->
                                            Mem.mem (action x) (Cons (Update Stat) Nil) ->
@@ -222,7 +238,7 @@ theory Fizzy
 
 (*     invariant { may_perform s.tr s.ename (Some Updatestatus) (Update Stat) }
        invariant { may_perform s.tr s.ename (Some Manual) (Update Stat) } *)
-       let k = nth i l in
+       let k = Asset.nth i l in
        match get s.stat k with
        | Created ->
          s.stat <- set s.stat k st;

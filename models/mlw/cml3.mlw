@@ -8,7 +8,7 @@ theory Types
   type role    = int
   type address = int
   type uint    = uint32
-  type tez     = uint32
+  type tez     = int
   type date    = int
   type string  = int
 
@@ -184,30 +184,30 @@ theory Sum
   use Asset
 
   type storage
-  type asset
+  type t
 
-  function f storage (list asset) int : int
+  function f {storage} {list t} int : int
 
-  function sum (list asset) int int : int
+  function sum (list t) int int : int
 
-  axiom Sum_def_empty :
-    forall c : list asset, i j : int.
+  lemma Sum_def_empty :
+    forall c : list t, i j : int.
     j <= i -> sum c i j = 0
 
-  axiom Sum_def_non_empty :
-    forall s : storage, c: list asset, i j : int.
+  lemma Sum_def_non_empty :
+    forall s : storage, c: list t, i j : int.
     i < j -> sum c i j = f s c i + sum c (i+1) j
 
   lemma Sum_right_extension:
-    forall s : storage, c : list asset, i j : int.
+    forall s : storage, c : list t, i j : int.
     i < j -> sum c i j = sum c i (j-1) + f s c (j-1)
 
   lemma Sum_transitivity :
-    forall c : list asset, i k j : int. i <= k <= j ->
+    forall c : list t, i k j : int. i <= k <= j ->
     sum c i j = sum c i k + sum c k j
 
   lemma Sum_eq :
-    forall s : storage, c1 c2 : list asset, i j : int.
+    forall s : storage, c1 c2 : list t, i j : int.
     (forall k : int. i <= k < j -> f s c1 k = f s c2 k) -> sum c1 i j = sum c2 i j
 
 end
