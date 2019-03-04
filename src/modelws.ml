@@ -792,34 +792,45 @@ let flat_model_to_modelws (info : info) (m : model) : model_with_storage =
 type asset_function =
   | Get of string
   | AddAsset of string
-  | Addifnotexist of string
+  | Addifnotexists of string
   | AddList of string * string
 [@@deriving show {with_path = false}]
 
-let is_get_asset (e, args) =
-  if List.length args <> 1 then false
+
+let is_asset_const (e, args) const nb_args =
+  if List.length args <> nb_args then false
   else
     match unloc e with
     | Pdot (a, b) -> (
         match unloc a, unloc b with
-        | Pvar _, Pconst Cget -> true
+        | Pvar _, Pconst c when c = const-> true
         | _ -> false
       )
     | _ -> false
 
-let extract_get_asset (e, args) =
-  let asset_name =
-    match unloc e with
-    | Pdot (a, b) -> (
-        match unloc a, unloc b with
-        | Pvar a, Pconst Cget -> unloc a
-        | _ -> raise (Anomaly("is_get_asset"))
-      )
-    | _ -> raise (Anomaly("is_get_asset")) in
+let is_asset_get            (e, args) = is_asset_const (e, args) Cget 1
+let is_asset_addifnotexists (e, args) = is_asset_const (e, args) Caddifnotexist 2
 
+let dest_asset_const_name = function
+  | Pdot (a, b) -> (
+      match unloc a, unloc b with
+      | Pvar a, Pconst _ -> unloc a
+      | _ -> raise (Anomaly("dest_asset_const_1"))
+    )
+  | _ -> raise (Anomaly("dest_asset_const_2"))
+
+let dest_asset_get (e, args) =
+  let asset_name = dest_asset_const_name (unloc e) in
   let arg = match args with
     | [a] -> a
-    | _ -> raise (Anomaly("is_get_asset")) in
+    | _ -> raise (Anomaly("dest_asset_get")) in
+  (asset_name, arg)
+
+let dest_asset_addifnotexists (e, args) =
+  let asset_name = dest_asset_const_name (unloc e) in
+  let arg = match args with
+    | [a; b] -> [a; b]
+    | _ -> raise (Anomaly("dest_asset_addifnotexists")) in
   (asset_name, arg)
 
 let rec gen_mapper_pterm f p =
@@ -848,7 +859,7 @@ let generate_asset_functions (l : asset_function list) : function_ws list =
       match x with
       | Get asset_name -> mk_get_asset asset_name
       | AddAsset asset_name -> mk_add_asset asset_name
-      | Addifnotexist asset_name -> mk_addifnotexists asset_name
+      | Addifnotexists asset_name -> mk_addifnotexists asset_name
       | AddList (asset_name, field_name) -> mk_add_list asset_name field_name) l
 
 
@@ -912,6 +923,10 @@ let rec model_pterm_to_pterm (p : Model.pterm) : pterm =
     id
     (unloc p)
 
+let get_storage_name (_acc : process_acc) = "s"
+
+let mk_var str = dumloc (Pvar (dumloc str))
+
 let rec process_rec (acc : process_acc) (pterm : Model.pterm) : process_data =
   let loc, v = deloc pterm in
   match v with
@@ -924,13 +939,25 @@ let rec process_rec (acc : process_acc) (pterm : Model.pterm) : process_data =
         funs = a.funs @ b.funs;
       }
     )
-  | Papp (e, args) when is_get_asset (e, args)->
+  | Papp (e, args) when is_asset_get (e, args)->
     (
-      let asset_name, arg = extract_get_asset (e, args) in
+      let asset_name, arg = dest_asset_get (e, args) in
+      let storage_name = get_storage_name acc in
       let new_arg = process_rec acc arg in
       {
-        term = mkloc loc (Papp(dumloc (Pvar (dumloc ("get_" ^ asset_name))), [new_arg.term]));
+        term = mkloc loc (Papp(dumloc (Pvar (dumloc ("get_" ^ asset_name))), [mk_var storage_name; new_arg.term]));
         funs = (Get asset_name)::new_arg.funs;
+      }
+    )
+  | Papp (e, args) when is_asset_addifnotexists (e, args)->
+    (
+      let asset_name, arg = dest_asset_addifnotexists (e, args) in
+      let storage_name = get_storage_name acc in
+      let arg1 = process_rec acc (List.nth arg 0) in
+      let arg2 = process_rec acc (List.nth arg 1) in
+      {
+        term = mkloc loc (Papp(dumloc (Pvar (dumloc ("addifnotexists_" ^ asset_name))), [mk_var storage_name; arg1.term; arg2.term]));
+        funs = (Addifnotexists asset_name)::(arg1.funs @ arg2.funs);
       }
     )
   | Papp (e, args) ->
