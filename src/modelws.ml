@@ -288,8 +288,8 @@ let ptyp_to_vtyp = function
   | Tasset _a -> VTstring (* TODO *)
   | _ -> raise (Anomaly "to_storage_type")
 
-let rec to_storage_type (_ptyp : ptyp option) : storage_field_type =
-  match _ptyp with
+let rec to_storage_type (ptyp : ptyp option) : storage_field_type =
+  match ptyp with
   | Some v -> (
       match unloc v with
       | Tbuiltin b -> Ftyp b
@@ -385,7 +385,6 @@ let compile_operations info mws =  {
         ) mws.storage.fields
   }
 }
-
 (* this is a basic pterm without loc easier to use when building ml term *)
 type basic_pattern = (string,storage_field_type,basic_pattern) pattern_unloc
 type basic_pterm = (string,storage_field_type,basic_pattern,basic_pterm) poly_pterm
@@ -823,9 +822,6 @@ let extract_get_asset (e, args) =
     | _ -> raise (Anomaly("is_get_asset")) in
   (asset_name, arg)
 
-let dest_get_asset (asset_name, arg) f =
-  dumloc (Papp(dumloc (Pvar (dumloc ("get_" ^ asset_name))), [f arg]))
-
 let rec gen_mapper_pterm f p =
   Model.poly_pterm_map
     (fun x -> mkloc (Location.loc p) x)
@@ -835,24 +831,6 @@ let rec gen_mapper_pterm f p =
     (gen_mapper_pterm f)
     id
     (unloc p)
-
-let replace_dot_expr a =
-  let rec myreplace p =
-    match unloc p with
-    | Papp (e, args) when is_get_asset (e, args) ->
-      (
-        let asset_name, arg = extract_get_asset (e, args) in
-        dest_get_asset (asset_name, arg) myreplace
-      )
-    | _ -> gen_mapper_pterm myreplace p in
-  a |> myreplace
-
-let extract_asset_function (p : Model.pterm) =
-  poly_pterm_fold (fun acc x ->
-      match x with
-      | Papp (Pvar app_name, _) -> Format.eprintf "%s\n" app_name; (Get app_name)::acc
-      | _ -> acc) [] (p |> unloc_pterm)
-
 
 let mk_get_asset name = {
   dummy_function with
@@ -899,21 +877,132 @@ let compute_s_args info (t : Model.transaction) =
             |> List.split in
     (ids, (Some (Ftuple args)), []))
 
+type process_data = {
+  term : pterm;
+  funs : asset_function list;
+}
+
+let mk_process_data t = {
+  term = t;
+  funs = [];
+}
+
+type process_acc = {
+  info : info;
+  binds : ((string * string) list) list;
+}
+
+let rec cast_pattern_type (p : Model.pattern) : pattern =
+  mkloc (Location.loc p)
+    (Model.pattern_map
+       id
+       id
+       (fun (x : ptyp) : storage_field_type -> to_storage_type (Some x))
+       cast_pattern_type
+       id
+       (Location.unloc p))
+
+let rec model_pterm_to_pterm (p : Model.pterm) : pterm =
+  Model.poly_pterm_map
+    (fun (x : (lident,storage_field_type,pattern,pterm) poly_pterm)-> mkloc (Location.loc p) x)
+    id
+    (fun (x : ptyp option) : storage_field_type option -> Some (to_storage_type x))
+    cast_pattern_type
+    model_pterm_to_pterm
+    id
+    (unloc p)
+
+let rec process_rec (acc : process_acc) (pterm : Model.pterm) : process_data =
+  let loc, v = deloc pterm in
+  match v with
+  | Pseq (l, r) ->
+    (
+      let a = process_rec acc l in
+      let b = process_rec acc r in
+      {
+        term = mkloc loc (Pseq (a.term, b.term));
+        funs = a.funs @ b.funs;
+      }
+    )
+  | Papp (e, args) when is_get_asset (e, args)->
+    (
+      let asset_name, arg = extract_get_asset (e, args) in
+      let new_arg = process_rec acc arg in
+      {
+        term = mkloc loc (Papp(dumloc (Pvar (dumloc ("get_" ^ asset_name))), [new_arg.term]));
+        funs = (Get asset_name)::new_arg.funs;
+      }
+    )
+  | Papp (e, args) ->
+    (
+      let new_e = process_rec acc e in
+      let new_args = List.map (process_rec acc) args in
+      let a, b = new_args |> List.map (fun (x : process_data) -> (x.term, x.funs)) |> List.split in
+      {
+        term = mkloc loc (Papp (new_e.term, a));
+        funs = new_e.funs @ (List.flatten b);
+      }
+    )
+  | Pdot (l, r) ->
+    (
+      let a = process_rec acc l in
+      let b = process_rec acc r in
+      {
+        term = mkloc loc (Pdot (a.term, b.term));
+        funs = a.funs @ b.funs;
+      }
+    )
+  | _ -> {
+      term = model_pterm_to_pterm pterm;
+      funs = [];
+    }
+
+let process (info : info) (binds : (string * string) list) (action : Model.pterm) : pterm * asset_function list =
+  let acc = {
+    info = info;
+    binds = [binds];
+  } in
+  let s = process_rec acc action in
+  s.term, s.funs
+
+let rec unloc_pattern (p : pattern) : basic_pattern =
+  match unloc p with
+  | Mwild -> Mwild
+  | Mvar s -> Mvar (unloc s)
+  | Mapp (q, l) -> Mapp (unloc_qualid q, List.map unloc_pattern l)
+  | Mrec l -> Mrec (List.map (fun (i, p) -> (unloc_qualid i, unloc_pattern p)) l)
+  | Mtuple l -> Mtuple (List.map unloc_pattern l)
+  | Mas (p, o, g) -> Mas (unloc_pattern p, unloc o, g)
+  | Mor (lhs, rhs) -> Mor (unloc_pattern lhs, unloc_pattern rhs)
+  | Mcast (p, t) -> Mcast (unloc_pattern p, t)
+  | Mscope (q, p) -> Mscope (unloc_qualid q, unloc_pattern p)
+  | Mparen p -> Mparen (unloc_pattern p)
+  | Mghost p -> Mghost (unloc_pattern p)
+
+let rec pterm_to_basic_pterm (p : pterm) : basic_pterm =
+  p |> unloc |>
+  Model.poly_pterm_map
+    id
+    unloc
+    id
+    unloc_pattern
+    pterm_to_basic_pterm
+    unloc_qualid
+
 let transform_transaction (info : info) (t : Model.transaction) : transaction_ws * asset_function list =
-  let ids, args, _binds = compute_s_args info t in
+  let ids, args, binds = compute_s_args info t in
   let args = List.map mk_arg [("p", args);
                               ("s", Some (Flocal (lstr "storage")))] in
   let nb = ids |> List.length |> string_of_int in
   let action = Tools.get t.action in
-  (*  Format.eprintf "%a\n" Model.pp_pterm action;*)
-  let action = replace_dot_expr action in
-  (*  Format.eprintf "--\n%a\n" Model.pp_pterm action;*)
-  let asset_functions = extract_asset_function action in
-  (*  Format.eprintf "%d\n" (List.length asset_functions);*)
-  (*  List.iter (fun x -> Format.eprintf "%s\n" (show_asset_function x)) asset_functions;*)
+  Format.eprintf "%a\n" Model.pp_pterm action;
+  let action, asset_functions = process info binds action in
+  Format.eprintf "--\n%a\n" pp_pterm action;
+  Format.eprintf "%d\n" (List.length asset_functions);
+  List.iter (fun x -> Format.eprintf "%s\n" (show_asset_function x)) asset_functions;
   (*  let action = Ptuple[Pvar "empty_ops"; Pvar "s"] in*)
-  (*  let action = dumloc (Pseq (action, loc_pterm (Ptuple[Pvar "empty_ops"; Pvar "s"]))) in*)
-  let action = Ptuple[Pvar "empty_ops"; Pvar "s"] in
+  (*  let action = Ptuple[Pvar "empty_ops"; Pvar "s"] in*)
+  let action : basic_pterm = Pseq (pterm_to_basic_pterm action, Ptuple[Pvar "empty_ops"; Pvar "s"]) in
   let action = loc_pterm (
       List.fold_right
         (fun x acc -> Pletin (x, Papp (Pvar ("get_0_"^nb),[Pvar "p"]),None,acc))

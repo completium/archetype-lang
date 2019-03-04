@@ -485,3 +485,16 @@ let poly_pterm_fold f acc = function
     | Pdot (l, r) -> f (f acc l) r
     | Ptuple l -> List.fold_left f acc l
     | _ -> acc
+
+let pattern_map f fi ft fr fq = function
+  | Mwild -> f Mwild
+  | Mvar s -> f (Mvar (fi s))
+  | Mapp (q, l) -> f (Mapp (fq q, List.map fr l))
+  | Mrec l -> Mrec (List.map (fun (i, p) -> (fq i, fr p)) l)
+  | Mtuple l -> Mtuple (List.map fr l)
+  | Mas (p, o, g) -> Mas (fr p, fi o, g)
+  | Mor (lhs, rhs) -> Mor (fr lhs, fr rhs)
+  | Mcast (p, t) -> Mcast (fr p, ft t)
+  | Mscope (q, p) -> Mscope (fq q, fr p)
+  | Mparen p -> Mparen (fr p)
+  | Mghost p -> Mghost (fr p)
