@@ -859,8 +859,7 @@ let mk_mk_asset _info name = {
   name = lstr (mk_fun_name (MkAsset name));
   return = Some (Flocal (lstr name));
   args = [mk_arg ("p", Some (Flist (Ftyp VTstring)))];
-  body = loc_pterm (Precord [(Qident "b", Plit (dumloc (BVbool true)));
-                             (Qident "miles", Pvar "p")]);
+  body = loc_pterm (Precord [(Qident "miles", Pvar "p")]);
 }
 
 let mk_get_asset _info name = {
