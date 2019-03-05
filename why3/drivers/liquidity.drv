@@ -139,6 +139,8 @@ module liq.Map
 
   syntax val remove     "Map.remove %1 %2"
 
+  syntax val update     "Map.update %1 %2 %3"
+
   syntax val empty_map  "empty_map"
 
 end

@@ -206,6 +206,8 @@ theory Map
 
   val remove 'a (map 'a 'b) : map 'a 'b
 
+  val update 'a (option 'b) (map 'a 'b) : map 'a 'b
+
   val empty_map unit : map 'a 'b
 
 end
