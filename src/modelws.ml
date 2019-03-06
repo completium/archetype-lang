@@ -854,12 +854,17 @@ let rec gen_mapper_pterm f p =
     id
     (unloc p)
 
-let mk_mk_asset _info name = {
+let mk_mk_asset info name =
+  let asset_args = get_asset_vars_id_typs (dumloc name) info in
+  let asset_args : (string * storage_field_type) list = List.map (fun ((x, y) : (string * ptyp)) -> (x, to_storage_type (Some y))) asset_args in
+  let args = List.map (fun ((x, y) : (string * storage_field_type)) -> mk_arg (x, Some y)) asset_args in
+  let rec_items = List.map (fun ((x, _y) : (string * storage_field_type)) -> (Qident x, Pvar x)) asset_args in
+  {
   dummy_function with
   name = lstr (mk_fun_name (MkAsset name));
   return = Some (Flocal (lstr name));
-  args = [mk_arg ("p", Some (Flist (Ftyp VTstring)))];
-  body = loc_pterm (Precord [(Qident "miles", Pvar "p")]);
+  args = args;
+  body = loc_pterm (Precord rec_items);
 }
 
 let mk_get_asset _info name = {
@@ -1033,7 +1038,7 @@ let rec process_rec (acc : process_acc) (pterm : Model.pterm) : process_data =
       let f_arg = dumloc (Ptuple ([mk_var storage_name; arg1.term] @ args)) in
       {
         term = mkloc loc (Papp(dumloc (Pvar (dumloc (mk_fun_name (Addifnotexist asset_name)))), [f_arg]));
-        funs = (MkAsset asset_name)::(Addifnotexist asset_name)::(arg1.funs @ arg2.funs);
+        funs = (Addifnotexist asset_name)::(arg1.funs @ arg2.funs);
       }
     )
   | Papp (e, args) ->
@@ -1130,6 +1135,7 @@ let transform_transactions (info : info) (m : model_unloc) : (transaction_ws lis
 
 let fun_trans (info : info) (m : model_unloc) (mws : model_with_storage) : model_with_storage =
   let (transactions, list) : (transaction_ws list * asset_function list) = transform_transactions info m in
+  let list = (List.map (fun (x : asset) -> MkAsset (unloc x.name)) m.assets) @ list in
   let functions : function_ws list = generate_asset_functions info list in
   { mws with
     functions = functions @ mws.functions;

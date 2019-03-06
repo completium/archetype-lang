@@ -33,6 +33,13 @@ type info = {
 }
 [@@deriving show {with_path = false}]
 
+
+let get_asset_policy aname info =
+  let id = unloc aname in
+  if List.mem_assoc id info.assets_pol
+  then List.assoc id info.assets_pol
+  else raise (NotFound ("get_asset_policy "^id))
+
 let get_key_type (a : asset) =
   let keyid = a |> fun x -> x.key |> unloc in
   let aname = a.name |> unloc in
@@ -109,6 +116,9 @@ let mk_dummy_variables (m : model_unloc) : (string * (string * vtyp)) list =
 
 let get_asset_vars (a : asset) : (string * ptyp) list =
   let keyid = a |> fun x -> x.key |> unloc in
+  let prefix = (match !storage_policy with
+      | Flat -> (unloc a.name) ^ "_"
+      | _ -> "") in
   let rec rec_get_vars acc = function
     | arg :: tl ->
       if compare keyid (get_decl_id arg) = 0
@@ -119,7 +129,7 @@ let get_asset_vars (a : asset) : (string * ptyp) list =
           | Some t -> t
           | None   -> raise (ExpectedVarType a.name)
         in
-        rec_get_vars (acc @ [(unloc a.name)^"_"^get_decl_id arg, t]) tl
+        rec_get_vars (acc @ [prefix ^ get_decl_id arg, t]) tl
     | [] -> acc in
   a.args |> rec_get_vars []
 
@@ -235,9 +245,3 @@ let get_asset_var_typ aname var info =
     then List.assoc var types
     else raise (NotFound var)
   else raise (NotFound a)
-
-let get_asset_policy aname info =
-  let id = unloc aname in
-  if List.mem_assoc id info.assets_pol
-  then List.assoc id info.assets_pol
-  else raise (NotFound ("get_asset_policy "^id))
