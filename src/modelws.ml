@@ -860,18 +860,41 @@ let mk_mk_asset info name =
   let args = List.map (fun ((x, y) : (string * storage_field_type)) -> mk_arg (x, Some y)) asset_args in
   let rec_items = List.map (fun ((x, _y) : (string * storage_field_type)) -> (Qident x, Pvar x)) asset_args in
   {
-  dummy_function with
-  name = lstr (mk_fun_name (MkAsset name));
-  return = Some (Flocal (lstr name));
-  args = args;
-  body = loc_pterm (Precord rec_items);
-}
+    dummy_function with
+    name = lstr (mk_fun_name (MkAsset name));
+    return = Some (Flocal (lstr name));
+    args = args;
+    body = loc_pterm (Precord rec_items);
+  }
 
-let mk_get_asset _info name = {
+(*
+let[@inline] get_owner (p: storage * address) : (address * owner) =
+  let s = get p 0 in
+  let v = get p 1 in
+  begin match Map.find v (s.owner_col) with
+    | Some k -> (v, k)
+    | None -> Current.failwith ("not found")
+  end
+*)
+let mk_get_asset info asset_name = {
   dummy_function with
-  name = lstr (mk_fun_name (Get name));
-  args = [mk_arg ("s", None)];
-  body = loc_pterm (Papp (Pvar name, [Pvar "s"]))
+  name = lstr (mk_fun_name (Get asset_name));
+  args = [mk_arg ("p", Some (Ftuple ([Flocal (lstr "storage");
+                                      Ftyp (get_key_type (dumloc asset_name) info) ])))];
+  body =
+    loc_pterm (
+      Pletin ("s", Papp (Pvar "get_0_2", [Pvar "p"]), None,
+        Pletin ("v", Papp (Pvar "get_1_2", [Pvar "p"]), None,
+          Pmatchwith (Papp (Pdot (Pvar "Map", Pvar "find"),
+            [Pvar "v";
+             Papp (Pvar (asset_name ^ "_col"), [Pvar "s"])])
+                     ,[
+                       (Mapp (Qident "Some", [Mvar "k"]), Ptuple [Pvar "v"; Pvar "k"]);
+                       (Mapp (Qident "None", []),Papp (Pdot (Pvar "Current",Pvar "failwith"),
+                                                       [Papp (Pvar "not_found",[])]))
+                     ]
+            )))
+    )
 }
 
 let mk_add_asset name = mk_get_asset name
@@ -913,7 +936,13 @@ let mk_addifnotexist info asset_name = {
             )))))
 }
 
-let mk_add_list info asset_name _field_name = mk_get_asset info asset_name
+
+let mk_add_list _info asset_name field_name = {
+  dummy_function with
+  name = lstr (mk_fun_name (AddList (asset_name, field_name)));
+  args = [mk_arg ("s", None)];
+  body = loc_pterm (Pvar "s");
+}
 
 let generate_asset_functions info (l : asset_function list) : function_ws list =
   List.map (fun x ->
@@ -950,14 +979,26 @@ let compute_s_args info (t : Model.transaction) =
             |> List.split in
     (ids, (Some (Ftuple args)), []))
 
+type ret_typ =
+  | Letin
+  | Storage
+  | Asset of string
+  | Field of string * string  (*asset name, field name*)
+  | Const of Model.const
+  | Id of string
+  | A
+  | None
+
 type process_data = {
   term : pterm;
   funs : asset_function list;
+  ret  : ret_typ;
 }
 
-let mk_process_data t = {
-  term = t;
+let dummy_process_data = {
+  term = dumloc Pbreak;
   funs = [];
+  ret  = None;
 }
 
 type process_acc = {
@@ -989,27 +1030,31 @@ let get_storage_name (_acc : process_acc) = "s"
 
 let mk_var str = dumloc (Pvar (dumloc str))
 
+let is_asset_field _info (_asset_name, _field_name) = true (* TODO *)
+
+let compute_const_field asset_name field_name _const : asset_function list * ret_typ * 'a =
+  let f = AddList (asset_name, field_name) in
+  [f], A, Pvar (dumloc (mk_fun_name f))
+
+(*  Papp (dumloc (Pvar (dumloc (mk_fun_name (AddList (asset_name, field_name))))),
+                                                  [dumloc (Pvar (dumloc "s"))])*)
+
 let rec process_rec (acc : process_acc) (pterm : Model.pterm) : process_data =
   let loc, v = deloc pterm in
   match v with
   | Pseq (l, r) ->
     (
       let a = process_rec acc l in
-      let _b = process_rec acc r in
-      {
-        term = a.term;
-        funs = a.funs;
-      }
-    )
-(*  | Pseq (l, r) ->
-    (
-      let a = process_rec acc l in
       let b = process_rec acc r in
+      let t = dumloc (Pletin (dumloc "s", a.term, None,
+                              dumloc (Pletin (dumloc "s", b.term, None,
+                                              loc_pterm (Ptuple[Pvar "empty_ops"; Pvar "s"]))))) in
       {
-        term = mkloc loc (Pseq (a.term, b.term));
+        dummy_process_data with
+        term = t;
         funs = a.funs @ b.funs;
       }
-    )*)
+    )
   | Papp (e, args) when is_asset_get (e, args)->
     (
       let asset_name, arg = dest_asset_get (e, args) in
@@ -1017,8 +1062,10 @@ let rec process_rec (acc : process_acc) (pterm : Model.pterm) : process_data =
       let new_arg = process_rec acc arg in
       let f_arg = dumloc (Ptuple [mk_var storage_name; new_arg.term]) in
       {
+        dummy_process_data with
         term = mkloc loc (Papp(dumloc (Pvar (dumloc (mk_fun_name (Get asset_name)))), [f_arg]));
         funs = (Get asset_name)::new_arg.funs;
+        ret = Asset asset_name;
       }
     )
   | Papp (e, args) when is_asset_addifnotexist (e, args)->
@@ -1037,8 +1084,10 @@ let rec process_rec (acc : process_acc) (pterm : Model.pterm) : process_data =
         ) in
       let f_arg = dumloc (Ptuple ([mk_var storage_name; arg1.term] @ args)) in
       {
+        dummy_process_data with
         term = mkloc loc (Papp(dumloc (Pvar (dumloc (mk_fun_name (Addifnotexist asset_name)))), [f_arg]));
         funs = (Addifnotexist asset_name)::(arg1.funs @ arg2.funs);
+        ret = Storage
       }
     )
   | Papp (e, args) ->
@@ -1046,21 +1095,45 @@ let rec process_rec (acc : process_acc) (pterm : Model.pterm) : process_data =
       let new_e = process_rec acc e in
       let new_args = List.map (process_rec acc) args in
       let a, b = new_args |> List.map (fun (x : process_data) -> (x.term, x.funs)) |> List.split in
-      {
-        term = mkloc loc (Papp (new_e.term, a));
-        funs = new_e.funs @ (List.flatten b);
+
+      let nl, ret, p = (match new_e.ret with
+          | A -> [], None, Papp (new_e.term, [dumloc (Pvar (dumloc "s"))])
+          | _ -> [], None, Papp (new_e.term, a)) in {
+        dummy_process_data with
+        term = mkloc loc p;
+        funs = nl @ new_e.funs @ (List.flatten b);
+        ret = ret;
       }
     )
   | Pdot (l, r) ->
     (
       let a = process_rec acc l in
       let b = process_rec acc r in
-      {
-        term = mkloc loc (Pdot (a.term, b.term));
-        funs = a.funs @ b.funs;
+
+      let nl, ret, p = (match a.ret, b.ret with
+          | Field (asset_name, id), Const c -> compute_const_field asset_name id c
+          | Asset asset_name, Id id when is_asset_field acc.info (asset_name, id) -> [], Field (asset_name, id), Pdot (a.term, b.term)
+          | _ -> [],None, Pdot (a.term, b.term)) in {
+        dummy_process_data with
+        term = mkloc loc p;
+        funs = nl @ a.funs @ b.funs;
+        ret = ret;
       }
     )
+  | Pvar id -> {
+      dummy_process_data with
+      term = model_pterm_to_pterm pterm;
+      funs = [];
+      ret = Id (unloc id)
+    }
+  | Pconst c -> {
+      dummy_process_data with
+      term = model_pterm_to_pterm pterm;
+      funs = [];
+      ret = Const c
+    }
   | _ -> {
+      dummy_process_data with
       term = model_pterm_to_pterm pterm;
       funs = [];
     }
@@ -1072,10 +1145,11 @@ let process (info : info) (ids : string list) (binds : (string * string) list) (
   } in
   let s = process_rec acc action in
   let nb = ids |> List.length in
-  let pt : pterm = dumloc (Pletin (dumloc "s", s.term, None, loc_pterm (Ptuple[Pvar "empty_ops"; Pvar "s"]))) in
+  let pt : pterm = s.term in
+  List.iter (fun x -> Printf.eprintf "%s\n" (show_asset_function x)) s.funs;
   let action =
       List.fold_right
-        (fun x (n, acc) -> (n - 1, dumloc (Pletin (dumloc x, loc_pterm (Papp (Pvar ("get_" ^ (string_of_int n) ^ "_" ^ (string_of_int nb)),[Pvar "p"])),None,acc))))
+        (fun x (n, acc) -> (n - 1, dumloc (Pletin (dumloc x, loc_pterm (Papp (Pvar ("get_" ^ (string_of_int n) ^ "_" ^ (string_of_int nb)), [Pvar "p"])), None, acc))))
         ids (nb - 1, pt) in
   action |> snd, s.funs
 
@@ -1108,11 +1182,7 @@ let transform_transaction (info : info) (t : Model.transaction) : transaction_ws
   let args = List.map mk_arg [("p", args);
                               ("s", Some (Flocal (lstr "storage")))] in
   let action = Tools.get t.action in
-  (*  Format.eprintf "%a\n" Model.pp_pterm action;*)
   let action, asset_functions = process info ids binds action in
-(*  Format.eprintf "--\n%a\n" pp_pterm action;
-  Format.eprintf "%d\n" (List.length asset_functions);
-    List.iter (fun x -> Format.eprintf "%s\n" (show_asset_function x)) asset_functions;*)
 
   let t, asset_functions = {
     dummy_transaction with
