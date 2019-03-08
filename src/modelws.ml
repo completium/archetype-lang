@@ -446,6 +446,7 @@ let dummy_function = {
   args   = [];
   return = None;
   body   = loc_pterm Pbreak;
+  side   = false;
   loc    = Location.dummy;
 }
 
@@ -953,14 +954,15 @@ let mk_add_list info asset_name field_name =
   let asset_name_key = asset_name ^ "_key" in
   let is_one_arg = true in
   {
-  dummy_function with
-  name = lstr (mk_fun_name (AddList (asset_name, field_name)));
-  args = [mk_arg ("p", Some (Ftuple ([Flocal (lstr "storage");
-                                      Ftyp (get_key_type (dumloc asset_name) info);
-                                      Ftuple ([Ftyp VTstring; Flocal (lstr asset_col)]);
-                                     ])))];
-  body =
-    loc_pterm (
+    dummy_function with
+    side = true;
+    name = lstr (mk_fun_name (AddList (asset_name, field_name)));
+    args = [mk_arg ("p", Some (Ftuple ([Flocal (lstr "storage");
+                                        Ftyp (get_key_type (dumloc asset_name) info);
+                                        Ftuple ([Ftyp VTstring; Flocal (lstr asset_col)]);
+                                       ])))];
+    body =
+      loc_pterm (
       Pletin ("s",                 Papp (Pvar "get_0_3", [Pvar "p"]), None,
       Pletin (asset_name ^ "_key", Papp (Pvar "get_1_3", [Pvar "p"]), None,
       Pletin (asset_col_key,       Papp (Pvar "get_0_2", [Papp (Pvar "get_2_3", [Pvar "p"])]), None,

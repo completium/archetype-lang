@@ -277,7 +277,7 @@ type ('id,'typ,'pattern,'term) poly_pterm  =
   | Prel of int
   | Pletin of 'id * 'term * 'typ option * 'term
   | Papp of 'term * ('term) list
-  | Plambda of 'id * 'typ option * 'term
+  | Plambda of 'id * 'typ option * bool * 'term
   | Plogical of logical_operator * 'term * 'term
   (* mutualize below with lterm ? *)
   | Pcomp of comparison_operator * 'term * 'term
@@ -386,6 +386,7 @@ type ('id,'typ,'pattern,'term) gen_function = {
   args         : (('typ, bval) gen_decl) list;
   return       : 'typ option;
   body         : ('id,'typ,'pattern,'term) poly_pterm loced;
+  side         : bool;
   loc          : Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]
@@ -447,7 +448,7 @@ let poly_pterm_map f fi ft fr fp fq = function
     | Prel i -> f (Prel i)
     | Pletin (i, v, t, b) -> f (Pletin (fi i, fp v, ft t, fp b))
     | Papp (e, a) -> f (Papp (fp e, List.map fp a))
-    | Plambda (i, t, b) -> f (Plambda (fi i, ft t, fp b))
+    | Plambda (i, t, s, b) -> f (Plambda (fi i, ft t, s, fp b))
     | Plogical (o, l, r) -> f (Plogical (o, fp l, fp r))
     | Pcomp (o, l, r) -> f (Pcomp (o, fp l, fp r))
     | Parith (o, l, r) -> f (Parith (o, fp l, fp r))
@@ -476,7 +477,7 @@ let poly_pterm_fold f acc = function
     | Precord l -> List.fold_left (fun acc (_q, t) -> f acc t) acc l
     | Pletin (_i, _v, _t, b) -> f acc b
     | Papp (e, a) -> List.fold_left f (f acc e) a
-    | Plambda (_i, _t, b) -> f acc b
+    | Plambda (_i, _t, _s, b) -> f acc b
     | Plogical (_o, l, r) -> f (f acc l) r
     | Pcomp (_o, l, r) -> f (f acc l) r
     | Parith (_o, l, r) -> f (f acc l) r

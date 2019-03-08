@@ -325,7 +325,7 @@ let is_lambda (p : Modelws.pterm) =
 
 let dest_lambda (p : Modelws.pterm) =
   match unloc p with
-  | Plambda (id,t,b) -> (id,t,b)
+  | Plambda (id,t,_,b) -> (id,t,b)
   | _ -> raise (Anomaly "dest_var")
 
 let to_big_int (n : Big_int.big_int) : BigInt.t =
@@ -405,7 +405,7 @@ let rec pterm_to_expr (p : Modelws.pterm) =  {
           else List.map pterm_to_expr l in
           Eidapp (mk_qid [mid;rid], l)
         else raise (Anomaly ("pterm_to_expr : "^(Modelws.show_pterm p)))
-      | Plambda (i,t,b) -> mk_efun [] (loc p) i t b
+      | Plambda (i,t,s,b) -> mk_efun [] (loc p) i t s b
       | Pmatchwith (e, l) -> Ematch (pterm_to_expr e, List.map to_regbranch l, [])
       | Pletin (n,v,_,b) -> Elet (mk_ident n, false, Expr.RKnone, pterm_to_expr v, pterm_to_expr b)
       | Ptuple l -> Etuple (List.map pterm_to_expr l)
@@ -431,14 +431,21 @@ let rec pterm_to_expr (p : Modelws.pterm) =  {
   expr_loc = loc p
 }
 
-and mk_efun args l i t b =
+and mk_efun args l i t s b =
   let t = map_option field_type_to_mlwtyp t in
   let args = args @ [l, Some (mk_ident i), false, t] in
   if is_lambda b
   then
     let (i,t,b) = dest_lambda b in
-    mk_efun args (loc b) i t b
-  else Efun (args, None, Ity.MaskVisible, empty_spec, pterm_to_expr b)
+    mk_efun args (loc b) i t s b
+  else
+    let spec =
+      if s
+      then (print_endline "side : true";{ empty_spec with
+             sp_xpost = [ Loc.dummy_position, [ mk_qid [dumloc "Current"; dumloc "Side"], None ] ];
+           })
+      else empty_spec in
+    Efun (args, None, Ity.MaskVisible, spec, pterm_to_expr b)
 and to_regbranch r : reg_branch =
   let pat, e = r in
   (mk_pattern pat, pterm_to_expr e)
@@ -469,24 +476,26 @@ and mk_unit () = {
   expr_loc = Loc.dummy_position;
 }
 
-let rec mk_lambda (args : (storage_field_type,bval) gen_decl list) body : Modelws.pterm =
+let rec mk_lambda (args : (storage_field_type,bval) gen_decl list) side body : Modelws.pterm =
   match args with
-  | [a]   -> mkloc a.loc (Plambda (a.name, a.typ, body))
-  | a::tl -> mkloc a.loc (Plambda (a.name, a.typ, mk_lambda tl body))
+  | [a]   -> mkloc a.loc (Plambda (a.name, a.typ, side, body))
+  | a::tl -> mkloc a.loc (Plambda (a.name, a.typ, side, mk_lambda tl side body))
   | []    -> body
 
 let mk_empty_ops () =
   Dlet(str_to_ident "empty_ops", false, Expr.RKnone, mk_empty_list())
 
 let mk_function_decl (f : function_ws) =
-  let body = mk_lambda f.args f.body in
+  (*print_endline ("fun : "^(unloc f.name)^" side : "^(string_of_bool f.side));*)
+  let body = mk_lambda f.args f.side f.body in
+  (*print_endline ("body : "^(show_pterm body));*)
   Dlet (mk_ident f.name, false, Expr.RKnone, pterm_to_expr body)
 
 let mk_transaction (f : transaction_ws) =
   let action = match f.action with
     | None -> raise (Modelinfo.UnsupportedFeature "no action in transaction")
     | Some e -> e in
-  let body = mk_lambda f.args action in
+  let body = mk_lambda f.args false action in
   Dlet (mk_ident f.name, false, Expr.RKnone, pterm_to_expr body)
 
 (* returns a list of definition *)

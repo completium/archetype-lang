@@ -150,7 +150,9 @@ theory Current
   val sender   unit   : address
   val time     unit   : timestamp
 
-  val failwith msg  : 'a
+  exception Side
+
+  val failwith msg  : 'a raises { Side }
 
   let get_caller = sender
 

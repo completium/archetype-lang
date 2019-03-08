@@ -282,8 +282,8 @@ let rec mk_pterm (e : expr) : pterm =
            List.fold_left (
            fun acc i ->
              let id, typ, _ = i in
-             Plambda (id, map_option mk_ptyp typ, mkloc dummy acc)
-           ) (Plambda (ia, map_option mk_ptyp it, mk_pterm body)) t)
+             Plambda (id, map_option mk_ptyp typ, false, mkloc dummy acc)
+           ) (Plambda (ia, map_option mk_ptyp it, false, mk_pterm body)) t)
     | Eletin ((i, typ, _), init, body) -> Pletin (i, mk_pterm init,
                                                   map_option mk_ptyp typ, mk_pterm body)
     | Ematchwith (e, l) ->
@@ -494,6 +494,7 @@ let get_functions decls =
           args = [];
           return = map_option mk_ptyp typ;
           body = mk_pterm body;
+          side = false;
           loc = loc;}::acc
        | _ -> acc)
     ) decls []

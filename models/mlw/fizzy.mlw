@@ -102,16 +102,16 @@ theory Fizzy
    mutable tr           : traces;
    mutable ename        : option entry;
  }
-(*  invariant { forall a:action. performed_by_role s.tr s.e (Cons a Nil) (Cons s.owner Nil) } *)
-(*  invariant { forall tx:entry. ename = Some tx -> is_empty ops } *)
+  invariant { forall a:action. performed_by_role tr e (Cons a Nil) (Cons owner Nil) }
+  invariant { forall tx:entry. ename = Some tx -> is_empty ops }
 
 (*   invariant { forall tx:entry.
                performed_by_tx tr ename tx (Update Stat) (Cons Updatestatus (Cons Manual Nil)) }*)
 
-(*   invariant { forall tx:entry, x:trace. Mem.mem x tr ->
+  invariant { forall tx:entry, x:trace. Mem.mem x tr ->
                                          Some tx = ename ->
                                          Mem.mem (action x) (Cons (Update Stat) Nil) ->
-                                         Mem.mem tx (Cons Updatestatus (Cons Manual Nil)) } *)
+                                         Mem.mem tx (Cons Updatestatus Nil(*(Cons Manual Nil)*)) }
 
 (*   invariant { exists r:address. forall a:action, x:trace.
                Mem.mem (action x) (Cons a Nil) ->
@@ -153,17 +153,17 @@ theory Fizzy
                  (arrival : string)
                  (st  : status): unit
  raises  { NotFound }
- ensures { forall a:action. performed_by_role s.tr s.e (Cons a Nil) (Cons s.owner Nil) }
+(* ensures { forall a:action. performed_by_role s.tr s.e (Cons a Nil) (Cons s.owner Nil) }
  ensures { forall tx:entry. Some tx = s.ename ->
            Transfers.sum s.ops 0 (length s.ops) = 0 }
  ensures { forall tx:entry, x:trace. Mem.mem x s.tr ->
                                      Some tx = s.ename ->
                                      Mem.mem (action x) (Cons (Update Stat) Nil) ->
-                                     Mem.mem tx (Cons Updatestatus (Cons Manual Nil)) }
+                                     Mem.mem tx (Cons Updatestatus (Cons Manual Nil)) }*)
 
  =
- s.tr  <- Nil;
- s.ops <- Nil;
+(* s.tr  <- Nil;
+ s.ops <- Nil;*)
  match s.ename with
  | Some Addflightinsurance ->
    if caller s.e = s.owner
