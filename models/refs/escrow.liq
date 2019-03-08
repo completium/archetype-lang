@@ -42,11 +42,11 @@ let%entry abort (_p : unit) (s : storage) =
 let%entry confirm (_p : unit) (s : storage) =
   let ops = empty_ops in
   let balance = Current.balance() in
-  if (not (balance = s.price + s.penalty))
-  then Current.failwith "condition is not valid";
   let s, ops =
     (match s.state with
      | Created -> begin
+         if (balance = s.price + s.penalty)
+         then Current.failwith "condition is not valid";
          let s = s.state <- Confirmed in
          s, ops
        end
@@ -59,11 +59,11 @@ let%entry transfer_ (_p : unit) (s : storage) =
   let ops = empty_ops in
   if (not (caller = (keyh_to_addr s.oracle)))
   then Current.failwith "caller is not authorized";
-  if (not (now < s.deadline))
-  then Current.failwith "condition is not valid";
   let s, ops =
     (match s.state with
-     | Confirmed-> begin
+     | Confirmed -> begin
+         if (now < s.deadline)
+         then Current.failwith "condition is not valid";
          let s = s.state <- Transferred in
          let ops = (Account.transfer ~dest:s.creditor ~amount:(s.price))::ops in
          let ops = (Account.transfer ~dest:s.seller ~amount:(s.penalty))::ops in
