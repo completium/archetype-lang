@@ -64,22 +64,25 @@ transaction consume (ow : address) (val : uint) = {
   action
      let remainder = val in
      loop for (m in by_expiration o) (
-       if m.amount > remainder
+       if remainder > 0
        then (
-         remainder := 0;  (* this should be after instruction below
-                             this is to demonstrate verification
-                             capacity to not verify contract in this
-                             state *)
-         m.amount  -= remainder;
-         break
-       ) else if (m.amount = remainder)
+         if m.amount > remainder
          then (
-         remainder := 0;
-         o.miles.remove m;
-         break
-       ) else (
-         remainder -= m.amount;
-         o.miles.remove m);
+           remainder := 0;  (* this should be after instruction below
+                               this is to demonstrate verification
+                               capacity to not verify contract in this
+                               state *)
+           m.amount  -= remainder
+         )
+         else if m.amount = remainder
+         then (
+           remainder := 0;
+           o.miles.remove m
+         ) else (
+           remainder -= m.amount;
+           o.miles.remove m
+         )
+       );
      assert (remainder = 0))
 }
 
