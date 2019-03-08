@@ -105,6 +105,7 @@ module liq.Utils
   syntax val get_5_6   "get %1 5"
 
   syntax val update_storage "%2 <- %3"
+  syntax val update_simple "%2"
 
 end
 
@@ -125,6 +126,8 @@ module liq.List
 
   syntax val add "list_add %1"
 
+  syntax val add2 "%1::%2"
+
   syntax val remove "list_remove %1"
 
   syntax val Nil "[]"
@@ -134,6 +137,8 @@ end
 module liq.Map
 
   syntax val find       "Map.find %1 %2"
+
+  syntax val mem        "Map.mem %1 %2"
 
   syntax val add        "Map.add %1 %2 %3"
 

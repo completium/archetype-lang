@@ -128,6 +128,7 @@ theory Utils
 
   (* storage update *)
   val update_storage 's 'a 'a : 's
+  val update_simple 's 'a : 's
 
 end
 
@@ -168,6 +169,8 @@ theory List
 
   val add ('a, list 'a) : list 'a
 
+  val add2 'a (list 'a) : list 'a
+
   val remove ('a, list 'a) : list 'a
 
   val append (list 'a, list 'a) : list 'a
@@ -201,6 +204,8 @@ theory Map
   type map 'a 'b
 
   val find 'a (map 'a 'b) : option 'b
+
+  val mem 'a (map 'a 'b) : bool
 
   val add 'a 'b (map 'a 'b) : map 'a 'b
 
