@@ -441,9 +441,9 @@ and mk_efun args l i t s b =
   else
     let spec =
       if s
-      then (print_endline "side : true";{ empty_spec with
-             sp_xpost = [ Loc.dummy_position, [ mk_qid [dumloc "Current"; dumloc "Side"], None ] ];
-           })
+      then { empty_spec with
+             sp_xpost = [ Loc.dummy_position, [ Qident (mk_ident (dumloc "Side")), None ] ];
+           }
       else empty_spec in
     Efun (args, None, Ity.MaskVisible, spec, pterm_to_expr b)
 and to_regbranch r : reg_branch =
@@ -495,7 +495,7 @@ let mk_transaction (f : transaction_ws) =
   let action = match f.action with
     | None -> raise (Modelinfo.UnsupportedFeature "no action in transaction")
     | Some e -> e in
-  let body = mk_lambda f.args false action in
+  let body = mk_lambda f.args f.side action in
   Dlet (mk_ident f.name, false, Expr.RKnone, pterm_to_expr body)
 
 (* returns a list of definition *)

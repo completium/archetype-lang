@@ -578,6 +578,7 @@ let get_transactions decls =
            transition = get_transaction_transition items;
            spec = get_transaction_specification items;
            action = get_transaction_action items;
+           side = false;
            loc = loc;
          }]
        | _ -> acc)

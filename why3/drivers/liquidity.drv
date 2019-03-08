@@ -2,8 +2,10 @@
 
 printer "liquidity"
 
-prelude "[%%version 0.5]\n
-let[@inline] empty_ops = ([] : operation list)"
+prelude "[%%version 1.01]\n
+let[@inline] empty_ops = ([] : operation list)
+
+let[@inline] list_add (e, l) = e::l"
 
 module HighOrd
   syntax type (->) "%1 -> %2"
@@ -125,8 +127,6 @@ module liq.List
   syntax val append "list_append %1"
 
   syntax val add "list_add %1"
-
-  syntax val add2 "%1::%2"
 
   syntax val remove "list_remove %1"
 

@@ -340,6 +340,7 @@ type ('id,'typ,'pattern,'term) gen_transaction = {
                  (*            id *  from * (    to *    condition *       action)) *)
   spec         : specification option;
   action       : ('id,'typ,'pattern,'term) poly_pterm loced option;
+  side         : bool;
   loc          : Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]

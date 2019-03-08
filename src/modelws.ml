@@ -458,6 +458,7 @@ let dummy_transaction = {
   transition   = None;
   spec         = None;
   action       = None;
+  side         = false;
   loc          = Location.dummy;
 }
 
@@ -540,7 +541,7 @@ let field_to_getset info (f : storage_field) (op : storage_field_operation) =
                               [Ptuple[Pvar "v";
                                       Papp (Pvar n,[Pvar "s"])]]) ,[
                (Mapp (Qident "Some",[Mvar "k"]), Pvar "k");
-               (Mapp (Qident "None",[]),  Papp (Pdot (Pvar "Current",Pvar "failwith"),
+               (Mapp (Qident "None",[]), Papp (Pdot (Pvar "Current",Pvar "failwith"),
                                                 [Papp (Pvar "not_found",[])]));
             ]
             ))
@@ -893,6 +894,7 @@ let mk_get_asset info asset_name = {
   name = lstr (mk_fun_name (Get asset_name));
   args = [mk_arg ("p", Some (Ftuple ([Flocal (lstr "storage");
                                       Ftyp (get_key_type (dumloc asset_name) info) ])))];
+  side = true;
   body =
     loc_pterm (
       Pletin ("s", Papp (Pvar "get_0_2", [Pvar "p"]), None,
@@ -955,8 +957,8 @@ let mk_add_list info asset_name field_name =
   let is_one_arg = true in
   {
     dummy_function with
-    side = true;
     name = lstr (mk_fun_name (AddList (asset_name, field_name)));
+    side = true;
     args = [mk_arg ("p", Some (Ftuple ([Flocal (lstr "storage");
                                         Ftyp (get_key_type (dumloc asset_name) info);
                                         Ftuple ([Ftyp VTstring; Flocal (lstr asset_col)]);
@@ -978,8 +980,8 @@ let mk_add_list info asset_name field_name =
                                                               Papp (Pvar "Some", [Pvar asset_col]);
                                                               Papp (Pvar (asset_col ^ "_col"), [Pvar "s"])])
                                                       ]), None,
-                     Pletin ("newlist", Papp (Pdot (Pvar "List", Pvar "add2"), [Pvar (asset_col_key);
-                                                                                Papp (Pvar field_name, [Pvar asset_name])]), None,
+                     Pletin ("newlist", Papp (Pdot (Pvar "List", Pvar "add"), [Ptuple [Pvar (asset_col_key);
+                                                                                Papp (Pvar field_name, [Pvar asset_name])]]), None,
                              Pletin ("new" ^ asset_name,
                                      (if is_one_arg
                                       then (Papp (Pvar "update_simple", [Pvar (asset_name);
@@ -1265,6 +1267,7 @@ let transform_transaction (info : info) (t : Model.transaction) : transaction_ws
     transition   = None;
     spec         = None;
     action       = Some action;
+    side         = true;
     loc          = Location.dummy;
   }, asset_functions in
   (t, asset_functions)

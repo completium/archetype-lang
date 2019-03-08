@@ -171,8 +171,6 @@ theory List
 
   val add ('a, list 'a) : list 'a
 
-  val add2 'a (list 'a) : list 'a
-
   val remove ('a, list 'a) : list 'a
 
   val append (list 'a, list 'a) : list 'a
