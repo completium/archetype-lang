@@ -3,11 +3,11 @@
         "name" :"Fizzy";
         "url" : "https://github.com/edukera/cml-lang/blob/master/contracts/fizzy.cml";
         "property": {
-            "id":"fizzy_p1";
-            "desc":"Only contract owner can interact with the Fizzy smart contract ";
+            "id":"fizzy_p2";
+            "desc":"No ether is recieved or transferred by the fizzy smart contract";
             "formula": {
                 "lang":"cml"
-                "code":"anyaction may only be performed by [creator]"
+                "code":"transfers_by anytx = 0 /\ received_by anytx = 0"
             };
             "proof": {
                 "type" : "why3";
@@ -752,65 +752,109 @@
                            prop Sum_eq2 = Sum_eq1, prop Sum_transitivity2 = Sum_transitivity1,
                            prop Sum_right_extension1 = Sum_right_extension,
                            prop Sum_def_non_empty1 = Sum_def_non_empty,
-                           prop Sum_def_empty2 = Sum_def_empty1,  *)function s [@introduced] [@model_trace:s] : storage
+                           prop Sum_def_empty2 = Sum_def_empty1,  *)function s8 [@introduced] [@model_trace:s] : storage
 
-                         function s_ename [@introduced] : option entry
+                         function s_ename8 [@introduced] : option entry
 
-                         function s_tr [@introduced] : list trace
+                         function s_tr10 [@introduced] : list trace
 
-                         function s_ops [@introduced] : list transfer
+                         function s_ops8 [@introduced] : list transfer
 
-                         function s_e [@introduced] : env
+                         function s_e8 [@introduced] : env
 
-                         function s_finsurances [@introduced] : infix_mngt int (list int)
+                         function s_finsurances8 [@introduced] : infix_mngt int (list int)
 
-                         function s_productid [@introduced] : infix_mngt int int
+                         function s_productid8 [@introduced] : infix_mngt int int
 
-                         function s_stat [@introduced] : infix_mngt int status
+                         function s_stat10 [@introduced] : infix_mngt int status
 
-                         function s_indemnity [@introduced] : infix_mngt int int
+                         function s_indemnity8 [@introduced] : infix_mngt int int
 
-                         function s_premium [@introduced] : infix_mngt int int
+                         function s_premium8 [@introduced] : infix_mngt int int
 
-                         function s_limit [@introduced] : infix_mngt int int
+                         function s_limit8 [@introduced] : infix_mngt int int
 
-                         function s_flights [@introduced] : list int
+                         function s_flights8 [@introduced] : list int
 
-                         function s_insurances [@introduced] : list int
+                         function s_insurances8 [@introduced] : list int
 
-                         function s_ikey [@introduced] : int
+                         function s_ikey8 [@introduced] : int
 
-                         function s_owner [@introduced] : int
+                         function s_owner8 [@introduced] : int
 
-                         function fi [@introduced] [@model_trace:fi] : int
+                         function fi8 [@introduced] [@model_trace:fi] : int
 
-                         function li [@introduced] [@model_trace:li] : int
+                         function li8 [@introduced] [@model_trace:li] : int
 
-                         function pre [@introduced] [@model_trace:pre] : int
+                         function pre8 [@introduced] [@model_trace:pre] : int
 
-                         function ind [@introduced] [@model_trace:ind] : int
+                         function ind8 [@introduced] [@model_trace:ind] : int
 
-                         function pro [@introduced] [@model_trace:pro] : int
+                         function pro8 [@introduced] [@model_trace:pro] : int
 
-                         function fk [@introduced] [@model_trace:fk] : int
+                         function fk8 [@introduced] [@model_trace:fk] : int
 
-                         function arrival [@introduced] [@model_trace:arrival] : int
+                         function arrival8 [@introduced] [@model_trace:arrival] : int
 
-                         function st [@introduced] [@model_trace:st] : status
+                         function st8 [@introduced] [@model_trace:st] : status
 
-                         axiom H7 [@introduced] : [@model_vc] [@vc:annotation]
-                           [@expl:type invariant] (s_ename = ename s) /\ (s_tr = tr s) /\ (s_ops = ops
-                           s) /\ (s_e = e s) /\ (s_finsurances = finsurances s) /\
-                           (s_productid = productid s) /\ (s_stat = stat s) /\
-                           (s_indemnity = indemnity s) /\ (s_premium = premium s) /\ (s_limit = limit
-                           s) /\ (s_flights = flights s) /\ (s_insurances = insurances s) /\
-                           (s_ikey = ikey s) /\ (s_owner = owner s)
+                         axiom H62 [@introduced] : [@model_vc] [@vc:annotation]
+                           [@expl:type invariant] (s_ename8 = ename s8) /\ (s_tr10 = tr s8) /\
+                           (s_ops8 = ops s8) /\ (s_e8 = e s8) /\ (s_finsurances8 = finsurances s8) /\
+                           (s_productid8 = productid s8) /\ (s_stat10 = stat s8) /\
+                           (s_indemnity8 = indemnity s8) /\ (s_premium8 = premium s8) /\
+                           (s_limit8 = limit s8) /\ (s_flights8 = flights s8) /\
+                           (s_insurances8 = insurances s8) /\ (s_ikey8 = ikey s8) /\ (s_owner8 = owner
+                           s8)
 
-                         axiom H8 [@introduced] : (ename s = Some Addflightinsurance)
+                         axiom H63 [@introduced] : (ename s8 = Some Updatestatus)
 
-                         axiom H9 [@introduced] : (caller (e s) = owner s)
+                         axiom H64 [@introduced] : (caller (e s8) = owner s8)
 
-                         function a1 [@introduced] [@model_trace:a] : action
+                         function l5 [@introduced] [@model_trace:l] : list int = get1 (finsurances s8)
+                           fk8
+
+                         axiom H65 [@introduced] : [@model_vc] [@vc:annotation]
+                           [@expl:loop bounds] infix_lseq 0 (infix_pl (infix_mn (length3 l5) 1) 1)
+
+                         function s_tr11 [@introduced] : list trace
+
+                         function s_stat11 [@introduced] : infix_mngt int status
+
+                         function i2 [@introduced] [@model_trace:i] : int
+
+                         axiom H66 [@introduced] : infix_lseq 0 i2
+
+                         axiom H67 [@introduced] : infix_lseq i2 (infix_mn (length3 l5) 1)
+
+                         axiom H68 [@introduced] : [@model_vc] [@vc:annotation]
+                           [@expl:loop invariant init] forall a4:action. performed_by_role s_tr11 (e
+                           s8) (Cons a4 (Nil:list action)) (Cons (owner s8) (Nil:list int))
+
+                         axiom H69 [@introduced] : [@model_vc] [@vc:annotation]
+                           [@expl:loop invariant init] forall tx5:entry. (Some tx5 = ename s8) ->
+                           (sum2 (ops s8) 0 (length3 (ops s8)) = 0)
+
+                         axiom H70 [@introduced] : [@model_vc] [@vc:annotation]
+                           [@expl:loop invariant init] forall tx5:entry, x3:trace. mem x3 s_tr11 ->
+                           (Some tx5 = ename s8) -> mem (action x3) (Cons (Update Stat) (Nil:list
+                           action)) -> mem tx5 (Cons Updatestatus (Cons Manual (Nil:list entry)))
+
+                         function k1 [@introduced] [@model_trace:k] : int
+
+                         axiom H71 [@introduced] : (get1 s_stat11 k1 = Created)
+
+                         axiom H72 [@introduced] : infix_gt arrival8 (get1 (limit s8) k1)
+
+                         axiom H73 [@introduced] : [@model_vc] [@asym_split] [@vc:annotation]
+                           [@expl:loop invariant preservation] forall a4:action. performed_by_role
+                           (infix_plpl s_tr11 (Cons (Mk_trace Updatestatus (Insurance k1) (Update
+                           Stat)) (Nil:list trace))) (e s8) (Cons a4 (Nil:list action)) (Cons (owner
+                           s8) (Nil:list int))
+
+                         function tx5 [@introduced] [@model_trace:tx] : entry
+
+                         axiom H74 [@introduced] : (Some tx5 = ename s8)
 
                          (* meta syntax_type type int, "int", 0 *)
 
@@ -821,13 +865,11 @@
                          (* meta encoding:ignore_polymorphism_ls predicate infix_eq *)
 
                          goal VC_all_entries [@expl:VC for all_entries] : [@model_vc] [@asym_split]
-                           [@vc:annotation] [@expl:type invariant] performed_by_role (infix_plpl
-                           (infix_plpl (tr s) (Cons (Mk_trace Addflightinsurance (Insurance (infix_mn
-                           (infix_pl (ikey s) 1) 1)) Add) (Nil:list trace))) (Cons (Mk_trace
-                           Addflightinsurance (Flight fi) Add) (Nil:list trace))) (e s) (Cons a1
-                           (Nil:list action)) (Cons (owner s) (Nil:list int))
+                           [@vc:annotation] [@expl:loop invariant preservation] (sum2 (ops s8) 0
+                           (length3 (ops s8)) = 0)
 
                          end
+
                          "
             }
 
