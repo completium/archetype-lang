@@ -1,0 +1,18 @@
+model certificate_generator
+
+role[%transferable] admin = @tz1aazS5ms5cbGkb6FN1wvWmN7yrMTTcr6wB
+
+asset certificate identified by id = {
+  id : string;
+  description : string;
+  formula : string;
+  url : string;
+  hash : string;
+  }
+
+transaction add (c : certificate) = {
+  called by admin
+
+  action
+    certificate.add c
+}
