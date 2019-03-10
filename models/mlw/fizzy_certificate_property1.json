@@ -1,9 +1,9 @@
 {
     "smart-contract" : {
         "name" :"Fizzy";
-        "url" : "";
+        "url" : "https://etherscan.io/address/0xe083515d1541f2a9fd0ca03f189f5d321c73b872#code";
         "property": {
-            "id":"property 1";
+            "id":"fizzy_p1";
             "desc":"Only contract owner can interact with the Fizzy smart contract ";
             "formula": {
                 "lang":"cml"
