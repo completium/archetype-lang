@@ -1032,13 +1032,13 @@ let to_arg info (arg : (ptyp, bval) gen_decl) : (string * storage_field_type) li
 let compute_s_args info (t : Model.transaction) =
   let args = t.args in
   if List.length args = 0
-  then ([], Some (Flocal (lstr "unit")), [])
+  then ([], Some (Flocal (lstr "unit")))
   else (
     let ids, args = args
             |> List.map (fun i -> to_arg info i)
             |> List.flatten
             |> List.split in
-    (ids, (Some (Ftuple args)), []))
+    (ids, (Some (Ftuple args))))
 
 type ret_typ =
   | Letin
@@ -1054,17 +1054,23 @@ type process_data = {
   term : pterm;
   funs : asset_function list;
   ret  : ret_typ;
+  side : bool;
 }
 
 let dummy_process_data = {
   term = dumloc Pbreak;
   funs = [];
   ret  = None;
+  side = false;
 }
 
 type process_acc = {
   info : info;
-  binds : ((string * string) list) list;
+}
+
+type process_ret = {
+  funs : asset_function list;
+  side : bool;
 }
 
 let rec cast_pattern_type (p : Model.pattern) : pattern =
@@ -1204,29 +1210,6 @@ let rec process_rec (acc : process_acc) (pterm : Model.pterm) : process_data =
       funs = [];
     }
 
-let process (info : info) (_ids : string list) (binds : (string * string) list) (action : Model.pterm) : pterm * asset_function list =
-  let acc = {
-    info = info;
-    binds = [binds];
-  } in
-  let s = process_rec acc action in
-  (*  let nb = ids |> List.length in*)
-  let pt : pterm = s.term in
-  (*  List.iter (fun x -> Printf.eprintf "%s\n" (show_asset_function x)) s.funs;*)
-
-  let action = None, dumloc (Pletin (dumloc "ow", loc_pterm (Papp (Pvar "get_0_4", [Pvar "p"])), None,
-                     (dumloc (Pletin (dumloc "newmile_key", loc_pterm (Papp (Pvar "get_1_4", [Pvar "p"])), None,
-                     (dumloc (Pletin (dumloc "newmile_amount", loc_pterm (Papp (Pvar "get_2_4", [Pvar "p"])), None,
-                     (dumloc (Pletin (dumloc "newmile_expiration", loc_pterm (Papp (Pvar "get_3_4", [Pvar "p"])), None,
-                     (dumloc (Pletin (dumloc "newmile", loc_pterm (Ptuple [Pvar "newmile_key"; Papp(Pvar(mk_fun_name (MkAsset "mile")),[Pvar "newmile_expiration"; Pvar "newmile_amount"])]), None,
-                                                     pt)))))))))))))) in
-
-(*  let action =
-      List.fold_right
-        (fun x (n, acc) -> (n - 1, dumloc (Pletin (dumloc x, loc_pterm (Papp (Pvar ("get_" ^ (string_of_int n) ^ "_" ^ (string_of_int nb)), [Pvar "p"])), None, acc))))
-        ids (nb - 1, pt) in*)
-  action |> snd, s.funs
-
 let rec unloc_pattern (p : pattern) : basic_pattern =
   match unloc p with
   | Mwild -> Mwild
@@ -1251,14 +1234,58 @@ let rec pterm_to_basic_pterm (p : pterm) : basic_pterm =
     pterm_to_basic_pterm
     unloc_qualid
 
-let transform_transaction (info : info) (t : Model.transaction) : transaction_ws * asset_function list =
-  let ids, args, binds = compute_s_args info t in
+type arg_ret = {
+  id: string;
+  typs: storage_field_type list;
+}
+
+let transform_transaction (info : info) (m : model_unloc) (t : Model.transaction) : transaction_ws * asset_function list =
+  let ids, args = compute_s_args info t in
   let args = List.map mk_arg [("p", args);
                               ("s", Some (Flocal (lstr "storage")))] in
   let action = Tools.get t.action in
-  let action, asset_functions = process info ids binds action in
 
-  let t, asset_functions = {
+  let dummy_pterm = loc_pterm (Ptuple[Pvar "empty_ops"; Pvar "s"]) in
+
+  let acc = {
+    info = info;
+  } in
+
+  let action, ret =
+  begin
+    match (unloc m.name), (unloc t.name) with
+    | "miles_with_expiration", "add" ->
+      begin
+        let s = process_rec acc action in
+        let pt : pterm = s.term in
+        dumloc (Pletin (dumloc "ow", loc_pterm (Papp (Pvar "get_0_4", [Pvar "p"])), None,
+                     (dumloc (Pletin (dumloc "newmile_key", loc_pterm (Papp (Pvar "get_1_4", [Pvar "p"])), None,
+                     (dumloc (Pletin (dumloc "newmile_amount", loc_pterm (Papp (Pvar "get_2_4", [Pvar "p"])), None,
+                     (dumloc (Pletin (dumloc "newmile_expiration", loc_pterm (Papp (Pvar "get_3_4", [Pvar "p"])), None,
+                     (dumloc (Pletin (dumloc "newmile", loc_pterm (Ptuple [Pvar "newmile_key"; Papp(Pvar(mk_fun_name (MkAsset "mile")),[Pvar "newmile_expiration"; Pvar "newmile_amount"])]), None,
+                                      pt)))))))))))))), {dummy_process_data with side = true; funs = s.funs}
+          end
+    | _ ->
+      begin
+        let nb = ids |> List.length in
+          (List.fold_right
+             (fun x (n, acc) -> (n - 1, dumloc (Pletin (dumloc x, loc_pterm (Papp (Pvar ("get_" ^ (string_of_int n) ^ "_" ^ (string_of_int nb)), [Pvar "p"])), None, acc))))
+             ids (nb - 1, dummy_pterm)) |> snd, dummy_process_data
+      end
+(*    | _ ->
+        begin
+          let s = process_rec acc action in
+          let pt : pterm = s.term in
+          let nb = ids |> List.length in
+          (List.fold_right
+             (fun x (n, acc) -> (n - 1, dumloc (Pletin (dumloc x, loc_pterm (Papp (Pvar ("get_" ^ (string_of_int n) ^ "_" ^ (string_of_int nb)), [Pvar "p"])), None, acc))))
+             ids (nb - 1, pt)) |> snd, s
+        end*)
+  end in
+
+  (*  List.iter (fun x -> Printf.eprintf "%s\n" (show_asset_function x)) s.funs;*)
+
+  {
     dummy_transaction with
     name         = t.name;
     args         = args;
@@ -1267,16 +1294,15 @@ let transform_transaction (info : info) (t : Model.transaction) : transaction_ws
     transition   = None;
     spec         = None;
     action       = Some action;
-    side         = true;
+    side         = ret.side;
     loc          = Location.dummy;
-  }, asset_functions in
-  (t, asset_functions)
+  }, ret.funs
 
 let transform_transactions (info : info) (m : model_unloc) : (transaction_ws list * asset_function list) =
   List.fold_left (fun (trs, assfuns) (t : Model.transaction) ->
-      let a, b = transform_transaction info t in
-      (a::trs, b @ assfuns))
-    ([], []) (m.transactions |> (fun l -> [List.nth l 0]))
+      let a, b = transform_transaction info m t in
+      (trs @ [a], assfuns @ b))
+    ([], []) m.transactions
 
 let fun_trans (info : info) (m : model_unloc) (mws : model_with_storage) : model_with_storage =
   let (transactions, list) : (transaction_ws list * asset_function list) = transform_transactions info m in

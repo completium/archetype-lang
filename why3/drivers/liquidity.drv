@@ -5,7 +5,9 @@ printer "liquidity"
 prelude "[%%version 1.01]\n
 let[@inline] empty_ops = ([] : operation list)
 
-let[@inline] list_add (e, l) = e::l"
+let[@inline] list_add (e, l) = e::l
+
+let[@inline] keyh_to_addr (iKeyh : key_hash) = Contract.address (Account.default iKeyh)"
 
 module HighOrd
   syntax type (->) "%1 -> %2"
