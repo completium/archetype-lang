@@ -1015,31 +1015,6 @@ let generate_asset_functions info (l : asset_function list) : function_ws list =
       | AddList (asset_name, field_name) -> mk_add_list info asset_name field_name) l
 
 
-let to_arg info (arg : (ptyp, bval) gen_decl) : (string * storage_field_type) list =
-  let arg_name = unloc arg.name in
-  let rec to_arg_rec prefix typ =
-    match typ |> unloc with
-    | Tasset lident ->
-      let asset_args = List.fold_left (fun acc ((_s, i) : string * ptyp) ->
-          (to_arg_rec ((unloc lident) ^ "_") i)@acc)
-          [] (get_asset_vars_id_typs lident info) in
-      [get_key_id lident info, Ftyp (get_key_type lident info)] @ asset_args
-    | Tbuiltin vtb -> [(prefix ^ arg_name, Ftyp vtb)]
-    | _ -> raise Tools.Unsupported_yet in
-  let typ = Tools.get arg.typ in
-  to_arg_rec "" typ
-
-let compute_s_args info (t : Model.transaction) =
-  let args = t.args in
-  if List.length args = 0
-  then ([], Some (Flocal (lstr "unit")))
-  else (
-    let ids, args = args
-            |> List.map (fun i -> to_arg info i)
-            |> List.flatten
-            |> List.split in
-    (ids, (Some (Ftuple args))))
-
 type ret_typ =
   | Letin
   | Storage
@@ -1234,14 +1209,82 @@ let rec pterm_to_basic_pterm (p : pterm) : basic_pterm =
     pterm_to_basic_pterm
     unloc_qualid
 
+
+
+
+let to_arg info (arg : (ptyp, bval) gen_decl) : (string * storage_field_type) list =
+  let arg_name = unloc arg.name in
+  let rec to_arg_rec prefix typ =
+    match typ |> unloc with
+    | Tasset lident ->
+      let asset_args = List.fold_left (fun acc ((_s, i) : string * ptyp) ->
+          (to_arg_rec ((unloc lident) ^ "_") i)@acc)
+          [] (get_asset_vars_id_typs lident info) in
+      [get_key_id lident info, Ftyp (get_key_type lident info)] @ asset_args
+    | Tbuiltin vtb -> [(prefix ^ arg_name, Ftyp vtb)]
+    | _ -> raise Tools.Unsupported_yet in
+  let typ = Tools.get arg.typ in
+  to_arg_rec "" typ
+
+let compute_s_args info (t : Model.transaction) =
+  let args = t.args in
+  if List.length args = 0
+  then ([], Some (Flocal (lstr "unit")))
+  else (
+    let ids, args = args
+            |> List.map (fun i -> to_arg info i)
+            |> List.flatten
+            |> List.split in
+    (ids, (Some (Ftuple args))))
+
+
+type arg_typ =
+  | ATSimple of storage_field_type
+  | ATAsset of string * storage_field_type * storage_field_type list
+
 type arg_ret = {
   id: string;
-  typs: storage_field_type list;
+  typ: arg_typ
 }
 
+let compute_args info (t : Model.transaction) : (arg_ret list) =
+  List.fold_left (
+    fun acc (arg : (ptyp, bval) gen_decl) -> (
+        let id = arg.name |> unloc in
+        let typ = Tools.get arg.typ in
+        match unloc typ with
+        | Tbuiltin vtb -> acc @ [{id = id; typ = ATSimple (Ftyp vtb);}]
+        | Tasset lident -> acc @ [{id = id; typ = ATAsset (
+            unloc lident,
+            Ftyp (get_key_type lident info),
+            List.fold_left (fun acc (i : string * ptyp) -> acc @ [Ftyp (
+                 match i |> snd |> unloc with
+                 | Tbuiltin vtb -> vtb
+                 | Tasset lident -> get_key_type lident info
+                 | _ -> raise (Anomaly "compute_args_0")
+               )])
+               [] (get_asset_vars_id_typs lident info))
+          }]
+        | _ -> raise (Anomaly "compute_args")
+      )
+  ) [] t.args
+
 let transform_transaction (info : info) (m : model_unloc) (t : Model.transaction) : transaction_ws * asset_function list =
-  let ids, args = compute_s_args info t in
-  let args = List.map mk_arg [("p", args);
+  let args0 = compute_args info t in
+
+  let args_p =
+    if List.length args0 = 0
+    then Some (Flocal (lstr "unit"))
+    else (Some (Ftuple (List.fold_left
+                          (fun acc (i : arg_ret) ->
+                             acc @
+                             (match i.typ with
+                              | ATSimple x -> [x]
+                              | ATAsset (_, k, l) -> k::l)
+                          )
+                          [] args0))) in
+
+  let args = List.map mk_arg [("p", args_p);
                               ("s", Some (Flocal (lstr "storage")))] in
   let action = Tools.get t.action in
 
@@ -1251,37 +1294,39 @@ let transform_transaction (info : info) (m : model_unloc) (t : Model.transaction
     info = info;
   } in
 
-  let action, ret =
-  begin
-    match (unloc m.name), (unloc t.name) with
-    | "miles_with_expiration", "add" ->
-      begin
-        let s = process_rec acc action in
-        let pt : pterm = s.term in
-        dumloc (Pletin (dumloc "ow", loc_pterm (Papp (Pvar "get_0_4", [Pvar "p"])), None,
-                     (dumloc (Pletin (dumloc "newmile_key", loc_pterm (Papp (Pvar "get_1_4", [Pvar "p"])), None,
-                     (dumloc (Pletin (dumloc "newmile_amount", loc_pterm (Papp (Pvar "get_2_4", [Pvar "p"])), None,
-                     (dumloc (Pletin (dumloc "newmile_expiration", loc_pterm (Papp (Pvar "get_3_4", [Pvar "p"])), None,
-                     (dumloc (Pletin (dumloc "newmile", loc_pterm (Ptuple [Pvar "newmile_key"; Papp(Pvar(mk_fun_name (MkAsset "mile")),[Pvar "newmile_expiration"; Pvar "newmile_amount"])]), None,
-                                      pt)))))))))))))), {dummy_process_data with side = true; funs = s.funs}
-          end
-    | _ ->
-      begin
-        let nb = ids |> List.length in
-          (List.fold_right
-             (fun x (n, acc) -> (n - 1, dumloc (Pletin (dumloc x, loc_pterm (Papp (Pvar ("get_" ^ (string_of_int n) ^ "_" ^ (string_of_int nb)), [Pvar "p"])), None, acc))))
-             ids (nb - 1, dummy_pterm)) |> snd, dummy_process_data
-      end
-(*    | _ ->
+  let pt, ret =
+    begin
+      match (unloc m.name), (unloc t.name) with
+      | "miles_with_expiration", "add" ->
         begin
           let s = process_rec acc action in
           let pt : pterm = s.term in
-          let nb = ids |> List.length in
-          (List.fold_right
-             (fun x (n, acc) -> (n - 1, dumloc (Pletin (dumloc x, loc_pterm (Papp (Pvar ("get_" ^ (string_of_int n) ^ "_" ^ (string_of_int nb)), [Pvar "p"])), None, acc))))
-             ids (nb - 1, pt)) |> snd, s
-        end*)
-  end in
+          pt, {dummy_process_data with side = true; funs = s.funs;}
+        end
+      | _ -> dummy_pterm, dummy_process_data
+    end in
+
+  let nb = List.fold_left (fun acc x -> acc +
+                                        (match x.typ with
+                                         | ATSimple _ -> 1
+                                         | ATAsset (_, _, l) -> 1 + List.length l)) 0 args0 in
+  let action =
+    (List.fold_right
+       (fun (x : arg_ret) (i, acc) ->
+          let get_arg i = Papp (Pvar ("get_" ^ (string_of_int i) ^ "_" ^ (string_of_int nb)), [Pvar "p"]) in
+          let id = x.id in
+          let n, body =
+            begin
+              match x.typ with
+              | ATSimple _ -> i - 1, get_arg i
+              | ATAsset (id, _, l) ->
+                let length_l = List.length l in
+                (i - 1 - length_l),
+                Ptuple [get_arg (i - length_l);
+                        Papp (Pvar (mk_fun_name (MkAsset id)), List.mapi (fun k _ -> get_arg (i - length_l + k + 1)) l)]
+            end in
+          n, dumloc (Pletin (dumloc id, loc_pterm body, None, acc)))
+       ) args0 (nb - 1, pt) |> snd in
 
   (*  List.iter (fun x -> Printf.eprintf "%s\n" (show_asset_function x)) s.funs;*)
 
