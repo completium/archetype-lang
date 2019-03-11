@@ -115,8 +115,9 @@ end
 
 module liq.Msg
 
-  syntax val not_found       "\"not found\""
-  syntax val already_exists  "\"already exists\""
+  syntax val not_found          "\"not found\""
+  syntax val not_supported_yet  "\"not supported yet\""
+  syntax val already_exists     "\"already exists\""
 
 end
 

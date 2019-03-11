@@ -1210,34 +1210,6 @@ let rec pterm_to_basic_pterm (p : pterm) : basic_pterm =
     unloc_qualid
 
 
-
-
-let to_arg info (arg : (ptyp, bval) gen_decl) : (string * storage_field_type) list =
-  let arg_name = unloc arg.name in
-  let rec to_arg_rec prefix typ =
-    match typ |> unloc with
-    | Tasset lident ->
-      let asset_args = List.fold_left (fun acc ((_s, i) : string * ptyp) ->
-          (to_arg_rec ((unloc lident) ^ "_") i)@acc)
-          [] (get_asset_vars_id_typs lident info) in
-      [get_key_id lident info, Ftyp (get_key_type lident info)] @ asset_args
-    | Tbuiltin vtb -> [(prefix ^ arg_name, Ftyp vtb)]
-    | _ -> raise Tools.Unsupported_yet in
-  let typ = Tools.get arg.typ in
-  to_arg_rec "" typ
-
-let compute_s_args info (t : Model.transaction) =
-  let args = t.args in
-  if List.length args = 0
-  then ([], Some (Flocal (lstr "unit")))
-  else (
-    let ids, args = args
-            |> List.map (fun i -> to_arg info i)
-            |> List.flatten
-            |> List.split in
-    (ids, (Some (Ftuple args))))
-
-
 type arg_typ =
   | ATSimple of storage_field_type
   | ATAsset of string * storage_field_type * storage_field_type list
@@ -1288,7 +1260,9 @@ let transform_transaction (info : info) (m : model_unloc) (t : Model.transaction
                               ("s", Some (Flocal (lstr "storage")))] in
   let action = Tools.get t.action in
 
-  let dummy_pterm = loc_pterm (Ptuple[Pvar "empty_ops"; Pvar "s"]) in
+  let dummy_pterm = loc_pterm (
+      Pseq (pfailwith "not_supported_yet",
+            Ptuple[Pvar "empty_ops"; Pvar "s"])) in
 
   let acc = {
     info = info;
@@ -1303,7 +1277,7 @@ let transform_transaction (info : info) (m : model_unloc) (t : Model.transaction
           let pt : pterm = s.term in
           pt, {dummy_process_data with side = true; funs = s.funs;}
         end
-      | _ -> dummy_pterm, dummy_process_data
+      | _ -> dummy_pterm, { dummy_process_data with side = true;}
     end in
 
   let nb = List.fold_left (fun acc x -> acc +

@@ -126,6 +126,36 @@ theory Utils
   let get_5_7 (v : ('a , 'b , 'c , 'd , 'e, 'f, 'g)) : 'f = let (_,_,_,_,_,f,_) = v in f
   let get_6_7 (v : ('a , 'b , 'c , 'd , 'e, 'f, 'g)) : 'g = let (_,_,_,_,_,_,g) = v in g
 
+  let get_0_8 (v : ('a , 'b , 'c , 'd , 'e, 'f, 'g, 'h)) : 'a = let (a,_,_,_,_,_,_,_) = v in a
+  let get_1_8 (v : ('a , 'b , 'c , 'd , 'e, 'f, 'g, 'h)) : 'b = let (_,b,_,_,_,_,_,_) = v in b
+  let get_2_8 (v : ('a , 'b , 'c , 'd , 'e, 'f, 'g, 'h)) : 'c = let (_,_,c,_,_,_,_,_) = v in c
+  let get_3_8 (v : ('a , 'b , 'c , 'd , 'e, 'f, 'g, 'h)) : 'd = let (_,_,_,d,_,_,_,_) = v in d
+  let get_4_8 (v : ('a , 'b , 'c , 'd , 'e, 'f, 'g, 'h)) : 'e = let (_,_,_,_,e,_,_,_) = v in e
+  let get_5_8 (v : ('a , 'b , 'c , 'd , 'e, 'f, 'g, 'h)) : 'f = let (_,_,_,_,_,f,_,_) = v in f
+  let get_6_8 (v : ('a , 'b , 'c , 'd , 'e, 'f, 'g, 'h)) : 'g = let (_,_,_,_,_,_,g,_) = v in g
+  let get_7_8 (v : ('a , 'b , 'c , 'd , 'e, 'f, 'g, 'h)) : 'h = let (_,_,_,_,_,_,_,h) = v in h
+
+  let get_0_9 (v : ('a , 'b , 'c , 'd , 'e, 'f, 'g, 'h, 'i)) : 'a = let (a,_,_,_,_,_,_,_,_) = v in a
+  let get_1_9 (v : ('a , 'b , 'c , 'd , 'e, 'f, 'g, 'h, 'i)) : 'b = let (_,b,_,_,_,_,_,_,_) = v in b
+  let get_2_9 (v : ('a , 'b , 'c , 'd , 'e, 'f, 'g, 'h, 'i)) : 'c = let (_,_,c,_,_,_,_,_,_) = v in c
+  let get_3_9 (v : ('a , 'b , 'c , 'd , 'e, 'f, 'g, 'h, 'i)) : 'd = let (_,_,_,d,_,_,_,_,_) = v in d
+  let get_4_9 (v : ('a , 'b , 'c , 'd , 'e, 'f, 'g, 'h, 'i)) : 'e = let (_,_,_,_,e,_,_,_,_) = v in e
+  let get_5_9 (v : ('a , 'b , 'c , 'd , 'e, 'f, 'g, 'h, 'i)) : 'f = let (_,_,_,_,_,f,_,_,_) = v in f
+  let get_6_9 (v : ('a , 'b , 'c , 'd , 'e, 'f, 'g, 'h, 'i)) : 'g = let (_,_,_,_,_,_,g,_,_) = v in g
+  let get_7_9 (v : ('a , 'b , 'c , 'd , 'e, 'f, 'g, 'h, 'i)) : 'h = let (_,_,_,_,_,_,_,h,_) = v in h
+  let get_8_9 (v : ('a , 'b , 'c , 'd , 'e, 'f, 'g, 'h, 'i)) : 'i = let (_,_,_,_,_,_,_,_,i) = v in i
+
+  let get_0_10 (v : ('a , 'b , 'c , 'd , 'e, 'f, 'g, 'h, 'i, 'j)) : 'a = let (a,_,_,_,_,_,_,_,_,_) = v in a
+  let get_1_10 (v : ('a , 'b , 'c , 'd , 'e, 'f, 'g, 'h, 'i, 'j)) : 'b = let (_,b,_,_,_,_,_,_,_,_) = v in b
+  let get_2_10 (v : ('a , 'b , 'c , 'd , 'e, 'f, 'g, 'h, 'i, 'j)) : 'c = let (_,_,c,_,_,_,_,_,_,_) = v in c
+  let get_3_10 (v : ('a , 'b , 'c , 'd , 'e, 'f, 'g, 'h, 'i, 'j)) : 'd = let (_,_,_,d,_,_,_,_,_,_) = v in d
+  let get_4_10 (v : ('a , 'b , 'c , 'd , 'e, 'f, 'g, 'h, 'i, 'j)) : 'e = let (_,_,_,_,e,_,_,_,_,_) = v in e
+  let get_5_10 (v : ('a , 'b , 'c , 'd , 'e, 'f, 'g, 'h, 'i, 'j)) : 'f = let (_,_,_,_,_,f,_,_,_,_) = v in f
+  let get_6_10 (v : ('a , 'b , 'c , 'd , 'e, 'f, 'g, 'h, 'i, 'j)) : 'g = let (_,_,_,_,_,_,g,_,_,_) = v in g
+  let get_7_10 (v : ('a , 'b , 'c , 'd , 'e, 'f, 'g, 'h, 'i, 'j)) : 'h = let (_,_,_,_,_,_,_,h,_,_) = v in h
+  let get_8_10 (v : ('a , 'b , 'c , 'd , 'e, 'f, 'g, 'h, 'i, 'j)) : 'i = let (_,_,_,_,_,_,_,_,i,_) = v in i
+  let get_9_10 (v : ('a , 'b , 'c , 'd , 'e, 'f, 'g, 'h, 'i, 'j)) : 'j = let (_,_,_,_,_,_,_,_,_,j) = v in j
+
   (* storage update *)
   val update_storage 's 'a 'a : 's
   val update_simple 's 'a : 's
@@ -136,8 +166,9 @@ theory Msg
 
   type msg
 
-  val not_found      unit : msg
-  val already_exists unit : msg
+  val not_found         unit : msg
+  val not_supported_yet unit : msg
+  val already_exists    unit : msg
 
 end
 
