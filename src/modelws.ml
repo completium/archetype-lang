@@ -833,6 +833,7 @@ let is_asset_const (e, args) const nb_args =
 let is_asset_get           (e, args) = is_asset_const (e, args) Cget 1
 let is_asset_add           (e, args) = is_asset_const (e, args) Cadd 1
 let is_asset_addifnotexist (e, args) = is_asset_const (e, args) Caddifnotexist 2
+let is_asset_removeif      (e, args) = is_asset_const (e, args) Cremoveif 1
 
 let dest_asset_const_name = function
   | Pdot (a, b) -> (
@@ -1173,7 +1174,7 @@ let rec process_rec (acc : process_acc) (pterm : Model.pterm) : process_data =
       let asset_name, arg = dest_asset_add (e, args) in
       let storage_name = get_storage_name acc in
       let arg = process_rec acc arg in
-      let fields = ["description"; "formula"; "url"; "hash"] in
+      let fields = get_asset_vars (dumloc asset_name) acc.info in
       let args : pterm list = (
         match unloc arg.term with
         | Pfassign l -> List.map (fun (_, _, z) ->
@@ -1216,6 +1217,15 @@ let rec process_rec (acc : process_acc) (pterm : Model.pterm) : process_data =
         term = mkloc loc (Papp(dumloc (Pvar (dumloc (mk_fun_name (Addifnotexist asset_name)))), [f_arg]));
         funs = add_fun (Addifnotexist asset_name) (add_funs arg1.funs arg2.funs);
         ret = Storage
+      }
+    )
+  | Papp (e, args) when is_asset_removeif (e, args)->
+    (
+      {
+        dummy_process_data with
+        term = mkloc loc (Pvar (dumloc "s"));
+        funs = [];
+        ret = Storage;
       }
     )
   | Papp (e, args) ->
@@ -1343,6 +1353,70 @@ let process_called_by (t : Model.transaction) pt =
               dumloc (Pseq (dumloc (Pif (dumloc (Pnot (process_rexpr r)), loc_pterm (pfailwith "not_authorized_fun"), None)), pt))))
   | _ -> pt
 
+let process_args args0 pt =
+  if List.length args0 = 0
+  then pt
+  else
+    begin
+      let nb = List.fold_left (fun acc x -> acc +
+                                            (match x.typ with
+                                             | ATSimple _ -> 1
+                                             | ATAsset (_, _, l) -> 1 + List.length l)) 0 args0 in
+      let action =
+        (List.fold_right
+           (fun (x : arg_ret) (i, acc) ->
+              let get_arg i = Papp (Pvar ("get_" ^ (string_of_int i) ^ "_" ^ (string_of_int nb)), [Pvar "p"]) in
+              let id = x.id in
+              let n, body =
+                begin
+                  match x.typ with
+                  | ATSimple _ -> i - 1, get_arg i
+                  | ATAsset (id, _, l) ->
+                    let length_l = List.length l in
+                    (i - 1 - length_l),
+                    Ptuple [get_arg (i - length_l);
+                            Papp (Pvar (mk_fun_name (MkAsset id)), List.mapi (fun k _ -> get_arg (i - length_l + k + 1)) l)]
+                end in
+              n, dumloc (Pletin (dumloc id, loc_pterm body, None, acc)))
+        ) args0 (nb - 1, pt) |> snd in
+      action
+    end
+
+let process_action info (m : model_unloc) t =
+  let empty_pt = Ptuple[Pvar "empty_ops"; Pvar "s"] in
+
+  match t.action with
+  | None ->
+    begin
+      let pt = loc_pterm (empty_pt) in
+      pt, { dummy_process_data with side = true;}
+    end
+  | Some action ->
+    begin
+      let dummy_pterm = loc_pterm (
+          Pseq (pfailwith "not_supported_yet",
+                empty_pt)) in
+
+      let acc = {
+        info = info;
+      } in
+
+      match (unloc m.name), (unloc t.name) with
+      | "miles_with_expiration", "consume" ->
+        dummy_pterm, { dummy_process_data with side = true;}
+      | _ ->
+        begin
+          let s = process_rec acc action in
+          let pt : pterm =
+            begin
+              match s.ret with
+              | Storage -> dumloc (Pletin (dumloc "s", s.term, None, loc_pterm (Ptuple[Pvar "empty_ops"; Pvar "s"])))
+              | _ -> s.term
+            end in
+          pt, {dummy_process_data with side = true; funs = s.funs;}
+        end
+    end
+
 let transform_transaction (info : info) (m : model_unloc) (t : Model.transaction) : transaction_ws * asset_function list =
   let args0 = compute_args info t in
 
@@ -1360,60 +1434,13 @@ let transform_transaction (info : info) (m : model_unloc) (t : Model.transaction
 
   let args = List.map mk_arg [("p", args_p);
                               ("s", Some (Flocal (lstr "storage")))] in
-  let action = Tools.get t.action in
 
-  let dummy_pterm = loc_pterm (
-      Pseq (pfailwith "not_supported_yet",
-            Ptuple[Pvar "empty_ops"; Pvar "s"])) in
+  let pt, ret = process_action info m t in
 
-  let acc = {
-    info = info;
-  } in
-
-  let pt, ret =
-    begin
-      match (unloc m.name), (unloc t.name) with
-      | "miles_with_expiration", "add"
-      | "certificate_generator", _ ->
-        begin
-          let s = process_rec acc action in
-          let pt : pterm =
-            begin
-              match s.ret with
-              | Storage -> dumloc (Pletin (dumloc "s", s.term, None, loc_pterm (Ptuple[Pvar "empty_ops"; Pvar "s"])))
-              | _ -> s.term
-            end in
-          pt, {dummy_process_data with side = true; funs = s.funs;}
-        end
-      | _ -> dummy_pterm, { dummy_process_data with side = true;}
-    end in
-
-  let pt =
-    pt |> process_called_by t in
-
-  let nb = List.fold_left (fun acc x -> acc +
-                                        (match x.typ with
-                                         | ATSimple _ -> 1
-                                         | ATAsset (_, _, l) -> 1 + List.length l)) 0 args0 in
   let action =
-    (List.fold_right
-       (fun (x : arg_ret) (i, acc) ->
-          let get_arg i = Papp (Pvar ("get_" ^ (string_of_int i) ^ "_" ^ (string_of_int nb)), [Pvar "p"]) in
-          let id = x.id in
-          let n, body =
-            begin
-              match x.typ with
-              | ATSimple _ -> i - 1, get_arg i
-              | ATAsset (id, _, l) ->
-                let length_l = List.length l in
-                (i - 1 - length_l),
-                Ptuple [get_arg (i - length_l);
-                        Papp (Pvar (mk_fun_name (MkAsset id)), List.mapi (fun k _ -> get_arg (i - length_l + k + 1)) l)]
-            end in
-          n, dumloc (Pletin (dumloc id, loc_pterm body, None, acc)))
-       ) args0 (nb - 1, pt) |> snd in
-
-  (*  List.iter (fun x -> Printf.eprintf "%s\n" (show_asset_function x)) s.funs;*)
+    pt
+    |> process_called_by t
+    |> process_args args0 in
 
   {
     dummy_transaction with
