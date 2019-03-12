@@ -5,11 +5,18 @@ open Tools
 type lident = ident loced
 [@@deriving show {with_path = false}]
 
+type 'id qualid =
+  | Qident of 'id
+  | Qdot of 'id qualid * 'id
+[@@deriving show {with_path = false}]
+
+type liqualid = lident qualid
+[@@deriving show {with_path = false}]
+
 type rexpr =
+  | Rqualid of liqualid
   | Ror of rexpr * rexpr
-  | Rrole of lident
   | Raddress of string
-  | Rasset of lident * lident
 [@@deriving show {with_path = false}]
 
 type role = {
@@ -207,14 +214,6 @@ type signature = {
 type quantifier =
   | Forall
   | Exists
-[@@deriving show {with_path = false}]
-
-type 'id qualid =
-  | Qident of 'id
-  | Qdot of 'id qualid * 'id
-[@@deriving show {with_path = false}]
-
-type liqualid = lident qualid
 [@@deriving show {with_path = false}]
 
 type ('id,'typ,'pattern) pattern_unloc =

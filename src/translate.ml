@@ -334,15 +334,15 @@ let to_rexpr_dv_role e =
       match l with
       | Laddress a -> Raddress a
       | _ -> raise (ModelError ("only address is supported", loc)) )
-  | Eterm (_, id) -> Rrole id
+  | Eterm (_, id) -> Rqualid (Qident id)
   (*  | Eapp ({pldesc = {pldesc = Eop}, args, _}) ->*)
   | _ -> raise (ModelError ("wrong type for ", loc))
 
 let rec to_rexpr_calledby (e : ParseTree.expr) : rexpr =
   let loc, v = deloc e in
   match v with
-  | Eterm (None, id) -> Rasset (dumloc "", id)
-  | Edot (_, id) -> Rasset (id, id)
+  | Eterm (None, id)
+  | Edot (_, id) -> Rqualid (Qident id)
   | Eapp ({pldesc = Eop (`Logical Or); _}, args) ->
     ( let lhs = to_rexpr_calledby (List.nth args 0) in
       let rhs = to_rexpr_calledby (List.nth args 1) in

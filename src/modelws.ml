@@ -1328,8 +1328,7 @@ let compute_args info (t : Model.transaction) : (arg_ret list) =
   ) [] t.args
 
 let rec process_rexpr = function
-  | Rrole id
-  | Rasset (_,id) ->
+  | Rqualid (Qident id) ->
     begin
       let id = unloc id in
       loc_pterm (Papp (Pdot (Pvar "Address", Pvar "add_eq"),
