@@ -1382,10 +1382,10 @@ let process_args args0 pt =
       action
     end
 
-let process_action info (m : model_unloc) t =
+let process_action info (m : model_unloc) (t : Model.transaction) (act : Model.pterm option) =
   let empty_pt = Ptuple[Pvar "empty_ops"; Pvar "s"] in
 
-  match t.action with
+  match act with
   | None ->
     begin
       let pt = loc_pterm (empty_pt) in
@@ -1417,6 +1417,37 @@ let process_action info (m : model_unloc) t =
         end
     end
 
+let build_match_state (from : string) (to_ : string) : pterm =
+  loc_pterm (
+    Pmatchwith (Papp (Pvar "_global_st", [Pvar "s"]) ,[
+        (Mapp (Qident from, []), Pletin ("s",
+                            (Papp (Pvar "update_storage",[Pvar "s";
+                                                          Papp (Pvar "_global_st", [Pvar "s"]);
+                                                          Pvar to_]))
+                           , None,
+                           Pvar "s"));
+        (Mwild, pfailwith "not_found");
+      ]
+      )
+  )
+
+let process_state_machine (_info : info) (_m : model_unloc) (t : Model.transaction) ((pt, ret) : 'a * process_data) =
+  match t.transition with
+  | None -> (pt, ret)
+  | Some (_id, from, l) ->
+    begin
+      let from =
+        begin
+          match unloc from with
+          | Sref lident -> unloc lident
+          | _ -> raise (Anomaly "process_state_machine")
+        end
+      in
+      let pt = List.fold_right (fun ((to_, _cond, _action) : (lident * Model.pterm option * Model.pterm option) ) acc ->
+          dumloc (Pletin (dumloc "s", build_match_state from (unloc to_), None, acc))) l pt in
+      (pt, {ret with side = true})
+    end
+
 let transform_transaction (info : info) (m : model_unloc) (t : Model.transaction) : transaction_ws * asset_function list =
   let args0 = compute_args info t in
 
@@ -1435,7 +1466,9 @@ let transform_transaction (info : info) (m : model_unloc) (t : Model.transaction
   let args = List.map mk_arg [("p", args_p);
                               ("s", Some (Flocal (lstr "storage")))] in
 
-  let pt, ret = process_action info m t in
+  let pt, ret =
+    process_action info m t t.action
+    |> process_state_machine info m t in
 
   let action =
     pt

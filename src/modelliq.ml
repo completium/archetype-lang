@@ -198,23 +198,30 @@ let mk_init_val = function
   | VTcurrency (c,_) -> BVcurrency (c,Big_int.zero_big_int)
 
 let mk_init_fields info args (fs : storage_field list) : (lident * initval) list =
+  let retrieve_default_value (f : storage_field) =
+    begin
+      match f.typ with
+      | Flocal id             -> Ienum (get_initial_state info id)
+      | Ftyp vt               -> Ival (mkloc Location.dummy (mk_init_val vt))
+      | Flist vt              -> Iemptyc (Emptylist vt)
+      | Fmap (vtf, Flist vtt) -> Iemptyc (EmptyCollMap (Ftyp vtf, vtt))
+      | Fmap (vtf, ftyp)      -> Iemptyc (EmptyMap (Ftyp vtf, ftyp))
+      | _                     -> raise (Anomaly "retrieve_default_value")
+    end in
+
   List.fold_left (fun acc (f : storage_field) ->
       match f.default with
       | Some bv -> acc @ [f.name, match unloc bv with
         | Plit l -> Ival l
-        | _ -> raise (Anomaly "mk_init_fields")]
+        | _ -> (*raise (Anomaly "mk_init_fields_0")*)
+          retrieve_default_value f (* TODO: handle all kind of default value for field *)
+        ]
       | None ->
          let init =
            if List.mem_assoc f.name args
            then Iinput f.name
            else (* not an input, no default value : depends on type *)
-             match f.typ with
-             | Flocal id             -> Ienum (get_initial_state info id)
-             | Ftyp vt               -> Ival (mkloc Location.dummy (mk_init_val vt))
-             | Flist vt              -> Iemptyc (Emptylist vt)
-             | Fmap (vtf, Flist vtt) -> Iemptyc (EmptyCollMap (Ftyp vtf, vtt))
-             | Fmap (vtf, ftyp)      -> Iemptyc (EmptyMap (Ftyp vtf, ftyp))
-             | _                     -> raise (Anomaly "mk_init_fields")
+             retrieve_default_value f
          in
          acc @ [f.name, init]
     ) [] fs
