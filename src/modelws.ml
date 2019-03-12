@@ -1327,6 +1327,23 @@ let compute_args info (t : Model.transaction) : (arg_ret list) =
       )
   ) [] t.args
 
+let rec process_rexpr = function
+  | Rrole id
+  | Rasset (_,id) ->
+    begin
+      let id = unloc id in
+      loc_pterm (Papp (Pdot (Pvar "Address", Pvar "add_eq"),
+                       [Pvar "caller"; Papp (Pvar id, [Pvar "s"])]))
+    end
+  | Ror (l, r) -> dumloc (Plogical (Or, process_rexpr l, process_rexpr r))
+  | _ -> raise (Anomaly "process_rexpr")
+
+let process_called_by (t : Model.transaction) pt =
+  match t.calledby with
+  | Some r -> dumloc (Pletin (dumloc "caller", loc_pterm (Papp (Pdot (Pvar "Current", Pvar "sender"), [])), None,
+              dumloc (Pseq (dumloc (Pif (dumloc (Pnot (process_rexpr r)), loc_pterm (pfailwith "not_authorized_fun"), None)), pt))))
+  | _ -> pt
+
 let transform_transaction (info : info) (m : model_unloc) (t : Model.transaction) : transaction_ws * asset_function list =
   let args0 = compute_args info t in
 
@@ -1371,6 +1388,9 @@ let transform_transaction (info : info) (m : model_unloc) (t : Model.transaction
         end
       | _ -> dummy_pterm, { dummy_process_data with side = true;}
     end in
+
+  let pt =
+    pt |> process_called_by t in
 
   let nb = List.fold_left (fun acc x -> acc +
                                         (match x.typ with
