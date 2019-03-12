@@ -927,37 +927,48 @@ let mk_get_asset info asset_name = {
     )
 }
 
-let extract_type_args_from_asset info asset_name =
-  List.fold_left (fun acc (i : string * ptyp) -> acc @ [Ftyp (
+let extract_type_args_from_asset info asset_name : storage_field_type list =
+  List.fold_left (fun acc (i : string * ptyp) -> acc @ [
       match i |> snd |> unloc with
-      | Tbuiltin vtb -> vtb
-      | Tasset lident -> get_key_type lident info
-      | _ -> raise (Anomaly "compute_args_0")
-    )]) [] (get_asset_vars_id_typs (dumloc asset_name) info)
+      | Tbuiltin vtb -> Ftyp (vtb)
+      | Tasset lident -> Ftyp (get_key_type lident info)
+      | Tcontainer ({pldesc=Tbuiltin vtb;_}, _cont) -> Flist (Ftyp (vtb))
+      | Tcontainer ({pldesc=Tasset lident;_}, _cont) -> Flist (Ftyp (get_key_type lident info))
+      | _ -> raise (Anomaly "extract_type_args_from_asset")
+    ]) [] (get_asset_vars_id_typs (dumloc asset_name) info)
 
 let get_arg i nb = Papp (Pvar ("get_" ^ (string_of_int i) ^ "_" ^ (string_of_int nb)), [Pvar "p"])
 
+type add_asset_gen_data = {
+  asset_name : string;
+  side : bool;
+  asset_fun : asset_function;
+  exist_expr : basic_pterm;
+}
 
-
-let get_mk_call_function id arg nb idx_start _n =
+let get_mk_call_function asset_name arg nb idx_start n =
   let get_arg i = Papp (Pvar ("get_" ^ (string_of_int i) ^ "_" ^ (string_of_int nb)), [Pvar arg]) in
-  Papp (Pvar (mk_fun_name (MkAsset id)), List.mapi (fun k _ -> get_arg (idx_start + k)) ["a"; "a"; "a"; "a"])
+  Papp (Pvar (mk_fun_name (MkAsset asset_name)), Tools.int_fold (fun acc k -> acc @ [get_arg (idx_start + k)]) [] n)
 
 (*let[@inline] add (p: storage * address * string list) : storage =
   let s = get p 0 in
   let owner_key = get p 1 in
   let owner_miles = get p 2 in
   match Map.find owner_key (s.owner_col) with
-  | Some _ -> s
+  | Some _ -> exist_expr
   | None -> s.owner_col <- Map.update owner_key (Some (mk_owner owner_miles)) s.owner_col*)
-let mk_add_asset info asset_name =
+let mk_add_asset_gen info (data : add_asset_gen_data) =
+  let asset_name = data.asset_name in
+  let side = data.side in
+  let exist_expr = data.exist_expr in
+  let asset_fun = data.asset_fun in
   let args = extract_type_args_from_asset info asset_name in
   let nb = 2 + List.length args in
-  let fun_mk = get_mk_call_function asset_name "p" nb 2 4 in
+  let fun_mk = get_mk_call_function asset_name "p" nb 2 (nb - 2) in
   {
   dummy_function with
-  name = lstr (mk_fun_name (AddAsset asset_name));
-  side = true;
+  name = lstr (mk_fun_name asset_fun);
+  side = side;
   args = [mk_arg ("p", Some (Ftuple ([Flocal (lstr "storage");
                                       Ftyp (get_key_type (dumloc asset_name) info) ] @ args)))];
   return = Some (Flocal (lstr "storage"));
@@ -969,7 +980,7 @@ let mk_add_asset info asset_name =
             [Pvar (asset_name ^ "_key");
              Papp (Pvar (asset_name ^ "_col"), [Pvar "s"])])
                      ,[
-                       (Mapp (Qident "Some", [Mwild]), pfailwith "already_exists");
+                       (Mapp (Qident "Some", [Mwild]), exist_expr);
                        (Mapp (Qident "None", []),
 
                         Papp (Pvar "update_storage",[Pvar "s";
@@ -983,42 +994,19 @@ let mk_add_asset info asset_name =
           ))))
 }
 
-(*let[@inline] addifnotexist_owner (p: storage * address * string list) : storage =
-  let s = get p 0 in
-  let owner_key = get p 1 in
-  let owner_miles = get p 2 in
-  match Map.find owner_key (s.owner_col) with
-  | Some _ -> s
-  | None -> s.owner_col <- Map.update owner_key (Some (mk_owner owner_miles)) s.owner_col*)
-let mk_addifnotexist info asset_name = {
-  dummy_function with
-  name = lstr (mk_fun_name (Addifnotexist asset_name));
-  args = [mk_arg ("p", Some (Ftuple ([Flocal (lstr "storage");
-                                      Ftyp (get_key_type (dumloc asset_name) info) ] @ [Flist (Ftyp VTstring)])))];
-  return = Some (Flocal (lstr "storage"));
-  body =
-    loc_pterm (
-      Pletin ("s", Papp (Pvar "get_0_3", [Pvar "p"]), None,
-        Pletin (asset_name ^ "_key", Papp (Pvar "get_1_3", [Pvar "p"]), None,
-          Pletin (asset_name ^ "_miles", Papp (Pvar "get_2_3", [Pvar "p"]), None,
-            Pmatchwith (Papp (Pdot (Pvar "Map", Pvar "find"),
-              [Pvar (asset_name ^ "_key");
-               Papp (Pvar (asset_name ^ "_col"), [Pvar "s"])])
-                       ,[
-                         (Mapp (Qident "Some", [Mwild]), Pvar "s");
-                         (Mapp (Qident "None", []),
+let mk_add_asset info asset_name = mk_add_asset_gen info {
+    asset_name = asset_name;
+    side       = true;
+    asset_fun  = AddAsset asset_name;
+    exist_expr = pfailwith "already_exists";
+  }
 
-                          Papp (Pvar "update_storage",[Pvar "s";
-                                                       Papp (Pvar (asset_name ^ "_col"), [Pvar "s"]);
-                                                       Papp (Pdot (Pvar "Map", Pvar "update"),
-                                                             [Pvar (asset_name ^ "_key");
-                                                              Papp (Pvar "Some", [Papp (Pvar (mk_fun_name (MkAsset asset_name)), [Pvar (asset_name ^ "_miles")])]);
-                                                              Papp (Pvar (asset_name ^ "_col"), [Pvar "s"])])
-                                                      ]))
-                       ]
-            )))))
-}
-
+let mk_addifnotexist info asset_name = mk_add_asset_gen info {
+    asset_name = asset_name;
+    side       = false;
+    asset_fun  = Addifnotexist asset_name;
+    exist_expr = Pvar "s";
+  }
 
 let mk_add_list info asset_name field_name =
   let asset_col = "mile" in

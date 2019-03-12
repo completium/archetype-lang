@@ -14,3 +14,10 @@ let map_option f = function
 let map_list = function
   | Some l -> l
   | None -> []
+
+let int_fold f acc n =
+  let rec int_fold_rec acc i =
+    if (i = n)
+    then acc
+    else int_fold_rec (f acc i) (i + 1) in
+  int_fold_rec acc 0
