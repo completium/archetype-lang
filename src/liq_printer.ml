@@ -437,8 +437,19 @@ module Print = struct
   and print_let_def ?(functor_arg=false) info fmt = function
     | Lvar (pv, _) when is_dummy pv -> ()
     | Lvar (pv, e) ->
-        fprintf fmt "@[<hov 2>let %a =@ %a@]"
-          (print_lident info) (pv_name pv) (print_expr info) e
+      begin
+        let entry_mod =
+          (match get_entry_typ (pv_name pv) with
+          | Init -> "%init"
+          | Entry -> "%entry"
+          | Inline -> "[@inline]"
+          | NotAnEntry -> "") in
+        fprintf fmt "@[<hov 2>let%a %a =@ %a@]"
+          print_str entry_mod
+          (print_lident info)
+          (pv_name pv)
+          (print_expr info) e
+      end
     | Lsym (rs, res, args, ef) ->
        let entry_mod =
          match get_entry_typ rs.rs_name with

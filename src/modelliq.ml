@@ -271,10 +271,6 @@ let mk_fun_decl id args body =
       let ty = field_storage_to_ptyp st in
       Loc.dummy_position, Some id, false, Some ty
     ) args in
-  let args : (Loc.position * ident option * ghost * pty option) list =
-    if compare (List.length args) 0 = 0
-    then [Loc.dummy_position, None, false, Some (PTtuple [])]
-    else args in
   let f = Efun(args, None, Ity.MaskVisible, empty_spec, body) in
   Dlet(str_to_ident id, false, Expr.RKnone, mk_expr f)
 
