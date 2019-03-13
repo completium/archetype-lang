@@ -49,7 +49,7 @@ module liq.Nat
   syntax val nat_one   "(1:nat)"
 
   syntax val nat_eq    "%1 = %2"
-  syntax val nat_nq   "%1 <> %2"
+  syntax val nat_nq    "%1 <> %2"
 
   syntax val nat_ge    "%1 >= %2"
   syntax val nat_le    "%1 <= %2"
@@ -59,7 +59,18 @@ module liq.Nat
 end
 
 module liq.Tez
-  syntax val totez     "%1tz:tez"
+  syntax val totez     "%1tz"
+
+  syntax val tez_eq    "%1 = %2"
+  syntax val tez_neq   "%1 <> %2"
+
+  syntax val tez_gt    "%1 > %2"
+  syntax val tez_ge    "%1 >= %2"
+  syntax val tez_lt    "%1 < %2"
+  syntax val tez_le    "%1 <= %2"
+
+  syntax val tez_plus  "%1 + %2"
+  syntax val tez_minus "%1 - %2"
 end
 
 module liq.Address
@@ -142,10 +153,11 @@ end
 
 module liq.Msg
 
-  syntax val not_found          "\"not found\""
-  syntax val not_supported_yet  "\"not supported yet\""
-  syntax val already_exists     "\"already exists\""
-  syntax val not_authorized_fun "\"not authorized to call this function\""
+  syntax val not_found           "\"not found\""
+  syntax val not_supported_yet   "\"not supported yet\""
+  syntax val already_exists      "\"already exists\""
+  syntax val not_authorized_fun  "\"not authorized to call this function\""
+  syntax val not_valid_condition "\"not valid condition\""
 
 end
 
@@ -196,6 +208,8 @@ end
 module liq.Current
 
   syntax val failwith  "Current.failwith %1"
-  syntax val sender  "Current.sender %1"
+  syntax val sender    "Current.sender %1"
+  syntax val balance   "Current.balance %1"
+  syntax val time_     "Current.time %1"
 
 end

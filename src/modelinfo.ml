@@ -29,6 +29,7 @@ type info = {
   asset_vars  : (string * (string * ptyp) list) list; (* asset name,(field name, type)  *)
   partitions  : (string * string)               list; (* partition field, asset name    *)
   state_init  : (string * lident)               list; (* state name, initial value      *)
+  vars_types  : (string * ptyp_unloc option)    list; (* variable name, variable type   *)
   dummy_vars  : (string * (string * vtyp))      list; (* variable name, (value, vtyp)   *)
 }
 [@@deriving show {with_path = false}]
@@ -164,6 +165,10 @@ let mk_info m =
   let vr = m |> mk_dummy_variables in
   let av = m.assets |> List.map (fun a -> get_asset_name a, get_asset_vars a) in
   let pa = m.assets |> List.fold_left (fun acc a -> acc @ (get_partitions a)) [] in
+  let vt =
+    (m.variables |> List.fold_left (fun acc s -> acc @ [unloc s.decl.name, Tools.map_option unloc s.decl.typ]) []) @
+    (m.roles |> List.fold_left (fun acc (s : role) -> acc @ [unloc s.name, Some (Tbuiltin VTstring)]) [])
+  in
   {
     assets_pol = ap;
     key_types  = kt;
@@ -171,6 +176,7 @@ let mk_info m =
     asset_vars = av;
     partitions = pa;
     state_init = si;
+    vars_types = vt;
     dummy_vars = vr }
 
 let is_key aname fname info =
@@ -245,3 +251,8 @@ let get_asset_var_typ aname var info =
     then List.assoc var types
     else raise (NotFound var)
   else raise (NotFound a)
+
+let get_type_storage info id =
+    if List.mem_assoc id info.vars_types
+    then Some (List.assoc id info.vars_types)
+    else None

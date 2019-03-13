@@ -27,8 +27,9 @@ states =
  | Transferred with { i1 : balance = 0}
 
 transaction abort = {
-  transition from Created to Aborted
   called by buyer or seller
+
+  transition from Created to Aborted
 }
 
 transaction[%signedbyall [buyer, seller]] confirm = {

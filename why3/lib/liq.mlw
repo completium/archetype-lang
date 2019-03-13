@@ -75,6 +75,17 @@ theory Tez
 
   val totez int : tez
 
+  val tez_eq  tez tez : bool
+  val tez_neq tez tez : bool
+
+  val tez_gt  tez tez : bool
+  val tez_ge  tez tez : bool
+  val tez_lt  tez tez : bool
+  val tez_le  tez tez : bool
+
+  val tez_plus   tez tez : tez
+  val tez_minus  tez tez : tez
+
 end
 
 theory String
@@ -166,10 +177,11 @@ theory Msg
 
   type msg
 
-  val not_found          unit : msg
-  val not_supported_yet  unit : msg
-  val already_exists     unit : msg
-  val not_authorized_fun unit : msg
+  val not_found           unit : msg
+  val not_supported_yet   unit : msg
+  val already_exists      unit : msg
+  val not_authorized_fun  unit : msg
+  val not_valid_condition unit : msg
 
 end
 
@@ -177,10 +189,12 @@ theory Current
 
   use Address
   use Timestamp
+  use Tez
   use Msg
 
   val sender   unit   : address
-  val time     unit   : timestamp
+  val balance  unit   : tez
+  val time_    unit   : timestamp
 
   exception Side
 
@@ -188,7 +202,7 @@ theory Current
 
   let get_caller = sender
 
-  let now = time
+  let now = time_
 
 end
 
