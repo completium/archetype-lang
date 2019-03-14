@@ -1617,7 +1617,7 @@ let build_match_state _info (_m : model_unloc) (_t : Model.transaction) (from : 
                                                     Papp (Pvar "_global_st", [Pvar "s"]);
                                                     Pvar to_])), None, loc_pterm (Ptuple [Pvar "_ops"; Pvar "s"])))
   |> build_match_act _info _m _t _action
-(*    |> build_match_cond _info _m _cond*)
+  |> build_match_cond _info _m _cond
   in
 
   dumloc (Pmatchwith (
