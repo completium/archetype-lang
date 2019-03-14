@@ -1117,6 +1117,7 @@ let dummy_process_data = {
 type process_acc = {
   info : info;
   model : model_unloc;
+  start : pterm option;
 }
 
 type process_ret = {
@@ -1194,11 +1195,10 @@ let rec process_rec (acc : process_acc) (pterm : Model.pterm) : process_data =
       let a = process_rec acc l in
       let b = process_rec acc r in
       let t = (
-        match a.ret, b.ret with
-        | Operations, Operations ->
+        match acc.start, a.ret, b.ret with
+        | Some s, Operations, Operations ->
           dumloc (Pletin (dumloc "_ops", a.term, None,
-                          dumloc (Pletin (dumloc "_ops", b.term, None,
-                                          loc_pterm (Ptuple[Pvar "_ops"; Pvar "s"])))))
+                          dumloc (Pletin (dumloc "_ops", b.term, None, s))))
         | _ ->
           dumloc (Pletin (dumloc "s", a.term, None,
                           dumloc (Pletin (dumloc "s", b.term, None,
@@ -1570,6 +1570,7 @@ let process_action info (m : model_unloc) (t : Model.transaction) (act : Model.p
       let acc = {
         info = info;
         model = m;
+        start = Some pt0;
       } in
 
       match (unloc m.name), (unloc t.name) with
@@ -1598,6 +1599,7 @@ let build_match_cond info (m : model_unloc) (cond : Model.pterm option) x : pter
       let acc = {
         info = info;
         model = m;
+        start = None;
       } in
       let cond_process_data = process_rec acc c in
       let cond = cond_process_data.term in
@@ -1607,15 +1609,16 @@ let build_match_cond info (m : model_unloc) (cond : Model.pterm option) x : pter
 let build_match_act info (m : model_unloc) (t : Model.transaction) (action : Model.pterm option) (x : pterm) : pterm =
   let act, _ret = process_action info m t action x in act
 
-let build_match_state info (m : model_unloc) (t : Model.transaction) (from : string) ((to_, cond, action) : (lident * Model.pterm option * Model.pterm option))  : pterm =
+let build_match_state _info (_m : model_unloc) (_t : Model.transaction) (from : string) ((to_, _cond, _action) : (lident * Model.pterm option * Model.pterm option))  : pterm =
 
 
   let to_ = unloc to_ in
   let act = dumloc (Pletin (dumloc "s", loc_pterm (Papp (Pvar "update_storage",[Pvar "s";
                                                     Papp (Pvar "_global_st", [Pvar "s"]);
                                                     Pvar to_])), None, loc_pterm (Ptuple [Pvar "_ops"; Pvar "s"])))
-  |> build_match_act info m t action
-  |> build_match_cond info m cond in
+  |> build_match_act _info _m _t _action
+(*    |> build_match_cond _info _m _cond*)
+  in
 
   dumloc (Pmatchwith (
       loc_pterm (Papp (Pvar "_global_st", [Pvar "s"])),
