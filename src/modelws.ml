@@ -1097,6 +1097,7 @@ type ret_typ =
   | Const of Model.const
   | Id of string
   | Aaa of pterm
+  | Operations
   | None
 
 type process_data = {
@@ -1115,6 +1116,7 @@ let dummy_process_data = {
 
 type process_acc = {
   info : info;
+  model : model_unloc;
 }
 
 type process_ret = {
@@ -1177,6 +1179,13 @@ let extract_id_from_storage info id : ret_typ option =
     )
   | None -> None
 
+let retrieve_id_from_storage info id =
+  let ret_storage = extract_id_from_storage info (unloc id) in
+  (
+    match ret_storage with
+    | Some ret -> dumloc (Papp (dumloc (Pvar id), [loc_pterm (Pvar "s")])), ret
+    | None -> dumloc (Pvar id), Id (unloc id))
+
 let rec process_rec (acc : process_acc) (pterm : Model.pterm) : process_data =
   let loc, v = deloc pterm in
   match v with
@@ -1184,13 +1193,22 @@ let rec process_rec (acc : process_acc) (pterm : Model.pterm) : process_data =
     (
       let a = process_rec acc l in
       let b = process_rec acc r in
-      let t = dumloc (Pletin (dumloc "s", a.term, None,
-                              dumloc (Pletin (dumloc "s", b.term, None,
-                                              loc_pterm (Ptuple[Pvar "empty_ops"; Pvar "s"]))))) in
+      let t = (
+        match a.ret, b.ret with
+        | Operations, Operations ->
+          dumloc (Pletin (dumloc "_ops", a.term, None,
+                          dumloc (Pletin (dumloc "_ops", b.term, None,
+                                          loc_pterm (Ptuple[Pvar "_ops"; Pvar "s"])))))
+        | _ ->
+          dumloc (Pletin (dumloc "s", a.term, None,
+                          dumloc (Pletin (dumloc "s", b.term, None,
+                                          loc_pterm (Ptuple[Pvar "_ops"; Pvar "s"])))))
+      ) in
       {
         dummy_process_data with
         term = t;
         funs = add_funs a.funs b.funs;
+        ret = Letin;
       }
     )
   | Papp (e, args) when is_asset_get (e, args)->
@@ -1363,13 +1381,7 @@ let rec process_rec (acc : process_acc) (pterm : Model.pterm) : process_data =
     )
   | Pvar id ->
     (
-      let ret_storage = extract_id_from_storage acc.info (unloc id) in
-
-      let pt, ret =
-        (
-          match ret_storage with
-          | Some ret -> dumloc (Papp (dumloc (Pvar id), [loc_pterm (Pvar "s")])), ret
-          | None -> dumloc (Pvar id), Id (unloc id)) in
+      let pt, ret = retrieve_id_from_storage acc.info id in
       {
         dummy_process_data with
         term = pt;
@@ -1391,6 +1403,50 @@ let rec process_rec (acc : process_acc) (pterm : Model.pterm) : process_data =
       funs = [];
       ret = ret
     }
+  | Ptransfer (amount, back, dest) ->
+    (
+      let a = process_rec acc amount in
+      let q = (
+        match dest with
+        | Some q -> q
+        | None -> (
+            match unloc amount with
+            | Pvar id ->
+              begin
+                let from, to_ =
+                  List.fold_left (fun acc (x : variable) ->
+                      if String.equal (unloc id) (unloc x.decl.name)
+                      then (x.from, x.to_)
+                      else acc) (None, None) acc.model.variables
+                in
+                let dest = if back then from else to_ in
+                match dest with
+                | Some q -> q
+                | None -> raise (Anomaly "transfer process 1")
+              end
+            | _ -> raise (Anomaly "transfer process 2")
+          )) in
+      let d = (
+        match q with
+        | Qident id -> (
+            let pt, _ret = retrieve_id_from_storage acc.info id in pt
+          )
+        | _ -> raise (Anomaly "transfer process 3")) in
+
+      let t = dumloc (Papp (loc_pterm (Pdot (Pvar "List", Pvar "add")),
+                            [dumloc (Ptuple [
+                                 dumloc (Papp (loc_pterm (Pdot (Pvar "Contract", Pvar "transfer")),
+                                               [d; a.term]));
+                                 loc_pterm (Pvar "_ops")
+                               ])])) in
+
+    {
+      dummy_process_data with
+      term = t;
+      funs = [];
+      ret = Operations;
+    }
+    )
   | _ -> {
       dummy_process_data with
       term = model_pterm_to_pterm pterm;
@@ -1458,15 +1514,14 @@ let rec process_rexpr = function
     begin
       let id = unloc id in
       loc_pterm (Papp (Pdot (Pvar "Address", Pvar "add_eq"),
-                       [Pvar "caller"; Papp (Pvar id, [Pvar "s"])]))
+                       [pCurrentSender; Papp (Pdot (Pvar "Address", Pvar "key_to_addr"), [Papp (Pvar id, [Pvar "s"])])]))
     end
   | Ror (l, r) -> dumloc (Plogical (Or, process_rexpr l, process_rexpr r))
   | _ -> raise (Anomaly "process_rexpr")
 
 let process_called_by (t : Model.transaction) pt =
   match t.calledby with
-  | Some r -> dumloc (Pletin (dumloc "caller", loc_pterm (pCurrentSender), None,
-              dumloc (Pseq (dumloc (Pif (dumloc (Pnot (process_rexpr r)), loc_pterm (pfailwith "not_authorized_fun"), None)), pt))))
+  | Some r -> dumloc (Pseq (dumloc (Pif (dumloc (Pnot (process_rexpr r)), loc_pterm (pfailwith "not_authorized_fun"), None)), pt))
   | _ -> pt
 
 let process_args args0 pt =
@@ -1498,23 +1553,23 @@ let process_args args0 pt =
       action
     end
 
-let process_action info (m : model_unloc) (t : Model.transaction) (act : Model.pterm option) =
-  let empty_pt = Ptuple[Pvar "empty_ops"; Pvar "s"] in
+let process_action info (m : model_unloc) (t : Model.transaction) (act : Model.pterm option) (pt0 : pterm) =
 
   match act with
   | None ->
     begin
-      let pt = loc_pterm (empty_pt) in
+      let pt = pt0 in
       pt, { dummy_process_data with side = true;}
     end
   | Some action ->
     begin
-      let dummy_pterm = loc_pterm (
-          Pseq (pfailwith "not_supported_yet",
-                empty_pt)) in
+      let dummy_pterm = dumloc (
+          Pseq (loc_pterm (pfailwith "not_supported_yet"),
+                pt0)) in
 
       let acc = {
         info = info;
+        model = m;
       } in
 
       match (unloc m.name), (unloc t.name) with
@@ -1526,49 +1581,57 @@ let process_action info (m : model_unloc) (t : Model.transaction) (act : Model.p
           let pt : pterm =
             begin
               match s.ret with
-              | Storage -> dumloc (Pletin (dumloc "s", s.term, None, loc_pterm (Ptuple[Pvar "empty_ops"; Pvar "s"])))
+              | Storage -> dumloc (Pletin (dumloc "s", s.term, None, pt0))
+              | Operations -> dumloc (Pletin (dumloc "_ops", s.term, None, pt0))
               | _ -> s.term
             end in
           pt, {dummy_process_data with side = true; funs = s.funs;}
         end
     end
 
-let build_match_state info (from : string) ((to_, _cond, _action) : (lident * Model.pterm option * Model.pterm option))  : pterm =
 
-  let build_match_cond (cond : Model.pterm option) x : pterm =
-    match cond with
-    | None -> x
-    | Some c ->
-      (
-        let acc = {
-          info = info;
-        } in
-        let cond_process_data = process_rec acc c in
-        let cond = cond_process_data.term in
-        (*let cond = dumloc (Plit (dumloc (BVbool true))) in*)
-        dumloc (Pseq (dumloc (Pif (dumloc (Pnot cond), loc_pterm (pfailwith "not_valid_condition"), None)), x))
-      ) in
+let build_match_cond info (m : model_unloc) (cond : Model.pterm option) x : pterm =
+  match cond with
+  | None -> x
+  | Some c ->
+    (
+      let acc = {
+        info = info;
+        model = m;
+      } in
+      let cond_process_data = process_rec acc c in
+      let cond = cond_process_data.term in
+      dumloc (Pseq (dumloc (Pif (dumloc (Pnot cond), loc_pterm (pfailwith "not_valid_condition"), None)), x))
+    )
+
+let build_match_act info (m : model_unloc) (t : Model.transaction) (action : Model.pterm option) (x : pterm) : pterm =
+  let act, _ret = process_action info m t action x in act
+
+let build_match_state info (m : model_unloc) (t : Model.transaction) (from : string) ((to_, cond, action) : (lident * Model.pterm option * Model.pterm option))  : pterm =
+
 
   let to_ = unloc to_ in
-  let act = loc_pterm (Papp (Pvar "update_storage",[Pvar "s";
+  let act = dumloc (Pletin (dumloc "s", loc_pterm (Papp (Pvar "update_storage",[Pvar "s";
                                                     Papp (Pvar "_global_st", [Pvar "s"]);
-                                                    Pvar to_])) in
-
-  let act = act |> build_match_cond _cond in
+                                                    Pvar to_])), None, loc_pterm (Ptuple [Pvar "_ops"; Pvar "s"])))
+  |> build_match_act info m t action
+  |> build_match_cond info m cond in
 
   dumloc (Pmatchwith (
       loc_pterm (Papp (Pvar "_global_st", [Pvar "s"])),
       [
-        (dumloc (Mapp (Qident (dumloc from), [])), dumloc (Pletin (dumloc "s", act, None, dumloc (Pvar (dumloc "s")))));
+        (dumloc (Mapp (Qident (dumloc from), [])), act);
         (dumloc Mwild, loc_pterm (pfailwith "not_found"))
       ]
     ))
 
-let process_state_machine (info : info) (_m : model_unloc) (t : Model.transaction) ((pt, ret) : 'a * process_data) =
+let process_state_machine (info : info) (m : model_unloc) (t : Model.transaction) ((pt, ret) : 'a * process_data) =
   match t.transition with
   | None -> (pt, ret)
   | Some (_id, from, l) ->
     begin
+      let pt = dumloc (Pletin (dumloc "_ops", loc_pterm (Papp (Pvar ("get_0_2"), [Pvar "_sops"])) , None,
+               dumloc (Pletin (dumloc "s",    loc_pterm (Papp (Pvar ("get_1_2"), [Pvar "_sops"])) , None, pt)))) in
       let from =
         begin
           match unloc from with
@@ -1577,12 +1640,17 @@ let process_state_machine (info : info) (_m : model_unloc) (t : Model.transactio
         end
       in
       let pt = List.fold_right (fun (x : (lident * Model.pterm option * Model.pterm option) ) acc ->
-          dumloc (Pletin (dumloc "s", build_match_state info from x, None, acc))) l pt in
+          let act = build_match_state info m t from x in
+          dumloc (Pletin (dumloc "_sops", act, None, acc))) l pt in
       (pt, {ret with side = true})
     end
 
+let process_add_ops pt =
+  dumloc (Pletin (dumloc "_ops", loc_pterm (Pvar "empty_ops"), None, pt))
+
 let transform_transaction (info : info) (m : model_unloc) (t : Model.transaction) : transaction_ws * asset_function list =
   let args0 = compute_args info t in
+  let pt0 = loc_pterm (Ptuple[Pvar "_ops"; Pvar "s"]) in
 
   let args_p =
     if List.length args0 = 0
@@ -1600,13 +1668,14 @@ let transform_transaction (info : info) (m : model_unloc) (t : Model.transaction
                               ("s", Some (Flocal (lstr "storage")))] in
 
   let pt, ret =
-    process_action info m t t.action
+    process_action info m t t.action pt0
     |> process_state_machine info m t in
 
   let action =
     pt
     |> process_called_by t
-    |> process_args args0 in
+    |> process_args args0
+    |> process_add_ops in
 
   {
     dummy_transaction with

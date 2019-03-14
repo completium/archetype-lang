@@ -86,9 +86,9 @@ let vtyp_to_str = function
   | VTint                -> "int"
   | VTuint               -> "nat"
   | VTdate               -> "timestamp"
-  | VTduration           -> "nat";
-  | VTstring             -> "string";
-  | VTaddress            -> "address";
+  | VTduration           -> "nat"
+  | VTstring             -> "string"
+  | VTaddress            -> "key_hash"
   | VTcurrency (Tez,_)   -> "tez"
   | VTcurrency (Mutez,_) -> "tez"
 

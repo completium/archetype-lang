@@ -9,6 +9,21 @@ type info = {
   assets : string list
 }
 
+let dummy_gen_decl = {
+  name = dumloc "dummy";
+  typ = None;
+  default = None;
+  loc = Location.dummy;
+}
+
+let dummy_variable : variable = {
+  decl = dummy_gen_decl;
+  constant = false;
+  from = None;
+  to_ = None;
+  loc = Location.dummy;
+}
+
 let builtin_type str =
   match str with
   | "bool" -> Some VTbool
@@ -411,8 +426,11 @@ let mk_spec loc (vars : (lident * type_t * expr option) loced list option) actio
       (fun acc i ->
          let loc, (id, typ, dv) = deloc i in
          ({
+           dummy_variable with
            decl = mk_decl_pterm loc (id, Some typ, dv);
            constant = false;
+           from = None;
+           to_ = None;
            loc = loc;
          })::acc) [] (vars |> map_list);
   action = map_option mk_pterm action;
@@ -424,15 +442,39 @@ let mk_spec loc (vars : (lident * type_t * expr option) loced list option) actio
 let mk_simple_spec loc items =
   mk_spec loc None None None items
 
+let ret_from_to opts =
+  match opts with
+  | Some o ->
+    (List.fold_left (fun (a, b) i ->
+         match i with
+         | VOfrom q -> (Some (mk_qualid q), b)
+         | VOto q -> (a, Some (mk_qualid q))) (None, None) o)
+  | _ -> (None, None)
+
 let get_variables decls =
   List.fold_left ( fun acc i ->
       (let loc = loc i in
        let decl_u = Location.unloc i in
        match decl_u with
        | Dconstant (id, typ, dv, _) ->
-         {decl = mk_decl_pterm loc (id, Some typ, dv); constant = true; loc = loc }::acc
-       | Dvariable (id, typ, _, dv, _) ->
-         {decl = mk_decl_pterm loc (id, Some typ, dv); constant = false; loc = loc }::acc
+         {
+           decl = mk_decl_pterm loc (id, Some typ, dv);
+           constant = true;
+           from = None;
+           to_ = None;
+           loc = loc;
+         }::acc
+       | Dvariable (id, typ, opts, dv, _) ->
+         begin
+           let (from, to_) = ret_from_to opts in
+           {
+             decl = mk_decl_pterm loc (id, Some typ, dv);
+             constant = false;
+             from = from;
+             to_ = to_;
+             loc = loc;
+           }::acc
+         end
        | _ -> acc)
     ) [] decls
 

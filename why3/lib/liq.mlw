@@ -40,14 +40,17 @@ end
 theory Address
 
   type address
+  type key_hash
 
-  val toaddress address : address
-  val mkaddress unit : address
+  val key_to_addr key_hash : address
+
+  val toaddress key_hash : key_hash
+  val mkaddress unit : key_hash
 
   val add_eq address address : bool
   val add_nq address address : bool
 
-  val default_address : address
+  val default_address : key_hash
 
 end
 
@@ -288,10 +291,12 @@ theory Contract
   use Tez
 
   type operation = {
-     destination : address;
+     destination : key_hash;
      amount      : tez;
- }
+  }
 
  let empty_ops : list operation = Nil
+
+ val transfer key_hash tez : operation
 
 end

@@ -6,8 +6,7 @@ prelude "[%%version 1.01]\n
 let[@inline] empty_ops = ([] : operation list)
 
 let[@inline] list_add (e, l) = e::l
-
-let[@inline] keyh_to_addr (iKeyh : key_hash) = Contract.address (Account.default iKeyh)"
+"
 
 module HighOrd
   syntax type (->) "%1 -> %2"
@@ -75,7 +74,9 @@ end
 
 module liq.Address
 
-  syntax val toaddress "Contract.address (Account.default %1)"
+  syntax val key_to_addr "Contract.address (Account.default %1)"
+
+  syntax val toaddress "%1"
 
   syntax val add_eq    "%1 = %2"
   syntax val add_nq    "%1 <> %2"
@@ -211,5 +212,11 @@ module liq.Current
   syntax val sender    "Current.sender %1"
   syntax val balance   "Current.balance %1"
   syntax val time_     "Current.time %1"
+
+end
+
+module liq.Contract
+
+  syntax val transfer  "Account.transfer ~dest:%1 ~amount:%2"
 
 end

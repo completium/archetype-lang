@@ -299,6 +299,8 @@ type cond = pterm
 type variable = {
   decl         : (ptyp, pterm) gen_decl;
   constant     : bool;
+  from         : liqualid option;
+  to_          : liqualid option;
   loc : Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]
