@@ -801,6 +801,7 @@ type asset_function =
   | AddAsset of string
   | Addifnotexist of string
   | AddList of string * string
+  | RemoveIf of string
 [@@deriving show {with_path = false}]
 
 let mk_fun_name = function
@@ -809,6 +810,7 @@ let mk_fun_name = function
   | AddAsset s -> "add_asset_" ^ s
   | Addifnotexist s -> "addifnotexist_" ^ s
   | AddList (s, f) -> "add_list_" ^ s ^ "_" ^ f
+  | RemoveIf s -> "removeif_" ^ s
 
 let add_fun i l =
   if List.mem i l then
@@ -1017,7 +1019,7 @@ let mk_addifnotexist info asset_name = mk_add_asset_gen info {
   }
 
 let mk_add_list info asset_name field_name =
-  let asset_col = "mile" in
+  let asset_col = "mile" in (* TODO: retrieve real type of list *)
   let asset_col_key = asset_col ^ "_key" in
   let asset_name_key = asset_name ^ "_key" in
   let is_one_arg = true in
@@ -1070,6 +1072,51 @@ let mk_add_list info asset_name field_name =
                     ))))))))))
 }
 
+(*
+let mile_remove_if s f =
+  let s= s.mile_col <-
+      Map.fold (
+        fun ((k, v), acc) ->
+          if f v
+          then acc
+          else Map.add k v acc
+      ) s.mile_col (Map : (string, mile) map) in s*)
+let mk_removeif _info asset_name =
+  let asset_col = asset_name ^ "_col" in {
+  dummy_function with
+  name = lstr (mk_fun_name (RemoveIf asset_name));
+(*  args = [mk_arg ("p", Some (Ftuple ([Flocal (lstr "storage");
+                                      Flocal (lstr "storage")])))];*)
+  args = [mk_arg ("p", None)];
+  side = false;
+  body =
+    loc_pterm (
+      Pletin ("s", Papp (Pvar "get_0_2", [Pvar "p"]), None,
+      Pletin ("f", Papp (Pvar "get_1_2", [Pvar "p"]), None,
+        (Papp (Pvar "update_storage", [Pvar ("s");
+                                       Papp (Pvar asset_col, [Pvar "s"]);
+
+                                       Papp (Pdot (Pvar "Map", Pvar "fold"), [
+                                           Plambda ("x", None, false,
+                                             Pletin ("i", Papp (Pvar "get_0_2", [Pvar "x"]), None,
+                                             Pletin ("acc", Papp (Pvar "get_1_2", [Pvar "x"]), None,
+                                             Pletin ("k", Papp (Pvar "get_0_2", [Pvar "i"]), None,
+                                             Pletin ("v", Papp (Pvar "get_1_2", [Pvar "i"]), None,
+                                             Pif (Papp (Pvar "f", [Pvar "v"]),
+                                                  Pvar "acc",
+                                                  Some (Papp (Pdot (Pvar "Map", Pvar "add"), [
+                                                      Pvar "k";
+                                                      Pvar "v";
+                                                      Pvar "acc"
+                                                    ]))
+                                                 ))))));
+                                           Papp (Pvar asset_col, [Pvar "s"]);
+                                           Papp (Pvar "empty_map", [])
+
+                                         ])
+                                      ])))))
+}
+
 let generate_asset_functions info (l : asset_function list) : function_ws list =
   mk_fun_to_key() ::
   List.map (fun x ->
@@ -1078,8 +1125,9 @@ let generate_asset_functions info (l : asset_function list) : function_ws list =
       | Get asset_name -> mk_get_asset info asset_name
       | AddAsset asset_name -> mk_add_asset info asset_name
       | Addifnotexist asset_name -> mk_addifnotexist info asset_name
-      | AddList (asset_name, field_name) -> mk_add_list info asset_name field_name) l
-
+      | AddList (asset_name, field_name) -> mk_add_list info asset_name field_name
+      | RemoveIf asset_name -> mk_removeif info asset_name
+    ) l
 
 type ret_typ =
   | Letin
@@ -1276,10 +1324,14 @@ let rec process_rec (acc : process_acc) (pterm : Model.pterm) : process_data =
     )
   | Papp (e, args) when is_asset_removeif (e, args)->
     (
+      let asset_name = "mile" in
+      let f_arg = loc_pterm (Ptuple [Pvar "s"; Plambda ("x", None, false, Papp (Pdot (Pvar "Timestamp", Pvar "tim_lt"),
+                                                                                 [Papp (Pvar "expiration", [Pvar "x"]);
+                                                                                  pCurrentTime]))]) in
       {
         dummy_process_data with
-        term = mkloc loc (Pvar (dumloc "s"));
-        funs = [];
+        term = mkloc loc (Papp(dumloc (Pvar (dumloc (mk_fun_name (RemoveIf asset_name)))), [f_arg]));
+        funs = [RemoveIf asset_name];
         ret = Storage;
       }
     )

@@ -79,3 +79,17 @@ let%entry add (p : address * string * nat * timestamp) (s : storage) =
   let s = addifnotexists_owner (s, ow, []) in
   let s = add_owner_miles (s, newmile_key, newmile, to_key (get_owner (s, ow))) in
   (empty_ops, s)
+
+
+let mile_remove_if s f =
+  let s= s.mile_col <-
+      Map.fold (
+        fun ((k, v), acc) ->
+          if f v
+          then acc
+          else Map.add k v acc
+      ) s.mile_col (Map : (string, mile) map) in s
+
+let%entry clear_expired () (s : storage) =
+  let s = mile_remove_if s (fun x -> x.expiration < Current.time()) in
+  ([], s)

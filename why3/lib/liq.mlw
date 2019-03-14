@@ -262,6 +262,8 @@ theory Map
 
   val update 'a (option 'b) (map 'a 'b) : map 'a 'b
 
+  val fold ((('a, 'b), 'c) -> 'c) (map 'a 'b) 'c : 'c
+
   val empty_map unit : map 'a 'b
 
 end

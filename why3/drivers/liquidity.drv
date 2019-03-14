@@ -190,6 +190,8 @@ module liq.Map
 
   syntax val update     "Map.update %1 %2 %3"
 
+  syntax val fold       "Map.fold %1 %2 %3"
+
   syntax val empty_map  "empty_map"
 
 end
