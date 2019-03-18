@@ -301,7 +301,7 @@ type variable = {
   constant     : bool;
   from         : liqualid option;
   to_          : liqualid option;
-  loc : Location.t [@opaque];
+  loc          : Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]
 

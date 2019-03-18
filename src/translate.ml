@@ -701,6 +701,21 @@ let get_specs decls =
        | _ -> acc)
     ) [] decls
 
+let check_dv model : Model.model =
+  (model
+   |> unloc
+   |> (fun x -> x.variables)
+   |> List.iter (fun v ->
+       let d = v.decl in
+       match d.typ, d.default with
+       | Some ({pldesc=Tbuiltin VTaddress; _}), None -> raise (Modelinfo.DefaultValueAssignment d.name)
+       | _ -> ()));
+  model
+
+let sanity_check model : Model.model =
+  model
+  |> check_dv
+
 let parseTree_to_model (pt : ParseTree.model) : Model.model =
   let ptu = Location.unloc pt in
   let decls = match ptu with
@@ -718,6 +733,7 @@ let parseTree_to_model (pt : ParseTree.model) : Model.model =
     enums         = get_enums decls;
     specs         = get_specs decls;
   }
+  |> sanity_check
 
 let string_to_pterm (str : string) : Model.pterm =
   let lb = Lexing.from_string str in

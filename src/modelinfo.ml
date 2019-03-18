@@ -10,6 +10,7 @@ exception ExpectedVarType        of lident
 exception CannotConvert          of string
 exception StringUnsupported
 exception ExpectsOneInitialState of lident
+exception DefaultValueAssignment of lident
 exception UnsupportedPolicy      of string * string
 exception UnsupportedFeature     of string
 exception NotFound               of string

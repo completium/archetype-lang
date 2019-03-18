@@ -109,6 +109,12 @@ let main () =
     close dispose channel;
     Printf.eprintf "%s at %s.\n" msg (Location.tostring l);
     exit 1
+  | Modelinfo.DefaultValueAssignment l ->
+    close dispose channel;
+    Printf.eprintf "'%s' field at %s must be assigned by a value.\n"
+      (Location.unloc l)
+      (l |> Location.loc |> Location.tostring);
+    exit 1
   | Modelinfo.UnsupportedVartype l ->
     close dispose channel;
     Printf.eprintf "Unsupported var type at %s.\n"  (Location.tostring l);
