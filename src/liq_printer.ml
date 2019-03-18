@@ -16,6 +16,8 @@ open Wstdlib
 open Pdecl
 open Printer
 
+(* BEGIN: liquidity code *)
+
 type liq_entries = {
     init     : string option;
     entries  : string list;
@@ -63,6 +65,8 @@ let ity_to_ty (t : Mltree.ity) : Mltree.ty =
   match t with
   | I t -> to_ty t
   | _ -> raise (Modelinfo.Anomaly "2:ity_to_ty")
+
+(* END *)
 
 type info = {
   info_syn          : syntax_map;
@@ -370,12 +374,14 @@ module Print = struct
           List.exists is_constructor its
       | _ -> false in
     match query_syntax info.info_syn rs.rs_name, pvl with
+    (* BEGIN: liquidity code *)
     | Some s, _ when compare rs.rs_name.id_string "update_storage" = 0 ->
         syntax_arguments s (print_expr ~paren:false info) fmt pvl;
     | Some s, _ when compare s "empty_map" = 0 ->
       fprintf fmt "Map : %a"  (print_ty ~use_quote:false info) (ity_to_ty e.e_ity);
     | Some s, _ when compare s "empty_set" = 0 ->
       fprintf fmt "Set : %a"  (print_ty ~use_quote:false info) (ity_to_ty e.e_ity);
+    (* END *)
     | Some s, _ (* when is_local_id info rs.rs_name  *)->
         syntax_arguments s (print_expr ~paren:true info) fmt pvl;
     | None, [t] when is_rs_tuple rs ->
@@ -430,6 +436,7 @@ module Print = struct
         (print_expr info) e
 
   and print_let_def ?(functor_arg=false) info fmt = function
+    (* BEGIN: liquidity code *)
     | Lvar (pv, _) when is_dummy pv -> ()
     | Lvar (pv, e) ->
       begin
@@ -457,6 +464,7 @@ module Print = struct
           (print_lident info) rs.rs_name
           (print_fun_type_args info) (args,svar,res,ef);
         forget_vars args
+    (* END *)
     | Lrec rdef ->
         let print_one fst fmt = function
           | { rec_sym = rs1; rec_args = args; rec_exp = e;
@@ -491,12 +499,14 @@ module Print = struct
           | _ -> assert false in
         (match query_syntax info.info_literal id with
          | Some s -> syntax_arguments s print_constant fmt [e]
+    (* BEGIN: liquidity code *)
          | None -> fprintf fmt "%s" n)
 (*         | None when n = "0" -> fprintf fmt "Z.zero"
            | None when n = "1" -> fprintf fmt "Z.one"
-         | None   -> fprintf fmt (protect_on paren "Z.of_string \"%s\"") n)*)
+           | None   -> fprintf fmt (protect_on paren "Z.of_string \"%s\"") n)*)
     | Evar pvs when is_dummy pvs ->
       fprintf fmt "%s" (dummy_to_val pvs)
+    (* END *)
     | Evar pvs ->
         (print_lident info) fmt (pv_name pvs)
     | Elet (let_def, e) ->
