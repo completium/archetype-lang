@@ -876,15 +876,6 @@ let rec gen_mapper_pterm f p =
     id
     (unloc p)
 
-let mk_fun_to_key () =
-  {
-    dummy_function with
-    name = lstr "to_key";
-    args = [
-      { name = lstr "x" ; typ = None; default = None ; loc = Location.dummy }];
-    body = loc_pterm (Papp(Pvar "get_0_2", [Pvar "x"]));
-  }
-
 let mk_mk_asset info name =
   let asset_args = get_asset_vars_id_typs (dumloc name) info in
   let asset_args : (string * storage_field_type) list = List.map (fun ((x, y) : (string * ptyp)) -> (x, to_storage_type (Some y))) asset_args in
@@ -1118,7 +1109,6 @@ let mk_removeif _info asset_name =
 }
 
 let generate_asset_functions info (l : asset_function list) : function_ws list =
-  mk_fun_to_key() ::
   List.map (fun x ->
       match x with
       | MkAsset asset_name -> mk_mk_asset info asset_name

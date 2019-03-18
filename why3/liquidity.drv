@@ -6,6 +6,10 @@ prelude "[%%version 1.01]\n
 let[@inline] empty_ops = ([] : operation list)
 
 let[@inline] list_add (e, l) = e::l
+
+let[@inline] to_key x = get x 0
+
+let[@inline] to_val x = get x 1
 "
 
 module HighOrd
@@ -37,11 +41,11 @@ theory bool.Bool
   syntax function implb "not %1 || %2"
 end
 
-module liq.Int
+module liquidity.Int
   syntax val toint      "%1:int"
 end
 
-module liq.Nat
+module liquidity.Nat
 
   syntax val tonat     "%1:nat"
   syntax val nat_zero  "(0:nat)"
@@ -57,7 +61,7 @@ module liq.Nat
 
 end
 
-module liq.Tez
+module liquidity.Tez
   syntax val totez     "%1tz"
 
   syntax val tez_eq    "%1 = %2"
@@ -72,7 +76,7 @@ module liq.Tez
   syntax val tez_minus "%1 - %2"
 end
 
-module liq.Address
+module liquidity.Address
 
   syntax val key_to_addr "Contract.address (Account.default %1)"
 
@@ -83,7 +87,7 @@ module liq.Address
 
 end
 
-module liq.Timestamp
+module liquidity.Timestamp
   syntax val tim_eq    "%1 = %2"
   syntax val tim_nq    "%1 <> %2"
 
@@ -93,7 +97,7 @@ module liq.Timestamp
   syntax val tim_lt    "%1 < %2"
 end
 
-module liq.Utils
+module liquidity.Utils
 
   syntax val get_0_2   "(get %1 0)"
   syntax val get_1_2   "(get %1 1)"
@@ -150,9 +154,12 @@ module liq.Utils
   syntax val update_storage "%2 <- %3"
   syntax val update_simple "%2"
 
+  syntax val to_key    "(to_key %1)"
+  syntax val to_val    "(to_val %1)"
+
 end
 
-module liq.Msg
+module liquidity.Msg
 
   syntax val not_found           "\"not found\""
   syntax val not_supported_yet   "\"not supported yet\""
@@ -162,7 +169,7 @@ module liq.Msg
 
 end
 
-module liq.List
+module liquidity.List
 
   syntax val fold "List.fold %1 %2 %3"
 
@@ -178,7 +185,7 @@ module liq.List
 
 end
 
-module liq.Map
+module liquidity.Map
 
   syntax val find       "Map.find %1 %2"
 
@@ -196,7 +203,7 @@ module liq.Map
 
 end
 
-module liq.Set
+module liquidity.Set
 
   syntax val mem           "Set.mem %1 %2"
 
@@ -208,7 +215,7 @@ module liq.Set
 
 end
 
-module liq.Current
+module liquidity.Current
 
   syntax val failwith  "Current.failwith %1"
   syntax val sender    "Current.sender %1"
@@ -217,7 +224,7 @@ module liq.Current
 
 end
 
-module liq.Contract
+module liquidity.Contract
 
   syntax val transfer  "Account.transfer ~dest:%1 ~amount:%2"
 

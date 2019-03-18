@@ -15,7 +15,7 @@ compiler:
 plugin:
 	$(MAKE) -C src cmlLib plugin
 	$(MAKE) -C src -f Makefile.plugin.mk plugin
-	cp -f src/_build/default/cml.cmxs ./why3/plugin/
+	cp -f src/_build/default/cml.cmxs ./why3/
 
 extract:
 	$(MAKE) -C src/liq extract.exe
@@ -36,4 +36,4 @@ check:
 	./check.sh
 
 build-deps:
-	opam install dune menhir batteries why3 ppx_deriving
+	opam install dune menhir batteries why3.1.2.0 ppx_deriving

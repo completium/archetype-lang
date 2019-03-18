@@ -66,7 +66,6 @@ let ity_to_ty (t : Mltree.ity) : Mltree.ty =
 
 type info = {
   info_syn          : syntax_map;
-  info_convert      : syntax_map;
   info_literal      : syntax_map;
   info_current_th   : Theory.theory;
   info_current_mo   : Pmodule.pmodule option;
@@ -128,7 +127,7 @@ module Print = struct
 
   let forget_let_defn = function
     | Lvar (v,_) -> forget_id v.pv_vs.vs_name
-    | Lsym (s,_,_,_) | Lany (s,_,_) -> forget_rs s
+    | Lsym (s,_,_,_,_) | Lany (s,_,_,_) -> forget_rs s
     | Lrec rdl -> List.iter (fun fd -> forget_rs fd.rec_sym) rdl
 
   let rec forget_pat = function
@@ -174,7 +173,7 @@ module Print = struct
       fprintf fmt "%s.%a" m (print_path ~sanitizer) (q, id)
     with
     | Not_found ->
-       let s = id_unique ~sanitizer iprinter id in
+        let s = id_unique ~sanitizer iprinter id in
         fprintf fmt "%s" s
     | Local ->
         let _, _, q =
@@ -186,8 +185,8 @@ module Print = struct
   let print_lident = print_qident ~sanitizer:Strings.uncapitalize
   let print_uident = print_qident ~sanitizer:Strings.capitalize
 
-  let print_tv fmt tv =
-    fprintf fmt "'%s" (id_unique aprinter tv.tv_name)
+  let print_tv ~use_quote fmt tv =
+    fprintf fmt (if use_quote then "'%s" else "%s") (id_unique aprinter tv.tv_name)
 
   let protect_on b s =
     if b then "(" ^^ s ^^ ")" else s
@@ -208,53 +207,53 @@ module Print = struct
 
   (** Types *)
 
-  let rec print_ty ?(paren=false) info fmt = function
+  let rec print_ty ~use_quote ?(paren=false) info fmt = function
     | Tvar tv ->
-        print_tv fmt tv
+        print_tv ~use_quote fmt tv
     | Ttuple [] ->
         fprintf fmt "unit"
     | Ttuple [t] ->
-        print_ty ~paren info fmt t
+        print_ty  ~use_quote ~paren info fmt t
     | Ttuple tl ->
         fprintf fmt (protect_on paren "@[%a@]")
-          (print_list star (print_ty ~paren:true info)) tl
+          (print_list star (print_ty ~use_quote ~paren:true info)) tl
     | Tapp (ts, tl) ->
         match query_syntax info.info_syn ts with
         | Some s ->
             fprintf fmt (protect_on paren "%a")
-              (syntax_arguments s (print_ty ~paren:true info)) tl
+              (syntax_arguments s (print_ty ~use_quote ~paren:true info)) tl
         | None   ->
             match tl with
             | [] ->
                 (print_lident info) fmt ts
             | [ty] ->
                 fprintf fmt (protect_on paren "%a@ %a")
-                  (print_ty ~paren:true info) ty (print_lident info) ts
+                  (print_ty ~use_quote ~paren:true info) ty (print_lident info) ts
             | tl ->
                 fprintf fmt (protect_on paren "(%a)@ %a")
-                  (print_list comma (print_ty ~paren:false info)) tl
+                  (print_list comma (print_ty ~use_quote ~paren:false info)) tl
                   (print_lident info) ts
 
   let print_vsty_opt info fmt id ty =
     fprintf fmt "?%s:(%a:@ %a)" id.id_string (print_lident info) id
-      (print_ty ~paren:false info) ty
+      (print_ty ~use_quote:false ~paren:false info) ty
 
   let print_vsty_named info fmt id ty =
     fprintf fmt "~%s:(%a:@ %a)" id.id_string (print_lident info) id
-      (print_ty ~paren:false info) ty
+      (print_ty ~use_quote:false ~paren:false info) ty
 
   let print_vsty info fmt (id, ty, _) =
     let attrs = id.id_attrs in
     if is_optional ~attrs then print_vsty_opt info fmt id ty
     else if is_named ~attrs then print_vsty_named info fmt id ty
     else fprintf fmt "(%a:@ %a)" (print_lident info) id
-        (print_ty ~paren:false info) ty
+        (print_ty ~use_quote:false ~paren:false info) ty
 
   let print_tv_arg = print_tv
-  let print_tv_args fmt = function
+  let print_tv_args ~use_quote fmt = function
     | []   -> ()
-    | [tv] -> fprintf fmt "%a@ " print_tv_arg tv
-    | tvl  -> fprintf fmt "(%a)@ " (print_list comma print_tv_arg) tvl
+    | [tv] -> fprintf fmt "%a@ " (print_tv_arg ~use_quote) tv
+    | tvl  -> fprintf fmt "(%a)@ " (print_list comma (print_tv_arg ~use_quote)) tvl
 
   let print_vs_arg info fmt vs =
     fprintf fmt "@[%a@]" (print_vsty info) vs
@@ -317,9 +316,8 @@ module Print = struct
 
   let check_val_in_drv info loc id =
     (* here [rs] refers to a [val] declaration *)
-    match query_syntax info.info_convert id,
-          query_syntax info.info_syn id with
-    | None, None (* when info.info_flat *) ->
+    match query_syntax info.info_syn id with
+    | None (* when info.info_flat *) ->
         Loc.errorm ?loc "Symbol %a cannot be extracted" (print_lident info) id
     | _ -> ()
 
@@ -371,25 +369,22 @@ module Print = struct
             List.exists (rs_equal rs) its.itd_constructors in
           List.exists is_constructor its
       | _ -> false in
-    match query_syntax info.info_convert rs.rs_name,
-          query_syntax info.info_syn rs.rs_name, pvl with
-    | Some s, _, [{e_node = Econst _}] ->
-      syntax_arguments s print_constant fmt pvl
-    | _, Some s, _  when compare rs.rs_name.id_string "update_storage" = 0 ->
+    match query_syntax info.info_syn rs.rs_name, pvl with
+    | Some s, _ when compare rs.rs_name.id_string "update_storage" = 0 ->
         syntax_arguments s (print_expr ~paren:false info) fmt pvl;
-    | _, Some s, _ when compare s "empty_map" = 0 ->
-      fprintf fmt "Map : %a"  (print_ty info) (ity_to_ty e.e_ity);
-    | _, Some s, _ when compare s "empty_set" = 0 ->
-      fprintf fmt "Set : %a"  (print_ty info) (ity_to_ty e.e_ity);
-    | _, Some s, _ (* when is_local_id info rs.rs_name  *) ->
-      syntax_arguments s (print_expr ~paren:true info) fmt pvl;
-    | _, None, [t] when is_rs_tuple rs ->
+    | Some s, _ when compare s "empty_map" = 0 ->
+      fprintf fmt "Map : %a"  (print_ty ~use_quote:false info) (ity_to_ty e.e_ity);
+    | Some s, _ when compare s "empty_set" = 0 ->
+      fprintf fmt "Set : %a"  (print_ty ~use_quote:false info) (ity_to_ty e.e_ity);
+    | Some s, _ (* when is_local_id info rs.rs_name  *)->
+        syntax_arguments s (print_expr ~paren:true info) fmt pvl;
+    | None, [t] when is_rs_tuple rs ->
         fprintf fmt "@[%a@]" (print_expr info) t
-    | _, None, tl when is_rs_tuple rs ->
+    | None, tl when is_rs_tuple rs ->
         fprintf fmt "@[(%a)@]" (print_list comma (print_expr info)) tl
-    | _, None, [t1] when isfield ->
+    | None, [t1] when isfield ->
         fprintf fmt "%a.%a" (print_expr info) t1 (print_lident info) rs.rs_name
-    | _, None, tl when isconstructor () ->
+    | None, tl when isconstructor () ->
         let pjl = get_record info rs in
         begin match pjl, tl with
           | [], [] ->
@@ -404,38 +399,37 @@ module Print = struct
               fprintf fmt "@[<hov 2>{ %a }@]"
                 (print_list2 semi equal (print_rs info)
                    (print_expr ~paren:true info)) (pjl, tl) end
-    | _, None, [] ->
+    | None, [] ->
         (print_lident info) fmt rs.rs_name
-    | _, _, tl ->
-       (*print_endline ("apply***"^rs.rs_name.id_string^" "^(string_of_int (List.length tl)));*)
-       fprintf fmt "@[<hov 2>%a %a@]"
+    | _, tl ->
+        fprintf fmt "@[<hov 2>%a %a@]"
           (print_lident info) rs.rs_name
           (print_apply_args info) (tl, rs.rs_cty.cty_args)
   (* (print_list space (print_expr ~paren:true info)) tl *)
 
   and print_svar fmt s =
-    Stv.iter (fun tv -> fprintf fmt "%a " print_tv tv) s
+    Stv.iter (fun tv -> fprintf fmt "%a " (print_tv ~use_quote:false) tv) s
 
   and print_fun_type_args info fmt (args, s, res, e) =
     if Stv.is_empty s then
       fprintf fmt "@[%a@] :@ %a@ =@ %a"
         (print_list space (print_vs_arg info)) args
-        (print_ty info) res
+        (print_ty ~use_quote:false info) res
         (print_expr info) e
     else
       let ty_args = List.map (fun (_, ty, _) -> ty) args in
       let id_args = List.map (fun (id, _, _) -> id) args in
       let arrow fmt () = fprintf fmt " ->@ " in
-      fprintf fmt ":@ @[<h>@[%a@]. @[%a ->@ %a@]@] =@ \
-                   @[<hov 2>fun @[%a@]@ ->@ %a@]"
+      let start fmt () = fprintf fmt "fun@ " in
+      fprintf fmt ":@ @[<h>type @[%a@]. @[%a@ %a@]@] =@ \
+                   @[<hov 2>@[%a@]@ %a@]"
         print_svar s
-        (print_list arrow (print_ty ~paren:true info)) ty_args
-        (print_ty ~paren:true info) res
-        (print_list space (print_lident info)) id_args
+        (print_list_suf arrow (print_ty ~use_quote:false ~paren:true info)) ty_args
+        (print_ty ~use_quote:false ~paren:true info) res
+        (print_list_delim ~start ~stop:arrow ~sep:space (print_lident info)) id_args
         (print_expr info) e
 
   and print_let_def ?(functor_arg=false) info fmt = function
-    | Lvar (pv, _) when is_dummy pv -> ()
     | Lvar (pv, e) ->
       begin
         let entry_mod =
@@ -450,18 +444,17 @@ module Print = struct
           (pv_name pv)
           (print_expr info) e
       end
-    | Lsym (rs, res, args, ef) ->
-       let entry_mod =
+    | Lsym (rs, svar, res, args, ef) ->
+      let entry_mod =
          match get_entry_typ rs.rs_name with
          | Init -> "%init"
          | Entry -> "%entry"
          | Inline -> "[@inline]"
          | NotAnEntry -> "" in
-        fprintf fmt "@[<hov 2>let%a %a @[%a@] : %a@ =@ @[%a@]@]"
+        fprintf fmt "@[<hov 2>let%a %a %a@]"
           print_str entry_mod
           (print_lident info) rs.rs_name
-          (print_list space (print_vs_arg info)) args
-          (print_ty info) res (print_expr info) ef;
+          (print_fun_type_args info) (args,svar,res,ef);
         forget_vars args
     | Lrec rdef ->
         let print_one fst fmt = function
@@ -473,19 +466,19 @@ module Print = struct
                 (print_fun_type_args info) (args, s, res, e);
               forget_vars args in
         print_list_next newline print_one fmt rdef;
-    | Lany (rs, res, []) when functor_arg ->
+    | Lany (rs, _svar, res, []) when functor_arg ->
         fprintf fmt "@[<hov 2>val %a : %a@]"
           (print_lident info) rs.rs_name
-          (print_ty info) res;
-    | Lany (rs, res, args) when functor_arg ->
+          (print_ty ~use_quote:true info) res;
+    | Lany (rs, _svar, res, args) when functor_arg ->
         let print_ty_arg info fmt (_, ty, _) =
-          fprintf fmt "@[%a@]" (print_ty info) ty in
+          fprintf fmt "@[%a@]" (print_ty ~use_quote:true info) ty in
         fprintf fmt "@[<hov 2>val %a : @[%a@] ->@ %a@]"
           (print_lident info) rs.rs_name
           (print_list arrow (print_ty_arg info)) args
-          (print_ty info) res;
+          (print_ty ~use_quote:true info) res;
         forget_vars args
-    | Lany ({rs_name}, _, _) -> check_val_in_drv info rs_name.id_loc rs_name
+    | Lany ({rs_name}, _, _, _) -> check_val_in_drv info rs_name.id_loc rs_name
 
   and print_expr ?(paren=false) info fmt e =
     match e.e_node with
@@ -499,10 +492,8 @@ module Print = struct
          | Some s -> syntax_arguments s print_constant fmt [e]
          | None -> fprintf fmt "%s" n)
 (*         | None when n = "0" -> fprintf fmt "Z.zero"
-         | None when n = "1" -> fprintf fmt "Z.one"
-           | None   -> fprintf fmt (protect_on paren "Z.of_string \"%s\"") n) *)
-    | Evar pvs when is_dummy pvs ->
-        fprintf fmt "%s" (dummy_to_val pvs)
+           | None when n = "1" -> fprintf fmt "Z.one"
+         | None   -> fprintf fmt (protect_on paren "Z.of_string \"%s\"") n)*)
     | Evar pvs ->
         (print_lident info) fmt (pv_name pvs)
     | Elet (let_def, e) ->
@@ -518,12 +509,8 @@ module Print = struct
     | Eapp (rs, [])  -> (* avoids parenthesis around values *)
         fprintf fmt "%a" (print_apply e info rs) []
     | Eapp (rs, pvl) ->
-        begin match query_syntax info.info_convert rs.rs_name, pvl with
-          | Some s, [{e_node = Econst _}] ->
-            syntax_arguments s print_constant fmt pvl
-          | _ ->
-              fprintf fmt (protect_on paren "%a")
-                (print_apply e info rs) pvl end
+       fprintf fmt (protect_on paren "%a")
+               (print_apply e info rs) pvl
     | Ematch (e1, [p, e2], []) ->
         fprintf fmt (protect_on paren "let %a =@ %a in@ %a")
           (print_pat info) p (print_expr info) e1 (print_expr info) e2
@@ -532,10 +519,10 @@ module Print = struct
           (protect_on paren "begin match @[%a@] with@\n@[<hov>%a@]@\nend")
           (print_expr info) e (print_list newline (print_branch info)) pl
     | Eassign al ->
-        let assign fmt (rho, rs, pv) =
+        let assign fmt (rho, rs, e) =
           fprintf fmt "@[<hov 2>%a.%a <-@ %a@]"
             (print_lident info) (pv_name rho) (print_lident info) rs.rs_name
-            (print_lident info) (pv_name pv) in
+            (print_expr info) e in
         begin match al with
           | [] -> assert false | [a] -> assign fmt a
           | al -> fprintf fmt "@[begin %a end@]" (print_list semi assign) al end
@@ -605,7 +592,7 @@ module Print = struct
           (print_uident info) xs.xs_name (print_expr info) e
     | Eexn (xs, Some t, e) ->
         fprintf fmt "@[<hv>let exception %a of %a in@\n%a@]"
-          (print_uident info) xs.xs_name (print_ty ~paren:true info) t
+          (print_uident info) xs.xs_name (print_ty ~use_quote:false ~paren:true info) t
           (print_expr info) e
     | Eignore e -> fprintf fmt "ignore (%a)" (print_expr info) e
 
@@ -650,10 +637,10 @@ module Print = struct
       match cs_args with
       | [] -> fprintf fmt "@[<hov 4>| %a@]" (print_uident info) id
       | l -> fprintf fmt "@[<hov 4>| %a of %a@]" (print_uident info) id
-               (print_list star (print_ty ~paren:false info)) l in
+               (print_list star (print_ty ~use_quote:true ~paren:false info)) l in
     let print_field fmt (is_mutable, id, ty) =
-      fprintf fmt "%s%a: @[%a@];" (if is_mutable then (*"mutable "*)"" else "")
-        (print_lident info) id (print_ty ~paren:false info) ty in
+      fprintf fmt "%s%a: @[%a@];" (if is_mutable then "mutable " else "")
+        (print_lident info) id (print_ty ~use_quote:true ~paren:false info) ty in
     let print_def fmt = function
       | None ->
           ()
@@ -664,7 +651,7 @@ module Print = struct
             (if its.its_private then "private " else "")
             (print_list newline print_field) fl
       | Some (Dalias ty) ->
-          fprintf fmt " =@ %a" (print_ty ~paren:false info) ty
+          fprintf fmt " =@ %a" (print_ty ~use_quote:true ~paren:false info) ty
       | Some (Drange _) ->
           fprintf fmt " =@ Z.t"
       | Some (Dfloat _) ->
@@ -673,7 +660,7 @@ module Print = struct
     let attrs = its.its_name.id_attrs in
     if not (is_ocaml_remove ~attrs) then
       fprintf fmt "@[<hov 2>@[%s %a%a@]%a@]"
-        (if fst then "type" else "and") print_tv_args its.its_args
+        (if fst then "type" else "and") (print_tv_args ~use_quote:true) its.its_args
         (print_lident info) its.its_name print_def its.its_def
 
   let rec is_signature_decl info = function
@@ -699,7 +686,7 @@ module Print = struct
   let print_top_val ?(functor_arg=false) info fmt ({pv_vs}, ty) =
     if functor_arg then
       fprintf fmt "@[<hov 2>val %a : %a@]"
-        (print_lident info) pv_vs.vs_name (print_ty info) ty
+        (print_lident info) pv_vs.vs_name (print_ty ~use_quote:true info) ty
     else
       check_val_in_drv info pv_vs.vs_name.id_loc pv_vs.vs_name
 
@@ -714,7 +701,7 @@ module Print = struct
         fprintf fmt "exception %a" (print_uident info) xs.xs_name
     | Dexn (xs, Some t)->
         fprintf fmt "@[<hov 2>exception %a of %a@]"
-          (print_uident info) xs.xs_name (print_ty ~paren:true info) t
+          (print_uident info) xs.xs_name (print_ty ~use_quote:true ~paren:true info) t
     | Dmodule (s, dl) ->
         let args, dl = extract_functor_args info dl in
         let info = { info with info_current_ph = s :: info.info_current_ph } in
@@ -750,7 +737,6 @@ let print_decl =
     ignore (old);
     let info = {
       info_syn          = pargs.Pdriver.syntax;
-      info_convert      = pargs.Pdriver.converter;
       info_literal      = pargs.Pdriver.literal;
       info_current_th   = th;
       info_current_mo   = Some m;
@@ -767,6 +753,7 @@ let ng suffix ?fname m =
   let mod_name = m.mod_theory.th_name.id_string in
   let path     = m.mod_theory.th_path in
   (module_name ?fname path mod_name) ^ suffix
+
 
 let file_gen = ng ".liq"
 let mli_gen = ng ".liq"

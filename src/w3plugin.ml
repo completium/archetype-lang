@@ -40,19 +40,19 @@ let read_channel env path file (c: in_channel) =
     Typing.close_scope loc ~import:true in
   List.iter use_import
     ["option", "Option";
-     "liq", "Utils";
-     "liq", "Int";
-     "liq", "Nat";
-     "liq", "Address";
-     "liq", "Timestamp";
-     "liq", "Tez";
-     "liq", "String";
-     "liq", "List";
-     "liq", "Map";
-     "liq", "Set";
-     "liq", "Msg";
-     "liq", "Current";
-     "liq", "Contract"];
+     "liquidity", "Utils";
+     "liquidity", "Int";
+     "liquidity", "Nat";
+     "liquidity", "Address";
+     "liquidity", "Timestamp";
+     "liquidity", "Tez";
+     "liquidity", "String";
+     "liquidity", "List";
+     "liquidity", "Map";
+     "liquidity", "Set";
+     "liquidity", "Msg";
+     "liquidity", "Current";
+     "liquidity", "Contract"];
   translate f;
   Typing.close_module loc;
   let mm = Typing.close_file () in
