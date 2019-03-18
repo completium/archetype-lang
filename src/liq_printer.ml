@@ -430,6 +430,7 @@ module Print = struct
         (print_expr info) e
 
   and print_let_def ?(functor_arg=false) info fmt = function
+    | Lvar (pv, _) when is_dummy pv -> ()
     | Lvar (pv, e) ->
       begin
         let entry_mod =
@@ -494,6 +495,8 @@ module Print = struct
 (*         | None when n = "0" -> fprintf fmt "Z.zero"
            | None when n = "1" -> fprintf fmt "Z.one"
          | None   -> fprintf fmt (protect_on paren "Z.of_string \"%s\"") n)*)
+    | Evar pvs when is_dummy pvs ->
+      fprintf fmt "%s" (dummy_to_val pvs)
     | Evar pvs ->
         (print_lident info) fmt (pv_name pvs)
     | Elet (let_def, e) ->
