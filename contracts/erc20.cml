@@ -8,12 +8,12 @@ constant symbol string
 
 asset tokenHolder identified by holder = {
     holder[%delegable] : address;
-    tokens : uint
+    tokens : int
 } initialized by {
     tokenHolder.add caller { tokens = total }
 }
 
-transaction transfer_ (k : address) (quantity : uint) = {
+transaction transfer_ (k : address) (quantity : int) = {
 
   specification
     before tokenHolder.sum(tokens) = tokenHolder.sum(tokens)

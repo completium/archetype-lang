@@ -511,3 +511,13 @@ let assignment_operator_to_str = function
   | DivAssign -> "div"
   | AndAssign -> "and"
   | OrAssign -> "or"
+
+let mk_init_val = function
+  | VTbool           -> BVbool false
+  | VTint            -> BVint Big_int.zero_big_int
+  | VTuint           -> BVint Big_int.zero_big_int
+  | VTdate           -> BVdate "1970-01-01T00:00:00Z"
+  | VTduration       -> BVduration "0s"
+  | VTstring         -> BVstring ""
+  | VTaddress        -> BVaddress "@none"
+  | VTcurrency (c,_) -> BVcurrency (c,Big_int.zero_big_int)

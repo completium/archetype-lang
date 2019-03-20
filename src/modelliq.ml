@@ -187,16 +187,6 @@ type initval =
   | Iemptyc of empty_container
   | Iinput  of lident
 
-let mk_init_val = function
-  | VTbool           -> BVbool false
-  | VTint            -> BVint Big_int.zero_big_int
-  | VTuint           -> BVint Big_int.zero_big_int
-  | VTdate           -> BVdate "1970-01-01T00:00:00Z"
-  | VTduration       -> BVduration "0s"
-  | VTstring         -> BVstring ""
-  | VTaddress        -> BVaddress "@none"
-  | VTcurrency (c,_) -> BVcurrency (c,Big_int.zero_big_int)
-
 let mk_init_fields info args (fs : storage_field list) : (lident * initval) list =
   let retrieve_default_value (f : storage_field) =
     begin

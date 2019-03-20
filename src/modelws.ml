@@ -898,9 +898,9 @@ let pfailwith msg = Papp (Pdot (Pvar "Current", Pvar "failwith"), [Papp (Pvar ms
 let pGen m s args = Papp (Pdot (Pvar m, Pvar s), args)
 
 let pCurrent s = pGen "Current" s []
-let pCurrentSender = pCurrent "sender"
+let pCurrentSender  = pCurrent "sender"
 let pCurrentBalance = pCurrent "balance"
-let pCurrentTime = pCurrent "time_"
+let pCurrentTime    = pCurrent "time_"
 
 (*
 let[@inline] get_owner (p: storage * address) : (address * owner) =
@@ -1386,15 +1386,21 @@ let rec process_rec (acc : process_acc) (pterm : Model.pterm) : process_data =
         begin
           match a.ret with
           | Field (a, _f, _g) -> (
+              let dv =
+                (
+                  let t = get_key_type (dumloc a) acc.info in
+                  Plit (dumloc (mk_init_val t))
+                )
+              in
               let le = loc_pterm (Papp (Pvar (a ^ "_col"), [Pvar "s"])) in
               (* ((to_val (get_toto (s, "id"))).cpt <- 1) *)
               let ri = dumloc (Papp (loc_pterm (Pdot (Pvar "Map", Pvar "update")),
-                                      [loc_pterm (Plit (dumloc (BVint Big_int.zero_big_int)));
+                                      [loc_pterm dv;
                                        dumloc (Papp (loc_pterm (Pvar "Some"), [
                                            dumloc (Papp (loc_pterm (Pvar "update_storage"), [
                                                loc_pterm (Papp ((Pvar "to_val"),
-                                                                [(Papp ((Pvar "get_myasset"),
-                                                                        [(Ptuple [(Pvar "s"); (Plit (dumloc (BVint Big_int.zero_big_int)))])]))]));
+                                                                [(Papp ((Pvar ("get_" ^ a)),
+                                                                        [(Ptuple [(Pvar "s"); dv])]))]));
                                                assigned;
                                                value]))
                                          ])); le])) in
@@ -1504,7 +1510,8 @@ let rec process_rec (acc : process_acc) (pterm : Model.pterm) : process_data =
       begin
         match c with
         | Cbalance -> loc_pterm (pCurrentBalance), Tez
-        | Cnow     -> loc_pterm (pCurrentTime), Timestamp
+        | Cnow     -> loc_pterm (pCurrentTime),    Timestamp
+        | Ccaller  -> loc_pterm (pCurrentSender),  Address
         | _ -> model_pterm_to_pterm pterm, Const c
       end in
     {
