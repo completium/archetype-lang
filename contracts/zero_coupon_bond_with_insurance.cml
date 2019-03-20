@@ -1,8 +1,8 @@
 model zero_coupon_bond_with_insurance
 
-role issuer = @tz1KksC8RvjUWAbXYJuNrUbontHGor25Cztk (* seller ‘Alice’ *)
+variable issuer role = @tz1KksC8RvjUWAbXYJuNrUbontHGor25Cztk (* seller ‘Alice’ *)
 
-role owner = @tz1KmuhR6P52hw6xs5P69BXJYAURaznhvN1k
+variable owner role  = @tz1KmuhR6P52hw6xs5P69BXJYAURaznhvN1k
 (* buyer ‘Bob’; receives 11 tez in one-year *)
 
 contract insurance = {

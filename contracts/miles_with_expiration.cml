@@ -1,6 +1,6 @@
 model miles_with_expiration
 
-role[%transferable] admin
+variable[%transferable] admin role
 
 (* id is a string because it is generated off-chain *)
 asset mile identified by id sorted by expiration = {

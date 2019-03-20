@@ -1,14 +1,14 @@
 model escrow
 
-role buyer
+variable buyer role
 
-role[%transferable] debitor = buyer
+variable[%transferable] debitor role = buyer
 
-role seller
+variable seller role
 
-role[%transferable] creditor = seller
+variable[%transferable] creditor role = seller
 
-role oracle
+variable oracle role
 
 variable[%traceable] price tez from buyer to creditor
 

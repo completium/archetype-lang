@@ -98,6 +98,7 @@ module liquidity.Timestamp
 end
 
 module liquidity.Utils
+  syntax val get_0_1   "%1"
 
   syntax val get_0_2   "(get %1 0)"
   syntax val get_1_2   "(get %1 1)"

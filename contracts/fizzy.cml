@@ -1,9 +1,9 @@
 model fizzy
 
-role creator
+variable creator role
 
-enum status = 
-| Created         
+enum status =
+| Created
 | Before           (* flight landed before the limit      *)
 | After            (* flight landed after the limit       *)
 | Cancelled        (* cancelled by the user               *)
@@ -17,7 +17,7 @@ asset insurance = {
   premium   : tez;
   indemnity : tez;
   stat      : status = Created;
-} 
+}
 
 asset[@add creator none] flight identified by id = {
   id         : string;
@@ -28,7 +28,7 @@ transaction addflightinsurance (fi : string) (* flight id *)
                                (i : insurance) = {
     called by creator
 
-    action 
+    action
       flight.addifnotexist { id = fi };
       let f = flight.get id in
       f.insurances.add i
@@ -39,11 +39,11 @@ transaction updatestatus (fi : string) (arrival : date) = {
 
     called by creator
 
-    action 
+    action
       let f = flight.get id in
       for (i in f.insurances)
         match i.status with
-        | Created -> 
+        | Created ->
            if arrival > i.limit
            then i.status := After
         | _ -> none
@@ -51,10 +51,10 @@ transaction updatestatus (fi : string) (arrival : date) = {
 }
 
 transaction manual (fi : string) (pr : string) (newst : status) = {
-   
+
     called by creator
 
-    action 
+    action
       let f = flight.get fi in
       for (i in f.insurances.when (product = pr))
         match i.status with
@@ -70,8 +70,7 @@ specification {
    (* this contract does not transfer any tez *)
    s2 : forall tx:atransaction, is_empty (transfers_by_tx tx);
 
-   (* transaction “updatestatus” is not the only one to potentially 
+   (* transaction “updatestatus” is not the only one to potentially
       perform an update of insurance status *)
    s3 : perform_by_tx [update stat] [updatestatus, manual]
 }
-

@@ -33,6 +33,7 @@ let builtin_type str =
   | "duration" -> Some VTduration
   | "string" -> Some VTstring
   | "address" -> Some VTaddress
+  | "role" -> Some VTaddress
   | "tez" -> Some (VTcurrency (Tez, None))
   | "mtez" -> Some (VTcurrency (Mutez, None))
   | _ -> None
@@ -377,16 +378,6 @@ let rec to_sexpr (e : expr) : Model.sexpr =
       mkloc loc (Sor (lhs, rhs)))
   | _ -> raise (ModelError ("wrong type for ", loc))
 
-let get_roles decls =
-  List.fold_left ( fun acc i ->
-      (let loc = loc i in
-       let decl_u = Location.unloc i in
-       match decl_u with
-       | Drole (id, dv, _) ->
-         {name = id; default = map_option to_rexpr_dv_role dv; loc = loc}::acc
-       | _ -> acc)
-    ) [] decls
-
 let mk_bval e =
   let loc, v = deloc e in
   mkloc loc
@@ -467,6 +458,7 @@ let get_variables decls =
        | Dvariable (id, typ, opts, dv, _) ->
          begin
            let (from, to_) = ret_from_to opts in
+           let dv = (match unloc (mk_ptyp typ) with | Tbuiltin VTaddress -> None | _ -> dv) in
            {
              decl = mk_decl_pterm loc (id, Some typ, dv);
              constant = false;
@@ -708,13 +700,13 @@ let check_dv model : Model.model =
    |> List.iter (fun v ->
        let d = v.decl in
        match d.typ, d.default with
-       | Some ({pldesc=Tbuiltin VTaddress; _}), None -> raise (Modelinfo.DefaultValueAssignment d.name)
+       (*       | Some ({pldesc=Tbuiltin VTaddress; _}), None -> raise (Modelinfo.DefaultValueAssignment d.name)*)
        | _ -> ()));
   model
 
 let sanity_check model : Model.model =
   model
-  |> check_dv
+(*  |> check_dv*)
 
 let parseTree_to_model (pt : ParseTree.model) : Model.model =
   let ptu = Location.unloc pt in
@@ -724,7 +716,6 @@ let parseTree_to_model (pt : ParseTree.model) : Model.model =
 
   mkloc (loc pt) {
     name          = get_name_model pt;
-    roles         = get_roles decls;
     variables     = get_variables decls;
     assets        = get_assets decls;
     functions     = get_functions decls;

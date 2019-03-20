@@ -398,7 +398,6 @@ type function_ = (lident,ptyp,pattern,pterm) gen_function
 
 type model_unloc = {
   name         : lident;
-  roles        : role list;
   variables    : variable list;
   assets       : asset list;
   functions    : function_ list;

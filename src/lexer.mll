@@ -13,7 +13,6 @@
       "model"               , MODEL          ;
       "constant"            , CONSTANT       ;
       "variable"            , VARIABLE       ;
-      "role"                , ROLE           ;
       "identified"          , IDENTIFIED     ;
       "sorted"              , SORTED         ;
       "by"                  , BY             ;

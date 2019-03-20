@@ -1,8 +1,8 @@
 model clause_io_acceptance_of_delivery
 
-role shipper
+variable shipper role
 
-role receiver
+variable receiver role
 
 variable payment tez from receiver to shipper
 

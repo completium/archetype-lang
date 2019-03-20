@@ -1,8 +1,8 @@
 model miles
 
-role owner
+variable owner role
 
-role[%transferable] validator
+variable[%transferable] validator role
 
 asset account identified by owner = {
   owner  : address;

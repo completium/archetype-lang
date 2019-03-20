@@ -1,6 +1,6 @@
 model extension signedby (
 
-  role arole
+  variable arole role
 
   transaction aTransaction (anarg[%signedby arole] : type)
 

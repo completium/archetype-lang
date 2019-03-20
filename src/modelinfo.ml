@@ -109,11 +109,6 @@ let mk_dummy_variables (m : model_unloc) : (string * (string * vtyp)) list =
           default_to_dummy_val acc decl.default
         ) acc fields
     ) x m.assets)
-  |> (fun x -> List.fold_left (fun acc (r : role) ->
-      match r.default with
-      | Some (Raddress a) -> acc @ [fresh_dummy (), (a, VTaddress)]
-      | _ -> acc
-    ) x m.roles)
 (* TODO : scan transactions *)
 
 let get_asset_vars (a : asset) : (string * ptyp) list =
@@ -166,9 +161,7 @@ let mk_info m =
   let vr = m |> mk_dummy_variables in
   let av = m.assets |> List.map (fun a -> get_asset_name a, get_asset_vars a) in
   let pa = m.assets |> List.fold_left (fun acc a -> acc @ (get_partitions a)) [] in
-  let vt =
-    (m.variables |> List.fold_left (fun acc s -> acc @ [unloc s.decl.name, Tools.map_option unloc s.decl.typ]) []) @
-    (m.roles |> List.fold_left (fun acc (s : role) -> acc @ [unloc s.name, Some (Tbuiltin VTstring)]) [])
+  let vt = m.variables |> List.fold_left (fun acc s -> acc @ [unloc s.decl.name, Tools.map_option unloc s.decl.typ]) []
   in
   {
     assets_pol = ap;

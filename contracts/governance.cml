@@ -1,6 +1,6 @@
 model governance
 
-role[%transferable] chairperson
+variable[%transferable] chairperson role
 
 (* vote start *)
 variable[%mutable chairperson (instate Created)] date startDate

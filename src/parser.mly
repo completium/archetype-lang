@@ -11,7 +11,6 @@
 %token MODEL
 %token CONSTANT
 %token VARIABLE
-%token ROLE
 %token IDENTIFIED
 %token SORTED
 %token BY
@@ -201,7 +200,6 @@ declaration_r:
  | x=model              { x }
  | x=constant           { x }
  | x=variable           { x }
- | x=role               { x }
  | x=enum               { x }
  | x=states             { x }
  | x=object_decl        { x }
@@ -239,9 +237,6 @@ variable:
 value_option:
 | x=from_value { VOfrom x }
 | x=to_value   { VOto x }
-
-role:
-| ROLE exts=option(extensions) x=ident dv=default_value? { Drole (x, dv, exts) }
 
 %inline default_value:
 | EQUAL x=expr { x }
@@ -410,7 +405,7 @@ asset:
 | INITIALIZED BY x=braced(expr) { x }
 
 asset_option:
-| AS ROLE               { AOasrole }
+| AS _x=ident           { AOasrole }
 | IDENTIFIED BY x=ident { AOidentifiedby x }
 | SORTED BY x=ident     { AOsortedby x }
 

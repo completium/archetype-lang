@@ -1,6 +1,6 @@
 model guarantee_fund
 
-role admin
+variable admin role
 
 asset insured_contract identified by addr = {
   addr : address;

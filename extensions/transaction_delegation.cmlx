@@ -1,6 +1,6 @@
 model extension transactionDelegation (
 
-  role aRole
+  variable aRole role
 
   asset anAsset = {
     arole : aRole

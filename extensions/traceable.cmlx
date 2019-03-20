@@ -1,15 +1,15 @@
 model extension traceable (
 
-  role fromP
+  variable fromP role
 
-  role toP
+  variable toP role
 
   variable[%traceable] anamount tez from fromP to toP
 ) = {
 
-  role fromP
+  variable fromP role
 
-  role toP
+  variable toP role
 
   variable anamount tez from participant to toP
 

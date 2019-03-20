@@ -24,13 +24,13 @@ variable nb_tez_raised int = 0
 
 (* Roles *)
 
-role[%transferable] owner
+variable[%transferable] owner role
 
-role whitelister
+variable whitelister role
 
-role reserve
+variable reserve role
 
-role community
+variable community role
 
 (* contributor *)
 

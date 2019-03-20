@@ -216,8 +216,7 @@ let vt_to_ft var =
     end
   | None -> raise (VarNoType var.decl.loc)
 
-let mk_variable (var : variable) =
-  {
+let mk_variable (var : variable) = {
   asset   = None;
   name    = var.decl.name;
   typ     = vt_to_ft var;
@@ -228,20 +227,6 @@ let mk_variable (var : variable) =
 }
 
 (* maps *)
-let mk_role_default (r : role) =
-  match r.default with
-  | Some (Raddress a) -> Some (mkloc (r.loc) (Plit (mkloc (r.loc) (BVaddress a))))
-  | _ -> None
-
-let mk_role_var (role : role) = {
-  asset   = None;
-  name    = role.name;
-  typ     = Ftyp VTaddress;
-  ghost   = false;
-  default = mk_role_default role;
-  ops     = [];
-  loc     = role.loc;
-}
 
 let mk_initial_state info (st : state) =
   let init = get_initial_state info st.name in
@@ -263,7 +248,6 @@ let mk_state_var info (st : state) = {
 let mk_storage info m =
   let fields = m.states
     |> List.fold_left (fun acc st -> acc @ [mk_state_var info st]) []
-    |> fun x -> List.fold_left (fun acc r -> acc @ [mk_role_var r]) x m.roles
     |> fun x -> List.fold_left (fun acc var -> acc @ [mk_variable var]) x m.variables
     |> fun x ->
     List.fold_left (fun acc a ->

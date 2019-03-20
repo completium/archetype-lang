@@ -1,5 +1,5 @@
 model extension signedby (
-  role arole
+  variable arole role
 
   object[%signedby arole] anObject aType
 

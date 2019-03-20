@@ -107,6 +107,8 @@ theory Utils
   val sort ((('a , 'a) -> int) , list 'a) : list 'a
 
   (* tuple *)
+  let get_0_1 (v : ('a)) : 'a = let (a) = v in a
+
   let get_0_2 (v : ('a , 'b)) : 'a = let (a,_) = v in a
   let get_1_2 (v : ('a , 'b)) : 'b = let (_,b) = v in b
 

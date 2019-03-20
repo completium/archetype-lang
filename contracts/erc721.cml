@@ -6,7 +6,7 @@ constant total uint
 
 constant symbol string
 
-role [%delegable] owner
+variable[%delegable] owner role
 
 asset token = {
   owner : owner

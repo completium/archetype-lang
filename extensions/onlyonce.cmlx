@@ -1,4 +1,4 @@
-model extension idempotent (
+model extension onlyonce (
 
   transaction[%onlyonce] tr
 

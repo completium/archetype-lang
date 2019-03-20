@@ -552,12 +552,6 @@ let rec pp_declaration fmt { pldesc = e; _ } =
           (pp_option (pp_prefix " " (pp_list " " pp_value_option))) opts
           (pp_option (pp_prefix " = " pp_expr)) dv
 
-  | Drole (id, dv, exts) ->
-      Format.fprintf fmt "role%a %a%a"
-          (pp_option (pp_list " " pp_extension)) exts
-           pp_id id
-          (pp_option (pp_prefix " = " pp_expr)) dv
-
   | Denum (id, ids) ->
       Format.fprintf fmt "enum %a =\n@[<v 2>@]%a"
         pp_id id

@@ -1,6 +1,6 @@
 model competition
 
-role[%transferable] organiser
+variable[%transferable] organiser role
 
 (* start date *)
 variable[%mutable organiser (instate Created)] startdate date
@@ -10,9 +10,9 @@ variable[%mutable organiser (instate Created)] deadline date
 
 variable[%traceable] prize tez from organizer = 3500
 
-role competitor
+variable competitor role
 
-role oracle
+variable oracle role
 
 asset submission = {
   competitor : competitor;

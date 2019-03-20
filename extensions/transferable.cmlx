@@ -1,12 +1,12 @@
 model extension transferable (
 
-  role[%transferable] aRole
+  variable[%transferable] aRole role
 
 ) = {
 
-  role aRole
+  variable aRole role
 
-  role <%aRole>_tmp
+  variable <%aRole>_tmp role
 
   transaction assign_new_<%aRole> (newrole : <%aRole>tmp) = {
     called by aRole
