@@ -501,3 +501,13 @@ let pattern_map f fi ft fr fq = function
   | Mscope (q, p) -> Mscope (fq q, fr p)
   | Mparen p -> Mparen (fr p)
   | Mghost p -> Mghost (fr p)
+
+let assignment_operator_to_str = function
+  | ValueAssign -> "value"
+  | SimpleAssign -> "simple"
+  | PlusAssign -> "plus"
+  | MinusAssign -> "minus"
+  | MultAssign -> "mult"
+  | DivAssign -> "div"
+  | AndAssign -> "and"
+  | OrAssign -> "or"

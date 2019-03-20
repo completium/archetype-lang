@@ -821,6 +821,10 @@ let add_fun i l =
 let add_funs l1 l2 =
   List.fold_right (fun x acc -> add_fun x acc) l1 l2
 
+let add_fun3 i l1 l2 = add_fun i (add_funs l1 l2)
+
+let add_funs3 l1 l2 l3 = add_funs l1 (add_funs l2 l3)
+
 let is_asset_const (e, args) const nb_args =
   if List.length args <> nb_args then false
   else
@@ -1123,7 +1127,7 @@ type ret_typ =
   | Letin
   | Storage
   | Asset of string
-  | Field of string * string  (*asset name, field name*)
+  | Field of string * string * pterm  (*asset name, field name*)
   | Bool
   | Int
   | Nat
@@ -1137,6 +1141,7 @@ type ret_typ =
   | Aaa of pterm
   | Operations
   | None
+[@@deriving show {with_path = false}]
 
 type process_data = {
   term : pterm;
@@ -1340,8 +1345,71 @@ let rec process_rec (acc : process_acc) (pterm : Model.pterm) : process_data =
           | _ -> [], None, Papp (new_e.term, a)) in {
         dummy_process_data with
         term = mkloc loc p;
-        funs = add_funs (add_funs nl new_e.funs) (List.flatten b);
+        funs = add_funs3 nl new_e.funs (List.flatten b);
         ret = ret;
+      }
+    )
+  | Passign (op, l, r) ->
+    (
+      let a = process_rec acc l in
+      let b = process_rec acc r in
+
+      let assigned =
+        begin
+          match a.ret with
+          | Field (_a, f, g) -> (
+              dumloc (Papp (loc_pterm (Pvar f), [dumloc (Papp (loc_pterm (Pvar "to_val"), [g]))]))
+            )
+          | _ -> a.term
+        end
+      in
+
+      (*print_endline (show_pterm assigned);*)
+
+      let v = b.term in
+
+      let value =
+        (
+          match op with
+          | ValueAssign  -> v
+          | SimpleAssign -> v
+          | PlusAssign   -> dumloc (Parith   (Plus,  assigned, v))
+          | MinusAssign  -> dumloc (Parith   (Minus, assigned, v))
+          | MultAssign   -> dumloc (Parith   (Mult,  assigned, v))
+          | DivAssign    -> dumloc (Parith   (Div,   assigned, v))
+          | AndAssign    -> dumloc (Plogical (And,   assigned, v))
+          | OrAssign     -> dumloc (Plogical (Or,    assigned, v))
+        ) in
+
+
+      let tabs =
+        begin
+          match a.ret with
+          | Field (a, _f, _g) -> (
+              let le = loc_pterm (Papp (Pvar (a ^ "_col"), [Pvar "s"])) in
+              (* ((to_val (get_toto (s, "id"))).cpt <- 1) *)
+              let ri = dumloc (Papp (loc_pterm (Pdot (Pvar "Map", Pvar "update")),
+                                      [loc_pterm (Plit (dumloc (BVint Big_int.zero_big_int)));
+                                       dumloc (Papp (loc_pterm (Pvar "Some"), [
+                                           dumloc (Papp (loc_pterm (Pvar "update_storage"), [
+                                               loc_pterm (Papp ((Pvar "to_val"),
+                                                                [(Papp ((Pvar "get_myasset"),
+                                                                        [(Ptuple [(Pvar "s"); (Plit (dumloc (BVint Big_int.zero_big_int)))])]))]));
+                                               assigned;
+                                               value]))
+                                         ])); le])) in
+              [le; ri]
+            )
+          | _ -> [assigned; value]
+        end
+      in
+      (* s.toto_col <- Map.update "id" (Some ((to_val (get_toto (s, "id"))).cpt <- 1)) s.toto_col *)
+      let p = Papp (loc_pterm (Pvar "update_storage"), [loc_pterm (Pvar "s")] @ tabs) in
+      {
+        dummy_process_data with
+        term = mkloc loc p;
+        funs = add_funs a.funs b.funs;
+        ret = Storage;
       }
     )
   | Pdot (l, r) ->
@@ -1350,13 +1418,13 @@ let rec process_rec (acc : process_acc) (pterm : Model.pterm) : process_data =
       let b = process_rec acc r in
 
       let nl, ret, p = (match a.ret, b.ret with
-          | Field (asset_name, id), Const c -> compute_const_field asset_name id c a.term
-          | Asset asset_name, Id id when is_asset_field acc.info (asset_name, id) -> [], Field (asset_name, id),
+          | Field (asset_name, id, _), Const c -> compute_const_field asset_name id c a.term
+          | Asset asset_name, Id id when is_asset_field acc.info (asset_name, id) -> [], Field (asset_name, id, a.term),
               Papp (dumloc (Pvar (dumloc "to_key")), [a.term])
-          | _ -> [],None, Pdot (a.term, b.term)) in {
+          | _ -> [], None, Pdot (a.term, b.term)) in {
         dummy_process_data with
         term = mkloc loc p;
-        funs = add_funs (add_funs nl a.funs) b.funs;
+        funs = add_funs3 nl a.funs b.funs;
         ret = ret;
       }
     )

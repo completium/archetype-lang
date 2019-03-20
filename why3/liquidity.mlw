@@ -172,6 +172,7 @@ theory Utils
 
   (* storage update *)
   val update_storage 's 'a 'a : 's
+  val update_record 'a 'a : 's
   val update_simple 's 'a : 's
 
   val to_key ('a, 'b) : 'a

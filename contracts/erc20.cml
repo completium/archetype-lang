@@ -6,20 +6,22 @@ constant total uint
 
 constant symbol string
 
-role[%delegable] holder
-
 asset tokenHolder identified by holder = {
-  holder : holder;
-  tokens : uint
+    holder[%delegable] : address;
+    tokens : uint
+} initialized by {
+    tokenHolder.add caller { tokens = total }
 }
 
-transaction transfer_ (creditor : tokenHolder) (quantity : uint) = {
-  called by tokenHolder.holder
+transaction transfer_ (k : address) (quantity : uint) = {
+
   specification
-    sum(tokens) = sum(tokens);
-    before.tokenHolder.sum(tokens) = after.tokenHolder.sum(tokens)
+    before tokenHolder.sum(tokens) = tokenHolder.sum(tokens)
+
+
+  called by (tokenHolder.get k).holder
 
   action
-    creditor.tokens += quantity;
+    (tokenHolder.get k).tokens += quantity;
     (tokenHolder.get caller).tokens -= quantity
 }

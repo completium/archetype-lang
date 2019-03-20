@@ -152,6 +152,7 @@ module liquidity.Utils
   syntax val get_8_9   "(get %1 8)"
 
   syntax val update_storage "%2 <- %3"
+  syntax val update_record  "%2 <- %3"
   syntax val update_simple "%2"
 
   syntax val to_key    "(to_key %1)"
