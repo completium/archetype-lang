@@ -521,8 +521,8 @@ let pp_asset_post_option fmt (apo : asset_post_option) =
     Format.fprintf fmt " with states %a"
       pp_id i
   | APOconstraints cs ->
-    Format.fprintf fmt "%a"
-      (pp_list " @," (pp_enclose " with { " " }" pp_expr)) cs
+    Format.fprintf fmt " with { %a } "
+      pp_expr cs
   | APOinit init ->
     Format.fprintf fmt " initialized by { %a }"
       pp_expr init

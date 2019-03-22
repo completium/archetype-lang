@@ -223,7 +223,7 @@ and asset_option =
 
 and asset_post_option =
   | APOstates of lident
-  | APOconstraints of expr list
+  | APOconstraints of expr
   | APOinit of expr
 [@@deriving show {with_path = false}]
 

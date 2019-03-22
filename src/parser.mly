@@ -393,14 +393,11 @@ asset:
 
 asset_post_option:
 | st=init_states       { APOstates st }
-| cs=asset_constraints { APOconstraints cs }
+| cs=asset_constraint  { APOconstraints cs }
 | init=init_asset      { APOinit init }
 
 %inline asset_post_options:
  | xs=asset_post_option* { xs }
-
-%inline asset_constraints:
- | xs=asset_constraint+ { xs }
 
 %inline asset_constraint:
  | WITH x=braced(expr) { x }
@@ -666,14 +663,14 @@ simple_expr_r:
      { (id, ty, None) }
 
 literal:
- | x=NUMBER     { Lnumber  x }
- | x=FLOAT      { Lfloat   x }
- | x=TZ         { Ltz      x }
- | x=STRING     { Lstring  x }
- | x=ADDRESS    { Laddress x }
- | x=bool_value { Lbool    x }
+ | x=NUMBER     { Lnumber   x }
+ | x=FLOAT      { Lfloat    x }
+ | x=TZ         { Ltz       x }
+ | x=STRING     { Lstring   x }
+ | x=ADDRESS    { Laddress  x }
+ | x=bool_value { Lbool     x }
  | x=DURATION   { Lduration x }
- | x=DATE       { Ldate x }
+ | x=DATE       { Ldate     x }
 
 %inline bool_value:
  | TRUE  { true }
