@@ -26,14 +26,14 @@ states =
  | Canceled
  | Transferred
 
-transaction abort = {
+transition abort from Created = {
   called by buyer or seller
-  transition from Created to Aborted
+
+  to Aborted
 }
 
-transaction[%signedbyall [buyer, seller]] confirm = {
-  transition from Created to Confirmed
-  condition balance = price + penalty
+transition[%signedbyall [buyer, seller]] confirm from Created = {
+  to Confirmed when balance = price + penalty
 }
 
 (* type taskStatus = {
@@ -43,19 +43,17 @@ transaction[%signedbyall [buyer, seller]] confirm = {
 *)
 object[%signedby oracle] taskStatus "https://oracle.io/tskstat.schema.json"
 
-transaction finalize (task : taskStatus) = {
-  transition from any
-   to Transferred
-   when task.date <= deadline and task.status
-   with action (
-       transfer price;
-       transfer back penalty
-     )
-   to Canceled
-   with action (
-       transfer penalty;
-       transfer back price
-    )
+transition finalize (task : taskStatus) from any = {
+  to Transferred
+  when task.date <= deadline and task.status
+  with action (
+    transfer price;
+    transfer back penalty)
+
+  to Canceled
+  with action (
+    transfer penalty;
+    transfer back price)
 }
 
 specification {

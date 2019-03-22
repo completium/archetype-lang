@@ -63,8 +63,9 @@ transaction withdraw = {
    action transfer (pending_returns.get caller).val to caller
 }
 
-transaction endAuction = {
-   condition now > auction_end
-   transition from Open to Closed
-   action transfer highest_bid to beneficiary
+transition endAuction from Open = {
+  to Closed
+  when now > auction_end
+  with action
+    transfer highest_bid to beneficiary
 }

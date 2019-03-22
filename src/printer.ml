@@ -443,13 +443,6 @@ let pp_transitem fmt { pldesc = t; _ } =
        (pp_option (pp_list " " pp_extension)) exts
        (pp_list ";@\n" pp_named_item) xs
 
-  | Ttransition (id, from, lto, exts) ->
-      Format.fprintf fmt "transition%a%a from %a@\n%a"
-        (pp_option (pp_prefix " " pp_qualid)) id
-        (pp_option (pp_list " " pp_extension)) exts
-        pp_expr from
-        (pp_list "@\n" pp_to) lto
-
   | Tfunction (id, args, r, b) ->
       Format.fprintf fmt "function %a %a%a = %a"
         pp_id id
@@ -475,11 +468,6 @@ let pp_transitem fmt { pldesc = t; _ } =
        (pp_option (pp_list " " pp_extension)) exts
        pp_id id
        (pp_list "; " pp_named_item) xs
-
-  | Taction (e, exts) ->
-      Format.fprintf fmt "action%a@\n@[<v 2>  %a@]@\n"
-        (pp_option (pp_list " " pp_extension)) exts
-        pp_expr e
 
 
 (* -------------------------------------------------------------------------- *)
@@ -584,12 +572,35 @@ let rec pp_declaration fmt { pldesc = e; _ } =
         pp_id id
         pp_expr e
 
-  | Dtransaction (id, args, items, exts) ->
+  | Dtransaction (id, args, items, _code, exts) ->
       Format.fprintf fmt "transaction%a %a%a = {@\n@[<v 2>  %a@]@\n}"
         (pp_option (pp_list "@," pp_extension)) exts
         pp_id id
         pp_fun_args args
         (pp_list "@," pp_transitem) items
+
+
+(*  | Taction (e, exts) ->
+      Format.fprintf fmt "action%a@\n@[<v 2>  %a@]@\n"
+        (pp_option (pp_list " " pp_extension)) exts
+        pp_expr e*)
+
+
+  | Dtransition (id, args, _from, items, _trs, exts) ->
+      Format.fprintf fmt "transition%a %a%a = {@\n@[<v 2>  %a@]@\n}"
+        (pp_option (pp_list "@," pp_extension)) exts
+        pp_id id
+        pp_fun_args args
+        (pp_list "@," pp_transitem) items
+
+(*  | Ttransition (id, from, lto, exts) ->
+      Format.fprintf fmt "transition%a%a from %a@\n%a"
+        (pp_option (pp_prefix " " pp_qualid)) id
+        (pp_option (pp_list " " pp_extension)) exts
+        pp_expr from
+        (pp_list "@\n" pp_to) lto*)
+
+
 
   | Dextension (id, args) ->
       Format.fprintf fmt "%%%a%a"

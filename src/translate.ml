@@ -561,33 +561,6 @@ let get_transaction_condition items : label_pterm list option =
       | _ -> acc
     ) None items
 
-let get_transaction_action items : pterm option =
-  List.fold_left (fun acc i ->
-      let loc, v = deloc i in
-      match v with
-      | Taction (e, _) ->
-        (match acc with
-         | None -> Some (mk_pterm e)
-         | _ -> raise (ModelError ("several action found", loc)))
-      | _ -> acc
-    ) None items
-
-let get_transaction_transition items =
-  List.fold_left (fun acc i ->
-      let loc, v = deloc i in
-      match v with
-      | Ttransition (id, from, to_, _) ->
-        (match acc with
-         | None -> Some (map_option mk_qualid id,
-                         to_sexpr from,
-                         List.fold_right (
-                           fun (to_, cond, action) acc -> (to_,
-                                                           map_option mk_pterm cond,
-                                                           map_option mk_pterm action)::acc) to_ [])
-         | _ -> raise (ModelError ("several transition found", loc)))
-      | _ -> acc
-    ) None items
-
 let get_transaction_specification items =
   List.fold_left (fun acc i ->
       let loc, v = deloc i in
@@ -599,22 +572,34 @@ let get_transaction_specification items =
       | _ -> acc
     ) None items
 
+let mk_transaction loc name args items = {
+  name = name;
+  args = get_transaction_args args;
+  calledby = get_transaction_calledby items;
+  condition = get_transaction_condition items;
+  transition = None;
+  spec = get_transaction_specification items;
+  action = None;
+  side = false;
+  loc = loc;
+}
+
 let get_transactions decls =
   List.fold_left (fun acc i ->
       (let loc, v = deloc i in
        match v with
-       | Dtransaction (name, args, items, _) ->
+       | Dtransaction (name, args, items, action, _) ->
          acc @ [{
-           name = name;
-           args = get_transaction_args args;
-           calledby = get_transaction_calledby items;
-           condition = get_transaction_condition items;
-           transition = get_transaction_transition items;
-           spec = get_transaction_specification items;
-           action = get_transaction_action items;
-           side = false;
-           loc = loc;
-         }]
+             (mk_transaction loc name args items) with
+             action = Tools.map_option (fun x -> let a, _ = x in mk_pterm a) action;
+           }]
+       | Dtransition (name, args, from, items, trs, _) ->
+         acc @ [{
+             (mk_transaction loc name args items) with
+             transition = Some (None, to_sexpr from, List.map (fun (to_, cond, action) -> (to_,
+                                                                                           map_option mk_pterm cond,
+                                                                                           map_option mk_pterm action)) trs)
+           }]
        | _ -> acc)
     ) [] decls
 

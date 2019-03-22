@@ -27,9 +27,8 @@ states =
  | Done
  | Closed
 
-transaction confirm = {
-   condition now > startdate
-   transition from Created to InProgress
+transition confirm from Created = {
+   to InProgress when now > startdate
 }
 
 transaction submit (competitor : competitor) (score[%signedby oracle] : uint) = {
@@ -40,11 +39,11 @@ transaction submit (competitor : competitor) (score[%signedby oracle] : uint) = 
                       date = now }
 }
 
-transaction decide = {
+transition decide from InProgress = {
 
   condition now > deadline
-  transition from InProgress to Done
-  action
+  to Done
+  with action (
     let submissions = submission.sort(asc(date)).sort(desc(score)) in
       if submissions.count() >= 3
       then (
@@ -71,7 +70,7 @@ transaction decide = {
                then (
                  let first = submissions.nth(0) in
                  transfer prize to first.competitor)
-               else transfer back prize
+               else transfer back prize)
 }
 
 specification {

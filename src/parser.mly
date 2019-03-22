@@ -207,6 +207,7 @@ declaration_r:
  | x=key_decl           { x }
  | x=asset              { x }
  | x=transaction        { x }
+ | x=transition         { x }
  | x=dextension         { x }
  | x=namespace          { x }
  | x=contract           { x }
@@ -428,14 +429,25 @@ field_r:
 transaction:
   TRANSACTION exts=option(extensions) x=ident
     args=function_args xs=transitems_eq
-      { Dtransaction (x, args, xs, exts) }
+      { let a, b = xs in Dtransaction (x, args, a, b, exts) }
+
+transition_to_item:
+| TO x=ident y=condition_value? z=with_action? { (x, y, z) }
+
+%inline transitions:
+ | xs=transition_to_item+ { xs }
+
+transition:
+  TRANSITION exts=option(extensions) x=ident
+    args=function_args FROM f=expr EQUAL LBRACE xs=transitems trs=transitions RBRACE
+      { Dtransition (x, args, f, xs, trs, exts) }
 
 %inline transitems_eq:
-| { [] }
-| EQUAL xs=braced(transitems) { xs }
+| { ([], None) }
+| EQUAL LBRACE xs=transitems e=action? RBRACE { (xs, e) }
 
 %inline transitems:
- | xs=transitem+ { xs }
+ | xs=transitem* { xs }
 
 %inline transitem:
  | e=loc(transitem_r) { e }
@@ -443,11 +455,9 @@ transaction:
 transitem_r:
  | x=calledby         { x }
  | x=condition        { x }
- | x=transition_item  { x }
  | x=function_item    { x }
  | x=specification    { x }
  | x=invariant        { x }
- | x=action           { x }
 
 calledby:
  | CALLED BY exts=option(extensions) x=expr { Tcalledby (x, exts) }
@@ -462,19 +472,6 @@ condition:
 %inline with_action:
 | WITH ACTION x=expr { x }
 
-transition_to_item:
-| TO x=ident y=condition_value? z=with_action? { (x, y, z) }
-
-%inline transition_to:
- | xs=transition_to_item+ { xs }
-
-transition_item:
- | TRANSITION id=qualid?
-     exts=option(extensions)
-       FROM x=expr
-         y=transition_to
-             { Ttransition (id, x, y, exts) }
-
 invariant:
  | INVARIANT exts=option(extensions)
      id=ident xs=named_items
@@ -488,7 +485,7 @@ invariant:
  | e=expr                { (None, e) }
 
 action:
- | ACTION exts=option(extensions) xs=loc(expr_extended) { Taction (xs, exts) }
+ | ACTION exts=option(extensions) xs=loc(expr_extended) { (xs, exts) }
 
 %inline function_return:
  | COLON ty=type_t { ty }

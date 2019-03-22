@@ -12,7 +12,7 @@ model extension signedbyall (
 
   transaction sign_<%aTransaction> = {
     action
-      (signer.get Caller.address).hasSigned := true
+      (signer_<%aTransaction>.get caller).hasSigned := true
   }
 
   transaction aTransaction = {

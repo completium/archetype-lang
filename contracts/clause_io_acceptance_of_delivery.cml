@@ -26,49 +26,52 @@ states =
  | Success
  | Fail
 
-transaction[%signedbyall [shipper, receiver]] sign = {
-   condition balance = payment + incentiveR + incentiveS
-   transition from Created to Signed
+transition[%signedbyall [shipper, receiver]] sign from Created = {
+  to Signed
+  when balance = payment + incentiveR + incentiveS
 }
 
-transaction unilateral_abort = {
-   called by shipper or receiver
-   transition from Created to Aborted
+transition unilateral_abort from Created = {
+  called by shipper or receiver
 
-   action
-     transfer back incentiveR;
-     transfer back payment;
-     transfer back incentiveS
+  to Aborted
+  with action (
+    transfer back incentiveR;
+    transfer back payment;
+    transfer back incentiveS)
 }
 
-transaction[%signedbyall [shipper, receiver]] abort = {
-   called by shipper or receiver
-   transition from Signed to Aborted
+transition[%signedbyall [shipper, receiver]] abort from Signed = {
+  called by shipper or receiver
 
-   action
-     transfer back incentiveR;
-     transfer back payment;
-     transfer back incentiveS
+  to Aborted
+  with action (
+    transfer back incentiveR;
+    transfer back payment;
+    transfer back incentiveS)
 }
 
-transaction confirm = {
+transition confirm from Signed = {
   called by receiver
-  transition from Signed to Delivered
-  action
+
+  to Delivered
+  with action (
      deliveryDate := now;
      transfer back incentiveR;
      transfer payment;
-     transfer back incentiveS
+     transfer back incentiveS)
 }
 
-transaction success = {
+transition success from Delivered = {
   called by shipper
-  transition from Delivered to Success
-  condition now > (deliverydate + businessDays)
+
+  to Success
+  when now > (deliverydate + businessDays)
 }
 
-transaction fail = {
+transition fail from Delivered = {
   called by receiver
-  transition from Delivered to Fail
-  condition now <= deliverydate + businessDays
+
+  to Fail
+  when now <= deliverydate + businessDays
 }

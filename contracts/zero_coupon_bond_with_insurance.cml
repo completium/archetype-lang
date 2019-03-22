@@ -22,34 +22,36 @@ states =
  | Repaid (* issuer has transferred payment to contract *)
  | Collected (* owner has collected payment *)
 
-transaction insured = {
+transition insured from Created = {
   called by insurance
-  transition from Created to Insured
+
+  to Insured
 }
 
-transaction confirm = {
-  condition transferred = price
+transition confirm from Insured = {
   specification
     balance = 0
-  transition from Insured to Confirmed
-  action
+
+  to Confirmed
+  when transferred = price
+  with action (
     maturity := now + 1Y;
-    transfer price to issuer
+    transfer price to issuer)
  }
 
-
-transaction repay = {
+transition repay from Confirmed = {
   called by issuer
-  transition from Confirmed to Repaid
-  condition transferred = payment
+
+  to Repaid when transferred = payment
 }
 
-transaction collect = {
+transition collect from Repaid = {
   called by owner
-  condition now > maturity
-  transition from Repaid to Collected
-  action
+
+  to Collected
+  when now > maturity
+  with action (
     if balance >= payment
     then transfer balance to owner
-    else guarantee_fund.pay owner payment
+    else guarantee_fund.pay owner payment)
 }

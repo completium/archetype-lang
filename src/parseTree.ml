@@ -156,15 +156,17 @@ type field_r =
 and field = field_r loced
 [@@deriving show {with_path = false}]
 
+
+type transition_r = (lident * expr option * expr option) list
+[@@deriving show {with_path = false}]
+
 (* -------------------------------------------------------------------- *)
 type transitem_r =
   | Tcalledby of expr * extension list option                                (** called by *)
   | Tcondition of named_item list * extension list option                    (** condition *)
-  | Ttransition of qualid option * expr * (lident * expr option * expr option) list * extension list option       (** transition  *)
   | Tfunction of lident * args * type_t option * expr                        (** function *)
   | Tspecification of s_variable * s_action * s_invariant * s_ensure * exts  (** specification *)
   | Tinvariant of lident * named_item list * extension list option           (** invariant *)
-  | Taction of expr * extension list option                                  (** action  *)
 [@@deriving show {with_path = false}]
 
 and transitem = transitem_r loced
@@ -199,7 +201,8 @@ type declaration_r =
   | Dasset         of lident * field list option * expr list option * asset_option list option * expr option * asset_operation option (** asset *)
   | Dobject        of lident * expr * exts                             (** object *)
   | Dkey           of lident * expr * exts                             (** key *)
-  | Dtransaction   of lident * args * transitem list * exts            (** transaction *)
+  | Dtransaction   of lident * args * transitem list * (expr * exts) option * exts
+  | Dtransition    of lident * args * expr * transitem list * transition_r * exts
   | Dextension     of lident * expr list option                        (** extension *)
   | Dnamespace     of lident * declaration list                        (** namespace *)
   | Dcontract      of lident * signature list * expr option * exts     (** contract *)
