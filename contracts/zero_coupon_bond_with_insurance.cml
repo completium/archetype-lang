@@ -17,9 +17,9 @@ variable maturity date
 
 states =
  | Created initial
- | Insured (* Guarantee Fund has accepted issuer *)
+ | Insured   (* Guarantee Fund has accepted issuer *)
  | Confirmed (* owner has purchased bond *)
- | Repaid (* issuer has transferred payment to contract *)
+ | Repaid    (* issuer has transferred payment to contract *)
  | Collected (* owner has collected payment *)
 
 transition insured from Created = {
@@ -42,7 +42,8 @@ transition confirm from Insured = {
 transition repay from Confirmed = {
   called by issuer
 
-  to Repaid when transferred = payment
+  to Repaid
+  when transferred = payment
 }
 
 transition collect from Repaid = {

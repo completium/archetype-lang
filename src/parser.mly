@@ -17,6 +17,7 @@
 %token AS
 %token FROM
 %token TO
+%token ON
 %token WHEN
 %token REF
 %token FUN
@@ -387,9 +388,16 @@ state_option:
 asset:
 | ASSET ops=bracket(asset_operation)? x=ident opts=asset_options?
         fields=asset_fields?
-            cs=asset_constraints?
-                init=init_asset?
-          { Dasset (x, fields, cs, opts, init, ops) }
+                 apo=asset_post_options
+          { Dasset (x, fields, opts, apo, ops) }
+
+asset_post_option:
+| st=init_states       { APOstates st }
+| cs=asset_constraints { APOconstraints cs }
+| init=init_asset      { APOinit init }
+
+%inline asset_post_options:
+ | xs=asset_post_option* { xs }
 
 %inline asset_constraints:
  | xs=asset_constraint+ { xs }
@@ -402,6 +410,9 @@ asset:
 
 %inline asset_options:
 | xs=asset_option+ { xs }
+
+%inline init_states:
+| WITH STATES x=ident { x }
 
 %inline init_asset:
 | INITIALIZED BY x=braced(expr) { x }
@@ -437,10 +448,13 @@ transition_to_item:
 %inline transitions:
  | xs=transition_to_item+ { xs }
 
+on_value:
+ | ON x=ident COLON y=ident { x, y }
+
 transition:
   TRANSITION exts=option(extensions) x=ident
-    args=function_args FROM f=expr EQUAL LBRACE xs=transitems trs=transitions RBRACE
-      { Dtransition (x, args, f, xs, trs, exts) }
+    args=function_args on=on_value? FROM f=expr EQUAL LBRACE xs=transitems trs=transitions RBRACE
+      { Dtransition (x, args, on, f, xs, trs, exts) }
 
 %inline transitems_eq:
 | { ([], None) }

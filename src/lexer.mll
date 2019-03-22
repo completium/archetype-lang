@@ -19,6 +19,7 @@
       "as"                  , AS             ;
       "from"                , FROM           ;
       "to"                  , TO             ;
+      "on"                  , ON             ;
       "when"                , WHEN           ;
       "ref"                 , REF            ;
       "fun"                 , FUN            ;

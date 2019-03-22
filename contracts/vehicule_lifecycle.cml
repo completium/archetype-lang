@@ -30,41 +30,42 @@ states vehicle_state =
 
 asset vehicle identified by vin = {
    vin          : string;
-   status       : vehicle_state;
    owner        : owner;
    detail       : vehicledetail;
    color        : string
-}
+} with states vehicle_state
 
 transaction placeOrder (neworder : order) = {
-   called by neworder.orderer
-   action order.add neworder
+  called by neworder.orderer
+  action order.add neworder
 }
 
-transaction assign_vin (order : order) (vin : string) (detail : vehicledetail) = {
-   transition order.status from Placed to Vin_assigned
-   called by order.orderer
-   action
+transition assign_vin (vin : string) (detail : vehicledetail) on ok : order from Placed = {
+  called by order.orderer
+
+  to Vin_assigned
+  with action
      vehicule.add { vin = vin; detail = detail }
 }
 
-transaction assign_owner (order : order) = {
-   transition order.status from any to Owner_assigned
-   action
-     (* set vehicule state *)
-     order.vehicule.state := Active;
-     (* set vehicule owner *)
-     order.vehicule.owner := order.orderer
+transition assign_owner on ok : order from any = {
+  to Owner_assigned
+  with action (
+    (* set vehicule state *)
+    (order.get ok).vehicule.state := Active;
+    (* set vehicule owner *)
+    (order.get ok).vehicule.owner := order.orderer)
 }
 
 transaction vehiculeTransfer (buyer : owner) (vehicule : vehicule) = {
-   called by [%delegable] vehicule.owner
-   action vehicule.owner := buyer
+  called by [%delegable] vehicule.owner
+  action vehicule.owner := buyer
 }
 
-transaction scrapVehicle (vehicule : vehicule) = {
-   transition vehicle.status from (Off_the_road or Active) to Scrapped
-   called by vehicle.owner
+transition scrapVehicle on vk : vehicule from (Off_the_road or Active) = {
+  called by vehicle.owner
+
+  to Scrapped
 }
 
 transaction scrapVehiclebyColor (color : string) = {

@@ -500,18 +500,24 @@ let get_asset_fields fields =
           | Ffield (id, typ, dv, _) -> mk_decl loc (id, Some typ, dv)::acc
         ) fields [])
 
+let get_assets_init apos : pterm option =
+  List.fold_left (fun acc i ->
+      match i with
+      | APOinit e -> Some (mk_pterm e)
+      | _ -> acc) None apos
+
 let get_assets decls =
   List.fold_right ( fun i acc ->
       (let loc, decl_u = Location.deloc i in
        match decl_u with
-       | Dasset (id, fields, _cs, opts, init, _ops) ->
+       | Dasset (id, fields, opts, apo, _ops) ->
          ({
            name = id;
            args = get_asset_fields fields;
            key = get_asset_key opts;
            sort = None;
            role = is_asset_role opts;
-           init = map_option mk_pterm init;
+           init = get_assets_init apo;
            preds = None;
            loc = loc;
          })::acc
@@ -593,7 +599,7 @@ let get_transactions decls =
              (mk_transaction loc name args items) with
              action = Tools.map_option (fun x -> let a, _ = x in mk_pterm a) action;
            }]
-       | Dtransition (name, args, from, items, trs, _) ->
+       | Dtransition (name, args, _on, from, items, trs, _) ->
          acc @ [{
              (mk_transaction loc name args items) with
              transition = Some (None, to_sexpr from, List.map (fun (to_, cond, action) -> (to_,

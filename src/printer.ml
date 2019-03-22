@@ -515,6 +515,18 @@ match e with
 (pp_list " " pp_asset_operation_enum) x
 (pp_option (pp_prefix " " (pp_list " " pp_expr))) y
 
+let pp_asset_post_option fmt (apo : asset_post_option) =
+  match apo with
+  | APOstates i ->
+    Format.fprintf fmt " with states %a"
+      pp_id i
+  | APOconstraints cs ->
+    Format.fprintf fmt "%a"
+      (pp_list " @," (pp_enclose " with { " " }" pp_expr)) cs
+  | APOinit init ->
+    Format.fprintf fmt " initialized by { %a }"
+      pp_expr init
+
 let rec pp_declaration fmt { pldesc = e; _ } =
   match e with
   | Duse id ->
@@ -551,14 +563,13 @@ let rec pp_declaration fmt { pldesc = e; _ } =
         (pp_option (pp_prefix " " pp_id)) id
         (pp_option (pp_list "\n" (pp_prefix "| " pp_ident_state_option))) ids
 
-  | Dasset (id, fields, cs, opts, init, ops) ->
-      Format.fprintf fmt "asset%a %a%a%a%a%a"
+  | Dasset (id, fields, opts, apo, ops) ->
+      Format.fprintf fmt "asset%a %a%a%a%a"
         (pp_option pp_asset_operation) ops
         pp_id id
         (pp_option (pp_prefix " " (pp_list " @," pp_asset_option))) opts
         (pp_option (pp_enclose " = { " " }" (pp_list ";@ " pp_field))) fields
-        (pp_option (pp_list " @," (pp_enclose " with { " " }" pp_expr))) cs
-        (pp_option (pp_enclose " initialized by { " " }" pp_expr)) init
+        (pp_list "@\n" pp_asset_post_option) apo
 
   | Dobject (id, e, exts) ->
       Format.fprintf fmt "object%a %a %a"
@@ -586,7 +597,7 @@ let rec pp_declaration fmt { pldesc = e; _ } =
         pp_expr e*)
 
 
-  | Dtransition (id, args, _from, items, _trs, exts) ->
+  | Dtransition (id, args, _on, _from, items, _trs, exts) ->
       Format.fprintf fmt "transition%a %a%a = {@\n@[<v 2>  %a@]@\n}"
         (pp_option (pp_list "@," pp_extension)) exts
         pp_id id

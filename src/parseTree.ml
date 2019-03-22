@@ -198,11 +198,11 @@ type declaration_r =
   | Dvariable      of lident * type_t * value_option list option * expr option * exts       (** variable *)
   | Denum          of lident * lident list                                           (** enum *)
   | Dstates        of lident option * (lident * state_option list option) list option * extension list option       (** states *)
-  | Dasset         of lident * field list option * expr list option * asset_option list option * expr option * asset_operation option (** asset *)
+  | Dasset         of lident * field list option * asset_option list option * asset_post_option list * asset_operation option (** asset *)
   | Dobject        of lident * expr * exts                             (** object *)
   | Dkey           of lident * expr * exts                             (** key *)
   | Dtransaction   of lident * args * transitem list * (expr * exts) option * exts
-  | Dtransition    of lident * args * expr * transitem list * transition_r * exts
+  | Dtransition    of lident * args * (lident * lident) option * expr * transitem list * transition_r * exts
   | Dextension     of lident * expr list option                        (** extension *)
   | Dnamespace     of lident * declaration list                        (** namespace *)
   | Dcontract      of lident * signature list * expr option * exts     (** contract *)
@@ -219,6 +219,12 @@ and asset_option =
   | AOasrole
   | AOidentifiedby of lident
   | AOsortedby of lident
+[@@deriving show {with_path = false}]
+
+and asset_post_option =
+  | APOstates of lident
+  | APOconstraints of expr list
+  | APOinit of expr
 [@@deriving show {with_path = false}]
 
 and state_option =

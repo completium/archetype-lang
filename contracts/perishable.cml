@@ -7,7 +7,7 @@ enum productType =
  | Peaches
  | Coffee
 
-enum shipmentStatus =
+states shipmentStatus =
  | Created
  | In_transit
  | Arrived
@@ -24,15 +24,12 @@ asset p_contract = {
   unitPrice       : float
 }
 
-
 asset shipment = {
   type     : productType;
-  status   : shipmentStatus;
   count    : uint;
   p_c      : p_contract
-}
+} with states shipmentStatus
 
-
-transaction payOut (shipment : shipment) (arrival : date) = {
-   transition shipment.status from In_transit to Arrived
+transition payOut (arrival : date) on sk : shipment from In_transit = {
+  to Arrived
 }
