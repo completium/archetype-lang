@@ -2,7 +2,7 @@ model hello
 
 constant name string
 
-transaction main (str : string) = {
-  action
+action main (str : string) = {
+  effect
     name := str
 }

@@ -578,7 +578,7 @@ let get_transaction_specification items =
       | _ -> acc
     ) None items
 
-let mk_transaction loc name args items = {
+let mk_action loc name args items = {
   name = name;
   args = get_transaction_args args;
   calledby = get_transaction_calledby items;
@@ -594,14 +594,14 @@ let get_transactions decls =
   List.fold_left (fun acc i ->
       (let loc, v = deloc i in
        match v with
-       | Dtransaction (name, args, items, action, _) ->
+       | Daction (name, args, items, action, _) ->
          acc @ [{
-             (mk_transaction loc name args items) with
+             (mk_action loc name args items) with
              action = Tools.map_option (fun x -> let a, _ = x in mk_pterm a) action;
            }]
        | Dtransition (name, args, _on, from, items, trs, _) ->
          acc @ [{
-             (mk_transaction loc name args items) with
+             (mk_action loc name args items) with
              transition = Some (None, to_sexpr from, List.map (fun (to_, cond, action) -> (to_,
                                                                                            map_option mk_pterm cond,
                                                                                            map_option mk_pterm action)) trs)

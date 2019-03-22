@@ -1,5 +1,5 @@
 model extension signedbyall (
-  transaction[%signedbyall roles] aTransaction
+  action[%signedbyall roles] aTransaction
 ) = {
 
   asset signer_<%aTransaction> = {
@@ -10,12 +10,12 @@ model extension signedbyall (
       signer_<%aTransaction>.add {signer = r; hasSigned = false}
   }
 
-  transaction sign_<%aTransaction> = {
-    action
+  action sign_<%aTransaction> = {
+    effect
       (signer_<%aTransaction>.get caller).hasSigned := true
   }
 
-  transaction aTransaction = {
+  action aTransaction = {
     condition
       conditions;
       (signer_<%aTransaction>.select(hasSigned = true)).count() = signer_<%aTransaction>.count()

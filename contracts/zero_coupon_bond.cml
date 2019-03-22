@@ -24,7 +24,7 @@ transition confirm from Insured = {
 
   to Confirmed
   when transferred = price
-  with action (
+  with effect (
     maturity := now + 1Y;
     transfer price to issuer)
 }
@@ -40,7 +40,7 @@ transition collect from Repaid = {
 
   to Collected
   when now >= maturity
-  with action (
+  with effect (
     if balance >= payment
     then transfer balance to owner)
 }

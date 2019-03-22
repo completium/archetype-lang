@@ -40,12 +40,12 @@
 %token STATES
 %token INITIAL
 %token INVARIANT
-%token TRANSACTION
+%token ACTION
 %token CALLED
 %token CONDITION
 %token TRANSITION
 %token SPECIFICATION
-%token ACTION
+%token EFFECT
 %token FUNCTION
 %token ENSURE
 %token LET
@@ -207,7 +207,7 @@ declaration_r:
  | x=object_decl        { x }
  | x=key_decl           { x }
  | x=asset              { x }
- | x=transaction        { x }
+ | x=action        { x }
  | x=transition         { x }
  | x=dextension         { x }
  | x=namespace          { x }
@@ -275,7 +275,7 @@ contract:
 | xs=signature+ { xs }
 
 signature:
-| TRANSACTION x=ident COLON xs=types { Ssignature (x, xs) }
+| ACTION x=ident COLON xs=types { Ssignature (x, xs) }
 
 function_item:
  | FUNCTION id=ident xs=function_args
@@ -294,7 +294,7 @@ specification:
 
  | SPECIFICATION exts=option(extensions)
      sv=specification_variables
-     sa=specification_action?
+     sa=specification_effect?
      si=specification_invariant?
      se=specification_ensure
        { Tspecification (sv, sa, si, se, exts) }
@@ -311,8 +311,8 @@ specification_decl:
 %inline specification_variable :
  | VARIABLE id=ident typ=type_t dv=default_value? { (id, typ, dv) }
 
-%inline specification_action:
- | ACTION e=expr { e }
+%inline specification_effect:
+ | EFFECT e=expr { e }
 
 %inline specification_invariant:
  | INVARIANT xs=named_items { xs }
@@ -437,13 +437,13 @@ field_r:
 %inline ident:
 | x=loc(IDENT) { x }
 
-transaction:
-  TRANSACTION exts=option(extensions) x=ident
+action:
+  ACTION exts=option(extensions) x=ident
     args=function_args xs=transitems_eq
-      { let a, b = xs in Dtransaction (x, args, a, b, exts) }
+      { let a, b = xs in Daction (x, args, a, b, exts) }
 
 transition_to_item:
-| TO x=ident y=condition_value? z=with_action? { (x, y, z) }
+| TO x=ident y=condition_value? z=with_effect? { (x, y, z) }
 
 %inline transitions:
  | xs=transition_to_item+ { xs }
@@ -458,7 +458,7 @@ transition:
 
 %inline transitems_eq:
 | { ([], None) }
-| EQUAL LBRACE xs=transitems e=action? RBRACE { (xs, e) }
+| EQUAL LBRACE xs=transitems e=effect? RBRACE { (xs, e) }
 
 %inline transitems:
  | xs=transitem* { xs }
@@ -483,8 +483,8 @@ condition:
 %inline condition_value:
 | WHEN x=expr { x }
 
-%inline with_action:
-| WITH ACTION x=expr { x }
+%inline with_effect:
+| WITH EFFECT x=expr { x }
 
 invariant:
  | INVARIANT exts=option(extensions)
@@ -498,8 +498,8 @@ invariant:
  | id=prefix_name e=expr { (Some id, e) }
  | e=expr                { (None, e) }
 
-action:
- | ACTION exts=option(extensions) xs=loc(expr_extended) { (xs, exts) }
+effect:
+ | EFFECT exts=option(extensions) xs=loc(expr_extended) { (xs, exts) }
 
 %inline function_return:
  | COLON ty=type_t { ty }

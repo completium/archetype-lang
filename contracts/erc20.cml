@@ -13,7 +13,7 @@ asset tokenHolder identified by holder = {
     tokenHolder.add caller { tokens = total }
 }
 
-transaction transfer_ (k : address) (quantity : int) = {
+action transfer_ (k : address) (quantity : int) = {
 
   specification
     before tokenHolder.sum(tokens) = tokenHolder.sum(tokens)
@@ -21,7 +21,7 @@ transaction transfer_ (k : address) (quantity : int) = {
 
   called by (tokenHolder.get k).holder
 
-  action
+  effect
     (tokenHolder.get k).tokens += quantity;
     (tokenHolder.get caller).tokens -= quantity
 }

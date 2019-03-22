@@ -24,22 +24,22 @@ asset[@add creator none] flight identified by id = {
   insurances : insurance partition;
 }
 
-transaction addflightinsurance (fi : string) (* flight id *)
+action addflightinsurance (fi : string) (* flight id *)
                                (i : insurance) = {
     called by creator
 
-    action
+    effect
       flight.addifnotexist { id = fi };
       let f = flight.get id in
       f.insurances.add i
 }
 
 (* data should be signed by oracle ... *)
-transaction updatestatus (fi : string) (arrival : date) = {
+action updatestatus (fi : string) (arrival : date) = {
 
     called by creator
 
-    action
+    effect
       let f = flight.get id in
       for (i in f.insurances)
         match i.status with
@@ -50,11 +50,11 @@ transaction updatestatus (fi : string) (arrival : date) = {
         end
 }
 
-transaction manual (fi : string) (pr : string) (newst : status) = {
+action manual (fi : string) (pr : string) (newst : status) = {
 
     called by creator
 
-    action
+    effect
       let f = flight.get fi in
       for (i in f.insurances.select(product = pr))
         match i.status with
@@ -65,12 +65,12 @@ transaction manual (fi : string) (pr : string) (newst : status) = {
 
 specification {
    (* any action on storage is performed only by the owner *)
-   s1 : forall a:aaction, performed_by_role [a] [owner];
+   s1 : forall a:effects, performed_by_role [a] [owner];
 
    (* this contract does not transfer any tez *)
-   s2 : forall tx:atransaction, is_empty (transfers_by_tx tx);
+   s2 : forall tx:actions, is_empty (transfers_by_tx tx);
 
-   (* transaction “updatestatus” is not the only one to potentially
+   (* action “updatestatus” is not the only one to potentially
       perform an update of insurance status *)
    s3 : perform_by_tx [update stat] [updatestatus, manual]
 }

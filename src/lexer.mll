@@ -42,11 +42,11 @@
       "initial"             , INITIAL        ;
       "invariant"           , INVARIANT      ;
       "transition"          , TRANSITION     ;
-      "transaction"         , TRANSACTION    ;
+      "action"              , ACTION         ;
       "called"              , CALLED         ;
       "condition"           , CONDITION      ;
       "specification"       , SPECIFICATION  ;
-      "action"              , ACTION         ;
+      "effect"              , EFFECT         ;
       "function"            , FUNCTION       ;
       "ensure"              , ENSURE         ;
       "let"                 , LET            ;

@@ -15,7 +15,7 @@ variable[%traceable] price tez from buyer to creditor
 variable[%traceable] [%mutable_signed [buyer, debitor] (state = Created)]
      penalty tez from seller to debitor = 0.1 * price
 
-(* transaction deadline *)
+(* action deadline *)
 variable[%mutable (buyer or seller) (instate Created)] deadline date
 
 (* state machine *)
@@ -40,7 +40,7 @@ transition transfer_ from Confirmed = {
   called by oracle
 
   to Transferred when now < deadline
-  with action (
+  with effect (
     transfer price;
     transfer back penalty
   )
@@ -50,7 +50,7 @@ transition cancel from Confirmed = {
   called by oracle
 
   to Canceled
-  with action (
+  with effect (
     transfer penalty;
     transfer back price
   )

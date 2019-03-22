@@ -13,7 +13,7 @@ model extension traceable (
 
   variable anamount tez from participant to toP
 
-  transaction transfer_<%anamount> = {
+  action transfer_<%anamount> = {
     called by fromP
     condition
       transferred = anamount

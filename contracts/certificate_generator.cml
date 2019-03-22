@@ -10,9 +10,9 @@ asset certificate identified by id = {
   hash : string;
   }
 
-transaction add (c : certificate) = {
+action add (c : certificate) = {
   called by admin
 
-  action
+  effect
     certificate.add c
 }

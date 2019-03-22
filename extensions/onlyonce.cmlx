@@ -1,13 +1,13 @@
 model extension onlyonce (
 
-  transaction[%onlyonce] tr
+  action[%onlyonce] tr
 
 ) = {
 
-  transaction tr = {
+  action tr = {
     specification
       variable call_count int = 0
-      action
+      effect
         call_count += 1
       invariant
         i1 : conditions -> call_count = 0;

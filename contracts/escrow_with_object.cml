@@ -15,7 +15,7 @@ variable[%traceable] price tez from buyer to creditor
 variable[%traceable] [%mutable_signed [buyer, debitor] (instate Created)]
      penalty tez from seller to debitor = 0.1 * price
 
-(* transaction deadline *)
+(* action deadline *)
 variable[%mutable (buyer or seller) (state = Created)] deadline date
 
 (* state machine *)
@@ -46,12 +46,12 @@ object[%signedby oracle] taskStatus "https://oracle.io/tskstat.schema.json"
 transition finalize (task : taskStatus) from any = {
   to Transferred
   when task.date <= deadline and task.status
-  with action (
+  with effect (
     transfer price;
     transfer back penalty)
 
   to Canceled
-  with action (
+  with effect (
     transfer penalty;
     transfer back price)
 }

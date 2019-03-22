@@ -6,7 +6,7 @@ variable owner role  = @tz1KmuhR6P52hw6xs5P69BXJYAURaznhvN1k
 (* buyer ‘Bob’; receives 11 tez in one-year *)
 
 contract insurance = {
-   transaction pay : address tez
+   action pay : address tez
 } = @KT1GabhR5P52hw6xs5P69BXJYAURaznhvN1k
 
 variable price tez from owner = 10
@@ -34,7 +34,7 @@ transition confirm from Insured = {
 
   to Confirmed
   when transferred = price
-  with action (
+  with effect (
     maturity := now + 1Y;
     transfer price to issuer)
  }
@@ -51,7 +51,7 @@ transition collect from Repaid = {
 
   to Collected
   when now > maturity
-  with action (
+  with effect (
     if balance >= payment
     then transfer balance to owner
     else guarantee_fund.pay owner payment)

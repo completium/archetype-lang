@@ -417,11 +417,11 @@ match s with
     pp_id x
     pp_expr y
 
-let pp_to fmt ((to_, when_, action) : (lident * expr option * expr option)) =
+let pp_to fmt ((to_, when_, effect) : (lident * expr option * expr option)) =
   Format.fprintf fmt "to %a@\n%a%a"
     pp_id to_
     (pp_option (pp_enclose "by condition " "@\n" pp_expr)) when_
-    (pp_option (pp_enclose "with action (" ")@\n" pp_expr)) action
+    (pp_option (pp_enclose "with effect (" ")@\n" pp_expr)) effect
 
 let pp_specification_variable fmt (sv : (lident * type_t * expr option) loced) =
 match sv with
@@ -459,7 +459,7 @@ let pp_transitem fmt { pldesc = t; _ } =
       Format.fprintf fmt "specification%a@\n@[<v 2>  %a@]@\n@[<v 2>  %a@]@\n@[<v 2>  %a@]@\n@[<v 2>  %a@]"
        (pp_option (pp_list " " pp_extension)) exts
        (pp_option (pp_list "@\n" pp_specification_variable)) sv
-       (pp_option (pp_prefix "action@\n  " pp_expr)) sa
+       (pp_option (pp_prefix "effect@\n  " pp_expr)) sa
        (pp_option (pp_prefix "invariant@\n  " (pp_list ";@\n  " pp_named_item))) si
        (pp_prefix "ensure@\n  " (pp_list ";@\n  " pp_named_item)) se
 
@@ -496,7 +496,7 @@ match opt with
 let pp_signature fmt s =
 match s with
   | Ssignature (id, xs) ->
-      Format.fprintf fmt "transaction %a : %a"
+      Format.fprintf fmt "action %a : %a"
         pp_id id
         (pp_list " " pp_type) xs
 
@@ -583,19 +583,12 @@ let rec pp_declaration fmt { pldesc = e; _ } =
         pp_id id
         pp_expr e
 
-  | Dtransaction (id, args, items, _code, exts) ->
-      Format.fprintf fmt "transaction%a %a%a = {@\n@[<v 2>  %a@]@\n}"
+  | Daction (id, args, items, _code, exts) ->
+      Format.fprintf fmt "action%a %a%a = {@\n@[<v 2>  %a@]@\n}"
         (pp_option (pp_list "@," pp_extension)) exts
         pp_id id
         pp_fun_args args
         (pp_list "@," pp_transitem) items
-
-
-(*  | Taction (e, exts) ->
-      Format.fprintf fmt "action%a@\n@[<v 2>  %a@]@\n"
-        (pp_option (pp_list " " pp_extension)) exts
-        pp_expr e*)
-
 
   | Dtransition (id, args, _on, _from, items, _trs, exts) ->
       Format.fprintf fmt "transition%a %a%a = {@\n@[<v 2>  %a@]@\n}"

@@ -8,15 +8,15 @@ model extension transferable (
 
   variable <%aRole>_tmp role
 
-  transaction assign_new_<%aRole> (newrole : <%aRole>tmp) = {
+  action assign_new_<%aRole> (newrole : <%aRole>tmp) = {
     called by aRole
-    action
+    effect
       <%aRole>_tmp := newrole
   }
 
-  transaction confirm_<%aRole> = {
+  action confirm_<%aRole> = {
     called by <%aRole>tmp
-    action
+    effect
       aRole := <%aRole>tmp
   }
 }

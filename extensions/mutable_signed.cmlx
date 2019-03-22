@@ -6,9 +6,9 @@ model extension mutable_signed (
 
   variable avariable type
 
-  transaction[%signedbyall roles] set_<%avariable> (newvariable : type) = {
+  action[%signedbyall roles] set_<%avariable> (newvariable : type) = {
     condition cond
-    action
+    effect
       avariable := newvariable
   }
 

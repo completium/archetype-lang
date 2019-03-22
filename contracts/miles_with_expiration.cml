@@ -15,16 +15,16 @@ asset owner as role identified by addr = {
   miles : mile partition (* injective (owner x mile) *)
 }
 
-transaction add (ow : address) (newmile : mile) = {
+action add (ow : address) (newmile : mile) = {
    called by admin
 
-   action
+   effect
      owner.addifnotexist ow { miles = empty };
-     (* transaction must fail if mile already exists *)
+     (* action must fail if mile already exists *)
      (owner.get ow).miles.add newmile
 }
 
-transaction consume (ow : address) (val : uint) = {
+action consume (ow : address) (val : uint) = {
   specification
 
        p1 : let o = owner.get owner in
@@ -61,7 +61,7 @@ transaction consume (ow : address) (val : uint) = {
 
   function by_expiration o = o.miles.select(mile.expiration > now)
 
-  action
+  effect
      let remainder = val in
      loop for (m in by_expiration o) (
        if remainder > 0
@@ -86,13 +86,13 @@ transaction consume (ow : address) (val : uint) = {
      assert (remainder = 0))
 }
 
-(* this ensures that any mile was added with the ‘add’ transaction *)
+(* this ensures that any mile was added with the ‘add’ action *)
 specification {
    mile = Collection.fold (fun u o => union u o.miles) void owner;
    mile = Collection.union(miles) owner
 }
 
-transaction clear_expired = {
+action clear_expired = {
 
   called by admin
 
@@ -101,5 +101,5 @@ transaction clear_expired = {
       is_empty (added mile);
       idem mile
 
-  action mile.removeif (expiration < now)
+  effect mile.removeif (expiration < now)
 }

@@ -1,4 +1,4 @@
-model extension transactionDelegation (
+model extension actionDelegation (
 
   variable aRole role
 
@@ -6,14 +6,14 @@ model extension transactionDelegation (
     arole : aRole
   }
 
-  transaction aTransaction (anasset : anAsset) = {
+  action aTransaction (anasset : anAsset) = {
     called by [%delegable] anAsset.arole
   }
 
 ) = {
 
-  transaction aTransaction = {
-    action
+  action aTransaction = {
+    effect
       <%aTransaction>_space::Operator.remove
       (<%aTransaction>_space::Operator.get anasset)
   }
@@ -24,26 +24,25 @@ model extension transactionDelegation (
       operator : address
     }
 
-    transaction setDelegate (Operator : Operator) = {
+    action setDelegate (Operator : Operator) = {
       called by Operator.anasset.arole
-      action
+      effect
         Operator.add Operator
     }
 
-    transaction rmDelegate (Operator : Operator) = {
+    action rmDelegate (Operator : Operator) = {
       called by Operator.anasset.arole
 
-      action
+      effect
         Operator.remove Operator
     }
 
-    transaction from_addr (anasset : anAsset) = {
+    action from_addr (anasset : anAsset) = {
       condition
         (Operator.get anasset).operator = caller
 
-      action
+      effect
         Operator.remove (Operator.get anasset)
     }
   }
-
 }

@@ -201,7 +201,7 @@ type declaration_r =
   | Dasset         of lident * field list option * asset_option list option * asset_post_option list * asset_operation option (** asset *)
   | Dobject        of lident * expr * exts                             (** object *)
   | Dkey           of lident * expr * exts                             (** key *)
-  | Dtransaction   of lident * args * transitem list * (expr * exts) option * exts
+  | Daction        of lident * args * transitem list * (expr * exts) option * exts
   | Dtransition    of lident * args * (lident * lident) option * expr * transitem list * transition_r * exts
   | Dextension     of lident * expr list option                        (** extension *)
   | Dnamespace     of lident * declaration list                        (** namespace *)

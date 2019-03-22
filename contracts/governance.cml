@@ -32,10 +32,10 @@ states =
  | Voting
  | Buried
 
-transaction register (voter : address) = {
+action register (voter : address) = {
   called by chairperson
   condition state = Created
-  action
+  effect
     voter.add {address = voter; hasVoted = false}
 }
 
@@ -43,13 +43,13 @@ transition start from Created = {
    to Vote when now > startDate
 }
 
-transaction vote (val : string) = {
+action vote (val : string) = {
    called by voter
    condition
      c1 : state = Voting;
      c2 : (voter.get (Caller.address)).hasVoted = false
 
-   action
+   effect
      (voter.get caller).hasVoted := true;
      ballot.update value { nbvotes += 1 } { nbvotes = 0 }
 }
@@ -57,7 +57,7 @@ transaction vote (val : string) = {
 transition bury from Voting = {
   condition now > deadline
   to Buried
-  with action (
+  with effect (
     let nbvotesMax = ballot.max(nbvotes) in
     for (b in ballot)
       if (b.nbvotes = nbvotesMax)

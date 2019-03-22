@@ -35,7 +35,7 @@ transition unilateral_abort from Created = {
   called by shipper or receiver
 
   to Aborted
-  with action (
+  with effect (
     transfer back incentiveR;
     transfer back payment;
     transfer back incentiveS)
@@ -45,7 +45,7 @@ transition[%signedbyall [shipper, receiver]] abort from Signed = {
   called by shipper or receiver
 
   to Aborted
-  with action (
+  with effect (
     transfer back incentiveR;
     transfer back payment;
     transfer back incentiveS)
@@ -55,7 +55,7 @@ transition confirm from Signed = {
   called by receiver
 
   to Delivered
-  with action (
+  with effect (
      deliveryDate := now;
      transfer back incentiveR;
      transfer payment;

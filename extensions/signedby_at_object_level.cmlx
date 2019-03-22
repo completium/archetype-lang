@@ -3,13 +3,13 @@ model extension signedby (
 
   object[%signedby arole] anObject aType
 
-  transaction aTransaction (obj : anObject)
+  action aTransaction (obj : anObject)
 
 ) = {
 
   key key_<%arole> of oracle
 
-  transaction aTransaction (signed_<%obj>: signature) = {
+  action aTransaction (signed_<%obj>: signature) = {
     condition check_signature obj signed_<%obj> key_<%arole>
   }
 }

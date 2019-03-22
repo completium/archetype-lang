@@ -29,11 +29,11 @@ specification {
 }
 
 
-transaction place_bid = {
+action place_bid = {
 
    condition auction_start <= now <= auction_end
 
-   action
+   effect
       if pending_returns.contains caller
       then
          let bid = (pending_returns.get caller).val in
@@ -58,14 +58,14 @@ transaction place_bid = {
                       nothing to withdraw *)
 }
 
-transaction withdraw = {
+action withdraw = {
    condition pending_returns.contains caller
-   action transfer (pending_returns.get caller).val to caller
+   effect transfer (pending_returns.get caller).val to caller
 }
 
 transition endAuction from Open = {
   to Closed
   when now > auction_end
-  with action
+  with effect
     transfer highest_bid to beneficiary
 }

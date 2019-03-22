@@ -12,8 +12,8 @@ asset token = {
   owner : owner
 }
 
-transaction transfer_ (newowner : owner) (token : token) = {
+action transfer_ (newowner : owner) (token : token) = {
   called by [%delegable] token.owner
-  action
+  effect
     token.owner := newowner
 }

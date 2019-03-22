@@ -86,7 +86,7 @@ function transition_to_finished =
   | _               -> Round2Finished
   end
 
-transaction contribute = {
+action contribute = {
 
    specification
      p1 :
@@ -100,7 +100,7 @@ transaction contribute = {
       let c = contributor.get caller in
           not (c.list = Silver and transferred >= max_contrib_silver)
 
-   action
+   effect
      (* cap contribution to max_contrib if necessary *)
      let contrib = transferred in
      if    c.list = Silver
@@ -131,15 +131,15 @@ transaction contribute = {
 (* the onlyonce extension specifies that withdraw action can be
   executed only once, that is a contributor can withdraw only once. *)
 
-transaction[%onlyonce] withdraw = {
- condition
-   c1 : state = Round2Finished;
-   c2 : nb_tez_raised <= soft_cap;
-   c3 : (contributor.get caller).contribution > 0
+action[%onlyonce] withdraw = {
+  condition
+    c1 : state = Round2Finished;
+    c2 : nb_tez_raised <= soft_cap;
+    c3 : (contributor.get caller).contribution > 0
 
- action
-   let c = contributor.get caller in
-   transfer c.contribution caller;
-   (* do not forget this *)
-   c.contribution := 0
+  effect
+    let c = contributor.get caller in
+    transfer c.contribution caller;
+    (* do not forget this *)
+    c.contribution := 0
 }

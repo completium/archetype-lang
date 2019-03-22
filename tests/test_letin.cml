@@ -1,5 +1,5 @@
-transaction tr = {
-  action
+action tr = {
+  effect
     for (i in list) (
       let x = toto in
       toto;

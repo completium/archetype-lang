@@ -13,10 +13,10 @@
   "Keymap for Cml major mode")
 
 (defvar cml-keywords
-  '("use" "model" "constant" "variable" "identified" "sorted" "by" "as" "from" "to" "on" "ref" "fun" "initialized" "collection" "queue" "stack" "set" "partition" "asset" "match" "with" "end" "assert" "object" "key" "of" "enum" "states" "initial" "invariant" "transition" "transaction" "when" "called" "condition" "specification" "action" "function" "ensure" "let" "if" "then" "else" "for" "in" "break" "transfer" "back" "extension" "namespace" "contract" "and" "or" "not" "forall" "exists" "true" "false"))
+  '("use" "model" "constant" "variable" "identified" "sorted" "by" "as" "from" "to" "on" "ref" "fun" "initialized" "collection" "queue" "stack" "set" "partition" "asset" "match" "with" "end" "assert" "object" "key" "of" "enum" "states" "initial" "invariant" "transition" "action" "when" "called" "condition" "specification" "effect" "function" "ensure" "let" "if" "then" "else" "for" "in" "break" "transfer" "back" "extension" "namespace" "contract" "and" "or" "not" "forall" "exists" "true" "false"))
 
 (defvar cml-constants
-  '("state" "now" "transferred" "caller" "fail" "balance" "conditions" "actions" "none" "any" "transfer" "mem" "idem" "before" "after" "fixed" "subset"))
+  '("state" "now" "transferred" "caller" "fail" "balance" "conditions" "effects" "none" "any" "transfer" "mem" "idem" "before" "after" "fixed" "subset"))
 
 (defun cml-regexp-opt (l)
   (regexp-opt l 'symbols))
@@ -55,9 +55,9 @@
    `( ,(cml-regexp-opt cml-constants) . font-lock-constant-face)
 
 
-;;   `(,(cml-regexp-opt '("state" "now" "transferred" "caller" "fail" "balance" "conditions" "actions" "none" "any" "transfer")) . font-lock-constant-face)
-;;   `(,(cml-regexp-opt '("use" "model" "extension" "constant" "variable" "role" "asset" "states" "enum" "transaction" "function" "object" "key" "namespace" "contract")) . font-lock-type-face)
-;;   `(,(cml-regexp-opt '("identified" "sorted" "by" "as" "from" "to" "match" "with" "end" "ref" "fun" "=>" "initialized" "collection" "queue" "stack" "set" "partition" "asset" "object" "initial" "args" "called" "transition" "condition" "action" "specification" "invariant" "ensure" "let" "if" "then" "else" "for" "in" "break" "of" "back")) . font-lock-keyword-face)
+;;   `(,(cml-regexp-opt '("state" "now" "transferred" "caller" "fail" "balance" "conditions" "effects" "none" "any" "transfer")) . font-lock-constant-face)
+;;   `(,(cml-regexp-opt '("use" "model" "extension" "constant" "variable" "role" "asset" "states" "enum" "action" "function" "object" "key" "namespace" "contract")) . font-lock-type-face)
+;;   `(,(cml-regexp-opt '("identified" "sorted" "by" "as" "from" "to" "match" "with" "end" "ref" "fun" "=>" "initialized" "collection" "queue" "stack" "set" "partition" "asset" "object" "initial" "args" "called" "transition" "condition" "effect" "specification" "invariant" "ensure" "let" "if" "then" "else" "for" "in" "break" "of" "back")) . font-lock-keyword-face)
 ;;   `(,(cml-regexp-opt '("and" "or" "not" "->" "<->" "forall" "exists" "assert" "true" "false")) . font-lock-doc-face)
 
    )
@@ -96,7 +96,7 @@
             )
           (if (or (looking-at ".*{$")
                   (looking-at ".*specification.*$")
-                  (looking-at ".*action.*$"))
+                  (looking-at ".*effect.*$"))
               (progn
                 (setq cur-indent (+ (current-indentation) default-tab-width))
                 (setq idt 1)

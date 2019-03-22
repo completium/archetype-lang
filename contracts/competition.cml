@@ -31,9 +31,9 @@ transition confirm from Created = {
    to InProgress when now > startdate
 }
 
-transaction submit (competitor : competitor) (score[%signedby oracle] : uint) = {
+action submit (competitor : competitor) (score[%signedby oracle] : uint) = {
    condition state = InProgress
-   action
+   effect
      submission.add { competitor = competitor;
                       score = score;
                       date = now }
@@ -43,7 +43,7 @@ transition decide from InProgress = {
 
   condition now > deadline
   to Done
-  with action (
+  with effect (
     let submissions = submission.sort(asc(date)).sort(desc(score)) in
       if submissions.count() >= 3
       then (

@@ -9,13 +9,13 @@ asset account identified by owner = {
   amount : uint
 }
 
-transaction add (owner : address) (value : uint) = {
+action add (owner : address) (value : uint) = {
    called by validator
-   action
+   effect
      account.update owner { amount += value } { amount = 0 }
 }
 
-transaction consume (owner : address) (value : uint) = {
+action consume (owner : address) (value : uint) = {
    called by validator
    condition (account.get owner).amount >= value
 
@@ -23,6 +23,6 @@ transaction consume (owner : address) (value : uint) = {
      (before.account.get owner).amount =
              (after.account.get owner).amount + value
 
-   action
+   effect
      (account.get owner).amount -= value
 }
