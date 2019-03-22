@@ -34,14 +34,14 @@ transaction abort = {
 
 transaction[%signedbyall [buyer, seller]] confirm = {
   transition from Created to Confirmed
-  by condition balance = price + penalty
+  when balance = price + penalty
 }
 
 transaction transfer_ = {
   called by oracle
 
   transition from Confirmed to Transferred
-  by condition now < deadline
+  when now < deadline
   with action (
     transfer price;
     transfer back penalty

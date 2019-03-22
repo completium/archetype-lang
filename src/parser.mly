@@ -17,6 +17,7 @@
 %token AS
 %token FROM
 %token TO
+%token WHEN
 %token REF
 %token FUN
 %token EQUALGREATER
@@ -456,7 +457,7 @@ condition:
        { Tcondition (xs, exts) }
 
 %inline condition_value:
-| BY CONDITION x=expr { x }
+| WHEN x=expr { x }
 
 %inline with_action:
 | WITH ACTION x=expr { x }

@@ -53,7 +53,7 @@ let to_const str =
   (* function *)
   | "nth" -> Some Cnth
   | "clear" -> Some Cclear
-  | "when" -> Some Cwhen
+  | "select" -> Some Cselect
   | "removeif" -> Some Cremoveif
   | "sort" -> Some Csort
   | "count" -> Some Ccount

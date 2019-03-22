@@ -19,6 +19,7 @@
       "as"                  , AS             ;
       "from"                , FROM           ;
       "to"                  , TO             ;
+      "when"                , WHEN           ;
       "ref"                 , REF            ;
       "fun"                 , FUN            ;
       "initialized"         , INITIALIZED    ;

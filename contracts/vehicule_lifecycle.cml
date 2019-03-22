@@ -69,6 +69,6 @@ transaction scrapVehicle (vehicule : vehicule) = {
 
 transaction scrapVehiclebyColor (color : string) = {
   action
-    for (v in vehicule.when (vehicule.color = color))
+    for (v in vehicule.select(vehicule.color = color))
       v.state := Scrapped
 }

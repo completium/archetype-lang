@@ -56,7 +56,7 @@ transaction manual (fi : string) (pr : string) (newst : status) = {
 
     action
       let f = flight.get fi in
-      for (i in f.insurances.when (product = pr))
+      for (i in f.insurances.select(product = pr))
         match i.status with
          | Created -> i.status := newst
          | _ -> none

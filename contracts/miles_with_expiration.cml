@@ -38,7 +38,7 @@ transaction consume (ow : address) (val : uint) = {
 
        p4 : idem (mile.project(not mile.amount));
 
-       p5 : idem ((owner.when(owner.owner <> owner)).miles);
+       p5 : idem ((owner.select(owner.owner <> owner)).miles);
 
        p6 : forall m : removed mile,
              forall o : fixed mile,
@@ -50,7 +50,7 @@ transaction consume (ow : address) (val : uint) = {
        i1 : 0 <= remainder <= to_iter.sum(amount);
 
        (* removed miles *)
-       i2 : (subset (removed miles) (o.miles.when(expiration >= now)));
+       i2 : (subset (removed miles) (o.miles.select(expiration >= now)));
 
        (* right amount consumed *)
        i3 : before miles.sum(amount) = miles.sum(amount) + nbmiles - remainder
@@ -59,7 +59,7 @@ transaction consume (ow : address) (val : uint) = {
 
   condition (by_expiration ow).sum(amount) >= val
 
-  function by_expiration o = o.miles.when(mile.expiration > now)
+  function by_expiration o = o.miles.select(mile.expiration > now)
 
   action
      let remainder = val in

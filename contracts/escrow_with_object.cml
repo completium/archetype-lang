@@ -46,7 +46,7 @@ object[%signedby oracle] taskStatus "https://oracle.io/tskstat.schema.json"
 transaction finalize (task : taskStatus) = {
   transition from any
    to Transferred
-   by condition task.date <= deadline and task.status
+   when task.date <= deadline and task.status
    with action (
        transfer price;
        transfer back penalty

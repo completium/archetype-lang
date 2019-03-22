@@ -176,7 +176,7 @@ type const =
   (* function *)
   | Cnth
   | Cclear
-  | Cwhen
+  | Cselect
   | Cremoveif
   | Csort
   | Ccount
