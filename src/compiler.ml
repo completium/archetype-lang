@@ -24,7 +24,7 @@ let compile_and_print (filename, channel) =
   then Format.printf "%a" Printer.pp_model pt
   else (
   if !opt_parse
-  then () (*Format.printf "%a\n" ParseTree.pp_model pt*)
+  then Format.printf "%a\n" ParseTree.pp_model pt
   else (
     let model = Translate.parseTree_to_model pt in
     if !opt_model
