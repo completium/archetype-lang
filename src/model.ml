@@ -3,7 +3,8 @@ open Ident
 open Tools
 
 type lident = ident loced
-[@@deriving show {with_path = false}]
+
+let pp_lident fmt i = Format.fprintf fmt "%s" (unloc i)
 
 type 'id qualid =
   | Qident of 'id

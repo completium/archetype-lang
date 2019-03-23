@@ -162,14 +162,14 @@ let rec mk_ltyp e : ltyp=
 
 let to_bval l =
   match l with
-  | Lnumber b -> BVint b
+  | Lnumber _b -> BVint Big_int.zero_big_int
   | Lfloat s -> BVfloat s
   | Laddress s -> BVaddress s
   | Lstring s -> BVstring s
   | Lbool b -> BVbool b
   | Lduration s -> BVduration s
   | Ldate s -> BVdate s
-  | Ltz n -> BVcurrency (Tez, n)
+  | Ltz _n -> BVcurrency (Tez, Big_int.zero_big_int)
 
 let mk_lterm_id (id : lident) =
   let c = id |> unloc |> to_const in

@@ -209,7 +209,7 @@ match op with
 let pp_assignment_operator fmt op =
  Format.fprintf fmt "%s" (assignment_operator_to_str op)
 
-let pp_qualid fmt (q : ParseTree.qualid) =
+let rec pp_qualid fmt (q : ParseTree.qualid) =
   match q with
   | Qident i -> Format.fprintf fmt "%a" pp_id i
   | Qdot (q, i) -> Format.fprintf fmt "%a.%a"

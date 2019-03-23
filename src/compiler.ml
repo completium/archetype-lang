@@ -2,7 +2,8 @@
 open CmlLib
 open Core
 
-let opt_pretty_print= ref false
+let opt_json = ref false
+let opt_pretty_print = ref false
 let opt_parse = ref false
 let opt_model = ref false
 let opt_modelws = ref false
@@ -16,11 +17,14 @@ exception ArgError of string
 (* -------------------------------------------------------------------- *)
 let compile_and_print (filename, channel) =
   let pt = Io.parse_model ~name:filename channel in
+  if !opt_json
+  then Format.printf "%s\n" (Yojson.Safe.to_string (ParseTree.model_to_yojson pt))
+  else (
   if !opt_pretty_print
-  then Format.printf "%a@." Printer.pp_model pt
+  then Format.printf "%a" Printer.pp_model pt
   else (
   if !opt_parse
-  then Format.printf "%a\n" ParseTree.pp_model pt
+  then () (*Format.printf "%a\n" ParseTree.pp_model pt*)
   else (
     let model = Translate.parseTree_to_model pt in
     if !opt_model
@@ -35,7 +39,7 @@ let compile_and_print (filename, channel) =
         if !opt_modelliq
         then ()(*Extract.print modelw3liq*)
         else ()
-    ))))
+    )))))
 
 let close dispose channel =
   if dispose then close_in channel
@@ -43,6 +47,7 @@ let close dispose channel =
 (* -------------------------------------------------------------------- *)
 let main () =
   let arg_list = Arg.align [
+      "--json", Arg.Set opt_json, " Output CML in JSON representation";
       "-PP", Arg.Set opt_pretty_print, " Pretty print";
       "-P", Arg.Set opt_parse, " Print raw parse tree";
       "-M", Arg.Set opt_model, " Print raw model";

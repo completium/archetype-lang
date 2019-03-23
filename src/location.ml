@@ -10,6 +10,7 @@ type t = {
   loc_bchar : int;
   loc_echar : int;
 }
+[@@deriving yojson]
 
 let dummy : t = {
   loc_fname = "";
@@ -76,6 +77,7 @@ type 'a loced = {
   plloc : t;
   pldesc : 'a;
 }
+[@@deriving yojson]
 
 let pp_loced pp fmt (x : 'a loced) = Format.fprintf fmt "%a" pp x.pldesc
 

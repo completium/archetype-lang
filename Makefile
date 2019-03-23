@@ -36,4 +36,4 @@ check:
 	./check.sh
 
 build-deps:
-	opam install dune menhir batteries why3.1.2.0 ppx_deriving
+	opam install dune menhir batteries why3.1.2.0 ppx_deriving ppx_deriving_yojson

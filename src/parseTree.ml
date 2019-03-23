@@ -4,7 +4,7 @@ open Location
 
 (* -------------------------------------------------------------------- *)
 type lident = ident loced
-[@@deriving show {with_path = false}]
+[@@deriving yojson]
 
 (* -------------------------------------------------------------------- *)
 type container =
@@ -13,7 +13,7 @@ type container =
   | Stack
   | Set
   | Partition
-[@@deriving show {with_path = false}]
+[@@deriving yojson]
 
 type type_r =
   | Tref of lident
@@ -21,10 +21,10 @@ type type_r =
   | Tvset of lident * type_t
   | Tapp of type_t * type_t
   | Ttuple of type_t list
-[@@deriving show {with_path = false}]
+[@@deriving yojson]
 
 and type_t = type_r loced
-[@@deriving show {with_path = false}]
+[@@deriving yojson]
 
 (* -------------------------------------------------------------------- *)
 type logical_operator =
@@ -32,7 +32,7 @@ type logical_operator =
   | Or
   | Imply
   | Equiv
-[@@deriving show {with_path = false}]
+[@@deriving yojson]
 
 type comparison_operator =
   | Equal
@@ -41,7 +41,7 @@ type comparison_operator =
   | Ge
   | Lt
   | Le
-[@@deriving show {with_path = false}]
+[@@deriving yojson]
 
 type arithmetic_operator =
   | Plus
@@ -49,13 +49,13 @@ type arithmetic_operator =
   | Mult
   | Div
   | Modulo
-[@@deriving show {with_path = false}]
+[@@deriving yojson]
 
 type unary_operator =
   | Uplus
   | Uminus
   | Not
-[@@deriving show {with_path = false}]
+[@@deriving yojson]
 
 type assignment_operator =
   | ValueAssign
@@ -66,12 +66,12 @@ type assignment_operator =
   | DivAssign
   | AndAssign
   | OrAssign
-[@@deriving show {with_path = false}]
+[@@deriving yojson]
 
 type quantifier =
   | Forall
   | Exists
-[@@deriving show {with_path = false}]
+[@@deriving yojson]
 
 type operator = [
   | `Logical of logical_operator
@@ -79,23 +79,23 @@ type operator = [
   | `Arith   of arithmetic_operator
   | `Unary   of unary_operator
 ]
-[@@deriving show {with_path = false}]
+[@@deriving yojson]
 
 type qualid =
   | Qident of lident
   | Qdot of qualid * lident
-[@@deriving show {with_path = false}]
+[@@deriving yojson]
 
 type name = lident option * lident
-[@@deriving show {with_path = false}]
+[@@deriving yojson]
 
 type pattern_unloc =
   | Pwild
   | Pref of lident
-[@@deriving show {with_path = false}]
+[@@deriving yojson]
 
 type pattern = pattern_unloc loced
-[@@deriving show {with_path = false}]
+[@@deriving yojson]
 
 type expr_r =
   | Eterm         of name
@@ -116,7 +116,7 @@ type expr_r =
   | Eletin        of lident_typ * expr * expr
   | Ematchwith    of expr * (pattern list * expr) list
   | Equantifier   of quantifier * lident_typ * expr
-[@@deriving show {with_path = false}]
+[@@deriving yojson]
 
 and literal =
   | Lnumber   of Core.big_int
@@ -127,38 +127,38 @@ and literal =
   | Lbool     of bool
   | Lduration of string
   | Ldate     of string
-[@@deriving show {with_path = false}]
+[@@deriving yojson]
 
 and assignment_field = assignment_operator * (lident option * lident) * expr
 
 and expr = expr_r loced
-[@@deriving show {with_path = false}]
+[@@deriving yojson]
 
 and lident_typ = lident * type_t option * extension list option
-[@@deriving show {with_path = false}]
+[@@deriving yojson]
 
 (* -------------------------------------------------------------------- *)
 and extension_r =
  | Eextension of lident * expr list option (** extension *)
-[@@deriving show {with_path = false}]
+[@@deriving yojson]
 
 and extension = extension_r loced
-[@@deriving show {with_path = false}]
+[@@deriving yojson]
 
 and exts = extension list option
-[@@deriving show {with_path = false}]
+[@@deriving yojson]
 
 (* -------------------------------------------------------------------- *)
 type field_r =
   | Ffield of lident * type_t * expr option * extension list option   (** field *)
-[@@deriving show {with_path = false}]
+[@@deriving yojson]
 
 and field = field_r loced
-[@@deriving show {with_path = false}]
+[@@deriving yojson]
 
 
 type transition_r = (lident * expr option * expr option) list
-[@@deriving show {with_path = false}]
+[@@deriving yojson]
 
 (* -------------------------------------------------------------------- *)
 type transitem_r =
@@ -167,28 +167,28 @@ type transitem_r =
   | Tfunction of lident * args * type_t option * expr                        (** function *)
   | Tspecification of s_variable * s_action * s_invariant * s_ensure * exts  (** specification *)
   | Tinvariant of lident * named_item list * extension list option           (** invariant *)
-[@@deriving show {with_path = false}]
+[@@deriving yojson]
 
 and transitem = transitem_r loced
-[@@deriving show {with_path = false}]
+[@@deriving yojson]
 
 and named_item = lident option * expr
-[@@deriving show {with_path = false}]
+[@@deriving yojson]
 
 and args = lident_typ list
-[@@deriving show {with_path = false}]
+[@@deriving yojson]
 
 and s_variable = (lident * type_t * expr option) loced list option
-[@@deriving show {with_path = false}]
+[@@deriving yojson]
 
 and s_action = expr option
-[@@deriving show {with_path = false}]
+[@@deriving yojson]
 
 and s_invariant = named_item list option
-[@@deriving show {with_path = false}]
+[@@deriving yojson]
 
 and s_ensure = named_item list
-[@@deriving show {with_path = false}]
+[@@deriving yojson]
 
 (* -------------------------------------------------------------------- *)
 type declaration_r =
@@ -208,52 +208,52 @@ type declaration_r =
   | Dcontract      of lident * signature list * expr option * exts     (** contract *)
   | Dfunction      of lident * args * type_t option * expr             (** function *)
   | Dspecification of named_item list * exts                           (** specification *)
-[@@deriving show {with_path = false}]
+[@@deriving yojson]
 
 and value_option =
   | VOfrom of qualid
   | VOto of qualid
-[@@deriving show {with_path = false}]
+[@@deriving yojson]
 
 and asset_option =
   | AOasrole
   | AOidentifiedby of lident
   | AOsortedby of lident
-[@@deriving show {with_path = false}]
+[@@deriving yojson]
 
 and asset_post_option =
   | APOstates of lident
   | APOconstraints of expr
   | APOinit of expr
-[@@deriving show {with_path = false}]
+[@@deriving yojson]
 
 and state_option =
   | SOinitial
   | SOspecification of named_item list
-[@@deriving show {with_path = false}]
+[@@deriving yojson]
 
 and signature =
   | Ssignature of lident * type_t list
-[@@deriving show {with_path = false}]
+[@@deriving yojson]
 
 and declaration = declaration_r loced
-[@@deriving show {with_path = false}]
+[@@deriving yojson]
 
 and asset_operation_enum =
   | AOadd
   | AOremove
   | AOupdate
-[@@deriving show {with_path = false}]
+[@@deriving yojson]
 
 and asset_operation =
   | AssetOperation of asset_operation_enum list * expr list option
-[@@deriving show {with_path = false}]
+[@@deriving yojson]
 
 (* -------------------------------------------------------------------- *)
 type model_r =
   | Mmodel of declaration list
   | Mmodelextension of lident * declaration list * declaration list
-[@@deriving show {with_path = false}]
+[@@deriving yojson]
 
 and model = model_r loced
-[@@deriving show {with_path = false}]
+[@@deriving yojson]
