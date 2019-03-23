@@ -7,6 +7,7 @@
 (ocamllex lexer)
 (menhir (flags --explain) (modules parser))
 
+
 (library
   (name cmlLib)
   (preprocess
@@ -19,18 +20,11 @@
 
 (library
   (name w3plugin)
-  (preprocess
-    (pps ppx_deriving.std)
-  )
-  (library_flags (-linkall))
   (modules w3plugin)
-  (libraries cmlLib menhirLib why3 ppx_deriving)
+  (libraries cmlLib)
 )
 
 (executable
-  (preprocess
-    (pps ppx_deriving.std ppx_deriving_yojson)
-  )
   (modules compiler)
-  (libraries cmlLib menhirLib why3 ppx_deriving)
+  (libraries cmlLib menhirLib why3)
   (name     compiler))
