@@ -94,12 +94,12 @@ specification {
 
 action clear_expired = {
 
-  called by admin
-
   specification
      forall m : removed mile, m.expiration < now;
       is_empty (added mile);
       idem mile
+
+  called by admin
 
   effect mile.removeif (expiration < now)
 }

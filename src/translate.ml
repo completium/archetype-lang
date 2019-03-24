@@ -545,46 +545,13 @@ let get_transaction_args (args : ParseTree.args)  =
       mk_decl dummy (name, typ, None)::acc
     ) [] (args |> List.rev)
 
-let get_transaction_calledby items : rexpr option =
-  List.fold_left (fun acc i ->
-      let loc, v = deloc i in
-      match v with
-      | Tcalledby (e, _) ->
-        (match acc with
-        | None -> Some (to_rexpr_calledby e)
-        | _ -> raise (ModelError ("several called by found", loc)))
-      | _ -> acc
-    ) None items
-
-let get_transaction_condition items : label_pterm list option =
-  List.fold_left (fun acc i ->
-      let loc, v = deloc i in
-      match v with
-      | Tcondition (items, _) ->
-        (match acc with
-         | None -> (Some (List.map (fun a -> let b, c = a in (to_label_pterm (b, c))) items))
-         | _ -> raise (ModelError ("several condition found", loc)))
-      | _ -> acc
-    ) None items
-
-let get_transaction_specification items =
-  List.fold_left (fun acc i ->
-      let loc, v = deloc i in
-      match v with
-      | Tspecification (vars, action, invs, ensure, _) ->
-        (match acc with
-         | None -> Some (mk_spec loc vars action invs ensure)
-         | _ -> raise (ModelError ("several specification found", loc)))
-      | _ -> acc
-    ) None items
-
-let mk_action loc name args items = {
+let mk_action loc name args (props : action_properties) = {
   name = name;
   args = get_transaction_args args;
-  calledby = get_transaction_calledby items;
-  condition = get_transaction_condition items;
+  calledby  = Tools.map_option (fun (e, _) -> to_rexpr_calledby e) props.calledby;
+  condition = Tools.map_option (fun (items, _) -> List.map (fun a -> let b, c = a in (to_label_pterm (b, c))) items) props.condition;
   transition = None;
-  spec = get_transaction_specification items;
+  spec = Tools.map_option (fun (vars, action, invs, ensure, _) -> mk_spec loc vars action invs ensure) props.specification;
   action = None;
   side = false;
   loc = loc;
@@ -594,14 +561,14 @@ let get_transactions decls =
   List.fold_left (fun acc i ->
       (let loc, v = deloc i in
        match v with
-       | Daction (name, args, items, action, _) ->
+       | Daction (name, args, props, action, _) ->
          acc @ [{
-             (mk_action loc name args items) with
+             (mk_action loc name args props) with
              action = Tools.map_option (fun x -> let a, _ = x in mk_pterm a) action;
            }]
-       | Dtransition (name, args, _on, from, items, trs, _) ->
+       | Dtransition (name, args, _on, from, props, trs, _) ->
          acc @ [{
-             (mk_action loc name args items) with
+             (mk_action loc name args props) with
              transition = Some (None, to_sexpr from, List.map (fun (to_, cond, action) -> (to_,
                                                                                            map_option mk_pterm cond,
                                                                                            map_option mk_pterm action)) trs)

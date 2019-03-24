@@ -163,15 +163,13 @@ type transition_r = (lident * expr option * expr option) list
 [@@deriving yojson, show {with_path = false}]
 
 (* -------------------------------------------------------------------- *)
-type transitem_r =
-  | Tcalledby of expr * extension list option                                (** called by *)
-  | Tcondition of named_item list * extension list option                    (** condition *)
-  | Tfunction of lident * args * type_t option * expr                        (** function *)
-  | Tspecification of s_variable * s_action * s_invariant * s_ensure * exts  (** specification *)
-  | Tinvariant of lident * named_item list * extension list option           (** invariant *)
-[@@deriving yojson, show {with_path = false}]
-
-and transitem = transitem_r loced
+type action_properties = {
+  calledby : (expr * extension list option) option;
+  condition : (named_item list * extension list option) option;
+  functions : (lident * args * type_t option * expr) list;
+  specification : (s_variable * s_action * s_invariant * s_ensure * exts) option;
+  invariants : (lident * named_item list * extension list option) list;
+}
 [@@deriving yojson, show {with_path = false}]
 
 and named_item = lident option * expr
@@ -203,8 +201,8 @@ type declaration_r =
   | Dasset         of lident * field list option * asset_option list option * asset_post_option list * asset_operation option (** asset *)
   | Dobject        of lident * expr * exts                             (** object *)
   | Dkey           of lident * expr * exts                             (** key *)
-  | Daction        of lident * args * transitem list * (expr * exts) option * exts
-  | Dtransition    of lident * args * (lident * lident) option * expr * transitem list * transition_r * exts
+  | Daction        of lident * args * action_properties * (expr * exts) option * exts
+  | Dtransition    of lident * args * (lident * lident) option * expr * action_properties * transition_r * exts
   | Dextension     of lident * expr list option                        (** extension *)
   | Dnamespace     of lident * declaration list                        (** namespace *)
   | Dcontract      of lident * signature list * expr option * exts     (** contract *)

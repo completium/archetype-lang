@@ -5,6 +5,15 @@
   open ParseUtils
 
   let error ?loc code = raise (ParseError (loc, code))
+
+  let dummy_action_properties = {
+      calledby      = None;
+      condition     = None;
+      functions     = [];
+      specification = None;
+      invariants    = [];
+    }
+
 %}
 
 %token USE
@@ -280,7 +289,7 @@ signature:
 function_item:
  | FUNCTION id=ident xs=function_args
      r=function_return? EQUAL b=expr
-       { Tfunction (id, xs, r, b) }
+       { (id, xs, r, b) }
 
 function_decl:
  | FUNCTION id=ident xs=function_args
@@ -290,14 +299,14 @@ function_decl:
 specification:
  | SPECIFICATION exts=option(extensions)
      xs=named_items
-       { Tspecification (None, None, None, xs, exts) }
+       { (None, None, None, xs, exts) }
 
  | SPECIFICATION exts=option(extensions)
      sv=specification_variables
      sa=specification_effect?
      si=specification_invariant?
      se=specification_ensure
-       { Tspecification (sv, sa, si, se, exts) }
+       { (sv, sa, si, se, exts) }
 
 specification_decl:
  | SPECIFICATION exts=option(extensions)
@@ -450,32 +459,31 @@ on_value:
 
 transition:
   TRANSITION exts=option(extensions) x=ident
-    args=function_args on=on_value? FROM f=expr EQUAL LBRACE xs=transitems trs=transitions RBRACE
+    args=function_args on=on_value? FROM f=expr EQUAL LBRACE xs=action_properties trs=transitions RBRACE
       { Dtransition (x, args, on, f, xs, trs, exts) }
 
 %inline transitems_eq:
-| { ([], None) }
-| EQUAL LBRACE xs=transitems e=effect? RBRACE { (xs, e) }
+| { (dummy_action_properties, None) }
+| EQUAL LBRACE xs=action_properties e=effect? RBRACE { (xs, e) }
 
-%inline transitems:
- | xs=transitem* { xs }
-
-%inline transitem:
- | e=loc(transitem_r) { e }
-
-transitem_r:
- | x=calledby         { x }
- | x=condition        { x }
- | x=function_item    { x }
- | x=specification    { x }
- | x=invariant        { x }
+action_properties:
+  sp=specification? is=invariant* cb=calledby? cs=condition? fs=function_item*
+  {
+    {
+      specification = sp;
+      invariants    = is;
+      calledby      = cb;
+      condition     = cs;
+      functions     = fs;
+    }
+  }
 
 calledby:
- | CALLED BY exts=option(extensions) x=expr { Tcalledby (x, exts) }
+ | CALLED BY exts=option(extensions) x=expr { (x, exts) }
 
 condition:
  | CONDITION exts=option(extensions) xs=named_items
-       { Tcondition (xs, exts) }
+       { (xs, exts) }
 
 %inline condition_value:
 | WHEN x=expr { x }
@@ -486,7 +494,7 @@ condition:
 invariant:
  | INVARIANT exts=option(extensions)
      id=ident xs=named_items
-       { Tinvariant (id, xs, exts) }
+       { (id, xs, exts) }
 
 %inline named_items:
  | xs=separated_nonempty_list(SEMI_COLON, named_item) { xs }

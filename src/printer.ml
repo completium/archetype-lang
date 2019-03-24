@@ -431,6 +431,7 @@ match sv with
         pp_type typ
         (pp_option (pp_prefix " = " pp_expr)) dv
 
+(*
 let pp_transitem fmt { pldesc = t; _ } =
   match t with
   | Tcalledby (e, exts) ->
@@ -468,7 +469,7 @@ let pp_transitem fmt { pldesc = t; _ } =
        (pp_option (pp_list " " pp_extension)) exts
        pp_id id
        (pp_list "; " pp_named_item) xs
-
+*)
 
 (* -------------------------------------------------------------------------- *)
 let pp_state_option fmt = function
@@ -527,6 +528,17 @@ let pp_asset_post_option fmt (apo : asset_post_option) =
     Format.fprintf fmt " initialized by { %a }"
       pp_expr init
 
+let map_option f x =
+  match x with
+  | Some y -> f y
+  | None -> ()
+
+let pp_action_properties fmt (props : action_properties) =
+  map_option (fun (e, exts) ->
+      Format.fprintf fmt "called by%a %a"
+        (pp_option (pp_list " " pp_extension)) exts
+        pp_expr e) props.calledby
+
 let rec pp_declaration fmt { pldesc = e; _ } =
   match e with
   | Duse id ->
@@ -583,19 +595,19 @@ let rec pp_declaration fmt { pldesc = e; _ } =
         pp_id id
         pp_expr e
 
-  | Daction (id, args, items, _code, exts) ->
+  | Daction (id, args, props, _code, exts) ->
       Format.fprintf fmt "action%a %a%a = {@\n@[<v 2>  %a@]@\n}"
         (pp_option (pp_list "@," pp_extension)) exts
         pp_id id
         pp_fun_args args
-        (pp_list "@," pp_transitem) items
+        pp_action_properties props
 
-  | Dtransition (id, args, _on, _from, items, _trs, exts) ->
+  | Dtransition (id, args, _on, _from, props, _trs, exts) ->
       Format.fprintf fmt "transition%a %a%a = {@\n@[<v 2>  %a@]@\n}"
         (pp_option (pp_list "@," pp_extension)) exts
         pp_id id
         pp_fun_args args
-        (pp_list "@," pp_transitem) items
+        pp_action_properties props
 
 (*  | Ttransition (id, from, lto, exts) ->
       Format.fprintf fmt "transition%a%a from %a@\n%a"
@@ -656,6 +668,5 @@ let type_to_str  = string_of__of_pp pp_type
 let expr_to_str  = string_of__of_pp pp_expr
 let extension_to_str = string_of__of_pp pp_extension
 let field_to_str  = string_of__of_pp pp_field
-let transitem_to_str = string_of__of_pp pp_transitem
 let declaration_to_str = string_of__of_pp pp_declaration
 let model_to_str  = string_of__of_pp pp_model
