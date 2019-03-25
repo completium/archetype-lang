@@ -20,7 +20,7 @@ states =
 
 transition confirm from Insured = {
   specification
-    balance = 0
+    s1 : balance = 0
 
   to Confirmed
   when transferred = price

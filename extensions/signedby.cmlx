@@ -9,7 +9,8 @@ model extension signedby (
   key key_<%arole> of oracle
 
   action aTransaction (signed_<%anarg> : signature) = {
-    condition check_signature anarg signed_<%anarg> key_<%arole>
+    condition
+      c1 : check_signature anarg signed_<%anarg> key_<%arole>
   }
 
 }

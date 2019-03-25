@@ -1,1 +1,1 @@
-specification { 0 < x <= 1 }
+specification { s1 : 0 < x <= 1 }

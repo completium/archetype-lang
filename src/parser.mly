@@ -500,8 +500,7 @@ invariant:
  | xs=separated_nonempty_list(SEMI_COLON, named_item) { xs }
 
 %inline named_item:
- | id=prefix_name e=expr { (Some id, e) }
- | e=expr                { (None, e) }
+ | id=label e=expr { (Some id, e) }
 
 effect:
  | EFFECT exts=option(extensions) xs=loc(expr_extended) { (xs, exts) }
@@ -576,7 +575,7 @@ expr_r:
  | BREAK
      { Ebreak }
 
- | label=ident? FOR LPAREN x=ident IN y=expr RPAREN body=expr %prec prec_for
+ | label=label? FOR LPAREN x=ident IN y=expr RPAREN body=expr %prec prec_for
      { Efor (x, y, body, label) }
 
  | IF c=expr THEN t=expr
@@ -620,7 +619,7 @@ order_operations:
     { let loc = Location.make $startpos $endpos in
        Eapp ( mkloc loc (Eop (unloc op)), [e1; e2]) }
 
-prefix_name:
+label:
  | id=ident COLON { id }
 
 %inline app_args:

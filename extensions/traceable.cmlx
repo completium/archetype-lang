@@ -16,6 +16,6 @@ model extension traceable (
   action transfer_<%anamount> = {
     called by fromP
     condition
-      transferred = anamount
+      c1 : transferred = anamount
   }
 }

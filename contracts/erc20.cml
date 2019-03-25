@@ -16,7 +16,7 @@ asset tokenHolder identified by holder = {
 action transfer_ (k : address) (quantity : int) = {
 
   specification
-    before tokenHolder.sum(tokens) = tokenHolder.sum(tokens)
+    s1 : before tokenHolder.sum(tokens) = tokenHolder.sum(tokens)
 
 
   called by (tokenHolder.get k).holder

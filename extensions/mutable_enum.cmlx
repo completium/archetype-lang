@@ -7,7 +7,7 @@ model extension mutable_enum (
   action set_state_<%a> (new_val : anenum) = {
 
     called by arole
-    condition state <= new_state
+    condition mutable_enum_<%a> : state <= new_state
     effect    anenum := new_val
   }
 }

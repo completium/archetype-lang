@@ -13,7 +13,7 @@ model extension onlyonce (
         i1 : conditions -> call_count = 0;
         i2 : call_count <= 1
       ensure
-        none
+        e1 : none
    }
 
 }

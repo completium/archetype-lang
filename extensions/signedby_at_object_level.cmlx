@@ -10,6 +10,7 @@ model extension signedby (
   key key_<%arole> of oracle
 
   action aTransaction (signed_<%obj>: signature) = {
-    condition check_signature obj signed_<%obj> key_<%arole>
+    condition
+      c1 : check_signature obj signed_<%obj> key_<%arole>
   }
 }

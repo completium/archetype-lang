@@ -31,7 +31,8 @@ specification {
 
 action place_bid = {
 
-   condition auction_start <= now <= auction_end
+  condition
+    c1 : auction_start <= now <= auction_end
 
    effect
       if pending_returns.contains caller
@@ -59,8 +60,9 @@ action place_bid = {
 }
 
 action withdraw = {
-   condition pending_returns.contains caller
-   effect transfer (pending_returns.get caller).val to caller
+  condition
+    c2 : pending_returns.contains caller
+  effect transfer (pending_returns.get caller).val to caller
 }
 
 transition endAuction from Open = {

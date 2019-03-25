@@ -9,7 +9,7 @@ variable[%mutable chairperson (instate Created)] date startDate
 variable[%mutable chairperson (instate Created)] date deadline
 
 specification {
-  startdate < deadline
+  s1 : startdate < deadline
 }
 
 asset voter as role identified by address = {
@@ -34,7 +34,8 @@ states =
 
 action register (voter : address) = {
   called by chairperson
-  condition state = Created
+  condition
+    c1 : state = Created
   effect
     voter.add {address = voter; hasVoted = false}
 }
@@ -46,8 +47,8 @@ transition start from Created = {
 action vote (val : string) = {
    called by voter
    condition
-     c1 : state = Voting;
-     c2 : (voter.get (Caller.address)).hasVoted = false
+     c2 : state = Voting;
+     c3 : (voter.get (Caller.address)).hasVoted = false
 
    effect
      (voter.get caller).hasVoted := true;
@@ -55,7 +56,8 @@ action vote (val : string) = {
 }
 
 transition bury from Voting = {
-  condition now > deadline
+  condition
+    c4 : now > deadline
   to Buried
   with effect (
     let nbvotesMax = ballot.max(nbvotes) in

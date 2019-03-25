@@ -17,11 +17,12 @@ action add (owner : address) (value : uint) = {
 
 action consume (owner : address) (value : uint) = {
    specification
-     (before.account.get owner).amount =
+     s1 : (before.account.get owner).amount =
              (after.account.get owner).amount + value
 
    called by validator
-   condition (account.get owner).amount >= value
+   condition
+     c1 : (account.get owner).amount >= value
 
    effect
      (account.get owner).amount -= value

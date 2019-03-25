@@ -8,7 +8,8 @@ asset bid identified by incumbent = {
 variable deadline date = 2019-01-01T00:00:00
 
 action place_bid = {
-  condition now < deadline
+  condition
+    c1 : now < deadline
   effect bid.add { incumbent = caller; val = transferred }
 }
 
@@ -25,6 +26,6 @@ action reclaim (witness : address) = {
 }
 
 specification {
-  forall a : address,
+  s1 : forall a : address,
   bid.contains a -> balance > (bid.get a).val
 }

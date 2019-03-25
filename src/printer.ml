@@ -535,9 +535,14 @@ let map_option f x =
 
 let pp_action_properties fmt (props : action_properties) =
   map_option (fun (e, exts) ->
-      Format.fprintf fmt "called by%a %a"
+      Format.fprintf fmt "called by%a %a@\n"
         (pp_option (pp_list " " pp_extension)) exts
         pp_expr e) props.calledby
+
+let pp_effect fmt (code, _) =
+  Format.fprintf fmt "effect@\n@[<v 2>  %a@]@\n"
+    (*(pp_list " " pp_extension) exts*)
+    pp_expr code
 
 let rec pp_declaration fmt { pldesc = e; _ } =
   match e with
@@ -595,12 +600,13 @@ let rec pp_declaration fmt { pldesc = e; _ } =
         pp_id id
         pp_expr e
 
-  | Daction (id, args, props, _code, exts) ->
-      Format.fprintf fmt "action%a %a%a = {@\n@[<v 2>  %a@]@\n}"
+  | Daction (id, args, props, code, exts) ->
+      Format.fprintf fmt "action%a %a%a = {@\n@[<v 2>  %a%a@]@\n}"
         (pp_option (pp_list "@," pp_extension)) exts
         pp_id id
         pp_fun_args args
         pp_action_properties props
+        (pp_option pp_effect) code
 
   | Dtransition (id, args, _on, _from, props, _trs, exts) ->
       Format.fprintf fmt "transition%a %a%a = {@\n@[<v 2>  %a@]@\n}"

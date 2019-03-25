@@ -9,7 +9,8 @@ asset insured_contract identified by addr = {
 
 action credit = {
   called by admin
-  condition transferred > 0
+  condition
+    c1 : transferred > 0
 }
 
 action add_contract (contract_ : insured_contract) = {

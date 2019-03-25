@@ -7,7 +7,7 @@ model extension test_namespace (
   variable avariable type
 
   specification {
-    a::myvariable = 1
+    c1 : a::myvariable = 1
   }
 
   namespace myspace {
