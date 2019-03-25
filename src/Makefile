@@ -19,7 +19,7 @@ cmlLib: __force__
 	dune build --profile=$(PROFILE) cmlLib.cmxa
 
 plugin: __force__
-	dune build --profile=$(PROFILE) w3plugin.cmxs
+	dune build --profile=$(PROFILE) cml.cmxs
 
 clean: __force__
 	dune clean

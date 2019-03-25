@@ -14,7 +14,6 @@ compiler:
 
 plugin:
 	$(MAKE) -C src cmlLib plugin
-	$(MAKE) -C src -f Makefile.plugin.mk plugin
 	cp -f src/_build/default/cml.cmxs ./why3/
 
 extract:
@@ -27,7 +26,6 @@ run:
 	$(MAKE) -C src run
 
 clean:
-	$(MAKE) -f Makefile.plugin.mk -C src clean
 	$(MAKE) -C src clean
 	rm -fr compiler.exe
 	rm -fr ./why3/plugin/cml.cmxs

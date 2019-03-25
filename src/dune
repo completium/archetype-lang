@@ -24,6 +24,18 @@
   (libraries cmlLib)
 )
 
+(rule
+ (targets cml.cmxs)
+ (deps    /home/dev/.opam/cml/lib/easy-format/easy_format.cmxa
+          /home/dev/.opam/cml/lib/biniou/biniou.cmxa
+          /home/dev/.opam/cml/lib/yojson/yojson.cmxa
+          /home/dev/.opam/cml/lib/result/result.cmxa
+          /home/dev/.opam/cml/lib/ppx_deriving/ppx_deriving_runtime.cmxa
+          /home/dev/.opam/cml/lib/ppx_deriving_yojson/runtime/ppx_deriving_yojson_runtime.cmxa
+          cmlLib.cmxa
+          w3plugin.cmxa)
+ (action  (run ocamlopt -shared -linkall -o %{targets} %{deps})))
+
 (executable
   (modules compiler)
   (libraries cmlLib menhirLib why3)
