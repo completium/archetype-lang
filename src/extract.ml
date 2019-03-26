@@ -6,7 +6,7 @@ exception ExtractError
 let mk_id ~loc name : ident =
   { id_str = name; id_ats = []; id_loc = loc }
 
-let print (ds : Ptree.decl list) =
+let print (_ds : Ptree.decl list) =
   let liqmlw_path = "./why3" in
   let dname = "./why3/liquidity.drv" in
   let mk_loadpath main = (Why3.Whyconf.loadpath main) @ [liqmlw_path] in
@@ -14,7 +14,8 @@ let print (ds : Ptree.decl list) =
   let main = Why3.Whyconf.get_main config in
   let env = Why3.Env.create_env (mk_loadpath main) in
   let driver = Why3.Pdriver.load_driver env dname [] in
-  List.iter (fun s -> Format.printf "%s@\n@." s) driver.drv_prelude;
+  List.iter (fun s -> Format.printf "%s@\n@." s) driver.drv_prelude(*;*)
+
   (*  let mm = Env.read_channel Pmodule.mlw_language env filename channel in*)
 (*  List.iter (fun (d : Ptree.decl) -> Format.printf "%a@\n@." print_module d) ds;*)
 
@@ -24,7 +25,7 @@ let print (ds : Ptree.decl list) =
       let print_prelude =
       print_prelude pargs.Pdriver.prelude*)
 
-  let loc = Loc.dummy_position in
+(*  let loc = Loc.dummy_position in
 
   let use_import (f, m) =
     let m = mk_id ~loc m in
@@ -52,4 +53,4 @@ let print (ds : Ptree.decl list) =
       try Typing.add_decl Loc.dummy_position d
       with e ->
         Format.printf "Exception raised during typing of d:@ %a@."
-          Exn_printer.exn_printer e) ds
+          Exn_printer.exn_printer e) ds*)
