@@ -35,9 +35,9 @@ let compile_and_print (filename, channel) =
       if !opt_modelws
       then Format.printf "%a\n" Modelws.pp_model_with_storage modelws
       else (
-        let _modelw3liq = Modelliq.modelws_to_modelliq info modelws in
+        let modelw3liq = Modelliq.modelws_to_modelliq info modelws in
         if !opt_modelliq
-        then ()(*Extract.print modelw3liq*)
+        then Extract.print modelw3liq
         else ()
     )))))
 
@@ -52,7 +52,7 @@ let main () =
       "-P", Arg.Set opt_parse, " Print raw parse tree";
       "-M", Arg.Set opt_model, " Print raw model";
       "-W", Arg.Set opt_modelws, " Print raw model_with_storage";
-      "-L", Arg.Set opt_modelliq, " Execute w3 tree generation for liquidity";
+      "-L", Arg.Set opt_modelliq, " Output CML in liquidity";
       "-T", Arg.Set opt_pterm, " Print pterm";
       "--storage-policy",
       Arg.String (fun s -> match s with

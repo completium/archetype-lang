@@ -1,6 +1,6 @@
 model hello
 
-constant name string
+variable name string
 
 action main (str : string) = {
   effect

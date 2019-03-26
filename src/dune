@@ -37,6 +37,6 @@
             %{deps} )))
 
 (executable
-  (modules compiler)
+  (modules extract compiler)
   (libraries cmlLib menhirLib why3)
   (name     compiler))
