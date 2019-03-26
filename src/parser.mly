@@ -500,6 +500,7 @@ invariant:
  | xs=separated_nonempty_list(SEMI_COLON, named_item) { xs }
 
 %inline named_item:
+ | id=ident { let loc = loc id in (None, mkloc loc (Eterm (None, id))) }
  | id=label e=expr { (Some id, e) }
 
 effect:

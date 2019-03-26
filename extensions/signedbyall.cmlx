@@ -17,8 +17,8 @@ model extension signedbyall (
 
   action aTransaction = {
     condition
-      c1 : conditions;
-      c2 : (signer_<%aTransaction>.select(hasSigned = true)).count() = signer_<%aTransaction>.count()
+      conditions;
+      <%aTransaction>_cond : (signer_<%aTransaction>.select(hasSigned = true)).count() = signer_<%aTransaction>.count()
   }
 
 }
