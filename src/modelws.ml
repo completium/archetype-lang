@@ -1657,14 +1657,19 @@ let process_args args0 pt =
   then pt
   else
     begin
+
       let nb = List.fold_left (fun acc x -> acc +
                                             (match x.typ with
                                              | ATSimple _ -> 1
                                              | ATAsset (_, _, l) -> 1 + List.length l)) 0 args0 in
+
       let action =
         (List.fold_right
            (fun (x : arg_ret) (i, acc) ->
-              let get_arg i = Papp (Pvar ("get_" ^ (string_of_int i) ^ "_" ^ (string_of_int nb)), [Pvar "p"]) in
+              let get_arg i =
+                (match nb with
+                 | 1 -> Pvar "p"
+                 | _ ->  Papp (Pvar ("get_" ^ (string_of_int i) ^ "_" ^ (string_of_int nb)), [Pvar "p"])) in
               let id = x.id in
               let n, body =
                 begin
@@ -1784,9 +1789,13 @@ let transform_transaction (info : info) (m : model_unloc) (t : Model.transaction
   let pt0 = loc_pterm (Ptuple[Pvar "_ops"; Pvar "s"]) in
 
   let args_p =
-    if List.length args0 = 0
-    then Some (Flocal (lstr "unit"))
-    else (Some (Ftuple (List.fold_left
+    match args0 with
+    | [] -> Some (Flocal (lstr "unit"))
+    | [i] when (match i.typ with | ATSimple _ -> true | _ -> false) ->
+      (match i.typ with
+       | ATSimple x -> Some x
+       | _ -> raise (Anomaly "transform_transaction 0"))
+    | _ -> (Some (Ftuple (List.fold_left
                           (fun acc (i : arg_ret) ->
                              acc @
                              (match i.typ with
