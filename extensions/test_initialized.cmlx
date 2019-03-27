@@ -5,7 +5,7 @@ model extension testInitialized (
   asset test_<%aTransaction> = {
     myvariable : string
   } initialized by {
-    myvariable := "a_string"
+    {"a_string"}
   }
 
 }

@@ -198,7 +198,7 @@ type declaration_r =
   | Dvariable      of lident * type_t * value_option list option * expr option * exts       (** variable *)
   | Denum          of lident * lident list                                           (** enum *)
   | Dstates        of lident option * (lident * state_option list option) list option * extension list option       (** states *)
-  | Dasset         of lident * field list option * asset_option list option * asset_post_option list * asset_operation option (** asset *)
+  | Dasset         of lident * field list option * asset_option list option * asset_post_option list * asset_operation option * exts (** asset *)
   | Dobject        of lident * expr * exts                             (** object *)
   | Dkey           of lident * expr * exts                             (** key *)
   | Daction        of lident * args * action_properties * (expr * exts) option * exts
@@ -223,8 +223,8 @@ and asset_option =
 
 and asset_post_option =
   | APOstates of lident
-  | APOconstraints of expr
-  | APOinit of expr
+  | APOconstraints of named_item list
+  | APOinit of expr list list
 [@@deriving yojson, show {with_path = false}]
 
 and state_option =

@@ -503,14 +503,14 @@ let get_asset_fields fields =
 let get_assets_init apos : pterm option =
   List.fold_left (fun acc i ->
       match i with
-      | APOinit e -> Some (mk_pterm e)
+      | APOinit _e -> None (*Some (mk_pterm e)*) (* TODO*)
       | _ -> acc) None apos
 
 let get_assets decls =
   List.fold_right ( fun i acc ->
       (let loc, decl_u = Location.deloc i in
        match decl_u with
-       | Dasset (id, fields, opts, apo, _ops) ->
+       | Dasset (id, fields, opts, apo, _ops, _) ->
          ({
            name = id;
            args = get_asset_fields fields;

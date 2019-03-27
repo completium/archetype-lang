@@ -216,7 +216,7 @@ declaration_r:
  | x=object_decl        { x }
  | x=key_decl           { x }
  | x=asset              { x }
- | x=action        { x }
+ | x=action             { x }
  | x=transition         { x }
  | x=dextension         { x }
  | x=namespace          { x }
@@ -395,10 +395,10 @@ state_option:
 | WITH xs=braced(named_items) { SOspecification xs }
 
 asset:
-| ASSET ops=bracket(asset_operation)? x=ident opts=asset_options?
+| ASSET exts=extensions? ops=bracket(asset_operation)? x=ident opts=asset_options?
         fields=asset_fields?
                  apo=asset_post_options
-          { Dasset (x, fields, opts, apo, ops) }
+          { Dasset (x, fields, opts, apo, ops, exts) }
 
 asset_post_option:
 | st=init_states       { APOstates st }
@@ -409,7 +409,7 @@ asset_post_option:
  | xs=asset_post_option* { xs }
 
 %inline asset_constraint:
- | WITH x=braced(expr) { x }
+ | WITH xs=braced(named_items) { xs }
 
 %inline asset_fields:
 | EQUAL fields=braced(fields) { fields }
@@ -421,7 +421,10 @@ asset_post_option:
 | WITH STATES x=ident { x }
 
 %inline init_asset:
-| INITIALIZED BY x=braced(expr) { x }
+| INITIALIZED BY xs=braced(init_asset_exprs+) { xs }
+
+%inline init_asset_exprs:
+| xs=braced(separated_list(SEMI_COLON, expr)) { xs }
 
 asset_option:
 | AS _x=ident           { AOasrole }

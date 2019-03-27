@@ -7,7 +7,9 @@ asset mile identified by id sorted by expiration = {
    id         : string;
    amount     : uint;
    expiration : date
-} with { amount > 0 }
+} with {
+  m1 : amount > 0
+}
 
 (* a partition ensures there is no direct access to mile collection *)
 asset owner as role identified by addr = {

@@ -43,7 +43,9 @@ asset[@add @remove @update owner (state = Init)]
    id           : address;
    list         : whitelist;
    contrib      : int = 0
-} with { contrib >= 0 }
+} with {
+  c1 : contrib >= 0
+}
 
 states[%incr_mutable_st owner] =
 | Init initial     (* ICO isn't started yet, initial state *)

@@ -5,9 +5,9 @@ model extension signedbyall (
   asset signer_<%aTransaction> = {
     signer    : address;
     hasSigned : boolean
-  } initialized by {
+(*  } initialized by {
     for (r in roles)
-      signer_<%aTransaction>.add {signer = r; hasSigned = false}
+      signer_<%aTransaction>.add {signer = r; hasSigned = false}*)
   }
 
   action sign_<%aTransaction> = {

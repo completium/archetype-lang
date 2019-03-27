@@ -3,11 +3,11 @@ model test_asset
 asset my_asset_simple identified by str = {
   str : string;
   i : uint
-} with { i >= 1 }
+} with { a1 : i >= 1 }
 
 asset my_asset identified by i = {
   i : uint;
   mycollection : my_asset_simple set
 } initialized by {
-  i := 0
+  {0; none}
 }
