@@ -122,7 +122,7 @@ type expr_r =
 
 and literal =
   | Lnumber   of Core.big_int
-  | Lfloat    of string
+  | Lrational of Core.big_int * Core.big_int
   | Ltz       of Core.big_int
   | Laddress  of string
   | Lstring   of string

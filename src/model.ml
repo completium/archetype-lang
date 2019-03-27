@@ -101,7 +101,7 @@ type bval_unloc =
   | BVuint         of Core.big_int
   | BVbool         of bool
   | BVenum         of string
-  | BVfloat        of string
+  | BVrational     of Core.big_int * Core.big_int
   | BVdate         of string (* todo : plus Bat.date *)
   | BVstring       of string
   | BVcurrency     of currency * Core.big_int

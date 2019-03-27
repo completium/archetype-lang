@@ -223,7 +223,7 @@ let bval_to_expr info = function
     mk_expr (str_to_eidapp ["tonat"] [mk_econst (Big_int.string_of_big_int v)])
   | BVbool     v -> mk_expr (if v then Etrue else Efalse)
   | BVenum     v -> mk_expr (str_to_eident [v])
-  | BVfloat    v -> raise (CannotConvert v)
+  | BVrational (n, d) -> raise (CannotConvert (n, d))
   | BVdate     v -> mk_expr (str_to_eident [get_dummy_for info v])
   | BVstring   _ -> raise (StringUnsupported)
   | BVcurrency (_,v) ->

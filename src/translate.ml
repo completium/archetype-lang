@@ -163,7 +163,7 @@ let rec mk_ltyp e : ltyp=
 let to_bval l =
   match l with
   | Lnumber b -> BVint b
-  | Lfloat s -> BVfloat s
+  | Lrational (n, d) -> BVrational (n, d)
   | Laddress s -> BVaddress s
   | Lstring s -> BVstring s
   | Lbool b -> BVbool b

@@ -10,12 +10,12 @@ constant issue      date = 2017-03-28T00:00:00
 constant final      date = 2020-03-16T00:00:00
 constant redemption date = 2020-03-30T00:00:00
 
-constant boa_trigger float = 12.666
-constant sg_trigger  float = 23.4725
-constant ubs_trigger float = 7.99
+constant boa_trigger rational = 12.666
+constant sg_trigger  rational = 23.4725
+constant ubs_trigger rational = 7.99
 
 (* accumulate interest *)
-variable acc_interet float = 0
+variable acc_interet rational = 0
 
 asset early identified by observation = {
   observation : date;
@@ -42,7 +42,7 @@ asset interest identified by observation = {
   observation : date;
   payment     : date;
   barrier     : int;
-  rate        : float;
+  rate        : rational;
 } with {
   i1 : 0 <= barrier <= 100;
   i2 : 0 <= rate    <= 100
@@ -64,9 +64,9 @@ asset interest identified by observation = {
 (* serves as input and log *)
 asset[%signedby oracle] underlyings identified by observation = {
   observation : date;
-  boa : float;  (* Bank of America *)
-  sg  : float;  (* Société Générale *)
-  ubs : float;  (* Union des Banques Suisses *)
+  boa : rational;  (* Bank of America *)
+  sg  : rational;  (* Société Générale *)
+  ubs : rational;  (* Union des Banques Suisses *)
 }
 
 states =

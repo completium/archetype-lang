@@ -72,13 +72,23 @@
 
   let () =
     List.iter (fun (k, v) -> Hashtbl.add keywords k v) keywords_
+
+  let compute_irr_fract (n, d) =
+    let rec gcd a b =
+      if Big_int.eq_big_int b Big_int.zero_big_int
+      then a
+      else gcd b (Big_int.mod_big_int a b) in
+    let g = gcd n d in
+    (Big_int.div_big_int n g), (Big_int.div_big_int d g)
+
 }
 
 (* -------------------------------------------------------------------- *)
 let blank   = [' ' '\t' '\r']
 let newline = '\n'
 let digit   = ['0'-'9']
-let float   = digit+ '.' digit+
+let dec     = digit+ '.' digit+
+let div     = digit+ blank+ "div" blank+ digit+
 let tz      = digit+ "tz"
 let var     = "<%" ['a'-'z' 'A'-'Z'] ['a'-'z' 'A'-'Z' '0'-'9' '_' ]* '>'
 let ident   = (['a'-'z' 'A'-'Z'] | var)  (['a'-'z' 'A'-'Z' '0'-'9' '_' ] | var)*
@@ -99,7 +109,17 @@ rule token = parse
   | "@update"             { AT_UPDATE }
   | ident as id           { try  Hashtbl.find keywords id with Not_found -> IDENT id }
   | tz as t               { TZ (Big_int.big_int_of_string (String.sub t 0 ((String.length t) - 2))) }
-  | float as f            { FLOAT (f) }
+  | dec as input          {
+      let l = Str.split (Str.regexp "\\.") input in
+      let n = Big_int.big_int_of_string ((List.nth l 0) ^ (List.nth l 1)) in
+      let d = Big_int.big_int_of_string ("1" ^ (String.make (String.length (List.nth l 1)) '0')) in
+      let n, d = compute_irr_fract (n, d) in
+      RATIONAL (n, d) }
+  | div as input          {
+      let l = Str.split (Str.regexp "[ \t\r]+div[ \t\r]+") input in
+      let n, d = (Big_int.big_int_of_string (List.nth l 0), Big_int.big_int_of_string (List.nth l 1)) in
+      let n, d = compute_irr_fract (n, d) in
+      RATIONAL (n, d) }
   | digit+ as n           { NUMBER (Big_int.big_int_of_string n) }
   | address as a          { ADDRESS (String.sub a 1 ((String.length a) - 1)) }
   | duration as d         { DURATION (d) }

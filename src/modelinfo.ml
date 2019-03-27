@@ -7,7 +7,7 @@ exception UnsupportedType        of lident * lident * Location.t
 exception VarNoType              of Location.t
 exception UnsupportedVartype     of Location.t
 exception ExpectedVarType        of lident
-exception CannotConvert          of string
+exception CannotConvert          of Core.big_int * Core.big_int
 exception StringUnsupported
 exception ExpectsOneInitialState of lident
 exception DefaultValueAssignment of lident
