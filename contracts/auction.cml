@@ -16,7 +16,7 @@ action place_bid = {
     c1 : now < deadline
 
   effect
-    bid.add { incumbent = caller; val = transferred };
+    bid.add { incumbent = caller; value = transferred };
     max_bid := max transferred max_bid
 }
 
@@ -36,5 +36,5 @@ action reclaim = {
 
 specification {
   s1 : forall a : address,
-    bid.contains a -> balance > (bid.get a).val
+         bid.contains a -> balance > (bid.get a).value
 }

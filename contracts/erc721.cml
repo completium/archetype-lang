@@ -6,14 +6,13 @@ constant total uint
 
 constant symbol string
 
-variable[%delegable] owner role
-
 asset token = {
-  owner : owner
+  owner[%delegable] : role;
+  id : string;
 }
 
-action transfer_ (newowner : owner) (token : token) = {
-  called by [%delegable] token.owner
+action transfer_ (k : role) (token : token) = {
+  called by [%delegable] (tokenHolder.get k).owner
   effect
     token.owner := newowner
 }

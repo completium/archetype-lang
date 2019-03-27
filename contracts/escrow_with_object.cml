@@ -16,15 +16,18 @@ variable[%traceable] [%mutable_signed [buyer, debitor] (instate Created)]
      penalty tez from seller to debitor = 0.1 * price
 
 (* action deadline *)
-variable[%mutable (buyer or seller) (state = Created)] deadline date
+variable[%mutable (buyer or seller) (instate Created)] deadline date
 
 (* state machine *)
 states =
  | Created initial
  | Aborted
  | Confirmed
- | Canceled
- | Transferred
+ | Canceled    with { s1 : balance = 0 }
+ | Transferred with { s2 : transferred_to(buyer) = price;
+                      s3 : balance = 0;
+                      s4 : needs oracle
+                    }
 
 transition abort from Created = {
   called by buyer or seller

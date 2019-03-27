@@ -22,9 +22,9 @@ asset submission = {
 
 (* state machine *)
 states =
- | Created initial
+ | Created     initial
  | InProgress
- | Done
+ | Done        with { s1 : balance = 0 }
  | Closed
 
 transition confirm from Created = {
@@ -74,8 +74,4 @@ transition decide from InProgress = {
                  let first = submissions.nth(0) in
                  transfer prize to first.competitor)
                else transfer back prize)
-}
-
-specification {
-  s1 : state = Done -> balance = 0
 }

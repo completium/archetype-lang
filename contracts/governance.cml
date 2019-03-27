@@ -3,14 +3,10 @@ model governance
 variable[%transferable] chairperson role
 
 (* vote start *)
-variable[%mutable chairperson (instate Created)] date startDate
+variable[%mutable chairperson (instate Created)] startDate date
 
 (* vote deadline *)
-variable[%mutable chairperson (instate Created)] date deadline
-
-specification {
-  s1 : startdate < deadline
-}
+variable[%mutable chairperson (instate Created)] deadline date
 
 asset voter as role identified by address = {
   address : address;
@@ -28,8 +24,8 @@ asset winner = {
 
 (* state machine *)
 states =
- | Created initial
- | Voting
+ | Created initial with { s1 : is_empty winner }
+ | Voting          with { s2 : is_empty winner }
  | Buried
 
 action register (voter : address) = {
@@ -48,7 +44,7 @@ action vote (val : string) = {
    called by voter
    condition
      c2 : state = Voting;
-     c3 : (voter.get (Caller.address)).hasVoted = false
+     c3 : (voter.get caller).hasVoted = false
 
    effect
      (voter.get caller).hasVoted := true;
@@ -67,9 +63,9 @@ transition bury from Voting = {
 }
 
 specification {
-  s1 : (voter.select(voter.hasVoted = true)).count() = ballot.sum(nbvotes);
-  s2 : state = Created or state = Voting -> is_empty winner;
-  s3 : forall w : winner,
+  s3 : startdate < deadline;
+  s4 : (voter.select(voter.hasVoted = true)).count() = ballot.sum(nbvotes);
+  s5 : forall w : winner,
          forall b : ballot,
            b.nbvotes <= ballot.get(w.value).nbvotes
 }

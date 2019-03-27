@@ -34,35 +34,47 @@ action place_bid = {
   condition
     c1 : auction_start <= now <= auction_end
 
-   effect
-      if pending_returns.contains caller
-      then
-         let bid = (pending_returns.get caller).val in
-         let new_bid = bid + transferred in
-         if new_bid > highest_bid
-         then (
-           highest_bid := new_bid;
-           highest_bidder := caller;
-           pending_returns.remove caller;
-           pending_returns.add { incumbent = highest_bidder;
-                                 val = highest_bid })
-         else
-           pending_returns.update caller { val = new_bid }
+  effect
+    if pending_return.contains caller
+    then
+      let bid = (pending_return.get caller).val in
+      let new_bid = bid + transferred in
+      if new_bid > highest_bid
+      then (
+        (* update pending_return *)
+        pending_return.add { incumbent = highest_bidder;
+                             val       = highest_bid };
+        pending_return.remove caller;
+        (* update highest *)
+        highest_bid    := new_bid;
+        highest_bidder := caller)
       else
-         if transferred > highest_bid
-         then (
-           highest_bid := transferred;
-           highest_bidder := caller;
-           pending_returns.add {incumbent = highest_bidder;
-                                val = highest_bid })
-         else fail (* no need to add bidder since there is
-                      nothing to withdraw *)
+        pending_return.update caller { val = new_bid }
+    else
+      if caller = highest_bidder
+      then
+        (* caller is highest_bidder! accumulate *)
+        highest_bid += transferred
+      else if transferred > highest_bid
+      then (
+        (* update pending_return *)
+        pending_return.add {incumbent = highest_bidder;
+                            val       = highest_bid };
+        (* update highest *)
+        highest_bid := transferred;
+        highest_bidder := caller)
+      else fail (* no need to add bidder since there will
+                           be nothing to withdraw *)
+
 }
 
-action withdraw = {
+(* onlyonce extension specifies that one cannot withdraw more than once *)
+action[%onlyonce] withdraw = {
   condition
     c2 : pending_returns.contains caller
-  effect transfer (pending_returns.get caller).val to caller
+  effect
+    transfer (pending_returns.get caller).val to caller;
+    pending_return.remove caller
 }
 
 transition endAuction from Open = {
