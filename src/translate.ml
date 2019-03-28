@@ -529,11 +529,11 @@ let get_functions decls =
       (let loc = loc i in
        let decl_u = Location.unloc i in
        match decl_u with
-       | Dfunction (name, _args, typ, body) ->
-         {name = name;
+       | Dfunction f ->
+         {name = f.name;
           args = [];
-          return = map_option mk_ptyp typ;
-          body = mk_pterm body;
+          return = map_option mk_ptyp f.ret_t;
+          body = mk_pterm f.body;
           side = false;
           loc = loc;}::acc
        | _ -> acc)

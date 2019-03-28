@@ -286,15 +286,45 @@ contract:
 signature:
 | ACTION x=ident COLON xs=types { Ssignature (x, xs) }
 
-function_item:
+%inline fun_specification:
+| SPECIFICATION xs=named_items { xs }
+
+%inline fun_invariant:
+| INVARIANT i=ident xs=named_items { (i, xs) }
+
+%inline fun_effect:
+| EFFECT e=loc(expr_extended) { e }
+
+%inline fun_body:
+| e=expr { ([], [], e) }
+| LBRACE s=fun_specification
+    i=fun_invariant*
+      e=fun_effect RBRACE
+        { (s, i, e) }
+
+
+%inline function_gen:
  | FUNCTION id=ident xs=function_args
-     r=function_return? EQUAL b=expr
-       { (id, xs, r, b) }
+     r=function_return? EQUAL b=fun_body {
+  let (s, i, b) = b in
+  {
+    name  = id;
+    args  = xs;
+    ret_t = r;
+    specs = s;
+    invs  = i;
+    body  = b;
+  }
+}
+
+function_item:
+| f=function_gen
+    { f }
 
 function_decl:
- | FUNCTION id=ident xs=function_args
-     r=function_return? EQUAL b=expr
-       { Dfunction (id, xs, r, b) }
+| f=function_gen
+    { Dfunction f }
+
 
 specification:
  | SPECIFICATION exts=option(extensions)

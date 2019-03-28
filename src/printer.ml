@@ -535,6 +535,17 @@ let map_option f x =
   | Some y -> f y
   | None -> ()
 
+let pp_function fmt f =
+  Format.fprintf fmt "function %a %a%a %a"
+    pp_id f.name
+    pp_fun_args f.args
+    (pp_option (pp_prefix " : " pp_type)) f.ret_t
+    (fun fmt f -> (if List.length f.specs > 0
+                   then Format.fprintf fmt "= {@\nspecification@\n%a@\neffect@\n%a}"
+                       (pp_list ";@\n  " pp_named_item) f.specs
+                       pp_expr f.body
+                   else Format.fprintf fmt "=@\n%a" pp_expr f.body)) f
+
 let pp_action_properties fmt (props : action_properties) =
   map_option (fun (e, exts) ->
       Format.fprintf fmt "called by%a %a@\n"
@@ -644,12 +655,9 @@ let rec pp_declaration fmt { pldesc = e; _ } =
            (pp_list ";@\n" pp_signature) xs
           (pp_option (pp_prefix " = " pp_expr)) dv
 
-  | Dfunction (id, args, r, b) ->
-      Format.fprintf fmt "function %a %a%a = %a"
-        pp_id id
-        pp_fun_args args
-        (pp_option (pp_prefix " : " pp_type)) r
-        pp_expr b
+  | Dfunction f ->
+    Format.fprintf fmt "%a"
+      pp_function f
 
   | Dspecification (xs, exts) ->
       Format.fprintf fmt "specification%a {@\n@[<v 2>  %a@]@\n}"

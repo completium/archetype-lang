@@ -166,7 +166,7 @@ type transition_r = (lident * expr option * expr option) list
 type action_properties = {
   calledby : (expr * extension list option) option;
   condition : (named_item list * extension list option) option;
-  functions : (lident * args * type_t option * expr) list;
+  functions : s_function list;
   specification : (s_variable * s_action * s_invariant * s_ensure * exts) option;
   invariants : (lident * named_item list * extension list option) list;
 }
@@ -190,6 +190,16 @@ and s_invariant = named_item list option
 and s_ensure = named_item list
 [@@deriving yojson, show {with_path = false}]
 
+and s_function = {
+  name  : lident;
+  args  : args;
+  ret_t : type_t option;
+  specs : named_item list;
+  invs  : (lident * named_item list) list;
+  body  : expr;
+}
+[@@deriving yojson, show {with_path = false}]
+
 (* -------------------------------------------------------------------- *)
 type declaration_r =
   | Duse           of lident                                              (** use *)
@@ -206,7 +216,7 @@ type declaration_r =
   | Dextension     of lident * expr list option                        (** extension *)
   | Dnamespace     of lident * declaration list                        (** namespace *)
   | Dcontract      of lident * signature list * expr option * exts     (** contract *)
-  | Dfunction      of lident * args * type_t option * expr             (** function *)
+  | Dfunction      of s_function                                       (** function *)
   | Dspecification of named_item list * exts                           (** specification *)
 [@@deriving yojson, show {with_path = false}]
 

@@ -76,3 +76,35 @@ states =
  | Defaulted
  | Ready
  | Terminated      with { s2 : balance = 0 }
+
+ function computeExpected (cd : date) : tez = {
+
+  specification
+    s1 : spec1
+
+  invariant redloop
+  i1 : cond1
+
+  invariant intloop
+  i2 : cond2
+
+  effect
+    let expected = 0tz in
+    let redem_date = initial_ in
+    (* early redemption *)
+    redloop : for (i in list) (
+      break
+    );
+    (* interest *)
+    let interest_acc = 0 in
+    intloop : for (i in list) (
+      break
+    );
+    expected
+}
+
+transition checkCompliance from Confirmed = {
+
+  called by owner
+  to Defaulted when actual_transferred >= computeExpected now
+}
