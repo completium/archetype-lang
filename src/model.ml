@@ -252,7 +252,7 @@ type lterm_unloc =
   | Lvar of lident
   | Lfield of lident
   | Lasset of lident
-  | Larray of lterm list
+  | Larray of lident option * lterm list
   | Llit of bval
   | Ldot of lterm * lterm
   | Lconst of const
@@ -284,7 +284,7 @@ type ('id,'typ,'pattern,'term) poly_pterm  =
   | Parith of arithmetic_operator * 'term * 'term
   | Puarith of unary_arithmetic_operator * 'term
   | Pvar of 'id
-  | Parray of ('term) list
+  | Parray of 'id option * ('term) list
   | Plit of bval
   | Pdot of 'term * 'term
   | Pconst of const
@@ -456,7 +456,7 @@ let poly_pterm_map f fi ft fr fp fq = function
     | Parith (o, l, r) -> f (Parith (o, fp l, fp r))
     | Puarith (u, e) -> f (Puarith (u, fp e))
     | Pvar i -> f (Pvar (fi i))
-    | Parray l -> f (Parray (List.map fp l))
+    | Parray (i, l) -> f (Parray (map_option fi i, List.map fp l))
     | Plit v -> f (Plit v)
     | Pdot (l, r) -> f (Pdot (fp l, fp r))
     | Pconst c -> f (Pconst c)
@@ -484,7 +484,7 @@ let poly_pterm_fold f acc = function
     | Pcomp (_o, l, r) -> f (f acc l) r
     | Parith (_o, l, r) -> f (f acc l) r
     | Puarith (_u, e) -> f acc e
-    | Parray l -> List.fold_left f acc l
+    | Parray (_i, l) -> List.fold_left f acc l
     | Pdot (l, r) -> f (f acc l) r
     | Ptuple l -> List.fold_left f acc l
     | _ -> acc

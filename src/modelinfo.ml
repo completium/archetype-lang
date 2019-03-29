@@ -11,6 +11,8 @@ exception CannotConvert          of Core.big_int * Core.big_int
 exception StringUnsupported
 exception ExpectsOneInitialState of lident
 exception DefaultValueAssignment of lident
+exception WrongTypeAsset         of string * string * Location.t
+exception TypeError              of string * string * Location.t
 exception UnsupportedPolicy      of string * string
 exception UnsupportedFeature     of string
 exception NotFound               of string

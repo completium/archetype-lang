@@ -830,7 +830,7 @@ let is_asset_const (e, args) const nb_args =
 
 let is_asset_get           (e, args) = is_asset_const (e, args) Cget 1
 let is_asset_add           (e, args) = is_asset_const (e, args) Cadd 1
-let is_asset_addifnotexist (e, args) = is_asset_const (e, args) Caddifnotexist 2
+let is_asset_addifnotexist (e, args) = is_asset_const (e, args) Caddifnotexist 1
 let is_asset_removeif      (e, args) = is_asset_const (e, args) Cremoveif 1
 
 let dest_asset_const_name = function
@@ -858,7 +858,7 @@ let dest_asset_add (e, args) =
 let dest_asset_addifnotexist (e, args) =
   let asset_name = dest_asset_const_name (unloc e) in
   let arg = match args with
-    | [a; b] -> [a; b]
+    | [a] -> [a]
     | _ -> raise (Anomaly("dest_asset_addifnotexist")) in
   (asset_name, arg)
 
@@ -1229,6 +1229,27 @@ let retrieve_id_from_storage info id =
     | Some ret -> dumloc (Papp (dumloc (Pvar id), [loc_pterm (Pvar "s")])), ret
     | None -> dumloc (Pvar id), Id (unloc id))
 
+let compute_asset_fun_args asset_name arg =
+  match unloc arg.term with
+  | Parray (label, exprs) ->
+    begin
+      (match label with
+       | Some id when not (String.equal (unloc id) asset_name) ->
+         let l, v = deloc id in
+         raise (WrongTypeAsset (v, asset_name, l))
+       | _ -> ());
+      List.map (fun z ->
+          match unloc z with
+          | Parray (_, a) when List.length a = 0 -> mkloc (Location.loc z) (Pvar (dumloc "Nil"))
+          | Pvar id when (String.equal (unloc id) "empty") -> mkloc (Location.loc z) (Pvar (dumloc "Nil"))
+          | _ -> z) exprs
+    end
+  | Pfassign l -> List.map (fun (_, _, z) ->
+      match unloc z with
+      | Pvar id when (String.equal (unloc id) "empty") -> mkloc (Location.loc z) (Pvar (dumloc "Nil"))
+      | _ -> z) l
+  | _ -> raise (Anomaly "process_rec")
+
 let rec process_rec (acc : process_acc) (pterm : Model.pterm) : process_data =
   let loc, v = deloc pterm in
   match v with
@@ -1303,22 +1324,14 @@ let rec process_rec (acc : process_acc) (pterm : Model.pterm) : process_data =
     (
       let asset_name, arg = dest_asset_addifnotexist (e, args) in
       let storage_name = get_storage_name acc in
-      let arg1 = process_rec acc (List.nth arg 0) in
-      let arg2 = process_rec acc (List.nth arg 1) in
+      let arg = process_rec acc (List.nth arg 0) in
       let f = Addifnotexist asset_name in
-      let args : pterm list = (
-        match unloc arg2.term with
-        | Pfassign l -> List.map (fun (_, _, z) ->
-            match unloc z with
-            | Pvar id when (String.equal (unloc id) "empty") -> mkloc (Location.loc z) (Pvar (dumloc "Nil"))
-            | _ -> z) l
-        | _ -> raise (Anomaly "process_rec")
-        ) in
-      let f_arg = dumloc (Ptuple ([mk_var storage_name; arg1.term] @ args)) in
+      let args : pterm list = compute_asset_fun_args asset_name arg in
+      let f_arg = dumloc (Ptuple ([mk_var storage_name] @ args)) in
       {
         dummy_process_data with
         term = mkloc loc (Papp(dumloc (Pvar (dumloc (mk_fun_name f))), [f_arg]));
-        funs = add_fun (Addifnotexist asset_name) (add_funs arg1.funs arg2.funs);
+        funs = add_fun (Addifnotexist asset_name) arg.funs;
         ret = Storage;
         side = is_side_fun f;
       }

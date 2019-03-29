@@ -28,6 +28,7 @@
 (setq cml-number-regexp "[0-9]+")
 (setq cml-float-regexp "[0-9]+\\.[0-9]+")
 (setq cml-label-regexp "^[ ]*[a-zA-z][a-zA-z0-9_]+[ ]*\\:[ ]+")
+(setq cml-label2-regexp "\\:[a-zA-z][a-zA-z0-9_]+[ ]*\\:")
 ;;(setq cml-date-regexp "(-?(?:[1-9][0-9]*)?[0-9]{4})-(1[0-2]|0[1-9])-(3[01]|0[1-9]|[12][0-9])T(2[0-3]|[01][0-9]):([0-5][0-9]):([0-5][0-9])(.[0-9]+)?(Z)?")
 ;;(setq cml-duration-regexp "[0-9]+Y")
 ;;(setq cml-date-regexp
@@ -50,6 +51,7 @@
 ;;   `(,cml-float-regexp . font-lock-builtin-face)
    ;; logical function : "mem" "idem" "before" "after" "fixed" "subset"
    `(,cml-label-regexp . font-lock-preprocessor-face)
+   `(,cml-label2-regexp . font-lock-preprocessor-face)
 
    `( ,(cml-regexp-opt cml-keywords) . font-lock-keyword-face)
    `( ,(cml-regexp-opt cml-constants) . font-lock-constant-face)
