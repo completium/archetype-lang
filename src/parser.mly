@@ -431,30 +431,18 @@ asset:
           { Dasset (x, fields, opts, apo, ops, exts) }
 
 asset_post_option:
-| st=init_states       { APOstates st }
-| cs=asset_constraint  { APOconstraints cs }
-| init=init_asset      { APOinit init }
+| WITH STATES x=ident           { APOstates x }
+| WITH xs=braced(named_items)   { APOconstraints xs }
+| INITIALIZED BY e=simple_expr  { APOinit e }
 
 %inline asset_post_options:
  | xs=asset_post_option* { xs }
-
-%inline asset_constraint:
- | WITH xs=braced(named_items) { xs }
 
 %inline asset_fields:
 | EQUAL fields=braced(fields) { fields }
 
 %inline asset_options:
 | xs=asset_option+ { xs }
-
-%inline init_states:
-| WITH STATES x=ident { x }
-
-%inline init_asset:
-| INITIALIZED BY xs=braced(init_asset_exprs+) { xs }
-
-%inline init_asset_exprs:
-| xs=braced(separated_list(SEMI_COLON, expr)) { xs }
 
 asset_option:
 | AS _x=ident           { AOasrole }
@@ -663,6 +651,9 @@ label:
 %inline simple_expr:
  | x=loc(simple_expr_r) { x }
 
+label_array:
+ | COLON x=label { x }
+
 simple_expr_r:
  | x=simple_expr DOT y=ident
      { Edot (x, y) }
@@ -670,8 +661,8 @@ simple_expr_r:
  | xs=braced(separated_nonempty_list(SEMI_COLON, assign_field_r))
      { EassignFields xs }
 
- | x=bracket(separated_list(COMMA, expr))
-     { Earray x }
+ | LBRACKET l=label_array? xs=separated_list(COMMA, expr) RBRACKET
+     { Earray (l, xs) }
 
  | x=literal
      { Eliteral x }

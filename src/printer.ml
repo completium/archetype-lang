@@ -243,8 +243,9 @@ let rec pp_expr fmt { pldesc = e; _ } =
       Format.fprintf fmt "%a"
         pp_literal x
 
-  | Earray values ->
-      Format.fprintf fmt "[%a]"
+  | Earray (label, values) ->
+      Format.fprintf fmt "[%a%a]"
+        (pp_option (pp_postfix " :" pp_id)) label
         (pp_list ", " pp_expr) values
 
   | Edot (lhs, rhs) ->
@@ -526,9 +527,9 @@ let pp_asset_post_option fmt (apo : asset_post_option) =
   | APOconstraints cs ->
     Format.fprintf fmt " with {@\n @[<v 2>  %a@] } "
       (pp_list ";@\n  " pp_named_item) cs
-  | APOinit init ->
-    Format.fprintf fmt " initialized by {@\n @[<v 2>  %a@] }"
-      (pp_list "@\n" (pp_enclose "{" "}" (pp_list "; " pp_expr))) init
+  | APOinit e ->
+    Format.fprintf fmt " initialized by %a"
+      pp_expr e
 
 let map_option f x =
   match x with

@@ -16,7 +16,7 @@
   '("use" "model" "constant" "variable" "identified" "sorted" "by" "as" "from" "to" "on" "ref" "fun" "initialized" "collection" "queue" "stack" "set" "partition" "asset" "match" "with" "end" "assert" "object" "key" "of" "enum" "states" "initial" "invariant" "transition" "action" "when" "called" "condition" "specification" "effect" "function" "ensure" "let" "if" "then" "else" "for" "in" "break" "transfer" "back" "extension" "namespace" "contract" "and" "or" "not" "forall" "exists" "true" "false"))
 
 (defvar cml-constants
-  '("state" "now" "transferred" "caller" "fail" "balance" "conditions" "effects" "none" "any" "transfer" "mem" "idem" "before" "after" "fixed" "subset"))
+  '("state" "now" "transferred" "caller" "fail" "balance" "conditions" "effects" "none" "any" "transfer" "mem" "idem" "before" "after" "fixed" "subset" "default"))
 
 (defun cml-regexp-opt (l)
   (regexp-opt l 'symbols))

@@ -4,8 +4,6 @@ model extension testInitialized (
 
   asset test_<%aTransaction> = {
     myvariable : string
-  } initialized by {
-    {"a_string"}
-  }
+  } initialized by [["a_string"]]
 
 }

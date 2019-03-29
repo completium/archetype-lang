@@ -103,7 +103,7 @@ type expr_r =
   | Eterm         of name
   | Eop           of operator
   | Eliteral      of literal
-  | Earray        of expr list
+  | Earray        of lident option * expr list
   | Edot          of expr * lident
   | EassignFields of assignment_field list
   | Eapp          of expr * expr list
@@ -234,7 +234,7 @@ and asset_option =
 and asset_post_option =
   | APOstates of lident
   | APOconstraints of named_item list
-  | APOinit of expr list list
+  | APOinit of expr
 [@@deriving yojson, show {with_path = false}]
 
 and state_option =

@@ -7,9 +7,9 @@ constant total uint = 1000
 asset tokenHolder identified by holder = {
   holder[%delegable] : address;
   tokens : int
-} initialized by {
-  { caller; total }
-}
+} initialized by [
+  [caller, total]
+]
 
 action transfer_ (k : address) (quantity : int) = {
 
@@ -19,6 +19,6 @@ action transfer_ (k : address) (quantity : int) = {
   called by (tokenHolder.get k).holder
 
   effect
-    (tokenHolder.get k).tokens += quantity;
-    (tokenHolder.get caller).tokens -= quantity
+    tokenHolder.update k {tokens += quantity};
+    tokenHolder.update caller {tokens -= quantity}
 }
