@@ -121,12 +121,18 @@ let main () =
       (l |> Location.loc |> Location.tostring);
     exit 1
   | Modelinfo.WrongTypeAsset (a, b, l) ->
+    close dispose channel;
     Printf.eprintf "This asset is flaged '%s' but was expected '%s' at %s.\n"
       a b (Location.tostring l);
     exit 1
   | Modelinfo.TypeError (a, b, l) ->
+    close dispose channel;
     Printf.eprintf "This expression has type %s but an expression was expected of %s at %s.\n"
       a b (Location.tostring l);
+    exit 1
+  | Modelinfo.UnsupportedFeature (msg, l) ->
+    close dispose channel;
+    Printf.eprintf "%s at %s.\n" msg (Location.tostring l);
     exit 1
   | Modelinfo.UnsupportedVartype l ->
     close dispose channel;

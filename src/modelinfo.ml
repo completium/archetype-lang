@@ -14,7 +14,7 @@ exception DefaultValueAssignment of lident
 exception WrongTypeAsset         of string * string * Location.t
 exception TypeError              of string * string * Location.t
 exception UnsupportedPolicy      of string * string
-exception UnsupportedFeature     of string
+exception UnsupportedFeature     of string * Location.t
 exception NotFound               of string
 exception Anomaly                of string
 

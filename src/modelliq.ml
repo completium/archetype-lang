@@ -486,7 +486,7 @@ let mk_function_decl (f : function_ws) =
 
 let mk_transaction (f : transaction_ws) =
   let action = match f.action with
-    | None -> raise (Modelinfo.UnsupportedFeature "no action in transaction")
+    | None -> raise (Modelinfo.Anomaly "no action in transaction")
     | Some e -> e in
   let body = mk_lambda f.args f.side action in
   Dlet (mk_ident f.name, false, Expr.RKnone, pterm_to_expr body)

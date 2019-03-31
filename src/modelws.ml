@@ -785,6 +785,7 @@ type asset_function =
   | AddAsset of string
   | Addifnotexist of string
   | AddList of string * string
+  | UpdateAsset of string
   | RemoveIf of string
 [@@deriving show {with_path = false}]
 
@@ -794,6 +795,7 @@ let mk_fun_name = function
   | AddAsset s -> "add_asset_" ^ s
   | Addifnotexist s -> "addifnotexist_" ^ s
   | AddList (s, f) -> "add_list_" ^ s ^ "_" ^ f
+  | UpdateAsset s -> "update_" ^ s
   | RemoveIf s -> "removeif_" ^ s
 
 let is_side_fun = function
@@ -802,6 +804,7 @@ let is_side_fun = function
   | AddAsset _ -> true
   | Addifnotexist _ -> false
   | AddList _ -> true
+  | UpdateAsset _ -> true
   | RemoveIf _ -> false
 
 let add_fun i l =
@@ -831,6 +834,7 @@ let is_asset_const (e, args) const nb_args =
 let is_asset_get           (e, args) = is_asset_const (e, args) Cget 1
 let is_asset_add           (e, args) = is_asset_const (e, args) Cadd 1
 let is_asset_addifnotexist (e, args) = is_asset_const (e, args) Caddifnotexist 1
+let is_asset_update        (e, args) = is_asset_const (e, args) Cupdate 2
 let is_asset_removeif      (e, args) = is_asset_const (e, args) Cremoveif 1
 
 let dest_asset_const_name = function
@@ -860,6 +864,13 @@ let dest_asset_addifnotexist (e, args) =
   let arg = match args with
     | [a] -> [a]
     | _ -> raise (Anomaly("dest_asset_addifnotexist")) in
+  (asset_name, arg)
+
+let dest_asset_update (e, args) =
+  let asset_name = dest_asset_const_name (unloc e) in
+  let arg = match args with
+    | [a; b] -> [a; b]
+    | _ -> raise (Anomaly("dest_asset_update")) in
   (asset_name, arg)
 
 let rec gen_mapper_pterm f p =
@@ -1065,6 +1076,30 @@ let mk_add_list info asset_name field_name =
                     ))))))))))
 }
 
+let mk_update_asset info asset_name =
+  let f = UpdateAsset asset_name in
+  let asset_key = asset_name ^ "_key" in
+  let asset_col = asset_name ^ "_col" in
+  let asset_arg = asset_name ^ "_arg" in {
+    dummy_function with
+    name = lstr (mk_fun_name f);
+    side = is_side_fun f;
+    args = [mk_arg ("p", Some (Ftuple ([Flocal (lstr "storage");
+                                        Ftyp (get_key_type (dumloc asset_name) info)
+                                       ])))];
+    body = loc_pterm (
+      Pletin ("s", Papp (Pvar "get_0_2", [Pvar "p"]), None,
+      Pletin (asset_key, Papp (Pvar "get_1_2", [Pvar "p"]), None,
+              (*      Pletin ("_f", Papp (Pvar "get_2_3", [Pvar "p"]), None,*)
+      Pletin (asset_arg, Papp (Pvar "to_val", [Papp (Pvar (mk_fun_name (Get asset_name)), [Ptuple [Pvar "s"; Pvar asset_key]])]), None,
+              Papp (Pvar "update_storage",[Pvar "s";
+                                           Papp (Pvar (asset_col), [Pvar "s"]);
+                                           Papp (Pdot (Pvar "Map", Pvar "update"),
+                                                 [Pvar (asset_key);
+                                                  Papp (Pvar "Some", [Pvar asset_arg]);
+                                                  Papp (Pvar (asset_col), [Pvar "s"])])])))))
+  }
+
 (*
 let mile_remove_if s f =
   let s= s.mile_col <-
@@ -1119,6 +1154,7 @@ let generate_asset_functions info (l : asset_function list) : function_ws list =
       | AddAsset asset_name -> mk_add_asset info asset_name
       | Addifnotexist asset_name -> mk_addifnotexist info asset_name
       | AddList (asset_name, field_name) -> mk_add_list info asset_name field_name
+      | UpdateAsset asset_name -> mk_update_asset info asset_name
       | RemoveIf asset_name -> mk_removeif info asset_name
     ) l
 
@@ -1336,6 +1372,31 @@ let rec process_rec (acc : process_acc) (pterm : Model.pterm) : process_data =
         side = is_side_fun f;
       }
     )
+  | Papp (e, args) when is_asset_update (e, args)->
+    (
+      let asset_name, arg = dest_asset_update (e, args) in
+      let arg1 = process_rec acc (List.nth arg 0) in
+      let arg2 = process_rec acc (List.nth arg 1) in
+
+      let convert_to_lambda _t =
+        loc_pterm (
+          Plambda ("x", None, false,
+                 Papp (Pvar "update_storage",
+                       [Pvar "x";
+                        Papp (Pvar "tokens", [Pvar "x"]);
+                        Pvar "quantity"]))) in
+
+      let _f = convert_to_lambda arg2.term in
+      let f_arg : pterm =  dumloc (Ptuple [loc_pterm (Pvar "s"); arg1.term]) in
+      let f = UpdateAsset asset_name in
+      {
+        dummy_process_data with
+        term = mkloc loc (Papp(dumloc (Pvar (dumloc (mk_fun_name f))), [f_arg]));
+        funs = [f];
+        ret = Storage;
+        side = is_side_fun f;
+      }
+    )
   | Papp (e, args) when is_asset_removeif (e, args)->
     (
       let asset_name = "mile" in
@@ -1380,14 +1441,10 @@ let rec process_rec (acc : process_acc) (pterm : Model.pterm) : process_data =
       let assigned =
         begin
           match a.ret with
-          | Field (_a, f, g) -> (
-              dumloc (Papp (loc_pterm (Pvar f), [dumloc (Papp (loc_pterm (Pvar "to_val"), [g]))]))
-            )
+          | Field _ -> raise (UnsupportedFeature ("Assignment to a field of asset is not supported yet.", loc))
           | _ -> a.term
         end
       in
-
-      (*print_endline (show_pterm assigned);*)
 
       let v = b.term in
 
@@ -1404,35 +1461,7 @@ let rec process_rec (acc : process_acc) (pterm : Model.pterm) : process_data =
           | OrAssign     -> dumloc (Plogical (Or,    assigned, v))
         ) in
 
-
-      let tabs =
-        begin
-          match a.ret with
-          | Field (a, _f, _g) -> (
-              let dv =
-                (
-                  let t = get_key_type (dumloc a) acc.info in
-                  Plit (dumloc (mk_init_val t))
-                )
-              in
-              let le = loc_pterm (Papp (Pvar (a ^ "_col"), [Pvar "s"])) in
-              (* ((to_val (get_toto (s, "id"))).cpt <- 1) *)
-              let ri = dumloc (Papp (loc_pterm (Pdot (Pvar "Map", Pvar "update")),
-                                      [loc_pterm dv;
-                                       dumloc (Papp (loc_pterm (Pvar "Some"), [
-                                           dumloc (Papp (loc_pterm (Pvar "update_storage"), [
-                                               loc_pterm (Papp ((Pvar "to_val"),
-                                                                [(Papp ((Pvar ("get_" ^ a)),
-                                                                        [(Ptuple [(Pvar "s"); dv])]))]));
-                                               assigned;
-                                               value]))
-                                         ])); le])) in
-              [le; ri]
-            )
-          | _ -> [assigned; value]
-        end
-      in
-      (* s.toto_col <- Map.update "id" (Some ((to_val (get_toto (s, "id"))).cpt <- 1)) s.toto_col *)
+      let tabs = [assigned; value] in
       let p = Papp (loc_pterm (Pvar "update_storage"), [loc_pterm (Pvar "s")] @ tabs) in
       {
         dummy_process_data with
