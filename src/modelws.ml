@@ -1076,28 +1076,30 @@ let mk_add_list info asset_name field_name =
                     ))))))))))
 }
 
-let mk_update_asset info asset_name =
+let mk_update_asset _info asset_name =
   let f = UpdateAsset asset_name in
   let asset_key = asset_name ^ "_key" in
   let asset_col = asset_name ^ "_col" in
-  let asset_arg = asset_name ^ "_arg" in {
+  let asset_arg = asset_name ^ "_arg" in
+  let update_fun = "f" in {
     dummy_function with
     name = lstr (mk_fun_name f);
     side = is_side_fun f;
-    args = [mk_arg ("p", Some (Ftuple ([Flocal (lstr "storage");
+(*    args = [mk_arg ("p", Some (Ftuple ([Flocal (lstr "storage");
                                         Ftyp (get_key_type (dumloc asset_name) info)
-                                       ])))];
+                                       ])))];*)
+    args = [mk_arg ("p", None)];
     body = loc_pterm (
-      Pletin ("s", Papp (Pvar "get_0_2", [Pvar "p"]), None,
-      Pletin (asset_key, Papp (Pvar "get_1_2", [Pvar "p"]), None,
-              (*      Pletin ("_f", Papp (Pvar "get_2_3", [Pvar "p"]), None,*)
-      Pletin (asset_arg, Papp (Pvar "to_val", [Papp (Pvar (mk_fun_name (Get asset_name)), [Ptuple [Pvar "s"; Pvar asset_key]])]), None,
+      Pletin ("s", Papp        (Pvar "get_0_3", [Pvar "p"]), None,
+      Pletin (asset_key,  Papp (Pvar "get_1_3", [Pvar "p"]), None,
+      Pletin (update_fun, Papp (Pvar "get_2_3", [Pvar "p"]), None,
+      Pletin (asset_arg,  Papp (Pvar "to_val", [Papp (Pvar (mk_fun_name (Get asset_name)), [Ptuple [Pvar "s"; Pvar asset_key]])]), None,
               Papp (Pvar "update_storage",[Pvar "s";
                                            Papp (Pvar (asset_col), [Pvar "s"]);
                                            Papp (Pdot (Pvar "Map", Pvar "update"),
                                                  [Pvar (asset_key);
                                                   Papp (Pvar "Some", [Pvar asset_arg]);
-                                                  Papp (Pvar (asset_col), [Pvar "s"])])])))))
+                                                  Papp (Pvar (asset_col), [Pvar "s"])])]))))))
   }
 
 (*
@@ -1265,6 +1267,17 @@ let retrieve_id_from_storage info id =
     | Some ret -> dumloc (Papp (dumloc (Pvar id), [loc_pterm (Pvar "s")])), ret
     | None -> dumloc (Pvar id), Id (unloc id))
 
+let compute_value_from_operator op assigned v =
+  match op with
+  | ValueAssign  -> v
+  | SimpleAssign -> v
+  | PlusAssign   -> dumloc (Parith   (Plus,  assigned, v))
+  | MinusAssign  -> dumloc (Parith   (Minus, assigned, v))
+  | MultAssign   -> dumloc (Parith   (Mult,  assigned, v))
+  | DivAssign    -> dumloc (Parith   (Div,   assigned, v))
+  | AndAssign    -> dumloc (Plogical (And,   assigned, v))
+  | OrAssign     -> dumloc (Plogical (Or,    assigned, v))
+
 let compute_asset_fun_args asset_name arg =
   match unloc arg.term with
   | Parray (label, exprs) ->
@@ -1378,16 +1391,24 @@ let rec process_rec (acc : process_acc) (pterm : Model.pterm) : process_data =
       let arg1 = process_rec acc (List.nth arg 0) in
       let arg2 = process_rec acc (List.nth arg 1) in
 
-      let convert_to_lambda _t =
-        loc_pterm (
-          Plambda ("x", None, false,
-                 Papp (Pvar "update_storage",
-                       [Pvar "x";
-                        Papp (Pvar "tokens", [Pvar "x"]);
-                        Pvar "quantity"]))) in
+      let convert_to_lambda t : pterm =
+        let l = (
+          match unloc t with
+          | Pfassign l -> l
+          | _ -> raise (Anomaly "convert_to_lambda")
+        ) in
 
-      let _f = convert_to_lambda arg2.term in
-      let f_arg : pterm =  dumloc (Ptuple [loc_pterm (Pvar "s"); arg1.term]) in
+        let ll : pterm = List.fold_right (fun (op, (_, field), v) acc ->
+            let assigned = dumloc (Papp (dumloc (Pvar field), [loc_pterm (Pvar "x")])) in
+            let value = compute_value_from_operator op assigned v in
+            dumloc (Pletin (dumloc "x",
+                            dumloc (Papp (loc_pterm (Pvar "update_storage"),
+                                          [loc_pterm (Pvar "x"); assigned; value])), None, acc))
+          ) l (loc_pterm (Pvar "x")) in
+        dumloc (Plambda (dumloc "x", Some (Flocal (lstr asset_name)), false, ll)) in
+
+      let f = convert_to_lambda arg2.term in
+      let f_arg : pterm =  dumloc (Ptuple [loc_pterm (Pvar "s"); arg1.term; f]) in
       let f = UpdateAsset asset_name in
       {
         dummy_process_data with
@@ -1448,18 +1469,7 @@ let rec process_rec (acc : process_acc) (pterm : Model.pterm) : process_data =
 
       let v = b.term in
 
-      let value =
-        (
-          match op with
-          | ValueAssign  -> v
-          | SimpleAssign -> v
-          | PlusAssign   -> dumloc (Parith   (Plus,  assigned, v))
-          | MinusAssign  -> dumloc (Parith   (Minus, assigned, v))
-          | MultAssign   -> dumloc (Parith   (Mult,  assigned, v))
-          | DivAssign    -> dumloc (Parith   (Div,   assigned, v))
-          | AndAssign    -> dumloc (Plogical (And,   assigned, v))
-          | OrAssign     -> dumloc (Plogical (Or,    assigned, v))
-        ) in
+      let value = compute_value_from_operator op assigned v in
 
       let tabs = [assigned; value] in
       let p = Papp (loc_pterm (Pvar "update_storage"), [loc_pterm (Pvar "s")] @ tabs) in
