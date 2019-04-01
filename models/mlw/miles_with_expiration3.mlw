@@ -8,7 +8,7 @@ module Miles
 
   use cml3.Types
   use cml3.Contract
-  use cml3.Ngmap
+  use cml3.Map
   use cml3.Asset
 
   type mile = key
@@ -16,10 +16,10 @@ module Miles
 
   type storage = {
     mutable miles            : list mile;
-    mutable mile_amounts     : ngmap int;
-    mutable mile_expirations : ngmap date;
+    mutable mile_amounts     : map int;
+    mutable mile_expirations : map date;
     mutable owners           : list owner;
-    mutable owner_miles      : ngmap (list mile);
+    mutable owner_miles      : map (list mile);
   }
 
   axiom Amount_gt0 : forall s : storage, m : mile. get s.mile_amounts m > 0

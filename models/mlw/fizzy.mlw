@@ -62,12 +62,6 @@ theory Fizzy
                   action x = a ->
                   Mem.mem tx1 l
 
-(*x:trace. Mem.mem x s.tr ->
-           Some tx = s.ename ->
-           action x = Update Stat ->
-           Mem.mem tx (Cons Updatestatus (Cons Manual Nil))*)
-
-
   predicate is_empty (l : list 'a) = l = Nil
 
   (* CONTRACT ******************************************************************)
@@ -101,34 +95,7 @@ theory Fizzy
    mutable ops          : transfers;
    mutable tr           : traces;
    mutable ename        : option entry;
- }
-  invariant { forall a:action. performed_by_role tr e (Cons a Nil) (Cons owner Nil) }
-  invariant { forall tx:entry. ename = Some tx -> is_empty ops }
-
-(*   invariant { forall tx:entry.
-               performed_by_tx tr ename tx (Update Stat) (Cons Updatestatus (Cons Manual Nil)) }*)
-
-  invariant { forall tx:entry, x:trace. Mem.mem x tr ->
-                                         Some tx = ename ->
-                                         Mem.mem (action x) (Cons (Update Stat) Nil) ->
-                                         Mem.mem tx (Cons Updatestatus Nil(*(Cons Manual Nil)*)) }
-
-(*   invariant { exists r:address. forall a:action, x:trace.
-               Mem.mem (action x) (Cons a Nil) ->
-               Mem.mem x tr ->
-               Mem.mem (caller e) (Cons r Nil) }*)
-
-(*   invariant { not (forall tx:entry, x:trace. Mem.mem x tr ->
-                                         Some tx = ename ->
-                                         action x = Update Stat ->
-                                         tx = Updatestatus) }*)
-
-
-(* invariant { not (may_perform tr ename (Some Addflightinsurance) (Update Stat)) }
-   invariant { may_perform tr ename (Some Updatestatus) (Update Stat) }
-   invariant { may_perform tr ename (Some Manual) (Update Stat) }  *)
-
-   by { owner = 0; ikey = 0; insurances = Nil; flights = Nil;
+ } by { owner = 0; ikey = 0; insurances = Nil; flights = Nil;
         limit = const 0; premium = const 0; indemnity = const 0;
         stat = const Created; productid = const 0; finsurances = const Nil;
         e = empty_env (); ops = Nil; tr = Nil; ename = None }
@@ -153,17 +120,17 @@ theory Fizzy
                  (arrival : string)
                  (st  : status): unit
  raises  { NotFound }
-(* ensures { forall a:action. performed_by_role s.tr s.e (Cons a Nil) (Cons s.owner Nil) }
+ ensures { forall a:action. performed_by_role s.tr s.e (Cons a Nil) (Cons s.owner Nil) }
  ensures { forall tx:entry. Some tx = s.ename ->
            Transfers.sum s.ops 0 (length s.ops) = 0 }
  ensures { forall tx:entry, x:trace. Mem.mem x s.tr ->
                                      Some tx = s.ename ->
                                      Mem.mem (action x) (Cons (Update Stat) Nil) ->
-                                     Mem.mem tx (Cons Updatestatus (Cons Manual Nil)) }*)
+                                     Mem.mem tx (Cons Updatestatus (Cons Manual Nil)) }
 
  =
-(* s.tr  <- Nil;
- s.ops <- Nil;*)
+ s.tr  <- Nil;
+ s.ops <- Nil;
  match s.ename with
  | Some Addflightinsurance ->
    if caller s.e = s.owner
@@ -197,13 +164,6 @@ theory Fizzy
                                            Mem.mem (action x) (Cons (Update Stat) Nil) ->
                                            Mem.mem tx (Cons Updatestatus (Cons Manual Nil)) }
 
-(*     invariant { not (forall tx:entry, x:trace. Mem.mem x s.tr ->
-                                         Some tx = s.ename ->
-                                         action x = Update Stat ->
-                                         tx = Updatestatus) }*)
-
-(*     invariant { may_perform s.tr s.ename (Some Updatestatus) (Update Stat) }
-       invariant { may_perform s.tr s.ename (Some Manual) (Update Stat) } *)
        let k = Asset.nth i l in
        match get s.stat k with
        | Created ->
@@ -231,13 +191,6 @@ theory Fizzy
                                            Mem.mem (action x) (Cons (Update Stat) Nil) ->
                                            Mem.mem tx (Cons Updatestatus (Cons Manual Nil)) }
 
-(*       invariant { not (forall tx:entry, x:trace. Mem.mem x s.tr ->
-                                         Some tx = s.ename ->
-                                         action x = Update Stat ->
-                                         tx = Updatestatus) }*)
-
-(*     invariant { may_perform s.tr s.ename (Some Updatestatus) (Update Stat) }
-       invariant { may_perform s.tr s.ename (Some Manual) (Update Stat) } *)
        let k = Asset.nth i l in
        match get s.stat k with
        | Created ->
@@ -250,78 +203,4 @@ theory Fizzy
  | None -> ()
  end
 
-(*
- let addflightinsurance (s   : storage)
-                        (fi  : string)
-                        (li  : date)
-                        (pre : tez)
-                        (ind : tez)
-                        (pro : string) : unit
-   =
-   s.ename <- Addflightinsurance;
-   if caller s.e = s.owner
-   then (
-     let f = fi in
-     s.flights <- addifnotexist fi s.flights;
-     (* add insurance *)
-     s.insurances <- add s.ikey s.insurances;
-     s.limit      <- set s.limit f li;
-     s.premium    <- set s.premium f pre;
-     s.indemnity  <- set s.indemnity f ind;
-     s.stat       <- set s.stat f Created;
-     s.productid  <- set s.productid f pro;
-     (* update finsurance *)
-     s.finsurances <- set s.finsurances fi (add s.ikey (get s.finsurances f));
-     s.ikey        <- s.ikey + 1;
-     s.tr          <- s.tr ++ mk_trace Addflightinsurance (Insurance (s.ikey-1)) Add;
-     s.tr          <- s.tr ++ mk_trace Addflightinsurance (Flight f) Add
-     )
-   else ()
-
- let updatestatus (s       : storage)
-                  (fk      : string)
-                  (arrival : string) : unit
- raises { NotFound }
- =
- s.ename <- Updatestatus;
- if caller s.e = s.owner
- then
-   let l = get s.finsurances fk in
-   for i=0 to (length l) - 1 do
-     let k = nth i l in
-     match get s.stat k with
-     | Created ->
-       if arrival > get s.limit k
-       then (
-         s.stat <- set s.stat k After;
-         s.tr   <- s.tr ++ mk_trace Updatestatus (Insurance k) (Update Stat)
-       )
-       else ()
-     | _ -> ()
-     end
-   done
- else ()
-
- let manual       (s   : storage)
-                  (fk  : string)
-                  (st  : status) : unit
- raises { NotFound }
- =
- s.ename <- Manual;
- if caller s.e = s.owner
- then
-   let l = get s.finsurances fk in
-   for i=0 to (length l) - 1 do
-   invariant { may_perform s.tr s.ename Updatestatus (Update Stat) }
-   invariant { may_perform s.tr s.ename Manual (Update Stat) }
-     let k = nth i l in
-     match get s.stat k with
-     | Created ->
-       s.stat <- set s.stat k st;
-       s.tr   <- s.tr ++ mk_trace Updatestatus (Insurance k) (Update Stat)
-     | _ -> ()
-     end
-   done
- else ()
-*)
 end
