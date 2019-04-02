@@ -1,10 +1,10 @@
 model autocallable
 
-role issuer = @tz1KksC8RvjUWAbXYJuNrUbontHGor25Cztk
-role owner  = @tz1uNrUbontHGor25CztkKksC8RvjUWAbXYJ
-role oracle = @tz1r25CztkKksC8RvjuNrUWAbXYJUbontHGo  (* exchange *)
+constant issuer role = @tz1KksC8RvjUWAbXYJuNrUbontHGor25Cztk
+constant owner  role = @tz1uNrUbontHGor25CztkKksC8RvjUWAbXYJ
+constant oracle role = @tz1r25CztkKksC8RvjuNrUWAbXYJUbontHGo  (* exchange *)
 
-constant nominal = 1000tz
+constant nominal tez = 1000tz
 
 constant trade      date = 2017-03-14T00:00:00
 constant init       date = 2017-03-14T00:00:00
@@ -18,7 +18,7 @@ constant sg_initial  rational = 46.945
 constant ubs_initial rational = 15.98
 
 constant bac_strike rational = 12.66   (* ~ 0.5 * bac_initial *)
-constant sg_strike  rational = 23.4725 (* ~ 0.5 * sg_initial  *) 
+constant sg_strike  rational = 23.4725 (* ~ 0.5 * sg_initial  *)
 constant ubs_strike rational = 15.98   (* ~ 0.5 * ubs_initial *)
 
 (* CONTRACT DATA *)
@@ -27,20 +27,20 @@ asset early identified by observation = {
   redemption  : date;
   trigger     : rational;
   value       : rational;
-} with { 
-  i1 : 0 <= trigger <= 1
+} with {
+  i1 : 0 <= trigger <= 1;
   i2 : 0 <= value   <= 1
-} initialized by {
-  { 2018-03-14T00:00:00; 2018-03-28T00:00:00; 0.95; 1 };
-  { 2018-06-14T00:00:00; 2018-06-28T00:00:00; 0.95; 1 };
-  { 2018-09-14T00:00:00; 2018-09-28T00:00:00; 0.95; 1 };
-  { 2018-12-14T00:00:00; 2019-01-02T00:00:00; 0.95; 1 };
-  { 2019-03-14T00:00:00; 2019-03-28T00:00:00; 0.80; 1 };
-  { 2019-06-14T00:00:00; 2019-06-28T00:00:00; 0.80; 1 };
-  { 2019-09-16T00:00:00; 2020-09-30T00:00:00; 0.70; 1 };
-  { 2019-12-16T00:00:00; 2020-01-02T00:00:00; 0.70; 1 }
-  { 2020-03-16T00:00:00; 2020-03-30T00:00:00; 0.70; 1 }
-}
+} initialized by [
+  [ 2018-03-14T00:00:00, 2018-03-28T00:00:00, 0.95, 1 ],
+  [ 2018-06-14T00:00:00, 2018-06-28T00:00:00, 0.95, 1 ],
+  [ 2018-09-14T00:00:00, 2018-09-28T00:00:00, 0.95, 1 ],
+  [ 2018-12-14T00:00:00, 2019-01-02T00:00:00, 0.95, 1 ],
+  [ 2019-03-14T00:00:00, 2019-03-28T00:00:00, 0.80, 1 ],
+  [ 2019-06-14T00:00:00, 2019-06-28T00:00:00, 0.80, 1 ],
+  [ 2019-09-16T00:00:00, 2020-09-30T00:00:00, 0.70, 1 ],
+  [ 2019-12-16T00:00:00, 2020-01-02T00:00:00, 0.70, 1 ],
+  [ 2020-03-16T00:00:00, 2020-03-30T00:00:00, 0.70, 1 ]
+]
 
 asset interest identified by observation = {
   observation : date;
@@ -49,20 +49,20 @@ asset interest identified by observation = {
   rate        : rational;
 } with {
   i1 : 0 <= barrier <= 1
- } initialized by {
-  { 2017-06-14T00:00:00; 2017-06-28T00:00:00; 0.5; 2.025  };
-  { 2017-09-14T00:00:00; 2017-09-28T00:00:00; 0.5; 4.05   };
-  { 2017-12-14T00:00:00; 2018-01-02T00:00:00; 0.5; 6.075  };
-  { 2018-03-14T00:00:00; 2018-03-28T00:00:00; 0.5; 8.1    };
-  { 2018-06-14T00:00:00; 2018-06-28T00:00:00; 0.5; 10.125 };
-  { 2018-09-14T00:00:00; 2018-09-28T00:00:00; 0.5; 12.15  };
-  { 2018-12-14T00:00:00; 2019-01-02T00:00:00; 0.5; 14.175 };
-  { 2019-03-14T00:00:00; 2019-03-28T00:00:00; 0.5; 16.2   };
-  { 2019-06-14T00:00:00; 2019-06-28T00:00:00; 0.5; 18.225 };
-  { 2019-09-16T00:00:00; 2019-09-30T00:00:00; 0.5; 20.25  };
-  { 2019-12-16T00:00:00; 2020-01-02T00:00:00; 0.5; 22.275 };
-  { 2020-03-16T00:00:00; 2020-03-30T00:00:00; 0.5; 24.3   }
-}
+} initialized by [
+  [ 2017-06-14T00:00:00, 2017-06-28T00:00:00, 0.5, 2.025  ],
+  [ 2017-09-14T00:00:00, 2017-09-28T00:00:00, 0.5, 4.05   ],
+  [ 2017-12-14T00:00:00, 2018-01-02T00:00:00, 0.5, 6.075  ],
+  [ 2018-03-14T00:00:00, 2018-03-28T00:00:00, 0.5, 8.1    ],
+  [ 2018-06-14T00:00:00, 2018-06-28T00:00:00, 0.5, 10.125 ],
+  [ 2018-09-14T00:00:00, 2018-09-28T00:00:00, 0.5, 12.15  ],
+  [ 2018-12-14T00:00:00, 2019-01-02T00:00:00, 0.5, 14.175 ],
+  [ 2019-03-14T00:00:00, 2019-03-28T00:00:00, 0.5, 16.2   ],
+  [ 2019-06-14T00:00:00, 2019-06-28T00:00:00, 0.5, 18.225 ],
+  [ 2019-09-16T00:00:00, 2019-09-30T00:00:00, 0.5, 20.25  ],
+  [ 2019-12-16T00:00:00, 2020-01-02T00:00:00, 0.5, 22.275 ],
+  [ 2020-03-16T00:00:00, 2020-03-30T00:00:00, 0.5, 24.3   ]
+]
 
 (* underlyings values *)
 asset fixing identified by observation = {
@@ -76,61 +76,61 @@ asset fixing identified by observation = {
 
 function compute_expected_nominal (d : date) : tez = {
 
-  predicate early_redemption (f:fixing) (e:early) = 
-          e.observation = f.observation 
-      and f.bac >= e.trigger * bac_initial 
+  predicate early_redemption (f:fixing) (e:early) =
+          e.observation = f.observation
+      and f.bac >= e.trigger * bac_initial
       and f.sg  >= e.trigger * sg_initial
       and f.ubs >= e.trigger * ubs_initial
- 
-  predicate is_earliest (x:early) (p:early -> predicate) = 
-          p x 
+
+  predicate is_earliest (x:early) (p:early -> bool) =
+          p x
       and forall y:early, if p y then x.observation <= y.observation
 
   specification
-    
-    (* Early redemption *)
-    p1 : forall (e:early) (f:fixing),
-            if 
-                  d <= e.redemption 
-              and is_earliest e (early_redemption f) 
-            then 
-              result = nominal * e.value (* + … interest *)
 
-    (* if each Fixing (Final) is equal to or above its respective Strike: 
+    (* Early redemption *)
+    p1 : forall e : early, forall f : fixing,
+            if
+                  d <= e.redemption
+              and is_earliest e (early_redemption f)
+            then
+              result = nominal * e.value (* + … interest *) ;
+
+    (* if each Fixing (Final) is equal to or above its respective Strike:
        100% of the Nominal in cash *)
-    p2 : forall (e:early) (f:fixing), 
-           if    
+    p2 : forall e : early, forall f : fixing,
+           if
                  d <= e.redemption
              and not (is_earliest e (early_redemption f))
-             and f.bac >= bac_strike 
+             and f.bac >= bac_strike
              and f.sg  >= sg_strike
-             and f.ubs >= usb_strike 
-           then 
+             and f.ubs >= usb_strike
+           then
              result = nominal (* + … interest *)
-           else 
+           else
              (* specify worst *)
              let bac_trigger = f.bac / bac_strike in
              let sg_trigger  = f.sg  / sg_strike  in
-             let ubs_trigger = f.ubs / ubs_strike in 
+             let ubs_trigger = f.ubs / ubs_strike in
              let worst = min (min bac_trigger sg_trigger) ubs_trigger in
              result = worst * nominal (* + … interest *)
-    
-  
+
+
   (* invariant redeemloop
-    … 
+    …
   invariant interestloop
     … *)
 
-  effect 
+  effect
     let expected = 0tz in
     let terminated = false in
-    let redeem_date = final in 
+    let redeem_date = final in
     (* early redemption *)
     redeemloop : for (e in early) (
-      if e.redemption <= cd 
+      if e.redemption <= cd
       then (* is there early redemption ? *)
         let v = fixing.get e.observation in
-        if     v.bac >= e.trigger * bac_initial 
+        if     v.bac >= e.trigger * bac_initial
            and v.sg  >= e.trigger * sg_initial
            and v.ubs >= e.trigger * ubs_initial
         then (
@@ -139,13 +139,13 @@ function compute_expected_nominal (d : date) : tez = {
            terminated := true
         )
       else (* no need to check future observation *)
-        break;
+        break
     );
     (* redemption *)
     if not terminated and redemption <= cd
-    then 
+    then
       let f = fixing.get redemption in
-      if     f.bac >= bac_strike 
+      if     f.bac >= bac_strike
          and f.sg  >= sg_strike
          and f.ubs >= usb_strike
       then
@@ -153,7 +153,7 @@ function compute_expected_nominal (d : date) : tez = {
       else
          let bac_trigger = v.bac / bac_strike in
          let sg_trigger  = v.sg  / sg_strike  in
-         let ubs_trigger = v.ubs / ubs_strike in 
+         let ubs_trigger = v.ubs / ubs_strike in
          let worst = min (min bac_trigger sg_trigger) ubs_trigger in
          expected += worst * nominal;
     (* accumulate interests *)
@@ -162,7 +162,7 @@ function compute_expected_nominal (d : date) : tez = {
       if i.observation <= redem_date and i.payment <= cd
       then
         let v = fixing.get i.observation in
-        if     v.bac >= i.barrier * bac_initial 
+        if     v.bac >= i.barrier * bac_initial
            and v.sg  >= i.barrier * sg_initial
            and v.ubs >= i.barrier * ubs_initial
         then (
@@ -188,12 +188,12 @@ action add_fixing (f[%signedby oracle] : fixing) = {
 }
 
 (* STATE MACHINE *)
-states 
+states =
  | Created initial
  | Canceled
  | Confirmed       with { s1 : balance = 0 } (* contract paid *)
  | Defaulted
- | Terminated      with { s2 : balance = 0 } 
+ | Terminated      with { s2 : balance = 0 }
 
 transition confirm from Created = {
    called by owner
@@ -207,11 +207,10 @@ transition cancel from Created = {
 
 transition check from Confirmed = {
   called by owner
-  to Defaulted when actual_payment < compute_expected now 
+  to Defaulted when actual_payment < compute_expected now
 }
 
 transition terminate from Confirmed = {
   called by issuer
   to Terminated when actual_payment >= compute_expected now
 }
-
