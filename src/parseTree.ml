@@ -162,6 +162,17 @@ and field = field_r loced
 type transition_r = (lident * expr option * expr option) list
 [@@deriving yojson, show {with_path = false}]
 
+type args = lident_typ list
+[@@deriving yojson, show {with_path = false}]
+
+type s_predicate = {
+  name  : lident;
+  args  : args;
+  ret_t : type_t option;
+  body  : expr;
+}
+[@@deriving yojson, show {with_path = false}]
+
 (* -------------------------------------------------------------------- *)
 type action_properties = {
   calledby : (expr * extension list option) option;
@@ -173,9 +184,6 @@ type action_properties = {
 [@@deriving yojson, show {with_path = false}]
 
 and named_item = lident option * expr
-[@@deriving yojson, show {with_path = false}]
-
-and args = lident_typ list
 [@@deriving yojson, show {with_path = false}]
 
 and s_variable = (lident * type_t * expr option) loced list option
@@ -194,6 +202,7 @@ and s_function = {
   name  : lident;
   args  : args;
   ret_t : type_t option;
+  preds : s_predicate list;
   specs : named_item list;
   invs  : (lident * named_item list) list;
   body  : expr;

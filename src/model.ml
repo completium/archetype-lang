@@ -384,10 +384,19 @@ type enum = {
 }
 [@@deriving show {with_path = false}]
 
+type ('id,'typ) gen_predicate = {
+  name         : lident;
+  args         : (('typ, bval) gen_decl) list;
+  return       : 'typ option;
+  body         : lterm;
+}
+[@@deriving show {with_path = false}]
+
 type ('id,'typ,'pattern,'term) gen_function = {
   name         : lident;
   args         : (('typ, bval) gen_decl) list;
   return       : 'typ option;
+  preds        : (('id,'typ) gen_predicate) list;
   body         : ('id,'typ,'pattern,'term) poly_pterm loced;
   side         : bool;
   loc          : Location.t [@opaque];

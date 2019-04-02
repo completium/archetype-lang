@@ -524,6 +524,14 @@ let get_assets decls =
        | _ -> acc)
     ) decls []
 
+let mk_predication (pr : s_predicate) : ('a, 'b) gen_predicate =
+  {
+    name = pr.name;
+    args = [];
+    return = None;
+    body = mk_lterm pr.body;
+  }
+
 let get_functions decls =
   List.fold_right ( fun i acc ->
       (let loc = loc i in
@@ -533,6 +541,7 @@ let get_functions decls =
          {name = f.name;
           args = [];
           return = map_option mk_ptyp f.ret_t;
+          preds = List.map mk_predication f.preds;
           body = mk_pterm f.body;
           side = false;
           loc = loc;}::acc
