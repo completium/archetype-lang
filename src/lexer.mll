@@ -48,6 +48,7 @@
       "specification"       , SPECIFICATION  ;
       "effect"              , EFFECT         ;
       "function"            , FUNCTION       ;
+      "predicate"           , PREDICATE      ;
       "ensure"              , ENSURE         ;
       "let"                 , LET            ;
       "if"                  , IF             ;

@@ -56,6 +56,7 @@
 %token SPECIFICATION
 %token EFFECT
 %token FUNCTION
+%token PREDICATE
 %token ENSURE
 %token LET
 %token IF
@@ -286,6 +287,17 @@ contract:
 signature:
 | ACTION x=ident COLON xs=types { Ssignature (x, xs) }
 
+%inline predicate:
+ | PREDICATE id=ident xs=function_args
+     r=function_return? EQUAL e=loc(expr_extended) {
+  {
+    name  = id;
+    args  = xs;
+    ret_t = r;
+    body  = e;
+  }
+}
+
 %inline fun_specification:
 | SPECIFICATION xs=named_items { xs }
 
@@ -296,21 +308,24 @@ signature:
 | EFFECT e=loc(expr_extended) { e }
 
 %inline fun_body:
-| e=expr { ([], [], e) }
-| LBRACE s=fun_specification
+| e=expr { ([], [], [], e) }
+| LBRACE
+  ps=predicate*
+  s=fun_specification
     i=fun_invariant*
       e=fun_effect RBRACE
-        { (s, i, e) }
+        { (ps, s, i, e) }
 
 
 %inline function_gen:
  | FUNCTION id=ident xs=function_args
      r=function_return? EQUAL b=fun_body {
-  let (s, i, b) = b in
+  let (ps, s, i, b) = b in
   {
     name  = id;
     args  = xs;
     ret_t = r;
+    preds = ps;
     specs = s;
     invs  = i;
     body  = b;
