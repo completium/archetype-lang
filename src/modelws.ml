@@ -41,6 +41,7 @@ type storage_field_type =
   | Fset   of storage_field_type
   | Fmap   of vtyp * storage_field_type
   | Ftuple of storage_field_type list
+  | Flambda of storage_field_type * storage_field_type
 [@@deriving show {with_path = false}]
 
 type storage_field = {
@@ -873,6 +874,13 @@ let dest_asset_update (e, args) =
     | _ -> raise (Anomaly("dest_asset_update")) in
   (asset_name, arg)
 
+let dest_asset_removeif (e, args) =
+  let asset_name = dest_asset_const_name (unloc e) in
+  let arg = match args with
+    | [a] -> a
+    | _ -> raise (Anomaly("dest_asset_removeif")) in
+  (asset_name, arg)
+
 let rec gen_mapper_pterm f p =
   Model.poly_pterm_map
     (fun x -> mkloc (Location.loc p) x)
@@ -1076,30 +1084,32 @@ let mk_add_list info asset_name field_name =
                     ))))))))))
 }
 
-let mk_update_asset _info asset_name =
+let mk_update_asset info asset_name =
   let f = UpdateAsset asset_name in
   let asset_key = asset_name ^ "_key" in
   let asset_col = asset_name ^ "_col" in
   let asset_arg = asset_name ^ "_arg" in
-  let update_fun = "f" in {
+  let update_fun = "f" in
+  let asset_arg2 = asset_arg ^ "2" in
+  {
     dummy_function with
     name = lstr (mk_fun_name f);
     side = is_side_fun f;
-(*    args = [mk_arg ("p", Some (Ftuple ([Flocal (lstr "storage");
-                                        Ftyp (get_key_type (dumloc asset_name) info)
-                                       ])))];*)
-    args = [mk_arg ("p", None)];
+    args = [mk_arg ("p", Some (Ftuple ([Flocal (lstr "storage");
+                                        Ftyp (get_key_type (dumloc asset_name) info);
+                                        Flambda (Flocal (lstr asset_name), Flocal (lstr asset_name))])))];
     body = loc_pterm (
       Pletin ("s", Papp        (Pvar "get_0_3", [Pvar "p"]), None,
       Pletin (asset_key,  Papp (Pvar "get_1_3", [Pvar "p"]), None,
       Pletin (update_fun, Papp (Pvar "get_2_3", [Pvar "p"]), None,
-      Pletin (asset_arg,  Papp (Pvar "to_val", [Papp (Pvar (mk_fun_name (Get asset_name)), [Ptuple [Pvar "s"; Pvar asset_key]])]), None,
+      Pletin (asset_arg,  Papp (Pvar "to_val",  [Papp (Pvar (mk_fun_name (Get asset_name)), [Ptuple [Pvar "s"; Pvar asset_key]])]), None,
+      Pletin (asset_arg2,  Papp (Pvar update_fun, [Pvar asset_arg]), None,
               Papp (Pvar "update_storage",[Pvar "s";
                                            Papp (Pvar (asset_col), [Pvar "s"]);
                                            Papp (Pdot (Pvar "Map", Pvar "update"),
                                                  [Pvar (asset_key);
-                                                  Papp (Pvar "Some", [Pvar asset_arg]);
-                                                  Papp (Pvar (asset_col), [Pvar "s"])])]))))))
+                                                  Papp (Pvar "Some", [Pvar asset_arg2]);
+                                                  Papp (Pvar (asset_col), [Pvar "s"])])])))))))
   }
 
 (*
@@ -1198,6 +1208,14 @@ type process_acc = {
   info : info;
   model : model_unloc;
   start : pterm option;
+  asset : (string * string) option;
+}
+
+let mk_process_acc info m = {
+  info = info;
+  model = m;
+  start = None;
+  asset = None;
 }
 
 type process_ret = {
@@ -1235,37 +1253,49 @@ let compute_const_field asset_name field_name _const pterm : asset_function list
   let f = AddList (asset_name, field_name) in
   [f], Aaa (pterm), Pvar (dumloc (mk_fun_name f))
 
+let to_ret_typ = function
+  | Tasset id -> Some (Asset (unloc id))
+  | Tbuiltin vt -> Some (
+      match vt with
+      | VTbool     -> Bool
+      | VTint      -> Int
+      | VTuint     -> Nat
+      | VTdate     -> Timestamp
+      | VTduration -> Time
+      | VTstring   -> String
+      | VTaddress  -> Address
+      | VTcurrency _ -> Tez
+    )
+  | _ -> None
 
-let extract_id_from_storage info id : ret_typ option =
-  match Modelinfo.get_type_storage info id with
-  | Some a -> Some (
+
+let to_ret_typ_option = function
+  | Some a ->
+    (
       match a with
-      | Some t -> (
-          match t with
-          | Tasset id -> Asset (unloc id)
-          | Tbuiltin vt -> (
-              match vt with
-              | VTbool     -> Bool
-              | VTint      -> Int
-              | VTuint     -> Nat
-              | VTdate     -> Timestamp
-              | VTduration -> Time
-              | VTstring   -> String
-              | VTaddress  -> Address
-              | VTcurrency _ -> Tez
-            )
-          | _ -> None
-        )
+      | Some t -> to_ret_typ t
       | None -> None
     )
   | None -> None
 
-let retrieve_id_from_storage info id =
-  let ret_storage = extract_id_from_storage info (unloc id) in
-  (
-    match ret_storage with
-    | Some ret -> dumloc (Papp (dumloc (Pvar id), [loc_pterm (Pvar "s")])), ret
-    | None -> dumloc (Pvar id), Id (unloc id))
+let retrieve_id_from_storage acc id =
+  let info = acc.info in
+  let name = (unloc id) in
+  match acc.asset with
+  | Some (asset_name, asset_arg) when Modelinfo.is_asset_field info asset_name name  -> (
+      let t = Modelinfo.get_asset_field_type info asset_name name in
+      (
+        match to_ret_typ (unloc t) with
+        | Some ret -> dumloc (Papp (dumloc (Pvar id), [loc_pterm (Pvar asset_arg)])), ret
+        | None -> dumloc (Pvar id), Id (unloc id))
+    )
+  | _ -> (
+      let t = Modelinfo.get_type_storage info name in
+      (
+        match to_ret_typ_option t with
+        | Some ret -> dumloc (Papp (dumloc (Pvar id), [loc_pterm (Pvar "s")])), ret
+        | None -> dumloc (Pvar id), Id (unloc id))
+    )
 
 let compute_value_from_operator op assigned v =
   match op with
@@ -1420,10 +1450,17 @@ let rec process_rec (acc : process_acc) (pterm : Model.pterm) : process_data =
     )
   | Papp (e, args) when is_asset_removeif (e, args)->
     (
-      let asset_name = "mile" in
+      let asset_name, arg = dest_asset_removeif (e, args) in
+      let asset_arg = "x" in
+
+      let a = process_rec {acc with asset = Some (asset_name, asset_arg)} arg in
+
+      let f_arg = dumloc (Plambda (dumloc "x", None, false, a.term)) in
+
+(*      let asset_name = "mile" in
       let f_arg = loc_pterm (Ptuple [Pvar "s"; Plambda ("x", None, false, Papp (Pdot (Pvar "Timestamp", Pvar "tim_lt"),
                                                                                  [Papp (Pvar "expiration", [Pvar "x"]);
-                                                                                  pCurrentTime]))]) in
+                                                                                  pCurrentTime]))]) in*)
       let f = RemoveIf asset_name in
       {
         dummy_process_data with
@@ -1560,7 +1597,7 @@ let rec process_rec (acc : process_acc) (pterm : Model.pterm) : process_data =
     )
   | Pvar id ->
     (
-      let pt, ret = retrieve_id_from_storage acc.info id in
+      let pt, ret = retrieve_id_from_storage acc id in
       {
         dummy_process_data with
         term = pt;
@@ -1609,7 +1646,7 @@ let rec process_rec (acc : process_acc) (pterm : Model.pterm) : process_data =
       let d = (
         match q with
         | Qident id -> (
-            let pt, _ret = retrieve_id_from_storage acc.info id in pt
+            let pt, _ret = retrieve_id_from_storage acc id in pt
           )
         | _ -> raise (Anomaly "transfer process 3")) in
 
@@ -1752,11 +1789,7 @@ let process_action info (m : model_unloc) (t : Model.transaction) (act : Model.p
           Pseq (loc_pterm (pfailwith "not_supported_yet"),
                 pt0)) in
 
-      let acc = {
-        info = info;
-        model = m;
-        start = Some pt0;
-      } in
+      let acc = mk_process_acc info m in
 
       match (unloc m.name), (unloc t.name) with
       | "miles_with_expiration", "consume" ->
@@ -1781,11 +1814,7 @@ let build_match_cond info (m : model_unloc) (cond : Model.pterm option) x : pter
   | None -> x
   | Some c ->
     (
-      let acc = {
-        info = info;
-        model = m;
-        start = None;
-      } in
+      let acc = mk_process_acc info m in
       let cond_process_data = process_rec acc c in
       let cond = cond_process_data.term in
       dumloc (Pseq (dumloc (Pif (dumloc (Pnot cond), loc_pterm (pfailwith "not_valid_condition"), None)), x))

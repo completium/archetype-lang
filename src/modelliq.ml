@@ -111,6 +111,7 @@ let rec field_storage_to_ptyp = function
     let mapid  = str_to_ident "map"  in
     PTtyapp (Qident mapid, [vtyp_to_mlwtyp vt; field_storage_to_ptyp fs])
   | Ftuple l     -> PTtuple (List.map field_storage_to_ptyp l)
+  | Flambda (a, b)  -> PTarrow (field_storage_to_ptyp a, field_storage_to_ptyp b)
 
 let mk_storage_field (f : storage_field) : field = {
   f_loc     = loc2loc (f.loc);

@@ -252,3 +252,11 @@ let get_type_storage info id =
     if List.mem_assoc id info.vars_types
     then Some (List.assoc id info.vars_types)
     else None
+
+let is_asset_field info asset_name asset_field : bool =
+  let l = List.assoc asset_name info.asset_vars in
+  List.mem_assoc asset_field l
+
+let get_asset_field_type info asset_name asset_field =
+  let l = List.assoc asset_name info.asset_vars in
+  List.assoc asset_field l
