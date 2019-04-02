@@ -170,10 +170,11 @@ rule token = parse
 
 (* -------------------------------------------------------------------- *)
 and comment = parse
-  | "*)" { () }
-  | "(*" { comment lexbuf; comment lexbuf }
-  | _    { comment lexbuf }
-  | eof  { lex_error lexbuf "unterminated comment" }
+  | "*)"    { () }
+  | "(*"    { comment lexbuf; comment lexbuf }
+  | newline { Lexing.new_line lexbuf; comment lexbuf }
+  | _       { comment lexbuf }
+  | eof     { lex_error lexbuf "unterminated comment" }
 
 and string buf = parse
   | "\""          { buf }
