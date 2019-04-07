@@ -524,14 +524,6 @@ let get_assets decls =
        | _ -> acc)
     ) decls []
 
-let mk_predication (pr : s_predicate) : ('a, 'b) gen_predicate =
-  {
-    name = pr.name;
-    args = [];
-    return = None;
-    body = mk_lterm pr.body;
-  }
-
 let get_functions decls =
   List.fold_right ( fun i acc ->
       (let loc = loc i in
@@ -541,7 +533,6 @@ let get_functions decls =
          {name = f.name;
           args = [];
           return = map_option mk_ptyp f.ret_t;
-          preds = List.map mk_predication f.preds;
           body = mk_pterm f.body;
           side = false;
           loc = loc;}::acc
@@ -560,7 +551,7 @@ let mk_action loc name args (props : action_properties) = {
   calledby  = Tools.map_option (fun (e, _) -> to_rexpr_calledby e) props.calledby;
   condition = Tools.map_option (fun (items, _) -> List.map (fun a -> let b, c = a in (to_label_pterm (b, c))) items) props.condition;
   transition = None;
-  spec = Tools.map_option (fun (vars, action, invs, ensure, _) -> mk_spec loc vars action invs ensure) props.specification;
+  spec = None;
   action = None;
   side = false;
   loc = loc;
@@ -653,10 +644,9 @@ let get_enums decls =
 
 let get_specs decls =
   List.fold_left ( fun acc i ->
-      (let loc, decl_u = deloc i in
+      (let _loc, decl_u = deloc i in
        match decl_u with
-       | Dspecification (items, _) ->
-         (mk_simple_spec loc items)::acc
+       | Dverification _v -> acc
        | _ -> acc)
     ) [] decls
 

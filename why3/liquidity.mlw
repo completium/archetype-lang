@@ -201,7 +201,7 @@ theory Current
   use Tez
   use Msg
 
-  val sender   unit   : address
+  val sender   unit   : key_hash
   val balance  unit   : tez
   val time_    unit   : timestamp
 

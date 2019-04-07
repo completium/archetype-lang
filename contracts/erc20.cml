@@ -1,12 +1,13 @@
 model erc20
 
-constant name string = "myerc20"
+(*constant name string = "myerc20"*)
 
-constant total uint = 1000
+constant total int = 1000
 
 asset tokenHolder identified by holder = {
   holder[%delegable] : address;
-  tokens : int
+  tokens : int;
+  mystr : string;
 } initialized by [
   [caller, total]
 ]
@@ -16,7 +17,7 @@ action transfer_ (k : address) (quantity : int) = {
   specification
     s1 : before tokenHolder.sum(tokens) = tokenHolder.sum(tokens)
 
-  called by (tokenHolder.get k).holder
+ (* called by (tokenHolder.get k).holder*)
 
   effect
     tokenHolder.update k {tokens += quantity};

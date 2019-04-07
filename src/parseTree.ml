@@ -165,47 +165,43 @@ type transition_r = (lident * expr option * expr option) list
 type args = lident_typ list
 [@@deriving yojson, show {with_path = false}]
 
-type s_predicate = {
+type named_item = lident option * expr
+[@@deriving yojson, show {with_path = false}]
+
+type verification_item_unloc =
+  | Vpredicate of lident * args * expr
+  | Vdefinition of lident * lident * expr
+  | Vaxiom of lident * expr
+  | Vtheorem of lident * expr
+  | Vvariable of lident * type_t * expr option
+  | Vinvariant of lident * named_item list
+  | Veffect of expr
+  | Vspecification of named_item list
+[@@deriving yojson, show {with_path = false}]
+
+type verification_item = verification_item_unloc loced
+[@@deriving yojson, show {with_path = false}]
+
+type verification_unloc = verification_item list * exts
+[@@deriving yojson, show {with_path = false}]
+
+type verification = verification_unloc loced
+[@@deriving yojson, show {with_path = false}]
+
+type s_function = {
   name  : lident;
   args  : args;
   ret_t : type_t option;
+  verif : verification option;
   body  : expr;
 }
 [@@deriving yojson, show {with_path = false}]
 
-(* -------------------------------------------------------------------- *)
 type action_properties = {
-  calledby : (expr * extension list option) option;
-  condition : (named_item list * extension list option) option;
-  functions : s_function list;
-  specification : (s_variable * s_action * s_invariant * s_ensure * exts) option;
-  invariants : (lident * named_item list * extension list option) list;
-}
-[@@deriving yojson, show {with_path = false}]
-
-and named_item = lident option * expr
-[@@deriving yojson, show {with_path = false}]
-
-and s_variable = (lident * type_t * expr option) loced list option
-[@@deriving yojson, show {with_path = false}]
-
-and s_action = expr option
-[@@deriving yojson, show {with_path = false}]
-
-and s_invariant = named_item list option
-[@@deriving yojson, show {with_path = false}]
-
-and s_ensure = named_item list
-[@@deriving yojson, show {with_path = false}]
-
-and s_function = {
-  name  : lident;
-  args  : args;
-  ret_t : type_t option;
-  preds : s_predicate list;
-  specs : named_item list;
-  invs  : (lident * named_item list) list;
-  body  : expr;
+  calledby   : (expr * extension list option) option;
+  condition  : (named_item list * extension list option) option;
+  functions  : s_function list;
+  verif      : verification option;
 }
 [@@deriving yojson, show {with_path = false}]
 
@@ -226,7 +222,7 @@ type declaration_r =
   | Dnamespace     of lident * declaration list                        (** namespace *)
   | Dcontract      of lident * signature list * expr option * exts     (** contract *)
   | Dfunction      of s_function                                       (** function *)
-  | Dspecification of named_item list * exts                           (** specification *)
+  | Dverification  of verification                                     (** verification *)
 [@@deriving yojson, show {with_path = false}]
 
 and value_option =

@@ -396,7 +396,6 @@ type ('id,'typ,'pattern,'term) gen_function = {
   name         : lident;
   args         : (('typ, bval) gen_decl) list;
   return       : 'typ option;
-  preds        : (('id,'typ) gen_predicate) list;
   body         : ('id,'typ,'pattern,'term) poly_pterm loced;
   side         : bool;
   loc          : Location.t [@opaque];

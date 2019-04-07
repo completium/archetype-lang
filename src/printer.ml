@@ -536,16 +536,27 @@ let map_option f x =
   | Some y -> f y
   | None -> ()
 
-let pp_function fmt f =
-  Format.fprintf fmt "function %a %a%a %a"
-    pp_id f.name
-    pp_fun_args f.args
-    (pp_option (pp_prefix " : " pp_type)) f.ret_t
-    (fun fmt f -> (if List.length f.specs > 0
+let pp_verification fmt v =
+  let _v = v in
+  Format.fprintf fmt " specification "
+(*    (fun fmt f -> (if List.length f.specs > 0
                    then Format.fprintf fmt "= {@\nspecification@\n%a@\neffect@\n%a}"
                        (pp_list ";@\n  " pp_named_item) f.specs
                        pp_expr f.body
                    else Format.fprintf fmt "=@\n%a" pp_expr f.body)) f
+*)
+
+let pp_function fmt (f : s_function) =
+  Format.fprintf fmt "function %a %a%a %a"
+    pp_id f.name
+    pp_fun_args f.args
+    (pp_option (pp_prefix " : " pp_type)) f.ret_t
+    (fun fmt f -> ((*if (match f.verif with | Some _ -> true | None -> false)
+                   then Format.fprintf fmt "= {@\nspecification@\n%a@\neffect@\n%a}"
+                       (pp_option pp_verification) f.verif
+                       pp_expr f.body
+                     else*) Format.fprintf fmt "=@\n%a" pp_expr f.body)) f
+
 
 let pp_action_properties fmt (props : action_properties) =
   map_option (fun (e, exts) ->
@@ -660,10 +671,10 @@ let rec pp_declaration fmt { pldesc = e; _ } =
     Format.fprintf fmt "%a"
       pp_function f
 
-  | Dspecification (xs, exts) ->
-      Format.fprintf fmt "specification%a {@\n@[<v 2>  %a@]@\n}"
+  | Dverification v -> pp_verification fmt v
+(*      Format.fprintf fmt "specification%a {@\n@[<v 2>  %a@]@\n}"
         (pp_option (pp_list " " pp_extension)) exts
-        (pp_list ";@\n" pp_named_item) xs
+        (pp_list ";@\n" pp_named_item) xs*)
 
 (* -------------------------------------------------------------------------- *)
 let pp_model fmt { pldesc = m; _ } =

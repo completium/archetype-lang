@@ -430,7 +430,6 @@ let dummy_function = {
   name   = lstr "";
   args   = [];
   return = None;
-  preds  = [];
   body   = loc_pterm Pbreak;
   side   = false;
   loc    = Location.dummy;

@@ -10,8 +10,7 @@
       calledby      = None;
       condition     = None;
       functions     = [];
-      specification = None;
-      invariants    = [];
+      verif         = None;
     }
 
 %}
@@ -48,16 +47,19 @@
 %token ENUM
 %token STATES
 %token INITIAL
-%token INVARIANT
 %token ACTION
 %token CALLED
 %token CONDITION
 %token TRANSITION
+%token VERIFICATION
+%token PREDICATE
+%token DEFINITION
+%token AXIOM
+%token THEOREM
+%token INVARIANT
 %token SPECIFICATION
 %token EFFECT
 %token FUNCTION
-%token PREDICATE
-%token ENSURE
 %token LET
 %token IF
 %token THEN
@@ -223,7 +225,7 @@ declaration_r:
  | x=namespace          { x }
  | x=contract           { x }
  | x=function_decl      { x }
- | x=specification_decl { x }
+ | x=verification_decl  { x }
 
 use:
 | USE x=ident { Duse x }
@@ -287,48 +289,27 @@ contract:
 signature:
 | ACTION x=ident COLON xs=types { Ssignature (x, xs) }
 
-%inline predicate:
- | PREDICATE id=ident xs=function_args
-     r=function_return? EQUAL e=loc(expr_extended) {
-  {
-    name  = id;
-    args  = xs;
-    ret_t = r;
-    body  = e;
-  }
-}
-
-%inline fun_specification:
-| SPECIFICATION xs=named_items { xs }
-
-%inline fun_invariant:
-| INVARIANT i=ident xs=named_items { (i, xs) }
-
 %inline fun_effect:
 | EFFECT e=loc(expr_extended) { e }
 
 %inline fun_body:
-| e=expr { ([], [], [], e) }
+| e=expr { (None, e) }
 | LBRACE
-  ps=predicate*
-  s=fun_specification
-    i=fun_invariant*
+  s=loc(verification)
       e=fun_effect RBRACE
-        { (ps, s, i, e) }
+        { (Some s, e) }
 
 
 %inline function_gen:
  | FUNCTION id=ident xs=function_args
      r=function_return? EQUAL b=fun_body {
-  let (ps, s, i, b) = b in
+  let (s, e) = b in
   {
     name  = id;
     args  = xs;
     ret_t = r;
-    preds = ps;
-    specs = s;
-    invs  = i;
-    body  = b;
+    verif = s;
+    body  = e;
   }
 }
 
@@ -340,39 +321,54 @@ function_decl:
 | f=function_gen
     { Dfunction f }
 
+%inline verif_predicate:
+| PREDICATE id=ident xs=function_args EQUAL e=expr { Vpredicate (id, xs, e) }
 
-specification:
- | SPECIFICATION exts=option(extensions)
-     xs=named_items
-       { (None, None, None, xs, exts) }
+%inline verif_definition:
+| DEFINITION id=ident EQUAL LBRACKET a=ident PIPE e=expr RBRACKET { Vdefinition (id, a, e) }
 
- | SPECIFICATION exts=option(extensions)
-     sv=specification_variables
-     sa=specification_effect?
-     si=specification_invariant?
-     se=specification_ensure
-       { (sv, sa, si, se, exts) }
+%inline verif_axiom:
+| AXIOM id=ident EQUAL x=expr { Vaxiom (id, x) }
 
-specification_decl:
- | SPECIFICATION exts=option(extensions)
-     xs=braced(named_items)
-       { Dspecification (xs, exts) }
+%inline verif_theorem:
+| THEOREM id=ident EQUAL x=expr { Vtheorem (id, x) }
 
-%inline specification_variables:
- | { None }
- | xs=loc(specification_variable)+ { Some xs }
+%inline verif_variable:
+| VARIABLE id=ident t=type_t dv=default_value? { Vvariable (id, t, dv) }
 
-%inline specification_variable :
- | VARIABLE id=ident typ=type_t dv=default_value? { (id, typ, dv) }
+%inline verif_invariant:
+| INVARIANT id=ident xs=named_items { Vinvariant (id, xs) }
 
-%inline specification_effect:
- | EFFECT e=expr { e }
+%inline verif_effect:
+| EFFECT e=expr { Veffect e }
 
-%inline specification_invariant:
- | INVARIANT xs=named_items { xs }
+%inline verif_specification:
+| SPECIFICATION xs=named_items { Vspecification xs }
 
-%inline specification_ensure:
- | ENSURE xs=named_items { xs }
+verif_item:
+| x=verif_predicate     { x }
+| x=verif_definition    { x }
+| x=verif_axiom         { x }
+| x=verif_theorem       { x }
+| x=verif_variable      { x }
+| x=verif_invariant     { x }
+| x=verif_effect        { x }
+| x=verif_specification { x }
+
+verif_items:
+| xs=loc(verif_item)+ { xs }
+
+verification_decl:
+| x=loc(verification) { Dverification x }
+
+verification:
+ | x=loc(verif_specification)
+       { ([x], None) }
+
+ | VERIFICATION exts=option(extensions)
+     xs=verif_items
+       x=loc(verif_specification)
+           { (xs@[x], exts) }
 
 enum:
 | ENUM x=ident EQUAL xs=pipe_idents {Denum (x, xs)}
@@ -503,14 +499,13 @@ transition:
 | EQUAL LBRACE xs=action_properties e=effect? RBRACE { (xs, e) }
 
 action_properties:
-  sp=specification? is=invariant* cb=calledby? cs=condition? fs=function_item*
+  sp=loc(verification)? cb=calledby? cs=condition? fs=function_item*
   {
     {
-      specification = sp;
-      invariants    = is;
       calledby      = cb;
       condition     = cs;
       functions     = fs;
+      verif         = sp;
     }
   }
 

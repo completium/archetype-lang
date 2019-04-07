@@ -13,7 +13,7 @@
   "Keymap for Cml major mode")
 
 (defvar cml-keywords
-  '("use" "model" "constant" "variable" "identified" "sorted" "by" "as" "from" "to" "on" "ref" "fun" "initialized" "collection" "queue" "stack" "set" "partition" "asset" "match" "with" "end" "assert" "object" "key" "of" "enum" "states" "initial" "invariant" "transition" "action" "when" "called" "condition" "specification" "effect" "function" "predicate" "ensure" "let" "if" "then" "else" "for" "in" "break" "transfer" "back" "extension" "namespace" "contract" "and" "or" "not" "forall" "exists" "true" "false"))
+  '("use" "model" "constant" "variable" "identified" "sorted" "by" "as" "from" "to" "on" "ref" "fun" "initialized" "collection" "queue" "stack" "set" "partition" "asset" "match" "with" "end" "assert" "object" "key" "of" "enum" "states" "initial" "invariant" "transition" "action" "when" "called" "condition" "verification" "predicate" "definition" "axiom" "theorem" "specification" "effect" "function" "ensure" "let" "if" "then" "else" "for" "in" "break" "transfer" "back" "extension" "namespace" "contract" "and" "or" "not" "forall" "exists" "true" "false"))
 
 (defvar cml-constants
   '("state" "now" "transferred" "caller" "fail" "balance" "conditions" "effects" "none" "any" "transfer" "mem" "idem" "before" "after" "fixed" "subset" "default"))
