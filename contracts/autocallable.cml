@@ -157,7 +157,7 @@ function compute_expected (d : date) : tez = {
            terminated := true
         )
       else (* no need to check future observation *)
-        break;
+        break
     );
     (* redemption *)
     if not terminated and redemption <= cd
@@ -183,7 +183,7 @@ function compute_expected (d : date) : tez = {
         if     v.bac >= i.barrier * bac_initial
            and v.sg  >= i.barrier * sg_initial
            and v.ubs >= i.barrier * ubs_initial
-        then exp_interests := i.rate * nominal;
+        then exp_interests := i.rate * nominal
     );
     expected += exp_interests;
     return expected
