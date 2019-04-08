@@ -589,9 +589,23 @@ pattern:
 %inline expr:
  | e=loc(expr_r) { e }
 
+%inline ident_typ_q_item:
+ | LPAREN ids=ident+ COLON t=type_t RPAREN { List.map (fun x -> (x, Some t, None)) ids }
+
+ident_typ_q:
+ | xs=ident_typ_q_item+ { List.flatten xs }
+
 expr_r:
  | q=quantifier x=ident_typ1 COMMA y=expr
-     { Equantifier (q, x, y)}
+     { Equantifier (q, x, y) }
+
+ | q=quantifier xs=ident_typ_q COMMA y=expr
+    {
+      (List.fold_right (fun x acc ->
+           let i, t, _ = x in
+           let l = Location.merge (loc i) (loc (Tools.get t)) in
+           mkloc l (Equantifier (q, x, acc))) xs y) |> unloc
+    }
 
  | LET x=ident_typ1 EQUAL e=expr IN y=expr OTHERWISE o=expr
      { Eletin (x, e, y, Some o) }
