@@ -1,4 +1,4 @@
-model extension actionDelegation (
+archetype extension actionDelegation (
 
   variable aRole role
 

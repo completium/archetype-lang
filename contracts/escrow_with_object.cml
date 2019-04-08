@@ -1,4 +1,4 @@
-model escrow_with_object
+archetype escrow_with_object
 
 variable buyer role
 

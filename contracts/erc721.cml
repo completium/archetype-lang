@@ -1,4 +1,4 @@
-model erc721
+archetype erc721
 
 constant name string
 

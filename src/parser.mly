@@ -15,8 +15,7 @@
 
 %}
 
-%token USE
-%token MODEL
+%token ARCHETYPE
 %token CONSTANT
 %token VARIABLE
 %token IDENTIFIED
@@ -157,7 +156,7 @@
 %right STACK SET QUEUE PARTITION COLLECTION
 %nonassoc above_coll
 
-%type <ParseTree.model> main
+%type <ParseTree.archetype> main
 %type <ParseTree.expr> start_expr
 
 %start main start_expr
@@ -190,20 +189,20 @@ start_expr:
       { error ~loc:(loc x) PE_Unknown }
 
 main:
- | x=loc(model_r) { x }
+ | x=loc(archetype_r) { x }
  | x=loc(error)
      { error ~loc:(loc x) PE_Unknown }
 
-model_r:
- | x=implementation_model EOF { x }
- | x=model_extension      EOF { x }
+archetype_r:
+ | x=implementation_archetype EOF { x }
+ | x=archetype_extension      EOF { x }
 
-model_extension:
- | MODEL EXTENSION id=ident xs=paren(declarations) EQUAL ys=braced(declarations)
-     { Mmodelextension (id, xs, ys) }
+archetype_extension:
+ | ARCHETYPE EXTENSION id=ident xs=paren(declarations) EQUAL ys=braced(declarations)
+     { Mextension (id, xs, ys) }
 
-implementation_model:
- | x=declarations { Mmodel x }
+implementation_archetype:
+ | x=declarations { Marchetype x }
 
 %inline declarations:
 | xs=declaration+ { xs }
@@ -212,8 +211,7 @@ implementation_model:
 | e=loc(declaration_r) { e }
 
 declaration_r:
- | x=use                { x }
- | x=model              { x }
+ | x=archetype          { x }
  | x=constant           { x }
  | x=variable           { x }
  | x=enum               { x }
@@ -229,11 +227,8 @@ declaration_r:
  | x=function_decl      { x }
  | x=verification_decl  { x }
 
-use:
-| USE x=ident { Duse x }
-
-model:
-| MODEL exts=option(extensions) x=ident { Dmodel (x, exts) }
+archetype:
+| ARCHETYPE exts=option(extensions) x=ident { Darchetype (x, exts) }
 
 constant:
 | CONSTANT exts=option(extensions) x=ident y=loc(type_ref)

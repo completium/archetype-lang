@@ -1,4 +1,4 @@
-model bond
+archetype bond
 
 enum couponType =
  | Fixed

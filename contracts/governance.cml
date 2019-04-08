@@ -1,4 +1,4 @@
-model governance
+archetype governance
 
 variable[%transferable] chairperson role
 

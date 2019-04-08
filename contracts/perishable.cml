@@ -1,4 +1,4 @@
-model perishable
+archetype perishable
 
 enum productType =
  | Bananas

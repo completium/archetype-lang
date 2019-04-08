@@ -1,4 +1,4 @@
-model test_specification
+archetype test_specification
 
 action tr = {
   specification

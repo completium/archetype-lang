@@ -9,8 +9,7 @@
   let keywords = Hashtbl.create 0
 
   let keywords_ =
-    [ "use"                 , USE            ;
-      "model"               , MODEL          ;
+    [ "archetype"           , ARCHETYPE      ;
       "constant"            , CONSTANT       ;
       "variable"            , VARIABLE       ;
       "identified"          , IDENTIFIED     ;

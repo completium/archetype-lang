@@ -1,4 +1,4 @@
-model extension onlyonce (
+archetype extension onlyonce (
 
   action[%onlyonce] tr
 

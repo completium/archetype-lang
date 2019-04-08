@@ -1,4 +1,4 @@
-model extension mutable (
+archetype extension mutable (
 
   variable[%mutable arole cond] avariable type
 

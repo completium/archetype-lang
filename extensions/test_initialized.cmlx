@@ -1,4 +1,4 @@
-model extension testInitialized (
+archetype extension testInitialized (
   variable[%testInitialized] aVariable string
 ) = {
 

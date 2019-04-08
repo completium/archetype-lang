@@ -1,4 +1,4 @@
-model extension roleDelegation (
+archetype extension roleDelegation (
 
   variable[%delegable] aRole role
 

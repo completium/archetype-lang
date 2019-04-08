@@ -1,4 +1,4 @@
-model autocallable
+archetype autocallable
 
 constant issuer role = @tz1KksC8RvjUWAbXYJuNrUbontHGor25Cztk
 constant owner  role = @tz1uNrUbontHGor25CztkKksC8RvjUWAbXYJ

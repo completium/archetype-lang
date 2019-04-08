@@ -1,4 +1,4 @@
-model extension traceable (
+archetype extension traceable (
 
   variable fromP role
 

@@ -1,4 +1,4 @@
-model competition
+archetype competition
 
 variable[%transferable] organiser role
 

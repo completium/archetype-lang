@@ -1,4 +1,4 @@
-model[%erc20] ico
+archetype[%erc20] ico
 
 constant symbol string = "BCDT"
 

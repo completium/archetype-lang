@@ -1,4 +1,4 @@
-model extension mutable_enum (
+archetype extension mutable_enum (
 
   states[%mutable_enum arole] anenum
 

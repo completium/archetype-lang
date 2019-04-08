@@ -325,23 +325,23 @@ let to_label_pterm (label, pterm) : label_pterm =
     loc = dummy;
   }
 
-let get_name_model (pt : ParseTree.model) : lident =
+let get_name_archetype (pt : ParseTree.archetype) : lident =
   let loc = loc pt in
   let ptu = Location.unloc pt in
   match ptu with
-  | Mmodel decls ->
+  | Marchetype decls ->
     (let res = List.fold_left (fun acc i -> (
            let decl_u = Location.unloc i in
            match decl_u with
-           | Dmodel (id, _exts) -> (match acc with
+           | Darchetype (id, _exts) -> (match acc with
                | None -> Some (unloc id)
-               | _ -> raise (ModelError ("only one name can be set to model.", loc)))
+               | _ -> raise (ModelError ("only one name can be set to archetype.", loc)))
            | _ -> acc)) None decls
      in
       match res with
       | Some id -> (dumloc id)
-      | _ -> raise (ModelError ("no name for model found.", loc)))
-  | _ -> raise (ModelError ("only ParseTree.model can be translated into Model.model.", loc))
+      | _ -> raise (ModelError ("no name for archetype found.", loc)))
+  | _ -> raise (ModelError ("only ParseTree.archetype can be translated into Model.model.", loc))
 
 let to_rexpr_dv_role e =
   let loc, v = deloc e in
@@ -665,14 +665,14 @@ let sanity_check model : Model.model =
   model
 (*  |> check_dv*)
 
-let parseTree_to_model (pt : ParseTree.model) : Model.model =
+let parseTree_to_model (pt : ParseTree.archetype) : Model.model =
   let ptu = Location.unloc pt in
   let decls = match ptu with
-  | Mmodel decls -> decls
+  | Marchetype decls -> decls
   | _ -> [] in
 
   mkloc (loc pt) {
-    name          = get_name_model pt;
+    name          = get_name_archetype pt;
     variables     = get_variables decls;
     assets        = get_assets decls;
     functions     = get_functions decls;

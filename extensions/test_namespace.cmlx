@@ -1,4 +1,4 @@
-model extension test_namespace (
+archetype extension test_namespace (
 
   variable[%test_namespace] avariable type
 

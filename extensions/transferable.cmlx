@@ -1,4 +1,4 @@
-model extension transferable (
+archetype extension transferable (
 
   variable[%transferable] aRole role
 

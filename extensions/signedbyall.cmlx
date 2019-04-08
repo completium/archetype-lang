@@ -1,4 +1,4 @@
-model extension signedbyall (
+archetype extension signedbyall (
   action[%signedbyall roles] aTransaction
 ) = {
 

@@ -1,4 +1,4 @@
-model vehicle_lifecycle
+archetype vehicle_lifecycle
 
 asset owner as role = {
   fn : string;

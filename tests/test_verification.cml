@@ -1,4 +1,4 @@
-model test_verification
+archetype test_verification
 
 action myaction = {
  verification {

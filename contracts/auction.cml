@@ -1,4 +1,4 @@
-model auction
+archetype auction
 
 variable max_bid tez = 0tz
 

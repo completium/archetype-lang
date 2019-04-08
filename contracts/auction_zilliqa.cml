@@ -1,4 +1,4 @@
-model auction_zilliqa
+archetype auction_zilliqa
 
 variable highest_bid tez = 0
 variable highest_bidder address = 0

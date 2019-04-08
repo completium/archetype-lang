@@ -23,6 +23,6 @@ let lexer (lexbuf : L.lexbuf) =
   (token, L.lexeme_start_p lexbuf, L.lexeme_end_p lexbuf)
 
 (* -------------------------------------------------------------------- *)
-let parse_model ?(name = "") (inc : in_channel) =
+let parse_archetype ?(name = "") (inc : in_channel) =
   let reader = lexbuf_from_channel name inc in
   parserfun_entry (fun () -> lexer reader)

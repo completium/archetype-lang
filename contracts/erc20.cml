@@ -1,4 +1,4 @@
-model erc20
+archetype erc20
 
 constant name string = "myerc20"
 

@@ -207,8 +207,7 @@ type action_properties = {
 
 (* -------------------------------------------------------------------- *)
 type declaration_r =
-  | Duse           of lident                                              (** use *)
-  | Dmodel         of lident * extension list option                      (** model *)
+  | Darchetype         of lident * extension list option                      (** archetype *)
   | Dconstant      of lident * type_t * expr option * exts                (** constant *)
   | Dvariable      of lident * type_t * value_option list option * expr option * exts       (** variable *)
   | Denum          of lident * lident list                                           (** enum *)
@@ -265,10 +264,10 @@ and asset_operation =
 [@@deriving yojson, show {with_path = false}]
 
 (* -------------------------------------------------------------------- *)
-type model_r =
-  | Mmodel of declaration list
-  | Mmodelextension of lident * declaration list * declaration list
+type archetype_unloc =
+  | Marchetype of declaration list
+  | Mextension of lident * declaration list * declaration list
 [@@deriving yojson, show {with_path = false}]
 
-and model = model_r loced
+and archetype = archetype_unloc loced
 [@@deriving yojson, show {with_path = false}]

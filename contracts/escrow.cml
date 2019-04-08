@@ -1,4 +1,4 @@
-model escrow
+archetype escrow
 
 variable buyer role
 

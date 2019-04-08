@@ -571,10 +571,7 @@ let pp_effect fmt (code, _) =
 
 let rec pp_declaration fmt { pldesc = e; _ } =
   match e with
-  | Duse id ->
-    Format.fprintf fmt "use %a" pp_id id
-
-  | Dmodel (id, exts) ->
+  | Darchetype (id, exts) ->
     Format.fprintf fmt "model%a %a"
       (pp_option (pp_list " " pp_extension)) exts
       pp_id id
@@ -677,12 +674,12 @@ let rec pp_declaration fmt { pldesc = e; _ } =
         (pp_list ";@\n" pp_named_item) xs*)
 
 (* -------------------------------------------------------------------------- *)
-let pp_model fmt { pldesc = m; _ } =
+let pp_archetype fmt { pldesc = m; _ } =
   match m with
-| Mmodel es ->
+| Marchetype es ->
   Format.fprintf fmt "%a" (pp_list "@,\n" pp_declaration) es
-| Mmodelextension (id, ds, es) ->
-  Format.fprintf fmt "model extension %a (%a) = {%a}"
+| Mextension (id, ds, es) ->
+  Format.fprintf fmt "archetype extension %a (%a) = {%a}"
      pp_id id
     (pp_list "@,\n" pp_declaration) ds
     (pp_list "@,\n" pp_declaration) es
@@ -693,9 +690,9 @@ let string_of__of_pp pp x =
   Format.asprintf "%a" pp x
 
 (* -------------------------------------------------------------------------- *)
-let type_to_str  = string_of__of_pp pp_type
-let expr_to_str  = string_of__of_pp pp_expr
-let extension_to_str = string_of__of_pp pp_extension
-let field_to_str  = string_of__of_pp pp_field
+let type_to_str        = string_of__of_pp pp_type
+let expr_to_str        = string_of__of_pp pp_expr
+let extension_to_str   = string_of__of_pp pp_extension
+let field_to_str       = string_of__of_pp pp_field
 let declaration_to_str = string_of__of_pp pp_declaration
-let model_to_str  = string_of__of_pp pp_model
+let archetype_to_str   = string_of__of_pp pp_archetype

@@ -24,7 +24,7 @@ let translate dl =
   List.iter (Typing.add_decl Loc.dummy_position) modelliq
 
 let read_channel env path file (c: in_channel) =
-  let f = Io.parse_model ~name:file c in
+  let f = Io.parse_archetype ~name:file c in
   Debug.dprintf debug "%s parsed successfully.@." file;
   let file = Filename.basename file in
   let file = Filename.chop_extension file in

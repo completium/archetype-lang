@@ -1,4 +1,4 @@
-model animal_tracking
+archetype animal_tracking
 
 enum animal =
  | Sheep

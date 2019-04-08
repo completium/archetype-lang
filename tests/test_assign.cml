@@ -1,4 +1,4 @@
-model c
+archetype c
 
 variable i int = 0
 

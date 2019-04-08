@@ -1,4 +1,4 @@
-model auction_no_memory
+archetype auction_no_memory
 
 variable bid tez = 0
 variable incumbent address

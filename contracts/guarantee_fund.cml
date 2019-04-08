@@ -1,4 +1,4 @@
-model guarantee_fund
+archetype guarantee_fund
 
 variable admin role
 

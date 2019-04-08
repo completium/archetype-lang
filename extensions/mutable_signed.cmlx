@@ -1,4 +1,4 @@
-model extension mutable_signed (
+archetype extension mutable_signed (
 
   variable[%mutable_signed roles cond] avariable type
 

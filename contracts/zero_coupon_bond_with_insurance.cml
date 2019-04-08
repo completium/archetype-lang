@@ -1,4 +1,4 @@
-model zero_coupon_bond_with_insurance
+archetype zero_coupon_bond_with_insurance
 
 variable issuer role = @tz1KksC8RvjUWAbXYJuNrUbontHGor25Cztk (* seller ‘Alice’ *)
 

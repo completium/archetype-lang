@@ -1,4 +1,4 @@
-model miles_with_expiration
+archetype miles_with_expiration
 
 variable[%transferable] admin role
 

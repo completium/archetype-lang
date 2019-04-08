@@ -1,4 +1,4 @@
-model hello
+archetype hello
 
 variable name string
 

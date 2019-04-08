@@ -1,4 +1,4 @@
-model test_quantifier
+archetype test_quantifier
 
 specification {
   s1 : forall x : asset1, x;

@@ -1,4 +1,4 @@
-model extension signedby (
+archetype extension signedby (
   variable arole role
 
   object[%signedby arole] anObject aType

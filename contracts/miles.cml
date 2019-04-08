@@ -1,4 +1,4 @@
-model miles
+archetype miles
 
 variable owner role
 

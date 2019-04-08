@@ -1,4 +1,4 @@
-model clause_io_acceptance_of_delivery
+archetype clause_io_acceptance_of_delivery
 
 variable shipper role
 

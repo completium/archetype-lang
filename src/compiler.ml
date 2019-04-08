@@ -16,15 +16,15 @@ exception ArgError of string
 
 (* -------------------------------------------------------------------- *)
 let compile_and_print (filename, channel) =
-  let pt = Io.parse_model ~name:filename channel in
+  let pt = Io.parse_archetype ~name:filename channel in
   if !opt_json
-  then Format.printf "%s\n" (Yojson.Safe.to_string (ParseTree.model_to_yojson pt))
+  then Format.printf "%s\n" (Yojson.Safe.to_string (ParseTree.archetype_to_yojson pt))
   else (
   if !opt_pretty_print
-  then Format.printf "%a" Printer.pp_model pt
+  then Format.printf "%a" Printer.pp_archetype pt
   else (
   if !opt_parse
-  then Format.printf "%a\n" ParseTree.pp_model pt
+  then Format.printf "%a\n" ParseTree.pp_archetype pt
   else (
     let model = Translate.parseTree_to_model pt in
     if !opt_model

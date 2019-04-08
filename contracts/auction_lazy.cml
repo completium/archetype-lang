@@ -1,4 +1,4 @@
-model auction_lazy
+archetype auction_lazy
 
 asset bid identified by incumbent = {
   incumbent : address;
