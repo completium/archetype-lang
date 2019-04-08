@@ -27,35 +27,38 @@ action add (ow : address) (newmile : mile) = {
 }
 
 action consume (ow : address) (val : uint) = {
-  specification
+  verification {
+    invariant loop
 
-       p1 : let o = owner.get owner in
-            o.miles.sum(amount) = before o.miles.sum(amount) - val;
+         (* remainder has a decreasing upper bound *)
+         i1 : 0 <= remainder <= to_iter.sum(amount);
 
-       (* sanity checks *)
-       p2 : forall m : removed miles,
-              mem m (before (owner.miles)) and m.expiration >= now;
+         (* removed miles *)
+         i2 : (subset (removed miles) (o.miles.select(expiration >= now)));
 
-       p3 : is_empty added.mile;
+         (* right amount consumed *)
+         i3 : before miles.sum(amount) = miles.sum(amount) + nbmiles - remainder
 
-       p4 : idem (mile.project(not mile.amount));
 
-       p5 : idem ((owner.select(owner.owner <> owner)).miles);
+    specification
 
-       p6 : forall m : removed mile,
-             forall o : fixed mile,
-                m.expiration <= o.expiration
+         p1 : let o = owner.get owner in
+              o.miles.sum(amount) = before o.miles.sum(amount) - val;
 
-  invariant loop
+         (* sanity checks *)
+         p2 : forall m : removed miles,
+                mem m (before (owner.miles)) and m.expiration >= now;
 
-       (* remainder has a decreasing upper bound *)
-       i1 : 0 <= remainder <= to_iter.sum(amount);
+         p3 : is_empty added.mile;
 
-       (* removed miles *)
-       i2 : (subset (removed miles) (o.miles.select(expiration >= now)));
+         p4 : idem (mile.project(not mile.amount));
 
-       (* right amount consumed *)
-       i3 : before miles.sum(amount) = miles.sum(amount) + nbmiles - remainder
+         p5 : idem ((owner.select(owner.owner <> owner)).miles);
+
+         p6 : forall m : removed mile,
+               forall o : fixed mile,
+                  m.expiration <= o.expiration
+  }
 
   called by admin
 

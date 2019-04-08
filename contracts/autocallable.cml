@@ -2,7 +2,7 @@ model autocallable
 
 constant issuer role = @tz1KksC8RvjUWAbXYJuNrUbontHGor25Cztk
 constant owner  role = @tz1uNrUbontHGor25CztkKksC8RvjUWAbXYJ
-constant oracle role = @tz1r25CztkKksC8RvjuNrUWAbXYJUbontHGo  (* exchange *)
+constant oracle role = @tz1r25CztkKksC8RvjuNrUWAbXYJUbontHGo (* exchange *)
 
 constant nominal tez = 1000tz
 
@@ -48,7 +48,7 @@ asset interest identified by observation = {
   barrier     : rational;
   rate        : rational;
 } with {
-  i1 : 0 <= barrier <= 1
+  i3 : 0 <= barrier <= 1
 } initialized by [
   [ 2017-06-14T00:00:00, 2017-06-28T00:00:00, 0.5, 2.025  ],
   [ 2017-09-14T00:00:00, 2017-09-28T00:00:00, 0.5, 4.05   ],
@@ -67,59 +67,77 @@ asset interest identified by observation = {
 (* underlyings values *)
 asset fixing identified by observation = {
   observation : date;
-  bac : rational;  (* Bank of America *)
+  bac : rational;  (* Bank of America Corporation *)
   sg  : rational;  (* Société Générale *)
   ubs : rational;  (* Union des Banques Suisses *)
 }
 
 (* EXPECTED PAYMENT COMPUTATION *)
 
-function compute_expected_nominal (d : date) : tez = {
+function compute_expected (d : date) : tez = {
 
-  predicate early_redemption (f:fixing) (e:early) =
-          e.observation = f.observation
-      and f.bac >= e.trigger * bac_initial
-      and f.sg  >= e.trigger * sg_initial
-      and f.ubs >= e.trigger * ubs_initial
+  verification {
 
-  predicate is_earliest (x:early) (p:early -> bool) =
-          p x
-      and forall y:early, if p y then x.observation <= y.observation
+    (** etrigger is defined as the set of early assets for which
+        the trigger condition is true *)
+    definition etrigger = { e : early |
+      forall f : fixing,
+        if e.obs = f.obs
+        then (* trigger condition *)
+              f.bac >= e.trigger * bac_initial
+          and f.sg  >= e.trigger * sg_initial
+          and f.ubs >= e.trigger * ubs_initial
+    }
 
-  specification
+    (** ibarrier is defined as the set of interest assets for which
+        the barrier condition is true *)
+    definition ibarrier = { i : interest |
+      forall f : fixing,
+        (* retrieving the first element of etrigger *)
+        let efirst = first etrigger in
+          if i.obs = f.obs and i.obs <= efirst.obs
+          then (* barrier condition *)
+                    f.bac >= bac_strike
+                and f.sg  >= sg_strike
+                and f.ubs >= usb_strike
+          otherwise interest
+    }
 
-    (* Early redemption *)
-    p1 : forall e : early, forall f : fixing,
-            if
-                  d <= e.redemption
-              and is_earliest e (early_redemption f)
-            then
-              result = nominal * e.value (* + … interest *) ;
-
-    (* if each Fixing (Final) is equal to or above its respective Strike:
-       100% of the Nominal in cash *)
-    p2 : forall e : early, forall f : fixing,
-           if
-                 d <= e.redemption
-             and not (is_earliest e (early_redemption f))
-             and f.bac >= bac_strike
+    (* … TODO finish specs *)
+    specification
+      (** expected is the sum of redemption nominal and interests *)
+      p_expected :
+        let expected =
+          let ftrigger = first etrigger in
+          (* early redemption *)
+          ftrigger.value * nominal
+          otherwise
+          (* redemption *)
+          let f = fixing.get redemption in
+          if     f.bac >= bac_strike
              and f.sg  >= sg_strike
              and f.ubs >= usb_strike
-           then
-             result = nominal (* + … interest *)
-           else
-             (* specify worst *)
-             let bac_trigger = f.bac / bac_strike in
-             let sg_trigger  = f.sg  / sg_strike  in
-             let ubs_trigger = f.ubs / ubs_strike in
-             let worst = min (min bac_trigger sg_trigger) ubs_trigger in
-             result = worst * nominal (* + … interest *)
-
-
-  (* invariant redeemloop
-    …
-  invariant interestloop
-    … *)
+          then
+             nominal
+          else
+            let bac_trigger = f.bac / bac_strike in
+            let sg_trigger  = f.sg  / sg_strike  in
+            let ubs_trigger = f.ubs / ubs_strike in
+            let worst = min (min bac_trigger sg_trigger) ubs_trigger in
+            worst * nominal
+        in
+        (* interests *)
+        let interests =
+          let lbarrier = last ibarrier in
+            let v = fixing.get i.observation in
+            if    v.bac >= i.barrier * bac_initial
+              and v.sg  >= i.barrier * sg_initial
+              and v.ubs >= i.barrier * ubs_initial
+            then i.rate * nominal
+          otherwize 0
+        in
+         result = expected + interests
+  }
 
   effect
     let expected = 0tz in
@@ -139,7 +157,7 @@ function compute_expected_nominal (d : date) : tez = {
            terminated := true
         )
       else (* no need to check future observation *)
-        break
+        break;
     );
     (* redemption *)
     if not terminated and redemption <= cd
@@ -151,13 +169,13 @@ function compute_expected_nominal (d : date) : tez = {
       then
          expected += nominal
       else
-         let bac_trigger = v.bac / bac_strike in
-         let sg_trigger  = v.sg  / sg_strike  in
-         let ubs_trigger = v.ubs / ubs_strike in
+         let bac_trigger = f.bac / bac_strike in
+         let sg_trigger  = f.sg  / sg_strike  in
+         let ubs_trigger = f.ubs / ubs_strike in
          let worst = min (min bac_trigger sg_trigger) ubs_trigger in
          expected += worst * nominal;
-    (* accumulate interests *)
-    let sum_rate = 0.0 in (* is it enough to specify rational type? *)
+    (* expected interests *)
+    let exp_interests = 0.0 in
     interestloop : for (i in interest) (
       if i.observation <= redem_date and i.payment <= cd
       then
@@ -165,13 +183,9 @@ function compute_expected_nominal (d : date) : tez = {
         if     v.bac >= i.barrier * bac_initial
            and v.sg  >= i.barrier * sg_initial
            and v.ubs >= i.barrier * ubs_initial
-        then (
-           expected += (i.rate - sum_rate) * nominal;
-           (* not sure what “minus the sum of previous
-                             interest payments in %” means … *)
-           sum_rate += i.rate
-        )
+        then exp_interests := i.rate * nominal;
     );
+    expected += exp_interests;
     return expected
 }
 
@@ -188,16 +202,17 @@ action add_fixing (f[%signedby oracle] : fixing) = {
 }
 
 (* STATE MACHINE *)
-states =
- | Created initial
- | Canceled
- | Confirmed       with { s1 : balance = 0 } (* contract paid *)
+states
+ | Created initial (** doc initial state. *)
+ | Canceled        (** owner or issuer has canceled the transaction. *)
+ | Confirmed       (** owner has confirmed. *)
  | Defaulted
- | Terminated      with { s2 : balance = 0 }
+ | Terminated
 
+(** Used by owner to confirm transaction. It transfers the price of contract (nominal) *)
 transition confirm from Created = {
    called by owner
- to Confirmed when transferred = nominal
+   to Confirmed when transferred = nominal
 }
 
 transition cancel from Created = {

@@ -42,6 +42,7 @@
       "initial"             , INITIAL        ;
       "transition"          , TRANSITION     ;
       "action"              , ACTION         ;
+      "effect"              , EFFECT         ;
       "called"              , CALLED         ;
       "condition"           , CONDITION      ;
       "verification"        , VERIFICATION   ;

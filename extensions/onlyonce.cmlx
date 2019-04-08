@@ -5,15 +5,16 @@ model extension onlyonce (
 ) = {
 
   action tr = {
-    specification
+    verification {
       variable call_count int = 0
       effect
         call_count += 1
-      invariant
+      invariant loop
         i1 : conditions -> call_count = 0;
         i2 : call_count <= 1
-      ensure
+      specification
         none
+      }
    }
 
 }

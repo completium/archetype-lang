@@ -127,7 +127,7 @@
 %token <string> DURATION
 %token <string> DATE
 
-/*%nonassoc prec_decl prec_spec*/
+%nonassoc prec_decl
 %nonassoc prec_for prec_transfer
 
 %nonassoc TO IN EQUALGREATER
@@ -221,7 +221,7 @@ declaration_r:
  | x=asset              { x }
  | x=action             { x }
  | x=transition         { x }
-/* | x=dextension         { x }*/
+ | x=dextension         { x }
  | x=namespace          { x }
  | x=contract           { x }
  | x=function_decl      { x }
@@ -262,8 +262,8 @@ value_option:
 %inline to_value:
 | TO x=qualid { x }
 
-/*dextension:
-| PERCENT x=ident xs=nonempty_list(simple_expr)? { Dextension (x, xs) }*/
+dextension:
+| PERCENT x=ident xs=nonempty_list(simple_expr)? { Dextension (x, xs) }
 
 %inline extensions:
 | xs=extension+ { xs }
@@ -295,10 +295,9 @@ signature:
 %inline fun_body:
 | e=expr { (None, e) }
 | LBRACE
-  s=loc(verification)
+  s=verification_fun
       e=fun_effect RBRACE
         { (Some s, e) }
-
 
 %inline function_gen:
  | FUNCTION id=ident xs=function_args
@@ -345,6 +344,9 @@ function_decl:
 %inline verif_specification:
 | SPECIFICATION xs=named_items { Vspecification xs }
 
+%inline verif_specification_braced:
+| SPECIFICATION xs=braced(named_items) { Vspecification xs }
+
 verif_item:
 | x=verif_predicate     { x }
 | x=verif_definition    { x }
@@ -354,8 +356,8 @@ verif_item:
 | x=verif_invariant     { x }
 | x=verif_effect        { x }
 
-verification:
-| x=loc(verif_specification)
+verification(spec):
+| x=loc(spec)
     { ([x], None) }
 
 | VERIFICATION exts=option(extensions) LBRACE
@@ -363,8 +365,11 @@ verification:
       x=loc(verif_specification) RBRACE
         { (xs@[x], exts) }
 
+verification_fun:
+| x=loc(verification(verif_specification)) { x }
+
 verification_decl:
- | x=loc(verification) { Dverification x }
+| x=loc(verification(verif_specification_braced)) { Dverification x }
 
 enum:
 | ENUM x=ident EQUAL xs=pipe_idents {Denum (x, xs)}
@@ -376,10 +381,10 @@ states_values:
 | EQUAL xs=pipe_ident_options { xs }
 
 object_decl:
-| OBJECT exts=extensions? x=ident y=expr { Dobject (x, y, exts) } /* %prec prec_decl*/
+| OBJECT exts=extensions? x=ident y=expr { Dobject (x, y, exts) } %prec prec_decl
 
 key_decl:
-| KEY exts=extensions? x=ident OF y=expr { Dkey (x, y, exts) } /* %prec prec_decl*/
+| KEY exts=extensions? x=ident OF y=expr { Dkey (x, y, exts) } %prec prec_decl
 
 types:
 | xs=separated_nonempty_list(COMMA, type_t) { xs }
@@ -495,7 +500,7 @@ transition:
 | EQUAL LBRACE xs=action_properties e=effect? RBRACE { (xs, e) }
 
 action_properties:
-  sp=loc(verification)? cb=calledby? cs=condition? fs=function_item*
+  sp=verification_fun? cb=calledby? cs=condition? fs=function_item*
   {
     {
       calledby      = cb;

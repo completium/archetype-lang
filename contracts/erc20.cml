@@ -1,6 +1,6 @@
 model erc20
 
-(*constant name string = "myerc20"*)
+constant name string = "myerc20"
 
 constant total int = 1000
 
@@ -17,7 +17,7 @@ action transfer_ (k : address) (quantity : int) = {
   specification
     s1 : before tokenHolder.sum(tokens) = tokenHolder.sum(tokens)
 
- (* called by (tokenHolder.get k).holder*)
+  called by (tokenHolder.get k).holder
 
   effect
     tokenHolder.update k {tokens += quantity};
