@@ -170,7 +170,7 @@ type named_item = lident option * expr
 
 type verification_item_unloc =
   | Vpredicate of lident * args * expr
-  | Vdefinition of lident * lident * expr
+  | Vdefinition of lident * type_t * lident * expr
   | Vaxiom of lident * expr
   | Vtheorem of lident * expr
   | Vvariable of lident * type_t * expr option

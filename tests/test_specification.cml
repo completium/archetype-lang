@@ -1,3 +1,5 @@
+model test_specification
+
 action tr = {
   specification
     s1 : forall x, P x -> y;

@@ -127,7 +127,7 @@
 %token <string> DURATION
 %token <string> DATE
 
-%nonassoc prec_decl
+/*%nonassoc prec_decl prec_spec*/
 %nonassoc prec_for prec_transfer
 
 %nonassoc TO IN EQUALGREATER
@@ -221,7 +221,7 @@ declaration_r:
  | x=asset              { x }
  | x=action             { x }
  | x=transition         { x }
- | x=dextension         { x }
+/* | x=dextension         { x }*/
  | x=namespace          { x }
  | x=contract           { x }
  | x=function_decl      { x }
@@ -262,8 +262,8 @@ value_option:
 %inline to_value:
 | TO x=qualid { x }
 
-dextension:
-| PERCENT x=ident xs=nonempty_list(simple_expr)? { Dextension (x, xs) }
+/*dextension:
+| PERCENT x=ident xs=nonempty_list(simple_expr)? { Dextension (x, xs) }*/
 
 %inline extensions:
 | xs=extension+ { xs }
@@ -325,7 +325,7 @@ function_decl:
 | PREDICATE id=ident xs=function_args EQUAL e=expr { Vpredicate (id, xs, e) }
 
 %inline verif_definition:
-| DEFINITION id=ident EQUAL LBRACKET a=ident PIPE e=expr RBRACKET { Vdefinition (id, a, e) }
+| DEFINITION id=ident EQUAL LBRACE a=ident COLON t=type_t PIPE e=expr RBRACE { Vdefinition (id, t, a, e) }
 
 %inline verif_axiom:
 | AXIOM id=ident EQUAL x=expr { Vaxiom (id, x) }
@@ -353,22 +353,18 @@ verif_item:
 | x=verif_variable      { x }
 | x=verif_invariant     { x }
 | x=verif_effect        { x }
-| x=verif_specification { x }
-
-verif_items:
-| xs=loc(verif_item)+ { xs }
-
-verification_decl:
-| x=loc(verification) { Dverification x }
 
 verification:
- | x=loc(verif_specification)
-       { ([x], None) }
+| x=loc(verif_specification)
+    { ([x], None) }
 
- | VERIFICATION exts=option(extensions)
-     xs=verif_items
-       x=loc(verif_specification)
-           { (xs@[x], exts) }
+| VERIFICATION exts=option(extensions) LBRACE
+    xs=loc(verif_item)*
+      x=loc(verif_specification) RBRACE
+        { (xs@[x], exts) }
+
+verification_decl:
+ | x=loc(verification) { Dverification x }
 
 enum:
 | ENUM x=ident EQUAL xs=pipe_idents {Denum (x, xs)}
@@ -380,10 +376,10 @@ states_values:
 | EQUAL xs=pipe_ident_options { xs }
 
 object_decl:
-| OBJECT exts=extensions? x=ident y=expr { Dobject (x, y, exts) } %prec prec_decl
+| OBJECT exts=extensions? x=ident y=expr { Dobject (x, y, exts) } /* %prec prec_decl*/
 
 key_decl:
-| KEY exts=extensions? x=ident OF y=expr { Dkey (x, y, exts) } %prec prec_decl
+| KEY exts=extensions? x=ident OF y=expr { Dkey (x, y, exts) } /* %prec prec_decl*/
 
 types:
 | xs=separated_nonempty_list(COMMA, type_t) { xs }
@@ -521,11 +517,6 @@ condition:
 
 %inline with_effect:
 | WITH EFFECT x=expr { x }
-
-invariant:
- | INVARIANT exts=option(extensions)
-     id=ident xs=named_items
-       { (id, xs, exts) }
 
 %inline named_items:
  | xs=separated_nonempty_list(SEMI_COLON, named_item) { xs }
