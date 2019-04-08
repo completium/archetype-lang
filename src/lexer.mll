@@ -54,6 +54,7 @@
       "specification"       , SPECIFICATION  ;
       "function"            , FUNCTION       ;
       "let"                 , LET            ;
+      "otherwise"           , OTHERWISE      ;
       "if"                  , IF             ;
       "then"                , THEN           ;
       "else"                , ELSE           ;

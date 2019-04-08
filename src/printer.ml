@@ -316,7 +316,7 @@ let rec pp_expr fmt { pldesc = e; _ } =
         (pp_list " " pp_ident_typ) id_ts
         pp_expr x
 
-  | Eletin (id_t, e, body) ->
+  | Eletin (id_t, e, body, _other) ->
         Format.fprintf fmt "@[@[<hv 0>let %a =@;<1 2>%a@;<1 0>in@]@ %a@]" (*"let %a = %a in %a"*)
         pp_ident_typ id_t
         pp_expr e

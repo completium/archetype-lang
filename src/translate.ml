@@ -228,7 +228,7 @@ let rec mk_lterm (e : expr) : lterm =
              let id, typ, _ = i in
              Llambda (id, map_option mk_ltyp typ, mkloc dummy acc)
            ) (Llambda (ia, map_option mk_ltyp it, mk_lterm body)) t)
-    | Eletin ((i, typ, _), init, body) -> Lletin (i, mk_lterm init,
+    | Eletin ((i, typ, _), init, body, _other) -> Lletin (i, mk_lterm init,
                                                   map_option mk_ltyp typ, mk_lterm body)
     | Ematchwith _ -> raise (ModelError ("match with is not allowed in logical block", loc))
     | Equantifier (q, (id, t, _), e) -> Lquantifer (to_quantifier q, id, map_option mk_ltyp t, mk_lterm e))
@@ -300,7 +300,7 @@ let rec mk_pterm (e : expr) : pterm =
              let id, typ, _ = i in
              Plambda (id, map_option mk_ptyp typ, false, mkloc dummy acc)
            ) (Plambda (ia, map_option mk_ptyp it, false, mk_pterm body)) t)
-    | Eletin ((i, typ, _), init, body) -> Pletin (i, mk_pterm init,
+    | Eletin ((i, typ, _), init, body, _) -> Pletin (i, mk_pterm init,
                                                   map_option mk_ptyp typ, mk_pterm body)
     | Ematchwith (e, l) ->
       let ll = List.fold_left

@@ -100,7 +100,7 @@ function compute_expected (d : date) : tez = {
                     f.bac >= bac_strike
                 and f.sg  >= sg_strike
                 and f.ubs >= usb_strike
-          otherwise interest
+        otherwise interest
     }
 
     (* … TODO finish specs *)
@@ -134,7 +134,7 @@ function compute_expected (d : date) : tez = {
               and v.sg  >= i.barrier * sg_initial
               and v.ubs >= i.barrier * ubs_initial
             then i.rate * nominal
-          otherwize 0
+          otherwise 0
         in
          result = expected + interests
   }
@@ -202,7 +202,7 @@ action add_fixing (f[%signedby oracle] : fixing) = {
 }
 
 (* STATE MACHINE *)
-states
+states =
  | Created initial (** doc initial state. *)
  | Canceled        (** owner or issuer has canceled the transaction. *)
  | Confirmed       (** owner has confirmed. *)

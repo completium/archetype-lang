@@ -67,6 +67,7 @@
 %token FOR
 %token IN
 %token BREAK
+%token OTHERWISE
 %token TRANSFER
 %token BACK
 %token EXTENSION
@@ -131,6 +132,7 @@
 %nonassoc prec_for prec_transfer
 
 %nonassoc TO IN EQUALGREATER
+%right OTHERWISE
 %right THEN ELSE
 
 %left COMMA
@@ -591,8 +593,11 @@ expr_r:
  | q=quantifier x=ident_typ1 COMMA y=expr
      { Equantifier (q, x, y)}
 
+ | LET x=ident_typ1 EQUAL e=expr IN y=expr OTHERWISE o=expr
+     { Eletin (x, e, y, Some o) }
+
  | LET x=ident_typ1 EQUAL e=expr IN y=expr
-     { Eletin (x, e, y) }
+     { Eletin (x, e, y, None) }
 
  | FUN xs=ident_typs EQUALGREATER x=expr
      { Efun (xs, x) }

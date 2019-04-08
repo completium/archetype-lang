@@ -115,7 +115,7 @@ type expr_r =
   | Eassert       of expr
   | Eseq          of expr * expr
   | Efun          of lident_typ list * expr
-  | Eletin        of lident_typ * expr * expr
+  | Eletin        of lident_typ * expr * expr * expr option
   | Ematchwith    of expr * (pattern list * expr) list
   | Equantifier   of quantifier * lident_typ * expr
 [@@deriving yojson, show {with_path = false}]
