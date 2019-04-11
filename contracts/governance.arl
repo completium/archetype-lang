@@ -10,7 +10,7 @@ variable[%mutable chairperson (instate Created)] deadline date
 
 asset voter as role identified by address = {
   address : address;
-  hasVoted : boolean
+  hasVoted : bool
 }
 
 asset ballot identified by value = {

@@ -13,3 +13,4 @@ src/*.o
 .merlin
 test.liq
 ./why3/archetype.cmxs
+why3/archetype.cmxs

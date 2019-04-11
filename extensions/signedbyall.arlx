@@ -4,7 +4,7 @@ archetype extension signedbyall (
 
   asset signer_<%aTransaction> = {
     signer    : address;
-    hasSigned : boolean
+    hasSigned : bool
 (*  } initialized by {
     for (r in roles)
       signer_<%aTransaction>.add {signer = r; hasSigned = false}*)
