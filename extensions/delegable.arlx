@@ -1,4 +1,4 @@
-archetype extension roleDelegation (
+archetype extension delegable (
 
   variable[%delegable] aRole role
 
@@ -11,8 +11,6 @@ archetype extension roleDelegation (
   }
 
 ) = {
-
-  variable aRole role
 
   asset <%aRole>Operators identified by arole = {
     arole      : aRole;

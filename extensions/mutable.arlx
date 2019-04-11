@@ -4,8 +4,6 @@ archetype extension mutable (
 
 ) = {
 
-  variable avariable type
-
   action set_<%avariable> (newvariable : type) = {
     called by arole
     condition set_<%avariable>_c1 : cond

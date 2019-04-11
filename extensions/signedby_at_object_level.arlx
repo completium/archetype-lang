@@ -3,13 +3,13 @@ archetype extension signedby (
 
   object[%signedby arole] anObject aType
 
-  action aTransaction (obj : anObject)
+  action anAction (obj : anObject)
 
 ) = {
 
   key key_<%arole> of oracle
 
-  action aTransaction (signed_<%obj>: signature) = {
+  action anAction (signed_<%obj>: signature) = {
     condition
       c1 : check_signature obj signed_<%obj> key_<%arole>
   }

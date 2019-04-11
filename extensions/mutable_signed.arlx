@@ -4,8 +4,6 @@ archetype extension mutable_signed (
 
 ) = {
 
-  variable avariable type
-
   action[%signedbyall roles] set_<%avariable> (newvariable : type) = {
     condition set_<%avariable>_c1 : cond
     effect
