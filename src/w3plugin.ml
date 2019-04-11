@@ -1,11 +1,11 @@
-open CmlLib
+open ArchetypeLib
 open Why3
 open Pmodule
 open Ptree
 open Wstdlib
 
-let debug = Debug.register_flag "cml"
-  ~desc:"cml plugin debug flag"
+let debug = Debug.register_flag "archetype"
+  ~desc:"archetype plugin debug flag"
 
 (* NO! this will be executed at plugin load, thus
 disabling the warning for ALL WHY3 USERS even if they don't
@@ -64,6 +64,6 @@ let read_channel env path file (c: in_channel) =
   mm
 
 let () =
-  Env.register_format mlw_language "cml_lang" ["cml"] read_channel
-    ~desc:"cml format";
+  Env.register_format mlw_language "archetype_lang" ["archetype"] read_channel
+    ~desc:"archetype format";
   Pdriver.register_printer "liquidity" Liq_printer.liq_printer

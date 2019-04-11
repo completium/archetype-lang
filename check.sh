@@ -76,24 +76,24 @@ process () {
 
 printf '%-48s%s\n' '' '  PARSE   MODEL   W_STR   MAP   EXTRACT'
 
-for i in contracts/*.cml; do
+for i in contracts/*.arl; do
   process $i
 done
 
 echo ""
-for i in tests/*.cml; do
+for i in tests/*.arl; do
   process $i
 done
 
 echo ""
-for i in extensions/*.cmlx; do
+for i in extensions/*.arlx; do
   process $i
 done
 
 echo ""
 
 if [ ${NB_ERR} -eq 0 ]; then
-    echo "all cml[x] files compile."
+    echo "all arl[x] files compile."
 else
     echo -e "\033[31mErrors of parse: ${NB_ERR} \033[0m"
 fi

@@ -1,5 +1,5 @@
 (* -------------------------------------------------------------------- *)
-open CmlLib
+open ArchetypeLib
 open Core
 
 let opt_json = ref false
@@ -47,12 +47,12 @@ let close dispose channel =
 (* -------------------------------------------------------------------- *)
 let main () =
   let arg_list = Arg.align [
-      "--json", Arg.Set opt_json, " Output CML in JSON representation";
+      "--json", Arg.Set opt_json, " Output Archetype in JSON representation";
       "-PP", Arg.Set opt_pretty_print, " Pretty print";
       "-P", Arg.Set opt_parse, " Print raw parse tree";
       "-M", Arg.Set opt_model, " Print raw model";
       "-W", Arg.Set opt_modelws, " Print raw model_with_storage";
-      "-L", Arg.Set opt_modelliq, " Output CML in liquidity";
+      "-L", Arg.Set opt_modelliq, " Output Archetype in liquidity";
       "-T", Arg.Set opt_pterm, " Print pterm";
       "--storage-policy",
       Arg.String (fun s -> match s with

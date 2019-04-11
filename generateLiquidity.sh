@@ -2,7 +2,7 @@
 
 tmpliq=$(mktemp /tmp/liq.XXXXXX)
 if [ $# -gt 0 ] && [ -f ${1} ]; then
-    why3 extract -L ~/cml-lang/why3/lib -F cml_lang -D liquidity $1 >> $tmpliq
+    why3 extract -L ~/archetype-lang/why3/lib -F archetype_lang -D liquidity $1 >> $tmpliq
 else
     while read line; do
     echo "$line" >> $tmpliq

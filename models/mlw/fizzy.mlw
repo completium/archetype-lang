@@ -1,9 +1,9 @@
 theory Fizzy
 
-  use cml3.Contract
-  use cml3.Types
-  use cml3.Map
-  use cml3.Asset
+  use archetype3.Contract
+  use archetype3.Types
+  use archetype3.Map
+  use archetype3.Asset
   use int.Int
   use list.List
   use list.Append
@@ -106,7 +106,7 @@ theory Fizzy
    | None   -> 0
    end
 
- clone cml3.Sum as Transfers with type storage = storage,
+ clone archetype3.Sum as Transfers with type storage = storage,
                                   type t       = transfer,
                                   function f   = get_transfer_amount
 

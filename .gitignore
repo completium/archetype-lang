@@ -12,3 +12,4 @@ src/*.o
 *.exe
 .merlin
 test.liq
+./why3/archetype.cmxs

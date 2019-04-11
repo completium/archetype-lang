@@ -6,10 +6,10 @@ module Miles
   use list.List
   use set.Fset
 
-  use cml3.Types
-  use cml3.Contract
-  use cml3.Map
-  use cml3.Asset
+  use archetype3.Types
+  use archetype3.Contract
+  use archetype3.Map
+  use archetype3.Asset
 
   type mile = key
   type owner = key
@@ -71,7 +71,7 @@ module Miles
   reads { e, s }
   get_expiration s m > now e
 
-  clone cml3.When as Expiration   with type     storage = storage,
+  clone archetype3.When as Expiration   with type     storage = storage,
                                        type     asset   = mile,
                                        val      test    = by_expiration
 
@@ -82,7 +82,7 @@ module Miles
   let function get_coll_amount (s : storage) (c : list mile) (i : int) : int =
     nth i 0 c
 
-  clone cml3.Sum as Amounts  with type     storage = storage,
+  clone archetype3.Sum as Amounts  with type     storage = storage,
                                   type     asset   = mile,
                                   function f       = get_coll_amount
 
@@ -105,7 +105,7 @@ module Miles
 
   ensures { Fset.is_empty (diff s.miles (old s).miles) }
 
-  (* cml 'invariant (mile.project(not mile.amount))) *)
+  (* archetype 'invariant (mile.project(not mile.amount))) *)
   ensures { forall m : mile. mem m s.miles /\ mem m (old s).miles ->
     get_expiration s m = get_expiration (old s) m }
 

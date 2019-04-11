@@ -7,9 +7,9 @@ theory Miles
   use set.Fset
   use set.FsetSum
 
-  use cml.Types
-  use cml.Contract
-  use cml.Ngmap
+  use archetype.Types
+  use archetype.Contract
+  use archetype.Ngmap
 
   use array.Array
 
@@ -80,7 +80,7 @@ theory Miles
   function get_array_amount (s : storage) (a : array key) (i : int) : int =
   get_amount s a[i]
 
-  clone cml.Sum as Amounts with type     storage = storage,
+  clone archetype.Sum as Amounts with type     storage = storage,
                                 type     asset   = mile,
                                 function f       = get_array_amount
 
@@ -102,7 +102,7 @@ theory Miles
 
   ensures { Fset.is_empty (Fset.diff s.miles (old s).miles) }
 
-  (* cml 'invariant (mile.project(not mile.amount))) *)
+  (* archetype 'invariant (mile.project(not mile.amount))) *)
   ensures { forall m : mile. Fset.mem m s.miles /\ Fset.mem m (old s).miles ->
     get_expiration s m = get_expiration (old s) m }
 

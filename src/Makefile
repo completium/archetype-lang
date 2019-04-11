@@ -7,19 +7,19 @@ PROFILE  ?= dev
 COMPILER := compiler.exe
 
 # --------------------------------------------------------------------
-all: $(COMPILER) cmlLib plugin .merlin
+all: $(COMPILER) archetypeLib plugin .merlin
 
 run: __force__
 	dune exec ./$(COMPILER)
 
 compiler: __force__
-	dune build --profile=$(PROFILE) cmlLib.cmxa
+	dune build --profile=$(PROFILE) archetypeLib.cmxa
 
-cmlLib: __force__
-	dune build --profile=$(PROFILE) cmlLib.cmxa
+archetypeLib: __force__
+	dune build --profile=$(PROFILE) archetypeLib.cmxa
 
 plugin: __force__
-	dune build --profile=$(PROFILE) cml.cmxs
+	dune build --profile=$(PROFILE) archetype.cmxs
 
 clean: __force__
 	dune clean

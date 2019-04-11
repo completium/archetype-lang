@@ -9,7 +9,7 @@
 
 
 (library
-  (name cmlLib)
+  (name archetypeLib)
   (preprocess
     (pps ppx_deriving.std ppx_deriving_yojson)
   )
@@ -21,12 +21,12 @@
 (library
   (name w3plugin)
   (modules w3plugin)
-  (libraries cmlLib)
+  (libraries archetypeLib)
 )
 
 (rule
- (targets cml.cmxs)
- (deps    cmlLib.cmxa w3plugin.cmxa)
+ (targets archetype.cmxs)
+ (deps    archetypeLib.cmxa w3plugin.cmxa)
  (action  (run ocamlopt -shared -linkall -o %{targets}
             %{lib:easy-format:easy_format.cmxa}
             %{lib:biniou:biniou.cmxa}
@@ -38,5 +38,5 @@
 
 (executable
   (modules extract compiler)
-  (libraries cmlLib menhirLib why3)
+  (libraries archetypeLib menhirLib why3)
   (name     compiler))

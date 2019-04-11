@@ -1,18 +1,18 @@
 {
     "smart-contract" : {
         "name" :"Fizzy";
-        "url" : "https://github.com/edukera/cml-lang/blob/master/contracts/fizzy.cml";
+        "url" : "https://github.com/edukera/archetype-lang/blob/master/contracts/fizzy.archetype";
         "property": {
             "id":"fizzy_p2";
             "desc":"No ether is recieved or transferred by the fizzy smart contract";
             "formula": {
-                "lang":"cml"
+                "lang":"archetype"
                 "code":"transfers_by anytx = 0 /\ received_by anytx = 0"
             };
             "proof": {
                 "type" : "why3";
                 "version" : "3.1.1.1";
-                "cmd" : "why3 solve -L ~/cml/wh3/lib/ -D cml -T Fizzy -a split_vc -o ."
+                "cmd" : "why3 solve -L ~/archetype/wh3/lib/ -D archetype -T Fizzy -a split_vc -o ."
                 "mlw" : "theory Task
                          (* use why3.BuiltIn.BuiltIn *)
 
@@ -286,7 +286,7 @@
 
                          function max_uint [@model_trace:max_uint] : int = max_uint32
 
-                         (* use cml3.Types *)
+                         (* use archetype3.Types *)
 
                          type list 'a =
                            | Nil
@@ -553,7 +553,7 @@
 
                          function now (e:env) : int = now_ e
 
-                         (* use cml3.Contract *)
+                         (* use archetype3.Contract *)
 
                          type map1 'value = infix_mngt int 'value
 
@@ -564,7 +564,7 @@
 
                          function const (v:'value) : infix_mngt int 'value = fun us:int -> v
 
-                         (* use cml3.Map1 *)
+                         (* use archetype3.Map1 *)
 
                          function elements (l:list 'a) : set 'a =
                            match l with
@@ -632,7 +632,7 @@
                          axiom split_mem : forall l:list 'a, x1:'a, y:'a. mem x1 l \/ (x1 = y) <-> mem
                            x1 (infix_plpl l (Cons y (Nil:list 'a)))
 
-                         (* use cml3.Asset *)
+                         (* use archetype3.Asset *)
 
                          type entry =
                            | Addflightinsurance
@@ -747,7 +747,7 @@
                            (get_transfer_amount s c1 k = get_transfer_amount s c2 k)) -> (sum2 c1 i
                            j = sum2 c2 i j)
 
-                         (* clone cml3.Sum with type t19 = transfer, type storage1 = storage,
+                         (* clone archetype3.Sum with type t19 = transfer, type storage1 = storage,
                            function sum3 = sum2, function f = get_transfer_amount,
                            prop Sum_eq2 = Sum_eq1, prop Sum_transitivity2 = Sum_transitivity1,
                            prop Sum_right_extension1 = Sum_right_extension,

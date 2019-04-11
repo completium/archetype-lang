@@ -2,8 +2,8 @@ module Escrow
 
   use int.Int
 
-  use cml.Types
-  use cml.Contract
+  use archetype.Types
+  use archetype.Contract
 
   type states = Created | Aborted | Confirmed | Canceled | Transferred
 
@@ -22,14 +22,14 @@ module Escrow
 
   (* transition from Created to Aborted *)
   let abort (e : env) (s : storage) : transfers
-    (* cml 'transition' property '*)
+    (* archetype 'transition' property '*)
     requires { s.state = Created }
-    (* cml 'called by' property '*)
+    (* archetype 'called by' property '*)
     requires {
          caller e = s.buyer
       \/ caller e = s.seller
     }
-    (* cml global assert *)
+    (* archetype global assert *)
     requires { s.state = Transferred -> balance e = 0 }
     ensures  { s.state = Transferred -> balance e = 0 }
     = s.state <- Aborted;
@@ -37,15 +37,15 @@ module Escrow
 
   (* transfer price *)
   let transfer_price (e : env) (s : storage) : transfers
-    (* cml 'transition' property '*)
+    (* archetype 'transition' property '*)
     requires { s.state = Created }
-    (* cml 'called by' property '*)
+    (* archetype 'called by' property '*)
     requires { caller e = s.buyer }
-    (* cml 'transferred' property *)
+    (* archetype 'transferred' property *)
     requires { transferred e = s.price }
     (* generic uint constraints *)
     requires { balance e + transferred e <= max_uint }
-    (* cml global assert *)
+    (* archetype global assert *)
     requires { s.state = Transferred -> balance e = 0 }
     ensures  { s.state = Transferred -> balance e = 0 }
     ensures  { balance e = old (balance e) + s.price }
@@ -55,15 +55,15 @@ module Escrow
 
   (* transfer penalty *)
   let transfer_penalty (e : env) (s : storage) : transfers
-    (* cml 'transition' property '*)
+    (* archetype 'transition' property '*)
     requires { s.state = Created }
-    (* cml 'called by' property '*)
+    (* archetype 'called by' property '*)
     requires { caller e = s.seller }
-    (* cml 'transferred' property *)
+    (* archetype 'transferred' property *)
     requires { transferred e = s.penalty }
     (* generic uint constraints *)
     requires { balance e + transferred e <= max_uint }
-    (* cml global assert *)
+    (* archetype global assert *)
     requires { s.state = Transferred -> balance e = 0 }
     ensures  { s.state = Transferred -> balance e = 0 }
     ensures { balance e = old (balance e) + s.penalty }
@@ -72,11 +72,11 @@ module Escrow
 
   (* transition from Created to Confirm *)
   let confirm (e : env) (s : storage) : transfers
-    (* cml 'transition' property '*)
+    (* archetype 'transition' property '*)
     requires { s.state = Created }
-    (* cml 'condition' property '*)
+    (* archetype 'condition' property '*)
     requires { balance e = s.price + s.penalty }
-    (* cml global assert *)
+    (* archetype global assert *)
     requires { s.state = Transferred -> balance e = 0 }
     ensures  { s.state = Transferred -> balance e = 0 }
     = s.state <- Confirmed;
@@ -89,7 +89,7 @@ module Escrow
     requires { now e <= s.deadline }
     (* !! Propagated precondition from 'confirm' transaction *)
     requires { balance e = s.price + s.penalty }
-    (* cml global assert *)
+    (* archetype global assert *)
     requires { s.state = Transferred -> balance e = 0 }
     ensures  { s.state = Transferred -> balance e = 0 }
   =  s.state <- Transferred;

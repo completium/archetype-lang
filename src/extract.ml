@@ -20,7 +20,7 @@ let print (_ds : Ptree.decl list) =
 (*  List.iter (fun (d : Ptree.decl) -> Format.printf "%a@\n@." print_module d) ds;*)
 
     (*let opt_driver = Pdriver.load_driver env f ef "liquidity" in
-      Why3.Pdriver.register_printer opt_driver CmlLib.Liq_printer.liq_printer;
+      Why3.Pdriver.register_printer opt_driver ArchetypeLib.Liq_printer.liq_printer;
       let (pargs, _printer) = Why3.Pdriver.lookup_printer opt_driver in
       let print_prelude =
       print_prelude pargs.Pdriver.prelude*)
