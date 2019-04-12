@@ -134,7 +134,9 @@
 %right OTHERWISE
 %right THEN ELSE
 
-%left COMMA
+%left COMMA SEMI_COLON
+
+%nonassoc COLON
 
 %nonassoc COLONEQUAL PLUSEQUAL MINUSEQUAL MULTEQUAL DIVEQUAL ANDEQUAL OREQUAL
 
@@ -431,7 +433,7 @@ type_s_unloc:
 
 state_option:
 | INITIAL                     { SOinitial }
-| WITH xs=braced(expr) { SOspecification xs }
+| WITH xs=braced(expr)        { SOspecification xs }
 
 asset:
 | ASSET exts=extensions? ops=bracket(asset_operation)? x=ident opts=asset_options?
@@ -598,6 +600,9 @@ expr_r:
 
  | e1=expr SEMI_COLON e2=expr
      { Eseq (e1, e2) }
+
+ | label=ident COLON e=expr
+     { Elabel (label, e) }
 
  | FUN xs=ident_typs EQUALGREATER x=expr
      { Efun (xs, x) }
