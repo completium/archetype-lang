@@ -187,9 +187,9 @@ let rec mk_lterm (e : expr) : lterm =
 
     | Eop _ -> raise (ModelError ("operation error", loc))
     | Eliteral l -> Llit (mkloc loc (to_bval l))
-    | Earray (i, l) -> Larray (i, List.map mk_lterm l)
+    | Earray l -> Larray (None, List.map mk_lterm l)
     | Edot (e, i) -> Ldot (mk_lterm e, mkloc (i |> Location.loc) (mk_lterm_id i))
-    | EassignFields _l -> raise (ModelError ("assignment fields are not allowed in logical block", loc))
+    | Erecord _ -> raise (ModelError ("assignment fields are not allowed in logical block", loc))
     | Eapp ({pldesc=Eop op; _}, [lhs; rhs]) ->
       (
         match op with
@@ -259,9 +259,9 @@ let rec mk_pterm (e : expr) : pterm =
         | (_, e) -> mk_pterm_id e)
     | Eop _ -> raise (ModelError ("operation error", loc))
     | Eliteral l -> Plit (mkloc loc (to_bval l))
-    | Earray (i, l) -> Parray (i, List.map mk_pterm l)
+    | Earray l -> Parray (None, List.map mk_pterm l)
     | Edot (e, i) -> Pdot (mk_pterm e, mkloc (i |> Location.loc) (mk_pterm_id i))
-    | EassignFields l ->
+    | EassignFields (_label, l) ->
       Pfassign (List.map
                   (fun i ->
                      let (op, (a, f), e) = i in

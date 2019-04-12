@@ -243,9 +243,8 @@ let rec pp_expr fmt { pldesc = e; _ } =
       Format.fprintf fmt "%a"
         pp_literal x
 
-  | Earray (label, values) ->
-      Format.fprintf fmt "[%a%a]"
-        (pp_option (pp_postfix " :" pp_id)) label
+  | Earray values ->
+      Format.fprintf fmt "[%a]"
         (pp_list ", " pp_expr) values
 
   | Edot (lhs, rhs) ->
@@ -253,8 +252,9 @@ let rec pp_expr fmt { pldesc = e; _ } =
         pp_expr lhs
         pp_id rhs
 
-  | EassignFields l ->
-      Format.fprintf fmt "{%a}"
+  | EassignFields (label, l) ->
+      Format.fprintf fmt "{%a%a}"
+        (pp_option (pp_postfix " :" pp_id)) label
         (pp_list ";@ " pp_assignment_field) l
 
   | Eapp ({pldesc = Eop op; _}, [a; b]) ->

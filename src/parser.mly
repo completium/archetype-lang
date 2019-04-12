@@ -668,11 +668,11 @@ simple_expr_r:
  | x=simple_expr DOT y=ident
      { Edot (x, y) }
 
- | xs=braced(separated_nonempty_list(SEMI_COLON, assign_field_r))
-     { EassignFields xs }
+ | LBRACKET xs=separated_list(SEMI_COLON, simple_expr) RBRACKET
+     { Earray xs }
 
- | LBRACKET xs=separated_list(COMMA, expr) RBRACKET
-     { Earray (None, xs) }
+ | LBRACE xs=separated_nonempty_list(SEMI_COLON, record_item) RBRACE
+     { Erecord (None, xs) }
 
  | x=literal
      { Eliteral x }
@@ -718,13 +718,10 @@ literal:
  | TRUE  { true }
  | FALSE { false }
 
-assign_field_r:
- | id=dot_ident op=assignment_value_operator e=expr
-   { (op, id, e) }
-
-%inline dot_ident:
- | x=ident DOT y=ident { (Some x, y) }
- | x=ident             { (None, x) }
+record_item:
+ | e=expr { (None, e) }
+ | id=qualid op=assignment_value_operator e=simple_expr
+   { (Some (op, id), e) }
 
 %inline quantifier:
  | FORALL { Forall }

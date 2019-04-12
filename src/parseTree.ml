@@ -103,9 +103,9 @@ type expr_r =
   | Eterm         of name
   | Eop           of operator
   | Eliteral      of literal
-  | Earray        of lident option * expr list
+  | Earray        of expr list
+  | Erecord       of lident option * record_item list
   | Edot          of expr * lident
-  | EassignFields of assignment_field list
   | Eapp          of expr * expr list
   | Etransfer     of expr * bool * qualid option
   | Eassign       of assignment_operator * expr * expr
@@ -132,7 +132,7 @@ and literal =
   | Ldate     of string
 [@@deriving yojson, show {with_path = false}]
 
-and assignment_field = assignment_operator * (lident option * lident) * expr
+and record_item = (assignment_operator * qualid) option * expr
 
 and expr = expr_r loced
 [@@deriving yojson, show {with_path = false}]

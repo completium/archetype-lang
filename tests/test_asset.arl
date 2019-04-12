@@ -8,4 +8,4 @@ asset my_asset_simple identified by str = {
 asset my_asset identified by i = {
   i : uint;
   mycollection : my_asset_simple set
-} initialized by [ [ 0, none] ]
+} initialized by [ { 0; [] } ]
