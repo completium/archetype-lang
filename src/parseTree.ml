@@ -111,13 +111,14 @@ type expr_r =
   | Eassign       of assignment_operator * expr * expr
   | Eif           of expr * expr * expr option
   | Ebreak
-  | Efor          of lident * expr * expr * lident option
+  | Efor          of lident * expr * expr
   | Eassert       of expr
   | Eseq          of expr * expr
   | Efun          of lident_typ list * expr
   | Eletin        of lident_typ * expr * expr * expr option
   | Ematchwith    of expr * (pattern list * expr) list
   | Equantifier   of quantifier * lident_typ * expr
+  | Elabel        of lident * expr
 [@@deriving yojson, show {with_path = false}]
 
 and literal =
@@ -165,18 +166,15 @@ type transition_r = (lident * expr option * expr option) list
 type args = lident_typ list
 [@@deriving yojson, show {with_path = false}]
 
-type named_item = lident option * expr
-[@@deriving yojson, show {with_path = false}]
-
 type verification_item_unloc =
   | Vpredicate of lident * args * expr
   | Vdefinition of lident * type_t * lident * expr
   | Vaxiom of lident * expr
   | Vtheorem of lident * expr
   | Vvariable of lident * type_t * expr option
-  | Vinvariant of lident * named_item list
+  | Vinvariant of lident * expr
   | Veffect of expr
-  | Vspecification of named_item list
+  | Vspecification of expr
 [@@deriving yojson, show {with_path = false}]
 
 type verification_item = verification_item_unloc loced
@@ -199,7 +197,7 @@ type s_function = {
 
 type action_properties = {
   calledby   : (expr * extension list option) option;
-  condition  : (named_item list * extension list option) option;
+  condition  : (expr * extension list option) option;
   functions  : s_function list;
   verif      : verification option;
 }
@@ -237,13 +235,13 @@ and asset_option =
 
 and asset_post_option =
   | APOstates of lident
-  | APOconstraints of named_item list
+  | APOconstraints of expr
   | APOinit of expr
 [@@deriving yojson, show {with_path = false}]
 
 and state_option =
   | SOinitial
-  | SOspecification of named_item list
+  | SOspecification of expr
 [@@deriving yojson, show {with_path = false}]
 
 and signature =

@@ -287,7 +287,7 @@ signature:
 | ACTION x=ident COLON xs=types { Ssignature (x, xs) }
 
 %inline fun_effect:
-| EFFECT e=loc(expr_extended) { e }
+| EFFECT e=expr { e }
 
 %inline fun_body:
 | e=expr { (None, e) }
@@ -333,16 +333,16 @@ function_decl:
 | VARIABLE id=ident t=type_t dv=default_value? { Vvariable (id, t, dv) }
 
 %inline verif_invariant:
-| INVARIANT id=ident xs=named_items { Vinvariant (id, xs) }
+| INVARIANT id=ident xs=expr { Vinvariant (id, xs) }
 
 %inline verif_effect:
 | EFFECT e=expr { Veffect e }
 
 %inline verif_specification:
-| SPECIFICATION xs=named_items { Vspecification xs }
+| SPECIFICATION xs=expr { Vspecification xs }
 
 %inline verif_specification_braced:
-| SPECIFICATION xs=braced(named_items) { Vspecification xs }
+| SPECIFICATION xs=braced(expr) { Vspecification xs }
 
 verif_item:
 | x=verif_predicate     { x }
@@ -431,7 +431,7 @@ type_s_unloc:
 
 state_option:
 | INITIAL                     { SOinitial }
-| WITH xs=braced(named_items) { SOspecification xs }
+| WITH xs=braced(expr) { SOspecification xs }
 
 asset:
 | ASSET exts=extensions? ops=bracket(asset_operation)? x=ident opts=asset_options?
@@ -441,7 +441,7 @@ asset:
 
 asset_post_option:
 | WITH STATES x=ident           { APOstates x }
-| WITH xs=braced(named_items)   { APOconstraints xs }
+| WITH xs=braced(expr)   { APOconstraints xs }
 | INITIALIZED BY e=simple_expr  { APOinit e }
 
 %inline asset_post_options:
@@ -511,7 +511,7 @@ calledby:
  | CALLED BY exts=option(extensions) x=expr { (x, exts) }
 
 condition:
- | CONDITION exts=option(extensions) xs=named_items
+ | CONDITION exts=option(extensions) xs=expr
        { (xs, exts) }
 
 %inline condition_value:
@@ -520,15 +520,8 @@ condition:
 %inline with_effect:
 | WITH EFFECT x=expr { x }
 
-%inline named_items:
- | xs=separated_nonempty_list(SEMI_COLON, named_item) { xs }
-
-%inline named_item:
- | id=ident { let loc = loc id in (None, mkloc loc (Eterm (None, id))) }
- | id=label e=expr { (Some id, e) }
-
 effect:
- | EFFECT exts=option(extensions) xs=loc(expr_extended) { (xs, exts) }
+ | EFFECT exts=option(extensions) xs=expr { (xs, exts) }
 
 %inline function_return:
  | COLON ty=type_t { ty }
@@ -558,11 +551,6 @@ effect:
  | ANDEQUAL    { AndAssign }
  | OREQUAL     { OrAssign }
 
-
-expr_extended:
- | e1=expr SEMI_COLON e2=loc(expr_extended)
-   { Eseq (e1, e2) }
- | e=expr_r { e }
 
 qualid:
  | i=ident              { Qident i }
@@ -608,6 +596,9 @@ expr_r:
  | LET x=ident_typ1 EQUAL e=expr IN y=expr
      { Eletin (x, e, y, None) }
 
+ | e1=expr SEMI_COLON e2=expr
+     { Eseq (e1, e2) }
+
  | FUN xs=ident_typs EQUALGREATER x=expr
      { Efun (xs, x) }
 
@@ -617,8 +608,8 @@ expr_r:
  | BREAK
      { Ebreak }
 
- | label=label? FOR LPAREN x=ident IN y=expr RPAREN body=expr %prec prec_for
-     { Efor (x, y, body, label) }
+ | FOR LPAREN x=ident IN y=expr RPAREN body=expr %prec prec_for
+     { Efor (x, y, body) }
 
  | IF c=expr THEN t=expr
      { Eif (c, t, None) }
@@ -661,18 +652,12 @@ order_operations:
     { let loc = Location.make $startpos $endpos in
        Eapp ( mkloc loc (Eop (unloc op)), [e1; e2]) }
 
-label:
- | id=ident COLON { id }
-
 %inline app_args:
  | LPAREN RPAREN     { [] }
  | xs=simple_expr+   { xs }
 
 %inline simple_expr:
  | x=loc(simple_expr_r) { x }
-
-label_array:
- | COLON x=label { x }
 
 simple_expr_r:
  | x=simple_expr DOT y=ident
@@ -681,8 +666,8 @@ simple_expr_r:
  | xs=braced(separated_nonempty_list(SEMI_COLON, assign_field_r))
      { EassignFields xs }
 
- | LBRACKET l=label_array? xs=separated_list(COMMA, expr) RBRACKET
-     { Earray (l, xs) }
+ | LBRACKET xs=separated_list(COMMA, expr) RBRACKET
+     { Earray (None, xs) }
 
  | x=literal
      { Eliteral x }
@@ -693,7 +678,7 @@ simple_expr_r:
  | x=ident
      { Eterm (None, x) }
 
- | x=paren(expr_extended)
+ | x=paren(expr_r)
      { x }
 
 %inline ident_typs:

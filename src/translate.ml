@@ -215,7 +215,7 @@ let rec mk_lterm (e : expr) : lterm =
                                                  mkloc loc (Limply (mk_lterm cond, mk_lterm then_)),
                                                  mkloc loc (Limply (mkloc (Location.loc cond) (Lnot (mk_lterm cond)), mk_lterm else_)))
     | Ebreak -> raise (ModelError ("\"break\" is not allowed in logical block", loc))
-    | Efor (_, _, _, _) -> raise (ModelError ("\"for\" is not allowed in logical block", loc))
+    | Efor (_, _, _) -> raise (ModelError ("\"for\" is not allowed in logical block", loc))
     | Eassert _ -> raise (ModelError ("\"assert\" is not allowed in logical block", loc))
     | Eseq (lhs, rhs) -> Lseq (mk_lterm lhs, mk_lterm rhs)
     | Efun (args, body) ->
@@ -231,7 +231,8 @@ let rec mk_lterm (e : expr) : lterm =
     | Eletin ((i, typ, _), init, body, _other) -> Lletin (i, mk_lterm init,
                                                   map_option mk_ltyp typ, mk_lterm body)
     | Ematchwith _ -> raise (ModelError ("match with is not allowed in logical block", loc))
-    | Equantifier (q, (id, t, _), e) -> Lquantifer (to_quantifier q, id, map_option mk_ltyp t, mk_lterm e))
+    | Equantifier (q, (id, t, _), e) -> Lquantifer (to_quantifier q, id, map_option mk_ltyp t, mk_lterm e)
+    | Elabel _ -> raise (ModelError ("Elabel", loc)))
 
 let rec mk_qualid (q : ParseTree.qualid) : liqualid =
   match q with
@@ -287,7 +288,7 @@ let rec mk_pterm (e : expr) : pterm =
     | Eassign (op, lhs, rhs) -> Passign (to_assignment_operator op, mk_pterm lhs, mk_pterm rhs)
     | Eif (cond, then_, else_) -> Pif (mk_pterm cond, mk_pterm then_, map_option mk_pterm else_)
     | Ebreak -> Pbreak
-    | Efor (i, e, body, _name) -> Pfor (i, mk_pterm e, mk_pterm body)
+    | Efor (i, e, body) -> Pfor (i, mk_pterm e, mk_pterm body)
     | Eassert e -> Passert (mk_lterm e)
     | Eseq (lhs, rhs) -> Pseq (mk_pterm lhs, mk_pterm rhs)
     | Efun (args, body) ->
@@ -308,7 +309,8 @@ let rec mk_pterm (e : expr) : pterm =
                         (List.map (fun x -> (mk_pattern x, mk_pterm e)) pts)@acc
                         )) [] l in
       Pmatchwith (mk_pterm e, ll)
-    | Equantifier _ -> raise (ModelError ("Quantifiers are not allowed in programming block", loc)))
+    | Equantifier _ -> raise (ModelError ("Quantifiers are not allowed in programming block", loc))
+      | Elabel _ -> raise (ModelError ("Elabel", loc)))
 
 
 let to_label_lterm (label, lterm) : label_lterm =
@@ -412,7 +414,21 @@ let mk_decl_pterm loc ((id, typ, dv) : (lident * type_t option * expr option)) =
     loc = loc;
   }
 
-let mk_spec loc (vars : (lident * type_t * expr option) loced list option) action (invs : named_item list option) items = {
+let rec split_eseq (e : expr) : expr list =
+  (fun accu -> match unloc e with
+     | Eseq (a, b) -> (split_eseq a) @ (split_eseq b)
+     | _ -> e::accu) []
+
+let dest_label (e : expr) : (lident option * expr) =
+  match unloc e with
+  | Elabel (i, e) -> Some i, e
+  | _ -> None, e
+
+let expr_to_label_list e : ((lident option * expr) list) =
+  List.map dest_label (split_eseq e)
+
+
+let mk_spec loc (vars : (lident * type_t * expr option) loced list option) action (invs : expr option) items = {
   variables = List.fold_left
       (fun acc i ->
          let loc, (id, typ, dv) = deloc i in
@@ -425,7 +441,7 @@ let mk_spec loc (vars : (lident * type_t * expr option) loced list option) actio
            loc = loc;
          })::acc) [] (vars |> map_list);
   action = map_option mk_pterm action;
-  invariants = List.map mk_label_lterm (map_list invs);
+  invariants = List.map mk_label_lterm (map_list (map_option expr_to_label_list invs));
   ensures = List.map mk_label_lterm items;
   loc = loc;
 }
@@ -549,7 +565,7 @@ let mk_action loc name args (props : action_properties) = {
   name = name;
   args = get_transaction_args args;
   calledby  = Tools.map_option (fun (e, _) -> to_rexpr_calledby e) props.calledby;
-  condition = Tools.map_option (fun (items, _) -> List.map (fun a -> let b, c = a in (to_label_pterm (b, c))) items) props.condition;
+  condition = Tools.map_option (fun (items, _) -> List.map (fun a -> let b, c = a in (to_label_pterm (b, c))) (expr_to_label_list items)) props.condition;
   transition = None;
   spec = None;
   action = None;
@@ -600,7 +616,7 @@ let is_state_initial = function
 let get_state_specifications (opts : state_option list) : Model.specification =
   let es = List.fold_left (fun acc i ->
           match i with
-          | SOspecification xs -> List.map to_label_lterm xs @ acc
+          | SOspecification xs -> List.map to_label_lterm (expr_to_label_list xs) @ acc
           | _ -> acc
         ) [] opts in
     {

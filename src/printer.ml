@@ -295,9 +295,8 @@ let rec pp_expr fmt { pldesc = e; _ } =
   | Ebreak ->
       Format.fprintf fmt "break"
 
-  | Efor (id, expr, body, label) ->
-      Format.fprintf fmt "%afor (%a in %a) (@\n@[<v 2>  %a@]@\n)"
-        (pp_option (pp_postfix " : " pp_id)) label
+  | Efor (id, expr, body) ->
+      Format.fprintf fmt "for (%a in %a) (@\n@[<v 2>  %a@]@\n)"
         pp_id id
         pp_expr expr
         pp_expr body
@@ -327,6 +326,11 @@ let rec pp_expr fmt { pldesc = e; _ } =
         pp_quantifier q
         pp_ident_typ id_t
         pp_expr body
+
+  | Elabel (i, x) ->
+      Format.fprintf fmt "%a : %a"
+        pp_id i
+        pp_expr x
 
 and pp_else fmt (e : expr option) =
   match e with
@@ -410,16 +414,6 @@ and pp_extension fmt { pldesc = e; _ } =
         (pp_option (pp_prefix " " (pp_list " " pp_expr))) args
 
 (* -------------------------------------------------------------------------- *)
-let pp_named_item fmt (s : named_item) =
-match s with
-| (None, y)   ->
-    Format.fprintf fmt "%a" pp_expr y
-
-| (Some x, y) ->
-    Format.fprintf fmt "%a : %a"
-    pp_id x
-    pp_expr y
-
 let pp_to fmt ((to_, when_, effect) : (lident * expr option * expr option)) =
   Format.fprintf fmt "to %a@\n%a%a"
     pp_id to_
@@ -477,7 +471,7 @@ let pp_transitem fmt { pldesc = t; _ } =
 (* -------------------------------------------------------------------------- *)
 let pp_state_option fmt = function
   | SOinitial  -> Format.fprintf fmt "initial"
-  | SOspecification xs -> Format.fprintf fmt "with {%a}" (pp_list ";@\n" pp_named_item) xs
+  | SOspecification xs -> Format.fprintf fmt "with {%a}" (pp_expr) xs
 
 let pp_ident_state_option fmt item =
   match item with
@@ -526,7 +520,7 @@ let pp_asset_post_option fmt (apo : asset_post_option) =
       pp_id i
   | APOconstraints cs ->
     Format.fprintf fmt " with {@\n @[<v 2>  %a@] } "
-      (pp_list ";@\n  " pp_named_item) cs
+      pp_expr cs
   | APOinit e ->
     Format.fprintf fmt " initialized by %a"
       pp_expr e
@@ -671,7 +665,7 @@ let rec pp_declaration fmt { pldesc = e; _ } =
   | Dverification v -> pp_verification fmt v
 (*      Format.fprintf fmt "specification%a {@\n@[<v 2>  %a@]@\n}"
         (pp_option (pp_list " " pp_extension)) exts
-        (pp_list ";@\n" pp_named_item) xs*)
+        pp_expr xs*)
 
 (* -------------------------------------------------------------------------- *)
 let pp_archetype fmt { pldesc = m; _ } =
