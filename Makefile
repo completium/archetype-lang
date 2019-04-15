@@ -36,4 +36,5 @@ check:
 build-deps:
 	opam install dune menhir batteries why3.1.2.0 ppx_deriving ppx_deriving_yojson
 
-dev-package: opam install tuareg merlin ocp-indent
+dev-package:
+	opam install tuareg merlin ocp-indent

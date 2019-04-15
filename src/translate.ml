@@ -190,6 +190,7 @@ let rec mk_lterm (e : expr) : lterm =
     | Earray l -> Larray (None, List.map mk_lterm l)
     | Edot (e, i) -> Ldot (mk_lterm e, mkloc (i |> Location.loc) (mk_lterm_id i))
     | Erecord _ -> raise (ModelError ("assignment fields are not allowed in logical block", loc))
+    | Etuple l -> Ltuple (List.map (fun x -> mk_lterm x) l)
     | Eapp ({pldesc=Eop op; _}, [lhs; rhs]) ->
       (
         match op with
@@ -261,11 +262,12 @@ let rec mk_pterm (e : expr) : pterm =
     | Eliteral l -> Plit (mkloc loc (to_bval l))
     | Earray l -> Parray (None, List.map mk_pterm l)
     | Edot (e, i) -> Pdot (mk_pterm e, mkloc (i |> Location.loc) (mk_pterm_id i))
-    | EassignFields (_label, l) ->
-      Pfassign (List.map
+    | Erecord _l -> raise Modelinfo.TODO
+    | Etuple l -> Ptuple (List.map (fun x -> mk_pterm x) l)
+      (*Pfassign (List.map
                   (fun i ->
                      let (op, (a, f), e) = i in
-                     (to_assignment_operator op, (a, f), mk_pterm e)) l)
+                     (to_assignment_operator op, (a, f), mk_pterm e)) l)*)
     | Eapp ({pldesc=Eop op; plloc=locop}, [lhs; rhs]) ->
       (
         match op with
@@ -414,21 +416,12 @@ let mk_decl_pterm loc ((id, typ, dv) : (lident * type_t option * expr option)) =
     loc = loc;
   }
 
-let rec split_eseq (e : expr) : expr list =
-  (fun accu -> match unloc e with
-     | Eseq (a, b) -> (split_eseq a) @ (split_eseq b)
-     | _ -> e::accu) []
-
 let dest_label (e : expr) : (lident option * expr) =
   match unloc e with
   | Elabel (i, e) -> Some i, e
   | _ -> None, e
 
-let expr_to_label_list e : ((lident option * expr) list) =
-  List.map dest_label (split_eseq e)
-
-
-let mk_spec loc (vars : (lident * type_t * expr option) loced list option) action (invs : expr option) items = {
+let mk_spec loc (vars : (lident * type_t * expr option) loced list option) action (_invs : (lident * expr) list) items = {
   variables = List.fold_left
       (fun acc i ->
          let loc, (id, typ, dv) = deloc i in
@@ -441,13 +434,13 @@ let mk_spec loc (vars : (lident * type_t * expr option) loced list option) actio
            loc = loc;
          })::acc) [] (vars |> map_list);
   action = map_option mk_pterm action;
-  invariants = List.map mk_label_lterm (map_list (map_option expr_to_label_list invs));
+  invariants = [];(*List.map mk_label_lterm invs;*)
   ensures = List.map mk_label_lterm items;
   loc = loc;
 }
 
 let mk_simple_spec loc items =
-  mk_spec loc None None None items
+  mk_spec loc None None [] items
 
 let ret_from_to opts =
   match opts with
@@ -565,7 +558,8 @@ let mk_action loc name args (props : action_properties) = {
   name = name;
   args = get_transaction_args args;
   calledby  = Tools.map_option (fun (e, _) -> to_rexpr_calledby e) props.calledby;
-  condition = Tools.map_option (fun (items, _) -> List.map (fun a -> let b, c = a in (to_label_pterm (b, c))) (expr_to_label_list items)) props.condition;
+  (*  condition = Tools.map_option (fun (items, _) -> List.map (fun a -> let b, c = a in (to_label_pterm (b, c))) items) props.condition;*)
+  condition = Tools.map_option (fun (items, _) -> List.map (fun a -> let b, c = a in (to_label_pterm (b, c))) items) props.condition;
   transition = None;
   spec = None;
   action = None;
@@ -597,7 +591,7 @@ let get_enums decls =
       (let loc = loc i in
        let decl_u = Location.unloc i in
        match decl_u with
-       | Denum (name, list) ->
+       | Denum (name, list, _) ->
          {name = name;
           vals = list;
           loc = loc;}::acc
@@ -616,7 +610,7 @@ let is_state_initial = function
 let get_state_specifications (opts : state_option list) : Model.specification =
   let es = List.fold_left (fun acc i ->
           match i with
-          | SOspecification xs -> List.map to_label_lterm (expr_to_label_list xs) @ acc
+          | SOspecification xs -> (List.map to_label_lterm xs) @ acc
           | _ -> acc
         ) [] opts in
     {
@@ -651,7 +645,7 @@ let get_enums decls =
   List.fold_left ( fun acc i ->
       (let loc, decl_u = deloc i in
        match decl_u with
-       | Denum (name, list) ->
+       | Denum (name, list, _) ->
          {name = name;
           vals = list;
           loc = loc;}::acc

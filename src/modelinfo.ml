@@ -17,6 +17,7 @@ exception UnsupportedPolicy      of string * string
 exception UnsupportedFeature     of string * Location.t
 exception NotFound               of string
 exception Anomaly                of string
+exception TODO
 
 type storage_policy = Record | Flat
 [@@deriving show {with_path = false}]

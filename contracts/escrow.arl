@@ -12,7 +12,7 @@ variable oracle role
 
 variable[%traceable] price tez from buyer to creditor
 
-variable[%traceable] [%mutable_signed [buyer, debitor] (state = Created)]
+variable[%traceable] [%mutable_signed [buyer; debitor] (state = Created)]
      penalty tez from seller to debitor = 0.1 * price
 
 (* action deadline *)
@@ -32,7 +32,7 @@ transition abort from Created = {
   to Aborted
 }
 
-transition[%signedbyall [buyer, seller]] confirm from Created = {
+transition[%signedbyall [buyer; seller]] confirm from Created = {
   to Confirmed when balance = price + penalty
 }
 

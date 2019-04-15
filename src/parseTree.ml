@@ -104,7 +104,8 @@ type expr_r =
   | Eop           of operator
   | Eliteral      of literal
   | Earray        of expr list
-  | Erecord       of lident option * record_item list
+  | Erecord       of record_item list
+  | Etuple        of expr list
   | Edot          of expr * lident
   | Eapp          of expr * expr list
   | Etransfer     of expr * bool * qualid option
@@ -132,13 +133,15 @@ and literal =
   | Ldate     of string
 [@@deriving yojson, show {with_path = false}]
 
-and record_item = (assignment_operator * qualid) option * expr
+and record_item = (assignment_operator * lident) option * expr
 
 and expr = expr_r loced
 [@@deriving yojson, show {with_path = false}]
 
 and lident_typ = lident * type_t option * extension list option
 [@@deriving yojson, show {with_path = false}]
+
+and label_exprs = (lident option * expr) list
 
 (* -------------------------------------------------------------------- *)
 and extension_r =
@@ -174,7 +177,7 @@ type verification_item_unloc =
   | Vvariable of lident * type_t * expr option
   | Vinvariant of lident * expr
   | Veffect of expr
-  | Vspecification of expr
+  | Vspecification of label_exprs
 [@@deriving yojson, show {with_path = false}]
 
 type verification_item = verification_item_unloc loced
@@ -197,7 +200,7 @@ type s_function = {
 
 type action_properties = {
   calledby   : (expr * extension list option) option;
-  condition  : (expr * extension list option) option;
+  condition  : (label_exprs * extension list option) option;
   functions  : s_function list;
   verif      : verification option;
 }
@@ -205,21 +208,21 @@ type action_properties = {
 
 (* -------------------------------------------------------------------- *)
 type declaration_r =
-  | Darchetype         of lident * extension list option                      (** archetype *)
-  | Dconstant      of lident * type_t * expr option * exts                (** constant *)
-  | Dvariable      of lident * type_t * value_option list option * expr option * exts       (** variable *)
-  | Denum          of lident * lident list                                           (** enum *)
-  | Dstates        of lident option * (lident * state_option list option) list option * extension list option       (** states *)
-  | Dasset         of lident * field list option * asset_option list option * asset_post_option list * asset_operation option * exts (** asset *)
-  | Dobject        of lident * expr * exts                             (** object *)
-  | Dkey           of lident * expr * exts                             (** key *)
+  | Darchetype     of lident * exts
+  | Dconstant      of lident * type_t * expr option * exts
+  | Dvariable      of lident * type_t * value_option list option * expr option * exts
+  | Denum          of lident * lident list * exts
+  | Dstates        of lident option * (lident * state_option list option) list option * exts
+  | Dasset         of lident * field list option * asset_option list option * asset_post_option list * asset_operation option * exts
+  | Dobject        of lident * expr * exts
+  | Dkey           of lident * expr * exts
   | Daction        of lident * args * action_properties * (expr * exts) option * exts
   | Dtransition    of lident * args * (lident * lident) option * expr * action_properties * transition_r * exts
-  | Dextension     of lident * expr list option                        (** extension *)
-  | Dnamespace     of lident * declaration list                        (** namespace *)
-  | Dcontract      of lident * signature list * expr option * exts     (** contract *)
-  | Dfunction      of s_function                                       (** function *)
-  | Dverification  of verification                                     (** verification *)
+  | Dcontract      of lident * signature list * expr option * exts
+  | Dextension     of lident * expr list option
+  | Dnamespace     of lident * declaration list
+  | Dfunction      of s_function
+  | Dverification  of verification
 [@@deriving yojson, show {with_path = false}]
 
 and value_option =
@@ -241,7 +244,7 @@ and asset_post_option =
 
 and state_option =
   | SOinitial
-  | SOspecification of expr
+  | SOspecification of label_exprs
 [@@deriving yojson, show {with_path = false}]
 
 and signature =

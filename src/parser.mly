@@ -13,6 +13,18 @@
       verif         = None;
     }
 
+  let rec split_seq e =
+    match unloc e with
+    | Eseq (a, b) -> (split_seq a) @ (split_seq b)
+    | _ -> [e]
+
+  let rec split_seq_label e =
+    match unloc e with
+    | Eseq (a, b) -> (split_seq_label a) @ (split_seq_label b)
+    | Elabel (lbl, e) -> [(Some lbl, e)]
+    | Eterm _ -> [(None, e)]
+    | _ -> error ~loc:(loc e) PE_Unknown
+
 %}
 
 %token ARCHETYPE
@@ -175,6 +187,10 @@ snl(separator, X):
   x = X { [ x ] }
 | x = X; separator { [ x ] }
 | x = X; separator; xs = snl(separator, X) { x :: xs }
+
+snl2(separator, X):
+  x = X; separator; y = X { [ x; y ] }
+| x = X; separator; xs = snl2(separator, X) { x :: xs }
 
 %inline paren(X):
 | LPAREN x=X RPAREN { x }
@@ -341,10 +357,10 @@ function_decl:
 | EFFECT e=expr { Veffect e }
 
 %inline verif_specification:
-| SPECIFICATION xs=expr { Vspecification xs }
+| SPECIFICATION xs=expr { Vspecification (split_seq_label xs) }
 
 %inline verif_specification_braced:
-| SPECIFICATION xs=braced(expr) { Vspecification xs }
+| SPECIFICATION xs=braced(expr) { Vspecification (split_seq_label xs) }
 
 verif_item:
 | x=verif_predicate     { x }
@@ -371,7 +387,7 @@ verification_decl:
 | x=loc(verification(verif_specification_braced)) { Dverification x }
 
 enum:
-| ENUM x=ident EQUAL xs=pipe_idents {Denum (x, xs)}
+| ENUM exts=extensions? x=ident EQUAL xs=pipe_idents {Denum (x, xs, exts)}
 
 states:
 | STATES exts=extensions? x=ident? xs=states_values? {Dstates (x, xs, exts)}
@@ -433,7 +449,7 @@ type_s_unloc:
 
 state_option:
 | INITIAL                     { SOinitial }
-| WITH xs=braced(expr)        { SOspecification xs }
+| WITH xs=braced(expr)        { SOspecification (split_seq_label xs) }
 
 asset:
 | ASSET exts=extensions? ops=bracket(asset_operation)? x=ident opts=asset_options?
@@ -443,7 +459,7 @@ asset:
 
 asset_post_option:
 | WITH STATES x=ident           { APOstates x }
-| WITH xs=braced(expr)   { APOconstraints xs }
+| WITH xs=braced(expr)          { APOconstraints xs }
 | INITIALIZED BY e=simple_expr  { APOinit e }
 
 %inline asset_post_options:
@@ -514,7 +530,7 @@ calledby:
 
 condition:
  | CONDITION exts=option(extensions) xs=expr
-       { (xs, exts) }
+       { (split_seq_label xs, exts) }
 
 %inline condition_value:
 | WHEN x=expr { x }
@@ -624,6 +640,9 @@ expr_r:
 
  | MATCH x=expr WITH xs=branchs END { Ematchwith (x, xs) }
 
+ | xs=snl2(COMMA, simple_expr)
+     { Etuple xs }
+
  | x=expr op=assignment_operator y=expr
      { Eassign (op, x, y) }
 
@@ -668,11 +687,14 @@ simple_expr_r:
  | x=simple_expr DOT y=ident
      { Edot (x, y) }
 
- | LBRACKET xs=separated_list(SEMI_COLON, simple_expr) RBRACKET
-     { Earray xs }
+ | LBRACKET RBRACKET
+     { Earray [] }
+
+ | LBRACKET e=expr RBRACKET
+     { Earray (split_seq e) }
 
  | LBRACE xs=separated_nonempty_list(SEMI_COLON, record_item) RBRACE
-     { Erecord (None, xs) }
+     { Erecord xs }
 
  | x=literal
      { Eliteral x }
@@ -719,8 +741,8 @@ literal:
  | FALSE { false }
 
 record_item:
- | e=expr { (None, e) }
- | id=qualid op=assignment_value_operator e=simple_expr
+ | e=simple_expr { (None, e) }
+ | id=ident op=assignment_value_operator e=simple_expr
    { (Some (op, id), e) }
 
 %inline quantifier:

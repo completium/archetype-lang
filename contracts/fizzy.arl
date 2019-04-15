@@ -72,5 +72,5 @@ specification {
 
    (* action “updatestatus” is not the only one to potentially
       perform an update of insurance status *)
-   s3 : perform_by_tx [update stat] [updatestatus, manual]
+   s3 : perform_by_tx [update stat] [updatestatus; manual]
 }

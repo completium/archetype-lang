@@ -256,6 +256,7 @@ type lterm_unloc =
   | Llit of bval
   | Ldot of lterm * lterm
   | Lconst of const
+  | Ltuple of lterm list
 [@@deriving show {with_path = false}]
 
 and lterm = lterm_unloc loced

@@ -245,17 +245,20 @@ let rec pp_expr fmt { pldesc = e; _ } =
 
   | Earray values ->
       Format.fprintf fmt "[%a]"
-        (pp_list ", " pp_expr) values
+        (pp_list "; " pp_expr) values
 
   | Edot (lhs, rhs) ->
       Format.fprintf fmt "%a.%a"
         pp_expr lhs
         pp_id rhs
 
-  | EassignFields (label, l) ->
-      Format.fprintf fmt "{%a%a}"
-        (pp_option (pp_postfix " :" pp_id)) label
-        (pp_list ";@ " pp_assignment_field) l
+  | Erecord l ->
+      Format.fprintf fmt "{%a}"
+        (pp_list ";@ " pp_record_field) l
+
+  | Etuple l ->
+      Format.fprintf fmt "%a"
+        (pp_list ",@ " pp_expr) l
 
   | Eapp ({pldesc = Eop op; _}, [a; b]) ->
       let _prec = get_precedence (operator_to_str op) in
@@ -350,10 +353,14 @@ and pp_literal fmt lit =
   | Lduration d -> Format.fprintf fmt "%s" d
   | Ldate     d -> Format.fprintf fmt "%s" d
 
-and pp_assignment_field fmt (op, id, e) =
-  Format.fprintf fmt "%a %a %a"
-    pp_ident_ident id
-    pp_assignment_operator op
+and pp_record_field fmt (_o, e) =
+  Format.fprintf fmt "%a"
+(*    pp_option (fun y ->
+        let op, q = y in
+        Format.fprintf fmt "%a %a"
+          pp_qualid q
+          pp_assignment_operator op
+      ) o*)
     pp_expr e
 
 and pp_ident_ident fmt a =
@@ -468,10 +475,16 @@ let pp_transitem fmt { pldesc = t; _ } =
        (pp_list "; " pp_named_item) xs
 *)
 
+let pp_label_exprs fmt (_xs : label_exprs) =
+  Format.fprintf fmt "TODO"
+(*    (pp_list "@\n" (fun x -> let _a, b = x in pp_expr b)) xs*)
+
+
 (* -------------------------------------------------------------------------- *)
 let pp_state_option fmt = function
   | SOinitial  -> Format.fprintf fmt "initial"
-  | SOspecification xs -> Format.fprintf fmt "with {%a}" (pp_expr) xs
+  | SOspecification xs -> Format.fprintf fmt "with {%a}"
+                            pp_label_exprs xs
 
 let pp_ident_state_option fmt item =
   match item with
@@ -585,8 +598,9 @@ let rec pp_declaration fmt { pldesc = e; _ } =
           (pp_option (pp_prefix " " (pp_list " " pp_value_option))) opts
           (pp_option (pp_prefix " = " pp_expr)) dv
 
-  | Denum (id, ids) ->
-      Format.fprintf fmt "enum %a =\n@[<v 2>@]%a"
+  | Denum (id, ids, exts) ->
+      Format.fprintf fmt "enum%a %a =\n@[<v 2>@]%a"
+        (pp_option (pp_list " " pp_extension)) exts
         pp_id id
         (pp_list "\n" (pp_prefix "| " pp_id)) ids
 
