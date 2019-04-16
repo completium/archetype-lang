@@ -110,9 +110,17 @@ let main () =
     close dispose channel;
     Printf.eprintf "%s.\n" s;
     exit 1
+  | Translate.ModelError0 msg ->
+    close dispose channel;
+    Printf.eprintf "%s.\n" msg;
+    exit 1
   | Translate.ModelError (msg, l) ->
     close dispose channel;
     Printf.eprintf "%s at %s.\n" msg (Location.tostring l);
+    exit 1
+  | Translate.ModelError2 (msg, l0, l1) ->
+    close dispose channel;
+    Printf.eprintf "%s at %s and %s.\n" msg (Location.tostring l0) (Location.tostring l1);
     exit 1
   | Modelinfo.DefaultValueAssignment l ->
     close dispose channel;

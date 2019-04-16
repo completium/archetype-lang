@@ -67,7 +67,7 @@ type transaction = {
   name         : lident;
   args         : ((storage_field_type, bval) gen_decl) list;
   requires     : require list;
-  spec         : specification option;
+  verification : verification option;
   body         : pterm;
   loc          : Location.t [@opaque];
 }
@@ -441,8 +441,8 @@ let dummy_transaction = {
   calledby     = None;
   condition    = None;
   transition   = None;
-  spec         = None;
-  action       = None;
+  verification = None;
+  effect       = None;
   side         = false;
   loc          = Location.dummy;
 }
@@ -1889,7 +1889,7 @@ let transform_transaction (info : info) (m : model_unloc) (t : Model.transaction
                               ("s", Some (Flocal (lstr "storage")))] in
 
   let pt, ret =
-    process_action info m t t.action pt0
+    process_action info m t t.effect pt0
     |> process_state_machine info m t
     |> process_called_by t in
 
@@ -1905,8 +1905,8 @@ let transform_transaction (info : info) (m : model_unloc) (t : Model.transaction
     calledby     = None;
     condition    = None;
     transition   = None;
-    spec         = None;
-    action       = Some action;
+    verification = None;
+    effect       = Some action;
     side         = ret.side;
     loc          = Location.dummy;
   }, ret.funs

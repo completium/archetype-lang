@@ -609,8 +609,8 @@ let rec pp_declaration fmt { pldesc = e; _ } =
         (pp_option (pp_list " " pp_extension)) exts
         (pp_option pp_asset_operation) ops
         pp_id id
-        (pp_option (pp_prefix " " (pp_list " @," pp_asset_option))) opts
-        (pp_option ((fun fmt -> Format.fprintf fmt " = {@\n @[<v 2>%a@] }@\n" (pp_list ";@\n" pp_field)))) fields
+        (pp_prefix " " (pp_list " @," pp_asset_option)) opts
+        ((fun fmt -> Format.fprintf fmt " = {@\n @[<v 2>%a@] }@\n" (pp_list ";@\n" pp_field))) fields
         (pp_list "@\n" pp_asset_post_option) apo
 
   | Dobject (id, e, exts) ->

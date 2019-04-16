@@ -454,7 +454,10 @@ asset:
 | ASSET exts=extensions? ops=bracket(asset_operation)? x=ident opts=asset_options?
         fields=asset_fields?
                  apo=asset_post_options
-          { Dasset (x, fields, opts, apo, ops, exts) }
+                       {
+                         let fs = match fields with | None -> [] | Some x -> x in
+                         let os = match opts with | None -> [] | Some x -> x in
+                         Dasset (x, fs, os, apo, ops, exts) }
 
 asset_post_option:
 | WITH STATES x=ident           { APOstates x }

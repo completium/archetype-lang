@@ -486,7 +486,7 @@ let mk_function_decl (f : function_ws) =
   Dlet (mk_ident f.name, false, Expr.RKnone, pterm_to_expr body)
 
 let mk_transaction (f : transaction_ws) =
-  let action = match f.action with
+  let action = match f.effect with
     | None -> raise (Modelinfo.Anomaly "no action in transaction")
     | Some e -> e in
   let body = mk_lambda f.args f.side action in

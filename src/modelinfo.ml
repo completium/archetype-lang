@@ -134,7 +134,8 @@ let get_asset_vars (a : asset) : (string * ptyp) list =
   a.args |> rec_get_vars []
 
 let get_partitions (a : asset) : (string * string) list =
-  let rec rec_get_p acc = function
+  let rec rec_get_p acc (l : arg list) =
+    match l with
     | arg :: tl ->
       begin
         match arg.typ with

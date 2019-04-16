@@ -212,7 +212,7 @@ type declaration_r =
   | Dvariable      of lident * type_t * expr option * value_option list option * bool * exts
   | Denum          of lident * lident list * exts
   | Dstates        of lident option * (lident * state_option list option) list option * exts
-  | Dasset         of lident * field list option * asset_option list option * asset_post_option list * asset_operation option * exts
+  | Dasset         of lident * field list * asset_option list * asset_post_option list * asset_operation option * exts
   | Dobject        of lident * expr * exts
   | Dkey           of lident * expr * exts
   | Daction        of lident * args * action_properties * (expr * exts) option * exts

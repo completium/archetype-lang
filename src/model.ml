@@ -298,15 +298,6 @@ type pterm = ((lident,ptyp,pattern,pterm) poly_pterm) loced
 type cond = pterm
 [@@deriving show {with_path = false}]
 
-type variable = {
-  decl         : (ptyp, pterm) gen_decl;
-  constant     : bool;
-  from         : liqualid option;
-  to_          : liqualid option;
-  loc          : Location.t [@opaque];
-}
-[@@deriving show {with_path = false}]
-
 type arg = decl
 [@@deriving show {with_path = false}]
 
@@ -323,12 +314,42 @@ type label_pterm = pterm label_term
 type label_lterm = lterm label_term
 [@@deriving show {with_path = false}]
 
-type specification = {
-  variables  : variable list;
-  action     : pterm option;
-  invariants : label_lterm list;
-  ensures    : label_lterm list;
-  loc        : Location.t [@opaque];
+type variable = {
+  decl         : (ptyp, pterm) gen_decl;
+  constant     : bool;
+  from         : liqualid option;
+  to_          : liqualid option;
+  loc          : Location.t [@opaque];
+}
+[@@deriving show {with_path = false}]
+
+type predicate = {
+  name : lident;
+  args : arg list;
+  body : lterm;
+  loc  : Location.t [@opaque];
+}
+[@@deriving show {with_path = false}]
+
+type definition = {
+  name : lident;
+  typ  : ptyp;
+  id   : lident;
+  def  : lterm;
+  loc  : Location.t [@opaque];
+}
+[@@deriving show {with_path = false}]
+
+type verification = {
+  predicates  : predicate list;
+  definitions : definition list;
+  axioms      : label_lterm list;
+  theorems    : label_lterm list;
+  variables   : variable list;
+  invariants  : label_lterm list;
+  effect      : pterm option;
+  specs       : label_lterm list;
+  loc         : Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]
 
@@ -341,8 +362,8 @@ type ('id,'typ,'pattern,'term) gen_transaction = {
   condition    : label_pterm list option;
   transition   : (liqualid option * sexpr * (lident * pterm option * pterm option) list) option;
                  (*            id *  from * (    to *    condition *       action)) *)
-  spec         : specification option;
-  action       : ('id,'typ,'pattern,'term) poly_pterm loced option;
+  verification : verification option;
+  effect       : ('id,'typ,'pattern,'term) poly_pterm loced option;
   side         : bool;
   loc          : Location.t [@opaque];
 }
@@ -354,7 +375,7 @@ type transaction = (lident,ptyp,pattern,pterm) gen_transaction
 type state_item = {
   name : lident;
   initial : bool;
-  specs : specification option;
+  verification : verification option;
   loc : Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]
@@ -407,14 +428,14 @@ type function_ = (lident,ptyp,pattern,pterm) gen_function
 [@@deriving show {with_path = false}]
 
 type model_unloc = {
-  name         : lident;
-  variables    : variable list;
-  assets       : asset list;
-  functions    : function_ list;
-  transactions : transaction list;
-  states       : state list;
-  enums        : enum list;
-  specs        : specification list;
+  name          : lident;
+  variables     : variable list;
+  assets        : asset list;
+  functions     : function_ list;
+  transactions  : transaction list;
+  states        : state list;
+  enums         : enum list;
+  verifications : verification list;
 }
 [@@deriving show {with_path = false}]
 

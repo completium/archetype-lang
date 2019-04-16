@@ -3,7 +3,9 @@ open Model
 open ParseTree
 open Tools
 
-exception ModelError of string * Location.t
+exception ModelError0 of string
+exception ModelError  of string * Location.t
+exception ModelError2 of string * Location.t * Location.t
 
 type info = {
   assets : string list
@@ -22,6 +24,18 @@ let dummy_variable : variable = {
   from = None;
   to_ = None;
   loc = Location.dummy;
+}
+
+let dummy_verif = {
+  predicates  = [];
+  definitions = [];
+  axioms      = [];
+  theorems    = [];
+  variables   = [];
+  invariants  = [];
+  effect      = None;
+  specs       = [];
+  loc         = Location.dummy;
 }
 
 let builtin_type str =
@@ -312,7 +326,7 @@ let rec mk_pterm (e : expr) : pterm =
                         )) [] l in
       Pmatchwith (mk_pterm e, ll)
     | Equantifier _ -> raise (ModelError ("Quantifiers are not allowed in programming block", loc))
-      | Elabel _ -> raise (ModelError ("Elabel", loc)))
+    | Elabel _ -> raise (ModelError ("Elabel", loc)))
 
 
 let to_label_lterm (label, lterm) : label_lterm =
@@ -329,45 +343,8 @@ let to_label_pterm (label, pterm) : label_pterm =
     loc = dummy;
   }
 
-let get_name_archetype (pt : ParseTree.archetype) : lident =
-  let loc = loc pt in
-  let ptu = Location.unloc pt in
-  match ptu with
-  | Marchetype decls ->
-    (let res = List.fold_left (fun acc i -> (
-           let decl_u = Location.unloc i in
-           match decl_u with
-           | Darchetype (id, _exts) -> (match acc with
-               | None -> Some (unloc id)
-               | _ -> raise (ModelError ("only one name can be set to archetype.", loc)))
-           | _ -> acc)) None decls
-     in
-      match res with
-      | Some id -> (dumloc id)
-      | _ -> raise (ModelError ("no name for archetype found.", loc)))
-  | _ -> raise (ModelError ("only ParseTree.archetype can be translated into Model.model.", loc))
+(****************)
 
-let to_rexpr_dv_role e =
-  let loc, v = deloc e in
-  match v with
-  | Eliteral l -> (
-      match l with
-      | Laddress a -> Raddress a
-      | _ -> raise (ModelError ("only address is supported", loc)) )
-  | Eterm (_, id) -> Rqualid (Qident id)
-  (*  | Eapp ({pldesc = {pldesc = Eop}, args, _}) ->*)
-  | _ -> raise (ModelError ("wrong type for ", loc))
-
-let rec to_rexpr_calledby (e : ParseTree.expr) : rexpr =
-  let loc, v = deloc e in
-  match v with
-  | Eterm (None, id)
-  | Edot (_, id) -> Rqualid (Qident id)
-  | Eapp ({pldesc = Eop (`Logical Or); _}, args) ->
-    ( let lhs = to_rexpr_calledby (List.nth args 0) in
-      let rhs = to_rexpr_calledby (List.nth args 1) in
-      Ror (lhs, rhs))
-  | _ -> raise (ModelError ("type error: called by", loc))
 
 let rec to_sexpr (e : expr) : Model.sexpr =
   let loc, v = deloc e in
@@ -422,6 +399,7 @@ let dest_label (e : expr) : (lident option * expr) =
   | _ -> None, e
 
 let mk_spec loc (vars : (lident * type_t * expr option) loced list option) action (_invs : (lident * expr) list) items = {
+  dummy_verif with
   variables = List.fold_left
       (fun acc i ->
          let loc, (id, typ, dv) = deloc i in
@@ -433,9 +411,9 @@ let mk_spec loc (vars : (lident * type_t * expr option) loced list option) actio
            to_ = None;
            loc = loc;
          })::acc) [] (vars |> map_list);
-  action = map_option mk_pterm action;
+  effect = map_option mk_pterm action;
   invariants = [];(*List.map mk_label_lterm invs;*)
-  ensures = List.map mk_label_lterm items;
+  specs = List.map mk_label_lterm items;
   loc = loc;
 }
 
@@ -451,238 +429,287 @@ let ret_from_to opts =
          | VOto q -> (a, Some (mk_qualid q))) (None, None) o)
   | _ -> (None, None)
 
-let get_variables decls =
-  List.fold_left ( fun acc i ->
-      (let loc = loc i in
-       let decl_u = Location.unloc i in
-       match decl_u with
-       | Dvariable (id, typ, dv, opts, cst, _) ->
-         begin
-           let (from, to_) = ret_from_to opts in
-           let dv = (match unloc (mk_ptyp typ) with | Tbuiltin VTaddress -> None | _ -> dv) in
-           {
-             decl = mk_decl_pterm loc (id, Some typ, dv);
-             constant = cst;
-             from = from;
-             to_ = to_;
-             loc = loc;
-           }::acc
-         end
-       | _ -> acc)
-    ) [] decls
 
-let get_asset_key opts =
-  let default = Location.dumloc "_id" in
-  match opts with
-  | None -> default
-  | Some opts ->
-    (let id = (List.fold_left (fun acc i ->
-         match i with
-         | AOidentifiedby id -> Some id
-         | _ -> acc) None opts) in
-     match id with
-     | Some i -> i
-  | _ -> default)
-
-let is_asset_role opts =
-  match opts with
-  | None -> false
-  | Some opts -> List.fold_left (fun acc i ->
-         match i with
-         | AOasrole -> true
-         | _ -> acc) false opts
-
-let get_asset_fields fields =
-    match fields with
-      | None -> []
-      | Some fields -> (List.fold_right (fun i acc ->
-          let loc, v = deloc i in
-          match v with
-          | Ffield (id, typ, dv, _) -> mk_decl loc (id, Some typ, dv)::acc
-        ) fields [])
-
-let get_assets_init apos : pterm option =
-  List.fold_left (fun acc i ->
-      match i with
-      | APOinit _e -> None (*Some (mk_pterm e)*) (* TODO*)
-      | _ -> acc) None apos
-
-let get_assets decls =
-  List.fold_right ( fun i acc ->
-      (let loc, decl_u = Location.deloc i in
-       match decl_u with
-       | Dasset (id, fields, opts, apo, _ops, _) ->
-         ({
-           name = id;
-           args = get_asset_fields fields;
-           key = get_asset_key opts;
-           sort = None;
-           role = is_asset_role opts;
-           init = get_assets_init apo;
-           preds = None;
-           loc = loc;
-         })::acc
-       | _ -> acc)
-    ) decls []
-
-let get_functions decls =
-  List.fold_right ( fun i acc ->
-      (let loc = loc i in
-       let decl_u = Location.unloc i in
-       match decl_u with
-       | Dfunction f ->
-         {name = f.name;
-          args = [];
-          return = map_option mk_ptyp f.ret_t;
-          body = mk_pterm f.body;
-          side = false;
-          loc = loc;}::acc
-       | _ -> acc)
-    ) decls []
-
-let get_transaction_args (args : ParseTree.args)  =
+let extract_args (args : ParseTree.args)  =
   List.fold_left (fun acc (i : lident_typ) ->
       let name, typ, _ = i in
       mk_decl dummy (name, typ, None)::acc
     ) [] (args |> List.rev)
 
-let mk_action loc name args (props : action_properties) = {
-  name = name;
-  args = get_transaction_args args;
-  calledby  = Tools.map_option (fun (e, _) -> to_rexpr_calledby e) props.calledby;
-  (*  condition = Tools.map_option (fun (items, _) -> List.map (fun a -> let b, c = a in (to_label_pterm (b, c))) items) props.condition;*)
-  condition = Tools.map_option (fun (items, _) -> List.map (fun a -> let b, c = a in (to_label_pterm (b, c))) items) props.condition;
-  transition = None;
-  spec = None;
-  action = None;
-  side = false;
-  loc = loc;
-}
 
-let get_transactions decls =
-  List.fold_left (fun acc i ->
-      (let loc, v = deloc i in
-       match v with
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+(* model *)
+
+(* name *)
+let get_name_archetype decls : lident =
+  let res = List.fold_left (fun acc i -> (
+        match unloc i with
+        | Darchetype _ -> (match acc with
+            | None -> Some i
+            | Some x -> raise (ModelError2 ("only one name can be set to archetype.", loc x, loc i)))
+        | _ -> acc)) None decls
+  in
+  match res with
+  | Some ({pldesc = Darchetype (id, _exts); plloc = _l }) -> id
+  | _ -> raise (ModelError0 ("no name for archetype found."))
+
+(* extraction if parse tree declarations *)
+let extract_decls decls model =
+
+  let mk_variable loc (id, typ, dv, opts, cst) =
+    let (from, to_) = ret_from_to opts in {
+      decl = mk_decl_pterm loc (id, Some typ, dv);
+      constant = cst;
+      from = from;
+      to_ = to_;
+      loc = loc;
+    } in
+
+  let mk_asset loc (id, fields, opts, apo, _ops) =
+    let get_asset_fields fields =
+      (List.fold_right (fun i acc ->
+           let loc, v = deloc i in
+           match v with
+           | Ffield (id, typ, dv, _) -> mk_decl loc (id, Some typ, dv)::acc
+         ) fields []) in
+
+    let get_assets_init apos : pterm option =
+      List.fold_left (fun acc i ->
+          match i with
+          | APOinit _e -> None (*Some (mk_pterm e)*) (* TODO*)
+          | _ -> acc) None apos in
+
+    let extract_asset_opts opts m =
+      List.fold_left (fun acc i ->
+          match i with
+          | AOidentifiedby id -> { m with key = id; }
+          | AOasrole -> { m with role = true; }
+          | _ -> acc) m opts in
+    {
+      name  = id;
+      args  = get_asset_fields fields;
+      key   = dumloc "_id";
+      sort  = None;
+      role  = false;
+      init  = get_assets_init apo;
+      preds = None;
+      loc   = loc;
+    }
+    |> extract_asset_opts opts
+  in
+
+  let mk_function loc f = {
+    name = f.name;
+    args = [];
+    return = map_option mk_ptyp f.ret_t;
+    body = mk_pterm f.body;
+    side = false;
+    loc = loc;
+  } in
+
+  let mk_action loc name args (props : action_properties) =
+    let rec to_rexpr_calledby (e : ParseTree.expr) : rexpr =
+      let loc, v = deloc e in
+      match v with
+      | Eterm (None, id)
+      | Edot (_, id) -> Rqualid (Qident id)
+      | Eapp ({pldesc = Eop (`Logical Or); _}, args) ->
+        ( let lhs = to_rexpr_calledby (List.nth args 0) in
+          let rhs = to_rexpr_calledby (List.nth args 1) in
+          Ror (lhs, rhs))
+      | _ -> raise (ModelError ("type error: called by", loc)) in
+
+    {
+      name = name;
+      args = extract_args args;
+      calledby  = Tools.map_option (fun (e, _) -> to_rexpr_calledby e) props.calledby;
+      condition = Tools.map_option (fun (items, _) -> List.map (fun a -> let b, c = a in (to_label_pterm (b, c))) items) props.condition;
+      transition = None;
+      verification = None;
+      effect = None;
+      side = false;
+      loc = loc;
+    } in
+
+  let mk_state loc (name, items) =
+    let get_states_items items =
+      let is_state_initial = function
+        | None -> false
+        | Some opts ->
+          List.fold_left (fun acc i ->
+              match i with
+              | SOinitial -> true
+              | _ -> acc
+            ) false opts in
+      let get_state_specifications (opts : state_option list) : Model.verification =
+        let es = List.fold_left (fun acc i ->
+            match i with
+            | SOspecification xs -> (List.map to_label_lterm xs) @ acc
+            | _ -> acc
+          ) [] opts in
+        {
+          dummy_verif with
+          specs = es;
+        } in
+
+      List.fold_left (fun acc i ->
+          (let (name, opts) = i in
+           {
+             name = name;
+             initial = is_state_initial opts;
+             verification = map_option get_state_specifications opts;
+             loc = Location.loc name;
+           }::acc)) [] items in
+    {
+      name = (match name with | None -> dumloc "_global" | Some a -> a);
+      items = get_states_items items;
+      loc = loc;
+    } in
+
+  let mk_enum loc (name, list) = {
+    name = name;
+    vals = list;
+    loc = loc;
+  } in
+
+  let mk_verification loc v =
+    let mk_predicate loc (id, args, body) = {
+      name = id;
+      args = extract_args args;
+      body = mk_lterm body;
+      loc  = loc;
+    } in
+    let mk_definition loc (name, typ_, id, def) = {
+      name = name;
+      typ  = mk_ptyp typ_;
+      id   = id;
+      def  = mk_lterm def;
+      loc  = loc;
+    } in
+	  List.fold_right (fun (x : verification_item) acc ->
+        let loc, vitem = Location.deloc x in
+        match vitem with
+        | Vpredicate (i, args, body) ->
+          {
+            acc with
+            predicates = (mk_predicate loc (i, args, body))::acc.predicates
+          }
+        | Vdefinition (name, typ_, id, def) ->
+          {
+            acc with
+            definitions = (mk_definition loc (name, typ_, id, def))::acc.definitions
+          }
+(*        | Vaxiom -> acc
+        | Vtheorem -> acc
+        | Vvariable -> acc
+        | Vinvariant -> acc
+        | Veffect -> acc
+        | Vspecification -> acc *)
+        | _ -> acc
+      ) (v |> unloc |> fst) { dummy_verif with loc = loc; }
+  in
+
+  List.fold_right ( fun i acc ->
+      (let loc, decl_u = deloc i in
+       match decl_u with
+       | Dvariable (id, typ, dv, opts, cst, _) ->
+         {
+           acc with
+           variables = (mk_variable loc (id, typ, dv, opts, cst))::acc.variables
+         }
+       | Dasset (id, fields, opts, apo, _ops, _) ->
+         {
+           acc with
+           assets = (mk_asset loc (id, fields, opts, apo, _ops))::acc.assets
+         }
+       | Dfunction f ->
+         {
+           acc with
+           functions = (mk_function loc f)::acc.functions
+         }
+       | Dstates (name, Some items, _) ->
+         {
+           acc with
+           states = (mk_state loc (name, items))::acc.states
+         }
+       | Denum (name, list, _) ->
+         {
+           acc with
+           enums = (mk_enum loc (name, list))::acc.enums
+         }
        | Daction (name, args, props, action, _) ->
-         acc @ [{
+         {
+           acc with
+           transactions = {
              (mk_action loc name args props) with
-             action = Tools.map_option (fun x -> let a, _ = x in mk_pterm a) action;
-           }]
+             effect = Tools.map_option (fun x -> let a, _ = x in mk_pterm a) action
+           }::acc.transactions
+         }
        | Dtransition (name, args, _on, from, props, trs, _) ->
-         acc @ [{
+         {
+           acc with
+           transactions = {
              (mk_action loc name args props) with
              transition = Some (None, to_sexpr from, List.map (fun (to_, cond, action) -> (to_,
                                                                                            map_option mk_pterm cond,
                                                                                            map_option mk_pterm action)) trs)
-           }]
+           }::acc.transactions
+         }
+       | Dverification v ->
+         {
+           acc with
+           verifications = (mk_verification loc v)::acc.verifications
+         }
        | _ -> acc)
-    ) [] decls
+    ) decls model
 
-let get_enums decls =
-  List.fold_left ( fun acc i ->
-      (let loc = loc i in
-       let decl_u = Location.unloc i in
-       match decl_u with
-       | Denum (name, list, _) ->
-         {name = name;
-          vals = list;
-          loc = loc;}::acc
-       | _ -> acc)
-    ) [] decls
 
-let is_state_initial = function
-  | None -> false
-  | Some opts ->
-  List.fold_left (fun acc i ->
-      match i with
-      | SOinitial -> true
-      | _ -> acc
-    ) false opts
-
-let get_state_specifications (opts : state_option list) : Model.specification =
-  let es = List.fold_left (fun acc i ->
-          match i with
-          | SOspecification xs -> (List.map to_label_lterm xs) @ acc
-          | _ -> acc
-        ) [] opts in
-    {
-      variables = [];
-      action = None;
-      invariants = [];
-      ensures = es;
-      loc = dummy;
-    }
-
-let get_states_items items =
-  List.fold_left (fun acc i ->
-      (let (name, opts) = i in
-        {name = name;
-         initial = is_state_initial opts;
-         specs = map_option get_state_specifications opts;
-         loc = Location.dummy;
-       }::acc)) [] items
-
-let get_states decls =
-  List.fold_left (fun acc i ->
-      (let loc, v = deloc i in
-       match v with
-       | Dstates (name, Some items, _exts) ->
-         {name = (match name with | None -> dumloc "_global" | Some a -> a);
-          items = get_states_items items;
-          loc = loc;}::acc
-       | _ -> acc)
-    ) [] decls
-
-let get_enums decls =
-  List.fold_left ( fun acc i ->
-      (let loc, decl_u = deloc i in
-       match decl_u with
-       | Denum (name, list, _) ->
-         {name = name;
-          vals = list;
-          loc = loc;}::acc
-       | _ -> acc)
-    ) [] decls
-
-let get_specs decls =
-  List.fold_left ( fun acc i ->
-      (let _loc, decl_u = deloc i in
-       match decl_u with
-       | Dverification _v -> acc
-       | _ -> acc)
-    ) [] decls
-
-let check_dv model : Model.model =
-  (model
-   |> unloc
-   |> (fun x -> x.variables)
-   |> List.iter (fun v ->
-       let d = v.decl in
-       match d.typ, d.default with
-       (*       | Some ({pldesc=Tbuiltin VTaddress; _}), None -> raise (Modelinfo.DefaultValueAssignment d.name)*)
-       | _ -> ()));
-  model
 
 let sanity_check model : Model.model =
+  let _check_dv model : Model.model =
+    (model
+     |> unloc
+     |> (fun x -> x.variables)
+     |> List.iter (fun v ->
+         let d = v.decl in
+         match d.typ, d.default with
+         (*       | Some ({pldesc=Tbuiltin VTaddress; _}), None -> raise (Modelinfo.DefaultValueAssignment d.name)*)
+         | _ -> ()));
+    model in
   model
-(*  |> check_dv*)
+(*  |> _check_dv*)
 
 let parseTree_to_model (pt : ParseTree.archetype) : Model.model =
-  let ptu = Location.unloc pt in
-  let decls = match ptu with
+  let decls = match unloc pt with
   | Marchetype decls -> decls
-  | _ -> [] in
+  | Mextension _ -> raise (ModelError ("extension cannot be translated into Model.model.", loc pt)) in
 
-  mkloc (loc pt) {
-    name          = get_name_archetype pt;
-    variables     = get_variables decls;
-    assets        = get_assets decls;
-    functions     = get_functions decls;
-    transactions  = get_transactions decls;
-    states        = get_states decls;
-    enums         = get_enums decls;
-    specs         = get_specs decls;
+  {
+    name          = get_name_archetype decls;
+    variables     = [];
+    assets        = [];
+    functions     = [];
+    transactions  = [];
+    states        = [];
+    enums         = [];
+    verifications = [];
   }
+  |> extract_decls decls
+  |> mkloc (loc pt)
   |> sanity_check
 
 let string_to_pterm (str : string) : Model.pterm =
