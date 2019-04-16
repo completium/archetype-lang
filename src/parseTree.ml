@@ -209,8 +209,7 @@ type action_properties = {
 (* -------------------------------------------------------------------- *)
 type declaration_r =
   | Darchetype     of lident * exts
-  | Dconstant      of lident * type_t * expr option * exts
-  | Dvariable      of lident * type_t * value_option list option * expr option * exts
+  | Dvariable      of lident * type_t * expr option * value_option list option * bool * exts
   | Denum          of lident * lident list * exts
   | Dstates        of lident option * (lident * state_option list option) list option * exts
   | Dasset         of lident * field list option * asset_option list option * asset_post_option list * asset_operation option * exts

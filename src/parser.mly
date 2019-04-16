@@ -248,18 +248,17 @@ declaration_r:
 archetype:
 | ARCHETYPE exts=option(extensions) x=ident { Darchetype (x, exts) }
 
-constant:
-| CONSTANT exts=option(extensions) x=ident y=loc(type_ref)
-    dv=default_value?
-       { Dconstant (x, y, dv, exts) }
+vc_decl(X):
+| X exts=extensions? x=ident t=type_t z=option(value_options) dv=default_value?
+    { (x, t, z, dv, exts) }
 
-%inline type_ref:
-| x=ident {Tref x}
+constant:
+  | x=vc_decl(CONSTANT) { let x, t, z, dv, exts = x in
+                          Dvariable (x, t, dv, z, true, exts) }
 
 variable:
-| VARIABLE exts=extensions? x=ident y=loc(type_ref) z=option(value_options)
-    dv=default_value?
-      { Dvariable (x, y, z, dv, exts) }
+  | x=vc_decl(VARIABLE) { let x, t, z, dv, exts = x in
+                          Dvariable (x, t, dv, z, false, exts) }
 
 %inline value_options:
 | xs=value_option+ { xs }

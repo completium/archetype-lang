@@ -6,3 +6,6 @@ variable a address = @tz1KmuhR6P52hw6xs5P69BXJYAURaznhvN1k
 variable duration duration = 1Y2M3W4D9h8m7s (* 1 year 2 months 3 weeks 4 days
                                                9 hours 8 minutes 7 seconds*)
 variable deadline date = 2019-01-01T00:00:00 (* iso 8601 *)
+variable mycollection (int collection) = [1; 2; 3]
+variable mytuple (int * int) = 1, 2
+variable mylambda int -> int = (fun x => x + 1)

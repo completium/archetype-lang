@@ -456,21 +456,13 @@ let get_variables decls =
       (let loc = loc i in
        let decl_u = Location.unloc i in
        match decl_u with
-       | Dconstant (id, typ, dv, _) ->
-         {
-           decl = mk_decl_pterm loc (id, Some typ, dv);
-           constant = true;
-           from = None;
-           to_ = None;
-           loc = loc;
-         }::acc
-       | Dvariable (id, typ, opts, dv, _) ->
+       | Dvariable (id, typ, dv, opts, cst, _) ->
          begin
            let (from, to_) = ret_from_to opts in
            let dv = (match unloc (mk_ptyp typ) with | Tbuiltin VTaddress -> None | _ -> dv) in
            {
              decl = mk_decl_pterm loc (id, Some typ, dv);
-             constant = false;
+             constant = cst;
              from = from;
              to_ = to_;
              loc = loc;
