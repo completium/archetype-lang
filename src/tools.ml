@@ -1,6 +1,8 @@
 exception No_value
 exception Unsupported_yet
 
+let debug_mode = ref false
+
 let id x = x
 
 let get = function

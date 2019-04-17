@@ -200,10 +200,25 @@ let mk_init_fields info args (fs : storage_field list) : (lident * initval) list
       | _                     -> raise (Anomaly "retrieve_default_value")
     end in
 
+  let seek_value id l : initval option =
+    let ref = unloc id in
+    List.fold_left (fun acc i ->
+        let k, v = i in
+        if (String.equal ref (unloc k))
+        then Some v
+        else acc
+      ) None l in
+
   List.fold_left (fun acc (f : storage_field) ->
       match f.default with
       | Some bv -> acc @ [f.name, match unloc bv with
         | Plit l -> Ival l
+        | Pvar i ->
+          begin
+            match seek_value i acc with
+            | Some e -> e
+            | _ -> raise (Anomaly "mk_init_fields_0")
+          end
         | _ -> (*raise (Anomaly "mk_init_fields_0")*)
           retrieve_default_value f (* TODO: handle all kind of default value for field *)
         ]
@@ -509,4 +524,4 @@ let modelws_to_modelliq (info : info) (m : model_with_storage) =
   |> (fun x -> x @ [mk_storage_decl m.storage])
   |> (fun x -> x @ [mk_init_storage info m.storage])
   |> (fun x -> List.fold_left (fun acc f -> acc @ [mk_function_decl f]) x m.functions)
-  |> (fun x -> List.fold_left (fun acc f -> acc @ [mk_transaction f]) x m.transactions);
+  |> (fun x -> List.fold_left (fun acc f -> acc @ [mk_transaction f]) x m.transactions)

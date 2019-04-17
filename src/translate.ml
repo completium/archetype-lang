@@ -146,11 +146,11 @@ let to_vset id =
   let loc, v = deloc id in
   match v with
   | "removed" -> VSremoved
-  | "added" -> VSadded
-  | "stable" -> VSstable
-  | "before" -> VSbefore
-  | "after" -> VSafter
-  | "fixed" -> VSfixed
+  | "added"   -> VSadded
+  | "stable"  -> VSstable
+  | "before"  -> VSbefore
+  | "after"   -> VSafter
+  | "fixed"   -> VSfixed
   | _ -> raise (ModelError (Format.sprintf "cannot convert %s to vset" v, loc))
 
 let rec mk_ptyp e : ptyp =

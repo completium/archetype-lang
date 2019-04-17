@@ -649,7 +649,7 @@ expr_r:
  | x=expr op=assignment_operator y=expr
      { Eassign (op, x, y) }
 
- | TRANSFER back=boption(BACK) x=expr y=ioption(to_value) %prec prec_transfer
+ | TRANSFER back=boption(BACK) x=simple_expr y=ioption(to_value) %prec prec_transfer
      { Etransfer (x, back, y) }
 
  | x=order_operations %prec prec_order { x }

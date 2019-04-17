@@ -585,7 +585,7 @@ let pp_effect fmt (code, _) =
 let rec pp_declaration fmt { pldesc = e; _ } =
   match e with
   | Darchetype (id, exts) ->
-    Format.fprintf fmt "model%a %a"
+    Format.fprintf fmt "archetype%a %a"
       (pp_option (pp_list " " pp_extension)) exts
       pp_id id
 

@@ -141,7 +141,7 @@ action[%onlyonce] withdraw = {
 
   effect
     let c = contributor.get caller in
-    transfer c.contribution caller;
+    transfer c.contribution to caller;
     (* do not forget this *)
     c.contribution := 0
 }

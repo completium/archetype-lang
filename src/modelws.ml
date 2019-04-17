@@ -1336,11 +1336,16 @@ let rec process_rec (acc : process_acc) (pterm : Model.pterm) : process_data =
     (
       let a = process_rec acc l in
       let b = process_rec acc r in
+
       let t = (
         match acc.start, a.ret, b.ret with
         | Some s, Operations, Operations ->
           dumloc (Pletin (dumloc "_ops", a.term, None,
                           dumloc (Pletin (dumloc "_ops", b.term, None, s))))
+        | None, Operations, Operations ->
+          dumloc (Pletin (dumloc "_ops", a.term, None,
+                          dumloc (Pletin (dumloc "_ops", b.term, None,
+                                          loc_pterm (Ptuple[Pvar "_ops"; Pvar "s"])))))
         | _ ->
           dumloc (Pletin (dumloc "s", a.term, None,
                           dumloc (Pletin (dumloc "s", b.term, None,

@@ -167,7 +167,7 @@ let mk_info m =
   let pa = m.assets |> List.fold_left (fun acc a -> acc @ (get_partitions a)) [] in
   let vt = m.variables |> List.fold_left (fun acc s -> acc @ [unloc s.decl.name, Tools.map_option unloc s.decl.typ]) []
   in
-  {
+  let res = {
     assets_pol = ap;
     key_types  = kt;
     key_ids    = ki;
@@ -175,7 +175,10 @@ let mk_info m =
     partitions = pa;
     state_init = si;
     vars_types = vt;
-    dummy_vars = vr }
+    dummy_vars = vr } in
+  if !Tools.debug_mode then
+    Format.eprintf "%a\n" pp_info res;
+  res
 
 let is_key aname fname info =
   let id = unloc aname in

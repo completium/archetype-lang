@@ -9,6 +9,7 @@ let opt_model = ref false
 let opt_modelws = ref false
 let opt_modelliq = ref false
 let opt_pterm = ref false
+let debug_mode = ref false
 
 exception Compiler_error
 exception E_arg
@@ -16,6 +17,7 @@ exception ArgError of string
 
 (* -------------------------------------------------------------------- *)
 let compile_and_print (filename, channel) =
+  Tools.debug_mode := !debug_mode;
   let pt = Io.parse_archetype ~name:filename channel in
   if !opt_json
   then Format.printf "%s\n" (Yojson.Safe.to_string (ParseTree.archetype_to_yojson pt))
@@ -54,6 +56,7 @@ let main () =
       "-W", Arg.Set opt_modelws, " Print raw model_with_storage";
       "-L", Arg.Set opt_modelliq, " Output Archetype in liquidity";
       "-T", Arg.Set opt_pterm, " Print pterm";
+      "-d", Arg.Set debug_mode, " Debug mode";
       "--storage-policy",
       Arg.String (fun s -> match s with
           | "flat" -> Modelinfo.storage_policy := Flat
