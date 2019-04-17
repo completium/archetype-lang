@@ -1308,23 +1308,24 @@ let compute_value_from_operator op assigned v =
   | AndAssign    -> dumloc (Plogical (And,   assigned, v))
   | OrAssign     -> dumloc (Plogical (Or,    assigned, v))
 
-let compute_asset_fun_args asset_name arg =
+let compute_asset_fun_args _asset_name arg =
   match unloc arg.term with
-  | Parray (label, exprs) ->
+  | Parray exprs ->
     begin
-      (match label with
+      (*match label with
        | Some id when not (String.equal (unloc id) asset_name) ->
          let l, v = deloc id in
          raise (WrongTypeAsset (v, asset_name, l))
-       | _ -> ());
+        | _ -> ());*)
       List.map (fun z ->
           match unloc z with
-          | Parray (_, a) when List.length a = 0 -> mkloc (Location.loc z) (Pvar (dumloc "Nil"))
+          | Parray a when List.length a = 0 -> mkloc (Location.loc z) (Pvar (dumloc "Nil"))
           | Pvar id when (String.equal (unloc id) "empty") -> mkloc (Location.loc z) (Pvar (dumloc "Nil"))
           | _ -> z) exprs
     end
-  | Pfassign l -> List.map (fun (_, _, z) ->
+  | Pfassign l -> List.map (fun (_, z) ->
       match unloc z with
+      | Parray a when List.length a = 0 -> mkloc (Location.loc z) (Pvar (dumloc "Nil"))
       | Pvar id when (String.equal (unloc id) "empty") -> mkloc (Location.loc z) (Pvar (dumloc "Nil"))
       | _ -> z) l
   | _ -> raise (Anomaly "process_rec")
@@ -1383,7 +1384,7 @@ let rec process_rec (acc : process_acc) (pterm : Model.pterm) : process_data =
       let f = AddAsset asset_name in
       let args : pterm list = (
         match unloc arg.term with
-        | Pfassign l -> List.map (fun (_, _, z) ->
+        | Pfassign l -> List.map (fun (_, z) ->
             match unloc z with
             | Pvar id when (String.equal (unloc id) "empty") -> mkloc (Location.loc z) (Pvar (dumloc "Nil"))
             | _ -> z) l
@@ -1433,7 +1434,8 @@ let rec process_rec (acc : process_acc) (pterm : Model.pterm) : process_data =
           | _ -> raise (Anomaly "convert_to_lambda")
         ) in
 
-        let ll : pterm = List.fold_right (fun (op, (_, field), v) acc ->
+        let ll : pterm = List.fold_right (fun (a, v) acc ->
+            let op, field = (match a with | Some (op, id) -> op, id | _ -> raise TODO) in
             let assigned = dumloc (Papp (dumloc (Pvar field), [loc_pterm (Pvar "x")])) in
             let value = compute_value_from_operator op assigned v in
             dumloc (Pletin (dumloc "x",
@@ -1460,7 +1462,8 @@ let rec process_rec (acc : process_acc) (pterm : Model.pterm) : process_data =
 
       let a = process_rec {acc with asset = Some (asset_name, asset_arg)} arg in
 
-      let f_arg = dumloc (Plambda (dumloc "x", None, false, a.term)) in
+      let f_arg = dumloc (Ptuple [loc_pterm (Pvar "s");
+                                  dumloc (Plambda (dumloc "x", None, false, a.term))]) in
 
 (*      let asset_name = "mile" in
       let f_arg = loc_pterm (Ptuple [Pvar "s"; Plambda ("x", None, false, Papp (Pdot (Pvar "Timestamp", Pvar "tim_lt"),

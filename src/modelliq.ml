@@ -435,7 +435,7 @@ let rec pterm_to_expr (p : Modelws.pterm) =  {
           Eident (to_qualid (x, y))
         )
       (* TODO : continue mapping *)
-      | _ -> raise (Anomaly ("pterm_to_expr : "^(Modelws.show_pterm p)))
+      | _ -> raise (Anomaly ("pterm_to_expr : " ^ (Modelws.show_pterm p)))
     end;
   expr_loc = loc p
 }

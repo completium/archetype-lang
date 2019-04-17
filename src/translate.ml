@@ -274,14 +274,15 @@ let rec mk_pterm (e : expr) : pterm =
         | (_, e) -> mk_pterm_id e)
     | Eop _ -> raise (ModelError ("operation error", loc))
     | Eliteral l -> Plit (mkloc loc (to_bval l))
-    | Earray l -> Parray (None, List.map mk_pterm l)
+    | Earray l -> Parray (List.map mk_pterm l)
     | Edot (e, i) -> Pdot (mk_pterm e, mkloc (i |> Location.loc) (mk_pterm_id i))
-    | Erecord _l -> raise Modelinfo.TODO
+    | Erecord l -> Pfassign (List.map
+                               (fun i ->
+                                  let (a, e) = i in
+                                  let b = map_option (fun (op, id) ->
+                                      (to_assignment_operator op, id)) a in
+                                  (b, mk_pterm e)) l)
     | Etuple l -> Ptuple (List.map (fun x -> mk_pterm x) l)
-      (*Pfassign (List.map
-                  (fun i ->
-                     let (op, (a, f), e) = i in
-                     (to_assignment_operator op, (a, f), mk_pterm e)) l)*)
     | Eapp ({pldesc=Eop op; plloc=locop}, [lhs; rhs]) ->
       (
         match op with
@@ -304,7 +305,7 @@ let rec mk_pterm (e : expr) : pterm =
     | Eassign (op, lhs, rhs) -> Passign (to_assignment_operator op, mk_pterm lhs, mk_pterm rhs)
     | Eif (cond, then_, else_) -> Pif (mk_pterm cond, mk_pterm then_, map_option mk_pterm else_)
     | Ebreak -> Pbreak
-    | Efor (i, e, body) -> Pfor (i, mk_pterm e, mk_pterm body)
+    | Efor (i, e, body) -> Pfor (i, mk_pterm e, mk_pterm body, None)
     | Eassert e -> Passert (mk_lterm e)
     | Eseq (lhs, rhs) -> Pseq (mk_pterm lhs, mk_pterm rhs)
     | Efun (args, body) ->
@@ -326,7 +327,13 @@ let rec mk_pterm (e : expr) : pterm =
                         )) [] l in
       Pmatchwith (mk_pterm e, ll)
     | Equantifier _ -> raise (ModelError ("Quantifiers are not allowed in programming block", loc))
-    | Elabel _ -> raise (ModelError ("Elabel", loc)))
+    | Elabel (lbl, e) ->
+      begin
+        let p = mk_pterm e in
+        match unloc p with
+        | Pfor (i, a, body, _) -> Pfor (i, a, body, Some lbl)
+        |  _ -> raise (ModelError ("Elabel", loc))
+      end)
 
 
 let to_label_lterm x : label_lterm =

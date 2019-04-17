@@ -264,9 +264,9 @@ and lterm = lterm_unloc loced
 type ('id,'typ,'pattern,'term) poly_pterm  =
   (* program specific *)
   | Pif of 'term * 'term * ('term) option
-  | Pfor of 'id * 'term * 'term
+  | Pfor of 'id * 'term * 'term * 'id option
   | Passign of assignment_operator * 'term * 'term
-  | Pfassign of (assignment_operator * ('id option * 'id) * 'term) list
+  | Pfassign of ((assignment_operator * 'id) option * 'term) list
   | Ptransfer of 'term * bool * 'id qualid option
   | Pbreak
   | Pseq of 'term * 'term
@@ -285,11 +285,11 @@ type ('id,'typ,'pattern,'term) poly_pterm  =
   | Parith of arithmetic_operator * 'term * 'term
   | Puarith of unary_arithmetic_operator * 'term
   | Pvar of 'id
-  | Parray of 'id option * ('term) list
+  | Parray of 'term list
   | Plit of bval
   | Pdot of 'term * 'term
   | Pconst of const
-  | Ptuple of ('term) list
+  | Ptuple of 'term list
 [@@deriving show {with_path = false}]
 
 type pterm = ((lident,ptyp,pattern,pterm) poly_pterm) loced
@@ -467,10 +467,11 @@ let get_asset_fields m =
 *)
 let poly_pterm_map f fi ft fr fp fq = function
     | Pif (c, t, e) -> f (Pif (fp c, fp t, map_option fp e))
-    | Pfor (id, c, b) -> f (Pfor (fi id, fp c, fp b))
+    | Pfor (id, c, b, lbl) -> f (Pfor (fi id, fp c, fp b, map_option fi lbl))
     | Passign (a, e, t) -> f (Passign (a, fp e, fp t))
-    | Pfassign l -> f (Pfassign (List.map (fun (a, (i, j), v) ->
-        (a, (map_option fi i, fi j), fp v)) l))
+    | Pfassign l -> f (Pfassign (List.map (fun (a, v) ->
+        let b = map_option (fun (x, y) -> (x, fi y)) a in
+        (b, fp v)) l))
     | Ptransfer (e, b, q) -> f (Ptransfer (fp e, b, map_option fq q))
     | Pbreak -> f (Pbreak)
     | Pseq (lhs, rhs) -> f (Pseq (fp lhs, fp rhs))
@@ -487,7 +488,7 @@ let poly_pterm_map f fi ft fr fp fq = function
     | Parith (o, l, r) -> f (Parith (o, fp l, fp r))
     | Puarith (u, e) -> f (Puarith (u, fp e))
     | Pvar i -> f (Pvar (fi i))
-    | Parray (i, l) -> f (Parray (map_option fi i, List.map fp l))
+    | Parray l -> f (Parray (List.map fp l))
     | Plit v -> f (Plit v)
     | Pdot (l, r) -> f (Pdot (fp l, fp r))
     | Pconst c -> f (Pconst c)
@@ -500,9 +501,9 @@ let poly_pterm_map f fi ft fr fp fq = function
 let poly_pterm_fold f acc = function
     | Pif (c, t, Some e) -> f (f (f acc c) t) e
     | Pif (c, t, None) -> f (f acc c) t
-    | Pfor (_id, c, b) -> f (f acc c) b
+    | Pfor (_id, c, b, _lbl) -> f (f acc c) b
     | Passign (_a, e, t) -> f (f acc e) t
-    | Pfassign l -> List.fold_left (fun acc (_a, (_i, _j), v) -> f acc v) acc l
+    | Pfassign l -> List.fold_left (fun acc (_, v) -> f acc v) acc l
     | Ptransfer (e, _b, _q) -> f acc e
     | Pseq (lhs, rhs) -> f (f acc lhs) rhs
     | Pnot e -> f acc e
@@ -515,7 +516,7 @@ let poly_pterm_fold f acc = function
     | Pcomp (_o, l, r) -> f (f acc l) r
     | Parith (_o, l, r) -> f (f acc l) r
     | Puarith (_u, e) -> f acc e
-    | Parray (_i, l) -> List.fold_left f acc l
+    | Parray l -> List.fold_left f acc l
     | Pdot (l, r) -> f (f acc l) r
     | Ptuple l -> List.fold_left f acc l
     | _ -> acc
