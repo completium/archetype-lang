@@ -641,8 +641,6 @@ let rec pp_declaration fmt { pldesc = e; _ } =
         pp_expr from
         (pp_list "@\n" pp_to) lto*)
 
-
-
   | Dextension (id, args) ->
       Format.fprintf fmt "%%%a%a"
         pp_id id

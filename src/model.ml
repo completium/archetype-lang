@@ -206,9 +206,7 @@ type const =
 [@@deriving show {with_path = false}]
 
 type signature = {
-  name : const;
-  arrity: int;
-  return: ptyp;
+  name : lident;
   args: ptyp list;
   loc: Location.t [@opaque];
 }
@@ -363,7 +361,7 @@ type ('id,'typ,'pattern,'term) gen_transaction = {
   calledby     : rexpr option;
   condition    : label_pterm list option;
   transition   : (liqualid option * sexpr * (lident * pterm option * pterm option) list) option;
-                 (*            id *  from * (    to *    condition *       action)) *)
+  (*            id *  from * (    to *    condition *       action)) *)
   verification : verification option;
   effect       : ('id,'typ,'pattern,'term) poly_pterm loced option;
   side         : bool;
@@ -430,6 +428,14 @@ type ('id,'typ,'pattern,'term) gen_function = {
 type function_ = (lident,ptyp,pattern,pterm) gen_function
 [@@deriving show {with_path = false}]
 
+type contract = {
+  name       : lident;
+  signatures : signature list;
+  init       : pterm option;
+  loc        : Location.t [@opaque];
+}
+[@@deriving show {with_path = false}]
+
 type model_unloc = {
   name          : lident;
   variables     : variable list;
@@ -438,6 +444,7 @@ type model_unloc = {
   transactions  : transaction list;
   states        : state list;
   enums         : enum list;
+  contracts     : contract list;
   verifications : verification list;
 }
 [@@deriving show {with_path = false}]
@@ -460,68 +467,68 @@ let get_asset_fields m =
     ) [] m.assets
 
 (* generic mapper for poly_pterm type
-  f  : function called on each constructor
-  fi : function called on ident argument into constructor
-  ft : function called on typ argument into constructor
-  fr : function called on pattern argument into constructor
-  fp : function called on pterm argument into constructor
-  fq : function called on qualid argument into constructor
+   f  : function called on each constructor
+   fi : function called on ident argument into constructor
+   ft : function called on typ argument into constructor
+   fr : function called on pattern argument into constructor
+   fp : function called on pterm argument into constructor
+   fq : function called on qualid argument into constructor
 *)
 let poly_pterm_map f fi ft fr fp fq = function
-    | Pif (c, t, e) -> f (Pif (fp c, fp t, map_option fp e))
-    | Pfor (id, c, b, lbl) -> f (Pfor (fi id, fp c, fp b, map_option fi lbl))
-    | Passign (a, e, t) -> f (Passign (a, fp e, fp t))
-    | Pfassign l -> f (Pfassign (List.map (fun (a, v) ->
-        let b = map_option (fun (x, y) -> (x, fi y)) a in
-        (b, fp v)) l))
-    | Ptransfer (e, b, q) -> f (Ptransfer (fp e, b, map_option fq q))
-    | Pbreak -> f (Pbreak)
-    | Pseq (lhs, rhs) -> f (Pseq (fp lhs, fp rhs))
-    | Pnot e -> f (Pnot (fp e))
-    | Passert l -> f (Passert l)
-    | Pmatchwith (e, l) -> f (Pmatchwith (fp e, List.map (fun (p, e) -> (fr p, fp e)) l))
-    | Precord l -> f (Precord (List.map (fun (q, t) -> (fq q, fp t) ) l))
-    | Prel i -> f (Prel i)
-    | Pletin (i, v, t, b) -> f (Pletin (fi i, fp v, ft t, fp b))
-    | Papp (e, a) -> f (Papp (fp e, List.map fp a))
-    | Plambda (i, t, s, b) -> f (Plambda (fi i, ft t, s, fp b))
-    | Plogical (o, l, r) -> f (Plogical (o, fp l, fp r))
-    | Pcomp (o, l, r) -> f (Pcomp (o, fp l, fp r))
-    | Parith (o, l, r) -> f (Parith (o, fp l, fp r))
-    | Puarith (u, e) -> f (Puarith (u, fp e))
-    | Pvar i -> f (Pvar (fi i))
-    | Parray l -> f (Parray (List.map fp l))
-    | Plit v -> f (Plit v)
-    | Pdot (l, r) -> f (Pdot (fp l, fp r))
-    | Pconst c -> f (Pconst c)
-    | Ptuple l -> f (Ptuple (List.map fp l))
+  | Pif (c, t, e) -> f (Pif (fp c, fp t, map_option fp e))
+  | Pfor (id, c, b, lbl) -> f (Pfor (fi id, fp c, fp b, map_option fi lbl))
+  | Passign (a, e, t) -> f (Passign (a, fp e, fp t))
+  | Pfassign l -> f (Pfassign (List.map (fun (a, v) ->
+      let b = map_option (fun (x, y) -> (x, fi y)) a in
+      (b, fp v)) l))
+  | Ptransfer (e, b, q) -> f (Ptransfer (fp e, b, map_option fq q))
+  | Pbreak -> f (Pbreak)
+  | Pseq (lhs, rhs) -> f (Pseq (fp lhs, fp rhs))
+  | Pnot e -> f (Pnot (fp e))
+  | Passert l -> f (Passert l)
+  | Pmatchwith (e, l) -> f (Pmatchwith (fp e, List.map (fun (p, e) -> (fr p, fp e)) l))
+  | Precord l -> f (Precord (List.map (fun (q, t) -> (fq q, fp t) ) l))
+  | Prel i -> f (Prel i)
+  | Pletin (i, v, t, b) -> f (Pletin (fi i, fp v, ft t, fp b))
+  | Papp (e, a) -> f (Papp (fp e, List.map fp a))
+  | Plambda (i, t, s, b) -> f (Plambda (fi i, ft t, s, fp b))
+  | Plogical (o, l, r) -> f (Plogical (o, fp l, fp r))
+  | Pcomp (o, l, r) -> f (Pcomp (o, fp l, fp r))
+  | Parith (o, l, r) -> f (Parith (o, fp l, fp r))
+  | Puarith (u, e) -> f (Puarith (u, fp e))
+  | Pvar i -> f (Pvar (fi i))
+  | Parray l -> f (Parray (List.map fp l))
+  | Plit v -> f (Plit v)
+  | Pdot (l, r) -> f (Pdot (fp l, fp r))
+  | Pconst c -> f (Pconst c)
+  | Ptuple l -> f (Ptuple (List.map fp l))
 
 (* generic mapper for poly_pterm type
-  f   : function called on each constructor
-  acc : accumulator
+   f   : function called on each constructor
+   acc : accumulator
 *)
 let poly_pterm_fold f acc = function
-    | Pif (c, t, Some e) -> f (f (f acc c) t) e
-    | Pif (c, t, None) -> f (f acc c) t
-    | Pfor (_id, c, b, _lbl) -> f (f acc c) b
-    | Passign (_a, e, t) -> f (f acc e) t
-    | Pfassign l -> List.fold_left (fun acc (_, v) -> f acc v) acc l
-    | Ptransfer (e, _b, _q) -> f acc e
-    | Pseq (lhs, rhs) -> f (f acc lhs) rhs
-    | Pnot e -> f acc e
-    | Pmatchwith (e, l) -> List.fold_left (fun acc (_p, e) -> f acc e) (f acc e) l
-    | Precord l -> List.fold_left (fun acc (_q, t) -> f acc t) acc l
-    | Pletin (_i, _v, _t, b) -> f acc b
-    | Papp (e, a) -> List.fold_left f (f acc e) a
-    | Plambda (_i, _t, _s, b) -> f acc b
-    | Plogical (_o, l, r) -> f (f acc l) r
-    | Pcomp (_o, l, r) -> f (f acc l) r
-    | Parith (_o, l, r) -> f (f acc l) r
-    | Puarith (_u, e) -> f acc e
-    | Parray l -> List.fold_left f acc l
-    | Pdot (l, r) -> f (f acc l) r
-    | Ptuple l -> List.fold_left f acc l
-    | _ -> acc
+  | Pif (c, t, Some e) -> f (f (f acc c) t) e
+  | Pif (c, t, None) -> f (f acc c) t
+  | Pfor (_id, c, b, _lbl) -> f (f acc c) b
+  | Passign (_a, e, t) -> f (f acc e) t
+  | Pfassign l -> List.fold_left (fun acc (_, v) -> f acc v) acc l
+  | Ptransfer (e, _b, _q) -> f acc e
+  | Pseq (lhs, rhs) -> f (f acc lhs) rhs
+  | Pnot e -> f acc e
+  | Pmatchwith (e, l) -> List.fold_left (fun acc (_p, e) -> f acc e) (f acc e) l
+  | Precord l -> List.fold_left (fun acc (_q, t) -> f acc t) acc l
+  | Pletin (_i, _v, _t, b) -> f acc b
+  | Papp (e, a) -> List.fold_left f (f acc e) a
+  | Plambda (_i, _t, _s, b) -> f acc b
+  | Plogical (_o, l, r) -> f (f acc l) r
+  | Pcomp (_o, l, r) -> f (f acc l) r
+  | Parith (_o, l, r) -> f (f acc l) r
+  | Puarith (_u, e) -> f acc e
+  | Parray l -> List.fold_left f acc l
+  | Pdot (l, r) -> f (f acc l) r
+  | Ptuple l -> List.fold_left f acc l
+  | _ -> acc
 
 let pattern_map f fi ft fr fq = function
   | Mwild -> f Mwild

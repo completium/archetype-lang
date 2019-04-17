@@ -597,6 +597,20 @@ let extract_decls decls model =
     loc = loc;
   } in
 
+  let mk_contract loc (id, ls, dv) =
+    let mk_signature = function
+      | Ssignature (i, ts) -> {
+          name = i;
+          args = List.map (fun x -> mk_ptyp x) ts;
+          loc = dummy;
+        } in
+    {
+      name       = id;
+      signatures = List.map (fun x -> mk_signature x) ls;
+      init       = map_option mk_pterm dv;
+      loc        = loc;
+    } in
+
   let mk_verification loc v =
     let mk_predicate loc (id, args, body) = {
       name = id;
@@ -703,7 +717,10 @@ let extract_decls decls model =
            acc with
            functions = (mk_function loc f)::acc.functions
          }
-       | Dcontract _ -> acc
+       | Dcontract (id, ls, dv, _) -> {
+           acc with
+           contracts = (mk_contract loc (id, ls, dv))::acc.contracts
+         }
        | Dnamespace _ -> raise (ModelError ("namespace is not supported at this stage", loc))
        | Dverification v ->
          {
@@ -742,6 +759,7 @@ let parseTree_to_model (pt : ParseTree.archetype) : Model.model =
     transactions  = [];
     states        = [];
     enums         = [];
+    contracts     = [];
     verifications = [];
   }
   |> extract_decls decls
