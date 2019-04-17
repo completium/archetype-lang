@@ -96,16 +96,16 @@ let to_const str =
 let container_to_container (c : ParseTree.container) : Model.container =
   match c with
   | Collection -> Collection
-  | Queue -> Queue
-  | Stack -> Stack
-  | Set -> Set
-  | Partition -> Partition
+  | Queue      -> Queue
+  | Stack      -> Stack
+  | Set        -> Set
+  | Partition  -> Partition
 
 
 let to_logical_operator (op : ParseTree.logical_operator) : Model.logical_operator =
   match op with
-  | And -> And
-  | Or -> Or
+  | And   -> And
+  | Or    -> Or
   | Imply -> Imply
   | Equiv -> Equiv
 
@@ -329,18 +329,20 @@ let rec mk_pterm (e : expr) : pterm =
     | Elabel _ -> raise (ModelError ("Elabel", loc)))
 
 
-let to_label_lterm (label, lterm) : label_lterm =
+let to_label_lterm x : label_lterm =
+  let loc, (label, lterm) = deloc x in
   {
     label = label;
     term = mk_lterm lterm;
-    loc = dummy;
+    loc = loc;
   }
 
-let to_label_pterm (label, pterm) : label_pterm =
+let to_label_pterm x : label_pterm =
+  let loc, (label, pterm) = deloc x in
   {
     label = label;
     term = mk_pterm pterm;
-    loc = dummy;
+    loc = loc;
   }
 
 (****************)
@@ -359,25 +361,14 @@ let rec to_sexpr (e : expr) : Model.sexpr =
       mkloc loc (Sor (lhs, rhs)))
   | _ -> raise (ModelError ("wrong type for ", loc))
 
-let mk_bval e =
-  let loc, v = deloc e in
-  mkloc loc
-    (match v with
-     | Eliteral l -> to_bval l
-     | Eterm (None, id) -> BVenum (unloc id)
-     | _ -> raise (ModelError ("mk_bval: wrong type for ", loc)))
-
-let mk_label_term mk item =
-  let (name, v) = item in {
-    label = name;
-    term = v |> mk;
-    loc = v |> loc;
-  }
-
-let mk_label_lterm =
-  mk_label_term mk_lterm
-
 let mk_decl loc ((id, typ, dv) : (lident * type_t option * expr option)) =
+  let mk_bval e =
+    let loc, v = deloc e in
+    mkloc loc
+      (match v with
+       | Eliteral l -> to_bval l
+       | Eterm (None, id) -> BVenum (unloc id)
+       | _ -> raise (ModelError ("mk_bval: wrong type for ", loc))) in
   {
     name = id;
     typ = map_option mk_ptyp typ;
@@ -385,56 +376,35 @@ let mk_decl loc ((id, typ, dv) : (lident * type_t option * expr option)) =
     loc = loc;
   }
 
-let mk_decl_pterm loc ((id, typ, dv) : (lident * type_t option * expr option)) =
-  {
-    name = id;
-    typ = map_option mk_ptyp typ;
-    default = map_option mk_pterm dv;
-    loc = loc;
-  }
-
-let dest_label (e : expr) : (lident option * expr) =
-  match unloc e with
-  | Elabel (i, e) -> Some i, e
-  | _ -> None, e
-
-let mk_spec loc (vars : (lident * type_t * expr option) loced list option) action (_invs : (lident * expr) list) items = {
-  dummy_verif with
-  variables = List.fold_left
-      (fun acc i ->
-         let loc, (id, typ, dv) = deloc i in
-         ({
-           dummy_variable with
-           decl = mk_decl_pterm loc (id, Some typ, dv);
-           constant = false;
-           from = None;
-           to_ = None;
-           loc = loc;
-         })::acc) [] (vars |> map_list);
-  effect = map_option mk_pterm action;
-  invariants = [];(*List.map mk_label_lterm invs;*)
-  specs = List.map mk_label_lterm items;
-  loc = loc;
-}
-
-let mk_simple_spec loc items =
-  mk_spec loc None None [] items
-
-let ret_from_to opts =
-  match opts with
-  | Some o ->
-    (List.fold_left (fun (a, b) i ->
-         match i with
-         | VOfrom q -> (Some (mk_qualid q), b)
-         | VOto q -> (a, Some (mk_qualid q))) (None, None) o)
-  | _ -> (None, None)
-
-
 let extract_args (args : ParseTree.args)  =
   List.fold_left (fun acc (i : lident_typ) ->
       let name, typ, _ = i in
       mk_decl dummy (name, typ, None)::acc
     ) [] (args |> List.rev)
+
+let mk_label_lterm loc (l, e) : lterm label_term =
+  {
+    label = l;
+    term  = mk_lterm e;
+    loc   = loc;
+  }
+
+let map_label_lterm l : label_lterm list =
+  List.map (fun x ->
+      let loc, (l, e) = deloc x in
+      mk_label_lterm loc (l, e)
+    ) l
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -467,10 +437,25 @@ let get_name_archetype decls : lident =
   | Some ({pldesc = Darchetype (id, _exts); plloc = _l }) -> id
   | _ -> raise (ModelError0 ("no name for archetype found."))
 
-(* extraction if parse tree declarations *)
+(* extraction of parse tree declarations *)
 let extract_decls decls model =
 
   let mk_variable loc (id, typ, dv, opts, cst) =
+    let mk_decl_pterm loc ((id, typ, dv) : (lident * type_t option * expr option)) =
+      {
+        name = id;
+        typ = map_option mk_ptyp typ;
+        default = map_option mk_pterm dv;
+        loc = loc;
+      } in
+    let ret_from_to opts =
+      match opts with
+      | Some o ->
+        (List.fold_left (fun (a, b) i ->
+             match i with
+             | VOfrom q -> (Some (mk_qualid q), b)
+             | VOto q -> (a, Some (mk_qualid q))) (None, None) o)
+      | _ -> (None, None) in
     let (from, to_) = ret_from_to opts in {
       decl = mk_decl_pterm loc (id, Some typ, dv);
       constant = cst;
@@ -487,29 +472,58 @@ let extract_decls decls model =
            | Ffield (id, typ, dv, _) -> mk_decl loc (id, Some typ, dv)::acc
          ) fields []) in
 
-    let get_assets_init apos : pterm option =
-      List.fold_left (fun acc i ->
-          match i with
-          | APOinit _e -> None (*Some (mk_pterm e)*) (* TODO*)
-          | _ -> acc) None apos in
-
     let extract_asset_opts opts m =
       List.fold_left (fun acc i ->
           match i with
-          | AOidentifiedby id -> { m with key = id; }
-          | AOasrole -> { m with role = true; }
-          | _ -> acc) m opts in
+          | AOasrole ->
+            {
+              acc with
+              role = true;
+            }
+          | AOidentifiedby id ->
+            {
+              acc with
+              key = id;
+            }
+          | AOsortedby id ->
+            {
+              acc with
+              sort = id::acc.sort
+            }) m opts in
+
+    let extract_apo apos m =
+      List.fold_left (fun acc i ->
+          match i with
+          | APOstates id ->
+            {
+              acc with
+              state = Some id
+            }
+          | APOconstraints l ->
+            {
+              acc with
+              specs = map_label_lterm l
+            }
+          | APOinit e ->
+            {
+              acc with
+              init = Some (mk_pterm e)
+            }
+        ) m apos in
+
     {
       name  = id;
       args  = get_asset_fields fields;
       key   = dumloc "_id";
-      sort  = None;
+      sort  = [];
+      state = None;
       role  = false;
-      init  = get_assets_init apo;
-      preds = None;
+      init  = None;
+      specs = [];
       loc   = loc;
     }
     |> extract_asset_opts opts
+    |> extract_apo apo
   in
 
   let mk_function loc f = {
@@ -536,8 +550,8 @@ let extract_decls decls model =
     {
       name = name;
       args = extract_args args;
-      calledby  = Tools.map_option (fun (e, _) -> to_rexpr_calledby e) props.calledby;
-      condition = Tools.map_option (fun (items, _) -> List.map (fun a -> let b, c = a in (to_label_pterm (b, c))) items) props.condition;
+      calledby  = map_option (fun (e, _) -> to_rexpr_calledby e) props.calledby;
+      condition = map_option (fun (items, _) -> List.map (fun a -> to_label_pterm a) items) props.condition;
       transition = None;
       verification = None;
       effect = None;
@@ -613,13 +627,36 @@ let extract_decls decls model =
             acc with
             definitions = (mk_definition loc (name, typ_, id, def))::acc.definitions
           }
-(*        | Vaxiom -> acc
-        | Vtheorem -> acc
-        | Vvariable -> acc
-        | Vinvariant -> acc
-        | Veffect -> acc
-        | Vspecification -> acc *)
-        | _ -> acc
+        | Vaxiom (id, e) ->
+          {
+            acc with
+            axioms = (mk_label_lterm loc (Some id, e))::acc.axioms
+          }
+        | Vtheorem (id, e) ->
+          {
+            acc with
+            theorems = (mk_label_lterm loc (Some id, e))::acc.theorems
+          }
+        | Vvariable (id, typ, e) ->
+          {
+            acc with
+            variables = (mk_variable loc (id, typ, e, None, false))::acc.variables
+          }
+        | Vinvariant (id, l) ->
+          {
+            acc with
+            invariants = (id, map_label_lterm l)::acc.invariants
+          }
+        | Veffect e ->
+          {
+            acc with
+            effect = Some (mk_pterm e)
+          }
+        | Vspecification l ->
+          {
+            acc with
+            specs = (map_label_lterm l) @ acc.specs
+          }
       ) (v |> unloc |> fst) { dummy_verif with loc = loc; }
   in
 

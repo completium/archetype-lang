@@ -19,11 +19,12 @@
     | _ -> [e]
 
   let rec split_seq_label e =
-    match unloc e with
+    let loc, f = deloc e in
+    match f with
     | Eseq (a, b) -> (split_seq_label a) @ (split_seq_label b)
-    | Elabel (lbl, e) -> [(Some lbl, e)]
-    | Eterm _ -> [(None, e)]
-    | _ -> error ~loc:(loc e) PE_Unknown
+    | Elabel (lbl, e) -> [mkloc loc (Some lbl, e)]
+    | Eterm _ -> [mkloc loc (None, e)]
+    | _ -> error ~loc:(Location.loc e) PE_Unknown
 
 %}
 
@@ -350,7 +351,7 @@ function_decl:
 | VARIABLE id=ident t=type_t dv=default_value? { Vvariable (id, t, dv) }
 
 %inline verif_invariant:
-| INVARIANT id=ident xs=expr { Vinvariant (id, xs) }
+| INVARIANT id=ident xs=expr { Vinvariant (id, split_seq_label xs) }
 
 %inline verif_effect:
 | EFFECT e=expr { Veffect e }
@@ -461,7 +462,7 @@ asset:
 
 asset_post_option:
 | WITH STATES x=ident           { APOstates x }
-| WITH xs=braced(expr)          { APOconstraints xs }
+| WITH xs=braced(expr)          { APOconstraints (split_seq_label xs) }
 | INITIALIZED BY e=simple_expr  { APOinit e }
 
 %inline asset_post_options:

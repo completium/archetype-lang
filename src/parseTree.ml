@@ -141,7 +141,9 @@ and expr = expr_r loced
 and lident_typ = lident * type_t option * extension list option
 [@@deriving yojson, show {with_path = false}]
 
-and label_exprs = (lident option * expr) list
+and label_expr = (lident option * expr) loced
+
+and label_exprs = label_expr list
 
 (* -------------------------------------------------------------------- *)
 and extension_r =
@@ -175,7 +177,7 @@ type verification_item_unloc =
   | Vaxiom of lident * expr
   | Vtheorem of lident * expr
   | Vvariable of lident * type_t * expr option
-  | Vinvariant of lident * expr
+  | Vinvariant of lident * label_exprs
   | Veffect of expr
   | Vspecification of label_exprs
 [@@deriving yojson, show {with_path = false}]
@@ -237,7 +239,7 @@ and asset_option =
 
 and asset_post_option =
   | APOstates of lident
-  | APOconstraints of expr
+  | APOconstraints of label_exprs
   | APOinit of expr
 [@@deriving yojson, show {with_path = false}]
 

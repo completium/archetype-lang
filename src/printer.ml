@@ -526,6 +526,12 @@ match e with
 (pp_list " " pp_asset_operation_enum) x
 (pp_option (pp_prefix " " (pp_list " " pp_expr))) y
 
+let pp_label_expr fmt (le : label_expr) =
+  let (lbl, e) = unloc le in
+  Format.fprintf fmt "%a%a"
+    (pp_option (pp_postfix " : " pp_id)) lbl
+    pp_expr e
+
 let pp_asset_post_option fmt (apo : asset_post_option) =
   match apo with
   | APOstates i ->
@@ -533,7 +539,7 @@ let pp_asset_post_option fmt (apo : asset_post_option) =
       pp_id i
   | APOconstraints cs ->
     Format.fprintf fmt " with {@\n @[<v 2>  %a@] } "
-      pp_expr cs
+      (pp_list "@\n;" pp_label_expr) cs
   | APOinit e ->
     Format.fprintf fmt " initialized by %a"
       pp_expr e

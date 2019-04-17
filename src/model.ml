@@ -346,7 +346,7 @@ type verification = {
   axioms      : label_lterm list;
   theorems    : label_lterm list;
   variables   : variable list;
-  invariants  : label_lterm list;
+  invariants  : (lident * label_lterm list) list;
   effect      : pterm option;
   specs       : label_lterm list;
   loc         : Location.t [@opaque];
@@ -391,10 +391,11 @@ type asset = {
   name  : lident;
   args  : arg list;
   key   : lident;
-  sort  : lident list option;
+  sort  : lident list;
+  state : lident option;
   role  : bool;
   init  : pterm option;
-  preds : pterm list option;
+  specs : label_lterm list;
   loc   : Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]
