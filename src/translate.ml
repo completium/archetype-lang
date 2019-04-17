@@ -101,7 +101,6 @@ let container_to_container (c : ParseTree.container) : Model.container =
   | Set        -> Set
   | Partition  -> Partition
 
-
 let to_logical_operator (op : ParseTree.logical_operator) : Model.logical_operator =
   match op with
   | And   -> And
@@ -165,7 +164,7 @@ let rec mk_ptyp e : ptyp =
      | Tcontainer (t, container) -> Tcontainer ((mk_ptyp t), container_to_container container)
      | Tapp (f, v) -> Tapp (mk_ptyp f, mk_ptyp v)
      | Ttuple l -> Ttuple (List.map mk_ptyp l)
-     | _ -> raise (ModelError ("mk_ptyp: unsupported type ", loc)))
+     | _ -> raise (ModelError ("unsupported type: " ^ (show_type_r v), loc)))
 
 let rec mk_ltyp e : ltyp=
   let loc, v = deloc e in
@@ -178,12 +177,12 @@ let to_bval l =
   match l with
   | Lnumber b -> BVint b
   | Lrational (n, d) -> BVrational (n, d)
+  | Ltz n -> BVcurrency (Tez, n)
   | Laddress s -> BVaddress s
   | Lstring s -> BVstring s
   | Lbool b -> BVbool b
   | Lduration s -> BVduration s
   | Ldate s -> BVdate s
-  | Ltz n -> BVcurrency (Tez, n)
 
 let mk_lterm_id (id : lident) =
   let c = id |> unloc |> to_const in
@@ -191,14 +190,25 @@ let mk_lterm_id (id : lident) =
   | Some d -> Lconst d
   | None -> Lvar id
 
+let compute_term = function
+  | (Some a, e) -> mkloc (Location.merge (loc a) (loc e) ) ("_" ^ (unloc a) ^ "_" ^ (unloc e))
+  | (None, e) -> e
+
+let process_fun f ty c loc (args, body) =
+  match List.rev args with
+  | [] -> raise (ModelError ("no argument in lamda", loc))
+  | (ia, it, _)::t ->
+    List.fold_left (
+      fun acc i ->
+        let id, typ, _ = i in
+        c (id, map_option ty typ, false, mkloc loc acc)
+    ) (c (ia, map_option ty it, false, f body)) t
+
 let rec mk_lterm (e : expr) : lterm =
   let loc, v = deloc e in
   mkloc loc (
     match v with
-    | Eterm t -> (match t with
-        | (Some _a, _e) -> Llit (mkloc loc (BVstring "TODO: Namespace"))
-        | (None, e) -> mk_lterm_id e)
-
+    | Eterm t -> mk_lterm_id (compute_term t)
     | Eop _ -> raise (ModelError ("operation error", loc))
     | Eliteral l -> Llit (mkloc loc (to_bval l))
     | Earray l -> Larray (None, List.map mk_lterm l)
@@ -224,7 +234,7 @@ let rec mk_lterm (e : expr) : lterm =
       )
     | Eapp (f, args) -> Lapp (mk_lterm f, List.map mk_lterm args)
     | Etransfer (_a, _, _dest) -> raise (ModelError ("\"transfer\" is not allowed in logical block", loc))
-    | Eassign (_, _, _) -> raise (ModelError ("assignment is not allowed in logical block", loc))
+    | Eassign (_, _, _) -> raise (ModelError ("assignments are not allowed in logical block", loc))
     | Eif (cond, then_, None) -> Limply (mk_lterm cond, mk_lterm then_)
     | Eif (cond, then_, Some else_) -> Llogical (And,
                                                  mkloc loc (Limply (mk_lterm cond, mk_lterm then_)),
@@ -233,21 +243,12 @@ let rec mk_lterm (e : expr) : lterm =
     | Efor (_, _, _) -> raise (ModelError ("\"for\" is not allowed in logical block", loc))
     | Eassert _ -> raise (ModelError ("\"assert\" is not allowed in logical block", loc))
     | Eseq (lhs, rhs) -> Lseq (mk_lterm lhs, mk_lterm rhs)
-    | Efun (args, body) ->
-      (
-        match List.rev args with
-       | [] -> raise (ModelError ("no argument in lamda", loc))
-       | (ia, it, _)::t ->
-           List.fold_left (
-           fun acc i ->
-             let id, typ, _ = i in
-             Llambda (id, map_option mk_ltyp typ, mkloc dummy acc)
-           ) (Llambda (ia, map_option mk_ltyp it, mk_lterm body)) t)
+    | Efun (args, body) -> process_fun mk_lterm mk_ltyp (fun (w, x, y, z) -> Llambda (w, x, y, z)) loc (args, body)
     | Eletin ((i, typ, _), init, body, _other) -> Lletin (i, mk_lterm init,
                                                   map_option mk_ltyp typ, mk_lterm body)
     | Ematchwith _ -> raise (ModelError ("match with is not allowed in logical block", loc))
     | Equantifier (q, (id, t, _), e) -> Lquantifer (to_quantifier q, id, map_option mk_ltyp t, mk_lterm e)
-    | Elabel _ -> raise (ModelError ("Elabel", loc)))
+    | Elabel _ -> raise (ModelError ("labels are not allowed in logical block", loc)))
 
 let rec mk_qualid (q : ParseTree.qualid) : liqualid =
   match q with
@@ -270,8 +271,7 @@ let rec mk_pterm (e : expr) : pterm =
   let loc, v = deloc e in
   mkloc loc  (
     match v with
-    | Eterm t -> (match t with
-        | (_, e) -> mk_pterm_id e)
+    | Eterm t -> mk_pterm_id (compute_term t)
     | Eop _ -> raise (ModelError ("operation error", loc))
     | Eliteral l -> Plit (mkloc loc (to_bval l))
     | Earray l -> Parray (List.map mk_pterm l)
@@ -286,7 +286,7 @@ let rec mk_pterm (e : expr) : pterm =
     | Eapp ({pldesc=Eop op; plloc=locop}, [lhs; rhs]) ->
       (
         match op with
-        | `Logical Imply -> raise (ModelError ("Imply operator is not allowed in programming block", locop))
+        | `Logical Imply -> raise (ModelError ("imply operator is not allowed in programming block", locop))
         | `Logical o -> Plogical (to_logical_operator o, mk_pterm lhs, mk_pterm rhs)
         | `Cmp o     -> Pcomp    (to_comparison_operator o, mk_pterm lhs, mk_pterm rhs)
         | `Arith o   -> Parith   (to_arithmetic_operator o, mk_pterm lhs, mk_pterm rhs)
@@ -308,31 +308,21 @@ let rec mk_pterm (e : expr) : pterm =
     | Efor (i, e, body) -> Pfor (i, mk_pterm e, mk_pterm body, None)
     | Eassert e -> Passert (mk_lterm e)
     | Eseq (lhs, rhs) -> Pseq (mk_pterm lhs, mk_pterm rhs)
-    | Efun (args, body) ->
-      (
-        match List.rev args with
-       | [] -> raise (ModelError ("no argument in lamda", loc))
-       | (ia, it, _)::t ->
-           List.fold_left (
-           fun acc i ->
-             let id, typ, _ = i in
-             Plambda (id, map_option mk_ptyp typ, false, mkloc dummy acc)
-           ) (Plambda (ia, map_option mk_ptyp it, false, mk_pterm body)) t)
-    | Eletin ((i, typ, _), init, body, _) -> Pletin (i, mk_pterm init,
-                                                  map_option mk_ptyp typ, mk_pterm body)
+    | Efun (args, body) -> process_fun mk_pterm mk_ptyp (fun (w, x, y, z) -> Plambda (w, x, y, z)) loc (args, body)
+    | Eletin ((i, typ, _), init, body, _) -> Pletin (i, mk_pterm init, map_option mk_ptyp typ, mk_pterm body)
     | Ematchwith (e, l) ->
       let ll = List.fold_left
                     (fun acc (pts, e) -> (
                         (List.map (fun x -> (mk_pattern x, mk_pterm e)) pts)@acc
                         )) [] l in
       Pmatchwith (mk_pterm e, ll)
-    | Equantifier _ -> raise (ModelError ("Quantifiers are not allowed in programming block", loc))
+    | Equantifier _ -> raise (ModelError ("quantifiers are not allowed in programming block", loc))
     | Elabel (lbl, e) ->
       begin
         let p = mk_pterm e in
         match unloc p with
         | Pfor (i, a, body, _) -> Pfor (i, a, body, Some lbl)
-        |  _ -> raise (ModelError ("Elabel", loc))
+        |  _ -> raise (ModelError ("labels are only allowed in for loop", loc))
       end)
 
 

@@ -243,7 +243,7 @@ type lterm_unloc =
   | Lseq of lterm * lterm
   | Lnot of lterm
   | Lapp of lterm * lterm list
-  | Llambda of lident * ltyp option * lterm
+  | Llambda of lident * ltyp option * bool * lterm
   | Llogical of logical_operator * lterm * lterm
   (* mutualize below with pterm ? *)
   | Lcomp of comparison_operator * lterm * lterm
