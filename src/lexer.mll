@@ -33,9 +33,6 @@
       "with"                , WITH           ;
       "end"                 , END            ;
       "assert"              , ASSERT         ;
-      "object"              , OBJECT         ;
-      "key"                 , KEY            ;
-      "of"                  , OF             ;
       "enum"                , ENUM           ;
       "states"              , STATES         ;
       "initial"             , INITIAL        ;

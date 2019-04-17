@@ -215,8 +215,6 @@ type declaration_r =
   | Denum          of lident * lident list * exts
   | Dstates        of lident option * (lident * state_option list option) list option * exts
   | Dasset         of lident * field list * asset_option list * asset_post_option list * asset_operation option * exts
-  | Dobject        of lident * expr * exts
-  | Dkey           of lident * expr * exts
   | Daction        of lident * args * action_properties * (expr * exts) option * exts
   | Dtransition    of lident * args * (lident * lident) option * expr * action_properties * transition_r * exts
   | Dcontract      of lident * signature list * expr option * exts

@@ -91,6 +91,8 @@ let vtyp_to_str = function
   | VTaddress            -> "key_hash"
   | VTcurrency (Tez,_)   -> "tez"
   | VTcurrency (Mutez,_) -> "tez"
+  | VTkey                -> "key"
+  | VTobject             -> "object"
 
 let str_to_lident = mkloc Location.dummy
 
@@ -257,6 +259,8 @@ let vtyp_to_acronym = function
   | VTstring     -> "str"
   | VTaddress    -> "add"
   | VTcurrency _ -> "tez"
+  | VTkey        -> "key"
+  | VTobject     -> "object"
 
 let mk_empty_list() = mk_expr (str_to_eident ["Nil"])
 

@@ -65,6 +65,8 @@ type vtyp =
   | VTstring
   | VTaddress
   | VTcurrency of currency * transfer option
+  | VTobject
+  | VTkey
 [@@deriving show {with_path = false}]
 
 type vset =
@@ -553,3 +555,5 @@ let mk_init_val = function
   | VTstring         -> BVstring ""
   | VTaddress        -> BVaddress "@none"
   | VTcurrency (c,_) -> BVcurrency (c,Big_int.zero_big_int)
+  | VTkey            -> BVstring ""
+  | VTobject         -> BVstring ""

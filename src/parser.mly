@@ -53,9 +53,6 @@
 %token WITH
 %token END
 %token ASSERT
-%token OBJECT
-%token KEY
-%token OF
 %token ENUM
 %token STATES
 %token INITIAL
@@ -140,7 +137,6 @@
 %token <string> DURATION
 %token <string> DATE
 
-%nonassoc prec_decl
 %nonassoc prec_for prec_transfer
 
 %nonassoc TO IN EQUALGREATER
@@ -235,8 +231,6 @@ declaration_r:
  | x=variable           { x }
  | x=enum               { x }
  | x=states             { x }
- | x=object_decl        { x }
- | x=key_decl           { x }
  | x=asset              { x }
  | x=action             { x }
  | x=transition         { x }
@@ -394,12 +388,6 @@ states:
 
 states_values:
 | EQUAL xs=pipe_ident_options { xs }
-
-object_decl:
-| OBJECT exts=extensions? x=ident y=expr { Dobject (x, y, exts) } %prec prec_decl
-
-key_decl:
-| KEY exts=extensions? x=ident OF y=expr { Dkey (x, y, exts) } %prec prec_decl
 
 types:
 | xs=separated_nonempty_list(COMMA, type_t) { xs }

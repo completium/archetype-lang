@@ -6,7 +6,7 @@ archetype extension signedby (
 
 ) = {
 
-  key key_<%arole> of oracle
+  variable key_<%arole> key = oracle
 
   action aTransaction (signed_<%anarg> : signature) = {
     condition

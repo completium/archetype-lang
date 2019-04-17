@@ -619,18 +619,6 @@ let rec pp_declaration fmt { pldesc = e; _ } =
         ((fun fmt -> Format.fprintf fmt " = {@\n @[<v 2>%a@] }@\n" (pp_list ";@\n" pp_field))) fields
         (pp_list "@\n" pp_asset_post_option) apo
 
-  | Dobject (id, e, exts) ->
-      Format.fprintf fmt "object%a %a %a"
-        (pp_option (pp_list " " pp_extension)) exts
-        pp_id id
-        pp_expr e
-
-  | Dkey (id, e, exts) ->
-      Format.fprintf fmt "key%a %a of %a"
-        (pp_option (pp_list " " pp_extension)) exts
-        pp_id id
-        pp_expr e
-
   | Daction (id, args, props, code, exts) ->
       Format.fprintf fmt "action%a %a%a = {@\n@[<v 2>  %a%a@]@\n}"
         (pp_option (pp_list "@," pp_extension)) exts

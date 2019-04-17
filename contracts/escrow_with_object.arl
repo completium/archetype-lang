@@ -18,6 +18,13 @@ variable[%traceable] [%mutable_signed [buyer, debitor] (instate Created)]
 (* action deadline *)
 variable[%mutable (buyer or seller) (instate Created)] deadline date
 
+(* type taskStatus = {
+     date : date;
+     status : string of [ “OK” | “KO” ]
+   }
+*)
+variable[%signedby oracle] taskStatus object = "https://oracle.io/tskstat.schema.json"
+
 (* state machine *)
 states =
  | Created initial
@@ -38,13 +45,6 @@ transition abort from Created = {
 transition[%signedbyall [buyer, seller]] confirm from Created = {
   to Confirmed when balance = price + penalty
 }
-
-(* type taskStatus = {
-     date : date;
-     status : string of [ “OK” | “KO” ]
-   }
-*)
-object[%signedby oracle] taskStatus "https://oracle.io/tskstat.schema.json"
 
 transition finalize (task : taskStatus) from any = {
   to Transferred

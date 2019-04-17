@@ -665,25 +665,20 @@ let extract_decls decls model =
            acc with
            variables = (mk_variable loc (id, typ, dv, opts, cst))::acc.variables
          }
-       | Dasset (id, fields, opts, apo, _ops, _) ->
+       | Denum (name, list, _) ->
          {
            acc with
-           assets = (mk_asset loc (id, fields, opts, apo, _ops))::acc.assets
-         }
-       | Dfunction f ->
-         {
-           acc with
-           functions = (mk_function loc f)::acc.functions
+           enums = (mk_enum loc (name, list))::acc.enums
          }
        | Dstates (name, Some items, _) ->
          {
            acc with
            states = (mk_state loc (name, items))::acc.states
          }
-       | Denum (name, list, _) ->
+       | Dasset (id, fields, opts, apo, _ops, _) ->
          {
            acc with
-           enums = (mk_enum loc (name, list))::acc.enums
+           assets = (mk_asset loc (id, fields, opts, apo, _ops))::acc.assets
          }
        | Daction (name, args, props, action, _) ->
          {
@@ -703,6 +698,13 @@ let extract_decls decls model =
                                                                                            map_option mk_pterm action)) trs)
            }::acc.transactions
          }
+       | Dfunction f ->
+         {
+           acc with
+           functions = (mk_function loc f)::acc.functions
+         }
+       | Dcontract _ -> acc
+       | Dnamespace _ -> raise (ModelError ("namespace is not supported at this stage", loc))
        | Dverification v ->
          {
            acc with

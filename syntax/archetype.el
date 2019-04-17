@@ -13,7 +13,7 @@
   "Keymap for Archetype major mode")
 
 (defvar archetype-keywords
-  '("archetype" "constant" "variable" "identified" "sorted" "by" "as" "from" "to" "on" "ref" "fun" "initialized" "collection" "queue" "stack" "set" "partition" "asset" "match" "with" "end" "assert" "object" "key" "of" "enum" "states" "initial" "invariant" "transition" "action" "when" "called" "condition" "verification" "predicate" "definition" "axiom" "theorem" "specification" "effect" "function" "ensure" "let" "otherwise" "if" "then" "else" "for" "in" "break" "transfer" "back" "extension" "namespace" "contract" "and" "or" "not" "forall" "exists" "true" "false"))
+  '("archetype" "constant" "variable" "identified" "sorted" "by" "as" "from" "to" "on" "ref" "fun" "initialized" "collection" "queue" "stack" "set" "partition" "asset" "match" "with" "end" "assert" "enum" "states" "initial" "invariant" "transition" "action" "when" "called" "condition" "verification" "predicate" "definition" "axiom" "theorem" "specification" "effect" "function" "ensure" "let" "otherwise" "if" "then" "else" "for" "in" "break" "transfer" "back" "extension" "namespace" "contract" "and" "or" "not" "forall" "exists" "true" "false"))
 
 (defvar archetype-constants
   '("state" "now" "transferred" "caller" "fail" "balance" "conditions" "effects" "none" "any" "transfer" "mem" "idem" "before" "after" "fixed" "subset" "default"))
@@ -58,8 +58,8 @@
 
 
 ;;   `(,(archetype-regexp-opt '("state" "now" "transferred" "caller" "fail" "balance" "conditions" "effects" "none" "any" "transfer")) . font-lock-constant-face)
-;;   `(,(archetype-regexp-opt '("use" "model" "extension" "constant" "variable" "role" "asset" "states" "enum" "action" "function" "object" "key" "namespace" "contract")) . font-lock-type-face)
-;;   `(,(archetype-regexp-opt '("identified" "sorted" "by" "as" "from" "to" "match" "with" "end" "ref" "fun" "=>" "initialized" "collection" "queue" "stack" "set" "partition" "asset" "object" "initial" "args" "called" "transition" "condition" "effect" "specification" "invariant" "ensure" "let" "if" "then" "else" "for" "in" "break" "of" "back")) . font-lock-keyword-face)
+;;   `(,(archetype-regexp-opt '("use" "model" "extension" "constant" "variable" "role" "asset" "states" "enum" "action" "function" "namespace" "contract")) . font-lock-type-face)
+;;   `(,(archetype-regexp-opt '("identified" "sorted" "by" "as" "from" "to" "match" "with" "end" "ref" "fun" "=>" "initialized" "collection" "queue" "stack" "set" "partition" "asset" "initial" "args" "called" "transition" "condition" "effect" "specification" "invariant" "ensure" "let" "if" "then" "else" "for" "in" "break" "of" "back")) . font-lock-keyword-face)
 ;;   `(,(archetype-regexp-opt '("and" "or" "not" "->" "<->" "forall" "exists" "assert" "true" "false")) . font-lock-doc-face)
 
    )

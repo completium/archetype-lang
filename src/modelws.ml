@@ -1183,6 +1183,8 @@ type ret_typ =
   | String
   | Address
   | Tez
+  | Key
+  | Object
   | Const of Model.const
   | Id of string
   | Aaa of pterm
@@ -1265,6 +1267,8 @@ let to_ret_typ = function
       | VTstring   -> String
       | VTaddress  -> Address
       | VTcurrency _ -> Tez
+      | VTkey      -> Key
+      | VTobject   -> Object
     )
   | _ -> None
 
