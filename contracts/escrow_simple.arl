@@ -1,10 +1,10 @@
 archetype escrow_simple
 
-variable buyer role = @tz1KmuhR6P52hw6xs5P69BXJYAURaznhvN1k
+variable buyer role  = @tz1KmuhR6P52hw6xs5P69BXJYAURaznhvN1k
 
-variable seller role = @tzXJYAURaznhvN1khR6P52hw6xs5P691KmuB
+variable seller role = @tz1XJYAURaznhvN1khR6P52hw6xs5P691Kmu
 
-variable oracle role = @tz5P69BXJYAURaznhvN1k1KmuhR6P52hw6xs
+variable oracle role = @tz15P69BXJYAURaznhvN1k1KmuhR6P52hw6x
 
 variable price tez from buyer to seller = 10tz
 
