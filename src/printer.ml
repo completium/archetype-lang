@@ -47,9 +47,9 @@ let pp_if c pp1 pp2 fmt x =
   | true  -> Format.fprintf fmt "%a" pp1 x
   | false -> Format.fprintf fmt "%a" pp2 x
 
-let pp_if_do c pp fmt x =
+let pp_cond c pp fmt x =
   match c with
-  | true  -> Format.fprintf fmt "%a" pp x
+  | true  -> pp fmt x
   | _ -> ()
 
 let pp_maybe c tx pp fmt x =
@@ -481,8 +481,6 @@ let pp_transitem fmt { pldesc = t; _ } =
        (pp_list "; " pp_named_item) xs
 *)
 
-let pp_label_exprs fmt (_xs : label_exprs) =
-  Format.fprintf fmt "TODO"
 (*    (pp_list "@\n" (fun x -> let _a, b = x in pp_expr b)) xs*)
 
 
@@ -538,6 +536,8 @@ let pp_label_expr fmt (le : label_expr) =
     (pp_option (pp_postfix " : " pp_id)) lbl
     pp_expr e
 
+let pp_label_exprs xs = (pp_list ";@\n" pp_label_expr) xs
+
 let pp_asset_post_option fmt (apo : asset_post_option) =
   match apo with
   | APOstates i ->
@@ -556,18 +556,49 @@ let map_option f x =
   | None -> ()
 
 let pp_verification_item fmt = function
-(*  | Vpredicate of lident * args * expr
-  | Vdefinition of lident * type_t * lident * expr
-  | Vaxiom of lident * expr
-  | Vtheorem of lident * expr
-  | Vvariable of lident * type_t * expr option
-    | Vinvariant of lident * label_exprs*)
-  | Veffect e ->
-    Format.fprintf fmt "effect@\n@[<v 2>  %a@]@\n"
-      pp_expr e
-  (*  | Vspecification of label_exprs*)
-  | _ -> ()
+  | Vpredicate (id, args, body) ->
+    Format.fprintf fmt "predicate %a %a =@\n@{<v 2>  %a@}"
+      pp_id id
+      pp_fun_args args
+      pp_expr body
 
+  | Vdefinition (id, typ, var, body) ->
+    Format.fprintf fmt "definition %a =@\n@[<v 2>  { %a : %a | %a }@]"
+      pp_id id
+      pp_id var
+      pp_type typ
+      pp_expr body
+
+  | Vaxiom (id, body) ->
+    Format.fprintf fmt "axiom %a =@\n@[<v 2>  %a@]"
+      pp_id id
+      pp_expr body
+
+  | Vtheorem (id, body) ->
+    Format.fprintf fmt "theorem %a =@\n@[<v 2>  %a@]"
+      pp_id id
+      pp_expr body
+
+  | Vvariable (id, typ, dv) ->
+    Format.fprintf fmt "variable %a %a%a"
+      pp_id id
+      pp_type typ
+      (pp_option (fun fmt x -> Format.fprintf fmt " = %a" pp_expr x)) dv
+
+  | Vinvariant (id, cs) ->
+    Format.fprintf fmt "invariant %a@\n@[<v 2>  %a@]"
+      pp_id id
+      pp_label_exprs cs
+
+  | Veffect e ->
+    Format.fprintf fmt "effect@\n@[<v 2>  %a@]"
+      pp_expr e
+
+  | Vspecification xs ->
+    Format.fprintf fmt "specification@\n@[<v 2>  %a@]"
+      pp_label_exprs xs
+
+let pp_verification_items = pp_list "@\n@\n" pp_verification_item
 
 let pp_verification fmt v =
   let _v = v in
@@ -604,9 +635,9 @@ let pp_action_properties fmt (props : action_properties) =
       fun v ->
       let items, exts = v |> unloc in
       let items = items |> List.map (fun x -> x |> unloc) in
-      Format.fprintf fmt "verification%a@\n@[<v 2>  %a@]@\n"
+      Format.fprintf fmt "verification%a {@\n@[<v 2>  %a@]@\n}"
         (pp_option (pp_list " " pp_extension)) exts
-        (pp_list "@\n" pp_verification_item) items) props.verif
+        pp_verification_items items) props.verif
 
 
 let pp_effect fmt (code, _) =
@@ -615,6 +646,10 @@ let pp_effect fmt (code, _) =
     pp_expr code
 
 let rec pp_declaration fmt { pldesc = e; _ } =
+  let is_empty_action_properties (ap : action_properties) =
+    match ap.calledby, ap.condition, ap.functions, ap.verif with
+    | None, None, [], None -> true
+    | _ -> false in
   match e with
   | Darchetype (id, exts) ->
     Format.fprintf fmt "archetype%a %a"
@@ -651,25 +686,26 @@ let rec pp_declaration fmt { pldesc = e; _ } =
         ((fun fmt -> Format.fprintf fmt " = {@\n @[<v 2>%a@] }@\n" (pp_list ";@\n" pp_field))) fields
         (pp_list "@\n" pp_asset_post_option) apo
 
-  | Daction (id, args, props, code, exts) ->
-      Format.fprintf fmt "action%a %a%a = {@\n@[<v 2>  %a%a@]@\n}"
+  | Daction (id, args, props, _code, exts) ->
+      Format.fprintf fmt "action%a %a%a%a"
         (pp_option (pp_list "@," pp_extension)) exts
         pp_id id
         pp_fun_args args
-
-        pp_action_properties props
-        (pp_option pp_effect) code
+        (pp_cond (not (is_empty_action_properties props))
+           (fun fmt x ->
+              Format.fprintf fmt " = {@\n@[<v 2>  %a@]@\n}"
+                pp_action_properties x)) props
+  (*(pp_option pp_effect) code*)
 
   | Dtransition (id, args, _on, _from, props, _trs, exts) ->
       Format.fprintf fmt "transition%a %a%a%a"
         (pp_option (pp_list "@," pp_extension)) exts
         pp_id id
         pp_fun_args args
-        pp_str ""
-        (*pp_if_do false
-         (fun fmt ->
-          Format.fprintf fmt " = {@\n@[<v 2>  %a@]@\n}"
-            pp_action_properties) props*)
+        (pp_cond (not (is_empty_action_properties props))
+           (fun fmt x ->
+              Format.fprintf fmt " = {@\n@[<v 2>  %a@]@\n}"
+                pp_action_properties x)) props
 
 (*  | Ttransition (id, from, lto, exts) ->
       Format.fprintf fmt "transition%a%a from %a@\n%a"
@@ -705,16 +741,16 @@ let rec pp_declaration fmt { pldesc = e; _ } =
        let items = items |> List.map (fun x -> x |> unloc) in
        Format.fprintf fmt "verification%a {@\n@[<v 2>  %a@]@\n}"
          (pp_option (pp_list " " pp_extension)) exts
-         (pp_list "@\n" pp_verification_item) items
+         pp_verification_items items
      end
 
 (* -------------------------------------------------------------------------- *)
 let pp_archetype fmt { pldesc = m; _ } =
   match m with
-| Marchetype es ->
-  Format.fprintf fmt "%a" (pp_list "@,\n" pp_declaration) es
-| Mextension (id, ds, es) ->
-  Format.fprintf fmt "archetype extension %a (@\n@[<v 2>  %a@]@\n) = {@\n@[<v 2>  %a@]@\n}"
+  | Marchetype es ->
+    Format.fprintf fmt "%a@\n" (pp_list "@,\n" pp_declaration) es
+  | Mextension (id, ds, es) ->
+  Format.fprintf fmt "archetype extension %a (@\n@[<v 2>  %a@]@\n) = {@\n@[<v 2>  %a@]@\n}@\n"
      pp_id id
     (pp_list "@,\n" pp_declaration) ds
     (pp_list "@,\n" pp_declaration) es
