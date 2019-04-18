@@ -139,11 +139,11 @@
 
 %nonassoc prec_for prec_transfer
 
+%left COMMA SEMI_COLON
+
 %nonassoc TO IN EQUALGREATER
 %right OTHERWISE
 %right THEN ELSE
-
-%left COMMA SEMI_COLON
 
 %nonassoc COLON
 
