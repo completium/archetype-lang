@@ -74,7 +74,7 @@ process () {
     rm -f $OUT
 }
 
-printf '%-48s%s\n' '' '  PARSE   PRETTY   MODEL   W_STR   MAP   EXTRACT'
+printf '%-48s%s\n' '' '  PARSE   PRETTY  MODEL   W_STR   MAP   EXTRACT'
 
 for i in contracts/*.arl; do
   process $i

@@ -296,6 +296,7 @@ contract:
 | xs=signature+ { xs }
 
 signature:
+| ACTION x=ident                { Ssignature (x, []) }
 | ACTION x=ident COLON xs=types { Ssignature (x, xs) }
 
 %inline fun_effect:
