@@ -47,6 +47,11 @@ let pp_if c pp1 pp2 fmt x =
   | true  -> Format.fprintf fmt "%a" pp1 x
   | false -> Format.fprintf fmt "%a" pp2 x
 
+let pp_if_do c pp fmt x =
+  match c with
+  | true  -> Format.fprintf fmt "%a" pp x
+  | _ -> ()
+
 let pp_maybe c tx pp fmt x =
   pp_if c (tx pp) pp fmt x
 
@@ -594,7 +599,15 @@ let pp_action_properties fmt (props : action_properties) =
   map_option (fun (e, exts) ->
       Format.fprintf fmt "called by%a %a@\n"
         (pp_option (pp_list " " pp_extension)) exts
-        pp_expr e) props.calledby
+        pp_expr e) props.calledby;
+  map_option (
+      fun v ->
+      let items, exts = v |> unloc in
+      let items = items |> List.map (fun x -> x |> unloc) in
+      Format.fprintf fmt "verification%a@\n@[<v 2>  %a@]@\n"
+        (pp_option (pp_list " " pp_extension)) exts
+        (pp_list "@\n" pp_verification_item) items) props.verif
+
 
 let pp_effect fmt (code, _) =
   Format.fprintf fmt "effect@\n@[<v 2>  %a@]@\n"
@@ -643,15 +656,20 @@ let rec pp_declaration fmt { pldesc = e; _ } =
         (pp_option (pp_list "@," pp_extension)) exts
         pp_id id
         pp_fun_args args
+
         pp_action_properties props
         (pp_option pp_effect) code
 
   | Dtransition (id, args, _on, _from, props, _trs, exts) ->
-      Format.fprintf fmt "transition%a %a%a = {@\n@[<v 2>  %a@]@\n}"
+      Format.fprintf fmt "transition%a %a%a%a"
         (pp_option (pp_list "@," pp_extension)) exts
         pp_id id
         pp_fun_args args
-        pp_action_properties props
+        pp_str ""
+        (*pp_if_do false
+         (fun fmt ->
+          Format.fprintf fmt " = {@\n@[<v 2>  %a@]@\n}"
+            pp_action_properties) props*)
 
 (*  | Ttransition (id, from, lto, exts) ->
       Format.fprintf fmt "transition%a%a from %a@\n%a"
@@ -682,13 +700,13 @@ let rec pp_declaration fmt { pldesc = e; _ } =
       pp_function f
 
   | Dverification v ->
-    begin
-      let items, exts = v |> unloc in
-      let items = items |> List.map (fun x -> x |> unloc) in
-      Format.fprintf fmt "verification%a {@\n@[<v 2>  %a@]@\n}"
-        (pp_option (pp_list " " pp_extension)) exts
-        (pp_list "@\n" pp_verification_item) items
-    end
+     begin
+       let items, exts = v |> unloc in
+       let items = items |> List.map (fun x -> x |> unloc) in
+       Format.fprintf fmt "verification%a {@\n@[<v 2>  %a@]@\n}"
+         (pp_option (pp_list " " pp_extension)) exts
+         (pp_list "@\n" pp_verification_item) items
+     end
 
 (* -------------------------------------------------------------------------- *)
 let pp_archetype fmt { pldesc = m; _ } =
@@ -696,7 +714,7 @@ let pp_archetype fmt { pldesc = m; _ } =
 | Marchetype es ->
   Format.fprintf fmt "%a" (pp_list "@,\n" pp_declaration) es
 | Mextension (id, ds, es) ->
-  Format.fprintf fmt "archetype extension %a (%a) = {%a}"
+  Format.fprintf fmt "archetype extension %a (@\n@[<v 2>  %a@]@\n) = {@\n@[<v 2>  %a@]@\n}"
      pp_id id
     (pp_list "@,\n" pp_declaration) ds
     (pp_list "@,\n" pp_declaration) es
