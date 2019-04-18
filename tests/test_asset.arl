@@ -9,3 +9,20 @@ asset my_asset identified by i = {
   i : uint;
   mycollection : my_asset_simple set
 } initialized by [ { 0; [] } ]
+
+
+states mystates =
+| Init initial
+| InProgress
+| Completed
+
+asset[%myextension] [@add @remove @update owner args]
+my_asset_all identified by str as role sorted by i = {
+  id : role;
+  st : mystates = Init;
+  i : uint
+}
+with states st
+with { a1 : i >= 1; a2 : i <= 10 }
+initialized by [ { @toto; Init; 9 };
+                 { @tata; InProgress; 8 } ]

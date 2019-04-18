@@ -416,7 +416,7 @@ and pp_field fmt { pldesc = f; _ } =
         pp_id id
         pp_extensions exts
         pp_type typ
-        (pp_option (pp_prefix " := " pp_expr)) dv
+        (pp_option (pp_prefix " = " pp_expr)) dv
 
 (* -------------------------------------------------------------------------- *)
 and pp_extension fmt { pldesc = e; _ } =
@@ -487,18 +487,6 @@ let pp_transitem fmt { pldesc = t; _ } =
 
 
 (* -------------------------------------------------------------------------- *)
-let pp_state_option fmt = function
-  | SOinitial  -> Format.fprintf fmt "initial"
-  | SOspecification xs -> Format.fprintf fmt "with {%a}"
-                            pp_label_exprs xs
-
-let pp_ident_state_option fmt item =
-  match item with
-  | (id, opts) ->
-      Format.fprintf fmt "%a%a"
-      pp_id id
-      (pp_option (pp_prefix " " (pp_list " " pp_state_option))) opts
-
 let pp_value_option fmt opt =
 match opt with
   | VOfrom e -> Format.fprintf fmt "from %a" pp_qualid e
@@ -540,14 +528,29 @@ let pp_label_expr fmt (le : label_expr) =
 
 let pp_label_exprs xs = (pp_list ";@\n" pp_label_expr) xs
 
+let pp_state_option fmt = function
+  | SOinitial ->
+    Format.fprintf fmt "initial"
+
+  | SOspecification xs ->
+    Format.fprintf fmt "with { %a }"
+      pp_label_exprs xs
+
+let pp_ident_state_option fmt item =
+  match item with
+  | (id, opts) ->
+      Format.fprintf fmt "%a%a"
+      pp_id id
+      (pp_option (pp_prefix " " (pp_list " " pp_state_option))) opts
+
 let pp_asset_post_option fmt (apo : asset_post_option) =
   match apo with
   | APOstates i ->
     Format.fprintf fmt " with states %a"
       pp_id i
   | APOconstraints cs ->
-    Format.fprintf fmt " with {@\n @[<v 2>  %a@] } "
-      (pp_list "@\n;" pp_label_expr) cs
+    Format.fprintf fmt " with {@[<v 0>%a@]}"
+      (pp_list ";@\n" pp_label_expr) cs
   | APOinit e ->
     Format.fprintf fmt " initialized by %a"
       pp_expr e
@@ -601,20 +604,6 @@ let pp_verification_item fmt = function
       pp_label_exprs xs
 
 let pp_verification_items = pp_list "@\n@\n" pp_verification_item
-
-let pp_verification fmt v =
-  let _v = v in
-  Format.fprintf fmt " specification "
-(*      Format.fprintf fmt "specification%a {@\n@[<v 2>  %a@]@\n}"
-        pp_extensions exts
-        pp_expr xs*)
-
-(*    (fun fmt f -> (if List.length f.specs > 0
-                   then Format.fprintf fmt "= {@\nspecification@\n%a@\neffect@\n%a}"
-                       (pp_list ";@\n  " pp_named_item) f.specs
-                       pp_expr f.body
-                   else Format.fprintf fmt "=@\n%a" pp_expr f.body)) f
-*)
 
 let pp_function fmt (f : s_function) =
   Format.fprintf fmt "function %a %a%a %a"
@@ -674,10 +663,13 @@ let rec pp_declaration fmt { pldesc = e; _ } =
         (pp_list "\n" (pp_prefix "| " pp_id)) ids
 
   | Dstates (id, ids, exts) ->
-      Format.fprintf fmt "states%a%a =@\n@[<v 2>@]%a"
+      Format.fprintf fmt "states%a%a%a"
         pp_extensions exts
         (pp_option (pp_prefix " " pp_id)) id
-        (pp_option (pp_list "\n" (pp_prefix "| " pp_ident_state_option))) ids
+        (pp_cond false (
+            fun fmt x->
+              Format.fprintf fmt " =@\n@[<v 2>@]%a"
+                (pp_option (pp_list "\n" (pp_prefix "| " pp_ident_state_option))) x)) ids
 
   | Dasset (id, fields, opts, apo, ops, exts) ->
       Format.fprintf fmt "asset%a%a %a%a%a%a"
@@ -685,7 +677,7 @@ let rec pp_declaration fmt { pldesc = e; _ } =
         (pp_option pp_asset_operation) ops
         pp_id id
         (pp_prefix " " (pp_list " @," pp_asset_option)) opts
-        ((fun fmt -> Format.fprintf fmt " = {@\n @[<v 2>%a@] }@\n" (pp_list ";@\n" pp_field))) fields
+        ((fun fmt -> Format.fprintf fmt " = {@\n@[<v 2>%a@]}@\n" (pp_list ";@\n" pp_field))) fields
         (pp_list "@\n" pp_asset_post_option) apo
 
   | Daction (id, args, props, _code, exts) ->
@@ -708,13 +700,6 @@ let rec pp_declaration fmt { pldesc = e; _ } =
            (fun fmt x ->
               Format.fprintf fmt " = {@\n@[<v 2>  %a@]@\n}"
                 pp_action_properties x)) props
-
-(*  | Ttransition (id, from, lto, exts) ->
-      Format.fprintf fmt "transition%a%a from %a@\n%a"
-        (pp_option (pp_prefix " " pp_qualid)) id
-        pp_extensions exts
-        pp_expr from
-        (pp_list "@\n" pp_to) lto*)
 
   | Dextension (id, args) ->
       Format.fprintf fmt "%%%a%a"
@@ -763,7 +748,5 @@ let string_of__of_pp pp x =
 (* -------------------------------------------------------------------------- *)
 let type_to_str        = string_of__of_pp pp_type
 let expr_to_str        = string_of__of_pp pp_expr
-let extension_to_str   = string_of__of_pp pp_extension
-let field_to_str       = string_of__of_pp pp_field
 let declaration_to_str = string_of__of_pp pp_declaration
 let archetype_to_str   = string_of__of_pp pp_archetype
