@@ -1856,10 +1856,14 @@ let build_match_state _info (_m : model_unloc) (_t : Model.transaction) (from : 
     ))
 
 let process_state_machine (info : info) (m : model_unloc) (t : Model.transaction) ((pt, ret) : 'a * process_data) =
+
   match t.transition with
   | None -> (pt, ret)
-  | Some (_id, from, l) ->
+  | Some tr ->
     begin
+      let from = tr.from in
+      let l = tr.trs in
+
       let pt = dumloc (Pletin (dumloc "_ops", loc_pterm (Papp (Pvar ("get_0_2"), [Pvar "_sops"])) , None,
                dumloc (Pletin (dumloc "s",    loc_pterm (Papp (Pvar ("get_1_2"), [Pvar "_sops"])) , None, pt)))) in
       let from =

@@ -703,16 +703,26 @@ let extract_decls decls model =
              effect = Tools.map_option (fun x -> let a, _ = x in mk_pterm a) action
            }::acc.transactions
          }
-       | Dtransition (name, args, _on, from, props, trs, _) ->
-         {
-           acc with
-           transactions = {
-             (mk_action loc name args props) with
-             transition = Some (None, to_sexpr from, List.map (fun (to_, cond, action) -> (to_,
-                                                                                           map_option mk_pterm cond,
-                                                                                           map_option mk_pterm action)) trs)
-           }::acc.transactions
-         }
+       | Dtransition (name, args, on, from, props, trs, _) ->
+         (
+           let mk_transition on from trs =
+             {
+               from = to_sexpr from;
+               on = on;
+               trs = List.map
+                   (fun (to_, cond, action) ->
+                      (to_,
+                       map_option mk_pterm cond,
+                       map_option mk_pterm action)) trs;
+             } in
+           {
+             acc with
+             transactions = {
+               (mk_action loc name args props) with
+               transition = Some (mk_transition on from trs)
+             }::acc.transactions
+           }
+       )
        | Dfunction f ->
          {
            acc with

@@ -368,13 +368,19 @@ type ('id,'typ,'pattern,'term) gen_function = {
 type function_ = (lident,ptyp,pattern,pterm) gen_function
 [@@deriving show {with_path = false}]
 
+type transition = {
+  from : sexpr;
+  on   : (lident * lident) option;
+  trs  : (lident * pterm option * pterm option) list; (* to * condition * action*)
+}
+[@@deriving show {with_path = false}]
+
 type ('id,'typ,'pattern,'term) gen_transaction = {
   name         : lident;
   args         : (('typ, bval) gen_decl) list;
   calledby     : rexpr option;
   condition    : label_pterm list option;
-  transition   : (liqualid option * sexpr * (lident * pterm option * pterm option) list) option;
-  (*            id *  from * (    to *    condition *       action)) *)
+  transition   : transition option;
   functions    : function_ list;
   verification : verification option;
   effect       : ('id,'typ,'pattern,'term) poly_pterm loced option;
