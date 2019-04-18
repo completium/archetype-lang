@@ -355,6 +355,19 @@ type verification = {
 
 type name = lident option * lident
 
+type ('id,'typ,'pattern,'term) gen_function = {
+  name         : lident;
+  args         : (('typ, bval) gen_decl) list;
+  return       : 'typ option;
+  body         : ('id,'typ,'pattern,'term) poly_pterm loced;
+  side         : bool;
+  loc          : Location.t [@opaque];
+}
+[@@deriving show {with_path = false}]
+
+type function_ = (lident,ptyp,pattern,pterm) gen_function
+[@@deriving show {with_path = false}]
+
 type ('id,'typ,'pattern,'term) gen_transaction = {
   name         : lident;
   args         : (('typ, bval) gen_decl) list;
@@ -362,6 +375,7 @@ type ('id,'typ,'pattern,'term) gen_transaction = {
   condition    : label_pterm list option;
   transition   : (liqualid option * sexpr * (lident * pterm option * pterm option) list) option;
   (*            id *  from * (    to *    condition *       action)) *)
+  functions    : function_ list;
   verification : verification option;
   effect       : ('id,'typ,'pattern,'term) poly_pterm loced option;
   side         : bool;
@@ -413,19 +427,6 @@ type ('id,'typ) gen_predicate = {
   return       : 'typ option;
   body         : lterm;
 }
-[@@deriving show {with_path = false}]
-
-type ('id,'typ,'pattern,'term) gen_function = {
-  name         : lident;
-  args         : (('typ, bval) gen_decl) list;
-  return       : 'typ option;
-  body         : ('id,'typ,'pattern,'term) poly_pterm loced;
-  side         : bool;
-  loc          : Location.t [@opaque];
-}
-[@@deriving show {with_path = false}]
-
-type function_ = (lident,ptyp,pattern,pterm) gen_function
 [@@deriving show {with_path = false}]
 
 type contract = {

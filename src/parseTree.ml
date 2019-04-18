@@ -203,7 +203,7 @@ type s_function = {
 type action_properties = {
   calledby   : (expr * extension list option) option;
   condition  : (label_exprs * extension list option) option;
-  functions  : s_function list;
+  functions  : (s_function loced) list;
   verif      : verification option;
 }
 [@@deriving yojson, show {with_path = false}]

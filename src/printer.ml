@@ -229,7 +229,8 @@ let pp_pattern fmt p =
   | Pwild ->  Format.fprintf fmt "| _"
   | Pref i ->  Format.fprintf fmt "| %a" pp_id i
 
-let rec pp_expr fmt { pldesc = e; _ } =
+let rec pp_expr fmt a =
+  let e = unloc a in
   match e with
   | Eterm (e, id) ->
       Format.fprintf fmt "%a%a"
@@ -549,9 +550,27 @@ let map_option f x =
   | Some y -> f y
   | None -> ()
 
+let pp_verification_item fmt = function
+(*  | Vpredicate of lident * args * expr
+  | Vdefinition of lident * type_t * lident * expr
+  | Vaxiom of lident * expr
+  | Vtheorem of lident * expr
+  | Vvariable of lident * type_t * expr option
+    | Vinvariant of lident * label_exprs*)
+  | Veffect e ->
+    Format.fprintf fmt "effect@\n@[<v 2>  %a@]@\n"
+      pp_expr e
+  (*  | Vspecification of label_exprs*)
+  | _ -> ()
+
+
 let pp_verification fmt v =
   let _v = v in
   Format.fprintf fmt " specification "
+(*      Format.fprintf fmt "specification%a {@\n@[<v 2>  %a@]@\n}"
+        (pp_option (pp_list " " pp_extension)) exts
+        pp_expr xs*)
+
 (*    (fun fmt f -> (if List.length f.specs > 0
                    then Format.fprintf fmt "= {@\nspecification@\n%a@\neffect@\n%a}"
                        (pp_list ";@\n  " pp_named_item) f.specs
@@ -662,10 +681,14 @@ let rec pp_declaration fmt { pldesc = e; _ } =
     Format.fprintf fmt "%a"
       pp_function f
 
-  | Dverification v -> pp_verification fmt v
-(*      Format.fprintf fmt "specification%a {@\n@[<v 2>  %a@]@\n}"
+  | Dverification v ->
+    begin
+      let items, exts = v |> unloc in
+      let items = items |> List.map (fun x -> x |> unloc) in
+      Format.fprintf fmt "verification%a {@\n@[<v 2>  %a@]@\n}"
         (pp_option (pp_list " " pp_extension)) exts
-        pp_expr xs*)
+        (pp_list "@\n" pp_verification_item) items
+    end
 
 (* -------------------------------------------------------------------------- *)
 let pp_archetype fmt { pldesc = m; _ } =

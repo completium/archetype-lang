@@ -322,7 +322,7 @@ signature:
 }
 
 function_item:
-| f=function_gen
+| f=loc(function_gen)
     { f }
 
 function_decl:

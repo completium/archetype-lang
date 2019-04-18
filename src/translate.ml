@@ -532,6 +532,66 @@ let extract_decls decls model =
     loc = loc;
   } in
 
+  let mk_verification v =
+    let mk_predicate loc (id, args, body) = {
+      name = id;
+      args = extract_args args;
+      body = mk_lterm body;
+      loc  = loc;
+    } in
+    let mk_definition loc (name, typ_, id, def) = {
+      name = name;
+      typ  = mk_ptyp typ_;
+      id   = id;
+      def  = mk_lterm def;
+      loc  = loc;
+    } in
+	  List.fold_right (fun (x : verification_item) acc ->
+        let loc, vitem = Location.deloc x in
+        match vitem with
+        | Vpredicate (i, args, body) ->
+          {
+            acc with
+            predicates = (mk_predicate loc (i, args, body))::acc.predicates
+          }
+        | Vdefinition (name, typ_, id, def) ->
+          {
+            acc with
+            definitions = (mk_definition loc (name, typ_, id, def))::acc.definitions
+          }
+        | Vaxiom (id, e) ->
+          {
+            acc with
+            axioms = (mk_label_lterm loc (Some id, e))::acc.axioms
+          }
+        | Vtheorem (id, e) ->
+          {
+            acc with
+            theorems = (mk_label_lterm loc (Some id, e))::acc.theorems
+          }
+        | Vvariable (id, typ, e) ->
+          {
+            acc with
+            variables = (mk_variable loc (id, typ, e, None, false))::acc.variables
+          }
+        | Vinvariant (id, l) ->
+          {
+            acc with
+            invariants = (id, map_label_lterm l)::acc.invariants
+          }
+        | Veffect e ->
+          {
+            acc with
+            effect = Some (mk_pterm e)
+          }
+        | Vspecification l ->
+          {
+            acc with
+            specs = (map_label_lterm l) @ acc.specs
+          }
+      ) (v |> unloc |> fst) { dummy_verif with loc = (loc v); }
+  in
+
   let mk_action loc name args (props : action_properties) =
     let rec to_rexpr_calledby (e : ParseTree.expr) : rexpr =
       let loc, v = deloc e in
@@ -550,7 +610,8 @@ let extract_decls decls model =
       calledby  = map_option (fun (e, _) -> to_rexpr_calledby e) props.calledby;
       condition = map_option (fun (items, _) -> List.map (fun a -> to_label_pterm a) items) props.condition;
       transition = None;
-      verification = None;
+      functions = List.map (fun x -> let loc, f = deloc x in mk_function loc f) props.functions;
+      verification = map_option mk_verification props.verif;
       effect = None;
       side = false;
       loc = loc;
@@ -611,66 +672,6 @@ let extract_decls decls model =
       loc        = loc;
     } in
 
-  let mk_verification loc v =
-    let mk_predicate loc (id, args, body) = {
-      name = id;
-      args = extract_args args;
-      body = mk_lterm body;
-      loc  = loc;
-    } in
-    let mk_definition loc (name, typ_, id, def) = {
-      name = name;
-      typ  = mk_ptyp typ_;
-      id   = id;
-      def  = mk_lterm def;
-      loc  = loc;
-    } in
-	  List.fold_right (fun (x : verification_item) acc ->
-        let loc, vitem = Location.deloc x in
-        match vitem with
-        | Vpredicate (i, args, body) ->
-          {
-            acc with
-            predicates = (mk_predicate loc (i, args, body))::acc.predicates
-          }
-        | Vdefinition (name, typ_, id, def) ->
-          {
-            acc with
-            definitions = (mk_definition loc (name, typ_, id, def))::acc.definitions
-          }
-        | Vaxiom (id, e) ->
-          {
-            acc with
-            axioms = (mk_label_lterm loc (Some id, e))::acc.axioms
-          }
-        | Vtheorem (id, e) ->
-          {
-            acc with
-            theorems = (mk_label_lterm loc (Some id, e))::acc.theorems
-          }
-        | Vvariable (id, typ, e) ->
-          {
-            acc with
-            variables = (mk_variable loc (id, typ, e, None, false))::acc.variables
-          }
-        | Vinvariant (id, l) ->
-          {
-            acc with
-            invariants = (id, map_label_lterm l)::acc.invariants
-          }
-        | Veffect e ->
-          {
-            acc with
-            effect = Some (mk_pterm e)
-          }
-        | Vspecification l ->
-          {
-            acc with
-            specs = (map_label_lterm l) @ acc.specs
-          }
-      ) (v |> unloc |> fst) { dummy_verif with loc = loc; }
-  in
-
   List.fold_right ( fun i acc ->
       (let loc, decl_u = deloc i in
        match decl_u with
@@ -725,7 +726,7 @@ let extract_decls decls model =
        | Dverification v ->
          {
            acc with
-           verifications = (mk_verification loc v)::acc.verifications
+           verifications = (mk_verification v)::acc.verifications
          }
        | _ -> acc)
     ) decls model

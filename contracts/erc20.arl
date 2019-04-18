@@ -7,9 +7,8 @@ constant total int = 1000
 asset tokenHolder identified by holder = {
   holder[%delegable] : address;
   tokens : int;
-  mystr : string;
 } initialized by [
-  [caller, total]
+  { caller; total }
 ]
 
 action transfer_ (k : address) (quantity : int) = {

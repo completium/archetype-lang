@@ -441,6 +441,7 @@ let dummy_transaction = {
   calledby     = None;
   condition    = None;
   transition   = None;
+  functions    = [];
   verification = None;
   effect       = None;
   side         = false;
