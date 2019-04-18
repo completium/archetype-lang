@@ -510,10 +510,10 @@ action_properties:
   sp=verification_fun? cb=calledby? cs=condition? fs=function_item*
   {
     {
+      verif         = sp;
       calledby      = cb;
       condition     = cs;
       functions     = fs;
-      verif         = sp;
     }
   }
 

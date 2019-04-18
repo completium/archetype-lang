@@ -443,49 +443,6 @@ match sv with
         pp_type typ
         (pp_option (pp_prefix " = " pp_expr)) dv
 
-(*
-let pp_transitem fmt { pldesc = t; _ } =
-  match t with
-  | Tcalledby (e, exts) ->
-      Format.fprintf fmt "called by%a %a"
-        pp_extensions exts
-        pp_expr e
-
-  | Tcondition (xs, exts) ->
-      Format.fprintf fmt "condition%a@\n@[<v 2>  %a@]@\n"
-       pp_extensions exts
-       (pp_list ";@\n" pp_named_item) xs
-
-  | Tfunction (id, args, r, b) ->
-      Format.fprintf fmt "function %a %a%a = %a"
-        pp_id id
-        pp_fun_args args
-        (pp_option (pp_prefix " : " pp_type)) r
-        pp_expr b
-
-  | Tspecification (None, None, None, se, exts) ->
-      Format.fprintf fmt "specification%a@\n@[<v 2>  %a@]@\n"
-       pp_extensions exts
-       (pp_list "; " pp_named_item) se
-
-   | Tspecification (sv, sa, si, se, exts) ->
-      Format.fprintf fmt "specification%a@\n@[<v 2>  %a@]@\n@[<v 2>  %a@]@\n@[<v 2>  %a@]@\n@[<v 2>  %a@]"
-       pp_extensions exts
-       (pp_option (pp_list "@\n" pp_specification_variable)) sv
-       (pp_option (pp_prefix "effect@\n  " pp_expr)) sa
-       (pp_option (pp_prefix "invariant@\n  " (pp_list ";@\n  " pp_named_item))) si
-       (pp_prefix "ensure@\n  " (pp_list ";@\n  " pp_named_item)) se
-
-  | Tinvariant (id, xs, exts) ->
-      Format.fprintf fmt "invariant%a %a@\n@[<v 2>  %a@]@\n"
-       pp_extensions exts
-       pp_id id
-       (pp_list "; " pp_named_item) xs
-*)
-
-(*    (pp_list "@\n" (fun x -> let _a, b = x in pp_expr b)) xs*)
-
-
 (* -------------------------------------------------------------------------- *)
 let pp_value_option fmt opt =
 match opt with
@@ -618,18 +575,30 @@ let pp_function fmt (f : s_function) =
 
 
 let pp_action_properties fmt (props : action_properties) =
-  map_option (fun (e, exts) ->
-      Format.fprintf fmt "called by%a %a@\n"
-        pp_extensions exts
-        pp_expr e) props.calledby;
   map_option (
       fun v ->
       let items, exts = v |> unloc in
       let items = items |> List.map (fun x -> x |> unloc) in
-      Format.fprintf fmt "verification%a {@\n@[<v 2>  %a@]@\n}"
+      Format.fprintf fmt "verification%a {@\n@[<v 2>  %a@]@\n}@\n"
         pp_extensions exts
-        pp_verification_items items) props.verif
+        pp_verification_items items) props.verif;
+  map_option (fun (e, exts) ->
+      Format.fprintf fmt "called by%a %a@\n"
+        pp_extensions exts
+        pp_expr e) props.calledby;
+  map_option (fun (cs, exts) ->
+      Format.fprintf fmt "condition%a@\n@[<v 2>  %a@]@\n"
+        pp_extensions exts
+        pp_label_exprs cs) props.condition;
+  (pp_list "@\n" pp_function) fmt (List.map unloc props.functions)
 
+let pp_transition fmt (to_, conditions, effect) =
+  Format.fprintf fmt "to %a%a%a@\n"
+    pp_id to_
+    (pp_option (pp_prefix "@\nwhen " pp_expr)) conditions
+    (pp_option (fun fmt x ->
+         Format.fprintf fmt "@\nwith effect@\n@[<v 2>  %a@]"
+           pp_expr x)) effect
 
 let pp_effect fmt (code, _) =
   Format.fprintf fmt "effect@\n@[<v 2>  %a@]@\n"
@@ -637,9 +606,9 @@ let pp_effect fmt (code, _) =
     pp_expr code
 
 let rec pp_declaration fmt { pldesc = e; _ } =
-  let is_empty_action_properties (ap : action_properties) =
-    match ap.calledby, ap.condition, ap.functions, ap.verif with
-    | None, None, [], None -> true
+  let is_empty_action_properties_opt (ap : action_properties) (a : 'a option) =
+    match ap.calledby, ap.condition, ap.functions, ap.verif, a with
+    | None, None, [], None, None -> true
     | _ -> false in
   match e with
   | Darchetype (id, exts) ->
@@ -666,7 +635,7 @@ let rec pp_declaration fmt { pldesc = e; _ } =
       Format.fprintf fmt "states%a%a%a"
         pp_extensions exts
         (pp_option (pp_prefix " " pp_id)) id
-        (pp_cond false (
+        (pp_cond (match ids with | Some l when List.length l > 0 -> true | _ -> false) (
             fun fmt x->
               Format.fprintf fmt " =@\n@[<v 2>@]%a"
                 (pp_option (pp_list "\n" (pp_prefix "| " pp_ident_state_option))) x)) ids
@@ -680,26 +649,33 @@ let rec pp_declaration fmt { pldesc = e; _ } =
         ((fun fmt -> Format.fprintf fmt " = {@\n@[<v 2>%a@]}@\n" (pp_list ";@\n" pp_field))) fields
         (pp_list "@\n" pp_asset_post_option) apo
 
-  | Daction (id, args, props, _code, exts) ->
+  | Daction (id, args, props, code, exts) ->
       Format.fprintf fmt "action%a %a%a%a"
-        (pp_option (pp_list "@," pp_extension)) exts
+        pp_extensions exts
         pp_id id
         pp_fun_args args
-        (pp_cond (not (is_empty_action_properties props))
+        (pp_cond (not (is_empty_action_properties_opt props code))
            (fun fmt x ->
-              Format.fprintf fmt " = {@\n@[<v 2>  %a@]@\n}"
-                pp_action_properties x)) props
-  (*(pp_option pp_effect) code*)
+              let pr, cod = x in
+              Format.fprintf fmt " = {@\n@[<v 2>%a%a@]@\n}"
+                pp_action_properties pr
+                (pp_option pp_effect) cod)) (props, code)
 
-  | Dtransition (id, args, _on, _from, props, _trs, exts) ->
-      Format.fprintf fmt "transition%a %a%a%a"
-        (pp_option (pp_list "@," pp_extension)) exts
+  | Dtransition (id, args, on, from, props, trs, exts) ->
+      Format.fprintf fmt "transition%a %a%a%a from %a%a"
+        pp_extensions exts
         pp_id id
         pp_fun_args args
-        (pp_cond (not (is_empty_action_properties props))
-           (fun fmt x ->
-              Format.fprintf fmt " = {@\n@[<v 2>  %a@]@\n}"
-                pp_action_properties x)) props
+        (pp_option (fun fmt (a, b) ->
+             Format.fprintf fmt "%a : %a"
+               pp_id a
+               pp_id b
+           )) on
+        pp_expr from
+        (fun fmt (pr, ts) ->
+           Format.fprintf fmt " = {@\n@[<v 2>  %a%a@]@\n}"
+             (pp_cond (not (is_empty_action_properties_opt props None)) pp_action_properties) pr
+             (pp_list "@\n" pp_transition) ts) (props, trs)
 
   | Dextension (id, args) ->
       Format.fprintf fmt "%%%a%a"

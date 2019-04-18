@@ -201,10 +201,10 @@ type s_function = {
 [@@deriving yojson, show {with_path = false}]
 
 type action_properties = {
+  verif      : verification option;
   calledby   : (expr * extension list option) option;
   condition  : (label_exprs * extension list option) option;
   functions  : (s_function loced) list;
-  verif      : verification option;
 }
 [@@deriving yojson, show {with_path = false}]
 
