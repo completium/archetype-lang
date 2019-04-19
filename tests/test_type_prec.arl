@@ -1,0 +1,5 @@
+archetype test_type_prec
+
+variable v1 ((string -> int) * tez * x)
+variable v2 (string -> (int * tez * x))
+variable v3 (string -> (int * tez) * x)

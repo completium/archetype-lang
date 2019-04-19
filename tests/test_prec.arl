@@ -1,0 +1,18 @@
+archetype test_prec
+
+variable x int = a + b + c
+variable y int = a + (b + c)
+variable z int = (a + b) + c
+
+variable x int = a + b * c
+variable y int = (a + b) * c
+variable z int = a + (b * c)
+
+variable x int = a * b + c
+variable y int = (a * b) + c
+variable y int = a * (b + c)
+
+specification {
+  s1 : z -> y -> x;
+  s2 : (z -> y) -> x
+}

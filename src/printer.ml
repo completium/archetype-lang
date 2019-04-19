@@ -84,38 +84,64 @@ let e_and           =  (60,  Left)     (* and *)
 let e_or            =  (70,  Left)     (* or  *)
 let e_equal         =  (80,  NonAssoc) (* =   *)
 let e_nequal        =  (80,  NonAssoc) (* <>  *)
-let e_gt            =  (90,  NonAssoc) (* >   *)
-let e_ge            =  (90,  NonAssoc) (* >=  *)
-let e_lt            =  (90,  NonAssoc) (* <   *)
-let e_le            =  (90,  NonAssoc) (* <=  *)
-let e_plus          =  (100, NonAssoc) (* +   *)
-let e_minus         =  (100, NonAssoc) (* -   *)
-let e_mult          =  (110, NonAssoc) (* *   *)
-let e_div           =  (110, NonAssoc) (* /   *)
+let e_gt            =  (90,  Left)     (* >   *)
+let e_ge            =  (90,  Left)     (* >=  *)
+let e_lt            =  (90,  Left)     (* <   *)
+let e_le            =  (90,  Left)     (* <=  *)
+let e_plus          =  (100, Left)     (* +   *)
+let e_minus         =  (100, Left)     (* -   *)
+let e_mult          =  (110, Left)     (* *   *)
+let e_div           =  (110, Left)     (* /   *)
+let e_modulo        =  (110, Left)     (* %   *)
+let e_not           =  (115, Right)    (* not *)
 let e_dot           =  (120, Right)    (* .   *)
 let e_coloncolon    =  (130, NonAssoc) (* ::  *)
-let e_app           =  (140, NonAssoc) (* ::  *)
+let e_app           =  (140, NonAssoc) (* f ()  *)
 let e_for           =  (140, NonAssoc) (* for in .  *)
 
 let e_default       =  (0, NonAssoc) (* ?  *)
-let e_simple        =  (100, NonAssoc) (* ?  *)
+let e_simple        =  (150, NonAssoc) (* ?  *)
 
-let get_prec (op : operator) =
+let get_prec_from_operator (op : operator) =
   match op with
-  | `Cmp Equal -> e_equal
-  | _ -> e_nequal
+  | `Logical And   -> e_and
+  | `Logical Or    -> e_or
+  | `Logical Imply -> e_imply
+  | `Logical Equiv -> e_equiv
+  | `Cmp Equal     -> e_equal
+  | `Cmp Nequal    -> e_nequal
+  | `Cmp Gt        -> e_gt
+  | `Cmp Ge        -> e_ge
+  | `Cmp Lt        -> e_lt
+  | `Cmp Le        -> e_le
+  | `Arith Plus    -> e_plus
+  | `Arith Minus   -> e_minus
+  | `Arith Mult    -> e_mult
+  | `Arith Div     -> e_div
+  | `Arith Modulo  -> e_modulo
+  | `Unary Uplus   -> e_plus
+  | `Unary Uminus  -> e_minus
+  | `Unary Not     -> e_not
 
 let get_prec_from_assignment_operator (op : assignment_operator) =
   match op with
+  | ValueAssign  -> e_assign_simple
   | SimpleAssign -> e_assign_simple
-  | _ -> e_assign_simple
+  | PlusAssign   -> e_assign_plus
+  | MinusAssign  -> e_assign_minus
+  | MultAssign   -> e_assign_mult
+  | DivAssign    -> e_assign_div
+  | AndAssign    -> e_assign_and
+  | OrAssign     -> e_assign_or
 
 
 let maybe_paren outer inner pos pp =
 let c =
 match (outer, inner, pos) with
-| (_, (_, NonAssoc), _) -> true
-| _ -> true
+  | ((o, Right), (i, Right), PLeft) when o >= i -> true
+  | ((o, Left), (i, Left), PRight) when o >= i -> true
+  | ((o, NonAssoc), (i, _), _) when o > i -> true
+  | _ -> false
 in pp_maybe_paren c pp
 
 
@@ -247,7 +273,7 @@ let rec pp_expr outer pos fmt a =
         (pp_option (pp_postfix "::" pp_id)) e
         pp_id id
     in
-    pp fmt (e, id)
+    (maybe_paren outer (match e with | Some _ -> e_coloncolon | _ -> e_simple) pos pp) fmt (e, id)
 
 
   | Eop op ->
@@ -265,7 +291,7 @@ let rec pp_expr outer pos fmt a =
       Format.fprintf fmt "%a"
         pp_literal x
     in
-    (maybe_paren outer e_default pos pp) fmt x
+    pp fmt x
 
 
   | Earray values ->
@@ -284,7 +310,7 @@ let rec pp_expr outer pos fmt a =
         pp_simple_expr lhs
         pp_id rhs
     in
-    (maybe_paren outer e_default pos pp) fmt (lhs, rhs)
+    (maybe_paren outer e_dot pos pp) fmt (lhs, rhs)
 
 
   | Erecord l ->
@@ -302,7 +328,7 @@ let rec pp_expr outer pos fmt a =
                 pp_simple_expr e
           )) l
     in
-    (maybe_paren outer e_default pos pp) fmt l
+    (maybe_paren outer e_simple pos pp) fmt l
 
 
   | Etuple l ->
@@ -311,19 +337,19 @@ let rec pp_expr outer pos fmt a =
       Format.fprintf fmt "%a"
         (pp_list ",@ " pp_simple_expr) l
     in
-    (maybe_paren outer e_default pos pp) fmt l
+    (maybe_paren outer e_comma pos pp) fmt l
 
 
   | Eapp ({pldesc = Eop op; _}, [a; b]) ->
 
     let pp fmt (op, a, b) =
-      let prec = get_prec op in
+      let prec = get_prec_from_operator op in
       Format.fprintf fmt "%a %a %a"
         (pp_expr prec PLeft) a
         pp_operator op
         (pp_expr prec PRight) b
     in
-    (maybe_paren outer e_default pos pp) fmt (op, a, b)
+    (maybe_paren outer (get_prec_from_operator op) pos pp) fmt (op, a, b)
 
 
   | Eapp (e, args) ->
@@ -336,7 +362,7 @@ let rec pp_expr outer pos fmt a =
            | [] -> Format.fprintf fmt "()"
            | _ -> Format.fprintf fmt " %a" (pp_list " " pp_simple_expr) args) args
     in
-    (maybe_paren outer e_default pos pp) fmt (e, args)
+    (maybe_paren outer e_app pos pp) fmt (e, args)
 
   | Etransfer (x, back, to_value) ->
 
@@ -351,14 +377,14 @@ let rec pp_expr outer pos fmt a =
 
   | Eassign (op, lhs, rhs) ->
 
+    let prec = get_prec_from_assignment_operator op in
     let pp fmt (op, lhs, rhs) =
-      let prec = get_prec_from_assignment_operator op in
       Format.fprintf fmt "%a %a %a"
         (pp_expr prec PLeft) lhs
         pp_assignment_operator op
         (pp_expr prec PRight) rhs
     in
-    (maybe_paren outer e_default pos pp) fmt (op, lhs, rhs)
+    (maybe_paren outer prec pos pp) fmt (op, lhs, rhs)
 
 
   | Eif (cond, then_, else_) ->
@@ -387,10 +413,10 @@ let rec pp_expr outer pos fmt a =
 
   | Ebreak ->
 
-    let pp fmt () =
+    let pp fmt =
       Format.fprintf fmt "break"
     in
-    (maybe_paren outer e_default pos pp) fmt ()
+    pp fmt
 
 
   | Efor (id, expr, body) ->
@@ -420,7 +446,7 @@ let rec pp_expr outer pos fmt a =
         (pp_expr e_semi_colon PLeft) x
         (pp_expr e_semi_colon PRight) y
     in
-    (maybe_paren outer e_default pos pp) fmt (x, y)
+    (maybe_paren outer e_semi_colon pos pp) fmt (x, y)
 
 
   | Efun (id_ts, x) ->
@@ -430,7 +456,7 @@ let rec pp_expr outer pos fmt a =
         (pp_list " " pp_ident_typ) id_ts
         (pp_expr e_equal_greater PRight) x
     in
-    (maybe_paren outer e_default pos pp) fmt (id_ts, x)
+    (maybe_paren outer e_equal_greater pos pp) fmt (id_ts, x)
 
 
   | Eletin (id_t, e, body, other) ->
@@ -464,7 +490,7 @@ let rec pp_expr outer pos fmt a =
         pp_id i
         (pp_expr e_colon PRight) x
     in
-    (maybe_paren outer e_default pos pp) fmt (i, x)
+    (maybe_paren outer e_colon pos pp) fmt (i, x)
 
 
 
@@ -700,7 +726,11 @@ let pp_action_properties fmt (props : action_properties) =
       let items, exts = v |> unloc in
       let items = items |> List.map (fun x -> x |> unloc) in
       match items with
-      | [Vspecification v] -> pp_specification fmt v
+      | [Vspecification v] ->
+        begin
+          Format.fprintf fmt "%a@\n"
+            pp_specification v
+        end
       | _ ->
         begin
           Format.fprintf fmt "verification%a {@\n@[<v 2>  %a@]@\n}@\n"
@@ -723,7 +753,7 @@ let pp_transition fmt (to_, conditions, effect) =
     (pp_option (pp_prefix "@\nwhen " (pp_expr e_default PNone))) conditions
     (pp_option (fun fmt x ->
          Format.fprintf fmt "@\nwith effect@\n@[<v 2>  %a@]"
-           (pp_expr e_default PNone) x)) effect
+           pp_simple_expr x)) effect
 
 
 let rec pp_declaration fmt { pldesc = e; _ } =
@@ -796,7 +826,7 @@ let rec pp_declaration fmt { pldesc = e; _ } =
                pp_id a
                pp_id b
            )) on
-        (pp_expr e_equal PLeft) from
+        pp_simple_expr from
         (fun fmt (pr, ts) ->
            Format.fprintf fmt " = {@\n@[<v 2>  %a%a@]@\n}"
              (pp_do_if (not (is_empty_action_properties_opt props None)) pp_action_properties) pr
