@@ -67,7 +67,7 @@ let e_in            =  (10,  NonAssoc) (* in  *)
 let e_to            =  (10,  NonAssoc) (* to  *)
 let e_other         =  (12,  Right)    (* otherwise *)
 let e_then          =  (14,  Right)    (* then *)
-let e_else          =  (14,  Right)    (* else *)
+let e_else          =  (16,  Right)    (* else *)
 let e_comma         =  (20,  Left)     (* ,   *)
 let e_semi_colon    =  (20,  Left)     (* ;   *)
 let e_colon         =  (25,  NonAssoc) (* :   *)
@@ -289,7 +289,10 @@ let rec pp_expr outer pos fmt a =
         (pp_option (pp_postfix "::" pp_id)) e
         pp_id id
     in
-    (maybe_paren outer (match e with | Some _ -> e_coloncolon | _ -> e_simple) pos pp) fmt (e, id)
+    (match e with
+     | Some _ -> (maybe_paren outer e_coloncolon pos pp)
+     | _ -> pp)
+     fmt (e, id)
 
 
   | Eop op ->
@@ -513,7 +516,7 @@ let rec pp_expr outer pos fmt a =
 and pp_else fmt (e : expr option) =
   match e with
 | None -> ()
-| Some x -> Format.fprintf fmt " else %a" (pp_expr e_else PRight) x
+| Some x -> Format.fprintf fmt " else (%a)" (pp_expr e_else PRight) x
 
 and pp_literal fmt lit =
   match lit with
@@ -717,7 +720,7 @@ let pp_verification_item fmt = function
 let pp_verification_items = pp_list "@\n@\n" pp_verification_item
 
 let pp_function fmt (f : s_function) =
-  Format.fprintf fmt "function %a %a%a %a"
+  Format.fprintf fmt "function %a %a%a %a@\n"
     pp_id f.name
     pp_fun_args f.args
     (pp_option (pp_prefix " : " pp_type)) f.ret_t
