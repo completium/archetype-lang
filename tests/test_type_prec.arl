@@ -1,5 +1,13 @@
 archetype test_type_prec
 
-variable v1 ((string -> int) * tez * x)
-variable v2 (string -> (int * tez * x))
-variable v3 (string -> (int * tez) * x)
+variable a1 int -> int -> int
+variable a2 (int -> int) -> int
+variable a3 int -> (int -> int)
+
+variable t1 int * int * int
+variable t2 (int * int) * int
+variable t3 int * (int * int)
+
+variable v1 (string -> int) * tez * x
+variable v2 string -> (int * tez * x)
+variable v3 string -> (int * tez) * x

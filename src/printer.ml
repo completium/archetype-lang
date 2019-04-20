@@ -99,6 +99,9 @@ let e_coloncolon    =  (130, NonAssoc) (* ::  *)
 let e_app           =  (140, NonAssoc) (* f ()  *)
 let e_for           =  (140, NonAssoc) (* for in .  *)
 
+
+let e_tuple         =  (50,  NonAssoc) (* *  *)
+
 let e_default       =  (0, NonAssoc) (* ?  *)
 let e_simple        =  (150, NonAssoc) (* ?  *)
 
@@ -140,7 +143,7 @@ let c =
 match (outer, inner, pos) with
   | ((o, Right), (i, Right), PLeft) when o >= i -> true
   | ((o, Left), (i, Left), PRight) when o >= i -> true
-  | ((o, NonAssoc), (i, _), _) when o > i -> true
+  | ((o, NonAssoc), (i, _), _) when o >= i -> true
   | _ -> false
 in pp_maybe_paren c pp
 
@@ -157,7 +160,9 @@ match c with
 let pp_container fmt c =
  Format.fprintf fmt "%s" (container_to_str c)
 
-let rec pp_type fmt e =
+let rec pp_type outer pos fmt e =
+  let pp_type_default = pp_type e_default PNone in
+
   match unloc e with
   | Tref x ->
       Format.fprintf fmt
@@ -167,25 +172,36 @@ let rec pp_type fmt e =
   | Tcontainer (x, y) ->
       Format.fprintf fmt
         "%a %a"
-           pp_type x
+           pp_type_default x
            pp_container y
 
   | Tvset (x, y) ->
       Format.fprintf fmt
         "%a %a"
            pp_id x
-           pp_type y
+           pp_type_default y
 
   | Tapp (x, y) ->
+
+    let pp fmt (x, y) =
       Format.fprintf fmt
         "%a -> %a"
-           pp_type x
-           pp_type y
+           (pp_type e_imply PLeft) x
+           (pp_type e_imply PRight) y
+    in
+    (maybe_paren outer e_imply pos pp) fmt (x, y)
 
   | Ttuple l ->
+
+    let pp fmt l =
       Format.fprintf fmt
-        "(%a)"
-           (pp_list " * " pp_type) l
+        "%a"
+        (pp_list " * " (pp_type e_tuple PInfix)) l
+    in
+    (maybe_paren outer e_tuple pos pp) fmt l
+
+
+let pp_type fmt e = pp_type e_default PNone fmt e
 
 
 (* -------------------------------------------------------------------------- *)
