@@ -14,7 +14,7 @@
     (pps ppx_deriving.std ppx_deriving_yojson)
   )
   (library_flags (-linkall))
-  (modules tools core ident location parseUtils parseTree parser lexer io model modelinfo modelws modelliq printer translate liq_printer)
+  (modules tools core ident location parseUtils parseTree parser lexer io model modelinfo modelws modelliq printer translate reduce liq_printer)
   (libraries menhirLib why3 ppx_deriving yojson ppx_deriving_yojson.runtime)
 )
 

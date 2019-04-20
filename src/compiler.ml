@@ -6,6 +6,7 @@ let opt_json = ref false
 let opt_pretty_print = ref false
 let opt_parse = ref false
 let opt_model = ref false
+let opt_modelr = ref false
 let opt_modelws = ref false
 let opt_modelliq = ref false
 let opt_pterm = ref false
@@ -32,16 +33,20 @@ let compile_and_print (filename, channel) =
     if !opt_model
     then Format.printf "%a\n" Model.pp_model model
     else (
-      let info  = Modelinfo.mk_info (Location.unloc model) in
-      let modelws = Modelws.model_to_modelws info model in
-      if !opt_modelws
-      then Format.printf "%a\n" Modelws.pp_model_with_storage modelws
+      let modelr = Reduce.reduce_model model in
+      if !opt_modelr
+      then Format.printf "%a\n" Model.pp_model modelr
       else (
-        let modelw3liq = Modelliq.modelws_to_modelliq info modelws in
-        if !opt_modelliq
-        then Extract.print modelw3liq
-        else ()
-    )))))
+        let info  = Modelinfo.mk_info (Location.unloc modelr) in
+        let modelws = Modelws.model_to_modelws info modelr in
+        if !opt_modelws
+        then Format.printf "%a\n" Modelws.pp_model_with_storage modelws
+        else (
+          let modelw3liq = Modelliq.modelws_to_modelliq info modelws in
+          if !opt_modelliq
+          then Extract.print modelw3liq
+          else ()
+    ))))))
 
 let close dispose channel =
   if dispose then close_in channel
@@ -53,6 +58,7 @@ let main () =
       "-PP", Arg.Set opt_pretty_print, " Pretty print";
       "-P", Arg.Set opt_parse, " Print raw parse tree";
       "-M", Arg.Set opt_model, " Print raw model";
+      "-R", Arg.Set opt_modelr, " Print raw model reduced";
       "-W", Arg.Set opt_modelws, " Print raw model_with_storage";
       "-L", Arg.Set opt_modelliq, " Output Archetype in liquidity";
       "-T", Arg.Set opt_pterm, " Print pterm";
@@ -65,8 +71,7 @@ let main () =
             Format.eprintf
               "Unknown policy %s (use record, flat)@." s;
             exit 2),
-      " Set storage policy";
-      "-PP", Arg.Set opt_pterm, " Print pterm"
+      " Set storage policy"
     ] in
   let arg_usage = String.concat "\n" [
       "compiler [OPTIONS] FILE";

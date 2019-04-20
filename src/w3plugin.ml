@@ -18,7 +18,8 @@ let mk_id ~loc name =
 
 let translate dl =
   let model = Translate.parseTree_to_model dl in
-  let info = Modelinfo.mk_info (Location.unloc model) in
+  let modelr = Reduce.reduce_model model in
+  let info = Modelinfo.mk_info (Location.unloc modelr) in
   let modelws = Modelws.model_to_modelws info model in
   let modelliq = Modelliq.modelws_to_modelliq info modelws in
   List.iter (Typing.add_decl Loc.dummy_position) modelliq

@@ -742,21 +742,6 @@ let extract_decls decls model =
     ) decls model
 
 
-
-let sanity_check model : Model.model =
-  let _check_dv model : Model.model =
-    (model
-     |> unloc
-     |> (fun x -> x.variables)
-     |> List.iter (fun v ->
-         let d = v.decl in
-         match d.typ, d.default with
-         (*       | Some ({pldesc=Tbuiltin VTaddress; _}), None -> raise (Modelinfo.DefaultValueAssignment d.name)*)
-         | _ -> ()));
-    model in
-  model
-(*  |> _check_dv*)
-
 let parseTree_to_model (pt : ParseTree.archetype) : Model.model =
   let decls = match unloc pt with
   | Marchetype decls -> decls
@@ -775,7 +760,6 @@ let parseTree_to_model (pt : ParseTree.archetype) : Model.model =
   }
   |> extract_decls decls
   |> mkloc (loc pt)
-  |> sanity_check
 
 let string_to_pterm (str : string) : Model.pterm =
   let lb = Lexing.from_string str in
