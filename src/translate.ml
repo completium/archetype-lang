@@ -712,8 +712,8 @@ let extract_decls decls model =
                trs = List.map
                    (fun (to_, cond, action) ->
                       (to_,
-                       map_option mk_pterm cond,
-                       map_option mk_pterm action)) trs;
+                       map_option (fun (e, _) -> mk_pterm e) cond,
+                       map_option (fun (e, _) -> mk_pterm e) action)) trs;
              } in
            {
              acc with

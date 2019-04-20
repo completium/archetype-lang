@@ -750,11 +750,15 @@ let pp_action_properties fmt (props : action_properties) =
 let pp_transition fmt (to_, conditions, effect) =
   Format.fprintf fmt "to %a%a%a@\n"
     pp_id to_
-    (pp_option (pp_prefix "@\nwhen " (pp_expr e_default PNone))) conditions
-    (pp_option (fun fmt x ->
-         Format.fprintf fmt "@\nwith effect@\n@[<v 2>  %a@]"
-           pp_simple_expr x)) effect
-
+    (pp_option (
+        fun fmt (e, exts) ->
+          Format.fprintf fmt "when%a %a"
+            pp_extensions exts
+            (pp_expr e_default PNone) e)) conditions
+    (pp_option (fun fmt (e, exts) ->
+         Format.fprintf fmt "@\nwith effect%a@\n@[<v 2>  %a@]"
+           pp_extensions exts
+           pp_simple_expr e)) effect
 
 let rec pp_declaration fmt { pldesc = e; _ } =
   let is_empty_action_properties_opt (ap : action_properties) (a : 'a option) =

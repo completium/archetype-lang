@@ -99,7 +99,7 @@ type pattern_unloc =
 type pattern = pattern_unloc loced
 [@@deriving yojson, show {with_path = false}]
 
-type expr_r =
+type expr_unloc =
   | Eterm         of name
   | Eop           of operator
   | Eliteral      of literal
@@ -135,7 +135,7 @@ and literal =
 
 and record_item = (assignment_operator * lident) option * expr
 
-and expr = expr_r loced
+and expr = expr_unloc loced
 [@@deriving yojson, show {with_path = false}]
 
 and lident_typ = lident * type_t option * extension list option
@@ -146,26 +146,22 @@ and label_expr = (lident option * expr) loced
 and label_exprs = label_expr list
 
 (* -------------------------------------------------------------------- *)
-and extension_r =
+and extension_unloc =
  | Eextension of lident * expr list option (** extension *)
 [@@deriving yojson, show {with_path = false}]
 
-and extension = extension_r loced
+and extension = extension_unloc loced
 [@@deriving yojson, show {with_path = false}]
 
 and exts = extension list option
 [@@deriving yojson, show {with_path = false}]
 
 (* -------------------------------------------------------------------- *)
-type field_r =
-  | Ffield of lident * type_t * expr option * extension list option   (** field *)
+type field_unloc =
+  | Ffield of lident * type_t * expr option * exts   (** field *)
 [@@deriving yojson, show {with_path = false}]
 
-and field = field_r loced
-[@@deriving yojson, show {with_path = false}]
-
-
-type transition_r = (lident * expr option * expr option) list
+and field = field_unloc loced
 [@@deriving yojson, show {with_path = false}]
 
 type args = lident_typ list
@@ -202,21 +198,24 @@ type s_function = {
 
 type action_properties = {
   verif      : verification option;
-  calledby   : (expr * extension list option) option;
-  condition  : (label_exprs * extension list option) option;
+  calledby   : (expr * exts) option;
+  condition  : (label_exprs * exts) option;
   functions  : (s_function loced) list;
 }
 [@@deriving yojson, show {with_path = false}]
 
+type transition = (lident * (expr * exts) option * (expr * exts) option) list
+[@@deriving yojson, show {with_path = false}]
+
 (* -------------------------------------------------------------------- *)
-type declaration_r =
+type declaration_unloc =
   | Darchetype     of lident * exts
   | Dvariable      of lident * type_t * expr option * value_option list option * bool * exts
   | Denum          of lident * lident list * exts
   | Dstates        of lident option * (lident * state_option list option) list option * exts
   | Dasset         of lident * field list * asset_option list * asset_post_option list * asset_operation option * exts
   | Daction        of lident * args * action_properties * (expr * exts) option * exts
-  | Dtransition    of lident * args * (lident * lident) option * expr * action_properties * transition_r * exts
+  | Dtransition    of lident * args * (lident * lident) option * expr * action_properties * transition * exts
   | Dcontract      of lident * signature list * expr option * exts
   | Dextension     of lident * expr list option
   | Dnamespace     of lident * declaration list
@@ -250,7 +249,7 @@ and signature =
   | Ssignature of lident * type_t list
 [@@deriving yojson, show {with_path = false}]
 
-and declaration = declaration_r loced
+and declaration = declaration_unloc loced
 [@@deriving yojson, show {with_path = false}]
 
 and asset_operation_enum =

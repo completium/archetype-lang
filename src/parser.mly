@@ -525,13 +525,13 @@ condition:
        { (split_seq_label xs, exts) }
 
 %inline condition_value:
-| WHEN x=expr { x }
+| WHEN exts=option(extensions) e=expr { (e, exts) }
 
 %inline with_effect:
-| WITH EFFECT x=expr { x }
+| WITH EFFECT exts=option(extensions) e=expr { (e, exts) }
 
 effect:
- | EFFECT exts=option(extensions) xs=expr { (xs, exts) }
+ | EFFECT exts=option(extensions) e=expr { (e, exts) }
 
 %inline function_return:
  | COLON ty=type_t { ty }
