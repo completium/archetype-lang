@@ -142,7 +142,7 @@ let maybe_paren outer inner pos pp =
 let c =
 match (outer, inner, pos) with
   | ((o, Right), (i, Right), PLeft) when o >= i -> true
-  | ((o, Left), (i, Left), PRight) when o >= i -> true
+  | ((o, Left), (i, Left), _) when o >= i -> true
   | ((o, NonAssoc), (i, _), _) when o >= i -> true
   | _ -> false
 in pp_maybe_paren c pp
@@ -884,7 +884,7 @@ let rec pp_declaration fmt { pldesc = e; _ } =
 let pp_archetype fmt { pldesc = m; _ } =
   match m with
   | Marchetype es ->
-    Format.fprintf fmt "%a@\n" (pp_list "@,\n" pp_declaration) es
+    Format.fprintf fmt "%a@\n" (pp_list "@\n@\n" pp_declaration) es
   | Mextension (id, ds, es) ->
   Format.fprintf fmt "archetype extension %a (@\n@[<v 2>  %a@]@\n) = {@\n@[<v 2>  %a@]@\n}@\n"
      pp_id id
