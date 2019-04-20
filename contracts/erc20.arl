@@ -2,23 +2,23 @@ archetype erc20
 
 constant name string = "myerc20"
 
-constant total int = 1000
+constant total uint = 1000
 
 asset tokenHolder identified by holder = {
-  holder[%delegable] : address;
-  tokens : int;
+    holder[%delegable] : role;
+    tokens : uint;
 } initialized by [
   { caller; total }
 ]
 
-action transfer_ (k : address) (quantity : int) = {
+action transferTokens (th : tokenHolder) (quantity : uint) = {
 
   specification
     s1 : before tokenHolder.sum(tokens) = tokenHolder.sum(tokens)
 
-  called by (tokenHolder.get k).holder
+  called by th.holder
 
   effect
-    tokenHolder.update k {tokens += quantity};
+    tokenHolder.update th.holder {tokens += quantity};
     tokenHolder.update caller {tokens -= quantity}
 }
