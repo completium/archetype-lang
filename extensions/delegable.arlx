@@ -5,7 +5,7 @@ archetype extension delegable (
   }
 
   action aTransaction (anasset : anAsset) = {
-     called by anAsset.arole
+     called by anasset.aRole
   }
 
 ) = {
