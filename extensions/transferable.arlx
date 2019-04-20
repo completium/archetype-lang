@@ -4,8 +4,6 @@ archetype extension transferable (
 
 ) = {
 
-  variable aRole role
-
   variable <%aRole>_tmp role
 
   action assign_new_<%aRole> (newrole : <%aRole>tmp) = {

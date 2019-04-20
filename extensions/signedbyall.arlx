@@ -1,18 +1,17 @@
 archetype extension signedbyall (
+
   action[%signedbyall roles] aTransaction
+
 ) = {
 
   asset signer_<%aTransaction> = {
     signer    : address;
-    hasSigned : bool
-(*  } initialized by {
-    for (r in roles)
-      signer_<%aTransaction>.add {signer = r; hasSigned = false}*)
-  }
+    hasSigned : bool = false;
+  } initialized by roles
 
   action sign_<%aTransaction> = {
     effect
-      (signer_<%aTransaction>.get caller).hasSigned := true
+      signed.update caller { hasSigned = true }
   }
 
   action aTransaction = {

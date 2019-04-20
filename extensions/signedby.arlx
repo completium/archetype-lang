@@ -1,12 +1,10 @@
 archetype extension signedby (
 
-  variable arole role
-
   action aTransaction (anarg[%signedby arole] : type)
 
 ) = {
 
-  variable key_<%arole> key = oracle
+  variable key_<%arole> key = arole
 
   action aTransaction (signed_<%anarg> : signature) = {
     condition

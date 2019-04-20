@@ -42,7 +42,7 @@ transition abort from Created = {
   to Aborted
 }
 
-transition[%signedbyall [buyer, seller]] confirm from Created = {
+transition[%signedbyall [{buyer}; {seller}]] confirm from Created = {
   to Confirmed when balance = price + penalty
 }
 

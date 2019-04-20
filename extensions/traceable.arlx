@@ -1,13 +1,8 @@
 archetype extension traceable (
 
-  variable fromP role
-
-  variable toP role
-
   variable[%traceable] anamount tez from fromP to toP
-) = {
 
-  variable anamount tez from participant to toP
+) = {
 
   action transfer_<%anamount> = {
     called by fromP

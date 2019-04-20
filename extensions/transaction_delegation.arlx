@@ -1,10 +1,4 @@
-archetype extension actionDelegation (
-
-  variable aRole role
-
-  asset anAsset = {
-    arole : aRole
-  }
+archetype extension transactionDelegation (
 
   action aTransaction (anasset : anAsset) = {
     called by [%delegable] anAsset.arole
@@ -14,6 +8,7 @@ archetype extension actionDelegation (
 
   action aTransaction = {
     effect
+      effects;
       <%aTransaction>_space::Operator.remove
       (<%aTransaction>_space::Operator.get anasset)
   }

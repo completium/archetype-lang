@@ -7,7 +7,9 @@ archetype extension mutable_enum (
   action set_state_<%arole> (new_val : anenum) = {
 
     called by arole
-    condition mutable_enum_<%a> : state <= new_state
-    effect    anenum := new_val
+    condition
+      mutable_enum_<%arole> : state <= new_state
+    effect
+      anenum := new_val
   }
 }

@@ -566,10 +566,10 @@ and pp_simple_expr fmt e = (pp_expr e_simple PNone) fmt e
 
 (* -------------------------------------------------------------------------- *)
 let pp_to fmt ((to_, when_, effect) : (lident * expr option * expr option)) =
-  Format.fprintf fmt "to %a@\n%a%a"
+  Format.fprintf fmt " to %a@\n%a%a"
     pp_id to_
-    (pp_option (pp_enclose "when " "@\n" (pp_expr e_default PNone))) when_
-    (pp_option (pp_enclose "with effect (" ")@\n" (pp_expr e_default PNone))) effect
+    (pp_option (pp_enclose " when " "@\n" (pp_expr e_default PNone))) when_
+    (pp_option (pp_enclose " with effect (" ")@\n" (pp_expr e_default PNone))) effect
 
 let pp_specification_variable fmt (sv : (lident * type_t * expr option) loced) =
 match sv with
@@ -752,7 +752,7 @@ let pp_transition fmt (to_, conditions, effect) =
     pp_id to_
     (pp_option (
         fun fmt (e, exts) ->
-          Format.fprintf fmt "when%a %a"
+          Format.fprintf fmt " when%a %a"
             pp_extensions exts
             (pp_expr e_default PNone) e)) conditions
     (pp_option (fun fmt (e, exts) ->
