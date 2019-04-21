@@ -1,0 +1,57 @@
+{
+	"$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+	"name": "archetype",
+	"patterns": [
+		{
+			"include": "#comments"
+		},
+		{
+			"include": "#keywords"
+		},
+		{
+			"include": "#constants"
+		},
+		{
+			"include": "#strings"
+		}
+	],
+	"repository": {
+		"keywords": {
+			"patterns": [{
+				"comment": "Language keyboards",
+				"name": "keyword.language.archetype",
+				"match": "\\b(archetype|constant|variable|identified|sorted|by|as|from|to|on|ref|fun|initialized|collection|queue|stack|set|partition|asset|match|with|end|assert|enum|states|initial|invariant|transition|action|when|called|condition|verification|predicate|definition|axiom|theorem|specification|effect|function|ensure|let|otherwise|if|then|else|for|in|break|transfer|back|extension|namespace|contract|and|or|not|forall|exists|true|false)\\b"
+			}]
+		},
+		"constants": {
+			"patterns": [{
+				"comment": "Language constants",
+				"name": "constant.language.archetype",
+				"match": "\\b(state|now|transferred|caller|fail|balance|conditions|effects|none|any|transfer|mem|idem|before|after|fixed|subset|default|type)\\b"
+			}]
+		},
+		"comments": {
+			"name": "comments.language.archetype",
+			"begin": "\\*",
+			"end": "\\*",
+			"patterns": [
+				{
+					"name": "constant.character.escape.archetype",
+					"match": "\\\\."
+				}
+			]
+		},
+		"strings": {
+			"name": "string.quoted.double.archetype",
+			"begin": "\"",
+			"end": "\"",
+			"patterns": [
+				{
+					"name": "constant.character.escape.archetype",
+					"match": "\\\\."
+				}
+			]
+		}		
+	},
+	"scopeName": "source.archetype"
+}
