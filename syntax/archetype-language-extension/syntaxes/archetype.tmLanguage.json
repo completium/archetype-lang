@@ -9,6 +9,12 @@
 			"include": "#keywords"
 		},
 		{
+			"include": "#entries"
+		},
+		{
+			"include": "#variables"
+		},
+		{
 			"include": "#constants"
 		},
 		{
@@ -20,7 +26,21 @@
 			"patterns": [{
 				"comment": "Language keyboards",
 				"name": "keyword.language.archetype",
-				"match": "\\b(archetype|constant|variable|identified|sorted|by|as|from|to|on|ref|fun|initialized|collection|queue|stack|set|partition|asset|match|with|end|assert|enum|states|initial|invariant|transition|action|when|called|condition|verification|predicate|definition|axiom|theorem|specification|effect|function|ensure|let|otherwise|if|then|else|for|in|break|transfer|back|extension|namespace|contract|and|or|not|forall|exists|true|false)\\b"
+				"match": "\\b(archetype|identified|sorted|by|as|from|to|on|ref|fun|initialized|collection|queue|stack|set|partition|match|with|end|assert|initial|invariant|when|called|condition|verification|predicate|definition|axiom|theorem|specification|effect|function|ensure|let|otherwise|if|then|else|for|in|break|transfer|back|extension|namespace|contract|and|or|not|forall|exists|true|false)\\b"
+			}]
+		},
+		"entries": {
+			"patterns": [{
+				"comment": "Language keyboards",
+				"name": "entity.name.function.archetype",
+				"match": "\\b(transition|action)\\b"
+			}]
+		},
+		"variables": {
+			"patterns": [{
+				"comment": "Language keyboards",
+				"name": "strong.language.archetype",
+				"match": "\\b(contant|variable|asset|states|enum)\\b"
 			}]
 		},
 		"constants": {
@@ -31,13 +51,13 @@
 			}]
 		},
 		"comments": {
-			"name": "comments.language.archetype",
-			"begin": "\\*",
-			"end": "\\*",
+			"name": "comment.language.archetype",
+			"begin": "\\(\\*",
+			"end": "\\*\\)",
 			"patterns": [
 				{
 					"name": "constant.character.escape.archetype",
-					"match": "\\\\."
+					"match": "wordPattern"
 				}
 			]
 		},
