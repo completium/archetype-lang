@@ -14,3 +14,5 @@ src/*.o
 test.liq
 ./why3/archetype.cmxs
 why3/archetype.cmxs
+syntax/archetype-language-extension/syntaxes/solidity.tmLanguage.json
+syntax/archetype-language-extension/syntaxes/go.tmLanguage.json
