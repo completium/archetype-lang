@@ -434,8 +434,15 @@
 					"name": "keyword.operator.arithmetic.archetype"
                 },
                 {
-					"match": "(forall|exists)",
-					"name": "keyword.control.quantifier.archetype"
+					"match": "(forall|exists)(\\s+([A-Za-z_]\\w*))",
+					"captures": {
+						"1": {
+							"name": "keyword.control.quantifier.archetype"
+						},
+						"2": {
+							"name": "entity.name.id_quantifier.archetype"
+						}
+					}
                 },
                 {
 					"match": "(\\:=|\\+=|\\-=|\\*=|\\/=|\\&=|\\|=)",
@@ -545,36 +552,16 @@
 		"control": {
 			"patterns": [
 				{
-					"include": "#control-let"
-				},
-				{
-					"include": "#control-match"
-				},
-				{
-					"include": "#control-label"
-				},
-				{
-					"include": "#control-flow"
-				}
-			]
-		},
-		"control-let": {
-			"patterns": [
-				{
 					"match": "\\b(let)(\\s+([A-Za-z_]\\w*))?\\b",
 					"captures": {
 						"1": {
 							"name": "keyword.control.let.archetype"
 						},
 						"3": {
-							"name": "entity.name.value.archetype"
+							"name": "variable.other.definition.archetype"
 						}
 					}
-				}
-			]
-		},
-		"control-match": {
-			"patterns": [
+				},
 				{
 					"match": "\\b(match)(.)+(with)\\b",
 					"captures": {
@@ -586,19 +573,11 @@
 						}
 
 					}
-				}
-			]
-		},
-		"control-label": {
-			"patterns": [
+				},
 				{
-					"match": "\\b(\\s+([A-Za-z0-9_])\\w*\\:)\\b",
-					"name": "entity.name.label.archetype"
-				}
-			]
-		},
-		"control-flow": {
-			"patterns": [
+					"match": "(([A-Za-z0-9_]\\w*)\\s+\\:\\s+)",
+					"name": "markup.bold.label.archetype"
+				},
 				{
 					"match": "\\b(if|then|else|for|in|break|otherwise|transfer|to|end?)\\b",
 					"name": "keyword.control.flow.archetype"
