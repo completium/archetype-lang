@@ -1,6 +1,10 @@
 open Location
 open Model
 
+exception ReduceError of string * Location.t option
+
+let fail str = dumloc (Papp (dumloc (Pconst Cfail), [dumloc (Plit (dumloc (BVstring str)))]))
+
 let process_action model : model =
   let process_ap (tr : transaction) =
     let process_transition (tr : transaction) : transaction =
@@ -15,8 +19,48 @@ let process_action model : model =
                 default = None;
                 loc = Location.merge (loc id) (loc id2)}]
           | None -> [] in
-          let process_effect (_tr : transition) =
-            Some (dumloc Pbreak)
+          let process_effect (tr : transition) =
+            let state = 
+            match tr.on with
+            | Some (_id, id2) -> dumloc (Pdot (dumloc (Pvar id2), dumloc (Pconst Cstate)))
+            | _ -> dumloc (Pconst Cstate) in
+            let code : pterm = 
+            (List.fold_right (fun (id, cond, effect) acc -> 
+              let tre = 
+                match tr.on with
+                | Some (id, id_asset) -> dumloc (Papp (dumloc (Pdot (dumloc (Pvar id_asset),
+                                                                     dumloc (Pconst Cupdate))), [
+                                                                      (*TODO: insert key of asset*)
+                                                                      dumloc (Precord [(Qident (dumloc "state"), dumloc (Pvar id))])
+                                                                     ]))
+                | None -> dumloc (Passign (ValueAssign, state, dumloc (Pvar id))) in
+              let code =
+              match effect with
+              | Some e -> dumloc (Pseq (tre, e))
+              | None -> tre in
+
+              match cond with
+              | Some c -> Some (dumloc (Pif (c, code, acc)))
+              | None -> Some code
+            ) tr.trs None)
+            |> Tools.get
+             in
+
+            match (unloc tr.from) with
+            | Sany -> Some code
+            | _ -> 
+            begin 
+            let rec compute_patterns loc = function
+            | Sref id -> [mkloc (Location.loc id) (Mapp (Qident id, []))]
+            | Sor (a, b) -> [a; b] |> List.map (fun x -> compute_patterns loc (unloc x)) |> List.flatten
+            | Sany -> raise (ReduceError ("any is not authorized in this expression", Some loc)) in
+            let list_patterns = let l, f = deloc tr.from in compute_patterns l f in
+            Some (dumloc (Pmatchwith (state,
+              List.map (fun x -> (x, code)) list_patterns @
+              [dumloc Mwild, fail ""]
+            )))
+            end 
+            
           in
           { tr with
             transition = None;
@@ -42,7 +86,7 @@ let process_action model : model =
           | _ -> raise Modelinfo.TODO)
         in
         let condition = dumloc (Pnot (process_rexpr cb)) in
-        dumloc (Pif (condition, dumloc (Papp( dumloc (Pconst Cfail), [])), None ))
+        dumloc (Pif (condition, fail "not_authorized_fun", None ))
       in
       begin
         match tr.calledby with
@@ -57,7 +101,11 @@ let process_action model : model =
       end in
     let process_conditions (tr : transaction) =
       let process_condition (x : label_pterm) : pterm =
-        mkloc x.loc (Pif (x.term, dumloc (Papp( dumloc (Pconst Cfail), [])), None ))
+        let msg =
+         match x.label with
+         | Some label -> "condition " ^ (unloc label) ^ " failed"
+         | _ -> "condition failed" in
+        mkloc x.loc (Pif (x.term, fail msg, None ))
       in
       match tr.condition with
       | None -> tr
