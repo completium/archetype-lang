@@ -393,32 +393,6 @@ let map_label_lterm l : label_lterm list =
     ) l
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 (* model *)
 
 (* name *)
