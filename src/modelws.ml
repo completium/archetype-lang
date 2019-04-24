@@ -1365,6 +1365,29 @@ let rec process_rec (acc : process_acc) (pterm : Model.pterm) : process_data =
         side = a.side || b.side;
       }
     )
+  | Pif (cond, then_, else_) ->
+  (
+    let c = process_rec acc cond in
+    let t = process_rec acc then_ in
+    let e = map_option (process_rec acc) else_ in
+      {
+        dummy_process_data with
+        term = mkloc loc (Pif (c.term, t.term, None));
+        funs = c.funs @ t.funs @ (match e with | Some e -> e.funs | _ -> []);
+        ret = t.ret;
+        side = c.side || t.side || (match e with | Some e -> e.side | _ -> false);
+      }
+  )
+  | Papp (e, args) when (match (unloc e) with | Pconst Cfail -> List.length args > 0 | _ -> false) ->
+    (
+      (* let msg : string = List.nth args 0 |> unloc |> (fun x -> (match x with | Plit {pldesc = BVstring x} -> x | _ -> raise (Anomaly ("string expected")))) in *)
+      {
+        dummy_process_data with
+        term = loc_pterm (Papp (Pdot (Pvar "Current", Pvar "failwith"), [Papp (Pvar "not_found",[])]));
+        ret = None;
+        side = true;
+      }
+    )
   | Papp (e, args) when is_asset_get (e, args)->
     (
       let asset_name, arg = dest_asset_get (e, args) in
