@@ -79,14 +79,16 @@ end
 (* non ghost map *)
 module Map
 
+  (* import non ghost equality on integer *)
   use int.Int
+  use Types
 
-  type map 'value = int -> 'value
+  type map 'value = key -> 'value
 
-  let function get (f: map 'value) (x: int) : 'value = f x
+  let function get (f: map 'value) (x: key) : 'value = f x
 
-  let function set (f: map 'value) (x: int) (v: 'value) : map 'value =
-    fun (y : int) -> if y = x then v else f y
+  let function set (f: map 'value) (x: key) (v: 'value) : map 'value =
+    fun (y : key) -> if y = x then v else f y
 
   let function const (v : 'value) : map 'value = fun _ -> v
 
@@ -111,7 +113,9 @@ theory Asset
   use Contract
   use Map
 
-  let rec predicate mem (k : int) (a : list int) : bool =
+  type acol = list key
+
+  let rec predicate mem (k : key) (a : acol) : bool =
     match a with
     | Cons e tl ->
       if e = k
@@ -124,7 +128,7 @@ theory Asset
 
   let function add (a : 'a) (c : list 'a) = c ++ (Cons a Nil)
 
-  let addifnotexist (a : int) (c : list int) : list int =
+  let addifnotexist (a : key) (c : acol) : acol =
   if mem a c
   then c
   else c ++ (Cons a Nil)
@@ -147,18 +151,12 @@ theory Asset
   let ghost function subset (c1 c2 : list 'a)
   = Fset.subset (elements c1) (elements c2)
 
-  predicate is_empty (c : list int) = forall m : int. not (mem m c)
+  predicate is_empty (c : acol) = forall m : key. not (mem m c)
 
-  let nth (i : int) (c : list 'a) : 'a
-  raises { NotFound }
-  requires { 0 <= i < length c }
-  = match nth i c with
-    | Some v -> v
-    | None -> raise NotFound
-    end
+  let function nth (i : key) (c : acol) : option key = nth i c
 
   (* should not be ghost *)
-  let ghost function sum (c : list 'a) (f : 'a -> int)
+  let ghost function sum (c : list 'a) (f : 'a -> key)
   = FsetSum.sum (elements c) f
 
   (* not really used *)
@@ -178,56 +176,54 @@ end
 
 theory Sum
 
+  (* import comparison operators on key *)
   use int.Int
-  use list.List
-
+  use Types
   use Asset
 
   type storage
-  type t
 
-  function f {storage} {list t} int : int
+  function f storage key : int
 
-  function sum (list t) int int : int
+  function sum acol int int : int
 
   lemma Sum_def_empty :
-    forall c : list t, i j : int.
+    forall c: acol, i j : int.
     j <= i -> sum c i j = 0
 
   lemma Sum_def_non_empty :
-    forall s : storage, c: list t, i j : int.
-    i < j -> sum c i j = f s c i + sum c (i+1) j
+    forall s : storage, c: acol, i j : int.
+    i < j -> sum c i j = f s i + sum c (i+1) j
 
   lemma Sum_right_extension:
-    forall s : storage, c : list t, i j : int.
-    i < j -> sum c i j = sum c i (j-1) + f s c (j-1)
+    forall s : storage, c : acol, i j : int.
+    i < j -> sum c i j = sum c i (j-1) + f s (j-1)
 
   lemma Sum_transitivity :
-    forall c : list t, i k j : int. i <= k <= j ->
+    forall c : acol, i k j : int. i <= k <= j ->
     sum c i j = sum c i k + sum c k j
 
   lemma Sum_eq :
-    forall s : storage, c1 c2 : list t, i j : int.
-    (forall k : int. i <= k < j -> f s c1 k = f s c2 k) -> sum c1 i j = sum c2 i j
+    forall s : storage, c1 c2 : acol, i j : int.
+    (forall k : int. i <= k < j -> mem k c1 /\ mem k c2) -> sum c1 i j = sum c2 i j
 
 end
 
+(*
+theory When
 
-(*theory When
-
+  use Types
   use Contract
-  use list.List
-  use set.Fset
-
   use Asset
+  (* import Nil constant *)
+  use list.List
 
   type storage
-  type asset
 
-  val function test env {storage} {asset} : bool
+  val function test env storage key : bool
 
-  let rec function when (e : env) (s : storage) (c : list asset) : list asset
-  ensures { forall e : env, s : storage, a : asset.
+  let rec function when (e : env) (s : storage) (c : acol) : acol
+  ensures { forall e : env, s : storage, a : key.
                 mem a result <-> test e s a }
   ensures { subset result c }
   ensures { forall i j : int. i <> j -> not ((nth i result) = (nth j result)) }
@@ -239,6 +235,5 @@ end
     then Cons a (when e s tl)
     else when e s tl
   end
-
 
 end*)
