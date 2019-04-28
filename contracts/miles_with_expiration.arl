@@ -42,22 +42,12 @@ action consume (ow : address) (val : uint) = {
 
     specification
 
-         p1 : let o = owner.get owner in
-              o.miles.sum(amount) = before o.miles.sum(amount) - val;
-
-         (* sanity checks *)
-         p2 : forall m : removed miles,
-                mem m (before (owner.miles)) and m.expiration >= now;
-
+         (* the globla quantity of miles is decreased by nbmiles *)
+         p1 : mile.sum(quantity) = before miles.sum(quantity) - nbmiles;
+         (* all removed miles are valid miles *)
+         p2 : forall m : removed miles, m.expiration >= now;
+         (* no added mile *)
          p3 : is_empty added.mile;
-
-         p4 : idem (mile.project(not mile.amount));
-
-         p5 : idem ((owner.select(owner.owner <> owner)).miles);
-
-         p6 : forall m : removed mile,
-               forall o : fixed mile,
-                  m.expiration <= o.expiration
   }
 
   called by admin
@@ -95,8 +85,9 @@ action consume (ow : address) (val : uint) = {
 
 (* this ensures that any mile was added with the ‘add’ action *)
 specification {
-   s1 : mile = Collection.fold (fun u o => union u o.miles) void owner;
-   s2 : mile = Collection.union(miles) owner
+   g1 : anyaction may be performed by only by role admin;
+   g2 : (remove mile) may be performed only by tx (consume or clear_expired);
+   g3 : not ((add mile) may be performed only by tx consume);
 }
 
 action clear_expired = {
@@ -110,3 +101,4 @@ action clear_expired = {
 
   effect mile.removeif (expiration < now)
 }
+
