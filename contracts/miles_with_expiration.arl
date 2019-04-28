@@ -29,16 +29,13 @@ action add (ow : address) (newmile : mile) = {
 action consume (ow : address) (val : uint) = {
   verification {
     invariant loop
-
          (* remainder has a decreasing upper bound *)
          i1 : 0 <= remainder <= to_iter.sum(amount);
-
          (* removed miles *)
          i2 : (subset (removed miles) (o.miles.select(expiration >= now)));
-
          (* right amount consumed *)
          i3 : before miles.sum(amount) = miles.sum(amount) + nbmiles - remainder
-
+         i4 : is_empty added.mile;
 
     specification
 
@@ -82,10 +79,9 @@ action consume (ow : address) (val : uint) = {
      assert (remainder = 0))
 }
 
-
 (* this ensures that any mile was added with the ‘add’ action *)
 specification {
-   g1 : anyaction may be performed by only by role admin;
+   g1 : anyaction may be performed only by role admin;
    g2 : (remove mile) may be performed only by tx (consume or clear_expired);
    g3 : not ((add mile) may be performed only by tx consume);
 }
