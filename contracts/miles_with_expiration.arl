@@ -20,6 +20,9 @@ asset owner as role identified by addr = {
 action add (ow : address) (newmile : mile) = {
    called by admin
 
+   condition
+     c1 : newmile.amount > 0
+
    effect
      owner.addifnotexist { addr = ow; mile = [] };
      (* action must fail if mile already exists *)
@@ -90,11 +93,12 @@ action clear_expired = {
 
   specification
      s3 : forall m : removed mile, m.expiration < now;
-     s4 : is_empty (added mile);
-     s5 : idem mile
 
   called by admin
 
-  effect mile.removeif (expiration < now)
+  effect 
+     for (o in owner) (
+       o.miles.removeif (expiration < now)
+     )
 }
 

@@ -5,17 +5,40 @@ module Miles
   use option.Option
   use list.List
 
-  use archetype3.Types
-  use archetype3.Contract
-  use archetype3.Map
-  use archetype3.AssetCollection
+  use archetype.Types
+  use archetype.Contract
+  use archetype.Map
+  use archetype.AssetCollection
+  use archetype.Trace
 
+(* TRACES *)
+
+  type asset =
+  | Mile key
+  | Owner key
+
+  type entry =
+  | Add 
+  | Consume
+
+  type field = 
+  | Amount
+  | Expiration
+  | Miles
+
+  clone archetype.Trace as Tr with type asset = asset,
+                                   type entry = entry, 
+                                   type field = field
   type storage = {
+    mutable admin            : role;
     mutable miles            : acol;
     mutable mile_amounts     : map int;
     mutable mile_expirations : map date;
     mutable owners           : acol;
     mutable owner_miles      : map acol;
+    (* others *)
+    mutable tr               : Tr.log;
+    mutable ename            : option entry;
   }
   
   (* TODO : make this a storage invariant *)
@@ -28,8 +51,8 @@ module Miles
   let function get_owner (s : storage) (o : key) : key = o
   let function get_miles (s : storage) (o : key) : acol  = get s.owner_miles o
 
-  clone archetype3.Sum as Amounts with type     storage = storage,
-                                       function f       = get_amount
+  clone archetype.Sum as Amounts with type     storage = storage,
+                                      function f       = get_amount
 
   (* Owner.miles is a partition of s.miles *)
 
@@ -54,29 +77,48 @@ module Miles
     let new_owner_miles = remove m miles in 
     s.owner_miles <- set s.owner_miles o new_owner_miles
 
+  let add_miles (o : key) (m : key) (a : int) (e : date) (s : storage) : unit
+  requires { mem o s.owners }
+  requires { not (mem m s.miles) }
+  ensures  { Amounts.sum (old s) (old s).miles + a = Amounts.sum s s.miles }
+  ensures  { forall x:key. mem x s.miles <-> (mem x (old s).miles \/ x = m) }
+  =
+    s.miles <- add m s.miles;
+    s.mile_amounts <- set s.mile_amounts m a;
+    s.mile_expirations <- set s.mile_expirations m e;
+    let miles = get_miles s o in
+    let new_owner_miles = add m miles in
+    s.owner_miles <- set s.owner_miles o new_owner_miles
+
   let set_amount (m : key) (a : int) (s : storage) : unit
   requires { mem m s.miles }
   ensures  { Amounts.sum (old s) (old s).miles = Amounts.sum s s.miles - a + get_amount (old s) m }
   ensures { (old s).miles = s.miles }
   = s.mile_amounts <- set s.mile_amounts m a
 
-  (* Transactions  ***********************************************************)
+  let update_owner (o : key) (new_miles : acol) (s : storage) : unit
+  raises { NotFound }
+  = 
+  if not (mem o s.owners) then raise NotFound;
+  s.owner_miles <- set s.owner_miles o new_miles  
 
-  (* filter generated from template 
-  let rec function when (e : env) (s : storage) (c : acol) : acol
-  ensures { forall a : key. mem a result <-> <TEST e s a> }
-  ensures { subset result c }
-  ensures { forall i j : int. i <> j -> not ((nth i result) = (nth j result)) }
+  let addifnotexist (o : key) (new_miles : acol) (s : storage) : unit
+  raises { NotFound }
   =
-  match c with
-  | Nil -> Nil
-  | Cons a tl ->
-    if <TEST e s a>
-    then Cons a (when e s tl)
-    else when e s tl
-  end
-  *)
-  let rec function filter (e : env) (s : storage) (c : acol) : acol
+  if not (mem o s.owners) then update_owner o new_miles s
+
+  (* Actions  *****************************************************************)
+
+  let add (e : env) (s : storage) (ow : key) (m : key) (a : int) (ex : date) : transfers 
+  raises { InvalidCaller, InvalidCondition, NotFound }
+  =
+    if caller e <> s.admin then raise InvalidCaller;
+    if not (a > 0) then raise InvalidCondition;
+    addifnotexist ow Nil s;
+    add_miles ow m a ex s;
+    Contract.empty
+
+  let rec function filter_consume (e : env) (s : storage) (c : acol) : acol
   variant { c }
   ensures { forall a : key. mem a result -> get_expiration s a > now e }
   ensures { subset result c }
@@ -85,18 +127,19 @@ module Miles
   | Nil -> Nil
   | Cons a tl ->
     if get_expiration s a > now e
-    then Cons a (filter e s tl)
-    else filter e s tl
+    then Cons a (filter_consume e s tl)
+    else filter_consume e s tl
   end
 
   let consume (e : env) (s : storage) (owner : address) (nbmiles : int) : transfers
+  raises { InvalidCaller }
   requires { nbmiles > 0 }
   requires { let o = get_owner s owner in mem o s.owners }
   requires { forall m : key, s : storage. get_amount s m > 0 }
   requires {
      let o = get_owner s owner in
      let miles = get_miles s o in
-     let l = filter e s miles in
+     let l = filter_consume e s miles in
      Amounts.sum s l >= nbmiles
   }
   (* forall m : removed miles, m.expiration > now *)
@@ -108,10 +151,11 @@ module Miles
   (* is_emtpy add.miles *)
   ensures { is_empty (diff s.miles (old s).miles) }
 
-  = let remainder = ref nbmiles in
+  = if caller e <> s.admin then raise InvalidCaller;
+    let remainder = ref nbmiles in
     let o = get_owner s owner in
     let miles = get_miles s o in
-    let l = filter e s miles in
+    let l = filter_consume e s miles in
     try
       for i = 0 to (length l) - 1 do
       (* helps for the membership precondition of set_amount: *)
@@ -143,5 +187,32 @@ module Miles
     end;
     assert { !remainder = 0 };
     Contract.empty
+
+    let rec function filter_clear_expired (e : env) (s : storage) (c : acol) 
+    variant { c }
+    ensures { forall a : key. mem a result -> get_expiration s a < now e }
+    ensures { subset result c }
+    = match c with
+      | Nil -> Nil
+      | Cons a tl ->
+        if get_expiration s a < now e
+        then Cons a (filter_clear_expired e s tl)
+        else filter_clear_expired e s tl
+      end
+
+    let clear_expired (e : env) (s : storage) (owner : address) : transfers 
+    raises { InvalidCaller }
+    ensures { forall m : key. mem m (diff (old s).miles s.miles) -> get_expiration s m < now e }
+    = if caller e <> s.admin then raise InvalidCaller;
+      for i = 0 to (length s.owners)-1 do
+        let o = nth i s.owners in
+        let miles = get_miles s o in
+        let l = filter_clear_expired e s miles in
+        for j = 0 to (length l) - 1 do
+          let m = nth j l in
+          remove_miles o m s;
+        done;
+      done;
+      Contract.empty
 
 end

@@ -16,6 +16,9 @@ theory Types
 
   exception Break
   exception NotFound
+  exception KeyExist
+  exception InvalidCaller
+  exception InvalidCondition
 
 end
 
@@ -236,4 +239,49 @@ theory Sum
      (forall k : int. i <= k <= j -> nth k c <> m -> f s1 (nth k c) = f s2 (nth k c)) ->
      part_sum s1 c i j - f s1 m = part_sum s2 c i j - f s2 m
 
+end
+
+theory Trace
+  
+  use list.List
+  use list.Mem
+  use option.Option
+
+  use Types
+  use Contract
+
+  type asset
+  type entry
+  type field
+
+  type action =
+  | Add
+  | Rm
+  | Get
+  | Update field
+  | Loop
+
+  type trace =  {
+    entry : entry;
+    asset : asset;
+    action : action;
+  }
+  
+  type log = list trace
+
+  let mk_trace (e : entry) (a : asset) (c : action) : log = Cons ({
+    entry = e;
+    asset = a;
+    action = c;
+  }) Nil
+
+  predicate performed_by_role  (tr : log) (e : env)  (a: list action) (r:list address) =
+  forall x:trace. Mem.mem (action x) a -> Mem.mem x tr -> Mem.mem (caller e) r
+
+  predicate performed_by_tx (tr : log) (tx2 : option entry) (tx1 : entry) (a:action) (l : list entry) =
+  forall x:trace. Mem.mem x tr ->
+                  Some tx1 = tx2 ->
+                  action x = a ->
+                  Mem.mem tx1 l
+  
 end
