@@ -126,17 +126,22 @@ theory AssetCollection
 
   let function length (c : list 'a) = length c
 
-  let function add (a : 'a) (c : list 'a) = c ++ (Cons a Nil)
+  let add (a : key) (c : acol)
+  raises { NotFound }
+  ensures { forall x : key. mem a result <-> mem x c \/ x = a } 
+  = if mem a c then raise NotFound;
+    c ++ (Cons a Nil)
 
   let addifnotexist (a : key) (c : acol) : acol =
   if mem a c
   then c
   else c ++ (Cons a Nil)
 
-  let rec function remove (a : key) (c : acol) : acol
-  requires { mem a c }
+  let rec remove (a : key) (c : acol) : acol
+  raises { NotFound }
   ensures { forall k : key. mem a result <-> mem k c /\ k <> a }
   =
+     if not (mem a c) then raise NotFound;
      match c with
      | Nil -> Nil
      | Cons e tl ->
@@ -201,18 +206,30 @@ theory Sum
 
   (* import comparison operators on key *)
   use int.Int
+  use list.List
   use Types
   use AssetCollection
 
-  type storage
+  type storage = abstract mutable {}
 
   (* should it be generalized to any summable type  ? *)
-  function f storage key : int
+  val function f storage key : int
 
-  (* make it non ghost ? *)
-  function part_sum storage acol int int : int
+  let function part_sum (s : storage) (c : acol) (i j : int) : int = 
+    let rec rec_sum (k : int) (l : acol) 
+    variant { l }
+    = match l with
+      | Cons e tl ->
+        if i <= k <= j
+        then
+          f s e + rec_sum (k+1) tl 
+        else 
+          rec_sum k tl
+      | Nil -> 0
+      end in
+    rec_sum 0 c
 
-  let ghost function sum (s : storage) (c : acol) = part_sum s c 0 (length c)
+  let function sum (s : storage) (c : acol) = part_sum s c 0 (length c)
 
   lemma part_sum_def_empty :
     forall s : storage, c: acol, i j : int.

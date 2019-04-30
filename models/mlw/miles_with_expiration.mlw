@@ -44,15 +44,19 @@ module Miles
   (* TODO : make this a storage invariant *)
   axiom Amount_gt0 : forall s : storage, m : key. get s.mile_amounts m > 0 
 
-  let function get_mile       (s : storage) (k : key) : key = k
+  let get_mile       (s : storage) (k : key) : key 
+  raises { NotFound }
+  = if mem k s.miles then raise NotFound else k
   let function get_amount     (s : storage) (k : key) : int = get s.mile_amounts k
   let function get_expiration (s : storage) (k : key) : date = get s.mile_expirations k
 
-  let function get_owner (s : storage) (o : key) : key = o
+  let get_owner (s : storage) (o : key) : key 
+  raises { NotFound }
+  = if mem o s.owners then raise NotFound else o
   let function get_miles (s : storage) (o : key) : acol  = get s.owner_miles o
 
   clone archetype.Sum as Amounts with type     storage = storage,
-                                      function f       = get_amount
+                                      val      f       = get_amount
 
   (* Owner.miles is a partition of s.miles *)
 
@@ -67,6 +71,7 @@ module Miles
     mem m s.miles -> mem m miles
 
   let remove_miles (o : key) (m : key) (s:storage) : unit
+  raises { NotFound }
   requires { mem m s.miles }
   requires { mem o s.owners }
   ensures  { Amounts.sum (old s) (old s).miles = Amounts.sum s s.miles + get_amount (old s) m }
@@ -78,6 +83,7 @@ module Miles
     s.owner_miles <- set s.owner_miles o new_owner_miles
 
   let add_miles (o : key) (m : key) (a : int) (e : date) (s : storage) : unit
+  raises { NotFound }
   requires { mem o s.owners }
   requires { not (mem m s.miles) }
   ensures  { Amounts.sum (old s) (old s).miles + a = Amounts.sum s s.miles }
@@ -132,16 +138,7 @@ module Miles
   end
 
   let consume (e : env) (s : storage) (owner : address) (nbmiles : int) : transfers
-  raises { InvalidCaller }
-  requires { nbmiles > 0 }
-  requires { let o = get_owner s owner in mem o s.owners }
-  requires { forall m : key, s : storage. get_amount s m > 0 }
-  requires {
-     let o = get_owner s owner in
-     let miles = get_miles s o in
-     let l = filter_consume e s miles in
-     Amounts.sum s l >= nbmiles
-  }
+  raises { NotFound, InvalidCaller, InvalidCondition }
   (* forall m : removed miles, m.expiration > now *)
   ensures { forall m : key.
      mem m (diff (old s).miles s.miles) ->  get_expiration s m > (now e)
@@ -152,10 +149,12 @@ module Miles
   ensures { is_empty (diff s.miles (old s).miles) }
 
   = if caller e <> s.admin then raise InvalidCaller;
-    let remainder = ref nbmiles in
+    if nbmiles <= 0 then raise InvalidCondition;
     let o = get_owner s owner in
     let miles = get_miles s o in
     let l = filter_consume e s miles in
+    if Amounts.sum s l >= nbmiles then raise InvalidCondition;
+    let remainder = ref nbmiles in
     try
       for i = 0 to (length l) - 1 do
       (* helps for the membership precondition of set_amount: *)
@@ -201,7 +200,7 @@ module Miles
       end
 
     let clear_expired (e : env) (s : storage) (owner : address) : transfers 
-    raises { InvalidCaller }
+    raises { NotFound, InvalidCaller }
     ensures { forall m : key. mem m (diff (old s).miles s.miles) -> get_expiration s m < now e }
     = if caller e <> s.admin then raise InvalidCaller;
       for i = 0 to (length s.owners)-1 do
