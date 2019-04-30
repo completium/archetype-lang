@@ -124,18 +124,10 @@ module Miles
     add_miles ow m a ex s;
     Contract.empty
 
-  let rec function filter_consume (e : env) (s : storage) (c : acol) : acol
-  variant { c }
-  ensures { forall a : key. mem a result -> get_expiration s a > now e }
-  ensures { subset result c }
-  =
-  match c with
-  | Nil -> Nil
-  | Cons a tl ->
-    if get_expiration s a > now e
-    then Cons a (filter_consume e s tl)
-    else filter_consume e s tl
-  end
+  let function test_consume (e : env) (s : storage) (a : key) : bool = get_expiration s a > now e
+
+  clone archetype.Filter as FConsume with type storage = storage,
+                                          val  test    = test_consume
 
   let consume (e : env) (s : storage) (owner : address) (nbmiles : int) : transfers
   raises { NotFound, InvalidCaller, InvalidCondition }
@@ -152,7 +144,7 @@ module Miles
     if nbmiles <= 0 then raise InvalidCondition;
     let o = get_owner s owner in
     let miles = get_miles s o in
-    let l = filter_consume e s miles in
+    let l = FConsume.filter e s miles in
     if Amounts.sum s l >= nbmiles then raise InvalidCondition;
     let remainder = ref nbmiles in
     try
@@ -187,17 +179,10 @@ module Miles
     assert { !remainder = 0 };
     Contract.empty
 
-    let rec function filter_clear_expired (e : env) (s : storage) (c : acol) 
-    variant { c }
-    ensures { forall a : key. mem a result -> get_expiration s a < now e }
-    ensures { subset result c }
-    = match c with
-      | Nil -> Nil
-      | Cons a tl ->
-        if get_expiration s a < now e
-        then Cons a (filter_clear_expired e s tl)
-        else filter_clear_expired e s tl
-      end
+    let function test_clear_expired (e : env) (s : storage) (a : key) : bool = get_expiration s a < now e
+
+    clone archetype.Filter as FClearexpired with type storage = storage,
+                                                 val  test    = test_clear_expired
 
     let clear_expired (e : env) (s : storage) (owner : address) : transfers 
     raises { NotFound, InvalidCaller }
@@ -206,7 +191,7 @@ module Miles
       for i = 0 to (length s.owners)-1 do
         let o = nth i s.owners in
         let miles = get_miles s o in
-        let l = filter_clear_expired e s miles in
+        let l = FClearexpired.filter e s miles in
         for j = 0 to (length l) - 1 do
           let m = nth j l in
           remove_miles o m s;

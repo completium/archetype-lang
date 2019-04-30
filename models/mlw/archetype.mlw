@@ -202,6 +202,33 @@ theory AssetCollection
 
 end
 
+theory Filter
+  use int.Int
+  use list.List
+
+  use Types
+  use Contract
+  use AssetCollection
+  
+  type storage = abstract mutable {}
+  
+  val function test env storage key : bool
+
+  let rec function filter (e : env) (s : storage) (c : acol) : acol
+  variant { c }
+  ensures { forall a : key. mem a result -> test e s a }
+  ensures { subset result c }
+  =
+  match c with
+  | Nil -> Nil
+  | Cons a tl ->
+    if test e s a
+    then Cons a (filter e s tl)
+    else filter e s tl
+  end
+
+end
+
 theory Sum
 
   (* import comparison operators on key *)
