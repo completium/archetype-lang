@@ -187,6 +187,7 @@ theory Msg
   type msg
 
   val not_found           unit : msg
+  val not_found_cond      unit : msg
   val not_supported_yet   unit : msg
   val already_exists      unit : msg
   val not_authorized_fun  unit : msg

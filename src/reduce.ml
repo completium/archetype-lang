@@ -11,7 +11,7 @@ let process_action model : model =
         match tr.transition with
         | None -> tr
         | Some transition ->
-          let process_args (tr : transition) : ((ptyp, bval) gen_decl) list = 
+          let process_args (tr : transition) : ((ptyp, bval) gen_decl) list =
           match tr.on with
           | Some (id, id2) ->
               [{name = id;
@@ -20,13 +20,13 @@ let process_action model : model =
                 loc = Location.merge (loc id) (loc id2)}]
           | None -> [] in
           let process_effect (tr : transition) =
-            let state = 
+            let state =
             match tr.on with
             | Some (_id, id2) -> dumloc (Pdot (dumloc (Pvar id2), dumloc (Pconst Cstate)))
             | _ -> dumloc (Pconst Cstate) in
-            let code : pterm = 
-            (List.fold_right (fun (id, cond, effect) acc -> 
-              let tre = 
+            let code : pterm =
+            (List.fold_right (fun (id, cond, effect) acc ->
+              let tre =
                 match tr.on with
                 | Some (id, id_asset) -> dumloc (Papp (dumloc (Pdot (dumloc (Pvar id_asset),
                                                                      dumloc (Pconst Cupdate))), [
@@ -48,8 +48,8 @@ let process_action model : model =
 
             match (unloc tr.from) with
             | Sany -> Some code
-            | _ -> 
-            begin 
+            | _ ->
+            begin
             let rec compute_patterns loc = function
             | Sref id -> [mkloc (Location.loc id) (Mapp (Qident id, []))]
             | Sor (a, b) -> [a; b] |> List.map (fun x -> compute_patterns loc (unloc x)) |> List.flatten
@@ -59,8 +59,8 @@ let process_action model : model =
               List.map (fun x -> (x, code)) list_patterns @
               [dumloc Mwild, fail ""]
             )))
-            end 
-            
+            end
+
           in
           { tr with
             transition = None;
@@ -70,10 +70,10 @@ let process_action model : model =
     in
     let process_calledby (tr : transaction) =
       let process_cb (cb : rexpr) : pterm =
-        let rec process_rexpr rq = 
+        let rec process_rexpr rq =
         dumloc (* TODO: rq must be loced *) ( match rq with
           | Rqualid q ->
-            begin 
+            begin
               let rec qualid_to_pterm (q : liqualid) : pterm =
               match q with
               | Qident i -> mkloc (loc i) (Pvar i)
@@ -103,7 +103,7 @@ let process_action model : model =
       let process_condition (x : label_pterm) : pterm =
         let msg =
          match x.label with
-         | Some label -> "condition " ^ (unloc label) ^ " failed"
+         | Some _label -> "cond" (*"condition " ^ (unloc label) ^ " failed"*)
          | _ -> "condition failed" in
         mkloc x.loc (Pif (x.term, fail msg, None ))
       in

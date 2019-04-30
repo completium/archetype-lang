@@ -847,41 +847,6 @@ let dest_asset_const_name = function
     )
   | _ -> raise (Anomaly("dest_asset_const_2"))
 
-let dest_asset_get (e, args) =
-  let asset_name = dest_asset_const_name (unloc e) in
-  let arg = match args with
-    | [a] -> a
-    | _ -> raise (Anomaly("dest_asset_get")) in
-  (asset_name, arg)
-
-let dest_asset_add (e, args) =
-  let asset_name = dest_asset_const_name (unloc e) in
-  let arg = match args with
-    | [a] -> a
-    | _ -> raise (Anomaly("dest_asset_add")) in
-  (asset_name, arg)
-
-let dest_asset_addifnotexist (e, args) =
-  let asset_name = dest_asset_const_name (unloc e) in
-  let arg = match args with
-    | [a] -> [a]
-    | _ -> raise (Anomaly("dest_asset_addifnotexist")) in
-  (asset_name, arg)
-
-let dest_asset_update (e, args) =
-  let asset_name = dest_asset_const_name (unloc e) in
-  let arg = match args with
-    | [a; b] -> [a; b]
-    | _ -> raise (Anomaly("dest_asset_update")) in
-  (asset_name, arg)
-
-let dest_asset_removeif (e, args) =
-  let asset_name = dest_asset_const_name (unloc e) in
-  let arg = match args with
-    | [a] -> a
-    | _ -> raise (Anomaly("dest_asset_removeif")) in
-  (asset_name, arg)
-
 let rec gen_mapper_pterm f p =
   Model.poly_pterm_map
     (fun x -> mkloc (Location.loc p) x)
@@ -1343,17 +1308,21 @@ let rec process_rec (acc : process_acc) (pterm : Model.pterm) : process_data =
       let a = process_rec acc l in
       let b = process_rec acc r in
 
-      let t = (
+      let ret, t = (
         match acc.start, a.ret, b.ret with
+        | None, None, None ->
+          None, mkloc loc (Pseq (a.term, b.term))
+        | Some s, None, None ->
+          None, mkloc loc (Pseq (a.term, dumloc (Pseq (b.term, s))))
         | Some s, Operations, Operations ->
-          dumloc (Pletin (dumloc "_ops", a.term, None,
+          Letin, dumloc (Pletin (dumloc "_ops", a.term, None,
                           dumloc (Pletin (dumloc "_ops", b.term, None, s))))
         | None, Operations, Operations ->
-          dumloc (Pletin (dumloc "_ops", a.term, None,
+          Letin, dumloc (Pletin (dumloc "_ops", a.term, None,
                           dumloc (Pletin (dumloc "_ops", b.term, None,
                                           loc_pterm (Ptuple[Pvar "_ops"; Pvar "s"])))))
         | _ ->
-          dumloc (Pletin (dumloc "s", a.term, None,
+          Letin, dumloc (Pletin (dumloc "s", a.term, None,
                           dumloc (Pletin (dumloc "s", b.term, None,
                                           loc_pterm (Ptuple[Pvar "_ops"; Pvar "s"])))))
       ) in
@@ -1361,7 +1330,7 @@ let rec process_rec (acc : process_acc) (pterm : Model.pterm) : process_data =
         dummy_process_data with
         term = t;
         funs = add_funs a.funs b.funs;
-        ret = Letin;
+        ret = ret;
         side = a.side || b.side;
       }
     )
@@ -1372,7 +1341,7 @@ let rec process_rec (acc : process_acc) (pterm : Model.pterm) : process_data =
     let e = map_option (process_rec acc) else_ in
       {
         dummy_process_data with
-        term = mkloc loc (Pif (c.term, t.term, None));
+        term = mkloc loc (Pif (c.term, t.term, map_option (fun e -> e.term) e));
         funs = c.funs @ t.funs @ (match e with | Some e -> e.funs | _ -> []);
         ret = t.ret;
         side = c.side || t.side || (match e with | Some e -> e.side | _ -> false);
@@ -1380,17 +1349,29 @@ let rec process_rec (acc : process_acc) (pterm : Model.pterm) : process_data =
   )
   | Papp (e, args) when (match (unloc e) with | Pconst Cfail -> List.length args > 0 | _ -> false) ->
     (
-      (* let msg : string = List.nth args 0 |> unloc |> (fun x -> (match x with | Plit {pldesc = BVstring x} -> x | _ -> raise (Anomaly ("string expected")))) in *)
+      let dest args =
+        match args with
+        | [{pldesc=Plit {pldesc=BVstring str; _}; _} ] -> str
+        | _ -> raise (Anomaly("dest_fail")) in
+
+      let str : string = dest args in
+      let msg = if String.equal str "cond" then "not_found_cond" else "not_found" in
       {
         dummy_process_data with
-        term = loc_pterm (Papp (Pdot (Pvar "Current", Pvar "failwith"), [Papp (Pvar "not_found",[])]));
+        term = loc_pterm (Papp (Pdot (Pvar "Current", Pvar "failwith"), [Papp (Pvar msg,[])]));
         ret = None;
         side = true;
       }
     )
   | Papp (e, args) when is_asset_get (e, args)->
     (
-      let asset_name, arg = dest_asset_get (e, args) in
+      let dest (e, args) =
+        let asset_name = dest_asset_const_name (unloc e) in
+        let arg = match args with
+        | [a] -> a
+        | _ -> raise (Anomaly("dest_asset_get")) in
+        (asset_name, arg) in
+      let asset_name, arg = dest (e, args) in
       let storage_name = get_storage_name acc in
       let new_arg = process_rec acc arg in
       let f_arg = dumloc (Ptuple [mk_var storage_name; new_arg.term]) in
@@ -1405,6 +1386,12 @@ let rec process_rec (acc : process_acc) (pterm : Model.pterm) : process_data =
     )
   | Papp (e, args) when is_asset_add (e, args)->
     (
+      let dest_asset_add (e, args) =
+        let asset_name = dest_asset_const_name (unloc e) in
+        let arg = match args with
+        | [a] -> a
+        | _ -> raise (Anomaly("dest_asset_add")) in
+        (asset_name, arg) in
       let asset_name, arg = dest_asset_add (e, args) in
       let storage_name = get_storage_name acc in
       let arg = process_rec acc arg in
@@ -1435,7 +1422,13 @@ let rec process_rec (acc : process_acc) (pterm : Model.pterm) : process_data =
     )
   | Papp (e, args) when is_asset_addifnotexist (e, args)->
     (
-      let asset_name, arg = dest_asset_addifnotexist (e, args) in
+      let dest (e, args) =
+        let asset_name = dest_asset_const_name (unloc e) in
+        let arg = match args with
+        | [a] -> [a]
+        | _ -> raise (Anomaly("dest_asset_addifnotexist")) in
+        (asset_name, arg) in
+      let asset_name, arg = dest (e, args) in
       let storage_name = get_storage_name acc in
       let arg = process_rec acc (List.nth arg 0) in
       let f = Addifnotexist asset_name in
@@ -1451,7 +1444,13 @@ let rec process_rec (acc : process_acc) (pterm : Model.pterm) : process_data =
     )
   | Papp (e, args) when is_asset_update (e, args)->
     (
-      let asset_name, arg = dest_asset_update (e, args) in
+      let dest (e, args) =
+        let asset_name = dest_asset_const_name (unloc e) in
+        let arg = match args with
+        | [a; b] -> [a; b]
+        | _ -> raise (Anomaly("dest_asset_update")) in
+        (asset_name, arg) in
+      let asset_name, arg = dest (e, args) in
       let arg1 = process_rec acc (List.nth arg 0) in
       let arg2 = process_rec acc (List.nth arg 1) in
 
@@ -1485,7 +1484,13 @@ let rec process_rec (acc : process_acc) (pterm : Model.pterm) : process_data =
     )
   | Papp (e, args) when is_asset_removeif (e, args)->
     (
-      let asset_name, arg = dest_asset_removeif (e, args) in
+      let dest (e, args) =
+        let asset_name = dest_asset_const_name (unloc e) in
+        let arg = match args with
+        | [a] -> a
+        | _ -> raise (Anomaly("dest_asset_removeif")) in
+        (asset_name, arg) in
+      let asset_name, arg = dest (e, args) in
       let asset_arg = "x" in
 
       let a = process_rec {acc with asset = Some (asset_name, asset_arg)} arg in
@@ -1838,6 +1843,7 @@ let process_action info (m : model_unloc) (t : Model.transaction) (act : Model.p
               match s.ret with
               | Storage -> dumloc (Pletin (dumloc "s", s.term, None, pt0))
               | Operations -> dumloc (Pletin (dumloc "_ops", s.term, None, pt0))
+              | None -> dumloc(Pseq (s.term, pt0))
               | _ -> s.term
             end in
           pt, {dummy_process_data with side = s.side; funs = s.funs;}

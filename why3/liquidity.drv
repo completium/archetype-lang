@@ -164,6 +164,7 @@ end
 module liquidity.Msg
 
   syntax val not_found           "\"not found\""
+  syntax val not_found_cond      "\"not_found_cond\""
   syntax val not_supported_yet   "\"not supported yet\""
   syntax val already_exists      "\"already exists\""
   syntax val not_authorized_fun  "\"not authorized to call this function\""
