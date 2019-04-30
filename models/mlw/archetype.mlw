@@ -221,10 +221,8 @@ theory Sum
     = match l with
       | Cons e tl ->
         if i <= k <= j
-        then
-          f s e + rec_sum (k+1) tl 
-        else 
-          rec_sum k tl
+        then f s e + rec_sum (k+1) tl 
+        else rec_sum (k+1) tl
       | Nil -> 0
       end in
     rec_sum 0 c
