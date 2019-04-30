@@ -13,10 +13,10 @@ asset tokenHolder identified by holder = {
 
 action transferTokens (th : tokenHolder) (quantity : uint) = {
 
+  called by th.holder
+
   specification
     s1 : before tokenHolder.sum(tokens) = tokenHolder.sum(tokens)
-
-  called by th.holder
 
   effect
     tokenHolder.update th.holder {tokens += quantity};

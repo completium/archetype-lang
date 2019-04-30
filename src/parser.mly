@@ -126,6 +126,7 @@
 %token MULT
 %token DIV
 %token UNDERSCORE
+%token OP_SPEC1
 %token EOF
 
 %token <string> IDENT
@@ -148,6 +149,8 @@
 %nonassoc COLON
 
 %nonassoc COLONEQUAL PLUSEQUAL MINUSEQUAL MULTEQUAL DIVEQUAL ANDEQUAL OREQUAL
+
+%nonassoc OP_SPEC1
 
 %right IMPLY
 %nonassoc EQUIV
@@ -507,7 +510,7 @@ transition:
 | EQUAL LBRACE xs=action_properties e=effect? RBRACE { (xs, e) }
 
 action_properties:
-  sp=verification_fun? cb=calledby? cs=condition? fs=function_item*
+  cb=calledby? cs=condition? sp=verification_fun? fs=function_item*
   {
     {
       verif         = sp;
@@ -741,6 +744,9 @@ record_item:
  | FORALL { Forall }
  | EXISTS { Exists }
 
+%inline spec_operator:
+ | OP_SPEC1   { OpSpec1 }
+
 %inline logical_operator:
  | AND   { And }
  | OR    { Or }
@@ -770,6 +776,7 @@ record_item:
  | NOT     { Not }
 
 %inline bin_operator:
+| op=spec_operator       { `Spec op }
 | op=logical_operator    { `Logical op }
 | op=comparison_operator { `Cmp op }
 | op=arithmetic_operator { `Arith op }

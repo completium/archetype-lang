@@ -29,6 +29,10 @@ and type_t = type_r loced
 [@@deriving yojson, show {with_path = false}]
 
 (* -------------------------------------------------------------------- *)
+type spec_operator =
+  | OpSpec1
+[@@deriving yojson, show {with_path = false}]
+
 type logical_operator =
   | And
   | Or
@@ -76,6 +80,7 @@ type quantifier =
 [@@deriving yojson, show {with_path = false}]
 
 type operator = [
+  | `Spec    of spec_operator
   | `Logical of logical_operator
   | `Cmp     of comparison_operator
   | `Arith   of arithmetic_operator

@@ -6,11 +6,15 @@
 # --------------------------------------------------------------------
 all: build merlin
 
-build: plugin compiler
+build: plugin archetypeLib compiler
 
 compiler:
 	$(MAKE) -C src compiler.exe
 	cp -f src/_build/default/compiler.exe .
+
+archetypeLib:
+	$(MAKE) -C src archetypeLib
+	cp -f src/_build/default/archetypeLib.cm* .
 
 plugin:
 	$(MAKE) -C src archetypeLib plugin
@@ -27,8 +31,8 @@ run:
 
 clean:
 	$(MAKE) -C src clean
-	rm -fr compiler.exe
-	rm -fr ./why3/plugin/archetype.cmxs
+	rm -fr compiler.exe archetypeLib.cm*
+	rm -fr ./why3/plugin/archetype.cmxa
 
 check:
 	./check.sh

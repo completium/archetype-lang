@@ -218,6 +218,7 @@ let rec mk_lterm (e : expr) : lterm =
     | Eapp ({pldesc=Eop op; _}, [lhs; rhs]) ->
       (
         match op with
+        | `Spec OpSpec1  -> Limply   (mk_lterm lhs, mk_lterm rhs) (** TODO *)
         | `Logical Imply -> Limply   (mk_lterm lhs, mk_lterm rhs)
         | `Logical o     -> Llogical (to_logical_operator o, mk_lterm lhs, mk_lterm rhs)
         | `Cmp o         -> Lcomp    (to_comparison_operator o, mk_lterm lhs, mk_lterm rhs)

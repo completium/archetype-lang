@@ -13,10 +13,12 @@ run: __force__
 	dune exec ./$(COMPILER)
 
 compiler: __force__
-	dune build --profile=$(PROFILE) archetypeLib.cmxa
+	dune build --profile=$(PROFILE) compiler.exe
 
 archetypeLib: __force__
+	dune build --profile=$(PROFILE) archetypeLib.cma
 	dune build --profile=$(PROFILE) archetypeLib.cmxa
+	dune build --profile=$(PROFILE) archetypeLib.cmxs
 
 plugin: __force__
 	dune build --profile=$(PROFILE) archetype.cmxs

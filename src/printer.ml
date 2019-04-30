@@ -78,6 +78,7 @@ let e_assign_mult   =  (30,  NonAssoc) (* *=  *)
 let e_assign_div    =  (30,  NonAssoc) (* /=  *)
 let e_assign_and    =  (30,  NonAssoc) (* &=  *)
 let e_assign_or     =  (30,  NonAssoc) (* |=  *)
+let e_opspec1       =  (35,  NonAssoc) (* op spec 1  *)
 let e_imply         =  (40,  Right)    (* ->  *)
 let e_equiv         =  (50,  NonAssoc) (* <-> *)
 let e_and           =  (60,  Left)     (* and *)
@@ -107,24 +108,25 @@ let e_simple        =  (150, NonAssoc) (* ?  *)
 
 let get_prec_from_operator (op : operator) =
   match op with
-  | `Logical And   -> e_and
-  | `Logical Or    -> e_or
-  | `Logical Imply -> e_imply
-  | `Logical Equiv -> e_equiv
-  | `Cmp Equal     -> e_equal
-  | `Cmp Nequal    -> e_nequal
-  | `Cmp Gt        -> e_gt
-  | `Cmp Ge        -> e_ge
-  | `Cmp Lt        -> e_lt
-  | `Cmp Le        -> e_le
-  | `Arith Plus    -> e_plus
-  | `Arith Minus   -> e_minus
-  | `Arith Mult    -> e_mult
-  | `Arith Div     -> e_div
-  | `Arith Modulo  -> e_modulo
-  | `Unary Uplus   -> e_plus
-  | `Unary Uminus  -> e_minus
-  | `Unary Not     -> e_not
+  | `Spec OpSpec1    -> e_opspec1
+  | `Logical And     -> e_and
+  | `Logical Or      -> e_or
+  | `Logical Imply   -> e_imply
+  | `Logical Equiv   -> e_equiv
+  | `Cmp Equal       -> e_equal
+  | `Cmp Nequal      -> e_nequal
+  | `Cmp Gt          -> e_gt
+  | `Cmp Ge          -> e_ge
+  | `Cmp Lt          -> e_lt
+  | `Cmp Le          -> e_le
+  | `Arith Plus      -> e_plus
+  | `Arith Minus     -> e_minus
+  | `Arith Mult      -> e_mult
+  | `Arith Div       -> e_div
+  | `Arith Modulo    -> e_modulo
+  | `Unary Uplus     -> e_plus
+  | `Unary Uminus    -> e_minus
+  | `Unary Not       -> e_not
 
 let get_prec_from_assignment_operator (op : assignment_operator) =
   match op with
@@ -205,6 +207,10 @@ let pp_type fmt e = pp_type e_default PNone fmt e
 
 
 (* -------------------------------------------------------------------------- *)
+let spec_operator_to_str op =
+match op with
+  | OpSpec1   -> "may be performed only by"
+
 let logical_operator_to_str op =
 match op with
   | And   -> "and"
@@ -237,6 +243,7 @@ match op with
 
 let operator_to_str op =
 match op with
+  | `Spec o    -> spec_operator_to_str o
   | `Logical o -> logical_operator_to_str o
   | `Cmp o     -> comparison_operator_to_str o
   | `Arith o   -> arithmetic_operator_to_str o
@@ -740,6 +747,14 @@ let pp_function fmt (f : s_function) =
             Format.fprintf fmt "=@\n%a" (pp_expr e_equal PRight) f.body)) f
 
 let pp_action_properties fmt (props : action_properties) =
+  map_option (fun (e, exts) ->
+      Format.fprintf fmt "called by%a %a@\n"
+        pp_extensions exts
+        (pp_expr e_default PNone) e) props.calledby;
+  map_option (fun (cs, exts) ->
+      Format.fprintf fmt "condition%a@\n@[<v 2>  %a@]@\n"
+        pp_extensions exts
+        pp_label_exprs cs) props.condition;
   map_option (
     fun v ->
       let items, exts = v |> unloc in
@@ -756,14 +771,6 @@ let pp_action_properties fmt (props : action_properties) =
             pp_extensions exts
             pp_verification_items items
         end) props.verif;
-  map_option (fun (e, exts) ->
-      Format.fprintf fmt "called by%a %a@\n"
-        pp_extensions exts
-        (pp_expr e_default PNone) e) props.calledby;
-  map_option (fun (cs, exts) ->
-      Format.fprintf fmt "condition%a@\n@[<v 2>  %a@]@\n"
-        pp_extensions exts
-        pp_label_exprs cs) props.condition;
   (pp_list "@\n" pp_function) fmt (List.map unloc props.functions)
 
 let pp_transition fmt (to_, conditions, effect) =
