@@ -30,6 +30,11 @@ action add (ow : address) (newmile : mile) = {
 }
 
 action consume (ow : address) (val : uint) = {
+  called by admin
+
+  condition
+       c1 : (by_expiration ow).sum(amount) >= val
+
   verification {
     invariant loop
          (* remainder has a decreasing upper bound *)
@@ -37,8 +42,8 @@ action consume (ow : address) (val : uint) = {
          (* removed miles *)
          i2 : (subset (removed miles) (o.miles.select(expiration >= now)));
          (* right amount consumed *)
-         i3 : before miles.sum(amount) = miles.sum(amount) + nbmiles - remainder
-         i4 : is_empty added.mile;
+         i3 : before miles.sum(amount) = miles.sum(amount) + nbmiles - remainder;
+         i4 : is_empty added.mile
 
     specification
 
@@ -47,13 +52,8 @@ action consume (ow : address) (val : uint) = {
          (* all removed miles are valid miles *)
          p2 : forall m : removed miles, m.expiration >= now;
          (* no added mile *)
-         p3 : is_empty added.mile;
+         p3 : is_empty added.mile
   }
-
-  called by admin
-
-  condition
-       c1 : (by_expiration ow).sum(amount) >= val
 
   function by_expiration o = o.miles.select(mile.expiration > now)
 
@@ -86,19 +86,17 @@ action consume (ow : address) (val : uint) = {
 specification {
    g1 : anyaction may be performed only by role admin;
    g2 : (remove mile) may be performed only by tx (consume or clear_expired);
-   g3 : not ((add mile) may be performed only by tx consume);
+   g3 : not ((add mile) may be performed only by tx consume)
 }
 
 action clear_expired = {
-
-  specification
-     s3 : forall m : removed mile, m.expiration < now;
-
   called by admin
 
-  effect 
+  specification
+     s3 : forall m : removed mile, m.expiration < now
+
+  effect
      for (o in owner) (
        o.miles.removeif (expiration < now)
      )
 }
-

@@ -90,17 +90,17 @@ function transition_to_finished =
 
 action contribute = {
 
-   specification
-     p1 :
-       let c = contributor.get caller in
-       transferred = transferred_to(caller) + c.contrib - (old c.contrib)
-
    condition
       c1 : contributor.contains caller;
       c2 : is_running ();
       c3 : transferred >= min_contribution;
       c4 : let c = contributor.get caller in
              not (c.list = Silver and transferred >= max_contrib_silver)
+
+   specification
+     p1 :
+       let c = contributor.get caller in
+       transferred = transferred_to(caller) + c.contrib - (old c.contrib)
 
    effect
      (* cap contribution to max_contrib if necessary *)
