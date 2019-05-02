@@ -19,6 +19,7 @@ archetypeLib: __force__
 	dune build --profile=$(PROFILE) archetypeLib.cma
 	dune build --profile=$(PROFILE) archetypeLib.cmxa
 	dune build --profile=$(PROFILE) archetypeLib.cmxs
+	dune build --profile=$(PROFILE) archetypeLib.a
 
 plugin: __force__
 	dune build --profile=$(PROFILE) archetype.cmxs

@@ -14,7 +14,7 @@ compiler:
 
 archetypeLib:
 	$(MAKE) -C src archetypeLib
-	cp -f src/_build/default/archetypeLib.cm* .
+	cp -f src/_build/default/archetypeLib.* .
 
 plugin:
 	$(MAKE) -C src archetypeLib plugin
@@ -31,7 +31,7 @@ run:
 
 clean:
 	$(MAKE) -C src clean
-	rm -fr compiler.exe archetypeLib.cm*
+	rm -fr compiler.exe archetypeLib.*
 	rm -fr ./why3/plugin/archetype.cmxa
 
 check:
