@@ -781,6 +781,8 @@ let flat_model_to_modelws (info : info) (m : model) : model_with_storage =
 
 (* record policy process *)
 
+let s_state = Papp (Pvar "_global_st", [Pvar "s"])
+
 type asset_function =
   | MkAsset of string
   | Get of string
@@ -1310,6 +1312,7 @@ let rec process_rec (acc : process_acc) (pterm : Model.pterm) : process_data =
       let a = process_rec acc l in
       let b = process_rec acc r in
 
+      (*Format.eprintf "%s %s\n" (show_ret_typ a.ret) (show_ret_typ b.ret);*)
       let ret, t = (
         match acc.start, a.ret, b.ret with
         | None, None, None ->
@@ -1357,10 +1360,11 @@ let rec process_rec (acc : process_acc) (pterm : Model.pterm) : process_data =
         | _ -> raise (Anomaly("dest_fail")) in
 
       let str : string = dest args in
-      let msg = str in (*if String.equal str "cond" then "not_found_cond" else "not_found" in*)
+      (* let msg = (Papp (Pdot (Pvar "Msg", Pvar "to_string"), [Plit (dumloc (BVstring str))])) in *)
+      let msg = Papp (Pvar str, []) in
       {
         dummy_process_data with
-        term = loc_pterm (Papp (Pdot (Pvar "Current", Pvar "failwith"), [Papp (Pvar msg,[])]));
+        term = loc_pterm (Papp (Pdot (Pvar "Current", Pvar "failwith"), [msg]));
         ret = None;
         side = true;
       }
@@ -1560,6 +1564,37 @@ let rec process_rec (acc : process_acc) (pterm : Model.pterm) : process_data =
         ret = Storage;
       }
     )
+  | Pmatchwith (a, l) ->
+  (
+    let rec to_pattern (p : Model.pattern) : pattern =
+    (
+    let loc, v = deloc p in mkloc loc
+    (match v with
+    | Mwild -> Mwild
+    | Mvar s -> Mvar s
+    | Mapp (q, l) -> Mapp (q, List.map to_pattern l)
+    | Mrec l -> Mrec (List.map (fun (i, p) -> (i, to_pattern p)) l)
+    | Mtuple l -> Mtuple (List.map to_pattern l)
+    | Mas (p, o, g) -> Mas (to_pattern p, o, g)
+    | Mor (lhs, rhs) -> Mor (to_pattern lhs, to_pattern rhs)
+    | Mcast (p, t) -> Mcast (to_pattern p, to_storage_type (Some t))
+    | Mscope (q, p) -> Mscope (q, to_pattern p)
+    | Mparen p -> Mparen (to_pattern p)
+    | Mghost p -> Mghost (to_pattern p)
+     )) in
+
+    let e = process_rec acc a in
+    let le = List.map (fun (p, c) -> to_pattern p, process_rec acc c) l in
+    let pt = mkloc loc (Pmatchwith (e.term, List.map (fun (p, c) -> (p, c.term)) le)) in
+    let ret = (List.nth le 0) |> snd |> (fun x -> x.ret) in
+      {
+        dummy_process_data with
+        term = pt;
+        funs = add_funs e.funs (List.fold_right (fun ((_, c) : (pattern * process_data)) acc -> c.funs @ acc ) le []);
+        ret = ret;
+        side = e.side || (List.fold_right (fun ((_, c) : (pattern * process_data)) acc -> c.side || acc ) le false);
+      }
+  )
   | Pdot (l, r) ->
     (
       let a = process_rec acc l in
@@ -1577,18 +1612,48 @@ let rec process_rec (acc : process_acc) (pterm : Model.pterm) : process_data =
         side = a.side || b.side;
       }
     )
+    | Plogical (op, l, r) ->
+    (
+      let a = process_rec acc l in
+      let b = process_rec acc r in
+
+      let pt = mkloc loc (Plogical (op, a.term, b.term)) in {
+        dummy_process_data with
+        term = pt;
+        funs = add_funs a.funs b.funs;
+        ret = Bool;
+        side = a.side || b.side;
+      }
+    )
   | Pcomp (op, l, r) ->
     (
       let key_to_addr (a : pterm) : pterm = dumloc (Papp (loc_pterm (Pdot (Pvar "Address", Pvar "key_to_addr")), [a])) in
       let a = process_rec acc l in
       let b = process_rec acc r in
 
+      (*Format.printf "%s%s\n" (show_ret_typ a.ret) (show_ret_typ b.ret);*)
       let pt = (
         match op, a.ret, b.ret with
 
+        (* Int *)
+        | Equal, Int, Int ->  dumloc (Papp (loc_pterm (Pdot (Pvar "Int", Pvar "int_eq")),  [a.term; b.term]))
+        | Nequal, Int, Int -> dumloc (Papp (loc_pterm (Pdot (Pvar "Int", Pvar "int_ne")),  [a.term; b.term]))
+        | Gt, Int, Int ->     dumloc (Papp (loc_pterm (Pdot (Pvar "Int", Pvar "int_gt")),  [a.term; b.term]))
+        | Ge, Int, Int ->     dumloc (Papp (loc_pterm (Pdot (Pvar "Int", Pvar "int_ge")),  [a.term; b.term]))
+        | Lt, Int, Int ->     dumloc (Papp (loc_pterm (Pdot (Pvar "Int", Pvar "int_lt")),  [a.term; b.term]))
+        | Le, Int, Int ->     dumloc (Papp (loc_pterm (Pdot (Pvar "Int", Pvar "int_le")),  [a.term; b.term]))
+
+        (* Nat *)
+        | Equal, Nat, Nat ->  dumloc (Papp (loc_pterm (Pdot (Pvar "Nat", Pvar "nat_eq")),  [a.term; b.term]))
+        | Nequal, Nat, Nat -> dumloc (Papp (loc_pterm (Pdot (Pvar "Nat", Pvar "nat_ne")),  [a.term; b.term]))
+        | Gt, Nat, Nat ->     dumloc (Papp (loc_pterm (Pdot (Pvar "Nat", Pvar "nat_gt")),  [a.term; b.term]))
+        | Ge, Nat, Nat ->     dumloc (Papp (loc_pterm (Pdot (Pvar "Nat", Pvar "nat_ge")),  [a.term; b.term]))
+        | Lt, Nat, Nat ->     dumloc (Papp (loc_pterm (Pdot (Pvar "Nat", Pvar "nat_lt")),  [a.term; b.term]))
+        | Le, Nat, Nat ->     dumloc (Papp (loc_pterm (Pdot (Pvar "Nat", Pvar "nat_le")),  [a.term; b.term]))
+
         (* Timestamp *)
         | Equal, Timestamp, Timestamp ->  dumloc (Papp (loc_pterm (Pdot (Pvar "Timestamp", Pvar "tim_eq")),  [a.term; b.term]))
-        | Nequal, Timestamp, Timestamp -> dumloc (Papp (loc_pterm (Pdot (Pvar "Timestamp", Pvar "tim_neq")), [a.term; b.term]))
+        | Nequal, Timestamp, Timestamp -> dumloc (Papp (loc_pterm (Pdot (Pvar "Timestamp", Pvar "tim_ne")),  [a.term; b.term]))
         | Gt, Timestamp, Timestamp ->     dumloc (Papp (loc_pterm (Pdot (Pvar "Timestamp", Pvar "tim_gt")),  [a.term; b.term]))
         | Ge, Timestamp, Timestamp ->     dumloc (Papp (loc_pterm (Pdot (Pvar "Timestamp", Pvar "tim_ge")),  [a.term; b.term]))
         | Lt, Timestamp, Timestamp ->     dumloc (Papp (loc_pterm (Pdot (Pvar "Timestamp", Pvar "tim_lt")),  [a.term; b.term]))
@@ -1596,7 +1661,7 @@ let rec process_rec (acc : process_acc) (pterm : Model.pterm) : process_data =
 
         (* Tez *)
         | Equal, Tez, Tez ->  dumloc (Papp (loc_pterm (Pdot (Pvar "Tez", Pvar "tez_eq")),  [a.term; b.term]))
-        | Nequal, Tez, Tez -> dumloc (Papp (loc_pterm (Pdot (Pvar "Tez", Pvar "tez_neq")), [a.term; b.term]))
+        | Nequal, Tez, Tez -> dumloc (Papp (loc_pterm (Pdot (Pvar "Tez", Pvar "tez_ne")),  [a.term; b.term]))
         | Gt, Tez, Tez ->     dumloc (Papp (loc_pterm (Pdot (Pvar "Tez", Pvar "tez_gt")),  [a.term; b.term]))
         | Ge, Tez, Tez ->     dumloc (Papp (loc_pterm (Pdot (Pvar "Tez", Pvar "tez_ge")),  [a.term; b.term]))
         | Lt, Tez, Tez ->     dumloc (Papp (loc_pterm (Pdot (Pvar "Tez", Pvar "tez_lt")),  [a.term; b.term]))
@@ -1671,6 +1736,7 @@ let rec process_rec (acc : process_acc) (pterm : Model.pterm) : process_data =
         | Cbalance -> loc_pterm (pCurrentBalance), Tez
         | Cnow     -> loc_pterm (pCurrentTime),    Timestamp
         | Ccaller  -> loc_pterm (pCurrentSender),  Address
+        | Cstate   -> loc_pterm s_state,           None
         | _ -> model_pterm_to_pterm pterm, Const c
       end in
     {
@@ -1895,15 +1961,14 @@ let build_match_state _info (_m : model_unloc) (_t : Model.transaction) (from : 
 
 
   let to_ = unloc to_ in
-  let act = dumloc (Pletin (dumloc "s", loc_pterm (Papp (Pvar "update_storage",[Pvar "s";
-                                                    Papp (Pvar "_global_st", [Pvar "s"]);
-                                                    Pvar to_])), None, loc_pterm (Ptuple [Pvar "_ops"; Pvar "s"])))
+  let act = dumloc (Pletin (dumloc "s", loc_pterm (Papp (Pvar "update_storage",[Pvar "s"; s_state; Pvar to_])),
+                            None, loc_pterm (Ptuple [Pvar "_ops"; Pvar "s"])))
   |> build_match_act _info _m _t _action
   |> build_match_cond _info _m _cond
   in
 
   dumloc (Pmatchwith (
-      loc_pterm (Papp (Pvar "_global_st", [Pvar "s"])),
+      loc_pterm s_state,
       [
         (dumloc (Mapp (Qident (dumloc from), [])), act);
         (dumloc Mwild, loc_pterm (pfailwith "not_found"))

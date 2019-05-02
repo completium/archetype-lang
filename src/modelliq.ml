@@ -89,7 +89,7 @@ let vtyp_to_str = function
   | VTduration           -> "nat"
   | VTstring             -> "string"
   | VTaddress            -> "address"
-  | VTrole               -> "role"
+  | VTrole               -> "key_hash"
   | VTcurrency (Tez,_)   -> "tez"
   | VTcurrency (Mutez,_) -> "tez"
   | VTkey                -> "key"

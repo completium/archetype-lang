@@ -57,7 +57,7 @@ let process_action model : model =
             let list_patterns = let l, f = deloc tr.from in compute_patterns l f in
             Some (dumloc (Pmatchwith (state,
               List.map (fun x -> (x, code)) list_patterns @
-              [dumloc Mwild, fail ""]
+              [dumloc Mwild, fail "not_valid_state"]
             )))
             end
 
@@ -103,9 +103,9 @@ let process_action model : model =
       let process_condition (x : label_pterm) : pterm =
         let msg =
          match x.label with
-         | Some label -> "condition " ^ (unloc label) ^ " failed";
+         | Some _label -> "check_condition_failed" (*"condition " ^ (unloc label) ^ " failed";*)
          | _ -> "condition failed" in
-        mkloc x.loc (Pif (x.term, fail msg, None ))
+        mkloc x.loc (Pif (dumloc (Pnot x.term), fail msg, None))
       in
       match tr.condition with
       | None -> tr
