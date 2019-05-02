@@ -47,7 +47,7 @@ let builtin_type str =
   | "duration" -> Some VTduration
   | "string" -> Some VTstring
   | "address" -> Some VTaddress
-  | "role" -> Some VTaddress
+  | "role" -> Some VTrole
   | "tez" -> Some (VTcurrency (Tez, None))
   | "mtez" -> Some (VTcurrency (Mutez, None))
   | _ -> None

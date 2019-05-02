@@ -48,7 +48,10 @@ theory Address
   val mkaddress unit : key_hash
 
   val add_eq address address : bool
-  val add_nq address address : bool
+  val add_ne address address : bool
+
+  val kh_eq key_hash key_hash : bool
+  val kh_ne key_hash key_hash : bool
 
   val default_address : key_hash
 

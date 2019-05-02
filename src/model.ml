@@ -64,6 +64,7 @@ type vtyp =
   | VTduration
   | VTstring
   | VTaddress
+  | VTrole
   | VTcurrency of currency * transfer option
   | VTobject
   | VTkey
@@ -568,6 +569,7 @@ let mk_init_val = function
   | VTduration       -> BVduration "0s"
   | VTstring         -> BVstring ""
   | VTaddress        -> BVaddress "@none"
+  | VTrole           -> BVaddress "@none"
   | VTcurrency (c,_) -> BVcurrency (c,Big_int.zero_big_int)
   | VTkey            -> BVstring ""
   | VTobject         -> BVstring ""

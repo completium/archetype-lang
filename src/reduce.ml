@@ -103,7 +103,7 @@ let process_action model : model =
       let process_condition (x : label_pterm) : pterm =
         let msg =
          match x.label with
-         | Some _label -> "cond" (*"condition " ^ (unloc label) ^ " failed"*)
+         | Some label -> "condition " ^ (unloc label) ^ " failed";
          | _ -> "condition failed" in
         mkloc x.loc (Pif (x.term, fail msg, None ))
       in
@@ -120,8 +120,9 @@ let process_action model : model =
         } in
     tr
     |> process_transition
+    |> process_conditions
     |> process_calledby
-    |> process_conditions;
+    ;
   in
   let loc, m = deloc model in
   mkloc loc {

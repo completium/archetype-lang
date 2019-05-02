@@ -83,7 +83,10 @@ module liquidity.Address
   syntax val toaddress "%1"
 
   syntax val add_eq    "%1 = %2"
-  syntax val add_nq    "%1 <> %2"
+  syntax val add_ne    "%1 <> %2"
+
+  syntax val kh_eq     "%1 = %2"
+  syntax val kh_ne     "%1 <> %2"
 
 end
 

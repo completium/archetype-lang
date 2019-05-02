@@ -1148,6 +1148,7 @@ type ret_typ =
   | Time
   | String
   | Address
+  | KeyHash
   | Tez
   | Key
   | Object
@@ -1232,6 +1233,7 @@ let to_ret_typ = function
       | VTduration -> Time
       | VTstring   -> String
       | VTaddress  -> Address
+      | VTrole     -> KeyHash
       | VTcurrency _ -> Tez
       | VTkey      -> Key
       | VTobject   -> Object
@@ -1355,7 +1357,7 @@ let rec process_rec (acc : process_acc) (pterm : Model.pterm) : process_data =
         | _ -> raise (Anomaly("dest_fail")) in
 
       let str : string = dest args in
-      let msg = if String.equal str "cond" then "not_found_cond" else "not_found" in
+      let msg = str in (*if String.equal str "cond" then "not_found_cond" else "not_found" in*)
       {
         dummy_process_data with
         term = loc_pterm (Papp (Pdot (Pvar "Current", Pvar "failwith"), [Papp (Pvar msg,[])]));
@@ -1577,6 +1579,7 @@ let rec process_rec (acc : process_acc) (pterm : Model.pterm) : process_data =
     )
   | Pcomp (op, l, r) ->
     (
+      let key_to_addr (a : pterm) : pterm = dumloc (Papp (loc_pterm (Pdot (Pvar "Address", Pvar "key_to_addr")), [a])) in
       let a = process_rec acc l in
       let b = process_rec acc r in
 
@@ -1598,7 +1601,22 @@ let rec process_rec (acc : process_acc) (pterm : Model.pterm) : process_data =
         | Ge, Tez, Tez ->     dumloc (Papp (loc_pterm (Pdot (Pvar "Tez", Pvar "tez_ge")),  [a.term; b.term]))
         | Lt, Tez, Tez ->     dumloc (Papp (loc_pterm (Pdot (Pvar "Tez", Pvar "tez_lt")),  [a.term; b.term]))
         | Le, Tez, Tez ->     dumloc (Papp (loc_pterm (Pdot (Pvar "Tez", Pvar "tez_le")),  [a.term; b.term]))
-| _ -> mkloc loc (Pcomp (op, a.term, b.term))
+
+        (* Address *)
+        | Equal,  Address, Address ->  dumloc (Papp (loc_pterm (Pdot (Pvar "Address", Pvar "add_eq")),  [a.term; b.term]))
+        | Nequal, Address, Address ->  dumloc (Papp (loc_pterm (Pdot (Pvar "Address", Pvar "add_ne")),  [a.term; b.term]))
+
+        | Equal,  Address, KeyHash ->  dumloc (Papp (loc_pterm (Pdot (Pvar "Address", Pvar "add_eq")),  [a.term; key_to_addr b.term]))
+        | Nequal, Address, KeyHash ->  dumloc (Papp (loc_pterm (Pdot (Pvar "Address", Pvar "add_ne")),  [a.term; key_to_addr b.term]))
+
+        | Equal,  KeyHash, Address ->  dumloc (Papp (loc_pterm (Pdot (Pvar "Address", Pvar "add_eq")),  [key_to_addr a.term; b.term]))
+        | Nequal, KeyHash, Address ->  dumloc (Papp (loc_pterm (Pdot (Pvar "Address", Pvar "add_ne")),  [key_to_addr a.term; b.term]))
+
+        | Equal,  KeyHash, KeyHash ->  dumloc (Papp (loc_pterm (Pdot (Pvar "Address", Pvar "kh_eq")),   [a.term; b.term]))
+        | Nequal, KeyHash, KeyHash ->  dumloc (Papp (loc_pterm (Pdot (Pvar "Address", Pvar "kh_ne")),   [a.term; b.term]))
+
+        | _ -> mkloc loc (Pcomp (op, a.term, b.term))
+
       ) in
       {
         dummy_process_data with
@@ -1660,6 +1678,14 @@ let rec process_rec (acc : process_acc) (pterm : Model.pterm) : process_data =
       term = t;
       funs = [];
       ret = ret
+    }
+  | Pnot x ->
+    let a = process_rec acc x in
+    {
+      dummy_process_data with
+      term = mkloc loc (Pnot a.term);
+      funs = a.funs;
+      ret = a.ret
     }
   | Ptransfer (amount, back, dest) ->
     (
