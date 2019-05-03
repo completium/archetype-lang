@@ -1139,7 +1139,6 @@ let generate_asset_functions info (l : asset_function list) : function_ws list =
     ) l
 
 type ret_typ =
-  | Letin
   | Storage
   | Asset of string
   | Field of string * string * pterm  (*asset name, field name*)
@@ -1158,6 +1157,7 @@ type ret_typ =
   | Id of string
   | Aaa of pterm
   | Operations
+  | OpsStorage
   | None
 [@@deriving show {with_path = false}]
 
@@ -1312,24 +1312,43 @@ let rec process_rec (acc : process_acc) (pterm : Model.pterm) : process_data =
       let a = process_rec acc l in
       let b = process_rec acc r in
 
-      (*Format.eprintf "%s %s\n" (show_ret_typ a.ret) (show_ret_typ b.ret);*)
+
+      let pt = dumloc (Pletin (dumloc "_ops", loc_pterm (Papp (Pvar ("get_0_2"), [Pvar "_sops"])) , None,
+               dumloc (Pletin (dumloc "s",    loc_pterm (Papp (Pvar ("get_1_2"), [Pvar "_sops"])) , None, (loc_pterm (Ptuple[Pvar "_ops"; Pvar "s"])))))) in
+
+      (*Format.eprintf "%s %s %s\n" (match acc.start with | Some _ -> "Some" | None -> "None") (show_ret_typ a.ret) (show_ret_typ b.ret);*)
       let ret, t = (
         match acc.start, a.ret, b.ret with
         | None, None, None ->
           None, mkloc loc (Pseq (a.term, b.term))
         | Some s, None, None ->
           None, mkloc loc (Pseq (a.term, dumloc (Pseq (b.term, s))))
+        | None, None, Storage ->
+          Storage, mkloc loc (Pseq (a.term, dumloc (Pletin (dumloc "s", b.term, None, loc_pterm (Pvar "s")))))
+        | Some s, None, Storage ->
+          None, mkloc loc (Pseq (a.term, dumloc (Pletin (dumloc "s", b.term, None, s))))
+        | None, None, Operations ->
+          Storage, mkloc loc (Pseq (a.term, dumloc (Pletin (dumloc "_ops", b.term, None, loc_pterm (Pvar "_ops")))))
         | Some s, Operations, Operations ->
-          Letin, dumloc (Pletin (dumloc "_ops", a.term, None,
+          Operations, dumloc (Pletin (dumloc "_ops", a.term, None,
                           dumloc (Pletin (dumloc "_ops", b.term, None, s))))
         | None, Operations, Operations ->
-          Letin, dumloc (Pletin (dumloc "_ops", a.term, None,
+          Operations, dumloc (Pletin (dumloc "_ops", a.term, None,
                           dumloc (Pletin (dumloc "_ops", b.term, None,
-                                          loc_pterm (Ptuple[Pvar "_ops"; Pvar "s"])))))
+                                          loc_pterm (Pvar "_ops")))))
+        | None, Storage, Operations ->
+          OpsStorage, dumloc (Pletin (dumloc "s", a.term, None,
+                      dumloc (Pletin (dumloc "_ops", b.term, None, loc_pterm (Ptuple[Pvar "_ops"; Pvar "s"])))))
+        | None, None, OpsStorage ->
+          OpsStorage, dumloc (Pseq (a.term, dumloc (Pletin (dumloc "_sops", b.term, None, pt))))
         | _ ->
-          Letin, dumloc (Pletin (dumloc "s", a.term, None,
+          None, mkloc loc (Pseq (a.term, b.term))
+        (* | _ ->
+          LetinOpsStorage, dumloc (Pletin (dumloc "s", a.term, None,
                           dumloc (Pletin (dumloc "s", b.term, None,
-                                          loc_pterm (Ptuple[Pvar "_ops"; Pvar "s"])))))
+                                          loc_pterm (Ptuple[Pvar "_ops"; Pvar "s"]))))) *)
+
+
       ) in
       {
         dummy_process_data with
@@ -1344,9 +1363,17 @@ let rec process_rec (acc : process_acc) (pterm : Model.pterm) : process_data =
     let c = process_rec acc cond in
     let t = process_rec acc then_ in
     let e = map_option (process_rec acc) else_ in
+    let pte =
+    (match t.ret, e with
+    | _, Some e -> Some (e.term)
+    | Storage, None -> Some (loc_pterm (Pvar "s"))
+    | Operations, None -> Some (loc_pterm (Pvar "_ops"))
+    | OpsStorage, None -> Some (loc_pterm (Ptuple[Pvar "_ops"; Pvar "s"]))
+    | _ -> None ) in
+
       {
         dummy_process_data with
-        term = mkloc loc (Pif (c.term, t.term, map_option (fun e -> e.term) e));
+        term = mkloc loc (Pif (c.term, t.term, pte));
         funs = c.funs @ t.funs @ (match e with | Some e -> e.funs | _ -> []);
         ret = t.ret;
         side = c.side || t.side || (match e with | Some e -> e.side | _ -> false);
@@ -1936,6 +1963,7 @@ let process_action info (m : model_unloc) (t : Model.transaction) (act : Model.p
               | Storage -> dumloc (Pletin (dumloc "s", s.term, None, pt0))
               | Operations -> dumloc (Pletin (dumloc "_ops", s.term, None, pt0))
               | None -> dumloc(Pseq (s.term, pt0))
+              | OpsStorage -> s.term
               | _ -> s.term
             end in
           pt, {dummy_process_data with side = s.side; funs = s.funs;}
