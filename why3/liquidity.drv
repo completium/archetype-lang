@@ -43,6 +43,14 @@ end
 
 module liquidity.Int
   syntax val toint      "%1:int"
+
+  syntax val int_eq    "%1 = %2"
+  syntax val int_ne    "%1 <> %2"
+
+  syntax val int_ge    "%1 >= %2"
+  syntax val int_le    "%1 <= %2"
+  syntax val int_gt    "%1 > %2"
+  syntax val int_lt    "%1 < %2"
 end
 
 module liquidity.Nat
@@ -52,7 +60,7 @@ module liquidity.Nat
   syntax val nat_one   "(1:nat)"
 
   syntax val nat_eq    "%1 = %2"
-  syntax val nat_nq    "%1 <> %2"
+  syntax val nat_ne    "%1 <> %2"
 
   syntax val nat_ge    "%1 >= %2"
   syntax val nat_le    "%1 <= %2"
@@ -65,7 +73,7 @@ module liquidity.Tez
   syntax val totez     "%1tz"
 
   syntax val tez_eq    "%1 = %2"
-  syntax val tez_neq   "%1 <> %2"
+  syntax val tez_ne    "%1 <> %2"
 
   syntax val tez_gt    "%1 > %2"
   syntax val tez_ge    "%1 >= %2"
@@ -83,13 +91,16 @@ module liquidity.Address
   syntax val toaddress "%1"
 
   syntax val add_eq    "%1 = %2"
-  syntax val add_nq    "%1 <> %2"
+  syntax val add_ne    "%1 <> %2"
+
+  syntax val kh_eq     "%1 = %2"
+  syntax val kh_ne     "%1 <> %2"
 
 end
 
 module liquidity.Timestamp
   syntax val tim_eq    "%1 = %2"
-  syntax val tim_nq    "%1 <> %2"
+  syntax val tim_ne    "%1 <> %2"
 
   syntax val tim_ge    "%1 >= %2"
   syntax val tim_le    "%1 <= %2"
@@ -163,11 +174,13 @@ end
 
 module liquidity.Msg
 
-  syntax val not_found           "\"not found\""
-  syntax val not_supported_yet   "\"not supported yet\""
-  syntax val already_exists      "\"already exists\""
-  syntax val not_authorized_fun  "\"not authorized to call this function\""
-  syntax val not_valid_condition "\"not valid condition\""
+  syntax val not_found               "\"not found\""
+  syntax val check_condition_failed  "\"check condition failed\""
+  syntax val not_valid_state         "\"not_valid_state\""
+  syntax val not_supported_yet       "\"not supported yet\""
+  syntax val already_exists          "\"already exists\""
+  syntax val not_authorized_fun      "\"not authorized to call this function\""
+  syntax val not_valid_condition     "\"not valid condition\""
 
 end
 

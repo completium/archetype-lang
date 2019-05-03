@@ -64,6 +64,7 @@ type vtyp =
   | VTduration
   | VTstring
   | VTaddress
+  | VTrole
   | VTcurrency of currency * transfer option
   | VTobject
   | VTkey
@@ -389,7 +390,7 @@ type ('id,'typ,'pattern,'term) gen_transaction = {
 }
 [@@deriving show {with_path = false}]
 
-type transaction = (lident,ptyp,pattern,pterm) gen_transaction
+type transaction = (lident, ptyp, pattern, pterm) gen_transaction
 [@@deriving show {with_path = false}]
 
 type state_item = {
@@ -568,6 +569,46 @@ let mk_init_val = function
   | VTduration       -> BVduration "0s"
   | VTstring         -> BVstring ""
   | VTaddress        -> BVaddress "@none"
+  | VTrole           -> BVaddress "@none"
   | VTcurrency (c,_) -> BVcurrency (c,Big_int.zero_big_int)
   | VTkey            -> BVstring ""
   | VTobject         -> BVstring ""
+
+
+type basic_pattern = (string, ptyp, basic_pattern) pattern_unloc
+[@@deriving show {with_path = false}]
+
+type basic_pterm = (string, ptyp, basic_pattern, basic_pterm) poly_pterm
+[@@deriving show {with_path = false}]
+
+let lstr s = mkloc Location.dummy s
+
+let rec loc_qualid (q : string qualid) : lident qualid =
+  match q with
+  | Qident s -> Qident (lstr s)
+  | Qdot (q, s) -> Qdot (loc_qualid q, lstr s)
+
+let rec loc_pattern (p : basic_pattern) : pattern =
+  mkloc Location.dummy (
+    match p with
+    | Mwild -> Mwild
+    | Mvar s -> Mvar (lstr s)
+    | Mapp (q, l) -> Mapp (loc_qualid q, List.map loc_pattern l)
+    | Mrec l -> Mrec (List.map (fun (i, p) -> (loc_qualid i, loc_pattern p)) l)
+    | Mtuple l -> Mtuple (List.map loc_pattern l)
+    | Mas (p, o, g) -> Mas (loc_pattern p, lstr o, g)
+    | Mor (lhs, rhs) -> Mor (loc_pattern lhs, loc_pattern rhs)
+    | Mcast (p, t) -> Mcast (loc_pattern p, t)
+    | Mscope (q, p) -> Mscope (loc_qualid q, loc_pattern p)
+    | Mparen p -> Mparen (loc_pattern p)
+    | Mghost p -> Mghost (loc_pattern p))
+
+let rec loc_pterm (p : basic_pterm) : pterm =
+  poly_pterm_map
+    (fun x -> mkloc (Location.dummy) x)
+    lstr
+    id
+    loc_pattern
+    loc_pterm
+    loc_qualid
+    p

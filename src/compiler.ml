@@ -154,7 +154,10 @@ let main () =
     close dispose channel;
     Printf.eprintf "Unsupported var type at %s.\n"  (Location.tostring l);
     exit 1
-
+  | Reduce.ReduceError (msg, l) ->
+    close dispose channel;
+    Printf.eprintf "%s%s.\n" msg (match l with | None -> "" | Some l -> (Location.tostring l));
+    exit 1
 
 (* -------------------------------------------------------------------- *)
 let _ = main ()

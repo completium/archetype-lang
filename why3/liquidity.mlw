@@ -3,7 +3,7 @@ theory Int
   use export int.Int
 
   val int_eq int int : bool
-  val int_nq int int : bool
+  val int_ne int int : bool
   val int_ge int int : bool
   val int_le int int : bool
   val int_gt int int : bool
@@ -20,7 +20,7 @@ theory Nat
   type nat
 
   val nat_eq nat nat : bool
-  val nat_nq nat nat : bool
+  val nat_ne nat nat : bool
 
   val nat_ge nat nat : bool
   val nat_le nat nat : bool
@@ -48,7 +48,10 @@ theory Address
   val mkaddress unit : key_hash
 
   val add_eq address address : bool
-  val add_nq address address : bool
+  val add_ne address address : bool
+
+  val kh_eq key_hash key_hash : bool
+  val kh_ne key_hash key_hash : bool
 
   val default_address : key_hash
 
@@ -61,7 +64,7 @@ theory Timestamp
   val mktimestamp unit : timestamp
 
   val tim_eq timestamp timestamp : bool
-  val tim_nq timestamp timestamp : bool
+  val tim_ne timestamp timestamp : bool
 
   val tim_ge timestamp timestamp : bool
   val tim_le timestamp timestamp : bool
@@ -79,7 +82,7 @@ theory Tez
   val totez int : tez
 
   val tez_eq  tez tez : bool
-  val tez_neq tez tez : bool
+  val tez_ne  tez tez : bool
 
   val tez_gt  tez tez : bool
   val tez_ge  tez tez : bool
@@ -186,11 +189,13 @@ theory Msg
 
   type msg
 
-  val not_found           unit : msg
-  val not_supported_yet   unit : msg
-  val already_exists      unit : msg
-  val not_authorized_fun  unit : msg
-  val not_valid_condition unit : msg
+  val not_found                unit : msg
+  val check_condition_failed   unit : msg
+  val not_valid_state          unit : msg
+  val not_supported_yet        unit : msg
+  val already_exists           unit : msg
+  val not_authorized_fun       unit : msg
+  val not_valid_condition      unit : msg
 
 end
 

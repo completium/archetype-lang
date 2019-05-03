@@ -47,7 +47,7 @@ let builtin_type str =
   | "duration" -> Some VTduration
   | "string" -> Some VTstring
   | "address" -> Some VTaddress
-  | "role" -> Some VTaddress
+  | "role" -> Some VTrole
   | "tez" -> Some (VTcurrency (Tez, None))
   | "mtez" -> Some (VTcurrency (Mutez, None))
   | _ -> None
@@ -392,32 +392,6 @@ let map_label_lterm l : label_lterm list =
       let loc, (l, e) = deloc x in
       mk_label_lterm loc (l, e)
     ) l
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 (* model *)
