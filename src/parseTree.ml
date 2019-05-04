@@ -31,6 +31,7 @@ and type_t = type_r loced
 (* -------------------------------------------------------------------- *)
 type spec_operator =
   | OpSpec1
+  | OpSpec2
 [@@deriving yojson, show {with_path = false}]
 
 type logical_operator =

@@ -99,12 +99,14 @@ let day      = digit digit digit digit '-' digit digit '-' digit digit
 let hour     = digit digit ':' digit digit ( ':' digit digit )?
 let timezone = ('+' digit digit ':' digit digit | 'Z')
 let date     = day ('T' hour ( timezone )?)?
-let op_spec1 = "may" blank+ "be" blank+ "performed" blank+ "only" blank+ "by"
+let op_spec1 = "may" blank+ "be" blank+ "performed" blank+ "only" blank+ "by" blank+ "role"
+let op_spec2 = "may" blank+ "be" blank+ "performed" blank+ "only" blank+ "by" blank+ "tx"
 
 (* -------------------------------------------------------------------- *)
 rule token = parse
   | newline               { Lexing.new_line lexbuf; token lexbuf }
   | op_spec1              { OP_SPEC1 }
+  | op_spec2              { OP_SPEC2 }
   | blank+                { token lexbuf }
 
   | "@add"                { AT_ADD }

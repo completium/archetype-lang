@@ -127,6 +127,7 @@
 %token DIV
 %token UNDERSCORE
 %token OP_SPEC1
+%token OP_SPEC2
 %token EOF
 
 %token <string> IDENT
@@ -150,7 +151,7 @@
 
 %nonassoc COLONEQUAL PLUSEQUAL MINUSEQUAL MULTEQUAL DIVEQUAL ANDEQUAL OREQUAL
 
-%nonassoc OP_SPEC1
+%nonassoc OP_SPEC1 OP_SPEC2
 
 %right IMPLY
 %nonassoc EQUIV
@@ -746,6 +747,7 @@ record_item:
 
 %inline spec_operator:
  | OP_SPEC1   { OpSpec1 }
+ | OP_SPEC2   { OpSpec2 }
 
 %inline logical_operator:
  | AND   { And }

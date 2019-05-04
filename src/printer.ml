@@ -79,6 +79,7 @@ let e_assign_div    =  (30,  NonAssoc) (* /=  *)
 let e_assign_and    =  (30,  NonAssoc) (* &=  *)
 let e_assign_or     =  (30,  NonAssoc) (* |=  *)
 let e_opspec1       =  (35,  NonAssoc) (* op spec 1  *)
+let e_opspec2       =  (35,  NonAssoc) (* op spec 2  *)
 let e_imply         =  (40,  Right)    (* ->  *)
 let e_equiv         =  (50,  NonAssoc) (* <-> *)
 let e_and           =  (60,  Left)     (* and *)
@@ -109,6 +110,7 @@ let e_simple        =  (150, NonAssoc) (* ?  *)
 let get_prec_from_operator (op : operator) =
   match op with
   | `Spec OpSpec1    -> e_opspec1
+  | `Spec OpSpec2    -> e_opspec2
   | `Logical And     -> e_and
   | `Logical Or      -> e_or
   | `Logical Imply   -> e_imply
@@ -209,7 +211,8 @@ let pp_type fmt e = pp_type e_default PNone fmt e
 (* -------------------------------------------------------------------------- *)
 let spec_operator_to_str op =
 match op with
-  | OpSpec1   -> "may be performed only by"
+  | OpSpec1   -> "may be performed only by role"
+  | OpSpec2   -> "may be performed only by tx"
 
 let logical_operator_to_str op =
 match op with
