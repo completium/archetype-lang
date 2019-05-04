@@ -1,0 +1,33 @@
+dist: trusty
+language: c
+
+cache:
+  directories:
+  - $HOME/.opam
+
+env:
+  global:
+  - OPAMJOBS="2"
+  - OPAMYES="true"
+  - OPAMVERBOSE="true"
+  matrix:
+  - OCAML_VERSION=4.07.0
+
+before_install:
+  # Obtain and install opam locally.
+  - sudo wget https://github.com/ocaml/opam/releases/download/2.0.0/opam-2.0.0-x86_64-linux -O /usr/bin/opam
+  - sudo chmod 755 /usr/bin/opam
+  # Initialize the switch.
+  - opam init -a --disable-sandboxing --compiler="$OCAML_VERSION"
+  - opam update
+  - opam switch "$OCAML_VERSION"
+  - eval $(opam env)
+  - opam install dune menhir why3.1.2.0 ppx_deriving ppx_deriving_yojson
+  - make all
+
+script:
+  - make check
+
+notifications:
+  email:
+    - guillaume.duhamel@edukera.com

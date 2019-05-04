@@ -35,10 +35,10 @@ clean:
 	rm -fr ./why3/plugin/archetype.cmxa
 
 check:
-	./check.sh
+	./check_pp.sh
 
 build-deps:
-	opam install dune menhir batteries why3.1.2.0 ppx_deriving ppx_deriving_yojson
+	opam install dune menhir why3.1.2.0 ppx_deriving ppx_deriving_yojson
 
 dev-package:
 	opam install tuareg merlin ocp-indent
