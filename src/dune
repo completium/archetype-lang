@@ -1,15 +1,9 @@
-(env
-  (dev
-    (flags (:standard -rectypes -g -w Y -w Z -w -9 -w -23 -w +28 -w +33 -w -32)))
-  (release
-    (flags (:standard -rectypes))))
-
 (ocamllex lexer)
 (menhir (flags --explain) (modules parser))
 
-
 (library
-  (name archetypeLib)
+  (name archetype)
+  (public_name archetype)
   (preprocess
     (pps ppx_deriving.std ppx_deriving_yojson)
   )
@@ -17,16 +11,15 @@
   (modules tools core ident location parseUtils parseTree parser lexer io model modelinfo modelws modelliq printer translate reduce liq_printer)
   (libraries menhirLib why3 ppx_deriving yojson ppx_deriving_yojson.runtime)
 )
-
 (library
   (name w3plugin)
   (modules w3plugin)
-  (libraries archetypeLib)
+  (libraries archetype)
 )
 
 (rule
- (targets archetype.cmxs)
- (deps    archetypeLib.cmxa w3plugin.cmxa)
+ (targets archetype_plugin.cmxs)
+ (deps    archetype.cmxa w3plugin.cmxa)
  (action  (run ocamlopt -shared -linkall -o %{targets}
             %{lib:easy-format:easy_format.cmxa}
             %{lib:biniou:biniou.cmxa}
@@ -38,5 +31,5 @@
 
 (executable
   (modules extract compiler)
-  (libraries archetypeLib menhirLib why3)
+  (libraries archetype menhirLib why3)
   (name     compiler))

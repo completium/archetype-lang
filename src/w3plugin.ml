@@ -1,4 +1,4 @@
-open ArchetypeLib
+open Archetype
 open Why3
 open Pmodule
 open Ptree

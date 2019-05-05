@@ -1,0 +1,23 @@
+opam-version: "2.0"
+maintainer: "The Archetype development team <archetype-dev@edukera.com>"
+authors: ["Benoit Rognier <benoit.rognier@edukera.com>"
+          "Guillaume Duhamel <guillaume.duhamel@edukera.com>"
+          "Pierre-Yves Strub <pierre-yves.strub@polytechnique.edu>"]
+homepage: "https://github.com/edukera/solidity-parser-ocaml"
+bug-reports: "https://github.com/edukera/solidity-parser-ocaml/issues"
+dev-repo: "git+https://github.com/edukera/solidity-parser-ocaml.git"
+license: "MIT"
+
+build: [
+  ["dune" "build"]
+]
+
+depends: [
+  "ocaml"        {         >= "4.07.0" }
+  "dune"         { build & >= "1.5.0"  }
+  "menhir"
+  "why3"                { >= "1.2.0" }
+  "yojson"              { >= "1.5.0" }
+  "ppx_deriving"        { >= "4.2.1" }
+  "ppx_deriving_yojson" { >= "3.3" }
+]

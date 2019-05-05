@@ -1,5 +1,5 @@
 (* -------------------------------------------------------------------- *)
-open ArchetypeLib
+open Archetype
 open Core
 
 let opt_json = ref false
