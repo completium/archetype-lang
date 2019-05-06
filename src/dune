@@ -11,6 +11,7 @@
   (modules tools core ident location parseUtils parseTree parser lexer io model modelinfo modelws modelliq printer translate reduce liq_printer)
   (libraries menhirLib why3 ppx_deriving yojson ppx_deriving_yojson.runtime)
 )
+
 (library
   (name w3plugin)
   (modules w3plugin)
@@ -32,4 +33,5 @@
 (executable
   (modules extract compiler)
   (libraries archetype menhirLib why3)
+  (public_name archetype)
   (name     compiler))

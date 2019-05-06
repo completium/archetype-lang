@@ -21,3 +21,4 @@ archetypeLib.a
 archetypeLib.ml-gen
 _build
 why3/archetype_plugin.cmxs
+archetype.install
