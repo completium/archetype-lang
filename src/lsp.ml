@@ -8,6 +8,7 @@ type status =
 type position = {
   line : int;
   col : int;
+  char : int;
 }
 [@@deriving yojson, show {with_path = false}]
 
@@ -19,15 +20,16 @@ type result = {
 }
 [@@deriving yojson, show {with_path = false}]
 
-let mk_position (line, col) : position = {
+let mk_position (line, col) char : position = {
   line = line;
   col = col;
+  char = char;
 }
 
 let mk_result status (loc : Location.t) msg = {
   status = status;
-  start = mk_position loc.loc_start;
-  end_ = mk_position loc.loc_end;
+  start = mk_position loc.loc_start loc.loc_bchar;
+  end_ = mk_position loc.loc_end loc.loc_echar;
   message = msg;
 }
 
