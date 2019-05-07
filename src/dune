@@ -31,7 +31,10 @@
             %{deps} )))
 
 (executable
-  (modules extract compiler)
+  (preprocess
+    (pps ppx_deriving.std ppx_deriving_yojson)
+  )
+  (modules extract lsp compiler)
   (libraries archetype menhirLib why3)
   (public_name archetype)
   (name     compiler))

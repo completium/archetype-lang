@@ -2,6 +2,7 @@
 open Archetype
 open Core
 
+let opt_lsp = ref false
 let opt_json = ref false
 let opt_pretty_print = ref false
 let opt_parse = ref false
@@ -19,34 +20,37 @@ exception ArgError of string
 (* -------------------------------------------------------------------- *)
 let compile_and_print (filename, channel) =
   Tools.debug_mode := !debug_mode;
-  let pt = Io.parse_archetype ~name:filename channel in
-  if !opt_json
-  then Format.printf "%s\n" (Yojson.Safe.to_string (ParseTree.archetype_to_yojson pt))
+  if !opt_lsp
+  then Lsp.process (filename, channel)
   else (
-  if !opt_pretty_print
-  then Format.printf "%a" Printer.pp_archetype pt
-  else (
-  if !opt_parse
-  then Format.printf "%a\n" ParseTree.pp_archetype pt
-  else (
-    let model = Translate.parseTree_to_model pt in
-    if !opt_model
-    then Format.printf "%a\n" Model.pp_model model
+    let pt = Io.parse_archetype ~name:filename channel in
+    if !opt_json
+    then Format.printf "%s\n" (Yojson.Safe.to_string (ParseTree.archetype_to_yojson pt))
     else (
-      let modelr = Reduce.reduce_model model in
-      if !opt_modelr
-      then Format.printf "%a\n" Model.pp_model modelr
+      if !opt_pretty_print
+      then Format.printf "%a" Printer.pp_archetype pt
       else (
-        let info  = Modelinfo.mk_info (Location.unloc modelr) in
-        let modelws = Modelws.model_to_modelws info modelr in
-        if !opt_modelws
-        then Format.printf "%a\n" Modelws.pp_model_with_storage modelws
+        if !opt_parse
+        then Format.printf "%a\n" ParseTree.pp_archetype pt
         else (
-          let modelw3liq = Modelliq.modelws_to_modelliq info modelws in
-          if !opt_modelliq
-          then Extract.print modelw3liq
-          else ()
-    ))))))
+          let model = Translate.parseTree_to_model pt in
+          if !opt_model
+          then Format.printf "%a\n" Model.pp_model model
+          else (
+            let modelr = Reduce.reduce_model model in
+            if !opt_modelr
+            then Format.printf "%a\n" Model.pp_model modelr
+            else (
+              let info  = Modelinfo.mk_info (Location.unloc modelr) in
+              let modelws = Modelws.model_to_modelws info modelr in
+              if !opt_modelws
+              then Format.printf "%a\n" Modelws.pp_model_with_storage modelws
+              else (
+                let modelw3liq = Modelliq.modelws_to_modelliq info modelws in
+                if !opt_modelliq
+                then Extract.print modelw3liq
+                else ()
+              )))))))
 
 let close dispose channel =
   if dispose then close_in channel
@@ -62,6 +66,7 @@ let main () =
       "-W", Arg.Set opt_modelws, " Print raw model_with_storage";
       "-L", Arg.Set opt_modelliq, " Output Archetype in liquidity";
       "-T", Arg.Set opt_pterm, " Print pterm";
+      "--lsp", Arg.Set opt_lsp, "LSP mode";
       "-d", Arg.Set debug_mode, " Debug mode";
       "--storage-policy",
       Arg.String (fun s -> match s with
