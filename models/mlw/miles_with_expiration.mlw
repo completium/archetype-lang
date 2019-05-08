@@ -44,31 +44,31 @@ module Miles
   (* TODO : make this a storage invariant *)
   axiom Amount_gt0 : forall s : storage, m : key. get s.mile_amounts m > 0 
 
+  (* getters *)
   let get_mile       (s : storage) (k : key) : key 
   raises { NotFound }
-  = if mem k s.miles then raise NotFound else k
+  ensures { mem result s.miles }
+  = if not (mem k s.miles) then raise NotFound else k
+
   let function get_amount     (s : storage) (k : key) : int = get s.mile_amounts k
+  
   let function get_expiration (s : storage) (k : key) : date = get s.mile_expirations k
 
   let get_owner (s : storage) (o : key) : key 
   raises { NotFound }
-  = if mem o s.owners then raise NotFound else o
-  let function get_miles (s : storage) (o : key) : acol  = get s.owner_miles o
+  ensures { mem result s.owners }
+  = if not (mem o s.owners) then raise NotFound else o
+
+  let function get_miles (s : storage) (o : key) : acol
+  = get s.owner_miles o
+
+    (* Owner.miles is a partition of s.miles *)
+
+  axiom subset_miles : forall s : storage, m : key, o : key.
+    subset (get_miles s o) s.miles
 
   clone archetype.Sum as Amounts with type     storage = storage,
                                       val      f       = get_amount
-
-  (* Owner.miles is a partition of s.miles *)
-
-  axiom Owners_miles_part_1 : forall s : storage, m : key, o : key.
-    mem o s.owners ->
-    let miles = get_miles s o in
-    mem m miles -> mem m s.miles
-
-  axiom Owners_miles_part_2 : forall s : storage, m : key, o : key.
-    mem o s.owners ->
-    let miles = get_miles s o in
-    mem m s.miles -> mem m miles
 
   let remove_miles (o : key) (m : key) (s:storage) : unit
   raises { NotFound }
@@ -110,13 +110,19 @@ module Miles
 
   let addifnotexist (o : key) (new_miles : acol) (s : storage) : unit
   raises { NotFound }
+  ensures { mem o s.owners }
   =
-  if not (mem o s.owners) then update_owner o new_miles s
+  if not (mem o s.owners) 
+  then (
+    s.owners <- add o s.owners;
+    update_owner o new_miles s
+  )
 
   (* Actions  *****************************************************************)
 
   let add (e : env) (s : storage) (ow : key) (m : key) (a : int) (ex : date) : transfers 
   raises { InvalidCaller, InvalidCondition, NotFound }
+  requires { not (mem m s.miles) }
   =
     if caller e <> s.admin then raise InvalidCaller;
     if not (a > 0) then raise InvalidCondition;
@@ -125,6 +131,8 @@ module Miles
     Contract.empty
 
   let function test_consume (e : env) (s : storage) (a : key) : bool = get_expiration s a > now e
+  axiom tauto_test_consume: forall e : env, s : storage, a : key.
+    now e < get_expiration s a <-> test_consume e s a = true
 
   clone archetype.Filter as FConsume with type storage = storage,
                                           val  test    = test_consume
@@ -138,14 +146,14 @@ module Miles
   (* mile.sum(quantity) = before miles.sum(quantity) - nbmiles *)
   ensures { Amounts.sum (old s) (old s).miles = Amounts.sum s s.miles + nbmiles }
   (* is_emtpy add.miles *)
-  ensures { is_empty (diff s.miles (old s).miles) }
+  (*ensures { is_empty (diff s.miles (old s).miles) }*)
 
   = if caller e <> s.admin then raise InvalidCaller;
     if nbmiles <= 0 then raise InvalidCondition;
     let o = get_owner s owner in
     let miles = get_miles s o in
     let l = FConsume.filter e s miles in
-    if Amounts.sum s l >= nbmiles then raise InvalidCondition;
+    if not (nbmiles <= Amounts.sum s l) then raise InvalidCondition;
     let remainder = ref nbmiles in
     try
       for i = 0 to (length l) - 1 do
@@ -158,7 +166,7 @@ module Miles
       (* right amount spent invariant *)
       invariant { Amounts.sum (old s) (old s).miles = Amounts.sum s s.miles + nbmiles - !remainder }
       (* no added mile : TODO replace by trace proof *)
-      invariant { is_empty (diff s.miles (old s).miles) }
+      (*invariant { is_empty (diff s.miles (old s).miles) }*)
         let m = nth i l in
         if get_amount s m > !remainder
         then

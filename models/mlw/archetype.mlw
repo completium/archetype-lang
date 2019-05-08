@@ -87,8 +87,9 @@ module Map
 
   let function get (f: map 'value) (x: key) : 'value = f x
 
-  let function set (f: map 'value) (x: key) (v: 'value) : map 'value =
-    fun (y : key) -> if y = x then v else f y
+  let function set (f: map 'value) (x: key) (v: 'value) : map 'value 
+  ensures { forall k : key. k <> x -> result k = f k }
+  = fun (y : key) -> if y = x then v else f y
 
   let function const (v : 'value) : map 'value = fun _ -> v
 
@@ -115,8 +116,9 @@ theory AssetCollection
   (* asset collection *)
   type acol = list key
 
-  let rec predicate mem (k : key) (a : acol) : bool =
-    match a with
+  let rec predicate mem (k : key) (c : acol) : bool 
+  variant { c }
+  = match c with
     | Cons e tl ->
       if e = k
       then true
@@ -124,22 +126,31 @@ theory AssetCollection
     | Nil -> false
     end
 
+  predicate (==) (c1 c2 : acol) = forall k : key. mem k c1 <-> mem k c2
+
   let function length (c : list 'a) = length c
+
+  lemma mem_exists: forall k : int, c : acol.
+    not (mem k c) <-> forall i : int. 0 <= i <= length c -> i <> k
 
   let add (a : key) (c : acol)
   raises { NotFound }
-  ensures { forall x : key. mem a result <-> mem x c \/ x = a } 
+  ensures { forall k : key. mem k result <-> mem k c \/ k = a }
+  ensures { mem a result }
   = if mem a c then raise NotFound;
     c ++ (Cons a Nil)
 
-  let addifnotexist (a : key) (c : acol) : acol =
-  if mem a c
-  then c
-  else c ++ (Cons a Nil)
+  let addifnotexist (a : key) (c : acol) : acol
+  ensures { forall k : key. mem k result <-> mem k c \/ k = a }
+  ensures { mem a result } 
+  = if mem a c
+    then c
+    else c ++ (Cons a Nil)
 
   let rec remove (a : key) (c : acol) : acol
   raises { NotFound }
-  ensures { forall k : key. mem a result <-> mem k c /\ k <> a }
+  variant { c }
+  ensures { forall k : key. mem k result <-> mem k c /\ k <> a }
   =
      if not (mem a c) then raise NotFound;
      match c with
@@ -186,6 +197,8 @@ theory AssetCollection
 
   axiom subset_nth : forall c1 c2 : acol.
     subset c1 c2 <-> forall k : int. 0 <= k < length c1 -> mem (nth k c1) c2
+  
+  lemma subset_diff: forall c1 c2 : acol. subset (diff c1 c2) c1 
 
   (* not really used *)
   let rec fold (f : {'a} -> 'k -> 'a)
@@ -274,12 +287,28 @@ theory Sum
 
   lemma part_sum_eq :
     forall s : storage, c1 c2 : acol, i j : int.
-    (forall k : int. i <= k < j -> mem k c1 /\ mem k c2) -> part_sum s c1 i j = part_sum s c2 i j
+    (forall k : int. i <= k < j -> mem k c1 /\ mem k c2) -> 
+    part_sum s c1 i j = part_sum s c2 i j
       
   lemma part_sum_extension:
     forall s1 s2: storage, c : acol, i j m : int.
-     (forall k : int. i <= k <= j -> nth k c <> m -> f s1 (nth k c) = f s2 (nth k c)) ->
-     part_sum s1 c i j - f s1 m = part_sum s2 c i j - f s2 m
+    (forall k : int. i <= k <= j -> nth k c <> m -> f s1 (nth k c) = f s2 (nth k c)) ->
+    part_sum s1 c i j - f s1 m = part_sum s2 c i j - f s2 m
+
+  lemma sum_remove:
+    forall s1 s2 : storage, c1 c2 : acol, m : int.
+     (mem m c2) ->
+     (forall k : key. mem k c1 <-> mem k c2 /\ k<>m) -> (* c1 = c2 \ { m } *)
+     (forall k : key. mem k c2 -> f s1 k = f s2 k) ->
+     sum s1 c1 = sum s2 c2 - f s1 m
+
+  lemma sum_add:
+    forall s1 s2 : storage, c1 c2 : acol, m v : int.
+     not (mem m c2) ->
+     (forall k : key. mem k c1 <-> mem k c2 \/ k=m) -> (* c1 = c2 U { m } *)
+     (forall k : key. mem k c2 -> f s1 k = f s2 k) ->
+     f s1 m = v ->
+     sum s1 c1 = sum s2 c2 + v
 
 end
 

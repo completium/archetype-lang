@@ -29,11 +29,9 @@ action add (ow : address) (newmile : mile) = {
      (owner.get ow).miles.add newmile
 }
 
-action consume (ow : address) (val : uint) = {
-  called by admin
+action consume (a : address) (quantity : uint) = {
 
-  condition
-       c1 : (by_expiration ow).sum(amount) >= val
+  called by admin
 
   verification {
     invariant loop
@@ -55,11 +53,12 @@ action consume (ow : address) (val : uint) = {
          p3 : is_empty added.mile
   }
 
-  function by_expiration o = o.miles.select(mile.expiration > now)
-
   effect
-     let remainder = val in
-     loop : for (m in by_expiration o) (
+     let ow = owner.get a in
+     let by_expiration = ow.miles.select(mile.expiration > now) in
+     failif not (by_expiration.sum(quantity) >= amount);
+     let remainder = quantitiy in
+     loop : for (m in by_expiration) (
        if remainder > 0
        then (
          if m.amount > remainder
