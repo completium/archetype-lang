@@ -5,6 +5,10 @@ exception ReduceError of string * Location.t option
 
 let fail str = dumloc (Papp (dumloc (Pconst Cfail), [dumloc (Plit (dumloc (BVstring str)))]))
 
+let process_failif model : model =
+(*TODO: visit all pterm in model and replace failif and require instructions by if instruction*)
+model
+
 let process_action model : model =
   let process_ap (tr : transaction) =
     let process_transition (tr : transaction) : transaction =
@@ -129,6 +133,7 @@ let process_action model : model =
     m with
     transactions = List.map (fun x -> process_ap x) m.transactions;
   }
+  |> process_failif
 
 let sanity_check model : model =
   let _check_dv model : model =

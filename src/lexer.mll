@@ -69,6 +69,8 @@
       "exists"              , EXISTS         ;
       "true"                , TRUE           ;
       "false"               , FALSE          ;
+      "failif"              , FAILIF         ;
+      "require"             , REQUIRE        ;
     ]
 
   let () =

@@ -129,6 +129,8 @@
 %token OP_SPEC1
 %token OP_SPEC2
 %token EOF
+%token FAILIF
+%token REQUIRE
 
 %token <string> IDENT
 %token <string> STRING
@@ -644,6 +646,12 @@ expr_r:
 
  | TRANSFER back=boption(BACK) x=simple_expr y=ioption(to_value) %prec prec_transfer
      { Etransfer (x, back, y) }
+
+ | REQUIRE x=simple_expr
+     { Erequire x }
+
+ | FAILIF x=simple_expr
+     { Efailif x }
 
  | x=order_operations %prec prec_order { x }
 

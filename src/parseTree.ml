@@ -115,6 +115,8 @@ type expr_unloc =
   | Edot          of expr * lident
   | Eapp          of expr * expr list
   | Etransfer     of expr * bool * qualid option
+  | Erequire      of expr
+  | Efailif       of expr
   | Eassign       of assignment_operator * expr * expr
   | Eif           of expr * expr * expr option
   | Ebreak

@@ -258,6 +258,7 @@ type lterm_unloc =
   | Ldot of lterm * lterm
   | Lconst of const
   | Ltuple of lterm list
+  | Lrequire of bool * lterm
 [@@deriving show {with_path = false}]
 
 and lterm = lterm_unloc loced
@@ -291,6 +292,7 @@ type ('id,'typ,'pattern,'term) poly_pterm  =
   | Pdot of 'term * 'term
   | Pconst of const
   | Ptuple of 'term list
+  | Prequire of bool * 'term
 [@@deriving show {with_path = false}]
 
 type pterm = ((lident,ptyp,pattern,pterm) poly_pterm) loced
@@ -510,6 +512,7 @@ let poly_pterm_map f fi ft fr fp fq = function
   | Pdot (l, r) -> f (Pdot (fp l, fp r))
   | Pconst c -> f (Pconst c)
   | Ptuple l -> f (Ptuple (List.map fp l))
+  | Prequire (b, x) -> f (Prequire (b, fp x))
 
 (* generic mapper for poly_pterm type
    f   : function called on each constructor
@@ -536,6 +539,7 @@ let poly_pterm_fold f acc = function
   | Parray l -> List.fold_left f acc l
   | Pdot (l, r) -> f (f acc l) r
   | Ptuple l -> List.fold_left f acc l
+  | Prequire (_b, x) -> (f acc x)
   | _ -> acc
 
 let pattern_map f fi ft fr fq = function

@@ -403,6 +403,21 @@ let rec pp_expr outer pos fmt a =
     in
     (maybe_paren outer e_default pos pp) fmt (x, back, to_value)
 
+  | Erequire x ->
+
+    let pp fmt x =
+      Format.fprintf fmt "require %a"
+        pp_simple_expr x
+    in
+    (maybe_paren outer e_default pos pp) fmt x
+
+  | Efailif x ->
+
+    let pp fmt x =
+      Format.fprintf fmt "failif %a"
+        pp_simple_expr x
+    in
+    (maybe_paren outer e_default pos pp) fmt x
 
   | Eassign (op, lhs, rhs) ->
 
