@@ -20,13 +20,15 @@ asset owner as role identified by addr = {
 action add (ow : address) (newmile : mile) = {
    called by admin
 
-   condition
+   require {
      c1 : newmile.amount > 0
+   }
 
-   effect
+   effect {
      owner.addifnotexist { addr = ow; mile = [] };
      (* action must fail if mile already exists *)
      (owner.get ow).miles.add newmile
+   }
 }
 
 action consume (a : address) (quantity : uint) = {
@@ -34,7 +36,7 @@ action consume (a : address) (quantity : uint) = {
   called by admin
 
   verification {
-    invariant loop
+    invariant loop = {
          (* remainder has a decreasing upper bound *)
          i1 : 0 <= remainder <= to_iter.sum(amount);
          (* removed miles *)
@@ -42,18 +44,19 @@ action consume (a : address) (quantity : uint) = {
          (* right amount consumed *)
          i3 : before miles.sum(amount) = miles.sum(amount) + nbmiles - remainder;
          i4 : is_empty added.mile
+    }
 
-    specification
-
+    specification {
          (* the globla quantity of miles is decreased by nbmiles *)
          p1 : mile.sum(quantity) = before miles.sum(quantity) - nbmiles;
          (* all removed miles are valid miles *)
          p2 : forall m : removed miles, m.expiration >= now;
          (* no added mile *)
          p3 : is_empty added.mile
+    }
   }
 
-  effect
+  effect {
      let ow = owner.get a in
      let by_expiration = ow.miles.select(mile.expiration > now) in
      require (by_expiration.sum(quantity) >= amount);
@@ -79,6 +82,7 @@ action consume (a : address) (quantity : uint) = {
          )
        );
      assert (remainder = 0))
+  }
 }
 
 (* this ensures that any mile was added with the ‘add’ action *)
@@ -91,11 +95,13 @@ specification {
 action clear_expired = {
   called by admin
 
-  specification
-     s3 : forall m : removed mile, m.expiration < now
+  specification {
+    s3 : forall m : removed mile, m.expiration < now
+  }
 
-  effect
-     for (o in owner) (
-       o.miles.removeif (expiration < now)
-     )
+  effect {
+    for (o in owner) (
+      o.miles.removeif (expiration < now)
+    )
+  }
 }

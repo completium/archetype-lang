@@ -382,7 +382,7 @@ type ('id,'typ,'pattern,'term) gen_transaction = {
   name         : lident;
   args         : (('typ, bval) gen_decl) list;
   calledby     : rexpr option;
-  condition    : label_pterm list option;
+  require      : label_pterm list option;
   transition   : transition option;
   functions    : function_ list;
   verification : verification option;

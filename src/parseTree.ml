@@ -205,9 +205,9 @@ type s_function = {
 [@@deriving yojson, show {with_path = false}]
 
 type action_properties = {
-  verif      : verification option;
   calledby   : (expr * exts) option;
-  condition  : (label_exprs * exts) option;
+  require    : (label_exprs * exts) option;
+  verif      : verification option;
   functions  : (s_function loced) list;
 }
 [@@deriving yojson, show {with_path = false}]

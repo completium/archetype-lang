@@ -12,26 +12,29 @@ variable deadline date = 2019-01-01T00:00:00
 
 action place_bid = {
 
-  condition
+  require {
     c1 : now < deadline
+  }
 
-  effect
+  effect {
     bid.add { incumbent = caller; value = transferred };
     max_bid := max transferred max_bid
+  }
 }
 
 
 (* Users need to exhibit proof they are not the winner to reclaim their bid *)
 action reclaim = {
 
- condition
+ require {
    c1 : now < deadline;
    c2 : let bc = bid.get caller in
         bc < max_bid
+ }
 
- effect
+ effect {
    transfer (bid.get caller) to caller
-
+ }
 }
 
 specification {

@@ -13,6 +13,7 @@ asset token = {
 
 action transfer_ (k : role) (token : token) = {
   called by [%delegable] (tokenHolder.get k).owner
-  effect
+  effect {
     token.owner := newowner
+  }
 }

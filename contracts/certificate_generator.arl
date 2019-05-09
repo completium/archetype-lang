@@ -13,6 +13,7 @@ asset certificate identified by id = {
 action add (c : certificate) = {
   called by admin
 
-  effect
+  effect {
     certificate.add c
+  }
 }

@@ -89,8 +89,8 @@ let process_action model : model =
             Plogical (Or, process_rexpr l, process_rexpr r)
           | _ -> raise Modelinfo.TODO)
         in
-        let condition = dumloc (Pnot (process_rexpr cb)) in
-        dumloc (Pif (condition, fail "not_authorized_fun", None ))
+        let require = dumloc (Pnot (process_rexpr cb)) in
+        dumloc (Pif (require, fail "not_authorized_fun", None ))
       in
       begin
         match tr.calledby with
@@ -103,28 +103,28 @@ let process_action model : model =
               | None -> Some (process_cb cb);
           }
       end in
-    let process_conditions (tr : transaction) =
-      let process_condition (x : label_pterm) : pterm =
+    let process_requires (tr : transaction) =
+      let process_require (x : label_pterm) : pterm =
         let msg =
          match x.label with
-         | Some _label -> "check_condition_failed" (*"condition " ^ (unloc label) ^ " failed";*)
-         | _ -> "condition failed" in
+         | Some _label -> "check_require_failed" (*"require " ^ (unloc label) ^ " failed";*)
+         | _ -> "require failed" in
         mkloc x.loc (Pif (dumloc (Pnot x.term), fail msg, None))
       in
-      match tr.condition with
+      match tr.require with
       | None -> tr
-      | Some conditions ->
+      | Some requires ->
         { tr with
-          condition = None;
+          require = None;
           effect = List.fold_right (fun x accu ->
               match accu with
-              | Some e -> Some (dumloc (Pseq (process_condition x, e)))
-              | None -> Some (process_condition x)
-            ) conditions tr.effect;
+              | Some e -> Some (dumloc (Pseq (process_require x, e)))
+              | None -> Some (process_require x)
+            ) requires tr.effect;
         } in
     tr
     |> process_transition
-    |> process_conditions
+    |> process_requires
     |> process_calledby
     ;
   in

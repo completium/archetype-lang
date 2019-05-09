@@ -30,36 +30,42 @@ states =
 
 action register (voter : address) = {
   called by chairperson
-  condition
+  require {
     c1 : state = Created
-  effect
-    voter.add {address = voter; hasVoted = false}
+  }
+  effect {
+    voter.add { address = voter; hasVoted = false }
+  }
 }
 
 transition start from Created = {
-   to Vote when now > startDate
+   to Vote when { now > startDate }
 }
 
 action vote (val : string) = {
    called by voter
-   condition
+   require {
      c2 : state = Voting;
      c3 : (voter.get caller).hasVoted = false
+   }
 
-   effect
+   effect {
      (voter.get caller).hasVoted := true;
      ballot.update value { nbvotes += 1 } { nbvotes = 0 }
+   }
 }
 
 transition bury from Voting = {
-  condition
+  require {
     c4 : now > deadline
+  }
   to Buried
-  with effect (
+  with effect {
     let nbvotesMax = ballot.max(nbvotes) in
     for (b in ballot)
       if (b.nbvotes = nbvotesMax)
-      then winner.add { value = b.val })
+      then winner.add { value = b.val }
+  }
 }
 
 specification {

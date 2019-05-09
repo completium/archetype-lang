@@ -7,9 +7,11 @@ archetype extension mutable_enum (
   action set_state_<%arole> (new_val : anenum) = {
 
     called by arole
-    condition
+    require {
       mutable_enum_<%arole> : state <= new_state
-    effect
+    }
+    effect {
       anenum := new_val
+    }
   }
 }

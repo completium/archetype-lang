@@ -28,10 +28,11 @@ action addflightinsurance (fi : string) (* flight id *)
                                (i : insurance) = {
     called by creator
 
-    effect
+    effect {
       flight.addifnotexist { id = fi };
       let f = flight.get id in
       f.insurances.add i
+    }
 }
 
 (* data should be signed by oracle ... *)
@@ -39,7 +40,7 @@ action updatestatus (fi : string) (arrival : date) = {
 
     called by creator
 
-    effect
+    effect {
       let f = flight.get id in
       for (i in f.insurances)
         match i.status with
@@ -48,19 +49,21 @@ action updatestatus (fi : string) (arrival : date) = {
            then i.status := After
         | _ -> none
         end
+    }
 }
 
 action manual (fi : string) (pr : string) (newst : status) = {
 
     called by creator
 
-    effect
+    effect {
       let f = flight.get fi in
       for (i in f.insurances.select(product = pr))
         match i.status with
          | Created -> i.status := newst
          | _ -> none
         end
+    }
 }
 
 specification {

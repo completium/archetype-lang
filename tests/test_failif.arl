@@ -1,6 +1,7 @@
 archetype test_failif
 
 action tr = {
-  effect
+  effect {
     failif (mycondition)
+  }
 }

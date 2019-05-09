@@ -15,10 +15,13 @@ action transferTokens (th : tokenHolder) (quantity : uint) = {
 
   called by th.holder
 
-  specification
+  specification {
     s1 : before tokenHolder.sum(tokens) = tokenHolder.sum(tokens)
+  }
 
-  effect
+  effect {
     tokenHolder.update th.holder {tokens += quantity};
     tokenHolder.update caller {tokens -= quantity}
+  }
+
 }

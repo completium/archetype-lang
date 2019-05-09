@@ -3,17 +3,20 @@ archetype tests_conditions
 variable i int = 0
 
 action a1 = {
-  condition
+  require {
     c1 : 1 = 2;
     c2 : true;
     c3 : 1 + 3 = 4
+  }
 }
 
 action a2 = {
-  condition
+  require {
     c1 : 1 = 2;
     c2 : true;
     c3 : 1 + 3 = 4
-  effect
+  }
+  effect {
     i := 1
+  }
 }

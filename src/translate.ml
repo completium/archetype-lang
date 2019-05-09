@@ -588,7 +588,7 @@ let extract_decls decls model =
       name = name;
       args = extract_args args;
       calledby  = map_option (fun (e, _) -> to_rexpr_calledby e) props.calledby;
-      condition = map_option (fun (items, _) -> List.map (fun a -> to_label_pterm a) items) props.condition;
+      require = map_option (fun (items, _) -> List.map (fun a -> to_label_pterm a) items) props.require;
       transition = None;
       functions = List.map (fun x -> let loc, f = deloc x in mk_function loc f) props.functions;
       verification = map_option mk_verification props.verif;

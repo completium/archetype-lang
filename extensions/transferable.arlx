@@ -8,13 +8,15 @@ archetype extension transferable (
 
   action assign_new_<%aRole> (newrole : role) = {
     called by aRole
-    effect
+    effect {
       <%aRole>_tmp := newrole
+    }
   }
 
   action confirm_<%aRole> = {
     called by <%aRole>_tmp
-    effect
+    effect {
       aRole := <%aRole>tmp
+    }
   }
 }

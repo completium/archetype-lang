@@ -3,29 +3,35 @@ archetype test_verification
 action myaction = {
  verification {
 
-    predicate mypredicate (a : int) =
+    predicate mypredicate (a : int) = {
       forall x : col1, forall y : col2, x = y
+    }
 
     definition mydef =
      { x : early | forall x, x = x }
 
-    axiom myaxiom =
+    axiom myaxiom = {
       forall x : col1, forall y : col2, x = y
+    }
 
-    theorem mytheorem =
+    theorem mytheorem = {
       forall x : col1, forall y : col2, x = y
+    }
 
     variable myvar atype = 0
 
-    invariant myloop
+    invariant myloop = {
       i1 : x = 0;
       i2 : y = 0
+    }
 
-    effect
+    effect {
       x := y
+    }
 
-    specification
+    specification {
       s1 : x = y;
       s2 : y = x
+    }
   }
 }

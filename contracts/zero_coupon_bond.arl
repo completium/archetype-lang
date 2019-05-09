@@ -19,28 +19,31 @@ states =
   | Collected (* owner has collected payment *)
 
 transition confirm from Insured = {
-  specification
+  specification {
     s1 : balance = 0
+  }
 
   to Confirmed
-  when transferred = price
-  with effect (
+  when { transferred = price }
+  with effect {
     maturity := now + 1Y;
-    transfer price to issuer)
+    transfer price to issuer
+  }
 }
 
 transition repay from Confirmed = {
   called by issuer
 
-  to Repaid when transferred = payment
+  to Repaid when { transferred = payment }
 }
 
 transition collect from Repaid = {
   called by owner
 
   to Collected
-  when now >= maturity
-  with effect (
+  when { now >= maturity }
+  with effect {
     if balance >= payment
-    then transfer balance to owner)
+    then transfer balance to owner
+  }
 }

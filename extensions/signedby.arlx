@@ -7,8 +7,9 @@ archetype extension signedby (
   variable key_<%arole> key = arole
 
   action aTransaction (signed_<%anarg> : signature) = {
-    condition
+    require {
       c1 : check_signature anarg signed_<%anarg> key_<%arole>
+    }
   }
 
 }

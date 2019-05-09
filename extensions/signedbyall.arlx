@@ -10,14 +10,16 @@ archetype extension signedbyall (
   } initialized by roles
 
   action sign_<%aTransaction> = {
-    effect
+    effect {
       signed.update caller { hasSigned = true }
+    }
   }
 
   action aTransaction = {
-    condition
-      conditions;
+    require {
+      requires;
       <%aTransaction>_cond : (signer_<%aTransaction>.select(hasSigned = true)).count() = signer_<%aTransaction>.count()
+    }
   }
 
 }

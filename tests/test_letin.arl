@@ -1,8 +1,9 @@
 action tr = {
-  effect
+  effect {
     for (i in list) (
       let x = toto in
       toto;
       tata
-      )
+    )
+  }
 }

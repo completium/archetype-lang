@@ -8,7 +8,7 @@
 
   let dummy_action_properties = {
       calledby      = None;
-      condition     = None;
+      require       = None;
       functions     = [];
       verif         = None;
     }
@@ -58,7 +58,6 @@
 %token INITIAL
 %token ACTION
 %token CALLED
-%token CONDITION
 %token TRANSITION
 %token VERIFICATION
 %token PREDICATE
@@ -306,18 +305,17 @@ signature:
 | ACTION x=ident COLON xs=types { Ssignature (x, xs) }
 
 %inline fun_effect:
-| EFFECT e=expr { e }
+| EFFECT e=braced(expr) { e }
 
 %inline fun_body:
 | e=expr { (None, e) }
-| LBRACE
-  s=verification_fun
-      e=fun_effect RBRACE
+|  s=verification_fun
+      e=fun_effect
         { (Some s, e) }
 
 %inline function_gen:
  | FUNCTION id=ident xs=function_args
-     r=function_return? EQUAL b=fun_body {
+     r=function_return? EQUAL LBRACE b=fun_body RBRACE {
   let (s, e) = b in
   {
     name  = id;
@@ -337,30 +335,27 @@ function_decl:
     { Dfunction f }
 
 %inline verif_predicate:
-| PREDICATE id=ident xs=function_args EQUAL e=expr { Vpredicate (id, xs, e) }
+| PREDICATE id=ident xs=function_args EQUAL e=braced(expr) { Vpredicate (id, xs, e) }
 
 %inline verif_definition:
 | DEFINITION id=ident EQUAL LBRACE a=ident COLON t=type_t PIPE e=expr RBRACE { Vdefinition (id, t, a, e) }
 
 %inline verif_axiom:
-| AXIOM id=ident EQUAL x=expr { Vaxiom (id, x) }
+| AXIOM id=ident EQUAL x=braced(expr) { Vaxiom (id, x) }
 
 %inline verif_theorem:
-| THEOREM id=ident EQUAL x=expr { Vtheorem (id, x) }
+| THEOREM id=ident EQUAL x=braced(expr) { Vtheorem (id, x) }
 
 %inline verif_variable:
 | VARIABLE id=ident t=type_t dv=default_value? { Vvariable (id, t, dv) }
 
 %inline verif_invariant:
-| INVARIANT id=ident xs=expr { Vinvariant (id, split_seq_label xs) }
+| INVARIANT id=ident EQUAL xs=braced(expr) { Vinvariant (id, split_seq_label xs) }
 
 %inline verif_effect:
-| EFFECT e=expr { Veffect e }
+| EFFECT e=braced(expr) { Veffect e }
 
 %inline verif_specification:
-| SPECIFICATION xs=expr { Vspecification (split_seq_label xs) }
-
-%inline verif_specification_braced:
 | SPECIFICATION xs=braced(expr) { Vspecification (split_seq_label xs) }
 
 verif_item:
@@ -385,7 +380,7 @@ verification_fun:
 | x=loc(verification(verif_specification)) { x }
 
 verification_decl:
-| x=loc(verification(verif_specification_braced)) { Dverification x }
+| x=loc(verification(verif_specification)) { Dverification x }
 
 enum:
 | ENUM exts=extensions? x=ident EQUAL xs=pipe_idents {Denum (x, xs, exts)}
@@ -495,7 +490,7 @@ action:
       { let a, b = xs in Daction (x, args, a, b, exts) }
 
 transition_to_item:
-| TO x=ident y=condition_value? z=with_effect? { (x, y, z) }
+| TO x=ident y=require_value? z=with_effect? { (x, y, z) }
 
 %inline transitions:
  | xs=transition_to_item+ { xs }
@@ -513,12 +508,12 @@ transition:
 | EQUAL LBRACE xs=action_properties e=effect? RBRACE { (xs, e) }
 
 action_properties:
-  cb=calledby? cs=condition? sp=verification_fun? fs=function_item*
+  cb=calledby? cs=require? sp=verification_fun? fs=function_item*
   {
     {
       verif         = sp;
       calledby      = cb;
-      condition     = cs;
+      require       = cs;
       functions     = fs;
     }
   }
@@ -526,18 +521,18 @@ action_properties:
 calledby:
  | CALLED BY exts=option(extensions) x=expr { (x, exts) }
 
-condition:
- | CONDITION exts=option(extensions) xs=expr
+require:
+ | REQUIRE exts=option(extensions) xs=braced(expr)
        { (split_seq_label xs, exts) }
 
-%inline condition_value:
-| WHEN exts=option(extensions) e=expr { (e, exts) }
+%inline require_value:
+| WHEN exts=option(extensions) e=braced(expr) { (e, exts) }
 
 %inline with_effect:
-| WITH EFFECT exts=option(extensions) e=expr { (e, exts) }
+| WITH EFFECT exts=option(extensions) e=braced(expr) { (e, exts) }
 
 effect:
- | EFFECT exts=option(extensions) e=expr { (e, exts) }
+ | EFFECT exts=option(extensions) e=braced(expr) { (e, exts) }
 
 %inline function_return:
  | COLON ty=type_t { ty }

@@ -439,7 +439,7 @@ let dummy_transaction = {
   name         = lstr "";
   args         = [];
   calledby     = None;
-  condition    = None;
+  require      = None;
   transition   = None;
   functions    = [];
   verification = None;
@@ -2068,7 +2068,7 @@ let transform_transaction (info : info) (m : model_unloc) (t : Model.transaction
     name         = t.name;
     args         = args;
     calledby     = None;
-    condition    = None;
+    require    = None;
     transition   = None;
     verification = None;
     effect       = Some action;
