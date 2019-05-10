@@ -6,8 +6,20 @@ exception ReduceError of string * Location.t option
 let fail str = dumloc (Papp (dumloc (Pconst Cfail), [dumloc (Plit (dumloc (BVstring str)))]))
 
 let process_failif model : model =
-(*TODO: visit all pterm in model and replace failif and require instructions by if instruction*)
-model
+  let rec process_pterm (pt : pterm) : pterm =
+  let l, v = deloc pt in
+  (
+    let f x = poly_pterm_map_for_pterm (mkloc l) process_pterm x in
+  match v with
+  | Prequire (b, x) -> mkloc l (Pif ((if b then dumloc (Pnot x) else x), fail "required", None))
+  | x -> f x
+  ) in
+  let l, v = deloc model in
+    mkloc l {
+    v with
+    functions = List.map (fun (x : function_) -> { x with body = process_pterm (x.body) }) v.functions;
+    transactions = List.map (fun (x : transaction) -> { x with effect = Tools.map_option process_pterm (x.effect) }) v.transactions;
+  }
 
 let process_action model : model =
   let process_ap (tr : transaction) =

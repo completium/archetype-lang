@@ -514,6 +514,8 @@ let poly_pterm_map f fi ft fr fp fq = function
   | Ptuple l -> f (Ptuple (List.map fp l))
   | Prequire (b, x) -> f (Prequire (b, fp x))
 
+let poly_pterm_map_for_pterm f g = poly_pterm_map f id id id g id
+
 (* generic mapper for poly_pterm type
    f   : function called on each constructor
    acc : accumulator

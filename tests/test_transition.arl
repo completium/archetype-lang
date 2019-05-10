@@ -1,0 +1,13 @@
+archetype test_transition
+
+states =
+| First
+| Second
+
+transition mytr from First = {
+  to Second
+  when { true }
+  with effect {
+    fail "not_found"
+  }
+}

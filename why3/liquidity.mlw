@@ -189,6 +189,7 @@ theory Msg
 
   type msg
 
+  val required                 unit : msg
   val not_found                unit : msg
   val check_condition_failed   unit : msg
   val not_valid_state          unit : msg
