@@ -9,21 +9,25 @@ asset insured_contract identified by addr = {
 
 action credit = {
   called by admin
-  condition
+  require {
     c1 : transferred > 0
+  }
 }
 
 action add_contract (contract_ : insured_contract) = {
   called by admin
-  effect
+  effect {
     insured_contract.addifnotexist contract_
+  }
 }
 
 action pay (recipient : address) (amount : tez) = {
-  condition
+  require {
     c1 : insured_contract.contains caller;
     c2 : amount <= (insured_contract.get caller).max_transfer
+  }
 
-  effect
+  effect {
     transfer amount to recipient
+  }
 }

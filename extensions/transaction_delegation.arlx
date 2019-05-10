@@ -7,10 +7,11 @@ archetype extension transactionDelegation (
 ) = {
 
   action aTransaction = {
-    effect
+    effect {
       effects;
       <%aTransaction>_space::Operator.remove
       (<%aTransaction>_space::Operator.get anasset)
+    }
   }
 
   namespace <%aTransaction>_space {
@@ -21,23 +22,27 @@ archetype extension transactionDelegation (
 
     action setDelegate (Operator : Operator) = {
       called by Operator.anasset.arole
-      effect
+      effect {
         Operator.add Operator
+      }
     }
 
     action rmDelegate (Operator : Operator) = {
       called by Operator.anasset.arole
 
-      effect
+      effect {
         Operator.remove Operator
+      }
     }
 
     action from_addr (anasset : anAsset) = {
-      condition
+      require {
         c1 : (Operator.get anasset).operator = caller
+      }
 
-      effect
+      effect {
         Operator.remove (Operator.get anasset)
+      }
     }
   }
 }

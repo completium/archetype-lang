@@ -11,20 +11,24 @@ asset account identified by owner = {
 
 action add (owner : address) (value : uint) = {
    called by validator
-   effect
+   effect {
      account.update owner { amount += value } { amount = 0 }
+   }
 }
 
 action consume (owner : address) (value : uint) = {
    called by validator
 
-   condition
+   require {
      c1 : (account.get owner).amount >= value
+   }
 
-   specification
+   specification {
      s1 : (before.account.get owner).amount =
              (after.account.get owner).amount + value
+   }
 
-   effect
+   effect {
      (account.get owner).amount -= value
+   }
 }

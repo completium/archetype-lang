@@ -28,25 +28,28 @@ states =
  | Closed
 
 transition confirm from Created = {
-   to InProgress when now > startdate
+   to InProgress when { now > startdate }
 }
 
 action submit (competitor : competitor) (score[%signedby oracle] : uint) = {
-  condition
-  c1 : state = InProgress
+  require {
+    c1 : state = InProgress
+  }
 
-  effect
+  effect {
     submission.add { competitor = competitor;
                      score = score;
                      date = now }
+  }
 }
 
 transition decide from InProgress = {
 
-  condition
+  require {
     c2 : now > deadline
+  }
   to Done
-  with effect (
+  with effect {
     let submissions = submission.sort(asc(date)).sort(desc(score)) in
       if submissions.count() >= 3
       then (
@@ -73,5 +76,6 @@ transition decide from InProgress = {
                then (
                  let first = submissions.nth(0) in
                  transfer prize to first.competitor)
-               else transfer back prize)
+               else transfer back prize
+  }
 }

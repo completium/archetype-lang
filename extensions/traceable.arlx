@@ -6,7 +6,8 @@ archetype extension traceable (
 
   action transfer_<%anamount> = {
     called by fromP
-    condition
+    require {
       c1 : transferred = anamount
+    }
   }
 }

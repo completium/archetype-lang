@@ -104,7 +104,7 @@ function compute_expected (d : date) : tez = {
     }
 
     (* … TODO finish specs *)
-    specification
+    specification {
       (** expected is the sum of redemption nominal and interests *)
       p_expected :
         let expected =
@@ -137,9 +137,10 @@ function compute_expected (d : date) : tez = {
           otherwise 0
         in
          result = expected + interests
+    }
   }
 
-  effect
+  effect {
     let expected = 0tz in
     let terminated = false in
     let redeem_date = final in
@@ -187,6 +188,7 @@ function compute_expected (d : date) : tez = {
     );
     expected += exp_interests;
     return expected
+  }
 }
 
 (* PAYMENT action *)
@@ -194,11 +196,15 @@ variable actual_payment tez = 0
 
 action pay_note = {
    called by issuer
-   effect actual_payment += transferred
+   effect {
+      actual_payment += transferred
+   }
 }
 
 action add_fixing (f[%signedby oracle] : fixing) = {
-   effect fixing.add f
+  effect {
+    fixing.add f
+  }
 }
 
 (* STATE MACHINE *)
@@ -212,7 +218,7 @@ states =
 (** Used by owner to confirm transaction. It transfers the price of contract (nominal) *)
 transition confirm from Created = {
    called by owner
-   to Confirmed when transferred = nominal
+   to Confirmed when { transferred = nominal }
 }
 
 transition cancel from Created = {
@@ -222,10 +228,10 @@ transition cancel from Created = {
 
 transition check from Confirmed = {
   called by owner
-  to Defaulted when actual_payment < compute_expected now
+  to Defaulted when { actual_payment < compute_expected now }
 }
 
 transition terminate from Confirmed = {
   called by issuer
-  to Terminated when actual_payment >= compute_expected now
+  to Terminated when { actual_payment >= compute_expected now }
 }

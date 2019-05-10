@@ -37,29 +37,35 @@ asset vehicle identified by vin = {
 
 action placeOrder (neworder : order) = {
   called by neworder.orderer
-  effect order.add neworder
+  effect {
+    order.add neworder
+  }
 }
 
 transition assign_vin (vin : string) (detail : vehicledetail) on ok : order from Placed = {
   called by order.orderer
 
   to Vin_assigned
-  with effect
+  with effect {
      vehicule.add { vin = vin; detail = detail }
+  }
 }
 
 transition assign_owner on ok : order from any = {
   to Owner_assigned
-  with effect (
+  with effect {
     (* set vehicule state *)
     (order.get ok).vehicule.state := Active;
     (* set vehicule owner *)
-    (order.get ok).vehicule.owner := order.orderer)
+    (order.get ok).vehicule.owner := order.orderer
+  }
 }
 
 action vehiculeTransfer (buyer : owner) (vehicule : vehicule) = {
   called by [%delegable] vehicule.owner
-  effect vehicule.owner := buyer
+  effect {
+    vehicule.owner := buyer
+  }
 }
 
 transition scrapVehicle on vk : vehicule from (Off_the_road or Active) = {
@@ -69,7 +75,8 @@ transition scrapVehicle on vk : vehicule from (Off_the_road or Active) = {
 }
 
 action scrapVehiclebyColor (color : string) = {
-  effect
+  effect {
     for (v in vehicule.select(vehicule.color = color))
       v.state := Scrapped
+  }
 }

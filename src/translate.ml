@@ -236,6 +236,8 @@ let rec mk_lterm (e : expr) : lterm =
       )
     | Eapp (f, args) -> Lapp (mk_lterm f, List.map mk_lterm args)
     | Etransfer (_a, _, _dest) -> raise (ModelError ("\"transfer\" is not allowed in logical block", loc))
+    | Erequire x -> Lrequire (true, mk_lterm x)
+    | Efailif x -> Lrequire (false, mk_lterm x)
     | Eassign (_, _, _) -> raise (ModelError ("assignments are not allowed in logical block", loc))
     | Eif (cond, then_, None) -> Limply (mk_lterm cond, mk_lterm then_)
     | Eif (cond, then_, Some else_) -> Llogical (And,
@@ -304,6 +306,8 @@ let rec mk_pterm (e : expr) : pterm =
       )
     | Eapp (f, args) -> Papp (mk_pterm f, List.map mk_pterm args)
     | Etransfer (a, back, dest) -> Ptransfer (mk_pterm a, back, map_option mk_qualid dest)
+    | Erequire x -> Prequire (true, mk_pterm x)
+    | Efailif x -> Prequire (false, mk_pterm x)
     | Eassign (op, lhs, rhs) -> Passign (to_assignment_operator op, mk_pterm lhs, mk_pterm rhs)
     | Eif (cond, then_, else_) -> Pif (mk_pterm cond, mk_pterm then_, map_option mk_pterm else_)
     | Ebreak -> Pbreak
@@ -584,7 +588,7 @@ let extract_decls decls model =
       name = name;
       args = extract_args args;
       calledby  = map_option (fun (e, _) -> to_rexpr_calledby e) props.calledby;
-      condition = map_option (fun (items, _) -> List.map (fun a -> to_label_pterm a) items) props.condition;
+      require = map_option (fun (items, _) -> List.map (fun a -> to_label_pterm a) items) props.require;
       transition = None;
       functions = List.map (fun x -> let loc, f = deloc x in mk_function loc f) props.functions;
       verification = map_option mk_verification props.verif;

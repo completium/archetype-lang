@@ -3,6 +3,7 @@ archetype hello
 variable name string
 
 action main (str : string) = {
-  effect
+  effect {
     name := str
+  }
 }

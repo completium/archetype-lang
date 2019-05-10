@@ -28,25 +28,25 @@ transition abort from Created = {
 }
 
 transition confirm from Created = {
-  to Confirmed when balance = price + penalty
+  to Confirmed when { balance = price + penalty }
 }
 
 transition complete from Confirmed = {
   called by oracle
 
-  to Completed when now < deadline
-  with effect (
+  to Completed when { now < deadline }
+  with effect {
     transfer price;
     transfer back penalty
-  )
+  }
 }
 
 transition cancel from Confirmed = {
   called by oracle
 
   to Canceled
-  with effect (
+  with effect {
     transfer penalty;
     transfer back price
-  )
+  }
 }

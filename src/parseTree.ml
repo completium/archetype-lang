@@ -115,6 +115,8 @@ type expr_unloc =
   | Edot          of expr * lident
   | Eapp          of expr * expr list
   | Etransfer     of expr * bool * qualid option
+  | Erequire      of expr
+  | Efailif       of expr
   | Eassign       of assignment_operator * expr * expr
   | Eif           of expr * expr * expr option
   | Ebreak
@@ -203,9 +205,9 @@ type s_function = {
 [@@deriving yojson, show {with_path = false}]
 
 type action_properties = {
-  verif      : verification option;
   calledby   : (expr * exts) option;
-  condition  : (label_exprs * exts) option;
+  require    : (label_exprs * exts) option;
+  verif      : verification option;
   functions  : (s_function loced) list;
 }
 [@@deriving yojson, show {with_path = false}]

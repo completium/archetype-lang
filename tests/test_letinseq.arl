@@ -1,6 +1,7 @@
 action tr = {
-  effect
+  effect {
     let x = 0 in
       foo;
       bar
+  }
 }

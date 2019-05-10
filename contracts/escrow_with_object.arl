@@ -43,20 +43,22 @@ transition abort from Created = {
 }
 
 transition[%signedbyall [{buyer}; {seller}]] confirm from Created = {
-  to Confirmed when balance = price + penalty
+  to Confirmed when { balance = price + penalty }
 }
 
 transition finalize (task : taskStatus) from any = {
   to Transferred
-  when task.date <= deadline and task.status
-  with effect (
+  when { task.date <= deadline and task.status }
+  with effect {
     transfer price;
-    transfer back penalty)
+    transfer back penalty
+  }
 
   to Canceled
-  with effect (
+  with effect {
     transfer penalty;
-    transfer back price)
+    transfer back price
+  }
 }
 
 specification {

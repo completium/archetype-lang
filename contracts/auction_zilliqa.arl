@@ -31,10 +31,11 @@ specification {
 
 action place_bid = {
 
-  condition
+  require {
     c1 : auction_start <= now <= auction_end
+  }
 
-  effect
+  effect {
     if pending_return.contains caller
     then
       let bid = (pending_return.get caller).val in
@@ -65,21 +66,24 @@ action place_bid = {
         highest_bidder := caller)
       else fail (* no need to add bidder since there will
                            be nothing to withdraw *)
-
+  }
 }
 
 (* onlyonce extension specifies that one cannot withdraw more than once *)
 action[%onlyonce] withdraw = {
-  condition
+  require {
     c2 : pending_returns.contains caller
-  effect
+  }
+  effect {
     transfer (pending_returns.get caller).val to caller;
     pending_return.remove caller
+  }
 }
 
 transition endAuction from Open = {
   to Closed
-  when now > auction_end
-  with effect
+  when { now > auction_end }
+  with effect {
     transfer highest_bid to beneficiary
+  }
 }

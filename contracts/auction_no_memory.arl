@@ -6,11 +6,13 @@ variable incumbent address
 variable deadline date = 2019-01-01T00:00:00
 
 action place_bid (id : address) (b : tez) = {
-   condition
+   require {
       c1 : now < deadline;
       c2 : b > bid
+   }
 
-   effect
+   effect {
       incumbent := caller;
       bid := transferred
+   }
 }
