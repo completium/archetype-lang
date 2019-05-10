@@ -174,10 +174,13 @@ theory AssetCollection
 
   predicate is_empty (c : acol) = forall m : key. not (mem m c)
 
+  axiom zero_length : forall c : acol. is_empty c -> length c = 0
+
   val function witness : key
 
   let function nth (i : key) (c : acol) : key 
   ensures { 0 <= i < length c -> result <> witness }
+  ensures { 0 <= i < length c -> mem result c }
   = 
   match nth i c with
   | Some v -> v
@@ -189,8 +192,13 @@ theory AssetCollection
   axiom inj_nth : forall i j : int, c : acol.
     0 <= i < length c ->
     0 <= j < length c ->
+    i = j <-> nth i c = nth j c
+
+  axiom inj_nth2 : forall i j : int, c : acol.
+    0 <= i < length c ->
+    0 <= j < length c ->
     i <> j ->
-    nth i c <> nth j c
+    nth i c <> nth j c  
 
   predicate subset (c1 c2 : acol)
   = forall k : key. mem k c1 -> mem k c2
@@ -275,7 +283,7 @@ theory Sum
 
   lemma part_sum_def_non_empty :
     forall s : storage, c: acol, i j : int.
-    i < j -> part_sum s c i j = f s i + part_sum s c (i+1) j
+    i < j -> part_sum s c i j = f s (nth i c) + part_sum s c (i+1) j
 
   lemma part_sum_right_extension:
     forall s : storage, c : acol, i j : int.
@@ -327,7 +335,7 @@ theory Trace
 
   type action =
   | Add
-  | Rm
+  | Rm 
   | Get
   | Update field
   | Loop
