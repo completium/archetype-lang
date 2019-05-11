@@ -163,6 +163,10 @@ let main () =
     close dispose channel;
     Printf.eprintf "%s%s.\n" msg (match l with | None -> "" | Some l -> (Location.tostring l));
     exit 1
+  | Reduce.ErrorAcceptTransfer (str, loc, locs) ->
+    close dispose channel;
+    Printf.eprintf "Error: accept transfer must be set to '%s' at %s because 'transferred' is read at %s.\n" str (Location.tostring loc) (List.fold_right (fun i accu -> (Location.tostring i) ^ accu) locs "");
+    exit 1
 
 (* -------------------------------------------------------------------- *)
 let _ = main ()

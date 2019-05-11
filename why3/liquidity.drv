@@ -175,6 +175,7 @@ end
 module liquidity.Msg
 
   syntax val required                "\"required\""
+  syntax val not_accept_transfer     "\"not_accept_transfer\""
   syntax val not_found               "\"not found\""
   syntax val check_condition_failed  "\"check condition failed\""
   syntax val not_valid_state         "\"not_valid_state\""
@@ -236,6 +237,7 @@ module liquidity.Current
   syntax val failwith  "Current.failwith %1"
   syntax val sender    "Current.sender %1"
   syntax val balance   "Current.balance %1"
+  syntax val amount    "Current.amount %1"
   syntax val time_     "Current.time %1"
 
 end

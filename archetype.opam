@@ -3,9 +3,9 @@ maintainer: "The Archetype development team <archetype-dev@edukera.com>"
 authors: ["Benoit Rognier <benoit.rognier@edukera.com>"
           "Guillaume Duhamel <guillaume.duhamel@edukera.com>"
           "Pierre-Yves Strub <pierre-yves.strub@polytechnique.edu>"]
-homepage: "https://github.com/edukera/solidity-parser-ocaml"
-bug-reports: "https://github.com/edukera/solidity-parser-ocaml/issues"
-dev-repo: "git+https://github.com/edukera/solidity-parser-ocaml.git"
+homepage: "https://github.com/edukera/archetype-lang"
+bug-reports: "https://github.com/edukera/archetype-lang/issues"
+dev-repo: "git+https://github.com/edukera/archetype-lang.git"
 license: "MIT"
 
 build: [

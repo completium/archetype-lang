@@ -7,10 +7,11 @@
   let error ?loc code = raise (ParseError (loc, code))
 
   let dummy_action_properties = {
-      calledby      = None;
-      require       = None;
-      functions     = [];
-      verif         = None;
+      calledby        = None;
+      accept_transfer = false;
+      require         = None;
+      functions       = [];
+      verif           = None;
     }
 
   let rec split_seq e =
@@ -125,6 +126,7 @@
 %token MULT
 %token DIV
 %token UNDERSCORE
+%token ACCEPT_TRANSFER
 %token OP_SPEC1
 %token OP_SPEC2
 %token EOF
@@ -508,13 +510,14 @@ transition:
 | EQUAL LBRACE xs=action_properties e=effect? RBRACE { (xs, e) }
 
 action_properties:
-  cb=calledby? cs=require? sp=verification_fun? fs=function_item*
+  cb=calledby? at=boption(ACCEPT_TRANSFER) cs=require? sp=verification_fun? fs=function_item*
   {
     {
-      verif         = sp;
-      calledby      = cb;
-      require       = cs;
-      functions     = fs;
+      verif           = sp;
+      calledby        = cb;
+      accept_transfer = at;
+      require         = cs;
+      functions       = fs;
     }
   }
 

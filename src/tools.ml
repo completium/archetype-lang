@@ -13,6 +13,10 @@ let map_option f = function
   | Some x -> Some (f x)
   | None -> None
 
+  let map_option_neutral f n = function
+  | Some x -> f x
+  | None -> n
+
 let map_list = function
   | Some l -> l
   | None -> []

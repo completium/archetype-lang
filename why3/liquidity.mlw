@@ -190,6 +190,7 @@ theory Msg
   type msg
 
   val required                 unit : msg
+  val not_accept_transfer      unit : msg
   val not_found                unit : msg
   val check_condition_failed   unit : msg
   val not_valid_state          unit : msg
@@ -209,6 +210,7 @@ theory Current
 
   val sender   unit   : address
   val balance  unit   : tez
+  val amount   unit   : tez
   val time_    unit   : timestamp
 
   exception Side

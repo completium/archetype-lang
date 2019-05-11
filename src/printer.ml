@@ -769,6 +769,8 @@ let pp_action_properties fmt (props : action_properties) =
       Format.fprintf fmt "called by%a %a@\n"
         pp_extensions exts
         (pp_expr e_default PNone) e) props.calledby;
+  if (props.accept_transfer)
+  then Format.fprintf fmt "accept transfer@\n";
   map_option (fun (cs, exts) ->
       Format.fprintf fmt "require%a{@\n@[<v 2>  %a@]}@\n"
         pp_extensions exts

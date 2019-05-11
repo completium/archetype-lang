@@ -436,16 +436,17 @@ let dummy_function = {
 }
 
 let dummy_transaction = {
-  name         = lstr "";
-  args         = [];
-  calledby     = None;
-  require      = None;
-  transition   = None;
-  functions    = [];
-  verification = None;
-  effect       = None;
-  side         = false;
-  loc          = Location.dummy;
+  name            = lstr "";
+  args            = [];
+  calledby        = None;
+  accept_transfer = false;
+  require         = None;
+  transition      = None;
+  functions       = [];
+  verification    = None;
+  effect          = None;
+  side            = false;
+  loc             = Location.dummy;
 }
 
 let mk_arg (s,t) = { name = lstr s ; typ = t; default = None ; loc = Location.dummy }
@@ -880,6 +881,7 @@ let pCurrent s = pGen "Current" s []
 let pCurrentSender  = pCurrent "sender"
 let pCurrentBalance = pCurrent "balance"
 let pCurrentTime    = pCurrent "time_"
+let pCurrentAmount  = pCurrent "amount"
 
 (*
 let[@inline] get_owner (p: storage * address) : (address * owner) =
@@ -1760,11 +1762,12 @@ let rec process_rec (acc : process_acc) (pterm : Model.pterm) : process_data =
     let t, ret =
       begin
         match c with
-        | Cbalance -> loc_pterm (pCurrentBalance), Tez
-        | Cnow     -> loc_pterm (pCurrentTime),    Timestamp
-        | Ccaller  -> loc_pterm (pCurrentSender),  Address
-        | Cstate   -> loc_pterm s_state,           None
-        | _ -> model_pterm_to_pterm pterm, Const c
+        | Cbalance     -> loc_pterm (pCurrentBalance), Tez
+        | Ctransferred -> loc_pterm (pCurrentAmount),  Tez
+        | Cnow         -> loc_pterm (pCurrentTime),    Timestamp
+        | Ccaller      -> loc_pterm (pCurrentSender),  Address
+        | Cstate       -> loc_pterm s_state,           None
+        | _            -> model_pterm_to_pterm pterm,  Const c
       end in
     {
       dummy_process_data with
@@ -2068,7 +2071,7 @@ let transform_transaction (info : info) (m : model_unloc) (t : Model.transaction
     name         = t.name;
     args         = args;
     calledby     = None;
-    require    = None;
+    require      = None;
     transition   = None;
     verification = None;
     effect       = Some action;

@@ -379,16 +379,17 @@ type transition = {
 [@@deriving show {with_path = false}]
 
 type ('id,'typ,'pattern,'term) gen_transaction = {
-  name         : lident;
-  args         : (('typ, bval) gen_decl) list;
-  calledby     : rexpr option;
-  require      : label_pterm list option;
-  transition   : transition option;
-  functions    : function_ list;
-  verification : verification option;
-  effect       : ('id,'typ,'pattern,'term) poly_pterm loced option;
-  side         : bool;
-  loc          : Location.t [@opaque];
+  name            : lident;
+  args            : (('typ, bval) gen_decl) list;
+  calledby        : rexpr option;
+  accept_transfer : bool;
+  require         : label_pterm list option;
+  transition      : transition option;
+  functions       : function_ list;
+  verification    : verification option;
+  effect          : ('id,'typ,'pattern,'term) poly_pterm loced option;
+  side            : bool;
+  loc             : Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]
 
