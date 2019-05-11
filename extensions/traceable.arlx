@@ -5,8 +5,8 @@ archetype extension traceable (
 ) = {
 
   action transfer_<%anamount> = {
-    accept transfer
     called by fromP
+    accept transfer
     require {
       c1 : transferred = anamount
     }
