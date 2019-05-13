@@ -129,6 +129,8 @@
 %token ACCEPT_TRANSFER
 %token OP_SPEC1
 %token OP_SPEC2
+%token OP_SPEC3
+%token OP_SPEC4
 %token EOF
 %token FAILIF
 %token REQUIRE
@@ -154,7 +156,7 @@
 
 %nonassoc COLONEQUAL PLUSEQUAL MINUSEQUAL MULTEQUAL DIVEQUAL ANDEQUAL OREQUAL
 
-%nonassoc OP_SPEC1 OP_SPEC2
+%nonassoc OP_SPEC1 OP_SPEC2 OP_SPEC3 OP_SPEC4
 
 %right IMPLY
 %nonassoc EQUIV
@@ -754,6 +756,8 @@ record_item:
 %inline spec_operator:
  | OP_SPEC1   { OpSpec1 }
  | OP_SPEC2   { OpSpec2 }
+ | OP_SPEC3   { OpSpec3 }
+ | OP_SPEC4   { OpSpec4 }
 
 %inline logical_operator:
  | AND   { And }
