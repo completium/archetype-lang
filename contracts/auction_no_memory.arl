@@ -12,7 +12,7 @@ action place_bid (id : address) (b : tez) = {
    }
 
    effect {
-      incumbent := caller;
-      bid := transferred
+      incumbent = caller;
+      bid = transferred
    }
 }

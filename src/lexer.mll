@@ -154,7 +154,6 @@ rule token = parse
   | "%"                   { PERCENT }
   | "|"                   { PIPE }
   | "."                   { DOT }
-  | ":="                  { COLONEQUAL }
   | "+="                  { PLUSEQUAL }
   | "-="                  { MINUSEQUAL }
   | "*="                  { MULTEQUAL }
@@ -163,6 +162,7 @@ rule token = parse
   | "|="                  { OREQUAL }
   | "->"                  { IMPLY }
   | "<->"                 { EQUIV }
+  | "=="                  { EQUALEQUAL }
   | "<>"                  { NEQUAL }
   | "<"                   { LESS }
   | "<="                  { LESSEQUAL }

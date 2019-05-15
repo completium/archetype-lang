@@ -24,7 +24,7 @@ asset submission = {
 states =
  | Created     initial
  | InProgress
- | Done        with { s1 : balance = 0 }
+ | Done        with { s1 : balance == 0 }
  | Closed
 
 transition confirm from Created = {
@@ -33,7 +33,7 @@ transition confirm from Created = {
 
 action submit (competitor : competitor) (score[%signedby oracle] : uint) = {
   require {
-    c1 : state = InProgress
+    c1 : state == InProgress
   }
 
   effect {

@@ -143,7 +143,6 @@ type comparison_operator =
 
 type assignment_operator =
   | ValueAssign
-  | SimpleAssign
   | PlusAssign
   | MinusAssign
   | MultAssign
@@ -560,7 +559,6 @@ let pattern_map f fi ft fr fq = function
 
 let assignment_operator_to_str = function
   | ValueAssign -> "value"
-  | SimpleAssign -> "simple"
   | PlusAssign -> "plus"
   | MinusAssign -> "minus"
   | MultAssign -> "mult"

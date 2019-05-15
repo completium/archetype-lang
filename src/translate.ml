@@ -128,7 +128,6 @@ let to_arithmetic_operator (op : ParseTree.arithmetic_operator) : Model.arithmet
 let to_assignment_operator (op : ParseTree.assignment_operator) : Model.assignment_operator =
   match op with
   | ValueAssign -> ValueAssign
-  | SimpleAssign -> SimpleAssign
   | PlusAssign -> PlusAssign
   | MinusAssign -> MinusAssign
   | MultAssign -> MultAssign

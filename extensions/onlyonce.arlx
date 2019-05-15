@@ -11,7 +11,7 @@ archetype extension onlyonce (
         call_count += 1
       }
       invariant loop = {
-        i1 : requires -> call_count = 0;
+        i1 : requires -> call_count == 0;
         i2 : call_count <= 1
       }
       specification {

@@ -1276,7 +1276,6 @@ let retrieve_id_from_storage acc id =
 let compute_value_from_operator op assigned v =
   match op with
   | ValueAssign  -> v
-  | SimpleAssign -> v
   | PlusAssign   -> dumloc (Parith   (Plus,  assigned, v))
   | MinusAssign  -> dumloc (Parith   (Minus, assigned, v))
   | MultAssign   -> dumloc (Parith   (Mult,  assigned, v))

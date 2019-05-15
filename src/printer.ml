@@ -3,7 +3,7 @@ open Core
 open Location
 open ParseTree
 
-exception TODO
+exception Anomaly of string
 
 let pp_str fmt str =
   Format.fprintf fmt "%s" str
@@ -88,7 +88,7 @@ let e_imply         =  (40,  Right)    (* ->  *)
 let e_equiv         =  (50,  NonAssoc) (* <-> *)
 let e_and           =  (60,  Left)     (* and *)
 let e_or            =  (70,  Left)     (* or  *)
-let e_equal         =  (80,  NonAssoc) (* =   *)
+let e_equal         =  (80,  NonAssoc) (* ==  *)
 let e_nequal        =  (80,  NonAssoc) (* <>  *)
 let e_gt            =  (90,  Left)     (* >   *)
 let e_ge            =  (90,  Left)     (* >=  *)
@@ -139,7 +139,6 @@ let get_prec_from_operator (op : operator) =
 let get_prec_from_assignment_operator (op : assignment_operator) =
   match op with
   | ValueAssign  -> e_assign_simple
-  | SimpleAssign -> e_assign_simple
   | PlusAssign   -> e_assign_plus
   | MinusAssign  -> e_assign_minus
   | MultAssign   -> e_assign_mult
@@ -152,6 +151,8 @@ let maybe_paren outer inner pos pp =
 let c =
 match (outer, inner, pos) with
   | ((o, Right), (i, Right), PLeft) when o >= i -> true
+  | ((o, Right), (i, NonAssoc), _) when o >= i -> true
+  | ((o, Right), (i, Left), _) when o >= i -> true
   | ((o, Left), (i, Left), _) when o >= i -> true
   | ((o, NonAssoc), (i, _), _) when o >= i -> true
   | _ -> false
@@ -231,7 +232,7 @@ match op with
 
 let comparison_operator_to_str op =
 match op with
-  | Equal  -> "="
+  | Equal  -> "=="
   | Nequal -> "<>"
   | Gt     -> ">"
   | Ge     -> ">="
@@ -266,7 +267,6 @@ let pp_operator fmt op =
 let assignment_operator_to_str op =
 match op with
   | ValueAssign  -> "="
-  | SimpleAssign -> ":="
   | PlusAssign   -> "+="
   | MinusAssign  -> "-="
   | MultAssign   -> "*="
@@ -377,21 +377,43 @@ let rec pp_expr outer pos fmt a =
         (pp_expr prec PRight) b
     in
     (maybe_paren outer (get_prec_from_operator op) pos pp) fmt (op, a, b)
-| Eapp _ -> raise TODO
 
-  (* | Eapp (e, args) ->
+  | Eapp (Foperator {pldesc = op; _}, [a]) ->
 
-    let pp fmt (e, args) =
+    let pp fmt (op, a) =
+      let prec = get_prec_from_operator op in
+      Format.fprintf fmt "%a %a"
+        pp_operator op
+        (pp_expr prec PRight) a
+    in
+    (maybe_paren outer (get_prec_from_operator op) pos pp) fmt (op, a)
+
+  | Eapp (Foperator _, _) -> raise (Anomaly "Eapp")
+
+  | Eapp (Fident id, args) ->
+
+    let pp fmt (id, args) =
       Format.fprintf fmt "%a%a"
-        pp_simple_expr e
+        pp_id id
         (fun fmt args ->
            match args with
            | [] -> Format.fprintf fmt "()"
            | _ -> Format.fprintf fmt " %a" (pp_list " " pp_simple_expr) args) args
     in
-    (maybe_paren outer e_app pos pp) fmt (e, args) *)
+    (maybe_paren outer e_app pos pp) fmt (id, args)
 
-  | Emethod _ -> raise TODO
+  | Emethod (e, id, args) ->
+
+    let pp fmt (e, id, args) =
+      Format.fprintf fmt "%a.%a%a"
+        pp_simple_expr e
+        pp_id id
+        (fun fmt args ->
+           match args with
+           | [] -> Format.fprintf fmt "()"
+           | _ -> Format.fprintf fmt " %a" (pp_list " " pp_simple_expr) args) args
+    in
+    (maybe_paren outer e_app pos pp) fmt (e, id, args)
 
   | Etransfer (x, back, to_value) ->
 

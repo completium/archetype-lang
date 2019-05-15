@@ -28,7 +28,7 @@ states =
 
 transition[%signedbyall [shipper, receiver]] sign from Created = {
   to Signed
-  when { balance = payment + incentiveR + incentiveS }
+  when { balance == payment + incentiveR + incentiveS }
 }
 
 transition unilateral_abort from Created = {
@@ -58,7 +58,7 @@ transition confirm from Signed = {
 
   to Delivered
   with effect {
-     deliveryDate := now;
+     deliveryDate = now;
      transfer back incentiveR;
      transfer payment;
      transfer back incentiveS

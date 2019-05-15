@@ -68,7 +68,6 @@ type unary_operator =
 
 type assignment_operator =
   | ValueAssign
-  | SimpleAssign
   | PlusAssign
   | MinusAssign
   | MultAssign

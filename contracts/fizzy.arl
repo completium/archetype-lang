@@ -46,7 +46,7 @@ action updatestatus (fi : string) (arrival : date) = {
         match i.status with
         | Created ->
            if arrival > i.limit
-           then i.status := After
+           then i.status = After
         | _ -> none
         end
     }
@@ -58,9 +58,9 @@ action manual (fi : string) (pr : string) (newst : status) = {
 
     effect {
       let f = flight.get fi in
-      for (i in f.insurances.select(product = pr))
+      for (i in f.insurances.select(product == pr))
         match i.status with
-         | Created -> i.status := newst
+         | Created -> i.status = newst
          | _ -> none
         end
     }

@@ -55,16 +55,16 @@ transition assign_owner on ok : order from any = {
   to Owner_assigned
   with effect {
     (* set vehicule state *)
-    (order.get ok).vehicule.state := Active;
+    (order.get ok).vehicule.state = Active;
     (* set vehicule owner *)
-    (order.get ok).vehicule.owner := order.orderer
+    (order.get ok).vehicule.owner = order.orderer
   }
 }
 
 action vehiculeTransfer (buyer : owner) (vehicule : vehicule) = {
   called by [%delegable] vehicule.owner
   effect {
-    vehicule.owner := buyer
+    vehicule.owner = buyer
   }
 }
 
@@ -77,6 +77,6 @@ transition scrapVehicle on vk : vehicule from (Off_the_road or Active) = {
 action scrapVehiclebyColor (color : string) = {
   effect {
     for (v in vehicule.select(vehicule.color = color))
-      v.state := Scrapped
+      v.state = Scrapped
   }
 }

@@ -100,7 +100,6 @@
 %token PERCENT
 %token PIPE
 %token DOT
-%token COLONEQUAL
 %token PLUSEQUAL
 %token MINUSEQUAL
 %token MULTEQUAL
@@ -116,6 +115,7 @@
 %token FALSE
 %token IMPLY
 %token EQUIV
+%token EQUALEQUAL
 %token NEQUAL
 %token LESS
 %token LESSEQUAL
@@ -154,7 +154,7 @@
 
 %nonassoc COLON
 
-%nonassoc COLONEQUAL PLUSEQUAL MINUSEQUAL MULTEQUAL DIVEQUAL ANDEQUAL OREQUAL
+%nonassoc EQUAL PLUSEQUAL MINUSEQUAL MULTEQUAL DIVEQUAL ANDEQUAL OREQUAL
 
 %nonassoc OP_SPEC1 OP_SPEC2 OP_SPEC3 OP_SPEC4
 
@@ -164,7 +164,7 @@
 %left OR
 %left AND
 
-%nonassoc EQUAL NEQUAL
+%nonassoc EQUALEQUAL NEQUAL
 %nonassoc prec_order
 %left GREATER GREATEREQUAL LESS LESSEQUAL
 
@@ -554,19 +554,14 @@ effect:
      COLON ty=type_t RPAREN
        { (id, Some ty, exts) }
 
-%inline assignment_value_operator:
- | EQUAL                  { ValueAssign }
- | op=assignment_operator { op }
-
 %inline assignment_operator:
- | COLONEQUAL  { SimpleAssign }
+ | EQUAL       { ValueAssign }
  | PLUSEQUAL   { PlusAssign }
  | MINUSEQUAL  { MinusAssign }
  | MULTEQUAL   { MultAssign }
  | DIVEQUAL    { DivAssign }
  | ANDEQUAL    { AndAssign }
  | OREQUAL     { OrAssign }
-
 
 qualid:
  | i=ident              { Qident i }
@@ -745,7 +740,7 @@ literal:
 
 record_item:
  | e=simple_expr { (None, e) }
- | id=ident op=assignment_value_operator e=simple_expr
+ | id=ident op=assignment_operator e=simple_expr
    { (Some (op, id), e) }
 
 %inline quantifier:
@@ -765,7 +760,7 @@ record_item:
  | EQUIV { Equiv }
 
 %inline comparison_operator:
- | EQUAL        { Equal }
+ | EQUALEQUAL   { Equal }
  | NEQUAL       { Nequal }
 
 %inline ordering_operator:

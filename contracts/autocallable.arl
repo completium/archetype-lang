@@ -154,8 +154,8 @@ function compute_expected (d : date) : tez = {
            and v.ubs >= e.trigger * ubs_initial
         then (
            expected += e.value * nominal;
-           redem_date := e.observation;
-           terminated := true
+           redem_date = e.observation;
+           terminated = true
         )
       else (* no need to check future observation *)
         break
@@ -184,7 +184,7 @@ function compute_expected (d : date) : tez = {
         if     v.bac >= i.barrier * bac_initial
            and v.sg  >= i.barrier * sg_initial
            and v.ubs >= i.barrier * ubs_initial
-        then exp_interests := i.rate * nominal
+        then exp_interests = i.rate * nominal
     );
     expected += exp_interests;
     return expected
@@ -218,7 +218,7 @@ states =
 (** Used by owner to confirm transaction. It transfers the price of contract (nominal) *)
 transition confirm from Created = {
    called by owner
-   to Confirmed when { transferred = nominal }
+   to Confirmed when { transferred == nominal }
 }
 
 transition cancel from Created = {

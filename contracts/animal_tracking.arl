@@ -37,7 +37,7 @@ transition transit (fk : string) on ak : animal from In_field = {
 transition arrival (toField : field) on ak : animal from In_transit = {
   to In_field
   with effect {
-    (animal.get ak).field := toField;
+    (animal.get ak).field = toField;
     toField.business.incomingAnimals.remove ak
   }
 }

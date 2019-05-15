@@ -16,7 +16,7 @@ action transferTokens (th : tokenHolder) (quantity : uint) = {
   called by th.holder
 
   specification {
-    s1 : before tokenHolder.sum(tokens) = tokenHolder.sum(tokens)
+    s1 : before tokenHolder.sum(tokens) == tokenHolder.sum(tokens)
   }
 
   effect {

@@ -30,9 +30,9 @@ states =
  | Created initial
  | Aborted
  | Confirmed
- | Canceled    with { s1 : balance = 0 }
- | Transferred with { s2 : transferred_to(buyer) = price;
-                      s3 : balance = 0;
+ | Canceled    with { s1 : balance == 0 }
+ | Transferred with { s2 : transferred_to(buyer) == price;
+                      s3 : balance == 0;
                       s4 : needs oracle
                     }
 
@@ -43,7 +43,7 @@ transition abort from Created = {
 }
 
 transition[%signedbyall [{buyer}; {seller}]] confirm from Created = {
-  to Confirmed when { balance = price + penalty }
+  to Confirmed when { balance == price + penalty }
 }
 
 transition finalize (task : taskStatus) from any = {
@@ -62,7 +62,7 @@ transition finalize (task : taskStatus) from any = {
 }
 
 specification {
-  s1 : state = Transferred or state = Canceled -> balance = 0;
-  s2 : state = Transferred or state = Canceled -> needs oracle;
-  s3 : state = Transferred -> receives buyer = price
+  s1 : state == Transferred or state == Canceled -> balance == 0;
+  s2 : state == Transferred or state == Canceled -> needs oracle;
+  s3 : state == Transferred -> receives buyer == price
 }

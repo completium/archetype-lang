@@ -8,7 +8,7 @@ archetype extension traceable (
     called by fromP
     accept transfer
     require {
-      c1 : transferred = anamount
+      c1 : transferred == anamount
     }
   }
 }
