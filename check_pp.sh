@@ -18,7 +18,7 @@ process () {
 	      echo -ne "\033[32m OK \033[0m"
 
         OUT=$i.out
-        $BIN -PP $i | $BIN -P > $OUT 2> /dev/null
+        $BIN -PP $i 2> /dev/null | $BIN -P > $OUT 2> /dev/null
         RET=`echo $?`
         if [ ${RET} -eq 0 ]; then
     	      echo -ne "     \033[32m OK \033[0m"

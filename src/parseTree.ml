@@ -109,13 +109,13 @@ type pattern = pattern_unloc loced
 
 type expr_unloc =
   | Eterm         of name
-  | Eop           of operator
   | Eliteral      of literal
   | Earray        of expr list
   | Erecord       of record_item list
   | Etuple        of expr list
   | Edot          of expr * lident
-  | Eapp          of expr * expr list
+  | Eapp          of function_ * expr list
+  | Emethod       of expr * lident * expr list
   | Etransfer     of expr * bool * qualid option
   | Erequire      of expr
   | Efailif       of expr
@@ -131,6 +131,10 @@ type expr_unloc =
   | Equantifier   of quantifier * lident_typ * expr
   | Elabel        of lident * expr
 [@@deriving yojson, show {with_path = false}]
+
+and function_ =
+  | Fident of lident
+  | Foperator of operator loced
 
 and literal =
   | Lnumber   of Core.big_int

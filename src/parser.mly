@@ -656,29 +656,28 @@ expr_r:
  | x=order_operations %prec prec_order { x }
 
  | e1=expr op=loc(bin_operator) e2=expr
-     { let loc = Location.make $startpos $endpos in
-       Eapp ( mkloc loc (Eop (unloc op)), [e1; e2]) }
+     { Eapp ( Foperator op, [e1; e2]) }
 
  | op=loc(un_operator) x=expr
-     { let loc = Location.make $startpos $endpos in
-       Eapp ( mkloc loc (Eop (unloc op)), [x]) }
+     { Eapp ( Foperator op, [x]) }
 
- | x=simple_expr a=app_args
-     { Eapp (x, a) }
+ | id=ident a=app_args
+     { Eapp ( Fident id, a) }
+
+ | x=simple_expr DOT id=ident a=app_args
+     { Emethod (x, id, a) }
 
  | x=simple_expr_r
      { x }
 
 order_operation:
  | e1=expr op=loc(ord_operator) e2=expr
-     { let loc = Location.make $startpos $endpos in
-       Eapp ( mkloc loc (Eop (unloc op)), [e1; e2]) }
+     { Eapp ( Foperator op, [e1; e2]) }
 
 order_operations:
  | e=order_operation { e }
  | e1=loc(order_operations) op=loc(ord_operator) e2=expr
-    { let loc = Location.make $startpos $endpos in
-       Eapp ( mkloc loc (Eop (unloc op)), [e1; e2]) }
+    { Eapp ( Foperator op, [e1; e2]) }
 
 %inline app_args:
  | LPAREN RPAREN     { [] }

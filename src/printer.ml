@@ -3,6 +3,8 @@ open Core
 open Location
 open ParseTree
 
+exception TODO
+
 let pp_str fmt str =
   Format.fprintf fmt "%s" str
 
@@ -310,16 +312,6 @@ let rec pp_expr outer pos fmt a =
      | _ -> pp)
      fmt (e, id)
 
-
-  | Eop op ->
-
-    let pp fmt op =
-      Format.fprintf fmt "%a"
-        pp_operator op
-    in
-    pp fmt op
-
-
   | Eliteral x ->
 
     let pp fmt x =
@@ -375,7 +367,7 @@ let rec pp_expr outer pos fmt a =
     (maybe_paren outer e_comma pos pp) fmt l
 
 
-  | Eapp ({pldesc = Eop op; _}, [a; b]) ->
+  | Eapp (Foperator {pldesc = op; _}, [a; b]) ->
 
     let pp fmt (op, a, b) =
       let prec = get_prec_from_operator op in
@@ -385,9 +377,9 @@ let rec pp_expr outer pos fmt a =
         (pp_expr prec PRight) b
     in
     (maybe_paren outer (get_prec_from_operator op) pos pp) fmt (op, a, b)
+| Eapp _ -> raise TODO
 
-
-  | Eapp (e, args) ->
+  (* | Eapp (e, args) ->
 
     let pp fmt (e, args) =
       Format.fprintf fmt "%a%a"
@@ -397,7 +389,9 @@ let rec pp_expr outer pos fmt a =
            | [] -> Format.fprintf fmt "()"
            | _ -> Format.fprintf fmt " %a" (pp_list " " pp_simple_expr) args) args
     in
-    (maybe_paren outer e_app pos pp) fmt (e, args)
+    (maybe_paren outer e_app pos pp) fmt (e, args) *)
+
+  | Emethod _ -> raise TODO
 
   | Etransfer (x, back, to_value) ->
 
