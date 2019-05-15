@@ -287,9 +287,8 @@ let rec to_storage_type (ptyp : ptyp option) : storage_field_type =
           | Collection | Queue | Stack -> Flist t
            | Set | Subset -> Fset t)
       | Ttuple l -> Ftuple (List.map (fun x -> to_storage_type (Some x)) l)
-      | _ -> raise (Anomaly "to_storage_type1")
     )
-  | None -> raise (Anomaly "to_storage_type2")
+  | None -> raise (Anomaly "to_storage_type1")
 
 let to_storage_decl (d : decl) : record_field_type = {
   name = d.name;
@@ -935,7 +934,7 @@ type add_asset_gen_data = {
 
 let get_mk_call_function asset_name arg nb idx_start n =
   let get_arg i = Papp (Pvar ("get_" ^ (string_of_int i) ^ "_" ^ (string_of_int nb)), [Pvar arg]) in
-  Papp (Pvar (mk_fun_name (MkAsset asset_name)), Tools.int_fold (fun acc k -> acc @ [get_arg (idx_start + k)]) [] n)
+  Papp (Pvar (mk_fun_name (MkAsset asset_name)), List.int_fold (fun acc k -> acc @ [get_arg (idx_start + k)]) [] n)
 
 (*let[@inline] add (p: storage * address * string list) : storage =
   let s = get p 0 in

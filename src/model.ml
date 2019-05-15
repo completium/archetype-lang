@@ -83,7 +83,6 @@ type ptyp_unloc =
   | Tasset of lident
   | Tbuiltin of vtyp
   | Tcontainer of ptyp * container
-  | Tapp of ptyp * ptyp
   | Ttuple of ptyp list
 [@@deriving show {with_path = false}]
 

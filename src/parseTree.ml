@@ -21,7 +21,6 @@ type type_r =
   | Tref of lident
   | Tcontainer of type_t * container
   | Tvset of lident * type_t
-  | Tapp of type_t * type_t
   | Ttuple of type_t list
 [@@deriving yojson, show {with_path = false}]
 
@@ -125,7 +124,6 @@ type expr_unloc =
   | Efor          of lident * expr * expr
   | Eassert       of expr
   | Eseq          of expr * expr
-  | Efun          of lident_typ list * expr
   | Eletin        of lident_typ * expr * expr * expr option
   | Ematchwith    of expr * (pattern list * expr) list
   | Equantifier   of quantifier * lident_typ * expr

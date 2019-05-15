@@ -191,16 +191,6 @@ let rec pp_type outer pos fmt e =
            pp_id x
            pp_type_default y
 
-  | Tapp (x, y) ->
-
-    let pp fmt (x, y) =
-      Format.fprintf fmt
-        "%a -> %a"
-           (pp_type e_imply PLeft) x
-           (pp_type e_imply PRight) y
-    in
-    (maybe_paren outer e_imply pos pp) fmt (x, y)
-
   | Ttuple l ->
 
     let pp fmt l =
@@ -491,17 +481,6 @@ let rec pp_expr outer pos fmt a =
         (pp_expr e_semi_colon PRight) y
     in
     (maybe_paren outer e_semi_colon pos pp) fmt (x, y)
-
-
-  | Efun (id_ts, x) ->
-
-    let pp fmt (id_ts, x) =
-      Format.fprintf fmt "fun %a => %a"
-        (pp_list " " pp_ident_typ) id_ts
-        (pp_expr e_equal_greater PRight) x
-    in
-    (maybe_paren outer e_equal_greater pos pp) fmt (id_ts, x)
-
 
   | Eletin (id_t, e, body, other) ->
 

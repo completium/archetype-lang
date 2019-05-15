@@ -41,8 +41,6 @@
 %token ON
 %token WHEN
 %token REF
-%token FUN
-%token EQUALGREATER
 %token INITIALIZED
 %token COLLECTION
 %token QUEUE
@@ -148,7 +146,7 @@
 
 %left COMMA SEMI_COLON
 
-%nonassoc TO IN EQUALGREATER
+%nonassoc TO IN
 %right OTHERWISE
 %right THEN ELSE
 
@@ -404,7 +402,6 @@ types:
 type_r:
 | x=type_s xs=type_tuples { Ttuple (x::xs) }
 | x=type_s_unloc          { x }
-| x=type_t IMPLY y=type_t { Tapp (x, y) }
 
 %inline type_s:
 | x=loc(type_s_unloc)     { x }
@@ -618,9 +615,6 @@ expr_r:
  | label=ident COLON e=expr
      { Elabel (label, e) }
 
- | FUN xs=ident_typs EQUALGREATER x=expr
-     { Efun (xs, x) }
-
  | ASSERT x=paren(expr)
      { Eassert x }
 
@@ -710,20 +704,6 @@ simple_expr_r:
 
  | x=paren(expr_r)
      { x }
-
-%inline ident_typs:
- | xs=ident+ COLON ty=type_t
-     { List.map (fun x -> (x, Some ty, None)) xs }
-
- | xs=ident_typ+
-     { List.flatten xs }
-
-%inline ident_typ:
- | id=ident
-     { [(id, None, None)] }
-
- | LPAREN ids=ident+ COLON ty=type_t RPAREN
-     { List.map (fun id -> (id, Some ty, None)) ids }
 
 %inline ident_typ1:
  | id=ident ty=option(COLON ty=type_t { ty })

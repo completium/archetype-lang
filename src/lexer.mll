@@ -21,7 +21,6 @@
       "on"                  , ON             ;
       "when"                , WHEN           ;
       "ref"                 , REF            ;
-      "fun"                 , FUN            ;
       "initialized"         , INITIALIZED    ;
       "collection"          , COLLECTION     ;
       "queue"               , QUEUE          ;
@@ -138,7 +137,6 @@ rule token = parse
 
   | "(*"                  { comment lexbuf; token lexbuf }
   | "\""                  { STRING (Buffer.contents (string (Buffer.create 0) lexbuf)) }
-  | "=>"                  { EQUALGREATER }
   | "::"                  { COLONCOLON }
   | "("                   { LPAREN }
   | ")"                   { RPAREN }

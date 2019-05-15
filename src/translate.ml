@@ -162,7 +162,6 @@ let rec mk_ptyp e : ptyp =
         | Some u -> Tbuiltin u
         | None -> Tasset v)
      | Tcontainer (t, container) -> Tcontainer ((mk_ptyp t), container_to_container container)
-     | Tapp (f, v) -> Tapp (mk_ptyp f, mk_ptyp v)
      | Ttuple l -> Ttuple (List.map mk_ptyp l)
      | _ -> raise (ModelError ("unsupported type: " ^ (show_type_r v), loc)))
 
@@ -250,7 +249,6 @@ let rec mk_lterm (e : expr) : lterm =
     | Efor (_, _, _) -> raise (ModelError ("\"for\" is not allowed in logical block", loc))
     | Eassert _ -> raise (ModelError ("\"assert\" is not allowed in logical block", loc))
     | Eseq (lhs, rhs) -> Lseq (mk_lterm lhs, mk_lterm rhs)
-    | Efun (args, body) -> process_fun mk_lterm mk_ltyp (fun (w, x, y, z) -> Llambda (w, x, y, z)) loc (args, body)
     | Eletin ((i, typ, _), init, body, _other) -> Lletin (i, mk_lterm init,
                                                   map_option mk_ltyp typ, mk_lterm body)
     | Ematchwith _ -> raise (ModelError ("match with is not allowed in logical block", loc))
@@ -317,7 +315,6 @@ let rec mk_pterm (e : expr) : pterm =
     | Efor (i, e, body) -> Pfor (i, mk_pterm e, mk_pterm body, None)
     | Eassert e -> Passert (mk_lterm e)
     | Eseq (lhs, rhs) -> Pseq (mk_pterm lhs, mk_pterm rhs)
-    | Efun (args, body) -> process_fun mk_pterm mk_ptyp (fun (w, x, y, z) -> Plambda (w, x, y, z)) loc (args, body)
     | Eletin ((i, typ, _), init, body, _) -> Pletin (i, mk_pterm init, map_option mk_ptyp typ, mk_pterm body)
     | Ematchwith (e, l) ->
       let ll = List.fold_left
