@@ -11,6 +11,7 @@ let opt_modelr = ref false
 let opt_modelws = ref false
 let opt_modelliq = ref false
 let opt_pterm = ref false
+let opt_pw = ref false
 let debug_mode = ref false
 
 exception Compiler_error
@@ -47,10 +48,13 @@ let compile_and_print (filename, channel) =
               then Format.printf "%a\n" Modelws.pp_model_with_storage modelws
               else (
                 let modelw3liq = Modelliq.modelws_to_modelliq info modelws in
-                if !opt_modelliq
-                then Extract.print modelw3liq
-                else ()
-              )))))))
+                if !opt_pw
+                then Format.printf "%a\n" Printer_mlw.pp_mlw modelw3liq
+                else (
+                  if !opt_modelliq
+                  then Extract.print modelw3liq
+                  else ()
+              ))))))))
 
 let close dispose channel =
   if dispose then close_in channel
@@ -65,6 +69,7 @@ let main () =
       "-R", Arg.Set opt_modelr, " Print raw model reduced";
       "-W", Arg.Set opt_modelws, " Print raw model_with_storage";
       "-L", Arg.Set opt_modelliq, " Output Archetype in liquidity";
+      "-PW", Arg.Set opt_pw, " Print mlw parse tree";
       "-T", Arg.Set opt_pterm, " Print pterm";
       "--lsp", Arg.Set opt_lsp, "LSP mode";
       "-d", Arg.Set debug_mode, " Debug mode";
