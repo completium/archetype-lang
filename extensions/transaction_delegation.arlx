@@ -37,7 +37,7 @@ archetype extension transactionDelegation (
 
     action from_addr (anasset : anAsset) = {
       require {
-        c1 : (Operator.get anasset).operator == caller
+        c1 : (Operator.get anasset).operator = caller
       }
 
       effect {

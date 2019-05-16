@@ -30,13 +30,13 @@ transition insured from Created = {
 
 transition confirm from Insured = {
   specification {
-    s1 : balance == 0
+    s1 : balance = 0
   }
 
   to Confirmed
-  when { transferred == price }
+  when { transferred = price }
   with effect {
-    maturity = now + 1Y;
+    maturity := now + 1Y;
     transfer price to issuer
   }
 }
@@ -46,7 +46,7 @@ transition repay from Confirmed = {
 
   to Repaid
   when {
-    transferred == payment
+    transferred = payment
   }
 }
 

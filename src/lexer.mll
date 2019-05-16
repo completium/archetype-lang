@@ -147,7 +147,7 @@ rule token = parse
   | "]"                   { RBRACKET }
   | "{"                   { LBRACE }
   | "}"                   { RBRACE }
-  | "="                   { EQUAL }
+  | ":="                  { COLONEQUAL }
   | ","                   { COMMA }
   | ":"                   { COLON }
   | ";"                   { SEMI_COLON }
@@ -162,7 +162,7 @@ rule token = parse
   | "|="                  { OREQUAL }
   | "->"                  { IMPLY }
   | "<->"                 { EQUIV }
-  | "=="                  { EQUALEQUAL }
+  | "="                   { EQUAL }
   | "<>"                  { NEQUAL }
   | "<"                   { LESS }
   | "<="                  { LESSEQUAL }

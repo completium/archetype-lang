@@ -93,7 +93,7 @@
 %token RBRACKET
 %token LBRACE
 %token RBRACE
-%token EQUAL
+%token COLONEQUAL
 %token COMMA
 %token COLON
 %token SEMI_COLON
@@ -115,7 +115,7 @@
 %token FALSE
 %token IMPLY
 %token EQUIV
-%token EQUALEQUAL
+%token EQUAL
 %token NEQUAL
 %token LESS
 %token LESSEQUAL
@@ -154,7 +154,7 @@
 
 %nonassoc COLON
 
-%nonassoc EQUAL PLUSEQUAL MINUSEQUAL MULTEQUAL DIVEQUAL ANDEQUAL OREQUAL
+%nonassoc COLONEQUAL PLUSEQUAL MINUSEQUAL MULTEQUAL DIVEQUAL ANDEQUAL OREQUAL
 
 %nonassoc OP_SPEC1 OP_SPEC2 OP_SPEC3 OP_SPEC4
 
@@ -164,7 +164,7 @@
 %left OR
 %left AND
 
-%nonassoc EQUALEQUAL NEQUAL
+%nonassoc EQUAL NEQUAL
 %nonassoc prec_order
 %left GREATER GREATEREQUAL LESS LESSEQUAL
 
@@ -554,14 +554,22 @@ effect:
      COLON ty=type_t RPAREN
        { (id, Some ty, exts) }
 
-%inline assignment_operator:
- | EQUAL       { ValueAssign }
+%inline assignment_operator_record:
+ | EQUAL                    { ValueAssign }
+ | op=assignment_operator_extra { op }
+
+%inline assignment_operator_expr:
+ | COLONEQUAL               { ValueAssign }
+ | op=assignment_operator_extra { op }
+
+%inline assignment_operator_extra:
  | PLUSEQUAL   { PlusAssign }
  | MINUSEQUAL  { MinusAssign }
  | MULTEQUAL   { MultAssign }
  | DIVEQUAL    { DivAssign }
  | ANDEQUAL    { AndAssign }
  | OREQUAL     { OrAssign }
+
 
 qualid:
  | i=ident              { Qident i }
@@ -636,7 +644,7 @@ expr_r:
  | xs=snl2(COMMA, simple_expr)
      { Etuple xs }
 
- | x=expr op=assignment_operator y=expr
+ | x=expr op=assignment_operator_expr y=expr
      { Eassign (op, x, y) }
 
  | TRANSFER back=boption(BACK) x=simple_expr y=ioption(to_value) %prec prec_transfer
@@ -740,7 +748,7 @@ literal:
 
 record_item:
  | e=simple_expr { (None, e) }
- | id=ident op=assignment_operator e=simple_expr
+ | id=ident op=assignment_operator_record e=simple_expr
    { (Some (op, id), e) }
 
 %inline quantifier:
@@ -760,7 +768,7 @@ record_item:
  | EQUIV { Equiv }
 
 %inline comparison_operator:
- | EQUALEQUAL   { Equal }
+ | EQUAL        { Equal }
  | NEQUAL       { Nequal }
 
 %inline ordering_operator:

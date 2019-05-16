@@ -18,7 +18,7 @@ action place_bid = {
 
   effect {
     bid.add { incumbent = caller; value = transferred };
-    max_bid = max transferred max_bid
+    max_bid := max transferred max_bid
   }
 }
 

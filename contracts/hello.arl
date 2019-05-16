@@ -4,6 +4,6 @@ variable name string
 
 action main (str : string) = {
   effect {
-    name = str
+    name := str
   }
 }

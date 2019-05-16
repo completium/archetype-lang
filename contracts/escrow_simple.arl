@@ -28,7 +28,7 @@ transition abort from Created = {
 }
 
 transition confirm from Created = {
-  to Confirmed when { balance == price + penalty }
+  to Confirmed when { balance = price + penalty }
 }
 
 transition complete from Confirmed = {

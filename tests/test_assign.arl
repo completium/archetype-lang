@@ -12,7 +12,7 @@ asset myasset identified by id = {
 
 action main = {
   effect {
-    i = 1;
-    (myasset.get 1).cpt = 1
+    i := 1;
+    (myasset.get 1).cpt := 1
   }
 }

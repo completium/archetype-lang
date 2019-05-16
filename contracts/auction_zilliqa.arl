@@ -47,8 +47,8 @@ action place_bid = {
                              val       = highest_bid };
         pending_return.remove caller;
         (* update highest *)
-        highest_bid    = new_bid;
-        highest_bidder = caller)
+        highest_bid    := new_bid;
+        highest_bidder := caller)
       else
         pending_return.update caller { val = new_bid }
     else
@@ -62,8 +62,8 @@ action place_bid = {
         pending_return.add {incumbent = highest_bidder;
                             val       = highest_bid };
         (* update highest *)
-        highest_bid = transferred;
-        highest_bidder = caller)
+        highest_bid := transferred;
+        highest_bidder := caller)
       else fail (* no need to add bidder since there will
                            be nothing to withdraw *)
   }

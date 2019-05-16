@@ -88,7 +88,7 @@ let e_imply         =  (40,  Right)    (* ->  *)
 let e_equiv         =  (50,  NonAssoc) (* <-> *)
 let e_and           =  (60,  Left)     (* and *)
 let e_or            =  (70,  Left)     (* or  *)
-let e_equal         =  (80,  NonAssoc) (* ==  *)
+let e_equal         =  (80,  NonAssoc) (* =   *)
 let e_nequal        =  (80,  NonAssoc) (* <>  *)
 let e_gt            =  (90,  Left)     (* >   *)
 let e_ge            =  (90,  Left)     (* >=  *)
@@ -232,7 +232,7 @@ match op with
 
 let comparison_operator_to_str op =
 match op with
-  | Equal  -> "=="
+  | Equal  -> "="
   | Nequal -> "<>"
   | Gt     -> ">"
   | Ge     -> ">="
@@ -264,18 +264,30 @@ match op with
 let pp_operator fmt op =
  Format.fprintf fmt "%s" (operator_to_str op)
 
-let assignment_operator_to_str op =
-match op with
-  | ValueAssign  -> "="
+let assignment_operator_extra_to_str = function
   | PlusAssign   -> "+="
   | MinusAssign  -> "-="
   | MultAssign   -> "*="
   | DivAssign    -> "/="
   | AndAssign    -> "&="
   | OrAssign     -> "|="
+  | _            -> raise (Anomaly "assignment_operator")
 
-let pp_assignment_operator fmt op =
- Format.fprintf fmt "%s" (assignment_operator_to_str op)
+let assignment_operator_record_to_str op =
+match op with
+  | ValueAssign  -> "="
+  | _ -> assignment_operator_extra_to_str op
+
+let assignment_operator_expr_to_str op =
+match op with
+  | ValueAssign  -> ":="
+  | _ -> assignment_operator_extra_to_str op
+
+let pp_assignment_operator_record fmt op =
+ Format.fprintf fmt "%s" (assignment_operator_record_to_str op)
+
+let pp_assignment_operator_expr fmt op =
+ Format.fprintf fmt "%s" (assignment_operator_expr_to_str op)
 
 let rec pp_qualid fmt (q : ParseTree.qualid) =
   match q with
@@ -350,7 +362,7 @@ let rec pp_expr outer pos fmt a =
                 (pp_option (fun fmt (op, id) ->
                      Format.fprintf fmt "%a %a "
                        pp_id id
-                       pp_assignment_operator op
+                       pp_assignment_operator_record op
                    )) o
                 pp_simple_expr e
           )) l
@@ -447,7 +459,7 @@ let rec pp_expr outer pos fmt a =
     let pp fmt (op, lhs, rhs) =
       Format.fprintf fmt "%a %a %a"
         (pp_expr prec PLeft) lhs
-        pp_assignment_operator op
+        pp_assignment_operator_expr op
         (pp_expr prec PRight) rhs
     in
     (maybe_paren outer prec pos pp) fmt (op, lhs, rhs)
