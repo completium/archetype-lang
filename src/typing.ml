@@ -135,7 +135,7 @@ let for_literal (env : env) (topv : PT.literal loced) : type_ =
       TInt
 
   | Lrational _ ->
-      TRational 
+      TRational
 
   | Lstring _ ->
       TString
@@ -162,13 +162,13 @@ let rec for_expr_dvg (env : env) ?(ety : type_ option) (tope : PT.expr) : type_ 
     match unloc tope with
     | Eterm (_, x) ->
         assert false
-  
+
     | Eliteral v ->
         Some (for_literal env (mkloc (loc tope) v))
-  
+
     | Earray es ->
         assert false
-  
+
     | Erecord fields -> begin
         let module E = struct
           type state = {
@@ -212,16 +212,16 @@ let rec for_expr_dvg (env : env) ?(ety : type_ option) (tope : PT.expr) : type_ 
               let asset = Env.Asset.get env asset in
 
               let ne, ng = List.length fields, List.length asset.as_fields in
-              
+
               if ne <> ng then begin
                 Env.emit_error env (loc tope, InvalidFieldsCountInRecordLiteral);
                 bailout ()
               end;
-              
+
               List.iter2 (fun (_, fe) (_, fty) ->
                   ignore (for_expr env ~ety:fty fe)
               ) fields asset.as_fields;
-              
+
               ety
 
         else begin
@@ -264,11 +264,11 @@ let rec for_expr_dvg (env : env) ?(ety : type_ option) (tope : PT.expr) : type_ 
             match assets with
             | [] ->
                 bailout ()
-  
+
             | _ :: _ :: _ ->
                 let err = MixedFieldNames (List.map (fun x -> x.as_name) assets) in
                 Env.emit_error env (loc tope, err); bailout ()
-  
+
             | [asset] ->
                 List.iter (fun (fname, _) ->
                   if is_none (Mid.find_opt fname fmap) then
@@ -279,10 +279,10 @@ let rec for_expr_dvg (env : env) ?(ety : type_ option) (tope : PT.expr) : type_ 
           in Some (TAsset asset.as_name)
         end
       end
-  
+
     | Etuple es ->
         Some (TTuple (List.map (for_expr env) es))
-  
+
     | Edot (e, x) -> begin
         let ety = for_expr env e in
         let asset = Type.as_asset ety in
@@ -302,8 +302,8 @@ let rec for_expr_dvg (env : env) ?(ety : type_ option) (tope : PT.expr) : type_ 
             Env.emit_error env (loc x, err); bailout ()
 
         | Some _ as fty -> fty
-      end          
-  
+      end
+
     | Eapp (f, args) -> begin
         match
           match f with
@@ -313,7 +313,7 @@ let rec for_expr_dvg (env : env) ?(ety : type_ option) (tope : PT.expr) : type_ 
                 Env.emit_error env (loc x, UnknownProcedure (unloc x));
               ps
 
-          | Foperator op -> 
+          | Foperator op ->
               Some (procsig_of_operator (unloc op))
         with None -> None | Some pdf ->
 
@@ -332,32 +332,32 @@ let rec for_expr_dvg (env : env) ?(ety : type_ option) (tope : PT.expr) : type_ 
 
     | Emethod(the, m, args) ->
         assert false
-  
+
     | Etransfer (e, b, x) ->
         assert false
-  
+
     | Eassign (op, lv, e) ->
         assert false
-  
+
     | Eif (c, et, ef) -> begin
         let _   = for_expr env ~ety:TBool c in
         let ty1 = for_expr_dvg env ?ety:(map_option (fun _ -> TUnit) ef) et in
-  
+
         match ef with
         | None ->
             Some TUnit
-  
+
         | Some ef ->
             for_expr_dvg env ?ety:ty1 ef
       end
-  
+
     | Erequire e | Eassert e | Efailif e ->
         let _ = for_expr env ~ety:TBool e in None
 
     | Ebreak ->
         (* FIXME: env: add a flag for loops *)
         Some TUnit
-  
+
     | Efor (x, rg, body) -> begin
         let tyrg = for_expr env rg in
 
@@ -370,22 +370,22 @@ let rec for_expr_dvg (env : env) ?(ety : type_ option) (tope : PT.expr) : type_ 
             ignore (for_expr_dvg env0 ~ety:TUnit body) end;
 
         Some TUnit
-            
+
       end
-  
+
     | Eseq (e1, e2) ->
         ignore (for_expr_dvg env ~ety:TUnit e1);
         for_expr_dvg env e2
-  
+
     | Eletin (lv, e1, e2, c) ->
         assert false
-  
+
     | Ematchwith (e, bs) ->
         assert false
-  
+
     | Equantifier (bd, x, e) ->
         assert false
-  
+
     | Elabel (l, e) ->
         assert false
 
@@ -395,12 +395,12 @@ let rec for_expr_dvg (env : env) ?(ety : type_ option) (tope : PT.expr) : type_ 
     match infty (), ety with
     | None, _ | (Some _, None) ->
         None
-  
+
     | Some infty, Some ety ->
         match Type.up infty ety with
         | Some _ as topty ->
             topty
-  
+
         | None ->
             let err = IncompatibleTypes (infty, ety) in
             Env.emit_error env (loc tope, err); Some ety

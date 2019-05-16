@@ -4,7 +4,7 @@
 .PHONY: all merlin build build-deps run clean
 
 # --------------------------------------------------------------------
-all: build plugin compiler merlin
+all: build compiler merlin # plugin
 
 build:
 	@dune build

@@ -21,22 +21,22 @@ exception ArgError of string
 let compile_and_print (filename, channel) =
   Tools.debug_mode := !debug_mode;
   if !opt_lsp
-  then Lsp.process (filename, channel)
+  then () (*Lsp.process (filename, channel)*)
   else (
     let pt = Io.parse_archetype ~name:filename channel in
     if !opt_json
     then Format.printf "%s\n" (Yojson.Safe.to_string (ParseTree.archetype_to_yojson pt))
     else (
       if !opt_pretty_print
-      then Format.printf "%a" Printer.pp_archetype pt
+      then () (*Format.printf "%a" Printer.pp_archetype pt*)
       else (
         if !opt_parse
         then Format.printf "%a\n" ParseTree.pp_archetype pt
         else (
-          let model = Translate.parseTree_to_model pt in
+          let model =  Model.mk_model (Location.dumloc "mymodel") (*Translate.parseTree_to_model pt*) in
           if !opt_model
           then Format.printf "%a\n" Model.pp_model model
-          else (
+          (* else (
             let modelr = Reduce.reduce_model model in
             if !opt_modelr
             then Format.printf "%a\n" Model.pp_model modelr
@@ -50,7 +50,8 @@ let compile_and_print (filename, channel) =
                 if !opt_modelliq
                 then Extract.print modelw3liq
                 else ()
-              )))))))
+              )) *)
+              ))))
 
 let close dispose channel =
   if dispose then close_in channel
@@ -70,8 +71,8 @@ let main () =
       "-d", Arg.Set debug_mode, " Debug mode";
       "--storage-policy",
       Arg.String (fun s -> match s with
-          | "flat" -> Modelinfo.storage_policy := Flat
-          | "record" -> Modelinfo.storage_policy := Record
+          (* | "flat" -> Modelinfo.storage_policy := Flat
+          | "record" -> Modelinfo.storage_policy := Record *)
           |  s ->
             Format.eprintf
               "Unknown policy %s (use record, flat)@." s;
@@ -94,13 +95,14 @@ let main () =
     | _ -> ("<stdin>", stdin, false) in
 
   try
-    if !opt_pterm
+    (* if !opt_pterm
     then (
       let str = input_line channel in
       let pterm = Translate.string_to_pterm str in
       Format.printf "%a\n" Model.pp_pterm pterm
     )
-    else compile_and_print (filename, channel);
+    else  *)
+    compile_and_print (filename, channel);
     close dispose channel
 
 (*    let filename, channel, dispose =
@@ -123,7 +125,7 @@ let main () =
     close dispose channel;
     Printf.eprintf "%s.\n" s;
     exit 1
-  | Translate.ModelError0 msg ->
+  (* | Translate.ModelError0 msg ->
     close dispose channel;
     Printf.eprintf "%s.\n" msg;
     exit 1
@@ -166,7 +168,7 @@ let main () =
   | Reduce.ErrorAcceptTransfer (str, loc, locs) ->
     close dispose channel;
     Printf.eprintf "Error: accept transfer must be set to '%s' at %s because 'transferred' is read at %s.\n" str (Location.tostring loc) (List.fold_right (fun i accu -> (Location.tostring i) ^ accu) locs "");
-    exit 1
+    exit 1 *)
 
 (* -------------------------------------------------------------------- *)
 let _ = main ()
