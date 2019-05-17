@@ -18,7 +18,7 @@ archetype extension signedbyall (
   action aTransaction = {
     require {
       requires;
-      <%aTransaction>_cond : (signer_<%aTransaction>.select(hasSigned == true)).count() == signer_<%aTransaction>.count()
+      <%aTransaction>_cond : (signer_<%aTransaction>.select(hasSigned = true)).count() = signer_<%aTransaction>.count()
     }
   }
 

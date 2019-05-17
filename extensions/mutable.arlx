@@ -10,7 +10,7 @@ archetype extension mutable (
       set_<%avariable>_c1 : cond
     }
     effect {
-      avariable = newvariable
+      avariable := newvariable
     }
   }
 }

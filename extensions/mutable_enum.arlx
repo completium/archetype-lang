@@ -11,7 +11,7 @@ archetype extension mutable_enum (
       mutable_enum_<%arole> : state <= new_state
     }
     effect {
-      anenum = new_val
+      anenum := new_val
     }
   }
 }

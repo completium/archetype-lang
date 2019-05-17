@@ -42,13 +42,13 @@ action consume (a : address) (quantity : uint) = {
          (* removed miles *)
          i2 : (subset (removed miles) (o.miles.select(expiration >= now)));
          (* right amount consumed *)
-         i3 : before miles.sum(amount) == miles.sum(amount) + nbmiles - remainder;
+         i3 : before miles.sum(amount) = miles.sum(amount) + nbmiles - remainder;
          i4 : is_empty added.mile
     }
 
     specification {
          (* the globla quantity of miles is decreased by nbmiles *)
-         p1 : mile.sum(quantity) == before miles.sum(quantity) - nbmiles;
+         p1 : mile.sum(quantity) = before miles.sum(quantity) - nbmiles;
          (* all removed miles are valid miles *)
          p2 : forall m : removed miles, m.expiration >= now;
          (* no added mile *)
@@ -66,22 +66,22 @@ action consume (a : address) (quantity : uint) = {
        then (
          if m.amount > remainder
          then (
-           remainder = 0;  (* this should be after instruction below
+           remainder := 0;  (* this should be after instruction below
                                this is to demonstrate verification
                                capacity to not verify contract in this
                                state *)
            m.amount  -= remainder
          )
-         else if m.amount == remainder
+         else if m.amount = remainder
          then (
-           remainder = 0;
+           remainder := 0;
            o.miles.remove m
          ) else (
            remainder -= m.amount;
            o.miles.remove m
          )
        );
-     assert (remainder == 0))
+     assert (remainder = 0))
   }
 }
 

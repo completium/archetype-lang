@@ -24,7 +24,7 @@ action consume (owner : address) (value : uint) = {
    }
 
    specification {
-     s1 : (before.account.get owner).amount ==
+     s1 : (before.account.get owner).amount =
              (after.account.get owner).amount + value
    }
 
