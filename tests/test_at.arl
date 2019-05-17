@@ -1,0 +1,8 @@
+archetype test_specification
+
+action tr = {
+  specification {
+    s1 : (x at label) -> x;
+    s2 : (s::x at label) -> x
+  }
+}

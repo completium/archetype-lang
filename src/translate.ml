@@ -190,8 +190,8 @@ let mk_lterm_id (id : lident) =
   | None -> Lvar id
 
 let compute_term = function
-  | (Some a, e) -> mkloc (Location.merge (loc a) (loc e) ) ("_" ^ (unloc a) ^ "_" ^ (unloc e))
-  | (None, e) -> e
+  | (_, Some a, e) -> mkloc (Location.merge (loc a) (loc e) ) ("_" ^ (unloc a) ^ "_" ^ (unloc e))
+  | (_, None, e) -> e
 
 let process_fun f ty c loc (args, body) =
   match List.rev args with
@@ -216,7 +216,7 @@ let rec mk_lterm (e : expr) : lterm =
     | Erecord _ -> raise (ModelError ("assignment fields are not allowed in logical block", loc))
     | Etuple l -> Ltuple (List.map (fun x -> mk_lterm x) l)
     (* | Eapp ({pldesc=Eop op; _}, [lhs; rhs]) ->
-      (
+       (
         match op with
         | `Spec OpSpec1  -> Limply   (mk_lterm lhs, mk_lterm rhs) (** TODO *)
         | `Spec OpSpec2  -> Limply   (mk_lterm lhs, mk_lterm rhs) (** TODO *)
@@ -227,16 +227,16 @@ let rec mk_lterm (e : expr) : lterm =
         | `Cmp o         -> Lcomp    (to_comparison_operator o, mk_lterm lhs, mk_lterm rhs)
         | `Arith o       -> Larith   (to_arithmetic_operator o, mk_lterm lhs, mk_lterm rhs)
         | _ -> raise (ModelError ("binary operation not valid", loc))
-      ) *)
+       ) *)
     (* | Eapp ({pldesc=Eop op; _}, [e]) ->
-      (
+       (
         match op with
         | `Unary Not -> Lnot (mk_lterm e)
         | `Unary Uplus -> Luarith (Uplus, mk_lterm e)
         | `Unary Uminus -> Luarith (Uminus, mk_lterm e)
         | _ -> raise (ModelError ("unary operation not valid", loc))
-      )
-    | Eapp (f, args) -> Lapp (mk_lterm f, List.map mk_lterm args) *)
+       )
+       | Eapp (f, args) -> Lapp (mk_lterm f, List.map mk_lterm args) *)
     | Etransfer (_a, _, _dest) -> raise (ModelError ("\"transfer\" is not allowed in logical block", loc))
     | Erequire x -> Lrequire (true, mk_lterm x)
     | Efailif x -> Lrequire (false, mk_lterm x)
@@ -251,7 +251,7 @@ let rec mk_lterm (e : expr) : lterm =
     | Eseq (lhs, rhs) -> Lseq (mk_lterm lhs, mk_lterm rhs)
     | Efun (args, body) -> process_fun mk_lterm mk_ltyp (fun (w, x, y, z) -> Llambda (w, x, y, z)) loc (args, body)
     | Eletin ((i, typ, _), init, body, _other) -> Lletin (i, mk_lterm init,
-                                                  map_option mk_ltyp typ, mk_lterm body)
+                                                          map_option mk_ltyp typ, mk_lterm body)
     | Ematchwith _ -> raise (ModelError ("match with is not allowed in logical block", loc))
     | Equantifier (q, (id, t, _), e) -> Lquantifer (to_quantifier q, id, map_option mk_ltyp t, mk_lterm e)
     | Elabel _ -> raise (ModelError ("labels are not allowed in logical block", loc)))
@@ -270,8 +270,8 @@ let mk_pterm_id id =
 let mk_pattern pt : Model.pattern =
   let loc, v = deloc pt in
   mkloc loc (match v with
-  | Pwild -> Mwild
-  | Pref i -> Mvar i)
+      | Pwild -> Mwild
+      | Pref i -> Mvar i)
 
 let rec mk_pterm (e : expr) : pterm =
   let loc, v = deloc e in
@@ -290,23 +290,23 @@ let rec mk_pterm (e : expr) : pterm =
                                   (b, mk_pterm e)) l)
     | Etuple l -> Ptuple (List.map (fun x -> mk_pterm x) l)
     (* | Eapp ({pldesc=Eop op; plloc=locop}, [lhs; rhs]) ->
-      (
+       (
         match op with
         | `Logical Imply -> raise (ModelError ("imply operator is not allowed in programming block", locop))
         | `Logical o -> Plogical (to_logical_operator o, mk_pterm lhs, mk_pterm rhs)
         | `Cmp o     -> Pcomp    (to_comparison_operator o, mk_pterm lhs, mk_pterm rhs)
         | `Arith o   -> Parith   (to_arithmetic_operator o, mk_pterm lhs, mk_pterm rhs)
         | _ -> raise (ModelError ("binary operation not valid", locop))
-      )
-    | Eapp ({pldesc=Eop op; _}, [e]) ->
-      (
+       )
+       | Eapp ({pldesc=Eop op; _}, [e]) ->
+       (
         match op with
         | `Unary Not -> Pnot (mk_pterm e)
         | `Unary Uplus -> Puarith (Uplus, mk_pterm e)
         | `Unary Uminus -> Puarith (Uminus, mk_pterm e)
         | _ -> raise (ModelError ("unary operation not valid", loc))
-      )
-    | Eapp (f, args) -> Papp (mk_pterm f, List.map mk_pterm args) *)
+       )
+       | Eapp (f, args) -> Papp (mk_pterm f, List.map mk_pterm args) *)
     | Etransfer (a, back, dest) -> Ptransfer (mk_pterm a, back, map_option mk_qualid dest)
     | Erequire x -> Prequire (true, mk_pterm x)
     | Efailif x -> Prequire (false, mk_pterm x)
@@ -320,9 +320,9 @@ let rec mk_pterm (e : expr) : pterm =
     | Eletin ((i, typ, _), init, body, _) -> Pletin (i, mk_pterm init, map_option mk_ptyp typ, mk_pterm body)
     | Ematchwith (e, l) ->
       let ll = List.fold_left
-                    (fun acc (pts, e) -> (
-                        (List.map (fun x -> (mk_pattern x, mk_pterm e)) pts)@acc
-                        )) [] l in
+          (fun acc (pts, e) -> (
+               (List.map (fun x -> (mk_pattern x, mk_pterm e)) pts)@acc
+             )) [] l in
       Pmatchwith (mk_pterm e, ll)
     | Equantifier _ -> raise (ModelError ("quantifiers are not allowed in programming block", loc))
     | Elabel (lbl, e) ->
@@ -357,12 +357,12 @@ let to_label_pterm x : label_pterm =
 let to_sexpr (e : expr) : Model.sexpr =
   let loc, v = deloc e in
   match v with
-  | Eterm (None, id) -> mkloc loc (
+  | Eterm (_, None, id) -> mkloc loc (
       match id |> unloc |> to_const with
       | Some Cany -> Sany
       | _ -> Sref id)
   (* | Eapp ({pldesc = Eop (`Logical Or); _}, args) ->
-    ( let lhs = to_sexpr (List.nth args 0) in
+     ( let lhs = to_sexpr (List.nth args 0) in
       let rhs = to_sexpr (List.nth args 1) in
       mkloc loc (Sor (lhs, rhs))) *)
   | _ -> raise (ModelError ("wrong type for ", loc))
@@ -373,7 +373,7 @@ let mk_decl loc ((id, typ, dv) : (lident * type_t option * expr option)) =
     mkloc loc
       (match v with
        | Eliteral l -> to_bval l
-       | Eterm (None, id) -> BVenum (unloc id)
+       | Eterm (_, None, id) -> BVenum (unloc id)
        | _ -> raise (ModelError ("mk_bval: wrong type for ", loc))) in
   {
     name = id;
@@ -529,7 +529,7 @@ let extract_decls decls model =
       def  = mk_lterm def;
       loc  = loc;
     } in
-	  List.fold_right (fun (x : verification_item) acc ->
+    List.fold_right (fun (x : verification_item) acc ->
         let loc, vitem = Location.deloc x in
         match vitem with
         | Vpredicate (i, args, body) ->
@@ -579,10 +579,10 @@ let extract_decls decls model =
     let to_rexpr_calledby (e : ParseTree.expr) : rexpr =
       let loc, v = deloc e in
       match v with
-      | Eterm (None, id)
+      | Eterm (_, None, id)
       | Edot (_, id) -> Rqualid (Qident id)
       (* | Eapp ({pldesc = Eop (`Logical Or); _}, args) ->
-        ( let lhs = to_rexpr_calledby (List.nth args 0) in
+         ( let lhs = to_rexpr_calledby (List.nth args 0) in
           let rhs = to_rexpr_calledby (List.nth args 1) in
           Ror (lhs, rhs)) *)
       | _ -> raise (ModelError ("type error: called by", loc)) in
@@ -706,7 +706,7 @@ let extract_decls decls model =
                transition = Some (mk_transition on from trs)
              }::acc.transactions
            }
-       )
+         )
        | Dfunction f ->
          {
            acc with
@@ -728,8 +728,8 @@ let extract_decls decls model =
 
 let parseTree_to_model (pt : ParseTree.archetype) : Model.model =
   let decls = match unloc pt with
-  | Marchetype decls -> decls
-  | Mextension _ -> raise (ModelError ("extension cannot be translated into Model.model.", loc pt)) in
+    | Marchetype decls -> decls
+    | Mextension _ -> raise (ModelError ("extension cannot be translated into Model.model.", loc pt)) in
 
   {
     name          = get_name_archetype decls;

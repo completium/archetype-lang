@@ -40,6 +40,7 @@
       "action"              , ACTION         ;
       "effect"              , EFFECT         ;
       "called"              , CALLED         ;
+      "at"                  , AT             ;
       "verification"        , VERIFICATION   ;
       "predicate"           , PREDICATE      ;
       "definition"          , DEFINITION     ;
