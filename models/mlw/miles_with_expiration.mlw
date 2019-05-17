@@ -93,10 +93,12 @@ module Miles
   raises { NotFound }
   requires { mem o s.owners }
   requires { not (mem m s.miles) }
-  ensures  { Amounts.sum (old s) (old s).miles + a = Amounts.sum s s.miles }
   ensures  { forall x:key. mem x s.miles <-> (mem x (old s).miles \/ x = m) }
+  ensures  { forall x:key. mem x s.miles_added <-> (mem x (old s).miles_added \/ x = m) }
+  ensures  { Amounts.sum (old s) (old s).miles + a = Amounts.sum s s.miles }
   =
     s.miles <- add m s.miles;
+    s.miles_added <- add m s.miles_added;
     s.mile_amounts <- set s.mile_amounts m a;
     s.mile_expirations <- set s.mile_expirations m e;
     let miles = get_miles s o in
@@ -160,14 +162,17 @@ module Miles
 
   let consume (e : env) (s : storage) (owner : address) (nbmiles : int) : transfers
   raises { NotFound, InvalidCaller, InvalidCondition }
+  requires { is_empty s.miles_removed }
+  requires { is_empty s.miles_added }
   (* forall m : removed miles, m.expiration > now *)
   ensures { forall m : key.
-     mem m (diff (old s).miles s.miles) ->  get_expiration s m > (now e)
+     (*mem m (diff (old s).miles s.miles) ->  get_expiration s m > (now e)*)
+     mem m s.miles_removed ->  get_expiration s m > (now e)
   }
   (* mile.sum(quantity) = before miles.sum(quantity) - nbmiles *)
   ensures { Amounts.sum (old s) (old s).miles = Amounts.sum s s.miles + nbmiles }
   (* is_emtpy add.miles *)
-  (*ensures { is_empty (diff s.miles (old s).miles) }*)
+  ensures { is_empty s.miles_added }
 
   = if caller e <> s.admin then raise InvalidCaller;
     if nbmiles <= 0 then raise InvalidCondition;
@@ -182,7 +187,8 @@ module Miles
       (* helps for the membership precondition of set_amount: *)
       invariant { forall k : int. i <= k < length l ->  mem (nth k l) s.miles }
       (* removed miles are in l: *)
-      invariant { subset (diff (old s).miles s.miles) l }
+      (*invariant { subset (diff (old s).miles s.miles) l }*)
+      invariant { subset s.miles_removed l }
       (* remainder bounds: *)
       invariant { 0 <= !remainder <= Amounts.part_sum s l i (length l) }
       (* right amount spent invariant *)
