@@ -18,16 +18,16 @@ module Miles
   | Owner key
 
   type entry =
-  | Add 
+  | Add
   | Consume
 
-  type field = 
+  type field =
   | Amount
   | Expiration
   | Miles
 
   clone archetype.Trace as Tr with type asset = asset,
-                                   type entry = entry, 
+                                   type entry = entry,
                                    type field = field
   type storage = {
     mutable admin            : role;
@@ -39,33 +39,37 @@ module Miles
     (* others *)
     mutable tr               : Tr.log;
     mutable ename            : option entry;
+    (* diff sets *)
+    mutable miles_added      : acol;
+    mutable miles_removed    : acol;
   }
-  
+
   (* TODO : make this a storage invariant *)
-  axiom Amount_gt0 : forall s : storage, m : key. get s.mile_amounts m > 0 
+  axiom Amount_gt0 : forall s : storage, m : key. get s.mile_amounts m > 0
 
   (* getters *)
-  let get_mile       (s : storage) (k : key) : key 
+  let get_mile       (s : storage) (k : key) : key
   raises { NotFound }
   ensures { mem result s.miles }
   = if not (mem k s.miles) then raise NotFound else k
 
   let function get_amount     (s : storage) (k : key) : int = get s.mile_amounts k
-  
+
   let function get_expiration (s : storage) (k : key) : date = get s.mile_expirations k
 
-  let get_owner (s : storage) (o : key) : key 
+  let get_owner (s : storage) (o : key) : key
   raises { NotFound }
   ensures { mem result s.owners }
   = if not (mem o s.owners) then raise NotFound else o
 
+  (* Owner.miles is a partition of s.miles *)
+  axiom subset_miles : forall s : storage, o : key.
+    subset (get s.owner_miles o) s.miles
+
   let function get_miles (s : storage) (o : key) : acol
+  ensures { subset result s.miles }
   = get s.owner_miles o
 
-    (* Owner.miles is a partition of s.miles *)
-
-  axiom subset_miles : forall s : storage, m : key, o : key.
-    subset (get_miles s o) s.miles
 
   clone archetype.Sum as Amounts with type     storage = storage,
                                       val      f       = get_amount
@@ -74,12 +78,15 @@ module Miles
   raises { NotFound }
   requires { mem m s.miles }
   requires { mem o s.owners }
-  ensures  { Amounts.sum (old s) (old s).miles = Amounts.sum s s.miles + get_amount (old s) m }
   ensures  { forall x:key. mem x s.miles <-> (mem x (old s).miles /\ x <> m) }
+  ensures  { forall x:key. mem x s.miles_removed <-> (mem x (old s).miles_removed \/ x = m) }
+  ensures  { forall x:key. mem x (get_miles s o) <-> (mem x (get_miles (old s) o) /\ x <> m) }
+  ensures  { Amounts.sum (old s) (old s).miles = Amounts.sum s s.miles + get_amount (old s) m }
   =
     s.miles <- remove m s.miles;
+    s.miles_removed <- add m s.miles_removed;
     let miles = get_miles s o in
-    let new_owner_miles = remove m miles in 
+    let new_owner_miles = remove m miles in
     s.owner_miles <- set s.owner_miles o new_owner_miles
 
   let add_miles (o : key) (m : key) (a : int) (e : date) (s : storage) : unit
@@ -104,15 +111,15 @@ module Miles
 
   let update_owner (o : key) (new_miles : acol) (s : storage) : unit
   raises { NotFound }
-  = 
+  =
   if not (mem o s.owners) then raise NotFound;
-  s.owner_miles <- set s.owner_miles o new_miles  
+  s.owner_miles <- set s.owner_miles o new_miles
 
   let addifnotexist (o : key) (new_miles : acol) (s : storage) : unit
   raises { NotFound }
   ensures { mem o s.owners }
   =
-  if not (mem o s.owners) 
+  if not (mem o s.owners)
   then (
     s.owners <- add o s.owners;
     update_owner o new_miles s
@@ -120,7 +127,7 @@ module Miles
 
   (* Actions  *****************************************************************)
 
-  let add (e : env) (s : storage) (ow : key) (m : key) (a : int) (ex : date) : transfers 
+  let add (e : env) (s : storage) (ow : key) (m : key) (a : int) (ex : date) : transfers
   raises { InvalidCaller, InvalidCondition, NotFound }
   requires { not (mem m s.miles) }
   =
@@ -202,23 +209,44 @@ module Miles
     assert { !remainder = 0 };
     Contract.empty
 
-    let function test_clear_expired (e : env) (s : storage) (a : key) : bool = get_expiration s a < now e
+(*    let function test_clear_expired (e : env) (s : storage) (a : key) : bool = get_expiration s a < now e
 
     clone archetype.Filter as FClearexpired with type storage = storage,
-                                                 val  test    = test_clear_expired
+                                                 val  test    = test_clear_expired*)
 
-    let clear_expired (e : env) (s : storage) (owner : address) : transfers 
+    let rec function filter_clear_expired (e : env) (s : storage) (c : acol) : acol
+    variant { c }
+    ensures { forall a : key. mem a result -> get_expiration s a < now e }
+    ensures { subset result c }
+    =
+    match c with
+    | Nil -> Nil
+    | Cons a tl ->
+      if get_expiration s a < now e
+      then Cons a (filter_clear_expired e s tl)
+      else filter_clear_expired e s tl
+    end
+
+    let clear_expired (e : env) (s : storage) (owner : address) : transfers
     raises { NotFound, InvalidCaller }
-    ensures { forall m : key. mem m (diff (old s).miles s.miles) -> get_expiration s m < now e }
+    requires { is_empty s.miles_added }
+    requires { is_empty s.miles_removed }
+    ensures { forall m : key. mem m s.miles_removed -> get_expiration s m < now e }
     = if caller e <> s.admin then raise InvalidCaller;
       for i = 0 to (length s.owners)-1 do
+      invariant { forall m : key. mem m s.miles_removed -> get_expiration s m < now e }
         let o = nth i s.owners in
         let miles = get_miles s o in
-        let l = FClearexpired.filter e s miles in
+        let l = filter_clear_expired e s miles in
+        label Internal_loop in
         for j = 0 to (length l) - 1 do
+        invariant { forall k : int. j <= k < length l -> mem (nth k l) s.miles }
+        invariant { forall m : key. mem m s.miles_removed <-> 
+          (mem m (s at Internal_loop).miles_removed \/ (exists k : int. 0 <= k < j /\ m = nth k l)) }
           let m = nth j l in
           remove_miles o m s;
         done;
+        
       done;
       Contract.empty
 
