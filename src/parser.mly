@@ -469,7 +469,7 @@ asset_post_option:
 | xs=asset_option+ { xs }
 
 asset_option:
-| AS _x=ident           { AOasrole }
+| AS ident              { AOasrole }
 | IDENTIFIED BY x=ident { AOidentifiedby x }
 | SORTED BY x=ident     { AOsortedby x }
 
