@@ -29,6 +29,10 @@ module Miles
   clone archetype.Trace as Tr with type asset = asset,
                                    type entry = entry,
                                    type field = field
+
+  (* for storage invariant initialisation *)
+  axiom def_mile_amounts : exists default_mile_amounts. forall m : key. get default_mile_amounts m > 0
+
   type storage = {
     mutable admin            : role;
     mutable miles            : acol;
@@ -42,10 +46,12 @@ module Miles
     (* diff sets *)
     mutable miles_added      : acol;
     mutable miles_removed    : acol;
+  } invariant { 
+    forall m : key. get mile_amounts m > 0
   }
 
   (* TODO : make this a storage invariant *)
-  axiom Amount_gt0 : forall s : storage, m : key. get s.mile_amounts m > 0
+  (*axiom Amount_gt0 : forall s : storage, m : key. get s.mile_amounts m > 0*)
 
   (* getters *)
   let get_mile       (s : storage) (k : key) : key
@@ -93,6 +99,7 @@ module Miles
   raises { NotFound }
   requires { mem o s.owners }
   requires { not (mem m s.miles) }
+  requires { a > 0 }
   ensures  { forall x:key. mem x s.miles <-> (mem x (old s).miles \/ x = m) }
   ensures  { forall x:key. mem x s.miles_added <-> (mem x (old s).miles_added \/ x = m) }
   ensures  { Amounts.sum (old s) (old s).miles + a = Amounts.sum s s.miles }
@@ -107,6 +114,7 @@ module Miles
 
   let set_amount (m : key) (a : int) (s : storage) : unit
   requires { mem m s.miles }
+  requires { a > 0 }
   ensures  { Amounts.sum (old s) (old s).miles = Amounts.sum s s.miles - a + get_amount (old s) m }
   ensures { (old s).miles = s.miles }
   = s.mile_amounts <- set s.mile_amounts m a
