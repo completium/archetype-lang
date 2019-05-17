@@ -1,6 +1,12 @@
 open Ident
 open Model
 
+type storage_policy = Record | Flat
+[@@deriving show {with_path = false}]
+
+let storage_policy = ref Record
+(*let storage_policy = ref Flat*)
+
 type require =
   | Membership
 [@@deriving show {with_path = false}]
@@ -33,9 +39,9 @@ type storage_field_operation = {
 [@@deriving show {with_path = false}]
 
 type storage_field_type =
-  | Ftyp    of vtyp
+  | Fbasic  of vtyp
   | Frecord of ident
-  | Fenum   of enum
+  | Fenum   of ident
   | Flist   of storage_field_type
   | Fset    of storage_field_type
   | Fmap    of vtyp * storage_field_type
@@ -57,7 +63,7 @@ type ('id, 'typ, 'term) record_field = {
 type ('id, 'typ, 'term) record = {
   fields      : ('id, 'typ, 'term) record_field list;
   invariants  : ('id, 'id lterm_gen) label_term list;
-  init        : 'term list;
+  init        : ((ident * 'term) list) list;
 }
 [@@deriving show {with_path = false}]
 
