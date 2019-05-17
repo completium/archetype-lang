@@ -4,6 +4,7 @@ module Miles
   use ref.Ref
   use option.Option
   use list.List
+  use list.Append
 
   use archetype.Types
   use archetype.Contract
@@ -20,6 +21,7 @@ module Miles
   type entry =
   | Add
   | Consume
+  | ClearExpired
 
   type field =
   | Amount
@@ -40,12 +42,14 @@ module Miles
     mutable mile_expirations : map date;
     mutable owners           : acol;
     mutable owner_miles      : map acol;
-    (* others *)
-    mutable tr               : Tr.log;
-    mutable ename            : option entry;
+    (* contract *)
+    mutable ops              : transfers;
     (* diff sets *)
     mutable miles_added      : acol;
     mutable miles_removed    : acol;
+    (* traces *)
+    mutable tr               : Tr.log;
+    mutable ename            : option entry;
   } invariant { 
     forall m : key. get mile_amounts m > 0
   }
@@ -181,7 +185,6 @@ module Miles
   ensures { Amounts.sum (old s) (old s).miles = Amounts.sum s s.miles + nbmiles }
   (* is_emtpy add.miles *)
   ensures { is_empty s.miles_added }
-
   = if caller e <> s.admin then raise InvalidCaller;
     if nbmiles <= 0 then raise InvalidCondition;
     let o = get_owner s owner in
@@ -201,8 +204,6 @@ module Miles
       invariant { 0 <= !remainder <= Amounts.part_sum s l i (length l) }
       (* right amount spent invariant *)
       invariant { Amounts.sum (old s) (old s).miles = Amounts.sum s s.miles + nbmiles - !remainder }
-      (* no added mile : TODO replace by trace proof *)
-      (*invariant { is_empty (diff s.miles (old s).miles) }*)
         let m = nth i l in
         if get_amount s m > !remainder
         then
@@ -264,4 +265,56 @@ module Miles
       done;
       Contract.empty
 
+  let all_entries (e : env)
+                  (s : storage)
+                  (* add *)
+                  (ow : key) (m : key) (a : int) (ex : date)
+                  (* consume *)
+                  (owner : address) (nbmiles : int)
+                  (* clear expired *)
+                  (owner_clear_expired : address)
+  raises { NotFound, InvalidCaller, InvalidCondition }                
+  (* any action is performed only be admin *)
+  ensures { forall a:Tr.action. Tr.performed_only_by_role e s.tr (Cons a Nil) (Cons s.admin Nil) }
+  =
+  s.tr  <- Nil;
+  s.ops <- Nil;
+  match s.ename with
+   | Some Add -> Contract.empty
+   | Some Consume -> 
+    if caller e <> s.admin then raise InvalidCaller;
+    if nbmiles <= 0 then raise InvalidCondition;
+    let o = get_owner s owner in
+    let miles = get_miles s o in
+    let l = filter_consume e s miles in
+    (*let l = FConsume.filter e s miles in*)
+    if not (nbmiles <= Amounts.sum s l) then raise InvalidCondition;
+    let remainder = ref nbmiles in
+    try
+      for i = 0 to (length l) - 1 do
+      invariant { forall a:Tr.action. Tr.performed_only_by_role e s.tr (Cons a Nil) (Cons s.admin Nil) }
+        let m = nth i l in
+        if get_amount s m > !remainder
+        then
+          (set_amount m (get_amount s m - !remainder) s;
+           s.tr <- s.tr ++ Tr.mk_trace Consume (Mile m) (Tr.Update Amount);
+           remainder := 0;
+           raise Break)
+        else if get_amount s m = !remainder
+        then
+          (remainder := 0;
+           remove_miles o m s;
+           s.tr <- s.tr ++ Tr.mk_trace Consume (Mile m) Tr.Rm;
+           raise Break)
+        else
+          (remainder := !remainder - get_amount s m;
+           remove_miles o m s;
+           s.tr <- s.tr ++ Tr.mk_trace Consume (Mile m) Tr.Rm)
+      done;
+    with Break -> assert { !remainder = 0 }; ()
+    end;
+    assert { !remainder = 0 };
+    Contract.empty
+   | Some ClearExpired -> Contract.empty
+  end
 end
