@@ -354,13 +354,24 @@ theory Trace
     action = c;
   }) Nil
 
-  predicate performed_by_role  (tr : log) (e : env)  (a: list action) (r:list address) =
-  forall x:trace. Mem.mem (action x) a -> Mem.mem x tr -> Mem.mem (caller e) r
+  predicate performed_only_by_role  (e : env) (tr : log) 
+    (actions : list action)
+    (assets  : list asset) 
+    (roles   : list address) =
+  forall x:trace. 
+    Mem.mem (action x) actions -> 
+    Mem.mem (asset x)  assets ->
+    Mem.mem x tr -> 
+    Mem.mem (caller e) roles
 
-  predicate performed_by_tx (tr : log) (tx2 : option entry) (tx1 : entry) (a:action) (l : list entry) =
-  forall x:trace. Mem.mem x tr ->
-                  Some tx1 = tx2 ->
-                  action x = a ->
-                  Mem.mem tx1 l
-  
+  predicate performed_only_by_action (e : env) (tr : log) 
+    (actions : list action) 
+    (assets  : list asset)  
+    (entries : list entry) =
+  forall x:trace.
+    Mem.mem (action x) actions ->
+    Mem.mem (asset x)  assets ->
+    Mem.mem x tr ->
+    Mem.mem (entry x) entries
+
 end

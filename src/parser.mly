@@ -60,6 +60,7 @@
 %token ACTION
 %token CALLED
 %token TRANSITION
+%token AT
 %token VERIFICATION
 %token PREDICATE
 %token DEFINITION
@@ -469,7 +470,7 @@ asset_post_option:
 | xs=asset_option+ { xs }
 
 asset_option:
-| AS _x=ident           { AOasrole }
+| AS ident              { AOasrole }
 | IDENTIFIED BY x=ident { AOidentifiedby x }
 | SORTED BY x=ident     { AOsortedby x }
 
@@ -705,11 +706,17 @@ simple_expr_r:
  | x=literal
      { Eliteral x }
 
- | n=ident COLONCOLON x=ident
-     { Eterm (Some n, x) }
+ | s=ident COLONCOLON x=ident
+     { Eterm (None, Some s, x) }
 
  | x=ident
-     { Eterm (None, x) }
+     { Eterm (None, None, x) }
+
+ | LPAREN s=ident COLONCOLON x=ident AT l=ident RPAREN
+     { Eterm (Some l, Some s, x) }
+
+ | LPAREN x=ident AT l=ident RPAREN
+     { Eterm (Some l, None, x) }
 
  | x=paren(expr_r)
      { x }

@@ -95,9 +95,6 @@ type qualid =
   | Qdot of qualid * lident
 [@@deriving yojson, show {with_path = false}]
 
-type name = lident option * lident
-[@@deriving yojson, show {with_path = false}]
-
 type pattern_unloc =
   | Pwild
   | Pref of lident
@@ -107,7 +104,7 @@ type pattern = pattern_unloc loced
 [@@deriving yojson, show {with_path = false}]
 
 type expr_unloc =
-  | Eterm         of name
+  | Eterm         of (lident option * lident option * lident)
   | Eliteral      of literal
   | Earray        of expr list
   | Erecord       of record_item list
@@ -160,7 +157,7 @@ and label_exprs = label_expr list
 
 (* -------------------------------------------------------------------- *)
 and extension_unloc =
- | Eextension of lident * expr list option (** extension *)
+  | Eextension of lident * expr list option (** extension *)
 [@@deriving yojson, show {with_path = false}]
 
 and extension = extension_unloc loced
