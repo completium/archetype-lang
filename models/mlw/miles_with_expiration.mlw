@@ -50,6 +50,8 @@ module Miles
     (* diff sets *)
     mutable miles_added      : acol;
     mutable miles_removed    : acol;
+    mutable owner_added      : acol;
+    mutable owner_removed    : acol;
     (* traces *)
     mutable tr               : Tr.log;
     mutable ename            : option entry;
@@ -65,6 +67,8 @@ module Miles
     ops              = Nil;
     miles_added      = Nil;
     miles_removed    = Nil;
+    owner_added      = Nil;
+    owner_removed    = Nil;
     tr               = Nil;
     ename            = None;
   }
@@ -346,7 +350,6 @@ module Miles
         let o = nth i s.owners in
         let miles = get_miles s o in
         let l = filter_clear_expired e s miles in
-        label Internal_loop in
         for j = 0 to (length l) - 1 do
         invariant { forall ac : Tr.action, a : asset. Tr.performed_only_by_role e s.tr (Cons ac Nil) (Cons a Nil) (Cons s.admin Nil) }
         invariant { Tr.performed_only_by_action e s.tr (Cons Tr.Rm Nil) (Cons Mile Nil) (Cons Consume (Cons ClearExpired Nil)) }
