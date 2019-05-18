@@ -1,10 +1,18 @@
 open Ident
 open Model
 
+type field_ident = string
+type asset_ident = string
+type enum_ident = string
+
+type field =
+  | Fid of string
+  | Fall
+
 type storage_policy =
   | Record
   | Flat
-  | Hybrid of (string * string) list
+  | Hybrid of (asset_ident * field) list
 [@@deriving show {with_path = false}]
 
 type execution_mode =
@@ -45,7 +53,7 @@ type 'id storage_field_operation = {
 type 'id storage_field_type =
   | FBasic            of vtyp
   | FKeyCollection    of 'id * vtyp
-  | FRecordCollection of 'id
+  | FRecordCollection of asset_ident
   | FEnum             of 'id
   | FContainer        of Model.container * 'id storage_field_type
 [@@deriving show {with_path = false}]
@@ -70,13 +78,5 @@ type ('id, 'typ, 'term) record = {
 }
 [@@deriving show {with_path = false}]
 
-type ('id, 'typ, 'term)  model_with_storage = {
-  name          : 'id;
-  enums         : ('id, 'typ, 'term) enum_struct list;
-  storage       : ('id, 'typ, 'term) record list;
-  functions     : ('id, 'typ, 'term) function_struct list;
-  transactions  : ('id, 'typ, 'term) transaction_struct list;
-  verifications : ('id, 'typ, 'term) verification list;
-  loc           : Location.t [@opaque];
-}
+type ('id, 'typ, 'term) storage = ('id, 'typ, 'term) record list;
 [@@deriving show {with_path = false}]
