@@ -1,5 +1,7 @@
 (ocamllex lexer)
-(menhir (flags --explain) (modules parser))
+(menhir
+  (modules parser)
+  (flags --table --explain))
 
 (library
   (name archetype)

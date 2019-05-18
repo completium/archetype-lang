@@ -148,20 +148,20 @@ let get_prec_from_assignment_operator (op : assignment_operator) =
 
 
 let maybe_paren outer inner pos pp =
-let c =
-match (outer, inner, pos) with
-  | ((o, Right), (i, Right), PLeft) when o >= i -> true
-  | ((o, Right), (i, NonAssoc), _) when o >= i -> true
-  | ((o, Right), (i, Left), _) when o >= i -> true
-  | ((o, Left), (i, Left), _) when o >= i -> true
-  | ((o, NonAssoc), (i, _), _) when o >= i -> true
-  | _ -> false
-in pp_maybe_paren c pp
+  let c =
+    match (outer, inner, pos) with
+    | ((o, Right), (i, Right), PLeft) when o >= i -> true
+    | ((o, Right), (i, NonAssoc), _) when o >= i -> true
+    | ((o, Right), (i, Left), _) when o >= i -> true
+    | ((o, Left), (i, Left), _) when o >= i -> true
+    | ((o, NonAssoc), (i, _), _) when o >= i -> true
+    | _ -> false
+  in pp_maybe_paren c pp
 
 
 (* -------------------------------------------------------------------------- *)
 let container_to_str c =
-match c with
+  match c with
   | Collection -> "collection"
   | Queue      -> "queue"
   | Stack      -> "stack"
@@ -169,36 +169,36 @@ match c with
   | Partition  -> "partition"
 
 let pp_container fmt c =
- Format.fprintf fmt "%s" (container_to_str c)
+  Format.fprintf fmt "%s" (container_to_str c)
 
 let rec pp_type outer pos fmt e =
   let pp_type_default = pp_type e_default PNone in
 
   match unloc e with
   | Tref x ->
-      Format.fprintf fmt
-        "%a"
-         pp_id x
+    Format.fprintf fmt
+      "%a"
+      pp_id x
 
   | Tcontainer (x, y) ->
-      Format.fprintf fmt
-        "%a %a"
-           pp_type_default x
-           pp_container y
+    Format.fprintf fmt
+      "%a %a"
+      pp_type_default x
+      pp_container y
 
   | Tvset (x, y) ->
-      Format.fprintf fmt
-        "%a %a"
-           pp_id x
-           pp_type_default y
+    Format.fprintf fmt
+      "%a %a"
+      pp_id x
+      pp_type_default y
 
   | Tapp (x, y) ->
 
     let pp fmt (x, y) =
       Format.fprintf fmt
         "%a -> %a"
-           (pp_type e_imply PLeft) x
-           (pp_type e_imply PRight) y
+        (pp_type e_imply PLeft) x
+        (pp_type e_imply PRight) y
     in
     (maybe_paren outer e_imply pos pp) fmt (x, y)
 
@@ -217,21 +217,21 @@ let pp_type fmt e = pp_type e_default PNone fmt e
 
 (* -------------------------------------------------------------------------- *)
 let spec_operator_to_str op =
-match op with
+  match op with
   | OpSpec1   -> "may be performed only by role"
   | OpSpec2   -> "may be performed only by action"
   | OpSpec3   -> "may be performed by role"
   | OpSpec4   -> "may be performed by action"
 
 let logical_operator_to_str op =
-match op with
+  match op with
   | And   -> "and"
   | Or    -> "or"
   | Imply -> "->"
   | Equiv -> "<->"
 
 let comparison_operator_to_str op =
-match op with
+  match op with
   | Equal  -> "="
   | Nequal -> "<>"
   | Gt     -> ">"
@@ -240,7 +240,7 @@ match op with
   | Le     -> "<="
 
 let arithmetic_operator_to_str op =
-match op with
+  match op with
   | Plus   -> "+"
   | Minus  -> "-"
   | Mult   -> "*"
@@ -248,13 +248,13 @@ match op with
   | Modulo -> "%"
 
 let unary_operator_to_str op =
-match op with
+  match op with
   | Uplus   -> "+"
   | Uminus  -> "-"
   | Not     -> "not"
 
 let operator_to_str op =
-match op with
+  match op with
   | `Spec o    -> spec_operator_to_str o
   | `Logical o -> logical_operator_to_str o
   | `Cmp o     -> comparison_operator_to_str o
@@ -262,7 +262,7 @@ match op with
   | `Unary o   -> unary_operator_to_str o
 
 let pp_operator fmt op =
- Format.fprintf fmt "%s" (operator_to_str op)
+  Format.fprintf fmt "%s" (operator_to_str op)
 
 let assignment_operator_extra_to_str = function
   | PlusAssign   -> "+="
@@ -274,20 +274,20 @@ let assignment_operator_extra_to_str = function
   | _            -> raise (Anomaly "assignment_operator")
 
 let assignment_operator_record_to_str op =
-match op with
+  match op with
   | ValueAssign  -> "="
   | _ -> assignment_operator_extra_to_str op
 
 let assignment_operator_expr_to_str op =
-match op with
+  match op with
   | ValueAssign  -> ":="
   | _ -> assignment_operator_extra_to_str op
 
 let pp_assignment_operator_record fmt op =
- Format.fprintf fmt "%s" (assignment_operator_record_to_str op)
+  Format.fprintf fmt "%s" (assignment_operator_record_to_str op)
 
 let pp_assignment_operator_expr fmt op =
- Format.fprintf fmt "%s" (assignment_operator_expr_to_str op)
+  Format.fprintf fmt "%s" (assignment_operator_expr_to_str op)
 
 let rec pp_qualid fmt (q : ParseTree.qualid) =
   match q with
@@ -297,7 +297,7 @@ let rec pp_qualid fmt (q : ParseTree.qualid) =
                      pp_id i
 
 let quantifier_to_str op =
-match op with
+  match op with
   | Forall -> "forall"
   | Exists -> "exists"
 
@@ -312,6 +312,7 @@ let pp_pattern fmt p =
 let rec pp_expr outer pos fmt a =
   let e = unloc a in
   match e with
+  | Eerror -> assert false
   | Eterm (e, id) ->
 
     let pp fmt (e, id) =
@@ -322,7 +323,7 @@ let rec pp_expr outer pos fmt a =
     (match e with
      | Some _ -> (maybe_paren outer e_coloncolon pos pp)
      | _ -> pp)
-     fmt (e, id)
+      fmt (e, id)
 
   | Eliteral x ->
 
@@ -574,8 +575,8 @@ let rec pp_expr outer pos fmt a =
 
 and pp_else fmt (e : expr option) =
   match e with
-| None -> ()
-| Some x -> Format.fprintf fmt " else (%a)" (pp_expr e_else PRight) x
+  | None -> ()
+  | Some x -> Format.fprintf fmt " else (%a)" (pp_expr e_else PRight) x
 
 and pp_literal fmt lit =
   match lit with
@@ -591,51 +592,51 @@ and pp_literal fmt lit =
   | Ldate     d -> Format.fprintf fmt "%s" d
 
 and pp_ident_ident fmt a =
-match a with
-| (x, y) ->
-  Format.fprintf fmt "%a%a"
-  (pp_option (pp_postfix "." pp_id)) x
-  pp_id y
+  match a with
+  | (x, y) ->
+    Format.fprintf fmt "%a%a"
+      (pp_option (pp_postfix "." pp_id)) x
+      pp_id y
 
 and pp_ident_typ fmt a =
-match a with
-| (x, y, exts) ->
-  Format.fprintf fmt "%a%a%a"
-  pp_id x
-  pp_extensions exts
-  (pp_option (pp_prefix " : " pp_type)) y
+  match a with
+  | (x, y, exts) ->
+    Format.fprintf fmt "%a%a%a"
+      pp_id x
+      pp_extensions exts
+      (pp_option (pp_prefix " : " pp_type)) y
 
 and pp_fun_ident_typ fmt (arg : lident_typ) =
-match arg with
-| (x, None, exts) -> Format.fprintf fmt "%a%a" pp_id x pp_extensions exts
-| (x, Some y, exts) ->
+  match arg with
+  | (x, None, exts) -> Format.fprintf fmt "%a%a" pp_id x pp_extensions exts
+  | (x, Some y, exts) ->
     Format.fprintf fmt "(%a%a : %a)"
-    pp_id x
-    pp_extensions exts
-    pp_type y
+      pp_id x
+      pp_extensions exts
+      pp_type y
 
 and pp_fun_args fmt args =
-match args with
-| [] -> Format.fprintf fmt ""
-| _ -> Format.fprintf fmt " %a" (pp_list " " pp_fun_ident_typ) args
+  match args with
+  | [] -> Format.fprintf fmt ""
+  | _ -> Format.fprintf fmt " %a" (pp_list " " pp_fun_ident_typ) args
 
 (* -------------------------------------------------------------------------- *)
 and pp_field fmt { pldesc = f; _ } =
   match f with
   | Ffield (id, typ, dv, exts) ->
-      Format.fprintf fmt "%a%a : %a%a"
-        pp_id id
-        pp_extensions exts
-        pp_type typ
-        (pp_option (pp_prefix " = " (pp_expr e_equal PRight))) dv
+    Format.fprintf fmt "%a%a : %a%a"
+      pp_id id
+      pp_extensions exts
+      pp_type typ
+      (pp_option (pp_prefix " = " (pp_expr e_equal PRight))) dv
 
 (* -------------------------------------------------------------------------- *)
 and pp_extension fmt { pldesc = e; _ } =
   match e with
   | Eextension (id, args) ->
-        Format.fprintf fmt "[%%%a%a]"
-        pp_id id
-        (pp_option (pp_prefix " " (pp_list " " pp_simple_expr))) args
+    Format.fprintf fmt "[%%%a%a]"
+      pp_id id
+      (pp_option (pp_prefix " " (pp_list " " pp_simple_expr))) args
 
 and pp_extensions x = (pp_option (pp_list " " pp_extension)) x
 
@@ -650,46 +651,46 @@ let pp_to fmt ((to_, when_, effect) : (lident * expr option * expr option)) =
     (pp_option (pp_enclose " with effect {" "}@\n" (pp_expr e_default PNone))) effect
 
 let pp_specification_variable fmt (sv : (lident * type_t * expr option) loced) =
-match sv with
-| {pldesc = (id, typ, dv); _} ->
+  match sv with
+  | {pldesc = (id, typ, dv); _} ->
     Format.fprintf fmt "variable %a %a%a"
-        pp_id id
-        pp_type typ
-        (pp_option (pp_prefix " = " (pp_expr e_equal PRight))) dv
+      pp_id id
+      pp_type typ
+      (pp_option (pp_prefix " = " (pp_expr e_equal PRight))) dv
 
 (* -------------------------------------------------------------------------- *)
 let pp_value_option fmt opt =
-match opt with
+  match opt with
   | VOfrom e -> Format.fprintf fmt "from %a" pp_qualid e
   | VOto   e -> Format.fprintf fmt "to %a"   pp_qualid e
 
 let pp_asset_option fmt opt =
-match opt with
+  match opt with
   | AOasrole -> Format.fprintf fmt "as role"
   | AOidentifiedby id -> Format.fprintf fmt "identified by %a" pp_id id
   | AOsortedby id  -> Format.fprintf fmt "sorted by %a" pp_id id
 
 let pp_signature fmt s =
-match s with
+  match s with
   | Ssignature (id, xs) ->
-      Format.fprintf fmt "action %a%a"
-        pp_id id
-        (pp_do_if (List.length xs > 0) (pp_prefix " : " (pp_list ", " pp_type))) xs
+    Format.fprintf fmt "action %a%a"
+      pp_id id
+      (pp_do_if (List.length xs > 0) (pp_prefix " : " (pp_list ", " pp_type))) xs
 
 let operation_enum_to_str e =
-match e with
+  match e with
   | AOadd    -> "@add"
   | AOremove -> "@remove"
   | AOupdate -> "@update"
 
 let pp_asset_operation_enum fmt e =
- Format.fprintf fmt "%s" (operation_enum_to_str e)
+  Format.fprintf fmt "%s" (operation_enum_to_str e)
 
 let pp_asset_operation fmt (e : asset_operation) =
-match e with
-| AssetOperation (x, y) -> Format.fprintf fmt "[%a%a]"
-(pp_list " " pp_asset_operation_enum) x
-(pp_option (pp_prefix " " (pp_list " " pp_simple_expr))) y
+  match e with
+  | AssetOperation (x, y) -> Format.fprintf fmt "[%a%a]"
+                               (pp_list " " pp_asset_operation_enum) x
+                               (pp_option (pp_prefix " " (pp_list " " pp_simple_expr))) y
 
 let pp_label_expr fmt (le : label_expr) =
   let (lbl, e) = unloc le in
@@ -710,7 +711,7 @@ let pp_state_option fmt = function
 let pp_ident_state_option fmt item =
   match item with
   | (id, opts) ->
-      Format.fprintf fmt "%a%a"
+    Format.fprintf fmt "%a%a"
       pp_id id
       (pp_option (pp_prefix " " (pp_list " " pp_state_option))) opts
 
@@ -852,79 +853,79 @@ let rec pp_declaration fmt { pldesc = e; _ } =
       pp_id id
 
   | Dvariable (id, typ, dv, opts, cst, exts) ->
-     Format.fprintf fmt "%a%a %a %a%a%a"
-          pp_str (if cst then "constant" else "variable")
-          pp_extensions exts
-          pp_id id
-          pp_type typ
-          (pp_option (pp_prefix " " (pp_list " " pp_value_option))) opts
-          (pp_option (pp_prefix " = " (pp_expr e_equal PRight))) dv
+    Format.fprintf fmt "%a%a %a %a%a%a"
+      pp_str (if cst then "constant" else "variable")
+      pp_extensions exts
+      pp_id id
+      pp_type typ
+      (pp_option (pp_prefix " " (pp_list " " pp_value_option))) opts
+      (pp_option (pp_prefix " = " (pp_expr e_equal PRight))) dv
 
   | Denum (id, ids, exts) ->
-      Format.fprintf fmt "enum%a %a =\n@[<v 2>@]%a"
-        pp_extensions exts
-        pp_id id
-        (pp_list "\n" (pp_prefix "| " pp_id)) ids
+    Format.fprintf fmt "enum%a %a =\n@[<v 2>@]%a"
+      pp_extensions exts
+      pp_id id
+      (pp_list "\n" (pp_prefix "| " pp_id)) ids
 
   | Dstates (id, ids, exts) ->
-      Format.fprintf fmt "states%a%a%a"
-        pp_extensions exts
-        (pp_option (pp_prefix " " pp_id)) id
-        (pp_do_if (match ids with | Some l when List.length l > 0 -> true | _ -> false) (
-            fun fmt x->
-              Format.fprintf fmt " =@\n@[<v 2>@]%a"
-                (pp_option (pp_list "\n" (pp_prefix "| " pp_ident_state_option))) x)) ids
+    Format.fprintf fmt "states%a%a%a"
+      pp_extensions exts
+      (pp_option (pp_prefix " " pp_id)) id
+      (pp_do_if (match ids with | Some l when List.length l > 0 -> true | _ -> false) (
+           fun fmt x->
+             Format.fprintf fmt " =@\n@[<v 2>@]%a"
+               (pp_option (pp_list "\n" (pp_prefix "| " pp_ident_state_option))) x)) ids
 
   | Dasset (id, fields, opts, apo, ops, exts) ->
-      Format.fprintf fmt "asset%a%a %a%a%a%a"
-        pp_extensions exts
-        (pp_option pp_asset_operation) ops
-        pp_id id
-        (pp_prefix " " (pp_list " @," pp_asset_option)) opts
-        (pp_do_if (List.length fields > 0) ((fun fmt -> Format.fprintf fmt " = {@\n@[<v 2>%a@]}@\n" (pp_list ";@\n" pp_field)))) fields
-        (pp_list "@\n" pp_asset_post_option) apo
+    Format.fprintf fmt "asset%a%a %a%a%a%a"
+      pp_extensions exts
+      (pp_option pp_asset_operation) ops
+      pp_id id
+      (pp_prefix " " (pp_list " @," pp_asset_option)) opts
+      (pp_do_if (List.length fields > 0) ((fun fmt -> Format.fprintf fmt " = {@\n@[<v 2>%a@]}@\n" (pp_list ";@\n" pp_field)))) fields
+      (pp_list "@\n" pp_asset_post_option) apo
 
   | Daction (id, args, props, code, exts) ->
-      Format.fprintf fmt "action%a %a%a%a"
-        pp_extensions exts
-        pp_id id
-        pp_fun_args args
-        (pp_do_if (not (is_empty_action_properties_opt props code))
-           (fun fmt x ->
-              let pr, cod = x in
-              Format.fprintf fmt " = {@\n@[<v 2>%a%a@]@\n}"
-                pp_action_properties pr
-                (pp_option (fun fmt (code, exts) ->
-                     Format.fprintf fmt "effect%a {@\n@[<v 2>  %a@]}@\n"
-                       pp_extensions exts
-                       (pp_expr e_default PNone) code
-                   )) cod)) (props, code)
+    Format.fprintf fmt "action%a %a%a%a"
+      pp_extensions exts
+      pp_id id
+      pp_fun_args args
+      (pp_do_if (not (is_empty_action_properties_opt props code))
+         (fun fmt x ->
+            let pr, cod = x in
+            Format.fprintf fmt " = {@\n@[<v 2>%a%a@]@\n}"
+              pp_action_properties pr
+              (pp_option (fun fmt (code, exts) ->
+                   Format.fprintf fmt "effect%a {@\n@[<v 2>  %a@]}@\n"
+                     pp_extensions exts
+                     (pp_expr e_default PNone) code
+                 )) cod)) (props, code)
 
   | Dtransition (id, args, on, from, props, trs, exts) ->
-      Format.fprintf fmt "transition%a %a%a%a from %a%a"
-        pp_extensions exts
-        pp_id id
-        pp_fun_args args
-        (pp_option (fun fmt (a, b) ->
-             Format.fprintf fmt " on %a : %a"
-               pp_id a
-               pp_id b
-           )) on
-        pp_simple_expr from
-        (fun fmt (pr, ts) ->
-           Format.fprintf fmt " = {@\n@[<v 2>  %a%a@]@\n}"
-             (pp_do_if (not (is_empty_action_properties_opt props None)) pp_action_properties) pr
-             (pp_list "@\n" pp_transition) ts) (props, trs)
+    Format.fprintf fmt "transition%a %a%a%a from %a%a"
+      pp_extensions exts
+      pp_id id
+      pp_fun_args args
+      (pp_option (fun fmt (a, b) ->
+           Format.fprintf fmt " on %a : %a"
+             pp_id a
+             pp_id b
+         )) on
+      pp_simple_expr from
+      (fun fmt (pr, ts) ->
+         Format.fprintf fmt " = {@\n@[<v 2>  %a%a@]@\n}"
+           (pp_do_if (not (is_empty_action_properties_opt props None)) pp_action_properties) pr
+           (pp_list "@\n" pp_transition) ts) (props, trs)
 
   | Dextension (id, args) ->
-      Format.fprintf fmt "%%%a%a"
-        pp_id id
-        (pp_option (pp_prefix " " (pp_list " " pp_simple_expr))) args
+    Format.fprintf fmt "%%%a%a"
+      pp_id id
+      (pp_option (pp_prefix " " (pp_list " " pp_simple_expr))) args
 
   | Dnamespace (id, ds) ->
-      Format.fprintf fmt "namespace %a {@\n@[<v 2>  %a@]@\n}"
-         pp_id id
-        (pp_list "\n" pp_declaration) ds
+    Format.fprintf fmt "namespace %a {@\n@[<v 2>  %a@]@\n}"
+      pp_id id
+      (pp_list "\n" pp_declaration) ds
 
   | Dcontract (id, xs, dv, exts) ->
     Format.fprintf fmt "contract%a %a = {@\n@[<v 2>  %a@]@\n}%a"
@@ -950,10 +951,10 @@ let pp_archetype fmt { pldesc = m; _ } =
   | Marchetype es ->
     Format.fprintf fmt "%a@\n" (pp_list "@\n@\n" pp_declaration) es
   | Mextension (id, ds, es) ->
-  Format.fprintf fmt "archetype extension %a (@\n@[<v 2>  %a@]@\n) = {@\n@[<v 2>  %a@]@\n}@\n"
-     pp_id id
-    (pp_list "@,\n" pp_declaration) ds
-    (pp_list "@,\n" pp_declaration) es
+    Format.fprintf fmt "archetype extension %a (@\n@[<v 2>  %a@]@\n) = {@\n@[<v 2>  %a@]@\n}@\n"
+      pp_id id
+      (pp_list "@,\n" pp_declaration) ds
+      (pp_list "@,\n" pp_declaration) es
 
 
 (* -------------------------------------------------------------------------- *)

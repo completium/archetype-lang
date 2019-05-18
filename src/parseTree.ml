@@ -129,6 +129,7 @@ type expr_unloc =
   | Ematchwith    of expr * (pattern list * expr) list
   | Equantifier   of quantifier * lident_typ * expr
   | Elabel        of lident * expr
+  | Eerror
 [@@deriving yojson, show {with_path = false}]
 
 and function_ =
