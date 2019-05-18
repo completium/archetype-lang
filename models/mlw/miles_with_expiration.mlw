@@ -33,7 +33,10 @@ module Miles
                                    type field = field
 
   (* for storage invariant initialisation *)
-  axiom def_mile_amounts : exists default_mile_amounts. forall m : key. get default_mile_amounts m > 0
+  val function empty_mile_amounts     : map int
+  val function empty_mile_expirations : map date
+  val function empty_owner_miles      : map acol
+  axiom def_mile_amounts : forall m : key. empty_mile_amounts m > 0
 
   type storage = {
     mutable admin            : role;
@@ -52,6 +55,18 @@ module Miles
     mutable ename            : option entry;
   } invariant { 
     forall m : key. get mile_amounts m > 0
+  } by {
+    admin            = 0;
+    miles            = Nil;
+    mile_amounts     = empty_mile_amounts;
+    mile_expirations = empty_mile_expirations;
+    owners           = Nil;
+    owner_miles      = empty_owner_miles;
+    ops              = Nil;
+    miles_added      = Nil;
+    miles_removed    = Nil;
+    tr               = Nil;
+    ename            = None;
   }
 
   (* TODO : make this a storage invariant *)
