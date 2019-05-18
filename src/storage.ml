@@ -1,67 +1,70 @@
 open Ident
 open Model
 
-type storage_policy = Record | Flat
+type storage_policy =
+  | Record
+  | Flat
+  | Hybrid of (string * string) list
+[@@deriving show {with_path = false}]
+
+type execution_mode =
+  | WithSideEffect
+  | WithoutSideEffect
+[@@deriving show {with_path = false}]
+
+type sorting_policy =
+  | OnTheFly
+  | OnChange
+  | None
 [@@deriving show {with_path = false}]
 
 let storage_policy = ref Record
 (*let storage_policy = ref Flat*)
+let execution_mode = ref WithSideEffect
+let sorting_policy = ref OnTheFly
 
-type require =
-  | Membership
-[@@deriving show {with_path = false}]
 
-type ensure =
-  | Remove (*  ensures  { forall x:mile. mem x s.miles <-> (mem x (old s).miles /\ x <> m) } *)
-  | Invariant
-  | Sum
-  | Min
-  | Max
-[@@deriving show {with_path = false}]
-
-type storage_field_operation_type =
+type 'id storage_field_operation_type =
   | Get
   | Set
-  | Add
+  | AddContainer of Model.container
+  | RemoveContainer of Model.container
   | Addnofail
   | Remove
   | Removenofail
-  | Addasset     of lident
-  | Removeasset  of lident
+  | AddAsset     of 'id
+  | RemoveAsset  of 'id
 [@@deriving show {with_path = false}]
 
-type storage_field_operation = {
+type 'id storage_field_operation = {
   name     : lident;
-  typ      : storage_field_operation_type;
-  requires : require list;
-  ensures  : ensure list;
+  typ      : 'id storage_field_operation_type;
 }
 [@@deriving show {with_path = false}]
 
-type storage_field_type =
-  | Fbasic  of vtyp
-  | Frecord of ident
-  | Fenum   of ident
-  | Flist   of storage_field_type
-  | Fset    of storage_field_type
-  | Fmap    of vtyp * storage_field_type
-  | Ftuple  of storage_field_type list
-  | Flambda of storage_field_type * storage_field_type
+type 'id storage_field_type =
+  | FBasic            of vtyp
+  | FKeyCollection    of 'id * vtyp
+  | FRecordCollection of 'id
+  | FEnum             of 'id
+  | FContainer        of Model.container * 'id storage_field_type
 [@@deriving show {with_path = false}]
 
 type ('id, 'typ, 'term) record_field = {
-    asset   : 'id option;
-    name    : 'id;
-    typ     : storage_field_type;
-    ghost   : bool;
-    default : 'term option; (* initial value *)
-    ops     : storage_field_operation list;
-    loc     : Location.t [@opaque]
-  }
+  asset   : 'id option;
+  name    : 'id;
+  typ     : 'id storage_field_type;
+  ghost   : bool;
+  default : 'term option; (* initial value *)
+  ops     : 'id storage_field_operation list;
+  loc     : Location.t [@opaque]
+}
 [@@deriving show {with_path = false}]
 
 type ('id, 'typ, 'term) record = {
+  name        : 'id;
   fields      : ('id, 'typ, 'term) record_field list;
+  operations  : 'id storage_field_operation list;
   invariants  : ('id, 'id lterm_gen) label_term list;
   init        : ((ident * 'term) list) list;
 }
