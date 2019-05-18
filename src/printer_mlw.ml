@@ -16,51 +16,51 @@ let pp_ident fmt ident =
   Format.fprintf fmt "%s" ident.id_str
 
 let rec pp_qualid fmt q =
-match q with
+  match q with
   | Qident id ->
-      Format.fprintf fmt "%a"
-        pp_ident id
+    Format.fprintf fmt "%a"
+      pp_ident id
 
   | Qdot (q, id) ->
-      Format.fprintf fmt "%a.%a"
-        pp_qualid q
-        pp_ident id
+    Format.fprintf fmt "%a.%a"
+      pp_qualid q
+      pp_ident id
 
 (* -------------------------------------------------------------------------- *)
 
 let pp_decl fmt decl =
-match decl with
+  match decl with
   | Dtype _tds ->
-      Format.fprintf fmt "FIXME"
+    Format.fprintf fmt "FIXME"
 
   | Dlogic _lds ->
-      Format.fprintf fmt "FIXME"
+    Format.fprintf fmt "FIXME"
 
   | Dind (_ind_sign, _ind_decls) ->
-      Format.fprintf fmt "FIXME"
+    Format.fprintf fmt "FIXME"
 
   | Dprop (_prop_kin, _id, _terms) ->
-      Format.fprintf fmt "FIXME"
+    Format.fprintf fmt "FIXME"
 
   | Dlet (id, _ghost, _kind, _e) ->
-      Format.fprintf fmt "let %a = FIXME"
-        pp_ident id
+    Format.fprintf fmt "let %a = FIXME"
+      pp_ident id
 
   | Drec _fundefs ->
-      Format.fprintf fmt "FIXME"
+    Format.fprintf fmt "FIXME"
 
   | Dexn (_id, _pty, _mask) ->
-      Format.fprintf fmt "FIXME"
+    Format.fprintf fmt "FIXME"
 
   | Dmeta (_id, _metargs) ->
-      Format.fprintf fmt "FIXME"
+    Format.fprintf fmt "FIXME"
 
   | Dclone (_q, _css) ->
-      Format.fprintf fmt "FIXME"
+    Format.fprintf fmt "FIXME"
 
   | Duse q ->
-      Format.fprintf fmt "use %a"
-        pp_qualid q
+    Format.fprintf fmt "use export %a"
+      pp_qualid q
 
 
 let pp_mlw fmt decls =
