@@ -15,8 +15,8 @@ module Miles
 (* TRACES *)
 
   type asset =
-  | Mile key
-  | Owner key
+  | Mile
+  | Owner
 
   type entry =
   | Add
@@ -242,7 +242,7 @@ module Miles
       else filter_clear_expired e s tl
     end
 
-    let clear_expired (e : env) (s : storage) (owner : address) : transfers
+    let clear_expired (e : env) (s : storage) : transfers
     raises { NotFound, InvalidCaller }
     requires { is_empty s.miles_added }
     requires { is_empty s.miles_removed }
@@ -265,56 +265,83 @@ module Miles
       done;
       Contract.empty
 
-  let all_entries (e : env)
-                  (s : storage)
+  let all_entries (e : env) (s : storage)
                   (* add *)
                   (ow : key) (m : key) (a : int) (ex : date)
                   (* consume *)
                   (owner : address) (nbmiles : int)
                   (* clear expired *)
-                  (owner_clear_expired : address)
-  raises { NotFound, InvalidCaller, InvalidCondition }                
-  (* any action is performed only be admin *)
-  ensures { forall a:Tr.action. Tr.performed_only_by_role e s.tr (Cons a Nil) (Cons s.admin Nil) }
+  raises { NotFound, InvalidCaller, InvalidCondition }   
+  requires { s.tr = Nil }
+  requires { s.ops = Nil }             
+  (* any action is performed only by rome admin *)
+  ensures { forall ac : Tr.action, a : asset. Tr.performed_only_by_role e s.tr (Cons ac Nil) (Cons a Nil) (Cons s.admin Nil) }
+  (* remove miles is performed only by action (consome or clear_expired)*)
+  ensures { Tr.performed_only_by_action e s.tr (Cons Tr.Rm Nil) (Cons Mile Nil) (Cons Consume (Cons ClearExpired Nil)) }
+  (* add is not permformed by consume *)
   =
-  s.tr  <- Nil;
-  s.ops <- Nil;
   match s.ename with
-   | Some Add -> Contract.empty
+   | Some Add -> 
+    if caller e <> s.admin then raise InvalidCaller;
+    if not (a > 0) then raise InvalidCondition;
+    s.tr <- s.tr ++ Tr.mk_trace Add Owner Tr.Add;
+    s.tr <- s.tr ++ Tr.mk_trace Add Mile Tr.Add;
+    (*addifnotexist ow Nil s;
+    add_miles ow m a ex s;*)
+    Contract.empty
    | Some Consume -> 
     if caller e <> s.admin then raise InvalidCaller;
     if nbmiles <= 0 then raise InvalidCondition;
     let o = get_owner s owner in
     let miles = get_miles s o in
     let l = filter_consume e s miles in
-    (*let l = FConsume.filter e s miles in*)
     if not (nbmiles <= Amounts.sum s l) then raise InvalidCondition;
     let remainder = ref nbmiles in
     try
       for i = 0 to (length l) - 1 do
-      invariant { forall a:Tr.action. Tr.performed_only_by_role e s.tr (Cons a Nil) (Cons s.admin Nil) }
+      invariant { forall ac : Tr.action, a : asset. Tr.performed_only_by_role e s.tr (Cons ac Nil) (Cons a Nil) (Cons s.admin Nil) }
+      invariant { Tr.performed_only_by_action e s.tr (Cons Tr.Rm Nil) (Cons Mile Nil) (Cons Consume (Cons ClearExpired Nil)) }
         let m = nth i l in
         if get_amount s m > !remainder
         then
-          (set_amount m (get_amount s m - !remainder) s;
-           s.tr <- s.tr ++ Tr.mk_trace Consume (Mile m) (Tr.Update Amount);
+          ((*set_amount m (get_amount s m - !remainder) s;*)
+           s.tr <- s.tr ++ Tr.mk_trace Consume Mile (Tr.Update Amount);
            remainder := 0;
            raise Break)
         else if get_amount s m = !remainder
         then
           (remainder := 0;
-           remove_miles o m s;
-           s.tr <- s.tr ++ Tr.mk_trace Consume (Mile m) Tr.Rm;
+           (*remove_miles o m s;*)
+           s.tr <- s.tr ++ Tr.mk_trace Consume Mile Tr.Rm;
            raise Break)
         else
           (remainder := !remainder - get_amount s m;
-           remove_miles o m s;
-           s.tr <- s.tr ++ Tr.mk_trace Consume (Mile m) Tr.Rm)
+           (*remove_miles o m s;*)
+           s.tr <- s.tr ++ Tr.mk_trace Consume Mile Tr.Rm)
       done;
-    with Break -> assert { !remainder = 0 }; ()
+    with Break -> (*assert { !remainder = 0 };*) ()
     end;
-    assert { !remainder = 0 };
+    (*assert { !remainder = 0 };*)
     Contract.empty
-   | Some ClearExpired -> Contract.empty
+   | Some ClearExpired ->
+      if caller e <> s.admin then raise InvalidCaller;
+      for i = 0 to (length s.owners)-1 do
+      invariant { forall ac : Tr.action, a : asset. Tr.performed_only_by_role e s.tr (Cons ac Nil) (Cons a Nil) (Cons s.admin Nil) }
+      invariant { Tr.performed_only_by_action e s.tr (Cons Tr.Rm Nil) (Cons Mile Nil) (Cons Consume (Cons ClearExpired Nil)) }
+        let o = nth i s.owners in
+        let miles = get_miles s o in
+        let l = filter_clear_expired e s miles in
+        label Internal_loop in
+        for j = 0 to (length l) - 1 do
+        invariant { forall ac : Tr.action, a : asset. Tr.performed_only_by_role e s.tr (Cons ac Nil) (Cons a Nil) (Cons s.admin Nil) }
+        invariant { Tr.performed_only_by_action e s.tr (Cons Tr.Rm Nil) (Cons Mile Nil) (Cons Consume (Cons ClearExpired Nil)) }
+          let m = nth j l in
+          s.tr <- s.tr ++ Tr.mk_trace Consume Mile Tr.Rm
+          (*remove_miles o m s;*)
+        done;
+        
+      done;
+      Contract.empty
+   | None -> Contract.empty
   end
 end
