@@ -42,6 +42,8 @@ let process (filename, channel) =
     | ParseUtils.ParseError (loc, error) ->
       let msg : string = (match error with
           | PE_LexicalError s -> s
+          | PE_MissingClosedParenthesis (x, y) -> Format.sprintf "missing %s for %s" x y
+          | PE_UnbalancedParenthesis x -> Format.sprintf "unbalanced %s" x
           | PE_Unknown -> "syntax error") in
 
       let loc : Location.t = (match loc with
