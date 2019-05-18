@@ -15,6 +15,9 @@ run: __force__
 compiler: __force__
 	dune build --profile=$(PROFILE) compiler.exe
 
+mlw: __force__
+	dune build --profile=$(PROFILE) mlw.exe
+
 plugin: __force__
 	dune build --profile=$(PROFILE) archetype_plugin.cmxs
 

@@ -38,3 +38,9 @@
   (libraries archetype menhirLib why3)
   (public_name archetype)
   (name     compiler))
+
+
+(executable
+  (modules   mlw)
+  (libraries archetype menhirLib why3)
+  (name      mlw))

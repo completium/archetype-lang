@@ -4,7 +4,7 @@
 .PHONY: all merlin build build-deps run clean
 
 # --------------------------------------------------------------------
-all: build plugin compiler merlin
+all: build plugin compiler mlw merlin
 
 build:
 	@dune build
@@ -16,6 +16,10 @@ plugin:
 compiler:
 	$(MAKE) -C src compiler.exe
 	cp -f _build/default/src/compiler.exe .
+
+mlw:
+	$(MAKE) -C src mlw.exe
+	cp -f _build/default/src/mlw.exe .
 
 extract:
 	$(MAKE) -C src/liq extract.exe
