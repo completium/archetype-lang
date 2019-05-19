@@ -4,7 +4,7 @@
   open Location
   open ParseUtils
 
-  let error ?loc code = raise (ParseError (loc, code))
+  let error loc = raise (ParseError [PE_Unknown loc])
 
   let dummy_action_properties = {
       calledby        = None;
@@ -25,7 +25,7 @@
     | Eseq (a, b) -> (split_seq_label a) @ (split_seq_label b)
     | Elabel (lbl, e) -> [mkloc loc (Some lbl, e)]
     | Eterm _ -> [mkloc loc (None, e)]
-    | _ -> error ~loc:(Location.loc e) PE_Unknown
+    | _ -> error (Location.loc e)
 
 %}
 
@@ -210,12 +210,12 @@ snl2(separator, X):
 start_expr:
 | x=expr EOF { x }
 | x=loc(error)
-      { error ~loc:(loc x) PE_Unknown }
+      { error (loc x) }
 
 main:
  | x=loc(archetype_r) { x }
  | x=loc(error)
-     { error ~loc:(loc x) PE_Unknown }
+     { error (loc x) }
 
 archetype_r:
  | x=implementation_archetype EOF { x }

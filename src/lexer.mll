@@ -4,7 +4,7 @@
 
   let lex_error lexbuf msg =
     let loc = Location.of_lexbuf lexbuf in
-    raise (ParseUtils.ParseError (Some loc, PE_LexicalError msg))
+    raise (ParseUtils.ParseError ([PE_LexicalError (loc, msg)]))
 
   let keywords = Hashtbl.create 0
 

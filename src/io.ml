@@ -29,8 +29,11 @@ let parse_archetype ?(name = "") (inc : in_channel) =
   let reader = lexbuf_from_channel name inc in
   parserfun_entry (fun () -> lexer reader)
 
-(*let check_balance_paren lexbuf =
-  let errors, st = List.fold_left (fun (errors, st) i ->
+
+
+
+(* let check_balance_paren lexbuf =
+   let errors, st = List.fold_left (fun (errors, st) i ->
       match Lexer.token i with
       | P.LBRACE -> (errors, (Stack.push st i))
       | P.RBRACE ->
@@ -38,15 +41,15 @@ let parse_archetype ?(name = "") (inc : in_channel) =
           try
             (errors, (Stack.pop i))
           with
-          | Stack.Empty ->     PE_UnbalancedParenthesis kind,  q lexbuf
+          | Stack.Empty -> PE_UnbalancedParenthesis kind,  q lexbuf
         end
       | _ -> (errors, q)) ([], Stack.create() ) lexbuf in
-  if (not (Stack.is_empty st))
-  then (
+   if (not (Stack.is_empty st))
+   then (
     let t = Stack.pop st in
     let loc = Location.mkloc () in
-    raise (ParseError (PE_MissingParenthesis , loc)))
-*)
+    raise (ParseError (PE_MissingParenthesis , loc))) *)
+
 
 
 

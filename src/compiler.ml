@@ -23,7 +23,7 @@ let compile_and_print (filename, channel) =
   if !opt_lsp
   then Lsp.process (filename, channel)
   else (
-    let pt = Io.parse_archetype2 ~name:filename channel in
+    let pt = Io.parse_archetype ~name:filename channel in
     if !opt_json
     then Format.printf "%s\n" (Yojson.Safe.to_string (ParseTree.archetype_to_yojson pt))
     else (
@@ -111,9 +111,9 @@ let main () =
         in*)
 
   with
-  | ParseUtils.ParseError exn ->
+  | ParseUtils.ParseError exns ->
     close dispose channel;
-    Format.eprintf "%a@." ParseUtils.pp_parse_error exn;
+    Format.eprintf "%a@." ParseUtils.pp_parse_errors exns;
     exit 1
   | Compiler_error ->
     close dispose channel;
