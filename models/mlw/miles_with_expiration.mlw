@@ -1,16 +1,6 @@
 module Miles
 
-  use int.Int
-  use ref.Ref
-  use option.Option
-  use list.List
-  use list.Append
-
-  use archetype.Types
-  use archetype.Contract
-  use archetype.Map
-  use archetype.AssetCollection
-  use archetype.Trace
+  use archetype.Lib
 
 (* TRACES *)
 
@@ -72,9 +62,6 @@ module Miles
     tr               = Nil;
     ename            = None;
   }
-
-  (* TODO : make this a storage invariant *)
-  (*axiom Amount_gt0 : forall s : storage, m : key. get s.mile_amounts m > 0*)
 
   (* getters *)
   let get_mile       (s : storage) (k : key) : key

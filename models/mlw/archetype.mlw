@@ -375,3 +375,19 @@ theory Trace
     Mem.mem (entry x) entries
 
 end
+
+module Lib
+ 
+  use export int.Int
+  use export ref.Ref
+  use export option.Option
+  use export list.List
+  use export list.Append
+  
+  use export Types
+  use export Contract
+  use export Map
+  use export AssetCollection
+  use export Trace
+
+end
