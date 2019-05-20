@@ -25,7 +25,7 @@ action add (ow : address) (newmile : mile) = {
    }
 
    effect {
-     owner.addifnotexist { addr = ow; miles = [newmile] };
+     owner.addifnotexist { addr = ow; miles = [newmile] }
    }
 }
 
