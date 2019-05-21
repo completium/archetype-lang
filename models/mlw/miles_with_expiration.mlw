@@ -126,7 +126,6 @@ module Miles
   requires { mem m s.miles }
   requires { a > 0 }
   ensures  { Amounts.sum (old s) (old s).miles = Amounts.sum s s.miles - a + get_amount (old s) m }
-  ensures { (old s).miles = s.miles }
   = s.mile_amounts <- set s.mile_amounts m a
 
   let update_owner (o : key) (new_miles : acol) (s : storage) : unit
