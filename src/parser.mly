@@ -134,6 +134,7 @@
 %token EOF
 %token FAILIF
 %token REQUIRE
+%token EXPR_ERROR
 
 %token <string> IDENT
 %token <string> STRING
@@ -710,6 +711,9 @@ simple_expr_r:
 
  | x=ident
      { Eterm (None, x) }
+
+| EXPR_ERROR
+     { Eerror }
 
  | x=paren(expr_r)
      { x }

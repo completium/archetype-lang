@@ -161,7 +161,7 @@ and label_exprs = label_expr list
 
 (* -------------------------------------------------------------------- *)
 and extension_unloc =
- | Eextension of lident * expr list option (** extension *)
+  | Eextension of lident * expr list option (** extension *)
 [@@deriving yojson, show {with_path = false}]
 
 and extension = extension_unloc loced

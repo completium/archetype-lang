@@ -6,10 +6,8 @@ action main = {
   }
 }
 
-(*
 action main2 = {
   effect {
-    to
+    f(); to
   }
 }
-*)

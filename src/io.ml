@@ -1,13 +1,15 @@
 (* -------------------------------------------------------------------- *)
-module P = Parser
-module L = Lexing
-module I = P.MenhirInterpreter
+open Parser
+open Parser.Incremental
+open Parser.MenhirInterpreter
+open Lexing
+open PureLexer
+open ParseError
 
-exception ParseError
 
 (* -------------------------------------------------------------------- *)
-let parserfun_entry =
-  MenhirLib.Convert.Simplified.traditional2revised P.main
+(* let parserfun_entry =
+   MenhirLib.Convert.Simplified.traditional2revised P.main *)
 
 (* -------------------------------------------------------------------- *)
 let lexbuf_from_channel = fun name channel ->
@@ -21,13 +23,13 @@ let lexbuf_from_channel = fun name channel ->
   lexbuf
 
 (* -------------------------------------------------------------------- *)
-let lexer (lexbuf : L.lexbuf) =
-  let token = Lexer.token lexbuf in
-  (token, L.lexeme_start_p lexbuf, L.lexeme_end_p lexbuf)
+(* let lexer (lexbuf : L.lexbuf) =
+   let token = Lexer.token lexbuf in
+   (token, L.lexeme_start_p lexbuf, L.lexeme_end_p lexbuf)
 
-let parse_archetype ?(name = "") (inc : in_channel) =
-  let reader = lexbuf_from_channel name inc in
-  parserfun_entry (fun () -> lexer reader)
+   let parse_archetype ?(name = "") (inc : in_channel) =
+   let reader = lexbuf_from_channel name inc in
+   parserfun_entry (fun () -> lexer reader) *)
 
 
 
@@ -53,47 +55,86 @@ let parse_archetype ?(name = "") (inc : in_channel) =
 
 
 
-(* The loop which drives the parser. At each iteration, we analyze a
-   checkpoint produced by the parser, and act in an appropriate manner.
-   [lexbuf] is the lexing buffer. [checkpoint] is the last checkpoint produced
-   by the parser. *)
-let rec loop lexbuf (checkpoint : ParseTree.archetype I.checkpoint) =
-  match checkpoint with
-  | I.InputNeeded _env ->
-    (* The parser needs a token. Request one from the lexer,
-       and offer it to the parser, which will produce a new
-       checkpoint. Then, repeat. *)
-    let token = (match Lexer.token lexbuf with
-        | P.LBRACE -> P.LBRACE
-        | v -> v) in
-    let startp = lexbuf.lex_start_p
-    and endp = lexbuf.lex_curr_p in
+let resume_on_error last_reduction lex =
+  match last_reduction with
+  | `FoundCommandAt checkpoint ->
+    let lex =
+      Lexer.skip_until_before (fun t -> t = SEMI_COLON || t = RBRACE) lex
+    in
+    let lex =
+      if Lexer.get' lex = SEMI_COLON then snd (Lexer.next lex) else lex
+    in
+    let checkpoint = Parser.MenhirInterpreter.offer checkpoint (Parser.EXPR_ERROR, dummy_pos, dummy_pos) in
+    (lex, checkpoint)
+  | (`FoundNothingAt checkpoint | `FoundDefinitionAt checkpoint) ->
+    (Lexer.skip_until_before
+       (function EOF | ACTION -> true | _ -> false)
+       lex,
+     checkpoint)
 
-    let checkpoint = I.offer checkpoint (token, startp, endp) in
-    loop lexbuf checkpoint
-  | I.Shifting _
-  | I.AboutToReduce _ ->
-    let checkpoint = I.resume checkpoint in
-    loop lexbuf checkpoint
-  | I.HandlingError _env ->
-    (* The parser has suspended itself because of a syntax error. Stop. *)
-    Printf.fprintf stderr
-      "At offset %d: syntax error.\n%!"
-      (L.lexeme_start lexbuf);
-    let token = P.BREAK in
-    let startp = L.dummy_pos
-    and endp = L.dummy_pos in
-    let checkpoint = I.offer checkpoint (token, startp, endp) in
-    loop lexbuf checkpoint
-  | I.Accepted v ->
-    (* The parser has succeeded and produced a semantic value. Print it. *)
-    v
-  | I.Rejected ->
-    (* The parser rejects this input. This cannot happen, here, because
-       we stop as soon as the parser reports [HandlingError]. *)
-    assert false
+(** This function updates the last fully correct state of the parser. *)
+let update_last_reduction checkpoint production last_reduction =
+  match lhs production with
+  | X (N N_expr_r) ->
+    `FoundCommandAt checkpoint
+  | X (N N_declaration_r) ->
+    `FoundDefinitionAt checkpoint
+  | _ ->
+    last_reduction
 
-let parse_archetype2 ?(name = "") (inc : in_channel) =
-  let _ = name in
-  let lexbuf = L.from_channel inc in
-  loop lexbuf (P.Incremental.main lexbuf.lex_curr_p)
+let parse lexbuf =
+  Lexer.initialize lexbuf;
+
+  let rec on_error last_reduction lexer checkpoint =
+    contextual_error_msg lexer checkpoint (fun () ->
+        resume_on_error last_reduction lexer
+      )
+
+  (** [run] is the loop function of the parser.
+
+      We maintain [last_reduction] as seen earlier but we also
+      save [input_needed] which is the last state of the automaton
+      that asked for a token. Since we can change the next token
+      observe by this state when we skip tokens, it is the right state from
+      which a recovering can be triggered.
+
+      [lexer] and [checkpoint] are the (purely functional) state of
+      the lexer and the parser respectively.
+  *)
+  and run last_reduction input_needed lexer checkpoint =
+    match checkpoint with
+    | InputNeeded _ ->
+      let token, lexer = Lexer.next lexer in
+      (** Notice that we update [input_needed] here. *)
+      run last_reduction checkpoint lexer (offer checkpoint token)
+    | Accepted x ->
+      (** We will always return a semantic value. *)
+      x
+    | Rejected
+    | HandlingError _ ->
+      (** [on_error] is responsible for recovering from the parsing
+          error by returning a lexer state and a parser state that can
+          work together to complete the analysis if the suffix of the
+          input is syntactically correct. *)
+      let lexer, after_error = on_error last_reduction lexer input_needed in
+      run last_reduction input_needed lexer after_error
+    | Shifting _ ->
+      (** Nothing special here, we simply resume parsing. *)
+      run last_reduction input_needed lexer (resume checkpoint)
+    | AboutToReduce (_, production) ->
+      (** At this point, we recall that the prefix of the input has been
+          successfully recognized as a nonterminal. *)
+      run
+        (update_last_reduction input_needed production last_reduction)
+        input_needed
+        lexer
+        (resume checkpoint)
+  in
+  let checkpoint = main lexbuf.lex_curr_p in
+  let lexer = Lexer.start in
+  run (`FoundNothingAt checkpoint) checkpoint lexer checkpoint
+
+let parse_archetype ?(name = "") (inc : in_channel) =
+  Error.resume_on_error ();
+  let lexbuf = lexbuf_from_channel name inc in
+  parse lexbuf
