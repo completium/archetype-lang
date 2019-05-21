@@ -6,4 +6,4 @@
 
 Archetype language is a DSL (Domain Specific Language) to describe blockchain business processes.
 
-[Online documentation(https://edukera.gitbook.io/archetype)]
+[Online documentation](https://edukera.gitbook.io/archetype)
