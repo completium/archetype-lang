@@ -145,7 +145,7 @@ type const =
 
 type ('typ, 'node) struct_poly = {
   node : 'node;                   (* kind of object *)
-  type_ : 'typ;                   (* type of object *)
+  type_ : 'typ option;                   (* type of object *)
   fvs : (ident * 'typ) list;      (* free variable *)
   label : ident option;           (* label (typically for instruction) *)
   loc : Location.t [@opaque];     (* location of object *)
@@ -260,15 +260,7 @@ type ('id, 'typ, 'pattern) pattern_poly = ('typ, ('id, 'typ, 'pattern) pattern_n
 
 and ('id, 'typ, 'pattern) pattern_node =
   | Mwild
-  | Mvar of 'id
-  | Mapp of ('id, 'typ) qualid_gen * 'pattern list
-  | Mrec of (('id, 'typ) qualid_gen * 'pattern) list
-  | Mtuple of 'pattern list
-  | Mas of 'pattern * 'id * bool
-  | Mor of 'pattern * 'pattern
-  | Mscope of ('id, 'typ) qualid_gen * 'pattern
-  | Mparen of 'pattern
-  | Mghost of 'pattern
+  | Mconst of 'id
 [@@deriving show {with_path = false}]
 
 type ('id, 'typ) pattern_gen = ('id, 'typ, ('id, 'typ) pattern_gen) pattern_poly
@@ -278,51 +270,16 @@ type pattern = (lident, type_) pattern_gen
 [@@deriving show {with_path = false}]
 
 
-(* -------------------------------------------------------------------- *)
-
-type ('id, 'term) lterm_poly = (ltype_, ('id, 'term) lterm_node) struct_poly
-[@@deriving show {with_path = false}]
-
-and ('id, 'term) lterm_node =
+type ('id, 'typ, 'term) term_node  =
   | Lquantifer of quantifier * 'id * ltype_ * 'term
-  | Limply of 'term * 'term
-  | Lletin of 'id * 'term * ltype_ * 'term
-  | Lnot of 'term
-  | Lapp of 'term * 'term list
-  | Llogical of logical_operator * 'term * 'term
-  | Lcomp of comparison_operator * 'term * 'term
-  | Larith of arithmetic_operator * 'term * 'term
-  | Luarith of unary_arithmetic_operator * 'term
-  | Lvar of 'id
-  | Larray of 'term list
-  | Llit of ltype_ bval_gen
-  | Ldot of 'term * 'id
-  | Lconst of const
-  | Ltuple of 'term list
-[@@deriving show {with_path = false}]
-
-type ('id) lterm_gen = ('id, ('id) lterm_gen) lterm_poly
-[@@deriving show {with_path = false}]
-
-type lterm = lident lterm_gen
-[@@deriving show {with_path = false}]
-
-
-(* -------------------------------------------------------------------- *)
-
-type ('id, 'typ, 'term) pterm_poly = ('typ, ('id, 'typ, 'term) pterm_node) struct_poly
-[@@deriving show {with_path = false}]
-
-and ('id, 'typ, 'term) pterm_node  =
-  | Papp of ('term * ('term) list)
-  | Pmethod of ('term * 'id * ('term) list)
-  | Plambda of 'id * 'typ option * bool * 'term
+  | Pif of ('term * 'term * 'term option)
+  | Pmatchwith of 'term * (('id, 'typ) pattern_gen * 'term) list
+  | Pcall of ('id option * 'id * (('id * 'typ ) list * 'term) list)
   | Plogical of logical_operator * 'term * 'term
   | Pnot of 'term
   | Pcomp of comparison_operator * 'term * 'term
   | Parith of arithmetic_operator * 'term * 'term
   | Puarith of unary_arithmetic_operator * 'term
-  | Peffect of (assignment_operator * 'id * 'term) list
   | Precord of (('id, 'typ) qualid_gen * 'term) list
   | Pletin of 'id * 'term * 'typ option * 'term
   | Pvar of 'id
@@ -331,6 +288,23 @@ and ('id, 'typ, 'term) pterm_node  =
   | Pdot of 'term * 'id
   | Pconst of const
   | Ptuple of 'term list
+[@@deriving show {with_path = false}]
+
+(* -------------------------------------------------------------------- *)
+
+type ('id, 'typ, 'term) lterm_poly = (ltype_, ('id, 'typ, 'term) term_node) struct_poly
+[@@deriving show {with_path = false}]
+
+type ('id, 'typ) lterm_gen = ('id, 'typ, ('id, 'typ) lterm_gen) lterm_poly
+[@@deriving show {with_path = false}]
+
+type lterm = (lident, type_) lterm_gen
+[@@deriving show {with_path = false}]
+
+
+(* -------------------------------------------------------------------- *)
+
+type ('id, 'typ, 'term) pterm_poly = ('typ, ('id, 'typ, 'term) term_node) struct_poly
 [@@deriving show {with_path = false}]
 
 type ('id, 'typ) pterm_gen = ('id, 'typ, ('id, 'typ) pterm_gen) pterm_poly
@@ -346,16 +320,16 @@ type ('id, 'typ, 'term, 'instr) instruction_poly = ('typ, ('id, 'typ, 'term, 'in
 [@@deriving show {with_path = false}]
 
 and ('id, 'typ, 'term, 'instr) instruction_node =
-  | Iif of ('term * 'instr * 'instr option)                       (* condition * then_ * else_ *)
+  | Iif of ('term * 'instr * 'instr)                       (* condition * then_ * else_ *)
   | Ifor of ('id * 'term * 'instr)                                (* id * collection * body *)
-  | Iseq of ('instr * 'instr)                                     (* lhs ; rhs*)
+  | Iseq of 'instr list                                   (* lhs ; rhs*)
   | Imatchwith of 'term * (('id, 'typ) pattern_gen * 'instr) list (* match 'term with ('pattern * 'instr) list *)
-  | Iassign of (assignment_operator * 'term * 'term)              (* $2 assignment_operator $3 *)
+  | Iassign of (assignment_operator * 'id * 'term)              (* $2 assignment_operator $3 *)
   | Irequire of (bool * 'term)                                    (* $1 ? require : failif *)
   | Itransfer of ('term * bool * ('id, 'typ) qualid_gen option)   (* value * back * dest *)
   | Ibreak
   | Iassert of 'term
-  | Isimple of 'term
+  | Icall of ('term option * 'id * ('term) list)
 [@@deriving show {with_path = false}]
 
 type ('id, 'typ, 'term) instruction_gen = ('id, 'typ, 'term, ('id, 'typ, 'term) instruction_gen) instruction_poly
@@ -382,10 +356,10 @@ type ('id, 'typ, 'term) variable = {
 }
 [@@deriving show {with_path = false}]
 
-type 'id predicate = {
+type ('id, 'typ) predicate = {
   name : 'id;
-  args : ('id * ('id lterm_gen)) list;
-  body : 'id lterm_gen;
+  args : ('id * (('id, 'typ) lterm_gen)) list;
+  body : ('id, 'typ) lterm_gen;
   loc  : Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]
@@ -394,20 +368,20 @@ type ('id, 'typ) definition = {
   name : 'id;
   typ  : 'typ;
   var  : 'id;
-  body : 'id lterm_gen;
+  body : ('id, 'typ) lterm_gen;
   loc  : Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]
 
 type ('id, 'typ, 'term) verification = {
-  predicates  : 'id predicate list;
+  predicates  : ('id, 'typ) predicate list;
   definitions : ('id, 'typ) definition list;
-  axioms      : ('id, 'id lterm_gen) label_term list;
-  theorems    : ('id, 'id lterm_gen) label_term list;
+  axioms      : ('id, ('id, 'typ) lterm_gen) label_term list;
+  theorems    : ('id, ('id, 'typ) lterm_gen) label_term list;
   variables   : ('id, 'typ, 'term) variable list;
-  invariants  : ('id * ('id, 'id lterm_gen) label_term list) list;
+  invariants  : ('id * ('id, ('id, 'typ) lterm_gen) label_term list) list;
   effect      : 'term option;
-  specs       : ('id, 'id lterm_gen) label_term list;
+  specs       : ('id, ('id, 'typ) lterm_gen) label_term list;
   loc         : Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]
@@ -477,7 +451,7 @@ type ('id, 'typ, 'term) asset_struct = {
   state   : 'id option;
   role    : bool;
   init    : 'term option;
-  specs   : ('id, 'id lterm_gen) label_term list;
+  specs   : ('id, ('id, 'typ) lterm_gen) label_term list;
   loc     : Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]
