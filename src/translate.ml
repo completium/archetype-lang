@@ -200,8 +200,8 @@ let process_fun f ty c loc (args, body) =
     List.fold_left (
       fun acc i ->
         let id, typ, _ = i in
-        c (id, map_option ty typ, false, mkloc loc acc)
-    ) (c (ia, map_option ty it, false, f body)) t
+        c (id, Some (ty typ), false, mkloc loc acc)
+    ) (c (ia, Some (ty it), false, f body)) t
 
 let rec mk_lterm (e : expr) : lterm =
   let loc, v = deloc e in
@@ -250,10 +250,9 @@ let rec mk_lterm (e : expr) : lterm =
     | Eassert _ -> raise (ModelError ("\"assert\" is not allowed in logical block", loc))
     | Eseq (lhs, rhs) -> Lseq (mk_lterm lhs, mk_lterm rhs)
     | Efun (args, body) -> process_fun mk_lterm mk_ltyp (fun (w, x, y, z) -> Llambda (w, x, y, z)) loc (args, body)
-    | Eletin ((i, typ, _), init, body, _other) -> Lletin (i, mk_lterm init,
-                                                          map_option mk_ltyp typ, mk_lterm body)
+    | Eletin (i, typ, init, body, _other) -> Lletin (i, mk_lterm init, map_option mk_ltyp typ, mk_lterm body)
     | Ematchwith _ -> raise (ModelError ("match with is not allowed in logical block", loc))
-    | Equantifier (q, (id, t, _), e) -> Lquantifer (to_quantifier q, id, map_option mk_ltyp t, mk_lterm e)
+    | Equantifier (q, (id, t, _), e) -> Lquantifer (to_quantifier q, id, Some (mk_ltyp t), mk_lterm e)
     | Elabel _ -> raise (ModelError ("labels are not allowed in logical block", loc)))
 
 let rec mk_qualid (q : ParseTree.qualid) : liqualid =
@@ -317,7 +316,7 @@ let rec mk_pterm (e : expr) : pterm =
     | Eassert e -> Passert (mk_lterm e)
     | Eseq (lhs, rhs) -> Pseq (mk_pterm lhs, mk_pterm rhs)
     | Efun (args, body) -> process_fun mk_pterm mk_ptyp (fun (w, x, y, z) -> Plambda (w, x, y, z)) loc (args, body)
-    | Eletin ((i, typ, _), init, body, _) -> Pletin (i, mk_pterm init, map_option mk_ptyp typ, mk_pterm body)
+    | Eletin (i, typ, init, body, _) -> Pletin (i, mk_pterm init, map_option mk_ptyp typ, mk_pterm body)
     | Ematchwith (e, l) ->
       let ll = List.fold_left
           (fun acc (pts, e) -> (
@@ -385,7 +384,7 @@ let mk_decl loc ((id, typ, dv) : (lident * type_t option * expr option)) =
 let extract_args (args : ParseTree.args)  =
   List.fold_left (fun acc (i : lident_typ) ->
       let name, typ, _ = i in
-      mk_decl dummy (name, typ, None)::acc
+      mk_decl dummy (name, Some typ, None)::acc
     ) [] (args |> List.rev)
 
 let mk_label_lterm loc (l, e) : lterm label_term =

@@ -548,12 +548,9 @@ effect:
  | xs=function_arg+  { xs }
 
 %inline function_arg:
- | id=ident exts=option(extensions)
-     { (id, None, exts) }
-
  | LPAREN id=ident exts=option(extensions)
      COLON ty=type_t RPAREN
-       { (id, Some ty, exts) }
+       { (id, ty, exts) }
 
 %inline assignment_operator_record:
  | EQUAL                    { ValueAssign }
@@ -593,10 +590,18 @@ pattern:
  | e=loc(expr_r) { e }
 
 %inline ident_typ_q_item:
- | LPAREN ids=ident+ COLON t=type_t RPAREN { List.map (fun x -> (x, Some t, None)) ids }
+ | LPAREN ids=ident+ COLON t=type_t RPAREN { List.map (fun x -> (x, t, None)) ids }
 
 ident_typ_q:
  | xs=ident_typ_q_item+ { List.flatten xs }
+
+%inline colon_type_opt:
+|                { None }
+| COLON t=type_s { Some t }
+
+%inline otherwise:
+|                  { None }
+| OTHERWISE o=expr { Some o }
 
 expr_r:
  | q=quantifier x=ident_typ1 COMMA y=expr
@@ -606,15 +611,12 @@ expr_r:
     {
       (List.fold_right (fun x acc ->
            let i, t, _ = x in
-           let l = Location.merge (loc i) (loc (Tools.get t)) in
+           let l = Location.merge (loc i) (loc t) in
            mkloc l (Equantifier (q, x, acc))) xs y) |> unloc
     }
 
- | LET x=ident_typ1 EQUAL e=expr IN y=expr OTHERWISE o=expr
-     { Eletin (x, e, y, Some o) }
-
- | LET x=ident_typ1 EQUAL e=expr IN y=expr
-     { Eletin (x, e, y, None) }
+ | LET i=ident t=colon_type_opt EQUAL e=expr IN y=expr o=otherwise
+     { Eletin (i, t, e, y, o) }
 
  | e1=expr SEMI_COLON e2=expr
      { Eseq (e1, e2) }
@@ -723,21 +725,17 @@ simple_expr_r:
 
 %inline ident_typs:
  | xs=ident+ COLON ty=type_t
-     { List.map (fun x -> (x, Some ty, None)) xs }
+     { List.map (fun x -> (x, ty, None)) xs }
 
  | xs=ident_typ+
      { List.flatten xs }
 
 %inline ident_typ:
- | id=ident
-     { [(id, None, None)] }
-
  | LPAREN ids=ident+ COLON ty=type_t RPAREN
-     { List.map (fun id -> (id, Some ty, None)) ids }
+     { List.map (fun id -> (id, ty, None)) ids }
 
 %inline ident_typ1:
- | id=ident ty=option(COLON ty=type_t { ty })
-     { (id, ty, None) }
+ | id=ident COLON ty=type_t { (id, ty, None) }
 
 literal:
  | x=NUMBER     { Lnumber   x }

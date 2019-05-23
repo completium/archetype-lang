@@ -544,18 +544,19 @@ let rec pp_expr outer pos fmt a =
     (maybe_paren outer e_equal_greater pos pp) fmt (id_ts, x)
 
 
-  | Eletin (id_t, e, body, other) ->
+  | Eletin (id, t, e, body, other) ->
 
-    let pp fmt (id_t, e, body, other) =
-      Format.fprintf fmt "@[@[<hv 0>let %a =@;<1 2>%a@;<1 0>in@]@ %a%a@]" (*"let %a = %a in %a"*)
-        pp_ident_typ id_t
+    let pp fmt (id, t, e, body, other) =
+      Format.fprintf fmt "@[@[<hv 0>let %a%a =@;<1 2>%a@;<1 0>in@]@ %a%a@]" (*"let %a = %a in %a"*)
+        pp_id id
+        (pp_option pp_type) t
         (pp_expr e_in PLeft) e
         (pp_expr e_in PRight) body
         (pp_option (fun fmt e ->
              Format.fprintf fmt "@\notherwise %a"
                (pp_expr e_other PInfix) e)) other
     in
-    (maybe_paren outer e_default pos pp) fmt (id_t, e, body, other)
+    (maybe_paren outer e_default pos pp) fmt (id, t, e, body, other)
 
 
   | Equantifier (q, id_t, body) ->
@@ -610,12 +611,11 @@ and pp_ident_typ fmt a =
     Format.fprintf fmt "%a%a%a"
       pp_id x
       pp_extensions exts
-      (pp_option (pp_prefix " : " pp_type)) y
+      (pp_prefix " : " pp_type) y
 
 and pp_fun_ident_typ fmt (arg : lident_typ) =
   match arg with
-  | (x, None, exts) -> Format.fprintf fmt "%a%a" pp_id x pp_extensions exts
-  | (x, Some y, exts) ->
+  | (x, y, exts) ->
     Format.fprintf fmt "(%a%a : %a)"
       pp_id x
       pp_extensions exts

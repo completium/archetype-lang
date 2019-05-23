@@ -122,7 +122,7 @@ type expr_unloc =
   | Eassert       of expr
   | Eseq          of expr * expr
   | Efun          of lident_typ list * expr
-  | Eletin        of lident_typ * expr * expr * expr option
+  | Eletin        of lident * type_t option * expr * expr * expr option
   | Ematchwith    of expr * (pattern list * expr) list
   | Equantifier   of quantifier * lident_typ * expr
   | Elabel        of lident * expr
@@ -148,7 +148,7 @@ and record_item = (assignment_operator * lident) option * expr
 and expr = expr_unloc loced
 [@@deriving yojson, show {with_path = false}]
 
-and lident_typ = lident * type_t option * extension list option
+and lident_typ = lident * type_t * extension list option
 [@@deriving yojson, show {with_path = false}]
 
 and label_expr = (lident option * expr) loced

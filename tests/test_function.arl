@@ -1,8 +1,6 @@
 function f0 = { body }
-function f1 : r_type = { body }
-function f2 x = { body }
-function f3 x : r_type = { body }
-function f4 x (y : int) = { body }
-function f5 x (y : int) : r_type = { body }
-function f6 x (y : int) z = { body }
-function f7 x (y : int) z : r_type = { body }
+function f1 : t = { body }
+function f2 (x : int) = { body }
+function f3 (x : int) : t = { body }
+function f4 (x : int) (y : int) = { body }
+function f5 (x : int) (y : int) : t = { body }
