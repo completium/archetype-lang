@@ -454,11 +454,6 @@ let extract_decls decls model =
     let extract_asset_opts opts m =
       List.fold_left (fun acc i ->
           match i with
-          | AOasrole ->
-            {
-              acc with
-              role = true;
-            }
           | AOidentifiedby id ->
             {
               acc with
@@ -496,7 +491,6 @@ let extract_decls decls model =
       key   = dumloc "_id";
       sort  = [];
       state = None;
-      role  = false;
       init  = None;
       specs = [];
       loc   = loc;

@@ -416,7 +416,6 @@ type asset = {
   key   : lident;
   sort  : lident list;
   state : lident option;
-  role  : bool;
   init  : pterm option;
   specs : label_lterm list;
   loc   : Location.t [@opaque];

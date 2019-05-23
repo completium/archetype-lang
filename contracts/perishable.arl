@@ -12,9 +12,17 @@ states shipmentStatus =
  | In_transit
  | Arrived
 
-asset grower as role
-asset importer as role
-asset importer as role
+asset grower identified by id = {
+  id : role
+}
+
+asset importer identified by id = {
+  id : role
+}
+
+asset importer identified by id = {
+  id : role
+}
 
 asset p_contract = {
   grower          : grower;

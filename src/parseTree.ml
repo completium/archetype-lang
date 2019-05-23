@@ -246,7 +246,6 @@ and value_option =
 [@@deriving yojson, show {with_path = false}]
 
 and asset_option =
-  | AOasrole
   | AOidentifiedby of lident
   | AOsortedby of lident
 [@@deriving yojson, show {with_path = false}]

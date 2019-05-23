@@ -15,7 +15,6 @@
       "identified"          , IDENTIFIED     ;
       "sorted"              , SORTED         ;
       "by"                  , BY             ;
-      "as"                  , AS             ;
       "from"                , FROM           ;
       "to"                  , TO             ;
       "on"                  , ON             ;

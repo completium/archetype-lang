@@ -17,7 +17,7 @@ states mystates =
 | Completed
 
 asset[%myextension] [@add @remove @update owner args]
-my_asset_all identified by str as role sorted by i = {
+my_asset_all identified by str sorted by id = {
   id : role;
   st : mystates = Init;
   i : uint

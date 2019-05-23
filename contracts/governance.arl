@@ -8,8 +8,8 @@ variable[%mutable chairperson (instate Created)] startDate date
 (* vote deadline *)
 variable[%mutable chairperson (instate Created)] deadline date
 
-asset voter as role identified by address = {
-  address : address;
+asset voter identified by address = {
+  address : role;
   hasVoted : bool
 }
 

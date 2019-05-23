@@ -1,6 +1,7 @@
 archetype vehicle_lifecycle
 
-asset owner as role = {
+asset owner = {
+  id : role;
   fn : string;
   ln : string
 }

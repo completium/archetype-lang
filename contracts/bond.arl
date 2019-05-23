@@ -10,7 +10,8 @@ enum period =
  | Month
  | Year
 
-asset issuer as role = {
+asset issuer identified by id = {
+  id   : role;
   name : string
 }
 
