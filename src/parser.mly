@@ -4,7 +4,7 @@
   open Location
   open ParseUtils
 
-  let error ?loc code = raise (ParseError (loc, code))
+  let error loc = raise (ParseError [PE_Unknown loc])
 
   let dummy_action_properties = {
       calledby        = None;
@@ -25,7 +25,7 @@
     | Eseq (a, b) -> (split_seq_label a) @ (split_seq_label b)
     | Elabel (lbl, e) -> [mkloc loc (Some lbl, e)]
     | Eterm _ -> [mkloc loc (None, e)]
-    | _ -> error ~loc:(Location.loc e) PE_Unknown
+    | _ -> error (Location.loc e)
 
 %}
 
@@ -135,6 +135,9 @@
 %token FAILIF
 %token REQUIRE
 
+%token EXPR_INVALID
+%token DECL_INVALID
+
 %token <string> IDENT
 %token <string> STRING
 %token <Big_int.big_int> NUMBER
@@ -210,12 +213,12 @@ snl2(separator, X):
 start_expr:
 | x=expr EOF { x }
 | x=loc(error)
-      { error ~loc:(loc x) PE_Unknown }
+      { error (loc x) }
 
 main:
  | x=loc(archetype_r) { x }
  | x=loc(error)
-     { error ~loc:(loc x) PE_Unknown }
+     { error (loc x) }
 
 archetype_r:
  | x=implementation_archetype EOF { x }
@@ -247,6 +250,7 @@ declaration_r:
  | x=contract           { x }
  | x=function_decl      { x }
  | x=verification_decl  { x }
+ | DECL_INVALID         { Dinvalid }
 
 archetype:
 | ARCHETYPE exts=option(extensions) x=ident { Darchetype (x, exts) }
@@ -307,13 +311,10 @@ signature:
 | ACTION x=ident                { Ssignature (x, []) }
 | ACTION x=ident COLON xs=types { Ssignature (x, xs) }
 
-%inline fun_effect:
-| EFFECT e=braced(expr) { e }
-
 %inline fun_body:
 | e=expr { (None, e) }
 |  s=verification_fun
-      e=fun_effect
+      EFFECT e=braced(expr)
         { (Some s, e) }
 
 %inline function_gen:
@@ -536,7 +537,7 @@ require:
 | WHEN exts=option(extensions) e=braced(expr) { (e, exts) }
 
 %inline with_effect:
-| WITH EFFECT exts=option(extensions) e=braced(expr) { (e, exts) }
+| WITH e=effect { e }
 
 effect:
  | EFFECT exts=option(extensions) e=braced(expr) { (e, exts) }
@@ -720,6 +721,9 @@ simple_expr_r:
 
  | LPAREN x=ident AT l=ident RPAREN
      { Eterm (Some l, None, x) }
+
+| EXPR_INVALID
+     { Einvalid }
 
  | x=paren(expr_r)
      { x }

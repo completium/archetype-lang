@@ -87,7 +87,7 @@ let main () =
   let ofilename = ref "" in
   let ochannel : in_channel option ref = ref None  in
   Arg.parse arg_list (fun s -> (ofilename := s;
-                                  ochannel := Some (open_in s))) arg_usage;
+                                ochannel := Some (open_in s))) arg_usage;
   let filename, channel, dispose =
     match !ochannel with
     | Some c -> (!ofilename, c, true)
@@ -103,17 +103,17 @@ let main () =
     else compile_and_print (filename, channel);
     close dispose channel
 
-(*    let filename, channel, dispose =
-      if Array.length Sys.argv > 1 then
-        let filename = Sys.argv.(1) in
-        (filename, open_in filename, true)
-      else ("<stdin>", stdin, false)
-      in*)
+  (*    let filename, channel, dispose =
+        if Array.length Sys.argv > 1 then
+          let filename = Sys.argv.(1) in
+          (filename, open_in filename, true)
+        else ("<stdin>", stdin, false)
+        in*)
 
   with
-  | ParseUtils.ParseError exn ->
+  | ParseUtils.ParseError exns ->
     close dispose channel;
-    Format.eprintf "%a@." ParseUtils.pp_parse_error exn;
+    Format.eprintf "%a@." ParseUtils.pp_parse_errors exns;
     exit 1
   | Compiler_error ->
     close dispose channel;

@@ -312,6 +312,7 @@ let pp_pattern fmt p =
 let rec pp_expr outer pos fmt a =
   let e = unloc a in
   match e with
+
   | Eterm (l, e, id) ->
 
     let pp fmt (l, e, id) =
@@ -326,10 +327,7 @@ let rec pp_expr outer pos fmt a =
         | None -> f fmt (e, id)
       end
     in
-    (match l, e with
-     | None, Some _ -> (maybe_paren outer e_coloncolon pos pp)
-     | _ -> pp)
-      fmt (l, e, id)
+    pp fmt (l, e, id)
 
   | Eliteral x ->
 
@@ -578,6 +576,7 @@ let rec pp_expr outer pos fmt a =
     in
     (maybe_paren outer e_colon pos pp) fmt (i, x)
 
+  | Einvalid -> Format.fprintf fmt "(* invalid expr *)"
 
 
 and pp_else fmt (e : expr option) =
@@ -948,6 +947,9 @@ let rec pp_declaration fmt { pldesc = e; _ } =
     Format.fprintf fmt "verification%a {@\n@[<v 2>  %a@]@\n}"
       pp_extensions exts
       pp_verification_items items
+
+  | Dinvalid ->
+    Format.fprintf fmt "(* invalid declaration *)"
 
 (* -------------------------------------------------------------------------- *)
 let pp_archetype fmt { pldesc = m; _ } =

@@ -1,0 +1,13 @@
+archetype test_error
+
+action main = {
+  effect {
+    when
+  }
+}
+
+action main2 = {
+  effect {
+    f(); to
+  }
+}
