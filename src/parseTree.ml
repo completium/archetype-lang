@@ -132,6 +132,7 @@ type expr_unloc =
 and function_ =
   | Fident of lident
   | Foperator of operator loced
+[@@deriving yojson, show {with_path = false}]
 
 and literal =
   | Lnumber   of Core.big_int

@@ -25,11 +25,11 @@ let make (p1 : position) (p2 : position) =
   let mkpos (p : position) =
     (p.pos_lnum, p.pos_cnum - p.pos_bol)
   in
-    { loc_fname = p1.pos_fname;
-      loc_start = mkpos p1    ;
-      loc_end   = mkpos p2    ;
-      loc_bchar = p1.pos_cnum ;
-      loc_echar = p2.pos_cnum ; }
+  { loc_fname = p1.pos_fname;
+    loc_start = mkpos p1    ;
+    loc_end   = mkpos p2    ;
+    loc_bchar = p1.pos_cnum ;
+    loc_echar = p2.pos_cnum ; }
 
 let of_lexbuf (lb : lexbuf) =
   let p1 = Lexing.lexeme_start_p lb in

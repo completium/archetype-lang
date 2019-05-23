@@ -3,14 +3,14 @@
 
 (* -------------------------------------------------------------------- *)
 (*module String  = BatString
-module List    = List
-module Int     = BatInt
-module Ord     = BatOrd
-module Set     = BatSet
-module Map     = BatMap
-module Num     = BatNum
-module Opt     = BatOption
-module IO      = BatIO
+  module List    = List
+  module Int     = BatInt
+  module Ord     = BatOrd
+  module Set     = BatSet
+  module Map     = BatMap
+  module Num     = BatNum
+  module Opt     = BatOption
+  module IO      = BatIO
   module Lexing  = BatLexing*)
 
 (* -------------------------------------------------------------------- *)

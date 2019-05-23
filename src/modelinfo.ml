@@ -254,9 +254,9 @@ let get_asset_var_typ aname var info =
   else raise (NotFound a)
 
 let get_type_storage info id =
-    if List.mem_assoc id info.vars_types
-    then Some (List.assoc id info.vars_types)
-    else None
+  if List.mem_assoc id info.vars_types
+  then Some (List.assoc id info.vars_types)
+  else None
 
 let is_asset_field info asset_name asset_field : bool =
   let l = List.assoc asset_name info.asset_vars in

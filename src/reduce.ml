@@ -194,7 +194,7 @@ let sanity_check model : model =
          | _ -> ()));
     model in
   model
-(*  |> _check_dv*)
+  (*  |> _check_dv*)
   |> check_accept_transfer
 
 let reduce_model (model : Model.model) =
