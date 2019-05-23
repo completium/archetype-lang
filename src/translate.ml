@@ -207,7 +207,7 @@ let rec mk_lterm (e : expr) : lterm =
   let loc, v = deloc e in
   mkloc loc (
     match v with
-    | Eerror -> assert false
+    | Einvalid -> assert false
     | Eterm t -> mk_lterm_id (compute_term t)
     | Eapp _ -> assert false
     | Emethod _ -> assert false

@@ -134,7 +134,9 @@
 %token EOF
 %token FAILIF
 %token REQUIRE
-%token EXPR_ERROR
+
+%token EXPR_INVALID
+%token DECL_INVALID
 
 %token <string> IDENT
 %token <string> STRING
@@ -249,6 +251,7 @@ declaration_r:
  | x=contract           { x }
  | x=function_decl      { x }
  | x=verification_decl  { x }
+ | DECL_INVALID         { Dinvalid }
 
 archetype:
 | ARCHETYPE exts=option(extensions) x=ident { Darchetype (x, exts) }
@@ -309,13 +312,10 @@ signature:
 | ACTION x=ident                { Ssignature (x, []) }
 | ACTION x=ident COLON xs=types { Ssignature (x, xs) }
 
-%inline fun_effect:
-| EFFECT e=braced(expr) { e }
-
 %inline fun_body:
 | e=expr { (None, e) }
 |  s=verification_fun
-      e=fun_effect
+      EFFECT e=braced(expr)
         { (Some s, e) }
 
 %inline function_gen:
@@ -535,7 +535,7 @@ require:
 | WHEN exts=option(extensions) e=braced(expr) { (e, exts) }
 
 %inline with_effect:
-| WITH EFFECT exts=option(extensions) e=braced(expr) { (e, exts) }
+| WITH e=effect { e }
 
 effect:
  | EFFECT exts=option(extensions) e=braced(expr) { (e, exts) }
@@ -712,8 +712,8 @@ simple_expr_r:
  | x=ident
      { Eterm (None, x) }
 
-| EXPR_ERROR
-     { Eerror }
+| EXPR_INVALID
+     { Einvalid }
 
  | x=paren(expr_r)
      { x }

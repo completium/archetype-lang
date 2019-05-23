@@ -129,7 +129,7 @@ type expr_unloc =
   | Ematchwith    of expr * (pattern list * expr) list
   | Equantifier   of quantifier * lident_typ * expr
   | Elabel        of lident * expr
-  | Eerror
+  | Einvalid
 [@@deriving yojson, show {with_path = false}]
 
 and function_ =
@@ -236,6 +236,7 @@ type declaration_unloc =
   | Dnamespace     of lident * declaration list
   | Dfunction      of s_function
   | Dverification  of verification
+  | Dinvalid
 [@@deriving yojson, show {with_path = false}]
 
 and value_option =
