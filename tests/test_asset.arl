@@ -11,7 +11,7 @@ asset my_asset identified by i = {
 } initialized by [ { 0; [] } ]
 
 
-states mystates =
+enum my_enums =
 | Init initial
 | InProgress
 | Completed

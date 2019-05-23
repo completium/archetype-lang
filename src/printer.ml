@@ -705,20 +705,20 @@ let pp_label_expr fmt (le : label_expr) =
 
 let pp_label_exprs xs = (pp_list ";@\n" pp_label_expr) xs
 
-let pp_state_option fmt = function
-  | SOinitial ->
+let pp_enum_option fmt = function
+  | EOinitial ->
     Format.fprintf fmt "initial"
 
-  | SOspecification xs ->
+  | EOspecification xs ->
     Format.fprintf fmt "with { %a }"
       pp_label_exprs xs
 
-let pp_ident_state_option fmt item =
+let pp_ident_state fmt item =
   match item with
   | (id, opts) ->
     Format.fprintf fmt "%a%a"
       pp_id id
-      (pp_option (pp_prefix " " (pp_list " " pp_state_option))) opts
+      (pp_prefix " " (pp_list " " pp_enum_option)) opts
 
 let pp_asset_post_option fmt (apo : asset_post_option) =
   match apo with
@@ -867,19 +867,18 @@ let rec pp_declaration fmt { pldesc = e; _ } =
       (pp_option (pp_prefix " = " (pp_expr e_equal PRight))) dv
 
   | Denum (id, ids, exts) ->
-    Format.fprintf fmt "enum%a %a =\n@[<v 2>@]%a"
-      pp_extensions exts
-      pp_id id
-      (pp_list "\n" (pp_prefix "| " pp_id)) ids
-
-  | Dstates (id, ids, exts) ->
-    Format.fprintf fmt "states%a%a%a"
-      pp_extensions exts
-      (pp_option (pp_prefix " " pp_id)) id
-      (pp_do_if (match ids with | Some l when List.length l > 0 -> true | _ -> false) (
-           fun fmt x->
-             Format.fprintf fmt " =@\n@[<v 2>@]%a"
-               (pp_option (pp_list "\n" (pp_prefix "| " pp_ident_state_option))) x)) ids
+    Format.fprintf fmt "%a%a"
+      (fun fmt id -> (
+           match id with
+           | EKstate -> Format.fprintf fmt "states%a" pp_extensions exts
+           | EKenum id -> Format.fprintf fmt "enum%a %a" pp_extensions exts pp_id id
+         )) id
+      (fun fmt ids -> (
+           match ids with
+           | [] -> ()
+           | l -> Format.fprintf fmt " =@\n@[<v 2>@]%a"
+                    (pp_list "@\n" (pp_prefix "| " pp_ident_state)) l
+         )) ids
 
   | Dasset (id, fields, opts, apo, ops, exts) ->
     Format.fprintf fmt "asset%a%a %a%a%a%a"

@@ -239,7 +239,6 @@ declaration_r:
  | x=constant           { x }
  | x=variable           { x }
  | x=enum               { x }
- | x=states             { x }
  | x=asset              { x }
  | x=action             { x }
  | x=transition         { x }
@@ -387,13 +386,33 @@ verification_decl:
 | x=loc(verification(verif_specification)) { Dverification x }
 
 enum:
-| ENUM exts=extensions? x=ident EQUAL xs=pipe_idents {Denum (x, xs, exts)}
+| STATES exts=extensions? xs=equal_enum_values
+    {Denum (EKstate,  xs, exts)}
 
-states:
-| STATES exts=extensions? x=ident? xs=states_values? {Dstates (x, xs, exts)}
+| ENUM exts=extensions? x=ident xs=equal_enum_values
+    {Denum (EKenum x, xs, exts)}
 
-states_values:
-| EQUAL xs=pipe_ident_options { xs }
+equal_enum_values:
+| /*nothing*/          { [] }
+| EQUAL xs=enum_values { xs }
+
+enum_values:
+| /*nothing*/    { [] }
+| xs=pipe_idents { xs }
+
+%inline pipe_idents:
+| xs=pipe_ident+ { xs }
+
+%inline pipe_ident:
+| PIPE x=ident opts=enum_options { (x, opts) }
+
+%inline enum_options:
+| /* nothing */    { [] }
+| xs=enum_option+ { xs }
+
+enum_option:
+| INITIAL              { EOinitial }
+| WITH xs=braced(expr) { EOspecification (split_seq_label xs) }
 
 types:
 | xs=separated_nonempty_list(COMMA, type_t) { xs }
@@ -428,22 +447,6 @@ type_s_unloc:
 | STACK      { Stack }
 | SET        { Set }
 | PARTITION  { Partition }
-
-%inline pipe_idents:
-| PIPE? xs=separated_nonempty_list(PIPE, ident) { xs }
-
-%inline pipe_ident_options:
-| PIPE? xs=separated_nonempty_list(PIPE, pipe_ident_option) { xs }
-
-%inline pipe_ident_option:
-| x=ident opts=state_options? { (x, opts) }
-
-%inline state_options:
-| xs=state_option+ { xs }
-
-state_option:
-| INITIAL                     { SOinitial }
-| WITH xs=braced(expr)        { SOspecification (split_seq_label xs) }
 
 asset:
 | ASSET exts=extensions? ops=bracket(asset_operation)? x=ident opts=asset_options?

@@ -7,7 +7,7 @@ enum productType =
  | Peaches
  | Coffee
 
-states shipmentStatus =
+enum shipmentStatus =
  | Created
  | In_transit
  | Arrived

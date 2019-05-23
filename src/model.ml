@@ -424,7 +424,7 @@ type asset = {
 
 type enum = {
   name : lident;
-  vals : lident list;
+  vals : state_item list;
   loc  : Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]

@@ -224,12 +224,16 @@ type variable_kind =
   | VKconstant
 [@@deriving yojson, show {with_path = false}]
 
+type enum_kind =
+  | EKenum of lident
+  | EKstate
+[@@deriving yojson, show {with_path = false}]
+
 (* -------------------------------------------------------------------- *)
 type declaration_unloc =
   | Darchetype     of lident * exts
   | Dvariable      of lident * type_t * expr option * value_option list option * variable_kind * exts
-  | Denum          of lident * lident list * exts
-  | Dstates        of lident option * (lident * state_option list option) list option * exts
+  | Denum          of enum_kind * (lident * enum_option list) list * exts
   | Dasset         of lident * field list * asset_option list * asset_post_option list * asset_operation option * exts
   | Daction        of lident * args * action_properties * (expr * exts) option * exts
   | Dtransition    of lident * args * (lident * lident) option * expr * action_properties * transition * exts
@@ -256,9 +260,9 @@ and asset_post_option =
   | APOinit of expr
 [@@deriving yojson, show {with_path = false}]
 
-and state_option =
-  | SOinitial
-  | SOspecification of label_exprs
+and enum_option =
+  | EOinitial
+  | EOspecification of label_exprs
 [@@deriving yojson, show {with_path = false}]
 
 and signature =

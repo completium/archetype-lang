@@ -6,7 +6,7 @@ asset owner = {
   ln : string
 }
 
-states order_state =
+enum order_state =
   | Placed                      initial
   | Scheduled_for_manufacture
   | Vin_assigned
@@ -24,7 +24,7 @@ asset order = {
    details      : vehicledetail
 }
 
-states vehicle_state =
+enum vehicle_state =
   | Off_the_road               initial
   | Active
   | Scrapped

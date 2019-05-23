@@ -594,20 +594,20 @@ let extract_decls decls model =
       loc = loc;
     } in
 
-  let mk_state loc (name, items) =
-    let get_states_items items =
+  (* let mk_state loc (name, items) =
+     let get_states_items items =
       let is_state_initial = function
         | None -> false
         | Some opts ->
           List.fold_left (fun acc i ->
               match i with
-              | SOinitial -> true
+              | EOinitial -> true
               | _ -> acc
             ) false opts in
       let get_state_specifications (opts : state_option list) : Model.verification =
         let es = List.fold_left (fun acc i ->
             match i with
-            | SOspecification xs -> (List.map to_label_lterm xs) @ acc
+            | EOspecification xs -> (List.map to_label_lterm xs) @ acc
             | _ -> acc
           ) [] opts in
         {
@@ -623,15 +623,15 @@ let extract_decls decls model =
              verification = map_option get_state_specifications opts;
              loc = Location.loc name;
            }::acc)) [] items in
-    {
+     {
       name = (match name with | None -> dumloc "_global" | Some a -> a);
       items = get_states_items items;
       loc = loc;
-    } in
+     } in *)
 
-  let mk_enum loc (name, list) = {
-    name = name;
-    vals = list;
+  let mk_enum loc (name, _list) = {
+    name = (match name with | EKstate -> dumloc "_global" | EKenum id -> id);
+    vals = [];
     loc = loc;
   } in
 
@@ -661,11 +661,6 @@ let extract_decls decls model =
          {
            acc with
            enums = (mk_enum loc (name, list))::acc.enums
-         }
-       | Dstates (name, Some items, _) ->
-         {
-           acc with
-           states = (mk_state loc (name, items))::acc.states
          }
        | Dasset (id, fields, opts, apo, _ops, _) ->
          {

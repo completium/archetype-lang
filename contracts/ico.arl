@@ -56,14 +56,12 @@ states[%incr_mutable_st owner] =
 | Round2Running    (* Round 2 has started *)
 | Round2Finished   (* Round 2 has ended   *)
 
-
 function is_running = {
   match state with
   | PresalesRunning | Round1Running | Round2Running -> true
   | _ -> false
   end
 }
-
 
 function get_rate = {
   let coeff = (match state with
