@@ -219,9 +219,15 @@ type transition = (lident * (expr * exts) option * (expr * exts) option) list
 [@@deriving yojson, show {with_path = false}]
 
 (* -------------------------------------------------------------------- *)
+type variable_kind =
+  | VKvariable
+  | VKconstant
+[@@deriving yojson, show {with_path = false}]
+
+(* -------------------------------------------------------------------- *)
 type declaration_unloc =
   | Darchetype     of lident * exts
-  | Dvariable      of lident * type_t * expr option * value_option list option * bool * exts
+  | Dvariable      of lident * type_t * expr option * value_option list option * variable_kind * exts
   | Denum          of lident * lident list * exts
   | Dstates        of lident option * (lident * state_option list option) list option * exts
   | Dasset         of lident * field list * asset_option list * asset_post_option list * asset_operation option * exts

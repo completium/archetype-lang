@@ -259,11 +259,11 @@ vc_decl(X):
 
 constant:
   | x=vc_decl(CONSTANT) { let x, t, z, dv, exts = x in
-                          Dvariable (x, t, dv, z, true, exts) }
+                          Dvariable (x, t, dv, z, VKconstant, exts) }
 
 variable:
   | x=vc_decl(VARIABLE) { let x, t, z, dv, exts = x in
-                          Dvariable (x, t, dv, z, false, exts) }
+                          Dvariable (x, t, dv, z, VKvariable, exts) }
 
 %inline value_options:
 | xs=value_option+ { xs }

@@ -420,7 +420,7 @@ let get_name_archetype decls : lident =
 (* extraction of parse tree declarations *)
 let extract_decls decls model =
 
-  let mk_variable loc (id, typ, dv, opts, cst) =
+  let mk_variable loc (id, typ, dv, opts, kind) =
     let mk_decl_pterm loc ((id, typ, dv) : (lident * type_t option * expr option)) =
       {
         name = id;
@@ -438,7 +438,7 @@ let extract_decls decls model =
       | _ -> (None, None) in
     let (from, to_) = ret_from_to opts in {
       decl = mk_decl_pterm loc (id, Some typ, dv);
-      constant = cst;
+      constant = (match kind with | VKconstant -> true | _ -> false);
       from = from;
       to_ = to_;
       loc = loc;
@@ -555,7 +555,7 @@ let extract_decls decls model =
         | Vvariable (id, typ, e) ->
           {
             acc with
-            variables = (mk_variable loc (id, typ, e, None, false))::acc.variables
+            variables = (mk_variable loc (id, typ, e, None, VKvariable))::acc.variables
           }
         | Vinvariant (id, l) ->
           {
@@ -659,10 +659,10 @@ let extract_decls decls model =
   List.fold_right ( fun i acc ->
       (let loc, decl_u = deloc i in
        match decl_u with
-       | Dvariable (id, typ, dv, opts, cst, _) ->
+       | Dvariable (id, typ, dv, opts, kind, _) ->
          {
            acc with
-           variables = (mk_variable loc (id, typ, dv, opts, cst))::acc.variables
+           variables = (mk_variable loc (id, typ, dv, opts, kind))::acc.variables
          }
        | Denum (name, list, _) ->
          {
