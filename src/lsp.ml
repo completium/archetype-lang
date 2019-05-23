@@ -47,7 +47,22 @@ let process (filename, channel) =
   let r = (
     try
       let _ = Io.parse_archetype ~name:filename channel in
-      mk_result Passed []
+      begin
+        let li = Error.errors in
+        match !li with
+        | [] -> mk_result Passed []
+        | l -> mk_result Error (List.map (fun (p : (Position.t list * string)) ->
+            let l, str = p in
+            let p = (
+              match l with
+              | [] -> Position.dummy
+              | i::_ -> i
+            ) in
+            let s : Lexing.position = Position.start_of_position p in
+            let e : Lexing.position = Position.end_of_position p in
+            let loc = Location.make s e in
+            mk_item loc str) l)
+      end
     with
     | ParseUtils.ParseError l ->
       mk_result Error (List.map (fun x ->
@@ -57,7 +72,9 @@ let process (filename, channel) =
             | PE_Unclosed (lo, _ , _) -> lo
             | PE_Not_Expecting (lo, _) -> lo
             | PE_Unknown lo -> lo
+            | _ -> Location.dummy
           ) in
-          mk_item loc (string_of_perror x)) l)) in
+          mk_item loc (string_of_perror x)) l)
+  ) in
 
   Format.printf "%s\n" (Yojson.Safe.to_string (result_to_yojson r))

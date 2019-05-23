@@ -1,10 +1,12 @@
-let flag = ref `Exit
+let flag = ref `Raise
 
 let exit_on_error () = flag := `Exit
 
 let raise_on_error () = flag := `Raise
 
 let resume_on_error () = flag := `Resume
+
+let errors = ref []
 
 exception Error of Position.t list * string
 
@@ -19,7 +21,7 @@ let error_alert positions msg continue =
   match !flag with
   | `Exit -> exit 1
   | `Raise -> raise (Error (positions, msg))
-  | `Resume -> continue ()
+  | `Resume -> errors := (positions, msg)::!errors; continue ()
 
 let global_error kind msg =
   error_alert [] (Printf.sprintf "Global Error (%s)\n  %s"  kind msg)

@@ -6,6 +6,7 @@ type perror =
   | PE_LexicalError of Location.t * string
   | PE_Unclosed of Location.t * string * string
   | PE_Not_Expecting of Location.t * string
+  | PE_Message of string
   | PE_Unknown of Location.t
 
 exception ParseError of perror list
@@ -20,6 +21,9 @@ let pp_perror fmt = function
 
   | PE_Not_Expecting (loc, x) ->
     Format.fprintf fmt "Not expecting '%s' at %s" x (Location.tostring loc)
+
+  | PE_Message x ->
+    Format.fprintf fmt "%s" x
 
   | PE_Unknown loc ->
     Format.fprintf fmt "syntax error at %s" (Location.tostring loc)
