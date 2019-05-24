@@ -134,10 +134,12 @@ theory AssetCollection
     not (mem k c) <-> forall i : int. 0 <= i <= length c -> i <> k
 
   let add (a : key) (c : acol)
-  raises { NotFound }
-  ensures { forall k : key. mem k result <-> mem k c \/ k = a }
+  raises { KeyExist }
+  ensures { not (mem a (old c)) }
   ensures { mem a result }
-  = if mem a c then raise NotFound;
+  ensures { forall k : key. mem k result <-> mem k c \/ k = a }
+  ensures { length result = length c + 1 }
+  = if mem a c then raise KeyExist;
     c ++ (Cons a Nil)
 
   let addifnotexist (a : key) (c : acol) : acol
@@ -172,20 +174,45 @@ theory AssetCollection
     else Cons h (diff tl c2)
   end
 
+  let rec function inter (c1 c2 : acol) : acol
+  variant { c1 }
+  ensures { forall x : key. mem x result <-> mem x c1 /\ mem x c2 }
+  = match c1 with
+  | Nil -> Nil 
+  | Cons h tl -> 
+    if mem h c2
+    then Cons h (inter tl c2)
+    else inter tl c2
+  end
+
+  let rec function union (c1 c2 : acol) : acol
+  variant { c1 }
+  ensures { forall x : key. mem x result <-> mem x c1 \/ mem x c2 }
+  = match c1 with
+  | Nil -> c2 
+  | Cons h tl -> 
+    if mem h c2
+    then union tl c2
+    else union tl (Cons h c2)
+  end
+
   predicate is_empty (c : acol) = forall m : key. not (mem m c)
 
   axiom zero_length : forall c : acol. is_empty c -> length c = 0
 
-  val function witness : key
+  val function witness : 'a
 
-  let function nth (i : key) (c : acol) : key 
-  ensures { 0 <= i < length c -> result <> witness }
-  ensures { 0 <= i < length c -> mem result c }
+  let function gen_nth (i : int) (c : list 'a) : 'a
   = 
   match nth i c with
   | Some v -> v
   | None -> witness
   end
+
+  let function nth (i : int) (c : acol) : key
+  ensures { 0 <= i < length c -> result <> witness }
+  ensures { 0 <= i < length c -> mem result c }
+  = gen_nth i c
 
   (* this axiom ensures that all asset keys are unique, 
      which is translated to the injectivity of nth *)
@@ -206,7 +233,15 @@ theory AssetCollection
   axiom subset_nth : forall c1 c2 : acol.
     subset c1 c2 <-> forall k : int. 0 <= k < length c1 -> mem (nth k c1) c2
   
-  lemma subset_diff: forall c1 c2 : acol. subset (diff c1 c2) c1 
+  lemma subset_diff: forall c1 c2 : acol. subset (diff c1 c2) c1
+
+  lemma subset_inter1: forall c1 c2 : acol. subset (inter c1 c2) c1
+
+  lemma subset_inter2: forall c1 c2 : acol. subset (inter c1 c2) c2
+
+  lemma subset_union1: forall c1 c2 : acol. subset c1 (union c1 c2)
+
+  lemma subset_union2: forall c1 c2 : acol. subset c2 (union c1 c2) 
 
   (* not really used *)
   let rec fold (f : {'a} -> 'k -> 'a)
@@ -219,7 +254,18 @@ theory AssetCollection
   end
 
   axiom split_mem : forall l : list 'a, x y : 'a.
-   Mem.mem x l \/ x = y <-> Mem.mem x (l ++ (Cons y Nil))
+   Mem.mem x l \/ x = y <-> Mem.mem x (l ++ (Cons y Nil))    
+
+  let rec add_to_map (c : acol) (l : list 'value) (m : map 'value)  
+   variant { c, l }
+   requires { length c = length l }
+   ensures { forall k : key. mem k c -> exists i : int. 0 <= i < length c /\ gen_nth i l = get m k }
+   =
+   match (c,l) with
+   | Nil,Nil -> m
+   | Cons k tlacol, Cons a tlasset -> add_to_map tlacol tlasset (set m k a) 
+   end
+
 
 end
 
@@ -317,6 +363,11 @@ theory Sum
      (forall k : key. mem k c2 -> f s1 k = f s2 k) ->
      f s1 m = v ->
      sum s1 c1 = sum s2 c2 + v
+
+  lemma sum_inter:
+    forall s : storage, c1 c2 : acol, i j : int.
+    is_empty (inter c1 c2) ->
+    part_sum s (union c1 c2) i j = part_sum s c1 i j + part_sum s c1 i j
 
 end
 

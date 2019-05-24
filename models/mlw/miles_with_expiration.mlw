@@ -22,12 +22,6 @@ module Miles
                                    type entry = entry,
                                    type field = field
 
-  (* for storage invariant initialisation *)
-  val function empty_mile_amounts     : map int
-  val function empty_mile_expirations : map date
-  val function empty_owner_miles      : map acol
-  axiom def_mile_amounts : forall m : key. empty_mile_amounts m > 0
-
   type storage = {
     mutable admin            : role;
     mutable miles            : acol;
@@ -46,14 +40,14 @@ module Miles
     mutable tr               : Tr.log;
     mutable ename            : option entry;
   } invariant { 
-    forall m : key. get mile_amounts m > 0
+    forall m : key. mem m miles -> get mile_amounts m > 0
   } by {
     admin            = 0;
     miles            = Nil;
-    mile_amounts     = empty_mile_amounts;
-    mile_expirations = empty_mile_expirations;
+    mile_amounts     = const 0;
+    mile_expirations = const 0;
     owners           = Nil;
-    owner_miles      = empty_owner_miles;
+    owner_miles      = const Nil;
     ops              = Nil;
     miles_added      = Nil;
     miles_removed    = Nil;
@@ -63,7 +57,55 @@ module Miles
     ename            = None;
   }
 
-  (* getters *)
+  let copy_storage_to (from_s to_s : storage) : unit 
+  ensures { to_s.admin = from_s.admin }
+  ensures { to_s.miles = from_s.miles }
+  ensures { to_s.mile_amounts = from_s.mile_amounts }
+  ensures { to_s.mile_expirations = from_s.mile_expirations }
+  ensures { to_s.owners = from_s.owners }
+  ensures { to_s.owner_miles = from_s.owner_miles }
+  ensures { to_s.ops = from_s.ops }
+  ensures { to_s.miles_added = from_s.miles_added }
+  ensures { to_s.miles_removed = from_s.miles_removed }
+  ensures { to_s.owner_added = from_s.owner_added }
+  ensures { to_s.owner_removed = from_s.owner_removed }
+  ensures { to_s.tr = from_s.tr }
+  ensures { to_s.ename = from_s.ename }
+  = to_s.admin            <- from_s.admin           ;  
+    to_s.miles            <- from_s.miles           ;
+    to_s.mile_amounts     <- from_s.mile_amounts    ;
+    to_s.mile_expirations <- from_s.mile_expirations;
+    to_s.owners           <- from_s.owners          ;
+    to_s.owner_miles      <- from_s.owner_miles     ;
+    to_s.ops              <- from_s.ops             ;
+    to_s.miles_added      <- from_s.miles_added     ;
+    to_s.miles_removed    <- from_s.miles_removed   ;
+    to_s.owner_added      <- from_s.owner_added     ;
+    to_s.owner_removed    <- from_s.owner_removed   ;
+    to_s.tr               <- from_s.tr              ;
+    to_s.ename            <- from_s.ename
+
+  let init_storage_from (s : storage) : storage 
+  = 
+    let new_storage = {
+      admin            = 0;
+      miles            = Nil;
+      mile_amounts     = const 0;
+      mile_expirations = const 0;
+      owners           = Nil;
+      owner_miles      = const Nil;
+      ops              = Nil;
+      miles_added      = Nil;
+      miles_removed    = Nil;
+      owner_added      = Nil;
+      owner_removed    = Nil;
+      tr               = Nil;
+      ename            = None;
+    } in
+    copy_storage_to s new_storage;
+    new_storage
+  
+  (* Getters *)
   let get_mile       (s : storage) (k : key) : key
   raises { NotFound }
   ensures { mem result s.miles }
@@ -91,7 +133,7 @@ module Miles
                                       val      f       = get_amount
 
   let remove_miles (o : key) (m : key) (s:storage) : unit
-  raises { NotFound }
+  raises { NotFound, KeyExist }
   requires { mem m s.miles }
   requires { mem o s.owners }
   ensures  { forall x:key. mem x s.miles <-> (mem x (old s).miles /\ x <> m) }
@@ -106,7 +148,7 @@ module Miles
     s.owner_miles <- set s.owner_miles o new_owner_miles
 
   let add_miles (o : key) (m : key) (a : int) (e : date) (s : storage) : unit
-  raises { NotFound }
+  raises { KeyExist }
   requires { mem o s.owners }
   requires { not (mem m s.miles) }
   requires { a > 0 }
@@ -126,34 +168,72 @@ module Miles
   requires { mem m s.miles }
   requires { a > 0 }
   ensures  { Amounts.sum (old s) (old s).miles = Amounts.sum s s.miles - a + get_amount (old s) m }
+  ensures  { s.mile_amounts m = a }
   = s.mile_amounts <- set s.mile_amounts m a
 
-  let update_owner (o : key) (new_miles : acol) (s : storage) : unit
-  raises { NotFound }
+  let set_mile_expiration (s : storage) (k : key) (v : date) : unit
   =
-  if not (mem o s.owners) then raise NotFound;
-  s.owner_miles <- set s.owner_miles o new_miles
+  s.mile_expirations <- set s.mile_expirations k v
+ 
+  (* Adders *)
+  let add_mile (s : storage) (a : (key, int, date)) : unit
+  raises { KeyExist }
+  requires { let _,amount,_ = a in amount > 0 }
+  ensures  { let k,_,_ = a in forall x:key. mem x s.miles <-> (mem x (old s).miles \/ x = k) }
+  ensures  { let k,_,_ = a in forall x:key. mem x s.miles_added <-> (mem x (old s).miles_added \/ x = k) }
+  ensures  { let _,amount,_ = a in Amounts.sum (old s) (old s).miles + amount = Amounts.sum s s.miles }
+  = 
+  (*let ls = init_storage_from s in*)
+  let ls = s in 
+  let k, amount, expiration = a in
+  (* update field first for storage invariants *)
+  ls.mile_amounts <- set ls.mile_amounts k amount;
+  ls.mile_expirations <- set ls.mile_expirations k expiration;
+  ls.miles <- add k ls.miles;
+  ls.miles_added <- add k ls.miles_added(*;
+  copy_storage_to ls s*)
 
-  let addifnotexist (o : key) (new_miles : acol) (s : storage) : unit
-  raises { NotFound }
-  ensures { mem o s.owners }
-  =
-  if not (mem o s.owners)
-  then (
-    s.owners <- add o s.owners;
-    update_owner o new_miles s
-  )
+  let add_owner (s : storage) (a : (key, list (key, int, date))) : unit
+  raises { KeyExist }
+  ensures  { let k,_ = a in forall x:key. mem x s.owners <-> (mem x (old s).owners \/ x = k) }
+  ensures  { let k,_ = a in forall x:key. mem x s.owner_added <-> (mem x (old s).owner_added \/ x = k) }
+  (* TODO : add effects on miles *)
+  (*ensures  { 
+    let sum_amount = Amounts.sum 
+    let _,amount,_ = a in Amounts.sum (old s) (old s).miles + amount = Amounts.sum s s.miles
+  }*)
+  = 
+  (* let ls = init_storage_from s in *)
+  let ls = s in
+  let k, asset_list = a in
+  if mem k ls.owners
+  then
+    raise KeyExist
+  else 
+    (ls.owners <- add k ls.owners;
+     ls.owner_added <- add k ls.owner_added);
+  for i = 0 to length asset_list - 1 do
+     let ka,amount,expiration = gen_nth i asset_list in
+     if mem ka ls.miles then
+       raise KeyExist
+     else 
+      (add_mile ls (ka,amount,expiration);
+       ls.owners
+  done;
+  ()
+  (*copy_storage_to ls s *)
+
+  (* Removers *)
 
   (* Actions  *****************************************************************)
 
   let add (e : env) (s : storage) (ow : key) (m : key) (a : int) (ex : date) : transfers
-  raises { InvalidCaller, InvalidCondition, NotFound }
+  raises { InvalidCaller, InvalidCondition, KeyExist }
   requires { not (mem m s.miles) }
   =
     if caller e <> s.admin then raise InvalidCaller;
     if not (a > 0) then raise InvalidCondition;
-    addifnotexist ow Nil s;
-    add_miles ow m a ex s;
+    add_owner s (ow, (Cons (m, a, ex) Nil));
     Contract.empty
 
   (*let function test_consume (e : env) (s : storage) (a : key) : bool = get_expiration s a > now e
@@ -178,7 +258,7 @@ module Miles
   end
 
   let consume (e : env) (s : storage) (owner : address) (nbmiles : int) : transfers
-  raises { NotFound, InvalidCaller, InvalidCondition }
+  raises { NotFound, KeyExist, InvalidCaller, InvalidCondition }
   requires { is_empty s.miles_removed }
   requires { is_empty s.miles_added }
   (* forall m : removed miles, m.expiration > now *)
@@ -248,7 +328,7 @@ module Miles
     end
 
     let clear_expired (e : env) (s : storage) : transfers
-    raises { NotFound, InvalidCaller }
+    raises { NotFound, KeyExist, InvalidCaller }
     requires { is_empty s.miles_added }
     requires { is_empty s.miles_removed }
     ensures { forall m : key. mem m s.miles_removed -> get_expiration s m < now e }
@@ -291,8 +371,6 @@ module Miles
     if not (a > 0) then raise InvalidCondition;
     s.tr <- s.tr ++ Tr.mk_trace Add Owner Tr.Add;
     s.tr <- s.tr ++ Tr.mk_trace Add Mile Tr.Add;
-    (*addifnotexist ow Nil s;
-    add_miles ow m a ex s;*)
     Contract.empty
    | Some Consume -> 
     if caller e <> s.admin then raise InvalidCaller;
