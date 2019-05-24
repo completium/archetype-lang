@@ -45,10 +45,9 @@ let parse_error pos msg cont =
   Error.error "during parsing" pos msg cont
 
 let contextual_error_msg lexer checkpoint continuation =
-  find_context checkpoint |> fun _nonterminals ->
+  find_context checkpoint |> fun nonterminals ->
   Error.error "parsing" (Lexer.current_position lexer)
     (Printf.sprintf "Error while analyzing %s."
-       "FIXME"
-       (*String.concat " or " (List.map Symbol.string_of_symbol nonterminals)*)
+       (String.concat " or " (List.map Symbol.string_of_symbol nonterminals))
     )
   @@ continuation
