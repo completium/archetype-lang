@@ -67,7 +67,7 @@ let check_brackets_balance () =
 
   let errors =
     aux (LPAREN   , RPAREN  ) @
-    aux (LBRACKET , RBRACKET) @
+    (* aux (LBRACKET , RBRACKET) @ *)
     aux (LBRACE   , RBRACE  ) in
   if List.length errors > 0
   then raise (ParseUtils.ParseError errors)
