@@ -62,7 +62,7 @@ transition finalize (task : taskStatus) from any = {
 }
 
 specification {
-  s1 : state = Transferred or state = Canceled -> balance = 0;
-  s2 : state = Transferred or state = Canceled -> needs oracle;
-  s3 : state = Transferred -> receives buyer = price
+  s5 : state = Transferred or state = Canceled -> balance = 0;
+  s6 : state = Transferred or state = Canceled -> needs oracle;
+  s7 : state = Transferred -> receives buyer = price
 }

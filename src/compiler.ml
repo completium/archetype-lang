@@ -101,14 +101,21 @@ let main () =
       Format.printf "%a\n" Model.pp_pterm pterm
     )
     else compile_and_print (filename, channel);
-    close dispose channel
+    close dispose channel;
 
-  (*    let filename, channel, dispose =
-        if Array.length Sys.argv > 1 then
-          let filename = Sys.argv.(1) in
-          (filename, open_in filename, true)
-        else ("<stdin>", stdin, false)
-        in*)
+    (*    let filename, channel, dispose =
+          if Array.length Sys.argv > 1 then
+            let filename = Sys.argv.(1) in
+            (filename, open_in filename, true)
+          else ("<stdin>", stdin, false)
+          in*)
+
+    begin
+      let li = Error.errors in
+      match !li with
+      | [] -> ()
+      | _ -> exit 1
+    end
 
   with
   | ParseUtils.ParseError exns ->

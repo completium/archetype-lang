@@ -1,4 +1,4 @@
-archetype extension transactionDelegation (
+archetype extension action_delegation (
 
   action aTransaction (anasset : anAsset) = {
     called by [%delegable%] anAsset.arole
