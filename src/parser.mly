@@ -135,8 +135,8 @@
 %token FAILIF
 %token REQUIRE
 
-%token EXPR_INVALID
-%token DECL_INVALID
+%token INVALID_EXPR
+%token INVALID_DECL
 
 %token <string> IDENT
 %token <string> STRING
@@ -250,7 +250,7 @@ declaration_r:
  | x=contract           { x }
  | x=function_decl      { x }
  | x=verification_decl  { x }
- | DECL_INVALID         { Dinvalid }
+ | INVALID_DECL         { Dinvalid }
 
 archetype:
 | ARCHETYPE exts=option(extensions) x=ident { Darchetype (x, exts) }
@@ -722,7 +722,7 @@ simple_expr_r:
  | LPAREN x=ident AT l=ident RPAREN
      { Eterm (Some l, None, x) }
 
-| EXPR_INVALID
+| INVALID_EXPR
      { Einvalid }
 
  | x=paren(expr_r)

@@ -11,3 +11,15 @@ action main2 = {
     f(); to
   }
 }
+
+action main3 = {
+  effect {
+    definition; f()
+  }
+}
+
+action main4 = {
+  effect {
+    f(); transition; g()
+  }
+}
