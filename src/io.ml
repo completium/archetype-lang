@@ -5,6 +5,7 @@ open Parser.MenhirInterpreter
 open Lexing
 open PureLexer
 open ParseError
+open ParseUtils
 
 (* -------------------------------------------------------------------- *)
 let lexbuf_from_channel = fun name channel ->
@@ -19,23 +20,60 @@ let lexbuf_from_channel = fun name channel ->
 
 (* -------------------------------------------------------------------- *)
 
-(* let check_balance_paren lexbuf =
-   let errors, st = List.fold_left (fun (errors, st) i ->
-      match Lexer.token i with
-      | P.LBRACE -> (errors, (Stack.push st i))
-      | P.RBRACE ->
-        begin
-          try
-            (errors, (Stack.pop i))
-          with
-          | Stack.Empty -> PE_UnbalancedParenthesis kind,  q lexbuf
-        end
-      | _ -> (errors, q)) ([], Stack.create() ) lexbuf in
-   if (not (Stack.is_empty st))
-   then (
-    let t = Stack.pop st in
-    let loc = Location.mkloc () in
-    raise (ParseError (PE_MissingParenthesis , loc))) *)
+let check_brackets_balance () =
+  let string_of_token_bracket = function
+    | LPAREN -> "("
+    | RPAREN -> ")"
+    | LBRACKET  -> "["
+    | RBRACKET -> "]"
+    | LBRACE  -> "{"
+    | RBRACE -> "}"
+    | _ -> assert false in
+  let aux ((op, cp) : token * token) : ParseUtils.perror list =
+    let rec aux_internal (st : ptoken Stack.t) ((op, cp) : token * token) pos : ParseUtils.perror list =
+      let t  = Lexer.get pos in
+      let token, _, _ = t in
+      let next () = aux_internal st (op, cp) (snd (Lexer.next pos)) in
+      if token = EOF
+      then (
+        if not (Stack.is_empty st)
+        then
+          (Stack.fold (fun (accu : ParseUtils.perror list) (x : ptoken) ->
+               let token, sl, el = x in
+               let loc = Location.make sl el in
+               (PE_Unclosed (loc, string_of_token_bracket token, string_of_token_bracket cp)) :: accu
+             ) [] st )
+        else []
+      )
+      else (
+        if token = op
+        then (Stack.push t st; next())
+        else (if token = cp
+              then (
+                try let _ = Stack.pop st in
+                  next()
+                with
+                | Stack.Empty -> (let token, sl, el = t in
+                                  let loc = Location.make sl el in
+                                  [PE_Not_Expecting (loc, string_of_token_bracket token)])
+              ) else next()
+             )
+      )
+    in
+    let st = Stack.create() in
+    let lexer = Lexer.start in
+    let _, lexer = Lexer.next lexer in
+    aux_internal st (op, cp) lexer in
+
+  let errors =
+    aux (LPAREN   , RPAREN  ) @
+    aux (LBRACKET , RBRACKET) @
+    aux (LBRACE   , RBRACE  ) in
+  if List.length errors > 0
+  then raise (ParseUtils.ParseError errors)
+
+(* -------------------------------------------------------------------- *)
+
 
 let resume_on_error last_reduction lex =
   match last_reduction with
@@ -102,6 +140,7 @@ let parse lexbuf =
         (resume checkpoint)
   in
   let checkpoint = main lexbuf.lex_curr_p in
+  check_brackets_balance ();
   let lexer = Lexer.start in
   run (`FoundNothingAt checkpoint) checkpoint lexer checkpoint
 
