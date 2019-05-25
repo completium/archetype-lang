@@ -71,13 +71,33 @@ module Miles_with_expiration
 
     (* Getters ----------------------------------------------------------------*)
 
-    let function get_amount  (s : storage) (k : key) : int = amount (get s.mile_assets k)
+    (* let function get_amount  (s : storage) (k : key) : int = amount (get s.mile_assets k)
 
     let function get_expiration  (s : storage) (k : key) : int = expiration (get s.mile_assets k)
 
-    let function get_miles (s : storage) (k : key) : acol = miles (get s.owner_assets k)
+    let function get_miles (s : storage) (k : key) : acol = miles (get s.owner_assets k) *)
+
+    let get_mile (s : storage) (k : key) : mile 
+    raises { NotFound }
+    ensures { mem k s.mile_keys }
+    = 
+    if not (mem k s.mile_keys) then
+        raise NotFound
+    else 
+        get s.mile_assets k 
+
+    let get_owner (s : storage) (k : key) : owner 
+    raises { NotFound }
+    ensures { mem k s.owner_keys }
+    = 
+    if not (mem k s.owner_keys) then
+        raise NotFound
+    else 
+        get s.owner_assets k  
 
     (* Operations -------------------------------------------------------------*)
+
+    let function get_amount  (s : storage) (k : key) : int = amount (get s.mile_assets k)
 
     clone archetype.Sum as Amounts with type     storage = storage,
                                         val      f       = get_amount
@@ -97,26 +117,6 @@ module Miles_with_expiration
         s with
         mile_keys   = c;
     }
-    
-    (* Getters ---------------------------------------------------------------*)
-
-    let get_mile (s : storage) (k : key) : mile 
-    raises { NotFound }
-    ensures { mem k s.mile_keys }
-    = 
-    if not (mem k s.mile_keys) then
-        raise NotFound
-    else 
-        get s.mile_assets k 
-
-    let get_owner (s : storage) (k : key) : owner 
-    raises { NotFound }
-    ensures { mem k s.owner_keys }
-    = 
-    if not (mem k s.owner_keys) then
-        raise NotFound
-    else 
-        get s.owner_assets k  
     
     (* Setters --------------------------------------------------------------*)
 
