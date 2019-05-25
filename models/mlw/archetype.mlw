@@ -33,8 +33,8 @@ theory Contract
 
   (* currency transfer during transaction *)
   type transfer = {
-     destination : address;
-     amount      : tez;
+     destination_ : address;
+     amount_      : tez;
   }
 
   type transfers = list transfer
@@ -71,7 +71,7 @@ theory Contract
     ensures  { old (balance e) = (balance e) + c }
   =
     e.balance_ <- e.balance_ - c;
-    let transfer = { destination = a; amount = c } in
+    let transfer = { destination_ = a; amount_ = c } in
     ops ++ (Cons transfer Nil)
 
 end
@@ -153,6 +153,7 @@ theory AssetCollection
   raises { NotFound }
   variant { c }
   ensures { forall k : key. mem k result <-> mem k c /\ k <> a }
+  ensures { length c = length (old c) - 1 }
   =
      if not (mem a c) then raise NotFound;
      match c with

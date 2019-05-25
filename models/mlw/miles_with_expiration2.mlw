@@ -24,11 +24,11 @@ module Miles_with_expiration
     
     (* ASSETS *)
      type mile = {
-        amount_: int;
+        amount: int;
         expiration : date;
     } 
     
-    let mk_default_mile () = { amount_ = 0; expiration = 0; } : mile
+    let mk_default_mile () = { amount = 0; expiration = 0; } : mile
 
     type owner = {
         miles      : acol;
@@ -53,7 +53,7 @@ module Miles_with_expiration
         mutable tr               : Tr.log;
         mutable ename            : option entry;
     } invariant { 
-        forall k : key. mem k mile_keys -> amount_ (get mile_assets k) > 0
+        forall k : key. mem k mile_keys -> amount (get mile_assets k) > 0
     } by {
         admin                    = 0;
         mile_keys                = Nil;
@@ -69,45 +69,36 @@ module Miles_with_expiration
         ename                    = None;
     }
 
-    let mk_emtpy_storage () : storage = {
-        admin                    = 0;
-        mile_keys                = Nil;
-        mile_assets              = const (mk_default_mile ());
-        owner_keys               = Nil;
-        owner_assets             = const (mk_default_owner ());
-        ops                      = Nil;
-        miles_added              = Nil;
-        miles_removed            = Nil;
-        owner_added              = Nil;
-        owner_removed            = Nil;
-        tr                       = Nil;
-        ename                    = None;
-    }
+    (* Getters ----------------------------------------------------------------*)
 
-    (* Getters *)
-
-    let function get_amount  (s : storage) (k : key) : int = amount_ (get s.mile_assets k)
+    let function get_amount  (s : storage) (k : key) : int = amount (get s.mile_assets k)
 
     let function get_expiration  (s : storage) (k : key) : int = expiration (get s.mile_assets k)
 
     let function get_miles (s : storage) (k : key) : acol = miles (get s.owner_assets k)
 
-    (* Operations *)
+    (* Operations -------------------------------------------------------------*)
 
     clone archetype.Sum as Amounts with type     storage = storage,
                                         val      f       = get_amount
 
-    let function miles_to_storage (c : acol) (l : list mile) : storage
+    let function set_miles_to_storage (s : storage) (c : acol) (l : list mile) : storage
     requires {  length c = length l }
-    requires {  forall a : mile, i : int. 0 <= i < length l -> a = gen_nth i l -> amount_ a > 0 }
-    = 
-    let empty_storage = mk_emtpy_storage() in { 
-        empty_storage with 
+    requires {  forall a : mile, i : int. 0 <= i < length l -> a = gen_nth i l -> amount a > 0 }
+    = { 
+        s with 
         mile_keys   = c;
-        mile_assets = add_to_map c l empty_storage.mile_assets;
+        mile_assets = add_to_map c l (const (mk_default_mile ()));
+    }
+
+    let function set_miles_keys_to_storage (s : storage) (c : acol) : storage
+    requires { subset c s.mile_keys }
+    = {
+        s with
+        mile_keys   = c;
     }
     
-    (* Getters *)
+    (* Getters ---------------------------------------------------------------*)
 
     let get_mile (s : storage) (k : key) : mile 
     raises { NotFound }
@@ -127,7 +118,7 @@ module Miles_with_expiration
     else 
         get s.owner_assets k  
     
-    (* Setters *)
+    (* Setters --------------------------------------------------------------*)
 
     let set_amount (s : storage) (k : key) (v : int) : unit
     raises { NotFound }
@@ -140,17 +131,17 @@ module Miles_with_expiration
         raise NotFound
     else 
         let asset = get_mile s k in
-        let new_asset = { asset with amount_ = v } in
+        let new_asset = { asset with amount = v } in
         s.mile_assets <- set s.mile_assets k new_asset
   
-    (* Adders *)
+    (* Adders ---------------------------------------------------------------*)
 
-    (* should not be called because it is partitioned *)
+    (* is not called by actions because it is partitioned *)
     let add_mile (s : storage) (k : key) (new_mile : mile) : unit
     raises { KeyExist }
-    requires { amount_ new_mile > 0 }
+    requires { amount new_mile > 0 }
     ensures { mem k s.mile_keys }
-    ensures { Amounts.sum s s.mile_keys = Amounts.sum (old s) (old s).mile_keys + (amount_ new_mile) }
+    ensures { Amounts.sum s s.mile_keys = Amounts.sum (old s) (old s).mile_keys + (amount new_mile) }
     ensures { length s.mile_keys = length (old s).mile_keys + 1 }
     =
     if mem k s.mile_keys then
@@ -158,23 +149,43 @@ module Miles_with_expiration
     else
         s.mile_keys <- add k s.mile_keys;
         s.mile_assets <- set s.mile_assets k new_mile
+
+    (* add a mile through an owner *)
+    let add_owner_mile (s : storage) (k : key) (ak : key) (new_mile : mile) : unit
+    raises { NotFound, KeyExist }
+    requires { amount new_mile > 0 }
+    ensures { mem ak s.mile_keys }
+    ensures { Amounts.sum s s.mile_keys = Amounts.sum (old s) (old s).mile_keys + (amount new_mile) }
+    ensures { length s.mile_keys = length (old s).mile_keys + 1 }
+    =
+    if not (mem k s.owner_keys) then
+        raise NotFound
+    else
+        (add_mile s ak new_mile;
+         (* update miles *)
+         let owner_asset = get_owner s k in
+         let owner_miles = miles owner_asset in
+         let new_owner_miles = add ak owner_miles in
+         let new_owner_asset = { owner_asset with 
+            miles = new_owner_miles;
+         } in
+         s.owner_assets <- set s.owner_assets k new_owner_asset)
+
     
     let add_owner (s : storage) (k : key) (new_owner : owner) (assets : list mile) : unit
     raises { KeyExist }
-    requires { let asset_keys = miles new_owner in 
-        length asset_keys = length assets
-    }
-    (* requires { 
-        let asset_keys = miles new_owner in 
-        let astorage = miles_to_storage asset_keys assets in
-        forall k : key. mem k asset_keys -> get_amount astorage k > 0 
-    } *)
-    requires {  forall a : mile, i : int. 0 <= i < length assets -> a = gen_nth i assets -> amount_ a > 0 }
+    (* input consistency *)
+    requires { let asset_keys = miles new_owner in length asset_keys = length assets }
+    (* mile invariant *)
+    requires {  forall a : mile, i : int. 0 <= i < length assets -> a = gen_nth i assets -> amount a > 0 }
     ensures { mem k s.owner_keys }
+    (* count operation *)
     ensures { length s.owner_keys = length (old s).owner_keys + 1 }
+    ensures { length s.mile_keys = length (old s).mile_keys + length assets }
+    (* sum operation *)
     ensures { 
         let asset_keys = miles new_owner in 
-        let astorage = miles_to_storage asset_keys assets in
+        let astorage = set_miles_to_storage s asset_keys assets in
         Amounts.sum s s.mile_keys = Amounts.sum (old s) (old s).mile_keys + Amounts.sum astorage asset_keys 
     }
     =
@@ -185,9 +196,10 @@ module Miles_with_expiration
         s.owner_assets <- set s.owner_assets k new_owner;
         let asset_keys = miles new_owner in
         for i = 0 to (length asset_keys) - 1 do
+        invariant { length s.mile_keys = length (old s).mile_keys + i }
         invariant {
             let asset_keys = miles new_owner in 
-            let astorage = miles_to_storage asset_keys assets in
+            let astorage = set_miles_to_storage s asset_keys assets in
             forall j : int. 
             0 <= j < i ->
             Amounts.sum s s.mile_keys = Amounts.sum (old s) (old s).mile_keys + Amounts.part_sum astorage asset_keys 0 j
@@ -197,4 +209,77 @@ module Miles_with_expiration
             add_mile s ak asset
         done
         
+    (* Removers ---------------------------------------------------------------*)
+
+    let remove_mile (s : storage) (k : key) : unit
+    raises { NotFound }
+    ensures { not (mem k s.mile_keys) }
+    ensures { 
+        let asset = get s.mile_assets k in
+        Amounts.sum s s.mile_keys = Amounts.sum (old s) (old s).mile_keys - (amount asset) 
+    }
+    ensures { length s.mile_keys = length (old s).mile_keys - 1 }
+    =
+    if not (mem k s.mile_keys) then
+        raise NotFound
+    else
+        s.mile_keys <- remove k s.mile_keys
+    
+    (* remove a mile through an owner *)
+    let remove_owner_mile (s : storage) (k : key) (ak : key) : unit
+    raises { NotFound }
+    ensures { not (mem ak s.mile_keys) }
+    ensures { 
+        let asset = get (old s).mile_assets ak in
+        Amounts.sum s s.mile_keys = Amounts.sum (old s) (old s).mile_keys - (amount asset) 
+    }
+    ensures { length s.mile_keys = length (old s).mile_keys - 1 }
+    =
+    if not (mem k s.owner_keys) then
+        raise NotFound
+    else
+        (remove_mile s ak;
+         (* update miles *)
+         let owner_asset = get_owner s k in
+         let owner_miles = miles owner_asset in
+         let new_owner_miles = remove ak owner_miles in
+         let new_owner_asset = { owner_asset with 
+            miles = new_owner_miles;
+         } in
+         s.owner_assets <- set s.owner_assets k new_owner_asset)
+    
+    let remove_owner (s : storage) (k : key) : unit
+    raises { NotFound }
+    ensures { not (mem k s.owner_keys) }
+    (* count operation *)
+    ensures { length s.owner_keys = length (old s).owner_keys - 1 }
+    ensures { 
+        let assets = miles (get s.owner_assets k) in
+        length s.mile_keys = length (old s).mile_keys - length assets 
+    }
+    (* sum operation *)
+    ensures { 
+        let asset_keys = miles (get (old s).owner_assets k) in 
+        let astorage = set_miles_keys_to_storage (old s) asset_keys in
+        Amounts.sum s s.mile_keys = Amounts.sum (old s) (old s).mile_keys + Amounts.sum astorage asset_keys 
+    }
+    =
+    if not (mem k s.owner_keys) then
+        raise NotFound
+    else
+        s.owner_keys <- remove k s.owner_keys;
+        let asset_keys = miles (get s.owner_assets k) in
+        for i = 0 to (length asset_keys) - 1 do
+        invariant { length s.mile_keys = length (old s).mile_keys - i }
+        invariant {
+            let asset_keys = miles (get (old s).owner_assets k) in 
+            let astorage = set_miles_keys_to_storage (old s) asset_keys in 
+            forall j : int. 
+            0 <= j < i ->
+            Amounts.sum s s.mile_keys = Amounts.sum (old s) (old s).mile_keys - Amounts.part_sum astorage asset_keys 0 j
+         }
+            let ak = nth i asset_keys in
+            remove_mile s ak 
+        done
+    
 end
