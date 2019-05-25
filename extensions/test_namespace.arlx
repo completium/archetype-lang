@@ -1,6 +1,6 @@
 archetype extension test_namespace (
 
-  variable[%test_namespace] avariable type
+  variable[%test_namespace%] avariable type
 
 ) = {
 

@@ -1,7 +1,7 @@
 archetype extension transactionDelegation (
 
   action aTransaction (anasset : anAsset) = {
-    called by [%delegable] anAsset.arole
+    called by [%delegable%] anAsset.arole
   }
 
 ) = {

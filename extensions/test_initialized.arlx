@@ -1,5 +1,5 @@
 archetype extension testInitialized (
-  variable[%testInitialized] aVariable string
+  variable[%testInitialized%] aVariable string
 ) = {
 
   asset test_<%aTransaction> = {

@@ -1,6 +1,6 @@
 archetype extension transferable (
 
-  variable[%transferable] aRole role
+  variable[%transferable%] aRole role
 
 ) = {
 

@@ -89,6 +89,7 @@
 %token LPAREN
 %token RPAREN
 %token LBRACKETPERCENT
+%token PERCENTRBRACKET
 %token LBRACKET
 %token RBRACKET
 %token LBRACE
@@ -293,7 +294,7 @@ dextension:
 | e=loc(extension_r) { e }
 
 extension_r:
-| LBRACKETPERCENT x=ident xs=option(simple_expr+) RBRACKET { Eextension (x, xs) }
+| LBRACKETPERCENT x=ident xs=option(simple_expr+) PERCENTRBRACKET { Eextension (x, xs) }
 
 namespace:
 | NAMESPACE x=ident xs=braced(declarations) { Dnamespace (x, xs) }

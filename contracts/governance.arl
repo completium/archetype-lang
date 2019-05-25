@@ -1,12 +1,12 @@
 archetype governance
 
-variable[%transferable] chairperson role
+variable[%transferable%] chairperson role
 
 (* vote start *)
-variable[%mutable chairperson (instate Created)] startDate date
+variable[%mutable chairperson (instate Created)%] startDate date
 
 (* vote deadline *)
-variable[%mutable chairperson (instate Created)] deadline date
+variable[%mutable chairperson (instate Created)%] deadline date
 
 asset voter identified by address = {
   address : role;

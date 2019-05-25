@@ -1,21 +1,21 @@
-archetype[%erc20] ico
+archetype[%erc20%] ico
 
 constant symbol string = "BCDT"
 
 constant decimals int  = 18
 
 (* contribution thresholds *)
-variable[%mutable owner (state = Init)] min_contribution tez = 0.001
-variable[%mutable owner (state = Init)] max_contribution_silver tez = 10
+variable[%mutable owner (state = Init)%] min_contribution tez = 0.001
+variable[%mutable owner (state = Init)%] max_contribution_silver tez = 10
 
 (* bcd token data *)
-variable[%mutable owner (state = Init)] max_bcd_to_sell int = 100000000
-variable[%mutable owner (state = Init)] exchange_rate_bcd_tez int = 13000
+variable[%mutable owner (state = Init)%] max_bcd_to_sell int = 100000000
+variable[%mutable owner (state = Init)%] exchange_rate_bcd_tez int = 13000
 
 (* round caps *)
-variable[%mutable owner (state = Init)] soft_cap tez = 1800
-variable[%mutable owner (state = Init)] presales_cap tez = 1800
-variable[%mutable owner (state = Init)] round1_cap tez = 3600
+variable[%mutable owner (state = Init)%] soft_cap tez = 1800
+variable[%mutable owner (state = Init)%] presales_cap tez = 1800
+variable[%mutable owner (state = Init)%] round1_cap tez = 3600
 (* presales_cap + 1600 *)
 
 (* Number tokens sent, eth raised, … *)
@@ -24,7 +24,7 @@ variable nb_tez_raised int = 0
 
 (* Roles *)
 
-variable[%transferable] owner role
+variable[%transferable%] owner role
 
 variable whitelister role
 
@@ -47,7 +47,7 @@ asset[@add @remove @update owner (state = Init)]
   c1 : contrib >= 0
 }
 
-states[%incr_mutable_st owner] =
+states[%incr_mutable_st owner%] =
 | Init initial     (* ICO isn't started yet, initial state *)
 | PresaleRunning   (* Presale has started *)
 | PresaleFinished  (* Presale has ended   *)
@@ -137,7 +137,7 @@ action contribute = {
 (* the onlyonce extension specifies that withdraw action can be
   executed only once, that is a contributor can withdraw only once. *)
 
-action[%onlyonce] withdraw = {
+action[%onlyonce%] withdraw = {
   require {
     c5 : state = Round2Finished;
     c6 : nb_tez_raised <= soft_cap;

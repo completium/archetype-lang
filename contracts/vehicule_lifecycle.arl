@@ -63,7 +63,7 @@ transition assign_owner on ok : order from any = {
 }
 
 action vehiculeTransfer (buyer : owner) (vehicule : vehicule) = {
-  called by [%delegable] vehicule.owner
+  called by [%delegable%] vehicule.owner
   effect {
     vehicule.owner := buyer
   }

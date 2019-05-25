@@ -143,6 +143,7 @@ rule token = parse
   | "("                   { LPAREN }
   | ")"                   { RPAREN }
   | "[%"                  { LBRACKETPERCENT }
+  | "%]"                  { PERCENTRBRACKET }
   | "["                   { LBRACKET }
   | "]"                   { RBRACKET }
   | "{"                   { LBRACE }

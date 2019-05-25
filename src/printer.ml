@@ -639,7 +639,7 @@ and pp_field fmt { pldesc = f; _ } =
 and pp_extension fmt { pldesc = e; _ } =
   match e with
   | Eextension (id, args) ->
-    Format.fprintf fmt "[%%%a%a]"
+    Format.fprintf fmt "[%%%a%a%%]"
       pp_id id
       (pp_option (pp_prefix " " (pp_list " " pp_simple_expr))) args
 

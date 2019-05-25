@@ -16,7 +16,7 @@ enum my_enums =
 | InProgress
 | Completed
 
-asset[%myextension] [@add @remove @update owner args]
+asset[%myextension%] [@add @remove @update owner args]
 my_asset_all identified by str sorted by id = {
   id : role;
   st : mystates = Init;

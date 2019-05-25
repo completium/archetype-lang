@@ -1,6 +1,6 @@
 archetype certificate_generator
 
-variable[%transferable] admin role = @tz1aazS5ms5cbGkb6FN1wvWmN7yrMTTcr6wB
+variable[%transferable%] admin role = @tz1aazS5ms5cbGkb6FN1wvWmN7yrMTTcr6wB
 
 asset certificate identified by id = {
   id : string;

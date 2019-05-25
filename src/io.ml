@@ -28,6 +28,8 @@ let check_brackets_balance () =
     | RBRACKET -> "]"
     | LBRACE  -> "{"
     | RBRACE -> "}"
+    | LBRACKETPERCENT  -> "[%"
+    | PERCENTRBRACKET -> "%]"
     | _ -> assert false in
   let aux ((op, cp) : token * token) : ParseUtils.perror list =
     let rec aux_internal (st : ptoken Stack.t) ((op, cp) : token * token) pos : ParseUtils.perror list =
@@ -67,8 +69,9 @@ let check_brackets_balance () =
 
   let errors =
     aux (LPAREN   , RPAREN  ) @
-    (* aux (LBRACKET , RBRACKET) @ *)
-    aux (LBRACE   , RBRACE  ) in
+    aux (LBRACKET , RBRACKET) @
+    aux (LBRACE   , RBRACE  ) @
+    aux (LBRACKETPERCENT , PERCENTRBRACKET) in
   if List.length errors > 0
   then raise (ParseUtils.ParseError errors)
 
