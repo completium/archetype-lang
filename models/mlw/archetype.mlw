@@ -128,6 +128,8 @@ theory AssetCollection
   
   predicate (==) (c1 c2 : acol) = forall k : key. mem k c1 <-> mem k c2
 
+  let function sing (k : key) : acol = Cons k Nil
+
   lemma extensionality:
   forall c1 c2 : acol. c1 == c2 -> c1 = c2
 
@@ -381,20 +383,20 @@ theory Sum
     (forall k : int. i <= k <= j -> nth k c <> m -> f s1 (nth k c) = f s2 (nth k c)) ->
     part_sum s1 c i j - f s1 m = part_sum s2 c i j - f s2 m
 
-  lemma sum_remove:
+  (*lemma sum_remove:
     forall s1 s2 : storage, c1 c2 : acol, m : int.
      (mem m c2) ->
      (forall k : key. mem k c1 <-> mem k c2 /\ k<>m) -> (* c1 = c2 \ { m } *)
      (forall k : key. mem k c2 -> f s1 k = f s2 k) ->
-     sum s1 c1 = sum s2 c2 - f s1 m
+     sum s1 c1 = sum s2 c2 - f s1 m*)
 
-  lemma sum_add:
+  (*lemma sum_add:
     forall s1 s2 : storage, c1 c2 : acol, m v : int.
      not (mem m c2) ->
      (forall k : key. mem k c1 <-> mem k c2 \/ k=m) -> (* c1 = c2 U { m } *)
      (forall k : key. mem k c2 -> f s1 k = f s2 k) ->
      f s1 m = v ->
-     sum s1 c1 = sum s2 c2 + v
+     sum s1 c1 = sum s2 c2 + v*)
 
   (* part_sum is functional towards (f s) *)
   lemma sum_fun_storage:
@@ -409,7 +411,6 @@ theory Sum
   lemma sum_union:
     forall s : storage, c1 c2 : acol, i j : int.
     part_sum s (union c1 c2) i j = part_sum s c1 i j + part_sum s c1 i j - part_sum s (inter c1 c2) i j
-
 
 end
 

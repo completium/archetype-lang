@@ -141,7 +141,10 @@ module Miles_with_expiration
     raises { KeyExist }
     requires { amount new_mile > 0 }
     ensures { mem k s.mile_keys }
-    ensures { Amounts.sum s s.mile_keys = Amounts.sum (old s) (old s).mile_keys + (amount new_mile) }
+    (* set operations *)
+    ensures { s.mile_keys == union (old s).mile_keys (sing k) /\ is_empty (inter (old s).mile_keys (sing k)) }
+    (* operations *)
+    ensures { Amounts.sum s s.mile_keys = Amounts.sum (old s) (old s).mile_keys + amount new_mile }
     ensures { length s.mile_keys = length (old s).mile_keys + 1 }
     =
     if mem k s.mile_keys then
@@ -155,7 +158,10 @@ module Miles_with_expiration
     raises { NotFound, KeyExist }
     requires { amount new_mile > 0 }
     ensures { mem ak s.mile_keys }
-    ensures { Amounts.sum s s.mile_keys = Amounts.sum (old s) (old s).mile_keys + (amount new_mile) }
+    (* set operations *)
+    ensures { s.mile_keys == union (old s).mile_keys (sing k) /\ is_empty (inter (old s).mile_keys (sing k)) }
+    (* operations *)
+    ensures { Amounts.sum s s.mile_keys = Amounts.sum (old s) (old s).mile_keys + amount new_mile }
     ensures { length s.mile_keys = length (old s).mile_keys + 1 }
     =
     if not (mem k s.owner_keys) then
