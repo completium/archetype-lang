@@ -179,6 +179,11 @@ module Miles_with_expiration
     (* mile invariant *)
     requires {  forall a : mile, i : int. 0 <= i < length assets -> a = gen_nth i assets -> amount a > 0 }
     ensures { mem k s.owner_keys }
+    (* basic set operation *)
+    ensures { 
+        let asset_keys = miles new_owner in
+        s.mile_keys == union (old s).mile_keys asset_keys /\ is_empty (inter (old s).mile_keys asset_keys)
+    }
     (* count operation *)
     ensures { length s.owner_keys = length (old s).owner_keys + 1 }
     ensures { length s.mile_keys = length (old s).mile_keys + length assets }
@@ -196,14 +201,9 @@ module Miles_with_expiration
         s.owner_assets <- set s.owner_assets k new_owner;
         let asset_keys = miles new_owner in
         for i = 0 to (length asset_keys) - 1 do
-        invariant { length s.mile_keys = length (old s).mile_keys + i }
-        invariant {
-            let asset_keys = miles new_owner in 
-            let astorage = set_miles_to_storage s asset_keys assets in
-            forall j : int. 
-            0 <= j < i ->
-            Amounts.sum s s.mile_keys = Amounts.sum (old s) (old s).mile_keys + Amounts.part_sum astorage asset_keys 0 j
-         }
+        invariant { s.mile_keys == union (old s).mile_keys (first i asset_keys) }
+        invariant { is_empty (inter (old s).mile_keys asset_keys) }
+        invariant { forall k : key. mem k s.mile_keys -> amount (get s.mile_assets k) > 0  }
             let ak = nth i asset_keys in
             let asset = gen_nth i assets in
             add_mile s ak asset

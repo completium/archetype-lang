@@ -125,8 +125,13 @@ theory AssetCollection
       else mem k tl
     | Nil -> false
     end
-
+  
   predicate (==) (c1 c2 : acol) = forall k : key. mem k c1 <-> mem k c2
+
+  lemma extensionality:
+  forall c1 c2 : acol. c1 == c2 -> c1 = c2
+
+  predicate is_empty (c : acol) = forall m : key. not (mem m c)
 
   let function length (c : list 'a) = length c
 
@@ -197,8 +202,6 @@ theory AssetCollection
     else union tl (Cons h c2)
   end
 
-  predicate is_empty (c : acol) = forall m : key. not (mem m c)
-
   axiom zero_length : forall c : acol. is_empty c -> length c = 0
 
   val function witness : 'a
@@ -254,8 +257,15 @@ theory AssetCollection
   | Nil -> acc
   end
 
-  axiom split_mem : forall l : list 'a, x y : 'a.
+  lemma split_mem : forall l : list 'a, x y : 'a.
    Mem.mem x l \/ x = y <-> Mem.mem x (l ++ (Cons y Nil))    
+
+  lemma length_union : forall c1 c2 : acol.
+  length (union c1 c2) = length c1 + length c2 - length (inter c1 c2)
+
+  lemma length_union2: forall c1 c2 : acol.
+  is_empty (inter c1 c2) ->
+  length (union c1 c2) = length c1 + length c2
 
   let rec add_to_map (c : acol) (l : list 'value) (m : map 'value)  
    variant { c, l }
@@ -267,6 +277,27 @@ theory AssetCollection
    | Cons k tlacol, Cons a tlasset -> add_to_map tlacol tlasset (set m k a) 
    end
 
+  (* first theory *)
+
+  let function first (i : int) (c : acol) : acol
+  ensures { 0 <= i <= length c -> length result = i }
+  = 
+  let rec rec_first (j : int) (a l : acol) : acol
+    variant { l }
+    = 
+    match l with
+    | Nil -> a
+    | Cons k tl -> 
+      if j > i then
+        a
+      else rec_first (i+1) (Cons k a) tl
+    end in
+  rec_first 0 Nil c
+
+  lemma first_add:
+  forall c : acol, i : int.
+  0 <= i < length c ->
+  first (i+1) c = Cons (nth (i+1) c) (first i c)
 
 end
 
@@ -365,10 +396,20 @@ theory Sum
      f s1 m = v ->
      sum s1 c1 = sum s2 c2 + v
 
-  lemma sum_inter:
+  (* part_sum is functional towards (f s) *)
+  lemma sum_fun_storage:
+    forall s1 s2 : storage, c : acol, i j : int.
+    (forall x : key. mem x c -> f s1 x = f s2 x) -> (* f s1 = f s2 *)
+    part_sum s1 c i j = part_sum s2 c i j (* part_sum c i j (f s1) = part_sum c i j (f s2) *)
+
+  lemma sum_empty:
+    forall s : storage, c : acol, i j : int.
+    is_empty c -> part_sum s c i j = 0
+
+  lemma sum_union:
     forall s : storage, c1 c2 : acol, i j : int.
-    is_empty (inter c1 c2) ->
-    part_sum s (union c1 c2) i j = part_sum s c1 i j + part_sum s c1 i j
+    part_sum s (union c1 c2) i j = part_sum s c1 i j + part_sum s c1 i j - part_sum s (inter c1 c2) i j
+
 
 end
 
