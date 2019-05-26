@@ -103,7 +103,7 @@ let date     = day ('T' hour ( timezone )?)?
 let accept_transfer = "accept" blank+ "transfer"
 let op_spec1 = "may" blank+ "be" blank+ "performed" blank+ "only" blank+ "by" blank+ "role"
 let op_spec2 = "may" blank+ "be" blank+ "performed" blank+ "only" blank+ "by" blank+ "action"
-let op_spec3 = "may" blank+ "be" blank+ "performed" blank+ "by" blank+ "by"
+let op_spec3 = "may" blank+ "be" blank+ "performed" blank+ "by" blank+ "role"
 let op_spec4 = "may" blank+ "be" blank+ "performed" blank+ "by" blank+ "action"
 
 (* -------------------------------------------------------------------- *)

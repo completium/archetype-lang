@@ -83,7 +83,7 @@ let resume_on_error last_reduction lex =
   | `FoundExprAt checkpoint ->
     (* let checkpoint = Parser.MenhirInterpreter.offer checkpoint (Parser.INVALID_EXPR, dummy_pos, dummy_pos) in *)
     let lex =
-      Lexer.skip_until_before (fun t -> t = SEMI_COLON || t = RBRACE) lex
+      Lexer.skip_until_before (fun t -> t = SEMI_COLON || t = RBRACE || t = EOF) lex
     in
     let lex =
       if Lexer.get' lex = SEMI_COLON
