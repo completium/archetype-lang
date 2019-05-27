@@ -128,17 +128,20 @@ theory AssetCollection
   
   predicate (==) (c1 c2 : acol) = forall k : key. mem k c1 <-> mem k c2
 
+  predicate subset (c1 c2 : acol)
+  = forall k : key. mem k c1 -> mem k c2
+
   let function sing (k : key) : acol = Cons k Nil
 
-  lemma extensionality:
+  axiom extensionality:
   forall c1 c2 : acol. c1 == c2 -> c1 = c2
 
   predicate is_empty (c : acol) = forall m : key. not (mem m c)
 
   let function length (c : list 'a) = length c
 
-  lemma mem_exists: forall k : int, c : acol.
-    not (mem k c) <-> forall i : int. 0 <= i <= length c -> i <> k
+  (*lemma mem_exists: forall k : int, c : acol.
+    not (mem k c) <-> forall i : int. 0 <= i <= length c -> i <> k*)
 
   let add (a : key) (c : acol)
   raises { KeyExist }
@@ -160,7 +163,7 @@ theory AssetCollection
   raises { NotFound }
   variant { c }
   ensures { forall k : key. mem k result <-> mem k c /\ k <> a }
-  ensures { length c = length (old c) - 1 }
+  ensures { length result = length (old c) - 1 }
   =
      if not (mem a c) then raise NotFound;
      match c with
@@ -204,7 +207,8 @@ theory AssetCollection
     else union tl (Cons h c2)
   end
 
-  axiom zero_length : forall c : acol. is_empty c -> length c = 0
+  axiom zero_length: 
+  forall c : acol. is_empty c -> length c = 0
 
   val function witness : 'a
 
@@ -227,14 +231,18 @@ theory AssetCollection
     0 <= j < length c ->
     i = j <-> nth i c = nth j c
 
-  axiom inj_nth2 : forall i j : int, c : acol.
+  (*axiom inj_nth2 : forall i j : int, c : acol.
     0 <= i < length c ->
     0 <= j < length c ->
     i <> j ->
-    nth i c <> nth j c  
+    nth i c <> nth j c  *)
 
-  predicate subset (c1 c2 : acol)
-  = forall k : key. mem k c1 -> mem k c2
+  predicate unique (c : acol) = 
+  forall i j : int.
+    0 <= i < length c ->
+    0 <= j < length c ->
+    i <> j ->
+    nth i c <> nth j c
 
   axiom subset_nth : forall c1 c2 : acol.
     subset c1 c2 <-> forall k : int. 0 <= k < length c1 -> mem (nth k c1) c2
@@ -249,20 +257,12 @@ theory AssetCollection
 
   lemma subset_union2: forall c1 c2 : acol. subset c2 (union c1 c2) 
 
-  (* not really used *)
-  let rec fold (f : {'a} -> 'k -> 'a)
-               (acc : {'a})
-               (l : list 'k) : 'a
-  variant { l } =
-  match l with
-  | Cons e tl -> fold f (f acc e) tl
-  | Nil -> acc
-  end
-
   lemma split_mem : forall l : list 'a, x y : 'a.
-   Mem.mem x l \/ x = y <-> Mem.mem x (l ++ (Cons y Nil))    
+   Mem.mem x l \/ x = y <-> Mem.mem x (l ++ (Cons y Nil))   
 
   lemma length_union : forall c1 c2 : acol.
+  unique c1 ->
+  unique c2 ->
   length (union c1 c2) = length c1 + length c2 - length (inter c1 c2)
 
   lemma length_union2: forall c1 c2 : acol.
@@ -300,6 +300,10 @@ theory AssetCollection
   forall c : acol, i : int.
   0 <= i < length c ->
   first (i+1) c = Cons (nth (i+1) c) (first i c)
+
+  lemma first_all:
+  forall c : acol, i : int.
+  i >= length c -> first i c == c
 
 end
 
@@ -412,6 +416,10 @@ theory Sum
     forall s : storage, c1 c2 : acol, i j : int.
     part_sum s (union c1 c2) i j = part_sum s c1 i j + part_sum s c1 i j - part_sum s (inter c1 c2) i j
 
+  lemma sum_diff:
+    forall s : storage, c1 c2 : acol, i j : int.
+    part_sum s (diff c1 c2) i j = part_sum s c1 i j - part_sum s (inter c1 c2) i j
+
 end
 
 theory Trace
@@ -483,5 +491,7 @@ module Lib
   use export Map
   use export AssetCollection
   use export Trace
+
+  goal G: false
 
 end
