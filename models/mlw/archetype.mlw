@@ -88,6 +88,7 @@ module Map
   let function get (f: map 'value) (x: key) : 'value = f x
 
   let function set (f: map 'value) (x: key) (v: 'value) : map 'value 
+  ensures { result x = v }
   ensures { forall k : key. k <> x -> result k = f k }
   = fun (y : key) -> if y = x then v else f y
 
@@ -138,32 +139,27 @@ theory AssetCollection
 
   predicate is_empty (c : acol) = forall m : key. not (mem m c)
 
-  let function length (c : list 'a) = length c
+  let function card (c : list 'a) = length c
 
   (*lemma mem_exists: forall k : int, c : acol.
     not (mem k c) <-> forall i : int. 0 <= i <= length c -> i <> k*)
 
   let add (a : key) (c : acol)
   raises { KeyExist }
-  ensures { not (mem a (old c)) }
+  reads { c }
+  ensures { not (mem a c) }
   ensures { mem a result }
   ensures { forall k : key. mem k result <-> mem k c \/ k = a }
-  ensures { length result = length c + 1 }
   = if mem a c then raise KeyExist;
     c ++ (Cons a Nil)
 
-  let addifnotexist (a : key) (c : acol) : acol
-  ensures { forall k : key. mem k result <-> mem k c \/ k = a }
-  ensures { mem a result } 
-  = if mem a c
-    then c
-    else c ++ (Cons a Nil)
-
   let rec remove (a : key) (c : acol) : acol
   raises { NotFound }
+  reads { c }
   variant { c }
+  ensures { mem a c }
+  ensures { not (mem a result) }
   ensures { forall k : key. mem k result <-> mem k c /\ k <> a }
-  ensures { length result = length (old c) - 1 }
   =
      if not (mem a c) then raise NotFound;
      match c with
@@ -207,8 +203,8 @@ theory AssetCollection
     else union tl (Cons h c2)
   end
 
-  axiom zero_length: 
-  forall c : acol. is_empty c -> length c = 0
+  axiom zero_card: 
+  forall c : acol. is_empty c -> card c = 0
 
   val function witness : 'a
 
@@ -220,32 +216,32 @@ theory AssetCollection
   end
 
   let function nth (i : int) (c : acol) : key
-  ensures { 0 <= i < length c -> result <> witness }
-  ensures { 0 <= i < length c -> mem result c }
+  ensures { 0 <= i < card c -> result <> witness }
+  ensures { 0 <= i < card c -> mem result c }
   = gen_nth i c
 
   (* this axiom ensures that all asset keys are unique, 
      which is translated to the injectivity of nth *)
   axiom inj_nth : forall i j : int, c : acol.
-    0 <= i < length c ->
-    0 <= j < length c ->
+    0 <= i < card c ->
+    0 <= j < card c ->
     i = j <-> nth i c = nth j c
 
   (*axiom inj_nth2 : forall i j : int, c : acol.
-    0 <= i < length c ->
-    0 <= j < length c ->
+    0 <= i < card c ->
+    0 <= j < card c ->
     i <> j ->
     nth i c <> nth j c  *)
 
   predicate unique (c : acol) = 
   forall i j : int.
-    0 <= i < length c ->
-    0 <= j < length c ->
+    0 <= i < card c ->
+    0 <= j < card c ->
     i <> j ->
     nth i c <> nth j c
 
   axiom subset_nth : forall c1 c2 : acol.
-    subset c1 c2 <-> forall k : int. 0 <= k < length c1 -> mem (nth k c1) c2
+    subset c1 c2 <-> forall k : int. 0 <= k < card c1 -> mem (nth k c1) c2
   
   lemma subset_diff: forall c1 c2 : acol. subset (diff c1 c2) c1
 
@@ -260,19 +256,26 @@ theory AssetCollection
   lemma split_mem : forall l : list 'a, x y : 'a.
    Mem.mem x l \/ x = y <-> Mem.mem x (l ++ (Cons y Nil))   
 
-  lemma length_union : forall c1 c2 : acol.
+  lemma card_union: forall c1 c2 : acol.
   unique c1 ->
   unique c2 ->
-  length (union c1 c2) = length c1 + length c2 - length (inter c1 c2)
+  card (union c1 c2) = card c1 + card c2 - card (inter c1 c2)
 
-  lemma length_union2: forall c1 c2 : acol.
-  is_empty (inter c1 c2) ->
-  length (union c1 c2) = length c1 + length c2
+  (*lemma card_diff: forall c1 c2 : acol.
+  unique c1 ->
+  unique c2 ->
+  card (diff c1 c2) = card c1 - card (inter c1 c2) *)
+
+  lemma card_diff2: forall c1 c2 : acol.
+  unique c1 ->
+  unique c2 ->
+  subset c2 c1 ->
+  card (diff c1 c2) = card c1 - card c2 
 
   let rec add_to_map (c : acol) (l : list 'value) (m : map 'value)  
    variant { c, l }
-   requires { length c = length l }
-   ensures { forall k : key. mem k c -> exists i : int. 0 <= i < length c /\ gen_nth i l = get m k }
+   requires { card c = card l }
+   ensures { forall k : key. mem k c -> exists i : int. 0 <= i < card c /\ gen_nth i l = get m k }
    =
    match (c,l) with
    | Nil,Nil -> m
@@ -282,7 +285,7 @@ theory AssetCollection
   (* first theory *)
 
   let function first (i : int) (c : acol) : acol
-  ensures { 0 <= i <= length c -> length result = i }
+  ensures { 0 <= i <= card c -> card result = i }
   = 
   let rec rec_first (j : int) (a l : acol) : acol
     variant { l }
@@ -298,12 +301,12 @@ theory AssetCollection
 
   lemma first_add:
   forall c : acol, i : int.
-  0 <= i < length c ->
+  0 <= i < card c ->
   first (i+1) c = Cons (nth (i+1) c) (first i c)
 
   lemma first_all:
   forall c : acol, i : int.
-  i >= length c -> first i c == c
+  i >= card c -> first i c == c
 
 end
 
@@ -352,14 +355,14 @@ theory Sum
     variant { l }
     = match l with
       | Cons e tl ->
-        if i <= k <= j
+        if i <= k < j 
         then f s e + rec_sum (k+1) tl 
         else rec_sum (k+1) tl
       | Nil -> 0
       end in
     rec_sum 0 c
 
-  let function sum (s : storage) (c : acol) = part_sum s c 0 (length c)
+  let function sum (s : storage) (c : acol) = part_sum s c 0 (card c)
 
   lemma part_sum_def_empty :
     forall s : storage, c: acol, i j : int.
@@ -387,38 +390,28 @@ theory Sum
     (forall k : int. i <= k <= j -> nth k c <> m -> f s1 (nth k c) = f s2 (nth k c)) ->
     part_sum s1 c i j - f s1 m = part_sum s2 c i j - f s2 m
 
-  (*lemma sum_remove:
-    forall s1 s2 : storage, c1 c2 : acol, m : int.
-     (mem m c2) ->
-     (forall k : key. mem k c1 <-> mem k c2 /\ k<>m) -> (* c1 = c2 \ { m } *)
-     (forall k : key. mem k c2 -> f s1 k = f s2 k) ->
-     sum s1 c1 = sum s2 c2 - f s1 m*)
-
-  (*lemma sum_add:
-    forall s1 s2 : storage, c1 c2 : acol, m v : int.
-     not (mem m c2) ->
-     (forall k : key. mem k c1 <-> mem k c2 \/ k=m) -> (* c1 = c2 U { m } *)
-     (forall k : key. mem k c2 -> f s1 k = f s2 k) ->
-     f s1 m = v ->
-     sum s1 c1 = sum s2 c2 + v*)
-
   (* part_sum is functional towards (f s) *)
   lemma sum_fun_storage:
     forall s1 s2 : storage, c : acol, i j : int.
     (forall x : key. mem x c -> f s1 x = f s2 x) -> (* f s1 = f s2 *)
-    part_sum s1 c i j = part_sum s2 c i j (* part_sum c i j (f s1) = part_sum c i j (f s2) *)
+    part_sum s1 c i j = part_sum s2 c i j (* part_sum c i j (f s1) = part_sum c i j (f s2) *) 
 
   lemma sum_empty:
-    forall s : storage, c : acol, i j : int.
-    is_empty c -> part_sum s c i j = 0
+    forall s : storage, c : acol.
+    is_empty c -> sum s c = 0
 
   lemma sum_union:
-    forall s : storage, c1 c2 : acol, i j : int.
-    part_sum s (union c1 c2) i j = part_sum s c1 i j + part_sum s c1 i j - part_sum s (inter c1 c2) i j
+    forall s : storage, c1 c2 : acol.
+    sum s (union c1 c2) = sum s c1 + sum s c2 - sum s (inter c1 c2)
 
-  lemma sum_diff:
-    forall s : storage, c1 c2 : acol, i j : int.
-    part_sum s (diff c1 c2) i j = part_sum s c1 i j - part_sum s (inter c1 c2) i j
+  (*lemma sum_diff:
+    forall s : storage, c1 c2 : acol.
+    sum s (diff c1 c2) = sum s c1 - sum s (inter c1 c2)*)
+
+  lemma sum_diff2:
+    forall s : storage, c1 c2 : acol.
+    subset c2 c1 ->
+    sum s (diff c1 c2) = sum s c1 - sum s c2  
 
 end
 
