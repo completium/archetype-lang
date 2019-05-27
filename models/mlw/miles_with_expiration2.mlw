@@ -160,8 +160,6 @@ module Miles_with_expiration_storage
     raises { NotFound, KeyExist }
     requires { amount new_mile > 0 }
     ensures { mem mile_k s.mile_keys }
-    (* set operations *)
-    ensures { s.mile_keys == union (old s).mile_keys (sing mile_k) /\ is_empty (inter (old s).mile_keys (sing mile_k)) }
     (* operations *)
     ensures { Amounts.sum s s.mile_keys = Amounts.sum (old s) (old s).mile_keys + amount new_mile }
     ensures { card s.mile_keys = card (old s).mile_keys + 1 }
@@ -234,21 +232,21 @@ module Miles_with_expiration_storage
         s.mile_keys <- remove k s.mile_keys
 
     (* remove a mile through an owner *)
-    let remove_owner_mile (s : storage) (k : key) (mile_key : key) : unit
+    let remove_owner_mile (s : storage) (k : key) (mile_k : key) : unit
     raises { NotFound }
-    ensures { not (mem mile_key s.mile_keys) }
+    ensures { not (mem mile_k s.mile_keys) }
     (* operations *)
-    ensures { Amounts.sum s s.mile_keys = Amounts.sum (old s) (old s).mile_keys - (get_amount (old s) mile_key) }
+    ensures { Amounts.sum s s.mile_keys = Amounts.sum (old s) (old s).mile_keys - (get_amount (old s) mile_k) }
     ensures { card s.mile_keys = card (old s).mile_keys - 1 }
     =
     if not (mem k s.owner_keys) then
         raise NotFound
     else
-        (remove_mile s mile_key;
+        (remove_mile s mile_k;
          (* update miles *)
          let owner_asset = get_owner s k in
          let owner_miles = miles owner_asset in
-         let new_owner_miles = remove mile_key owner_miles in
+         let new_owner_miles = remove mile_k owner_miles in
          let new_owner_asset = { owner_asset with 
             miles = new_owner_miles;
          } in
