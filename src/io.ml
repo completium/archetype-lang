@@ -81,7 +81,6 @@ let check_brackets_balance () =
 let resume_on_error last_reduction lex =
   match last_reduction with
   | `FoundExprAt checkpoint ->
-    (* let checkpoint = Parser.MenhirInterpreter.offer checkpoint (Parser.INVALID_EXPR, dummy_pos, dummy_pos) in *)
     let lex =
       Lexer.skip_until_before (fun t -> t = SEMI_COLON || t = RBRACE || t = EOF) lex
     in
@@ -90,6 +89,7 @@ let resume_on_error last_reduction lex =
       then snd (Lexer.next lex)
       else lex
     in
+    (*let checkpoint = Parser.MenhirInterpreter.offer checkpoint (Parser.INVALID_EXPR, dummy_pos, dummy_pos) in*)
     (lex, checkpoint)
   | `FoundDeclarationAt checkpoint ->
     let lex =
