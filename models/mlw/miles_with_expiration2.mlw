@@ -160,6 +160,8 @@ module Miles_with_expiration_storage
     raises { NotFound, KeyExist }
     requires { amount new_mile > 0 }
     ensures { mem mile_k s.mile_keys }
+    (* set operations *)
+    ensures { s.mile_keys == union (old s).mile_keys (sing mile_k) /\ is_empty (inter (old s).mile_keys (sing mile_k)) }
     (* operations *)
     ensures { Amounts.sum s s.mile_keys = Amounts.sum (old s) (old s).mile_keys + amount new_mile }
     ensures { card s.mile_keys = card (old s).mile_keys + 1 }
@@ -235,6 +237,8 @@ module Miles_with_expiration_storage
     let remove_owner_mile (s : storage) (k : key) (mile_k : key) : unit
     raises { NotFound }
     ensures { not (mem mile_k s.mile_keys) }
+    (* set operation *)
+    ensures { s.mile_keys == diff (old s).mile_keys (sing mile_k) }
     (* operations *)
     ensures { Amounts.sum s s.mile_keys = Amounts.sum (old s) (old s).mile_keys - (get_amount (old s) mile_k) }
     ensures { card s.mile_keys = card (old s).mile_keys - 1 }
