@@ -134,41 +134,9 @@ theory AssetCollection
 
   let function sing (k : key) : acol = Cons k Nil
 
-  axiom extensionality:
-  forall c1 c2 : acol. c1 == c2 -> c1 = c2
-
   predicate is_empty (c : acol) = forall m : key. not (mem m c)
 
   let function card (c : list 'a) = length c
-
-  (*lemma mem_exists: forall k : int, c : acol.
-    not (mem k c) <-> forall i : int. 0 <= i <= length c -> i <> k*)
-
-  let add (a : key) (c : acol)
-  raises { KeyExist }
-  reads { c }
-  ensures { not (mem a c) }
-  ensures { mem a result }
-  ensures { forall k : key. mem k result <-> mem k c \/ k = a }
-  = if mem a c then raise KeyExist;
-    c ++ (Cons a Nil)
-
-  let rec remove (a : key) (c : acol) : acol
-  raises { NotFound }
-  reads { c }
-  variant { c }
-  ensures { mem a c }
-  ensures { not (mem a result) }
-  ensures { forall k : key. mem k result <-> mem k c /\ k <> a }
-  =
-     if not (mem a c) then raise NotFound;
-     match c with
-     | Nil -> Nil
-     | Cons e tl ->
-       if e = a
-       then remove a tl
-       else Cons e (remove a tl)
-     end
 
   let rec function diff (c1 c2 : acol) : acol
   variant { c1 }
@@ -272,41 +240,59 @@ theory AssetCollection
   subset c2 c1 ->
   card (diff c1 c2) = card c1 - card c2 
 
-  let rec add_to_map (c : acol) (l : list 'value) (m : map 'value)  
+  let rec add_to_map (c : acol) (l : list 'value) (m : map 'value) : map 'value 
    variant { c, l }
    requires { card c = card l }
-   ensures { forall k : key. mem k c -> exists i : int. 0 <= i < card c /\ gen_nth i l = get m k }
+   ensures { forall k : key. mem k c -> (exists i : int. 0 <= i < card c /\ gen_nth i l = get result k) } 
    =
    match (c,l) with
    | Nil,Nil -> m
    | Cons k tlacol, Cons a tlasset -> add_to_map tlacol tlasset (set m k a) 
    end
 
-  (* first theory *)
+  (* head theory *)
 
-  let function first (i : int) (c : acol) : acol
-  ensures { 0 <= i <= card c -> card result = i }
+  let function head (i : int) (c : acol) : acol
+  ensures { 0 <= i < card c -> card result = i }
+  ensures { i >= card c -> result == c }
   = 
-  let rec rec_first (j : int) (a l : acol) : acol
+  let rec rec_head (j : int) (a l : acol) : acol
     variant { l }
     = 
     match l with
     | Nil -> a
     | Cons k tl -> 
-      if j > i then
-        a
-      else rec_first (i+1) (Cons k a) tl
+      if j >= i then a
+      else rec_head (i+1) (Cons k a) tl
     end in
-  rec_first 0 Nil c
+  rec_head 0 Nil c
 
-  lemma first_add:
+  lemma head_add:
   forall c : acol, i : int.
   0 <= i < card c ->
-  first (i+1) c = Cons (nth (i+1) c) (first i c)
+  head (i+1) c = Cons (nth i c) (head i c)
 
-  lemma first_all:
-  forall c : acol, i : int.
-  i >= card c -> first i c == c
+  (* add & remove with side effect *)
+  let add (a : key) (c : acol) 
+  raises { KeyExist }
+  reads { c }
+  requires { unique c }
+  ensures { not (mem a c) }
+  ensures { mem a result }
+  ensures { result = union c (sing a) }
+  = if mem a c then raise KeyExist;
+    union c (sing a)
+
+  let rec remove (a : key) (c : acol) : acol
+  raises { NotFound }
+  reads { c }
+  variant { c }
+  requires { unique c }
+  ensures { mem a c }
+  ensures { not (mem a result) }
+  ensures { result = diff c (sing a) }
+  = if not (mem a c) then raise NotFound;
+    diff c (sing a) 
 
 end
 
@@ -402,6 +388,8 @@ theory Sum
 
   lemma sum_union:
     forall s : storage, c1 c2 : acol.
+    unique c1 ->
+    unique c2 ->
     sum s (union c1 c2) = sum s c1 + sum s c2 - sum s (inter c1 c2)
 
   (*lemma sum_diff:
@@ -410,6 +398,8 @@ theory Sum
 
   lemma sum_diff2:
     forall s : storage, c1 c2 : acol.
+    unique c1 ->
+    unique c2 ->
     subset c2 c1 ->
     sum s (diff c1 c2) = sum s c1 - sum s c2  
 
@@ -484,7 +474,5 @@ module Lib
   use export Map
   use export AssetCollection
   use export Trace
-
-  goal G: false
 
 end
