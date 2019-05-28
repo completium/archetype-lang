@@ -1,0 +1,6 @@
+archetype empty_effect
+
+transition ident from source = {
+  to target
+  with effect {}
+}
