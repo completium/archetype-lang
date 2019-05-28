@@ -66,7 +66,13 @@ let main () =
       "-W", Arg.Set opt_modelws, " Print raw model_with_storage";
       "-L", Arg.Set opt_modelliq, " Output Archetype in liquidity";
       "-T", Arg.Set opt_pterm, " Print pterm";
-      "--lsp", Arg.Set opt_lsp, "LSP mode";
+      "--lsp", Arg.String (fun s -> match s with
+          | "errors" -> opt_lsp := true; Lsp.kind := Errors
+          | "outline" -> opt_lsp := true; Lsp.kind := Outline
+          |  s ->
+            Format.eprintf
+              "Unknown lsp commands %s (use errors, outline)@." s;
+            exit 2), "LSP mode";
       "-d", Arg.Set debug_mode, " Debug mode";
       "--storage-policy",
       Arg.String (fun s -> match s with
