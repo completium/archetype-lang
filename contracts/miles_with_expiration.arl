@@ -25,7 +25,10 @@ action add (ow : address) (newmile : mile) = {
    }
 
    effect {
-     owner.addifnotexist { addr = ow; miles = [newmile] }
+     if owner.has ow then
+      (owner.get ow).miles.add newmile
+     else
+      owner.add { addr = ow; miles = [newmile] }
    }
 }
 
