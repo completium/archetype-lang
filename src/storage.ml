@@ -100,11 +100,21 @@ type 'id record = {
 }
 [@@deriving show {with_path = false}]
 
+type 'id function_ = {
+  name: fun_ident;
+}
+
+type 'id entry = {
+  name: entry_ident;
+}
+
 type ('id, 'typ, 'term) type_node =
   | TNenum of 'id enum
   | TNrecord of ('id, 'typ) record
   | TNstorage of ('id, 'typ, 'term) storage
+  | TNfunction of function_
+  | TNentry of entry
 [@@deriving show {with_path = false}]
 
-type ('id, 'typ, 'term) model = type_node list;
+type ('id, 'typ, 'term) model = ('id, 'typ, 'term) type_node list;
 [@@deriving show {with_path = false}]
