@@ -217,10 +217,10 @@ theory AssetCollection
   function head (i : int) (c : acol) : acol
   axiom head_def: forall c : acol, i j : int. 0 <= i < j -> nth j (head i c) = nth j c
   axiom head_card: forall c : acol, i : int. 0 <= i < card c -> card (head i c) = i 
-  axiom head_all: forall c : acol, i : int.  i >= card c ->  head i c == c
+  axiom head_all: forall c : acol, i : int.  i >= card c ->  head i c = c
 
   axiom head_add: forall c : acol, i : int. 0 <= i < card c -> 
-  head (i+1) c == union (singleton (nth i c)) (head i c)
+  head (i+1) c = union (singleton (nth i c)) (head i c)
 
   (* API ----------------------------------------------------------------------*)
 

@@ -24,17 +24,19 @@ module Miles_with_expiration_storage
     
     (* ASSETS *)
      type mile = {
-        amount: int;
+        id         : int;
+        amount     : int;
         expiration : date;
     } 
     
-    let mk_default_mile () = { amount = 0; expiration = 0; } : mile
+    let mk_default_mile () = { id = 0; amount = 0; expiration = 0; } : mile
 
     type owner = {
-        miles      : acol;
+        addr   : address;
+        miles  : acol;
     } 
 
-    let mk_default_owner () : owner = { miles = empty; } : owner
+    let mk_default_owner () : owner = { addr = 0; miles = empty; } : owner
 
     type storage = {
         mutable admin            : role;
@@ -136,58 +138,62 @@ module Miles_with_expiration_storage
     (* Adders ---------------------------------------------------------------*)
 
     (* is not called by actions because it is partitioned *)
-    let add_mile (s : storage) (k : key) (new_mile : mile) : unit
+    let add_mile (s : storage) (new_mile : mile) : unit
     raises { KeyExist }
     requires { amount new_mile > 0 }
-    ensures { mem k s.mile_keys }
+    ensures { mem (id new_mile) s.mile_keys }
     (* set operations *)
-    ensures { s.mile_keys == union (old s).mile_keys (singleton k) }
-    ensures { is_empty (inter (old s).mile_keys (singleton k)) }
+    ensures { s.mile_keys == union (old s).mile_keys (singleton (id new_mile)) }
+    ensures { is_empty (inter (old s).mile_keys (singleton (id new_mile))) }
     (* operations *)
     ensures { Amounts.sum s s.mile_keys = Amounts.sum (old s) (old s).mile_keys + amount new_mile }
     ensures { forall k : key. mem k (old s).mile_keys -> get_amount s k = get_amount (old s) k }
     ensures { card s.mile_keys = card (old s).mile_keys + 1 }
     =
-    if mem k s.mile_keys then
+    if mem (id new_mile) s.mile_keys then
         raise KeyExist
     else
-        s.mile_keys <- add k s.mile_keys;
-        s.mile_assets <- set s.mile_assets k new_mile
+        s.mile_keys <- add (id new_mile) s.mile_keys;
+        s.mile_assets <- set s.mile_assets (id new_mile) new_mile
 
     (* add a mile through an owner *)
-    let add_owner_mile (s : storage) (k : key) (mile_k : key) (new_mile : mile) : unit
+    let add_owner_miles (s : storage) (owner : owner) (new_mile : mile) : unit
     raises { NotFound, KeyExist }
     requires { amount new_mile > 0 }
-    ensures { mem mile_k s.mile_keys }
+    ensures { mem (id new_mile)s.mile_keys }
     (* set operations *)
-    ensures { s.mile_keys == union (old s).mile_keys (singleton mile_k) /\ is_empty (inter (old s).mile_keys (singleton mile_k)) }
+    ensures { s.mile_keys == union (old s).mile_keys (singleton (id new_mile)) }
+    ensures { is_empty (inter (old s).mile_keys (singleton (id new_mile))) }
     (* operations *)
     ensures { Amounts.sum s s.mile_keys = Amounts.sum (old s) (old s).mile_keys + amount new_mile }
     ensures { forall k : key. mem k (old s).mile_keys -> get_amount s k = get_amount (old s) k }
     ensures { card s.mile_keys = card (old s).mile_keys + 1 }
     =
-    if not (mem k s.owner_keys) then
+    if not (mem (addr owner) s.owner_keys) then
         raise NotFound
     else
-        (add_mile s mile_k new_mile;
+        (add_mile s new_mile;
          (* update miles *)
-         let owner_asset = get_owner s k in
-         let owner_miles = miles owner_asset in
-         let new_owner_miles = add mile_k owner_miles in
-         let new_owner_asset = { owner_asset with 
+         let owner_miles = miles owner in
+         let new_owner_miles = add (id new_mile) owner_miles in
+         let new_owner = { owner with 
             miles = new_owner_miles;
          } in
-         s.owner_assets <- set s.owner_assets k new_owner_asset)
+         s.owner_assets <- set s.owner_assets (addr owner) new_owner)
     
-    let add_owner (s : storage) (k : key) (new_owner : owner) (assets : list mile) : unit
+    let add_owner (s : storage) (new_owner : owner) (assets : list mile) : unit
     raises { KeyExist, NotFound }
     (* input consistency *)
     requires { let asset_keys = miles new_owner in card asset_keys = length assets }
+    requires { let asset_keys = miles new_owner in 
+        forall i : int. 0 <= i < card asset_keys -> nth i asset_keys = id (gen_nth i assets) 
+    }
     (* mile invariant *)
     requires {  forall a : mile, i : int. 0 <= i < length assets -> a = gen_nth i assets -> amount a > 0 }
-    ensures { mem k s.owner_keys }
+    ensures { mem (addr new_owner) s.owner_keys }
     (* basic set operation *)
-    ensures { s.owner_keys == union (old s).owner_keys (singleton k) /\ inter (old s).owner_keys (singleton k) == empty }
+    ensures { s.owner_keys == union (old s).owner_keys (singleton (addr new_owner)) }
+    ensures { inter (old s).owner_keys (singleton (addr new_owner)) == empty }
     ensures { 
         let asset_keys = miles new_owner in
         s.mile_keys == union (old s).mile_keys asset_keys /\ (inter (old s).mile_keys asset_keys == empty)
@@ -206,20 +212,19 @@ module Miles_with_expiration_storage
         Amounts.sum s s.mile_keys = Amounts.sum (old s) (old s).mile_keys + Amounts.sum s asset_keys 
     }
     =
-    if mem k s.owner_keys then
+    if mem (addr new_owner) s.owner_keys then
         raise KeyExist
     else
-        s.owner_keys <- add k s.owner_keys;
-        s.owner_assets <- set s.owner_assets k new_owner;
+        s.owner_keys <- add (addr new_owner) s.owner_keys;
+        s.owner_assets <- set s.owner_assets (addr new_owner) new_owner;
         let asset_keys = miles new_owner in
         for i = 0 to (card asset_keys) - 1 do
         invariant { s.mile_keys == union (old s).mile_keys (head i asset_keys) }
         invariant { is_empty (inter (old s).mile_keys (head i asset_keys)) }
         invariant { forall k : key. mem k s.mile_keys -> amount (get s.mile_assets k) > 0  }
         invariant { forall k : key. mem k (old s).mile_keys -> get_amount s k = get_amount (old s) k }
-            let ak = nth i asset_keys in
             let asset = gen_nth i assets in
-            add_owner_mile s k ak asset
+            add_owner_miles s new_owner asset
         done
 
     (* Removers ---------------------------------------------------------------*)
@@ -290,4 +295,27 @@ module Miles_with_expiration_storage
             remove_mile s ak 
         done
     
+end
+
+
+module Miles_with_expiration
+
+    use archetype.Lib
+    use Miles_with_expiration_storage
+    
+    let add (e : env) (s : storage) (ow : key) (newmile : mile) : transfers
+    raises { NotFound, InvalidCaller, InvalidCondition, KeyExist }
+    =
+      if caller e <> s.admin then raise InvalidCaller;
+      if not (amount newmile > 0) then raise InvalidCondition;
+      (if mem ow s.owner_keys then
+        let owner = get_owner s ow in
+        add_owner_miles s owner newmile
+      else
+        let new_owner = { addr = ow; miles = mkacol (Cons (id newmile) Nil); } in
+        let assets = Cons newmile Nil in
+        add_owner s new_owner assets);
+      no_transfer
+
+
 end
