@@ -143,12 +143,16 @@ let symbol_kind_to_int = function
   | Operator -> 25
   | TypeParameter -> 26
 
+let mk_outline_from_label_exprs (x : ParseTree.label_exprs) =
+  (List.map (fun (x : ParseTree.label_expr)  -> let i, _ = Location.unloc x in let id = (Tools.get i) in mk_outline (Location.unloc id, symbol_kind_to_int Property, Location.loc id)) x)
+
 let mk_outline_from_verification (verif : ParseTree.verification) =
   let vis, _ = Location.unloc verif in
 
   List.fold_left (fun accu (i : ParseTree.verification_item) ->
       match Location.unloc i with
-      | Vspecification l -> (List.map (fun (x : ParseTree.label_expr)  -> let i, _ = Location.unloc x in let id = (Tools.get i) in mk_outline (Location.unloc id, symbol_kind_to_int Property, Location.loc id)) l) @ accu
+      | Vinvariant (_, l) -> mk_outline_from_label_exprs l @ accu
+      | Vspecification l  -> mk_outline_from_label_exprs l @ accu
       | _ -> accu) [] vis
 
 let make_outline_from_enum ((ek, li, l) : (ParseTree.enum_kind * 'a * 'b) ) =
@@ -162,7 +166,7 @@ let make_outline_from_decl (d : ParseTree.declaration) =
   | Dvariable (id, _, _, _, _, _) -> [mk_outline (Location.unloc id, symbol_kind_to_int Variable, l)]
   | Denum (ek, li, _) -> [make_outline_from_enum (ek, li, l)]
   | Dasset (id, _, _, _, _, _) -> [mk_outline (Location.unloc id, symbol_kind_to_int Struct, l)]
-  | Daction (id, _, _, _, _) -> [mk_outline (Location.unloc id, symbol_kind_to_int Function, l)]
+  | Daction (id, _, ap, _, _) -> mk_outline (Location.unloc id, symbol_kind_to_int Function, l) :: (Tools.map_option_neutral mk_outline_from_verification [] ap.verif)
   | Dtransition (id, _, _, _, _, _, _) -> [mk_outline (Location.unloc id, symbol_kind_to_int Function, l)]
   | Dcontract (id, _, _, _) -> [mk_outline (Location.unloc id, symbol_kind_to_int Object, l)]
   | Dfunction s -> [mk_outline (Location.unloc s.name, symbol_kind_to_int Function, l)]
