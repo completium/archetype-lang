@@ -106,7 +106,7 @@ type ('id, 'typ, 'term) type_node =
 [@@deriving show {with_path = false}]
 
 type ('id, 'typ, 'term) model = {
-  tnodes: ('id, 'typ, 'term) type_ list;
+  tnodes: ('id, 'typ, 'term) type_node list;
   storage: ('id, 'typ, 'term) storage;
 }
 [@@deriving show {with_path = false}]
