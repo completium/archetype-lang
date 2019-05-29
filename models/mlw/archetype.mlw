@@ -272,7 +272,7 @@ theory AssetCollection
 
 end
 
-module Tomap
+(*module Tomap
 
   use AssetCollection
   use Map
@@ -292,7 +292,7 @@ module Tomap
    end
 
 
-end
+end*)
 
 (*theory Filter
   use int.Int
@@ -473,7 +473,6 @@ module Lib
   use export Contract
   use export Map
   use export AssetCollection
-  use export Tomap
   use export Trace
 
 end
