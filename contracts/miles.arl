@@ -1,34 +1,37 @@
 archetype miles
 
-variable owner role
+variable validator role
 
 variable[%transferable] validator role
 
 asset account identified by owner = {
-  owner  : address;
+  owner  : role;
   amount : uint
 }
 
-action add (owner : address) (value : uint) = {
+action add (ow : role) (value : uint) = {
    called by validator
    effect {
-     account.update owner { amount += value } { amount = 0 }
+     if account.contains ow then
+      account.update ow { amount += value }
+     else
+      owner.add { owner = ow; amount = 0 }
    }
 }
 
-action consume (owner : address) (value : uint) = {
+action consume (ow : role) (value : uint) = {
    called by validator
 
    require {
-     c1 : (account.get owner).amount >= value
+     c1 : (account.get ow).amount >= value
    }
 
    specification {
-     s1 : (before.account.get owner).amount =
-             (after.account.get owner).amount + value
+     s1 : (before.account.get ow).amount =
+             (after.account.get ow).amount + value
    }
 
    effect {
-     (account.get owner).amount -= value
+     account.update ow { amount -= value }
    }
 }
