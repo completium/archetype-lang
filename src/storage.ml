@@ -69,7 +69,7 @@ type ('id, 'typ, 'term) record_field = {
 }
 [@@deriving show {with_path = false}]
 
-type ('id, 'typ, 'term) record = {
+type ('id, 'typ, 'term) storage_item = {
   name        : 'id;
   fields      : ('id, 'typ, 'term) record_field list;
   operations  : 'id storage_field_operation list;
@@ -78,5 +78,5 @@ type ('id, 'typ, 'term) record = {
 }
 [@@deriving show {with_path = false}]
 
-type ('id, 'typ, 'term) storage = ('id, 'typ, 'term) record list;
+type ('id, 'typ, 'term) storage = ('id, 'typ, 'term) storage_item list;
 [@@deriving show {with_path = false}]
