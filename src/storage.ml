@@ -4,6 +4,7 @@ open Model
 type field_ident = string
 type asset_ident = string
 type enum_ident = string
+type enum_value_ident = string
 
 type field =
   | Fid of string
@@ -54,6 +55,7 @@ type ('id) item_field_type =
   | FBasic            of vtyp
   | FKeyCollection    of 'id * vtyp
   | FRecordMap        of asset_ident
+  | FRecordCollection of 'id
   | FEnum             of 'id
   | FContainer        of Model.container * 'id item_field_type
 [@@deriving show {with_path = false}]
@@ -79,4 +81,32 @@ type ('id, 'typ, 'term) storage_item = {
 [@@deriving show {with_path = false}]
 
 type ('id, 'typ, 'term) storage = ('id, 'typ, 'term) storage_item list;
+[@@deriving show {with_path = false}]
+
+type 'id enum = {
+  name: enum_ident;
+  values: enum_value_ident;
+}
+
+type ('id, 'typ) record_item = {
+  name: enum_ident;
+  type_: 'typ;
+}
+[@@deriving show {with_path = false}]
+
+type 'id record = {
+  name: enum_ident;
+  values: record_item list;
+}
+[@@deriving show {with_path = false}]
+
+type ('id, 'typ, 'term) type_node =
+  | TNenum of 'id enum
+  | TNrecord of ('id, 'typ) record
+[@@deriving show {with_path = false}]
+
+type ('id, 'typ, 'term) model = {
+  tnodes: ('id, 'typ, 'term) type_ list;
+  storage: ('id, 'typ, 'term) storage;
+}
 [@@deriving show {with_path = false}]
