@@ -376,9 +376,14 @@ theory Sum
 
   (* part_sum is functional towards (f s) *)
   lemma sum_fun_storage:
-    forall s1 s2 : storage, c : acol, i j : int.
+    forall s1 s2 : storage, c : acol.
     (forall x : key. mem x c -> f s1 x = f s2 x) -> (* f s1 = f s2 *)
-    part_sum s1 c i j = part_sum s2 c i j (* part_sum c i j (f s1) = part_sum c i j (f s2) *) 
+    sum s1 c = sum s2 c (* part_sum c i j (f s1) = part_sum c i j (f s2) *) 
+
+  lemma sum_fun_storage2:
+    forall s1 s2 : storage, field : storage -> acol.
+    (forall x : key. mem x (field s1) -> f s1 x = f s2 x) ->
+    sum s2 (field s1) = sum s1 (field s1) 
 
   lemma sum_empty:
     forall s : storage, c : acol.
