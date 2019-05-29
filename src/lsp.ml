@@ -39,9 +39,11 @@ type result = {
 [@@deriving yojson, show {with_path = false}]
 
 type outline = {
+  children: outline list;
   name : string;
   kind : int;
-  range: range;
+  start: position;
+  end_: position [@key "end"];
 }
 [@@deriving yojson, show {with_path = false}]
 
@@ -52,7 +54,7 @@ type result_outline = {
 [@@deriving yojson, show {with_path = false}]
 
 let mk_position (line, col) char : position = {
-  line = line;
+  line = line - 1;
   col = col;
   char = char;
 }
@@ -68,9 +70,11 @@ let mk_item (loc : Location.t) msg = {
 }
 
 let mk_outline (name, kind, (loc : Location.t)) = {
-  name = name;
-  kind = kind;
-  range = mk_range loc;
+  children = [];
+  name  = name;
+  kind  = kind;
+  start = mk_position loc.loc_start loc.loc_bchar;
+  end_  = mk_position loc.loc_end loc.loc_echar;
 }
 
 let mk_result status items = {
@@ -139,18 +143,23 @@ let symbol_kind_to_int = function
   | Operator -> 25
   | TypeParameter -> 26
 
+let make_outline_from_enum ((ek, li, l) : (ParseTree.enum_kind * 'a * 'b) ) =
+  let outline = mk_outline ((match ek with | EKenum i -> (Location.unloc i) | EKstate -> "states"), symbol_kind_to_int Enum, l) in
+  {outline with
+   children = List.map (fun (id, _) -> mk_outline(Location.unloc id, symbol_kind_to_int EnumMember, Location.loc id) ) li }
+
 let make_outline_from_decl (d : ParseTree.declaration) =
   let l, v = Location.deloc d in
   match v with
-  | Dvariable (id, _, _, _, _, _) -> (Location.unloc id, symbol_kind_to_int Variable, l)
-  | Denum (ek, _, _) -> ((match ek with | EKenum i -> (Location.unloc i) | EKstate -> "states"), symbol_kind_to_int Enum, l)
-  | Dasset (id, _, _, _, _, _) -> (Location.unloc id, symbol_kind_to_int Struct, l)
-  | Daction (id, _, _, _, _) -> (Location.unloc id, symbol_kind_to_int Function, l)
-  | Dtransition (id, _, _, _, _, _, _) -> (Location.unloc id, symbol_kind_to_int Function, l)
-  | Dcontract (id, _, _, _) -> (Location.unloc id, symbol_kind_to_int Object, l)
-  | Dfunction s -> (Location.unloc s.name, symbol_kind_to_int Function, l)
-  | Dnamespace (id, _) -> (Location.unloc id, symbol_kind_to_int Namespace, l)
-  | _ -> ("", -1, Location.dummy)
+  | Dvariable (id, _, _, _, _, _) -> mk_outline (Location.unloc id, symbol_kind_to_int Variable, l)
+  | Denum (ek, li, _) -> make_outline_from_enum (ek, li, l)
+  | Dasset (id, _, _, _, _, _) -> mk_outline (Location.unloc id, symbol_kind_to_int Struct, l)
+  | Daction (id, _, _, _, _) -> mk_outline (Location.unloc id, symbol_kind_to_int Function, l)
+  | Dtransition (id, _, _, _, _, _, _) -> mk_outline (Location.unloc id, symbol_kind_to_int Function, l)
+  | Dcontract (id, _, _, _) -> mk_outline (Location.unloc id, symbol_kind_to_int Object, l)
+  | Dfunction s -> mk_outline (Location.unloc s.name, symbol_kind_to_int Function, l)
+  | Dnamespace (id, _) -> mk_outline (Location.unloc id, symbol_kind_to_int Namespace, l)
+  | _ -> mk_outline ("", -1, Location.dummy)
 
 let process (filename, channel) =
   let pt = Io.parse_archetype ~name:filename channel in
@@ -161,10 +170,9 @@ let process (filename, channel) =
         | Marchetype m -> (
             let lis = List.fold_left (fun accu d  ->
                 let t = make_outline_from_decl d in
-                let _, v, _ = t in
-                if v = -1
+                if t.kind = -1
                 then accu
-                else (mk_outline t)::accu) [] m in
+                else t::accu) [] m in
             let res = {
               status = Passed;
               outlines = lis;
