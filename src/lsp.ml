@@ -143,6 +143,14 @@ let symbol_kind_to_int = function
   | Operator -> 25
   | TypeParameter -> 26
 
+let mk_outline_from_verification (verif : ParseTree.verification) =
+  let vis, _ = Location.unloc verif in
+
+  List.fold_left (fun accu (i : ParseTree.verification_item) ->
+      match Location.unloc i with
+      | Vspecification l -> (List.map (fun (x : ParseTree.label_expr)  -> let i, _ = Location.unloc x in let id = (Tools.get i) in mk_outline (Location.unloc id, symbol_kind_to_int Property, Location.loc id)) l) @ accu
+      | _ -> accu) [] vis
+
 let make_outline_from_enum ((ek, li, l) : (ParseTree.enum_kind * 'a * 'b) ) =
   let outline = mk_outline ((match ek with | EKenum i -> (Location.unloc i) | EKstate -> "states"), symbol_kind_to_int Enum, l) in
   {outline with
@@ -151,15 +159,16 @@ let make_outline_from_enum ((ek, li, l) : (ParseTree.enum_kind * 'a * 'b) ) =
 let make_outline_from_decl (d : ParseTree.declaration) =
   let l, v = Location.deloc d in
   match v with
-  | Dvariable (id, _, _, _, _, _) -> mk_outline (Location.unloc id, symbol_kind_to_int Variable, l)
-  | Denum (ek, li, _) -> make_outline_from_enum (ek, li, l)
-  | Dasset (id, _, _, _, _, _) -> mk_outline (Location.unloc id, symbol_kind_to_int Struct, l)
-  | Daction (id, _, _, _, _) -> mk_outline (Location.unloc id, symbol_kind_to_int Function, l)
-  | Dtransition (id, _, _, _, _, _, _) -> mk_outline (Location.unloc id, symbol_kind_to_int Function, l)
-  | Dcontract (id, _, _, _) -> mk_outline (Location.unloc id, symbol_kind_to_int Object, l)
-  | Dfunction s -> mk_outline (Location.unloc s.name, symbol_kind_to_int Function, l)
-  | Dnamespace (id, _) -> mk_outline (Location.unloc id, symbol_kind_to_int Namespace, l)
-  | _ -> mk_outline ("", -1, Location.dummy)
+  | Dvariable (id, _, _, _, _, _) -> [mk_outline (Location.unloc id, symbol_kind_to_int Variable, l)]
+  | Denum (ek, li, _) -> [make_outline_from_enum (ek, li, l)]
+  | Dasset (id, _, _, _, _, _) -> [mk_outline (Location.unloc id, symbol_kind_to_int Struct, l)]
+  | Daction (id, _, _, _, _) -> [mk_outline (Location.unloc id, symbol_kind_to_int Function, l)]
+  | Dtransition (id, _, _, _, _, _, _) -> [mk_outline (Location.unloc id, symbol_kind_to_int Function, l)]
+  | Dcontract (id, _, _, _) -> [mk_outline (Location.unloc id, symbol_kind_to_int Object, l)]
+  | Dfunction s -> [mk_outline (Location.unloc s.name, symbol_kind_to_int Function, l)]
+  | Dnamespace (id, _) -> [mk_outline (Location.unloc id, symbol_kind_to_int Namespace, l)]
+  | Dverification verif -> mk_outline_from_verification verif
+  | _ -> []
 
 let process (filename, channel) =
   let pt = Io.parse_archetype ~name:filename channel in
@@ -170,9 +179,9 @@ let process (filename, channel) =
         | Marchetype m -> (
             let lis = List.fold_left (fun accu d  ->
                 let t = make_outline_from_decl d in
-                if t.kind = -1
+                if List.length t = 0
                 then accu
-                else t::accu) [] m in
+                else t@accu) [] m in
             let res = {
               status = Passed;
               outlines = lis;
