@@ -32,7 +32,7 @@ let execution_mode = ref WithSideEffect
 let sorting_policy = ref OnTheFly
 
 
-type 'id storage_field_operation_type =
+type ('id) storage_field_operation_type =
   | Get
   | Set
   | AddContainer of Model.container
@@ -44,16 +44,16 @@ type 'id storage_field_operation_type =
   | RemoveAsset  of 'id
 [@@deriving show {with_path = false}]
 
-type 'id storage_field_operation = {
+type ('id) storage_field_operation = {
   name     : lident;
   typ      : 'id storage_field_operation_type;
 }
 [@@deriving show {with_path = false}]
 
-type 'id storage_field_type =
+type ('id) storage_field_type =
   | FBasic            of vtyp
   | FKeyCollection    of 'id * vtyp
-  | FRecordCollection of asset_ident
+  | FRecordMap        of asset_ident
   | FEnum             of 'id
   | FContainer        of Model.container * 'id storage_field_type
 [@@deriving show {with_path = false}]
