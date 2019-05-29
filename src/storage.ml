@@ -32,7 +32,7 @@ let execution_mode = ref WithSideEffect
 let sorting_policy = ref OnTheFly
 
 
-type ('id) storage_field_operation_type =
+type ('id) item_field_operation_type =
   | Get
   | Set
   | AddContainer of Model.container
@@ -44,35 +44,35 @@ type ('id) storage_field_operation_type =
   | RemoveAsset  of 'id
 [@@deriving show {with_path = false}]
 
-type ('id) storage_field_operation = {
+type ('id) item_field_operation = {
   name     : lident;
-  typ      : 'id storage_field_operation_type;
+  typ      : 'id item_field_operation_type;
 }
 [@@deriving show {with_path = false}]
 
-type ('id) storage_field_type =
+type ('id) item_field_type =
   | FBasic            of vtyp
   | FKeyCollection    of 'id * vtyp
   | FRecordMap        of asset_ident
   | FEnum             of 'id
-  | FContainer        of Model.container * 'id storage_field_type
+  | FContainer        of Model.container * 'id item_field_type
 [@@deriving show {with_path = false}]
 
-type ('id, 'typ, 'term) record_field = {
+type ('id, 'typ, 'term) item_field = {
   asset   : 'id option;
   name    : 'id;
-  typ     : 'id storage_field_type;
+  typ     : 'id item_field_type;
   ghost   : bool;
   default : 'term option; (* initial value *)
-  ops     : 'id storage_field_operation list;
+  ops     : 'id item_field_operation list;
   loc     : Location.t [@opaque]
 }
 [@@deriving show {with_path = false}]
 
 type ('id, 'typ, 'term) storage_item = {
   name        : 'id;
-  fields      : ('id, 'typ, 'term) record_field list;
-  operations  : 'id storage_field_operation list;
+  fields      : ('id, 'typ, 'term) item_field list;
+  operations  : 'id item_field_operation list;
   invariants  : ('id, 'id lterm_gen) label_term list;
   init        : ((ident * 'term) list) list;
 }
