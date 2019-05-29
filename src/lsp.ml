@@ -157,14 +157,18 @@ let mk_outline_from_verification (verif : ParseTree.verification) =
 
 let make_outline_from_enum ((ek, li, l) : (ParseTree.enum_kind * 'a * 'b) ) =
   let outline = mk_outline ((match ek with | EKenum i -> (Location.unloc i) | EKstate -> "states"), symbol_kind_to_int Enum, l) in
-  {outline with
-   children = List.map (fun (id, _) -> mk_outline(Location.unloc id, symbol_kind_to_int EnumMember, Location.loc id) ) li }
+  outline :: (List.map (fun (id, _) -> mk_outline(Location.unloc id, symbol_kind_to_int EnumMember, Location.loc id) ) li)
+(*
 
-let make_outline_from_decl (d : ParseTree.declaration) =
+  {outline with
+   children = List.map (fun (id, _) -> mk_outline(Location.unloc id, symbol_kind_to_int EnumMember, Location.loc id) ) li } *)
+
+let make_outline_from_decl (d : ParseTree.declaration) gl =
   let l, v = Location.deloc d in
   match v with
+  | Darchetype (id, _) -> [mk_outline (Location.unloc id, symbol_kind_to_int Class, gl)]
   | Dvariable (id, _, _, _, _, _) -> [mk_outline (Location.unloc id, symbol_kind_to_int Variable, l)]
-  | Denum (ek, li, _) -> [make_outline_from_enum (ek, li, l)]
+  | Denum (ek, li, _) -> make_outline_from_enum (ek, li, l)
   | Dasset (id, _, _, _, _, _) -> [mk_outline (Location.unloc id, symbol_kind_to_int Struct, l)]
   | Daction (id, _, ap, _, _) -> mk_outline (Location.unloc id, symbol_kind_to_int Function, l) :: (Tools.map_option_neutral mk_outline_from_verification [] ap.verif)
   | Dtransition (id, _, _, _, _, _, _) -> [mk_outline (Location.unloc id, symbol_kind_to_int Function, l)]
@@ -179,10 +183,11 @@ let process (filename, channel) =
   begin
     match !kind with
     | Outline -> (
-        match Location.unloc pt with
+        let gl, v =  Location.deloc pt in
+        match v with
         | Marchetype m -> (
             let lis = List.fold_left (fun accu d  ->
-                let t = make_outline_from_decl d in
+                let t = make_outline_from_decl d gl in
                 if List.length t = 0
                 then accu
                 else t@accu) [] m in
