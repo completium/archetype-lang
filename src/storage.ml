@@ -105,10 +105,10 @@ type ('id, 'typ, 'term) function_node =
   | Make
   | AddAsset           of asset_ident
   | RemoveAsset        of asset_ident
-  | UpdateAsset      of asset_ident
+  | UpdateAsset        of asset_ident
   | ContainsAsset      of asset_ident
-  | SelectAsset        of asset_ident * field_ident * Model.container
-  | CountAsset         of asset_ident * field_ident * Model.container
+  | SelectAsset        of asset_ident
+  | CountAsset         of asset_ident
   | AddContainer       of asset_ident * field_ident * Model.container
   | RemoveContainer    of asset_ident * field_ident * Model.container
   | ContainsContainer  of asset_ident * field_ident * Model.container
