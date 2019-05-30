@@ -4,7 +4,7 @@ module Miles_with_expiration_storage
 
     (* TRACES *)
 
-   type asset =
+    type asset =
     | Mile
     | Owner
 
@@ -47,10 +47,10 @@ module Miles_with_expiration_storage
          (* contract *)
         mutable ops              : transfers;
         (* diff sets *)
-        mutable miles_added      : acol;
-        mutable miles_removed    : acol;
-        mutable owner_added      : acol;
-        mutable owner_removed    : acol;
+        mutable added_miles      : acol;
+        mutable removed_miles    : acol;
+        mutable added_owner      : acol;
+        mutable removed_owner    : acol;
         (* traces *)
         mutable tr               : Tr.log;
         mutable ename            : option entry; 
@@ -63,10 +63,10 @@ module Miles_with_expiration_storage
         owner_keys               = empty;
         owner_assets             = const (mk_default_owner ());
         ops                      = Nil;
-        miles_added              = empty;
-        miles_removed            = empty;
-        owner_added              = empty;
-        owner_removed            = empty;
+        added_miles              = empty;
+        removed_miles            = empty;
+        added_owner              = empty;
+        removed_owner            = empty;
         tr                       = Nil;
         ename                    = None;
     }
@@ -79,49 +79,30 @@ module Miles_with_expiration_storage
 
     let function get_miles (s : storage) (k : key) : acol = miles (get s.owner_assets k)
 
-    let get_mile (s : storage) (k : key) : mile 
+    let get_mile (s : storage) (k : key) : key 
     raises { NotFound }
     ensures { mem k s.mile_keys }
     = 
     if not (mem k s.mile_keys) then
         raise NotFound
-    else 
-        get s.mile_assets k 
+    else k 
 
-    let get_owner (s : storage) (k : key) : owner 
+    let get_owner (s : storage) (k : key) : key 
     raises { NotFound }
     ensures { mem k s.owner_keys }
     = 
     if not (mem k s.owner_keys) then
         raise NotFound
-    else 
-        get s.owner_assets k  
+    else k  
 
     (* Operations -------------------------------------------------------------*)
 
     clone archetype.Sum as Amounts with type     storage = storage,
                                         val      f       = get_amount
-
-   (*let function set_miles_to_storage  (c : acol) (l : list mile) (s : storage): storage
-    requires { card c = length l }
-    requires {  forall a : mile. (exists i : int. 0 <= i < length l /\ a = gen_nth i l) -> amount a > 0 }
-    ensures { forall x : key. mem x (mile_keys s) -> get_amount s x = get_amount result x }
-    = { 
-        s with 
-        mile_keys   = c;
-        mile_assets = to_map c l s.mile_assets;
-    }
-
-    let function set_miles_keys_to_storage (s : storage) (c : acol) : storage
-    requires { subset c s.mile_keys }
-    = {
-        s with
-        mile_keys   = c;
-    }*)
    
     (* Setters --------------------------------------------------------------*)
 
-(*    let set_amount (s : storage) (k : key) (v : int) : unit
+    let set_amount (s : storage) (k : key) (v : int) : unit
     raises { NotFound }
     requires { v > 0 }
     ensures { mem k s.mile_keys }
@@ -131,10 +112,10 @@ module Miles_with_expiration_storage
     if not (mem k s.mile_keys) then
         raise NotFound
     else 
-        let asset = get_mile s k in
+        let asset = get s.mile_assets k in
         let new_asset = { asset with amount = v } in
         s.mile_assets <- set s.mile_assets k new_asset
-*)  
+ 
     (* Adders ---------------------------------------------------------------*)
 
     (* is not called by actions because it is partitioned *)
@@ -144,6 +125,7 @@ module Miles_with_expiration_storage
     ensures { mem (id new_mile) s.mile_keys }
     (* set operations *)
     ensures { s.mile_keys == union (old s).mile_keys (singleton (id new_mile)) }
+    ensures { s.added_miles == union (old s).added_miles (singleton (id new_mile)) }
     ensures { is_empty (inter (old s).mile_keys (singleton (id new_mile))) }
     (* operations *)
     ensures { Amounts.sum s s.mile_keys = Amounts.sum (old s) (old s).mile_keys + amount new_mile }
@@ -153,8 +135,10 @@ module Miles_with_expiration_storage
     if mem (id new_mile) s.mile_keys then
         raise KeyExist
     else
+        s.mile_assets <- set s.mile_assets (id new_mile) new_mile;
         s.mile_keys <- add (id new_mile) s.mile_keys;
-        s.mile_assets <- set s.mile_assets (id new_mile) new_mile
+        s.added_miles <- add (id new_mile) s.added_miles
+        
 
     (* add a mile through an owner *)
     let add_owner_miles (s : storage) (owner : owner) (new_mile : mile) : unit
@@ -163,6 +147,7 @@ module Miles_with_expiration_storage
     ensures { mem (id new_mile)s.mile_keys }
     (* set operations *)
     ensures { s.mile_keys == union (old s).mile_keys (singleton (id new_mile)) }
+    ensures { s.added_miles == union (old s).added_miles (singleton (id new_mile)) }
     ensures { is_empty (inter (old s).mile_keys (singleton (id new_mile))) }
     (* operations *)
     ensures { Amounts.sum s s.mile_keys = Amounts.sum (old s) (old s).mile_keys + amount new_mile }
@@ -198,6 +183,7 @@ module Miles_with_expiration_storage
         let asset_keys = miles new_owner in
         s.mile_keys == union (old s).mile_keys asset_keys /\ (inter (old s).mile_keys asset_keys == empty)
     }
+    ensures { let asset_keys = miles new_owner in s.added_miles == union (old s).added_miles asset_keys }
     (* count operation *)
     ensures { card s.owner_keys = card (old s).owner_keys + 1 }
     ensures { 
@@ -220,6 +206,7 @@ module Miles_with_expiration_storage
         let asset_keys = miles new_owner in
         for i = 0 to (card asset_keys) - 1 do
         invariant { s.mile_keys == union (old s).mile_keys (head i asset_keys) }
+        invariant { s.added_miles == union (old s).added_miles (head i asset_keys) }
         invariant { is_empty (inter (old s).mile_keys (head i asset_keys)) }
         invariant { forall k : key. mem k s.mile_keys -> amount (get s.mile_assets k) > 0  }
         invariant { forall k : key. mem k (old s).mile_keys -> get_amount s k = get_amount (old s) k }
@@ -230,10 +217,11 @@ module Miles_with_expiration_storage
     (* Removers ---------------------------------------------------------------*)
 
     let remove_mile (s : storage) (k : key) : unit
-    raises { NotFound }
+    raises { NotFound, KeyExist }
     ensures { not (mem k s.mile_keys) }
     (* set effect *)
     ensures { s.mile_keys == diff (old s).mile_keys (singleton k) }
+    ensures { s.removed_miles == union (old s).removed_miles (singleton k) }
     (* operations *)
     ensures {  Amounts.sum s s.mile_keys = Amounts.sum (old s) (old s).mile_keys - (get_amount (old s) k) }
     ensures { card s.mile_keys = card (old s).mile_keys - 1 }
@@ -241,14 +229,16 @@ module Miles_with_expiration_storage
     if not (mem k s.mile_keys) then
         raise NotFound
     else
-        s.mile_keys <- remove k s.mile_keys
+        s.mile_keys <- remove k s.mile_keys;
+        s.removed_miles <- add k s.removed_miles
 
     (* remove a mile through an owner *)
-    let remove_owner_mile (s : storage) (k : key) (mile_k : key) : unit
-    raises { NotFound }
+    let remove_owner_miles (s : storage) (k : key) (mile_k : key) : unit
+    raises { NotFound, KeyExist }
     ensures { not (mem mile_k s.mile_keys) }
     (* set effect *)
     ensures { s.mile_keys == diff (old s).mile_keys (singleton mile_k) }
+    ensures { s.removed_miles == union (old s).removed_miles (singleton mile_k) }
     (* operations *)
     ensures { Amounts.sum s s.mile_keys = Amounts.sum (old s) (old s).mile_keys - (get_amount (old s) mile_k) }
     ensures { card s.mile_keys = card (old s).mile_keys - 1 }
@@ -258,7 +248,7 @@ module Miles_with_expiration_storage
     else
         (remove_mile s mile_k;
          (* update miles *)
-         let owner_asset = get_owner s k in
+         let owner_asset = get s.owner_assets k in
          let owner_miles = miles owner_asset in
          let new_owner_miles = remove mile_k owner_miles in
          let new_owner_asset = { owner_asset with 
@@ -267,13 +257,14 @@ module Miles_with_expiration_storage
          s.owner_assets <- set s.owner_assets k new_owner_asset)
     
     let remove_owner (s : storage) (k : key) : unit
-    raises { NotFound }
+    raises { NotFound, KeyExist }
     (* partition property *)
     requires { mem k s.owner_keys -> subset (miles (get s.owner_assets k)) s.mile_keys }
     ensures { not (mem k s.owner_keys) }
     (* set effect *)
     ensures { s.owner_keys == diff (old s).owner_keys (singleton k) }
     ensures { s.mile_keys == diff (old s).mile_keys (get_miles (old s) k) }
+    ensures { s.removed_miles == union (old s).removed_miles (get_miles (old s) k) }
     (* count operation *)
     ensures { card s.owner_keys = card (old s).owner_keys - 1 }
     ensures { card s.mile_keys = card (old s).mile_keys - card (get_miles (old s) k) }
@@ -290,13 +281,13 @@ module Miles_with_expiration_storage
         let assets = get_miles s k in
         for i = 0 to (card assets) - 1 do
         invariant { s.mile_keys == diff (old s).mile_keys (head i assets)}
+        invariant { s.removed_miles == union (old s).removed_miles (head i assets) }
         invariant { forall k : key. mem k s.mile_keys -> amount (get s.mile_assets k) > 0  }
             let ak = nth i assets in
             remove_mile s ak 
         done
     
 end
-
 
 module Miles_with_expiration
 
@@ -309,7 +300,7 @@ module Miles_with_expiration
       if caller e <> s.admin then raise InvalidCaller;
       if not (amount newmile > 0) then raise InvalidCondition;
       (if mem ow s.owner_keys then
-        let owner = get_owner s ow in
+        let owner = get s.owner_assets ow in
         add_owner_miles s owner newmile
       else
         let new_owner = { addr = ow; miles = mkacol (Cons (id newmile) Nil); } in
@@ -317,5 +308,70 @@ module Miles_with_expiration
         add_owner s new_owner assets);
       no_transfer
 
+    let function filter_consume (e : env) (s : storage) (c : acol) : acol
+    ensures { forall k : key. mem k result -> get_expiration s k > now e }
+    ensures { subset result c }
+    =
+    let rec rec_filter (l : list key) : list key
+    variant { l }
+    ensures { forall k : key. lmem k result -> get_expiration s k > now e }
+    ensures { forall k : key. lmem k result -> lmem k l }
+    =   match l with
+        | Nil -> Nil
+        | Cons a tl ->
+          if get_expiration s a > now e
+          then Cons a (rec_filter tl)
+          else (rec_filter tl)
+        end in
+    mkacol (rec_filter c.content)
+
+    let consume (e : env) (s : storage) (ow : address) (nbmiles : int) : transfers
+    raises { NotFound, KeyExist, InvalidCaller, InvalidCondition }
+    requires { is_empty s.removed_miles }
+    requires { is_empty s.added_miles }
+    (* forall m : removed miles, m.expiration > now *)
+    ensures { forall m : key.
+       (* note that expiration of *removed* asset is done on old storage ! *)
+       mem m s.removed_miles ->  get_expiration (old s) m > (now e)
+    }
+    (* mile.sum(quantity) = before miles.sum(quantity) - nbmiles *)
+    ensures { Amounts.sum (old s) (old s).mile_keys = Amounts.sum s s.mile_keys + nbmiles }
+    (* is_emtpy add.miles *)
+    ensures { is_empty s.added_miles }
+    = if caller e <> s.admin then raise InvalidCaller;
+      if nbmiles <= 0 then raise InvalidCondition;
+      let o = get_owner s ow in
+      let miles = get_miles s o in
+      let l = filter_consume e s miles in
+      (*let l = FConsume.filter e s miles in*)
+      if not (nbmiles <= Amounts.sum s l) then raise InvalidCondition;
+      let remainder = ref nbmiles in
+      try
+        for i = 0 to (card l) - 1 do  
+        (* removed miles are in l: *)
+        invariant { subset s.removed_miles l }
+        (* remainder bounds: *)
+        invariant { 0 <= !remainder <= Amounts.part_sum s l i (card l) }
+        (* right amount spent invariant *)
+        invariant { Amounts.sum (old s) (old s).mile_keys = Amounts.sum s s.mile_keys + nbmiles - !remainder }
+          let m = nth i l in
+          if get_amount s m > !remainder
+          then
+            (set_amount s m (get_amount s m - !remainder);
+             remainder := 0;
+             raise Break)
+          else if get_amount s m = !remainder
+          then
+            (remainder := 0;
+             remove_owner_miles s o m;
+             raise Break)
+          else
+            (remainder := !remainder - get_amount s m;
+             remove_owner_miles s o m)
+        done;
+      with Break -> assert { !remainder = 0 }; ()
+      end;
+      assert { !remainder = 0 };
+      no_transfer
 
 end
