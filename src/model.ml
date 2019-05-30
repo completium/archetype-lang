@@ -361,7 +361,7 @@ and ('id, 'typ, 'term, 'instr) instruction_node =
 type ('id, 'typ, 'term) instruction_gen = ('id, 'typ, 'term, ('id, 'typ, 'term) instruction_gen) instruction_poly
 [@@deriving show {with_path = false}]
 
-and instruction = (lident, pattern, pterm, instruction) instruction_poly
+and instruction = (lident, type_, pterm, instruction) instruction_poly
 
 
 (* -------------------------------------------------------------------- *)
