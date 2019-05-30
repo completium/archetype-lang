@@ -37,4 +37,4 @@ check:
 	./check_pp.sh
 
 build-deps:
-	opam install dune menhir why3.1.2.0 ppx_deriving ppx_deriving_yojson
+	opam install dune menhir omd why3.1.2.0 ppx_deriving ppx_deriving_yojson

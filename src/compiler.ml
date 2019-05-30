@@ -3,6 +3,7 @@ open Archetype
 open Core
 
 let opt_lsp = ref false
+let opt_md = ref false
 let opt_json = ref false
 let opt_pretty_print = ref false
 let opt_parse = ref false
@@ -29,6 +30,8 @@ let compile_and_print (filename, channel) =
     else (
       if !opt_pretty_print
       then Format.printf "%a" Printer.pp_archetype pt
+      else if !opt_md
+      then Format.printf "%s\n" (Gen_markdown.pt_to_md_output pt)
       else (
         if !opt_parse
         then Format.printf "%a\n" ParseTree.pp_archetype pt
@@ -66,6 +69,7 @@ let main () =
       "-W", Arg.Set opt_modelws, " Print raw model_with_storage";
       "-L", Arg.Set opt_modelliq, " Output Archetype in liquidity";
       "-T", Arg.Set opt_pterm, " Print pterm";
+      "--md", Arg.Set opt_md, " Generate markdown output";
       "--lsp", Arg.String (fun s -> match s with
           | "errors" -> opt_lsp := true; Lsp.kind := Errors
           | "outline" -> opt_lsp := true; Lsp.kind := Outline
