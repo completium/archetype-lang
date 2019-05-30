@@ -1,14 +1,34 @@
 open Ident
 open Model
 
-type field_ident = string
-type asset_ident = string
-type enum_ident = string
-type enum_value_ident = string
+type lident = ident Location.loced
+[@@deriving show {with_path = false}]
+
+type type_ = ptyp
+type term = pterm
+
+type field_ident = lident
+[@@deriving show {with_path = false}]
+
+type argument_ident = lident
+[@@deriving show {with_path = false}]
+
+type fun_ident = lident
+[@@deriving show {with_path = false}]
+
+type asset_ident = lident
+[@@deriving show {with_path = false}]
+
+type enum_ident = lident
+[@@deriving show {with_path = false}]
+
+type enum_value_ident = lident
+[@@deriving show {with_path = false}]
 
 type field =
   | Fid of string
   | Fall
+[@@deriving show {with_path = false}]
 
 type storage_policy =
   | Record
@@ -32,49 +52,49 @@ let storage_policy = ref Record
 let execution_mode = ref WithSideEffect
 let sorting_policy = ref OnTheFly
 
-type ('id) item_field_type =
+type item_field_type =
   | FBasic            of vtyp
-  | FKeyCollection    of 'id * vtyp
+  | FKeyCollection    of asset_ident * vtyp
   | FRecordMap        of asset_ident
-  | FRecordCollection of 'id
-  | FEnum             of 'id
-  | FContainer        of Model.container * 'id item_field_type
+  | FRecordCollection of asset_ident
+  | FEnum             of enum_ident
+  | FContainer        of Model.container * item_field_type
 [@@deriving show {with_path = false}]
 
-type ('id, 'typ, 'term) item_field = {
-  asset   : 'id option;
-  name    : 'id;
-  typ     : 'id item_field_type;
+type item_field = {
+  asset   : asset_ident option;
+  name    : field_ident;
+  typ     : item_field_type;
   ghost   : bool;
-  default : 'term option; (* initial value *)
+  default : pterm option; (* initial value *)
   loc     : Location.t [@opaque]
 }
 [@@deriving show {with_path = false}]
 
-type ('id, 'typ, 'term) storage_item = {
-  name        : 'id;
-  fields      : ('id, 'typ, 'term) item_field list;
-  invariants  : ('id, 'id lterm_gen) label_term list;
-  init        : ((ident * 'term) list) list;
+type storage_item = {
+  name        : field_ident;
+  fields      : item_field list;
+  invariants  : (lident, (lident) lterm_gen) label_term list;
+  init        : ((ident * pterm) list) list;
 }
 [@@deriving show {with_path = false}]
 
-type ('id, 'typ, 'term) storage = ('id, 'typ, 'term) storage_item list
+type storage = storage_item list
 [@@deriving show {with_path = false}]
 
-type 'id enum = {
+type enum = {
   name: enum_ident;
   values: enum_value_ident list;
 }
 [@@deriving show {with_path = false}]
 
-type ('id, 'typ) record_item = {
+type record_item = {
   name: enum_ident;
-  type_: 'typ;
+  type_: type_;
 }
 [@@deriving show {with_path = false}]
 
-type 'id record = {
+type record = {
   name: enum_ident;
   values: record_item list;
 }
@@ -86,20 +106,20 @@ type 'id function_ = {
 [@@deriving show {with_path = false}]
 
 type 'id entry = {
-  name: entry_ident;
+  name: fun_ident;
 }
 [@@deriving show {with_path = false}]
 
-type ('id, 'typ, 'term) function_struct = {
-  name: 'id;
-  args: 'id * 'typ * 'term option;
-
+type function_struct = {
+  name: fun_ident;
+  args: argument_ident * type_ * pterm option;
+  body: pterm;
 }
 [@@deriving show {with_path = false}]
 
-type ('id, 'typ, 'term) function_node =
-  | Function           of ('id, 'typ, 'term) function_struct
-  | Entry              of ('id, 'typ, 'term) function_struct
+type function_node =
+  | Function           of function_struct
+  | Entry              of function_struct
   | Get                of asset_ident
   | Set                of asset_ident
   | Make               of asset_ident
@@ -117,26 +137,49 @@ type ('id, 'typ, 'term) function_node =
   | Other
 [@@deriving show {with_path = false}]
 
+type argument = argument_ident * type_ * pterm option
+[@@deriving show {with_path = false}]
 
-type ('id, 'typ, 'term) argument = 'id * 'typ * 'term option;
-
-type ('id, 'typ, 'term) signature = {
-  name: 'id;
+type signature = {
+  name: fun_ident;
   args: argument list;
-  ret: 'typ;
+  ret: type_;
 }
-
-type ('id, 'typ, 'term) function_ = {
-  node: ('id, 'typ, 'term) function_node;
-  sign: ('id, 'typ, 'term) signature;
-}
-
-type ('id, 'typ, 'term) type_node =
-  | TNenum of 'id enum
-  | TNrecord of ('id, 'typ) record
-  | TNstorage of ('id, 'typ, 'term) storage
-  | TNfunction of ('id, 'typ, 'term) function_
 [@@deriving show {with_path = false}]
 
-type ('id, 'typ, 'term) model = ('id, 'typ, 'term) type_node list;
+type function__ = {
+  node: function_node;
+  sig_: signature;
+}
 [@@deriving show {with_path = false}]
+
+type type_node =
+  | TNenum of enum
+  | TNrecord of record
+  | TNstorage of storage
+  | TNfunction of function__
+[@@deriving show {with_path = false}]
+
+type model = type_node list
+[@@deriving show {with_path = false}]
+
+let lident_to_string lident = Location.unloc lident
+
+let function_name_from_function_node = function
+  | Function           fs           -> lident_to_string fs.name
+  | Entry              fs           -> lident_to_string fs.name
+  | Get                aid          -> "get_"      ^ lident_to_string aid
+  | Set                aid          -> "set_"      ^ lident_to_string aid
+  | Make               aid          -> "mk_"       ^ lident_to_string aid
+  | AddAsset           aid          -> "add_"      ^ lident_to_string aid
+  | RemoveAsset        aid          -> "remove_"   ^ lident_to_string aid
+  | UpdateAsset        aid          -> "update_"   ^ lident_to_string aid
+  | ContainsAsset      aid          -> "contains_" ^ lident_to_string aid
+  | SelectAsset        aid          -> "select_"   ^ lident_to_string aid
+  | CountAsset         aid          -> "count_"    ^ lident_to_string aid
+  | AddContainer      (aid, fid, _) -> "add_"      ^ lident_to_string aid ^ "_" ^ lident_to_string fid
+  | RemoveContainer   (aid, fid, _) -> "remove_"   ^ lident_to_string aid ^ "_" ^ lident_to_string fid
+  | ContainsContainer (aid, fid, _) -> "contains_" ^ lident_to_string aid ^ "_" ^ lident_to_string fid
+  | SelectContainer   (aid, fid, _) -> "select_"   ^ lident_to_string aid ^ "_" ^ lident_to_string fid
+  | CountContainer    (aid, fid, _) -> "count_"    ^ lident_to_string aid ^ "_" ^ lident_to_string fid
+  | Other -> assert false
