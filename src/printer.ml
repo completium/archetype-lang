@@ -629,7 +629,7 @@ and pp_fun_args fmt args =
 and pp_field fmt { pldesc = f; _ } =
   match f with
   | Ffield (id, typ, dv, exts) ->
-    Format.fprintf fmt "%a%a : %a%a"
+    Format.fprintf fmt "%a%a : %a%a;"
       pp_id id
       pp_extensions exts
       pp_type typ
@@ -885,7 +885,7 @@ let rec pp_declaration fmt { pldesc = e; _ } =
       (pp_option pp_asset_operation) ops
       pp_id id
       (pp_prefix " " (pp_list " @," pp_asset_option)) opts
-      (pp_do_if (List.length fields > 0) ((fun fmt -> Format.fprintf fmt " = {@\n@[<v 2>%a@]}@\n" (pp_list ";@\n" pp_field)))) fields
+      (pp_do_if (List.length fields > 0) ((fun fmt -> Format.fprintf fmt " = {@\n@[<v 2>%a@]}@\n" (pp_list "@\n" pp_field)))) fields
       (pp_list "@\n" pp_asset_post_option) apo
 
   | Daction (id, args, props, code, exts) ->

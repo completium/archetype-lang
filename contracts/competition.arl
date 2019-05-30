@@ -17,7 +17,7 @@ variable oracle role
 asset submission = {
   competitor : competitor;
   score      : uint;
-  date       : date
+  date       : date;
 }
 
 (* state machine *)

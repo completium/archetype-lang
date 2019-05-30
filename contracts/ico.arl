@@ -42,7 +42,7 @@ asset[@add @remove @update owner (state = Init)]
      contributor identified by id = {
    id           : address;
    list         : whitelist;
-   contrib      : int = 0
+   contrib      : int = 0;
 } with {
   c1 : contrib >= 0
 }

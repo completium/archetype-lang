@@ -12,18 +12,18 @@ enum period =
 
 asset issuer identified by id = {
   id   : role;
-  name : string
+  name : string;
 }
 
 asset paymentFrequency = {
   periodMultiplier : unit;
-  period           : period
+  period           : period;
 }
 
 asset bond = {
   couponType       : couponType;
   paymentFrequency : paymentFrequency;
-  issuer           : issuer
+  issuer           : issuer;
 }
 
 action publish (bond : bond) = {

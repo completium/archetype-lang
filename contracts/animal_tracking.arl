@@ -14,17 +14,17 @@ asset animal identified by id = {
  id       : string;
  status   : movement;
  typ      : animal;
- location : field
+ location : field;
 }
 
 asset field identified by name = {
   name     : string;
-  business : business
+  business : business;
 } with states movement
 
 asset business identified by id = {
   id              : string;
-  incomingAnimals : animal set
+  incomingAnimals : animal set;
 }
 
 transition transit (fk : string) on ak : animal from In_field = {

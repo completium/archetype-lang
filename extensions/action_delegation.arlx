@@ -17,7 +17,7 @@ archetype extension action_delegation (
   namespace <%aTransaction>_space {
     asset Operator identified by anasset = {
       anasset  : anAsset;
-      operator : address
+      operator : address;
     }
 
     action setDelegate (Operator : Operator) = {

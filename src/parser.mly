@@ -478,7 +478,7 @@ asset_option:
 | SORTED BY x=ident     { AOsortedby x }
 
 %inline fields:
-| xs=snl(SEMI_COLON, field) { xs }
+| xs=terminated(field, SEMI_COLON)+ { xs }
 
 field_r:
 | x=ident exts=option(extensions)

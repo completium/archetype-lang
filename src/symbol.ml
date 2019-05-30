@@ -252,7 +252,7 @@ let string_of_symbol = function
   | X (N N_transition) -> "a transition"
   | X (N N_start_expr) -> "a start expression"
   | X (N N_snl2_COMMA_simple_expr_) -> "a non empty list of simple expression separated by  ,"
-  | X (N N_snl_SEMI_COLON_field_) -> "a non empty list of field separated by ,"
+  | X (N N_nonempty_list_terminated_field_SEMI_COLON__) -> "a non empty list of field terminated by ;"
   | X (N N_simple_expr_r) -> "a simple expression"
   | X (N N_signature) -> "a signature"
   | X (N N_separated_nonempty_list_SEMI_COLON_record_item_) -> "a non empty list of record item by ;"
