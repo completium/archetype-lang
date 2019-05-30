@@ -32,25 +32,6 @@ let storage_policy = ref Record
 let execution_mode = ref WithSideEffect
 let sorting_policy = ref OnTheFly
 
-
-type ('id) item_field_operation_type =
-  | Get
-  | Set
-  | AddContainer of Model.container
-  | RemoveContainer of Model.container
-  | Addnofail
-  | Remove
-  | Removenofail
-  | AddAsset     of 'id
-  | RemoveAsset  of 'id
-[@@deriving show {with_path = false}]
-
-type ('id) item_field_operation = {
-  name     : lident;
-  typ      : 'id item_field_operation_type;
-}
-[@@deriving show {with_path = false}]
-
 type ('id) item_field_type =
   | FBasic            of vtyp
   | FKeyCollection    of 'id * vtyp
@@ -66,7 +47,6 @@ type ('id, 'typ, 'term) item_field = {
   typ     : 'id item_field_type;
   ghost   : bool;
   default : 'term option; (* initial value *)
-  ops     : 'id item_field_operation list;
   loc     : Location.t [@opaque]
 }
 [@@deriving show {with_path = false}]
@@ -74,19 +54,19 @@ type ('id, 'typ, 'term) item_field = {
 type ('id, 'typ, 'term) storage_item = {
   name        : 'id;
   fields      : ('id, 'typ, 'term) item_field list;
-  operations  : 'id item_field_operation list;
   invariants  : ('id, 'id lterm_gen) label_term list;
   init        : ((ident * 'term) list) list;
 }
 [@@deriving show {with_path = false}]
 
-type ('id, 'typ, 'term) storage = ('id, 'typ, 'term) storage_item list;
+type ('id, 'typ, 'term) storage = ('id, 'typ, 'term) storage_item list
 [@@deriving show {with_path = false}]
 
 type 'id enum = {
   name: enum_ident;
   values: enum_value_ident list;
 }
+[@@deriving show {with_path = false}]
 
 type ('id, 'typ) record_item = {
   name: enum_ident;
@@ -103,9 +83,48 @@ type 'id record = {
 type 'id function_ = {
   name: fun_ident;
 }
+[@@deriving show {with_path = false}]
 
 type 'id entry = {
   name: entry_ident;
+}
+[@@deriving show {with_path = false}]
+
+type ('id, 'typ, 'term) function_struct = {
+  name: 'id;
+  args: 'id * 'typ * 'term option;
+
+}
+[@@deriving show {with_path = false}]
+
+type ('id, 'typ, 'term) function_node =
+  | Function           of ('id, 'typ, 'term) function_struct
+  | Entry              of ('id, 'typ, 'term) function_struct
+  | Get
+  | Set
+  | Make
+  | AddAsset           of asset_ident
+  | RemoveAsset        of asset_ident
+  | UpdateAsset      of asset_ident
+  | ContainsAsset      of asset_ident
+  | SelectAsset        of asset_ident * field_ident * Model.container
+  | CountAsset         of asset_ident * field_ident * Model.container
+  | AddContainer       of asset_ident * field_ident * Model.container
+  | RemoveContainer    of asset_ident * field_ident * Model.container
+  | ContainsContainer  of asset_ident * field_ident * Model.container
+  | SelectContainer    of asset_ident * field_ident * Model.container
+  | CountContainer     of asset_ident * field_ident * Model.container
+  | Other
+[@@deriving show {with_path = false}]
+
+type ('id) item_field_operation = {
+  name     : lident;
+  typ      : 'id item_field_operation_type;
+}
+[@@deriving show {with_path = false}]
+
+type function_ = {
+  node: function_node;
 }
 
 type ('id, 'typ, 'term) type_node =
@@ -113,7 +132,6 @@ type ('id, 'typ, 'term) type_node =
   | TNrecord of ('id, 'typ) record
   | TNstorage of ('id, 'typ, 'term) storage
   | TNfunction of function_
-  | TNentry of entry
 [@@deriving show {with_path = false}]
 
 type ('id, 'typ, 'term) model = ('id, 'typ, 'term) type_node list;
