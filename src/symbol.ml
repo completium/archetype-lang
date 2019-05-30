@@ -299,7 +299,7 @@ let string_of_symbol = function
   | X (N N_namespace) -> "a namespace"
   | X (N N_main) -> "archetype"
   | X (N N_literal) -> "a literal"
-  | X (N N_list_loc_verif_item__) -> "list of verif item"
+  | X (N N_nonempty_list_loc_verif_item__) -> "list of verif item"
   | X (N N_list_function_item_) -> "list of item function"
   | X (N N_list_asset_post_option_) -> "a list of asset post option"
   | X (N N_implementation_archetype) -> "an archetype implementation"

@@ -371,15 +371,15 @@ verif_item:
 | x=verif_variable      { x }
 | x=verif_invariant     { x }
 | x=verif_effect        { x }
+| x=verif_specification { x }
 
 verification(spec):
 | x=loc(spec)
     { ([x], None) }
 
 | VERIFICATION exts=option(extensions) LBRACE
-    xs=loc(verif_item)*
-      x=loc(verif_specification) RBRACE
-        { (xs@[x], exts) }
+    xs=loc(verif_item)+ RBRACE
+        { (xs, exts) }
 
 verification_fun:
 | x=loc(verification(verif_specification)) { x }
