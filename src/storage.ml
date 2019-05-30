@@ -100,9 +100,9 @@ type ('id, 'typ, 'term) function_struct = {
 type ('id, 'typ, 'term) function_node =
   | Function           of ('id, 'typ, 'term) function_struct
   | Entry              of ('id, 'typ, 'term) function_struct
-  | Get
-  | Set
-  | Make
+  | Get                of asset_ident
+  | Set                of asset_ident
+  | Make               of asset_ident
   | AddAsset           of asset_ident
   | RemoveAsset        of asset_ident
   | UpdateAsset        of asset_ident
@@ -117,21 +117,25 @@ type ('id, 'typ, 'term) function_node =
   | Other
 [@@deriving show {with_path = false}]
 
-type ('id) item_field_operation = {
-  name     : lident;
-  typ      : 'id item_field_operation_type;
-}
-[@@deriving show {with_path = false}]
 
-type function_ = {
-  node: function_node;
+type ('id, 'typ, 'term) argument = 'id * 'typ * 'term option;
+
+type ('id, 'typ, 'term) signature = {
+  name: 'id;
+  args: argument list;
+  ret: 'typ;
+}
+
+type ('id, 'typ, 'term) function_ = {
+  node: ('id, 'typ, 'term) function_node;
+  sign: ('id, 'typ, 'term) signature;
 }
 
 type ('id, 'typ, 'term) type_node =
   | TNenum of 'id enum
   | TNrecord of ('id, 'typ) record
   | TNstorage of ('id, 'typ, 'term) storage
-  | TNfunction of function_
+  | TNfunction of ('id, 'typ, 'term) function_
 [@@deriving show {with_path = false}]
 
 type ('id, 'typ, 'term) model = ('id, 'typ, 'term) type_node list;
