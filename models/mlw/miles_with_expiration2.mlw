@@ -351,7 +351,7 @@ module Miles_with_expiration
         (* removed miles are in l: *)
         invariant { subset s.removed_miles l }
         (* remainder bounds: *)
-        invariant { 0 <= !remainder <= Amounts.part_sum s l i (card l) }
+        invariant { 0 <= !remainder <= Amounts.sum s (tail i l) }
         (* right amount spent invariant *)
         invariant { Amounts.sum (old s) (old s).mile_keys = Amounts.sum s s.mile_keys + nbmiles - !remainder }
           let m = nth i l in

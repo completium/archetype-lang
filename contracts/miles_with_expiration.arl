@@ -37,6 +37,14 @@ action consume (a : address) (quantity : uint) = {
   called by admin
 
   verification {
+    specification {
+         (* the globla quantity of miles is decreased by nbmiles *)
+         p1 : mile.sum(quantity) = before miles.sum(quantity) - nbmiles;
+         (* all removed miles are valid miles *)
+         p2 : forall m : removed miles, m.expiration >= now;
+         (* no added mile *)
+         p3 : is_empty added.mile
+    }
     invariant loop = {
          (* remainder has a decreasing upper bound *)
          i1 : 0 <= remainder <= to_iter.sum(amount);
@@ -45,15 +53,6 @@ action consume (a : address) (quantity : uint) = {
          (* right amount consumed *)
          i3 : before miles.sum(amount) = miles.sum(amount) + nbmiles - remainder;
          i4 : is_empty added.mile
-    }
-
-    specification {
-         (* the globla quantity of miles is decreased by nbmiles *)
-         p1 : mile.sum(quantity) = before miles.sum(quantity) - nbmiles;
-         (* all removed miles are valid miles *)
-         p2 : forall m : removed miles, m.expiration >= now;
-         (* no added mile *)
-         p3 : is_empty added.mile
     }
   }
 

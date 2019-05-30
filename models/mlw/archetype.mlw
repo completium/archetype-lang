@@ -163,6 +163,8 @@ theory AssetCollection
 
   let function singleton (k : key) : acol = { content = Cons k Nil; }
 
+  lemma mem_singleton: forall k1 k2 : key. mem k1 (singleton k2) -> k1 = k2
+
   predicate is_empty (c : acol) = forall m : key. not (mem m c)
 
   lemma mem_empty : is_empty empty
@@ -219,8 +221,21 @@ theory AssetCollection
   axiom head_card: forall c : acol, i : int. 0 <= i < card c -> card (head i c) = i 
   axiom head_all: forall c : acol, i : int.  i >= card c ->  head i c = c
 
+  (* for loop invariant *)
   axiom head_add: forall c : acol, i : int. 0 <= i < card c -> 
   head (i+1) c = union (singleton (nth i c)) (head i c)
+
+  function tail (i : int) (c : acol) : acol
+  axiom tail_def: forall c : acol, i j : int. i <= j < card c -> nth (j - i) (tail i c) = nth j c
+  axiom tail_card: forall c : acol, i : int. 0 <= i < card c -> card (tail i c) = card c - i 
+  axiom tail_empty: forall c : acol, i : int.  i >= card c ->  tail i c = empty
+  axiom tail_all: forall c : acol. tail 0 c = c
+
+  axiom tail_add: forall c : acol, i : int. 0 <= i < card c ->
+  tail (i+1) c = diff (tail i c) (singleton (nth i c))
+
+  axiom mem_tail: forall c : acol, i : int. 0 <= i < card c ->
+  mem (nth i c) (tail i c)
 
   (* API ----------------------------------------------------------------------*)
 
