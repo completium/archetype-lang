@@ -110,9 +110,11 @@ type 'id entry = {
 }
 [@@deriving show {with_path = false}]
 
+type argument = argument_ident * type_ * pterm option
+[@@deriving show {with_path = false}]
+
 type function_struct = {
   name: fun_ident;
-  args: argument_ident * type_ * pterm option;
   body: pterm;
 }
 [@@deriving show {with_path = false}]
@@ -127,17 +129,24 @@ type function_node =
   | RemoveAsset        of asset_ident
   | UpdateAsset        of asset_ident
   | ContainsAsset      of asset_ident
+  | NthAsset           of asset_ident
   | SelectAsset        of asset_ident
+  | SortAsset          of asset_ident
   | CountAsset         of asset_ident
+  | SumAsset           of asset_ident
+  | MinAsset           of asset_ident
+  | MaxAsset           of asset_ident
   | AddContainer       of asset_ident * field_ident * Model.container
   | RemoveContainer    of asset_ident * field_ident * Model.container
   | ContainsContainer  of asset_ident * field_ident * Model.container
+  | NthContainer       of asset_ident * field_ident * Model.container
   | SelectContainer    of asset_ident * field_ident * Model.container
+  | SortContainer      of asset_ident * field_ident * Model.container
   | CountContainer     of asset_ident * field_ident * Model.container
+  | SumContainer       of asset_ident * field_ident * Model.container
+  | MinContainer       of asset_ident * field_ident * Model.container
+  | MaxContainer       of asset_ident * field_ident * Model.container
   | Other
-[@@deriving show {with_path = false}]
-
-type argument = argument_ident * type_ * pterm option
 [@@deriving show {with_path = false}]
 
 type signature = {
@@ -175,11 +184,21 @@ let function_name_from_function_node = function
   | RemoveAsset        aid          -> "remove_"   ^ lident_to_string aid
   | UpdateAsset        aid          -> "update_"   ^ lident_to_string aid
   | ContainsAsset      aid          -> "contains_" ^ lident_to_string aid
+  | NthAsset           aid          -> "nth_"      ^ lident_to_string aid
   | SelectAsset        aid          -> "select_"   ^ lident_to_string aid
+  | SortAsset          aid          -> "sort_"     ^ lident_to_string aid
   | CountAsset         aid          -> "count_"    ^ lident_to_string aid
+  | SumAsset           aid          -> "sum_"      ^ lident_to_string aid
+  | MinAsset           aid          -> "min_"      ^ lident_to_string aid
+  | MaxAsset           aid          -> "max_"      ^ lident_to_string aid
   | AddContainer      (aid, fid, _) -> "add_"      ^ lident_to_string aid ^ "_" ^ lident_to_string fid
   | RemoveContainer   (aid, fid, _) -> "remove_"   ^ lident_to_string aid ^ "_" ^ lident_to_string fid
   | ContainsContainer (aid, fid, _) -> "contains_" ^ lident_to_string aid ^ "_" ^ lident_to_string fid
+  | NthContainer      (aid, fid, _) -> "nth_"      ^ lident_to_string aid ^ "_" ^ lident_to_string fid
   | SelectContainer   (aid, fid, _) -> "select_"   ^ lident_to_string aid ^ "_" ^ lident_to_string fid
+  | SortContainer     (aid, fid, _) -> "sort_"     ^ lident_to_string aid ^ "_" ^ lident_to_string fid
   | CountContainer    (aid, fid, _) -> "count_"    ^ lident_to_string aid ^ "_" ^ lident_to_string fid
+  | SumContainer      (aid, fid, _) -> "sum_"      ^ lident_to_string aid ^ "_" ^ lident_to_string fid
+  | MinContainer      (aid, fid, _) -> "min_"      ^ lident_to_string aid ^ "_" ^ lident_to_string fid
+  | MaxContainer      (aid, fid, _) -> "max_"      ^ lident_to_string aid ^ "_" ^ lident_to_string fid
   | Other -> assert false
