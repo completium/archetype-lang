@@ -164,8 +164,7 @@ type signature = {
 type function__ = {
   node: function_node;
   sig_: signature;
-  specs  : (lident, (lident) lterm_gen) label_term list;
-  invariants  : (lident * (lident, (lident) lterm_gen) label_term list) list;
+  verif  : (lident, type_, pterm) verification;
 }
 [@@deriving show {with_path = false}]
 
