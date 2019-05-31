@@ -80,14 +80,14 @@ let check_brackets_balance () =
 
 let resume_on_error last_reduction lex =
   match last_reduction with
-  (* | `FoundExprAt checkpoint ->
-     let lex = Lexer.skip_until_before (function SEMI_COLON | RBRACE -> true | _ -> false) lex in
-     let lex =
+  | `FoundExprAt checkpoint ->
+    let lex = Lexer.skip_until_before (function SEMI_COLON | RBRACE -> true | _ -> false) lex in
+    let lex =
       if Lexer.get' lex = SEMI_COLON
       then snd (Lexer.next lex)
       else lex in
-     let checkpoint = Parser.MenhirInterpreter.offer checkpoint (Parser.INVALID_EXPR, dummy_pos, dummy_pos) in
-     (lex, checkpoint) *)
+    let checkpoint = Parser.MenhirInterpreter.offer checkpoint (Parser.INVALID_EXPR, dummy_pos, dummy_pos) in
+    (lex, checkpoint)
   | `FoundDeclarationAt checkpoint
   | `FoundNothingAt checkpoint ->
     let lex =
@@ -102,10 +102,10 @@ let resume_on_error last_reduction lex =
 let update_last_reduction checkpoint production last_reduction =
   (* Printf.eprintf "update_last_reduction: %s\n" (Symbol.string_of_symbol (lhs production)); *)
   match lhs production with
-  (* | X (N N_expr_r) ->
-     `FoundExprAt checkpoint
-     | X (N N_simple_expr_r) ->
-     `FoundExprAt checkpoint *)
+  | X (N N_expr_r) ->
+    `FoundExprAt checkpoint
+  | X (N N_simple_expr_r) ->
+    `FoundExprAt checkpoint
   | X (N N_declaration_r) ->
     `FoundDeclarationAt checkpoint
   | _ ->
