@@ -119,6 +119,7 @@ type argument = argument_ident * type_ * pterm option
 type function_struct = {
   name: fun_ident;
   body: pterm;
+  loc : Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]
 
