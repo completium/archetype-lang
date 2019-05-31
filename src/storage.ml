@@ -123,8 +123,6 @@ type function_node =
   | Function           of function_struct
   | Entry              of function_struct
   | Get                of asset_ident
-  | Set                of asset_ident
-  | Make               of asset_ident
   | AddAsset           of asset_ident
   | RemoveAsset        of asset_ident
   | ClearAsset         of asset_ident
@@ -182,8 +180,6 @@ let function_name_from_function_node = function
   | Function           fs           -> lident_to_string fs.name
   | Entry              fs           -> lident_to_string fs.name
   | Get                aid          -> "get_"      ^ lident_to_string aid
-  | Set                aid          -> "set_"      ^ lident_to_string aid
-  | Make               aid          -> "mk_"       ^ lident_to_string aid
   | AddAsset           aid          -> "add_"      ^ lident_to_string aid
   | RemoveAsset        aid          -> "remove_"   ^ lident_to_string aid
   | ClearAsset         aid          -> "clear_"    ^ lident_to_string aid
