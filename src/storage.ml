@@ -22,6 +22,9 @@ type asset_ident = lident
 type enum_ident = lident
 [@@deriving show {with_path = false}]
 
+type record_ident = lident
+[@@deriving show {with_path = false}]
+
 type enum_value_ident = lident
 [@@deriving show {with_path = false}]
 
@@ -95,7 +98,7 @@ type record_item = {
 [@@deriving show {with_path = false}]
 
 type record = {
-  name: enum_ident;
+  name: record_ident;
   values: record_item list;
 }
 [@@deriving show {with_path = false}]
@@ -154,13 +157,15 @@ type function_node =
 type signature = {
   name: fun_ident;
   args: argument list;
-  ret: type_;
+  ret: type_ option;
 }
 [@@deriving show {with_path = false}]
 
 type function__ = {
   node: function_node;
   sig_: signature;
+  specs  : (lident, (lident) lterm_gen) label_term list;
+  invariants  : (lident * (lident, (lident) lterm_gen) label_term list) list;
 }
 [@@deriving show {with_path = false}]
 
@@ -206,3 +211,7 @@ let function_name_from_function_node = function
   | MinContainer      (aid, fid, _) -> "min_"      ^ lident_to_string aid ^ "_" ^ lident_to_string fid
   | MaxContainer      (aid, fid, _) -> "max_"      ^ lident_to_string aid ^ "_" ^ lident_to_string fid
   | Other -> assert false
+
+
+let type_from_function_node = function
+  | _ -> assert false
