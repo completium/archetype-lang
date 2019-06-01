@@ -5,6 +5,25 @@ exception ReduceError of string * Location.t option
 exception ErrorAcceptTransfer of string * Location.t * Location.t list
 exception TODO
 
+
+let map_instr_node f = function
+  | Iif (c, t, e) -> Iif (c, f t, Tools.map_option f e)
+  | Ifor (i, c, b) -> Ifor (i, c, f b)
+  | Iseq (l, h) -> Iseq (f l, f h)
+  | Imatchwith (a, ps) -> Imatchwith (a, ps)
+  | Iassign (op, l, r) -> Iassign (op, l, r)
+  | Irequire (b, x) -> Irequire (b, x)
+  | Itransfer x -> Itransfer x
+  | Ibreak -> Ibreak
+  | Iassert x -> Iassert x
+  | Isimple x -> Isimple x
+
+let map_instr f i =
+  {
+    i with
+    node = map_instr_node f i.node
+  }
+
 let type_unit     : Model.type_ = Tbuiltin VTstring (* TODO: replace unit type *)
 let type_string   : Model.type_ = Tbuiltin VTstring
 let type_bool     : Model.type_ = Tbuiltin VTbool
@@ -43,21 +62,22 @@ let fail str : instruction =
               else raise (ErrorAcceptTransfer (v, lo, l)))) [] m.transactions) in
    model *)
 
-(* let process_failif model : model =
-   let rec process_pterm (pt : pterm) : pterm =
-    let l, v = deloc pt in
-    (
-      let f x = poly_pterm_map_for_pterm (mkloc l) process_pterm x in
-      match v with
-      | Prequire (b, x) -> mkloc l (Pif ((if b then dumloc (Pnot x) else x), fail "required", None))
-      | x -> f x
-    ) in
-   let l, v = deloc model in
-   mkloc l {
-    v with
-    functions = List.map (fun (x : function_) -> { x with body = process_pterm (x.body) }) v.functions;
-    transactions = List.map (fun (x : transaction) -> { x with effect = Tools.map_option process_pterm (x.effect) }) v.transactions;
-   } *)
+let replace_instruction model : model =
+  let process (instr : instruction) : instruction =
+    let rec f (instr : instruction) : instruction =
+      let l = instr.loc in
+      (
+        match instr.node with
+        | Irequire (b, x) ->
+          mk_instr_with_loc (Iif ((if b then mk_struct_poly (Pnot x) type_bool else x), fail "required", None)) l
+        | _ -> map_instr f instr
+      ) in
+    map_instr f instr
+  in {
+    model with
+    functions = List.map (fun (x : function_) -> { x with body = process (x.body) }) model.functions;
+    transactions = List.map (fun (x : transaction) -> { x with effect = Tools.map_option process (x.effect) }) model.transactions;
+  }
 
 let process_action (model : model) : model =
   let process_ap (tr : transaction) : transaction =
@@ -225,11 +245,11 @@ let process_action (model : model) : model =
     model with
     transactions = List.map (fun x -> process_ap x) model.transactions;
   }
-(* |> process_failif *)
+    |> replace_instruction
 
-(* let sanity_check model : model =
-   let _check_dv model : model =
-    (model
+let sanity_check model : model =
+  (* let _check_dv model : model =
+     (model
      |> unloc
      |> (fun x -> x.variables)
      |> List.iter (fun v ->
@@ -237,12 +257,12 @@ let process_action (model : model) : model =
          match d.typ, d.default with
          (*       | Some ({pldesc=Tbuiltin VTaddress; _}), None -> raise (Modelinfo.DefaultValueAssignment d.name)*)
          | _ -> ()));
-    model in
-   model
-   (*  |> _check_dv*)
-   |> check_accept_transfer *)
+     model in *)
+  model
+(*  |> _check_dv*)
+(* |> check_accept_transfer *)
 
 let reduce_ast (model : Model.model) =
   model
   |> process_action
-(* |> sanity_check *)
+  |> sanity_check
