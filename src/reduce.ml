@@ -5,7 +5,10 @@ exception ReduceError of string * Location.t option
 exception ErrorAcceptTransfer of string * Location.t * Location.t list
 exception TODO
 
-let type_unit : Model.type_ = Tbuiltin VTstring (* TODO: replace unit type *)
+let type_unit     : Model.type_ = Tbuiltin VTstring (* TODO: replace unit type *)
+let type_string   : Model.type_ = Tbuiltin VTstring
+let type_bool     : Model.type_ = Tbuiltin VTbool
+let type_currency : Model.type_ = Tbuiltin (VTcurrency Tez)
 
 let fail str : instruction =
   let f = mk_struct_poly (Pconst Cfail) type_unit in
@@ -90,67 +93,68 @@ let process_action (model : model) : model =
       end
     in
 
-    (* let process_transition (tr : transaction) : transaction =
-         match tr.transition with
-         | None -> tr
-         | Some transition ->
-          let process_args (tr : transition) : ((ptyp, bval) gen_decl) list =
+    let process_transition (tr : transaction) : transaction =
+      match tr.transition with
+      | None -> tr
+      | Some transition ->
+        let process_args tr =
+          match tr.on with
+          | Some (id, id2) ->
+            [{name = id;
+              typ = Some (Tasset id2);
+              default = None;
+              loc = Location.merge (loc id) (loc id2)}]
+          | None -> [] in
+        (* let process_effect (tr : (lident, type_, pterm) transition) =
+           let state =
             match tr.on with
-            | Some (id, id2) ->
-              [{name = id;
-                typ = Some (mkloc (Location.loc id2) (Tasset id2));
-                default = None;
-                loc = Location.merge (loc id) (loc id2)}]
-            | None -> [] in
-          let process_effect (tr : transition) =
-            let state =
-              match tr.on with
-              | Some (_id, id2) -> dumloc (Pdot (dumloc (Pvar id2), dumloc (Pconst Cstate)))
-              | _ -> dumloc (Pconst Cstate) in
-            let code : pterm =
-              (List.fold_right (fun (id, cond, effect) acc ->
-                   let tre =
-                     match tr.on with
-                     | Some (id, id_asset) -> dumloc (Papp (dumloc (Pdot (dumloc (Pvar id_asset),
-                                                                          dumloc (Pconst Cupdate))), [
-                                                              (*TODO: insert key of asset*)
-                                                              dumloc (Precord [(Qident (dumloc "state"), dumloc (Pvar id))])
-                                                            ]))
-                     | None -> dumloc (Passign (ValueAssign, state, dumloc (Pvar id))) in
-                   let code =
-                     match effect with
-                     | Some e -> dumloc (Pseq (tre, e))
-                     | None -> tre in
+            | Some (_id, id2) -> dumloc (Pdot (dumloc (Pvar id2), dumloc (Pconst Cstate)))
+            | _ -> dumloc (Pconst Cstate) in
+           let code : pterm =
+            (List.fold_right (fun (id, cond, effect) acc ->
+                 let tre =
+                   match tr.on with
+                   | Some (id, id_asset) -> dumloc (Papp (dumloc (Pdot (dumloc (Pvar id_asset),
+                                                                        dumloc (Pconst Cupdate))), [
+                                                            (*TODO: insert key of asset*)
+                                                            dumloc (Precord [(Qident (dumloc "state"), dumloc (Pvar id))])
+                                                          ]))
+                   | None -> dumloc (Passign (ValueAssign, state, dumloc (Pvar id))) in
+                 let code =
+                   match effect with
+                   | Some e -> dumloc (Pseq (tre, e))
+                   | None -> tre in
 
-                   match cond with
-                   | Some c -> Some (dumloc (Pif (c, code, acc)))
-                   | None -> Some code
-                 ) tr.trs None)
-              |> Tools.get
-            in
+                 match cond with
+                 | Some c -> Some (dumloc (Pif (c, code, acc)))
+                 | None -> Some code
+               ) tr.trs None)
+            |> Tools.get
+           in
 
-            match (unloc tr.from) with
-            | Sany -> Some code
-            | _ ->
-              begin
-                let rec compute_patterns loc = function
-                  | Sref id -> [mkloc (Location.loc id) (Mapp (Qident id, []))]
-                  | Sor (a, b) -> [a; b] |> List.map (fun x -> compute_patterns loc (unloc x)) |> List.flatten
-                  | Sany -> raise (ReduceError ("any is not authorized in this expression", Some loc)) in
-                let list_patterns = let l, f = deloc tr.from in compute_patterns l f in
-                Some (dumloc (Pmatchwith (state,
-                                          List.map (fun x -> (x, code)) list_patterns @
-                                          [dumloc Mwild, fail "not_valid_state"]
-                                         )))
-              end
+           match (unloc tr.from) with
+           | Sany -> Some code
+           | _ ->
+            begin
+              let rec compute_patterns loc = function
+                | Sref id -> [mkloc (Location.loc id) (Mapp (Qident id, []))]
+                | Sor (a, b) -> [a; b] |> List.map (fun x -> compute_patterns loc (unloc x)) |> List.flatten
+                | Sany -> raise (ReduceError ("any is not authorized in this expression", Some loc)) in
+              let list_patterns = let l, f = deloc tr.from in compute_patterns l f in
+              Some (dumloc (Pmatchwith (state,
+                                        List.map (fun x -> (x, code)) list_patterns @
+                                        [dumloc Mwild, fail "not_valid_state"]
+                                       )))
+            end
 
-          in
-          { tr with
-            transition = None;
-            args = tr.args @ (process_args transition);
-            effect = process_effect transition;
-          }
-         in *)
+           in *)
+        let args : ((lident, type_, type_ bval_gen) decl_gen) list = tr.args @ (process_args transition) in
+        { tr with
+          transition = None;
+          args = args;
+          (* effect = process_effect transition; *)
+        }
+    in
 
     let process_requires (tr : transaction) =
       let process_require (x : (lident, pterm) label_term) : instruction =
@@ -174,24 +178,26 @@ let process_action (model : model) : model =
             ) requires tr.effect;
         } in
 
-    (* let process_accept_transfer (tr : transaction) =
-       let at : pterm = dumloc (Pif (dumloc (Pnot (dumloc (Pcomp (Equal,
-                                                                 (dumloc (Pconst Ctransferred)),
-                                                                 (dumloc (Plit (dumloc (BVcurrency (Tez, Big_int.zero_big_int))))))))),
-                                    fail "not_accept_transfer", None)) in
-       if (not tr.accept_transfer)
-       then { tr with
+    let process_accept_transfer (tr : transaction) =
+      let lhs : pterm = mk_struct_poly (Pconst Ctransferred) type_currency in
+      let basic_value : bval = mk_struct_poly (BVcurrency (Tez, Big_int.zero_big_int)) type_currency in
+      let rhs : pterm = mk_struct_poly (Plit basic_value) type_currency in
+      let eq : pterm = mk_struct_poly (Pcomp (Equal, lhs, rhs)) type_bool in
+      let cond : pterm = mk_struct_poly (Pnot eq) type_bool in
+      let at : instruction = mk_struct_poly (Iif (cond, fail "not_accept_transfer", None)) type_unit in
+      if (not tr.accept_transfer)
+      then { tr with
              effect =
                match tr.effect with
-               | Some e -> Some (dumloc (Pseq (at, e)))
-               | None -> Some (at)
+               | Some e -> Some (mk_struct_poly (Iseq (at, e)) type_unit)
+               | None -> Some at
            }
-       else tr in *)
+      else tr in
 
     tr
-    (* |> process_transition *)
+    |> process_transition
     |> process_requires
-    (* |> process_accept_transfer *)
+    |> process_accept_transfer
     |> process_calledby
     ;
   in {
