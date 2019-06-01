@@ -22,16 +22,16 @@ let compile_and_print (filename, channel) =
         if !Option.opt_parse
         then Format.printf "%a\n" ParseTree.pp_archetype pt
         else (
-          let ast =  Model.mk_model (Location.dumloc "mymodel") (*Translate.parseTree_to_model pt*) in
-          if !Option.opt_model
+          let ast = Model.mk_model (Location.dumloc "mymodel") (*Translate.parseTree_to_model pt*) in
+          if !Option.opt_ast
           then Format.printf "%a\n" Model.pp_model ast
           else (
-            let ast = Reduce.reduce_model ast in
-            if !Option.opt_modelr
+            let ast = Reduce.reduce_ast ast in
+            if !Option.opt_astr
             then Format.printf "%a\n" Model.pp_model ast
             else (
               let model = Translate.ast_to_model ast in
-              if !Option.opt_modelr
+              if !Option.opt_model
               then Format.printf "%a\n" Storage.pp_model model
               else (
                 match !Option.target with
@@ -69,7 +69,7 @@ let main () =
   let arg_list = Arg.align [
       "-t", Arg.String f, "<lang> Transcode to <lang> language";
       "--target", Arg.String f, " Same as -t";
-      "--list-target", Arg.Unit (fun _ -> Format.printf "  liquidity@\n  whyml@\n  markdown@\n"; exit 0), " List available target languages";
+      "--list-target", Arg.Unit (fun _ -> Format.printf "target available:@\n  liquidity@\n  whyml@\n  markdown@\n"; exit 0), " List available target languages";
       "--json", Arg.Set Option.opt_json, " Output Archetype in JSON representation";
       "--storage-policy", Arg.String (fun s -> match s with
           | "flat" -> Option.storage_policy := Flat
@@ -78,14 +78,16 @@ let main () =
             Format.eprintf
               "Unknown policy %s (use record, flat)@." s;
             exit 2), "<policy> Set storage policy";
-      "--list-storage-policy", Arg.Unit (fun _ -> Format.printf "  record@\n  flat@\n"; exit 0), " List storage policy";
+      "--list-storage-policy", Arg.Unit (fun _ -> Format.printf "storage policy available:@\n  record@\n  flat@\n"; exit 0), " List storage policy";
       "-PP", Arg.Set Option.opt_pretty_print, " Pretty print";
       "--pretty-print", Arg.Set Option.opt_pretty_print, " Same as -PP";
       "-P", Arg.Set Option.opt_parse, " Print raw parse tree";
+      "-A", Arg.Set Option.opt_ast, " Print raw ast";
+      "--ast", Arg.Set Option.opt_ast, " Same as -A";
+      "-RA", Arg.Set Option.opt_astr, " Print raw ast";
+      "--reduced-ast", Arg.Set Option.opt_astr, " Same as -RA";
       "-M", Arg.Set Option.opt_model, " Print raw model";
-      "-R", Arg.Set Option.opt_modelr, " Print raw model reduced";
-      "-W", Arg.Set Option.opt_modelws, " Print raw model_with_storage";
-      "-L", Arg.Set Option.opt_modelliq, " Output Archetype in liquidity";
+      "--model", Arg.Set Option.opt_model, " Same as -M";
       "--lsp", Arg.Set Option.opt_lsp, "LSP mode";
       "-d", Arg.Set Option.debug_mode, " Debug mode";
     ] in

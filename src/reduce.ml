@@ -212,7 +212,7 @@ let process_action (model : model) : model =
    (*  |> _check_dv*)
    |> check_accept_transfer *)
 
-let reduce_model (model : Model.model) =
+let reduce_ast (model : Model.model) =
   model
   |> process_action
 (* |> sanity_check *)
