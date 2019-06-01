@@ -99,7 +99,41 @@ module Miles_with_expiration_storage
 
     clone archetype.Sum as Amounts with type     storage = storage,
                                         val      f       = get_amount
-   
+
+    let function filter_consume (e : env) (s : storage) (c : acol) : acol
+    ensures { forall k : key. mem k result -> get_expiration s k > now e }
+    ensures { subset result c }
+    =
+    let rec rec_filter (l : list key) : list key
+    variant { l }
+    ensures { forall k : key. lmem k result -> get_expiration s k > now e }
+    ensures { forall k : key. lmem k result -> lmem k l }
+    =   match l with
+        | Nil -> Nil
+        | Cons a tl ->
+          if get_expiration s a > now e
+          then Cons a (rec_filter tl)
+          else (rec_filter tl)
+        end in
+    mkacol (rec_filter c.content)
+
+    let rec function filter_clear_expired (e : env) (s : storage) (c : acol) : acol
+    ensures { forall k : key. mem k result -> get_expiration s k < now e }
+    ensures { subset result c }
+    =
+    let rec rec_filter (l : list key) : list key
+    variant { l }
+    ensures { forall k : key. lmem k result -> get_expiration s k < now e }
+    ensures { forall k : key. lmem k result -> lmem k l }
+    =   match l with
+        | Nil -> Nil
+        | Cons a tl ->
+          if get_expiration s a < now e
+          then Cons a (rec_filter tl)
+          else (rec_filter tl)
+        end in
+    mkacol (rec_filter c.content)
+
     (* Setters --------------------------------------------------------------*)
 
     let update_mile (s : storage) (k : key) (new_mile : mile) : unit
@@ -311,23 +345,6 @@ module Miles_with_expiration
         add_owner s new_owner assets);
       no_transfer
 
-    let function filter_consume (e : env) (s : storage) (c : acol) : acol
-    ensures { forall k : key. mem k result -> get_expiration s k > now e }
-    ensures { subset result c }
-    =
-    let rec rec_filter (l : list key) : list key
-    variant { l }
-    ensures { forall k : key. lmem k result -> get_expiration s k > now e }
-    ensures { forall k : key. lmem k result -> lmem k l }
-    =   match l with
-        | Nil -> Nil
-        | Cons a tl ->
-          if get_expiration s a > now e
-          then Cons a (rec_filter tl)
-          else (rec_filter tl)
-        end in
-    mkacol (rec_filter c.content)
-
     let consume (e : env) (s : storage) (ow : address) (nbmiles : int) : transfers
     raises { NotFound, KeyExist, InvalidCaller, InvalidCondition }
     requires { is_empty s.removed_miles }
@@ -379,23 +396,6 @@ module Miles_with_expiration
       end;
       assert { !remainder = 0 };
       no_transfer
-
-    let rec function filter_clear_expired (e : env) (s : storage) (c : acol) : acol
-    ensures { forall k : key. mem k result -> get_expiration s k < now e }
-    ensures { subset result c }
-    =
-    let rec rec_filter (l : list key) : list key
-    variant { l }
-    ensures { forall k : key. lmem k result -> get_expiration s k < now e }
-    ensures { forall k : key. lmem k result -> lmem k l }
-    =   match l with
-        | Nil -> Nil
-        | Cons a tl ->
-          if get_expiration s a < now e
-          then Cons a (rec_filter tl)
-          else (rec_filter tl)
-        end in
-    mkacol (rec_filter c.content)
 
     let clear_expired (e : env) (s : storage) : transfers
     raises { NotFound, KeyExist, InvalidCaller }
