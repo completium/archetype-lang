@@ -33,28 +33,6 @@ type field =
   | Fall
 [@@deriving show {with_path = false}]
 
-type storage_policy =
-  | Record
-  | Flat
-  | Hybrid of (asset_ident * field) list
-[@@deriving show {with_path = false}]
-
-type execution_mode =
-  | WithSideEffect
-  | WithoutSideEffect
-[@@deriving show {with_path = false}]
-
-type sorting_policy =
-  | OnTheFly
-  | OnChange
-  | None
-[@@deriving show {with_path = false}]
-
-let storage_policy = ref Record
-(*let storage_policy = ref Flat*)
-let execution_mode = ref WithSideEffect
-let sorting_policy = ref OnTheFly
-
 type item_field_type =
   | FBasic            of vtyp
   | FKeyCollection    of asset_ident * vtyp

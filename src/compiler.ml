@@ -2,82 +2,92 @@
 open Archetype
 open Core
 
-let opt_lsp = ref false
-let opt_json = ref false
-let opt_pretty_print = ref false
-let opt_parse = ref false
-let opt_model = ref false
-let opt_modelr = ref false
-let opt_modelws = ref false
-let opt_modelliq = ref false
-let opt_pterm = ref false
-let debug_mode = ref false
-
 exception Compiler_error
 exception E_arg
 exception ArgError of string
 
 (* -------------------------------------------------------------------- *)
 let compile_and_print (filename, channel) =
-  Tools.debug_mode := !debug_mode;
-  if !opt_lsp
+  Tools.debug_mode := !Option.debug_mode;
+  if !Option.opt_lsp
   then () (*Lsp.process (filename, channel)*)
   else (
     let pt = Io.parse_archetype ~name:filename channel in
-    if !opt_json
+    if !Option.opt_json
     then Format.printf "%s\n" (Yojson.Safe.to_string (ParseTree.archetype_to_yojson pt))
     else (
-      if !opt_pretty_print
+      if !Option.opt_pretty_print
       then () (*Format.printf "%a" Printer.pp_archetype pt*)
       else (
-        if !opt_parse
+        if !Option.opt_parse
         then Format.printf "%a\n" ParseTree.pp_archetype pt
         else (
-          let model =  Model.mk_model (Location.dumloc "mymodel") (*Translate.parseTree_to_model pt*) in
-          if !opt_model
-          then Format.printf "%a\n" Model.pp_model model
+          let ast =  Model.mk_model (Location.dumloc "mymodel") (*Translate.parseTree_to_model pt*) in
+          if !Option.opt_model
+          then Format.printf "%a\n" Model.pp_model ast
           else (
-            let modelr = Reduce.reduce_model model in
-            if !opt_modelr
-            then Format.printf "%a\n" Model.pp_model modelr
-            (* else (
-               let info  = Modelinfo.mk_info (Location.unloc modelr) in
-               let modelws = Modelws.model_to_modelws info modelr in
-               if !opt_modelws
-               then Format.printf "%a\n" Modelws.pp_model_with_storage modelws
-               else (
-                let modelw3liq = Modelliq.modelws_to_modelliq info modelws in
-                if !opt_modelliq
-                then Extract.print modelw3liq
-                else ()
-               ) *)
-          )))))
+            let ast = Reduce.reduce_model ast in
+            if !Option.opt_modelr
+            then Format.printf "%a\n" Model.pp_model ast
+            else (
+              let model = Translate.ast_to_model ast in
+              if !Option.opt_modelr
+              then Format.printf "%a\n" Storage.pp_model model
+              else (
+                match !Option.target with
+                | Liquidity -> (
+                    let liq_tree = Gen_liquidity.model_to_liq_tree model in
+                    if !Option.opt_raw_target
+                    then  Format.printf "%a\n" Gen_liquidity.pp_liq_tree liq_tree
+                    else () (*TODO: pretty print liquidity tree *)
+                  )
+                | Whyml      -> (
+                    let _decls = Gen_whyml.model_to_liq_tree model in
+                    if !Option.opt_raw_target
+                    then () (*TODO: raw print ptree whyml tree *)
+                    else () (*TODO: pretty print ptree whyml tree *)
+                  )
+                | Markdown  -> () (*TODO*)
+                | None      -> () (*TODO*)
+              )
+            ))))))
 
 let close dispose channel =
   if dispose then close_in channel
 
 (* -------------------------------------------------------------------- *)
 let main () =
+  let f = function
+    | "liquidity" -> Option.target := Liquidity
+    | "whyml" -> Option.target := Whyml
+    | "markdown" -> Option.target := Markdown
+    |  s ->
+      Format.eprintf
+        "Unknown target %s (--list-target to see available target)@." s;
+      exit 2 in
+
   let arg_list = Arg.align [
-      "--json", Arg.Set opt_json, " Output Archetype in JSON representation";
-      "-PP", Arg.Set opt_pretty_print, " Pretty print";
-      "-P", Arg.Set opt_parse, " Print raw parse tree";
-      "-M", Arg.Set opt_model, " Print raw model";
-      "-R", Arg.Set opt_modelr, " Print raw model reduced";
-      "-W", Arg.Set opt_modelws, " Print raw model_with_storage";
-      "-L", Arg.Set opt_modelliq, " Output Archetype in liquidity";
-      "-T", Arg.Set opt_pterm, " Print pterm";
-      "--lsp", Arg.Set opt_lsp, "LSP mode";
-      "-d", Arg.Set debug_mode, " Debug mode";
-      "--storage-policy",
-      Arg.String (fun s -> match s with
-          (* | "flat" -> Modelinfo.storage_policy := Flat
-             | "record" -> Modelinfo.storage_policy := Record *)
+      "-t", Arg.String f, "<lang> Transcode to <lang> language";
+      "--target", Arg.String f, " Same as -t";
+      "--list-target", Arg.Unit (fun _ -> Format.printf "  liquidity@\n  whyml@\n  markdown@\n"; exit 0), " List available target languages";
+      "--json", Arg.Set Option.opt_json, " Output Archetype in JSON representation";
+      "--storage-policy", Arg.String (fun s -> match s with
+          | "flat" -> Option.storage_policy := Flat
+          | "record" -> Option.storage_policy := Record
           |  s ->
             Format.eprintf
               "Unknown policy %s (use record, flat)@." s;
-            exit 2),
-      " Set storage policy"
+            exit 2), "<policy> Set storage policy";
+      "--list-storage-policy", Arg.Unit (fun _ -> Format.printf "  record@\n  flat@\n"; exit 0), " List storage policy";
+      "-PP", Arg.Set Option.opt_pretty_print, " Pretty print";
+      "--pretty-print", Arg.Set Option.opt_pretty_print, " Same as -PP";
+      "-P", Arg.Set Option.opt_parse, " Print raw parse tree";
+      "-M", Arg.Set Option.opt_model, " Print raw model";
+      "-R", Arg.Set Option.opt_modelr, " Print raw model reduced";
+      "-W", Arg.Set Option.opt_modelws, " Print raw model_with_storage";
+      "-L", Arg.Set Option.opt_modelliq, " Output Archetype in liquidity";
+      "--lsp", Arg.Set Option.opt_lsp, "LSP mode";
+      "-d", Arg.Set Option.debug_mode, " Debug mode";
     ] in
   let arg_usage = String.concat "\n" [
       "compiler [OPTIONS] FILE";
@@ -95,13 +105,6 @@ let main () =
     | _ -> ("<stdin>", stdin, false) in
 
   try
-    (* if !opt_pterm
-       then (
-       let str = input_line channel in
-       let pterm = Translate.string_to_pterm str in
-       Format.printf "%a\n" Model.pp_pterm pterm
-       )
-       else  *)
     compile_and_print (filename, channel);
     close dispose channel
 
