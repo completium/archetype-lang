@@ -70,7 +70,7 @@ action consume (a : address) (quantity : uint) = {
                                this is to demonstrate verification
                                capacity to not verify contract in this
                                state *)
-           m.amount  -= remainder
+           mile.update m.id { amount  -= remainder }
          )
          else if m.amount = remainder
          then (
