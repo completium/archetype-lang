@@ -374,4 +374,44 @@ module Miles_with_expiration
       assert { !remainder = 0 };
       no_transfer
 
+    let rec function filter_clear_expired (e : env) (s : storage) (c : acol) : acol
+    ensures { forall k : key. mem k result -> get_expiration s k < now e }
+    ensures { subset result c }
+    =
+    let rec rec_filter (l : list key) : list key
+    variant { l }
+    ensures { forall k : key. lmem k result -> get_expiration s k < now e }
+    ensures { forall k : key. lmem k result -> lmem k l }
+    =   match l with
+        | Nil -> Nil
+        | Cons a tl ->
+          if get_expiration s a < now e
+          then Cons a (rec_filter tl)
+          else (rec_filter tl)
+        end in
+    mkacol (rec_filter c.content)
+
+    let clear_expired (e : env) (s : storage) : transfers
+    raises { NotFound, KeyExist, InvalidCaller }
+    requires { is_empty s.added_miles }
+    requires { is_empty s.removed_owner }
+    requires { is_empty s.removed_miles }
+    ensures { forall m : key. mem m s.removed_miles -> get_expiration s m < now e }
+    = if caller e <> s.admin then raise InvalidCaller;
+      for i = 0 to (card s.owner_keys)-1 do
+      invariant { forall m : key. mem m s.removed_miles -> get_expiration s m < now e }
+        let o = nth i s.owner_keys in
+        let miles = get_miles s o in
+        let l = filter_clear_expired e s miles in
+        label Internal_loop in
+        for j = 0 to (card l) - 1 do
+        (* why do we need the type invariant here ? *)
+        invariant { forall k : key. mem k s.mile_keys -> amount (get s.mile_assets k) > 0 }
+        invariant { s.removed_miles == union (s at Internal_loop).removed_miles (head j l) }
+          let m = nth j l in
+          remove_owner_miles s o m;
+        done;
+      done;
+      no_transfer
+
 end
