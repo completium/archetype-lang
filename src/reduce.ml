@@ -152,24 +152,27 @@ let process_action (model : model) : model =
           }
          in *)
 
-    (* let process_requires (tr : transaction) =
-       let process_require (x : label_pterm) : pterm =
+    let process_requires (tr : transaction) =
+      let process_require (x : (lident, pterm) label_term) : instruction =
         let msg =
           match x.label with
-          | Some _label -> "check_require_failed" (*"require " ^ (unloc label) ^ " failed";*)
+          | Some label -> "require " ^ (unloc label) ^ " failed"
           | _ -> "require failed" in
-        mkloc x.loc (Pif (dumloc (Pnot x.term), fail msg, None)) in
-       match tr.require with
-       | None -> tr
-       | Some requires ->
+        let cond : pterm = mk_struct_with_loc (Pnot x.term) type_unit x.loc in
+        mk_struct_with_loc (Iif (cond, fail msg, None)) type_unit x.loc
+      in
+      match tr.require with
+      | None -> tr
+      | Some requires ->
         { tr with
           require = None;
           effect = List.fold_right (fun x accu ->
+              let instr : instruction = process_require x in
               match accu with
-              | Some e -> Some (dumloc (Pseq (process_require x, e)))
-              | None -> Some (process_require x)
+              | Some e -> Some (mk_struct_poly (Iseq (instr, e)) type_unit)
+              | None -> Some instr
             ) requires tr.effect;
-        } in *)
+        } in
 
     (* let process_accept_transfer (tr : transaction) =
        let at : pterm = dumloc (Pif (dumloc (Pnot (dumloc (Pcomp (Equal,
@@ -186,9 +189,9 @@ let process_action (model : model) : model =
        else tr in *)
 
     tr
-    (* |> process_transition
-       |> process_requires
-       |> process_accept_transfer *)
+    (* |> process_transition *)
+    |> process_requires
+    (* |> process_accept_transfer *)
     |> process_calledby
     ;
   in {
