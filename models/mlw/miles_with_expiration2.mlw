@@ -102,19 +102,21 @@ module Miles_with_expiration_storage
    
     (* Setters --------------------------------------------------------------*)
 
-    let set_amount (s : storage) (k : key) (v : int) : unit
+    let update_mile (s : storage) (k : key) (new_mile : mile) : unit
     raises { NotFound }
-    requires { v > 0 }
-    ensures { mem k s.mile_keys }
-    ensures { Amounts.sum (old s) (old s).mile_keys = Amounts.sum s s.mile_keys - v + get_amount (old s) k }
-    ensures { get_amount s k = v }
-    =
+    requires { amount new_mile > 0 }
+    ensures { Amounts.sum (old s) (old s).mile_keys = Amounts.sum s s.mile_keys - (amount new_mile) + get_amount (old s) k }
+    ensures { get_amount s k = amount new_mile }
+    = 
     if not (mem k s.mile_keys) then
         raise NotFound
     else 
         let asset = get s.mile_assets k in
-        let new_asset = { asset with amount = v } in
-        s.mile_assets <- set s.mile_assets k new_asset
+        let updated_asset = { asset with 
+            amount = amount new_mile;
+            expiration = expiration new_mile;
+         } in
+        s.mile_assets <- set s.mile_assets k updated_asset
  
     (* Adders ---------------------------------------------------------------*)
 
@@ -357,7 +359,10 @@ module Miles_with_expiration
           let m = nth i l in
           if get_amount s m > !remainder
           then
-            (set_amount s m (get_amount s m - !remainder);
+            (let new_mile = { (get s.mile_assets m) with
+                amount = get_amount s m - !remainder; 
+             } in
+             update_mile s m new_mile;
              remainder := 0;
              raise Break)
           else if get_amount s m = !remainder
