@@ -105,8 +105,9 @@ module Miles_with_expiration_storage
     let update_mile (s : storage) (k : key) (new_mile : mile) : unit
     raises { NotFound }
     requires { amount new_mile > 0 }
-    ensures { Amounts.sum (old s) (old s).mile_keys = Amounts.sum s s.mile_keys - (amount new_mile) + get_amount (old s) k }
     ensures { get_amount s k = amount new_mile }
+    ensures { get_expiration s k = expiration new_mile }
+    ensures { Amounts.sum (old s) (old s).mile_keys = Amounts.sum s s.mile_keys - (amount new_mile) + get_amount (old s) k }
     = 
     if not (mem k s.mile_keys) then
         raise NotFound
