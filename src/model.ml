@@ -426,20 +426,20 @@ type ('id, 'typ, 'term) function_struct = {
 type function_ = (lident, type_, pterm) function_struct
 [@@deriving show {with_path = false}]
 
-type ('id, 'typ, 'term) transition = {
+type ('id, 'typ, 'term, 'instr) transition = {
   from : ('id, 'typ) sexpr_gen;
   on   : ('id * 'id) option;
-  trs  : ('id * 'term option * 'term option) list; (* to * condition * action*)
+  trs  : ('id * 'term option * 'instr option) list; (* to * condition * action*)
 }
 [@@deriving show {with_path = false}]
 
-type ('id, 'typ, 'term) transaction_struct = {
+type ('id, 'typ, 'term, 'instr) transaction_struct = {
   name            : 'id;
   args            : (('id, 'typ, 'typ bval_gen) decl_gen) list;
   calledby        : ('id, 'typ) rexpr_gen option;
   accept_transfer : bool;
   require         : ('id, 'term) label_term list option;
-  transition      : ('id, 'typ, 'term) transition option;
+  transition      : ('id, 'typ, 'term, 'instr) transition option;
   verification    : ('id, 'typ, 'term) verification option;
   functions       : ('id, 'typ, 'term) function_struct list;
   effect          : ('id, 'typ, 'term) instruction_gen option;
@@ -448,7 +448,7 @@ type ('id, 'typ, 'term) transaction_struct = {
 }
 [@@deriving show {with_path = false}]
 
-type transaction = (lident, type_, pterm) transaction_struct
+type transaction = (lident, type_, pterm, instruction) transaction_struct
 [@@deriving show {with_path = false}]
 
 type ('id, 'typ, 'term) enum_item_struct = {
@@ -492,12 +492,12 @@ type ('id, 'typ, 'term) contract = {
 }
 [@@deriving show {with_path = false}]
 
-type ('id, 'typ, 'term)  model_struct = {
+type ('id, 'typ, 'term, 'instr)  model_struct = {
   name          : 'id;
   variables     : ('id, 'typ, 'term) variable list;
   assets        : ('id, 'typ, 'term) asset_struct list;
   functions     : ('id, 'typ, 'term) function_struct list;
-  transactions  : ('id, 'typ, 'term) transaction_struct list;
+  transactions  : ('id, 'typ, 'term, 'instr) transaction_struct list;
   enums         : ('id, 'typ, 'term) enum_struct list;
   contracts     : ('id, 'typ, 'term) contract list;
   verifications : ('id, 'typ, 'term) verification list;
@@ -505,7 +505,7 @@ type ('id, 'typ, 'term)  model_struct = {
 }
 [@@deriving show {with_path = false}]
 
-and model = (lident, type_, pterm) model_struct
+and model = (lident, type_, pterm, instruction) model_struct
 
 
 

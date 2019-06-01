@@ -10,12 +10,17 @@ let type_string   : Model.type_ = Tbuiltin VTstring
 let type_bool     : Model.type_ = Tbuiltin VTbool
 let type_currency : Model.type_ = Tbuiltin (VTcurrency Tez)
 
+let mk_struct_with_loc node typ loc = let m = mk_struct_poly node typ in {m  with loc = loc; }
+
+let mk_instr (node : (lident, type_, pterm, instruction) instruction_node) = mk_struct_poly node type_unit
+let mk_instr_with_loc (node : (lident, type_, pterm, instruction) instruction_node) loc = mk_struct_with_loc node type_unit loc
+
 let fail str : instruction =
   let f = mk_struct_poly (Pconst Cfail) type_unit in
   let lit = mk_struct_poly (BVstring str) (Tbuiltin VTstring) in
   let arg = mk_struct_poly (Plit lit) (Tbuiltin VTstring) in
   let app = mk_struct_poly (Papp (f, [arg])) type_unit in
-  mk_struct_poly (Isimple app) type_unit
+  mk_instr (Isimple app)
 
 (* mk_struct_poly (Plit (dumloc (BVstring str))) *)
 
@@ -54,8 +59,6 @@ let fail str : instruction =
     transactions = List.map (fun (x : transaction) -> { x with effect = Tools.map_option process_pterm (x.effect) }) v.transactions;
    } *)
 
-let mk_struct_with_loc node typ loc = let m = mk_struct_poly node typ in {m  with loc = loc; }
-
 let process_action (model : model) : model =
   let process_ap (tr : transaction) : transaction =
     let process_calledby (tr : transaction) : transaction =
@@ -78,7 +81,7 @@ let process_action (model : model) : model =
             mk_struct_poly (Plogical (Or, process_rexpr l, process_rexpr r)) (Tbuiltin VTbool)
           | Raddress a -> raise TODO (* TODO *) in
         let require : pterm = mk_struct_poly (Pnot (process_rexpr cb)) (Tbuiltin VTbool) in
-        mk_struct_poly (Iif (require, fail "not_authorized_fun", None)) type_unit in
+        mk_instr (Iif (require, fail "not_authorized_fun", None)) in
       begin
         match tr.calledby with
         | None -> tr
@@ -87,7 +90,7 @@ let process_action (model : model) : model =
           { tr with
             calledby = None;
             effect = match tr.effect with
-              | Some e -> Some (mk_struct_poly (Iseq (instr, e)) type_unit)
+              | Some e -> Some (mk_instr (Iseq (instr, e)))
               | None -> Some instr;
           }
       end
@@ -105,54 +108,72 @@ let process_action (model : model) : model =
               default = None;
               loc = Location.merge (loc id) (loc id2)}]
           | None -> [] in
-        (* let process_effect (tr : (lident, type_, pterm) transition) =
-           let state =
+        let process_effect (tr : (lident, type_, pterm, instruction) transition) : instruction option =
+          let state : pterm =
             match tr.on with
-            | Some (_id, id2) -> dumloc (Pdot (dumloc (Pvar id2), dumloc (Pconst Cstate)))
-            | _ -> dumloc (Pconst Cstate) in
-           let code : pterm =
-            (List.fold_right (fun (id, cond, effect) acc ->
-                 let tre =
+            | Some (_id, id2) ->
+              begin
+                let a : pterm = mk_struct_poly (Pvar id2) type_unit in
+                mk_struct_poly (Pdot (a, dumloc "state")) type_unit
+              end
+            | _ -> mk_struct_poly (Pconst Cstate) type_unit in
+          let code : instruction =
+            (List.fold_right (fun ((id, cond, effect) : (lident * pterm option * instruction option)) acc : instruction option ->
+                 let tre : instruction =
                    match tr.on with
-                   | Some (id, id_asset) -> dumloc (Papp (dumloc (Pdot (dumloc (Pvar id_asset),
-                                                                        dumloc (Pconst Cupdate))), [
-                                                            (*TODO: insert key of asset*)
-                                                            dumloc (Precord [(Qident (dumloc "state"), dumloc (Pvar id))])
-                                                          ]))
-                   | None -> dumloc (Passign (ValueAssign, state, dumloc (Pvar id))) in
-                 let code =
+                   | Some (id, id_asset) ->
+                     (
+                       let asset : pterm = mk_struct_poly (Pvar id_asset) type_unit in
+                       let update : lident = dumloc "update" in
+                       let f : pterm = mk_struct_poly (Pdot (asset, update)) type_unit in
+
+                       let q : qualid = mk_struct_poly (Qident (dumloc "state")) type_unit in
+                       let aid : pterm = mk_struct_poly (Pvar id) type_unit in
+
+                       let arg : pterm = mk_struct_poly (Precord [q, aid]) type_unit in
+                       let args : pterm list = [arg] in
+
+                       let a : (lident, type_, pterm) pterm_node = (Papp (f, args)) in
+                       let app : pterm = mk_struct_poly a type_unit in
+                       mk_instr (Isimple app)
+                     )
+                   | _ ->
+                     mk_instr (Iassign (ValueAssign, state, mk_struct_with_loc (Pvar id) type_bool (Location.loc id))) in
+                 let code : instruction =
                    match effect with
-                   | Some e -> dumloc (Pseq (tre, e))
+                   | Some e -> mk_instr (Iseq (tre, e))
                    | None -> tre in
 
                  match cond with
-                 | Some c -> Some (dumloc (Pif (c, code, acc)))
+                 | Some c -> Some (mk_instr (Iif (c, code, acc)))
                  | None -> Some code
                ) tr.trs None)
             |> Tools.get
-           in
+          in
 
-           match (unloc tr.from) with
-           | Sany -> Some code
-           | _ ->
+          match transition.from.node with
+          | Sany -> Some code
+          | _ ->
             begin
-              let rec compute_patterns loc = function
-                | Sref id -> [mkloc (Location.loc id) (Mapp (Qident id, []))]
-                | Sor (a, b) -> [a; b] |> List.map (fun x -> compute_patterns loc (unloc x)) |> List.flatten
-                | Sany -> raise (ReduceError ("any is not authorized in this expression", Some loc)) in
-              let list_patterns = let l, f = deloc tr.from in compute_patterns l f in
-              Some (dumloc (Pmatchwith (state,
-                                        List.map (fun x -> (x, code)) list_patterns @
-                                        [dumloc Mwild, fail "not_valid_state"]
-                                       )))
-            end
+              let rec compute_patterns (a : sexpr) : ((lident, type_) pattern_gen) list =
+                match a.node with
+                | Sref id -> [mk_struct_poly (Mapp (mk_struct_poly (Qident id) type_unit, [])) type_unit]
+                | Sor (a, b) -> [a; b] |> List.map (fun x -> compute_patterns x) |> List.flatten
+                | Sany -> raise (ReduceError ("any is not authorized in this expression", Some a.loc)) in
+              let list_patterns : ((lident, type_) pattern_gen) list =
+                compute_patterns tr.from in
 
-           in *)
+              let pattern : pattern = mk_struct_poly Mwild type_unit in
+              let instr : instruction = fail "not_valid_state" in
+              Some (mk_instr (Imatchwith (state, List.map (fun x -> (x, code)) list_patterns @ [pattern, instr])))
+
+            end
+        in
         let args : ((lident, type_, type_ bval_gen) decl_gen) list = tr.args @ (process_args transition) in
         { tr with
           transition = None;
           args = args;
-          (* effect = process_effect transition; *)
+          effect = process_effect transition;
         }
     in
 
@@ -163,7 +184,7 @@ let process_action (model : model) : model =
           | Some label -> "require " ^ (unloc label) ^ " failed"
           | _ -> "require failed" in
         let cond : pterm = mk_struct_with_loc (Pnot x.term) type_unit x.loc in
-        mk_struct_with_loc (Iif (cond, fail msg, None)) type_unit x.loc
+        mk_instr_with_loc (Iif (cond, fail msg, None)) x.loc
       in
       match tr.require with
       | None -> tr
@@ -173,7 +194,7 @@ let process_action (model : model) : model =
           effect = List.fold_right (fun x accu ->
               let instr : instruction = process_require x in
               match accu with
-              | Some e -> Some (mk_struct_poly (Iseq (instr, e)) type_unit)
+              | Some e -> Some (mk_instr (Iseq (instr, e)))
               | None -> Some instr
             ) requires tr.effect;
         } in
@@ -184,12 +205,12 @@ let process_action (model : model) : model =
       let rhs : pterm = mk_struct_poly (Plit basic_value) type_currency in
       let eq : pterm = mk_struct_poly (Pcomp (Equal, lhs, rhs)) type_bool in
       let cond : pterm = mk_struct_poly (Pnot eq) type_bool in
-      let at : instruction = mk_struct_poly (Iif (cond, fail "not_accept_transfer", None)) type_unit in
+      let at : instruction = mk_instr (Iif (cond, fail "not_accept_transfer", None)) in
       if (not tr.accept_transfer)
       then { tr with
              effect =
                match tr.effect with
-               | Some e -> Some (mk_struct_poly (Iseq (at, e)) type_unit)
+               | Some e -> Some (mk_instr (Iseq (at, e)))
                | None -> Some at
            }
       else tr in
