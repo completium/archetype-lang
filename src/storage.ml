@@ -191,5 +191,64 @@ let function_name_from_function_node = function
   | Other -> assert false
 
 
-let type_from_function_node = function
-  | _ -> assert false
+(* let type_from_function_node = function
+   (* | Function           fs           -> fs. *)
+   | Entry              fs           -> None
+   | Get                aid          -> Some (Tasset aid)
+   | AddAsset           aid          -> None
+   | RemoveAsset        aid          -> None
+   | ClearAsset         aid          -> None
+   | UpdateAsset        aid          -> None
+   | ContainsAsset      aid          -> Some (Tbuiltin VTbool)
+   | NthAsset           aid          -> Some (Tasset aid)
+   | SelectAsset        aid          -> Some (Tcontainer (Tasset aid, Collection))
+   | SortAsset          aid          -> Some (Tcontainer (Tasset aid, Collection))
+   | ReverseAsset       aid          -> Some (Tcontainer (Tasset aid, Collection))
+   | CountAsset         aid          -> Some (Tbuiltin VTint)
+   | SumAsset           aid          -> Some (Tbuiltin VTrational)
+   | MinAsset           aid          -> 
+   | MaxAsset           aid          -> 
+   | AddContainer      (aid, fid, _) -> None
+   | RemoveContainer   (aid, fid, _) -> None
+   | ClearContainer    (aid, fid, _) -> None
+   | ContainsContainer (aid, fid, _) -> Some (Tbuiltin VTbool)
+   | NthContainer      (aid, fid, _) -> Some (Tasset aid)
+   | SelectContainer   (aid, fid, _) ->
+   | SortContainer     (aid, fid, _) ->
+   | ReverseContainer  (aid, fid, _) ->
+   | CountContainer    (aid, fid, _) ->
+   | SumContainer      (aid, fid, _) ->
+   | MinContainer      (aid, fid, _) ->
+   | MaxContainer      (aid, fid, _) ->
+   | _ -> assert false *)
+
+let mk_enum name : enum = {
+  name = name;
+  values = [];
+}
+
+let mk_record name : record = {
+  name = name;
+  values = [];
+}
+
+let mk_record_item name type_ : record_item = {
+  name = name;
+  type_ = type_;
+}
+
+let mk_storage_item name = {
+  name = name;
+  fields = [];
+  invariants = [];
+  init = [];
+}
+
+let mk_item_field name node = {
+  asset = None;
+  name = name;
+  typ = node;
+  ghost = false;
+  default = None;
+  loc = Location.dummy;
+}
