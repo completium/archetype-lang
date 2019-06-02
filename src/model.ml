@@ -24,6 +24,7 @@ type vtyp =
   | VTbool
   | VTint
   | VTuint
+  | VTrational
   | VTdate
   | VTduration
   | VTstring
@@ -146,7 +147,6 @@ type const =
 type ('typ, 'node) struct_poly = {
   node : 'node;                   (* kind of object *)
   type_ : 'typ option;                   (* type of object *)
-  fvs : (ident * 'typ) list;      (* free variable *)
   label : ident option;           (* label (typically for instruction) *)
   loc : Location.t [@opaque];     (* location of object *)
 }
@@ -274,7 +274,7 @@ type ('id, 'typ, 'term) term_node  =
   | Lquantifer of quantifier * 'id * ltype_ * 'term
   | Pif of ('term * 'term * 'term option)
   | Pmatchwith of 'term * (('id, 'typ) pattern_gen * 'term) list
-  | Pcall of ('id option * 'id * (('id * 'typ ) list * 'term) list)
+  | Pcall of ('id option * 'id * ('term term_arg) list)
   | Plogical of logical_operator * 'term * 'term
   | Pnot of 'term
   | Pcomp of comparison_operator * 'term * 'term
@@ -289,6 +289,12 @@ type ('id, 'typ, 'term) term_node  =
   | Pconst of const
   | Ptuple of 'term list
 [@@deriving show {with_path = false}]
+
+and 'term term_arg =
+  | AExpr   of 'term
+  | AEffect of unit
+[@@deriving show {with_path = false}]
+
 
 (* -------------------------------------------------------------------- *)
 
@@ -313,6 +319,8 @@ type ('id, 'typ) pterm_gen = ('id, 'typ, ('id, 'typ) pterm_gen) pterm_poly
 type pterm = (lident, type_, pterm) pterm_poly
 [@@deriving show {with_path = false}]
 
+type pterm_arg = pterm term_arg
+[@@deriving show {with_path = false}]
 
 (* -------------------------------------------------------------------- *)
 
@@ -335,7 +343,7 @@ and ('id, 'typ, 'term, 'instr) instruction_node =
 type ('id, 'typ, 'term) instruction_gen = ('id, 'typ, 'term, ('id, 'typ, 'term) instruction_gen) instruction_poly
 [@@deriving show {with_path = false}]
 
-and instruction = (lident, pattern, pterm, instruction) instruction_poly
+and instruction = (lident, ptyp, pterm, instruction) instruction_poly
 
 
 (* -------------------------------------------------------------------- *)
@@ -481,18 +489,24 @@ type ('id, 'typ, 'term)  model_struct = {
 
 and model = (lident, type_, pterm) model_struct
 
-
-
+(* vtyp -> ptyp *)
+let vtbool       = Tbuiltin (VTbool      )
+let vtint        = Tbuiltin (VTint       )
+let vtuint       = Tbuiltin (VTuint      )
+let vtrational   = Tbuiltin (VTrational  )
+let vtdate       = Tbuiltin (VTdate      )
+let vtduration   = Tbuiltin (VTduration  )
+let vtstring     = Tbuiltin (VTstring    )
+let vtaddress    = Tbuiltin (VTaddress   )
+let vtrole       = Tbuiltin (VTrole      )
+let vtcurrency c = Tbuiltin (VTcurrency c)
+let vtkey        = Tbuiltin (VTkey       )
 
 (* mk functions *)
 
-let mk_struct_poly node typ = {
-  node            = node;
-  type_           = typ;
-  fvs             = [];
-  label           = None;
-  loc             = Location.dummy;
-}
+
+let mk_sp ?label ?(loc = Location.dummy) ?type_ node =
+  { node; type_; label; loc; }
 
 let mk_label_term term = {
   label           = None;
@@ -608,3 +622,9 @@ let mk_model id = {
   verifications = [];
   loc           = Location.dummy;
 }
+
+let mk_id type_ id : qualid =
+  { type_ = Some type_;
+    loc   = loc id;
+    node  = Qident id;
+    label = None; }
