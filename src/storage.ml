@@ -28,16 +28,12 @@ type record_ident = lident
 type enum_value_ident = lident
 [@@deriving show {with_path = false}]
 
-type field =
-  | Fid of string
-  | Fall
-[@@deriving show {with_path = false}]
-
 type item_field_type =
   | FBasic            of vtyp
   | FKeyCollection    of asset_ident * vtyp
   | FRecordMap        of asset_ident
   | FRecordCollection of asset_ident
+  | FRecord           of asset_ident
   | FEnum             of enum_ident
   | FContainer        of Model.container * item_field_type
 [@@deriving show {with_path = false}]
@@ -70,7 +66,7 @@ type enum = {
 [@@deriving show {with_path = false}]
 
 type record_item = {
-  name: enum_ident;
+  name: record_ident;
   type_: type_;
 }
 [@@deriving show {with_path = false}]
@@ -206,8 +202,8 @@ let function_name_from_function_node = function
    | ReverseAsset       aid          -> Some (Tcontainer (Tasset aid, Collection))
    | CountAsset         aid          -> Some (Tbuiltin VTint)
    | SumAsset           aid          -> Some (Tbuiltin VTrational)
-   | MinAsset           aid          -> 
-   | MaxAsset           aid          -> 
+   | MinAsset           aid          ->
+   | MaxAsset           aid          ->
    | AddContainer      (aid, fid, _) -> None
    | RemoveContainer   (aid, fid, _) -> None
    | ClearContainer    (aid, fid, _) -> None
