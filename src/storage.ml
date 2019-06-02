@@ -98,7 +98,7 @@ type argument = argument_ident * type_ * pterm option
 
 type function_struct = {
   name: fun_ident;
-  body: pterm;
+  body: instruction;
   loc : Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]
@@ -145,7 +145,7 @@ type signature = {
 type function__ = {
   node: function_node;
   sig_: signature;
-  verif  : (lident, type_, pterm) verification;
+  verif  : (lident, type_, pterm) verification option;
 }
 [@@deriving show {with_path = false}]
 
@@ -258,4 +258,22 @@ let mk_item_field name node = {
   ghost = false;
   default = None;
   loc = Location.dummy;
+}
+
+let mk_function_struct name body : function_struct = {
+  name = name;
+  body = body;
+  loc  = Location.dummy;
+}
+
+let mk_function node sig_ : function__ = {
+  node  = node;
+  sig_  = sig_;
+  verif = None;
+}
+
+let mk_signature name : signature = {
+  name = name;
+  args = [];
+  ret  = None;
 }

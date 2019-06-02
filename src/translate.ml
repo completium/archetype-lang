@@ -9,6 +9,8 @@ type record           = (A.lident, A.type_, A.pterm) A.decl_gen
 type field            = (A.lident, A.type_, A.pterm) A.decl_gen
 type variable         = (A.lident, A.type_, A.pterm) A.variable
 
+let map_instr = Reduce.map_instr
+
 let ast_to_model (ast : A.model) : M.model =
   let process_enums list =
     let process_enum (e : A.enum) : M.type_node =
@@ -106,7 +108,55 @@ let ast_to_model (ast : A.model) : M.model =
     |> (fun x -> list @ [M.TNstorage x])
   in
 
+  let process_functions list : M.type_node list =
+
+    let extract_function_from_instruction (_instr : A.instruction) (list : M.type_node list) : M.type_node list =
+      let extract_function_node_from_instruction (instr : A.instruction) list : M.function_node list =
+        let add l i1 = i1::l in
+        let is_const id = false in
+        let mk_fun (id, arg) = M.Get (Location.dumloc "") in
+        let f (accu : M.function_node list) (pterm : A.pterm) =
+          match pterm.node with
+          | A.Papp (id, args) when is_const id -> add accu (mk_fun (id, args))
+          | _ -> accu
+        in
+        let fi accu (instr : A.instruction) : M.function_node list =
+          match instr.node with
+          | A.Isimple p -> f accu p
+          | _ -> accu (*TODO: fold on instruction *)
+        in
+        fi [] instr
+      in
+      list
+    in
+
+    let process_function (function_ : A.function_) (list : M.type_node list) : M.type_node list =
+      []
+    in
+
+    let process_transaction (transaction : A.transaction) (list : M.type_node list) : M.type_node list =
+      let name = transaction.name in
+      let node = M.mk_function_struct name (get transaction.effect) in
+      let sig_ = M.mk_signature name in
+      let funct_ = M.mk_function (M.Entry node) sig_ in
+
+      let funs : A.instruction list = (List.map (fun (x : A.function_) -> x.body) transaction.functions) @ [node.body] in
+
+      list
+      |> (fun (x : M.type_node list) -> List.fold_left (fun accu (x : A.instruction) ->
+          extract_function_from_instruction x accu) x funs)
+      |> (fun x -> x @ [M.TNfunction funct_])
+    in
+
+    let cont f x l = List.fold_left (fun accu x -> f x accu) l x in
+    []
+    |> cont process_function ast.functions
+    |> cont process_transaction ast.transactions
+
+  in
+
   []
   |> process_enums
   |> process_records
   |> process_storage
+  |> process_functions

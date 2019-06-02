@@ -5,18 +5,17 @@ exception ReduceError of string * Location.t option
 exception ErrorAcceptTransfer of string * Location.t * Location.t list
 exception TODO
 
-
 let map_instr_node f = function
-  | Iif (c, t, e) -> Iif (c, f t, Tools.map_option f e)
-  | Ifor (i, c, b) -> Ifor (i, c, f b)
-  | Iseq (l, h) -> Iseq (f l, f h)
+  | Iif (c, t, e)      -> Iif (c, f t, Tools.map_option f e)
+  | Ifor (i, c, b)     -> Ifor (i, c, f b)
+  | Iseq (l, h)        -> Iseq (f l, f h)
   | Imatchwith (a, ps) -> Imatchwith (a, ps)
   | Iassign (op, l, r) -> Iassign (op, l, r)
-  | Irequire (b, x) -> Irequire (b, x)
-  | Itransfer x -> Itransfer x
-  | Ibreak -> Ibreak
-  | Iassert x -> Iassert x
-  | Isimple x -> Isimple x
+  | Irequire (b, x)    -> Irequire (b, x)
+  | Itransfer x        -> Itransfer x
+  | Ibreak             -> Ibreak
+  | Iassert x          -> Iassert x
+  | Isimple x          -> Isimple x
 
 let map_instr f i =
   {
