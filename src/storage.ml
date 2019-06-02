@@ -59,9 +59,15 @@ type storage_item = {
 type storage = storage_item list
 [@@deriving show {with_path = false}]
 
+type enum_item = {
+  name: enum_value_ident;
+  invariants : (lident, (lident) lterm_gen) label_term list;
+}
+[@@deriving show {with_path = false}]
+
 type enum = {
   name: enum_ident;
-  values: enum_value_ident list;
+  values: enum_item list;
 }
 [@@deriving show {with_path = false}]
 
@@ -221,6 +227,11 @@ let function_name_from_function_node = function
 let mk_enum name : enum = {
   name = name;
   values = [];
+}
+
+let mk_enum_item name : enum_item = {
+  name = name;
+  invariants = [];
 }
 
 let mk_record name : record = {

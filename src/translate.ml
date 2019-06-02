@@ -3,17 +3,26 @@ open Tools
 module A = Model
 module M = Storage
 
-type record = (A.lident, A.type_, A.pterm) A.decl_gen
-type field = (A.lident, A.type_, A.pterm) A.decl_gen
-type variable = (A.lident, A.type_, A.pterm) A.variable
+type enum_item_struct = (A.lident, A.type_, A.pterm) A.enum_item_struct
+type verification     = (A.lident, A.type_, A.pterm) A.verification
+type record           = (A.lident, A.type_, A.pterm) A.decl_gen
+type field            = (A.lident, A.type_, A.pterm) A.decl_gen
+type variable         = (A.lident, A.type_, A.pterm) A.variable
 
 let ast_to_model (ast : A.model) : M.model =
   let process_enums list =
     let process_enum (e : A.enum) : M.type_node =
-      let e = M.mk_enum e.name in
+      let enum = M.mk_enum e.name in
       M.TNenum {
-        e with
-        values = List.map (fun x -> x) e.values;
+        enum with
+        values = List.map (fun (x : enum_item_struct) ->
+            let id : M.lident = x.name in
+            let enum_item = M.mk_enum_item id in
+            {
+              enum_item with
+              invariants = map_option_neutral (fun (x : verification) -> x.specs) [] x.verification;
+            }
+          ) e.items;
       }
     in
     list @ List.map (fun x -> process_enum x) ast.enums in
@@ -31,35 +40,26 @@ let ast_to_model (ast : A.model) : M.model =
   let process_storage list =
     let variable_to_storage_items (var : variable) : M.storage_item =
       let arg = var.decl in
-      let compute_fields (type_ : A.type_) : M.item_field list =
-        match type_ with
-        | Tbuiltin vtyp -> (
-            let item_field =
-              let m = M.mk_item_field arg.name (FBasic vtyp) in
-              {m with default = arg.default} in
-            [item_field])
-        | Tasset id -> (
-            let item_field =
-              let m = M.mk_item_field arg.name (FRecord id) in
-              {m with default = arg.default} in
-            [item_field])
-        | Tcontainer (ptyp, container) -> (
-            let item =
-              let f = function
-                | A.Tbuiltin vtyp -> M.FBasic vtyp
-                | _ -> assert false in
-              let m = M.mk_item_field arg.name (FContainer (container, f ptyp)) in
-              {m with default = arg.default} in
-            [item]
-          )
-        (* | Ttuple l -> List.map (fun x -> compute_fields x) l |> List.flatten *)
-        | _ -> assert false
+      let compute_field (type_ : A.type_) : M.item_field =
+        let rec ptyp_to_item_field_type = function
+          | A.Tbuiltin vtyp -> M.FBasic vtyp
+          | A.Tenum id      -> M.FEnum id
+          | A.Tasset id     -> M.FRecord id
+          | A.Tcontainer (ptyp, container) -> M.FContainer (container, ptyp_to_item_field_type ptyp)
+          | A.Ttuple _ -> assert false
+        in
+        let a = ptyp_to_item_field_type type_ in
+        let item_field =
+          let m = M.mk_item_field arg.name a in
+          { m with default = arg.default } in
+        item_field
+
       in
 
       let storage_item = M.mk_storage_item arg.name in
       let typ : A.type_ = get arg.typ in {
         storage_item with
-        fields = compute_fields typ;
+        fields = [compute_field typ];
         init = [];
       }
     in
@@ -83,16 +83,19 @@ let ast_to_model (ast : A.model) : M.model =
         in
         let mk a =
           let m = M.mk_item_field id a in
-          {m with
-           asset = Some id;
-           (* default = arg.default; *)
+          { m with
+            asset = Some id;
+            (* default = arg.default; *)
           } in
-        [mk (FKeyCollection (id, type_id)); mk (FRecordMap id)] in
+        let asset_name = id in
+        let keys_id = Location.mkloc (Location.loc asset_name) ((Location.unloc asset_name) ^ "_keys") in
+        let asset_name = Location.mkloc (Location.loc asset_name) ((Location.unloc asset_name) ^ "_assets") in
+        [mk (FKeyCollection (keys_id, type_id)); mk (FRecordMap asset_name)] in
       let item = M.mk_storage_item asset.name in
-      {item with
-       fields = compute_fields;
-       invariants = asset.specs;
-       (* init = asset.init; *)
+      { item with
+        fields = compute_fields;
+        invariants = asset.specs;
+        (* init = asset.init; *)
       }
     in
 
