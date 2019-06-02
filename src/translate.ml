@@ -111,18 +111,13 @@ let ast_to_model (ast : A.model) : M.model =
   let process_functions list : M.type_node list =
 
     let extract_function_from_instruction (_instr : A.instruction) (list : M.type_node list) : M.type_node list =
-      let extract_function_node_from_instruction (instr : A.instruction) list : M.function_node list =
+      let _extract_function_node_from_instruction (instr : A.instruction) list : M.function_node list =
         let add l i1 = i1::l in
         let is_const id = false in
         let mk_fun (id, arg) = M.Get (Location.dumloc "") in
-        let f (accu : M.function_node list) (pterm : A.pterm) =
-          match pterm.node with
-          | A.Papp (id, args) when is_const id -> add accu (mk_fun (id, args))
-          | _ -> accu
-        in
         let fi accu (instr : A.instruction) : M.function_node list =
           match instr.node with
-          | A.Isimple p -> f accu p
+          | A.Icall (a, id, args) when is_const id -> add accu (mk_fun (id, args))
           | _ -> accu (*TODO: fold on instruction *)
         in
         fi [] instr

@@ -6,16 +6,16 @@ exception ErrorAcceptTransfer of string * Location.t * Location.t list
 exception TODO
 
 let map_instr_node f = function
-  | Iif (c, t, e)      -> Iif (c, f t, Tools.map_option f e)
-  | Ifor (i, c, b)     -> Ifor (i, c, f b)
-  | Iseq (l, h)        -> Iseq (f l, f h)
-  | Imatchwith (a, ps) -> Imatchwith (a, ps)
-  | Iassign (op, l, r) -> Iassign (op, l, r)
-  | Irequire (b, x)    -> Irequire (b, x)
-  | Itransfer x        -> Itransfer x
-  | Ibreak             -> Ibreak
-  | Iassert x          -> Iassert x
-  | Isimple x          -> Isimple x
+  | Iif (c, t, e)       -> Iif (c, f t, Tools.map_option f e)
+  | Ifor (i, c, b)      -> Ifor (i, c, f b)
+  | Iseq is             -> Iseq (List.map f is)
+  | Imatchwith (a, ps)  -> Imatchwith (a, ps)
+  | Iassign (op, l, r)  -> Iassign (op, l, r)
+  | Irequire (b, x)     -> Irequire (b, x)
+  | Itransfer x         -> Itransfer x
+  | Ibreak              -> Ibreak
+  | Iassert x           -> Iassert x
+  | Icall (x, id, args) -> Icall (x, id, args)
 
 let map_instr f i =
   {
@@ -23,22 +23,21 @@ let map_instr f i =
     node = map_instr_node f i.node
   }
 
-let type_unit     : Model.type_ = Tbuiltin VTstring (* TODO: replace unit type *)
-let type_string   : Model.type_ = Tbuiltin VTstring
-let type_bool     : Model.type_ = Tbuiltin VTbool
-let type_currency : Model.type_ = Tbuiltin (VTcurrency Tez)
+let type_string   : Model.type_ option = Some (vtstring)
+let type_bool     : Model.type_ option = Some (vtbool)
+let type_currency : Model.type_ option = Some (vtcurrency Tez)
+let type_address  : Model.type_ option = Some (vtaddress)
 
-let mk_struct_with_loc node typ loc = let m = mk_struct_poly node typ in {m  with loc = loc; }
+let unit = mk_sp Ibreak
 
-let mk_instr (node : (lident, type_, pterm, instruction) instruction_node) = mk_struct_poly node type_unit
-let mk_instr_with_loc (node : (lident, type_, pterm, instruction) instruction_node) loc = mk_struct_with_loc node type_unit loc
+(* let mk_struct_with_loc node typ loc = let m = mk_struct_poly node typ in {m  with loc = loc; } *)
 
 let fail str : instruction =
-  let f = mk_struct_poly (Pconst Cfail) type_unit in
-  let lit = mk_struct_poly (BVstring str) (Tbuiltin VTstring) in
-  let arg = mk_struct_poly (Plit lit) (Tbuiltin VTstring) in
-  let app = mk_struct_poly (Papp (f, [arg])) type_unit in
-  mk_instr (Isimple app)
+  let f = dumloc "fail" in (*mk_sp (Pconst Cfail) in*)
+  let lit = mk_sp (BVstring str) ?type_:type_string in
+  let arg = mk_sp (Plit lit) ?type_:type_string in
+  (* let app = mk_struct_poly (Papp (f, [arg])) type_unit in *)
+  mk_sp (Icall (None, f, [arg]))
 
 (* mk_struct_poly (Plit (dumloc (BVstring str))) *)
 
@@ -61,24 +60,25 @@ let fail str : instruction =
               else raise (ErrorAcceptTransfer (v, lo, l)))) [] m.transactions) in
    model *)
 
-let replace_instruction model : model =
-  let process (instr : instruction) : instruction =
+(* let replace_instruction model : model =
+   let process (instr : instruction) : instruction =
     let rec f (instr : instruction) : instruction =
       let l = instr.loc in
       (
         match instr.node with
         | Irequire (b, x) ->
-          mk_instr_with_loc (Iif ((if b then mk_struct_poly (Pnot x) type_bool else x), fail "required", None)) l
+          let m = mk_sp (Pnot x) ?type_:type_bool in
+          mk_sp (Iif ((if b then m else x), fail "required", unit)) ?loc:(Some l)
         | _ -> map_instr f instr
       ) in
     map_instr f instr
-  in {
+   in {
     model with
     functions = List.map (fun (x : function_) -> { x with body = process (x.body) }) model.functions;
     transactions = List.map (fun (x : transaction) -> { x with effect = Tools.map_option process (x.effect) }) model.transactions;
-  }
+   } *)
 
-let process_action (model : model) : model =
+(*let process_action (model : model) : model =
   let process_ap (tr : transaction) : transaction =
     let process_calledby (tr : transaction) : transaction =
       let process_cb (cb : rexpr) : instruction =
@@ -88,18 +88,18 @@ let process_action (model : model) : model =
             begin
               let rec qualid_to_pterm (q : qualid) : pterm =
                 match q.node with
-                | Qident i -> mk_struct_with_loc (Pvar i) q.type_ q.loc
+                | Qident i -> mk_sp (Pvar i) ?type_:q.type_ ?loc:(Some q.loc)
                 | Qdot (q, i) -> (
                     let qq = qualid_to_pterm q in
-                    mk_struct_with_loc (Pdot (qq, i)) q.type_ (Location.merge qq.loc (loc i))
+                    mk_sp (Pdot (qq, i)) ?type_:(Some q.type_) ?loc:(Some (Location.merge qq.loc (loc i)))
                   )
               in
-              mk_struct_poly (Pcomp(Equal, mk_struct_poly (Pconst Ccaller) (Tbuiltin VTaddress), qualid_to_pterm q)) (Tbuiltin VTbool)
+              mk_struct_poly (Pcomp(Equal, mk_sp (Pconst Ccaller) ?type_:type_address, qualid_to_pterm q)) (Tbuiltin VTbool)
             end
           | Ror (l, r) ->
-            mk_struct_poly (Plogical (Or, process_rexpr l, process_rexpr r)) (Tbuiltin VTbool)
+            mk_sp (Plogical (Or, process_rexpr l, process_rexpr r)) ?type_:type_bool
           | Raddress a -> raise TODO (* TODO *) in
-        let require : pterm = mk_struct_poly (Pnot (process_rexpr cb)) (Tbuiltin VTbool) in
+        let require : pterm = mk_sp (Pnot (process_rexpr cb)) ?type_:type_bool in
         mk_instr (Iif (require, fail "not_authorized_fun", None)) in
       begin
         match tr.calledby with
@@ -229,7 +229,7 @@ let process_action (model : model) : model =
       then { tr with
              effect =
                match tr.effect with
-               | Some e -> Some (mk_instr (Iseq (at, e)))
+               | Some e -> Some (mk_instr (Iseq (instr, e)))
                | None -> Some at
            }
       else tr in
@@ -244,7 +244,7 @@ let process_action (model : model) : model =
     model with
     transactions = List.map (fun x -> process_ap x) model.transactions;
   }
-    |> replace_instruction
+    |> replace_instruction *)
 
 let sanity_check model : model =
   (* let _check_dv model : model =
@@ -263,5 +263,5 @@ let sanity_check model : model =
 
 let reduce_ast (model : Model.model) =
   model
-  |> process_action
+  (* |> process_action *)
   |> sanity_check
