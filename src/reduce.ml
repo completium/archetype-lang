@@ -6,7 +6,7 @@ exception ErrorAcceptTransfer of string * Location.t * Location.t list
 exception TODO
 
 let map_instr_node f = function
-  | Iif (c, t, e)       -> Iif (c, f t, Tools.map_option f e)
+  | Iif (c, t, e)       -> Iif (c, f t, f e)
   | Ifor (i, c, b)      -> Ifor (i, c, f b)
   | Iseq is             -> Iseq (List.map f is)
   | Imatchwith (a, ps)  -> Imatchwith (a, ps)
@@ -60,8 +60,8 @@ let fail str : instruction =
               else raise (ErrorAcceptTransfer (v, lo, l)))) [] m.transactions) in
    model *)
 
-(* let replace_instruction model : model =
-   let process (instr : instruction) : instruction =
+let replace_instruction model : model =
+  let process (instr : instruction) : instruction =
     let rec f (instr : instruction) : instruction =
       let l = instr.loc in
       (
@@ -72,16 +72,16 @@ let fail str : instruction =
         | _ -> map_instr f instr
       ) in
     map_instr f instr
-   in {
+  in {
     model with
     functions = List.map (fun (x : function_) -> { x with body = process (x.body) }) model.functions;
     transactions = List.map (fun (x : transaction) -> { x with effect = Tools.map_option process (x.effect) }) model.transactions;
-   } *)
+  }
 
-(*let process_action (model : model) : model =
+let process_action (model : model) : model =
   let process_ap (tr : transaction) : transaction =
     let process_calledby (tr : transaction) : transaction =
-      let process_cb (cb : rexpr) : instruction =
+      let process_cb (cb : rexpr) body : instruction =
         let rec process_rexpr (rq : rexpr) : pterm =
           match rq.node with
           | Rqualid q ->
@@ -91,26 +91,25 @@ let fail str : instruction =
                 | Qident i -> mk_sp (Pvar i) ?type_:q.type_ ?loc:(Some q.loc)
                 | Qdot (q, i) -> (
                     let qq = qualid_to_pterm q in
-                    mk_sp (Pdot (qq, i)) ?type_:(Some q.type_) ?loc:(Some (Location.merge qq.loc (loc i)))
+                    mk_sp (Pdot (qq, i)) ?type_:q.type_ ?loc:(Some (Location.merge qq.loc (loc i)))
                   )
               in
-              mk_struct_poly (Pcomp(Equal, mk_sp (Pconst Ccaller) ?type_:type_address, qualid_to_pterm q)) (Tbuiltin VTbool)
+              mk_sp (Pcomp(Equal, mk_sp (Pconst Ccaller) ?type_:type_address, qualid_to_pterm q)) ?type_:type_bool
             end
           | Ror (l, r) ->
             mk_sp (Plogical (Or, process_rexpr l, process_rexpr r)) ?type_:type_bool
           | Raddress a -> raise TODO (* TODO *) in
         let require : pterm = mk_sp (Pnot (process_rexpr cb)) ?type_:type_bool in
-        mk_instr (Iif (require, fail "not_authorized_fun", None)) in
+        mk_sp (Iif (require, fail "not_authorized_fun", body)) in
       begin
+        let body = Tools.get tr.effect in
         match tr.calledby with
         | None -> tr
         | Some cb ->
-          let instr : instruction = process_cb cb in
+          let instr : instruction = process_cb cb body in
           { tr with
             calledby = None;
-            effect = match tr.effect with
-              | Some e -> Some (mk_instr (Iseq (instr, e)))
-              | None -> Some instr;
+            effect = Some instr;
           }
       end
     in
@@ -128,63 +127,56 @@ let fail str : instruction =
               loc = Location.merge (loc id) (loc id2)}]
           | None -> [] in
         let process_effect (tr : (lident, type_, pterm, instruction) transition) : instruction option =
-          let state : pterm =
-            match tr.on with
-            | Some (_id, id2) ->
-              begin
-                let a : pterm = mk_struct_poly (Pvar id2) type_unit in
-                mk_struct_poly (Pdot (a, dumloc "state")) type_unit
-              end
-            | _ -> mk_struct_poly (Pconst Cstate) type_unit in
-          let code : instruction =
-            (List.fold_right (fun ((id, cond, effect) : (lident * pterm option * instruction option)) acc : instruction option ->
+          let state : lident = dumloc "state" in
+          let build_code (body : instruction) : instruction =
+            (List.fold_right (fun ((id, cond, effect) : (lident * pterm option * instruction option)) acc : instruction ->
                  let tre : instruction =
                    match tr.on with
                    | Some (id, id_asset) ->
                      (
-                       let asset : pterm = mk_struct_poly (Pvar id_asset) type_unit in
+                       let asset : pterm = mk_sp (Pvar id_asset) in
                        let update : lident = dumloc "update" in
-                       let f : pterm = mk_struct_poly (Pdot (asset, update)) type_unit in
 
-                       let q : qualid = mk_struct_poly (Qident (dumloc "state")) type_unit in
-                       let aid : pterm = mk_struct_poly (Pvar id) type_unit in
+                       let q : qualid = mk_sp (Qident state) in
+                       let aid : pterm = mk_sp (Pvar id) in
 
-                       let arg : pterm = mk_struct_poly (Precord [q, aid]) type_unit in
+                       let arg : pterm = mk_sp (Precord [q, aid]) in
                        let args : pterm list = [arg] in
 
-                       let a : (lident, type_, pterm) pterm_node = (Papp (f, args)) in
-                       let app : pterm = mk_struct_poly a type_unit in
-                       mk_instr (Isimple app)
+                       mk_sp (Icall (Some asset, update, args))
                      )
                    | _ ->
-                     mk_instr (Iassign (ValueAssign, state, mk_struct_with_loc (Pvar id) type_bool (Location.loc id))) in
+                     let a : pterm = mk_sp (Pvar id) ?type_:type_bool ?loc:(Some (Location.loc id)) in
+                     mk_sp (Iassign (ValueAssign, state, a)) in
                  let code : instruction =
                    match effect with
-                   | Some e -> mk_instr (Iseq (tre, e))
+                   | Some e -> mk_sp (Iseq [tre; e])
                    | None -> tre in
 
                  match cond with
-                 | Some c -> Some (mk_instr (Iif (c, code, acc)))
-                 | None -> Some code
-               ) tr.trs None)
-            |> Tools.get
+                 | Some c -> mk_sp (Iif (c, code, acc))
+                 | None -> code
+               ) tr.trs body)
           in
-
+          let body : instruction = mk_sp (Iseq []) in
+          let code : instruction  = build_code body in
           match transition.from.node with
           | Sany -> Some code
           | _ ->
             begin
               let rec compute_patterns (a : sexpr) : ((lident, type_) pattern_gen) list =
                 match a.node with
-                | Sref id -> [mk_struct_poly (Mapp (mk_struct_poly (Qident id) type_unit, [])) type_unit]
+                | Sref id -> [mk_sp (Mconst id)]
                 | Sor (a, b) -> [a; b] |> List.map (fun x -> compute_patterns x) |> List.flatten
                 | Sany -> raise (ReduceError ("any is not authorized in this expression", Some a.loc)) in
               let list_patterns : ((lident, type_) pattern_gen) list =
                 compute_patterns tr.from in
 
-              let pattern : pattern = mk_struct_poly Mwild type_unit in
-              let instr : instruction = fail "not_valid_state" in
-              Some (mk_instr (Imatchwith (state, List.map (fun x -> (x, code)) list_patterns @ [pattern, instr])))
+              let pattern : pattern = mk_sp Mwild in
+              let fail_instr : instruction = fail "not_valid_state" in
+
+              let w = mk_sp (Pvar state) in
+              Some (mk_sp (Imatchwith (w, List.map (fun x -> (x, code)) list_patterns @ [pattern, fail_instr])))
 
             end
         in
@@ -197,41 +189,36 @@ let fail str : instruction =
     in
 
     let process_requires (tr : transaction) =
-      let process_require (x : (lident, pterm) label_term) : instruction =
+      let process_require (x : (lident, pterm) label_term) body : instruction =
         let msg =
           match x.label with
           | Some label -> "require " ^ (unloc label) ^ " failed"
           | _ -> "require failed" in
-        let cond : pterm = mk_struct_with_loc (Pnot x.term) type_unit x.loc in
-        mk_instr_with_loc (Iif (cond, fail msg, None)) x.loc
+        let cond : pterm = mk_sp (Pnot x.term) ?loc:(Some x.loc) in
+        mk_sp (Iif (cond, fail msg, body)) ?loc:(Some x.loc)
       in
       match tr.require with
       | None -> tr
       | Some requires ->
+        let body = Tools.get tr.effect in
         { tr with
           require = None;
-          effect = List.fold_right (fun x accu ->
-              let instr : instruction = process_require x in
-              match accu with
-              | Some e -> Some (mk_instr (Iseq (instr, e)))
-              | None -> Some instr
-            ) requires tr.effect;
+          effect = Some (List.fold_right (fun (x : (lident, pterm) label_term) (accu : instruction) -> process_require x accu) requires body);
         } in
 
     let process_accept_transfer (tr : transaction) =
-      let lhs : pterm = mk_struct_poly (Pconst Ctransferred) type_currency in
-      let basic_value : bval = mk_struct_poly (BVcurrency (Tez, Big_int.zero_big_int)) type_currency in
-      let rhs : pterm = mk_struct_poly (Plit basic_value) type_currency in
-      let eq : pterm = mk_struct_poly (Pcomp (Equal, lhs, rhs)) type_bool in
-      let cond : pterm = mk_struct_poly (Pnot eq) type_bool in
-      let at : instruction = mk_instr (Iif (cond, fail "not_accept_transfer", None)) in
+      let lhs : pterm = mk_sp (Pconst Ctransferred) ?type_:type_currency in
+      let basic_value : bval = mk_sp (BVcurrency (Tez, Big_int.zero_big_int)) ?type_:type_currency in
+      let rhs : pterm = mk_sp (Plit basic_value) ?type_:type_currency in
+      let eq : pterm = mk_sp (Pcomp (Equal, lhs, rhs)) ?type_:type_bool in
+      let cond : pterm = mk_sp (Pnot eq) ?type_:type_bool in
+      let at body : instruction = mk_sp (Iif (cond, fail "not_accept_transfer", body)) in
       if (not tr.accept_transfer)
-      then { tr with
-             effect =
-               match tr.effect with
-               | Some e -> Some (mk_instr (Iseq (instr, e)))
-               | None -> Some at
-           }
+      then
+        let body = Tools.get tr.effect in
+        { tr with
+          effect = Some (at body);
+        }
       else tr in
 
     tr
@@ -244,7 +231,7 @@ let fail str : instruction =
     model with
     transactions = List.map (fun x -> process_ap x) model.transactions;
   }
-    |> replace_instruction *)
+    |> replace_instruction
 
 let sanity_check model : model =
   (* let _check_dv model : model =
@@ -263,5 +250,5 @@ let sanity_check model : model =
 
 let reduce_ast (model : Model.model) =
   model
-  (* |> process_action *)
+  |> process_action
   |> sanity_check
