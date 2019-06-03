@@ -277,10 +277,10 @@ value_option:
 | EQUAL x=expr { x }
 
 %inline from_value:
-| FROM x=qualid { x }
+| FROM x=ident { x }
 
 %inline to_value:
-| TO x=qualid { x }
+| TO x=ident { x }
 
 dextension:
 | PERCENT x=ident xs=nonempty_list(simple_expr)? { Dextension (x, xs) }

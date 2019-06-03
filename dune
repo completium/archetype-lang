@@ -2,4 +2,4 @@
   (dev
     (flags (:standard -rectypes -g -w Y -w Z -w -9 -w -20 -w -23 -w -27 -w +28 -w +33 -w -32)))
   (release
-    (flags (:standard -rectypes))))
+    (flags (:standard -rectypes -g -w Y -w Z -w -9 -w -20 -w -23 -w -27 -w +28 -w +33 -w -32))))
