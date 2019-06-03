@@ -1,5 +1,6 @@
 open Location
 open Model
+open Tools
 
 exception ReduceError of string * Location.t option
 exception ErrorAcceptTransfer of string * Location.t * Location.t list
@@ -75,7 +76,7 @@ let replace_instruction model : model =
   in {
     model with
     functions = List.map (fun (x : function_) -> { x with body = process (x.body) }) model.functions;
-    transactions = List.map (fun (x : transaction) -> { x with effect = Tools.map_option process (x.effect) }) model.transactions;
+    transactions = List.map (fun (x : transaction) -> { x with effect = Option.map process (x.effect) }) model.transactions;
   }
 
 let process_action (model : model) : model =
@@ -102,7 +103,7 @@ let process_action (model : model) : model =
         let require : pterm = mk_sp (Pnot (process_rexpr cb)) ?type_:type_bool in
         mk_sp (Iif (require, fail "not_authorized_fun", body)) in
       begin
-        let body = Tools.get tr.effect in
+        let body = Option.get tr.effect in
         match tr.calledby with
         | None -> tr
         | Some cb ->
@@ -137,11 +138,11 @@ let process_action (model : model) : model =
                        let asset : pterm = mk_sp (Pvar id_asset) in
                        let update : lident = dumloc "update" in
 
-                       let q : qualid = mk_sp (Qident state) in
-                       let aid : pterm = mk_sp (Pvar id) in
+                       (* let q : qualid = mk_sp (Qident state) in
+                          let aid : pterm = mk_sp (Pvar id) in *)
 
-                       let arg : pterm = mk_sp (Precord [q, aid]) in
-                       let args : pterm list = [arg] in
+                       (* let arg : pterm = mk_sp (Precord [q; aid]) in *)
+                       let args : pterm list = [] in (*TODO *)
 
                        mk_sp (Icall (Some asset, update, args))
                      )
@@ -200,7 +201,7 @@ let process_action (model : model) : model =
       match tr.require with
       | None -> tr
       | Some requires ->
-        let body = Tools.get tr.effect in
+        let body = Option.get tr.effect in
         { tr with
           require = None;
           effect = Some (List.fold_right (fun (x : (lident, pterm) label_term) (accu : instruction) -> process_require x accu) requires body);
@@ -215,7 +216,7 @@ let process_action (model : model) : model =
       let at body : instruction = mk_sp (Iif (cond, fail "not_accept_transfer", body)) in
       if (not tr.accept_transfer)
       then
-        let body = Tools.get tr.effect in
+        let body = Option.get tr.effect in
         { tr with
           effect = Some (at body);
         }

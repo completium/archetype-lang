@@ -428,7 +428,7 @@ let rec pp_expr outer pos fmt a =
       Format.fprintf fmt "transfer%s %a%a"
         (if back then " back" else "")
         pp_simple_expr x
-        (pp_option (pp_prefix " to " pp_qualid)) to_value
+        (pp_option (pp_prefix " to " pp_id)) to_value
     in
     (maybe_paren outer e_default pos pp) fmt (x, back, to_value)
 
@@ -645,8 +645,8 @@ let pp_specification_variable fmt (sv : (lident * type_t * expr option) loced) =
 (* -------------------------------------------------------------------------- *)
 let pp_value_option fmt opt =
   match opt with
-  | VOfrom e -> Format.fprintf fmt "from %a" pp_qualid e
-  | VOto   e -> Format.fprintf fmt "to %a"   pp_qualid e
+  | VOfrom e -> Format.fprintf fmt "from %a" pp_id e
+  | VOto   e -> Format.fprintf fmt "to %a"   pp_id e
 
 let pp_asset_option fmt opt =
   match opt with

@@ -568,11 +568,6 @@ effect:
  | ANDEQUAL    { AndAssign }
  | OREQUAL     { OrAssign }
 
-
-qualid:
- | i=ident              { Qident i }
- | x=qualid DOT i=ident { Qdot (x, i) }
-
 %inline branchs:
  | xs=branch+ { xs }
 

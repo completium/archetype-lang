@@ -255,7 +255,6 @@ let string_of_symbol = function
   | X (N N_separated_nonempty_list_COMMA_type_t_) -> "a non empty list of type separated by ,"
   | X (N N_require) -> "a require"
   | X (N N_record_item) -> "a record item"
-  | X (N N_qualid) -> "a qualid"
   | X (N N_pattern) -> "a pattern"
   | X (N N_order_operations) -> "order operations"
   | X (N N_order_operation) -> "an order operation"

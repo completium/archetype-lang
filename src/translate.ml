@@ -22,7 +22,7 @@ let ast_to_model (ast : A.model) : M.model =
             let enum_item = M.mk_enum_item id in
             {
               enum_item with
-              invariants = map_option_neutral (fun (x : verification) -> x.specs) [] x.verification;
+              invariants = Option.map_dfl (fun (x : verification) -> x.specs) [] x.verification;
             }
           ) e.items;
       }
@@ -34,7 +34,7 @@ let ast_to_model (ast : A.model) : M.model =
       let e = M.mk_record a.name in
       M.TNrecord {
         e with
-        values = List.map (fun (x : (A.lident, A.type_, A.pterm) A.decl_gen) -> M.mk_record_item x.name (get x.typ)) a.fields;
+        values = List.map (fun (x : (A.lident, A.type_, A.pterm) A.decl_gen) -> M.mk_record_item x.name (Option.get x.typ)) a.fields;
       }
     in
     list @ List.map (fun x -> process_asset x) ast.assets in
@@ -59,7 +59,7 @@ let ast_to_model (ast : A.model) : M.model =
       in
 
       let storage_item = M.mk_storage_item arg.name in
-      let typ : A.type_ = get arg.typ in {
+      let typ : A.type_ = Option.get arg.typ in {
         storage_item with
         fields = [compute_field typ];
         init = [];
@@ -71,7 +71,7 @@ let ast_to_model (ast : A.model) : M.model =
       let compute_fields =
         let type_id : A.vtyp =
           let res : A.vtyp option = List.fold_left (fun accu (x : field) ->
-              if String.equal (Location.unloc x.name) (Location.unloc (get asset.key))
+              if String.equal (Location.unloc x.name) (Location.unloc (Option.get asset.key))
               then (
                 match x.typ with
                 | Some (Tbuiltin v) -> Some v
@@ -81,7 +81,7 @@ let ast_to_model (ast : A.model) : M.model =
             ) None asset.fields in
           match res with
           | Some t -> t
-          | _ -> get res
+          | _ -> Option.get res
         in
         let mk a =
           let m = M.mk_item_field id a in
@@ -131,7 +131,7 @@ let ast_to_model (ast : A.model) : M.model =
 
     let process_transaction (transaction : A.transaction) (list : M.type_node list) : M.type_node list =
       let name = transaction.name in
-      let node = M.mk_function_struct name (get transaction.effect) in
+      let node = M.mk_function_struct name (Option.get transaction.effect) in
       let sig_ = M.mk_signature name in
       let funct_ = M.mk_function (M.Entry node) sig_ in
 
