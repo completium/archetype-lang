@@ -447,7 +447,7 @@ let rec pterm_to_expr (p : Modelws.pterm) =  {
 }
 
 and mk_efun args l i t s b =
-  let t = map_option field_type_to_mlwtyp t in
+  let t = Option.map field_type_to_mlwtyp t in
   let args = args @ [l, Some (mk_ident i), false, t] in
   if is_lambda b
   then

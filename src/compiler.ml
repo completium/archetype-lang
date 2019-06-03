@@ -24,6 +24,7 @@ let compile_and_print (filename, channel) =
   then () (*Lsp.process (filename, channel)*)
   else (
     let pt = Io.parse_archetype ~name:filename channel in
+    let _ : Model.model = Typing.typing Typing.empty pt in
     if !opt_json
     then Format.printf "%s\n" (Yojson.Safe.to_string (ParseTree.archetype_to_yojson pt))
     else (

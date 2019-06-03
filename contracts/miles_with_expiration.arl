@@ -12,7 +12,7 @@ asset mile identified by id sorted by expiration = {
 }
 
 (* a partition ensures there is no direct access to mile collection *)
-asset owner as role identified by addr = {
+asset owner identified by addr = {
   addr  : address;
   miles : mile partition (* injective (owner x mile) *)
 }
@@ -25,7 +25,7 @@ action add (ow : address) (newmile : mile) = {
    }
 
    effect {
-     owner.addifnotexist { addr = ow; mile = [] };
+     owner.addifnotexist { addr = ow; miles = [] };
      (* action must fail if mile already exists *)
      (owner.get ow).miles.add newmile
    }

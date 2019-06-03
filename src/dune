@@ -9,7 +9,7 @@
   )
   (library_flags (-linkall))
   (modules tools core ident location parseUtils parseTree parser lexer io typing model
-  ;; modelinfo modelws modelliq printer translate reduce liq_printer
+  ;; modelinfo modelws modelliq printer reduce liq_printer
   )
   (libraries menhirLib why3 ppx_deriving yojson ppx_deriving_yojson.runtime)
 )

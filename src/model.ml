@@ -146,7 +146,7 @@ type const =
 
 type ('typ, 'node) struct_poly = {
   node : 'node;                   (* kind of object *)
-  type_ : 'typ option;                   (* type of object *)
+  type_ : 'typ option;            (* type of object *)
   label : ident option;           (* label (typically for instruction) *)
   loc : Location.t [@opaque];     (* location of object *)
 }
@@ -272,7 +272,7 @@ type pattern = (lident, type_) pattern_gen
 
 type ('id, 'typ, 'term) term_node  =
   | Lquantifer of quantifier * 'id * ltype_ * 'term
-  | Pif of ('term * 'term * 'term option)
+  | Pif of ('term * 'term * 'term)
   | Pmatchwith of 'term * (('id, 'typ) pattern_gen * 'term) list
   | Pcall of ('id option * 'id * ('term term_arg) list)
   | Plogical of logical_operator * 'term * 'term
@@ -280,7 +280,7 @@ type ('id, 'typ, 'term) term_node  =
   | Pcomp of comparison_operator * 'term * 'term
   | Parith of arithmetic_operator * 'term * 'term
   | Puarith of unary_arithmetic_operator * 'term
-  | Precord of (('id, 'typ) qualid_gen * 'term) list
+  | Precord of 'term list
   | Pletin of 'id * 'term * 'typ option * 'term
   | Pvar of 'id
   | Parray of 'term list

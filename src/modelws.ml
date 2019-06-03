@@ -157,7 +157,7 @@ let mk_asset_field_simple fname =
   { plloc = loc; pldesc = name ^ "_col" }
 
 let mk_default_field (b : bval option) : Model.pterm option =
-    map_option
+    Option.map
     (fun x -> mkloc (loc x) (Plit x))
     b
 
@@ -1363,7 +1363,7 @@ let rec process_rec (acc : process_acc) (pterm : Model.pterm) : process_data =
   (
     let c = process_rec acc cond in
     let t = process_rec acc then_ in
-    let e = map_option (process_rec acc) else_ in
+    let e = Option.map (process_rec acc) else_ in
     let pte =
     (match t.ret, e with
     | _, Some e -> Some (e.term)
@@ -1870,7 +1870,7 @@ let compute_args info (t : Model.transaction) : (arg_ret list) =
   List.fold_left (
     fun acc (arg : (ptyp, bval) gen_decl) -> (
         let id = arg.name |> unloc in
-        let typ = Tools.get arg.typ in
+        let typ = Option.get arg.typ in
         match unloc typ with
         | Tbuiltin vtb -> acc @ [{id = id; typ = ATSimple (Ftyp vtb);}]
         | Tasset lident -> acc @ [{id = id; typ = ATAsset (

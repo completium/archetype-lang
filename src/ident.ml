@@ -1,11 +1,10 @@
 (* -------------------------------------------------------------------- *)
 type ident = string
-[@@deriving yojson]
-
-let pp_ident pp fmt (x : ident) = Format.fprintf fmt "%a" pp x
+[@@deriving yojson, show {with_path = false}]
 
 (* -------------------------------------------------------------------- *)
 let cmp_ident = (String.compare : ident -> ident -> int)
 
 (* -------------------------------------------------------------------- *)
-module Mid = Map.Make(String)
+module Mid = Tools.Map.Make(String)
+module Sid = Tools.Set.Make(String)

@@ -84,6 +84,7 @@ let pp_loced pp fmt (x : 'a loced) = Format.fprintf fmt "%a" pp x.pldesc
 let loc    x = x.plloc
 let unloc  x = x.pldesc
 let unlocs x = List.map unloc x
+let aspair x = (loc x, unloc x)
 
 let lmap (f : 'a -> 'b) (x : 'a loced) =
   { x with pldesc = f x.pldesc }

@@ -16,7 +16,7 @@ let check_accept_transfer model =
         | Pconst Ctransferred -> lo::accu
         | _ -> (process x) @ accu) [] (unloc e) in (* TODO: check call function too *)
   let _ = (List.fold_left (fun accu (tr : transaction) ->
-      let l = List.flatten (Tools.map_option_neutral (List.map ((fun (x : label_pterm) -> process x.term))) [[]] tr.require) @ (mo process tr.effect) @ accu in
+      let l = List.flatten (Tools.Option.map_dfl (List.map ((fun (x : label_pterm) -> process x.term))) [[]] tr.require) @ (mo process tr.effect) @ accu in
       match l with
       | [] -> accu
       | _ -> (let lo, v = deloc tr.name in
@@ -38,7 +38,7 @@ let process_failif model : model =
   mkloc l {
     v with
     functions = List.map (fun (x : function_) -> { x with body = process_pterm (x.body) }) v.functions;
-    transactions = List.map (fun (x : transaction) -> { x with effect = Tools.map_option process_pterm (x.effect) }) v.transactions;
+    transactions = List.map (fun (x : transaction) -> { x with effect = Tools.Option.map process_pterm (x.effect) }) v.transactions;
   }
 
 let process_action model : model =
@@ -79,7 +79,7 @@ let process_action model : model =
                  | Some c -> Some (dumloc (Pif (c, code, acc)))
                  | None -> Some code
                ) tr.trs None)
-            |> Tools.get
+            |> Tools.Option.get
           in
 
           match (unloc tr.from) with

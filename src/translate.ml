@@ -200,8 +200,8 @@ let process_fun f ty c loc (args, body) =
     List.fold_left (
       fun acc i ->
         let id, typ, _ = i in
-        c (id, map_option ty typ, false, mkloc loc acc)
-    ) (c (ia, map_option ty it, false, f body)) t
+        c (id, Option.map ty typ, false, mkloc loc acc)
+    ) (c (ia, Option.map ty it, false, f body)) t
 
 let rec mk_lterm (e : expr) : lterm =
   let loc, v = deloc e in
@@ -250,9 +250,9 @@ let rec mk_lterm (e : expr) : lterm =
     | Eassert _ -> raise (ModelError ("\"assert\" is not allowed in logical block", loc))
     | Eseq (lhs, rhs) -> Lseq (mk_lterm lhs, mk_lterm rhs)
     | Eletin ((i, typ, _), init, body, _other) -> Lletin (i, mk_lterm init,
-                                                  map_option mk_ltyp typ, mk_lterm body)
+                                                  Option.map mk_ltyp typ, mk_lterm body)
     | Ematchwith _ -> raise (ModelError ("match with is not allowed in logical block", loc))
-    | Equantifier (q, (id, t, _), e) -> Lquantifer (to_quantifier q, id, map_option mk_ltyp t, mk_lterm e)
+    | Equantifier (q, (id, t, _), e) -> Lquantifer (to_quantifier q, id, Option.map mk_ltyp t, mk_lterm e)
     | Elabel _ -> raise (ModelError ("labels are not allowed in logical block", loc)))
 
 let rec mk_qualid (q : ParseTree.qualid) : liqualid =
@@ -284,7 +284,7 @@ let rec mk_pterm (e : expr) : pterm =
     | Erecord l -> Pfassign (List.map
                                (fun i ->
                                   let (a, e) = i in
-                                  let b = map_option (fun (op, id) ->
+                                  let b = Option.map (fun (op, id) ->
                                       (to_assignment_operator op, id)) a in
                                   (b, mk_pterm e)) l)
     | Etuple l -> Ptuple (List.map (fun x -> mk_pterm x) l)
@@ -306,16 +306,16 @@ let rec mk_pterm (e : expr) : pterm =
         | _ -> raise (ModelError ("unary operation not valid", loc))
       )
     | Eapp (f, args) -> Papp (mk_pterm f, List.map mk_pterm args) *)
-    | Etransfer (a, back, dest) -> Ptransfer (mk_pterm a, back, map_option mk_qualid dest)
+    | Etransfer (a, back, dest) -> Ptransfer (mk_pterm a, back, Option.map mk_qualid dest)
     | Erequire x -> Prequire (true, mk_pterm x)
     | Efailif x -> Prequire (false, mk_pterm x)
     | Eassign (op, lhs, rhs) -> Passign (to_assignment_operator op, mk_pterm lhs, mk_pterm rhs)
-    | Eif (cond, then_, else_) -> Pif (mk_pterm cond, mk_pterm then_, map_option mk_pterm else_)
+    | Eif (cond, then_, else_) -> Pif (mk_pterm cond, mk_pterm then_, Option.map mk_pterm else_)
     | Ebreak -> Pbreak
     | Efor (i, e, body) -> Pfor (i, mk_pterm e, mk_pterm body, None)
     | Eassert e -> Passert (mk_lterm e)
     | Eseq (lhs, rhs) -> Pseq (mk_pterm lhs, mk_pterm rhs)
-    | Eletin ((i, typ, _), init, body, _) -> Pletin (i, mk_pterm init, map_option mk_ptyp typ, mk_pterm body)
+    | Eletin ((i, typ, _), init, body, _) -> Pletin (i, mk_pterm init, Option.map mk_ptyp typ, mk_pterm body)
     | Ematchwith (e, l) ->
       let ll = List.fold_left
                     (fun acc (pts, e) -> (
@@ -375,8 +375,8 @@ let mk_decl loc ((id, typ, dv) : (lident * type_t option * expr option)) =
        | _ -> raise (ModelError ("mk_bval: wrong type for ", loc))) in
   {
     name = id;
-    typ = map_option mk_ptyp typ;
-    default = map_option mk_bval dv;
+    typ = Option.map mk_ptyp typ;
+    default = Option.map mk_bval dv;
     loc = loc;
   }
 
@@ -422,8 +422,8 @@ let extract_decls decls model =
     let mk_decl_pterm loc ((id, typ, dv) : (lident * type_t option * expr option)) =
       {
         name = id;
-        typ = map_option mk_ptyp typ;
-        default = map_option mk_pterm dv;
+        typ = Option.map mk_ptyp typ;
+        default = Option.map mk_pterm dv;
         loc = loc;
       } in
     let ret_from_to opts =
@@ -507,7 +507,7 @@ let extract_decls decls model =
   let mk_function loc f = {
     name = f.name;
     args = [];
-    return = map_option mk_ptyp f.ret_t;
+    return = Option.map mk_ptyp f.ret_t;
     body = mk_pterm f.body;
     side = false;
     loc = loc;
@@ -588,12 +588,12 @@ let extract_decls decls model =
     {
       name = name;
       args = extract_args args;
-      calledby  = map_option (fun (e, _) -> to_rexpr_calledby e) props.calledby;
+      calledby  = Option.map (fun (e, _) -> to_rexpr_calledby e) props.calledby;
       accept_transfer = props.accept_transfer;
-      require = map_option (fun (items, _) -> List.map (fun a -> to_label_pterm a) items) props.require;
+      require = Option.map (fun (items, _) -> List.map (fun a -> to_label_pterm a) items) props.require;
       transition = None;
       functions = List.map (fun x -> let loc, f = deloc x in mk_function loc f) props.functions;
-      verification = map_option mk_verification props.verif;
+      verification = Option.map mk_verification props.verif;
       effect = None;
       side = false;
       loc = loc;
@@ -625,7 +625,7 @@ let extract_decls decls model =
            {
              name = name;
              initial = is_state_initial opts;
-             verification = map_option get_state_specifications opts;
+             verification = Option.map get_state_specifications opts;
              loc = Location.loc name;
            }::acc)) [] items in
     {
@@ -650,7 +650,7 @@ let extract_decls decls model =
     {
       name       = id;
       signatures = List.map (fun x -> mk_signature x) ls;
-      init       = map_option mk_pterm dv;
+      init       = Option.map mk_pterm dv;
       loc        = loc;
     } in
 
@@ -682,7 +682,7 @@ let extract_decls decls model =
            acc with
            transactions = {
              (mk_action loc name args props) with
-             effect = Tools.map_option (fun x -> let a, _ = x in mk_pterm a) action
+             effect = Tools.Option.map (fun x -> let a, _ = x in mk_pterm a) action
            }::acc.transactions
          }
        | Dtransition (name, args, on, from, props, trs, _) ->
@@ -694,8 +694,8 @@ let extract_decls decls model =
                trs = List.map
                    (fun (to_, cond, action) ->
                       (to_,
-                       map_option (fun (e, _) -> mk_pterm e) cond,
-                       map_option (fun (e, _) -> mk_pterm e) action)) trs;
+                       Option.map (fun (e, _) -> mk_pterm e) cond,
+                       Option.map (fun (e, _) -> mk_pterm e) action)) trs;
              } in
            {
              acc with

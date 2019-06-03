@@ -273,10 +273,10 @@ value_option:
 | EQUAL x=expr { x }
 
 %inline from_value:
-| FROM x=qualid { x }
+| FROM x=ident { x }
 
 %inline to_value:
-| TO x=qualid { x }
+| TO x=ident { x }
 
 dextension:
 | PERCENT x=ident xs=nonempty_list(simple_expr)? { Dextension (x, xs) }
@@ -599,7 +599,7 @@ expr_r:
     {
       (List.fold_right (fun x acc ->
            let i, t, _ = x in
-           let l = Location.merge (loc i) (loc (Tools.get t)) in
+           let l = Location.merge (loc i) (loc (Tools.Option.get t)) in
            mkloc l (Equantifier (q, x, acc))) xs y) |> unloc
     }
 

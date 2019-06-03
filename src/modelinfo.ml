@@ -165,7 +165,7 @@ let mk_info m =
   let vr = m |> mk_dummy_variables in
   let av = m.assets |> List.map (fun a -> get_asset_name a, get_asset_vars a) in
   let pa = m.assets |> List.fold_left (fun acc a -> acc @ (get_partitions a)) [] in
-  let vt = m.variables |> List.fold_left (fun acc s -> acc @ [unloc s.decl.name, Tools.map_option unloc s.decl.typ]) []
+  let vt = m.variables |> List.fold_left (fun acc s -> acc @ [unloc s.decl.name, Tools.Option.map unloc s.decl.typ]) []
   in
   let res = {
     assets_pol = ap;

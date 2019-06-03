@@ -115,7 +115,7 @@ type expr_unloc =
   | Edot          of expr * lident
   | Eapp          of function_ * expr list
   | Emethod       of expr * lident * expr list
-  | Etransfer     of expr * bool * qualid option
+  | Etransfer     of expr * bool * lident option
   | Erequire      of expr
   | Efailif       of expr
   | Eassign       of assignment_operator * expr * expr
@@ -237,8 +237,8 @@ type declaration_unloc =
 [@@deriving yojson, show {with_path = false}]
 
 and value_option =
-  | VOfrom of qualid
-  | VOto of qualid
+  | VOfrom of lident
+  | VOto of lident
 [@@deriving yojson, show {with_path = false}]
 
 and asset_option =
@@ -283,3 +283,4 @@ type archetype_unloc =
 
 and archetype = archetype_unloc loced
 [@@deriving yojson, show {with_path = false}]
+

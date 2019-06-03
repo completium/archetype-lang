@@ -7,7 +7,7 @@ PROFILE  ?= dev
 COMPILER := compiler.exe
 
 # --------------------------------------------------------------------
-all: $(COMPILER) plugin .merlin
+all: $(COMPILER)  .merlin
 
 run: __force__
 	dune exec ./$(COMPILER)
