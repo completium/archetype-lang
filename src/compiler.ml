@@ -44,14 +44,14 @@ let generate_target model =
   | Liquidity -> (
       let liq_tree = Gen_liquidity.model_to_liq_tree model in
       if !Option.opt_raw_target
-      then  Format.printf "%a\n" Gen_liquidity.pp_liq_tree liq_tree
+      then Format.printf "%a\n" Gen_liquidity.pp_liq_tree liq_tree
       else () (*TODO: pretty print liquidity tree *)
     )
   | Whyml     -> (
-      let _decls = Gen_whyml.model_to_liq_tree model in
+      let decls = Gen_whyml.model_to_liq_tree model in
       if !Option.opt_raw_target
       then () (*TODO: raw print ptree whyml tree *)
-      else () (*TODO: pretty print ptree whyml tree *)
+      else (Format.printf "%a\n" Printer_mlw.pp_mlw decls; raise Stop)
     )
   | Markdown  -> () (*TODO*)
   | None      -> () (*TODO*)
