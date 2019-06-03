@@ -1,7 +1,7 @@
-archetype extension transactionDelegation (
+archetype extension action_delegation (
 
   action aTransaction (anasset : anAsset) = {
-    called by [%delegable] anAsset.arole
+    called by [%delegable%] anAsset.arole
   }
 
 ) = {
@@ -17,7 +17,7 @@ archetype extension transactionDelegation (
   namespace <%aTransaction>_space {
     asset Operator identified by anasset = {
       anasset  : anAsset;
-      operator : address
+      operator : address;
     }
 
     action setDelegate (Operator : Operator) = {

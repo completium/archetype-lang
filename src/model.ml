@@ -82,7 +82,6 @@ type comparison_operator =
 
 type assignment_operator =
   | ValueAssign
-  | SimpleAssign
   | PlusAssign
   | MinusAssign
   | MultAssign

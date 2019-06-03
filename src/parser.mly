@@ -4,7 +4,7 @@
   open Location
   open ParseUtils
 
-  let error ?loc code = raise (ParseError (loc, code))
+  let error loc = raise (ParseError [PE_Unknown loc])
 
   let dummy_action_properties = {
       calledby        = None;
@@ -25,7 +25,7 @@
     | Eseq (a, b) -> (split_seq_label a) @ (split_seq_label b)
     | Elabel (lbl, e) -> [mkloc loc (Some lbl, e)]
     | Eterm _ -> [mkloc loc (None, e)]
-    | _ -> error ~loc:(Location.loc e) PE_Unknown
+    | _ -> error (Location.loc e)
 
 %}
 
@@ -35,7 +35,6 @@
 %token IDENTIFIED
 %token SORTED
 %token BY
-%token AS
 %token FROM
 %token TO
 %token ON
@@ -58,6 +57,7 @@
 %token ACTION
 %token CALLED
 %token TRANSITION
+%token AT
 %token VERIFICATION
 %token PREDICATE
 %token DEFINITION
@@ -87,18 +87,18 @@
 %token LPAREN
 %token RPAREN
 %token LBRACKETPERCENT
+%token PERCENTRBRACKET
 %token LBRACKET
 %token RBRACKET
 %token LBRACE
 %token RBRACE
-%token EQUAL
+%token COLONEQUAL
 %token COMMA
 %token COLON
 %token SEMI_COLON
 %token PERCENT
 %token PIPE
 %token DOT
-%token COLONEQUAL
 %token PLUSEQUAL
 %token MINUSEQUAL
 %token MULTEQUAL
@@ -114,6 +114,7 @@
 %token FALSE
 %token IMPLY
 %token EQUIV
+%token EQUAL
 %token NEQUAL
 %token LESS
 %token LESSEQUAL
@@ -132,6 +133,9 @@
 %token EOF
 %token FAILIF
 %token REQUIRE
+
+%token INVALID_EXPR
+%token INVALID_DECL
 
 %token <string> IDENT
 %token <string> STRING
@@ -208,12 +212,12 @@ snl2(separator, X):
 start_expr:
 | x=expr EOF { x }
 | x=loc(error)
-      { error ~loc:(loc x) PE_Unknown }
+      { error (loc x) }
 
 main:
  | x=loc(archetype_r) { x }
  | x=loc(error)
-     { error ~loc:(loc x) PE_Unknown }
+     { error (loc x) }
 
 archetype_r:
  | x=implementation_archetype EOF { x }
@@ -237,7 +241,6 @@ declaration_r:
  | x=constant           { x }
  | x=variable           { x }
  | x=enum               { x }
- | x=states             { x }
  | x=asset              { x }
  | x=action             { x }
  | x=transition         { x }
@@ -246,6 +249,7 @@ declaration_r:
  | x=contract           { x }
  | x=function_decl      { x }
  | x=verification_decl  { x }
+ | INVALID_DECL         { Dinvalid }
 
 archetype:
 | ARCHETYPE exts=option(extensions) x=ident { Darchetype (x, exts) }
@@ -256,11 +260,11 @@ vc_decl(X):
 
 constant:
   | x=vc_decl(CONSTANT) { let x, t, z, dv, exts = x in
-                          Dvariable (x, t, dv, z, true, exts) }
+                          Dvariable (x, t, dv, z, VKconstant, exts) }
 
 variable:
   | x=vc_decl(VARIABLE) { let x, t, z, dv, exts = x in
-                          Dvariable (x, t, dv, z, false, exts) }
+                          Dvariable (x, t, dv, z, VKvariable, exts) }
 
 %inline value_options:
 | xs=value_option+ { xs }
@@ -288,7 +292,7 @@ dextension:
 | e=loc(extension_r) { e }
 
 extension_r:
-| LBRACKETPERCENT x=ident xs=option(simple_expr+) RBRACKET { Eextension (x, xs) }
+| LBRACKETPERCENT x=ident xs=option(simple_expr+) PERCENTRBRACKET { Eextension (x, xs) }
 
 namespace:
 | NAMESPACE x=ident xs=braced(declarations) { Dnamespace (x, xs) }
@@ -306,13 +310,10 @@ signature:
 | ACTION x=ident                { Ssignature (x, []) }
 | ACTION x=ident COLON xs=types { Ssignature (x, xs) }
 
-%inline fun_effect:
-| EFFECT e=braced(expr) { e }
-
 %inline fun_body:
 | e=expr { (None, e) }
 |  s=verification_fun
-      e=fun_effect
+      EFFECT e=braced(expr)
         { (Some s, e) }
 
 %inline function_gen:
@@ -368,15 +369,15 @@ verif_item:
 | x=verif_variable      { x }
 | x=verif_invariant     { x }
 | x=verif_effect        { x }
+| x=verif_specification { x }
 
 verification(spec):
 | x=loc(spec)
     { ([x], None) }
 
 | VERIFICATION exts=option(extensions) LBRACE
-    xs=loc(verif_item)*
-      x=loc(verif_specification) RBRACE
-        { (xs@[x], exts) }
+    xs=loc(verif_item)+ RBRACE
+        { (xs, exts) }
 
 verification_fun:
 | x=loc(verification(verif_specification)) { x }
@@ -385,13 +386,33 @@ verification_decl:
 | x=loc(verification(verif_specification)) { Dverification x }
 
 enum:
-| ENUM exts=extensions? x=ident EQUAL xs=pipe_idents {Denum (x, xs, exts)}
+| STATES exts=extensions? xs=equal_enum_values
+    {Denum (EKstate,  xs, exts)}
 
-states:
-| STATES exts=extensions? x=ident? xs=states_values? {Dstates (x, xs, exts)}
+| ENUM exts=extensions? x=ident xs=equal_enum_values
+    {Denum (EKenum x, xs, exts)}
 
-states_values:
-| EQUAL xs=pipe_ident_options { xs }
+equal_enum_values:
+| /*nothing*/          { [] }
+| EQUAL xs=enum_values { xs }
+
+enum_values:
+| /*nothing*/    { [] }
+| xs=pipe_idents { xs }
+
+%inline pipe_idents:
+| xs=pipe_ident+ { xs }
+
+%inline pipe_ident:
+| PIPE x=ident opts=enum_options { (x, opts) }
+
+%inline enum_options:
+| /* nothing */    { [] }
+| xs=enum_option+ { xs }
+
+enum_option:
+| INITIAL              { EOinitial }
+| WITH xs=braced(expr) { EOspecification (split_seq_label xs) }
 
 types:
 | xs=separated_nonempty_list(COMMA, type_t) { xs }
@@ -426,22 +447,6 @@ type_s_unloc:
 | SET        { Set }
 | PARTITION  { Partition }
 
-%inline pipe_idents:
-| PIPE? xs=separated_nonempty_list(PIPE, ident) { xs }
-
-%inline pipe_ident_options:
-| PIPE? xs=separated_nonempty_list(PIPE, pipe_ident_option) { xs }
-
-%inline pipe_ident_option:
-| x=ident opts=state_options? { (x, opts) }
-
-%inline state_options:
-| xs=state_option+ { xs }
-
-state_option:
-| INITIAL                     { SOinitial }
-| WITH xs=braced(expr)        { SOspecification (split_seq_label xs) }
-
 asset:
 | ASSET exts=extensions? ops=bracket(asset_operation)? x=ident opts=asset_options?
         fields=asset_fields?
@@ -466,12 +471,11 @@ asset_post_option:
 | xs=asset_option+ { xs }
 
 asset_option:
-| AS _x=ident           { AOasrole }
 | IDENTIFIED BY x=ident { AOidentifiedby x }
 | SORTED BY x=ident     { AOsortedby x }
 
 %inline fields:
-| xs=snl(SEMI_COLON, field) { xs }
+| xs=terminated(field, SEMI_COLON)+ { xs }
 
 field_r:
 | x=ident exts=option(extensions)
@@ -531,7 +535,7 @@ require:
 | WHEN exts=option(extensions) e=braced(expr) { (e, exts) }
 
 %inline with_effect:
-| WITH EFFECT exts=option(extensions) e=braced(expr) { (e, exts) }
+| WITH e=effect { e }
 
 effect:
  | EFFECT exts=option(extensions) e=braced(expr) { (e, exts) }
@@ -544,19 +548,19 @@ effect:
  | xs=function_arg+  { xs }
 
 %inline function_arg:
- | id=ident exts=option(extensions)
-     { (id, None, exts) }
-
  | LPAREN id=ident exts=option(extensions)
      COLON ty=type_t RPAREN
-       { (id, Some ty, exts) }
+       { (id, ty, exts) }
 
-%inline assignment_value_operator:
- | EQUAL                  { ValueAssign }
- | op=assignment_operator { op }
+%inline assignment_operator_record:
+ | EQUAL                    { ValueAssign }
+ | op=assignment_operator_extra { op }
 
-%inline assignment_operator:
- | COLONEQUAL  { SimpleAssign }
+%inline assignment_operator_expr:
+ | COLONEQUAL               { ValueAssign }
+ | op=assignment_operator_extra { op }
+
+%inline assignment_operator_extra:
  | PLUSEQUAL   { PlusAssign }
  | MINUSEQUAL  { MinusAssign }
  | MULTEQUAL   { MultAssign }
@@ -586,10 +590,18 @@ pattern:
  | e=loc(expr_r) { e }
 
 %inline ident_typ_q_item:
- | LPAREN ids=ident+ COLON t=type_t RPAREN { List.map (fun x -> (x, Some t, None)) ids }
+ | LPAREN ids=ident+ COLON t=type_t RPAREN { List.map (fun x -> (x, t, None)) ids }
 
 ident_typ_q:
  | xs=ident_typ_q_item+ { List.flatten xs }
+
+%inline colon_type_opt:
+|                { None }
+| COLON t=type_s { Some t }
+
+%inline otherwise:
+|                  { None }
+| OTHERWISE o=expr { Some o }
 
 expr_r:
  | q=quantifier x=ident_typ1 COMMA y=expr
@@ -599,15 +611,12 @@ expr_r:
     {
       (List.fold_right (fun x acc ->
            let i, t, _ = x in
-           let l = Location.merge (loc i) (loc (Tools.get t)) in
+           let l = Location.merge (loc i) (loc t) in
            mkloc l (Equantifier (q, x, acc))) xs y) |> unloc
     }
 
- | LET x=ident_typ1 EQUAL e=expr IN y=expr OTHERWISE o=expr
-     { Eletin (x, e, y, Some o) }
-
- | LET x=ident_typ1 EQUAL e=expr IN y=expr
-     { Eletin (x, e, y, None) }
+ | LET i=ident t=colon_type_opt EQUAL e=expr IN y=expr o=otherwise
+     { Eletin (i, t, e, y, o) }
 
  | e1=expr SEMI_COLON e2=expr
      { Eseq (e1, e2) }
@@ -635,7 +644,7 @@ expr_r:
  | xs=snl2(COMMA, simple_expr)
      { Etuple xs }
 
- | x=expr op=assignment_operator y=expr
+ | x=expr op=assignment_operator_expr y=expr
      { Eassign (op, x, y) }
 
  | TRANSFER back=boption(BACK) x=simple_expr y=ioption(to_value) %prec prec_transfer
@@ -696,18 +705,37 @@ simple_expr_r:
  | x=literal
      { Eliteral x }
 
- | n=ident COLONCOLON x=ident
-     { Eterm (Some n, x) }
+ | s=ident COLONCOLON x=ident
+     { Eterm (None, Some s, x) }
 
  | x=ident
-     { Eterm (None, x) }
+     { Eterm (None, None, x) }
+
+ | LPAREN s=ident COLONCOLON x=ident AT l=ident RPAREN
+     { Eterm (Some l, Some s, x) }
+
+ | LPAREN x=ident AT l=ident RPAREN
+     { Eterm (Some l, None, x) }
+
+| INVALID_EXPR
+     { Einvalid }
 
  | x=paren(expr_r)
      { x }
 
+/*%inline ident_typs:
+ | xs=ident+ COLON ty=type_t
+     { List.map (fun x -> (x, ty, None)) xs }
+
+ | xs=ident_typ+
+     { List.flatten xs }
+
+%inline ident_typ:
+ | LPAREN ids=ident+ COLON ty=type_t RPAREN
+     { List.map (fun id -> (id, ty, None)) ids }*/
+
 %inline ident_typ1:
- | id=ident ty=option(COLON ty=type_t { ty })
-     { (id, ty, None) }
+ | id=ident COLON ty=type_t { (id, ty, None) }
 
 literal:
  | x=NUMBER     { Lnumber   x }
@@ -725,7 +753,7 @@ literal:
 
 record_item:
  | e=simple_expr { (None, e) }
- | id=ident op=assignment_value_operator e=simple_expr
+ | id=ident op=assignment_operator_record e=simple_expr
    { (Some (op, id), e) }
 
 %inline quantifier:

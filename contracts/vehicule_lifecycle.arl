@@ -1,11 +1,12 @@
 archetype vehicle_lifecycle
 
-asset owner as role = {
+asset owner = {
+  id : role;
   fn : string;
-  ln : string
+  ln : string;
 }
 
-states order_state =
+enum order_state =
   | Placed                      initial
   | Scheduled_for_manufacture
   | Vin_assigned
@@ -13,17 +14,17 @@ states order_state =
   | Delivered
 
 asset vehicledetail = {
-  id : string
+  id : string;
 }
 
 asset order = {
    status       : order_sate;
    manufacturer : manufacturer;
    orderer      : owner;
-   details      : vehicledetail
+   details      : vehicledetail;
 }
 
-states vehicle_state =
+enum vehicle_state =
   | Off_the_road               initial
   | Active
   | Scrapped
@@ -32,7 +33,7 @@ asset vehicle identified by vin = {
    vin          : string;
    owner        : owner;
    detail       : vehicledetail;
-   color        : string
+   color        : string;
 } with states vehicle_state
 
 action placeOrder (neworder : order) = {
@@ -62,7 +63,7 @@ transition assign_owner on ok : order from any = {
 }
 
 action vehiculeTransfer (buyer : owner) (vehicule : vehicule) = {
-  called by [%delegable] vehicule.owner
+  called by [%delegable%] vehicule.owner
   effect {
     vehicule.owner := buyer
   }

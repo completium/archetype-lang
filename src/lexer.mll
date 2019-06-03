@@ -4,7 +4,7 @@
 
   let lex_error lexbuf msg =
     let loc = Location.of_lexbuf lexbuf in
-    raise (ParseUtils.ParseError (Some loc, PE_LexicalError msg))
+    raise (ParseUtils.ParseError ([PE_LexicalError (loc, msg)]))
 
   let keywords = Hashtbl.create 0
 
@@ -15,7 +15,6 @@
       "identified"          , IDENTIFIED     ;
       "sorted"              , SORTED         ;
       "by"                  , BY             ;
-      "as"                  , AS             ;
       "from"                , FROM           ;
       "to"                  , TO             ;
       "on"                  , ON             ;
@@ -39,6 +38,7 @@
       "action"              , ACTION         ;
       "effect"              , EFFECT         ;
       "called"              , CALLED         ;
+      "at"                  , AT             ;
       "verification"        , VERIFICATION   ;
       "predicate"           , PREDICATE      ;
       "definition"          , DEFINITION     ;
@@ -102,7 +102,7 @@ let date     = day ('T' hour ( timezone )?)?
 let accept_transfer = "accept" blank+ "transfer"
 let op_spec1 = "may" blank+ "be" blank+ "performed" blank+ "only" blank+ "by" blank+ "role"
 let op_spec2 = "may" blank+ "be" blank+ "performed" blank+ "only" blank+ "by" blank+ "action"
-let op_spec3 = "may" blank+ "be" blank+ "performed" blank+ "by" blank+ "by"
+let op_spec3 = "may" blank+ "be" blank+ "performed" blank+ "by" blank+ "role"
 let op_spec4 = "may" blank+ "be" blank+ "performed" blank+ "by" blank+ "action"
 
 (* -------------------------------------------------------------------- *)
@@ -141,18 +141,18 @@ rule token = parse
   | "("                   { LPAREN }
   | ")"                   { RPAREN }
   | "[%"                  { LBRACKETPERCENT }
+  | "%]"                  { PERCENTRBRACKET }
   | "["                   { LBRACKET }
   | "]"                   { RBRACKET }
   | "{"                   { LBRACE }
   | "}"                   { RBRACE }
-  | "="                   { EQUAL }
+  | ":="                  { COLONEQUAL }
   | ","                   { COMMA }
   | ":"                   { COLON }
   | ";"                   { SEMI_COLON }
   | "%"                   { PERCENT }
   | "|"                   { PIPE }
   | "."                   { DOT }
-  | ":="                  { COLONEQUAL }
   | "+="                  { PLUSEQUAL }
   | "-="                  { MINUSEQUAL }
   | "*="                  { MULTEQUAL }
@@ -161,6 +161,7 @@ rule token = parse
   | "|="                  { OREQUAL }
   | "->"                  { IMPLY }
   | "<->"                 { EQUIV }
+  | "="                   { EQUAL }
   | "<>"                  { NEQUAL }
   | "<"                   { LESS }
   | "<="                  { LESSEQUAL }

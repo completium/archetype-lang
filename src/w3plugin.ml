@@ -5,12 +5,12 @@ open Ptree
 open Wstdlib
 
 let debug = Debug.register_flag "archetype"
-  ~desc:"archetype plugin debug flag"
+    ~desc:"archetype plugin debug flag"
 
 (* NO! this will be executed at plugin load, thus
-disabling the warning for ALL WHY3 USERS even if they don't
-use the python front-end
-let () = Debug.set_flag Dterm.debug_ignore_unused_var
+   disabling the warning for ALL WHY3 USERS even if they don't
+   use the python front-end
+   let () = Debug.set_flag Dterm.debug_ignore_unused_var
 *)
 
 let mk_id ~loc name =

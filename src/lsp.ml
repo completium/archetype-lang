@@ -1,5 +1,12 @@
 open Archetype
 
+type kind =
+  | Errors
+  | Outline
+[@@deriving yojson, show {with_path = false}]
+
+let kind = ref Errors
+
 type status =
   | Passed
   | Error
@@ -12,41 +19,199 @@ type position = {
 }
 [@@deriving yojson, show {with_path = false}]
 
-type result = {
-  status : status;
-  start : position;
-  end_ : position;
+type range = {
+  start: position;
+  end_: position [@key "end"];
+}
+[@@deriving yojson, show {with_path = false}]
+
+type item = {
+  range : range;
   message : string;
 }
 [@@deriving yojson, show {with_path = false}]
 
+type result = {
+  status : status;
+  items : item list;
+}
+[@@deriving yojson, show {with_path = false}]
+
+type outline = {
+  children: outline list;
+  name : string;
+  kind : int;
+  start: position;
+  end_: position [@key "end"];
+}
+[@@deriving yojson, show {with_path = false}]
+
+type result_outline = {
+  status : status;
+  outlines : outline list;
+}
+[@@deriving yojson, show {with_path = false}]
+
 let mk_position (line, col) char : position = {
-  line = line;
+  line = line - 1;
   col = col;
   char = char;
 }
 
-let mk_result status (loc : Location.t) msg = {
-  status = status;
+let mk_range (loc : Location.t) = {
   start = mk_position loc.loc_start loc.loc_bchar;
-  end_ = mk_position loc.loc_end loc.loc_echar;
+  end_  = mk_position loc.loc_end loc.loc_echar;
+}
+
+let mk_item (loc : Location.t) msg = {
+  range = mk_range loc;
   message = msg;
 }
 
-let process (filename, channel) =
-  let st, loc, msg = (
-    try
-      let _ = Io.parse_archetype ~name:filename channel in
-      (Passed, Location.dummy, "")
-    with
-    | ParseUtils.ParseError (loc, error) ->
-      let msg : string = (match error with
-          | PE_LexicalError s -> s
-          | PE_Unknown -> "syntax error") in
+let mk_outline (name, kind, (loc : Location.t)) = {
+  children = [];
+  name  = name;
+  kind  = kind;
+  start = mk_position loc.loc_start loc.loc_bchar;
+  end_  = mk_position loc.loc_end loc.loc_echar;
+}
 
-      let loc : Location.t = (match loc with
-          | Some l -> l
-          | None -> Location.dummy) in
-      (Error, loc,msg)) in
-  let r : result = mk_result st loc msg in
-  Format.printf "%s\n" (Yojson.Safe.to_string (result_to_yojson r))
+let mk_result status items = {
+  status = status;
+  items = items;
+}
+
+let mk_result status items = {
+  status = status;
+  items = items;
+}
+
+type symbol_kind =
+  | File
+  | Module
+  | Namespace
+  | Package
+  | Class
+  | Method
+  | Property
+  | Field
+  | Constructor
+  | Enum
+  | Interface
+  | Function
+  | Variable
+  | Constant
+  | String
+  | Number
+  | Boolean
+  | Array
+  | Object
+  | Key
+  | Null
+  | EnumMember
+  | Struct
+  | Event
+  | Operator
+  | TypeParameter
+
+let symbol_kind_to_int = function
+  | File -> 1
+  | Module -> 2
+  | Namespace -> 3
+  | Package -> 4
+  | Class -> 5
+  | Method -> 6
+  | Property -> 7
+  | Field -> 8
+  | Constructor -> 9
+  | Enum -> 10
+  | Interface -> 11
+  | Function -> 12
+  | Variable -> 13
+  | Constant -> 14
+  | String -> 15
+  | Number -> 16
+  | Boolean -> 17
+  | Array -> 18
+  | Object -> 19
+  | Key -> 20
+  | Null -> 21
+  | EnumMember -> 22
+  | Struct -> 23
+  | Event -> 24
+  | Operator -> 25
+  | TypeParameter -> 26
+
+let mk_outline_from_label_exprs (x : ParseTree.label_exprs) =
+  (List.map (fun (x : ParseTree.label_expr)  -> let i, _ = Location.unloc x in let id = (Tools.get i) in mk_outline (Location.unloc id, symbol_kind_to_int Property, Location.loc id)) x)
+
+let mk_outline_from_verification (verif : ParseTree.verification) =
+  let vis, _ = Location.unloc verif in
+
+  List.fold_left (fun accu (i : ParseTree.verification_item) ->
+      match Location.unloc i with
+      | Vinvariant (_, l) -> mk_outline_from_label_exprs l @ accu
+      | Vspecification l  -> mk_outline_from_label_exprs l @ accu
+      | _ -> accu) [] vis
+
+let make_outline_from_enum ((ek, li, l) : (ParseTree.enum_kind * 'a * 'b) ) =
+  let outline = mk_outline ((match ek with | EKenum i -> (Location.unloc i) | EKstate -> "states"), symbol_kind_to_int Enum, l) in
+  outline :: (List.map (fun (id, _) -> mk_outline(Location.unloc id, symbol_kind_to_int EnumMember, Location.loc id) ) li)
+(*
+
+  {outline with
+   children = List.map (fun (id, _) -> mk_outline(Location.unloc id, symbol_kind_to_int EnumMember, Location.loc id) ) li } *)
+
+let make_outline_from_decl (d : ParseTree.declaration) gl =
+  let l, v = Location.deloc d in
+  match v with
+  | Darchetype (id, _) -> [mk_outline (Location.unloc id, symbol_kind_to_int Class, gl)]
+  | Dvariable (id, _, _, _, _, _) -> [mk_outline (Location.unloc id, symbol_kind_to_int Variable, l)]
+  | Denum (ek, li, _) -> make_outline_from_enum (ek, li, l)
+  | Dasset (id, _, _, _, _, _) -> [mk_outline (Location.unloc id, symbol_kind_to_int Struct, l)]
+  | Daction (id, _, ap, _, _) -> mk_outline (Location.unloc id, symbol_kind_to_int Function, l) :: (Tools.map_option_neutral mk_outline_from_verification [] ap.verif)
+  | Dtransition (id, _, _, _, _, _, _) -> [mk_outline (Location.unloc id, symbol_kind_to_int Function, l)]
+  | Dcontract (id, _, _, _) -> [mk_outline (Location.unloc id, symbol_kind_to_int Object, l)]
+  | Dfunction s -> [mk_outline (Location.unloc s.name, symbol_kind_to_int Function, l)]
+  | Dnamespace (id, _) -> [mk_outline (Location.unloc id, symbol_kind_to_int Namespace, l)]
+  | Dverification verif -> mk_outline_from_verification verif
+  | _ -> []
+
+let process (filename, channel) =
+  let pt = Io.parse_archetype ~name:filename channel in
+  begin
+    match !kind with
+    | Outline -> (
+        let gl, v =  Location.deloc pt in
+        match v with
+        | Marchetype m -> (
+            let lis = List.fold_left (fun accu d  ->
+                let t = make_outline_from_decl d gl in
+                if List.length t = 0
+                then accu
+                else t@accu) [] m in
+            let res = {
+              status = Passed;
+              outlines = lis;
+            } in
+            Format.printf "%s\n" (Yojson.Safe.to_string (result_outline_to_yojson res)))
+        | _ -> ()
+      )
+    | Errors -> (
+        Format.printf "%s\n" (Yojson.Safe.to_string (result_to_yojson (
+            let li = Error.errors in
+            match !li with
+            | [] -> mk_result Passed []
+            | l -> mk_result Error (List.map (fun (p : (Position.t list * string)) ->
+                let l, str = p in
+                let p = (
+                  match l with
+                  | [] -> Position.dummy
+                  | i::_ -> i
+                ) in
+                let s : Lexing.position = Position.start_of_position p in
+                let e : Lexing.position = Position.end_of_position p in
+                let loc = Location.make s e in
+                mk_item loc str) l)
+          ))))
+  end

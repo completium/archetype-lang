@@ -13,7 +13,7 @@
   "Keymap for Archetype major mode")
 
 (defvar archetype-keywords
-  '("archetype" "constant" "variable" "identified" "sorted" "by" "as" "from" "to" "on" "ref" "fun" "initialized" "collection" "queue" "stack" "set" "partition" "asset" "match" "with" "end" "assert" "enum" "states" "initial" "invariant" "transition" "action" "when" "called" "condition" "verification" "predicate" "definition" "axiom" "theorem" "specification" "effect" "function" "ensure" "let" "otherwise" "if" "then" "else" "for" "in" "break" "accept" "transfer" "back" "extension" "namespace" "contract" "and" "or" "not" "forall" "exists" "true" "false" "failif" "require"))
+  '("archetype" "constant" "variable" "identified" "sorted" "by" "at" "from" "to" "on" "ref" "fun" "initialized" "collection" "queue" "stack" "set" "partition" "asset" "match" "with" "end" "assert" "enum" "states" "initial" "invariant" "transition" "action" "when" "called" "condition" "verification" "predicate" "definition" "axiom" "theorem" "specification" "effect" "function" "ensure" "let" "otherwise" "if" "then" "else" "for" "in" "break" "accept" "transfer" "back" "extension" "namespace" "contract" "and" "or" "not" "forall" "exists" "true" "false" "failif" "require"))
 
 (defvar archetype-constants
   '("state" "now" "transferred" "caller" "fail" "balance" "conditions" "effects" "none" "any" "transfer" "mem" "idem" "before" "after" "fixed" "subset" "default" "type"))

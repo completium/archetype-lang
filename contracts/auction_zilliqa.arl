@@ -7,7 +7,7 @@ variable beneficiary address = @tz1KmuhR6P52hw6xs5P69BXJYAURaznhvN1k
 
 asset pending_returns identified by incumbent = {
   incumbent   : address;
-  val         : tez
+  val         : tez;
 }
 
 states =
@@ -70,7 +70,7 @@ action place_bid = {
 }
 
 (* onlyonce extension specifies that one cannot withdraw more than once *)
-action[%onlyonce] withdraw = {
+action[%onlyonce%] withdraw = {
   require {
     c2 : pending_returns.contains caller
   }

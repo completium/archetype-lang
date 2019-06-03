@@ -2,8 +2,3 @@ states =
 | First initial
 | Second
 | Third
-
-states color =
-| Red initial
-| Green
-| Blue

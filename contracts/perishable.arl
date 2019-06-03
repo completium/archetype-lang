@@ -7,27 +7,35 @@ enum productType =
  | Peaches
  | Coffee
 
-states shipmentStatus =
+enum shipmentStatus =
  | Created
  | In_transit
  | Arrived
 
-asset grower as role
-asset importer as role
-asset importer as role
+asset grower identified by id = {
+  id : role;
+}
+
+asset importer identified by id = {
+  id : role;
+}
+
+asset importer identified by id = {
+  id : role;
+}
 
 asset p_contract = {
   grower          : grower;
   shipper         : shipper;
   importer        : importer;
   arrivalDateTime : date;
-  unitPrice       : rational
+  unitPrice       : rational;
 }
 
 asset shipment = {
   type     : productType;
   count    : uint;
-  p_c      : p_contract
+  p_c      : p_contract;
 } with states shipmentStatus
 
 transition payOut (arrival : date) on sk : shipment from In_transit = {

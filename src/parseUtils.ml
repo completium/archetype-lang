@@ -3,33 +3,42 @@ open Core
 
 (* -------------------------------------------------------------------- *)
 type perror =
-  | PE_LexicalError of string
-  | PE_Unknown
+  | PE_LexicalError of Location.t * string
+  | PE_Unclosed of Location.t * string * string
+  | PE_Not_Expecting of Location.t * string
+  | PE_Message of string
+  | PE_Unknown of Location.t
 
-exception ParseError of (Location.t option * perror)
+exception ParseError of perror list
 
 (* -------------------------------------------------------------------- *)
 let pp_perror fmt = function
-  | PE_LexicalError x ->
-      Format.fprintf fmt "lexical error: %s" x
+  | PE_LexicalError (loc, x) ->
+    Format.fprintf fmt "lexical error: '%s' at %s" x (Location.tostring loc)
 
-  | PE_Unknown ->
-      Format.fprintf fmt "syntax error"
+  | PE_Unclosed (_loc, x, _y) ->
+    Format.fprintf fmt "Unclosed bracket '%s' detected" x
+
+  | PE_Not_Expecting (loc, x) ->
+    Format.fprintf fmt "Not expecting '%s' at %s" x (Location.tostring loc)
+
+  | PE_Message x ->
+    Format.fprintf fmt "%s" x
+
+  | PE_Unknown loc ->
+    Format.fprintf fmt "syntax error at %s" (Location.tostring loc)
 
 (* -------------------------------------------------------------------- *)
-let pp_parse_error fmt (loc, ppe) =
-  match loc with
-  | None ->
-      pp_perror fmt ppe
+let pp_parse_error fmt ppe = pp_perror fmt ppe
 
-  | Some loc ->
-      Format.fprintf fmt "%s: %a"
-        (Location.tostring loc) pp_perror ppe
+(* -------------------------------------------------------------------------- *)
+let pp_list sep pp =
+  Format.pp_print_list
+    ~pp_sep:(fun fmt () -> Format.fprintf fmt "%(%)" sep)
+    pp
+
+let pp_parse_errors ppes = pp_list "@\n" pp_perror ppes
 
 (* -------------------------------------------------------------------- *)
 let string_of_perror ppe =
   Format.asprintf "%a" pp_perror ppe
-
-(* -------------------------------------------------------------------- *)
-let string_of_parse_error ppe =
-  Format.asprintf "%a" pp_parse_error ppe

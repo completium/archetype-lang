@@ -8,17 +8,17 @@ open Why3
 open Ptree
 
 let empty_spec = {
-    sp_pre = [];
-    sp_post = [];
-    sp_xpost = [];
-    sp_reads = [];
-    sp_writes = [];
-    sp_alias = [];
-    sp_variant = [];
-    sp_checkrw = false;
-    sp_diverge = false;
-    sp_partial = false;
-  }
+  sp_pre = [];
+  sp_post = [];
+  sp_xpost = [];
+  sp_reads = [];
+  sp_writes = [];
+  sp_alias = [];
+  sp_variant = [];
+  sp_checkrw = false;
+  sp_diverge = false;
+  sp_partial = false;
+}
 
 let loc2loc (l : Location.t) : Loc.position =
   let fname  = l.loc_fname in
@@ -38,9 +38,9 @@ let mk_ident s = { id_str = unloc s; id_ats = []; id_loc = loc s }
 let mk_qid l =
   let rec aux l =
     match l with
-      | [] -> assert false
-      | [x] -> Qident(mk_ident x)
-      | x::r -> Qdot(aux r,mk_ident x)
+    | [] -> assert false
+    | [x] -> Qident(mk_ident x)
+    | x::r -> Qdot(aux r,mk_ident x)
   in
   aux (List.rev l)
 
@@ -56,12 +56,12 @@ let mk_econst s =
                           ic_abs = int_literal_dec s }))
 
 let str_to_eident (s : string list) = s
-  |> List.map (fun x -> mkloc Location.dummy x)
-  |> fun x -> Eident (mk_qid x)
+                                      |> List.map (fun x -> mkloc Location.dummy x)
+                                      |> fun x -> Eident (mk_qid x)
 
 let str_to_eidapp (s : string list) l = s
-  |> List.map (fun x -> mkloc Location.dummy x)
-  |> fun x -> Eidapp ((mk_qid x),l)
+                                        |> List.map (fun x -> mkloc Location.dummy x)
+                                        |> fun x -> Eidapp ((mk_qid x),l)
 
 let mk_enum_vals = List.map (fun id -> loc id, mk_ident id, [])
 
@@ -69,15 +69,15 @@ let mk_evar x = mk_expr(Eident(mk_qid [x]))
 
 let mk_enum_decl (enum : Modelws.enum) =
   Dtype [{
-    td_loc = loc enum;
-    td_ident = mk_ident (unloc enum).name;
-    td_params = [];
-    td_vis = Public;
-    td_mut = false;
-    td_inv = [];
-    td_wit = [];
-    td_def = TDalgebraic (mk_enum_vals (unloc enum).values);
-  }]
+      td_loc = loc enum;
+      td_ident = mk_ident (unloc enum).name;
+      td_params = [];
+      td_vis = Public;
+      td_mut = false;
+      td_inv = [];
+      td_wit = [];
+      td_def = TDalgebraic (mk_enum_vals (unloc enum).values);
+    }]
 
 let lident_to_typ s = PTtyapp (mk_qid [s],[])
 
@@ -126,15 +126,15 @@ let mk_storage_field (f : storage_field) : field = {
 
 let mk_storage_decl (storage : storage) =
   Dtype [{
-    td_loc = Loc.dummy_position;
-    td_ident = { id_str = "storage"; id_ats = []; id_loc = Loc.dummy_position } ;
-    td_params = [];
-    td_vis = Public;
-    td_mut = false;
-    td_inv = [];
-    td_wit = [];
-    td_def = TDrecord (List.map mk_storage_field storage.fields);
-  }]
+      td_loc = Loc.dummy_position;
+      td_ident = { id_str = "storage"; id_ats = []; id_loc = Loc.dummy_position } ;
+      td_params = [];
+      td_vis = Public;
+      td_mut = false;
+      td_inv = [];
+      td_wit = [];
+      td_def = TDrecord (List.map mk_storage_field storage.fields);
+    }]
 
 (* records generation *)
 
@@ -153,16 +153,16 @@ let mk_value_field (d : record_field_type) : field = {
 
 let mk_records (records : record list) =
   List.map (fun (x : record) ->
-  Dtype [{
-    td_loc = Loc.dummy_position;
-    td_ident = { id_str = x.name |> unloc; id_ats = []; id_loc = loc x.name } ;
-    td_params = [];
-    td_vis = Public;
-    td_mut = false;
-    td_inv = [];
-    td_wit = [];
-    td_def = TDrecord (List.map mk_value_field x.values);
-  }]) records
+      Dtype [{
+          td_loc = Loc.dummy_position;
+          td_ident = { id_str = x.name |> unloc; id_ats = []; id_loc = loc x.name } ;
+          td_params = [];
+          td_vis = Public;
+          td_mut = false;
+          td_inv = [];
+          td_wit = [];
+          td_def = TDrecord (List.map mk_value_field x.values);
+        }]) records
 
 (* storage init generation *)
 let mk_init_args info (fs : storage_field list) : (lident * storage_field_type) list =
@@ -226,13 +226,13 @@ let mk_init_fields info args (fs : storage_field list) : (lident * initval) list
           retrieve_default_value f (* TODO: handle all kind of default value for field *)
         ]
       | None ->
-         let init =
-           if List.mem_assoc f.name args
-           then Iinput f.name
-           else (* not an input, no default value : depends on type *)
-             retrieve_default_value f
-         in
-         acc @ [f.name, init]
+        let init =
+          if List.mem_assoc f.name args
+          then Iinput f.name
+          else (* not an input, no default value : depends on type *)
+            retrieve_default_value f
+        in
+        acc @ [f.name, init]
     ) [] fs
 
 let bval_to_expr info = function
@@ -278,10 +278,10 @@ let empty_cont_to_expr = function
 let mk_init_body info (fields : (lident * initval) list) : expr =
   let fields = fields |> List.map (fun (id,init) ->
       mk_qid [id], match init with
-        | Ienum id   -> mk_expr (Eident (mk_qid [id]))
-        | Ival bv    -> bval_to_expr info (unloc bv)
-        | Iemptyc ec -> empty_cont_to_expr ec
-        | Iinput id  -> mk_evar id) in
+      | Ienum id   -> mk_expr (Eident (mk_qid [id]))
+      | Ival bv    -> bval_to_expr info (unloc bv)
+      | Iemptyc ec -> empty_cont_to_expr ec
+      | Iinput id  -> mk_evar id) in
   mk_expr (Erecord fields)
 
 let mk_fun_decl id args body =
@@ -355,11 +355,11 @@ let rec pterm_to_expr (p : Modelws.pterm) =  {
       match unloc p with
       | Plit lit ->
         (match unloc lit with
-        | BVbool true -> Etrue
-        | BVbool false -> Efalse
-        | BVint n -> Econst (ConstInt (Number.int_const_of_big_int (to_big_int n)))
-        | BVuint n -> Econst (ConstInt (Number.int_const_of_big_int (to_big_int n)))
-        | _ -> raise (Anomaly ("pterm_to_expr: literal")))
+         | BVbool true -> Etrue
+         | BVbool false -> Efalse
+         | BVint n -> Econst (ConstInt (Number.int_const_of_big_int (to_big_int n)))
+         | BVuint n -> Econst (ConstInt (Number.int_const_of_big_int (to_big_int n)))
+         | _ -> raise (Anomaly ("pterm_to_expr: literal")))
       | Pnot e -> Enot (pterm_to_expr e)
       | Plogical (op, lhs, rhs) ->
         (match op with
@@ -370,32 +370,32 @@ let rec pterm_to_expr (p : Modelws.pterm) =  {
         (let l = pterm_to_expr lhs in
          let r = pterm_to_expr rhs in
          Eidapp (Qident (
-         (match op with
-           | Equal -> "="
-           | Nequal -> "<>"
-           | Gt -> ">"
-           | Ge -> ">="
-           | Lt -> "<"
-           | Le -> "<="
-         ) |> op_infix |> dumloc |> mk_ident), [l; r]))
+             (match op with
+              | Equal -> "="
+              | Nequal -> "<>"
+              | Gt -> ">"
+              | Ge -> ">="
+              | Lt -> "<"
+              | Le -> "<="
+             ) |> op_infix |> dumloc |> mk_ident), [l; r]))
       | Parith (op, lhs, rhs) ->
         (let l = pterm_to_expr lhs in
          let r = pterm_to_expr rhs in
          Eidapp (Qident (
-         (match op with
-         | Plus -> "+"
-         | Minus -> "-"
-         | Mult -> "*"
-         | Div -> "/"
-         | Modulo -> "%"
-         (*| _ -> raise (Anomaly ("pterm_to_expr: arith"))*)
-         ) |> op_infix |> dumloc |> mk_ident), [l; r]))
+             (match op with
+              | Plus -> "+"
+              | Minus -> "-"
+              | Mult -> "*"
+              | Div -> "/"
+              | Modulo -> "%"
+              (*| _ -> raise (Anomaly ("pterm_to_expr: arith"))*)
+             ) |> op_infix |> dumloc |> mk_ident), [l; r]))
       | Puarith (op, p) ->
         let e = pterm_to_expr p in
         Eidapp (Qident (
-         (match op with
-         | Uplus -> "+"
-         | Uminus -> "-" ) |> op_infix |> dumloc |> mk_ident), [e])
+            (match op with
+             | Uplus -> "+"
+             | Uminus -> "-" ) |> op_infix |> dumloc |> mk_ident), [e])
       | Pif (cond, then_, else_) ->
         Eif (pterm_to_expr cond,
              pterm_to_expr then_,
@@ -415,9 +415,9 @@ let rec pterm_to_expr (p : Modelws.pterm) =  {
         then
           let mid = dest_var m in
           let rid = dest_var r in
-        let l = if List.length l = 0
-          then [mk_unit ()]
-          else List.map pterm_to_expr l in
+          let l = if List.length l = 0
+            then [mk_unit ()]
+            else List.map pterm_to_expr l in
           Eidapp (mk_qid [mid;rid], l)
         else raise (Anomaly ("pterm_to_expr : "^(Modelws.show_pterm p)))
       | Plambda (i,t,s,b) -> mk_efun [] (loc p) i t s b
@@ -466,7 +466,7 @@ and to_regbranch r : reg_branch =
   (mk_pattern pat, pterm_to_expr e)
 and mk_pattern (p : Modelws.pattern) : Ptree.pattern =
   { pat_desc = (
-      match unloc p with
+        match unloc p with
         | Mwild -> Pwild
         | Mvar i -> Pvar (mk_ident i)
         | Mapp (q, l) -> Papp (mk_qualid q, List.map mk_pattern l)
@@ -478,9 +478,9 @@ and mk_pattern (p : Modelws.pattern) : Ptree.pattern =
         | Mscope (q, p) -> Pscope (mk_qualid q, mk_pattern p)
         | Mparen p -> Pparen (mk_pattern p)
         | Mghost p -> Pghost (mk_pattern p)
-    );
+      );
     pat_loc = Loc.dummy_position;
-}
+  }
 and mk_qualid (q : lident Model.qualid) : Ptree.qualid =
   match q with
   | Qident i -> Qident (mk_ident i)

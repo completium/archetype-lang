@@ -2,21 +2,21 @@ archetype escrow
 
 variable buyer role
 
-variable[%transferable] debitor role = buyer
+variable[%transferable%] debitor role = buyer
 
 variable seller role
 
-variable[%transferable] creditor role = seller
+variable[%transferable%] creditor role = seller
 
 variable oracle role
 
-variable[%traceable] price tez from buyer to creditor
+variable[%traceable%] price tez from buyer to creditor
 
-variable[%traceable] [%mutable_signed [{buyer}; {debitor}] (state = Created)]
+variable[%traceable%] [%mutable_signed [{buyer}; {debitor}] (state = Created)%]
      penalty tez from seller to debitor = 0.1 * price
 
 (* action deadline *)
-variable[%mutable (buyer or seller) (instate Created)] deadline date
+variable[%mutable (buyer or seller) (instate Created)%] deadline date
 
 (* state machine *)
 states =
@@ -32,7 +32,7 @@ transition abort from Created = {
   to Aborted
 }
 
-transition[%signedbyall [buyer; seller]] confirm from Created = {
+transition[%signedbyall [buyer; seller]%] confirm from Created = {
   to Confirmed when { balance = price + penalty }
 }
 

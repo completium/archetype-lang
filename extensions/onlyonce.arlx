@@ -1,6 +1,6 @@
 archetype extension onlyonce (
 
-  action[%onlyonce] tr
+  action[%onlyonce%] tr
 
 ) = {
 

@@ -9,16 +9,16 @@ exception Stop
 
 
 let parse (filename, channel) =
-  let pt = Io.parse_archetype ~name:filename channel in
+  let pt = Io.parse_archetype_strict ~name:filename channel in
   if !Option.opt_json then (Format.printf "%s\n" (Yojson.Safe.to_string (ParseTree.archetype_to_yojson pt)); raise Stop)
   else if !Option.opt_parse then (Format.printf "%a\n" ParseTree.pp_archetype pt; raise Stop)
-  else if !Option.opt_pretty_print then (() (*Format.printf "%a" Printer.pp_archetype pt*); raise Stop)
+  else if !Option.opt_pretty_print then (Format.printf "%a" Printer.pp_archetype pt; raise Stop)
   else pt
 
 let preprocess_ext pt =
   if !Option.opt_pre_json then (Format.printf "%s\n" (Yojson.Safe.to_string (ParseTree.archetype_to_yojson pt)); raise Stop)
   else if !Option.opt_pre_parse then (Format.printf "%a\n" ParseTree.pp_archetype pt; raise Stop)
-  else if !Option.opt_pre_pretty_print then (() (*Format.printf "%a" Printer.pp_archetype pt*); raise Stop)
+  else if !Option.opt_pre_pretty_print then (Format.printf "%a" Printer.pp_archetype pt; raise Stop)
   else pt
 
 let type_ pt =
@@ -57,7 +57,7 @@ let generate_target model =
   | None      -> () (*TODO*)
 
 (* -------------------------------------------------------------------- *)
-let compile_and_print (filename, channel) =
+let compile (filename, channel) =
   Tools.debug_mode := !Option.debug_mode;
   (filename, channel)
   |> parse
@@ -124,22 +124,17 @@ let main () =
     | _ -> ("<stdin>", stdin, false) in
 
   try
-    compile_and_print (filename, channel);
+    if !Option.opt_lsp
+    then Lsp.process (filename, channel)
+    else compile (filename, channel);
     close dispose channel
-
-  (*    let filename, channel, dispose =
-        if Array.length Sys.argv > 1 then
-          let filename = Sys.argv.(1) in
-          (filename, open_in filename, true)
-        else ("<stdin>", stdin, false)
-        in*)
 
   with
   | Stop ->
     close dispose channel
-  | ParseUtils.ParseError exn ->
+  | ParseUtils.ParseError exns ->
     close dispose channel;
-    Format.eprintf "%a@." ParseUtils.pp_parse_error exn;
+    Format.eprintf "%a@." ParseUtils.pp_parse_errors exns;
     exit 1
   | Compiler_error ->
     close dispose channel;
@@ -157,42 +152,6 @@ let main () =
     close dispose channel;
     Printf.eprintf "Error: accept transfer must be set to '%s' at %s because 'transferred' is read at %s.\n" str (Location.tostring loc) (List.fold_right (fun i accu -> (Location.tostring i) ^ accu) locs "");
     exit 1
-(* | Translate.ModelError0 msg ->
-   close dispose channel;
-   Printf.eprintf "%s.\n" msg;
-   exit 1
-   | Translate.ModelError (msg, l) ->
-   close dispose channel;
-   Printf.eprintf "%s at %s.\n" msg (Location.tostring l);
-   exit 1
-   | Translate.ModelError2 (msg, l0, l1) ->
-   close dispose channel;
-   Printf.eprintf "%s at %s and %s.\n" msg (Location.tostring l0) (Location.tostring l1);
-   exit 1
-   | Modelinfo.DefaultValueAssignment l ->
-   close dispose channel;
-   Printf.eprintf "'%s' field at %s must be assigned by a value.\n"
-    (Location.unloc l)
-    (l |> Location.loc |> Location.tostring);
-   exit 1
-   | Modelinfo.WrongTypeAsset (a, b, l) ->
-   close dispose channel;
-   Printf.eprintf "This asset is flaged '%s' but was expected '%s' at %s.\n"
-    a b (Location.tostring l);
-   exit 1
-   | Modelinfo.TypeError (a, b, l) ->
-   close dispose channel;
-   Printf.eprintf "This expression has type %s but an expression was expected of %s at %s.\n"
-    a b (Location.tostring l);
-   exit 1
-   | Modelinfo.UnsupportedFeature (msg, l) ->
-   close dispose channel;
-   Printf.eprintf "%s at %s.\n" msg (Location.tostring l);
-   exit 1
-   | Modelinfo.UnsupportedVartype l ->
-   close dispose channel;
-   Printf.eprintf "Unsupported var type at %s.\n"  (Location.tostring l);
-   exit 1 *)
 
 (* -------------------------------------------------------------------- *)
 let _ = main ()

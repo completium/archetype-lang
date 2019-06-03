@@ -4,7 +4,7 @@ variable admin role
 
 asset insured_contract identified by addr = {
   addr : address;
-  max_transfer : tez
+  max_transfer : tez;
 }
 
 action credit = {

@@ -2,11 +2,11 @@ archetype miles
 
 variable validator role
 
-variable[%transferable] validator role
+variable[%transferable%] validator role
 
 asset account identified by owner = {
   owner  : role;
-  amount : uint
+  amount : uint;
 }
 
 action add (ow : role) (value : uint) = {
