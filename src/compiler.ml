@@ -39,6 +39,15 @@ let model ast =
   then (Format.printf "%a\n" Model.pp_model model; raise Stop)
   else model
 
+let generate_target_pt pt =
+  match !Options.target with
+  | Markdown  -> (
+      let md = Gen_markdown.pt_to_ast_omd pt in
+      Format.printf "%s\n" (Omd.to_markdown md);
+      raise Stop
+    )
+  | _ -> pt
+
 let generate_target model =
   match !Options.target with
   | Liquidity -> (
@@ -53,8 +62,7 @@ let generate_target model =
       then () (*TODO: raw print ptree whyml tree *)
       else (Format.printf "%a\n" Printer_mlw.pp_mlw decls; raise Stop)
     )
-  | Markdown  -> () (*TODO*)
-  | None      -> () (*TODO*)
+  | _ -> ()
 
 (* -------------------------------------------------------------------- *)
 
@@ -63,6 +71,7 @@ let compile (filename, channel) =
   (filename, channel)
   |> parse
   |> preprocess_ext
+  |> generate_target_pt
   |> type_
   |> reduce_ast
   |> model
