@@ -53,29 +53,29 @@ transition decide from InProgress = {
     let submissions = submission.sort(asc(date)).sort(desc(score)) in
       if submissions.count() >= 3
       then (
-        let first = submissions.nth(0) in
-        let second = submissions.nth(1) in
-        let third = submissions.nth(2) in
+        let first = submissions.nth(0).competitor in
+        let second = submissions.nth(1).competitor in
+        let third = submissions.nth(2).competitor in
         let q1 = 0.5 * prize in
         let q2 = 0.3 * prize in
         let q3 = 0.2 * prize in
-        transfer q1 to first.competitor;
-        transfer q2 to second.competitor;
-        transfer q3 to third.competitor;
+        transfer q1 to first;
+        transfer q2 to second;
+        transfer q3 to third;
         transfer (prize - q1 - q2 - q3) to organizer)
         else if (submissions.count() >= 2)
              then (
-               let first = submissions.nth(0) in
-               let second = submissions.nth(1) in
+               let first = submissions.nth(0).competitor in
+               let second = submissions.nth(1).competitor in
                let q1 = 0.6 * prize in
                let q2 = 0.4 * prize in
-               transfer q1 to first.competitor;
-               transfer q2 to second.competitor;
+               transfer q1 to first;
+               transfer q2 to second;
                transfer (prize - q1 - q2) to organizer)
              else if (submissions.count() >= 1)
                then (
-                 let first = submissions.nth(0) in
-                 transfer prize to first.competitor)
+                 let first = submissions.nth(0).competitor in
+                 transfer prize to first)
                else transfer back prize
   }
 }

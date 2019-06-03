@@ -1311,7 +1311,7 @@ let for_declarations (env : env) (decls : (PT.declaration list) loced) : M.model
           match unloc decl with
           (* | PT.Denum (name, values, _exts_) ->
              let id = match name with | EKenum i -> Some i | EKstate -> None in
-             `Left (mkloc (loc decl) (id, values)) *)  (* TODO: uncomment this with new type *)
+             `Left (mkloc (loc decl) (id, values)) *)  (* TODO: fix this with new type values of Denum constructor *)
           | x ->
             `Right (mkloc (loc decl) x)
         ) decls in
