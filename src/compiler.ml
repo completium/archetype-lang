@@ -105,7 +105,13 @@ let main () =
       "--reduced-ast", Arg.Set Option.opt_astr, " Same as -RA";
       "-M", Arg.Set Option.opt_model, " Print raw model";
       "--model", Arg.Set Option.opt_model, " Same as -M";
-      "--lsp", Arg.Set Option.opt_lsp, "LSP mode";
+      "--lsp", Arg.String (fun s -> match s with
+          | "errors" -> Option.opt_lsp := true; Lsp.kind := Errors
+          | "outline" -> Option.opt_lsp := true; Lsp.kind := Outline
+          |  s ->
+            Format.eprintf
+              "Unknown lsp commands %s (use errors, outline)@." s;
+            exit 2), "LSP mode";
       "-d", Arg.Set Option.debug_mode, " Debug mode";
     ] in
   let arg_usage = String.concat "\n" [
