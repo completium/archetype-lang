@@ -1,5 +1,5 @@
 open Location
-open Model
+open Ast
 open Tools
 
 exception ReduceError of string * Location.t option
@@ -249,7 +249,7 @@ let sanity_check model : model =
 (* |> _check_dv *)
 (* |> check_accept_transfer *)
 
-let reduce_ast (model : Model.model) =
-  model
+let reduce_ast (ast : Ast.model) =
+  ast
   |> process_action
   |> sanity_check

@@ -1,5 +1,5 @@
 open Ident
-open Model
+open Ast
 
 type lident = ident Location.loced
 [@@deriving show {with_path = false}]
@@ -35,7 +35,7 @@ type item_field_type =
   | FRecordCollection of asset_ident
   | FRecord           of asset_ident
   | FEnum             of enum_ident
-  | FContainer        of Model.container * item_field_type
+  | FContainer        of Ast.container * item_field_type
 [@@deriving show {with_path = false}]
 
 type item_field = {
@@ -120,18 +120,18 @@ type function_node =
   | SumAsset           of asset_ident
   | MinAsset           of asset_ident
   | MaxAsset           of asset_ident
-  | AddContainer       of asset_ident * field_ident * Model.container
-  | RemoveContainer    of asset_ident * field_ident * Model.container
-  | ClearContainer     of asset_ident * field_ident * Model.container
-  | ContainsContainer  of asset_ident * field_ident * Model.container
-  | NthContainer       of asset_ident * field_ident * Model.container
-  | SelectContainer    of asset_ident * field_ident * Model.container
-  | SortContainer      of asset_ident * field_ident * Model.container
-  | ReverseContainer   of asset_ident * field_ident * Model.container
-  | CountContainer     of asset_ident * field_ident * Model.container
-  | SumContainer       of asset_ident * field_ident * Model.container
-  | MinContainer       of asset_ident * field_ident * Model.container
-  | MaxContainer       of asset_ident * field_ident * Model.container
+  | AddContainer       of asset_ident * field_ident * Ast.container
+  | RemoveContainer    of asset_ident * field_ident * Ast.container
+  | ClearContainer     of asset_ident * field_ident * Ast.container
+  | ContainsContainer  of asset_ident * field_ident * Ast.container
+  | NthContainer       of asset_ident * field_ident * Ast.container
+  | SelectContainer    of asset_ident * field_ident * Ast.container
+  | SortContainer      of asset_ident * field_ident * Ast.container
+  | ReverseContainer   of asset_ident * field_ident * Ast.container
+  | CountContainer     of asset_ident * field_ident * Ast.container
+  | SumContainer       of asset_ident * field_ident * Ast.container
+  | MinContainer       of asset_ident * field_ident * Ast.container
+  | MaxContainer       of asset_ident * field_ident * Ast.container
   | Other
 [@@deriving show {with_path = false}]
 

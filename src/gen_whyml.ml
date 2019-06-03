@@ -1,7 +1,7 @@
 open Why3
 (* open Ptree *)
 
-module S = Storage
+module M = Model
 
-let model_to_liq_tree (_model : S.model) : Ptree.decl list =
+let model_to_liq_tree (_model : M.model) : Ptree.decl list =
   []

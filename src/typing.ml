@@ -5,7 +5,7 @@ open Location
 
 module L  = Location
 module PT = ParseTree
-module M  = Model
+module M  = Ast
 
 (* -------------------------------------------------------------------- *)
 module Type : sig

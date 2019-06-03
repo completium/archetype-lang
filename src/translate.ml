@@ -1,7 +1,7 @@
 open Tools
 
-module A = Model
-module M = Storage
+module A = Ast
+module M = Model
 
 type enum_item_struct = (A.lident, A.type_, A.pterm) A.enum_item_struct
 type verification     = (A.lident, A.type_, A.pterm) A.verification

@@ -24,19 +24,19 @@ let preprocess_ext pt =
 let type_ pt =
   let ast = Typing.typing Typing.empty pt in
   if !Options.opt_ast
-  then (Format.printf "%a\n" Model.pp_model ast; raise Stop)
+  then (Format.printf "%a\n" Ast.pp_model ast; raise Stop)
   else ast
 
 let reduce_ast ast =
   let rast = Reduce.reduce_ast ast in
   if !Options.opt_astr
-  then (Format.printf "%a\n" Model.pp_model rast; raise Stop)
+  then (Format.printf "%a\n" Ast.pp_model rast; raise Stop)
   else rast
 
 let model ast =
   let model = Translate.ast_to_model ast in
   if !Options.opt_model
-  then (Format.printf "%a\n" Storage.pp_model model; raise Stop)
+  then (Format.printf "%a\n" Model.pp_model model; raise Stop)
   else model
 
 let generate_target model =
