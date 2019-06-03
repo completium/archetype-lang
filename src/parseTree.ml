@@ -21,7 +21,6 @@ type type_r =
   | Tref of lident
   | Tcontainer of type_t * container
   | Tvset of lident * type_t
-  | Tapp of type_t * type_t
   | Ttuple of type_t list
 [@@deriving yojson, show {with_path = false}]
 
@@ -121,16 +120,17 @@ type expr_unloc =
   | Efor          of lident * expr * expr
   | Eassert       of expr
   | Eseq          of expr * expr
-  | Efun          of lident_typ list * expr
-  | Eletin        of lident_typ * expr * expr * expr option
+  | Eletin        of lident * type_t option * expr * expr * expr option
   | Ematchwith    of expr * (pattern list * expr) list
   | Equantifier   of quantifier * lident_typ * expr
   | Elabel        of lident * expr
+  | Einvalid
 [@@deriving yojson, show {with_path = false}]
 
 and function_ =
   | Fident of lident
   | Foperator of operator loced
+[@@deriving yojson, show {with_path = false}]
 
 and literal =
   | Lnumber   of Core.big_int
@@ -148,7 +148,7 @@ and record_item = (assignment_operator * lident) option * expr
 and expr = expr_unloc loced
 [@@deriving yojson, show {with_path = false}]
 
-and lident_typ = lident * type_t option * extension list option
+and lident_typ = lident * type_t * extension list option
 [@@deriving yojson, show {with_path = false}]
 
 and label_expr = (lident option * expr) loced
@@ -219,11 +219,21 @@ type transition = (lident * (expr * exts) option * (expr * exts) option) list
 [@@deriving yojson, show {with_path = false}]
 
 (* -------------------------------------------------------------------- *)
+type variable_kind =
+  | VKvariable
+  | VKconstant
+[@@deriving yojson, show {with_path = false}]
+
+type enum_kind =
+  | EKenum of lident
+  | EKstate
+[@@deriving yojson, show {with_path = false}]
+
+(* -------------------------------------------------------------------- *)
 type declaration_unloc =
   | Darchetype     of lident * exts
-  | Dvariable      of lident * type_t * expr option * value_option list option * bool * exts
-  | Denum          of lident * lident list * exts
-  | Dstates        of lident option * (lident * state_option list option) list option * exts
+  | Dvariable      of lident * type_t * expr option * value_option list option * variable_kind * exts
+  | Denum          of enum_kind * (lident * enum_option list) list * exts
   | Dasset         of lident * field list * asset_option list * asset_post_option list * asset_operation option * exts
   | Daction        of lident * args * action_properties * (expr * exts) option * exts
   | Dtransition    of lident * args * (lident * lident) option * expr * action_properties * transition * exts
@@ -232,6 +242,7 @@ type declaration_unloc =
   | Dnamespace     of lident * declaration list
   | Dfunction      of s_function
   | Dverification  of verification
+  | Dinvalid
 [@@deriving yojson, show {with_path = false}]
 
 and value_option =
@@ -240,7 +251,6 @@ and value_option =
 [@@deriving yojson, show {with_path = false}]
 
 and asset_option =
-  | AOasrole
   | AOidentifiedby of lident
   | AOsortedby of lident
 [@@deriving yojson, show {with_path = false}]
@@ -251,9 +261,9 @@ and asset_post_option =
   | APOinit of expr
 [@@deriving yojson, show {with_path = false}]
 
-and state_option =
-  | SOinitial
-  | SOspecification of label_exprs
+and enum_option =
+  | EOinitial
+  | EOspecification of label_exprs
 [@@deriving yojson, show {with_path = false}]
 
 and signature =

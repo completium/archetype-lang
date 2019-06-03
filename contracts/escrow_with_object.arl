@@ -2,28 +2,28 @@ archetype escrow_with_object
 
 variable buyer role
 
-variable[%transferable] debitor role = buyer
+variable[%transferable%] debitor role = buyer
 
 variable seller role
 
-variable[%transferable] creditor role = seller
+variable[%transferable%] creditor role = seller
 
 variable oracle role
 
-variable[%traceable] price tez from buyer to creditor
+variable[%traceable%] price tez from buyer to creditor
 
-variable[%traceable] [%mutable_signed [buyer, debitor] (instate Created)]
+variable[%traceable%] [%mutable_signed [buyer, debitor] (instate Created)%]
      penalty tez from seller to debitor = 0.1 * price
 
 (* action deadline *)
-variable[%mutable (buyer or seller) (instate Created)] deadline date
+variable[%mutable (buyer or seller) (instate Created)%] deadline date
 
 (* type taskStatus = {
      date : date;
      status : string of [ “OK” | “KO” ]
    }
 *)
-variable[%signedby oracle] taskStatus object = "https://oracle.io/tskstat.schema.json"
+variable[%signedby oracle%] taskStatus object = "https://oracle.io/tskstat.schema.json"
 
 (* state machine *)
 states =
@@ -42,7 +42,7 @@ transition abort from Created = {
   to Aborted
 }
 
-transition[%signedbyall [{buyer}; {seller}]] confirm from Created = {
+transition[%signedbyall [{buyer}; {seller}]%] confirm from Created = {
   to Confirmed when { balance = price + penalty }
 }
 
@@ -62,7 +62,7 @@ transition finalize (task : taskStatus) from any = {
 }
 
 specification {
-  s1 : state = Transferred or state = Canceled -> balance = 0;
-  s2 : state = Transferred or state = Canceled -> needs oracle;
-  s3 : state = Transferred -> receives buyer = price
+  s5 : state = Transferred or state = Canceled -> balance = 0;
+  s6 : state = Transferred or state = Canceled -> needs oracle;
+  s7 : state = Transferred -> receives buyer = price
 }

@@ -45,20 +45,20 @@ type storage_field_type =
 [@@deriving show {with_path = false}]
 
 type storage_field = {
-    asset   : lident option;
-    name    : lident;
-    typ     : storage_field_type;
-    ghost   : bool;
-    default : pterm option; (* initial value *)
-    ops     : storage_field_operation list;
-    loc     : Location.t [@opaque]
-  }
+  asset   : lident option;
+  name    : lident;
+  typ     : storage_field_type;
+  ghost   : bool;
+  default : pterm option; (* initial value *)
+  ops     : storage_field_operation list;
+  loc     : Location.t [@opaque]
+}
 [@@deriving show {with_path = false}]
 
 type storage = {
-    fields     : storage_field list;
-    invariants : lterm list;
-  }
+  fields     : storage_field list;
+  invariants : lterm list;
+}
 [@@deriving show {with_path = false}]
 
 let empty_storage = { fields = []; invariants = [] }
@@ -137,13 +137,13 @@ let aft_to_sft info aname iskey fname (typ : ptyp) =
                                         Ftyp (get_key_type id info))
   (* an asset field which is a container of another asset *)
   | false, Tcontainer (ptyp,_) ->
-     begin
-     match unloc ptyp with
-     (* what is the vtyp of the asset ? *)
-       | Tasset id             -> Fmap (get_key_type aname info,
-                                        Flist (Ftyp (get_key_type id info)))
-       | _                     -> raise (UnsupportedType (aname,fname,loc))
-     end
+    begin
+      match unloc ptyp with
+      (* what is the vtyp of the asset ? *)
+      | Tasset id             -> Fmap (get_key_type aname info,
+                                       Flist (Ftyp (get_key_type id info)))
+      | _                     -> raise (UnsupportedType (aname,fname,loc))
+    end
   | _ -> raise (UnsupportedType (aname,fname,loc))
 
 let mk_asset_field aname fname =
@@ -157,7 +157,7 @@ let mk_asset_field_simple fname =
   { plloc = loc; pldesc = name ^ "_col" }
 
 let mk_default_field (b : bval option) : Model.pterm option =
-    map_option
+  map_option
     (fun x -> mkloc (loc x) (Plit x))
     b
 
@@ -182,14 +182,14 @@ let mk_storage_field info iskey name (arg : decl) =
     | None   -> raise (ExpectedVarType name)
   in
   let typ = aft_to_sft info name iskey fname typ in [{
-    asset   = Some name;
-    name    = mk_asset_field name arg.name;
-    typ     = typ;
-    ghost   = false;
-    default = mk_default_field arg.default;
-    ops     = [];
-    loc     = arg.loc
-  }]
+      asset   = Some name;
+      name    = mk_asset_field name arg.name;
+      typ     = typ;
+      ghost   = false;
+      default = mk_default_field arg.default;
+      ops     = [];
+      loc     = arg.loc
+    }]
 
 let mk_storage_fields info (asset : asset)  =
   let name = asset.name in
@@ -248,12 +248,12 @@ let mk_state_var info (st : state) = {
 
 let mk_storage info m =
   let fields = m.states
-    |> List.fold_left (fun acc st -> acc @ [mk_state_var info st]) []
-    |> fun x -> List.fold_left (fun acc var -> acc @ [mk_variable var]) x m.variables
-    |> fun x ->
-    List.fold_left (fun acc a ->
-        acc @ (mk_storage_asset info a)
-      ) x m.assets
+               |> List.fold_left (fun acc st -> acc @ [mk_state_var info st]) []
+               |> fun x -> List.fold_left (fun acc var -> acc @ [mk_variable var]) x m.variables
+                           |> fun x ->
+                           List.fold_left (fun acc a ->
+                               acc @ (mk_storage_asset info a)
+                             ) x m.assets
   in
   { empty_storage with fields = fields }
 
@@ -285,11 +285,10 @@ let rec to_storage_type (ptyp : ptyp option) : storage_field_type =
           match c with
           | Partition -> Flist (Ftyp VTstring) (*TODO: retrieve key type when c is an asset *)
           | Collection | Queue | Stack -> Flist t
-           | Set | Subset -> Fset t)
+          | Set | Subset -> Fset t)
       | Ttuple l -> Ftuple (List.map (fun x -> to_storage_type (Some x)) l)
-      | _ -> raise (Anomaly "to_storage_type1")
     )
-  | None -> raise (Anomaly "to_storage_type2")
+  | None -> raise (Anomaly "to_storage_type1")
 
 let to_storage_decl (d : decl) : record_field_type = {
   name = d.name;
@@ -523,15 +522,15 @@ let field_to_getset info (f : storage_field) (op : storage_field_operation) =
         args = List.map mk_arg ["p",Some (Ftuple [Flocal (lstr "storage"); vt])];
         body = loc_pterm (
             Pletin ("s",Papp (Pvar "get_0_2",[Pvar "p"]),None,
-            Pletin ("v",Papp (Pvar "get_1_2",[Pvar "p"]),None,
-            Pmatchwith (Papp (Pdot (Pvar "List",Pvar "mem"),
-                              [Ptuple[Pvar "v";
-                                      Papp (Pvar n,[Pvar "s"])]]) ,[
-               (Mapp (Qident "Some",[Mvar "k"]), Pvar "k");
-               (Mapp (Qident "None",[]), Papp (Pdot (Pvar "Current",Pvar "failwith"),
-                                                [Papp (Pvar "not_found",[])]));
-            ]
-            ))
+                    Pletin ("v",Papp (Pvar "get_1_2",[Pvar "p"]),None,
+                            Pmatchwith (Papp (Pdot (Pvar "List",Pvar "mem"),
+                                              [Ptuple[Pvar "v";
+                                                      Papp (Pvar n,[Pvar "s"])]]) ,[
+                                          (Mapp (Qident "Some",[Mvar "k"]), Pvar "k");
+                                          (Mapp (Qident "None",[]), Papp (Pdot (Pvar "Current",Pvar "failwith"),
+                                                                          [Papp (Pvar "not_found",[])]));
+                                        ]
+                                       ))
                    ));
       }
     else raise (Anomaly ("field_to_getset : "^(unloc (f.name))))
@@ -550,7 +549,7 @@ let field_to_getset info (f : storage_field) (op : storage_field_operation) =
                              Papp (Pvar (unloc (f.name)), [Pvar "s"]);
                              mk_field_add "k" (unloc (f.name)) (Flist vt)
                             ]),None
-      ] @ (List.mapi (fun i v ->
+                 ] @ (List.mapi (fun i v ->
           let param = "p"^(string_of_int i) in
           let typ = (aft_to_sft info a false a) (get_asset_var_typ a v info) in
           "s",Papp (Pvar "update_storage",[Pvar "s";
@@ -565,16 +564,16 @@ let field_to_getset info (f : storage_field) (op : storage_field_operation) =
                                 Some (Ftuple ([Flocal (lstr "storage"); vt]@typs))];
         body = loc_pterm (
             Pletin ("s",Papp (Pvar ("get_0_"^nb),[Pvar "p"]),None,
-            Pletin ("k",Papp (Pvar ("get_1_"^nb),[Pvar "p"]),None,
-            mk_letin params (Pmatchwith (Papp (Pdot (Pvar "List",Pvar "mem"),
-                              [Ptuple[Pvar "k";
-                                      Papp (Pvar n,[Pvar "s"])]]) ,[
-                                           (Mapp (Qident "Some",[Mwild]),
-                                            Papp (Pdot (Pvar "Current",Pvar "failwith"),
-                                                  [Papp (Pvar "already_exists",[])]));
-               (Mapp (Qident "None",[]), mk_letin adds (Pvar "s"));
-            ]
-            )))
+                    Pletin ("k",Papp (Pvar ("get_1_"^nb),[Pvar "p"]),None,
+                            mk_letin params (Pmatchwith (Papp (Pdot (Pvar "List",Pvar "mem"),
+                                                               [Ptuple[Pvar "k";
+                                                                       Papp (Pvar n,[Pvar "s"])]]) ,[
+                                                           (Mapp (Qident "Some",[Mwild]),
+                                                            Papp (Pdot (Pvar "Current",Pvar "failwith"),
+                                                                  [Papp (Pvar "already_exists",[])]));
+                                                           (Mapp (Qident "None",[]), mk_letin adds (Pvar "s"));
+                                                         ]
+                                                        )))
                    ));
       }
     else raise (Anomaly ("field_to_getset : "^(unloc (f.name))))
@@ -590,11 +589,11 @@ let field_to_getset info (f : storage_field) (op : storage_field_operation) =
     then
       let nb = "2" in
       let rms = ["s",Papp (Pvar "update_storage",
-                            [Pvar "s";
-                             Papp (Pvar (unloc (f.name)), [Pvar "s"]);
-                             mk_field_remove "k" (unloc (f.name)) (Flist vt)
-                            ]),None
-      ] @ (List.map (fun v ->
+                           [Pvar "s";
+                            Papp (Pvar (unloc (f.name)), [Pvar "s"]);
+                            mk_field_remove "k" (unloc (f.name)) (Flist vt)
+                           ]),None
+                ] @ (List.map (fun v ->
           let typ = (aft_to_sft info a false a) (get_asset_var_typ a v info) in
           "s",Papp (Pvar "update_storage",[Pvar "s";
                                            Papp (Pvar v, [Pvar "s"]);
@@ -608,16 +607,16 @@ let field_to_getset info (f : storage_field) (op : storage_field_operation) =
                                 Some (Ftuple ([Flocal (lstr "storage"); vt]))];
         body = loc_pterm (
             Pletin ("s",Papp (Pvar ("get_0_"^nb),[Pvar "p"]),None,
-            Pletin ("k",Papp (Pvar ("get_1_"^nb),[Pvar "p"]),None,
-            (Pmatchwith (Papp (Pdot (Pvar "List",Pvar "mem"),
-                               [Ptuple[Pvar "k";
-                                       Papp (Pvar n,[Pvar "s"])]]) ,[
-                           (Mapp (Qident "None",[]),
-                            Papp (Pdot (Pvar "Current",Pvar "failwith"),
-                                  [Papp (Pvar "not_found",[])]));
-                           (Mapp (Qident "Some",[Mwild]), mk_letin rms (Pvar "s"));
-            ]
-            )))
+                    Pletin ("k",Papp (Pvar ("get_1_"^nb),[Pvar "p"]),None,
+                            (Pmatchwith (Papp (Pdot (Pvar "List",Pvar "mem"),
+                                               [Ptuple[Pvar "k";
+                                                       Papp (Pvar n,[Pvar "s"])]]) ,[
+                                           (Mapp (Qident "None",[]),
+                                            Papp (Pdot (Pvar "Current",Pvar "failwith"),
+                                                  [Papp (Pvar "not_found",[])]));
+                                           (Mapp (Qident "Some",[Mwild]), mk_letin rms (Pvar "s"));
+                                         ]
+                                        )))
                    ));
       }
     else raise (Anomaly ("field_to_getset : "^(unloc (f.name))))
@@ -642,9 +641,9 @@ let field_to_getset info (f : storage_field) (op : storage_field_operation) =
     let typs = mk_typs f ca info in
     let nb = string_of_int ((List.length typs)+3) in
     let params = List.mapi (fun i _ ->
-          let si = string_of_int i in
-          let sip3 = string_of_int (i+3) in
-          "p"^si,Papp (Pvar ("get_"^sip3^"_"^nb),[Pvar "p"]),None
+        let si = string_of_int i in
+        let sip3 = string_of_int (i+3) in
+        "p"^si,Papp (Pvar ("get_"^sip3^"_"^nb),[Pvar "p"]),None
       ) typs in
     let args = List.mapi (fun i _ -> Pvar ("p"^(string_of_int i))) typs in
     let mapfind = Papp (Pdot(Pvar "Map",Pvar "find"),[Pvar "k";
@@ -656,29 +655,29 @@ let field_to_getset info (f : storage_field) (op : storage_field_operation) =
         ];
       body = loc_pterm (
           Pletin ("s",Papp (Pvar ("get_0_"^nb),[Pvar "p"]),None,
-          Pletin ("k",Papp (Pvar ("get_1_"^nb),[Pvar "p"]),None,
-          Pletin ("a",Papp (Pvar ("get_2_"^nb),[Pvar "p"]),None,
-          mk_letin params (Pmatchwith (mapfind,[
-          (* None -> Current.failwith "not found "*)
-          (Mapp (Qident "None",[]), Papp (Pdot (Pvar "Current",Pvar "failwith"),
-                                           [Papp (Pvar "not_found",[])]));
-          (* Some v -> ... *)
-          (Mapp (Qident "Some",[Mvar "v"]),
-           Pletin ("s",Papp (Pvar add_asset_n,[Ptuple ([Pvar "s";Pvar "a"]@args)]),None,
-           Pletin ("v",
-                   Papp (Pdot(Pvar "List",Pvar "add"),[Ptuple [Pvar "a";Pvar "v"]]),None,
-           Pletin ("s",
-                   Papp (Pvar "update_storage", [
-                       Pvar "s";
-                       Papp (Pvar fn,[Pvar "s"]);
-                       Papp (Pdot(Pvar "Map",Pvar "add"),[Pvar "k";
-                                                          Pvar "v";
-                                                          Papp (Pvar fn,[Pvar "s"])])]
-                     ), None,
-           Pvar "s"
-             ))))
-                    ])
-        )))));
+                  Pletin ("k",Papp (Pvar ("get_1_"^nb),[Pvar "p"]),None,
+                          Pletin ("a",Papp (Pvar ("get_2_"^nb),[Pvar "p"]),None,
+                                  mk_letin params (Pmatchwith (mapfind,[
+                                      (* None -> Current.failwith "not found "*)
+                                      (Mapp (Qident "None",[]), Papp (Pdot (Pvar "Current",Pvar "failwith"),
+                                                                      [Papp (Pvar "not_found",[])]));
+                                      (* Some v -> ... *)
+                                      (Mapp (Qident "Some",[Mvar "v"]),
+                                       Pletin ("s",Papp (Pvar add_asset_n,[Ptuple ([Pvar "s";Pvar "a"]@args)]),None,
+                                               Pletin ("v",
+                                                       Papp (Pdot(Pvar "List",Pvar "add"),[Ptuple [Pvar "a";Pvar "v"]]),None,
+                                                       Pletin ("s",
+                                                               Papp (Pvar "update_storage", [
+                                                                   Pvar "s";
+                                                                   Papp (Pvar fn,[Pvar "s"]);
+                                                                   Papp (Pdot(Pvar "Map",Pvar "add"),[Pvar "k";
+                                                                                                      Pvar "v";
+                                                                                                      Papp (Pvar fn,[Pvar "s"])])]
+                                                                 ), None,
+                                                               Pvar "s"
+                                                              ))))
+                                    ])
+                                    )))));
     }
   | Fmap (vtf, Flist vtt), Some _ (*a*), Removeasset ca ->
     (* let remove_asset (p : (storage, asset key, contained asset key)) =
@@ -707,29 +706,29 @@ let field_to_getset info (f : storage_field) (op : storage_field_operation) =
         ];
       body = loc_pterm (
           Pletin ("s",Papp (Pvar ("get_0_"^nb),[Pvar "p"]),None,
-          Pletin ("k",Papp (Pvar ("get_1_"^nb),[Pvar "p"]),None,
-          Pletin ("a",Papp (Pvar ("get_2_"^nb),[Pvar "p"]),None,
-          (Pmatchwith (mapfind,[
-          (* None -> Current.failwith "not found "*)
-          (Mapp (Qident "None",[]), Papp (Pdot (Pvar "Current",Pvar "failwith"),
-                                           [Papp (Pvar "not_found",[])]));
-          (* Some v -> ... *)
-          (Mapp (Qident "Some",[Mvar "v"]),
-           Pletin ("s",Papp (Pvar rm_asset_n,[Ptuple ([Pvar "s";Pvar "a"])]),None,
-           Pletin ("v",
-                   Papp (Pdot(Pvar "List",Pvar "remove"),[Ptuple [Pvar "a";Pvar "v"]]),None,
-           Pletin ("s",
-                   Papp (Pvar "update_storage", [
-                       Pvar "s";
-                       Papp (Pvar fn,[Pvar "s"]);
-                       Papp (Pdot(Pvar "Map",Pvar "add"),[Pvar "k";
-                                                          Pvar "v";
-                                                          Papp (Pvar fn,[Pvar "s"])])]
-                     ), None,
-           Pvar "s"
-             ))))
-                    ])
-        )))));
+                  Pletin ("k",Papp (Pvar ("get_1_"^nb),[Pvar "p"]),None,
+                          Pletin ("a",Papp (Pvar ("get_2_"^nb),[Pvar "p"]),None,
+                                  (Pmatchwith (mapfind,[
+                                       (* None -> Current.failwith "not found "*)
+                                       (Mapp (Qident "None",[]), Papp (Pdot (Pvar "Current",Pvar "failwith"),
+                                                                       [Papp (Pvar "not_found",[])]));
+                                       (* Some v -> ... *)
+                                       (Mapp (Qident "Some",[Mvar "v"]),
+                                        Pletin ("s",Papp (Pvar rm_asset_n,[Ptuple ([Pvar "s";Pvar "a"])]),None,
+                                                Pletin ("v",
+                                                        Papp (Pdot(Pvar "List",Pvar "remove"),[Ptuple [Pvar "a";Pvar "v"]]),None,
+                                                        Pletin ("s",
+                                                                Papp (Pvar "update_storage", [
+                                                                    Pvar "s";
+                                                                    Papp (Pvar fn,[Pvar "s"]);
+                                                                    Papp (Pdot(Pvar "Map",Pvar "add"),[Pvar "k";
+                                                                                                       Pvar "v";
+                                                                                                       Papp (Pvar fn,[Pvar "s"])])]
+                                                                  ), None,
+                                                                Pvar "s"
+                                                               ))))
+                                     ])
+                                  )))));
     }
   | Fmap (_vtf, Flocal name_asset), _, _ ->
     (* simply apply field name to argument "s" *)
@@ -741,13 +740,13 @@ let field_to_getset info (f : storage_field) (op : storage_field_operation) =
       args = List.map mk_arg ["p",Some (Ftuple [Flocal (lstr "storage"); Ftyp key_type])];
       body = loc_pterm (
           Pletin ("s",Papp (Pvar "get_0_2",[Pvar "p"]),None,
-          Pletin ("v",Papp (Pvar "get_1_2",[Pvar "p"]),None,
-          Pmatchwith (Papp (Pdot (Pvar "Map",Pvar "find"),
-          [Pvar "v"; Papp (Pvar (n ^ "_col"),[Pvar "s"])]) ,[
-          (Mapp (Qident "Some",[Mvar "k"]), Pvar "k");
-          (Mapp (Qident "None",[]),  Papp (Pdot (Pvar "Current",Pvar "failwith"),
-                                     [Papp (Pvar "not_found",[])]))])
-                 )))
+                  Pletin ("v",Papp (Pvar "get_1_2",[Pvar "p"]),None,
+                          Pmatchwith (Papp (Pdot (Pvar "Map",Pvar "find"),
+                                            [Pvar "v"; Papp (Pvar (n ^ "_col"),[Pvar "s"])]) ,[
+                                        (Mapp (Qident "Some",[Mvar "k"]), Pvar "k");
+                                        (Mapp (Qident "None",[]),  Papp (Pdot (Pvar "Current",Pvar "failwith"),
+                                                                         [Papp (Pvar "not_found",[])]))])
+                         )))
     }
 
   | _ -> raise (Anomaly ("field_to_getset : "^(unloc (f.name))))
@@ -935,7 +934,7 @@ type add_asset_gen_data = {
 
 let get_mk_call_function asset_name arg nb idx_start n =
   let get_arg i = Papp (Pvar ("get_" ^ (string_of_int i) ^ "_" ^ (string_of_int nb)), [Pvar arg]) in
-  Papp (Pvar (mk_fun_name (MkAsset asset_name)), Tools.int_fold (fun acc k -> acc @ [get_arg (idx_start + k)]) [] n)
+  Papp (Pvar (mk_fun_name (MkAsset asset_name)), List.int_fold (fun acc k -> acc @ [get_arg (idx_start + k)]) [] n)
 
 (*let[@inline] add (p: storage * address * string list) : storage =
   let s = get p 0 in
@@ -953,33 +952,33 @@ let mk_add_asset_gen info (data : add_asset_gen_data) =
   let nb = 2 + List.length args in
   let fun_mk = get_mk_call_function asset_name "p" nb 2 (nb - 2) in
   {
-  dummy_function with
-  name = lstr (mk_fun_name asset_fun);
-  side = side;
-  args = [mk_arg ("p", Some (Ftuple ([Flocal (lstr "storage");
-                                      Ftyp (get_key_type (dumloc asset_name) info) ] @ args)))];
-  return = Some (Flocal (lstr "storage"));
-  body =
-    loc_pterm (
-      Pletin ("s", Papp (Pvar ("get_0_" ^ (string_of_int nb)), [Pvar "p"]), None,
-        Pletin (asset_name ^ "_key", Papp (Pvar ("get_1_" ^ (string_of_int nb)), [Pvar "p"]), None,
-          Pmatchwith (Papp (Pdot (Pvar "Map", Pvar "find"),
-            [Pvar (asset_name ^ "_key");
-             Papp (Pvar (asset_name ^ "_col"), [Pvar "s"])])
-                     ,[
-                       (Mapp (Qident "Some", [Mwild]), exist_expr);
-                       (Mapp (Qident "None", []),
+    dummy_function with
+    name = lstr (mk_fun_name asset_fun);
+    side = side;
+    args = [mk_arg ("p", Some (Ftuple ([Flocal (lstr "storage");
+                                        Ftyp (get_key_type (dumloc asset_name) info) ] @ args)))];
+    return = Some (Flocal (lstr "storage"));
+    body =
+      loc_pterm (
+        Pletin ("s", Papp (Pvar ("get_0_" ^ (string_of_int nb)), [Pvar "p"]), None,
+                Pletin (asset_name ^ "_key", Papp (Pvar ("get_1_" ^ (string_of_int nb)), [Pvar "p"]), None,
+                        Pmatchwith (Papp (Pdot (Pvar "Map", Pvar "find"),
+                                          [Pvar (asset_name ^ "_key");
+                                           Papp (Pvar (asset_name ^ "_col"), [Pvar "s"])])
+                                   ,[
+                                     (Mapp (Qident "Some", [Mwild]), exist_expr);
+                                     (Mapp (Qident "None", []),
 
-                        Papp (Pvar "update_storage",[Pvar "s";
-                                                     Papp (Pvar (asset_name ^ "_col"), [Pvar "s"]);
-                                                     Papp (Pdot (Pvar "Map", Pvar "update"),
-                                                           [Pvar (asset_name ^ "_key");
-                                                            Papp (Pvar "Some", [fun_mk]);
-                                                            Papp (Pvar (asset_name ^ "_col"), [Pvar "s"])])
-                       ]))
-                     ]
-          ))))
-}
+                                      Papp (Pvar "update_storage",[Pvar "s";
+                                                                   Papp (Pvar (asset_name ^ "_col"), [Pvar "s"]);
+                                                                   Papp (Pdot (Pvar "Map", Pvar "update"),
+                                                                         [Pvar (asset_name ^ "_key");
+                                                                          Papp (Pvar "Some", [fun_mk]);
+                                                                          Papp (Pvar (asset_name ^ "_col"), [Pvar "s"])])
+                                                                  ]))
+                                   ]
+                                   ))))
+  }
 
 let mk_add_asset info asset_name =
   let f = AddAsset asset_name in
@@ -1015,44 +1014,44 @@ let mk_add_list info asset_name field_name =
                                        ])))];
     body =
       loc_pterm (
-      Pletin ("s",                 Papp (Pvar "get_0_3", [Pvar "p"]), None,
-      Pletin (asset_name ^ "_key", Papp (Pvar "get_1_3", [Pvar "p"]), None,
-      Pletin (asset_col_key,       Papp (Pvar "get_0_2", [Papp (Pvar "get_2_3", [Pvar "p"])]), None,
-      Pletin (asset_col,           Papp (Pvar "get_1_2", [Papp (Pvar "get_2_3", [Pvar "p"])]), None,
-      Pletin (asset_name,          Papp (Pvar "get_1_2", [Papp (Pvar (mk_fun_name (Get asset_name)), [Ptuple [Pvar "s"; Pvar asset_name_key]])]), None,
-        Pseq(Pif(
-               Papp (Pdot (Pvar "Map", Pvar "mem"), [Pvar asset_col_key; Papp (Pvar (asset_col ^ "_col"), [Pvar "s"])]),
-               pfailwith "not_found", None),
-             Pletin ("s", Papp (Pvar "update_storage",[Pvar "s";
-                                                       Papp (Pvar (asset_col ^ "_col"), [Pvar "s"]);
-                                                       Papp (Pdot (Pvar "Map", Pvar "update"),
-                                                             [Pvar (asset_col ^ "_key");
-                                                              Papp (Pvar "Some", [Pvar asset_col]);
-                                                              Papp (Pvar (asset_col ^ "_col"), [Pvar "s"])])
-                                                      ]), None,
-                     Pletin ("newlist", Papp (Pdot (Pvar "List", Pvar "add"), [Ptuple [Pvar (asset_col_key);
-                                                                                Papp (Pvar field_name, [Pvar asset_name])]]), None,
-                             Pletin ("new" ^ asset_name,
-                                     (if is_one_arg
-                                      then (Papp (Pvar "update_simple", [Pvar (asset_name);
-                                                                         Pvar "newlist"]))
-                                  else (Papp (Pvar "update_storage", [Pvar (asset_name);
-                                                           Papp (Pvar (field_name), [Pvar asset_name]);
-                                                           Pvar "newlist"])))
+        Pletin ("s",                 Papp (Pvar "get_0_3", [Pvar "p"]), None,
+                Pletin (asset_name ^ "_key", Papp (Pvar "get_1_3", [Pvar "p"]), None,
+                        Pletin (asset_col_key,       Papp (Pvar "get_0_2", [Papp (Pvar "get_2_3", [Pvar "p"])]), None,
+                                Pletin (asset_col,           Papp (Pvar "get_1_2", [Papp (Pvar "get_2_3", [Pvar "p"])]), None,
+                                        Pletin (asset_name,          Papp (Pvar "get_1_2", [Papp (Pvar (mk_fun_name (Get asset_name)), [Ptuple [Pvar "s"; Pvar asset_name_key]])]), None,
+                                                Pseq(Pif(
+                                                    Papp (Pdot (Pvar "Map", Pvar "mem"), [Pvar asset_col_key; Papp (Pvar (asset_col ^ "_col"), [Pvar "s"])]),
+                                                    pfailwith "not_found", None),
+                                                     Pletin ("s", Papp (Pvar "update_storage",[Pvar "s";
+                                                                                               Papp (Pvar (asset_col ^ "_col"), [Pvar "s"]);
+                                                                                               Papp (Pdot (Pvar "Map", Pvar "update"),
+                                                                                                     [Pvar (asset_col ^ "_key");
+                                                                                                      Papp (Pvar "Some", [Pvar asset_col]);
+                                                                                                      Papp (Pvar (asset_col ^ "_col"), [Pvar "s"])])
+                                                                                              ]), None,
+                                                             Pletin ("newlist", Papp (Pdot (Pvar "List", Pvar "add"), [Ptuple [Pvar (asset_col_key);
+                                                                                                                               Papp (Pvar field_name, [Pvar asset_name])]]), None,
+                                                                     Pletin ("new" ^ asset_name,
+                                                                             (if is_one_arg
+                                                                              then (Papp (Pvar "update_simple", [Pvar (asset_name);
+                                                                                                                 Pvar "newlist"]))
+                                                                              else (Papp (Pvar "update_storage", [Pvar (asset_name);
+                                                                                                                  Papp (Pvar (field_name), [Pvar asset_name]);
+                                                                                                                  Pvar "newlist"])))
 
 
 
-                            , None,
-                             Papp (Pvar "update_storage",[Pvar "s";
-                                                          Papp (Pvar (asset_name ^ "_col"), [Pvar "s"]);
-                                                          Papp (Pdot (Pvar "Map", Pvar "update"),
-                                                                [Pvar (asset_name ^ "_key");
-                                                                 Papp (Pvar "Some", [Pvar ("new" ^ asset_name)]);
-                                                                 Papp (Pvar (asset_name ^ "_col"), [Pvar "s"])])
-                                                         ])
+                                                                            , None,
+                                                                            Papp (Pvar "update_storage",[Pvar "s";
+                                                                                                         Papp (Pvar (asset_name ^ "_col"), [Pvar "s"]);
+                                                                                                         Papp (Pdot (Pvar "Map", Pvar "update"),
+                                                                                                               [Pvar (asset_name ^ "_key");
+                                                                                                                Papp (Pvar "Some", [Pvar ("new" ^ asset_name)]);
+                                                                                                                Papp (Pvar (asset_name ^ "_col"), [Pvar "s"])])
+                                                                                                        ])
 
-                    ))))))))))
-}
+                                                                            ))))))))))
+  }
 
 let mk_update_asset info asset_name =
   let f = UpdateAsset asset_name in
@@ -1069,17 +1068,17 @@ let mk_update_asset info asset_name =
                                         Ftyp (get_key_type (dumloc asset_name) info);
                                         Flambda (Flocal (lstr asset_name), Flocal (lstr asset_name))])))];
     body = loc_pterm (
-      Pletin ("s", Papp        (Pvar "get_0_3", [Pvar "p"]), None,
-      Pletin (asset_key,  Papp (Pvar "get_1_3", [Pvar "p"]), None,
-      Pletin (update_fun, Papp (Pvar "get_2_3", [Pvar "p"]), None,
-      Pletin (asset_arg,  Papp (Pvar "to_val",  [Papp (Pvar (mk_fun_name (Get asset_name)), [Ptuple [Pvar "s"; Pvar asset_key]])]), None,
-      Pletin (asset_arg2,  Papp (Pvar update_fun, [Pvar asset_arg]), None,
-              Papp (Pvar "update_storage",[Pvar "s";
-                                           Papp (Pvar (asset_col), [Pvar "s"]);
-                                           Papp (Pdot (Pvar "Map", Pvar "update"),
-                                                 [Pvar (asset_key);
-                                                  Papp (Pvar "Some", [Pvar asset_arg2]);
-                                                  Papp (Pvar (asset_col), [Pvar "s"])])])))))))
+        Pletin ("s", Papp        (Pvar "get_0_3", [Pvar "p"]), None,
+                Pletin (asset_key,  Papp (Pvar "get_1_3", [Pvar "p"]), None,
+                        Pletin (update_fun, Papp (Pvar "get_2_3", [Pvar "p"]), None,
+                                Pletin (asset_arg,  Papp (Pvar "to_val",  [Papp (Pvar (mk_fun_name (Get asset_name)), [Ptuple [Pvar "s"; Pvar asset_key]])]), None,
+                                        Pletin (asset_arg2,  Papp (Pvar update_fun, [Pvar asset_arg]), None,
+                                                Papp (Pvar "update_storage",[Pvar "s";
+                                                                             Papp (Pvar (asset_col), [Pvar "s"]);
+                                                                             Papp (Pdot (Pvar "Map", Pvar "update"),
+                                                                                   [Pvar (asset_key);
+                                                                                    Papp (Pvar "Some", [Pvar asset_arg2]);
+                                                                                    Papp (Pvar (asset_col), [Pvar "s"])])])))))))
   }
 
 (*
@@ -1094,39 +1093,39 @@ let mile_remove_if s f =
 let mk_removeif _info asset_name =
   let f = RemoveIf asset_name in
   let asset_col = asset_name ^ "_col" in {
-  dummy_function with
-  name = lstr (mk_fun_name f);
-(*  args = [mk_arg ("p", Some (Ftuple ([Flocal (lstr "storage");
-                                      Flocal (lstr "storage")])))];*)
-  args = [mk_arg ("p", None)];
-  side = is_side_fun f;
-  body =
-    loc_pterm (
-      Pletin ("s", Papp (Pvar "get_0_2", [Pvar "p"]), None,
-      Pletin ("f", Papp (Pvar "get_1_2", [Pvar "p"]), None,
-        (Papp (Pvar "update_storage", [Pvar ("s");
-                                       Papp (Pvar asset_col, [Pvar "s"]);
+    dummy_function with
+    name = lstr (mk_fun_name f);
+    (*  args = [mk_arg ("p", Some (Ftuple ([Flocal (lstr "storage");
+                                          Flocal (lstr "storage")])))];*)
+    args = [mk_arg ("p", None)];
+    side = is_side_fun f;
+    body =
+      loc_pterm (
+        Pletin ("s", Papp (Pvar "get_0_2", [Pvar "p"]), None,
+                Pletin ("f", Papp (Pvar "get_1_2", [Pvar "p"]), None,
+                        (Papp (Pvar "update_storage", [Pvar ("s");
+                                                       Papp (Pvar asset_col, [Pvar "s"]);
 
-                                       Papp (Pdot (Pvar "Map", Pvar "fold"), [
-                                           Plambda ("x", None, false,
-                                             Pletin ("i", Papp (Pvar "get_0_2", [Pvar "x"]), None,
-                                             Pletin ("acc", Papp (Pvar "get_1_2", [Pvar "x"]), None,
-                                             Pletin ("k", Papp (Pvar "get_0_2", [Pvar "i"]), None,
-                                             Pletin ("v", Papp (Pvar "get_1_2", [Pvar "i"]), None,
-                                             Pif (Papp (Pvar "f", [Pvar "v"]),
-                                                  Pvar "acc",
-                                                  Some (Papp (Pdot (Pvar "Map", Pvar "add"), [
-                                                      Pvar "k";
-                                                      Pvar "v";
-                                                      Pvar "acc"
-                                                    ]))
-                                                 ))))));
-                                           Papp (Pvar asset_col, [Pvar "s"]);
-                                           Papp (Pvar "empty_map", [])
+                                                       Papp (Pdot (Pvar "Map", Pvar "fold"), [
+                                                           Plambda ("x", None, false,
+                                                                    Pletin ("i", Papp (Pvar "get_0_2", [Pvar "x"]), None,
+                                                                            Pletin ("acc", Papp (Pvar "get_1_2", [Pvar "x"]), None,
+                                                                                    Pletin ("k", Papp (Pvar "get_0_2", [Pvar "i"]), None,
+                                                                                            Pletin ("v", Papp (Pvar "get_1_2", [Pvar "i"]), None,
+                                                                                                    Pif (Papp (Pvar "f", [Pvar "v"]),
+                                                                                                         Pvar "acc",
+                                                                                                         Some (Papp (Pdot (Pvar "Map", Pvar "add"), [
+                                                                                                             Pvar "k";
+                                                                                                             Pvar "v";
+                                                                                                             Pvar "acc"
+                                                                                                           ]))
+                                                                                                        ))))));
+                                                           Papp (Pvar asset_col, [Pvar "s"]);
+                                                           Papp (Pvar "empty_map", [])
 
-                                         ])
-                                      ])))))
-}
+                                                         ])
+                                                      ])))))
+  }
 
 let generate_asset_functions info (l : asset_function list) : function_ws list =
   List.map (fun x ->
@@ -1288,7 +1287,7 @@ let compute_asset_fun_args _asset_name arg =
   | Parray exprs ->
     begin
       (*match label with
-       | Some id when not (String.equal (unloc id) asset_name) ->
+        | Some id when not (String.equal (unloc id) asset_name) ->
          let l, v = deloc id in
          raise (WrongTypeAsset (v, asset_name, l))
         | _ -> ());*)
@@ -1315,7 +1314,7 @@ let rec process_rec (acc : process_acc) (pterm : Model.pterm) : process_data =
 
 
       let pt = dumloc (Pletin (dumloc "_ops", loc_pterm (Papp (Pvar ("get_0_2"), [Pvar "_sops"])) , None,
-               dumloc (Pletin (dumloc "s",    loc_pterm (Papp (Pvar ("get_1_2"), [Pvar "_sops"])) , None, (loc_pterm (Ptuple[Pvar "_ops"; Pvar "s"])))))) in
+                               dumloc (Pletin (dumloc "s",    loc_pterm (Papp (Pvar ("get_1_2"), [Pvar "_sops"])) , None, (loc_pterm (Ptuple[Pvar "_ops"; Pvar "s"])))))) in
 
       (*Format.eprintf "%s %s %s\n" (match acc.start with | Some _ -> "Some" | None -> "None") (show_ret_typ a.ret) (show_ret_typ b.ret);*)
       let ret, t = (
@@ -1332,22 +1331,22 @@ let rec process_rec (acc : process_acc) (pterm : Model.pterm) : process_data =
           Storage, mkloc loc (Pseq (a.term, dumloc (Pletin (dumloc "_ops", b.term, None, loc_pterm (Pvar "_ops")))))
         | Some s, Operations, Operations ->
           Operations, dumloc (Pletin (dumloc "_ops", a.term, None,
-                          dumloc (Pletin (dumloc "_ops", b.term, None, s))))
+                                      dumloc (Pletin (dumloc "_ops", b.term, None, s))))
         | None, Operations, Operations ->
           Operations, dumloc (Pletin (dumloc "_ops", a.term, None,
-                          dumloc (Pletin (dumloc "_ops", b.term, None,
-                                          loc_pterm (Pvar "_ops")))))
+                                      dumloc (Pletin (dumloc "_ops", b.term, None,
+                                                      loc_pterm (Pvar "_ops")))))
         | None, Storage, Operations ->
           OpsStorage, dumloc (Pletin (dumloc "s", a.term, None,
-                      dumloc (Pletin (dumloc "_ops", b.term, None, loc_pterm (Ptuple[Pvar "_ops"; Pvar "s"])))))
+                                      dumloc (Pletin (dumloc "_ops", b.term, None, loc_pterm (Ptuple[Pvar "_ops"; Pvar "s"])))))
         | None, None, OpsStorage ->
           OpsStorage, dumloc (Pseq (a.term, dumloc (Pletin (dumloc "_sops", b.term, None, pt))))
         | _ ->
           None, mkloc loc (Pseq (a.term, b.term))
-        (* | _ ->
-          LetinOpsStorage, dumloc (Pletin (dumloc "s", a.term, None,
-                          dumloc (Pletin (dumloc "s", b.term, None,
-                                          loc_pterm (Ptuple[Pvar "_ops"; Pvar "s"]))))) *)
+          (* | _ ->
+             LetinOpsStorage, dumloc (Pletin (dumloc "s", a.term, None,
+                            dumloc (Pletin (dumloc "s", b.term, None,
+                                            loc_pterm (Ptuple[Pvar "_ops"; Pvar "s"]))))) *)
 
 
       ) in
@@ -1360,17 +1359,17 @@ let rec process_rec (acc : process_acc) (pterm : Model.pterm) : process_data =
       }
     )
   | Pif (cond, then_, else_) ->
-  (
-    let c = process_rec acc cond in
-    let t = process_rec acc then_ in
-    let e = map_option (process_rec acc) else_ in
-    let pte =
-    (match t.ret, e with
-    | _, Some e -> Some (e.term)
-    | Storage, None -> Some (loc_pterm (Pvar "s"))
-    | Operations, None -> Some (loc_pterm (Pvar "_ops"))
-    | OpsStorage, None -> Some (loc_pterm (Ptuple[Pvar "_ops"; Pvar "s"]))
-    | _ -> None ) in
+    (
+      let c = process_rec acc cond in
+      let t = process_rec acc then_ in
+      let e = map_option (process_rec acc) else_ in
+      let pte =
+        (match t.ret, e with
+         | _, Some e -> Some (e.term)
+         | Storage, None -> Some (loc_pterm (Pvar "s"))
+         | Operations, None -> Some (loc_pterm (Pvar "_ops"))
+         | OpsStorage, None -> Some (loc_pterm (Ptuple[Pvar "_ops"; Pvar "s"]))
+         | _ -> None ) in
 
       {
         dummy_process_data with
@@ -1379,7 +1378,7 @@ let rec process_rec (acc : process_acc) (pterm : Model.pterm) : process_data =
         ret = t.ret;
         side = c.side || t.side || (match e with | Some e -> e.side | _ -> false);
       }
-  )
+    )
   | Papp (e, args) when (match (unloc e) with | Pconst Cfail -> List.length args > 0 | _ -> false) ->
     (
       let dest args =
@@ -1402,8 +1401,8 @@ let rec process_rec (acc : process_acc) (pterm : Model.pterm) : process_data =
       let dest (e, args) =
         let asset_name = dest_asset_const_name (unloc e) in
         let arg = match args with
-        | [a] -> a
-        | _ -> raise (Anomaly("dest_asset_get")) in
+          | [a] -> a
+          | _ -> raise (Anomaly("dest_asset_get")) in
         (asset_name, arg) in
       let asset_name, arg = dest (e, args) in
       let storage_name = get_storage_name acc in
@@ -1423,8 +1422,8 @@ let rec process_rec (acc : process_acc) (pterm : Model.pterm) : process_data =
       let dest_asset_add (e, args) =
         let asset_name = dest_asset_const_name (unloc e) in
         let arg = match args with
-        | [a] -> a
-        | _ -> raise (Anomaly("dest_asset_add")) in
+          | [a] -> a
+          | _ -> raise (Anomaly("dest_asset_add")) in
         (asset_name, arg) in
       let asset_name, arg = dest_asset_add (e, args) in
       let storage_name = get_storage_name acc in
@@ -1444,7 +1443,7 @@ let rec process_rec (acc : process_acc) (pterm : Model.pterm) : process_data =
             List.map (fun x -> loc_pterm (Papp (Pvar x, [Papp (Pvar "get_1_2", [Pvar id])]))) fields
           end
         | _ -> raise (Anomaly "process_rec")
-        ) in
+      ) in
       let f_arg = dumloc (Ptuple ([mk_var storage_name] @ args)) in
       {
         dummy_process_data with
@@ -1459,8 +1458,8 @@ let rec process_rec (acc : process_acc) (pterm : Model.pterm) : process_data =
       let dest (e, args) =
         let asset_name = dest_asset_const_name (unloc e) in
         let arg = match args with
-        | [a] -> [a]
-        | _ -> raise (Anomaly("dest_asset_addifnotexist")) in
+          | [a] -> [a]
+          | _ -> raise (Anomaly("dest_asset_addifnotexist")) in
         (asset_name, arg) in
       let asset_name, arg = dest (e, args) in
       let storage_name = get_storage_name acc in
@@ -1481,8 +1480,8 @@ let rec process_rec (acc : process_acc) (pterm : Model.pterm) : process_data =
       let dest (e, args) =
         let asset_name = dest_asset_const_name (unloc e) in
         let arg = match args with
-        | [a; b] -> [a; b]
-        | _ -> raise (Anomaly("dest_asset_update")) in
+          | [a; b] -> [a; b]
+          | _ -> raise (Anomaly("dest_asset_update")) in
         (asset_name, arg) in
       let asset_name, arg = dest (e, args) in
       let arg1 = process_rec acc (List.nth arg 0) in
@@ -1521,8 +1520,8 @@ let rec process_rec (acc : process_acc) (pterm : Model.pterm) : process_data =
       let dest (e, args) =
         let asset_name = dest_asset_const_name (unloc e) in
         let arg = match args with
-        | [a] -> a
-        | _ -> raise (Anomaly("dest_asset_removeif")) in
+          | [a] -> a
+          | _ -> raise (Anomaly("dest_asset_removeif")) in
         (asset_name, arg) in
       let asset_name, arg = dest (e, args) in
       let asset_arg = "x" in
@@ -1532,10 +1531,10 @@ let rec process_rec (acc : process_acc) (pterm : Model.pterm) : process_data =
       let f_arg = dumloc (Ptuple [loc_pterm (Pvar "s");
                                   dumloc (Plambda (dumloc "x", None, false, a.term))]) in
 
-(*      let asset_name = "mile" in
-      let f_arg = loc_pterm (Ptuple [Pvar "s"; Plambda ("x", None, false, Papp (Pdot (Pvar "Timestamp", Pvar "tim_lt"),
-                                                                                 [Papp (Pvar "expiration", [Pvar "x"]);
-                                                                                  pCurrentTime]))]) in*)
+      (*      let asset_name = "mile" in
+              let f_arg = loc_pterm (Ptuple [Pvar "s"; Plambda ("x", None, false, Papp (Pdot (Pvar "Timestamp", Pvar "tim_lt"),
+                                                                                       [Papp (Pvar "expiration", [Pvar "x"]);
+                                                                                        pCurrentTime]))]) in*)
       let f = RemoveIf asset_name in
       {
         dummy_process_data with
@@ -1593,28 +1592,28 @@ let rec process_rec (acc : process_acc) (pterm : Model.pterm) : process_data =
       }
     )
   | Pmatchwith (a, l) ->
-  (
-    let rec to_pattern (p : Model.pattern) : pattern =
     (
-    let loc, v = deloc p in mkloc loc
-    (match v with
-    | Mwild -> Mwild
-    | Mvar s -> Mvar s
-    | Mapp (q, l) -> Mapp (q, List.map to_pattern l)
-    | Mrec l -> Mrec (List.map (fun (i, p) -> (i, to_pattern p)) l)
-    | Mtuple l -> Mtuple (List.map to_pattern l)
-    | Mas (p, o, g) -> Mas (to_pattern p, o, g)
-    | Mor (lhs, rhs) -> Mor (to_pattern lhs, to_pattern rhs)
-    | Mcast (p, t) -> Mcast (to_pattern p, to_storage_type (Some t))
-    | Mscope (q, p) -> Mscope (q, to_pattern p)
-    | Mparen p -> Mparen (to_pattern p)
-    | Mghost p -> Mghost (to_pattern p)
-     )) in
+      let rec to_pattern (p : Model.pattern) : pattern =
+        (
+          let loc, v = deloc p in mkloc loc
+            (match v with
+             | Mwild -> Mwild
+             | Mvar s -> Mvar s
+             | Mapp (q, l) -> Mapp (q, List.map to_pattern l)
+             | Mrec l -> Mrec (List.map (fun (i, p) -> (i, to_pattern p)) l)
+             | Mtuple l -> Mtuple (List.map to_pattern l)
+             | Mas (p, o, g) -> Mas (to_pattern p, o, g)
+             | Mor (lhs, rhs) -> Mor (to_pattern lhs, to_pattern rhs)
+             | Mcast (p, t) -> Mcast (to_pattern p, to_storage_type (Some t))
+             | Mscope (q, p) -> Mscope (q, to_pattern p)
+             | Mparen p -> Mparen (to_pattern p)
+             | Mghost p -> Mghost (to_pattern p)
+            )) in
 
-    let e = process_rec acc a in
-    let le = List.map (fun (p, c) -> to_pattern p, process_rec acc c) l in
-    let pt = mkloc loc (Pmatchwith (e.term, List.map (fun (p, c) -> (p, c.term)) le)) in
-    let ret = (List.nth le 0) |> snd |> (fun x -> x.ret) in
+      let e = process_rec acc a in
+      let le = List.map (fun (p, c) -> to_pattern p, process_rec acc c) l in
+      let pt = mkloc loc (Pmatchwith (e.term, List.map (fun (p, c) -> (p, c.term)) le)) in
+      let ret = (List.nth le 0) |> snd |> (fun x -> x.ret) in
       {
         dummy_process_data with
         term = pt;
@@ -1622,7 +1621,7 @@ let rec process_rec (acc : process_acc) (pterm : Model.pterm) : process_data =
         ret = ret;
         side = e.side || (List.fold_right (fun ((_, c) : (pattern * process_data)) acc -> c.side || acc ) le false);
       }
-  )
+    )
   | Pdot (l, r) ->
     (
       let a = process_rec acc l in
@@ -1631,7 +1630,7 @@ let rec process_rec (acc : process_acc) (pterm : Model.pterm) : process_data =
       let nl, ret, p = (match a.ret, b.ret with
           | Field (asset_name, id, _), Const c -> compute_const_field asset_name id c a.term
           | Asset asset_name, Id id when is_asset_field acc.info (asset_name, id) -> [], Field (asset_name, id, a.term),
-              Papp (dumloc (Pvar (dumloc "to_key")), [a.term])
+                                                                                     Papp (dumloc (Pvar (dumloc "to_key")), [a.term])
           | _ -> [], None, Pdot (a.term, b.term)) in {
         dummy_process_data with
         term = mkloc loc p;
@@ -1640,7 +1639,7 @@ let rec process_rec (acc : process_acc) (pterm : Model.pterm) : process_data =
         side = a.side || b.side;
       }
     )
-    | Plogical (op, l, r) ->
+  | Plogical (op, l, r) ->
     (
       let a = process_rec acc l in
       let b = process_rec acc r in
@@ -1819,12 +1818,12 @@ let rec process_rec (acc : process_acc) (pterm : Model.pterm) : process_data =
                                  loc_pterm (Pvar "_ops")
                                ])])) in
 
-    {
-      dummy_process_data with
-      term = t;
-      funs = [];
-      ret = Operations;
-    }
+      {
+        dummy_process_data with
+        term = t;
+        funs = [];
+        ret = Operations;
+      }
     )
   | _ -> {
       dummy_process_data with
@@ -1877,12 +1876,12 @@ let compute_args info (t : Model.transaction) : (arg_ret list) =
             unloc lident,
             Ftyp (get_key_type lident info),
             List.fold_left (fun acc (i : string * ptyp) -> acc @ [Ftyp (
-                 match i |> snd |> unloc with
-                 | Tbuiltin vtb -> vtb
-                 | Tasset lident -> get_key_type lident info
-                 | _ -> raise (Anomaly "compute_args_0")
-               )])
-               [] (get_asset_vars_id_typs lident info))
+                match i |> snd |> unloc with
+                | Tbuiltin vtb -> vtb
+                | Tasset lident -> get_key_type lident info
+                | _ -> raise (Anomaly "compute_args_0")
+              )])
+              [] (get_asset_vars_id_typs lident info))
           }]
         | _ -> raise (Anomaly "compute_args")
       )
@@ -1993,8 +1992,8 @@ let build_match_state _info (_m : model_unloc) (_t : Model.transaction) (from : 
   let to_ = unloc to_ in
   let act = dumloc (Pletin (dumloc "s", loc_pterm (Papp (Pvar "update_storage",[Pvar "s"; s_state; Pvar to_])),
                             None, loc_pterm (Ptuple [Pvar "_ops"; Pvar "s"])))
-  |> build_match_act _info _m _t _action
-  |> build_match_cond _info _m _cond
+            |> build_match_act _info _m _t _action
+            |> build_match_cond _info _m _cond
   in
 
   dumloc (Pmatchwith (
@@ -2015,7 +2014,7 @@ let process_state_machine (info : info) (m : model_unloc) (t : Model.transaction
       let l = tr.trs in
 
       let pt = dumloc (Pletin (dumloc "_ops", loc_pterm (Papp (Pvar ("get_0_2"), [Pvar "_sops"])) , None,
-               dumloc (Pletin (dumloc "s",    loc_pterm (Papp (Pvar ("get_1_2"), [Pvar "_sops"])) , None, pt)))) in
+                               dumloc (Pletin (dumloc "s",    loc_pterm (Papp (Pvar ("get_1_2"), [Pvar "_sops"])) , None, pt)))) in
       let from =
         begin
           match unloc from with
@@ -2044,13 +2043,13 @@ let transform_transaction (info : info) (m : model_unloc) (t : Model.transaction
        | ATSimple x -> Some x
        | _ -> raise (Anomaly "transform_transaction 0"))
     | _ -> (Some (Ftuple (List.fold_left
-                          (fun acc (i : arg_ret) ->
-                             acc @
-                             (match i.typ with
-                              | ATSimple x -> [x]
-                              | ATAsset (_, k, l) -> k::l)
-                          )
-                          [] args0))) in
+                            (fun acc (i : arg_ret) ->
+                               acc @
+                               (match i.typ with
+                                | ATSimple x -> [x]
+                                | ATAsset (_, k, l) -> k::l)
+                            )
+                            [] args0))) in
 
   let args = List.map mk_arg [("p", args_p);
                               ("s", Some (Flocal (lstr "storage")))] in
@@ -2109,5 +2108,5 @@ let record_model_to_modelws (info : info) (m : model) : model_with_storage =
 
 let model_to_modelws (info : info) (m : model) : model_with_storage =
   (match !Modelinfo.storage_policy with
-  | Record -> record_model_to_modelws
-  | Flat -> flat_model_to_modelws) info m
+   | Record -> record_model_to_modelws
+   | Flat -> flat_model_to_modelws) info m

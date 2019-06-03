@@ -8,7 +8,7 @@ action myaction = {
     }
 
     definition mydef =
-     { x : early | forall x, x = x }
+     { x : early | forall x : col1, x = x }
 
     axiom myaxiom = {
       forall x : col1, forall y : col2, x = y

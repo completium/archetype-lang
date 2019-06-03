@@ -1,51 +1,10 @@
 open Location
 open Ident
-open Tools
 
 type lident = ident loced
 
+let pp_ident fmt i = Format.fprintf fmt "%s" i
 let pp_lident fmt i = Format.fprintf fmt "%s" (unloc i)
-
-type 'id qualid =
-  | Qident of 'id
-  | Qdot of 'id qualid * 'id
-[@@deriving show {with_path = false}]
-
-type liqualid = lident qualid
-[@@deriving show {with_path = false}]
-
-type rexpr =
-  | Rqualid of liqualid
-  | Ror of rexpr * rexpr
-  | Raddress of string
-[@@deriving show {with_path = false}]
-
-type role = {
-  name    : lident;
-  default : rexpr option;
-  loc     : Location.t [@opaque];
-}
-[@@deriving show {with_path = false}]
-
-type sexpr_unloc =
-  | Sref of lident
-  | Sor of sexpr * sexpr
-  | Sany
-[@@deriving show {with_path = false}]
-
-and sexpr = sexpr_unloc loced
-[@@deriving show {with_path = false}]
-
-type currency =
-  | Tez
-  | Mutez
-[@@deriving show {with_path = false}]
-
-type transfer = {
-  from : role;
-  tto  : role;
-}
-[@@deriving show {with_path = false}]
 
 type container =
   | Collection
@@ -56,17 +15,22 @@ type container =
   | Partition
 [@@deriving show {with_path = false}]
 
+type currency =
+  | Tez
+  | Mutez
+[@@deriving show {with_path = false}]
+
 type vtyp =
   | VTbool
   | VTint
   | VTuint
+  | VTrational
   | VTdate
   | VTduration
   | VTstring
   | VTaddress
   | VTrole
-  | VTcurrency of currency * transfer option
-  | VTobject
+  | VTcurrency of currency
   | VTkey
 [@@deriving show {with_path = false}]
 
@@ -79,52 +43,27 @@ type vset =
   | VSfixed
 [@@deriving show {with_path = false}]
 
-type ptyp_unloc =
+type ptyp =
   | Tasset of lident
+  | Tenum of lident
   | Tbuiltin of vtyp
   | Tcontainer of ptyp * container
-  | Tapp of ptyp * ptyp
   | Ttuple of ptyp list
 [@@deriving show {with_path = false}]
 
-and ptyp = ptyp_unloc loced
-[@@deriving show {with_path = false}]
-
-type ltyp_unloc =
+type ltyp =
   | LTprog of ptyp
   | LTvset of vset * ltyp
 [@@deriving show {with_path = false}]
 
-and ltyp = ltyp_unloc loced
+
+type type_ = ptyp (* type of pterm *)
 [@@deriving show {with_path = false}]
 
-(* basic variable *)
-type bval_unloc =
-  | BVint          of Core.big_int
-  | BVuint         of Core.big_int
-  | BVbool         of bool
-  | BVenum         of string
-  | BVrational     of Core.big_int * Core.big_int
-  | BVdate         of string (* todo : plus Bat.date *)
-  | BVstring       of string
-  | BVcurrency     of currency * Core.big_int
-  | BVaddress      of string
-  | BVduration     of string
+type ltype_ = ltyp (* type of lterm *)
 [@@deriving show {with_path = false}]
 
-and bval = bval_unloc loced
-
-type ('typ,'term) gen_decl = {
-  name    : lident;
-  typ     : 'typ option;
-  default : 'term option;
-  loc     : Location.t [@opaque];
-}
-[@@deriving show {with_path = false}]
-
-type decl = (ptyp, bval) gen_decl
-[@@deriving show {with_path = false}]
-
+(* operators and constants *)
 type logical_operator =
   | And
   | Or
@@ -205,9 +144,105 @@ type const =
   | Cremoved
 [@@deriving show {with_path = false}]
 
-type signature = {
-  name : lident;
-  args: ptyp list;
+type ('typ, 'node) struct_poly = {
+  node : 'node;                   (* kind of object *)
+  type_ : 'typ option;                   (* type of object *)
+  label : ident option;           (* label (typically for instruction) *)
+  loc : Location.t [@opaque];     (* location of object *)
+}
+[@@deriving show {with_path = false}]
+
+(* -------------------------------------------------------------------- *)
+
+type ('id, 'typ, 'qualid) qualid_poly = ('typ, (('id, 'qualid) qualid_node)) struct_poly
+[@@deriving show {with_path = false}]
+
+and ('id, 'qualid) qualid_node =
+  | Qident of 'id
+  | Qdot of 'qualid * 'id
+[@@deriving show {with_path = false}]
+
+type ('id, 'typ) qualid_gen = ('id, 'typ, ('id, 'typ) qualid_gen) qualid_poly
+[@@deriving show {with_path = false}]
+
+type qualid = (lident, type_) qualid_gen
+[@@deriving show {with_path = false}]
+
+
+(* -------------------------------------------------------------------- *)
+
+type ('id, 'typ, 'rexpr) rexpr_poly = ('typ, ('id, 'typ, 'rexpr) rexpr_node) struct_poly
+[@@deriving show {with_path = false}]
+
+and ('id, 'typ, 'rexpr) rexpr_node =
+  | Rqualid of ('id, 'typ) qualid_gen
+  | Ror of 'rexpr * 'rexpr
+  | Raddress of 'id
+[@@deriving show {with_path = false}]
+
+type ('id, 'typ) rexpr_gen = ('id, 'typ, ('id, 'typ) rexpr_gen) rexpr_poly
+[@@deriving show {with_path = false}]
+
+type rexpr = (lident, type_) rexpr_gen
+[@@deriving show {with_path = false}]
+
+
+(* -------------------------------------------------------------------- *)
+
+type ('id, 'typ, 'sexpr) sexpr_poly = ('typ, ('id, 'sexpr) sexpr_node) struct_poly
+[@@deriving show {with_path = false}]
+
+and ('id, 'sexpr) sexpr_node =
+  | Sref of 'id
+  | Sor of 'sexpr * 'sexpr
+  | Sany
+[@@deriving show {with_path = false}]
+
+type ('id, 'typ) sexpr_gen = ('id, 'typ, ('id, 'typ) sexpr_gen) sexpr_poly
+[@@deriving show {with_path = false}]
+
+type sexpr = (lident, type_) sexpr_gen
+[@@deriving show {with_path = false}]
+
+(* -------------------------------------------------------------------- *)
+
+(* basic variable *)
+type 'typ bval_poly = ('typ, bval_node) struct_poly
+[@@deriving show {with_path = false}]
+
+and bval_node =
+  | BVint          of Core.big_int
+  | BVuint         of Core.big_int
+  | BVbool         of bool
+  | BVenum         of string
+  | BVrational     of Core.big_int * Core.big_int
+  | BVdate         of string (* TODO : find a date structure *)
+  | BVstring       of string
+  | BVcurrency     of currency * Core.big_int
+  | BVaddress      of string
+  | BVduration     of string
+[@@deriving show {with_path = false}]
+
+type 'typ bval_gen = 'typ bval_poly
+[@@deriving show {with_path = false}]
+
+type bval = type_ bval_gen
+[@@deriving show {with_path = false}]
+
+
+(* -------------------------------------------------------------------- *)
+
+type ('id, 'typ, 'term) decl_gen = {
+  name    : 'id;
+  typ     : 'typ option;
+  default : 'term option;
+  loc     : Location.t [@opaque];
+}
+[@@deriving show {with_path = false}]
+
+type ('id, 'typ) signature = {
+  name : 'id;
+  args: 'typ list;
   loc: Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]
@@ -217,403 +252,379 @@ type quantifier =
   | Exists
 [@@deriving show {with_path = false}]
 
-type ('id,'typ,'pattern) pattern_unloc =
+
+(* -------------------------------------------------------------------- *)
+
+type ('id, 'typ, 'pattern) pattern_poly = ('typ, ('id, 'typ, 'pattern) pattern_node) struct_poly
+[@@deriving show {with_path = false}]
+
+and ('id, 'typ, 'pattern) pattern_node =
   | Mwild
-  | Mvar of 'id
-  | Mapp of 'id qualid * 'pattern list
-  | Mrec of ('id qualid * 'pattern) list
-  | Mtuple of 'pattern list
-  | Mas of 'pattern * 'id * bool
-  | Mor of 'pattern * 'pattern
-  | Mcast of 'pattern * 'typ
-  | Mscope of 'id qualid * 'pattern
-  | Mparen of 'pattern
-  | Mghost of 'pattern
+  | Mconst of 'id
 [@@deriving show {with_path = false}]
 
-type pattern = (lident,ptyp,pattern) pattern_unloc loced
+type ('id, 'typ) pattern_gen = ('id, 'typ, ('id, 'typ) pattern_gen) pattern_poly
 [@@deriving show {with_path = false}]
 
-type lterm_unloc =
-  | Lquantifer of quantifier * lident * ltyp option * lterm
-  | Limply of lterm * lterm
-  (* below is common entries with lterm *)
-  | Lrel of int
-  | Lletin of lident * lterm * ltyp option * lterm
-  | Lseq of lterm * lterm
-  | Lnot of lterm
-  | Lapp of lterm * lterm list
-  | Llambda of lident * ltyp option * bool * lterm
-  | Llogical of logical_operator * lterm * lterm
-  (* mutualize below with pterm ? *)
-  | Lcomp of comparison_operator * lterm * lterm
-  | Larith of arithmetic_operator * lterm * lterm
-  | Luarith of unary_arithmetic_operator * lterm
-  | Lvar of lident
-  | Lfield of lident
-  | Lasset of lident
-  | Larray of lident option * lterm list
-  | Llit of bval
-  | Ldot of lterm * lterm
-  | Lconst of const
-  | Ltuple of lterm list
-  | Lrequire of bool * lterm
+type pattern = (lident, type_) pattern_gen
 [@@deriving show {with_path = false}]
 
-and lterm = lterm_unloc loced
 
-type ('id,'typ,'pattern,'term) poly_pterm  =
-  (* program specific *)
-  | Pif of 'term * 'term * ('term) option
-  | Pfor of 'id * 'term * 'term * 'id option
-  | Passign of assignment_operator * 'term * 'term
-  | Pfassign of ((assignment_operator * 'id) option * 'term) list
-  | Ptransfer of 'term * bool * 'id qualid option
-  | Pbreak
-  | Pseq of 'term * 'term
-  | Pnot of 'term
-  | Passert of lterm
-  | Pmatchwith of 'term * ('pattern * 'term) list
-  | Precord of ('id qualid * 'term) list
-  (* below is common entries with lterm *)
-  | Prel of int
-  | Pletin of 'id * 'term * 'typ option * 'term
-  | Papp of 'term * ('term) list
-  | Plambda of 'id * 'typ option * bool * 'term
+type ('id, 'typ, 'term) term_node  =
+  | Lquantifer of quantifier * 'id * ltype_ * 'term
+  | Pif of ('term * 'term * 'term option)
+  | Pmatchwith of 'term * (('id, 'typ) pattern_gen * 'term) list
+  | Pcall of ('id option * 'id * ('term term_arg) list)
   | Plogical of logical_operator * 'term * 'term
-  (* mutualize below with lterm ? *)
+  | Pnot of 'term
   | Pcomp of comparison_operator * 'term * 'term
   | Parith of arithmetic_operator * 'term * 'term
   | Puarith of unary_arithmetic_operator * 'term
+  | Precord of (('id, 'typ) qualid_gen * 'term) list
+  | Pletin of 'id * 'term * 'typ option * 'term
   | Pvar of 'id
   | Parray of 'term list
-  | Plit of bval
-  | Pdot of 'term * 'term
+  | Plit of 'typ bval_gen
+  | Pdot of 'term * 'id
   | Pconst of const
   | Ptuple of 'term list
-  | Prequire of bool * 'term
 [@@deriving show {with_path = false}]
 
-type pterm = ((lident,ptyp,pattern,pterm) poly_pterm) loced
+and 'term term_arg =
+  | AExpr   of 'term
+  | AEffect of unit
 [@@deriving show {with_path = false}]
 
-type cond = pterm
+
+(* -------------------------------------------------------------------- *)
+
+type ('id, 'typ, 'term) lterm_poly = (ltype_, ('id, 'typ, 'term) term_node) struct_poly
 [@@deriving show {with_path = false}]
 
-type arg = decl
+type ('id, 'typ) lterm_gen = ('id, 'typ, ('id, 'typ) lterm_gen) lterm_poly
 [@@deriving show {with_path = false}]
 
-type 'a label_term = {
-  label : lident option;
-  term : 'a;
+type lterm = (lident, type_) lterm_gen
+[@@deriving show {with_path = false}]
+
+
+(* -------------------------------------------------------------------- *)
+
+type ('id, 'typ, 'term) pterm_poly = ('typ, ('id, 'typ, 'term) term_node) struct_poly
+[@@deriving show {with_path = false}]
+
+type ('id, 'typ) pterm_gen = ('id, 'typ, ('id, 'typ) pterm_gen) pterm_poly
+[@@deriving show {with_path = false}]
+
+type pterm = (lident, type_, pterm) pterm_poly
+[@@deriving show {with_path = false}]
+
+type pterm_arg = pterm term_arg
+[@@deriving show {with_path = false}]
+
+(* -------------------------------------------------------------------- *)
+
+type ('id, 'typ, 'term, 'instr) instruction_poly = ('typ, ('id, 'typ, 'term, 'instr) instruction_node) struct_poly
+[@@deriving show {with_path = false}]
+
+and ('id, 'typ, 'term, 'instr) instruction_node =
+  | Iif of ('term * 'instr * 'instr)                              (* condition * then_ * else_ *)
+  | Ifor of ('id * 'term * 'instr)                                (* id * collection * body *)
+  | Iseq of 'instr list                                           (* lhs ; rhs*)
+  | Imatchwith of 'term * (('id, 'typ) pattern_gen * 'instr) list (* match 'term with ('pattern * 'instr) list *)
+  | Iassign of (assignment_operator * 'id * 'term)                (* $2 assignment_operator $3 *)
+  | Irequire of (bool * 'term)                                    (* $1 ? require : failif *)
+  | Itransfer of ('term * bool * ('id, 'typ) qualid_gen option)   (* value * back * dest *)
+  | Ibreak
+  | Iassert of 'term
+  | Icall of ('term option * 'id * ('term) list)
+[@@deriving show {with_path = false}]
+
+type ('id, 'typ, 'term) instruction_gen = ('id, 'typ, 'term, ('id, 'typ, 'term) instruction_gen) instruction_poly
+[@@deriving show {with_path = false}]
+
+and instruction = (lident, ptyp, pterm, instruction) instruction_poly
+
+
+(* -------------------------------------------------------------------- *)
+
+type ('id, 'term) label_term = {
+  label : 'id option;
+  term : 'term;
   loc  : Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]
 
-type label_pterm = pterm label_term
-[@@deriving show {with_path = false}]
-
-type label_lterm = lterm label_term
-[@@deriving show {with_path = false}]
-
-type variable = {
-  decl         : (ptyp, pterm) gen_decl;
+type ('id, 'typ, 'term) variable = {
+  decl         : ('id, 'typ, 'term) decl_gen; (* TODO *)
   constant     : bool;
-  from         : liqualid option;
-  to_          : liqualid option;
+  from         : ('id, 'typ) qualid_gen option;
+  to_          : ('id, 'typ) qualid_gen option;
   loc          : Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]
 
-type predicate = {
-  name : lident;
-  args : arg list;
-  body : lterm;
+type ('id, 'typ) predicate = {
+  name : 'id;
+  args : ('id * (('id, 'typ) lterm_gen)) list;
+  body : ('id, 'typ) lterm_gen;
   loc  : Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]
 
-type definition = {
-  name : lident;
-  typ  : ptyp;
-  id   : lident;
-  def  : lterm;
+type ('id, 'typ) definition = {
+  name : 'id;
+  typ  : 'typ;
+  var  : 'id;
+  body : ('id, 'typ) lterm_gen;
   loc  : Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]
 
-type verification = {
-  predicates  : predicate list;
-  definitions : definition list;
-  axioms      : label_lterm list;
-  theorems    : label_lterm list;
-  variables   : variable list;
-  invariants  : (lident * label_lterm list) list;
-  effect      : pterm option;
-  specs       : label_lterm list;
+type ('id, 'typ, 'term) verification = {
+  predicates  : ('id, 'typ) predicate list;
+  definitions : ('id, 'typ) definition list;
+  axioms      : ('id, ('id, 'typ) lterm_gen) label_term list;
+  theorems    : ('id, ('id, 'typ) lterm_gen) label_term list;
+  variables   : ('id, 'typ, 'term) variable list;
+  invariants  : ('id * ('id, ('id, 'typ) lterm_gen) label_term list) list;
+  effect      : 'term option;
+  specs       : ('id, ('id, 'typ) lterm_gen) label_term list;
   loc         : Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]
 
-type name = lident option * lident
-
-type ('id,'typ,'pattern,'term) gen_function = {
-  name         : lident;
-  args         : (('typ, bval) gen_decl) list;
-  return       : 'typ option;
-  body         : ('id,'typ,'pattern,'term) poly_pterm loced;
-  side         : bool;
+type ('id, 'typ, 'term) function_struct = {
+  name         : 'id;
+  args         : (('id, 'typ, 'typ bval_gen) decl_gen) list;
+  body         : ('id, 'typ, 'term) instruction_gen;
+  side         : bool; (* true if function contains a failwith call *)
+  return       : 'typ;
+  fvs          : (ident * 'typ) list [@opaque];
   loc          : Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]
 
-type function_ = (lident,ptyp,pattern,pterm) gen_function
+type function_ = (lident, type_, pterm) function_struct
 [@@deriving show {with_path = false}]
 
-type transition = {
-  from : sexpr;
-  on   : (lident * lident) option;
-  trs  : (lident * pterm option * pterm option) list; (* to * condition * action*)
+type ('id, 'typ, 'term, 'instr) transition = {
+  from : ('id, 'typ) sexpr_gen;
+  on   : ('id * 'id) option;
+  trs  : ('id * 'term option * 'instr option) list; (* to * condition * action*)
 }
 [@@deriving show {with_path = false}]
 
-type ('id,'typ,'pattern,'term) gen_transaction = {
-  name            : lident;
-  args            : (('typ, bval) gen_decl) list;
-  calledby        : rexpr option;
+type ('id, 'typ, 'term, 'instr) transaction_struct = {
+  name            : 'id;
+  args            : (('id, 'typ, 'typ bval_gen) decl_gen) list;
+  calledby        : ('id, 'typ) rexpr_gen option;
   accept_transfer : bool;
-  require         : label_pterm list option;
-  transition      : transition option;
-  functions       : function_ list;
-  verification    : verification option;
-  effect          : ('id,'typ,'pattern,'term) poly_pterm loced option;
+  require         : ('id, 'term) label_term list option;
+  transition      : ('id, 'typ, 'term, 'instr) transition option;
+  verification    : ('id, 'typ, 'term) verification option;
+  functions       : ('id, 'typ, 'term) function_struct list;
+  effect          : ('id, 'typ, 'term) instruction_gen option;
   side            : bool;
   loc             : Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]
 
-type transaction = (lident, ptyp, pattern, pterm) gen_transaction
+type transaction = (lident, type_, pterm, instruction) transaction_struct
 [@@deriving show {with_path = false}]
 
-type state_item = {
-  name : lident;
+type ('id, 'typ, 'term) enum_item_struct = {
+  name : 'id;
   initial : bool;
-  verification : verification option;
+  verification : ('id, 'typ, 'term) verification option;
   loc : Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]
 
-type state = {
-  name : lident;
-  items : state_item list;
+type ('id, 'typ, 'term) enum_struct = {
+  name : 'id; (* "_state" if it's coming from Dstates constructor *)
+  items : ('id, 'typ, 'term) enum_item_struct list;
   loc : Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]
 
-type asset = {
-  name  : lident;
-  args  : arg list;
-  key   : lident;
-  sort  : lident list;
-  state : lident option;
-  role  : bool;
-  init  : pterm option;
-  specs : label_lterm list;
-  loc   : Location.t [@opaque];
+type enum = (lident, type_, pterm) enum_struct
+[@@deriving show {with_path = false}]
+
+type ('id, 'typ, 'term) asset_struct = {
+  name    : 'id;
+  fields  : ('id, 'typ, 'term) decl_gen list;
+  key     : 'id option;
+  sort    : 'id list;
+  state   : 'id option;
+  role    : bool;
+  init    : 'term option;
+  specs   : ('id, ('id, 'typ) lterm_gen) label_term list;
+  loc     : Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]
 
-type enum = {
-  name : lident;
-  vals : lident list;
-  loc  : Location.t [@opaque];
-}
-[@@deriving show {with_path = false}]
+type asset = (lident, type_, pterm) asset_struct
 
-type ('id,'typ) gen_predicate = {
-  name         : lident;
-  args         : (('typ, bval) gen_decl) list;
-  return       : 'typ option;
-  body         : lterm;
-}
-[@@deriving show {with_path = false}]
-
-type contract = {
-  name       : lident;
-  signatures : signature list;
-  init       : pterm option;
+type ('id, 'typ, 'term) contract = {
+  name       : 'id;
+  signatures : ('id, 'typ) signature list;
+  init       : 'term option;
   loc        : Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]
 
-type model_unloc = {
-  name          : lident;
-  variables     : variable list;
-  assets        : asset list;
-  functions     : function_ list;
-  transactions  : transaction list;
-  states        : state list;
-  enums         : enum list;
-  contracts     : contract list;
-  verifications : verification list;
+type ('id, 'typ, 'term, 'instr)  model_struct = {
+  name          : 'id;
+  variables     : ('id, 'typ, 'term) variable list;
+  assets        : ('id, 'typ, 'term) asset_struct list;
+  functions     : ('id, 'typ, 'term) function_struct list;
+  transactions  : ('id, 'typ, 'term, 'instr) transaction_struct list;
+  enums         : ('id, 'typ, 'term) enum_struct list;
+  contracts     : ('id, 'typ, 'term) contract list;
+  verifications : ('id, 'typ, 'term) verification list;
+  loc           : Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]
 
-and model = model_unloc loced
+and model = (lident, type_, pterm, instruction) model_struct
 
-let get_decl_id (a : decl) = a |> fun x -> x.name |> unloc
+(* vtyp -> ptyp *)
+let vtbool       = Tbuiltin (VTbool      )
+let vtint        = Tbuiltin (VTint       )
+let vtuint       = Tbuiltin (VTuint      )
+let vtrational   = Tbuiltin (VTrational  )
+let vtdate       = Tbuiltin (VTdate      )
+let vtduration   = Tbuiltin (VTduration  )
+let vtstring     = Tbuiltin (VTstring    )
+let vtaddress    = Tbuiltin (VTaddress   )
+let vtrole       = Tbuiltin (VTrole      )
+let vtcurrency c = Tbuiltin (VTcurrency c)
+let vtkey        = Tbuiltin (VTkey       )
 
-let get_asset_name (a : asset) = a |> fun x -> x.name |> unloc
-
-let get_asset_names m = (unloc m).assets |> List.map get_asset_name
-
-(* returns a list of triplet : asset name, field name, field type *)
-let get_asset_fields m =
-  List.fold_left (fun acc (a : asset) ->
-      let id = a.name in
-      List.fold_left (fun acc (arg : decl) ->
-          acc @ [id, arg.name, arg.typ]
-        ) acc a.args
-    ) [] m.assets
-
-(* generic mapper for poly_pterm type
-   f  : function called on each constructor
-   fi : function called on ident argument into constructor
-   ft : function called on typ argument into constructor
-   fr : function called on pattern argument into constructor
-   fp : function called on pterm argument into constructor
-   fq : function called on qualid argument into constructor
-*)
-let poly_pterm_map f fi ft fr fp fq = function
-  | Pif (c, t, e) -> f (Pif (fp c, fp t, map_option fp e))
-  | Pfor (id, c, b, lbl) -> f (Pfor (fi id, fp c, fp b, map_option fi lbl))
-  | Passign (a, e, t) -> f (Passign (a, fp e, fp t))
-  | Pfassign l -> f (Pfassign (List.map (fun (a, v) ->
-      let b = map_option (fun (x, y) -> (x, fi y)) a in
-      (b, fp v)) l))
-  | Ptransfer (e, b, q) -> f (Ptransfer (fp e, b, map_option fq q))
-  | Pbreak -> f (Pbreak)
-  | Pseq (lhs, rhs) -> f (Pseq (fp lhs, fp rhs))
-  | Pnot e -> f (Pnot (fp e))
-  | Passert l -> f (Passert l)
-  | Pmatchwith (e, l) -> f (Pmatchwith (fp e, List.map (fun (p, e) -> (fr p, fp e)) l))
-  | Precord l -> f (Precord (List.map (fun (q, t) -> (fq q, fp t) ) l))
-  | Prel i -> f (Prel i)
-  | Pletin (i, v, t, b) -> f (Pletin (fi i, fp v, ft t, fp b))
-  | Papp (e, a) -> f (Papp (fp e, List.map fp a))
-  | Plambda (i, t, s, b) -> f (Plambda (fi i, ft t, s, fp b))
-  | Plogical (o, l, r) -> f (Plogical (o, fp l, fp r))
-  | Pcomp (o, l, r) -> f (Pcomp (o, fp l, fp r))
-  | Parith (o, l, r) -> f (Parith (o, fp l, fp r))
-  | Puarith (u, e) -> f (Puarith (u, fp e))
-  | Pvar i -> f (Pvar (fi i))
-  | Parray l -> f (Parray (List.map fp l))
-  | Plit v -> f (Plit v)
-  | Pdot (l, r) -> f (Pdot (fp l, fp r))
-  | Pconst c -> f (Pconst c)
-  | Ptuple l -> f (Ptuple (List.map fp l))
-  | Prequire (b, x) -> f (Prequire (b, fp x))
-
-let poly_pterm_map_for_pterm f g = poly_pterm_map f id id id g id
-
-(* generic mapper for poly_pterm type
-   f   : function called on each constructor
-   acc : accumulator
-*)
-let poly_pterm_fold f acc = function
-  | Pif (c, t, Some e) -> f (f (f acc c) t) e
-  | Pif (c, t, None) -> f (f acc c) t
-  | Pfor (_id, c, b, _lbl) -> f (f acc c) b
-  | Passign (_a, e, t) -> f (f acc e) t
-  | Pfassign l -> List.fold_left (fun acc (_, v) -> f acc v) acc l
-  | Ptransfer (e, _b, _q) -> f acc e
-  | Pseq (lhs, rhs) -> f (f acc lhs) rhs
-  | Pnot e -> f acc e
-  | Pmatchwith (e, l) -> List.fold_left (fun acc (_p, e) -> f acc e) (f acc e) l
-  | Precord l -> List.fold_left (fun acc (_q, t) -> f acc t) acc l
-  | Pletin (_i, _v, _t, b) -> f acc b
-  | Papp (e, a) -> List.fold_left f (f acc e) a
-  | Plambda (_i, _t, _s, b) -> f acc b
-  | Plogical (_o, l, r) -> f (f acc l) r
-  | Pcomp (_o, l, r) -> f (f acc l) r
-  | Parith (_o, l, r) -> f (f acc l) r
-  | Puarith (_u, e) -> f acc e
-  | Parray l -> List.fold_left f acc l
-  | Pdot (l, r) -> f (f acc l) r
-  | Ptuple l -> List.fold_left f acc l
-  | Prequire (_b, x) -> (f acc x)
-  | _ -> acc
-
-let pattern_map f fi ft fr fq = function
-  | Mwild -> f Mwild
-  | Mvar s -> f (Mvar (fi s))
-  | Mapp (q, l) -> f (Mapp (fq q, List.map fr l))
-  | Mrec l -> Mrec (List.map (fun (i, p) -> (fq i, fr p)) l)
-  | Mtuple l -> Mtuple (List.map fr l)
-  | Mas (p, o, g) -> Mas (fr p, fi o, g)
-  | Mor (lhs, rhs) -> Mor (fr lhs, fr rhs)
-  | Mcast (p, t) -> Mcast (fr p, ft t)
-  | Mscope (q, p) -> Mscope (fq q, fr p)
-  | Mparen p -> Mparen (fr p)
-  | Mghost p -> Mghost (fr p)
-
-let assignment_operator_to_str = function
-  | ValueAssign -> "value"
-  | PlusAssign -> "plus"
-  | MinusAssign -> "minus"
-  | MultAssign -> "mult"
-  | DivAssign -> "div"
-  | AndAssign -> "and"
-  | OrAssign -> "or"
-
-let mk_init_val = function
-  | VTbool           -> BVbool false
-  | VTint            -> BVint Big_int.zero_big_int
-  | VTuint           -> BVint Big_int.zero_big_int
-  | VTdate           -> BVdate "1970-01-01T00:00:00Z"
-  | VTduration       -> BVduration "0s"
-  | VTstring         -> BVstring ""
-  | VTaddress        -> BVaddress "@none"
-  | VTrole           -> BVaddress "@none"
-  | VTcurrency (c,_) -> BVcurrency (c,Big_int.zero_big_int)
-  | VTkey            -> BVstring ""
-  | VTobject         -> BVstring ""
+(* mk functions *)
 
 
-type basic_pattern = (string, ptyp, basic_pattern) pattern_unloc
-[@@deriving show {with_path = false}]
+let mk_sp ?label ?(loc = Location.dummy) ?type_ node =
+  { node; type_; label; loc; }
 
-type basic_pterm = (string, ptyp, basic_pattern, basic_pterm) poly_pterm
-[@@deriving show {with_path = false}]
+let mk_label_term term = {
+  label           = None;
+  term            = term;
+  loc             = Location.dummy;
+}
 
-let lstr s = mkloc Location.dummy s
+let mk_variable decl = {
+  decl            = decl;
+  constant        = false;
+  from            = None;
+  to_             = None;
+  loc             = Location.dummy;
+}
 
-let rec loc_qualid (q : string qualid) : lident qualid =
-  match q with
-  | Qident s -> Qident (lstr s)
-  | Qdot (q, s) -> Qdot (loc_qualid q, lstr s)
+let mk_predicate id body = {
+  name            = id;
+  args            = [];
+  body            = body;
+  loc             = Location.dummy;
+}
 
-let rec loc_pattern (p : basic_pattern) : pattern =
-  mkloc Location.dummy (
-    match p with
-    | Mwild -> Mwild
-    | Mvar s -> Mvar (lstr s)
-    | Mapp (q, l) -> Mapp (loc_qualid q, List.map loc_pattern l)
-    | Mrec l -> Mrec (List.map (fun (i, p) -> (loc_qualid i, loc_pattern p)) l)
-    | Mtuple l -> Mtuple (List.map loc_pattern l)
-    | Mas (p, o, g) -> Mas (loc_pattern p, lstr o, g)
-    | Mor (lhs, rhs) -> Mor (loc_pattern lhs, loc_pattern rhs)
-    | Mcast (p, t) -> Mcast (loc_pattern p, t)
-    | Mscope (q, p) -> Mscope (loc_qualid q, loc_pattern p)
-    | Mparen p -> Mparen (loc_pattern p)
-    | Mghost p -> Mghost (loc_pattern p))
+let mk_definition id typ var body = {
+  name            = id;
+  typ             = typ;
+  var             = var;
+  body            = body;
+  loc             = Location.dummy;
+}
 
-let rec loc_pterm (p : basic_pterm) : pterm =
-  poly_pterm_map
-    (fun x -> mkloc (Location.dummy) x)
-    lstr
-    id
-    loc_pattern
-    loc_pterm
-    loc_qualid
-    p
+let mk_verification = {
+  predicates      = [];
+  definitions     = [];
+  axioms          = [];
+  theorems        = [];
+  variables       = [];
+  invariants      = [];
+  effect          = None;
+  specs           = [];
+  loc             = Location.dummy;
+}
+
+let mk_function_struct id body ret = {
+  name            = id;
+  args            = [];
+  body            = body;
+  side            = false;
+  return          = ret;
+  fvs             = [];
+  loc             = Location.dummy;
+}
+
+let mk_transition from = {
+  from            = from;
+  on              = None;
+  trs             = [];
+}
+
+let mk_transaction_struct id = {
+  name            = id;
+  args            = [];
+  calledby        = None;
+  accept_transfer = false;
+  require         = None;
+  transition      = None;
+  verification    = None;
+  functions       = [];
+  effect          = None;
+  side            = false;
+  loc             = Location.dummy;
+}
+
+let mk_enum_item id = {
+  name            = id;
+  initial         = false;
+  verification    = None;
+  loc             = Location.dummy;
+}
+
+let mk_enum id =   {
+  name            = id;
+  items           = [];
+  loc             = Location.dummy;
+}
+
+let mk_asset id   = {
+  name            = id;
+  fields          = [];
+  key             = None;
+  sort            = [];
+  state           = None;
+  role            = false;
+  init            = None;
+  specs           = [];
+  loc             = Location.dummy;
+}
+
+let mk_contract id = {
+  name          = id;
+  signatures    = [];
+  init          = None;
+  loc           = Location.dummy;
+}
+
+let mk_model id = {
+  name          = id;
+  variables     = [];
+  assets        = [];
+  functions     = [];
+  transactions  = [];
+  enums         = [];
+  contracts     = [];
+  verifications = [];
+  loc           = Location.dummy;
+}
+
+let mk_id type_ id : qualid =
+  { type_ = Some type_;
+    loc   = loc id;
+    node  = Qident id;
+    label = None; }

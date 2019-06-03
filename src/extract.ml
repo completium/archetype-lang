@@ -16,18 +16,18 @@ let print (_ds : Ptree.decl list) =
   let driver = Why3.Pdriver.load_driver env dname [] in
   List.iter (fun s -> Format.printf "%s@\n@." s) driver.drv_prelude(*;*)
 
-  (*  let mm = Env.read_channel Pmodule.mlw_language env filename channel in*)
+(*  let mm = Env.read_channel Pmodule.mlw_language env filename channel in*)
 (*  List.iter (fun (d : Ptree.decl) -> Format.printf "%a@\n@." print_module d) ds;*)
 
-    (*let opt_driver = Pdriver.load_driver env f ef "liquidity" in
-      Why3.Pdriver.register_printer opt_driver ArchetypeLib.Liq_printer.liq_printer;
-      let (pargs, _printer) = Why3.Pdriver.lookup_printer opt_driver in
-      let print_prelude =
-      print_prelude pargs.Pdriver.prelude*)
+(*let opt_driver = Pdriver.load_driver env f ef "liquidity" in
+  Why3.Pdriver.register_printer opt_driver ArchetypeLib.Liq_printer.liq_printer;
+  let (pargs, _printer) = Why3.Pdriver.lookup_printer opt_driver in
+  let print_prelude =
+  print_prelude pargs.Pdriver.prelude*)
 
 (*  let loc = Loc.dummy_position in
 
-  let use_import (f, m) =
+    let use_import (f, m) =
     let m = mk_id ~loc m in
     Typing.open_scope loc m;
     Typing.add_decl loc (Ptree.Duse (Qdot (Qident (mk_id ~loc f), m)));
@@ -49,7 +49,7 @@ let print (_ds : Ptree.decl list) =
      "liq", "Current";
      "liq", "Contract"];
 
-  List.iter (fun d ->
+    List.iter (fun d ->
       try Typing.add_decl Loc.dummy_position d
       with e ->
         Format.printf "Exception raised during typing of d:@ %a@."

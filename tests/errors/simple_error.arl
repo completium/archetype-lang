@@ -1,0 +1,7 @@
+archetype simple_error
+
+action funerror = {
+  effect {
+    f(); transition; g()
+  }
+}

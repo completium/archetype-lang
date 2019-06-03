@@ -1,7 +1,7 @@
 archetype extension delegable (
 
   asset anAsset = {
-    aRole[%delegable] : role
+    aRole[%delegable%] : role;
   }
 
   action aTransaction (anasset : anAsset) = {

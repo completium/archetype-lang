@@ -1,751 +1,157 @@
-open Location
-open Model
-open ParseTree
 open Tools
 
-exception ModelError0 of string
-exception ModelError  of string * Location.t
-exception ModelError2 of string * Location.t * Location.t
+module A = Model
+module M = Storage
 
-type info = {
-  assets : string list
-}
+type enum_item_struct = (A.lident, A.type_, A.pterm) A.enum_item_struct
+type verification     = (A.lident, A.type_, A.pterm) A.verification
+type record           = (A.lident, A.type_, A.pterm) A.decl_gen
+type field            = (A.lident, A.type_, A.pterm) A.decl_gen
+type variable         = (A.lident, A.type_, A.pterm) A.variable
 
-let dummy_gen_decl = {
-  name = dumloc "dummy";
-  typ = None;
-  default = None;
-  loc = Location.dummy;
-}
+let map_instr = Reduce.map_instr
 
-let dummy_variable : variable = {
-  decl = dummy_gen_decl;
-  constant = false;
-  from = None;
-  to_ = None;
-  loc = Location.dummy;
-}
-
-let dummy_verif = {
-  predicates  = [];
-  definitions = [];
-  axioms      = [];
-  theorems    = [];
-  variables   = [];
-  invariants  = [];
-  effect      = None;
-  specs       = [];
-  loc         = Location.dummy;
-}
-
-let builtin_type str =
-  match str with
-  | "bool" -> Some VTbool
-  | "int" -> Some VTint
-  | "uint" -> Some VTuint
-  | "date" -> Some VTdate
-  | "duration" -> Some VTduration
-  | "string" -> Some VTstring
-  | "address" -> Some VTaddress
-  | "role" -> Some VTrole
-  | "tez" -> Some (VTcurrency (Tez, None))
-  | "mtez" -> Some (VTcurrency (Mutez, None))
-  | _ -> None
-
-let to_const str =
-  match str with
-  | "state" -> Some Cstate
-  | "now" -> Some Cnow
-  | "transferred" -> Some Ctransferred
-  | "caller" -> Some Ccaller
-  | "fail" -> Some Cfail
-  | "balance" -> Some Cbalance
-  | "conditions" -> Some Cconditions
-  | "actions" -> Some Cactions
-  | "none" -> Some Cnone
-  | "any" -> Some Cany
-  (* function *)
-  | "nth" -> Some Cnth
-  | "clear" -> Some Cclear
-  | "select" -> Some Cselect
-  | "removeif" -> Some Cremoveif
-  | "sort" -> Some Csort
-  | "count" -> Some Ccount
-  | "sum" -> Some Csum
-  | "max" -> Some Cmax
-  | "min" -> Some Cmin
-  | "enqueue" -> Some Cenqueue
-  | "dequeue" -> Some Cdequeue
-  | "push" -> Some Cpush
-  | "pop" -> Some Cpop
-  | "add" -> Some Cadd
-  | "addifnotexist" -> Some Caddifnotexist
-  | "remove" -> Some Cremove
-  | "get" -> Some Cget
-  | "contains" -> Some Ccontains
-  | "update" -> Some Cupdate
-  | "mem" -> Some Cmem
-  (* vset *)
-  | "before" -> Some Cbefore
-  | "after" -> Some Cafter
-  | "fixed" -> Some Cfixed
-  | "added" -> Some Cadded
-  | "removed" -> Some Cremoved
-  | _ -> None
-
-let container_to_container (c : ParseTree.container) : Model.container =
-  match c with
-  | Collection -> Collection
-  | Queue      -> Queue
-  | Stack      -> Stack
-  | Set        -> Set
-  | Partition  -> Partition
-
-let to_logical_operator (op : ParseTree.logical_operator) : Model.logical_operator =
-  match op with
-  | And   -> And
-  | Or    -> Or
-  | Imply -> Imply
-  | Equiv -> Equiv
-
-let to_comparison_operator (op : ParseTree.comparison_operator) : Model.comparison_operator =
-  match op with
-  | Equal  -> Equal
-  | Nequal -> Nequal
-  | Gt     -> Gt
-  | Ge     -> Ge
-  | Lt     -> Lt
-  | Le     -> Le
-
-let to_arithmetic_operator (op : ParseTree.arithmetic_operator) : Model.arithmetic_operator =
-  match op with
-  | Plus   -> Plus
-  | Minus  -> Minus
-  | Mult   -> Mult
-  | Div    -> Div
-  | Modulo -> Modulo
-
-let to_assignment_operator (op : ParseTree.assignment_operator) : Model.assignment_operator =
-  match op with
-  | ValueAssign -> ValueAssign
-  | PlusAssign -> PlusAssign
-  | MinusAssign -> MinusAssign
-  | MultAssign -> MultAssign
-  | DivAssign -> DivAssign
-  | AndAssign -> AndAssign
-  | OrAssign -> OrAssign
-
-let to_quantifier (op : ParseTree.quantifier) : Model.quantifier =
-  match op with
-  | Forall -> Forall
-  | Exists -> Exists
-
-let to_vset id =
-  let loc, v = deloc id in
-  match v with
-  | "removed" -> VSremoved
-  | "added"   -> VSadded
-  | "stable"  -> VSstable
-  | "before"  -> VSbefore
-  | "after"   -> VSafter
-  | "fixed"   -> VSfixed
-  | _ -> raise (ModelError (Format.sprintf "cannot convert %s to vset" v, loc))
-
-let rec mk_ptyp e : ptyp =
-  let loc, v = deloc e in
-  mkloc loc
-    (match v with
-     | Tref v ->
-       (let b = builtin_type (unloc v) in
-        match b with
-        | Some u -> Tbuiltin u
-        | None -> Tasset v)
-     | Tcontainer (t, container) -> Tcontainer ((mk_ptyp t), container_to_container container)
-     | Tapp (f, v) -> Tapp (mk_ptyp f, mk_ptyp v)
-     | Ttuple l -> Ttuple (List.map mk_ptyp l)
-     | _ -> raise (ModelError ("unsupported type: " ^ (show_type_r v), loc)))
-
-let rec mk_ltyp e : ltyp=
-  let loc, v = deloc e in
-  mkloc loc
-    (match v with
-     | Tvset (vs, t) -> LTvset (to_vset vs, mk_ltyp t)
-     | _ -> LTprog (mk_ptyp e))
-
-let to_bval l =
-  match l with
-  | Lnumber b -> BVint b
-  | Lrational (n, d) -> BVrational (n, d)
-  | Ltz n -> BVcurrency (Tez, n)
-  | Laddress s -> BVaddress s
-  | Lstring s -> BVstring s
-  | Lbool b -> BVbool b
-  | Lduration s -> BVduration s
-  | Ldate s -> BVdate s
-
-let mk_lterm_id (id : lident) =
-  let c = id |> unloc |> to_const in
-  match c with
-  | Some d -> Lconst d
-  | None -> Lvar id
-
-let compute_term = function
-  | (_, Some a, e) -> mkloc (Location.merge (loc a) (loc e) ) ("_" ^ (unloc a) ^ "_" ^ (unloc e))
-  | (_, None, e) -> e
-
-let process_fun f ty c loc (args, body) =
-  match List.rev args with
-  | [] -> raise (ModelError ("no argument in lamda", loc))
-  | (ia, it, _)::t ->
-    List.fold_left (
-      fun acc i ->
-        let id, typ, _ = i in
-        c (id, map_option ty typ, false, mkloc loc acc)
-    ) (c (ia, map_option ty it, false, f body)) t
-
-let rec mk_lterm (e : expr) : lterm =
-  let loc, v = deloc e in
-  mkloc loc (
-    match v with
-    | Eterm t -> mk_lterm_id (compute_term t)
-    | Eapp _ -> assert false
-    | Emethod _ -> assert false
-    | Eliteral l -> Llit (mkloc loc (to_bval l))
-    | Earray l -> Larray (None, List.map mk_lterm l)
-    | Edot (e, i) -> Ldot (mk_lterm e, mkloc (i |> Location.loc) (mk_lterm_id i))
-    | Erecord _ -> raise (ModelError ("assignment fields are not allowed in logical block", loc))
-    | Etuple l -> Ltuple (List.map (fun x -> mk_lterm x) l)
-    (* | Eapp ({pldesc=Eop op; _}, [lhs; rhs]) ->
-       (
-        match op with
-        | `Spec OpSpec1  -> Limply   (mk_lterm lhs, mk_lterm rhs) (** TODO *)
-        | `Spec OpSpec2  -> Limply   (mk_lterm lhs, mk_lterm rhs) (** TODO *)
-        | `Spec OpSpec3  -> Limply   (mk_lterm lhs, mk_lterm rhs) (** TODO *)
-        | `Spec OpSpec4  -> Limply   (mk_lterm lhs, mk_lterm rhs) (** TODO *)
-        | `Logical Imply -> Limply   (mk_lterm lhs, mk_lterm rhs)
-        | `Logical o     -> Llogical (to_logical_operator o, mk_lterm lhs, mk_lterm rhs)
-        | `Cmp o         -> Lcomp    (to_comparison_operator o, mk_lterm lhs, mk_lterm rhs)
-        | `Arith o       -> Larith   (to_arithmetic_operator o, mk_lterm lhs, mk_lterm rhs)
-        | _ -> raise (ModelError ("binary operation not valid", loc))
-       ) *)
-    (* | Eapp ({pldesc=Eop op; _}, [e]) ->
-       (
-        match op with
-        | `Unary Not -> Lnot (mk_lterm e)
-        | `Unary Uplus -> Luarith (Uplus, mk_lterm e)
-        | `Unary Uminus -> Luarith (Uminus, mk_lterm e)
-        | _ -> raise (ModelError ("unary operation not valid", loc))
-       )
-       | Eapp (f, args) -> Lapp (mk_lterm f, List.map mk_lterm args) *)
-    | Etransfer (_a, _, _dest) -> raise (ModelError ("\"transfer\" is not allowed in logical block", loc))
-    | Erequire x -> Lrequire (true, mk_lterm x)
-    | Efailif x -> Lrequire (false, mk_lterm x)
-    | Eassign (_, _, _) -> raise (ModelError ("assignments are not allowed in logical block", loc))
-    | Eif (cond, then_, None) -> Limply (mk_lterm cond, mk_lterm then_)
-    | Eif (cond, then_, Some else_) -> Llogical (And,
-                                                 mkloc loc (Limply (mk_lterm cond, mk_lterm then_)),
-                                                 mkloc loc (Limply (mkloc (Location.loc cond) (Lnot (mk_lterm cond)), mk_lterm else_)))
-    | Ebreak -> raise (ModelError ("\"break\" is not allowed in logical block", loc))
-    | Efor (_, _, _) -> raise (ModelError ("\"for\" is not allowed in logical block", loc))
-    | Eassert _ -> raise (ModelError ("\"assert\" is not allowed in logical block", loc))
-    | Eseq (lhs, rhs) -> Lseq (mk_lterm lhs, mk_lterm rhs)
-    | Efun (args, body) -> process_fun mk_lterm mk_ltyp (fun (w, x, y, z) -> Llambda (w, x, y, z)) loc (args, body)
-    | Eletin ((i, typ, _), init, body, _other) -> Lletin (i, mk_lterm init,
-                                                          map_option mk_ltyp typ, mk_lterm body)
-    | Ematchwith _ -> raise (ModelError ("match with is not allowed in logical block", loc))
-    | Equantifier (q, (id, t, _), e) -> Lquantifer (to_quantifier q, id, map_option mk_ltyp t, mk_lterm e)
-    | Elabel _ -> raise (ModelError ("labels are not allowed in logical block", loc)))
-
-let rec mk_qualid (q : ParseTree.qualid) : liqualid =
-  match q with
-  | Qident i -> Qident i
-  | Qdot (q, i) -> Qdot (mk_qualid q, i)
-
-let mk_pterm_id id =
-  let c = id |> unloc |> to_const in
-  match c with
-  | Some d -> Pconst d
-  | None -> Pvar id
-
-let mk_pattern pt : Model.pattern =
-  let loc, v = deloc pt in
-  mkloc loc (match v with
-      | Pwild -> Mwild
-      | Pref i -> Mvar i)
-
-let rec mk_pterm (e : expr) : pterm =
-  let loc, v = deloc e in
-  mkloc loc  (
-    match v with
-    | Eterm t -> mk_pterm_id (compute_term t)
-    (* | Eop _ -> raise (ModelError ("operation error", loc)) *)
-    | Eliteral l -> Plit (mkloc loc (to_bval l))
-    | Earray l -> Parray (List.map mk_pterm l)
-    | Edot (e, i) -> Pdot (mk_pterm e, mkloc (i |> Location.loc) (mk_pterm_id i))
-    | Erecord l -> Pfassign (List.map
-                               (fun i ->
-                                  let (a, e) = i in
-                                  let b = map_option (fun (op, id) ->
-                                      (to_assignment_operator op, id)) a in
-                                  (b, mk_pterm e)) l)
-    | Etuple l -> Ptuple (List.map (fun x -> mk_pterm x) l)
-    (* | Eapp ({pldesc=Eop op; plloc=locop}, [lhs; rhs]) ->
-       (
-        match op with
-        | `Logical Imply -> raise (ModelError ("imply operator is not allowed in programming block", locop))
-        | `Logical o -> Plogical (to_logical_operator o, mk_pterm lhs, mk_pterm rhs)
-        | `Cmp o     -> Pcomp    (to_comparison_operator o, mk_pterm lhs, mk_pterm rhs)
-        | `Arith o   -> Parith   (to_arithmetic_operator o, mk_pterm lhs, mk_pterm rhs)
-        | _ -> raise (ModelError ("binary operation not valid", locop))
-       )
-       | Eapp ({pldesc=Eop op; _}, [e]) ->
-       (
-        match op with
-        | `Unary Not -> Pnot (mk_pterm e)
-        | `Unary Uplus -> Puarith (Uplus, mk_pterm e)
-        | `Unary Uminus -> Puarith (Uminus, mk_pterm e)
-        | _ -> raise (ModelError ("unary operation not valid", loc))
-       )
-       | Eapp (f, args) -> Papp (mk_pterm f, List.map mk_pterm args) *)
-    | Etransfer (a, back, dest) -> Ptransfer (mk_pterm a, back, map_option mk_qualid dest)
-    | Erequire x -> Prequire (true, mk_pterm x)
-    | Efailif x -> Prequire (false, mk_pterm x)
-    | Eassign (op, lhs, rhs) -> Passign (to_assignment_operator op, mk_pterm lhs, mk_pterm rhs)
-    | Eif (cond, then_, else_) -> Pif (mk_pterm cond, mk_pterm then_, map_option mk_pterm else_)
-    | Ebreak -> Pbreak
-    | Efor (i, e, body) -> Pfor (i, mk_pterm e, mk_pterm body, None)
-    | Eassert e -> Passert (mk_lterm e)
-    | Eseq (lhs, rhs) -> Pseq (mk_pterm lhs, mk_pterm rhs)
-    | Efun (args, body) -> process_fun mk_pterm mk_ptyp (fun (w, x, y, z) -> Plambda (w, x, y, z)) loc (args, body)
-    | Eletin ((i, typ, _), init, body, _) -> Pletin (i, mk_pterm init, map_option mk_ptyp typ, mk_pterm body)
-    | Ematchwith (e, l) ->
-      let ll = List.fold_left
-          (fun acc (pts, e) -> (
-               (List.map (fun x -> (mk_pattern x, mk_pterm e)) pts)@acc
-             )) [] l in
-      Pmatchwith (mk_pterm e, ll)
-    | Equantifier _ -> raise (ModelError ("quantifiers are not allowed in programming block", loc))
-    | Elabel (lbl, e) ->
-      begin
-        let p = mk_pterm e in
-        match unloc p with
-        | Pfor (i, a, body, _) -> Pfor (i, a, body, Some lbl)
-        |  _ -> raise (ModelError ("labels are only allowed in for loop", loc))
-      end
-    | _ -> assert false)
-
-
-let to_label_lterm x : label_lterm =
-  let loc, (label, lterm) = deloc x in
-  {
-    label = label;
-    term = mk_lterm lterm;
-    loc = loc;
-  }
-
-let to_label_pterm x : label_pterm =
-  let loc, (label, pterm) = deloc x in
-  {
-    label = label;
-    term = mk_pterm pterm;
-    loc = loc;
-  }
-
-(****************)
-
-
-let to_sexpr (e : expr) : Model.sexpr =
-  let loc, v = deloc e in
-  match v with
-  | Eterm (_, None, id) -> mkloc loc (
-      match id |> unloc |> to_const with
-      | Some Cany -> Sany
-      | _ -> Sref id)
-  (* | Eapp ({pldesc = Eop (`Logical Or); _}, args) ->
-     ( let lhs = to_sexpr (List.nth args 0) in
-      let rhs = to_sexpr (List.nth args 1) in
-      mkloc loc (Sor (lhs, rhs))) *)
-  | _ -> raise (ModelError ("wrong type for ", loc))
-
-let mk_decl loc ((id, typ, dv) : (lident * type_t option * expr option)) =
-  let mk_bval e =
-    let loc, v = deloc e in
-    mkloc loc
-      (match v with
-       | Eliteral l -> to_bval l
-       | Eterm (_, None, id) -> BVenum (unloc id)
-       | _ -> raise (ModelError ("mk_bval: wrong type for ", loc))) in
-  {
-    name = id;
-    typ = map_option mk_ptyp typ;
-    default = map_option mk_bval dv;
-    loc = loc;
-  }
-
-let extract_args (args : ParseTree.args)  =
-  List.fold_left (fun acc (i : lident_typ) ->
-      let name, typ, _ = i in
-      mk_decl dummy (name, typ, None)::acc
-    ) [] (args |> List.rev)
-
-let mk_label_lterm loc (l, e) : lterm label_term =
-  {
-    label = l;
-    term  = mk_lterm e;
-    loc   = loc;
-  }
-
-let map_label_lterm l : label_lterm list =
-  List.map (fun x ->
-      let loc, (l, e) = deloc x in
-      mk_label_lterm loc (l, e)
-    ) l
-
-
-(* model *)
-
-(* name *)
-let get_name_archetype decls : lident =
-  let res = List.fold_left (fun acc i -> (
-        match unloc i with
-        | Darchetype _ -> (match acc with
-            | None -> Some i
-            | Some x -> raise (ModelError2 ("only one name can be set to archetype.", loc x, loc i)))
-        | _ -> acc)) None decls
-  in
-  match res with
-  | Some ({pldesc = Darchetype (id, _exts); plloc = _l }) -> id
-  | _ -> raise (ModelError0 ("no name for archetype found."))
-
-(* extraction of parse tree declarations *)
-let extract_decls decls model =
-
-  let mk_variable loc (id, typ, dv, opts, cst) =
-    let mk_decl_pterm loc ((id, typ, dv) : (lident * type_t option * expr option)) =
-      {
-        name = id;
-        typ = map_option mk_ptyp typ;
-        default = map_option mk_pterm dv;
-        loc = loc;
-      } in
-    let ret_from_to opts =
-      match opts with
-      | Some o ->
-        (List.fold_left (fun (a, b) i ->
-             match i with
-             | VOfrom q -> (Some (mk_qualid q), b)
-             | VOto q -> (a, Some (mk_qualid q))) (None, None) o)
-      | _ -> (None, None) in
-    let (from, to_) = ret_from_to opts in {
-      decl = mk_decl_pterm loc (id, Some typ, dv);
-      constant = cst;
-      from = from;
-      to_ = to_;
-      loc = loc;
-    } in
-
-  let mk_asset loc (id, fields, opts, apo, _ops) =
-    let get_asset_fields fields =
-      (List.fold_right (fun i acc ->
-           let loc, v = deloc i in
-           match v with
-           | Ffield (id, typ, dv, _) -> mk_decl loc (id, Some typ, dv)::acc
-         ) fields []) in
-
-    let extract_asset_opts opts m =
-      List.fold_left (fun acc i ->
-          match i with
-          | AOasrole ->
+let ast_to_model (ast : A.model) : M.model =
+  let process_enums list =
+    let process_enum (e : A.enum) : M.type_node =
+      let enum = M.mk_enum e.name in
+      M.TNenum {
+        enum with
+        values = List.map (fun (x : enum_item_struct) ->
+            let id : M.lident = x.name in
+            let enum_item = M.mk_enum_item id in
             {
-              acc with
-              role = true;
+              enum_item with
+              invariants = map_option_neutral (fun (x : verification) -> x.specs) [] x.verification;
             }
-          | AOidentifiedby id ->
-            {
-              acc with
-              key = id;
-            }
-          | AOsortedby id ->
-            {
-              acc with
-              sort = id::acc.sort
-            }) m opts in
+          ) e.items;
+      }
+    in
+    list @ List.map (fun x -> process_enum x) ast.enums in
 
-    let extract_apo apos m =
-      List.fold_left (fun acc i ->
-          match i with
-          | APOstates id ->
-            {
-              acc with
-              state = Some id
-            }
-          | APOconstraints l ->
-            {
-              acc with
-              specs = map_label_lterm l
-            }
-          | APOinit e ->
-            {
-              acc with
-              init = Some (mk_pterm e)
-            }
-        ) m apos in
+  let process_records list =
+    let process_asset (a : A.asset) : M.type_node =
+      let e = M.mk_record a.name in
+      M.TNrecord {
+        e with
+        values = List.map (fun (x : (A.lident, A.type_, A.pterm) A.decl_gen) -> M.mk_record_item x.name (get x.typ)) a.fields;
+      }
+    in
+    list @ List.map (fun x -> process_asset x) ast.assets in
 
-    {
-      name  = id;
-      args  = get_asset_fields fields;
-      key   = dumloc "_id";
-      sort  = [];
-      state = None;
-      role  = false;
-      init  = None;
-      specs = [];
-      loc   = loc;
-    }
-    |> extract_asset_opts opts
-    |> extract_apo apo
+  let process_storage list =
+    let variable_to_storage_items (var : variable) : M.storage_item =
+      let arg = var.decl in
+      let compute_field (type_ : A.type_) : M.item_field =
+        let rec ptyp_to_item_field_type = function
+          | A.Tbuiltin vtyp -> M.FBasic vtyp
+          | A.Tenum id      -> M.FEnum id
+          | A.Tasset id     -> M.FRecord id
+          | A.Tcontainer (ptyp, container) -> M.FContainer (container, ptyp_to_item_field_type ptyp)
+          | A.Ttuple _ -> assert false
+        in
+        let a = ptyp_to_item_field_type type_ in
+        let item_field =
+          let m = M.mk_item_field arg.name a in
+          { m with default = arg.default } in
+        item_field
+
+      in
+
+      let storage_item = M.mk_storage_item arg.name in
+      let typ : A.type_ = get arg.typ in {
+        storage_item with
+        fields = [compute_field typ];
+        init = [];
+      }
+    in
+
+    let asset_to_storage_items (asset : A.asset) : M.storage_item =
+      let id = asset.name in
+      let compute_fields =
+        let type_id : A.vtyp =
+          let res : A.vtyp option = List.fold_left (fun accu (x : field) ->
+              if String.equal (Location.unloc x.name) (Location.unloc (get asset.key))
+              then (
+                match x.typ with
+                | Some (Tbuiltin v) -> Some v
+                | _ -> accu
+              )
+              else accu
+            ) None asset.fields in
+          match res with
+          | Some t -> t
+          | _ -> get res
+        in
+        let mk a =
+          let m = M.mk_item_field id a in
+          { m with
+            asset = Some id;
+            (* default = arg.default; *)
+          } in
+        let asset_name = id in
+        let keys_id = Location.mkloc (Location.loc asset_name) ((Location.unloc asset_name) ^ "_keys") in
+        let asset_name = Location.mkloc (Location.loc asset_name) ((Location.unloc asset_name) ^ "_assets") in
+        [mk (FKeyCollection (keys_id, type_id)); mk (FRecordMap asset_name)] in
+      let item = M.mk_storage_item asset.name in
+      { item with
+        fields = compute_fields;
+        invariants = asset.specs;
+        (* init = asset.init; *)
+      }
+    in
+
+    let cont f x l = List.map f x in
+    []
+    |> cont variable_to_storage_items ast.variables
+    |> cont asset_to_storage_items ast.assets
+    |> (fun x -> list @ [M.TNstorage x])
   in
 
-  let mk_function loc f = {
-    name = f.name;
-    args = [];
-    return = map_option mk_ptyp f.ret_t;
-    body = mk_pterm f.body;
-    side = false;
-    loc = loc;
-  } in
+  let process_functions list : M.type_node list =
 
-  let mk_verification v =
-    let mk_predicate loc (id, args, body) = {
-      name = id;
-      args = extract_args args;
-      body = mk_lterm body;
-      loc  = loc;
-    } in
-    let mk_definition loc (name, typ_, id, def) = {
-      name = name;
-      typ  = mk_ptyp typ_;
-      id   = id;
-      def  = mk_lterm def;
-      loc  = loc;
-    } in
-    List.fold_right (fun (x : verification_item) acc ->
-        let loc, vitem = Location.deloc x in
-        match vitem with
-        | Vpredicate (i, args, body) ->
-          {
-            acc with
-            predicates = (mk_predicate loc (i, args, body))::acc.predicates
-          }
-        | Vdefinition (name, typ_, id, def) ->
-          {
-            acc with
-            definitions = (mk_definition loc (name, typ_, id, def))::acc.definitions
-          }
-        | Vaxiom (id, e) ->
-          {
-            acc with
-            axioms = (mk_label_lterm loc (Some id, e))::acc.axioms
-          }
-        | Vtheorem (id, e) ->
-          {
-            acc with
-            theorems = (mk_label_lterm loc (Some id, e))::acc.theorems
-          }
-        | Vvariable (id, typ, e) ->
-          {
-            acc with
-            variables = (mk_variable loc (id, typ, e, None, false))::acc.variables
-          }
-        | Vinvariant (id, l) ->
-          {
-            acc with
-            invariants = (id, map_label_lterm l)::acc.invariants
-          }
-        | Veffect e ->
-          {
-            acc with
-            effect = Some (mk_pterm e)
-          }
-        | Vspecification l ->
-          {
-            acc with
-            specs = (map_label_lterm l) @ acc.specs
-          }
-      ) (v |> unloc |> fst) { dummy_verif with loc = (loc v); }
+    let extract_function_from_instruction (_instr : A.instruction) (list : M.type_node list) : M.type_node list =
+      let _extract_function_node_from_instruction (instr : A.instruction) list : M.function_node list =
+        let add l i1 = i1::l in
+        let is_const id = false in
+        let mk_fun (id, arg) = M.Get (Location.dumloc "") in
+        let fi accu (instr : A.instruction) : M.function_node list =
+          match instr.node with
+          | A.Icall (a, id, args) when is_const id -> add accu (mk_fun (id, args))
+          | _ -> accu (*TODO: fold on instruction *)
+        in
+        fi [] instr
+      in
+      list
+    in
+
+    let process_function (function_ : A.function_) (list : M.type_node list) : M.type_node list =
+      []
+    in
+
+    let process_transaction (transaction : A.transaction) (list : M.type_node list) : M.type_node list =
+      let name = transaction.name in
+      let node = M.mk_function_struct name (get transaction.effect) in
+      let sig_ = M.mk_signature name in
+      let funct_ = M.mk_function (M.Entry node) sig_ in
+
+      let funs : A.instruction list = (List.map (fun (x : A.function_) -> x.body) transaction.functions) @ [node.body] in
+
+      list
+      |> (fun (x : M.type_node list) -> List.fold_left (fun accu (x : A.instruction) ->
+          extract_function_from_instruction x accu) x funs)
+      |> (fun x -> x @ [M.TNfunction funct_])
+    in
+
+    let cont f x l = List.fold_left (fun accu x -> f x accu) l x in
+    []
+    |> cont process_function ast.functions
+    |> cont process_transaction ast.transactions
+
   in
 
-  let mk_action loc name args (props : action_properties) =
-    let to_rexpr_calledby (e : ParseTree.expr) : rexpr =
-      let loc, v = deloc e in
-      match v with
-      | Eterm (_, None, id)
-      | Edot (_, id) -> Rqualid (Qident id)
-      (* | Eapp ({pldesc = Eop (`Logical Or); _}, args) ->
-         ( let lhs = to_rexpr_calledby (List.nth args 0) in
-          let rhs = to_rexpr_calledby (List.nth args 1) in
-          Ror (lhs, rhs)) *)
-      | _ -> raise (ModelError ("type error: called by", loc)) in
-
-    {
-      name = name;
-      args = extract_args args;
-      calledby  = map_option (fun (e, _) -> to_rexpr_calledby e) props.calledby;
-      accept_transfer = props.accept_transfer;
-      require = map_option (fun (items, _) -> List.map (fun a -> to_label_pterm a) items) props.require;
-      transition = None;
-      functions = List.map (fun x -> let loc, f = deloc x in mk_function loc f) props.functions;
-      verification = map_option mk_verification props.verif;
-      effect = None;
-      side = false;
-      loc = loc;
-    } in
-
-  let mk_state loc (name, items) =
-    let get_states_items items =
-      let is_state_initial = function
-        | None -> false
-        | Some opts ->
-          List.fold_left (fun acc i ->
-              match i with
-              | SOinitial -> true
-              | _ -> acc
-            ) false opts in
-      let get_state_specifications (opts : state_option list) : Model.verification =
-        let es = List.fold_left (fun acc i ->
-            match i with
-            | SOspecification xs -> (List.map to_label_lterm xs) @ acc
-            | _ -> acc
-          ) [] opts in
-        {
-          dummy_verif with
-          specs = es;
-        } in
-
-      List.fold_left (fun acc i ->
-          (let (name, opts) = i in
-           {
-             name = name;
-             initial = is_state_initial opts;
-             verification = map_option get_state_specifications opts;
-             loc = Location.loc name;
-           }::acc)) [] items in
-    {
-      name = (match name with | None -> dumloc "_global" | Some a -> a);
-      items = get_states_items items;
-      loc = loc;
-    } in
-
-  let mk_enum loc (name, list) = {
-    name = name;
-    vals = list;
-    loc = loc;
-  } in
-
-  let mk_contract loc (id, ls, dv) =
-    let mk_signature = function
-      | Ssignature (i, ts) -> {
-          name = i;
-          args = List.map (fun x -> mk_ptyp x) ts;
-          loc = dummy;
-        } in
-    {
-      name       = id;
-      signatures = List.map (fun x -> mk_signature x) ls;
-      init       = map_option mk_pterm dv;
-      loc        = loc;
-    } in
-
-  List.fold_right ( fun i acc ->
-      (let loc, decl_u = deloc i in
-       match decl_u with
-       | Dvariable (id, typ, dv, opts, cst, _) ->
-         {
-           acc with
-           variables = (mk_variable loc (id, typ, dv, opts, cst))::acc.variables
-         }
-       | Denum (name, list, _) ->
-         {
-           acc with
-           enums = (mk_enum loc (name, list))::acc.enums
-         }
-       | Dstates (name, Some items, _) ->
-         {
-           acc with
-           states = (mk_state loc (name, items))::acc.states
-         }
-       | Dasset (id, fields, opts, apo, _ops, _) ->
-         {
-           acc with
-           assets = (mk_asset loc (id, fields, opts, apo, _ops))::acc.assets
-         }
-       | Daction (name, args, props, action, _) ->
-         {
-           acc with
-           transactions = {
-             (mk_action loc name args props) with
-             effect = Tools.map_option (fun x -> let a, _ = x in mk_pterm a) action
-           }::acc.transactions
-         }
-       | Dtransition (name, args, on, from, props, trs, _) ->
-         (
-           let mk_transition on from trs =
-             {
-               from = to_sexpr from;
-               on = on;
-               trs = List.map
-                   (fun (to_, cond, action) ->
-                      (to_,
-                       map_option (fun (e, _) -> mk_pterm e) cond,
-                       map_option (fun (e, _) -> mk_pterm e) action)) trs;
-             } in
-           {
-             acc with
-             transactions = {
-               (mk_action loc name args props) with
-               transition = Some (mk_transition on from trs)
-             }::acc.transactions
-           }
-         )
-       | Dfunction f ->
-         {
-           acc with
-           functions = (mk_function loc f)::acc.functions
-         }
-       | Dcontract (id, ls, dv, _) -> {
-           acc with
-           contracts = (mk_contract loc (id, ls, dv))::acc.contracts
-         }
-       | Dnamespace _ -> raise (ModelError ("namespace is not supported at this stage", loc))
-       | Dverification v ->
-         {
-           acc with
-           verifications = (mk_verification v)::acc.verifications
-         }
-       | _ -> acc)
-    ) decls model
-
-
-let parseTree_to_model (pt : ParseTree.archetype) : Model.model =
-  let decls = match unloc pt with
-    | Marchetype decls -> decls
-    | Mextension _ -> raise (ModelError ("extension cannot be translated into Model.model.", loc pt)) in
-
-  {
-    name          = get_name_archetype decls;
-    variables     = [];
-    assets        = [];
-    functions     = [];
-    transactions  = [];
-    states        = [];
-    enums         = [];
-    contracts     = [];
-    verifications = [];
-  }
-  |> extract_decls decls
-  |> mkloc (loc pt)
-
-let string_to_pterm (str : string) : Model.pterm =
-  let lb = Lexing.from_string str in
-  let pt = Parser.start_expr Lexer.token lb in
-  mk_pterm pt
+  []
+  |> process_enums
+  |> process_records
+  |> process_storage
+  |> process_functions

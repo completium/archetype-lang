@@ -192,16 +192,6 @@ let rec pp_type outer pos fmt e =
       pp_id x
       pp_type_default y
 
-  | Tapp (x, y) ->
-
-    let pp fmt (x, y) =
-      Format.fprintf fmt
-        "%a -> %a"
-        (pp_type e_imply PLeft) x
-        (pp_type e_imply PRight) y
-    in
-    (maybe_paren outer e_imply pos pp) fmt (x, y)
-
   | Ttuple l ->
 
     let pp fmt l =
@@ -326,10 +316,7 @@ let rec pp_expr outer pos fmt a =
         | None -> f fmt (e, id)
       end
     in
-    (match l, e with
-     | None, Some _ -> (maybe_paren outer e_coloncolon pos pp)
-     | _ -> pp)
-      fmt (l, e, id)
+    pp fmt (l, e, id)
 
   | Eliteral x ->
 
@@ -533,29 +520,19 @@ let rec pp_expr outer pos fmt a =
     in
     (maybe_paren outer e_semi_colon pos pp) fmt (x, y)
 
+  | Eletin (id, t, e, body, other) ->
 
-  | Efun (id_ts, x) ->
-
-    let pp fmt (id_ts, x) =
-      Format.fprintf fmt "fun %a => %a"
-        (pp_list " " pp_ident_typ) id_ts
-        (pp_expr e_equal_greater PRight) x
-    in
-    (maybe_paren outer e_equal_greater pos pp) fmt (id_ts, x)
-
-
-  | Eletin (id_t, e, body, other) ->
-
-    let pp fmt (id_t, e, body, other) =
-      Format.fprintf fmt "@[@[<hv 0>let %a =@;<1 2>%a@;<1 0>in@]@ %a%a@]" (*"let %a = %a in %a"*)
-        pp_ident_typ id_t
+    let pp fmt (id, t, e, body, other) =
+      Format.fprintf fmt "@[@[<hv 0>let %a%a =@;<1 2>%a@;<1 0>in@]@ %a%a@]" (*"let %a = %a in %a"*)
+        pp_id id
+        (pp_option pp_type) t
         (pp_expr e_in PLeft) e
         (pp_expr e_in PRight) body
         (pp_option (fun fmt e ->
              Format.fprintf fmt "@\notherwise %a"
                (pp_expr e_other PInfix) e)) other
     in
-    (maybe_paren outer e_default pos pp) fmt (id_t, e, body, other)
+    (maybe_paren outer e_default pos pp) fmt (id, t, e, body, other)
 
 
   | Equantifier (q, id_t, body) ->
@@ -577,6 +554,7 @@ let rec pp_expr outer pos fmt a =
     in
     (maybe_paren outer e_colon pos pp) fmt (i, x)
 
+  | Einvalid -> Format.fprintf fmt "(* invalid expr *)"
 
 
 and pp_else fmt (e : expr option) =
@@ -610,12 +588,11 @@ and pp_ident_typ fmt a =
     Format.fprintf fmt "%a%a%a"
       pp_id x
       pp_extensions exts
-      (pp_option (pp_prefix " : " pp_type)) y
+      (pp_prefix " : " pp_type) y
 
 and pp_fun_ident_typ fmt (arg : lident_typ) =
   match arg with
-  | (x, None, exts) -> Format.fprintf fmt "%a%a" pp_id x pp_extensions exts
-  | (x, Some y, exts) ->
+  | (x, y, exts) ->
     Format.fprintf fmt "(%a%a : %a)"
       pp_id x
       pp_extensions exts
@@ -630,7 +607,7 @@ and pp_fun_args fmt args =
 and pp_field fmt { pldesc = f; _ } =
   match f with
   | Ffield (id, typ, dv, exts) ->
-    Format.fprintf fmt "%a%a : %a%a"
+    Format.fprintf fmt "%a%a : %a%a;"
       pp_id id
       pp_extensions exts
       pp_type typ
@@ -640,7 +617,7 @@ and pp_field fmt { pldesc = f; _ } =
 and pp_extension fmt { pldesc = e; _ } =
   match e with
   | Eextension (id, args) ->
-    Format.fprintf fmt "[%%%a%a]"
+    Format.fprintf fmt "[%%%a%a%%]"
       pp_id id
       (pp_option (pp_prefix " " (pp_list " " pp_simple_expr))) args
 
@@ -672,7 +649,6 @@ let pp_value_option fmt opt =
 
 let pp_asset_option fmt opt =
   match opt with
-  | AOasrole -> Format.fprintf fmt "as role"
   | AOidentifiedby id -> Format.fprintf fmt "identified by %a" pp_id id
   | AOsortedby id  -> Format.fprintf fmt "sorted by %a" pp_id id
 
@@ -706,20 +682,20 @@ let pp_label_expr fmt (le : label_expr) =
 
 let pp_label_exprs xs = (pp_list ";@\n" pp_label_expr) xs
 
-let pp_state_option fmt = function
-  | SOinitial ->
+let pp_enum_option fmt = function
+  | EOinitial ->
     Format.fprintf fmt "initial"
 
-  | SOspecification xs ->
+  | EOspecification xs ->
     Format.fprintf fmt "with { %a }"
       pp_label_exprs xs
 
-let pp_ident_state_option fmt item =
+let pp_ident_state fmt item =
   match item with
   | (id, opts) ->
     Format.fprintf fmt "%a%a"
       pp_id id
-      (pp_option (pp_prefix " " (pp_list " " pp_state_option))) opts
+      (pp_prefix " " (pp_list " " pp_enum_option)) opts
 
 let pp_asset_post_option fmt (apo : asset_post_option) =
   match apo with
@@ -858,9 +834,9 @@ let rec pp_declaration fmt { pldesc = e; _ } =
       pp_extensions exts
       pp_id id
 
-  | Dvariable (id, typ, dv, opts, cst, exts) ->
+  | Dvariable (id, typ, dv, opts, kind, exts) ->
     Format.fprintf fmt "%a%a %a %a%a%a"
-      pp_str (if cst then "constant" else "variable")
+      pp_str (match kind with | VKvariable -> "variable" | VKconstant -> "constant")
       pp_extensions exts
       pp_id id
       pp_type typ
@@ -868,19 +844,18 @@ let rec pp_declaration fmt { pldesc = e; _ } =
       (pp_option (pp_prefix " = " (pp_expr e_equal PRight))) dv
 
   | Denum (id, ids, exts) ->
-    Format.fprintf fmt "enum%a %a =\n@[<v 2>@]%a"
-      pp_extensions exts
-      pp_id id
-      (pp_list "\n" (pp_prefix "| " pp_id)) ids
-
-  | Dstates (id, ids, exts) ->
-    Format.fprintf fmt "states%a%a%a"
-      pp_extensions exts
-      (pp_option (pp_prefix " " pp_id)) id
-      (pp_do_if (match ids with | Some l when List.length l > 0 -> true | _ -> false) (
-           fun fmt x->
-             Format.fprintf fmt " =@\n@[<v 2>@]%a"
-               (pp_option (pp_list "\n" (pp_prefix "| " pp_ident_state_option))) x)) ids
+    Format.fprintf fmt "%a%a"
+      (fun fmt id -> (
+           match id with
+           | EKstate -> Format.fprintf fmt "states%a" pp_extensions exts
+           | EKenum id -> Format.fprintf fmt "enum%a %a" pp_extensions exts pp_id id
+         )) id
+      (fun fmt ids -> (
+           match ids with
+           | [] -> ()
+           | l -> Format.fprintf fmt " =@\n@[<v 2>@]%a"
+                    (pp_list "@\n" (pp_prefix "| " pp_ident_state)) l
+         )) ids
 
   | Dasset (id, fields, opts, apo, ops, exts) ->
     Format.fprintf fmt "asset%a%a %a%a%a%a"
@@ -888,7 +863,7 @@ let rec pp_declaration fmt { pldesc = e; _ } =
       (pp_option pp_asset_operation) ops
       pp_id id
       (pp_prefix " " (pp_list " @," pp_asset_option)) opts
-      (pp_do_if (List.length fields > 0) ((fun fmt -> Format.fprintf fmt " = {@\n@[<v 2>%a@]}@\n" (pp_list ";@\n" pp_field)))) fields
+      (pp_do_if (List.length fields > 0) ((fun fmt -> Format.fprintf fmt " = {@\n@[<v 2>%a@]}@\n" (pp_list "@\n" pp_field)))) fields
       (pp_list "@\n" pp_asset_post_option) apo
 
   | Daction (id, args, props, code, exts) ->
@@ -950,6 +925,9 @@ let rec pp_declaration fmt { pldesc = e; _ } =
     Format.fprintf fmt "verification%a {@\n@[<v 2>  %a@]@\n}"
       pp_extensions exts
       pp_verification_items items
+
+  | Dinvalid ->
+    Format.fprintf fmt "(* invalid declaration *)"
 
 (* -------------------------------------------------------------------------- *)
 let pp_archetype fmt { pldesc = m; _ } =

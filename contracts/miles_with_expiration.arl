@@ -1,20 +1,20 @@
 archetype miles_with_expiration
 
-variable[%transferable] admin role
+variable[%transferable%] admin role
 
 (* id is a string because it is generated off-chain *)
 asset mile identified by id sorted by expiration = {
    id         : string;
    amount     : uint;
-   expiration : date
+   expiration : date;
 } with {
   m1 : amount > 0
 }
 
 (* a partition ensures there is no direct access to mile collection *)
-asset owner as role identified by addr = {
-  addr  : address;
-  miles : mile partition (* injective (owner x mile) *)
+asset owner identified by addr = {
+  addr  : role;
+  miles : mile partition; (* injective (owner x mile) *)
 }
 
 action add (ow : address) (newmile : mile) = {
@@ -25,9 +25,10 @@ action add (ow : address) (newmile : mile) = {
    }
 
    effect {
-     owner.addifnotexist { addr = ow; mile = [] };
-     (* action must fail if mile already exists *)
-     (owner.get ow).miles.add newmile
+     if owner.contains ow then
+      (owner.get ow).miles.add newmile
+     else
+      owner.add { addr = ow; miles = [newmile] }
    }
 }
 
@@ -36,6 +37,14 @@ action consume (a : address) (quantity : uint) = {
   called by admin
 
   verification {
+    specification {
+         (* the globla quantity of miles is decreased by nbmiles *)
+         p1 : mile.sum(quantity) = before miles.sum(quantity) - nbmiles;
+         (* all removed miles are valid miles *)
+         p2 : forall m : removed miles, m.expiration >= now;
+         (* no added mile *)
+         p3 : is_empty added.mile
+    }
     invariant loop = {
          (* remainder has a decreasing upper bound *)
          i1 : 0 <= remainder <= to_iter.sum(amount);
@@ -44,15 +53,6 @@ action consume (a : address) (quantity : uint) = {
          (* right amount consumed *)
          i3 : before miles.sum(amount) = miles.sum(amount) + nbmiles - remainder;
          i4 : is_empty added.mile
-    }
-
-    specification {
-         (* the globla quantity of miles is decreased by nbmiles *)
-         p1 : mile.sum(quantity) = before miles.sum(quantity) - nbmiles;
-         (* all removed miles are valid miles *)
-         p2 : forall m : removed miles, m.expiration >= now;
-         (* no added mile *)
-         p3 : is_empty added.mile
     }
   }
 
@@ -75,10 +75,10 @@ action consume (a : address) (quantity : uint) = {
          else if m.amount = remainder
          then (
            remainder := 0;
-           o.miles.remove m
+           o.miles.remove m.id
          ) else (
            remainder -= m.amount;
-           o.miles.remove m
+           o.miles.remove m.id
          )
        );
      assert (remainder = 0))

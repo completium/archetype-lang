@@ -4,7 +4,7 @@
 .PHONY: all merlin build build-deps run clean
 
 # --------------------------------------------------------------------
-all: build plugin compiler mlw merlin
+all: build compiler merlin # plugin
 
 build:
 	@dune build
@@ -41,4 +41,4 @@ check:
 	./check_pp.sh
 
 build-deps:
-	opam install dune menhir why3.1.2.0 ppx_deriving ppx_deriving_yojson
+	opam install dune menhir omd why3.1.2.0 ppx_deriving ppx_deriving_yojson

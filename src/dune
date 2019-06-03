@@ -1,5 +1,7 @@
 (ocamllex lexer)
-(menhir (flags --explain) (modules parser))
+(menhir
+  (modules parser)
+  (flags --explain --inspection --table --dump))
 
 (library
   (name archetype)
@@ -8,8 +10,10 @@
     (pps ppx_deriving.std ppx_deriving_yojson)
   )
   (library_flags (-linkall))
-  (modules tools core ident location parseUtils parseTree parser lexer io model modelinfo modelws modelliq printer translate reduce liq_printer printer_mlw)
-  (libraries menhirLib why3 ppx_deriving yojson ppx_deriving_yojson.runtime)
+  (modules tools core ident option location parseUtils parseTree parser lexer symbol error position pureLexer parseError io printer model reduce storage translate gen_liquidity gen_whyml gen_markdown printer_mlw
+  ;; typing modelinfo modelws modelliq printer  liq_printer
+  )
+  (libraries menhirLib omd why3 ppx_deriving yojson ppx_deriving_yojson.runtime)
 )
 
 (library
