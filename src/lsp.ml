@@ -8,13 +8,6 @@ type kind =
 
 let kind = ref Errors
 
-type kind =
-  | Errors
-  | Outline
-[@@deriving yojson, show {with_path = false}]
-
-let kind = ref Errors
-
 type status =
   | Passed
   | Error
