@@ -302,6 +302,7 @@ let pp_pattern fmt p =
 let rec pp_expr outer pos fmt a =
   let e = unloc a in
   match e with
+
   | Eterm (l, e, id) ->
 
     let pp fmt (l, e, id) =
