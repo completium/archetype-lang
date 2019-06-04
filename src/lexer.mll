@@ -111,6 +111,8 @@ rule token = parse
   | accept_transfer       { ACCEPT_TRANSFER }
   | op_spec1              { OP_SPEC1 }
   | op_spec2              { OP_SPEC2 }
+  | op_spec3              { OP_SPEC3 }
+  | op_spec4              { OP_SPEC4 }
   | blank+                { token lexbuf }
 
   | "@add"                { AT_ADD }
