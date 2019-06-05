@@ -4,4 +4,6 @@ contract mycontract = {
   action myaction1 : address, tez
   action myaction2 : string
   action pay
-} = @KT1GabhR5P52hw6xs5P69BXJYAURaznhvN1k
+}
+
+variable contract_i mycontract = @KT1GabhR5P52hw6xs5P69BXJYAURaznhvN1k

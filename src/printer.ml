@@ -914,12 +914,11 @@ let rec pp_declaration fmt { pldesc = e; _ } =
       pp_id id
       (pp_list "\n" pp_declaration) ds
 
-  | Dcontract (id, xs, dv, exts) ->
-    Format.fprintf fmt "contract%a %a = {@\n@[<v 2>  %a@]@\n}%a"
+  | Dcontract (id, xs, exts) ->
+    Format.fprintf fmt "contract%a %a = {@\n@[<v 2>  %a@]@\n}"
       pp_extensions exts
       pp_id id
       (pp_list "@\n" pp_signature) xs
-      (pp_option (pp_prefix " = " (pp_expr e_equal PRight))) dv
 
   | Dfunction f ->
     Format.fprintf fmt "%a"

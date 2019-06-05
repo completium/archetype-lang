@@ -300,8 +300,7 @@ namespace:
 contract:
 | CONTRACT exts=option(extensions) x=ident EQUAL
     xs=braced(signatures)
-      dv=default_value?
-         { Dcontract (x, xs, dv, exts) }
+         { Dcontract (x, xs, exts) }
 
 %inline signatures:
 | xs=signature+ { xs }
@@ -730,7 +729,7 @@ simple_expr_r:
      { List.map (fun id -> (id, ty, None)) ids }*/
 
 %inline ident_typ1:
- | id=ident IN ty=type_t { (id, ty, None) }
+ | id=ident COLON ty=type_t { (id, ty, None) }
 
 literal:
  | x=NUMBER     { Lnumber   x }

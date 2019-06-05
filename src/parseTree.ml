@@ -238,7 +238,7 @@ type declaration_unloc =
   | Dasset         of lident * field list * asset_option list * asset_post_option list * asset_operation option * exts
   | Daction        of lident * args * action_properties * (expr * exts) option * exts
   | Dtransition    of lident * args * (lident * lident) option * expr * action_properties * transition * exts
-  | Dcontract      of lident * signature list * expr option * exts
+  | Dcontract      of lident * signature list * exts
   | Dextension     of lident * expr list option
   | Dnamespace     of lident * declaration list
   | Dfunction      of s_function

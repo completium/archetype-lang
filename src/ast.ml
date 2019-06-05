@@ -46,6 +46,7 @@ type vset =
 type ptyp =
   | Tasset of lident
   | Tenum of lident
+  | Tcontract of lident
   | Tbuiltin of vtyp
   | Tcontainer of ptyp * container
   | Ttuple of ptyp list

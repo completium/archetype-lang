@@ -172,7 +172,7 @@ let make_outline_from_decl (d : ParseTree.declaration) gl =
   | Dasset (id, _, _, _, _, _) -> [mk_outline (Location.unloc id, symbol_kind_to_int Struct, l)]
   | Daction (id, _, ap, _, _) -> mk_outline (Location.unloc id, symbol_kind_to_int Function, l) :: (Option.map_dfl mk_outline_from_verification [] ap.verif)
   | Dtransition (id, _, _, _, _, _, _) -> [mk_outline (Location.unloc id, symbol_kind_to_int Function, l)]
-  | Dcontract (id, _, _, _) -> [mk_outline (Location.unloc id, symbol_kind_to_int Object, l)]
+  | Dcontract (id, _, _) -> [mk_outline (Location.unloc id, symbol_kind_to_int Object, l)]
   | Dfunction s -> [mk_outline (Location.unloc s.name, symbol_kind_to_int Function, l)]
   | Dnamespace (id, _) -> [mk_outline (Location.unloc id, symbol_kind_to_int Namespace, l)]
   | Dverification verif -> mk_outline_from_verification verif

@@ -13,7 +13,7 @@ let decl_to_element d : Omd.element option=
   | Dasset (id, _, _, _, _, _)         -> Some (H2 [Text ("todo: asset: " ^ (to_str id))])
   | Daction (id, _, _, _, _)           -> Some (H2 [Text ("todo: action: " ^ (to_str id))])
   | Dtransition (id, _, _, _, _, _, _) -> Some (H2 [Text ("todo: transition: " ^ (to_str id))])
-  | Dcontract (id, _, _, _)            -> Some (H2 [Text ("todo: contract: " ^ (to_str id))])
+  | Dcontract (id, _, _)            -> Some (H2 [Text ("todo: contract: " ^ (to_str id))])
   | Dfunction f                        -> Some (H2 [Text ("todo: function: " ^ (to_str f.name))])
   | _ -> None
 

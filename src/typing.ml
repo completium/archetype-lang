@@ -1223,7 +1223,7 @@ type action_properties = {
 *)
 
 
-  | Dcontract (_x, _sig, _, _) ->
+  | Dcontract (_x, _sig, _) ->
     assert false
 
   | Dextension (_x, _) ->

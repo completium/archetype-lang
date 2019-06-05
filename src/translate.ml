@@ -47,8 +47,9 @@ let ast_to_model (ast : A.model) : M.model =
           | A.Tbuiltin vtyp -> M.FBasic vtyp
           | A.Tenum id      -> M.FEnum id
           | A.Tasset id     -> M.FRecord id
+          | A.Tcontract x   -> M.FBasic VTrole
           | A.Tcontainer (ptyp, container) -> M.FContainer (container, ptyp_to_item_field_type ptyp)
-          | A.Ttuple _ -> assert false
+          | A.Ttuple _ -> assert false  
         in
         let a = ptyp_to_item_field_type type_ in
         let item_field =
