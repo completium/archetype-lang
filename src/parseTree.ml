@@ -19,6 +19,7 @@ type container =
 
 type type_r =
   | Tref of lident
+  | Tasset of lident
   | Tcontainer of type_t * container
   | Tvset of lident * type_t
   | Ttuple of type_t list

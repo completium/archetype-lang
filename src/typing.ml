@@ -476,6 +476,10 @@ let rec for_type_exn (env : env) (ty : PT.type_t) : M.ptyp =
       | Some ty -> ty
     end
 
+  | Tasset x ->
+    (* FIXME *)
+    assert false
+
   | Tcontainer (ty, ctn) ->
     M.Tcontainer (for_type_exn env ty, for_container env ctn)
 

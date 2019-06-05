@@ -115,33 +115,31 @@ type const =
   | Cactions
   | Cnone
   | Cany
-  (* function *)
-  | Cnth
-  | Cclear
-  | Cselect
+   (* function *)
+  | Cget
+  | Cadd
+  | Caddnofail
+  | Cremove
+  | Cremovenofail
   | Cremoveif
+  | Cupdate
+  | Cupdatenofail (* if key exists -> update *)
+  | Cclear
+  | Ccontains
+  | Cnth
+  | Cselect
   | Csort
   | Ccount
   | Csum
   | Cmax
   | Cmin
-  | Cenqueue
-  | Cdequeue
-  | Cpush
-  | Cpop
-  | Cadd
-  | Caddifnotexist
-  | Cremove
-  | Cget
-  | Ccontains
-  | Cupdate
-  | Cmem
   (* vset *)
   | Cbefore
-  | Cafter
-  | Cfixed
+  | Cunmoved
   | Cadded
   | Cremoved
+  | Citerated
+  | Ctoiterate
 [@@deriving show {with_path = false}]
 
 type ('typ, 'node) struct_poly = {

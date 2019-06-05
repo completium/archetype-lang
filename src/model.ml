@@ -25,6 +25,9 @@ type enum_ident = lident
 type record_ident = lident
 [@@deriving show {with_path = false}]
 
+type contract_ident = lident
+[@@deriving show {with_path = false}]
+
 type enum_value_ident = lident
 [@@deriving show {with_path = false}]
 
@@ -80,6 +83,13 @@ type record_item = {
 type record = {
   name: record_ident;
   values: record_item list;
+}
+[@@deriving show {with_path = false}]
+
+
+type contract = {
+  name: contract_ident;
+  (* FIXME *)
 }
 [@@deriving show {with_path = false}]
 
@@ -152,6 +162,7 @@ type function__ = {
 type type_node =
   | TNenum of enum
   | TNrecord of record
+  | TNcontract of contract
   | TNstorage of storage
   | TNfunction of function__
 [@@deriving show {with_path = false}]
