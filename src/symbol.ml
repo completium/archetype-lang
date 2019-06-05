@@ -24,6 +24,7 @@ let string_of_token = function
   | RPAREN          -> "RPAREN"
   | REQUIRE         -> "REQUIRE"
   | REF             -> "REF"
+  | RECORD          -> "RECORD"
   | RBRACKET        -> "RBRACKET"
   | RBRACE          -> "RBRACE"
   | RATIONAL (d, n) -> Printf.sprintf "RATIONAL(%s, %s)" (Big_int.string_of_big_int d) (Big_int.string_of_big_int n)
@@ -141,6 +142,7 @@ let string_of_symbol = function
   | X (T T_RPAREN) -> ")"
   | X (T T_REQUIRE) -> "require"
   | X (T T_REF) -> "ref"
+  | X (T T_RECORD) -> "record"
   | X (T T_RBRACKET) -> "]"
   | X (T T_RBRACE) -> "}"
   | X (T T_RATIONAL) -> "rational"

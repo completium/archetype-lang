@@ -182,7 +182,7 @@ let rec pp_type outer pos fmt e =
 
   | Tasset x ->
     Format.fprintf fmt
-      "%a asset"
+      "%a record"
       pp_id x
 
   | Tcontainer (x, y) ->

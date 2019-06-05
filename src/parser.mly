@@ -133,6 +133,7 @@
 %token EOF
 %token FAILIF
 %token REQUIRE
+%token RECORD
 
 %token INVALID_EXPR
 %token INVALID_DECL
@@ -428,6 +429,7 @@ type_r:
 
 type_s_unloc:
 | x=ident                 { Tref x }
+| x=ident RECORD          { Tasset x }
 | x=type_s c=container    { Tcontainer (x, c) }
 | x=ident y=type_s %prec above_coll
                           { Tvset (x, y) }

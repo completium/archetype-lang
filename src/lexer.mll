@@ -69,6 +69,7 @@
       "false"               , FALSE          ;
       "failif"              , FAILIF         ;
       "require"             , REQUIRE        ;
+      "record"              , RECORD         ;
     ]
 
   let () =
