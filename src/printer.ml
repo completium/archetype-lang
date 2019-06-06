@@ -814,6 +814,20 @@ let pp_function fmt (f : s_function) =
          (fun fmt (f : s_function) ->
             Format.fprintf fmt "= {@\n%a@\n}" (pp_expr e_equal PRight) f.body)) f
 
+let pp_verif fmt (items, exts) =
+  let items = items |> List.map (fun x -> x |> unloc) in
+  match items with
+  | l when List.fold_left (fun accu x -> match x with | Vassert _ | Vspecification _ -> accu | _ -> false) true l ->
+    begin
+      Format.fprintf fmt "%a@\n" pp_verification_items items
+    end
+  | _ ->
+    begin
+      Format.fprintf fmt "verification%a {@\n@[<v 2>  %a@]@\n}@\n"
+        pp_extensions exts
+        pp_verification_items items
+    end
+
 let pp_action_properties fmt (props : action_properties) =
   map_option (fun (e, exts) ->
       Format.fprintf fmt "called by%a %a@\n"
@@ -828,23 +842,8 @@ let pp_action_properties fmt (props : action_properties) =
   map_option (
     fun v ->
       let items, exts = v |> unloc in
-      let items = items |> List.map (fun x -> x |> unloc) in
-      match items with
-      | l when List.fold_left (fun accu x -> match x with | Vassert _ | Vspecification _ -> accu | _ -> false) true l ->
-        begin
-          Format.fprintf fmt "%a@\n" pp_verification_items items
-        end
-      | [Vspecification v] ->
-        begin
-          Format.fprintf fmt "%a@\n"
-            pp_specification v
-        end
-      | _ ->
-        begin
-          Format.fprintf fmt "verification%a {@\n@[<v 2>  %a@]@\n}@\n"
-            pp_extensions exts
-            pp_verification_items items
-        end) props.verif;
+      pp_verif fmt (items, exts)
+  ) props.verif;
   (pp_list "@\n" pp_function) fmt (List.map unloc props.functions)
 
 let pp_transition fmt (to_, conditions, effect) =
@@ -957,10 +956,7 @@ let rec pp_declaration fmt { pldesc = e; _ } =
 
   | Dverification v ->
     let items, exts = v |> unloc in
-    let items = items |> List.map (fun x -> x |> unloc) in
-    Format.fprintf fmt "verification%a {@\n@[<v 2>  %a@]@\n}"
-      pp_extensions exts
-      pp_verification_items items
+    pp_verif fmt (items, exts)
 
   | Dinvalid ->
     Format.fprintf fmt "(* invalid declaration *)"

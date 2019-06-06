@@ -390,17 +390,17 @@ verification_item:
     xs=loc(verif_item)+ RBRACE
         { (xs, exts) }
 
-%inline verification_d:
+%inline verification:
+
 | VERIFICATION exts=option(extensions) LBRACE
     xs=loc(verif_item)+ RBRACE
         { (xs, exts) }
 
 verification_fun:
-| x=loc(verification_f) { x }
+| x=loc(verification) { x }
 
 verification_decl:
-//| xs=loc(verification_item)+ { Dverification (xs, None) }
-| x=loc(verification_d) { Dverification x }
+| x=loc(verification)      { Dverification x }
 
 enum:
 | STATES exts=extensions? xs=equal_enum_values
