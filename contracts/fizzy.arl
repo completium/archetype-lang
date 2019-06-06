@@ -68,12 +68,13 @@ action manual (fi : string) (pr : string) (newst : status) = {
 
 specification {
    (* any action on storage is performed only by the owner *)
-   s1 : forall a in effects, performed_by_role [a] [owner];
+   s1 : anyaction may be performed only by role owner;
 
    (* this contract does not transfer any tez *)
-   s2 : forall tx in actions, is_empty (transfers_by_tx tx);
+   s2 : transfers_by_tx anytx = 0;
 
-   (* action “updatestatus” is not the only one to potentially
+   (* transaction “updatestatus” is not the only one to potentially
       perform an update of insurance status *)
-   s3 : perform_by_tx [update stat] [updatestatus; manual]
+   s3 : (update insurance.stat) may be performed only by action
+                                                (updatestatus or manual)
 }
