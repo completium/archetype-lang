@@ -3,12 +3,12 @@ archetype test_verification
 action myaction = {
  verification {
 
+    definition mydef =
+     { x : early | forall x in col1, x = x }
+
     predicate mypredicate (a : int) = {
       forall x in col1, forall y in col2, x = y
     }
-
-    definition mydef =
-     { x : early | forall x in col1, x = x }
 
     axiom myaxiom = {
       forall x in col1, forall y in col2, x = y
@@ -24,9 +24,17 @@ action myaction = {
       x := y
     }
 
-    specification s1 {
+    assert a1 at aaa = {
       x = y
-      invariants for myloop = {
+      invariants for myloop {
+        x = 0;
+        y = 0
+      }
+    }
+
+    specification s1 = {
+      x = y
+      invariants for myloop {
         x = 0;
         y = 0
       }

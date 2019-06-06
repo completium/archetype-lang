@@ -1,1 +1,7 @@
-specification { s1 : 0 < x <= 1 }
+archetype test_bound_value
+
+verification {
+  specification s1 = {
+    0 < x <= 1
+  }
+}

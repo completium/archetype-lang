@@ -104,9 +104,8 @@ function compute_expected (d : date) : tez = {
     }
 
     (* … TODO finish specs *)
-    specification {
-      (** expected is the sum of redemption nominal and interests *)
-      p_expected :
+    (** expected is the sum of redemption nominal and interests *)
+    specification p_expected = {
         let expected =
           let ftrigger = first etrigger in
           (* early redemption *)

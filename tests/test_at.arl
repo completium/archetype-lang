@@ -1,8 +1,13 @@
 archetype test_specification
 
 action tr = {
-  specification {
-    s1 : (x at label) -> x;
-    s2 : (s::x at label) -> x
+  verification {
+    specification s1 = {
+      (x at label) -> x
+    }
+
+    specification s2 = {
+      (s::x at label) -> x
+    }
   }
 }

@@ -29,7 +29,9 @@ action reclaim (witness : address) = {
   }
 }
 
-specification {
-  s1 : forall a in address,
-       bid.contains a -> balance > (bid.get a).val
+verification {
+  specification s1 = {
+    forall a in address,
+      bid.contains a -> balance > (bid.get a).val
+  }
 }

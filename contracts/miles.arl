@@ -10,28 +10,30 @@ asset account identified by owner = {
 }
 
 action add (ow : role) (value : uint) = {
-   called by validator
-   effect {
-     if account.contains ow then
-      account.update ow { amount += value }
-     else
-      owner.add { owner = ow; amount = 0 }
-   }
+  called by validator
+  effect {
+    if account.contains ow then
+     account.update ow { amount += value }
+    else
+     owner.add { owner = ow; amount = 0 }
+  }
 }
 
 action consume (ow : role) (value : uint) = {
-   called by validator
+  verification {
+    specification s1 = {
+      (before.account.get ow).amount =
+        (after.account.get ow).amount + value
+    }
+  }
 
-   require {
-     c1 : (account.get ow).amount >= value
-   }
+  called by validator
 
-   specification {
-     s1 : (before.account.get ow).amount =
-             (after.account.get ow).amount + value
-   }
+  require {
+    c1 : (account.get ow).amount >= value
+  }
 
-   effect {
-     account.update ow { amount -= value }
-   }
+  effect {
+    account.update ow { amount -= value }
+  }
 }

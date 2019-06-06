@@ -1,8 +1,16 @@
 archetype test_quantifier
 
-specification {
-  s1 : forall x in asset1, x;
-  s2 : forall (x in asset1), x;
-  s3 : forall (x in asset1) (y in asset2), x;
-  s4 : forall (x z t in asset1) (y in asset2), x
+verification {
+  specification s1 = {
+    forall x in asset1, x
+  }
+  specification s2 = {
+    forall (x in asset1), x
+  }
+  specification s3 = {
+    forall (x in asset1) (y in asset2), x
+  }
+  specification s4 = {
+    forall (x z t in asset1) (y in asset2), x
+  }
 }

@@ -1,8 +1,12 @@
 archetype test_specification
 
 action tr = {
-  specification {
-    s1 : forall x in t, P x -> y;
-    s2 : exists x in t, P x and P y
+  verification {
+    specification s1 = {
+      forall x in t, P x -> y
+    }
+    specification s2 = {
+      exists x in t, P x and P y
+    }
   }
 }

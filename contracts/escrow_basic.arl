@@ -47,6 +47,8 @@ transition[%onlyonce%] cancel from Confirmed = {
   }
 }
 
-specification {
-  s1 : transfers may be performed only by role oracle
+verification {
+  specification s1 = {
+    transfers may be performed only by role oracle
+  }
 }
