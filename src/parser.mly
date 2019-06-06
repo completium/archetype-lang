@@ -63,7 +63,7 @@
 %token DEFINITION
 %token AXIOM
 %token THEOREM
-%token INVARIANT
+%token INVARIANTS
 %token SPECIFICATION
 %token EFFECT
 %token FUNCTION
@@ -134,6 +134,7 @@
 %token FAILIF
 %token REQUIRE
 %token RECORD
+%token LABEL
 
 %token INVALID_EXPR
 %token INVALID_DECL
@@ -154,7 +155,6 @@
 %nonassoc TO IN
 %right OTHERWISE
 %right THEN ELSE
-
 %nonassoc COLON
 
 %nonassoc COLONEQUAL PLUSEQUAL MINUSEQUAL MULTEQUAL DIVEQUAL ANDEQUAL OREQUAL
@@ -352,14 +352,22 @@ function_decl:
 %inline verif_variable:
 | VARIABLE id=ident t=type_t dv=default_value? { Vvariable (id, t, dv) }
 
-%inline verif_invariant:
-| INVARIANT id=ident EQUAL xs=braced(expr) { Vinvariant (id, split_seq_label xs) }
-
 %inline verif_effect:
 | EFFECT e=braced(expr) { Veffect e }
 
+%inline invars:
+| INVARIANTS FOR id=ident xs=braced(expr) { (id, split_seq xs) }
+
+%inline spec_body:
+| e=expr is=invars*  { (e, is) }
+
+%inline verif_assert:
+| ASSERT id=ident AT lbl=ident EQUAL sp=braced(spec_body)
+    { let e, is = sp in Vassert (id, lbl, e, is) }
+
 %inline verif_specification:
-| SPECIFICATION xs=braced(expr) { Vspecification (split_seq_label xs) }
+| SPECIFICATION id=ident EQUAL sp=braced(spec_body)
+    { let e, is = sp in Vspecification (id, e, is) }
 
 verif_item:
 | x=verif_predicate     { x }
@@ -367,23 +375,32 @@ verif_item:
 | x=verif_axiom         { x }
 | x=verif_theorem       { x }
 | x=verif_variable      { x }
-| x=verif_invariant     { x }
 | x=verif_effect        { x }
+| x=verif_assert        { x }
 | x=verif_specification { x }
 
-verification(spec):
-| x=loc(spec)
-    { ([x], None) }
+verification_item:
+| x=verif_specification { x }
+| x=verif_assert { x }
+
+%inline verification_f:
+| xs=loc(verification_item)+ { (xs, None) }
 
 | VERIFICATION exts=option(extensions) LBRACE
     xs=loc(verif_item)+ RBRACE
         { (xs, exts) }
 
+%inline verification_d:
+| VERIFICATION exts=option(extensions) LBRACE
+    xs=loc(verif_item)+ RBRACE
+        { (xs, exts) }
+
 verification_fun:
-| x=loc(verification(verif_specification)) { x }
+| x=loc(verification_f) { x }
 
 verification_decl:
-| x=loc(verification(verif_specification)) { Dverification x }
+//| xs=loc(verification_item)+ { Dverification (xs, None) }
+| x=loc(verification_d) { Dverification x }
 
 enum:
 | STATES exts=extensions? xs=equal_enum_values
@@ -620,8 +637,8 @@ expr_r:
  | label=ident COLON e=expr
      { Elabel (label, e) }
 
- | ASSERT x=paren(expr)
-     { Eassert x }
+ | LABEL id=ident
+     { Eilabel id }
 
  | BREAK
      { Ebreak }

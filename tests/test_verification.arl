@@ -20,18 +20,16 @@ action myaction = {
 
     variable myvar atype = 0
 
-    invariant myloop = {
-      i1 : x = 0;
-      i2 : y = 0
-    }
-
     effect {
       x := y
     }
 
-    specification {
-      s1 : x = y;
-      s2 : y = x
+    specification s1 {
+      x = y
+      invariants for myloop = {
+        x = 0;
+        y = 0
+      }
     }
   }
 }

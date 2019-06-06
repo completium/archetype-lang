@@ -10,6 +10,8 @@ let errors = ref []
 
 exception Error of Position.t list * string
 
+exception ParseError of (Position.t list * string) list
+
 let print_error positions msg =
   Printf.sprintf "%s%s\n"
     (String.concat "\n"

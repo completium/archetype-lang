@@ -6,8 +6,10 @@ archetype extension test_namespace (
 
   variable avariable type
 
-  specification {
-    c1 : a::myvariable = 1
+  verification {
+    specification c1 = {
+      a::myvariable = 1
+    }
   }
 
   namespace myspace {

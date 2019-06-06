@@ -560,6 +560,14 @@ let rec pp_expr outer pos fmt a =
     in
     (maybe_paren outer e_colon pos pp) fmt (i, x)
 
+  | Eilabel i ->
+
+    let pp fmt i =
+      Format.fprintf fmt "label %a"
+        pp_id i
+    in
+    (maybe_paren outer e_colon pos pp) fmt i
+
   | Einvalid -> Format.fprintf fmt "(* invalid expr *)"
 
 
@@ -728,9 +736,23 @@ let map_option f x =
   | Some y -> f y
   | None -> ()
 
-let pp_specification fmt xs =
-  Format.fprintf fmt "specification {@\n@[<v 2>  %a@]@\n}"
-    pp_label_exprs xs
+let pp_invariants fmt (lbl, is) =
+  Format.fprintf fmt "invariants for %a {@\n@[<v 2>  %a@]@\n}"
+    pp_id lbl
+    (pp_list ";@\n" (pp_expr e_default PNone)) is
+
+let pp_specification fmt (id, f, is) =
+  Format.fprintf fmt "specification %a = {@\n@[<v 2>  %a@]@\n@[<v 2>  %a@]@\n}"
+    pp_id id
+    (pp_expr e_default PNone) f
+    (pp_list "@\n" pp_invariants) is
+
+let pp_assert fmt (id, lbl, f, is) =
+  Format.fprintf fmt "assert %a at %a = {@\n@[<v 2>  %a@]@\n@[<v 2>  %a@]@\n}"
+    pp_id id
+    pp_id lbl
+    (pp_expr e_default PNone) f
+    (pp_list "@\n" pp_invariants) is
 
 let pp_verification_item fmt = function
   | Vpredicate (id, args, body) ->
@@ -762,16 +784,13 @@ let pp_verification_item fmt = function
       pp_type typ
       (pp_option (fun fmt x -> Format.fprintf fmt " = %a" (pp_expr e_equal PRight) x)) dv
 
-  | Vinvariant (id, cs) ->
-    Format.fprintf fmt "invariant %a = {@\n@[<v 2>  %a@]@\n}"
-      pp_id id
-      pp_label_exprs cs
-
   | Veffect e ->
     Format.fprintf fmt "effect {@\n@[<v 2>  %a@]@\n}"
       (pp_expr e_default PNone) e
 
-  | Vspecification xs -> pp_specification fmt xs
+  | Vassert (id, lbl, f, is) -> pp_assert fmt (id, lbl, f, is)
+
+  | Vspecification (id, f, xs) -> pp_specification fmt (id, f, xs)
 
 let pp_verification_items = pp_list "@\n@\n" pp_verification_item
 
@@ -811,6 +830,10 @@ let pp_action_properties fmt (props : action_properties) =
       let items, exts = v |> unloc in
       let items = items |> List.map (fun x -> x |> unloc) in
       match items with
+      | l when List.fold_left (fun accu x -> match x with | Vassert _ | Vspecification _ -> accu | _ -> false) true l ->
+        begin
+          Format.fprintf fmt "%a@\n" pp_verification_items items
+        end
       | [Vspecification v] ->
         begin
           Format.fprintf fmt "%a@\n"

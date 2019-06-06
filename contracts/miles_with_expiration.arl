@@ -36,23 +36,31 @@ action consume (a : address) (quantity : uint) = {
 
   called by admin
 
-  verification {
-    specification {
-         (* the globla quantity of miles is decreased by nbmiles *)
-         p1 : mile.sum(quantity) = before miles.sum(quantity) - nbmiles;
-         (* all removed miles are valid miles *)
-         p2 : forall m in removed miles, m.expiration >= now;
-         (* no added mile *)
-         p3 : is_empty added.mile
+  assert p1 at zero_remainder = {
+    remainder = 0
+    invariants for loop {
+      0 <= remainder <= to_iter.sum(amount)
     }
-    invariant loop = {
-         (* remainder has a decreasing upper bound *)
-         i1 : 0 <= remainder <= to_iter.sum(amount);
-         (* removed miles *)
-         i2 : (subset (removed miles) (o.miles.select(expiration >= now)));
-         (* right amount consumed *)
-         i3 : before miles.sum(amount) = miles.sum(amount) + nbmiles - remainder;
-         i4 : is_empty added.mile
+  }
+
+  specification p2 = {
+    mile.sum(quantity) = before miles.sum(quantity) - nbmiles
+    invariants for loop {
+      subset (removed miles) (o.miles.select(expiration >= now))
+    }
+  }
+
+  specification p3 = {
+    forall m in removed miles, m.expiration >= now
+    invariants for loop {
+      before miles.sum(amount) = miles.sum(amount) + nbmiles - remainder
+    }
+  }
+
+  specification p4 = {
+    is_empty added.mile
+    invariants for loop {
+      is_empty added.mile
     }
   }
 
@@ -81,22 +89,30 @@ action consume (a : address) (quantity : uint) = {
            o.miles.remove m.id
          )
        );
-     assert (remainder = 0))
+     label zero_remainder)
   }
 }
 
 (* this ensures that any mile was added with the ‘add’ action *)
-specification {
-   g1 : anyaction may be performed only by role admin;
-   g2 : (remove mile) may be performed only by action (consume or clear_expired);
-   g3 : not ((add mile) may be performed only by action consume)
+verification {
+  specification g1 = {
+    anyaction may be performed only by role admin
+  }
+
+  specification g2 = {
+    (remove mile) may be performed only by action (consume or clear_expired)
+  }
+
+  specification g3 = {
+    not ((add mile) may be performed only by action consume)
+  }
 }
 
 action clear_expired = {
   called by admin
 
-  specification {
-    s3 : forall m in removed mile, m.expiration < now
+  specification s3 = {
+    forall m in removed mile, m.expiration < now
   }
 
   effect {

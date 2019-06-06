@@ -152,4 +152,4 @@ let parse_archetype_strict ?(name = "") (inc : in_channel) =
   let pt = parse_archetype inc ?name:(Some name) in
   match !Error.errors with
   | [] -> pt
-  | l -> raise (ParseUtils.ParseError [])
+  | l -> raise (Error.ParseError !Error.errors)

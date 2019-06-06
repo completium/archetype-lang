@@ -44,7 +44,7 @@
       "definition"          , DEFINITION     ;
       "axiom"               , AXIOM          ;
       "theorem"             , THEOREM        ;
-      "invariant"           , INVARIANT      ;
+      "invariants"          , INVARIANTS     ;
       "specification"       , SPECIFICATION  ;
       "function"            , FUNCTION       ;
       "let"                 , LET            ;

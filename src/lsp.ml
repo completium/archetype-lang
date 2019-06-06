@@ -149,11 +149,10 @@ let mk_outline_from_label_exprs (x : ParseTree.label_exprs) =
 let mk_outline_from_verification (verif : ParseTree.verification) =
   let vis, _ = Location.unloc verif in
 
-  List.fold_left (fun accu (i : ParseTree.verification_item) ->
+  List.fold_right (fun (i : ParseTree.verification_item) accu ->
       match Location.unloc i with
-      | Vinvariant (_, l) -> mk_outline_from_label_exprs l @ accu
-      | Vspecification l  -> mk_outline_from_label_exprs l @ accu
-      | _ -> accu) [] vis
+      | Vspecification (id, _, _) -> [(mk_outline (Location.unloc id, symbol_kind_to_int Property, Location.loc id))] @ accu
+      | _ -> accu) vis []
 
 let make_outline_from_enum ((ek, li, l) : (ParseTree.enum_kind * 'a * 'b) ) =
   let outline = mk_outline ((match ek with | EKenum i -> (Location.unloc i) | EKstate -> "states"), symbol_kind_to_int Enum, l) in

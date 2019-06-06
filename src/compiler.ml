@@ -160,6 +160,11 @@ let main () =
     close dispose channel;
     Printf.eprintf "%s.\n" s;
     exit 1
+  | Error.ParseError l ->
+    close dispose channel;
+    (* List.map (fun (_ps, _s) -> ()) l; *)
+    (* Format.eprintf "%s.\n" s *)
+    exit 1
 (* | Reduce.ReduceError (msg, l) ->
    close dispose channel;
    Printf.eprintf "%s%s.\n" msg (match l with | None -> "" | Some l -> (Location.tostring l));

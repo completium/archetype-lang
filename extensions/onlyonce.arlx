@@ -8,14 +8,15 @@ archetype extension onlyonce (
     verification {
       variable call_count int = 0
       effect {
+        label step;
         call_count += 1
       }
-      invariant loop = {
-        i1 : requires -> call_count = 0;
-        i2 : call_count <= 1
-      }
-      specification {
+      specification o1 = {
         none
+        invariants for step {
+          requires -> call_count = 0;
+          call_count <= 1
+        }
       }
     }
   }

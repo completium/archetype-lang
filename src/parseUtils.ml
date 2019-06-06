@@ -16,8 +16,8 @@ let pp_perror fmt = function
   | PE_LexicalError (loc, x) ->
     Format.fprintf fmt "lexical error: '%s' at %s" x (Location.tostring loc)
 
-  | PE_Unclosed (_loc, x, _y) ->
-    Format.fprintf fmt "Unclosed bracket '%s' detected" x
+  | PE_Unclosed (loc, x, _y) ->
+    Format.fprintf fmt "Unclosed bracket '%s' detected at %s" x (Location.tostring loc)
 
   | PE_Not_Expecting (loc, x) ->
     Format.fprintf fmt "Not expecting '%s' at %s" x (Location.tostring loc)

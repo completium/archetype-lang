@@ -125,6 +125,7 @@ type expr_unloc =
   | Ematchwith    of expr * (pattern list * expr) list
   | Equantifier   of quantifier * lident_typ * expr
   | Elabel        of lident * expr
+  | Eilabel       of lident
   | Einvalid
 [@@deriving yojson, show {with_path = false}]
 
@@ -178,15 +179,18 @@ and field = field_unloc loced
 type args = lident_typ list
 [@@deriving yojson, show {with_path = false}]
 
+type invariants = (lident * expr list) list
+[@@deriving yojson, show {with_path = false}]
+
 type verification_item_unloc =
   | Vpredicate of lident * args * expr
   | Vdefinition of lident * type_t * lident * expr
   | Vaxiom of lident * expr
   | Vtheorem of lident * expr
   | Vvariable of lident * type_t * expr option
-  | Vinvariant of lident * label_exprs
   | Veffect of expr
-  | Vspecification of label_exprs
+  | Vassert of (lident * lident * expr * invariants)
+  | Vspecification of (lident * expr * invariants)
 [@@deriving yojson, show {with_path = false}]
 
 type verification_item = verification_item_unloc loced

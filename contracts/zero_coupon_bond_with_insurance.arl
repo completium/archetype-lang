@@ -31,8 +31,8 @@ transition insured from Created = {
 }
 
 transition confirm from Insured = {
-  specification {
-    s1 : balance = 0
+  specification s1 = {
+    balance = 0
   }
 
   to Confirmed

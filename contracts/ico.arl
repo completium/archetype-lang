@@ -100,8 +100,7 @@ action contribute = {
              not (c.list = Silver and transferred >= max_contrib_silver)
    }
 
-   specification {
-     p1 :
+   specification p1 = {
        let c = contributor.get caller in
        transferred = transferred_to(caller) + c.contrib - (old c.contrib)
    }

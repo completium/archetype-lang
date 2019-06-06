@@ -846,7 +846,8 @@ let rec for_xexpr (env : env) ?(ety : M.ptyp option) (tope : PT.expr) : xexpr =
     | Equantifier (_bd, _x, _e) ->
       assert false
 
-    | Elabel _ ->
+    | Elabel _
+    | Eilabel _ ->
       assert false
 
     | Eassert   _
@@ -1001,10 +1002,10 @@ let for_verification_item (_env : env) (v : PT.verification_item) =
   | PT.Vvariable (_x, _ty, _e) ->
     assert false
 
-  | PT.Vinvariant (_x, _lbl) ->
+  | PT.Veffect _e ->
     assert false
 
-  | PT.Veffect _e ->
+  | PT.Vassert _lbl ->
     assert false
 
   | PT.Vspecification _lbl ->
