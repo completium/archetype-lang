@@ -34,11 +34,10 @@ let unit = mk_sp Ibreak
 (* let mk_struct_with_loc node typ loc = let m = mk_struct_poly node typ in {m  with loc = loc; } *)
 
 let fail str : instruction =
-  let f = dumloc "fail" in (*mk_sp (Pconst Cfail) in*)
   let lit = mk_sp (BVstring str) ?type_:type_string in
   let arg = mk_sp (Plit lit) ?type_:type_string in
   (* let app = mk_struct_poly (Papp (f, [arg])) type_unit in *)
-  mk_sp (Icall (None, f, [arg]))
+  mk_sp (Icall (None, Cconst Cfail, [arg]))
 
 (* mk_struct_poly (Plit (dumloc (BVstring str))) *)
 
@@ -136,7 +135,6 @@ let process_action (model : model) : model =
                    | Some (id, id_asset) ->
                      (
                        let asset : pterm = mk_sp (Pvar id_asset) in
-                       let update : lident = dumloc "update" in
 
                        (* let q : qualid = mk_sp (Qident state) in
                           let aid : pterm = mk_sp (Pvar id) in *)
@@ -144,7 +142,7 @@ let process_action (model : model) : model =
                        (* let arg : pterm = mk_sp (Precord [q; aid]) in *)
                        let args : pterm list = [] in (*TODO *)
 
-                       mk_sp (Icall (Some asset, update, args))
+                       mk_sp (Icall (Some asset, Cconst Cupdate, args))
                      )
                    | _ ->
                      let a : pterm = mk_sp (Pvar id) ?type_:type_bool ?loc:(Some (Location.loc id)) in

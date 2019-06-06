@@ -116,7 +116,7 @@ type const =
   | Cactions
   | Cnone
   | Cany
-   (* function *)
+  (* function *)
   | Cget
   | Cadd
   | Caddnofail
@@ -269,11 +269,16 @@ type pattern = (lident, type_) pattern_gen
 [@@deriving show {with_path = false}]
 
 
+type 'id call_kind =
+  | Cid of 'id
+  | Cconst of const
+[@@deriving show {with_path = false}]
+
 type ('id, 'typ, 'term) term_node  =
   | Lquantifer of quantifier * 'id * ltype_ * 'term
   | Pif of ('term * 'term * 'term)
   | Pmatchwith of 'term * (('id, 'typ) pattern_gen * 'term) list
-  | Pcall of ('id option * 'id * ('term term_arg) list)
+  | Pcall of ('id option * 'id call_kind * ('term term_arg) list)
   | Plogical of logical_operator * 'term * 'term
   | Pnot of 'term
   | Pcomp of comparison_operator * 'term * 'term
@@ -336,7 +341,7 @@ and ('id, 'typ, 'term, 'instr) instruction_node =
   | Itransfer of ('term * bool * ('id, 'typ) qualid_gen option)   (* value * back * dest *)
   | Ibreak
   | Iassert of 'term
-  | Icall of ('term option * 'id * ('term) list)
+  | Icall of ('term option * 'id call_kind * ('term) list)
 [@@deriving show {with_path = false}]
 
 type ('id, 'typ, 'term) instruction_gen = ('id, 'typ, 'term, ('id, 'typ, 'term) instruction_gen) instruction_poly

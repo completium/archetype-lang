@@ -764,10 +764,30 @@ let rec for_xexpr (env : env) ?(ety : M.ptyp option) (tope : PT.expr) : xexpr =
                 (fun arg aty -> for_arg env aty arg)
                 args pdf.psl_sig in
 
+          let to_const = function
+            | "get"          -> Some M.Cget
+            | "add"          -> Some M.Cadd
+            | "addnofail"    -> Some M.Caddnofail
+            | "remove"       -> Some M.Cremove
+            | "removenofail" -> Some M.Cremovenofail
+            | "removeif"     -> Some M.Cremoveif
+            | "update"       -> Some M.Cupdate
+            | "updatenofail" -> Some M.Cupdatenofail
+            | "clear"        -> Some M.Cclear
+            | "contains"     -> Some M.Ccontains
+            | "nth"          -> Some M.Cnth
+            | "select"       -> Some M.Cselect
+            | "sort"         -> Some M.Csort
+            | "count"        -> Some M.Ccount
+            | "sum"          -> Some M.Csum
+            | "max"          -> Some M.Cmax
+            | "min"          -> Some M.Cmin
+            | _              -> None in
+
           let aout =
             match kind with
             | `Named x ->
-              M.Pcall (None, x, args)
+              M.Pcall (None, Option.map_dfl (fun x -> M.Cconst x) (Cid x) (to_const (unloc x)), args)
 
             | `Operator (`Logical op) ->
               let args = List.map (Option.get |@ pterm_arg_as_pterm) args in
