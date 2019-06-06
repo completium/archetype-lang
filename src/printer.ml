@@ -829,6 +829,11 @@ let pp_verif fmt (items, exts) =
     end
 
 let pp_action_properties fmt (props : action_properties) =
+  map_option (
+    fun v ->
+      let items, exts = v |> unloc in
+      pp_verif fmt (items, exts)
+  ) props.verif;
   map_option (fun (e, exts) ->
       Format.fprintf fmt "called by%a %a@\n"
         pp_extensions exts
@@ -839,11 +844,6 @@ let pp_action_properties fmt (props : action_properties) =
       Format.fprintf fmt "require%a{@\n@[<v 2>  %a@]}@\n"
         pp_extensions exts
         pp_label_exprs cs) props.require;
-  map_option (
-    fun v ->
-      let items, exts = v |> unloc in
-      pp_verif fmt (items, exts)
-  ) props.verif;
   (pp_list "@\n" pp_function) fmt (List.map unloc props.functions)
 
 let pp_transition fmt (to_, conditions, effect) =

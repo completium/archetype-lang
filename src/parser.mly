@@ -520,7 +520,7 @@ transition:
 | EQUAL LBRACE xs=action_properties e=effect? RBRACE { (xs, e) }
 
 action_properties:
-  cb=calledby? at=boption(ACCEPT_TRANSFER) cs=require? sp=verification_fun? fs=function_item*
+  sp=verification_fun? cb=calledby? at=boption(ACCEPT_TRANSFER) cs=require? fs=function_item*
   {
     {
       verif           = sp;
