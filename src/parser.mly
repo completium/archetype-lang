@@ -359,41 +359,30 @@ function_decl:
 | INVARIANTS FOR id=ident xs=braced(expr) { (id, split_seq xs) }
 
 %inline spec_body:
-| e=expr is=invars*  { (e, is) }
+| e=expr xs=invars*  { (e, xs) }
 
 %inline verif_assert:
 | ASSERT id=ident AT lbl=ident EQUAL sp=braced(spec_body)
-    { let e, is = sp in Vassert (id, lbl, e, is) }
+    { let e, xs = sp in Vassert (id, lbl, e, xs) }
 
 %inline verif_specification:
 | SPECIFICATION id=ident EQUAL sp=braced(spec_body)
-    { let e, is = sp in Vspecification (id, e, is) }
+    { let e, xs = sp in Vspecification (id, e, xs) }
 
-verif_item:
-| x=verif_predicate     { x }
-| x=verif_definition    { x }
-| x=verif_axiom         { x }
-| x=verif_theorem       { x }
-| x=verif_variable      { x }
-| x=verif_effect        { x }
-| x=verif_assert        { x }
-| x=verif_specification { x }
-
-verification_item:
-| x=verif_specification { x }
-| x=verif_assert { x }
-
-%inline verification_f:
-| xs=loc(verification_item)+ { (xs, None) }
-
-| VERIFICATION exts=option(extensions) LBRACE
-    xs=loc(verif_item)+ RBRACE
-        { (xs, exts) }
+verif_items:
+| ds=loc(verif_definition)*
+  ps=loc(verif_predicate)*
+  xs=loc(verif_axiom)*
+  ts=loc(verif_theorem)*
+  vs=loc(verif_variable)*
+  es=loc(verif_effect)*
+  bs=loc(verif_assert)*
+  ss=loc(verif_specification)*
+   { ds @ ps @ xs @ ts @ vs @ es @ bs @ ss }
 
 %inline verification:
-
 | VERIFICATION exts=option(extensions) LBRACE
-    xs=loc(verif_item)+ RBRACE
+    xs=verif_items RBRACE
         { (xs, exts) }
 
 verification_fun:

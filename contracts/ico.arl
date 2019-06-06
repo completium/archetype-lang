@@ -92,45 +92,47 @@ function transition_to_finished = {
 
 action contribute = {
 
-   require {
-      c1 : contributor.contains caller;
-      c2 : is_running ();
-      c3 : transferred >= min_contribution;
-      c4 : let c = contributor.get caller in
-             not (c.list = Silver and transferred >= max_contrib_silver)
-   }
+  require {
+     c1 : contributor.contains caller;
+     c2 : is_running ();
+     c3 : transferred >= min_contribution;
+     c4 : let c = contributor.get caller in
+            not (c.list = Silver and transferred >= max_contrib_silver)
+  }
 
-   specification p1 = {
-       let c = contributor.get caller in
-       transferred = transferred_to(caller) + c.contrib - (old c.contrib)
-   }
+  verification {
+    specification p1 = {
+        let c = contributor.get caller in
+        transferred = transferred_to(caller) + c.contrib - (old c.contrib)
+    }
+  }
 
-   effect {
-     (* cap contribution to max_contrib if necessary *)
-     let contrib = transferred in
-     if    c.list = Silver
-       and c.contrib + contrib >= max_contrib_silver
-     then contrib := max_contrib_silver - c.contrib;
-     (* cap contribution to round cap if necessary *)
-     let remaining_tez = get_remaining_tez_to_raise () in
-     if remaining_tez <= contrib
-     then (
-       contrib := remaining_tez;
-       state := transition_to_finished ()
-     );
-     (* convert contribution to nb of bcd tokens *)
-     let rate = get_rate () in
-     let nb_tokens  = contrib * rate in
-     (* update ico stats *)
-     nb_bcd_sold   += nb_tokens;
-     nb_tez_raised += contrib;
-     (* update caller’s contribution *)
-     c.contrib     += contrib;
-     (* syntaxic sugar for
-        contributor.update caller { contrib += contrib } *)
-     if contrib <= transferred
-     then transfer (transferred - contrib) to caller
-   }
+  effect {
+    (* cap contribution to max_contrib if necessary *)
+    let contrib = transferred in
+    if    c.list = Silver
+      and c.contrib + contrib >= max_contrib_silver
+    then contrib := max_contrib_silver - c.contrib;
+    (* cap contribution to round cap if necessary *)
+    let remaining_tez = get_remaining_tez_to_raise () in
+    if remaining_tez <= contrib
+    then (
+      contrib := remaining_tez;
+      state := transition_to_finished ()
+    );
+    (* convert contribution to nb of bcd tokens *)
+    let rate = get_rate () in
+    let nb_tokens  = contrib * rate in
+    (* update ico stats *)
+    nb_bcd_sold   += nb_tokens;
+    nb_tez_raised += contrib;
+    (* update caller’s contribution *)
+    c.contrib     += contrib;
+    (* syntaxic sugar for
+       contributor.update caller { contrib += contrib } *)
+    if contrib <= transferred
+    then transfer (transferred - contrib) to caller
+  }
 }
 
 (* the onlyonce extension specifies that withdraw action can be

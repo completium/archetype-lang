@@ -817,10 +817,10 @@ let pp_function fmt (f : s_function) =
 let pp_verif fmt (items, exts) =
   let items = items |> List.map (fun x -> x |> unloc) in
   match items with
-  | l when List.fold_left (fun accu x -> match x with | Vassert _ | Vspecification _ -> accu | _ -> false) true l ->
-    begin
+  (* | l when List.fold_left (fun accu x -> match x with | Vassert _ | Vspecification _ -> accu | _ -> false) true l ->
+     begin
       Format.fprintf fmt "%a@\n" pp_verification_items items
-    end
+     end *)
   | _ ->
     begin
       Format.fprintf fmt "verification%a {@\n@[<v 2>  %a@]@\n}@\n"
