@@ -71,7 +71,7 @@ transition bury from Voting = {
 specification {
   s3 : startdate < deadline;
   s4 : (voter.select(voter.hasVoted = true)).count() = ballot.sum(nbvotes);
-  s5 : forall w : winner,
-         forall b : ballot,
+  s5 : forall w in winner,
+         forall b in ballot,
            b.nbvotes <= ballot.get(w.value).nbvotes
 }

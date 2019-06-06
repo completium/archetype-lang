@@ -1,8 +1,8 @@
 archetype test_quantifier
 
 specification {
-  s1 : forall x : asset1, x;
-  s2 : forall (x : asset1), x;
-  s3 : forall (x : asset1) (y : asset2), x;
-  s4 : forall (x z t : asset1) (y : asset2), x
+  s1 : forall x in asset1, x;
+  s2 : forall (x in asset1), x;
+  s3 : forall (x in asset1) (y in asset2), x;
+  s4 : forall (x z t in asset1) (y in asset2), x
 }

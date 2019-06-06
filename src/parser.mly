@@ -586,7 +586,7 @@ pattern:
  | e=loc(expr_r) { e }
 
 %inline ident_typ_q_item:
- | LPAREN ids=ident+ COLON t=type_t RPAREN { List.map (fun x -> (x, t, None)) ids }
+ | LPAREN ids=ident+ IN t=type_t RPAREN { List.map (fun x -> (x, t, None)) ids }
 
 ident_typ_q:
  | xs=ident_typ_q_item+ { List.flatten xs }
@@ -600,7 +600,7 @@ ident_typ_q:
 | OTHERWISE o=expr { Some o }
 
 expr_r:
- | q=quantifier x=ident_typ1 COMMA y=expr
+ | q=quantifier x=ident_typ_quant COMMA y=expr
      { Equantifier (q, x, y) }
 
  | q=quantifier xs=ident_typ_q COMMA y=expr
@@ -730,8 +730,8 @@ simple_expr_r:
  | LPAREN ids=ident+ COLON ty=type_t RPAREN
      { List.map (fun id -> (id, ty, None)) ids }*/
 
-%inline ident_typ1:
- | id=ident COLON ty=type_t { (id, ty, None) }
+%inline ident_typ_quant:
+ | id=ident IN ty=type_t { (id, ty, None) }
 
 literal:
  | x=NUMBER     { Lnumber   x }

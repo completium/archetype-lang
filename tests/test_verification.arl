@@ -4,18 +4,18 @@ action myaction = {
  verification {
 
     predicate mypredicate (a : int) = {
-      forall x : col1, forall y : col2, x = y
+      forall x in col1, forall y in col2, x = y
     }
 
     definition mydef =
-     { x : early | forall x : col1, x = x }
+     { x : early | forall x in col1, x = x }
 
     axiom myaxiom = {
-      forall x : col1, forall y : col2, x = y
+      forall x in col1, forall y in col2, x = y
     }
 
     theorem mytheorem = {
-      forall x : col1, forall y : col2, x = y
+      forall x in col1, forall y in col2, x = y
     }
 
     variable myvar atype = 0

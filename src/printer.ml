@@ -546,7 +546,7 @@ let rec pp_expr outer pos fmt a =
     let pp fmt (q, id_t, body) =
       Format.fprintf fmt "%a %a, %a"
         pp_quantifier q
-        pp_ident_typ id_t
+        pp_ident_quant id_t
         (pp_expr e_comma PRight) body
     in
     (maybe_paren outer e_default pos pp) fmt (q, id_t, body)
@@ -595,6 +595,14 @@ and pp_ident_typ fmt a =
       pp_id x
       pp_extensions exts
       (pp_prefix " : " pp_type) y
+
+and pp_ident_quant fmt a =
+  match a with
+  | (x, y, exts) ->
+    Format.fprintf fmt "%a%a%a"
+      pp_id x
+      pp_extensions exts
+      (pp_prefix " in " pp_type) y
 
 and pp_fun_ident_typ fmt (arg : lident_typ) =
   match arg with

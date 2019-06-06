@@ -2,7 +2,7 @@ archetype test_specification
 
 action tr = {
   specification {
-    s1 : forall x : t, P x -> y;
-    s2 : exists x : t, P x and P y
+    s1 : forall x in t, P x -> y;
+    s2 : exists x in t, P x and P y
   }
 }

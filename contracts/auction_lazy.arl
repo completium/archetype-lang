@@ -30,6 +30,6 @@ action reclaim (witness : address) = {
 }
 
 specification {
-  s1 : forall a : address,
+  s1 : forall a in address,
        bid.contains a -> balance > (bid.get a).val
 }

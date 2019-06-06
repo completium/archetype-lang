@@ -81,7 +81,7 @@ function compute_expected (d : date) : tez = {
     (** etrigger is defined as the set of early assets for which
         the trigger condition is true *)
     definition etrigger = { e : early |
-      forall f : fixing,
+      forall f in fixing,
         if e.obs = f.obs
         then (* trigger condition *)
               f.bac >= e.trigger * bac_initial
@@ -92,7 +92,7 @@ function compute_expected (d : date) : tez = {
     (** ibarrier is defined as the set of interest assets for which
         the barrier condition is true *)
     definition ibarrier = { i : interest |
-      forall f : fixing,
+      forall f in fixing,
         (* retrieving the first element of etrigger *)
         let efirst = first etrigger in
           if i.obs = f.obs and i.obs <= efirst.obs

@@ -41,7 +41,7 @@ action consume (a : address) (quantity : uint) = {
          (* the globla quantity of miles is decreased by nbmiles *)
          p1 : mile.sum(quantity) = before miles.sum(quantity) - nbmiles;
          (* all removed miles are valid miles *)
-         p2 : forall m : removed miles, m.expiration >= now;
+         p2 : forall m in removed miles, m.expiration >= now;
          (* no added mile *)
          p3 : is_empty added.mile
     }
@@ -96,7 +96,7 @@ action clear_expired = {
   called by admin
 
   specification {
-    s3 : forall m : removed mile, m.expiration < now
+    s3 : forall m in removed mile, m.expiration < now
   }
 
   effect {
