@@ -633,6 +633,24 @@ let mk_id type_ id : qualid =
     node  = Qident id;
     label = None; }
 
+let map_term_node f = function
+  | Lquantifer (q, i, t, e) -> Lquantifer (q, i, t, f e)
+  | Pif (c, t, e)           -> Pif (f c, f t, f e)
+  | Pmatchwith (e, l)       -> Pmatchwith (e, List.map (fun (p, e) -> (p, f e)) l)
+  | Pcall (i, e, args)      -> Pcall (i, e, List.map (fun arg -> match arg with | AExpr e -> AExpr (f e) | _ -> arg ) args)
+  | Plogical (op, l, r)     -> Plogical (op, f l, f r)
+  | Pnot e                  -> Pnot (f e)
+  | Pcomp (c, l, r)         -> Pcomp (c, f l, f r)
+  | Parith (op, l, r)       -> Parith (op, f l, f r)
+  | Puarith (op, e)         -> Puarith (op, f e)
+  | Precord l               -> Precord (List.map f l)
+  | Pletin (i, a, t, b)     -> Pletin (i, f a, t, f b)
+  | Pvar v                  -> Pvar v
+  | Parray l                -> Parray (List.map f l)
+  | Plit l                  -> Plit l
+  | Pdot (e, i)             -> Pdot (f e, i)
+  | Pconst c                -> Pconst c
+  | Ptuple l                -> Ptuple (List.map f l)
 
 let map_instr_node f = function
   | Iif (c, t, e)       -> Iif (c, f t, f e)
@@ -646,31 +664,34 @@ let map_instr_node f = function
   | Iassert x           -> Iassert x
   | Icall (x, id, args) -> Icall (x, id, args)
 
-let map_instr f i =
+let map_gen g f i =
   {
     i with
-    node = map_instr_node f i.node
+    node = g f i.node
   }
+
+let map_term  f t = map_gen map_term_node  f t
+let map_instr f i = map_gen map_instr_node f i
 
 let fold_term f accu term =
   match term.node with
   | Lquantifer (_, _, _, e) -> f accu e
-  | Pif (c, t, e) -> f (f (f accu c) t) e
-  | Pmatchwith (e, l) -> List.fold_left (fun accu (_, a) -> f accu a) (f accu e) l
-  | Pcall (_, _, args) -> List.fold_left (fun accu (arg : 'a term_arg) -> match arg with | AExpr e -> f accu e | _ -> accu ) accu args
-  | Plogical (_, l, r) -> f (f accu l) r
-  | Pnot e -> f accu e
-  | Pcomp (_, l, r) -> f (f accu l) r
-  | Parith (_, l, r) -> f (f accu l) r
-  | Puarith (_, e) -> f accu e
-  | Precord l -> List.fold_left f accu l
-  | Pletin (_, a, _, b) -> f (f accu a) b
-  | Pvar _ -> accu
-  | Parray l -> List.fold_left f accu l
-  | Plit _ -> accu
-  | Pdot (e, _) -> f accu e
-  | Pconst _ -> accu
-  | Ptuple l -> List.fold_left f accu l
+  | Pif (c, t, e)           -> f (f (f accu c) t) e
+  | Pmatchwith (e, l)       -> List.fold_left (fun accu (_, a) -> f accu a) (f accu e) l
+  | Pcall (_, _, args)      -> List.fold_left (fun accu (arg : 'a term_arg) -> match arg with | AExpr e -> f accu e | _ -> accu ) accu args
+  | Plogical (_, l, r)      -> f (f accu l) r
+  | Pnot e                  -> f accu e
+  | Pcomp (_, l, r)         -> f (f accu l) r
+  | Parith (_, l, r)        -> f (f accu l) r
+  | Puarith (_, e)          -> f accu e
+  | Precord l               -> List.fold_left f accu l
+  | Pletin (_, a, _, b)     -> f (f accu a) b
+  | Pvar _                  -> accu
+  | Parray l                -> List.fold_left f accu l
+  | Plit _                  -> accu
+  | Pdot (e, _)             -> f accu e
+  | Pconst _                -> accu
+  | Ptuple l                -> List.fold_left f accu l
 
 let fold_instr f accu instr =
   match instr.node with
