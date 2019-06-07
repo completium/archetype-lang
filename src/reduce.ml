@@ -6,24 +6,6 @@ exception ReduceError of string * Location.t option
 exception ErrorAcceptTransfer of string * Location.t * Location.t list
 exception TODO
 
-let map_instr_node f = function
-  | Iif (c, t, e)       -> Iif (c, f t, f e)
-  | Ifor (i, c, b)      -> Ifor (i, c, f b)
-  | Iseq is             -> Iseq (List.map f is)
-  | Imatchwith (a, ps)  -> Imatchwith (a, ps)
-  | Iassign (op, l, r)  -> Iassign (op, l, r)
-  | Irequire (b, x)     -> Irequire (b, x)
-  | Itransfer x         -> Itransfer x
-  | Ibreak              -> Ibreak
-  | Iassert x           -> Iassert x
-  | Icall (x, id, args) -> Icall (x, id, args)
-
-let map_instr f i =
-  {
-    i with
-    node = map_instr_node f i.node
-  }
-
 let type_string   : Model.type_ option = Some (vtstring)
 let type_bool     : Model.type_ option = Some (vtbool)
 let type_currency : Model.type_ option = Some (vtcurrency Tez)

@@ -39,6 +39,7 @@ module Option : sig
   val foldmap     : ('a -> 'b -> 'a * 'c) -> 'a -> 'b option -> 'a * 'c option
   val map_dfl     : ('a -> 'b) -> 'b -> 'a option -> 'b
   val get_as_list : 'a option -> 'a list
+  val flatten     : 'a option option -> 'a option
 end = struct
   let is_none = function None -> true  | Some _ -> false
   let is_some = function None -> false | Some _ -> true
@@ -79,6 +80,8 @@ end = struct
   let map_dfl f n = function None -> n | Some x -> f x
 
   let get_as_list = function None -> [] | Some x -> [x]
+
+  let flatten = function Some (Some v) -> Some v | _ -> None
 end
 
 let (|?>) x f = Option.map f x
@@ -126,7 +129,7 @@ end = struct
     let rec doit xs =
       match xs with
       | [] ->
-          []
+        []
       | x :: xs -> begin
           match f x with
           | None -> doit xs
@@ -136,9 +139,9 @@ end = struct
 
   let find_dup (type a b) (key : a -> b) (xs : a list) : (a * a) option =
     let module M = Map.Make(struct
-      type t = b
-      let compare (x : b) (y : b) = (Pervasives.compare x y)
-    end) in
+        type t = b
+        let compare (x : b) (y : b) = (Pervasives.compare x y)
+      end) in
 
     let module E = struct exception Found of a * a end in
 
@@ -150,15 +153,15 @@ end = struct
           in M.update (key v) udp map
         in List.fold_left doit M.empty xs
       in
-        None
+      None
 
     with E.Found (x, y) -> Some (x, y)
 
   let undup (type a b) (key : a -> b) (xs : a list) =
     let module M = Set.Make(struct
-      type t = b
-      let compare = (Pervasives.compare : t -> t -> int)
-    end) in
+        type t = b
+        let compare = (Pervasives.compare : t -> t -> int)
+      end) in
 
     List.rev (snd (List.fold_left (fun (seen, acc) x ->
         let k = key x in
@@ -168,7 +171,7 @@ end = struct
   let xfilter f =
     let rec doit (accl, accr) = function
       | [] ->
-          (List.rev accl, List.rev accr)
+        (List.rev accl, List.rev accr)
       | x :: xs -> begin
           match f x with
           | `Left  y -> doit (y :: accl, accr) xs
@@ -180,8 +183,8 @@ end = struct
   let fold_left_map f state xs =
     let state, xs =
       List.fold_left (fun (state, acc) x ->
-        let state, x = f state x in (state, x :: acc)
-      ) (state, []) xs in
+          let state, x = f state x in (state, x :: acc)
+        ) (state, []) xs in
 
     (state, List.rev xs)
 
@@ -215,8 +218,8 @@ end = struct
     let collect (type a b) (key : a -> key) (xs : (a * b list) list) =
       let map =
         List.fold_left (fun map (k, v) ->
-          update (key k) (fun v'-> Some (Option.get_dfl [] v' @ v)) map
-        ) empty xs in
+            update (key k) (fun v'-> Some (Option.get_dfl [] v' @ v)) map
+          ) empty xs in
 
       List.map
         (fun k -> (k, find (key k) map))

@@ -632,3 +632,68 @@ let mk_id type_ id : qualid =
     loc   = loc id;
     node  = Qident id;
     label = None; }
+
+
+let map_instr_node f = function
+  | Iif (c, t, e)       -> Iif (c, f t, f e)
+  | Ifor (i, c, b)      -> Ifor (i, c, f b)
+  | Iseq is             -> Iseq (List.map f is)
+  | Imatchwith (a, ps)  -> Imatchwith (a, ps)
+  | Iassign (op, l, r)  -> Iassign (op, l, r)
+  | Irequire (b, x)     -> Irequire (b, x)
+  | Itransfer x         -> Itransfer x
+  | Ibreak              -> Ibreak
+  | Iassert x           -> Iassert x
+  | Icall (x, id, args) -> Icall (x, id, args)
+
+let map_instr f i =
+  {
+    i with
+    node = map_instr_node f i.node
+  }
+
+let fold_term f accu term =
+  match term.node with
+  | Lquantifer (_, _, _, e) -> f accu e
+  | Pif (c, t, e) -> f (f (f accu c) t) e
+  | Pmatchwith (e, l) -> List.fold_left (fun accu (_, a) -> f accu a) (f accu e) l
+  | Pcall (_, _, args) -> List.fold_left (fun accu (arg : 'a term_arg) -> match arg with | AExpr e -> f accu e | _ -> accu ) accu args
+  | Plogical (_, l, r) -> f (f accu l) r
+  | Pnot e -> f accu e
+  | Pcomp (_, l, r) -> f (f accu l) r
+  | Parith (_, l, r) -> f (f accu l) r
+  | Puarith (_, e) -> f accu e
+  | Precord l -> List.fold_left f accu l
+  | Pletin (_, a, _, b) -> f (f accu a) b
+  | Pvar _ -> accu
+  | Parray l -> List.fold_left f accu l
+  | Plit _ -> accu
+  | Pdot (e, _) -> f accu e
+  | Pconst _ -> accu
+  | Ptuple l -> List.fold_left f accu l
+
+let fold_instr f accu instr =
+  match instr.node with
+  | Iif (c, t, e)  -> f (f accu t) e
+  | Ifor (i, c, b) -> f accu b
+  | Iseq is        -> List.fold_left f accu is
+  | Imatchwith _   -> accu
+  | Iassign _      -> accu
+  | Irequire _     -> accu
+  | Itransfer _    -> accu
+  | Ibreak         -> accu
+  | Iassert _      -> accu
+  | Icall _        -> accu
+
+let fold_instr_expr fi fe accu instr =
+  match instr.node with
+  | Iif (c, t, e)       -> fi (fi (fe accu c) t) e
+  | Ifor (i, c, b)      -> fi (fe accu c) b
+  | Iseq is             -> List.fold_left fi accu is
+  | Imatchwith (a, ps)  -> List.fold_left (fun accu (_, i) -> fi accu i) (fe accu a) ps
+  | Iassign (_, _, e)   -> fe accu e
+  | Irequire (_, x)     -> fe accu x
+  | Itransfer x         -> accu (*fe accu x*)
+  | Ibreak              -> accu
+  | Iassert x           -> fe accu x
+  | Icall (x, id, args) -> fi accu instr

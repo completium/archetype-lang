@@ -9,8 +9,6 @@ type record           = (A.lident, A.type_, A.pterm) A.decl_gen
 type field            = (A.lident, A.type_, A.pterm) A.decl_gen
 type variable         = (A.lident, A.type_, A.pterm) A.variable
 
-let map_instr = Reduce.map_instr
-
 let ast_to_model (ast : A.model) : M.model =
   let process_enums list =
     let process_enum (e : A.enum) : M.type_node =
@@ -49,7 +47,7 @@ let ast_to_model (ast : A.model) : M.model =
           | A.Tasset id     -> M.FRecord id
           | A.Tcontract x   -> M.FBasic VTrole
           | A.Tcontainer (ptyp, container) -> M.FContainer (container, ptyp_to_item_field_type ptyp)
-          | A.Ttuple _ -> assert false  
+          | A.Ttuple _ -> assert false
         in
         let a = ptyp_to_item_field_type type_ in
         let item_field =
@@ -115,11 +113,44 @@ let ast_to_model (ast : A.model) : M.model =
       let _extract_function_node_from_instruction (instr : A.instruction) list : M.function_node list =
         let add l i1 = i1::l in
         let is_const id = false in
-        let mk_fun (id, arg) = M.Get (Location.dumloc "") in
-        let fi accu (instr : A.instruction) : M.function_node list =
+        let mk_fun_node (c : A.const) asset_name =
+          match asset_name, c with
+          | Some asset, Cget      -> Some (M.Get asset)
+          | Some asset, Cadd      -> Some (M.AddAsset asset)
+          | Some asset, Cremove   -> Some (M.RemoveAsset asset)
+          | Some asset, Cupdate   -> Some (M.UpdateAsset asset)
+          | Some asset, Cclear    -> Some (M.ClearAsset asset)
+          | Some asset, Ccontains -> Some (M.ContainsAsset asset)
+          | Some asset, Cnth      -> Some (M.NthAsset asset)
+          | Some asset, Cselect   -> Some (M.SelectAsset asset)
+          | Some asset, Csort     -> Some (M.SortAsset asset)
+          | Some asset, Ccount    -> Some (M.CountAsset asset)
+          | Some asset, Csum      -> Some (M.SumAsset asset)
+          | Some asset, Cmax      -> Some (M.MaxAsset asset)
+          | Some asset, Cmin      -> Some (M.MinAsset asset)
+          | _ -> None in
+
+        let rec fe accu (term : A.pterm) : M.function_node list =
+          match term.node with
+          | A.Pcall  (a, Cconst c, args) -> (
+              let accu = A.fold_term fe accu term in
+              let node = mk_fun_node c a in
+              match node with
+              | Some v -> add accu v
+              | None -> accu)
+          | _ -> A.fold_term fe accu term in
+
+        let rec fi accu (instr : A.instruction) : M.function_node list =
           match instr.node with
-          | A.Icall (a, id, args) when is_const id -> add accu (mk_fun (id, args))
-          | _ -> accu (*TODO: fold on instruction *)
+          | A.Icall (a, Cconst c, args) -> (
+              let f (t : A.ptyp) : A.lident option = match t with A.Tasset id -> Some id | _ -> None in
+              let g (x : A.pterm) : A.lident option = Option.map f x.type_  |>  Option.flatten in
+              let asset_name : A.lident option = Option.map g a |> Option.flatten in
+              let node = mk_fun_node c asset_name in
+              match node with
+              | Some v -> add accu v
+              | None -> accu)
+          | _ -> A.fold_instr_expr fi fe accu instr
         in
         fi [] instr
       in
