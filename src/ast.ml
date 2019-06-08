@@ -715,7 +715,113 @@ let fold_instr_expr fi fe accu instr =
   | Imatchwith (a, ps)  -> List.fold_left (fun accu (_, i) -> fi accu i) (fe accu a) ps
   | Iassign (_, _, e)   -> fe accu e
   | Irequire (_, x)     -> fe accu x
-  | Itransfer x         -> accu (*fe accu x*)
+  | Itransfer (x, _, _) -> fe accu x
   | Ibreak              -> accu
   | Iassert x           -> fe accu x
   | Icall (x, id, args) -> fi accu instr
+
+let rec fold_map_term g f (accu : 'a) (term : pterm) : pterm * 'a =
+  match term.node with
+  (* | Lquantifer (_, _, _, e) -> f accu e *)
+  (* | Pif (c, t, e)           -> f (f (f accu c) t) e *)
+  (* | Pmatchwith (e, l)       -> List.fold_left (fun accu (_, a) -> f accu a) (f accu e) l *)
+  (* | Pcall (_, _, args)      -> List.fold_left (fun accu (arg : 'a term_arg) -> match arg with | AExpr e -> f accu e | _ -> accu ) accu args *)
+  (* | Plogical (_, l, r)      -> f (f accu l) r *)
+  (* | Pnot e                  -> f accu e *)
+  (* | Pcomp (_, l, r)         -> f (f accu l) r *)
+  (* | Parith (_, l, r)        -> f (f accu l) r *)
+  (* | Puarith (_, e)          -> f accu e *)
+  (* | Precord l               -> List.fold_left f accu l *)
+  (* | Pletin (_, a, _, b)     -> f (f accu a) b *)
+  (* | Pvar _                  -> accu *)
+  (* | Parray l                -> List.fold_left f accu l *)
+  | Plit l
+    -> (g (Plit l), accu)
+  | Pdot (e, id)
+    -> (
+        let ee, ea = fold_map_term g f accu e in
+        g (Pdot (ee, id)), ea)
+  | Pconst c
+    -> (g (Pconst c), accu)
+  (* | Ptuple l                -> List.fold_left f accu l *)
+  | _ -> term, accu
+
+
+let rec fold_map_instr_term gi fi fe (accu : 'a) instr : 'instr * 'a =
+  let ge e = (fun node -> {e with node = node}) in
+  match instr.node with
+  | Iif (c, t, e)
+    -> (
+        let ce, ca = fold_map_term (ge c) fe accu c in
+        let ti, ta = fold_map_instr_term gi fi fe ca t in
+        let ei, ea = fold_map_instr_term gi fi fe ta t in
+        gi (Iif (c, ti, ei)), ea
+      )
+  | Ifor (i, c, b)
+    -> (
+        let ce, ca = fold_map_term (ge c) fe accu c in
+        let bi, ba = fold_map_instr_term gi fi fe ca b in
+        gi (Ifor (i, ce, bi)), ba
+      )
+  | Iseq is
+    -> (
+        let (isi, isa) : ('instr list * 'a) =
+          List.fold_left
+            (fun ((instrs, accu) : ('b list * 'c)) x ->
+               let bi, accu = fold_map_instr_term gi fi fe accu x in
+               [bi] @ instrs, accu) ([], accu) is
+        in
+        gi (Iseq isi), isa
+      )
+  | Imatchwith (a, ps)
+    -> (
+        let ae, aa = fold_map_term (ge a) fe accu a in
+
+        let (pse, psa) =
+          List.fold_left
+            (fun (ps, accu) (p, i) ->
+               let pa, accu = fold_map_instr_term gi fi fe accu i in
+               [(p, i)] @ ps, accu) ([], aa) ps
+        in
+
+        gi (Imatchwith (ae, ps)), psa
+      )
+  | Iassign (op, id, x)
+    -> (
+        let xe, xa = fold_map_term (ge x) fe accu x in
+        gi (Iassign (op, id, xe)), xa
+      )
+  | Irequire (b, x)
+    -> (
+        let xe, xa = fold_map_term (ge x) fe accu x in
+        gi (Irequire (b, xe)), xa
+      )
+  | Itransfer (x, b, q)
+    -> (
+        let xe, xa = fold_map_term (ge x) fe accu x in
+        gi (Itransfer (xe, b, q)), xa
+      )
+  | Ibreak
+    -> (
+        gi (Ibreak), accu
+      )
+  | Iassert x
+    -> (
+        let xe, xa = fold_map_term (ge x) fe accu x in
+        gi (Iassert xe), xa
+      )
+  | Icall (x, id, args)
+    -> (
+        let xe, xa =
+          match x with
+          | Some x -> fold_map_term (ge x) fe accu x |> (fun (a, b) -> (Some a, b))
+          | None -> None, accu in
+
+        let (argss, argsa) =
+          List.fold_left
+            (fun (pterms, accu) x ->
+               let p, accu = fold_map_term (ge x) fe accu x in
+               [p] @ pterms, accu) ([], xa) args
+        in
+        gi (Icall (xe, id, argss)), argsa
+      )

@@ -151,29 +151,54 @@ let ast_to_model (ast : A.model) : M.model =
           | Some v -> add accu v
           | None -> accu in
 
-        let rec fe accu (term : A.pterm) : M.function_node list =
+        let rec fe accu (term : A.pterm) : A.pterm * M.function_node list =
+          let ge = (fun node -> {instr with node = node} ) in
           match term.node with
-          | A.Pcall  (a, Cconst c, args) -> (
-              let accu = A.fold_term fe accu term in
-              let node = mk_fun_node c a None in
-              match node with
-              | Some v -> add accu v
-              | None -> accu)
-          | _ -> A.fold_term fe accu term in
+          | A.Pcall (asset_name, Cconst c, args) -> (
+              let _, accu = A.fold_map_term (fun node -> {term with node = node} ) fe accu term in
+              let node = mk_fun_node c asset_name None in
+              let term, accu =
+                match node with
+                | Some v -> (
+                    let fun_name = Location.dumloc (M.function_name_from_function_node v) in
+                    {term with node = A.Pcall (None, Cid fun_name, args) }, add accu v
+                  )
+                | None -> term, accu in
+              term, accu)
+          | _ -> A.fold_map_term (fun node -> {term with node = node} ) fe accu term in
 
-        let rec fi accu (instr : A.instruction) : M.function_node list =
+        let rec fi accu (instr : A.instruction) : A.instruction * M.function_node list =
+          let gi = (fun node -> {instr with node = node} ) in
           match instr.node with
           | A.Icall (Some {node = A.Pdot ({type_ = t; _}, id); _}, Cconst c, args) -> (
               let field_name = Some id in
               let asset_name = extract_asset_name t in
-              build_accu accu c asset_name field_name
-            )
+              let node = mk_fun_node c asset_name field_name in
+              let _, accu = A.fold_map_instr_term gi fi fe accu instr in
+              let instr, accu =
+                match node with
+                | Some v -> (
+                    let fun_name = Location.dumloc (M.function_name_from_function_node v) in
+                    {instr with node = A.Icall (None, Cid fun_name, args) }, add accu v
+                  )
+                | None -> instr, accu in
+              instr, accu)
           | A.Icall (Some {type_ = t; _}, Cconst c, args) -> (
+              let field_name = None in
               let asset_name = extract_asset_name t in
-              build_accu accu c asset_name None)
-          | _ -> A.fold_instr_expr fi fe accu instr
-        in
-        fi [] instr
+              let node = mk_fun_node c asset_name field_name in
+              let _, accu = A.fold_map_instr_term (fun node -> {instr with node = node} ) fi fe accu instr in
+              let instr, accu =
+                match node with
+                | Some v -> (
+                    let fun_name = Location.dumloc (M.function_name_from_function_node v) in
+                    {instr with node = A.Icall (None, Cid fun_name, args) }, add accu v
+                  )
+                | None -> instr, accu in
+              instr, accu)
+          | _ -> A.fold_map_instr_term (fun node -> {instr with node = node} ) fi fe accu instr in
+        let instr, list = fi [] instr in
+        list
       in
       list
     in
