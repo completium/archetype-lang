@@ -128,6 +128,7 @@ type const =
   | Cclear
   | Ccontains
   | Cnth
+  | Creverse
   | Cselect
   | Csort
   | Ccount

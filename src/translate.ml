@@ -115,31 +115,41 @@ let ast_to_model (ast : A.model) : M.model =
         let is_const id = false in
         let mk_fun_node (c : A.const) asset_name field_name =
           match asset_name, field_name, c with
+          | Some asset, None, Cget            -> Some (M.Get asset)
+          | Some asset, None, Cadd            -> Some (M.AddAsset asset)
+          | Some asset, None, Cremove         -> Some (M.RemoveAsset asset)
+          | Some asset, None, Cclear          -> Some (M.ClearAsset asset)
+          | Some asset, None, Cupdate         -> Some (M.UpdateAsset asset)
+          | Some asset, None, Ccontains       -> Some (M.ContainsAsset asset)
+          | Some asset, None, Cnth            -> Some (M.NthAsset asset)
+          | Some asset, None, Cselect         -> Some (M.SelectAsset asset)
+          | Some asset, None, Creverse        -> Some (M.SortAsset asset)
+          | Some asset, None, Csort           -> Some (M.SortAsset asset)
+          | Some asset, None, Ccount          -> Some (M.CountAsset asset)
+          | Some asset, None, Csum            -> Some (M.SumAsset asset)
+          | Some asset, None, Cmin            -> Some (M.MinAsset asset)
+          | Some asset, None, Cmax            -> Some (M.MaxAsset asset)
           | Some asset, Some field, Cadd      -> Some (M.AddContainer (asset, field))
           | Some asset, Some field, Cremove   -> Some (M.RemoveContainer (asset, field))
           | Some asset, Some field, Cclear    -> Some (M.ClearContainer (asset, field))
           | Some asset, Some field, Ccontains -> Some (M.ContainsContainer (asset, field))
           | Some asset, Some field, Cnth      -> Some (M.NthContainer (asset, field))
           | Some asset, Some field, Cselect   -> Some (M.SelectContainer (asset, field))
+          | Some asset, Some field, Creverse  -> Some (M.ReverseContainer (asset, field))
           | Some asset, Some field, Csort     -> Some (M.SortContainer (asset, field))
           | Some asset, Some field, Ccount    -> Some (M.CountContainer (asset, field))
           | Some asset, Some field, Csum      -> Some (M.SumContainer (asset, field))
           | Some asset, Some field, Cmax      -> Some (M.MaxContainer (asset, field))
           | Some asset, Some field, Cmin      -> Some (M.MinContainer (asset, field))
-          | Some asset, None, Cget            -> Some (M.Get asset)
-          | Some asset, None, Cadd            -> Some (M.AddAsset asset)
-          | Some asset, None, Cremove         -> Some (M.RemoveAsset asset)
-          | Some asset, None, Cupdate         -> Some (M.UpdateAsset asset)
-          | Some asset, None, Cclear          -> Some (M.ClearAsset asset)
-          | Some asset, None, Ccontains       -> Some (M.ContainsAsset asset)
-          | Some asset, None, Cnth            -> Some (M.NthAsset asset)
-          | Some asset, None, Cselect         -> Some (M.SelectAsset asset)
-          | Some asset, None, Csort           -> Some (M.SortAsset asset)
-          | Some asset, None, Ccount          -> Some (M.CountAsset asset)
-          | Some asset, None, Csum            -> Some (M.SumAsset asset)
-          | Some asset, None, Cmax            -> Some (M.MaxAsset asset)
-          | Some asset, None, Cmin            -> Some (M.MinAsset asset)
           | _ -> None in
+
+        let extract_asset_name t = match t with Some A.Tasset id -> Some id | _ -> None in
+
+        let build_accu accu c asset_name field_name =
+          let node = mk_fun_node c asset_name field_name in
+          match node with
+          | Some v -> add accu v
+          | None -> accu in
 
         let rec fe accu (term : A.pterm) : M.function_node list =
           match term.node with
@@ -153,15 +163,14 @@ let ast_to_model (ast : A.model) : M.model =
 
         let rec fi accu (instr : A.instruction) : M.function_node list =
           match instr.node with
-          | A.Icall (Some {node = A.Pdot (_, id); _}, Cconst c, args) -> accu
-          | A.Icall (a, Cconst c, args) -> (
-              let f (t : A.ptyp) : A.lident option = match t with A.Tasset id -> Some id | _ -> None in
-              let g (x : A.pterm) : A.lident option = Option.map f x.type_  |>  Option.flatten in
-              let asset_name : A.lident option = Option.map g a |> Option.flatten in
-              let node = mk_fun_node c asset_name None in
-              match node with
-              | Some v -> add accu v
-              | None -> accu)
+          | A.Icall (Some {node = A.Pdot ({type_ = t; _}, id); _}, Cconst c, args) -> (
+              let field_name = Some id in
+              let asset_name = extract_asset_name t in
+              build_accu accu c asset_name field_name
+            )
+          | A.Icall (Some {type_ = t; _}, Cconst c, args) -> (
+              let asset_name = extract_asset_name t in
+              build_accu accu c asset_name None)
           | _ -> A.fold_instr_expr fi fe accu instr
         in
         fi [] instr
