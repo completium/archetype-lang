@@ -37,6 +37,9 @@ let ast_to_model (ast : A.model) : M.model =
     in
     list @ List.map (fun x -> process_asset x) ast.assets in
 
+  let process_contracts list =
+    list @ List.map (fun x -> M.TNcontract x) ast.contracts in
+
   let process_storage list =
     let variable_to_storage_items (var : variable) : M.storage_item =
       let arg = var.decl in
@@ -231,5 +234,6 @@ let ast_to_model (ast : A.model) : M.model =
   []
   |> process_enums
   |> process_records
+  |> process_contracts
   |> process_storage
   |> process_functions

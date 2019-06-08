@@ -89,15 +89,7 @@ type record = {
 }
 [@@deriving show {with_path = false}]
 
-type contract_function = {
-  name: contract_function_ident;
-}
-[@@deriving show {with_path = false}]
-
-type contract = {
-  name: contract_ident;
-  sigs: contract_function list;
-}
+type contract = (lident, type_, pterm) Ast.contract
 [@@deriving show {with_path = false}]
 
 type 'id function_ = {
