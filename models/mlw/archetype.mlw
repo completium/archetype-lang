@@ -422,47 +422,25 @@ theory Trace
   type action =
   | Add asset
   | Rm asset
+  | Any asset
   | Get asset
   | Update field
   | Iterate asset
 
   type trace =  {
     entry : option entry;
-    asset : asset;
     action : action;
   }
   
   type log = list trace
 
-  let mk_trace (e : option entry) (a : asset) (c : action) : log = Cons ({
+  let mk_trace (e : option entry) (c : action) : log = Cons ({
     entry = e;
-    asset = a;
     action = c;
   }) Nil
 
   predicate sub (a b : list 'v) = 
   forall e : 'v. mem e a -> mem e b
-
-  predicate performed_only_by_role (tr : log) 
-    (actions : list action)
-    (assets  : list asset) 
-    (roles   : list address)
-    (callers : list address) =
-  forall x:trace. 
-    Mem.mem (action x) actions -> 
-    Mem.mem (asset x)  assets ->
-    Mem.mem x tr -> 
-    sub callers roles
-
-  predicate performed_only_by_action (tr : log) 
-    (actions : list action) 
-    (assets  : list asset)  
-    (entries : list (option entry)) =
-  forall x:trace.
-    Mem.mem (action x) actions ->
-    Mem.mem (asset x)  assets ->
-    Mem.mem x tr ->
-    Mem.mem (entry x) entries
 
 end
 
