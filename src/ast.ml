@@ -821,25 +821,24 @@ let rec fold_map_term g f (accu : 'a) (term : 'term) : 'term * 'a =
     g (Ptuple lp), la
 
 
-let rec fold_map_instr_term gi fi fe (accu : 'a) instr : 'instr * 'a =
-  let ge e = (fun node -> {e with node = node}) in
+let rec fold_map_instr_term gi ge fi fe (accu : 'a) instr : 'instr * 'a =
   match instr.node with
   | Iif (c, t, e) ->
     let ce, ca = fold_map_term (ge c) fe accu c in
-    let ti, ta = fold_map_instr_term gi fi fe ca t in
-    let ei, ea = fold_map_instr_term gi fi fe ta e in
+    let ti, ta = fold_map_instr_term gi ge fi fe ca t in
+    let ei, ea = fold_map_instr_term gi ge fi fe ta e in
     gi (Iif (ce, ti, ei)), ea
 
   | Ifor (i, c, b) ->
     let ce, ca = fold_map_term (ge c) fe accu c in
-    let bi, ba = fold_map_instr_term gi fi fe ca b in
+    let bi, ba = fold_map_instr_term gi ge fi fe ca b in
     gi (Ifor (i, ce, bi)), ba
 
   | Iseq is ->
     let (isi, isa) : ('instr list * 'a) =
       List.fold_left
         (fun ((instrs, accu) : ('b list * 'c)) x ->
-           let bi, accu = fold_map_instr_term gi fi fe accu x in
+           let bi, accu = fold_map_instr_term gi ge fi fe accu x in
            [bi] @ instrs, accu) ([], accu) is
     in
     gi (Iseq isi), isa
@@ -850,7 +849,7 @@ let rec fold_map_instr_term gi fi fe (accu : 'a) instr : 'instr * 'a =
     let (pse, psa) =
       List.fold_left
         (fun (ps, accu) (p, i) ->
-           let pa, accu = fold_map_instr_term gi fi fe accu i in
+           let pa, accu = fold_map_instr_term gi ge fi fe accu i in
            [(p, i)] @ ps, accu) ([], aa) ps
     in
 
