@@ -434,7 +434,7 @@ theory Trace
   
   type log = list trace
 
-  let mk_trace (e : option entry) (c : action) : log = Cons ({
+  let function mk_trace (e : option entry) (c : action) : log = Cons ({
     entry = e;
     action = c;
   }) Nil
