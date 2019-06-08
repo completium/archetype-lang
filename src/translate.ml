@@ -85,22 +85,12 @@ let ast_to_model (ast : A.model) : M.model =
           | Some t -> t
           | _ -> Option.get res
         in
-        let mk a =
-          let m = M.mk_item_field id a in
-          { m with
-            asset = Some id;
-            (* default = arg.default; *)
-          } in
         let asset_name = id in
         let keys_id = Location.mkloc (Location.loc asset_name) ((Location.unloc asset_name) ^ "_keys") in
         let asset_name = Location.mkloc (Location.loc asset_name) ((Location.unloc asset_name) ^ "_assets") in
-        [mk (FKeyCollection (keys_id, type_id)); mk (FRecordMap asset_name)] in
-      let item = M.mk_storage_item asset.name in
-      { item with
-        fields = compute_fields;
-        invariants = asset.specs;
-        (* init = asset.init; *)
-      }
+        [M.mk_item_field id (FKeyCollection (keys_id, type_id)) ?asset:(Some id) (* ?default:(Some arg.default) TODO: uncomment this*);
+         M.mk_item_field id (FRecordMap asset_name) ?asset:(Some id) (* ?default:(Some arg.default) TODO: uncomment this*)] in
+      M.mk_storage_item asset.name ?fields:(Some compute_fields) ?invariants:(Some asset.specs) (*?init:(Some asset.init) TODO: uncomment this *)
     in
 
     let cont f x l = List.map f x in
@@ -112,12 +102,10 @@ let ast_to_model (ast : A.model) : M.model =
 
   let process_functions list : M.type_node list =
 
-    let extract_function_from_instruction (_instr : A.instruction) (list : M.type_node list) : M.type_node list =
-      let _extract_function_node_from_instruction (instr : A.instruction) list : M.function_node list =
-        let add l i1 = i1::l in
-        let is_const id = false in
-        let mk_fun_node (c : A.const) asset_name field_name =
-          match asset_name, field_name, c with
+    let extract_function_from_instruction (instr : A.instruction) (list : M.type_node list) : (A.instruction * M.type_node list) =
+      let add l i = i::l in (* if i exists in l then ignore *)
+      let mk_function (c : A.const) asset_name field_name ret : M.function__ option =
+        let node = match asset_name, field_name, c with
           | Some asset, None, Cget            -> Some (M.Get asset)
           | Some asset, None, Cadd            -> Some (M.AddAsset asset)
           | Some asset, None, Cremove         -> Some (M.RemoveAsset asset)
@@ -145,86 +133,81 @@ let ast_to_model (ast : A.model) : M.model =
           | Some asset, Some field, Cmax      -> Some (M.MaxContainer (asset, field))
           | Some asset, Some field, Cmin      -> Some (M.MinContainer (asset, field))
           | _ -> None in
+        Option.map (fun node ->
+            let sig_ : M.signature = M.mk_signature (Location.dumloc (M.function_name_from_function_node node)) ?ret:(Some ret) in
+            M.mk_function node sig_) node in
 
-        let extract_asset_name t = match t with Some A.Tasset id -> Some id | _ -> None in
+      let extract_asset_name t = match t with Some A.Tasset id -> Some id | _ -> None in
 
-        let build_accu accu c asset_name field_name =
-          let node = mk_fun_node c asset_name field_name in
-          match node with
-          | Some v -> add accu v
-          | None -> accu in
+      let rec fe accu (term : A.pterm) : A.pterm * M.type_node list =
+        match term.node with
+        | A.Pcall (asset_name, Cconst c, args) -> (
+            let _, accu = A.fold_map_term (fun node -> {term with node = node} ) fe accu term in
+            let function__ = mk_function c asset_name None (Option.get term.type_) in
+            let term, accu =
+              match function__ with
+              | Some f -> (
+                  let node = f.node in
+                  let fun_name = Location.dumloc (M.function_name_from_function_node node) in
+                  {term with node = A.Pcall (None, Cid fun_name, args) }, add accu (M.TNfunction f)
+                )
+              | None -> term, accu in
+            term, accu)
+        | _ -> A.fold_map_term (fun node -> {term with node = node} ) fe accu term in
 
-        let rec fe accu (term : A.pterm) : A.pterm * M.function_node list =
-          let ge = (fun node -> {instr with node = node} ) in
-          match term.node with
-          | A.Pcall (asset_name, Cconst c, args) -> (
-              let _, accu = A.fold_map_term (fun node -> {term with node = node} ) fe accu term in
-              let node = mk_fun_node c asset_name None in
-              let term, accu =
-                match node with
-                | Some v -> (
-                    let fun_name = Location.dumloc (M.function_name_from_function_node v) in
-                    {term with node = A.Pcall (None, Cid fun_name, args) }, add accu v
-                  )
-                | None -> term, accu in
-              term, accu)
-          | _ -> A.fold_map_term (fun node -> {term with node = node} ) fe accu term in
+      let rec fi accu (instr : A.instruction) : A.instruction * M.type_node list =
+        let gi = (fun node -> {instr with node = node} ) in
+        match instr.node with
+        | A.Icall (Some {node = A.Pdot ({type_ = t; _}, id); _}, Cconst c, args) -> (
+            let field_name = Some id in
+            let asset_name = extract_asset_name t in
+            let function__ = mk_function c asset_name field_name (Option.get instr.type_) in
+            let _, accu = A.fold_map_instr_term gi fi fe accu instr in
+            let instr, accu =
+              match function__ with
+              | Some f -> (
+                  let node = f.node in
+                  let fun_name = Location.dumloc (M.function_name_from_function_node node) in
+                  {instr with node = A.Icall (None, Cid fun_name, args) }, add accu (M.TNfunction f)
+                )
+              | None -> instr, accu in
+            instr, accu)
+        | A.Icall (Some {type_ = t; _}, Cconst c, args) -> (
+            let field_name = None in
+            let asset_name = extract_asset_name t in
+            let function__ = mk_function c asset_name field_name (Option.get instr.type_) in
+            let _, accu = A.fold_map_instr_term (fun node -> {instr with node = node} ) fi fe accu instr in
+            let instr, accu =
+              match function__ with
+              | Some f -> (
+                  let node = f.node in
+                  let fun_name = Location.dumloc (M.function_name_from_function_node node) in
+                  {instr with node = A.Icall (None, Cid fun_name, args) }, add accu (M.TNfunction f)
+                )
+              | None -> instr, accu in
+            instr, accu)
+        | _ -> A.fold_map_instr_term (fun node -> { instr with node = node} ) fi fe accu instr in
+      fi [] instr in
 
-        let rec fi accu (instr : A.instruction) : A.instruction * M.function_node list =
-          let gi = (fun node -> {instr with node = node} ) in
-          match instr.node with
-          | A.Icall (Some {node = A.Pdot ({type_ = t; _}, id); _}, Cconst c, args) -> (
-              let field_name = Some id in
-              let asset_name = extract_asset_name t in
-              let node = mk_fun_node c asset_name field_name in
-              let _, accu = A.fold_map_instr_term gi fi fe accu instr in
-              let instr, accu =
-                match node with
-                | Some v -> (
-                    let fun_name = Location.dumloc (M.function_name_from_function_node v) in
-                    {instr with node = A.Icall (None, Cid fun_name, args) }, add accu v
-                  )
-                | None -> instr, accu in
-              instr, accu)
-          | A.Icall (Some {type_ = t; _}, Cconst c, args) -> (
-              let field_name = None in
-              let asset_name = extract_asset_name t in
-              let node = mk_fun_node c asset_name field_name in
-              let _, accu = A.fold_map_instr_term (fun node -> {instr with node = node} ) fi fe accu instr in
-              let instr, accu =
-                match node with
-                | Some v -> (
-                    let fun_name = Location.dumloc (M.function_name_from_function_node v) in
-                    {instr with node = A.Icall (None, Cid fun_name, args) }, add accu v
-                  )
-                | None -> instr, accu in
-              instr, accu)
-          | _ -> A.fold_map_instr_term (fun node -> {instr with node = node} ) fi fe accu instr in
-        let instr, list = fi [] instr in
-        list
-      in
-      list
-    in
+    let cont f x l = List.fold_left (fun accu x -> f x accu) l x in
 
     let process_function (function_ : A.function_) (list : M.type_node list) : M.type_node list =
-      []
+      let instr, list = extract_function_from_instruction function_.body list in
+      let name = function_.name in
+      let sig_ = M.mk_signature name (*TODO: put arguments *) in
+      let node = M.Function (M.mk_function_struct name instr ?loc:(Some function_.loc)) in
+      list @ [TNfunction (M.mk_function ?verif:function_.verification node sig_)]
     in
 
     let process_transaction (transaction : A.transaction) (list : M.type_node list) : M.type_node list =
+      let list = list |> cont process_function ast.functions in
+      let instr, list = extract_function_from_instruction (Option.get transaction.effect) list in
       let name = transaction.name in
-      let node = M.mk_function_struct name (Option.get transaction.effect) in
-      let sig_ = M.mk_signature name in
-      let funct_ = M.mk_function (M.Entry node) sig_ in
-
-      let funs : A.instruction list = (List.map (fun (x : A.function_) -> x.body) transaction.functions) @ [node.body] in
-
-      list
-      |> (fun (x : M.type_node list) -> List.fold_left (fun accu (x : A.instruction) ->
-          extract_function_from_instruction x accu) x funs)
-      |> (fun x -> x @ [M.TNfunction funct_])
+      let sig_ = M.mk_signature name (*TODO: put arguments *) in
+      let node = M.Entry (M.mk_function_struct name instr ?loc:(Some transaction.loc)) in
+      list @ [TNfunction (M.mk_function ?verif:transaction.verification node sig_)]
     in
 
-    let cont f x l = List.fold_left (fun accu x -> f x accu) l x in
     []
     |> cont process_function ast.functions
     |> cont process_transaction ast.transactions

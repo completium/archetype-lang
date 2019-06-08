@@ -1045,8 +1045,8 @@ let rec for_instruction (env : env) (i : PT.expr) : M.instruction =
   try
     match unloc i with
     | Emethod (target, name, args) -> begin
-        let target = Option.get_exn E.Failure (for_asset_expr env target)  in
-        let mthd   =
+        let _target = Option.get_exn E.Failure (for_asset_expr env target)  in
+        let _mthd   =
           match get_asset_method (unloc name) with
           | None ->
             Env.emit_error env (loc name, NoSuchMethod (unloc name));
@@ -1219,10 +1219,10 @@ let for_declaration (env : env) (decl : PT.declaration) =
     end
 
   | Dtransition (x, args, tgt, from_, actions, tx, _exts) ->
-    let env0  = for_args env args in
-    let from_ = for_state env from_ in
+    let _env0  = for_args env args in
+    let _from_ = for_state env from_ in
     let env, act = for_action_properties env actions in
-    let tx = List.map (for_transition env) tx in
+    let _tx = List.map (for_transition env) tx in
 
     if Option.is_some tgt then
       assert false;

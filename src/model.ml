@@ -202,56 +202,29 @@ let function_name_from_function_node = function
   | MaxContainer      (aid, fid)    -> "max_"      ^ lident_to_string aid ^ "_" ^ lident_to_string fid
   | Other -> assert false
 
-let mk_enum name : enum = {
-  name = name;
-  values = [];
-}
+let mk_enum ?(values = []) name : enum =
+  { name; values }
 
-let mk_enum_item name : enum_item = {
-  name = name;
-  invariants = [];
-}
+let mk_enum_item ?(invariants = []) name : enum_item =
+  { name; invariants }
 
-let mk_record name : record = {
-  name = name;
-  values = [];
-}
+let mk_record ?(values = []) name : record =
+  { name; values }
 
-let mk_record_item name type_ : record_item = {
-  name = name;
-  type_ = type_;
-}
+let mk_record_item name type_ : record_item =
+  { name; type_ }
 
-let mk_storage_item name = {
-  name = name;
-  fields = [];
-  invariants = [];
-  init = [];
-}
+let mk_storage_item ?(fields = []) ?(invariants = []) ?(init = []) name : storage_item =
+  { name; fields; invariants; init }
 
-let mk_item_field name node = {
-  asset = None;
-  name = name;
-  typ = node;
-  ghost = false;
-  default = None;
-  loc = Location.dummy;
-}
+let mk_item_field ?asset ?(ghost = false) ?default ?(loc = Location.dummy) name typ : item_field =
+  { asset; name; typ; ghost; default; loc }
 
-let mk_function_struct name body : function_struct = {
-  name = name;
-  body = body;
-  loc  = Location.dummy;
-}
+let mk_function_struct ?(loc = Location.dummy) name body : function_struct =
+  { name; body; loc }
 
-let mk_function node sig_ : function__ = {
-  node  = node;
-  sig_  = sig_;
-  verif = None;
-}
+let mk_function ?verif node sig_: function__ =
+  { node; sig_; verif }
 
-let mk_signature name : signature = {
-  name = name;
-  args = [];
-  ret  = None;
-}
+let mk_signature ?(args = []) ?ret name : signature =
+  { name; args; ret}

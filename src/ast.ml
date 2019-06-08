@@ -404,6 +404,7 @@ type ('id, 'typ, 'term) function_struct = {
   args         : (('id, 'typ, 'typ bval_gen) decl_gen) list;
   body         : ('id, 'typ, 'term) instruction_gen;
   side         : bool; (* true if function contains a failwith call *)
+  verification : ('id, 'typ, 'term) verification option;
   return       : 'typ;
   fvs          : (ident * 'typ) list [@opaque];
   loc          : Location.t [@opaque];
@@ -558,6 +559,7 @@ let mk_function_struct id body ret = {
   name            = id;
   args            = [];
   body            = body;
+  verification    = None;
   side            = false;
   return          = ret;
   fvs             = [];
