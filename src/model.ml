@@ -130,18 +130,18 @@ type function_node =
   | SumAsset           of asset_ident
   | MinAsset           of asset_ident
   | MaxAsset           of asset_ident
-  | AddContainer       of asset_ident * field_ident * Ast.container
-  | RemoveContainer    of asset_ident * field_ident * Ast.container
-  | ClearContainer     of asset_ident * field_ident * Ast.container
-  | ContainsContainer  of asset_ident * field_ident * Ast.container
-  | NthContainer       of asset_ident * field_ident * Ast.container
-  | SelectContainer    of asset_ident * field_ident * Ast.container
-  | SortContainer      of asset_ident * field_ident * Ast.container
-  | ReverseContainer   of asset_ident * field_ident * Ast.container
-  | CountContainer     of asset_ident * field_ident * Ast.container
-  | SumContainer       of asset_ident * field_ident * Ast.container
-  | MinContainer       of asset_ident * field_ident * Ast.container
-  | MaxContainer       of asset_ident * field_ident * Ast.container
+  | AddContainer       of asset_ident * field_ident
+  | RemoveContainer    of asset_ident * field_ident
+  | ClearContainer     of asset_ident * field_ident
+  | ContainsContainer  of asset_ident * field_ident
+  | NthContainer       of asset_ident * field_ident
+  | SelectContainer    of asset_ident * field_ident
+  | SortContainer      of asset_ident * field_ident
+  | ReverseContainer   of asset_ident * field_ident
+  | CountContainer     of asset_ident * field_ident
+  | SumContainer       of asset_ident * field_ident
+  | MinContainer       of asset_ident * field_ident
+  | MaxContainer       of asset_ident * field_ident
   | Other
 [@@deriving show {with_path = false}]
 
@@ -189,18 +189,18 @@ let function_name_from_function_node = function
   | SumAsset           aid          -> "sum_"      ^ lident_to_string aid
   | MinAsset           aid          -> "min_"      ^ lident_to_string aid
   | MaxAsset           aid          -> "max_"      ^ lident_to_string aid
-  | AddContainer      (aid, fid, _) -> "add_"      ^ lident_to_string aid ^ "_" ^ lident_to_string fid
-  | RemoveContainer   (aid, fid, _) -> "remove_"   ^ lident_to_string aid ^ "_" ^ lident_to_string fid
-  | ClearContainer    (aid, fid, _) -> "clear_"    ^ lident_to_string aid ^ "_" ^ lident_to_string fid
-  | ContainsContainer (aid, fid, _) -> "contains_" ^ lident_to_string aid ^ "_" ^ lident_to_string fid
-  | NthContainer      (aid, fid, _) -> "nth_"      ^ lident_to_string aid ^ "_" ^ lident_to_string fid
-  | SelectContainer   (aid, fid, _) -> "select_"   ^ lident_to_string aid ^ "_" ^ lident_to_string fid
-  | SortContainer     (aid, fid, _) -> "sort_"     ^ lident_to_string aid ^ "_" ^ lident_to_string fid
-  | ReverseContainer  (aid, fid, _) -> "reverse_"  ^ lident_to_string aid ^ "_" ^ lident_to_string fid
-  | CountContainer    (aid, fid, _) -> "count_"    ^ lident_to_string aid ^ "_" ^ lident_to_string fid
-  | SumContainer      (aid, fid, _) -> "sum_"      ^ lident_to_string aid ^ "_" ^ lident_to_string fid
-  | MinContainer      (aid, fid, _) -> "min_"      ^ lident_to_string aid ^ "_" ^ lident_to_string fid
-  | MaxContainer      (aid, fid, _) -> "max_"      ^ lident_to_string aid ^ "_" ^ lident_to_string fid
+  | AddContainer      (aid, fid)    -> "add_"      ^ lident_to_string aid ^ "_" ^ lident_to_string fid
+  | RemoveContainer   (aid, fid)    -> "remove_"   ^ lident_to_string aid ^ "_" ^ lident_to_string fid
+  | ClearContainer    (aid, fid)    -> "clear_"    ^ lident_to_string aid ^ "_" ^ lident_to_string fid
+  | ContainsContainer (aid, fid)    -> "contains_" ^ lident_to_string aid ^ "_" ^ lident_to_string fid
+  | NthContainer      (aid, fid)    -> "nth_"      ^ lident_to_string aid ^ "_" ^ lident_to_string fid
+  | SelectContainer   (aid, fid)    -> "select_"   ^ lident_to_string aid ^ "_" ^ lident_to_string fid
+  | SortContainer     (aid, fid)    -> "sort_"     ^ lident_to_string aid ^ "_" ^ lident_to_string fid
+  | ReverseContainer  (aid, fid)    -> "reverse_"  ^ lident_to_string aid ^ "_" ^ lident_to_string fid
+  | CountContainer    (aid, fid)    -> "count_"    ^ lident_to_string aid ^ "_" ^ lident_to_string fid
+  | SumContainer      (aid, fid)    -> "sum_"      ^ lident_to_string aid ^ "_" ^ lident_to_string fid
+  | MinContainer      (aid, fid)    -> "min_"      ^ lident_to_string aid ^ "_" ^ lident_to_string fid
+  | MaxContainer      (aid, fid)    -> "max_"      ^ lident_to_string aid ^ "_" ^ lident_to_string fid
   | Other -> assert false
 
 
