@@ -64,7 +64,7 @@ module Miles_with_expiration_storage
         forall k : key. mem k mile_keys -> amount (get mile_assets k) > 0
     } invariant {
         Mem.mem get_caller_ (Cons admin Nil)
-    } invariant { 
+    } invariant { [@expl:i1]
         (* only Consume and Clear expired may remove mile ie. if x is remove mile then x.entry is one of them *)
         forall x : Tr.trace.
         Mem.mem x tr_ ->
@@ -187,9 +187,14 @@ module Miles_with_expiration_storage
     (* is not called by actions because it is partitioned *)
     let add_mile (s : storage) (new_mile : mile) : unit
     raises { KeyExist }
-    requires { amount new_mile > 0 }
+    requires { 
+        not (mem (id new_mile) s.mile_keys) ->
+        forall k : key. 
+        k = id new_mile \/ mem k (s.mile_keys) -> 
+        amount (get (set s.mile_assets (id new_mile) new_mile) k) > 0
+    }
     (* requires { lmem (get_caller_ s) (Cons (admin s) Nil) } *)
-    ensures { mem (id new_mile) s.mile_keys }
+    ensures {  mem (id new_mile) s.mile_keys }
     (* set operations *)
     ensures { s.mile_keys == union (old s).mile_keys (singleton (id new_mile)) }
     ensures { s.added_miles == union (old s).added_miles (singleton (id new_mile)) }
