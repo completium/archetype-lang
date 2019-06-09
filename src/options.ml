@@ -39,5 +39,6 @@ let opt_pre_parse = ref false
 let opt_ast = ref false
 let opt_astr = ref false
 let opt_model = ref false
+let opt_wse = ref false
 let opt_raw_target = ref false
 let debug_mode = ref false

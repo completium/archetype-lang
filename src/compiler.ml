@@ -39,6 +39,24 @@ let model ast =
   then (Format.printf "%a\n" Model.pp_model model; raise Stop)
   else model
 
+let remove_side_effect model =
+  let wse = Model_wse.to_wse model in
+  if !Options.opt_wse
+  then (Format.printf "%a\n" Model_wse.pp_model wse; raise Stop)
+  else wse
+
+let generate_liquidity wse =
+  let liq_tree = Gen_liquidity.model_to_liq_tree wse in
+  if !Options.opt_raw_target
+  then Format.printf "%a\n" Gen_liquidity.pp_liq_tree liq_tree
+  else () (*TODO: pretty print liquidity tree *)
+
+let generate_whyml model =
+  let decls = Gen_whyml.model_to_liq_tree model in
+  if !Options.opt_raw_target
+  then () (*TODO: raw print ptree whyml tree *)
+  else (Format.printf "%a\n" Printer_mlw.pp_mlw decls; raise Stop)
+
 let generate_target_pt pt =
   match !Options.target with
   | Markdown  -> (
@@ -50,18 +68,15 @@ let generate_target_pt pt =
 
 let generate_target model =
   match !Options.target with
-  | Liquidity -> (
-      let liq_tree = Gen_liquidity.model_to_liq_tree model in
-      if !Options.opt_raw_target
-      then Format.printf "%a\n" Gen_liquidity.pp_liq_tree liq_tree
-      else () (*TODO: pretty print liquidity tree *)
-    )
-  | Whyml     -> (
-      let decls = Gen_whyml.model_to_liq_tree model in
-      if !Options.opt_raw_target
-      then () (*TODO: raw print ptree whyml tree *)
-      else (Format.printf "%a\n" Printer_mlw.pp_mlw decls; raise Stop)
-    )
+  | Liquidity ->
+    model
+    |> remove_side_effect
+    |> generate_liquidity
+
+  | Whyml ->
+    model
+    |> generate_whyml
+
   | _ -> ()
 
 (* -------------------------------------------------------------------- *)
