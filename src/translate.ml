@@ -185,21 +185,28 @@ let ast_to_model (ast : A.model) : M.model =
 
     let cont f x l = List.fold_left (fun accu x -> f x accu) l x in
 
-    let process_function (function_ : A.function_) (list : M.type_node list) : M.type_node list =
-      let instr, list = extract_function_from_instruction function_.body list in
-      let name = function_.name in
+    let process_fun_gen name body loc verif f (list : M.type_node list) : M.type_node list =
+      let instr, list = extract_function_from_instruction body list in
       let sig_ = M.mk_signature name (*TODO: put arguments *) in
-      let node = M.Function (M.mk_function_struct name instr ?loc:(Some function_.loc)) in
-      list @ [TNfunction (M.mk_function ?verif:function_.verification node sig_)]
+      let node = f (M.mk_function_struct name instr ?loc:(Some loc)) in
+      list @ [TNfunction (M.mk_function ?verif:verif node sig_)]
+    in
+
+    let process_function (function_ : A.function_) (list : M.type_node list) : M.type_node list =
+      let name  = function_.name in
+      let body  = function_.body in
+      let loc   = function_.loc in
+      let verif = function_.verification in
+      process_fun_gen name body loc verif (fun x -> M.Function x) list
     in
 
     let process_transaction (transaction : A.transaction) (list : M.type_node list) : M.type_node list =
-      let list = list |> cont process_function ast.functions in
-      let instr, list = extract_function_from_instruction (Option.get transaction.effect) list in
-      let name = transaction.name in
-      let sig_ = M.mk_signature name (*TODO: put arguments *) in
-      let node = M.Entry (M.mk_function_struct name instr ?loc:(Some transaction.loc)) in
-      list @ [TNfunction (M.mk_function ?verif:transaction.verification node sig_)]
+      let list  = list |> cont process_function ast.functions in
+      let name  = transaction.name in
+      let body  = Option.get transaction.effect in
+      let loc   = transaction.loc in
+      let verif = transaction.verification in
+      process_fun_gen name body loc verif (fun x -> M.Entry x) list
     in
 
     []
