@@ -145,12 +145,12 @@ let process_action (model : model) : model =
           | Sany -> Some code
           | _ ->
             begin
-              let rec compute_patterns (a : sexpr) : ((lident, type_) pattern_gen) list =
+              let rec compute_patterns (a : sexpr) : (lident pattern_gen) list =
                 match a.node with
                 | Sref id -> [mk_sp (Mconst id)]
                 | Sor (a, b) -> [a; b] |> List.map (fun x -> compute_patterns x) |> List.flatten
                 | Sany -> raise (ReduceError ("any is not authorized in this expression", Some a.loc)) in
-              let list_patterns : ((lident, type_) pattern_gen) list =
+              let list_patterns : (lident pattern_gen) list =
                 compute_patterns tr.from in
 
               let pattern : pattern = mk_sp Mwild in

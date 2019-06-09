@@ -255,18 +255,18 @@ type quantifier =
 
 (* -------------------------------------------------------------------- *)
 
-type ('id, 'typ, 'pattern) pattern_poly = ('typ, ('id, 'typ, 'pattern) pattern_node) struct_poly
+type ('id, 'pattern) pattern_poly = ('id, ('id, 'pattern) pattern_node) struct_poly
 [@@deriving show {with_path = false}]
 
-and ('id, 'typ, 'pattern) pattern_node =
+and ('id, 'pattern) pattern_node =
   | Mwild
   | Mconst of 'id
 [@@deriving show {with_path = false}]
 
-type ('id, 'typ) pattern_gen = ('id, 'typ, ('id, 'typ) pattern_gen) pattern_poly
+type ('id) pattern_gen = ('id, 'id pattern_gen) pattern_poly
 [@@deriving show {with_path = false}]
 
-type pattern = (lident, type_) pattern_gen
+type pattern = lident pattern_gen
 [@@deriving show {with_path = false}]
 
 
@@ -278,7 +278,7 @@ type 'id call_kind =
 type ('id, 'typ, 'term) term_node  =
   | Lquantifer of quantifier * 'id * ltype_ * 'term
   | Pif of ('term * 'term * 'term)
-  | Pmatchwith of 'term * (('id, 'typ) pattern_gen * 'term) list
+  | Pmatchwith of 'term * ('id pattern_gen * 'term) list
   | Pcall of ('id option * 'id call_kind * ('term term_arg) list)
   | Plogical of logical_operator * 'term * 'term
   | Pnot of 'term
@@ -337,7 +337,7 @@ and ('id, 'typ, 'term, 'instr) instruction_node =
   | Ifor of ('id * 'term * 'instr)                                (* id * collection * body *)
   | Iletin of ('id * 'term * 'instr)                              (* id * init * body *)
   | Iseq of 'instr list                                           (* lhs ; rhs*)
-  | Imatchwith of 'term * (('id, 'typ) pattern_gen * 'instr) list (* match 'term with ('pattern * 'instr) list *)
+  | Imatchwith of 'term * ('id pattern_gen * 'instr) list (* match 'term with ('pattern * 'instr) list *)
   | Iassign of (assignment_operator * 'id * 'term)                (* $2 assignment_operator $3 *)
   | Irequire of (bool * 'term)                                    (* $1 ? require : failif *)
   | Itransfer of ('term * bool * ('id, 'typ) qualid_gen option)   (* value * back * dest *)
