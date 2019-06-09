@@ -22,7 +22,7 @@ type sorting_policy =
   | None
 [@@deriving show {with_path = false}]
 
-let target = ref (None : target_lang)
+let target = ref (Liquidity : target_lang)
 
 let storage_policy = ref Record
 let execution_mode = ref WithSideEffect

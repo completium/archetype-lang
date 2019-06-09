@@ -158,7 +158,7 @@ type function__ = {
 }
 [@@deriving show {with_path = false}]
 
-type type_node =
+type decl_node =
   | TNenum of enum
   | TNrecord of record
   | TNcontract of contract
@@ -166,7 +166,10 @@ type type_node =
   | TNfunction of function__
 [@@deriving show {with_path = false}]
 
-type model = type_node list
+type model = {
+  name: lident;
+  decls: decl_node list;
+}
 [@@deriving show {with_path = false}]
 
 let lident_to_string lident = Location.unloc lident
@@ -228,3 +231,6 @@ let mk_function ?verif node sig_: function__ =
 
 let mk_signature ?(args = []) ?ret name : signature =
   { name; args; ret}
+
+let mk_model ?(decls = []) name : model =
+  { name; decls}

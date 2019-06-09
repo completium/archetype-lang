@@ -11,7 +11,7 @@ type variable         = (A.lident, A.type_, A.pterm) A.variable
 
 let ast_to_model (ast : A.model) : M.model =
   let process_enums list =
-    let process_enum (e : A.enum) : M.type_node =
+    let process_enum (e : A.enum) : M.decl_node =
       let enum = M.mk_enum e.name in
       M.TNenum {
         enum with
@@ -28,7 +28,7 @@ let ast_to_model (ast : A.model) : M.model =
     list @ List.map (fun x -> process_enum x) ast.enums in
 
   let process_records list =
-    let process_asset (a : A.asset) : M.type_node =
+    let process_asset (a : A.asset) : M.decl_node =
       let e = M.mk_record a.name in
       M.TNrecord {
         e with
@@ -100,9 +100,9 @@ let ast_to_model (ast : A.model) : M.model =
     |> (fun x -> list @ [M.TNstorage x])
   in
 
-  let process_functions list : M.type_node list =
+  let process_functions list : M.decl_node list =
 
-    let extract_function_from_instruction (instr : A.instruction) (list : M.type_node list) : (A.instruction * M.type_node list) =
+    let extract_function_from_instruction (instr : A.instruction) (list : M.decl_node list) : (A.instruction * M.decl_node list) =
       let add l i = i::l in (* if i exists in l then ignore *)
       let mk_function (c : A.const) asset_name field_name ret : M.function__ option =
         let node = match asset_name, field_name, c with
@@ -141,7 +141,7 @@ let ast_to_model (ast : A.model) : M.model =
 
       let ge (e : ('a, 'b) A.struct_poly) = (fun node -> {e with node = node}) in
 
-      let rec fe accu (term : A.pterm) : A.pterm * M.type_node list =
+      let rec fe accu (term : A.pterm) : A.pterm * M.decl_node list =
         match term.node with
         | A.Pcall (asset_name, Cconst c, args) -> (
             let _, accu = A.fold_map_term (fun node -> {term with node = node} ) fe accu term in
@@ -171,7 +171,7 @@ let ast_to_model (ast : A.model) : M.model =
           | None -> instr, accu in
         instr, accu in
 
-      let rec fi accu (instr : A.instruction) : A.instruction * M.type_node list =
+      let rec fi accu (instr : A.instruction) : A.instruction * M.decl_node list =
         let gi = (fun node -> {instr with node = node}) in
         match instr.node with
         | A.Icall (Some {node = A.Pdot ({type_ = t; _}, id); _}, Cconst c, args) ->
@@ -185,14 +185,14 @@ let ast_to_model (ast : A.model) : M.model =
 
     let cont f x l = List.fold_left (fun accu x -> f x accu) l x in
 
-    let process_fun_gen name body loc verif f (list : M.type_node list) : M.type_node list =
+    let process_fun_gen name body loc verif f (list : M.decl_node list) : M.decl_node list =
       let instr, list = extract_function_from_instruction body list in
       let sig_ = M.mk_signature name (*TODO: put arguments *) in
       let node = f (M.mk_function_struct name instr ?loc:(Some loc)) in
       list @ [TNfunction (M.mk_function ?verif:verif node sig_)]
     in
 
-    let process_function (function_ : A.function_) (list : M.type_node list) : M.type_node list =
+    let process_function (function_ : A.function_) (list : M.decl_node list) : M.decl_node list =
       let name  = function_.name in
       let body  = function_.body in
       let loc   = function_.loc in
@@ -200,7 +200,7 @@ let ast_to_model (ast : A.model) : M.model =
       process_fun_gen name body loc verif (fun x -> M.Function x) list
     in
 
-    let process_transaction (transaction : A.transaction) (list : M.type_node list) : M.type_node list =
+    let process_transaction (transaction : A.transaction) (list : M.decl_node list) : M.decl_node list =
       let list  = list |> cont process_function ast.functions in
       let name  = transaction.name in
       let body  = Option.get transaction.effect in
@@ -215,9 +215,13 @@ let ast_to_model (ast : A.model) : M.model =
 
   in
 
-  []
-  |> process_enums
-  |> process_records
-  |> process_contracts
-  |> process_storage
-  |> process_functions
+  let name = ast.name in
+  let decls =
+    []
+    |> process_enums
+    |> process_records
+    |> process_contracts
+    |> process_storage
+    |> process_functions
+  in
+  M.mk_model name ?decls:(Some decls)

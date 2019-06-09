@@ -1,10 +1,10 @@
-(* open Tools *)
 open Location
 
 module A = Ast
 module M = Model
 
 type lident  = A.lident
+[@@deriving show {with_path = false}]
 
 type expr    = A.pterm
 [@@deriving show {with_path = false}]
@@ -103,11 +103,3 @@ let mk_function ?(args = []) name kind ret body : function_struct =
 
 let mk_model ?(enums = []) ?(records = []) ?init ?(funs = []) ?(entries = []) name : model =
   { name; enums; records; init; funs; entries }
-
-
-
-
-
-let to_wse (_model : M.model) : model =
-  let name = dumloc "mymodel" in
-  mk_model name

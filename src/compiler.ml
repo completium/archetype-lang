@@ -40,7 +40,7 @@ let model ast =
   else model
 
 let remove_side_effect model =
-  let wse = Model_wse.to_wse model in
+  let wse = Remove_se.to_wse model in
   if !Options.opt_wse
   then (Format.printf "%a\n" Model_wse.pp_model wse; raise Stop)
   else wse
@@ -130,6 +130,8 @@ let main () =
       "--reduced-ast", Arg.Set Options.opt_astr, " Same as -RA";
       "-M", Arg.Set Options.opt_model, " Print raw model";
       "--model", Arg.Set Options.opt_model, " Same as -M";
+      "-W", Arg.Set Options.opt_wse, " Print raw model without side effect";
+      "--without-side-effect", Arg.Set Options.opt_wse, " Same as -W";
       "--lsp", Arg.String (fun s -> match s with
           | "errors" -> Options.opt_lsp := true; Lsp.kind := Errors
           | "outline" -> Options.opt_lsp := true; Lsp.kind := Outline
