@@ -17,34 +17,35 @@ type type_   =
 [@@deriving show {with_path = false}]
 
 type 'expr wse_expr =
-  | Ifold of (lident list * 'expr * 'expr)
+  | Efold of (lident list * 'expr * 'expr)
 [@@deriving show {with_path = false}]
 
-type 'expr expr_node = [
+and 'instr instruction_node =
+  | Iletin of lident list * expr * 'instr
+  | Ituple of lident list
+[@@deriving show {with_path = false}]
+
+and instruction = {
+  node: instruction instruction_node;
+  type_: type_ list;
+  loc: Location.t [@opaque];
+}
+[@@deriving show {with_path = false}]
+
+and 'expr expr_node = [
   | `Eexpr of (lident, type_, 'expr) A.term_node
   | `Ewse  of 'expr wse_expr
+  | `Einstr of instruction
 ]
 [@@deriving show {with_path = false}]
 
-type expr    = (type_, expr expr_node) A.struct_poly
+and expr    = (type_, expr expr_node) A.struct_poly
 [@@deriving show {with_path = false}]
 
 type pattern = A.pattern
 [@@deriving show {with_path = false}]
 
 let pp_lident fmt i = Format.fprintf fmt "%s" (unloc i)
-
-type 'instr instruction_node =
-  | Iletin of lident list * expr * 'instr
-  | Ituple of lident list
-[@@deriving show {with_path = false}]
-
-type instruction = {
-  node: instruction instruction_node;
-  type_: type_ list;
-  loc: Location.t [@opaque];
-}
-[@@deriving show {with_path = false}]
 
 type enum_struct = {
   name: lident;
