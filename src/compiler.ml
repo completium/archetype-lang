@@ -34,7 +34,7 @@ let reduce_ast ast =
   else rast
 
 let model ast =
-  let model = Translate.ast_to_model ast in
+  let model = Gen_model.to_model ast in
   if !Options.opt_model
   then (Format.printf "%a\n" Model.pp_model model; raise Stop)
   else model
@@ -46,16 +46,16 @@ let remove_side_effect model =
   else wse
 
 let generate_liquidity wse =
-  let liq_tree = Gen_liquidity.model_to_liq_tree wse in
+  let tree = Gen_liquidity.to_liquidity wse in
   if !Options.opt_raw_target
-  then Format.printf "%a\n" Gen_liquidity.pp_liq_tree liq_tree
+  then Format.printf "%a\n" Mltree.pp_tree tree
   else () (*TODO: pretty print liquidity tree *)
 
 let generate_whyml model =
-  let decls = Gen_whyml.model_to_liq_tree model in
+  let decls = Gen_whyml.to_whyml model in
   if !Options.opt_raw_target
   then () (*TODO: raw print ptree whyml tree *)
-  else (Format.printf "%a\n" Printer_mlw.pp_mlw decls; raise Stop)
+  else (Format.printf "%a\n" Printer_whyml.pp_mlw decls; raise Stop)
 
 let generate_target_pt pt =
   match !Options.target with

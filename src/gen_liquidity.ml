@@ -1,7 +1,8 @@
+open Location
+
 module W = Model_wse
+module T = Mltree
 
-type liq_tree = string list
-[@@deriving show {with_path = false}]
-
-let model_to_liq_tree (_model : W.model) : liq_tree =
-  []
+let to_liquidity (model : W.model) : T.tree =
+  let name = model.name |> unloc in
+  T.mk_tree name

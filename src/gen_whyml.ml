@@ -3,5 +3,5 @@ open Why3
 
 module M = Model
 
-let model_to_liq_tree (_model : M.model) : Ptree.decl list =
+let to_whyml (_model : M.model) : Ptree.decl list =
   []

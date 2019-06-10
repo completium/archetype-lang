@@ -115,14 +115,14 @@ type tree = {
 }
 [@@deriving show {with_path = false}]
 
-let mk_type name values =
+let mk_type name values : type_struct =
   { name; values }
 
-let mk_struct name fields =
+let mk_struct name fields : struct_struct =
   { name; fields }
 
-let mk_fun name node args body =
+let mk_fun name node args body : fun_struct=
   { name; node; args; body }
 
-let mk_tree ?(decls= []) name =
+let mk_tree ?(decls= []) name : tree =
   { name; decls }

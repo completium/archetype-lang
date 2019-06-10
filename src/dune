@@ -10,7 +10,7 @@
     (pps ppx_deriving.std ppx_deriving_yojson)
   )
   (library_flags (-linkall))
-  (modules tools core ident options location parseUtils parseTree parser lexer symbol error position pureLexer parseError io printer typing ast reduce model translate model_wse remove_se mltree gen_liquidity gen_whyml gen_markdown printer_mlw)
+  (modules tools core ident options location parseUtils parseTree parser lexer symbol error position pureLexer parseError io printer typing ast reduce model gen_model model_wse remove_se mltree gen_liquidity gen_whyml gen_markdown printer_whyml)
   (libraries menhirLib omd why3 ppx_deriving yojson ppx_deriving_yojson.runtime)
 )
 
@@ -36,13 +36,7 @@
   (preprocess
     (pps ppx_deriving.std ppx_deriving_yojson)
   )
-  (modules extract lsp compiler)
+  (modules lsp compiler)
   (libraries archetype menhirLib why3)
   (public_name archetype)
   (name     compiler))
-
-
-(executable
-  (modules   mlw)
-  (libraries archetype menhirLib why3)
-  (name      mlw))
