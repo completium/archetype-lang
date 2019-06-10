@@ -24,44 +24,44 @@ let preprocess_ext pt =
 let type_ pt =
   let ast = Typing.typing Typing.empty pt in
   if !Options.opt_ast
-  then (Format.printf "%a\n" Ast.pp_model ast; raise Stop)
+  then (Format.printf "%a@." Ast.pp_model ast; raise Stop)
   else ast
 
 let reduce_ast ast =
   let rast = Reduce.reduce_ast ast in
   if !Options.opt_astr
-  then (Format.printf "%a\n" Ast.pp_model rast; raise Stop)
+  then (Format.printf "%a@." Ast.pp_model rast; raise Stop)
   else rast
 
 let model ast =
   let model = Gen_model.to_model ast in
   if !Options.opt_model
-  then (Format.printf "%a\n" Model.pp_model model; raise Stop)
+  then (Format.printf "%a@." Model.pp_model model; raise Stop)
   else model
 
 let remove_side_effect model =
   let wse = Remove_se.remove_se model in
   if !Options.opt_wse
-  then (Format.printf "%a\n" Model_wse.pp_model wse; raise Stop)
+  then (Format.printf "%a@." Model_wse.pp_model wse; raise Stop)
   else wse
 
 let generate_liquidity wse =
   let tree = Gen_liquidity.to_liquidity wse in
   if !Options.opt_raw_target
-  then Format.printf "%a\n" Mltree.pp_tree tree
-  else () (*TODO: pretty print liquidity tree *)
+  then Format.printf "%a@." Mltree.pp_tree tree
+  else Format.printf "%a@." Printer_mltree.pp_tree tree
 
 let generate_whyml model =
   let decls = Gen_whyml.to_whyml model in
   if !Options.opt_raw_target
   then () (*TODO: raw print ptree whyml tree *)
-  else (Format.printf "%a\n" Printer_whyml.pp_mlw decls; raise Stop)
+  else (Format.printf "%a@." Printer_whyml.pp_mlw decls; raise Stop)
 
 let generate_target_pt pt =
   match !Options.target with
   | Markdown  -> (
       let md = Gen_markdown.pt_to_ast_omd pt in
-      Format.printf "%s\n" (Omd.to_markdown md);
+      Format.printf "%s@." (Omd.to_markdown md);
       raise Stop
     )
   | _ -> pt
@@ -132,6 +132,8 @@ let main () =
       "--model", Arg.Set Options.opt_model, " Same as -M";
       "-W", Arg.Set Options.opt_wse, " Print raw model without side effect";
       "--without-side-effect", Arg.Set Options.opt_wse, " Same as -W";
+      "-RTT", Arg.Set Options.opt_raw_target, " Print raw target tree";
+      "--raw-target-tree", Arg.Set Options.opt_raw_target, " Same as -RTT";
       "--lsp", Arg.String (fun s -> match s with
           | "errors" -> Options.opt_lsp := true; Lsp.kind := Errors
           | "outline" -> Options.opt_lsp := true; Lsp.kind := Outline
