@@ -40,7 +40,7 @@ let model ast =
   else model
 
 let remove_side_effect model =
-  let wse = Remove_se.to_wse model in
+  let wse = Remove_se.remove_se model in
   if !Options.opt_wse
   then (Format.printf "%a\n" Model_wse.pp_model wse; raise Stop)
   else wse
