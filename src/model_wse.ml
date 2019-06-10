@@ -12,7 +12,7 @@ type expr    = A.pterm
 type type_   =
   | Tstorage
   | Toperations
-  | Tbuiltin of A.ptyp
+  | Tbuiltin of A.vtyp
   | Trecord of lident
   | Tenum of lident
   | Ttuple of type_ list
