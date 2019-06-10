@@ -6,9 +6,6 @@ module M = Model
 type lident  = A.lident
 [@@deriving show {with_path = false}]
 
-type expr    = A.pterm
-[@@deriving show {with_path = false}]
-
 type type_   =
   | Tstorage
   | Toperations
@@ -19,21 +16,32 @@ type type_   =
   | Tcontainer of type_
 [@@deriving show {with_path = false}]
 
+type 'expr wse_expr =
+  | Ifold of (lident list * 'expr * 'expr)
+[@@deriving show {with_path = false}]
+
+type 'expr expr_node = [
+  | `Eexpr of (lident, type_, 'expr) A.term_node
+  | `Ewse  of 'expr wse_expr
+]
+[@@deriving show {with_path = false}]
+
+type expr    = (type_, expr expr_node) A.struct_poly
+[@@deriving show {with_path = false}]
+
 type pattern = A.pattern
 [@@deriving show {with_path = false}]
 
 let pp_lident fmt i = Format.fprintf fmt "%s" (unloc i)
 
 type 'instr instruction_node =
-  | Iif of (expr * 'instr * 'instr)
-  | Imatchwith of expr * (pattern * 'instr) list
-  | Ifold of (lident list * expr * 'instr)
-  | Iletin of ((lident * type_) list * expr * 'instr)
+  | Iletin of lident list * expr * 'instr
+  | Ituple of lident list
 [@@deriving show {with_path = false}]
 
 type instruction = {
   node: instruction instruction_node;
-  type_: type_;
+  type_: type_ list;
   loc: Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]
@@ -59,7 +67,7 @@ type kind_function =
 type function_struct = {
   name: lident;
   kind: kind_function;
-  ret: type_;
+  ret:  type_;
   args: (lident * type_) list;
   body: instruction;
 }
@@ -79,11 +87,11 @@ type model = {
 let mk_enum ?(values = []) name : enum_struct =
   { name; values }
 
-let mk_record ?(values = []) name : record_struct =
-  { name; values }
+let mk_record ?(values = []) name init : record_struct =
+  { name; values; init }
 
 let mk_function ?(args = []) name kind ret body : function_struct =
   { name; kind; ret; args; body }
 
-let mk_model ?(enums = []) ?(records = []) ?init ?(funs = []) ?(entries = []) name : model =
-  { name; enums; records; init; funs; entries }
+let mk_model ?(enums = []) ?(records = []) ?(funs = []) name : model =
+  { name; enums; records; funs }
