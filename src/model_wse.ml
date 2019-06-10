@@ -24,30 +24,16 @@ type pattern = A.pattern
 
 let pp_lident fmt i = Format.fprintf fmt "%s" (unloc i)
 
-type type_instr =
-  | OpsStorage
-  | Storage
-  | Ops
-  | None
-[@@deriving show {with_path = false}]
-
-type letin_kind =
-  | LKid of lident
-  | LKtuple of lident list
-[@@deriving show {with_path = false}]
-
 type 'instr instruction_node =
   | Iif of (expr * 'instr * 'instr)
   | Imatchwith of expr * (pattern * 'instr) list
   | Ifold of (lident list * expr * 'instr)
-  | Iletin of (letin_kind * expr * 'instr)
-  | Iseq of 'instr list
-  | Itransfer of (expr * string)
+  | Iletin of ((lident * type_) list * expr * 'instr)
 [@@deriving show {with_path = false}]
 
 type instruction = {
   node: instruction instruction_node;
-  type_: type_instr;
+  type_: type_;
   loc: Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]
@@ -61,11 +47,11 @@ type enum_struct = {
 type record_struct = {
   name: lident;
   values: (lident * type_) list;
+  init: expr;
 }
 [@@deriving show {with_path = false}]
 
 type kind_function =
-  | Init
   | Function
   | Entry
 [@@deriving show {with_path = false}]
@@ -83,9 +69,7 @@ type model = {
   name: lident;
   enums: enum_struct list;
   records: record_struct list;
-  init: function_struct option;
   funs: function_struct list;
-  entries: function_struct list;
 }
 [@@deriving show {with_path = false}]
 
