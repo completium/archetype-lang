@@ -70,7 +70,7 @@ type expr =
   | Eapp of ident * expr list
   | Ebin of bin_operator * expr * expr
   | Eunary of unary_operator * expr
-  | Erecord of expr list
+  | Erecord of ident option * (ident * expr) list
   | Evar of ident
   | Econtainer of expr list
   | Elit of literal

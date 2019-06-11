@@ -173,12 +173,17 @@ let rec pp_expr fmt = function
 
     pp fmt (op, e)
 
-  | Erecord l ->
-    let pp fmt l =
-      Format.fprintf fmt "{ %a }"
-        (pp_list "; " pp_expr) l
+  | Erecord (w, l) ->
+    let pp fmt (w, l) =
+      let pp_item fmt (id, e) =
+        Format.fprintf fmt "%a = %a"
+          pp_id id
+          pp_expr e in
+      Format.fprintf fmt "{ %a %a }"
+        (pp_option (pp_postfix " with " pp_id)) w
+        (pp_list "; " pp_item) l
     in
-    pp fmt l
+    pp fmt (w, l)
 
   | Etuple l ->
 
