@@ -88,9 +88,9 @@ let to_model (ast : A.model) : M.model =
         let asset_name = id in
         let keys_id = Location.mkloc (Location.loc asset_name) ((Location.unloc asset_name) ^ "_keys") in
         let asset_name = Location.mkloc (Location.loc asset_name) ((Location.unloc asset_name) ^ "_assets") in
-        [M.mk_item_field id (FKeyCollection (keys_id, type_id)) ?asset:(Some id) (* ?default:(Some arg.default) TODO: uncomment this*);
-         M.mk_item_field id (FRecordMap asset_name) ?asset:(Some id) (* ?default:(Some arg.default) TODO: uncomment this*)] in
-      M.mk_storage_item asset.name ?fields:(Some compute_fields) ?invariants:(Some asset.specs) (*?init:(Some asset.init) TODO: uncomment this *)
+        [M.mk_item_field id (FKeyCollection (keys_id, type_id)) ~asset:id (* ~default:arg.default TODO: uncomment this*);
+         M.mk_item_field id (FRecordMap asset_name) ~asset:id (* ~default:arg.default TODO: uncomment this*)] in
+      M.mk_storage_item asset.name ~fields:compute_fields ~invariants:asset.specs (*~init:asset.init TODO: uncomment this *)
     in
 
     let cont f x l = List.map f x in
@@ -134,7 +134,7 @@ let to_model (ast : A.model) : M.model =
           | Some asset, Some field, Cmin      -> Some (M.MinContainer (asset, field))
           | _ -> None in
         Option.map (fun node ->
-            let sig_ : M.signature = M.mk_signature (Location.dumloc (M.function_name_from_function_node node)) ?ret:(Some ret) in
+            let sig_ : M.signature = M.mk_signature (Location.dumloc (M.function_name_from_function_node node)) ~ret:ret in
             M.mk_function node sig_) node in
 
       let extract_asset_name t = match t with Some A.Tasset id -> Some id | _ -> None in
@@ -188,7 +188,7 @@ let to_model (ast : A.model) : M.model =
     let process_fun_gen name body loc verif f (list : M.decl_node list) : M.decl_node list =
       let instr, list = extract_function_from_instruction body list in
       let sig_ = M.mk_signature name (*TODO: put arguments *) in
-      let node = f (M.mk_function_struct name instr ?loc:(Some loc)) in
+      let node = f (M.mk_function_struct name instr ~loc:loc) in
       list @ [TNfunction (M.mk_function ?verif:verif node sig_)]
     in
 
@@ -224,4 +224,4 @@ let to_model (ast : A.model) : M.model =
     |> process_storage
     |> process_functions
   in
-  M.mk_model name ?decls:(Some decls)
+  M.mk_model name ~decls:decls

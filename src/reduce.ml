@@ -6,18 +6,18 @@ exception ReduceError of string * Location.t option
 exception ErrorAcceptTransfer of string * Location.t * Location.t list
 exception TODO
 
-let type_string   : Model.type_ option = Some (vtstring)
-let type_bool     : Model.type_ option = Some (vtbool)
-let type_currency : Model.type_ option = Some (vtcurrency Tez)
-let type_address  : Model.type_ option = Some (vtaddress)
+let type_string   : Model.type_ = vtstring
+let type_bool     : Model.type_ = vtbool
+let type_currency : Model.type_ = vtcurrency Tez
+let type_address  : Model.type_ = vtaddress
 
 let unit = mk_sp Ibreak
 
 (* let mk_struct_with_loc node typ loc = let m = mk_struct_poly node typ in {m  with loc = loc; } *)
 
 let fail str : instruction =
-  let lit = mk_sp (BVstring str) ?type_:type_string in
-  let arg = mk_sp (Plit lit) ?type_:type_string in
+  let lit = mk_sp (BVstring str) ~type_:type_string in
+  let arg = mk_sp (Plit lit) ~type_:type_string in
   (* let app = mk_struct_poly (Papp (f, [arg])) type_unit in *)
   mk_sp (Icall (None, Cconst Cfail, [arg]))
 
@@ -49,7 +49,7 @@ let replace_instruction model : model =
       (
         match instr.node with
         | Irequire (b, x) ->
-          let m = mk_sp (Pnot x) ?type_:type_bool in
+          let m = mk_sp (Pnot x) ~type_:type_bool in
           mk_sp (Iif ((if b then m else x), fail "required", unit)) ?loc:(Some l)
         | _ -> map_instr f instr
       ) in
@@ -76,12 +76,12 @@ let process_action (model : model) : model =
                     mk_sp (Pdot (qq, i)) ?type_:q.type_ ?loc:(Some (Location.merge qq.loc (loc i)))
                   )
               in
-              mk_sp (Pcomp(Equal, mk_sp (Pconst Ccaller) ?type_:type_address, qualid_to_pterm q)) ?type_:type_bool
+              mk_sp (Pcomp(Equal, mk_sp (Pconst Ccaller) ~type_:type_address, qualid_to_pterm q)) ~type_:type_bool
             end
           | Ror (l, r) ->
-            mk_sp (Plogical (Or, process_rexpr l, process_rexpr r)) ?type_:type_bool
+            mk_sp (Plogical (Or, process_rexpr l, process_rexpr r)) ~type_:type_bool
           | Raddress a -> raise TODO (* TODO *) in
-        let require : pterm = mk_sp (Pnot (process_rexpr cb)) ?type_:type_bool in
+        let require : pterm = mk_sp (Pnot (process_rexpr cb)) ~type_:type_bool in
         mk_sp (Iif (require, fail "not_authorized_fun", body)) in
       begin
         let body = Option.get tr.effect in
@@ -127,7 +127,7 @@ let process_action (model : model) : model =
                        mk_sp (Icall (Some asset, Cconst Cupdate, args))
                      )
                    | _ ->
-                     let a : pterm = mk_sp (Pvar id) ?type_:type_bool ?loc:(Some (Location.loc id)) in
+                     let a : pterm = mk_sp (Pvar id) ~type_:type_bool ~loc:(Location.loc id) in
                      mk_sp (Iassign (ValueAssign, state, a)) in
                  let code : instruction =
                    match effect with
@@ -188,11 +188,11 @@ let process_action (model : model) : model =
         } in
 
     let process_accept_transfer (tr : transaction) =
-      let lhs : pterm = mk_sp (Pconst Ctransferred) ?type_:type_currency in
-      let basic_value : bval = mk_sp (BVcurrency (Tez, Big_int.zero_big_int)) ?type_:type_currency in
-      let rhs : pterm = mk_sp (Plit basic_value) ?type_:type_currency in
-      let eq : pterm = mk_sp (Pcomp (Equal, lhs, rhs)) ?type_:type_bool in
-      let cond : pterm = mk_sp (Pnot eq) ?type_:type_bool in
+      let lhs : pterm = mk_sp (Pconst Ctransferred) ~type_:type_currency in
+      let basic_value : bval = mk_sp (BVcurrency (Tez, Big_int.zero_big_int)) ~type_:type_currency in
+      let rhs : pterm = mk_sp (Plit basic_value) ~type_:type_currency in
+      let eq : pterm = mk_sp (Pcomp (Equal, lhs, rhs)) ~type_:type_bool in
+      let cond : pterm = mk_sp (Pnot eq) ~type_:type_bool in
       let at body : instruction = mk_sp (Iif (cond, fail "not_accept_transfer", body)) in
       if (not tr.accept_transfer)
       then

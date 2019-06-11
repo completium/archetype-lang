@@ -20,7 +20,7 @@ type type_basic =
 
 type type_ =
   | Tbasic of type_basic
-  | Ttuple of type_
+  | Ttuple of type_ list
   | Tlist of type_
   | Tmap of type_ * type_
   | Tcontract
@@ -66,7 +66,7 @@ type expr =
   | Eletin of ((ident * type_) list * expr) list * expr
   | Etuple of expr list
   | Eif of (expr * expr * expr)
-  | Ematchwith of expr * (pattern * expr) list
+  | Ematchwith of expr * (pattern list * expr) list
   | Eapp of ident * expr list
   | Ebin of bin_operator * expr * expr
   | Eunary of unary_operator * expr
@@ -79,7 +79,7 @@ type expr =
 
 type type_struct = {
   name: ident;
-  values: (ident * type_ list) list;
+  values: (ident * type_ option) list;
 }
 [@@deriving show {with_path = false}]
 
