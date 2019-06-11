@@ -22,23 +22,101 @@ let pp_prefix pre pp fmt x =
 
 let pp_postfix post pp fmt x =
   pp_enclose "" post pp fmt x
+(* -------------------------------------------------------------------------- *)
+type assoc  = Left | Right | NonAssoc
+type pos    = PLeft | PRight | PInfix | PNone
+
+let e_in            =  (10,  NonAssoc) (* in  *)
+let e_to            =  (10,  NonAssoc) (* to  *)
+let e_arrow         =  (12,  NonAssoc) (* ->  *)
+let e_match         =  (14,  Right)    (* match *)
+let e_if            =  (14,  Right)    (* if  *)
+let e_then          =  (14,  Right)    (* then *)
+let e_else          =  (16,  Right)    (* else *)
+let e_comma         =  (20,  Left)     (* ,   *)
+let e_semi_colon    =  (20,  Left)     (* ;   *)
+let e_colon         =  (25,  NonAssoc) (* :   *)
+let e_and           =  (60,  Left)     (* and *)
+let e_or            =  (70,  Left)     (* or  *)
+let e_equal         =  (80,  NonAssoc) (* =   *)
+let e_nequal        =  (80,  NonAssoc) (* <>  *)
+let e_gt            =  (90,  Left)     (* >   *)
+let e_ge            =  (90,  Left)     (* >=  *)
+let e_lt            =  (90,  Left)     (* <   *)
+let e_le            =  (90,  Left)     (* <=  *)
+let e_plus          =  (100, Left)     (* +   *)
+let e_minus         =  (100, Left)     (* -   *)
+let e_mult          =  (110, Left)     (* *   *)
+let e_div           =  (110, Left)     (* /   *)
+let e_modulo        =  (110, Left)     (* %   *)
+let e_not           =  (115, Right)    (* not *)
+let e_dot           =  (120, Right)    (* .   *)
+let e_app           =  (140, NonAssoc) (* f ()  *)
+let e_for           =  (140, NonAssoc) (* for in .  *)
+
+let e_default       =  (0, NonAssoc)   (* ?  *)
+let e_simple       =   (200, NonAssoc)   (* ?  *)
+
+let get_prec_from_operator (op : operator) =
+  match op with
+  | `Bin And     -> e_and
+  | `Bin Or      -> e_or
+  | `Bin Equal   -> e_equal
+  | `Bin Nequal  -> e_nequal
+  | `Bin Gt      -> e_gt
+  | `Bin Ge      -> e_ge
+  | `Bin Lt      -> e_lt
+  | `Bin Le      -> e_le
+  | `Bin Plus    -> e_plus
+  | `Bin Minus   -> e_minus
+  | `Bin Mult    -> e_mult
+  | `Bin Div     -> e_div
+  | `Bin Modulo  -> e_modulo
+  | `Una Not     -> e_not
+  | `Una Uminus  -> e_minus
+  | `Una Uplus   -> e_plus
+
+let pp_if c pp_true pp_false fmt x =
+  match c with
+  | true  -> pp_true fmt x
+  | false -> pp_false fmt x
+
+let pp_maybe c tx pp fmt x =
+  pp_if c (tx pp) pp fmt x
+
+let pp_paren pp fmt x =
+  pp_enclose "(" ")" pp fmt x
+
+let pp_maybe_paren c pp =
+  pp_maybe c pp_paren pp
+
+let maybe_paren outer inner pos pp =
+  let c =
+    match (outer, inner, pos) with
+    | ((o, Right), (i, Right), PLeft) when o >= i -> true
+    | ((o, Right), (i, NonAssoc), _)  when o >= i -> true
+    | ((o, Right), (i, Left), _)      when o >= i -> true
+    | ((o, Left),  (i, Left), _)      when o >= i -> true
+    | ((o, NonAssoc), (i, _), _)      when o >= i -> true
+    | _ -> false
+  in pp_maybe_paren c pp
 
 (* -------------------------------------------------------------------------- *)
 
 let type_basic_to_string = function
-  | Tunit -> "unit"
-  | Tbool -> "bool"
-  | Tint -> "int"
-  | Tnat -> "nat"
-  | Ttez -> "tez"
-  | Tstring -> "string"
-  | Tbytes -> "bytes"
+  | Tunit      -> "unit"
+  | Tbool      -> "bool"
+  | Tint       -> "int"
+  | Tnat       -> "nat"
+  | Ttez       -> "tez"
+  | Tstring    -> "string"
+  | Tbytes     -> "bytes"
   | Ttimestamp -> "timestamp"
-  | Tkey -> "key"
-  | Tkey_hash -> "key_hash"
+  | Tkey       -> "key"
+  | Tkey_hash  -> "key_hash"
   | Tsignature -> "signature"
   | Toperation -> "operation"
-  | Taddress -> "address"
+  | Taddress   -> "address"
 
 let rec pp_type fmt = function
   | Tbasic b ->
@@ -113,85 +191,88 @@ let pp_pattern fmt = function
   | Pwild ->
     Format.fprintf fmt "| _"
 
-let rec pp_expr fmt = function
+let rec pp_expr outer pos fmt = function
   | Eletin (l, b) ->
     let pp_letin_item fmt (l, e) =
       Format.fprintf fmt "let %a : %a = %a in@\n"
-        (pp_list "@\n" pp_id) (List.map fst l)
+        (pp_list ", " pp_id) (List.map fst l)
         pp_type (Ttuple (List.map snd l))
-        pp_expr e
+        (pp_expr e_equal PRight) e
     in
-    Format.fprintf fmt "%a%a"
+    Format.fprintf fmt "@[%a%a@]"
       (pp_list "@\n" pp_letin_item) l
-      pp_expr b
+      (pp_expr e_in PRight) b
 
   | Eif (cond, then_, else_) ->
     let pp fmt (cond, then_, else_) =
-      Format.fprintf fmt "@[if %a@ then (%a)@ else (%a)@ @]"
-        pp_expr cond
-        pp_expr then_
-        pp_expr else_
+      Format.fprintf fmt "@[if %a@ then %a@ else %a@ @]"
+        (pp_expr e_if PRight) cond
+        (pp_expr e_then PRight) then_
+        (pp_expr e_else PRight) else_
     in
-    pp fmt (cond, then_, else_)
+    (maybe_paren outer e_default pos pp) fmt (cond, then_, else_)
 
   | Ematchwith (e, l) ->
     let pp fmt (e, l) =
-      Format.fprintf fmt "match %a with@\n%a@\n"
-        pp_expr e
+      Format.fprintf fmt "@[match %a with@\n%a@]"
+        (pp_expr e_match PRight) e
         (pp_list "@\n" (fun fmt (pts, e) ->
              Format.fprintf fmt "%a -> %a"
                (pp_list " " pp_pattern) pts
-               pp_expr e)) l
+               (pp_expr e_arrow PRight) e)) l
     in
-    pp fmt (e, l)
+    (maybe_paren outer e_default pos pp) fmt (e, l)
 
   | Eapp (id, args) ->
 
     let pp fmt (id, args) =
       Format.fprintf fmt "%a %a"
         pp_id id
-        (pp_list " " pp_expr) args
+        (pp_list " " (pp_expr e_app PInfix)) args
     in
-    pp fmt (id, args)
+    (maybe_paren outer e_app pos pp) fmt (id, args)
 
   | Ebin (op, l, r) ->
+
+    let prec_op = get_prec_from_operator (`Bin op) in
     let pp fmt (op, l, r) =
       Format.fprintf fmt "%a %s %a"
-        pp_expr l
+        (pp_expr prec_op PLeft) l
         (binop_to_string op)
-        pp_expr r
+        (pp_expr prec_op PRight) r
     in
-    pp fmt (op, l, r)
+    (maybe_paren outer prec_op pos pp) fmt (op, l, r)
 
   | Eunary (op, e) ->
 
+    let prec_op = get_prec_from_operator (`Una op) in
     let pp fmt (op, e) =
-      Format.fprintf fmt "%s%a"
+      Format.fprintf fmt "%s %a"
         (unaop_to_string op)
-        pp_expr e
+        (pp_expr prec_op PRight) e
     in
 
-    pp fmt (op, e)
+    (maybe_paren outer prec_op pos pp) fmt (op, e)
 
   | Erecord (w, l) ->
     let pp fmt (w, l) =
       let pp_item fmt (id, e) =
         Format.fprintf fmt "%a = %a"
           pp_id id
-          pp_expr e in
+          (pp_expr e_equal PRight) e in
       Format.fprintf fmt "{ %a %a }"
         (pp_option (pp_postfix " with " pp_id)) w
         (pp_list "; " pp_item) l
     in
-    pp fmt (w, l)
+    (maybe_paren outer e_simple pos pp) fmt (w, l)
 
   | Etuple l ->
 
     let pp fmt l =
       Format.fprintf fmt "(%a)"
-        (pp_list ", " pp_expr) l
+        (pp_list ", " (pp_expr e_comma PInfix)) l
     in
-    pp fmt l
+    (maybe_paren outer e_comma pos pp) fmt l
 
   | Evar s ->
     Format.fprintf fmt "%s" s
@@ -199,9 +280,9 @@ let rec pp_expr fmt = function
   | Econtainer l ->
     let pp fmt l =
       Format.fprintf fmt "[%a]"
-        (pp_list "; " pp_expr) l
+        (pp_list "; " (pp_expr e_semi_colon PInfix)) l
     in
-    pp fmt l
+    (maybe_paren outer e_simple pos pp) fmt l
 
   | Elit l ->
     pp_literal fmt l
@@ -210,10 +291,10 @@ let rec pp_expr fmt = function
 
     let pp fmt (e, id) =
       Format.fprintf fmt "%a.%a"
-        pp_expr e
+        (pp_expr e_dot PLeft) e
         pp_id id
     in
-    pp fmt (e, id)
+    (maybe_paren outer e_dot pos pp) fmt (e, id)
 
 let pp_struct_type fmt (s : type_struct) =
   let pp_item fmt ((id, t) : (ident * type_ option)) =
@@ -249,11 +330,11 @@ let pp_fun fmt (s : fun_struct) =
         pp_id id
         pp_type t
   in
-  Format.fprintf fmt "let%a %a %a =@\n %a@."
+  Format.fprintf fmt "let%a %a %a =@\n@[  %a@]@."
     pp_fun_node s.node
     pp_id s.name
     (pp_list " " pp_arg) s.args
-    pp_expr s.body
+    (pp_expr e_equal PRight) s.body
 
 let pp_decl fmt = function
   | Dtype s   -> pp_struct_type fmt s

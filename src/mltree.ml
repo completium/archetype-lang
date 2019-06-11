@@ -55,6 +55,12 @@ type unary_operator =
   | Uplus
 [@@deriving show {with_path = false}]
 
+type operator = [
+  | `Bin of bin_operator
+  | `Una of unary_operator
+]
+[@@deriving show {with_path = false}]
+
 type literal =
   | Lint    of Core.big_int
   | Lbool   of bool
