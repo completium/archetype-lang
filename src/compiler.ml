@@ -52,10 +52,10 @@ let generate_liquidity wse =
   else Format.printf "%a@." Printer_mltree.pp_tree tree
 
 let generate_whyml model =
-  let decls = Gen_whyml.to_whyml model in
+  let mlw = Gen_why3.to_whyml model in
   if !Options.opt_raw_target
-  then () (*TODO: raw print ptree whyml tree *)
-  else (Format.printf "%a@." Printer_whyml.pp_mlw decls; raise Stop)
+  then Format.printf "%a@." Mlwtree.pp_mlw_tree mlw
+  else (Format.printf "%a@." Printer_mlwtree.pp_mlw_tree mlw; raise Stop)
 
 let generate_target_pt pt =
   match !Options.target with
