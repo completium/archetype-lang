@@ -14,6 +14,7 @@ type type_   =
   | Tenum of lident
   | Ttuple of type_ list
   | Tcontainer of type_
+  | Tmap of type_ * type_
 [@@deriving show {with_path = false}]
 
 type 'expr wse_expr =
