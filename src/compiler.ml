@@ -23,7 +23,8 @@ let preprocess_ext pt =
 
 let type_ pt =
   let _ast = Typing.typing Typing.empty pt in
-  let ast = Ast.create_fake_ast () in
+  (* let ast = Ast.create_fake_ast () in *)
+  let ast = Ast.create_miles_with_expiration_ast () in
   if !Options.opt_ast
   then (Format.printf "%a@." Ast.pp_model ast; raise Stop)
   else ast

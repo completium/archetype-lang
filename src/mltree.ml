@@ -129,7 +129,7 @@ let mk_type ?(values = []) name : type_struct =
 let mk_struct ?(fields = []) name : struct_struct =
   { name; fields }
 
-let mk_fun name node args ret body : fun_struct=
+let mk_fun name node args ret body : fun_struct =
   { name; node; args; ret; body }
 
 let mk_tree ?(decls= []) name : tree =

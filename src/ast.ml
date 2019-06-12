@@ -521,121 +521,47 @@ let vtkey        = Tbuiltin (VTkey       )
 let mk_sp ?label ?(loc = Location.dummy) ?type_ node =
   { node; type_; label; loc; }
 
-let mk_label_term term = {
-  label           = None;
-  term            = term;
-  loc             = Location.dummy;
-}
+let mk_label_term ?label ?(loc = Location.dummy) term =
+  { label; term; loc }
 
-let mk_variable decl = {
-  decl            = decl;
-  constant        = false;
-  from            = None;
-  to_             = None;
-  loc             = Location.dummy;
-}
+let mk_variable ?(constant = false) ?from ?to_ ?(loc = Location.dummy) decl =
+  { decl; constant; from; to_; loc }
 
-let mk_predicate id body = {
-  name            = id;
-  args            = [];
-  body            = body;
-  loc             = Location.dummy;
-}
+let mk_predicate ?(args = []) ?(loc = Location.dummy) name body =
+  { name; args; body; loc }
 
-let mk_definition id typ var body = {
-  name            = id;
-  typ             = typ;
-  var             = var;
-  body            = body;
-  loc             = Location.dummy;
-}
+let mk_definition ?(loc = Location.dummy) name typ var body =
+  { name; typ; var; body; loc }
 
-let mk_verification = {
-  predicates      = [];
-  definitions     = [];
-  axioms          = [];
-  theorems        = [];
-  variables       = [];
-  invariants      = [];
-  effect          = None;
-  specs           = [];
-  loc             = Location.dummy;
-}
+let mk_verification ?(predicates = []) ?(definitions = []) ?(axioms = []) ?(theorems = []) ?(variables = []) ?(invariants = []) ?effect ?(specs = []) ?(loc = Location.dummy) () =
+  { predicates; definitions; axioms; theorems; variables; invariants; effect; specs; loc}
 
-let mk_function_struct id body ret = {
-  name            = id;
-  args            = [];
-  body            = body;
-  verification    = None;
-  side            = false;
-  return          = ret;
-  fvs             = [];
-  loc             = Location.dummy;
-}
+let mk_function_struct ?(args = []) ?verification ?(side = false) ?(fvs = []) ?(loc = Location.dummy) name body return =
+  { name; args; body; verification; side; return; fvs; loc }
 
-let mk_transition from = {
-  from            = from;
-  on              = None;
-  trs             = [];
-}
+let mk_transition ?on ?(trs = []) from =
+  { from; on; trs }
 
-let mk_transaction_struct id = {
-  name            = id;
-  args            = [];
-  calledby        = None;
-  accept_transfer = false;
-  require         = None;
-  transition      = None;
-  verification    = None;
-  functions       = [];
-  effect          = None;
-  side            = false;
-  loc             = Location.dummy;
-}
+let mk_transaction_struct ?(args = []) ?calledby ?(accept_transfer = false) ?require ?transition ?verification ?(functions = []) ?effect ?(side = false) ?(loc = Location.dummy) name =
+  { name; args; calledby; accept_transfer; require; transition; verification; functions; effect; side; loc }
 
-let mk_enum_item id = {
-  name            = id;
-  initial         = false;
-  verification    = None;
-  loc             = Location.dummy;
-}
+let mk_enum_item ?(initial = false) ?verification ?(loc = Location.dummy) name =
+  { name; initial; verification; loc }
 
-let mk_enum id =   {
-  name            = id;
-  items           = [];
-  loc             = Location.dummy;
-}
+let mk_enum ?(items = []) ?(loc = Location.dummy) name =
+  { name; items; loc }
 
-let mk_asset id   = {
-  name            = id;
-  fields          = [];
-  key             = None;
-  sort            = [];
-  state           = None;
-  role            = false;
-  init            = None;
-  specs           = [];
-  loc             = Location.dummy;
-}
+let mk_decl ?typ ?default ?(loc = Location.dummy) name =
+  { name; typ; default; loc }
 
-let mk_contract id = {
-  name          = id;
-  signatures    = [];
-  init          = None;
-  loc           = Location.dummy;
-}
+let mk_asset ?(fields = []) ?key ?(sort = []) ?state ?(role = false) ?init ?(specs = []) ?(loc = Location.dummy) name   =
+  { name; fields; key; sort; state; role; init; specs; loc }
 
-let mk_model id = {
-  name          = id;
-  variables     = [];
-  assets        = [];
-  functions     = [];
-  transactions  = [];
-  enums         = [];
-  contracts     = [];
-  verifications = [];
-  loc           = Location.dummy;
-}
+let mk_contract ?(signatures = []) ?init ?(loc = Location.dummy) name =
+  { name; signatures; init; loc }
+
+let mk_model ?(variables = []) ?(assets = []) ?(functions = []) ?(transactions = []) ?(enums = []) ?(contracts = []) ?(verifications = []) ?(loc = Location.dummy) name =
+  { name; variables; assets; functions; transactions; enums; contracts; verifications; loc }
 
 let mk_id type_ id : qualid =
   { type_ = Some type_;
@@ -903,16 +829,99 @@ let rec fold_map_instr_term gi ge fi fe (accu : 'a) instr : 'instr * 'a =
     in
     gi (Icall (xe, id, argss)), argsa
 
-let mk_decl ?typ ?default ?(loc = Location.dummy) name =
-  { name; typ; default; loc }
-
 let create_fake_ast () =
-  let ast = mk_model (dumloc "fake") in
-  let decl1 = mk_decl (dumloc "str") ?typ:(Some (Tbuiltin VTstring)) ?default:(Some (mk_sp (Plit (mk_sp (BVstring "toto"))))) in
-  let decl2 = mk_decl (dumloc "n") ?typ:(Some (Tbuiltin VTint)) ?default:(Some (mk_sp (Plit (mk_sp (BVint Big_int.zero_big_int))))) in
-  let vars = [ mk_variable decl1; mk_variable decl2 ] in
-  {
-    ast with
-    variables = vars;
-  }
+  mk_model (dumloc "fake")
+    ~variables:[
+      mk_variable (mk_decl (dumloc "str")
+                     ~typ:(Tbuiltin VTstring)
+                     ~default:(mk_sp (Plit (mk_sp (BVstring "toto")))));
+      mk_variable (mk_decl (dumloc "n")
+                     ~typ:(Tbuiltin VTint)
+                     ~default:(mk_sp (Plit (mk_sp (BVint Big_int.zero_big_int)))))
+    ]
 
+let create_miles_with_expiration_ast () =
+  mk_model (dumloc "miles_with_expiration")
+    ~variables:[
+      mk_variable (mk_decl (dumloc "admin")
+                     ~typ:(Tbuiltin VTrole))
+    ]
+    ~assets:[
+      mk_asset (dumloc "mile")
+        ~key:(dumloc "id")
+        ~sort:[(dumloc "expiration")]
+        ~fields:[mk_decl (dumloc "id")
+                   ~typ:(Tbuiltin VTstring);
+                 mk_decl (dumloc "amount")
+                   ~typ:(Tbuiltin VTuint);
+                 mk_decl (dumloc "expiration")
+                   ~typ:(Tbuiltin VTdate); ]
+        ~specs:[mk_label_term (mk_sp (Pcomp (Gt,
+                                             (mk_sp (Pvar (dumloc "amount"))
+                                                ~type_:(LTprog (Tbuiltin VTuint))
+                                             ),
+                                             (mk_sp (Plit (mk_sp (BVint Big_int.zero_big_int)))
+                                                ~type_:(LTprog (Tbuiltin VTint))
+                                             )))
+                                 ~type_:(LTprog (Tbuiltin VTbool)))
+                  ~label:(dumloc "m1")];
+      mk_asset (dumloc "owner")
+        ~key:(dumloc "addr")
+        ~fields:[mk_decl (dumloc "addr")
+                   ~typ:(Tbuiltin VTrole);
+                 mk_decl (dumloc "miles")
+                   ~typ:(Tcontainer (Tasset (dumloc "mile"), Partition))]
+    ]
+
+    ~transactions:[
+      mk_transaction_struct (dumloc "add")
+        ~args:[mk_decl (dumloc "ow")
+                 ~typ:(Tbuiltin VTrole);
+               mk_decl (dumloc "newmile")
+                 ~typ:(Tasset (dumloc "mile"))
+              ]
+        ~calledby:(mk_sp (Rqualid (mk_sp (Qident (dumloc "admin"))
+                                     ~type_:(Tbuiltin VTrole)
+                                  )))
+
+        ~require:[mk_label_term (mk_sp (Pcomp (Gt,
+                                               (mk_sp (Pdot (mk_sp (Pvar (dumloc "newmile"))
+                                                               ~type_:(Tasset (dumloc "mile")),
+                                                             (dumloc "amount")))
+                                                  ~type_:(Tbuiltin VTuint)),
+                                               (mk_sp (Plit (mk_sp (BVint Big_int.zero_big_int)))
+                                                  ~type_:(Tbuiltin VTint)
+                                               )))
+                                   ~type_:(Tbuiltin VTbool))
+                    ~label:(dumloc "c1")]
+
+        ~effect:(mk_sp (Iif (mk_sp (Pcall (Some (dumloc "owner"),
+                                           Cconst Ccontains,
+                                           [AExpr (mk_sp (Pvar (dumloc "ow"))
+                                                     ~type_:(Tbuiltin VTaddress))]))
+                               ~type_:(Tbuiltin VTbool),
+                             mk_sp (Icall (Some (mk_sp (Pdot ((mk_sp (Pcall (Some (dumloc "owner"),
+                                                                             Cconst Cget,
+                                                                             [AExpr (mk_sp (Pvar (dumloc "ow"))
+                                                                                       ~type_:(Tbuiltin VTaddress))]))
+                                                                 ~type_:(Tasset (dumloc "owner"))
+                                                              ),
+                                                              (dumloc "miles")))
+                                                   ~type_:(Tcontainer (Tasset (dumloc "mile"), Partition))
+                                                ),
+                                           Cconst Cadd,
+                                           [mk_sp (Pvar (dumloc "newmile"))
+                                              ~type_:(Tasset (dumloc "mile"))
+                                           ])),
+                             mk_sp (Icall (Some (mk_sp (Pvar (dumloc "owner"))
+                                                   ~type_:(Tasset (dumloc "owner")) (* not sure ? *)
+                                                ),
+                                           Cconst Cadd,
+                                           [mk_sp (Precord [mk_sp (Pvar (dumloc "ow"))
+                                                              ~type_:(Tbuiltin VTaddress);
+                                                            mk_sp (Parray [mk_sp (Pvar (dumloc "newmile"))
+                                                                             ~type_:(Tasset (dumloc "mile"))])
+                                                              ~type_:(Tcontainer (Tasset (dumloc "owner"), Partition))
+                                                           ])
+                                              ~type_:(Tasset (dumloc "mile"))])))))
+    ]
