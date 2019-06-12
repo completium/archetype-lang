@@ -3,7 +3,53 @@ open Location
 module M = Model
 open Mlwtree
 
-let mk_test_add asset key : decl = Dfun {
+let mk_test_mile : decl = Drecord ("mile", [
+    { name = "id";         typ = Tystring  ; mutable_ = false; };
+    { name = "amount";     typ = Tyint     ; mutable_ = false; };
+    { name = "expiration"; typ = Tydate    ; mutable_ = false; };
+  ])
+
+let mk_test_mile : decl = Drecord ("owner", [
+    { name = "addr" ; typ = Tyaddr            ; mutable_ = false; };
+    { name = "miles"; typ = Typartition "mile"; mutable_ = false; };
+  ])
+
+
+let mk_asset_fields asset = [
+  ({ name = asset^"_keys"   ; typ = Tycoll asset ; mutable_ = true; }, Tvar "empty");
+  ({ name = asset^"_assets" ; typ = Tymap asset  ; mutable_ = true; },
+   Tvar ("const (mk_default_"^asset^" ())"));
+  ({ name = "added_"^asset  ; typ = Tycoll asset ; mutable_ = true; }, Tvar "empty");
+  ({ name = "removed_"^asset; typ = Tycoll asset ; mutable_ = true; }, Tvar "empty");
+]
+
+let mk_const_fields () = [
+  ({ name = "ops_"   ; typ = Tyrecord "transfers" ; mutable_ = true; }, Tvar "Nil");
+  ({ name = "get_balance_" ;     typ = Tytez          ; mutable_ = false; }, Tint 0);
+  ({ name = "get_transferred_" ; typ = Tytez          ; mutable_ = false; }, Tint 0);
+  ({ name = "get_caller_"      ; typ = Tyaddr         ; mutable_ = false; }, Tint 0);
+  ({ name = "get_now_"         ; typ = Tydate         ; mutable_ = false; }, Tint 0);
+]
+
+let mk_test_storage : decl = Dstorage {
+    fields = [
+      ({ name = "admin" ; typ = Tyrole ; mutable_ = true; }, Tint 0);
+    ] @
+      (mk_asset_fields "mile") @
+      (mk_asset_fields "owner") @
+      (mk_const_fields ())
+    ;
+    invariants = [
+      { id   = "inv1";
+        body = Tforall ([["k"],Tyasset "mile"],
+                        Timpl (Tmem (Tvar "k", Tvar "mile_keys"),
+                               Tgt (Tyint, Tapp (Tvar "amount",[Tget (Tvar "mile_assets",Tvar "k")]), Tint 0)))
+      };
+
+    ];
+  }
+
+let mk_add asset key : decl = Dfun {
     name     = "add_"^asset;
     args     = ["s",Tystorage; "new_asset",Tyasset asset];
     returns  = Tyunit;
@@ -49,7 +95,8 @@ let to_whyml (model : M.model) : mlw_tree  =
   let name = unloc model.name in
   { name = name;
     decls = [
-      mk_test_add "mile" "id";
-      mk_test_add "owner" "addr"
+      mk_test_storage;
+      mk_add "mile" "id";
+      mk_add "owner" "addr"
     ];
   }

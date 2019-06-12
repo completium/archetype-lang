@@ -14,11 +14,16 @@ type 'i abstract_type =
   | Tyint
   | Tystring
   | Tyaddr
+  | Tyrole
+  | Tydate
+  | Tytez
   | Tystorage
   | Tyunit
   | Tyrecord of 'i
   | Tycoll  of 'i
+  | Tymap of 'i
   | Tyasset of 'i
+  | Typartition of 'i
   (* ... *)
 [@@deriving show {with_path = false}]
 
@@ -146,14 +151,19 @@ let map_abstract_qualid (map_i : 'i1 -> 'i2) (q1 : 'i1 abstract_qualid)
   = List.map map_i q1
 
 let map_abstract_type (map_i : 'i1 -> 'i2) = function
-  | Tyint      -> Tyint
-  | Tystring   -> Tystring
-  | Tyaddr     -> Tyaddr
-  | Tystorage  -> Tystorage
-  | Tyunit      -> Tyunit
-  | Tyrecord i -> Tyrecord (map_i i)
-  | Tycoll i   -> Tycoll (map_i i)
-  | Tyasset i  -> Tyasset (map_i i)
+  | Tyint         -> Tyint
+  | Tystring      -> Tystring
+  | Tyaddr        -> Tyaddr
+  | Tyrole        -> Tyrole
+  | Tydate        -> Tydate
+  | Tytez         -> Tytez
+  | Tystorage     -> Tystorage
+  | Tyunit        -> Tyunit
+  | Tyrecord i    -> Tyrecord (map_i i)
+  | Tycoll i      -> Tycoll (map_i i)
+  | Tymap i       -> Tymap (map_i i)
+  | Tyasset i     -> Tyasset (map_i i)
+  | Typartition i -> Typartition (map_i i)
 
 let map_abstract_univ_decl
     (map_t : 't1 -> 't2)

@@ -99,14 +99,20 @@ let pp_with_paren pp fmt x =
 let pp_type fmt typ =
   let typ_str =
     match typ with
-    | Tyint      -> "int"
-    | Tystring   -> "string"
-    | Tyaddr     -> "address"
-    | Tystorage  -> "storage_"
-    | Tyunit     -> "unit"
-    | Tyrecord i -> i
-    | Tyasset  i -> i
-    | Tycoll i -> i in
+    | Tyint         -> "int"
+    | Tystring      -> "string"
+    | Tydate        -> "date"
+    | Tyaddr        -> "address"
+    | Tyrole        -> "role"
+    | Tytez         -> "tez"
+    | Tystorage     -> "storage_"
+    | Tyunit        -> "unit"
+    | Tyrecord i    -> i
+    | Tyasset  i    -> i
+    | Tycoll i      -> "acol"
+    | Tymap i       -> "map "^i
+    | Typartition _ -> "acol" in
+
   pp_str fmt typ_str
 
 (* -------------------------------------------------------------------------- *)
@@ -117,6 +123,13 @@ let pp_exn fmt e =
     | Ekeyexist -> "KeyExist"
     | Enotfound -> "NotFound" in
   pp_str fmt e_str
+
+(* -------------------------------------------------------------------------- *)
+
+let pp_univ_decl fmt (i,t) =
+  Format.fprintf fmt "%a : %a"
+    (pp_list " " pp_str) i
+    pp_type t
 
 (* -------------------------------------------------------------------------- *)
 
@@ -180,6 +193,27 @@ let rec pp_term outer pos fmt = function
   | Tempty e ->
     Format.fprintf fmt "is_empty %a"
       (pp_with_paren (pp_term outer pos)) e
+  | Tint i -> pp_str fmt (string_of_int i)
+  | Tforall (ud,b) ->
+    Format.fprintf fmt "@[forall %a.@\n%a@]"
+      (pp_list ", " pp_univ_decl) ud
+      (pp_term e_default PRight) b
+  | Timpl (e1,e2) ->
+    Format.fprintf fmt "@[%a ->@\n%a @]"
+      (pp_term e_default PRight) e1
+      (pp_term e_default PRight) e2
+  | Tgt (_,e1,e2) ->
+    Format.fprintf fmt "%a > %a"
+      (pp_term e_default PRight) e1
+      (pp_term e_default PRight) e2
+  | Tapp (f,a) ->
+    Format.fprintf fmt "%a %a"
+      (pp_with_paren (pp_term outer pos)) f
+      (pp_list " " (pp_with_paren (pp_term outer pos))) a
+  | Tget (e1,e2) ->
+    Format.fprintf fmt "get %a %a"
+      (pp_with_paren (pp_term outer pos)) e1
+      (pp_with_paren (pp_term outer pos)) e2
   | _ -> pp_str fmt "NOT IMPLEMENTED"
 
 (* -------------------------------------------------------------------------- *)
@@ -193,7 +227,7 @@ let pp_raise fmt raises =
 
 
 let pp_formula fmt f =
-  Format.fprintf fmt "@[[@expl:%a]@\n%a @]"
+  Format.fprintf fmt "@[ [@expl:%a]@\n %a @]"
     pp_str f.id
     (pp_term e_default PRight) f.body
 
@@ -201,8 +235,8 @@ let pp_ensures fmt ensures =
   if List.length ensures = 0
   then pp_str fmt ""
   else
-    Format.fprintf fmt "ensures { %a }@\n"
-      (pp_list " }@\nensures { " pp_formula) ensures
+    Format.fprintf fmt "ensures {@\n %a @\n}@\n"
+      (pp_list "@\n}@\nensures {@\n" pp_formula) ensures
 
 let pp_fun fmt (s : fun_struct) =
   let pp_arg fmt (id, t) =
@@ -218,11 +252,43 @@ let pp_fun fmt (s : fun_struct) =
 
 (* -------------------------------------------------------------------------- *)
 
+let pp_mutable fmt m =
+  let m_str = if m then "mutable" else "" in
+  pp_str fmt m_str
+
+let pp_field fmt (f : field) =
+  Format.fprintf fmt "%a %a : %a"
+    pp_mutable f.mutable_
+    pp_str f.name
+    pp_type f.typ
+
+(* -------------------------------------------------------------------------- *)
+
+let pp_init fmt ((f : field),i) =
+  Format.fprintf fmt "%a = %a"
+    pp_str f.name
+    (pp_term e_default PRight) i
+
+let pp_invariants fmt invs =
+  if List.length invs = 0
+  then pp_str fmt ""
+  else
+    Format.fprintf fmt " invariant {@\n %a @\n}@\n"
+      (pp_list "@\n}@\n invariant {@\n " pp_formula) invs
+
+let pp_storage fmt (s : storage_struct) =
+  Format.fprintf fmt "type storage_ = {@\n  @[%a @]@\n}%aby {@\n  @[%a @]@\n}"
+    (pp_list ";@\n" pp_field) (fst (List.split s.fields))
+    pp_invariants s.invariants
+    (pp_list ";@\n" pp_init) s.fields
+
+(* -------------------------------------------------------------------------- *)
+
 let pp_decl fmt = function
   | Duse _     -> Format.fprintf fmt "TODO: use"
   | Dclone _   -> Format.fprintf fmt "TODO: clone"
   | Drecord _  -> Format.fprintf fmt "TODO: record"
-  | Dstorage _ -> Format.fprintf fmt "TODO: storage"
+  | Dstorage s -> pp_storage fmt s
   | Daxiom _   -> Format.fprintf fmt "TODO: axiom"
   | Dfun s     -> pp_fun fmt s
 
