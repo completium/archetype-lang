@@ -228,7 +228,7 @@ let pp_decl fmt = function
 
 let pp_mlw_tree fmt (tree : mlw_tree) =
   Format.fprintf fmt "%a"
-    (pp_list "@\n" pp_decl) tree.decls
+    (pp_list "@\n@\n" pp_decl) tree.decls
 
 (* -------------------------------------------------------------------------- *)
 let string_of__of_pp pp x =
