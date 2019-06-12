@@ -22,7 +22,8 @@ let preprocess_ext pt =
   else pt
 
 let type_ pt =
-  let ast = Typing.typing Typing.empty pt in
+  let _ast = Typing.typing Typing.empty pt in
+  let ast = Ast.create_fake_ast () in
   if !Options.opt_ast
   then (Format.printf "%a@." Ast.pp_model ast; raise Stop)
   else ast
@@ -55,7 +56,7 @@ let generate_whyml model =
   let mlw = Gen_why3.to_whyml model in
   if !Options.opt_raw_target
   then Format.printf "%a@." Mlwtree.pp_mlw_tree mlw
-  else (Format.printf "%a@." Printer_mlwtree.pp_mlw_tree mlw; raise Stop)
+  else Format.printf "%a@." Printer_mlwtree.pp_mlw_tree mlw
 
 let generate_target_pt pt =
   match !Options.target with

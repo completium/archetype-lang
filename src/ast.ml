@@ -104,6 +104,12 @@ type unary_arithmetic_operator =
   | Uminus
 [@@deriving show {with_path = false}]
 
+type operator = [
+  | `Logical of logical_operator
+  | `Cmp     of comparison_operator
+  | `Arith   of arithmetic_operator
+  | `Unary   of unary_arithmetic_operator
+]
 type const =
   (* constant *)
   | Cstate
@@ -896,4 +902,17 @@ let rec fold_map_instr_term gi ge fi fe (accu : 'a) instr : 'instr * 'a =
            [p] @ pterms, accu) ([], xa) args
     in
     gi (Icall (xe, id, argss)), argsa
+
+let mk_decl ?typ ?default ?(loc = Location.dummy) name =
+  { name; typ; default; loc }
+
+let create_fake_ast () =
+  let ast = mk_model (dumloc "fake") in
+  let decl1 = mk_decl (dumloc "str") ?typ:(Some (Tbuiltin VTstring)) ?default:(Some (mk_sp (Plit (mk_sp (BVstring "toto"))))) in
+  let decl2 = mk_decl (dumloc "n") ?typ:(Some (Tbuiltin VTint)) ?default:(Some (mk_sp (Plit (mk_sp (BVint Big_int.zero_big_int))))) in
+  let vars = [ mk_variable decl1; mk_variable decl2 ] in
+  {
+    ast with
+    variables = vars;
+  }
 

@@ -56,8 +56,7 @@ type enum_struct = {
 
 type record_struct = {
   name: lident;
-  values: (lident * type_) list;
-  init: expr;
+  values: (lident * type_ * expr) list;
 }
 [@@deriving show {with_path = false}]
 
@@ -86,11 +85,14 @@ type model = {
 
 
 
+let mk_instruction ?(type_ = []) ?(loc = Location.dummy) node =
+  { node; type_; loc}
+
 let mk_enum ?(values = []) name : enum_struct =
   { name; values }
 
-let mk_record ?(values = []) name init : record_struct =
-  { name; values; init }
+let mk_record ?(values = []) name : record_struct =
+  { name; values }
 
 let mk_function ?(args = []) name kind ret body : function_struct =
   { name; kind; ret; args; body }

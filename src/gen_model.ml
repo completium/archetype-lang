@@ -93,7 +93,7 @@ let to_model (ast : A.model) : M.model =
       M.mk_storage_item asset.name ~fields:compute_fields ~invariants:asset.specs (*~init:asset.init TODO: uncomment this *)
     in
 
-    let cont f x l = List.map f x in
+    let cont f x l = l @ (List.map f x) in
     []
     |> cont variable_to_storage_items ast.variables
     |> cont asset_to_storage_items ast.assets
@@ -209,10 +209,9 @@ let to_model (ast : A.model) : M.model =
       process_fun_gen name body loc verif (fun x -> M.Entry x) list
     in
 
-    []
+    list
     |> cont process_function ast.functions
     |> cont process_transaction ast.transactions
-
   in
 
   let name = ast.name in

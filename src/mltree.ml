@@ -65,6 +65,7 @@ type literal =
   | Lint    of Core.big_int
   | Lbool   of bool
   | Lstring of string
+  | Lmap    of type_ * type_
   | Lraw    of string
 [@@deriving show {with_path = false}]
 
@@ -91,7 +92,7 @@ type type_struct = {
 
 type struct_struct = {
   name: ident;
-  fields: (ident * type_) list;
+  fields: (ident * type_ * expr) list;
 }
 [@@deriving show {with_path = false}]
 
@@ -105,6 +106,7 @@ type fun_struct = {
   name: ident;
   node: fun_node;
   args: (ident * type_) list;
+  ret: type_;
   body: expr;
 }
 [@@deriving show {with_path = false}]
@@ -127,8 +129,8 @@ let mk_type ?(values = []) name : type_struct =
 let mk_struct ?(fields = []) name : struct_struct =
   { name; fields }
 
-let mk_fun name node args body : fun_struct=
-  { name; node; args; body }
+let mk_fun name node args ret body : fun_struct=
+  { name; node; args; ret; body }
 
 let mk_tree ?(decls= []) name : tree =
   { name; decls }

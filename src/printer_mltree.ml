@@ -159,10 +159,14 @@ let rec pp_type fmt = function
     Format.fprintf fmt "%s" str
 
 let pp_literal fmt = function
-  | Lint    n -> Format.fprintf fmt "%s" (Big_int.string_of_big_int n)
-  | Lbool   b -> Format.fprintf fmt "%s" (if b then "true" else "false")
-  | Lstring s -> Format.fprintf fmt "\"%s\"" s
-  | Lraw    s -> Format.fprintf fmt "%s" s
+  | Lint    n   -> Format.fprintf fmt "%s" (Big_int.string_of_big_int n)
+  | Lbool   b   -> Format.fprintf fmt "%s" (if b then "true" else "false")
+  | Lstring s   -> Format.fprintf fmt "\"%s\"" s
+  | Lraw    s   -> Format.fprintf fmt "%s" s
+  | Lmap (k, v) ->
+    Format.fprintf fmt "(Map : (%a, %a) map)"
+      pp_type k
+      pp_type v
 
 let binop_to_string = function
   | And    -> "&&"
@@ -307,7 +311,7 @@ let pp_struct_type fmt (s : type_struct) =
     (pp_list "@\n" pp_item) s.values
 
 let pp_sstruct fmt (s : struct_struct) =
-  let pp_field fmt ((id, t) : (ident * type_)) =
+  let pp_field fmt ((id, t, _) : (ident * type_ * 'a)) =
     Format.fprintf fmt "%a: %a;"
       pp_id id
       pp_type t
