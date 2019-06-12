@@ -17,6 +17,7 @@ type 'i abstract_type =
   | Tystorage
   | Tyunit
   | Tyrecord of 'i
+  | Tycoll  of 'i
   | Tyasset of 'i
   (* ... *)
 [@@deriving show {with_path = false}]
@@ -73,6 +74,7 @@ type ('e,'t,'i) abstract_term =
   | Told    of 'e
   | Tat     of 'e
   | Tunion  of 'e * 'e
+  | Tinter  of 'e * 'e
   | Tdiff   of 'e * 'e
   (* set *)
   | Tmem    of 'e * 'e
@@ -150,6 +152,7 @@ let map_abstract_type (map_i : 'i1 -> 'i2) = function
   | Tystorage  -> Tystorage
   | Tyunit      -> Tyunit
   | Tyrecord i -> Tyrecord (map_i i)
+  | Tycoll i   -> Tycoll (map_i i)
   | Tyasset i  -> Tyasset (map_i i)
 
 let map_abstract_univ_decl
@@ -203,6 +206,7 @@ let map_abstract_term
   | Told e          -> Told (map_e e)
   | Tat e           -> Tat (map_e e)
   | Tunion (e1,e2)  -> Tunion (map_e e1, map_e e2)
+  | Tinter (e1,e2)  -> Tinter (map_e e1, map_e e2)
   | Tdiff (e1,e2)   -> Tdiff (map_e e1, map_e e2)
   | Tmem (e1,e2)    -> Tmem (map_e e1, map_e e2)
   | Tempty e        -> Tempty (map_e e)

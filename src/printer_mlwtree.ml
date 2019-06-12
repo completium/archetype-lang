@@ -85,6 +85,15 @@ let maybe_paren outer inner pos pp =
     | _ -> false
   in pp_maybe_paren c pp
 
+let needs_paren = function
+  | Tdoti _ -> false
+  | Tdot _  -> false
+  | Tvar _  -> false
+  | _ -> true
+
+let pp_with_paren pp fmt x =
+  pp_maybe (needs_paren x) pp_paren pp fmt x
+
 (* -------------------------------------------------------------------------- *)
 
 let pp_type fmt typ =
@@ -96,7 +105,8 @@ let pp_type fmt typ =
     | Tystorage  -> "storage_"
     | Tyunit     -> "unit"
     | Tyrecord i -> i
-    | Tyasset  i -> i in
+    | Tyasset  i -> i
+    | Tycoll i -> i in
   pp_str fmt typ_str
 
 (* -------------------------------------------------------------------------- *)
@@ -130,23 +140,46 @@ let rec pp_term outer pos fmt = function
   | Traise e -> Format.fprintf fmt "raise %a" pp_exn e
   | Tmem (e1,e2) ->
     Format.fprintf fmt "mem %a %a"
-      (pp_term outer pos) e1
-      (pp_term outer pos) e2
+      (pp_with_paren (pp_term outer pos)) e1
+      (pp_with_paren (pp_term outer pos)) e2
   | Tvar i -> pp_str fmt i
   | Tdoti (i1,i2) -> Format.fprintf fmt "%a.%a" pp_str i1 pp_str i2
+  | Tdot (e1,e2) ->
+    Format.fprintf fmt "%a.%a"
+      (pp_with_paren (pp_term outer pos)) e1
+      (pp_term outer pos) e2
   | Tassign (e1,e2) ->
     Format.fprintf fmt "%a <- %a"
-      (pp_term outer pos) e1
+      (pp_with_paren (pp_term outer pos)) e1
       (pp_term outer pos) e2
   | Tadd (e1,e2) ->
     Format.fprintf fmt "add %a %a"
-      (pp_term outer pos) e1
-      (pp_term outer pos) e2
+      (pp_with_paren (pp_term outer pos)) e1
+      (pp_with_paren (pp_term outer pos)) e2
   | Tset (e1,e2,e3) ->
     Format.fprintf fmt "set %a %a %a"
-      (pp_term outer pos) e1
-      (pp_term outer pos) e2
-      (pp_term outer pos) e3
+      (pp_with_paren (pp_term outer pos)) e1
+      (pp_with_paren (pp_term outer pos)) e2
+      (pp_with_paren (pp_term outer pos)) e3
+  | Teq (Tycoll _, e1, e2) ->
+    Format.fprintf fmt "%a == %a" (pp_term outer pos) e1 (pp_term outer pos) e2
+  | Tunion (e1, e2) ->
+    Format.fprintf fmt "union %a %a"
+      (pp_with_paren (pp_term outer pos)) e1
+      (pp_with_paren (pp_term outer pos)) e2
+  | Tinter (e1, e2) ->
+    Format.fprintf fmt "inter %a %a"
+      (pp_with_paren (pp_term outer pos)) e1
+      (pp_with_paren (pp_term outer pos)) e2
+  | Told e ->
+    Format.fprintf fmt "old %a"
+      (pp_with_paren (pp_term outer pos)) e
+  | Tsingl e ->
+    Format.fprintf fmt "singl %a"
+      (pp_with_paren (pp_term outer pos)) e
+  | Tempty e ->
+    Format.fprintf fmt "is_empty %a"
+      (pp_with_paren (pp_term outer pos)) e
   | _ -> pp_str fmt "NOT IMPLEMENTED"
 
 (* -------------------------------------------------------------------------- *)
@@ -158,15 +191,29 @@ let pp_raise fmt raises =
     Format.fprintf fmt "raises { %a }@\n"
       (pp_list ", " pp_exn) raises
 
+
+let pp_formula fmt f =
+  Format.fprintf fmt "@[[@expl:%a]@\n%a @]"
+    pp_str f.id
+    (pp_term e_default PRight) f.body
+
+let pp_ensures fmt ensures =
+  if List.length ensures = 0
+  then pp_str fmt ""
+  else
+    Format.fprintf fmt "ensures { %a }@\n"
+      (pp_list " }@\nensures { " pp_formula) ensures
+
 let pp_fun fmt (s : fun_struct) =
   let pp_arg fmt (id, t) =
     Format.fprintf fmt "(%a : %a)"
       pp_id id
       pp_type t in
-  Format.fprintf fmt "let %a %a @\n%a=@[  %a@]@."
+  Format.fprintf fmt "let %a %a @\n%a%a=@[  %a@]@."
     pp_id s.name
     (pp_list " " pp_arg) s.args
     pp_raise s.raises
+    pp_ensures s.ensures
     (pp_term e_top PRight) s.body
 
 (* -------------------------------------------------------------------------- *)
