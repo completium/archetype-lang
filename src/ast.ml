@@ -761,18 +761,18 @@ let fold_map_term g f (accu : 'a) (term : 'term) : 'term * 'a =
 let fold_map_instr_term gi ge fi fe (accu : 'a) instr : 'instr * 'a =
   match instr.node with
   | Iif (c, t, e) ->
-    let ce, ca = fold_map_term (ge c) fe accu c in
+    let ce, ca = fe accu c in
     let ti, ta = fi ca t in
     let ei, ea = fi ta e in
     gi (Iif (ce, ti, ei)), ea
 
   | Ifor (i, c, b) ->
-    let ce, ca = fold_map_term (ge c) fe accu c in
+    let ce, ca = fe accu c in
     let bi, ba = fi ca b in
     gi (Ifor (i, ce, bi)), ba
 
   | Iletin (i, j, b) ->
-    let je, ja = fold_map_term (ge j) fe accu j in
+    let je, ja = fe accu j in
     let bi, ba = fi ja b in
     gi (Iletin (i, je, bi)), ba
 
@@ -786,7 +786,7 @@ let fold_map_instr_term gi ge fi fe (accu : 'a) instr : 'instr * 'a =
     gi (Iseq isi), isa
 
   | Imatchwith (a, ps) ->
-    let ae, aa = fold_map_term (ge a) fe accu a in
+    let ae, aa = fe accu a in
 
     let (pse, psa) =
       List.fold_left
@@ -798,34 +798,34 @@ let fold_map_instr_term gi ge fi fe (accu : 'a) instr : 'instr * 'a =
     gi (Imatchwith (ae, ps)), psa
 
   | Iassign (op, id, x) ->
-    let xe, xa = fold_map_term (ge x) fe accu x in
+    let xe, xa = fe accu x in
     gi (Iassign (op, id, xe)), xa
 
   | Irequire (b, x) ->
-    let xe, xa = fold_map_term (ge x) fe accu x in
+    let xe, xa = fe accu x in
     gi (Irequire (b, xe)), xa
 
   | Itransfer (x, b, q) ->
-    let xe, xa = fold_map_term (ge x) fe accu x in
+    let xe, xa = fe accu x in
     gi (Itransfer (xe, b, q)), xa
 
   | Ibreak ->
     gi (Ibreak), accu
 
   | Iassert x ->
-    let xe, xa = fold_map_term (ge x) fe accu x in
+    let xe, xa = fe accu x in
     gi (Iassert xe), xa
 
   | Icall (x, id, args) ->
     let xe, xa =
       match x with
-      | Some x -> fold_map_term (ge x) fe accu x |> (fun (a, b) -> (Some a, b))
+      | Some x -> fe accu x |> (fun (a, b) -> (Some a, b))
       | None -> None, accu in
 
     let (argss, argsa) =
       List.fold_left
         (fun (pterms, accu) x ->
-           let p, accu = fold_map_term (ge x) fe accu x in
+           let p, accu = fe accu x in
            [p] @ pterms, accu) ([], xa) args
     in
     gi (Icall (xe, id, argss)), argsa

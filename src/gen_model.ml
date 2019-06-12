@@ -3,6 +3,8 @@ open Tools
 module A = Ast
 module M = Model
 
+exception Anomaly
+
 type enum_item_struct = (A.lident, A.type_, A.pterm) A.enum_item_struct
 type verification     = (A.lident, A.type_, A.pterm) A.verification
 type record           = (A.lident, A.type_, A.pterm) A.decl_gen
@@ -139,9 +141,8 @@ let to_model (ast : A.model) : M.model =
       let rec fe accu (term : A.pterm) : A.pterm * M.decl_node list =
         match term.node with
         | A.Pcall (Some asset_name, Cconst c, args) -> (
-            (* Format.eprintf "la\n"; *)
             let _, accu = A.fold_map_term (fun node -> {term with node = node} ) fe accu term in
-            let function__ = mk_function (Option.get term.type_) None c in
+            let function__ = mk_function (Tcolasset asset_name) None c in
             let term, accu =
               match function__ with
               | Some f -> (
@@ -150,17 +151,37 @@ let to_model (ast : A.model) : M.model =
                   {term with node = A.Pcall (None, Cid fun_name, args) }, add accu (M.TNfunction f)
                 )
               | None -> term, accu in
-            term, accu)
+            term, accu
+          )
         | _ -> A.fold_map_term (ge term) fe accu term in
 
-      let process_instr accu t (c : A.const) field_name gi fi args =
+      let process_instr accu t (c : A.const) field_name gi fi node args =
+        let a =
+          match node with
+          | A.Icall (a, _, _) -> a
+          | _ -> raise Anomaly in
+
+        let xe, xa =
+          match a with
+          | Some x -> fe accu x |> (fun (a, b) -> (Some a, b))
+          | None -> None, accu in
+
+        let (argss, argsa) =
+          List.fold_left
+            (fun (pterms, accu) x ->
+               let p, accu = fe accu x in
+               [p] @ pterms, accu) ([], xa) args
+        in
+
+        let new_args = Option.map_dfl (fun x -> x::argss) argss xe in
+
         let function__ = mk_function (Option.get t) field_name c in
         let instr, accu =
           match function__ with
           | Some f -> (
               let node = f.node in
               let fun_name = Location.dumloc (M.function_name_from_function_node node) in
-              {instr with node = A.Icall (None, Cid fun_name, args) }, add accu (M.TNfunction f)
+              {instr with node = A.Icall (None, Cid fun_name, new_args) }, add argsa (M.TNfunction f)
             )
           | None -> instr, accu in
         instr, accu in
@@ -169,10 +190,10 @@ let to_model (ast : A.model) : M.model =
         let gi = (fun node -> {instr with node = node}) in
         match instr.node with
         | A.Icall (Some {node = A.Pdot ({type_ = t; _}, id); _}, Cconst c, args) ->
-          process_instr accu t c (Some id) gi fi args
+          process_instr accu t c (Some id) gi fi instr.node args
 
         | A.Icall (Some {type_ = t; _}, Cconst c, args) ->
-          process_instr accu t c None gi fi args
+          process_instr accu t c None gi fi instr.node args
 
         | _ ->
           A.fold_map_instr_term (fun node -> { instr with node = node} ) ge fi fe accu instr
