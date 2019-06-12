@@ -1,7 +1,4 @@
-type literal =
-  | Lint of int
-  (* ... *)
-[@@deriving show {with_path = false}]
+open Tools
 
 type exn =
   | Enotfound
@@ -15,7 +12,12 @@ type 'i abstract_qualid = 'i list
 
 type 'i abstract_type =
   | Tyint
-  | TyRecord of 'i
+  | Tystring
+  | Tyaddr
+  | Tystorage
+  | Tyunit
+  | Tyrecord of 'i
+  | Tyasset of 'i
   (* ... *)
 [@@deriving show {with_path = false}]
 
@@ -24,8 +26,61 @@ type ('t,'i) abstract_univ_decl = 'i list * 't
 
 type ('e,'t,'i) abstract_term =
   | Tseq    of 'e list
+  | Tletin  of 'i * 't option
+  | Tif     of 'e * 'e * 'e option
+  | Tapp    of 'e * 'e list
+  | Tvar    of 'i
+  (* record *)
+  | Trecord of 'e * 't * ('i * 'e) list (* { 'e with 'i = 'e; } *)
+  | Tdot    of 'e * 'e
+  | Tdoti   of 'i * 'i
+  (* storage fields *)
+  | Tename
+  | Tcaller
+  | Tnow
+  | Tadded  of 'i
+  | Trmed   of 'i
+  (* archetype lib *)
+  | Tadd    of 'e * 'e
+  | Tremove of 'e * 'e
+  | Tget    of 'e * 'e
+  | Tset    of 'e * 'e * 'e
+  | Tassign of 'e * 'e
+  | Traise  of exn
+  | Tconcat of 'e * 'e
+  (* trace *)
+  | Tmktr   of 'e * 'e
+  | Ttradd  of 'i
+  | Ttrrm   of 'i
+  (* operators *)
+  | Tplus   of 't * 'e * 'e
+  | Tminus  of 't * 'e * 'e
+  | Tuminus of 't * 'e
+  | Tdiv    of 't * 'e * 'e
+  | Tmod    of 't * 'e * 'e
+  (* comp *)
+  | Teq     of 't * 'e * 'e
+  | Tlt     of 't * 'e * 'e
+  | Tle     of 't * 'e * 'e
+  | Tgt     of 't * 'e * 'e
+  | Tge     of 't * 'e * 'e
+  (* literals *)
+  | Tint    of int
+  | Taddr   of string
+  (* spec *)
   | Tforall of (('t,'i) abstract_univ_decl list) * 'e
-  | Tlit    of literal
+  | Timpl   of 'e * 'e
+  | Told    of 'e
+  | Tat     of 'e
+  | Tunion  of 'e * 'e
+  | Tdiff   of 'e * 'e
+  (* set *)
+  | Tmem    of 'e * 'e
+  | Tempty  of 'e
+  | Tsingl  of 'e
+  | Thead   of 'e * 'e
+  | Ttail   of 'e * 'e
+  | Tnth    of 'e * 'e
   (* ... *)
 [@@deriving show {with_path = false}]
 
@@ -89,8 +144,13 @@ let map_abstract_qualid (map_i : 'i1 -> 'i2) (q1 : 'i1 abstract_qualid)
   = List.map map_i q1
 
 let map_abstract_type (map_i : 'i1 -> 'i2) = function
-  | Tyint -> Tyint
-  | TyRecord i -> TyRecord (map_i i)
+  | Tyint      -> Tyint
+  | Tystring   -> Tystring
+  | Tyaddr     -> Tyaddr
+  | Tystorage  -> Tystorage
+  | Tyunit      -> Tyunit
+  | Tyrecord i -> Tyrecord (map_i i)
+  | Tyasset i  -> Tyasset (map_i i)
 
 let map_abstract_univ_decl
     (map_t : 't1 -> 't2)
@@ -102,9 +162,54 @@ let map_abstract_term
     (map_e : 'e1 -> 'e2)
     (map_t : 't1 -> 't2)
     (map_i : 'i1 -> 'i2) = function
-  | Tseq l        -> Tseq (List.map map_e l)
-  | Tforall (l,e) -> Tforall (List.map (map_abstract_univ_decl map_t map_i) l, map_e e)
-  | Tlit l        -> Tlit l
+  | Tseq l          -> Tseq (List.map map_e l)
+  | Tletin (i,t)    -> Tletin (map_i i, Option.map map_t t)
+  | Tif (i,t,e)     -> Tif (map_e i, map_e t, Option.map map_e e)
+  | Tapp (f,a)      -> Tapp (map_e f, List.map map_e a)
+  | Tvar i          -> Tvar (map_i i)
+  | Trecord (e,t,l) -> Trecord (map_e e, map_t t, List.map (fun (i,v) ->
+      (map_i i,map_e v)) l)
+  | Tdot (e1,e2)    -> Tdot (map_e e1, map_e e2)
+  | Tdoti (i1,i2)   -> Tdoti (map_i i1, map_i i2)
+  | Tename          -> Tename
+  | Tcaller         -> Tcaller
+  | Tnow            -> Tnow
+  | Tadded a        -> Tadded (map_i a)
+  | Trmed  a        -> Trmed (map_i a)
+  | Tadd (e1,e2)    -> Tadd (map_e e1, map_e e2)
+  | Tremove (e1,e2) -> Tremove (map_e e1, map_e e2)
+  | Tget (e1,e2)    -> Tget (map_e e1, map_e e2)
+  | Tset (e1,e2,e3) -> Tset (map_e e1, map_e e2, map_e e3)
+  | Tassign (e1,e2) -> Tassign (map_e e1, map_e e2)
+  | Traise e        -> Traise e
+  | Tconcat (e1,e2) -> Tconcat (map_e e1, map_e e2)
+  | Tmktr (e1,e2)   -> Tmktr (map_e e1, map_e e2)
+  | Ttradd i        -> Ttradd (map_i i)
+  | Ttrrm  i        -> Ttrrm (map_i i)
+  | Tplus (t,l,r)   -> Tplus (map_t t, map_e l, map_e r)
+  | Tminus (t,l,r)  -> Tminus (map_t t, map_e l, map_e r)
+  | Tuminus (t,e)   -> Tuminus (map_t t, map_e e)
+  | Tdiv (t,l,r)    -> Tdiv (map_t t, map_e l, map_e r)
+  | Tmod (t,l,r)    -> Tmod (map_t t, map_e l, map_e r)
+  | Teq (t,l,r)     -> Teq (map_t t, map_e l, map_e r)
+  | Tlt (t,l,r)     -> Tlt (map_t t, map_e l, map_e r)
+  | Tle (t,l,r)     -> Tle (map_t t, map_e l, map_e r)
+  | Tgt (t,l,r)     -> Tgt (map_t t, map_e l, map_e r)
+  | Tge (t,l,r)     -> Tge (map_t t, map_e l, map_e r)
+  | Tint i          -> Tint i
+  | Taddr s         -> Taddr s
+  | Tforall (l,e)   -> Tforall (List.map (map_abstract_univ_decl map_t map_i) l, map_e e)
+  | Timpl (e1,e2)   -> Timpl (map_e e1, map_e e2)
+  | Told e          -> Told (map_e e)
+  | Tat e           -> Tat (map_e e)
+  | Tunion (e1,e2)  -> Tunion (map_e e1, map_e e2)
+  | Tdiff (e1,e2)   -> Tdiff (map_e e1, map_e e2)
+  | Tmem (e1,e2)    -> Tmem (map_e e1, map_e e2)
+  | Tempty e        -> Tempty (map_e e)
+  | Tsingl e        -> Tsingl (map_e e)
+  | Thead (e1,e2)   -> Thead (map_e e1, map_e e2)
+  | Ttail (e1,e2)   -> Ttail (map_e e1, map_e e2)
+  | Tnth (e1,e2)    -> Tnth (map_e e1, map_e e2)
 
 let map_abstract_forumla
     (map_e : 'e1 -> 'e2)
