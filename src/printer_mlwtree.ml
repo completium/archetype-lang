@@ -243,7 +243,7 @@ let pp_fun fmt (s : fun_struct) =
     Format.fprintf fmt "(%a : %a)"
       pp_id id
       pp_type t in
-  Format.fprintf fmt "let %a %a @\n%a%a=@[  %a@]@."
+  Format.fprintf fmt "let %a %a @\n%a%a=@[  %a@]"
     pp_id s.name
     (pp_list " " pp_arg) s.args
     pp_raise s.raises
@@ -261,6 +261,13 @@ let pp_field fmt (f : field) =
     pp_mutable f.mutable_
     pp_str f.name
     pp_type f.typ
+
+(* -------------------------------------------------------------------------- *)
+
+let pp_record fmt (i,fl) =
+  Format.fprintf fmt "type %a = {@\n  @[%a@] @\n}"
+    pp_str i
+    (pp_list ";@\n" pp_field) fl
 
 (* -------------------------------------------------------------------------- *)
 
@@ -285,15 +292,17 @@ let pp_storage fmt (s : storage_struct) =
 (* -------------------------------------------------------------------------- *)
 
 let pp_decl fmt = function
-  | Duse _     -> Format.fprintf fmt "TODO: use"
-  | Dclone _   -> Format.fprintf fmt "TODO: clone"
-  | Drecord _  -> Format.fprintf fmt "TODO: record"
-  | Dstorage s -> pp_storage fmt s
-  | Daxiom _   -> Format.fprintf fmt "TODO: axiom"
-  | Dfun s     -> pp_fun fmt s
+  | Duse l       -> Format.fprintf fmt "use %a" (pp_list "." pp_str) l
+  | Dclone _     -> Format.fprintf fmt "TODO: clone"
+  | Dvariant _   -> Format.fprintf fmt "TODO: variant"
+  | Drecord (i,l)-> pp_record fmt (i,l)
+  | Dstorage s   -> pp_storage fmt s
+  | Daxiom _     -> Format.fprintf fmt "TODO: axiom"
+  | Dfun s       -> pp_fun fmt s
 
 let pp_mlw_tree fmt (tree : mlw_tree) =
-  Format.fprintf fmt "%a"
+  Format.fprintf fmt "module %a@\n  @[%a@]@\nend"
+    pp_str tree.name
     (pp_list "@\n@\n" pp_decl) tree.decls
 
 (* -------------------------------------------------------------------------- *)

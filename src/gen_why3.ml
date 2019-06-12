@@ -9,7 +9,7 @@ let mk_test_mile : decl = Drecord ("mile", [
     { name = "expiration"; typ = Tydate    ; mutable_ = false; };
   ])
 
-let mk_test_mile : decl = Drecord ("owner", [
+let mk_test_owner : decl = Drecord ("owner", [
     { name = "addr" ; typ = Tyaddr            ; mutable_ = false; };
     { name = "miles"; typ = Typartition "mile"; mutable_ = false; };
   ])
@@ -91,10 +91,15 @@ let mk_add asset key : decl = Dfun {
       ];
   }
 
+let mk_use : decl = Duse ["archetype";"Lib"]
+
 let to_whyml (model : M.model) : mlw_tree  =
-  let name = unloc model.name in
-  { name = name;
+  let _name = unloc model.name in
+  { name = "Miles_with_expiration_storage";
     decls = [
+      mk_use;
+      mk_test_mile;
+      mk_test_owner;
       mk_test_storage;
       mk_add "mile" "id";
       mk_add "owner" "addr"
