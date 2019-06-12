@@ -214,6 +214,13 @@ let rec pp_term outer pos fmt = function
     Format.fprintf fmt "get %a %a"
       (pp_with_paren (pp_term outer pos)) e1
       (pp_with_paren (pp_term outer pos)) e2
+  | Trecord (None,l) ->
+    let pp_recfield fmt (n,t) =
+      Format.fprintf fmt "%a = %a"
+        pp_str n
+        (pp_term e_default PRight) t in
+    Format.fprintf fmt "{@\n  @[%a@]@\n}"
+      (pp_list ";@\n" pp_recfield) l
   | _ -> pp_str fmt "NOT IMPLEMENTED"
 
 (* -------------------------------------------------------------------------- *)
@@ -243,9 +250,10 @@ let pp_fun fmt (s : fun_struct) =
     Format.fprintf fmt "(%a : %a)"
       pp_id id
       pp_type t in
-  Format.fprintf fmt "let %a %a @\n%a%a=@[  %a@]"
+  Format.fprintf fmt "let %a %a : %a@\n%a%a=@[  %a@]"
     pp_id s.name
     (pp_list " " pp_arg) s.args
+    pp_type s.returns
     pp_raise s.raises
     pp_ensures s.ensures
     (pp_term e_top PRight) s.body

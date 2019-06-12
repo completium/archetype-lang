@@ -15,6 +15,25 @@ let mk_test_owner : decl = Drecord ("owner", [
   ])
 
 
+let mk_default_val = function
+  | Typartition _ -> Tvar "acol"
+  | _ -> Tint 0
+
+let mk_default_init = function
+  | Drecord (n,fs) ->
+    Dfun {
+      name     = "mk_default_"^n;
+      args     = [];
+      returns  = Tyasset n;
+      raises   = [];
+      requires = [];
+      ensures  = [];
+      body     = Trecord (None, List.map (fun (f:field) ->
+          f.name, mk_default_val f.typ
+        ) fs);
+    }
+  | _ -> assert false
+
 let mk_asset_fields asset = [
   ({ name = asset^"_keys"   ; typ = Tycoll asset ; mutable_ = true; }, Tvar "empty");
   ({ name = asset^"_assets" ; typ = Tymap asset  ; mutable_ = true; },
@@ -99,7 +118,9 @@ let to_whyml (model : M.model) : mlw_tree  =
     decls = [
       mk_use;
       mk_test_mile;
+      mk_default_init mk_test_mile;
       mk_test_owner;
+      mk_default_init mk_test_owner;
       mk_test_storage;
       mk_add "mile" "id";
       mk_add "owner" "addr"

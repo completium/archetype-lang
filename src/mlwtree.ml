@@ -37,7 +37,7 @@ type ('e,'t,'i) abstract_term =
   | Tapp    of 'e * 'e list
   | Tvar    of 'i
   (* record *)
-  | Trecord of 'e * 't * ('i * 'e) list (* { 'e with 'i = 'e; } *)
+  | Trecord of 'e option * ('i * 'e) list (* { 'e with 'i = 'e; } *)
   | Tdot    of 'e * 'e
   | Tdoti   of 'i * 'i
   (* storage fields *)
@@ -181,7 +181,7 @@ let map_abstract_term
   | Tif (i,t,e)     -> Tif (map_e i, map_e t, Option.map map_e e)
   | Tapp (f,a)      -> Tapp (map_e f, List.map map_e a)
   | Tvar i          -> Tvar (map_i i)
-  | Trecord (e,t,l) -> Trecord (map_e e, map_t t, List.map (fun (i,v) ->
+  | Trecord (e,l) -> Trecord (Option.map map_e e, List.map (fun (i,v) ->
       (map_i i,map_e v)) l)
   | Tdot (e1,e2)    -> Tdot (map_e e1, map_e e2)
   | Tdoti (i1,i2)   -> Tdoti (map_i i1, map_i i2)
