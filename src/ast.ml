@@ -50,6 +50,7 @@ type ptyp =
   | Tbuiltin of vtyp
   | Tcontainer of ptyp * container
   | Ttuple of ptyp list
+  | Tcolasset of lident
 [@@deriving show {with_path = false}]
 
 type ltyp =
@@ -658,24 +659,24 @@ let fold_instr_expr fi fe accu instr =
   | Iassert x           -> fe accu x
   | Icall (x, id, args) -> fi accu instr
 
-let rec fold_map_term g f (accu : 'a) (term : 'term) : 'term * 'a =
+let fold_map_term g f (accu : 'a) (term : 'term) : 'term * 'a =
   match term.node with
   | Lquantifer (q, id, t, e) ->
-    let ee, ea = fold_map_term g f accu e in
+    let ee, ea = f accu e in
     g (Lquantifer (q, id, t, ee)), ea
 
   | Pif (c, t, e) ->
-    let ce, ca = fold_map_term g f accu c in
-    let ti, ta = fold_map_term g f ca t in
-    let ei, ea = fold_map_term g f ta e in
+    let ce, ca = f accu c in
+    let ti, ta = f ca t in
+    let ei, ea = f ta e in
     g (Pif (ce, ti, ei)), ea
 
   | Pmatchwith (e, l) ->
-    let ee, ea = fold_map_term g f accu e in
+    let ee, ea = f accu e in
     let (pse, psa) =
       List.fold_left
         (fun (ps, accu) (p, i) ->
-           let pa, accu = fold_map_term g f accu i in
+           let pa, accu = f accu i in
            [(p, i)] @ ps, accu) ([], ea) l
     in
 
@@ -687,7 +688,7 @@ let rec fold_map_term g f (accu : 'a) (term : 'term) : 'term * 'a =
         (fun (pterms, accu) (x : 'term term_arg) ->
            let p, accu =
              match x with
-             | AExpr a -> fold_map_term g f accu a |> fun (x, acc) -> (Some (AExpr x), acc)
+             | AExpr a -> f accu a |> fun (x, acc) -> (Some (AExpr x), acc)
              | _ -> None, accu in
            let x = match p with | Some a -> a | None -> x in
            [x] @ pterms, accu) ([], accu) args
@@ -695,38 +696,38 @@ let rec fold_map_term g f (accu : 'a) (term : 'term) : 'term * 'a =
     g (Pcall (a, id, argss)), argsa
 
   | Plogical (op, l, r) ->
-    let le, la = fold_map_term g f accu l in
-    let re, ra = fold_map_term g f la r in
+    let le, la = f accu l in
+    let re, ra = f la r in
     g (Plogical (op, le, re)), ra
 
   | Pnot e ->
-    let ee, ea = fold_map_term g f accu e in
+    let ee, ea = f accu e in
     g (Pnot ee), ea
 
   | Pcomp (op, l, r) ->
-    let le, la = fold_map_term g f accu l in
-    let re, ra = fold_map_term g f la r in
+    let le, la = f accu l in
+    let re, ra = f la r in
     g (Pcomp (op, le, re)), ra
 
   | Parith (op, l, r) ->
-    let le, la = fold_map_term g f accu l in
-    let re, ra = fold_map_term g f la r in
+    let le, la = f accu l in
+    let re, ra = f la r in
     g (Parith (op, le, re)), ra
 
   | Puarith (op, e) ->
-    let ee, ea = fold_map_term g f accu e in
+    let ee, ea = f accu e in
     g (Puarith (op, ee)), ea
 
   | Precord l ->
     let (lp, la) = List.fold_left
         (fun (pterms, accu) x ->
-           let p, accu = fold_map_term g f accu x in
+           let p, accu = f accu x in
            [p] @ pterms, accu) ([], accu) l in
     g (Precord lp), la
 
   | Pletin (id, i, t, o) ->
-    let ie, ia = fold_map_term g f accu i in
-    let oe, oa = fold_map_term g f ia o in
+    let ie, ia = f accu i in
+    let oe, oa = f ia o in
     g (Pletin (id, i, t, oe)), oa
 
   | Pvar id ->
@@ -735,7 +736,7 @@ let rec fold_map_term g f (accu : 'a) (term : 'term) : 'term * 'a =
   | Parray l ->
     let (lp, la) = List.fold_left
         (fun (pterms, accu) x ->
-           let p, accu = fold_map_term g f accu x in
+           let p, accu = f accu x in
            [p] @ pterms, accu) ([], accu) l in
     g (Parray lp), la
 
@@ -743,7 +744,7 @@ let rec fold_map_term g f (accu : 'a) (term : 'term) : 'term * 'a =
     g (Plit l), accu
 
   | Pdot (e, id) ->
-    let ee, ea = fold_map_term g f accu e in
+    let ee, ea = f accu e in
     g (Pdot (ee, id)), ea
 
   | Pconst c ->
@@ -752,34 +753,34 @@ let rec fold_map_term g f (accu : 'a) (term : 'term) : 'term * 'a =
   | Ptuple l ->
     let (lp, la) = List.fold_left
         (fun (pterms, accu) x ->
-           let p, accu = fold_map_term g f accu x in
+           let p, accu = f accu x in
            [p] @ pterms, accu) ([], accu) l in
     g (Ptuple lp), la
 
 
-let rec fold_map_instr_term gi ge fi fe (accu : 'a) instr : 'instr * 'a =
+let fold_map_instr_term gi ge fi fe (accu : 'a) instr : 'instr * 'a =
   match instr.node with
   | Iif (c, t, e) ->
     let ce, ca = fold_map_term (ge c) fe accu c in
-    let ti, ta = fold_map_instr_term gi ge fi fe ca t in
-    let ei, ea = fold_map_instr_term gi ge fi fe ta e in
+    let ti, ta = fi ca t in
+    let ei, ea = fi ta e in
     gi (Iif (ce, ti, ei)), ea
 
   | Ifor (i, c, b) ->
     let ce, ca = fold_map_term (ge c) fe accu c in
-    let bi, ba = fold_map_instr_term gi ge fi fe ca b in
+    let bi, ba = fi ca b in
     gi (Ifor (i, ce, bi)), ba
 
   | Iletin (i, j, b) ->
     let je, ja = fold_map_term (ge j) fe accu j in
-    let bi, ba = fold_map_instr_term gi ge fi fe ja b in
+    let bi, ba = fi ja b in
     gi (Iletin (i, je, bi)), ba
 
   | Iseq is ->
     let (isi, isa) : ('instr list * 'a) =
       List.fold_left
         (fun ((instrs, accu) : ('b list * 'c)) x ->
-           let bi, accu = fold_map_instr_term gi ge fi fe accu x in
+           let bi, accu = fi accu x in
            [bi] @ instrs, accu) ([], accu) is
     in
     gi (Iseq isi), isa
@@ -790,7 +791,7 @@ let rec fold_map_instr_term gi ge fi fe (accu : 'a) instr : 'instr * 'a =
     let (pse, psa) =
       List.fold_left
         (fun (ps, accu) (p, i) ->
-           let pa, accu = fold_map_instr_term gi ge fi fe accu i in
+           let pa, accu = fi accu i in
            [(p, i)] @ ps, accu) ([], aa) ps
     in
 
@@ -844,7 +845,8 @@ let create_miles_with_expiration_ast () =
   mk_model (dumloc "miles_with_expiration")
     ~variables:[
       mk_variable (mk_decl (dumloc "admin")
-                     ~typ:(Tbuiltin VTrole))
+                     ~typ:(Tbuiltin VTrole)
+                     ~default:(mk_sp (Plit (mk_sp (BVaddress "tz1aazS5ms5cbGkb6FN1wvWmN7yrMTTcr6wB")))))
     ]
     ~assets:[
       mk_asset (dumloc "mile")
@@ -914,7 +916,7 @@ let create_miles_with_expiration_ast () =
                                               ~type_:(Tasset (dumloc "mile"))
                                            ])),
                              mk_sp (Icall (Some (mk_sp (Pvar (dumloc "owner"))
-                                                   ~type_:(Tasset (dumloc "owner")) (* not sure ? *)
+                                                   ~type_:(Tcolasset (dumloc "owner"))
                                                 ),
                                            Cconst Cadd,
                                            [mk_sp (Precord [mk_sp (Pvar (dumloc "ow"))

@@ -30,7 +30,7 @@ let type_ pt =
   else ast
 
 let reduce_ast ast =
-  let rast = Reduce.reduce_ast ast in
+  let rast = Gen_reduce.reduce_ast ast in
   if !Options.opt_astr
   then (Format.printf "%a@." Ast.pp_model rast; raise Stop)
   else rast
@@ -42,7 +42,7 @@ let model ast =
   else model
 
 let remove_side_effect model =
-  let wse = Remove_se.remove_se model in
+  let wse = Gen_remove_se.remove_se model in
   if !Options.opt_wse
   then (Format.printf "%a@." Model_wse.pp_model wse; raise Stop)
   else wse
@@ -90,7 +90,7 @@ let compile (filename, channel) =
   |> preprocess_ext
   |> generate_target_pt
   |> type_
-  |> reduce_ast
+  (* |> reduce_ast *)
   |> model
   |> generate_target
 

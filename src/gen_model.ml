@@ -50,14 +50,11 @@ let to_model (ast : A.model) : M.model =
           | A.Tasset id     -> M.FRecord id
           | A.Tcontract x   -> M.FBasic VTrole
           | A.Tcontainer (ptyp, container) -> M.FContainer (container, ptyp_to_item_field_type ptyp)
-          | A.Ttuple _ -> assert false
+          | A.Ttuple _      -> assert false
+          | A.Tcolasset _   -> assert false
         in
         let a = ptyp_to_item_field_type type_ in
-        let item_field =
-          let m = M.mk_item_field arg.name a in
-          { m with default = arg.default } in
-        item_field
-
+        M.mk_item_field arg.name a ?default:arg.default
       in
 
       let storage_item = M.mk_storage_item arg.name in
@@ -101,51 +98,50 @@ let to_model (ast : A.model) : M.model =
   in
 
   let process_functions list : M.decl_node list =
-
     let extract_function_from_instruction (instr : A.instruction) (list : M.decl_node list) : (A.instruction * M.decl_node list) =
       let add l i = i::l in (* if i exists in l then ignore *)
-      let mk_function (c : A.const) asset_name field_name ret : M.function__ option =
-        let node = match asset_name, field_name, c with
-          | Some asset, None, Cget            -> Some (M.Get asset)
-          | Some asset, None, Cadd            -> Some (M.AddAsset asset)
-          | Some asset, None, Cremove         -> Some (M.RemoveAsset asset)
-          | Some asset, None, Cclear          -> Some (M.ClearAsset asset)
-          | Some asset, None, Cupdate         -> Some (M.UpdateAsset asset)
-          | Some asset, None, Ccontains       -> Some (M.ContainsAsset asset)
-          | Some asset, None, Cnth            -> Some (M.NthAsset asset)
-          | Some asset, None, Cselect         -> Some (M.SelectAsset asset)
-          | Some asset, None, Creverse        -> Some (M.SortAsset asset)
-          | Some asset, None, Csort           -> Some (M.SortAsset asset)
-          | Some asset, None, Ccount          -> Some (M.CountAsset asset)
-          | Some asset, None, Csum            -> Some (M.SumAsset asset)
-          | Some asset, None, Cmin            -> Some (M.MinAsset asset)
-          | Some asset, None, Cmax            -> Some (M.MaxAsset asset)
-          | Some asset, Some field, Cadd      -> Some (M.AddContainer (asset, field))
-          | Some asset, Some field, Cremove   -> Some (M.RemoveContainer (asset, field))
-          | Some asset, Some field, Cclear    -> Some (M.ClearContainer (asset, field))
-          | Some asset, Some field, Ccontains -> Some (M.ContainsContainer (asset, field))
-          | Some asset, Some field, Cnth      -> Some (M.NthContainer (asset, field))
-          | Some asset, Some field, Cselect   -> Some (M.SelectContainer (asset, field))
-          | Some asset, Some field, Creverse  -> Some (M.ReverseContainer (asset, field))
-          | Some asset, Some field, Csort     -> Some (M.SortContainer (asset, field))
-          | Some asset, Some field, Ccount    -> Some (M.CountContainer (asset, field))
-          | Some asset, Some field, Csum      -> Some (M.SumContainer (asset, field))
-          | Some asset, Some field, Cmax      -> Some (M.MaxContainer (asset, field))
-          | Some asset, Some field, Cmin      -> Some (M.MinContainer (asset, field))
+      let mk_function t field_name c : M.function__ option =
+        let node = match t, field_name, c with
+          | A.Tcolasset asset, None,    A.Cget      -> Some (M.Get asset)
+          | A.Tcolasset asset, None,    A.Cadd      -> Some (M.AddAsset asset)
+          | A.Tcolasset asset, None,    A.Cremove   -> Some (M.RemoveAsset asset)
+          | A.Tcolasset asset, None,    A.Cclear    -> Some (M.ClearAsset asset)
+          | A.Tcolasset asset, None,    A.Cupdate   -> Some (M.UpdateAsset asset)
+          | A.Tcolasset asset, None,    A.Ccontains -> Some (M.ContainsAsset asset)
+          | A.Tcolasset asset, None,    A.Cnth      -> Some (M.NthAsset asset)
+          | A.Tcolasset asset, None,    A.Cselect   -> Some (M.SelectAsset asset)
+          | A.Tcolasset asset, None,    A.Creverse  -> Some (M.SortAsset asset)
+          | A.Tcolasset asset, None,    A.Csort     -> Some (M.SortAsset asset)
+          | A.Tcolasset asset, None,    A.Ccount    -> Some (M.CountAsset asset)
+          | A.Tcolasset asset, None,    A.Csum      -> Some (M.SumAsset asset)
+          | A.Tcolasset asset, None,    A.Cmin      -> Some (M.MinAsset asset)
+          | A.Tcolasset asset, None,    A.Cmax      -> Some (M.MaxAsset asset)
+          | A.Tasset asset, Some field, A.Cadd      -> Some (M.AddContainer (asset, field))
+          | A.Tasset asset, Some field, A.Cremove   -> Some (M.RemoveContainer (asset, field))
+          | A.Tasset asset, Some field, A.Cclear    -> Some (M.ClearContainer (asset, field))
+          | A.Tasset asset, Some field, A.Ccontains -> Some (M.ContainsContainer (asset, field))
+          | A.Tasset asset, Some field, A.Cnth      -> Some (M.NthContainer (asset, field))
+          | A.Tasset asset, Some field, A.Cselect   -> Some (M.SelectContainer (asset, field))
+          | A.Tasset asset, Some field, A.Creverse  -> Some (M.ReverseContainer (asset, field))
+          | A.Tasset asset, Some field, A.Csort     -> Some (M.SortContainer (asset, field))
+          | A.Tasset asset, Some field, A.Ccount    -> Some (M.CountContainer (asset, field))
+          | A.Tasset asset, Some field, A.Csum      -> Some (M.SumContainer (asset, field))
+          | A.Tasset asset, Some field, A.Cmax      -> Some (M.MaxContainer (asset, field))
+          | A.Tasset asset, Some field, A.Cmin      -> Some (M.MinContainer (asset, field))
           | _ -> None in
         Option.map (fun node ->
+            let ret = t (*TODO: get_type node*) in
             let sig_ : M.signature = M.mk_signature (Location.dumloc (M.function_name_from_function_node node)) ~ret:ret in
             M.mk_function node sig_) node in
-
-      let extract_asset_name t = match t with Some A.Tasset id -> Some id | _ -> None in
 
       let ge (e : ('a, 'b) A.struct_poly) = (fun node -> {e with node = node}) in
 
       let rec fe accu (term : A.pterm) : A.pterm * M.decl_node list =
         match term.node with
-        | A.Pcall (asset_name, Cconst c, args) -> (
+        | A.Pcall (Some asset_name, Cconst c, args) -> (
+            (* Format.eprintf "la\n"; *)
             let _, accu = A.fold_map_term (fun node -> {term with node = node} ) fe accu term in
-            let function__ = mk_function c asset_name None (Option.get term.type_) in
+            let function__ = mk_function (Option.get term.type_) None c in
             let term, accu =
               match function__ with
               | Some f -> (
@@ -157,10 +153,8 @@ let to_model (ast : A.model) : M.model =
             term, accu)
         | _ -> A.fold_map_term (ge term) fe accu term in
 
-      let process_instr accu t c field_name gi fi args =
-        let asset_name = extract_asset_name t in
-        let function__ = mk_function c asset_name field_name (Option.get instr.type_) in
-        let _, accu = A.fold_map_instr_term gi ge fi fe accu instr in
+      let process_instr accu t (c : A.const) field_name gi fi args =
+        let function__ = mk_function (Option.get t) field_name c in
         let instr, accu =
           match function__ with
           | Some f -> (
@@ -180,8 +174,11 @@ let to_model (ast : A.model) : M.model =
         | A.Icall (Some {type_ = t; _}, Cconst c, args) ->
           process_instr accu t c None gi fi args
 
-        | _ -> A.fold_map_instr_term (fun node -> { instr with node = node} ) ge fi fe accu instr in
-      fi [] instr in
+        | _ ->
+          A.fold_map_instr_term (fun node -> { instr with node = node} ) ge fi fe accu instr
+
+      in
+      fi list instr in
 
     let cont f x l = List.fold_left (fun accu x -> f x accu) l x in
 
