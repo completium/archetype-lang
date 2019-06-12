@@ -26,7 +26,7 @@ type ('t,'i) abstract_univ_decl = 'i list * 't
 
 type ('e,'t,'i) abstract_term =
   | Tseq    of 'e list
-  | Tletin  of 'i * 't option
+  | Tletin  of 'i * 't option * 'e
   | Tif     of 'e * 'e * 'e option
   | Tapp    of 'e * 'e list
   | Tvar    of 'i
@@ -163,7 +163,7 @@ let map_abstract_term
     (map_t : 't1 -> 't2)
     (map_i : 'i1 -> 'i2) = function
   | Tseq l          -> Tseq (List.map map_e l)
-  | Tletin (i,t)    -> Tletin (map_i i, Option.map map_t t)
+  | Tletin (i,t,b)  -> Tletin (map_i i, Option.map map_t t, map_e b)
   | Tif (i,t,e)     -> Tif (map_e i, map_e t, Option.map map_e e)
   | Tapp (f,a)      -> Tapp (map_e f, List.map map_e a)
   | Tvar i          -> Tvar (map_i i)

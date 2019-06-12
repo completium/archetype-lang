@@ -111,7 +111,7 @@ let pp_exn fmt e =
 (* -------------------------------------------------------------------------- *)
 
 let rec pp_term outer pos fmt = function
-  | Tseq l         -> Format.fprintf fmt "%a" (pp_list "@\n" (pp_term outer pos)) l
+  | Tseq l         -> Format.fprintf fmt "%a" (pp_list ";@\n" (pp_term outer pos)) l
   | Tif (i,t, None)    ->
     let pp fmt (cond, then_) =
       Format.fprintf fmt "@[if %a@ then %a@ @]"
@@ -132,7 +132,21 @@ let rec pp_term outer pos fmt = function
     Format.fprintf fmt "mem %a %a"
       (pp_term outer pos) e1
       (pp_term outer pos) e2
+  | Tvar i -> pp_str fmt i
   | Tdoti (i1,i2) -> Format.fprintf fmt "%a.%a" pp_str i1 pp_str i2
+  | Tassign (e1,e2) ->
+    Format.fprintf fmt "%a <- %a"
+      (pp_term outer pos) e1
+      (pp_term outer pos) e2
+  | Tadd (e1,e2) ->
+    Format.fprintf fmt "add %a %a"
+      (pp_term outer pos) e1
+      (pp_term outer pos) e2
+  | Tset (e1,e2,e3) ->
+    Format.fprintf fmt "set %a %a %a"
+      (pp_term outer pos) e1
+      (pp_term outer pos) e2
+      (pp_term outer pos) e3
   | _ -> pp_str fmt "NOT IMPLEMENTED"
 
 (* -------------------------------------------------------------------------- *)
