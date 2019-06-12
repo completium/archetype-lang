@@ -128,6 +128,11 @@ let rec pp_term outer pos fmt = function
     in
     (maybe_paren outer e_default pos pp) fmt (i, t, e)
   | Traise e -> Format.fprintf fmt "raise %a" pp_exn e
+  | Tmem (e1,e2) ->
+    Format.fprintf fmt "mem %a %a"
+      (pp_term outer pos) e1
+      (pp_term outer pos) e2
+  | Tdoti (i1,i2) -> Format.fprintf fmt "%a.%a" pp_str i1 pp_str i2
   | _ -> pp_str fmt "NOT IMPLEMENTED"
 
 (* -------------------------------------------------------------------------- *)
