@@ -53,7 +53,6 @@ let to_model (ast : A.model) : M.model =
           | A.Tcontract x   -> M.FBasic VTrole
           | A.Tcontainer (ptyp, container) -> M.FContainer (container, ptyp_to_item_field_type ptyp)
           | A.Ttuple _      -> assert false
-          | A.Tcolasset _   -> assert false
         in
         let a = ptyp_to_item_field_type type_ in
         M.mk_item_field arg.name a ?default:arg.default
@@ -72,7 +71,7 @@ let to_model (ast : A.model) : M.model =
       let compute_fields =
         let type_id : A.vtyp =
           let res : A.vtyp option = List.fold_left (fun accu (x : field) ->
-              if String.equal (Location.unloc x.name) (Location.unloc (Option.get asset.key))
+              if String.equal (Location.unloc x.name) ((Location.unloc |@ Option.get) asset.key)
               then (
                 match x.typ with
                 | Some (Tbuiltin v) -> Some v
@@ -104,32 +103,32 @@ let to_model (ast : A.model) : M.model =
       let add l i = i::l in (* if i exists in l then ignore *)
       let mk_function t field_name c : M.function__ option =
         let node = match t, field_name, c with
-          | A.Tcolasset asset, None,    A.Cget      -> Some (M.Get asset)
-          | A.Tcolasset asset, None,    A.Cadd      -> Some (M.AddAsset asset)
-          | A.Tcolasset asset, None,    A.Cremove   -> Some (M.RemoveAsset asset)
-          | A.Tcolasset asset, None,    A.Cclear    -> Some (M.ClearAsset asset)
-          | A.Tcolasset asset, None,    A.Cupdate   -> Some (M.UpdateAsset asset)
-          | A.Tcolasset asset, None,    A.Ccontains -> Some (M.ContainsAsset asset)
-          | A.Tcolasset asset, None,    A.Cnth      -> Some (M.NthAsset asset)
-          | A.Tcolasset asset, None,    A.Cselect   -> Some (M.SelectAsset asset)
-          | A.Tcolasset asset, None,    A.Creverse  -> Some (M.SortAsset asset)
-          | A.Tcolasset asset, None,    A.Csort     -> Some (M.SortAsset asset)
-          | A.Tcolasset asset, None,    A.Ccount    -> Some (M.CountAsset asset)
-          | A.Tcolasset asset, None,    A.Csum      -> Some (M.SumAsset asset)
-          | A.Tcolasset asset, None,    A.Cmin      -> Some (M.MinAsset asset)
-          | A.Tcolasset asset, None,    A.Cmax      -> Some (M.MaxAsset asset)
-          | A.Tasset asset, Some field, A.Cadd      -> Some (M.AddContainer (asset, field))
-          | A.Tasset asset, Some field, A.Cremove   -> Some (M.RemoveContainer (asset, field))
-          | A.Tasset asset, Some field, A.Cclear    -> Some (M.ClearContainer (asset, field))
-          | A.Tasset asset, Some field, A.Ccontains -> Some (M.ContainsContainer (asset, field))
-          | A.Tasset asset, Some field, A.Cnth      -> Some (M.NthContainer (asset, field))
-          | A.Tasset asset, Some field, A.Cselect   -> Some (M.SelectContainer (asset, field))
-          | A.Tasset asset, Some field, A.Creverse  -> Some (M.ReverseContainer (asset, field))
-          | A.Tasset asset, Some field, A.Csort     -> Some (M.SortContainer (asset, field))
-          | A.Tasset asset, Some field, A.Ccount    -> Some (M.CountContainer (asset, field))
-          | A.Tasset asset, Some field, A.Csum      -> Some (M.SumContainer (asset, field))
-          | A.Tasset asset, Some field, A.Cmax      -> Some (M.MaxContainer (asset, field))
-          | A.Tasset asset, Some field, A.Cmin      -> Some (M.MinContainer (asset, field))
+          | A.Tcontainer (Tasset asset, Collection), None,    A.Cget      -> Some (M.Get asset)
+          | A.Tcontainer (Tasset asset, Collection), None,    A.Cadd      -> Some (M.AddAsset asset)
+          | A.Tcontainer (Tasset asset, Collection), None,    A.Cremove   -> Some (M.RemoveAsset asset)
+          | A.Tcontainer (Tasset asset, Collection), None,    A.Cclear    -> Some (M.ClearAsset asset)
+          | A.Tcontainer (Tasset asset, Collection), None,    A.Cupdate   -> Some (M.UpdateAsset asset)
+          | A.Tcontainer (Tasset asset, Collection), None,    A.Ccontains -> Some (M.ContainsAsset asset)
+          | A.Tcontainer (Tasset asset, Collection), None,    A.Cnth      -> Some (M.NthAsset asset)
+          | A.Tcontainer (Tasset asset, Collection), None,    A.Cselect   -> Some (M.SelectAsset asset)
+          | A.Tcontainer (Tasset asset, Collection), None,    A.Creverse  -> Some (M.SortAsset asset)
+          | A.Tcontainer (Tasset asset, Collection), None,    A.Csort     -> Some (M.SortAsset asset)
+          | A.Tcontainer (Tasset asset, Collection), None,    A.Ccount    -> Some (M.CountAsset asset)
+          | A.Tcontainer (Tasset asset, Collection), None,    A.Csum      -> Some (M.SumAsset asset)
+          | A.Tcontainer (Tasset asset, Collection), None,    A.Cmin      -> Some (M.MinAsset asset)
+          | A.Tcontainer (Tasset asset, Collection), None,    A.Cmax      -> Some (M.MaxAsset asset)
+          | A.Tasset asset, Some field, A.Cadd                            -> Some (M.AddContainer (asset, field))
+          | A.Tasset asset, Some field, A.Cremove                         -> Some (M.RemoveContainer (asset, field))
+          | A.Tasset asset, Some field, A.Cclear                          -> Some (M.ClearContainer (asset, field))
+          | A.Tasset asset, Some field, A.Ccontains                       -> Some (M.ContainsContainer (asset, field))
+          | A.Tasset asset, Some field, A.Cnth                            -> Some (M.NthContainer (asset, field))
+          | A.Tasset asset, Some field, A.Cselect                         -> Some (M.SelectContainer (asset, field))
+          | A.Tasset asset, Some field, A.Creverse                        -> Some (M.ReverseContainer (asset, field))
+          | A.Tasset asset, Some field, A.Csort                           -> Some (M.SortContainer (asset, field))
+          | A.Tasset asset, Some field, A.Ccount                          -> Some (M.CountContainer (asset, field))
+          | A.Tasset asset, Some field, A.Csum                            -> Some (M.SumContainer (asset, field))
+          | A.Tasset asset, Some field, A.Cmax                            -> Some (M.MaxContainer (asset, field))
+          | A.Tasset asset, Some field, A.Cmin                            -> Some (M.MinContainer (asset, field))
           | _ -> None in
         Option.map (fun node ->
             let ret = t (*TODO: get_type node*) in
@@ -142,7 +141,7 @@ let to_model (ast : A.model) : M.model =
         match term.node with
         | A.Pcall (Some asset_name, Cconst c, args) -> (
             let _, accu = A.fold_map_term (fun node -> {term with node = node} ) fe accu term in
-            let function__ = mk_function (Tcolasset asset_name) None c in
+            let function__ = mk_function (A.Tcontainer (Tasset asset_name, Collection)) None c in
             let term, accu =
               match function__ with
               | Some f -> (

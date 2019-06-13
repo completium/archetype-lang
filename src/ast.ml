@@ -50,7 +50,6 @@ type ptyp =
   | Tbuiltin of vtyp
   | Tcontainer of ptyp * container
   | Ttuple of ptyp list
-  | Tcolasset of lident
 [@@deriving show {with_path = false}]
 
 type ltyp =
@@ -916,7 +915,7 @@ let create_miles_with_expiration_ast () =
                                               ~type_:(Tasset (dumloc "mile"))
                                            ])),
                              mk_sp (Icall (Some (mk_sp (Pvar (dumloc "owner"))
-                                                   ~type_:(Tcolasset (dumloc "owner"))
+                                                   ~type_:(Tcontainer (Tasset (dumloc "owner"), Collection))
                                                 ),
                                            Cconst Cadd,
                                            [mk_sp (Precord [mk_sp (Pvar (dumloc "ow"))
