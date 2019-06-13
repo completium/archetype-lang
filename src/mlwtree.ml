@@ -93,6 +93,7 @@ type ('e,'t,'i) abstract_term =
   (* option *)
   | Tnone
   | Tsome   of 'e
+  | Tnottranslated
   (* ... *)
 [@@deriving show {with_path = false}]
 
@@ -102,9 +103,10 @@ type ('e,'t,'i) abstract_formula = {
 }
 [@@deriving show {with_path = false}]
 
-type 'i abstract_field = {
+type ('e,'t,'i) abstract_field = {
   name     : 'i;
-  typ      : 'i abstract_type;
+  typ      : 't;
+  init     : 'e;
   mutable_ : bool;
 }
 [@@deriving show {with_path = false}]
@@ -121,8 +123,8 @@ type ('e,'t,'i) abstract_fun_struct = {
 [@@deriving show {with_path = false}]
 
 type ('e,'t,'i) abstract_storage_struct = {
-  fields     : ('i abstract_field * ('e,'t,'i) abstract_term) list;
-  invariants : (('e,'t,'i) abstract_formula) list;
+  fields     : ('e,'t,'i) abstract_field list;
+  invariants : ('e,'t,'i) abstract_formula list;
 }
 [@@deriving show {with_path = false}]
 
@@ -135,7 +137,7 @@ type ('e,'t,'i) abstract_decl =
   | Duse     of 'i abstract_qualid
   | Dclone   of 'i abstract_qualid * 'i * ('i abstract_clone_subst) list
   | Denum    of 'i * 'i list
-  | Drecord  of 'i * ('i abstract_field) list
+  | Drecord  of 'i * (('e,'t,'i) abstract_field) list
   | Dstorage of ('e,'t,'i) abstract_storage_struct
   | Daxiom   of 'i * ('e,'t,'i) abstract_formula
   | Dfun     of ('e,'t,'i) abstract_fun_struct
@@ -234,6 +236,7 @@ let map_abstract_term
   | Tnth (e1,e2)    -> Tnth (map_e e1, map_e e2)
   | Tnone           -> Tnone
   | Tsome e         -> Tsome (map_e e)
+  | Tnottranslated  -> Tnottranslated
 
 let map_abstract_forumla
     (map_e : 'e1 -> 'e2)
@@ -244,10 +247,15 @@ let map_abstract_forumla
   body = map_abstract_term map_e map_t map_i f.body;
 }
 
-let map_abstract_field (map_i : 'i1 -> 'i2) (f : 'i1 abstract_field) = {
+let map_abstract_field
+    (map_e : 'e1 -> 'e2)
+    (map_t : 't1 -> 't2)
+    (map_i : 'i1 -> 'i2)
+    (f : ('e1,'t1,'i1) abstract_field) = {
   name     = map_i f.name;
-  typ      = map_abstract_type map_i f.typ;
-  mutable_ = f.mutable_
+  typ      = map_t f.typ;
+  init     = map_e f.init;
+  mutable_ = f.mutable_;
 }
 
 let map_abstract_fun_struct
@@ -269,9 +277,7 @@ let map_abstract_storage_struct
     (map_t : 't1 -> 't2)
     (map_i : 'i1 -> 'i2)
     (s : ('e1,'t1,'i1) abstract_storage_struct) = {
-  fields     = List.map (fun (f,i) ->
-      (map_abstract_field map_i f, map_abstract_term map_e map_t map_i i)
-    ) s.fields;
+  fields     = List.map (map_abstract_field map_e map_t map_i) s.fields;
   invariants = List.map (map_abstract_forumla map_e map_t map_i) s.invariants;
 }
 
@@ -288,7 +294,7 @@ let map_abstract_decl
                                map_i i,
                                List.map (map_abstract_clone_subst map_i) l)
   | Denum (i,l)     -> Denum (map_i i, List.map map_i l)
-  | Drecord (i,l)   -> Drecord (map_i i, List.map (map_abstract_field map_i) l)
+  | Drecord (i,l)   -> Drecord (map_i i, List.map (map_abstract_field map_e map_t map_i) l)
   | Dstorage s      -> Dstorage (map_abstract_storage_struct map_e map_t map_i s)
   | Daxiom (i,f)    -> Daxiom (map_i i, map_abstract_forumla map_e map_t map_i f)
   | Dfun f          -> Dfun (map_abstract_fun_struct map_e map_t map_i f)
@@ -322,7 +328,7 @@ type term              = (term,typ,ident) abstract_term
 type formula           = (term,typ,ident) abstract_formula
 [@@deriving show {with_path = false}]
 
-type field             = ident abstract_field
+type field             = (term,typ,ident) abstract_field
 [@@deriving show {with_path = false}]
 
 type fun_struct        = (term,typ,ident) abstract_fun_struct
@@ -366,7 +372,7 @@ type loc_term          = ((loc_term,loc_typ,loc_ident) abstract_term) with_loc
 type loc_formula       = ((loc_term,loc_typ,loc_ident) abstract_formula) with_loc
 [@@deriving show {with_path = false}]
 
-type loc_field         = (loc_ident abstract_field) with_loc
+type loc_field         = ((loc_term,loc_typ,loc_ident) abstract_field) with_loc
 [@@deriving show {with_path = false}]
 
 type loc_fun_struct    = ((loc_term,loc_typ,loc_ident) abstract_fun_struct) with_loc

@@ -19,30 +19,30 @@ let mk_default_init = function
       requires = [];
       ensures  = [];
       body     = Trecord (None, List.map (fun (f:field) ->
-          f.name, mk_default_val f.typ
+          f.name, f.init
         ) fs);
     }
   | _ -> assert false
 
 let mk_asset_fields asset = [
-  ({ name = asset^"_keys"   ; typ = Tycoll asset ; mutable_ = true; }, Tvar "empty");
-  ({ name = asset^"_assets" ; typ = Tymap asset  ; mutable_ = true; },
-   Tvar ("const (mk_default_"^asset^" ())"));
-  ({ name = "added_"^asset  ; typ = Tycoll asset ; mutable_ = true; }, Tvar "empty");
-  ({ name = "removed_"^asset; typ = Tycoll asset ; mutable_ = true; }, Tvar "empty");
+  { name = asset^"_keys"   ; typ = Tycoll asset ; init = Tvar "empty"; mutable_ = true; };
+  { name = asset^"_assets" ; typ = Tymap asset  ;
+    init = Tvar ("const (mk_default_"^asset^" ())"); mutable_ = true; };
+  { name = "added_"^asset  ; typ = Tycoll asset ; init = Tvar "empty"; mutable_ = true; };
+  { name = "removed_"^asset; typ = Tycoll asset ; init = Tvar "empty"; mutable_ = true; }
 ]
 
 let mk_const_fields with_trace = [
-  ({ name = "ops_"   ; typ = Tyrecord "transfers" ; mutable_ = true; }, Tvar "Nil");
-  ({ name = "get_balance_" ;     typ = Tytez          ; mutable_ = false; }, Tint 0);
-  ({ name = "get_transferred_" ; typ = Tytez          ; mutable_ = false; }, Tint 0);
-  ({ name = "get_caller_"      ; typ = Tyaddr         ; mutable_ = false; }, Tint 0);
-  ({ name = "get_now_"         ; typ = Tydate         ; mutable_ = false; }, Tint 0);
+  { name = "ops_"   ; typ = Tyrecord "transfers" ; init = Tvar "Nil"; mutable_ = true; };
+  { name = "get_balance_" ;     typ = Tytez; init = Tint 0; mutable_ = false; };
+  { name = "get_transferred_" ; typ = Tytez; init = Tint 0; mutable_ = false; };
+  { name = "get_caller_"    ; typ = Tyaddr;  init = Tint 0; mutable_ = false; };
+  { name = "get_now_"       ; typ = Tydate;  init = Tint 0; mutable_ = false; };
 ] @
   if with_trace then
     [
-      ({ name = "tr_"   ; typ = Tyrecord "Tr.log" ; mutable_ = true; }, Tvar "Nil");
-      ({ name = "ename" ; typ = Tyoption (Tyenum "entry") ; mutable_ = true; }, Tnone);
+      { name = "tr_"; typ = Tyrecord "Tr.log" ; init = Tvar "Nil"; mutable_ = true; };
+      { name = "ename"; typ = Tyoption (Tyenum "entry"); init = Tnone; mutable_ = true;}
     ]
     else []
 
@@ -103,19 +103,19 @@ let mk_test_entry_enum = Denum ("entry",["Add";"Consume";"ClearExpired"])
 let mk_test_field_enum = Denum ("field",["Amount";"Expiration";"Miles"])
 
 let mk_test_mile : decl = Drecord ("mile", [
-    { name = "id";         typ = Tystring  ; mutable_ = false; };
-    { name = "amount";     typ = Tyint     ; mutable_ = false; };
-    { name = "expiration"; typ = Tydate    ; mutable_ = false; };
+    { name = "id";         typ = Tystring; init = Tint 0; mutable_ = false; };
+    { name = "amount";     typ = Tyint;    init = Tint 0; mutable_ = false; };
+    { name = "expiration"; typ = Tydate;   init = Tint 0; mutable_ = false; };
   ])
 
 let mk_test_owner : decl = Drecord ("owner", [
-    { name = "addr" ; typ = Tyaddr            ; mutable_ = false; };
-    { name = "miles"; typ = Typartition "mile"; mutable_ = false; };
+    { name = "addr" ; typ = Tyaddr; init = Tint 0; mutable_ = false; };
+    { name = "miles"; typ = Typartition "mile"; init = Tvar "empty"; mutable_ = false; }
   ])
 
 let mk_test_storage : decl = Dstorage {
     fields = [
-      ({ name = "admin" ; typ = Tyrole ; mutable_ = true; }, Tint 0);
+      { name = "admin" ; typ = Tyrole ; init = Tint 0; mutable_ = true; }
     ] @
       (mk_asset_fields "mile") @
       (mk_asset_fields "owner") @

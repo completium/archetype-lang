@@ -5,7 +5,6 @@ let pp_str fmt str =
 
 let pp_id = pp_str
 
-
 let pp_str fmt str =
   Format.fprintf fmt "%s" str
 
@@ -227,6 +226,7 @@ let rec pp_term outer pos fmt = function
     Format.fprintf fmt "{@\n  @[%a@]@\n}"
       (pp_list ";@\n" pp_recfield) l
   | Tnone -> pp_str fmt "None"
+  | Tnottranslated -> pp_str fmt "NOT TRANSLATED"
   | _ -> pp_str fmt "NOT IMPLEMENTED"
 
 (* -------------------------------------------------------------------------- *)
@@ -291,10 +291,10 @@ let pp_record fmt (i,fl) =
 
 (* -------------------------------------------------------------------------- *)
 
-let pp_init fmt ((f : field),i) =
+let pp_init fmt (f : field) =
   Format.fprintf fmt "%a = %a"
     pp_str f.name
-    (pp_term e_default PRight) i
+    (pp_term e_default PRight) f.init
 
 let pp_invariants fmt invs =
   if List.length invs = 0
@@ -305,7 +305,7 @@ let pp_invariants fmt invs =
 
 let pp_storage fmt (s : storage_struct) =
   Format.fprintf fmt "type storage_ = {@\n  @[%a @]@\n}%aby {@\n  @[%a @]@\n}"
-    (pp_list ";@\n" pp_field) (fst (List.split s.fields))
+    (pp_list ";@\n" pp_field) s.fields
     pp_invariants s.invariants
     (pp_list ";@\n" pp_init) s.fields
 
