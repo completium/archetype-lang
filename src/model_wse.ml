@@ -1,62 +1,67 @@
-open Location
+open Ident
 
 module A = Ast
 module M = Model
-
-type lident  = A.lident
-[@@deriving show {with_path = false}]
 
 type type_   =
   | Tstorage
   | Toperations
   | Tbuiltin of A.vtyp
-  | Trecord of lident
-  | Tenum of lident
+  | Trecord of ident
+  | Tenum of ident
   | Ttuple of type_ list
   | Tcontainer of type_
   | Tmap of type_ * type_
 [@@deriving show {with_path = false}]
 
-type 'expr wse_expr =
-  | Efold of (lident list * 'expr * 'expr)
+type pattern =
+  | Mwild
+  | Mconst of ident
 [@@deriving show {with_path = false}]
 
-and 'instr instruction_node =
-  | Iletin of lident list * expr * 'instr
-  | Ituple of lident list
+type expr =
+  | Eif        of (expr * expr * expr)
+  | Ematchwith of expr * (pattern * expr) list
+  | Ecall      of (ident * expr list)
+  | Eand       of (expr * expr)
+  | Eor        of (expr * expr)
+  | Enot       of expr
+  | Eequal     of (expr * expr)
+  | Enequal    of (expr * expr)
+  | Egt        of (expr * expr)
+  | Ege        of (expr * expr)
+  | Elt        of (expr * expr)
+  | Ele        of (expr * expr)
+  | Eplus      of (expr * expr)
+  | Eminus     of (expr * expr)
+  | Emult      of (expr * expr)
+  | Ediv       of (expr * expr)
+  | Emodulo    of (expr * expr)
+  | Euplus     of expr
+  | Euminus    of expr
+  | Erecord    of (ident * expr) list
+  | Eletin     of ((ident * type_) list * expr) list * expr
+  | Evar       of ident
+  | Earray     of expr list
+  | Elitint    of Core.big_int
+  | Elitbool   of bool
+  | Elitstring of string
+  | Elitmap    of type_ * type_
+  | Elitraw    of string
+  | Edot       of expr * ident
+  | Etuple     of expr list
+  | Efold      of (ident list * expr * expr)
 [@@deriving show {with_path = false}]
-
-and instruction = {
-  node: instruction instruction_node;
-  type_: type_ list;
-  loc: Location.t [@opaque];
-}
-[@@deriving show {with_path = false}]
-
-and 'expr expr_node = [
-  | `Eexpr of (lident, type_, 'expr) A.term_node
-  | `Ewse  of 'expr wse_expr
-  | `Einstr of instruction
-]
-[@@deriving show {with_path = false}]
-
-and expr    = (type_, expr expr_node) A.struct_poly
-[@@deriving show {with_path = false}]
-
-type pattern = A.pattern
-[@@deriving show {with_path = false}]
-
-let pp_lident fmt i = Format.fprintf fmt "%s" (unloc i)
 
 type enum_struct = {
-  name: lident;
-  values: lident list;
+  name: ident;
+  values: ident list;
 }
 [@@deriving show {with_path = false}]
 
 type record_struct = {
-  name: lident;
-  values: (lident * type_ * expr) list;
+  name: ident;
+  values: (ident * type_ * expr) list;
 }
 [@@deriving show {with_path = false}]
 
@@ -66,27 +71,22 @@ type kind_function =
 [@@deriving show {with_path = false}]
 
 type function_struct = {
-  name: lident;
+  name: ident;
   kind: kind_function;
   ret:  type_;
-  args: (lident * type_) list;
-  body: instruction;
+  args: (ident * type_) list;
+  body: expr;
 }
 [@@deriving show {with_path = false}]
 
 type model = {
-  name: lident;
+  name: ident;
   enums: enum_struct list;
   records: record_struct list;
   funs: function_struct list;
 }
 [@@deriving show {with_path = false}]
 
-
-
-
-let mk_instruction ?(type_ = []) ?(loc = Location.dummy) node =
-  { node; type_; loc}
 
 let mk_enum ?(values = []) name : enum_struct =
   { name; values }

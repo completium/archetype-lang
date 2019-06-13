@@ -1,11 +1,8 @@
-open Location
 open Tools
 
 module A = Ast
 module W = Model_wse
 module T = Mltree
-
-let to_ident ident = unloc ident
 
 exception Anomaly of string
 
@@ -29,7 +26,7 @@ let rec to_type = function
   | W.Toperations  -> T.Tlist  (T.Tlocal "operation")
   | W.Tbuiltin b   -> T.Tbasic (to_basic b)
   | W.Trecord id
-  | W.Tenum id     -> T.Tlocal (to_ident id)
+  | W.Tenum id     -> T.Tlocal id
   | W.Ttuple types -> T.Ttuple (List.map to_type types)
   | W.Tcontainer t -> T.Tlist  (to_type t)
   | W.Tmap (k, v)  -> T.Tmap   (to_type k, to_type v)
@@ -91,61 +88,63 @@ let op_to_unary_operator = function
   | A.Uplus   -> T.Uplus
   | A.Uminus  -> T.Uminus
 
-let rec expr_to_expr (x : W.expr) : T.expr =
-  match x.node with
-  | `Eexpr Lquantifer _ ->
-    emit_error "quantifier is not supported here"
+let expr_to_expr (x : W.expr) : T.expr =
+  match x with
+  | W.Elitraw s -> T.Elit (Lraw s)
+  (* | `Eexpr Lquantifer _ ->
+     emit_error "quantifier is not supported here"
 
-  | `Eexpr Pif (c, t, e) ->
-    Eif (expr_to_expr c, expr_to_expr t, expr_to_expr e)
+     | `Eexpr Pif (c, t, e) ->
+     Eif (expr_to_expr c, expr_to_expr t, expr_to_expr e)
 
-  | `Eexpr Pmatchwith (id, l) -> assert false
-  | `Eexpr Pcall (_, c, args) -> assert false
-  | `Eexpr Pnot e ->
-    Eunary (Not, expr_to_expr e)
+     | `Eexpr Pmatchwith (id, l) -> assert false
+     | `Eexpr Pcall (_, c, args) -> assert false
+     | `Eexpr Pnot e ->
+     Eunary (Not, expr_to_expr e)
 
-  | `Eexpr Plogical (op, lhs, rhs) ->
-    Ebin (op_to_bin_operator (`Logical op), expr_to_expr lhs, expr_to_expr rhs)
+     | `Eexpr Plogical (op, lhs, rhs) ->
+     Ebin (op_to_bin_operator (`Logical op), expr_to_expr lhs, expr_to_expr rhs)
 
-  | `Eexpr Pcomp (op, lhs, rhs) ->
-    Ebin (op_to_bin_operator (`Cmp op), expr_to_expr lhs, expr_to_expr rhs)
+     | `Eexpr Pcomp (op, lhs, rhs) ->
+     Ebin (op_to_bin_operator (`Cmp op), expr_to_expr lhs, expr_to_expr rhs)
 
-  | `Eexpr Parith (op, lhs, rhs) ->
-    Ebin (op_to_bin_operator (`Arith op), expr_to_expr lhs, expr_to_expr rhs)
+     | `Eexpr Parith (op, lhs, rhs) ->
+     Ebin (op_to_bin_operator (`Arith op), expr_to_expr lhs, expr_to_expr rhs)
 
-  | `Eexpr Puarith (op, e) ->
-    Eunary (op_to_unary_operator op, expr_to_expr e)
+     | `Eexpr Puarith (op, e) ->
+     Eunary (op_to_unary_operator op, expr_to_expr e)
 
-  | `Eexpr Precord l -> assert false
-  | `Eexpr Pletin (id, i, b, _) -> assert false
-  | `Eexpr Pvar id ->
-    Evar (to_ident id)
+     | `Eexpr Precord l -> assert false
+     | `Eexpr Pletin (id, i, b, _) -> assert false
+     | `Eexpr Pvar id ->
+     Evar (to_ident id)
 
-  | `Eexpr Parray l ->
-    Econtainer (List.map expr_to_expr l)
+     | `Eexpr Parray l ->
+     Econtainer (List.map expr_to_expr l)
 
-  | `Eexpr Plit l ->
-    Elit (to_literal l)
+     | `Eexpr Plit l ->
+     Elit (to_literal l)
 
-  | `Eexpr Pdot (e, id) ->
-    Edot (expr_to_expr e, to_ident id)
+     | `Eexpr Pdot (e, id) ->
+     Edot (expr_to_expr e, to_ident id)
 
-  | `Eexpr Pconst c -> assert false
-  | `Eexpr Ptuple l ->
-    Etuple (List.map expr_to_expr l)
+     | `Eexpr Pconst c -> assert false
+     | `Eexpr Ptuple l ->
+     Etuple (List.map expr_to_expr l)
 
-  | `Ewse  Efold (l, e, w) -> assert false
-  | `Einstr i -> instruction_to_expr i
+     | `Ewse  Efold (l, e, w) -> assert false
+     | `Einstr i -> instruction_to_expr i *)
+  | _ -> assert false
 
-and instruction_to_expr (i : W.instruction) : T.expr =
-  match i.node with
-  | Iletin (l, e, b) -> Eletin ([[], expr_to_expr e], instruction_to_expr b)
-  | Ituple l -> Etuple (List.map (fun x -> T.Evar (to_ident x)) l)
+(* and instruction_to_expr (i : W.instruction) : T.expr =
+   match i.node with
+   | Iletin (l, e, b) -> Eletin ([[], expr_to_expr e], instruction_to_expr b)
+   | Ituple l -> Etuple (List.map (fun x -> T.Evar (to_ident x)) l) *)
 
 let generate_init_instr (model : W.model) : T.expr =
   let storage = List.fold_left (fun accu (x : W.record_struct) ->
       match x with
-      | {name = name; _} when String.equal (to_ident name) "storage" -> Some x
+      | {name = name; _} when String.equal name "storage" -> Some x
       | _ -> accu) None model.records in
 
   let s : W.record_struct =
@@ -155,7 +154,7 @@ let generate_init_instr (model : W.model) : T.expr =
 
   T.Erecord (None, List.map (
       fun (id, _, init) ->
-        (to_ident id, expr_to_expr init)
+        (id, expr_to_expr init)
     ) s.values)
 
 
@@ -165,15 +164,15 @@ let to_liquidity (model : W.model) : T.tree =
 
   let add_enums =
     List.map (fun (x : W.enum_struct) ->
-        let name = to_ident x.name in
-        let values = List.map (fun x -> (to_ident x, None)) x.values in
+        let name = x.name in
+        let values = List.map (fun x -> (x, None)) x.values in
         T.Dtype (T.mk_type name ~values:values))
   in
 
   let add_structs =
     List.map (fun (x : W.record_struct) ->
-        let name = to_ident x.name in
-        let fields = List.map (fun (id, t, e) -> (to_ident id, to_type t, expr_to_expr e)) x.values in
+        let name = x.name in
+        let fields = List.map (fun (id, t, e) -> (id, to_type t, expr_to_expr e)) x.values in
         T.Dstruct (T.mk_struct name ~fields:fields))
   in
 
@@ -187,19 +186,19 @@ let to_liquidity (model : W.model) : T.tree =
 
   let add_funs =
     List.map (fun (x : W.function_struct) ->
-        let name = to_ident x.name in
+        let name = x.name in
         let node : T.fun_node =
           match x.kind with
           | Function -> None
           | Entry -> Entry
         in
-        let args = List.map (fun (id, t) -> (to_ident id, to_type t) ) x.args in
+        let args = List.map (fun (id, t) -> (id, to_type t) ) x.args in
         let ret = to_type x.ret in
-        let body = instruction_to_expr x.body in
+        let body = expr_to_expr x.body in
         T.Dfun (T.mk_fun name node args ret body))
   in
 
-  let name = to_ident model.name in
+  let name = model.name in
   let decls =
     []
     |> cont add_enums model.enums

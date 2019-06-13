@@ -90,7 +90,7 @@ let compile (filename, channel) =
   |> preprocess_ext
   |> generate_target_pt
   |> type_
-  (* |> reduce_ast *)
+  |> reduce_ast
   |> model
   |> generate_target
 
