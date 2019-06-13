@@ -62,7 +62,7 @@ let mk_add asset key : decl = Dfun {
     requires = [];
     ensures  = [
       { id   = "add_"^asset^"_post_1";
-        body = Tmem (Tdoti ("new_asset","id"), Tdoti ("s",asset^"_keys"))
+        body = Tmem (Tdoti ("new_asset",key), Tdoti ("s",asset^"_keys"))
       };
       { id   = "add_"^asset^"_post_2";
         body = Teq (Tycoll asset,Tdoti ("s",asset^"_keys"),
@@ -123,7 +123,7 @@ let mk_test_storage : decl = Dstorage {
     ;
     invariants = [
       { id   = "inv1";
-        body = Tforall ([["k"],Tyasset "mile"],
+        body = Tforall ([["k"],Tystring],
                         Timpl (Tmem (Tvar "k", Tvar "mile_keys"),
                                Tgt (Tyint, Tapp (Tvar "amount",
                                                  [Tget (Tvar "mile_assets",

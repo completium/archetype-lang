@@ -190,7 +190,7 @@ let rec pp_term outer pos fmt = function
     Format.fprintf fmt "old %a"
       (pp_with_paren (pp_term outer pos)) e
   | Tsingl e ->
-    Format.fprintf fmt "singl %a"
+    Format.fprintf fmt "singleton %a"
       (pp_with_paren (pp_term outer pos)) e
   | Tempty e ->
     Format.fprintf fmt "is_empty %a"
@@ -208,6 +208,9 @@ let rec pp_term outer pos fmt = function
     Format.fprintf fmt "%a > %a"
       (pp_term e_default PRight) e1
       (pp_term e_default PRight) e2
+  | Tapp (f,[]) ->
+    Format.fprintf fmt "%a ()"
+      (pp_with_paren (pp_term outer pos)) f
   | Tapp (f,a) ->
     Format.fprintf fmt "%a %a"
       (pp_with_paren (pp_term outer pos)) f
@@ -248,14 +251,20 @@ let pp_ensures fmt ensures =
     Format.fprintf fmt "ensures {@\n %a @\n}@\n"
       (pp_list "@\n}@\nensures {@\n" pp_formula) ensures
 
+let pp_arg fmt (id, t) =
+  Format.fprintf fmt "(%a : %a)"
+    pp_id id
+    pp_type t
+
+let pp_args fmt l =
+  if List.length l = 0
+  then pp_str fmt "()"
+  else Format.fprintf fmt "%a" (pp_list " " pp_arg) l
+
 let pp_fun fmt (s : fun_struct) =
-  let pp_arg fmt (id, t) =
-    Format.fprintf fmt "(%a : %a)"
-      pp_id id
-      pp_type t in
   Format.fprintf fmt "let %a %a : %a@\n%a%a=@[  %a@]"
     pp_id s.name
-    (pp_list " " pp_arg) s.args
+    pp_args s.args
     pp_type s.returns
     pp_raise s.raises
     pp_ensures s.ensures
@@ -321,7 +330,7 @@ let pp_clone fmt (i,j,l) =
   Format.fprintf fmt "clone %a as %a with @[%a@]"
     pp_qualid i
     pp_str j
-    (pp_list "@\n" pp_clone_subst) l
+    (pp_list ",@\n" pp_clone_subst) l
 
 (* -------------------------------------------------------------------------- *)
 
