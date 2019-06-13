@@ -1,5 +1,6 @@
 open Why3
 open Ptree
+open Printer_tools
 
 (** grammar : http://why3.lri.fr/doc-1.2.0/syntaxref.html#sec85 *)
 
@@ -7,11 +8,6 @@ let pp_str fmt str =
   Format.fprintf fmt "%s" str
 
 (* -------------------------------------------------------------------------- *)
-let pp_list sep pp =
-  Format.pp_print_list
-    ~pp_sep:(fun fmt () -> Format.fprintf fmt "%(%)" sep)
-    pp
-
 let pp_ident fmt ident =
   Format.fprintf fmt "%s" ident.id_str
 

@@ -1,30 +1,13 @@
 open Mltree
+open Printer_tools
 
 let pp_str fmt str =
   Format.fprintf fmt "%s" str
 
 let pp_id = pp_str
 
+
 (* -------------------------------------------------------------------------- *)
-let pp_list sep pp =
-  Format.pp_print_list
-    ~pp_sep:(fun fmt () -> Format.fprintf fmt "%(%)" sep)
-    pp
-
-let pp_option pp fmt (x : 'a option) =
-  match x with None -> () | Some x -> pp fmt x
-
-let pp_enclose pre post pp fmt x =
-  Format.fprintf fmt "%(%)%a%(%)" pre pp x post
-
-let pp_prefix pre pp fmt x =
-  pp_enclose pre "" pp fmt x
-
-let pp_postfix post pp fmt x =
-  pp_enclose "" post pp fmt x
-(* -------------------------------------------------------------------------- *)
-type assoc  = Left | Right | NonAssoc
-type pos    = PLeft | PRight | PInfix | PNone
 
 let e_in            =  (10,  NonAssoc) (* in  *)
 let e_to            =  (10,  NonAssoc) (* to  *)
@@ -55,7 +38,7 @@ let e_app           =  (140, NonAssoc) (* f ()  *)
 let e_for           =  (140, NonAssoc) (* for in .  *)
 
 let e_default       =  (0, NonAssoc)   (* ?  *)
-let e_simple       =   (200, NonAssoc)   (* ?  *)
+let e_simple        =  (200, NonAssoc) (* ?  *)
 
 let get_prec_from_operator (op : operator) =
   match op with
@@ -75,31 +58,6 @@ let get_prec_from_operator (op : operator) =
   | `Una Not     -> e_not
   | `Una Uminus  -> e_minus
   | `Una Uplus   -> e_plus
-
-let pp_if c pp_true pp_false fmt x =
-  match c with
-  | true  -> pp_true fmt x
-  | false -> pp_false fmt x
-
-let pp_maybe c tx pp fmt x =
-  pp_if c (tx pp) pp fmt x
-
-let pp_paren pp fmt x =
-  pp_enclose "(" ")" pp fmt x
-
-let pp_maybe_paren c pp =
-  pp_maybe c pp_paren pp
-
-let maybe_paren outer inner pos pp =
-  let c =
-    match (outer, inner, pos) with
-    | ((o, Right), (i, Right), PLeft) when o >= i -> true
-    | ((o, Right), (i, NonAssoc), _)  when o >= i -> true
-    | ((o, Right), (i, Left), _)      when o >= i -> true
-    | ((o, Left),  (i, Left), _)      when o >= i -> true
-    | ((o, NonAssoc), (i, _), _)      when o >= i -> true
-    | _ -> false
-  in pp_maybe_paren c pp
 
 (* -------------------------------------------------------------------------- *)
 
