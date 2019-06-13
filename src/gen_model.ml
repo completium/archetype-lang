@@ -34,7 +34,7 @@ let to_model (ast : A.model) : M.model =
       let e = M.mk_record a.name in
       M.TNrecord {
         e with
-        values = List.map (fun (x : (A.lident, A.type_, A.pterm) A.decl_gen) -> M.mk_record_item x.name (Option.get x.typ)) a.fields;
+        values = List.map (fun (x : (A.lident, A.type_, A.pterm) A.decl_gen) -> M.mk_record_item x.name (Option.get x.typ) ?default:x.default) a.fields;
       }
     in
     list @ List.map (fun x -> process_asset x) ast.assets in

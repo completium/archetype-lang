@@ -80,6 +80,7 @@ type enum = {
 type record_item = {
   name: record_ident;
   type_: type_;
+  default: pterm option;
 }
 [@@deriving show {with_path = false}]
 
@@ -214,8 +215,8 @@ let mk_enum_item ?(invariants = []) name : enum_item =
 let mk_record ?(values = []) name : record =
   { name; values }
 
-let mk_record_item name type_ : record_item =
-  { name; type_ }
+let mk_record_item ?default name type_ : record_item =
+  { name; type_; default }
 
 let mk_storage_item ?(fields = []) ?(invariants = []) ?(init = []) name : storage_item =
   { name; fields; invariants; init }
