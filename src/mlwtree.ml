@@ -24,6 +24,8 @@ type 'i abstract_type =
   | Tymap of 'i
   | Tyasset of 'i
   | Typartition of 'i
+  | Tyenum of 'i
+  | Tyoption of 'i abstract_type
   (* ... *)
 [@@deriving show {with_path = false}]
 
@@ -88,6 +90,9 @@ type ('e,'t,'i) abstract_term =
   | Thead   of 'e * 'e
   | Ttail   of 'e * 'e
   | Tnth    of 'e * 'e
+  (* option *)
+  | Tnone
+  | Tsome   of 'e
   (* ... *)
 [@@deriving show {with_path = false}]
 
@@ -129,7 +134,7 @@ type 'i abstract_clone_subst =
 type ('e,'t,'i) abstract_decl =
   | Duse     of 'i abstract_qualid
   | Dclone   of 'i abstract_qualid * 'i * ('i abstract_clone_subst) list
-  | Dvariant of 'i * 'i list
+  | Denum    of 'i * 'i list
   | Drecord  of 'i * ('i abstract_field) list
   | Dstorage of ('e,'t,'i) abstract_storage_struct
   | Daxiom   of 'i * ('e,'t,'i) abstract_formula
@@ -151,7 +156,7 @@ type ('e,'t,'i) abstract_mlw_tree = {
 let map_abstract_qualid (map_i : 'i1 -> 'i2) (q1 : 'i1 abstract_qualid)
   = List.map map_i q1
 
-let map_abstract_type (map_i : 'i1 -> 'i2) = function
+let rec map_abstract_type (map_i : 'i1 -> 'i2) = function
   | Tyint         -> Tyint
   | Tystring      -> Tystring
   | Tyaddr        -> Tyaddr
@@ -165,6 +170,8 @@ let map_abstract_type (map_i : 'i1 -> 'i2) = function
   | Tymap i       -> Tymap (map_i i)
   | Tyasset i     -> Tyasset (map_i i)
   | Typartition i -> Typartition (map_i i)
+  | Tyenum i      -> Typartition (map_i i)
+  | Tyoption t    -> Tyoption (map_abstract_type map_i t)
 
 let map_abstract_univ_decl
     (map_t : 't1 -> 't2)
@@ -225,6 +232,8 @@ let map_abstract_term
   | Thead (e1,e2)   -> Thead (map_e e1, map_e e2)
   | Ttail (e1,e2)   -> Ttail (map_e e1, map_e e2)
   | Tnth (e1,e2)    -> Tnth (map_e e1, map_e e2)
+  | Tnone           -> Tnone
+  | Tsome e         -> Tsome (map_e e)
 
 let map_abstract_forumla
     (map_e : 'e1 -> 'e2)
@@ -278,7 +287,7 @@ let map_abstract_decl
   | Dclone (q,i,l)  -> Dclone (map_abstract_qualid map_i q,
                                map_i i,
                                List.map (map_abstract_clone_subst map_i) l)
-  | Dvariant (i,l)  -> Dvariant (map_i i, List.map map_i l)
+  | Denum (i,l)     -> Denum (map_i i, List.map map_i l)
   | Drecord (i,l)   -> Drecord (map_i i, List.map (map_abstract_field map_i) l)
   | Dstorage s      -> Dstorage (map_abstract_storage_struct map_e map_t map_i s)
   | Daxiom (i,f)    -> Daxiom (map_i i, map_abstract_forumla map_e map_t map_i f)

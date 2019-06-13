@@ -97,8 +97,8 @@ let pp_with_paren pp fmt x =
 (* -------------------------------------------------------------------------- *)
 
 let pp_type fmt typ =
-  let typ_str =
-    match typ with
+  let rec typ_str t =
+    match t with
     | Tyint         -> "int"
     | Tystring      -> "string"
     | Tydate        -> "date"
@@ -107,13 +107,15 @@ let pp_type fmt typ =
     | Tytez         -> "tez"
     | Tystorage     -> "storage_"
     | Tyunit        -> "unit"
-    | Tyrecord i    -> i
-    | Tyasset  i    -> i
     | Tycoll i      -> "acol"
+    | Typartition _ -> "acol"
     | Tymap i       -> "map "^i
-    | Typartition _ -> "acol" in
-
-  pp_str fmt typ_str
+    | Tyrecord i    -> i
+    | Tyasset i     -> i
+    | Tyenum i      -> i
+    | Tyoption tt   -> "option "^(typ_str tt)
+  in
+  pp_str fmt (typ_str typ)
 
 (* -------------------------------------------------------------------------- *)
 
@@ -221,6 +223,7 @@ let rec pp_term outer pos fmt = function
         (pp_term e_default PRight) t in
     Format.fprintf fmt "{@\n  @[%a@]@\n}"
       (pp_list ";@\n" pp_recfield) l
+  | Tnone -> pp_str fmt "None"
   | _ -> pp_str fmt "NOT IMPLEMENTED"
 
 (* -------------------------------------------------------------------------- *)
@@ -288,7 +291,7 @@ let pp_invariants fmt invs =
   if List.length invs = 0
   then pp_str fmt ""
   else
-    Format.fprintf fmt " invariant {@\n %a @\n}@\n"
+    Format.fprintf fmt " invariant {@\n %a @\n} "
       (pp_list "@\n}@\n invariant {@\n " pp_formula) invs
 
 let pp_storage fmt (s : storage_struct) =
@@ -299,14 +302,37 @@ let pp_storage fmt (s : storage_struct) =
 
 (* -------------------------------------------------------------------------- *)
 
+let pp_enum fmt (i,l) =
+  Format.fprintf fmt "type %a =@\n @[| %a@]"
+    pp_str i
+    (pp_list "@\n| " pp_str) l
+
+(* -------------------------------------------------------------------------- *)
+
+let pp_qualid fmt q = Format.fprintf fmt "%a" (pp_list "." pp_str) q
+
+(* -------------------------------------------------------------------------- *)
+
+let pp_clone_subst fmt = function
+  | Ctype (i,j) -> Format.fprintf fmt "type %a = %a" pp_str i pp_str j
+  | Cval (i,j)  -> Format.fprintf fmt "type %a = %a" pp_str i pp_str j
+
+let pp_clone fmt (i,j,l) =
+  Format.fprintf fmt "clone %a as %a with @[%a@]"
+    pp_qualid i
+    pp_str j
+    (pp_list "@\n" pp_clone_subst) l
+
+(* -------------------------------------------------------------------------- *)
+
 let pp_decl fmt = function
-  | Duse l       -> Format.fprintf fmt "use %a" (pp_list "." pp_str) l
-  | Dclone _     -> Format.fprintf fmt "TODO: clone"
-  | Dvariant _   -> Format.fprintf fmt "TODO: variant"
-  | Drecord (i,l)-> pp_record fmt (i,l)
-  | Dstorage s   -> pp_storage fmt s
-  | Daxiom _     -> Format.fprintf fmt "TODO: axiom"
-  | Dfun s       -> pp_fun fmt s
+  | Duse l         -> Format.fprintf fmt "use %a" pp_qualid l
+  | Dclone (i,j,l) -> pp_clone fmt (i,j,l)
+  | Denum (i,l)    -> pp_enum fmt (i,l)
+  | Drecord (i,l)  -> pp_record fmt (i,l)
+  | Dstorage s     -> pp_storage fmt s
+  | Daxiom _       -> Format.fprintf fmt "TODO: axiom"
+  | Dfun s         -> pp_fun fmt s
 
 let pp_mlw_tree fmt (tree : mlw_tree) =
   Format.fprintf fmt "module %a@\n  @[%a@]@\nend"
