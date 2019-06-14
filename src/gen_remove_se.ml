@@ -63,7 +63,8 @@ let get_default_expr_from_type = function
 
 type sig_ = W.kind_function * (ident * W.type_) list * W.type_ * W.expr
 module Utils : sig
-  val get_asset : M.model -> A.lident -> sig_
+  val get_asset      : M.model -> A.lident -> sig_
+  val add_asset      : M.model -> A.lident -> sig_
   val contains_asset : M.model -> A.lident -> sig_
 end = struct
   open Model_wse
@@ -89,13 +90,43 @@ end = struct
     in
     Function, args, ret, body
 
+  let add_asset model asset =
+    let asset_name = unloc asset in
+    let key_id, _ = M.Utils.get_record_key model asset |> fun (x, y) -> unloc x , y in
+    let new_asset = "new_asset" in
+    let storage_id = "s" in
+    let col_asset_id = asset_name ^ "_assets" in
+    let col_keys_id = asset_name ^ "_keys" in
+    let args = [(storage_id, Tstorage); (new_asset, Trecord asset_name) ] in
+    let ret  = Tstorage in
+    let s_col_asset_id = Edot (Evar storage_id, col_asset_id) in
+    let s_col_keys_id = Edot (Evar storage_id, col_keys_id) in
+    let new_asset_key = Edot (Evar new_asset, key_id) in
+    let body =
+      Eletin (
+        [
+          [storage_id, Tstorage], Eassign (s_col_asset_id, Ecall (Edot (Evar "Map","add"), [new_asset_key; Evar new_asset; s_col_asset_id]));
+          [storage_id, Tstorage], Eassign (s_col_keys_id, Eaddlist (new_asset_key, s_col_keys_id))
+        ], Evar storage_id)
+    in
+    Function, args, ret, body
 
   let contains_asset model asset =
-    (* let asset_name = unloc asset in *)
+    let asset_name = unloc asset in
     let _, key_type = M.Utils.get_record_key model asset in
     let args = [("s", Tstorage); ("key", vtyp_to_type key_type) ] in
     let ret  = Tbool in
-    let body = Elitbool false in
+    let body =
+      Ematchwith (Ecall (Edot (Evar "Map", "find"),
+                         [
+                           Evar "key";
+                           Edot (Evar "s",
+                                 asset_name ^ "_assets")
+                         ]),
+                  [
+                    (Pexpr (Ecall (Evar "Some", [Evar "_"])), Elitbool true);
+                    (Pwild,  Elitbool false)])
+    in
     Function, args, ret, body
 
 end
@@ -111,6 +142,7 @@ let mk_function_struct model (f : M.function__) =
       W.Entry, args, ret, body
 
     | M.Get asset           -> Utils.get_asset model asset
+    | M.AddAsset asset      -> Utils.add_asset model asset
     | M.ContainsAsset asset -> Utils.contains_asset model asset
 
     | _ ->

@@ -42,22 +42,24 @@ let e_simple        =  (200, NonAssoc) (* ?  *)
 
 let get_prec_from_operator (op : operator) =
   match op with
-  | `Bin And     -> e_and
-  | `Bin Or      -> e_or
-  | `Bin Equal   -> e_equal
-  | `Bin Nequal  -> e_nequal
-  | `Bin Gt      -> e_gt
-  | `Bin Ge      -> e_ge
-  | `Bin Lt      -> e_lt
-  | `Bin Le      -> e_le
-  | `Bin Plus    -> e_plus
-  | `Bin Minus   -> e_minus
-  | `Bin Mult    -> e_mult
-  | `Bin Div     -> e_div
-  | `Bin Modulo  -> e_modulo
-  | `Una Not     -> e_not
-  | `Una Uminus  -> e_minus
-  | `Una Uplus   -> e_plus
+  | `Bin And        -> e_and
+  | `Bin Or         -> e_or
+  | `Bin Equal      -> e_equal
+  | `Bin Nequal     -> e_nequal
+  | `Bin Gt         -> e_gt
+  | `Bin Ge         -> e_ge
+  | `Bin Lt         -> e_lt
+  | `Bin Le         -> e_le
+  | `Bin Plus       -> e_plus
+  | `Bin Minus      -> e_minus
+  | `Bin Mult       -> e_mult
+  | `Bin Div        -> e_div
+  | `Bin Modulo     -> e_modulo
+  | `Bin At         -> e_default
+  | `Bin ColonColon -> e_default
+  | `Una Not        -> e_not
+  | `Una Uminus     -> e_minus
+  | `Una Uplus      -> e_plus
 
 (* -------------------------------------------------------------------------- *)
 
@@ -127,19 +129,21 @@ let pp_literal fmt = function
       pp_type v
 
 let binop_to_string = function
-  | And    -> "&&"
-  | Or     -> "||"
-  | Equal  -> "="
-  | Nequal -> "<>"
-  | Gt     -> ">"
-  | Ge     -> ">="
-  | Lt     -> "<"
-  | Le     -> "<="
-  | Plus   -> "+"
-  | Minus  -> "-"
-  | Mult   -> "*"
-  | Div    -> "/"
-  | Modulo -> "%"
+  | And    -> " && "
+  | Or     -> " || "
+  | Equal  -> " = "
+  | Nequal -> " <> "
+  | Gt     -> " > "
+  | Ge     -> " >= "
+  | Lt     -> " < "
+  | Le     -> " <= "
+  | Plus   -> " + "
+  | Minus  -> " - "
+  | Mult   -> " * "
+  | Div    -> " / "
+  | Modulo -> " % "
+  | ColonColon -> "::"
+  | At -> " @ "
 
 let unaop_to_string = function
   | Not    -> "not"
@@ -165,7 +169,7 @@ and pp_expr outer pos fmt = function
         (pp_expr e_equal PRight) e
     in
     Format.fprintf fmt "@[%a%a@]"
-      (pp_list "@\n" pp_letin_item) l
+      (pp_list "" pp_letin_item) l
       (pp_expr e_in PRight) b
 
   | Eif (cond, then_, else_) ->
@@ -201,7 +205,7 @@ and pp_expr outer pos fmt = function
 
     let prec_op = get_prec_from_operator (`Bin op) in
     let pp fmt (op, l, r) =
-      Format.fprintf fmt "%a %s %a"
+      Format.fprintf fmt "%a%s%a"
         (pp_expr prec_op PLeft) l
         (binop_to_string op)
         (pp_expr prec_op PRight) r
@@ -259,7 +263,17 @@ and pp_expr outer pos fmt = function
         (pp_expr e_dot PLeft) e
         pp_id id
     in
-    (maybe_paren outer e_simple pos pp) fmt (e, id)
+    (* (maybe_paren outer e_simple pos pp) fmt (e, id) *)
+    pp fmt (e, id)
+
+  | Eassign (l, r) ->
+
+    let pp fmt (l, r) =
+      Format.fprintf fmt "%a <- %a"
+        (pp_expr e_simple PLeft) l
+        (pp_expr e_simple PRight) r
+    in
+    (maybe_paren outer e_simple pos pp) fmt (l, r)
 
 let pp_struct_type fmt (s : type_struct) =
   let pp_item fmt ((id, t) : (ident * type_ option)) =

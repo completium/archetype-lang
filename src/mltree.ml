@@ -42,6 +42,8 @@ type bin_operator =
   | Mult
   | Div
   | Modulo
+  | At
+  | ColonColon
 [@@deriving show {with_path = false}]
 
 type unary_operator =
@@ -83,6 +85,7 @@ and expr =
   | Econtainer of expr list
   | Elit of literal
   | Edot of expr * ident
+  | Eassign    of expr * expr
 [@@deriving show {with_path = false}]
 
 type type_struct = {

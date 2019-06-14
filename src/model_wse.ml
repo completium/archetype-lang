@@ -33,37 +33,40 @@ type pattern =
 [@@deriving show {with_path = false}]
 
 and expr =
-  | Eif        of (expr * expr * expr)
-  | Ematchwith of expr * (pattern * expr) list
-  | Ecall      of (expr * expr list)
-  | Eand       of (expr * expr)
-  | Eor        of (expr * expr)
-  | Enot       of expr
-  | Eequal     of (expr * expr)
-  | Enequal    of (expr * expr)
-  | Egt        of (expr * expr)
-  | Ege        of (expr * expr)
-  | Elt        of (expr * expr)
-  | Ele        of (expr * expr)
-  | Eplus      of (expr * expr)
-  | Eminus     of (expr * expr)
-  | Emult      of (expr * expr)
-  | Ediv       of (expr * expr)
-  | Emodulo    of (expr * expr)
-  | Euplus     of expr
-  | Euminus    of expr
-  | Erecord    of (ident * expr) list
-  | Eletin     of ((ident * type_) list * expr) list * expr
-  | Evar       of ident
-  | Earray     of expr list
-  | Elitint    of Core.big_int
-  | Elitbool   of bool
-  | Elitstring of string
-  | Elitmap    of type_ * type_
-  | Elitraw    of string
-  | Edot       of expr * ident
-  | Etuple     of expr list
-  | Efold      of (ident list * expr * expr)
+  | Eif         of (expr * expr * expr)
+  | Ematchwith  of expr * (pattern * expr) list
+  | Ecall       of (expr * expr list)
+  | Eand        of (expr * expr)
+  | Eor         of (expr * expr)
+  | Enot        of expr
+  | Eequal      of (expr * expr)
+  | Enequal     of (expr * expr)
+  | Egt         of (expr * expr)
+  | Ege         of (expr * expr)
+  | Elt         of (expr * expr)
+  | Ele         of (expr * expr)
+  | Eplus       of (expr * expr)
+  | Eminus      of (expr * expr)
+  | Emult       of (expr * expr)
+  | Ediv        of (expr * expr)
+  | Emodulo     of (expr * expr)
+  | Eaddlist    of (expr * expr)
+  | Econcatlist of (expr * expr)
+  | Euplus      of expr
+  | Euminus     of expr
+  | Erecord     of (ident * expr) list
+  | Eletin      of ((ident * type_) list * expr) list * expr
+  | Evar        of ident
+  | Earray      of expr list
+  | Elitint     of Core.big_int
+  | Elitbool    of bool
+  | Elitstring  of string
+  | Elitmap     of type_ * type_
+  | Elitraw     of string
+  | Edot        of expr * ident
+  | Etuple      of expr list
+  | Efold       of (ident list * expr * expr)
+  | Eassign     of expr * expr
 [@@deriving show {with_path = false}]
 
 type enum_struct = {
