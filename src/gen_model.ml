@@ -67,27 +67,17 @@ let to_model (ast : A.model) : M.model =
     in
 
     let asset_to_storage_items (asset : A.asset) : M.storage_item =
-      let id = asset.name in
+      let asset_name = asset.name in
       let compute_fields =
-        let type_id : A.vtyp =
-          let res : A.vtyp option = List.fold_left (fun accu (x : field) ->
-              if String.equal (Location.unloc x.name) ((Location.unloc |@ Option.get) asset.key)
-              then (
-                match x.typ with
-                | Some (Tbuiltin v) -> Some v
-                | _ -> accu
-              )
-              else accu
-            ) None asset.fields in
-          match res with
-          | Some t -> t
-          | _ -> Option.get res
-        in
-        let asset_name = id in
+        let key_type = Option.get asset.key_type in
         let keys_id = Location.mkloc (Location.loc asset_name) ((Location.unloc asset_name) ^ "_keys") in
-        let asset_name = Location.mkloc (Location.loc asset_name) ((Location.unloc asset_name) ^ "_assets") in
-        [M.mk_item_field id (FKeyCollection (keys_id, type_id)) ~asset:id (* ~default:arg.default TODO: uncomment this*);
-         M.mk_item_field id (FRecordMap asset_name) ~asset:id (* ~default:arg.default TODO: uncomment this*)] in
+        let map_asset_name = Location.mkloc (Location.loc asset_name) ((Location.unloc asset_name) ^ "_assets") in
+        [M.mk_item_field keys_id (FAssetKeys (key_type, asset_name))
+           ~asset:asset_name
+        (*?default:None TODO: uncomment this*);
+         M.mk_item_field map_asset_name (FAssetRecord (key_type, asset_name))
+           ~asset:asset_name
+           (* ~default:arg.default TODO: uncomment this*)] in
       M.mk_storage_item asset.name ~fields:compute_fields ~invariants:asset.specs (*~init:asset.init TODO: uncomment this *)
     in
 
@@ -100,7 +90,16 @@ let to_model (ast : A.model) : M.model =
 
   let process_functions list : M.decl_node list =
     let extract_function_from_instruction (instr : A.instruction) (list : M.decl_node list) : (A.instruction * M.decl_node list) =
-      let add l i = i::l in (* if i exists in l then ignore *)
+      let add l i =
+        let e = List.fold_left (fun accu x ->
+            if x = i
+            then true
+            else accu) false l in
+        if e then
+          l
+        else
+          i::l
+      in (* if i exists in l then ignore *)
       let mk_function t field_name c : M.function__ option =
         let node = match t, field_name, c with
           | A.Tcontainer (Tasset asset, Collection), None,    A.Cget      -> Some (M.Get asset)

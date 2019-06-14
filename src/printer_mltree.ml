@@ -103,7 +103,7 @@ let rec pp_type fmt = function
     in
     pp fmt (k, v)
 
-  | Tcontract ->
+  | Tcontract _ ->
     Format.fprintf fmt "contract"
 
   | Toption t ->
@@ -222,9 +222,9 @@ let rec pp_expr outer pos fmt = function
         Format.fprintf fmt "%a = %a"
           pp_id id
           (pp_expr e_equal PRight) e in
-      Format.fprintf fmt "{ %a %a }"
+      Format.fprintf fmt "{@\n %a @[<v 2>  %a@]@\n  }"
         (pp_option (pp_postfix " with " pp_id)) w
-        (pp_list "; " pp_item) l
+        (pp_list ";@\n" pp_item) l
     in
     (maybe_paren outer e_simple pos pp) fmt (w, l)
 

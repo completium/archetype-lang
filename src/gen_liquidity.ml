@@ -6,13 +6,21 @@ module T = Mltree
 
 exception Anomaly of string
 
-let emit_error msg = raise (Anomaly msg)
+type error_desc =
+  | UnsupportedDefaultValue of string
+  | CannotConvertLogicalOperator of string
+  | NoStorageRecordFound
+[@@deriving show {with_path = false}]
+
+let emit_error (desc : error_desc) =
+  let str = Format.sprintf "a@." (*pp_error_desc desc*) in
+  raise (Anomaly str)
 
 let to_basic = function
   | A.VTbool       -> T.Tbool
   | A.VTint        -> T.Tint
   | A.VTuint       -> T.Tnat
-  | A.VTrational   -> assert false
+  | A.VTrational   -> assert false (* TODO *)
   | A.VTdate       -> T.Ttimestamp
   | A.VTduration   -> T.Tint
   | A.VTstring     -> T.Tstring
@@ -24,12 +32,24 @@ let to_basic = function
 let rec to_type = function
   | W.Tstorage     -> T.Tlocal "storage"
   | W.Toperations  -> T.Tlist  (T.Tlocal "operation")
-  | W.Tbuiltin b   -> T.Tbasic (to_basic b)
+  | W.Tbool        -> T.Tbasic Tbool
+  | W.Tint         -> T.Tbasic Tint
+  | W.Tuint        -> T.Tbasic T.Tnat
+  | W.Trational    -> assert false (* TODO *)
+  | W.Tdate        -> T.Tbasic T.Ttimestamp
+  | W.Tduration    -> T.Tbasic Tint
+  | W.Tstring      -> T.Tbasic Tstring
+  | W.Taddress     -> T.Tbasic Taddress
+  | W.Trole        -> T.Tbasic Tkey_hash
+  | W.Tcurrency _  -> T.Tbasic Ttez
+  | W.Tkey         -> T.Tbasic Tkey
   | W.Trecord id
   | W.Tenum id     -> T.Tlocal id
   | W.Ttuple types -> T.Ttuple (List.map to_type types)
   | W.Tcontainer t -> T.Tlist  (to_type t)
+  | W.Tcontract c  -> T.Tcontract c
   | W.Tmap (k, v)  -> T.Tmap   (to_type k, to_type v)
+  | W.Tunit        -> T.Tbasic Tunit
 
 let to_literal (l : 'a A.bval_poly) =
   match l.node with
@@ -44,34 +64,33 @@ let to_literal (l : 'a A.bval_poly) =
   | A.BVaddress   s      -> T.Lraw s
   | A.BVduration  s      -> T.Lraw s
 
-let get_default_value_from_basic = function
-  | A.VTbool -> T.Elit (Lbool false)
-  | A.VTint -> T.Elit (Lint Big_int.zero_big_int)
-  | A.VTuint -> T.Elit (Lint Big_int.zero_big_int)
-  | A.VTrational -> T.Elit (Lint Big_int.zero_big_int)
-  | A.VTdate-> emit_error "cannot have a default value for date"
-  | A.VTduration -> T.Elit (Lint Big_int.zero_big_int)
-  | A.VTstring -> T.Elit (Lstring "")
-  | A.VTaddress -> emit_error "cannot have a default value for address"
-  | A.VTrole -> emit_error "cannot have a default value for role"
-  | A.VTcurrency _ -> T.Elit (Lraw "0tz")
-  | A.VTkey -> emit_error "cannot have a default value for key"
-
 let get_default_value_from_type = function
-  | W.Tstorage -> emit_error "cannot have a default value for storage"
-  | W.Toperations -> emit_error "cannot have a default value for contract"
-  | W.Tbuiltin b -> get_default_value_from_basic b
-  | W.Trecord _ -> emit_error "cannot have a default value for record"
-  | W.Tenum _ -> emit_error "cannot have a default value for enum"
-  | W.Ttuple _ -> emit_error "cannot have a default value for tuple"
+  | W.Tstorage     -> emit_error (UnsupportedDefaultValue "storage")
+  | W.Toperations  -> emit_error (UnsupportedDefaultValue "operations")
+  | W.Tbool        -> T.Elit (Lbool false)
+  | W.Tint         -> T.Elit (Lint Big_int.zero_big_int)
+  | W.Tuint        -> T.Elit (Lint Big_int.zero_big_int)
+  | W.Trational    -> T.Elit (Lint Big_int.zero_big_int)
+  | W.Tdate        -> emit_error (UnsupportedDefaultValue "date")
+  | W.Tduration    -> T.Elit (Lint Big_int.zero_big_int)
+  | W.Tstring      -> T.Elit (Lstring "")
+  | W.Taddress     -> emit_error (UnsupportedDefaultValue "address")
+  | W.Trole        -> emit_error (UnsupportedDefaultValue "role")
+  | W.Tcurrency _  -> T.Elit (Lraw "0tz")
+  | W.Tkey         -> emit_error (UnsupportedDefaultValue "key")
+  | W.Trecord _    -> emit_error (UnsupportedDefaultValue "record")
+  | W.Tenum _      -> emit_error (UnsupportedDefaultValue "enum")
+  | W.Ttuple _     -> emit_error (UnsupportedDefaultValue "tuple")
   | W.Tcontainer _ -> Econtainer []
-  | W.Tmap (k, v) -> T.Elit (Lmap (to_type k, to_type v))
+  | W.Tcontract _  -> emit_error (UnsupportedDefaultValue "contract")
+  | W.Tmap (k, v)  -> T.Elit (Lmap (to_type k, to_type v))
+  | W.Tunit        -> emit_error (UnsupportedDefaultValue "unit")
 
 let op_to_bin_operator = function
   | `Logical A.And   -> T.And
   | `Logical A.Or    -> T.Or
-  | `Logical A.Imply -> emit_error "imply is not supported here"
-  | `Logical A.Equiv -> emit_error "equiv is not supported here"
+  | `Logical A.Imply -> emit_error (CannotConvertLogicalOperator "imply")
+  | `Logical A.Equiv -> emit_error (CannotConvertLogicalOperator "equiv")
   | `Cmp A.Equal     -> T.Equal
   | `Cmp A.Nequal    -> T.Nequal
   | `Cmp A.Gt        -> T.Gt
@@ -88,58 +107,43 @@ let op_to_unary_operator = function
   | A.Uplus   -> T.Uplus
   | A.Uminus  -> T.Uminus
 
-let expr_to_expr (x : W.expr) : T.expr =
+let pattern_to_pattern = function
+  | W.Mwild    -> T.Pwild
+  | W.Mconst i -> T.Pid i
+
+let rec expr_to_expr (x : W.expr) : T.expr =
   match x with
-  | W.Elitraw s -> T.Elit (Lraw s)
-  (* | `Eexpr Lquantifer _ ->
-     emit_error "quantifier is not supported here"
-
-     | `Eexpr Pif (c, t, e) ->
-     Eif (expr_to_expr c, expr_to_expr t, expr_to_expr e)
-
-     | `Eexpr Pmatchwith (id, l) -> assert false
-     | `Eexpr Pcall (_, c, args) -> assert false
-     | `Eexpr Pnot e ->
-     Eunary (Not, expr_to_expr e)
-
-     | `Eexpr Plogical (op, lhs, rhs) ->
-     Ebin (op_to_bin_operator (`Logical op), expr_to_expr lhs, expr_to_expr rhs)
-
-     | `Eexpr Pcomp (op, lhs, rhs) ->
-     Ebin (op_to_bin_operator (`Cmp op), expr_to_expr lhs, expr_to_expr rhs)
-
-     | `Eexpr Parith (op, lhs, rhs) ->
-     Ebin (op_to_bin_operator (`Arith op), expr_to_expr lhs, expr_to_expr rhs)
-
-     | `Eexpr Puarith (op, e) ->
-     Eunary (op_to_unary_operator op, expr_to_expr e)
-
-     | `Eexpr Precord l -> assert false
-     | `Eexpr Pletin (id, i, b, _) -> assert false
-     | `Eexpr Pvar id ->
-     Evar (to_ident id)
-
-     | `Eexpr Parray l ->
-     Econtainer (List.map expr_to_expr l)
-
-     | `Eexpr Plit l ->
-     Elit (to_literal l)
-
-     | `Eexpr Pdot (e, id) ->
-     Edot (expr_to_expr e, to_ident id)
-
-     | `Eexpr Pconst c -> assert false
-     | `Eexpr Ptuple l ->
-     Etuple (List.map expr_to_expr l)
-
-     | `Ewse  Efold (l, e, w) -> assert false
-     | `Einstr i -> instruction_to_expr i *)
-  | _ -> assert false
-
-(* and instruction_to_expr (i : W.instruction) : T.expr =
-   match i.node with
-   | Iletin (l, e, b) -> Eletin ([[], expr_to_expr e], instruction_to_expr b)
-   | Ituple l -> Etuple (List.map (fun x -> T.Evar (to_ident x)) l) *)
+  | W.Eif (c, t, e)     -> T.Eif (expr_to_expr c, expr_to_expr t, expr_to_expr e)
+  | W.Ematchwith (w, l) -> T.Ematchwith (expr_to_expr w, List.map (fun (p, e) -> ([pattern_to_pattern p], expr_to_expr e)) l)
+  | W.Ecall (i, args)   -> T.Eapp (i, List.map expr_to_expr args)
+  | W.Eand (l, r)       -> T.Ebin (And, expr_to_expr l, expr_to_expr l)
+  | W.Eor (l, r)        -> T.Ebin (Or, expr_to_expr l, expr_to_expr l)
+  | W.Enot e            -> T.Eunary (Not, expr_to_expr e)
+  | W.Eequal (l, r)     -> T.Ebin (Equal, expr_to_expr l, expr_to_expr l)
+  | W.Enequal (l, r)    -> T.Ebin (Nequal, expr_to_expr l, expr_to_expr l)
+  | W.Egt (l, r)        -> T.Ebin (Gt, expr_to_expr l, expr_to_expr l)
+  | W.Ege (l, r)        -> T.Ebin (Ge, expr_to_expr l, expr_to_expr l)
+  | W.Elt (l, r)        -> T.Ebin (Lt, expr_to_expr l, expr_to_expr l)
+  | W.Ele (l, r)        -> T.Ebin (Le, expr_to_expr l, expr_to_expr l)
+  | W.Eplus (l, r)      -> T.Ebin (Plus, expr_to_expr l, expr_to_expr l)
+  | W.Eminus (l, r)     -> T.Ebin (Minus, expr_to_expr l, expr_to_expr l)
+  | W.Emult (l, r)      -> T.Ebin (Mult, expr_to_expr l, expr_to_expr l)
+  | W.Ediv (l, r)       -> T.Ebin (Div, expr_to_expr l, expr_to_expr l)
+  | W.Emodulo (l, r)    -> T.Ebin (Modulo, expr_to_expr l, expr_to_expr l)
+  | W.Euplus e          -> T.Eunary (Uplus, expr_to_expr e)
+  | W.Euminus e         -> T.Eunary (Uminus, expr_to_expr e)
+  | W.Erecord l         -> T.Erecord (None ,List.map (fun (i, e) -> (i, expr_to_expr e)) l)
+  | W.Eletin (l, e)     -> T.Eletin (List.map (fun (ll, ee) -> (List.map (fun (i, t) -> (i, to_type t)) ll, expr_to_expr ee)) l, expr_to_expr e)
+  | W.Evar s            -> T.Evar s
+  | W.Earray l          -> T.Econtainer (List.map expr_to_expr l)
+  | W.Elitint i         -> T.Elit (Lint i)
+  | W.Elitbool b        -> T.Elit (Lbool b)
+  | W.Elitstring s      -> T.Elit (Lstring s)
+  | W.Elitmap (k, v)    -> T.Elit (Lmap (to_type k, to_type v))
+  | W.Elitraw s         -> T.Elit (Lraw s)
+  | W.Edot (e, i)       -> T.Edot (expr_to_expr e, i)
+  | W.Etuple l          -> T.Etuple (List.map expr_to_expr l)
+  | W.Efold _           -> assert false (* TODO *)
 
 let generate_init_instr (model : W.model) : T.expr =
   let storage = List.fold_left (fun accu (x : W.record_struct) ->
@@ -150,7 +154,7 @@ let generate_init_instr (model : W.model) : T.expr =
   let s : W.record_struct =
     match storage with
     | Some x -> x
-    | _ -> emit_error "no storage found" in
+    | _ -> emit_error NoStorageRecordFound in
 
   T.Erecord (None, List.map (
       fun (id, _, init) ->

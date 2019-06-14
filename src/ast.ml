@@ -467,7 +467,8 @@ type enum = (lident, type_, pterm) enum_struct
 type ('id, 'typ, 'term) asset_struct = {
   name    : 'id;
   fields  : ('id, 'typ, 'term) decl_gen list;
-  key     : 'id option;
+  key     : 'id option;   (* TODO: option ? *)
+  key_type: vtyp option; (* TODO: option ? *)
   sort    : 'id list;
   state   : 'id option;
   role    : bool;
@@ -554,8 +555,8 @@ let mk_enum ?(items = []) ?(loc = Location.dummy) name =
 let mk_decl ?typ ?default ?(loc = Location.dummy) name =
   { name; typ; default; loc }
 
-let mk_asset ?(fields = []) ?key ?(sort = []) ?state ?(role = false) ?init ?(specs = []) ?(loc = Location.dummy) name   =
-  { name; fields; key; sort; state; role; init; specs; loc }
+let mk_asset ?(fields = []) ?key ?key_type ?(sort = []) ?state ?(role = false) ?init ?(specs = []) ?(loc = Location.dummy) name   =
+  { name; fields; key; key_type; sort; state; role; init; specs; loc }
 
 let mk_contract ?(signatures = []) ?init ?(loc = Location.dummy) name =
   { name; signatures; init; loc }
@@ -850,6 +851,7 @@ let create_miles_with_expiration_ast () =
     ~assets:[
       mk_asset (dumloc "mile")
         ~key:(dumloc "id")
+        ~key_type:(VTstring)
         ~sort:[(dumloc "expiration")]
         ~fields:[mk_decl (dumloc "id")
                    ~typ:(Tbuiltin VTstring);
@@ -868,6 +870,7 @@ let create_miles_with_expiration_ast () =
                   ~label:(dumloc "m1")];
       mk_asset (dumloc "owner")
         ~key:(dumloc "addr")
+        ~key_type:(VTrole)
         ~fields:[mk_decl (dumloc "addr")
                    ~typ:(Tbuiltin VTrole);
                  mk_decl (dumloc "miles")

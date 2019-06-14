@@ -36,8 +36,8 @@ type enum_value_ident = lident
 
 type item_field_type =
   | FBasic            of vtyp
-  | FKeyCollection    of asset_ident * vtyp
-  | FRecordMap        of asset_ident
+  | FAssetKeys        of vtyp * asset_ident
+  | FAssetRecord      of vtyp * asset_ident
   | FRecordCollection of asset_ident
   | FRecord           of asset_ident
   | FEnum             of enum_ident

@@ -23,7 +23,7 @@ type type_ =
   | Ttuple of type_ list
   | Tlist of type_
   | Tmap of type_ * type_
-  | Tcontract
+  | Tcontract of ident
   | Toption of type_
   | Tlocal of ident (* struct or type *)
 [@@deriving show {with_path = false}]

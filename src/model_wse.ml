@@ -6,12 +6,24 @@ module M = Model
 type type_   =
   | Tstorage
   | Toperations
-  | Tbuiltin of A.vtyp
+  | Tbool
+  | Tint
+  | Tuint
+  | Trational
+  | Tdate
+  | Tduration
+  | Tstring
+  | Taddress
+  | Trole
+  | Tcurrency of A.currency
+  | Tkey
   | Trecord of ident
   | Tenum of ident
   | Ttuple of type_ list
   | Tcontainer of type_
+  | Tcontract of ident
   | Tmap of type_ * type_
+  | Tunit
 [@@deriving show {with_path = false}]
 
 type pattern =
