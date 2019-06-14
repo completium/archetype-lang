@@ -27,14 +27,15 @@ type type_   =
 [@@deriving show {with_path = false}]
 
 type pattern =
-  | Mwild
-  | Mconst of ident
+  | Pwild
+  | Pexpr of expr
+  | Pconst of ident
 [@@deriving show {with_path = false}]
 
-type expr =
+and expr =
   | Eif        of (expr * expr * expr)
   | Ematchwith of expr * (pattern * expr) list
-  | Ecall      of (ident * expr list)
+  | Ecall      of (expr * expr list)
   | Eand       of (expr * expr)
   | Eor        of (expr * expr)
   | Enot       of expr

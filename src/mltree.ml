@@ -28,11 +28,6 @@ type type_ =
   | Tlocal of ident (* struct or type *)
 [@@deriving show {with_path = false}]
 
-type pattern =
-  | Pid of ident
-  | Pwild
-[@@deriving show {with_path = false}]
-
 type bin_operator =
   | And
   | Or
@@ -69,12 +64,18 @@ type literal =
   | Lraw    of string
 [@@deriving show {with_path = false}]
 
-type expr =
+type pattern =
+  | Pid of ident
+  | Pexpr of expr
+  | Pwild
+[@@deriving show {with_path = false}]
+
+and expr =
   | Eletin of ((ident * type_) list * expr) list * expr
   | Etuple of expr list
   | Eif of (expr * expr * expr)
   | Ematchwith of expr * (pattern list * expr) list
-  | Eapp of ident * expr list
+  | Eapp of expr * expr list
   | Ebin of bin_operator * expr * expr
   | Eunary of unary_operator * expr
   | Erecord of ident option * (ident * expr) list

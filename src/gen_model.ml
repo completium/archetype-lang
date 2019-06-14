@@ -1,3 +1,4 @@
+open Location
 open Tools
 
 module A = Ast
@@ -100,41 +101,55 @@ let to_model (ast : A.model) : M.model =
         else
           i::l
       in (* if i exists in l then ignore *)
+      let get_asset asset_name : A.asset =
+        let id = unloc asset_name in
+        let res = List.fold_left (fun accu (x : A.asset) -> if String.equal id (unloc x.name) then Some x else accu ) None ast.assets in
+        Option.get_exn Anomaly res
+      in
+      let get_key_type_from_asset_name asset_name =
+        let asset = get_asset asset_name in
+        Option.get_exn Anomaly asset.key_type
+      in
+      let get_field_container_from_asset_name (asset_name, field_name) =
+        let asset = get_asset asset_name in
+        let res = List.fold_left (fun accu (x : (A.lident, 'b, 'c) A.decl_gen) -> if String.equal (unloc field_name) (unloc x.name) then Some x else accu ) None asset.fields in
+        let field = Option.get_exn Anomaly res in
+        match field.typ with
+        | Some Tcontainer (_, c) -> c
+        | _ -> raise Anomaly
+      in
       let mk_function t field_name c : M.function__ option =
         let node = match t, field_name, c with
-          | A.Tcontainer (Tasset asset, Collection), None,    A.Cget      -> Some (M.Get asset)
-          | A.Tcontainer (Tasset asset, Collection), None,    A.Cadd      -> Some (M.AddAsset asset)
-          | A.Tcontainer (Tasset asset, Collection), None,    A.Cremove   -> Some (M.RemoveAsset asset)
-          | A.Tcontainer (Tasset asset, Collection), None,    A.Cclear    -> Some (M.ClearAsset asset)
-          | A.Tcontainer (Tasset asset, Collection), None,    A.Cupdate   -> Some (M.UpdateAsset asset)
-          | A.Tcontainer (Tasset asset, Collection), None,    A.Ccontains -> Some (M.ContainsAsset asset)
-          | A.Tcontainer (Tasset asset, Collection), None,    A.Cnth      -> Some (M.NthAsset asset)
-          | A.Tcontainer (Tasset asset, Collection), None,    A.Cselect   -> Some (M.SelectAsset asset)
-          | A.Tcontainer (Tasset asset, Collection), None,    A.Creverse  -> Some (M.SortAsset asset)
-          | A.Tcontainer (Tasset asset, Collection), None,    A.Csort     -> Some (M.SortAsset asset)
-          | A.Tcontainer (Tasset asset, Collection), None,    A.Ccount    -> Some (M.CountAsset asset)
-          | A.Tcontainer (Tasset asset, Collection), None,    A.Csum      -> Some (M.SumAsset asset)
-          | A.Tcontainer (Tasset asset, Collection), None,    A.Cmin      -> Some (M.MinAsset asset)
-          | A.Tcontainer (Tasset asset, Collection), None,    A.Cmax      -> Some (M.MaxAsset asset)
-          | A.Tasset asset, Some field, A.Cadd                            -> Some (M.AddContainer (asset, field))
-          | A.Tasset asset, Some field, A.Cremove                         -> Some (M.RemoveContainer (asset, field))
-          | A.Tasset asset, Some field, A.Cclear                          -> Some (M.ClearContainer (asset, field))
-          | A.Tasset asset, Some field, A.Ccontains                       -> Some (M.ContainsContainer (asset, field))
-          | A.Tasset asset, Some field, A.Cnth                            -> Some (M.NthContainer (asset, field))
-          | A.Tasset asset, Some field, A.Cselect                         -> Some (M.SelectContainer (asset, field))
-          | A.Tasset asset, Some field, A.Creverse                        -> Some (M.ReverseContainer (asset, field))
-          | A.Tasset asset, Some field, A.Csort                           -> Some (M.SortContainer (asset, field))
-          | A.Tasset asset, Some field, A.Ccount                          -> Some (M.CountContainer (asset, field))
-          | A.Tasset asset, Some field, A.Csum                            -> Some (M.SumContainer (asset, field))
-          | A.Tasset asset, Some field, A.Cmax                            -> Some (M.MaxContainer (asset, field))
-          | A.Tasset asset, Some field, A.Cmin                            -> Some (M.MinContainer (asset, field))
+          | A.Tcontainer (Tasset asset, Collection), None, A.Cget         -> Some (M.Get (asset, get_key_type_from_asset_name asset))
+          | A.Tcontainer (Tasset asset, Collection), None, A.Cadd         -> Some (M.AddAsset asset)
+          | A.Tcontainer (Tasset asset, Collection), None, A.Cremove      -> Some (M.RemoveAsset asset)
+          | A.Tcontainer (Tasset asset, Collection), None, A.Cclear       -> Some (M.ClearAsset asset)
+          | A.Tcontainer (Tasset asset, Collection), None, A.Cupdate      -> Some (M.UpdateAsset asset)
+          | A.Tcontainer (Tasset asset, Collection), None, A.Ccontains    -> Some (M.ContainsAsset (asset, get_key_type_from_asset_name asset))
+          | A.Tcontainer (Tasset asset, Collection), None, A.Cnth         -> Some (M.NthAsset asset)
+          | A.Tcontainer (Tasset asset, Collection), None, A.Cselect      -> Some (M.SelectAsset asset)
+          | A.Tcontainer (Tasset asset, Collection), None, A.Creverse     -> Some (M.SortAsset asset)
+          | A.Tcontainer (Tasset asset, Collection), None, A.Csort        -> Some (M.SortAsset asset)
+          | A.Tcontainer (Tasset asset, Collection), None, A.Ccount       -> Some (M.CountAsset asset)
+          | A.Tcontainer (Tasset asset, Collection), None, A.Csum         -> Some (M.SumAsset asset)
+          | A.Tcontainer (Tasset asset, Collection), None, A.Cmin         -> Some (M.MinAsset asset)
+          | A.Tcontainer (Tasset asset, Collection), None, A.Cmax         -> Some (M.MaxAsset asset)
+          | A.Tasset asset, Some field, A.Cadd                            -> Some (M.AddContainer (asset, field, get_field_container_from_asset_name (asset, field)))
+          | A.Tasset asset, Some field, A.Cremove                         -> Some (M.RemoveContainer (asset, field, get_field_container_from_asset_name (asset, field)))
+          | A.Tasset asset, Some field, A.Cclear                          -> Some (M.ClearContainer (asset, field, get_field_container_from_asset_name (asset, field)))
+          | A.Tasset asset, Some field, A.Ccontains                       -> Some (M.ContainsContainer (asset, field, get_field_container_from_asset_name (asset, field)))
+          | A.Tasset asset, Some field, A.Cnth                            -> Some (M.NthContainer (asset, field, get_field_container_from_asset_name (asset, field)))
+          | A.Tasset asset, Some field, A.Cselect                         -> Some (M.SelectContainer (asset, field, get_field_container_from_asset_name (asset, field)))
+          | A.Tasset asset, Some field, A.Creverse                        -> Some (M.ReverseContainer (asset, field, get_field_container_from_asset_name (asset, field)))
+          | A.Tasset asset, Some field, A.Csort                           -> Some (M.SortContainer (asset, field, get_field_container_from_asset_name (asset, field)))
+          | A.Tasset asset, Some field, A.Ccount                          -> Some (M.CountContainer (asset, field, get_field_container_from_asset_name (asset, field)))
+          | A.Tasset asset, Some field, A.Csum                            -> Some (M.SumContainer (asset, field, get_field_container_from_asset_name (asset, field)))
+          | A.Tasset asset, Some field, A.Cmax                            -> Some (M.MaxContainer (asset, field, get_field_container_from_asset_name (asset, field)))
+          | A.Tasset asset, Some field, A.Cmin                            -> Some (M.MinContainer (asset, field, get_field_container_from_asset_name (asset, field)))
           | _ -> None in
-        Option.map (fun node ->
-            let ret = t (*TODO: get_type node*) in
-            let sig_ : M.signature = M.mk_signature (Location.dumloc (M.function_name_from_function_node node)) ~ret:ret in
-            M.mk_function node sig_) node in
+        Option.map (fun node -> M.mk_function node) node in
 
-      let ge (e : ('a, 'b) A.struct_poly) = (fun node -> {e with node = node}) in
+      let ge (e : A.pterm) = (fun node -> {e with node = node}) in
 
       let rec fe accu (term : A.pterm) : A.pterm * M.decl_node list =
         match term.node with
@@ -203,17 +218,17 @@ let to_model (ast : A.model) : M.model =
 
     let process_fun_gen name body loc verif f (list : M.decl_node list) : M.decl_node list =
       let instr, list = extract_function_from_instruction body list in
-      let sig_ = M.mk_signature name (*TODO: put arguments *) in
       let node = f (M.mk_function_struct name instr ~loc:loc) in
-      list @ [TNfunction (M.mk_function ?verif:verif node sig_)]
+      list @ [TNfunction (M.mk_function ?verif:verif node)]
     in
 
     let process_function (function_ : A.function_) (list : M.decl_node list) : M.decl_node list =
       let name  = function_.name in
       let body  = function_.body in
       let loc   = function_.loc in
+      let ret   = function_.return in
       let verif = function_.verification in
-      process_fun_gen name body loc verif (fun x -> M.Function x) list
+      process_fun_gen name body loc verif (fun x -> M.Function (x, ret)) list
     in
 
     let process_transaction (transaction : A.transaction) (list : M.decl_node list) : M.decl_node list =

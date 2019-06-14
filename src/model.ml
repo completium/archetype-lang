@@ -108,20 +108,21 @@ type argument = argument_ident * type_ * pterm option
 
 type function_struct = {
   name: fun_ident;
+  args: argument list;
   body: instruction;
   loc : Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]
 
 type function_node =
-  | Function           of function_struct
+  | Function           of function_struct * type_ (* fun * return type *)
   | Entry              of function_struct
-  | Get                of asset_ident
+  | Get                of asset_ident * vtyp     (* asset_name * key type *)
   | AddAsset           of asset_ident
   | RemoveAsset        of asset_ident
   | ClearAsset         of asset_ident
   | UpdateAsset        of asset_ident
-  | ContainsAsset      of asset_ident
+  | ContainsAsset      of asset_ident * vtyp
   | NthAsset           of asset_ident
   | SelectAsset        of asset_ident
   | SortAsset          of asset_ident
@@ -130,18 +131,18 @@ type function_node =
   | SumAsset           of asset_ident
   | MinAsset           of asset_ident
   | MaxAsset           of asset_ident
-  | AddContainer       of asset_ident * field_ident
-  | RemoveContainer    of asset_ident * field_ident
-  | ClearContainer     of asset_ident * field_ident
-  | ContainsContainer  of asset_ident * field_ident
-  | NthContainer       of asset_ident * field_ident
-  | SelectContainer    of asset_ident * field_ident
-  | SortContainer      of asset_ident * field_ident
-  | ReverseContainer   of asset_ident * field_ident
-  | CountContainer     of asset_ident * field_ident
-  | SumContainer       of asset_ident * field_ident
-  | MinContainer       of asset_ident * field_ident
-  | MaxContainer       of asset_ident * field_ident
+  | AddContainer       of asset_ident * field_ident * container
+  | RemoveContainer    of asset_ident * field_ident * container
+  | ClearContainer     of asset_ident * field_ident * container
+  | ContainsContainer  of asset_ident * field_ident * container
+  | NthContainer       of asset_ident * field_ident * container
+  | SelectContainer    of asset_ident * field_ident * container
+  | SortContainer      of asset_ident * field_ident * container
+  | ReverseContainer   of asset_ident * field_ident * container
+  | CountContainer     of asset_ident * field_ident * container
+  | SumContainer       of asset_ident * field_ident * container
+  | MinContainer       of asset_ident * field_ident * container
+  | MaxContainer       of asset_ident * field_ident * container
   | Other
 [@@deriving show {with_path = false}]
 
@@ -154,7 +155,6 @@ type signature = {
 
 type function__ = {
   node: function_node;
-  sig_: signature;
   verif  : (lident, type_, pterm) verification option;
 }
 [@@deriving show {with_path = false}]
@@ -176,14 +176,14 @@ type model = {
 let lident_to_string lident = Location.unloc lident
 
 let function_name_from_function_node = function
-  | Function           fs           -> lident_to_string fs.name
+  | Function           (fs, _)      -> lident_to_string fs.name
   | Entry              fs           -> lident_to_string fs.name
-  | Get                aid          -> "get_"      ^ lident_to_string aid
+  | Get                (aid, _)     -> "get_"      ^ lident_to_string aid
   | AddAsset           aid          -> "add_"      ^ lident_to_string aid
   | RemoveAsset        aid          -> "remove_"   ^ lident_to_string aid
   | ClearAsset         aid          -> "clear_"    ^ lident_to_string aid
   | UpdateAsset        aid          -> "update_"   ^ lident_to_string aid
-  | ContainsAsset      aid          -> "contains_" ^ lident_to_string aid
+  | ContainsAsset      (aid, _)     -> "contains_" ^ lident_to_string aid
   | NthAsset           aid          -> "nth_"      ^ lident_to_string aid
   | SelectAsset        aid          -> "select_"   ^ lident_to_string aid
   | SortAsset          aid          -> "sort_"     ^ lident_to_string aid
@@ -192,18 +192,18 @@ let function_name_from_function_node = function
   | SumAsset           aid          -> "sum_"      ^ lident_to_string aid
   | MinAsset           aid          -> "min_"      ^ lident_to_string aid
   | MaxAsset           aid          -> "max_"      ^ lident_to_string aid
-  | AddContainer      (aid, fid)    -> "add_"      ^ lident_to_string aid ^ "_" ^ lident_to_string fid
-  | RemoveContainer   (aid, fid)    -> "remove_"   ^ lident_to_string aid ^ "_" ^ lident_to_string fid
-  | ClearContainer    (aid, fid)    -> "clear_"    ^ lident_to_string aid ^ "_" ^ lident_to_string fid
-  | ContainsContainer (aid, fid)    -> "contains_" ^ lident_to_string aid ^ "_" ^ lident_to_string fid
-  | NthContainer      (aid, fid)    -> "nth_"      ^ lident_to_string aid ^ "_" ^ lident_to_string fid
-  | SelectContainer   (aid, fid)    -> "select_"   ^ lident_to_string aid ^ "_" ^ lident_to_string fid
-  | SortContainer     (aid, fid)    -> "sort_"     ^ lident_to_string aid ^ "_" ^ lident_to_string fid
-  | ReverseContainer  (aid, fid)    -> "reverse_"  ^ lident_to_string aid ^ "_" ^ lident_to_string fid
-  | CountContainer    (aid, fid)    -> "count_"    ^ lident_to_string aid ^ "_" ^ lident_to_string fid
-  | SumContainer      (aid, fid)    -> "sum_"      ^ lident_to_string aid ^ "_" ^ lident_to_string fid
-  | MinContainer      (aid, fid)    -> "min_"      ^ lident_to_string aid ^ "_" ^ lident_to_string fid
-  | MaxContainer      (aid, fid)    -> "max_"      ^ lident_to_string aid ^ "_" ^ lident_to_string fid
+  | AddContainer      (aid, fid, _) -> "add_"      ^ lident_to_string aid ^ "_" ^ lident_to_string fid
+  | RemoveContainer   (aid, fid, _) -> "remove_"   ^ lident_to_string aid ^ "_" ^ lident_to_string fid
+  | ClearContainer    (aid, fid, _) -> "clear_"    ^ lident_to_string aid ^ "_" ^ lident_to_string fid
+  | ContainsContainer (aid, fid, _) -> "contains_" ^ lident_to_string aid ^ "_" ^ lident_to_string fid
+  | NthContainer      (aid, fid, _) -> "nth_"      ^ lident_to_string aid ^ "_" ^ lident_to_string fid
+  | SelectContainer   (aid, fid, _) -> "select_"   ^ lident_to_string aid ^ "_" ^ lident_to_string fid
+  | SortContainer     (aid, fid, _) -> "sort_"     ^ lident_to_string aid ^ "_" ^ lident_to_string fid
+  | ReverseContainer  (aid, fid, _) -> "reverse_"  ^ lident_to_string aid ^ "_" ^ lident_to_string fid
+  | CountContainer    (aid, fid, _) -> "count_"    ^ lident_to_string aid ^ "_" ^ lident_to_string fid
+  | SumContainer      (aid, fid, _) -> "sum_"      ^ lident_to_string aid ^ "_" ^ lident_to_string fid
+  | MinContainer      (aid, fid, _) -> "min_"      ^ lident_to_string aid ^ "_" ^ lident_to_string fid
+  | MaxContainer      (aid, fid, _) -> "max_"      ^ lident_to_string aid ^ "_" ^ lident_to_string fid
   | Other -> assert false
 
 let mk_enum ?(values = []) name : enum =
@@ -224,11 +224,11 @@ let mk_storage_item ?(fields = []) ?(invariants = []) ?(init = []) name : storag
 let mk_item_field ?asset ?(ghost = false) ?default ?(loc = Location.dummy) name typ : item_field =
   { asset; name; typ; ghost; default; loc }
 
-let mk_function_struct ?(loc = Location.dummy) name body : function_struct =
-  { name; body; loc }
+let mk_function_struct ?(args = []) ?(loc = Location.dummy) name body : function_struct =
+  { name; args; body; loc }
 
-let mk_function ?verif node sig_: function__ =
-  { node; sig_; verif }
+let mk_function ?verif node : function__ =
+  { node; verif }
 
 let mk_signature ?(args = []) ?ret name : signature =
   { name; args; ret}

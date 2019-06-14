@@ -146,14 +146,17 @@ let unaop_to_string = function
   | Uminus -> "-"
   | Uplus  -> "+"
 
-let pp_pattern fmt = function
+let rec pp_pattern fmt = function
   | Pid id ->
     Format.fprintf fmt "| %a"
       pp_id id
+  | Pexpr e ->
+    Format.fprintf fmt "| %a"
+      (pp_expr e_simple PRight) e
   | Pwild ->
     Format.fprintf fmt "| _"
 
-let rec pp_expr outer pos fmt = function
+and pp_expr outer pos fmt = function
   | Eletin (l, b) ->
     let pp_letin_item fmt (l, e) =
       Format.fprintf fmt "let %a : %a = %a in@\n"
@@ -183,16 +186,16 @@ let rec pp_expr outer pos fmt = function
                (pp_list " " pp_pattern) pts
                (pp_expr e_arrow PRight) e)) l
     in
-    (maybe_paren outer e_default pos pp) fmt (e, l)
+    (maybe_paren outer e_simple pos pp) fmt (e, l)
 
   | Eapp (id, args) ->
 
     let pp fmt (id, args) =
       Format.fprintf fmt "%a %a"
-        pp_id id
+        (pp_expr e_app PLeft) id
         (pp_list " " (pp_expr e_app PInfix)) args
     in
-    (maybe_paren outer e_app pos pp) fmt (id, args)
+    (maybe_paren outer e_simple pos pp) fmt (id, args)
 
   | Ebin (op, l, r) ->
 
@@ -256,7 +259,7 @@ let rec pp_expr outer pos fmt = function
         (pp_expr e_dot PLeft) e
         pp_id id
     in
-    (maybe_paren outer e_dot pos pp) fmt (e, id)
+    (maybe_paren outer e_simple pos pp) fmt (e, id)
 
 let pp_struct_type fmt (s : type_struct) =
   let pp_item fmt ((id, t) : (ident * type_ option)) =
@@ -292,10 +295,11 @@ let pp_fun fmt (s : fun_struct) =
         pp_id id
         pp_type t
   in
-  Format.fprintf fmt "let%a %a %a =@\n@[  %a@]@."
+  Format.fprintf fmt "let%a %a %a : %a =@\n@[  %a@]@."
     pp_fun_node s.node
     pp_id s.name
     (pp_list " " pp_arg) s.args
+    pp_type s.ret
     (pp_expr e_equal PRight) s.body
 
 let pp_decl fmt = function

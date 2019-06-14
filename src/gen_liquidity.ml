@@ -107,15 +107,16 @@ let op_to_unary_operator = function
   | A.Uplus   -> T.Uplus
   | A.Uminus  -> T.Uminus
 
-let pattern_to_pattern = function
-  | W.Mwild    -> T.Pwild
-  | W.Mconst i -> T.Pid i
+let rec pattern_to_pattern = function
+  | W.Pwild    -> T.Pwild
+  | W.Pexpr e -> T.Pexpr (expr_to_expr e)
+  | W.Pconst i -> T.Pid i
 
-let rec expr_to_expr (x : W.expr) : T.expr =
+and  expr_to_expr (x : W.expr) : T.expr =
   match x with
   | W.Eif (c, t, e)     -> T.Eif (expr_to_expr c, expr_to_expr t, expr_to_expr e)
   | W.Ematchwith (w, l) -> T.Ematchwith (expr_to_expr w, List.map (fun (p, e) -> ([pattern_to_pattern p], expr_to_expr e)) l)
-  | W.Ecall (i, args)   -> T.Eapp (i, List.map expr_to_expr args)
+  | W.Ecall (i, args)   -> T.Eapp (expr_to_expr i, List.map expr_to_expr args)
   | W.Eand (l, r)       -> T.Ebin (And, expr_to_expr l, expr_to_expr l)
   | W.Eor (l, r)        -> T.Ebin (Or, expr_to_expr l, expr_to_expr l)
   | W.Enot e            -> T.Eunary (Not, expr_to_expr e)

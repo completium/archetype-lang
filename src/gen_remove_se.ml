@@ -61,6 +61,8 @@ let get_default_expr_from_type = function
   | M.FEnum _             -> assert false
   | M.FContainer (c, i)   -> assert false
 
+let failwith str = W.Ecall (Evar "failwith", [Elitstring str])
+
 let mk_function_struct (f : M.function__) =
   let name : ident = M.function_name_from_function_node f.node in
   let kind, args, ret, body =
@@ -71,11 +73,28 @@ let mk_function_struct (f : M.function__) =
       let body = W.Etuple [W.Earray []; W.Evar "s"] in
       W.Entry, args, ret, body
 
-    | M.Get asset ->
+    | M.Get (asset, key_type) ->
       let asset_name = unloc asset in
-      let args = [("s", W.Tstorage); ("key", W.Tstring) ] in
+      let args = [("s", W.Tstorage); ("key", vtyp_to_type key_type) ] in
       let ret  = W.Trecord asset_name in
-      let body = W.Evar "s" in
+      let body = W.Ematchwith (W.Ecall (Edot (Evar "Map", "find"),
+                                        [
+                                          Evar "key";
+                                          Edot (Evar "s",
+                                                asset_name ^ "_assets")
+                                        ]),
+                               [
+                                 (W.Pexpr (Ecall (Evar "Some", [Evar "v"])), Evar "v");
+                                 (W.Pwild,  failwith "not_found") ]) in
+      W.Function, args, ret, body
+
+    | M.ContainsAsset (_asset, key_type) ->
+      (* let asset_name = unloc asset in *)
+      let args = [("s", W.Tstorage); ("key", vtyp_to_type key_type) ] in
+      let ret  = W.Tbool in
+      let body = W.Elitbool false
+
+      in
       W.Function, args, ret, body
 
     | _ ->
