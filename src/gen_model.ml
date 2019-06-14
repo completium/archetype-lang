@@ -73,9 +73,10 @@ let to_model (ast : A.model) : M.model =
     let asset_to_storage_items (asset : A.asset) : M.storage_item =
       let asset_name = asset.name in
       let compute_fields =
-        let keys_id, key_type = A.Utils.get_asset_key ast asset_name in
+        let _, key_type = A.Utils.get_asset_key ast asset_name in
+        let key_asset_name = Location.mkloc (Location.loc asset_name) ((Location.unloc asset_name) ^ "_keys") in
         let map_asset_name = Location.mkloc (Location.loc asset_name) ((Location.unloc asset_name) ^ "_assets") in
-        [M.mk_item_field keys_id (FAssetKeys (key_type, asset_name))
+        [M.mk_item_field key_asset_name (FAssetKeys (key_type, asset_name))
            ~asset:asset_name
         (*?default:None TODO: uncomment this*);
          M.mk_item_field map_asset_name (FAssetRecord (key_type, asset_name))
