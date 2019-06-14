@@ -75,7 +75,7 @@ let mk_function_struct model (f : M.function__) =
 
     | M.Get asset ->
       let asset_name = unloc asset in
-      let _, key_type = M.get_record_key model asset in
+      let _, key_type = M.Utils.get_record_key model asset in
       let args = [("s", W.Tstorage); ("key", vtyp_to_type key_type) ] in
       let ret  = W.Trecord asset_name in
       let body = W.Ematchwith (W.Ecall (Edot (Evar "Map", "find"),
@@ -91,7 +91,7 @@ let mk_function_struct model (f : M.function__) =
 
     | M.ContainsAsset asset ->
       (* let asset_name = unloc asset in *)
-      let _, key_type = M.get_record_key model asset in
+      let _, key_type = M.Utils.get_record_key model asset in
       let args = [("s", W.Tstorage); ("key", vtyp_to_type key_type) ] in
       let ret  = W.Tbool in
       let body = W.Elitbool false

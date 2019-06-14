@@ -245,44 +245,52 @@ let mk_model ?(decls = []) name : model =
 
 (* -------------------------------------------------------------------- *)
 
-open Tools
-open Location
+module Utils : sig
 
-exception Anomaly of string
+  val get_record       : model -> A.lident -> record
+  val get_record_field : model -> (A.lident * A.lident ) -> record_item
+  val get_record_key   : model -> A.lident -> (A.lident * A.vtyp)
 
-type error_desc =
-  | RecordNotFound of string
-  | RecordFieldNotFound of string * string
-  | RecordKeyTypeNotFound of string
-  | ContainerNotFound of string * string
-[@@deriving show {with_path = false}]
+end = struct
 
-let emit_error (desc : error_desc) =
-  let str = Format.asprintf "%a@." pp_error_desc desc in
-  raise (Anomaly str)
+  open Tools
+  open Location
 
-let get_record model record_name : record =
-  let id = unloc record_name in
-  let res = List.fold_left (fun accu (x : decl_node) ->
-      match x with
-      | TNrecord r when String.equal (unloc record_name) (unloc r.name) -> Some r
-      | _ -> accu
-    ) None model.decls in
-  match res with
-  | Some v -> v
-  | _ -> emit_error (RecordNotFound id)
+  exception Anomaly of string
 
-let get_record_field model (record_name, field_name) =
-  let record = get_record model record_name in
-  let res = List.fold_left (fun accu (x : record_item) -> if String.equal (unloc field_name) (unloc x.name) then Some x else accu) None record.values in
-  match res with
-  | Some v -> v
-  | _ -> emit_error (RecordFieldNotFound (unloc record_name, unloc field_name))
+  type error_desc =
+    | RecordNotFound of string
+    | RecordFieldNotFound of string * string
+    | RecordKeyTypeNotFound of string
+  [@@deriving show {with_path = false}]
 
-let get_record_key model record_name : (lident * A.vtyp) =
-  let record = get_record model record_name in
-  let key_id = Option.get record.key in
-  let key_field = get_record_field model (record_name, key_id) in
-  match key_field.type_ with
-  | Tbuiltin v -> (key_id, v)
-  | _ -> emit_error (RecordKeyTypeNotFound (unloc record_name))
+  let emit_error (desc : error_desc) =
+    let str = Format.asprintf "%a@." pp_error_desc desc in
+    raise (Anomaly str)
+
+  let get_record model record_name : record =
+    let id = unloc record_name in
+    let res = List.fold_left (fun accu (x : decl_node) ->
+        match x with
+        | TNrecord r when String.equal (unloc record_name) (unloc r.name) -> Some r
+        | _ -> accu
+      ) None model.decls in
+    match res with
+    | Some v -> v
+    | _ -> emit_error (RecordNotFound id)
+
+  let get_record_field model (record_name, field_name) =
+    let record = get_record model record_name in
+    let res = List.fold_left (fun accu (x : record_item) -> if String.equal (unloc field_name) (unloc x.name) then Some x else accu) None record.values in
+    match res with
+    | Some v -> v
+    | _ -> emit_error (RecordFieldNotFound (unloc record_name, unloc field_name))
+
+  let get_record_key model record_name : (lident * A.vtyp) =
+    let record = get_record model record_name in
+    let key_id = Option.get record.key in
+    let key_field = get_record_field model (record_name, key_id) in
+    match key_field.type_ with
+    | Tbuiltin v -> (key_id, v)
+    | _ -> emit_error (RecordKeyTypeNotFound (unloc record_name))
+end
