@@ -13,6 +13,7 @@ let mk_default_init = function
   | Drecord (n,fs) ->
     Dfun {
       name     = "mk_default_"^n;
+      logic    = false;
       args     = [];
       returns  = Tyasset n;
       raises   = [];
@@ -53,9 +54,28 @@ let mk_trace_clone = Dclone (["archetype";"Trace"], "Tr",
 
 (* API storage templates -----------------------------------------------------*)
 
+(* basic getters *)
+
+let gen_field_getter n field = Dfun {
+    name     = n;
+    logic    = true;
+    args     = [];
+    returns  = Tyunit;
+    raises   = [];
+    requires = [];
+    ensures  = [];
+    body     = Tnone;
+  }
+
+let gen_field_getters = function
+  | Drecord (n,fs) ->
+    List.map (gen_field_getter n) fs
+  | _ -> assert false
+
 (* TODO : add postconditions *)
 let mk_add asset key : decl = Dfun {
     name     = "add_"^asset;
+    logic    = false;
     args     = ["s",Tystorage; "new_asset",Tyasset asset];
     returns  = Tyunit;
     raises   = [Ekeyexist];
@@ -113,6 +133,27 @@ let mk_test_owner : decl = Drecord ("owner", [
     { name = "miles"; typ = Typartition "mile"; init = Tvar "empty"; mutable_ = false; }
   ])
 
+let mk_test_consume : decl = Dfun {
+    name     = "consume";
+    logic    = false;
+    args     = ["s",Tystorage; "ow",Tyasset "owner"; "nbmiles",Tyint];
+    returns  = Tytransfers;
+    raises   = [Enotfound; Ekeyexist; Einvalidcaller; Einvalidcondition];
+    requires = [
+      { id   = "r1";
+        body = Teq (Tyoption (Tyenum "entry"),Tdoti ("s","ename_"),Tsome (Tenum "Consume"))
+      };
+      { id   = "r2";
+        body = Tempty (Tdoti ("s","removed_mile"))
+      };
+      { id   = "r3";
+        body = Tempty (Tdoti ("s","added_mile"))
+      };
+    ];
+    ensures  = [];
+    body     = Tnone;
+  }
+
 let mk_test_storage : decl = Dstorage {
     fields = [
       { name = "admin" ; typ = Tyrole ; init = Tint 0; mutable_ = true; }
@@ -152,6 +193,7 @@ let to_whyml (model : M.model) : mlw_tree  =
       mk_default_init mk_test_owner;
       mk_test_storage;
       mk_add "mile" "id";
-      mk_add "owner" "addr"
+      mk_add "owner" "addr";
+      mk_test_consume;
     ];
   }

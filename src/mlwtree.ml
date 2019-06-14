@@ -3,6 +3,8 @@ open Tools
 type exn =
   | Enotfound
   | Ekeyexist
+  | Einvalidcaller
+  | Einvalidcondition
 [@@deriving show {with_path = false}]
 
 (* abstract types -------------------------------------------------------------*)
@@ -18,6 +20,7 @@ type 'i abstract_type =
   | Tydate
   | Tytez
   | Tystorage
+  | Tytransfers
   | Tyunit
   | Tyrecord of 'i
   | Tycoll  of 'i
@@ -93,6 +96,7 @@ type ('e,'t,'i) abstract_term =
   (* option *)
   | Tnone
   | Tsome   of 'e
+  | Tenum   of 'i
   | Tnottranslated
   (* ... *)
 [@@deriving show {with_path = false}]
@@ -113,6 +117,7 @@ type ('e,'t,'i) abstract_field = {
 
 type ('e,'t,'i) abstract_fun_struct = {
   name     : 'i;
+  logic    : bool;
   args     : ('i * 'i abstract_type) list;
   returns  : 'i abstract_type;
   raises   :  exn list;
@@ -167,6 +172,7 @@ let rec map_abstract_type (map_i : 'i1 -> 'i2) = function
   | Tytez         -> Tytez
   | Tystorage     -> Tystorage
   | Tyunit        -> Tyunit
+  | Tytransfers   -> Tytransfers
   | Tyrecord i    -> Tyrecord (map_i i)
   | Tycoll i      -> Tycoll (map_i i)
   | Tymap i       -> Tymap (map_i i)
@@ -236,6 +242,7 @@ let map_abstract_term
   | Tnth (e1,e2)    -> Tnth (map_e e1, map_e e2)
   | Tnone           -> Tnone
   | Tsome e         -> Tsome (map_e e)
+  | Tenum i         -> Tenum (map_i i)
   | Tnottranslated  -> Tnottranslated
 
 let map_abstract_forumla
@@ -264,6 +271,7 @@ let map_abstract_fun_struct
     (map_i : 'i1 -> 'i2)
     (f : ('e1,'t1,'i1) abstract_fun_struct) = {
   name     = map_i f.name;
+  logic    = f.logic;
   args     = List.map (fun (a,t) -> (map_i a, map_abstract_type map_i t)) f.args;
   returns  = map_abstract_type map_i f.returns;
   raises   = f.raises;

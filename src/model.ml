@@ -86,6 +86,7 @@ type record_item = {
 
 type record = {
   name: record_ident;
+  key: record_ident option;
   values: record_item list;
 }
 [@@deriving show {with_path = false}]
@@ -212,8 +213,8 @@ let mk_enum ?(values = []) name : enum =
 let mk_enum_item ?(invariants = []) name : enum_item =
   { name; invariants }
 
-let mk_record ?(values = []) name : record =
-  { name; values }
+let mk_record ?(values = []) ?(key = None) name : record =
+  { name; key; values }
 
 let mk_record_item ?default name type_ : record_item =
   { name; type_; default }

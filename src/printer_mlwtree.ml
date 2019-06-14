@@ -88,6 +88,7 @@ let needs_paren = function
   | Tdoti _ -> false
   | Tdot _  -> false
   | Tvar _  -> false
+  | Tenum _ -> false
   | _ -> true
 
 let pp_with_paren pp fmt x =
@@ -106,6 +107,7 @@ let pp_type fmt typ =
     | Tytez         -> "tez"
     | Tystorage     -> "storage_"
     | Tyunit        -> "unit"
+    | Tytransfers   -> "transfers"
     | Tycoll i      -> "acol"
     | Typartition _ -> "acol"
     | Tymap i       -> "map "^i
@@ -121,8 +123,10 @@ let pp_type fmt typ =
 let pp_exn fmt e =
   let e_str =
     match e with
-    | Ekeyexist -> "KeyExist"
-    | Enotfound -> "NotFound" in
+    | Ekeyexist         -> "KeyExist"
+    | Enotfound         -> "NotFound"
+    | Einvalidcaller    -> "InvalidCaller"
+    | Einvalidcondition -> "InvalidCondition" in
   pp_str fmt e_str
 
 (* -------------------------------------------------------------------------- *)
@@ -177,6 +181,8 @@ let rec pp_term outer pos fmt = function
       (pp_with_paren (pp_term outer pos)) e3
   | Teq (Tycoll _, e1, e2) ->
     Format.fprintf fmt "%a == %a" (pp_term outer pos) e1 (pp_term outer pos) e2
+  | Teq (_, e1, e2) ->
+    Format.fprintf fmt "%a = %a" (pp_term outer pos) e1 (pp_term outer pos) e2
   | Tunion (e1, e2) ->
     Format.fprintf fmt "union %a %a"
       (pp_with_paren (pp_term outer pos)) e1
@@ -226,6 +232,8 @@ let rec pp_term outer pos fmt = function
     Format.fprintf fmt "{@\n  @[%a@]@\n}"
       (pp_list ";@\n" pp_recfield) l
   | Tnone -> pp_str fmt "None"
+  | Tenum i -> pp_str fmt i
+  | Tsome e -> Format.fprintf fmt "Some %a" (pp_with_paren (pp_term e_default PRight)) e
   | Tnottranslated -> pp_str fmt "NOT TRANSLATED"
   | _ -> pp_str fmt "NOT IMPLEMENTED"
 
@@ -251,6 +259,13 @@ let pp_ensures fmt ensures =
     Format.fprintf fmt "ensures {@\n %a @\n}@\n"
       (pp_list "@\n}@\nensures {@\n" pp_formula) ensures
 
+let pp_requires fmt requires =
+  if List.length requires = 0
+  then pp_str fmt ""
+  else
+    Format.fprintf fmt "requires {@\n %a @\n}@\n"
+      (pp_list "@\n}@\nrequires {@\n" pp_formula) requires
+
 let pp_arg fmt (id, t) =
   Format.fprintf fmt "(%a : %a)"
     pp_id id
@@ -261,12 +276,18 @@ let pp_args fmt l =
   then pp_str fmt "()"
   else Format.fprintf fmt "%a" (pp_list " " pp_arg) l
 
+let pp_logic fmt = function
+  | true -> pp_str fmt " function"
+  | false -> pp_str fmt ""
+
 let pp_fun fmt (s : fun_struct) =
-  Format.fprintf fmt "let %a %a : %a@\n%a%a=@[  %a@]"
+  Format.fprintf fmt "let%a %a %a : %a@\n%a%a%a=@[  %a@]"
+    pp_logic s.logic
     pp_id s.name
     pp_args s.args
     pp_type s.returns
     pp_raise s.raises
+    pp_requires s.requires
     pp_ensures s.ensures
     (pp_term e_top PRight) s.body
 
