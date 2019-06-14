@@ -13,7 +13,7 @@ type error_desc =
 [@@deriving show {with_path = false}]
 
 let emit_error (desc : error_desc) =
-  let str = Format.sprintf "a@." (*pp_error_desc desc*) in
+  let str = Format.asprintf "%a@." pp_error_desc desc in
   raise (Anomaly str)
 
 let to_basic = function

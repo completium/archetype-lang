@@ -63,7 +63,7 @@ let get_default_expr_from_type = function
 
 let failwith str = W.Ecall (Evar "failwith", [Elitstring str])
 
-let mk_function_struct (f : M.function__) =
+let mk_function_struct model (f : M.function__) =
   let name : ident = M.function_name_from_function_node f.node in
   let kind, args, ret, body =
     match f.node with
@@ -73,8 +73,9 @@ let mk_function_struct (f : M.function__) =
       let body = W.Etuple [W.Earray []; W.Evar "s"] in
       W.Entry, args, ret, body
 
-    | M.Get (asset, key_type) ->
+    | M.Get asset ->
       let asset_name = unloc asset in
+      let _, key_type = M.get_record_key model asset in
       let args = [("s", W.Tstorage); ("key", vtyp_to_type key_type) ] in
       let ret  = W.Trecord asset_name in
       let body = W.Ematchwith (W.Ecall (Edot (Evar "Map", "find"),
@@ -88,8 +89,9 @@ let mk_function_struct (f : M.function__) =
                                  (W.Pwild,  failwith "not_found") ]) in
       W.Function, args, ret, body
 
-    | M.ContainsAsset (_asset, key_type) ->
+    | M.ContainsAsset asset ->
       (* let asset_name = unloc asset in *)
+      let _, key_type = M.get_record_key model asset in
       let args = [("s", W.Tstorage); ("key", vtyp_to_type key_type) ] in
       let ret  = W.Tbool in
       let body = W.Elitbool false
@@ -142,7 +144,7 @@ let remove_se (model : M.model) : W.model =
   let funs = List.fold_left (fun accu x ->
       match x with
       | M.TNfunction f ->
-        let func = mk_function_struct f in
+        let func = mk_function_struct model f in
         accu @ [func]
       | _ -> accu) [] model.decls in
   W.mk_model (unloc name) ~enums:enums ~records:records ~funs:funs

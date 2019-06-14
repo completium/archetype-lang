@@ -468,7 +468,6 @@ type ('id, 'typ, 'term) asset_struct = {
   name    : 'id;
   fields  : ('id, 'typ, 'term) decl_gen list;
   key     : 'id option;   (* TODO: option ? *)
-  key_type: vtyp option; (* TODO: option ? *)
   sort    : 'id list;
   state   : 'id option;
   role    : bool;
@@ -555,8 +554,8 @@ let mk_enum ?(items = []) ?(loc = Location.dummy) name =
 let mk_decl ?typ ?default ?(loc = Location.dummy) name =
   { name; typ; default; loc }
 
-let mk_asset ?(fields = []) ?key ?key_type ?(sort = []) ?state ?(role = false) ?init ?(specs = []) ?(loc = Location.dummy) name   =
-  { name; fields; key; key_type; sort; state; role; init; specs; loc }
+let mk_asset ?(fields = []) ?key ?(sort = []) ?state ?(role = false) ?init ?(specs = []) ?(loc = Location.dummy) name   =
+  { name; fields; key; sort; state; role; init; specs; loc }
 
 let mk_contract ?(signatures = []) ?init ?(loc = Location.dummy) name =
   { name; signatures; init; loc }
@@ -830,6 +829,55 @@ let fold_map_instr_term gi ge fi fe (accu : 'a) instr : 'instr * 'a =
     in
     gi (Icall (xe, id, argss)), argsa
 
+
+(* -------------------------------------------------------------------- *)
+
+open Tools
+
+exception Anomaly of string
+
+type error_desc =
+  | AssetNotFound of string
+  | AssetFieldNotFound of string * string
+  | AssetKeyTypeNotFound of string
+  | ContainerNotFound of string * string
+[@@deriving show {with_path = false}]
+
+let emit_error (desc : error_desc) =
+  let str = Format.sprintf "a@." (*pp_error_desc desc*) in
+  raise (Anomaly str)
+
+let get_asset ast asset_name : asset =
+  let id = unloc asset_name in
+  let res = List.fold_left (fun accu (x : asset) -> if String.equal id (unloc x.name) then Some x else accu ) None ast.assets in
+  match res with
+  | Some v -> v
+  | _ -> emit_error (AssetNotFound id)
+
+let get_asset_field ast (asset_name, field_name) =
+  let asset = get_asset ast asset_name in
+  let res = List.fold_left (fun accu (x : ('id, 'typ, 'term) decl_gen) -> if String.equal (unloc field_name) (unloc x.name) then Some x else accu) None asset.fields in
+  match res with
+  | Some v -> v
+  | _ -> emit_error (AssetFieldNotFound (unloc asset_name, unloc field_name))
+
+let get_asset_key ast asset_name : (lident * vtyp) =
+  let asset = get_asset ast asset_name in
+  let key_id = Option.get asset.key in
+  let key_field = get_asset_field ast (asset_name, key_id) in
+  match key_field.typ with
+  | Some (Tbuiltin v) -> (key_id, v)
+  | _ -> emit_error (AssetKeyTypeNotFound (unloc asset_name))
+
+let get_container_asset_field ast (asset_name, field_name) =
+  let field = get_asset_field ast (asset_name, field_name) in
+  match field.typ with
+  | Some Tcontainer (_, c) -> c
+  | _ -> emit_error (ContainerNotFound (unloc asset_name, unloc field_name))
+
+
+(* -------------------------------------------------------------------- *)
+
 let create_fake_ast () =
   mk_model (dumloc "fake")
     ~variables:[
@@ -851,7 +899,6 @@ let create_miles_with_expiration_ast () =
     ~assets:[
       mk_asset (dumloc "mile")
         ~key:(dumloc "id")
-        ~key_type:(VTstring)
         ~sort:[(dumloc "expiration")]
         ~fields:[mk_decl (dumloc "id")
                    ~typ:(Tbuiltin VTstring);
@@ -870,7 +917,6 @@ let create_miles_with_expiration_ast () =
                   ~label:(dumloc "m1")];
       mk_asset (dumloc "owner")
         ~key:(dumloc "addr")
-        ~key_type:(VTrole)
         ~fields:[mk_decl (dumloc "addr")
                    ~typ:(Tbuiltin VTrole);
                  mk_decl (dumloc "miles")

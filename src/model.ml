@@ -1,11 +1,16 @@
 open Ident
-open Ast
+
+module A = Ast
+
 
 type lident = ident Location.loced
 [@@deriving show {with_path = false}]
 
-type type_ = ptyp
-type term = pterm
+type type_ = A.ptyp
+[@@deriving show {with_path = false}]
+
+type term = A.pterm
+[@@deriving show {with_path = false}]
 
 type field_ident = lident
 [@@deriving show {with_path = false}]
@@ -35,9 +40,9 @@ type enum_value_ident = lident
 [@@deriving show {with_path = false}]
 
 type item_field_type =
-  | FBasic            of vtyp
-  | FAssetKeys        of vtyp * asset_ident
-  | FAssetRecord      of vtyp * asset_ident
+  | FBasic            of A.vtyp
+  | FAssetKeys        of A.vtyp * asset_ident
+  | FAssetRecord      of A.vtyp * asset_ident
   | FRecordCollection of asset_ident
   | FRecord           of asset_ident
   | FEnum             of enum_ident
@@ -49,7 +54,7 @@ type item_field = {
   name    : field_ident;
   typ     : item_field_type;
   ghost   : bool;
-  default : pterm option; (* initial value *)
+  default : A.pterm option; (* initial value *)
   loc     : Location.t [@opaque]
 }
 [@@deriving show {with_path = false}]
@@ -57,8 +62,8 @@ type item_field = {
 type storage_item = {
   name        : field_ident;
   fields      : item_field list;
-  invariants  : (lident, (lident, type_) lterm_gen) label_term list;
-  init        : ((ident * pterm) list) list;
+  invariants  : (lident, (lident, type_) A.lterm_gen) A.label_term list;
+  init        : ((ident * A.pterm) list) list;
 }
 [@@deriving show {with_path = false}]
 
@@ -67,7 +72,7 @@ type storage = storage_item list
 
 type enum_item = {
   name: enum_value_ident;
-  invariants : (lident, (lident, type_) lterm_gen) label_term list;
+  invariants : (lident, (lident, type_) A.lterm_gen) A.label_term list;
 }
 [@@deriving show {with_path = false}]
 
@@ -80,7 +85,7 @@ type enum = {
 type record_item = {
   name: record_ident;
   type_: type_;
-  default: pterm option;
+  default: A.pterm option;
 }
 [@@deriving show {with_path = false}]
 
@@ -91,7 +96,7 @@ type record = {
 }
 [@@deriving show {with_path = false}]
 
-type contract = (lident, type_, pterm) Ast.contract
+type contract = (lident, type_, A.pterm) Ast.contract
 [@@deriving show {with_path = false}]
 
 type 'id function_ = {
@@ -104,13 +109,13 @@ type 'id entry = {
 }
 [@@deriving show {with_path = false}]
 
-type argument = argument_ident * type_ * pterm option
+type argument = argument_ident * type_ * A.pterm option
 [@@deriving show {with_path = false}]
 
 type function_struct = {
   name: fun_ident;
   args: argument list;
-  body: instruction;
+  body: A.instruction;
   loc : Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]
@@ -118,12 +123,12 @@ type function_struct = {
 type function_node =
   | Function           of function_struct * type_ (* fun * return type *)
   | Entry              of function_struct
-  | Get                of asset_ident * vtyp     (* asset_name * key type *)
+  | Get                of asset_ident
   | AddAsset           of asset_ident
   | RemoveAsset        of asset_ident
   | ClearAsset         of asset_ident
   | UpdateAsset        of asset_ident
-  | ContainsAsset      of asset_ident * vtyp
+  | ContainsAsset      of asset_ident
   | NthAsset           of asset_ident
   | SelectAsset        of asset_ident
   | SortAsset          of asset_ident
@@ -132,18 +137,18 @@ type function_node =
   | SumAsset           of asset_ident
   | MinAsset           of asset_ident
   | MaxAsset           of asset_ident
-  | AddContainer       of asset_ident * field_ident * container
-  | RemoveContainer    of asset_ident * field_ident * container
-  | ClearContainer     of asset_ident * field_ident * container
-  | ContainsContainer  of asset_ident * field_ident * container
-  | NthContainer       of asset_ident * field_ident * container
-  | SelectContainer    of asset_ident * field_ident * container
-  | SortContainer      of asset_ident * field_ident * container
-  | ReverseContainer   of asset_ident * field_ident * container
-  | CountContainer     of asset_ident * field_ident * container
-  | SumContainer       of asset_ident * field_ident * container
-  | MinContainer       of asset_ident * field_ident * container
-  | MaxContainer       of asset_ident * field_ident * container
+  | AddContainer       of asset_ident * field_ident * A.container
+  | RemoveContainer    of asset_ident * field_ident * A.container
+  | ClearContainer     of asset_ident * field_ident * A.container
+  | ContainsContainer  of asset_ident * field_ident * A.container
+  | NthContainer       of asset_ident * field_ident * A.container
+  | SelectContainer    of asset_ident * field_ident * A.container
+  | SortContainer      of asset_ident * field_ident * A.container
+  | ReverseContainer   of asset_ident * field_ident * A.container
+  | CountContainer     of asset_ident * field_ident * A.container
+  | SumContainer       of asset_ident * field_ident * A.container
+  | MinContainer       of asset_ident * field_ident * A.container
+  | MaxContainer       of asset_ident * field_ident * A.container
   | Other
 [@@deriving show {with_path = false}]
 
@@ -156,7 +161,7 @@ type signature = {
 
 type function__ = {
   node: function_node;
-  verif  : (lident, type_, pterm) verification option;
+  verif  : (lident, type_, A.pterm) A.verification option;
 }
 [@@deriving show {with_path = false}]
 
@@ -179,12 +184,12 @@ let lident_to_string lident = Location.unloc lident
 let function_name_from_function_node = function
   | Function           (fs, _)      -> lident_to_string fs.name
   | Entry              fs           -> lident_to_string fs.name
-  | Get                (aid, _)     -> "get_"      ^ lident_to_string aid
+  | Get                aid          -> "get_"      ^ lident_to_string aid
   | AddAsset           aid          -> "add_"      ^ lident_to_string aid
   | RemoveAsset        aid          -> "remove_"   ^ lident_to_string aid
   | ClearAsset         aid          -> "clear_"    ^ lident_to_string aid
   | UpdateAsset        aid          -> "update_"   ^ lident_to_string aid
-  | ContainsAsset      (aid, _)     -> "contains_" ^ lident_to_string aid
+  | ContainsAsset      aid          -> "contains_" ^ lident_to_string aid
   | NthAsset           aid          -> "nth_"      ^ lident_to_string aid
   | SelectAsset        aid          -> "select_"   ^ lident_to_string aid
   | SortAsset          aid          -> "sort_"     ^ lident_to_string aid
@@ -213,7 +218,7 @@ let mk_enum ?(values = []) name : enum =
 let mk_enum_item ?(invariants = []) name : enum_item =
   { name; invariants }
 
-let mk_record ?(values = []) ?(key = None) name : record =
+let mk_record ?(values = []) ?key name : record =
   { name; key; values }
 
 let mk_record_item ?default name type_ : record_item =
@@ -236,3 +241,48 @@ let mk_signature ?(args = []) ?ret name : signature =
 
 let mk_model ?(decls = []) name : model =
   { name; decls}
+
+
+(* -------------------------------------------------------------------- *)
+
+open Tools
+open Location
+
+exception Anomaly of string
+
+type error_desc =
+  | RecordNotFound of string
+  | RecordFieldNotFound of string * string
+  | RecordKeyTypeNotFound of string
+  | ContainerNotFound of string * string
+[@@deriving show {with_path = false}]
+
+let emit_error (desc : error_desc) =
+  let str = Format.asprintf "%a@." pp_error_desc desc in
+  raise (Anomaly str)
+
+let get_record model record_name : record =
+  let id = unloc record_name in
+  let res = List.fold_left (fun accu (x : decl_node) ->
+      match x with
+      | TNrecord r when String.equal (unloc record_name) (unloc r.name) -> Some r
+      | _ -> accu
+    ) None model.decls in
+  match res with
+  | Some v -> v
+  | _ -> emit_error (RecordNotFound id)
+
+let get_record_field model (record_name, field_name) =
+  let record = get_record model record_name in
+  let res = List.fold_left (fun accu (x : record_item) -> if String.equal (unloc field_name) (unloc x.name) then Some x else accu) None record.values in
+  match res with
+  | Some v -> v
+  | _ -> emit_error (RecordFieldNotFound (unloc record_name, unloc field_name))
+
+let get_record_key model record_name : (lident * A.vtyp) =
+  let record = get_record model record_name in
+  let key_id = Option.get record.key in
+  let key_field = get_record_field model (record_name, key_id) in
+  match key_field.type_ with
+  | Tbuiltin v -> (key_id, v)
+  | _ -> emit_error (RecordKeyTypeNotFound (unloc record_name))
