@@ -17,8 +17,8 @@ depends: [
   "dune"                { build & >= "1.5.0"  }
   "menhir"
   "omd"
-  "why3"                { >= "1.2.0" }
-  "yojson"              { >= "1.5.0" }
-  "ppx_deriving"        { >= "4.2.1" }
-  "ppx_deriving_yojson" { >= "3.3" }
+  "why3"                { = "1.2.0" }
+  "yojson"              { = "1.5.0" }
+  "ppx_deriving"        { = "4.2.1" }
+  "ppx_deriving_yojson" { = "3.3" }
 ]
