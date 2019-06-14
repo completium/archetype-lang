@@ -80,6 +80,7 @@ type record_struct = {
 
 type kind_function =
   | Function
+  | Inline
   | Entry
 [@@deriving show {with_path = false}]
 

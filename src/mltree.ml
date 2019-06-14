@@ -99,6 +99,7 @@ type struct_struct = {
 
 type fun_node =
   | Init
+  | Inline
   | Entry
   | None
 [@@deriving show {with_path = false}]

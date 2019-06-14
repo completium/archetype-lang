@@ -285,6 +285,7 @@ let pp_fun fmt (s : fun_struct) =
   let pp_fun_node fmt = function
     | Init  -> Format.fprintf fmt "%%init"
     | Entry -> Format.fprintf fmt "%%entry"
+    | Inline -> Format.fprintf fmt "[@@inline]"
     | None  -> Format.fprintf fmt ""
   in
   let pp_arg fmt (id, t) =

@@ -195,6 +195,7 @@ let to_liquidity (model : W.model) : T.tree =
         let node : T.fun_node =
           match x.kind with
           | Function -> None
+          | Inline -> Inline
           | Entry -> Entry
         in
         let args = List.map (fun (id, t) -> (id, to_type t) ) x.args in

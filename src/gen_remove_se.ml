@@ -61,7 +61,44 @@ let get_default_expr_from_type = function
   | M.FEnum _             -> assert false
   | M.FContainer (c, i)   -> assert false
 
-let failwith str = W.Ecall (Evar "failwith", [Elitstring str])
+type sig_ = W.kind_function * (ident * W.type_) list * W.type_ * W.expr
+module Utils : sig
+  val get_asset : M.model -> A.lident -> sig_
+  val contains_asset : M.model -> A.lident -> sig_
+end = struct
+  open Model_wse
+
+  let failwith str = Ecall (Evar "failwith", [Elitstring str])
+
+
+  let get_asset model asset =
+    let asset_name = unloc asset in
+    let _, key_type = M.Utils.get_record_key model asset in
+    let args = [("s", Tstorage); ("key", vtyp_to_type key_type) ] in
+    let ret  = Trecord asset_name in
+    let body =
+      Ematchwith (Ecall (Edot (Evar "Map", "find"),
+                         [
+                           Evar "key";
+                           Edot (Evar "s",
+                                 asset_name ^ "_assets")
+                         ]),
+                  [
+                    (Pexpr (Ecall (Evar "Some", [Evar "v"])), Evar "v");
+                    (Pwild,  failwith "not_found") ])
+    in
+    Function, args, ret, body
+
+
+  let contains_asset model asset =
+    (* let asset_name = unloc asset in *)
+    let _, key_type = M.Utils.get_record_key model asset in
+    let args = [("s", Tstorage); ("key", vtyp_to_type key_type) ] in
+    let ret  = Tbool in
+    let body = Elitbool false in
+    Function, args, ret, body
+
+end
 
 let mk_function_struct model (f : M.function__) =
   let name : ident = M.function_name_from_function_node f.node in
@@ -73,31 +110,8 @@ let mk_function_struct model (f : M.function__) =
       let body = W.Etuple [W.Earray []; W.Evar "s"] in
       W.Entry, args, ret, body
 
-    | M.Get asset ->
-      let asset_name = unloc asset in
-      let _, key_type = M.Utils.get_record_key model asset in
-      let args = [("s", W.Tstorage); ("key", vtyp_to_type key_type) ] in
-      let ret  = W.Trecord asset_name in
-      let body = W.Ematchwith (W.Ecall (Edot (Evar "Map", "find"),
-                                        [
-                                          Evar "key";
-                                          Edot (Evar "s",
-                                                asset_name ^ "_assets")
-                                        ]),
-                               [
-                                 (W.Pexpr (Ecall (Evar "Some", [Evar "v"])), Evar "v");
-                                 (W.Pwild,  failwith "not_found") ]) in
-      W.Function, args, ret, body
-
-    | M.ContainsAsset asset ->
-      (* let asset_name = unloc asset in *)
-      let _, key_type = M.Utils.get_record_key model asset in
-      let args = [("s", W.Tstorage); ("key", vtyp_to_type key_type) ] in
-      let ret  = W.Tbool in
-      let body = W.Elitbool false
-
-      in
-      W.Function, args, ret, body
+    | M.Get asset           -> Utils.get_asset model asset
+    | M.ContainsAsset asset -> Utils.contains_asset model asset
 
     | _ ->
       let args = ["", W.Tunit] in
