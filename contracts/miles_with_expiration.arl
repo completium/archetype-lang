@@ -70,7 +70,7 @@ action consume (a : address) (quantity : uint) = {
      let ow = owner.get a in
      let by_expiration = ow.miles.select(mile.expiration > now) in
      require (by_expiration.sum(quantity) >= amount);
-     let remainder = quantitiy in
+     let remainder = by_expiration.sum(quantity) in
      loop : for (m in by_expiration) (
        if remainder > 0
        then (
@@ -85,10 +85,10 @@ action consume (a : address) (quantity : uint) = {
          else if m.amount = remainder
          then (
            remainder := 0;
-           o.miles.remove m.id
+           ow.miles.remove m.id
          ) else (
            remainder -= m.amount;
-           o.miles.remove m.id
+           ow.miles.remove m.id
          )
        );
      label zero_remainder)
