@@ -399,6 +399,27 @@ type ('id, 'typ) definition = {
 }
 [@@deriving show {with_path = false}]
 
+type ('id, 'typ) invariant = {
+  label: 'id;
+  formulas: (('id, 'typ) lterm_gen) list;
+}
+[@@deriving show {with_path = false}]
+
+type ('id, 'typ) specification = {
+  name: 'id;
+  formula: ('id, 'typ) lterm_gen;
+  invariants: (('id, 'typ) invariant) list;
+}
+[@@deriving show {with_path = false}]
+
+type ('id, 'typ) assert_ = {
+  name: 'id;
+  label: 'id;
+  formula: ('id, 'typ) lterm_gen;
+  invariants: ('id, 'typ) invariant list;
+}
+[@@deriving show {with_path = false}]
+
 type ('id, 'typ, 'term) verification = {
   predicates  : ('id, 'typ) predicate list;
   definitions : ('id, 'typ) definition list;
@@ -407,7 +428,8 @@ type ('id, 'typ, 'term) verification = {
   variables   : ('id, 'typ, 'term) variable list;
   invariants  : ('id * ('id, ('id, 'typ) lterm_gen) label_term list) list;
   effect      : 'term option;
-  specs       : ('id, ('id, 'typ) lterm_gen) label_term list;
+  specs       : ('id, 'typ) specification list;
+  asserts     : ('id, 'typ) assert_ list;
   loc         : Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]
@@ -539,8 +561,17 @@ let mk_predicate ?(args = []) ?(loc = Location.dummy) name body =
 let mk_definition ?(loc = Location.dummy) name typ var body =
   { name; typ; var; body; loc }
 
-let mk_verification ?(predicates = []) ?(definitions = []) ?(axioms = []) ?(theorems = []) ?(variables = []) ?(invariants = []) ?effect ?(specs = []) ?(loc = Location.dummy) () =
-  { predicates; definitions; axioms; theorems; variables; invariants; effect; specs; loc}
+let mk_invariant ?(formulas = []) label =
+  { label; formulas }
+
+let mk_specification ?(invariants = []) name formula =
+  { name; formula; invariants }
+
+let mk_assert ?(invariants = []) name label formula =
+  { name; label; formula; invariants }
+
+let mk_verification ?(predicates = []) ?(definitions = []) ?(axioms = []) ?(theorems = []) ?(variables = []) ?(invariants = []) ?effect ?(specs = []) ?(asserts = []) ?(loc = Location.dummy) () =
+  { predicates; definitions; axioms; theorems; variables; invariants; effect; specs; asserts; loc}
 
 let mk_function_struct ?(args = []) ?verification ?(side = false) ?(fvs = []) ?(loc = Location.dummy) name body return =
   { name; args; body; verification; side; return; fvs; loc }
@@ -990,6 +1021,48 @@ let create_miles_with_expiration_ast () =
                                               ~type_:(Tasset (dumloc "mile"))])))));
 
       mk_transaction_struct (dumloc "consume")
+        ?verification: (Some (mk_verification ()
+                                ~asserts:[
+                                  mk_assert (dumloc "p1") (dumloc "zero_remainder")
+                                    (mk_sp (Pcomp (Equal,
+                                                   (mk_sp (Pvar (dumloc "remainder"))
+                                                      ~type_:(LTprog (Tbuiltin VTuint))),
+                                                   (mk_sp (Plit (mk_sp (BVint Big_int.zero_big_int)))
+                                                      ~type_:(LTprog (Tbuiltin VTuint)))
+                                                  ))
+                                       ~type_:(LTprog (Tbuiltin VTbool)))
+
+                                    ~invariants:[
+                                      mk_invariant (dumloc "loop")
+                                        ~formulas:[
+                                          (mk_sp (Plogical (And,
+                                                            (mk_sp (Pcomp (Le,
+                                                                           (mk_sp (Plit (mk_sp (BVint Big_int.zero_big_int)))
+                                                                              ~type_:(LTprog (Tbuiltin VTuint))),
+                                                                           (mk_sp (Pvar (dumloc "remainder"))
+                                                                              ~type_:(LTprog (Tbuiltin VTuint)))
+                                                                          ))
+                                                               ~type_:(LTprog (Tbuiltin VTbool))),
+                                                            (mk_sp (Pcomp (Le,
+                                                                           (mk_sp (Pvar (dumloc "remainder"))
+                                                                              ~type_:(LTprog (Tbuiltin VTuint))),
+                                                                           (mk_sp (Pcall (None,
+                                                                                          Cconst Csum,
+                                                                                          [
+                                                                                            AExpr (mk_sp (Pvar (dumloc "to_iter"))
+                                                                                                     ~type_:(LTprog (Tasset (dumloc "mile"))));
+                                                                                            AExpr (mk_sp (Pvar (dumloc "amount"))
+                                                                                                     ~type_:(LTprog (Tbuiltin VTuint)))
+                                                                                          ]))
+                                                                              ~type_:(LTprog (Tbuiltin VTbool)))
+                                                                          ))
+                                                               ~type_:(LTprog (Tbuiltin VTbool))))))
+                                        ]
+                                    ]
+                                ]
+                             ))
+
+
         ~args:[mk_decl (dumloc "a")
                  ~typ:(Tbuiltin VTaddress);
                mk_decl (dumloc "quantity")
@@ -1186,72 +1259,72 @@ let create_miles_with_expiration_ast () =
 
         ~verification:(mk_verification ()
                          ~specs:[
-                           mk_label_term (mk_sp (Lquantifer (Forall,
-                                                             dumloc "m",
-                                                             LTvset (VSremoved, LTprog (Tasset (dumloc "mile")) ),
-                                                             (mk_sp (Pcomp (Lt,
-                                                                            (mk_sp (Pdot (mk_sp (Pvar (dumloc "m"))
-                                                                                            ~type_:(LTprog (Tasset (dumloc "mile"))),
-                                                                                          (dumloc "expiration")))
-                                                                               ~type_:(LTprog (Tbuiltin VTdate))),
-                                                                            (mk_sp (Pconst Cnow)
-                                                                               ~type_:(LTprog (Tbuiltin VTdate)))
-                                                                           ))
-                                                                ~type_:(LTprog (Tbuiltin VTbool))
-                                                             )))
-                                            ~type_:(LTprog (Tbuiltin VTbool)))
-                             ~label:(dumloc "s3")
+                           mk_specification (dumloc "s3")
+                             (mk_sp (Lquantifer (Forall,
+                                                 dumloc "m",
+                                                 LTvset (VSremoved, LTprog (Tasset (dumloc "mile")) ),
+                                                 (mk_sp (Pcomp (Lt,
+                                                                (mk_sp (Pdot (mk_sp (Pvar (dumloc "m"))
+                                                                                ~type_:(LTprog (Tasset (dumloc "mile"))),
+                                                                              (dumloc "expiration")))
+                                                                   ~type_:(LTprog (Tbuiltin VTdate))),
+                                                                (mk_sp (Pconst Cnow)
+                                                                   ~type_:(LTprog (Tbuiltin VTdate)))
+                                                               ))
+                                                    ~type_:(LTprog (Tbuiltin VTbool))
+                                                 )))
+                                ~type_:(LTprog (Tbuiltin VTbool)))
                          ])
     ]
 
     ~verifications:[(mk_verification ()
                        ~specs:[
-                         mk_label_term (mk_sp (Pcall (None,
-                                                      Cconst Cmaybeperformedonlybyrole,
-                                                      [
-                                                        AExpr (mk_sp (Pconst Canyaction)
-                                                        (*TODO: ~type_:type action ???*));
-                                                        AExpr (mk_sp (Pvar (dumloc "admin"))
-                                                                 ~type_:(LTprog (Tbuiltin VTrole)))
-                                                      ]))
-                                          ~type_:(LTprog (Tbuiltin VTbool)))
-                           ~label:(dumloc "g1");
-                         mk_label_term (mk_sp (Pcall (None,
-                                                      Cconst Cmaybeperformedonlybyaction,
-                                                      [
-                                                        AExpr (mk_sp (Pcall (
-                                                            None,
-                                                            Cid (dumloc "remove"),
-                                                            [
-                                                              AExpr (mk_sp (Pvar (dumloc "mile"))
-                                                                       ~type_:(LTprog (Tcontainer (Tasset (dumloc "mile"), Collection)))
-                                                                    )])))
-                                                        (*TODO: ~type_:type action ???*);
-                                                        AExpr (mk_sp (Plogical (
-                                                            Or,
-                                                            mk_sp (Pvar (dumloc "consume"))
-                                                            (*TODO: ~type_:type action ???*),
-                                                            mk_sp (Pvar (dumloc "clear_expired"))
-                                                            (*TODO: ~type_:type action ???*))
-                                                          )
-                                                        (*TODO: ~type_:type action ???*))
-                                                      ]))
-                                          ~type_:(LTprog (Tbuiltin VTbool)))
-                           ~label:(dumloc "g2");
-                         mk_label_term (mk_sp (Pcall (None,
-                                                      Cconst Cmaybeperformedonlybyaction,
-                                                      [
-                                                        AExpr (mk_sp (Pnot (mk_sp (Pcall (
-                                                            None,
-                                                            Cid (dumloc "add"),
-                                                            [
-                                                              AExpr (mk_sp (Pvar (dumloc "mile"))
-                                                                       ~type_:(LTprog (Tcontainer (Tasset (dumloc "mile"), Collection))))
-                                                            ])))))
-                                                        (*TODO: ~type_:type action ???*);
-                                                        AExpr (mk_sp (Pvar (dumloc "consume"))
-                                                        (*TODO: ~type_:type action ???*))
-                                                      ]))
-                                          ~type_:(LTprog (Tbuiltin VTbool)))
-                           ~label:(dumloc "g3")
+                         mk_specification (dumloc "g1")
+                           (mk_sp (Pcall (None,
+                                          Cconst Cmaybeperformedonlybyrole,
+                                          [
+                                            AExpr (mk_sp (Pconst Canyaction)
+                                            (*TODO: ~type_:type action ???*));
+                                            AExpr (mk_sp (Pvar (dumloc "admin"))
+                                                     ~type_:(LTprog (Tbuiltin VTrole)))
+                                          ]))
+                              ~type_:(LTprog (Tbuiltin VTbool)));
+                         mk_specification (dumloc "g2")
+                           (mk_sp (Pcall (None,
+                                          Cconst Cmaybeperformedonlybyaction,
+                                          [
+                                            AExpr (mk_sp (Pcall (
+                                                None,
+                                                Cid (dumloc "remove"),
+                                                [
+                                                  AExpr (mk_sp (Pvar (dumloc "mile"))
+                                                           ~type_:(LTprog (Tcontainer (Tasset (dumloc "mile"), Collection)))
+                                                        )])))
+                                            (*TODO: ~type_:type action ???*);
+                                            AExpr (mk_sp (Plogical (
+                                                Or,
+                                                mk_sp (Pvar (dumloc "consume"))
+                                                (*TODO: ~type_:type action ???*),
+                                                mk_sp (Pvar (dumloc "clear_expired"))
+                                                (*TODO: ~type_:type action ???*))
+                                              )
+                                            (*TODO: ~type_:type action ???*))
+                                          ]))
+                              ~type_:(LTprog (Tbuiltin VTbool)));
+                         mk_specification (dumloc "g3")
+                           (mk_sp (Pcall (None,
+                                          Cconst Cmaybeperformedonlybyaction,
+                                          [
+                                            AExpr (mk_sp (Pnot (mk_sp (Pcall (
+                                                None,
+                                                Cid (dumloc "add"),
+                                                [
+                                                  AExpr (mk_sp (Pvar (dumloc "mile"))
+                                                           ~type_:(LTprog (Tcontainer (Tasset (dumloc "mile"), Collection))))
+                                                ])))))
+                                            (*TODO: ~type_:type action ???*);
+                                            AExpr (mk_sp (Pvar (dumloc "consume"))
+                                            (*TODO: ~type_:type action ???*))
+                                          ]))
+                              ~type_:(LTprog (Tbuiltin VTbool)))
                        ])]

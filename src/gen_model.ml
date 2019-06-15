@@ -23,7 +23,7 @@ let to_model (ast : A.model) : M.model =
             let enum_item = M.mk_enum_item id in
             {
               enum_item with
-              invariants = Option.map_dfl (fun (x : verification) -> x.specs) [] x.verification;
+              invariants = [] (* TODO : Option.map_dfl (fun (x : verification) -> x.specs) [] x.verification*);
             }
           ) e.items;
       }
