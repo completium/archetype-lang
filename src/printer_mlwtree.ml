@@ -89,6 +89,8 @@ let needs_paren = function
   | Tdot _  -> false
   | Tvar _  -> false
   | Tenum _ -> false
+  | Tnil    -> false
+  | Tint _  -> false
   | _ -> true
 
 let pp_with_paren pp fmt x =
@@ -139,10 +141,10 @@ let pp_univ_decl fmt (i,t) =
 (* -------------------------------------------------------------------------- *)
 
 let rec pp_term outer pos fmt = function
-  | Tseq l         -> Format.fprintf fmt "%a" (pp_list ";@\n" (pp_term outer pos)) l
+  | Tseq l         -> Format.fprintf fmt "@[%a@]" (pp_list ";@\n" (pp_term outer pos)) l
   | Tif (i,t, None)    ->
     let pp fmt (cond, then_) =
-      Format.fprintf fmt "@[if %a@ then %a@ @]"
+      Format.fprintf fmt "@[if %a@ then %a@]"
         (pp_term e_if PRight) cond
         (pp_term e_then PRight) then_
     in
@@ -225,18 +227,31 @@ let rec pp_term outer pos fmt = function
       (pp_with_paren (pp_term outer pos)) e1
       (pp_with_paren (pp_term outer pos)) e2
   | Trecord (None,l) ->
-    let pp_recfield fmt (n,t) =
-      Format.fprintf fmt "%a = %a"
-        pp_str n
-        (pp_term e_default PRight) t in
     Format.fprintf fmt "{@\n  @[%a@]@\n}"
       (pp_list ";@\n" pp_recfield) l
   | Tnone -> pp_str fmt "None"
   | Tenum i -> pp_str fmt i
   | Tsome e -> Format.fprintf fmt "Some %a" (pp_with_paren (pp_term e_default PRight)) e
+  | Tnot e -> Format.fprintf fmt "not %a" (pp_with_paren (pp_term outer pos)) e
+  | Tlist l -> pp_tlist outer pos fmt l
+  | Tnil -> pp_str fmt "[]"
+  | Tcaller i -> Format.fprintf fmt "get_caller_ %a" pp_str i
+  | Tle (_,e1,e2) ->
+    Format.fprintf fmt "%a <= %a"
+      (pp_with_paren (pp_term outer pos)) e1
+      (pp_with_paren (pp_term outer pos)) e2
   | Tnottranslated -> pp_str fmt "NOT TRANSLATED"
   | _ -> pp_str fmt "NOT IMPLEMENTED"
-
+and pp_recfield fmt (n,t) =
+  Format.fprintf fmt "%a = %a"
+    pp_str n
+    (pp_term e_default PRight) t
+and pp_tlist outer pos fmt = function
+  | []    -> pp_str fmt "Nil" 
+  | e::tl -> Format.fprintf fmt "Cons %a %a"
+               (pp_with_paren (pp_term outer pos)) e
+               (pp_tlist outer pos) tl 
+  
 (* -------------------------------------------------------------------------- *)
 
 let pp_raise fmt raises =

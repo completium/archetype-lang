@@ -47,10 +47,13 @@ type ('e,'t,'i) abstract_term =
   | Tdoti   of 'i * 'i
   (* storage fields *)
   | Tename
-  | Tcaller
+  | Tcaller of 'i
   | Tnow
   | Tadded  of 'i
   | Trmed   of 'i
+  (* list *)
+  | Tlist   of 'e list
+  | Tnil
   (* archetype lib *)
   | Tadd    of 'e * 'e
   | Tremove of 'e * 'e
@@ -69,6 +72,7 @@ type ('e,'t,'i) abstract_term =
   | Tuminus of 't * 'e
   | Tdiv    of 't * 'e * 'e
   | Tmod    of 't * 'e * 'e
+  | Tnot    of 'e
   (* comp *)
   | Teq     of 't * 'e * 'e
   | Tlt     of 't * 'e * 'e
@@ -201,10 +205,12 @@ let map_abstract_term
   | Tdot (e1,e2)    -> Tdot (map_e e1, map_e e2)
   | Tdoti (i1,i2)   -> Tdoti (map_i i1, map_i i2)
   | Tename          -> Tename
-  | Tcaller         -> Tcaller
+  | Tcaller i       -> Tcaller (map_i i)
   | Tnow            -> Tnow
   | Tadded a        -> Tadded (map_i a)
   | Trmed  a        -> Trmed (map_i a)
+  | Tlist l         -> Tlist (List.map map_e l)
+  | Tnil            -> Tnil
   | Tadd (e1,e2)    -> Tadd (map_e e1, map_e e2)
   | Tremove (e1,e2) -> Tremove (map_e e1, map_e e2)
   | Tget (e1,e2)    -> Tget (map_e e1, map_e e2)
@@ -220,6 +226,7 @@ let map_abstract_term
   | Tuminus (t,e)   -> Tuminus (map_t t, map_e e)
   | Tdiv (t,l,r)    -> Tdiv (map_t t, map_e l, map_e r)
   | Tmod (t,l,r)    -> Tmod (map_t t, map_e l, map_e r)
+  | Tnot e          -> Tnot (map_e e)
   | Teq (t,l,r)     -> Teq (map_t t, map_e l, map_e r)
   | Tlt (t,l,r)     -> Tlt (map_t t, map_e l, map_e r)
   | Tle (t,l,r)     -> Tle (map_t t, map_e l, map_e r)

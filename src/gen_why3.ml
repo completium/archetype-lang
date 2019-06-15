@@ -151,7 +151,12 @@ let mk_test_consume : decl = Dfun {
       };
     ];
     ensures  = [];
-    body     = Tnone;
+    body     = Tseq [
+        Tif (Tnot (Tmem (Tcaller "s", Tlist [Tdoti("s","admin")])),Traise Einvalidcaller, None);
+        Tif (Tle (Tyint,Tvar "nbmiles",Tint 0),Traise Einvalidcondition, None);
+        Tnone
+        
+        ]
   }
 
 let mk_test_storage : decl = Dstorage {
