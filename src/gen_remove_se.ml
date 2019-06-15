@@ -62,15 +62,28 @@ let get_default_expr_from_type = function
   | M.FContainer (c, i)   -> assert false
 
 type sig_ = W.kind_function * (ident * W.type_) list * W.type_ * W.expr
+
+exception Anomaly of string
+
+type error_desc =
+  | UnsupportedContainer of string
+  | UnsupportedType of string
+  | RecordNotFound
+[@@deriving show {with_path = false}]
+
+let emit_error (desc : error_desc) =
+  let str = Format.asprintf "%a@." pp_error_desc desc in
+  raise (Anomaly str)
+
 module Utils : sig
-  val get_asset      : M.model -> A.lident -> sig_
-  val add_asset      : M.model -> A.lident -> sig_
-  val contains_asset : M.model -> A.lident -> sig_
+  val get_asset      : M.model -> A.lident              -> sig_
+  val add_asset      : M.model -> A.lident              -> sig_
+  val contains_asset : M.model -> A.lident              -> sig_
+  val add_container  : M.model -> (A.lident * A.lident) -> sig_
 end = struct
   open Model_wse
 
   let failwith str = Ecall (Evar "failwith", [Elitstring str])
-
 
   let get_asset model asset =
     let asset_name = unloc asset in
@@ -129,6 +142,58 @@ end = struct
     in
     Function, args, ret, body
 
+  let add_container_collection model (asset, field) t = assert false
+
+  let add_container_partition model ((asset, field) : A.lident * M.record_item) t =
+    let field_ptype = ptyp_to_type t in
+    let asset2_name = unloc asset in
+    let asset2_key_id, _ = M.Utils.get_record_key model asset in
+    let asset_name = match field_ptype with
+      | Trecord v -> v
+      | _ -> emit_error RecordNotFound in
+    let storage_id = "s" in
+    let new_asset_id = "new_asset" in
+    let args = [(storage_id, Tstorage); ("a", Trecord asset2_name); (new_asset_id, field_ptype)] in
+    let ret  = Tstorage in
+    let key_id, _ = M.Utils.get_record_key model (dumloc asset_name) |> fun (x, y) -> unloc x , y in
+    let col_asset2_id   = asset2_name ^ "_assets" in
+    let col_asset_id    = asset_name  ^ "_assets" in
+    let col_keys_id     = asset_name  ^ "_keys" in
+    let s_col_asset2_id = Edot (Evar storage_id,   col_asset2_id) in
+    let s_col_asset_id  = Edot (Evar storage_id,   col_asset_id) in
+    let s_col_keys_id   = Edot (Evar storage_id,   col_keys_id) in
+    let new_asset_key   = Edot (Evar new_asset_id, key_id) in
+    let aaa = Edot (Evar "v", unloc field.name) in
+    let body =
+      Eletin (
+        [
+          [storage_id, Tstorage], Eassign (s_col_asset_id, Ecall (Edot (Evar "Map","add"), [new_asset_key; Evar new_asset_id; s_col_asset_id]));
+          [storage_id, Tstorage], Eassign (s_col_keys_id, Eaddlist (new_asset_key, s_col_keys_id));
+          [storage_id, Tstorage], Eassign (s_col_asset2_id, Ematchwith (Ecall (Edot (Evar "Map", "find"),
+                                                                               [
+                                                                                 Edot (Evar "a", unloc asset2_key_id);
+                                                                                 Edot (Evar storage_id, col_asset2_id)
+                                                                               ]),
+                                                                        [
+                                                                          (Pexpr (Ecall (Evar "Some", [Evar "v"])),
+
+                                                                           Eletin ([["new_casset", Trecord asset2_name], Eassign (aaa, Eaddlist (Evar new_asset_id, aaa))],
+                                                                                   Ecall (Edot (Evar "Map","update"), [Edot (Evar "a", unloc asset2_key_id); Ecall (Evar "(Some", [Evar "new_casset)"]); s_col_asset2_id]))
+                                                                          );
+                                                                          (Pwild, failwith "not found")]))
+        ], Evar storage_id)
+    in
+    Function, args, ret, body
+
+
+  let add_container model (asset, field) =
+    let field = M.Utils.get_record_field model (asset, field) in
+    match field.type_ with
+    | Tcontainer (t, A.Collection) -> add_container_collection model (asset, field) t
+    | Tcontainer (t, A.Partition)  -> add_container_partition  model (asset, field) t
+    | Tcontainer (t, c) -> emit_error (UnsupportedContainer (Format.asprintf "%a@." A.pp_container c))
+    | t -> emit_error (UnsupportedType (Format.asprintf "%a@." A.pp_ptyp t))
+
 end
 
 let mk_function_struct model (f : M.function__) =
@@ -141,9 +206,10 @@ let mk_function_struct model (f : M.function__) =
       let body = W.Etuple [W.Earray []; W.Evar "s"] in
       W.Entry, args, ret, body
 
-    | M.Get asset           -> Utils.get_asset model asset
-    | M.AddAsset asset      -> Utils.add_asset model asset
-    | M.ContainsAsset asset -> Utils.contains_asset model asset
+    | M.Get asset                   -> Utils.get_asset model asset
+    | M.AddAsset asset              -> Utils.add_asset model asset
+    | M.ContainsAsset asset         -> Utils.contains_asset model asset
+    | M.AddContainer (asset, field) -> Utils.add_container model (asset, field)
 
     | _ ->
       let args = ["", W.Tunit] in
