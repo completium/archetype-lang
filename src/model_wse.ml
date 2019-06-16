@@ -91,7 +91,7 @@ type function_struct = {
   name: ident;
   kind: kind_function;
   ret:  type_;
-  args: (ident * type_) list;
+  args: (ident list * type_) list;
   body: expr;
 }
 [@@deriving show {with_path = false}]

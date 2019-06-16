@@ -302,12 +302,16 @@ let pp_fun fmt (s : fun_struct) =
     | Inline -> Format.fprintf fmt "[@@inline]"
     | None  -> Format.fprintf fmt ""
   in
-  let pp_arg fmt (id, t) =
+  let pp_arg fmt (ids, t) =
+    let pp_ids fmt = function
+      | [e] -> Format.fprintf fmt "%a" pp_id e
+      | l ->  Format.fprintf fmt "(%a)" (pp_list ", " pp_id) l
+    in
     match t with
     | Tbasic Tunit -> Format.fprintf fmt "()"
     | _ ->
       Format.fprintf fmt "(%a : %a)"
-        pp_id id
+        pp_ids ids
         pp_type t
   in
   Format.fprintf fmt "let%a %a %a : %a =@\n@[  %a@]@."

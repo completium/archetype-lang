@@ -110,7 +110,7 @@ type fun_node =
 type fun_struct = {
   name: ident;
   node: fun_node;
-  args: (ident * type_) list;
+  args: (ident list * type_) list;
   ret: type_;
   body: expr;
 }

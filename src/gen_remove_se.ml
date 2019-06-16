@@ -6,6 +6,8 @@ module A = Ast
 module M = Model
 module W = Model_wse
 
+let storage_id = "s"
+
 let vtyp_to_type = function
   | A.VTbool       -> W.Tbool
   | A.VTint        -> W.Tint
@@ -61,7 +63,7 @@ let get_default_expr_from_type = function
   | M.FEnum _             -> assert false
   | M.FContainer (c, i)   -> assert false
 
-type sig_ = W.kind_function * (ident * W.type_) list * W.type_ * W.expr
+type sig_ = W.kind_function * (ident list * W.type_) list * W.type_ * W.expr
 
 exception Anomaly of string
 
@@ -88,7 +90,7 @@ end = struct
   let get_asset model asset =
     let asset_name = unloc asset in
     let _, key_type = M.Utils.get_record_key model asset in
-    let args = [("s", Tstorage); ("key", vtyp_to_type key_type) ] in
+    let args = [(["s"], Tstorage); (["key"], vtyp_to_type key_type) ] in
     let ret  = Trecord asset_name in
     let body =
       Ematchwith (Ecall (Edot (Evar "Map", "find"),
@@ -107,10 +109,9 @@ end = struct
     let asset_name = unloc asset in
     let key_id, _ = M.Utils.get_record_key model asset |> fun (x, y) -> unloc x , y in
     let new_asset = "new_asset" in
-    let storage_id = "s" in
     let col_asset_id = asset_name ^ "_assets" in
     let col_keys_id = asset_name ^ "_keys" in
-    let args = [(storage_id, Tstorage); (new_asset, Trecord asset_name) ] in
+    let args = [([storage_id], Tstorage); ([new_asset], Trecord asset_name) ] in
     let ret  = Tstorage in
     let s_col_asset_id = Edot (Evar storage_id, col_asset_id) in
     let s_col_keys_id = Edot (Evar storage_id, col_keys_id) in
@@ -127,7 +128,7 @@ end = struct
   let contains_asset model asset =
     let asset_name = unloc asset in
     let _, key_type = M.Utils.get_record_key model asset in
-    let args = [("s", Tstorage); ("key", vtyp_to_type key_type) ] in
+    let args = [(["s"], Tstorage); (["key"], vtyp_to_type key_type) ] in
     let ret  = Tbool in
     let body =
       Ematchwith (Ecall (Edot (Evar "Map", "find"),
@@ -151,9 +152,8 @@ end = struct
     let asset_name = match field_ptype with
       | Trecord v -> v
       | _ -> emit_error RecordNotFound in
-    let storage_id = "s" in
     let new_asset_id = "new_asset" in
-    let args = [(storage_id, Tstorage); ("a", Trecord asset2_name); (new_asset_id, field_ptype)] in
+    let args = [([storage_id], Tstorage); (["a"], Trecord asset2_name); ([new_asset_id], field_ptype)] in
     let ret  = Tstorage in
     let key_id, _ = M.Utils.get_record_key model (dumloc asset_name) |> fun (x, y) -> unloc x , y in
     let col_asset2_id   = asset2_name ^ "_assets" in
@@ -196,14 +196,37 @@ end = struct
 
 end
 
+let instr_to_expr = function
+  | _ -> W.Evar "s", W.Tstorage
+
+let compute_body_entry model (fs : M.function_struct) =
+  let e, ret = instr_to_expr fs.body in
+  match ret with
+  | W.Tstorage ->
+    W.Eletin (
+      [([storage_id, Tstorage], e)],
+      Etuple [Earray []; W.Evar storage_id])
+  | _ -> assert false
+
+
 let mk_function_struct model (f : M.function__) =
   let name : ident = M.function_name_from_function_node f.node in
   let kind, args, ret, body =
     match f.node with
-    | M.Entry _ ->
-      let args = [("params", W.Tunit); ("s", W.Tstorage) ] in
+    | M.Entry fs ->
+      let itargs, ttargs = List.fold_left (fun (args, typs) (arg, typ, _) ->
+          (args @ [unloc arg], typs @ [ptyp_to_type typ])
+        ) ([], []) fs.args in
+      let type_arg =
+        match ttargs with
+        | [] -> W.Tunit
+        | _  -> W.Ttuple ttargs in
+      let args = [(itargs, type_arg); ([storage_id], W.Tstorage) ] in
       let ret  = W.Ttuple [W.Toperations; W.Tstorage] in
-      let body = W.Etuple [W.Earray []; W.Evar "s"] in
+      let body =
+        if (String.equal (unloc fs.name) "add")
+        then compute_body_entry model fs
+        else Etuple [Earray []; W.Evar storage_id] in
       W.Entry, args, ret, body
 
     | M.Get asset                   -> Utils.get_asset model asset
@@ -212,7 +235,7 @@ let mk_function_struct model (f : M.function__) =
     | M.AddContainer (asset, field) -> Utils.add_container model (asset, field)
 
     | _ ->
-      let args = ["", W.Tunit] in
+      let args = [[""], W.Tunit] in
       let ret  = W.Tunit in
       let body = W.Etuple [] in
       W.Function, args, ret, body

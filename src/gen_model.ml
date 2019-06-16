@@ -202,28 +202,32 @@ let to_model (ast : A.model) : M.model =
 
     let cont f x l = List.fold_left (fun accu x -> f x accu) l x in
 
-    let process_fun_gen name body loc verif f (list : M.decl_node list) : M.decl_node list =
+    let process_fun_gen name args body loc verif f (list : M.decl_node list) : M.decl_node list =
       let instr, list = extract_function_from_instruction body list in
-      let node = f (M.mk_function_struct name instr ~loc:loc) in
+      let node = f (M.mk_function_struct name instr
+                      ~args:(List.map (fun (x : ('id, 'typ, 'term) A.decl_gen) -> (x.name, Option.get x.typ, None)) args)
+                      ~loc:loc) in
       list @ [TNfunction (M.mk_function ?verif:verif node)]
     in
 
     let process_function (function_ : A.function_) (list : M.decl_node list) : M.decl_node list =
       let name  = function_.name in
+      let args  = function_.args in
       let body  = function_.body in
       let loc   = function_.loc in
       let ret   = function_.return in
       let verif = function_.verification in
-      process_fun_gen name body loc verif (fun x -> M.Function (x, ret)) list
+      process_fun_gen name args body loc verif (fun x -> M.Function (x, ret)) list
     in
 
     let process_transaction (transaction : A.transaction) (list : M.decl_node list) : M.decl_node list =
       let list  = list |> cont process_function ast.functions in
       let name  = transaction.name in
+      let args  = transaction.args in
       let body  = Option.get transaction.effect in
       let loc   = transaction.loc in
       let verif = transaction.verification in
-      process_fun_gen name body loc verif (fun x -> M.Entry x) list
+      process_fun_gen name args body loc verif (fun x -> M.Entry x) list
     in
 
     list
