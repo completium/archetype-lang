@@ -154,8 +154,35 @@ let mk_test_consume : decl = Dfun {
     body     = Tseq [
         Tif (Tnot (Tmem (Tcaller "s", Tlist [Tdoti("s","admin")])),Traise Einvalidcaller, None);
         Tif (Tle (Tyint,Tvar "nbmiles",Tint 0),Traise Einvalidcondition, None);
-        Tnone
-        
+        Tletin (false,"o",None,Tapp (Tvar "get_owner",[Tvar "s";Tvar "ow"]),
+        Tletin (false,"miles",None,Tapp (Tvar "get_miles",[Tvar "s";Tvar "o"]),
+        Tletin (false,"l",None,Tapp (Tvar "filter_consume",[Tvar "s";Tvar "miles"]),
+        Tseq [
+        Tif (Tnot (Tle (Tyint, Tvar "nbmiles", Tapp (Tdoti ("Amounts","sum"),[Tvar "s";Tvar "l"]))),Traise Einvalidcondition,None);
+        Tletin (true,"remainder",None,Tvar "nbmiles",
+        Tseq [
+          Ttry (
+            Tfor ("i",Tminus (Tyint,Tcard (Tvar "l"),Tint 1),[],
+             Tletin (false,"m",None,Tnth (Tvar "i",Tvar "l"),
+             Tif (Tgt (Tyint,Tapp (Tvar "get_amount",[Tvar "s";Tvar "m"]),Tvar "remainder"),
+                  Tletin (false,"new_mile",None,Trecord (Some (Tget (Tdoti ("s","mile_assets"),Tvar "m")),["amount",Tminus (Tyint,Tapp (Tvar "get_amount",[Tvar "s";Tvar "m"]),Tvar "remainder")]),
+                          Tseq [Tapp (Tvar "update_mile",[Tvar "s";Tvar "m";Tvar "new_mile"]);
+                                Tassign (Tvar "remainder",Tint 0);
+                                Traise Ebreak]),
+                  Some (Tif (Teq (Tyint,Tapp (Tvar "get_amount",[Tvar "s";Tvar "m"]),Tvar "remainder"),
+                             Tseq [Tassign (Tvar "remainder",Tint 0);
+                                   Tapp (Tvar "remove_owner_miles",[Tvar "s";Tvar "o";Tvar "m"]);
+                                   Traise Ebreak],
+                             Some (Tseq [
+                                 Tassign (Tvar "remainder",Tminus (Tyint,Tvar "remainder",Tapp (Tvar "get_amount",[Tvar "s";Tvar "m"])));
+                                 Tapp (Tvar "remove_owner_miles",[Tvar "s";Tvar "o";Tvar "m"])
+                               ]))))        
+             )
+            ),
+            Ebreak,Tassert (Teq (Tyint,Tvar "remainder",Tint 0)));
+          Tassert (Teq (Tyint,Tvar "remainder",Tint 0));              
+          Tvar "no_transfer"])
+          ])))
         ]
   }
 

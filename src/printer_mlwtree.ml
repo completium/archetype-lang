@@ -85,15 +85,26 @@ let maybe_paren outer inner pos pp =
   in pp_maybe_paren c pp
 
 let needs_paren = function
-  | Tdoti _ -> false
-  | Tdot _  -> false
-  | Tvar _  -> false
-  | Tenum _ -> false
-  | Tnil    -> false
-  | Tint _  -> false
+  | Tdoti _  -> false
+  | Tdot _   -> false
+  | Tvar _   -> false
+  | Tenum _  -> false
+  | Tnil     -> false
+  | Tint _   -> false
+  | Tnone    -> false
+  | Tletin _ -> false
+  | Tif _    -> false
+  | Ttry _   -> false
   | _ -> true
 
 let pp_with_paren pp fmt x =
+  pp_maybe (needs_paren x) pp_paren pp fmt x
+
+let needs_paren = function
+  | Tseq _ -> true
+  | _      -> false
+
+let pp_if_with_paren pp fmt x =
   pp_maybe (needs_paren x) pp_paren pp fmt x
 
 (* -------------------------------------------------------------------------- *)
@@ -128,7 +139,8 @@ let pp_exn fmt e =
     | Ekeyexist         -> "KeyExist"
     | Enotfound         -> "NotFound"
     | Einvalidcaller    -> "InvalidCaller"
-    | Einvalidcondition -> "InvalidCondition" in
+    | Einvalidcondition -> "InvalidCondition"
+    | Ebreak            -> "Break" in
   pp_str fmt e_str
 
 (* -------------------------------------------------------------------------- *)
@@ -140,23 +152,27 @@ let pp_univ_decl fmt (i,t) =
 
 (* -------------------------------------------------------------------------- *)
 
+let pp_ref fmt = function
+  | true -> pp_str fmt " ref"
+  | false -> pp_str fmt ""
+
+let pp_lettyp fmt = function
+  | Some t -> Format.fprintf fmt " : %a" pp_typ t
+  | None -> pp_str fmt ""
+
+(* -------------------------------------------------------------------------- *)
+
 let rec pp_term outer pos fmt = function
   | Tseq l         -> Format.fprintf fmt "@[%a@]" (pp_list ";@\n" (pp_term outer pos)) l
   | Tif (i,t, None)    ->
-    let pp fmt (cond, then_) =
-      Format.fprintf fmt "@[if %a@ then %a@]"
-        (pp_term e_if PRight) cond
-        (pp_term e_then PRight) then_
-    in
-    (maybe_paren outer e_default pos pp) fmt (i, t)
+    Format.fprintf fmt "@[if %a@ then %a@]"
+      (pp_term e_if PRight) t
+      (pp_if_with_paren (pp_term e_then PRight)) t
   | Tif (i,t, Some e)    ->
-    let pp fmt (cond, then_, else_) =
-      Format.fprintf fmt "@[if %a then @\n  @[%a @]@\nelse @\n  @[%a @]@]"
-        (pp_term e_if PRight) cond
-        (pp_term e_then PRight) then_
-        (pp_term e_else PRight) else_
-    in
-    (maybe_paren outer e_default pos pp) fmt (i, t, e)
+    Format.fprintf fmt "@[if %a then @\n  @[%a @]@\nelse @\n  @[%a @]@]"
+      (pp_term e_if PRight) i
+      (pp_if_with_paren (pp_term e_then PRight)) t
+      (pp_if_with_paren (pp_term e_else PRight)) e
   | Traise e -> Format.fprintf fmt "raise %a" pp_exn e
   | Tmem (e1,e2) ->
     Format.fprintf fmt "mem %a %a"
@@ -229,6 +245,10 @@ let rec pp_term outer pos fmt = function
   | Trecord (None,l) ->
     Format.fprintf fmt "{@\n  @[%a@]@\n}"
       (pp_list ";@\n" pp_recfield) l
+  | Trecord (Some e,l) ->
+    Format.fprintf fmt "{ %a with@\n  @[%a@]@\n}"
+      ((*pp_with_paren *)pp_term outer pos) e
+      (pp_list ";@\n" pp_recfield) l
   | Tnone -> pp_str fmt "None"
   | Tenum i -> pp_str fmt i
   | Tsome e -> Format.fprintf fmt "Some %a" (pp_with_paren (pp_term e_default PRight)) e
@@ -238,6 +258,37 @@ let rec pp_term outer pos fmt = function
   | Tcaller i -> Format.fprintf fmt "get_caller_ %a" pp_str i
   | Tle (_,e1,e2) ->
     Format.fprintf fmt "%a <= %a"
+      (pp_term outer pos) e1
+      (pp_term outer pos) e2
+  | Tletin (r,i,t,b,e) ->
+    Format.fprintf fmt "let%a %a%a = %a in@\n%a"
+      pp_ref r
+      pp_str i
+      pp_lettyp t
+      (pp_term outer pos) b
+      (pp_with_paren (pp_term outer pos)) e
+  | Tfor (i,s,l,b) ->
+    Format.fprintf fmt "for %a = 0 to %a do@\n%a  @[%a@]@\ndone"
+      pp_str i
+      (pp_term outer pos) s
+      pp_invariants l
+      (pp_term outer pos) b
+  | Ttry (b,e,c) ->
+    Format.fprintf fmt "try@\n  @[%a@]@\nwith %a ->@\n  @[%a@]@\nend"
+      (pp_term outer pos) b
+      pp_exn e
+      (pp_term outer pos) c
+  | Tassert e ->
+    Format.fprintf fmt "assert { %a }"
+      (pp_term outer pos) e
+  | Tcard e ->
+    Format.fprintf fmt "card %a" (pp_with_paren (pp_term outer pos)) e
+  | Tminus (_,e1,e2) ->
+    Format.fprintf fmt "%a - %a"
+      (pp_with_paren (pp_term outer pos)) e1
+      (pp_with_paren (pp_term outer pos)) e2
+  | Tnth (e1,e2) ->
+    Format.fprintf fmt "nth %a %a"
       (pp_with_paren (pp_term outer pos)) e1
       (pp_with_paren (pp_term outer pos)) e2
   | Tnottranslated -> pp_str fmt "NOT TRANSLATED"
@@ -251,6 +302,17 @@ and pp_tlist outer pos fmt = function
   | e::tl -> Format.fprintf fmt "Cons %a %a"
                (pp_with_paren (pp_term outer pos)) e
                (pp_tlist outer pos) tl 
+and pp_formula fmt f =
+  Format.fprintf fmt "@[ [@expl:%a]@\n %a @]"
+    pp_str f.id
+    (pp_term e_default PRight) f.body
+and pp_invariants fmt invs =
+  if List.length invs = 0
+  then pp_str fmt ""
+  else
+    Format.fprintf fmt " invariant {@\n %a @\n} "
+      (pp_list "@\n}@\n invariant {@\n " pp_formula) invs
+
   
 (* -------------------------------------------------------------------------- *)
 
@@ -260,12 +322,6 @@ let pp_raise fmt raises =
   else
     Format.fprintf fmt "raises { %a }@\n"
       (pp_list ", " pp_exn) raises
-
-
-let pp_formula fmt f =
-  Format.fprintf fmt "@[ [@expl:%a]@\n %a @]"
-    pp_str f.id
-    (pp_term e_default PRight) f.body
 
 let pp_ensures fmt ensures =
   if List.length ensures = 0
@@ -331,13 +387,6 @@ let pp_init fmt (f : field) =
   Format.fprintf fmt "%a = %a"
     pp_str f.name
     (pp_term e_default PRight) f.init
-
-let pp_invariants fmt invs =
-  if List.length invs = 0
-  then pp_str fmt ""
-  else
-    Format.fprintf fmt " invariant {@\n %a @\n} "
-      (pp_list "@\n}@\n invariant {@\n " pp_formula) invs
 
 let pp_storage fmt (s : storage_struct) =
   Format.fprintf fmt "type storage_ = {@\n  @[%a @]@\n}%aby {@\n  @[%a @]@\n}"
