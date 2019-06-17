@@ -1279,14 +1279,7 @@ let create_miles_with_expiration_ast () =
                                       ));
                       mk_sp (Iletin (
                           dumloc "remainder",
-                          (mk_sp (Pcall (None,
-                                         Cconst Csum,
-                                         [
-                                           AExpr (mk_sp (Pvar (dumloc "by_expiration"))
-                                                    ~type_:(Tcontainer (Tasset (dumloc "mile"), Collection)));
-                                           AExpr (mk_sp (Pvar (dumloc "quantity"))
-                                                    ~type_:(Tbuiltin VTuint))
-                                         ]))
+                          (mk_sp (Pvar (dumloc "quantity"))
                              ~type_:(Tbuiltin VTuint)
                           ),
                           mk_sp (Ifor (dumloc "m",
