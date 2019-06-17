@@ -175,6 +175,7 @@ type decl_node =
 
 type model = {
   name: lident;
+  ast: A.model;
   decls: decl_node list;
 }
 [@@deriving show {with_path = false}]
@@ -239,8 +240,8 @@ let mk_function ?verif node : function__ =
 let mk_signature ?(args = []) ?ret name : signature =
   { name; args; ret}
 
-let mk_model ?(decls = []) name : model =
-  { name; decls}
+let mk_model ?(decls = []) name ast : model =
+  { name; ast; decls}
 
 
 (* -------------------------------------------------------------------- *)

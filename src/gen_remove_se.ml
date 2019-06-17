@@ -196,11 +196,89 @@ end = struct
 
 end
 
-let instr_to_expr = function
-  | _ -> W.Evar "s", W.Tstorage
+
+
+let rec instr_to_expr model (instr : A.instruction) : W.expr * W.type_ =
+  let compute_return_type t1 t2 : W.type_ =
+
+    match t1, t2 with
+    | W.Tstorage, W.Tstorage       -> W.Tstorage
+    | W.Toperations, W.Toperations -> W.Toperations
+    | W.Tstorage, W.Toperations    -> W.Ttuple [W.Toperations; W.Tstorage]
+    | W.Toperations, W.Tstorage    -> W.Ttuple [W.Toperations; W.Tstorage]
+    | _ -> W.Tunit
+  in
+
+  let rec expr_to_expr (model : M.model) (expr : A.pterm) : W.expr * W.type_ =
+    match expr.node with
+    | A.Pcall (None , id, args) ->
+      let c_id = match id with
+        | Cid id -> W.Evar (unloc id)
+        | Cconst _ -> raise (Anomaly "no const")
+      in
+      let args =
+        W.Evar "s"::(List.map (fun x ->
+            match x with
+            | A.AExpr e -> expr_to_expr model e |> fst
+            | _ -> assert false
+          ) args) in
+      W.Ecall (c_id, args), ptyp_to_type (Option.get expr.type_)
+
+    | A.Precord l ->
+      let asset_name = match (Option.get expr.type_) with
+        | A.Tasset v -> v
+        | _ -> assert false
+      in
+      let field_list = A.Utils.get_named_field_list model.ast asset_name l in
+
+      let field_list = List.map (fun (a, b) -> (unloc a, (fst |@ expr_to_expr model) b) ) field_list in
+
+      W.Erecord field_list, ptyp_to_type (Option.get expr.type_)
+
+    | A.Parray l ->
+      let list = List.map (fun x -> (fst |@ expr_to_expr model) x) l in
+      W.Earray list, ptyp_to_type (Option.get expr.type_)
+
+    | A.Pdot (a, b) ->
+      let expr_a, _ = expr_to_expr model a in
+      let id_b = unloc b in
+      W.Edot (expr_a, id_b), ptyp_to_type (Option.get expr.type_)
+
+    | A.Pvar s ->
+      W.Evar (unloc s), ptyp_to_type (Option.get expr.type_)
+
+    | _ ->
+      Format.eprintf "expr: %a@\n" A.pp_pterm expr;
+      W.Evar "s", W.Tstorage
+  in
+
+  match instr.node with
+  | A.Iif (c, t, e) ->
+    let expr_cond, _ = expr_to_expr model c in
+    let expr_then, type_then = instr_to_expr model t in
+    let expr_else, type_else = instr_to_expr model e in
+
+    let ret = compute_return_type type_then type_else in
+    W.Eif (expr_cond, expr_then, expr_else), ret
+
+  | A.Icall (None, id, args) ->
+    let i_id = match id with
+      | Cid id -> W.Evar (unloc id)
+      | Cconst _ -> raise (Anomaly "no const")
+    in
+
+    let args =
+      W.Evar "s"::(List.map (fun e -> expr_to_expr model e |> fst) args)
+    in
+
+    W.Ecall (i_id, args), W.Tstorage
+
+  | _ ->
+    Format.eprintf "instr: %a@\n" A.pp_instruction instr;
+    W.Evar "s", W.Tstorage
 
 let compute_body_entry model (fs : M.function_struct) =
-  let e, ret = instr_to_expr fs.body in
+  let e, ret = instr_to_expr model fs.body in
   match ret with
   | W.Tstorage ->
     W.Eletin (
