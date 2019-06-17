@@ -875,6 +875,7 @@ module Utils : sig
   val get_asset_field           : model -> (lident * lident ) -> (lident, ptyp, pterm) decl_gen
   val get_asset_key             : model -> lident -> (lident * vtyp)
   val get_container_asset_field : model -> (lident * lident ) -> container
+  val get_named_field_list      : model -> lident -> pterm list -> (lident * pterm) list
 
 end = struct
   open Tools
@@ -919,6 +920,18 @@ end = struct
     match field.typ with
     | Some Tcontainer (_, c) -> c
     | _ -> emit_error (ContainerNotFound (unloc asset_name, unloc field_name))
+
+  let get_field_list ast asset_name =
+    let asset = get_asset ast asset_name in
+    List.map (fun (x : (lident, 'a, 'b) decl_gen) -> x.name) asset.fields
+
+  let get_named_field_list ast asset_name list =
+    let field_list = get_field_list ast asset_name in
+    (* List.iter (fun x -> Format.eprintf "f1: %s@." (unloc x)) field_list;
+       List.iter (fun x -> Format.eprintf "f2: %a@." pp_pterm x) list;
+       Format.eprintf "lf1: %d@." (List.length field_list);
+       Format.eprintf "lf2: %d@." (List.length list); *)
+    List.map2 (fun x y -> x, y) field_list list
 end
 
 (* -------------------------------------------------------------------- *)
@@ -1018,8 +1031,9 @@ let create_miles_with_expiration_ast () =
                                                                              ~type_:(Tasset (dumloc "mile"))])
                                                               ~type_:(Tcontainer (Tasset (dumloc "owner"), Partition))
                                                            ])
-                                              ~type_:(Tasset (dumloc "mile"))])))));
-
+                                              ~type_:(Tasset (dumloc "owner"))])))));
+    ]
+(*
       mk_transaction_struct (dumloc "consume")
         ?verification: (Some (mk_verification ()
                                 ~asserts:[
@@ -1479,4 +1493,4 @@ let create_miles_with_expiration_ast () =
                                             (*TODO: ~type_:type action ???*))
                                           ]))
                               ~type_:(LTprog (Tbuiltin VTbool)))
-                       ])]
+                       ])] *)
