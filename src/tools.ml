@@ -97,6 +97,7 @@ module List : sig
   val make          : (int -> 'a) -> int -> 'a list
   val int_fold      : ('a -> int -> 'a) -> 'a -> int -> 'a
   val pmap          : ('a -> 'b option) -> 'a list -> 'b list
+  val mappdt        : ('a -> 'b -> 'c) -> 'a list -> 'b list -> 'c list
   val find_dup      : ('a -> 'b) -> 'a list -> ('a * 'a) option
   val undup         : ('a -> 'b) -> 'a list -> 'a list
   val xfilter       : ('a -> [`Left of 'b | `Right of 'c]) -> 'a list -> 'b list * 'c list
@@ -136,6 +137,9 @@ end = struct
           | Some y -> y :: doit xs
         end
     in fun xs -> doit xs
+
+  let mappdt f xs ys =
+    List.flatten (List.map (fun x -> List.map (fun y -> f x y) ys) xs)
 
   let find_dup (type a b) (key : a -> b) (xs : a list) : (a * a) option =
     let module M = Map.Make(struct
