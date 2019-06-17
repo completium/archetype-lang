@@ -61,8 +61,16 @@ let remove_side_effect model =
 let generate_liquidity wse =
   let tree = Gen_liquidity.to_liquidity wse in
   if !Options.opt_raw_target
-  then Format.printf "%a@." Mltree.pp_tree tree
-  else Format.printf "%a@." Printer_mltree.pp_tree tree
+  then (Format.printf "%a@." Mltree.pp_tree tree; raise Stop)
+  else Format.asprintf "%a@." Printer_mltree.pp_tree tree
+
+let output_liquidity str =
+  if !Options.opt_liq_url
+  then
+    let encoded_src = Uri.pct_encode str in
+    let url = "http://www.liquidity-lang.org/edit/?source=" ^ encoded_src in
+    Format.printf "%s@\n" url
+  else Format.printf "%s" str
 
 let generate_whyml model =
   let mlw = Gen_why3.to_whyml model in
@@ -85,6 +93,7 @@ let generate_target model =
     model
     |> remove_side_effect
     |> generate_liquidity
+    |> output_liquidity
 
   | Whyml ->
     model
@@ -147,6 +156,8 @@ let main () =
       "--without-side-effect", Arg.Set Options.opt_wse, " Same as -W";
       "-RTT", Arg.Set Options.opt_raw_target, " Print raw target tree";
       "--raw-target-tree", Arg.Set Options.opt_raw_target, " Same as -RTT";
+      "-LU", Arg.Set Options.opt_liq_url, " Print url of try liquidity";
+      "--fake-ast", Arg.Set Options.opt_liq_url, " Same as -LU";
       "--lsp", Arg.String (fun s -> match s with
           | "errors" -> Options.opt_lsp := true; Lsp.kind := Errors
           | "outline" -> Options.opt_lsp := true; Lsp.kind := Outline
