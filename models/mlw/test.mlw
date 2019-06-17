@@ -1,67 +1,226 @@
-module Test
-
-  use int.Int
-
-  type storage = {
-    mutable       value   : int;
-    ghost mutable counter : int;
-  } invariant { counter <= 1 }
-    by { value = 1; counter = 0 }
-
-  (* should it be a lemma ? *)
-  axiom init : forall s : storage. s.value > 0 -> s.counter = 0
-
-  let only_once (s : storage) : unit
-  =
-   if s.value > 0
-   then (
-     s.value <- 0;
-     ghost (s.counter <- s.counter +1))
-
-end
-
-(* this test adds a state variable *)
-module Test2
-
-  use int.Int
-
-  type states = Open | Closed
-
-  type storage = {
-    mutable value : int;
-            state : states;
-    ghost mutable counter : int;
-  } invariant { state = Closed ->
-                value > 0 ->
-                counter = 0 }
-    invariant { counter <= 1 }
-    by { value = 10; state = Open; counter = 0 }
-
-  let is_open s =
-    match s.state with
-    | Open -> true
-    | _ -> false
-    end
-
-  let is_closed s =
-    match s.state with
-    | Closed -> true
-    | _ -> false
-    end
-
-  let call_in_open (s : storage) =
-  if is_open s
-  then
-   (s.value <- 10)
-
-  let only_once (s : storage)
-  =
-   if is_closed s
-   then
-     if s.value > 0
-     then (
-       s.value <- 0;
-       ghost (s.counter <- s.counter +1)
-     )
-
+module Miles_with_expiration_storage
+  use archetype.Lib
+  
+  type asset =
+   | Mile
+   | Owner
+  
+  type entry =
+   | Add
+   | Consume
+   | ClearExpired
+  
+  type field =
+   | Amount
+   | Expiration
+   | Miles
+  
+  clone archetype.Trace as Tr with type asset = asset,
+                                   type entry = entry,
+                                   type field = field
+  
+  type mile = {
+     id : string;
+     amount : int;
+     expiration : date 
+  }
+  
+  let mk_default_mile () : mile
+  =  {
+       id = 0;
+       amount = 0;
+       expiration = 0
+     }
+  
+  type owner = {
+     addr : address;
+     miles : acol 
+  }
+  
+  let mk_default_owner () : owner
+  =  {
+       addr = 0;
+       miles = empty
+     }
+  
+  type storage_ = {
+    mutable admin : role;
+    mutable mile_keys : acol;
+    mutable mile_assets : map mile;
+    mutable added_mile : acol;
+    mutable removed_mile : acol;
+    mutable owner_keys : acol;
+    mutable owner_assets : map owner;
+    mutable added_owner : acol;
+    mutable removed_owner : acol;
+    mutable ops_ : transfers;
+     get_balance_ : tez;
+     get_transferred_ : tez;
+     get_caller_ : address;
+     get_now_ : date;
+    mutable tr_ : Tr.log;
+    mutable ename : option entry 
+  } invariant {
+    [@expl:inv1]
+    forall k : string.
+    mem k mile_keys ->
+    amount (get mile_assets k) > 0   
+  } by {
+    admin = 0;
+    mile_keys = empty;
+    mile_assets = const (mk_default_mile ());
+    added_mile = empty;
+    removed_mile = empty;
+    owner_keys = empty;
+    owner_assets = const (mk_default_owner ());
+    added_owner = empty;
+    removed_owner = empty;
+    ops_ = Nil;
+    get_balance_ = 0;
+    get_transferred_ = 0;
+    get_caller_ = 0;
+    get_now_ = 0;
+    tr_ = Nil;
+    ename = None 
+  }
+  
+  let function get_amount (s : storage_) (k : string) : int
+  =  amount (get s.mile_assets k)
+  
+  clone archetype.Sum as Amount with type storage = storage,
+                                     type f = get_amount
+  
+  let function filter_consume (s : storage_) (c : acol) : acol
+  ensures {
+    [@expl:filter_consume_post1]
+    forall k : int.
+    mem k result ->
+    get_expiration s k < get_now_ s  
+  }
+  ensures {
+    [@expl:filter_consume_post2]
+    subset result c  
+  }
+  =  let rec rec_filter (l : acol) : acol
+     variant { l }
+     ensures {
+       [@expl:rec_filter_post1]
+       forall k : int.
+       lmem k result ->
+       get_expiration s k < get_now_ s  
+     }
+     ensures {
+       [@expl:rec_filter_post2]
+       forall k : int.
+       lmem k result ->
+       lmem k l   
+     }
+     =  match l with
+        | Nil -> Nil
+        | Cons k tl -> 
+          if get_expiration s k < get_now_ s then 
+            Cons k (rec_filter tl) 
+          else 
+            rec_filter tl  in
+     mkacol (rec_filter c.content)
+  
+  let add_mile (s : storage_) (new_asset : mile) : unit
+  raises { KeyExist }
+  ensures {
+    [@expl:add_mile_post_1]
+    mem new_asset.id s.mile_keys 
+  }
+  ensures {
+    [@expl:add_mile_post_2]
+    s.mile_keys == union (old s).mile_keys (singleton new_asset.id) 
+  }
+  ensures {
+    [@expl:add_mile_post_3]
+    s.added_mile == union (old s).added_mile (singleton new_asset.id) 
+  }
+  ensures {
+    [@expl:add_mile_post_4]
+    is_empty (inter (old s).mile_keys (singleton new_asset.id))  
+  }
+  =  if mem new_asset.id s.mile_keys then 
+       raise KeyExist 
+     else 
+       (s.mile_assets <- set s.mile_assets new_asset.id new_asset;
+        s.mile_keys <- add new_asset.id s.mile_keys;
+        s.added_mile <- add new_asset.id s.added_mile) 
+  
+  let add_owner (s : storage_) (new_asset : owner) : unit
+  raises { KeyExist }
+  ensures {
+    [@expl:add_owner_post_1]
+    mem new_asset.addr s.owner_keys 
+  }
+  ensures {
+    [@expl:add_owner_post_2]
+    s.owner_keys == union (old s).owner_keys (singleton new_asset.addr) 
+  }
+  ensures {
+    [@expl:add_owner_post_3]
+    s.added_owner == union (old s).added_owner (singleton new_asset.addr) 
+  }
+  ensures {
+    [@expl:add_owner_post_4]
+    is_empty (inter (old s).owner_keys (singleton new_asset.addr))  
+  }
+  =  if mem new_asset.addr s.owner_keys then 
+       raise KeyExist 
+     else 
+       (s.owner_assets <- set s.owner_assets new_asset.addr new_asset;
+        s.owner_keys <- add new_asset.addr s.owner_keys;
+        s.added_owner <- add new_asset.addr s.added_owner) 
+  
+  let consume (s : storage_) (ow : owner) (nbmiles : int) : transfers
+  raises { NotFound, KeyExist, InvalidCaller, InvalidCondition }
+  requires {
+    [@expl:r1]
+    s.ename_ = Some Consume 
+  }
+  requires {
+   [@expl:r2]
+   is_empty s.removed_mile 
+  }
+  requires {
+   [@expl:r3]
+   is_empty s.added_mile  
+  }
+  =  if raise InvalidCaller then raise InvalidCaller;
+     if raise InvalidCondition then raise InvalidCondition;
+     let o = get_owner s ow in
+     let miles = get_miles s o in
+     let l = filter_consume s miles in
+     (if raise InvalidCondition then raise InvalidCondition;
+      let ref remainder = nbmiles in
+      (try
+         for i = 0 to (card l) - 1 do
+         invariant {
+           [@expl:loop_inv1]
+           0 <= remainder <= Amount.sum s (tail i l)  
+         } 
+           let m = nth i l in
+           if get_amount s m > remainder then 
+             let new_mile = { get s.mile_assets m with
+               amount = (get_amount s m) - remainder
+             } in
+             (update_mile s m new_mile;
+              remainder <- 0;
+              raise Break) 
+           else 
+             if get_amount s m = remainder then 
+               (remainder <- 0;
+                remove_owner_miles s o m;
+                raise Break) 
+             else 
+               (remainder <- remainder - (get_amount s m);
+                remove_owner_miles s o m)  
+         done
+       with Break ->
+         assert { remainder = 0 }
+       end;
+       assert { remainder = 0 };
+       no_transfer))
 end

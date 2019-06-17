@@ -95,6 +95,7 @@ let needs_paren = function
   | Tletin _ -> false
   | Tif _    -> false
   | Ttry _   -> false
+  | Tresult  -> false
   | _ -> true
 
 let pp_with_paren pp fmt x =
@@ -106,6 +107,16 @@ let needs_paren = function
 
 let pp_if_with_paren pp fmt x =
   pp_maybe (needs_paren x) pp_paren pp fmt x
+
+(* -------------------------------------------------------------------------- *)
+
+let pp_logic fmt m =
+  let mod_str =
+    match m with
+    | Logic         -> " function"
+    | Rec           -> " rec"
+    | NoMod         -> "" in
+  pp_str fmt mod_str
 
 (* -------------------------------------------------------------------------- *)
 
@@ -128,6 +139,7 @@ let pp_type fmt typ =
     | Tyasset i     -> i
     | Tyenum i      -> i
     | Tyoption tt   -> "option "^(typ_str tt)
+    | Tylist tt     -> "list "^(typ_str tt)
   in
   pp_str fmt (typ_str typ)
 
@@ -162,6 +174,25 @@ let pp_lettyp fmt = function
 
 (* -------------------------------------------------------------------------- *)
 
+let pp_raise fmt raises =
+  if List.length raises = 0
+  then pp_str fmt ""
+  else
+    Format.fprintf fmt "raises { %a }@\n"
+      (pp_list ", " pp_exn) raises
+
+let pp_arg fmt (id, t) =
+  Format.fprintf fmt "(%a : %a)"
+    pp_id id
+    pp_type t
+
+let pp_args fmt l =
+  if List.length l = 0
+  then pp_str fmt "()"
+  else Format.fprintf fmt "%a" (pp_list " " pp_arg) l
+
+(* -------------------------------------------------------------------------- *)
+
 let rec pp_term outer pos fmt = function
   | Tseq l         -> Format.fprintf fmt "@[%a@]" (pp_list ";@\n" (pp_term outer pos)) l
   | Tif (i,t, None)    ->
@@ -176,6 +207,10 @@ let rec pp_term outer pos fmt = function
   | Traise e -> Format.fprintf fmt "raise %a" pp_exn e
   | Tmem (e1,e2) ->
     Format.fprintf fmt "mem %a %a"
+      (pp_with_paren (pp_term outer pos)) e1
+      (pp_with_paren (pp_term outer pos)) e2
+  | Tlmem (e1,e2) ->
+    Format.fprintf fmt "lmem %a %a"
       (pp_with_paren (pp_term outer pos)) e1
       (pp_with_paren (pp_term outer pos)) e2
   | Tvar i -> pp_str fmt i
@@ -207,6 +242,10 @@ let rec pp_term outer pos fmt = function
       (pp_with_paren (pp_term outer pos)) e2
   | Tinter (e1, e2) ->
     Format.fprintf fmt "inter %a %a"
+      (pp_with_paren (pp_term outer pos)) e1
+      (pp_with_paren (pp_term outer pos)) e2
+  | Tdiff (e1, e2) ->
+    Format.fprintf fmt "diff %a %a"
       (pp_with_paren (pp_term outer pos)) e1
       (pp_with_paren (pp_term outer pos)) e2
   | Told e ->
@@ -247,17 +286,21 @@ let rec pp_term outer pos fmt = function
       (pp_list ";@\n" pp_recfield) l
   | Trecord (Some e,l) ->
     Format.fprintf fmt "{ %a with@\n  @[%a@]@\n}"
-      ((*pp_with_paren *)pp_term outer pos) e
+      (pp_with_paren (pp_term outer pos)) e
       (pp_list ";@\n" pp_recfield) l
   | Tnone -> pp_str fmt "None"
   | Tenum i -> pp_str fmt i
   | Tsome e -> Format.fprintf fmt "Some %a" (pp_with_paren (pp_term e_default PRight)) e
   | Tnot e -> Format.fprintf fmt "not %a" (pp_with_paren (pp_term outer pos)) e
   | Tlist l -> pp_tlist outer pos fmt l
-  | Tnil -> pp_str fmt "[]"
+  | Tnil -> pp_str fmt "Nil"
   | Tcaller i -> Format.fprintf fmt "get_caller_ %a" pp_str i
   | Tle (_,e1,e2) ->
     Format.fprintf fmt "%a <= %a"
+      (pp_term outer pos) e1
+      (pp_term outer pos) e2
+  | Tlt (_,e1,e2) ->
+    Format.fprintf fmt "%a < %a"
       (pp_term outer pos) e1
       (pp_term outer pos) e2
   | Tletin (r,i,t,b,e) ->
@@ -266,9 +309,13 @@ let rec pp_term outer pos fmt = function
       pp_str i
       pp_lettyp t
       (pp_term outer pos) b
-      (pp_with_paren (pp_term outer pos)) e
+      (pp_if_with_paren (pp_term outer pos)) e
+  | Tletfun (s,e) ->
+    Format.fprintf fmt "@[%a@] in@\n%a"
+      pp_fun s
+      (pp_term outer pos) e
   | Tfor (i,s,l,b) ->
-    Format.fprintf fmt "for %a = 0 to %a do@\n%a  @[%a@]@\ndone"
+    Format.fprintf fmt "for %a = 0 to %a do@\n%a@\n  @[%a@]@\ndone"
       pp_str i
       (pp_term outer pos) s
       pp_invariants l
@@ -291,6 +338,36 @@ let rec pp_term outer pos fmt = function
     Format.fprintf fmt "nth %a %a"
       (pp_with_paren (pp_term outer pos)) e1
       (pp_with_paren (pp_term outer pos)) e2
+  | Tdle (_,e1,e2,e3) ->
+    Format.fprintf fmt "%a <= %a <= %a"
+      (pp_term outer pos) e1
+      (pp_term outer pos) e2
+      (pp_term outer pos) e3
+  | Tresult -> pp_str fmt "result"
+  | Tsubset (e1,e2) ->
+    Format.fprintf fmt "subset %a %a"
+      (pp_with_paren (pp_term outer pos)) e1
+      (pp_with_paren (pp_term outer pos)) e2
+  | Ttail (e1,e2) ->
+    Format.fprintf fmt "tail %a %a"
+      (pp_with_paren (pp_term outer pos)) e1
+      (pp_with_paren (pp_term outer pos)) e2
+  | Tnow i -> Format.fprintf fmt "get_now_ %a" pp_str i
+  | Tmlist (e1,i1,i2,i3,e2) ->
+    Format.fprintf fmt "@[match %a with@\n| Nil -> %a@\n| Cons %a %a -> @\n  @[%a@]@\nend@]"
+      pp_str i1
+      (pp_term outer pos) e1
+      pp_str i2
+      pp_str i3
+      (pp_term outer pos) e2
+  | Tcons (e1,e2) ->
+    Format.fprintf fmt "Cons %a %a"
+      (pp_with_paren (pp_term outer pos)) e1
+      (pp_with_paren (pp_term outer pos)) e2
+  | Tremove (e1,e2) ->
+    Format.fprintf fmt "remove %a %a"
+      (pp_with_paren (pp_term outer pos)) e1
+      (pp_with_paren (pp_term outer pos)) e2
   | Tnottranslated -> pp_str fmt "NOT TRANSLATED"
   | _ -> pp_str fmt "NOT IMPLEMENTED"
 and pp_recfield fmt (n,t) =
@@ -298,65 +375,45 @@ and pp_recfield fmt (n,t) =
     pp_str n
     (pp_term e_default PRight) t
 and pp_tlist outer pos fmt = function
-  | []    -> pp_str fmt "Nil" 
+  | []    -> pp_str fmt "Nil"
   | e::tl -> Format.fprintf fmt "Cons %a %a"
                (pp_with_paren (pp_term outer pos)) e
-               (pp_tlist outer pos) tl 
+               (pp_tlist outer pos) tl
 and pp_formula fmt f =
   Format.fprintf fmt "@[ [@expl:%a]@\n %a @]"
     pp_str f.id
-    (pp_term e_default PRight) f.body
+    (pp_term e_default PRight) f.form
 and pp_invariants fmt invs =
   if List.length invs = 0
   then pp_str fmt ""
   else
-    Format.fprintf fmt " invariant {@\n %a @\n} "
+    Format.fprintf fmt "invariant {@\n %a @\n} "
       (pp_list "@\n}@\n invariant {@\n " pp_formula) invs
-
-  
-(* -------------------------------------------------------------------------- *)
-
-let pp_raise fmt raises =
-  if List.length raises = 0
-  then pp_str fmt ""
-  else
-    Format.fprintf fmt "raises { %a }@\n"
-      (pp_list ", " pp_exn) raises
-
-let pp_ensures fmt ensures =
+and pp_ensures fmt ensures =
   if List.length ensures = 0
   then pp_str fmt ""
   else
     Format.fprintf fmt "ensures {@\n %a @\n}@\n"
-      (pp_list "@\n}@\nensures {@\n" pp_formula) ensures
-
-let pp_requires fmt requires =
+      (pp_list "@\n}@\nensures {@\n " pp_formula) ensures
+and pp_requires fmt requires =
   if List.length requires = 0
   then pp_str fmt ""
   else
     Format.fprintf fmt "requires {@\n %a @\n}@\n"
       (pp_list "@\n}@\nrequires {@\n" pp_formula) requires
-
-let pp_arg fmt (id, t) =
-  Format.fprintf fmt "(%a : %a)"
-    pp_id id
-    pp_type t
-
-let pp_args fmt l =
-  if List.length l = 0
-  then pp_str fmt "()"
-  else Format.fprintf fmt "%a" (pp_list " " pp_arg) l
-
-let pp_logic fmt = function
-  | true -> pp_str fmt " function"
-  | false -> pp_str fmt ""
-
-let pp_fun fmt (s : fun_struct) =
-  Format.fprintf fmt "let%a %a %a : %a@\n%a%a%a=@[  %a@]"
+and pp_variants fmt variants =
+  if List.length variants = 0
+  then pp_str fmt ""
+  else
+    Format.fprintf fmt "variant { %a }@\n"
+      (pp_list ", " (pp_term e_default PRight)) variants
+and pp_fun fmt (s : fun_struct) =
+  Format.fprintf fmt "let%a %a %a : %a@\n%a%a%a%a=  @[%a@]"
     pp_logic s.logic
     pp_id s.name
     pp_args s.args
     pp_type s.returns
+    pp_variants s.variants
     pp_raise s.raises
     pp_requires s.requires
     pp_ensures s.ensures
@@ -389,7 +446,7 @@ let pp_init fmt (f : field) =
     (pp_term e_default PRight) f.init
 
 let pp_storage fmt (s : storage_struct) =
-  Format.fprintf fmt "type storage_ = {@\n  @[%a @]@\n}%aby {@\n  @[%a @]@\n}"
+  Format.fprintf fmt "type storage_ = {@\n  @[%a @]@\n} %aby {@\n  @[%a @]@\n}"
     (pp_list ";@\n" pp_field) s.fields
     pp_invariants s.invariants
     (pp_list ";@\n" pp_init) s.fields
@@ -409,7 +466,7 @@ let pp_qualid fmt q = Format.fprintf fmt "%a" (pp_list "." pp_str) q
 
 let pp_clone_subst fmt = function
   | Ctype (i,j) -> Format.fprintf fmt "type %a = %a" pp_str i pp_str j
-  | Cval (i,j)  -> Format.fprintf fmt "type %a = %a" pp_str i pp_str j
+  | Cval (i,j)  -> Format.fprintf fmt "val %a = %a" pp_str i pp_str j
 
 let pp_clone fmt (i,j,l) =
   Format.fprintf fmt "clone %a as %a with @[%a@]"

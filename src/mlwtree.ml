@@ -8,6 +8,12 @@ type exn =
   | Ebreak
 [@@deriving show {with_path = false}]
 
+type fmod =
+  | Logic
+  | Rec
+  | NoMod
+[@@deriving show {with_path = false}]
+
 (* abstract types -------------------------------------------------------------*)
 
 type 'i abstract_qualid = 'i list
@@ -30,6 +36,7 @@ type 'i abstract_type =
   | Typartition of 'i
   | Tyenum of 'i
   | Tyoption of 'i abstract_type
+  | Tylist of 'i abstract_type
   (* ... *)
 [@@deriving show {with_path = false}]
 
@@ -39,6 +46,7 @@ type ('t,'i) abstract_univ_decl = 'i list * 't
 type ('e,'t,'i) abstract_term =
   | Tseq    of 'e list
   | Tletin  of bool * 'i * 't option * 'e * 'e
+  | Tletfun of ('e,'t,'i) abstract_fun_struct * 'e
   | Tif     of 'e * 'e * 'e option
   | Tapp    of 'e * 'e list
   | Tfor    of 'i * 'e * ('e,'t,'i) abstract_formula list * 'e
@@ -51,13 +59,15 @@ type ('e,'t,'i) abstract_term =
   (* storage fields *)
   | Tename
   | Tcaller of 'i
-  | Tnow
+  | Tnow    of 'i
   | Tadded  of 'i
   | Trmed   of 'i
   (* list *)
   | Tlist   of 'e list
   | Tnil
   | Tcard   of 'e
+  | Tmlist  of 'e * 'i * 'i * 'i * 'e (* match list *)
+  | Tcons   of 'e * 'e
   (* archetype lib *)
   | Tadd    of 'e * 'e
   | Tremove of 'e * 'e
@@ -83,20 +93,28 @@ type ('e,'t,'i) abstract_term =
   | Tle     of 't * 'e * 'e
   | Tgt     of 't * 'e * 'e
   | Tge     of 't * 'e * 'e
+  (* double comp *)
+  | Tdlt    of 't * 'e * 'e * 'e (* _ < _ < _ *)
+  | Tdle    of 't * 'e * 'e * 'e (* _ <= _ <= _ *)
+  | Tdlet   of 't * 'e * 'e * 'e (* _ < _ <= _ *)
+  | Tdlte   of 't * 'e * 'e * 'e (* _ < _ <= _ *)
   (* literals *)
   | Tint    of int
   | Taddr   of string
   (* spec *)
   | Tforall of (('t,'i) abstract_univ_decl list) * 'e
+  | Tresult
   | Timpl   of 'e * 'e
   | Told    of 'e
   | Tat     of 'e
   | Tunion  of 'e * 'e
   | Tinter  of 'e * 'e
   | Tdiff   of 'e * 'e
+  | Tsubset of 'e * 'e
   | Tassert of 'e
   (* set *)
   | Tmem    of 'e * 'e
+  | Tlmem   of 'e * 'e
   | Tempty  of 'e
   | Tsingl  of 'e
   | Thead   of 'e * 'e
@@ -111,7 +129,19 @@ type ('e,'t,'i) abstract_term =
 [@@deriving show {with_path = false}]
 and ('e,'t,'i) abstract_formula = {
   id   : 'i;
-  body : ('e,'t,'i) abstract_term;
+  form : ('e,'t,'i) abstract_term;
+}
+[@@deriving show {with_path = false}]
+and ('e,'t,'i) abstract_fun_struct = {
+  name     : 'i;
+  logic    : fmod;
+  args     : ('i * 'i abstract_type) list;
+  returns  : 'i abstract_type;
+  raises   :  exn list;
+  variants : 'e list;
+  requires : (('e,'t,'i) abstract_formula) list;
+  ensures  : (('e,'t,'i) abstract_formula) list;
+  body     : ('e,'t,'i) abstract_term;
 }
 [@@deriving show {with_path = false}]
 
@@ -120,18 +150,6 @@ type ('e,'t,'i) abstract_field = {
   typ      : 't;
   init     : 'e;
   mutable_ : bool;
-}
-[@@deriving show {with_path = false}]
-
-type ('e,'t,'i) abstract_fun_struct = {
-  name     : 'i;
-  logic    : bool;
-  args     : ('i * 'i abstract_type) list;
-  returns  : 'i abstract_type;
-  raises   :  exn list;
-  requires : (('e,'t,'i) abstract_formula) list;
-  ensures  : (('e,'t,'i) abstract_formula) list;
-  body     : ('e,'t,'i) abstract_term;
 }
 [@@deriving show {with_path = false}]
 
@@ -188,6 +206,7 @@ let rec map_abstract_type (map_i : 'i1 -> 'i2) = function
   | Typartition i -> Typartition (map_i i)
   | Tyenum i      -> Typartition (map_i i)
   | Tyoption t    -> Tyoption (map_abstract_type map_i t)
+  | Tylist t      -> Tylist (map_abstract_type map_i t)
 
 let map_abstract_univ_decl
     (map_t : 't1 -> 't2)
@@ -201,7 +220,22 @@ let rec map_abstract_formula
     (map_i : 'i1 -> 'i2)
     (f : ('e1,'t1,'i1) abstract_formula) = {
   id   = map_i f.id;
-  body = map_abstract_term map_e map_t map_i f.body;
+  form = map_abstract_term map_e map_t map_i f.form;
+}
+and map_abstract_fun_struct
+    (map_e : 'e1 -> 'e2)
+    (map_t : 't1 -> 't2)
+    (map_i : 'i1 -> 'i2)
+    (f : ('e1,'t1,'i1) abstract_fun_struct) = {
+  name     = map_i f.name;
+  logic    = f.logic;
+  args     = List.map (fun (a,t) -> (map_i a, map_abstract_type map_i t)) f.args;
+  returns  = map_abstract_type map_i f.returns;
+  raises   = f.raises;
+  variants = List.map map_e f.variants;
+  requires = List.map (map_abstract_formula map_e map_t map_i) f.requires;
+  ensures  = List.map (map_abstract_formula map_e map_t map_i) f.ensures;
+  body     = map_abstract_term map_e map_t map_i f.body;
 }
 and map_abstract_term
     (map_e : 'e1 -> 'e2)
@@ -209,6 +243,7 @@ and map_abstract_term
     (map_i : 'i1 -> 'i2) = function
   | Tseq l             -> Tseq (List.map map_e l)
   | Tletin (r,i,t,b,e) -> Tletin (r,map_i i, Option.map map_t t, map_e b, map_e e)
+  | Tletfun (s,e)      -> Tletfun (map_abstract_fun_struct map_e map_t map_i s, map_e e)
   | Tif (i,t,e)        -> Tif (map_e i, map_e t, Option.map map_e e)
   | Tapp (f,a)         -> Tapp (map_e f, List.map map_e a)
   | Tfor (i,s,l,b)     -> Tfor (map_i i,
@@ -224,12 +259,14 @@ and map_abstract_term
   | Tdoti (i1,i2)      -> Tdoti (map_i i1, map_i i2)
   | Tename             -> Tename
   | Tcaller i          -> Tcaller (map_i i)
-  | Tnow               -> Tnow
+  | Tnow i             -> Tnow (map_i i)
   | Tadded a           -> Tadded (map_i a)
   | Trmed  a           -> Trmed (map_i a)
   | Tlist l            -> Tlist (List.map map_e l)
   | Tnil               -> Tnil
   | Tcard e            -> Tcard (map_e e)
+  | Tmlist (e1,i1,i2,i3,e2) -> Tmlist (map_e e1, map_i i1, map_i i2, map_i i3, map_e e2)
+  | Tcons (e1,e2)      -> Tcons (map_e e1, map_e e2)
   | Tadd (e1,e2)       -> Tadd (map_e e1, map_e e2)
   | Tremove (e1,e2)    -> Tremove (map_e e1, map_e e2)
   | Tget (e1,e2)       -> Tget (map_e e1, map_e e2)
@@ -251,6 +288,10 @@ and map_abstract_term
   | Tle (t,l,r)        -> Tle (map_t t, map_e l, map_e r)
   | Tgt (t,l,r)        -> Tgt (map_t t, map_e l, map_e r)
   | Tge (t,l,r)        -> Tge (map_t t, map_e l, map_e r)
+  | Tdlt (t,e1,e2,e3)  -> Tdlt (map_t t,map_e e1,map_e e2,map_e e3)
+  | Tdle (t,e1,e2,e3)  -> Tdle (map_t t,map_e e1,map_e e2,map_e e3)
+  | Tdlet (t,e1,e2,e3) -> Tdlet (map_t t,map_e e1,map_e e2,map_e e3)
+  | Tdlte (t,e1,e2,e3) -> Tdlte (map_t t,map_e e1,map_e e2,map_e e3)
   | Tint i             -> Tint i
   | Taddr s            -> Taddr s
   | Tforall (l,e)      -> Tforall (List.map (map_abstract_univ_decl map_t map_i) l, map_e e)
@@ -260,7 +301,10 @@ and map_abstract_term
   | Tunion (e1,e2)     -> Tunion (map_e e1, map_e e2)
   | Tinter (e1,e2)     -> Tinter (map_e e1, map_e e2)
   | Tdiff (e1,e2)      -> Tdiff (map_e e1, map_e e2)
+  | Tsubset (e1,e2)    -> Tsubset (map_e e1, map_e e2)
+  | Tresult            -> Tresult
   | Tmem (e1,e2)       -> Tmem (map_e e1, map_e e2)
+  | Tlmem (e1,e2)      -> Tlmem (map_e e1, map_e e2)
   | Tempty e           -> Tempty (map_e e)
   | Tsingl e           -> Tsingl (map_e e)
   | Thead (e1,e2)      -> Thead (map_e e1, map_e e2)
@@ -280,21 +324,6 @@ let map_abstract_field
   typ      = map_t f.typ;
   init     = map_e f.init;
   mutable_ = f.mutable_;
-}
-
-let map_abstract_fun_struct
-    (map_e : 'e1 -> 'e2)
-    (map_t : 't1 -> 't2)
-    (map_i : 'i1 -> 'i2)
-    (f : ('e1,'t1,'i1) abstract_fun_struct) = {
-  name     = map_i f.name;
-  logic    = f.logic;
-  args     = List.map (fun (a,t) -> (map_i a, map_abstract_type map_i t)) f.args;
-  returns  = map_abstract_type map_i f.returns;
-  raises   = f.raises;
-  requires = List.map (map_abstract_formula map_e map_t map_i) f.requires;
-  ensures  = List.map (map_abstract_formula map_e map_t map_i) f.ensures;
-  body     = map_abstract_term map_e map_t map_i f.body;
 }
 
 let map_abstract_storage_struct
