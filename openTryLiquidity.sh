@@ -9,8 +9,10 @@ else
     done < "${1:-/dev/stdin}"
 fi
 str=$(sed -e ':a;N;$!ba;s/\n/\\n/g' -e 's/\"/\\\"/g' < $tmpliq)
+echo $str
 tmpjs=$(mktemp /tmp/js.XXXXXX)
 echo "var str = \"" "$str" "\"; var s = encodeURIComponent(str).replace(/\"/g,\"%27\").replace(/\"/g,\"%22\"); console.log(s);" > $tmpjs
+cat $tmpjs
 param=`nodejs $tmpjs`
 url="http://www.liquidity-lang.org/edit/?source=$param"
 echo $url

@@ -57,9 +57,9 @@ action consume (a : address) (quantity : uint) = {
     }
 
     specification p4 = {
-      is_empty added.mile
+      is_empty (added mile)
       invariants for loop {
-        is_empty added.mile
+        is_empty (added mile)
       }
     }
   }
