@@ -22,9 +22,11 @@ let preprocess_ext pt =
   else pt
 
 let type_ pt =
-  let _ast = Typing.typing Typing.empty pt in
-  (* let ast = Ast.create_fake_ast () in *)
-  let ast = Ast.create_miles_with_expiration_ast () in
+  let ast =
+    if !Options.fake_ast
+    then Ast.create_miles_with_expiration_ast ()
+    else Typing.typing Typing.empty pt
+  in
   if !Options.opt_ast
   then (Format.printf "%a@." Ast.pp_model ast; raise Stop)
   else ast
@@ -143,6 +145,8 @@ let main () =
             Format.eprintf
               "Unknown lsp commands %s (use errors, outline)@." s;
             exit 2), "LSP mode";
+      "-F", Arg.Set Options.fake_ast, " Fake ast";
+      "--fake-ast", Arg.Set Options.fake_ast, " Same as -F";
       "-d", Arg.Set Options.debug_mode, " Debug mode";
     ] in
   let arg_usage = String.concat "\n" [
