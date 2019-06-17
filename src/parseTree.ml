@@ -297,3 +297,5 @@ type archetype_unloc =
 and archetype = archetype_unloc loced
 [@@deriving yojson, show {with_path = false}]
 
+let mk_archetype ?(decls=[]) ?(loc=dummy) () =
+  mkloc loc (Marchetype decls)

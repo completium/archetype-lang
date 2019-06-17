@@ -44,3 +44,4 @@ let opt_raw_target = ref false
 let debug_mode = ref false
 
 let fake_ast = ref false
+let no_reduce = ref false

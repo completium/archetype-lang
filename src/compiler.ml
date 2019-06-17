@@ -9,13 +9,19 @@ exception Stop
 
 
 let parse (filename, channel) =
-  let pt = Io.parse_archetype_strict ~name:filename channel in
-  if !Options.opt_json then (Format.printf "%s\n" (Yojson.Safe.to_string (ParseTree.archetype_to_yojson pt)); raise Stop)
-  else if !Options.opt_parse then (Format.printf "%a\n" ParseTree.pp_archetype pt; raise Stop)
-  else if !Options.opt_pretty_print then (Format.printf "%a" Printer.pp_archetype pt; raise Stop)
-  else pt
+  if !Options.fake_ast
+  then ParseTree.mk_archetype()
+  else
+    let pt = Io.parse_archetype_strict ~name:filename channel in
+    if !Options.opt_json then (Format.printf "%s\n" (Yojson.Safe.to_string (ParseTree.archetype_to_yojson pt)); raise Stop)
+    else if !Options.opt_parse then (Format.printf "%a\n" ParseTree.pp_archetype pt; raise Stop)
+    else if !Options.opt_pretty_print then (Format.printf "%a" Printer.pp_archetype pt; raise Stop)
+    else pt
 
 let preprocess_ext pt =
+  if !Options.fake_ast
+  then pt
+  else
   if !Options.opt_pre_json then (Format.printf "%s\n" (Yojson.Safe.to_string (ParseTree.archetype_to_yojson pt)); raise Stop)
   else if !Options.opt_pre_parse then (Format.printf "%a\n" ParseTree.pp_archetype pt; raise Stop)
   else if !Options.opt_pre_pretty_print then (Format.printf "%a" Printer.pp_archetype pt; raise Stop)
@@ -32,10 +38,13 @@ let type_ pt =
   else ast
 
 let reduce_ast ast =
-  let rast = Gen_reduce.reduce_ast ast in
-  if !Options.opt_astr
-  then (Format.printf "%a@." Ast.pp_model rast; raise Stop)
-  else rast
+  if !Options.no_reduce
+  then ast
+  else
+    let rast = Gen_reduce.reduce_ast ast in
+    if !Options.opt_astr
+    then (Format.printf "%a@." Ast.pp_model rast; raise Stop)
+    else rast
 
 let model ast =
   let model = Gen_model.to_model ast in
@@ -92,7 +101,7 @@ let compile (filename, channel) =
   |> preprocess_ext
   |> generate_target_pt
   |> type_
-  (* |> reduce_ast *)
+  |> reduce_ast
   |> model
   |> generate_target
 
@@ -147,6 +156,8 @@ let main () =
             exit 2), "LSP mode";
       "-F", Arg.Set Options.fake_ast, " Fake ast";
       "--fake-ast", Arg.Set Options.fake_ast, " Same as -F";
+      "-NR", Arg.Set Options.no_reduce, " No reduce processing";
+      "--no-reduce", Arg.Set Options.no_reduce, " Same as -NR";
       "-d", Arg.Set Options.debug_mode, " Debug mode";
     ] in
   let arg_usage = String.concat "\n" [
