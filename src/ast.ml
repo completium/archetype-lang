@@ -735,7 +735,7 @@ let fold_map_term g f (accu : 'a) (term : 'term) : 'term * 'a =
              | AExpr a -> f accu a |> fun (x, acc) -> (Some (AExpr x), acc)
              | _ -> None, accu in
            let x = match p with | Some a -> a | None -> x in
-           [x] @ pterms, accu) ([], accu) args
+           pterms @ [x], accu) ([], accu) args
     in
     g (Pcall (a, id, argss)), argsa
 
@@ -766,7 +766,7 @@ let fold_map_term g f (accu : 'a) (term : 'term) : 'term * 'a =
     let (lp, la) = List.fold_left
         (fun (pterms, accu) x ->
            let p, accu = f accu x in
-           [p] @ pterms, accu) ([], accu) l in
+           pterms @ [p], accu) ([], accu) l in
     g (Precord lp), la
 
   | Pletin (id, i, t, o) ->
@@ -781,7 +781,7 @@ let fold_map_term g f (accu : 'a) (term : 'term) : 'term * 'a =
     let (lp, la) = List.fold_left
         (fun (pterms, accu) x ->
            let p, accu = f accu x in
-           [p] @ pterms, accu) ([], accu) l in
+           pterms @ [p], accu) ([], accu) l in
     g (Parray lp), la
 
   | Plit l ->
@@ -798,7 +798,7 @@ let fold_map_term g f (accu : 'a) (term : 'term) : 'term * 'a =
     let (lp, la) = List.fold_left
         (fun (pterms, accu) x ->
            let p, accu = f accu x in
-           [p] @ pterms, accu) ([], accu) l in
+           pterms @ [p], accu) ([], accu) l in
     g (Ptuple lp), la
 
 
@@ -825,7 +825,7 @@ let fold_map_instr_term gi ge fi fe (accu : 'a) instr : 'instr * 'a =
       List.fold_left
         (fun ((instrs, accu) : ('b list * 'c)) x ->
            let bi, accu = fi accu x in
-           [bi] @ instrs, accu) ([], accu) is
+           instrs @ [bi], accu) ([], accu) is
     in
     gi (Iseq isi), isa
 
@@ -870,7 +870,7 @@ let fold_map_instr_term gi ge fi fe (accu : 'a) instr : 'instr * 'a =
       List.fold_left
         (fun (pterms, accu) x ->
            let p, accu = fe accu x in
-           [p] @ pterms, accu) ([], xa) args
+           pterms @ [p], accu) ([], xa) args
     in
     gi (Icall (xe, id, argss)), argsa
 

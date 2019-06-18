@@ -211,7 +211,7 @@ let to_model (ast : A.model) : M.model =
           process_instr accu t c None gi fi instr.node args
 
         | _ ->
-          A.fold_map_instr_term (fun node -> { instr with node = node} ) ge fi fe accu instr
+          A.fold_map_instr_term (fun node -> { instr with node = node } ) ge fi fe accu instr
 
       in
       fi list instr in
