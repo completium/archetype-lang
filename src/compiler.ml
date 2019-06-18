@@ -12,7 +12,10 @@ let parse (filename, channel) =
   if !Options.fake_ast
   then ParseTree.mk_archetype()
   else
-    let pt = Io.parse_archetype_strict ~name:filename channel in
+    let pt =
+      (if !Options.opt_cwse
+       then Io.parse_archetype
+       else Io.parse_archetype_strict) ~name:filename channel in
     if !Options.opt_json then (Format.printf "%s\n" (Yojson.Safe.to_string (ParseTree.archetype_to_yojson pt)); raise Stop)
     else if !Options.opt_parse then (Format.printf "%a\n" ParseTree.pp_archetype pt; raise Stop)
     else if !Options.opt_pretty_print then (Format.printf "%a" Printer.pp_archetype pt; raise Stop)
@@ -158,6 +161,8 @@ let main () =
       "--raw-target-tree", Arg.Set Options.opt_raw_target, " Same as -RTT";
       "-LU", Arg.Set Options.opt_liq_url, " Print url of try liquidity";
       "--fake-ast", Arg.Set Options.opt_liq_url, " Same as -LU";
+      "-CWSE", Arg.Set Options.opt_cwse, " Continue with syntax errors";
+      "--continue-with-syntax-errors", Arg.Set Options.opt_cwse, " Same as -CWSE";
       "--lsp", Arg.String (fun s -> match s with
           | "errors" -> Options.opt_lsp := true; Lsp.kind := Errors
           | "outline" -> Options.opt_lsp := true; Lsp.kind := Outline

@@ -138,6 +138,7 @@
 
 %token INVALID_EXPR
 %token INVALID_DECL
+%token INVALID_EFFECT
 
 %token <string> IDENT
 %token <string> STRING
@@ -546,6 +547,7 @@ require:
 
 effect:
  | EFFECT exts=option(extensions) e=braced(expr) { (e, exts) }
+ | INVALID_EFFECT                                { (mkloc Location.dummy Einvalid, None) }
 
 %inline function_return:
  | COLON ty=type_t { ty }

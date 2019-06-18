@@ -76,27 +76,52 @@ let check_brackets_balance () =
   then raise (ParseUtils.ParseError errors)
 
 (* -------------------------------------------------------------------- *)
-
-
 let resume_on_error last_reduction lex =
+  let invalids_tokens = [Parser.INVALID_EFFECT; Parser.INVALID_EXPR; Parser.INVALID_DECL] in
   match last_reduction with
   | `FoundExprAt checkpoint ->
+    let _, checkpoint =
+      List.fold_left (fun (cont, check) x ->
+          if cont && Parser.MenhirInterpreter.acceptable checkpoint x dummy_pos
+          then false, Parser.MenhirInterpreter.offer checkpoint (x, dummy_pos, dummy_pos)
+          else (cont, check)
+        ) (true, checkpoint) invalids_tokens
+    in
     let lex = Lexer.skip_until_before (function SEMI_COLON | RBRACE -> true | _ -> false) lex in
     let lex =
       if Lexer.get' lex = SEMI_COLON
       then snd (Lexer.next lex)
       else lex in
-    let checkpoint = Parser.MenhirInterpreter.offer checkpoint (Parser.INVALID_EXPR, dummy_pos, dummy_pos) in
     (lex, checkpoint)
-  | `FoundDeclarationAt checkpoint
-  | `FoundNothingAt checkpoint ->
+
+  | `FoundEffect checkpoint ->
+    let _, checkpoint =
+      List.fold_left (fun (cont, check) x ->
+          if cont && Parser.MenhirInterpreter.acceptable checkpoint x dummy_pos
+          then false, Parser.MenhirInterpreter.offer checkpoint (x, dummy_pos, dummy_pos)
+          else (cont, check)
+        ) (true, checkpoint) invalids_tokens
+    in
+    let lex = Lexer.skip_until_before (function RBRACE -> true | _ -> false) lex in
+    (lex, checkpoint)
+
+  | `FoundDeclarationAt checkpoint ->
     let lex =
       Lexer.skip_until_before (function EOF | CONSTANT | VARIABLE | ENUM | STATES | ASSET | ACTION | TRANSITION | NAMESPACE | CONTRACT -> true | _ -> false) lex
     in
-    let checkpoint =
-      if Lexer.get' lex = EOF
-      then Parser.MenhirInterpreter.offer checkpoint (Parser.INVALID_DECL, dummy_pos, dummy_pos)
-      else checkpoint in
+    (lex, checkpoint)
+
+  | `FoundNothingAt checkpoint ->
+    let lex =
+      Lexer.skip_until_before (function EOF | CONSTANT | VARIABLE | ENUM | STATES | ASSET | ACTION | TRANSITION | NAMESPACE | CONTRACT | RBRACE -> true | _ -> false) lex
+    in
+    let _, checkpoint =
+      List.fold_left (fun (cont, check) x ->
+          if cont && Parser.MenhirInterpreter.acceptable checkpoint x dummy_pos
+          then false, Parser.MenhirInterpreter.offer checkpoint (x, dummy_pos, dummy_pos)
+          else (cont, check)
+        ) (true, checkpoint) invalids_tokens
+    in
     (lex, checkpoint)
 
 let update_last_reduction checkpoint production last_reduction =
@@ -106,6 +131,8 @@ let update_last_reduction checkpoint production last_reduction =
     `FoundExprAt checkpoint
   | X (N N_simple_expr_r) ->
     `FoundExprAt checkpoint
+  | X (N N_effect) ->
+    `FoundEffect checkpoint
   | X (N N_declaration_r) ->
     `FoundDeclarationAt checkpoint
   | _ ->
