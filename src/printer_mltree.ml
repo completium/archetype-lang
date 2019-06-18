@@ -156,7 +156,7 @@ let rec pp_pattern fmt = function
       pp_id id
   | Pexpr e ->
     Format.fprintf fmt "| %a"
-      (pp_expr e_simple PRight) e
+      (pp_expr e_default PNone) e
   | Pwild ->
     Format.fprintf fmt "| _"
 
@@ -184,7 +184,7 @@ and pp_expr outer pos fmt = function
   | Ematchwith (e, l) ->
     let pp fmt (e, l) =
       Format.fprintf fmt "@[match %a with@\n%a@]"
-        (pp_expr e_match PRight) e
+        (pp_expr e_default PNone) e
         (pp_list "@\n" (fun fmt (pts, e) ->
              Format.fprintf fmt "%a -> %a"
                (pp_list " " pp_pattern) pts
@@ -199,7 +199,7 @@ and pp_expr outer pos fmt = function
         (pp_expr e_app PLeft) id
         (pp_list " " (pp_expr e_app PInfix)) args
     in
-    (maybe_paren outer e_simple pos pp) fmt (id, args)
+    (maybe_paren outer e_app pos pp) fmt (id, args)
 
   | Ebin (op, l, r) ->
 
