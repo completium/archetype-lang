@@ -116,20 +116,20 @@ let to_model (ast : A.model) : M.model =
           else e
         in
         let node = match t, field_name, c, e with
-          | A.Tcontainer (Tasset asset, Collection), None, A.Cget,      _ -> Some (M.Get asset, get_first_arg asset e)
-          | A.Tcontainer (Tasset asset, Collection), None, A.Cadd,      _ -> Some (M.AddAsset asset, get_first_arg asset e)
-          | A.Tcontainer (Tasset asset, Collection), None, A.Cremove,   _ -> Some (M.RemoveAsset asset, get_first_arg asset e)
-          | A.Tcontainer (Tasset asset, Collection), None, A.Cclear,    _ -> Some (M.ClearAsset asset, get_first_arg asset e)
-          | A.Tcontainer (Tasset asset, Collection), None, A.Cupdate,   _ -> Some (M.UpdateAsset asset, get_first_arg asset e)
-          | A.Tcontainer (Tasset asset, Collection), None, A.Ccontains, _ -> Some (M.ContainsAsset asset, get_first_arg asset e)
-          | A.Tcontainer (Tasset asset, Collection), None, A.Cnth,      _ -> Some (M.NthAsset asset, get_first_arg asset e)
-          | A.Tcontainer (Tasset asset, Collection), None, A.Cselect,   _ -> Some (M.SelectAsset asset, get_first_arg asset e)
-          | A.Tcontainer (Tasset asset, Collection), None, A.Creverse,  _ -> Some (M.ReverseAsset asset, get_first_arg asset e)
-          | A.Tcontainer (Tasset asset, Collection), None, A.Csort,     _ -> Some (M.SortAsset asset, get_first_arg asset e)
-          | A.Tcontainer (Tasset asset, Collection), None, A.Ccount,    _ -> Some (M.CountAsset asset, get_first_arg asset e)
-          | A.Tcontainer (Tasset asset, Collection), None, A.Csum,      _ -> Some (M.SumAsset asset, get_first_arg asset e)
-          | A.Tcontainer (Tasset asset, Collection), None, A.Cmin,      _ -> Some (M.MinAsset asset, get_first_arg asset e)
-          | A.Tcontainer (Tasset asset, Collection), None, A.Cmax,      _ -> Some (M.MaxAsset asset, get_first_arg asset e)
+          | A.Tcontainer (Tasset asset, Collection), None, A.Cget,      _ when is_global_asset asset e -> Some (M.Get asset, get_first_arg asset e)
+          | A.Tcontainer (Tasset asset, Collection), None, A.Cadd,      _ when is_global_asset asset e -> Some (M.AddAsset asset, get_first_arg asset e)
+          | A.Tcontainer (Tasset asset, Collection), None, A.Cremove,   _ when is_global_asset asset e -> Some (M.RemoveAsset asset, get_first_arg asset e)
+          | A.Tcontainer (Tasset asset, Collection), None, A.Cclear,    _ when is_global_asset asset e -> Some (M.ClearAsset asset, get_first_arg asset e)
+          | A.Tcontainer (Tasset asset, Collection), None, A.Cupdate,   _ when is_global_asset asset e -> Some (M.UpdateAsset asset, get_first_arg asset e)
+          | A.Tcontainer (Tasset asset, Collection), None, A.Ccontains, _ when is_global_asset asset e -> Some (M.ContainsAsset asset, get_first_arg asset e)
+          | A.Tcontainer (Tasset asset, Collection), None, A.Cnth,      _ when is_global_asset asset e -> Some (M.NthAsset asset, get_first_arg asset e)
+          | A.Tcontainer (Tasset asset, Collection), None, A.Cselect,   _ when is_global_asset asset e -> Some (M.SelectAsset asset, get_first_arg asset e)
+          | A.Tcontainer (Tasset asset, Collection), None, A.Creverse,  _ when is_global_asset asset e -> Some (M.ReverseAsset asset, get_first_arg asset e)
+          | A.Tcontainer (Tasset asset, Collection), None, A.Csort,     _ when is_global_asset asset e -> Some (M.SortAsset asset, get_first_arg asset e)
+          | A.Tcontainer (Tasset asset, Collection), None, A.Ccount,    _ when is_global_asset asset e -> Some (M.CountAsset asset, get_first_arg asset e)
+          | A.Tcontainer (Tasset asset, Collection), None, A.Csum,      _ when is_global_asset asset e -> Some (M.SumAsset asset, get_first_arg asset e)
+          | A.Tcontainer (Tasset asset, Collection), None, A.Cmin,      _ when is_global_asset asset e -> Some (M.MinAsset asset, get_first_arg asset e)
+          | A.Tcontainer (Tasset asset, Collection), None, A.Cmax,      _ when is_global_asset asset e -> Some (M.MaxAsset asset, get_first_arg asset e)
           | A.Tasset asset, Some field, A.Cadd,      Some {node = A.Pdot (a, _)}  -> Some (M.AddContainer (asset, field), Some a)
           | A.Tasset asset, Some field, A.Cremove,   Some {node = A.Pdot (a, _)}  -> Some (M.RemoveContainer (asset, field), Some a)
           | A.Tasset asset, Some field, A.Cclear,    Some {node = A.Pdot (a, _)}  -> Some (M.ClearContainer (asset, field), Some a)
@@ -154,7 +154,7 @@ let to_model (ast : A.model) : M.model =
         match term.node with
         | A.Pcall (Some asset_name, Cconst c, args) -> (
             let _, accu = A.fold_map_term (fun node -> {term with node = node} ) fe accu term in
-            let function__ = mk_function (A.Tcontainer (Tasset asset_name, Collection)) None c None in
+            let function__ = mk_function (A.Tcontainer (Tasset asset_name, Collection)) None c (Some (A.mk_sp (A.Pvar asset_name))) in
             let term, accu =
               match function__ with
               | Some (f, _) -> (
