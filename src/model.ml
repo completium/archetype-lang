@@ -248,9 +248,10 @@ let mk_model ?(decls = []) name ast : model =
 
 module Utils : sig
 
-  val get_record       : model -> A.lident -> record
-  val get_record_field : model -> (A.lident * A.lident ) -> record_item
-  val get_record_key   : model -> A.lident -> (A.lident * A.vtyp)
+  val get_record           : model -> A.lident -> record
+  val get_record_field     : model -> (A.lident * A.lident ) -> record_item
+  val get_record_key       : model -> A.lident -> (A.lident * A.vtyp)
+  val is_storage_attribute : model -> A.lident -> bool
 
 end = struct
 
@@ -263,6 +264,7 @@ end = struct
     | RecordNotFound of string
     | RecordFieldNotFound of string * string
     | RecordKeyTypeNotFound of string
+    | StorageNotFound
   [@@deriving show {with_path = false}]
 
   let emit_error (desc : error_desc) =
@@ -294,4 +296,26 @@ end = struct
     match key_field.type_ with
     | Tbuiltin v -> (key_id, v)
     | _ -> emit_error (RecordKeyTypeNotFound (unloc record_name))
+
+  let get_storage model =
+    List.fold_left (fun accu (x : decl_node) ->
+        match x with
+        | TNstorage s -> Some s
+        | _ -> accu
+      ) None model.decls
+
+  let get_storage_strict model =
+    let res = get_storage model in
+    match res with
+    | Some e -> e
+    | _ -> emit_error StorageNotFound
+
+  let is_storage_attribute model id =
+    let s = get_storage model in
+    match s with
+    | Some items ->
+      (List.fold_left (fun accu (x : storage_item) ->
+           accu || String.equal (Location.unloc id) (Location.unloc x.name)) false items)
+    | None -> false
+
 end

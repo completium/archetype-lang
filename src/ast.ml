@@ -118,6 +118,8 @@ type operator = [
   | `Arith   of arithmetic_operator
   | `Unary   of unary_arithmetic_operator
 ]
+[@@deriving show {with_path = false}]
+
 type const =
   (* constant *)
   | Cstate
@@ -959,7 +961,7 @@ let create_miles_with_expiration_ast () =
   mk_model (dumloc "miles_with_expiration")
     ~variables:[
       mk_variable (mk_decl (dumloc "admin")
-                     ~typ:(Tbuiltin VTrole)
+                     ~typ:(Tbuiltin VTaddress)
                      ~default:(mk_sp (Plit (mk_sp (BVaddress "tz1aazS5ms5cbGkb6FN1wvWmN7yrMTTcr6wB")))))
     ]
     ~assets:[
@@ -1040,7 +1042,6 @@ let create_miles_with_expiration_ast () =
                                                               ~type_:(Tcontainer (Tasset (dumloc "owner"), Partition))
                                                            ])
                                               ~type_:(Tasset (dumloc "owner"))])))));
-
 
       mk_transaction_struct (dumloc "consume")
         ?verification: (Some (mk_verification ()

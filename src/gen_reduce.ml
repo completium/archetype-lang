@@ -175,7 +175,7 @@ let process_action (model : model) : model =
           match x.label with
           | Some label -> "require " ^ (unloc label) ^ " failed"
           | _ -> "require failed" in
-        let cond : pterm = mk_sp (Pnot x.term) ?loc:(Some x.loc) in
+        let cond : pterm = mk_sp (Pnot x.term) ~type_:(Tbuiltin VTbool) ?loc:(Some x.loc) in
         mk_sp (Iif (cond, fail msg, body)) ?loc:(Some x.loc)
       in
       match tr.require with

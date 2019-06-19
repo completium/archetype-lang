@@ -77,6 +77,8 @@ let emit_error (desc : error_desc) =
   let str = Format.asprintf "%a@." pp_error_desc desc in
   raise (Anomaly str)
 
+let current_id id = W.Ecall (W.Edot (W.Evar "Current", id), [])
+
 module Utils : sig
   val get_asset      : M.model -> A.lident              -> sig_
   val add_asset      : M.model -> A.lident              -> sig_
@@ -196,7 +198,24 @@ end = struct
 
 end
 
-
+let op_to_constr op =
+  match op with
+  | `Logical A.And  -> (fun (x, y) -> W.Eand (x, y))
+  | `Logical A.Or   -> (fun (x, y) -> W.Eor (x, y))
+  | `Cmp A.Equal    -> (fun (x, y) -> W.Eequal (x, y))
+  | `Cmp A.Nequal   -> (fun (x, y) -> W.Enequal (x, y))
+  | `Cmp A.Gt       -> (fun (x, y) -> W.Egt (x, y))
+  | `Cmp A.Ge       -> (fun (x, y) -> W.Ege (x, y))
+  | `Cmp A.Lt       -> (fun (x, y) -> W.Elt (x, y))
+  | `Cmp A.Le       -> (fun (x, y) -> W.Ele (x, y))
+  | `Arith A.Plus   -> (fun (x, y) -> W.Eplus (x, y))
+  | `Arith A.Minus  -> (fun (x, y) -> W.Eminus (x, y))
+  | `Arith A.Mult   -> (fun (x, y) -> W.Emult (x, y))
+  | `Arith A.Div    -> (fun (x, y) -> W.Ediv (x, y))
+  | `Arith A.Modulo -> (fun (x, y) -> W.Emodulo (x, y))
+  | _ ->
+    Format.eprintf "op_to_constr: %a@\n" A.pp_operator op;
+    raise (Anomaly (Format.asprintf "Unsupported operator %a@." A.pp_operator op) )
 
 let rec instr_to_expr model (instr : A.instruction) : W.expr * W.type_ =
   let compute_return_type t1 t2 : W.type_ =
@@ -214,7 +233,9 @@ let rec instr_to_expr model (instr : A.instruction) : W.expr * W.type_ =
     | A.Pcall (None , id, args) ->
       let c_id = match id with
         | Cid id -> W.Evar (unloc id)
-        | Cconst _ -> raise (Anomaly "no const")
+        | Cconst c ->
+          Format.eprintf "Cconst: %a@\n" A.pp_const c;
+          raise (Anomaly "no const")
       in
       let args =
         W.Evar "s"::(List.map (fun x ->
@@ -245,8 +266,60 @@ let rec instr_to_expr model (instr : A.instruction) : W.expr * W.type_ =
       W.Edot (expr_a, id_b), ptyp_to_type (Option.get expr.type_)
 
     | A.Pvar s ->
-      W.Evar (unloc s), ptyp_to_type (Option.get expr.type_)
+      let a =
+        if Model.Utils.is_storage_attribute model s
+        then W.Edot (W.Evar storage_id, unloc s)
+        else W.Evar (unloc s)
+      in
+      a, ptyp_to_type (Option.get expr.type_)
 
+    | A.Plit ({ node = A.BVint i; _})
+    | A.Plit ({ node = A.BVuint i; _}) -> W.Elitint i, ptyp_to_type (Option.get expr.type_)
+    | A.Plit ({ node = A.BVbool b; _}) -> W.Elitbool b, ptyp_to_type (Option.get expr.type_)
+    | A.Plit ({ node = A.BVstring str; _}) -> W.Elitstring str, ptyp_to_type (Option.get expr.type_)
+
+    | A.Plit ({ node = A.BVduration _; _}) -> raise (Anomaly "Unsuported duration") (*W.Elitraw str, ptyp_to_type (Option.get expr.type_)*)
+    | A.Plit ({ node = A.BVrational _; _}) -> raise (Anomaly "Unsuported rational") (*W.Elitraw str, ptyp_to_type (Option.get expr.type_)*)
+
+    | A.Plit ({ node = A.BVenum str; _})
+    | A.Plit ({ node = A.BVdate str; _})
+    | A.Plit ({ node = A.BVaddress str; _})  ->
+      W.Elitraw str, ptyp_to_type (Option.get expr.type_)
+
+    | A.Plit ({ node = A.BVcurrency (_cur, v); _}) ->
+      W.Elitraw (Format.asprintf "%stz" (Big_int.string_of_big_int v)), ptyp_to_type (Option.get expr.type_)
+
+    | A.Pnot e ->
+      let expr_e, _ = expr_to_expr model e in
+      W.Enot expr_e, ptyp_to_type (Option.get expr.type_)
+
+    | A.Plogical (op, l, r) ->
+      let expr_l, _ = expr_to_expr model l in
+      let expr_r, _ = expr_to_expr model r in
+      (op_to_constr (`Logical op)) (expr_l, expr_r), ptyp_to_type (Option.get expr.type_)
+
+    | A.Pcomp (op, l, r) ->
+      let expr_l, _ = expr_to_expr model l in
+      let expr_r, _ = expr_to_expr model r in
+      (op_to_constr (`Cmp op)) (expr_l, expr_r), ptyp_to_type (Option.get expr.type_)
+
+    | A.Parith (op, l, r) ->
+      let expr_l, _ = expr_to_expr model l in
+      let expr_r, _ = expr_to_expr model r in
+      (op_to_constr (`Arith op)) (expr_l, expr_r), ptyp_to_type (Option.get expr.type_)
+
+    | A.Pconst c ->
+      (
+        match c with
+        | A.Ccaller      -> current_id "sender",  ptyp_to_type (Option.get expr.type_)
+        | A.Ctransferred -> current_id "amount",  ptyp_to_type (Option.get expr.type_)
+        | A.Cbalance     -> current_id "balance", ptyp_to_type (Option.get expr.type_)
+        | A.Cnow         -> current_id "time",    ptyp_to_type (Option.get expr.type_)
+
+        | _ ->
+          Format.eprintf "to_const: %a@\n" A.pp_const c;
+          raise (Anomaly "Not supported yet")
+      )
     | _ ->
       Format.eprintf "expr: %a@\n" A.pp_pterm expr;
       W.Evar "s", W.Tstorage
@@ -262,16 +335,20 @@ let rec instr_to_expr model (instr : A.instruction) : W.expr * W.type_ =
     W.Eif (expr_cond, expr_then, expr_else), ret
 
   | A.Icall (None, id, args) ->
-    let i_id = match id with
-      | Cid id -> W.Evar (unloc id)
-      | Cconst _ -> raise (Anomaly "no const")
+    let i_id, args, t = match id with
+      | Cid id ->
+        let args =
+          W.Evar "s"::(List.map (fun e -> expr_to_expr model e |> fst) args)
+        in
+        W.Evar (unloc id), args, W.Tstorage
+      | Cconst Cfail ->
+        let args = (List.map (fun e -> expr_to_expr model e |> fst) args) in
+        W.Edot (W.Evar "Current", "failwith"), args, W.Tstorage
+      | Cconst c ->
+        Format.eprintf "Cconst: %a@\n" A.pp_const c;
+        raise (Anomaly "no const")
     in
-
-    let args =
-      W.Evar "s"::(List.map (fun e -> expr_to_expr model e |> fst) args)
-    in
-
-    W.Ecall (i_id, args), W.Tstorage
+    W.Ecall (i_id, args), t
 
   | _ ->
     Format.eprintf "instr: %a@\n" A.pp_instruction instr;
@@ -284,7 +361,8 @@ let compute_body_entry model (fs : M.function_struct) =
     W.Eletin (
       [([storage_id, Tstorage], e)],
       Etuple [Earray []; W.Evar storage_id])
-  | _ -> assert false
+  | _ ->
+    raise (Anomaly (Format.asprintf "compute_body_entry: %a@\n" W.pp_type_ ret))
 
 
 let mk_function_struct model (f : M.function__) =

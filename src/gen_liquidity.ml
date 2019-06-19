@@ -19,7 +19,7 @@ let emit_error (desc : error_desc) =
 let to_basic = function
   | A.VTbool       -> T.Tbool
   | A.VTint        -> T.Tint
-  | A.VTuint       -> T.Tnat
+  | A.VTuint       -> T.Tint
   | A.VTrational   -> assert false (* TODO *)
   | A.VTdate       -> T.Ttimestamp
   | A.VTduration   -> T.Tint
@@ -34,7 +34,7 @@ let rec to_type = function
   | W.Toperations  -> T.Tlist  (T.Tlocal "operation")
   | W.Tbool        -> T.Tbasic Tbool
   | W.Tint         -> T.Tbasic Tint
-  | W.Tuint        -> T.Tbasic T.Tnat
+  | W.Tuint        -> T.Tbasic T.Tint
   | W.Trational    -> assert false (* TODO *)
   | W.Tdate        -> T.Tbasic T.Ttimestamp
   | W.Tduration    -> T.Tbasic Tint
@@ -117,20 +117,20 @@ and  expr_to_expr (x : W.expr) : T.expr =
   | W.Eif (c, t, e)      -> T.Eif (expr_to_expr c, expr_to_expr t, expr_to_expr e)
   | W.Ematchwith (w, l)  -> T.Ematchwith (expr_to_expr w, List.map (fun (p, e) -> ([pattern_to_pattern p], expr_to_expr e)) l)
   | W.Ecall (i, args)    -> T.Eapp (expr_to_expr i, List.map expr_to_expr args)
-  | W.Eand (l, r)        -> T.Ebin (And, expr_to_expr l, expr_to_expr l)
-  | W.Eor (l, r)         -> T.Ebin (Or, expr_to_expr l, expr_to_expr l)
+  | W.Eand (l, r)        -> T.Ebin (And, expr_to_expr l, expr_to_expr r)
+  | W.Eor (l, r)         -> T.Ebin (Or, expr_to_expr l, expr_to_expr r)
   | W.Enot e             -> T.Eunary (Not, expr_to_expr e)
-  | W.Eequal (l, r)      -> T.Ebin (Equal, expr_to_expr l, expr_to_expr l)
-  | W.Enequal (l, r)     -> T.Ebin (Nequal, expr_to_expr l, expr_to_expr l)
-  | W.Egt (l, r)         -> T.Ebin (Gt, expr_to_expr l, expr_to_expr l)
-  | W.Ege (l, r)         -> T.Ebin (Ge, expr_to_expr l, expr_to_expr l)
-  | W.Elt (l, r)         -> T.Ebin (Lt, expr_to_expr l, expr_to_expr l)
-  | W.Ele (l, r)         -> T.Ebin (Le, expr_to_expr l, expr_to_expr l)
-  | W.Eplus (l, r)       -> T.Ebin (Plus, expr_to_expr l, expr_to_expr l)
-  | W.Eminus (l, r)      -> T.Ebin (Minus, expr_to_expr l, expr_to_expr l)
-  | W.Emult (l, r)       -> T.Ebin (Mult, expr_to_expr l, expr_to_expr l)
-  | W.Ediv (l, r)        -> T.Ebin (Div, expr_to_expr l, expr_to_expr l)
-  | W.Emodulo (l, r)     -> T.Ebin (Modulo, expr_to_expr l, expr_to_expr l)
+  | W.Eequal (l, r)      -> T.Ebin (Equal, expr_to_expr l, expr_to_expr r)
+  | W.Enequal (l, r)     -> T.Ebin (Nequal, expr_to_expr l, expr_to_expr r)
+  | W.Egt (l, r)         -> T.Ebin (Gt, expr_to_expr l, expr_to_expr r)
+  | W.Ege (l, r)         -> T.Ebin (Ge, expr_to_expr l, expr_to_expr r)
+  | W.Elt (l, r)         -> T.Ebin (Lt, expr_to_expr l, expr_to_expr r)
+  | W.Ele (l, r)         -> T.Ebin (Le, expr_to_expr l, expr_to_expr r)
+  | W.Eplus (l, r)       -> T.Ebin (Plus, expr_to_expr l, expr_to_expr r)
+  | W.Eminus (l, r)      -> T.Ebin (Minus, expr_to_expr l, expr_to_expr r)
+  | W.Emult (l, r)       -> T.Ebin (Mult, expr_to_expr l, expr_to_expr r)
+  | W.Ediv (l, r)        -> T.Ebin (Div, expr_to_expr l, expr_to_expr r)
+  | W.Emodulo (l, r)     -> T.Ebin (Modulo, expr_to_expr l, expr_to_expr r)
   | W.Euplus e           -> T.Eunary (Uplus, expr_to_expr e)
   | W.Euminus e          -> T.Eunary (Uminus, expr_to_expr e)
   | W.Eaddlist (l, r)    -> T.Ebin (ColonColon, expr_to_expr l, expr_to_expr r)

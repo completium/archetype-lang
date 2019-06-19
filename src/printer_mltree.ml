@@ -197,7 +197,10 @@ and pp_expr outer pos fmt = function
     let pp fmt (id, args) =
       Format.fprintf fmt "%a %a"
         (pp_expr e_app PLeft) id
-        (pp_list " " (pp_expr e_app PInfix)) args
+        (fun fmt args -> match args with
+           | [] -> pp_str fmt "()"
+           | _ -> (pp_list " " (pp_expr e_app PInfix)) fmt args
+        ) args
     in
     (maybe_paren outer e_app pos pp) fmt (id, args)
 
