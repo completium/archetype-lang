@@ -380,7 +380,7 @@ let mk_function_struct model (f : M.function__) =
       let args = [(itargs, type_arg); ([storage_id], W.Tstorage) ] in
       let ret  = W.Ttuple [W.Toperations; W.Tstorage] in
       let body =
-        if (String.equal (unloc fs.name) "add")
+        if (String.equal (unloc fs.name) "add") || (String.equal (unloc fs.name) "clear_expired")
         then compute_body_entry model fs
         else Etuple [Earray []; W.Evar storage_id] in
       W.Entry, args, ret, body

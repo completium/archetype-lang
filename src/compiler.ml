@@ -160,7 +160,7 @@ let main () =
       "-RTT", Arg.Set Options.opt_raw_target, " Print raw target tree";
       "--raw-target-tree", Arg.Set Options.opt_raw_target, " Same as -RTT";
       "-LU", Arg.Set Options.opt_liq_url, " Print url of try liquidity";
-      "--fake-ast", Arg.Set Options.opt_liq_url, " Same as -LU";
+      "--liquidity-url", Arg.Set Options.opt_liq_url, " Same as -LU";
       "-CWSE", Arg.Set Options.opt_cwse, " Continue with syntax errors";
       "--continue-with-syntax-errors", Arg.Set Options.opt_cwse, " Same as -CWSE";
       "--lsp", Arg.String (fun s -> match s with
