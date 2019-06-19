@@ -140,6 +140,13 @@ let pp_type fmt typ =
     | Tyenum i      -> i
     | Tyoption tt   -> "option "^(typ_str tt)
     | Tylist tt     -> "list "^(typ_str tt)
+    | Tybool        -> "bool"
+    | Tyuint        -> "uint"
+    | Tycontract i  -> i
+    | Tyrational    -> "rational"
+    | Tyduration    -> "duration"
+    | Tykey         -> "key"
+    | Tytuple l     -> "("^(String.concat ", " (List.map typ_str l))^")"
   in
   pp_str fmt (typ_str typ)
 

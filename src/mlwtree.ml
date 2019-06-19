@@ -21,14 +21,20 @@ type 'i abstract_qualid = 'i list
 
 type 'i abstract_type =
   | Tyint
+  | Tyuint
+  | Tybool
   | Tystring
+  | Tyrational
   | Tyaddr
   | Tyrole
+  | Tykey
   | Tydate
+  | Tyduration
   | Tytez
   | Tystorage
   | Tytransfers
   | Tyunit
+  | Tycontract of 'i
   | Tyrecord of 'i
   | Tycoll  of 'i
   | Tymap of 'i
@@ -37,6 +43,7 @@ type 'i abstract_type =
   | Tyenum of 'i
   | Tyoption of 'i abstract_type
   | Tylist of 'i abstract_type
+  | Tytuple of 'i abstract_type list
   (* ... *)
 [@@deriving show {with_path = false}]
 
@@ -207,6 +214,13 @@ let rec map_abstract_type (map_i : 'i1 -> 'i2) = function
   | Tyenum i      -> Typartition (map_i i)
   | Tyoption t    -> Tyoption (map_abstract_type map_i t)
   | Tylist t      -> Tylist (map_abstract_type map_i t)
+  | Tycontract i   -> Tycontract (map_i i)
+  | Tybool        -> Tybool
+  | Tyuint        -> Tyuint
+  | Tyrational    -> Tyrational
+  | Tyduration    -> Tyduration
+  | Tykey         -> Tykey
+  | Tytuple l     -> Tytuple (List.map (map_abstract_type map_i) l)
 
 let map_abstract_univ_decl
     (map_t : 't1 -> 't2)
@@ -451,9 +465,17 @@ and unloc_term (t : loc_term) : term = map_abstract_term unloc_term unloc_type u
 and unloc_type (t : loc_typ) : typ = map_abstract_type unloc_ident t.obj
 and unloc_ident (i : loc_ident) : ident = i.obj
 
+let unloc_decl (d : loc_decl) = map_abstract_decl unloc_term unloc_type unloc_ident d.obj
+
 let with_dummy_loc o = { obj = o; loc = Location.dummy; }
+let mk_loc l o = { obj = o; loc = l; }
 
 let rec loc_tree (t : mlw_tree) : loc_mlw_tree = map_abstract_mlw_tree loc_term loc_type loc_ident t
 and loc_term (t : term) : loc_term = with_dummy_loc (map_abstract_term loc_term loc_type loc_ident t)
 and loc_type (t : typ) : loc_typ = with_dummy_loc (map_abstract_type loc_ident t)
 and loc_ident (i : ident) : loc_ident = with_dummy_loc i
+
+let loc_decl (d : decl) = with_dummy_loc (map_abstract_decl loc_term loc_type loc_ident d)
+let loc_field (f : field) = with_dummy_loc (map_abstract_field loc_term loc_type loc_ident f)
+
+let deloc x = x.obj
