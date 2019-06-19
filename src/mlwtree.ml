@@ -476,3 +476,5 @@ and loc_type (t : typ) : loc_typ = with_dummy_loc (map_abstract_type loc_ident t
 and loc_ident (i : ident) : loc_ident = with_dummy_loc i
 
 let loc_decl (d : decl) = with_dummy_loc (map_abstract_decl loc_term loc_type loc_ident d)
+
+let deloc x = x.obj

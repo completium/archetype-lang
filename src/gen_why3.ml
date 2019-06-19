@@ -445,8 +445,8 @@ let map_lident (i : M.lident) : loc_ident = {
 
 let type_to_init (typ : loc_typ) : loc_term =
   mk_loc typ.loc (match typ.obj with
-  | Typartition i -> Tvar i
-  | _             -> Tint 0)
+      | Typartition i -> Tvar (with_dummy_loc "empty")
+      | _             -> Tint 0)
 
 let map_type (typ : Ast.ptyp) : loc_typ =
   let rec rec_map_type = function
@@ -464,10 +464,32 @@ let map_type (typ : Ast.ptyp) : loc_typ =
       | Ast.Tbuiltin VTrole          -> Tyrole
       | Ast.Tbuiltin (VTcurrency _)  -> Tytez
       | Ast.Tbuiltin VTkey           -> Tykey
-      | Ast.Tcontainer _             -> Tycoll (with_dummy_loc "NOT TRANSLATED")
+      | Ast.Tcontainer (Ast.Tasset i,Ast.Partition) -> Typartition (map_lident i)
+      | Ast.Tcontainer _             -> Typartition (with_dummy_loc "NOT TRANSLATED")
       | Ast.Ttuple l                 -> Tytuple (List.map rec_map_type l)
   in
   with_dummy_loc (rec_map_type typ)
+
+let map_basic_type (typ : M.item_field_type) : loc_typ =
+  let rec_map_basic_type = function
+    | M.FBasic VTbool       -> Tybool
+    | M.FBasic VTint        -> Tyint
+    | M.FBasic VTuint       -> Tyuint
+    | M.FBasic VTrational   -> Tyrational
+    | M.FBasic VTdate       -> Tydate
+    | M.FBasic VTduration   -> Tyduration
+    | M.FBasic VTstring     -> Tystring
+    | M.FBasic VTaddress    -> Tyaddr
+    | M.FBasic VTrole       -> Tyrole
+    | M.FBasic VTcurrency _ -> Tytez
+    | M.FBasic VTkey        -> Tykey
+    | M.FAssetKeys (_,i)    -> Tycoll (map_lident i)
+    | M.FAssetRecord (_,i)  -> Tymap (map_lident i)
+    | M.FRecordCollection i -> Tymap (map_lident i) (* ? *)
+    | M.FRecord i           -> Tyrecord (map_lident i)
+    | M.FEnum i             -> Tyenum (map_lident i)
+    | _ -> assert false in
+  with_dummy_loc (rec_map_basic_type typ)
 
 let map_term (t : Ast.pterm) : loc_term = with_dummy_loc Tnottranslated
 
@@ -484,9 +506,26 @@ let map_record_values (values : M.record_item list) =
       }
     ) values
 
+let map_storage_items = List.fold_left (fun acc (items : M.storage_item) ->
+    List.fold_left (fun acc (item : M.item_field) ->
+        let typ_ = map_basic_type item.typ in
+        let init_value = type_to_init typ_ in
+        acc @[{
+          name     = map_lident item.name;
+          typ      = typ_;
+          init     = Option.fold map_record_term init_value item.default;
+          mutable_ = true;
+        }]
+       ) acc items.fields
+  ) []
+
 let map_decl (d : M.decl_node) =
   match d with
   | M.TNrecord r -> Drecord (map_lident r.name, map_record_values r.values)
+  | M.TNstorage l -> Dstorage {
+      fields     = map_storage_items l;
+      invariants = []; (*map_formula (get_invariants l)*)
+    }
   | _ -> assert false
 
 let is_record (d : M.decl_node) : bool =
@@ -496,21 +535,31 @@ let is_record (d : M.decl_node) : bool =
 
 let get_records = List.filter is_record
 
-(* ----------------------------------------------------------------------------*)
+let is_storage (d : M.decl_node) : bool =
+  match d with
+  | M.TNstorage _ -> true
+  | _             -> false
 
+let get_storage = List.filter is_storage
+
+(* ----------------------------------------------------------------------------*)
 
 let wdl        = List.map with_dummy_loc
 let unloc_decl = List.map unloc_decl
 let loc_decl   = List.map loc_decl
-let deloc      = List.map (fun x -> x.obj)
+let deloc      = List.map deloc
 
 let zip l1 l2 = List.concat (List.map2 (fun a b -> [a]@[b]) l1 l2)
 
+let cap s = mk_loc s.loc (String.capitalize_ascii s.obj)
+
 let to_whyml (model : M.model) : mlw_tree  =
+  let uselib       = mk_use |> Mlwtree.loc_decl |> Mlwtree.deloc in
   let records      = get_records model.decls |> List.map map_decl |> wdl in
   let init_records = records |> unloc_decl |> List.map mk_default_init |> loc_decl in
   let records      = zip records init_records |> deloc in
+  let storage      = get_storage model.decls |> List.map map_decl in
   let loct : loc_mlw_tree = {
-    name = map_lident model.name;
-    decls =  records;
+    name = cap (map_lident model.name);
+    decls =  uselib :: (records @ storage);
   } in unloc_tree loct
