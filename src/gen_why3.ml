@@ -438,6 +438,18 @@ let mk_test_mlwtree : mlw_tree =   {
 
 (* ----------------------------------------------------------------------------*)
 
+let wdl        = List.map with_dummy_loc
+let unloc_decl = List.map unloc_decl
+let loc_decl   = List.map loc_decl
+let loc_field  = List.map loc_field
+let deloc (l : 'a list) = List.map deloc l
+
+let zip l1 l2 = List.concat (List.map2 (fun a b -> [a]@[b]) l1 l2)
+
+let cap s = mk_loc s.loc (String.capitalize_ascii s.obj)
+
+(* ----------------------------------------------------------------------------*)
+
 let map_lident (i : M.lident) : loc_ident = {
   obj = i.pldesc;
   loc = i.plloc;
@@ -523,7 +535,7 @@ let map_decl (d : M.decl_node) =
   match d with
   | M.TNrecord r -> Drecord (map_lident r.name, map_record_values r.values)
   | M.TNstorage l -> Dstorage {
-      fields     = map_storage_items l;
+      fields     = (map_storage_items l)@(mk_const_fields false |> loc_field |> deloc);
       invariants = []; (*map_formula (get_invariants l)*)
     }
   | _ -> assert false
@@ -543,15 +555,6 @@ let is_storage (d : M.decl_node) : bool =
 let get_storage = List.filter is_storage
 
 (* ----------------------------------------------------------------------------*)
-
-let wdl        = List.map with_dummy_loc
-let unloc_decl = List.map unloc_decl
-let loc_decl   = List.map loc_decl
-let deloc      = List.map deloc
-
-let zip l1 l2 = List.concat (List.map2 (fun a b -> [a]@[b]) l1 l2)
-
-let cap s = mk_loc s.loc (String.capitalize_ascii s.obj)
 
 let to_whyml (model : M.model) : mlw_tree  =
   let uselib       = mk_use |> Mlwtree.loc_decl |> Mlwtree.deloc in
