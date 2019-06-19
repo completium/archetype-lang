@@ -1,9 +1,12 @@
 open Location
 
 module M = Model
+open Tools
 open Mlwtree
 
 (* Utils -----------------------------------------------------------------------*)
+
+let mk_use : decl = Duse ["archetype";"Lib"]
 
 let mk_default_val = function
   | Typartition _ -> Tvar "empty"
@@ -404,36 +407,110 @@ let mk_test_storage : decl = Dstorage {
     ];
   }
 
+let mk_test_mlwtree : mlw_tree =   {
+  name = "Miles_with_expiration_storage";
+  decls = [
+    mk_use;
+    mk_test_asset_enum;
+    mk_test_entry_enum;
+    mk_test_field_enum;
+    mk_trace_clone;
+    mk_test_mile;
+    mk_default_init mk_test_mile;
+    mk_test_owner;
+    mk_default_init mk_test_owner;
+    mk_test_storage;
+    mk_get_field "mile" Tystring "amount" Tyint;
+    mk_get_field "mile" Tystring "expiration" Tydate;
+    mk_get_field "owner" Tyaddr "miles" (Tycoll "");
+    mk_update_asset "id" mk_test_mile;
+    mk_get_asset "mile" Tystring;
+    mk_get_asset "owner" Tystring;
+    mk_sum_clone "amount";
+    mk_filter "consume" (Tyint) (Tlt (Tyint,Tapp (Tvar "get_expiration",[Tvar "s";Tvar "k"]),Tnow "s"));
+    mk_add "mile" "id";
+    mk_add "owner" "addr";
+    mk_rm_asset "mile" Tystring;
+    mk_rm_partition_field "owner" Tyaddr "miles" "mile" Tystring;
+    mk_test_consume;
+  ];
+}
+
 (* ----------------------------------------------------------------------------*)
 
-let mk_use : decl = Duse ["archetype";"Lib"]
+let map_lident (i : M.lident) : loc_ident = {
+  obj = i.pldesc;
+  loc = i.plloc;
+}
+
+let type_to_init (typ : loc_typ) : loc_term =
+  mk_loc typ.loc (match typ.obj with
+  | Typartition i -> Tvar i
+  | _             -> Tint 0)
+
+let map_type (typ : Ast.ptyp) : loc_typ =
+  let rec rec_map_type = function
+      | Ast.Tasset i                 -> Tyasset (map_lident i)
+      | Ast.Tenum i                  -> Tyenum (map_lident i)
+      | Ast.Tcontract i              -> Tycontract (map_lident i)
+      | Ast.Tbuiltin VTbool          -> Tybool
+      | Ast.Tbuiltin VTint           -> Tyint
+      | Ast.Tbuiltin VTuint          -> Tyuint
+      | Ast.Tbuiltin VTrational      -> Tyrational
+      | Ast.Tbuiltin VTdate          -> Tydate
+      | Ast.Tbuiltin VTduration      -> Tyduration
+      | Ast.Tbuiltin VTstring        -> Tystring
+      | Ast.Tbuiltin VTaddress       -> Tyaddr
+      | Ast.Tbuiltin VTrole          -> Tyrole
+      | Ast.Tbuiltin (VTcurrency _)  -> Tytez
+      | Ast.Tbuiltin VTkey           -> Tykey
+      | Ast.Tcontainer _             -> Tycoll (with_dummy_loc "NOT TRANSLATED")
+      | Ast.Ttuple l                 -> Tytuple (List.map rec_map_type l)
+  in
+  with_dummy_loc (rec_map_type typ)
+
+let map_term (t : Ast.pterm) : loc_term = with_dummy_loc Tnottranslated
+
+let map_record_term _ = map_term
+
+let map_record_values (values : M.record_item list) =
+  List.map (fun (value : M.record_item) ->
+      let typ_ = map_type value.type_ in
+      let init_value = type_to_init typ_ in {
+        name     = map_lident value.name;
+        typ      = typ_;
+        init     = Option.fold map_record_term init_value value.default;
+        mutable_ = false;
+      }
+    ) values
+
+let map_decl (d : M.decl_node) =
+  match d with
+  | M.TNrecord r -> Drecord (map_lident r.name, map_record_values r.values)
+  | _ -> assert false
+
+let is_record (d : M.decl_node) : bool =
+  match d with
+  | M.TNrecord _ -> true
+  | _            -> false
+
+let get_records = List.filter is_record
+
+(* ----------------------------------------------------------------------------*)
+
+
+let wdl        = List.map with_dummy_loc
+let unloc_decl = List.map unloc_decl
+let loc_decl   = List.map loc_decl
+let deloc      = List.map (fun x -> x.obj)
+
+let zip l1 l2 = List.concat (List.map2 (fun a b -> [a]@[b]) l1 l2)
 
 let to_whyml (model : M.model) : mlw_tree  =
-  let _name = unloc model.name in
-  { name = "Miles_with_expiration_storage";
-    decls = [
-      mk_use;
-      mk_test_asset_enum;
-      mk_test_entry_enum;
-      mk_test_field_enum;
-      mk_trace_clone;
-      mk_test_mile;
-      mk_default_init mk_test_mile;
-      mk_test_owner;
-      mk_default_init mk_test_owner;
-      mk_test_storage;
-      mk_get_field "mile" Tystring "amount" Tyint;
-      mk_get_field "mile" Tystring "expiration" Tydate;
-      mk_get_field "owner" Tyaddr "miles" (Tycoll "");
-      mk_update_asset "id" mk_test_mile;
-      mk_get_asset "mile" Tystring;
-      mk_get_asset "owner" Tystring;
-      mk_sum_clone "amount";
-      mk_filter "consume" (Tyint) (Tlt (Tyint,Tapp (Tvar "get_expiration",[Tvar "s";Tvar "k"]),Tnow "s"));
-      mk_add "mile" "id";
-      mk_add "owner" "addr";
-      mk_rm_asset "mile" Tystring;
-      mk_rm_partition_field "owner" Tyaddr "miles" "mile" Tystring;
-      mk_test_consume;
-    ];
-  }
+  let records      = get_records model.decls |> List.map map_decl |> wdl in
+  let init_records = records |> unloc_decl |> List.map mk_default_init |> loc_decl in
+  let records      = zip records init_records |> deloc in
+  let loct : loc_mlw_tree = {
+    name = map_lident model.name;
+    decls =  records;
+  } in unloc_tree loct
