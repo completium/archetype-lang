@@ -350,6 +350,10 @@ let rec instr_to_expr model (instr : A.instruction) : W.expr * W.type_ =
     in
     W.Ecall (i_id, args), t
 
+  | A.Ifor (id, col, body) ->
+    let expr_body, type_body = instr_to_expr model body in
+    expr_body, W.Tstorage
+
   | _ ->
     Format.eprintf "instr: %a@\n" A.pp_instruction instr;
     W.Evar "s", W.Tstorage
@@ -380,7 +384,7 @@ let mk_function_struct model (f : M.function__) =
       let args = [(itargs, type_arg); ([storage_id], W.Tstorage) ] in
       let ret  = W.Ttuple [W.Toperations; W.Tstorage] in
       let body =
-        if (String.equal (unloc fs.name) "add") || (String.equal (unloc fs.name) "clear_expired")
+        if (String.equal (unloc fs.name) "add") (* || (String.equal (unloc fs.name) "clear_expired")*)
         then compute_body_entry model fs
         else Etuple [Earray []; W.Evar storage_id] in
       W.Entry, args, ret, body
