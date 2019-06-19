@@ -429,11 +429,11 @@ and pp_fun fmt (s : fun_struct) =
 (* -------------------------------------------------------------------------- *)
 
 let pp_mutable fmt m =
-  let m_str = if m then "mutable" else "" in
+  let m_str = if m then "mutable " else "" in
   pp_str fmt m_str
 
 let pp_field fmt (f : field) =
-  Format.fprintf fmt "%a %a : %a"
+  Format.fprintf fmt "%a%a : %a"
     pp_mutable f.mutable_
     pp_str f.name
     pp_type f.typ

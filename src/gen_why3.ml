@@ -29,13 +29,16 @@ let mk_default_init = function
     }
   | _ -> assert false
 
-let mk_asset_fields asset = [
-  { name = asset^"_keys"   ; typ = Tycoll asset ; init = Tvar "empty"; mutable_ = true; };
-  { name = asset^"_assets" ; typ = Tymap asset  ;
-    init = Tvar ("const (mk_default_"^asset^" ())"); mutable_ = true; };
+let mk_diff_set_fields asset = [
   { name = "added_"^asset  ; typ = Tycoll asset ; init = Tvar "empty"; mutable_ = true; };
   { name = "removed_"^asset; typ = Tycoll asset ; init = Tvar "empty"; mutable_ = true; }
 ]
+
+let mk_asset_fields asset = [
+  { name = asset^"_keys"   ; typ = Tycoll asset ; init = Tvar "empty"; mutable_ = true; };
+  { name = asset^"_assets" ; typ = Tymap asset  ;
+    init = Tvar ("const (mk_default_"^asset^" ())"); mutable_ = true; } ] @
+  (mk_diff_set_fields asset)
 
 let mk_const_fields with_trace = [
   { name = "ops_"   ; typ = Tyrecord "transfers" ; init = Tvar "Nil"; mutable_ = true; };
@@ -457,7 +460,9 @@ let map_lident (i : M.lident) : loc_ident = {
 
 let type_to_init (typ : loc_typ) : loc_term =
   mk_loc typ.loc (match typ.obj with
-      | Typartition i -> Tvar (with_dummy_loc "empty")
+      | Typartition i -> Tvar (mk_loc typ.loc "empty")
+      | Tycoll i      -> Tvar (mk_loc typ.loc "empty")
+      | Tymap i       -> Tvar (mk_loc typ.loc ("const (mk_default_"^i.obj^" ())"))
       | _             -> Tint 0)
 
 let map_type (typ : Ast.ptyp) : loc_typ =
@@ -527,7 +532,12 @@ let map_record_values (values : M.record_item list) =
     ) values
 
 let map_storage_items = List.fold_left (fun acc (items : M.storage_item) ->
-    List.fold_left (fun acc (item : M.item_field) ->
+    let extra_fields =
+      if List.length items.fields > 1 (* this is the way to detect assets ... *)
+      then (mk_diff_set_fields items.name.pldesc) |> loc_field |> deloc
+      else []
+    in
+    (List.fold_left (fun acc (item : M.item_field) ->
         let typ_ = map_basic_type item.typ in
         let init_value = type_to_init typ_ in
         acc @[{
@@ -536,7 +546,7 @@ let map_storage_items = List.fold_left (fun acc (items : M.storage_item) ->
           init     = Option.fold map_record_term init_value item.default;
           mutable_ = true;
         }]
-       ) acc items.fields
+       ) acc items.fields) @ extra_fields
   ) []
 
 let map_decl (d : M.decl_node) =

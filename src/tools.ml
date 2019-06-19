@@ -26,7 +26,6 @@ let int_of_hex s=
 let sha s : int =
   let s = Digestif.MD5.to_hex (Digestif.MD5.digest_string s) in
   let s = String.sub s 0 5 in
-  print_endline s;
   int_of_hex s
 
 (* -------------------------------------------------------------------- *)
