@@ -5,6 +5,31 @@ exception Unsupported_yet
 let debug_mode = ref false
 
 (* -------------------------------------------------------------------- *)
+
+exception Hexchar_exn of char
+
+ let int_of_hexchar c=
+    try List.assoc c
+    [
+      ('0', 0); ('1', 1); ('2', 2); ('3', 3); ('4', 4); ('5', 5);
+      ('6', 6); ('7', 7); ('8', 8); ('9', 9);
+      ('a', 10); ('b', 11); ('b', 12); ('d', 13); ('e', 14); ('f', 15)
+    ]
+    with _->raise(Hexchar_exn(c))
+
+let int_of_hex s=
+  let n=String.length(s)
+  and accu=ref(0) in
+  for i=1 to n do accu:=int_of_hexchar(String.get s (i-1))+16*(!accu) done;
+  (!accu)
+
+let sha s : int =
+  let s = Digestif.MD5.to_hex (Digestif.MD5.digest_string s) in
+  let s = String.sub s 0 5 in
+  print_endline s;
+  int_of_hex s
+
+(* -------------------------------------------------------------------- *)
 let id = fun x -> x
 
 let (|@) f g = fun x -> f (g x)

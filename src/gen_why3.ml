@@ -503,7 +503,15 @@ let map_basic_type (typ : M.item_field_type) : loc_typ =
     | _ -> assert false in
   with_dummy_loc (rec_map_basic_type typ)
 
-let map_term (t : Ast.pterm) : loc_term = with_dummy_loc Tnottranslated
+let map_bval (b : Ast.bval) : loc_term =
+  match b.node with
+  | Ast.BVaddress v -> mk_loc b.loc (Tint (sha v))
+  | _ -> with_dummy_loc Tnottranslated
+
+let map_term (t : Ast.pterm) : loc_term =
+  match t.node with
+  | Ast.Plit b -> map_bval b
+  | _ -> with_dummy_loc Tnottranslated
 
 let map_record_term _ = map_term
 
