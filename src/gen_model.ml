@@ -260,4 +260,4 @@ let to_model (ast : A.model) : M.model =
     |> process_storage
     |> process_functions
   in
-  M.mk_model name ast ~decls:decls
+  M.mk_model name ~decls:decls

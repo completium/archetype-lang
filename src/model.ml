@@ -175,7 +175,6 @@ type decl_node =
 
 type model = {
   name: lident;
-  ast: A.model;
   decls: decl_node list;
 }
 [@@deriving show {with_path = false}]
@@ -240,8 +239,8 @@ let mk_function ?verif node : function__ =
 let mk_signature ?(args = []) ?ret name : signature =
   { name; args; ret}
 
-let mk_model ?(decls = []) name ast : model =
-  { name; ast; decls}
+let mk_model ?(decls = []) name : model =
+  { name; decls}
 
 
 (* -------------------------------------------------------------------- *)
@@ -252,6 +251,7 @@ module Utils : sig
   val get_record_field     : model -> (A.lident * A.lident ) -> record_item
   val get_record_key       : model -> A.lident -> (A.lident * A.vtyp)
   val is_storage_attribute : model -> A.lident -> bool
+  val get_named_field_list : model -> lident -> 'a list -> (lident * 'a) list
 
 end = struct
 
@@ -318,4 +318,15 @@ end = struct
            accu || String.equal (Location.unloc id) (Location.unloc x.name)) false items)
     | None -> false
 
+  let get_field_list model record_name =
+    let record = get_record model record_name in
+    List.map (fun (x : record_item) -> x.name) record.values
+
+  let get_named_field_list ast asset_name list =
+    let field_list = get_field_list ast asset_name in
+    (* List.iter (fun x -> Format.eprintf "f1: %s@." (unloc x)) field_list;
+       List.iter (fun x -> Format.eprintf "f2: %a@." pp_pterm x) list;
+       Format.eprintf "lf1: %d@." (List.length field_list);
+       Format.eprintf "lf2: %d@." (List.length list); *)
+    List.map2 (fun x y -> x, y) field_list list
 end

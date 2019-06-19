@@ -250,7 +250,7 @@ let rec instr_to_expr model (instr : A.instruction) : W.expr * W.type_ =
         | A.Tasset v -> v
         | _ -> assert false
       in
-      let field_list = A.Utils.get_named_field_list model.ast asset_name l in
+      let field_list = M.Utils.get_named_field_list model asset_name l in
 
       let field_list = List.map (fun (a, b) -> (unloc a, (fst |@ expr_to_expr model) b) ) field_list in
 
