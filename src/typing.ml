@@ -112,7 +112,7 @@ let eqtypes =
     M.VTduration       ;
     M.VTstring         ;
     M.VTaddress        ;
-    M.VTrole           ; 
+    M.VTrole           ;
     M.VTcurrency Tez   ;
     M.VTcurrency Mutez ;
     M.VTkey            ]
@@ -142,7 +142,7 @@ let opsigs =
     let ops  = [PT.Equal; PT.Nequal] in
     let sigs = List.map (fun ty -> ([ty; ty], M.VTbool)) eqtypes in
     List.mappdt (fun op sig_ -> (`Cmp op, sig_)) ops sigs in
-      
+
   let cmpsigs : (PT.operator * (M.vtyp list * M.vtyp)) list =
     let ops  = [PT.Gt; PT.Ge; PT.Lt; PT.Le] in
     let sigs = List.map (fun ty -> ([ty; ty], M.VTbool)) cmptypes in
@@ -150,14 +150,14 @@ let opsigs =
 
   let grptypes : (PT.operator * (M.vtyp list * M.vtyp)) list =
     let ops  =
-        (List.map (fun x -> `Arith x) [PT.Plus ; PT.Minus])
+      (List.map (fun x -> `Arith x) [PT.Plus ; PT.Minus])
       @ (List.map (fun x -> `Unary x) [PT.Uplus; PT.Uminus]) in
     let sigs = List.map (fun ty -> ([ty; ty], ty)) grptypes in
     List.mappdt (fun op sig_ -> (op, sig_)) ops sigs in
 
   let rgtypes : (PT.operator * (M.vtyp list * M.vtyp)) list =
     let ops  =
-        (List.map (fun x -> `Arith x) [PT.Plus; PT.Minus; PT.Mult; PT.Div])
+      (List.map (fun x -> `Arith x) [PT.Plus; PT.Minus; PT.Mult; PT.Div])
       @ (List.map (fun x -> `Unary x) [PT.Uplus; PT.Uminus]) in
     let sigs = List.map (fun ty -> ([ty; ty], ty)) rgtypes in
     List.mappdt (fun op sig_ -> (op, sig_)) ops sigs in
@@ -169,7 +169,7 @@ let opsigs =
     let unas = List.map (fun x -> `Unary   x) [PT.Not] in
     let bins = List.map (fun x -> `Logical x) [PT.And; PT.Or; PT.Imply; PT.Equiv] in
 
-      List.map (fun op -> (op, ([M.VTbool], M.VTbool))) unas
+    List.map (fun op -> (op, ([M.VTbool], M.VTbool))) unas
     @ List.map (fun op -> (op, ([M.VTbool; M.VTbool], M.VTbool))) bins in
 
   let others : (PT.operator * (M.vtyp list * M.vtyp)) list =
@@ -197,7 +197,7 @@ let globals =
 *)
 
 type method_ =
-    string
+  string
   * M.const
   * [`Pure | `Effect]
   * [`Total | `Partial]
@@ -233,7 +233,7 @@ let methods : method_ list = [
   ("removed"     , M.Cremoved     , `Pure  , `Total  , ([             ], Some (`SubColl)));
   ("iterated"    , M.Citerated    , `Pure  , `Total  , ([             ], Some (`SubColl)));
   ("toiterate"   , M.Ctoiterate   , `Pure  , `Total  , ([             ], Some (`SubColl)));
-]  
+]
 
 (* -------------------------------------------------------------------- *)
 type assetdecl = {
@@ -416,8 +416,8 @@ end = struct
 
   let open_ (env : t) =
     { env with
-        env_locals = Sid.empty;
-        env_scopes = env.env_locals :: env.env_scopes; }
+      env_locals = Sid.empty;
+      env_scopes = env.env_locals :: env.env_scopes; }
 
   let close (env : t) =
     let lc, sc =
@@ -484,10 +484,10 @@ end = struct
     let proj = function
       | `Global x -> Some x
       | `Asset  a ->
-          Some {
-            vr_name = a.as_name;
-            vr_type = M.Tcontainer (M.Tasset a.as_name, M.Collection);
-            vr_kind = `Constant; }
+        Some {
+          vr_name = a.as_name;
+          vr_type = M.Tcontainer (M.Tasset a.as_name, M.Collection);
+          vr_kind = `Constant; }
       | _ -> None
 
     let lookup (env : t) (name : ident) =
@@ -531,10 +531,10 @@ end = struct
     let byfield (env : t) (fname : ident) =
       Option.bind
         (function
-           | `Field nm ->
-               let decl = get env nm in
-               Some (decl, List.assoc fname decl.as_fields)
-           | _ -> None)
+          | `Field nm ->
+            let decl = get env nm in
+            Some (decl, List.assoc fname decl.as_fields)
+          | _ -> None)
         (Mid.find_opt fname env.env_bindings)
 
     let push (env : t) ({ as_name = nm } as decl : assetdecl) : t =
@@ -1070,10 +1070,10 @@ and for_expr (env : env) ?(ety : M.type_ option) (tope : PT.expr) : M.pterm =
 and for_xarg (env : env) (ety : argtype) (tope : PT.expr) : M.pterm_arg =
   match ety with
   | `Type ety ->
-      M.AExpr (for_expr env ~ety tope)
+    M.AExpr (for_expr env ~ety tope)
 
-  | `Effect name ->
-      M.AEffect (for_effect env name tope)
+  | `Effect name -> assert false
+(* M.AEffect (for_effect env name tope) *)
 
 (* -------------------------------------------------------------------- *)
 and for_effect (env : env) (_asset : ident) (tope : PT.expr) : effect =
@@ -1129,10 +1129,10 @@ let for_arg (env : env) ((x, ty, _) : PT.lident_typ) =
 
   match b, ty with
   | true, Some ty ->
-      (env, Some (x, ty))
+    (env, Some (x, ty))
 
   | _, _ ->
-      (env, None)
+    (env, None)
 
 (* -------------------------------------------------------------------- *)
 let for_args (env : env) (xs : PT.args) =
@@ -1220,8 +1220,8 @@ let rec for_instruction (env : env) (i : PT.expr) : M.instruction =
 
   let bailout () = raise E.Failure in
 
-  let mki ?label node : M.instruction =
-    M.{ label; node; type_ = None; loc = loc i; } in
+  let mki ?label ?(subvars=[]) node : M.instruction =
+    M.{ node; label; subvars; loc = loc i; } in
 
   let mkseq i1 i2 =
     let asblock = function M.{ node = Iseq is } -> is | _ as i -> [i] in
@@ -1280,44 +1280,44 @@ let rec for_instruction (env : env) (i : PT.expr) : M.instruction =
 let for_verification_item (env : env) (v : PT.verification_item) =
   match unloc v with
   | PT.Vpredicate (x, args, f) ->
-      let env, (args, f) =
-        Env.inscope env (fun env ->
+    let env, (args, f) =
+      Env.inscope env (fun env ->
           let env, args = for_args env args in
           let args = List.pmap id args in
           let f = for_formula env f in
           (env, (args, f)))
-      in env, `Predicate (x, args, f)
+    in env, `Predicate (x, args, f)
 
   | PT.Vdefinition (x, ty, y, f) ->
-      let env, (arg, f) =
-        Env.inscope env (fun env ->
+    let env, (arg, f) =
+      Env.inscope env (fun env ->
           let env, arg = for_arg env (y, ty, None) in
           let f = for_formula env f in
           (env, (arg, f)))
-      in env, `Definition (x, arg, f)
+    in env, `Definition (x, arg, f)
 
   | PT.Vaxiom (x, f) ->
-      let f = for_formula env f in
-      (env, `Axiom (x, f))
+    let f = for_formula env f in
+    (env, `Axiom (x, f))
 
   | PT.Vtheorem (x, f) ->
-      let f = for_formula env f in
-      (env, `Theorem (x, f))
+    let f = for_formula env f in
+    (env, `Theorem (x, f))
 
   | PT.Vvariable (x, ty, e) ->
-      let ty = for_type env ty in
-      let e  = Option.map (for_expr env ?ety:ty) e in
-      (env, `Variable (x, e))
+    let ty = for_type env ty in
+    let e  = Option.map (for_expr env ?ety:ty) e in
+    (env, `Variable (x, e))
 
   | PT.Vassert _ ->
-      assert false
+    assert false
 
   | PT.Veffect i ->
-      let i = for_instruction env i in
-      (env, `Effect i)
+    let i = for_instruction env i in
+    (env, `Effect i)
 
   | PT.Vspecification specs ->
-      assert false
+    assert false
 
 (* -------------------------------------------------------------------- *)
 let for_verification (env : env) (v : PT.verification) =
@@ -1482,19 +1482,19 @@ type action_properties = {
     assert false
 
   | Dextension (_x, _) ->
-      assert false
+    assert false
 
   | Dnamespace (_x, _decls) ->
-      assert false
+    assert false
 
   | Dfunction _fun ->
-      assert false
+    assert false
 
   | Dverification v ->
-      assert false
+    assert false
 
   | Dinvalid ->
-      assert false
+    assert false
 
 (* -------------------------------------------------------------------- *)
 type state = ((PT.lident * PT.enum_option list) list)
@@ -1565,7 +1565,7 @@ let for_declarations (env : env) (decls : (PT.declaration list) loced) : M.model
       List.xfilter (fun decl ->
           match unloc decl with
           | PT.Denum (EKstate, values, _exts_) ->
-             `Left (mkloc (loc decl) values)
+            `Left (mkloc (loc decl) values)
           | x ->
             `Right (mkloc (loc decl) x)
         ) decls in
@@ -1573,7 +1573,7 @@ let for_declarations (env : env) (decls : (PT.declaration list) loced) : M.model
     let _decl, env =
       match states with
       | [] ->
-          (None, env)
+        (None, env)
 
       | _ -> begin
           if List.length states > 1 then
@@ -1587,8 +1587,8 @@ let for_declarations (env : env) (decls : (PT.declaration list) loced) : M.model
 
             match List.pmap for1 states with
             | (env, (init, ctors)) :: _ ->
-                let decl = { sd_ctors = ctors; sd_init = init; } in
-                (Some decl, Env.State.push env decl)
+              let decl = { sd_ctors = ctors; sd_init = init; } in
+              (Some decl, Env.State.push env decl)
             | _ ->
               (None, env)
           in env

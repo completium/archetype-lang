@@ -11,7 +11,7 @@ let type_bool     : Model.type_ = vtbool
 let type_currency : Model.type_ = vtcurrency Tez
 let type_address  : Model.type_ = vtaddress
 
-let unit = mk_sp Ibreak
+let unit = mk_instr Ibreak
 
 (* let mk_struct_with_loc node typ loc = let m = mk_struct_poly node typ in {m  with loc = loc; } *)
 
@@ -19,7 +19,7 @@ let fail str : instruction =
   let lit = mk_sp (BVstring str) ~type_:type_string in
   let arg = mk_sp (Plit lit) ~type_:type_string in
   (* let app = mk_struct_poly (Papp (f, [arg])) type_unit in *)
-  mk_sp (Icall (None, Cconst Cfail, [arg]))
+  mk_instr (Icall (None, Cconst Cfail, [arg]))
 
 (* mk_struct_poly (Plit (dumloc (BVstring str))) *)
 
@@ -50,7 +50,7 @@ let replace_instruction model : model =
         match instr.node with
         | Irequire (b, x) ->
           let m = mk_sp (Pnot x) ~type_:type_bool in
-          mk_sp (Iif ((if b then m else x), fail "required", unit)) ?loc:(Some l)
+          mk_instr (Iif ((if b then m else x), fail "required", unit)) ?loc:(Some l)
         | _ -> map_instr f instr
       ) in
     map_instr f instr
@@ -82,7 +82,7 @@ let process_action (model : model) : model =
             mk_sp (Plogical (Or, process_rexpr l, process_rexpr r)) ~type_:type_bool
           | Raddress a -> raise TODO (* TODO *) in
         let require : pterm = mk_sp (Pnot (process_rexpr cb)) ~type_:type_bool in
-        mk_sp (Iif (require, fail "not_authorized_fun", body)) in
+        mk_instr (Iif (require, fail "not_authorized_fun", body)) in
       begin
         let body = Option.get tr.effect in
         match tr.calledby with
@@ -124,22 +124,22 @@ let process_action (model : model) : model =
                        (* let arg : pterm = mk_sp (Precord [q; aid]) in *)
                        let args : pterm list = [] in (*TODO *)
 
-                       mk_sp (Icall (Some asset, Cconst Cupdate, args))
+                       mk_instr (Icall (Some asset, Cconst Cupdate, args))
                      )
                    | _ ->
                      let a : pterm = mk_sp (Pvar id) ~type_:type_bool ~loc:(Location.loc id) in
-                     mk_sp (Iassign (ValueAssign, state, a)) in
+                     mk_instr (Iassign (ValueAssign, state, a)) in
                  let code : instruction =
                    match effect with
-                   | Some e -> mk_sp (Iseq [tre; e])
+                   | Some e -> mk_instr (Iseq [tre; e])
                    | None -> tre in
 
                  match cond with
-                 | Some c -> mk_sp (Iif (c, code, acc))
+                 | Some c -> mk_instr (Iif (c, code, acc))
                  | None -> code
                ) tr.trs body)
           in
-          let body : instruction = mk_sp (Iseq []) in
+          let body : instruction = mk_instr (Iseq []) in
           let code : instruction  = build_code body in
           match transition.from.node with
           | Sany -> Some code
@@ -157,7 +157,7 @@ let process_action (model : model) : model =
               let fail_instr : instruction = fail "not_valid_state" in
 
               let w = mk_sp (Pvar state) in
-              Some (mk_sp (Imatchwith (w, List.map (fun x -> (x, code)) list_patterns @ [pattern, fail_instr])))
+              Some (mk_instr (Imatchwith (w, List.map (fun x -> (x, code)) list_patterns @ [pattern, fail_instr])))
 
             end
         in
@@ -176,7 +176,7 @@ let process_action (model : model) : model =
           | Some label -> "require " ^ (unloc label) ^ " failed"
           | _ -> "require failed" in
         let cond : pterm = mk_sp (Pnot x.term) ~type_:(Tbuiltin VTbool) ?loc:(Some x.loc) in
-        mk_sp (Iif (cond, fail msg, body)) ?loc:(Some x.loc)
+        mk_instr (Iif (cond, fail msg, body)) ?loc:(Some x.loc)
       in
       match tr.require with
       | None -> tr
@@ -193,7 +193,7 @@ let process_action (model : model) : model =
       let rhs : pterm = mk_sp (Plit basic_value) ~type_:type_currency in
       let eq : pterm = mk_sp (Pcomp (Equal, lhs, rhs)) ~type_:type_bool in
       let cond : pterm = mk_sp (Pnot eq) ~type_:type_bool in
-      let at body : instruction = mk_sp (Iif (cond, fail "not_accept_transfer", body)) in
+      let at body : instruction = mk_instr (Iif (cond, fail "not_accept_transfer", body)) in
       if (not tr.accept_transfer)
       then
         let body = Option.get tr.effect in

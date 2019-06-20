@@ -1,5 +1,6 @@
 type target_lang =
   | Liquidity
+  | Ligo
   | Whyml
   | Markdown
   | None

@@ -124,8 +124,9 @@ let close dispose channel =
 let main () =
   let f = function
     | "liquidity" -> Options.target := Liquidity
-    | "whyml" -> Options.target := Whyml
-    | "markdown" -> Options.target := Markdown
+    | "ligo"      -> Options.target := Ligo
+    | "whyml"     -> Options.target := Whyml
+    | "markdown"  -> Options.target := Markdown
     |  s ->
       Format.eprintf
         "Unknown target %s (--list-target to see available target)@." s;
@@ -134,7 +135,7 @@ let main () =
   let arg_list = Arg.align [
       "-t", Arg.String f, "<lang> Transcode to <lang> language";
       "--target", Arg.String f, " Same as -t";
-      "--list-target", Arg.Unit (fun _ -> Format.printf "target available:@\n  liquidity@\n  whyml@\n  markdown@\n"; exit 0), " List available target languages";
+      "--list-target", Arg.Unit (fun _ -> Format.printf "target available:@\n  ligo@\n  whyml@\n  markdown@\n"; exit 0), " List available target languages";
       "--json", Arg.Set Options.opt_json, " Output Archetype in JSON representation";
       "--storage-policy", Arg.String (fun s -> match s with
           | "flat" -> Options.storage_policy := Flat
