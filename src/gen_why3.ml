@@ -508,30 +508,22 @@ let map_basic_type (typ : M.item_field_type) : loc_typ =
     | _ -> assert false in
   with_dummy_loc (rec_map_basic_type typ)
 
-let map_bval (b : 'typ Ast.bval_gen) : loc_term = mk_loc b.loc (
+let map_bval (b : ('t, Ast.bval_node) Ast.struct_poly) : loc_term = mk_loc b.loc (
     match b.node with
     | Ast.BVaddress v -> Tint (sha v)
     | Ast.BVint i     -> Tint (Big_int.int_of_big_int i)
     | _ -> Tnottranslated
   )
 
-let rec map_pterm (t : Ast.pterm) : loc_term = mk_loc t.loc (
+let rec map_term (t : (Ast.lident, 't) Ast.term_gen) : loc_term = mk_loc t.loc (
     match t.node with
     | Ast.Plit b -> map_bval b |> Mlwtree.deloc
     | Ast.Pvar i -> Tvar (map_lident i)
-    | Ast.Pcomp (Ast.Gt,t1,t2) -> Tgt (with_dummy_loc Tyint,map_pterm t1,map_pterm t2)
+    | Ast.Pcomp (Ast.Gt,t1,t2) -> Tgt (with_dummy_loc Tyint,map_term t1,map_term t2)
     | _ -> Tnottranslated
   )
 
-let rec map_lterm (t : Ast.lterm) : loc_term = mk_loc t.loc (
-    match t.node with
-    | Ast.Plit b -> map_bval b |> Mlwtree.deloc
-    | Ast.Pvar i -> Tvar (map_lident i)
-    | Ast.Pcomp (Ast.Gt,t1,t2) -> Tgt (with_dummy_loc Tyint,map_lterm t1,map_lterm t2)
-    | _ -> Tnottranslated
-  )
-
-let map_record_term _ = map_pterm
+let map_record_term _ = map_term
 
 let map_record_values (values : M.record_item list) =
   List.map (fun (value : M.record_item) ->
@@ -564,7 +556,7 @@ let map_storage_items = List.fold_left (fun acc (items : M.storage_item) ->
 
 let map_label_term (lt : (M.lident,Ast.lterm) Ast.label_term) : (loc_term,loc_ident) abstract_formula = {
   id = Option.fold (fun _ x -> map_lident x)  (with_dummy_loc "") lt.label;
-  form = map_lterm lt.term;
+  form = map_term lt.term;
 }
 
 let map_decl (d : M.decl_node) =
