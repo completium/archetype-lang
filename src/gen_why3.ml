@@ -52,7 +52,7 @@ let mk_const_fields with_trace = [
       { name = "tr_"; typ = Tyrecord "Tr.log" ; init = Tvar "Nil"; mutable_ = true; };
       { name = "ename_"; typ = Tyoption (Tyenum "entry"); init = Tnone; mutable_ = true;}
     ]
-    else []
+  else []
 
 let mk_trace_clone = Dclone (["archetype";"Trace"], "Tr",
                              [Ctype ("asset","asset");
@@ -87,9 +87,9 @@ let mk_get_asset asset ktyp = Dfun {
       { id   = "get_"^asset^"_post";
         form = Tmem (Tvar "k",Tdoti ("s",asset^"_keys"));
       }
-      ];
+    ];
     body = Tif (Tnot (Tmem (Tvar "k",Tdoti ("s",asset^"_keys"))), Traise Enotfound,
-               Some (Tvar "k"))
+                Some (Tvar "k"))
   }
 
 let rec get_asset_key_typ key (fields : field list) =
@@ -104,7 +104,7 @@ let mk_update_fields n key =
         acc
       else
         acc@[f.name,Tapp (Tvar f.name,[Tvar ("new_"^n)])]
-  ) []
+    ) []
 
 let mk_update_ensures n key fields =
   snd (List.fold_left (fun (i,acc) (f:field) ->
@@ -120,24 +120,24 @@ let mk_update_ensures n key fields =
 
 let mk_update_asset key = function
   | Drecord (n,fields) ->  Dfun {
-    name = "update_"^n;
-    logic = NoMod;
-    args = ["s",Tystorage; "k",get_asset_key_typ key fields; "new_"^n, Tyasset n];
-    returns = Tyunit;
-    raises = [ Enotfound ];
-    variants = [];
-    requires = [];
-    ensures = mk_update_ensures n key fields;
-    body = Tif (Tnot (Tmem (Tvar "k",Tdoti ("s",n^"_keys"))), Traise Enotfound,
-                Some (
-                  Tletin (false,"updated_"^n,None,
-                          Trecord (Some (Tget (Tdoti ("s",n^"_assets"),Tvar "k")),
-                                   mk_update_fields n key fields),
-                          Tassign (Tdoti ("s",n^"_assets"),Tset (Tdoti ("s",n^"_assets"),
-                                                                 Tvar "k",Tvar ("updated_"^n)))
-                         )
-                ))
-  }
+      name = "update_"^n;
+      logic = NoMod;
+      args = ["s",Tystorage; "k",get_asset_key_typ key fields; "new_"^n, Tyasset n];
+      returns = Tyunit;
+      raises = [ Enotfound ];
+      variants = [];
+      requires = [];
+      ensures = mk_update_ensures n key fields;
+      body = Tif (Tnot (Tmem (Tvar "k",Tdoti ("s",n^"_keys"))), Traise Enotfound,
+                  Some (
+                    Tletin (false,"updated_"^n,None,
+                            Trecord (Some (Tget (Tdoti ("s",n^"_assets"),Tvar "k")),
+                                     mk_update_fields n key fields),
+                            Tassign (Tdoti ("s",n^"_assets"),Tset (Tdoti ("s",n^"_assets"),
+                                                                   Tvar "k",Tvar ("updated_"^n)))
+                           )
+                  ))
+    }
   | _ -> assert false
 
 (* Filter template -----------------------------------------------------------*)
@@ -176,9 +176,9 @@ let mk_filter n typ test : decl = Dfun {
         body = Tmlist (Tnil,"l","k","tl",
                        Tif(test,Tcons (Tvar "k",Tapp (Tvar ("rec_filter"),[Tvar "tl"])),
                            Some (Tapp (Tvar ("rec_filter"),[Tvar "tl"])))
-        );
-        }
-        ,Tapp (Tvar "mkacol",[Tapp (Tvar ("rec_filter"),[Tdoti("c","content")])]));
+                      );
+      }
+                   ,Tapp (Tvar "mkacol",[Tapp (Tvar ("rec_filter"),[Tdoti("c","content")])]));
   }
 
 (* API storage templates -----------------------------------------------------*)
@@ -233,17 +233,17 @@ let mk_add asset key : decl = Dfun {
 
     ];
     body     = Tseq [
-      Tif (Tmem (Tdoti ("new_asset",key), Tdoti ("s",asset^"_keys")),
-      Traise Ekeyexist, (* then *)
-      Some (Tseq [      (* else *)
-      Tassign (Tdoti ("s",asset^"_assets"),
-               Tset (Tdoti ("s",asset^"_assets"),Tdoti("new_asset",key),Tvar "new_asset"));
-      Tassign (Tdoti ("s",asset^"_keys"),
-               Tadd (Tdoti("new_asset",key),Tdoti ("s",asset^"_keys")));
-      Tassign (Tdoti ("s","added_"^asset),
-                Tadd (Tdoti("new_asset",key),Tdoti ("s","added_"^asset)))
-      ]
-            ))
+        Tif (Tmem (Tdoti ("new_asset",key), Tdoti ("s",asset^"_keys")),
+             Traise Ekeyexist, (* then *)
+             Some (Tseq [      (* else *)
+                 Tassign (Tdoti ("s",asset^"_assets"),
+                          Tset (Tdoti ("s",asset^"_assets"),Tdoti("new_asset",key),Tvar "new_asset"));
+                 Tassign (Tdoti ("s",asset^"_keys"),
+                          Tadd (Tdoti("new_asset",key),Tdoti ("s",asset^"_keys")));
+                 Tassign (Tdoti ("s","added_"^asset),
+                          Tadd (Tdoti("new_asset",key),Tdoti ("s","added_"^asset)))
+               ]
+               ))
       ];
   }
 
@@ -272,14 +272,14 @@ let mk_rm_asset n ktyp : decl = Dfun {
                     Tassign (Tdoti("s",n^"_keys"),Tremove (Tvar "k",Tdoti("s",n^"_keys")));
                     Tassign (Tdoti("s","removed_"^n),Tadd (Tvar "k",Tdoti("s","removed_"^n)))
                   ]));
-    }
+  }
 
 (* n      : asset name
    ktyp   : asset key type
    f      : partition field name
    rmn    : removed asset name
    rmktyp : removed asset key type
- *)
+*)
 let mk_rm_partition_field n ktyp f rmn rmktyp : decl = Dfun {
     name     = "remove_"^n^"_"^f;
     logic    = NoMod;
@@ -302,16 +302,16 @@ let mk_rm_partition_field n ktyp f rmn rmktyp : decl = Dfun {
     body     = Tif (Tnot (Tmem (Tvar "k",Tdoti ("s",n^"_keys"))), Traise Enotfound,
                     Some (
                       Tletin (false,n^"_asset",None,Tget (Tdoti ("s",n^"_assets"),Tvar "k"),
-                      Tletin (false,n^"_"^f,None,Tapp (Tvar f,[Tvar (n^"_asset")]),
-                      Tletin (false,"new_"^n^"_"^f,None,Tremove (Tvar (rmn^"_k"),Tvar (n^"_"^f)),
-                      Tletin (false,"new_"^n^"_asset",None,
-                              Trecord (Some (Tvar (n^"_asset")),[f,Tvar ("new_"^n^"_"^f)]),
-                      Tseq [
-                        Tassign (Tdoti ("s",n^"_assets"),
-                                 Tset (Tdoti ("s",n^"_assets"),Tvar "k",Tvar ("new_"^n^"_asset")));
-                        Tapp (Tvar ("remove_"^rmn),[Tvar "s";Tvar (rmn^"_k")])
-                      ]
-                    ))))));
+                              Tletin (false,n^"_"^f,None,Tapp (Tvar f,[Tvar (n^"_asset")]),
+                                      Tletin (false,"new_"^n^"_"^f,None,Tremove (Tvar (rmn^"_k"),Tvar (n^"_"^f)),
+                                              Tletin (false,"new_"^n^"_asset",None,
+                                                      Trecord (Some (Tvar (n^"_asset")),[f,Tvar ("new_"^n^"_"^f)]),
+                                                      Tseq [
+                                                        Tassign (Tdoti ("s",n^"_assets"),
+                                                                 Tset (Tdoti ("s",n^"_assets"),Tvar "k",Tvar ("new_"^n^"_asset")));
+                                                        Tapp (Tvar ("remove_"^rmn),[Tvar "s";Tvar (rmn^"_k")])
+                                                      ]
+                                                     ))))));
   }
 
 
@@ -355,39 +355,39 @@ let mk_test_consume : decl = Dfun {
         Tif (Tnot (Tmem (Tcaller "s", Tlist [Tdoti("s","admin")])),Traise Einvalidcaller, None);
         Tif (Tle (Tyint,Tvar "nbmiles",Tint 0),Traise Einvalidcondition, None);
         Tletin (false,"o",None,Tapp (Tvar "get_owner",[Tvar "s";Tvar "ow"]),
-        Tletin (false,"miles",None,Tapp (Tvar "get_miles",[Tvar "s";Tvar "o"]),
-        Tletin (false,"l",None,Tapp (Tvar "filter_consume",[Tvar "s";Tvar "miles"]),
-        Tseq [
-        Tif (Tnot (Tle (Tyint, Tvar "nbmiles", Tapp (Tdoti ("Amount","sum"),[Tvar "s";Tvar "l"]))),Traise Einvalidcondition,None);
-        Tletin (true,"remainder",None,Tvar "nbmiles",
-        Tseq [
-          Ttry (
-            Tfor ("i",Tminus (Tyint,Tcard (Tvar "l"),Tint 1),[
-                { id   = "loop_inv1";
-                  form = Tdle (Tyint,Tint 0,Tvar "remainder",Tapp(Tdoti ("Amount","sum"),[Tvar "s";Ttail (Tvar "i",Tvar "l")]))
-                }
-              ],
-             Tletin (false,"m",None,Tnth (Tvar "i",Tvar "l"),
-             Tif (Tgt (Tyint,Tapp (Tvar "get_amount",[Tvar "s";Tvar "m"]),Tvar "remainder"),
-                  Tletin (false,"new_mile",None,Trecord (Some (Tget (Tdoti ("s","mile_assets"),Tvar "m")),["amount",Tminus (Tyint,Tapp (Tvar "get_amount",[Tvar "s";Tvar "m"]),Tvar "remainder")]),
-                          Tseq [Tapp (Tvar "update_mile",[Tvar "s";Tvar "m";Tvar "new_mile"]);
-                                Tassign (Tvar "remainder",Tint 0);
-                                Traise Ebreak]),
-                  Some (Tif (Teq (Tyint,Tapp (Tvar "get_amount",[Tvar "s";Tvar "m"]),Tvar "remainder"),
-                             Tseq [Tassign (Tvar "remainder",Tint 0);
-                                   Tapp (Tvar "remove_owner_miles",[Tvar "s";Tvar "o";Tvar "m"]);
-                                   Traise Ebreak],
-                             Some (Tseq [
-                                 Tassign (Tvar "remainder",Tminus (Tyint,Tvar "remainder",Tapp (Tvar "get_amount",[Tvar "s";Tvar "m"])));
-                                 Tapp (Tvar "remove_owner_miles",[Tvar "s";Tvar "o";Tvar "m"])
-                               ]))))
-             )
-            ),
-            Ebreak,Tassert (Teq (Tyint,Tvar "remainder",Tint 0)));
-          Tassert (Teq (Tyint,Tvar "remainder",Tint 0));
-          Tvar "no_transfer"])
-          ])))
-        ]
+                Tletin (false,"miles",None,Tapp (Tvar "get_miles",[Tvar "s";Tvar "o"]),
+                        Tletin (false,"l",None,Tapp (Tvar "filter_consume",[Tvar "s";Tvar "miles"]),
+                                Tseq [
+                                  Tif (Tnot (Tle (Tyint, Tvar "nbmiles", Tapp (Tdoti ("Amount","sum"),[Tvar "s";Tvar "l"]))),Traise Einvalidcondition,None);
+                                  Tletin (true,"remainder",None,Tvar "nbmiles",
+                                          Tseq [
+                                            Ttry (
+                                              Tfor ("i",Tminus (Tyint,Tcard (Tvar "l"),Tint 1),[
+                                                  { id   = "loop_inv1";
+                                                    form = Tdle (Tyint,Tint 0,Tvar "remainder",Tapp(Tdoti ("Amount","sum"),[Tvar "s";Ttail (Tvar "i",Tvar "l")]))
+                                                  }
+                                                ],
+                                                    Tletin (false,"m",None,Tnth (Tvar "i",Tvar "l"),
+                                                            Tif (Tgt (Tyint,Tapp (Tvar "get_amount",[Tvar "s";Tvar "m"]),Tvar "remainder"),
+                                                                 Tletin (false,"new_mile",None,Trecord (Some (Tget (Tdoti ("s","mile_assets"),Tvar "m")),["amount",Tminus (Tyint,Tapp (Tvar "get_amount",[Tvar "s";Tvar "m"]),Tvar "remainder")]),
+                                                                         Tseq [Tapp (Tvar "update_mile",[Tvar "s";Tvar "m";Tvar "new_mile"]);
+                                                                               Tassign (Tvar "remainder",Tint 0);
+                                                                               Traise Ebreak]),
+                                                                 Some (Tif (Teq (Tyint,Tapp (Tvar "get_amount",[Tvar "s";Tvar "m"]),Tvar "remainder"),
+                                                                            Tseq [Tassign (Tvar "remainder",Tint 0);
+                                                                                  Tapp (Tvar "remove_owner_miles",[Tvar "s";Tvar "o";Tvar "m"]);
+                                                                                  Traise Ebreak],
+                                                                            Some (Tseq [
+                                                                                Tassign (Tvar "remainder",Tminus (Tyint,Tvar "remainder",Tapp (Tvar "get_amount",[Tvar "s";Tvar "m"])));
+                                                                                Tapp (Tvar "remove_owner_miles",[Tvar "s";Tvar "o";Tvar "m"])
+                                                                              ]))))
+                                                           )
+                                                ),
+                                              Ebreak,Tassert (Teq (Tyint,Tvar "remainder",Tint 0)));
+                                            Tassert (Teq (Tyint,Tvar "remainder",Tint 0));
+                                            Tvar "no_transfer"])
+                                ])))
+      ]
   }
 
 let mk_test_storage : decl = Dstorage {
@@ -467,23 +467,23 @@ let type_to_init (typ : loc_typ) : loc_term =
 
 let map_type (typ : Ast.ptyp) : loc_typ =
   let rec rec_map_type = function
-      | Ast.Tasset i                 -> Tyasset (map_lident i)
-      | Ast.Tenum i                  -> Tyenum (map_lident i)
-      | Ast.Tcontract i              -> Tycontract (map_lident i)
-      | Ast.Tbuiltin VTbool          -> Tybool
-      | Ast.Tbuiltin VTint           -> Tyint
-      | Ast.Tbuiltin VTuint          -> Tyuint
-      | Ast.Tbuiltin VTrational      -> Tyrational
-      | Ast.Tbuiltin VTdate          -> Tydate
-      | Ast.Tbuiltin VTduration      -> Tyduration
-      | Ast.Tbuiltin VTstring        -> Tystring
-      | Ast.Tbuiltin VTaddress       -> Tyaddr
-      | Ast.Tbuiltin VTrole          -> Tyrole
-      | Ast.Tbuiltin (VTcurrency _)  -> Tytez
-      | Ast.Tbuiltin VTkey           -> Tykey
-      | Ast.Tcontainer (Ast.Tasset i,Ast.Partition) -> Typartition (map_lident i)
-      | Ast.Tcontainer _             -> Typartition (with_dummy_loc "NOT TRANSLATED")
-      | Ast.Ttuple l                 -> Tytuple (List.map rec_map_type l)
+    | Ast.Tasset i                 -> Tyasset (map_lident i)
+    | Ast.Tenum i                  -> Tyenum (map_lident i)
+    | Ast.Tcontract i              -> Tycontract (map_lident i)
+    | Ast.Tbuiltin VTbool          -> Tybool
+    | Ast.Tbuiltin VTint           -> Tyint
+    | Ast.Tbuiltin VTuint          -> Tyuint
+    | Ast.Tbuiltin VTrational      -> Tyrational
+    | Ast.Tbuiltin VTdate          -> Tydate
+    | Ast.Tbuiltin VTduration      -> Tyduration
+    | Ast.Tbuiltin VTstring        -> Tystring
+    | Ast.Tbuiltin VTaddress       -> Tyaddr
+    | Ast.Tbuiltin VTrole          -> Tyrole
+    | Ast.Tbuiltin (VTcurrency _)  -> Tytez
+    | Ast.Tbuiltin VTkey           -> Tykey
+    | Ast.Tcontainer (Ast.Tasset i,Ast.Partition) -> Typartition (map_lident i)
+    | Ast.Tcontainer _             -> Typartition (with_dummy_loc "NOT TRANSLATED")
+    | Ast.Ttuple l                 -> Tytuple (List.map rec_map_type l)
   in
   with_dummy_loc (rec_map_type typ)
 
@@ -508,7 +508,7 @@ let map_basic_type (typ : M.item_field_type) : loc_typ =
     | _ -> assert false in
   with_dummy_loc (rec_map_basic_type typ)
 
-let map_bval (b : Ast.bval) : loc_term = mk_loc b.loc (
+let map_bval (b : 'typ Ast.bval_gen) : loc_term = mk_loc b.loc (
     match b.node with
     | Ast.BVaddress v -> Tint (sha v)
     | Ast.BVint i     -> Tint (Big_int.int_of_big_int i)
@@ -551,14 +551,14 @@ let map_storage_items = List.fold_left (fun acc (items : M.storage_item) ->
       else []
     in
     (List.fold_left (fun acc (item : M.item_field) ->
-        let typ_ = map_basic_type item.typ in
-        let init_value = type_to_init typ_ in
-        acc @[{
-          name     = map_lident item.name;
-          typ      = typ_;
-          init     = Option.fold map_record_term init_value item.default;
-          mutable_ = true;
-        }]
+         let typ_ = map_basic_type item.typ in
+         let init_value = type_to_init typ_ in
+         acc @[{
+             name     = map_lident item.name;
+             typ      = typ_;
+             init     = Option.fold map_record_term init_value item.default;
+             mutable_ = true;
+           }]
        ) acc items.fields) @ extra_fields
   ) []
 
