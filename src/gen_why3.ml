@@ -575,6 +575,11 @@ let get_storage = List.filter is_storage
 (* ----------------------------------------------------------------------------*)
 
 let to_whyml (model : M.model) : mlw_tree  =
+  (*let test = loc_term (Tdot (Tvar "titi",Tvar "toto")) in
+  let test2 = loc_term (Tvar "toto") in
+  let test3 = loc_term (Tvar "tata") in
+    let test4 = replace test2 test3 test in
+    Format.printf "%a" pp_term (unloc_term test4);*)
   let uselib       = mk_use |> Mlwtree.loc_decl |> Mlwtree.deloc in
   let records      = get_records model.decls |> List.map map_decl |> wdl in
   let init_records = records |> unloc_decl |> List.map mk_default_init |> loc_decl in

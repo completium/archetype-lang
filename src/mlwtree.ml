@@ -56,7 +56,7 @@ type ('e,'t,'i) abstract_term =
   | Tletfun of ('e,'t,'i) abstract_fun_struct * 'e
   | Tif     of 'e * 'e * 'e option
   | Tapp    of 'e * 'e list
-  | Tfor    of 'i * 'e * ('e,'t,'i) abstract_formula list * 'e
+  | Tfor    of 'i * 'e * ('e,'i) abstract_formula list * 'e
   | Ttry    of 'e * exn * 'e
   | Tvar    of 'i
   (* record *)
@@ -134,21 +134,21 @@ type ('e,'t,'i) abstract_term =
   | Tnottranslated
   (* ... *)
 [@@deriving show {with_path = false}]
-and ('e,'t,'i) abstract_formula = {
+and ('e,'i) abstract_formula = {
   id   : 'i;
-  form : ('e,'t,'i) abstract_term;
+  form : 'e;
 }
 [@@deriving show {with_path = false}]
 and ('e,'t,'i) abstract_fun_struct = {
   name     : 'i;
   logic    : fmod;
-  args     : ('i * 'i abstract_type) list;
-  returns  : 'i abstract_type;
+  args     : ('i * 't) list;
+  returns  : 't;
   raises   :  exn list;
   variants : 'e list;
-  requires : (('e,'t,'i) abstract_formula) list;
-  ensures  : (('e,'t,'i) abstract_formula) list;
-  body     : ('e,'t,'i) abstract_term;
+  requires : (('e,'i) abstract_formula) list;
+  ensures  : (('e,'i) abstract_formula) list;
+  body     : 'e;
 }
 [@@deriving show {with_path = false}]
 
@@ -162,7 +162,7 @@ type ('e,'t,'i) abstract_field = {
 
 type ('e,'t,'i) abstract_storage_struct = {
   fields     : ('e,'t,'i) abstract_field list;
-  invariants : ('e,'t,'i) abstract_formula list;
+  invariants : ('e,'i) abstract_formula list;
 }
 [@@deriving show {with_path = false}]
 
@@ -177,7 +177,7 @@ type ('e,'t,'i) abstract_decl =
   | Denum    of 'i * 'i list
   | Drecord  of 'i * (('e,'t,'i) abstract_field) list
   | Dstorage of ('e,'t,'i) abstract_storage_struct
-  | Daxiom   of 'i * ('e,'t,'i) abstract_formula
+  | Daxiom   of 'i * ('e,'i) abstract_formula
   | Dfun     of ('e,'t,'i) abstract_fun_struct
 [@@deriving show {with_path = false}]
 
@@ -230,11 +230,10 @@ let map_abstract_univ_decl
 
 let rec map_abstract_formula
     (map_e : 'e1 -> 'e2)
-    (map_t : 't1 -> 't2)
     (map_i : 'i1 -> 'i2)
-    (f : ('e1,'t1,'i1) abstract_formula) = {
+    (f : ('e1,'i1) abstract_formula) = {
   id   = map_i f.id;
-  form = map_abstract_term map_e map_t map_i f.form;
+  form = map_e f.form;
 }
 and map_abstract_fun_struct
     (map_e : 'e1 -> 'e2)
@@ -243,13 +242,13 @@ and map_abstract_fun_struct
     (f : ('e1,'t1,'i1) abstract_fun_struct) = {
   name     = map_i f.name;
   logic    = f.logic;
-  args     = List.map (fun (a,t) -> (map_i a, map_abstract_type map_i t)) f.args;
-  returns  = map_abstract_type map_i f.returns;
+  args     = List.map (fun (a,t) -> (map_i a, map_t t)) f.args;
+  returns  = map_t f.returns;
   raises   = f.raises;
   variants = List.map map_e f.variants;
-  requires = List.map (map_abstract_formula map_e map_t map_i) f.requires;
-  ensures  = List.map (map_abstract_formula map_e map_t map_i) f.ensures;
-  body     = map_abstract_term map_e map_t map_i f.body;
+  requires = List.map (map_abstract_formula map_e map_i) f.requires;
+  ensures  = List.map (map_abstract_formula map_e map_i) f.ensures;
+  body     = map_e f.body;
 }
 and map_abstract_term
     (map_e : 'e1 -> 'e2)
@@ -262,7 +261,7 @@ and map_abstract_term
   | Tapp (f,a)         -> Tapp (map_e f, List.map map_e a)
   | Tfor (i,s,l,b)     -> Tfor (map_i i,
                                 map_e s,
-                                List.map (map_abstract_formula map_e map_t map_i) l,
+                                List.map (map_abstract_formula map_e map_i) l,
                                 map_e b)
   | Ttry (b,e,c)       -> Ttry (map_e b, e, map_e c)
   | Tassert e          -> Tassert (map_e e)
@@ -346,7 +345,7 @@ let map_abstract_storage_struct
     (map_i : 'i1 -> 'i2)
     (s : ('e1,'t1,'i1) abstract_storage_struct) = {
   fields     = List.map (map_abstract_field map_e map_t map_i) s.fields;
-  invariants = List.map (map_abstract_formula map_e map_t map_i) s.invariants;
+  invariants = List.map (map_abstract_formula map_e map_i) s.invariants;
 }
 
 let map_abstract_clone_subst (map_i : 'i1 -> 'i2) = function
@@ -364,7 +363,7 @@ let map_abstract_decl
   | Denum (i,l)     -> Denum (map_i i, List.map map_i l)
   | Drecord (i,l)   -> Drecord (map_i i, List.map (map_abstract_field map_e map_t map_i) l)
   | Dstorage s      -> Dstorage (map_abstract_storage_struct map_e map_t map_i s)
-  | Daxiom (i,f)    -> Daxiom (map_i i, map_abstract_formula map_e map_t map_i f)
+  | Daxiom (i,f)    -> Daxiom (map_i i, map_abstract_formula map_e map_i f)
   | Dfun f          -> Dfun (map_abstract_fun_struct map_e map_t map_i f)
 
 let map_abstract_mlw_tree
@@ -393,7 +392,7 @@ type univ_decl         = (typ,ident) abstract_univ_decl
 type term              = (term,typ,ident) abstract_term
 [@@deriving show {with_path = false}]
 
-type formula           = (term,typ,ident) abstract_formula
+type formula           = (term,ident) abstract_formula
 [@@deriving show {with_path = false}]
 
 type field             = (term,typ,ident) abstract_field
@@ -437,7 +436,7 @@ type loc_univ_decl         = ((loc_typ,loc_ident) abstract_univ_decl) with_loc
 type loc_term          = ((loc_term,loc_typ,loc_ident) abstract_term) with_loc
 [@@deriving show {with_path = false}]
 
-type loc_formula       = ((loc_term,loc_typ,loc_ident) abstract_formula) with_loc
+type loc_formula       = ((loc_term,loc_ident) abstract_formula) with_loc
 [@@deriving show {with_path = false}]
 
 type loc_field         = ((loc_term,loc_typ,loc_ident) abstract_field) with_loc
@@ -531,10 +530,9 @@ let rec compare_abstract_type
 
 let compare_abstract_formula
     (cmpe : 'e -> 'e -> bool)
-    (cmpt : 't -> 't -> bool)
     (cmpi : 'i -> 'i -> bool)
-    (f1 : ('e,'t,'i) abstract_formula)
-    (f2 : ('e,'t,'i) abstract_formula) : bool =
+    (f1 : ('e,'i) abstract_formula)
+    (f2 : ('e,'i) abstract_formula) : bool =
   cmpi f1.id f2.id && cmpe f1.form f2.form
 
 let compare_abstract_fun_struct
@@ -546,13 +544,13 @@ let compare_abstract_fun_struct
   cmpi s1.name s2.name &&
   compare_fmod s1.logic s2.logic &&
   List.for_all2 (fun (i1,t1) (i2,t2) ->
-      cmpi i1 i2 && cmpt i2 t2
+      cmpi i1 i2 && cmpt t1 t2
     ) s1.args s2.args &&
   cmpt s1.returns s2.returns &&
   List.for_all2 compare_exn s1.raises s2.raises &&
   List.for_all2 cmpe s1.variants s2.variants &&
-  List.for_all2 (compare_abstract_formula cmpe cmpt cmpi) s1.requires s2.requires &&
-  List.for_all2 (compare_abstract_formula cmpe cmpt cmpi) s1.ensures s2.ensures &&
+  List.for_all2 (compare_abstract_formula cmpe cmpi) s1.requires s2.requires &&
+  List.for_all2 (compare_abstract_formula cmpe cmpi) s1.ensures s2.ensures &&
   cmpe s1.body s2.body
 
 let compare_abstract_term
@@ -572,7 +570,7 @@ let compare_abstract_term
   | Tapp (f1,a1), Tapp (f2,a2) -> cmpe f1 f2 && List.for_all2 cmpe a1 a2
   | Tfor (i1,s1,l1,b1), Tfor (i2,s2,l2,b2) ->
     cmpi i1 i2 && cmpe s1 s2 &&
-    List.for_all2 (compare_abstract_formula cmpe cmpt cmpi) l1 l2 && cmpe b1 b2
+    List.for_all2 (compare_abstract_formula cmpe cmpi) l1 l2 && cmpe b1 b2
   | Ttry (b1,e1,c1), Ttry (b2,e2,c2) -> cmpe b1 b2 && compare_exn e1 e2 && cmpe c1 c2
   | Tassert e1, Tassert e2 -> cmpe e1 e2
   | Tvar i1, Tvar i2 -> cmpi i1 i2
@@ -643,5 +641,22 @@ let compare_abstract_term
   | Tnone, Tnone -> true
   | Tsome e1, Tsome e2 -> cmpe e1 e2
   | Tenum i1, Tenum i2 -> cmpi i1 i2
-  | Tnottranslated, Tnottranslated -> true
-  | _ -> false
+    | Tnottranslated, Tnottranslated -> true
+    | _ -> false
+
+(* replace --------------------------------------------------------------------*)
+
+let cmp_loc_ident (i1 : loc_ident) (i2 : loc_ident) = compare i1.obj i2.obj = 0
+
+let cmp_loc_type (t1 : loc_typ) (t2 : loc_typ) = compare_abstract_type cmp_loc_ident t1.obj t2.obj
+
+let rec cmp_loc_term (e1 : loc_term) (e2 : loc_term) : bool =
+  compare_abstract_term cmp_loc_term cmp_loc_type cmp_loc_ident e1.obj e2.obj
+
+let id x = x
+
+(* replaces t1 by t2 in t3 *)
+let rec replace t1 t2 t3 =
+  if cmp_loc_term t1 t3
+  then t2
+  else mk_loc t3.loc (map_abstract_term (replace t1 t2) id id t3.obj)
