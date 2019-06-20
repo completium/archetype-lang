@@ -338,11 +338,11 @@ let rec instr_to_expr model (instr : A.instruction) : W.expr * W.type_ =
     let i_id, args, t = match id with
       | Cid id ->
         let args =
-          W.Evar "s"::(List.map (fun e -> expr_to_expr model e |> fst) args)
+          W.Evar "s"::(List.map (fun e -> (match e with | A.AExpr e -> expr_to_expr model e | _ -> assert false) |> fst) args)
         in
         W.Evar (unloc id), args, W.Tstorage
       | Cconst Cfail ->
-        let args = (List.map (fun e -> expr_to_expr model e |> fst) args) in
+        let args = (List.map (fun e -> (match e with | A.AExpr e -> expr_to_expr model e | _ -> assert false) |> fst) args) in
         W.Edot (W.Evar "Current", "failwith"), args, W.Tstorage
       | Cconst c ->
         Format.eprintf "Cconst: %a@\n" A.pp_const c;

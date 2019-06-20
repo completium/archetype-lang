@@ -19,7 +19,7 @@ let fail str : instruction =
   let lit = mk_sp (BVstring str) ~type_:type_string in
   let arg = mk_sp (Plit lit) ~type_:type_string in
   (* let app = mk_struct_poly (Papp (f, [arg])) type_unit in *)
-  mk_instr (Icall (None, Cconst Cfail, [arg]))
+  mk_instr (Icall (None, Cconst Cfail, [AExpr arg]))
 
 (* mk_struct_poly (Plit (dumloc (BVstring str))) *)
 
@@ -122,7 +122,7 @@ let process_action (model : model) : model =
                           let aid : pterm = mk_sp (Pvar id) in *)
 
                        (* let arg : pterm = mk_sp (Precord [q; aid]) in *)
-                       let args : pterm list = [] in (*TODO *)
+                       let args : ('id, 'term) term_arg list = [] in (*TODO *)
 
                        mk_instr (Icall (Some asset, Cconst Cupdate, args))
                      )

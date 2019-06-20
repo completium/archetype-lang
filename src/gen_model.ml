@@ -104,13 +104,13 @@ let to_model (ast : A.model) : M.model =
         else
           i::l
       in
-      let mk_function t field_name c (e : A.pterm option) : (M.function__ * A.pterm option) option =
-        let is_global_asset (asset_name : A.lident) (e : A.pterm option) =
+      let mk_function t field_name c (e : (A.lident, A.pterm) A.term_arg option) : (M.function__ * (A.lident, A.pterm) A.term_arg option) option =
+        let is_global_asset (asset_name : A.lident) (e : (A.lident, A.pterm) A.term_arg option) =
           match e with
-          | Some {node = Pvar {pldesc = id; _}; _} when String.equal (Location.unloc asset_name) id -> true
+          | Some AExpr {node = Pvar {pldesc = id; _}; _} when String.equal (Location.unloc asset_name) id -> true
           | _ -> false
         in
-        let get_first_arg asset_name (e : A.pterm option) : A.pterm option =
+        let get_first_arg asset_name (e : (A.lident, A.pterm) A.term_arg option) : (A.lident, A.pterm) A.term_arg option =
           if (is_global_asset asset_name e)
           then None
           else e
@@ -130,18 +130,18 @@ let to_model (ast : A.model) : M.model =
           | A.Tcontainer (Tasset asset, Collection), None, A.Csum,      _ when is_global_asset asset e -> Some (M.SumAsset asset, get_first_arg asset e)
           | A.Tcontainer (Tasset asset, Collection), None, A.Cmin,      _ when is_global_asset asset e -> Some (M.MinAsset asset, get_first_arg asset e)
           | A.Tcontainer (Tasset asset, Collection), None, A.Cmax,      _ when is_global_asset asset e -> Some (M.MaxAsset asset, get_first_arg asset e)
-          | A.Tasset asset, Some field, A.Cadd,      Some {node = A.Pdot (a, _)}  -> Some (M.AddContainer (asset, field), Some a)
-          | A.Tasset asset, Some field, A.Cremove,   Some {node = A.Pdot (a, _)}  -> Some (M.RemoveContainer (asset, field), Some a)
-          | A.Tasset asset, Some field, A.Cclear,    Some {node = A.Pdot (a, _)}  -> Some (M.ClearContainer (asset, field), Some a)
-          | A.Tasset asset, Some field, A.Ccontains, Some {node = A.Pdot (a, _)}  -> Some (M.ContainsContainer (asset, field), Some a)
-          | A.Tasset asset, Some field, A.Cnth,      Some {node = A.Pdot (a, _)}  -> Some (M.NthContainer (asset, field), Some a)
-          | A.Tasset asset, Some field, A.Cselect,   Some {node = A.Pdot (a, _)}  -> Some (M.SelectContainer (asset, field), Some a)
-          | A.Tasset asset, Some field, A.Creverse,  Some {node = A.Pdot (a, _)}  -> Some (M.ReverseContainer (asset, field), Some a)
-          | A.Tasset asset, Some field, A.Csort,     Some {node = A.Pdot (a, _)}  -> Some (M.SortContainer (asset, field), Some a)
-          | A.Tasset asset, Some field, A.Ccount,    Some {node = A.Pdot (a, _)}  -> Some (M.CountContainer (asset, field), Some a)
-          | A.Tasset asset, Some field, A.Csum,      Some {node = A.Pdot (a, _)}  -> Some (M.SumContainer (asset, field), Some a)
-          | A.Tasset asset, Some field, A.Cmax,      Some {node = A.Pdot (a, _)}  -> Some (M.MaxContainer (asset, field), Some a)
-          | A.Tasset asset, Some field, A.Cmin,      Some {node = A.Pdot (a, _)}  -> Some (M.MinContainer (asset, field), Some a)
+          | A.Tasset asset, Some field, A.Cadd,      Some AExpr {node = A.Pdot (a, _)}  -> Some (M.AddContainer (asset, field), Some (AExpr a))
+          | A.Tasset asset, Some field, A.Cremove,   Some AExpr {node = A.Pdot (a, _)}  -> Some (M.RemoveContainer (asset, field), Some (AExpr a))
+          | A.Tasset asset, Some field, A.Cclear,    Some AExpr {node = A.Pdot (a, _)}  -> Some (M.ClearContainer (asset, field), Some (AExpr a))
+          | A.Tasset asset, Some field, A.Ccontains, Some AExpr {node = A.Pdot (a, _)}  -> Some (M.ContainsContainer (asset, field), Some (AExpr a))
+          | A.Tasset asset, Some field, A.Cnth,      Some AExpr {node = A.Pdot (a, _)}  -> Some (M.NthContainer (asset, field), Some (AExpr a))
+          | A.Tasset asset, Some field, A.Cselect,   Some AExpr {node = A.Pdot (a, _)}  -> Some (M.SelectContainer (asset, field), Some (AExpr a))
+          | A.Tasset asset, Some field, A.Creverse,  Some AExpr {node = A.Pdot (a, _)}  -> Some (M.ReverseContainer (asset, field), Some (AExpr a))
+          | A.Tasset asset, Some field, A.Csort,     Some AExpr {node = A.Pdot (a, _)}  -> Some (M.SortContainer (asset, field), Some (AExpr a))
+          | A.Tasset asset, Some field, A.Ccount,    Some AExpr {node = A.Pdot (a, _)}  -> Some (M.CountContainer (asset, field), Some (AExpr a))
+          | A.Tasset asset, Some field, A.Csum,      Some AExpr {node = A.Pdot (a, _)}  -> Some (M.SumContainer (asset, field), Some (AExpr a))
+          | A.Tasset asset, Some field, A.Cmax,      Some AExpr {node = A.Pdot (a, _)}  -> Some (M.MaxContainer (asset, field), Some (AExpr a))
+          | A.Tasset asset, Some field, A.Cmin,      Some AExpr {node = A.Pdot (a, _)}  -> Some (M.MinContainer (asset, field), Some (AExpr a))
           | _ -> None in
         match node with
         | Some (node, x) -> Some (M.mk_function node, x)
@@ -154,7 +154,7 @@ let to_model (ast : A.model) : M.model =
         match term.node with
         | A.Pcall (Some asset_name, Cconst c, args) -> (
             let _, accu = A.fold_map_term (fun node -> {term with node = node} ) fe accu term in
-            let function__ = mk_function (A.Tcontainer (Tasset asset_name, Collection)) None c (Some (A.mk_sp (A.Pvar asset_name))) in
+            let function__ = mk_function (A.Tcontainer (Tasset asset_name, Collection)) None c (Some (AExpr (A.mk_sp (A.Pvar asset_name)))) in
             let term, accu =
               match function__ with
               | Some (f, _) -> (
@@ -167,7 +167,7 @@ let to_model (ast : A.model) : M.model =
           )
         | _ -> A.fold_map_term (ge term) fe accu term in
 
-      let process_instr accu t (c : A.const) field_name gi fi node args =
+      let process_instr accu t (c : A.const) field_name gi fi node (args : (A.lident, A.pterm) A.term_arg list) =
         let a =
           match node with
           | A.Icall (a, _, _) -> a
@@ -180,12 +180,16 @@ let to_model (ast : A.model) : M.model =
 
         let (argss, argsa) =
           List.fold_left
-            (fun (pterms, accu) x ->
-               let p, accu = fe accu x in
-               [p] @ pterms, accu) ([], xa) args
+            (fun (pterms, accu) arg ->
+               match arg with
+               | A.AExpr x ->
+                 let p, accu = fe accu x in
+                 [A.AExpr p] @ pterms, accu
+               | _ -> (pterms, accu) (*TODO*))
+            ([], xa) args
         in
 
-        let first_arg = xe in
+        let first_arg = Option.map (fun x -> A.AExpr x) xe in
         let function__ = mk_function (Option.get t) field_name c first_arg in
         let instr, accu =
           match function__ with
