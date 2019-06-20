@@ -1,182 +1,471 @@
 open Ident
 
-module A = Ast
-
-
 type lident = ident Location.loced
 [@@deriving show {with_path = false}]
 
-type type_ = A.ptyp
+type currency =
+  | Tez
+  | Mutez
 [@@deriving show {with_path = false}]
 
-type term = A.pterm
+type container =
+  | Collection
+  | Partition
 [@@deriving show {with_path = false}]
 
-type field_ident = lident
+type btyp =
+  | Bbool
+  | Bint
+  | Buint
+  | Brational
+  | Bdate
+  | Bduration
+  | Bstring
+  | Baddress
+  | Brole
+  | Bcurrency of currency
+  | Bkey
 [@@deriving show {with_path = false}]
 
-type argument_ident = lident
+type vset =
+  | VSremoved
+  | VSadded
+  | VSstable
+  | VSbefore
+  | VSafter
+  | VSfixed
 [@@deriving show {with_path = false}]
 
-type fun_ident = lident
+type trtyp =
+  | TRentry
+  | TRaction (* add; remove; update *)
+  | TRasset
+  | TRfield
 [@@deriving show {with_path = false}]
 
-type asset_ident = lident
+type type_ =
+  | Tasset of lident
+  | Tenum of lident
+  | Tcontract of lident
+  | Tbuiltin of btyp
+  | Tcontainer of type_ * container
+  | Ttuple of type_ list
+  | Tprog of type_
+  | Tvset of vset * type_
+  | Ttrace of trtyp
 [@@deriving show {with_path = false}]
 
-type enum_ident = lident
+type quantifier =
+  | Forall
+  | Exists
 [@@deriving show {with_path = false}]
 
-type record_ident = lident
+type const =
+  (* constant *)
+  | Cstate
+  | Cnow
+  | Ctransferred
+  | Ccaller
+  | Cfail
+  | Cbalance
+  | Cconditions
+  | Cactions
+  | Cnone
+  | Cany
+  | Canyaction
+  (* function *)
+  | Cget
+  | Cadd
+  | Caddnofail
+  | Cremove
+  | Cremovenofail
+  | Cremoveif
+  | Cupdate
+  | Cupdatenofail (* if key exists -> update *)
+  | Cclear
+  | Ccontains
+  | Cnth
+  | Creverse
+  | Cselect
+  | Csort
+  | Ccount
+  | Csum
+  | Cmax
+  | Cmin
+  (* vset *)
+  | Cbefore
+  | Cunmoved
+  | Cadded
+  | Cremoved
+  | Citerated
+  | Ctoiterate
+  (* predicates *)
+  | Cmaybeperformedonlybyrole
+  | Cmaybeperformedonlybyaction
+  | Cmaybeperformedbyrole
+  | Cmaybeperformedbyaction
 [@@deriving show {with_path = false}]
 
-type contract_ident = lident
+type 'id call_kind =
+  | Cid of 'id
+  | Cconst of const
 [@@deriving show {with_path = false}]
 
-type contract_function_ident = lident
+type 'id pattern_gen =
+  | Mwild
+  | Mconst of 'id
 [@@deriving show {with_path = false}]
 
-type enum_value_ident = lident
+type pattern = lident pattern_gen
 [@@deriving show {with_path = false}]
 
-type item_field_type =
-  | FBasic            of A.vtyp
-  | FAssetKeys        of A.vtyp * asset_ident
-  | FAssetRecord      of A.vtyp * asset_ident
-  | FRecordCollection of asset_ident
-  | FRecord           of asset_ident
-  | FEnum             of enum_ident
-  | FContainer        of Ast.container * item_field_type
+type logical_operator =
+  | And
+  | Or
+  | Imply
+  | Equiv
 [@@deriving show {with_path = false}]
 
-type item_field = {
-  asset   : asset_ident option;
-  name    : field_ident;
-  typ     : item_field_type;
-  ghost   : bool;
-  default : A.pterm option; (* initial value *)
-  loc     : Location.t [@opaque]
-}
+type comparison_operator =
+  | Equal
+  | Nequal
+  | Gt
+  | Ge
+  | Lt
+  | Le
 [@@deriving show {with_path = false}]
 
-type storage_item = {
-  name        : field_ident;
-  fields      : item_field list;
-  invariants  : (lident, (lident, A.ltype_) A.term_gen) A.label_term list;
-  init        : ((ident * A.pterm) list) list;
-}
+type assignment_operator =
+  | ValueAssign
+  | PlusAssign
+  | MinusAssign
+  | MultAssign
+  | DivAssign
+  | AndAssign
+  | OrAssign
 [@@deriving show {with_path = false}]
 
-type storage = storage_item list
+type arithmetic_operator =
+  | Plus
+  | Minus
+  | Mult
+  | Div
+  | Modulo
 [@@deriving show {with_path = false}]
 
-type enum_item = {
-  name: enum_value_ident;
-  invariants : (lident, (lident, A.ltype_) A.term_gen) A.label_term list;
-}
+type unary_arithmetic_operator =
+  | Uplus
+  | Uminus
 [@@deriving show {with_path = false}]
 
-type enum = {
-  name: enum_ident;
-  values: enum_item list;
-}
+type operator = [
+  | `Logical of logical_operator
+  | `Cmp     of comparison_operator
+  | `Arith   of arithmetic_operator
+  | `Unary   of unary_arithmetic_operator
+  | `Assign  of assignment_operator
+]
 [@@deriving show {with_path = false}]
 
-type record_item = {
-  name: record_ident;
+type lit_value =
+  | BVint          of Core.big_int
+  | BVuint         of Core.big_int
+  | BVbool         of bool
+  | BVenum         of string
+  | BVrational     of Core.big_int * Core.big_int
+  | BVdate         of string (* TODO : find a date structure *)
+  | BVstring       of string
+  | BVcurrency     of currency * Core.big_int
+  | BVaddress      of string
+  | BVduration     of string
+[@@deriving show {with_path = false}]
+
+type ('id, 'term) mterm_node  =
+  | Mquantifer of quantifier * 'id * type_ * 'term
+  | Mif of ('term * 'term * 'term)
+  | Mmatchwith of 'term * ('id pattern_gen * 'term) list
+  | Mcall of ('id option * 'id call_kind * ('id term_arg) list)
+  | Mlogical of logical_operator * 'term * 'term
+  | Mnot of 'term
+  | Mcomp of comparison_operator * 'term * 'term
+  | Marith of arithmetic_operator * 'term * 'term
+  | Muarith of unary_arithmetic_operator * 'term
+  | Mrecord of 'term list
+  | Mletin of 'id * 'term * type_ option * 'term
+  | Mvar of 'id
+  | Marray of 'term list
+  | Mlit of lit_value
+  | Mdot of 'term * 'id
+  | Mconst of const
+  | Mtuple of 'term list
+[@@deriving show {with_path = false}]
+
+and 'id mterm_gen = {
+  node: ('id, 'id mterm_gen) mterm_node;
   type_: type_;
-  default: A.pterm option;
-}
-[@@deriving show {with_path = false}]
-
-type record = {
-  name: record_ident;
-  key: record_ident option;
-  values: record_item list;
-}
-[@@deriving show {with_path = false}]
-
-type contract = (lident, type_, A.pterm) Ast.contract
-[@@deriving show {with_path = false}]
-
-type 'id function_ = {
-  name: fun_ident;
-}
-[@@deriving show {with_path = false}]
-
-type 'id entry = {
-  name: fun_ident;
-}
-[@@deriving show {with_path = false}]
-
-type argument = argument_ident * type_ * A.pterm option
-[@@deriving show {with_path = false}]
-
-type function_struct = {
-  name: fun_ident;
-  args: argument list;
-  body: A.instruction;
   loc : Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]
 
-type function_node =
-  | Function           of function_struct * type_ (* fun * return type *)
-  | Entry              of function_struct
-  | Get                of asset_ident
-  | AddAsset           of asset_ident
-  | RemoveAsset        of asset_ident
-  | ClearAsset         of asset_ident
-  | UpdateAsset        of asset_ident
-  | ContainsAsset      of asset_ident
-  | NthAsset           of asset_ident
-  | SelectAsset        of asset_ident
-  | SortAsset          of asset_ident
-  | ReverseAsset       of asset_ident
-  | CountAsset         of asset_ident
-  | SumAsset           of asset_ident
-  | MinAsset           of asset_ident
-  | MaxAsset           of asset_ident
-  | AddContainer       of asset_ident * field_ident
-  | RemoveContainer    of asset_ident * field_ident
-  | ClearContainer     of asset_ident * field_ident
-  | ContainsContainer  of asset_ident * field_ident
-  | NthContainer       of asset_ident * field_ident
-  | SelectContainer    of asset_ident * field_ident
-  | SortContainer      of asset_ident * field_ident
-  | ReverseContainer   of asset_ident * field_ident
-  | CountContainer     of asset_ident * field_ident
-  | SumContainer       of asset_ident * field_ident
-  | MinContainer       of asset_ident * field_ident
-  | MaxContainer       of asset_ident * field_ident
+and mterm = lident mterm_gen
+[@@deriving show {with_path = false}]
+
+and 'id term_arg =
+  | AExpr   of 'id mterm_gen
+  | AEffect of ('id * operator * 'id mterm_gen) list
+[@@deriving show {with_path = false}]
+
+type 'id label_term_gen = {
+  label : 'id option;
+  term : 'id mterm_gen;
+  loc  : Location.t [@opaque];
+}
+[@@deriving show {with_path = false}]
+
+type label_term = lident label_term_gen
+[@@deriving show {with_path = false}]
+
+type 'id item_field_type =
+  | FBasic            of lit_value
+  | FAssetKeys        of lit_value * 'id
+  | FAssetRecord      of lit_value * 'id
+  | FRecordCollection of 'id
+  | FRecord           of 'id
+  | FEnum             of 'id
+  | FContainer        of container * 'id item_field_type
+[@@deriving show {with_path = false}]
+
+type 'id item_field = {
+  asset   : 'id option;
+  name    : 'id;
+  typ     : 'id item_field_type;
+  ghost   : bool;
+  default : 'id mterm_gen option; (* initial value *)
+  loc     : Location.t [@opaque];
+}
+[@@deriving show {with_path = false}]
+
+type 'id storage_item = {
+  name        : 'id;
+  fields      : 'id item_field list;
+  invariants  : lident label_term_gen list;
+  init        : ((ident * mterm) list) list;
+}
+[@@deriving show {with_path = false}]
+
+type 'id storage = 'id storage_item list
+[@@deriving show {with_path = false}]
+
+type 'id enum_item = {
+  name: 'id;
+  invariants : 'id label_term_gen list;
+}
+[@@deriving show {with_path = false}]
+
+type 'id enum = {
+  name: 'id;
+  values: 'id enum_item list;
+}
+[@@deriving show {with_path = false}]
+
+type 'id record_item = {
+  name: 'id;
+  type_: type_;
+  default: 'id mterm_gen option;
+}
+[@@deriving show {with_path = false}]
+
+type 'id record = {
+  name: 'id;
+  key: 'id option;
+  values: 'id record_item list;
+}
+[@@deriving show {with_path = false}]
+
+type 'id contract = (lident, type_, 'id mterm_gen) Ast.contract
+[@@deriving show {with_path = false}]
+
+type 'id function_ = {
+  name: 'id;
+}
+[@@deriving show {with_path = false}]
+
+type 'id entry = {
+  name: 'id;
+}
+[@@deriving show {with_path = false}]
+
+type 'id argument = 'id * type_ * 'id mterm_gen option
+[@@deriving show {with_path = false}]
+
+type ('id, 'qualid) qualid_node =
+  | Qident of 'id
+  | Qdot of 'qualid * 'id
+[@@deriving show {with_path = false}]
+
+type 'id qualid_gen = {
+  node: ('id, 'id qualid_gen) qualid_node;
+  type_: type_;
+  loc : Location.t [@opaque];
+}
+[@@deriving show {with_path = false}]
+
+type ('id, 'instr) instruction_node =
+  | Iif of ('id mterm_gen * 'instr * 'instr)                              (* condition * then_ * else_ *)
+  | Ifor of ('id * 'id mterm_gen * 'instr)                                (* id * collection * body *)
+  | Iletin of ('id * 'id mterm_gen * 'instr)                              (* id * init * body *)
+  | Iseq of 'instr list                                                   (* lhs ; rhs*)
+  | Imatchwith of 'id mterm_gen * ('id pattern_gen * 'instr) list         (* match 'term with ('pattern * 'instr) list *)
+  | Iassign of (assignment_operator * 'id * 'id mterm_gen)                (* $2 assignment_operator $3 *)
+  | Irequire of (bool * 'id mterm_gen)                                    (* $1 ? require : failif *)
+  | Itransfer of ('id mterm_gen * bool * 'id qualid_gen option)           (* value * back * dest *)
+  | Ibreak
+  | Iassert of 'id mterm_gen
+  | Icall of ('id mterm_gen option * 'id call_kind * ('id term_arg) list)
+[@@deriving show {with_path = false}]
+
+and 'id instruction_gen = {
+  node:    ('id, 'id instruction_gen) instruction_node;
+  subvars: ident list;
+  loc:     Location.t [@opaque];
+}
+[@@deriving show {with_path = false}]
+
+and instruction = lident instruction_gen
+[@@deriving show {with_path = false}]
+
+type 'id function_struct_gen = {
+  name: 'id;
+  args: 'id argument list;
+  body: 'id instruction_gen;
+  loc : Location.t [@opaque];
+}
+[@@deriving show {with_path = false}]
+
+type function_struct = lident function_struct_gen
+[@@deriving show {with_path = false}]
+
+type 'id function_node =
+  | Function           of 'id function_struct_gen * type_ (* fun * return type *)
+  | Entry              of 'id function_struct_gen
+  | Get                of 'id
+  | AddAsset           of 'id
+  | RemoveAsset        of 'id
+  | ClearAsset         of 'id
+  | UpdateAsset        of 'id
+  | ContainsAsset      of 'id
+  | NthAsset           of 'id
+  | SelectAsset        of 'id
+  | SortAsset          of 'id
+  | ReverseAsset       of 'id
+  | CountAsset         of 'id
+  | SumAsset           of 'id
+  | MinAsset           of 'id
+  | MaxAsset           of 'id
+  | AddContainer       of 'id * 'id
+  | RemoveContainer    of 'id * 'id
+  | ClearContainer     of 'id * 'id
+  | ContainsContainer  of 'id * 'id
+  | NthContainer       of 'id * 'id
+  | SelectContainer    of 'id * 'id
+  | SortContainer      of 'id * 'id
+  | ReverseContainer   of 'id * 'id
+  | CountContainer     of 'id * 'id
+  | SumContainer       of 'id * 'id
+  | MinContainer       of 'id * 'id
+  | MaxContainer       of 'id * 'id
   | Other
 [@@deriving show {with_path = false}]
 
-type signature = {
-  name: fun_ident;
-  args: argument list;
+type 'id signature = {
+  name: 'id;
+  args: 'id argument list;
   ret: type_ option;
 }
 [@@deriving show {with_path = false}]
 
-type function__ = {
-  node: function_node;
-  verif  : (lident, type_, A.pterm) A.verification option;
+type 'id variable = {
+  decl         : 'id argument;
+  constant     : bool;
+  from         : 'id qualid_gen option;
+  to_          : 'id qualid_gen option;
+  loc          : Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]
 
-type decl_node =
-  | TNenum of enum
-  | TNrecord of record
-  | TNcontract of contract
-  | TNstorage of storage
-  | TNfunction of function__
+type 'id predicate = {
+  name : 'id;
+  args : ('id * ('id mterm_gen)) list;
+  body : 'id mterm_gen;
+  loc  : Location.t [@opaque];
+}
 [@@deriving show {with_path = false}]
 
-type model = {
+type 'id definition = {
+  name : 'id;
+  typ  : type_;
+  var  : 'id;
+  body : 'id mterm_gen;
+  loc  : Location.t [@opaque];
+}
+[@@deriving show {with_path = false}]
+
+type 'id invariant = {
+  label: 'id;
+  formulas: 'id mterm_gen list;
+}
+[@@deriving show {with_path = false}]
+
+type 'id specification = {
+  name: 'id;
+  formula: 'id mterm_gen;
+  invariants: ('id invariant) list;
+}
+[@@deriving show {with_path = false}]
+
+type 'id assert_ = {
+  name: 'id;
+  label: 'id;
+  formula: 'id mterm_gen;
+  invariants: 'id invariant list;
+}
+[@@deriving show {with_path = false}]
+
+type 'id verification = {
+  predicates  : 'id predicate list;
+  definitions : 'id definition list;
+  axioms      : 'id label_term_gen list;
+  theorems    : 'id label_term_gen list;
+  variables   : 'id variable list;
+  invariants  : 'id label_term_gen list;
+  effect      : 'id mterm_gen option;
+  specs       : 'id specification list;
+  asserts     : 'id assert_ list;
+  loc         : Location.t [@opaque];
+}
+[@@deriving show {with_path = false}]
+
+type 'id function__ = {
+  node: 'id function_node;
+  verif  : 'id verification option;
+}
+[@@deriving show {with_path = false}]
+
+type 'id decl_node =
+  | TNenum of 'id enum
+  | TNrecord of 'id record
+  | TNcontract of 'id contract
+  | TNstorage of 'id storage
+  | TNfunction of 'id function__
+[@@deriving show {with_path = false}]
+
+type 'id model_gen = {
   name: lident;
-  decls: decl_node list;
+  decls: 'id decl_node list;
 }
+[@@deriving show {with_path = false}]
+
+type model = lident model_gen
 [@@deriving show {with_path = false}]
 
 let lident_to_string lident = Location.unloc lident
@@ -212,31 +501,31 @@ let function_name_from_function_node = function
   | MaxContainer      (aid, fid) -> "max_"      ^ lident_to_string aid ^ "_" ^ lident_to_string fid
   | Other -> assert false
 
-let mk_enum ?(values = []) name : enum =
+let mk_enum ?(values = []) name : 'id enum =
   { name; values }
 
-let mk_enum_item ?(invariants = []) name : enum_item =
+let mk_enum_item ?(invariants = []) name : 'id enum_item =
   { name; invariants }
 
-let mk_record ?(values = []) ?key name : record =
+let mk_record ?(values = []) ?key name : 'id record =
   { name; key; values }
 
-let mk_record_item ?default name type_ : record_item =
+let mk_record_item ?default name type_ : 'id record_item =
   { name; type_; default }
 
-let mk_storage_item ?(fields = []) ?(invariants = []) ?(init = []) name : storage_item =
+let mk_storage_item ?(fields = []) ?(invariants = []) ?(init = []) name : 'id storage_item =
   { name; fields; invariants; init }
 
-let mk_item_field ?asset ?(ghost = false) ?default ?(loc = Location.dummy) name typ : item_field =
+let mk_item_field ?asset ?(ghost = false) ?default ?(loc = Location.dummy) name typ : 'id item_field =
   { asset; name; typ; ghost; default; loc }
 
 let mk_function_struct ?(args = []) ?(loc = Location.dummy) name body : function_struct =
   { name; args; body; loc }
 
-let mk_function ?verif node : function__ =
+let mk_function ?verif node : 'id function__ =
   { node; verif }
 
-let mk_signature ?(args = []) ?ret name : signature =
+let mk_signature ?(args = []) ?ret name : 'id signature =
   { name; args; ret}
 
 let mk_model ?(decls = []) name : model =
@@ -247,10 +536,10 @@ let mk_model ?(decls = []) name : model =
 
 module Utils : sig
 
-  val get_record           : model -> A.lident -> record
-  val get_record_field     : model -> (A.lident * A.lident ) -> record_item
-  val get_record_key       : model -> A.lident -> (A.lident * A.vtyp)
-  val is_storage_attribute : model -> A.lident -> bool
+  val get_record           : model -> lident -> lident record
+  val get_record_field     : model -> (lident * lident) -> lident record_item
+  val get_record_key       : model -> lident -> (lident * btyp)
+  val is_storage_attribute : model -> lident -> bool
   val get_named_field_list : model -> lident -> 'a list -> (lident * 'a) list
 
 end = struct
@@ -271,9 +560,9 @@ end = struct
     let str = Format.asprintf "%a@." pp_error_desc desc in
     raise (Anomaly str)
 
-  let get_record model record_name : record =
+  let get_record model record_name : lident record =
     let id = unloc record_name in
-    let res = List.fold_left (fun accu (x : decl_node) ->
+    let res = List.fold_left (fun accu (x : lident decl_node) ->
         match x with
         | TNrecord r when String.equal (unloc record_name) (unloc r.name) -> Some r
         | _ -> accu
@@ -284,12 +573,12 @@ end = struct
 
   let get_record_field model (record_name, field_name) =
     let record = get_record model record_name in
-    let res = List.fold_left (fun accu (x : record_item) -> if String.equal (unloc field_name) (unloc x.name) then Some x else accu) None record.values in
+    let res = List.fold_left (fun accu (x : lident record_item) -> if String.equal (unloc field_name) (unloc x.name) then Some x else accu) None record.values in
     match res with
     | Some v -> v
     | _ -> emit_error (RecordFieldNotFound (unloc record_name, unloc field_name))
 
-  let get_record_key model record_name : (lident * A.vtyp) =
+  let get_record_key model record_name : (lident * btyp) =
     let record = get_record model record_name in
     let key_id = Option.get record.key in
     let key_field = get_record_field model (record_name, key_id) in
@@ -298,7 +587,7 @@ end = struct
     | _ -> emit_error (RecordKeyTypeNotFound (unloc record_name))
 
   let get_storage model =
-    List.fold_left (fun accu (x : decl_node) ->
+    List.fold_left (fun accu (x : lident decl_node) ->
         match x with
         | TNstorage s -> Some s
         | _ -> accu
@@ -314,13 +603,13 @@ end = struct
     let s = get_storage model in
     match s with
     | Some items ->
-      (List.fold_left (fun accu (x : storage_item) ->
+      (List.fold_left (fun accu (x : lident storage_item) ->
            accu || String.equal (Location.unloc id) (Location.unloc x.name)) false items)
     | None -> false
 
   let get_field_list model record_name =
     let record = get_record model record_name in
-    List.map (fun (x : record_item) -> x.name) record.values
+    List.map (fun (x : lident record_item) -> x.name) record.values
 
   let get_named_field_list ast asset_name list =
     let field_list = get_field_list ast asset_name in
