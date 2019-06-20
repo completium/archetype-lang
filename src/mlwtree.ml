@@ -641,8 +641,8 @@ let compare_abstract_term
   | Tnone, Tnone -> true
   | Tsome e1, Tsome e2 -> cmpe e1 e2
   | Tenum i1, Tenum i2 -> cmpi i1 i2
-    | Tnottranslated, Tnottranslated -> true
-    | _ -> false
+  | Tnottranslated, Tnottranslated -> true
+  | _ -> false
 
 (* replace --------------------------------------------------------------------*)
 

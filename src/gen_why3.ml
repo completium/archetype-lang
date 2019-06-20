@@ -508,17 +508,30 @@ let map_basic_type (typ : M.item_field_type) : loc_typ =
     | _ -> assert false in
   with_dummy_loc (rec_map_basic_type typ)
 
-let map_bval (b : Ast.bval) : loc_term =
-  match b.node with
-  | Ast.BVaddress v -> mk_loc b.loc (Tint (sha v))
-  | _ -> with_dummy_loc Tnottranslated
+let map_bval (b : Ast.bval) : loc_term = mk_loc b.loc (
+    match b.node with
+    | Ast.BVaddress v -> Tint (sha v)
+    | Ast.BVint i     -> Tint (Big_int.int_of_big_int i)
+    | _ -> Tnottranslated
+  )
 
-let map_term (t : Ast.pterm) : loc_term =
-  match t.node with
-  | Ast.Plit b -> map_bval b
-  | _ -> with_dummy_loc Tnottranslated
+let rec map_pterm (t : Ast.pterm) : loc_term = mk_loc t.loc (
+    match t.node with
+    | Ast.Plit b -> map_bval b |> Mlwtree.deloc
+    | Ast.Pvar i -> Tvar (map_lident i)
+    | Ast.Pcomp (Ast.Gt,t1,t2) -> Tgt (with_dummy_loc Tyint,map_pterm t1,map_pterm t2)
+    | _ -> Tnottranslated
+  )
 
-let map_record_term _ = map_term
+let rec map_lterm (t : Ast.lterm) : loc_term = mk_loc t.loc (
+    match t.node with
+    | Ast.Plit b -> map_bval b |> Mlwtree.deloc
+    | Ast.Pvar i -> Tvar (map_lident i)
+    | Ast.Pcomp (Ast.Gt,t1,t2) -> Tgt (with_dummy_loc Tyint,map_lterm t1,map_lterm t2)
+    | _ -> Tnottranslated
+  )
+
+let map_record_term _ = map_pterm
 
 let map_record_values (values : M.record_item list) =
   List.map (fun (value : M.record_item) ->
@@ -549,12 +562,18 @@ let map_storage_items = List.fold_left (fun acc (items : M.storage_item) ->
        ) acc items.fields) @ extra_fields
   ) []
 
+let map_label_term (lt : (M.lident,Ast.lterm) Ast.label_term) : (loc_term,loc_ident) abstract_formula = {
+  id = Option.fold (fun _ x -> map_lident x)  (with_dummy_loc "") lt.label;
+  form = map_lterm lt.term;
+}
+
 let map_decl (d : M.decl_node) =
   match d with
   | M.TNrecord r -> Drecord (map_lident r.name, map_record_values r.values)
   | M.TNstorage l -> Dstorage {
       fields     = (map_storage_items l)@(mk_const_fields false |> loc_field |> deloc);
-      invariants = []; (*map_formula (get_invariants l)*)
+      invariants = List.concat (List.map (fun (item : M.storage_item) ->
+          List.map map_label_term item.invariants) l)
     }
   | _ -> assert false
 
@@ -575,11 +594,6 @@ let get_storage = List.filter is_storage
 (* ----------------------------------------------------------------------------*)
 
 let to_whyml (model : M.model) : mlw_tree  =
-  (*let test = loc_term (Tdot (Tvar "titi",Tvar "toto")) in
-  let test2 = loc_term (Tvar "toto") in
-  let test3 = loc_term (Tvar "tata") in
-    let test4 = replace test2 test3 test in
-    Format.printf "%a" pp_term (unloc_term test4);*)
   let uselib       = mk_use |> Mlwtree.loc_decl |> Mlwtree.deloc in
   let records      = get_records model.decls |> List.map map_decl |> wdl in
   let init_records = records |> unloc_decl |> List.map mk_default_init |> loc_decl in
