@@ -479,3 +479,169 @@ let loc_decl (d : decl) = with_dummy_loc (map_abstract_decl loc_term loc_type lo
 let loc_field (f : field) = with_dummy_loc (map_abstract_field loc_term loc_type loc_ident f)
 
 let deloc x = x.obj
+
+(* compare -----------------------------------------------------------------------*)
+
+let compare_exn e1 e2 =
+  match e1,e2 with
+  | Enotfound, Enotfound -> true
+  | Ekeyexist, Ekeyexist -> true
+  | Einvalidcaller, Einvalidcaller -> true
+  | Einvalidcondition, Einvalidcondition -> true
+  | Ebreak, Ebreak -> true
+  | _ -> false
+
+let compare_fmod m1 m2 =
+  match m1,m2 with
+  | Logic,Logic -> true
+  | Rec,Rec -> true
+  | NoMod,NoMod -> true
+  | _ -> false
+
+let rec compare_abstract_type
+    (cmpi : 'i -> 'i -> bool)
+    (typ1 : 'i abstract_type)
+    (typ2 : 'i abstract_type) =
+  match typ1,typ2 with
+  | Tyint, Tyint -> true
+  | Tyuint, Tyunit -> true
+  | Tybool, Tybool -> true
+  | Tystring, Tystring -> true
+  | Tyrational, Tyrational -> true
+  | Tyaddr, Tyaddr -> true
+  | Tyrole, Tyrole -> true
+  | Tykey, Tykey -> true
+  | Tydate, Tydate -> true
+  | Tyduration, Tyduration -> true
+  | Tytez, Tytez -> true
+  | Tystorage, Tystorage -> true
+  | Tytransfers, Tytransfers -> true
+  | Tyunit, Tyunit -> true
+  | Tycontract i1, Tycontract i2 -> cmpi i1 i2
+  | Tyrecord i1, Tyrecord i2 -> cmpi i1 i2
+  | Tycoll i1, Tycoll i2 -> cmpi i1 i2
+  | Tymap i1, Tymap i2 -> cmpi i1 i2
+  | Tyasset i1, Tyasset i2 -> cmpi i1 i2
+  | Typartition i1, Typartition i2 -> cmpi i1 i2
+  | Tyenum i1, Tyenum i2 -> cmpi i1 i2
+  | Tyoption t1, Tyoption t2 -> compare_abstract_type cmpi t1 t2
+  | Tylist t1, Tylist t2 -> compare_abstract_type cmpi t1 t2
+  | Tytuple l1, Tytuple l2 -> List.for_all2 (compare_abstract_type cmpi) l1 l2
+  | _ -> false
+
+let compare_abstract_formula
+    (cmpe : 'e -> 'e -> bool)
+    (cmpt : 't -> 't -> bool)
+    (cmpi : 'i -> 'i -> bool)
+    (f1 : ('e,'t,'i) abstract_formula)
+    (f2 : ('e,'t,'i) abstract_formula) : bool =
+  cmpi f1.id f2.id && cmpe f1.form f2.form
+
+let compare_abstract_fun_struct
+    (cmpe : 'e -> 'e -> bool)
+    (cmpt : 't -> 't -> bool)
+    (cmpi : 'i -> 'i -> bool)
+    (s1 : ('e,'t,'i) abstract_fun_struct)
+    (s2 : ('e,'t,'i) abstract_fun_struct) : bool =
+  cmpi s1.name s2.name &&
+  compare_fmod s1.logic s2.logic &&
+  List.for_all2 (fun (i1,t1) (i2,t2) ->
+      cmpi i1 i2 && cmpt i2 t2
+    ) s1.args s2.args &&
+  cmpt s1.returns s2.returns &&
+  List.for_all2 compare_exn s1.raises s2.raises &&
+  List.for_all2 cmpe s1.variants s2.variants &&
+  List.for_all2 (compare_abstract_formula cmpe cmpt cmpi) s1.requires s2.requires &&
+  List.for_all2 (compare_abstract_formula cmpe cmpt cmpi) s1.ensures s2.ensures &&
+  cmpe s1.body s2.body
+
+let compare_abstract_term
+    (cmpe : 'e -> 'e -> bool)
+    (cmpt : 't -> 't -> bool)
+    (cmpi : 'i -> 'i -> bool)
+    (term1 : ('e,'t,'i) abstract_term)
+    (term2 : ('e,'t,'i) abstract_term) : bool =
+  match term1,term2 with
+  | Tseq l1, Tseq l2 -> List.for_all2 cmpe l1 l2
+  | Tletin (r1,i1,None,b1,e1),Tletin (r2,i2,None,b2,e2) ->
+    r1 = r2 && cmpi i1 i2 && cmpe b1 b2 && cmpe e1 e2
+  | Tletfun (s1,e1), Tletfun (s2,e2) ->
+    compare_abstract_fun_struct cmpe cmpt cmpi s1 s2 && cmpe e1 e2
+  | Tif (i1,t1,None), Tif (i2,t2,None) -> cmpe i1 i2 && cmpe t1 t2
+  | Tif (i1,t1,Some e1), Tif (i2,t2,Some e2) -> cmpe i1 i2 && cmpe t1 t2 && cmpe e1 e2
+  | Tapp (f1,a1), Tapp (f2,a2) -> cmpe f1 f2 && List.for_all2 cmpe a1 a2
+  | Tfor (i1,s1,l1,b1), Tfor (i2,s2,l2,b2) ->
+    cmpi i1 i2 && cmpe s1 s2 &&
+    List.for_all2 (compare_abstract_formula cmpe cmpt cmpi) l1 l2 && cmpe b1 b2
+  | Ttry (b1,e1,c1), Ttry (b2,e2,c2) -> cmpe b1 b2 && compare_exn e1 e2 && cmpe c1 c2
+  | Tassert e1, Tassert e2 -> cmpe e1 e2
+  | Tvar i1, Tvar i2 -> cmpi i1 i2
+  | Trecord (None,l1), Trecord (None,l2) ->
+    List.for_all2 (fun (i1,j1) (i2,j2) ->
+        cmpi i1 i2 && cmpe j1 j2) l1 l2
+  | Trecord (Some e1,l1), Trecord (Some e2,l2) ->
+    cmpe e1 e2 && List.for_all2 (fun (i1,j1) (i2,j2) ->
+      cmpi i1 i2 && cmpe j1 j2) l1 l2
+  | Tdot (l1,r1), Tdot (l2,r2) -> cmpe r1 r2 && cmpe l1 l2
+  | Tdoti (l1,r1), Tdoti (l2,r2) -> cmpi r1 r2 && cmpi l1 l2
+  | Tename,Tename -> true
+  | Tcaller i1, Tcaller i2 -> cmpi i1 i2
+  | Tnow i1, Tnow i2 -> cmpi i1 i2
+  | Tadded a1, Tadded a2 -> cmpi a1 a2
+  | Trmed  a1, Trmed a2 -> cmpi a1 a2
+  | Tlist l1, Tlist l2 -> List.for_all2 cmpe l1 l2
+  | Tnil, Tnil -> true
+  | Tcard e1, Tcard e2 -> cmpe e1 e2
+  | Tmlist (e1,i1,i2,i3,e2), Tmlist (f1,j1,j2,j3,f2) ->
+    cmpe e1 f2 && cmpi i1 j1 && cmpi i2 j2 && cmpi i3 j3 && cmpe f1 f2
+  | Tcons (e1,e2), Tcons (f1,f2) -> cmpe e1 f1 && cmpe e2 f2
+  | Tadd (e1,e2), Tadd (f1,f2) -> cmpe e1 f1 && cmpe e2 f2
+  | Tremove (e1,e2), Tremove (f1,f2) -> cmpe e1 f1 && cmpe e2 f2
+  | Tget (e1,e2), Tget (f1,f2) -> cmpe e1 f1 && cmpe e2 f2
+  | Tset (e1,e2,e3), Tset (f1,f2,f3) -> cmpe e1 f1 && cmpe e2 f2 && cmpe e3 f3
+  | Tassign (e1,e2), Tassign (f1,f2) -> cmpe e1 f1 && cmpe e2 f2
+  | Traise e1, Traise e2 -> compare_exn e1 e2
+  | Tconcat (e1,e2), Tconcat (f1,f2) -> cmpe e1 f1 && cmpe e2 f2
+  | Tmktr (e1,e2), Tmktr (f1,f2) -> cmpe e1 f1 && cmpe e2 f2
+  | Ttradd i1, Ttradd i2 -> cmpi i1 i2
+  | Ttrrm  i1, Ttrrm i2 -> cmpi i1 i2
+  | Tplus (t1,l1,r1), Tplus (t2,l2,r2) -> cmpt t1 t2 && cmpe l1 l2 && cmpe r1 r2
+  | Tminus (t1,l1,r1), Tminus (t2,l2,r2) -> cmpt t1 t2 && cmpe l1 l2 && cmpe r1 r2
+  | Tuminus (t1,e1), Tuminus (t2,e2) -> cmpt t1 t2 && cmpe e1 e2
+  | Tdiv (t1,l1,r1), Tdiv (t2,l2,r2) -> cmpt t1 t2 && cmpe l1 l2 && cmpe r1 r2
+  | Tmod (t1,l1,r1), Tmod (t2,l2,r2) -> cmpt t1 t2 && cmpe l1 l2 && cmpe r1 r2
+  | Tnot e1, Tnot e2 -> cmpe e1 e2
+  | Teq (t1,l1,r1), Teq (t2,l2,r2) -> cmpt t1 t2 && cmpe l1 l2 && cmpe r1 r2
+  | Tlt (t1,l1,r1), Tlt (t2,l2,r2) -> cmpt t1 t2 && cmpe l1 l2 && cmpe r1 r2
+  | Tle (t1,l1,r1), Tle (t2,l2,r2) -> cmpt t1 t2 && cmpe l1 l2 && cmpe r1 r2
+  | Tgt (t1,l1,r1), Tgt (t2,l2,r2) -> cmpt t1 t2 && cmpe l1 l2 && cmpe r1 r2
+  | Tge (t1,l1,r1), Tge (t2,l2,r2) -> cmpt t1 t2 && cmpe l1 l2 && cmpe r1 r2
+  | Tdlt (t1,e1,e2,e3), Tdlt (t2,f1,f2,f3) -> cmpt t1 t2 && cmpe e1 f1 && cmpe e2 f2 && cmpe e3 f3
+  | Tdle (t1,e1,e2,e3), Tdle (t2,f1,f2,f3) -> cmpt t1 t2 && cmpe e1 f1 && cmpe e2 f2 && cmpe e3 f3
+  | Tdlet (t1,e1,e2,e3), Tdlet (t2,f1,f2,f3) -> cmpt t1 t2 && cmpe e1 f1 && cmpe e2 f2 && cmpe e3 f3
+  | Tdlte (t1,e1,e2,e3), Tdlte (t2,f1,f2,f3) -> cmpt t1 t2 && cmpe e1 f1 && cmpe e2 f2 && cmpe e3 f3
+  | Tint i1, Tint i2 -> compare i1 i2 = 0
+  | Taddr s1, Taddr s2 -> compare s1 s2 = 0
+  | Tforall (l1,e1), Tforall (l2,e2) -> List.for_all2 (fun (i1,t1) (i2,t2) ->
+      List.for_all2 cmpi i1 i2 && cmpt t1 t2
+    ) l1 l2 && cmpe e1 e2
+  | Timpl (e1,e2), Timpl (f1,f2) -> cmpe e1 f1 && cmpe e2 f2
+  | Told e1, Told e2 -> cmpe e1 e2
+  | Tat e1, Tat e2 -> cmpe e1 e2
+  | Tunion (e1,e2), Tunion (f1,f2) -> cmpe e1 f1 && cmpe e2 f2
+  | Tinter (e1,e2), Tinter (f1,f2) -> cmpe e1 f1 && cmpe e2 f2
+  | Tdiff (e1,e2), Tdiff (f1,f2) -> cmpe e1 f1 && cmpe e2 f2
+  | Tsubset (e1,e2), Tsubset (f1,f2) -> cmpe e1 f1 && cmpe e2 f2
+  | Tresult, Tresult -> true
+  | Tmem (e1,e2), Tmem (f1,f2) -> cmpe e1 f1 && cmpe e2 f2
+  | Tlmem (e1,e2), Tlmem (f1,f2) -> cmpe e1 f1 && cmpe e2 f2
+  | Tempty e1, Tempty e2 -> cmpe e1 e2
+  | Tsingl e1, Tsingl e2 -> cmpe e1 e2
+  | Thead (e1,e2), Thead (f1,f2) -> cmpe e1 f1 && cmpe e2 f2
+  | Ttail (e1,e2), Ttail (f1,f2) -> cmpe e1 f1 && cmpe e2 f2
+  | Tnth (e1,e2), Tnth (f1,f2) -> cmpe e1 f1 && cmpe e2 f2
+  | Tnone, Tnone -> true
+  | Tsome e1, Tsome e2 -> cmpe e1 e2
+  | Tenum i1, Tenum i2 -> cmpi i1 i2
+  | Tnottranslated, Tnottranslated -> true
+  | _ -> false
