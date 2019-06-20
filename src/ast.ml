@@ -326,25 +326,16 @@ and ('id, 'term) term_arg =
 
 (* -------------------------------------------------------------------- *)
 
-type ('id, 'typ, 'term) lterm_poly = (ltype_, ('id, 'typ, 'term) term_node) struct_poly
+type ('id, 'typ, 'term) term_poly = ('typ, ('id, 'typ, 'term) term_node) struct_poly
 [@@deriving show {with_path = false}]
 
-type ('id, 'typ) lterm_gen = ('id, 'typ, ('id, 'typ) lterm_gen) lterm_poly
+type ('id, 'typ) term_gen = ('id, 'typ, ('id, 'typ) term_gen) term_poly
 [@@deriving show {with_path = false}]
 
-type lterm = (lident, type_) lterm_gen
+type lterm = (lident, ltype_) term_gen
 [@@deriving show {with_path = false}]
 
-
-(* -------------------------------------------------------------------- *)
-
-type ('id, 'typ, 'term) pterm_poly = ('typ, ('id, 'typ, 'term) term_node) struct_poly
-[@@deriving show {with_path = false}]
-
-type ('id, 'typ) pterm_gen = ('id, 'typ, ('id, 'typ) pterm_gen) pterm_poly
-[@@deriving show {with_path = false}]
-
-type pterm = (lident, type_, pterm) pterm_poly
+type pterm = (lident, type_) term_gen
 [@@deriving show {with_path = false}]
 
 type pterm_arg = (lident, pterm) term_arg
@@ -399,8 +390,8 @@ type ('id, 'typ, 'term) variable = {
 
 type ('id, 'typ) predicate = {
   name : 'id;
-  args : ('id * (('id, 'typ) lterm_gen)) list;
-  body : ('id, 'typ) lterm_gen;
+  args : ('id * (('id, ltype_) term_gen)) list;
+  body : ('id, ltype_) term_gen;
   loc  : Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]
@@ -409,20 +400,20 @@ type ('id, 'typ) definition = {
   name : 'id;
   typ  : 'typ;
   var  : 'id;
-  body : ('id, 'typ) lterm_gen;
+  body : ('id, ltype_) term_gen;
   loc  : Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]
 
 type ('id, 'typ) invariant = {
   label: 'id;
-  formulas: (('id, 'typ) lterm_gen) list;
+  formulas: (('id, ltype_) term_gen) list;
 }
 [@@deriving show {with_path = false}]
 
 type ('id, 'typ) specification = {
   name: 'id;
-  formula: ('id, 'typ) lterm_gen;
+  formula: ('id, ltype_) term_gen;
   invariants: (('id, 'typ) invariant) list;
 }
 [@@deriving show {with_path = false}]
@@ -430,7 +421,7 @@ type ('id, 'typ) specification = {
 type ('id, 'typ) assert_ = {
   name: 'id;
   label: 'id;
-  formula: ('id, 'typ) lterm_gen;
+  formula: ('id, ltype_) term_gen;
   invariants: ('id, 'typ) invariant list;
 }
 [@@deriving show {with_path = false}]
@@ -438,10 +429,10 @@ type ('id, 'typ) assert_ = {
 type ('id, 'typ, 'term) verification = {
   predicates  : ('id, 'typ) predicate list;
   definitions : ('id, 'typ) definition list;
-  axioms      : ('id, ('id, 'typ) lterm_gen) label_term list;
-  theorems    : ('id, ('id, 'typ) lterm_gen) label_term list;
+  axioms      : ('id, ('id, ltype_) term_gen) label_term list;
+  theorems    : ('id, ('id, ltype_) term_gen) label_term list;
   variables   : ('id, 'typ, 'term) variable list;
-  invariants  : ('id * ('id, ('id, 'typ) lterm_gen) label_term list) list;
+  invariants  : ('id * ('id, ('id, ltype_) term_gen) label_term list) list;
   effect      : 'term option;
   specs       : ('id, 'typ) specification list;
   asserts     : ('id, 'typ) assert_ list;
@@ -515,7 +506,7 @@ type ('id, 'typ, 'term) asset_struct = {
   state   : 'id option;
   role    : bool;
   init    : 'term option;
-  specs   : ('id, ('id, 'typ) lterm_gen) label_term list;
+  specs   : ('id, ('id, ltype_) term_gen) label_term list;
   loc     : Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]
@@ -624,7 +615,7 @@ let mk_id type_ id : qualid =
     node  = Qident id;
     label = None; }
 
-let map_term_node (f : ('id, 'typ) pterm_gen -> ('id, 'typ) pterm_gen) = function
+let map_term_node (f : ('id, type_) term_gen -> ('id, type_) term_gen) = function
   | Lquantifer (q, i, t, e) -> Lquantifer (q, i, t, f e)
   | Pif (c, t, e)           -> Pif (f c, f t, f e)
   | Pmatchwith (e, l)       -> Pmatchwith (e, List.map (fun (p, e) -> (p, f e)) l)
@@ -674,7 +665,7 @@ let map_gen g f i =
 let map_term  f t = map_gen_poly map_term_node  f t
 let map_instr f i = map_gen map_instr_node f i
 
-let fold_term (f: 'a -> 't -> 'a) (accu : 'a) (term : ('id, 'typ) pterm_gen) =
+let fold_term (f: 'a -> 't -> 'a) (accu : 'a) (term : ('id, type_) term_gen) =
   match term.node with
   | Lquantifer (_, _, _, e) -> f accu e
   | Pif (c, t, e)           -> f (f (f accu c) t) e
@@ -724,7 +715,7 @@ let fold_instr_expr fi fe accu instr =
   | Iassert x           -> fe accu x
   | Icall (x, id, args) -> fi accu instr
 
-let fold_map_term g f (accu : 'a) (term : ('id, 'typ) pterm_gen) : 'term * 'a =
+let fold_map_term g f (accu : 'a) (term : ('id, type_) term_gen) : 'term * 'a =
   match term.node with
   | Lquantifer (q, id, t, e) ->
     let ee, ea = f accu e in

@@ -62,7 +62,7 @@ type item_field = {
 type storage_item = {
   name        : field_ident;
   fields      : item_field list;
-  invariants  : (lident, (lident, type_) A.lterm_gen) A.label_term list;
+  invariants  : (lident, (lident, A.ltype_) A.term_gen) A.label_term list;
   init        : ((ident * A.pterm) list) list;
 }
 [@@deriving show {with_path = false}]
@@ -72,7 +72,7 @@ type storage = storage_item list
 
 type enum_item = {
   name: enum_value_ident;
-  invariants : (lident, (lident, type_) A.lterm_gen) A.label_term list;
+  invariants : (lident, (lident, A.ltype_) A.term_gen) A.label_term list;
 }
 [@@deriving show {with_path = false}]
 
