@@ -380,7 +380,7 @@ let to_model (ast : A.model) : M.model =
          M.mk_item_field map_asset_name (FAssetRecord (vtyp_to_btyp key_type, asset_name))
            ~asset:asset_name
            (* ~default:arg.default TODO: uncomment this*)] in
-      M.mk_storage_item asset.name ~fields:compute_fields (*TODO: ~invariants:asset.specs*) (*~init:asset.init D uncomment this *)
+      M.mk_storage_item asset.name ~fields:compute_fields ~invariants:(List.map (fun x -> to_label_lterm x) asset.specs) (*~init:asset.init D uncomment this *)
     in
 
     let cont f x l = l @ (List.map f x) in
