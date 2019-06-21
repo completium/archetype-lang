@@ -239,6 +239,7 @@ let rec instr_to_expr model (instr : M.instruction) : W.expr * W.type_ =
         | Cconst c ->
           Format.eprintf "Cconst: %a@\n" M.pp_const c;
           raise (Anomaly "no const")
+        | Cstorage s -> W.Evar (M.function_name_from_function_node (M.Storage s))
       in
       let args =
         W.Evar "s"::(List.map (fun x ->
@@ -350,6 +351,11 @@ let rec instr_to_expr model (instr : M.instruction) : W.expr * W.type_ =
       | Cconst c ->
         Format.eprintf "Cconst: %a@\n" M.pp_const c;
         raise (Anomaly "no const")
+      | Cstorage s ->
+        let args =
+          W.Evar "s"::(List.map (fun e -> (match e with | M.AExpr e -> expr_to_expr model e | _ -> assert false) |> fst) args)
+        in
+        W.Evar (M.function_name_from_function_node (M.Storage s)), args, W.Tstorage
     in
     W.Ecall (i_id, args), t
 
@@ -392,10 +398,10 @@ let mk_function_struct model (f : 'id M.function__) =
         else Etuple [Earray []; W.Evar storage_id] in
       W.Entry, args, ret, body
 
-    | M.Get asset                   -> Utils.get_asset model asset
-    | M.AddAsset asset              -> Utils.add_asset model asset
-    | M.ContainsAsset asset         -> Utils.contains_asset model asset
-    | M.AddContainer (asset, field) -> Utils.add_container model (asset, field)
+    | M.Storage Get asset                   -> Utils.get_asset model asset
+    | M.Storage AddAsset asset              -> Utils.add_asset model asset
+    | M.Storage ContainsAsset asset         -> Utils.contains_asset model asset
+    | M.Storage AddContainer (asset, field) -> Utils.add_container model (asset, field)
 
     | _ ->
       let args = [[""], W.Tunit] in

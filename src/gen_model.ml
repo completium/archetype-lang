@@ -442,7 +442,7 @@ let to_model (ast : A.model) : M.model =
           | A.Tasset asset, Some field, A.Cmin,      Some AExpr {node = A.Pdot (a, _)}  -> Some (M.MinContainer (asset, field), Some (AExpr a))
           | _ -> None in
         match node with
-        | Some (node, x) -> Some (M.mk_function node, x)
+        | Some (node, x) -> Some (M.mk_function (M.Storage node), x)
         | _ -> None
       in
 
