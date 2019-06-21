@@ -160,7 +160,7 @@ let rec to_qualid_node (n : ('a, 'b) A.qualid_node) : ('id, 'qualid) M.qualid_no
   | A.Qident i    -> M.Qident i
   | A.Qdot (d, i) -> M.Qdot (to_qualid_gen d, i)
 
-and  to_qualid_gen (q : A.qualid) : M.qualid =
+and to_qualid_gen (q : A.qualid) : M.qualid =
   let node = to_qualid_node q.node in
   let type_ = ptyp_to_type (Option.get q.type_) in
   M.mk_qualid node type_
@@ -229,60 +229,62 @@ let rec lterm_to_mterm (lterm : A.lterm) : M.mterm =
   let type_ = ltyp_to_type (Option.get lterm.type_) in
   M.mk_mterm node type_ ~loc:lterm.loc
 
+let to_label_lterm (x : ('id, ('id, A.ltype_) A.term_gen) A.label_term) : M.lident M.label_term_gen =
+  M.mk_label_term (lterm_to_mterm x.term) ?label:x.label ~loc:x.loc
 
-let to_instruction_node (n : ('a, 'b, 'c, 'd) A.instruction_node) : ('id, 'instr) M.instruction_node =
+
+let to_instruction_node (n : ('a, 'b, 'c, 'd) A.instruction_node) fi ft : ('id, 'instr) M.instruction_node =
   match n with
-  (* | Iif of ('id mterm_gen * 'instr * 'instr)                           *)
-  (* | Ifor of ('id * 'id mterm_gen * 'instr)                                *)
-  (* | Iletin of ('id * 'id mterm_gen * 'instr)                              *)
-  (* | Iseq of 'instr list                                                   *)
-  (* | Imatchwith of 'id mterm_gen * ('id pattern_gen * 'instr) list   *)
-  (* | Iassign of (assignment_operator * 'id * 'id mterm_gen)         *)
-  (* | Irequire of (bool * 'id mterm_gen)                           *)
-  (* | Itransfer of ('id mterm_gen * bool * 'id qualid_gen option)   *)
-  | A.Ibreak -> M.Ibreak
-  (* | Iassert of 'id mterm_gen *)
-  (* | Icall of ('id mterm_gen option * 'id call_kind * ('id term_arg) list) *)
-  | _ -> assert false
+  | A.Iif (c, t, e)          -> M.Iif (ft c, fi t, fi e)
+  | A.Ifor (i, col, body)    -> M.Ifor (i, ft col, fi body)
+  | A.Iletin (i, init, cont) -> M.Iletin (i, ft init, fi cont)
+  | A.Iseq l                 -> M.Iseq (List.map fi l)
+  | A.Imatchwith (m, l)      -> M.Imatchwith (ft m, List.map (fun (p, i) -> (to_pattern p, fi i)) l)
+  | A.Iassign (op, i, e)     -> M.Iassign (to_assignment_operator op, i, to_mterm e)
+  | A.Irequire (b, t)        -> M.Irequire (b, ft t)
+  | A.Itransfer (i, b, q)    -> M.Itransfer (ft i, b, Option.map to_qualid_gen q)
+  | A.Ibreak                 -> M.Ibreak
+  | A.Iassert e              -> M.Iassert (ft e)
+  | A.Icall (i, ck, args)    -> M.Icall (Option.map to_mterm i, to_call_kind ck, List.map (to_term_arg ft) args)
 
-let to_instruction (instr : A.instruction) : M.instruction =
-  let node = to_instruction_node instr.node in
+let rec to_instruction (instr : A.instruction) : M.instruction =
+  let node = to_instruction_node instr.node to_instruction to_mterm in
   M.mk_instruction node ~subvars:instr.subvars ~loc:instr.loc
 
-let to_predicate (p : ('a, 'b) A.predicate) : 'id M.predicate =
+let to_predicate (p : ('a, A.ptyp) A.predicate) : 'id M.predicate =
   M.mk_predicate p.name (lterm_to_mterm p.body) ~args:(List.map (fun (id, body) -> (id, lterm_to_mterm body)) p.args) ~loc:p.loc
 
-let to_definition (d : ('a, 'b) A.definition ): 'id M.definition =
-  M.mk_definition d.name d.typ d.var (lterm_to_mterm d.body) ~loc:d.loc
+let to_definition (d : ('a, A.ptyp) A.definition ): 'id M.definition =
+  M.mk_definition d.name (ptyp_to_type d.typ) d.var (lterm_to_mterm d.body) ~loc:d.loc
 
-(* let to_axiom      : 'id axiom      = () in
-   let to_theorem    : 'id theorem    = () in
-   let to_variable   : 'id variable   = () in
-   let to_invariant  : 'id invariant  = () in
-   let to_effect     : 'id effect     = () in
-   let to_spec       : 'id spec       = () in
-   let to_assert     : 'id assert     = () in *)
+(* let to_variable (v : (A.lident, A.ptyp, A.pterm) A.variable) : M.lident M.variable = *)
 
-let to_verification (v : ('a, 'b, 'c) A.verification) : 'id M.verification =
+let to_invariant (i : (A.lident, A.ptyp) A.invariant) : M.lident M.invariant  =
+  M.mk_invariant i.label ~formulas:(List.map lterm_to_mterm i.formulas)
+
+(* let to_spec       : 'id spec       = () in *)
+(* let to_assert     : 'id assert     = () in *)
+
+let to_verification (v : (A.lident, A.ptyp, A.pterm) A.verification) : M.lident M.verification =
   let predicates  = List.map (fun x -> to_predicate x) v.predicates in
   let definitions = List.map (fun x -> to_definition x) v.definitions in
-  (* let axioms      = () in
-     let theorems    = () in
-     let variables   = () in
-     let invariants  = () in
-     let effect      = () in
-     let specs       = () in
-     let asserts     = () in *)
+  let axioms      = List.map (fun x -> to_label_lterm x) v.axioms in
+  let theorems    = List.map (fun x -> to_label_lterm x) v.theorems in
+  (* let variables   = List.map (fun x -> to_variable x) v.variables in *)
+  (* let invariants  = List.map (fun x -> to_label_lterm x) v.invariants in *)
+  let effect      = Option.map to_mterm v.effect in
+  (* let specs       = () in *)
+  (* let asserts     = () in *)
   M.mk_verification
     ~predicates:predicates
     ~definitions:definitions
-    (* ~axioms:axioms
-       ~theorems:theorems
-       ~variables:variables
-       ~invariants:invariants
-       ~effect:effect
-       ~specs:specs
-       ~asserts:asserts *)
+    ~axioms:axioms
+    ~theorems:theorems
+    (* ~variables:variables *)
+    (* ~invariants:invariants *)
+    ?effect:effect
+    (* ~specs:specs *)
+    (* ~asserts:asserts *)
     ~loc:v.loc ()
 
 let to_model (ast : A.model) : M.model =
@@ -309,7 +311,10 @@ let to_model (ast : A.model) : M.model =
       let r = {
         r with
         key = a.key;
-        values=(List.map (fun (x : (A.lident, A.type_, A.pterm) A.decl_gen) -> M.mk_record_item x.name (Option.get x.typ) ?default:x.default) a.fields);
+        values=(List.map (fun (x : (A.lident, A.type_, A.pterm) A.decl_gen) ->
+            let typ = Option.map ptyp_to_type x.typ in
+            let default = Option.map to_mterm x.default in
+            M.mk_record_item x.name (Option.get typ) ?default:default) a.fields);
       }
       in
       M.TNrecord r
@@ -317,17 +322,20 @@ let to_model (ast : A.model) : M.model =
     list @ List.map (fun x -> process_asset x) ast.assets in
 
   let process_contracts list =
-    let to_mk_contract_signature s =
+    let to_contract_signature (s : (A.lident, A.ptyp) A.signature) : M.lident M.contract_signature =
       let name = s.name in
-      M.mk_mk_contract_signature name ~args=c.args ?ret=c.ret
+      M.mk_contract_signature name ~args:(List.map (fun arg -> ptyp_to_type arg) s.args) ~loc:s.loc
     in
-    let to_contract c =
-      M.mk_contract c.name ~signature=(List.map to_signature c.signatures) ?init=(Option.map to_mterm c.init) ~loc=c.loc
+    let to_contract (c : (A.lident, A.ptyp, A.pterm) A.contract) : M.contract =
+      M.mk_contract c.name
+        ~signatures:(List.map to_contract_signature c.signatures)
+        ?init:(Option.map to_mterm c.init)
+        ~loc:c.loc
     in
-    list @ List.map (fun x -> M.TNcontract x) ast.contracts in
+    list @ List.map (fun (x : (A.lident, A.ptyp, A.pterm) A.contract) -> M.TNcontract (to_contract x)) ast.contracts in
 
   let process_storage list =
-    let variable_to_storage_items (var : variable) : 'id M.storage_item =
+    let variable_to_storage_items (var : variable) : M.storage_item =
       let arg = var.decl in
       let compute_field (type_ : A.type_) : 'id M.item_field =
         let rec ptyp_to_item_field_type = function
@@ -350,7 +358,7 @@ let to_model (ast : A.model) : M.model =
       }
     in
 
-    let asset_to_storage_items (asset : A.asset) : 'id M.storage_item =
+    let asset_to_storage_items (asset : A.asset) : M.storage_item =
       let asset_name = asset.name in
       let compute_fields =
         let _, key_type = A.Utils.get_asset_key ast asset_name in
@@ -362,7 +370,7 @@ let to_model (ast : A.model) : M.model =
          M.mk_item_field map_asset_name (FAssetRecord (vtyp_to_btyp key_type, asset_name))
            ~asset:asset_name
            (* ~default:arg.default TODO: uncomment this*)] in
-      M.mk_storage_item asset.name ~fields:compute_fields ~invariants:asset.specs (*~init:asset.init TODO: uncomment this *)
+      M.mk_storage_item asset.name ~fields:compute_fields (*TODO: ~invariants:asset.specs*) (*~init:asset.init D uncomment this *)
     in
 
     let cont f x l = l @ (List.map f x) in
@@ -512,21 +520,21 @@ let to_model (ast : A.model) : M.model =
 
     let process_function (function_ : A.function_) (list : 'id M.decl_node list) : 'id M.decl_node list =
       let name  = function_.name in
-      let args  = function_.args in
+      let args  = [] in (*function_.args in*)
       let body  = function_.body in
       let loc   = function_.loc in
-      let ret   = function_.return in
-      let verif = to_verification function_.verification in
+      let ret   = ptyp_to_type function_.return in
+      let verif : M.lident M.verification option = Option.map to_verification function_.verification in
       process_fun_gen name args body loc verif (fun x -> M.Function (x, ret)) list
     in
 
     let process_transaction (transaction : A.transaction) (list : 'id M.decl_node list) : 'id M.decl_node list =
       let list  = list |> cont process_function ast.functions in
       let name  = transaction.name in
-      let args  = transaction.args in
+      let args  = [] in (*transaction.args in*)
       let body  = Option.get transaction.effect in
       let loc   = transaction.loc in
-      let verif = to_verification transaction.verification in
+      let verif : M.lident M.verification option = Option.map to_verification transaction.verification in
       process_fun_gen name args body loc verif (fun x -> M.Entry x) list
     in
 

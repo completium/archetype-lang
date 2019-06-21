@@ -300,13 +300,15 @@ type 'id contract_signature = {
 }
 [@@deriving show {with_path = false}]
 
-type 'id contract = {
+type 'id contract_gen = {
   name       : 'id;
   signatures : 'id contract_signature list;
   init       : 'id mterm_gen option;
   loc        : Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]
+
+type contract = lident contract_gen
 
 type 'id function_ = {
   name: 'id;
@@ -480,7 +482,7 @@ type 'id function__ = {
 type 'id decl_node =
   | TNenum of 'id enum
   | TNrecord of 'id record
-  | TNcontract of 'id contract
+  | TNcontract of 'id contract_gen
   | TNstorage of 'id storage
   | TNfunction of 'id function__
 [@@deriving show {with_path = false}]
@@ -536,6 +538,9 @@ let mk_pattern ?(loc = Location.dummy) node : 'id pattern_gen =
 let mk_mterm ?(loc = Location.dummy) node type_ : 'id mterm_gen =
   { node; type_; loc}
 
+let mk_label_term ?label ?(loc = Location.dummy) term : 'id label_term_gen =
+  { label; term; loc }
+
 let mk_instruction ?(loc = Location.dummy) ?(subvars=[]) node : 'id instruction_gen =
   { node; subvars; loc}
 
@@ -560,10 +565,10 @@ let mk_assert ?(invariants = []) name label formula =
 let mk_verification ?(predicates = []) ?(definitions = []) ?(axioms = []) ?(theorems = []) ?(variables = []) ?(invariants = []) ?effect ?(specs = []) ?(asserts = []) ?(loc = Location.dummy) () =
   { predicates; definitions; axioms; theorems; variables; invariants; effect; specs; asserts; loc}
 
-let mk_contract_signature ?ret ?(args=[]) name : 'id signature =
-  { name; args; ret}
+let mk_contract_signature ?(args=[]) ?(loc=Location.dummy) name : 'id contract_signature =
+  { name; args; loc }
 
-let mk_contract ?(signatures=[]) ?init ?(loc=Location.dummy) name : 'id contract =
+let mk_contract ?(signatures=[]) ?init ?(loc=Location.dummy) name : 'id contract_gen =
   { name; signatures; init; loc }
 
 let mk_enum ?(values = []) name : 'id enum =
