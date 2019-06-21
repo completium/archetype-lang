@@ -522,14 +522,14 @@ let to_model (ast : A.model) : M.model =
     let process_fun_gen name args (body : M.instruction) loc verif f (list : 'id M.decl_node_gen list) : 'id M.decl_node_gen list =
       let instr, list = extract_function_from_instruction body list in
       let node = f (M.mk_function_struct name instr
-                      ~args:(List.map (fun (x : ('id, 'typ, 'term) A.decl_gen) -> (x.name, Option.get x.typ, None)) args)
+                      ~args:args
                       ~loc:loc) in
       list @ [TNfunction (M.mk_function ?verif:verif node)]
     in
 
     let process_function (function_ : A.function_) (list : 'id M.decl_node_gen list) : 'id M.decl_node_gen list =
       let name  = function_.name in
-      let args  = [] in (*function_.args in*)
+      let args  = List.map (fun (x : (A.lident, A.ptyp, A.ptyp A.bval_gen) A.decl_gen) -> (x.name, (ptyp_to_type |@ Option.get) x.typ, None)) function_.args in
       let body  = to_instruction function_.body in
       let loc   = function_.loc in
       let ret   = ptyp_to_type function_.return in
@@ -540,7 +540,7 @@ let to_model (ast : A.model) : M.model =
     let process_transaction (transaction : A.transaction) (list : 'id M.decl_node_gen list) : 'id M.decl_node_gen list =
       let list  = list |> cont process_function ast.functions in
       let name  = transaction.name in
-      let args  = [] in (*transaction.args in*)
+      let args  = List.map (fun (x : (A.lident, A.ptyp, A.ptyp A.bval_gen) A.decl_gen) -> (x.name, (ptyp_to_type |@ Option.get) x.typ, None)) transaction.args in
       let body  = (to_instruction |@ Option.get) transaction.effect in
       let loc   = transaction.loc in
       let verif : M.lident M.verification option = Option.map to_verification transaction.verification in
