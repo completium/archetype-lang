@@ -131,6 +131,7 @@ type ('e,'t,'i) abstract_term =
   | Tnone
   | Tsome   of 'e
   | Tenum   of 'i
+  | Ttobereplaced
   | Tnottranslated
   (* ... *)
 [@@deriving show {with_path = false}]
@@ -326,6 +327,7 @@ and map_abstract_term
   | Tnone              -> Tnone
   | Tsome e            -> Tsome (map_e e)
   | Tenum i            -> Tenum (map_i i)
+  | Ttobereplaced      -> Ttobereplaced
   | Tnottranslated     -> Tnottranslated
 
 let map_abstract_field
@@ -642,6 +644,7 @@ let compare_abstract_term
   | Tsome e1, Tsome e2 -> cmpe e1 e2
   | Tenum i1, Tenum i2 -> cmpi i1 i2
   | Tnottranslated, Tnottranslated -> true
+  | Ttobereplaced, Ttobereplaced -> true
   | _ -> false
 
 (* replace --------------------------------------------------------------------*)
