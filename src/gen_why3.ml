@@ -146,6 +146,13 @@ let mk_app_field (a : loc_ident) (f : loc_ident) : loc_term * loc_term  =
   let loc_f : loc_term = mk_loc f.loc (Tvar f) in
   (loc_f,with_dummy_loc (Tapp (loc_f,[loc_term arg])))
 
+(* n is the asset name *)
+let mk_keys_eq_axiom n f ktyp : decl =
+  Daxiom ("eq_"^n^"_keys",
+          Tforall ([["s"],Tystorage;["k"],ktyp],
+                   Timpl (Tmem (Tvar "s",Tdoti ("s",n^"_keys")),
+                          Tapp (Tvar f,[Tget (Tdoti ("s",n^"_assets"),Tvar "k")]))))
+
 (* Filter template -----------------------------------------------------------*)
 
 let mk_filter n typ test : decl = Dfun {
@@ -560,7 +567,7 @@ let map_storage_items = List.fold_left (fun acc (items : M.storage_item) ->
    TODO : make sure there is no collision between "k_" and invariant vars
 
    m is the Model
-   n is the asset n
+   n is the asset name
    inv is the invariant to extend
 *)
 let mk_extended_invariant m n inv : loc_term =
@@ -604,6 +611,15 @@ let is_storage (d : M.decl_node) : bool =
 
 let get_storage = List.filter is_storage
 
+
+let mk_axioms (m : M.model) : loc_decl list =
+  let records = get_records m.decls |> List.map (fun d ->
+      match d with M.TNrecord r -> r.name | _ -> assert false) in
+  let keys    = records |> List.map (M.Utils.get_record_key m) in
+  List.map2 (fun r (k,kt) ->
+      mk_keys_eq_axiom r.pldesc k.pldesc (map_vtype kt)
+    ) records keys |> loc_decl
+
 (* ----------------------------------------------------------------------------*)
 
 let to_whyml (m : M.model) : mlw_tree  =
@@ -612,7 +628,8 @@ let to_whyml (m : M.model) : mlw_tree  =
   let init_records = records |> unloc_decl |> List.map mk_default_init |> loc_decl in
   let records      = zip records init_records |> deloc in
   let storage      = get_storage m.decls |> List.map (map_decl m) in
+  let axioms       = mk_axioms m |> deloc in
   let loct : loc_mlw_tree = {
     name = cap (map_lident m.name);
-    decls =  uselib :: (records @ storage);
+    decls =  uselib :: (records @ storage @ axioms);
   } in unloc_tree loct

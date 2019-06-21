@@ -178,7 +178,7 @@ type ('e,'t,'i) abstract_decl =
   | Denum    of 'i * 'i list
   | Drecord  of 'i * (('e,'t,'i) abstract_field) list
   | Dstorage of ('e,'t,'i) abstract_storage_struct
-  | Daxiom   of 'i * ('e,'i) abstract_formula
+  | Daxiom   of 'i * 'e
   | Dfun     of ('e,'t,'i) abstract_fun_struct
 [@@deriving show {with_path = false}]
 
@@ -365,7 +365,7 @@ let map_abstract_decl
   | Denum (i,l)     -> Denum (map_i i, List.map map_i l)
   | Drecord (i,l)   -> Drecord (map_i i, List.map (map_abstract_field map_e map_t map_i) l)
   | Dstorage s      -> Dstorage (map_abstract_storage_struct map_e map_t map_i s)
-  | Daxiom (i,f)    -> Daxiom (map_i i, map_abstract_formula map_e map_i f)
+  | Daxiom (i,e)    -> Daxiom (map_i i, map_e e)
   | Dfun f          -> Dfun (map_abstract_fun_struct map_e map_t map_i f)
 
 let map_abstract_mlw_tree
