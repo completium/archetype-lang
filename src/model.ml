@@ -479,7 +479,7 @@ type 'id function__ = {
 }
 [@@deriving show {with_path = false}]
 
-type 'id decl_node =
+type 'id decl_node_gen =
   | TNenum of 'id enum
   | TNrecord of 'id record
   | TNcontract of 'id contract_gen
@@ -487,9 +487,12 @@ type 'id decl_node =
   | TNfunction of 'id function__
 [@@deriving show {with_path = false}]
 
+type decl_node = lident decl_node_gen
+[@@deriving show {with_path = false}]
+
 type 'id model_gen = {
   name: lident;
-  decls: 'id decl_node list;
+  decls: 'id decl_node_gen list;
 }
 [@@deriving show {with_path = false}]
 
@@ -632,7 +635,7 @@ end = struct
 
   let get_record model record_name : lident record =
     let id = unloc record_name in
-    let res = List.fold_left (fun accu (x : lident decl_node) ->
+    let res = List.fold_left (fun accu (x : decl_node) ->
         match x with
         | TNrecord r when String.equal (unloc record_name) (unloc r.name) -> Some r
         | _ -> accu
@@ -657,7 +660,7 @@ end = struct
     | _ -> emit_error (RecordKeyTypeNotFound (unloc record_name))
 
   let get_storage model =
-    List.fold_left (fun accu (x : lident decl_node) ->
+    List.fold_left (fun accu (x : decl_node) ->
         match x with
         | TNstorage s -> Some s
         | _ -> accu

@@ -598,14 +598,14 @@ let map_decl m (d : M.decl_node) =
     }
   | _ -> assert false
 
-let is_record (d : 'id M.decl_node) : bool =
+let is_record (d : M.decl_node) : bool =
   match d with
   | M.TNrecord _ -> true
   | _            -> false
 
 let get_records = List.filter is_record
 
-let is_storage (d : 'id M.decl_node) : bool =
+let is_storage (d : M.decl_node) : bool =
   match d with
   | M.TNstorage _ -> true
   | _             -> false
@@ -618,7 +618,7 @@ let mk_axioms (m : M.model) : loc_decl list =
       match d with M.TNrecord r -> r.name | _ -> assert false) in
   let keys    = records |> List.map (M.Utils.get_record_key m) in
   List.map2 (fun r (k,kt) ->
-      mk_keys_eq_axiom r.pldesc k.pldesc (map_vtype kt)
+      mk_keys_eq_axiom r.pldesc k.pldesc (map_btype kt)
     ) records keys |> loc_decl
 
 (* ----------------------------------------------------------------------------*)

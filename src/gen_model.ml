@@ -289,7 +289,7 @@ let to_verification (v : (A.lident, A.ptyp, A.pterm) A.verification) : M.lident 
 
 let to_model (ast : A.model) : M.model =
   let process_enums list =
-    let process_enum (e : A.enum) : 'id M.decl_node =
+    let process_enum (e : A.enum) : 'id M.decl_node_gen =
       let enum = M.mk_enum e.name in
       M.TNenum {
         enum with
@@ -306,7 +306,7 @@ let to_model (ast : A.model) : M.model =
     list @ List.map (fun x -> process_enum x) ast.enums in
 
   let process_records list =
-    let process_asset (a : A.asset) : 'id M.decl_node =
+    let process_asset (a : A.asset) : 'id M.decl_node_gen =
       let r : 'id M.record = M.mk_record a.name in
       let r = {
         r with
@@ -380,8 +380,8 @@ let to_model (ast : A.model) : M.model =
     |> (fun x -> list @ [M.TNstorage x])
   in
 
-  let process_functions list : 'id M.decl_node list =
-    let extract_function_from_instruction (instr : A.instruction) (list : 'id  M.decl_node list) : (A.instruction * 'id M.decl_node list) =
+  let process_functions list : 'id M.decl_node_gen list =
+    let extract_function_from_instruction (instr : A.instruction) (list : 'id  M.decl_node_gen list) : (A.instruction * 'id M.decl_node_gen list) =
       let add l i =
         let e = List.fold_left (fun accu x ->
             if x = i
@@ -438,7 +438,7 @@ let to_model (ast : A.model) : M.model =
 
       let ge (e : A.pterm) = (fun node -> {e with node = node}) in
 
-      let rec fe accu (term : A.pterm) : A.pterm * 'id M.decl_node list =
+      let rec fe accu (term : A.pterm) : A.pterm * 'id M.decl_node_gen list =
         match term.node with
         | A.Pcall (Some asset_name, Cconst c, args) -> (
             let _, accu = A.fold_map_term (fun node -> {term with node = node} ) fe accu term in
@@ -493,7 +493,7 @@ let to_model (ast : A.model) : M.model =
           | None -> instr, accu in
         instr, accu in
 
-      let rec fi accu (instr : A.instruction) : A.instruction * 'id M.decl_node list =
+      let rec fi accu (instr : A.instruction) : A.instruction * 'id M.decl_node_gen list =
         let gi = (fun node -> {instr with node = node}) in
         match instr.node with
         | A.Icall (Some {node = A.Pdot ({type_ = t; _}, id); _}, Cconst c, args) ->
@@ -510,7 +510,7 @@ let to_model (ast : A.model) : M.model =
 
     let cont f x l = List.fold_left (fun accu x -> f x accu) l x in
 
-    let process_fun_gen name args body loc verif f (list : 'id M.decl_node list) : 'id M.decl_node list =
+    let process_fun_gen name args body loc verif f (list : 'id M.decl_node_gen list) : 'id M.decl_node_gen list =
       let instr, list = extract_function_from_instruction body list in
       let node = f (M.mk_function_struct name (to_instruction instr)
                       ~args:(List.map (fun (x : ('id, 'typ, 'term) A.decl_gen) -> (x.name, Option.get x.typ, None)) args)
@@ -518,7 +518,7 @@ let to_model (ast : A.model) : M.model =
       list @ [TNfunction (M.mk_function ?verif:verif node)]
     in
 
-    let process_function (function_ : A.function_) (list : 'id M.decl_node list) : 'id M.decl_node list =
+    let process_function (function_ : A.function_) (list : 'id M.decl_node_gen list) : 'id M.decl_node_gen list =
       let name  = function_.name in
       let args  = [] in (*function_.args in*)
       let body  = function_.body in
@@ -528,7 +528,7 @@ let to_model (ast : A.model) : M.model =
       process_fun_gen name args body loc verif (fun x -> M.Function (x, ret)) list
     in
 
-    let process_transaction (transaction : A.transaction) (list : 'id M.decl_node list) : 'id M.decl_node list =
+    let process_transaction (transaction : A.transaction) (list : 'id M.decl_node_gen list) : 'id M.decl_node_gen list =
       let list  = list |> cont process_function ast.functions in
       let name  = transaction.name in
       let args  = [] in (*transaction.args in*)
