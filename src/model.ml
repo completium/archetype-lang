@@ -615,6 +615,284 @@ let mk_model ?(decls = []) name : model =
 
 (* -------------------------------------------------------------------- *)
 
+let map_term_node (f : 'id mterm_gen -> 'id mterm_gen) = function
+  | Mquantifer (q, i, t, e) -> Mquantifer (q, i, t, f e)
+  | Mif (c, t, e)           -> Mif (f c, f t, f e)
+  | Mmatchwith (e, l)       -> Mmatchwith (e, List.map (fun (p, e) -> (p, f e)) l)
+  | Mcall (i, e, args)      ->
+    Mcall (i, e, List.map (fun (arg : 'id term_arg) -> match arg with
+        | AExpr e   -> AExpr (f e)
+        | AEffect l -> AEffect (List.map (fun (id, op, e) -> (id, op, f e)) l)) args)
+  | Mlogical (op, l, r)     -> Mlogical (op, f l, f r)
+  | Mnot e                  -> Mnot (f e)
+  | Mcomp (c, l, r)         -> Mcomp (c, f l, f r)
+  | Marith (op, l, r)       -> Marith (op, f l, f r)
+  | Muarith (op, e)         -> Muarith (op, f e)
+  | Mrecord l               -> Mrecord (List.map f l)
+  | Mletin (i, a, t, b)     -> Mletin (i, f a, t, f b)
+  | Mvar v                  -> Mvar v
+  | Marray l                -> Marray (List.map f l)
+  | Mlit l                  -> Mlit l
+  | Mdot (e, i)             -> Mdot (f e, i)
+  | Mconst c                -> Mconst c
+  | Mtuple l                -> Mtuple (List.map f l)
+
+let map_instr_node f = function
+  | Iif (c, t, e)       -> Iif (c, f t, f e)
+  | Ifor (i, c, b)      -> Ifor (i, c, f b)
+  | Iletin (i, c, b)    -> Iletin (i, c, f b)
+  | Iseq is             -> Iseq (List.map f is)
+  | Imatchwith (a, ps)  -> Imatchwith (a, ps)
+  | Iassign (op, l, r)  -> Iassign (op, l, r)
+  | Irequire (b, x)     -> Irequire (b, x)
+  | Itransfer x         -> Itransfer x
+  | Ibreak              -> Ibreak
+  | Iassert x           -> Iassert x
+  | Icall (x, id, args) -> Icall (x, id, args)
+
+let map_gen_mterm g f (i : 'id mterm_gen) : 'id mterm_gen =
+  {
+    i with
+    node = g f i.node
+  }
+
+let map_gen g f (i : 'id instruction_gen) : 'id instruction_gen =
+  {
+    i with
+    node = g f i.node
+  }
+
+let map_term  f t = map_gen_mterm map_term_node  f t
+let map_instr f i = map_gen map_instr_node f i
+
+let fold_term (f : 'a -> 't -> 'a) (accu : 'a) (term : 'id mterm_gen) =
+  match term.node with
+  | Mquantifer (_, _, _, e) -> f accu e
+  | Mif (c, t, e)           -> f (f (f accu c) t) e
+  | Mmatchwith (e, l)       -> List.fold_left (fun accu (_, a) -> f accu a) (f accu e) l
+  | Mcall (_, _, args)      -> List.fold_left (fun accu (arg : 'id term_arg) -> match arg with
+      | AExpr e -> f accu e
+      | AEffect l -> List.fold_left (fun accu (_, _, e) -> f accu e) accu l ) accu args
+  | Mlogical (_, l, r)      -> f (f accu l) r
+  | Mnot e                  -> f accu e
+  | Mcomp (_, l, r)         -> f (f accu l) r
+  | Marith (_, l, r)        -> f (f accu l) r
+  | Muarith (_, e)          -> f accu e
+  | Mrecord l               -> List.fold_left f accu l
+  | Mletin (_, a, _, b)     -> f (f accu a) b
+  | Mvar _                  -> accu
+  | Marray l                -> List.fold_left f accu l
+  | Mlit _                  -> accu
+  | Mdot (e, _)             -> f accu e
+  | Mconst _                -> accu
+  | Mtuple l                -> List.fold_left f accu l
+
+let fold_instr f accu (instr : 'id instruction_gen) =
+  match instr.node with
+  | Iif (c, t, e)    -> f (f accu t) e
+  | Ifor (i, c, b)   -> f accu b
+  | Iletin (i, j, b) -> f accu b
+  | Iseq is          -> List.fold_left f accu is
+  | Imatchwith _     -> accu
+  | Iassign _        -> accu
+  | Irequire _       -> accu
+  | Itransfer _      -> accu
+  | Ibreak           -> accu
+  | Iassert _        -> accu
+  | Icall _          -> accu
+
+let fold_instr_expr fi fe accu (instr : 'id instruction_gen) =
+  match instr.node with
+  | Iif (c, t, e)       -> fi (fi (fe accu c) t) e
+  | Ifor (i, c, b)      -> fi (fe accu c) b
+  | Iletin (i, j, b)    -> fi (fe accu j) b
+  | Iseq is             -> List.fold_left fi accu is
+  | Imatchwith (a, ps)  -> List.fold_left (fun accu (_, i) -> fi accu i) (fe accu a) ps
+  | Iassign (_, _, e)   -> fe accu e
+  | Irequire (_, x)     -> fe accu x
+  | Itransfer (x, _, _) -> fe accu x
+  | Ibreak              -> accu
+  | Iassert x           -> fe accu x
+  | Icall (x, id, args) -> fi accu instr
+
+let fold_map_term g f (accu : 'a) (term : 'id mterm_gen) : 'term * 'a =
+  match term.node with
+  | Mquantifer (q, id, t, e) ->
+    let ee, ea = f accu e in
+    g (Mquantifer (q, id, t, ee)), ea
+
+  | Mif (c, t, e) ->
+    let ce, ca = f accu c in
+    let ti, ta = f ca t in
+    let ei, ea = f ta e in
+    g (Mif (ce, ti, ei)), ea
+
+  | Mmatchwith (e, l) ->
+    let ee, ea = f accu e in
+    let (pse, psa) =
+      List.fold_left
+        (fun (ps, accu) (p, i) ->
+           let pa, accu = f accu i in
+           [(p, i)] @ ps, accu) ([], ea) l
+    in
+
+    g (Mmatchwith (ee, l)), psa
+
+  | Mcall (a, id, args) ->
+    let ((argss, argsa) : 'c list * 'a) =
+      List.fold_left
+        (fun (pterms, accu) (x : 'id term_arg) ->
+           let p, accu =
+             match x with
+             | AExpr a -> f accu a |> fun (x, acc) -> (Some (AExpr x), acc)
+             | _ -> None, accu in
+           let x = match p with | Some a -> a | None -> x in
+           pterms @ [x], accu) ([], accu) args
+    in
+    g (Mcall (a, id, argss)), argsa
+
+  | Mlogical (op, l, r) ->
+    let le, la = f accu l in
+    let re, ra = f la r in
+    g (Mlogical (op, le, re)), ra
+
+  | Mnot e ->
+    let ee, ea = f accu e in
+    g (Mnot ee), ea
+
+  | Mcomp (op, l, r) ->
+    let le, la = f accu l in
+    let re, ra = f la r in
+    g (Mcomp (op, le, re)), ra
+
+  | Marith (op, l, r) ->
+    let le, la = f accu l in
+    let re, ra = f la r in
+    g (Marith (op, le, re)), ra
+
+  | Muarith (op, e) ->
+    let ee, ea = f accu e in
+    g (Muarith (op, ee)), ea
+
+  | Mrecord l ->
+    let (lp, la) = List.fold_left
+        (fun (pterms, accu) x ->
+           let p, accu = f accu x in
+           pterms @ [p], accu) ([], accu) l in
+    g (Mrecord lp), la
+
+  | Mletin (id, i, t, o) ->
+    let ie, ia = f accu i in
+    let oe, oa = f ia o in
+    g (Mletin (id, i, t, oe)), oa
+
+  | Mvar id ->
+    g (Mvar id), accu
+
+  | Marray l ->
+    let (lp, la) = List.fold_left
+        (fun (pterms, accu) x ->
+           let p, accu = f accu x in
+           pterms @ [p], accu) ([], accu) l in
+    g (Marray lp), la
+
+  | Mlit l ->
+    g (Mlit l), accu
+
+  | Mdot (e, id) ->
+    let ee, ea = f accu e in
+    g (Mdot (ee, id)), ea
+
+  | Mconst c ->
+    g (Mconst c), accu
+
+  | Mtuple l ->
+    let (lp, la) = List.fold_left
+        (fun (pterms, accu) x ->
+           let p, accu = f accu x in
+           pterms @ [p], accu) ([], accu) l in
+    g (Mtuple lp), la
+
+
+let fold_map_instr_term gi ge fi fe (accu : 'a) (instr : 'id instruction_gen) : 'instr * 'a =
+  match instr.node with
+  | Iif (c, t, e) ->
+    let ce, ca = fe accu c in
+    let ti, ta = fi ca t in
+    let ei, ea = fi ta e in
+    gi (Iif (ce, ti, ei)), ea
+
+  | Ifor (i, c, b) ->
+    let ce, ca = fe accu c in
+    let bi, ba = fi ca b in
+    gi (Ifor (i, ce, bi)), ba
+
+  | Iletin (i, j, b) ->
+    let je, ja = fe accu j in
+    let bi, ba = fi ja b in
+    gi (Iletin (i, je, bi)), ba
+
+  | Iseq is ->
+    let (isi, isa) : ('instr list * 'a) =
+      List.fold_left
+        (fun ((instrs, accu) : ('b list * 'c)) x ->
+           let bi, accu = fi accu x in
+           instrs @ [bi], accu) ([], accu) is
+    in
+    gi (Iseq isi), isa
+
+  | Imatchwith (a, ps) ->
+    let ae, aa = fe accu a in
+
+    let (pse, psa) =
+      List.fold_left
+        (fun (ps, accu) (p, i) ->
+           let pa, accu = fi accu i in
+           [(p, i)] @ ps, accu) ([], aa) ps
+    in
+
+    gi (Imatchwith (ae, ps)), psa
+
+  | Iassign (op, id, x) ->
+    let xe, xa = fe accu x in
+    gi (Iassign (op, id, xe)), xa
+
+  | Irequire (b, x) ->
+    let xe, xa = fe accu x in
+    gi (Irequire (b, xe)), xa
+
+  | Itransfer (x, b, q) ->
+    let xe, xa = fe accu x in
+    gi (Itransfer (xe, b, q)), xa
+
+  | Ibreak ->
+    gi (Ibreak), accu
+
+  | Iassert x ->
+    let xe, xa = fe accu x in
+    gi (Iassert xe), xa
+
+  | Icall (x, id, args) ->
+    let xe, xa =
+      match x with
+      | Some x -> fe accu x |> (fun (a, b) -> (Some a, b))
+      | None -> None, accu in
+
+    let (argss, argsa) =
+      List.fold_left
+        (fun (pterms, accu) arg ->
+           match arg with
+           | AExpr x ->
+             let p, accu = fe accu x in
+             pterms @ [AExpr p], accu
+           | _ ->
+             pterms, accu
+        ) ([], xa) args
+    in
+    gi (Icall (xe, id, argss)), argsa
+
+
+(* -------------------------------------------------------------------- *)
 module Utils : sig
 
   val get_record           : model -> lident -> lident record

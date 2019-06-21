@@ -977,7 +977,8 @@ let create_miles_with_expiration_ast () =
     ~variables:[
       mk_variable (mk_decl (dumloc "admin")
                      ~typ:(Tbuiltin VTaddress)
-                     ~default:(mk_sp (Plit (mk_sp (BVaddress "tz1aazS5ms5cbGkb6FN1wvWmN7yrMTTcr6wB")))))
+                     ~default:(mk_sp (Plit (mk_sp (BVaddress "tz1aazS5ms5cbGkb6FN1wvWmN7yrMTTcr6wB")))
+                                 ~type_:(Tbuiltin VTaddress)))
     ]
     ~assets:[
       mk_asset (dumloc "mile")
