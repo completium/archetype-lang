@@ -511,16 +511,14 @@ let map_basic_type (typ : 'id M.item_field_type) : loc_typ =
     | _ -> assert false in
   with_dummy_loc (rec_map_basic_type typ)
 
-let map_bval (b : M.lit_value) : loc_term = mk_loc (Location.dummy) (
-    match b with
+let map_bval = function
     | M.BVaddress v -> Tint (sha v)
     | M.BVint i     -> Tint (Big_int.int_of_big_int i)
     | _ -> Tnottranslated
-  )
 
-let rec map_term (t : 'id M.mterm_gen) : loc_term = mk_loc t.loc (
+let rec map_term (t : M.mterm) : loc_term = mk_loc t.loc (
     match t.node with
-    | M.Mlit b -> map_bval b |> Mlwtree.deloc
+    | M.Mlit b -> map_bval b
     | M.Mvar i -> Tvar (map_lident i)
     | M.Mcomp (M.Gt,t1,t2) -> Tgt (with_dummy_loc Tyint,map_term t1,map_term t2)
     | _ -> Tnottranslated
@@ -528,8 +526,8 @@ let rec map_term (t : 'id M.mterm_gen) : loc_term = mk_loc t.loc (
 
 let map_record_term _ = map_term
 
-let map_record_values (values : 'id M.record_item list) =
-  List.map (fun (value : 'id M.record_item) ->
+let map_record_values (values : M.record_item list) =
+  List.map (fun (value : M.record_item) ->
       let typ_ = map_type value.type_ in
       let init_value = type_to_init typ_ in {
         name     = map_lident value.name;
@@ -539,7 +537,7 @@ let map_record_values (values : 'id M.record_item list) =
       }
     ) values
 
-let map_storage_items = List.fold_left (fun acc (items : 'id M.storage_item) ->
+let map_storage_items = List.fold_left (fun acc (items : M.storage_item) ->
     let extra_fields =
       if List.length items.fields > 1 (* this is the way to detect assets ... *)
       then (mk_diff_set_fields items.name.pldesc) |> loc_field |> deloc
@@ -567,7 +565,7 @@ let map_decl (d : 'id M.decl_node) =
   | M.TNrecord r -> Drecord (map_lident r.name, map_record_values r.values)
   | M.TNstorage l -> Dstorage {
       fields     = (map_storage_items l)@(mk_const_fields false |> loc_field |> deloc);
-      invariants = List.concat (List.map (fun (item : 'id M.storage_item) ->
+      invariants = List.concat (List.map (fun (item : M.storage_item) ->
           List.map map_label_term item.invariants) l)
     }
   | _ -> assert false

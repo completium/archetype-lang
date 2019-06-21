@@ -150,7 +150,7 @@ end = struct
 
   let add_container_collection model (asset, field) t = assert false
 
-  let add_container_partition model ((asset, field) : M.lident * 'id M.record_item) t =
+  let add_container_partition model ((asset, field) : M.lident * 'id M.record_item_gen) t =
     let field_ptype = to_type t in
     let asset2_name = unloc asset in
     let asset2_key_id, _ = M.Utils.get_record_key model asset in
@@ -420,13 +420,13 @@ let remove_se (model : M.model) : W.model =
       match x with
       | M.TNrecord r ->
         let values : (ident * W.type_ * W.expr) list =
-          List.map (fun (x : 'id M.record_item) -> (unloc x.name, to_type x.type_, W.Elitbool false)) r.values
+          List.map (fun (x : 'id M.record_item_gen) -> (unloc x.name, to_type x.type_, W.Elitbool false)) r.values
         in
         accu @
         [W.mk_record (unloc r.name) ~values:values]
       | M.TNstorage s ->
         let values : (ident * W.type_ * W.expr) list =
-          List.fold_left (fun accu (x : 'id M.storage_item) ->
+          List.fold_left (fun accu (x : 'id M.storage_item_gen) ->
               accu @ List.map (fun (i : 'id M.item_field) : (ident * W.type_ * W.expr) ->
                   (unloc i.name, item_type_to_type i.typ, (
                       match i.default with

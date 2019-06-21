@@ -251,7 +251,7 @@ type 'id item_field = {
 }
 [@@deriving show {with_path = false}]
 
-type 'id storage_item = {
+type 'id storage_item_gen = {
   name        : 'id;
   fields      : 'id item_field list;
   invariants  : lident label_term_gen list;
@@ -259,7 +259,9 @@ type 'id storage_item = {
 }
 [@@deriving show {with_path = false}]
 
-type 'id storage = 'id storage_item list
+type storage_item = lident storage_item_gen
+
+type 'id storage = 'id storage_item_gen list
 [@@deriving show {with_path = false}]
 
 type 'id enum_item = {
@@ -274,17 +276,20 @@ type 'id enum = {
 }
 [@@deriving show {with_path = false}]
 
-type 'id record_item = {
+type 'id record_item_gen = {
   name: 'id;
   type_: type_;
   default: 'id mterm_gen option;
 }
 [@@deriving show {with_path = false}]
 
+type record_item = lident record_item_gen
+[@@deriving show {with_path = false}]
+
 type 'id record = {
   name: 'id;
   key: 'id option;
-  values: 'id record_item list;
+  values: 'id record_item_gen list;
 }
 [@@deriving show {with_path = false}]
 
@@ -570,10 +575,10 @@ let mk_enum_item ?(invariants = []) name : 'id enum_item =
 let mk_record ?(values = []) ?key name : 'id record =
   { name; key; values }
 
-let mk_record_item ?default name type_ : 'id record_item =
+let mk_record_item ?default name type_ : 'id record_item_gen =
   { name; type_; default }
 
-let mk_storage_item ?(fields = []) ?(invariants = []) ?(init = []) name : 'id storage_item =
+let mk_storage_item ?(fields = []) ?(invariants = []) ?(init = []) name : 'id storage_item_gen =
   { name; fields; invariants; init }
 
 let mk_item_field ?asset ?(ghost = false) ?default ?(loc = Location.dummy) name typ : 'id item_field =
@@ -597,7 +602,7 @@ let mk_model ?(decls = []) name : model =
 module Utils : sig
 
   val get_record           : model -> lident -> lident record
-  val get_record_field     : model -> (lident * lident) -> lident record_item
+  val get_record_field     : model -> (lident * lident) -> record_item
   val get_record_key       : model -> lident -> (lident * btyp)
   val is_storage_attribute : model -> lident -> bool
   val get_named_field_list : model -> lident -> 'a list -> (lident * 'a) list
@@ -633,7 +638,7 @@ end = struct
 
   let get_record_field model (record_name, field_name) =
     let record = get_record model record_name in
-    let res = List.fold_left (fun accu (x : lident record_item) -> if String.equal (unloc field_name) (unloc x.name) then Some x else accu) None record.values in
+    let res = List.fold_left (fun accu (x : record_item) -> if String.equal (unloc field_name) (unloc x.name) then Some x else accu) None record.values in
     match res with
     | Some v -> v
     | _ -> emit_error (RecordFieldNotFound (unloc record_name, unloc field_name))
@@ -663,13 +668,13 @@ end = struct
     let s = get_storage model in
     match s with
     | Some items ->
-      (List.fold_left (fun accu (x : lident storage_item) ->
+      (List.fold_left (fun accu (x : storage_item) ->
            accu || String.equal (Location.unloc id) (Location.unloc x.name)) false items)
     | None -> false
 
   let get_field_list model record_name =
     let record = get_record model record_name in
-    List.map (fun (x : lident record_item) -> x.name) record.values
+    List.map (fun (x : record_item) -> x.name) record.values
 
   let get_named_field_list ast asset_name list =
     let field_list = get_field_list ast asset_name in
