@@ -465,7 +465,7 @@ type 'id verification = {
   axioms      : 'id label_term_gen list;
   theorems    : 'id label_term_gen list;
   variables   : 'id variable list;
-  invariants  : 'id label_term_gen list;
+  invariants  : ('id * 'id label_term_gen list) list;
   effect      : 'id mterm_gen option;
   specs       : 'id specification list;
   asserts     : 'id assert_ list;

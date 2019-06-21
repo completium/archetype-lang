@@ -257,34 +257,38 @@ let to_predicate (p : ('a, A.ptyp) A.predicate) : 'id M.predicate =
 let to_definition (d : ('a, A.ptyp) A.definition ): 'id M.definition =
   M.mk_definition d.name (ptyp_to_type d.typ) d.var (lterm_to_mterm d.body) ~loc:d.loc
 
-(* let to_variable (v : (A.lident, A.ptyp, A.pterm) A.variable) : M.lident M.variable = *)
+(* let to_variable (v : (A.lident, A.ptyp, A.pterm) A.variable) : M.lident M.variable =
+   M.mk_variable ((fun (i, t, a) -> M.mk_argument ) v.decl) ~constant:v.constant ?from:(Option.map to_qualid_gen v.from) ?to_:(Option.map to_qualid_gen v.to_) ~loc:v.loc *)
 
 let to_invariant (i : (A.lident, A.ptyp) A.invariant) : M.lident M.invariant  =
   M.mk_invariant i.label ~formulas:(List.map lterm_to_mterm i.formulas)
 
-(* let to_spec       : 'id spec       = () in *)
-(* let to_assert     : 'id assert     = () in *)
+let to_spec (s : (A.lident, A.type_) A.specification) : M.lident M.specification  =
+  M.mk_specification s.name (lterm_to_mterm s.formula) ~invariants:(List.map to_invariant s.invariants)
+
+let to_assert (a : (A.lident, A.type_) A.assert_) : M.lident M.assert_  =
+  M.mk_assert a.name a.label (lterm_to_mterm a.formula) ~invariants:(List.map to_invariant a.invariants)
 
 let to_verification (v : (A.lident, A.ptyp, A.pterm) A.verification) : M.lident M.verification =
-  let predicates  = List.map (fun x -> to_predicate x) v.predicates in
-  let definitions = List.map (fun x -> to_definition x) v.definitions in
-  let axioms      = List.map (fun x -> to_label_lterm x) v.axioms in
-  let theorems    = List.map (fun x -> to_label_lterm x) v.theorems in
+  let predicates  = List.map to_predicate   v.predicates  in
+  let definitions = List.map to_definition  v.definitions in
+  let axioms      = List.map to_label_lterm v.axioms      in
+  let theorems    = List.map to_label_lterm v.theorems    in
   (* let variables   = List.map (fun x -> to_variable x) v.variables in *)
-  (* let invariants  = List.map (fun x -> to_label_lterm x) v.invariants in *)
-  let effect      = Option.map to_mterm v.effect in
-  (* let specs       = () in *)
-  (* let asserts     = () in *)
+  let invariants  = List.map (fun (a, l) -> (a, List.map (fun x -> to_label_lterm x) l)) v.invariants in
+  let effect      = Option.map to_mterm     v.effect      in
+  let specs       = List.map to_spec        v.specs       in
+  let asserts     = List.map to_assert      v.asserts     in
   M.mk_verification
     ~predicates:predicates
     ~definitions:definitions
     ~axioms:axioms
     ~theorems:theorems
     (* ~variables:variables *)
-    (* ~invariants:invariants *)
+    ~invariants:invariants
     ?effect:effect
-    (* ~specs:specs *)
-    (* ~asserts:asserts *)
+    ~specs:specs
+    ~asserts:asserts
     ~loc:v.loc ()
 
 let to_model (ast : A.model) : M.model =
