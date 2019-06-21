@@ -7,6 +7,7 @@ module M = Model
 exception Anomaly of string
 type error_desc =
   | NotSupportedContainer of string
+  | TODO
 [@@deriving show {with_path = false}]
 
 let emit_error (desc : error_desc) =
@@ -42,14 +43,14 @@ let vtyp_to_btyp = function
   | A.VTcurrency c -> M.Bcurrency (to_currency c)
   | A.VTkey        -> M.Bkey
 
-let rec ptyp_to_ptyp t : M.type_ =
+let rec ptyp_to_type t : M.type_ =
   match t with
   | A.Tasset id          -> M.Tasset id
   | A.Tenum id           -> M.Tenum id
   | A.Tcontract id       -> M.Tcontract id
   | A.Tbuiltin b         -> M.Tbuiltin (vtyp_to_btyp b)
-  | A.Tcontainer (t, c)  -> M.Tcontainer (ptyp_to_ptyp t, to_container c)
-  | A.Ttuple l           -> M.Ttuple (List.map ptyp_to_ptyp l)
+  | A.Tcontainer (t, c)  -> M.Tcontainer (ptyp_to_type t, to_container c)
+  | A.Ttuple l           -> M.Ttuple (List.map ptyp_to_type l)
 
 let to_vset = function
   | A.VSremoved -> M.VSremoved
@@ -65,10 +66,10 @@ let to_trtyp = function
   | A.TRasset  -> M.TRasset
   | A.TRfield  -> M.TRfield
 
-let rec ltyp_to_ptyp t : M.type_ =
+let rec ltyp_to_type t : M.type_ =
   match t with
-  | A.LTprog t      -> ptyp_to_ptyp t
-  | A.LTvset (v, t) -> M.Tvset (to_vset v, ltyp_to_ptyp t)
+  | A.LTprog t      -> ptyp_to_type t
+  | A.LTvset (v, t) -> M.Tvset (to_vset v, ltyp_to_type t)
   | A.LTtrace tr    -> M.Ttrace (to_trtyp tr)
 
 let to_logical_operator = function
@@ -154,16 +155,135 @@ let to_const = function
   | A.Cmaybeperformedbyaction     -> M.Cmaybeperformedbyaction
 
 
-let rec to_qualid_node (q : ('id, 'qualid) A.qualid_node) : ('id, 'qualid) M.qualid_node =
-  match q with
+let rec to_qualid_node (n : ('a, 'b) A.qualid_node) : ('id, 'qualid) M.qualid_node =
+  match n with
   | A.Qident i    -> M.Qident i
   | A.Qdot (d, i) -> M.Qdot (to_qualid_gen d, i)
 
 and  to_qualid_gen (q : A.qualid) : M.qualid =
   let node = to_qualid_node q.node in
-  let type_ = ptyp_to_ptyp (Option.get q.type_) in
+  let type_ = ptyp_to_type (Option.get q.type_) in
   M.mk_qualid node type_
 
+let to_pattern_node (n : ('a, 'b) A.pattern_node) : 'id M.pattern_node =
+  match n with
+  | A.Mconst id -> M.Pconst id
+  | A.Mwild    -> M.Pwild
+
+let to_pattern (p : A.pattern) : M.pattern =
+  let node = to_pattern_node p.node in
+  M.mk_pattern node ~loc:p.loc
+
+let to_quantifier = function
+  | A.Forall -> M.Forall
+  | A.Exists -> M.Exists
+
+let to_call_kind = function
+  | A.Cid i    -> M.Cid i
+  | A.Cconst c -> M.Cconst (to_const c)
+
+let to_lit_value (b : 'typ A.bval_gen) =
+  match b.node with
+  | A.BVint i           -> M.BVint i
+  | A.BVuint i          -> M.BVuint i
+  | A.BVbool b          -> M.BVbool b
+  | A.BVenum s          -> M.BVenum s
+  | A.BVrational (d, n) -> M.BVrational (d, n)
+  | A.BVdate s          -> M.BVdate s
+  | A.BVstring s        -> M.BVstring s
+  | A.BVcurrency (c, i) -> M.BVcurrency (to_currency c, i)
+  | A.BVaddress s       -> M.BVaddress s
+  | A.BVduration s      -> M.BVduration s
+
+let rec to_mterm_node (n : ('a, 'b, 'c) A.term_node) f (ftyp : 'b -> M.type_) : ('id, 'term) M.mterm_node =
+  match n with
+  | A.Lquantifer (q, i, typ, term) -> M.Mquantifer (to_quantifier q, i, ltyp_to_type typ, f term)
+  | A.Pif (c, t, e)                -> M.Mif (f c, f t, f e)
+  | A.Pmatchwith (m, l)            -> M.Mmatchwith (f m, List.map (fun (p, e) -> (to_pattern p, f e)) l)
+  | A.Pcall (id, ck, args)         -> M.Mcall (id, to_call_kind ck, List.map (fun x -> to_term_arg f x) args)
+  | A.Plogical (op, l, r)          -> M.Mlogical (to_logical_operator op, f l, f r)
+  | A.Pnot e                       -> M.Mnot (f e)
+  | A.Pcomp (op, l, r)             -> M.Mcomp (to_comparison_operator op, f l, f r)
+  | A.Parith (op, l, r)            -> M.Marith (to_arithmetic_operator op, f l, f r)
+  | A.Puarith (op, e)              -> M.Muarith (to_unary_arithmetic_operator op, f e)
+  | A.Precord l                    -> M.Mrecord (List.map f l)
+  | A.Pletin (id, init, typ, cont) -> M.Mletin (id, f init, Option.map ftyp typ, f cont)
+  | A.Pvar id                      -> M.Mvar id
+  | A.Parray l                     -> M.Marray (List.map f l)
+  | A.Plit lit                     -> M.Mlit (to_lit_value lit)
+  | A.Pdot (d, i)                  -> M.Mdot (f d, i)
+  | A.Pconst c                     -> M.Mconst (to_const c)
+  | A.Ptuple l                     -> M.Mtuple (List.map f l)
+
+and to_term_arg f = function
+  | A.AExpr x -> M.AExpr (f x)
+  | A.AEffect l -> M.AEffect (List.map (fun (id, op, term) -> (id, to_operator op, f term)) l)
+
+let rec to_mterm (pterm : A.pterm) : M.mterm =
+  let node = to_mterm_node pterm.node to_mterm ptyp_to_type in
+  let type_ = ptyp_to_type (Option.get pterm.type_) in
+  M.mk_mterm node type_ ~loc:pterm.loc
+
+let rec lterm_to_mterm (lterm : A.lterm) : M.mterm =
+  let node = to_mterm_node lterm.node lterm_to_mterm ltyp_to_type in
+  let type_ = ltyp_to_type (Option.get lterm.type_) in
+  M.mk_mterm node type_ ~loc:lterm.loc
+
+
+let to_instruction_node (n : ('a, 'b, 'c, 'd) A.instruction_node) : ('id, 'instr) M.instruction_node =
+  match n with
+  (* | Iif of ('id mterm_gen * 'instr * 'instr)                           *)
+  (* | Ifor of ('id * 'id mterm_gen * 'instr)                                *)
+  (* | Iletin of ('id * 'id mterm_gen * 'instr)                              *)
+  (* | Iseq of 'instr list                                                   *)
+  (* | Imatchwith of 'id mterm_gen * ('id pattern_gen * 'instr) list   *)
+  (* | Iassign of (assignment_operator * 'id * 'id mterm_gen)         *)
+  (* | Irequire of (bool * 'id mterm_gen)                           *)
+  (* | Itransfer of ('id mterm_gen * bool * 'id qualid_gen option)   *)
+  | A.Ibreak -> M.Ibreak
+  (* | Iassert of 'id mterm_gen *)
+  (* | Icall of ('id mterm_gen option * 'id call_kind * ('id term_arg) list) *)
+  | _ -> assert false
+
+let to_instruction (instr : A.instruction) : M.instruction =
+  let node = to_instruction_node instr.node in
+  M.mk_instruction node ~subvars:instr.subvars ~loc:instr.loc
+
+let to_predicate (p : ('a, 'b) A.predicate) : 'id M.predicate =
+  M.mk_predicate p.name (lterm_to_mterm p.body) ~args:(List.map (fun (id, body) -> (id, lterm_to_mterm body)) p.args) ~loc:p.loc
+
+let to_definition (d : ('a, 'b) A.definition ): 'id M.definition =
+  M.mk_definition d.name d.typ d.var (lterm_to_mterm d.body) ~loc:d.loc
+
+(* let to_axiom      : 'id axiom      = () in
+   let to_theorem    : 'id theorem    = () in
+   let to_variable   : 'id variable   = () in
+   let to_invariant  : 'id invariant  = () in
+   let to_effect     : 'id effect     = () in
+   let to_spec       : 'id spec       = () in
+   let to_assert     : 'id assert     = () in *)
+
+let to_verification (v : ('a, 'b, 'c) A.verification) : 'id M.verification =
+  let predicates  = List.map (fun x -> to_predicate x) v.predicates in
+  let definitions = List.map (fun x -> to_definition x) v.definitions in
+  (* let axioms      = () in
+     let theorems    = () in
+     let variables   = () in
+     let invariants  = () in
+     let effect      = () in
+     let specs       = () in
+     let asserts     = () in *)
+  M.mk_verification
+    ~predicates:predicates
+    ~definitions:definitions
+    (* ~axioms:axioms
+       ~theorems:theorems
+       ~variables:variables
+       ~invariants:invariants
+       ~effect:effect
+       ~specs:specs
+       ~asserts:asserts *)
+    ~loc:v.loc ()
 
 let to_model (ast : A.model) : M.model =
   let process_enums list =
@@ -197,6 +317,13 @@ let to_model (ast : A.model) : M.model =
     list @ List.map (fun x -> process_asset x) ast.assets in
 
   let process_contracts list =
+    let to_mk_contract_signature s =
+      let name = s.name in
+      M.mk_mk_contract_signature name ~args=c.args ?ret=c.ret
+    in
+    let to_contract c =
+      M.mk_contract c.name ~signature=(List.map to_signature c.signatures) ?init=(Option.map to_mterm c.init) ~loc=c.loc
+    in
     list @ List.map (fun x -> M.TNcontract x) ast.contracts in
 
   let process_storage list =
@@ -204,15 +331,15 @@ let to_model (ast : A.model) : M.model =
       let arg = var.decl in
       let compute_field (type_ : A.type_) : 'id M.item_field =
         let rec ptyp_to_item_field_type = function
-          | A.Tbuiltin vtyp -> M.FBasic vtyp
+          | A.Tbuiltin vtyp -> M.FBasic (vtyp_to_btyp vtyp)
           | A.Tenum id      -> M.FEnum id
           | A.Tasset id     -> M.FRecord id
-          | A.Tcontract x   -> M.FBasic VTrole
-          | A.Tcontainer (ptyp, container) -> M.FContainer (container, ptyp_to_item_field_type ptyp)
+          | A.Tcontract x   -> M.FBasic Brole
+          | A.Tcontainer (ptyp, container) -> M.FContainer (to_container container, ptyp_to_item_field_type ptyp)
           | A.Ttuple _      -> assert false
         in
         let a = ptyp_to_item_field_type type_ in
-        M.mk_item_field arg.name a ?default:arg.default
+        M.mk_item_field arg.name a (* TODO: ?default:(Option.get to_mterm arg.default)*)
       in
 
       let storage_item = M.mk_storage_item arg.name in
@@ -229,10 +356,10 @@ let to_model (ast : A.model) : M.model =
         let _, key_type = A.Utils.get_asset_key ast asset_name in
         let key_asset_name = Location.mkloc (Location.loc asset_name) ((Location.unloc asset_name) ^ "_keys") in
         let map_asset_name = Location.mkloc (Location.loc asset_name) ((Location.unloc asset_name) ^ "_assets") in
-        [M.mk_item_field key_asset_name (FAssetKeys (key_type, asset_name))
+        [M.mk_item_field key_asset_name (FAssetKeys (vtyp_to_btyp key_type, asset_name))
            ~asset:asset_name
         (*?default:None TODO: uncomment this*);
-         M.mk_item_field map_asset_name (FAssetRecord (key_type, asset_name))
+         M.mk_item_field map_asset_name (FAssetRecord (vtyp_to_btyp key_type, asset_name))
            ~asset:asset_name
            (* ~default:arg.default TODO: uncomment this*)] in
       M.mk_storage_item asset.name ~fields:compute_fields ~invariants:asset.specs (*~init:asset.init TODO: uncomment this *)
@@ -324,7 +451,7 @@ let to_model (ast : A.model) : M.model =
         let a =
           match node with
           | A.Icall (a, _, _) -> a
-          | _ -> raise Anomaly in
+          | _ -> emit_error TODO in
 
         let xe, xa =
           match a with
@@ -377,7 +504,7 @@ let to_model (ast : A.model) : M.model =
 
     let process_fun_gen name args body loc verif f (list : 'id M.decl_node list) : 'id M.decl_node list =
       let instr, list = extract_function_from_instruction body list in
-      let node = f (M.mk_function_struct name instr
+      let node = f (M.mk_function_struct name (to_instruction instr)
                       ~args:(List.map (fun (x : ('id, 'typ, 'term) A.decl_gen) -> (x.name, Option.get x.typ, None)) args)
                       ~loc:loc) in
       list @ [TNfunction (M.mk_function ?verif:verif node)]
@@ -389,7 +516,7 @@ let to_model (ast : A.model) : M.model =
       let body  = function_.body in
       let loc   = function_.loc in
       let ret   = function_.return in
-      let verif = function_.verification in
+      let verif = to_verification function_.verification in
       process_fun_gen name args body loc verif (fun x -> M.Function (x, ret)) list
     in
 
@@ -399,7 +526,7 @@ let to_model (ast : A.model) : M.model =
       let args  = transaction.args in
       let body  = Option.get transaction.effect in
       let loc   = transaction.loc in
-      let verif = transaction.verification in
+      let verif = to_verification transaction.verification in
       process_fun_gen name args body loc verif (fun x -> M.Entry x) list
     in
 

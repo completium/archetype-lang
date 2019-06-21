@@ -111,9 +111,15 @@ type 'id call_kind =
   | Cconst of const
 [@@deriving show {with_path = false}]
 
-type 'id pattern_gen =
-  | Mwild
-  | Mconst of 'id
+type 'id pattern_node =
+  | Pwild
+  | Pconst of 'id
+[@@deriving show {with_path = false}]
+
+type 'id pattern_gen = {
+  node: 'id pattern_node;
+  loc : Location.t [@opaque];
+}
 [@@deriving show {with_path = false}]
 
 type pattern = lident pattern_gen
@@ -282,7 +288,19 @@ type 'id record = {
 }
 [@@deriving show {with_path = false}]
 
-type 'id contract = (lident, type_, 'id mterm_gen) Ast.contract
+type 'id contract_signature = {
+  name : 'id;
+  args: type_ list;
+  loc: Location.t [@opaque];
+}
+[@@deriving show {with_path = false}]
+
+type 'id contract = {
+  name       : 'id;
+  signatures : 'id contract_signature list;
+  init       : 'id mterm_gen option;
+  loc        : Location.t [@opaque];
+}
 [@@deriving show {with_path = false}]
 
 type 'id function_ = {
@@ -474,7 +492,7 @@ type model = lident model_gen
 let lident_to_string lident = Location.unloc lident
 
 let function_name_from_function_node = function
-  | Function           (fs, _)   -> lident_to_string fs.name
+  | Function          (fs, _)    -> lident_to_string fs.name
   | Entry              fs        -> lident_to_string fs.name
   | Get                aid       -> "get_"      ^ lident_to_string aid
   | AddAsset           aid       -> "add_"      ^ lident_to_string aid
@@ -506,6 +524,42 @@ let function_name_from_function_node = function
 
 let mk_qualid ?(loc = Location.dummy) node type_ : 'id qualid_gen =
   { node; type_; loc}
+
+let mk_pattern ?(loc = Location.dummy) node : 'id pattern_gen =
+  { node; loc}
+
+let mk_mterm ?(loc = Location.dummy) node type_ : 'id mterm_gen =
+  { node; type_; loc}
+
+let mk_instruction ?(loc = Location.dummy) ?(subvars=[]) node : 'id instruction_gen =
+  { node; subvars; loc}
+
+let mk_variable ?(constant = false) ?from ?to_ ?(loc = Location.dummy) decl =
+  { decl; constant; from; to_; loc }
+
+let mk_predicate ?(args = []) ?(loc = Location.dummy) name body =
+  { name; args; body; loc }
+
+let mk_definition ?(loc = Location.dummy) name typ var body =
+  { name; typ; var; body; loc }
+
+let mk_invariant ?(formulas = []) label =
+  { label; formulas }
+
+let mk_specification ?(invariants = []) name formula =
+  { name; formula; invariants }
+
+let mk_assert ?(invariants = []) name label formula =
+  { name; label; formula; invariants }
+
+let mk_verification ?(predicates = []) ?(definitions = []) ?(axioms = []) ?(theorems = []) ?(variables = []) ?(invariants = []) ?effect ?(specs = []) ?(asserts = []) ?(loc = Location.dummy) () =
+  { predicates; definitions; axioms; theorems; variables; invariants; effect; specs; asserts; loc}
+
+let mk_contract_signature ?ret ?(args=[]) name : 'id signature =
+  { name; args; ret}
+
+let mk_contract ?(signatures=[]) ?init ?(loc=Location.dummy) name : 'id contract =
+  { name; signatures; init; loc }
 
 let mk_enum ?(values = []) name : 'id enum =
   { name; values }
