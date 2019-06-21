@@ -6,10 +6,10 @@ exception ReduceError of string * Location.t option
 exception ErrorAcceptTransfer of string * Location.t * Location.t list
 exception TODO
 
-let type_string   : Model.type_ = vtstring
-let type_bool     : Model.type_ = vtbool
-let type_currency : Model.type_ = vtcurrency Tez
-let type_address  : Model.type_ = vtaddress
+let type_string   : Ast.type_ = vtstring
+let type_bool     : Ast.type_ = vtbool
+let type_currency : Ast.type_ = vtcurrency Tez
+let type_address  : Ast.type_ = vtaddress
 
 let unit = mk_instr Ibreak
 

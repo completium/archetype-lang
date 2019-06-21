@@ -226,9 +226,9 @@ type label_term = lident label_term_gen
 [@@deriving show {with_path = false}]
 
 type 'id item_field_type =
-  | FBasic            of lit_value
-  | FAssetKeys        of lit_value * 'id
-  | FAssetRecord      of lit_value * 'id
+  | FBasic            of btyp
+  | FAssetKeys        of btyp * 'id
+  | FAssetRecord      of btyp * 'id
   | FRecordCollection of 'id
   | FRecord           of 'id
   | FEnum             of 'id
@@ -308,6 +308,9 @@ type 'id qualid_gen = {
   type_: type_;
   loc : Location.t [@opaque];
 }
+[@@deriving show {with_path = false}]
+
+type qualid = lident qualid_gen
 [@@deriving show {with_path = false}]
 
 type ('id, 'instr) instruction_node =
@@ -500,6 +503,9 @@ let function_name_from_function_node = function
   | MinContainer      (aid, fid) -> "min_"      ^ lident_to_string aid ^ "_" ^ lident_to_string fid
   | MaxContainer      (aid, fid) -> "max_"      ^ lident_to_string aid ^ "_" ^ lident_to_string fid
   | Other -> assert false
+
+let mk_qualid ?(loc = Location.dummy) node type_ : 'id qualid_gen =
+  { node; type_; loc}
 
 let mk_enum ?(values = []) name : 'id enum =
   { name; values }

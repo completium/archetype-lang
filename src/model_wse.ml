@@ -1,6 +1,5 @@
 open Ident
 
-module A = Ast
 module M = Model
 
 type type_   =
@@ -15,7 +14,7 @@ type type_   =
   | Tstring
   | Taddress
   | Trole
-  | Tcurrency of A.currency
+  | Tcurrency of M.currency
   | Tkey
   | Trecord of ident
   | Tenum of ident
