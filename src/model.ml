@@ -274,7 +274,7 @@ type 'id item_field_type =
   | FContainer        of container * 'id item_field_type
 [@@deriving show {with_path = false}]
 
-type 'id item_field = {
+type 'id item_field_gen = {
   asset   : 'id option;
   name    : 'id;
   typ     : 'id item_field_type;
@@ -284,9 +284,12 @@ type 'id item_field = {
 }
 [@@deriving show {with_path = false}]
 
+type item_field = lident item_field_gen
+[@@deriving show {with_path = false}]
+
 type 'id storage_item_gen = {
   name        : 'id;
-  fields      : 'id item_field list;
+  fields      : 'id item_field_gen list;
   invariants  : lident label_term_gen list;
   init        : ((ident * mterm) list) list;
 }
@@ -294,7 +297,10 @@ type 'id storage_item_gen = {
 
 type storage_item = lident storage_item_gen
 
-type 'id storage = 'id storage_item_gen list
+type 'id storage_gen = 'id storage_item_gen list
+[@@deriving show {with_path = false}]
+
+type storage = lident storage_gen
 [@@deriving show {with_path = false}]
 
 type 'id enum_item = {
@@ -319,11 +325,14 @@ type 'id record_item_gen = {
 type record_item = lident record_item_gen
 [@@deriving show {with_path = false}]
 
-type 'id record = {
+type 'id record_gen = {
   name: 'id;
   key: 'id option;
   values: 'id record_item_gen list;
 }
+[@@deriving show {with_path = false}]
+
+type record = lident record_gen
 [@@deriving show {with_path = false}]
 
 type 'id contract_signature = {
@@ -489,9 +498,9 @@ type 'id function__ = {
 
 type 'id decl_node_gen =
   | TNenum of 'id enum
-  | TNrecord of 'id record
+  | TNrecord of 'id record_gen
   | TNcontract of 'id contract_gen
-  | TNstorage of 'id storage
+  | TNstorage of 'id storage_gen
   | TNfunction of 'id function__
 [@@deriving show {with_path = false}]
 
@@ -588,7 +597,7 @@ let mk_enum ?(values = []) name : 'id enum =
 let mk_enum_item ?(invariants = []) name : 'id enum_item =
   { name; invariants }
 
-let mk_record ?(values = []) ?key name : 'id record =
+let mk_record ?(values = []) ?key name : 'id record_gen =
   { name; key; values }
 
 let mk_record_item ?default name type_ : 'id record_item_gen =
@@ -597,7 +606,7 @@ let mk_record_item ?default name type_ : 'id record_item_gen =
 let mk_storage_item ?(fields = []) ?(invariants = []) ?(init = []) name : 'id storage_item_gen =
   { name; fields; invariants; init }
 
-let mk_item_field ?asset ?(ghost = false) ?default ?(loc = Location.dummy) name typ : 'id item_field =
+let mk_item_field ?asset ?(ghost = false) ?default ?(loc = Location.dummy) name typ : 'id item_field_gen =
   { asset; name; typ; ghost; default; loc }
 
 let mk_function_struct ?(args = []) ?(loc = Location.dummy) name body : function_struct =
@@ -895,11 +904,15 @@ let fold_map_instr_term gi ge fi fe (accu : 'a) (instr : 'id instruction_gen) : 
 (* -------------------------------------------------------------------- *)
 module Utils : sig
 
-  val get_record           : model -> lident -> lident record
+  val get_records          : model -> record list
+  val get_storage          : model -> storage
+  val get_record           : model -> lident -> record
   val get_record_field     : model -> (lident * lident) -> record_item
   val get_record_key       : model -> lident -> (lident * btyp)
   val is_storage_attribute : model -> lident -> bool
   val get_named_field_list : model -> lident -> 'a list -> (lident * 'a) list
+  val get_partitions       : model -> (lident * record_item) list (* record id, record item *)
+  val dest_partition       : type_ -> lident
 
 end = struct
 
@@ -919,7 +932,18 @@ end = struct
     let str = Format.asprintf "%a@." pp_error_desc desc in
     raise (Anomaly str)
 
-  let get_record model record_name : lident record =
+  let is_record (d : decl_node) : bool =
+    match d with
+    | TNrecord _ -> true
+    | _            -> false
+
+  let dest_record  = function
+    | TNrecord r -> r
+    | _ -> assert false
+
+  let get_records m = m.decls |> List.filter is_record |> List.map dest_record
+
+  let get_record model record_name : record =
     let id = unloc record_name in
     let res = List.fold_left (fun accu (x : decl_node) ->
         match x with
@@ -929,6 +953,20 @@ end = struct
     match res with
     | Some v -> v
     | _ -> emit_error (RecordNotFound id)
+
+  let get_partitions m : (lident * record_item) list=
+    get_records m |> List.fold_left (fun acc (record : record) ->
+        acc @ (List.fold_left (fun acc (ritem : record_item) ->
+            match ritem.type_ with
+            | Tcontainer (Tasset _, Partition) ->
+              acc @ [record.name,ritem]
+            | _ -> acc
+          ) [] record.values)
+      ) []
+
+  let dest_partition = function
+  | Tcontainer (Tasset p,Partition) -> p
+  | _ -> assert false
 
   let get_record_field model (record_name, field_name) =
     let record = get_record model record_name in
@@ -945,21 +983,21 @@ end = struct
     | Tbuiltin v -> (key_id, v)
     | _ -> emit_error (RecordKeyTypeNotFound (unloc record_name))
 
-  let get_storage model =
+  let get_storage_opt model =
     List.fold_left (fun accu (x : decl_node) ->
         match x with
         | TNstorage s -> Some s
         | _ -> accu
       ) None model.decls
 
-  let get_storage_strict model =
-    let res = get_storage model in
+  let get_storage model =
+    let res = get_storage_opt model in
     match res with
     | Some e -> e
     | _ -> emit_error StorageNotFound
 
   let is_storage_attribute model id =
-    let s = get_storage model in
+    let s = get_storage_opt model in
     match s with
     | Some items ->
       (List.fold_left (fun accu (x : storage_item) ->

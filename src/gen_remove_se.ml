@@ -433,7 +433,7 @@ let remove_se (model : M.model) : W.model =
       | M.TNstorage s ->
         let values : (ident * W.type_ * W.expr) list =
           List.fold_left (fun accu (x : 'id M.storage_item_gen) ->
-              accu @ List.map (fun (i : 'id M.item_field) : (ident * W.type_ * W.expr) ->
+              accu @ List.map (fun (i : 'id M.item_field_gen) : (ident * W.type_ * W.expr) ->
                   (unloc i.name, item_type_to_type i.typ, (
                       match i.default with
                       | Some v -> to_expr v

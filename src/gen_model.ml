@@ -317,7 +317,7 @@ let to_model (ast : A.model) : M.model =
 
   let process_records list =
     let process_asset (a : A.asset) : 'id M.decl_node_gen =
-      let r : 'id M.record = M.mk_record a.name in
+      let r : 'id M.record_gen = M.mk_record a.name in
       let r = {
         r with
         key = a.key;
@@ -347,7 +347,7 @@ let to_model (ast : A.model) : M.model =
   let process_storage list =
     let variable_to_storage_items (var : variable) : M.storage_item =
       let arg = var.decl in
-      let compute_field (type_ : A.type_) : 'id M.item_field =
+      let compute_field (type_ : A.type_) : 'id M.item_field_gen =
         let rec ptyp_to_item_field_type = function
           | A.Tbuiltin vtyp -> M.FBasic (vtyp_to_btyp vtyp)
           | A.Tenum id      -> M.FEnum id

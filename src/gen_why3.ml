@@ -146,12 +146,28 @@ let mk_app_field (a : loc_ident) (f : loc_ident) : loc_term * loc_term  =
   let loc_f : loc_term = mk_loc f.loc (Tvar f) in
   (loc_f,with_dummy_loc (Tapp (loc_f,[loc_term arg])))
 
-(* n is the asset name *)
+(* n is the asset name
+   f is the name of the key field
+   ktyp is the key type
+*)
 let mk_keys_eq_axiom n f ktyp : decl =
   Daxiom ("eq_"^n^"_keys",
           Tforall ([["s"],Tystorage;["k"],ktyp],
                    Timpl (Tmem (Tvar "s",Tdoti ("s",n^"_keys")),
                           Tapp (Tvar f,[Tget (Tdoti ("s",n^"_assets"),Tvar "k")]))))
+
+(* n is the asset name
+   f is the partition field name
+   kt is the key type
+   pa is the partitionned asset name
+   kpt is the partionned asset key type
+*)
+let mk_partition_axiom n f kt pa kpt : decl =
+  Daxiom (n^"_"^f^"_is_partition",
+          Tforall ([["s"],Tystorage;["k1"],kt;["k2"],kpt],
+                   Timpl (Tmem (Tvar("k1"),Tdoti ("s",n^"_keys")),
+                   Timpl (Tmem (Tvar "k2",Tapp (Tvar f,[Tget (Tdoti ("s",n^"_assets"),Tvar "k1")])),
+                          Tmem (Tvar "k2",Tdoti ("s",pa^"_keys"))))))
 
 (* Filter template -----------------------------------------------------------*)
 
@@ -551,7 +567,7 @@ let map_storage_items = List.fold_left (fun acc (items : M.storage_item) ->
       then (mk_diff_set_fields items.name.pldesc) |> loc_field |> deloc
       else []
     in
-    (List.fold_left (fun acc (item : 'id M.item_field) ->
+    (List.fold_left (fun acc (item : M.item_field) ->
          let typ_ = map_basic_type item.typ in
          let init_value = type_to_init typ_ in
          acc @[{
@@ -588,49 +604,42 @@ let map_extended_label_term m n (lt : M.label_term) = {
   form = mk_extended_invariant m n (map_term lt.term);
 }
 
-let map_decl m (d : M.decl_node) =
-  match d with
-  | M.TNrecord r -> Drecord (map_lident r.name, map_record_values r.values)
-  | M.TNstorage l -> Dstorage {
-      fields     = (map_storage_items l)@(mk_const_fields false |> loc_field |> deloc);
-      invariants = List.concat (List.map (fun (item : M.storage_item) ->
-          List.map (map_extended_label_term m item.name) item.invariants) l)
-    }
-  | _ -> assert false
+let map_record m (r : M.record) =
+  Drecord (map_lident r.name, map_record_values r.values)
 
-let is_record (d : M.decl_node) : bool =
-  match d with
-  | M.TNrecord _ -> true
-  | _            -> false
-
-let get_records = List.filter is_record
-
-let is_storage (d : M.decl_node) : bool =
-  match d with
-  | M.TNstorage _ -> true
-  | _             -> false
-
-let get_storage = List.filter is_storage
-
+let map_storage m (l : M.storage) =
+  Dstorage {
+    fields     = (map_storage_items l)@(mk_const_fields false |> loc_field |> deloc);
+    invariants = List.concat (List.map (fun (item : M.storage_item) ->
+        List.map (map_extended_label_term m item.name) item.invariants) l)
+  }
 
 let mk_axioms (m : M.model) : loc_decl list =
-  let records = get_records m.decls |> List.map (fun d ->
-      match d with M.TNrecord r -> r.name | _ -> assert false) in
+  let records = M.Utils.get_records m |> List.map (fun (r : M.record) -> r.name) in
   let keys    = records |> List.map (M.Utils.get_record_key m) in
   List.map2 (fun r (k,kt) ->
       mk_keys_eq_axiom r.pldesc k.pldesc (map_btype kt)
     ) records keys |> loc_decl
 
+let mk_partition_axioms (m : M.model) : loc_decl list =
+  M.Utils.get_partitions m |> List.map (fun ((n : M.lident),(item : M.record_item)) ->
+      let kt  = M.Utils.get_record_key m n |> snd |> map_btype in
+      let pa  = M.Utils.dest_partition item.type_ in
+      let pkt = M.Utils.get_record_key m pa |> snd |> map_btype in
+      mk_partition_axiom n.pldesc item.name.pldesc kt pa.pldesc pkt
+  ) |> loc_decl
+
 (* ----------------------------------------------------------------------------*)
 
 let to_whyml (m : M.model) : mlw_tree  =
-  let uselib       = mk_use |> Mlwtree.loc_decl |> Mlwtree.deloc in
-  let records      = get_records m.decls |> List.map (map_decl m) |> wdl in
-  let init_records = records |> unloc_decl |> List.map mk_default_init |> loc_decl in
-  let records      = zip records init_records |> deloc in
-  let storage      = get_storage m.decls |> List.map (map_decl m) in
-  let axioms       = mk_axioms m |> deloc in
+  let uselib           = mk_use |> Mlwtree.loc_decl |> Mlwtree.deloc in
+  let records          = M.Utils.get_records m |> List.map (map_record m) |> wdl in
+  let init_records     = records |> unloc_decl |> List.map mk_default_init |> loc_decl in
+  let records          = zip records init_records |> deloc in
+  let storage          = M.Utils.get_storage m |> map_storage m in
+  let axioms           = mk_axioms m |> deloc in
+  let partition_axioms = mk_partition_axioms m |> deloc in
   let loct : loc_mlw_tree = {
     name = cap (map_lident m.name);
-    decls =  uselib :: (records @ storage @ axioms);
+    decls =  uselib :: (records @ [storage] @ axioms @ partition_axioms);
   } in unloc_tree loct
