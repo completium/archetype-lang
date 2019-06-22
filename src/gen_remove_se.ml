@@ -378,7 +378,7 @@ let compute_body_entry model (fs : M.function_struct) =
     raise (Anomaly (Format.asprintf "compute_body_entry: %a@\n" W.pp_type_ ret))
 
 
-let mk_function_struct model (f : 'id M.function__) =
+let mk_function_struct model (f : M.function__) =
   let name : ident = M.function_name_from_function_node f.node in
   let kind, args, ret, body =
     match f.node with

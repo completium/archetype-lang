@@ -223,7 +223,7 @@ type ('id, 'term) mterm_node  =
   | Mquantifer of quantifier * 'id * type_ * 'term
   | Mif of ('term * 'term * 'term)
   | Mmatchwith of 'term * ('id pattern_gen * 'term) list
-  | Mcall of ('id option * 'id call_kind * ('id term_arg) list)
+  | Mcall of ('id option * 'id call_kind * ('id term_arg_gen) list)
   | Mlogical of logical_operator * 'term * 'term
   | Mnot of 'term
   | Mcomp of comparison_operator * 'term * 'term
@@ -249,9 +249,12 @@ and 'id mterm_gen = {
 and mterm = lident mterm_gen
 [@@deriving show {with_path = false}]
 
-and 'id term_arg =
+and 'id term_arg_gen =
   | AExpr   of 'id mterm_gen
   | AEffect of ('id * operator * 'id mterm_gen) list
+[@@deriving show {with_path = false}]
+
+and term_arg = lident term_arg_gen
 [@@deriving show {with_path = false}]
 
 type 'id label_term_gen = {
@@ -335,22 +338,26 @@ type 'id record_gen = {
 type record = lident record_gen
 [@@deriving show {with_path = false}]
 
-type 'id contract_signature = {
+type 'id contract_signature_gen = {
   name : 'id;
   args: type_ list;
   loc: Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]
 
+type contract_signature = lident contract_signature_gen
+[@@deriving show {with_path = false}]
+
 type 'id contract_gen = {
   name       : 'id;
-  signatures : 'id contract_signature list;
+  signatures : 'id contract_signature_gen list;
   init       : 'id mterm_gen option;
   loc        : Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]
 
 type contract = lident contract_gen
+[@@deriving show {with_path = false}]
 
 type 'id function_ = {
   name: 'id;
@@ -362,7 +369,10 @@ type 'id entry = {
 }
 [@@deriving show {with_path = false}]
 
-type 'id argument = 'id * type_ * 'id mterm_gen option
+type 'id argument_gen = 'id * type_ * 'id mterm_gen option
+[@@deriving show {with_path = false}]
+
+type argument = lident argument_gen
 [@@deriving show {with_path = false}]
 
 type ('id, 'qualid) qualid_node =
@@ -391,7 +401,7 @@ type ('id, 'instr) instruction_node =
   | Itransfer of ('id mterm_gen * bool * 'id qualid_gen option)           (* value * back * dest *)
   | Ibreak
   | Iassert of 'id mterm_gen
-  | Icall of ('id mterm_gen option * 'id call_kind * ('id term_arg) list)
+  | Icall of ('id mterm_gen option * 'id call_kind * ('id term_arg_gen) list)
 [@@deriving show {with_path = false}]
 
 and 'id instruction_gen = {
@@ -406,7 +416,7 @@ and instruction = lident instruction_gen
 
 type 'id function_struct_gen = {
   name: 'id;
-  args: 'id argument list;
+  args: 'id argument_gen list;
   body: 'id instruction_gen;
   loc : Location.t [@opaque];
 }
@@ -415,22 +425,28 @@ type 'id function_struct_gen = {
 type function_struct = lident function_struct_gen
 [@@deriving show {with_path = false}]
 
-type 'id function_node =
+type 'id function_node_gen =
   | Function           of 'id function_struct_gen * type_ (* fun * return type *)
   | Entry              of 'id function_struct_gen
   | Storage            of storage_const
   | Other
 [@@deriving show {with_path = false}]
 
-type 'id signature = {
+type function_node = lident function_node_gen
+[@@deriving show {with_path = false}]
+
+type 'id signature_gen = {
   name: 'id;
-  args: 'id argument list;
+  args: 'id argument_gen list;
   ret: type_ option;
 }
 [@@deriving show {with_path = false}]
 
-type 'id variable = {
-  decl         : 'id argument;
+type signature = lident signature_gen
+[@@deriving show {with_path = false}]
+
+type 'id variable_gen = {
+  decl         : 'id argument_gen;
   constant     : bool;
   from         : 'id qualid_gen option;
   to_          : 'id qualid_gen option;
@@ -438,7 +454,10 @@ type 'id variable = {
 }
 [@@deriving show {with_path = false}]
 
-type 'id predicate = {
+type variable = lident variable_gen
+[@@deriving show {with_path = false}]
+
+type 'id predicate_gen = {
   name : 'id;
   args : ('id * ('id mterm_gen)) list;
   body : 'id mterm_gen;
@@ -446,7 +465,10 @@ type 'id predicate = {
 }
 [@@deriving show {with_path = false}]
 
-type 'id definition = {
+type predicate = lident predicate_gen
+[@@deriving show {with_path = false}]
+
+type 'id definition_gen = {
   name : 'id;
   typ  : type_;
   var  : 'id;
@@ -455,45 +477,65 @@ type 'id definition = {
 }
 [@@deriving show {with_path = false}]
 
-type 'id invariant = {
+type definition = lident definition_gen
+[@@deriving show {with_path = false}]
+
+type 'id invariant_gen = {
   label: 'id;
   formulas: 'id mterm_gen list;
 }
 [@@deriving show {with_path = false}]
 
-type 'id specification = {
+type invariant = lident invariant_gen
+[@@deriving show {with_path = false}]
+
+
+type 'id specification_gen = {
   name: 'id;
   formula: 'id mterm_gen;
-  invariants: ('id invariant) list;
+  invariants: ('id invariant_gen) list;
 }
 [@@deriving show {with_path = false}]
 
-type 'id assert_ = {
+type specification = lident specification_gen
+[@@deriving show {with_path = false}]
+
+
+type 'id assert_gen = {
   name: 'id;
   label: 'id;
   formula: 'id mterm_gen;
-  invariants: 'id invariant list;
+  invariants: 'id invariant_gen list;
 }
 [@@deriving show {with_path = false}]
 
-type 'id verification = {
-  predicates  : 'id predicate list;
-  definitions : 'id definition list;
+type assert_ = lident assert_gen
+[@@deriving show {with_path = false}]
+
+type 'id verification_gen = {
+  predicates  : 'id predicate_gen list;
+  definitions : 'id definition_gen list;
   axioms      : 'id label_term_gen list;
   theorems    : 'id label_term_gen list;
-  variables   : 'id variable list;
+  variables   : 'id variable_gen list;
   invariants  : ('id * 'id label_term_gen list) list;
   effect      : 'id mterm_gen option;
-  specs       : 'id specification list;
-  asserts     : 'id assert_ list;
+  specs       : 'id specification_gen list;
+  asserts     : 'id assert_gen list;
   loc         : Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]
 
-type 'id function__ = {
-  node: 'id function_node;
-  verif  : 'id verification option;
+type verification = lident verification_gen
+[@@deriving show {with_path = false}]
+
+type 'id function__gen = {
+  node: 'id function_node_gen;
+  verif  : 'id verification_gen option;
 }
+[@@deriving show {with_path = false}]
+
+type function__ = lident function__gen
 [@@deriving show {with_path = false}]
 
 type 'id decl_node_gen =
@@ -501,7 +543,7 @@ type 'id decl_node_gen =
   | TNrecord of 'id record_gen
   | TNcontract of 'id contract_gen
   | TNstorage of 'id storage_gen
-  | TNfunction of 'id function__
+  | TNfunction of 'id function__gen
 [@@deriving show {with_path = false}]
 
 type decl_node = lident decl_node_gen
@@ -585,7 +627,7 @@ let mk_assert ?(invariants = []) name label formula =
 let mk_verification ?(predicates = []) ?(definitions = []) ?(axioms = []) ?(theorems = []) ?(variables = []) ?(invariants = []) ?effect ?(specs = []) ?(asserts = []) ?(loc = Location.dummy) () =
   { predicates; definitions; axioms; theorems; variables; invariants; effect; specs; asserts; loc}
 
-let mk_contract_signature ?(args=[]) ?(loc=Location.dummy) name : 'id contract_signature =
+let mk_contract_signature ?(args=[]) ?(loc=Location.dummy) name : 'id contract_signature_gen =
   { name; args; loc }
 
 let mk_contract ?(signatures=[]) ?init ?(loc=Location.dummy) name : 'id contract_gen =
@@ -612,10 +654,10 @@ let mk_item_field ?asset ?(ghost = false) ?default ?(loc = Location.dummy) name 
 let mk_function_struct ?(args = []) ?(loc = Location.dummy) name body : function_struct =
   { name; args; body; loc }
 
-let mk_function ?verif node : 'id function__ =
+let mk_function ?verif node : 'id function__gen =
   { node; verif }
 
-let mk_signature ?(args = []) ?ret name : 'id signature =
+let mk_signature ?(args = []) ?ret name : 'id signature_gen =
   { name; args; ret}
 
 let mk_model ?(decls = []) name : model =
@@ -629,7 +671,7 @@ let map_term_node (f : 'id mterm_gen -> 'id mterm_gen) = function
   | Mif (c, t, e)           -> Mif (f c, f t, f e)
   | Mmatchwith (e, l)       -> Mmatchwith (e, List.map (fun (p, e) -> (p, f e)) l)
   | Mcall (i, e, args)      ->
-    Mcall (i, e, List.map (fun (arg : 'id term_arg) -> match arg with
+    Mcall (i, e, List.map (fun (arg : 'id term_arg_gen) -> match arg with
         | AExpr e   -> AExpr (f e)
         | AEffect l -> AEffect (List.map (fun (id, op, e) -> (id, op, f e)) l)) args)
   | Mlogical (op, l, r)     -> Mlogical (op, f l, f r)
@@ -679,7 +721,7 @@ let fold_term (f : 'a -> 't -> 'a) (accu : 'a) (term : 'id mterm_gen) =
   | Mquantifer (_, _, _, e) -> f accu e
   | Mif (c, t, e)           -> f (f (f accu c) t) e
   | Mmatchwith (e, l)       -> List.fold_left (fun accu (_, a) -> f accu a) (f accu e) l
-  | Mcall (_, _, args)      -> List.fold_left (fun accu (arg : 'id term_arg) -> match arg with
+  | Mcall (_, _, args)      -> List.fold_left (fun accu (arg : 'id term_arg_gen) -> match arg with
       | AExpr e -> f accu e
       | AEffect l -> List.fold_left (fun accu (_, _, e) -> f accu e) accu l ) accu args
   | Mlogical (_, l, r)      -> f (f accu l) r
@@ -750,7 +792,7 @@ let fold_map_term g f (accu : 'a) (term : 'id mterm_gen) : 'term * 'a =
   | Mcall (a, id, args) ->
     let ((argss, argsa) : 'c list * 'a) =
       List.fold_left
-        (fun (pterms, accu) (x : 'id term_arg) ->
+        (fun (pterms, accu) (x : 'id term_arg_gen) ->
            let p, accu =
              match x with
              | AExpr a -> f accu a |> fun (x, acc) -> (Some (AExpr x), acc)
@@ -982,8 +1024,8 @@ end = struct
       ) []
 
   let dest_partition = function
-  | Tcontainer (Tasset p,Partition) -> p
-  | _ -> assert false
+    | Tcontainer (Tasset p,Partition) -> p
+    | _ -> assert false
 
   let get_record_field model (record_name, field_name) =
     let record = get_record model record_name in

@@ -229,7 +229,7 @@ let rec lterm_to_mterm (lterm : A.lterm) : M.mterm =
   let type_ = ltyp_to_type (Option.get lterm.type_) in
   M.mk_mterm node type_ ~loc:lterm.loc
 
-let to_label_lterm (x : ('id, ('id, A.ltype_) A.term_gen) A.label_term) : M.lident M.label_term_gen =
+let to_label_lterm (x : ('id, ('id, A.ltype_) A.term_gen) A.label_term) : M.label_term =
   M.mk_label_term (lterm_to_mterm x.term) ?label:x.label ~loc:x.loc
 
 
@@ -251,13 +251,13 @@ let rec to_instruction (instr : A.instruction) : M.instruction =
   let node = to_instruction_node instr.node to_instruction to_mterm in
   M.mk_instruction node ~subvars:instr.subvars ~loc:instr.loc
 
-let to_predicate (p : ('a, A.ptyp) A.predicate) : 'id M.predicate =
+let to_predicate (p : ('a, A.ptyp) A.predicate) : M.predicate =
   M.mk_predicate p.name (lterm_to_mterm p.body) ~args:(List.map (fun (id, body) -> (id, lterm_to_mterm body)) p.args) ~loc:p.loc
 
-let to_definition (d : ('a, A.ptyp) A.definition ): 'id M.definition =
+let to_definition (d : ('a, A.ptyp) A.definition ): M.definition =
   M.mk_definition d.name (ptyp_to_type d.typ) d.var (lterm_to_mterm d.body) ~loc:d.loc
 
-let to_variable (v : (A.lident, A.ptyp, A.pterm) A.variable) : M.lident M.variable =
+let to_variable (v : (A.lident, A.ptyp, A.pterm) A.variable) : M.variable =
   M.mk_variable
     ((fun (arg : (A.lident, A.ptyp, A.pterm) A.decl_gen) : (M.lident * M.type_ * M.mterm option) ->
         (arg.name, ptyp_to_type (Option.get arg.typ), Option.map to_mterm arg.default)) v.decl)
@@ -266,16 +266,16 @@ let to_variable (v : (A.lident, A.ptyp, A.pterm) A.variable) : M.lident M.variab
     ?to_:(Option.map to_qualid_gen v.to_)
     ~loc:v.loc
 
-let to_invariant (i : (A.lident, A.ptyp) A.invariant) : M.lident M.invariant  =
+let to_invariant (i : (A.lident, A.ptyp) A.invariant) :M.invariant  =
   M.mk_invariant i.label ~formulas:(List.map lterm_to_mterm i.formulas)
 
-let to_spec (s : (A.lident, A.type_) A.specification) : M.lident M.specification  =
+let to_spec (s : (A.lident, A.type_) A.specification) : M.specification  =
   M.mk_specification s.name (lterm_to_mterm s.formula) ~invariants:(List.map to_invariant s.invariants)
 
-let to_assert (a : (A.lident, A.type_) A.assert_) : M.lident M.assert_  =
+let to_assert (a : (A.lident, A.type_) A.assert_) : M.assert_  =
   M.mk_assert a.name a.label (lterm_to_mterm a.formula) ~invariants:(List.map to_invariant a.invariants)
 
-let to_verification (v : (A.lident, A.ptyp, A.pterm) A.verification) : M.lident M.verification =
+let to_verification (v : (A.lident, A.ptyp, A.pterm) A.verification) : M.verification =
   let predicates  = List.map to_predicate   v.predicates  in
   let definitions = List.map to_definition  v.definitions in
   let axioms      = List.map to_label_lterm v.axioms      in
@@ -332,7 +332,7 @@ let to_model (ast : A.model) : M.model =
     list @ List.map (fun x -> process_asset x) ast.assets in
 
   let process_contracts list =
-    let to_contract_signature (s : (A.lident, A.ptyp) A.signature) : M.lident M.contract_signature =
+    let to_contract_signature (s : (A.lident, A.ptyp) A.signature) : M.contract_signature =
       let name = s.name in
       M.mk_contract_signature name ~args:(List.map (fun arg -> ptyp_to_type arg) s.args) ~loc:s.loc
     in
@@ -394,6 +394,41 @@ let to_model (ast : A.model) : M.model =
   in
 
   let process_functions list : 'id M.decl_node_gen list =
+    let cont f x l = List.fold_left (fun accu x -> f x accu) l x in
+
+    let process_fun_gen name args (body : M.instruction) loc verif f (list : 'id M.decl_node_gen list) : 'id M.decl_node_gen list =
+      let node = f (M.mk_function_struct name body
+                      ~args:args
+                      ~loc:loc) in
+      list @ [TNfunction (M.mk_function ?verif:verif node)]
+    in
+
+    let process_function (function_ : A.function_) (list : 'id M.decl_node_gen list) : 'id M.decl_node_gen list =
+      let name  = function_.name in
+      let args  = List.map (fun (x : (A.lident, A.ptyp, A.ptyp A.bval_gen) A.decl_gen) -> (x.name, (ptyp_to_type |@ Option.get) x.typ, None)) function_.args in
+      let body  = to_instruction function_.body in
+      let loc   = function_.loc in
+      let ret   = ptyp_to_type function_.return in
+      let verif : M.verification option = Option.map to_verification function_.verification in
+      process_fun_gen name args body loc verif (fun x -> M.Function (x, ret)) list
+    in
+
+    let process_transaction (transaction : A.transaction) (list : 'id M.decl_node_gen list) : 'id M.decl_node_gen list =
+      let list  = list |> cont process_function ast.functions in
+      let name  = transaction.name in
+      let args  = List.map (fun (x : (A.lident, A.ptyp, A.ptyp A.bval_gen) A.decl_gen) -> (x.name, (ptyp_to_type |@ Option.get) x.typ, None)) transaction.args in
+      let body  = (to_instruction |@ Option.get) transaction.effect in
+      let loc   = transaction.loc in
+      let verif : M.verification option = Option.map to_verification transaction.verification in
+      process_fun_gen name args body loc verif (fun x -> M.Entry x) list
+    in
+
+    list
+    |> cont process_function ast.functions
+    |> cont process_transaction ast.transactions
+  in
+
+  let process_api_storage list : M.decl_node list =
     let extract_function_from_instruction (instr : M.instruction) (list : 'id  M.decl_node_gen list) : (M.instruction * 'id M.decl_node_gen list) =
       let add l i =
         let e = List.fold_left (fun accu x ->
@@ -405,13 +440,13 @@ let to_model (ast : A.model) : M.model =
         else
           i::l
       in
-      let mk_function t field_name c (e : M.lident M.term_arg option) : (M.storage_const * M.lident M.term_arg option) option =
-        let is_global_asset (asset_name : M.lident) (e : (M.lident M.term_arg option)) =
+      let mk_function t field_name c (e : M.term_arg option) : (M.storage_const * M.term_arg option) option =
+        let is_global_asset (asset_name : M.lident) (e : (M.term_arg option)) =
           match e with
           | Some AExpr {node = Mvar {pldesc = id; _}; _} when String.equal (Location.unloc asset_name) id -> true
           | _ -> false
         in
-        let get_first_arg asset_name (e : M.lident M.term_arg option) : M.lident M.term_arg option =
+        let get_first_arg asset_name (e : M.term_arg option) : M.term_arg option =
           if (is_global_asset asset_name e)
           then None
           else e
@@ -466,7 +501,7 @@ let to_model (ast : A.model) : M.model =
           )
         | _ -> M.fold_map_term (ge term) fe accu term in
 
-      let process_instr accu t (c : M.const) field_name gi fi node (args : M.lident M.term_arg list) =
+      let process_instr accu t (c : M.const) field_name gi fi node (args : M.term_arg list) =
         let a =
           match node with
           | M.Icall (a, _, _) -> a
@@ -517,39 +552,43 @@ let to_model (ast : A.model) : M.model =
       in
       fi list instr in
 
-    let cont f x l = List.fold_left (fun accu x -> f x accu) l x in
+    (* let aaa accu expr : M.mterm * M.decl_node list =
+       assert false
+       in *)
 
-    let process_fun_gen name args (body : M.instruction) loc verif f (list : 'id M.decl_node_gen list) : 'id M.decl_node_gen list =
-      let instr, list = extract_function_from_instruction body list in
-      let node = f (M.mk_function_struct name instr
-                      ~args:args
-                      ~loc:loc) in
-      list @ [TNfunction (M.mk_function ?verif:verif node)]
+    let update_verif accu verif : M.verification  * M.decl_node list =
+      verif, accu
     in
 
-    let process_function (function_ : A.function_) (list : 'id M.decl_node_gen list) : 'id M.decl_node_gen list =
-      let name  = function_.name in
-      let args  = List.map (fun (x : (A.lident, A.ptyp, A.ptyp A.bval_gen) A.decl_gen) -> (x.name, (ptyp_to_type |@ Option.get) x.typ, None)) function_.args in
-      let body  = to_instruction function_.body in
-      let loc   = function_.loc in
-      let ret   = ptyp_to_type function_.return in
-      let verif : M.lident M.verification option = Option.map to_verification function_.verification in
-      process_fun_gen name args body loc verif (fun x -> M.Function (x, ret)) list
+    let update_function__ (f : M.function__) (e : M.function_struct) accu g : M.function__  * M.decl_node list =
+      let instr, accu = extract_function_from_instruction e.body accu in
+      let verif, accu =
+        match f.verif with
+        | Some v -> update_verif accu v |> (fun (x, y) -> Some x, y)
+        | _ -> None, accu
+      in
+      let e : M.function_struct = { e with body = instr} in
+      { f with node = g e; verif = verif }, accu
     in
 
-    let process_transaction (transaction : A.transaction) (list : 'id M.decl_node_gen list) : 'id M.decl_node_gen list =
-      let list  = list |> cont process_function ast.functions in
-      let name  = transaction.name in
-      let args  = List.map (fun (x : (A.lident, A.ptyp, A.ptyp A.bval_gen) A.decl_gen) -> (x.name, (ptyp_to_type |@ Option.get) x.typ, None)) transaction.args in
-      let body  = (to_instruction |@ Option.get) transaction.effect in
-      let loc   = transaction.loc in
-      let verif : M.lident M.verification option = Option.map to_verification transaction.verification in
-      process_fun_gen name args body loc verif (fun x -> M.Entry x) list
-    in
-
-    list
-    |> cont process_function ast.functions
-    |> cont process_transaction ast.transactions
+    List.fold_left (fun accu decl ->
+        match decl with
+        | M.TNfunction f ->
+          begin
+            match f.node with
+            | Entry e ->
+              begin
+                let f, accu = update_function__ f e accu (fun e -> Entry e) in
+                accu @ [M.TNfunction f]
+              end
+            | Function (e, t) ->
+              begin
+                let f, accu = update_function__ f e accu (fun e -> Function (e, t)) in
+                accu @ [M.TNfunction f]
+              end
+            | _ -> accu @ [decl]
+          end
+        | _ -> accu @ [decl]) [] list
   in
 
   let name = ast.name in
@@ -560,5 +599,6 @@ let to_model (ast : A.model) : M.model =
     |> process_contracts
     |> process_storage
     |> process_functions
+    |> process_api_storage
   in
   M.mk_model name ~decls:decls
