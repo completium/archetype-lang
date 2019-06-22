@@ -552,23 +552,133 @@ let to_model (ast : A.model) : M.model =
       in
       fi list instr in
 
-    (* let aaa accu expr : M.mterm * M.decl_node list =
-       assert false
-       in *)
-
-    let update_verif accu verif : M.verification  * M.decl_node list =
-      verif, accu
+    let process_mterm accu expr : M.mterm * M.decl_node list =
+      assert false
     in
 
-    let update_function__ (f : M.function__) (e : M.function_struct) accu g : M.function__  * M.decl_node list =
-      let instr, accu = extract_function_from_instruction e.body accu in
+    let update_label_term accu (lt : M.label_term) : M.label_term * M.decl_node list =
+      let t, accu = process_mterm accu lt.term in
+      { lt with term = t }, accu
+    in
+
+    let update_predicate accu (d : M.predicate) : M.predicate * M.decl_node list =
+      let body, accu = process_mterm accu d.body in
+      { d with body = body }, accu
+    in
+
+    let update_definition accu (d : M.definition) : M.definition * M.decl_node list =
+      let body, accu = process_mterm accu d.body in
+      { d with body = body }, accu
+    in
+
+    let update_invariant accu (i : M.invariant) : M.invariant * M.decl_node list =
+      let formulas, accu = List.fold_left
+          (fun (l, accu) item ->
+             let i, accu = process_mterm accu item in
+             (l @ [i], accu)
+          ) ([], accu) i.formulas in
+      { i with formulas = formulas }, accu
+    in
+
+    let update_specification accu (spec : M.specification) : M.specification * M.decl_node list =
+      let formula, accu = process_mterm spec.formula accu in
+      let invariants, accu = List.fold_left
+          (fun (l, accu) (item : M.invariant) ->
+             let i, accu = update_invariant accu item in
+             (l @ [i], accu)
+          ) ([], accu) spec.invariants in
+      { spec with formula = formula; invariants = invariants; }, accu
+    in
+
+    let update_assert accu (assert_ : M.assert_) : M.assert_ * M.decl_node list =
+      let formula, accu = process_mterm assert_.formula accu in
+      let invariants, accu = List.fold_left
+          (fun (l, accu) (item : M.invariant) ->
+             let i, accu = update_invariant accu item in
+             (l @ [i], accu)
+          ) ([], accu) assert_.invariants in
+      { assert_ with formula = formula; invariants = invariants; }, accu
+    in
+
+    let update_verif accu (verif : M.verification) : M.verification * M.decl_node list =
+
+      let predicates, accu = List.fold_left
+          (fun (l, accu) (item : M.predicate) ->
+             let i, accu = update_predicate accu item in
+             (l @ [i], accu)
+          ) ([], accu) verif.predicates in
+
+      let definitions, accu = List.fold_left
+          (fun (l, accu) (item : M.definition) ->
+             let i, accu = update_definition accu item in
+             (l @ [i], accu)
+          ) ([], accu) verif.definitions in
+
+      let axioms, accu = List.fold_left
+          (fun (l, accu) (item : M.label_term) ->
+             let i, accu = update_label_term accu item in
+             (l @ [i], accu)
+          ) ([], accu) verif.axioms in
+
+      let theorems, accu = List.fold_left
+          (fun (l, accu) (item : M.label_term) ->
+             let i, accu = update_label_term accu item in
+             (l @ [i], accu)
+          ) ([], accu) verif.theorems in
+
+      let invariants, accu =
+        List.fold_left (fun (l, accu) (lbl, is) ->
+            let invs, accu = List.fold_left
+                (fun (l, accu) (item : M.label_term) ->
+                   let i, accu = update_label_term accu item in
+                   (l @ [i], accu)
+                ) ([], accu) is in
+            (l @ [lbl, invs], accu)
+          ) ([], accu) verif.invariants in
+
+      let effect, accu =
+        match verif.effect with
+        | Some v -> process_mterm v accu |> (fun (x, y) -> (Some x, y))
+        | _ -> None, accu in
+
+      let specs, accu = List.fold_left
+          (fun (l, accu) (item : M.specification) ->
+             let i, accu = update_specification accu item in
+             (l @ [i], accu)
+          ) ([], accu) verif.specs in
+
+      let asserts, accu = List.fold_left
+          (fun (l, accu) (item : M.assert_) ->
+             let i, accu = update_assert accu item in
+             (l @ [i], accu)
+          ) ([], accu) verif.asserts in
+
+      { verif with
+        predicates  = predicates;
+        definitions = definitions;
+        axioms      = axioms;
+        theorems    = theorems;
+        (* variables   : 'id variable_gen list; *)
+        invariants = invariants;
+        effect     = effect;
+        specs      = specs;
+        asserts    = asserts;
+      }, accu
+    in
+
+    let update_function_struct accu (fs : M.function_struct) : M.function_struct * M.decl_node list =
+      let instr, accu = extract_function_from_instruction fs.body accu in
+      { fs with body = instr}, accu
+    in
+
+    let update_function__ (f : M.function__) (fs : M.function_struct) accu g : M.function__  * M.decl_node list =
+      let fs, accu = update_function_struct accu fs in
       let verif, accu =
         match f.verif with
         | Some v -> update_verif accu v |> (fun (x, y) -> Some x, y)
         | _ -> None, accu
       in
-      let e : M.function_struct = { e with body = instr} in
-      { f with node = g e; verif = verif }, accu
+      { f with node = g fs; verif = verif }, accu
     in
 
     List.fold_left (fun accu decl ->
