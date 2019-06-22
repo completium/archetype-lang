@@ -544,6 +544,7 @@ type 'id decl_node_gen =
   | TNcontract of 'id contract_gen
   | TNstorage of 'id storage_gen
   | TNfunction of 'id function__gen
+  | TNverification of 'id verification_gen
 [@@deriving show {with_path = false}]
 
 type decl_node = lident decl_node_gen
