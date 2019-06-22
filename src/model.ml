@@ -926,6 +926,7 @@ end = struct
     | RecordFieldNotFound of string * string
     | RecordKeyTypeNotFound of string
     | StorageNotFound
+    | NotaPartition
   [@@deriving show {with_path = false}]
 
   let emit_error (desc : error_desc) =
@@ -939,7 +940,7 @@ end = struct
 
   let dest_record  = function
     | TNrecord r -> r
-    | _ -> assert false
+    | _ -> emit_error NotaPartition
 
   let get_records m = m.decls |> List.filter is_record |> List.map dest_record
 
