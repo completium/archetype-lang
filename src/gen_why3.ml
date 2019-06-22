@@ -153,8 +153,8 @@ let mk_app_field (a : loc_ident) (f : loc_ident) : loc_term * loc_term  =
 let mk_keys_eq_axiom n f ktyp : decl =
   Daxiom ("eq_"^n^"_keys",
           Tforall ([["s"],Tystorage;["k"],ktyp],
-                   Timpl (Tmem (Tvar "s",Tdoti ("s",n^"_keys")),
-                          Tapp (Tvar f,[Tget (Tdoti ("s",n^"_assets"),Tvar "k")]))))
+                   Timpl (Tmem (Tvar "k",Tdoti ("s",n^"_keys")),
+                          Teq (Tyint,Tapp (Tvar f,[Tget (Tdoti ("s",n^"_assets"),Tvar "k")]),Tvar "k"))))
 
 (* n is the asset name
    f is the partition field name
@@ -623,10 +623,9 @@ let mk_axioms (m : M.model) =
 
 let mk_partition_axioms (m : M.model) =
   M.Utils.get_partitions m |> List.map (fun ((n : M.lident),(item : M.record_item)) ->
-      let kt  = M.Utils.get_record_key m n |> snd |> map_btype in
-      let pa  = M.Utils.dest_partition item.type_ in
-      let pkt = M.Utils.get_record_key m pa |> snd |> map_btype in
-      mk_partition_axiom n.pldesc item.name.pldesc kt pa.pldesc pkt
+      let kt     = M.Utils.get_record_key m n |> snd |> map_btype in
+      let pa,_,pkt  = M.Utils.get_partition_record_key m n item.name in
+      mk_partition_axiom n.pldesc item.name.pldesc kt pa.pldesc (pkt |> map_btype)
   ) |> loc_decl |> deloc
 
 let mk_record_get_fields m (r : M.record) =
@@ -642,6 +641,38 @@ let mk_record_get_fields m (r : M.record) =
 let mk_get_fields (m : M.model) =
   M.Utils.get_records m |> List.map (mk_record_get_fields m) |> List.concat |> loc_decl |> deloc
 
+let rec get_record id = function
+  | Drecord (n,_) as r :: tl when compare id n = 0 -> r
+  | _ :: tl -> get_record id tl
+  | [] -> assert false
+
+let get_record_name = function
+  | Drecord (n,_) -> n
+  | _ -> assert false
+
+let mk_storage_api (m : M.model) records =
+  M.Utils.get_storage_api m |> List.fold_left (fun acc (sc : M.storage_const) ->
+      match sc with
+      | Get n ->
+        let k = M.Utils.get_record_key m n |> snd |> map_btype in
+        acc @ [mk_get_asset n.pldesc k]
+      | AddAsset n ->
+        let k = M.Utils.get_record_key m n |> fst |> unloc in
+        acc @ [mk_add n.pldesc k]
+      | UpdateAsset n ->
+        let record = get_record n.pldesc (records |> unloc_decl) in
+        let k      = M.Utils.get_record_key m (get_record_name record |> dumloc) |> fst |> unloc in
+        acc @ [mk_update_asset k record]
+      | RemoveContainer (n,f) ->
+        let t         = M.Utils.get_record_key m n |> snd |> map_btype in
+        let (pa,_,pt) = M.Utils.get_partition_record_key m n f in
+        acc @ [
+          mk_rm_asset           pa.pldesc (pt |> map_btype);
+          mk_rm_partition_field n.pldesc t f.pldesc pa.pldesc (pt |> map_btype)
+        ]
+      | _ -> acc
+    ) [] |> loc_decl |> deloc
+
 (* ----------------------------------------------------------------------------*)
 
 let to_whyml (m : M.model) : mlw_tree  =
@@ -653,7 +684,14 @@ let to_whyml (m : M.model) : mlw_tree  =
   let axioms           = mk_axioms m in
   let partition_axioms = mk_partition_axioms m in
   let get_fields       = mk_get_fields m in
+  let storage_api      = mk_storage_api m (records |> wdl) in
   let loct : loc_mlw_tree = {
     name = cap (map_lident m.name);
-    decls =  uselib :: (records @ [storage] @ axioms @ partition_axioms @ get_fields);
+    decls =  [uselib]         @
+             records          @
+             [storage]        @
+             axioms           @
+             partition_axioms @
+             get_fields       @
+             storage_api;
   } in unloc_tree loct

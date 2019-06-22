@@ -904,15 +904,17 @@ let fold_map_instr_term gi ge fi fe (accu : 'a) (instr : 'id instruction_gen) : 
 (* -------------------------------------------------------------------- *)
 module Utils : sig
 
-  val get_records          : model -> record list
-  val get_storage          : model -> storage
-  val get_record           : model -> lident -> record
-  val get_record_field     : model -> (lident * lident) -> record_item
-  val get_record_key       : model -> lident -> (lident * btyp)
-  val is_storage_attribute : model -> lident -> bool
-  val get_named_field_list : model -> lident -> 'a list -> (lident * 'a) list
-  val get_partitions       : model -> (lident * record_item) list (* record id, record item *)
-  val dest_partition       : type_ -> lident
+  val get_records                : model -> record list
+  val get_storage                : model -> storage
+  val get_record                 : model -> lident -> record
+  val get_record_field           : model -> (lident * lident) -> record_item
+  val get_record_key             : model -> lident -> (lident * btyp)
+  val is_storage_attribute       : model -> lident -> bool
+  val get_named_field_list       : model -> lident -> 'a list -> (lident * 'a) list
+  val get_partitions             : model -> (lident * record_item) list (* record id, record item *)
+  val dest_partition             : type_ -> lident
+  val get_storage_api            : model -> storage_const list
+  val get_partition_record_key   : model -> lident -> lident -> (lident * lident * btyp)
 
 end = struct
 
@@ -927,11 +929,25 @@ end = struct
     | RecordKeyTypeNotFound of string
     | StorageNotFound
     | NotaPartition
+    | PartitionNotFound
   [@@deriving show {with_path = false}]
 
   let emit_error (desc : error_desc) =
     let str = Format.asprintf "%a@." pp_error_desc desc in
     raise (Anomaly str)
+
+  let is_storage_const (d : decl_node) : bool =
+    match d with
+    | TNfunction { node = Storage _; verif = _ } -> true
+    | _ -> false
+
+  let dest_storage_const (d : decl_node) : storage_const =
+    match d with
+    | TNfunction { node = Storage sc; verif = _ } -> sc
+    | _ -> assert false
+
+  let get_storage_api m  =
+    m.decls |> List.filter is_storage_const |> List.map dest_storage_const
 
   let is_record (d : decl_node) : bool =
     match d with
@@ -971,7 +987,10 @@ end = struct
 
   let get_record_field model (record_name, field_name) =
     let record = get_record model record_name in
-    let res = List.fold_left (fun accu (x : record_item) -> if String.equal (unloc field_name) (unloc x.name) then Some x else accu) None record.values in
+    let res = List.fold_left (fun accu (x : record_item) ->
+        if String.equal (unloc field_name) (unloc x.name) then
+          Some x
+        else accu) None record.values in
     match res with
     | Some v -> v
     | _ -> emit_error (RecordFieldNotFound (unloc record_name, unloc field_name))
@@ -983,6 +1002,19 @@ end = struct
     match key_field.type_ with
     | Tbuiltin v -> (key_id, v)
     | _ -> emit_error (RecordKeyTypeNotFound (unloc record_name))
+
+  (* returns : asset name, key name, key type *)
+  let get_partition_record_key model record field : (lident * lident * btyp) =
+    let partitions = get_partitions model in
+    let rec rec_get = function
+      | (r,(ri : record_item)) :: tl when compare r.pldesc record.pldesc = 0 &&
+                                          compare ri.name.pldesc field.pldesc = 0 ->
+        let pa  = dest_partition ri.type_ in
+        let k,t = get_record_key model pa in
+        (pa,k,t)
+      | _ :: tl -> rec_get tl
+      | _ -> emit_error (PartitionNotFound) in
+    rec_get partitions
 
   let get_storage_opt model =
     List.fold_left (fun accu (x : decl_node) ->
