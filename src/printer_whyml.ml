@@ -58,7 +58,6 @@ let pp_decl fmt decl =
     Format.fprintf fmt "use export %a"
       pp_qualid q
 
-
 let pp_mlw fmt decls =
   Format.fprintf fmt "%a"
     (pp_list "@\n" pp_decl) decls

@@ -168,8 +168,10 @@ let mk_partition_axiom n f kt pa kpt : decl =
   Daxiom (n^"_"^f^"_is_partition",
           Tforall ([["s"],Tystorage;["k1"],kt;["k2"],kpt],
                    Timpl (Tmem (Tvar("k1"),Tdoti ("s",n^"_keys")),
-                   Timpl (Tmem (Tvar "k2",Tapp (Tvar f,[Tget (Tdoti ("s",n^"_assets"),Tvar "k1")])),
-                          Tmem (Tvar "k2",Tdoti ("s",pa^"_keys"))))))
+                          Timpl (Tmem (Tvar "k2",
+                                       Tapp (Tvar f,
+                                             [Tget (Tdoti ("s",n^"_assets"),Tvar "k1")])),
+                                 Tmem (Tvar "k2",Tdoti ("s",pa^"_keys"))))))
 
 (* Filter template -----------------------------------------------------------*)
 
@@ -546,7 +548,7 @@ let mk_test_storage : decl = Dstorage {
     ];
   }
 
-let mk_test_mlwtree : mlw_tree =   {
+let mk_test_mlwtree : mlw_tree =   [{
   name = "Miles_with_expiration_storage";
   decls = [
     mk_use;
@@ -573,7 +575,7 @@ let mk_test_mlwtree : mlw_tree =   {
     mk_rm_partition_field "owner" Tyaddr "miles" "mile" Tystring;
     mk_test_consume;
   ];
-}
+}]
 
 (* ----------------------------------------------------------------------------*)
 
@@ -799,8 +801,8 @@ let to_whyml (m : M.model) : mlw_tree  =
   let partition_axioms = mk_partition_axioms m in
   let get_fields       = mk_get_fields m in
   let storage_api      = mk_storage_api m (records |> wdl) in
-  let loct : loc_mlw_tree = {
-    name = cap (map_lident m.name);
+  let loct : loc_mlw_tree = [{
+    name = with_dummy_loc (String.capitalize_ascii (m.name.pldesc^"_storage"));
     decls =  [uselib]         @
              records          @
              [storage]        @
@@ -808,4 +810,4 @@ let to_whyml (m : M.model) : mlw_tree  =
              partition_axioms @
              get_fields       @
              storage_api;
-  } in unloc_tree loct
+  }] in unloc_tree loct
