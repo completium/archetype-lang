@@ -6,8 +6,8 @@ open Mlwtree
 
 (* Utils -----------------------------------------------------------------------*)
 
-let mk_use : decl = Duse ["archetype";"Lib"]
-let mk_use_module m : decl = Duse [deloc m]
+let mk_use = Duse ["archetype";"Lib"] |> loc_decl |> deloc
+let mk_use_module m = Duse [deloc m]  |> loc_decl |> deloc
 
 let mk_default_val = function
   | Typartition _ -> Tvar "empty"
@@ -552,7 +552,6 @@ let mk_test_storage : decl = Dstorage {
 let mk_test_mlwtree : mlw_tree =   [{
   name = "Miles_with_expiration_storage";
   decls = [
-    mk_use;
     mk_test_asset_enum;
     mk_test_entry_enum;
     mk_test_field_enum;
@@ -794,7 +793,7 @@ let mk_storage_api (m : M.model) records =
 
 let to_whyml (m : M.model) : mlw_tree  =
   let storage_module   = with_dummy_loc (String.capitalize_ascii (m.name.pldesc^"_storage")) in
-  let uselib           = mk_use |> Mlwtree.loc_decl |> Mlwtree.deloc in
+  let uselib           = mk_use in
   let records          = M.Utils.get_records m |> List.map (map_record m) |> wdl in
   let init_records     = records |> unloc_decl |> List.map mk_default_init |> loc_decl in
   let records          = zip records init_records |> deloc in
@@ -803,7 +802,7 @@ let to_whyml (m : M.model) : mlw_tree  =
   let partition_axioms = mk_partition_axioms m in
   let get_fields       = mk_get_fields m in
   let storage_api      = mk_storage_api m (records |> wdl) in
-  let usestorage       = mk_use_module storage_module |> Mlwtree.loc_decl |> Mlwtree.deloc in
+  let usestorage       = mk_use_module storage_module in
   let loct : loc_mlw_tree = [
     {
       name  = storage_module;
