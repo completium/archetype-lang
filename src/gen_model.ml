@@ -7,6 +7,7 @@ module M = Model
 exception Anomaly of string
 type error_desc =
   | NotSupportedContainer of string
+  | CannotExtractField
   | TODO
 [@@deriving show {with_path = false}]
 
@@ -443,7 +444,28 @@ let to_model (ast : A.model) : M.model =
       then None
       else e
     in
-    let mk_function t field_name c (e : M.term_arg option) : (M.storage_const * M.term_arg option) option =
+    let extract_field asset_name (args : M.term_arg list) : M.lident =
+      let asset_items : string list = A.Utils.get_field_list ast asset_name |> List.map Location.unloc in
+      let is_ident_field_name (id : M.lident) : bool =
+        List.fold_left (fun accu (x : string) -> accu || (String.equal x (Location.unloc id))) false asset_items
+      in
+
+      let res = List.fold_left (fun accu x ->
+          match accu, x with
+          | None, M.AExpr ({ node = M.Mvar x; _}) when is_ident_field_name x -> Some x
+          | _ -> accu) None args in
+
+      match res with
+      | Some id -> id
+      | _ ->
+
+        (* Format.eprintf "asset_name : %s@\n" an; *)
+        List.iter (fun x -> Format.eprintf "%s@\n" x) asset_items;
+        List.iter (fun x -> Format.eprintf "%a@\n" M.pp_term_arg x) args;
+        emit_error CannotExtractField
+    in
+
+    let mk_function t field_name c (e : M.term_arg option) (args : M.term_arg list) : (M.storage_const * M.term_arg option) option =
       let node = match t, field_name, c, e with
         | M.Tcontainer (Tasset asset, Collection), None, M.Cget,      _ when is_global_asset asset e -> Some (M.Get asset, get_first_arg asset e)
         | M.Tcontainer (Tasset asset, Collection), None, M.Cadd,      _ when is_global_asset asset e -> Some (M.AddAsset asset, get_first_arg asset e)
@@ -456,9 +478,9 @@ let to_model (ast : A.model) : M.model =
         | M.Tcontainer (Tasset asset, Collection), None, M.Creverse,  _ when is_global_asset asset e -> Some (M.ReverseAsset asset, get_first_arg asset e)
         | M.Tcontainer (Tasset asset, Collection), None, M.Csort,     _ when is_global_asset asset e -> Some (M.SortAsset asset, get_first_arg asset e)
         | M.Tcontainer (Tasset asset, Collection), None, M.Ccount,    _ when is_global_asset asset e -> Some (M.CountAsset asset, get_first_arg asset e)
-        | M.Tcontainer (Tasset asset, Collection), None, M.Csum,      _ when is_global_asset asset e -> Some (M.SumAsset asset, get_first_arg asset e)
-        | M.Tcontainer (Tasset asset, Collection), None, M.Cmin,      _ when is_global_asset asset e -> Some (M.MinAsset asset, get_first_arg asset e)
-        | M.Tcontainer (Tasset asset, Collection), None, M.Cmax,      _ when is_global_asset asset e -> Some (M.MaxAsset asset, get_first_arg asset e)
+        | M.Tcontainer (Tasset asset, Collection), None, M.Csum,      _ when is_global_asset asset e -> Some (M.SumAsset (asset, extract_field asset args), get_first_arg asset e)
+        | M.Tcontainer (Tasset asset, Collection), None, M.Cmin,      _ when is_global_asset asset e -> Some (M.MinAsset (asset, extract_field asset args), get_first_arg asset e)
+        | M.Tcontainer (Tasset asset, Collection), None, M.Cmax,      _ when is_global_asset asset e -> Some (M.MaxAsset (asset, extract_field asset args), get_first_arg asset e)
         | M.Tasset asset, Some field, M.Cadd,      Some AExpr {node = M.Mdot (a, _)}  -> Some (M.AddContainer (asset, field), Some (AExpr a))
         | M.Tasset asset, Some field, M.Cremove,   Some AExpr {node = M.Mdot (a, _)}  -> Some (M.RemoveContainer (asset, field), Some (AExpr a))
         | M.Tasset asset, Some field, M.Cclear,    Some AExpr {node = M.Mdot (a, _)}  -> Some (M.ClearContainer (asset, field), Some (AExpr a))
@@ -483,7 +505,7 @@ let to_model (ast : A.model) : M.model =
       match term.node with
       | M.Mcall (Some asset_name, Cconst c, args) -> (
           let _, accu = M.fold_map_term (fun node -> {term with node = node} ) fe accu term in
-          let function__ = mk_function (M.Tcontainer (Tasset asset_name, Collection)) None c (Some (M.AExpr (M.mk_mterm (Mvar asset_name) (Tasset asset_name) ))) in
+          let function__ = mk_function (M.Tcontainer (Tasset asset_name, Collection)) None c (Some (M.AExpr (M.mk_mterm (Mvar asset_name) (Tasset asset_name)))) args in
           let term, accu =
             match function__ with
             | Some (const, _) -> (
@@ -519,7 +541,7 @@ let to_model (ast : A.model) : M.model =
         in
 
         let first_arg = Option.map (fun x -> M.AExpr x) xe in
-        let function__ = mk_function t field_name c first_arg in
+        let function__ = mk_function t field_name c first_arg argss in
         let instr, accu =
           match function__ with
           | Some (const, arg) -> (

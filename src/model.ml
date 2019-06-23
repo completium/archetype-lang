@@ -118,9 +118,9 @@ type 'id storage_const_gen =
   | SortAsset          of 'id
   | ReverseAsset       of 'id
   | CountAsset         of 'id
-  | SumAsset           of 'id
-  | MinAsset           of 'id
-  | MaxAsset           of 'id
+  | SumAsset           of 'id * 'id
+  | MinAsset           of 'id * 'id
+  | MaxAsset           of 'id * 'id
   | AddContainer       of 'id * 'id
   | RemoveContainer    of 'id * 'id
   | ClearContainer     of 'id * 'id
@@ -575,9 +575,9 @@ let function_name_from_function_node = function
   | Storage (SortAsset          aid      ) -> "sort_"     ^ lident_to_string aid
   | Storage (ReverseAsset       aid      ) -> "reverse_"  ^ lident_to_string aid
   | Storage (CountAsset         aid      ) -> "count_"    ^ lident_to_string aid
-  | Storage (SumAsset           aid      ) -> "sum_"      ^ lident_to_string aid
-  | Storage (MinAsset           aid      ) -> "min_"      ^ lident_to_string aid
-  | Storage (MaxAsset           aid      ) -> "max_"      ^ lident_to_string aid
+  | Storage (SumAsset          (aid, _)  ) -> "sum_"      ^ lident_to_string aid
+  | Storage (MinAsset          (aid, _)  ) -> "min_"      ^ lident_to_string aid
+  | Storage (MaxAsset          (aid, _)  ) -> "max_"      ^ lident_to_string aid
   | Storage (AddContainer      (aid, fid)) -> "add_"      ^ lident_to_string aid ^ "_" ^ lident_to_string fid
   | Storage (RemoveContainer   (aid, fid)) -> "remove_"   ^ lident_to_string aid ^ "_" ^ lident_to_string fid
   | Storage (ClearContainer    (aid, fid)) -> "clear_"    ^ lident_to_string aid ^ "_" ^ lident_to_string fid

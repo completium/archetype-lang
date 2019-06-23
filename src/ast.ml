@@ -901,6 +901,7 @@ module Utils : sig
   val get_asset_key             : model -> lident -> (lident * vtyp)
   val get_container_asset_field : model -> (lident * lident ) -> container
   val get_named_field_list      : model -> lident -> pterm list -> (lident * pterm) list
+  val get_field_list            : model -> lident -> lident list
 
 end = struct
   open Tools
@@ -1107,7 +1108,7 @@ let create_miles_with_expiration_ast () =
                                                    (mk_sp (Pcall (Some (dumloc "mile"),
                                                                   Cconst Csum,
                                                                   [
-                                                                    AExpr (mk_sp (Pvar (dumloc "quantity"))
+                                                                    AExpr (mk_sp (Pvar (dumloc "amount"))
                                                                              ~type_:(LTprog (Tbuiltin VTuint)))
                                                                   ]))
                                                       ~type_:(LTprog (Tbuiltin VTuint))),
@@ -1122,11 +1123,11 @@ let create_miles_with_expiration_ast () =
                                                                                                                    ~type_:(LTprog (Tcontainer (Tasset (dumloc "miles"), Collection))))
                                                                                                         ]))
                                                                                             ~type_:(LTprog (Tcontainer (Tasset (dumloc "owner"), Collection))));
-                                                                                   AExpr (mk_sp (Pvar (dumloc "quantity"))
+                                                                                   AExpr (mk_sp (Pvar (dumloc "amount"))
                                                                                             ~type_:(LTprog (Tbuiltin VTuint)))
                                                                                  ]))
                                                                      ~type_:(LTprog (Tbuiltin VTuint))),
-                                                                  (mk_sp (Pvar (dumloc "nbmiles"))
+                                                                  (mk_sp (Pvar (dumloc "quantity"))
                                                                      ~type_:(LTprog (Tbuiltin VTuint)))
                                                                  ))
                                                      ~type_:(LTprog (Tbuiltin VTint))
@@ -1217,7 +1218,7 @@ let create_miles_with_expiration_ast () =
                                                                                                                  ~type_:(LTprog (Tbuiltin VTuint)))
                                                                                                       ]))
                                                                                           ~type_:(LTprog (Tbuiltin VTuint))),
-                                                                                       (mk_sp (Pvar (dumloc "nbmiles"))
+                                                                                       (mk_sp (Pvar (dumloc "quantity"))
                                                                                           ~type_:(LTprog (Tbuiltin VTuint)))
                                                                                       ))
                                                                           ~type_:(LTprog (Tbuiltin VTint)),
@@ -1308,7 +1309,7 @@ let create_miles_with_expiration_ast () =
                                                                         [
                                                                           AExpr (mk_sp (Pvar (dumloc "by_expiration"))
                                                                                    ~type_:(Tcontainer (Tasset (dumloc "mile"), Collection)));
-                                                                          AExpr (mk_sp (Pvar (dumloc "quantity"))
+                                                                          AExpr (mk_sp (Pvar (dumloc "amount"))
                                                                                    ~type_:(Tbuiltin VTuint))
                                                                         ]))
                                                             ~type_:(Tbuiltin VTuint)),
