@@ -113,27 +113,20 @@ type 'id storage_const_gen =
   | RemoveAsset        of 'id
   | ClearAsset         of 'id
   | UpdateAsset        of 'id
-  | ContainsAsset      of 'id
-  | NthAsset           of 'id
-  | SelectAsset        of 'id
   | SortAsset          of 'id
   | ReverseAsset       of 'id
-  | CountAsset         of 'id
-  | SumAsset           of 'id * 'id
-  | MinAsset           of 'id * 'id
-  | MaxAsset           of 'id * 'id
+  | Contains           of 'id
+  | Nth                of 'id
+  | Select             of 'id
+  | Count              of 'id
+  | Sum                of 'id * 'id
+  | Min                of 'id * 'id
+  | Max                of 'id * 'id
   | AddContainer       of 'id * 'id
   | RemoveContainer    of 'id * 'id
   | ClearContainer     of 'id * 'id
-  | ContainsContainer  of 'id * 'id
-  | NthContainer       of 'id * 'id
-  | SelectContainer    of 'id * 'id
   | SortContainer      of 'id * 'id
   | ReverseContainer   of 'id * 'id
-  | CountContainer     of 'id * 'id
-  | SumContainer       of 'id * 'id
-  | MinContainer       of 'id * 'id
-  | MaxContainer       of 'id * 'id
 [@@deriving show {with_path = false}]
 
 type storage_const = lident storage_const_gen
@@ -569,27 +562,20 @@ let function_name_from_function_node = function
   | Storage (RemoveAsset        aid      ) -> "remove_"   ^ lident_to_string aid
   | Storage (ClearAsset         aid      ) -> "clear_"    ^ lident_to_string aid
   | Storage (UpdateAsset        aid      ) -> "update_"   ^ lident_to_string aid
-  | Storage (ContainsAsset      aid      ) -> "contains_" ^ lident_to_string aid
-  | Storage (NthAsset           aid      ) -> "nth_"      ^ lident_to_string aid
-  | Storage (SelectAsset        aid      ) -> "select_"   ^ lident_to_string aid
   | Storage (SortAsset          aid      ) -> "sort_"     ^ lident_to_string aid
   | Storage (ReverseAsset       aid      ) -> "reverse_"  ^ lident_to_string aid
-  | Storage (CountAsset         aid      ) -> "count_"    ^ lident_to_string aid
-  | Storage (SumAsset          (aid, fid)) -> "sum_"      ^ lident_to_string aid ^ "_" ^ lident_to_string fid
-  | Storage (MinAsset          (aid, fid)) -> "min_"      ^ lident_to_string aid ^ "_" ^ lident_to_string fid
-  | Storage (MaxAsset          (aid, fid)) -> "max_"      ^ lident_to_string aid ^ "_" ^ lident_to_string fid
   | Storage (AddContainer      (aid, fid)) -> "add_"      ^ lident_to_string aid ^ "_" ^ lident_to_string fid
   | Storage (RemoveContainer   (aid, fid)) -> "remove_"   ^ lident_to_string aid ^ "_" ^ lident_to_string fid
   | Storage (ClearContainer    (aid, fid)) -> "clear_"    ^ lident_to_string aid ^ "_" ^ lident_to_string fid
-  | Storage (ContainsContainer (aid, fid)) -> "contains_" ^ lident_to_string aid ^ "_" ^ lident_to_string fid
-  | Storage (NthContainer      (aid, fid)) -> "nth_"      ^ lident_to_string aid ^ "_" ^ lident_to_string fid
-  | Storage (SelectContainer   (aid, fid)) -> "select_"   ^ lident_to_string aid ^ "_" ^ lident_to_string fid
   | Storage (SortContainer     (aid, fid)) -> "sort_"     ^ lident_to_string aid ^ "_" ^ lident_to_string fid
   | Storage (ReverseContainer  (aid, fid)) -> "reverse_"  ^ lident_to_string aid ^ "_" ^ lident_to_string fid
-  | Storage (CountContainer    (aid, fid)) -> "count_"    ^ lident_to_string aid ^ "_" ^ lident_to_string fid
-  | Storage (SumContainer      (aid, fid)) -> "sum_"      ^ lident_to_string aid ^ "_" ^ lident_to_string fid
-  | Storage (MinContainer      (aid, fid)) -> "min_"      ^ lident_to_string aid ^ "_" ^ lident_to_string fid
-  | Storage (MaxContainer      (aid, fid)) -> "max_"      ^ lident_to_string aid ^ "_" ^ lident_to_string fid
+  | Storage (Contains           aid      ) -> "contains_" ^ lident_to_string aid
+  | Storage (Select             aid      ) -> "select_"   ^ lident_to_string aid
+  | Storage (Nth                aid      ) -> "nth_"      ^ lident_to_string aid
+  | Storage (Count              aid      ) -> "count_"    ^ lident_to_string aid
+  | Storage (Sum               (aid, fid)) -> "sum_"      ^ lident_to_string aid ^ "_" ^ lident_to_string fid
+  | Storage (Min               (aid, fid)) -> "min_"      ^ lident_to_string aid ^ "_" ^ lident_to_string fid
+  | Storage (Max               (aid, fid)) -> "max_"      ^ lident_to_string aid ^ "_" ^ lident_to_string fid
   | Other -> assert false
 
 let mk_qualid ?(loc = Location.dummy) node type_ : 'id qualid_gen =

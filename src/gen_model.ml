@@ -72,7 +72,7 @@ let to_trtyp = function
 let rec ltyp_to_type t : M.type_ =
   match t with
   | A.LTprog t      -> ptyp_to_type t
-  | A.LTvset (v, t) -> M.Tvset (to_vset v, ltyp_to_type t)
+  | A.LTvset (v, t) -> ltyp_to_type t
   | A.LTtrace tr    -> M.Ttrace (to_trtyp tr)
 
 let to_logical_operator = function
@@ -473,27 +473,20 @@ let to_model (ast : A.model) : M.model =
         | M.Tcontainer (Tasset asset, Collection), None, M.Cremove,   _ when is_global_asset asset e -> Some (M.RemoveAsset asset, get_first_arg asset e)
         | M.Tcontainer (Tasset asset, Collection), None, M.Cclear,    _ when is_global_asset asset e -> Some (M.ClearAsset asset, get_first_arg asset e)
         | M.Tcontainer (Tasset asset, Collection), None, M.Cupdate,   _ when is_global_asset asset e -> Some (M.UpdateAsset asset, get_first_arg asset e)
-        | M.Tcontainer (Tasset asset, Collection), None, M.Ccontains, _ when is_global_asset asset e -> Some (M.ContainsAsset asset, get_first_arg asset e)
-        | M.Tcontainer (Tasset asset, Collection), None, M.Cnth,      _ when is_global_asset asset e -> Some (M.NthAsset asset, get_first_arg asset e)
-        | M.Tcontainer (Tasset asset, Collection), None, M.Cselect,   _ when is_global_asset asset e -> Some (M.SelectAsset asset, get_first_arg asset e)
         | M.Tcontainer (Tasset asset, Collection), None, M.Creverse,  _ when is_global_asset asset e -> Some (M.ReverseAsset asset, get_first_arg asset e)
         | M.Tcontainer (Tasset asset, Collection), None, M.Csort,     _ when is_global_asset asset e -> Some (M.SortAsset asset, get_first_arg asset e)
-        | M.Tcontainer (Tasset asset, Collection), None, M.Ccount,    _ when is_global_asset asset e -> Some (M.CountAsset asset, get_first_arg asset e)
-        | M.Tcontainer (Tasset asset, Collection), None, M.Csum,      _ when is_global_asset asset e -> Some (M.SumAsset (asset, extract_field asset args), get_first_arg asset e)
-        | M.Tcontainer (Tasset asset, Collection), None, M.Cmin,      _ when is_global_asset asset e -> Some (M.MinAsset (asset, extract_field asset args), get_first_arg asset e)
-        | M.Tcontainer (Tasset asset, Collection), None, M.Cmax,      _ when is_global_asset asset e -> Some (M.MaxAsset (asset, extract_field asset args), get_first_arg asset e)
+        | M.Tcontainer (Tasset asset, _), None, M.Ccontains,          _ -> Some (M.Contains asset, get_first_arg asset e)
+        | M.Tcontainer (Tasset asset, _), None, M.Cnth,               _ -> Some (M.Nth asset, get_first_arg asset e)
+        | M.Tcontainer (Tasset asset, _), None, M.Cselect,            _ -> Some (M.Select asset, get_first_arg asset e)
+        | M.Tcontainer (Tasset asset, _), None, M.Ccount,             _ -> Some (M.Count asset, get_first_arg asset e)
+        | M.Tcontainer (Tasset asset, _), None, M.Csum,               _ -> Some (M.Sum (asset, extract_field asset args), get_first_arg asset e)
+        | M.Tcontainer (Tasset asset, _), None, M.Cmin,               _ -> Some (M.Min (asset, extract_field asset args), get_first_arg asset e)
+        | M.Tcontainer (Tasset asset, _), None, M.Cmax,               _ -> Some (M.Max (asset, extract_field asset args), get_first_arg asset e)
         | M.Tasset asset, Some field, M.Cadd,      Some AExpr {node = M.Mdot (a, _)}  -> Some (M.AddContainer (asset, field), Some (AExpr a))
         | M.Tasset asset, Some field, M.Cremove,   Some AExpr {node = M.Mdot (a, _)}  -> Some (M.RemoveContainer (asset, field), Some (AExpr a))
         | M.Tasset asset, Some field, M.Cclear,    Some AExpr {node = M.Mdot (a, _)}  -> Some (M.ClearContainer (asset, field), Some (AExpr a))
-        | M.Tasset asset, Some field, M.Ccontains, Some AExpr {node = M.Mdot (a, _)}  -> Some (M.ContainsContainer (asset, field), Some (AExpr a))
-        | M.Tasset asset, Some field, M.Cnth,      Some AExpr {node = M.Mdot (a, _)}  -> Some (M.NthContainer (asset, field), Some (AExpr a))
-        | M.Tasset asset, Some field, M.Cselect,   Some AExpr {node = M.Mdot (a, _)}  -> Some (M.SelectContainer (asset, field), Some (AExpr a))
         | M.Tasset asset, Some field, M.Creverse,  Some AExpr {node = M.Mdot (a, _)}  -> Some (M.ReverseContainer (asset, field), Some (AExpr a))
         | M.Tasset asset, Some field, M.Csort,     Some AExpr {node = M.Mdot (a, _)}  -> Some (M.SortContainer (asset, field), Some (AExpr a))
-        | M.Tasset asset, Some field, M.Ccount,    Some AExpr {node = M.Mdot (a, _)}  -> Some (M.CountContainer (asset, field), Some (AExpr a))
-        | M.Tasset asset, Some field, M.Csum,      Some AExpr {node = M.Mdot (a, _)}  -> Some (M.SumContainer (asset, field), Some (AExpr a))
-        | M.Tasset asset, Some field, M.Cmax,      Some AExpr {node = M.Mdot (a, _)}  -> Some (M.MaxContainer (asset, field), Some (AExpr a))
-        | M.Tasset asset, Some field, M.Cmin,      Some AExpr {node = M.Mdot (a, _)}  -> Some (M.MinContainer (asset, field), Some (AExpr a))
         | _ -> None in
       match node with
       | Some (node, x) -> Some (node, x)

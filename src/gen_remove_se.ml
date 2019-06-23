@@ -401,7 +401,7 @@ let mk_function_struct model (f : M.function__) =
 
     | M.Storage Get asset                   -> Utils.get_asset model asset
     | M.Storage AddAsset asset              -> Utils.add_asset model asset
-    | M.Storage ContainsAsset asset         -> Utils.contains_asset model asset
+    | M.Storage Contains asset              -> Utils.contains_asset model asset
     | M.Storage AddContainer (asset, field) -> Utils.add_container model (asset, field)
 
     | _ ->
