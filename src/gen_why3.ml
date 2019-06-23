@@ -550,32 +550,32 @@ let mk_test_storage : decl = Dstorage {
   }
 
 let mk_test_mlwtree : mlw_tree =   [{
-  name = "Miles_with_expiration_storage";
-  decls = [
-    mk_test_asset_enum;
-    mk_test_entry_enum;
-    mk_test_field_enum;
-    mk_trace_clone;
-    mk_test_mile;
-    mk_default_init mk_test_mile;
-    mk_test_owner;
-    mk_default_init mk_test_owner;
-    mk_test_storage;
-    mk_get_field "mile" Tystring "amount" Tyint;
-    mk_get_field "mile" Tystring "expiration" Tydate;
-    mk_get_field "owner" Tyaddr "miles" (Tycoll "");
-    mk_update_asset "id" mk_test_mile;
-    mk_get_asset "mile" Tystring;
-    mk_get_asset "owner" Tystring;
-    mk_sum_clone "amount";
-    mk_filter "consume" (Tyint) (Tlt (Tyint,Tapp (Tvar "get_expiration",[Tvar "s";Tvar "k"]),Tnow "s"));
-    mk_add_asset "mile" "id";
-    mk_add_asset "owner" "addr";
-    mk_rm_asset "mile" Tystring;
-    mk_rm_partition_field "owner" Tyaddr "miles" "mile" Tystring;
-    mk_test_consume;
-  ];
-}]
+    name = "Miles_with_expiration_storage";
+    decls = [
+      mk_test_asset_enum;
+      mk_test_entry_enum;
+      mk_test_field_enum;
+      mk_trace_clone;
+      mk_test_mile;
+      mk_default_init mk_test_mile;
+      mk_test_owner;
+      mk_default_init mk_test_owner;
+      mk_test_storage;
+      mk_get_field "mile" Tystring "amount" Tyint;
+      mk_get_field "mile" Tystring "expiration" Tydate;
+      mk_get_field "owner" Tyaddr "miles" (Tycoll "");
+      mk_update_asset "id" mk_test_mile;
+      mk_get_asset "mile" Tystring;
+      mk_get_asset "owner" Tystring;
+      mk_sum_clone "amount";
+      mk_filter "consume" (Tyint) (Tlt (Tyint,Tapp (Tvar "get_expiration",[Tvar "s";Tvar "k"]),Tnow "s"));
+      mk_add_asset "mile" "id";
+      mk_add_asset "owner" "addr";
+      mk_rm_asset "mile" Tystring;
+      mk_rm_partition_field "owner" Tyaddr "miles" "mile" Tystring;
+      mk_test_consume;
+    ];
+  }]
 
 (* ----------------------------------------------------------------------------*)
 
@@ -627,8 +627,9 @@ let rec map_type (typ : M.type_) : loc_typ =
     | M.Tcontainer (M.Tasset i,M.Partition) -> Typartition (map_lident i)
     | M.Tcontainer _             -> Typartition (with_dummy_loc "NOT TRANSLATED")
     | M.Ttuple l                 -> Tytuple (List.map rec_map_type l)
+    | M.Tentry                   -> Typartition (with_dummy_loc "NOT TRANSLATED")
     | M.Tprog t                  -> Mlwtree.deloc (map_type t)
-    | M.Tvset (_,t)             ->  Typartition (with_dummy_loc "NOT TRANSLATED")
+    | M.Tvset (_,t)              ->  Typartition (with_dummy_loc "NOT TRANSLATED")
     | M.Ttrace trtyp             -> Typartition (with_dummy_loc "NOT TRANSLATED")
   in
   with_dummy_loc (rec_map_type typ)
@@ -645,9 +646,9 @@ let map_basic_type (typ : 'id M.item_field_type) : loc_typ =
   with_dummy_loc (rec_map_basic_type typ)
 
 let map_bval = function
-    | M.BVaddress v -> Tint (sha v)
-    | M.BVint i     -> Tint (Big_int.int_of_big_int i)
-    | _ -> Tnottranslated
+  | M.BVaddress v -> Tint (sha v)
+  | M.BVint i     -> Tint (Big_int.int_of_big_int i)
+  | _ -> Tnottranslated
 
 let rec map_term (t : M.mterm) : loc_term = mk_loc t.loc (
     match t.node with
@@ -735,7 +736,7 @@ let mk_partition_axioms (m : M.model) =
       let kt     = M.Utils.get_record_key m n |> snd |> map_btype in
       let pa,_,pkt  = M.Utils.get_partition_record_key m n item.name in
       mk_partition_axiom n.pldesc item.name.pldesc kt pa.pldesc (pkt |> map_btype)
-  ) |> loc_decl |> deloc
+    ) |> loc_decl |> deloc
 
 let mk_record_get_fields m (r : M.record) =
   let k,kt = M.Utils.get_record_key m r.name |> fun (x,y) -> (x, map_btype y) in
@@ -792,17 +793,17 @@ let mk_storage_api (m : M.model) records =
 let mk_entries m =
   M.Utils.get_entries m |> List.map (fun ((_ : M.verification option),
                                           (s : M.function_struct)) ->
-      Dfun {
-        name     = map_lident s.name |> unloc_ident;
-        logic    = NoMod;
-        args     = [];
-        returns  = Tytransfers;
-        raises   = [];
-        variants = [];
-        requires = [];
-        ensures  = [];
-        body     = Tnone;
-      }) |> loc_decl |> deloc
+                                      Dfun {
+                                        name     = map_lident s.name |> unloc_ident;
+                                        logic    = NoMod;
+                                        args     = [];
+                                        returns  = Tytransfers;
+                                        raises   = [];
+                                        variants = [];
+                                        requires = [];
+                                        ensures  = [];
+                                        body     = Tnone;
+                                      }) |> loc_decl |> deloc
 
 (* ----------------------------------------------------------------------------*)
 
@@ -829,7 +830,7 @@ let to_whyml (m : M.model) : mlw_tree  =
               get_fields       @
               storage_api;
     };{
-      name = cap (map_lident m.name);
-      decls = [usestorage] @
-              entries;
-    }] in unloc_tree loct
+       name = cap (map_lident m.name);
+       decls = [usestorage] @
+               entries;
+     }] in unloc_tree loct

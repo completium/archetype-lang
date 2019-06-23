@@ -50,6 +50,7 @@ type type_ =
   | Tbuiltin of btyp
   | Tcontainer of type_ * container
   | Ttuple of type_ list
+  | Tentry
   | Tprog of type_
   | Tvset of vset * type_
   | Ttrace of trtyp
@@ -294,7 +295,6 @@ type 'id storage_item_gen = {
   name        : 'id;
   fields      : 'id item_field_gen list;
   invariants  : lident label_term_gen list;
-  init        : ((ident * mterm) list) list;
 }
 [@@deriving show {with_path = false}]
 
@@ -575,9 +575,9 @@ let function_name_from_function_node = function
   | Storage (SortAsset          aid      ) -> "sort_"     ^ lident_to_string aid
   | Storage (ReverseAsset       aid      ) -> "reverse_"  ^ lident_to_string aid
   | Storage (CountAsset         aid      ) -> "count_"    ^ lident_to_string aid
-  | Storage (SumAsset          (aid, _)  ) -> "sum_"      ^ lident_to_string aid
-  | Storage (MinAsset          (aid, _)  ) -> "min_"      ^ lident_to_string aid
-  | Storage (MaxAsset          (aid, _)  ) -> "max_"      ^ lident_to_string aid
+  | Storage (SumAsset          (aid, fid)) -> "sum_"      ^ lident_to_string aid ^ "_" ^ lident_to_string fid
+  | Storage (MinAsset          (aid, fid)) -> "min_"      ^ lident_to_string aid ^ "_" ^ lident_to_string fid
+  | Storage (MaxAsset          (aid, fid)) -> "max_"      ^ lident_to_string aid ^ "_" ^ lident_to_string fid
   | Storage (AddContainer      (aid, fid)) -> "add_"      ^ lident_to_string aid ^ "_" ^ lident_to_string fid
   | Storage (RemoveContainer   (aid, fid)) -> "remove_"   ^ lident_to_string aid ^ "_" ^ lident_to_string fid
   | Storage (ClearContainer    (aid, fid)) -> "clear_"    ^ lident_to_string aid ^ "_" ^ lident_to_string fid
@@ -646,8 +646,8 @@ let mk_record ?(values = []) ?key name : 'id record_gen =
 let mk_record_item ?default name type_ : 'id record_item_gen =
   { name; type_; default }
 
-let mk_storage_item ?(fields = []) ?(invariants = []) ?(init = []) name : 'id storage_item_gen =
-  { name; fields; invariants; init }
+let mk_storage_item ?(fields = []) ?(invariants = []) name : 'id storage_item_gen =
+  { name; fields; invariants }
 
 let mk_item_field ?asset ?(ghost = false) ?default ?(loc = Location.dummy) name typ : 'id item_field_gen =
   { asset; name; typ; ghost; default; loc }

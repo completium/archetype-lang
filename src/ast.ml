@@ -50,6 +50,7 @@ type ptyp =
   | Tbuiltin of vtyp
   | Tcontainer of ptyp * container
   | Ttuple of ptyp list
+  | Tentry (* entry of external contract *)
 [@@deriving show {with_path = false}]
 
 type trtyp =
@@ -483,7 +484,7 @@ type transaction = (lident, type_, pterm, instruction) transaction_struct
 type ('id, 'typ, 'term) enum_item_struct = {
   name : 'id;
   initial : bool;
-  verification : ('id, 'typ, 'term) verification option;
+  invariants : ('id, ('id, ltype_) term_gen) label_term list;
   loc : Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]
@@ -591,8 +592,8 @@ let mk_transition ?on ?(trs = []) from =
 let mk_transaction_struct ?(args = []) ?calledby ?(accept_transfer = false) ?require ?transition ?verification ?(functions = []) ?effect ?(side = false) ?(loc = Location.dummy) name =
   { name; args; calledby; accept_transfer; require; transition; verification; functions; effect; side; loc }
 
-let mk_enum_item ?(initial = false) ?verification ?(loc = Location.dummy) name =
-  { name; initial; verification; loc }
+let mk_enum_item ?(initial = false) ?(invariants = []) ?(loc = Location.dummy) name : ('id, 'typ, 'term) enum_item_struct =
+  { name; initial; invariants; loc }
 
 let mk_enum ?(items = []) ?(loc = Location.dummy) name =
   { name; items; loc }

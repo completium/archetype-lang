@@ -8,6 +8,7 @@ exception Anomaly of string
 type error_desc =
   | NotSupportedContainer of string
   | CannotExtractField
+  | UnsupportedTypeForFile of A.type_
   | TODO
 [@@deriving show {with_path = false}]
 
@@ -52,6 +53,7 @@ let rec ptyp_to_type t : M.type_ =
   | A.Tbuiltin b         -> M.Tbuiltin (vtyp_to_btyp b)
   | A.Tcontainer (t, c)  -> M.Tcontainer (ptyp_to_type t, to_container c)
   | A.Ttuple l           -> M.Ttuple (List.map ptyp_to_type l)
+  | A.Tentry             -> M.Tentry
 
 let to_vset = function
   | A.VSremoved -> M.VSremoved
@@ -309,7 +311,7 @@ let to_model (ast : A.model) : M.model =
             let enum_item = M.mk_enum_item id in
             {
               enum_item with
-              invariants = [] (* TODO: Option.map_dfl (fun v -> List.map (fun (id, body) -> (id, lterm_to_mterm body)) v.invariants) [] x.verification*);
+              invariants = List.map (fun x -> to_label_lterm x) x.invariants
             }
           ) e.items;
       }
@@ -355,7 +357,8 @@ let to_model (ast : A.model) : M.model =
           | A.Tasset id     -> M.FRecord id
           | A.Tcontract x   -> M.FBasic Brole
           | A.Tcontainer (ptyp, container) -> M.FContainer (to_container container, ptyp_to_item_field_type ptyp)
-          | A.Ttuple _      -> assert false
+          | A.Tentry
+          | A.Ttuple _      -> emit_error (UnsupportedTypeForFile type_)
         in
         let a = ptyp_to_item_field_type type_ in
         M.mk_item_field arg.name a ?default:(Option.map to_mterm arg.default)
@@ -365,7 +368,6 @@ let to_model (ast : A.model) : M.model =
       let typ : A.type_ = Option.get arg.typ in {
         storage_item with
         fields = [compute_field typ];
-        init = [];
       }
     in
 
@@ -384,7 +386,6 @@ let to_model (ast : A.model) : M.model =
       M.mk_storage_item asset.name
         ~fields:compute_fields
         ~invariants:(List.map (fun x -> to_label_lterm x) asset.specs)
-        (*~init:asset.init D uncomment this *)
     in
 
     let cont f x l = l @ (List.map f x) in

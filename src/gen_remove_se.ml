@@ -55,6 +55,7 @@ let rec to_type t =
   | M.Tbuiltin v        -> byp_to_type v
   | M.Tcontainer (t, _) -> W.Tcontainer (to_type t)
   | M.Ttuple l          -> W.Ttuple (List.map to_type l)
+  | M.Tentry
   | M.Tprog _
   | M.Tvset _
   | M.Ttrace _          -> emit_error (NotSupportedType (Format.asprintf "%a@." M.pp_type_ t))
