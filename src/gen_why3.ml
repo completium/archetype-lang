@@ -7,6 +7,7 @@ open Mlwtree
 (* Utils -----------------------------------------------------------------------*)
 
 let mk_use : decl = Duse ["archetype";"Lib"]
+let mk_use_module m : decl = Duse [deloc m]
 
 let mk_default_val = function
   | Typartition _ -> Tvar "empty"
@@ -792,6 +793,7 @@ let mk_storage_api (m : M.model) records =
 (* ----------------------------------------------------------------------------*)
 
 let to_whyml (m : M.model) : mlw_tree  =
+  let storage_module   = with_dummy_loc (String.capitalize_ascii (m.name.pldesc^"_storage")) in
   let uselib           = mk_use |> Mlwtree.loc_decl |> Mlwtree.deloc in
   let records          = M.Utils.get_records m |> List.map (map_record m) |> wdl in
   let init_records     = records |> unloc_decl |> List.map mk_default_init |> loc_decl in
@@ -801,13 +803,18 @@ let to_whyml (m : M.model) : mlw_tree  =
   let partition_axioms = mk_partition_axioms m in
   let get_fields       = mk_get_fields m in
   let storage_api      = mk_storage_api m (records |> wdl) in
-  let loct : loc_mlw_tree = [{
-    name = with_dummy_loc (String.capitalize_ascii (m.name.pldesc^"_storage"));
-    decls =  [uselib]         @
-             records          @
-             [storage]        @
-             axioms           @
-             partition_axioms @
-             get_fields       @
-             storage_api;
-  }] in unloc_tree loct
+  let usestorage       = mk_use_module storage_module |> Mlwtree.loc_decl |> Mlwtree.deloc in
+  let loct : loc_mlw_tree = [
+    {
+      name  = storage_module;
+      decls = [uselib]         @
+              records          @
+              [storage]        @
+              axioms           @
+              partition_axioms @
+              get_fields       @
+              storage_api;
+    };{
+      name = cap (map_lident m.name);
+      decls = [usestorage];
+    }] in unloc_tree loct
