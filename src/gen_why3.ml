@@ -789,6 +789,21 @@ let mk_storage_api (m : M.model) records =
       | _ -> acc
     ) [] |> loc_decl |> deloc
 
+let mk_entries m =
+  M.Utils.get_entries m |> List.map (fun ((_ : M.verification option),
+                                          (s : M.function_struct)) ->
+      Dfun {
+        name     = map_lident s.name |> unloc_ident;
+        logic    = NoMod;
+        args     = [];
+        returns  = Tytransfers;
+        raises   = [];
+        variants = [];
+        requires = [];
+        ensures  = [];
+        body     = Tnone;
+      }) |> loc_decl |> deloc
+
 (* ----------------------------------------------------------------------------*)
 
 let to_whyml (m : M.model) : mlw_tree  =
@@ -802,9 +817,9 @@ let to_whyml (m : M.model) : mlw_tree  =
   let partition_axioms = mk_partition_axioms m in
   let get_fields       = mk_get_fields m in
   let storage_api      = mk_storage_api m (records |> wdl) in
+  let entries          = mk_entries m in
   let usestorage       = mk_use_module storage_module in
-  let loct : loc_mlw_tree = [
-    {
+  let loct : loc_mlw_tree = [{
       name  = storage_module;
       decls = [uselib]         @
               records          @
@@ -815,5 +830,6 @@ let to_whyml (m : M.model) : mlw_tree  =
               storage_api;
     };{
       name = cap (map_lident m.name);
-      decls = [usestorage];
+      decls = [usestorage] @
+              entries;
     }] in unloc_tree loct

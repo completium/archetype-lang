@@ -958,6 +958,7 @@ module Utils : sig
   val dest_partition             : type_ -> lident
   val get_storage_api            : model -> storage_const list
   val get_partition_record_key   : model -> lident -> lident -> (lident * lident * btyp)
+  val get_entries                : model -> (verification option * function_struct) list
 
 end = struct
 
@@ -995,7 +996,19 @@ end = struct
   let is_record (d : decl_node) : bool =
     match d with
     | TNrecord _ -> true
-    | _            -> false
+    | _          -> false
+
+  let is_entry (d : decl_node) : bool =
+    match d with
+    | TNfunction { node = Entry _; verif = _ } -> true
+    | _                                        -> false
+
+  let get_entry (d : decl_node) : verification option * function_struct =
+    match d with
+    | TNfunction { node = Entry s; verif = v } -> (v,s)
+    | _                                        -> assert false
+
+  let get_entries m = List.filter is_entry m.decls |> List.map get_entry
 
   let dest_record  = function
     | TNrecord r -> r
