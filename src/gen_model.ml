@@ -285,7 +285,7 @@ let to_verification (v : (A.lident, A.ptyp, A.pterm) A.verification) : M.verific
   let theorems    = List.map to_label_lterm v.theorems    in
   let variables   = List.map (fun x -> to_variable x) v.variables in
   let invariants  = List.map (fun (a, l) -> (a, List.map (fun x -> to_label_lterm x) l)) v.invariants in
-  let effect      = Option.map to_mterm     v.effect      in
+  let effects      = Option.map_dfl (fun x -> [to_mterm x]) [] v.effect      in
   let specs       = List.map to_spec        v.specs       in
   let asserts     = List.map to_assert      v.asserts     in
   M.mk_verification
@@ -295,10 +295,25 @@ let to_verification (v : (A.lident, A.ptyp, A.pterm) A.verification) : M.verific
     ~theorems:theorems
     ~variables:variables
     ~invariants:invariants
-    ?effect:effect
+    ~effects:effects
     ~specs:specs
     ~asserts:asserts
     ~loc:v.loc ()
+
+let cont_verification (v : (A.lident, A.ptyp, A.pterm) A.verification) (verif : M.verification) : M.verification =
+  let v = to_verification v in
+  { verif with
+    predicates  = verif.predicates @ v.predicates;
+    definitions = verif.definitions @ v.definitions;
+    axioms      = verif.axioms @ v.axioms;
+    theorems    = verif.theorems @ v.theorems;
+    variables   = verif.variables @ v.variables;
+    invariants  = verif.invariants @ v.invariants;
+    effects     = verif.effects @ v.effects;
+    specs       = verif.specs @ v.specs;
+    asserts     = verif.asserts @ v.asserts;
+    loc         = Location.merge verif.loc v.loc;
+  }
 
 let to_model (ast : A.model) : M.model =
   let process_enums list =
@@ -392,7 +407,6 @@ let to_model (ast : A.model) : M.model =
     []
     |> cont variable_to_storage_items ast.variables
     |> cont asset_to_storage_items ast.assets
-    |> (fun x -> list @ [M.TNstorage x])
   in
 
   let cont f x l = List.fold_left (fun accu x -> f x accu) l x in
@@ -647,10 +661,11 @@ let to_model (ast : A.model) : M.model =
             (l @ [lbl, invs], accu)
           ) ([], accu) verif.invariants in
 
-      let effect, accu =
-        match verif.effect with
-        | Some v -> process_mterm accu v |> (fun (x, y) -> (Some x, y))
-        | _ -> None, accu in
+      let effects, accu = List.fold_left
+          (fun (l, accu) (item : M.mterm) ->
+             let i, accu = process_mterm accu item in
+             (l @ [i], accu)
+          ) ([], accu) verif.effects in
 
       let specs, accu = List.fold_left
           (fun (l, accu) (item : M.specification) ->
@@ -670,10 +685,10 @@ let to_model (ast : A.model) : M.model =
         axioms      = axioms;
         theorems    = theorems;
         (* variables   : 'id variable_gen list; *)
-        invariants = invariants;
-        effect     = effect;
-        specs      = specs;
-        asserts    = asserts;
+        invariants  = invariants;
+        effects     = effects;
+        specs       = specs;
+        asserts     = asserts;
       }, accu
     in
 
@@ -721,10 +736,16 @@ let to_model (ast : A.model) : M.model =
     |> process_enums
     |> process_records
     |> process_contracts
-    |> process_storage
     |> cont process_function ast.functions
     |> cont process_transaction ast.transactions
-    |> cont (fun v list -> list @ [M.TNverification (to_verification v)] ) ast.verifications
     |> process_api_storage
   in
-  M.mk_model name ~decls:decls
+
+  let storage_items = process_storage () in
+  let storage = storage_items in
+
+  let verification =
+    M.mk_verification ()
+    |> (fun verif -> List.fold_left (fun accu x -> cont_verification x accu) verif ast.verifications)  in
+
+  M.mk_model name storage verification ~decls:decls

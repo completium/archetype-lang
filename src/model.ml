@@ -512,7 +512,7 @@ type 'id verification_gen = {
   theorems    : 'id label_term_gen list;
   variables   : 'id variable_gen list;
   invariants  : ('id * 'id label_term_gen list) list;
-  effect      : 'id mterm_gen option;
+  effects     : 'id mterm_gen list;
   specs       : 'id specification_gen list;
   asserts     : 'id assert_gen list;
   loc         : Location.t [@opaque];
@@ -535,7 +535,6 @@ type 'id decl_node_gen =
   | TNenum of 'id enum
   | TNrecord of 'id record_gen
   | TNcontract of 'id contract_gen
-  | TNstorage of 'id storage_gen
   | TNfunction of 'id function__gen
   | TNverification of 'id verification_gen
 [@@deriving show {with_path = false}]
@@ -543,9 +542,19 @@ type 'id decl_node_gen =
 type decl_node = lident decl_node_gen
 [@@deriving show {with_path = false}]
 
+type 'id api_item_gen =
+  | Storage of 'id storage_const_gen
+[@@deriving show {with_path = false}]
+
+type api_item = lident api_item_gen
+[@@deriving show {with_path = false}]
+
 type 'id model_gen = {
   name: lident;
+  api_items: 'id api_item_gen list;
+  storage: 'id storage_gen;
   decls: 'id decl_node_gen list;
+  verification : 'id verification_gen;
 }
 [@@deriving show {with_path = false}]
 
@@ -611,8 +620,8 @@ let mk_specification ?(invariants = []) name formula =
 let mk_assert ?(invariants = []) name label formula =
   { name; label; formula; invariants }
 
-let mk_verification ?(predicates = []) ?(definitions = []) ?(axioms = []) ?(theorems = []) ?(variables = []) ?(invariants = []) ?effect ?(specs = []) ?(asserts = []) ?(loc = Location.dummy) () =
-  { predicates; definitions; axioms; theorems; variables; invariants; effect; specs; asserts; loc}
+let mk_verification ?(predicates = []) ?(definitions = []) ?(axioms = []) ?(theorems = []) ?(variables = []) ?(invariants = []) ?(effects = []) ?(specs = []) ?(asserts = []) ?(loc = Location.dummy) () =
+  { predicates; definitions; axioms; theorems; variables; invariants; effects; specs; asserts; loc}
 
 let mk_contract_signature ?(args=[]) ?(loc=Location.dummy) name : 'id contract_signature_gen =
   { name; args; loc }
@@ -647,8 +656,8 @@ let mk_function ?verif node : 'id function__gen =
 let mk_signature ?(args = []) ?ret name : 'id signature_gen =
   { name; args; ret}
 
-let mk_model ?(decls = []) name : model =
-  { name; decls}
+let mk_model ?(api_items = []) ?(decls = []) name storage verification : model =
+  { name; api_items; storage; decls; verification}
 
 
 (* -------------------------------------------------------------------- *)
@@ -957,7 +966,6 @@ end = struct
     | RecordNotFound of string
     | RecordFieldNotFound of string * string
     | RecordKeyTypeNotFound of string
-    | StorageNotFound
     | NotaPartition
     | PartitionNotFound
   [@@deriving show {with_path = false}]
@@ -1058,26 +1066,15 @@ end = struct
       | _ -> emit_error (PartitionNotFound) in
     rec_get partitions
 
-  let get_storage_opt model =
-    List.fold_left (fun accu (x : decl_node) ->
-        match x with
-        | TNstorage s -> Some s
-        | _ -> accu
-      ) None model.decls
 
   let get_storage model =
-    let res = get_storage_opt model in
-    match res with
-    | Some e -> e
-    | _ -> emit_error StorageNotFound
+    model.storage
 
   let is_storage_attribute model id =
-    let s = get_storage_opt model in
-    match s with
-    | Some items ->
-      (List.fold_left (fun accu (x : storage_item) ->
-           accu || String.equal (Location.unloc id) (Location.unloc x.name)) false items)
-    | None -> false
+    let s = get_storage model in
+    let items = s in
+    (List.fold_left (fun accu (x : storage_item) ->
+         accu || String.equal (Location.unloc id) (Location.unloc x.name)) false items)
 
   let get_field_list model record_name =
     let record = get_record model record_name in
