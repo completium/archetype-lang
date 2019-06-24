@@ -10,7 +10,9 @@
     (pps ppx_deriving.std ppx_deriving_yojson)
   )
   (library_flags (-linkall))
-  (modules tools core ident options location parseUtils parseTree parser lexer symbol error position pureLexer parseError io printer_tools printer typing ast gen_reduce model gen_model model_wse gen_remove_se mltree gen_liquidity gen_why3 gen_markdown printer_mltree mlwtree printer_mlwtree printer_whyml)
+  (modules tools core ident options location parseUtils parseTree parser lexer symbol error position pureLexer parseError io printer_tools printer gen_markdown typing ast gen_reduce model gen_model
+;;  model_wse gen_remove_se mltree gen_liquidity gen_why3 printer_mltree mlwtree printer_mlwtree printer_whyml
+  )
   (libraries menhirLib uri digestif omd why3 ppx_deriving yojson ppx_deriving_yojson.runtime)
 )
 

@@ -55,6 +55,16 @@ let model ast =
   then (Format.printf "%a@." Model.pp_model model; raise Stop)
   else model
 
+let generate_target_pt pt =
+  match !Options.target with
+  | Markdown  -> (
+      let md = Gen_markdown.pt_to_ast_omd pt in
+      Format.printf "%s@." (Omd.to_markdown md);
+      raise Stop
+    )
+  | _ -> pt
+
+(*
 let remove_side_effect model =
   let wse = Gen_remove_se.remove_se model in
   if !Options.opt_wse
@@ -81,15 +91,6 @@ let generate_whyml model =
   then Format.printf "%a@." Mlwtree.pp_mlw_tree mlw
   else Format.printf "%a@." Printer_mlwtree.pp_mlw_tree mlw
 
-let generate_target_pt pt =
-  match !Options.target with
-  | Markdown  -> (
-      let md = Gen_markdown.pt_to_ast_omd pt in
-      Format.printf "%s@." (Omd.to_markdown md);
-      raise Stop
-    )
-  | _ -> pt
-
 let generate_target model =
   match !Options.target with
   | Liquidity ->
@@ -102,7 +103,7 @@ let generate_target model =
     model
     |> generate_whyml
 
-  | _ -> ()
+  | _ -> () *)
 
 (* -------------------------------------------------------------------- *)
 
@@ -115,7 +116,8 @@ let compile (filename, channel) =
   |> type_
   |> reduce_ast
   |> model
-  |> generate_target
+  |> (fun _ -> ())
+(* |> generate_target *)
 
 let close dispose channel =
   if dispose then close_in channel
