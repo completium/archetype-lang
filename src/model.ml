@@ -523,8 +523,8 @@ type verification = lident verification_gen
 [@@deriving show {with_path = false}]
 
 type 'id function__gen = {
-  node: 'id function_node_gen;
-  verif  : 'id verification_gen option;
+  node:  'id function_node_gen;
+  verif: 'id verification_gen option;
 }
 [@@deriving show {with_path = false}]
 
@@ -532,28 +532,27 @@ type function__ = lident function__gen
 [@@deriving show {with_path = false}]
 
 type 'id decl_node_gen =
-  | TNenum of 'id enum
-  | TNrecord of 'id record_gen
-  | TNcontract of 'id contract_gen
-  | TNfunction of 'id function__gen
-  | TNverification of 'id verification_gen
+  | Denum of 'id enum
+  | Drecord of 'id record_gen
+  | Dcontract of 'id contract_gen
 [@@deriving show {with_path = false}]
 
 type decl_node = lident decl_node_gen
 [@@deriving show {with_path = false}]
 
 type 'id api_item_gen =
-  | Storage of 'id storage_const_gen
+  | APIStorage of 'id storage_const_gen
 [@@deriving show {with_path = false}]
 
 type api_item = lident api_item_gen
 [@@deriving show {with_path = false}]
 
 type 'id model_gen = {
-  name: lident;
-  api_items: 'id api_item_gen list;
-  storage: 'id storage_gen;
-  decls: 'id decl_node_gen list;
+  name:          lident;
+  api_items:     'id api_item_gen list;
+  decls:         'id decl_node_gen list;
+  storage:       'id storage_gen;
+  functions :    'id function__gen list;
   verification : 'id verification_gen;
 }
 [@@deriving show {with_path = false}]
@@ -656,8 +655,8 @@ let mk_function ?verif node : 'id function__gen =
 let mk_signature ?(args = []) ?ret name : 'id signature_gen =
   { name; args; ret}
 
-let mk_model ?(api_items = []) ?(decls = []) name storage verification : model =
-  { name; api_items; storage; decls; verification}
+let mk_model ?(api_items = []) ?(decls = []) ?(functions = []) name storage verification : model =
+  { name; api_items; storage; decls; functions; verification}
 
 
 (* -------------------------------------------------------------------- *)
@@ -974,38 +973,38 @@ end = struct
     let str = Format.asprintf "%a@." pp_error_desc desc in
     raise (Anomaly str)
 
-  let is_storage_const (d : decl_node) : bool =
-    match d with
-    | TNfunction { node = Storage _; verif = _ } -> true
+  let is_storage_const (f : function__) : bool =
+    match f with
+    | { node = Storage _; verif = _ } -> true
     | _ -> false
 
-  let dest_storage_const (d : decl_node) : storage_const =
-    match d with
-    | TNfunction { node = Storage sc; verif = _ } -> sc
+  let dest_storage_const (f : function__) : storage_const =
+    match f with
+    | { node = Storage sc; verif = _ } -> sc
     | _ -> assert false
 
   let get_storage_api m  =
-    m.decls |> List.filter is_storage_const |> List.map dest_storage_const
+    m.functions |> List.filter is_storage_const |> List.map dest_storage_const
 
   let is_record (d : decl_node) : bool =
     match d with
-    | TNrecord _ -> true
+    | Drecord _ -> true
     | _          -> false
 
-  let is_entry (d : decl_node) : bool =
-    match d with
-    | TNfunction { node = Entry _; verif = _ } -> true
+  let is_entry (f : function__) : bool =
+    match f with
+    | { node = Entry _; verif = _ } -> true
     | _                                        -> false
 
-  let get_entry (d : decl_node) : verification option * function_struct =
-    match d with
-    | TNfunction { node = Entry s; verif = v } -> (v,s)
+  let get_entry (f : function__) : verification option * function_struct =
+    match f with
+    | { node = Entry s; verif = v } -> (v,s)
     | _                                        -> assert false
 
-  let get_entries m = List.filter is_entry m.decls |> List.map get_entry
+  let get_entries m = List.filter is_entry m.functions |> List.map get_entry
 
   let dest_record  = function
-    | TNrecord r -> r
+    | Drecord r -> r
     | _ -> emit_error NotaPartition
 
   let get_records m = m.decls |> List.filter is_record |> List.map dest_record
@@ -1014,7 +1013,7 @@ end = struct
     let id = unloc record_name in
     let res = List.fold_left (fun accu (x : decl_node) ->
         match x with
-        | TNrecord r when String.equal (unloc record_name) (unloc r.name) -> Some r
+        | Drecord r when String.equal (unloc record_name) (unloc r.name) -> Some r
         | _ -> accu
       ) None model.decls in
     match res with
