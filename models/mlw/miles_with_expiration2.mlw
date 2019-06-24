@@ -218,7 +218,7 @@ module Miles_with_expiration_storage
     requires { mem (addr owner) s.owner_keys }
     requires { amount new_mile > 0 }
     requires { lmem (get_caller_ s) (Cons (admin s) Nil) }
-    ensures { mem (id new_mile)s.mile_keys }
+    ensures { mem (id new_mile) s.mile_keys }
     (* set operations *)
     ensures { s.mile_keys == union (old s).mile_keys (singleton (id new_mile)) }
     ensures { s.added_miles == union (old s).added_miles (singleton (id new_mile)) }

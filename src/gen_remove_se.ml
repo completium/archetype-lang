@@ -55,6 +55,7 @@ let rec to_type t =
   | M.Tbuiltin v        -> byp_to_type v
   | M.Tcontainer (t, _) -> W.Tcontainer (to_type t)
   | M.Ttuple l          -> W.Ttuple (List.map to_type l)
+  | M.Tentry
   | M.Tprog _
   | M.Tvset _
   | M.Ttrace _          -> emit_error (NotSupportedType (Format.asprintf "%a@." M.pp_type_ t))
@@ -239,6 +240,7 @@ let rec instr_to_expr model (instr : M.instruction) : W.expr * W.type_ =
         | Cconst c ->
           Format.eprintf "Cconst: %a@\n" M.pp_const c;
           raise (Anomaly "no const")
+        | Cstorage s -> W.Evar (M.function_name_from_function_node (M.Storage s))
       in
       let args =
         W.Evar "s"::(List.map (fun x ->
@@ -350,6 +352,11 @@ let rec instr_to_expr model (instr : M.instruction) : W.expr * W.type_ =
       | Cconst c ->
         Format.eprintf "Cconst: %a@\n" M.pp_const c;
         raise (Anomaly "no const")
+      | Cstorage s ->
+        let args =
+          W.Evar "s"::(List.map (fun e -> (match e with | M.AExpr e -> expr_to_expr model e | _ -> assert false) |> fst) args)
+        in
+        W.Evar (M.function_name_from_function_node (M.Storage s)), args, W.Tstorage
     in
     W.Ecall (i_id, args), t
 
@@ -372,7 +379,7 @@ let compute_body_entry model (fs : M.function_struct) =
     raise (Anomaly (Format.asprintf "compute_body_entry: %a@\n" W.pp_type_ ret))
 
 
-let mk_function_struct model (f : 'id M.function__) =
+let mk_function_struct model (f : M.function__) =
   let name : ident = M.function_name_from_function_node f.node in
   let kind, args, ret, body =
     match f.node with
@@ -392,10 +399,10 @@ let mk_function_struct model (f : 'id M.function__) =
         else Etuple [Earray []; W.Evar storage_id] in
       W.Entry, args, ret, body
 
-    | M.Get asset                   -> Utils.get_asset model asset
-    | M.AddAsset asset              -> Utils.add_asset model asset
-    | M.ContainsAsset asset         -> Utils.contains_asset model asset
-    | M.AddContainer (asset, field) -> Utils.add_container model (asset, field)
+    | M.Storage Get asset                   -> Utils.get_asset model asset
+    | M.Storage AddAsset asset              -> Utils.add_asset model asset
+    | M.Storage Contains asset              -> Utils.contains_asset model asset
+    | M.Storage AddContainer (asset, field) -> Utils.add_container model (asset, field)
 
     | _ ->
       let args = [[""], W.Tunit] in
@@ -427,7 +434,7 @@ let remove_se (model : M.model) : W.model =
       | M.TNstorage s ->
         let values : (ident * W.type_ * W.expr) list =
           List.fold_left (fun accu (x : 'id M.storage_item_gen) ->
-              accu @ List.map (fun (i : 'id M.item_field) : (ident * W.type_ * W.expr) ->
+              accu @ List.map (fun (i : 'id M.item_field_gen) : (ident * W.type_ * W.expr) ->
                   (unloc i.name, item_type_to_type i.typ, (
                       match i.default with
                       | Some v -> to_expr v

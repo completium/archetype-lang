@@ -499,10 +499,14 @@ let pp_decl fmt = function
   | Daxiom (i,e)   -> pp_axiom fmt (i,e)
   | Dfun s         -> pp_fun fmt s
 
-let pp_mlw_tree fmt (tree : mlw_tree) =
+let pp_module fmt (m : mlw_module) =
   Format.fprintf fmt "module %a@\n  @[%a@]@\nend"
-    pp_str tree.name
-    (pp_list "@\n@\n" pp_decl) tree.decls
+    pp_str m.name
+    (pp_list "@\n@\n" pp_decl) m.decls
+
+let pp_mlw_tree fmt (tree : mlw_tree) =
+  Format.fprintf fmt "%a"
+  (pp_list "@\n" pp_module) tree
 
 (* -------------------------------------------------------------------------- *)
 let string_of__of_pp pp x =

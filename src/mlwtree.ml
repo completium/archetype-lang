@@ -182,14 +182,18 @@ type ('e,'t,'i) abstract_decl =
   | Dfun     of ('e,'t,'i) abstract_fun_struct
 [@@deriving show {with_path = false}]
 
+
+type ('e,'t,'i) abstract_module = {
+  name   : 'i;
+  decls  : ('e,'t,'i) abstract_decl list;
+}
+[@@deriving show {with_path = false}]
+
 (* 'e : expression type
    't : type type
    'i : ident type
 *)
-type ('e,'t,'i) abstract_mlw_tree = {
-  name   : 'i;
-  decls  : ('e,'t,'i) abstract_decl list;
-}
+type ('e,'t,'i) abstract_mlw_tree = ('e,'t,'i) abstract_module list
 [@@deriving show {with_path = false}]
 
 (* abstract mappers ------------------------------------------------------------*)
@@ -368,14 +372,22 @@ let map_abstract_decl
   | Daxiom (i,e)    -> Daxiom (map_i i, map_e e)
   | Dfun f          -> Dfun (map_abstract_fun_struct map_e map_t map_i f)
 
+
+let map_abstract_module
+    (map_e : 'e1 -> 'e2)
+    (map_t : 't1 -> 't2)
+    (map_i : 'i1 -> 'i2)
+    (t : ('e1,'t1,'i1) abstract_module) = {
+  name  = map_i t.name;
+  decls = List.map (map_abstract_decl map_e map_t map_i) t.decls;
+}
+
 let map_abstract_mlw_tree
     (map_e : 'e1 -> 'e2)
     (map_t : 't1 -> 't2)
     (map_i : 'i1 -> 'i2)
-    (t : ('e1,'t1,'i1) abstract_mlw_tree) = {
-  name  = map_i t.name;
-  decls = List.map (map_abstract_decl map_e map_t map_i) t.decls;
-}
+    (t : ('e1,'t1,'i1) abstract_mlw_tree) =
+  List.map (map_abstract_module map_e map_t map_i) t
 
 (* no location types -----------------------------------------------------------*)
 
@@ -410,6 +422,9 @@ type clone_subst       = ident abstract_clone_subst
 [@@deriving show {with_path = false}]
 
 type decl              = (term,typ,ident) abstract_decl
+[@@deriving show {with_path = false}]
+
+type mlw_module        = (term,typ,ident) abstract_module
 [@@deriving show {with_path = false}]
 
 type mlw_tree          = (term,typ,ident) abstract_mlw_tree
@@ -454,6 +469,9 @@ type loc_clone_subst   = (loc_ident abstract_clone_subst) with_loc
 [@@deriving show {with_path = false}]
 
 type loc_decl          = ((loc_term,loc_typ,loc_ident) abstract_decl) with_loc
+[@@deriving show {with_path = false}]
+
+type loc_mlw_module    = (loc_term,loc_typ,loc_ident) abstract_module
 [@@deriving show {with_path = false}]
 
 type loc_mlw_tree      = (loc_term,loc_typ,loc_ident) abstract_mlw_tree
