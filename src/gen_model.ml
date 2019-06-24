@@ -500,7 +500,7 @@ let to_model (ast : A.model) : M.model =
 
     let ge (e : M.mterm) = (fun node -> { e with node = node }) in
 
-    let rec fe accu (term : M.mterm) : M.mterm * M.function__ list =
+    let rec fe accu (term : M.mterm) : M.mterm * M.api_item list =
       match term.node with
       | M.Mcall (Some asset_name, Cconst c, args) -> (
           let _, accu = M.fold_map_term (fun node -> {term with node = node} ) fe accu term in
@@ -508,14 +508,14 @@ let to_model (ast : A.model) : M.model =
           let term, accu =
             match function__ with
             | Some (const, _) -> (
-                {term with node = M.Mcall (None, Cstorage const, args) }, add accu (M.mk_function (Storage const))
+                {term with node = M.Mcall (None, Cstorage const, args) }, add accu (M.APIStorage const)
               )
             | None -> term, accu in
           term, accu
         )
       | _ -> M.fold_map_term (ge term) fe accu term in
 
-    let extract_function_from_instruction (instr : M.instruction) (list : M.function__ list) : (M.instruction * M.function__ list) =
+    let extract_function_from_instruction (instr : M.instruction) (list : M.api_item list) : (M.instruction * M.api_item list) =
 
       let process_instr accu t (c : M.const) field_name gi fi node (args : M.term_arg list) =
         let a =
@@ -548,12 +548,12 @@ let to_model (ast : A.model) : M.model =
                 match argss, arg with
                 | _, Some arg -> arg::argss
                 | _ -> argss in
-              {instr with node = M.Icall (None, Cstorage const, new_args) }, add argsa (M.mk_function (Storage const))
+              {instr with node = M.Icall (None, Cstorage const, new_args) }, add argsa (M.APIStorage const)
             )
           | None -> instr, accu in
         instr, accu in
 
-      let rec fi accu (instr : M.instruction) : M.instruction * M.function__ list =
+      let rec fi accu (instr : M.instruction) : M.instruction * M.api_item list =
         let gi = (fun node -> {instr with node = node}) in
         match instr.node with
         | M.Icall (Some {node = M.Mdot ({type_ = t; _}, id); _}, M.Cconst c, args) ->
@@ -568,26 +568,26 @@ let to_model (ast : A.model) : M.model =
       in
       fi list instr in
 
-    let process_mterm accu expr : M.mterm * M.function__ list =
+    let process_mterm accu expr : M.mterm * M.api_item list =
       fe accu expr
     in
 
-    let update_label_term accu (lt : M.label_term) : M.label_term * M.function__ list =
+    let update_label_term accu (lt : M.label_term) : M.label_term * M.api_item list =
       let t, accu = process_mterm accu lt.term in
       { lt with term = t }, accu
     in
 
-    let update_predicate accu (d : M.predicate) : M.predicate * M.function__ list =
+    let update_predicate accu (d : M.predicate) : M.predicate * M.api_item list =
       let body, accu = process_mterm accu d.body in
       { d with body = body }, accu
     in
 
-    let update_definition accu (d : M.definition) : M.definition * M.function__ list =
+    let update_definition accu (d : M.definition) : M.definition * M.api_item list =
       let body, accu = process_mterm accu d.body in
       { d with body = body }, accu
     in
 
-    let update_invariant accu (i : M.invariant) : M.invariant * M.function__ list =
+    let update_invariant accu (i : M.invariant) : M.invariant * M.api_item list =
       let formulas, accu = List.fold_left
           (fun (l, accu) item ->
              let i, accu = process_mterm accu item in
@@ -596,7 +596,7 @@ let to_model (ast : A.model) : M.model =
       { i with formulas = formulas }, accu
     in
 
-    let update_specification accu (spec : M.specification) : M.specification * M.function__ list =
+    let update_specification accu (spec : M.specification) : M.specification * M.api_item list =
       let formula, accu = process_mterm accu spec.formula in
       let invariants, accu = List.fold_left
           (fun (l, accu) (item : M.invariant) ->
@@ -606,7 +606,7 @@ let to_model (ast : A.model) : M.model =
       { spec with formula = formula; invariants = invariants; }, accu
     in
 
-    let update_assert accu (assert_ : M.assert_) : M.assert_ * M.function__ list =
+    let update_assert accu (assert_ : M.assert_) : M.assert_ * M.api_item list =
       let formula, accu = process_mterm accu assert_.formula in
       let invariants, accu = List.fold_left
           (fun (l, accu) (item : M.invariant) ->
@@ -616,7 +616,7 @@ let to_model (ast : A.model) : M.model =
       { assert_ with formula = formula; invariants = invariants; }, accu
     in
 
-    let update_verif accu (verif : M.verification) : M.verification * M.function__ list =
+    let update_verif accu (verif : M.verification) : M.verification * M.api_item list =
 
       let predicates, accu = List.fold_left
           (fun (l, accu) (item : M.predicate) ->
@@ -683,12 +683,12 @@ let to_model (ast : A.model) : M.model =
       }, accu
     in
 
-    let update_function_struct accu (fs : M.function_struct) : M.function_struct * M.function__ list =
+    let update_function_struct accu (fs : M.function_struct) : M.function_struct * M.api_item list =
       let instr, accu = extract_function_from_instruction fs.body accu in
       { fs with body = instr}, accu
     in
 
-    let update_function__ (f : M.function__) (fs : M.function_struct) accu g : M.function__  * M.function__ list =
+    let update_function__ (f : M.function__) (fs : M.function_struct) accu g : M.function__  * M.api_item list =
       let fs, accu = update_function_struct accu fs in
       let verif, accu =
         match f.verif with
@@ -698,25 +698,30 @@ let to_model (ast : A.model) : M.model =
       { f with node = g fs; verif = verif }, accu
     in
 
-    let functions : M.function__ list = List.fold_left (fun (accu : M.function__ list) (f : M.function__) ->
-        match f.node with
-        | M.Entry e ->
-          begin
-            let f, accu = update_function__ f e accu (fun e -> Entry e) in
-            accu @ [f]
-          end
-        | M.Function (e, t) ->
-          begin
-            let f, accu = update_function__ f e accu (fun e -> Function (e, t)) in
-            accu @ [f]
-          end
-        | _ -> accu @ [f]
-      ) [] model.functions in
+    let api_items : M.api_item list = model.api_items in
 
-    let (v, decls) : M.verification * M.function__ list = update_verif functions model.verification in
+    let (functions, api_items) : M.function__ list * M.api_item list =
+      List.fold_left
+        (fun ((accu, api_items) : M.function__ list * M.api_item list) (f : M.function__) ->
+           match f.node with
+           | M.Entry e ->
+             begin
+               let f, api_items = update_function__ f e api_items (fun e -> Entry e) in
+               accu @ [f], api_items
+             end
+           | M.Function (e, t) ->
+             begin
+               let f, api_items = update_function__ f e api_items (fun e -> Function (e, t)) in
+               accu @ [f], api_items
+             end
+             (* | _ -> accu @ [f], api_items *)
+        ) ([], api_items) model.functions in
+
+    let (v, api_items) : M.verification * M.api_item list = update_verif api_items model.verification in
 
     {
       model with
+      api_items = api_items;
       functions = functions;
       verification = v;
     }
