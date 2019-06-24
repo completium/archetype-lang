@@ -483,13 +483,20 @@ let pp_clone fmt (i,j,l) =
 
 (* -------------------------------------------------------------------------- *)
 
+let pp_axiom fmt (i,e) =
+  Format.fprintf fmt "axiom %a:@\n  @[%a@]"
+    pp_str i
+    (pp_term e_default PRight) e
+
+(* -------------------------------------------------------------------------- *)
+
 let pp_decl fmt = function
   | Duse l         -> Format.fprintf fmt "use %a" pp_qualid l
   | Dclone (i,j,l) -> pp_clone fmt (i,j,l)
   | Denum (i,l)    -> pp_enum fmt (i,l)
   | Drecord (i,l)  -> pp_record fmt (i,l)
   | Dstorage s     -> pp_storage fmt s
-  | Daxiom _       -> Format.fprintf fmt "TODO: axiom"
+  | Daxiom (i,e)   -> pp_axiom fmt (i,e)
   | Dfun s         -> pp_fun fmt s
 
 let pp_mlw_tree fmt (tree : mlw_tree) =

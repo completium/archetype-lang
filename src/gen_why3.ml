@@ -140,6 +140,19 @@ let mk_update_asset key = function
     }
   | _ -> assert false
 
+(* f --> f (get a_assets k) *)
+let mk_app_field (a : loc_ident) (f : loc_ident) : loc_term * loc_term  =
+  let arg   : term     = Tget (Tvar ((deloc a)^"_assets"), Tvar "k_") in
+  let loc_f : loc_term = mk_loc f.loc (Tvar f) in
+  (loc_f,with_dummy_loc (Tapp (loc_f,[loc_term arg])))
+
+(* n is the asset name *)
+let mk_keys_eq_axiom n f ktyp : decl =
+  Daxiom ("eq_"^n^"_keys",
+          Tforall ([["s"],Tystorage;["k"],ktyp],
+                   Timpl (Tmem (Tvar "s",Tdoti ("s",n^"_keys")),
+                          Tapp (Tvar f,[Tget (Tdoti ("s",n^"_assets"),Tvar "k")]))))
+
 (* Filter template -----------------------------------------------------------*)
 
 let mk_filter n typ test : decl = Dfun {
@@ -458,6 +471,8 @@ let map_lident (i : M.lident) : loc_ident = {
   loc = i.plloc;
 }
 
+let map_lidents = List.map map_lident
+
 let type_to_init (typ : loc_typ) : loc_term =
   mk_loc typ.loc (match typ.obj with
       | Typartition i -> Tvar (mk_loc typ.loc "empty")
@@ -465,44 +480,37 @@ let type_to_init (typ : loc_typ) : loc_term =
       | Tymap i       -> Tvar (mk_loc typ.loc ("const (mk_default_"^i.obj^" ())"))
       | _             -> Tint 0)
 
-let map_type (typ : M.type_) : loc_typ =
+let map_btype = function
+  | M.Bbool          -> Tybool
+  | M.Bint           -> Tyint
+  | M.Buint          -> Tyuint
+  | M.Brational      -> Tyrational
+  | M.Bdate          -> Tydate
+  | M.Bduration      -> Tyduration
+  | M.Bstring        -> Tystring
+  | M.Baddress       -> Tyaddr
+  | M.Brole          -> Tyrole
+  | M.Bcurrency _    -> Tytez
+  | M.Bkey           -> Tykey
+
+let rec map_type (typ : M.type_) : loc_typ =
   let rec rec_map_type = function
     | M.Tasset i                 -> Tyasset (map_lident i)
     | M.Tenum i                  -> Tyenum (map_lident i)
     | M.Tcontract i              -> Tycontract (map_lident i)
-    | M.Tbuiltin Bbool        -> Tybool
-    | M.Tbuiltin Bint         -> Tyint
-    | M.Tbuiltin Buint        -> Tyuint
-    | M.Tbuiltin Brational    -> Tyrational
-    | M.Tbuiltin Bdate        -> Tydate
-    | M.Tbuiltin Bduration    -> Tyduration
-    | M.Tbuiltin Bstring      -> Tystring
-    | M.Tbuiltin Baddress     -> Tyaddr
-    | M.Tbuiltin Brole        -> Tyrole
-    | M.Tbuiltin (Bcurrency _)  -> Tytez
-    | M.Tbuiltin Bkey           -> Tykey
-    | M.Tcontainer (M.Tasset i, M.Partition) -> Typartition (map_lident i)
+    | M.Tbuiltin vt              -> map_btype vt
+    | M.Tcontainer (M.Tasset i,M.Partition) -> Typartition (map_lident i)
     | M.Tcontainer _             -> Typartition (with_dummy_loc "NOT TRANSLATED")
     | M.Ttuple l                 -> Tytuple (List.map rec_map_type l)
-    | M.Tprog _
-    | M.Tvset _
-    | M.Ttrace _ -> (* TODO *) assert false
+    | M.Tprog t                  -> Mlwtree.deloc (map_type t)
+    | M.Tvset (_,t)             ->  Typartition (with_dummy_loc "NOT TRANSLATED")
+    | M.Ttrace trtyp             -> Typartition (with_dummy_loc "NOT TRANSLATED")
   in
   with_dummy_loc (rec_map_type typ)
 
 let map_basic_type (typ : 'id M.item_field_type) : loc_typ =
   let rec_map_basic_type = function
-    | M.FBasic Bbool        -> Tybool
-    | M.FBasic Bint         -> Tyint
-    | M.FBasic Buint        -> Tyuint
-    | M.FBasic Brational    -> Tyrational
-    | M.FBasic Bdate        -> Tydate
-    | M.FBasic Bduration    -> Tyduration
-    | M.FBasic Bstring      -> Tystring
-    | M.FBasic Baddress     -> Tyaddr
-    | M.FBasic Brole        -> Tyrole
-    | M.FBasic Bcurrency _  -> Tytez
-    | M.FBasic Bkey         -> Tykey
+    | M.FBasic vt           -> map_btype vt
     | M.FAssetKeys (_,i)    -> Tycoll (map_lident i)
     | M.FAssetRecord (_,i)  -> Tymap (map_lident i)
     | M.FRecordCollection i -> Tymap (map_lident i) (* ? *)
@@ -555,44 +563,74 @@ let map_storage_items = List.fold_left (fun acc (items : M.storage_item) ->
        ) acc items.fields) @ extra_fields
   ) []
 
-let map_label_term (lt : M.lident M.label_term_gen) : (loc_term,loc_ident) abstract_formula = {
+(* prefixes with 'forall k_:key, mem k_ "asset"_keys ->  ...'
+   replaces asset field "field" by '"field " (get "asset"_assets k_)'
+   TODO : make sure there is no collision between "k_" and invariant vars
+
+   m is the Model
+   n is the asset name
+   inv is the invariant to extend
+*)
+let mk_extended_invariant m n inv : loc_term =
+  let r        = M.Utils.get_record m n in
+  let ktyp     = M.Utils.get_record_key m n |> snd |> map_btype in
+  let fields   = r.values |> List.map (fun (item : M.record_item) -> item.name) |> map_lidents in
+  let asset    = map_lident n in
+  let replacements = List.map (fun f -> mk_app_field asset f) fields in
+  let replaced = List.fold_left (fun acc (t1,t2) -> replace t1 t2 acc) inv replacements in
+  let prefix   = Tforall ([["k_"],ktyp],
+                          Timpl (Tmem (Tvar "k_", Tvar (asset.obj^"_keys")),
+                                 Ttobereplaced)) in
+  replace (with_dummy_loc Ttobereplaced) replaced (loc_term prefix)
+
+let map_extended_label_term m n (lt : M.label_term) = {
   id = Option.fold (fun _ x -> map_lident x)  (with_dummy_loc "") lt.label;
-  form = map_term lt.term;
+  form = mk_extended_invariant m n (map_term lt.term);
 }
 
-let map_decl (d : 'id M.decl_node) =
+let map_decl m (d : M.decl_node) =
   match d with
   | M.TNrecord r -> Drecord (map_lident r.name, map_record_values r.values)
   | M.TNstorage l -> Dstorage {
       fields     = (map_storage_items l)@(mk_const_fields false |> loc_field |> deloc);
       invariants = List.concat (List.map (fun (item : M.storage_item) ->
-          List.map map_label_term item.invariants) l)
+          List.map (map_extended_label_term m item.name) item.invariants) l)
     }
   | _ -> assert false
 
-let is_record (d : 'id M.decl_node) : bool =
+let is_record (d : M.decl_node) : bool =
   match d with
   | M.TNrecord _ -> true
   | _            -> false
 
 let get_records = List.filter is_record
 
-let is_storage (d : 'id M.decl_node) : bool =
+let is_storage (d : M.decl_node) : bool =
   match d with
   | M.TNstorage _ -> true
   | _             -> false
 
 let get_storage = List.filter is_storage
 
+
+let mk_axioms (m : M.model) : loc_decl list =
+  let records = get_records m.decls |> List.map (fun d ->
+      match d with M.TNrecord r -> r.name | _ -> assert false) in
+  let keys    = records |> List.map (M.Utils.get_record_key m) in
+  List.map2 (fun r (k,kt) ->
+      mk_keys_eq_axiom r.pldesc k.pldesc (map_btype kt)
+    ) records keys |> loc_decl
+
 (* ----------------------------------------------------------------------------*)
 
-let to_whyml (model : M.model) : mlw_tree  =
+let to_whyml (m : M.model) : mlw_tree  =
   let uselib       = mk_use |> Mlwtree.loc_decl |> Mlwtree.deloc in
-  let records      = get_records model.decls |> List.map map_decl |> wdl in
+  let records      = get_records m.decls |> List.map (map_decl m) |> wdl in
   let init_records = records |> unloc_decl |> List.map mk_default_init |> loc_decl in
   let records      = zip records init_records |> deloc in
-  let storage      = get_storage model.decls |> List.map map_decl in
+  let storage      = get_storage m.decls |> List.map (map_decl m) in
+  let axioms       = mk_axioms m |> deloc in
   let loct : loc_mlw_tree = {
-    name = cap (map_lident model.name);
-    decls =  uselib :: (records @ storage);
+    name = cap (map_lident m.name);
+    decls =  uselib :: (records @ storage @ axioms);
   } in unloc_tree loct
