@@ -108,25 +108,20 @@ type const =
 [@@deriving show {with_path = false}]
 
 type 'id storage_const_gen =
-  | Get                of 'id
-  | AddAsset           of 'id
-  | RemoveAsset        of 'id
-  | ClearAsset         of 'id
-  | UpdateAsset        of 'id
-  | SortAsset          of 'id
-  | ReverseAsset       of 'id
-  | Contains           of 'id
-  | Nth                of 'id
-  | Select             of 'id
-  | Count              of 'id
-  | Sum                of 'id * 'id
-  | Min                of 'id * 'id
-  | Max                of 'id * 'id
-  | AddContainer       of 'id * 'id
-  | RemoveContainer    of 'id * 'id
-  | ClearContainer     of 'id * 'id
-  | SortContainer      of 'id * 'id
-  | ReverseContainer   of 'id * 'id
+  | Get        of 'id
+  | Add        of 'id
+  | Remove     of 'id
+  | Clear      of 'id
+  | Update     of 'id
+  | Sort       of 'id
+  | Reverse    of 'id
+  | Contains   of 'id
+  | Nth        of 'id
+  | Select     of 'id
+  | Count      of 'id
+  | Sum        of 'id * 'id
+  | Min        of 'id * 'id
+  | Max        of 'id * 'id
 [@@deriving show {with_path = false}]
 
 type storage_const = lident storage_const_gen
@@ -949,29 +944,24 @@ end = struct
   let lident_to_string lident = Location.unloc lident
 
   let function_name_from_function_node = function
-    | Function          (fs, _)    -> lident_to_string fs.name
-    | Entry              fs        -> lident_to_string fs.name
+    | Function (fs, _)    -> lident_to_string fs.name
+    | Entry     fs        -> lident_to_string fs.name
 
   let function_name_from_storage_node = function
-    | Get                aid       -> "get_"      ^ lident_to_string aid
-    | AddAsset           aid       -> "add_"      ^ lident_to_string aid
-    | RemoveAsset        aid       -> "remove_"   ^ lident_to_string aid
-    | ClearAsset         aid       -> "clear_"    ^ lident_to_string aid
-    | UpdateAsset        aid       -> "update_"   ^ lident_to_string aid
-    | SortAsset          aid       -> "sort_"     ^ lident_to_string aid
-    | ReverseAsset       aid       -> "reverse_"  ^ lident_to_string aid
-    | AddContainer      (aid, fid) -> "add_"      ^ lident_to_string aid ^ "_" ^ lident_to_string fid
-    | RemoveContainer   (aid, fid) -> "remove_"   ^ lident_to_string aid ^ "_" ^ lident_to_string fid
-    | ClearContainer    (aid, fid) -> "clear_"    ^ lident_to_string aid ^ "_" ^ lident_to_string fid
-    | SortContainer     (aid, fid) -> "sort_"     ^ lident_to_string aid ^ "_" ^ lident_to_string fid
-    | ReverseContainer  (aid, fid) -> "reverse_"  ^ lident_to_string aid ^ "_" ^ lident_to_string fid
-    | Contains           aid       -> "contains_" ^ lident_to_string aid
-    | Select             aid       -> "select_"   ^ lident_to_string aid
-    | Nth                aid       -> "nth_"      ^ lident_to_string aid
-    | Count              aid       -> "count_"    ^ lident_to_string aid
-    | Sum               (aid, fid) -> "sum_"      ^ lident_to_string aid ^ "_" ^ lident_to_string fid
-    | Min               (aid, fid) -> "min_"      ^ lident_to_string aid ^ "_" ^ lident_to_string fid
-    | Max               (aid, fid) -> "max_"      ^ lident_to_string aid ^ "_" ^ lident_to_string fid
+    | Get       aid       -> "get_"      ^ lident_to_string aid
+    | Add       aid       -> "add_"      ^ lident_to_string aid
+    | Remove    aid       -> "remove_"   ^ lident_to_string aid
+    | Clear     aid       -> "clear_"    ^ lident_to_string aid
+    | Update    aid       -> "update_"   ^ lident_to_string aid
+    | Sort      aid       -> "sort_"     ^ lident_to_string aid
+    | Reverse   aid       -> "reverse_"  ^ lident_to_string aid
+    | Contains  aid       -> "contains_" ^ lident_to_string aid
+    | Select    aid       -> "select_"   ^ lident_to_string aid
+    | Nth       aid       -> "nth_"      ^ lident_to_string aid
+    | Count     aid       -> "count_"    ^ lident_to_string aid
+    | Sum      (aid, fid) -> "sum_"      ^ lident_to_string aid ^ "_" ^ lident_to_string fid
+    | Min      (aid, fid) -> "min_"      ^ lident_to_string aid ^ "_" ^ lident_to_string fid
+    | Max      (aid, fid) -> "max_"      ^ lident_to_string aid ^ "_" ^ lident_to_string fid
 
   let is_record (d : decl_node) : bool =
     match d with
@@ -981,12 +971,12 @@ end = struct
   let is_entry (f : function__) : bool =
     match f with
     | { node = Entry _; verif = _ } -> true
-    | _                                        -> false
+    | _                             -> false
 
   let get_entry (f : function__) : verification option * function_struct =
     match f with
     | { node = Entry s; verif = v } -> (v,s)
-    | _                                        -> assert false
+    | _                             -> assert false
 
   let get_entries m = List.filter is_entry m.functions |> List.map get_entry
 
