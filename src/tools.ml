@@ -76,6 +76,7 @@ module Option : sig
   val get_all     : ('a option) list -> 'a list option
   val get_exn     : exn -> 'a option -> 'a
   val get_dfl     : 'a -> 'a option -> 'a
+  val get_fdfl    : (unit -> 'a) -> 'a option -> 'a
   val iter        : ('a -> unit) -> 'a option -> unit
   val map         : ('a -> 'b) -> 'a option -> 'b option
   val bind        : ('a -> 'b option) -> 'a option -> 'b option
@@ -102,6 +103,9 @@ end = struct
 
   let get_dfl dfl =
     function None -> dfl | Some e -> e
+
+  let get_fdfl dfl =
+    function None -> dfl () | Some e -> e
 
   let get_all xs =
     let module E = struct exception Aaarg end in

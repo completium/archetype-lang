@@ -203,7 +203,7 @@ let rec to_mterm_node (n : ('a, 'b, 'c) A.term_node) f (ftyp : 'b -> M.type_) : 
   | A.Lquantifer (q, i, typ, term) -> M.Mquantifer (to_quantifier q, i, ltyp_to_type typ, f term)
   | A.Pif (c, t, e)                -> M.Mif (f c, f t, f e)
   | A.Pmatchwith (m, l)            -> M.Mmatchwith (f m, List.map (fun (p, e) -> (to_pattern p, f e)) l)
-  | A.Pcall (id, ck, args)         -> M.Mcall (id, to_call_kind ck, List.map (fun x -> to_term_arg f x) args)
+  | A.Pcall (the, ck, args)        -> M.Mcall (Option.map f the, to_call_kind ck, List.map (fun x -> to_term_arg f x) args)
   | A.Plogical (op, l, r)          -> M.Mlogical (to_logical_operator op, f l, f r)
   | A.Pnot e                       -> M.Mnot (f e)
   | A.Pcomp (op, l, r)             -> M.Mcomp (to_comparison_operator op, f l, f r)
@@ -497,7 +497,8 @@ let to_model (ast : A.model) : M.model =
 
     let rec fe accu (term : M.mterm) : M.mterm * M.decl_node list =
       match term.node with
-      | M.Mcall (Some asset_name, Cconst c, args) -> (
+      (* FIXME: asset can by general expressions *)
+      | M.Mcall (Some ({ node = Mvar asset_name }), Cconst c, args) -> (
           let _, accu = M.fold_map_term (fun node -> {term with node = node} ) fe accu term in
           let function__ = mk_function (M.Tcontainer (Tasset asset_name, Collection)) None c (Some (M.AExpr (M.mk_mterm (Mvar asset_name) (Tasset asset_name)))) args in
           let term, accu =

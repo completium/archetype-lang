@@ -42,6 +42,7 @@ end
 (* -------------------------------------------------------------------- *)
 type error_desc =
   | AssetExpected
+  | AssetWithoutFields
   | CannotInferAnonRecord
   | CannotInferCollectionType
   | CollectionExpected
@@ -88,6 +89,7 @@ type error_desc =
   | UnknownProcedure                   of ident
   | UnknownState                       of ident
   | UnknownTypeName                    of ident
+  | VoidMethodInExpr
 [@@deriving show {with_path = false}]
 
 type error = L.t * error_desc
@@ -201,49 +203,62 @@ let globals =
   (M.Cbalance    , ([], `Type (M.vtcurrency M.Tez))) ]
 *)
 
-type method_ =
-  string
-  * M.const
-  * [`Pure | `Effect]
-  * [`Total | `Partial]
-  * (mthtyp list * mthtyp option)
+type method_ = {
+  mth_name     : M.const;
+  mth_purity   : [`Pure | `Effect];
+  mth_totality : [`Total | `Partial];
+  mth_sig      : mthtyp list * mthtyp option;
+}
 
 and mthtyp = [
-  | `The   | `Pk            | `Effect | `T of M.ptyp
-  | `Field | `RField of int | `Asset  | `SubColl
-  | `Pred  | `Ref of int
+  | `T        of M.ptyp
+  | `The  
+  | `Pk
+  | `Effect
+  | `Field
+  | `RField   of int
+  | `Asset
+  | `SubColl
+  | `Pred
+  | `Ref      of int
 ]
 
-let methods : method_ list = [
-  ("get"         , M.Cget         , `Pure  , `Partial, ([`Pk          ], Some `The));
-  ("add"         , M.Cadd         , `Effect, `Total  , ([`The         ], None));
-  ("addnofail"   , M.Caddnofail   , `Effect, `Total  , ([`The         ], None));
-  ("remove"      , M.Cremove      , `Effect, `Total  , ([`Pk          ], None));
-  ("removeofail" , M.Cremovenofail, `Effect, `Total  , ([`Pk          ], None));
-  ("removeif"    , M.Cremoveif    , `Effect, `Total  , ([`Pred        ], None));
-  ("update"      , M.Cupdate      , `Effect, `Total  , ([`Pk; `Effect ], None));
-  ("updatenofail", M.Cupdatenofail, `Effect, `Total  , ([`Pk; `Effect ], None));
-  ("clear"       , M.Cclear       , `Effect, `Total  , ([             ], None));
-  ("contains"    , M.Ccontains    , `Pure  , `Total  , ([`Pk          ], Some (`T M.vtbool)));
-  ("nth"         , M.Cnth         , `Pure  , `Partial, ([`T    M.vtint], Some (`Asset)));
-  ("select"      , M.Cselect      , `Pure  , `Total  , ([`Pred        ], Some (`SubColl)));
-  ("sort"        , M.Csort        , `Pure  , `Total  , ([`Field       ], Some (`SubColl)));
-  ("count"       , M.Ccount       , `Pure  , `Total  , ([             ], Some (`SubColl)));
-  ("sum"         , M.Csum         , `Pure  , `Total  , ([`RField 0    ], Some (`Ref 0)));
-  ("max"         , M.Cmax         , `Pure  , `Partial, ([`RField 0    ], Some (`Ref 0)));
-  ("min"         , M.Cmin         , `Pure  , `Partial, ([`RField 0    ], Some (`Ref 0)));
-  ("before"      , M.Cbefore      , `Pure  , `Total  , ([             ], Some (`SubColl)));
-  ("unmoved"     , M.Cunmoved     , `Pure  , `Total  , ([             ], Some (`SubColl)));
-  ("added"       , M.Cadded       , `Pure  , `Total  , ([             ], Some (`SubColl)));
-  ("removed"     , M.Cremoved     , `Pure  , `Total  , ([             ], Some (`SubColl)));
-  ("iterated"    , M.Citerated    , `Pure  , `Total  , ([             ], Some (`SubColl)));
-  ("toiterate"   , M.Ctoiterate   , `Pure  , `Total  , ([             ], Some (`SubColl)));
-]
+let methods : (string * method_) list =
+  let mk mth_name mth_purity mth_totality mth_sig = 
+    { mth_name; mth_purity; mth_totality; mth_sig; }
+  in [
+    ("get"         , mk M.Cget          `Pure   `Partial ([`Pk          ], Some `The));
+    ("add"         , mk M.Cadd          `Effect `Total   ([`The         ], None));
+    ("addnofail"   , mk M.Caddnofail    `Effect `Total   ([`The         ], None));
+    ("remove"      , mk M.Cremove       `Effect `Total   ([`Pk          ], None));
+    ("removeofail" , mk M.Cremovenofail `Effect `Total   ([`Pk          ], None));
+    ("removeif"    , mk M.Cremoveif     `Effect `Total   ([`Pred        ], None));
+    ("update"      , mk M.Cupdate       `Effect `Total   ([`Pk; `Effect ], None));
+    ("updatenofail", mk M.Cupdatenofail `Effect `Total   ([`Pk; `Effect ], None));
+    ("clear"       , mk M.Cclear        `Effect `Total   ([             ], None));
+    ("contains"    , mk M.Ccontains     `Pure   `Total   ([`Pk          ], Some (`T M.vtbool)));
+    ("nth"         , mk M.Cnth          `Pure   `Partial ([`T    M.vtint], Some (`Asset)));
+    ("select"      , mk M.Cselect       `Pure   `Total   ([`Pred        ], Some (`SubColl)));
+    ("sort"        , mk M.Csort         `Pure   `Total   ([`Field       ], Some (`SubColl)));
+    ("count"       , mk M.Ccount        `Pure   `Total   ([             ], Some (`SubColl)));
+    ("sum"         , mk M.Csum          `Pure   `Total   ([`RField 0    ], Some (`Ref 0)));
+    ("max"         , mk M.Cmax          `Pure   `Partial ([`RField 0    ], Some (`Ref 0)));
+    ("min"         , mk M.Cmin          `Pure   `Partial ([`RField 0    ], Some (`Ref 0)));
+    ("before"      , mk M.Cbefore       `Pure   `Total   ([             ], Some (`SubColl)));
+    ("unmoved"     , mk M.Cunmoved      `Pure   `Total   ([             ], Some (`SubColl)));
+    ("added"       , mk M.Cadded        `Pure   `Total   ([             ], Some (`SubColl)));
+    ("removed"     , mk M.Cremoved      `Pure   `Total   ([             ], Some (`SubColl)));
+    ("iterated"    , mk M.Citerated     `Pure   `Total   ([             ], Some (`SubColl)));
+    ("toiterate"   , mk M.Ctoiterate    `Pure   `Total   ([             ], Some (`SubColl)));
+  ]
+
+let methods = Mid.of_list methods
 
 (* -------------------------------------------------------------------- *)
 type assetdecl = {
   as_name   : M.lident;
   as_fields : (ident * M.ptyp) list;
+  as_pk     : ident;
 }
 
 (* -------------------------------------------------------------------- *)
@@ -487,12 +502,14 @@ end = struct
 
   module Var = struct
     let proj = function
-      | `Global x -> Some x
+      | `Global x ->
+          Some x
+
       | `Asset  a ->
-        Some {
-          vr_name = a.as_name;
-          vr_type = M.Tcontainer (M.Tasset a.as_name, M.Collection);
-          vr_kind = `Constant; }
+          Some { vr_name = a.as_name;
+                 vr_type = M.Tcontainer (M.Tasset a.as_name, M.Collection);
+                 vr_kind = `Constant; }
+
       | _ -> None
 
     let lookup (env : t) (name : ident) =
@@ -713,14 +730,17 @@ let rec for_xexpr (env : env) ?(ety : M.ptyp option) (tope : PT.expr) : xexpr =
     | Eterm (None, None, x) -> begin
         match Env.lookup env (unloc x) with
         | Some (`Local xty) ->
-          `Expr (mk_sp (Some xty) (M.Pvar x))
+            `Expr (mk_sp (Some xty) (M.Pvar x))
 
         | Some (`Global decl) ->
-          `Expr (mk_sp (Some decl.vr_type) (M.Pvar x))
+            `Expr (mk_sp (Some decl.vr_type) (M.Pvar x))
+
+        | Some (`Asset decl) ->
+            `Expr (mk_sp (Some (M.Tasset decl.as_name)) (M.Pvar x))
 
         | _ ->
-          Env.emit_error env (loc x, UnknownLocalOrVariable (unloc x));
-          bailout ()
+            Env.emit_error env (loc x, UnknownLocalOrVariable (unloc x));
+            bailout ()
       end
 
     | Eliteral v ->
@@ -1024,17 +1044,59 @@ let rec for_xexpr (env : env) ?(ety : M.ptyp option) (tope : PT.expr) : xexpr =
         `Expr (mk_sp (Some (pdf.psl_ret)) aout)
       end
 
-    | Emethod (_the, _m, _args) ->
-        assert false
+    | Emethod (the, m, args) -> begin
+        let the, asset = for_asset_expr env the in
+        let asset = Option.get_fdfl bailout asset in
+        let method_ =
+          match Mid.find_opt (unloc m) methods with
+          | None ->
+              Env.emit_error env (loc m, NoSuchMethod (unloc m));
+              bailout ()
+          | Some method_ -> method_
+        in
 
-    | Eif (c, et, Some ef) -> begin
+        let ne = List.length (fst method_.mth_sig) in
+        let ng = List.length args in
+
+        if ne <> ng then begin
+          Env.emit_error env (loc tope, InvalidNumberOfArguments (ne, ng));
+          bailout ()
+        end;
+
+        let type_of_mthtype = function
+          | `T typ -> typ
+          | _      -> assert false (* FIXME *)
+        in
+  
+        let doarg arg (aty : mthtyp) =
+          match aty with
+          | `Pk ->
+              let pk = List.assoc asset.as_pk asset.as_fields in
+              M.AExpr (for_expr env ~ety:pk arg)
+
+          | _ ->                (* FIXME *)
+              assert false
+
+        in
+
+        let args = List.map2 doarg args (fst method_.mth_sig) in
+
+        if Option.is_none (snd method_.mth_sig) then begin
+          Env.emit_error env (loc tope, VoidMethodInExpr)
+        end;
+
+        let rty = Option.map type_of_mthtype (snd method_.mth_sig) in
+
+        `Expr (mk_sp rty (M.Pcall (Some the, M.Cconst method_.mth_name, args)))
+      end
+
+    | Eif (c, et, Some ef) ->
         let c    = for_expr env ~ety:M.vtbool c in
         let et   = for_expr env et in
         let ef   = for_expr env ?ety:et.type_ ef in
         let aout = mk_sp (Some M.vtbool) (M.Pif (c, et, ef)) in
 
         `Expr aout
-      end
 
     | Eletin (_lv, _t, _e1, _e2, _c) ->
       assert false
@@ -1115,7 +1177,7 @@ and for_effect (env : env) (_asset : ident) (tope : PT.expr) : effect =
     Env.emit_error env (loc tope, InvalidEffect)
 
 (* -------------------------------------------------------------------- *)
-let for_formula (env : env) (topf : PT.expr) : M.pterm =
+and for_formula (env : env) (topf : PT.expr) : M.pterm =
   let mk node = M.{ node; label = None; type_ = None; loc = loc topf; } in
 
   match for_xexpr env topf with
@@ -1130,27 +1192,29 @@ let for_formula (env : env) (topf : PT.expr) : M.pterm =
     mk (M.Pvar (mkloc (loc topf) "<unknown>"))
 
 (* -------------------------------------------------------------------- *)
-let for_lbl_formula (env : env) (topf : PT.label_expr) : env * M.pterm =
+and for_lbl_formula (env : env) (topf : PT.label_expr) : env * M.pterm =
   env, for_formula env (snd (unloc topf))
 
 (* -------------------------------------------------------------------- *)
-let for_lbls_formula (env : env) (topf : PT.label_exprs) : env * M.pterm list =
+and for_lbls_formula (env : env) (topf : PT.label_exprs) : env * M.pterm list =
   List.fold_left_map for_lbl_formula env topf
 
 (* -------------------------------------------------------------------- *)
-let for_asset_expr (env : env) (tope : PT.expr) =
-  let e = for_expr env tope in
+and for_asset_expr (env : env) (tope : PT.expr) =
+  let ast = for_expr env tope in
+  let typ =
+    match Option.map Type.as_asset ast.M.type_ with
+    | None ->
+        None
+  
+    | Some None ->
+        Env.emit_error env (loc tope, InvalidAssetExpression);
+        None
+  
+    | Some (Some asset) ->
+        Some (Env.Asset.get env (unloc asset))
 
-  match Option.map Type.as_asset e.M.type_ with
-  | None ->
-    None
-
-  | Some None ->
-    Env.emit_error env (loc tope, InvalidAssetExpression);
-    None
-
-  | Some (Some asset) ->
-    Some (Env.Asset.get env (unloc asset), e)
+  in (ast, typ)
 
 (* -------------------------------------------------------------------- *)
 let for_arg (env : env) ((x, ty, _) : PT.lident_typ) =
@@ -1172,13 +1236,13 @@ let for_args (env : env) (xs : PT.args) =
 let for_role (env : env) (name : PT.lident) =
   match Env.Var.lookup env (unloc name) with
   | None ->
-    Env.emit_error env (loc name, UnknownLocalOrVariable (unloc name));
-    None
+      Env.emit_error env (loc name, UnknownLocalOrVariable (unloc name));
+      None
 
   | Some nty ->
-    if not (Type.compatible ~from_:nty.vr_type ~to_:M.vtrole) then
-      (Env.emit_error env (loc name, NotARole (unloc name)); None)
-    else Some name
+      if not (Type.compatible ~from_:nty.vr_type ~to_:M.vtrole) then
+        (Env.emit_error env (loc name, NotARole (unloc name)); None)
+      else Some name
 
 (* -------------------------------------------------------------------- *)
 let for_lvalue (env : env) (e : PT.expr) : (M.lident * M.ptyp) option =
@@ -1261,22 +1325,13 @@ let rec for_instruction (env : env) (i : PT.expr) : M.instruction =
 
   try
     match unloc i with
-    | Emethod (target, name, args) -> begin
-        let _target = Option.get_exn E.Failure (for_asset_expr env target)  in
-        let _mthd   =
-          match get_asset_method (unloc name) with
-          | None ->
-            Env.emit_error env (loc name, NoSuchMethod (unloc name));
-            bailout ()
-          | Some mthd -> mthd in
-
+    | Emethod (_target, _name, _args) ->
         assert false
-      end
 
     | Eseq (i1, i2) ->
-      let i1 = for_instruction env i1 in
-      let i2 = for_instruction env i2 in
-      mkseq i1 i2
+        let i1 = for_instruction env i1 in
+        let i2 = for_instruction env i2 in
+        mkseq i1 i2
 
     | Eassign (ValueAssign, plv, pe) -> begin
         let lv = for_lvalue env plv in
@@ -1293,11 +1348,10 @@ let rec for_instruction (env : env) (i : PT.expr) : M.instruction =
       end
 
     | Etransfer (e, back, to_) ->
-      let to_ = Option.bind (for_role env) to_ in
-      let to_ = Option.map (M.mk_id M.vtrole) to_ in
-      let e   = for_expr env ~ety:(M.vtcurrency M.Tez) e in
-
-      mki (Itransfer (e, back, to_))
+        let to_ = Option.bind (for_role env) to_ in
+        let to_ = Option.map (M.mk_id M.vtrole) to_ in
+        let e   = for_expr env ~ety:(M.vtcurrency M.Tez) e in
+        mki (Itransfer (e, back, to_))
 
     | Eif (c, bit, bif) ->
         let c    = for_expr env ~ety:M.vtbool c in
@@ -1307,8 +1361,8 @@ let rec for_instruction (env : env) (i : PT.expr) : M.instruction =
         mki (M.Iif (c, cit, cif))
 
     | _ ->
-      Env.emit_error env (loc i, InvalidInstruction);
-      bailout ()
+        Env.emit_error env (loc i, InvalidInstruction);
+        bailout ()
 
   with E.Failure ->
     mki (Iseq [])
@@ -1420,31 +1474,31 @@ let for_transition (env : env) (state, when_, effect) =
 let for_declaration (env : env) (decl : PT.declaration) =
   match unloc decl with
   | Darchetype _ ->
-    Env.emit_error env (loc decl, InvalidArcheTypeDecl);
-    env
+      Env.emit_error env (loc decl, InvalidArcheTypeDecl);
+      env
 
   | Dvariable (x, ty, e, _tgts, ctt, _) ->
-    (* FIXME: handle tgts *)
-
-    let ty   = for_type env ty in
-    let e    = Option.map (for_expr env ?ety:ty) e in
-    let dty  = if   Option.is_some ty
-      then ty
-      else Option.bind (fun e -> e.M.type_) e in
-    let ctt  = match ctt with
-      | VKconstant -> `Constant
-      | VKvariable -> `Variable in
-
-    if Option.is_some dty then begin
-      let decl = { vr_name = x; vr_type = Option.get dty; vr_kind = ctt} in
-
-      if   (check_and_emit_name_free env x)
-      then Env.Var.push env decl
-      else env
-    end else env
+      (* FIXME: handle tgts *)
+  
+      let ty   = for_type env ty in
+      let e    = Option.map (for_expr env ?ety:ty) e in
+      let dty  = if   Option.is_some ty
+        then ty
+        else Option.bind (fun e -> e.M.type_) e in
+      let ctt  = match ctt with
+        | VKconstant -> `Constant
+        | VKvariable -> `Variable in
+  
+      if Option.is_some dty then begin
+        let decl = { vr_name = x; vr_type = Option.get dty; vr_kind = ctt} in
+  
+        if   (check_and_emit_name_free env x)
+        then Env.Var.push env decl
+        else env
+      end else env
 
   | Denum (_x, _ctors, _) ->
-    assert false
+      assert false
 
   | Dasset (x, fields, _, _, _, _) -> begin
       (* FIXME: check that there is at least one field for PK *)
@@ -1464,22 +1518,32 @@ let for_declaration (env : env) (decl : PT.declaration) =
 
       (* FIXME: check for duplicated type name? *)
 
-      let get_field_type { pldesc = (x, ty, e) } =
-        let ty =
-          if   Option.is_some ty
-          then ty
-          else Option.bind (fun e -> e.M.type_) e
-        in Option.map (fun ty -> (x, ty)) ty
-      in
-
       if Env.Asset.exists env (unloc x) then begin
         Env.emit_error env (loc x, DuplicatedAssetName (unloc x));
         env
       end else
-        let decl = {
-          as_name   = x;
-          as_fields = List.pmap get_field_type fields;
-        } in Env.Asset.push env decl
+        let module E = struct exception Bailout end in
+
+        if List.is_empty fields then begin
+          Env.emit_error env (loc decl, AssetWithoutFields);
+          raise E.Bailout
+        end;
+
+        let get_field_type { pldesc = (x, ty, e) } =
+          let ty =
+            if   Option.is_some ty
+            then ty
+            else Option.bind (fun e -> e.M.type_) e
+          in (x, Option.get_fdfl (fun () -> raise E.Bailout) ty)
+        in
+
+        try
+          let decl = {
+            as_name   = x;
+            as_fields = List.map get_field_type fields;
+            as_pk     = proj3_1 (unloc (List.hd fields));
+          } in Env.Asset.push env decl
+        with E.Bailout -> env
     end
 
   | Daction (x, args, pt, i_exts, _exts) -> begin
@@ -1496,15 +1560,15 @@ let for_declaration (env : env) (decl : PT.declaration) =
     end
 
   | Dtransition (x, args, tgt, from_, actions, tx, _exts) ->
-    let _env0  = for_args env args in
-    let _from_ = for_state env from_ in
-    let env, act = for_action_properties env actions in
-    let _tx = List.map (for_transition env) tx in
-
-    if Option.is_some tgt then
-      assert false;
-
-    env
+      let _env0  = for_args env args in
+      let _from_ = for_state env from_ in
+      let env, act = for_action_properties env actions in
+      let _tx = List.map (for_transition env) tx in
+  
+      if Option.is_some tgt then
+        assert false;
+  
+      env
 
 (*
 type transition = (TO: lident * WHEN: (expr * exts) option * EFFECT: (expr * exts) option) list
@@ -1522,22 +1586,22 @@ type action_properties = {
 
 
   | Dcontract (_x, _sig, _) ->
-    assert false
+      assert false
 
   | Dextension (_x, _) ->
-    assert false
+      assert false
 
   | Dnamespace (_x, _decls) ->
-    assert false
+      assert false
 
   | Dfunction _fun ->
-    assert false
+      assert false
 
   | Dverification v ->
-    assert false
+      assert false
 
   | Dinvalid ->
-    assert false
+      assert false
 
 (* -------------------------------------------------------------------- *)
 type state = ((PT.lident * PT.enum_option list) list)

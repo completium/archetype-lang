@@ -217,7 +217,7 @@ type ('id, 'term) mterm_node  =
   | Mquantifer of quantifier * 'id * type_ * 'term
   | Mif of ('term * 'term * 'term)
   | Mmatchwith of 'term * ('id pattern_gen * 'term) list
-  | Mcall of ('id option * 'id call_kind * ('id term_arg_gen) list)
+  | Mcall of ('term option * 'id call_kind * ('id term_arg_gen) list)
   | Mlogical of logical_operator * 'term * 'term
   | Mnot of 'term
   | Mcomp of comparison_operator * 'term * 'term

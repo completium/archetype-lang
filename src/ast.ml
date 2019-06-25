@@ -303,7 +303,7 @@ type ('id, 'typ, 'term) term_node  =
   | Lquantifer of quantifier * 'id * ltype_ * 'term
   | Pif of ('term * 'term * 'term)
   | Pmatchwith of 'term * ('id pattern_gen * 'term) list
-  | Pcall of ('id option * 'id call_kind * (('id, 'term) term_arg) list)
+  | Pcall of ('term option * 'id call_kind * (('id, 'term) term_arg) list)
   | Plogical of logical_operator * 'term * 'term
   | Pnot of 'term
   | Pcomp of comparison_operator * 'term * 'term
@@ -1031,12 +1031,12 @@ let create_miles_with_expiration_ast () =
                                    ~type_:(Tbuiltin VTbool))
                     ~label:(dumloc "c1")]
 
-        ~effect:(mk_instr (Iif (mk_sp (Pcall (Some (dumloc "owner"),
+        ~effect:(mk_instr (Iif (mk_sp (Pcall (Some (mk_sp ~type_:(Tasset (dumloc "mile")) (Pvar (dumloc "owner"))),
                                               Cconst Ccontains,
                                               [AExpr (mk_sp (Pvar (dumloc "ow"))
                                                         ~type_:(Tbuiltin VTaddress))]))
                                   ~type_:(Tbuiltin VTbool),
-                                mk_instr (Icall (Some (mk_sp (Pdot ((mk_sp (Pcall (Some (dumloc "owner"),
+                                mk_instr (Icall (Some (mk_sp (Pdot ((mk_sp (Pcall (Some (mk_sp ~type_:(Tasset (dumloc "mile")) (Pvar (dumloc "owner"))),
                                                                                    Cconst Cget,
                                                                                    [AExpr (mk_sp (Pvar (dumloc "ow"))
                                                                                              ~type_:(Tbuiltin VTaddress))]))
@@ -1106,7 +1106,7 @@ let create_miles_with_expiration_ast () =
                                 ~specs:[
                                   mk_specification (dumloc "p2")
                                     (mk_sp (Pcomp (Equal,
-                                                   (mk_sp (Pcall (Some (dumloc "mile"),
+                                                   (mk_sp (Pcall (Some (mk_sp ~type_:(LTprog (Tasset (dumloc "mile"))) (Pvar (dumloc "mile"))),
                                                                   Cconst Csum,
                                                                   [
                                                                     AExpr (mk_sp (Pvar (dumloc "amount"))
@@ -1278,7 +1278,7 @@ let create_miles_with_expiration_ast () =
         ~effect:(
           mk_instr (Iletin (
               dumloc "ow",
-              (mk_sp (Pcall (Some (dumloc "owner"),
+              (mk_sp (Pcall (Some (mk_sp ~type_:(Tasset (dumloc "mile")) (Pvar (dumloc "owner"))),
                              Cconst Cget,
                              [AExpr (mk_sp (Pvar (dumloc "a"))
                                        ~type_:(Tbuiltin VTaddress))]))
