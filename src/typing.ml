@@ -67,6 +67,7 @@ type error_desc =
   | DuplicatedFieldInRecordLiteral     of ident
   | DuplicatedInitMarkForCtor
   | DuplicatedVarDecl                  of ident
+  | AnonymousFieldInEffect
   | EmptyStateDecl
   | ExpressionExpected
   | FormulaExpected
@@ -75,7 +76,7 @@ type error_desc =
   | InvalidAssetCollectionExpr
   | InvalidAssetExpression
   | InvalidCallByExpression
-  | InvalidEffect
+  | InvalidExpressionForEffect
   | InvalidExpression
   | InvalidFieldsCountInRecordLiteral
   | InvalidLValue
@@ -662,6 +663,15 @@ let for_container (_ : env) = function
   | PT.Set       -> M.Set
   | PT.Partition -> M.Partition
 
+(* -------------------------------------------------------------------- *)
+let for_assignment_operator = function
+  | PT.ValueAssign  -> M.ValueAssign
+  | PT.PlusAssign   -> M.PlusAssign
+  | PT.MinusAssign  -> M.MinusAssign
+  | PT.MultAssign   -> M.MultAssign
+  | PT.DivAssign    -> M.DivAssign
+  | PT.AndAssign    -> M.AndAssign
+  | PT.OrAssign     -> M.OrAssign
 
 (* -------------------------------------------------------------------- *)
 let tt_logical_operator (op : PT.logical_operator) =
@@ -1175,19 +1185,10 @@ and for_expr (env : env) ?(ety : M.type_ option) (tope : PT.expr) : M.pterm =
 and for_xarg (env : env) (ety : argtype) (tope : PT.expr) : M.pterm_arg =
   match ety with
   | `Type ety ->
-    M.AExpr (for_expr env ~ety tope)
+      M.AExpr (for_expr env ~ety tope)
 
-  | `Effect name -> assert false
-(* M.AEffect (for_effect env name tope) *)
-
-(* -------------------------------------------------------------------- *)
-and for_effect (env : env) (_asset : ident) (tope : PT.expr) : effect =
-  match unloc tope with
-  | Erecord _fields ->
-    assert false
-
-  | _ ->
-    Env.emit_error env (loc tope, InvalidEffect)
+  | `Effect name ->
+      assert false
 
 (* -------------------------------------------------------------------- *)
 and for_formula (env : env) (topf : PT.expr) : M.pterm =
@@ -1195,14 +1196,14 @@ and for_formula (env : env) (topf : PT.expr) : M.pterm =
 
   match for_xexpr env topf with
   | `Expr e ->
-    Option.iter (fun ety ->
-        if ety <> M.vtbool then
-          Env.emit_error env (loc topf, FormulaExpected))
-      e.type_; e
+      Option.iter (fun ety ->
+          if ety <> M.vtbool then
+            Env.emit_error env (loc topf, FormulaExpected))
+        e.type_; e
 
   | _ ->
-    Env.emit_error env (loc topf, InvalidFormula);
-    mk (M.Pvar (mkloc (loc topf) "<unknown>"))
+      Env.emit_error env (loc topf, InvalidFormula);
+      mk (M.Pvar (mkloc (loc topf) "<unknown>"))
 
 (* -------------------------------------------------------------------- *)
 and for_lbl_formula (env : env) (topf : PT.label_expr) : env * M.pterm =
@@ -1295,6 +1296,9 @@ and for_gen_method_call env theloc (the, m, args) =
               Env.emit_error env (loc arg, NumericExpressionExpected));
           M.AExpr e
 
+      | `Effect ->
+          M.AEffect (Option.get_dfl [] (for_arg_effect env asset arg))
+
       | _ ->                (* FIXME *)
           assert false
   
@@ -1312,6 +1316,65 @@ and for_gen_method_call env theloc (the, m, args) =
     Some (the, asset, method_, args, amap)
 
   with E.Bailout -> None
+
+(* -------------------------------------------------------------------- *)
+and for_arg_effect (env : env) (asset : assetdecl) (tope : PT.expr) =
+  match unloc tope with
+  | Erecord fields ->
+      let do1 map ((x, e) : PT.record_item) =
+        match x with
+        | None ->
+            Env.emit_error env (loc tope, AnonymousFieldInEffect);
+            map
+
+        | Some (op, x) -> begin
+            try
+              let fty = List.assoc (unloc x) asset.as_fields in
+              let op  = for_assignment_operator op in
+              let ety =
+                match op with
+                | ValueAssign ->
+                    Some fty
+  
+                | PlusAssign
+                | MinusAssign
+                | MultAssign
+                | DivAssign ->
+                    if not (Type.is_numeric fty) then begin
+                      Env.emit_error env (loc x, NumericExpressionExpected);
+                      None
+                    end else
+                      Some fty
+
+                | AndAssign
+                | OrAssign ->
+                    if not (Type.compatible ~from_:fty ~to_:M.vtbool) then
+                      Env.emit_error env (loc x, IncompatibleTypes (fty, M.vtbool));
+                    Some M.vtbool
+              in
+                
+
+              let e = for_expr env ?ety e in
+
+              if Mid.mem (unloc x) map then begin
+                Env.emit_error env (loc x, DuplicatedFieldInRecordLiteral (unloc x));
+                map
+              end else
+                Mid.add (unloc x) (x, `Assign op, e) map
+
+            with Not_found ->
+              Env.emit_error env (loc x, UnknownFieldName (unloc x));
+              map
+          end
+      in
+
+      let effects = List.fold_left do1 Mid.empty fields in
+
+      Some (List.map snd (Mid.bindings effects))
+
+  | _ ->
+      Env.emit_error env (loc tope, InvalidExpressionForEffect); 
+      None
 
 (* -------------------------------------------------------------------- *)
 let for_arg_decl (env : env) ((x, ty, _) : PT.lident_typ) =
