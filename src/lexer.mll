@@ -70,6 +70,7 @@
       "failif"              , FAILIF         ;
       "require"             , REQUIRE        ;
       "record"              , RECORD         ;
+      "label"               , LABEL          ;
     ]
 
   let () =

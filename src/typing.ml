@@ -1331,30 +1331,7 @@ and for_arg_effect (env : env) (asset : assetdecl) (tope : PT.expr) =
             try
               let fty = List.assoc (unloc x) asset.as_fields in
               let op  = for_assignment_operator op in
-              let ety =
-                match op with
-                | ValueAssign ->
-                    Some fty
-  
-                | PlusAssign
-                | MinusAssign
-                | MultAssign
-                | DivAssign ->
-                    if not (Type.is_numeric fty) then begin
-                      Env.emit_error env (loc x, NumericExpressionExpected);
-                      None
-                    end else
-                      Some fty
-
-                | AndAssign
-                | OrAssign ->
-                    if not (Type.compatible ~from_:fty ~to_:M.vtbool) then
-                      Env.emit_error env (loc x, IncompatibleTypes (fty, M.vtbool));
-                    Some M.vtbool
-              in
-                
-
-              let e = for_expr env ?ety e in
+              let e   = for_assign_expr env (loc x) (op, fty) e in
 
               if Mid.mem (unloc x) map then begin
                 Env.emit_error env (loc x, DuplicatedFieldInRecordLiteral (unloc x));
@@ -1375,6 +1352,31 @@ and for_arg_effect (env : env) (asset : assetdecl) (tope : PT.expr) =
   | _ ->
       Env.emit_error env (loc tope, InvalidExpressionForEffect); 
       None
+
+(* -------------------------------------------------------------------- *)
+and for_assign_expr env orloc (op, fty) e =
+  let ety =
+    match op with
+    | ValueAssign ->
+        Some fty
+  
+    | PlusAssign
+    | MinusAssign
+    | MultAssign
+    | DivAssign ->
+        if not (Type.is_numeric fty) then begin
+          Env.emit_error env (orloc, NumericExpressionExpected);
+          None
+        end else
+          Some fty
+  
+    | AndAssign
+    | OrAssign ->
+        if not (Type.compatible ~from_:fty ~to_:M.vtbool) then
+          Env.emit_error env (orloc, IncompatibleTypes (fty, M.vtbool));
+        Some M.vtbool
+
+  in for_expr env ?ety e
 
 (* -------------------------------------------------------------------- *)
 let for_arg_decl (env : env) ((x, ty, _) : PT.lident_typ) =
@@ -1495,16 +1497,19 @@ let rec for_instruction (env : env) (i : PT.expr) : env * M.instruction =
         let env, i2 = for_instruction env i2 in
         env, mkseq i1 i2
 
-    | Eassign (ValueAssign, plv, pe) -> begin
+    | Eassign (op, plv, pe) -> begin
         let lv = for_lvalue env plv in
-        let e  = for_expr env ?ety:(Option.map snd lv) pe in
         let x  = Option.get_dfl (mkloc (loc plv) "<error>") (Option.map fst lv) in
+        let op = for_assignment_operator op in
 
-        begin match e.M.type_, lv with
-          | Some from_, Some (_, to_) ->
-            if not (Type.compatible ~from_ ~to_) then
-              Env.emit_error env (loc pe, IncompatibleTypes (from_, to_))
-          | _ -> () end;
+        let e  =
+          match lv with
+          | None ->
+              for_expr env pe
+
+          | Some (_, fty) ->
+              for_assign_expr env (loc plv) (op, fty) pe
+        in
 
         env, mki (M.Iassign (M.ValueAssign, x, e))
       end
@@ -1563,6 +1568,9 @@ let rec for_instruction (env : env) (i : PT.expr) : env * M.instruction =
 
     | Elabel (_, e) ->
         for_instruction env e
+
+    | Eilabel _ ->
+        env, mki (Iseq [])
 
     | _ ->
         Env.emit_error env (loc i, InvalidInstruction);
@@ -1755,11 +1763,11 @@ let for_declaration (env : env) (decl : PT.declaration) =
   | Daction (x, args, pt, i_exts, _exts) -> begin
       let env, _ =
         Env.inscope env (fun env ->
-          let env     = (fst (for_args_decl env args)) in
-          let _effect = Option.map (for_instruction env) (Option.fst i_exts) in
-          let _callby = Option.map (for_callby env) (Option.fst pt.calledby) in
-          let _callby = Option.get_dfl [] _callby in
-          let _reqs   = Option.map (for_lbls_formula env) (Option.fst pt.require) in
+          let env         = (fst (for_args_decl env args)) in
+          let env, effect = Option.foldmap for_instruction env (Option.fst i_exts) in
+          let callby      = Option.map (for_callby env) (Option.fst pt.calledby) in
+          let _callby     = Option.get_dfl [] callby in
+          let env, reqs   = Option.foldmap for_lbls_formula env (Option.fst pt.require) in
 
           (env, ()))
 
@@ -1805,7 +1813,7 @@ type action_properties = {
       assert false
 
   | Dverification v ->
-      assert false
+      let env, _ = for_verification env v in env
 
   | Dinvalid ->
       assert false
