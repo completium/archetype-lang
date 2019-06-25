@@ -5,30 +5,6 @@ exception Unsupported_yet
 let debug_mode = ref false
 
 (* -------------------------------------------------------------------- *)
-
-exception Hexchar_exn of char
-
- let int_of_hexchar c=
-    try List.assoc c
-    [
-      ('0', 0); ('1', 1); ('2', 2); ('3', 3); ('4', 4); ('5', 5);
-      ('6', 6); ('7', 7); ('8', 8); ('9', 9);
-      ('a', 10); ('b', 11); ('b', 12); ('d', 13); ('e', 14); ('f', 15)
-    ]
-    with _->raise(Hexchar_exn(c))
-
-let int_of_hex s=
-  let n=String.length(s)
-  and accu=ref(0) in
-  for i=1 to n do accu:=int_of_hexchar(String.get s (i-1))+16*(!accu) done;
-  (!accu)
-
-let sha s : int =
-  let s = Digestif.MD5.to_hex (Digestif.MD5.digest_string s) in
-  let s = String.sub s 0 5 in
-  int_of_hex s
-
-(* -------------------------------------------------------------------- *)
 let id = fun x -> x
 
 let (|@) f g = fun x -> f (g x)
@@ -43,6 +19,50 @@ let snd_map f (x, y) = (x, f y)
 let pair_map f g (x, y) = (f x, g y)
 
 let swap = fun (x, y) -> (y, x)
+
+(* -------------------------------------------------------------------- *)
+module String : sig
+  include module type of String
+
+  val starts : pattern:string -> string -> bool
+  val ends   : pattern:string -> string -> bool
+end = struct
+  include String
+
+  let starts ~pattern s =
+    let module E = struct exception No end in
+
+    let plen = String.length pattern in
+    let slen = String.length s in
+
+    try
+      if plen > slen then
+        raise E.No;
+      for i = 0 to plen-1 do
+        if pattern.[i] <> s.[i] then
+          raise E.No
+      done;
+      true
+
+    with E.No -> false
+
+  let ends ~pattern s =
+    let module E = struct exception No end in
+
+    let plen = String.length pattern in
+    let slen = String.length s in
+
+    try
+      if plen > slen then
+        raise E.No;
+      for i = 0 to plen-1 do
+        if pattern.[i] <> s.[slen-1-i] then
+          raise E.No
+      done;
+      true
+
+    with E.No -> false
+end
 
 (* -------------------------------------------------------------------- *)
 module Option : sig
@@ -257,3 +277,14 @@ end
 
 (* -------------------------------------------------------------------- *)
 module Set = Set
+
+(* -------------------------------------------------------------------- *)
+let norm_hex_string (s : string) =
+  if String.starts ~pattern:"0x" s then s else "0x" ^ s
+
+let int_of_hex (s : string) =
+  int_of_string (norm_hex_string s)
+
+let sha s : int =
+  let s = Digestif.SHA1.to_hex (Digestif.SHA1.digest_string s) in
+  int_of_hex (String.sub s 0 5)
