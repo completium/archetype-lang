@@ -293,6 +293,12 @@ end
 module Set = Set
 
 (* -------------------------------------------------------------------- *)
+module Mint = Map.Make(struct
+  type t = int
+  let compare = (Pervasives.compare : t -> t -> int)
+end)
+
+(* -------------------------------------------------------------------- *)
 let norm_hex_string (s : string) =
   if String.starts ~pattern:"0x" s then s else "0x" ^ s
 

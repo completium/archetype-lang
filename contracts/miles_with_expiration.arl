@@ -68,8 +68,8 @@ action consume (a : address) (quantity : uint) = {
 
   effect {
      let ow = owner.get a in
-     let by_expiration = ow.miles.select(mile.expiration > now) in
-     require (by_expiration.sum(quantity) >= amount);
+     let by_expiration = ow.miles.select(the.expiration > now) in
+     require (by_expiration.sum(the.amount) >= quantity);
      let remainder = quantity in
      loop : for (m in by_expiration) (
        if remainder > 0
