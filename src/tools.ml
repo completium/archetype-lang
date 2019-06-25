@@ -84,6 +84,9 @@ module Option : sig
   val map_dfl     : ('a -> 'b) -> 'b -> 'a option -> 'b
   val get_as_list : 'a option -> 'a list
   val flatten     : 'a option option -> 'a option
+
+  val fst : ('a * 'b) option -> 'a option
+  val snd : ('a * 'b) option -> 'b option
 end = struct
   let is_none = function None -> true  | Some _ -> false
   let is_some = function None -> false | Some _ -> true
@@ -126,6 +129,9 @@ end = struct
   let get_as_list = function None -> [] | Some x -> [x]
 
   let flatten = function Some (Some v) -> Some v | _ -> None
+
+  let fst = fun x -> map fst x
+  let snd = fun x -> map snd x
 end
 
 let (|?>) x f = Option.map f x
@@ -146,6 +152,7 @@ module List : sig
   val undup         : ('a -> 'b) -> 'a list -> 'a list
   val xfilter       : ('a -> [`Left of 'b | `Right of 'c]) -> 'a list -> 'b list * 'c list
   val fold_left_map : ('a -> 'b -> 'a * 'c) -> 'a -> 'b list -> 'a * 'c list
+  val assoc_all     : 'a -> ('a * 'b) list -> 'b list
 
   module Exn : sig
     val assoc : 'a -> ('a * 'b) list -> 'b option
@@ -235,6 +242,9 @@ end = struct
         ) (state, []) xs in
 
     (state, List.rev xs)
+
+  let assoc_all (v : 'a) (xs : ('a * 'b) list) =
+    pmap (fun (x, y) -> if x = v then Some y else None) xs
 
   module Exn = struct
     let assoc x xs =
