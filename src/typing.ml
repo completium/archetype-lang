@@ -9,9 +9,10 @@ module M  = Ast
 
 (* -------------------------------------------------------------------- *)
 module Type : sig
-  val as_container : M.ptyp -> (M.ptyp * M.container) option
-  val as_asset     : M.ptyp -> M.lident option
-  val as_tuple     : M.ptyp -> (M.ptyp list) option
+  val as_container        : M.ptyp -> (M.ptyp * M.container) option
+  val as_asset            : M.ptyp -> M.lident option
+  val as_asset_collection : M.ptyp -> (M.lident * M.container) option
+  val as_tuple            : M.ptyp -> (M.ptyp list) option
 
   val equal      : M.ptyp -> M.ptyp -> bool
   val compatible : from_:M.ptyp -> to_:M.ptyp -> bool
@@ -19,6 +20,10 @@ end = struct
   let as_container = function M.Tcontainer (ty, c) -> Some (ty, c) | _ -> None
   let as_asset     = function M.Tasset     x       -> Some x       | _ -> None
   let as_tuple     = function M.Ttuple     ts      -> Some ts      | _ -> None
+
+  let as_asset_collection = function
+    | M.Tcontainer (M.Tasset asset, c) -> Some (asset, c)
+    | _ -> None
 
   let equal = ((=) : M.ptyp -> M.ptyp -> bool)
 
@@ -58,6 +63,7 @@ type error_desc =
   | FormulaExpected
   | IncompatibleTypes                  of M.ptyp * M.ptyp
   | InvalidArcheTypeDecl
+  | InvalidAssetCollectionExpr
   | InvalidAssetExpression
   | InvalidCallByExpression
   | InvalidEffect
@@ -554,15 +560,15 @@ end = struct
       Option.bind
         (function
           | `Field nm ->
-            let decl = get env nm in
-            Some (decl, List.assoc fname decl.as_fields)
+              let decl = get env nm in
+              Some (decl, List.assoc fname decl.as_fields)
           | _ -> None)
         (Mid.find_opt fname env.env_bindings)
 
     let push (env : t) ({ as_name = nm } as decl : assetdecl) : t =
       let env = push env (unloc nm) (`Asset decl) in
       List.fold_left
-        (fun bds (x, _) -> push env x (`Field (unloc nm)))
+        (fun env (x, _) -> push env x (`Field (unloc nm)))
         env decl.as_fields
   end
 
@@ -736,7 +742,8 @@ let rec for_xexpr (env : env) ?(ety : M.ptyp option) (tope : PT.expr) : xexpr =
             `Expr (mk_sp (Some decl.vr_type) (M.Pvar x))
 
         | Some (`Asset decl) ->
-            `Expr (mk_sp (Some (M.Tasset decl.as_name)) (M.Pvar x))
+            let typ = M.Tcontainer ((M.Tasset decl.as_name), M.Collection) in
+            `Expr (mk_sp (Some typ) (M.Pvar x))
 
         | _ ->
             Env.emit_error env (loc x, UnknownLocalOrVariable (unloc x));
@@ -1045,41 +1052,14 @@ let rec for_xexpr (env : env) ?(ety : M.ptyp option) (tope : PT.expr) : xexpr =
       end
 
     | Emethod (the, m, args) -> begin
-        let the, asset = for_asset_expr env the in
-        let asset = Option.get_fdfl bailout asset in
-        let method_ =
-          match Mid.find_opt (unloc m) methods with
-          | None ->
-              Env.emit_error env (loc m, NoSuchMethod (unloc m));
-              bailout ()
-          | Some method_ -> method_
-        in
-
-        let ne = List.length (fst method_.mth_sig) in
-        let ng = List.length args in
-
-        if ne <> ng then begin
-          Env.emit_error env (loc tope, InvalidNumberOfArguments (ne, ng));
-          bailout ()
-        end;
+        let infos = for_gen_method_call env (loc tope) (the, m, args) in
+        let the, asset, method_, args = Option.get_fdfl bailout infos in
 
         let type_of_mthtype = function
           | `T typ -> typ
-          | _      -> assert false (* FIXME *)
+          | `The   -> M.Tasset asset.as_name
+          | _      -> assert false
         in
-  
-        let doarg arg (aty : mthtyp) =
-          match aty with
-          | `Pk ->
-              let pk = List.assoc asset.as_pk asset.as_fields in
-              M.AExpr (for_expr env ~ety:pk arg)
-
-          | _ ->                (* FIXME *)
-              assert false
-
-        in
-
-        let args = List.map2 doarg args (fst method_.mth_sig) in
 
         if Option.is_none (snd method_.mth_sig) then begin
           Env.emit_error env (loc tope, VoidMethodInExpr)
@@ -1122,8 +1102,8 @@ let rec for_xexpr (env : env) ?(ety : M.ptyp option) (tope : PT.expr) : xexpr =
     | Eterm     _
     | Etransfer _
     | Einvalid ->
-      Env.emit_error env (loc tope, InvalidExpression);
-      bailout ()
+        Env.emit_error env (loc tope, InvalidExpression);
+        bailout ()
 
   in
 
@@ -1217,7 +1197,67 @@ and for_asset_expr (env : env) (tope : PT.expr) =
   in (ast, typ)
 
 (* -------------------------------------------------------------------- *)
-let for_arg (env : env) ((x, ty, _) : PT.lident_typ) =
+and for_asset_collection_expr (env : env) (tope : PT.expr) =
+  let ast = for_expr env tope in
+  let typ =
+    match Option.map Type.as_asset_collection ast.M.type_ with
+    | None ->
+        None
+  
+    | Some None ->
+        Env.emit_error env (loc tope, InvalidAssetCollectionExpr);
+        None
+  
+    | Some (Some (asset, c)) ->
+        Some (Env.Asset.get env (unloc asset), c)
+
+  in (ast, typ)
+
+(* -------------------------------------------------------------------- *)
+and for_gen_method_call env theloc (the, m, args) =
+  let module E = struct exception Bailout end in
+
+  try
+    let the, asset = for_asset_collection_expr env the in
+    let asset, _ = Option.get_fdfl (fun () -> raise E.Bailout) asset in
+    let method_ =
+      match Mid.find_opt (unloc m) methods with
+      | None ->
+          Env.emit_error env (loc m, NoSuchMethod (unloc m));
+          raise E.Bailout
+      | Some method_ -> method_
+    in
+  
+    let ne = List.length (fst method_.mth_sig) in
+    let ng = List.length args in
+
+    if ne <> ng then begin
+      Env.emit_error env (theloc, InvalidNumberOfArguments (ne, ng));
+      raise E.Bailout
+    end;
+
+    let doarg arg (aty : mthtyp) =
+      match aty with
+      | `Pk ->
+          let pk = List.assoc asset.as_pk asset.as_fields in
+          M.AExpr (for_expr env ~ety:pk arg)
+
+      | `The ->
+          M.AExpr (for_expr env ~ety:(Tasset asset.as_name) arg)
+  
+      | _ ->                (* FIXME *)
+          assert false
+  
+    in
+  
+    let args = List.map2 doarg args (fst method_.mth_sig) in
+  
+    Some (the, asset, method_, args)
+
+  with E.Bailout -> None
+
+(* -------------------------------------------------------------------- *)
+let for_arg_decl (env : env) ((x, ty, _) : PT.lident_typ) =
   let ty = for_type env ty in
   let b  = check_and_emit_name_free env x in
 
@@ -1229,8 +1269,8 @@ let for_arg (env : env) ((x, ty, _) : PT.lident_typ) =
      (env, None)
 
 (* -------------------------------------------------------------------- *)
-let for_args (env : env) (xs : PT.args) =
-  List.fold_left_map for_arg env xs
+let for_args_decl (env : env) (xs : PT.args) =
+  List.fold_left_map for_arg_decl env xs
 
 (* -------------------------------------------------------------------- *)
 let for_role (env : env) (name : PT.lident) =
@@ -1325,8 +1365,10 @@ let rec for_instruction (env : env) (i : PT.expr) : M.instruction =
 
   try
     match unloc i with
-    | Emethod (_target, _name, _args) ->
-        assert false
+    | Emethod (the, m, args) ->
+        let infos = for_gen_method_call env (loc i) (the, m, args) in
+        let the, asset, method_, args = Option.get_fdfl bailout infos in
+        mki (M.Icall (Some the, M.Cconst method_.mth_name, args))
 
     | Eseq (i1, i2) ->
         let i1 = for_instruction env i1 in
@@ -1373,7 +1415,7 @@ let for_verification_item (env : env) (v : PT.verification_item) =
   | PT.Vpredicate (x, args, f) ->
     let env, (args, f) =
       Env.inscope env (fun env ->
-          let env, args = for_args env args in
+          let env, args = for_args_decl env args in
           let args = List.pmap id args in
           let f = for_formula env f in
           (env, (args, f)))
@@ -1382,7 +1424,7 @@ let for_verification_item (env : env) (v : PT.verification_item) =
   | PT.Vdefinition (x, ty, y, f) ->
     let env, (arg, f) =
       Env.inscope env (fun env ->
-          let env, arg = for_arg env (y, ty, None) in
+          let env, arg = for_arg_decl env (y, ty, None) in
           let f = for_formula env f in
           (env, (arg, f)))
     in env, `Definition (x, arg, f)
@@ -1548,7 +1590,7 @@ let for_declaration (env : env) (decl : PT.declaration) =
 
   | Daction (x, args, pt, i_exts, _exts) -> begin
       let env, _ =
-        Env.inscope (fst (for_args env args)) (fun env ->
+        Env.inscope (fst (for_args_decl env args)) (fun env ->
           let _effect = Option.map (for_instruction env) (Option.fst i_exts) in
           let _callby = Option.map (for_callby env) (Option.fst pt.calledby) in
           let _callby = Option.get_dfl [] _callby in
@@ -1560,7 +1602,7 @@ let for_declaration (env : env) (decl : PT.declaration) =
     end
 
   | Dtransition (x, args, tgt, from_, actions, tx, _exts) ->
-      let _env0  = for_args env args in
+      let _env0  = for_args_decl env args in
       let _from_ = for_state env from_ in
       let env, act = for_action_properties env actions in
       let _tx = List.map (for_transition env) tx in
