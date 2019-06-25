@@ -1428,37 +1428,6 @@ let for_lvalue (env : env) (e : PT.expr) : (M.lident * M.ptyp) option =
     Env.emit_error env (loc e, InvalidLValue); None
 
 (* -------------------------------------------------------------------- *)
-let for_verification_item (_env : env) (v : PT.verification_item) =
-  match unloc v with
-  | PT.Vpredicate (_x, _args, _e) ->
-    assert false
-
-  | PT.Vdefinition (_x, _ty, _y, _e) ->
-    assert false
-
-  | PT.Vaxiom (_x, _e) ->
-    assert false
-
-  | PT.Vtheorem (_x, _e) ->
-    assert false
-
-  | PT.Vvariable (_x, _ty, _e) ->
-    assert false
-
-  | PT.Veffect _e ->
-    assert false
-
-  | PT.Vassert _lbl ->
-    assert false
-
-  | PT.Vspecification _lbl ->
-    assert false
-
-(* -------------------------------------------------------------------- *)
-let for_verification (env : env) (v : PT.verification) =
-  List.fold_left for_verification_item env (fst (unloc v))
-
-(* -------------------------------------------------------------------- *)
 let for_role (env : env) (name : PT.lident) =
   match Env.Var.lookup env (unloc name) with
   | None ->
