@@ -50,6 +50,7 @@ type type_ =
   | Tbuiltin of btyp
   | Tcontainer of type_ * container
   | Ttuple of type_ list
+  | Tunit
   | Tentry
   | Tprog of type_
   | Tvset of vset * type_
@@ -127,10 +128,10 @@ type 'id storage_const_gen =
 type storage_const = lident storage_const_gen
 [@@deriving show {with_path = false}]
 
-type 'id call_kind =
-  | Cid of 'id
-  | Cconst of const
-  | Cstorage of 'id storage_const_gen
+type 'id app_kind =
+  | Aid of 'id
+  | Aconst of const
+  | Astorage of 'id storage_const_gen
 [@@deriving show {with_path = false}]
 
 type 'id pattern_node =
@@ -208,11 +209,26 @@ type lit_value =
   | BVduration     of string
 [@@deriving show {with_path = false}]
 
+type ('id, 'qualid) qualid_node =
+  | Qident of 'id
+  | Qdot of 'qualid * 'id
+[@@deriving show {with_path = false}]
+
+type 'id qualid_gen = {
+  node: ('id, 'id qualid_gen) qualid_node;
+  type_: type_;
+  loc : Location.t [@opaque];
+}
+[@@deriving show {with_path = false}]
+
+type qualid = lident qualid_gen
+[@@deriving show {with_path = false}]
+
 type ('id, 'term) mterm_node  =
   | Mquantifer of quantifier * 'id * type_ * 'term
   | Mif of ('term * 'term * 'term)
   | Mmatchwith of 'term * ('id pattern_gen * 'term) list
-  | Mcall of ('id option * 'id call_kind * ('id term_arg_gen) list)
+  | Mapp of ('id app_kind * ('id term_arg_gen) list)
   | Mlogical of logical_operator * 'term * 'term
   | Mnot of 'term
   | Mcomp of comparison_operator * 'term * 'term
@@ -226,11 +242,19 @@ type ('id, 'term) mterm_node  =
   | Mdot of 'term * 'id
   | Mconst of const
   | Mtuple of 'term list
+  | Mfor of ('id * 'term * 'term)
+  | Mseq of 'term list
+  | Massign of (assignment_operator * 'id * 'id mterm_gen)
+  | Mrequire of (bool * 'id mterm_gen)
+  | Mtransfer of ('id mterm_gen * bool * 'id qualid_gen option)
+  | Mbreak
+  | Massert of 'id mterm_gen
 [@@deriving show {with_path = false}]
 
 and 'id mterm_gen = {
   node: ('id, 'id mterm_gen) mterm_node;
   type_: type_;
+  subvars: ident list;
   loc : Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]
@@ -363,49 +387,10 @@ type 'id argument_gen = 'id * type_ * 'id mterm_gen option
 type argument = lident argument_gen
 [@@deriving show {with_path = false}]
 
-type ('id, 'qualid) qualid_node =
-  | Qident of 'id
-  | Qdot of 'qualid * 'id
-[@@deriving show {with_path = false}]
-
-type 'id qualid_gen = {
-  node: ('id, 'id qualid_gen) qualid_node;
-  type_: type_;
-  loc : Location.t [@opaque];
-}
-[@@deriving show {with_path = false}]
-
-type qualid = lident qualid_gen
-[@@deriving show {with_path = false}]
-
-type ('id, 'instr) instruction_node =
-  | Iif of ('id mterm_gen * 'instr * 'instr)                              (* condition * then_ * else_ *)
-  | Ifor of ('id * 'id mterm_gen * 'instr)                                (* id * collection * body *)
-  | Iletin of ('id * 'id mterm_gen * 'instr)                              (* id * init * body *)
-  | Iseq of 'instr list                                                   (* lhs ; rhs*)
-  | Imatchwith of 'id mterm_gen * ('id pattern_gen * 'instr) list         (* match 'term with ('pattern * 'instr) list *)
-  | Iassign of (assignment_operator * 'id * 'id mterm_gen)                (* $2 assignment_operator $3 *)
-  | Irequire of (bool * 'id mterm_gen)                                    (* $1 ? require : failif *)
-  | Itransfer of ('id mterm_gen * bool * 'id qualid_gen option)           (* value * back * dest *)
-  | Ibreak
-  | Iassert of 'id mterm_gen
-  | Icall of ('id mterm_gen option * 'id call_kind * ('id term_arg_gen) list)
-[@@deriving show {with_path = false}]
-
-and 'id instruction_gen = {
-  node:    ('id, 'id instruction_gen) instruction_node;
-  subvars: ident list;
-  loc:     Location.t [@opaque];
-}
-[@@deriving show {with_path = false}]
-
-and instruction = lident instruction_gen
-[@@deriving show {with_path = false}]
-
 type 'id function_struct_gen = {
   name: 'id;
   args: 'id argument_gen list;
-  body: 'id instruction_gen;
+  body: 'id mterm_gen;
   loc : Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]
@@ -559,14 +544,11 @@ let mk_qualid ?(loc = Location.dummy) node type_ : 'id qualid_gen =
 let mk_pattern ?(loc = Location.dummy) node : 'id pattern_gen =
   { node; loc}
 
-let mk_mterm ?(loc = Location.dummy) node type_ : 'id mterm_gen =
-  { node; type_; loc}
+let mk_mterm ?(subvars = []) ?(loc = Location.dummy) node type_ : 'id mterm_gen =
+  { node; type_; subvars; loc}
 
 let mk_label_term ?label ?(loc = Location.dummy) term : 'id label_term_gen =
   { label; term; loc }
-
-let mk_instruction ?(loc = Location.dummy) ?(subvars=[]) node : 'id instruction_gen =
-  { node; subvars; loc}
 
 let mk_variable ?(constant = false) ?from ?to_ ?(loc = Location.dummy) decl =
   { decl; constant; from; to_; loc }
@@ -632,8 +614,8 @@ let map_term_node (f : 'id mterm_gen -> 'id mterm_gen) = function
   | Mquantifer (q, i, t, e) -> Mquantifer (q, i, t, f e)
   | Mif (c, t, e)           -> Mif (f c, f t, f e)
   | Mmatchwith (e, l)       -> Mmatchwith (e, List.map (fun (p, e) -> (p, f e)) l)
-  | Mcall (i, e, args)      ->
-    Mcall (i, e, List.map (fun (arg : 'id term_arg_gen) -> match arg with
+  | Mapp (e, args)          ->
+    Mapp (e, List.map (fun (arg : 'id term_arg_gen) -> match arg with
         | AExpr e   -> AExpr (f e)
         | AEffect l -> AEffect (List.map (fun (id, op, e) -> (id, op, f e)) l)) args)
   | Mlogical (op, l, r)     -> Mlogical (op, f l, f r)
@@ -649,41 +631,27 @@ let map_term_node (f : 'id mterm_gen -> 'id mterm_gen) = function
   | Mdot (e, i)             -> Mdot (f e, i)
   | Mconst c                -> Mconst c
   | Mtuple l                -> Mtuple (List.map f l)
-
-let map_instr_node f = function
-  | Iif (c, t, e)       -> Iif (c, f t, f e)
-  | Ifor (i, c, b)      -> Ifor (i, c, f b)
-  | Iletin (i, c, b)    -> Iletin (i, c, f b)
-  | Iseq is             -> Iseq (List.map f is)
-  | Imatchwith (a, ps)  -> Imatchwith (a, ps)
-  | Iassign (op, l, r)  -> Iassign (op, l, r)
-  | Irequire (b, x)     -> Irequire (b, x)
-  | Itransfer x         -> Itransfer x
-  | Ibreak              -> Ibreak
-  | Iassert x           -> Iassert x
-  | Icall (x, id, args) -> Icall (x, id, args)
+  | Mfor (i, c, b)          -> Mfor (i, f c, f b)
+  | Mseq is                 -> Mseq (List.map f is)
+  | Massign (op, l, r)      -> Massign (op, f l, f r)
+  | Mrequire (b, x)         -> Mrequire (b, f x)
+  | Mtransfer (x, b, q)     -> Mtransfer (f x, b, q)
+  | Mbreak                  -> Mbreak
+  | Massert x               -> Massert (f x)
 
 let map_gen_mterm g f (i : 'id mterm_gen) : 'id mterm_gen =
   {
     i with
     node = g f i.node
   }
-
-let map_gen g f (i : 'id instruction_gen) : 'id instruction_gen =
-  {
-    i with
-    node = g f i.node
-  }
-
 let map_term  f t = map_gen_mterm map_term_node  f t
-let map_instr f i = map_gen map_instr_node f i
 
 let fold_term (f : 'a -> 't -> 'a) (accu : 'a) (term : 'id mterm_gen) =
   match term.node with
   | Mquantifer (_, _, _, e) -> f accu e
   | Mif (c, t, e)           -> f (f (f accu c) t) e
   | Mmatchwith (e, l)       -> List.fold_left (fun accu (_, a) -> f accu a) (f accu e) l
-  | Mcall (_, _, args)      -> List.fold_left (fun accu (arg : 'id term_arg_gen) -> match arg with
+  | Mapp (_, args)      -> List.fold_left (fun accu (arg : 'id term_arg_gen) -> match arg with
       | AExpr e -> f accu e
       | AEffect l -> List.fold_left (fun accu (_, _, e) -> f accu e) accu l ) accu args
   | Mlogical (_, l, r)      -> f (f accu l) r
@@ -699,36 +667,19 @@ let fold_term (f : 'a -> 't -> 'a) (accu : 'a) (term : 'id mterm_gen) =
   | Mdot (e, _)             -> f accu e
   | Mconst _                -> accu
   | Mtuple l                -> List.fold_left f accu l
+  | Mfor (i, c, b)          -> f accu b
+  | Mseq is                 -> List.fold_left f accu is
+  | Massign (_, _, e)       -> f accu e
+  | Mtransfer (x, _, _)     -> f accu x
+  | Mrequire (_, x)         -> f accu x
+  | Mbreak                  -> accu
+  | Massert x               -> f accu x
 
-let fold_instr f accu (instr : 'id instruction_gen) =
-  match instr.node with
-  | Iif (c, t, e)    -> f (f accu t) e
-  | Ifor (i, c, b)   -> f accu b
-  | Iletin (i, j, b) -> f accu b
-  | Iseq is          -> List.fold_left f accu is
-  | Imatchwith _     -> accu
-  | Iassign _        -> accu
-  | Irequire _       -> accu
-  | Itransfer _      -> accu
-  | Ibreak           -> accu
-  | Iassert _        -> accu
-  | Icall _          -> accu
-
-let fold_instr_expr fi fe accu (instr : 'id instruction_gen) =
-  match instr.node with
-  | Iif (c, t, e)       -> fi (fi (fe accu c) t) e
-  | Ifor (i, c, b)      -> fi (fe accu c) b
-  | Iletin (i, j, b)    -> fi (fe accu j) b
-  | Iseq is             -> List.fold_left fi accu is
-  | Imatchwith (a, ps)  -> List.fold_left (fun accu (_, i) -> fi accu i) (fe accu a) ps
-  | Iassign (_, _, e)   -> fe accu e
-  | Irequire (_, x)     -> fe accu x
-  | Itransfer (x, _, _) -> fe accu x
-  | Ibreak              -> accu
-  | Iassert x           -> fe accu x
-  | Icall (x, id, args) -> fi accu instr
-
-let fold_map_term g f (accu : 'a) (term : 'id mterm_gen) : 'term * 'a =
+let fold_map_term
+    (g : ('id, 'term) mterm_node -> 'term)
+    (f : 'a -> 'id mterm_gen -> 'id mterm_gen * 'a)
+    (accu : 'a)
+    (term : 'id mterm_gen) : 'term * 'a =
   match term.node with
   | Mquantifer (q, id, t, e) ->
     let ee, ea = f accu e in
@@ -751,7 +702,7 @@ let fold_map_term g f (accu : 'a) (term : 'id mterm_gen) : 'term * 'a =
 
     g (Mmatchwith (ee, l)), psa
 
-  | Mcall (a, id, args) ->
+  | Mapp (id, args) ->
     let ((argss, argsa) : 'c list * 'a) =
       List.fold_left
         (fun (pterms, accu) (x : 'id term_arg_gen) ->
@@ -762,7 +713,7 @@ let fold_map_term g f (accu : 'a) (term : 'id mterm_gen) : 'term * 'a =
            let x = match p with | Some a -> a | None -> x in
            pterms @ [x], accu) ([], accu) args
     in
-    g (Mcall (a, id, argss)), argsa
+    g (Mapp (id, argss)), argsa
 
   | Mlogical (op, l, r) ->
     let le, la = f accu l in
@@ -826,83 +777,36 @@ let fold_map_term g f (accu : 'a) (term : 'id mterm_gen) : 'term * 'a =
            pterms @ [p], accu) ([], accu) l in
     g (Mtuple lp), la
 
+  | Mfor (i, c, b) ->
+    let ce, ca = f accu c in
+    let bi, ba = f ca b in
+    g (Mfor (i, ce, bi)), ba
 
-let fold_map_instr_term gi ge fi fe (accu : 'a) (instr : 'id instruction_gen) : 'instr * 'a =
-  match instr.node with
-  | Iif (c, t, e) ->
-    let ce, ca = fe accu c in
-    let ti, ta = fi ca t in
-    let ei, ea = fi ta e in
-    gi (Iif (ce, ti, ei)), ea
+  | Mseq is ->
+    let (isi, isa) = List.fold_left
+        (fun (pterms, accu) x ->
+           let p, accu = f accu x in
+           pterms @ [p], accu) ([], accu) is in
+    g (Mseq isi), isa
 
-  | Ifor (i, c, b) ->
-    let ce, ca = fe accu c in
-    let bi, ba = fi ca b in
-    gi (Ifor (i, ce, bi)), ba
+  | Massign (op, id, x) ->
+    let xe, xa = f accu x in
+    g (Massign (op, id, xe)), xa
 
-  | Iletin (i, j, b) ->
-    let je, ja = fe accu j in
-    let bi, ba = fi ja b in
-    gi (Iletin (i, je, bi)), ba
+  | Mrequire (b, x) ->
+    let xe, xa = f accu x in
+    g (Mrequire (b, xe)), xa
 
-  | Iseq is ->
-    let (isi, isa) : ('instr list * 'a) =
-      List.fold_left
-        (fun ((instrs, accu) : ('b list * 'c)) x ->
-           let bi, accu = fi accu x in
-           instrs @ [bi], accu) ([], accu) is
-    in
-    gi (Iseq isi), isa
+  | Mtransfer (x, b, q) ->
+    let xe, xa = f accu x in
+    g (Mtransfer (xe, b, q)), xa
 
-  | Imatchwith (a, ps) ->
-    let ae, aa = fe accu a in
+  | Mbreak ->
+    g (Mbreak), accu
 
-    let (pse, psa) =
-      List.fold_left
-        (fun (ps, accu) (p, i) ->
-           let pa, accu = fi accu i in
-           [(p, i)] @ ps, accu) ([], aa) ps
-    in
-
-    gi (Imatchwith (ae, ps)), psa
-
-  | Iassign (op, id, x) ->
-    let xe, xa = fe accu x in
-    gi (Iassign (op, id, xe)), xa
-
-  | Irequire (b, x) ->
-    let xe, xa = fe accu x in
-    gi (Irequire (b, xe)), xa
-
-  | Itransfer (x, b, q) ->
-    let xe, xa = fe accu x in
-    gi (Itransfer (xe, b, q)), xa
-
-  | Ibreak ->
-    gi (Ibreak), accu
-
-  | Iassert x ->
-    let xe, xa = fe accu x in
-    gi (Iassert xe), xa
-
-  | Icall (x, id, args) ->
-    let xe, xa =
-      match x with
-      | Some x -> fe accu x |> (fun (a, b) -> (Some a, b))
-      | None -> None, accu in
-
-    let (argss, argsa) =
-      List.fold_left
-        (fun (pterms, accu) arg ->
-           match arg with
-           | AExpr x ->
-             let p, accu = fe accu x in
-             pterms @ [AExpr p], accu
-           | _ ->
-             pterms, accu
-        ) ([], xa) args
-    in
-    gi (Icall (xe, id, argss)), argsa
+  | Massert x ->
+    let xe, xa = f accu x in
+    g (Massert xe), xa
 
 
 (* -------------------------------------------------------------------- *)

@@ -182,8 +182,8 @@ let to_quantifier = function
   | A.Exists -> M.Exists
 
 let to_call_kind = function
-  | A.Cid i    -> M.Cid i
-  | A.Cconst c -> M.Cconst (to_const c)
+  | A.Cid i    -> M.Aid i
+  | A.Cconst c -> M.Aconst (to_const c)
 
 let to_lit_value (b : 'typ A.bval_gen) =
   match b.node with
@@ -203,7 +203,7 @@ let rec to_mterm_node (n : ('a, 'b, 'c) A.term_node) f (ftyp : 'b -> M.type_) : 
   | A.Lquantifer (q, i, typ, term) -> M.Mquantifer (to_quantifier q, i, ltyp_to_type typ, f term)
   | A.Pif (c, t, e)                -> M.Mif (f c, f t, f e)
   | A.Pmatchwith (m, l)            -> M.Mmatchwith (f m, List.map (fun (p, e) -> (to_pattern p, f e)) l)
-  | A.Pcall (id, ck, args)         -> M.Mcall (id, to_call_kind ck, List.map (fun x -> to_term_arg f x) args)
+  | A.Pcall (id, ck, args)         -> M.Mapp (to_call_kind ck, (Option.map_dfl (fun x -> [M.AExpr (M.mk_mterm (Mvar x) (M.Tasset x))]) [] id) @ List.map (fun x -> to_term_arg f x) args)
   | A.Plogical (op, l, r)          -> M.Mlogical (to_logical_operator op, f l, f r)
   | A.Pnot e                       -> M.Mnot (f e)
   | A.Pcomp (op, l, r)             -> M.Mcomp (to_comparison_operator op, f l, f r)
@@ -236,23 +236,23 @@ let to_label_lterm (x : ('id, ('id, A.ltype_) A.term_gen) A.label_term) : M.labe
   M.mk_label_term (lterm_to_mterm x.term) ?label:x.label ~loc:x.loc
 
 
-let to_instruction_node (n : ('a, 'b, 'c, 'd) A.instruction_node) fi ft : ('id, 'instr) M.instruction_node =
+let to_instruction_node (n : (A.lident, A.ptyp, A.pterm, A.instruction) A.instruction_node) g f : ('id, 'instr) M.mterm_node =
   match n with
-  | A.Iif (c, t, e)          -> M.Iif (ft c, fi t, fi e)
-  | A.Ifor (i, col, body)    -> M.Ifor (i, ft col, fi body)
-  | A.Iletin (i, init, cont) -> M.Iletin (i, ft init, fi cont)
-  | A.Iseq l                 -> M.Iseq (List.map fi l)
-  | A.Imatchwith (m, l)      -> M.Imatchwith (ft m, List.map (fun (p, i) -> (to_pattern p, fi i)) l)
-  | A.Iassign (op, i, e)     -> M.Iassign (to_assignment_operator op, i, to_mterm e)
-  | A.Irequire (b, t)        -> M.Irequire (b, ft t)
-  | A.Itransfer (i, b, q)    -> M.Itransfer (ft i, b, Option.map to_qualid_gen q)
-  | A.Ibreak                 -> M.Ibreak
-  | A.Iassert e              -> M.Iassert (ft e)
-  | A.Icall (i, ck, args)    -> M.Icall (Option.map to_mterm i, to_call_kind ck, List.map (to_term_arg ft) args)
+  | A.Iif (c, t, e)          -> M.Mif (f c, g t, g e)
+  | A.Ifor (i, col, body)    -> M.Mfor (i, f col, g body)
+  | A.Iletin (i, init, cont) -> M.Mletin (i, f init, None, g cont) (* TODO *)
+  | A.Iseq l                 -> M.Mseq (List.map g l)
+  | A.Imatchwith (m, l)      -> M.Mmatchwith (f m, List.map (fun (p, i) -> (to_pattern p, g i)) l)
+  | A.Iassign (op, i, e)     -> M.Massign (to_assignment_operator op, i, to_mterm e)
+  | A.Irequire (b, t)        -> M.Mrequire (b, f t)
+  | A.Itransfer (i, b, q)    -> M.Mtransfer (f i, b, Option.map to_qualid_gen q)
+  | A.Ibreak                 -> M.Mbreak
+  | A.Iassert e              -> M.Massert (f e)
+  | A.Icall (i, ck, args)    -> M.Mapp (to_call_kind ck, List.map (to_term_arg f) args) (* Option.map to_mterm i *)
 
-let rec to_instruction (instr : A.instruction) : M.instruction =
+let rec to_instruction (instr : A.instruction) : M.mterm =
   let node = to_instruction_node instr.node to_instruction to_mterm in
-  M.mk_instruction node ~subvars:instr.subvars ~loc:instr.loc
+  M.mk_mterm node (M.Tunit) ~subvars:instr.subvars ~loc:instr.loc
 
 let to_predicate (p : ('a, A.ptyp) A.predicate) : M.predicate =
   M.mk_predicate p.name (lterm_to_mterm p.body) ~args:(List.map (fun (id, body) -> (id, lterm_to_mterm body)) p.args) ~loc:p.loc
@@ -402,7 +402,7 @@ let to_model (ast : A.model) : M.model =
 
   let cont f x l = List.fold_left (fun accu x -> f x accu) l x in
 
-  let process_fun_gen name args (body : M.instruction) loc verif f (list : M.function__ list) : M.function__ list =
+  let process_fun_gen name args (body : M.mterm) loc verif f (list : M.function__ list) : M.function__ list =
     let node = f (M.mk_function_struct name body
                     ~args:args
                     ~loc:loc) in
@@ -440,16 +440,6 @@ let to_model (ast : A.model) : M.model =
       else
         i::l
     in
-    let is_global_asset (asset_name : M.lident) (e : (M.term_arg option)) =
-      match e with
-      | Some AExpr {node = Mvar {pldesc = id; _}; _} when String.equal (Location.unloc asset_name) id -> true
-      | _ -> false
-    in
-    let get_first_arg asset_name (e : M.term_arg option) : M.term_arg option =
-      if (is_global_asset asset_name e)
-      then None
-      else e
-    in
     let extract_field asset_name (args : M.term_arg list) : M.lident =
       let asset_items : string list = A.Utils.get_field_list ast asset_name |> List.map Location.unloc in
       let is_ident_field_name (id : M.lident) : bool =
@@ -471,99 +461,43 @@ let to_model (ast : A.model) : M.model =
         emit_error CannotExtractField
     in
 
-    let mk_function t field_name c (e : M.term_arg option) (args : M.term_arg list) : (M.storage_const * M.term_arg option) option =
-      let node = match t, field_name, c with
-        | M.Tcontainer (Tasset asset, _), None, M.Cget      -> Some (M.Get asset, get_first_arg asset e)
-        | M.Tcontainer (Tasset asset, _), None, M.Cadd      -> Some (M.Add asset, get_first_arg asset e)
-        | M.Tcontainer (Tasset asset, _), None, M.Cremove   -> Some (M.Remove asset, get_first_arg asset e)
-        | M.Tcontainer (Tasset asset, _), None, M.Cclear    -> Some (M.Clear asset, get_first_arg asset e)
-        | M.Tcontainer (Tasset asset, _), None, M.Cupdate   -> Some (M.Update asset, get_first_arg asset e)
-        | M.Tcontainer (Tasset asset, _), None, M.Creverse  -> Some (M.Reverse asset, get_first_arg asset e)
-        | M.Tcontainer (Tasset asset, _), None, M.Csort     -> Some (M.Sort asset, get_first_arg asset e)
-        | M.Tcontainer (Tasset asset, _), None, M.Ccontains -> Some (M.Contains asset, get_first_arg asset e)
-        | M.Tcontainer (Tasset asset, _), None, M.Cnth      -> Some (M.Nth asset, get_first_arg asset e)
-        | M.Tcontainer (Tasset asset, _), None, M.Cselect   -> Some (M.Select asset, get_first_arg asset e)
-        | M.Tcontainer (Tasset asset, _), None, M.Ccount    -> Some (M.Count asset, get_first_arg asset e)
-        | M.Tcontainer (Tasset asset, _), None, M.Csum      -> Some (M.Sum (asset, extract_field asset args), get_first_arg asset e)
-        | M.Tcontainer (Tasset asset, _), None, M.Cmin      -> Some (M.Min (asset, extract_field asset args), get_first_arg asset e)
-        | M.Tcontainer (Tasset asset, _), None, M.Cmax      -> Some (M.Max (asset, extract_field asset args), get_first_arg asset e)
-        | _ -> None in
-      match node with
-      | Some (node, x) -> Some (node, x)
+    let mk_function c (args : M.term_arg list) : M.storage_const option =
+      match c, args with
+      | M.Cget     , [ AExpr { type_ = M.Tcontainer (Tasset asset, _); _}] -> Some (M.Get asset)
+      | M.Cadd     , [ AExpr { type_ = M.Tcontainer (Tasset asset, _); _}] -> Some (M.Add asset)
+      | M.Cremove  , [ AExpr { type_ = M.Tcontainer (Tasset asset, _); _}] -> Some (M.Remove asset)
+      | M.Cclear   , [ AExpr { type_ = M.Tcontainer (Tasset asset, _); _}] -> Some (M.Clear asset)
+      | M.Cupdate  , [ AExpr { type_ = M.Tcontainer (Tasset asset, _); _}] -> Some (M.Update asset)
+      | M.Creverse , [ AExpr { type_ = M.Tcontainer (Tasset asset, _); _}] -> Some (M.Reverse asset)
+      | M.Csort    , [ AExpr { type_ = M.Tcontainer (Tasset asset, _); _}] -> Some (M.Sort asset)
+      | M.Ccontains, [ AExpr { type_ = M.Tcontainer (Tasset asset, _); _}] -> Some (M.Contains asset)
+      | M.Cnth     , [ AExpr { type_ = M.Tcontainer (Tasset asset, _); _}] -> Some (M.Nth asset)
+      | M.Cselect  , [ AExpr { type_ = M.Tcontainer (Tasset asset, _); _}] -> Some (M.Select asset)
+      | M.Ccount   , [ AExpr { type_ = M.Tcontainer (Tasset asset, _); _}] -> Some (M.Count asset)
+      | M.Csum     , [ AExpr { type_ = M.Tcontainer (Tasset asset, _); _}] -> Some (M.Sum (asset, extract_field asset args))
+      | M.Cmin     , [ AExpr { type_ = M.Tcontainer (Tasset asset, _); _}] -> Some (M.Min (asset, extract_field asset args))
+      | M.Cmax     , [ AExpr { type_ = M.Tcontainer (Tasset asset, _); _}] -> Some (M.Max (asset, extract_field asset args))
       | _ -> None
     in
 
     let ge (e : M.mterm) = (fun node -> { e with node = node }) in
 
-    let rec fe accu (term : M.mterm) : M.mterm * M.api_item list =
+    let rec fe (accu : M.api_item list) (term : M.mterm) : M.mterm * M.api_item list =
       match term.node with
-      | M.Mcall (Some asset_name, Cconst c, args) -> (
+      | M.Mapp (Aconst c, args) -> (
           let _, accu = M.fold_map_term (fun node -> {term with node = node} ) fe accu term in
-          let function__ = mk_function (M.Tcontainer (Tasset asset_name, Collection)) None c (Some (M.AExpr (M.mk_mterm (Mvar asset_name) (Tasset asset_name)))) args in
+          let function__ = mk_function c args in
           let term, accu =
             match function__ with
-            | Some (const, _) -> (
-                {term with node = M.Mcall (None, Cstorage const, args) }, add accu (M.APIStorage const)
+            | Some const -> (
+                {term with node = M.Mapp (Astorage const, args) }, add accu (M.APIStorage const)
               )
             | None -> term, accu in
           term, accu
         )
       | _ -> M.fold_map_term (ge term) fe accu term in
 
-    let extract_function_from_instruction (instr : M.instruction) (list : M.api_item list) : (M.instruction * M.api_item list) =
-
-      let process_instr accu t (c : M.const) field_name gi fi node (args : M.term_arg list) =
-        let a =
-          match node with
-          | M.Icall (a, _, _) -> a
-          | _ -> emit_error TODO in
-
-        let xe, xa =
-          match a with
-          | Some x -> fe accu x |> (fun (a, b) -> (Some a, b))
-          | None -> None, accu in
-
-        let (argss, argsa) =
-          List.fold_left
-            (fun (pterms, accu) arg ->
-               match arg with
-               | M.AExpr x ->
-                 let p, accu = fe accu x in
-                 [M.AExpr p] @ pterms, accu
-               | _ -> (pterms, accu) (*TODO*))
-            ([], xa) args
-        in
-
-        let first_arg = Option.map (fun x -> M.AExpr x) xe in
-        let function__ = mk_function t field_name c first_arg argss in
-        let instr, accu =
-          match function__ with
-          | Some (const, arg) -> (
-              let new_args =
-                match argss, arg with
-                | _, Some arg -> arg::argss
-                | _ -> argss in
-              {instr with node = M.Icall (None, Cstorage const, new_args) }, add argsa (M.APIStorage const)
-            )
-          | None -> instr, accu in
-        instr, accu in
-
-      let rec fi accu (instr : M.instruction) : M.instruction * M.api_item list =
-        let gi = (fun node -> {instr with node = node}) in
-        match instr.node with
-        | M.Icall (Some {node = M.Mdot ({type_ = t; _}, id); _}, M.Cconst c, args) ->
-          process_instr accu t c (Some id) gi fi instr.node args
-
-        | M.Icall (Some {type_ = t; _}, Cconst c, args) ->
-          process_instr accu t c None gi fi instr.node args
-
-        | _ ->
-          M.fold_map_instr_term (fun node -> { instr with node = node } ) ge fi fe accu instr
-
-      in
-      fi list instr in
-
-    let process_mterm accu expr : M.mterm * M.api_item list =
+    let process_mterm (accu : M.api_item list) (expr : M.mterm) : M.mterm * M.api_item list =
       fe accu expr
     in
 
@@ -679,7 +613,7 @@ let to_model (ast : A.model) : M.model =
     in
 
     let update_function_struct accu (fs : M.function_struct) : M.function_struct * M.api_item list =
-      let instr, accu = extract_function_from_instruction fs.body accu in
+      let instr, accu = process_mterm accu fs.body in
       { fs with body = instr}, accu
     in
 
