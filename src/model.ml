@@ -129,9 +129,13 @@ type storage_const = lident storage_const_gen
 [@@deriving show {with_path = false}]
 
 type 'id app_kind =
-  | Aid of 'id
+  | Alocal of 'id
   | Aconst of const
   | Astorage of 'id storage_const_gen
+  | Aset of const
+  | Abuiltin of const
+  (* | Aapp of 'id app_const_gen *)
+  | Aexternal of 'id * 'id  (* contract type * fun entry *)
 [@@deriving show {with_path = false}]
 
 type 'id pattern_node =
@@ -224,11 +228,20 @@ type 'id qualid_gen = {
 type qualid = lident qualid_gen
 [@@deriving show {with_path = false}]
 
+type 'id var_kind =
+  | Vstorevar of 'id
+  | Vstorecol of 'id (* asset_name *)
+  | Vparam of 'id
+  | Vlocal of 'id
+  | Vconst of const
+[@@deriving show {with_path = false}]
+
 type ('id, 'term) mterm_node  =
   | Mquantifer of quantifier * 'id * type_ * 'term
   | Mif of ('term * 'term * 'term)
   | Mmatchwith of 'term * ('id pattern_gen * 'term) list
   | Mapp of ('id app_kind * ('id term_arg_gen) list)
+  | Mappset of const * 'id mterm_gen
   | Mlogical of logical_operator * 'term * 'term
   | Mnot of 'term
   | Mcomp of comparison_operator * 'term * 'term
@@ -236,7 +249,7 @@ type ('id, 'term) mterm_node  =
   | Muarith of unary_arithmetic_operator * 'term
   | Mrecord of 'term list
   | Mletin of 'id * 'term * type_ option * 'term
-  | Mvar of 'id
+  | Mvar of 'id var_kind
   | Marray of 'term list
   | Mlit of lit_value
   | Mdot of 'term * 'id
@@ -618,6 +631,7 @@ let map_term_node (f : 'id mterm_gen -> 'id mterm_gen) = function
     Mapp (e, List.map (fun (arg : 'id term_arg_gen) -> match arg with
         | AExpr e   -> AExpr (f e)
         | AEffect l -> AEffect (List.map (fun (id, op, e) -> (id, op, f e)) l)) args)
+  | Mappset (c, e)          -> Mappset (c, f e)
   | Mlogical (op, l, r)     -> Mlogical (op, f l, f r)
   | Mnot e                  -> Mnot (f e)
   | Mcomp (c, l, r)         -> Mcomp (c, f l, f r)
@@ -654,6 +668,7 @@ let fold_term (f : 'a -> 't -> 'a) (accu : 'a) (term : 'id mterm_gen) =
   | Mapp (_, args)      -> List.fold_left (fun accu (arg : 'id term_arg_gen) -> match arg with
       | AExpr e -> f accu e
       | AEffect l -> List.fold_left (fun accu (_, _, e) -> f accu e) accu l ) accu args
+  | Mappset (c, e)          -> f accu e
   | Mlogical (_, l, r)      -> f (f accu l) r
   | Mnot e                  -> f accu e
   | Mcomp (_, l, r)         -> f (f accu l) r
@@ -714,6 +729,10 @@ let fold_map_term
            pterms @ [x], accu) ([], accu) args
     in
     g (Mapp (id, argss)), argsa
+
+  | Mappset (c, e) ->
+    let ee, ea = f accu e in
+    g (Mappset (c, ee)), ea
 
   | Mlogical (op, l, r) ->
     let le, la = f accu l in
