@@ -74,6 +74,7 @@ type error_desc =
   | InvalidInstruction
   | InvalidNumberOfArguments           of int * int
   | InvalidStateExpression
+  | LetInElseInInstruction
   | MissingFieldInRecordLiteral        of ident
   | MixedAnonInRecordLiteral
   | MixedFieldNamesInRecordLiteral     of ident list
@@ -1402,6 +1403,24 @@ let rec for_instruction (env : env) (i : PT.expr) : M.instruction =
         let cif  = Option.get_dfl (mki (Iseq [])) cif in
         mki (M.Iif (c, cit, cif))
 
+    | Eletin (x, ty, e1, e2, eo) ->
+        if Option.is_some eo then
+          Env.emit_error env (loc i, LetInElseInInstruction);
+        let ty = Option.bind (for_type env) ty in
+        let e  = for_expr env ?ety:ty e1 in
+        let _env, body =
+          Env.inscope env (fun env ->
+            let env =
+              if check_and_emit_name_free env x then
+                if Option.is_some e.M.type_ then
+                  Env.Local.push env (unloc x, Option.get e.M.type_)
+                else env
+              else env in
+  
+            (env, for_instruction env e2)) in
+
+         mki (M.Iletin (x, e, body))
+
     | _ ->
         Env.emit_error env (loc i, InvalidInstruction);
         bailout ()
@@ -1590,7 +1609,8 @@ let for_declaration (env : env) (decl : PT.declaration) =
 
   | Daction (x, args, pt, i_exts, _exts) -> begin
       let env, _ =
-        Env.inscope (fst (for_args_decl env args)) (fun env ->
+        Env.inscope env (fun env ->
+          let env     = (fst (for_args_decl env args)) in
           let _effect = Option.map (for_instruction env) (Option.fst i_exts) in
           let _callby = Option.map (for_callby env) (Option.fst pt.calledby) in
           let _callby = Option.get_dfl [] _callby in
