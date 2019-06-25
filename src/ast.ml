@@ -903,6 +903,9 @@ module Utils : sig
   val get_container_asset_field : model -> (lident * lident ) -> container
   val get_named_field_list      : model -> lident -> pterm list -> (lident * pterm) list
   val get_field_list            : model -> lident -> lident list
+  val is_enum                   : model -> lident -> bool
+  val is_asset                  : model -> lident -> bool
+  val is_contract               : model -> lident -> bool
 
 end = struct
   open Tools
@@ -959,6 +962,16 @@ end = struct
        Format.eprintf "lf1: %d@." (List.length field_list);
        Format.eprintf "lf2: %d@." (List.length list); *)
     List.map2 (fun x y -> x, y) field_list list
+
+  let is_enum ast ident =
+    List.fold_left (fun accu (x : ('id, 'typ, 'term) enum_struct) -> accu || (Location.unloc x.name) = (Location.unloc ident)) false ast.enums
+
+  let is_asset ast ident =
+    List.fold_left (fun accu (x : ('id, 'typ, 'term) asset_struct) -> accu || (Location.unloc x.name) = (Location.unloc ident)) false ast.assets
+
+  let is_contract ast ident =
+    List.fold_left (fun accu (x : ('id, 'typ, 'term) contract) -> accu || (Location.unloc x.name) = (Location.unloc ident)) false ast.contracts
+
 end
 
 (* -------------------------------------------------------------------- *)

@@ -7,7 +7,6 @@ module M = Model
 exception Anomaly of string
 type error_desc =
   | NotSupportedContainer of string
-  | CannotExtractField
   | UnsupportedTypeForFile of A.type_
   | TODO
 [@@deriving show {with_path = false}]
@@ -16,309 +15,411 @@ let emit_error (desc : error_desc) =
   let str = Format.asprintf "%a@." pp_error_desc desc in
   raise (Anomaly str)
 
-type enum_item_struct = (A.lident, A.type_, A.pterm) A.enum_item_struct
-type verification     = (A.lident, A.type_, A.pterm) A.verification
-type record           = (A.lident, A.type_, A.pterm) A.decl_gen
-type field            = (A.lident, A.type_, A.pterm) A.decl_gen
-type variable         = (A.lident, A.type_, A.pterm) A.variable
-
-let to_container c =
-  match c with
-  | A.Collection -> M.Collection
-  | A.Partition  -> M.Partition
-  | _            -> emit_error (NotSupportedContainer (Format.asprintf "%a@." A.pp_container c))
-
-let to_currency = function
-  | A.Tez   -> M.Tez
-  | A.Mutez -> M.Mutez
-
-let vtyp_to_btyp = function
-  | A.VTbool       -> M.Bbool
-  | A.VTint        -> M.Bint
-  | A.VTuint       -> M.Buint
-  | A.VTrational   -> M.Brational
-  | A.VTdate       -> M.Bdate
-  | A.VTduration   -> M.Bduration
-  | A.VTstring     -> M.Bstring
-  | A.VTaddress    -> M.Baddress
-  | A.VTrole       -> M.Brole
-  | A.VTcurrency c -> M.Bcurrency (to_currency c)
-  | A.VTkey        -> M.Bkey
-
-let rec ptyp_to_type t : M.type_ =
-  match t with
-  | A.Tasset id          -> M.Tasset id
-  | A.Tenum id           -> M.Tenum id
-  | A.Tcontract id       -> M.Tcontract id
-  | A.Tbuiltin b         -> M.Tbuiltin (vtyp_to_btyp b)
-  | A.Tcontainer (t, c)  -> M.Tcontainer (ptyp_to_type t, to_container c)
-  | A.Ttuple l           -> M.Ttuple (List.map ptyp_to_type l)
-  | A.Tentry             -> M.Tentry
-
-let to_vset = function
-  | A.VSremoved -> M.VSremoved
-  | A.VSadded   -> M.VSadded
-  | A.VSstable  -> M.VSstable
-  | A.VSbefore  -> M.VSbefore
-  | A.VSafter   -> M.VSafter
-  | A.VSfixed   -> M.VSfixed
-
-let to_trtyp = function
-  | A.TRentry  -> M.TRentry
-  | A.TRaction -> M.TRaction
-  | A.TRasset  -> M.TRasset
-  | A.TRfield  -> M.TRfield
-
-let rec ltyp_to_type t : M.type_ =
-  match t with
-  | A.LTprog t      -> ptyp_to_type t
-  | A.LTvset (v, t) -> ltyp_to_type t
-  | A.LTtrace tr    -> M.Ttrace (to_trtyp tr)
-
-let to_logical_operator = function
-  | A.And   -> M.And
-  | A.Or    -> M.Or
-  | A.Imply -> M.Imply
-  | A.Equiv -> M.Equiv
-
-let to_comparison_operator = function
-  | A.Equal  -> M.Equal
-  | A.Nequal -> M.Nequal
-  | A.Gt     -> M.Gt
-  | A.Ge     -> M.Ge
-  | A.Lt     -> M.Lt
-  | A.Le     -> M.Le
-
-let to_arithmetic_operator = function
-  | A.Plus   -> M.Plus
-  | A.Minus  -> M.Minus
-  | A.Mult   -> M.Mult
-  | A.Div    -> M.Div
-  | A.Modulo -> M.Modulo
-
-let to_unary_arithmetic_operator = function
-  | A.Uplus  -> M.Uplus
-  | A.Uminus -> M.Uminus
-
-let to_assignment_operator = function
-  | A.ValueAssign  -> M.ValueAssign
-  | A.PlusAssign   -> M.PlusAssign
-  | A.MinusAssign  -> M.MinusAssign
-  | A.MultAssign   -> M.MultAssign
-  | A.DivAssign    -> M.DivAssign
-  | A.AndAssign    -> M.AndAssign
-  | A.OrAssign     -> M.OrAssign
-
-let to_operator = function
-  | `Logical op -> `Logical (to_logical_operator op)
-  | `Cmp     op -> `Cmp     (to_comparison_operator op)
-  | `Arith   op -> `Arith   (to_arithmetic_operator op)
-  | `Unary   op -> `Unary   (to_unary_arithmetic_operator op)
-  | `Assign  op -> `Assign  (to_assignment_operator op)
-
-let to_const = function
-  | A.Cstate                      -> M.Cstate
-  | A.Cnow                        -> M.Cnow
-  | A.Ctransferred                -> M.Ctransferred
-  | A.Ccaller                     -> M.Ccaller
-  | A.Cfail                       -> M.Cfail
-  | A.Cbalance                    -> M.Cbalance
-  | A.Cconditions                 -> M.Cconditions
-  | A.Cactions                    -> M.Cactions
-  | A.Cnone                       -> M.Cnone
-  | A.Cany                        -> M.Cany
-  | A.Canyaction                  -> M.Canyaction
-  | A.Cget                        -> M.Cget
-  | A.Cadd                        -> M.Cadd
-  | A.Caddnofail                  -> M.Caddnofail
-  | A.Cremove                     -> M.Cremove
-  | A.Cremovenofail               -> M.Cremovenofail
-  | A.Cremoveif                   -> M.Cremoveif
-  | A.Cupdate                     -> M.Cupdate
-  | A.Cupdatenofail               -> M.Cupdatenofail
-  | A.Cclear                      -> M.Cclear
-  | A.Ccontains                   -> M.Ccontains
-  | A.Cnth                        -> M.Cnth
-  | A.Creverse                    -> M.Creverse
-  | A.Cselect                     -> M.Cselect
-  | A.Csort                       -> M.Csort
-  | A.Ccount                      -> M.Ccount
-  | A.Csum                        -> M.Csum
-  | A.Cmax                        -> M.Cmax
-  | A.Cmin                        -> M.Cmin
-  | A.Cbefore                     -> M.Cbefore
-  | A.Cunmoved                    -> M.Cunmoved
-  | A.Cadded                      -> M.Cadded
-  | A.Cremoved                    -> M.Cremoved
-  | A.Citerated                   -> M.Citerated
-  | A.Ctoiterate                  -> M.Ctoiterate
-  | A.Cmaybeperformedonlybyrole   -> M.Cmaybeperformedonlybyrole
-  | A.Cmaybeperformedonlybyaction -> M.Cmaybeperformedonlybyaction
-  | A.Cmaybeperformedbyrole       -> M.Cmaybeperformedbyrole
-  | A.Cmaybeperformedbyaction     -> M.Cmaybeperformedbyaction
-
-
-let rec to_qualid_node (n : ('a, 'b) A.qualid_node) : ('id, 'qualid) M.qualid_node =
-  match n with
-  | A.Qident i    -> M.Qident i
-  | A.Qdot (d, i) -> M.Qdot (to_qualid_gen d, i)
-
-and to_qualid_gen (q : A.qualid) : M.qualid =
-  let node = to_qualid_node q.node in
-  let type_ = ptyp_to_type (Option.get q.type_) in
-  M.mk_qualid node type_
-
-let to_pattern_node (n : ('a, 'b) A.pattern_node) : 'id M.pattern_node =
-  match n with
-  | A.Mconst id -> M.Pconst id
-  | A.Mwild    -> M.Pwild
-
-let to_pattern (p : A.pattern) : M.pattern =
-  let node = to_pattern_node p.node in
-  M.mk_pattern node ~loc:p.loc
-
-let to_quantifier = function
-  | A.Forall -> M.Forall
-  | A.Exists -> M.Exists
-
-let to_call_kind = function
-  | A.Cid i    -> M.Aid i
-  | A.Cconst c -> M.Aconst (to_const c)
-
-let to_lit_value (b : 'typ A.bval_gen) =
-  match b.node with
-  | A.BVint i           -> M.BVint i
-  | A.BVuint i          -> M.BVuint i
-  | A.BVbool b          -> M.BVbool b
-  | A.BVenum s          -> M.BVenum s
-  | A.BVrational (d, n) -> M.BVrational (d, n)
-  | A.BVdate s          -> M.BVdate s
-  | A.BVstring s        -> M.BVstring s
-  | A.BVcurrency (c, i) -> M.BVcurrency (to_currency c, i)
-  | A.BVaddress s       -> M.BVaddress s
-  | A.BVduration s      -> M.BVduration s
-
-let rec to_mterm_node (n : ('a, 'b, 'c) A.term_node) f (ftyp : 'b -> M.type_) : ('id, 'term) M.mterm_node =
-  match n with
-  | A.Lquantifer (q, i, typ, term) -> M.Mquantifer (to_quantifier q, i, ltyp_to_type typ, f term)
-  | A.Pif (c, t, e)                -> M.Mif (f c, f t, f e)
-  | A.Pmatchwith (m, l)            -> M.Mmatchwith (f m, List.map (fun (p, e) -> (to_pattern p, f e)) l)
-  | A.Pcall (id, ck, args)         -> M.Mapp (to_call_kind ck, (Option.map_dfl (fun x -> [M.AExpr (M.mk_mterm (Mvar x) (M.Tasset x))]) [] id) @ List.map (fun x -> to_term_arg f x) args)
-  | A.Plogical (op, l, r)          -> M.Mlogical (to_logical_operator op, f l, f r)
-  | A.Pnot e                       -> M.Mnot (f e)
-  | A.Pcomp (op, l, r)             -> M.Mcomp (to_comparison_operator op, f l, f r)
-  | A.Parith (op, l, r)            -> M.Marith (to_arithmetic_operator op, f l, f r)
-  | A.Puarith (op, e)              -> M.Muarith (to_unary_arithmetic_operator op, f e)
-  | A.Precord l                    -> M.Mrecord (List.map f l)
-  | A.Pletin (id, init, typ, cont) -> M.Mletin (id, f init, Option.map ftyp typ, f cont)
-  | A.Pvar id                      -> M.Mvar id
-  | A.Parray l                     -> M.Marray (List.map f l)
-  | A.Plit lit                     -> M.Mlit (to_lit_value lit)
-  | A.Pdot (d, i)                  -> M.Mdot (f d, i)
-  | A.Pconst c                     -> M.Mconst (to_const c)
-  | A.Ptuple l                     -> M.Mtuple (List.map f l)
-
-and to_term_arg f = function
-  | A.AExpr x -> M.AExpr (f x)
-  | A.AEffect l -> M.AEffect (List.map (fun (id, op, term) -> (id, to_operator op, f term)) l)
-
-let rec to_mterm (pterm : A.pterm) : M.mterm =
-  let node = to_mterm_node pterm.node to_mterm ptyp_to_type in
-  let type_ = ptyp_to_type (Option.get pterm.type_) in
-  M.mk_mterm node type_ ~loc:pterm.loc
-
-let rec lterm_to_mterm (lterm : A.lterm) : M.mterm =
-  let node = to_mterm_node lterm.node lterm_to_mterm ltyp_to_type in
-  let type_ = ltyp_to_type (Option.get lterm.type_) in
-  M.mk_mterm node type_ ~loc:lterm.loc
-
-let to_label_lterm (x : ('id, ('id, A.ltype_) A.term_gen) A.label_term) : M.label_term =
-  M.mk_label_term (lterm_to_mterm x.term) ?label:x.label ~loc:x.loc
-
-
-let to_instruction_node (n : (A.lident, A.ptyp, A.pterm, A.instruction) A.instruction_node) g f : ('id, 'instr) M.mterm_node =
-  match n with
-  | A.Iif (c, t, e)          -> M.Mif (f c, g t, g e)
-  | A.Ifor (i, col, body)    -> M.Mfor (i, f col, g body)
-  | A.Iletin (i, init, cont) -> M.Mletin (i, f init, None, g cont) (* TODO *)
-  | A.Iseq l                 -> M.Mseq (List.map g l)
-  | A.Imatchwith (m, l)      -> M.Mmatchwith (f m, List.map (fun (p, i) -> (to_pattern p, g i)) l)
-  | A.Iassign (op, i, e)     -> M.Massign (to_assignment_operator op, i, to_mterm e)
-  | A.Irequire (b, t)        -> M.Mrequire (b, f t)
-  | A.Itransfer (i, b, q)    -> M.Mtransfer (f i, b, Option.map to_qualid_gen q)
-  | A.Ibreak                 -> M.Mbreak
-  | A.Iassert e              -> M.Massert (f e)
-  | A.Icall (i, ck, args)    -> M.Mapp (to_call_kind ck, List.map (to_term_arg f) args) (* Option.map to_mterm i *)
-
-let rec to_instruction (instr : A.instruction) : M.mterm =
-  let node = to_instruction_node instr.node to_instruction to_mterm in
-  M.mk_mterm node (M.Tunit) ~subvars:instr.subvars ~loc:instr.loc
-
-let to_predicate (p : ('a, A.ptyp) A.predicate) : M.predicate =
-  M.mk_predicate p.name (lterm_to_mterm p.body) ~args:(List.map (fun (id, body) -> (id, lterm_to_mterm body)) p.args) ~loc:p.loc
-
-let to_definition (d : ('a, A.ptyp) A.definition ): M.definition =
-  M.mk_definition d.name (ptyp_to_type d.typ) d.var (lterm_to_mterm d.body) ~loc:d.loc
-
-let to_variable (v : (A.lident, A.ptyp, A.pterm) A.variable) : M.variable =
-  M.mk_variable
-    ((fun (arg : (A.lident, A.ptyp, A.pterm) A.decl_gen) : (M.lident * M.type_ * M.mterm option) ->
-        (arg.name, ptyp_to_type (Option.get arg.typ), Option.map to_mterm arg.default)) v.decl)
-    ~constant:v.constant
-    ?from:(Option.map to_qualid_gen v.from)
-    ?to_:(Option.map to_qualid_gen v.to_)
-    ~loc:v.loc
-
-let to_invariant (i : (A.lident, A.ptyp) A.invariant) :M.invariant  =
-  M.mk_invariant i.label ~formulas:(List.map lterm_to_mterm i.formulas)
-
-let to_spec (s : (A.lident, A.type_) A.specification) : M.specification  =
-  M.mk_specification s.name (lterm_to_mterm s.formula) ~invariants:(List.map to_invariant s.invariants)
-
-let to_assert (a : (A.lident, A.type_) A.assert_) : M.assert_  =
-  M.mk_assert a.name a.label (lterm_to_mterm a.formula) ~invariants:(List.map to_invariant a.invariants)
-
-let to_verification (v : (A.lident, A.ptyp, A.pterm) A.verification) : M.verification =
-  let predicates  = List.map to_predicate   v.predicates  in
-  let definitions = List.map to_definition  v.definitions in
-  let axioms      = List.map to_label_lterm v.axioms      in
-  let theorems    = List.map to_label_lterm v.theorems    in
-  let variables   = List.map (fun x -> to_variable x) v.variables in
-  let invariants  = List.map (fun (a, l) -> (a, List.map (fun x -> to_label_lterm x) l)) v.invariants in
-  let effects      = Option.map_dfl (fun x -> [to_mterm x]) [] v.effect      in
-  let specs       = List.map to_spec        v.specs       in
-  let asserts     = List.map to_assert      v.asserts     in
-  M.mk_verification
-    ~predicates:predicates
-    ~definitions:definitions
-    ~axioms:axioms
-    ~theorems:theorems
-    ~variables:variables
-    ~invariants:invariants
-    ~effects:effects
-    ~specs:specs
-    ~asserts:asserts
-    ~loc:v.loc ()
-
-let cont_verification (v : (A.lident, A.ptyp, A.pterm) A.verification) (verif : M.verification) : M.verification =
-  let v = to_verification v in
-  { verif with
-    predicates  = verif.predicates @ v.predicates;
-    definitions = verif.definitions @ v.definitions;
-    axioms      = verif.axioms @ v.axioms;
-    theorems    = verif.theorems @ v.theorems;
-    variables   = verif.variables @ v.variables;
-    invariants  = verif.invariants @ v.invariants;
-    effects     = verif.effects @ v.effects;
-    specs       = verif.specs @ v.specs;
-    asserts     = verif.asserts @ v.asserts;
-    loc         = Location.merge verif.loc v.loc;
-  }
-
 let to_model (ast : A.model) : M.model =
+
+
+  let to_container c =
+    match c with
+    | A.Collection -> M.Collection
+    | A.Partition  -> M.Partition
+    | _            -> emit_error (NotSupportedContainer (Format.asprintf "%a@." A.pp_container c))
+  in
+
+  let to_currency = function
+    | A.Tez   -> M.Tez
+    | A.Mutez -> M.Mutez
+  in
+
+  let vtyp_to_btyp = function
+    | A.VTbool       -> M.Bbool
+    | A.VTint        -> M.Bint
+    | A.VTuint       -> M.Buint
+    | A.VTrational   -> M.Brational
+    | A.VTdate       -> M.Bdate
+    | A.VTduration   -> M.Bduration
+    | A.VTstring     -> M.Bstring
+    | A.VTaddress    -> M.Baddress
+    | A.VTrole       -> M.Brole
+    | A.VTcurrency c -> M.Bcurrency (to_currency c)
+    | A.VTkey        -> M.Bkey
+  in
+
+  let rec ptyp_to_type (t : A.ptyp) : M.type_ =
+    match t with
+    | A.Tasset id          -> M.Tasset id
+    | A.Tenum id           -> M.Tenum id
+    | A.Tcontract id       -> M.Tcontract id
+    | A.Tbuiltin b         -> M.Tbuiltin (vtyp_to_btyp b)
+    | A.Tcontainer (t, c)  -> M.Tcontainer (ptyp_to_type t, to_container c)
+    | A.Ttuple l           -> M.Ttuple (List.map ptyp_to_type l)
+    | A.Tentry             -> M.Tentry
+  in
+
+  (* let to_vset = function
+     | A.VSremoved -> M.VSremoved
+     | A.VSadded   -> M.VSadded
+     | A.VSstable  -> M.VSstable
+     | A.VSbefore  -> M.VSbefore
+     | A.VSafter   -> M.VSafter
+     | A.VSfixed   -> M.VSfixed
+     in *)
+
+  let to_trtyp = function
+    | A.TRentry  -> M.TRentry
+    | A.TRaction -> M.TRaction
+    | A.TRasset  -> M.TRasset
+    | A.TRfield  -> M.TRfield
+  in
+
+  let rec ltyp_to_type t : M.type_ =
+    match t with
+    | A.LTprog t      -> ptyp_to_type t
+    | A.LTvset (v, t) -> ltyp_to_type t
+    | A.LTtrace tr    -> M.Ttrace (to_trtyp tr)
+  in
+
+  let to_logical_operator = function
+    | A.And   -> M.And
+    | A.Or    -> M.Or
+    | A.Imply -> M.Imply
+    | A.Equiv -> M.Equiv
+  in
+
+  let to_comparison_operator = function
+    | A.Equal  -> M.Equal
+    | A.Nequal -> M.Nequal
+    | A.Gt     -> M.Gt
+    | A.Ge     -> M.Ge
+    | A.Lt     -> M.Lt
+    | A.Le     -> M.Le
+  in
+
+  let to_arithmetic_operator = function
+    | A.Plus   -> M.Plus
+    | A.Minus  -> M.Minus
+    | A.Mult   -> M.Mult
+    | A.Div    -> M.Div
+    | A.Modulo -> M.Modulo
+  in
+
+  let to_unary_arithmetic_operator = function
+    | A.Uplus  -> M.Uplus
+    | A.Uminus -> M.Uminus
+  in
+
+  let to_assignment_operator = function
+    | A.ValueAssign  -> M.ValueAssign
+    | A.PlusAssign   -> M.PlusAssign
+    | A.MinusAssign  -> M.MinusAssign
+    | A.MultAssign   -> M.MultAssign
+    | A.DivAssign    -> M.DivAssign
+    | A.AndAssign    -> M.AndAssign
+    | A.OrAssign     -> M.OrAssign
+  in
+
+  let to_operator = function
+    | `Logical op -> `Logical (to_logical_operator op)
+    | `Cmp     op -> `Cmp     (to_comparison_operator op)
+    | `Arith   op -> `Arith   (to_arithmetic_operator op)
+    | `Unary   op -> `Unary   (to_unary_arithmetic_operator op)
+    | `Assign  op -> `Assign  (to_assignment_operator op)
+  in
+
+  let to_const = function
+    | A.Cstate                      -> M.Cstate
+    | A.Cnow                        -> M.Cnow
+    | A.Ctransferred                -> M.Ctransferred
+    | A.Ccaller                     -> M.Ccaller
+    | A.Cfail                       -> M.Cfail
+    | A.Cbalance                    -> M.Cbalance
+    | A.Cconditions                 -> M.Cconditions
+    | A.Cactions                    -> M.Cactions
+    | A.Cnone                       -> M.Cnone
+    | A.Cany                        -> M.Cany
+    | A.Canyaction                  -> M.Canyaction
+    | A.Cget                        -> M.Cget
+    | A.Cadd                        -> M.Cadd
+    | A.Caddnofail                  -> M.Caddnofail
+    | A.Cremove                     -> M.Cremove
+    | A.Cremovenofail               -> M.Cremovenofail
+    | A.Cremoveif                   -> M.Cremoveif
+    | A.Cupdate                     -> M.Cupdate
+    | A.Cupdatenofail               -> M.Cupdatenofail
+    | A.Cclear                      -> M.Cclear
+    | A.Ccontains                   -> M.Ccontains
+    | A.Cnth                        -> M.Cnth
+    | A.Creverse                    -> M.Creverse
+    | A.Cselect                     -> M.Cselect
+    | A.Csort                       -> M.Csort
+    | A.Ccount                      -> M.Ccount
+    | A.Csum                        -> M.Csum
+    | A.Cmax                        -> M.Cmax
+    | A.Cmin                        -> M.Cmin
+    | A.Cbefore                     -> M.Cbefore
+    | A.Cunmoved                    -> M.Cunmoved
+    | A.Cadded                      -> M.Cadded
+    | A.Cremoved                    -> M.Cremoved
+    | A.Citerated                   -> M.Citerated
+    | A.Ctoiterate                  -> M.Ctoiterate
+    | A.Cmaybeperformedonlybyrole   -> M.Cmaybeperformedonlybyrole
+    | A.Cmaybeperformedonlybyaction -> M.Cmaybeperformedonlybyaction
+    | A.Cmaybeperformedbyrole       -> M.Cmaybeperformedbyrole
+    | A.Cmaybeperformedbyaction     -> M.Cmaybeperformedbyaction
+  in
+
+  let rec to_qualid_node (n : ('a, 'b) A.qualid_node) : ('id, 'qualid) M.qualid_node =
+    match n with
+    | A.Qident i    -> M.Qident i
+    | A.Qdot (d, i) -> M.Qdot (to_qualid_gen d, i)
+
+  and to_qualid_gen (q : A.qualid) : M.qualid =
+    let node = to_qualid_node q.node in
+    let type_ = ptyp_to_type (Option.get q.type_) in
+    M.mk_qualid node type_
+  in
+
+  let to_pattern_node (n : (A.lident, A.lident A.pattern_gen) A.pattern_node) : 'id M.pattern_node =
+    match n with
+    | A.Mconst id -> M.Pconst id
+    | A.Mwild    -> M.Pwild
+  in
+
+  let to_pattern (p : A.pattern) : M.pattern =
+    let node = to_pattern_node p.node in
+    M.mk_pattern node ~loc:p.loc
+  in
+
+  let to_quantifier = function
+    | A.Forall -> M.Forall
+    | A.Exists -> M.Exists
+  in
+
+  let to_call_kind = function
+    | A.Cid i    -> M.Aid i
+    | A.Cconst c -> M.Aconst (to_const c)
+  in
+
+  let to_lit_value (b : 't A.bval_gen) =
+    match b.node with
+    | A.BVint i           -> M.BVint i
+    | A.BVuint i          -> M.BVuint i
+    | A.BVbool b          -> M.BVbool b
+    | A.BVenum s          -> M.BVenum s
+    | A.BVrational (d, n) -> M.BVrational (d, n)
+    | A.BVdate s          -> M.BVdate s
+    | A.BVstring s        -> M.BVstring s
+    | A.BVcurrency (c, i) -> M.BVcurrency (to_currency c, i)
+    | A.BVaddress s       -> M.BVaddress s
+    | A.BVduration s      -> M.BVduration s
+  in
+
+  let to_term_arg (f : (A.lident, 't) A.term_gen -> M.mterm) (a : (A.lident, (A.lident, 't) A.term_gen) A.term_arg) =
+    match a with
+    | A.AExpr x -> M.AExpr (f x)
+    | A.AEffect l -> M.AEffect (List.map (fun (id, op, term) -> (id, to_operator op, f term)) l)
+  in
+
+  let to_mterm_node
+      (n : (A.lident, 't, (A.lident, 't) A.term_gen) A.term_node)
+      (f : (A.lident, 't) A.term_gen -> M.mterm)
+      (ftyp : 't -> M.type_)
+    : (M.lident, M.mterm) M.mterm_node =
+    match n with
+    | A.Lquantifer (q, i, typ, term) -> M.Mquantifer (to_quantifier q, i, ltyp_to_type typ, f term)
+    | A.Pif (c, t, e)                -> M.Mif (f c, f t, f e)
+    | A.Pmatchwith (m, l)            -> M.Mmatchwith (f m, List.map (fun (p, e) -> (to_pattern p, f e)) l)
+    | A.Pcall (id, ck, args)         -> M.Mapp (to_call_kind ck,
+                                                (Option.map_dfl
+                                                   (fun x ->
+                                                      [
+                                                        M.AExpr (M.mk_mterm (Mvar x)
+                                                                   ( if A.Utils.is_enum ast x
+                                                                     then M.Tenum x
+                                                                     else if A.Utils.is_asset ast x
+                                                                     then M.Tcontainer (M.Tasset x, M.Collection)
+                                                                     else if A.Utils.is_contract ast x
+                                                                     then M.Tcontract x
+                                                                     else assert false )
+                                                                )
+                                                      ]) [] id)
+                                                @ List.map (fun x -> to_term_arg f x) args)
+    | A.Plogical (op, l, r)          -> M.Mlogical (to_logical_operator op, f l, f r)
+    | A.Pnot e                       -> M.Mnot (f e)
+    | A.Pcomp (op, l, r)             -> M.Mcomp (to_comparison_operator op, f l, f r)
+    | A.Parith (op, l, r)            -> M.Marith (to_arithmetic_operator op, f l, f r)
+    | A.Puarith (op, e)              -> M.Muarith (to_unary_arithmetic_operator op, f e)
+    | A.Precord l                    -> M.Mrecord (List.map f l)
+    | A.Pletin (id, init, typ, cont) -> M.Mletin (id, f init, Option.map ftyp typ, f cont)
+    | A.Pvar id                      -> M.Mvar id
+    | A.Parray l                     -> M.Marray (List.map f l)
+    | A.Plit lit                     -> M.Mlit (to_lit_value lit)
+    | A.Pdot (d, i)                  -> M.Mdot (f d, i)
+    | A.Pconst c                     -> M.Mconst (to_const c)
+    | A.Ptuple l                     -> M.Mtuple (List.map f l)
+  in
+
+  let to_mterm_node2
+      (n : (A.lident, A.ltype_, (A.lident, A.ltype_) A.term_gen) A.term_node)
+      (f : (A.lident, A.ltype_) A.term_gen -> M.mterm)
+      (ftyp : A.ltype_ -> M.type_)
+    : (M.lident, M.mterm) M.mterm_node =
+    let to_lit_value2 (b : A.ltype_ A.bval_gen) =
+      match b.node with
+      | A.BVint i           -> M.BVint i
+      | A.BVuint i          -> M.BVuint i
+      | A.BVbool b          -> M.BVbool b
+      | A.BVenum s          -> M.BVenum s
+      | A.BVrational (d, n) -> M.BVrational (d, n)
+      | A.BVdate s          -> M.BVdate s
+      | A.BVstring s        -> M.BVstring s
+      | A.BVcurrency (c, i) -> M.BVcurrency (to_currency c, i)
+      | A.BVaddress s       -> M.BVaddress s
+      | A.BVduration s      -> M.BVduration s
+    in
+    let to_term_arg2 (f : (A.lident, A.ltype_) A.term_gen -> M.mterm) = function
+      | A.AExpr x -> M.AExpr (f x)
+      | A.AEffect l -> M.AEffect (List.map (fun (id, op, term) -> (id, to_operator op, f term)) l)
+    in
+    match n with
+    | A.Lquantifer (q, i, typ, term) -> M.Mquantifer (to_quantifier q, i, ltyp_to_type typ, f term)
+    | A.Pif (c, t, e)                -> M.Mif (f c, f t, f e)
+    | A.Pmatchwith (m, l)            -> M.Mmatchwith (f m, List.map (fun (p, e) -> (to_pattern p, f e)) l)
+    | A.Pcall (id, ck, args)         -> M.Mapp (to_call_kind ck,
+                                                (Option.map_dfl (fun x -> [M.AExpr (M.mk_mterm (Mvar x) (
+                                                     if A.Utils.is_enum ast x
+                                                     then M.Tenum x
+                                                     else if A.Utils.is_asset ast x
+                                                     then M.Tasset x
+                                                     else if A.Utils.is_contract ast x
+                                                     then M.Tcontract x
+                                                     else assert false
+                                                   )
+                                                   )]) [] id)
+
+                                                @ List.map (fun x -> to_term_arg2 f x) args)
+    | A.Plogical (op, l, r)          -> M.Mlogical (to_logical_operator op, f l, f r)
+    | A.Pnot e                       -> M.Mnot (f e)
+    | A.Pcomp (op, l, r)             -> M.Mcomp (to_comparison_operator op, f l, f r)
+    | A.Parith (op, l, r)            -> M.Marith (to_arithmetic_operator op, f l, f r)
+    | A.Puarith (op, e)              -> M.Muarith (to_unary_arithmetic_operator op, f e)
+    | A.Precord l                    -> M.Mrecord (List.map f l)
+    | A.Pletin (id, init, typ, cont) -> M.Mletin (id, f init, Option.map ftyp typ, f cont)
+    | A.Pvar id                      -> M.Mvar id
+    | A.Parray l                     -> M.Marray (List.map f l)
+    | A.Plit lit                     -> M.Mlit (to_lit_value2 lit)
+    | A.Pdot (d, i)                  -> M.Mdot (f d, i)
+    | A.Pconst c                     -> M.Mconst (to_const c)
+    | A.Ptuple l                     -> M.Mtuple (List.map f l)
+  in
+
+  let rec to_mterm (pterm : A.pterm) : M.mterm =
+    let node = to_mterm_node pterm.node to_mterm ptyp_to_type in
+    let type_ = ptyp_to_type (Option.get pterm.type_) in
+    M.mk_mterm node type_ ~loc:pterm.loc
+  in
+
+  let rec lterm_to_mterm (lterm : A.lterm) : M.mterm =
+    let node = to_mterm_node2 lterm.node lterm_to_mterm ltyp_to_type in
+    let type_ = ltyp_to_type (Option.get lterm.type_) in
+    M.mk_mterm node type_ ~loc:lterm.loc
+  in
+
+  let to_label_lterm (x : ('id, ('id, A.ltype_) A.term_gen) A.label_term) : M.label_term =
+    M.mk_label_term (lterm_to_mterm x.term) ?label:x.label ~loc:x.loc
+  in
+
+  let to_instruction_node (n : (A.lident, A.ptyp, A.pterm, A.instruction) A.instruction_node) g f : ('id, 'instr) M.mterm_node =
+    match n with
+    | A.Iif (c, t, e)          -> M.Mif (f c, g t, g e)
+    | A.Ifor (i, col, body)    -> M.Mfor (i, f col, g body)
+    | A.Iletin (i, init, cont) -> M.Mletin (i, f init, None, g cont) (* TODO *)
+    | A.Iseq l                 -> M.Mseq (List.map g l)
+    | A.Imatchwith (m, l)      -> M.Mmatchwith (f m, List.map (fun (p, i) -> (to_pattern p, g i)) l)
+    | A.Iassign (op, i, e)     -> M.Massign (to_assignment_operator op, i, to_mterm e)
+    | A.Irequire (b, t)        -> M.Mrequire (b, f t)
+    | A.Itransfer (i, b, q)    -> M.Mtransfer (f i, b, Option.map to_qualid_gen q)
+    | A.Ibreak                 -> M.Mbreak
+    | A.Iassert e              -> M.Massert (f e)
+    | A.Icall (i, ck, args)    -> M.Mapp (to_call_kind ck, Option.map_dfl (fun v -> [M.AExpr (to_mterm v)]) [] i @ List.map (to_term_arg f) args)
+  in
+
+  let rec to_instruction (instr : A.instruction) : M.mterm =
+    let node = to_instruction_node instr.node to_instruction to_mterm in
+    M.mk_mterm node (M.Tunit) ~subvars:instr.subvars ~loc:instr.loc
+  in
+
+  let to_predicate (p : ('a, A.ptyp) A.predicate) : M.predicate =
+    M.mk_predicate p.name (lterm_to_mterm p.body) ~args:(List.map (fun (id, body) -> (id, lterm_to_mterm body)) p.args) ~loc:p.loc
+  in
+
+  let to_definition (d : ('a, A.ptyp) A.definition ): M.definition =
+    M.mk_definition d.name (ptyp_to_type d.typ) d.var (lterm_to_mterm d.body) ~loc:d.loc
+  in
+
+  let to_variable (v : (A.lident, A.ptyp, A.pterm) A.variable) : M.variable =
+    M.mk_variable
+      ((fun (arg : (A.lident, A.ptyp, A.pterm) A.decl_gen) : (M.lident * M.type_ * M.mterm option) ->
+          (arg.name, ptyp_to_type (Option.get arg.typ), Option.map to_mterm arg.default)) v.decl)
+      ~constant:v.constant
+      ?from:(Option.map to_qualid_gen v.from)
+      ?to_:(Option.map to_qualid_gen v.to_)
+      ~loc:v.loc
+  in
+
+  let to_invariant (i : (A.lident, A.ptyp) A.invariant) :M.invariant  =
+    M.mk_invariant i.label ~formulas:(List.map lterm_to_mterm i.formulas)
+  in
+
+  let to_spec (s : (A.lident, A.type_) A.specification) : M.specification  =
+    M.mk_specification s.name (lterm_to_mterm s.formula) ~invariants:(List.map to_invariant s.invariants)
+  in
+
+  let to_assert (a : (A.lident, A.type_) A.assert_) : M.assert_  =
+    M.mk_assert a.name a.label (lterm_to_mterm a.formula) ~invariants:(List.map to_invariant a.invariants)
+  in
+
+  let to_verification (v : (A.lident, A.ptyp, A.pterm) A.verification) : M.verification =
+    let predicates  = List.map to_predicate   v.predicates  in
+    let definitions = List.map to_definition  v.definitions in
+    let axioms      = List.map to_label_lterm v.axioms      in
+    let theorems    = List.map to_label_lterm v.theorems    in
+    let variables   = List.map (fun x -> to_variable x) v.variables in
+    let invariants  = List.map (fun (a, l) -> (a, List.map (fun x -> to_label_lterm x) l)) v.invariants in
+    let effects      = Option.map_dfl (fun x -> [to_mterm x]) [] v.effect      in
+    let specs       = List.map to_spec        v.specs       in
+    let asserts     = List.map to_assert      v.asserts     in
+    M.mk_verification
+      ~predicates:predicates
+      ~definitions:definitions
+      ~axioms:axioms
+      ~theorems:theorems
+      ~variables:variables
+      ~invariants:invariants
+      ~effects:effects
+      ~specs:specs
+      ~asserts:asserts
+      ~loc:v.loc ()
+  in
+
+  let cont_verification (v : (A.lident, A.ptyp, A.pterm) A.verification) (verif : M.verification) : M.verification =
+    let v = to_verification v in
+    { verif with
+      predicates  = verif.predicates @ v.predicates;
+      definitions = verif.definitions @ v.definitions;
+      axioms      = verif.axioms @ v.axioms;
+      theorems    = verif.theorems @ v.theorems;
+      variables   = verif.variables @ v.variables;
+      invariants  = verif.invariants @ v.invariants;
+      effects     = verif.effects @ v.effects;
+      specs       = verif.specs @ v.specs;
+      asserts     = verif.asserts @ v.asserts;
+      loc         = Location.merge verif.loc v.loc;
+    }
+  in
+
   let process_enums list =
     let process_enum (e : A.enum) : M.decl_node =
-      let values = List.map (fun (x : enum_item_struct) ->
+      let values = List.map (fun (x : (A.lident, A.type_, A.pterm) A.enum_item_struct) ->
           let id : M.lident = x.name in
           M.mk_enum_item id ~invariants:(List.map (fun x -> to_label_lterm x) x.invariants)
         ) e.items in
@@ -354,7 +455,7 @@ let to_model (ast : A.model) : M.model =
   in
 
   let process_storage list =
-    let variable_to_storage_items (var : variable) : M.storage_item =
+    let variable_to_storage_items (var : (A.lident, A.type_, A.pterm) A.variable) : M.storage_item =
       let arg = var.decl in
       let compute_field (type_ : A.type_) : M.item_field =
         let rec ptyp_to_item_field_type = function
@@ -440,43 +541,23 @@ let to_model (ast : A.model) : M.model =
       else
         i::l
     in
-    let extract_field asset_name (args : M.term_arg list) : M.lident =
-      let asset_items : string list = A.Utils.get_field_list ast asset_name |> List.map Location.unloc in
-      let is_ident_field_name (id : M.lident) : bool =
-        List.fold_left (fun accu (x : string) -> accu || (String.equal x (Location.unloc id))) false asset_items
-      in
-
-      let res = List.fold_left (fun accu x ->
-          match accu, x with
-          | None, M.AExpr ({ node = M.Mvar x; _}) when is_ident_field_name x -> Some x
-          | _ -> accu) None args in
-
-      match res with
-      | Some id -> id
-      | _ ->
-
-        (* Format.eprintf "asset_name : %s@\n" an; *)
-        List.iter (fun x -> Format.eprintf "%s@\n" x) asset_items;
-        List.iter (fun x -> Format.eprintf "%a@\n" M.pp_term_arg x) args;
-        emit_error CannotExtractField
-    in
 
     let mk_function c (args : M.term_arg list) : M.storage_const option =
       match c, args with
-      | M.Cget     , [ AExpr { type_ = M.Tcontainer (Tasset asset, _); _}] -> Some (M.Get asset)
-      | M.Cadd     , [ AExpr { type_ = M.Tcontainer (Tasset asset, _); _}] -> Some (M.Add asset)
-      | M.Cremove  , [ AExpr { type_ = M.Tcontainer (Tasset asset, _); _}] -> Some (M.Remove asset)
-      | M.Cclear   , [ AExpr { type_ = M.Tcontainer (Tasset asset, _); _}] -> Some (M.Clear asset)
-      | M.Cupdate  , [ AExpr { type_ = M.Tcontainer (Tasset asset, _); _}] -> Some (M.Update asset)
-      | M.Creverse , [ AExpr { type_ = M.Tcontainer (Tasset asset, _); _}] -> Some (M.Reverse asset)
-      | M.Csort    , [ AExpr { type_ = M.Tcontainer (Tasset asset, _); _}] -> Some (M.Sort asset)
-      | M.Ccontains, [ AExpr { type_ = M.Tcontainer (Tasset asset, _); _}] -> Some (M.Contains asset)
-      | M.Cnth     , [ AExpr { type_ = M.Tcontainer (Tasset asset, _); _}] -> Some (M.Nth asset)
-      | M.Cselect  , [ AExpr { type_ = M.Tcontainer (Tasset asset, _); _}] -> Some (M.Select asset)
-      | M.Ccount   , [ AExpr { type_ = M.Tcontainer (Tasset asset, _); _}] -> Some (M.Count asset)
-      | M.Csum     , [ AExpr { type_ = M.Tcontainer (Tasset asset, _); _}] -> Some (M.Sum (asset, extract_field asset args))
-      | M.Cmin     , [ AExpr { type_ = M.Tcontainer (Tasset asset, _); _}] -> Some (M.Min (asset, extract_field asset args))
-      | M.Cmax     , [ AExpr { type_ = M.Tcontainer (Tasset asset, _); _}] -> Some (M.Max (asset, extract_field asset args))
+      | M.Cget     , AExpr { type_ = M.Tcontainer (Tasset asset, _); _}::_ -> Some (M.Get asset)
+      | M.Cadd     , AExpr { type_ = M.Tcontainer (Tasset asset, _); _}::_ -> Some (M.Add asset)
+      | M.Cremove  , AExpr { type_ = M.Tcontainer (Tasset asset, _); _}::_ -> Some (M.Remove asset)
+      | M.Cclear   , AExpr { type_ = M.Tcontainer (Tasset asset, _); _}::_ -> Some (M.Clear asset)
+      | M.Cupdate  , AExpr { type_ = M.Tcontainer (Tasset asset, _); _}::_ -> Some (M.Update asset)
+      | M.Creverse , AExpr { type_ = M.Tcontainer (Tasset asset, _); _}::_ -> Some (M.Reverse asset)
+      | M.Csort    , AExpr { type_ = M.Tcontainer (Tasset asset, _); _}::_ -> Some (M.Sort asset)
+      | M.Ccontains, AExpr { type_ = M.Tcontainer (Tasset asset, _); _}::_ -> Some (M.Contains asset)
+      | M.Cnth     , AExpr { type_ = M.Tcontainer (Tasset asset, _); _}::_ -> Some (M.Nth asset)
+      | M.Cselect  , AExpr { type_ = M.Tcontainer (Tasset asset, _); _}::_ -> Some (M.Select asset)
+      | M.Ccount   , AExpr { type_ = M.Tcontainer (Tasset asset, _); _}::_ -> Some (M.Count asset)
+      | M.Csum     , AExpr { type_ = M.Tcontainer (Tasset asset, _); _}::AExpr { node = M.Mvar field; _}::_ -> Some (M.Sum (asset, field))
+      | M.Cmin     , AExpr { type_ = M.Tcontainer (Tasset asset, _); _}::AExpr { node = M.Mvar field; _}::_ -> Some (M.Min (asset, field))
+      | M.Cmax     , AExpr { type_ = M.Tcontainer (Tasset asset, _); _}::AExpr { node = M.Mvar field; _}::_ -> Some (M.Max (asset, field))
       | _ -> None
     in
 
@@ -485,7 +566,20 @@ let to_model (ast : A.model) : M.model =
     let rec fe (accu : M.api_item list) (term : M.mterm) : M.mterm * M.api_item list =
       match term.node with
       | M.Mapp (Aconst c, args) -> (
-          let _, accu = M.fold_map_term (fun node -> {term with node = node} ) fe accu term in
+          let args, accu = List.fold_left
+              (fun ((ps, accus) : M.term_arg list * M.api_item list) (x : M.term_arg) ->
+                 let arg, accu = match x with
+                   | M.AExpr v   -> M.fold_map_term (ge v) fe accu v |> fun (x, y) -> M.AExpr x, y
+                   | M.AEffect l ->
+                     let ll, accu = List.fold_left (fun (ps, accu) ((i, j, k) : (M.lident * M.operator * M.mterm)) ->
+                         let a, accu = M.fold_map_term (ge k) fe accu k in
+                         ps @ [(i, j, a)], accu
+                       ) ([], accu) l in
+                     M.AEffect ll, accu
+                 in
+                 ps @ [arg], accu
+              ) ([], accu) args in
+          let _, accu = M.fold_map_term (ge term) fe accu term in
           let function__ = mk_function c args in
           let term, accu =
             match function__ with
