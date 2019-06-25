@@ -903,9 +903,8 @@ module Utils : sig
   val get_container_asset_field : model -> (lident * lident ) -> container
   val get_named_field_list      : model -> lident -> pterm list -> (lident * pterm) list
   val get_field_list            : model -> lident -> lident list
-  val is_enum                   : model -> lident -> bool
-  val is_asset                  : model -> lident -> bool
-  val is_contract               : model -> lident -> bool
+  val get_enum_values           : model -> lident -> lident option
+  val get_type                  : model -> lident -> ptyp option
 
 end = struct
   open Tools
@@ -963,14 +962,36 @@ end = struct
        Format.eprintf "lf2: %d@." (List.length list); *)
     List.map2 (fun x y -> x, y) field_list list
 
-  let is_enum ast ident =
-    List.fold_left (fun accu (x : ('id, 'typ, 'term) enum_struct) -> accu || (Location.unloc x.name) = (Location.unloc ident)) false ast.enums
+  let get_enum_opt ast ident =
+    List.fold_left (fun accu (x : ('id, 'typ, 'term) enum_struct) ->
+        if (Location.unloc x.name) = (Location.unloc ident)
+        then Some x
+        else accu
+      ) None ast.enums
 
-  let is_asset ast ident =
-    List.fold_left (fun accu (x : ('id, 'typ, 'term) asset_struct) -> accu || (Location.unloc x.name) = (Location.unloc ident)) false ast.assets
+  let get_asset_opt ast ident =
+    List.fold_left (fun accu (x : ('id, 'typ, 'term) asset_struct) ->
+        if (Location.unloc x.name) = (Location.unloc ident)
+        then Some x
+        else accu
+      ) None ast.assets
 
-  let is_contract ast ident =
-    List.fold_left (fun accu (x : ('id, 'typ, 'term) contract) -> accu || (Location.unloc x.name) = (Location.unloc ident)) false ast.contracts
+  let get_contract_opt ast ident =
+    List.fold_left (fun accu (x : ('id, 'typ, 'term) contract) ->
+        if (Location.unloc x.name) = (Location.unloc ident)
+        then Some x
+        else accu
+      ) None ast.contracts
+
+  let get_enum_values ast ident =
+    List.fold_left (
+      fun accu (x : ('id, 'typ, 'term) enum_struct) ->
+        if List.fold_left (fun accu (x : ('id, 'typ, 'term) enum_item_struct) -> accu || (Location.unloc x.name) = (Location.unloc ident)) false x.items
+        then (Some x.name)
+        else accu
+    ) None ast.enums
+
+  let get_type ast ident = assert false
 
 end
 

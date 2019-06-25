@@ -55,15 +55,6 @@ let to_model (ast : A.model) : M.model =
     | A.Tentry             -> M.Tentry
   in
 
-  (* let to_vset = function
-     | A.VSremoved -> M.VSremoved
-     | A.VSadded   -> M.VSadded
-     | A.VSstable  -> M.VSstable
-     | A.VSbefore  -> M.VSbefore
-     | A.VSafter   -> M.VSafter
-     | A.VSfixed   -> M.VSfixed
-     in *)
-
   let to_trtyp = function
     | A.TRentry  -> M.TRentry
     | A.TRaction -> M.TRaction
@@ -155,16 +146,16 @@ let to_model (ast : A.model) : M.model =
     | A.Csum                        -> M.Csum
     | A.Cmax                        -> M.Cmax
     | A.Cmin                        -> M.Cmin
-    | A.Cbefore                     -> M.Cbefore
-    | A.Cunmoved                    -> M.Cunmoved
-    | A.Cadded                      -> M.Cadded
-    | A.Cremoved                    -> M.Cremoved
-    | A.Citerated                   -> M.Citerated
-    | A.Ctoiterate                  -> M.Ctoiterate
     | A.Cmaybeperformedonlybyrole   -> M.Cmaybeperformedonlybyrole
     | A.Cmaybeperformedonlybyaction -> M.Cmaybeperformedonlybyaction
     | A.Cmaybeperformedbyrole       -> M.Cmaybeperformedbyrole
     | A.Cmaybeperformedbyaction     -> M.Cmaybeperformedbyaction
+    | A.Cbefore
+    | A.Cunmoved
+    | A.Cadded
+    | A.Cremoved
+    | A.Citerated
+    | A.Ctoiterate                  -> assert false
   in
 
   let rec to_qualid_node (n : ('a, 'b) A.qualid_node) : ('id, 'qualid) M.qualid_node =
@@ -199,77 +190,8 @@ let to_model (ast : A.model) : M.model =
     | A.Cconst c -> M.Aconst (to_const c)
   in
 
-  let to_lit_value (b : 't A.bval_gen) =
-    match b.node with
-    | A.BVint i           -> M.BVint i
-    | A.BVuint i          -> M.BVuint i
-    | A.BVbool b          -> M.BVbool b
-    | A.BVenum s          -> M.BVenum s
-    | A.BVrational (d, n) -> M.BVrational (d, n)
-    | A.BVdate s          -> M.BVdate s
-    | A.BVstring s        -> M.BVstring s
-    | A.BVcurrency (c, i) -> M.BVcurrency (to_currency c, i)
-    | A.BVaddress s       -> M.BVaddress s
-    | A.BVduration s      -> M.BVduration s
-  in
-
-  let to_term_arg (f : (A.lident, 't) A.term_gen -> M.mterm) (a : (A.lident, (A.lident, 't) A.term_gen) A.term_arg) =
-    match a with
-    | A.AExpr x -> M.AExpr (f x)
-    | A.AEffect l -> M.AEffect (List.map (fun (id, op, term) -> (id, to_operator op, f term)) l)
-  in
-
-  let to_mterm_node
-      (n : (A.lident, 't, (A.lident, 't) A.term_gen) A.term_node)
-      (f : (A.lident, 't) A.term_gen -> M.mterm)
-      (ftyp : 't -> M.type_)
-    : (M.lident, M.mterm) M.mterm_node =
-    match n with
-    | A.Lquantifer (q, i, typ, term)        -> M.Mquantifer (to_quantifier q, i, ltyp_to_type typ, f term)
-    | A.Pif (c, t, e)                       -> M.Mif (f c, f t, f e)
-    | A.Pmatchwith (m, l)                   -> M.Mmatchwith (f m, List.map (fun (p, e) -> (to_pattern p, f e)) l)
-    | A.Pcall (_, A.Cconst A.Cbefore,    [AExpr p]) -> M.Mappset (M.Cbefore, f p)
-    | A.Pcall (_, A.Cconst A.Cunmoved,   [AExpr p]) -> M.Mappset (M.Cunmoved, f p)
-    | A.Pcall (_, A.Cconst A.Cadded,     [AExpr p]) -> M.Mappset (M.Cadded, f p)
-    | A.Pcall (_, A.Cconst A.Cremoved,   [AExpr p]) -> M.Mappset (M.Cremoved, f p)
-    | A.Pcall (_, A.Cconst A.Citerated,  [AExpr p]) -> M.Mappset (M.Citerated, f p)
-    | A.Pcall (_, A.Cconst A.Ctoiterate, [AExpr p]) -> M.Mappset (M.Ctoiterate, f p)
-    | A.Pcall (id, ck, args)                -> M.Mapp (to_call_kind ck,
-                                                       (Option.map_dfl
-                                                          (fun (x : A.lident) ->
-                                                             [
-                                                               M.AExpr (M.mk_mterm (Mvar (Vlocal x))
-                                                                          ( if A.Utils.is_enum ast x
-                                                                            then M.Tenum x
-                                                                            else if A.Utils.is_asset ast x
-                                                                            then M.Tcontainer (M.Tasset x, M.Collection)
-                                                                            else if A.Utils.is_contract ast x
-                                                                            then M.Tcontract x
-                                                                            else assert false )
-                                                                       )
-                                                             ]) [] id)
-                                                       @ List.map (fun x -> to_term_arg f x) args)
-    | A.Plogical (op, l, r)                 -> M.Mlogical (to_logical_operator op, f l, f r)
-    | A.Pnot e                              -> M.Mnot (f e)
-    | A.Pcomp (op, l, r)                    -> M.Mcomp (to_comparison_operator op, f l, f r)
-    | A.Parith (op, l, r)                   -> M.Marith (to_arithmetic_operator op, f l, f r)
-    | A.Puarith (op, e)                     -> M.Muarith (to_unary_arithmetic_operator op, f e)
-    | A.Precord l                           -> M.Mrecord (List.map f l)
-    | A.Pletin (id, init, typ, cont)        -> M.Mletin (id, f init, Option.map ftyp typ, f cont)
-    | A.Pvar id                             -> M.Mvar (Vlocal id)
-    | A.Parray l                            -> M.Marray (List.map f l)
-    | A.Plit lit                            -> M.Mlit (to_lit_value lit)
-    | A.Pdot (d, i)                         -> M.Mdot (f d, i)
-    | A.Pconst c                            -> M.Mconst (to_const c)
-    | A.Ptuple l                            -> M.Mtuple (List.map f l)
-  in
-
-  let to_mterm_node2
-      (n : (A.lident, A.ltype_, (A.lident, A.ltype_) A.term_gen) A.term_node)
-      (f : (A.lident, A.ltype_) A.term_gen -> M.mterm)
-      (ftyp : A.ltype_ -> M.type_)
-    : (M.lident, M.mterm) M.mterm_node =
-    let to_lit_value2 (b : A.ltype_ A.bval_gen) =
+  let to_lit_value : 't. 't A.bval_gen -> M.lit_value =
+    fun b ->
       match b.node with
       | A.BVint i           -> M.BVint i
       | A.BVuint i          -> M.BVuint i
@@ -281,49 +203,47 @@ let to_model (ast : A.model) : M.model =
       | A.BVcurrency (c, i) -> M.BVcurrency (to_currency c, i)
       | A.BVaddress s       -> M.BVaddress s
       | A.BVduration s      -> M.BVduration s
-    in
-    let to_term_arg2 (f : (A.lident, A.ltype_) A.term_gen -> M.mterm) = function
+  in
+
+  let to_term_arg : 't. ((A.lident, 't) A.term_gen -> M.mterm) -> ((A.lident, (A.lident, 't) A.term_gen) A.term_arg) -> M.term_arg =
+    fun f a ->
+      match a with
       | A.AExpr x -> M.AExpr (f x)
       | A.AEffect l -> M.AEffect (List.map (fun (id, op, term) -> (id, to_operator op, f term)) l)
-    in
-    match n with
-    | A.Lquantifer (q, i, typ, term) -> M.Mquantifer (to_quantifier q, i, ltyp_to_type typ, f term)
-    | A.Pif (c, t, e)                -> M.Mif (f c, f t, f e)
-    | A.Pmatchwith (m, l)            -> M.Mmatchwith (f m, List.map (fun (p, e) -> (to_pattern p, f e)) l)
-    | A.Pcall (_, A.Cconst A.Cbefore,    [AExpr p]) -> M.Mappset (M.Cbefore, f p)
-    | A.Pcall (_, A.Cconst A.Cunmoved,   [AExpr p]) -> M.Mappset (M.Cunmoved, f p)
-    | A.Pcall (_, A.Cconst A.Cadded,     [AExpr p]) -> M.Mappset (M.Cadded, f p)
-    | A.Pcall (_, A.Cconst A.Cremoved,   [AExpr p]) -> M.Mappset (M.Cremoved, f p)
-    | A.Pcall (_, A.Cconst A.Citerated,  [AExpr p]) -> M.Mappset (M.Citerated, f p)
-    | A.Pcall (_, A.Cconst A.Ctoiterate, [AExpr p]) -> M.Mappset (M.Ctoiterate, f p)
-    | A.Pcall (id, ck, args)         -> M.Mapp (to_call_kind ck,
-                                                (Option.map_dfl (fun x -> [
-                                                       M.AExpr (M.mk_mterm (Mvar (Vlocal x))
-                                                                  (
-                                                                    if A.Utils.is_enum ast x
-                                                                    then M.Tenum x
-                                                                    else if A.Utils.is_asset ast x
-                                                                    then M.Tasset x
-                                                                    else if A.Utils.is_contract ast x
-                                                                    then M.Tcontract x
-                                                                    else assert false
-                                                                  )
-                                                               )]) [] id)
+  in
 
-                                                @ List.map (fun x -> to_term_arg2 f x) args)
-    | A.Plogical (op, l, r)          -> M.Mlogical (to_logical_operator op, f l, f r)
-    | A.Pnot e                       -> M.Mnot (f e)
-    | A.Pcomp (op, l, r)             -> M.Mcomp (to_comparison_operator op, f l, f r)
-    | A.Parith (op, l, r)            -> M.Marith (to_arithmetic_operator op, f l, f r)
-    | A.Puarith (op, e)              -> M.Muarith (to_unary_arithmetic_operator op, f e)
-    | A.Precord l                    -> M.Mrecord (List.map f l)
-    | A.Pletin (id, init, typ, cont) -> M.Mletin (id, f init, Option.map ftyp typ, f cont)
-    | A.Pvar id                      -> M.Mvar (Vlocal id)
-    | A.Parray l                     -> M.Marray (List.map f l)
-    | A.Plit lit                     -> M.Mlit (to_lit_value2 lit)
-    | A.Pdot (d, i)                  -> M.Mdot (f d, i)
-    | A.Pconst c                     -> M.Mconst (to_const c)
-    | A.Ptuple l                     -> M.Mtuple (List.map f l)
+  let to_mterm_node : 't. ((A.lident, 't, (A.lident, 't) A.term_gen) A.term_node) -> ((A.lident, 't) A.term_gen -> M.mterm) -> ('t -> M.type_) -> (M.lident, M.mterm) M.mterm_node =
+    fun n f ftyp ->
+      match n with
+      | A.Lquantifer (q, i, typ, term)        -> M.Mquantifer (to_quantifier q, i, ltyp_to_type typ, f term)
+      | A.Pif (c, t, e)                       -> M.Mif (f c, f t, f e)
+      | A.Pmatchwith (m, l)                   -> M.Mmatchwith (f m, List.map (fun (p, e) -> (to_pattern p, f e)) l)
+      | A.Pcall (_, A.Cconst A.Cbefore,    [AExpr p]) -> M.Mappset (M.Cbefore, f p)
+      | A.Pcall (_, A.Cconst A.Cunmoved,   [AExpr p]) -> M.Mappset (M.Cunmoved, f p)
+      | A.Pcall (_, A.Cconst A.Cadded,     [AExpr p]) -> M.Mappset (M.Cadded, f p)
+      | A.Pcall (_, A.Cconst A.Cremoved,   [AExpr p]) -> M.Mappset (M.Cremoved, f p)
+      | A.Pcall (_, A.Cconst A.Citerated,  [AExpr p]) -> M.Mappset (M.Citerated, f p)
+      | A.Pcall (_, A.Cconst A.Ctoiterate, [AExpr p]) -> M.Mappset (M.Ctoiterate, f p)
+      | A.Pcall (id, ck, args)                -> M.Mapplocal (to_call_kind ck,
+                                                              (Option.map_dfl
+                                                                 (fun (x : A.lident) ->
+                                                                    [
+                                                                      M.AExpr (M.mk_mterm (Mvar (Vlocal x)) (M.Tcontainer (M.Tasset x, M.Collection)))
+                                                                    ]) [] id)
+                                                              @ List.map (fun x -> to_term_arg f x) args)
+      | A.Plogical (op, l, r)                 -> M.Mlogical (to_logical_operator op, f l, f r)
+      | A.Pnot e                              -> M.Mnot (f e)
+      | A.Pcomp (op, l, r)                    -> M.Mcomp (to_comparison_operator op, f l, f r)
+      | A.Parith (op, l, r)                   -> M.Marith (to_arithmetic_operator op, f l, f r)
+      | A.Puarith (op, e)                     -> M.Muarith (to_unary_arithmetic_operator op, f e)
+      | A.Precord l                           -> M.Mrecord (List.map f l)
+      | A.Pletin (id, init, typ, cont)        -> M.Mletin (id, f init, Option.map ftyp typ, f cont)
+      | A.Pvar id                             -> M.Mvar (Vlocal id)
+      | A.Parray l                            -> M.Marray (List.map f l)
+      | A.Plit lit                            -> M.Mlit (to_lit_value lit)
+      | A.Pdot (d, i)                         -> M.Mdot (f d, i)
+      | A.Pconst c                            -> M.Mconst (to_const c)
+      | A.Ptuple l                            -> M.Mtuple (List.map f l)
   in
 
   let rec to_mterm (pterm : A.pterm) : M.mterm =
@@ -333,7 +253,7 @@ let to_model (ast : A.model) : M.model =
   in
 
   let rec lterm_to_mterm (lterm : A.lterm) : M.mterm =
-    let node = to_mterm_node2 lterm.node lterm_to_mterm ltyp_to_type in
+    let node = to_mterm_node lterm.node lterm_to_mterm ltyp_to_type in
     let type_ = ltyp_to_type (Option.get lterm.type_) in
     M.mk_mterm node type_ ~loc:lterm.loc
   in
@@ -354,7 +274,7 @@ let to_model (ast : A.model) : M.model =
     | A.Itransfer (i, b, q)    -> M.Mtransfer (f i, b, Option.map to_qualid_gen q)
     | A.Ibreak                 -> M.Mbreak
     | A.Iassert e              -> M.Massert (f e)
-    | A.Icall (i, ck, args)    -> M.Mapp (to_call_kind ck, Option.map_dfl (fun v -> [M.AExpr (to_mterm v)]) [] i @ List.map (to_term_arg f) args)
+    | A.Icall (i, ck, args)    -> M.Mapplocal (to_call_kind ck, Option.map_dfl (fun v -> [M.AExpr (to_mterm v)]) [] i @ List.map (to_term_arg f) args)
   in
 
   let rec to_instruction (instr : A.instruction) : M.mterm =
@@ -556,22 +476,29 @@ let to_model (ast : A.model) : M.model =
         i::l
     in
 
-    let mk_function c (args : M.term_arg list) : M.storage_const option =
+    let mk_function c (args : M.term_arg list) : (M.storage_const * M.mterm) option =
+      let nth_arg n =
+        let arg = List.nth args n in
+        match arg with
+        | AExpr v -> v
+        | _ -> assert false
+      in
+
       match c, args with
-      | M.Cget     , AExpr { type_ = M.Tcontainer (Tasset asset, _); _}::_ -> Some (M.Get asset)
-      | M.Cadd     , AExpr { type_ = M.Tcontainer (Tasset asset, _); _}::_ -> Some (M.Add asset)
-      | M.Cremove  , AExpr { type_ = M.Tcontainer (Tasset asset, _); _}::_ -> Some (M.Remove asset)
-      | M.Cclear   , AExpr { type_ = M.Tcontainer (Tasset asset, _); _}::_ -> Some (M.Clear asset)
-      | M.Cupdate  , AExpr { type_ = M.Tcontainer (Tasset asset, _); _}::_ -> Some (M.Update asset)
-      | M.Creverse , AExpr { type_ = M.Tcontainer (Tasset asset, _); _}::_ -> Some (M.Reverse asset)
-      | M.Csort    , AExpr { type_ = M.Tcontainer (Tasset asset, _); _}::_ -> Some (M.Sort asset)
-      | M.Ccontains, AExpr { type_ = M.Tcontainer (Tasset asset, _); _}::_ -> Some (M.Contains asset)
-      | M.Cnth     , AExpr { type_ = M.Tcontainer (Tasset asset, _); _}::_ -> Some (M.Nth asset)
-      | M.Cselect  , AExpr { type_ = M.Tcontainer (Tasset asset, _); _}::_ -> Some (M.Select asset)
-      | M.Ccount   , AExpr { type_ = M.Tcontainer (Tasset asset, _); _}::_ -> Some (M.Count asset)
-      | M.Csum     , AExpr { type_ = M.Tcontainer (Tasset asset, _); _}::AExpr { node = M.Mvar (Vlocal field); _}::_ -> Some (M.Sum (asset, field))
-      | M.Cmin     , AExpr { type_ = M.Tcontainer (Tasset asset, _); _}::AExpr { node = M.Mvar (Vlocal field); _}::_ -> Some (M.Min (asset, field))
-      | M.Cmax     , AExpr { type_ = M.Tcontainer (Tasset asset, _); _}::AExpr { node = M.Mvar (Vlocal field); _}::_ -> Some (M.Max (asset, field))
+      | M.Cget     , AExpr { type_ = M.Tcontainer (Tasset asset, _); _}::AExpr a::[] -> Some (M.Get asset,      M.mk_mterm (M.Mappget (nth_arg 0, a))    (M.Tasset asset))
+      | M.Cadd     , AExpr { type_ = M.Tcontainer (Tasset asset, _); _}::AExpr a::[] -> Some (M.Add asset,      M.mk_mterm (M.Mappadd (nth_arg 0, a))    (M.Tasset asset))
+      | M.Cremove  , AExpr { type_ = M.Tcontainer (Tasset asset, _); _}::AExpr a::[] -> Some (M.Remove asset,   M.mk_mterm (M.Mappremove (nth_arg 0, a)) (M.Tasset asset))
+      | M.Cclear   , AExpr { type_ = M.Tcontainer (Tasset asset, _); _}::[]          -> Some (M.Clear asset,    M.mk_mterm (M.Mappclear (nth_arg 0))     (M.Tasset asset))
+      | M.Cupdate  , AExpr { type_ = M.Tcontainer (Tasset asset, _); _}::_           -> Some (M.Update asset,   M.mk_mterm (M.Mappupdate)                (M.Tasset asset))
+      | M.Creverse , AExpr { type_ = M.Tcontainer (Tasset asset, _); _}::[]          -> Some (M.Reverse asset,  M.mk_mterm (M.Mappreverse (nth_arg 0))   (M.Tasset asset))
+      | M.Csort    , AExpr { type_ = M.Tcontainer (Tasset asset, _); _}::_           -> Some (M.Sort asset,     M.mk_mterm (M.Mappsort)                  (M.Tasset asset))
+      | M.Ccontains, AExpr { type_ = M.Tcontainer (Tasset asset, _); _}::AExpr a::[] -> Some (M.Contains asset, M.mk_mterm (M.Mappget (nth_arg 0, a))    (M.Tasset asset))
+      | M.Cnth     , AExpr { type_ = M.Tcontainer (Tasset asset, _); _}::AExpr a::[] -> Some (M.Nth asset,      M.mk_mterm (M.Mappnth (nth_arg 0, a))    (M.Tasset asset))
+      | M.Cselect  , AExpr { type_ = M.Tcontainer (Tasset asset, _); _}::_           -> Some (M.Select asset,   M.mk_mterm (M.Mappselect)                (M.Tasset asset))
+      | M.Ccount   , AExpr { type_ = M.Tcontainer (Tasset asset, _); _}::[]          -> Some (M.Count asset,    M.mk_mterm (M.Mappcount (nth_arg 0))     (M.Tasset asset))
+      | M.Csum     , AExpr { type_ = M.Tcontainer (Tasset asset, _); _}::AExpr { node = M.Mvar (Vlocal field); _}::_ -> Some (M.Sum (asset, field),    M.mk_mterm (M.Mappsum (field, nth_arg 0)) (M.Tasset asset))
+      | M.Cmin     , AExpr { type_ = M.Tcontainer (Tasset asset, _); _}::AExpr { node = M.Mvar (Vlocal field); _}::_ -> Some (M.Min (asset, field),    M.mk_mterm (M.Mappmax (field, nth_arg 0)) (M.Tasset asset))
+      | M.Cmax     , AExpr { type_ = M.Tcontainer (Tasset asset, _); _}::AExpr { node = M.Mvar (Vlocal field); _}::_ -> Some (M.Max (asset, field),    M.mk_mterm (M.Mappmin (field, nth_arg 0)) (M.Tasset asset))
       | _ -> None
     in
 
@@ -579,7 +506,7 @@ let to_model (ast : A.model) : M.model =
 
     let rec fe (accu : M.api_item list) (term : M.mterm) : M.mterm * M.api_item list =
       match term.node with
-      | M.Mapp (Aconst c, args) -> (
+      | M.Mapplocal (Aconst c, args) -> (
           let args, accu = List.fold_left
               (fun ((ps, accus) : M.term_arg list * M.api_item list) (x : M.term_arg) ->
                  let arg, accu = match x with
@@ -597,8 +524,8 @@ let to_model (ast : A.model) : M.model =
           let function__ = mk_function c args in
           let term, accu =
             match function__ with
-            | Some const -> (
-                {term with node = M.Mapp (Astorage const, args) }, add accu (M.APIStorage const)
+            | Some (const, mterm) -> (
+                mterm, add accu (M.APIStorage const)
               )
             | None -> term, accu in
           term, accu
