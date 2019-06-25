@@ -1299,6 +1299,13 @@ let rec for_instruction (env : env) (i : PT.expr) : M.instruction =
 
       mki (Itransfer (e, back, to_))
 
+    | Eif (c, bit, bif) ->
+        let c    = for_expr env ~ety:M.vtbool c in
+        let cit  = for_instruction env bit in
+        let cif  = Option.map (for_instruction env) bif in
+        let cif  = Option.get_dfl (mki (Iseq [])) cif in
+        mki (M.Iif (c, cit, cif))
+
     | _ ->
       Env.emit_error env (loc i, InvalidInstruction);
       bailout ()
