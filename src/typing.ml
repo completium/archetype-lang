@@ -13,11 +13,14 @@ module Type : sig
   val as_asset     : M.ptyp -> M.lident option
   val as_tuple     : M.ptyp -> (M.ptyp list) option
 
+  val equal      : M.ptyp -> M.ptyp -> bool
   val compatible : from_:M.ptyp -> to_:M.ptyp -> bool
 end = struct
   let as_container = function M.Tcontainer (ty, c) -> Some (ty, c) | _ -> None
   let as_asset     = function M.Tasset     x       -> Some x       | _ -> None
   let as_tuple     = function M.Ttuple     ts      -> Some ts      | _ -> None
+
+  let equal = ((=) : M.ptyp -> M.ptyp -> bool)
 
   let compatible ~(from_ : M.ptyp) ~(to_ : M.ptyp) =
     match from_, to_ with
@@ -69,8 +72,10 @@ type error_desc =
   | MixedFieldNamesInRecordLiteral     of ident list
   | MoreThanOneInitState               of ident list
   | MultipleInitialMarker
+  | MultipleMatchingOperator
   | MultipleStateDeclaration
   | NameIsAlreadyBound                 of ident
+  | NoMatchingOperator
   | NoSuchMethod                       of ident
   | NotARole                           of ident
   | OpInRecordLiteral
@@ -904,101 +909,123 @@ let rec for_xexpr (env : env) ?(ety : M.ptyp option) (tope : PT.expr) : xexpr =
           end
       end
 
-    | Eapp (f, args) -> begin
-        match
-          match f with
-          | Fident x ->
-            let ps = Env.Proc.lookup env (unloc x) in
-            if Option.is_none ps then
-              Env.emit_error env (loc x, UnknownProcedure (unloc x));
-            Option.map (fun ps -> (`Named x, ps)) ps
+    | Eapp (Foperator { pldesc = `Spec _ ; plloc = loc; }, _) ->
+        Env.emit_error env (loc, SpecOperatorInExpr);
+        bailout ()
 
-          | Foperator { pldesc = `Spec _; plloc = loc } ->
-            Env.emit_error env (loc, SpecOperatorInExpr);
-            bailout ()
+    | Eapp (Foperator { pldesc = op }, args) -> begin
+        let args = List.map (for_expr env) args in
+        let na   = List.length args in
 
-          | Foperator { pldesc = ((`Logical _ | `Unary _ | `Arith _ | `Cmp _) as op) } ->
-            Some (`Operator op, procsig_of_operator op)
-        with
-        | None ->
-          bailout ()
+        if List.exists (fun arg -> Option.is_none arg.M.type_) args then
+          bailout ();
 
-        | Some (kind, pdf) ->
+        let filter (sig_ : opsig) =
+          if na <> List.length sig_.osl_sig then false else
 
-          let ne, ng = List.length pdf.psl_sig, List.length args in
+          List.for_all2
+            (fun arg ty -> Type.equal (Option.get arg.M.type_) ty) (* FIXME *)
+            args sig_.osl_sig in
 
-          let args =
-            if ne <> ng then begin
-              Env.emit_error env (loc tope, InvalidNumberOfArguments (ne, ng));
+        let sig_ =
+          match List.filter filter (List.assoc_all op opsigs) with
+          | [] ->
+              Env.emit_error env (loc tope, NoMatchingOperator);
               bailout ()
-            end else
-              List.map2
-                (fun arg aty -> for_xarg env aty arg)
-                args pdf.psl_sig in
 
-          let to_const = function
-            | "get"          -> Some M.Cget
-            | "add"          -> Some M.Cadd
-            | "addnofail"    -> Some M.Caddnofail
-            | "remove"       -> Some M.Cremove
-            | "removenofail" -> Some M.Cremovenofail
-            | "removeif"     -> Some M.Cremoveif
-            | "update"       -> Some M.Cupdate
-            | "updatenofail" -> Some M.Cupdatenofail
-            | "clear"        -> Some M.Cclear
-            | "contains"     -> Some M.Ccontains
-            | "nth"          -> Some M.Cnth
-            | "select"       -> Some M.Cselect
-            | "sort"         -> Some M.Csort
-            | "count"        -> Some M.Ccount
-            | "sum"          -> Some M.Csum
-            | "max"          -> Some M.Cmax
-            | "min"          -> Some M.Cmin
-            | _              -> None in
+          | _::_::_ ->
+              Env.emit_error env (loc tope, MultipleMatchingOperator);
+              bailout ()
 
-          let aout =
-            match kind with
-            | `Named x ->
-              M.Pcall (None, Option.map_dfl (fun x -> M.Cconst x) (Cid x) (to_const (unloc x)), args)
+          | [sig_] ->
+              sig_ in
 
-            | `Operator (`Logical op) ->
-              let args = List.map (Option.get |@ pterm_arg_as_pterm) args in
+        let aout =
+          match op with
+          | `Logical op ->
               let a1, a2 = Option.get (List.as_seq2 args) in
               M.Plogical (tt_logical_operator op, a1, a2)
 
-            | `Operator (`Unary op) -> begin
-                let args = List.map (Option.get |@ pterm_arg_as_pterm) args in
-                let a1 = Option.get (List.as_seq1 args) in
+          | `Unary op -> begin
+              let a1 = Option.get (List.as_seq1 args) in
 
-                match
-                  match op with
-                  | PT.Not    -> `Not
-                  | PT.Uplus  -> `UArith (M.Uplus)
-                  | PT.Uminus -> `UArith (M.Uminus)
-                with
-                | `Not ->
-                  M.Pnot a1
+              match
+                match op with
+                | PT.Not    -> `Not
+                | PT.Uplus  -> `UArith (M.Uplus)
+                | PT.Uminus -> `UArith (M.Uminus)
+              with
+              | `Not ->
+                M.Pnot a1
 
-                | `UArith op ->
-                  M.Puarith (op, a1)
-              end
+              | `UArith op ->
+                M.Puarith (op, a1)
+            end
 
-            | `Operator (`Arith op) ->
-
-              let args = List.map (Option.get |@ pterm_arg_as_pterm) args in
+          | `Arith op ->
               let a1, a2 = Option.get (List.as_seq2 args) in
               M.Parith (tt_arith_operator op, a1, a2)
 
-            | `Operator (`Cmp op) ->
-              let args = List.map (Option.get |@ pterm_arg_as_pterm) args in
+          | `Cmp op ->
               let a1, a2 = Option.get (List.as_seq2 args) in
               M.Pcomp (tt_cmp_operator op, a1, a2)
 
-          in `Expr (mk_sp (Some (pdf.psl_ret)) aout)
+          | `Spec _ ->
+              assert false
+
+        in `Expr (mk_sp (Some (sig_.osl_ret)) aout)
+      end
+
+    | Eapp (Fident x, args) -> begin
+        let pdf =
+          match Env.Proc.lookup env (unloc x) with
+          | None ->
+              Env.emit_error env (loc x, UnknownProcedure (unloc x));
+              bailout ()
+
+          | Some ps ->
+              ps
+        in
+
+        let ne, ng = List.length pdf.psl_sig, List.length args in
+
+        let args =
+          if ne <> ng then begin
+            Env.emit_error env (loc tope, InvalidNumberOfArguments (ne, ng));
+            bailout ()
+          end else
+            List.map2
+              (fun arg aty -> for_xarg env aty arg)
+              args pdf.psl_sig in
+
+        let to_const = function
+          | "get"          -> Some M.Cget
+          | "add"          -> Some M.Cadd
+          | "addnofail"    -> Some M.Caddnofail
+          | "remove"       -> Some M.Cremove
+          | "removenofail" -> Some M.Cremovenofail
+          | "removeif"     -> Some M.Cremoveif
+          | "update"       -> Some M.Cupdate
+          | "updatenofail" -> Some M.Cupdatenofail
+          | "clear"        -> Some M.Cclear
+          | "contains"     -> Some M.Ccontains
+          | "nth"          -> Some M.Cnth
+          | "select"       -> Some M.Cselect
+          | "sort"         -> Some M.Csort
+          | "count"        -> Some M.Ccount
+          | "sum"          -> Some M.Csum
+          | "max"          -> Some M.Cmax
+          | "min"          -> Some M.Cmin
+          | _              -> None in
+
+        let aout = Option.map_dfl (fun x -> M.Cconst x) (Cid x) (to_const (unloc x)) in
+        let aout = M.Pcall (None, aout, args) in
+
+        `Expr (mk_sp (Some (pdf.psl_ret)) aout)
       end
 
     | Emethod (_the, _m, _args) ->
-      assert false
+        assert false
 
     | Eif (c, et, Some ef) -> begin
         let c    = for_expr env ~ety:M.vtbool c in
@@ -1043,12 +1070,15 @@ let rec for_xexpr (env : env) ?(ety : M.ptyp option) (tope : PT.expr) : xexpr =
 
     begin match aout, ety with
       | `Expr { type_ = Some from_ }, Some to_ ->
-        if not (Type.compatible ~from_ ~to_) then
-          Env.emit_error env (loc tope, IncompatibleTypes (from_, to_));
+          if not (Type.compatible ~from_ ~to_) then
+            Env.emit_error env (loc tope, IncompatibleTypes (from_, to_));
+
       | _, Some to_ ->
-        Env.emit_error env (loc tope, ExpressionExpected)
+          Env.emit_error env (loc tope, ExpressionExpected)
+
       | _, _ ->
-        () end;
+        ()
+    end;
 
     aout
 
@@ -1129,10 +1159,10 @@ let for_arg (env : env) ((x, ty, _) : PT.lident_typ) =
 
   match b, ty with
   | true, Some ty ->
-    (env, Some (x, ty))
+      (Env.Local.push env (unloc x, ty), Some (x, ty))
 
   | _, _ ->
-    (env, None)
+     (env, None)
 
 (* -------------------------------------------------------------------- *)
 let for_args (env : env) (xs : PT.args) =
@@ -1268,6 +1298,13 @@ let rec for_instruction (env : env) (i : PT.expr) : M.instruction =
       let e   = for_expr env ~ety:(M.vtcurrency M.Tez) e in
 
       mki (Itransfer (e, back, to_))
+
+    | Eif (c, bit, bif) ->
+        let c    = for_expr env ~ety:M.vtbool c in
+        let cit  = for_instruction env bit in
+        let cif  = Option.map (for_instruction env) bif in
+        let cif  = Option.get_dfl (mki (Iseq [])) cif in
+        mki (M.Iif (c, cit, cif))
 
     | _ ->
       Env.emit_error env (loc i, InvalidInstruction);
@@ -1445,11 +1482,17 @@ let for_declaration (env : env) (decl : PT.declaration) =
         } in Env.Asset.push env decl
     end
 
-  | Daction (x, args, _pt, i_exts, _exts) -> begin
-      let env0, args = for_args env args in
-      let _i = Option.map (for_instruction env0) (Option.map fst i_exts) in
+  | Daction (x, args, pt, i_exts, _exts) -> begin
+      let env, _ =
+        Env.inscope (fst (for_args env args)) (fun env ->
+          let _effect = Option.map (for_instruction env) (Option.fst i_exts) in
+          let _callby = Option.map (for_callby env) (Option.fst pt.calledby) in
+          let _callby = Option.get_dfl [] _callby in
+          let _reqs   = Option.map (for_lbls_formula env) (Option.fst pt.require) in
 
-      Env.Action.push env { ad_name = x; }
+          (env, ()))
+
+      in Env.Action.push env { ad_name = x; }
     end
 
   | Dtransition (x, args, tgt, from_, actions, tx, _exts) ->
