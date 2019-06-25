@@ -68,30 +68,31 @@ action consume (a : address) (quantity : uint) = {
 
   effect {
      let ow = owner.get a in
-     let by_expiration = ow.miles.select(the.expiration > now) in
-     require (by_expiration.sum(the.amount) >= quantity);
-     let remainder = quantity in
-     loop : for (m in by_expiration) (
-       if remainder > 0
-       then (
-         if m.amount > remainder
+     let by_expiration = ow.miles.select(the.expiration > now) in (
+       require (by_expiration.sum(the.amount) >= quantity);
+       let remainder = quantity in
+       loop : for (m in by_expiration) (
+         if remainder > 0
          then (
-           remainder := 0;  (* this should be after instruction below
-                               this is to demonstrate verification
-                               capacity to not verify contract in this
-                               state *)
-           mile.update m.id { amount  -= remainder }
-         )
-         else if m.amount = remainder
-         then (
-           remainder := 0;
-           ow.miles.remove m.id
-         ) else (
-           remainder -= m.amount;
-           ow.miles.remove m.id
-         )
-       );
-     label zero_remainder)
+           if m.amount > remainder
+           then (
+             remainder := 0;  (* this should be after instruction below
+                                 this is to demonstrate verification
+                                 capacity to not verify contract in this
+                                 state *)
+             mile.update m.id { amount  -= remainder }
+           )
+           else if m.amount = remainder
+           then (
+             remainder := 0;
+             ow.miles.remove m.id
+           ) else (
+             remainder -= m.amount;
+             ow.miles.remove m.id
+           )
+         );
+       label zero_remainder)
+     )
   }
 }
 
