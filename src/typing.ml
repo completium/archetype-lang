@@ -1577,17 +1577,23 @@ let for_verification_item (env : env) (v : PT.verification_item) =
       let e  = Option.map (for_expr env ?ety:ty) e in
       (env, `Variable (x, e))
 
-  | PT.Vassert _ ->
-      assert false
+  | PT.Vassert (x, tg, f, invs) ->
+      let for_inv (lbl, linvs) =
+        (lbl, List.map (for_formula env) linvs) in
+      let f    = for_formula env f in
+      let invs = List.map for_inv invs in
+      (env, `Assert (x, tg, f, invs))
 
   | PT.Veffect i ->
       let i = for_instruction env i in
       (env, `Effect i)
 
-  | PT.Vspecification (_, e, invs) ->
-      assert (List.is_empty invs);
-      let e = for_formula env e in
-      (env, `Specification e)
+  | PT.Vspecification (x, f, invs) ->
+      let for_inv (lbl, linvs) =
+        (lbl, List.map (for_formula env) linvs) in
+      let f    = for_formula env f in
+      let invs = List.map for_inv invs in
+      (env, `Specification (x, f, invs))
 
 (* -------------------------------------------------------------------- *)
 let for_verification (env : env) (v : PT.verification) =
@@ -1735,6 +1741,7 @@ let for_declaration (env : env) (decl : PT.declaration) =
           let callby      = Option.map (for_callby env) (Option.fst pt.calledby) in
           let _callby     = Option.get_dfl [] callby in
           let env, reqs   = Option.foldmap for_lbls_formula env (Option.fst pt.require) in
+          let env, verif  = Option.foldmap for_verification env pt.verif in
 
           (env, ()))
 
