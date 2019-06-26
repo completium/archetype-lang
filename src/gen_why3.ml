@@ -626,6 +626,7 @@ let rec map_type (typ : M.type_) : loc_typ =
     | M.Tbuiltin vt              -> map_btype vt
     | M.Tcontainer (M.Tasset i,M.Partition) -> Typartition (map_lident i)
     | M.Tcontainer _             -> Typartition (with_dummy_loc "NOT TRANSLATED")
+    | M.Toption ty               -> assert false
     | M.Ttuple l                 -> Tytuple (List.map rec_map_type l)
     | M.Tentry                   -> Typartition (with_dummy_loc "NOT TRANSLATED")
     | M.Tprog t                  -> Mlwtree.deloc (map_type t)

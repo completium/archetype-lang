@@ -50,6 +50,7 @@ type ptyp =
   | Tbuiltin of vtyp
   | Tcontainer of ptyp * container
   | Ttuple of ptyp list
+  | Toption of ptyp
   | Tentry (* entry of external contract *)
 [@@deriving show {with_path = false}]
 

@@ -52,6 +52,7 @@ let rec ptyp_to_type t : M.type_ =
   | A.Tcontract id       -> M.Tcontract id
   | A.Tbuiltin b         -> M.Tbuiltin (vtyp_to_btyp b)
   | A.Tcontainer (t, c)  -> M.Tcontainer (ptyp_to_type t, to_container c)
+  | A.Toption ty         -> M.Toption (ptyp_to_type ty)
   | A.Ttuple l           -> M.Ttuple (List.map ptyp_to_type l)
   | A.Tentry             -> M.Tentry
 
@@ -358,6 +359,7 @@ let to_model (ast : A.model) : M.model =
           | A.Tcontract x   -> M.FBasic Brole
           | A.Tcontainer (ptyp, container) -> M.FContainer (to_container container, ptyp_to_item_field_type ptyp)
           | A.Tentry
+          | A.Toption _
           | A.Ttuple _      -> emit_error (UnsupportedTypeForFile type_)
         in
         let a = ptyp_to_item_field_type type_ in

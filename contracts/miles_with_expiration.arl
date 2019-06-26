@@ -122,7 +122,7 @@ action clear_expired = {
 
   effect {
     for (o in owner) (
-      o.miles.removeif (expiration < now)
+      o.miles.removeif (the.expiration < now)
     )
   }
 }
