@@ -394,10 +394,10 @@ verification_decl:
 
 enum:
 | STATES exts=extensions? xs=equal_enum_values
-    {Denum (EKstate,  xs, exts)}
+    {Denum (EKstate, (xs, exts))}
 
 | ENUM exts=extensions? x=ident xs=equal_enum_values
-    {Denum (EKenum x, xs, exts)}
+    {Denum (EKenum x, (xs, exts))}
 
 equal_enum_values:
 | /*nothing*/          { [] }

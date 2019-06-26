@@ -216,6 +216,27 @@ let opsigs =
   List.map (snd_map doit) opsigs
 
 (* -------------------------------------------------------------------- *)
+type varfun = [
+  | `Variable of PT.variable_decl
+  | `Function of PT.s_function
+]
+
+type acttx = [
+  | `Action     of PT.action_decl
+  | `Transition of PT.transition_decl
+]
+
+type groups = {
+  gr_archetypes  : (PT.lident * PT.exts)      loced list;
+  gr_states      : PT.enum_decl               loced list;
+  gr_enums       : (PT.lident * PT.enum_decl) loced list;
+  gr_assets      : PT.asset_decl              loced list;
+  gr_varfuns     : varfun                     loced list;
+  gr_acttxs      : acttx                      loced list;
+  gr_verifs      : PT.verification            loced list;
+}
+
+(* -------------------------------------------------------------------- *)
 (*
   (M.Cstate      , ([], `State))                     ;
   (M.Cnow        , ([], `Type M.vtdate))             ;
@@ -1655,142 +1676,6 @@ let for_transition (env : env) (state, when_, effect) =
 
   (state, when_, effect)
 
-(* -------------------------------------------------------------------- *)
-let for_declaration (env : env) (decl : PT.declaration) =
-  match unloc decl with
-  | Darchetype _ ->
-      Env.emit_error env (loc decl, InvalidArcheTypeDecl);
-      env
-
-  | Dvariable (x, ty, e, _tgts, ctt, _) ->
-      (* FIXME: handle tgts *)
-  
-      let ty   = for_type env ty in
-      let e    = Option.map (for_expr env ?ety:ty) e in
-      let dty  = if   Option.is_some ty
-        then ty
-        else Option.bind (fun e -> e.M.type_) e in
-      let ctt  = match ctt with
-        | VKconstant -> `Constant
-        | VKvariable -> `Variable in
-  
-      if Option.is_some dty then begin
-        let decl = {
-            vr_name = x; vr_type = Option.get dty; vr_kind = ctt; vr_core = None;
-        } in
-  
-        if   (check_and_emit_name_free env x)
-        then Env.Var.push env decl
-        else env
-      end else env
-
-  | Denum (_x, _ctors, _) ->
-      assert false
-
-  | Dasset (x, fields, _, _, _, _) -> begin
-      (* FIXME: check that there is at least one field for PK *)
-
-      let for_field field =
-        let PT.Ffield (f, fty, init, _) = unloc field in
-        let fty  = for_type env fty in
-        let init = Option.map (for_expr env ?ety:fty) init in
-        mkloc (loc f) (unloc f, fty, init) in
-
-      let fields = List.map for_field fields in
-
-      Option.iter
-        (fun (_, { plloc = lc; pldesc = (name, _, _) }) ->
-           Env.emit_error env (lc, DuplicatedFieldInAssetDecl name))
-        (List.find_dup (fun x -> proj3_1 (unloc x)) fields);
-
-      (* FIXME: check for duplicated type name? *)
-
-      if Env.Asset.exists env (unloc x) then begin
-        Env.emit_error env (loc x, DuplicatedAssetName (unloc x));
-        env
-      end else
-        let module E = struct exception Bailout end in
-
-        if List.is_empty fields then begin
-          Env.emit_error env (loc decl, AssetWithoutFields);
-          raise E.Bailout
-        end;
-
-        let get_field_type { pldesc = (x, ty, e) } =
-          let ty =
-            if   Option.is_some ty
-            then ty
-            else Option.bind (fun e -> e.M.type_) e
-          in (x, Option.get_fdfl (fun () -> raise E.Bailout) ty)
-        in
-
-        try
-          let decl = {
-            as_name   = x;
-            as_fields = List.map get_field_type fields;
-            as_pk     = proj3_1 (unloc (List.hd fields));
-          } in Env.Asset.push env decl
-        with E.Bailout -> env
-    end
-
-  | Daction (x, args, pt, i_exts, _exts) -> begin
-      let env, _ =
-        Env.inscope env (fun env ->
-          let env         = (fst (for_args_decl env args)) in
-          let env, effect = Option.foldmap for_instruction env (Option.fst i_exts) in
-          let callby      = Option.map (for_callby env) (Option.fst pt.calledby) in
-          let _callby     = Option.get_dfl [] callby in
-          let env, reqs   = Option.foldmap for_lbls_formula env (Option.fst pt.require) in
-          let env, verif  = Option.foldmap for_verification env pt.verif in
-
-          (env, ()))
-
-      in Env.Action.push env { ad_name = x; }
-    end
-
-  | Dtransition (x, args, tgt, from_, actions, tx, _exts) ->
-      let _env0  = for_args_decl env args in
-      let _from_ = for_state env from_ in
-      let env, act = for_action_properties env actions in
-      let _tx = List.map (for_transition env) tx in
-  
-      if Option.is_some tgt then
-        assert false;
-  
-      env
-
-(*
-type transition = (TO: lident * WHEN: (expr * exts) option * EFFECT: (expr * exts) option) list
-
-type action_properties = {
-  calledby        : (expr * exts) option;
-  accept_transfer : bool;
-  require         : (label_exprs * exts) option;
-  verif           : verification option;
-  functions       : (s_function loced) list;
-}
-
-
-*)
-
-
-  | Dcontract (_x, _sig, _) ->
-      assert false
-
-  | Dextension (_x, _) ->
-      assert false
-
-  | Dnamespace (_x, _decls) ->
-      assert false
-
-  | Dfunction _fun ->
-      assert false
-
-  | Dverification v ->
-      let env, _ = for_verification env v in env
-
-  | Dinvalid ->
-      assert false
 
 (* -------------------------------------------------------------------- *)
 type state = ((PT.lident * PT.enum_option list) list)
@@ -1852,50 +1737,218 @@ let for_state_decl (env : env) (state : state loced) =
     env, Some (unloc ictor, List.map (fun (x, _, inv) -> (x, inv)) ctors)
 
 (* -------------------------------------------------------------------- *)
+let for_varfun_decl (env : env) (decl : varfun loced) =
+  match unloc decl with
+  | `Variable (x, ty, e, _tgts, ctt, _) ->
+      (* FIXME: handle tgts *)
+  
+      let ty   = for_type env ty in
+      let e    = Option.map (for_expr env ?ety:ty) e in
+      let dty  = if   Option.is_some ty
+        then ty
+        else Option.bind (fun e -> e.M.type_) e in
+      let ctt  = match ctt with
+        | VKconstant -> `Constant
+        | VKvariable -> `Variable in
+  
+      if Option.is_some dty then begin
+        let decl = {
+            vr_name = x; vr_type = Option.get dty; vr_kind = ctt; vr_core = None;
+        } in
+  
+        if   (check_and_emit_name_free env x)
+        then Env.Var.push env decl
+        else env
+      end else env
+
+  | `Function _ ->
+      assert false
+
+(* -------------------------------------------------------------------- *)
+let for_varfuns_decl (env : env) (decls : varfun loced list) =
+  List.fold_left for_varfun_decl env decls
+
+(* -------------------------------------------------------------------- *)
+let for_asset_decl (env : env) (decl : PT.asset_decl loced) =
+  let (x, fields, _, _, _, _) = unloc decl in
+
+  let for_field field =
+    let PT.Ffield (f, fty, init, _) = unloc field in
+    let fty  = for_type env fty in
+    let init = Option.map (for_expr env ?ety:fty) init in
+    mkloc (loc f) (unloc f, fty, init) in
+
+  let fields = List.map for_field fields in
+
+  Option.iter
+    (fun (_, { plloc = lc; pldesc = (name, _, _) }) ->
+       Env.emit_error env (lc, DuplicatedFieldInAssetDecl name))
+    (List.find_dup (fun x -> proj3_1 (unloc x)) fields);
+
+  (* FIXME: check for duplicated type name? *)
+
+  if Env.Asset.exists env (unloc x) then begin
+    Env.emit_error env (loc x, DuplicatedAssetName (unloc x));
+    env
+  end else
+    let module E = struct exception Bailout end in
+
+    if List.is_empty fields then begin
+      Env.emit_error env (loc decl, AssetWithoutFields);
+      raise E.Bailout
+    end;
+
+    let get_field_type { pldesc = (x, ty, e) } =
+      let ty =
+        if   Option.is_some ty
+        then ty
+        else Option.bind (fun e -> e.M.type_) e
+      in (x, Option.get_fdfl (fun () -> raise E.Bailout) ty)
+    in
+
+    try
+      let decl = {
+        as_name   = x;
+        as_fields = List.map get_field_type fields;
+        as_pk     = proj3_1 (unloc (List.hd fields));
+      } in Env.Asset.push env decl
+    with E.Bailout -> env
+
+(* -------------------------------------------------------------------- *)
+let for_assets_decl (env : env) (decls : PT.asset_decl loced list) =
+  List.fold_left for_asset_decl env decls
+
+(* -------------------------------------------------------------------- *)
+let for_acttx_decl (env : env) (decl : acttx loced) =
+  match unloc decl with
+  | `Action (x, args, pt, i_exts, _exts) -> begin
+      let env, _ =
+        Env.inscope env (fun env ->
+          let env         = (fst (for_args_decl env args)) in
+          let env, effect = Option.foldmap for_instruction env (Option.fst i_exts) in
+          let callby      = Option.map (for_callby env) (Option.fst pt.calledby) in
+          let _callby     = Option.get_dfl [] callby in
+          let env, reqs   = Option.foldmap for_lbls_formula env (Option.fst pt.require) in
+          let env, verif  = Option.foldmap for_verification env pt.verif in
+
+          (env, ()))
+
+      in Env.Action.push env { ad_name = x; }
+    end
+
+  | `Transition (x, args, tgt, from_, actions, tx, _exts) ->
+      let _env0  = for_args_decl env args in
+      let _from_ = for_state env from_ in
+      let env, act = for_action_properties env actions in
+      let _tx = List.map (for_transition env) tx in
+  
+      if Option.is_some tgt then
+        assert false;
+  
+      env
+
+(* -------------------------------------------------------------------- *)
+let for_acttxs_decl (env : env) (decls : acttx loced list) =
+  List.fold_left for_acttx_decl env decls
+
+(* -------------------------------------------------------------------- *)
+let for_verifs_decl (env : env) (decls : PT.verification loced list) =
+  List.fold_left_map
+    (fun env { pldesc = x } -> for_verification env x)
+    env decls
+
+(* -------------------------------------------------------------------- *)
+let group_declarations (decls : (PT.declaration list)) =
+  let empty = {
+    gr_archetypes = [];
+    gr_states     = [];
+    gr_enums      = [];
+    gr_assets     = [];
+    gr_varfuns    = [];
+    gr_acttxs     = [];
+    gr_verifs     = [];
+  } in
+
+  let for1 { plloc = loc; pldesc = decl } (g : groups) =
+    let mk x = Location.mkloc loc x in
+
+    match decl with
+    | PT.Darchetype (x, exts) ->
+        { g with gr_archetypes = mk (x, exts) :: g.gr_archetypes }
+
+    | PT.Dvariable infos ->
+        { g with gr_varfuns = mk (`Variable infos) :: g.gr_varfuns }
+
+    | PT.Denum (PT.EKstate, infos) ->
+        { g with gr_states = mk infos :: g.gr_states }
+
+    | PT.Denum (PT.EKenum x, infos) ->
+        { g with gr_enums = mk (x, infos) :: g.gr_enums }
+
+    | PT.Dasset infos ->
+        { g with gr_assets = mk infos :: g.gr_assets }
+
+    | PT.Daction infos ->
+        { g with gr_acttxs = mk (`Action infos) :: g.gr_acttxs }
+
+    | PT.Dtransition infos ->
+        { g with gr_acttxs = mk (`Transition infos) :: g.gr_acttxs }
+
+    | PT.Dfunction infos ->
+        { g with gr_varfuns = mk (`Function infos) :: g.gr_varfuns }
+
+    | PT.Dverification infos ->
+        { g with gr_verifs = mk infos :: g.gr_verifs }
+
+    | Dcontract  _
+    | Dnamespace _
+    | Dextension _
+    | Dinvalid      -> assert false
+
+  in List.fold_right for1 decls empty
+
+(* -------------------------------------------------------------------- *)
+let for_grouped_declarations (env : env) (toploc, g) =
+  if not (List.is_empty g.gr_archetypes) then
+     Env.emit_error env (toploc, InvalidArcheTypeDecl);
+
+  if List.length g.gr_states > 1 then
+    Env.emit_error env (toploc, MultipleStateDeclaration);
+
+  let _state, env =
+    let for1 { plloc = loc; pldesc = state } =
+      match for_state_decl env (mkloc loc (fst state)) with
+      | env, Some state -> Some (env, state)
+      | _  , None       -> None in
+  
+    match List.pmap for1 g.gr_states with
+    | (env, (init, ctors)) :: _ ->
+        let decl = { sd_ctors = ctors; sd_init = init; } in
+        (Some decl, Env.State.push env decl)
+    | _ ->
+        (None, env) in
+
+  let env = for_assets_decl  env g.gr_assets  in
+  let env = for_varfuns_decl env g.gr_varfuns in
+  let env = for_acttxs_decl  env g.gr_acttxs  in
+  let env = for_verifs_decl  env g.gr_verifs  in
+
+  env
+
+(* -------------------------------------------------------------------- *)
 let for_declarations (env : env) (decls : (PT.declaration list) loced) : M.model =
   let toploc = loc decls in
 
   match unloc decls with
   | { pldesc = Darchetype (x, _exts) } :: decls ->
-    let states, subdecls =
-      List.xfilter (fun decl ->
-          match unloc decl with
-          | PT.Denum (EKstate, values, _exts_) ->
-            `Left (mkloc (loc decl) values)
-          | x ->
-            `Right (mkloc (loc decl) x)
-        ) decls in
+      let groups = group_declarations decls in
+      let _env = for_grouped_declarations env (toploc, groups) in
 
-    let _decl, env =
-      match states with
-      | [] ->
-        (None, env)
-
-      | _ -> begin
-          if List.length states > 1 then
-            Env.emit_error env (toploc, MultipleStateDeclaration);
-
-          let env =
-            let for1 state =
-              match for_state_decl env state with
-              | env, Some state -> Some (env, state)
-              | _  , None       -> None in
-
-            match List.pmap for1 states with
-            | (env, (init, ctors)) :: _ ->
-              let decl = { sd_ctors = ctors; sd_init = init; } in
-              (Some decl, Env.State.push env decl)
-            | _ ->
-              (None, env)
-          in env
-        end in
-
-    let _env = List.fold_left for_declaration env subdecls in
-    M.mk_model x
+      M.mk_model x
 
   | _ ->
-    Env.emit_error env (loc decls, InvalidArcheTypeDecl);
-    { (M.mk_model (mkloc (loc decls) "<unknown>")) with loc = loc decls }
+      Env.emit_error env (loc decls, InvalidArcheTypeDecl);
+      { (M.mk_model (mkloc (loc decls) "<unknown>")) with loc = loc decls }
 
 (* -------------------------------------------------------------------- *)
 let typing (env : env) (cmd : PT.archetype) =
@@ -1903,5 +1956,5 @@ let typing (env : env) (cmd : PT.archetype) =
   | Marchetype decls ->
       for_declarations env (mkloc (loc cmd) decls)
 
-  | _ ->
+  | Mextension _ ->
       assert false

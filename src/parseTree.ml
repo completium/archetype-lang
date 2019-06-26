@@ -237,18 +237,62 @@ type enum_kind =
 (* -------------------------------------------------------------------- *)
 type declaration_unloc =
   | Darchetype     of lident * exts
-  | Dvariable      of lident * type_t * expr option * value_option list option * variable_kind * exts
-  | Denum          of enum_kind * (lident * enum_option list) list * exts
-  | Dasset         of lident * field list * asset_option list * asset_post_option list * asset_operation option * exts
-  | Daction        of lident * args * action_properties * (expr * exts) option * exts
-  | Dtransition    of lident * args * (lident * lident) option * expr * action_properties * transition * exts
-  | Dcontract      of lident * signature list * exts
-  | Dextension     of lident * expr list option
-  | Dnamespace     of lident * declaration list
+  | Dvariable      of variable_decl
+  | Denum          of enum_kind * enum_decl
+  | Dasset         of asset_decl
+  | Daction        of action_decl
+  | Dtransition    of transition_decl
+  | Dcontract      of contract_decl
+  | Dextension     of extension_decl
+  | Dnamespace     of namespace_decl
   | Dfunction      of s_function
   | Dverification  of verification
   | Dinvalid
 [@@deriving yojson, show {with_path = false}]
+
+and variable_decl =
+    lident
+  * type_t
+  * expr option
+  * value_option list option
+  * variable_kind
+  * exts
+
+and enum_decl =
+  (lident * enum_option list) list * exts
+
+and asset_decl =
+    lident
+  * field list
+  * asset_option list
+  * asset_post_option list
+  * asset_operation option
+  * exts
+
+and action_decl =
+    lident
+  * args
+  * action_properties
+  * (expr * exts) option
+  * exts
+
+and transition_decl =
+    lident
+  * args
+  * (lident * lident) option
+  * expr
+  * action_properties
+  * transition
+  * exts
+
+and contract_decl =
+  lident * signature list * exts
+
+and extension_decl =
+  lident * expr list option
+
+and namespace_decl =
+  lident * declaration list
 
 and value_option =
   | VOfrom of lident

@@ -806,7 +806,7 @@ let rec pp_declaration fmt { pldesc = e; _ } =
       (pp_option (pp_prefix " " (pp_list " " pp_value_option))) opts
       (pp_option (pp_prefix " = " (pp_expr e_equal PRight))) dv
 
-  | Denum (id, ids, exts) ->
+  | Denum (id, (ids, exts)) ->
     Format.fprintf fmt "%a%a"
       (fun fmt id -> (
            match id with
