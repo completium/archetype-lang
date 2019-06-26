@@ -1,7 +1,5 @@
 archetype miles
 
-variable validator role
-
 variable[%transferable%] validator role
 
 asset account identified by owner = {

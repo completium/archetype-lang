@@ -222,6 +222,7 @@ let rec to_mterm_node (n : ('a, 'b, 'c) A.term_node) f (ftyp : 'b -> M.type_) : 
 and to_term_arg f = function
   | A.AExpr x -> M.AExpr (f x)
   | A.AEffect l -> M.AEffect (List.map (fun (id, op, term) -> (id, to_operator op, f term)) l)
+  | _ -> assert false
 
 let rec to_mterm (pterm : A.pterm) : M.mterm =
   let node = to_mterm_node pterm.node to_mterm ptyp_to_type in

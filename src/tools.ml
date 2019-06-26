@@ -302,9 +302,6 @@ end)
 let norm_hex_string (s : string) =
   if String.starts ~pattern:"0x" s then s else "0x" ^ s
 
-let int_of_hex (s : string) =
-  int_of_string (norm_hex_string s)
-
-let sha s : int =
-  let s = Digestif.SHA1.to_hex (Digestif.SHA1.digest_string s) in
-  int_of_hex (String.sub s 0 5)
+let sha s : Big_int.big_int =
+  let s  = Digestif.SHA512.to_hex (Digestif.SHA512.digest_string s) in
+  Big_int.big_int_of_string (norm_hex_string s)

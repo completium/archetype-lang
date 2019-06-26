@@ -11,7 +11,7 @@ let mk_use_module m = Duse [deloc m]  |> loc_decl |> deloc
 
 let mk_default_val = function
   | Typartition _ -> Tvar "empty"
-  | _ -> Tint 0
+  | _ -> Tint Big_int.zero_big_int
 
 let mk_default_init = function
   | Drecord (n,fs) ->
@@ -43,10 +43,10 @@ let mk_asset_fields asset = [
 
 let mk_const_fields with_trace = [
   { name = "ops_"   ; typ = Tyrecord "transfers" ; init = Tvar "Nil"; mutable_ = true; };
-  { name = "get_balance_" ;     typ = Tytez; init = Tint 0; mutable_ = false; };
-  { name = "get_transferred_" ; typ = Tytez; init = Tint 0; mutable_ = false; };
-  { name = "get_caller_"    ; typ = Tyaddr;  init = Tint 0; mutable_ = false; };
-  { name = "get_now_"       ; typ = Tydate;  init = Tint 0; mutable_ = false; };
+  { name = "get_balance_" ;     typ = Tytez; init = Tint Big_int.zero_big_int; mutable_ = false; };
+  { name = "get_transferred_" ; typ = Tytez; init = Tint Big_int.zero_big_int; mutable_ = false; };
+  { name = "get_caller_"    ; typ = Tyaddr;  init = Tint Big_int.zero_big_int; mutable_ = false; };
+  { name = "get_now_"       ; typ = Tydate;  init = Tint Big_int.zero_big_int; mutable_ = false; };
 ] @
   if with_trace then
     [
@@ -461,13 +461,13 @@ let mk_test_entry_enum = Denum ("entry",["Add";"Consume";"ClearExpired"])
 let mk_test_field_enum = Denum ("field",["Amount";"Expiration";"Miles"])
 
 let mk_test_mile : decl = Drecord ("mile", [
-    { name = "id";         typ = Tystring; init = Tint 0; mutable_ = false; };
-    { name = "amount";     typ = Tyint;    init = Tint 0; mutable_ = false; };
-    { name = "expiration"; typ = Tydate;   init = Tint 0; mutable_ = false; };
+    { name = "id";         typ = Tystring; init = Tint Big_int.zero_big_int; mutable_ = false; };
+    { name = "amount";     typ = Tyint;    init = Tint Big_int.zero_big_int; mutable_ = false; };
+    { name = "expiration"; typ = Tydate;   init = Tint Big_int.zero_big_int; mutable_ = false; };
   ])
 
 let mk_test_owner : decl = Drecord ("owner", [
-    { name = "addr" ; typ = Tyaddr; init = Tint 0; mutable_ = false; };
+    { name = "addr" ; typ = Tyaddr; init = Tint Big_int.zero_big_int; mutable_ = false; };
     { name = "miles"; typ = Typartition "mile"; init = Tvar "empty"; mutable_ = false; }
   ])
 
@@ -492,7 +492,7 @@ let mk_test_consume : decl = Dfun {
     ensures  = [];
     body     = Tseq [
         Tif (Tnot (Tmem (Tcaller "s", Tlist [Tdoti("s","admin")])),Traise Einvalidcaller, None);
-        Tif (Tle (Tyint,Tvar "nbmiles",Tint 0),Traise Einvalidcondition, None);
+        Tif (Tle (Tyint,Tvar "nbmiles",Tint Big_int.zero_big_int),Traise Einvalidcondition, None);
         Tletin (false,"o",None,Tapp (Tvar "get_owner",[Tvar "s";Tvar "ow"]),
                 Tletin (false,"miles",None,Tapp (Tvar "get_miles",[Tvar "s";Tvar "o"]),
                         Tletin (false,"l",None,Tapp (Tvar "filter_consume",[Tvar "s";Tvar "miles"]),
@@ -501,19 +501,19 @@ let mk_test_consume : decl = Dfun {
                                   Tletin (true,"remainder",None,Tvar "nbmiles",
                                           Tseq [
                                             Ttry (
-                                              Tfor ("i",Tminus (Tyint,Tcard (Tvar "l"),Tint 1),[
+                                              Tfor ("i",Tminus (Tyint,Tcard (Tvar "l"),Tint Big_int.unit_big_int),[
                                                   { id   = "loop_inv1";
-                                                    form = Tdle (Tyint,Tint 0,Tvar "remainder",Tapp(Tdoti ("Amount","sum"),[Tvar "s";Ttail (Tvar "i",Tvar "l")]))
+                                                    form = Tdle (Tyint,Tint Big_int.zero_big_int,Tvar "remainder",Tapp(Tdoti ("Amount","sum"),[Tvar "s";Ttail (Tvar "i",Tvar "l")]))
                                                   }
                                                 ],
                                                     Tletin (false,"m",None,Tnth (Tvar "i",Tvar "l"),
                                                             Tif (Tgt (Tyint,Tapp (Tvar "get_amount",[Tvar "s";Tvar "m"]),Tvar "remainder"),
                                                                  Tletin (false,"new_mile",None,Trecord (Some (Tget (Tdoti ("s","mile_assets"),Tvar "m")),["amount",Tminus (Tyint,Tapp (Tvar "get_amount",[Tvar "s";Tvar "m"]),Tvar "remainder")]),
                                                                          Tseq [Tapp (Tvar "update_mile",[Tvar "s";Tvar "m";Tvar "new_mile"]);
-                                                                               Tassign (Tvar "remainder",Tint 0);
+                                                                               Tassign (Tvar "remainder",Tint Big_int.zero_big_int);
                                                                                Traise Ebreak]),
                                                                  Some (Tif (Teq (Tyint,Tapp (Tvar "get_amount",[Tvar "s";Tvar "m"]),Tvar "remainder"),
-                                                                            Tseq [Tassign (Tvar "remainder",Tint 0);
+                                                                            Tseq [Tassign (Tvar "remainder",Tint Big_int.zero_big_int);
                                                                                   Tapp (Tvar "remove_owner_miles",[Tvar "s";Tvar "o";Tvar "m"]);
                                                                                   Traise Ebreak],
                                                                             Some (Tseq [
@@ -522,8 +522,8 @@ let mk_test_consume : decl = Dfun {
                                                                               ]))))
                                                            )
                                                 ),
-                                              Ebreak,Tassert (Teq (Tyint,Tvar "remainder",Tint 0)));
-                                            Tassert (Teq (Tyint,Tvar "remainder",Tint 0));
+                                              Ebreak,Tassert (Teq (Tyint,Tvar "remainder",Tint Big_int.zero_big_int)));
+                                            Tassert (Teq (Tyint,Tvar "remainder",Tint Big_int.zero_big_int));
                                             Tvar "no_transfer"])
                                 ])))
       ]
@@ -531,7 +531,7 @@ let mk_test_consume : decl = Dfun {
 
 let mk_test_storage : decl = Dstorage {
     fields = [
-      { name = "admin" ; typ = Tyrole ; init = Tint 0; mutable_ = true; }
+      { name = "admin" ; typ = Tyrole ; init = Tint Big_int.zero_big_int; mutable_ = true; }
     ] @
       (mk_asset_fields "mile") @
       (mk_asset_fields "owner") @
@@ -543,7 +543,7 @@ let mk_test_storage : decl = Dstorage {
                         Timpl (Tmem (Tvar "k", Tvar "mile_keys"),
                                Tgt (Tyint, Tapp (Tvar "amount",
                                                  [Tget (Tvar "mile_assets",
-                                                        Tvar "k")]), Tint 0)))
+                                                        Tvar "k")]), Tint Big_int.zero_big_int)))
       };
 
     ];
@@ -603,7 +603,7 @@ let type_to_init (typ : loc_typ) : loc_term =
       | Typartition i -> Tvar (mk_loc typ.loc "empty")
       | Tycoll i      -> Tvar (mk_loc typ.loc "empty")
       | Tymap i       -> Tvar (mk_loc typ.loc ("const (mk_default_"^i.obj^" ())"))
-      | _             -> Tint 0)
+      | _             -> Tint Big_int.zero_big_int)
 
 let map_btype = function
   | M.Bbool          -> Tybool
@@ -648,7 +648,7 @@ let map_basic_type (typ : 'id M.item_field_type) : loc_typ =
 
 let map_bval = function
   | M.BVaddress v -> Tint (sha v)
-  | M.BVint i     -> Tint (Big_int.int_of_big_int i)
+  | M.BVint i     -> Tint i
   | _ -> Tnottranslated
 
 let rec map_term (t : M.mterm) : loc_term = mk_loc t.loc (

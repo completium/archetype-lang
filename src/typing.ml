@@ -1245,20 +1245,22 @@ and for_gen_method_call mode env theloc (the, m, args) =
   
       | `Pred ->
           let theid = mkloc (loc arg) "the" in
+          let thety = M.Tasset asset.as_name in
           let _ : bool = check_and_emit_name_free env theid in
-          let env = Env.Local.push env (unloc theid, Tasset asset.as_name) in
-          M.AExpr (for_xexpr mode env ~ety:M.vtbool arg)
+          let env = Env.Local.push env (unloc theid, thety) in
+          M.AFun (theid, thety, for_xexpr mode env ~ety:M.vtbool arg)
 
       | `RExpr ->
           let theid = mkloc (loc arg) "the" in
+          let thety = M.Tasset asset.as_name in
           let _ : bool = check_and_emit_name_free env theid in
-          let env = Env.Local.push env (unloc theid, Tasset asset.as_name) in
+          let env = Env.Local.push env (unloc theid, thety) in
           let e = for_xexpr mode env arg in
 
           e.M.type_ |> Option.iter (fun ty ->
             if not (Type.is_numeric ty) then
               Env.emit_error env (loc arg, NumericExpressionExpected));
-          M.AExpr e
+          M.AFun (theid, thety, e)
 
       | `Effect ->
           M.AEffect (Option.get_dfl [] (for_arg_effect mode env asset arg))
@@ -1390,6 +1392,14 @@ and for_role_expr (env : env) (role : PT.expr) =
 (* -------------------------------------------------------------------- *)
 let for_expr (env : env) ?(ety : M.type_ option) (tope : PT.expr) : M.pterm =
   for_xexpr `Expr env ?ety tope
+
+(* -------------------------------------------------------------------- *)
+let for_lbl_expr (env : env) (topf : PT.label_expr) : env * M.pterm =
+  env, for_expr env (snd (unloc topf))
+
+(* -------------------------------------------------------------------- *)
+let for_lbls_expr (env : env) (topf : PT.label_exprs) : env * M.pterm list =
+  List.fold_left_map for_lbl_expr env topf
 
 (* -------------------------------------------------------------------- *)
 let for_formula (env : env) (topf : PT.expr) : M.pterm =
@@ -1753,16 +1763,21 @@ let for_varfun_decl (env : env) (decl : varfun loced) =
   
       if Option.is_some dty then begin
         let decl = {
-            vr_name = x; vr_type = Option.get dty; vr_kind = ctt; vr_core = None;
-        } in
+            vr_name = x  ; vr_type = Option.get dty;
+            vr_kind = ctt; vr_core = None          ; } in
   
         if   (check_and_emit_name_free env x)
         then Env.Var.push env decl
         else env
       end else env
 
-  | `Function _ ->
-      assert false
+  | `Function fdecl ->
+      let env, _   = Env.inscope env (fun env ->
+        let env    = fst (for_args_decl env fdecl.args) in
+        let rty    = Option.bind (for_type env) fdecl.ret_t in
+        let _body  = for_expr env ?ety:rty fdecl.body in
+        let _verif = Option.map (for_verification env) fdecl.verif in
+        env, ()) in env
 
 (* -------------------------------------------------------------------- *)
 let for_varfuns_decl (env : env) (decls : varfun loced list) =
@@ -1828,7 +1843,7 @@ let for_acttx_decl (env : env) (decl : acttx loced) =
           let env, effect = Option.foldmap for_instruction env (Option.fst i_exts) in
           let callby      = Option.map (for_callby env) (Option.fst pt.calledby) in
           let _callby     = Option.get_dfl [] callby in
-          let env, reqs   = Option.foldmap for_lbls_formula env (Option.fst pt.require) in
+          let env, reqs   = Option.foldmap for_lbls_expr env (Option.fst pt.require) in
           let env, verif  = Option.foldmap for_verification env pt.verif in
 
           (env, ()))

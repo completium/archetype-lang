@@ -122,7 +122,7 @@ let process_action (model : model) : model =
                           let aid : pterm = mk_sp (Pvar id) in *)
 
                        (* let arg : pterm = mk_sp (Precord [q; aid]) in *)
-                       let args : ('id, 'term) term_arg list = [] in (*TODO *)
+                       let args : ('id, 'typ, 'term) term_arg list = [] in (*TODO *)
 
                        mk_instr (Icall (Some asset, Cconst Cupdate, args))
                      )

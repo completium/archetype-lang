@@ -264,7 +264,7 @@ let rec pp_term outer pos fmt = function
   | Tempty e ->
     Format.fprintf fmt "is_empty %a"
       (pp_with_paren (pp_term outer pos)) e
-  | Tint i -> pp_str fmt (string_of_int i)
+  | Tint i -> pp_str fmt (Big_int.string_of_big_int i)
   | Tforall (ud,b) ->
     Format.fprintf fmt "@[forall %a.@\n%a@]"
       (pp_list ", " pp_univ_decl) ud
