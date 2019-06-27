@@ -96,6 +96,7 @@
 %token MULTEQUAL
 %token NAMESPACE
 %token NEQUAL
+%token NONE
 %token NOT
 %token OF
 %token ON
@@ -103,6 +104,7 @@
 %token OP_SPEC2
 %token OP_SPEC3
 %token OP_SPEC4
+%token OPTION
 %token OR
 %token OREQUAL
 %token OTHERWISE
@@ -122,6 +124,7 @@
 %token RPAREN
 %token SEMI_COLON
 %token SORTED
+%token SOME
 %token SPECIFICATION
 %token STATES
 %token THEN
@@ -445,6 +448,7 @@ type_s_unloc:
 | x=type_s c=container    { Tcontainer (x, c) }
 | x=ident y=type_s %prec above_coll
                           { Tapp (x, y) }
+| x=type_s OPTION         { Toption x }
 | x=paren(type_r)         { x }
 
 %inline type_tuples:
@@ -664,6 +668,12 @@ expr_r:
 
  | RETURN x=simple_expr
      { Ereturn x }
+
+ | SOME x=simple_expr
+     { Eoption (OSome x) }
+
+ | NONE
+     { Eoption ONone }
 
  | x=order_operations %prec prec_order { x }
 

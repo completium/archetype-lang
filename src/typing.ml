@@ -752,6 +752,10 @@ let rec for_type_exn (env : env) (ty : PT.type_t) : M.ptyp =
   | Ttuple tys ->
     M.Ttuple (List.map (for_type_exn env) tys)
 
+  | Toption _x ->
+    (* FIXME *)
+    assert false
+
 let for_type (env : env) (ty : PT.type_t) : M.ptyp option =
   try Some (for_type_exn env ty) with InvalidType -> None
 
@@ -1150,6 +1154,7 @@ let rec for_xexpr (mode : emode_t) (env : env) ?(ety : M.ptyp option) (tope : PT
     | Eif       _
     | Erequire  _
     | Ereturn   _
+    | Eoption   _
     | Eseq      _
     | Eterm     _
     | Etransfer _

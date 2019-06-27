@@ -20,6 +20,7 @@ type type_r =
   | Tcontainer of type_t * container
   | Tapp of lident * type_t
   | Ttuple of type_t list
+  | Toption of type_t
 [@@deriving yojson, show {with_path = false}]
 
 and type_t = type_r loced
@@ -124,8 +125,13 @@ type expr_unloc =
   | Elabel        of lident * expr
   | Eilabel       of lident
   | Ereturn       of expr
+  | Eoption       of option_
   | Einvalid
 [@@deriving yojson, show {with_path = false}]
+
+and option_ =
+  | OSome of expr
+  | ONone
 
 and function_ =
   | Fident of lident

@@ -130,6 +130,12 @@ let rec pp_type outer pos fmt e =
     in
     (maybe_paren outer e_tuple pos pp) fmt l
 
+  | Toption x ->
+    Format.fprintf fmt
+      "%a option"
+      pp_type_default x
+
+
 
 let pp_type fmt e = pp_type e_default PNone fmt e
 
@@ -382,6 +388,19 @@ let rec pp_expr outer pos fmt a =
     let pp fmt x =
       Format.fprintf fmt "return %a"
         pp_simple_expr x
+    in
+    (maybe_paren outer e_default pos pp) fmt x
+
+  | Eoption x ->
+
+    let pp fmt x =
+      let pp_option_ fmt x =
+        match x with
+        | OSome x -> Format.fprintf fmt "Some %a" pp_simple_expr x
+        | ONone -> Format.fprintf fmt "None"
+      in
+      Format.fprintf fmt "%a"
+        pp_option_ x
     in
     (maybe_paren outer e_default pos pp) fmt x
 
