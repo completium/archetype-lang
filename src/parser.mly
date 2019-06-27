@@ -85,7 +85,6 @@
 %token LABEL
 %token LBRACE
 %token LBRACKET
-%token LBRACKET2
 %token LBRACKETPERCENT
 %token LESS
 %token LESSEQUAL
@@ -119,7 +118,6 @@
 %token PREDICATE
 %token RBRACE
 %token RBRACKET
-%token RBRACKET2
 %token RECORD
 %token REF
 %token REQUIRE
@@ -219,7 +217,7 @@ snl2(separator, X):
 | LBRACKET x=X RBRACKET { x }
 
 %inline bracket2(X):
-| LBRACKET2 x=X RBRACKET2 { x }
+| LBRACKET UNDERSCORE LBRACKET x=X RBRACKET UNDERSCORE RBRACKET { x }
 
 start_expr:
 | x=expr EOF { x }

@@ -125,7 +125,6 @@ let string_of_token = function
   | ADDRESS s       -> Printf.sprintf "DURATION(%s)" s
   | ACTION          -> "ACTION"
   | ACCEPT_TRANSFER -> "ACCEPT_TRANSFER"
-  | _ -> "anomaly"
 
 let string_of_symbol = function
   | X (T T_error) -> "error"
@@ -358,7 +357,6 @@ let string_of_symbol = function
   | X (N N_archetype) -> "archetype"
   | X (N N_action_properties) -> "action properties"
   | X (N N_action) -> "an action"
-  | _ -> "anomaly"
 
 let string_of_item (p, i) =
   string_of_symbol (lhs p) ^ " -> "

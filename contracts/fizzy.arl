@@ -69,7 +69,7 @@ action manual (fi : string) (pr : string) (newst : status) = {
 verification {
   (* any action on storage is performed only by the owner *)
   specification s1 = {
-    [[anyaction may be performed only by role owner]]
+    [_[anyaction may be performed only by role owner]_]
   }
 
   (* this contract does not transfer any tez *)
@@ -80,7 +80,7 @@ verification {
   (* transaction “updatestatus” is not the only one to potentially
     perform an update of insurance status *)
   specification s3 = {
-    [[(update insurance.stat) may be performed only by action
-                                          [updatestatus or manual] ]]
+    [_[(update insurance.stat) may be performed only by action
+                                          [updatestatus or manual] ]_]
   }
 }

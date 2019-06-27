@@ -185,8 +185,6 @@ rule token = parse
   | "*"                   { MULT }
   | "/"                   { DIV }
   | "_"                   { UNDERSCORE }
-  | "[["                  { LBRACKET2 }
-  | "]]"                  { RBRACKET2 }
   | eof                   { EOF }
   | _ as c                {
       lex_error lexbuf (Printf.sprintf "unexpected char: %c" c)
