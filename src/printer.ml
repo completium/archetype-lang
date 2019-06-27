@@ -814,6 +814,13 @@ let rec pp_declaration fmt { pldesc = e; _ } =
       (pp_option (pp_prefix " " (pp_list " " pp_value_option))) opts
       (pp_option (pp_prefix " = " (pp_expr e_equal PRight))) dv
 
+  | Dinstance (id, t, dv, exts) ->
+    Format.fprintf fmt "instance%a %a of %a = %a"
+      pp_extensions exts
+      pp_id id
+      pp_id t
+      (pp_expr e_equal PRight) dv
+
   | Denum (id, (ids, exts)) ->
     Format.fprintf fmt "%a%a"
       (fun fmt id -> (

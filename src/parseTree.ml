@@ -239,6 +239,7 @@ type enum_kind =
 type declaration_unloc =
   | Darchetype     of lident * exts
   | Dvariable      of variable_decl
+  | Dinstance      of instance_decl
   | Denum          of enum_kind * enum_decl
   | Dasset         of asset_decl
   | Daction        of action_decl
@@ -258,6 +259,12 @@ and variable_decl =
   * value_option list option
   * variable_kind
   * exts
+
+and instance_decl = (* instance[%exts%] var of contract_type = e *)
+  lident   (* var *)
+  * lident (* contract_type *)
+  * expr   (* e *)
+  * exts   (* exts *)
 
 and enum_decl =
   (lident * enum_option list) list * exts

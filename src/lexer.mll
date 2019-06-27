@@ -42,12 +42,14 @@
       "in"                  , IN             ;
       "initial"             , INITIAL        ;
       "initialized"         , INITIALIZED    ;
+      "instance"            , INSTANCE       ;
       "invariants"          , INVARIANTS     ;
       "label"               , LABEL          ;
       "let"                 , LET            ;
       "match"               , MATCH          ;
       "namespace"           , NAMESPACE      ;
       "not"                 , NOT            ;
+      "of"                  , OF             ;
       "on"                  , ON             ;
       "or"                  , OR             ;
       "otherwise"           , OTHERWISE      ;

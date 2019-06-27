@@ -1916,6 +1916,7 @@ let group_declarations (decls : (PT.declaration list)) =
     | PT.Dverification infos ->
       { g with gr_verifs = mk infos :: g.gr_verifs }
 
+    | Dinstance _
     | Dcontract  _
     | Dnamespace _
     | Dextension _
