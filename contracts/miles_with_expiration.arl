@@ -99,15 +99,15 @@ action consume (a : address) (quantity : uint) = {
 verification {
   (* this ensures that any mile was added with the ‘add’ action *)
   specification g1 = {
-    anyaction may be performed only by role admin
+    [[ anyaction may be performed only by role admin]]
   }
 
   specification g2 = {
-    (remove mile) may be performed only by action (consume or clear_expired)
+    [[ (remove mile) may be performed only by action [consume or clear_expired] ]]
   }
 
   specification g3 = {
-    not ((add mile) may be performed only by action consume)
+    not ( [[ (add mile) may be performed only by action consume]] )
   }
 }
 

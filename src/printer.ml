@@ -53,10 +53,6 @@ let e_simple        =  (150, NonAssoc) (* ?  *)
 
 let get_prec_from_operator (op : operator) =
   match op with
-  | `Spec OpSpec1    -> e_opspec1
-  | `Spec OpSpec2    -> e_opspec2
-  | `Spec OpSpec3    -> e_opspec3
-  | `Spec OpSpec4    -> e_opspec4
   | `Logical And     -> e_and
   | `Logical Or      -> e_or
   | `Logical Imply   -> e_imply
@@ -141,13 +137,6 @@ let pp_type fmt e = pp_type e_default PNone fmt e
 
 
 (* -------------------------------------------------------------------------- *)
-let spec_operator_to_str op =
-  match op with
-  | OpSpec1   -> "may be performed only by role"
-  | OpSpec2   -> "may be performed only by action"
-  | OpSpec3   -> "may be performed by role"
-  | OpSpec4   -> "may be performed by action"
-
 let logical_operator_to_str op =
   match op with
   | And   -> "and"
@@ -180,7 +169,6 @@ let unary_operator_to_str op =
 
 let operator_to_str op =
   match op with
-  | `Spec o    -> spec_operator_to_str o
   | `Logical o -> logical_operator_to_str o
   | `Cmp o     -> comparison_operator_to_str o
   | `Arith o   -> arithmetic_operator_to_str o
@@ -526,6 +514,65 @@ let rec pp_expr outer pos fmt a =
         pp_id i
     in
     (maybe_paren outer e_colon pos pp) fmt i
+
+  | Esecurity x ->
+
+    let pp fmt s =
+      let rec pp_security_arg fmt arg =
+        let arg = unloc arg in
+        match arg with
+        | Sident id -> pp_id fmt id
+        | Sdot (a, b) ->
+          Format.fprintf fmt "%a.%a"
+            pp_id a
+            pp_id b
+        | Slist l ->
+          Format.fprintf fmt "[%a]"
+            (pp_list " or " pp_security_arg) l
+        | Sapp (id, args) ->
+          Format.fprintf fmt "(%a %a)"
+            pp_id id
+            (pp_list "@ " pp_security_arg) args
+        | Sexpect (id, arg) ->
+          Format.fprintf fmt "(%a expect %a)"
+            pp_id id
+            pp_security_arg arg
+        | Sto (id, arg) ->
+          Format.fprintf fmt "(%a to %a)"
+            pp_id id
+            pp_security_arg arg
+      in
+      let s = unloc s in
+      match s with
+      | SMayBePerformedOnlyByRole (lhs, rhs) ->
+        Format.fprintf fmt "[[ %a may be performed only by role %a ]]"
+          pp_security_arg lhs
+          pp_security_arg rhs
+
+      | SMayBePerformedOnlyByAction (lhs, rhs) ->
+        Format.fprintf fmt "[[ %a may be performed only by action %a ]]"
+          pp_security_arg lhs
+          pp_security_arg rhs
+
+      | SMayBePerformedByRole (lhs, rhs) ->
+        Format.fprintf fmt "[[ %a may be performed by role %a ]]"
+          pp_security_arg lhs
+          pp_security_arg rhs
+
+      | SMayBePerformedByAction (lhs, rhs) ->
+        Format.fprintf fmt "[[ %a may be performed by action %a ]]"
+          pp_security_arg lhs
+          pp_security_arg rhs
+
+      | STransferredBy arg ->
+        Format.fprintf fmt "[[ transferred by %a ]]"
+          pp_security_arg arg
+
+      | STransferredTo arg ->
+        Format.fprintf fmt "[[ transferred to %a ]]"
+          pp_security_arg arg
+    in
+    (maybe_paren outer e_default pos pp) fmt x
 
   | Einvalid -> Format.fprintf fmt "(* invalid expr *)"
 

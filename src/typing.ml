@@ -1006,11 +1006,11 @@ let rec for_xexpr (mode : emode_t) (env : env) ?(ety : M.ptyp option) (tope : PT
           end
       end
 
-    | Eapp (Foperator { pldesc = `Spec _ ; plloc = loc; }, _) when mode = `Expr ->
+    (*| Eapp (Foperator { pldesc = `Spec _ ; plloc = loc; }, _) when mode = `Expr ->
       Env.emit_error env (loc, SpecOperatorInExpr);
-      bailout ()
+      bailout ()*)
 
-    | Eapp (Foperator { pldesc = `Spec PT.OpSpec1 }, args) ->
+    (*| Eapp (Foperator { pldesc = `Spec PT.OpSpec1 }, args) ->
       if List.length args <> 2 then begin
         Env.emit_error env (loc tope, InvalidNumberOfArguments (2, List.length args));
         bailout ()
@@ -1022,10 +1022,10 @@ let rec for_xexpr (mode : emode_t) (env : env) ?(ety : M.ptyp option) (tope : PT
       let _role   = for_role_expr   env role   in
 
       bailout ()              (* FIXME *)
-
-    | Eapp (Foperator { pldesc = `Spec _ }, args) ->
+    *)
+    (*| Eapp (Foperator { pldesc = `Spec _ }, args) ->
       bailout ()              (* FIXME *)
-
+    *)
     | Eapp (Foperator { pldesc = op }, args) -> begin
         let args = List.map (for_xexpr env) args in
         let na   = List.length args in
@@ -1083,8 +1083,8 @@ let rec for_xexpr (mode : emode_t) (env : env) ?(ety : M.ptyp option) (tope : PT
             let a1, a2 = Option.get (List.as_seq2 args) in
             M.Pcomp (tt_cmp_operator op, a1, a2)
 
-          | `Spec _ ->
-            assert false
+          (*| `Spec _ ->
+            assert false*)
 
         in mk_sp (Some (sig_.osl_ret)) aout
       end
@@ -1158,6 +1158,7 @@ let rec for_xexpr (mode : emode_t) (env : env) ?(ety : M.ptyp option) (tope : PT
     | Eseq      _
     | Eterm     _
     | Etransfer _
+    | Esecurity _
     | Einvalid ->
       Env.emit_error env (loc tope, InvalidExpression);
       bailout ()

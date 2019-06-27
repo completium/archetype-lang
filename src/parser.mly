@@ -63,6 +63,7 @@
 %token EOF
 %token EQUAL
 %token EQUIV
+%token EXCEPT
 %token EXISTS
 %token EXTENSION
 %token FAILIF
@@ -84,12 +85,17 @@
 %token LABEL
 %token LBRACE
 %token LBRACKET
+%token LBRACKET2
 %token LBRACKETPERCENT
 %token LESS
 %token LESSEQUAL
 %token LET
 %token LPAREN
 %token MATCH
+%token MAY_BE_PERFORMED_ONLY_BY_ROLE
+%token MAY_BE_PERFORMED_ONLY_BY_ACTION
+%token MAY_BE_PERFORMED_BY_ROLE
+%token MAY_BE_PERFORMED_BY_ACTION
 %token MINUS
 %token MINUSEQUAL
 %token MULT
@@ -100,10 +106,6 @@
 %token NOT
 %token OF
 %token ON
-%token OP_SPEC1
-%token OP_SPEC2
-%token OP_SPEC3
-%token OP_SPEC4
 %token OPTION
 %token OR
 %token OREQUAL
@@ -117,6 +119,7 @@
 %token PREDICATE
 %token RBRACE
 %token RBRACKET
+%token RBRACKET2
 %token RECORD
 %token REF
 %token REQUIRE
@@ -131,6 +134,8 @@
 %token THEOREM
 %token TO
 %token TRANSFER
+%token TRANSFERRED_BY
+%token TRANSFERRED_TO
 %token TRANSITION
 %token TRUE
 %token UNDERSCORE
@@ -162,8 +167,6 @@
 %nonassoc COLON
 
 %nonassoc COLONEQUAL PLUSEQUAL MINUSEQUAL MULTEQUAL DIVEQUAL ANDEQUAL OREQUAL
-
-%nonassoc OP_SPEC1 OP_SPEC2 OP_SPEC3 OP_SPEC4
 
 %right IMPLY
 %nonassoc EQUIV
@@ -214,6 +217,9 @@ snl2(separator, X):
 
 %inline bracket(X):
 | LBRACKET x=X RBRACKET { x }
+
+%inline bracket2(X):
+| LBRACKET2 x=X RBRACKET2 { x }
 
 start_expr:
 | x=expr EOF { x }
@@ -675,6 +681,9 @@ expr_r:
  | NONE
      { Eoption ONone }
 
+ | x=security
+    { Esecurity x }
+
  | x=order_operations %prec prec_order { x }
 
  | e1=expr op=loc(bin_operator) e2=expr
@@ -789,12 +798,6 @@ record_item:
  | FORALL { Forall }
  | EXISTS { Exists }
 
-%inline spec_operator:
- | OP_SPEC1   { OpSpec1 }
- | OP_SPEC2   { OpSpec2 }
- | OP_SPEC3   { OpSpec3 }
- | OP_SPEC4   { OpSpec4 }
-
 %inline logical_operator:
  | AND   { And }
  | OR    { Or }
@@ -824,7 +827,6 @@ record_item:
  | NOT     { Not }
 
 %inline bin_operator:
-| op=spec_operator       { `Spec op }
 | op=logical_operator    { `Logical op }
 | op=comparison_operator { `Cmp op }
 | op=arithmetic_operator { `Arith op }
@@ -842,3 +844,35 @@ record_item:
 
 %inline asset_operation:
 | xs=asset_operation_enum+ args=option(simple_expr+) { AssetOperation (xs, args) }
+
+%inline security:
+ | e=loc(bracket2(security_unloc)) { e }
+
+security_unloc:
+| lhs=security_arg MAY_BE_PERFORMED_ONLY_BY_ROLE rhs=security_arg
+    { SMayBePerformedOnlyByRole (lhs, rhs) }
+| lhs=security_arg MAY_BE_PERFORMED_ONLY_BY_ACTION rhs=security_arg
+    { SMayBePerformedOnlyByAction (lhs, rhs) }
+| lhs=security_arg MAY_BE_PERFORMED_BY_ROLE rhs=security_arg
+    { SMayBePerformedByRole (lhs, rhs) }
+| lhs=security_arg MAY_BE_PERFORMED_BY_ACTION rhs=security_arg
+    { SMayBePerformedByAction (lhs, rhs) }
+| TRANSFERRED_BY arg=security_arg
+    { STransferredBy arg }
+| TRANSFERRED_TO arg=security_arg
+    { STransferredTo arg }
+
+%inline security_arg:
+ | e=loc(security_arg_unloc) { e }
+
+security_arg_unloc:
+| id=ident                           { Sident id }
+| a=ident DOT b=ident                { Sdot (a, b) }
+| xs=bracket(snl2(OR, security_arg)) { Slist xs }
+| x=paren(security_arg_ext_unloc)    { x }
+
+security_arg_ext_unloc:
+| id=ident xs=security_arg+          { Sapp (id, xs) }
+| id=ident EXCEPT arg=security_arg   { Sexpect (id, arg) }
+| id=ident TO arg=security_arg       { Sto (id, arg) }
+| x=security_arg_unloc               { x }

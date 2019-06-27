@@ -27,13 +27,6 @@ and type_t = type_r loced
 [@@deriving yojson, show {with_path = false}]
 
 (* -------------------------------------------------------------------- *)
-type spec_operator =
-  | OpSpec1
-  | OpSpec2
-  | OpSpec3
-  | OpSpec4
-[@@deriving yojson, show {with_path = false}]
-
 type logical_operator =
   | And
   | Or
@@ -80,7 +73,6 @@ type quantifier =
 [@@deriving yojson, show {with_path = false}]
 
 type operator = [
-  | `Spec    of spec_operator
   | `Logical of logical_operator
   | `Cmp     of comparison_operator
   | `Arith   of arithmetic_operator
@@ -99,6 +91,30 @@ type pattern_unloc =
 [@@deriving yojson, show {with_path = false}]
 
 type pattern = pattern_unloc loced
+[@@deriving yojson, show {with_path = false}]
+
+type security_arg_unloc =
+  | Sident of lident
+  | Sdot   of lident * lident
+  | Slist of security_arg list
+  | Sapp of lident * security_arg list
+  | Sexpect of lident * security_arg
+  | Sto of lident * security_arg
+[@@deriving yojson, show {with_path = false}]
+
+and security_arg = security_arg_unloc loced
+[@@deriving yojson, show {with_path = false}]
+
+type security_unloc =
+  | SMayBePerformedOnlyByRole of security_arg * security_arg
+  | SMayBePerformedOnlyByAction of security_arg * security_arg
+  | SMayBePerformedByRole of security_arg * security_arg
+  | SMayBePerformedByAction of security_arg * security_arg
+  | STransferredBy of security_arg
+  | STransferredTo of security_arg
+[@@deriving yojson, show {with_path = false}]
+
+and security = security_unloc loced
 [@@deriving yojson, show {with_path = false}]
 
 type expr_unloc =
@@ -126,6 +142,7 @@ type expr_unloc =
   | Eilabel       of lident
   | Ereturn       of expr
   | Eoption       of option_
+  | Esecurity     of security
   | Einvalid
 [@@deriving yojson, show {with_path = false}]
 

@@ -143,7 +143,8 @@ let parse lexbuf =
 
   let rec on_error last_reduction lexer checkpoint =
     contextual_error_msg lexer checkpoint (fun () ->
-        resume_on_error last_reduction lexer
+        raise (Error.ParseError [])
+        (* resume_on_error last_reduction lexer *)
       )
   and run last_reduction input_needed lexer checkpoint =
     match checkpoint with
