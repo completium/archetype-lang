@@ -177,7 +177,7 @@
 
 %right NOT
 
-%right STACK SET QUEUE PARTITION COLLECTION
+%right PARTITION COLLECTION
 %nonassoc above_coll
 
 %type <ParseTree.archetype> main

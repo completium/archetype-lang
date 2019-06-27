@@ -646,6 +646,10 @@ type env = Env.t
 
 let empty : env =
   let cb (lc, error) =
+    let str : string = Format.asprintf "%a@." pp_error_desc error in
+    let pos : Position.t list = [location_to_position lc] in
+    Error.error_alert pos str (fun _ -> ());
+
     Format.eprintf "%s: %a@."
       (Location.tostring lc) pp_error_desc error in
 

@@ -294,9 +294,9 @@ module Set = Set
 
 (* -------------------------------------------------------------------- *)
 module Mint = Map.Make(struct
-  type t = int
-  let compare = (Pervasives.compare : t -> t -> int)
-end)
+    type t = int
+    let compare = (Pervasives.compare : t -> t -> int)
+  end)
 
 (* -------------------------------------------------------------------- *)
 let norm_hex_string (s : string) =
@@ -305,3 +305,14 @@ let norm_hex_string (s : string) =
 let sha s : Big_int.big_int =
   let s  = Digestif.SHA512.to_hex (Digestif.SHA512.digest_string s) in
   Big_int.big_int_of_string (norm_hex_string s)
+
+(* -------------------------------------------------------------------- *)
+let location_to_position (l : Location.t) : Position.t =
+  let fname = l.loc_fname in
+  let start : int * int * int =
+    l.loc_start |> fst, l.loc_bchar, l.loc_start |> snd
+  in
+  let end_ : int * int * int =
+    l.loc_end |> fst, l.loc_echar, l.loc_end |> snd
+  in
+  Position.mk_position fname start end_
