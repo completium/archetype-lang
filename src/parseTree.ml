@@ -121,7 +121,7 @@ type expr_unloc =
   | Eseq          of expr * expr
   | Eletin        of lident * type_t option * expr * expr * expr option
   | Ematchwith    of expr * (pattern list * expr) list
-  | Equantifier   of quantifier * lident_typ * expr
+  | Equantifier   of quantifier * lident * quantifier_kind * expr
   | Elabel        of lident * expr
   | Eilabel       of lident
   | Ereturn       of expr
@@ -129,9 +129,15 @@ type expr_unloc =
   | Einvalid
 [@@deriving yojson, show {with_path = false}]
 
+and quantifier_kind =
+  | Qcollection of expr
+  | Qtype of type_t
+[@@deriving yojson, show {with_path = false}]
+
 and option_ =
   | OSome of expr
   | ONone
+[@@deriving yojson, show {with_path = false}]
 
 and function_ =
   | Fident of lident

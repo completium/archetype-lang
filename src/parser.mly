@@ -181,6 +181,7 @@
 %right NOT
 
 %right PARTITION COLLECTION
+%right OPTION
 %nonassoc above_coll
 
 %type <ParseTree.archetype> main
@@ -600,7 +601,7 @@ pattern:
  | e=loc(expr_r) { e }
 
 %inline ident_typ_q_item:
- | LPAREN ids=ident+ IN t=type_t RPAREN { List.map (fun x -> (x, t, None)) ids }
+ | LPAREN ids=ident+ t=quant_kind RPAREN { List.map (fun x -> (x, t)) ids }
 
 ident_typ_q:
  | xs=ident_typ_q_item+ { List.flatten xs }
@@ -614,15 +615,14 @@ ident_typ_q:
 | OTHERWISE o=expr { Some o }
 
 expr_r:
- | q=quantifier x=ident_typ_quant COMMA y=expr
-     { Equantifier (q, x, y) }
+ | q=quantifier id=ident t=quant_kind COMMA y=expr
+     { Equantifier (q, id, t, y) }
 
  | q=quantifier xs=ident_typ_q COMMA y=expr
     {
-      (List.fold_right (fun x acc ->
-           let i, t, _ = x in
-           let l = Location.merge (loc i) (loc t) in
-           mkloc l (Equantifier (q, x, acc))) xs y) |> unloc
+      (List.fold_right (fun (i, t) acc ->
+           let l = loc i in
+           mkloc l (Equantifier (q, i, t, acc))) xs y) |> unloc
     }
 
  | LET i=ident t=colon_type_opt EQUAL e=expr IN y=expr o=otherwise
@@ -705,6 +705,15 @@ order_operations:
  | LPAREN RPAREN     { [] }
  | xs=simple_expr+   { xs }
 
+%inline simple_expr_with_app:
+ | x=loc(expr_with_app_unloc) { x }
+
+expr_with_app_unloc:
+ | id=ident a=app_args
+     { Eapp ( Fident id, a) }
+ | x=simple_expr_r
+     { x }
+
 %inline simple_expr:
  | x=loc(simple_expr_r) { x }
 
@@ -753,8 +762,9 @@ simple_expr_r:
  | LPAREN ids=ident+ COLON ty=type_t RPAREN
      { List.map (fun id -> (id, ty, None)) ids }*/
 
-%inline ident_typ_quant:
- | id=ident IN ty=type_t { (id, ty, None) }
+%inline quant_kind:
+| COLON t=type_s               { Qtype t }
+| IN    e=simple_expr_with_app { Qcollection e }
 
 literal:
  | x=NUMBER     { Lnumber   x }

@@ -492,15 +492,23 @@ let rec pp_expr outer pos fmt a =
     (maybe_paren outer e_default pos pp) fmt (id, t, e, body, other)
 
 
-  | Equantifier (q, id_t, body) ->
+  | Equantifier (q, id, t, body) ->
 
-    let pp fmt (q, id_t, body) =
-      Format.fprintf fmt "%a %a, %a"
+    let pp fmt (q, id, t, body) =
+      let pp_quantifier_kind fmt t =
+        match t with
+        | Qcollection e ->
+          Format.fprintf fmt "in %a" (pp_expr e_simple PNone) e
+        | Qtype t_ ->
+          Format.fprintf fmt ": %a" pp_type t_
+      in
+      Format.fprintf fmt "%a %a %a, %a"
         pp_quantifier q
-        pp_ident_quant id_t
+        pp_id id
+        pp_quantifier_kind t
         (pp_expr e_comma PRight) body
     in
-    (maybe_paren outer e_default pos pp) fmt (q, id_t, body)
+    (maybe_paren outer e_default pos pp) fmt (q, id, t, body)
 
   | Elabel (i, x) ->
 

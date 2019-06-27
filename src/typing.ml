@@ -1139,7 +1139,7 @@ let rec for_xexpr (mode : emode_t) (env : env) ?(ety : M.ptyp option) (tope : PT
     | Ematchwith (_e, _bs) ->
       assert false
 
-    | Equantifier (_bd, _x, _e) ->
+    | Equantifier (_bd, _id, _x, _e) ->
       assert false
 
     | Elabel _
