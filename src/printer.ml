@@ -380,6 +380,14 @@ let rec pp_expr outer pos fmt a =
     in
     (maybe_paren outer e_default pos pp) fmt x
 
+  | Ereturn x ->
+
+    let pp fmt x =
+      Format.fprintf fmt "return %a"
+        pp_simple_expr x
+    in
+    (maybe_paren outer e_default pos pp) fmt x
+
   | Eassign (op, lhs, rhs) ->
 
     let prec = get_prec_from_assignment_operator op in

@@ -251,6 +251,7 @@ let to_instruction_node (n : ('a, 'b, 'c, 'd) A.instruction_node) fi ft : ('id, 
   | A.Ibreak                 -> M.Ibreak
   | A.Iassert e              -> M.Iassert (ft e)
   | A.Icall (i, ck, args)    -> M.Icall (Option.map to_mterm i, to_call_kind ck, List.map (to_term_arg ft) args)
+  | A.Ireturn _ -> assert false (* TODO *)
 
 let rec to_instruction (instr : A.instruction) : M.instruction =
   let node = to_instruction_node instr.node to_instruction to_mterm in

@@ -366,6 +366,7 @@ and ('id, 'typ, 'term, 'instr) instruction_node =
   | Ibreak
   | Iassert of 'term
   | Icall of ('term option * 'id call_kind * (('id, 'typ, 'term) term_arg) list)
+  | Ireturn of 'term
 [@@deriving show {with_path = false}]
 
 and ('id, 'typ, 'term) instruction_gen = ('id, 'typ, 'term, ('id, 'typ, 'term) instruction_gen) instruction_poly
@@ -653,6 +654,7 @@ let map_instr_node f = function
   | Ibreak              -> Ibreak
   | Iassert x           -> Iassert x
   | Icall (x, id, args) -> Icall (x, id, args)
+  | Ireturn x           -> Ireturn x
 
 let map_gen_poly g f (i : ('id, 'typ) struct_poly) : ('id, 'typ) struct_poly =
   {
@@ -705,6 +707,7 @@ let fold_instr f accu instr =
   | Ibreak           -> accu
   | Iassert _        -> accu
   | Icall _          -> accu
+  | Ireturn _        -> accu
 
 let fold_instr_expr fi fe accu instr =
   match instr.node with
@@ -719,6 +722,7 @@ let fold_instr_expr fi fe accu instr =
   | Ibreak              -> accu
   | Iassert x           -> fe accu x
   | Icall (x, id, args) -> fi accu instr
+  | Ireturn x           -> fe accu x
 
 let fold_map_term g f (accu : 'a) (term : ('id, type_) term_gen) : 'term * 'a =
   match term.node with
@@ -896,6 +900,10 @@ let fold_map_instr_term gi ge fi fe (accu : 'a) instr : 'instr * 'a =
         ) ([], xa) args
     in
     gi (Icall (xe, id, argss)), argsa
+
+  | Ireturn x ->
+    let xe, xa = fe accu x in
+    gi (Ireturn xe), xa
 
 
 (* -------------------------------------------------------------------- *)

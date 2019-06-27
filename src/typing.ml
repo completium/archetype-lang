@@ -29,10 +29,10 @@ end = struct
 
   let is_numeric = function
     | M.Tbuiltin (M.VTint | M.VTrational) ->
-        true
+      true
 
     | _ ->
-        false
+      false
 
   let equal = ((=) : M.ptyp -> M.ptyp -> bool)
 
@@ -258,7 +258,7 @@ type method_ = {
 
 and mthtyp = [
   | `T        of M.ptyp
-  | `The  
+  | `The
   | `Pk
   | `Effect
   | `Asset
@@ -270,7 +270,7 @@ and mthtyp = [
 ]
 
 let methods : (string * method_) list =
-  let mk mth_name mth_purity mth_totality mth_sig = 
+  let mk mth_name mth_purity mth_totality mth_sig =
     { mth_name; mth_purity; mth_totality; mth_sig; }
   in [
     ("get"         , mk M.Cget          `Pure   `Partial ([`Pk          ], Some `The));
@@ -545,13 +545,13 @@ end = struct
   module Var = struct
     let proj = function
       | `Global x ->
-          Some x
+        Some x
 
       | `Asset  a ->
-          Some { vr_name = a.as_name;
-                 vr_type = M.Tcontainer (M.Tasset a.as_name, M.Collection);
-                 vr_kind = `Constant;
-                 vr_core = None; }
+        Some { vr_name = a.as_name;
+               vr_type = M.Tcontainer (M.Tasset a.as_name, M.Collection);
+               vr_kind = `Constant;
+               vr_core = None; }
 
       | _ -> None
 
@@ -597,8 +597,8 @@ end = struct
       Option.bind
         (function
           | `Field nm ->
-              let decl = get env nm in
-              Some (decl, List.assoc fname decl.as_fields)
+            let decl = get env nm in
+            Some (decl, List.assoc fname decl.as_fields)
           | _ -> None)
         (Mid.find_opt fname env.env_bindings)
 
@@ -651,7 +651,7 @@ let empty : env =
 
   let env = Env.create cb in
 
-  let env = 
+  let env =
     List.fold_left
       (fun env (name, ty) -> Env.Type.push env (name, ty))
       env core_types in
@@ -801,32 +801,32 @@ let rec for_xexpr (mode : emode_t) (env : env) ?(ety : M.ptyp option) (tope : PT
     | Eterm (None, None, x) -> begin
         match Env.lookup env (unloc x) with
         | Some (`Local xty) ->
-            mk_sp (Some xty) (M.Pvar x)
+          mk_sp (Some xty) (M.Pvar x)
 
         | Some (`Global decl) ->
-            mk_sp (Some decl.vr_type) (M.Pvar x)
+          mk_sp (Some decl.vr_type) (M.Pvar x)
 
         | Some (`Asset decl) ->
-            let typ = M.Tcontainer ((M.Tasset decl.as_name), M.Collection) in
-            mk_sp (Some typ) (M.Pvar x)
+          let typ = M.Tcontainer ((M.Tasset decl.as_name), M.Collection) in
+          mk_sp (Some typ) (M.Pvar x)
 
         | _ ->
-            Env.emit_error env (loc x, UnknownLocalOrVariable (unloc x));
-            bailout ()
+          Env.emit_error env (loc x, UnknownLocalOrVariable (unloc x));
+          bailout ()
       end
 
     | Eliteral v ->
-        let v = for_literal env (mkloc (loc tope) v) in
-        mk_sp v.M.type_ (M.Plit v)
+      let v = for_literal env (mkloc (loc tope) v) in
+      mk_sp v.M.type_ (M.Plit v)
 
     | Earray [] -> begin
         match ety with
         | Some (M.Tcontainer (_, _)) ->
-            mk_sp ety (M.Parray [])
+          mk_sp ety (M.Parray [])
 
         | _ ->
-            Env.emit_error env (loc tope, CannotInferCollectionType);
-            bailout ()
+          Env.emit_error env (loc tope, CannotInferCollectionType);
+          bailout ()
       end
 
     | Earray (e :: es) -> begin
@@ -837,11 +837,11 @@ let rec for_xexpr (mode : emode_t) (env : env) ?(ety : M.ptyp option) (tope : PT
 
         match ety with
         | Some (M.Tcontainer (_, _)) ->
-            mk_sp ety (M.Parray es)
+          mk_sp ety (M.Parray es)
 
         | _ ->
-            Env.emit_error env (loc tope, CannotInferCollectionType);
-            bailout ()
+          Env.emit_error env (loc tope, CannotInferCollectionType);
+          bailout ()
       end
 
     | Erecord fields -> begin
@@ -1002,24 +1002,24 @@ let rec for_xexpr (mode : emode_t) (env : env) ?(ety : M.ptyp option) (tope : PT
       end
 
     | Eapp (Foperator { pldesc = `Spec _ ; plloc = loc; }, _) when mode = `Expr ->
-        Env.emit_error env (loc, SpecOperatorInExpr);
-        bailout ()
+      Env.emit_error env (loc, SpecOperatorInExpr);
+      bailout ()
 
     | Eapp (Foperator { pldesc = `Spec PT.OpSpec1 }, args) ->
-        if List.length args <> 2 then begin
-          Env.emit_error env (loc tope, InvalidNumberOfArguments (2, List.length args));
-          bailout ()
-        end;
+      if List.length args <> 2 then begin
+        Env.emit_error env (loc tope, InvalidNumberOfArguments (2, List.length args));
+        bailout ()
+      end;
 
-        let action, role = Option.get (List.as_seq2 args) in
+      let action, role = Option.get (List.as_seq2 args) in
 
-        let _action = for_action_expr env action in
-        let _role   = for_role_expr   env role   in
+      let _action = for_action_expr env action in
+      let _role   = for_role_expr   env role   in
 
-        bailout ()              (* FIXME *)
+      bailout ()              (* FIXME *)
 
     | Eapp (Foperator { pldesc = `Spec _ }, args) ->
-        bailout ()              (* FIXME *)
+      bailout ()              (* FIXME *)
 
     | Eapp (Foperator { pldesc = op }, args) -> begin
         let args = List.map (for_xexpr env) args in
@@ -1031,28 +1031,28 @@ let rec for_xexpr (mode : emode_t) (env : env) ?(ety : M.ptyp option) (tope : PT
         let filter (sig_ : opsig) =
           if na <> List.length sig_.osl_sig then false else
 
-          List.for_all2
-            (fun arg ty -> Type.equal (Option.get arg.M.type_) ty) (* FIXME *)
-            args sig_.osl_sig in
+            List.for_all2
+              (fun arg ty -> Type.equal (Option.get arg.M.type_) ty) (* FIXME *)
+              args sig_.osl_sig in
 
         let sig_ =
           match List.filter filter (List.assoc_all op opsigs) with
           | [] ->
-              Env.emit_error env (loc tope, NoMatchingOperator);
-              bailout ()
+            Env.emit_error env (loc tope, NoMatchingOperator);
+            bailout ()
 
           | _::_::_ ->
-              Env.emit_error env (loc tope, MultipleMatchingOperator);
-              bailout ()
+            Env.emit_error env (loc tope, MultipleMatchingOperator);
+            bailout ()
 
           | [sig_] ->
-              sig_ in
+            sig_ in
 
         let aout =
           match op with
           | `Logical op ->
-              let a1, a2 = Option.get (List.as_seq2 args) in
-              M.Plogical (tt_logical_operator op, a1, a2)
+            let a1, a2 = Option.get (List.as_seq2 args) in
+            M.Plogical (tt_logical_operator op, a1, a2)
 
           | `Unary op -> begin
               let a1 = Option.get (List.as_seq1 args) in
@@ -1071,21 +1071,21 @@ let rec for_xexpr (mode : emode_t) (env : env) ?(ety : M.ptyp option) (tope : PT
             end
 
           | `Arith op ->
-              let a1, a2 = Option.get (List.as_seq2 args) in
-              M.Parith (tt_arith_operator op, a1, a2)
+            let a1, a2 = Option.get (List.as_seq2 args) in
+            M.Parith (tt_arith_operator op, a1, a2)
 
           | `Cmp op ->
-              let a1, a2 = Option.get (List.as_seq2 args) in
-              M.Pcomp (tt_cmp_operator op, a1, a2)
+            let a1, a2 = Option.get (List.as_seq2 args) in
+            M.Pcomp (tt_cmp_operator op, a1, a2)
 
           | `Spec _ ->
-              assert false
+            assert false
 
         in mk_sp (Some (sig_.osl_ret)) aout
       end
 
     | Eapp _ ->
-        assert false
+      assert false
 
     | Emethod (the, m, args) -> begin
         let infos = for_gen_method_call mode env (loc tope) (the, m, args) in
@@ -1104,29 +1104,29 @@ let rec for_xexpr (mode : emode_t) (env : env) ?(ety : M.ptyp option) (tope : PT
         end;
 
         begin match method_.mth_purity, mode with
-        | `Effect, `Formula ->
+          | `Effect, `Formula ->
             Env.emit_error env (loc tope, UnpureInFormula)
-        | _, _ ->
+          | _, _ ->
             () end;
 
         let rty = Option.bind type_of_mthtype (snd method_.mth_sig) in
         let rty =
           match method_.mth_totality, mode with
           | `Partial, `Formula ->
-              Option.map (fun x -> M.Toption x) rty
+            Option.map (fun x -> M.Toption x) rty
           | _, _ ->
-              rty in
+            rty in
 
         mk_sp rty (M.Pcall (Some the, M.Cconst method_.mth_name, args))
       end
 
     | Eif (c, et, Some ef) ->
-        let c    = for_xexpr env ~ety:M.vtbool c in
-        let et   = for_xexpr env et in
-        let ef   = for_xexpr env ?ety:et.type_ ef in
-        let aout = mk_sp (Some M.vtbool) (M.Pif (c, et, ef)) in
+      let c    = for_xexpr env ~ety:M.vtbool c in
+      let et   = for_xexpr env et in
+      let ef   = for_xexpr env ?ety:et.type_ ef in
+      let aout = mk_sp (Some M.vtbool) (M.Pif (c, et, ef)) in
 
-        aout
+      aout
 
     | Eletin (_lv, _t, _e1, _e2, _c) ->
       assert false
@@ -1148,12 +1148,13 @@ let rec for_xexpr (mode : emode_t) (env : env) ?(ety : M.ptyp option) (tope : PT
     | Efor      _
     | Eif       _
     | Erequire  _
+    | Ereturn   _
     | Eseq      _
     | Eterm     _
     | Etransfer _
     | Einvalid ->
-        Env.emit_error env (loc tope, InvalidExpression);
-        bailout ()
+      Env.emit_error env (loc tope, InvalidExpression);
+      bailout ()
 
   in
 
@@ -1162,11 +1163,11 @@ let rec for_xexpr (mode : emode_t) (env : env) ?(ety : M.ptyp option) (tope : PT
 
     begin match aout, ety with
       | { type_ = Some from_ }, Some to_ ->
-          if not (Type.compatible ~from_ ~to_) then
-            Env.emit_error env (loc tope, IncompatibleTypes (from_, to_));
+        if not (Type.compatible ~from_ ~to_) then
+          Env.emit_error env (loc tope, IncompatibleTypes (from_, to_));
 
       | _, Some to_ ->
-          Env.emit_error env (loc tope, ExpressionExpected)
+        Env.emit_error env (loc tope, ExpressionExpected)
 
       | _, _ ->
         ()
@@ -1182,14 +1183,14 @@ and for_asset_expr mode (env : env) (tope : PT.expr) =
   let typ =
     match Option.map Type.as_asset ast.M.type_ with
     | None ->
-        None
-  
+      None
+
     | Some None ->
-        Env.emit_error env (loc tope, InvalidAssetExpression);
-        None
-  
+      Env.emit_error env (loc tope, InvalidAssetExpression);
+      None
+
     | Some (Some asset) ->
-        Some (Env.Asset.get env (unloc asset))
+      Some (Env.Asset.get env (unloc asset))
 
   in (ast, typ)
 
@@ -1200,14 +1201,14 @@ and for_asset_collection_expr mode (env : env) (tope : PT.expr) =
   let typ =
     match Option.map Type.as_asset_collection ast.M.type_ with
     | None ->
-        None
-  
+      None
+
     | Some None ->
-        Env.emit_error env (loc tope, InvalidAssetCollectionExpr);
-        None
-  
+      Env.emit_error env (loc tope, InvalidAssetCollectionExpr);
+      None
+
     | Some (Some (asset, c)) ->
-        Some (Env.Asset.get env (unloc asset), c)
+      Some (Env.Asset.get env (unloc asset), c)
 
   in (ast, typ)
 
@@ -1221,11 +1222,11 @@ and for_gen_method_call mode env theloc (the, m, args) =
     let method_ =
       match Mid.find_opt (unloc m) methods with
       | None ->
-          Env.emit_error env (loc m, NoSuchMethod (unloc m));
-          raise E.Bailout
+        Env.emit_error env (loc m, NoSuchMethod (unloc m));
+        raise E.Bailout
       | Some method_ -> method_
     in
-  
+
     let ne = List.length (fst method_.mth_sig) in
     let ng = List.length args in
 
@@ -1237,48 +1238,48 @@ and for_gen_method_call mode env theloc (the, m, args) =
     let doarg arg (aty : mthtyp) =
       match aty with
       | `Pk ->
-          let pk = List.assoc asset.as_pk asset.as_fields in
-          M.AExpr (for_xexpr mode env ~ety:pk arg)
+        let pk = List.assoc asset.as_pk asset.as_fields in
+        M.AExpr (for_xexpr mode env ~ety:pk arg)
 
       | `The ->
-          M.AExpr (for_xexpr mode env ~ety:(Tasset asset.as_name) arg)
-  
+        M.AExpr (for_xexpr mode env ~ety:(Tasset asset.as_name) arg)
+
       | `Pred ->
-          let theid = mkloc (loc arg) "the" in
-          let thety = M.Tasset asset.as_name in
-          let _ : bool = check_and_emit_name_free env theid in
-          let env = Env.Local.push env (unloc theid, thety) in
-          M.AFun (theid, thety, for_xexpr mode env ~ety:M.vtbool arg)
+        let theid = mkloc (loc arg) "the" in
+        let thety = M.Tasset asset.as_name in
+        let _ : bool = check_and_emit_name_free env theid in
+        let env = Env.Local.push env (unloc theid, thety) in
+        M.AFun (theid, thety, for_xexpr mode env ~ety:M.vtbool arg)
 
       | `RExpr ->
-          let theid = mkloc (loc arg) "the" in
-          let thety = M.Tasset asset.as_name in
-          let _ : bool = check_and_emit_name_free env theid in
-          let env = Env.Local.push env (unloc theid, thety) in
-          let e = for_xexpr mode env arg in
+        let theid = mkloc (loc arg) "the" in
+        let thety = M.Tasset asset.as_name in
+        let _ : bool = check_and_emit_name_free env theid in
+        let env = Env.Local.push env (unloc theid, thety) in
+        let e = for_xexpr mode env arg in
 
-          e.M.type_ |> Option.iter (fun ty ->
+        e.M.type_ |> Option.iter (fun ty ->
             if not (Type.is_numeric ty) then
               Env.emit_error env (loc arg, NumericExpressionExpected));
-          M.AFun (theid, thety, e)
+        M.AFun (theid, thety, e)
 
       | `Effect ->
-          M.AEffect (Option.get_dfl [] (for_arg_effect mode env asset arg))
+        M.AEffect (Option.get_dfl [] (for_arg_effect mode env asset arg))
 
       | _ ->                (* FIXME *)
-          assert false
-  
+        assert false
+
     in
-  
+
     let args = List.map2 doarg args (fst method_.mth_sig) in
     let amap =
       let aout = ref Mint.empty in
       List.iteri (fun i arg ->
           match arg with
           | M.AExpr { M.type_ = Some ty } ->
-              aout := Mint.add i ty !aout
+            aout := Mint.add i ty !aout
           | _ -> ()) args; !aout in
-        
+
     Some (the, asset, method_, args, amap)
 
   with E.Bailout -> None
@@ -1287,60 +1288,60 @@ and for_gen_method_call mode env theloc (the, m, args) =
 and for_arg_effect mode (env : env) (asset : assetdecl) (tope : PT.expr) =
   match unloc tope with
   | Erecord fields ->
-      let do1 map ((x, e) : PT.record_item) =
-        match x with
-        | None ->
-            Env.emit_error env (loc tope, AnonymousFieldInEffect);
-            map
+    let do1 map ((x, e) : PT.record_item) =
+      match x with
+      | None ->
+        Env.emit_error env (loc tope, AnonymousFieldInEffect);
+        map
 
-        | Some (op, x) -> begin
-            try
-              let fty = List.assoc (unloc x) asset.as_fields in
-              let op  = for_assignment_operator op in
-              let e   = for_assign_expr mode env (loc x) (op, fty) e in
+      | Some (op, x) -> begin
+          try
+            let fty = List.assoc (unloc x) asset.as_fields in
+            let op  = for_assignment_operator op in
+            let e   = for_assign_expr mode env (loc x) (op, fty) e in
 
-              if Mid.mem (unloc x) map then begin
-                Env.emit_error env (loc x, DuplicatedFieldInRecordLiteral (unloc x));
-                map
-              end else
-                Mid.add (unloc x) (x, `Assign op, e) map
-
-            with Not_found ->
-              Env.emit_error env (loc x, UnknownFieldName (unloc x));
+            if Mid.mem (unloc x) map then begin
+              Env.emit_error env (loc x, DuplicatedFieldInRecordLiteral (unloc x));
               map
-          end
-      in
+            end else
+              Mid.add (unloc x) (x, `Assign op, e) map
 
-      let effects = List.fold_left do1 Mid.empty fields in
+          with Not_found ->
+            Env.emit_error env (loc x, UnknownFieldName (unloc x));
+            map
+        end
+    in
 
-      Some (List.map snd (Mid.bindings effects))
+    let effects = List.fold_left do1 Mid.empty fields in
+
+    Some (List.map snd (Mid.bindings effects))
 
   | _ ->
-      Env.emit_error env (loc tope, InvalidExpressionForEffect); 
-      None
+    Env.emit_error env (loc tope, InvalidExpressionForEffect);
+    None
 
 (* -------------------------------------------------------------------- *)
 and for_assign_expr mode env orloc (op, fty) e =
   let ety =
     match op with
     | ValueAssign ->
-        Some fty
-  
+      Some fty
+
     | PlusAssign
     | MinusAssign
     | MultAssign
     | DivAssign ->
-        if not (Type.is_numeric fty) then begin
-          Env.emit_error env (orloc, NumericExpressionExpected);
-          None
-        end else
-          Some fty
-  
+      if not (Type.is_numeric fty) then begin
+        Env.emit_error env (orloc, NumericExpressionExpected);
+        None
+      end else
+        Some fty
+
     | AndAssign
     | OrAssign ->
-        if not (Type.compatible ~from_:fty ~to_:M.vtbool) then
-          Env.emit_error env (orloc, IncompatibleTypes (fty, M.vtbool));
-        Some M.vtbool
+      if not (Type.compatible ~from_:fty ~to_:M.vtbool) then
+        Env.emit_error env (orloc, IncompatibleTypes (fty, M.vtbool));
+      Some M.vtbool
 
   in for_xexpr mode env ?ety e
 
@@ -1351,43 +1352,43 @@ and for_action_name (env : env) (name : PT.lident) =
   else
     match Env.Action.lookup env (unloc name) with
     | None ->
-        Env.emit_error env (loc name, UnknownAction (unloc name));
-        None
-  
+      Env.emit_error env (loc name, UnknownAction (unloc name));
+      None
+
     | Some action ->
-        Some (Some action)
+      Some (Some action)
 
 (* -------------------------------------------------------------------- *)
 and for_action_expr (env : env) (action : PT.expr) =
   match unloc action with
   | Eterm (None, None, x) ->
-      for_action_name env x
+    for_action_name env x
 
   | _ ->
-      Env.emit_error env (loc action, InvalidActionExpression);
-      None
+    Env.emit_error env (loc action, InvalidActionExpression);
+    None
 
 (* -------------------------------------------------------------------- *)
 and for_role_name (env : env) (name : PT.lident) =
   match Env.Var.lookup env (unloc name) with
   | None ->
-      Env.emit_error env (loc name, UnknownLocalOrVariable (unloc name));
-      None
+    Env.emit_error env (loc name, UnknownLocalOrVariable (unloc name));
+    None
 
   | Some nty ->
-      if not (Type.compatible ~from_:nty.vr_type ~to_:M.vtrole) then
-        (Env.emit_error env (loc name, NotARole (unloc name)); None)
-      else Some name
+    if not (Type.compatible ~from_:nty.vr_type ~to_:M.vtrole) then
+      (Env.emit_error env (loc name, NotARole (unloc name)); None)
+    else Some name
 
 (* -------------------------------------------------------------------- *)
 and for_role_expr (env : env) (role : PT.expr) =
   match unloc role with
   | Eterm (None, None, x) ->
-      for_role_name env x
+    for_role_name env x
 
   | _ ->
-      Env.emit_error env (loc role, InvalidRoleExpression);
-      None
+    Env.emit_error env (loc role, InvalidRoleExpression);
+    None
 
 (* -------------------------------------------------------------------- *)
 let for_expr (env : env) ?(ety : M.type_ option) (tope : PT.expr) : M.pterm =
@@ -1424,10 +1425,10 @@ let for_arg_decl (env : env) ((x, ty, _) : PT.lident_typ) =
 
   match b, ty with
   | true, Some ty ->
-      (Env.Local.push env (unloc x, ty), Some (x, ty))
+    (Env.Local.push env (unloc x, ty), Some (x, ty))
 
   | _, _ ->
-     (env, None)
+    (env, None)
 
 (* -------------------------------------------------------------------- *)
 let for_args_decl (env : env) (xs : PT.args) =
@@ -1484,14 +1485,14 @@ let rec for_instruction (env : env) (i : PT.expr) : env * M.instruction =
   try
     match unloc i with
     | Emethod (the, m, args) ->
-        let infos = for_gen_method_call `Expr env (loc i) (the, m, args) in
-        let the, asset, method_, args, _ = Option.get_fdfl bailout infos in
-        env, mki (M.Icall (Some the, M.Cconst method_.mth_name, args))
+      let infos = for_gen_method_call `Expr env (loc i) (the, m, args) in
+      let the, asset, method_, args, _ = Option.get_fdfl bailout infos in
+      env, mki (M.Icall (Some the, M.Cconst method_.mth_name, args))
 
     | Eseq (i1, i2) ->
-        let env, i1 = for_instruction env i1 in
-        let env, i2 = for_instruction env i2 in
-        env, mkseq i1 i2
+      let env, i1 = for_instruction env i1 in
+      let env, i2 = for_instruction env i2 in
+      env, mkseq i1 i2
 
     | Eassign (op, plv, pe) -> begin
         let lv = for_lvalue env plv in
@@ -1501,49 +1502,49 @@ let rec for_instruction (env : env) (i : PT.expr) : env * M.instruction =
         let e  =
           match lv with
           | None ->
-              for_expr env pe
+            for_expr env pe
 
           | Some (_, fty) ->
-              for_assign_expr `Expr env (loc plv) (op, fty) pe
+            for_assign_expr `Expr env (loc plv) (op, fty) pe
         in
 
         env, mki (M.Iassign (M.ValueAssign, x, e))
       end
 
     | Etransfer (e, back, to_) ->
-        let to_ = Option.bind (for_role env) to_ in
-        let to_ = Option.map (M.mk_id M.vtrole) to_ in
-        let e   = for_expr env ~ety:(M.vtcurrency M.Tez) e in
-        env, mki (Itransfer (e, back, to_))
+      let to_ = Option.bind (for_role env) to_ in
+      let to_ = Option.map (M.mk_id M.vtrole) to_ in
+      let e   = for_expr env ~ety:(M.vtcurrency M.Tez) e in
+      env, mki (Itransfer (e, back, to_))
 
     | Eif (c, bit, bif) ->
-        let c        = for_expr env ~ety:M.vtbool c in
-        let env, cit = for_instruction env bit in
-        let cif      = Option.map (for_instruction env) bif in
-        let env, cif = Option.get_dfl (env, mki (Iseq [])) cif in
-        env, mki (M.Iif (c, cit, cif))
+      let c        = for_expr env ~ety:M.vtbool c in
+      let env, cit = for_instruction env bit in
+      let cif      = Option.map (for_instruction env) bif in
+      let env, cif = Option.get_dfl (env, mki (Iseq [])) cif in
+      env, mki (M.Iif (c, cit, cif))
 
     | Eletin (x, ty, e1, e2, eo) ->
-        if Option.is_some eo then
-          Env.emit_error env (loc i, LetInElseInInstruction);
-        let ty = Option.bind (for_type env) ty in
-        let e  = for_expr env ?ety:ty e1 in
-        let env, body =
-          Env.inscope env (fun env ->
+      if Option.is_some eo then
+        Env.emit_error env (loc i, LetInElseInInstruction);
+      let ty = Option.bind (for_type env) ty in
+      let e  = for_expr env ?ety:ty e1 in
+      let env, body =
+        Env.inscope env (fun env ->
             let _ : bool = check_and_emit_name_free env x in
             let env =
               if Option.is_some e.M.type_ then
                 Env.Local.push env (unloc x, Option.get e.M.type_)
               else env in
-  
+
             for_instruction env e2) in
 
-         env, mki (M.Iletin (x, e, body))
+      env, mki (M.Iletin (x, e, body))
 
     | Efor (x, e, i) ->
-        let e, asset = for_asset_collection_expr `Expr env e in
-        let asset = Option.map fst asset in
-        let env, i = Env.inscope env (fun env ->
+      let e, asset = for_asset_collection_expr `Expr env e in
+      let asset = Option.map fst asset in
+      let env, i = Env.inscope env (fun env ->
           let _ : bool = check_and_emit_name_free env x in
           let env =
             if Option.is_some asset then
@@ -1552,25 +1553,25 @@ let rec for_instruction (env : env) (i : PT.expr) : env * M.instruction =
             else env in
           for_instruction env i) in
 
-        env, mki (M.Ifor (x, e, i))
+      env, mki (M.Ifor (x, e, i))
 
     | Erequire e ->
-        let e = for_formula env e in
-        env, mki (M.Irequire (true, e))
+      let e = for_formula env e in
+      env, mki (M.Irequire (true, e))
 
     | Efailif e ->
-        let e = for_formula env e in
-        env, mki (M.Irequire (false, e))
+      let e = for_formula env e in
+      env, mki (M.Irequire (false, e))
 
     | Elabel (_, e) ->
-        for_instruction env e
+      for_instruction env e
 
     | Eilabel _ ->
-        env, mki (Iseq [])
+      env, mki (Iseq [])
 
     | _ ->
-        Env.emit_error env (loc i, InvalidInstruction);
-        bailout ()
+      Env.emit_error env (loc i, InvalidInstruction);
+      bailout ()
 
   with E.Failure ->
     env, mki (Iseq [])
@@ -1579,52 +1580,52 @@ let rec for_instruction (env : env) (i : PT.expr) : env * M.instruction =
 let for_verification_item (env : env) (v : PT.verification_item) =
   match unloc v with
   | PT.Vpredicate (x, args, f) ->
-      let env, (args, f) =
-        Env.inscope env (fun env ->
-            let env, args = for_args_decl env args in
-            let args = List.pmap id args in
-            let f = for_formula env f in
-            (env, (args, f)))
-      in env, `Predicate (x, args, f)
+    let env, (args, f) =
+      Env.inscope env (fun env ->
+          let env, args = for_args_decl env args in
+          let args = List.pmap id args in
+          let f = for_formula env f in
+          (env, (args, f)))
+    in env, `Predicate (x, args, f)
 
   | PT.Vdefinition (x, ty, y, f) ->
-      let env, (arg, f) =
-        Env.inscope env (fun env ->
-            let env, arg = for_arg_decl env (y, ty, None) in
-            let f = for_formula env f in
-            (env, (arg, f)))
-      in env, `Definition (x, arg, f)
+    let env, (arg, f) =
+      Env.inscope env (fun env ->
+          let env, arg = for_arg_decl env (y, ty, None) in
+          let f = for_formula env f in
+          (env, (arg, f)))
+    in env, `Definition (x, arg, f)
 
   | PT.Vaxiom (x, f) ->
-      let f = for_formula env f in
-      (env, `Axiom (x, f))
+    let f = for_formula env f in
+    (env, `Axiom (x, f))
 
   | PT.Vtheorem (x, f) ->
-      let f = for_formula env f in
-      (env, `Theorem (x, f))
+    let f = for_formula env f in
+    (env, `Theorem (x, f))
 
   | PT.Vvariable (x, ty, e) ->
-      let ty = for_type env ty in
-      let e  = Option.map (for_expr env ?ety:ty) e in
-      (env, `Variable (x, e))
+    let ty = for_type env ty in
+    let e  = Option.map (for_expr env ?ety:ty) e in
+    (env, `Variable (x, e))
 
   | PT.Vassert (x, tg, f, invs) ->
-      let for_inv (lbl, linvs) =
-        (lbl, List.map (for_formula env) linvs) in
-      let f    = for_formula env f in
-      let invs = List.map for_inv invs in
-      (env, `Assert (x, tg, f, invs))
+    let for_inv (lbl, linvs) =
+      (lbl, List.map (for_formula env) linvs) in
+    let f    = for_formula env f in
+    let invs = List.map for_inv invs in
+    (env, `Assert (x, tg, f, invs))
 
   | PT.Veffect i ->
-      let i = for_instruction env i in
-      (env, `Effect i)
+    let i = for_instruction env i in
+    (env, `Effect i)
 
   | PT.Vspecification (x, f, invs) ->
-      let for_inv (lbl, linvs) =
-        (lbl, List.map (for_formula env) linvs) in
-      let f    = for_formula env f in
-      let invs = List.map for_inv invs in
-      (env, `Specification (x, f, invs))
+    let for_inv (lbl, linvs) =
+      (lbl, List.map (for_formula env) linvs) in
+    let f    = for_formula env f in
+    let invs = List.map for_inv invs in
+    (env, `Specification (x, f, invs))
 
 (* -------------------------------------------------------------------- *)
 let for_verification (env : env) (v : PT.verification) =
@@ -1750,29 +1751,29 @@ let for_state_decl (env : env) (state : state loced) =
 let for_varfun_decl (env : env) (decl : varfun loced) =
   match unloc decl with
   | `Variable (x, ty, e, _tgts, ctt, _) ->
-      (* FIXME: handle tgts *)
-  
-      let ty   = for_type env ty in
-      let e    = Option.map (for_expr env ?ety:ty) e in
-      let dty  = if   Option.is_some ty
-        then ty
-        else Option.bind (fun e -> e.M.type_) e in
-      let ctt  = match ctt with
-        | VKconstant -> `Constant
-        | VKvariable -> `Variable in
-  
-      if Option.is_some dty then begin
-        let decl = {
-            vr_name = x  ; vr_type = Option.get dty;
-            vr_kind = ctt; vr_core = None          ; } in
-  
-        if   (check_and_emit_name_free env x)
-        then Env.Var.push env decl
-        else env
-      end else env
+    (* FIXME: handle tgts *)
+
+    let ty   = for_type env ty in
+    let e    = Option.map (for_expr env ?ety:ty) e in
+    let dty  = if   Option.is_some ty
+      then ty
+      else Option.bind (fun e -> e.M.type_) e in
+    let ctt  = match ctt with
+      | VKconstant -> `Constant
+      | VKvariable -> `Variable in
+
+    if Option.is_some dty then begin
+      let decl = {
+        vr_name = x  ; vr_type = Option.get dty;
+        vr_kind = ctt; vr_core = None          ; } in
+
+      if   (check_and_emit_name_free env x)
+      then Env.Var.push env decl
+      else env
+    end else env
 
   | `Function fdecl ->
-      let env, _   = Env.inscope env (fun env ->
+    let env, _   = Env.inscope env (fun env ->
         let env    = fst (for_args_decl env fdecl.args) in
         let rty    = Option.bind (for_type env) fdecl.ret_t in
         let _body  = for_expr env ?ety:rty fdecl.body in
@@ -1839,28 +1840,28 @@ let for_acttx_decl (env : env) (decl : acttx loced) =
   | `Action (x, args, pt, i_exts, _exts) -> begin
       let env, _ =
         Env.inscope env (fun env ->
-          let env         = (fst (for_args_decl env args)) in
-          let env, effect = Option.foldmap for_instruction env (Option.fst i_exts) in
-          let callby      = Option.map (for_callby env) (Option.fst pt.calledby) in
-          let _callby     = Option.get_dfl [] callby in
-          let env, reqs   = Option.foldmap for_lbls_expr env (Option.fst pt.require) in
-          let env, verif  = Option.foldmap for_verification env pt.verif in
+            let env         = (fst (for_args_decl env args)) in
+            let env, effect = Option.foldmap for_instruction env (Option.fst i_exts) in
+            let callby      = Option.map (for_callby env) (Option.fst pt.calledby) in
+            let _callby     = Option.get_dfl [] callby in
+            let env, reqs   = Option.foldmap for_lbls_expr env (Option.fst pt.require) in
+            let env, verif  = Option.foldmap for_verification env pt.verif in
 
-          (env, ()))
+            (env, ()))
 
       in Env.Action.push env { ad_name = x; }
     end
 
   | `Transition (x, args, tgt, from_, actions, tx, _exts) ->
-      let _env0  = for_args_decl env args in
-      let _from_ = for_state env from_ in
-      let env, act = for_action_properties env actions in
-      let _tx = List.map (for_transition env) tx in
-  
-      if Option.is_some tgt then
-        assert false;
-  
-      env
+    let _env0  = for_args_decl env args in
+    let _from_ = for_state env from_ in
+    let env, act = for_action_properties env actions in
+    let _tx = List.map (for_transition env) tx in
+
+    if Option.is_some tgt then
+      assert false;
+
+    env
 
 (* -------------------------------------------------------------------- *)
 let for_acttxs_decl (env : env) (decls : acttx loced list) =
@@ -1889,31 +1890,31 @@ let group_declarations (decls : (PT.declaration list)) =
 
     match decl with
     | PT.Darchetype (x, exts) ->
-        { g with gr_archetypes = mk (x, exts) :: g.gr_archetypes }
+      { g with gr_archetypes = mk (x, exts) :: g.gr_archetypes }
 
     | PT.Dvariable infos ->
-        { g with gr_varfuns = mk (`Variable infos) :: g.gr_varfuns }
+      { g with gr_varfuns = mk (`Variable infos) :: g.gr_varfuns }
 
     | PT.Denum (PT.EKstate, infos) ->
-        { g with gr_states = mk infos :: g.gr_states }
+      { g with gr_states = mk infos :: g.gr_states }
 
     | PT.Denum (PT.EKenum x, infos) ->
-        { g with gr_enums = mk (x, infos) :: g.gr_enums }
+      { g with gr_enums = mk (x, infos) :: g.gr_enums }
 
     | PT.Dasset infos ->
-        { g with gr_assets = mk infos :: g.gr_assets }
+      { g with gr_assets = mk infos :: g.gr_assets }
 
     | PT.Daction infos ->
-        { g with gr_acttxs = mk (`Action infos) :: g.gr_acttxs }
+      { g with gr_acttxs = mk (`Action infos) :: g.gr_acttxs }
 
     | PT.Dtransition infos ->
-        { g with gr_acttxs = mk (`Transition infos) :: g.gr_acttxs }
+      { g with gr_acttxs = mk (`Transition infos) :: g.gr_acttxs }
 
     | PT.Dfunction infos ->
-        { g with gr_varfuns = mk (`Function infos) :: g.gr_varfuns }
+      { g with gr_varfuns = mk (`Function infos) :: g.gr_varfuns }
 
     | PT.Dverification infos ->
-        { g with gr_verifs = mk infos :: g.gr_verifs }
+      { g with gr_verifs = mk infos :: g.gr_verifs }
 
     | Dcontract  _
     | Dnamespace _
@@ -1925,7 +1926,7 @@ let group_declarations (decls : (PT.declaration list)) =
 (* -------------------------------------------------------------------- *)
 let for_grouped_declarations (env : env) (toploc, g) =
   if not (List.is_empty g.gr_archetypes) then
-     Env.emit_error env (toploc, InvalidArcheTypeDecl);
+    Env.emit_error env (toploc, InvalidArcheTypeDecl);
 
   if List.length g.gr_states > 1 then
     Env.emit_error env (toploc, MultipleStateDeclaration);
@@ -1935,13 +1936,13 @@ let for_grouped_declarations (env : env) (toploc, g) =
       match for_state_decl env (mkloc loc (fst state)) with
       | env, Some state -> Some (env, state)
       | _  , None       -> None in
-  
+
     match List.pmap for1 g.gr_states with
     | (env, (init, ctors)) :: _ ->
-        let decl = { sd_ctors = ctors; sd_init = init; } in
-        (Some decl, Env.State.push env decl)
+      let decl = { sd_ctors = ctors; sd_init = init; } in
+      (Some decl, Env.State.push env decl)
     | _ ->
-        (None, env) in
+      (None, env) in
 
   let env = for_assets_decl  env g.gr_assets  in
   let env = for_varfuns_decl env g.gr_varfuns in
@@ -1956,20 +1957,20 @@ let for_declarations (env : env) (decls : (PT.declaration list) loced) : M.model
 
   match unloc decls with
   | { pldesc = Darchetype (x, _exts) } :: decls ->
-      let groups = group_declarations decls in
-      let _env = for_grouped_declarations env (toploc, groups) in
+    let groups = group_declarations decls in
+    let _env = for_grouped_declarations env (toploc, groups) in
 
-      M.mk_model x
+    M.mk_model x
 
   | _ ->
-      Env.emit_error env (loc decls, InvalidArcheTypeDecl);
-      { (M.mk_model (mkloc (loc decls) "<unknown>")) with loc = loc decls }
+    Env.emit_error env (loc decls, InvalidArcheTypeDecl);
+    { (M.mk_model (mkloc (loc decls) "<unknown>")) with loc = loc decls }
 
 (* -------------------------------------------------------------------- *)
 let typing (env : env) (cmd : PT.archetype) =
   match unloc cmd with
   | Marchetype decls ->
-      for_declarations env (mkloc (loc cmd) decls)
+    for_declarations env (mkloc (loc cmd) decls)
 
   | Mextension _ ->
-      assert false
+    assert false

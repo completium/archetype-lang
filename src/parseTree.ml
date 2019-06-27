@@ -126,6 +126,7 @@ type expr_unloc =
   | Equantifier   of quantifier * lident_typ * expr
   | Elabel        of lident * expr
   | Eilabel       of lident
+  | Ereturn       of expr
   | Einvalid
 [@@deriving yojson, show {with_path = false}]
 
@@ -251,7 +252,7 @@ type declaration_unloc =
 [@@deriving yojson, show {with_path = false}]
 
 and variable_decl =
-    lident
+  lident
   * type_t
   * expr option
   * value_option list option
@@ -262,7 +263,7 @@ and enum_decl =
   (lident * enum_option list) list * exts
 
 and asset_decl =
-    lident
+  lident
   * field list
   * asset_option list
   * asset_post_option list
@@ -270,14 +271,14 @@ and asset_decl =
   * exts
 
 and action_decl =
-    lident
+  lident
   * args
   * action_properties
   * (expr * exts) option
   * exts
 
 and transition_decl =
-    lident
+  lident
   * args
   * (lident * lident) option
   * expr
