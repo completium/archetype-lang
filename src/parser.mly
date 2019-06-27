@@ -113,7 +113,6 @@
 %token PLUS
 %token PLUSEQUAL
 %token PREDICATE
-%token QUEUE
 %token RBRACE
 %token RBRACKET
 %token RECORD
@@ -122,10 +121,8 @@
 %token RETURN
 %token RPAREN
 %token SEMI_COLON
-%token SET
 %token SORTED
 %token SPECIFICATION
-%token STACK
 %token STATES
 %token THEN
 %token THEOREM
@@ -447,7 +444,7 @@ type_s_unloc:
 | x=ident RECORD          { Tasset x }
 | x=type_s c=container    { Tcontainer (x, c) }
 | x=ident y=type_s %prec above_coll
-                          { Tvset (x, y) }
+                          { Tapp (x, y) }
 | x=paren(type_r)         { x }
 
 %inline type_tuples:
@@ -458,9 +455,6 @@ type_s_unloc:
 
 %inline container:
 | COLLECTION { Collection }
-| QUEUE      { Queue }
-| STACK      { Stack }
-| SET        { Set }
 | PARTITION  { Partition }
 
 asset:

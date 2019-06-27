@@ -90,9 +90,6 @@ let get_prec_from_assignment_operator (op : assignment_operator) =
 let container_to_str c =
   match c with
   | Collection -> "collection"
-  | Queue      -> "queue"
-  | Stack      -> "stack"
-  | Set        -> "set"
   | Partition  -> "partition"
 
 let pp_container fmt c =
@@ -118,7 +115,7 @@ let rec pp_type outer pos fmt e =
       pp_type_default x
       pp_container y
 
-  | Tvset (x, y) ->
+  | Tapp (x, y) ->
     Format.fprintf fmt
       "%a %a"
       pp_id x

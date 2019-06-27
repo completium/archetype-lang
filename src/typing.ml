@@ -678,9 +678,6 @@ let check_and_emit_name_free (env : env) (x : M.lident) =
 (* -------------------------------------------------------------------- *)
 let for_container (_ : env) = function
   | PT.Collection-> M.Collection
-  | PT.Queue     -> M.Queue
-  | PT.Stack     -> M.Stack
-  | PT.Set       -> M.Set
   | PT.Partition -> M.Partition
 
 (* -------------------------------------------------------------------- *)
@@ -744,7 +741,7 @@ let rec for_type_exn (env : env) (ty : PT.type_t) : M.ptyp =
   | Tcontainer (ty, ctn) ->
     M.Tcontainer (for_type_exn env ty, for_container env ctn)
 
-  | Tvset (_x, _ty) ->
+  | Tapp (_x, _ty) ->
     (* FIXME *)
     assert false
 

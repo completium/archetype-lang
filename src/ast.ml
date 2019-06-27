@@ -8,9 +8,6 @@ let pp_lident fmt i = Format.fprintf fmt "%s" (unloc i)
 
 type container =
   | Collection
-  | Queue
-  | Stack
-  | Set
   | Subset
   | Partition
 [@@deriving show {with_path = false}]

@@ -55,15 +55,12 @@
       "otherwise"           , OTHERWISE      ;
       "partition"           , PARTITION      ;
       "predicate"           , PREDICATE      ;
-      "queue"               , QUEUE          ;
       "record"              , RECORD         ;
       "ref"                 , REF            ;
       "require"             , REQUIRE        ;
       "return"              , RETURN         ;
-      "set"                 , SET            ;
       "sorted"              , SORTED         ;
       "specification"       , SPECIFICATION  ;
-      "stack"               , STACK          ;
       "states"              , STATES         ;
       "then"                , THEN           ;
       "theorem"             , THEOREM        ;

@@ -11,9 +11,6 @@ let pp_lident fmt i = Format.fprintf fmt "%s" (unloc i)
 (* -------------------------------------------------------------------- *)
 type container =
   | Collection
-  | Queue
-  | Stack
-  | Set
   | Partition
 [@@deriving yojson, show {with_path = false}]
 
@@ -21,7 +18,7 @@ type type_r =
   | Tref of lident
   | Tasset of lident
   | Tcontainer of type_t * container
-  | Tvset of lident * type_t
+  | Tapp of lident * type_t
   | Ttuple of type_t list
 [@@deriving yojson, show {with_path = false}]
 
