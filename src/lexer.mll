@@ -19,6 +19,7 @@
       "axiom"               , AXIOM          ;
       "back"                , BACK           ;
       "break"               , BREAK          ;
+      "but"                 , BUT            ;
       "by"                  , BY             ;
       "called"              , CALLED         ;
       "collection"          , COLLECTION     ;
@@ -29,7 +30,6 @@
       "else"                , ELSE           ;
       "end"                 , END            ;
       "enum"                , ENUM           ;
-      "except"              , EXCEPT         ;
       "exists"              , EXISTS         ;
       "extension"           , EXTENSION      ;
       "failif"              , FAILIF         ;

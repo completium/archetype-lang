@@ -533,8 +533,8 @@ let rec pp_expr outer pos fmt a =
           Format.fprintf fmt "(%a %a)"
             pp_id id
             (pp_list "@ " pp_security_arg) args
-        | Sexpect (id, arg) ->
-          Format.fprintf fmt "(%a expect %a)"
+        | Sbut (id, arg) ->
+          Format.fprintf fmt "(%a but %a)"
             pp_id id
             pp_security_arg arg
         | Sto (id, arg) ->
