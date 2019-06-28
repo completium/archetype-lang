@@ -275,6 +275,7 @@ type ('id, 'term) mterm_node  =
   | Mtransfer    of ('id mterm_gen * bool * 'id qualid_gen option)
   | Mbreak
   | Massert      of 'id mterm_gen
+  | Mreturn      of 'id mterm_gen
 [@@deriving show {with_path = false}]
 
 and 'id mterm_gen = {
@@ -680,6 +681,7 @@ let map_term_node (f : 'id mterm_gen -> 'id mterm_gen) = function
   | Mtransfer (x, b, q)     -> Mtransfer (f x, b, q)
   | Mbreak                  -> Mbreak
   | Massert x               -> Massert (f x)
+  | Mreturn x               -> Mreturn (f x)
 
 let map_gen_mterm g f (i : 'id mterm_gen) : 'id mterm_gen =
   {
@@ -732,6 +734,7 @@ let fold_term (f : 'a -> 't -> 'a) (accu : 'a) (term : 'id mterm_gen) =
   | Mrequire (_, x)         -> f accu x
   | Mbreak                  -> accu
   | Massert x               -> f accu x
+  | Mreturn x               -> f accu x
 
 let fold_map_term
     (g : ('id, 'term) mterm_node -> 'term)
@@ -935,6 +938,10 @@ let fold_map_term
   | Massert x ->
     let xe, xa = f accu x in
     g (Massert xe), xa
+
+  | Mreturn x ->
+    let xe, xa = f accu x in
+    g (Mreturn xe), xa
 
 (* -------------------------------------------------------------------- *)
 module Utils : sig
