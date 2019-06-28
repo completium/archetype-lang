@@ -98,7 +98,7 @@ type security_arg_unloc =
   | Sdot   of lident * lident
   | Slist of security_arg list
   | Sapp of lident * security_arg list
-  | Sexpect of lident * security_arg
+  | Sbut of lident * security_arg
   | Sto of lident * security_arg
 [@@deriving yojson, show {with_path = false}]
 

@@ -43,6 +43,7 @@
 %token AXIOM
 %token BACK
 %token BREAK
+%token BUT
 %token BY
 %token CALLED
 %token COLLECTION
@@ -63,7 +64,6 @@
 %token EOF
 %token EQUAL
 %token EQUIV
-%token EXCEPT
 %token EXISTS
 %token EXTENSION
 %token FAILIF
@@ -871,6 +871,6 @@ security_arg_unloc:
 
 security_arg_ext_unloc:
 | id=ident xs=security_arg+          { Sapp (id, xs) }
-| id=ident EXCEPT arg=security_arg   { Sexpect (id, arg) }
+| id=ident BUT arg=security_arg      { Sbut (id, arg) }
 | id=ident TO arg=security_arg       { Sto (id, arg) }
 | x=security_arg_unloc               { x }
