@@ -5,7 +5,21 @@ open Parser.MenhirInterpreter
 open Lexing
 open PureLexer
 open ParseError
-open ParseUtils
+
+exception ParenError
+
+type error_desc =
+  | LexicalError of string
+  | Unclosed of string * string
+  | NotExpecting of string
+[@@deriving show {with_path = false}]
+
+type error = Location.t * error_desc
+
+let emit_error lc error_desc =
+  let str : string = Format.asprintf "%a@." pp_error_desc error_desc in
+  let pos : Position.t list = [Tools.location_to_position lc] in
+  Error.error_alert pos str (fun _ -> ())
 
 (* -------------------------------------------------------------------- *)
 let lexbuf_from_channel = fun name channel ->
@@ -31,8 +45,8 @@ let check_brackets_balance () =
     | LBRACKETPERCENT  -> "[%"
     | PERCENTRBRACKET -> "%]"
     | _ -> assert false in
-  let aux ((op, cp) : token * token) : ParseUtils.perror list =
-    let rec aux_internal (st : ptoken Stack.t) ((op, cp) : token * token) pos : ParseUtils.perror list =
+  let aux ((op, cp) : token * token) : unit =
+    let rec aux_internal (st : ptoken Stack.t) ((op, cp) : token * token) pos : unit =
       let t  = Lexer.get pos in
       let token, _, _ = t in
       let next () = aux_internal st (op, cp) (snd (Lexer.next pos)) in
@@ -40,12 +54,11 @@ let check_brackets_balance () =
       then (
         if not (Stack.is_empty st)
         then
-          (Stack.fold (fun (accu : ParseUtils.perror list) (x : ptoken) ->
+          (Stack.iter (fun (x : ptoken) ->
                let token, sl, el = x in
                let loc = Location.make sl el in
-               (PE_Unclosed (loc, string_of_token_bracket token, string_of_token_bracket cp)) :: accu
-             ) [] st )
-        else []
+               emit_error loc (Unclosed (string_of_token_bracket token, string_of_token_bracket cp))
+             ) st )
       )
       else (
         if token = op
@@ -57,7 +70,7 @@ let check_brackets_balance () =
                 with
                 | Stack.Empty -> (let token, sl, el = t in
                                   let loc = Location.make sl el in
-                                  [PE_Not_Expecting (loc, string_of_token_bracket token)])
+                                  emit_error loc (NotExpecting (string_of_token_bracket token)))
               ) else next()
              )
       )
@@ -67,13 +80,10 @@ let check_brackets_balance () =
     let _, lexer = Lexer.next lexer in
     aux_internal st (op, cp) lexer in
 
-  let errors =
-    aux (LPAREN   , RPAREN  ) @
-    aux (LBRACKET , RBRACKET) @
-    aux (LBRACE   , RBRACE  ) @
-    aux (LBRACKETPERCENT , PERCENTRBRACKET) in
-  if List.length errors > 0
-  then raise (ParseUtils.ParseError errors)
+  aux (LPAREN   , RPAREN  );
+  aux (LBRACKET , RBRACKET);
+  aux (LBRACE   , RBRACE  );
+  aux (LBRACKETPERCENT , PERCENTRBRACKET)
 
 (* -------------------------------------------------------------------- *)
 let resume_on_error last_reduction lex =
@@ -168,8 +178,13 @@ let parse lexbuf =
   in
   let checkpoint = main lexbuf.lex_curr_p in
   check_brackets_balance ();
-  let lexer = Lexer.start in
-  run (`FoundNothingAt checkpoint) checkpoint lexer checkpoint
+  if List.length !Error.errors > 0
+  then ParseTree.mk_archetype ()
+  else
+    begin
+      let lexer = Lexer.start in
+      run (`FoundNothingAt checkpoint) checkpoint lexer checkpoint
+    end
 
 let parse_archetype ?(name = "") (inc : in_channel) =
   Error.resume_on_error ();

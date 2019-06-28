@@ -1083,8 +1083,8 @@ let rec for_xexpr (mode : emode_t) (env : env) ?(ety : M.ptyp option) (tope : PT
             let a1, a2 = Option.get (List.as_seq2 args) in
             M.Pcomp (tt_cmp_operator op, a1, a2)
 
-          (*| `Spec _ ->
-            assert false*)
+        (*| `Spec _ ->
+          assert false*)
 
         in mk_sp (Some (sig_.osl_ret)) aout
       end

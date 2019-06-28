@@ -178,44 +178,48 @@ let make_outline_from_decl (d : ParseTree.declaration) gl =
   | Dverification verif -> mk_outline_from_verification verif
   | _ -> []
 
-let process (filename, channel) =
-  let pt = Io.parse_archetype ~name:filename channel in
-  begin
-    match !kind with
-    | Outline -> (
-        let gl, v =  Location.deloc pt in
-        match v with
-        | Marchetype m -> (
-            let lis = List.fold_left (fun accu d  ->
-                let t = make_outline_from_decl d gl in
-                if List.length t = 0
-                then accu
-                else t@accu) [] m in
-            let res = {
-              status = Passed;
-              outlines = lis;
-            } in
-            Format.printf "%s\n" (Yojson.Safe.to_string (result_outline_to_yojson res)))
-        | _ -> ()
-      )
-    | Errors -> (
-        if (List.is_empty !Error.errors)
-        then ( let _ = Typing.typing Typing.empty pt in ());
+let process_errors () =
+  Format.printf "%s\n" (Yojson.Safe.to_string (result_to_yojson (
+      let li = Error.errors in
+      match !li with
+      | [] -> mk_result Passed []
+      | l -> mk_result Error (List.map (fun (p : (Position.t list * string)) ->
+          let l, str = p in
+          let p = (
+            match l with
+            | [] -> Position.dummy
+            | i::_ -> i
+          ) in
+          let s : Lexing.position = Position.start_of_position p in
+          let e : Lexing.position = Position.end_of_position p in
+          let loc = Location.make s e in
+          mk_item loc str) l)
+    )))
 
-        Format.printf "%s\n" (Yojson.Safe.to_string (result_to_yojson (
-            let li = Error.errors in
-            match !li with
-            | [] -> mk_result Passed []
-            | l -> mk_result Error (List.map (fun (p : (Position.t list * string)) ->
-                let l, str = p in
-                let p = (
-                  match l with
-                  | [] -> Position.dummy
-                  | i::_ -> i
-                ) in
-                let s : Lexing.position = Position.start_of_position p in
-                let e : Lexing.position = Position.end_of_position p in
-                let loc = Location.make s e in
-                mk_item loc str) l)
-          ))))
-  end
+let process (filename, channel) =
+  match !kind with
+  | Outline -> (
+      let pt = Io.parse_archetype ~name:filename channel in
+      let gl, v =  Location.deloc pt in
+      match v with
+      | Marchetype m -> (
+          let lis = List.fold_left (fun accu d  ->
+              let t = make_outline_from_decl d gl in
+              if List.length t = 0
+              then accu
+              else t@accu) [] m in
+          let res = {
+            status = Passed;
+            outlines = lis;
+          } in
+          Format.printf "%s\n" (Yojson.Safe.to_string (result_outline_to_yojson res)))
+      | _ -> ()
+    )
+  | Errors ->
+    try
+      let pt = Io.parse_archetype ~name:filename channel in
+      if (List.is_empty !Error.errors)
+      then ( let _ = Typing.typing Typing.empty pt in ());
+      process_errors ()
+    with
+    | _ -> process_errors ()

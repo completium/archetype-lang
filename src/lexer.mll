@@ -2,9 +2,17 @@
 {
   open Parser
 
+  exception LexError
+
+  let emit_error loc msg =
+    let str : string = "lexical error: " ^ msg in
+    let pos : Position.t list = [Tools.location_to_position loc] in
+    Error.error_alert pos str (fun _ -> ())
+
   let lex_error lexbuf msg =
     let loc = Location.of_lexbuf lexbuf in
-    raise (ParseUtils.ParseError ([PE_LexicalError (loc, msg)]))
+    emit_error loc msg;
+    raise LexError
 
   let keywords = Hashtbl.create 0
 

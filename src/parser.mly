@@ -2,9 +2,11 @@
 %{
   open ParseTree
   open Location
-  open ParseUtils
 
-  let error loc = raise (ParseError [PE_Unknown loc])
+  let emit_error loc =
+    let str : string = "syntax error" in
+    let pos : Position.t list = [Tools.location_to_position loc] in
+    Error.error_alert pos str (fun _ -> ())
 
   let dummy_action_properties = {
       calledby        = None;
@@ -25,7 +27,7 @@
     | Eseq (a, b) -> (split_seq_label a) @ (split_seq_label b)
     | Elabel (lbl, e) -> [mkloc loc (Some lbl, e)]
     | Eterm _ -> [mkloc loc (None, e)]
-    | _ -> error (Location.loc e)
+    | _ -> (emit_error (Location.loc e); raise Tools.Anomaly)
 
 %}
 
@@ -221,13 +223,9 @@ snl2(separator, X):
 
 start_expr:
 | x=expr EOF { x }
-| x=loc(error)
-      { error (loc x) }
 
 main:
  | x=loc(archetype_r) { x }
- | x=loc(error)
-     { error (loc x) }
 
 archetype_r:
  | x=implementation_archetype EOF { x }
