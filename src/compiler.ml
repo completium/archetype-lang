@@ -203,10 +203,6 @@ let main () =
   with
   | Stop ->
     close dispose channel
-  | ParseUtils.ParseError exns ->
-    close dispose channel;
-    Format.eprintf "%a@." ParseUtils.pp_parse_errors exns;
-    exit 1
   | Compiler_error ->
     close dispose channel;
     Arg.usage arg_list arg_usage;

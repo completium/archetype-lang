@@ -49,6 +49,7 @@ type type_ =
   | Tcontract of lident
   | Tbuiltin of btyp
   | Tcontainer of type_ * container
+  | Toption of type_
   | Ttuple of type_ list
   | Tunit
   | Tentry

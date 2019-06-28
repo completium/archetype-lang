@@ -106,7 +106,7 @@ type ('e,'t,'i) abstract_term =
   | Tdlet   of 't * 'e * 'e * 'e (* _ < _ <= _ *)
   | Tdlte   of 't * 'e * 'e * 'e (* _ < _ <= _ *)
   (* literals *)
-  | Tint    of int
+  | Tint    of Core.big_int
   | Taddr   of string
   (* spec *)
   | Tforall of (('t,'i) abstract_univ_decl list) * 'e

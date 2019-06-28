@@ -1,6 +1,7 @@
 (* -------------------------------------------------------------------- *)
 exception No_value
 exception Unsupported_yet
+exception Anomaly
 
 let debug_mode = ref false
 
@@ -76,6 +77,7 @@ module Option : sig
   val get_all     : ('a option) list -> 'a list option
   val get_exn     : exn -> 'a option -> 'a
   val get_dfl     : 'a -> 'a option -> 'a
+  val get_fdfl    : (unit -> 'a) -> 'a option -> 'a
   val iter        : ('a -> unit) -> 'a option -> unit
   val map         : ('a -> 'b) -> 'a option -> 'b option
   val bind        : ('a -> 'b option) -> 'a option -> 'b option
@@ -102,6 +104,9 @@ end = struct
 
   let get_dfl dfl =
     function None -> dfl | Some e -> e
+
+  let get_fdfl dfl =
+    function None -> dfl () | Some e -> e
 
   let get_all xs =
     let module E = struct exception Aaarg end in
@@ -289,12 +294,26 @@ end
 module Set = Set
 
 (* -------------------------------------------------------------------- *)
+module Mint = Map.Make(struct
+    type t = int
+    let compare = (Pervasives.compare : t -> t -> int)
+  end)
+
+(* -------------------------------------------------------------------- *)
 let norm_hex_string (s : string) =
   if String.starts ~pattern:"0x" s then s else "0x" ^ s
 
-let int_of_hex (s : string) =
-  int_of_string (norm_hex_string s)
+let sha s : Big_int.big_int =
+  let s  = Digestif.SHA512.to_hex (Digestif.SHA512.digest_string s) in
+  Big_int.big_int_of_string (norm_hex_string s)
 
-let sha s : int =
-  let s = Digestif.SHA1.to_hex (Digestif.SHA1.digest_string s) in
-  int_of_hex (String.sub s 0 5)
+(* -------------------------------------------------------------------- *)
+let location_to_position (l : Location.t) : Position.t =
+  let fname = l.loc_fname in
+  let start : int * int * int =
+    l.loc_start |> fst, l.loc_bchar, l.loc_start |> snd
+  in
+  let end_ : int * int * int =
+    l.loc_end |> fst, l.loc_echar, l.loc_end |> snd
+  in
+  Position.mk_position fname start end_

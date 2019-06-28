@@ -53,6 +53,7 @@ let to_model (ast : A.model) : M.model =
     | A.Tcontainer (t, c)  -> M.Tcontainer (ptyp_to_type t, to_container c)
     | A.Ttuple l           -> M.Ttuple (List.map ptyp_to_type l)
     | A.Tentry             -> M.Tentry
+    | A.Toption t          -> M.Toption (ptyp_to_type t)
   in
 
   let to_trtyp = function
@@ -205,11 +206,12 @@ let to_model (ast : A.model) : M.model =
       | A.BVduration s      -> M.BVduration s
   in
 
-  let to_term_arg : 't. ((A.lident, 't) A.term_gen -> M.mterm) -> ((A.lident, (A.lident, 't) A.term_gen) A.term_arg) -> M.term_arg =
+  let to_term_arg : 't. ((A.lident, 't) A.term_gen -> M.mterm) -> ((A.lident, 't, (A.lident, 't) A.term_gen) A.term_arg) -> M.term_arg =
     fun f a ->
       match a with
       | A.AExpr x -> M.AExpr (f x)
       | A.AEffect l -> M.AEffect (List.map (fun (id, op, term) -> (id, to_operator op, f term)) l)
+      | A.AFun _ -> assert false (* TODO *)
   in
 
   let to_mterm_node : 't. ((A.lident, 't, (A.lident, 't) A.term_gen) A.term_node) -> ((A.lident, 't) A.term_gen -> M.mterm) -> ('t -> M.type_) -> (M.lident, M.mterm) M.mterm_node =
@@ -226,10 +228,8 @@ let to_model (ast : A.model) : M.model =
       | A.Pcall (_, A.Cconst A.Ctoiterate, [AExpr p]) -> M.Mappset (M.Ctoiterate, f p)
       | A.Pcall (id, ck, args)                -> M.Mapplocal (to_call_kind ck,
                                                               (Option.map_dfl
-                                                                 (fun (x : A.lident) ->
-                                                                    [
-                                                                      M.AExpr (M.mk_mterm (Mvar (Vlocal x)) (M.Tcontainer (M.Tasset x, M.Collection)))
-                                                                    ]) [] id)
+                                                                 (fun x -> [ M.AExpr (f x) ])
+                                                                 [] id)
                                                               @ List.map (fun x -> to_term_arg f x) args)
       | A.Plogical (op, l, r)                 -> M.Mlogical (to_logical_operator op, f l, f r)
       | A.Pnot e                              -> M.Mnot (f e)
@@ -275,6 +275,7 @@ let to_model (ast : A.model) : M.model =
     | A.Ibreak                 -> M.Mbreak
     | A.Iassert e              -> M.Massert (f e)
     | A.Icall (i, ck, args)    -> M.Mapplocal (to_call_kind ck, Option.map_dfl (fun v -> [M.AExpr (to_mterm v)]) [] i @ List.map (to_term_arg f) args)
+    | A.Ireturn e              -> M.Mreturn (f e)
   in
 
   let rec to_instruction (instr : A.instruction) : M.mterm =
@@ -399,6 +400,7 @@ let to_model (ast : A.model) : M.model =
           | A.Tcontract x   -> M.FBasic Brole
           | A.Tcontainer (ptyp, container) -> M.FContainer (to_container container, ptyp_to_item_field_type ptyp)
           | A.Tentry
+          | A.Toption _
           | A.Ttuple _      -> emit_error (UnsupportedTypeForFile type_)
         in
         let a = ptyp_to_item_field_type type_ in

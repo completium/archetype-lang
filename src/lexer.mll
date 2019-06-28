@@ -2,74 +2,88 @@
 {
   open Parser
 
+  exception LexError
+
+  let emit_error loc msg =
+    let str : string = "lexical error: " ^ msg in
+    let pos : Position.t list = [Tools.location_to_position loc] in
+    Error.error_alert pos str (fun _ -> ())
+
   let lex_error lexbuf msg =
     let loc = Location.of_lexbuf lexbuf in
-    raise (ParseUtils.ParseError ([PE_LexicalError (loc, msg)]))
+    emit_error loc msg;
+    raise LexError
 
   let keywords = Hashtbl.create 0
 
   let keywords_ =
-    [ "archetype"           , ARCHETYPE      ;
-      "constant"            , CONSTANT       ;
-      "variable"            , VARIABLE       ;
-      "identified"          , IDENTIFIED     ;
-      "sorted"              , SORTED         ;
-      "by"                  , BY             ;
-      "from"                , FROM           ;
-      "to"                  , TO             ;
-      "on"                  , ON             ;
-      "when"                , WHEN           ;
-      "ref"                 , REF            ;
-      "initialized"         , INITIALIZED    ;
-      "collection"          , COLLECTION     ;
-      "queue"               , QUEUE          ;
-      "stack"               , STACK          ;
-      "set"                 , SET            ;
-      "partition"           , PARTITION      ;
-      "asset"               , ASSET          ;
-      "match"               , MATCH          ;
-      "with"                , WITH           ;
-      "end"                 , END            ;
-      "assert"              , ASSERT         ;
-      "enum"                , ENUM           ;
-      "states"              , STATES         ;
-      "initial"             , INITIAL        ;
-      "transition"          , TRANSITION     ;
+    [
       "action"              , ACTION         ;
-      "effect"              , EFFECT         ;
-      "called"              , CALLED         ;
-      "at"                  , AT             ;
-      "verification"        , VERIFICATION   ;
-      "predicate"           , PREDICATE      ;
-      "definition"          , DEFINITION     ;
-      "axiom"               , AXIOM          ;
-      "theorem"             , THEOREM        ;
-      "invariants"          , INVARIANTS     ;
-      "specification"       , SPECIFICATION  ;
-      "function"            , FUNCTION       ;
-      "let"                 , LET            ;
-      "otherwise"           , OTHERWISE      ;
-      "if"                  , IF             ;
-      "then"                , THEN           ;
-      "else"                , ELSE           ;
-      "for"                 , FOR            ;
-      "in"                  , IN             ;
-      "break"               , BREAK          ;
-      "transfer"            , TRANSFER       ;
-      "back"                , BACK           ;
-      "extension"           , EXTENSION      ;
-      "namespace"           , NAMESPACE      ;
-      "contract"            , CONTRACT       ;
       "and"                 , AND            ;
-      "or"                  , OR             ;
-      "not"                 , NOT            ;
-      "forall"              , FORALL         ;
+      "archetype"           , ARCHETYPE      ;
+      "assert"              , ASSERT         ;
+      "asset"               , ASSET          ;
+      "at"                  , AT             ;
+      "axiom"               , AXIOM          ;
+      "back"                , BACK           ;
+      "break"               , BREAK          ;
+      "but"                 , BUT            ;
+      "by"                  , BY             ;
+      "called"              , CALLED         ;
+      "collection"          , COLLECTION     ;
+      "constant"            , CONSTANT       ;
+      "contract"            , CONTRACT       ;
+      "definition"          , DEFINITION     ;
+      "effect"              , EFFECT         ;
+      "else"                , ELSE           ;
+      "end"                 , END            ;
+      "enum"                , ENUM           ;
       "exists"              , EXISTS         ;
-      "true"                , TRUE           ;
-      "false"               , FALSE          ;
+      "extension"           , EXTENSION      ;
       "failif"              , FAILIF         ;
-      "require"             , REQUIRE        ;
+      "false"               , FALSE          ;
+      "forall"              , FORALL         ;
+      "for"                 , FOR            ;
+      "from"                , FROM           ;
+      "function"            , FUNCTION       ;
+      "identified"          , IDENTIFIED     ;
+      "if"                  , IF             ;
+      "in"                  , IN             ;
+      "initial"             , INITIAL        ;
+      "initialized"         , INITIALIZED    ;
+      "instance"            , INSTANCE       ;
+      "invariants"          , INVARIANTS     ;
+      "label"               , LABEL          ;
+      "let"                 , LET            ;
+      "match"               , MATCH          ;
+      "namespace"           , NAMESPACE      ;
+      "None"                , NONE           ;
+      "not"                 , NOT            ;
+      "of"                  , OF             ;
+      "on"                  , ON             ;
+      "or"                  , OR             ;
+      "otherwise"           , OTHERWISE      ;
+      "option"              , OPTION         ;
+      "partition"           , PARTITION      ;
+      "predicate"           , PREDICATE      ;
       "record"              , RECORD         ;
+      "ref"                 , REF            ;
+      "require"             , REQUIRE        ;
+      "return"              , RETURN         ;
+      "sorted"              , SORTED         ;
+      "Some"                , SOME           ;
+      "specification"       , SPECIFICATION  ;
+      "states"              , STATES         ;
+      "then"                , THEN           ;
+      "theorem"             , THEOREM        ;
+      "to"                  , TO             ;
+      "transfer"            , TRANSFER       ;
+      "transition"          , TRANSITION     ;
+      "true"                , TRUE           ;
+      "variable"            , VARIABLE       ;
+      "verification"        , VERIFICATION   ;
+      "when"                , WHEN           ;
+      "with"                , WITH           ;
     ]
 
   let () =
@@ -101,19 +115,23 @@ let hour     = digit digit ':' digit digit ( ':' digit digit )?
 let timezone = ('+' digit digit ':' digit digit | 'Z')
 let date     = day ('T' hour ( timezone )?)?
 let accept_transfer = "accept" blank+ "transfer"
-let op_spec1 = "may" blank+ "be" blank+ "performed" blank+ "only" blank+ "by" blank+ "role"
-let op_spec2 = "may" blank+ "be" blank+ "performed" blank+ "only" blank+ "by" blank+ "action"
-let op_spec3 = "may" blank+ "be" blank+ "performed" blank+ "by" blank+ "role"
-let op_spec4 = "may" blank+ "be" blank+ "performed" blank+ "by" blank+ "action"
+let may_be_performed_only_by_role = "may" blank+ "be" blank+ "performed" blank+ "only" blank+ "by" blank+ "role"
+let may_be_performed_only_by_action = "may" blank+ "be" blank+ "performed" blank+ "only" blank+ "by" blank+ "action"
+let may_be_performed_by_role = "may" blank+ "be" blank+ "performed" blank+ "by" blank+ "role"
+let may_be_performed_by_action = "may" blank+ "be" blank+ "performed" blank+ "by" blank+ "action"
+let transferred_by = "transferred" blank+ "by"
+let transferred_to = "transferred" blank+ "to"
 
 (* -------------------------------------------------------------------- *)
 rule token = parse
   | newline               { Lexing.new_line lexbuf; token lexbuf }
   | accept_transfer       { ACCEPT_TRANSFER }
-  | op_spec1              { OP_SPEC1 }
-  | op_spec2              { OP_SPEC2 }
-  | op_spec3              { OP_SPEC3 }
-  | op_spec4              { OP_SPEC4 }
+  | may_be_performed_only_by_role   { MAY_BE_PERFORMED_ONLY_BY_ROLE }
+  | may_be_performed_only_by_action { MAY_BE_PERFORMED_ONLY_BY_ACTION }
+  | may_be_performed_by_role        { MAY_BE_PERFORMED_BY_ROLE }
+  | may_be_performed_by_action      { MAY_BE_PERFORMED_BY_ACTION }
+  | transferred_by                  { TRANSFERRED_BY }
+  | transferred_to                  { TRANSFERRED_TO }
   | blank+                { token lexbuf }
 
   | "@add"                { AT_ADD }

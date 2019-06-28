@@ -8,9 +8,6 @@ let pp_lident fmt i = Format.fprintf fmt "%s" (unloc i)
 
 type container =
   | Collection
-  | Queue
-  | Stack
-  | Set
   | Subset
   | Partition
 [@@deriving show {with_path = false}]
@@ -50,6 +47,7 @@ type ptyp =
   | Tbuiltin of vtyp
   | Tcontainer of ptyp * container
   | Ttuple of ptyp list
+  | Toption of ptyp
   | Tentry (* entry of external contract *)
 [@@deriving show {with_path = false}]
 
@@ -303,7 +301,7 @@ type ('id, 'typ, 'term) term_node  =
   | Lquantifer of quantifier * 'id * ltype_ * 'term
   | Pif of ('term * 'term * 'term)
   | Pmatchwith of 'term * ('id pattern_gen * 'term) list
-  | Pcall of ('id option * 'id call_kind * (('id, 'term) term_arg) list)
+  | Pcall of ('term option * 'id call_kind * (('id, 'typ, 'term) term_arg) list)
   | Plogical of logical_operator * 'term * 'term
   | Pnot of 'term
   | Pcomp of comparison_operator * 'term * 'term
@@ -319,8 +317,9 @@ type ('id, 'typ, 'term) term_node  =
   | Ptuple of 'term list
 [@@deriving show {with_path = false}]
 
-and ('id, 'term) term_arg =
+and ('id, 'typ, 'term) term_arg =
   | AExpr   of 'term
+  | AFun    of 'id * 'typ * 'term
   | AEffect of ('id * operator * 'term) list
 [@@deriving show {with_path = false}]
 
@@ -339,7 +338,7 @@ type lterm = (lident, ltype_) term_gen
 type pterm = (lident, type_) term_gen
 [@@deriving show {with_path = false}]
 
-type pterm_arg = (lident, pterm) term_arg
+type pterm_arg = (lident, ptyp, pterm) term_arg
 [@@deriving show {with_path = false}]
 
 (* -------------------------------------------------------------------- *)
@@ -363,7 +362,8 @@ and ('id, 'typ, 'term, 'instr) instruction_node =
   | Itransfer of ('term * bool * ('id, 'typ) qualid_gen option)   (* value * back * dest *)
   | Ibreak
   | Iassert of 'term
-  | Icall of ('term option * 'id call_kind * (('id, 'term) term_arg) list)
+  | Icall of ('term option * 'id call_kind * (('id, 'typ, 'term) term_arg) list)
+  | Ireturn of 'term
 [@@deriving show {with_path = false}]
 
 and ('id, 'typ, 'term) instruction_gen = ('id, 'typ, 'term, ('id, 'typ, 'term) instruction_gen) instruction_poly
@@ -621,8 +621,9 @@ let map_term_node (f : ('id, type_) term_gen -> ('id, type_) term_gen) = functio
   | Pif (c, t, e)           -> Pif (f c, f t, f e)
   | Pmatchwith (e, l)       -> Pmatchwith (e, List.map (fun (p, e) -> (p, f e)) l)
   | Pcall (i, e, args)      ->
-    Pcall (i, e, List.map (fun (arg : ('id, 'term) term_arg) -> match arg with
+    Pcall (i, e, List.map (fun (arg : ('id, 'typ, 'term) term_arg) -> match arg with
         | AExpr e -> AExpr (f e)
+        | AFun (x, xty, e) -> AFun (x, xty, f e)
         | AEffect l -> AEffect (List.map (fun (id, op, e) -> (id, op, f e)) l)) args)
   | Plogical (op, l, r)     -> Plogical (op, f l, f r)
   | Pnot e                  -> Pnot (f e)
@@ -650,6 +651,7 @@ let map_instr_node f = function
   | Ibreak              -> Ibreak
   | Iassert x           -> Iassert x
   | Icall (x, id, args) -> Icall (x, id, args)
+  | Ireturn x           -> Ireturn x
 
 let map_gen_poly g f (i : ('id, 'typ) struct_poly) : ('id, 'typ) struct_poly =
   {
@@ -671,8 +673,9 @@ let fold_term (f: 'a -> 't -> 'a) (accu : 'a) (term : ('id, type_) term_gen) =
   | Lquantifer (_, _, _, e) -> f accu e
   | Pif (c, t, e)           -> f (f (f accu c) t) e
   | Pmatchwith (e, l)       -> List.fold_left (fun accu (_, a) -> f accu a) (f accu e) l
-  | Pcall (_, _, args)      -> List.fold_left (fun accu (arg : ('id, 'typ) term_arg) -> match arg with
+  | Pcall (_, _, args)      -> List.fold_left (fun accu (arg : ('id, 'typ, 'term) term_arg) -> match arg with
       | AExpr e -> f accu e
+      | AFun (_, _, e) -> f accu e
       | AEffect l -> List.fold_left (fun accu (_, _, e) -> f accu e) accu l ) accu args
   | Plogical (_, l, r)      -> f (f accu l) r
   | Pnot e                  -> f accu e
@@ -701,6 +704,7 @@ let fold_instr f accu instr =
   | Ibreak           -> accu
   | Iassert _        -> accu
   | Icall _          -> accu
+  | Ireturn _        -> accu
 
 let fold_instr_expr fi fe accu instr =
   match instr.node with
@@ -715,6 +719,7 @@ let fold_instr_expr fi fe accu instr =
   | Ibreak              -> accu
   | Iassert x           -> fe accu x
   | Icall (x, id, args) -> fi accu instr
+  | Ireturn x           -> fe accu x
 
 let fold_map_term g f (accu : 'a) (term : ('id, type_) term_gen) : 'term * 'a =
   match term.node with
@@ -742,10 +747,11 @@ let fold_map_term g f (accu : 'a) (term : ('id, type_) term_gen) : 'term * 'a =
   | Pcall (a, id, args) ->
     let ((argss, argsa) : 'c list * 'a) =
       List.fold_left
-        (fun (pterms, accu) (x : ('id, 'term) term_arg) ->
+        (fun (pterms, accu) (x : ('id, 'typ, 'term) term_arg) ->
            let p, accu =
              match x with
              | AExpr a -> f accu a |> fun (x, acc) -> (Some (AExpr x), acc)
+             | AFun (_, _, e) -> assert false
              | _ -> None, accu in
            let x = match p with | Some a -> a | None -> x in
            pterms @ [x], accu) ([], accu) args
@@ -891,6 +897,10 @@ let fold_map_instr_term gi ge fi fe (accu : 'a) instr : 'instr * 'a =
         ) ([], xa) args
     in
     gi (Icall (xe, id, argss)), argsa
+
+  | Ireturn x ->
+    let xe, xa = fe accu x in
+    gi (Ireturn xe), xa
 
 
 (* -------------------------------------------------------------------- *)
@@ -1065,12 +1075,12 @@ let create_miles_with_expiration_ast () =
                                    ~type_:(Tbuiltin VTbool))
                     ~label:(dumloc "c1")]
 
-        ~effect:(mk_instr (Iif (mk_sp (Pcall (Some (dumloc "owner"),
+        ~effect:(mk_instr (Iif (mk_sp (Pcall (Some (mk_sp ~type_:(Tasset (dumloc "mile")) (Pvar (dumloc "owner"))),
                                               Cconst Ccontains,
                                               [AExpr (mk_sp (Pvar (dumloc "ow"))
                                                         ~type_:(Tbuiltin VTaddress))]))
                                   ~type_:(Tbuiltin VTbool),
-                                mk_instr (Icall (Some (mk_sp (Pdot ((mk_sp (Pcall (Some (dumloc "owner"),
+                                mk_instr (Icall (Some (mk_sp (Pdot ((mk_sp (Pcall (Some (mk_sp ~type_:(Tasset (dumloc "mile")) (Pvar (dumloc "owner"))),
                                                                                    Cconst Cget,
                                                                                    [AExpr (mk_sp (Pvar (dumloc "ow"))
                                                                                              ~type_:(Tbuiltin VTaddress))]))
@@ -1140,7 +1150,7 @@ let create_miles_with_expiration_ast () =
                                 ~specs:[
                                   mk_specification (dumloc "p2")
                                     (mk_sp (Pcomp (Equal,
-                                                   (mk_sp (Pcall (Some (dumloc "mile"),
+                                                   (mk_sp (Pcall (Some (mk_sp ~type_:(LTprog (Tasset (dumloc "mile"))) (Pvar (dumloc "mile"))),
                                                                   Cconst Csum,
                                                                   [
                                                                     AExpr (mk_sp (Pvar (dumloc "amount"))
@@ -1312,7 +1322,7 @@ let create_miles_with_expiration_ast () =
         ~effect:(
           mk_instr (Iletin (
               dumloc "ow",
-              (mk_sp (Pcall (Some (dumloc "owner"),
+              (mk_sp (Pcall (Some (mk_sp ~type_:(Tasset (dumloc "mile")) (Pvar (dumloc "owner"))),
                              Cconst Cget,
                              [AExpr (mk_sp (Pvar (dumloc "a"))
                                        ~type_:(Tbuiltin VTaddress))]))

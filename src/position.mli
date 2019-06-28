@@ -107,3 +107,6 @@ val cpos : Lexing.lexbuf -> t
 (** [string_of_cpos p] returns a string representation of
     the lexer's current position. *)
 val string_of_cpos : Lexing.lexbuf -> string
+
+
+val mk_position : string -> (int * int * int) -> (int * int * int) -> t

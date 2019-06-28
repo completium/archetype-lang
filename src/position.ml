@@ -119,3 +119,19 @@ let with_cpos lexbuf v =
 
 let string_of_cpos lexbuf =
   string_of_pos (cpos lexbuf)
+
+let mk_position fname (sl, sn, sb) (el, en, eb) =
+  {
+    start_p = {
+      pos_fname = fname;
+      pos_lnum  = sl;
+      pos_bol   = sb;
+      pos_cnum  = sn;
+    };
+    end_p = {
+      pos_fname = fname;
+      pos_lnum  = el;
+      pos_bol   = eb;
+      pos_cnum  = en;
+    };
+  }

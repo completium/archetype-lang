@@ -55,6 +55,7 @@ let rec to_type t =
   | M.Tbuiltin v        -> byp_to_type v
   | M.Tcontainer (t, _) -> W.Tcontainer (to_type t)
   | M.Ttuple l          -> W.Ttuple (List.map to_type l)
+  | M.Toption _
   | M.Tentry
   | M.Tprog _
   | M.Tvset _

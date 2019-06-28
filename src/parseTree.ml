@@ -11,9 +11,6 @@ let pp_lident fmt i = Format.fprintf fmt "%s" (unloc i)
 (* -------------------------------------------------------------------- *)
 type container =
   | Collection
-  | Queue
-  | Stack
-  | Set
   | Partition
 [@@deriving yojson, show {with_path = false}]
 
@@ -21,21 +18,15 @@ type type_r =
   | Tref of lident
   | Tasset of lident
   | Tcontainer of type_t * container
-  | Tvset of lident * type_t
+  | Tapp of lident * type_t
   | Ttuple of type_t list
+  | Toption of type_t
 [@@deriving yojson, show {with_path = false}]
 
 and type_t = type_r loced
 [@@deriving yojson, show {with_path = false}]
 
 (* -------------------------------------------------------------------- *)
-type spec_operator =
-  | OpSpec1
-  | OpSpec2
-  | OpSpec3
-  | OpSpec4
-[@@deriving yojson, show {with_path = false}]
-
 type logical_operator =
   | And
   | Or
@@ -82,7 +73,6 @@ type quantifier =
 [@@deriving yojson, show {with_path = false}]
 
 type operator = [
-  | `Spec    of spec_operator
   | `Logical of logical_operator
   | `Cmp     of comparison_operator
   | `Arith   of arithmetic_operator
@@ -101,6 +91,30 @@ type pattern_unloc =
 [@@deriving yojson, show {with_path = false}]
 
 type pattern = pattern_unloc loced
+[@@deriving yojson, show {with_path = false}]
+
+type security_arg_unloc =
+  | Sident of lident
+  | Sdot   of lident * lident
+  | Slist of security_arg list
+  | Sapp of lident * security_arg list
+  | Sbut of lident * security_arg
+  | Sto of lident * security_arg
+[@@deriving yojson, show {with_path = false}]
+
+and security_arg = security_arg_unloc loced
+[@@deriving yojson, show {with_path = false}]
+
+type security_unloc =
+  | SMayBePerformedOnlyByRole of security_arg * security_arg
+  | SMayBePerformedOnlyByAction of security_arg * security_arg
+  | SMayBePerformedByRole of security_arg * security_arg
+  | SMayBePerformedByAction of security_arg * security_arg
+  | STransferredBy of security_arg
+  | STransferredTo of security_arg
+[@@deriving yojson, show {with_path = false}]
+
+and security = security_unloc loced
 [@@deriving yojson, show {with_path = false}]
 
 type expr_unloc =
@@ -123,10 +137,23 @@ type expr_unloc =
   | Eseq          of expr * expr
   | Eletin        of lident * type_t option * expr * expr * expr option
   | Ematchwith    of expr * (pattern list * expr) list
-  | Equantifier   of quantifier * lident_typ * expr
+  | Equantifier   of quantifier * lident * quantifier_kind * expr
   | Elabel        of lident * expr
   | Eilabel       of lident
+  | Ereturn       of expr
+  | Eoption       of option_
+  | Esecurity     of security
   | Einvalid
+[@@deriving yojson, show {with_path = false}]
+
+and quantifier_kind =
+  | Qcollection of expr
+  | Qtype of type_t
+[@@deriving yojson, show {with_path = false}]
+
+and option_ =
+  | OSome of expr
+  | ONone
 [@@deriving yojson, show {with_path = false}]
 
 and function_ =
@@ -237,18 +264,69 @@ type enum_kind =
 (* -------------------------------------------------------------------- *)
 type declaration_unloc =
   | Darchetype     of lident * exts
-  | Dvariable      of lident * type_t * expr option * value_option list option * variable_kind * exts
-  | Denum          of enum_kind * (lident * enum_option list) list * exts
-  | Dasset         of lident * field list * asset_option list * asset_post_option list * asset_operation option * exts
-  | Daction        of lident * args * action_properties * (expr * exts) option * exts
-  | Dtransition    of lident * args * (lident * lident) option * expr * action_properties * transition * exts
-  | Dcontract      of lident * signature list * exts
-  | Dextension     of lident * expr list option
-  | Dnamespace     of lident * declaration list
+  | Dvariable      of variable_decl
+  | Dinstance      of instance_decl
+  | Denum          of enum_kind * enum_decl
+  | Dasset         of asset_decl
+  | Daction        of action_decl
+  | Dtransition    of transition_decl
+  | Dcontract      of contract_decl
+  | Dextension     of extension_decl
+  | Dnamespace     of namespace_decl
   | Dfunction      of s_function
   | Dverification  of verification
   | Dinvalid
 [@@deriving yojson, show {with_path = false}]
+
+and variable_decl =
+  lident
+  * type_t
+  * expr option
+  * value_option list option
+  * variable_kind
+  * exts
+
+and instance_decl = (* instance[%exts%] var of contract_type = e *)
+  lident   (* var *)
+  * lident (* contract_type *)
+  * expr   (* e *)
+  * exts   (* exts *)
+
+and enum_decl =
+  (lident * enum_option list) list * exts
+
+and asset_decl =
+  lident
+  * field list
+  * asset_option list
+  * asset_post_option list
+  * asset_operation option
+  * exts
+
+and action_decl =
+  lident
+  * args
+  * action_properties
+  * (expr * exts) option
+  * exts
+
+and transition_decl =
+  lident
+  * args
+  * (lident * lident) option
+  * expr
+  * action_properties
+  * transition
+  * exts
+
+and contract_decl =
+  lident * signature list * exts
+
+and extension_decl =
+  lident * expr list option
+
+and namespace_decl =
+  lident * declaration list
 
 and value_option =
   | VOfrom of lident

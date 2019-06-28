@@ -2,9 +2,11 @@
 %{
   open ParseTree
   open Location
-  open ParseUtils
 
-  let error loc = raise (ParseError [PE_Unknown loc])
+  let emit_error loc =
+    let str : string = "syntax error" in
+    let pos : Position.t list = [Tools.location_to_position loc] in
+    Error.error_alert pos str (fun _ -> ())
 
   let dummy_action_properties = {
       calledby        = None;
@@ -25,116 +27,122 @@
     | Eseq (a, b) -> (split_seq_label a) @ (split_seq_label b)
     | Elabel (lbl, e) -> [mkloc loc (Some lbl, e)]
     | Eterm _ -> [mkloc loc (None, e)]
-    | _ -> error (Location.loc e)
+    | _ -> (emit_error (Location.loc e); raise Tools.Anomaly)
 
 %}
 
-%token ARCHETYPE
-%token CONSTANT
-%token VARIABLE
-%token IDENTIFIED
-%token SORTED
-%token BY
-%token FROM
-%token TO
-%token ON
-%token WHEN
-%token REF
-%token INITIALIZED
-%token COLLECTION
-%token QUEUE
-%token STACK
-%token SET
-%token PARTITION
-%token ASSET
-%token MATCH
-%token WITH
-%token END
-%token ASSERT
-%token ENUM
-%token STATES
-%token INITIAL
+%token ACCEPT_TRANSFER
 %token ACTION
-%token CALLED
-%token TRANSITION
+%token AND
+%token ANDEQUAL
+%token ARCHETYPE
+%token ASSERT
+%token ASSET
 %token AT
-%token VERIFICATION
-%token PREDICATE
-%token DEFINITION
-%token AXIOM
-%token THEOREM
-%token INVARIANTS
-%token SPECIFICATION
-%token EFFECT
-%token FUNCTION
-%token LET
-%token IF
-%token THEN
-%token ELSE
-%token FOR
-%token IN
-%token BREAK
-%token OTHERWISE
-%token TRANSFER
-%token BACK
-%token EXTENSION
-%token NAMESPACE
-%token CONTRACT
 %token AT_ADD
 %token AT_REMOVE
 %token AT_UPDATE
+%token AXIOM
+%token BACK
+%token BREAK
+%token BUT
+%token BY
+%token CALLED
+%token COLLECTION
+%token COLON
 %token COLONCOLON
-%token LPAREN
-%token RPAREN
-%token LBRACKETPERCENT
-%token PERCENTRBRACKET
-%token LBRACKET
-%token RBRACKET
-%token LBRACE
-%token RBRACE
 %token COLONEQUAL
 %token COMMA
-%token COLON
-%token SEMI_COLON
-%token PERCENT
-%token PIPE
-%token DOT
-%token PLUSEQUAL
-%token MINUSEQUAL
-%token MULTEQUAL
+%token CONSTANT
+%token CONTRACT
+%token DEFINITION
+%token DIV
 %token DIVEQUAL
-%token ANDEQUAL
-%token OREQUAL
-%token AND
-%token OR
-%token NOT
-%token FORALL
-%token EXISTS
-%token TRUE
-%token FALSE
-%token IMPLY
-%token EQUIV
+%token DOT
+%token EFFECT
+%token ELSE
+%token END
+%token ENUM
+%token EOF
 %token EQUAL
-%token NEQUAL
-%token LESS
-%token LESSEQUAL
+%token EQUIV
+%token EXISTS
+%token EXTENSION
+%token FAILIF
+%token FALSE
+%token FOR
+%token FORALL
+%token FROM
+%token FUNCTION
 %token GREATER
 %token GREATEREQUAL
-%token PLUS
-%token MINUS
-%token MULT
-%token DIV
-%token UNDERSCORE
-%token ACCEPT_TRANSFER
-%token OP_SPEC1
-%token OP_SPEC2
-%token OP_SPEC3
-%token OP_SPEC4
-%token EOF
-%token FAILIF
-%token REQUIRE
-%token RECORD
+%token IDENTIFIED
+%token IF
+%token IMPLY
+%token IN
+%token INITIAL
+%token INITIALIZED
+%token INSTANCE
+%token INVARIANTS
 %token LABEL
+%token LBRACE
+%token LBRACKET
+%token LBRACKETPERCENT
+%token LESS
+%token LESSEQUAL
+%token LET
+%token LPAREN
+%token MATCH
+%token MAY_BE_PERFORMED_ONLY_BY_ROLE
+%token MAY_BE_PERFORMED_ONLY_BY_ACTION
+%token MAY_BE_PERFORMED_BY_ROLE
+%token MAY_BE_PERFORMED_BY_ACTION
+%token MINUS
+%token MINUSEQUAL
+%token MULT
+%token MULTEQUAL
+%token NAMESPACE
+%token NEQUAL
+%token NONE
+%token NOT
+%token OF
+%token ON
+%token OPTION
+%token OR
+%token OREQUAL
+%token OTHERWISE
+%token PARTITION
+%token PERCENT
+%token PERCENTRBRACKET
+%token PIPE
+%token PLUS
+%token PLUSEQUAL
+%token PREDICATE
+%token RBRACE
+%token RBRACKET
+%token RECORD
+%token REF
+%token REQUIRE
+%token RETURN
+%token RPAREN
+%token SEMI_COLON
+%token SORTED
+%token SOME
+%token SPECIFICATION
+%token STATES
+%token THEN
+%token THEOREM
+%token TO
+%token TRANSFER
+%token TRANSFERRED_BY
+%token TRANSFERRED_TO
+%token TRANSITION
+%token TRUE
+%token UNDERSCORE
+%token VARIABLE
+%token VERIFICATION
+%token WHEN
+%token WITH
 
 %token INVALID_EXPR
 %token INVALID_DECL
@@ -160,8 +168,6 @@
 
 %nonassoc COLONEQUAL PLUSEQUAL MINUSEQUAL MULTEQUAL DIVEQUAL ANDEQUAL OREQUAL
 
-%nonassoc OP_SPEC1 OP_SPEC2 OP_SPEC3 OP_SPEC4
-
 %right IMPLY
 %nonassoc EQUIV
 
@@ -177,7 +183,8 @@
 
 %right NOT
 
-%right STACK SET QUEUE PARTITION COLLECTION
+%right PARTITION COLLECTION
+%right OPTION
 %nonassoc above_coll
 
 %type <ParseTree.archetype> main
@@ -211,15 +218,14 @@ snl2(separator, X):
 %inline bracket(X):
 | LBRACKET x=X RBRACKET { x }
 
+%inline bracket2(X):
+| LBRACKET UNDERSCORE LBRACKET x=X RBRACKET UNDERSCORE RBRACKET { x }
+
 start_expr:
 | x=expr EOF { x }
-| x=loc(error)
-      { error (loc x) }
 
 main:
  | x=loc(archetype_r) { x }
- | x=loc(error)
-     { error (loc x) }
 
 archetype_r:
  | x=implementation_archetype EOF { x }
@@ -242,6 +248,7 @@ declaration_r:
  | x=archetype          { x }
  | x=constant           { x }
  | x=variable           { x }
+ | x=instance           { x }
  | x=enum               { x }
  | x=asset              { x }
  | x=action             { x }
@@ -267,6 +274,10 @@ constant:
 variable:
   | x=vc_decl(VARIABLE) { let x, t, z, dv, exts = x in
                           Dvariable (x, t, dv, z, VKvariable, exts) }
+
+instance:
+  | INSTANCE exts=option(extensions) v=ident OF t=ident dv=default_value
+    { Dinstance (v, t, dv, exts) }
 
 %inline value_options:
 | xs=value_option+ { xs }
@@ -394,10 +405,10 @@ verification_decl:
 
 enum:
 | STATES exts=extensions? xs=equal_enum_values
-    {Denum (EKstate,  xs, exts)}
+    {Denum (EKstate, (xs, exts))}
 
 | ENUM exts=extensions? x=ident xs=equal_enum_values
-    {Denum (EKenum x, xs, exts)}
+    {Denum (EKenum x, (xs, exts))}
 
 equal_enum_values:
 | /*nothing*/          { [] }
@@ -439,7 +450,8 @@ type_s_unloc:
 | x=ident RECORD          { Tasset x }
 | x=type_s c=container    { Tcontainer (x, c) }
 | x=ident y=type_s %prec above_coll
-                          { Tvset (x, y) }
+                          { Tapp (x, y) }
+| x=type_s OPTION         { Toption x }
 | x=paren(type_r)         { x }
 
 %inline type_tuples:
@@ -450,9 +462,6 @@ type_s_unloc:
 
 %inline container:
 | COLLECTION { Collection }
-| QUEUE      { Queue }
-| STACK      { Stack }
-| SET        { Set }
 | PARTITION  { Partition }
 
 asset:
@@ -594,7 +603,7 @@ pattern:
  | e=loc(expr_r) { e }
 
 %inline ident_typ_q_item:
- | LPAREN ids=ident+ IN t=type_t RPAREN { List.map (fun x -> (x, t, None)) ids }
+ | LPAREN ids=ident+ t=quant_kind RPAREN { List.map (fun x -> (x, t)) ids }
 
 ident_typ_q:
  | xs=ident_typ_q_item+ { List.flatten xs }
@@ -608,15 +617,14 @@ ident_typ_q:
 | OTHERWISE o=expr { Some o }
 
 expr_r:
- | q=quantifier x=ident_typ_quant COMMA y=expr
-     { Equantifier (q, x, y) }
+ | q=quantifier id=ident t=quant_kind COMMA y=expr
+     { Equantifier (q, id, t, y) }
 
  | q=quantifier xs=ident_typ_q COMMA y=expr
     {
-      (List.fold_right (fun x acc ->
-           let i, t, _ = x in
-           let l = Location.merge (loc i) (loc t) in
-           mkloc l (Equantifier (q, x, acc))) xs y) |> unloc
+      (List.fold_right (fun (i, t) acc ->
+           let l = loc i in
+           mkloc l (Equantifier (q, i, t, acc))) xs y) |> unloc
     }
 
  | LET i=ident t=colon_type_opt EQUAL e=expr IN y=expr o=otherwise
@@ -660,6 +668,18 @@ expr_r:
  | FAILIF x=simple_expr
      { Efailif x }
 
+ | RETURN x=simple_expr
+     { Ereturn x }
+
+ | SOME x=simple_expr
+     { Eoption (OSome x) }
+
+ | NONE
+     { Eoption ONone }
+
+ | x=security
+    { Esecurity x }
+
  | x=order_operations %prec prec_order { x }
 
  | e1=expr op=loc(bin_operator) e2=expr
@@ -689,6 +709,15 @@ order_operations:
 %inline app_args:
  | LPAREN RPAREN     { [] }
  | xs=simple_expr+   { xs }
+
+%inline simple_expr_with_app:
+ | x=loc(expr_with_app_unloc) { x }
+
+expr_with_app_unloc:
+ | id=ident a=app_args
+     { Eapp ( Fident id, a) }
+ | x=simple_expr_r
+     { x }
 
 %inline simple_expr:
  | x=loc(simple_expr_r) { x }
@@ -738,8 +767,9 @@ simple_expr_r:
  | LPAREN ids=ident+ COLON ty=type_t RPAREN
      { List.map (fun id -> (id, ty, None)) ids }*/
 
-%inline ident_typ_quant:
- | id=ident IN ty=type_t { (id, ty, None) }
+%inline quant_kind:
+| COLON t=type_s               { Qtype t }
+| IN    e=simple_expr_with_app { Qcollection e }
 
 literal:
  | x=NUMBER     { Lnumber   x }
@@ -763,12 +793,6 @@ record_item:
 %inline quantifier:
  | FORALL { Forall }
  | EXISTS { Exists }
-
-%inline spec_operator:
- | OP_SPEC1   { OpSpec1 }
- | OP_SPEC2   { OpSpec2 }
- | OP_SPEC3   { OpSpec3 }
- | OP_SPEC4   { OpSpec4 }
 
 %inline logical_operator:
  | AND   { And }
@@ -799,7 +823,6 @@ record_item:
  | NOT     { Not }
 
 %inline bin_operator:
-| op=spec_operator       { `Spec op }
 | op=logical_operator    { `Logical op }
 | op=comparison_operator { `Cmp op }
 | op=arithmetic_operator { `Arith op }
@@ -817,3 +840,35 @@ record_item:
 
 %inline asset_operation:
 | xs=asset_operation_enum+ args=option(simple_expr+) { AssetOperation (xs, args) }
+
+%inline security:
+ | e=loc(bracket2(security_unloc)) { e }
+
+security_unloc:
+| lhs=security_arg MAY_BE_PERFORMED_ONLY_BY_ROLE rhs=security_arg
+    { SMayBePerformedOnlyByRole (lhs, rhs) }
+| lhs=security_arg MAY_BE_PERFORMED_ONLY_BY_ACTION rhs=security_arg
+    { SMayBePerformedOnlyByAction (lhs, rhs) }
+| lhs=security_arg MAY_BE_PERFORMED_BY_ROLE rhs=security_arg
+    { SMayBePerformedByRole (lhs, rhs) }
+| lhs=security_arg MAY_BE_PERFORMED_BY_ACTION rhs=security_arg
+    { SMayBePerformedByAction (lhs, rhs) }
+| TRANSFERRED_BY arg=security_arg
+    { STransferredBy arg }
+| TRANSFERRED_TO arg=security_arg
+    { STransferredTo arg }
+
+%inline security_arg:
+ | e=loc(security_arg_unloc) { e }
+
+security_arg_unloc:
+| id=ident                           { Sident id }
+| a=ident DOT b=ident                { Sdot (a, b) }
+| xs=bracket(snl2(OR, security_arg)) { Slist xs }
+| x=paren(security_arg_ext_unloc)    { x }
+
+security_arg_ext_unloc:
+| id=ident xs=security_arg+          { Sapp (id, xs) }
+| id=ident BUT arg=security_arg      { Sbut (id, arg) }
+| id=ident TO arg=security_arg       { Sto (id, arg) }
+| x=security_arg_unloc               { x }

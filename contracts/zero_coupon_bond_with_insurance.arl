@@ -9,7 +9,7 @@ contract insurance = {
    action pay : address, tez
 }
 
-variable zero_insr insurance = @KT1GabhR5P52hw6xs5P69BXJYAURaznhvN1k
+instance zero_insr of insurance = @KT1GabhR5P52hw6xs5P69BXJYAURaznhvN1k
 
 variable price tez from owner = 10
 

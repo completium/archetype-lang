@@ -1,7 +1,5 @@
 archetype miles
 
-variable validator role
-
 variable[%transferable%] validator role
 
 asset account identified by owner = {
@@ -15,7 +13,7 @@ action add (ow : role) (value : uint) = {
     if account.contains ow then
      account.update ow { amount += value }
     else
-     owner.add { owner = ow; amount = 0 }
+     account.add { owner = ow; amount = 0 }
   }
 }
 

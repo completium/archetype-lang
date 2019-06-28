@@ -8,8 +8,8 @@ let decl_to_element d : Omd.element option=
   match unloc d with
   | Darchetype (i, _)                  -> Some (H1 [Text (to_str i)])
   | Dvariable (id, _, _, _, _, _)      -> Some (H2 [Text ("todo: variable: " ^ (to_str id))])
-  | Denum (EKenum id, _, _)            -> Some (H2 [Text ("todo: enum: " ^ (to_str id))])
-  | Denum (EKstate, _, _)              -> Some (H2 [Text ("todo: states")])
+  | Denum (EKenum id, _)               -> Some (H2 [Text ("todo: enum: " ^ (to_str id))])
+  | Denum (EKstate, _)                 -> Some (H2 [Text ("todo: states")])
   | Dasset (id, _, _, _, _, _)         -> Some (H2 [Text ("todo: asset: " ^ (to_str id))])
   | Daction (id, _, _, _, _)           -> Some (H2 [Text ("todo: action: " ^ (to_str id))])
   | Dtransition (id, _, _, _, _, _, _) -> Some (H2 [Text ("todo: transition: " ^ (to_str id))])

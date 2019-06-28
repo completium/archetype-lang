@@ -68,45 +68,46 @@ action consume (a : address) (quantity : uint) = {
 
   effect {
      let ow = owner.get a in
-     let by_expiration = ow.miles.select(mile.expiration > now) in
-     require (by_expiration.sum(quantity) >= amount);
-     let remainder = quantity in
-     loop : for (m in by_expiration) (
-       if remainder > 0
-       then (
-         if m.amount > remainder
+     let by_expiration = ow.miles.select(the.expiration > now) in (
+       require (by_expiration.sum(the.amount) >= quantity);
+       let remainder = quantity in
+       loop : for (m in by_expiration) (
+         if remainder > 0
          then (
-           remainder := 0;  (* this should be after instruction below
-                               this is to demonstrate verification
-                               capacity to not verify contract in this
-                               state *)
-           mile.update m.id { amount  -= remainder }
-         )
-         else if m.amount = remainder
-         then (
-           remainder := 0;
-           ow.miles.remove m.id
-         ) else (
-           remainder -= m.amount;
-           ow.miles.remove m.id
-         )
-       );
-     label zero_remainder)
+           if m.amount > remainder
+           then (
+             remainder := 0;  (* this should be after instruction below
+                                 this is to demonstrate verification
+                                 capacity to not verify contract in this
+                                 state *)
+             mile.update m.id { amount  -= remainder }
+           )
+           else if m.amount = remainder
+           then (
+             remainder := 0;
+             ow.miles.remove m.id
+           ) else (
+             remainder -= m.amount;
+             ow.miles.remove m.id
+           )
+         );
+       label zero_remainder)
+     )
   }
 }
 
 verification {
   (* this ensures that any mile was added with the ‘add’ action *)
   specification g1 = {
-    anyaction may be performed only by role admin
+    [_[ anyaction may be performed only by role admin]_]
   }
 
   specification g2 = {
-    (remove mile) may be performed only by action (consume or clear_expired)
+    [_[ (remove mile) may be performed only by action [consume or clear_expired] ]_]
   }
 
   specification g3 = {
-    not ((add mile) may be performed only by action consume)
+    not ( [_[ (add mile) may be performed only by action consume]_] )
   }
 }
 
@@ -121,7 +122,7 @@ action clear_expired = {
 
   effect {
     for (o in owner) (
-      o.miles.removeif (expiration < now)
+      o.miles.removeif (the.expiration < now)
     )
   }
 }

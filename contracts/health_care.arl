@@ -1,0 +1,104 @@
+archetype health_care 
+
+constant insurer role = 
+constant patient role = 
+
+constant fee tez = 100tz
+constant deductible = 500tz
+constant period duration = 30d
+
+variable last_fee date
+
+variable consultation_debt tez = 0tz
+
+asset doctor identified by id {
+    id   : role;
+    debt : tez = 0;
+}
+
+states =
+| Created   initial
+| Running
+| Canceled
+
+transition confirm from Created = {
+    (*signed by [insrurer; patient]*)
+    to Running 
+    with effect {
+        last_fee := now
+    }
+}
+
+transition cancel from Created = {
+    called by insurer or patient
+    to Canceled
+}
+
+action register_doctor (docid : address) = {
+    (*signed by [insurer; patient]*)
+    require { state = Running }
+    effect {
+        doctor.add { id = docid }
+    }
+}
+
+action declare_consultation (v : tez) = {
+    called by doctor  (* <-> require { doctor.contains caller } *)
+    
+    require { state = Running }
+    effect {
+        doctor.update caller { debt += v };
+        consultation_debt += min v deductible
+    }
+}
+
+action pay_doctor (docid : address) = {
+    specification { 
+        idem_balance_pay_doctor : balance = before balance 
+    }
+    accept transfer
+    called by insurer
+    require { state = Running }
+    effect {
+        let debt = (doctor.get docid).debt in
+        let decrease = min transferred debt in
+        transfer decrease to docid;
+        transfer (transferred - decrease) to insurer;
+        doctor.update docid { debt -= decrease }
+    }
+}
+
+action pay_fee = {
+    specification { 
+        idem_balance_pay_fee : balance = before balance 
+    }
+    accept transfer
+    require { state = Running }
+    called by patient
+    effect {
+        let nb_periods = (now - last_fee) / period in  (* div is euclidean *)
+        let due = nb_periods * fee in 
+        let decrease = min transferred due in
+        transfer decrease to insrurer;
+        transfer (transferred - decrease) to patient;
+        last_fee := last_fee + period * nb_periods     (* last_fee <> now because div is euclidean *)
+    }
+}
+
+action pay_consulation = {
+    specification { 
+        idem_balance_pay_consultation : balance = before balance 
+    }
+    require { state = Running }
+    accept transfer
+    called by patient
+    effect {
+        let decrease = min (transferred, consultation_debt) in
+        transfer decrease to insurer;
+        transfer (transferred - decrease) to patient;
+        consultation_debt -= decrease
+    }
+}
+
+
+
