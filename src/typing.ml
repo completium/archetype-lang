@@ -340,14 +340,15 @@ let procsig_of_operator (_op : PT.operator) : procsig =
 
 (* -------------------------------------------------------------------- *)
 let core_types = [
-  ("string" , M.vtstring        );
-  ("int"    , M.vtint           );
-  ("uint"   , M.vtint           ); (* FIXME *)
-  ("bool"   , M.vtbool          );
-  ("role"   , M.vtrole          );
-  ("address", M.vtaddress       );
-  ("date"   , M.vtdate          );
-  ("tez"    , M.vtcurrency M.Tez);
+  ("string"  , M.vtstring        );
+  ("int"     , M.vtint           );
+  ("uint"    , M.vtint           ); (* FIXME *)
+  ("bool"    , M.vtbool          );
+  ("role"    , M.vtrole          );
+  ("address" , M.vtaddress       );
+  ("date"    , M.vtdate          );
+  ("tez"     , M.vtcurrency M.Tez);
+  ("duration", M.vtduration      );
 ]
 
 (* -------------------------------------------------------------------- *)

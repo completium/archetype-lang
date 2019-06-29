@@ -1,4 +1,4 @@
-archetype health_care 
+archetype health_care
 
 constant insurer role = @tz1KksC8RvjUWAbXYJuNrUbontHGor25Cztk
 constant patient role = @tz1KksC8RvjUWAbXYJuNrUbontHGor25Cztk
@@ -23,7 +23,7 @@ states =
 
 transition confirm from Created = {
     (*signed by [insrurer; patient]*)
-    to Running 
+    to Running
     with effect {
         last_fee := now
     }
@@ -44,7 +44,7 @@ action register_doctor (docid : address) = {
 
 action declare_consultation (v : tez) = {
     called by doctor  (* <-> require { doctor.contains caller } *)
-    
+
     require { r2 : state = Running }
     effect {
         doctor.update caller { debt += v };
@@ -54,8 +54,8 @@ action declare_consultation (v : tez) = {
 
 action pay_doctor (docid : address) = {
     verification {
-      specification idem_balance_pay_doctor = { 
-        balance = before balance 
+      specification idem_balance_pay_doctor = {
+        balance = before balance
       }
     }
     called by insurer
@@ -72,8 +72,8 @@ action pay_doctor (docid : address) = {
 
 action pay_fee = {
     verification {
-      specification idem_balance_pay_fee = { 
-         balance = before balance 
+      specification idem_balance_pay_fee = {
+         balance = before balance
       }
     }
     called by patient
@@ -81,7 +81,7 @@ action pay_fee = {
     require { r4 : state = Running }
     effect {
         let nb_periods = (now - last_fee) / period in  (* div is euclidean *)
-        let due = nb_periods * fee in 
+        let due = nb_periods * fee in
         let decrease = min transferred due in
         transfer decrease to insrurer;
         transfer (transferred - decrease) to patient;
@@ -91,8 +91,8 @@ action pay_fee = {
 
 action pay_consulation = {
     verification {
-        specification idem_balance_pay_consultation = { 
-            balance = before balance 
+        specification idem_balance_pay_consultation = {
+            balance = before balance
         }
     }
     called by patient
