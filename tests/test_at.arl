@@ -3,11 +3,11 @@ archetype test_specification
 action tr = {
   verification {
     specification s1 = {
-      (x at label) -> x
+      (x at label_in_code) -> x
     }
 
     specification s2 = {
-      (s::x at label) -> x
+      (s::x at label_in_code) -> x
     }
   }
 }
