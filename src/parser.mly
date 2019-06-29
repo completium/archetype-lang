@@ -159,9 +159,10 @@
 
 %nonassoc prec_for prec_transfer
 
+%nonassoc TO IN
+
 %left COMMA SEMI_COLON
 
-%nonassoc TO IN
 %right OTHERWISE
 %right THEN ELSE
 %nonassoc COLON
