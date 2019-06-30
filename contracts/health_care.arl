@@ -21,7 +21,7 @@ states =
 | Running
 | Canceled
 
-transition confirm from Created = {
+transition[%signedbyall [patient; insurer]%] confirm from Created = {
     (*signed by [insrurer; patient]*)
     to Running
     with effect {
