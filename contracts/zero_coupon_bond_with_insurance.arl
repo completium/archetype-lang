@@ -40,7 +40,7 @@ transition confirm from Insured = {
   to Confirmed
   when { transferred = price }
   with effect {
-    maturity := now + 1Y;
+    maturity := now + 365d;
     transfer price to issuer
   }
 }
