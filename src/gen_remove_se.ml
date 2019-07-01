@@ -60,6 +60,7 @@ let rec to_type t =
   | M.Tprog _
   | M.Tvset _
   | M.Ttrace _          -> emit_error (NotSupportedType (Format.asprintf "%a@." M.pp_type_ t))
+  | M.Tunit             -> W.Tunit
 
 let get_default_expr_from_type = function
   | M.FBasic Bbool        -> W.Elitbool false
@@ -222,7 +223,8 @@ let op_to_constr op =
     Format.eprintf "op_to_constr: %a@\n" M.pp_operator op;
     raise (Anomaly (Format.asprintf "Unsupported operator %a@." M.pp_operator op) )
 
-let rec instr_to_expr model (instr : M.instruction) : W.expr * W.type_ =
+
+let rec expr_to_expr (model : M.model) (expr : M.mterm) : W.expr * W.type_ =
   let compute_return_type t1 t2 : W.type_ =
 
     match t1, t2 with
@@ -233,144 +235,138 @@ let rec instr_to_expr model (instr : M.instruction) : W.expr * W.type_ =
     | _ -> W.Tunit
   in
 
-  let rec expr_to_expr (model : M.model) (expr : M.mterm) : W.expr * W.type_ =
-    match expr.node with
-    | M.Mcall (None , id, args) ->
-      let c_id = match id with
-        | Cid id -> W.Evar (unloc id)
-        | Cconst c ->
-          Format.eprintf "Cconst: %a@\n" M.pp_const c;
-          raise (Anomaly "no const")
-        | Cstorage s -> W.Evar (M.function_name_from_function_node (M.Storage s))
-      in
-      let args =
-        W.Evar "s"::(List.map (fun x ->
-            match x with
-            | M.AExpr e -> expr_to_expr model e |> fst
-            | _ -> assert false
-          ) args) in
-      W.Ecall (c_id, args), to_type expr.type_
+  match expr.node with
 
-    | M.Mrecord l ->
-      let asset_name = match expr.type_ with
-        | M.Tasset v -> v
-        | _ -> assert false
-      in
-      let field_list = M.Utils.get_named_field_list model asset_name l in
-
-      let field_list = List.map (fun (a, b) -> (unloc a, (fst |@ expr_to_expr model) b) ) field_list in
-
-      W.Erecord field_list, to_type expr.type_
-
-    | M.Marray l ->
-      let list = List.map (fun x -> (fst |@ expr_to_expr model) x) l in
-      W.Earray list, to_type expr.type_
-
-    | M.Mdot (a, b) ->
-      let expr_a, _ = expr_to_expr model a in
-      let id_b = unloc b in
-      W.Edot (expr_a, id_b), to_type expr.type_
-
-    | M.Mvar s ->
-      let a =
-        if Model.Utils.is_storage_attribute model s
-        then W.Edot (W.Evar storage_id, unloc s)
-        else W.Evar (unloc s)
-      in
-      a, to_type expr.type_
-
-    | M.Mlit (BVint i)
-    | M.Mlit (BVuint i) -> W.Elitint i, to_type expr.type_
-    | M.Mlit (BVbool b) -> W.Elitbool b, to_type expr.type_
-    | M.Mlit (BVstring str) -> W.Elitstring str, to_type expr.type_
-
-    | M.Mlit (BVduration _) -> raise (Anomaly "Unsuported duration") (*W.Elitraw str, to_type expr.type_*)
-    | M.Mlit (BVrational _) -> raise (Anomaly "Unsuported rational") (*W.Elitraw str, to_type expr.type_*)
-
-    | M.Mlit (BVenum str)
-    | M.Mlit (BVdate str)
-    | M.Mlit (BVaddress str)  ->
-      W.Elitraw str, to_type expr.type_
-
-    | M.Mlit (BVcurrency (_cur, v)) ->
-      W.Elitraw (Format.asprintf "%stz" (Big_int.string_of_big_int v)), to_type expr.type_
-
-    | M.Mnot e ->
-      let expr_e, _ = expr_to_expr model e in
-      W.Enot expr_e, to_type expr.type_
-
-    | M.Mlogical (op, l, r) ->
-      let expr_l, _ = expr_to_expr model l in
-      let expr_r, _ = expr_to_expr model r in
-      (op_to_constr (`Logical op)) (expr_l, expr_r), to_type expr.type_
-
-    | M.Mcomp (op, l, r) ->
-      let expr_l, _ = expr_to_expr model l in
-      let expr_r, _ = expr_to_expr model r in
-      (op_to_constr (`Cmp op)) (expr_l, expr_r), to_type expr.type_
-
-    | M.Marith (op, l, r) ->
-      let expr_l, _ = expr_to_expr model l in
-      let expr_r, _ = expr_to_expr model r in
-      (op_to_constr (`Arith op)) (expr_l, expr_r), to_type expr.type_
-
-    | M.Mconst c ->
-      (
-        match c with
-        | M.Ccaller      -> current_id "sender",  to_type expr.type_
-        | M.Ctransferred -> current_id "amount",  to_type expr.type_
-        | M.Cbalance     -> current_id "balance", to_type expr.type_
-        | M.Cnow         -> current_id "time",    to_type expr.type_
-
-        | _ ->
-          Format.eprintf "to_const: %a@\n" M.pp_const c;
-          raise (Anomaly "Not supported yet")
-      )
-    | _ ->
-      Format.eprintf "expr: %a@\n" M.pp_mterm expr;
-      W.Evar "s", W.Tstorage
-  in
-
-  match instr.node with
-  | M.Iif (c, t, e) ->
+  | M.Mif (c, t, e) ->
     let expr_cond, _ = expr_to_expr model c in
-    let expr_then, type_then = instr_to_expr model t in
-    let expr_else, type_else = instr_to_expr model e in
+    let expr_then, type_then = expr_to_expr model t in
+    let expr_else, type_else = expr_to_expr model e in
 
     let ret = compute_return_type type_then type_else in
     W.Eif (expr_cond, expr_then, expr_else), ret
 
-  | M.Icall (None, id, args) ->
-    let i_id, args, t = match id with
-      | Cid id ->
+  | M.Mfor (id, col, body) ->
+    let expr_body, type_body = expr_to_expr model body in
+    expr_body, W.Tstorage
+
+  | M.Mapplocal (id, args) ->
+    let s_id, args, t = match id with
+      | Alocal id ->
         let args =
-          W.Evar "s"::(List.map (fun e -> (match e with | M.AExpr e -> expr_to_expr model e | _ -> assert false) |> fst) args)
-        in
-        W.Evar (unloc id), args, W.Tstorage
-      | Cconst Cfail ->
+          W.Evar "s"::(List.map (fun x ->
+              match x with
+              | M.AExpr e -> expr_to_expr model e |> fst
+              | _ -> assert false
+            ) args) in
+        W.Evar (unloc id), args, to_type expr.type_
+      | Aconst Cfail ->
         let args = (List.map (fun e -> (match e with | M.AExpr e -> expr_to_expr model e | _ -> assert false) |> fst) args) in
         W.Edot (W.Evar "Current", "failwith"), args, W.Tstorage
-      | Cconst c ->
-        Format.eprintf "Cconst: %a@\n" M.pp_const c;
-        raise (Anomaly "no const")
+      | Aconst c ->
+        Format.eprintf "Cconst: %a@." M.pp_const c;
+        W.Evar (Format.asprintf "%a" M.pp_const c), [], W.Tstorage
+        (* raise (Anomaly "no const") *)
+        (* | Cstorage s -> W.Evar (M.function_name_from_function_node (M.Storage s)) *)
+    in
+
+    W.Ecall (s_id, args), t
+
+  | M.Mappadd (col, item) ->
+    let lhs, _ = expr_to_expr model col in
+    let rhs, _ = expr_to_expr model item in
+    W.Ecall (W.Evar "add", [lhs; rhs]), W.Tstorage
+  (* | M.Icall (None, id, args) ->
+     let i_id, args, t = match id with
       | Cstorage s ->
         let args =
           W.Evar "s"::(List.map (fun e -> (match e with | M.AExpr e -> expr_to_expr model e | _ -> assert false) |> fst) args)
         in
         W.Evar (M.function_name_from_function_node (M.Storage s)), args, W.Tstorage
+     in
+     W.Ecall (i_id, args), t *)
+
+  | M.Mrecord l ->
+    let asset_name = match expr.type_ with
+      | M.Tasset v -> v
+      | _ -> assert false
     in
-    W.Ecall (i_id, args), t
+    let field_list = M.Utils.get_named_field_list model asset_name l in
 
-  | M.Ifor (id, col, body) ->
-    let expr_body, type_body = instr_to_expr model body in
-    expr_body, W.Tstorage
+    let field_list = List.map (fun (a, b) -> (unloc a, (fst |@ expr_to_expr model) b) ) field_list in
 
+    W.Erecord field_list, to_type expr.type_
+
+  | M.Marray l ->
+    let list = List.map (fun x -> (fst |@ expr_to_expr model) x) l in
+    W.Earray list, to_type expr.type_
+
+  | M.Mdot (a, b) ->
+    let expr_a, _ = expr_to_expr model a in
+    let id_b = unloc b in
+    W.Edot (expr_a, id_b), to_type expr.type_
+
+  | M.Mvar (Vlocal s) ->
+    let a =
+      if Model.Utils.is_storage_attribute model s
+      then W.Edot (W.Evar storage_id, unloc s)
+      else W.Evar (unloc s)
+    in
+    a, to_type expr.type_
+
+  | M.Mlit (BVint i)
+  | M.Mlit (BVuint i) -> W.Elitint i, to_type expr.type_
+  | M.Mlit (BVbool b) -> W.Elitbool b, to_type expr.type_
+  | M.Mlit (BVstring str) -> W.Elitstring str, to_type expr.type_
+
+  | M.Mlit (BVduration _) -> raise (Anomaly "Unsuported duration") (*W.Elitraw str, to_type expr.type_*)
+  | M.Mlit (BVrational _) -> raise (Anomaly "Unsuported rational") (*W.Elitraw str, to_type expr.type_*)
+
+  | M.Mlit (BVenum str)
+  | M.Mlit (BVdate str)
+  | M.Mlit (BVaddress str)  ->
+    W.Elitraw str, to_type expr.type_
+
+  | M.Mlit (BVcurrency (_cur, v)) ->
+    W.Elitraw (Format.asprintf "%stz" (Big_int.string_of_big_int v)), to_type expr.type_
+
+  | M.Mnot e ->
+    let expr_e, _ = expr_to_expr model e in
+    W.Enot expr_e, to_type expr.type_
+
+  | M.Mlogical (op, l, r) ->
+    let expr_l, _ = expr_to_expr model l in
+    let expr_r, _ = expr_to_expr model r in
+    (op_to_constr (`Logical op)) (expr_l, expr_r), to_type expr.type_
+
+  | M.Mcomp (op, l, r) ->
+    let expr_l, _ = expr_to_expr model l in
+    let expr_r, _ = expr_to_expr model r in
+    (op_to_constr (`Cmp op)) (expr_l, expr_r), to_type expr.type_
+
+  | M.Marith (op, l, r) ->
+    let expr_l, _ = expr_to_expr model l in
+    let expr_r, _ = expr_to_expr model r in
+    (op_to_constr (`Arith op)) (expr_l, expr_r), to_type expr.type_
+
+  | M.Mconst c ->
+    (
+      match c with
+      | M.Ccaller      -> current_id "sender",  to_type expr.type_
+      | M.Ctransferred -> current_id "amount",  to_type expr.type_
+      | M.Cbalance     -> current_id "balance", to_type expr.type_
+      | M.Cnow         -> current_id "time",    to_type expr.type_
+
+      | _ ->
+        Format.eprintf "to_const: %a@\n" M.pp_const c;
+        raise (Anomaly "Not supported yet")
+    )
   | _ ->
-    Format.eprintf "instr: %a@\n" M.pp_instruction instr;
+    Format.eprintf "expr: %a@\n" M.pp_mterm expr;
     W.Evar "s", W.Tstorage
 
+
 let compute_body_entry model (fs : M.function_struct) =
-  let e, ret = instr_to_expr model fs.body in
+  let e, ret = expr_to_expr model fs.body in
   match ret with
   | W.Tstorage ->
     W.Eletin (
@@ -379,12 +375,29 @@ let compute_body_entry model (fs : M.function_struct) =
   | _ ->
     raise (Anomaly (Format.asprintf "compute_body_entry: %a@\n" W.pp_type_ ret))
 
+let mk_function_storage model (storage_const : M.storage_const) =
+  let name : ident = M.Utils.function_name_from_storage_node storage_const in
+  let kind, args, ret, body =
+    match storage_const with
+    | Get asset                   -> Utils.get_asset model asset
+    | Add asset                   -> Utils.add_asset model asset
+    | Contains asset              -> Utils.contains_asset model asset
+    (* | AddContainer (asset, field) -> Utils.add_container model (asset, field) *)
+    | _ ->
+      let args = [[""], W.Tunit] in
+      let ret  = W.Tunit in
+      let body = W.Etuple [] in
+      W.Function, args, ret, body
+  in
+
+  W.mk_function name kind ret body ~args:args
 
 let mk_function_struct model (f : M.function__) =
-  let name : ident = M.function_name_from_function_node f.node in
-  let kind, args, ret, body =
+
+  let name, kind, args, ret, body =
     match f.node with
     | M.Entry fs ->
+      let name = fs.name |> Location.unloc in
       let itargs, ttargs = List.fold_left (fun (args, typs) (arg, typ, _) ->
           (args @ [unloc arg], typs @ [to_type typ])
         ) ([], []) fs.args in
@@ -398,18 +411,14 @@ let mk_function_struct model (f : M.function__) =
         if (String.equal (unloc fs.name) "add") (* || (String.equal (unloc fs.name) "clear_expired")*)
         then compute_body_entry model fs
         else Etuple [Earray []; W.Evar storage_id] in
-      W.Entry, args, ret, body
+      name, W.Entry, args, ret, body
 
-    | M.Storage Get asset                   -> Utils.get_asset model asset
-    | M.Storage AddAsset asset              -> Utils.add_asset model asset
-    | M.Storage Contains asset              -> Utils.contains_asset model asset
-    | M.Storage AddContainer (asset, field) -> Utils.add_container model (asset, field)
-
-    | _ ->
+    | M.Function (fs, _)->
+      let name = fs.name |> Location.unloc in
       let args = [[""], W.Tunit] in
       let ret  = W.Tunit in
       let body = W.Etuple [] in
-      W.Function, args, ret, body
+      name, W.Function, args, ret, body
   in
 
   W.mk_function name kind ret body ~args:args
@@ -418,39 +427,41 @@ let remove_se (model : M.model) : W.model =
   let name = model.name in
   let enums = List.fold_left (fun accu x ->
       match x with
-      | M.TNenum e ->
+      | M.Denum e ->
         let name = unloc e.name in
         let values : ident list = List.map (fun (x : 'id M.enum_item) -> unloc x.name) e.values in
         let enum = W.mk_enum name ~values:values in
         accu @ [enum]
       | _ -> accu) [] model.decls in
-  let records = List.fold_left (fun accu x ->
-      match x with
-      | M.TNrecord r ->
-        let values : (ident * W.type_ * W.expr) list =
-          List.map (fun (x : 'id M.record_item_gen) -> (unloc x.name, to_type x.type_, W.Elitbool false)) r.values
-        in
-        accu @
-        [W.mk_record (unloc r.name) ~values:values]
-      | M.TNstorage s ->
-        let values : (ident * W.type_ * W.expr) list =
-          List.fold_left (fun accu (x : 'id M.storage_item_gen) ->
-              accu @ List.map (fun (i : 'id M.item_field_gen) : (ident * W.type_ * W.expr) ->
-                  (unloc i.name, item_type_to_type i.typ, (
-                      match i.default with
-                      | Some v -> to_expr v
-                      | None -> get_default_expr_from_type i.typ
-                    ))) x.fields
-            ) [] s
-        in
-        accu @
-        [W.mk_record "storage" ~values:values]
-      | _ -> accu
-    ) [] model.decls in
-  let funs = List.fold_left (fun accu x ->
-      match x with
-      | M.TNfunction f ->
-        let func = mk_function_struct model f in
-        accu @ [func]
-      | _ -> accu) [] model.decls in
+  let records =
+    let storage_values : (ident * W.type_ * W.expr) list =
+      List.fold_left (fun accu (x : 'id M.storage_item_gen) ->
+          accu @ List.map (fun (i : 'id M.item_field_gen) : (ident * W.type_ * W.expr) ->
+              (unloc i.name, item_type_to_type i.typ, (
+                  match i.default with
+                  | Some v -> to_expr v
+                  | None -> get_default_expr_from_type i.typ
+                ))) x.fields
+        ) [] model.storage
+    in
+    (List.fold_left (fun accu x ->
+         match x with
+         | M.Drecord r ->
+           let values : (ident * W.type_ * W.expr) list =
+             List.map (fun (x : 'id M.record_item_gen) -> (unloc x.name, to_type x.type_, W.Elitbool false)) r.values
+           in
+           accu @
+           [W.mk_record (unloc r.name) ~values:values]
+         | _ -> accu) [] model.decls)
+    @ [W.mk_record "storage" ~values:storage_values] in
+  let funs =
+    (List.fold_left (fun accu (api_item : M.api_item) ->
+         match api_item with
+         | APIStorage api_storage ->
+           let func = mk_function_storage model api_storage in
+           accu @ [func]) [] model.api_items)
+    @
+    (List.fold_left (fun accu (f : M.function__) ->
+         let func = mk_function_struct model f in
+         accu @ [func]) [] model.functions) in
   W.mk_model (unloc name) ~enums:enums ~records:records ~funs:funs
