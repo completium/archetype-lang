@@ -107,6 +107,7 @@ type error_desc =
   | UnknownAsset                       of ident
   | UnknownField                       of ident * ident
   | UnknownFieldName                   of ident
+  | UnknownLabel                       of ident
   | UnknownLocalOrVariable             of ident
   | UnknownProcedure                   of ident
   | UnknownState                       of ident
@@ -357,6 +358,7 @@ module Env : sig
   type t
 
   type entry = [
+    | `Label      of t
     | `State      of statedecl
     | `Type       of M.ptyp
     | `Local      of M.ptyp
@@ -377,6 +379,13 @@ module Env : sig
   val open_      : t -> t
   val close      : t -> t
   val inscope    : t -> (t -> t * 'a) -> t * 'a
+
+  module Label : sig
+    val lookup : t -> ident -> t option
+    val get    : t -> ident -> t
+    val exists : t -> ident -> bool
+    val push : t -> ident -> t
+  end
 
   module Type : sig
     val lookup : t -> ident -> M.ptyp option
@@ -435,6 +444,7 @@ end = struct
   type ecallback = error -> unit
 
   type entry = [
+    | `Label      of t
     | `State      of statedecl
     | `Type       of M.ptyp
     | `Local      of M.ptyp
@@ -446,7 +456,7 @@ end = struct
     | `Field      of ident
   ]
 
-  type t = {
+  and t = {
     env_error    : ecallback;
     env_bindings : entry Mid.t;
     env_locals   : Sid.t;
@@ -495,6 +505,25 @@ end = struct
 
   let inscope (env : t) (f : t -> t * 'a) =
     let env, aout = f (open_ env) in (close env, aout)
+
+  module Label = struct
+    let proj (entry : entry) =
+      match entry with
+      | `Label x    -> Some x
+      | _           -> None
+
+    let lookup (env : t) (name : ident) =
+      lookup_gen proj env name
+
+    let exists (env : t) (name : ident) =
+      Option.is_some (lookup env name)
+
+    let get (env : t) (name : ident) =
+      Option.get (lookup env name)
+
+    let push (env : t) (name : ident) =
+      push env name (`Label env)
+  end
 
   module Type = struct
     let proj (entry : entry) =
@@ -1166,10 +1195,8 @@ let rec for_xexpr (mode : emode_t) (env : env) ?(ety : M.ptyp option) (tope : PT
             mk_sp (Some M.vtbool) (M.Lquantifer (qt, x, M.LTprog xty, body))
       end
 
-    | Elabel _
-    | Eilabel _ ->
-      assert false
-
+    | Elabel    _
+    | Eilabel   _
     | Eassert   _
     | Eassign   _
     | Ebreak
@@ -1224,7 +1251,6 @@ and for_asset_expr mode (env : env) (tope : PT.expr) =
       Some (Env.Asset.get env (unloc asset))
 
   in (ast, typ)
-
 
 (* -------------------------------------------------------------------- *)
 and for_asset_collection_expr mode (env : env) (tope : PT.expr) =
@@ -1597,7 +1623,11 @@ let rec for_instruction (env : env) (i : PT.expr) : env * M.instruction =
     | Elabel (_, e) ->
       for_instruction env e
 
-    | Eilabel _ ->
+    | Eilabel lbl ->
+      let env =
+        if (check_and_emit_name_free env lbl) then
+          Env.Label.push env (unloc lbl)
+        else env in
       env, mki (Iseq [])
 
     | _ ->
@@ -1640,12 +1670,24 @@ let for_verification_item (env : env) (v : PT.verification_item) =
     let e  = Option.map (for_expr env ?ety:ty) e in
     (env, `Variable (x, e))
 
-  | PT.Vassert (x, tg, f, invs) ->
+  | PT.Vassert (x, tg, f, invs) -> begin
+    let env0 =
+      match Env.Label.lookup env (unloc tg) with
+      | None ->
+          Env.emit_error env (loc tg, UnknownLabel (unloc tg));
+          env
+      | Some env ->
+          env
+    in
+
     let for_inv (lbl, linvs) =
-      (lbl, List.map (for_formula env) linvs) in
-    let f    = for_formula env f in
+      (lbl, List.map (for_formula env0) linvs) in
+
+    let f    = for_formula env0 f in
     let invs = List.map for_inv invs in
+
     (env, `Assert (x, tg, f, invs))
+    end
 
   | PT.Veffect i ->
     let i = for_instruction env i in
@@ -1871,14 +1913,14 @@ let for_acttx_decl (env : env) (decl : acttx loced) =
   | `Action (x, args, pt, i_exts, _exts) -> begin
       let env, _ =
         Env.inscope env (fun env ->
-            let env         = (fst (for_args_decl env args)) in
-            let env, effect = Option.foldmap for_instruction env (Option.fst i_exts) in
-            let callby      = Option.map (for_callby env) (Option.fst pt.calledby) in
-            let _callby     = Option.get_dfl [] callby in
-            let env, reqs   = Option.foldmap for_lbls_expr env (Option.fst pt.require) in
-            let env, verif  = Option.foldmap for_verification env pt.verif in
+          let env         = (fst (for_args_decl env args)) in
+          let env, effect = Option.foldmap for_instruction env (Option.fst i_exts) in
+          let callby      = Option.map (for_callby env) (Option.fst pt.calledby) in
+          let _callby     = Option.get_dfl [] callby in
+          let env, reqs   = Option.foldmap for_lbls_expr env (Option.fst pt.require) in
+          let env, verif  = Option.foldmap for_verification env pt.verif in
 
-            (env, ()))
+          (env, ()))
 
       in Env.Action.push env { ad_name = x; }
     end
