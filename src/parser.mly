@@ -394,6 +394,15 @@ verif_items:
     xs=verif_items RBRACE
         { (xs, exts) }
 
+| VERIFICATION exts=option(extensions) LBRACE
+    xs=expr RBRACE
+        { let l = split_seq_label xs in
+            let ll = List.map (fun x ->
+            let loc, (id, e) = Location.deloc x in
+            let lbl : lident = Tools.Option.get id in
+            mkloc loc (Vspecification (lbl, e, []))) l in
+            (ll, exts) }
+
 verification_fun:
 | x=loc(verification) { x }
 
