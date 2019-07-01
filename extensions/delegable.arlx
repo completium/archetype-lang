@@ -12,7 +12,7 @@ archetype extension delegable (
 
   asset <%aRole>Operators identified by arole = {
     arole      : role;
-    operators  : address set;
+    operators  : address collection;
   }
 
   action setDelegate<%aRole> (arole : role) (operator : address) = {

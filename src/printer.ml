@@ -111,12 +111,6 @@ let rec pp_type outer pos fmt e =
       pp_type_default x
       pp_container y
 
-  | Tapp (x, y) ->
-    Format.fprintf fmt
-      "%a %a"
-      pp_id x
-      pp_type_default y
-
   | Ttuple l ->
 
     let pp fmt l =

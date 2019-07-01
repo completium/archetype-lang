@@ -18,7 +18,6 @@ type type_r =
   | Tref of lident
   | Tasset of lident
   | Tcontainer of type_t * container
-  | Tapp of lident * type_t
   | Ttuple of type_t list
   | Toption of type_t
 [@@deriving yojson, show {with_path = false}]

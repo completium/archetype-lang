@@ -57,6 +57,7 @@ end
 type error_desc =
   | AssetExpected
   | AssetWithoutFields
+  | BindingInExpr
   | CannotInferAnonRecord
   | CannotInferCollectionType
   | CollectionExpected
@@ -746,10 +747,6 @@ let rec for_type_exn (env : env) (ty : PT.type_t) : M.ptyp =
   | Tcontainer (ty, ctn) ->
     M.Tcontainer (for_type_exn env ty, for_container env ctn)
 
-  | Tapp (_x, _ty) ->
-    (* FIXME *)
-    assert false
-
   | Ttuple tys ->
     M.Ttuple (List.map (for_type_exn env) tys)
 
@@ -1140,8 +1137,35 @@ let rec for_xexpr (mode : emode_t) (env : env) ?(ety : M.ptyp option) (tope : PT
     | Ematchwith (_e, _bs) ->
       assert false
 
-    | Equantifier (_bd, _id, _x, _e) ->
-      assert false
+    | Equantifier (qt, x, xty, body) -> begin
+        if mode <> `Formula then begin
+          Env.emit_error env (loc tope, BindingInExpr);
+          bailout ()
+        end else
+          match
+            match xty with
+            | PT.Qcollection xe ->
+              Option.map
+                (fun (ad, ct) -> M.Tcontainer (M.Tasset ad.as_name, ct))
+                (snd (for_asset_collection_expr mode env xe))
+            | PT.Qtype ty ->
+              for_type env ty
+          with
+          | None -> bailout () | Some xty ->
+
+            let _, body =
+              Env.inscope env (fun env ->
+                  let _ : bool = check_and_emit_name_free env x in
+                  let env = Env.Local.push env (unloc x, xty) in
+                  env, for_formula env body) in 
+
+            let qt =
+              match qt with
+              | PT.Forall -> M.Forall
+              | PT.Exists -> M.Exists in
+
+            mk_sp (Some M.vtbool) (M.Lquantifer (qt, x, M.LTprog xty, body))
+      end
 
     | Elabel _
     | Eilabel _ ->
@@ -1399,6 +1423,14 @@ and for_role_expr (env : env) (role : PT.expr) =
     None
 
 (* -------------------------------------------------------------------- *)
+and for_formula (env : env) (topf : PT.expr) : M.pterm =
+  let e = for_xexpr `Formula env topf in
+  Option.iter (fun ety ->
+      if ety <> M.vtbool then
+        Env.emit_error env (loc topf, FormulaExpected))
+    e.type_; e
+
+(* -------------------------------------------------------------------- *)
 let for_expr (env : env) ?(ety : M.type_ option) (tope : PT.expr) : M.pterm =
   for_xexpr `Expr env ?ety tope
 
@@ -1409,14 +1441,6 @@ let for_lbl_expr (env : env) (topf : PT.label_expr) : env * M.pterm =
 (* -------------------------------------------------------------------- *)
 let for_lbls_expr (env : env) (topf : PT.label_exprs) : env * M.pterm list =
   List.fold_left_map for_lbl_expr env topf
-
-(* -------------------------------------------------------------------- *)
-let for_formula (env : env) (topf : PT.expr) : M.pterm =
-  let e = for_xexpr `Formula env topf in
-  Option.iter (fun ety ->
-      if ety <> M.vtbool then
-        Env.emit_error env (loc topf, FormulaExpected))
-    e.type_; e
 
 (* -------------------------------------------------------------------- *)
 let for_lbl_formula (env : env) (topf : PT.label_expr) : env * M.pterm =
