@@ -64,26 +64,25 @@ let generate_target_pt pt =
     )
   | _ -> pt
 
-(*
-let remove_side_effect model =
-  let wse = Gen_remove_se.remove_se model in
-  if !Options.opt_wse
-  then (Format.printf "%a@." Model_wse.pp_model wse; raise Stop)
-  else wse
+(* let remove_side_effect model =
+   let wse = Gen_remove_se.remove_se model in
+   if !Options.opt_wse
+   then (Format.printf "%a@." Model_wse.pp_model wse; raise Stop)
+   else wse
 
-let generate_liquidity wse =
-  let tree = Gen_liquidity.to_liquidity wse in
-  if !Options.opt_raw_target
-  then (Format.printf "%a@." Mltree.pp_tree tree; raise Stop)
-  else Format.asprintf "%a@." Printer_mltree.pp_tree tree
+   let generate_liquidity wse =
+   let tree = Gen_liquidity.to_liquidity wse in
+   if !Options.opt_raw_target
+   then (Format.printf "%a@." Mltree.pp_tree tree; raise Stop)
+   else Format.asprintf "%a@." Printer_mltree.pp_tree tree
 
-let output_liquidity str =
-  if !Options.opt_liq_url
-  then
+   let output_liquidity str =
+   if !Options.opt_liq_url
+   then
     let encoded_src = Uri.pct_encode str in
     let url = "http://www.liquidity-lang.org/edit/?source=" ^ encoded_src in
     Format.printf "%s@\n" url
-  else Format.printf "%s" str
+   else Format.printf "%s" str *)
 
 let generate_whyml model =
   let mlw = Gen_why3.to_whyml model in
@@ -93,17 +92,17 @@ let generate_whyml model =
 
 let generate_target model =
   match !Options.target with
-  | Liquidity ->
-    model
-    |> remove_side_effect
-    |> generate_liquidity
-    |> output_liquidity
+  (* | Liquidity ->
+     model
+     |> remove_side_effect
+     |> generate_liquidity
+     |> output_liquidity *)
 
   | Whyml ->
     model
     |> generate_whyml
 
-  | _ -> () *)
+  | _ -> ()
 
 (* -------------------------------------------------------------------- *)
 
@@ -116,8 +115,7 @@ let compile (filename, channel) =
   |> type_
   |> reduce_ast
   |> model
-  |> (fun _ -> ())
-(* |> generate_target *)
+  |> generate_target
 
 let close dispose channel =
   if dispose then close_in channel
