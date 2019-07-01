@@ -24,7 +24,7 @@ asset field identified by name = {
 
 asset business identified by id = {
   id              : string;
-  incomingAnimals : animal set;
+  incomingAnimals : animal collection;
 }
 
 transition transit (fk : string) on ak : animal from In_field = {
