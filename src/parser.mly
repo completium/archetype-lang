@@ -184,10 +184,6 @@
 
 %right NOT
 
-%right PARTITION COLLECTION
-%right OPTION
-%nonassoc above_coll
-
 %type <ParseTree.archetype> main
 %type <ParseTree.expr> start_expr
 
@@ -450,8 +446,6 @@ type_s_unloc:
 | x=ident                 { Tref x }
 | x=ident RECORD          { Tasset x }
 | x=type_s c=container    { Tcontainer (x, c) }
-/*| x=ident y=type_s %prec above_coll
-                          { Tapp (x, y) }*/
 | x=type_s OPTION         { Toption x }
 | x=paren(type_r)         { x }
 

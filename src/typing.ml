@@ -747,10 +747,6 @@ let rec for_type_exn (env : env) (ty : PT.type_t) : M.ptyp =
   | Tcontainer (ty, ctn) ->
     M.Tcontainer (for_type_exn env ty, for_container env ctn)
 
-  | Tapp (_x, _ty) ->
-    (* FIXME *)
-    assert false
-
   | Ttuple tys ->
     M.Ttuple (List.map (for_type_exn env) tys)
 
@@ -1149,28 +1145,28 @@ let rec for_xexpr (mode : emode_t) (env : env) ?(ety : M.ptyp option) (tope : PT
           match
             match xty with
             | PT.Qcollection xe ->
-                Option.map
-                  (fun (ad, ct) -> M.Tcontainer (M.Tasset ad.as_name, ct))
-                  (snd (for_asset_collection_expr mode env xe))
+              Option.map
+                (fun (ad, ct) -> M.Tcontainer (M.Tasset ad.as_name, ct))
+                (snd (for_asset_collection_expr mode env xe))
             | PT.Qtype ty ->
-                for_type env ty
+              for_type env ty
           with
           | None -> bailout () | Some xty ->
-  
-          let _, body =
-            Env.inscope env (fun env ->
-              let _ : bool = check_and_emit_name_free env x in
-              let env = Env.Local.push env (unloc x, xty) in
-              env, for_formula env body) in 
 
-          let qt =
-            match qt with
-            | PT.Forall -> M.Forall
-            | PT.Exists -> M.Exists in
+            let _, body =
+              Env.inscope env (fun env ->
+                  let _ : bool = check_and_emit_name_free env x in
+                  let env = Env.Local.push env (unloc x, xty) in
+                  env, for_formula env body) in 
 
-          mk_sp (Some M.vtbool) (M.Lquantifer (qt, x, M.LTprog xty, body))
+            let qt =
+              match qt with
+              | PT.Forall -> M.Forall
+              | PT.Exists -> M.Exists in
+
+            mk_sp (Some M.vtbool) (M.Lquantifer (qt, x, M.LTprog xty, body))
       end
-            
+
     | Elabel _
     | Eilabel _ ->
       assert false
