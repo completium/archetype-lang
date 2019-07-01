@@ -741,8 +741,8 @@ let rec for_type_exn (env : env) (ty : PT.type_t) : M.ptyp =
     end
 
   | Tasset x ->
-    (* FIXME *)
-    assert false
+    let decl = Env.Asset.lookup env (unloc x) in
+    M.Tasset (Option.get_exn InvalidType decl).as_name
 
   | Tcontainer (ty, ctn) ->
     M.Tcontainer (for_type_exn env ty, for_container env ctn)
@@ -750,9 +750,8 @@ let rec for_type_exn (env : env) (ty : PT.type_t) : M.ptyp =
   | Ttuple tys ->
     M.Ttuple (List.map (for_type_exn env) tys)
 
-  | Toption _x ->
-    (* FIXME *)
-    assert false
+  | Toption ty ->
+    M.Toption (for_type_exn env ty)
 
 let for_type (env : env) (ty : PT.type_t) : M.ptyp option =
   try Some (for_type_exn env ty) with InvalidType -> None
