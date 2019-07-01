@@ -43,7 +43,7 @@ action consume (a : address) (quantity : uint) = {
     }
 
     specification p2 = {
-      mile.sum(amount) = before mile.sum(amount) - quantity
+      mile.sum(the.amount) = before mile.sum(the.amount) - quantity
       invariants for loop {
         subset (removed miles) (ow.miles.select(expiration >= now))
       }
