@@ -5,7 +5,7 @@ constant patient role = @tz1KksC8RvjUWAbXYJuNrUbontHGor25Cztk
 
 constant fee tez = 100tz
 constant deductible tez = 500tz
-constant period duration = 30D
+constant period duration = 30d
 
 variable last_fee date
 

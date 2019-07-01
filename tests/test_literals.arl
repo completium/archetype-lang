@@ -3,7 +3,7 @@ variable f rational = 1.1
 variable r rational = 2 div 6
 variable s string = "str"
 variable a address = @tz1KmuhR6P52hw6xs5P69BXJYAURaznhvN1k
-variable duration duration = 1Y2M3W4D9h8m7s (* 1 year 2 months 3 weeks 4 days
+variable duration duration = 1w2d3h4m5s (* 1 year 2 months 3 weeks 4 days
                                                9 hours 8 minutes 7 seconds*)
 variable deadline date = 2019-01-01T00:00:00 (* iso 8601 *)
 variable mycollection (int collection) = [1; 2; 3]
