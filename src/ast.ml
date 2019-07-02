@@ -914,7 +914,9 @@ module Utils : sig
   val get_named_field_list      : model -> lident -> pterm list -> (lident * pterm) list
   val get_field_list            : model -> lident -> lident list
   val get_enum_values           : model -> lident -> lident option
-  val get_type                  : model -> lident -> ptyp option
+  val is_variable               : model -> lident -> bool
+  val is_asset                  : model -> lident -> bool
+  val is_enum_value             : model -> lident -> bool
 
 end = struct
   open Tools
@@ -932,12 +934,15 @@ end = struct
     let str = Format.sprintf "a@." (*pp_error_desc desc*) in
     raise (Anomaly str)
 
-  let get_asset ast asset_name : asset =
+  let get_asset_opt ast asset_name : asset option =
     let id = unloc asset_name in
-    let res = List.fold_left (fun accu (x : asset) -> if String.equal id (unloc x.name) then Some x else accu ) None ast.assets in
+    List.fold_left (fun accu (x : asset) -> if String.equal id (unloc x.name) then Some x else accu ) None ast.assets
+
+  let get_asset ast asset_name : asset =
+    let res = get_asset_opt ast asset_name in
     match res with
     | Some v -> v
-    | _ -> emit_error (AssetNotFound id)
+    | _ -> emit_error (AssetNotFound (unloc asset_name))
 
   let get_asset_field ast (asset_name, field_name) =
     let asset = get_asset ast asset_name in
@@ -1001,7 +1006,28 @@ end = struct
         else accu
     ) None ast.enums
 
-  let get_type ast ident = assert false
+  let get_variable_opt ast ident : ('id, 'typ, 'term) variable option =
+    List.fold_left (
+      fun accu (x : ('id, 'typ, 'term) variable) ->
+        if (String.equal (Location.unloc x.decl.name) (Location.unloc ident))
+        then Some x
+        else accu
+    ) None ast.variables
+
+  let is_variable ast ident =
+    match get_variable_opt ast ident with
+    | Some _ -> true
+    | None   -> false
+
+  let is_asset ast ident =
+    match get_asset_opt ast ident with
+    | Some _ -> true
+    | None   -> false
+
+  let is_enum_value ast ident =
+    match get_enum_values ast ident with
+    | Some _ -> true
+    | None   -> false
 
 end
 

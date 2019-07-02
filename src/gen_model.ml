@@ -222,7 +222,17 @@ let to_model (ast : A.model) : M.model =
       | A.Puarith (op, e)                     -> M.Muarith (to_unary_arithmetic_operator op, f e)
       | A.Precord l                           -> M.Mrecord (List.map f l)
       | A.Pletin (id, init, typ, cont)        -> M.Mletin (id, f init, Option.map ftyp typ, f cont)
-      | A.Pvar id                             -> M.Mvar (Vlocal id)
+      | A.Pvar id                             ->
+        let f =
+          if A.Utils.is_variable ast id
+          then (fun x -> M.Vstorevar x)
+          else if A.Utils.is_asset ast id
+          then (fun x -> M.Vstorecol x)
+          else if A.Utils.is_enum_value ast id
+          then (fun x -> M.Venumval x)
+          else (fun x -> M.Vlocal x)
+        in
+        M.Mvar (f id)
       | A.Parray l                            -> M.Marray (List.map f l)
       | A.Plit lit                            -> M.Mlit (to_lit_value lit)
       | A.Pdot (d, i)                         -> M.Mdot (f d, i)
@@ -367,7 +377,7 @@ let to_model (ast : A.model) : M.model =
     let theorems    = List.map to_label_lterm v.theorems    in
     let variables   = List.map (fun x -> to_variable x) v.variables in
     let invariants  = List.map (fun (a, l) -> (a, List.map (fun x -> to_label_lterm x) l)) v.invariants in
-    let effects      = Option.map_dfl (fun x -> [to_mterm x]) [] v.effect      in
+    let effects     = Option.map_dfl (fun x -> [to_mterm x]) [] v.effect in
     let specs       = List.map to_spec        v.specs       in
     let asserts     = List.map to_assert      v.asserts     in
     M.mk_verification

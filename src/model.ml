@@ -224,7 +224,7 @@ type qualid = lident qualid_gen
 type 'id var_kind =
   | Vstorevar of 'id
   | Vstorecol of 'id (* asset_name *)
-  | Vparam of 'id
+  | Venumval of 'id
   | Vlocal of 'id
   | Vconst of const
 [@@deriving show {with_path = false}]
