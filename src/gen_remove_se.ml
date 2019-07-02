@@ -250,26 +250,17 @@ let rec expr_to_expr (model : M.model) (expr : M.mterm) : W.expr * W.type_ =
     expr_body, W.Tstorage
 
   | M.Mapplocal (id, args) ->
-    let s_id, args, t = match id with
-      | Alocal id ->
-        let args =
-          W.Evar "s"::(List.map (fun x ->
-              match x with
-              | M.AExpr e -> expr_to_expr model e |> fst
-              | _ -> assert false
-            ) args) in
-        W.Evar (unloc id), args, to_type expr.type_
-      | Aconst Cfail ->
-        let args = (List.map (fun e -> (match e with | M.AExpr e -> expr_to_expr model e | _ -> assert false) |> fst) args) in
-        W.Edot (W.Evar "Current", "failwith"), args, W.Tstorage
-      | Aconst c ->
-        Format.eprintf "Cconst: %a@." M.pp_const c;
-        W.Evar (Format.asprintf "%a" M.pp_const c), [], W.Tstorage
-        (* raise (Anomaly "no const") *)
-        (* | Cstorage s -> W.Evar (M.function_name_from_function_node (M.Storage s)) *)
-    in
+    let args =
+      W.Evar "s"::(List.map (fun x ->
+          match x with
+          | M.AExpr e -> expr_to_expr model e |> fst
+          | _ -> assert false
+        ) args) in
+    W.Ecall (W.Evar (unloc id), args), to_type expr.type_
 
-    W.Ecall (s_id, args), t
+  | M.Mappfail msg ->
+    let arg, _ = expr_to_expr model msg in
+    W.Ecall (W.Edot (W.Evar "Current", "failwith"), [arg]), W.Tstorage
 
   | M.Mappadd (col, item) ->
     let lhs, _ = expr_to_expr model col in

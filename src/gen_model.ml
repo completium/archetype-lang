@@ -186,11 +186,6 @@ let to_model (ast : A.model) : M.model =
     | A.Exists -> M.Exists
   in
 
-  let to_call_kind = function
-    | A.Cid i    -> M.Alocal i
-    | A.Cconst c -> M.Aconst (to_const c)
-  in
-
   let to_lit_value : 't. 't A.bval_gen -> M.lit_value =
     fun b ->
       match b.node with
@@ -220,17 +215,6 @@ let to_model (ast : A.model) : M.model =
       | A.Lquantifer (q, i, typ, term)        -> M.Mquantifer (to_quantifier q, i, ltyp_to_type typ, f term)
       | A.Pif (c, t, e)                       -> M.Mif (f c, f t, f e)
       | A.Pmatchwith (m, l)                   -> M.Mmatchwith (f m, List.map (fun (p, e) -> (to_pattern p, f e)) l)
-      | A.Pcall (_, A.Cconst A.Cbefore,    [AExpr p]) -> M.Mappset (M.Cbefore, f p)
-      | A.Pcall (_, A.Cconst A.Cunmoved,   [AExpr p]) -> M.Mappset (M.Cunmoved, f p)
-      | A.Pcall (_, A.Cconst A.Cadded,     [AExpr p]) -> M.Mappset (M.Cadded, f p)
-      | A.Pcall (_, A.Cconst A.Cremoved,   [AExpr p]) -> M.Mappset (M.Cremoved, f p)
-      | A.Pcall (_, A.Cconst A.Citerated,  [AExpr p]) -> M.Mappset (M.Citerated, f p)
-      | A.Pcall (_, A.Cconst A.Ctoiterate, [AExpr p]) -> M.Mappset (M.Ctoiterate, f p)
-      | A.Pcall (id, ck, args)                -> M.Mapplocal (to_call_kind ck,
-                                                              (Option.map_dfl
-                                                                 (fun x -> [ M.AExpr (f x) ])
-                                                                 [] id)
-                                                              @ List.map (fun x -> to_term_arg f x) args)
       | A.Plogical (op, l, r)                 -> M.Mlogical (to_logical_operator op, f l, f r)
       | A.Pnot e                              -> M.Mnot (f e)
       | A.Pcomp (op, l, r)                    -> M.Mcomp (to_comparison_operator op, f l, f r)
@@ -244,6 +228,41 @@ let to_model (ast : A.model) : M.model =
       | A.Pdot (d, i)                         -> M.Mdot (f d, i)
       | A.Pconst c                            -> M.Mconst (to_const c)
       | A.Ptuple l                            -> M.Mtuple (List.map f l)
+      | A.Pcall (_, A.Cconst A.Cbefore,    [AExpr p]) -> M.Mappset (M.Cbefore, f p)
+      | A.Pcall (_, A.Cconst A.Cunmoved,   [AExpr p]) -> M.Mappset (M.Cunmoved, f p)
+      | A.Pcall (_, A.Cconst A.Cadded,     [AExpr p]) -> M.Mappset (M.Cadded, f p)
+      | A.Pcall (_, A.Cconst A.Cremoved,   [AExpr p]) -> M.Mappset (M.Cremoved, f p)
+      | A.Pcall (_, A.Cconst A.Citerated,  [AExpr p]) -> M.Mappset (M.Citerated, f p)
+      | A.Pcall (_, A.Cconst A.Ctoiterate, [AExpr p]) -> M.Mappset (M.Ctoiterate, f p)
+
+      | A.Pcall (aux, A.Cid id, args) ->
+        M.Mapplocal (id,
+                     (Option.map_dfl
+                        (fun x -> [ M.AExpr (f x) ])
+                        [] aux)
+                     @ List.map (fun x -> to_term_arg f x) args)
+
+      | A.Pcall (Some p, A.Cconst A.Cget, [AExpr q]) ->
+        M.Mappget (f p, f q)
+
+      | A.Pcall (Some p, A.Cconst (A.Ccontains), [AExpr q]) ->
+        M.Mappcontains (f p, f q)
+
+      | A.Pcall (None, A.Cconst (A.Ccontains), [AExpr p; AExpr q]) ->
+        M.Mappcontains (f p, f q)
+
+      | A.Pcall (None, A.Cconst (A.Csum), [AExpr p; AExpr q]) ->
+        M.Mappsum (Location.dumloc "TODO", f q)
+
+      | A.Pcall (Some p, A.Cconst (A.Csum), [AExpr q]) ->
+        M.Mappsum (Location.dumloc "TODO", f q)
+
+      | A.Pcall (None, A.Cconst (A.Cselect), [_; _]) ->
+        M.Mappselect
+
+      | A.Pcall (aux, A.Cconst c, args) ->
+        Format.eprintf "expr const unkown: %a with nb args: %d %s@." A.pp_const c (List.length args) (match aux with | Some _ -> "with aux" | _ -> "without aux");
+        assert false
   in
 
   let rec to_mterm (pterm : A.pterm) : M.mterm =
@@ -264,18 +283,46 @@ let to_model (ast : A.model) : M.model =
 
   let to_instruction_node (n : (A.lident, A.ptyp, A.pterm, A.instruction) A.instruction_node) g f : ('id, 'instr) M.mterm_node =
     match n with
-    | A.Iif (c, t, e)          -> M.Mif (f c, g t, g e)
-    | A.Ifor (i, col, body)    -> M.Mfor (i, f col, g body)
-    | A.Iletin (i, init, cont) -> M.Mletin (i, f init, None, g cont) (* TODO *)
-    | A.Iseq l                 -> M.Mseq (List.map g l)
-    | A.Imatchwith (m, l)      -> M.Mmatchwith (f m, List.map (fun (p, i) -> (to_pattern p, g i)) l)
-    | A.Iassign (op, i, e)     -> M.Massign (to_assignment_operator op, i, to_mterm e)
-    | A.Irequire (b, t)        -> M.Mrequire (b, f t)
-    | A.Itransfer (i, b, q)    -> M.Mtransfer (f i, b, Option.map to_qualid_gen q)
-    | A.Ibreak                 -> M.Mbreak
-    | A.Iassert e              -> M.Massert (f e)
-    | A.Icall (i, ck, args)    -> M.Mapplocal (to_call_kind ck, Option.map_dfl (fun v -> [M.AExpr (to_mterm v)]) [] i @ List.map (to_term_arg f) args)
-    | A.Ireturn e              -> M.Mreturn (f e)
+    | A.Iif (c, t, e)           -> M.Mif (f c, g t, g e)
+    | A.Ifor (i, col, body)     -> M.Mfor (i, f col, g body)
+    | A.Iletin (i, init, cont)  -> M.Mletin (i, f init, None, g cont) (* TODO *)
+    | A.Iseq l                  -> M.Mseq (List.map g l)
+    | A.Imatchwith (m, l)       -> M.Mmatchwith (f m, List.map (fun (p, i) -> (to_pattern p, g i)) l)
+    | A.Iassign (op, i, e)      -> M.Massign (to_assignment_operator op, i, to_mterm e)
+    | A.Irequire (b, t)         -> M.Mrequire (b, f t)
+    | A.Itransfer (i, b, q)     -> M.Mtransfer (f i, b, Option.map to_qualid_gen q)
+    | A.Ibreak                  -> M.Mbreak
+    | A.Iassert e               -> M.Massert (f e)
+    | A.Ireturn e               -> M.Mreturn (f e)
+    | A.Icall (i, Cid id, args) -> M.Mapplocal (id, Option.map_dfl (fun v -> [M.AExpr (to_mterm v)]) [] i @ List.map (to_term_arg f) args)
+
+    | A.Icall (_, A.Cconst (A.Cfail), [AExpr p]) ->
+      M.Mappfail (f p)
+
+    | A.Icall (None, A.Cconst (A.Cadd), [AExpr p; AExpr q]) ->
+      M.Mappadd (f p, f q)
+
+    | A.Icall (Some p, A.Cconst (A.Cadd), [AExpr q]) ->
+      M.Mappadd (f p, f q)
+
+    | A.Icall (None, A.Cconst (A.Cremove), [AExpr p; AExpr q]) ->
+      M.Mappremove (f p, f q)
+
+    | A.Icall (Some p, A.Cconst (A.Cremove), [AExpr q]) ->
+      M.Mappremove (f p, f q)
+
+    | A.Icall (Some _, A.Cconst (A.Cupdate), [_; _]) ->
+      M.Mappupdate
+
+    | A.Icall (Some p, A.Cconst (A.Cupdate), [AExpr q]) ->
+      M.Mappupdate
+
+    | A.Icall (_, A.Cconst (A.Cremoveif), _) ->
+      M.Mseq []
+
+    | A.Icall (aux, A.Cconst c, args) ->
+      Format.eprintf "instr const unkown: %a with nb args: %d %s@." A.pp_const c (List.length args) (match aux with | Some _ -> "with aux" | _ -> "without aux");
+      assert false
   in
 
   let rec to_instruction (instr : A.instruction) : M.mterm =
@@ -467,7 +514,7 @@ let to_model (ast : A.model) : M.model =
   in
 
   let process_api_storage (model : M.model) : M.model =
-    let add l i =
+    let _add l i =
       let e = List.fold_left (fun accu x ->
           if x = i
           then true
@@ -478,7 +525,7 @@ let to_model (ast : A.model) : M.model =
         i::l
     in
 
-    let mk_function c (args : M.term_arg list) : (M.storage_const * M.mterm) option =
+    let _mk_function c (args : M.term_arg list) : (M.storage_const * M.mterm) option =
       let nth_arg n =
         let arg = List.nth args n in
         match arg with
@@ -508,7 +555,7 @@ let to_model (ast : A.model) : M.model =
 
     let rec fe (accu : M.api_item list) (term : M.mterm) : M.mterm * M.api_item list =
       match term.node with
-      | M.Mapplocal (Aconst c, args) -> (
+      (* | M.Mapplocal (Aconst c, args) -> (
           let args, accu = List.fold_left
               (fun ((ps, accus) : M.term_arg list * M.api_item list) (x : M.term_arg) ->
                  let arg, accu = match x with
@@ -531,7 +578,7 @@ let to_model (ast : A.model) : M.model =
               )
             | None -> term, accu in
           term, accu
-        )
+         ) *)
       | _ -> M.fold_map_term (ge term) fe accu term in
 
     let process_mterm (accu : M.api_item list) (expr : M.mterm) : M.mterm * M.api_item list =

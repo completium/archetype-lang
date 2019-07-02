@@ -229,32 +229,28 @@ type 'id var_kind =
   | Vconst of const
 [@@deriving show {with_path = false}]
 
-type 'id call_kind =
-  | Alocal of 'id
-  | Aconst of const
-[@@deriving show {with_path = false}]
-
 type ('id, 'term) mterm_node  =
   | Mquantifer   of quantifier * 'id * type_ * 'term
   | Mif          of ('term * 'term * 'term)
   | Mmatchwith   of 'term * ('id pattern_gen * 'term) list
-  | Mapplocal    of ('id call_kind * ('id term_arg_gen) list)
-  | Mappset      of const_vset * 'id mterm_gen
-  | Mappexternal of ('id * 'id * 'id mterm_gen * ('id mterm_gen) list)
-  | Mappget      of ('id mterm_gen * 'id mterm_gen)
-  | Mappadd      of ('id mterm_gen * 'id mterm_gen)
-  | Mappremove   of ('id mterm_gen * 'id mterm_gen)
-  | Mappclear    of ('id mterm_gen)
+  | Mapplocal    of ('id * (('id, 'term) term_arg_gen) list)
+  | Mappset      of const_vset * 'term
+  | Mappexternal of ('id * 'id * 'term * ('term) list)
+  | Mappget      of ('term * 'term)
+  | Mappadd      of ('term * 'term)
+  | Mappremove   of ('term * 'term)
+  | Mappclear    of ('term)
   | Mappupdate
-  | Mappreverse  of ('id mterm_gen)
+  | Mappreverse  of ('term)
   | Mappsort
-  | Mappcontains of ('id mterm_gen * 'id mterm_gen)
-  | Mappnth      of ('id mterm_gen * 'id mterm_gen)
+  | Mappcontains of ('term * 'term)
+  | Mappnth      of ('term * 'term)
   | Mappselect
-  | Mappcount    of ('id mterm_gen)
-  | Mappsum      of ('id * 'id mterm_gen)
-  | Mappmin      of ('id * 'id mterm_gen)
-  | Mappmax      of ('id * 'id mterm_gen)
+  | Mappcount    of ('term)
+  | Mappsum      of ('id * 'term)
+  | Mappmin      of ('id * 'term)
+  | Mappmax      of ('id * 'term)
+  | Mappfail     of 'term
   | Mlogical     of logical_operator * 'term * 'term
   | Mnot         of 'term
   | Mcomp        of comparison_operator * 'term * 'term
@@ -270,12 +266,12 @@ type ('id, 'term) mterm_node  =
   | Mtuple       of 'term list
   | Mfor         of ('id * 'term * 'term)
   | Mseq         of 'term list
-  | Massign      of (assignment_operator * 'id * 'id mterm_gen)
-  | Mrequire     of (bool * 'id mterm_gen)
-  | Mtransfer    of ('id mterm_gen * bool * 'id qualid_gen option)
+  | Massign      of (assignment_operator * 'id * 'term)
+  | Mrequire     of (bool * 'term)
+  | Mtransfer    of ('term * bool * 'id qualid_gen option)
   | Mbreak
-  | Massert      of 'id mterm_gen
-  | Mreturn      of 'id mterm_gen
+  | Massert      of 'term
+  | Mreturn      of 'term
 [@@deriving show {with_path = false}]
 
 and 'id mterm_gen = {
@@ -289,12 +285,12 @@ and 'id mterm_gen = {
 and mterm = lident mterm_gen
 [@@deriving show {with_path = false}]
 
-and 'id term_arg_gen =
+and ('id, 'term) term_arg_gen =
   | AExpr   of 'id mterm_gen
-  | AEffect of ('id * operator * 'id mterm_gen) list
+  | AEffect of ('id * operator * 'term) list
 [@@deriving show {with_path = false}]
 
-and term_arg = lident term_arg_gen
+and term_arg = (lident, mterm) term_arg_gen
 [@@deriving show {with_path = false}]
 
 type 'id label_term_gen = {
@@ -642,7 +638,7 @@ let map_term_node (f : 'id mterm_gen -> 'id mterm_gen) = function
   | Mif (c, t, e)           -> Mif (f c, f t, f e)
   | Mmatchwith (e, l)       -> Mmatchwith (e, List.map (fun (p, e) -> (p, f e)) l)
   | Mapplocal (e, args)          ->
-    Mapplocal (e, List.map (fun (arg : 'id term_arg_gen) -> match arg with
+    Mapplocal (e, List.map (fun (arg : ('id, 'term) term_arg_gen) -> match arg with
         | AExpr e   -> AExpr (f e)
         | AEffect l -> AEffect (List.map (fun (id, op, e) -> (id, op, f e)) l)) args)
   | Mappset (c, e)          -> Mappset (c, f e)
@@ -661,6 +657,7 @@ let map_term_node (f : 'id mterm_gen -> 'id mterm_gen) = function
   | Mappsum (fd, c)         -> Mappsum (fd, f c)
   | Mappmin (fd, c)         -> Mappmin (fd, f c)
   | Mappmax (fd, c)         -> Mappmax (fd, f c)
+  | Mappfail msg            -> Mappfail (f msg)
   | Mlogical (op, l, r)     -> Mlogical (op, f l, f r)
   | Mnot e                  -> Mnot (f e)
   | Mcomp (c, l, r)         -> Mcomp (c, f l, f r)
@@ -695,7 +692,7 @@ let fold_term (f : 'a -> 't -> 'a) (accu : 'a) (term : 'id mterm_gen) =
   | Mquantifer (_, _, _, e) -> f accu e
   | Mif (c, t, e)           -> f (f (f accu c) t) e
   | Mmatchwith (e, l)       -> List.fold_left (fun accu (_, a) -> f accu a) (f accu e) l
-  | Mapplocal (_, args)     -> List.fold_left (fun accu (arg : 'id term_arg_gen) -> match arg with
+  | Mapplocal (_, args)     -> List.fold_left (fun accu (arg : ('id, 'term) term_arg_gen) -> match arg with
       | AExpr e -> f accu e
       | AEffect l -> List.fold_left (fun accu (_, _, e) -> f accu e) accu l ) accu args
   | Mappset (c, e)          -> f accu e
@@ -714,6 +711,7 @@ let fold_term (f : 'a -> 't -> 'a) (accu : 'a) (term : 'id mterm_gen) =
   | Mappsum (fd, c)         -> f accu c
   | Mappmin (fd, c)         -> f accu c
   | Mappmax (fd, c)         -> f accu c
+  | Mappfail msg            -> f accu msg
   | Mlogical (_, l, r)      -> f (f accu l) r
   | Mnot e                  -> f accu e
   | Mcomp (_, l, r)         -> f (f accu l) r
@@ -766,7 +764,7 @@ let fold_map_term
   | Mapplocal (id, args) ->
     let ((argss, argsa) : 'c list * 'a) =
       List.fold_left
-        (fun (pterms, accu) (x : 'id term_arg_gen) ->
+        (fun (pterms, accu) (x : ('id, 'term) term_arg_gen) ->
            let p, accu =
              match x with
              | AExpr a -> f accu a |> fun (x, acc) -> (Some (AExpr x), acc)
@@ -845,6 +843,10 @@ let fold_map_term
   | Mappmax (fd, c) ->
     let ce, ca = f accu c in
     g (Mappmax (fd, ce)), ca
+
+  | Mappfail msg ->
+    let msge, msga = f accu msg in
+    g (Mappfail msge), msga
 
   | Mlogical (op, l, r) ->
     let le, la = f accu l in
