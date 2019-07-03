@@ -113,9 +113,9 @@ type const_vset =
 
 type 'id storage_const_gen =
   | Get        of 'id
-  | Add        of 'id
-  | Remove     of 'id
-  | Clear      of 'id
+  | Add        of container * 'id
+  | Remove     of container * 'id
+  | Clear      of container * 'id
   | Update     of 'id
   | Sort       of 'id
   | Reverse    of 'id
@@ -129,6 +129,36 @@ type 'id storage_const_gen =
 [@@deriving show {with_path = false}]
 
 type storage_const = lident storage_const_gen
+[@@deriving show {with_path = false}]
+
+type 'id container_const_gen =
+  | Add      of container * type_
+  | Remove   of container * type_
+  | Clear    of container * type_
+  | Update   of container * type_
+  | Reverse  of container * type_
+  | Sort     of container * type_
+  | Select   of container
+  | Contains of container * type_
+  | Nth      of container * type_
+  | Count    of container * type_
+  | Sum      of container * 'id * 'id
+  | Min      of container * 'id * 'id
+  | Max      of container * 'id * 'id
+[@@deriving show {with_path = false}]
+
+type builtin_const =
+  | Min of type_
+  | Max of type_
+[@@deriving show {with_path = false}]
+
+type 'id api_item_gen =
+  | APIStorage   of 'id storage_const_gen
+  | APIContainer of 'id container_const_gen
+  | APIBuiltin   of builtin_const
+[@@deriving show {with_path = false}]
+
+type api_item = lident api_item_gen
 [@@deriving show {with_path = false}]
 
 type 'id pattern_node =
@@ -233,24 +263,24 @@ type ('id, 'term) mterm_node  =
   | Mquantifer   of quantifier * 'id * type_ * 'term
   | Mif          of ('term * 'term * 'term)
   | Mmatchwith   of 'term * ('id pattern_gen * 'term) list
-  | Mapplocal    of ('id * (('id, 'term) term_arg_gen) list)
-  | Mappset      of const_vset * 'term
-  | Mappexternal of ('id * 'id * 'term * ('term) list)
-  | Mappget      of ('term * 'term)
-  | Mappadd      of ('term * 'term)
-  | Mappremove   of ('term * 'term)
-  | Mappclear    of ('term)
-  | Mappupdate
-  | Mappreverse  of ('term)
-  | Mappsort
-  | Mappcontains of ('term * 'term)
-  | Mappnth      of ('term * 'term)
-  | Mappselect
-  | Mappcount    of ('term)
-  | Mappsum      of ('id * 'term)
-  | Mappmin      of ('id * 'term)
-  | Mappmax      of ('id * 'term)
-  | Mappfail     of 'term
+  | Mapplocal    of 'id api_item_gen option * 'id * (('id, 'term) term_arg_gen) list
+  | Mappset      of 'id api_item_gen option * const_vset * 'term
+  | Mappexternal of 'id api_item_gen option * 'id * 'id * 'term * ('term) list
+  | Mappget      of 'id api_item_gen option * 'term * 'term
+  | Mappadd      of 'id api_item_gen option * 'term * 'term
+  | Mappremove   of 'id api_item_gen option * 'term * 'term
+  | Mappclear    of 'id api_item_gen option * 'term
+  | Mappupdate   of 'id api_item_gen option
+  | Mappreverse  of 'id api_item_gen option * 'term
+  | Mappsort     of 'id api_item_gen option
+  | Mappcontains of 'id api_item_gen option * 'term * 'term
+  | Mappnth      of 'id api_item_gen option * 'term * 'term
+  | Mappselect   of 'id api_item_gen option
+  | Mappcount    of 'id api_item_gen option * 'term
+  | Mappsum      of 'id api_item_gen option * 'id * 'term
+  | Mappmin      of 'id api_item_gen option * 'id * 'term
+  | Mappmax      of 'id api_item_gen option * 'id * 'term
+  | Mappfail     of 'id api_item_gen option * 'term
   | Mlogical     of logical_operator * 'term * 'term
   | Mnot         of 'term
   | Mcomp        of comparison_operator * 'term * 'term
@@ -541,13 +571,6 @@ type 'id decl_node_gen =
 type decl_node = lident decl_node_gen
 [@@deriving show {with_path = false}]
 
-type 'id api_item_gen =
-  | APIStorage of 'id storage_const_gen
-[@@deriving show {with_path = false}]
-
-type api_item = lident api_item_gen
-[@@deriving show {with_path = false}]
-
 type 'id model_gen = {
   name:          lident;
   api_items:     'id api_item_gen list;
@@ -637,102 +660,102 @@ let map_term_node (f : 'id mterm_gen -> 'id mterm_gen) = function
   | Mquantifer (q, i, t, e) -> Mquantifer (q, i, t, f e)
   | Mif (c, t, e)           -> Mif (f c, f t, f e)
   | Mmatchwith (e, l)       -> Mmatchwith (e, List.map (fun (p, e) -> (p, f e)) l)
-  | Mapplocal (e, args)          ->
-    Mapplocal (e, List.map (fun (arg : ('id, 'term) term_arg_gen) -> match arg with
+  | Mapplocal (api, e, args) ->
+    Mapplocal (api, e, List.map (fun (arg : ('id, 'term) term_arg_gen) -> match arg with
         | AExpr e   -> AExpr (f e)
         | AEffect l -> AEffect (List.map (fun (id, op, e) -> (id, op, f e)) l)) args)
-  | Mappset (c, e)          -> Mappset (c, f e)
-  | Mappexternal (t, func, c, args) -> Mappexternal (t, func, f c, List.map f args)
-  | Mappget (c, k)          -> Mappget (f c, f k)
-  | Mappadd (c, i)          -> Mappadd (f c, f i)
-  | Mappremove (c, i)       -> Mappremove (f c, f i)
-  | Mappclear c             -> Mappclear (f c)
-  | Mappupdate              -> Mappupdate
-  | Mappreverse c           -> Mappreverse (f c)
-  | Mappsort                -> Mappsort
-  | Mappcontains (c, i)     -> Mappcontains (f c, f i)
-  | Mappnth      (c, i)     -> Mappnth (f c, f i)
-  | Mappselect              -> Mappselect
-  | Mappcount c             -> Mappcount (f c)
-  | Mappsum (fd, c)         -> Mappsum (fd, f c)
-  | Mappmin (fd, c)         -> Mappmin (fd, f c)
-  | Mappmax (fd, c)         -> Mappmax (fd, f c)
-  | Mappfail msg            -> Mappfail (f msg)
-  | Mlogical (op, l, r)     -> Mlogical (op, f l, f r)
-  | Mnot e                  -> Mnot (f e)
-  | Mcomp (c, l, r)         -> Mcomp (c, f l, f r)
-  | Marith (op, l, r)       -> Marith (op, f l, f r)
-  | Muarith (op, e)         -> Muarith (op, f e)
-  | Mrecord l               -> Mrecord (List.map f l)
-  | Mletin (i, a, t, b)     -> Mletin (i, f a, t, f b)
-  | Mvar v                  -> Mvar v
-  | Marray l                -> Marray (List.map f l)
-  | Mlit l                  -> Mlit l
-  | Mdot (e, i)             -> Mdot (f e, i)
-  | Mconst c                -> Mconst c
-  | Mtuple l                -> Mtuple (List.map f l)
-  | Mfor (i, c, b)          -> Mfor (i, f c, f b)
-  | Mseq is                 -> Mseq (List.map f is)
-  | Massign (op, l, r)      -> Massign (op, f l, f r)
-  | Mrequire (b, x)         -> Mrequire (b, f x)
-  | Mtransfer (x, b, q)     -> Mtransfer (f x, b, q)
-  | Mbreak                  -> Mbreak
-  | Massert x               -> Massert (f x)
-  | Mreturn x               -> Mreturn (f x)
+  | Mappset (api, c, e)          -> Mappset (api, c, f e)
+  | Mappexternal (api, t, func, c, args) -> Mappexternal (api, t, func, f c, List.map f args)
+  | Mappget (api, c, k)      -> Mappget (api, f c, f k)
+  | Mappadd (api, c, i)      -> Mappadd (api, f c, f i)
+  | Mappremove (api, c, i)   -> Mappremove (api, f c, f i)
+  | Mappclear (api, c)       -> Mappclear (api, f c)
+  | Mappupdate api           -> Mappupdate api
+  | Mappreverse (api, c)     -> Mappreverse (api, f c)
+  | Mappsort api             -> Mappsort api
+  | Mappcontains (api, c, i) -> Mappcontains (api, f c, f i)
+  | Mappnth (api, c, i)      -> Mappnth (api, f c, f i)
+  | Mappselect api           -> Mappselect api
+  | Mappcount (api, c)       -> Mappcount (api, f c)
+  | Mappsum (api, fd, c)     -> Mappsum (api, fd, f c)
+  | Mappmin (api, fd, c)     -> Mappmin (api, fd, f c)
+  | Mappmax (api, fd, c)     -> Mappmax (api, fd, f c)
+  | Mappfail (api, msg)      -> Mappfail (api, f msg)
+  | Mlogical (op, l, r)      -> Mlogical (op, f l, f r)
+  | Mnot e                   -> Mnot (f e)
+  | Mcomp (c, l, r)          -> Mcomp (c, f l, f r)
+  | Marith (op, l, r)        -> Marith (op, f l, f r)
+  | Muarith (op, e)          -> Muarith (op, f e)
+  | Mrecord l                -> Mrecord (List.map f l)
+  | Mletin (i, a, t, b)      -> Mletin (i, f a, t, f b)
+  | Mvar v                   -> Mvar v
+  | Marray l                 -> Marray (List.map f l)
+  | Mlit l                   -> Mlit l
+  | Mdot (e, i)              -> Mdot (f e, i)
+  | Mconst c                 -> Mconst c
+  | Mtuple l                 -> Mtuple (List.map f l)
+  | Mfor (i, c, b)           -> Mfor (i, f c, f b)
+  | Mseq is                  -> Mseq (List.map f is)
+  | Massign (op, l, r)       -> Massign (op, f l, f r)
+  | Mrequire (b, x)          -> Mrequire (b, f x)
+  | Mtransfer (x, b, q)      -> Mtransfer (f x, b, q)
+  | Mbreak                   -> Mbreak
+  | Massert x                -> Massert (f x)
+  | Mreturn x                -> Mreturn (f x)
 
 let map_gen_mterm g f (i : 'id mterm_gen) : 'id mterm_gen =
   {
     i with
     node = g f i.node
   }
-let map_term  f t = map_gen_mterm map_term_node  f t
+let map_term  f t = map_gen_mterm map_term_node f t
 
 let fold_term (f : 'a -> 't -> 'a) (accu : 'a) (term : 'id mterm_gen) =
   match term.node with
   | Mquantifer (_, _, _, e) -> f accu e
   | Mif (c, t, e)           -> f (f (f accu c) t) e
   | Mmatchwith (e, l)       -> List.fold_left (fun accu (_, a) -> f accu a) (f accu e) l
-  | Mapplocal (_, args)     -> List.fold_left (fun accu (arg : ('id, 'term) term_arg_gen) -> match arg with
+  | Mapplocal (api, _, args)     -> List.fold_left (fun accu (arg : ('id, 'term) term_arg_gen) -> match arg with
       | AExpr e -> f accu e
       | AEffect l -> List.fold_left (fun accu (_, _, e) -> f accu e) accu l ) accu args
-  | Mappset (c, e)          -> f accu e
-  | Mappexternal (t, func, c, args) -> List.fold_left f (f accu c) args
-  | Mappget (c, k)          -> f (f accu k) c
-  | Mappadd (c, i)          -> f (f accu c) i
-  | Mappremove (c, i)       -> f (f accu c) i
-  | Mappclear c             -> f accu c
-  | Mappupdate              -> accu
-  | Mappreverse c           -> f accu c
-  | Mappsort                -> accu
-  | Mappcontains (c, i)     -> f (f accu c) i
-  | Mappnth      (c, i)     -> f (f accu c) i
-  | Mappselect              -> accu
-  | Mappcount c             -> f accu c
-  | Mappsum (fd, c)         -> f accu c
-  | Mappmin (fd, c)         -> f accu c
-  | Mappmax (fd, c)         -> f accu c
-  | Mappfail msg            -> f accu msg
-  | Mlogical (_, l, r)      -> f (f accu l) r
-  | Mnot e                  -> f accu e
-  | Mcomp (_, l, r)         -> f (f accu l) r
-  | Marith (_, l, r)        -> f (f accu l) r
-  | Muarith (_, e)          -> f accu e
-  | Mrecord l               -> List.fold_left f accu l
-  | Mletin (_, a, _, b)     -> f (f accu a) b
-  | Mvar _                  -> accu
-  | Marray l                -> List.fold_left f accu l
-  | Mlit _                  -> accu
-  | Mdot (e, _)             -> f accu e
-  | Mconst _                -> accu
-  | Mtuple l                -> List.fold_left f accu l
-  | Mfor (i, c, b)          -> f accu b
-  | Mseq is                 -> List.fold_left f accu is
-  | Massign (_, _, e)       -> f accu e
-  | Mtransfer (x, _, _)     -> f accu x
-  | Mrequire (_, x)         -> f accu x
-  | Mbreak                  -> accu
-  | Massert x               -> f accu x
-  | Mreturn x               -> f accu x
+  | Mappset (api, c, e)          -> f accu e
+  | Mappexternal (api, t, func, c, args) -> List.fold_left f (f accu c) args
+  | Mappget (api, c, k)      -> f (f accu k) c
+  | Mappadd (api, c, i)      -> f (f accu c) i
+  | Mappremove (api, c, i)   -> f (f accu c) i
+  | Mappclear (api, c)       -> f accu c
+  | Mappupdate api           -> accu
+  | Mappreverse (api, c)     -> f accu c
+  | Mappsort api             -> accu
+  | Mappcontains (api, c, i) -> f (f accu c) i
+  | Mappnth      (api, c, i) -> f (f accu c) i
+  | Mappselect api           -> accu
+  | Mappcount (api, c)       -> f accu c
+  | Mappsum (api, fd, c)     -> f accu c
+  | Mappmin (api, fd, c)     -> f accu c
+  | Mappmax (api, fd, c)     -> f accu c
+  | Mappfail (api, msg)      -> f accu msg
+  | Mlogical (_, l, r)       -> f (f accu l) r
+  | Mnot e                   -> f accu e
+  | Mcomp (_, l, r)          -> f (f accu l) r
+  | Marith (_, l, r)         -> f (f accu l) r
+  | Muarith (_, e)           -> f accu e
+  | Mrecord l                -> List.fold_left f accu l
+  | Mletin (_, a, _, b)      -> f (f accu a) b
+  | Mvar _                   -> accu
+  | Marray l                 -> List.fold_left f accu l
+  | Mlit _                   -> accu
+  | Mdot (e, _)              -> f accu e
+  | Mconst _                 -> accu
+  | Mtuple l                 -> List.fold_left f accu l
+  | Mfor (i, c, b)           -> f accu b
+  | Mseq is                  -> List.fold_left f accu is
+  | Massign (_, _, e)        -> f accu e
+  | Mtransfer (x, _, _)      -> f accu x
+  | Mrequire (_, x)          -> f accu x
+  | Mbreak                   -> accu
+  | Massert x                -> f accu x
+  | Mreturn x                -> f accu x
 
 let fold_map_term
     (g : ('id, 'term) mterm_node -> 'term)
@@ -761,7 +784,7 @@ let fold_map_term
 
     g (Mmatchwith (ee, l)), psa
 
-  | Mapplocal (id, args) ->
+  | Mapplocal (api, id, args) ->
     let ((argss, argsa) : 'c list * 'a) =
       List.fold_left
         (fun (pterms, accu) (x : ('id, 'term) term_arg_gen) ->
@@ -772,81 +795,81 @@ let fold_map_term
            let x = match p with | Some a -> a | None -> x in
            pterms @ [x], accu) ([], accu) args
     in
-    g (Mapplocal (id, argss)), argsa
+    g (Mapplocal (api, id, argss)), argsa
 
-  | Mappset (c, e) ->
+  | Mappset (api, c, e) ->
     let ee, ea = f accu e in
-    g (Mappset (c, ee)), ea
+    g (Mappset (api, c, ee)), ea
 
-  | Mappexternal (t, func, c, args) ->
+  | Mappexternal (api, t, func, c, args) ->
     let ce, ca = f accu c in
     let (lp, la) = List.fold_left
         (fun (pterms, accu) x ->
            let p, accu = f accu x in
            pterms @ [p], accu) ([], ca) args in
-    g (Mappexternal (t, func, ce, lp)), la
+    g (Mappexternal (api, t, func, ce, lp)), la
 
-  | Mappget (c, k) ->
+  | Mappget (api, c, k) ->
     let ce, ca = f accu c in
     let ke, ka = f ca k in
-    g (Mappget (ce, ke)), ka
+    g (Mappget (api, ce, ke)), ka
 
-  | Mappadd (c, i) ->
+  | Mappadd (api, c, i) ->
     let ce, ca = f accu c in
     let ie, ia = f ca i in
-    g (Mappadd (ce, ie)), ia
+    g (Mappadd (api, ce, ie)), ia
 
-  | Mappremove (c, i) ->
+  | Mappremove (api, c, i) ->
     let ce, ca = f accu c in
     let ie, ia = f ca i in
-    g (Mappremove (ce, ie)), ia
+    g (Mappremove (api, ce, ie)), ia
 
-  | Mappclear c ->
+  | Mappclear (api, c) ->
     let ce, ca = f accu c in
-    g (Mappclear ce), ca
+    g (Mappclear (api, ce)), ca
 
-  | Mappupdate ->
-    g Mappupdate, accu
+  | Mappupdate api ->
+    g (Mappupdate api), accu
 
-  | Mappreverse c ->
+  | Mappreverse (api, c) ->
     let ce, ca = f accu c in
-    g (Mappreverse ce), ca
+    g (Mappreverse (api, ce)), ca
 
-  | Mappsort ->
-    g Mappsort, accu
+  | Mappsort api ->
+    g (Mappsort api), accu
 
-  | Mappcontains (c, i) ->
-    let ce, ca = f accu c in
-    let ie, ia = f ca i in
-    g (Mappcontains (ce, ie)), ia
-
-  | Mappnth (c, i) ->
+  | Mappcontains (api, c, i) ->
     let ce, ca = f accu c in
     let ie, ia = f ca i in
-    g (Mappnth (ce, ie)), ia
+    g (Mappcontains (api, ce, ie)), ia
 
-  | Mappselect ->
-    g Mappselect, accu
-
-  | Mappcount c ->
+  | Mappnth (api, c, i) ->
     let ce, ca = f accu c in
-    g (Mappcount ce), ca
+    let ie, ia = f ca i in
+    g (Mappnth (api, ce, ie)), ia
 
-  | Mappsum (fd, c) ->
+  | Mappselect api ->
+    g (Mappselect api), accu
+
+  | Mappcount (api, c) ->
     let ce, ca = f accu c in
-    g (Mappsum (fd, ce)), ca
+    g (Mappcount (api, ce)), ca
 
-  | Mappmin (fd, c) ->
+  | Mappsum (api, fd, c) ->
     let ce, ca = f accu c in
-    g (Mappmin (fd, ce)), ca
+    g (Mappsum (api, fd, ce)), ca
 
-  | Mappmax (fd, c) ->
+  | Mappmin (api, fd, c) ->
     let ce, ca = f accu c in
-    g (Mappmax (fd, ce)), ca
+    g (Mappmin (api, fd, ce)), ca
 
-  | Mappfail msg ->
+  | Mappmax (api, fd, c) ->
+    let ce, ca = f accu c in
+    g (Mappmax (api, fd, ce)), ca
+
+  | Mappfail (api, msg) ->
     let msge, msga = f accu msg in
-    g (Mappfail msge), msga
+    g (Mappfail (api, msge)), msga
 
   | Mlogical (op, l, r) ->
     let le, la = f accu l in
@@ -989,9 +1012,9 @@ end = struct
 
   let function_name_from_storage_node = function
     | Get       aid       -> "get_"      ^ lident_to_string aid
-    | Add       aid       -> "add_"      ^ lident_to_string aid
-    | Remove    aid       -> "remove_"   ^ lident_to_string aid
-    | Clear     aid       -> "clear_"    ^ lident_to_string aid
+    | Add       (_c, aid) -> "add_"      ^ lident_to_string aid
+    | Remove    (_c, aid) -> "remove_"   ^ lident_to_string aid
+    | Clear     (_c, aid) -> "clear_"    ^ lident_to_string aid
     | Update    aid       -> "update_"   ^ lident_to_string aid
     | Sort      aid       -> "sort_"     ^ lident_to_string aid
     | Reverse   aid       -> "reverse_"  ^ lident_to_string aid

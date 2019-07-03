@@ -524,7 +524,7 @@ let to_model (ast : A.model) : M.model =
   in
 
   let process_api_storage (model : M.model) : M.model =
-    let _add l i =
+    let add l i =
       let e = List.fold_left (fun accu x ->
           if x = i
           then true
@@ -565,6 +565,9 @@ let to_model (ast : A.model) : M.model =
 
     let rec fe (accu : M.api_item list) (term : M.mterm) : M.mterm * M.api_item list =
       match term.node with
+      | M.Mappadd (None, {node = M.Mvar (M.Vstorecol asset_name); _}, _) ->
+        let accu = add accu (M.APIStorage (M.Add asset_name)) in
+        term, accu
       (* | M.Mapplocal (Aconst c, args) -> (
           let args, accu = List.fold_left
               (fun ((ps, accus) : M.term_arg list * M.api_item list) (x : M.term_arg) ->
