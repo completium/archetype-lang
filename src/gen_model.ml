@@ -149,11 +149,6 @@ let to_model (ast : A.model) : M.model =
     M.mk_pattern node ~loc:p.loc
   in
 
-  let to_quantifier = function
-    | A.Forall -> M.Forall
-    | A.Exists -> M.Exists
-  in
-
   let to_lit_value : 't. 't A.bval_gen -> M.lit_value =
     fun b ->
       match b.node with
@@ -180,7 +175,6 @@ let to_model (ast : A.model) : M.model =
   let to_mterm_node : 't. ((A.lident, 't, (A.lident, 't) A.term_gen) A.term_node) -> ((A.lident, 't) A.term_gen -> M.mterm) -> ('t -> M.type_) -> (M.lident, M.mterm) M.mterm_node =
     fun n f ftyp ->
       match n with
-      | A.Lquantifer (q, i, typ, term) -> M.Mquantifer (to_quantifier q, i, ltyp_to_type typ, f term)
       | A.Pif (c, t, e)                -> M.Mif        (f c, f t, f e)
       | A.Pmatchwith (m, l)            -> M.Mmatchwith (f m, List.map (fun (p, e) -> (to_pattern p, f e)) l)
       | A.Plogical (A.And, l, r)       -> M.Mand       (f l, f r)
@@ -219,6 +213,9 @@ let to_model (ast : A.model) : M.model =
       | A.Pdot (d, i)                         -> M.Mdot (f d, i)
       | A.Pconst c                            -> M.Mconst (to_const c)
       | A.Ptuple l                            -> M.Mtuple (List.map f l)
+      | A.Lquantifer (Forall, i, typ, term)   -> M.Mforall (i, ltyp_to_type typ, f term)
+      | A.Lquantifer (Exists, i, typ, term)   -> M.Mexists (i, ltyp_to_type typ, f term)
+
       | A.Pcall (_, A.Cconst A.Cbefore,    [AExpr p]) -> M.Msetbefore    (f p)
       | A.Pcall (_, A.Cconst A.Cunmoved,   [AExpr p]) -> M.Msetunmoved   (f p)
       | A.Pcall (_, A.Cconst A.Cadded,     [AExpr p]) -> M.Msetadded     (f p)

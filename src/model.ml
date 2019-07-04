@@ -58,11 +58,6 @@ type type_ =
   | Ttrace of trtyp
 [@@deriving show {with_path = false}]
 
-type quantifier =
-  | Forall
-  | Exists
-[@@deriving show {with_path = false}]
-
 type const =
   (* constant *)
   | Cstate
@@ -218,16 +213,9 @@ type 'id var_kind =
 [@@deriving show {with_path = false}]
 
 type ('id, 'term) mterm_node  =
-  | Mquantifer    of quantifier * 'id * type_ * 'term
   | Mif           of ('term * 'term * 'term)
   | Mmatchwith    of 'term * ('id pattern_gen * 'term) list
   | Mapplocal     of 'id * (('id, 'term) term_arg_gen) list
-  | Msetbefore    of 'term
-  | Msetunmoved   of 'term
-  | Msetadded     of 'term
-  | Msetremoved   of 'term
-  | Msetiterated  of 'term
-  | Msettoiterate of 'term
   | Mappexternal  of 'id api_item_gen option * 'id * 'id * 'term * ('term) list
   | Mappget       of 'id api_item_gen option * 'term * 'term
   | Mappadd       of 'id api_item_gen option * 'term * 'term
@@ -265,6 +253,11 @@ type ('id, 'term) mterm_node  =
   | Mrecord       of 'term list
   | Mletin        of 'id * 'term * type_ option * 'term
   | Mvar          of 'id var_kind
+  (* | Mvarstorevar  of 'id
+     | Mvarstorecol  of 'id
+     | Mvarenumval   of 'id
+     | Mvarlocal     of 'id
+     | Mvarconst     of const *)
   | Marray        of 'term list
   | Mlit          of lit_value
   | Mdot          of 'term * 'id
@@ -276,8 +269,25 @@ type ('id, 'term) mterm_node  =
   | Mrequire      of (bool * 'term)
   | Mtransfer     of ('term * bool * 'id qualid_gen option)
   | Mbreak
-  | Massert      of 'term
-  | Mreturn      of 'term
+  | Massert       of 'term
+  | Mreturn       of 'term
+  (* quantifiers *)
+  | Mforall       of 'id * type_ * 'term
+  | Mexists       of 'id * type_ * 'term
+  (* security predicates *)
+  | Msetbefore    of 'term
+  | Msetunmoved   of 'term
+  | Msetadded     of 'term
+  | Msetremoved   of 'term
+  | Msetiterated  of 'term
+  | Msettoiterate of 'term
+  (* security predicates *)
+(* | MMayBePerformedOnlyByRole   of 'term * 'term
+   | MMayBePerformedOnlyByAction of 'term * 'term
+   | MMayBePerformedByRole       of 'term * 'term
+   | MMayBePerformedByAction     of 'term * 'term
+   | MTransferredBy              of 'term
+   | MTransferredTo              of 'term *)
 [@@deriving show {with_path = false}]
 
 and 'id mterm_gen = {
@@ -633,7 +643,6 @@ let mk_model ?(api_items = []) ?(decls = []) ?(functions = []) name storage veri
 (* -------------------------------------------------------------------- *)
 
 let map_term_node (f : 'id mterm_gen -> 'id mterm_gen) = function
-  | Mquantifer (q, i, t, e) -> Mquantifer (q, i, t, f e)
   | Mif (c, t, e)           -> Mif (f c, f t, f e)
   | Mmatchwith (e, l)       -> Mmatchwith (e, List.map (fun (p, e) -> (p, f e)) l)
   | Mapplocal (e, args) ->
@@ -696,6 +705,8 @@ let map_term_node (f : 'id mterm_gen -> 'id mterm_gen) = function
   | Mbreak                   -> Mbreak
   | Massert x                -> Massert (f x)
   | Mreturn x                -> Mreturn (f x)
+  | Mforall (i, t, e)        -> Mforall (i, t, f e)
+  | Mexists (i, t, e)        -> Mexists (i, t, f e)
 
 let map_gen_mterm g f (i : 'id mterm_gen) : 'id mterm_gen =
   {
@@ -706,7 +717,6 @@ let map_term  f t = map_gen_mterm map_term_node f t
 
 let fold_term (f : 'a -> 't -> 'a) (accu : 'a) (term : 'id mterm_gen) =
   match term.node with
-  | Mquantifer (_, _, _, e) -> f accu e
   | Mif (c, t, e)           -> f (f (f accu c) t) e
   | Mmatchwith (e, l)       -> List.fold_left (fun accu (_, a) -> f accu a) (f accu e) l
   | Mapplocal (_, args)     -> List.fold_left (fun accu (arg : ('id, 'term) term_arg_gen) -> match arg with
@@ -768,6 +778,8 @@ let fold_term (f : 'a -> 't -> 'a) (accu : 'a) (term : 'id mterm_gen) =
   | Mbreak                   -> accu
   | Massert x                -> f accu x
   | Mreturn x                -> f accu x
+  | Mforall (_, _, e)        -> f accu e
+  | Mexists (_, _, e)        -> f accu e
 
 let fold_map_term
     (g : ('id, 'term) mterm_node -> 'term)
@@ -775,10 +787,6 @@ let fold_map_term
     (accu : 'a)
     (term : 'id mterm_gen) : 'term * 'a =
   match term.node with
-  | Mquantifer (q, id, t, e) ->
-    let ee, ea = f accu e in
-    g (Mquantifer (q, id, t, ee)), ea
-
   | Mif (c, t, e) ->
     let ce, ca = f accu c in
     let ti, ta = f ca t in
@@ -1063,6 +1071,14 @@ let fold_map_term
   | Mreturn x ->
     let xe, xa = f accu x in
     g (Mreturn xe), xa
+
+  | Mforall (id, t, e) ->
+    let ee, ea = f accu e in
+    g (Mforall (id, t, ee)), ea
+
+  | Mexists (id, t, e) ->
+    let ee, ea = f accu e in
+    g (Mexists (id, t, ee)), ea
 
 (* -------------------------------------------------------------------- *)
 module Utils : sig
