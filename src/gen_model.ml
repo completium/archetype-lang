@@ -70,11 +70,6 @@ let to_model (ast : A.model) : M.model =
     | A.LTtrace tr    -> M.Ttrace (to_trtyp tr)
   in
 
-  let to_unary_arithmetic_operator = function
-    | A.Uplus  -> M.Uplus
-    | A.Uminus -> M.Uminus
-  in
-
   let to_assignment_operator = function
     | A.ValueAssign  -> M.ValueAssign
     | A.PlusAssign   -> M.PlusAssign
@@ -204,7 +199,8 @@ let to_model (ast : A.model) : M.model =
       | A.Parith (A.Mult, l, r)        -> M.Mmult      (f l, f r)
       | A.Parith (A.Div, l, r)         -> M.Mdiv       (f l, f r)
       | A.Parith (A.Modulo, l, r)      -> M.Mmodulo    (f l, f r)
-      | A.Puarith (op, e)              -> M.Muarith    (to_unary_arithmetic_operator op, f e)
+      | A.Puarith (A.Uplus, e)         -> M.Muplus     (f e)
+      | A.Puarith (A.Uminus, e)        -> M.Muminus    (f e)
       | A.Precord l                    -> M.Mrecord    (List.map f l)
       | A.Pletin (id, init, typ, cont) -> M.Mletin     (id, f init, Option.map ftyp typ, f cont)
       | A.Pvar id                      ->

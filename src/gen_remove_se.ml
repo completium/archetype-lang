@@ -381,6 +381,14 @@ let rec expr_to_expr (model : M.model) (expr : M.mterm) : W.expr * W.type_ =
     let expr_r, _ = expr_to_expr model r in
     W.Emodulo (expr_l, expr_r), to_type expr.type_
 
+  | M.Muplus e ->
+    let expr_e, _ = expr_to_expr model e in
+    W.Euplus expr_e, to_type expr.type_
+
+  | M.Muminus e ->
+    let expr_e, _ = expr_to_expr model e in
+    W.Euminus expr_e, to_type expr.type_
+
   | M.Mconst c ->
     (
       match c with

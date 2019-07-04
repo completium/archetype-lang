@@ -181,11 +181,6 @@ type assignment_operator =
   | OrAssign
 [@@deriving show {with_path = false}]
 
-type unary_arithmetic_operator =
-  | Uplus
-  | Uminus
-[@@deriving show {with_path = false}]
-
 type lit_value =
   | BVint          of Core.big_int
   | BVuint         of Core.big_int
@@ -265,7 +260,8 @@ type ('id, 'term) mterm_node  =
   | Mmult         of 'term * 'term
   | Mdiv          of 'term * 'term
   | Mmodulo       of 'term * 'term
-  | Muarith       of unary_arithmetic_operator * 'term
+  | Muplus        of 'term
+  | Muminus       of 'term
   | Mrecord       of 'term list
   | Mletin        of 'id * 'term * type_ option * 'term
   | Mvar          of 'id var_kind
@@ -682,7 +678,8 @@ let map_term_node (f : 'id mterm_gen -> 'id mterm_gen) = function
   | Mmult (l, r)             -> Mmult (f l, f r)
   | Mdiv (l, r)              -> Mdiv (f l, f r)
   | Mmodulo (l, r)           -> Mmodulo (f l, f r)
-  | Muarith (op, e)          -> Muarith (op, f e)
+  | Muplus e                 -> Muplus (f e)
+  | Muminus e                -> Muminus (f e)
   | Mrecord l                -> Mrecord (List.map f l)
   | Mletin (i, a, t, b)      -> Mletin (i, f a, t, f b)
   | Mvar v                   -> Mvar v
@@ -753,7 +750,8 @@ let fold_term (f : 'a -> 't -> 'a) (accu : 'a) (term : 'id mterm_gen) =
   | Mmult (l, r)             -> f (f accu l) r
   | Mdiv (l, r)              -> f (f accu l) r
   | Mmodulo (l, r)           -> f (f accu l) r
-  | Muarith (_, e)           -> f accu e
+  | Muplus e                 -> f accu e
+  | Muminus e                -> f accu e
   | Mrecord l                -> List.fold_left f accu l
   | Mletin (_, a, _, b)      -> f (f accu a) b
   | Mvar _                   -> accu
@@ -984,9 +982,13 @@ let fold_map_term
     let re, ra = f la r in
     g (Mmodulo (le, re)), ra
 
-  | Muarith (op, e) ->
+  | Muplus e ->
     let ee, ea = f accu e in
-    g (Muarith (op, ee)), ea
+    g (Muplus ee), ea
+
+  | Muminus e ->
+    let ee, ea = f accu e in
+    g (Muminus ee), ea
 
   | Mrecord l ->
     let (lp, la) = List.fold_left
