@@ -238,12 +238,12 @@ let to_model (ast : A.model) : M.model =
       | A.Pdot (d, i)                         -> M.Mdot (f d, i)
       | A.Pconst c                            -> M.Mconst (to_const c)
       | A.Ptuple l                            -> M.Mtuple (List.map f l)
-      | A.Pcall (_, A.Cconst A.Cbefore,    [AExpr p]) -> M.Mappset (M.Cbefore, f p)
-      | A.Pcall (_, A.Cconst A.Cunmoved,   [AExpr p]) -> M.Mappset (M.Cunmoved, f p)
-      | A.Pcall (_, A.Cconst A.Cadded,     [AExpr p]) -> M.Mappset (M.Cadded, f p)
-      | A.Pcall (_, A.Cconst A.Cremoved,   [AExpr p]) -> M.Mappset (M.Cremoved, f p)
-      | A.Pcall (_, A.Cconst A.Citerated,  [AExpr p]) -> M.Mappset (M.Citerated, f p)
-      | A.Pcall (_, A.Cconst A.Ctoiterate, [AExpr p]) -> M.Mappset (M.Ctoiterate, f p)
+      | A.Pcall (_, A.Cconst A.Cbefore,    [AExpr p]) -> M.Msetbefore    (f p)
+      | A.Pcall (_, A.Cconst A.Cunmoved,   [AExpr p]) -> M.Msetunmoved   (f p)
+      | A.Pcall (_, A.Cconst A.Cadded,     [AExpr p]) -> M.Msetadded     (f p)
+      | A.Pcall (_, A.Cconst A.Cremoved,   [AExpr p]) -> M.Msetremoved   (f p)
+      | A.Pcall (_, A.Cconst A.Citerated,  [AExpr p]) -> M.Msetiterated  (f p)
+      | A.Pcall (_, A.Cconst A.Ctoiterate, [AExpr p]) -> M.Msettoiterate (f p)
 
       | A.Pcall (aux, A.Cid id, args) ->
         M.Mapplocal (id,

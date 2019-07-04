@@ -102,15 +102,6 @@ type const =
   | Cmaybeperformedbyaction
 [@@deriving show {with_path = false}]
 
-type const_vset =
-  | Cbefore
-  | Cunmoved
-  | Cadded
-  | Cremoved
-  | Citerated
-  | Ctoiterate
-[@@deriving show {with_path = false}]
-
 type 'id storage_const_gen =
   | Get              of 'id
   | Set              of 'id
@@ -265,45 +256,50 @@ type 'id var_kind =
 [@@deriving show {with_path = false}]
 
 type ('id, 'term) mterm_node  =
-  | Mquantifer   of quantifier * 'id * type_ * 'term
-  | Mif          of ('term * 'term * 'term)
-  | Mmatchwith   of 'term * ('id pattern_gen * 'term) list
-  | Mapplocal    of 'id * (('id, 'term) term_arg_gen) list
-  | Mappset      of const_vset * 'term
-  | Mappexternal of 'id api_item_gen option * 'id * 'id * 'term * ('term) list
-  | Mappget      of 'id api_item_gen option * 'term * 'term
-  | Mappadd      of 'id api_item_gen option * 'term * 'term
-  | Mappremove   of 'id api_item_gen option * 'term * 'term
-  | Mappclear    of 'id api_item_gen option * 'term
-  | Mappupdate   of 'id api_item_gen option
-  | Mappreverse  of 'id api_item_gen option * 'term
-  | Mappsort     of 'id api_item_gen option
-  | Mappcontains of 'id api_item_gen option * 'term * 'term
-  | Mappnth      of 'id api_item_gen option * 'term * 'term
-  | Mappselect   of 'id api_item_gen option
-  | Mappcount    of 'id api_item_gen option * 'term
-  | Mappsum      of 'id api_item_gen option * 'id * 'term
-  | Mappmin      of 'id api_item_gen option * 'id * 'term
-  | Mappmax      of 'id api_item_gen option * 'id * 'term
-  | Mappfail     of 'id api_item_gen option * 'term
-  | Mlogical     of logical_operator * 'term * 'term
-  | Mnot         of 'term
-  | Mcomp        of comparison_operator * 'term * 'term
-  | Marith       of arithmetic_operator * 'term * 'term
-  | Muarith      of unary_arithmetic_operator * 'term
-  | Mrecord      of 'term list
-  | Mletin       of 'id * 'term * type_ option * 'term
-  | Mvar         of 'id var_kind
-  | Marray       of 'term list
-  | Mlit         of lit_value
-  | Mdot         of 'term * 'id
-  | Mconst       of const
-  | Mtuple       of 'term list
-  | Mfor         of ('id * 'term * 'term)
-  | Mseq         of 'term list
-  | Massign      of (assignment_operator * 'id * 'term)
-  | Mrequire     of (bool * 'term)
-  | Mtransfer    of ('term * bool * 'id qualid_gen option)
+  | Mquantifer    of quantifier * 'id * type_ * 'term
+  | Mif           of ('term * 'term * 'term)
+  | Mmatchwith    of 'term * ('id pattern_gen * 'term) list
+  | Mapplocal     of 'id * (('id, 'term) term_arg_gen) list
+  | Msetbefore    of 'term
+  | Msetunmoved   of 'term
+  | Msetadded     of 'term
+  | Msetremoved   of 'term
+  | Msetiterated  of 'term
+  | Msettoiterate of 'term
+  | Mappexternal  of 'id api_item_gen option * 'id * 'id * 'term * ('term) list
+  | Mappget       of 'id api_item_gen option * 'term * 'term
+  | Mappadd       of 'id api_item_gen option * 'term * 'term
+  | Mappremove    of 'id api_item_gen option * 'term * 'term
+  | Mappclear     of 'id api_item_gen option * 'term
+  | Mappupdate    of 'id api_item_gen option
+  | Mappreverse   of 'id api_item_gen option * 'term
+  | Mappsort      of 'id api_item_gen option
+  | Mappcontains  of 'id api_item_gen option * 'term * 'term
+  | Mappnth       of 'id api_item_gen option * 'term * 'term
+  | Mappselect    of 'id api_item_gen option
+  | Mappcount     of 'id api_item_gen option * 'term
+  | Mappsum       of 'id api_item_gen option * 'id * 'term
+  | Mappmin       of 'id api_item_gen option * 'id * 'term
+  | Mappmax       of 'id api_item_gen option * 'id * 'term
+  | Mappfail      of 'id api_item_gen option * 'term
+  | Mlogical      of logical_operator * 'term * 'term
+  | Mnot          of 'term
+  | Mcomp         of comparison_operator * 'term * 'term
+  | Marith        of arithmetic_operator * 'term * 'term
+  | Muarith       of unary_arithmetic_operator * 'term
+  | Mrecord       of 'term list
+  | Mletin        of 'id * 'term * type_ option * 'term
+  | Mvar          of 'id var_kind
+  | Marray        of 'term list
+  | Mlit          of lit_value
+  | Mdot          of 'term * 'id
+  | Mconst        of const
+  | Mtuple        of 'term list
+  | Mfor          of ('id * 'term * 'term)
+  | Mseq          of 'term list
+  | Massign       of (assignment_operator * 'id * 'term)
+  | Mrequire      of (bool * 'term)
+  | Mtransfer     of ('term * bool * 'id qualid_gen option)
   | Mbreak
   | Massert      of 'term
   | Mreturn      of 'term
@@ -669,7 +665,12 @@ let map_term_node (f : 'id mterm_gen -> 'id mterm_gen) = function
     Mapplocal (e, List.map (fun (arg : ('id, 'term) term_arg_gen) -> match arg with
         | AExpr e   -> AExpr (f e)
         | AEffect l -> AEffect (List.map (fun (id, op, e) -> (id, op, f e)) l)) args)
-  | Mappset (c, e)           -> Mappset (c, f e)
+  | Msetbefore    e          -> Msetbefore    (f e)
+  | Msetunmoved   e          -> Msetunmoved   (f e)
+  | Msetadded     e          -> Msetadded     (f e)
+  | Msetremoved   e          -> Msetremoved   (f e)
+  | Msetiterated  e          -> Msetiterated  (f e)
+  | Msettoiterate e          -> Msettoiterate (f e)
   | Mappexternal (api, t, func, c, args) -> Mappexternal (api, t, func, f c, List.map f args)
   | Mappget (api, c, k)      -> Mappget (api, f c, f k)
   | Mappadd (api, c, i)      -> Mappadd (api, f c, f i)
@@ -723,7 +724,12 @@ let fold_term (f : 'a -> 't -> 'a) (accu : 'a) (term : 'id mterm_gen) =
   | Mapplocal (_, args)     -> List.fold_left (fun accu (arg : ('id, 'term) term_arg_gen) -> match arg with
       | AExpr e -> f accu e
       | AEffect l -> List.fold_left (fun accu (_, _, e) -> f accu e) accu l ) accu args
-  | Mappset (c, e)          -> f accu e
+  | Msetbefore    e          -> f accu e
+  | Msetunmoved   e          -> f accu e
+  | Msetadded     e          -> f accu e
+  | Msetremoved   e          -> f accu e
+  | Msetiterated  e          -> f accu e
+  | Msettoiterate e          -> f accu e
   | Mappexternal (api, t, func, c, args) -> List.fold_left f (f accu c) args
   | Mappget (api, c, k)      -> f (f accu k) c
   | Mappadd (api, c, i)      -> f (f accu c) i
@@ -802,9 +808,29 @@ let fold_map_term
     in
     g (Mapplocal (id, argss)), argsa
 
-  | Mappset (c, e) ->
+  | Msetbefore e ->
     let ee, ea = f accu e in
-    g (Mappset (c, ee)), ea
+    g (Msetbefore ee), ea
+
+  | Msetunmoved e ->
+    let ee, ea = f accu e in
+    g (Msetunmoved ee), ea
+
+  | Msetadded e ->
+    let ee, ea = f accu e in
+    g (Msetadded ee), ea
+
+  | Msetremoved e ->
+    let ee, ea = f accu e in
+    g (Msetremoved ee), ea
+
+  | Msetiterated e ->
+    let ee, ea = f accu e in
+    g (Msetiterated ee), ea
+
+  | Msettoiterate e ->
+    let ee, ea = f accu e in
+    g (Msettoiterate ee), ea
 
   | Mappexternal (api, t, func, c, args) ->
     let ce, ca = f accu c in
