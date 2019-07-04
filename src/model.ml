@@ -112,39 +112,43 @@ type const_vset =
 [@@deriving show {with_path = false}]
 
 type 'id storage_const_gen =
-  | Get        of 'id
-  | Add        of container * 'id
-  | Remove     of container * 'id
-  | Clear      of container * 'id
-  | Update     of 'id
-  | Sort       of 'id
-  | Reverse    of 'id
-  | Contains   of 'id
-  | Nth        of 'id
-  | Select     of 'id
-  | Count      of 'id
-  | Sum        of 'id * 'id
-  | Min        of 'id * 'id
-  | Max        of 'id * 'id
+  | Get              of 'id
+  | Set              of 'id
+  | Add              of 'id
+  | Remove           of 'id
+  | Clear            of 'id
+  | Reverse          of 'id
+  | UpdateAdd        of 'id * 'id
+  | UpdateRemove     of 'id * 'id
+  | UpdateClear      of 'id * 'id
+  | UpdateReverse    of 'id * 'id
 [@@deriving show {with_path = false}]
 
 type storage_const = lident storage_const_gen
 [@@deriving show {with_path = false}]
 
 type 'id container_const_gen =
-  | Add      of container * type_
-  | Remove   of container * type_
-  | Clear    of container * type_
-  | Update   of container * type_
-  | Reverse  of container * type_
-  | Sort     of container * type_
-  | Select   of container
-  | Contains of container * type_
-  | Nth      of container * type_
-  | Count    of container * type_
-  | Sum      of container * 'id * 'id
-  | Min      of container * 'id * 'id
-  | Max      of container * 'id * 'id
+  | Add      of type_
+  | Remove   of type_
+  | Clear    of type_
+  | Reverse  of type_
+[@@deriving show {with_path = false}]
+
+type container_const = lident container_const_gen
+[@@deriving show {with_path = false}]
+
+type 'id function_const_gen =
+  | Select           of 'id
+  | Sort             of 'id * 'id
+  | Contains         of 'id
+  | Nth              of 'id
+  | Count            of 'id
+  | Sum              of 'id * 'id
+  | Min              of 'id * 'id
+  | Max              of 'id * 'id
+[@@deriving show {with_path = false}]
+
+type function_const = lident function_const_gen
 [@@deriving show {with_path = false}]
 
 type builtin_const =
@@ -155,6 +159,7 @@ type builtin_const =
 type 'id api_item_gen =
   | APIStorage   of 'id storage_const_gen
   | APIContainer of 'id container_const_gen
+  | APIFunction  of 'id function_const_gen
   | APIBuiltin   of builtin_const
 [@@deriving show {with_path = false}]
 
@@ -971,19 +976,20 @@ let fold_map_term
 (* -------------------------------------------------------------------- *)
 module Utils : sig
 
-  val function_name_from_function_node : function_node -> string
-  val function_name_from_storage_node  : storage_const -> string
-  val get_records                      : model -> record list
-  val get_storage                      : model -> storage
-  val get_record                       : model -> lident -> record
-  val get_record_field                 : model -> (lident * lident) -> record_item
-  val get_record_key                   : model -> lident -> (lident * btyp)
-  val is_storage_attribute             : model -> lident -> bool
-  val get_named_field_list             : model -> lident -> 'a list -> (lident * 'a) list
-  val get_partitions                   : model -> (lident * record_item) list (* record id, record item *)
-  val dest_partition                   : type_ -> lident
-  val get_partition_record_key         : model -> lident -> lident -> (lident * lident * btyp)
-  val get_entries                      : model -> (verification option * function_struct) list
+  val function_name_from_storage_const   : storage_const   -> string
+  val function_name_from_container_const : container_const -> string
+  val function_name_from_function_const  : function_const  -> string
+  val get_records                        : model -> record list
+  val get_storage                        : model -> storage
+  val get_record                         : model -> lident -> record
+  val get_record_field                   : model -> (lident * lident) -> record_item
+  val get_record_key                     : model -> lident -> (lident * btyp)
+  val is_storage_attribute               : model -> lident -> bool
+  val get_named_field_list               : model -> lident -> 'a list -> (lident * 'a) list
+  val get_partitions                     : model -> (lident * record_item) list (* record id, record item *)
+  val dest_partition                     : type_ -> lident
+  val get_partition_record_key           : model -> lident -> lident -> (lident * lident * btyp)
+  val get_entries                        : model -> (verification option * function_struct) list
 
 end = struct
 
@@ -1010,21 +1016,33 @@ end = struct
     | Function (fs, _)    -> lident_to_string fs.name
     | Entry     fs        -> lident_to_string fs.name
 
-  let function_name_from_storage_node = function
-    | Get       aid       -> "get_"      ^ lident_to_string aid
-    | Add       (_c, aid) -> "add_"      ^ lident_to_string aid
-    | Remove    (_c, aid) -> "remove_"   ^ lident_to_string aid
-    | Clear     (_c, aid) -> "clear_"    ^ lident_to_string aid
-    | Update    aid       -> "update_"   ^ lident_to_string aid
-    | Sort      aid       -> "sort_"     ^ lident_to_string aid
-    | Reverse   aid       -> "reverse_"  ^ lident_to_string aid
-    | Contains  aid       -> "contains_" ^ lident_to_string aid
-    | Select    aid       -> "select_"   ^ lident_to_string aid
-    | Nth       aid       -> "nth_"      ^ lident_to_string aid
-    | Count     aid       -> "count_"    ^ lident_to_string aid
-    | Sum      (aid, fid) -> "sum_"      ^ lident_to_string aid ^ "_" ^ lident_to_string fid
-    | Min      (aid, fid) -> "min_"      ^ lident_to_string aid ^ "_" ^ lident_to_string fid
-    | Max      (aid, fid) -> "max_"      ^ lident_to_string aid ^ "_" ^ lident_to_string fid
+  let function_name_from_storage_const = function
+    | Get            aid       -> "get_"            ^ lident_to_string aid
+    | Set            aid       -> "set_"            ^ lident_to_string aid
+    | Add            aid       -> "add_"            ^ lident_to_string aid
+    | Remove         aid       -> "remove_"         ^ lident_to_string aid
+    | Clear          aid       -> "clear_"          ^ lident_to_string aid
+    | Reverse        aid       -> "reverse_"        ^ lident_to_string aid
+    | UpdateAdd     (aid, fid) -> "update_add_"     ^ lident_to_string aid ^ "_" ^ lident_to_string fid
+    | UpdateRemove  (aid, fid) -> "update_remove_"  ^ lident_to_string aid ^ "_" ^ lident_to_string fid
+    | UpdateClear   (aid, fid) -> "update_clear_"   ^ lident_to_string aid ^ "_" ^ lident_to_string fid
+    | UpdateReverse (aid, fid) -> "update_reverse_" ^ lident_to_string aid ^ "_" ^ lident_to_string fid
+
+  let function_name_from_container_const = function
+    | Add            _ -> "add"
+    | Remove         _ -> "remove"
+    | Clear          _ -> "clear"
+    | Reverse        _ -> "reverse"
+
+  let function_name_from_function_const = function
+    | Select    aid       -> "select"   ^ lident_to_string aid
+    | Sort     (aid, fid) -> "sort"     ^ lident_to_string aid ^ "_" ^ lident_to_string fid
+    | Contains  aid       -> "contains" ^ lident_to_string aid
+    | Nth       aid       -> "nth"      ^ lident_to_string aid
+    | Count     aid       -> "count"    ^ lident_to_string aid
+    | Sum      (aid, fid) -> "sum"      ^ lident_to_string aid ^ "_" ^ lident_to_string fid
+    | Min      (aid, fid) -> "min"      ^ lident_to_string aid ^ "_" ^ lident_to_string fid
+    | Max      (aid, fid) -> "max"      ^ lident_to_string aid ^ "_" ^ lident_to_string fid
 
   let is_record (d : decl_node) : bool =
     match d with

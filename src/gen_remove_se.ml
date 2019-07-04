@@ -249,7 +249,7 @@ let rec expr_to_expr (model : M.model) (expr : M.mterm) : W.expr * W.type_ =
     let expr_body, type_body = expr_to_expr model body in
     expr_body, W.Tstorage
 
-  | M.Mapplocal (id, args) ->
+  | M.Mapplocal (_, id, args) ->
     let args =
       W.Evar "s"::(List.map (fun x ->
           match x with
@@ -258,11 +258,11 @@ let rec expr_to_expr (model : M.model) (expr : M.mterm) : W.expr * W.type_ =
         ) args) in
     W.Ecall (W.Evar (unloc id), args), to_type expr.type_
 
-  | M.Mappfail msg ->
+  | M.Mappfail (_, msg) ->
     let arg, _ = expr_to_expr model msg in
     W.Ecall (W.Edot (W.Evar "Current", "failwith"), [arg]), W.Tstorage
 
-  | M.Mappadd (col, item) ->
+  | M.Mappadd (_, col, item) ->
     let lhs, _ = expr_to_expr model col in
     let rhs, _ = expr_to_expr model item in
     W.Ecall (W.Evar "add", [lhs; rhs]), W.Tstorage
@@ -367,13 +367,26 @@ let compute_body_entry model (fs : M.function_struct) =
     raise (Anomaly (Format.asprintf "compute_body_entry: %a@\n" W.pp_type_ ret))
 
 let mk_function_storage model (storage_const : M.storage_const) =
-  let name : ident = M.Utils.function_name_from_storage_node storage_const in
+  let name : ident = M.Utils.function_name_from_storage_const storage_const in
   let kind, args, ret, body =
     match storage_const with
     | Get asset                   -> Utils.get_asset model asset
     | Add asset                   -> Utils.add_asset model asset
+    | UpdateAdd (asset, field)    -> Utils.add_container model (asset, field)
+    | _ ->
+      let args = [[""], W.Tunit] in
+      let ret  = W.Tunit in
+      let body = W.Etuple [] in
+      W.Function, args, ret, body
+  in
+
+  W.mk_function name kind ret body ~args:args
+
+let mk_function_function model (function_const : M.function_const) =
+  let name : ident = M.Utils.function_name_from_function_const function_const in
+  let kind, args, ret, body =
+    match function_const with
     | Contains asset              -> Utils.contains_asset model asset
-    (* | AddContainer (asset, field) -> Utils.add_container model (asset, field) *)
     | _ ->
       let args = [[""], W.Tunit] in
       let ret  = W.Tunit in
@@ -450,7 +463,13 @@ let remove_se (model : M.model) : W.model =
          match api_item with
          | APIStorage api_storage ->
            let func = mk_function_storage model api_storage in
-           accu @ [func]) [] model.api_items)
+           accu @ [func]
+         | APIFunction api_function ->
+           accu
+         | _ ->
+           accu) [] model.api_items
+    )
+
     @
     (List.fold_left (fun accu (f : M.function__) ->
          let func = mk_function_struct model f in

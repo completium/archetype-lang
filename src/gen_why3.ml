@@ -771,24 +771,24 @@ let mk_storage_api (m : M.model) records =
       | M.APIStorage (Add n) ->
         let k = M.Utils.get_record_key m n |> fst |> unloc in
         acc @ [mk_add_asset n.pldesc k]
-      | M.APIStorage (Update n) ->
+      | M.APIStorage (Set n) ->
         let record = get_record n.pldesc (records |> unloc_decl) in
         let k      = M.Utils.get_record_key m (get_record_name record |> dumloc) |> fst |> unloc in
         acc @ [mk_update_asset k record]
-      (* | M.APIStorage (AddContainer (a,pf)) ->
-         let k            = M.Utils.get_record_key m a |> fst |> unloc in
-         let (pa,addak,_) = M.Utils.get_partition_record_key m a pf in
-         acc @ [
+      | M.APIStorage (UpdateAdd (a,pf)) ->
+        let k            = M.Utils.get_record_key m a |> fst |> unloc in
+        let (pa,addak,_) = M.Utils.get_partition_record_key m a pf in
+        acc @ [
           mk_add_asset           pa.pldesc addak.pldesc;
           mk_add_partition_field a.pldesc k pf.pldesc pa.pldesc addak.pldesc
-         ]
-         | M.APIStorage (Remove (n,f)) ->
-         let t         = M.Utils.get_record_key m n |> snd |> map_btype in
-         let (pa,_,pt) = M.Utils.get_partition_record_key m n f in
-         acc @ [
+        ]
+      | M.APIStorage (UpdateRemove (n,f)) ->
+        let t         = M.Utils.get_record_key m n |> snd |> map_btype in
+        let (pa,_,pt) = M.Utils.get_partition_record_key m n f in
+        acc @ [
           mk_rm_asset           pa.pldesc (pt |> map_btype);
           mk_rm_partition_field n.pldesc t f.pldesc pa.pldesc (pt |> map_btype)
-         ] *)
+        ]
       | _ -> acc
     ) [] |> loc_decl |> deloc
 
