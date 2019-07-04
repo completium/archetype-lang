@@ -137,19 +137,6 @@ type assignment_operator =
   | OrAssign
 [@@deriving show {with_path = false}]
 
-type lit_value =
-  | BVint          of Core.big_int
-  | BVuint         of Core.big_int
-  | BVbool         of bool
-  | BVenum         of string
-  | BVrational     of Core.big_int * Core.big_int
-  | BVdate         of string (* TODO : find a date structure *)
-  | BVstring       of string
-  | BVcurrency     of currency * Core.big_int
-  | BVaddress      of string
-  | BVduration     of string
-[@@deriving show {with_path = false}]
-
 type ('id, 'qualid) qualid_node =
   | Qident of 'id
   | Qdot of 'qualid * 'id
@@ -215,17 +202,16 @@ type ('id, 'term) mterm_node  =
   | Mcaller
   | Mbalance
   | Marray        of 'term list
-  | Mlit          of lit_value
-  (* | Mint          of Core.big_int
-     | Muint         of Core.big_int
-     | Mbool         of bool
-     | Menum         of string
-     | Mrational     of Core.big_int * Core.big_int
-     | Mdate         of string
-     | Mstring       of string
-     | Mcurrency     of Core.big_int * currency
-     | Maddress      of string
-     | Mduration     of string *)
+  | Mint          of Core.big_int
+  | Muint         of Core.big_int
+  | Mbool         of bool
+  | Menum         of string
+  | Mrational     of Core.big_int * Core.big_int
+  | Mdate         of string
+  | Mstring       of string
+  | Mcurrency     of Core.big_int * currency
+  | Maddress      of string
+  | Mduration     of string
   | Mdot          of 'term * 'id
   | Mtuple        of 'term list
   | Mfor          of ('id * 'term * 'term)
@@ -666,7 +652,16 @@ let map_term_node (f : 'id mterm_gen -> 'id mterm_gen) = function
   | Mcaller                  -> Mcaller
   | Mbalance                 -> Mbalance
   | Marray l                 -> Marray (List.map f l)
-  | Mlit l                   -> Mlit l
+  | Mint v                   -> Mint v
+  | Muint v                  -> Muint v
+  | Mbool v                  -> Mbool v
+  | Menum v                  -> Menum v
+  | Mrational (n, d)         -> Mrational (n, d)
+  | Mdate v                  -> Mdate v
+  | Mstring v                -> Mstring v
+  | Mcurrency (v, c)         -> Mcurrency (v, c)
+  | Maddress v               -> Maddress v
+  | Mduration v              -> Mduration v
   | Mdot (e, i)              -> Mdot (f e, i)
   | Mtuple l                 -> Mtuple (List.map f l)
   | Mfor (i, c, b)           -> Mfor (i, f c, f b)
@@ -741,7 +736,16 @@ let fold_term (f : 'a -> 't -> 'a) (accu : 'a) (term : 'id mterm_gen) =
   | Mvarenumval _            -> accu
   | Mvarlocal _              -> accu
   | Marray l                 -> List.fold_left f accu l
-  | Mlit _                   -> accu
+  | Mint _                   -> accu
+  | Muint _                  -> accu
+  | Mbool _                  -> accu
+  | Menum _                  -> accu
+  | Mrational _              -> accu
+  | Mdate _                  -> accu
+  | Mstring _                -> accu
+  | Mcurrency _              -> accu
+  | Maddress _               -> accu
+  | Mduration _              -> accu
   | Mdot (e, _)              -> f accu e
   | Mstate                   -> accu
   | Mnow                     -> accu
@@ -1008,8 +1012,16 @@ let fold_map_term
            pterms @ [p], accu) ([], accu) l in
     g (Marray lp), la
 
-  | Mlit l ->
-    g (Mlit l), accu
+  | Mint v                   -> g (Mint v), accu
+  | Muint v                  -> g (Muint v), accu
+  | Mbool v                  -> g (Mbool v), accu
+  | Menum v                  -> g (Menum v), accu
+  | Mrational (n, d)         -> g (Mrational (n, d)), accu
+  | Mdate v                  -> g (Mdate v), accu
+  | Mstring v                -> g (Mstring v), accu
+  | Mcurrency (v, c)         -> g (Mcurrency (v, c)), accu
+  | Maddress v               -> g (Maddress v), accu
+  | Mduration v              -> g (Mduration v), accu
 
   | Mdot (e, id) ->
     let ee, ea = f accu e in

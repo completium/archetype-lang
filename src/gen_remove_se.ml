@@ -43,8 +43,8 @@ let rec item_type_to_type = function
 
 let to_expr (e : M.mterm) : W.expr =
   match e.node with
-  | M.Mlit (BVint v)     -> W.Elitint v
-  | M.Mlit (BVaddress v) -> W.Elitraw v
+  | M.Mint v     -> W.Elitint v
+  | M.Maddress v -> W.Elitraw v
   | _ -> assert false
 
 let rec to_type t =
@@ -284,20 +284,20 @@ let rec expr_to_expr (model : M.model) (expr : M.mterm) : W.expr * W.type_ =
     in
     a, to_type expr.type_
 
-  | M.Mlit (BVint i)
-  | M.Mlit (BVuint i) -> W.Elitint i, to_type expr.type_
-  | M.Mlit (BVbool b) -> W.Elitbool b, to_type expr.type_
-  | M.Mlit (BVstring str) -> W.Elitstring str, to_type expr.type_
+  | M.Mint i
+  | M.Muint i -> W.Elitint i, to_type expr.type_
+  | M.Mbool b -> W.Elitbool b, to_type expr.type_
+  | M.Mstring str -> W.Elitstring str, to_type expr.type_
 
-  | M.Mlit (BVduration _) -> raise (Anomaly "Unsuported duration") (*W.Elitraw str, to_type expr.type_*)
-  | M.Mlit (BVrational _) -> raise (Anomaly "Unsuported rational") (*W.Elitraw str, to_type expr.type_*)
+  | M.Mduration _ -> raise (Anomaly "Unsuported duration") (*W.Elitraw str, to_type expr.type_*)
+  | M.Mrational _ -> raise (Anomaly "Unsuported rational") (*W.Elitraw str, to_type expr.type_*)
 
-  | M.Mlit (BVenum str)
-  | M.Mlit (BVdate str)
-  | M.Mlit (BVaddress str)  ->
+  | M.Menum str
+  | M.Mdate str
+  | M.Maddress str  ->
     W.Elitraw str, to_type expr.type_
 
-  | M.Mlit (BVcurrency (_cur, v)) ->
+  | M.Mcurrency (v, _c) ->
     W.Elitraw (Format.asprintf "%stz" (Big_int.string_of_big_int v)), to_type expr.type_
 
   | M.Mnot e ->

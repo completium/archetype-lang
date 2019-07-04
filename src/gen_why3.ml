@@ -647,14 +647,10 @@ let map_basic_type (typ : 'id M.item_field_type) : loc_typ =
     | _ -> assert false in
   with_dummy_loc (rec_map_basic_type typ)
 
-let map_bval = function
-  | M.BVaddress v -> Tint (sha v)
-  | M.BVint i     -> Tint i
-  | _ -> Tnottranslated
-
 let rec map_term (t : M.mterm) : loc_term = mk_loc t.loc (
     match t.node with
-    | M.Mlit b -> map_bval b
+    | M.Maddress v  -> Tint (sha v)
+    | M.Mint i      -> Tint i
     | M.Mvarlocal i -> Tvar (map_lident i)
     | M.Mgt (t1,t2) -> Tgt (with_dummy_loc Tyint,map_term t1,map_term t2)
     | _ -> Tnottranslated

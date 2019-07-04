@@ -107,21 +107,6 @@ let to_model (ast : A.model) : M.model =
     M.mk_pattern node ~loc:p.loc
   in
 
-  let to_lit_value : 't. 't A.bval_gen -> M.lit_value =
-    fun b ->
-      match b.node with
-      | A.BVint i           -> M.BVint i
-      | A.BVuint i          -> M.BVuint i
-      | A.BVbool b          -> M.BVbool b
-      | A.BVenum s          -> M.BVenum s
-      | A.BVrational (d, n) -> M.BVrational (d, n)
-      | A.BVdate s          -> M.BVdate s
-      | A.BVstring s        -> M.BVstring s
-      | A.BVcurrency (c, i) -> M.BVcurrency (to_currency c, i)
-      | A.BVaddress s       -> M.BVaddress s
-      | A.BVduration s      -> M.BVduration s
-  in
-
   let to_term_arg : 't. ((A.lident, 't) A.term_gen -> M.mterm) -> ((A.lident, 't, (A.lident, 't) A.term_gen) A.term_arg) -> M.term_arg =
     fun f a ->
       match a with
@@ -159,18 +144,27 @@ let to_model (ast : A.model) : M.model =
       | A.Pvar id when A.Utils.is_asset ast id      -> M.Mvarstorecol id
       | A.Pvar id when A.Utils.is_enum_value ast id -> M.Mvarenumval id
       | A.Pvar id                                   -> M.Mvarlocal id
-      | A.Parray l                            -> M.Marray (List.map f l)
-      | A.Plit lit                            -> M.Mlit (to_lit_value lit)
-      | A.Pdot (d, i)                         -> M.Mdot (f d, i)
-      | A.Pconst Cstate                       -> M.Mstate
-      | A.Pconst Cnow                         -> M.Mnow
-      | A.Pconst Ctransferred                 -> M.Mtransferred
-      | A.Pconst Ccaller                      -> M.Mcaller
-      | A.Pconst Cbalance                     -> M.Mbalance
-      | A.Pconst _                            -> assert false
-      | A.Ptuple l                            -> M.Mtuple (List.map f l)
-      | A.Lquantifer (Forall, i, typ, term)   -> M.Mforall (i, ltyp_to_type typ, f term)
-      | A.Lquantifer (Exists, i, typ, term)   -> M.Mexists (i, ltyp_to_type typ, f term)
+      | A.Parray l                             -> M.Marray (List.map f l)
+      | A.Plit ({node = BVint i; _})           -> M.Mint i
+      | A.Plit ({node = BVuint i; _})          -> M.Muint i
+      | A.Plit ({node = BVbool b; _})          -> M.Mbool b
+      | A.Plit ({node = BVenum s; _})          -> M.Menum s
+      | A.Plit ({node = BVrational (d, n); _}) -> M.Mrational (d, n)
+      | A.Plit ({node = BVdate s; _})          -> M.Mdate s
+      | A.Plit ({node = BVstring s; _})        -> M.Mstring s
+      | A.Plit ({node = BVcurrency (c, i); _}) -> M.Mcurrency (i, to_currency c)
+      | A.Plit ({node = BVaddress s; _})       -> M.Maddress s
+      | A.Plit ({node = BVduration s; _})      -> M.Mduration s
+      | A.Pdot (d, i)                          -> M.Mdot (f d, i)
+      | A.Pconst Cstate                        -> M.Mstate
+      | A.Pconst Cnow                          -> M.Mnow
+      | A.Pconst Ctransferred                  -> M.Mtransferred
+      | A.Pconst Ccaller                       -> M.Mcaller
+      | A.Pconst Cbalance                      -> M.Mbalance
+      | A.Pconst _                             -> assert false
+      | A.Ptuple l                             -> M.Mtuple (List.map f l)
+      | A.Lquantifer (Forall, i, typ, term)    -> M.Mforall (i, ltyp_to_type typ, f term)
+      | A.Lquantifer (Exists, i, typ, term)    -> M.Mexists (i, ltyp_to_type typ, f term)
 
       | A.Pcall (_, A.Cconst A.Cbefore,    [AExpr p]) -> M.Msetbefore    (f p)
       | A.Pcall (_, A.Cconst A.Cunmoved,   [AExpr p]) -> M.Msetunmoved   (f p)
