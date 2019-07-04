@@ -206,8 +206,6 @@ end
 
 let op_to_constr op =
   match op with
-  | `Logical M.And    -> (fun (x, y) -> W.Eand (x, y))
-  | `Logical M.Or     -> (fun (x, y) -> W.Eor (x, y))
   | `Cmp     M.Equal  -> (fun (x, y) -> W.Eequal (x, y))
   | `Cmp     M.Nequal -> (fun (x, y) -> W.Enequal (x, y))
   | `Cmp     M.Gt     -> (fun (x, y) -> W.Egt (x, y))
@@ -324,10 +322,15 @@ let rec expr_to_expr (model : M.model) (expr : M.mterm) : W.expr * W.type_ =
     let expr_e, _ = expr_to_expr model e in
     W.Enot expr_e, to_type expr.type_
 
-  | M.Mlogical (op, l, r) ->
+  | M.Mand (l, r) ->
     let expr_l, _ = expr_to_expr model l in
     let expr_r, _ = expr_to_expr model r in
-    (op_to_constr (`Logical op)) (expr_l, expr_r), to_type expr.type_
+    W.Eand (expr_l, expr_r), to_type expr.type_
+
+  | M.Mor (l, r) ->
+    let expr_l, _ = expr_to_expr model l in
+    let expr_r, _ = expr_to_expr model r in
+    W.Eor (expr_l, expr_r), to_type expr.type_
 
   | M.Mcomp (op, l, r) ->
     let expr_l, _ = expr_to_expr model l in

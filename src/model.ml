@@ -171,13 +171,6 @@ type 'id pattern_gen = {
 type pattern = lident pattern_gen
 [@@deriving show {with_path = false}]
 
-type logical_operator =
-  | And
-  | Or
-  | Imply
-  | Equiv
-[@@deriving show {with_path = false}]
-
 type comparison_operator =
   | Equal
   | Nequal
@@ -211,7 +204,6 @@ type unary_arithmetic_operator =
 [@@deriving show {with_path = false}]
 
 type operator = [
-  | `Logical of logical_operator
   | `Cmp     of comparison_operator
   | `Arith   of arithmetic_operator
   | `Unary   of unary_arithmetic_operator
@@ -282,7 +274,10 @@ type ('id, 'term) mterm_node  =
   | Mappmin       of 'id api_item_gen option * 'id * 'term
   | Mappmax       of 'id api_item_gen option * 'id * 'term
   | Mappfail      of 'id api_item_gen option * 'term
-  | Mlogical      of logical_operator * 'term * 'term
+  | Mand          of 'term * 'term
+  | Mor           of 'term * 'term
+  | Mimply        of 'term * 'term
+  | Mequiv        of 'term * 'term
   | Mnot          of 'term
   | Mcomp         of comparison_operator * 'term * 'term
   | Marith        of arithmetic_operator * 'term * 'term
@@ -687,7 +682,10 @@ let map_term_node (f : 'id mterm_gen -> 'id mterm_gen) = function
   | Mappmin (api, fd, c)     -> Mappmin (api, fd, f c)
   | Mappmax (api, fd, c)     -> Mappmax (api, fd, f c)
   | Mappfail (api, msg)      -> Mappfail (api, f msg)
-  | Mlogical (op, l, r)      -> Mlogical (op, f l, f r)
+  | Mand (l, r)              -> Mand (f l, f r)
+  | Mor (l, r)               -> Mor (f l, f r)
+  | Mimply (l, r)            -> Mimply (f l, f r)
+  | Mequiv  (l, r)           -> Mequiv (f l, f r)
   | Mnot e                   -> Mnot (f e)
   | Mcomp (c, l, r)          -> Mcomp (c, f l, f r)
   | Marith (op, l, r)        -> Marith (op, f l, f r)
@@ -746,7 +744,10 @@ let fold_term (f : 'a -> 't -> 'a) (accu : 'a) (term : 'id mterm_gen) =
   | Mappmin (api, fd, c)     -> f accu c
   | Mappmax (api, fd, c)     -> f accu c
   | Mappfail (api, msg)      -> f accu msg
-  | Mlogical (_, l, r)       -> f (f accu l) r
+  | Mand (l, r)              -> f (f accu l) r
+  | Mor (l, r)               -> f (f accu l) r
+  | Mimply (l, r)            -> f (f accu l) r
+  | Mequiv  (l, r)           -> f (f accu l) r
   | Mnot e                   -> f accu e
   | Mcomp (_, l, r)          -> f (f accu l) r
   | Marith (_, l, r)         -> f (f accu l) r
@@ -902,10 +903,25 @@ let fold_map_term
     let msge, msga = f accu msg in
     g (Mappfail (api, msge)), msga
 
-  | Mlogical (op, l, r) ->
+  | Mand (l, r) ->
     let le, la = f accu l in
     let re, ra = f la r in
-    g (Mlogical (op, le, re)), ra
+    g (Mand (le, re)), ra
+
+  | Mor (l, r) ->
+    let le, la = f accu l in
+    let re, ra = f la r in
+    g (Mor (le, re)), ra
+
+  | Mimply (l, r) ->
+    let le, la = f accu l in
+    let re, ra = f la r in
+    g (Mimply (le, re)), ra
+
+  | Mequiv  (l, r) ->
+    let le, la = f accu l in
+    let re, ra = f la r in
+    g (Mequiv (le, re)), ra
 
   | Mnot e ->
     let ee, ea = f accu e in

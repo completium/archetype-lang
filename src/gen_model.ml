@@ -70,13 +70,6 @@ let to_model (ast : A.model) : M.model =
     | A.LTtrace tr    -> M.Ttrace (to_trtyp tr)
   in
 
-  let to_logical_operator = function
-    | A.And   -> M.And
-    | A.Or    -> M.Or
-    | A.Imply -> M.Imply
-    | A.Equiv -> M.Equiv
-  in
-
   let to_comparison_operator = function
     | A.Equal  -> M.Equal
     | A.Nequal -> M.Nequal
@@ -109,13 +102,13 @@ let to_model (ast : A.model) : M.model =
     | A.OrAssign     -> M.OrAssign
   in
 
-  let to_operator = function
-    | `Logical op -> `Logical (to_logical_operator op)
-    | `Cmp     op -> `Cmp     (to_comparison_operator op)
-    | `Arith   op -> `Arith   (to_arithmetic_operator op)
-    | `Unary   op -> `Unary   (to_unary_arithmetic_operator op)
-    | `Assign  op -> `Assign  (to_assignment_operator op)
-  in
+  (* let to_operator = function
+     | `Logical op -> assert false
+     | `Cmp     op -> `Cmp     (to_comparison_operator op)
+     | `Arith   op -> `Arith   (to_arithmetic_operator op)
+     | `Unary   op -> `Unary   (to_unary_arithmetic_operator op)
+     | `Assign  op -> `Assign  (to_assignment_operator op)
+     in *)
 
   let to_const = function
     | A.Cstate                      -> M.Cstate
@@ -205,24 +198,28 @@ let to_model (ast : A.model) : M.model =
     fun f a ->
       match a with
       | A.AExpr x -> M.AExpr (f x)
-      | A.AEffect l -> M.AEffect (List.map (fun (id, op, term) -> (id, to_operator op, f term)) l)
-      | A.AFun _ -> assert false (* TODO *)
+      (* | A.AEffect l -> M.AEffect (List.map (fun (id, op, term) -> (id, to_operator op, f term)) l)
+         | A.AFun _ -> assert false *)
+      | _ -> assert false (* TODO *)
   in
 
   let to_mterm_node : 't. ((A.lident, 't, (A.lident, 't) A.term_gen) A.term_node) -> ((A.lident, 't) A.term_gen -> M.mterm) -> ('t -> M.type_) -> (M.lident, M.mterm) M.mterm_node =
     fun n f ftyp ->
       match n with
-      | A.Lquantifer (q, i, typ, term)        -> M.Mquantifer (to_quantifier q, i, ltyp_to_type typ, f term)
-      | A.Pif (c, t, e)                       -> M.Mif (f c, f t, f e)
-      | A.Pmatchwith (m, l)                   -> M.Mmatchwith (f m, List.map (fun (p, e) -> (to_pattern p, f e)) l)
-      | A.Plogical (op, l, r)                 -> M.Mlogical (to_logical_operator op, f l, f r)
-      | A.Pnot e                              -> M.Mnot (f e)
-      | A.Pcomp (op, l, r)                    -> M.Mcomp (to_comparison_operator op, f l, f r)
-      | A.Parith (op, l, r)                   -> M.Marith (to_arithmetic_operator op, f l, f r)
-      | A.Puarith (op, e)                     -> M.Muarith (to_unary_arithmetic_operator op, f e)
-      | A.Precord l                           -> M.Mrecord (List.map f l)
-      | A.Pletin (id, init, typ, cont)        -> M.Mletin (id, f init, Option.map ftyp typ, f cont)
-      | A.Pvar id                             ->
+      | A.Lquantifer (q, i, typ, term) -> M.Mquantifer (to_quantifier q, i, ltyp_to_type typ, f term)
+      | A.Pif (c, t, e)                -> M.Mif        (f c, f t, f e)
+      | A.Pmatchwith (m, l)            -> M.Mmatchwith (f m, List.map (fun (p, e) -> (to_pattern p, f e)) l)
+      | A.Plogical (A.And, l, r)       -> M.Mand       (f l, f r)
+      | A.Plogical (A.Or, l, r)        -> M.Mor        (f l, f r)
+      | A.Plogical (A.Imply, l, r)     -> M.Mimply     (f l, f r)
+      | A.Plogical (A.Equiv, l, r)     -> M.Mequiv     (f l, f r)
+      | A.Pnot e                       -> M.Mnot       (f e)
+      | A.Pcomp (op, l, r)             -> M.Mcomp      (to_comparison_operator op, f l, f r)
+      | A.Parith (op, l, r)            -> M.Marith     (to_arithmetic_operator op, f l, f r)
+      | A.Puarith (op, e)              -> M.Muarith    (to_unary_arithmetic_operator op, f e)
+      | A.Precord l                    -> M.Mrecord    (List.map f l)
+      | A.Pletin (id, init, typ, cont) -> M.Mletin     (id, f init, Option.map ftyp typ, f cont)
+      | A.Pvar id                      ->
         let f =
           if A.Utils.is_variable ast id
           then (fun x -> M.Vstorevar x)
