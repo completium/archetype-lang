@@ -181,14 +181,6 @@ type assignment_operator =
   | OrAssign
 [@@deriving show {with_path = false}]
 
-type arithmetic_operator =
-  | Plus
-  | Minus
-  | Mult
-  | Div
-  | Modulo
-[@@deriving show {with_path = false}]
-
 type unary_arithmetic_operator =
   | Uplus
   | Uminus
@@ -268,7 +260,11 @@ type ('id, 'term) mterm_node  =
   | Mge           of 'term * 'term
   | Mlt           of 'term * 'term
   | Mle           of 'term * 'term
-  | Marith        of arithmetic_operator * 'term * 'term
+  | Mplus         of 'term * 'term
+  | Mminus        of 'term * 'term
+  | Mmult         of 'term * 'term
+  | Mdiv          of 'term * 'term
+  | Mmodulo       of 'term * 'term
   | Muarith       of unary_arithmetic_operator * 'term
   | Mrecord       of 'term list
   | Mletin        of 'id * 'term * type_ option * 'term
@@ -681,7 +677,11 @@ let map_term_node (f : 'id mterm_gen -> 'id mterm_gen) = function
   | Mge (l, r)               -> Mge (f l, f r)
   | Mlt (l, r)               -> Mlt (f l, f r)
   | Mle (l, r)               -> Mle (f l, f r)
-  | Marith (op, l, r)        -> Marith (op, f l, f r)
+  | Mplus (l, r)             -> Mplus (f l, f r)
+  | Mminus (l, r)            -> Mminus (f l, f r)
+  | Mmult (l, r)             -> Mmult (f l, f r)
+  | Mdiv (l, r)              -> Mdiv (f l, f r)
+  | Mmodulo (l, r)           -> Mmodulo (f l, f r)
   | Muarith (op, e)          -> Muarith (op, f e)
   | Mrecord l                -> Mrecord (List.map f l)
   | Mletin (i, a, t, b)      -> Mletin (i, f a, t, f b)
@@ -748,7 +748,11 @@ let fold_term (f : 'a -> 't -> 'a) (accu : 'a) (term : 'id mterm_gen) =
   | Mge (l, r)               -> f (f accu l) r
   | Mlt (l, r)               -> f (f accu l) r
   | Mle (l, r)               -> f (f accu l) r
-  | Marith (_, l, r)         -> f (f accu l) r
+  | Mplus (l, r)             -> f (f accu l) r
+  | Mminus (l, r)            -> f (f accu l) r
+  | Mmult (l, r)             -> f (f accu l) r
+  | Mdiv (l, r)              -> f (f accu l) r
+  | Mmodulo (l, r)           -> f (f accu l) r
   | Muarith (_, e)           -> f accu e
   | Mrecord l                -> List.fold_left f accu l
   | Mletin (_, a, _, b)      -> f (f accu a) b
@@ -955,10 +959,30 @@ let fold_map_term
     let re, ra = f la r in
     g (Mle (le, re)), ra
 
-  | Marith (op, l, r) ->
+  | Mplus (l, r) ->
     let le, la = f accu l in
     let re, ra = f la r in
-    g (Marith (op, le, re)), ra
+    g (Mplus (le, re)), ra
+
+  | Mminus (l, r) ->
+    let le, la = f accu l in
+    let re, ra = f la r in
+    g (Mminus (le, re)), ra
+
+  | Mmult (l, r) ->
+    let le, la = f accu l in
+    let re, ra = f la r in
+    g (Mmult (le, re)), ra
+
+  | Mdiv (l, r) ->
+    let le, la = f accu l in
+    let re, ra = f la r in
+    g (Mdiv (le, re)), ra
+
+  | Mmodulo (l, r) ->
+    let le, la = f accu l in
+    let re, ra = f la r in
+    g (Mmodulo (le, re)), ra
 
   | Muarith (op, e) ->
     let ee, ea = f accu e in

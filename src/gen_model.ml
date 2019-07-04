@@ -70,14 +70,6 @@ let to_model (ast : A.model) : M.model =
     | A.LTtrace tr    -> M.Ttrace (to_trtyp tr)
   in
 
-  let to_arithmetic_operator = function
-    | A.Plus   -> M.Plus
-    | A.Minus  -> M.Minus
-    | A.Mult   -> M.Mult
-    | A.Div    -> M.Div
-    | A.Modulo -> M.Modulo
-  in
-
   let to_unary_arithmetic_operator = function
     | A.Uplus  -> M.Uplus
     | A.Uminus -> M.Uminus
@@ -93,13 +85,10 @@ let to_model (ast : A.model) : M.model =
     | A.OrAssign     -> M.OrAssign
   in
 
-  (* let to_operator = function
-     | `Logical op -> assert false
-     | `Cmp     op -> `Cmp     (to_comparison_operator op)
-     | `Arith   op -> `Arith   (to_arithmetic_operator op)
-     | `Unary   op -> `Unary   (to_unary_arithmetic_operator op)
-     | `Assign  op -> `Assign  (to_assignment_operator op)
-     in *)
+  let to_assignment_operator2 = function
+    | `Assign op -> to_assignment_operator op
+    | _ -> assert false
+  in
 
   let to_const = function
     | A.Cstate                      -> M.Cstate
@@ -189,9 +178,8 @@ let to_model (ast : A.model) : M.model =
     fun f a ->
       match a with
       | A.AExpr x -> M.AExpr (f x)
-      (* | A.AEffect l -> M.AEffect (List.map (fun (id, op, term) -> (id, to_operator op, f term)) l)
-         | A.AFun _ -> assert false *)
-      | _ -> assert false (* TODO *)
+      | A.AEffect l -> M.AEffect (List.map (fun (id, op, term) -> (id, to_assignment_operator2 op, f term)) l)
+      | A.AFun _ -> assert false (* TODO *)
   in
 
   let to_mterm_node : 't. ((A.lident, 't, (A.lident, 't) A.term_gen) A.term_node) -> ((A.lident, 't) A.term_gen -> M.mterm) -> ('t -> M.type_) -> (M.lident, M.mterm) M.mterm_node =
@@ -211,7 +199,11 @@ let to_model (ast : A.model) : M.model =
       | A.Pcomp (A.Ge, l, r)           -> M.Mge        (f l, f r)
       | A.Pcomp (A.Lt, l, r)           -> M.Mlt        (f l, f r)
       | A.Pcomp (A.Le, l, r)           -> M.Mle        (f l, f r)
-      | A.Parith (op, l, r)            -> M.Marith     (to_arithmetic_operator op, f l, f r)
+      | A.Parith (A.Plus, l, r)        -> M.Mplus      (f l, f r)
+      | A.Parith (A.Minus, l, r)       -> M.Mminus     (f l, f r)
+      | A.Parith (A.Mult, l, r)        -> M.Mmult      (f l, f r)
+      | A.Parith (A.Div, l, r)         -> M.Mdiv       (f l, f r)
+      | A.Parith (A.Modulo, l, r)      -> M.Mmodulo    (f l, f r)
       | A.Puarith (op, e)              -> M.Muarith    (to_unary_arithmetic_operator op, f e)
       | A.Precord l                    -> M.Mrecord    (List.map f l)
       | A.Pletin (id, init, typ, cont) -> M.Mletin     (id, f init, Option.map ftyp typ, f cont)

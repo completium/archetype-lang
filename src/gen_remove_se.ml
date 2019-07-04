@@ -356,10 +356,30 @@ let rec expr_to_expr (model : M.model) (expr : M.mterm) : W.expr * W.type_ =
     let expr_r, _ = expr_to_expr model r in
     W.Ele (expr_l, expr_r), to_type expr.type_
 
-  | M.Marith (op, l, r) ->
+  | M.Mplus (l, r) ->
     let expr_l, _ = expr_to_expr model l in
     let expr_r, _ = expr_to_expr model r in
-    W.Ele (expr_l, expr_r), to_type expr.type_
+    W.Eplus (expr_l, expr_r), to_type expr.type_
+
+  | M.Mminus (l, r) ->
+    let expr_l, _ = expr_to_expr model l in
+    let expr_r, _ = expr_to_expr model r in
+    W.Eminus (expr_l, expr_r), to_type expr.type_
+
+  | M.Mmult (l, r) ->
+    let expr_l, _ = expr_to_expr model l in
+    let expr_r, _ = expr_to_expr model r in
+    W.Emult (expr_l, expr_r), to_type expr.type_
+
+  | M.Mdiv (l, r) ->
+    let expr_l, _ = expr_to_expr model l in
+    let expr_r, _ = expr_to_expr model r in
+    W.Ediv (expr_l, expr_r), to_type expr.type_
+
+  | M.Mmodulo (l, r) ->
+    let expr_l, _ = expr_to_expr model l in
+    let expr_r, _ = expr_to_expr model r in
+    W.Emodulo (expr_l, expr_r), to_type expr.type_
 
   | M.Mconst c ->
     (
