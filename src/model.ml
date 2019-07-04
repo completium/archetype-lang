@@ -233,12 +233,12 @@ type ('id, 'term) mterm_node  =
   | Msetiterated  of 'term
   | Msettoiterate of 'term
   (* security predicates *)
-(* | MMayBePerformedOnlyByRole   of 'term * 'term
-   | MMayBePerformedOnlyByAction of 'term * 'term
-   | MMayBePerformedByRole       of 'term * 'term
-   | MMayBePerformedByAction     of 'term * 'term
-   | MTransferredBy              of 'term
-   | MTransferredTo              of 'term *)
+  | MsecMayBePerformedOnlyByRole   of 'term * 'term
+  | MsecMayBePerformedOnlyByAction of 'term * 'term
+  | MsecMayBePerformedByRole       of 'term * 'term
+  | MsecMayBePerformedByAction     of 'term * 'term
+  | MsecTransferredBy              of 'term
+  | MsecTransferredTo              of 'term
 [@@deriving show {with_path = false}]
 
 and 'id mterm_gen = {
@@ -674,6 +674,12 @@ let map_term_node (f : 'id mterm_gen -> 'id mterm_gen) = function
   | Mreturn x                -> Mreturn (f x)
   | Mforall (i, t, e)        -> Mforall (i, t, f e)
   | Mexists (i, t, e)        -> Mexists (i, t, f e)
+  | MsecMayBePerformedOnlyByRole   (l, r) -> MsecMayBePerformedOnlyByRole   (f l, f r)
+  | MsecMayBePerformedOnlyByAction (l, r) -> MsecMayBePerformedOnlyByAction (f l, f r)
+  | MsecMayBePerformedByRole       (l, r) -> MsecMayBePerformedByRole       (f l, f r)
+  | MsecMayBePerformedByAction     (l, r) -> MsecMayBePerformedByAction     (f l, f r)
+  | MsecTransferredBy              a      -> MsecTransferredBy              (f a)
+  | MsecTransferredTo              a      -> MsecTransferredTo              (f a)
 
 let map_gen_mterm g f (i : 'id mterm_gen) : 'id mterm_gen =
   {
@@ -763,6 +769,12 @@ let fold_term (f : 'a -> 't -> 'a) (accu : 'a) (term : 'id mterm_gen) =
   | Mreturn x                -> f accu x
   | Mforall (_, _, e)        -> f accu e
   | Mexists (_, _, e)        -> f accu e
+  | MsecMayBePerformedOnlyByRole   (l, r) -> f (f accu l) r
+  | MsecMayBePerformedOnlyByAction (l, r) -> f (f accu l) r
+  | MsecMayBePerformedByRole       (l, r) -> f (f accu l) r
+  | MsecMayBePerformedByAction     (l, r) -> f (f accu l) r
+  | MsecTransferredBy              a      -> f accu a
+  | MsecTransferredTo              a      -> f accu a
 
 let fold_map_term
     (g : ('id, 'term) mterm_node -> 'term)
@@ -1091,6 +1103,34 @@ let fold_map_term
   | Mexists (id, t, e) ->
     let ee, ea = f accu e in
     g (Mexists (id, t, ee)), ea
+
+  | MsecMayBePerformedOnlyByRole (l, r) ->
+    let le, la = f accu l in
+    let re, ra = f la r in
+    g (MsecMayBePerformedOnlyByRole (le, re)), ra
+
+  | MsecMayBePerformedOnlyByAction (l, r) ->
+    let le, la = f accu l in
+    let re, ra = f la r in
+    g (MsecMayBePerformedOnlyByAction (le, re)), ra
+
+  | MsecMayBePerformedByRole (l, r) ->
+    let le, la = f accu l in
+    let re, ra = f la r in
+    g (MsecMayBePerformedByRole (le, re)), ra
+
+  | MsecMayBePerformedByAction (l, r) ->
+    let le, la = f accu l in
+    let re, ra = f la r in
+    g (MsecMayBePerformedByAction (le, re)), ra
+
+  | MsecTransferredBy a ->
+    let ee, ea = f accu a in
+    g (MsecTransferredBy ee), ea
+
+  | MsecTransferredTo a ->
+    let ee, ea = f accu a in
+    g (MsecTransferredTo ee), ea
 
 (* -------------------------------------------------------------------- *)
 module Utils : sig
