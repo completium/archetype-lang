@@ -204,18 +204,6 @@ end = struct
 
 end
 
-(* let op_to_constr op =
-   match op with
-   | `Arith   M.Plus   -> (fun (x, y) -> W.Eplus (x, y))
-   | `Arith   M.Minus  -> (fun (x, y) -> W.Eminus (x, y))
-   | `Arith   M.Mult   -> (fun (x, y) -> W.Emult (x, y))
-   | `Arith   M.Div    -> (fun (x, y) -> W.Ediv (x, y))
-   | `Arith   M.Modulo -> (fun (x, y) -> W.Emodulo (x, y))
-   | _ ->
-    Format.eprintf "op_to_constr: %a@\n" M.pp_operator op;
-    raise (Anomaly (Format.asprintf "Unsupported operator %a@." M.pp_operator op) ) *)
-
-
 let rec expr_to_expr (model : M.model) (expr : M.mterm) : W.expr * W.type_ =
   let compute_return_type t1 t2 : W.type_ =
 
@@ -389,18 +377,11 @@ let rec expr_to_expr (model : M.model) (expr : M.mterm) : W.expr * W.type_ =
     let expr_e, _ = expr_to_expr model e in
     W.Euminus expr_e, to_type expr.type_
 
-  | M.Mconst c ->
-    (
-      match c with
-      | M.Ccaller      -> current_id "sender",  to_type expr.type_
-      | M.Ctransferred -> current_id "amount",  to_type expr.type_
-      | M.Cbalance     -> current_id "balance", to_type expr.type_
-      | M.Cnow         -> current_id "time",    to_type expr.type_
+  | Mnow          -> current_id "time",    to_type expr.type_
+  | Mtransferred  -> current_id "amount",  to_type expr.type_
+  | Mcaller       -> current_id "sender",  to_type expr.type_
+  | Mbalance      -> current_id "balance", to_type expr.type_
 
-      | _ ->
-        Format.eprintf "to_const: %a@\n" M.pp_const c;
-        raise (Anomaly "Not supported yet")
-    )
   | _ ->
     Format.eprintf "expr: %a@\n" M.pp_mterm expr;
     W.Evar "s", W.Tstorage

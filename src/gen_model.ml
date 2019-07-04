@@ -85,48 +85,6 @@ let to_model (ast : A.model) : M.model =
     | _ -> assert false
   in
 
-  let to_const = function
-    | A.Cstate                      -> M.Cstate
-    | A.Cnow                        -> M.Cnow
-    | A.Ctransferred                -> M.Ctransferred
-    | A.Ccaller                     -> M.Ccaller
-    | A.Cfail                       -> M.Cfail
-    | A.Cbalance                    -> M.Cbalance
-    | A.Cconditions                 -> M.Cconditions
-    | A.Cactions                    -> M.Cactions
-    | A.Cnone                       -> M.Cnone
-    | A.Cany                        -> M.Cany
-    | A.Canyaction                  -> M.Canyaction
-    | A.Cget                        -> M.Cget
-    | A.Cadd                        -> M.Cadd
-    | A.Caddnofail                  -> M.Caddnofail
-    | A.Cremove                     -> M.Cremove
-    | A.Cremovenofail               -> M.Cremovenofail
-    | A.Cremoveif                   -> M.Cremoveif
-    | A.Cupdate                     -> M.Cupdate
-    | A.Cupdatenofail               -> M.Cupdatenofail
-    | A.Cclear                      -> M.Cclear
-    | A.Ccontains                   -> M.Ccontains
-    | A.Cnth                        -> M.Cnth
-    | A.Creverse                    -> M.Creverse
-    | A.Cselect                     -> M.Cselect
-    | A.Csort                       -> M.Csort
-    | A.Ccount                      -> M.Ccount
-    | A.Csum                        -> M.Csum
-    | A.Cmax                        -> M.Cmax
-    | A.Cmin                        -> M.Cmin
-    | A.Cmaybeperformedonlybyrole   -> M.Cmaybeperformedonlybyrole
-    | A.Cmaybeperformedonlybyaction -> M.Cmaybeperformedonlybyaction
-    | A.Cmaybeperformedbyrole       -> M.Cmaybeperformedbyrole
-    | A.Cmaybeperformedbyaction     -> M.Cmaybeperformedbyaction
-    | A.Cbefore
-    | A.Cunmoved
-    | A.Cadded
-    | A.Cremoved
-    | A.Citerated
-    | A.Ctoiterate                  -> assert false
-  in
-
   let rec to_qualid_node (n : ('a, 'b) A.qualid_node) : ('id, 'qualid) M.qualid_node =
     match n with
     | A.Qident i    -> M.Qident i
@@ -211,7 +169,12 @@ let to_model (ast : A.model) : M.model =
       | A.Parray l                            -> M.Marray (List.map f l)
       | A.Plit lit                            -> M.Mlit (to_lit_value lit)
       | A.Pdot (d, i)                         -> M.Mdot (f d, i)
-      | A.Pconst c                            -> M.Mconst (to_const c)
+      | A.Pconst Cstate                       -> M.Mstate
+      | A.Pconst Cnow                         -> M.Mnow
+      | A.Pconst Ctransferred                 -> M.Mtransferred
+      | A.Pconst Ccaller                      -> M.Mcaller
+      | A.Pconst Cbalance                     -> M.Mbalance
+      | A.Pconst _                            -> assert false
       | A.Ptuple l                            -> M.Mtuple (List.map f l)
       | A.Lquantifer (Forall, i, typ, term)   -> M.Mforall (i, ltyp_to_type typ, f term)
       | A.Lquantifer (Exists, i, typ, term)   -> M.Mexists (i, ltyp_to_type typ, f term)

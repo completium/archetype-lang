@@ -58,45 +58,6 @@ type type_ =
   | Ttrace of trtyp
 [@@deriving show {with_path = false}]
 
-type const =
-  (* constant *)
-  | Cstate
-  | Cnow
-  | Ctransferred
-  | Ccaller
-  | Cfail
-  | Cbalance
-  | Cconditions
-  | Cactions
-  | Cnone
-  | Cany
-  | Canyaction
-  (* function *)
-  | Cget
-  | Cadd
-  | Caddnofail
-  | Cremove
-  | Cremovenofail
-  | Cremoveif
-  | Cupdate
-  | Cupdatenofail (* if key exists -> update *)
-  | Cclear
-  | Ccontains
-  | Cnth
-  | Creverse
-  | Cselect
-  | Csort
-  | Ccount
-  | Csum
-  | Cmax
-  | Cmin
-  (* predicates *)
-  | Cmaybeperformedonlybyrole
-  | Cmaybeperformedonlybyaction
-  | Cmaybeperformedbyrole
-  | Cmaybeperformedbyaction
-[@@deriving show {with_path = false}]
-
 type 'id storage_const_gen =
   | Get              of 'id
   | Set              of 'id
@@ -209,7 +170,6 @@ type 'id var_kind =
   | Vstorecol of 'id (* asset_name *)
   | Venumval of 'id
   | Vlocal of 'id
-  | Vconst of const
 [@@deriving show {with_path = false}]
 
 type ('id, 'term) mterm_node  =
@@ -258,10 +218,24 @@ type ('id, 'term) mterm_node  =
      | Mvarenumval   of 'id
      | Mvarlocal     of 'id
      | Mvarconst     of const *)
+  | Mstate
+  | Mnow
+  | Mtransferred
+  | Mcaller
+  | Mbalance
   | Marray        of 'term list
   | Mlit          of lit_value
+  (* | Mint          of Core.big_int
+     | Muint         of Core.big_int
+     | Mbool         of bool
+     | Menum         of string
+     | Mrational     of Core.big_int * Core.big_int
+     | Mdate         of string
+     | Mstring       of string
+     | Mcurrency     of Core.big_int * currency
+     | Maddress      of string
+     | Mduration     of string *)
   | Mdot          of 'term * 'id
-  | Mconst        of const
   | Mtuple        of 'term list
   | Mfor          of ('id * 'term * 'term)
   | Mseq          of 'term list
@@ -692,10 +666,14 @@ let map_term_node (f : 'id mterm_gen -> 'id mterm_gen) = function
   | Mrecord l                -> Mrecord (List.map f l)
   | Mletin (i, a, t, b)      -> Mletin (i, f a, t, f b)
   | Mvar v                   -> Mvar v
+  | Mstate                   -> Mstate
+  | Mnow                     -> Mnow
+  | Mtransferred             -> Mtransferred
+  | Mcaller                  -> Mcaller
+  | Mbalance                 -> Mbalance
   | Marray l                 -> Marray (List.map f l)
   | Mlit l                   -> Mlit l
   | Mdot (e, i)              -> Mdot (f e, i)
-  | Mconst c                 -> Mconst c
   | Mtuple l                 -> Mtuple (List.map f l)
   | Mfor (i, c, b)           -> Mfor (i, f c, f b)
   | Mseq is                  -> Mseq (List.map f is)
@@ -768,7 +746,11 @@ let fold_term (f : 'a -> 't -> 'a) (accu : 'a) (term : 'id mterm_gen) =
   | Marray l                 -> List.fold_left f accu l
   | Mlit _                   -> accu
   | Mdot (e, _)              -> f accu e
-  | Mconst _                 -> accu
+  | Mstate                   -> accu
+  | Mnow                     -> accu
+  | Mtransferred             -> accu
+  | Mcaller                  -> accu
+  | Mbalance                 -> accu
   | Mtuple l                 -> List.fold_left f accu l
   | Mfor (i, c, b)           -> f accu b
   | Mseq is                  -> List.fold_left f accu is
@@ -1027,8 +1009,20 @@ let fold_map_term
     let ee, ea = f accu e in
     g (Mdot (ee, id)), ea
 
-  | Mconst c ->
-    g (Mconst c), accu
+  | Mstate ->
+    g Mstate, accu
+
+  | Mnow ->
+    g Mnow, accu
+
+  | Mtransferred ->
+    g Mtransferred, accu
+
+  | Mcaller ->
+    g Mcaller, accu
+
+  | Mbalance ->
+    g Mbalance, accu
 
   | Mtuple l ->
     let (lp, la) = List.fold_left
