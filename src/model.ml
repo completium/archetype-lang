@@ -165,13 +165,6 @@ type 'id qualid_gen = {
 type qualid = lident qualid_gen
 [@@deriving show {with_path = false}]
 
-type 'id var_kind =
-  | Vstorevar of 'id
-  | Vstorecol of 'id (* asset_name *)
-  | Venumval of 'id
-  | Vlocal of 'id
-[@@deriving show {with_path = false}]
-
 type ('id, 'term) mterm_node  =
   | Mif           of ('term * 'term * 'term)
   | Mmatchwith    of 'term * ('id pattern_gen * 'term) list
@@ -212,12 +205,10 @@ type ('id, 'term) mterm_node  =
   | Muminus       of 'term
   | Mrecord       of 'term list
   | Mletin        of 'id * 'term * type_ option * 'term
-  | Mvar          of 'id var_kind
-  (* | Mvarstorevar  of 'id
-     | Mvarstorecol  of 'id
-     | Mvarenumval   of 'id
-     | Mvarlocal     of 'id
-     | Mvarconst     of const *)
+  | Mvarstorevar  of 'id
+  | Mvarstorecol  of 'id
+  | Mvarenumval   of 'id
+  | Mvarlocal     of 'id
   | Mstate
   | Mnow
   | Mtransferred
@@ -665,7 +656,10 @@ let map_term_node (f : 'id mterm_gen -> 'id mterm_gen) = function
   | Muminus e                -> Muminus (f e)
   | Mrecord l                -> Mrecord (List.map f l)
   | Mletin (i, a, t, b)      -> Mletin (i, f a, t, f b)
-  | Mvar v                   -> Mvar v
+  | Mvarstorevar v           -> Mvarstorevar v
+  | Mvarstorecol v           -> Mvarstorecol v
+  | Mvarenumval v            -> Mvarenumval  v
+  | Mvarlocal v              -> Mvarlocal    v
   | Mstate                   -> Mstate
   | Mnow                     -> Mnow
   | Mtransferred             -> Mtransferred
@@ -742,7 +736,10 @@ let fold_term (f : 'a -> 't -> 'a) (accu : 'a) (term : 'id mterm_gen) =
   | Muminus e                -> f accu e
   | Mrecord l                -> List.fold_left f accu l
   | Mletin (_, a, _, b)      -> f (f accu a) b
-  | Mvar _                   -> accu
+  | Mvarstorevar _           -> accu
+  | Mvarstorecol _           -> accu
+  | Mvarenumval _            -> accu
+  | Mvarlocal _              -> accu
   | Marray l                 -> List.fold_left f accu l
   | Mlit _                   -> accu
   | Mdot (e, _)              -> f accu e
@@ -992,8 +989,17 @@ let fold_map_term
     let oe, oa = f ia o in
     g (Mletin (id, i, t, oe)), oa
 
-  | Mvar id ->
-    g (Mvar id), accu
+  | Mvarstorevar v ->
+    g (Mvarstorevar v), accu
+
+  | Mvarstorecol v ->
+    g (Mvarstorecol v), accu
+
+  | Mvarenumval v ->
+    g (Mvarenumval v), accu
+
+  | Mvarlocal v ->
+    g (Mvarlocal v), accu
 
   | Marray l ->
     let (lp, la) = List.fold_left

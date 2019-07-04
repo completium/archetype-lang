@@ -155,17 +155,10 @@ let to_model (ast : A.model) : M.model =
       | A.Puarith (A.Uminus, e)        -> M.Muminus    (f e)
       | A.Precord l                    -> M.Mrecord    (List.map f l)
       | A.Pletin (id, init, typ, cont) -> M.Mletin     (id, f init, Option.map ftyp typ, f cont)
-      | A.Pvar id                      ->
-        let f =
-          if A.Utils.is_variable ast id
-          then (fun x -> M.Vstorevar x)
-          else if A.Utils.is_asset ast id
-          then (fun x -> M.Vstorecol x)
-          else if A.Utils.is_enum_value ast id
-          then (fun x -> M.Venumval x)
-          else (fun x -> M.Vlocal x)
-        in
-        M.Mvar (f id)
+      | A.Pvar id when A.Utils.is_variable ast id   -> M.Mvarstorevar id
+      | A.Pvar id when A.Utils.is_asset ast id      -> M.Mvarstorecol id
+      | A.Pvar id when A.Utils.is_enum_value ast id -> M.Mvarenumval id
+      | A.Pvar id                                   -> M.Mvarlocal id
       | A.Parray l                            -> M.Marray (List.map f l)
       | A.Plit lit                            -> M.Mlit (to_lit_value lit)
       | A.Pdot (d, i)                         -> M.Mdot (f d, i)
@@ -506,7 +499,7 @@ let to_model (ast : A.model) : M.model =
 
     let rec fe (accu : M.api_item list) (term : M.mterm) : M.mterm * M.api_item list =
       match term.node with
-      | M.Mappadd (None, {node = M.Mvar (M.Vstorecol asset_name); _}, _) ->
+      | M.Mappadd (None, {node = M.Mvarstorecol asset_name; _}, _) ->
         let accu = add accu (M.APIStorage (M.Add asset_name)) in
         term, accu
       (* | M.Mapplocal (Aconst c, args) -> (

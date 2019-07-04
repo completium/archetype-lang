@@ -276,7 +276,7 @@ let rec expr_to_expr (model : M.model) (expr : M.mterm) : W.expr * W.type_ =
     let id_b = unloc b in
     W.Edot (expr_a, id_b), to_type expr.type_
 
-  | M.Mvar (Vlocal s) ->
+  | M.Mvarlocal s ->
     let a =
       if Model.Utils.is_storage_attribute model s
       then W.Edot (W.Evar storage_id, unloc s)
