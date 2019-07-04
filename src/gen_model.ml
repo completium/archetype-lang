@@ -70,15 +70,6 @@ let to_model (ast : A.model) : M.model =
     | A.LTtrace tr    -> M.Ttrace (to_trtyp tr)
   in
 
-  let to_comparison_operator = function
-    | A.Equal  -> M.Equal
-    | A.Nequal -> M.Nequal
-    | A.Gt     -> M.Gt
-    | A.Ge     -> M.Ge
-    | A.Lt     -> M.Lt
-    | A.Le     -> M.Le
-  in
-
   let to_arithmetic_operator = function
     | A.Plus   -> M.Plus
     | A.Minus  -> M.Minus
@@ -214,7 +205,12 @@ let to_model (ast : A.model) : M.model =
       | A.Plogical (A.Imply, l, r)     -> M.Mimply     (f l, f r)
       | A.Plogical (A.Equiv, l, r)     -> M.Mequiv     (f l, f r)
       | A.Pnot e                       -> M.Mnot       (f e)
-      | A.Pcomp (op, l, r)             -> M.Mcomp      (to_comparison_operator op, f l, f r)
+      | A.Pcomp (A.Equal, l, r)        -> M.Mequal     (f l, f r)
+      | A.Pcomp (A.Nequal, l, r)       -> M.Mnequal    (f l, f r)
+      | A.Pcomp (A.Gt, l, r)           -> M.Mgt        (f l, f r)
+      | A.Pcomp (A.Ge, l, r)           -> M.Mge        (f l, f r)
+      | A.Pcomp (A.Lt, l, r)           -> M.Mlt        (f l, f r)
+      | A.Pcomp (A.Le, l, r)           -> M.Mle        (f l, f r)
       | A.Parith (op, l, r)            -> M.Marith     (to_arithmetic_operator op, f l, f r)
       | A.Puarith (op, e)              -> M.Muarith    (to_unary_arithmetic_operator op, f e)
       | A.Precord l                    -> M.Mrecord    (List.map f l)

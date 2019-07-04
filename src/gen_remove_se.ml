@@ -204,22 +204,16 @@ end = struct
 
 end
 
-let op_to_constr op =
-  match op with
-  | `Cmp     M.Equal  -> (fun (x, y) -> W.Eequal (x, y))
-  | `Cmp     M.Nequal -> (fun (x, y) -> W.Enequal (x, y))
-  | `Cmp     M.Gt     -> (fun (x, y) -> W.Egt (x, y))
-  | `Cmp     M.Ge     -> (fun (x, y) -> W.Ege (x, y))
-  | `Cmp     M.Lt     -> (fun (x, y) -> W.Elt (x, y))
-  | `Cmp     M.Le     -> (fun (x, y) -> W.Ele (x, y))
-  | `Arith   M.Plus   -> (fun (x, y) -> W.Eplus (x, y))
-  | `Arith   M.Minus  -> (fun (x, y) -> W.Eminus (x, y))
-  | `Arith   M.Mult   -> (fun (x, y) -> W.Emult (x, y))
-  | `Arith   M.Div    -> (fun (x, y) -> W.Ediv (x, y))
-  | `Arith   M.Modulo -> (fun (x, y) -> W.Emodulo (x, y))
-  | _ ->
+(* let op_to_constr op =
+   match op with
+   | `Arith   M.Plus   -> (fun (x, y) -> W.Eplus (x, y))
+   | `Arith   M.Minus  -> (fun (x, y) -> W.Eminus (x, y))
+   | `Arith   M.Mult   -> (fun (x, y) -> W.Emult (x, y))
+   | `Arith   M.Div    -> (fun (x, y) -> W.Ediv (x, y))
+   | `Arith   M.Modulo -> (fun (x, y) -> W.Emodulo (x, y))
+   | _ ->
     Format.eprintf "op_to_constr: %a@\n" M.pp_operator op;
-    raise (Anomaly (Format.asprintf "Unsupported operator %a@." M.pp_operator op) )
+    raise (Anomaly (Format.asprintf "Unsupported operator %a@." M.pp_operator op) ) *)
 
 
 let rec expr_to_expr (model : M.model) (expr : M.mterm) : W.expr * W.type_ =
@@ -332,15 +326,40 @@ let rec expr_to_expr (model : M.model) (expr : M.mterm) : W.expr * W.type_ =
     let expr_r, _ = expr_to_expr model r in
     W.Eor (expr_l, expr_r), to_type expr.type_
 
-  | M.Mcomp (op, l, r) ->
+  | M.Mequal (l, r) ->
     let expr_l, _ = expr_to_expr model l in
     let expr_r, _ = expr_to_expr model r in
-    (op_to_constr (`Cmp op)) (expr_l, expr_r), to_type expr.type_
+    W.Eequal (expr_l, expr_r), to_type expr.type_
+
+  | M.Mnequal (l, r) ->
+    let expr_l, _ = expr_to_expr model l in
+    let expr_r, _ = expr_to_expr model r in
+    W.Enequal (expr_l, expr_r), to_type expr.type_
+
+  | M.Mgt (l, r) ->
+    let expr_l, _ = expr_to_expr model l in
+    let expr_r, _ = expr_to_expr model r in
+    W.Egt (expr_l, expr_r), to_type expr.type_
+
+  | M.Mge (l, r) ->
+    let expr_l, _ = expr_to_expr model l in
+    let expr_r, _ = expr_to_expr model r in
+    W.Ege (expr_l, expr_r), to_type expr.type_
+
+  | M.Mlt (l, r) ->
+    let expr_l, _ = expr_to_expr model l in
+    let expr_r, _ = expr_to_expr model r in
+    W.Elt (expr_l, expr_r), to_type expr.type_
+
+  | M.Mle (l, r) ->
+    let expr_l, _ = expr_to_expr model l in
+    let expr_r, _ = expr_to_expr model r in
+    W.Ele (expr_l, expr_r), to_type expr.type_
 
   | M.Marith (op, l, r) ->
     let expr_l, _ = expr_to_expr model l in
     let expr_r, _ = expr_to_expr model r in
-    (op_to_constr (`Arith op)) (expr_l, expr_r), to_type expr.type_
+    W.Ele (expr_l, expr_r), to_type expr.type_
 
   | M.Mconst c ->
     (

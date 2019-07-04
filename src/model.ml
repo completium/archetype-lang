@@ -171,15 +171,6 @@ type 'id pattern_gen = {
 type pattern = lident pattern_gen
 [@@deriving show {with_path = false}]
 
-type comparison_operator =
-  | Equal
-  | Nequal
-  | Gt
-  | Ge
-  | Lt
-  | Le
-[@@deriving show {with_path = false}]
-
 type assignment_operator =
   | ValueAssign
   | PlusAssign
@@ -201,14 +192,6 @@ type arithmetic_operator =
 type unary_arithmetic_operator =
   | Uplus
   | Uminus
-[@@deriving show {with_path = false}]
-
-type operator = [
-  | `Cmp     of comparison_operator
-  | `Arith   of arithmetic_operator
-  | `Unary   of unary_arithmetic_operator
-  | `Assign  of assignment_operator
-]
 [@@deriving show {with_path = false}]
 
 type lit_value =
@@ -279,7 +262,12 @@ type ('id, 'term) mterm_node  =
   | Mimply        of 'term * 'term
   | Mequiv        of 'term * 'term
   | Mnot          of 'term
-  | Mcomp         of comparison_operator * 'term * 'term
+  | Mequal        of 'term * 'term
+  | Mnequal       of 'term * 'term
+  | Mgt           of 'term * 'term
+  | Mge           of 'term * 'term
+  | Mlt           of 'term * 'term
+  | Mle           of 'term * 'term
   | Marith        of arithmetic_operator * 'term * 'term
   | Muarith       of unary_arithmetic_operator * 'term
   | Mrecord       of 'term list
@@ -313,7 +301,7 @@ and mterm = lident mterm_gen
 
 and ('id, 'term) term_arg_gen =
   | AExpr   of 'id mterm_gen
-  | AEffect of ('id * operator * 'term) list
+  | AEffect of ('id * assignment_operator * 'term) list
 [@@deriving show {with_path = false}]
 
 and term_arg = (lident, mterm) term_arg_gen
@@ -687,7 +675,12 @@ let map_term_node (f : 'id mterm_gen -> 'id mterm_gen) = function
   | Mimply (l, r)            -> Mimply (f l, f r)
   | Mequiv  (l, r)           -> Mequiv (f l, f r)
   | Mnot e                   -> Mnot (f e)
-  | Mcomp (c, l, r)          -> Mcomp (c, f l, f r)
+  | Mequal (l, r)            -> Mequal (f l, f r)
+  | Mnequal (l, r)           -> Mnequal (f l, f r)
+  | Mgt (l, r)               -> Mgt (f l, f r)
+  | Mge (l, r)               -> Mge (f l, f r)
+  | Mlt (l, r)               -> Mlt (f l, f r)
+  | Mle (l, r)               -> Mle (f l, f r)
   | Marith (op, l, r)        -> Marith (op, f l, f r)
   | Muarith (op, e)          -> Muarith (op, f e)
   | Mrecord l                -> Mrecord (List.map f l)
@@ -749,7 +742,12 @@ let fold_term (f : 'a -> 't -> 'a) (accu : 'a) (term : 'id mterm_gen) =
   | Mimply (l, r)            -> f (f accu l) r
   | Mequiv  (l, r)           -> f (f accu l) r
   | Mnot e                   -> f accu e
-  | Mcomp (_, l, r)          -> f (f accu l) r
+  | Mequal (l, r)            -> f (f accu l) r
+  | Mnequal (l, r)           -> f (f accu l) r
+  | Mgt (l, r)               -> f (f accu l) r
+  | Mge (l, r)               -> f (f accu l) r
+  | Mlt (l, r)               -> f (f accu l) r
+  | Mle (l, r)               -> f (f accu l) r
   | Marith (_, l, r)         -> f (f accu l) r
   | Muarith (_, e)           -> f accu e
   | Mrecord l                -> List.fold_left f accu l
@@ -927,10 +925,35 @@ let fold_map_term
     let ee, ea = f accu e in
     g (Mnot ee), ea
 
-  | Mcomp (op, l, r) ->
+  | Mequal (l, r) ->
     let le, la = f accu l in
     let re, ra = f la r in
-    g (Mcomp (op, le, re)), ra
+    g (Mequal (le, re)), ra
+
+  | Mnequal (l, r) ->
+    let le, la = f accu l in
+    let re, ra = f la r in
+    g (Mnequal (le, re)), ra
+
+  | Mgt (l, r) ->
+    let le, la = f accu l in
+    let re, ra = f la r in
+    g (Mgt (le, re)), ra
+
+  | Mge (l, r) ->
+    let le, la = f accu l in
+    let re, ra = f la r in
+    g (Mge (le, re)), ra
+
+  | Mlt (l, r) ->
+    let le, la = f accu l in
+    let re, ra = f la r in
+    g (Mlt (le, re)), ra
+
+  | Mle (l, r) ->
+    let le, la = f accu l in
+    let re, ra = f la r in
+    g (Mle (le, re)), ra
 
   | Marith (op, l, r) ->
     let le, la = f accu l in

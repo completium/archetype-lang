@@ -656,7 +656,7 @@ let rec map_term (t : M.mterm) : loc_term = mk_loc t.loc (
     match t.node with
     | M.Mlit b -> map_bval b
     | M.Mvar (Vlocal i) -> Tvar (map_lident i)
-    | M.Mcomp (M.Gt,t1,t2) -> Tgt (with_dummy_loc Tyint,map_term t1,map_term t2)
+    | M.Mgt (t1,t2) -> Tgt (with_dummy_loc Tyint,map_term t1,map_term t2)
     | _ -> Tnottranslated
   )
 
