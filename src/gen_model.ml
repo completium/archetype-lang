@@ -253,22 +253,22 @@ let to_model (ast : A.model) : M.model =
                      @ List.map (fun x -> to_term_arg f x) args)
 
       | A.Pcall (Some p, A.Cconst A.Cget, [AExpr q]) ->
-        M.Mappget (f p, f q)
+        M.Mappget (None, f p, f q)
 
       | A.Pcall (Some p, A.Cconst (A.Ccontains), [AExpr q]) ->
-        M.Mappcontains (f p, f q)
+        M.Mappcontains (None, f p, f q)
 
       | A.Pcall (None, A.Cconst (A.Ccontains), [AExpr p; AExpr q]) ->
-        M.Mappcontains (f p, f q)
+        M.Mappcontains (None, f p, f q)
 
       | A.Pcall (None, A.Cconst (A.Csum), [AExpr p; AExpr q]) ->
-        M.Mappsum (Location.dumloc "TODO", f q)
+        M.Mappsum (None, Location.dumloc "TODO", f q)
 
       | A.Pcall (Some p, A.Cconst (A.Csum), [AExpr q]) ->
-        M.Mappsum (Location.dumloc "TODO", f q)
+        M.Mappsum (None, Location.dumloc "TODO", f q)
 
       | A.Pcall (None, A.Cconst (A.Cselect), [_; _]) ->
-        M.Mappselect
+        M.Mappselect None
 
       | A.Pcall (aux, A.Cconst c, args) ->
         Format.eprintf "expr const unkown: %a with nb args: %d %s@." A.pp_const c (List.length args) (match aux with | Some _ -> "with aux" | _ -> "without aux");
@@ -307,25 +307,25 @@ let to_model (ast : A.model) : M.model =
     | A.Icall (i, Cid id, args) -> M.Mapplocal (id, Option.map_dfl (fun v -> [M.AExpr (to_mterm v)]) [] i @ List.map (to_term_arg f) args)
 
     | A.Icall (_, A.Cconst (A.Cfail), [AExpr p]) ->
-      M.Mappfail (f p)
+      M.Mappfail (None, f p)
 
     | A.Icall (None, A.Cconst (A.Cadd), [AExpr p; AExpr q]) ->
-      M.Mappadd (f p, f q)
+      M.Mappadd (None, f p, f q)
 
     | A.Icall (Some p, A.Cconst (A.Cadd), [AExpr q]) ->
-      M.Mappadd (f p, f q)
+      M.Mappadd (None, f p, f q)
 
     | A.Icall (None, A.Cconst (A.Cremove), [AExpr p; AExpr q]) ->
-      M.Mappremove (f p, f q)
+      M.Mappremove (None, f p, f q)
 
     | A.Icall (Some p, A.Cconst (A.Cremove), [AExpr q]) ->
-      M.Mappremove (f p, f q)
+      M.Mappremove (None, f p, f q)
 
     | A.Icall (Some _, A.Cconst (A.Cupdate), [_; _]) ->
-      M.Mappupdate
+      M.Mappupdate None
 
     | A.Icall (Some p, A.Cconst (A.Cupdate), [AExpr q]) ->
-      M.Mappupdate
+      M.Mappupdate None
 
     | A.Icall (_, A.Cconst (A.Cremoveif), _) ->
       M.Mseq []
@@ -535,31 +535,31 @@ let to_model (ast : A.model) : M.model =
         i::l
     in
 
-    let _mk_function c (args : M.term_arg list) : (M.storage_const * M.mterm) option =
-      let nth_arg n =
+    (* let _mk_function c (args : M.term_arg list) : (M.storage_const * M.mterm) option =
+       let nth_arg n =
         let arg = List.nth args n in
         match arg with
         | AExpr v -> v
         | _ -> assert false
-      in
+       in
 
-      match c, args with
-      | M.Cget     , AExpr { type_ = M.Tcontainer (Tasset asset, _); _}::AExpr a::[] -> Some (M.Get asset,      M.mk_mterm (M.Mappget (nth_arg 0, a))    (M.Tasset asset))
-      | M.Cadd     , AExpr { type_ = M.Tcontainer (Tasset asset, _); _}::AExpr a::[] -> Some (M.Add asset,      M.mk_mterm (M.Mappadd (nth_arg 0, a))    (M.Tasset asset))
-      | M.Cremove  , AExpr { type_ = M.Tcontainer (Tasset asset, _); _}::AExpr a::[] -> Some (M.Remove asset,   M.mk_mterm (M.Mappremove (nth_arg 0, a)) (M.Tasset asset))
-      | M.Cclear   , AExpr { type_ = M.Tcontainer (Tasset asset, _); _}::[]          -> Some (M.Clear asset,    M.mk_mterm (M.Mappclear (nth_arg 0))     (M.Tasset asset))
-      | M.Cupdate  , AExpr { type_ = M.Tcontainer (Tasset asset, _); _}::_           -> Some (M.Update asset,   M.mk_mterm (M.Mappupdate)                (M.Tasset asset))
-      | M.Creverse , AExpr { type_ = M.Tcontainer (Tasset asset, _); _}::[]          -> Some (M.Reverse asset,  M.mk_mterm (M.Mappreverse (nth_arg 0))   (M.Tasset asset))
-      | M.Csort    , AExpr { type_ = M.Tcontainer (Tasset asset, _); _}::_           -> Some (M.Sort asset,     M.mk_mterm (M.Mappsort)                  (M.Tasset asset))
-      | M.Ccontains, AExpr { type_ = M.Tcontainer (Tasset asset, _); _}::AExpr a::[] -> Some (M.Contains asset, M.mk_mterm (M.Mappget (nth_arg 0, a))    (M.Tasset asset))
-      | M.Cnth     , AExpr { type_ = M.Tcontainer (Tasset asset, _); _}::AExpr a::[] -> Some (M.Nth asset,      M.mk_mterm (M.Mappnth (nth_arg 0, a))    (M.Tasset asset))
-      | M.Cselect  , AExpr { type_ = M.Tcontainer (Tasset asset, _); _}::_           -> Some (M.Select asset,   M.mk_mterm (M.Mappselect)                (M.Tasset asset))
-      | M.Ccount   , AExpr { type_ = M.Tcontainer (Tasset asset, _); _}::[]          -> Some (M.Count asset,    M.mk_mterm (M.Mappcount (nth_arg 0))     (M.Tasset asset))
-      | M.Csum     , AExpr { type_ = M.Tcontainer (Tasset asset, _); _}::AExpr { node = M.Mvar (Vlocal field); _}::_ -> Some (M.Sum (asset, field),    M.mk_mterm (M.Mappsum (field, nth_arg 0)) (M.Tasset asset))
-      | M.Cmin     , AExpr { type_ = M.Tcontainer (Tasset asset, _); _}::AExpr { node = M.Mvar (Vlocal field); _}::_ -> Some (M.Min (asset, field),    M.mk_mterm (M.Mappmax (field, nth_arg 0)) (M.Tasset asset))
-      | M.Cmax     , AExpr { type_ = M.Tcontainer (Tasset asset, _); _}::AExpr { node = M.Mvar (Vlocal field); _}::_ -> Some (M.Max (asset, field),    M.mk_mterm (M.Mappmin (field, nth_arg 0)) (M.Tasset asset))
-      | _ -> None
-    in
+       match c, args with
+       | M.Cget     , AExpr { type_ = M.Tcontainer (Tasset asset, _); _}::AExpr a::[] -> Some (M.Get asset,      M.mk_mterm (M.Mappget (nth_arg 0, a))    (M.Tasset asset))
+       | M.Cadd     , AExpr { type_ = M.Tcontainer (Tasset asset, _); _}::AExpr a::[] -> Some (M.Add asset,      M.mk_mterm (M.Mappadd (nth_arg 0, a))    (M.Tasset asset))
+       | M.Cremove  , AExpr { type_ = M.Tcontainer (Tasset asset, _); _}::AExpr a::[] -> Some (M.Remove asset,   M.mk_mterm (M.Mappremove (nth_arg 0, a)) (M.Tasset asset))
+       | M.Cclear   , AExpr { type_ = M.Tcontainer (Tasset asset, _); _}::[]          -> Some (M.Clear asset,    M.mk_mterm (M.Mappclear (nth_arg 0))     (M.Tasset asset))
+       | M.Cupdate  , AExpr { type_ = M.Tcontainer (Tasset asset, _); _}::_           -> Some (M.Update asset,   M.mk_mterm (M.Mappupdate)                (M.Tasset asset))
+       | M.Creverse , AExpr { type_ = M.Tcontainer (Tasset asset, _); _}::[]          -> Some (M.Reverse asset,  M.mk_mterm (M.Mappreverse (nth_arg 0))   (M.Tasset asset))
+       | M.Csort    , AExpr { type_ = M.Tcontainer (Tasset asset, _); _}::_           -> Some (M.Sort asset,     M.mk_mterm (M.Mappsort)                  (M.Tasset asset))
+       | M.Ccontains, AExpr { type_ = M.Tcontainer (Tasset asset, _); _}::AExpr a::[] -> Some (M.Contains asset, M.mk_mterm (M.Mappget (nth_arg 0, a))    (M.Tasset asset))
+       | M.Cnth     , AExpr { type_ = M.Tcontainer (Tasset asset, _); _}::AExpr a::[] -> Some (M.Nth asset,      M.mk_mterm (M.Mappnth (nth_arg 0, a))    (M.Tasset asset))
+       | M.Cselect  , AExpr { type_ = M.Tcontainer (Tasset asset, _); _}::_           -> Some (M.Select asset,   M.mk_mterm (M.Mappselect)                (M.Tasset asset))
+       | M.Ccount   , AExpr { type_ = M.Tcontainer (Tasset asset, _); _}::[]          -> Some (M.Count asset,    M.mk_mterm (M.Mappcount (nth_arg 0))     (M.Tasset asset))
+       | M.Csum     , AExpr { type_ = M.Tcontainer (Tasset asset, _); _}::AExpr { node = M.Mvar (Vlocal field); _}::_ -> Some (M.Sum (asset, field),    M.mk_mterm (M.Mappsum (field, nth_arg 0)) (M.Tasset asset))
+       | M.Cmin     , AExpr { type_ = M.Tcontainer (Tasset asset, _); _}::AExpr { node = M.Mvar (Vlocal field); _}::_ -> Some (M.Min (asset, field),    M.mk_mterm (M.Mappmax (field, nth_arg 0)) (M.Tasset asset))
+       | M.Cmax     , AExpr { type_ = M.Tcontainer (Tasset asset, _); _}::AExpr { node = M.Mvar (Vlocal field); _}::_ -> Some (M.Max (asset, field),    M.mk_mterm (M.Mappmin (field, nth_arg 0)) (M.Tasset asset))
+       | _ -> None
+       in *)
 
     let ge (e : M.mterm) = (fun node -> { e with node = node }) in
 

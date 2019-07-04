@@ -249,7 +249,7 @@ let rec expr_to_expr (model : M.model) (expr : M.mterm) : W.expr * W.type_ =
     let expr_body, type_body = expr_to_expr model body in
     expr_body, W.Tstorage
 
-  | M.Mapplocal (_, id, args) ->
+  | M.Mapplocal (id, args) ->
     let args =
       W.Evar "s"::(List.map (fun x ->
           match x with

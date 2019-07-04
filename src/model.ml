@@ -268,8 +268,8 @@ type ('id, 'term) mterm_node  =
   | Mquantifer   of quantifier * 'id * type_ * 'term
   | Mif          of ('term * 'term * 'term)
   | Mmatchwith   of 'term * ('id pattern_gen * 'term) list
-  | Mapplocal    of 'id api_item_gen option * 'id * (('id, 'term) term_arg_gen) list
-  | Mappset      of 'id api_item_gen option * const_vset * 'term
+  | Mapplocal    of 'id * (('id, 'term) term_arg_gen) list
+  | Mappset      of const_vset * 'term
   | Mappexternal of 'id api_item_gen option * 'id * 'id * 'term * ('term) list
   | Mappget      of 'id api_item_gen option * 'term * 'term
   | Mappadd      of 'id api_item_gen option * 'term * 'term
@@ -665,11 +665,11 @@ let map_term_node (f : 'id mterm_gen -> 'id mterm_gen) = function
   | Mquantifer (q, i, t, e) -> Mquantifer (q, i, t, f e)
   | Mif (c, t, e)           -> Mif (f c, f t, f e)
   | Mmatchwith (e, l)       -> Mmatchwith (e, List.map (fun (p, e) -> (p, f e)) l)
-  | Mapplocal (api, e, args) ->
-    Mapplocal (api, e, List.map (fun (arg : ('id, 'term) term_arg_gen) -> match arg with
+  | Mapplocal (e, args) ->
+    Mapplocal (e, List.map (fun (arg : ('id, 'term) term_arg_gen) -> match arg with
         | AExpr e   -> AExpr (f e)
         | AEffect l -> AEffect (List.map (fun (id, op, e) -> (id, op, f e)) l)) args)
-  | Mappset (api, c, e)          -> Mappset (api, c, f e)
+  | Mappset (c, e)           -> Mappset (c, f e)
   | Mappexternal (api, t, func, c, args) -> Mappexternal (api, t, func, f c, List.map f args)
   | Mappget (api, c, k)      -> Mappget (api, f c, f k)
   | Mappadd (api, c, i)      -> Mappadd (api, f c, f i)
@@ -720,10 +720,10 @@ let fold_term (f : 'a -> 't -> 'a) (accu : 'a) (term : 'id mterm_gen) =
   | Mquantifer (_, _, _, e) -> f accu e
   | Mif (c, t, e)           -> f (f (f accu c) t) e
   | Mmatchwith (e, l)       -> List.fold_left (fun accu (_, a) -> f accu a) (f accu e) l
-  | Mapplocal (api, _, args)     -> List.fold_left (fun accu (arg : ('id, 'term) term_arg_gen) -> match arg with
+  | Mapplocal (_, args)     -> List.fold_left (fun accu (arg : ('id, 'term) term_arg_gen) -> match arg with
       | AExpr e -> f accu e
       | AEffect l -> List.fold_left (fun accu (_, _, e) -> f accu e) accu l ) accu args
-  | Mappset (api, c, e)          -> f accu e
+  | Mappset (c, e)          -> f accu e
   | Mappexternal (api, t, func, c, args) -> List.fold_left f (f accu c) args
   | Mappget (api, c, k)      -> f (f accu k) c
   | Mappadd (api, c, i)      -> f (f accu c) i
@@ -789,7 +789,7 @@ let fold_map_term
 
     g (Mmatchwith (ee, l)), psa
 
-  | Mapplocal (api, id, args) ->
+  | Mapplocal (id, args) ->
     let ((argss, argsa) : 'c list * 'a) =
       List.fold_left
         (fun (pterms, accu) (x : ('id, 'term) term_arg_gen) ->
@@ -800,11 +800,11 @@ let fold_map_term
            let x = match p with | Some a -> a | None -> x in
            pterms @ [x], accu) ([], accu) args
     in
-    g (Mapplocal (api, id, argss)), argsa
+    g (Mapplocal (id, argss)), argsa
 
-  | Mappset (api, c, e) ->
+  | Mappset (c, e) ->
     let ee, ea = f accu e in
-    g (Mappset (api, c, ee)), ea
+    g (Mappset (c, ee)), ea
 
   | Mappexternal (api, t, func, c, args) ->
     let ce, ca = f accu c in
@@ -1035,14 +1035,14 @@ end = struct
     | Reverse        _ -> "reverse"
 
   let function_name_from_function_const = function
-    | Select    aid       -> "select"   ^ lident_to_string aid
-    | Sort     (aid, fid) -> "sort"     ^ lident_to_string aid ^ "_" ^ lident_to_string fid
-    | Contains  aid       -> "contains" ^ lident_to_string aid
-    | Nth       aid       -> "nth"      ^ lident_to_string aid
-    | Count     aid       -> "count"    ^ lident_to_string aid
-    | Sum      (aid, fid) -> "sum"      ^ lident_to_string aid ^ "_" ^ lident_to_string fid
-    | Min      (aid, fid) -> "min"      ^ lident_to_string aid ^ "_" ^ lident_to_string fid
-    | Max      (aid, fid) -> "max"      ^ lident_to_string aid ^ "_" ^ lident_to_string fid
+    | Select    aid       -> "select_"   ^ lident_to_string aid
+    | Sort     (aid, fid) -> "sort_"     ^ lident_to_string aid ^ "_" ^ lident_to_string fid
+    | Contains  aid       -> "contains_" ^ lident_to_string aid
+    | Nth       aid       -> "nth_"      ^ lident_to_string aid
+    | Count     aid       -> "count_"    ^ lident_to_string aid
+    | Sum      (aid, fid) -> "sum_"      ^ lident_to_string aid ^ "_" ^ lident_to_string fid
+    | Min      (aid, fid) -> "min_"      ^ lident_to_string aid ^ "_" ^ lident_to_string fid
+    | Max      (aid, fid) -> "max_"      ^ lident_to_string aid ^ "_" ^ lident_to_string fid
 
   let is_record (d : decl_node) : bool =
     match d with
