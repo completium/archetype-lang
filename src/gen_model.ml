@@ -463,63 +463,83 @@ let to_model (ast : A.model) : M.model =
         i::l
     in
 
-    (* let _mk_function c (args : M.term_arg list) : (M.storage_const * M.mterm) option =
-       let nth_arg n =
-        let arg = List.nth args n in
-        match arg with
-        | AExpr v -> v
-        | _ -> assert false
-       in
-
-       match c, args with
-       | M.Cget     , AExpr { type_ = M.Tcontainer (Tasset asset, _); _}::AExpr a::[] -> Some (M.Get asset,      M.mk_mterm (M.Mappget (nth_arg 0, a))    (M.Tasset asset))
-       | M.Cadd     , AExpr { type_ = M.Tcontainer (Tasset asset, _); _}::AExpr a::[] -> Some (M.Add asset,      M.mk_mterm (M.Mappadd (nth_arg 0, a))    (M.Tasset asset))
-       | M.Cremove  , AExpr { type_ = M.Tcontainer (Tasset asset, _); _}::AExpr a::[] -> Some (M.Remove asset,   M.mk_mterm (M.Mappremove (nth_arg 0, a)) (M.Tasset asset))
-       | M.Cclear   , AExpr { type_ = M.Tcontainer (Tasset asset, _); _}::[]          -> Some (M.Clear asset,    M.mk_mterm (M.Mappclear (nth_arg 0))     (M.Tasset asset))
-       | M.Cupdate  , AExpr { type_ = M.Tcontainer (Tasset asset, _); _}::_           -> Some (M.Update asset,   M.mk_mterm (M.Mappupdate)                (M.Tasset asset))
-       | M.Creverse , AExpr { type_ = M.Tcontainer (Tasset asset, _); _}::[]          -> Some (M.Reverse asset,  M.mk_mterm (M.Mappreverse (nth_arg 0))   (M.Tasset asset))
-       | M.Csort    , AExpr { type_ = M.Tcontainer (Tasset asset, _); _}::_           -> Some (M.Sort asset,     M.mk_mterm (M.Mappsort)                  (M.Tasset asset))
-       | M.Ccontains, AExpr { type_ = M.Tcontainer (Tasset asset, _); _}::AExpr a::[] -> Some (M.Contains asset, M.mk_mterm (M.Mappget (nth_arg 0, a))    (M.Tasset asset))
-       | M.Cnth     , AExpr { type_ = M.Tcontainer (Tasset asset, _); _}::AExpr a::[] -> Some (M.Nth asset,      M.mk_mterm (M.Mappnth (nth_arg 0, a))    (M.Tasset asset))
-       | M.Cselect  , AExpr { type_ = M.Tcontainer (Tasset asset, _); _}::_           -> Some (M.Select asset,   M.mk_mterm (M.Mappselect)                (M.Tasset asset))
-       | M.Ccount   , AExpr { type_ = M.Tcontainer (Tasset asset, _); _}::[]          -> Some (M.Count asset,    M.mk_mterm (M.Mappcount (nth_arg 0))     (M.Tasset asset))
-       | M.Csum     , AExpr { type_ = M.Tcontainer (Tasset asset, _); _}::AExpr { node = M.Mvar (Vlocal field); _}::_ -> Some (M.Sum (asset, field),    M.mk_mterm (M.Mappsum (field, nth_arg 0)) (M.Tasset asset))
-       | M.Cmin     , AExpr { type_ = M.Tcontainer (Tasset asset, _); _}::AExpr { node = M.Mvar (Vlocal field); _}::_ -> Some (M.Min (asset, field),    M.mk_mterm (M.Mappmax (field, nth_arg 0)) (M.Tasset asset))
-       | M.Cmax     , AExpr { type_ = M.Tcontainer (Tasset asset, _); _}::AExpr { node = M.Mvar (Vlocal field); _}::_ -> Some (M.Max (asset, field),    M.mk_mterm (M.Mappmin (field, nth_arg 0)) (M.Tasset asset))
-       | _ -> None
-       in *)
-
     let ge (e : M.mterm) = (fun node -> { e with node = node }) in
 
     let rec fe (accu : M.api_item list) (term : M.mterm) : M.mterm * M.api_item list =
       match term.node with
+      | M.Mappget (None, {node = M.Mvarstorecol asset_name; _}, _) ->
+        let term, accu = M.fold_map_term (ge term) fe accu term in
+        let accu = add accu (M.APIStorage (M.Get asset_name)) in
+        term, accu
       | M.Mappadd (None, {node = M.Mvarstorecol asset_name; _}, _) ->
+        let term, accu = M.fold_map_term (ge term) fe accu term in
         let accu = add accu (M.APIStorage (M.Add asset_name)) in
         term, accu
-      (* | M.Mapplocal (Aconst c, args) -> (
-          let args, accu = List.fold_left
-              (fun ((ps, accus) : M.term_arg list * M.api_item list) (x : M.term_arg) ->
-                 let arg, accu = match x with
-                   | M.AExpr v   -> M.fold_map_term (ge v) fe accu v |> fun (x, y) -> M.AExpr x, y
-                   | M.AEffect l ->
-                     let ll, accu = List.fold_left (fun (ps, accu) ((i, j, k) : (M.lident * M.operator * M.mterm)) ->
-                         let a, accu = M.fold_map_term (ge k) fe accu k in
-                         ps @ [(i, j, a)], accu
-                       ) ([], accu) l in
-                     M.AEffect ll, accu
-                 in
-                 ps @ [arg], accu
-              ) ([], accu) args in
-          let _, accu = M.fold_map_term (ge term) fe accu term in
-          let function__ = mk_function c args in
-          let term, accu =
-            match function__ with
-            | Some (const, mterm) -> (
-                mterm, add accu (M.APIStorage const)
-              )
-            | None -> term, accu in
-          term, accu
-         ) *)
+      | M.Mappadd (None, {node = M.Mdot ({type_ = M.Tasset asset_name ; _}, f); _}, _) ->
+        let term, accu = M.fold_map_term (ge term) fe accu term in
+        let accu = add accu (M.APIStorage (M.UpdateAdd (asset_name, f))) in
+        term, accu
+      | M.Mappremove (None, {node = M.Mvarstorecol asset_name; _}, _) ->
+        let term, accu = M.fold_map_term (ge term) fe accu term in
+        let accu = add accu (M.APIStorage (M.Remove asset_name)) in
+        term, accu
+      | M.Mappremove (None, {node = M.Mdot ({type_ = M.Tasset asset_name ; _}, f); _}, _) ->
+        let term, accu = M.fold_map_term (ge term) fe accu term in
+        let accu = add accu (M.APIStorage (M.UpdateRemove (asset_name, f))) in
+        term, accu
+      | M.Mappclear (None, {node = M.Mvarstorecol asset_name; _}) ->
+        let term, accu = M.fold_map_term (ge term) fe accu term in
+        let accu = add accu (M.APIStorage (M.Clear asset_name)) in
+        term, accu
+      | M.Mappclear (None, {node = M.Mdot ({type_ = M.Tasset asset_name ; _}, f); _}) ->
+        let term, accu = M.fold_map_term (ge term) fe accu term in
+        let accu = add accu (M.APIStorage (M.UpdateClear (asset_name, f))) in
+        term, accu
+      (* | M.Mappupdate (None, {node = M.Mvarstorecol asset_name; _}, _) ->
+         let term, accu = M.fold_map_term (ge term) fe accu term in
+         let accu = add accu (M.APIStorage (M.Up asset_name)) in
+         term, accu *)
+      | M.Mappreverse (None, {node = M.Mvarstorecol asset_name; _}) ->
+        let term, accu = M.fold_map_term (ge term) fe accu term in
+        let accu = add accu (M.APIStorage (M.Reverse asset_name)) in
+        term, accu
+      | M.Mappreverse (None, {node = M.Mdot ({type_ = M.Tasset asset_name ; _}, f); _}) ->
+        let term, accu = M.fold_map_term (ge term) fe accu term in
+        let accu = add accu (M.APIStorage (M.UpdateReverse (asset_name, f))) in
+        term, accu
+      (* | M.Mappselect (None, {node = M.Mvarstorecol asset_name; _}, _) ->
+         let term, accu = M.fold_map_term (ge term) fe accu term in
+         let accu = add accu (M.APIStorage (M.Select asset_name)) in
+         term, accu *)
+      (* | M.Mappsort (None, {node = M.Mvarstorecol asset_name; _}, _) ->
+         let term, accu = M.fold_map_term (ge term) fe accu term in
+         let accu = add accu (M.APIStorage (M.Sort asset_name)) in
+         term, accu *)
+      | M.Mappcontains (None, {type_ = M.Tcontainer (M.Tasset asset_name, _) ; _}, _) ->
+        let term, accu = M.fold_map_term (ge term) fe accu term in
+        let accu = add accu (M.APIFunction (M.Contains asset_name)) in
+        term, accu
+      | M.Mappnth (None, {type_ = M.Tcontainer (M.Tasset asset_name, _) ; _}, _) ->
+        let term, accu = M.fold_map_term (ge term) fe accu term in
+        let accu = add accu (M.APIFunction (M.Nth asset_name)) in
+        term, accu
+      | M.Mappcount (None, {type_ = M.Tcontainer (M.Tasset asset_name, _) ; _}) ->
+        let term, accu = M.fold_map_term (ge term) fe accu term in
+        let accu = add accu (M.APIFunction (M.Count asset_name)) in
+        term, accu
+      | M.Mappsum (None, field_name, {type_ = M.Tcontainer (M.Tasset asset_name, _) ; _}) ->
+        let term, accu = M.fold_map_term (ge term) fe accu term in
+        let accu = add accu (M.APIFunction (M.Sum (asset_name, field_name))) in
+        term, accu
+      | M.Mappmin (None, field_name, {type_ = M.Tcontainer (M.Tasset asset_name, _) ; _}) ->
+        let term, accu = M.fold_map_term (ge term) fe accu term in
+        let accu = add accu (M.APIFunction (M.Min (asset_name, field_name))) in
+        term, accu
+      | M.Mappmax (None, field_name, {type_ = M.Tcontainer (M.Tasset asset_name, _) ; _}) ->
+        let term, accu = M.fold_map_term (ge term) fe accu term in
+        let accu = add accu (M.APIFunction (M.Max (asset_name, field_name))) in
+        term, accu
+
       | _ -> M.fold_map_term (ge term) fe accu term in
 
     let process_mterm (accu : M.api_item list) (expr : M.mterm) : M.mterm * M.api_item list =

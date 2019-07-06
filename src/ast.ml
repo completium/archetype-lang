@@ -1101,7 +1101,7 @@ let create_miles_with_expiration_ast () =
                                    ~type_:(Tbuiltin VTbool))
                     ~label:(dumloc "c1")]
 
-        ~effect:(mk_instr (Iif (mk_sp (Pcall (Some (mk_sp ~type_:(Tasset (dumloc "mile")) (Pvar (dumloc "owner"))),
+        ~effect:(mk_instr (Iif (mk_sp (Pcall (Some (mk_sp ~type_:(Tcontainer (Tasset (dumloc "owner"), Partition)) (Pvar (dumloc "owner"))),
                                               Cconst Ccontains,
                                               [AExpr (mk_sp (Pvar (dumloc "ow"))
                                                         ~type_:(Tbuiltin VTaddress))]))
