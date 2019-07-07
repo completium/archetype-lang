@@ -285,7 +285,7 @@ module Miles_with_expiration_storage
         invariant { s.added_miles == union (old s).added_miles (head i asset_keys) }
         invariant { is_empty (inter (old s).mile_keys (head i asset_keys)) }
         invariant { forall k : key. mem k s.mile_keys -> amount (get s.mile_assets k) > 0  }
-        invariant { forall k : key. mem k (old s).mile_keys -> get_amount s k = get_amount (old s) k }
+        (*invariant { forall k : key. mem k (old s).mile_keys -> get_amount s k = get_amount (old s) k }*)
             let asset = gen_nth i assets in
             add_owner_miles s new_owner asset
         done

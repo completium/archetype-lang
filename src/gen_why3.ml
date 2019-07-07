@@ -701,11 +701,11 @@ let mk_extended_invariant m n inv : loc_term =
   let fields   = r.values |> List.map (fun (item : M.record_item) -> item.name) |> map_lidents in
   let asset    = map_lident n in
   let replacements = List.map (fun f -> mk_app_field asset f) fields in
-  let replaced = List.fold_left (fun acc (t1,t2) -> replace t1 t2 acc) inv replacements in
+  let replaced = List.fold_left (fun acc (t1,t2) -> loc_replace t1 t2 acc) inv replacements in
   let prefix   = Tforall ([["k_"],ktyp],
                           Timpl (Tmem (Tvar "k_", Tvar (asset.obj^"_keys")),
                                  Ttobereplaced)) in
-  replace (with_dummy_loc Ttobereplaced) replaced (loc_term prefix)
+  loc_replace (with_dummy_loc Ttobereplaced) replaced (loc_term prefix)
 
 let map_extended_label_term m n (lt : M.label_term) = {
   id = Option.fold (fun _ x -> map_lident x)  (with_dummy_loc "") lt.label;
