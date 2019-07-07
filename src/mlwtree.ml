@@ -674,10 +674,22 @@ let cmp_loc_type (t1 : loc_typ) (t2 : loc_typ) = compare_abstract_type cmp_loc_i
 let rec cmp_loc_term (e1 : loc_term) (e2 : loc_term) : bool =
   compare_abstract_term cmp_loc_term cmp_loc_type cmp_loc_ident e1.obj e2.obj
 
+let cmp_ident (i1 : ident) (i2 : ident) = compare i1 i2 = 0
+
+let cmp_type (t1 : typ) (t2 : typ) = compare_abstract_type cmp_ident t1 t2
+
+let rec cmp_term (e1 : term) (e2 : term) : bool =
+  compare_abstract_term cmp_term cmp_type cmp_ident e1 e2
+
 let id x = x
 
 (* replaces t1 by t2 in t3 *)
-let rec replace t1 t2 t3 =
+let rec loc_replace t1 t2 t3 =
   if cmp_loc_term t1 t3
   then t2
-  else mk_loc t3.loc (map_abstract_term (replace t1 t2) id id t3.obj)
+  else mk_loc t3.loc (map_abstract_term (loc_replace t1 t2) id id t3.obj)
+
+let rec replace t1 t2 t3 =
+  if cmp_term t1 t3
+  then t2
+  else map_abstract_term (replace t1 t2) id id t3
