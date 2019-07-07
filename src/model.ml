@@ -103,11 +103,20 @@ type builtin_const =
   | Max of type_
 [@@deriving show {with_path = false}]
 
-type 'id api_item_gen =
+type 'id api_item_gen_node =
   | APIStorage   of 'id storage_const_gen
   | APIContainer of 'id container_const_gen
   | APIFunction  of 'id function_const_gen
   | APIBuiltin   of builtin_const
+[@@deriving show {with_path = false}]
+
+type api_item_node = lident api_item_gen_node
+[@@deriving show {with_path = false}]
+
+type 'id api_item_gen = {
+  node: 'id api_item_gen_node;
+  only_formula: bool;
+}
 [@@deriving show {with_path = false}]
 
 type api_item = lident api_item_gen
@@ -156,22 +165,22 @@ type ('id, 'term) mterm_node  =
   | Mif           of ('term * 'term * 'term)
   | Mmatchwith    of 'term * ('id pattern_gen * 'term) list
   | Mapplocal     of 'id * (('id, 'term) term_arg_gen) list
-  | Mappexternal  of 'id api_item_gen option * 'id * 'id * 'term * ('term) list
-  | Mappget       of 'id api_item_gen option * 'term * 'term
-  | Mappadd       of 'id api_item_gen option * 'term * 'term
-  | Mappremove    of 'id api_item_gen option * 'term * 'term
-  | Mappclear     of 'id api_item_gen option * 'term
-  | Mappupdate    of 'id api_item_gen option
-  | Mappreverse   of 'id api_item_gen option * 'term
-  | Mappsort      of 'id api_item_gen option
-  | Mappcontains  of 'id api_item_gen option * 'term * 'term
-  | Mappnth       of 'id api_item_gen option * 'term * 'term
-  | Mappselect    of 'id api_item_gen option
-  | Mappcount     of 'id api_item_gen option * 'term
-  | Mappsum       of 'id api_item_gen option * 'id * 'term
-  | Mappmin       of 'id api_item_gen option * 'id * 'term
-  | Mappmax       of 'id api_item_gen option * 'id * 'term
-  | Mappfail      of 'id api_item_gen option * 'term
+  | Mappexternal  of 'id api_item_gen_node option * 'id * 'id * 'term * ('term) list
+  | Mappget       of 'id api_item_gen_node option * 'term * 'term
+  | Mappadd       of 'id api_item_gen_node option * 'term * 'term
+  | Mappremove    of 'id api_item_gen_node option * 'term * 'term
+  | Mappclear     of 'id api_item_gen_node option * 'term
+  | Mappupdate    of 'id api_item_gen_node option
+  | Mappreverse   of 'id api_item_gen_node option * 'term
+  | Mappsort      of 'id api_item_gen_node option
+  | Mappcontains  of 'id api_item_gen_node option * 'term * 'term
+  | Mappnth       of 'id api_item_gen_node option * 'term * 'term
+  | Mappselect    of 'id api_item_gen_node option
+  | Mappcount     of 'id api_item_gen_node option * 'term
+  | Mappsum       of 'id api_item_gen_node option * 'id * 'term
+  | Mappmin       of 'id api_item_gen_node option * 'id * 'term
+  | Mappmax       of 'id api_item_gen_node option * 'id * 'term
+  | Mappfail      of 'id api_item_gen_node option * 'term
   | Mand          of 'term * 'term
   | Mor           of 'term * 'term
   | Mimply        of 'term * 'term
@@ -585,7 +594,10 @@ let mk_function ?verif node : 'id function__gen =
   { node; verif }
 
 let mk_signature ?(args = []) ?ret name : 'id signature_gen =
-  { name; args; ret}
+  { name; args; ret }
+
+let mk_api_item ?(only_formula = false) node =
+  { node; only_formula }
 
 let mk_model ?(api_items = []) ?(decls = []) ?(functions = []) name storage verification : model =
   { name; api_items; storage; decls; functions; verification}

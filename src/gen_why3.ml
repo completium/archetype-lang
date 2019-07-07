@@ -760,7 +760,7 @@ let get_record_name = function
 
 let mk_storage_api (m : M.model) records =
   m.api_items |> List.fold_left (fun acc (sc : M.api_item) ->
-      match sc with
+      match sc.node with
       | M.APIStorage (Get n) ->
         let k = M.Utils.get_record_key m n |> snd |> map_btype in
         acc @ [mk_get_asset n.pldesc k]
