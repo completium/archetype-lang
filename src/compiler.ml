@@ -65,13 +65,13 @@ let generate_target_pt pt =
   | _ -> pt
 
 let remove_side_effect model =
-  let wse = Gen_remove_se.remove_se model in
+  let wse = Gen_reduce_side_effect.reduce_side_effect model in
   if !Options.opt_wse
-  then (Format.printf "%a@." Model_wse.pp_model wse; raise Stop)
+  then (Format.printf "%a@." Model.pp_model model; raise Stop)
   else wse
 
-let generate_liquidity wse =
-  let tree = Gen_liquidity.to_liquidity wse in
+let generate_liquidity model =
+  let tree = Gen_liquidity.to_liquidity model in
   if !Options.opt_raw_target
   then (Format.printf "%a@." Mltree.pp_tree tree; raise Stop)
   else Format.asprintf "%a@." Printer_mltree.pp_tree tree
