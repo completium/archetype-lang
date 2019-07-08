@@ -207,6 +207,7 @@ type ('id, 'term) mterm_node  =
   | Mvarstorecol  of 'id
   | Mvarenumval   of 'id
   | Mvarlocal     of 'id
+  | Mvarthe
   | Mstate
   | Mnow
   | Mtransferred
@@ -651,6 +652,7 @@ let map_term_node (f : 'id mterm_gen -> 'id mterm_gen) = function
   | Mvarstorecol v           -> Mvarstorecol v
   | Mvarenumval v            -> Mvarenumval  v
   | Mvarlocal v              -> Mvarlocal    v
+  | Mvarthe                  -> Mvarthe
   | Mstate                   -> Mstate
   | Mnow                     -> Mnow
   | Mtransferred             -> Mtransferred
@@ -746,6 +748,7 @@ let fold_term (f : 'a -> 't -> 'a) (accu : 'a) (term : 'id mterm_gen) =
   | Mvarstorecol _           -> accu
   | Mvarenumval _            -> accu
   | Mvarlocal _              -> accu
+  | Mvarthe                  -> accu
   | Marray l                 -> List.fold_left f accu l
   | Mint _                   -> accu
   | Muint _                  -> accu
@@ -1030,6 +1033,9 @@ let fold_map_term
 
   | Mvarlocal v ->
     g (Mvarlocal v), accu
+
+  | Mvarthe ->
+    g Mvarthe, accu
 
   | Marray l ->
     let (lp, la) = List.fold_left

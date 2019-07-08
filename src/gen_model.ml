@@ -457,6 +457,10 @@ let to_model (ast : A.model) : M.model =
         let term, accu = M.fold_map_term (ge term) fe accu term in
         let accu = add accu (Model.mk_api_item (M.APIStorage (M.Get asset_name))) in
         term, accu
+      | M.Mset (None, {node = M.Mvarstorecol asset_name; _}, _, _) ->
+        let term, accu = M.fold_map_term (ge term) fe accu term in
+        let accu = add accu (Model.mk_api_item (M.APIStorage (M.Set asset_name))) in
+        term, accu
       | M.Madd (None, {node = M.Mvarstorecol asset_name; _}, _) ->
         let term, accu = M.fold_map_term (ge term) fe accu term in
         let accu = add accu (Model.mk_api_item (M.APIStorage (M.Add asset_name))) in
@@ -481,10 +485,6 @@ let to_model (ast : A.model) : M.model =
         let term, accu = M.fold_map_term (ge term) fe accu term in
         let accu = add accu (Model.mk_api_item (M.APIStorage (M.UpdateClear (asset_name, f)))) in
         term, accu
-      (* | M.Mupdate (None, {node = M.Mvarstorecol asset_name; _}, _) ->
-         let term, accu = M.fold_map_term (ge term) fe accu term in
-         let accu = add accu (Model.mk_api_item (M.APIStorage (M.Up asset_name))) in
-         term, accu *)
       | M.Mreverse (None, {node = M.Mvarstorecol asset_name; _}) ->
         let term, accu = M.fold_map_term (ge term) fe accu term in
         let accu = add accu (Model.mk_api_item (M.APIStorage (M.Reverse asset_name))) in
