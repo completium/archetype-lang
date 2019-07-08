@@ -167,10 +167,10 @@ type ('id, 'term) mterm_node  =
   | Mapp          of 'id * 'term list
   | Mexternal     of 'id api_item_gen_node option * 'id * 'id * 'term * ('term) list
   | Mget          of 'id api_item_gen_node option * 'term * 'term
+  | Mset          of 'id api_item_gen_node option * 'term * 'term * 'term
   | Madd          of 'id api_item_gen_node option * 'term * 'term
   | Mremove       of 'id api_item_gen_node option * 'term * 'term
   | Mclear        of 'id api_item_gen_node option * 'term
-  | Mupdate       of 'id api_item_gen_node option (* * 'term * 'term * 'id (* collection * key * var id *)*)
   | Mreverse      of 'id api_item_gen_node option * 'term
   | Msort         of 'id api_item_gen_node option
   | Mcontains     of 'id api_item_gen_node option * 'term * 'term
@@ -611,10 +611,10 @@ let map_term_node (f : 'id mterm_gen -> 'id mterm_gen) = function
   | Msettoiterate e          -> Msettoiterate (f e)
   | Mexternal (api, t, func, c, args) -> Mexternal (api, t, func, f c, List.map f args)
   | Mget (api, c, k)         -> Mget (api, f c, f k)
+  | Mset (api, c, k, v)      -> Mset (api, f c, f k, f v)
   | Madd (api, c, i)         -> Madd (api, f c, f i)
   | Mremove (api, c, i)      -> Mremove (api, f c, f i)
   | Mclear (api, c)          -> Mclear (api, f c)
-  | Mupdate api              -> Mupdate api
   | Mreverse (api, c)        -> Mreverse (api, f c)
   | Msort api                -> Msort api
   | Mcontains (api, c, i)    -> Mcontains (api, f c, f i)
@@ -706,10 +706,10 @@ let fold_term (f : 'a -> 't -> 'a) (accu : 'a) (term : 'id mterm_gen) =
   | Msettoiterate e          -> f accu e
   | Mexternal (api, t, func, c, args) -> List.fold_left f (f accu c) args
   | Mget (api, c, k)         -> f (f accu k) c
+  | Mset (api, c, k, v)      -> f (f (f accu v) k) c
   | Madd (api, c, i)         -> f (f accu c) i
   | Mremove (api, c, i)      -> f (f accu c) i
   | Mclear (api, c)          -> f accu c
-  | Mupdate api              -> accu
   | Mreverse (api, c)        -> f accu c
   | Msort api                -> accu
   | Mcontains (api, c, i)    -> f (f accu c) i
@@ -850,6 +850,12 @@ let fold_map_term
     let ke, ka = f ca k in
     g (Mget (api, ce, ke)), ka
 
+  | Mset (api, c, k, v) ->
+    let ce, ca = f accu c in
+    let ke, ka = f ca k in
+    let ve, va = f ka v in
+    g (Mset (api, ce, ke, ve)), ka
+
   | Madd (api, c, i) ->
     let ce, ca = f accu c in
     let ie, ia = f ca i in
@@ -863,9 +869,6 @@ let fold_map_term
   | Mclear (api, c) ->
     let ce, ca = f accu c in
     g (Mclear (api, ce)), ca
-
-  | Mupdate api ->
-    g (Mupdate api), accu
 
   | Mreverse (api, c) ->
     let ce, ca = f accu c in

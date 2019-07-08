@@ -241,12 +241,6 @@ let to_model (ast : A.model) : M.model =
     | A.Icall (Some p, A.Cconst (A.Cremove), [AExpr q]) ->
       M.Mremove (None, f p, f q)
 
-    | A.Icall (Some _, A.Cconst (A.Cupdate), [_; _]) ->
-      M.Mupdate None
-
-    | A.Icall (Some p, A.Cconst (A.Cupdate), [AExpr q]) ->
-      M.Mupdate None
-
     | A.Icall (_, A.Cconst (A.Cremoveif), _) ->
       M.Mseq []
 
