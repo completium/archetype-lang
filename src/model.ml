@@ -161,6 +161,11 @@ type 'id qualid_gen = {
 type qualid = lident qualid_gen
 [@@deriving show {with_path = false}]
 
+type sort_kind =
+  | SKasc
+  | SKdesc
+[@@deriving show {with_path = false}]
+
 type ('id, 'term) mterm_node  =
   | Mif           of ('term * 'term * 'term)
   | Mmatchwith    of 'term * ('id pattern_gen * 'term) list
@@ -172,10 +177,10 @@ type ('id, 'term) mterm_node  =
   | Mremove       of 'id api_item_gen_node option * 'term * 'term
   | Mclear        of 'id api_item_gen_node option * 'term
   | Mreverse      of 'id api_item_gen_node option * 'term
-  | Msort         of 'id api_item_gen_node option
+  | Mselect       of 'id api_item_gen_node option * 'term * 'term
+  | Msort         of 'id api_item_gen_node option * 'term * 'id * sort_kind
   | Mcontains     of 'id api_item_gen_node option * 'term * 'term
   | Mnth          of 'id api_item_gen_node option * 'term * 'term
-  | Mselect       of 'id api_item_gen_node option
   | Mcount        of 'id api_item_gen_node option * 'term
   | Msum          of 'id api_item_gen_node option * 'id * 'term
   | Mmin          of 'id api_item_gen_node option * 'id * 'term
@@ -207,6 +212,7 @@ type ('id, 'term) mterm_node  =
   | Mvarstorecol  of 'id
   | Mvarenumval   of 'id
   | Mvarlocal     of 'id
+  | Mvarfield     of 'id
   | Mvarthe
   | Mstate
   | Mnow
@@ -618,10 +624,10 @@ let map_term_node (f : 'id mterm_gen -> 'id mterm_gen) = function
   | Mremove (api, c, i)         -> Mremove (api, f c, f i)
   | Mclear (api, c)             -> Mclear (api, f c)
   | Mreverse (api, c)           -> Mreverse (api, f c)
-  | Msort api                   -> Msort api
+  | Mselect (api, c, p)         -> Mselect (api, f c, f p)
+  | Msort (api, c, p, k)        -> Msort (api, f c, f p, k)
   | Mcontains (api, c, i)       -> Mcontains (api, f c, f i)
   | Mnth (api, c, i)            -> Mnth (api, f c, f i)
-  | Mselect api                 -> Mselect api
   | Mcount (api, c)             -> Mcount (api, f c)
   | Msum (api, fd, c)           -> Msum (api, fd, f c)
   | Mmin (api, fd, c)           -> Mmin (api, fd, f c)
@@ -652,6 +658,7 @@ let map_term_node (f : 'id mterm_gen -> 'id mterm_gen) = function
   | Mvarstorevar v              -> Mvarstorevar v
   | Mvarstorecol v              -> Mvarstorecol v
   | Mvarenumval v               -> Mvarenumval  v
+  | Mvarfield v                 -> Mvarfield    v
   | Mvarlocal v                 -> Mvarlocal    v
   | Mvarthe                     -> Mvarthe
   | Mstate                      -> Mstate
@@ -715,10 +722,10 @@ let fold_term (f : 'a -> 't -> 'a) (accu : 'a) (term : 'id mterm_gen) =
   | Mremove (api, c, i)                   -> f (f accu c) i
   | Mclear (api, c)                       -> f accu c
   | Mreverse (api, c)                     -> f accu c
-  | Msort api                             -> accu
+  | Mselect (api, c, p)                   -> f (f accu c) p
+  | Msort (api, c, p, _)                  -> f (f accu c) p
   | Mcontains (api, c, i)                 -> f (f accu c) i
   | Mnth      (api, c, i)                 -> f (f accu c) i
-  | Mselect api                           -> accu
   | Mcount (api, c)                       -> f accu c
   | Msum (api, fd, c)                     -> f accu c
   | Mmin (api, fd, c)                     -> f accu c
@@ -749,6 +756,7 @@ let fold_term (f : 'a -> 't -> 'a) (accu : 'a) (term : 'id mterm_gen) =
   | Mvarstorevar _                        -> accu
   | Mvarstorecol _                        -> accu
   | Mvarenumval _                         -> accu
+  | Mvarfield _                           -> accu
   | Mvarlocal _                           -> accu
   | Mvarthe                               -> accu
   | Marray l                              -> List.fold_left f accu l
@@ -880,8 +888,14 @@ let fold_map_term
     let ce, ca = f accu c in
     g (Mreverse (api, ce)), ca
 
-  | Msort api ->
-    g (Msort api), accu
+  | Mselect (api, c, p) ->
+    let ce, ca = f accu c in
+    let pe, pa = f ca p in
+    g (Mselect (api, ce, pe)), pa
+
+  | Msort (api, c, fi, k) ->
+    let ce, ca = f accu c in
+    g (Msort (api, ce, fi, k)), ca
 
   | Mcontains (api, c, i) ->
     let ce, ca = f accu c in
@@ -892,9 +906,6 @@ let fold_map_term
     let ce, ca = f accu c in
     let ie, ia = f ca i in
     g (Mnth (api, ce, ie)), ia
-
-  | Mselect api ->
-    g (Mselect api), accu
 
   | Mcount (api, c) ->
     let ce, ca = f accu c in
@@ -1033,6 +1044,9 @@ let fold_map_term
 
   | Mvarenumval v ->
     g (Mvarenumval v), accu
+
+  | Mvarfield v ->
+    g (Mvarfield v), accu
 
   | Mvarlocal v ->
     g (Mvarlocal v), accu

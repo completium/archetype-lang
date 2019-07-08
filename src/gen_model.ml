@@ -187,8 +187,8 @@ let to_model (ast : A.model) : M.model =
       | A.Pcall (Some p, A.Cconst (A.Csum), [AExpr q]) ->
         M.Msum (None, Location.dumloc "TODO", f q)
 
-      | A.Pcall (None, A.Cconst (A.Cselect), [_; _]) ->
-        M.Mselect None
+      | A.Pcall (None, A.Cconst (A.Cselect), [AExpr c; AExpr p]) ->
+        M.Mselect (None, f c, f p)
 
       | A.Pcall (aux, A.Cconst c, args) ->
         Format.eprintf "expr const unkown: %a with nb args: %d %s@." A.pp_const c (List.length args) (match aux with | Some _ -> "with aux" | _ -> "without aux");
@@ -493,14 +493,14 @@ let to_model (ast : A.model) : M.model =
         let term, accu = M.fold_map_term (ge term) fe accu term in
         let accu = add accu (Model.mk_api_item (M.APIStorage (M.UpdateReverse (asset_name, f)))) in
         term, accu
-      (* | M.Mselect (None, {node = M.Mvarstorecol asset_name; _}, _) ->
-         let term, accu = M.fold_map_term (ge term) fe accu term in
-         let accu = add accu (Model.mk_api_item (M.APIStorage (M.Select asset_name))) in
-         term, accu *)
-      (* | M.Msort (None, {node = M.Mvarstorecol asset_name; _}, _) ->
-         let term, accu = M.fold_map_term (ge term) fe accu term in
-         let accu = add accu (Model.mk_api_item (M.APIStorage (M.Sort asset_name))) in
-         term, accu *)
+      | M.Mselect (None, {node = M.Mvarstorecol asset_name; _}, _) ->
+        let term, accu = M.fold_map_term (ge term) fe accu term in
+        let accu = add accu (Model.mk_api_item (M.APIFunction (M.Select asset_name))) in
+        term, accu
+      | M.Msort (None, {node = M.Mvarstorecol asset_name; _}, field_name, _) ->
+        let term, accu = M.fold_map_term (ge term) fe accu term in
+        let accu = add accu (Model.mk_api_item (M.APIFunction (M.Sort (asset_name, field_name)))) in
+        term, accu
       | M.Mcontains (None, {type_ = M.Tcontainer (M.Tasset asset_name, _) ; _}, _) ->
         let term, accu = M.fold_map_term (ge term) fe accu term in
         let accu = add accu (Model.mk_api_item (M.APIFunction (M.Contains asset_name))) in
