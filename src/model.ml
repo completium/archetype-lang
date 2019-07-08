@@ -181,8 +181,8 @@ type ('id, 'term) mterm_node  =
   | Mmin          of 'id api_item_gen_node option * 'id * 'term
   | Mmax          of 'id api_item_gen_node option * 'id * 'term
   | Mfail         of 'id api_item_gen_node option * 'term
-  (* | Mmathmax      of 'term * 'term
-     | Mmathmin      of 'term * 'term *)
+  | Mmathmax      of 'term * 'term
+  | Mmathmin      of 'term * 'term
   | Mand          of 'term * 'term
   | Mor           of 'term * 'term
   | Mimply        of 'term * 'term
@@ -625,6 +625,8 @@ let map_term_node (f : 'id mterm_gen -> 'id mterm_gen) = function
   | Mmin (api, fd, c)        -> Mmin (api, fd, f c)
   | Mmax (api, fd, c)        -> Mmax (api, fd, f c)
   | Mfail (api, msg)         -> Mfail (api, f msg)
+  | Mmathmin (l, r)          -> Mmathmin (f l, f r)
+  | Mmathmax (l, r)          -> Mmathmax (f l, f r)
   | Mand (l, r)              -> Mand (f l, f r)
   | Mor (l, r)               -> Mor (f l, f r)
   | Mimply (l, r)            -> Mimply (f l, f r)
@@ -718,6 +720,8 @@ let fold_term (f : 'a -> 't -> 'a) (accu : 'a) (term : 'id mterm_gen) =
   | Mmin (api, fd, c)        -> f accu c
   | Mmax (api, fd, c)        -> f accu c
   | Mfail (api, msg)         -> f accu msg
+  | Mmathmax (l, r)          -> f (f accu l) r
+  | Mmathmin (l, r)          -> f (f accu l) r
   | Mand (l, r)              -> f (f accu l) r
   | Mor (l, r)               -> f (f accu l) r
   | Mimply (l, r)            -> f (f accu l) r
@@ -902,6 +906,16 @@ let fold_map_term
   | Mfail (api, msg) ->
     let msge, msga = f accu msg in
     g (Mfail (api, msge)), msga
+
+  | Mmathmax (l, r) ->
+    let le, la = f accu l in
+    let re, ra = f la r in
+    g (Mmathmax (le, re)), ra
+
+  | Mmathmin (l, r) ->
+    let le, la = f accu l in
+    let re, ra = f la r in
+    g (Mmathmin (le, re)), ra
 
   | Mand (l, r) ->
     let le, la = f accu l in
