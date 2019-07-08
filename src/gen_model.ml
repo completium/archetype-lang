@@ -80,10 +80,10 @@ let to_model (ast : A.model) : M.model =
     | A.OrAssign     -> M.OrAssign
   in
 
-  let to_assignment_operator2 = function
-    | `Assign op -> to_assignment_operator op
-    | _ -> assert false
-  in
+  (* let to_assignment_operator2 = function
+     | `Assign op -> to_assignment_operator op
+     | _ -> assert false
+     in *)
 
   let rec to_qualid_node (n : ('a, 'b) A.qualid_node) : ('id, 'qualid) M.qualid_node =
     match n with
@@ -107,12 +107,13 @@ let to_model (ast : A.model) : M.model =
     M.mk_pattern node ~loc:p.loc
   in
 
-  let to_term_arg : 't. ((A.lident, 't) A.term_gen -> M.mterm) -> ((A.lident, 't, (A.lident, 't) A.term_gen) A.term_arg) -> M.term_arg =
+  let term_arg_to_expr : 't. ((A.lident, 't) A.term_gen -> M.mterm) -> ((A.lident, 't, (A.lident, 't) A.term_gen) A.term_arg) -> M.mterm =
     fun f a ->
       match a with
-      | A.AExpr x -> M.AExpr (f x)
-      | A.AEffect l -> M.AEffect (List.map (fun (id, op, term) -> (id, to_assignment_operator2 op, f term)) l)
-      | A.AFun _ -> assert false (* TODO *)
+      | A.AExpr x -> f x
+      | _ -> assert false
+      (*| A.AEffect l -> M.AEffect (List.map (fun (id, op, term) -> (id, to_assignment_operator2 op, f term)) l)
+        | A.AFun _ -> assert false (* TODO *)*)
   in
 
   let to_mterm_node : 't. ((A.lident, 't, (A.lident, 't) A.term_gen) A.term_node) -> ((A.lident, 't) A.term_gen -> M.mterm) -> ('t -> M.type_) -> (M.lident, M.mterm) M.mterm_node =
@@ -174,11 +175,7 @@ let to_model (ast : A.model) : M.model =
       | A.Pcall (_, A.Cconst A.Ctoiterate, [AExpr p]) -> M.Msettoiterate (f p)
 
       | A.Pcall (aux, A.Cid id, args) ->
-        M.Mapplocal (id,
-                     (Option.map_dfl
-                        (fun x -> [ M.AExpr (f x) ])
-                        [] aux)
-                     @ List.map (fun x -> to_term_arg f x) args)
+        M.Mapp (id, List.map (fun x -> term_arg_to_expr f x) args)
 
       | A.Pcall (Some p, A.Cconst A.Cget, [AExpr q]) ->
         M.Mappget (None, f p, f q)
@@ -232,7 +229,7 @@ let to_model (ast : A.model) : M.model =
     | A.Ibreak                  -> M.Mbreak
     | A.Iassert e               -> M.Massert (f e)
     | A.Ireturn e               -> M.Mreturn (f e)
-    | A.Icall (i, Cid id, args) -> M.Mapplocal (id, Option.map_dfl (fun v -> [M.AExpr (to_mterm v)]) [] i @ List.map (to_term_arg f) args)
+    | A.Icall (i, Cid id, args) -> M.Mapp (id, Option.map_dfl (fun v -> [to_mterm v]) [] i @ List.map (term_arg_to_expr f) args)
 
     | A.Icall (_, A.Cconst (A.Cfail), [AExpr p]) ->
       M.Mappfail (None, f p)

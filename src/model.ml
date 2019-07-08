@@ -164,13 +164,13 @@ type qualid = lident qualid_gen
 type ('id, 'term) mterm_node  =
   | Mif           of ('term * 'term * 'term)
   | Mmatchwith    of 'term * ('id pattern_gen * 'term) list
-  | Mapplocal     of 'id * (('id, 'term) term_arg_gen) list
+  | Mapp          of 'id * 'term list
   | Mappexternal  of 'id api_item_gen_node option * 'id * 'id * 'term * ('term) list
   | Mappget       of 'id api_item_gen_node option * 'term * 'term
   | Mappadd       of 'id api_item_gen_node option * 'term * 'term
   | Mappremove    of 'id api_item_gen_node option * 'term * 'term
   | Mappclear     of 'id api_item_gen_node option * 'term
-  | Mappupdate    of 'id api_item_gen_node option
+  | Mappupdate    of 'id api_item_gen_node option (* * 'term * 'term * 'id (* collection * key * var id *)*)
   | Mappreverse   of 'id api_item_gen_node option * 'term
   | Mappsort      of 'id api_item_gen_node option
   | Mappcontains  of 'id api_item_gen_node option * 'term * 'term
@@ -181,6 +181,8 @@ type ('id, 'term) mterm_node  =
   | Mappmin       of 'id api_item_gen_node option * 'id * 'term
   | Mappmax       of 'id api_item_gen_node option * 'id * 'term
   | Mappfail      of 'id api_item_gen_node option * 'term
+  (* | Mmathmax      of 'term * 'term
+     | Mmathmin      of 'term * 'term *)
   | Mand          of 'term * 'term
   | Mor           of 'term * 'term
   | Mimply        of 'term * 'term
@@ -259,14 +261,6 @@ and 'id mterm_gen = {
 [@@deriving show {with_path = false}]
 
 and mterm = lident mterm_gen
-[@@deriving show {with_path = false}]
-
-and ('id, 'term) term_arg_gen =
-  | AExpr   of 'id mterm_gen
-  | AEffect of ('id * assignment_operator * 'term) list
-[@@deriving show {with_path = false}]
-
-and term_arg = (lident, mterm) term_arg_gen
 [@@deriving show {with_path = false}]
 
 type 'id label_term_gen = {
@@ -606,12 +600,9 @@ let mk_model ?(api_items = []) ?(decls = []) ?(functions = []) name storage veri
 (* -------------------------------------------------------------------- *)
 
 let map_term_node (f : 'id mterm_gen -> 'id mterm_gen) = function
-  | Mif (c, t, e)           -> Mif (f c, f t, f e)
-  | Mmatchwith (e, l)       -> Mmatchwith (e, List.map (fun (p, e) -> (p, f e)) l)
-  | Mapplocal (e, args) ->
-    Mapplocal (e, List.map (fun (arg : ('id, 'term) term_arg_gen) -> match arg with
-        | AExpr e   -> AExpr (f e)
-        | AEffect l -> AEffect (List.map (fun (id, op, e) -> (id, op, f e)) l)) args)
+  | Mif (c, t, e)            -> Mif (f c, f t, f e)
+  | Mmatchwith (e, l)        -> Mmatchwith (e, List.map (fun (p, e) -> (p, f e)) l)
+  | Mapp (e, args)           -> Mapp (e, List.map f args)
   | Msetbefore    e          -> Msetbefore    (f e)
   | Msetunmoved   e          -> Msetunmoved   (f e)
   | Msetadded     e          -> Msetadded     (f e)
@@ -702,11 +693,9 @@ let map_term  f t = map_gen_mterm map_term_node f t
 
 let fold_term (f : 'a -> 't -> 'a) (accu : 'a) (term : 'id mterm_gen) =
   match term.node with
-  | Mif (c, t, e)           -> f (f (f accu c) t) e
-  | Mmatchwith (e, l)       -> List.fold_left (fun accu (_, a) -> f accu a) (f accu e) l
-  | Mapplocal (_, args)     -> List.fold_left (fun accu (arg : ('id, 'term) term_arg_gen) -> match arg with
-      | AExpr e -> f accu e
-      | AEffect l -> List.fold_left (fun accu (_, _, e) -> f accu e) accu l ) accu args
+  | Mif (c, t, e)            -> f (f (f accu c) t) e
+  | Mmatchwith (e, l)        -> List.fold_left (fun accu (_, a) -> f accu a) (f accu e) l
+  | Mapp (_, args)           -> List.fold_left f accu args
   | Msetbefore    e          -> f accu e
   | Msetunmoved   e          -> f accu e
   | Msetadded     e          -> f accu e
@@ -811,18 +800,14 @@ let fold_map_term
 
     g (Mmatchwith (ee, l)), psa
 
-  | Mapplocal (id, args) ->
+  | Mapp (id, args) ->
     let ((argss, argsa) : 'c list * 'a) =
       List.fold_left
-        (fun (pterms, accu) (x : ('id, 'term) term_arg_gen) ->
-           let p, accu =
-             match x with
-             | AExpr a -> f accu a |> fun (x, acc) -> (Some (AExpr x), acc)
-             | _ -> None, accu in
-           let x = match p with | Some a -> a | None -> x in
-           pterms @ [x], accu) ([], accu) args
+        (fun (pterms, accu) x ->
+           let p, accu = f accu x in
+           pterms @ [p], accu) ([], accu) args
     in
-    g (Mapplocal (id, argss)), argsa
+    g (Mapp (id, argss)), argsa
 
   | Msetbefore e ->
     let ee, ea = f accu e in
