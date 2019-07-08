@@ -165,22 +165,22 @@ type ('id, 'term) mterm_node  =
   | Mif           of ('term * 'term * 'term)
   | Mmatchwith    of 'term * ('id pattern_gen * 'term) list
   | Mapp          of 'id * 'term list
-  | Mappexternal  of 'id api_item_gen_node option * 'id * 'id * 'term * ('term) list
-  | Mappget       of 'id api_item_gen_node option * 'term * 'term
-  | Mappadd       of 'id api_item_gen_node option * 'term * 'term
-  | Mappremove    of 'id api_item_gen_node option * 'term * 'term
-  | Mappclear     of 'id api_item_gen_node option * 'term
-  | Mappupdate    of 'id api_item_gen_node option (* * 'term * 'term * 'id (* collection * key * var id *)*)
-  | Mappreverse   of 'id api_item_gen_node option * 'term
-  | Mappsort      of 'id api_item_gen_node option
-  | Mappcontains  of 'id api_item_gen_node option * 'term * 'term
-  | Mappnth       of 'id api_item_gen_node option * 'term * 'term
-  | Mappselect    of 'id api_item_gen_node option
-  | Mappcount     of 'id api_item_gen_node option * 'term
-  | Mappsum       of 'id api_item_gen_node option * 'id * 'term
-  | Mappmin       of 'id api_item_gen_node option * 'id * 'term
-  | Mappmax       of 'id api_item_gen_node option * 'id * 'term
-  | Mappfail      of 'id api_item_gen_node option * 'term
+  | Mexternal     of 'id api_item_gen_node option * 'id * 'id * 'term * ('term) list
+  | Mget          of 'id api_item_gen_node option * 'term * 'term
+  | Madd          of 'id api_item_gen_node option * 'term * 'term
+  | Mremove       of 'id api_item_gen_node option * 'term * 'term
+  | Mclear        of 'id api_item_gen_node option * 'term
+  | Mupdate       of 'id api_item_gen_node option (* * 'term * 'term * 'id (* collection * key * var id *)*)
+  | Mreverse      of 'id api_item_gen_node option * 'term
+  | Msort         of 'id api_item_gen_node option
+  | Mcontains     of 'id api_item_gen_node option * 'term * 'term
+  | Mnth          of 'id api_item_gen_node option * 'term * 'term
+  | Mselect       of 'id api_item_gen_node option
+  | Mcount        of 'id api_item_gen_node option * 'term
+  | Msum          of 'id api_item_gen_node option * 'id * 'term
+  | Mmin          of 'id api_item_gen_node option * 'id * 'term
+  | Mmax          of 'id api_item_gen_node option * 'id * 'term
+  | Mfail         of 'id api_item_gen_node option * 'term
   (* | Mmathmax      of 'term * 'term
      | Mmathmin      of 'term * 'term *)
   | Mand          of 'term * 'term
@@ -609,22 +609,22 @@ let map_term_node (f : 'id mterm_gen -> 'id mterm_gen) = function
   | Msetremoved   e          -> Msetremoved   (f e)
   | Msetiterated  e          -> Msetiterated  (f e)
   | Msettoiterate e          -> Msettoiterate (f e)
-  | Mappexternal (api, t, func, c, args) -> Mappexternal (api, t, func, f c, List.map f args)
-  | Mappget (api, c, k)      -> Mappget (api, f c, f k)
-  | Mappadd (api, c, i)      -> Mappadd (api, f c, f i)
-  | Mappremove (api, c, i)   -> Mappremove (api, f c, f i)
-  | Mappclear (api, c)       -> Mappclear (api, f c)
-  | Mappupdate api           -> Mappupdate api
-  | Mappreverse (api, c)     -> Mappreverse (api, f c)
-  | Mappsort api             -> Mappsort api
-  | Mappcontains (api, c, i) -> Mappcontains (api, f c, f i)
-  | Mappnth (api, c, i)      -> Mappnth (api, f c, f i)
-  | Mappselect api           -> Mappselect api
-  | Mappcount (api, c)       -> Mappcount (api, f c)
-  | Mappsum (api, fd, c)     -> Mappsum (api, fd, f c)
-  | Mappmin (api, fd, c)     -> Mappmin (api, fd, f c)
-  | Mappmax (api, fd, c)     -> Mappmax (api, fd, f c)
-  | Mappfail (api, msg)      -> Mappfail (api, f msg)
+  | Mexternal (api, t, func, c, args) -> Mexternal (api, t, func, f c, List.map f args)
+  | Mget (api, c, k)         -> Mget (api, f c, f k)
+  | Madd (api, c, i)         -> Madd (api, f c, f i)
+  | Mremove (api, c, i)      -> Mremove (api, f c, f i)
+  | Mclear (api, c)          -> Mclear (api, f c)
+  | Mupdate api              -> Mupdate api
+  | Mreverse (api, c)        -> Mreverse (api, f c)
+  | Msort api                -> Msort api
+  | Mcontains (api, c, i)    -> Mcontains (api, f c, f i)
+  | Mnth (api, c, i)         -> Mnth (api, f c, f i)
+  | Mselect api              -> Mselect api
+  | Mcount (api, c)          -> Mcount (api, f c)
+  | Msum (api, fd, c)        -> Msum (api, fd, f c)
+  | Mmin (api, fd, c)        -> Mmin (api, fd, f c)
+  | Mmax (api, fd, c)        -> Mmax (api, fd, f c)
+  | Mfail (api, msg)         -> Mfail (api, f msg)
   | Mand (l, r)              -> Mand (f l, f r)
   | Mor (l, r)               -> Mor (f l, f r)
   | Mimply (l, r)            -> Mimply (f l, f r)
@@ -702,22 +702,22 @@ let fold_term (f : 'a -> 't -> 'a) (accu : 'a) (term : 'id mterm_gen) =
   | Msetremoved   e          -> f accu e
   | Msetiterated  e          -> f accu e
   | Msettoiterate e          -> f accu e
-  | Mappexternal (api, t, func, c, args) -> List.fold_left f (f accu c) args
-  | Mappget (api, c, k)      -> f (f accu k) c
-  | Mappadd (api, c, i)      -> f (f accu c) i
-  | Mappremove (api, c, i)   -> f (f accu c) i
-  | Mappclear (api, c)       -> f accu c
-  | Mappupdate api           -> accu
-  | Mappreverse (api, c)     -> f accu c
-  | Mappsort api             -> accu
-  | Mappcontains (api, c, i) -> f (f accu c) i
-  | Mappnth      (api, c, i) -> f (f accu c) i
-  | Mappselect api           -> accu
-  | Mappcount (api, c)       -> f accu c
-  | Mappsum (api, fd, c)     -> f accu c
-  | Mappmin (api, fd, c)     -> f accu c
-  | Mappmax (api, fd, c)     -> f accu c
-  | Mappfail (api, msg)      -> f accu msg
+  | Mexternal (api, t, func, c, args) -> List.fold_left f (f accu c) args
+  | Mget (api, c, k)         -> f (f accu k) c
+  | Madd (api, c, i)         -> f (f accu c) i
+  | Mremove (api, c, i)      -> f (f accu c) i
+  | Mclear (api, c)          -> f accu c
+  | Mupdate api              -> accu
+  | Mreverse (api, c)        -> f accu c
+  | Msort api                -> accu
+  | Mcontains (api, c, i)    -> f (f accu c) i
+  | Mnth      (api, c, i)    -> f (f accu c) i
+  | Mselect api              -> accu
+  | Mcount (api, c)          -> f accu c
+  | Msum (api, fd, c)        -> f accu c
+  | Mmin (api, fd, c)        -> f accu c
+  | Mmax (api, fd, c)        -> f accu c
+  | Mfail (api, msg)         -> f accu msg
   | Mand (l, r)              -> f (f accu l) r
   | Mor (l, r)               -> f (f accu l) r
   | Mimply (l, r)            -> f (f accu l) r
@@ -833,75 +833,75 @@ let fold_map_term
     let ee, ea = f accu e in
     g (Msettoiterate ee), ea
 
-  | Mappexternal (api, t, func, c, args) ->
+  | Mexternal (api, t, func, c, args) ->
     let ce, ca = f accu c in
     let (lp, la) = List.fold_left
         (fun (pterms, accu) x ->
            let p, accu = f accu x in
            pterms @ [p], accu) ([], ca) args in
-    g (Mappexternal (api, t, func, ce, lp)), la
+    g (Mexternal (api, t, func, ce, lp)), la
 
-  | Mappget (api, c, k) ->
+  | Mget (api, c, k) ->
     let ce, ca = f accu c in
     let ke, ka = f ca k in
-    g (Mappget (api, ce, ke)), ka
+    g (Mget (api, ce, ke)), ka
 
-  | Mappadd (api, c, i) ->
+  | Madd (api, c, i) ->
     let ce, ca = f accu c in
     let ie, ia = f ca i in
-    g (Mappadd (api, ce, ie)), ia
+    g (Madd (api, ce, ie)), ia
 
-  | Mappremove (api, c, i) ->
+  | Mremove (api, c, i) ->
     let ce, ca = f accu c in
     let ie, ia = f ca i in
-    g (Mappremove (api, ce, ie)), ia
+    g (Mremove (api, ce, ie)), ia
 
-  | Mappclear (api, c) ->
+  | Mclear (api, c) ->
     let ce, ca = f accu c in
-    g (Mappclear (api, ce)), ca
+    g (Mclear (api, ce)), ca
 
-  | Mappupdate api ->
-    g (Mappupdate api), accu
+  | Mupdate api ->
+    g (Mupdate api), accu
 
-  | Mappreverse (api, c) ->
+  | Mreverse (api, c) ->
     let ce, ca = f accu c in
-    g (Mappreverse (api, ce)), ca
+    g (Mreverse (api, ce)), ca
 
-  | Mappsort api ->
-    g (Mappsort api), accu
+  | Msort api ->
+    g (Msort api), accu
 
-  | Mappcontains (api, c, i) ->
-    let ce, ca = f accu c in
-    let ie, ia = f ca i in
-    g (Mappcontains (api, ce, ie)), ia
-
-  | Mappnth (api, c, i) ->
+  | Mcontains (api, c, i) ->
     let ce, ca = f accu c in
     let ie, ia = f ca i in
-    g (Mappnth (api, ce, ie)), ia
+    g (Mcontains (api, ce, ie)), ia
 
-  | Mappselect api ->
-    g (Mappselect api), accu
-
-  | Mappcount (api, c) ->
+  | Mnth (api, c, i) ->
     let ce, ca = f accu c in
-    g (Mappcount (api, ce)), ca
+    let ie, ia = f ca i in
+    g (Mnth (api, ce, ie)), ia
 
-  | Mappsum (api, fd, c) ->
+  | Mselect api ->
+    g (Mselect api), accu
+
+  | Mcount (api, c) ->
     let ce, ca = f accu c in
-    g (Mappsum (api, fd, ce)), ca
+    g (Mcount (api, ce)), ca
 
-  | Mappmin (api, fd, c) ->
+  | Msum (api, fd, c) ->
     let ce, ca = f accu c in
-    g (Mappmin (api, fd, ce)), ca
+    g (Msum (api, fd, ce)), ca
 
-  | Mappmax (api, fd, c) ->
+  | Mmin (api, fd, c) ->
     let ce, ca = f accu c in
-    g (Mappmax (api, fd, ce)), ca
+    g (Mmin (api, fd, ce)), ca
 
-  | Mappfail (api, msg) ->
+  | Mmax (api, fd, c) ->
+    let ce, ca = f accu c in
+    g (Mmax (api, fd, ce)), ca
+
+  | Mfail (api, msg) ->
     let msge, msga = f accu msg in
-    g (Mappfail (api, msge)), msga
+    g (Mfail (api, msge)), msga
 
   | Mand (l, r) ->
     let le, la = f accu l in
