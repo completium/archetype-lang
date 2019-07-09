@@ -362,11 +362,15 @@ let to_model (ast : A.model) : M.model =
         | _ -> M.Maddlocal (fp, fq)
       )
 
-    | A.Icall (None, A.Cconst (A.Cremove), [AExpr p; AExpr q]) ->
-      M.Mremove (f p, f q)
-
-    | A.Icall (Some p, A.Cconst (A.Cremove), [AExpr q]) ->
-      M.Mremove (f p, f q)
+    | A.Icall (None, A.Cconst (A.Cremove), [AExpr p; AExpr q])
+    | A.Icall (Some p, A.Cconst (A.Cremove), [AExpr q]) -> (
+        let fp = f p in
+        let fq = f q in
+        match fp with
+        | {node = M.Mvarstorecol asset_name; _} -> M.Mremoveasset (unloc asset_name, fp, fq)
+        | {node = M.Mdot ({type_ = M.Tasset asset_name ; _}, f); _} -> M.Mremovefield (unloc asset_name, unloc f, fp, fq)
+        | _ -> M.Mremovelocal (fp, fq)
+      )
 
     | A.Icall (Some p, A.Cconst (A.Cupdate), [AExpr k; AEffect e]) ->
       let p = f p in
@@ -610,33 +614,33 @@ let to_model (ast : A.model) : M.model =
         let term, accu = M.fold_map_term (ge term) fe accu term in
         let accu = add accu (Model.mk_api_item api_item) in
         term, accu
-      | M.Mremove ({node = M.Mvarstorecol asset_name; _}, _) ->
-        let api_item = M.APIStorage (M.Remove asset_name) in
+      | M.Mremoveasset (asset_name, _, _) ->
+        let api_item = M.APIStorage (M.Remove (dumloc asset_name)) in
         let term, accu = M.fold_map_term (ge term) fe accu term in
         let accu = add accu (Model.mk_api_item api_item) in
         term, accu
-      | M.Mremove ({node = M.Mdot ({type_ = M.Tasset asset_name ; _}, f); _}, _) ->
-        let api_item = M.APIStorage (M.UpdateRemove (asset_name, f)) in
+      | M.Mremovefield (asset_name, field_name, _, _) ->
+        let api_item = M.APIStorage (M.UpdateRemove (dumloc asset_name, dumloc field_name)) in
         let term, accu = M.fold_map_term (ge term) fe accu term in
         let accu = add accu (Model.mk_api_item api_item) in
         term, accu
-      | M.Mclear ({node = M.Mvarstorecol asset_name; _}) ->
-        let api_item = M.APIStorage (M.Clear asset_name) in
+      | M.Mclearasset (asset_name, _) ->
+        let api_item = M.APIStorage (M.Clear (dumloc asset_name)) in
         let term, accu = M.fold_map_term (ge term) fe accu term in
         let accu = add accu (Model.mk_api_item api_item) in
         term, accu
-      | M.Mclear ({node = M.Mdot ({type_ = M.Tasset asset_name ; _}, f); _}) ->
-        let api_item = M.APIStorage (M.UpdateClear (asset_name, f)) in
+      | M.Mclearfield (asset_name, field_name, _) ->
+        let api_item = M.APIStorage (M.UpdateClear (dumloc asset_name, dumloc field_name)) in
         let term, accu = M.fold_map_term (ge term) fe accu term in
         let accu = add accu (Model.mk_api_item api_item) in
         term, accu
-      | M.Mreverse ({node = M.Mvarstorecol asset_name; _}) ->
-        let api_item = M.APIStorage (M.Reverse asset_name) in
+      | M.Mreverseasset (asset_name, _) ->
+        let api_item = M.APIStorage (M.Reverse (dumloc asset_name)) in
         let term, accu = M.fold_map_term (ge term) fe accu term in
         let accu = add accu (Model.mk_api_item api_item) in
         term, accu
-      | M.Mreverse ({node = M.Mdot ({type_ = M.Tasset asset_name ; _}, f); _}) ->
-        let api_item = M.APIStorage (M.UpdateReverse (asset_name, f)) in
+      | M.Mreversefield (asset_name, field_name, _) ->
+        let api_item = M.APIStorage (M.UpdateReverse (dumloc asset_name, dumloc field_name)) in
         let term, accu = M.fold_map_term (ge term) fe accu term in
         let accu = add accu (Model.mk_api_item api_item) in
         term, accu

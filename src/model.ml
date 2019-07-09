@@ -176,9 +176,15 @@ type ('id, 'term) mterm_node  =
   | Maddasset     of ident * 'term * 'term
   | Maddfield     of ident * ident * 'term * 'term (* asset_name * field_name ... *)
   | Maddlocal     of 'term * 'term
-  | Mremove       of 'term * 'term
-  | Mclear        of 'term
-  | Mreverse      of 'term
+  | Mremoveasset  of ident * 'term * 'term
+  | Mremovefield  of ident * ident * 'term * 'term
+  | Mremovelocal  of 'term * 'term
+  | Mclearasset   of ident * 'term
+  | Mclearfield   of ident * ident * 'term
+  | Mclearlocal   of 'term
+  | Mreverseasset of ident * 'term
+  | Mreversefield of ident * ident * 'term
+  | Mreverselocal of 'term
   | Mselect       of 'term * 'term
   | Msort         of 'term * 'id * sort_kind
   | Mcontains     of 'term * 'term
@@ -628,9 +634,15 @@ let map_term_node (f : 'id mterm_gen -> 'id mterm_gen) = function
   | Maddasset (an, c, i)         -> Maddasset (an,f c, f i)
   | Maddfield (an, fn, c, i)     -> Maddfield (an, fn, f c, f i)
   | Maddlocal (c, i)             -> Maddlocal (f c, f i)
-  | Mremove (c, i)               -> Mremove (f c, f i)
-  | Mclear (c)                   -> Mclear (f c)
-  | Mreverse (c)                 -> Mreverse (f c)
+  | Mremoveasset (an, c, i)      -> Mremoveasset (an,f c, f i)
+  | Mremovefield (an, fn, c, i)  -> Mremovefield (an, fn, f c, f i)
+  | Mremovelocal (c, i)          -> Mremovelocal (f c, f i)
+  | Mclearasset (an, i)          -> Mclearasset (an, f i)
+  | Mclearfield (an, fn, i)      -> Mclearfield (an, fn, f i)
+  | Mclearlocal (i)              -> Mclearlocal (f i)
+  | Mreverseasset (an, i)        -> Mreverseasset (an, f i)
+  | Mreversefield (an, fn, i)    -> Mreversefield (an, fn, f i)
+  | Mreverselocal (i)            -> Mreverselocal (f i)
   | Mselect (c, p)               -> Mselect (f c, f p)
   | Msort (c, p, k)              -> Msort (f c, f p, k)
   | Mcontains (c, i)             -> Mcontains (f c, f i)
@@ -728,9 +740,15 @@ let fold_term (f : 'a -> 't -> 'a) (accu : 'a) (term : 'id mterm_gen) =
   | Maddasset (an, c, i)                  -> f (f accu c) i
   | Maddfield (an, fn, c, i)              -> f (f accu c) i
   | Maddlocal (c, i)                      -> f (f accu c) i
-  | Mremove (c, i)                        -> f (f accu c) i
-  | Mclear (c)                            -> f accu c
-  | Mreverse (c)                          -> f accu c
+  | Mremoveasset (an, c, i)               -> f (f accu c) i
+  | Mremovefield (an, fn, c, i)           -> f (f accu c) i
+  | Mremovelocal (c, i)                   -> f (f accu c) i
+  | Mclearasset (an, c)                   -> f accu c
+  | Mclearfield (an, fn, c)               -> f accu c
+  | Mclearlocal (c)                       -> f accu c
+  | Mreverseasset (an, c)                 -> f accu c
+  | Mreversefield (an, fn, c)             -> f accu c
+  | Mreverselocal (c)                     -> f accu c
   | Mselect (c, p)                        -> f (f accu c) p
   | Msort (c, p, _)                       -> f (f accu c) p
   | Mcontains (c, i)                      -> f (f accu c) i
@@ -894,18 +912,44 @@ let fold_map_term
     let ie, ia = f ca i in
     g (Maddlocal (ce, ie)), ia
 
-  | Mremove (c, i) ->
+  | Mremoveasset (an, c, i) ->
     let ce, ca = f accu c in
     let ie, ia = f ca i in
-    g (Mremove (ce, ie)), ia
+    g (Mremoveasset (an, ce, ie)), ia
 
-  | Mclear (c) ->
+  | Mremovefield (an, fn, c, i) ->
     let ce, ca = f accu c in
-    g (Mclear (ce)), ca
+    let ie, ia = f ca i in
+    g (Mremovefield (an, fn, ce, ie)), ia
 
-  | Mreverse (c) ->
+  | Mremovelocal (c, i) ->
     let ce, ca = f accu c in
-    g (Mreverse (ce)), ca
+    let ie, ia = f ca i in
+    g (Mremovelocal (ce, ie)), ia
+
+  | Mclearasset (an, i) ->
+    let ie, ia = f accu i in
+    g (Mclearasset (an, ie)), ia
+
+  | Mclearfield (an, fn, i) ->
+    let ie, ia = f accu i in
+    g (Mclearfield (an, fn, ie)), ia
+
+  | Mclearlocal i ->
+    let ie, ia = f accu i in
+    g (Mclearlocal (ie)), ia
+
+  | Mreverseasset (an, i) ->
+    let ie, ia = f accu i in
+    g (Mreverseasset (an, ie)), ia
+
+  | Mreversefield (an, fn, i) ->
+    let ie, ia = f accu i in
+    g (Mreversefield (an, fn, ie)), ia
+
+  | Mreverselocal i ->
+    let ie, ia = f accu i in
+    g (Mreverselocal (ie)), ia
 
   | Mselect (c, p) ->
     let ce, ca = f accu c in
