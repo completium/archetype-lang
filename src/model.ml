@@ -173,7 +173,9 @@ type ('id, 'term) mterm_node  =
   | Mexternal     of 'id * 'id * 'term * ('term) list
   | Mget          of 'term * 'term
   | Mset          of 'term * 'term * 'term
-  | Madd          of 'term * 'term
+  | Maddasset     of ident * 'term * 'term
+  | Maddfield     of ident * ident * 'term * 'term (* asset_name * field_name ... *)
+  | Maddlocal     of 'term * 'term
   | Mremove       of 'term * 'term
   | Mclear        of 'term
   | Mreverse      of 'term
@@ -621,20 +623,22 @@ let map_term_node (f : 'id mterm_gen -> 'id mterm_gen) = function
   | Msetiterated  e              -> Msetiterated  (f e)
   | Msettoiterate e              -> Msettoiterate (f e)
   | Mexternal (t, func, c, args) -> Mexternal (t, func, f c, List.map f args)
-  | Mget (c, k)             -> Mget (f c, f k)
-  | Mset (c, k, v)          -> Mset (f c, f k, f v)
-  | Madd (c, i)             -> Madd (f c, f i)
-  | Mremove (c, i)          -> Mremove (f c, f i)
-  | Mclear (c)              -> Mclear (f c)
-  | Mreverse (c)            -> Mreverse (f c)
-  | Mselect (c, p)          -> Mselect (f c, f p)
-  | Msort (c, p, k)         -> Msort (f c, f p, k)
-  | Mcontains (c, i)        -> Mcontains (f c, f i)
-  | Mnth (c, i)             -> Mnth (f c, f i)
-  | Mcount (c)              -> Mcount (f c)
-  | Msum (fd, c)            -> Msum (fd, f c)
-  | Mmin (fd, c)            -> Mmin (fd, f c)
-  | Mmax (fd, c)            -> Mmax (fd, f c)
+  | Mget (c, k)                  -> Mget (f c, f k)
+  | Mset (c, k, v)               -> Mset (f c, f k, f v)
+  | Maddasset (an, c, i)         -> Maddasset (an,f c, f i)
+  | Maddfield (an, fn, c, i)     -> Maddfield (an, fn, f c, f i)
+  | Maddlocal (c, i)             -> Maddlocal (f c, f i)
+  | Mremove (c, i)               -> Mremove (f c, f i)
+  | Mclear (c)                   -> Mclear (f c)
+  | Mreverse (c)                 -> Mreverse (f c)
+  | Mselect (c, p)               -> Mselect (f c, f p)
+  | Msort (c, p, k)              -> Msort (f c, f p, k)
+  | Mcontains (c, i)             -> Mcontains (f c, f i)
+  | Mnth (c, i)                  -> Mnth (f c, f i)
+  | Mcount (c)                   -> Mcount (f c)
+  | Msum (fd, c)                 -> Msum (fd, f c)
+  | Mmin (fd, c)                 -> Mmin (fd, f c)
+  | Mmax (fd, c)                 -> Mmax (fd, f c)
   | Mfail (msg)                  -> Mfail (f msg)
   | Mmathmin (l, r)         -> Mmathmin (f l, f r)
   | Mmathmax (l, r)         -> Mmathmax (f l, f r)
@@ -721,7 +725,9 @@ let fold_term (f : 'a -> 't -> 'a) (accu : 'a) (term : 'id mterm_gen) =
   | Mexternal (t, func, c, args)          -> List.fold_left f (f accu c) args
   | Mget (c, k)                           -> f (f accu k) c
   | Mset (c, k, v)                        -> f (f (f accu v) k) c
-  | Madd (c, i)                           -> f (f accu c) i
+  | Maddasset (an, c, i)                  -> f (f accu c) i
+  | Maddfield (an, fn, c, i)              -> f (f accu c) i
+  | Maddlocal (c, i)                      -> f (f accu c) i
   | Mremove (c, i)                        -> f (f accu c) i
   | Mclear (c)                            -> f accu c
   | Mreverse (c)                          -> f accu c
@@ -873,10 +879,20 @@ let fold_map_term
     let ve, va = f ka v in
     g (Mset (ce, ke, ve)), ka
 
-  | Madd (c, i) ->
+  | Maddasset (an, c, i) ->
     let ce, ca = f accu c in
     let ie, ia = f ca i in
-    g (Madd (ce, ie)), ia
+    g (Maddasset (an, ce, ie)), ia
+
+  | Maddfield (an, fn, c, i) ->
+    let ce, ca = f accu c in
+    let ie, ia = f ca i in
+    g (Maddfield (an, fn, ce, ie)), ia
+
+  | Maddlocal (c, i) ->
+    let ce, ca = f accu c in
+    let ie, ia = f ca i in
+    g (Maddlocal (ce, ie)), ia
 
   | Mremove (c, i) ->
     let ce, ca = f accu c in

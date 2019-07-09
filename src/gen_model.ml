@@ -352,11 +352,15 @@ let to_model (ast : A.model) : M.model =
     | A.Icall (_, A.Cconst (A.Cfail), [AExpr p]) ->
       M.Mfail (f p)
 
-    | A.Icall (None, A.Cconst (A.Cadd), [AExpr p; AExpr q]) ->
-      M.Madd (f p, f q)
-
-    | A.Icall (Some p, A.Cconst (A.Cadd), [AExpr q]) ->
-      M.Madd (f p, f q)
+    | A.Icall (None, A.Cconst (A.Cadd), [AExpr p; AExpr q])
+    | A.Icall (Some p, A.Cconst (A.Cadd), [AExpr q]) -> (
+        let fp = f p in
+        let fq = f q in
+        match fp with
+        | {node = M.Mvarstorecol asset_name; _} -> M.Maddasset (unloc asset_name, fp, fq)
+        | {node = M.Mdot ({type_ = M.Tasset asset_name ; _}, f); _} -> M.Maddfield (unloc asset_name, unloc f, fp, fq)
+        | _ -> M.Maddlocal (fp, fq)
+      )
 
     | A.Icall (None, A.Cconst (A.Cremove), [AExpr p; AExpr q]) ->
       M.Mremove (f p, f q)
@@ -596,13 +600,13 @@ let to_model (ast : A.model) : M.model =
         let term, accu = M.fold_map_term (ge term) fe accu term in
         let accu = add accu (Model.mk_api_item api_item) in
         term, accu
-      | M.Madd ({node = M.Mvarstorecol asset_name; _}, _) ->
-        let api_item = M.APIStorage (M.Add asset_name) in
+      | M.Maddasset (asset_name, _, _) ->
+        let api_item = M.APIStorage (M.Add (dumloc asset_name)) in
         let term, accu = M.fold_map_term (ge term) fe accu term in
         let accu = add accu (Model.mk_api_item api_item) in
         term, accu
-      | M.Madd ({node = M.Mdot ({type_ = M.Tasset asset_name ; _}, f); _}, _) ->
-        let api_item = M.APIStorage (M.UpdateAdd (asset_name, f)) in
+      | M.Maddfield (asset_name, field_name, _, _) ->
+        let api_item = M.APIStorage (M.UpdateAdd (dumloc asset_name, dumloc field_name)) in
         let term, accu = M.fold_map_term (ge term) fe accu term in
         let accu = add accu (Model.mk_api_item api_item) in
         term, accu
