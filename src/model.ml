@@ -1193,6 +1193,8 @@ module Utils : sig
   val dest_partition                     : type_ -> lident
   val get_partition_record_key           : model -> lident -> lident -> (lident * lident * btyp)
   val get_entries                        : model -> (verification option * function_struct) list
+  val has_partition                      : model -> lident -> bool
+  val get_record_partitions              : model -> lident -> record_item list
 
 end = struct
 
@@ -1289,6 +1291,32 @@ end = struct
               acc @ [record.name,ritem]
             | _ -> acc
           ) [] record.values)
+      ) []
+
+  let has_partition m asset : bool =
+    get_records m |> List.fold_left (fun acc (record : record) ->
+        if compare asset.pldesc record.name.pldesc = 0 then
+          (List.fold_left (fun acc (ritem : record_item) ->
+               match ritem.type_ with
+               | Tcontainer (Tasset _, Partition) -> true
+               | _ -> acc
+             ) false record.values)
+        else
+          acc
+      ) false
+
+
+  let get_record_partitions m asset : record_item list =
+    get_records m |> List.fold_left (fun acc (record : record) ->
+        if compare asset.pldesc record.name.pldesc = 0 then
+          (List.fold_left (fun acc (ritem : record_item) ->
+               match ritem.type_ with
+               | Tcontainer (Tasset _, Partition) ->
+                 acc @ [ritem]
+               | _ -> acc
+             ) [] record.values)
+        else
+          acc
       ) []
 
   let dest_partition = function
