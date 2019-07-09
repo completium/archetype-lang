@@ -171,23 +171,23 @@ type ('id, 'term) mterm_node  =
   | Mmatchwith    of 'term * ('id pattern_gen * 'term) list
   | Mapp          of 'id * 'term list
   | Mexternal     of 'id * 'id * 'term * ('term) list
-  | Mget          of 'id api_item_gen_node option * 'term * 'term
-  | Mset          of 'id api_item_gen_node option * 'term * 'term * 'term
-  | Madd          of 'id api_item_gen_node option * 'term * 'term
-  | Mremove       of 'id api_item_gen_node option * 'term * 'term
-  | Mclear        of 'id api_item_gen_node option * 'term
-  | Mreverse      of 'id api_item_gen_node option * 'term
-  | Mselect       of 'id api_item_gen_node option * 'term * 'term
-  | Msort         of 'id api_item_gen_node option * 'term * 'id * sort_kind
-  | Mcontains     of 'id api_item_gen_node option * 'term * 'term
-  | Mnth          of 'id api_item_gen_node option * 'term * 'term
-  | Mcount        of 'id api_item_gen_node option * 'term
-  | Msum          of 'id api_item_gen_node option * 'id * 'term
-  | Mmin          of 'id api_item_gen_node option * 'id * 'term
-  | Mmax          of 'id api_item_gen_node option * 'id * 'term
+  | Mget          of 'term * 'term
+  | Mset          of 'term * 'term * 'term
+  | Madd          of 'term * 'term
+  | Mremove       of 'term * 'term
+  | Mclear        of 'term
+  | Mreverse      of 'term
+  | Mselect       of 'term * 'term
+  | Msort         of 'term * 'id * sort_kind
+  | Mcontains     of 'term * 'term
+  | Mnth          of 'term * 'term
+  | Mcount        of 'term
+  | Msum          of 'id * 'term
+  | Mmin          of 'id * 'term
+  | Mmax          of 'id * 'term
+  | Mmathmax      of 'term * 'term
+  | Mmathmin      of 'term * 'term
   | Mfail         of 'term
-  | Mmathmax      of 'id api_item_gen_node option * 'term * 'term
-  | Mmathmin      of 'id api_item_gen_node option * 'term * 'term
   | Mand          of 'term * 'term
   | Mor           of 'term * 'term
   | Mimply        of 'term * 'term
@@ -621,23 +621,23 @@ let map_term_node (f : 'id mterm_gen -> 'id mterm_gen) = function
   | Msetiterated  e              -> Msetiterated  (f e)
   | Msettoiterate e              -> Msettoiterate (f e)
   | Mexternal (t, func, c, args) -> Mexternal (t, func, f c, List.map f args)
-  | Mget (api, c, k)             -> Mget (api, f c, f k)
-  | Mset (api, c, k, v)          -> Mset (api, f c, f k, f v)
-  | Madd (api, c, i)             -> Madd (api, f c, f i)
-  | Mremove (api, c, i)          -> Mremove (api, f c, f i)
-  | Mclear (api, c)              -> Mclear (api, f c)
-  | Mreverse (api, c)            -> Mreverse (api, f c)
-  | Mselect (api, c, p)          -> Mselect (api, f c, f p)
-  | Msort (api, c, p, k)         -> Msort (api, f c, f p, k)
-  | Mcontains (api, c, i)        -> Mcontains (api, f c, f i)
-  | Mnth (api, c, i)             -> Mnth (api, f c, f i)
-  | Mcount (api, c)              -> Mcount (api, f c)
-  | Msum (api, fd, c)            -> Msum (api, fd, f c)
-  | Mmin (api, fd, c)            -> Mmin (api, fd, f c)
-  | Mmax (api, fd, c)            -> Mmax (api, fd, f c)
+  | Mget (c, k)             -> Mget (f c, f k)
+  | Mset (c, k, v)          -> Mset (f c, f k, f v)
+  | Madd (c, i)             -> Madd (f c, f i)
+  | Mremove (c, i)          -> Mremove (f c, f i)
+  | Mclear (c)              -> Mclear (f c)
+  | Mreverse (c)            -> Mreverse (f c)
+  | Mselect (c, p)          -> Mselect (f c, f p)
+  | Msort (c, p, k)         -> Msort (f c, f p, k)
+  | Mcontains (c, i)        -> Mcontains (f c, f i)
+  | Mnth (c, i)             -> Mnth (f c, f i)
+  | Mcount (c)              -> Mcount (f c)
+  | Msum (fd, c)            -> Msum (fd, f c)
+  | Mmin (fd, c)            -> Mmin (fd, f c)
+  | Mmax (fd, c)            -> Mmax (fd, f c)
   | Mfail (msg)                  -> Mfail (f msg)
-  | Mmathmin (api, l, r)         -> Mmathmin (api, f l, f r)
-  | Mmathmax (api, l, r)         -> Mmathmax (api, f l, f r)
+  | Mmathmin (l, r)         -> Mmathmin (f l, f r)
+  | Mmathmax (l, r)         -> Mmathmax (f l, f r)
   | Mand (l, r)                  -> Mand (f l, f r)
   | Mor (l, r)                   -> Mor (f l, f r)
   | Mimply (l, r)                -> Mimply (f l, f r)
@@ -719,23 +719,23 @@ let fold_term (f : 'a -> 't -> 'a) (accu : 'a) (term : 'id mterm_gen) =
   | Msetiterated  e                       -> f accu e
   | Msettoiterate e                       -> f accu e
   | Mexternal (t, func, c, args)          -> List.fold_left f (f accu c) args
-  | Mget (api, c, k)                      -> f (f accu k) c
-  | Mset (api, c, k, v)                   -> f (f (f accu v) k) c
-  | Madd (api, c, i)                      -> f (f accu c) i
-  | Mremove (api, c, i)                   -> f (f accu c) i
-  | Mclear (api, c)                       -> f accu c
-  | Mreverse (api, c)                     -> f accu c
-  | Mselect (api, c, p)                   -> f (f accu c) p
-  | Msort (api, c, p, _)                  -> f (f accu c) p
-  | Mcontains (api, c, i)                 -> f (f accu c) i
-  | Mnth      (api, c, i)                 -> f (f accu c) i
-  | Mcount (api, c)                       -> f accu c
-  | Msum (api, fd, c)                     -> f accu c
-  | Mmin (api, fd, c)                     -> f accu c
-  | Mmax (api, fd, c)                     -> f accu c
+  | Mget (c, k)                           -> f (f accu k) c
+  | Mset (c, k, v)                        -> f (f (f accu v) k) c
+  | Madd (c, i)                           -> f (f accu c) i
+  | Mremove (c, i)                        -> f (f accu c) i
+  | Mclear (c)                            -> f accu c
+  | Mreverse (c)                          -> f accu c
+  | Mselect (c, p)                        -> f (f accu c) p
+  | Msort (c, p, _)                       -> f (f accu c) p
+  | Mcontains (c, i)                      -> f (f accu c) i
+  | Mnth      (c, i)                      -> f (f accu c) i
+  | Mcount (c)                            -> f accu c
+  | Msum (fd, c)                          -> f accu c
+  | Mmin (fd, c)                          -> f accu c
+  | Mmax (fd, c)                          -> f accu c
   | Mfail (msg)                           -> f accu msg
-  | Mmathmax (_, l, r)                    -> f (f accu l) r
-  | Mmathmin (_, l, r)                    -> f (f accu l) r
+  | Mmathmax (l, r)                       -> f (f accu l) r
+  | Mmathmin (l, r)                       -> f (f accu l) r
   | Mand (l, r)                           -> f (f accu l) r
   | Mor (l, r)                            -> f (f accu l) r
   | Mimply (l, r)                         -> f (f accu l) r
@@ -862,83 +862,83 @@ let fold_map_term
            pterms @ [p], accu) ([], ca) args in
     g (Mexternal (t, func, ce, lp)), la
 
-  | Mget (api, c, k) ->
+  | Mget (c, k) ->
     let ce, ca = f accu c in
     let ke, ka = f ca k in
-    g (Mget (api, ce, ke)), ka
+    g (Mget (ce, ke)), ka
 
-  | Mset (api, c, k, v) ->
+  | Mset (c, k, v) ->
     let ce, ca = f accu c in
     let ke, ka = f ca k in
     let ve, va = f ka v in
-    g (Mset (api, ce, ke, ve)), ka
+    g (Mset (ce, ke, ve)), ka
 
-  | Madd (api, c, i) ->
+  | Madd (c, i) ->
     let ce, ca = f accu c in
     let ie, ia = f ca i in
-    g (Madd (api, ce, ie)), ia
+    g (Madd (ce, ie)), ia
 
-  | Mremove (api, c, i) ->
+  | Mremove (c, i) ->
     let ce, ca = f accu c in
     let ie, ia = f ca i in
-    g (Mremove (api, ce, ie)), ia
+    g (Mremove (ce, ie)), ia
 
-  | Mclear (api, c) ->
+  | Mclear (c) ->
     let ce, ca = f accu c in
-    g (Mclear (api, ce)), ca
+    g (Mclear (ce)), ca
 
-  | Mreverse (api, c) ->
+  | Mreverse (c) ->
     let ce, ca = f accu c in
-    g (Mreverse (api, ce)), ca
+    g (Mreverse (ce)), ca
 
-  | Mselect (api, c, p) ->
+  | Mselect (c, p) ->
     let ce, ca = f accu c in
     let pe, pa = f ca p in
-    g (Mselect (api, ce, pe)), pa
+    g (Mselect (ce, pe)), pa
 
-  | Msort (api, c, fi, k) ->
+  | Msort (c, fi, k) ->
     let ce, ca = f accu c in
-    g (Msort (api, ce, fi, k)), ca
+    g (Msort (ce, fi, k)), ca
 
-  | Mcontains (api, c, i) ->
-    let ce, ca = f accu c in
-    let ie, ia = f ca i in
-    g (Mcontains (api, ce, ie)), ia
-
-  | Mnth (api, c, i) ->
+  | Mcontains (c, i) ->
     let ce, ca = f accu c in
     let ie, ia = f ca i in
-    g (Mnth (api, ce, ie)), ia
+    g (Mcontains (ce, ie)), ia
 
-  | Mcount (api, c) ->
+  | Mnth (c, i) ->
     let ce, ca = f accu c in
-    g (Mcount (api, ce)), ca
+    let ie, ia = f ca i in
+    g (Mnth (ce, ie)), ia
 
-  | Msum (api, fd, c) ->
+  | Mcount (c) ->
     let ce, ca = f accu c in
-    g (Msum (api, fd, ce)), ca
+    g (Mcount (ce)), ca
 
-  | Mmin (api, fd, c) ->
+  | Msum (fd, c) ->
     let ce, ca = f accu c in
-    g (Mmin (api, fd, ce)), ca
+    g (Msum (fd, ce)), ca
 
-  | Mmax (api, fd, c) ->
+  | Mmin (fd, c) ->
     let ce, ca = f accu c in
-    g (Mmax (api, fd, ce)), ca
+    g (Mmin (fd, ce)), ca
+
+  | Mmax (fd, c) ->
+    let ce, ca = f accu c in
+    g (Mmax (fd, ce)), ca
 
   | Mfail (msg) ->
     let msge, msga = f accu msg in
     g (Mfail (msge)), msga
 
-  | Mmathmax (api, l, r) ->
+  | Mmathmax (l, r) ->
     let le, la = f accu l in
     let re, ra = f la r in
-    g (Mmathmax (api, le, re)), ra
+    g (Mmathmax (le, re)), ra
 
-  | Mmathmin (api, l, r) ->
+  | Mmathmin (l, r) ->
     let le, la = f accu l in
     let re, ra = f la r in
-    g (Mmathmin (api, le, re)), ra
+    g (Mmathmin (le, re)), ra
 
   | Mand (l, r) ->
     let le, la = f accu l in
