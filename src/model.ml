@@ -170,7 +170,7 @@ type ('id, 'term) mterm_node  =
   | Mif           of ('term * 'term * 'term)
   | Mmatchwith    of 'term * ('id pattern_gen * 'term) list
   | Mapp          of 'id * 'term list
-  | Mexternal     of 'id api_item_gen_node option * 'id * 'id * 'term * ('term) list
+  | Mexternal     of 'id * 'id * 'term * ('term) list
   | Mget          of 'id api_item_gen_node option * 'term * 'term
   | Mset          of 'id api_item_gen_node option * 'term * 'term * 'term
   | Madd          of 'id api_item_gen_node option * 'term * 'term
@@ -185,9 +185,9 @@ type ('id, 'term) mterm_node  =
   | Msum          of 'id api_item_gen_node option * 'id * 'term
   | Mmin          of 'id api_item_gen_node option * 'id * 'term
   | Mmax          of 'id api_item_gen_node option * 'id * 'term
-  | Mfail         of 'id api_item_gen_node option * 'term
-  | Mmathmax      of 'term * 'term
-  | Mmathmin      of 'term * 'term
+  | Mfail         of 'term
+  | Mmathmax      of 'id api_item_gen_node option * 'term * 'term
+  | Mmathmin      of 'id api_item_gen_node option * 'term * 'term
   | Mand          of 'term * 'term
   | Mor           of 'term * 'term
   | Mimply        of 'term * 'term
@@ -611,88 +611,88 @@ let mk_model ?(api_items = []) ?(decls = []) ?(functions = []) name storage veri
 (* -------------------------------------------------------------------- *)
 
 let map_term_node (f : 'id mterm_gen -> 'id mterm_gen) = function
-  | Mif (c, t, e)               -> Mif (f c, f t, f e)
-  | Mmatchwith (e, l)           -> Mmatchwith (e, List.map (fun (p, e) -> (p, f e)) l)
-  | Mapp (e, args)              -> Mapp (e, List.map f args)
-  | Msetbefore    e             -> Msetbefore    (f e)
-  | Msetunmoved   e             -> Msetunmoved   (f e)
-  | Msetadded     e             -> Msetadded     (f e)
-  | Msetremoved   e             -> Msetremoved   (f e)
-  | Msetiterated  e             -> Msetiterated  (f e)
-  | Msettoiterate e             -> Msettoiterate (f e)
-  | Mexternal (api, t, func, c, args) -> Mexternal (api, t, func, f c, List.map f args)
-  | Mget (api, c, k)            -> Mget (api, f c, f k)
-  | Mset (api, c, k, v)         -> Mset (api, f c, f k, f v)
-  | Madd (api, c, i)            -> Madd (api, f c, f i)
-  | Mremove (api, c, i)         -> Mremove (api, f c, f i)
-  | Mclear (api, c)             -> Mclear (api, f c)
-  | Mreverse (api, c)           -> Mreverse (api, f c)
-  | Mselect (api, c, p)         -> Mselect (api, f c, f p)
-  | Msort (api, c, p, k)        -> Msort (api, f c, f p, k)
-  | Mcontains (api, c, i)       -> Mcontains (api, f c, f i)
-  | Mnth (api, c, i)            -> Mnth (api, f c, f i)
-  | Mcount (api, c)             -> Mcount (api, f c)
-  | Msum (api, fd, c)           -> Msum (api, fd, f c)
-  | Mmin (api, fd, c)           -> Mmin (api, fd, f c)
-  | Mmax (api, fd, c)           -> Mmax (api, fd, f c)
-  | Mfail (api, msg)            -> Mfail (api, f msg)
-  | Mmathmin (l, r)             -> Mmathmin (f l, f r)
-  | Mmathmax (l, r)             -> Mmathmax (f l, f r)
-  | Mand (l, r)                 -> Mand (f l, f r)
-  | Mor (l, r)                  -> Mor (f l, f r)
-  | Mimply (l, r)               -> Mimply (f l, f r)
-  | Mequiv  (l, r)              -> Mequiv (f l, f r)
-  | Mnot e                      -> Mnot (f e)
-  | Mequal (l, r)               -> Mequal (f l, f r)
-  | Mnequal (l, r)              -> Mnequal (f l, f r)
-  | Mgt (l, r)                  -> Mgt (f l, f r)
-  | Mge (l, r)                  -> Mge (f l, f r)
-  | Mlt (l, r)                  -> Mlt (f l, f r)
-  | Mle (l, r)                  -> Mle (f l, f r)
-  | Mplus (l, r)                -> Mplus (f l, f r)
-  | Mminus (l, r)               -> Mminus (f l, f r)
-  | Mmult (l, r)                -> Mmult (f l, f r)
-  | Mdiv (l, r)                 -> Mdiv (f l, f r)
-  | Mmodulo (l, r)              -> Mmodulo (f l, f r)
-  | Muplus e                    -> Muplus (f e)
-  | Muminus e                   -> Muminus (f e)
-  | Mrecord l                   -> Mrecord (List.map f l)
-  | Mletin (i, a, t, b)         -> Mletin (i, f a, t, f b)
-  | Mvarstorevar v              -> Mvarstorevar v
-  | Mvarstorecol v              -> Mvarstorecol v
-  | Mvarenumval v               -> Mvarenumval  v
-  | Mvarfield v                 -> Mvarfield    v
-  | Mvarlocal v                 -> Mvarlocal    v
-  | Mvarthe                     -> Mvarthe
-  | Mstate                      -> Mstate
-  | Mnow                        -> Mnow
-  | Mtransferred                -> Mtransferred
-  | Mcaller                     -> Mcaller
-  | Mbalance                    -> Mbalance
-  | Marray l                    -> Marray (List.map f l)
-  | Mint v                      -> Mint v
-  | Muint v                     -> Muint v
-  | Mbool v                     -> Mbool v
-  | Menum v                     -> Menum v
-  | Mrational (n, d)            -> Mrational (n, d)
-  | Mdate v                     -> Mdate v
-  | Mstring v                   -> Mstring v
-  | Mcurrency (v, c)            -> Mcurrency (v, c)
-  | Maddress v                  -> Maddress v
-  | Mduration v                 -> Mduration v
-  | Mdot (e, i)                 -> Mdot (f e, i)
-  | Mtuple l                    -> Mtuple (List.map f l)
-  | Mfor (i, c, b)              -> Mfor (i, f c, f b)
-  | Mseq is                     -> Mseq (List.map f is)
-  | Massign (op, l, r)          -> Massign (op, l, f r)
-  | Massignfield (op, a, fi, r) -> Massignfield (op, a, fi, f r)
-  | Mrequire (b, x)             -> Mrequire (b, f x)
-  | Mtransfer (x, b, q)         -> Mtransfer (f x, b, q)
-  | Mbreak                      -> Mbreak
-  | Massert x                   -> Massert (f x)
-  | Mreturn x                   -> Mreturn (f x)
-  | Mforall (i, t, e)           -> Mforall (i, t, f e)
-  | Mexists (i, t, e)           -> Mexists (i, t, f e)
+  | Mif (c, t, e)                -> Mif (f c, f t, f e)
+  | Mmatchwith (e, l)            -> Mmatchwith (e, List.map (fun (p, e) -> (p, f e)) l)
+  | Mapp (e, args)               -> Mapp (e, List.map f args)
+  | Msetbefore    e              -> Msetbefore    (f e)
+  | Msetunmoved   e              -> Msetunmoved   (f e)
+  | Msetadded     e              -> Msetadded     (f e)
+  | Msetremoved   e              -> Msetremoved   (f e)
+  | Msetiterated  e              -> Msetiterated  (f e)
+  | Msettoiterate e              -> Msettoiterate (f e)
+  | Mexternal (t, func, c, args) -> Mexternal (t, func, f c, List.map f args)
+  | Mget (api, c, k)             -> Mget (api, f c, f k)
+  | Mset (api, c, k, v)          -> Mset (api, f c, f k, f v)
+  | Madd (api, c, i)             -> Madd (api, f c, f i)
+  | Mremove (api, c, i)          -> Mremove (api, f c, f i)
+  | Mclear (api, c)              -> Mclear (api, f c)
+  | Mreverse (api, c)            -> Mreverse (api, f c)
+  | Mselect (api, c, p)          -> Mselect (api, f c, f p)
+  | Msort (api, c, p, k)         -> Msort (api, f c, f p, k)
+  | Mcontains (api, c, i)        -> Mcontains (api, f c, f i)
+  | Mnth (api, c, i)             -> Mnth (api, f c, f i)
+  | Mcount (api, c)              -> Mcount (api, f c)
+  | Msum (api, fd, c)            -> Msum (api, fd, f c)
+  | Mmin (api, fd, c)            -> Mmin (api, fd, f c)
+  | Mmax (api, fd, c)            -> Mmax (api, fd, f c)
+  | Mfail (msg)                  -> Mfail (f msg)
+  | Mmathmin (api, l, r)         -> Mmathmin (api, f l, f r)
+  | Mmathmax (api, l, r)         -> Mmathmax (api, f l, f r)
+  | Mand (l, r)                  -> Mand (f l, f r)
+  | Mor (l, r)                   -> Mor (f l, f r)
+  | Mimply (l, r)                -> Mimply (f l, f r)
+  | Mequiv  (l, r)               -> Mequiv (f l, f r)
+  | Mnot e                       -> Mnot (f e)
+  | Mequal (l, r)                -> Mequal (f l, f r)
+  | Mnequal (l, r)               -> Mnequal (f l, f r)
+  | Mgt (l, r)                   -> Mgt (f l, f r)
+  | Mge (l, r)                   -> Mge (f l, f r)
+  | Mlt (l, r)                   -> Mlt (f l, f r)
+  | Mle (l, r)                   -> Mle (f l, f r)
+  | Mplus (l, r)                 -> Mplus (f l, f r)
+  | Mminus (l, r)                -> Mminus (f l, f r)
+  | Mmult (l, r)                 -> Mmult (f l, f r)
+  | Mdiv (l, r)                  -> Mdiv (f l, f r)
+  | Mmodulo (l, r)               -> Mmodulo (f l, f r)
+  | Muplus e                     -> Muplus (f e)
+  | Muminus e                    -> Muminus (f e)
+  | Mrecord l                    -> Mrecord (List.map f l)
+  | Mletin (i, a, t, b)          -> Mletin (i, f a, t, f b)
+  | Mvarstorevar v               -> Mvarstorevar v
+  | Mvarstorecol v               -> Mvarstorecol v
+  | Mvarenumval v                -> Mvarenumval  v
+  | Mvarfield v                  -> Mvarfield    v
+  | Mvarlocal v                  -> Mvarlocal    v
+  | Mvarthe                      -> Mvarthe
+  | Mstate                       -> Mstate
+  | Mnow                         -> Mnow
+  | Mtransferred                 -> Mtransferred
+  | Mcaller                      -> Mcaller
+  | Mbalance                     -> Mbalance
+  | Marray l                     -> Marray (List.map f l)
+  | Mint v                       -> Mint v
+  | Muint v                      -> Muint v
+  | Mbool v                      -> Mbool v
+  | Menum v                      -> Menum v
+  | Mrational (n, d)             -> Mrational (n, d)
+  | Mdate v                      -> Mdate v
+  | Mstring v                    -> Mstring v
+  | Mcurrency (v, c)             -> Mcurrency (v, c)
+  | Maddress v                   -> Maddress v
+  | Mduration v                  -> Mduration v
+  | Mdot (e, i)                  -> Mdot (f e, i)
+  | Mtuple l                     -> Mtuple (List.map f l)
+  | Mfor (i, c, b)               -> Mfor (i, f c, f b)
+  | Mseq is                      -> Mseq (List.map f is)
+  | Massign (op, l, r)           -> Massign (op, l, f r)
+  | Massignfield (op, a, fi, r)  -> Massignfield (op, a, fi, f r)
+  | Mrequire (b, x)              -> Mrequire (b, f x)
+  | Mtransfer (x, b, q)          -> Mtransfer (f x, b, q)
+  | Mbreak                       -> Mbreak
+  | Massert x                    -> Massert (f x)
+  | Mreturn x                    -> Mreturn (f x)
+  | Mforall (i, t, e)            -> Mforall (i, t, f e)
+  | Mexists (i, t, e)            -> Mexists (i, t, f e)
   | MsecMayBePerformedOnlyByRole   (l, r) -> MsecMayBePerformedOnlyByRole   (f l, f r)
   | MsecMayBePerformedOnlyByAction (l, r) -> MsecMayBePerformedOnlyByAction (f l, f r)
   | MsecMayBePerformedByRole       (l, r) -> MsecMayBePerformedByRole       (f l, f r)
@@ -718,7 +718,7 @@ let fold_term (f : 'a -> 't -> 'a) (accu : 'a) (term : 'id mterm_gen) =
   | Msetremoved   e                       -> f accu e
   | Msetiterated  e                       -> f accu e
   | Msettoiterate e                       -> f accu e
-  | Mexternal (api, t, func, c, args)     -> List.fold_left f (f accu c) args
+  | Mexternal (t, func, c, args)          -> List.fold_left f (f accu c) args
   | Mget (api, c, k)                      -> f (f accu k) c
   | Mset (api, c, k, v)                   -> f (f (f accu v) k) c
   | Madd (api, c, i)                      -> f (f accu c) i
@@ -733,9 +733,9 @@ let fold_term (f : 'a -> 't -> 'a) (accu : 'a) (term : 'id mterm_gen) =
   | Msum (api, fd, c)                     -> f accu c
   | Mmin (api, fd, c)                     -> f accu c
   | Mmax (api, fd, c)                     -> f accu c
-  | Mfail (api, msg)                      -> f accu msg
-  | Mmathmax (l, r)                       -> f (f accu l) r
-  | Mmathmin (l, r)                       -> f (f accu l) r
+  | Mfail (msg)                           -> f accu msg
+  | Mmathmax (_, l, r)                    -> f (f accu l) r
+  | Mmathmin (_, l, r)                    -> f (f accu l) r
   | Mand (l, r)                           -> f (f accu l) r
   | Mor (l, r)                            -> f (f accu l) r
   | Mimply (l, r)                         -> f (f accu l) r
@@ -854,13 +854,13 @@ let fold_map_term
     let ee, ea = f accu e in
     g (Msettoiterate ee), ea
 
-  | Mexternal (api, t, func, c, args) ->
+  | Mexternal (t, func, c, args) ->
     let ce, ca = f accu c in
     let (lp, la) = List.fold_left
         (fun (pterms, accu) x ->
            let p, accu = f accu x in
            pterms @ [p], accu) ([], ca) args in
-    g (Mexternal (api, t, func, ce, lp)), la
+    g (Mexternal (t, func, ce, lp)), la
 
   | Mget (api, c, k) ->
     let ce, ca = f accu c in
@@ -926,19 +926,19 @@ let fold_map_term
     let ce, ca = f accu c in
     g (Mmax (api, fd, ce)), ca
 
-  | Mfail (api, msg) ->
+  | Mfail (msg) ->
     let msge, msga = f accu msg in
-    g (Mfail (api, msge)), msga
+    g (Mfail (msge)), msga
 
-  | Mmathmax (l, r) ->
+  | Mmathmax (api, l, r) ->
     let le, la = f accu l in
     let re, ra = f la r in
-    g (Mmathmax (le, re)), ra
+    g (Mmathmax (api, le, re)), ra
 
-  | Mmathmin (l, r) ->
+  | Mmathmin (api, l, r) ->
     let le, la = f accu l in
     let re, ra = f la r in
-    g (Mmathmin (le, re)), ra
+    g (Mmathmin (api, le, re)), ra
 
   | Mand (l, r) ->
     let le, la = f accu l in

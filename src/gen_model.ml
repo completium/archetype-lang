@@ -350,7 +350,7 @@ let to_model (ast : A.model) : M.model =
     | A.Icall (i, Cid id, args) -> M.Mapp (id, Option.map_dfl (fun v -> [to_mterm v]) [] i @ List.map (term_arg_to_expr f) args)
 
     | A.Icall (_, A.Cconst (A.Cfail), [AExpr p]) ->
-      M.Mfail (None, f p)
+      M.Mfail (f p)
 
     | A.Icall (None, A.Cconst (A.Cadd), [AExpr p; AExpr q]) ->
       M.Madd (None, f p, f q)
@@ -600,7 +600,8 @@ let to_model (ast : A.model) : M.model =
       | M.Msum (_, a, b)      -> f (M.Msum (Some api_item, a, b))
       | M.Mmin (_, a, b)      -> f (M.Mmin (Some api_item, a, b))
       | M.Mmax (_, a, b)      -> f (M.Mmax (Some api_item, a, b))
-      | M.Mfail (_, a)        -> f (M.Mfail (Some api_item, a))
+      | M.Mmathmax (_, a, b)  -> f (M.Mmathmax (Some api_item, a, b))
+      | M.Mmathmin (_, a, b)  -> f (M.Mmathmin (Some api_item, a, b))
       | _ -> emit_error CannotSetApiItem
     in
 
