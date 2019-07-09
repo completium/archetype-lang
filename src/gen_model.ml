@@ -180,22 +180,22 @@ let to_model (ast : A.model) : M.model =
         M.Mapp (id, List.map (fun x -> term_arg_to_expr f x) args)
 
       | A.Pcall (Some p, A.Cconst A.Cget, [AExpr q]) ->
-        M.Mget (None, f p, f q)
+        M.Mget (f p, f q)
 
       | A.Pcall (Some p, A.Cconst (A.Ccontains), [AExpr q]) ->
-        M.Mcontains (None, f p, f q)
+        M.Mcontains (f p, f q)
 
       | A.Pcall (None, A.Cconst (A.Ccontains), [AExpr p; AExpr q]) ->
-        M.Mcontains (None, f p, f q)
+        M.Mcontains (f p, f q)
 
       | A.Pcall (None, A.Cconst (A.Csum), [AExpr p; AExpr q]) ->
-        M.Msum (None, Location.dumloc "TODO", f q)
+        M.Msum (Location.dumloc "TODO", f q)
 
       | A.Pcall (Some p, A.Cconst (A.Csum), [AExpr q]) ->
-        M.Msum (None, Location.dumloc "TODO", f q)
+        M.Msum (Location.dumloc "TODO", f q)
 
       | A.Pcall (None, A.Cconst (A.Cselect), [AExpr c; AExpr p]) ->
-        M.Mselect (None, f c, f p)
+        M.Mselect (f c, f p)
 
       | A.Pcall (aux, A.Cconst c, args) ->
         Format.eprintf "expr const unkown: %a with nb args: %d %s@." A.pp_const c (List.length args) (match aux with | Some _ -> "with aux" | _ -> "without aux");
@@ -249,7 +249,7 @@ let to_model (ast : A.model) : M.model =
     let key_loced : M.lident = dumloc (key_name) in
     let key_mterm : M.mterm = M.mk_mterm (M.Mvarlocal key_loced) type_container_asset in
 
-    let set_mterm : M.mterm = M.mk_mterm (M.Mset (None, asset_mterm, key_mterm, var_mterm)) Tunit in
+    let set_mterm : M.mterm = M.mk_mterm (M.Mset (asset_mterm, key_mterm, var_mterm)) Tunit in
 
     let seq : M.mterm list = (List.map (fun ((id, op, term) : ('a * A.operator * 'c)) -> M.mk_mterm
                                            (M.Massignfield (to_assign_operator op, var_name, id, term))
@@ -258,7 +258,7 @@ let to_model (ast : A.model) : M.model =
 
     let body : M.mterm = M.mk_mterm (M.Mseq seq) Tunit in
 
-    let get_mterm : M.mterm = M.mk_mterm (M.Mget (None, asset_mterm, key_mterm)) type_asset in
+    let get_mterm : M.mterm = M.mk_mterm (M.Mget (asset_mterm, key_mterm)) type_asset in
 
     let letinasset : M.mterm = M.mk_mterm (M.Mletin (var_name,
                                                      get_mterm,
@@ -352,17 +352,25 @@ let to_model (ast : A.model) : M.model =
     | A.Icall (_, A.Cconst (A.Cfail), [AExpr p]) ->
       M.Mfail (f p)
 
-    | A.Icall (None, A.Cconst (A.Cadd), [AExpr p; AExpr q]) ->
-      M.Madd (None, f p, f q)
+    | A.Icall (None, A.Cconst (A.Cadd), [AExpr p; AExpr q])
+    | A.Icall (Some p, A.Cconst (A.Cadd), [AExpr q]) -> (
+        let fp = f p in
+        let fq = f q in
+        match fp with
+        | {node = M.Mvarstorecol asset_name; _} -> M.Maddasset (unloc asset_name, fp, fq)
+        | {node = M.Mdot ({type_ = M.Tasset asset_name ; _}, f); _} -> M.Maddfield (unloc asset_name, unloc f, fp, fq)
+        | _ -> M.Maddlocal (fp, fq)
+      )
 
-    | A.Icall (Some p, A.Cconst (A.Cadd), [AExpr q]) ->
-      M.Madd (None, f p, f q)
-
-    | A.Icall (None, A.Cconst (A.Cremove), [AExpr p; AExpr q]) ->
-      M.Mremove (None, f p, f q)
-
-    | A.Icall (Some p, A.Cconst (A.Cremove), [AExpr q]) ->
-      M.Mremove (None, f p, f q)
+    | A.Icall (None, A.Cconst (A.Cremove), [AExpr p; AExpr q])
+    | A.Icall (Some p, A.Cconst (A.Cremove), [AExpr q]) -> (
+        let fp = f p in
+        let fq = f q in
+        match fp with
+        | {node = M.Mvarstorecol asset_name; _} -> M.Mremoveasset (unloc asset_name, fp, fq)
+        | {node = M.Mdot ({type_ = M.Tasset asset_name ; _}, f); _} -> M.Mremovefield (unloc asset_name, unloc f, fp, fq)
+        | _ -> M.Mremovelocal (fp, fq)
+      )
 
     | A.Icall (Some p, A.Cconst (A.Cupdate), [AExpr k; AEffect e]) ->
       let p = f p in
@@ -371,7 +379,7 @@ let to_model (ast : A.model) : M.model =
       extract_letin p k e
 
     | A.Icall (None, A.Cconst (A.Cselect), [AExpr p; AExpr q]) ->
-      M.Mselect (None, f p, f q)
+      M.Mselect (f p, f q)
 
     | A.Icall (Some c, A.Cconst (A.Cremoveif), [AExpr p]) ->
       M.Mseq []
@@ -584,136 +592,97 @@ let to_model (ast : A.model) : M.model =
 
     let ge (e : M.mterm) = (fun node -> { e with node = node }) in
 
-    let set_api_item api_item f (term : M.mterm) : M.mterm =
-      match term.node with
-      | M.Mget (_, a, b)      -> f (M.Mget (Some api_item, a, b))
-      | M.Mset (_, a, b, c)   -> f (M.Mset (Some api_item, a, b, c))
-      | M.Madd (_, a, b)      -> f (M.Madd (Some api_item, a, b))
-      | M.Mremove (_, a, b)   -> f (M.Mremove (Some api_item, a, b))
-      | M.Mclear (_, a)       -> f (M.Mclear (Some api_item, a))
-      | M.Mreverse (_, a)     -> f (M.Mreverse (Some api_item, a))
-      | M.Mselect (_, a, b)   -> f (M.Mselect (Some api_item, a, b))
-      | M.Msort (_, a, b, c)  -> f (M.Msort (Some api_item, a, b, c))
-      | M.Mcontains (_, a, b) -> f (M.Mcontains (Some api_item, a, b))
-      | M.Mnth (_, a, b)      -> f (M.Mnth (Some api_item, a, b))
-      | M.Mcount (_, a)       -> f (M.Mcount (Some api_item, a))
-      | M.Msum (_, a, b)      -> f (M.Msum (Some api_item, a, b))
-      | M.Mmin (_, a, b)      -> f (M.Mmin (Some api_item, a, b))
-      | M.Mmax (_, a, b)      -> f (M.Mmax (Some api_item, a, b))
-      | M.Mmathmax (_, a, b)  -> f (M.Mmathmax (Some api_item, a, b))
-      | M.Mmathmin (_, a, b)  -> f (M.Mmathmin (Some api_item, a, b))
-      | _ -> emit_error CannotSetApiItem
-    in
-
     let rec fe (accu : M.api_item list) (term : M.mterm) : M.mterm * M.api_item list =
       match term.node with
-      | M.Mget (None, {node = M.Mvarstorecol asset_name; _}, _) ->
+      | M.Mget ({node = M.Mvarstorecol asset_name; _}, _) ->
         let api_item = M.APIStorage (M.Get asset_name) in
         let term, accu = M.fold_map_term (ge term) fe accu term in
         let accu = add accu (Model.mk_api_item api_item) in
-        let term : M.mterm = set_api_item api_item (ge term) term in
         term, accu
-      | M.Mset (None, {node = M.Mvarstorecol asset_name; _}, _, _) ->
+      | M.Mset ({node = M.Mvarstorecol asset_name; _}, _, _) ->
         let api_item = M.APIStorage (M.Set asset_name) in
         let term, accu = M.fold_map_term (ge term) fe accu term in
         let accu = add accu (Model.mk_api_item api_item) in
-        let term : M.mterm = set_api_item api_item (ge term) term in
         term, accu
-      | M.Madd (None, {node = M.Mvarstorecol asset_name; _}, _) ->
-        let api_item = M.APIStorage (M.Add asset_name) in
+      | M.Maddasset (asset_name, _, _) ->
+        let api_item = M.APIStorage (M.Add (dumloc asset_name)) in
         let term, accu = M.fold_map_term (ge term) fe accu term in
         let accu = add accu (Model.mk_api_item api_item) in
-        let term : M.mterm = set_api_item api_item (ge term) term in
         term, accu
-      | M.Madd (None, {node = M.Mdot ({type_ = M.Tasset asset_name ; _}, f); _}, _) ->
-        let api_item = M.APIStorage (M.UpdateAdd (asset_name, f)) in
+      | M.Maddfield (asset_name, field_name, _, _) ->
+        let api_item = M.APIStorage (M.UpdateAdd (dumloc asset_name, dumloc field_name)) in
         let term, accu = M.fold_map_term (ge term) fe accu term in
         let accu = add accu (Model.mk_api_item api_item) in
-        let term : M.mterm = set_api_item api_item (ge term) term in
         term, accu
-      | M.Mremove (None, {node = M.Mvarstorecol asset_name; _}, _) ->
-        let api_item = M.APIStorage (M.Remove asset_name) in
+      | M.Mremoveasset (asset_name, _, _) ->
+        let api_item = M.APIStorage (M.Remove (dumloc asset_name)) in
         let term, accu = M.fold_map_term (ge term) fe accu term in
         let accu = add accu (Model.mk_api_item api_item) in
-        let term : M.mterm = set_api_item api_item (ge term) term in
         term, accu
-      | M.Mremove (None, {node = M.Mdot ({type_ = M.Tasset asset_name ; _}, f); _}, _) ->
-        let api_item = M.APIStorage (M.UpdateRemove (asset_name, f)) in
+      | M.Mremovefield (asset_name, field_name, _, _) ->
+        let api_item = M.APIStorage (M.UpdateRemove (dumloc asset_name, dumloc field_name)) in
         let term, accu = M.fold_map_term (ge term) fe accu term in
         let accu = add accu (Model.mk_api_item api_item) in
-        let term : M.mterm = set_api_item api_item (ge term) term in
         term, accu
-      | M.Mclear (None, {node = M.Mvarstorecol asset_name; _}) ->
-        let api_item = M.APIStorage (M.Clear asset_name) in
+      | M.Mclearasset (asset_name, _) ->
+        let api_item = M.APIStorage (M.Clear (dumloc asset_name)) in
         let term, accu = M.fold_map_term (ge term) fe accu term in
         let accu = add accu (Model.mk_api_item api_item) in
-        let term : M.mterm = set_api_item api_item (ge term) term in
         term, accu
-      | M.Mclear (None, {node = M.Mdot ({type_ = M.Tasset asset_name ; _}, f); _}) ->
-        let api_item = M.APIStorage (M.UpdateClear (asset_name, f)) in
+      | M.Mclearfield (asset_name, field_name, _) ->
+        let api_item = M.APIStorage (M.UpdateClear (dumloc asset_name, dumloc field_name)) in
         let term, accu = M.fold_map_term (ge term) fe accu term in
         let accu = add accu (Model.mk_api_item api_item) in
-        let term : M.mterm = set_api_item api_item (ge term) term in
         term, accu
-      | M.Mreverse (None, {node = M.Mvarstorecol asset_name; _}) ->
-        let api_item = M.APIStorage (M.Reverse asset_name) in
+      | M.Mreverseasset (asset_name, _) ->
+        let api_item = M.APIStorage (M.Reverse (dumloc asset_name)) in
         let term, accu = M.fold_map_term (ge term) fe accu term in
         let accu = add accu (Model.mk_api_item api_item) in
-        let term : M.mterm = set_api_item api_item (ge term) term in
         term, accu
-      | M.Mreverse (None, {node = M.Mdot ({type_ = M.Tasset asset_name ; _}, f); _}) ->
-        let api_item = M.APIStorage (M.UpdateReverse (asset_name, f)) in
+      | M.Mreversefield (asset_name, field_name, _) ->
+        let api_item = M.APIStorage (M.UpdateReverse (dumloc asset_name, dumloc field_name)) in
         let term, accu = M.fold_map_term (ge term) fe accu term in
         let accu = add accu (Model.mk_api_item api_item) in
-        let term : M.mterm = set_api_item api_item (ge term) term in
         term, accu
-      | M.Mselect (None, {node = M.Mvarstorecol asset_name; _}, _) ->
+      | M.Mselect ({node = M.Mvarstorecol asset_name; _}, _) ->
         let api_item = M.APIFunction (M.Select asset_name) in
         let term, accu = M.fold_map_term (ge term) fe accu term in
         let accu = add accu (Model.mk_api_item api_item) in
-        let term : M.mterm = set_api_item api_item (ge term) term in
         term, accu
-      | M.Msort (None, {node = M.Mvarstorecol asset_name; _}, field_name, _) ->
+      | M.Msort ({node = M.Mvarstorecol asset_name; _}, field_name, _) ->
         let api_item = M.APIFunction (M.Sort (asset_name, field_name)) in
         let term, accu = M.fold_map_term (ge term) fe accu term in
         let accu = add accu (Model.mk_api_item api_item) in
-        let term : M.mterm = set_api_item api_item (ge term) term in
         term, accu
-      | M.Mcontains (None, {type_ = M.Tcontainer (M.Tasset asset_name, _) ; _}, _) ->
+      | M.Mcontains ({type_ = M.Tcontainer (M.Tasset asset_name, _) ; _}, _) ->
         let api_item = M.APIFunction (M.Contains asset_name) in
         let term, accu = M.fold_map_term (ge term) fe accu term in
         let accu = add accu (Model.mk_api_item api_item) in
-        let term : M.mterm = set_api_item api_item (ge term) term in
         term, accu
-      | M.Mnth (None, {type_ = M.Tcontainer (M.Tasset asset_name, _) ; _}, _) ->
+      | M.Mnth ({type_ = M.Tcontainer (M.Tasset asset_name, _) ; _}, _) ->
         let api_item = M.APIFunction (M.Nth asset_name) in
         let term, accu = M.fold_map_term (ge term) fe accu term in
         let accu = add accu (Model.mk_api_item api_item) in
-        let term : M.mterm = set_api_item api_item (ge term) term in
         term, accu
-      | M.Mcount (None, {type_ = M.Tcontainer (M.Tasset asset_name, _) ; _}) ->
+      | M.Mcount ({type_ = M.Tcontainer (M.Tasset asset_name, _) ; _}) ->
         let api_item = M.APIFunction (M.Count asset_name) in
         let term, accu = M.fold_map_term (ge term) fe accu term in
         let accu = add accu (Model.mk_api_item api_item) in
-        let term : M.mterm = set_api_item api_item (ge term) term in
         term, accu
-      | M.Msum (None, field_name, {type_ = M.Tcontainer (M.Tasset asset_name, _) ; _}) ->
+      | M.Msum (field_name, {type_ = M.Tcontainer (M.Tasset asset_name, _) ; _}) ->
         let api_item = M.APIFunction (M.Sum (asset_name, field_name)) in
         let term, accu = M.fold_map_term (ge term) fe accu term in
         let accu = add accu (Model.mk_api_item api_item) in
-        let term : M.mterm = set_api_item api_item (ge term) term in
         term, accu
-      | M.Mmin (None, field_name, {type_ = M.Tcontainer (M.Tasset asset_name, _) ; _}) ->
+      | M.Mmin (field_name, {type_ = M.Tcontainer (M.Tasset asset_name, _) ; _}) ->
         let api_item = M.APIFunction (M.Min (asset_name, field_name)) in
         let term, accu = M.fold_map_term (ge term) fe accu term in
         let accu = add accu (Model.mk_api_item api_item) in
-        let term : M.mterm = set_api_item api_item (ge term) term in
         term, accu
-      | M.Mmax (None, field_name, {type_ = M.Tcontainer (M.Tasset asset_name, _) ; _}) ->
+      | M.Mmax (field_name, {type_ = M.Tcontainer (M.Tasset asset_name, _) ; _}) ->
         let api_item = M.APIFunction (M.Max (asset_name, field_name)) in
         let term, accu = M.fold_map_term (ge term) fe accu term in
         let accu = add accu (Model.mk_api_item api_item) in
-        let term : M.mterm = set_api_item api_item (ge term) term in
         term, accu
 
       | _ -> M.fold_map_term (ge term) fe accu term in
