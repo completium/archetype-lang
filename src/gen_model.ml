@@ -220,9 +220,11 @@ let to_model (ast : A.model) : M.model =
      myasset.f2 := v2;
      set_myasset s _k _myasset *)
 
-  let extract_letin c k (e : (A.lident * A.operator * M.mterm) list) : M.mterm__node =
-    let extract_asset_name _pterm =
-      "myasset"
+  let extract_letin (c : M.mterm) k (e : (A.lident * A.operator * M.mterm) list) : M.mterm__node =
+    let extract_asset_name (pterm : M.mterm) : Ident.ident =
+      match pterm with
+      | {type_ = Tcontainer (Tasset asset_name, Collection); _ } -> unloc asset_name
+      | _ -> assert false
     in
 
     let asset_name = extract_asset_name c in
