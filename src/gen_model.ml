@@ -183,19 +183,51 @@ let to_model (ast : A.model) : M.model =
         M.Mget (f p, f q)
 
       | A.Pcall (Some p, A.Cconst (A.Ccontains), [AExpr q]) ->
-        M.Mcontains (f p, f q)
+        let fp = f p in
+        let asset_name =
+          match fp with
+          | {type_ = M.Tcontainer (M.Tasset asset_name, _); _} -> unloc asset_name
+          | _ -> assert false
+        in
+        M.Mcontains (asset_name, f p, f q)
 
       | A.Pcall (None, A.Cconst (A.Ccontains), [AExpr p; AExpr q]) ->
-        M.Mcontains (f p, f q)
+        let fp = f p in
+        let asset_name =
+          match fp with
+          | {type_ = M.Tcontainer (M.Tasset asset_name, _); _} -> unloc asset_name
+          | _ -> "todo"
+        in
+        M.Mcontains (asset_name, f p, f q)
 
       | A.Pcall (None, A.Cconst (A.Csum), [AExpr p; AExpr q]) ->
-        M.Msum (Location.dumloc "TODO", f q)
+        let fp = f p in
+        let asset_name =
+          match fp with
+          | {type_ = M.Tcontainer (M.Tasset asset_name, _); _} -> unloc asset_name
+          | _ -> "todo"
+        in
+        M.Msum (asset_name, Location.dumloc "TODO", f q)
 
       | A.Pcall (Some p, A.Cconst (A.Csum), [AExpr q]) ->
-        M.Msum (Location.dumloc "TODO", f q)
+        let fp = f p in
+        let asset_name =
+          match fp with
+          | {type_ = M.Tcontainer (M.Tasset asset_name, _); _} -> unloc asset_name
+          | _ -> "todo"
+        in
+        M.Msum (asset_name, Location.dumloc "TODO", f q)
 
+      | A.Pcall (Some c, A.Cconst (A.Cselect), [AExpr p])
       | A.Pcall (None, A.Cconst (A.Cselect), [AExpr c; AExpr p]) ->
-        M.Mselect (f c, f p)
+        let fc = f c in
+        let fp = f p in
+        let asset_name =
+          match fc with
+          | {type_ = M.Tcontainer (M.Tasset asset_name, _); _} -> unloc asset_name
+          | _ -> "todo0"
+        in
+        M.Mselect (asset_name, fc, fp)
 
       | A.Pcall (aux, A.Cconst c, args) ->
         Format.eprintf "expr const unkown: %a with nb args: %d %s@." A.pp_const c (List.length args) (match aux with | Some _ -> "with aux" | _ -> "without aux");
@@ -379,7 +411,13 @@ let to_model (ast : A.model) : M.model =
       extract_letin p k e
 
     | A.Icall (None, A.Cconst (A.Cselect), [AExpr p; AExpr q]) ->
-      M.Mselect (f p, f q)
+      let fp = f p in
+      let asset_name =
+        match fp with
+        | {type_ = M.Tcontainer (M.Tasset asset_name, _); _} -> unloc asset_name
+        | _ -> assert false
+      in
+      M.Mselect (asset_name, fp, f q)
 
     | A.Icall (Some c, A.Cconst (A.Cremoveif), [AExpr p]) ->
       M.Mseq []
@@ -644,43 +682,43 @@ let to_model (ast : A.model) : M.model =
         let term, accu = M.fold_map_term (ge term) fe accu term in
         let accu = add accu (Model.mk_api_item api_item) in
         term, accu
-      | M.Mselect ({node = M.Mvarstorecol asset_name; _}, _) ->
-        let api_item = M.APIFunction (M.Select asset_name) in
+      | M.Mselect (asset_name, _, _) ->
+        let api_item = M.APIFunction (M.Select (dumloc asset_name)) in
         let term, accu = M.fold_map_term (ge term) fe accu term in
         let accu = add accu (Model.mk_api_item api_item) in
         term, accu
-      | M.Msort ({node = M.Mvarstorecol asset_name; _}, field_name, _) ->
-        let api_item = M.APIFunction (M.Sort (asset_name, field_name)) in
+      | M.Msort (asset_name, _, field_name, _) ->
+        let api_item = M.APIFunction (M.Sort (dumloc asset_name, dumloc field_name)) in
         let term, accu = M.fold_map_term (ge term) fe accu term in
         let accu = add accu (Model.mk_api_item api_item) in
         term, accu
-      | M.Mcontains ({type_ = M.Tcontainer (M.Tasset asset_name, _) ; _}, _) ->
-        let api_item = M.APIFunction (M.Contains asset_name) in
+      | M.Mcontains (asset_name, _, _) ->
+        let api_item = M.APIFunction (M.Contains (dumloc asset_name)) in
         let term, accu = M.fold_map_term (ge term) fe accu term in
         let accu = add accu (Model.mk_api_item api_item) in
         term, accu
-      | M.Mnth ({type_ = M.Tcontainer (M.Tasset asset_name, _) ; _}, _) ->
-        let api_item = M.APIFunction (M.Nth asset_name) in
+      | M.Mnth (asset_name, _, _) ->
+        let api_item = M.APIFunction (M.Nth (dumloc asset_name)) in
         let term, accu = M.fold_map_term (ge term) fe accu term in
         let accu = add accu (Model.mk_api_item api_item) in
         term, accu
-      | M.Mcount ({type_ = M.Tcontainer (M.Tasset asset_name, _) ; _}) ->
-        let api_item = M.APIFunction (M.Count asset_name) in
+      | M.Mcount (asset_name, _) ->
+        let api_item = M.APIFunction (M.Count (dumloc asset_name)) in
         let term, accu = M.fold_map_term (ge term) fe accu term in
         let accu = add accu (Model.mk_api_item api_item) in
         term, accu
-      | M.Msum (field_name, {type_ = M.Tcontainer (M.Tasset asset_name, _) ; _}) ->
-        let api_item = M.APIFunction (M.Sum (asset_name, field_name)) in
+      | M.Msum (asset_name, field_name, _) ->
+        let api_item = M.APIFunction (M.Sum (dumloc asset_name, field_name)) in
         let term, accu = M.fold_map_term (ge term) fe accu term in
         let accu = add accu (Model.mk_api_item api_item) in
         term, accu
-      | M.Mmin (field_name, {type_ = M.Tcontainer (M.Tasset asset_name, _) ; _}) ->
-        let api_item = M.APIFunction (M.Min (asset_name, field_name)) in
+      | M.Mmin (asset_name, field_name, _) ->
+        let api_item = M.APIFunction (M.Min (dumloc asset_name, field_name)) in
         let term, accu = M.fold_map_term (ge term) fe accu term in
         let accu = add accu (Model.mk_api_item api_item) in
         term, accu
-      | M.Mmax (field_name, {type_ = M.Tcontainer (M.Tasset asset_name, _) ; _}) ->
-        let api_item = M.APIFunction (M.Max (asset_name, field_name)) in
+      | M.Mmax (asset_name, field_name, _) ->
+        let api_item = M.APIFunction (M.Max (dumloc asset_name, field_name)) in
         let term, accu = M.fold_map_term (ge term) fe accu term in
         let accu = add accu (Model.mk_api_item api_item) in
         term, accu

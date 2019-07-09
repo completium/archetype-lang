@@ -185,14 +185,14 @@ type ('id, 'term) mterm_node  =
   | Mreverseasset of ident * 'term
   | Mreversefield of ident * ident * 'term
   | Mreverselocal of 'term
-  | Mselect       of 'term * 'term
-  | Msort         of 'term * 'id * sort_kind
-  | Mcontains     of 'term * 'term
-  | Mnth          of 'term * 'term
-  | Mcount        of 'term
-  | Msum          of 'id * 'term
-  | Mmin          of 'id * 'term
-  | Mmax          of 'id * 'term
+  | Mselect       of ident * 'term * 'term
+  | Msort         of ident * 'term * ident * sort_kind
+  | Mcontains     of ident * 'term * 'term
+  | Mnth          of ident * 'term * 'term
+  | Mcount        of ident * 'term
+  | Msum          of ident * 'id * 'term
+  | Mmin          of ident * 'id * 'term
+  | Mmax          of ident * 'id * 'term
   | Mmathmax      of 'term * 'term
   | Mmathmin      of 'term * 'term
   | Mfail         of 'term
@@ -643,17 +643,17 @@ let map_term_node (f : 'id mterm_gen -> 'id mterm_gen) = function
   | Mreverseasset (an, i)        -> Mreverseasset (an, f i)
   | Mreversefield (an, fn, i)    -> Mreversefield (an, fn, f i)
   | Mreverselocal (i)            -> Mreverselocal (f i)
-  | Mselect (c, p)               -> Mselect (f c, f p)
-  | Msort (c, p, k)              -> Msort (f c, f p, k)
-  | Mcontains (c, i)             -> Mcontains (f c, f i)
-  | Mnth (c, i)                  -> Mnth (f c, f i)
-  | Mcount (c)                   -> Mcount (f c)
-  | Msum (fd, c)                 -> Msum (fd, f c)
-  | Mmin (fd, c)                 -> Mmin (fd, f c)
-  | Mmax (fd, c)                 -> Mmax (fd, f c)
+  | Mselect (an, c, p)           -> Mselect (an, f c, f p)
+  | Msort (an, c, fn, k)         -> Msort (an, f c, fn, k)
+  | Mcontains (an, c, i)         -> Mcontains (an, f c, f i)
+  | Mnth (an, c, i)              -> Mnth (an, f c, f i)
+  | Mcount (an, c)               -> Mcount (an, f c)
+  | Msum (an, fd, c)             -> Msum (an, fd, f c)
+  | Mmin (an, fd, c)             -> Mmin (an, fd, f c)
+  | Mmax (an, fd, c)             -> Mmax (an, fd, f c)
   | Mfail (msg)                  -> Mfail (f msg)
-  | Mmathmin (l, r)         -> Mmathmin (f l, f r)
-  | Mmathmax (l, r)         -> Mmathmax (f l, f r)
+  | Mmathmin (l, r)              -> Mmathmin (f l, f r)
+  | Mmathmax (l, r)             -> Mmathmax (f l, f r)
   | Mand (l, r)                  -> Mand (f l, f r)
   | Mor (l, r)                   -> Mor (f l, f r)
   | Mimply (l, r)                -> Mimply (f l, f r)
@@ -749,14 +749,14 @@ let fold_term (f : 'a -> 't -> 'a) (accu : 'a) (term : 'id mterm_gen) =
   | Mreverseasset (an, c)                 -> f accu c
   | Mreversefield (an, fn, c)             -> f accu c
   | Mreverselocal (c)                     -> f accu c
-  | Mselect (c, p)                        -> f (f accu c) p
-  | Msort (c, p, _)                       -> f (f accu c) p
-  | Mcontains (c, i)                      -> f (f accu c) i
-  | Mnth      (c, i)                      -> f (f accu c) i
-  | Mcount (c)                            -> f accu c
-  | Msum (fd, c)                          -> f accu c
-  | Mmin (fd, c)                          -> f accu c
-  | Mmax (fd, c)                          -> f accu c
+  | Mselect (an, c, p)                    -> f (f accu c) p
+  | Msort (an, c, p, _)                   -> f accu c
+  | Mcontains (an, c, i)                  -> f (f accu c) i
+  | Mnth      (an, c, i)                  -> f (f accu c) i
+  | Mcount (an, c)                        -> f accu c
+  | Msum (an, fd, c)                      -> f accu c
+  | Mmin (an, fd, c)                      -> f accu c
+  | Mmax (an, fd, c)                      -> f accu c
   | Mfail (msg)                           -> f accu msg
   | Mmathmax (l, r)                       -> f (f accu l) r
   | Mmathmin (l, r)                       -> f (f accu l) r
@@ -951,40 +951,40 @@ let fold_map_term
     let ie, ia = f accu i in
     g (Mreverselocal (ie)), ia
 
-  | Mselect (c, p) ->
+  | Mselect (an, c, p) ->
     let ce, ca = f accu c in
     let pe, pa = f ca p in
-    g (Mselect (ce, pe)), pa
+    g (Mselect (an, ce, pe)), pa
 
-  | Msort (c, fi, k) ->
+  | Msort (an, c, fi, k) ->
     let ce, ca = f accu c in
-    g (Msort (ce, fi, k)), ca
+    g (Msort (an, ce, fi, k)), ca
 
-  | Mcontains (c, i) ->
-    let ce, ca = f accu c in
-    let ie, ia = f ca i in
-    g (Mcontains (ce, ie)), ia
-
-  | Mnth (c, i) ->
+  | Mcontains (an, c, i) ->
     let ce, ca = f accu c in
     let ie, ia = f ca i in
-    g (Mnth (ce, ie)), ia
+    g (Mcontains (an, ce, ie)), ia
 
-  | Mcount (c) ->
+  | Mnth (an, c, i) ->
     let ce, ca = f accu c in
-    g (Mcount (ce)), ca
+    let ie, ia = f ca i in
+    g (Mnth (an, ce, ie)), ia
 
-  | Msum (fd, c) ->
+  | Mcount (an, c) ->
     let ce, ca = f accu c in
-    g (Msum (fd, ce)), ca
+    g (Mcount (an, ce)), ca
 
-  | Mmin (fd, c) ->
+  | Msum (an, fd, c) ->
     let ce, ca = f accu c in
-    g (Mmin (fd, ce)), ca
+    g (Msum (an, fd, ce)), ca
 
-  | Mmax (fd, c) ->
+  | Mmin (an, fd, c) ->
     let ce, ca = f accu c in
-    g (Mmax (fd, ce)), ca
+    g (Mmin (an, fd, ce)), ca
+
+  | Mmax (an, fd, c) ->
+    let ce, ca = f accu c in
+    g (Mmax (an, fd, ce)), ca
 
   | Mfail (msg) ->
     let msge, msga = f accu msg in
@@ -1235,6 +1235,10 @@ let fold_map_term
   | MsecTransferredTo a ->
     let ee, ea = f accu a in
     g (MsecTransferredTo ee), ea
+
+
+let fold_model (m : 'id model_gen) (f : 'id mterm_gen -> 'a) : 'a =
+  ()
 
 (* -------------------------------------------------------------------- *)
 module Utils : sig
