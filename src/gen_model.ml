@@ -8,6 +8,7 @@ exception Anomaly of string
 type error_desc =
   | NotSupportedContainer of string
   | UnsupportedTypeForFile of A.type_
+  | CannotConvertToAssignOperator
   | TODO
 [@@deriving show {with_path = false}]
 
@@ -78,6 +79,11 @@ let to_model (ast : A.model) : M.model =
     | A.DivAssign    -> M.DivAssign
     | A.AndAssign    -> M.AndAssign
     | A.OrAssign     -> M.OrAssign
+  in
+
+  let to_assign_operator = function
+    | `Assign op -> to_assignment_operator op
+    | _ -> emit_error CannotConvertToAssignOperator
   in
 
   let rec to_qualid_node (n : ('a, 'b) A.qualid_node) : ('id, 'qualid) M.qualid_node =
@@ -223,7 +229,7 @@ let to_model (ast : A.model) : M.model =
   let extract_letin (c : M.mterm) k (e : (A.lident * A.operator * M.mterm) list) : M.mterm__node =
     let extract_asset_name (pterm : M.mterm) : Ident.ident =
       match pterm with
-      | {type_ = Tcontainer (Tasset asset_name, Collection); _ } -> unloc asset_name
+      | {type_ = Tcontainer (Tasset asset_name, _); _ } -> unloc asset_name
       | _ -> assert false
     in
 
@@ -244,8 +250,8 @@ let to_model (ast : A.model) : M.model =
 
     let set_mterm : M.mterm = M.mk_mterm (M.Mset (None, asset_mterm, key_mterm, var_mterm)) Tunit in
 
-    let seq : M.mterm list = (List.map (fun (id, op, term) -> M.mk_mterm
-                                           (M.Massignfield (M.ValueAssign, var_name, id, term))
+    let seq : M.mterm list = (List.map (fun ((id, op, term) : ('a * A.operator * 'c)) -> M.mk_mterm
+                                           (M.Massignfield (to_assign_operator op, var_name, id, term))
                                            Tunit
                                        ) e) @ [set_mterm] in
 
@@ -268,6 +274,64 @@ let to_model (ast : A.model) : M.model =
     res
 
   in
+
+
+  (* col.removeif pred
+
+     let _pred = pred in
+     let _col = col.select pred in
+     for (_asset in _col)
+       _col_asset.remove _asset.key
+  *)
+
+  (* let extract_removeif (c : M.mterm) (p : M.mterm) : M.mterm__node =
+
+     let extract_ aaa = ()
+     in
+
+
+
+     let asset_name = extract_asset_name c in
+     let asset_loced = dumloc asset_name in
+
+     let type_asset = M.Tasset asset_loced in
+     let type_container_asset = M.Tcontainer (type_asset, Collection) in
+
+     let var_name = dumloc ("_" ^ asset_name) in
+     let var_mterm : M.mterm = M.mk_mterm (M.Mvarlocal (dumloc (asset_name))) type_asset in
+
+     let asset_mterm : M.mterm = M.mk_mterm (M.Mvarstorecol (dumloc (asset_name))) type_container_asset in
+
+     let key_name = "_k" in
+     let key_loced : M.lident = dumloc (key_name) in
+     let key_mterm : M.mterm = M.mk_mterm (M.Mvarlocal key_loced) type_container_asset in
+
+     let set_mterm : M.mterm = M.mk_mterm (M.Mset (None, asset_mterm, key_mterm, var_mterm)) Tunit in
+
+     let seq : M.mterm list = (List.map (fun ((id, op, term) : ('a * A.operator * 'c)) -> M.mk_mterm
+                                           (M.Massignfield (to_assign_operator op, var_name, id, term))
+                                           Tunit
+                                       ) e) @ [set_mterm] in
+
+     let body : M.mterm = M.mk_mterm (M.Mseq seq) Tunit in
+
+     let get_mterm : M.mterm = M.mk_mterm (M.Mget (None, asset_mterm, key_mterm)) type_asset in
+
+     let letinasset : M.mterm = M.mk_mterm (M.Mletin (var_name,
+                                                     get_mterm,
+                                                     Some (type_asset),
+                                                     body
+                                                    ))
+        Tunit in
+
+     let res : M.mterm__node = M.Mletin (key_loced,
+                                        key_mterm,
+                                        None,
+                                        letinasset
+                                       ) in
+     res
+
+     in *)
 
   let to_instruction_node (n : (A.lident, A.ptyp, A.pterm, A.instruction) A.instruction_node) g f : ('id, 'instr) M.mterm_node =
     match n with
@@ -305,11 +369,13 @@ let to_model (ast : A.model) : M.model =
       let e = List.map (fun (a, b, c) -> (a, b, f c)) e in
       extract_letin p k e
 
-    | A.Icall (None, A.Cconst (A.Cselect), [AExpr k; AExpr e]) ->
-      M.Mseq [] (* TODO *)
+    | A.Icall (None, A.Cconst (A.Cselect), [AExpr p; AExpr q]) ->
+      M.Mselect (None, f p, f q)
 
-    | A.Icall (_, A.Cconst (A.Cremoveif), _) ->
+    | A.Icall (Some c, A.Cconst (A.Cremoveif), [AExpr p]) ->
       M.Mseq []
+    (* extract_removeif (f c) (f p) *)
+
     | A.Icall (aux, A.Cconst c, args) ->
       Format.eprintf "instr const unkown: %a with nb args: %d %s@." A.pp_const c (List.length args) (match aux with | Some _ -> "with aux" | _ -> "without aux");
       assert false
@@ -532,8 +598,14 @@ let to_model (ast : A.model) : M.model =
         let accu = add accu (Model.mk_api_item (M.APIStorage (M.Add asset_name))) in
         term, accu
       | M.Madd (None, {node = M.Mdot ({type_ = M.Tasset asset_name ; _}, f); _}, _) ->
+        let api_item = M.APIStorage (M.UpdateAdd (asset_name, f)) in
         let term, accu = M.fold_map_term (ge term) fe accu term in
-        let accu = add accu (Model.mk_api_item (M.APIStorage (M.UpdateAdd (asset_name, f)))) in
+        let accu = add accu (Model.mk_api_item api_item) in
+        let term : M.mterm =
+          match term.node with
+          | M.Madd (_, a, b) -> ge term (M.Madd (Some api_item, a, b))
+          | _ -> assert false
+        in
         term, accu
       | M.Mremove (None, {node = M.Mvarstorecol asset_name; _}, _) ->
         let term, accu = M.fold_map_term (ge term) fe accu term in

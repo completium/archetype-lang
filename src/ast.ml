@@ -1543,12 +1543,14 @@ let create_miles_with_expiration_ast () =
                                                           ~type_:(Tcontainer (Tasset (dumloc "mile"), Collection))),
                                                   Cconst Cremoveif,
                                                   [
-                                                    AEffect [
-                                                      (dumloc "expiration"),
-                                                      `Cmp Lt,
-                                                      mk_sp (Pconst Cnow)
-                                                        ~type_:(Tbuiltin VTdate)
-                                                    ]
+                                                    AExpr
+                                                      (mk_sp (Pcomp (Lt,
+                                                                     mk_sp (Pvar (dumloc "expiration"))
+                                                                       ~type_:(Tbuiltin VTdate),
+                                                                     mk_sp (Pconst Cnow)
+                                                                       ~type_:(Tbuiltin VTdate)))
+                                                         ~type_:(Tbuiltin VTbool)
+                                                      )
                                                   ]
                                                  )
                                           ))))
