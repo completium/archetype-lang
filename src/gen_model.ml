@@ -1,4 +1,4 @@
-(* open Location *)
+open Location
 open Tools
 
 module A = Ast
@@ -211,6 +211,62 @@ let to_model (ast : A.model) : M.model =
     M.mk_label_term (lterm_to_mterm x.term) ?label:x.label ~loc:x.loc
   in
 
+
+  (* myasset.update k {f1 = v1; f2 = v2}
+
+     let _k = k in
+     let _myasset = myasset.get _k in
+     myasset.f1 := v1;
+     myasset.f2 := v2;
+     set_myasset s _k _myasset *)
+
+  let extract_letin c k (e : (A.lident * A.operator * M.mterm) list) : M.mterm__node =
+    let extract_asset_name _pterm =
+      "myasset"
+    in
+
+    let asset_name = extract_asset_name c in
+    let asset_loced = dumloc asset_name in
+
+    let type_asset = M.Tasset asset_loced in
+    let type_container_asset = M.Tcontainer (type_asset, Collection) in
+
+    let var_name = dumloc ("_" ^ asset_name) in
+    let var_mterm : M.mterm = M.mk_mterm (M.Mvarlocal (dumloc (asset_name))) type_asset in
+
+    let asset_mterm : M.mterm = M.mk_mterm (M.Mvarstorecol (dumloc (asset_name))) type_container_asset in
+
+    let key_name = "_k" in
+    let key_loced : M.lident = dumloc (key_name) in
+    let key_mterm : M.mterm = M.mk_mterm (M.Mvarlocal key_loced) type_container_asset in
+
+    let set_mterm : M.mterm = M.mk_mterm (M.Mset (None, asset_mterm, key_mterm, var_mterm)) Tunit in
+
+    let seq : M.mterm list = (List.map (fun (id, op, term) -> M.mk_mterm
+                                           (M.Massignfield (M.ValueAssign, var_name, id, term))
+                                           Tunit
+                                       ) e) @ [set_mterm] in
+
+    let body : M.mterm = M.mk_mterm (M.Mseq seq) Tunit in
+
+    let get_mterm : M.mterm = M.mk_mterm (M.Mget (None, asset_mterm, key_mterm)) type_asset in
+
+    let letinasset : M.mterm = M.mk_mterm (M.Mletin (var_name,
+                                                     get_mterm,
+                                                     Some (type_asset),
+                                                     body
+                                                    ))
+        Tunit in
+
+    let res : M.mterm__node = M.Mletin (key_loced,
+                                        key_mterm,
+                                        None,
+                                        letinasset
+                                       ) in
+    res
+
+  in
+
   let to_instruction_node (n : (A.lident, A.ptyp, A.pterm, A.instruction) A.instruction_node) g f : ('id, 'instr) M.mterm_node =
     match n with
     | A.Iif (c, t, e)           -> M.Mif (f c, g t, g e)
@@ -241,9 +297,17 @@ let to_model (ast : A.model) : M.model =
     | A.Icall (Some p, A.Cconst (A.Cremove), [AExpr q]) ->
       M.Mremove (None, f p, f q)
 
+    | A.Icall (Some p, A.Cconst (A.Cupdate), [AExpr k; AEffect e]) ->
+      let p = f p in
+      let k = f k in
+      let e = List.map (fun (a, b, c) -> (a, b, f c)) e in
+      extract_letin p k e
+
+    | A.Icall (None, A.Cconst (A.Cselect), [AExpr k; AExpr e]) ->
+      M.Mseq [] (* TODO *)
+
     | A.Icall (_, A.Cconst (A.Cremoveif), _) ->
       M.Mseq []
-
     | A.Icall (aux, A.Cconst c, args) ->
       Format.eprintf "instr const unkown: %a with nb args: %d %s@." A.pp_const c (List.length args) (match aux with | Some _ -> "with aux" | _ -> "without aux");
       assert false

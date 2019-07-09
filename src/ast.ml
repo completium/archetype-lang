@@ -1225,14 +1225,23 @@ let create_miles_with_expiration_ast () =
                                                                                                         (Pvar (dumloc "o"))
                                                                                                         ~type_:(LTprog (Tasset (dumloc "owner"))),
                                                                                                       dumloc "miles"))
-                                                                                           ~type_:(LTprog (Tcontainer (Tasset (dumloc "miles"), Collection))));
-                                                                                  AEffect [
-                                                                                    (dumloc "expiration"),
-                                                                                    `Cmp Ge,
-                                                                                    mk_sp (Pconst Cnow)
-                                                                                      ~type_:(LTprog (Tbuiltin VTdate))
-                                                                                  ]
-                                                                                ]))
+                                                                                           ~type_:(LTprog (Tcontainer (Tasset (dumloc "miles"), Collection))))
+                                                                                  ;
+                                                                                  AExpr (mk_sp (Pcomp (Ge,
+                                                                                                       mk_sp (Pdot (
+                                                                                                           mk_sp (Pvar (dumloc "the"))
+                                                                                                             ~type_:(LTprog (Tasset (dumloc "mile"))),
+                                                                                                           dumloc "expiration"
+                                                                                                         ))
+                                                                                                         ~type_:(LTprog (Tbuiltin VTdate)),
+                                                                                                       mk_sp (Pconst Cnow)
+                                                                                                         ~type_:(LTprog (Tbuiltin VTdate))
+                                                                                                      ))
+                                                                                           ~type_:(LTprog (Tbuiltin VTbool))
+                                                                                        )
+                                                                                ]
+
+                                                                               ))
                                                                     ~type_:(LTprog (Tcontainer (Tasset (dumloc "mile"), Collection))));
                                                          ]))
                                              ~type_:(LTprog (Tbuiltin VTbool)))
@@ -1363,12 +1372,18 @@ let create_miles_with_expiration_ast () =
                                                          ~type_:(Tasset (dumloc "owner")),
                                                        dumloc "miles"))
                                             ~type_:(Tcontainer (Tasset (dumloc "mile"), Partition)));
-                                   AEffect [
-                                     (dumloc "expiration"),
-                                     `Cmp Gt,
-                                     mk_sp (Pconst Cnow)
-                                       ~type_:(Tbuiltin VTdate)
-                                   ]
+                                   AExpr (mk_sp (Pcomp (Gt,
+                                                        mk_sp (Pdot (
+                                                            mk_sp (Pvar (dumloc "the"))
+                                                              ~type_:((Tasset (dumloc "mile"))),
+                                                            dumloc "expiration"
+                                                          ))
+                                                          ~type_:((Tbuiltin VTdate)),
+                                                        mk_sp (Pconst Cnow)
+                                                          ~type_:((Tbuiltin VTdate))
+                                                       ))
+                                            ~type_:((Tbuiltin VTbool))
+                                         )
                                  ]))
                      ~type_:(Tasset (dumloc "owner"))
                   ),

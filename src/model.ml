@@ -271,6 +271,9 @@ and 'id mterm_gen = {
 and mterm = lident mterm_gen
 [@@deriving show {with_path = false}]
 
+and mterm__node = (lident, mterm) mterm_node
+[@@deriving show {with_path = false}]
+
 type 'id label_term_gen = {
   label : 'id option;
   term : 'id mterm_gen;
