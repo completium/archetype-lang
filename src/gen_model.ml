@@ -607,12 +607,57 @@ let to_model (ast : A.model) : M.model =
   in
 
   let process_transaction (transaction : A.transaction) (list : M.function__ list) : M.function__ list =
+    let fail msg : M.mterm =
+      let var = M.mk_mterm (M.Mstring msg) (M.Tbuiltin Bstring) in
+      M.mk_mterm (M.Mfail var) M.Tunit
+    in
+
+    let process_calledby (instrs : M.mterm) : M.mterm =
+      let process_cb (cb : A.rexpr) (body : M.mterm) : M.mterm =
+        let rec process_rexpr (rq : A.rexpr) : M.mterm =
+          let caller : M.mterm = M.mk_mterm M.Mcaller (M.Tbuiltin Baddress) in
+          match rq.node with
+          | Rqualid q ->
+            begin
+              let qualid_to_pterm (q : A.qualid) : M.mterm =
+                let type_ = M.Tbuiltin Baddress in
+                match q.node with
+                | Qident i ->
+                  M.mk_mterm (M.Mvarstorevar i) type_ ~loc:q.loc
+                (* | Qdot ({node = Qident a}, i) ->
+                   M.mk_mterm (M.Mvarstorevar i) type_ ~loc:q.loc *)
+                | _ -> emit_error TODO
+              in
+              let addr : M.mterm = qualid_to_pterm q in
+              M.mk_mterm (M.Mequal (caller, addr)) (M.Tbuiltin Bbool) ~loc:rq.loc
+            end
+          | Ror (l, r) ->
+            M.mk_mterm (M.Mor (process_rexpr l, process_rexpr r)) (M.Tbuiltin Bbool) ~loc:rq.loc
+          | Raddress a ->
+            let addr   : M.mterm = M.mk_mterm (M.Maddress (unloc a)) (M.Tbuiltin Baddress) in
+            M.mk_mterm (M.Mequal (caller, addr)) (M.Tbuiltin Bbool) ~loc:rq.loc
+        in
+        let require : M.mterm = M.mk_mterm (M.Mnot (process_rexpr cb)) (M.Tbuiltin Bbool) ~loc:cb.loc in
+        let fail_auth : M.mterm = fail "not_authorized_fun" in
+        M.mk_mterm (M.Mif (require, fail_auth, body)) M.Tunit in
+      begin
+        match transaction.calledby with
+        | None -> instrs
+        | Some cb -> process_cb cb instrs
+      end
+    in
+
     let list  = list |> cont process_function ast.functions in
     let name  = transaction.name in
     let args  = List.map (fun (x : (A.lident, A.ptyp, A.ptyp A.bval_gen) A.decl_gen) -> (x.name, (ptyp_to_type |@ Option.get) x.typ, None)) transaction.args in
-    let body  = (to_instruction |@ Option.get) transaction.effect in
+    let body  =
+      (to_instruction |@ Option.get) transaction.effect
+      |> process_calledby
+    in
     let loc   = transaction.loc in
     let verif : M.verification option = Option.map to_verification transaction.verification in
+
+
     process_fun_gen name args body loc verif (fun x -> M.Entry x) list
   in
 
