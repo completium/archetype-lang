@@ -616,275 +616,6 @@ let to_model (ast : A.model) : M.model =
     process_fun_gen name args body loc verif (fun x -> M.Entry x) list
   in
 
-  let process_api_storage (model : M.model) : M.model =
-    let add l i =
-      let e = List.fold_left (fun accu x ->
-          if x = i
-          then true
-          else accu) false l in
-      if e then
-        l
-      else
-        i::l
-    in
-
-    let ge (e : M.mterm) = (fun node -> { e with node = node }) in
-
-    let rec fe (accu : M.api_item list) (term : M.mterm) : M.mterm * M.api_item list =
-      match term.node with
-      | M.Mget ({node = M.Mvarstorecol asset_name; _}, _) ->
-        let api_item = M.APIStorage (M.Get asset_name) in
-        let term, accu = M.fold_map_term (ge term) fe accu term in
-        let accu = add accu (Model.mk_api_item api_item) in
-        term, accu
-      | M.Mset ({node = M.Mvarstorecol asset_name; _}, _, _) ->
-        let api_item = M.APIStorage (M.Set asset_name) in
-        let term, accu = M.fold_map_term (ge term) fe accu term in
-        let accu = add accu (Model.mk_api_item api_item) in
-        term, accu
-      | M.Maddasset (asset_name, _, _) ->
-        let api_item = M.APIStorage (M.Add (dumloc asset_name)) in
-        let term, accu = M.fold_map_term (ge term) fe accu term in
-        let accu = add accu (Model.mk_api_item api_item) in
-        term, accu
-      | M.Maddfield (asset_name, field_name, _, _) ->
-        let api_item = M.APIStorage (M.UpdateAdd (dumloc asset_name, dumloc field_name)) in
-        let term, accu = M.fold_map_term (ge term) fe accu term in
-        let accu = add accu (Model.mk_api_item api_item) in
-        term, accu
-      | M.Mremoveasset (asset_name, _, _) ->
-        let api_item = M.APIStorage (M.Remove (dumloc asset_name)) in
-        let term, accu = M.fold_map_term (ge term) fe accu term in
-        let accu = add accu (Model.mk_api_item api_item) in
-        term, accu
-      | M.Mremovefield (asset_name, field_name, _, _) ->
-        let api_item = M.APIStorage (M.UpdateRemove (dumloc asset_name, dumloc field_name)) in
-        let term, accu = M.fold_map_term (ge term) fe accu term in
-        let accu = add accu (Model.mk_api_item api_item) in
-        term, accu
-      | M.Mclearasset (asset_name, _) ->
-        let api_item = M.APIStorage (M.Clear (dumloc asset_name)) in
-        let term, accu = M.fold_map_term (ge term) fe accu term in
-        let accu = add accu (Model.mk_api_item api_item) in
-        term, accu
-      | M.Mclearfield (asset_name, field_name, _) ->
-        let api_item = M.APIStorage (M.UpdateClear (dumloc asset_name, dumloc field_name)) in
-        let term, accu = M.fold_map_term (ge term) fe accu term in
-        let accu = add accu (Model.mk_api_item api_item) in
-        term, accu
-      | M.Mreverseasset (asset_name, _) ->
-        let api_item = M.APIStorage (M.Reverse (dumloc asset_name)) in
-        let term, accu = M.fold_map_term (ge term) fe accu term in
-        let accu = add accu (Model.mk_api_item api_item) in
-        term, accu
-      | M.Mreversefield (asset_name, field_name, _) ->
-        let api_item = M.APIStorage (M.UpdateReverse (dumloc asset_name, dumloc field_name)) in
-        let term, accu = M.fold_map_term (ge term) fe accu term in
-        let accu = add accu (Model.mk_api_item api_item) in
-        term, accu
-      | M.Mselect (asset_name, _, _) ->
-        let api_item = M.APIFunction (M.Select (dumloc asset_name)) in
-        let term, accu = M.fold_map_term (ge term) fe accu term in
-        let accu = add accu (Model.mk_api_item api_item) in
-        term, accu
-      | M.Msort (asset_name, _, field_name, _) ->
-        let api_item = M.APIFunction (M.Sort (dumloc asset_name, dumloc field_name)) in
-        let term, accu = M.fold_map_term (ge term) fe accu term in
-        let accu = add accu (Model.mk_api_item api_item) in
-        term, accu
-      | M.Mcontains (asset_name, _, _) ->
-        let api_item = M.APIFunction (M.Contains (dumloc asset_name)) in
-        let term, accu = M.fold_map_term (ge term) fe accu term in
-        let accu = add accu (Model.mk_api_item api_item) in
-        term, accu
-      | M.Mnth (asset_name, _, _) ->
-        let api_item = M.APIFunction (M.Nth (dumloc asset_name)) in
-        let term, accu = M.fold_map_term (ge term) fe accu term in
-        let accu = add accu (Model.mk_api_item api_item) in
-        term, accu
-      | M.Mcount (asset_name, _) ->
-        let api_item = M.APIFunction (M.Count (dumloc asset_name)) in
-        let term, accu = M.fold_map_term (ge term) fe accu term in
-        let accu = add accu (Model.mk_api_item api_item) in
-        term, accu
-      | M.Msum (asset_name, field_name, _) ->
-        let api_item = M.APIFunction (M.Sum (dumloc asset_name, field_name)) in
-        let term, accu = M.fold_map_term (ge term) fe accu term in
-        let accu = add accu (Model.mk_api_item api_item) in
-        term, accu
-      | M.Mmin (asset_name, field_name, _) ->
-        let api_item = M.APIFunction (M.Min (dumloc asset_name, field_name)) in
-        let term, accu = M.fold_map_term (ge term) fe accu term in
-        let accu = add accu (Model.mk_api_item api_item) in
-        term, accu
-      | M.Mmax (asset_name, field_name, _) ->
-        let api_item = M.APIFunction (M.Max (dumloc asset_name, field_name)) in
-        let term, accu = M.fold_map_term (ge term) fe accu term in
-        let accu = add accu (Model.mk_api_item api_item) in
-        term, accu
-
-      | _ -> M.fold_map_term (ge term) fe accu term in
-
-    let process_mterm (accu : M.api_item list) (expr : M.mterm) : M.mterm * M.api_item list =
-      fe accu expr
-    in
-
-    let update_label_term accu (lt : M.label_term) : M.label_term * M.api_item list =
-      let t, accu = process_mterm accu lt.term in
-      { lt with term = t }, accu
-    in
-
-    let update_predicate accu (d : M.predicate) : M.predicate * M.api_item list =
-      let body, accu = process_mterm accu d.body in
-      { d with body = body }, accu
-    in
-
-    let update_definition accu (d : M.definition) : M.definition * M.api_item list =
-      let body, accu = process_mterm accu d.body in
-      { d with body = body }, accu
-    in
-
-    let update_invariant accu (i : M.invariant) : M.invariant * M.api_item list =
-      let formulas, accu = List.fold_left
-          (fun (l, accu) item ->
-             let i, accu = process_mterm accu item in
-             (l @ [i], accu)
-          ) ([], accu) i.formulas in
-      { i with formulas = formulas }, accu
-    in
-
-    let update_specification accu (spec : M.specification) : M.specification * M.api_item list =
-      let formula, accu = process_mterm accu spec.formula in
-      let invariants, accu = List.fold_left
-          (fun (l, accu) (item : M.invariant) ->
-             let i, accu = update_invariant accu item in
-             (l @ [i], accu)
-          ) ([], accu) spec.invariants in
-      { spec with formula = formula; invariants = invariants; }, accu
-    in
-
-    let update_assert accu (assert_ : M.assert_) : M.assert_ * M.api_item list =
-      let formula, accu = process_mterm accu assert_.formula in
-      let invariants, accu = List.fold_left
-          (fun (l, accu) (item : M.invariant) ->
-             let i, accu = update_invariant accu item in
-             (l @ [i], accu)
-          ) ([], accu) assert_.invariants in
-      { assert_ with formula = formula; invariants = invariants; }, accu
-    in
-
-    let update_verif accu (verif : M.verification) : M.verification * M.api_item list =
-
-      let predicates, accu = List.fold_left
-          (fun (l, accu) (item : M.predicate) ->
-             let i, accu = update_predicate accu item in
-             (l @ [i], accu)
-          ) ([], accu) verif.predicates in
-
-      let definitions, accu = List.fold_left
-          (fun (l, accu) (item : M.definition) ->
-             let i, accu = update_definition accu item in
-             (l @ [i], accu)
-          ) ([], accu) verif.definitions in
-
-      let axioms, accu = List.fold_left
-          (fun (l, accu) (item : M.label_term) ->
-             let i, accu = update_label_term accu item in
-             (l @ [i], accu)
-          ) ([], accu) verif.axioms in
-
-      let theorems, accu = List.fold_left
-          (fun (l, accu) (item : M.label_term) ->
-             let i, accu = update_label_term accu item in
-             (l @ [i], accu)
-          ) ([], accu) verif.theorems in
-
-      let invariants, accu =
-        List.fold_left (fun (l, accu) (lbl, is) ->
-            let invs, accu = List.fold_left
-                (fun (l, accu) (item : M.label_term) ->
-                   let i, accu = update_label_term accu item in
-                   (l @ [i], accu)
-                ) ([], accu) is in
-            (l @ [lbl, invs], accu)
-          ) ([], accu) verif.invariants in
-
-      let effects, accu = List.fold_left
-          (fun (l, accu) (item : M.mterm) ->
-             let i, accu = process_mterm accu item in
-             (l @ [i], accu)
-          ) ([], accu) verif.effects in
-
-      let specs, accu = List.fold_left
-          (fun (l, accu) (item : M.specification) ->
-             let i, accu = update_specification accu item in
-             (l @ [i], accu)
-          ) ([], accu) verif.specs in
-
-      let asserts, accu = List.fold_left
-          (fun (l, accu) (item : M.assert_) ->
-             let i, accu = update_assert accu item in
-             (l @ [i], accu)
-          ) ([], accu) verif.asserts in
-
-      { verif with
-        predicates  = predicates;
-        definitions = definitions;
-        axioms      = axioms;
-        theorems    = theorems;
-        (* variables   : 'id variable_gen list; *)
-        invariants  = invariants;
-        effects     = effects;
-        specs       = specs;
-        asserts     = asserts;
-      }, accu
-    in
-
-    let update_function_struct accu (fs : M.function_struct) : M.function_struct * M.api_item list =
-      let instr, accu = process_mterm accu fs.body in
-      { fs with body = instr}, accu
-    in
-
-    let update_function__ (f : M.function__) (fs : M.function_struct) accu g : M.function__  * M.api_item list =
-      let fs, accu = update_function_struct accu fs in
-      let verif, accu =
-        match f.verif with
-        | Some v -> update_verif accu v |> (fun (x, y) -> Some x, y)
-        | _ -> None, accu
-      in
-      { f with node = g fs; verif = verif }, accu
-    in
-
-    let api_items : M.api_item list = model.api_items in
-
-    let (functions, api_items) : M.function__ list * M.api_item list =
-      List.fold_left
-        (fun ((accu, api_items) : M.function__ list * M.api_item list) (f : M.function__) ->
-           match f.node with
-           | M.Entry e ->
-             begin
-               let f, api_items = update_function__ f e api_items (fun e -> Entry e) in
-               accu @ [f], api_items
-             end
-           | M.Function (e, t) ->
-             begin
-               let f, api_items = update_function__ f e api_items (fun e -> Function (e, t)) in
-               accu @ [f], api_items
-             end
-             (* | _ -> accu @ [f], api_items *)
-        ) ([], api_items) model.functions in
-
-    let (v, api_items) : M.verification * M.api_item list = update_verif api_items model.verification in
-
-    {
-      model with
-      api_items = api_items;
-      functions = functions;
-      verification = v;
-    }
-
-  in
-
   let name = ast.name in
   let decls =
     []
@@ -905,6 +636,68 @@ let to_model (ast : A.model) : M.model =
   let verification =
     M.mk_verification ()
     |> (fun verif -> List.fold_left (fun accu x -> cont_verification x accu) verif ast.verifications)
+  in
+
+  let process_api_storage (model : M.model) : M.model =
+    let add l i =
+      let e = List.fold_left (fun accu x ->
+          if x = i
+          then true
+          else accu) false l in
+      if e then
+        l
+      else
+        i::l
+    in
+
+    let rec f (accu : M.api_item list) (term : M.mterm) : M.api_item list =
+      let accu = M.fold_term f accu term in
+      let api_item : M.api_item_node option =
+        match term.node with
+        | M.Mget ({node = M.Mvarstorecol asset_name; _}, _) ->
+          Some (M.APIStorage (M.Get asset_name))
+        | M.Mset ({node = M.Mvarstorecol asset_name; _}, _, _) ->
+          Some (M.APIStorage (M.Set asset_name))
+        | M.Maddasset (asset_name, _, _) ->
+          Some (M.APIStorage (M.Add (dumloc asset_name)))
+        | M.Maddfield (asset_name, field_name, _, _) ->
+          Some (M.APIStorage (M.UpdateAdd (dumloc asset_name, dumloc field_name)))
+        | M.Mremoveasset (asset_name, _, _) ->
+          Some (M.APIStorage (M.Remove (dumloc asset_name)))
+        | M.Mremovefield (asset_name, field_name, _, _) ->
+          Some (M.APIStorage (M.UpdateRemove (dumloc asset_name, dumloc field_name)))
+        | M.Mclearasset (asset_name, _) ->
+          Some (M.APIStorage (M.Clear (dumloc asset_name)))
+        | M.Mclearfield (asset_name, field_name, _) ->
+          Some (M.APIStorage (M.UpdateClear (dumloc asset_name, dumloc field_name)))
+        | M.Mreverseasset (asset_name, _) ->
+          Some (M.APIStorage (M.Reverse (dumloc asset_name)))
+        | M.Mreversefield (asset_name, field_name, _) ->
+          Some (M.APIStorage (M.UpdateReverse (dumloc asset_name, dumloc field_name)))
+        | M.Mselect (asset_name, _, _) ->
+          Some (M.APIFunction (M.Select (dumloc asset_name)))
+        | M.Msort (asset_name, _, field_name, _) ->
+          Some (M.APIFunction (M.Sort (dumloc asset_name, dumloc field_name)))
+        | M.Mcontains (asset_name, _, _) ->
+          Some (M.APIFunction (M.Contains (dumloc asset_name)))
+        | M.Mnth (asset_name, _, _) ->
+          Some (M.APIFunction (M.Nth (dumloc asset_name)))
+        | M.Mcount (asset_name, _) ->
+          Some (M.APIFunction (M.Count (dumloc asset_name)))
+        | M.Msum (asset_name, field_name, _) ->
+          Some (M.APIFunction (M.Sum (dumloc asset_name, field_name)))
+        | M.Mmin (asset_name, field_name, _) ->
+          Some (M.APIFunction (M.Min (dumloc asset_name, field_name)))
+        | M.Mmax (asset_name, field_name, _) ->
+          Some (M.APIFunction (M.Max (dumloc asset_name, field_name)))
+        | _ -> None
+      in
+      match api_item with
+      | Some v -> add accu (Model.mk_api_item v)
+      | _ -> accu
+    in
+    let l = M.fold_model f model [] in
+    {model with api_items = l }
   in
 
   M.mk_model name storage verification ~decls:decls ~functions:functions

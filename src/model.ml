@@ -1,4 +1,5 @@
 open Ident
+open Tools
 
 type lident = ident Location.loced
 [@@deriving show {with_path = false}]
@@ -531,11 +532,11 @@ type decl_node = lident decl_node_gen
 [@@deriving show {with_path = false}]
 
 type 'id model_gen = {
-  name:          lident;
-  api_items:     'id api_item_gen list;
-  decls:         'id decl_node_gen list;
-  storage:       'id storage_gen;
-  functions :    'id function__gen list;
+  name         : lident;
+  api_items    : 'id api_item_gen list;
+  decls        : 'id decl_node_gen list;
+  storage      : 'id storage_gen;
+  functions    : 'id function__gen list;
   verification : 'id verification_gen;
 }
 [@@deriving show {with_path = false}]
@@ -723,7 +724,7 @@ let map_gen_mterm g f (i : 'id mterm_gen) : 'id mterm_gen =
   }
 let map_term  f t = map_gen_mterm map_term_node f t
 
-let fold_term (f : 'a -> 't -> 'a) (accu : 'a) (term : 'id mterm_gen) =
+let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_gen) : 'a =
   match term.node with
   | Mif (c, t, e)                         -> f (f (f accu c) t) e
   | Mmatchwith (e, l)                     -> List.fold_left (fun accu (_, a) -> f accu a) (f accu e) l
@@ -1237,8 +1238,72 @@ let fold_map_term
     g (MsecTransferredTo ee), ea
 
 
-let fold_model (m : 'id model_gen) (f : 'id mterm_gen -> 'a) : 'a =
-  ()
+let fold_model (f : 'a -> 'id mterm_gen -> 'a) (m : 'id model_gen) (accu : 'a) : 'a =
+  let fold_left g l accu = List.fold_left (fun accu x -> g x accu) accu l in
+
+  let fold_verification (f : 'a -> 'id mterm_gen -> 'a) (v : 'id verification_gen) (accu : 'a) : 'a = (
+    let fold_label_term (f : 'a -> 'id mterm_gen -> 'a) (lt : 'id label_term_gen) (accu : 'a) : 'a =
+      f accu lt.term
+    in
+
+    let fold_predicate (f : 'a -> 'id mterm_gen -> 'a) (p : 'id predicate_gen) (accu : 'a) : 'a =
+      accu
+      |> (fun x -> List.fold_left (fun accu x -> x |> snd |> f accu) x p.args)
+      |> fun x -> f x p.body
+    in
+
+    let fold_definition (f : 'a -> 'id mterm_gen -> 'a) (d : 'id definition_gen) (accu : 'a) : 'a =
+      f accu d.body
+    in
+
+    let fold_invariantt (f : 'a -> 'id mterm_gen -> 'a) (it : 'id * 'id label_term_gen list) (accu : 'a) : 'a =
+      List.fold_left (fun accu x -> fold_label_term f x accu) accu (snd it)
+    in
+
+    let fold_invariant (f : 'a -> 'id mterm_gen -> 'a) (spec : 'id invariant_gen) (accu : 'a) : 'a =
+      List.fold_left f accu spec.formulas
+    in
+
+    let fold_specification (f : 'a -> 'id mterm_gen -> 'a) (spec : 'id specification_gen) (accu : 'a) : 'a =
+      accu
+      |> (fun x -> f x spec.formula)
+      |> (fun x -> List.fold_left (fun accu (x : 'id invariant_gen) -> fold_invariant f x accu) x spec.invariants)
+    in
+
+    let fold_variable (f : 'a -> 'id mterm_gen -> 'a) (spec : 'id variable_gen) (accu : 'a) : 'a =
+      accu
+    in
+
+    let fold_assert (f : 'a -> 'id mterm_gen -> 'a) (assert_ : 'id assert_gen) (accu : 'a) : 'a =
+      accu
+      |> (fun x -> f accu assert_.formula)
+      |> (fun x -> List.fold_left (fun accu (x : 'id invariant_gen) -> fold_invariant f x accu) x assert_.invariants)
+    in
+
+    accu
+    |> fold_left (fold_predicate f) v.predicates
+    |> fold_left (fold_definition f) v.definitions
+    |> fold_left (fold_label_term f) v.axioms
+    |> fold_left (fold_label_term f) v.theorems
+    |> fold_left (fold_variable f) v.variables
+    |> fold_left (fold_invariantt f) v.invariants
+    |> (fun x -> List.fold_left (fun accu x -> f accu x) x v.effects)
+    |> fold_left (fold_specification f) v.specs
+    |> fold_left (fold_assert f) v.asserts
+  ) in
+
+  let fold_action (f : 'a -> 'id mterm_gen -> 'a) (a : 'id function__gen) (accu : 'a) : 'a = (
+    let accu : 'a = (
+      match a.node with
+      | Function (fs, _)
+      | Entry fs -> fold_term f accu fs.body
+    ) in
+    Option.map_dfl (fun (x : 'id verification_gen) -> fold_verification f x accu) accu a.verif
+  ) in
+
+  accu
+  |> fold_left (fold_action f) m.functions
+  |> fold_verification f m.verification
 
 (* -------------------------------------------------------------------- *)
 module Utils : sig
