@@ -204,7 +204,7 @@ let rec pp_term outer pos fmt = function
   | Tseq l         -> Format.fprintf fmt "@[%a@]" (pp_list ";@\n" (pp_term outer pos)) l
   | Tif (i,t, None)    ->
     Format.fprintf fmt "@[if %a@ then %a@]"
-      (pp_term e_if PRight) t
+      (pp_term e_if PRight) i
       (pp_if_with_paren (pp_term e_then PRight)) t
   | Tif (i,t, Some e)    ->
     Format.fprintf fmt "@[if %a then @\n  @[%a @]@\nelse @\n  @[%a @]@]"
@@ -302,6 +302,7 @@ let rec pp_term outer pos fmt = function
   | Tlist l -> pp_tlist outer pos fmt l
   | Tnil -> pp_str fmt "Nil"
   | Tcaller i -> Format.fprintf fmt "get_caller_ %a" pp_str i
+  | Ttransferred i -> Format.fprintf fmt "get_transferred_ %a" pp_str i
   | Tle (_,e1,e2) ->
     Format.fprintf fmt "%a <= %a"
       (pp_term outer pos) e1

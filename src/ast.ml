@@ -1127,7 +1127,7 @@ let create_miles_with_expiration_ast () =
                                                                            ~type_:(Tbuiltin VTaddress);
                                                                          mk_sp (Parray [mk_sp (Pvar (dumloc "newmile"))
                                                                                           ~type_:(Tasset (dumloc "mile"))])
-                                                                           ~type_:(Tcontainer (Tasset (dumloc "owner"), Partition))
+                                                                           ~type_:(Tcontainer (Tasset (dumloc "mile"), Partition))
                                                                         ])
                                                            ~type_:(Tasset (dumloc "owner")))])))));
 

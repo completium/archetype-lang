@@ -1257,8 +1257,13 @@ module Utils : sig
   val dest_partition                     : type_ -> lident
   val get_partition_record_key           : model -> lident -> lident -> (lident * lident * btyp)
   val get_entries                        : model -> (verification option * function_struct) list
-  val has_partition                      : model -> lident -> bool
-  val get_record_partitions              : model -> lident -> record_item list
+  val has_partition                      : model -> ident -> bool
+  val get_record_partitions              : model -> ident -> record_item list
+  val get_field_list                     : model -> lident -> lident list
+  val get_field_pos                      : model -> lident -> lident -> int (* m, record, field *)
+  val get_nth_record_val                 : int -> mterm -> mterm
+  val dest_array                         : mterm -> mterm list
+  val get_asset_type                     : mterm -> lident
 
 end = struct
 
@@ -1273,6 +1278,9 @@ end = struct
     | RecordKeyTypeNotFound of string
     | NotaPartition
     | PartitionNotFound
+    | NotanArray
+    | NotaRecord
+    | NotanAssetType
   [@@deriving show {with_path = false}]
 
   let emit_error (desc : error_desc) =
@@ -1334,6 +1342,22 @@ end = struct
     | Drecord r -> r
     | _ -> emit_error NotaPartition
 
+  let dest_array (t : mterm)  =
+    match t.node with
+    | Marray l -> l
+    | _ -> emit_error NotanArray
+
+  let get_nth_record_val pos (t : mterm) =
+    match t.node with
+    | Mrecord l -> List.nth l pos
+    | _ -> emit_error NotaRecord
+
+  let get_asset_type (t : mterm) : lident =
+    match t.type_ with
+    | Tasset n -> n
+    | Tcontainer (Tasset n, _) -> n
+    | _ -> emit_error NotanAssetType
+
   let get_records m = m.decls |> List.filter is_record |> List.map dest_record
 
   let get_record model record_name : record =
@@ -1359,7 +1383,7 @@ end = struct
 
   let has_partition m asset : bool =
     get_records m |> List.fold_left (fun acc (record : record) ->
-        if compare asset.pldesc record.name.pldesc = 0 then
+        if compare asset record.name.pldesc = 0 then
           (List.fold_left (fun acc (ritem : record_item) ->
                match ritem.type_ with
                | Tcontainer (Tasset _, Partition) -> true
@@ -1372,7 +1396,7 @@ end = struct
 
   let get_record_partitions m asset : record_item list =
     get_records m |> List.fold_left (fun acc (record : record) ->
-        if compare asset.pldesc record.name.pldesc = 0 then
+        if compare asset record.name.pldesc = 0 then
           (List.fold_left (fun acc (ritem : record_item) ->
                match ritem.type_ with
                | Tcontainer (Tasset _, Partition) ->
@@ -1431,6 +1455,14 @@ end = struct
   let get_field_list model record_name =
     let record = get_record model record_name in
     List.map (fun (x : record_item) -> x.name) record.values
+
+  let get_field_pos model record field =
+    let l = get_field_list model record in
+    let rec rec_get_pos i = function
+      | e :: tl when compare field.pldesc e.pldesc = 0 -> i
+      | _ :: tl -> rec_get_pos (succ i) tl
+      | [] -> assert false in
+    rec_get_pos 0 l
 
   let get_named_field_list ast asset_name list =
     let field_list = get_field_list ast asset_name in

@@ -66,6 +66,7 @@ type ('e,'t,'i) abstract_term =
   (* storage fields *)
   | Tename
   | Tcaller of 'i
+  | Ttransferred of 'i
   | Tnow    of 'i
   | Tadded  of 'i
   | Trmed   of 'i
@@ -277,6 +278,7 @@ and map_abstract_term
   | Tdoti (i1,i2)      -> Tdoti (map_i i1, map_i i2)
   | Tename             -> Tename
   | Tcaller i          -> Tcaller (map_i i)
+  | Ttransferred i     -> Ttransferred (map_i i)
   | Tnow i             -> Tnow (map_i i)
   | Tadded a           -> Tadded (map_i a)
   | Trmed  a           -> Trmed (map_i a)
@@ -604,6 +606,7 @@ let compare_abstract_term
   | Tdoti (l1,r1), Tdoti (l2,r2) -> cmpi r1 r2 && cmpi l1 l2
   | Tename,Tename -> true
   | Tcaller i1, Tcaller i2 -> cmpi i1 i2
+  | Ttransferred i1, Ttransferred i2 -> cmpi i1 i2
   | Tnow i1, Tnow i2 -> cmpi i1 i2
   | Tadded a1, Tadded a2 -> cmpi a1 a2
   | Trmed  a1, Trmed a2 -> cmpi a1 a2
