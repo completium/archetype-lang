@@ -119,6 +119,17 @@ let to_model (ast : A.model) : M.model =
         | A.AFun _ -> assert false (* TODO *)*)
   in
 
+  let fail msg : M.mterm =
+    let var = M.mk_mterm (M.Mstring msg) (M.Tbuiltin Bstring) in
+    M.mk_mterm (M.Mfail var) M.Tunit
+  in
+
+  let term_not x : M.mterm =
+    M.mk_mterm (M.Mnot x) (M.Tbuiltin Bbool)
+  in
+
+  let unit : M.mterm = M.mk_mterm (M.Mseq []) M.Tunit in
+
   let to_mterm_node : 't. ((A.lident, 't, (A.lident, 't) A.term_gen) A.term_node) -> ((A.lident, 't) A.term_gen -> M.mterm) -> ('t -> M.type_) -> (M.lident, M.mterm) M.mterm_node =
     fun n f ftyp ->
       match n with
@@ -377,7 +388,14 @@ let to_model (ast : A.model) : M.model =
     | A.Iseq l                  -> M.Mseq (List.map g l)
     | A.Imatchwith (m, l)       -> M.Mmatchwith (f m, List.map (fun (p, i) -> (to_pattern p, g i)) l)
     | A.Iassign (op, i, e)      -> M.Massign (to_assignment_operator op, i, to_mterm e)
-    | A.Irequire (b, t)         -> M.Mrequire (b, f t)
+    | A.Irequire (b, t)         ->
+      let cond : M.mterm =
+        if b
+        then term_not (f t)
+        else (f t)
+      in
+      M.Mif (cond, fail "required", unit)
+
     | A.Itransfer (i, b, q)     -> M.Mtransfer (f i, b, Option.map to_qualid_gen q)
     | A.Ibreak                  -> M.Mbreak
     | A.Iassert e               -> M.Massert (f e)
@@ -610,11 +628,6 @@ let to_model (ast : A.model) : M.model =
   in
 
   let process_transaction (transaction : A.transaction) (list : M.function__ list) : M.function__ list =
-    let fail msg : M.mterm =
-      let var = M.mk_mterm (M.Mstring msg) (M.Tbuiltin Bstring) in
-      M.mk_mterm (M.Mfail var) M.Tunit
-    in
-
     let process_calledby (body : M.mterm) : M.mterm =
       let process_cb (cb : A.rexpr) (body : M.mterm) : M.mterm =
         let rec process_rexpr (rq : A.rexpr) : M.mterm =

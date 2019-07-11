@@ -251,7 +251,6 @@ type ('id, 'term) mterm_node  =
   | Mseq          of 'term list
   | Massign       of (assignment_operator * 'id * 'term)
   | Massignfield  of (assignment_operator * 'id * 'id * 'term)
-  | Mrequire      of (bool * 'term)
   | Mtransfer     of ('term * bool * 'id qualid_gen option)
   | Mbreak
   | Massert       of 'term
@@ -710,7 +709,6 @@ let map_term_node (ctx : 'c) (f : 'c -> 'id mterm_gen -> 'id mterm_gen) = functi
   | Mseq is                      -> Mseq (List.map (f ctx) is)
   | Massign (op, l, r)           -> Massign (op, l, f ctx r)
   | Massignfield (op, a, fi, r)  -> Massignfield (op, a, fi, f ctx r)
-  | Mrequire (b, x)              -> Mrequire (b, f ctx x)
   | Mtransfer (x, b, q)          -> Mtransfer (f ctx x, b, q)
   | Mbreak                       -> Mbreak
   | Massert x                    -> Massert (f ctx x)
@@ -819,7 +817,6 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Massign (_, _, e)                     -> f accu e
   | Massignfield (_, _, _, e)             -> f accu e
   | Mtransfer (x, _, _)                   -> f accu x
-  | Mrequire (_, x)                       -> f accu x
   | Mbreak                                -> accu
   | Massert x                             -> f accu x
   | Mreturn x                             -> f accu x
@@ -1194,10 +1191,6 @@ let fold_map_term
   | Massignfield (op, a, fi, x) ->
     let xe, xa = f accu x in
     g (Massignfield (op, a, fi, xe)), xa
-
-  | Mrequire (b, x) ->
-    let xe, xa = f accu x in
-    g (Mrequire (b, xe)), xa
 
   | Mtransfer (x, b, q) ->
     let xe, xa = f accu x in
