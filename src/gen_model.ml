@@ -10,6 +10,7 @@ type error_desc =
   | UnsupportedTypeForFile of A.type_
   | CannotConvertToAssignOperator
   | CannotSetApiItem
+  | CannotExtractBody
   | TODO
 [@@deriving show {with_path = false}]
 
@@ -664,12 +665,37 @@ let to_model (ast : A.model) : M.model =
       | Some requires -> List.fold_right (fun (x : (A.lident, A.pterm) A.label_term) (accu : M.mterm) -> process_require x accu) requires body
     in
 
+    let process_accept_transfer (body : M.mterm) : M.mterm =
+      if (not transaction.accept_transfer)
+      then
+        let type_currency = M.Tbuiltin (Bcurrency Tez) in
+        let lhs : M.mterm = M.mk_mterm (M.Mtransferred) type_currency in
+        let rhs : M.mterm = M.mk_mterm (M.Mcurrency (Big_int.zero_big_int, Tez)) type_currency in
+        let eq : M.mterm = M.mk_mterm (M.Mequal (lhs, rhs)) (M.Tbuiltin Bbool) in
+        let cond : M.mterm = M.mk_mterm (M.Mnot eq) (M.Tbuiltin Bbool) in
+        let at body : M.mterm = M.mk_mterm (M.Mif (cond, fail "not_accept_transfer", body)) M.Tunit in
+        at body
+      else
+        body
+    in
+
+    let process_body () : M.mterm =
+      match transaction.transition, transaction.effect with
+      | None, Some e -> to_instruction e
+      | Some t, None ->
+        begin
+          assert false
+        end
+      | _ -> emit_error CannotExtractBody
+    in
+
     let list  = list |> cont process_function ast.functions in
     let name  = transaction.name in
     let args  = List.map (fun (x : (A.lident, A.ptyp, A.ptyp A.bval_gen) A.decl_gen) -> (x.name, (ptyp_to_type |@ Option.get) x.typ, None)) transaction.args in
     let body  =
-      (to_instruction |@ Option.get) transaction.effect
+      process_body ()
       |> process_requires
+      |> process_accept_transfer
       |> process_calledby
     in
     let loc   = transaction.loc in
