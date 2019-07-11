@@ -817,11 +817,11 @@ let rec map_mterm m (mt : M.mterm) : loc_term =
     | M.Mgt (l, r)      -> Tgt (with_dummy_loc Tyint, map_mterm m l, map_mterm m r)
     | M.Mvarlocal v     -> Tvar (map_lident v)
     | M.Mint v          -> Tint v
-    | M.Mdotasset (_, e,i) -> Tdot (map_mterm m e, mk_loc (loc i) (Tvar (map_lident i)))
+    | M.Mdotasset (e,i) -> Tdot (map_mterm m e, mk_loc (loc i) (Tvar (map_lident i)))
     | M.Mcontains (a,_,r) ->
       Tapp (loc_term (Tvar (a^"_contains")),
             [loc_term (Tvar "_s");map_mterm m r])
-    | M.Maddfield (a,f,{ node = M.Mdotasset (_,c,_); type_= _ },i) ->
+    | M.Maddfield (a,f,{ node = M.Mdotasset (c,_); type_= _ },i) ->
       Tapp (loc_term (Tvar ("add_"^a^"_"^f)),
             [loc_term (Tvar "_s"); map_mterm m c; map_mterm m i])
     | M.Mget ({ node = M.Mvarstorecol n; type_ = _ },k) ->

@@ -158,11 +158,6 @@ type sort_kind =
   | SKdesc
 [@@deriving show {with_path = false}]
 
-type asset_tropism =
-  | ATin
-  | ATout
-[@@deriving show {with_path = false}]
-
 type ('id, 'term) mterm_node  =
   | Mif           of ('term * 'term * 'term)
   | Mmatchwith    of 'term * ('id pattern_gen * 'term) list
@@ -235,7 +230,7 @@ type ('id, 'term) mterm_node  =
   | Mcurrency     of Core.big_int * currency
   | Maddress      of string
   | Mduration     of string
-  | Mdotasset     of asset_tropism * 'term * 'id
+  | Mdotasset     of 'term * 'id
   | Mdotcontract  of 'term * 'id
   | Mtuple        of 'term list
   | Mfor          of ('id * 'term * 'term)
@@ -693,7 +688,7 @@ let map_term_node (ctx : 'c) (f : 'c -> 'id mterm_gen -> 'id mterm_gen) = functi
   | Mcurrency (v, c)             -> Mcurrency (v, c)
   | Maddress v                   -> Maddress v
   | Mduration v                  -> Mduration v
-  | Mdotasset (trp, e, i)        -> Mdotasset (trp, f ctx e, i)
+  | Mdotasset (e, i)             -> Mdotasset (f ctx e, i)
   | Mdotcontract (e, i)          -> Mdotcontract (f ctx e, i)
   | Mtuple l                     -> Mtuple (List.map (f ctx) l)
   | Mfor (i, c, b)               -> Mfor (i, f ctx c, f ctx b)
@@ -795,7 +790,7 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mcurrency _                           -> accu
   | Maddress _                            -> accu
   | Mduration _                           -> accu
-  | Mdotasset (trp, e, i)                 -> f accu e
+  | Mdotasset (e, i)                      -> f accu e
   | Mdotcontract (e, i)                   -> f accu e
   | Mstate                                -> accu
   | Mnow                                  -> accu
@@ -1133,9 +1128,9 @@ let fold_map_term
   | Maddress v               -> g (Maddress v), accu
   | Mduration v              -> g (Mduration v), accu
 
-  | Mdotasset (trp, e, i) ->
+  | Mdotasset (e, i) ->
     let ee, ea = f accu e in
-    g (Mdotasset (trp, ee, id)), ea
+    g (Mdotasset (ee, id)), ea
 
   | Mdotcontract (e, i) ->
     let ee, ea = f accu e in
