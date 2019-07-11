@@ -287,7 +287,7 @@ let to_model (ast : A.model) : M.model =
     let type_container_asset = M.Tcontainer (type_asset, Collection) in
 
     let var_name = dumloc ("_" ^ asset_name) in
-    let var_mterm : M.mterm = M.mk_mterm (M.Mvarlocal (dumloc (asset_name))) type_asset in
+    let var_mterm : M.mterm = M.mk_mterm (M.Mvarlocal var_name) type_asset in
 
     let asset_mterm : M.mterm = M.mk_mterm (M.Mvarstorecol (dumloc (asset_name))) type_container_asset in
 
@@ -314,7 +314,7 @@ let to_model (ast : A.model) : M.model =
         Tunit in
 
     let res : M.mterm__node = M.Mletin (key_loced,
-                                        key_mterm,
+                                        k,
                                         None,
                                         letinasset
                                        ) in
