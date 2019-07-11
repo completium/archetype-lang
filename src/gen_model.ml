@@ -612,7 +612,7 @@ let to_model (ast : A.model) : M.model =
       M.mk_mterm (M.Mfail var) M.Tunit
     in
 
-    let process_calledby (instrs : M.mterm) : M.mterm =
+    let process_calledby (body : M.mterm) : M.mterm =
       let process_cb (cb : A.rexpr) (body : M.mterm) : M.mterm =
         let rec process_rexpr (rq : A.rexpr) : M.mterm =
           let caller : M.mterm = M.mk_mterm M.Mcaller (M.Tbuiltin Baddress) in
@@ -642,9 +642,26 @@ let to_model (ast : A.model) : M.model =
         M.mk_mterm (M.Mif (require, fail_auth, body)) M.Tunit in
       begin
         match transaction.calledby with
-        | None -> instrs
-        | Some cb -> process_cb cb instrs
+        | None -> body
+        | Some cb -> process_cb cb body
       end
+    in
+
+    let process_requires (body : M.mterm) : M.mterm =
+      let process_require (x : (A.lident, A.pterm) A.label_term) (body : M.mterm) : M.mterm =
+        let msg =
+          match x.label with
+          | Some label -> "require " ^ (unloc label) ^ " failed"
+          | _ -> "require failed"
+        in
+        let term = to_mterm x.term in
+        let cond : M.mterm = M.mk_mterm (M.Mnot term) (Tbuiltin Bbool) ~loc:x.loc in
+        let fail_cond : M.mterm = fail msg in
+        M.mk_mterm (M.Mif (cond, fail_cond, body)) M.Tunit ~loc:x.loc
+      in
+      match transaction.require with
+      | None -> body
+      | Some requires -> List.fold_right (fun (x : (A.lident, A.pterm) A.label_term) (accu : M.mterm) -> process_require x accu) requires body
     in
 
     let list  = list |> cont process_function ast.functions in
@@ -652,6 +669,7 @@ let to_model (ast : A.model) : M.model =
     let args  = List.map (fun (x : (A.lident, A.ptyp, A.ptyp A.bval_gen) A.decl_gen) -> (x.name, (ptyp_to_type |@ Option.get) x.typ, None)) transaction.args in
     let body  =
       (to_instruction |@ Option.get) transaction.effect
+      |> process_requires
       |> process_calledby
     in
     let loc   = transaction.loc in
