@@ -11,6 +11,7 @@ type error_desc =
   | CannotConvertToAssignOperator
   | CannotSetApiItem
   | CannotExtractBody
+  | AnyNotAuthorizedInTransitionTo of Location.t
   | TODO
 [@@deriving show {with_path = false}]
 
@@ -19,7 +20,6 @@ let emit_error (desc : error_desc) =
   raise (Anomaly str)
 
 let to_model (ast : A.model) : M.model =
-
 
   let to_container c =
     match c with
@@ -679,28 +679,90 @@ let to_model (ast : A.model) : M.model =
         body
     in
 
-    let process_body () : M.mterm =
+    let process_body_args () : M.argument list * M.mterm =
+      let args  = List.map (fun (x : (A.lident, A.ptyp, A.ptyp A.bval_gen) A.decl_gen) -> (x.name, (ptyp_to_type |@ Option.get) x.typ, None)) transaction.args in
       match transaction.transition, transaction.effect with
-      | None, Some e -> to_instruction e
+      | None, Some e ->
+        let body = to_instruction e in
+        args, body
       | Some t, None ->
-        begin
-          assert false
-        end
+        let args =
+          match t.on with
+          | Some (id, id2) -> args @ [(id, M.Tasset id2, None)]
+          | None -> args
+        in
+        let state : M.lident = dumloc "_state" in
+        let build_code (body : M.mterm) : M.mterm =
+          (List.fold_right (fun ((id, cond, effect) : (A.lident * A.pterm option * A.instruction option)) (acc : M.mterm) : M.mterm ->
+               let tre : M.mterm =
+                 match t.on with
+                 | Some (id, id_asset) ->
+                   (
+                     (* let asset : M.mterm = M.mk_mterm (M.Mvarstorecol id_asset) (M.Tasset id_asset) in *)
+
+                     (* let q : qualid = mk_sp (Qident state) in
+                        let aid : pterm = mk_sp (Pvar id) in *)
+
+                     (* let arg : pterm = mk_sp (Precord [q; aid]) in *)
+                     (* let args : ('id, 'typ, 'term) term_arg list = [] in *)
+
+                     (* M.mk_mterm (M.Mcall Icall (Some asset, Cconst Cupdate, args)) Tunit *)
+
+                     emit_error TODO
+                   )
+                 | _ ->
+                   let a : M.mterm = M.mk_mterm (M.Mvarlocal id) (M.Tbuiltin Bbool) ~loc:(Location.loc id) in
+                   M.mk_mterm (M.Massign (ValueAssign, state, a)) Tunit in
+               let code : M.mterm =
+                 match effect with
+                 | Some e -> M.mk_mterm (M.Mseq [tre; to_instruction e]) Tunit
+                 | None -> tre
+               in
+
+               match cond with
+               | Some c -> M.mk_mterm (M.Mif (to_mterm c, code, acc)) Tunit
+               | None -> code
+             ) t.trs body)
+        in
+        let code : M.mterm = M.mk_mterm (M.Mseq []) Tunit in
+        let body : M.mterm = build_code code in
+
+        let body = match t.from.node with
+          | Sany -> body
+          | _ ->
+            begin
+              let rec compute_patterns (a : A.sexpr) : M.pattern list =
+                match a.node with
+                | Sref id -> [M.mk_pattern (M.Pconst id)]
+                | Sor (a, b) -> [a; b] |> List.map (fun x -> compute_patterns x) |> List.flatten
+                | Sany -> emit_error (AnyNotAuthorizedInTransitionTo a.loc)
+              in
+              let list_patterns : M.pattern list =
+                compute_patterns t.from in
+
+              let pattern : M.pattern = M.mk_pattern M.Pwild in
+              let fail_instr : M.mterm = fail "not_valid_state" in
+
+              let w = M.mk_mterm (M.Mvarstorevar state) (Tenum (dumloc "_state")) in
+              M.mk_mterm (M.Mmatchwith (w, List.map (fun x -> (x, code)) list_patterns @ [pattern, fail_instr])) Tunit
+            end
+        in
+        args, body
+
       | _ -> emit_error CannotExtractBody
     in
 
     let list  = list |> cont process_function ast.functions in
     let name  = transaction.name in
-    let args  = List.map (fun (x : (A.lident, A.ptyp, A.ptyp A.bval_gen) A.decl_gen) -> (x.name, (ptyp_to_type |@ Option.get) x.typ, None)) transaction.args in
-    let body  =
-      process_body ()
+    let args, body = process_body_args () in
+    let body =
+      body
       |> process_requires
       |> process_accept_transfer
       |> process_calledby
     in
     let loc   = transaction.loc in
     let verif : M.verification option = Option.map to_verification transaction.verification in
-
 
     process_fun_gen name args body loc verif (fun x -> M.Entry x) list
   in

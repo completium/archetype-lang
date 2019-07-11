@@ -10,7 +10,7 @@ type t = {
   loc_bchar : int;
   loc_echar : int;
 }
-[@@deriving yojson]
+[@@deriving yojson, show {with_path = false}]
 
 let dummy : t = {
   loc_fname = "";
