@@ -59,44 +59,35 @@ type type_ =
   | Ttrace of trtyp
 [@@deriving show {with_path = false}]
 
-type 'id storage_const_gen =
-  | Get              of 'id
-  | Set              of 'id
-  | Add              of 'id
-  | Remove           of 'id
-  | Clear            of 'id
-  | Reverse          of 'id
-  | UpdateAdd        of 'id * 'id
-  | UpdateRemove     of 'id * 'id
-  | UpdateClear      of 'id * 'id
-  | UpdateReverse    of 'id * 'id
+type storage_const =
+  | Get              of ident
+  | Set              of ident
+  | Add              of ident
+  | Remove           of ident
+  | Clear            of ident
+  | Reverse          of ident
+  | UpdateAdd        of ident * ident
+  | UpdateRemove     of ident * ident
+  | UpdateClear      of ident * ident
+  | UpdateReverse    of ident * ident
 [@@deriving show {with_path = false}]
 
-type storage_const = lident storage_const_gen
-[@@deriving show {with_path = false}]
-
-type 'id container_const_gen =
+type container_const =
   | Add      of type_
   | Remove   of type_
   | Clear    of type_
   | Reverse  of type_
 [@@deriving show {with_path = false}]
 
-type container_const = lident container_const_gen
-[@@deriving show {with_path = false}]
-
-type 'id function_const_gen =
-  | Select           of 'id
-  | Sort             of 'id * 'id
-  | Contains         of 'id
-  | Nth              of 'id
-  | Count            of 'id
-  | Sum              of 'id * 'id
-  | Min              of 'id * 'id
-  | Max              of 'id * 'id
-[@@deriving show {with_path = false}]
-
-type function_const = lident function_const_gen
+type function_const =
+  | Select           of ident
+  | Sort             of ident * ident
+  | Contains         of ident
+  | Nth              of ident
+  | Count            of ident
+  | Sum              of ident * ident
+  | Min              of ident * ident
+  | Max              of ident * ident
 [@@deriving show {with_path = false}]
 
 type builtin_const =
@@ -105,9 +96,9 @@ type builtin_const =
 [@@deriving show {with_path = false}]
 
 type 'id api_item_gen_node =
-  | APIStorage   of 'id storage_const_gen
-  | APIContainer of 'id container_const_gen
-  | APIFunction  of 'id function_const_gen
+  | APIStorage   of storage_const
+  | APIContainer of container_const
+  | APIFunction  of function_const
   | APIBuiltin   of builtin_const
 [@@deriving show {with_path = false}]
 
@@ -1366,16 +1357,16 @@ end = struct
     | Entry     fs        -> lident_to_string fs.name
 
   let function_name_from_storage_const = function
-    | Get            aid       -> "get_"            ^ lident_to_string aid
-    | Set            aid       -> "set_"            ^ lident_to_string aid
-    | Add            aid       -> "add_"            ^ lident_to_string aid
-    | Remove         aid       -> "remove_"         ^ lident_to_string aid
-    | Clear          aid       -> "clear_"          ^ lident_to_string aid
-    | Reverse        aid       -> "reverse_"        ^ lident_to_string aid
-    | UpdateAdd     (aid, fid) -> "update_add_"     ^ lident_to_string aid ^ "_" ^ lident_to_string fid
-    | UpdateRemove  (aid, fid) -> "update_remove_"  ^ lident_to_string aid ^ "_" ^ lident_to_string fid
-    | UpdateClear   (aid, fid) -> "update_clear_"   ^ lident_to_string aid ^ "_" ^ lident_to_string fid
-    | UpdateReverse (aid, fid) -> "update_reverse_" ^ lident_to_string aid ^ "_" ^ lident_to_string fid
+    | Get            aid       -> "get_"            ^ aid
+    | Set            aid       -> "set_"            ^ aid
+    | Add            aid       -> "add_"            ^ aid
+    | Remove         aid       -> "remove_"         ^ aid
+    | Clear          aid       -> "clear_"          ^ aid
+    | Reverse        aid       -> "reverse_"        ^ aid
+    | UpdateAdd     (aid, fid) -> "update_add_"     ^ aid ^ "_" ^ fid
+    | UpdateRemove  (aid, fid) -> "update_remove_"  ^ aid ^ "_" ^ fid
+    | UpdateClear   (aid, fid) -> "update_clear_"   ^ aid ^ "_" ^ fid
+    | UpdateReverse (aid, fid) -> "update_reverse_" ^ aid ^ "_" ^ fid
 
   let function_name_from_container_const = function
     | Add            _ -> "add"
@@ -1384,14 +1375,14 @@ end = struct
     | Reverse        _ -> "reverse"
 
   let function_name_from_function_const = function
-    | Select    aid       -> "select_"   ^ lident_to_string aid
-    | Sort     (aid, fid) -> "sort_"     ^ lident_to_string aid ^ "_" ^ lident_to_string fid
-    | Contains  aid       -> "contains_" ^ lident_to_string aid
-    | Nth       aid       -> "nth_"      ^ lident_to_string aid
-    | Count     aid       -> "count_"    ^ lident_to_string aid
-    | Sum      (aid, fid) -> "sum_"      ^ lident_to_string aid ^ "_" ^ lident_to_string fid
-    | Min      (aid, fid) -> "min_"      ^ lident_to_string aid ^ "_" ^ lident_to_string fid
-    | Max      (aid, fid) -> "max_"      ^ lident_to_string aid ^ "_" ^ lident_to_string fid
+    | Select    aid       -> "select_"   ^ aid
+    | Sort     (aid, fid) -> "sort_"     ^ aid ^ "_" ^ fid
+    | Contains  aid       -> "contains_" ^ aid
+    | Nth       aid       -> "nth_"      ^ aid
+    | Count     aid       -> "count_"    ^ aid
+    | Sum      (aid, fid) -> "sum_"      ^ aid ^ "_" ^ fid
+    | Min      (aid, fid) -> "min_"      ^ aid ^ "_" ^ fid
+    | Max      (aid, fid) -> "max_"      ^ aid ^ "_" ^ fid
 
   let is_record (d : decl_node) : bool =
     match d with

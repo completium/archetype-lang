@@ -770,32 +770,32 @@ let mk_storage_api (m : M.model) records =
   m.api_items |> List.fold_left (fun acc (sc : M.api_item) ->
       match sc.node with
       | M.APIStorage (Get n) ->
-        let k = M.Utils.get_record_key m n |> snd |> map_btype in
-        acc @ [mk_get_asset n.pldesc k]
+        let k = M.Utils.get_record_key m (dumloc n) |> snd |> map_btype in
+        acc @ [mk_get_asset n k]
       | M.APIStorage (Add n) ->
-        let k = M.Utils.get_record_key m n |> fst |> unloc in
-        acc @ [mk_add_asset n.pldesc k]
+        let k = M.Utils.get_record_key m (dumloc n) |> fst |> unloc in
+        acc @ [mk_add_asset n k]
       | M.APIStorage (Set n) ->
-        let record = get_record n.pldesc (records |> unloc_decl) in
+        let record = get_record n (records |> unloc_decl) in
         let k      = M.Utils.get_record_key m (get_record_name record |> dumloc) |> fst |> unloc in
         acc @ [mk_set_asset k record]
       | M.APIStorage (UpdateAdd (a,pf)) ->
-        let k            = M.Utils.get_record_key m a |> fst |> unloc in
-        let (pa,addak,_) = M.Utils.get_partition_record_key m a pf in
+        let k            = M.Utils.get_record_key m (dumloc a) |> fst |> unloc in
+        let (pa,addak,_) = M.Utils.get_partition_record_key m (dumloc a) (dumloc pf) in
         acc @ [
           mk_add_asset           pa.pldesc addak.pldesc;
-          mk_add_partition_field a.pldesc k pf.pldesc pa.pldesc addak.pldesc
+          mk_add_partition_field a k pf pa.pldesc addak.pldesc
         ]
       | M.APIStorage (UpdateRemove (n,f)) ->
-        let t         = M.Utils.get_record_key m n |> snd |> map_btype in
-        let (pa,_,pt) = M.Utils.get_partition_record_key m n f in
+        let t         = M.Utils.get_record_key m (dumloc n) |> snd |> map_btype in
+        let (pa,_,pt) = M.Utils.get_partition_record_key m (dumloc n) (dumloc f) in
         acc @ [
           mk_rm_asset           pa.pldesc (pt |> map_btype);
-          mk_rm_partition_field n.pldesc t f.pldesc pa.pldesc (pt |> map_btype)
+          mk_rm_partition_field n t f pa.pldesc (pt |> map_btype)
         ]
       | M.APIFunction (Contains n) ->
-        let t         =  M.Utils.get_record_key m n |> snd |> map_btype in
-        acc @ [ mk_contains n.pldesc t ]
+        let t         =  M.Utils.get_record_key m (dumloc n) |> snd |> map_btype in
+        acc @ [ mk_contains n t ]
       | _ -> acc
     ) [] |> loc_decl |> deloc
 

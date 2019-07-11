@@ -821,41 +821,41 @@ let to_model (ast : A.model) : M.model =
       let api_item : M.api_item_node option =
         match term.node with
         | M.Mget ({node = M.Mvarstorecol asset_name; _}, _) ->
-          Some (M.APIStorage (M.Get asset_name))
+          Some (M.APIStorage (M.Get (unloc asset_name)))
         | M.Mset ({node = M.Mvarstorecol asset_name; _}, _, _) ->
-          Some (M.APIStorage (M.Set asset_name))
+          Some (M.APIStorage (M.Set (unloc asset_name)))
         | M.Maddasset (asset_name, _, _) ->
-          Some (M.APIStorage (M.Add (dumloc asset_name)))
+          Some (M.APIStorage (M.Add asset_name))
         | M.Maddfield (asset_name, field_name, _, _) ->
-          Some (M.APIStorage (M.UpdateAdd (dumloc asset_name, dumloc field_name)))
+          Some (M.APIStorage (M.UpdateAdd (asset_name, field_name)))
         | M.Mremoveasset (asset_name, _, _) ->
-          Some (M.APIStorage (M.Remove (dumloc asset_name)))
+          Some (M.APIStorage (M.Remove asset_name))
         | M.Mremovefield (asset_name, field_name, _, _) ->
-          Some (M.APIStorage (M.UpdateRemove (dumloc asset_name, dumloc field_name)))
+          Some (M.APIStorage (M.UpdateRemove (asset_name, field_name)))
         | M.Mclearasset (asset_name, _) ->
-          Some (M.APIStorage (M.Clear (dumloc asset_name)))
+          Some (M.APIStorage (M.Clear asset_name))
         | M.Mclearfield (asset_name, field_name, _) ->
-          Some (M.APIStorage (M.UpdateClear (dumloc asset_name, dumloc field_name)))
+          Some (M.APIStorage (M.UpdateClear (asset_name, field_name)))
         | M.Mreverseasset (asset_name, _) ->
-          Some (M.APIStorage (M.Reverse (dumloc asset_name)))
+          Some (M.APIStorage (M.Reverse asset_name))
         | M.Mreversefield (asset_name, field_name, _) ->
-          Some (M.APIStorage (M.UpdateReverse (dumloc asset_name, dumloc field_name)))
+          Some (M.APIStorage (M.UpdateReverse (asset_name, field_name)))
         | M.Mselect (asset_name, _, _) ->
-          Some (M.APIFunction (M.Select (dumloc asset_name)))
+          Some (M.APIFunction (M.Select asset_name))
         | M.Msort (asset_name, _, field_name, _) ->
-          Some (M.APIFunction (M.Sort (dumloc asset_name, dumloc field_name)))
+          Some (M.APIFunction (M.Sort (asset_name, field_name)))
         | M.Mcontains (asset_name, _, _) ->
-          Some (M.APIFunction (M.Contains (dumloc asset_name)))
+          Some (M.APIFunction (M.Contains asset_name))
         | M.Mnth (asset_name, _, _) ->
-          Some (M.APIFunction (M.Nth (dumloc asset_name)))
+          Some (M.APIFunction (M.Nth asset_name))
         | M.Mcount (asset_name, _) ->
-          Some (M.APIFunction (M.Count (dumloc asset_name)))
+          Some (M.APIFunction (M.Count asset_name))
         | M.Msum (asset_name, field_name, _) ->
-          Some (M.APIFunction (M.Sum (dumloc asset_name, field_name)))
+          Some (M.APIFunction (M.Sum (asset_name, unloc field_name)))
         | M.Mmin (asset_name, field_name, _) ->
-          Some (M.APIFunction (M.Min (dumloc asset_name, field_name)))
+          Some (M.APIFunction (M.Min (asset_name, unloc field_name)))
         | M.Mmax (asset_name, field_name, _) ->
-          Some (M.APIFunction (M.Max (dumloc asset_name, field_name)))
+          Some (M.APIFunction (M.Max (asset_name, unloc field_name)))
         | _ -> None
       in
       match api_item with
