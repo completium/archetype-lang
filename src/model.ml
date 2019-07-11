@@ -167,6 +167,11 @@ type sort_kind =
   | SKdesc
 [@@deriving show {with_path = false}]
 
+type asset_tropism =
+  | ATin
+  | ATout
+[@@deriving show {with_path = false}]
+
 type ('id, 'term) mterm_node  =
   | Mif           of ('term * 'term * 'term)
   | Mmatchwith    of 'term * ('id pattern_gen * 'term) list
@@ -239,7 +244,8 @@ type ('id, 'term) mterm_node  =
   | Mcurrency     of Core.big_int * currency
   | Maddress      of string
   | Mduration     of string
-  | Mdot          of 'term * 'id
+  | Mdotasset     of asset_tropism * 'term * 'id
+  | Mdotcontract  of 'term * 'id
   | Mtuple        of 'term list
   | Mfor          of ('id * 'term * 'term)
   | Mseq          of 'term list
@@ -654,7 +660,7 @@ let map_term_node (ctx : 'c) (f : 'c -> 'id mterm_gen -> 'id mterm_gen) = functi
   | Mmax (an, fd, c)             -> Mmax (an, fd, f ctx c)
   | Mfail (msg)                  -> Mfail (f ctx msg)
   | Mmathmin (l, r)              -> Mmathmin (f ctx l, f ctx r)
-  | Mmathmax (l, r)             -> Mmathmax (f ctx l, f ctx r)
+  | Mmathmax (l, r)              -> Mmathmax (f ctx l, f ctx r)
   | Mand (l, r)                  -> Mand (f ctx l, f ctx r)
   | Mor (l, r)                   -> Mor (f ctx l, f ctx r)
   | Mimply (l, r)                -> Mimply (f ctx l, f ctx r)
@@ -697,7 +703,8 @@ let map_term_node (ctx : 'c) (f : 'c -> 'id mterm_gen -> 'id mterm_gen) = functi
   | Mcurrency (v, c)             -> Mcurrency (v, c)
   | Maddress v                   -> Maddress v
   | Mduration v                  -> Mduration v
-  | Mdot (e, i)                  -> Mdot (f ctx e, i)
+  | Mdotasset (trp, e, i)        -> Mdotasset (trp, f ctx e, i)
+  | Mdotcontract (e, i)          -> Mdotcontract (f ctx e, i)
   | Mtuple l                     -> Mtuple (List.map (f ctx) l)
   | Mfor (i, c, b)               -> Mfor (i, f ctx c, f ctx b)
   | Mseq is                      -> Mseq (List.map (f ctx) is)
@@ -799,7 +806,8 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mcurrency _                           -> accu
   | Maddress _                            -> accu
   | Mduration _                           -> accu
-  | Mdot (e, _)                           -> f accu e
+  | Mdotasset (trp, e, i)                 -> f accu e
+  | Mdotcontract (e, i)                   -> f accu e
   | Mstate                                -> accu
   | Mnow                                  -> accu
   | Mtransferred                          -> accu
@@ -1137,9 +1145,13 @@ let fold_map_term
   | Maddress v               -> g (Maddress v), accu
   | Mduration v              -> g (Mduration v), accu
 
-  | Mdot (e, id) ->
+  | Mdotasset (trp, e, i) ->
     let ee, ea = f accu e in
-    g (Mdot (ee, id)), ea
+    g (Mdotasset (trp, ee, id)), ea
+
+  | Mdotcontract (e, i) ->
+    let ee, ea = f accu e in
+    g (Mdotcontract (ee, id)), ea
 
   | Mstate ->
     g Mstate, accu

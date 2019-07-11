@@ -159,7 +159,9 @@ let to_model (ast : A.model) : M.model =
       | A.Plit ({node = BVcurrency (c, i); _}) -> M.Mcurrency (i, to_currency c)
       | A.Plit ({node = BVaddress s; _})       -> M.Maddress s
       | A.Plit ({node = BVduration s; _})      -> M.Mduration s
-      | A.Pdot (d, i)                          -> M.Mdot (f d, i)
+      | A.Pdot (d, i) ->
+        (* handle dot contract too *)
+        M.Mdotasset (M.ATin, f d, i)
       | A.Pconst Cstate                        -> M.Mstate
       | A.Pconst Cnow                          -> M.Mnow
       | A.Pconst Ctransferred                  -> M.Mtransferred
@@ -391,7 +393,7 @@ let to_model (ast : A.model) : M.model =
         let fq = f q in
         match fp with
         | {node = M.Mvarstorecol asset_name; _} -> M.Maddasset (unloc asset_name, fp, fq)
-        | {node = M.Mdot ({type_ = M.Tasset asset_name ; _}, f); _} -> M.Maddfield (unloc asset_name, unloc f, fp, fq)
+        | {node = M.Mdotasset (_, {type_ = M.Tasset asset_name ; _}, f); _} -> M.Maddfield (unloc asset_name, unloc f, fp, fq)
         | _ -> M.Maddlocal (fp, fq)
       )
 
@@ -401,7 +403,7 @@ let to_model (ast : A.model) : M.model =
         let fq = f q in
         match fp with
         | {node = M.Mvarstorecol asset_name; _} -> M.Mremoveasset (unloc asset_name, fp, fq)
-        | {node = M.Mdot ({type_ = M.Tasset asset_name ; _}, f); _} -> M.Mremovefield (unloc asset_name, unloc f, fp, fq)
+        | {node = M.Mdotasset (_, {type_ = M.Tasset asset_name ; _}, f); _} -> M.Mremovefield (unloc asset_name, unloc f, fp, fq)
         | _ -> M.Mremovelocal (fp, fq)
       )
 
