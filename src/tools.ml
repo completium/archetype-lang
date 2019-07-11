@@ -86,6 +86,7 @@ module Option : sig
   val map_dfl     : ('a -> 'b) -> 'b -> 'a option -> 'b
   val get_as_list : 'a option -> 'a list
   val flatten     : 'a option option -> 'a option
+  val cmp         : ('a -> 'a -> bool) -> 'a option -> 'a option -> bool
 
   val fst : ('a * 'b) option -> 'a option
   val snd : ('a * 'b) option -> 'b option
@@ -134,6 +135,12 @@ end = struct
   let get_as_list = function None -> [] | Some x -> [x]
 
   let flatten = function Some (Some v) -> Some v | _ -> None
+
+  let cmp c i1 i2 =
+    match i1, i2 with
+    | Some v1, Some v2 -> c v1 v2
+    | None, None -> true
+    | _ -> false
 
   let fst = fun x -> map fst x
   let snd = fun x -> map snd x
