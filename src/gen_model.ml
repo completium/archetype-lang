@@ -265,6 +265,12 @@ let to_model (ast : A.model) : M.model =
   in
 
 
+  let extract_asset_name (pterm : M.mterm) : Ident.ident =
+    match pterm with
+    | {type_ = Tcontainer (Tasset asset_name, _); _ } -> unloc asset_name
+    | _ -> assert false
+  in
+
   (* myasset.update k {f1 = v1; f2 = v2}
 
      let _k = k in
@@ -274,11 +280,6 @@ let to_model (ast : A.model) : M.model =
      set_myasset s _k _myasset *)
 
   let extract_letin (c : M.mterm) k (e : (A.lident * A.operator * M.mterm) list) : M.mterm__node =
-    let extract_asset_name (pterm : M.mterm) : Ident.ident =
-      match pterm with
-      | {type_ = Tcontainer (Tasset asset_name, _); _ } -> unloc asset_name
-      | _ -> assert false
-    in
 
     let asset_name = extract_asset_name c in
     let asset_loced = dumloc asset_name in
@@ -325,60 +326,38 @@ let to_model (ast : A.model) : M.model =
 
   (* col.removeif pred
 
-     let _pred = pred in
      let _col = col.select pred in
      for (_asset in _col)
        _col_asset.remove _asset.key
   *)
 
-  (* let extract_removeif (c : M.mterm) (p : M.mterm) : M.mterm__node =
+  let extract_removeif (c : M.mterm) (p : M.mterm) : M.mterm__node =
+    let asset_str = extract_asset_name c in
+    let key_str, key_type = A.Utils.get_asset_key ast (dumloc asset_str) |> fun (x, y) -> (unloc x, M.Tbuiltin (vtyp_to_btyp y)) in
 
-     let extract_ aaa = ()
-     in
+    let asset_name = dumloc asset_str in
+    let key_name = dumloc key_str in
+    let type_asset = M.Tasset asset_name in
 
+    let col_name = dumloc ("_col") in
+    let col_var = M.mk_mterm (M.Mvarlocal col_name) type_asset in
 
+    let asset_var_name = dumloc ("_asset") in
+    let asset_var = M.mk_mterm (M.Mvarlocal (dumloc ("_asset"))) type_asset in
 
-     let asset_name = extract_asset_name c in
-     let asset_loced = dumloc asset_name in
+    let select : M.mterm =  M.mk_mterm (M.Mselect (asset_str, c, p) ) type_asset in
 
-     let type_asset = M.Tasset asset_loced in
-     let type_container_asset = M.Tcontainer (type_asset, Collection) in
+    let asset_sortcol : M.mterm = M.mk_mterm (M.Mvarstorecol asset_name) type_asset in
+    let asset_key : M.mterm = M.mk_mterm (M.Mdotasset (asset_var, key_name)) key_type in
 
-     let var_name = dumloc ("_" ^ asset_name) in
-     let var_mterm : M.mterm = M.mk_mterm (M.Mvarlocal (dumloc (asset_name))) type_asset in
+    let remove : M.mterm = M.mk_mterm (M.Mremoveasset (asset_str, asset_sortcol, asset_key)) Tunit in
 
-     let asset_mterm : M.mterm = M.mk_mterm (M.Mvarstorecol (dumloc (asset_name))) type_container_asset in
+    let for_ = M.mk_mterm (M.Mfor (col_name, col_var, remove) ) Tunit in
 
-     let key_name = "_k" in
-     let key_loced : M.lident = dumloc (key_name) in
-     let key_mterm : M.mterm = M.mk_mterm (M.Mvarlocal key_loced) type_container_asset in
+    let res : M.mterm__node = M.Mletin (asset_var_name, select, Some type_asset, for_) in
+    res
 
-     let set_mterm : M.mterm = M.mk_mterm (M.Mset (None, asset_mterm, key_mterm, var_mterm)) Tunit in
-
-     let seq : M.mterm list = (List.map (fun ((id, op, term) : ('a * A.operator * 'c)) -> M.mk_mterm
-                                           (M.Massignfield (to_assign_operator op, var_name, id, term))
-                                           Tunit
-                                       ) e) @ [set_mterm] in
-
-     let body : M.mterm = M.mk_mterm (M.Mseq seq) Tunit in
-
-     let get_mterm : M.mterm = M.mk_mterm (M.Mget (None, asset_mterm, key_mterm)) type_asset in
-
-     let letinasset : M.mterm = M.mk_mterm (M.Mletin (var_name,
-                                                     get_mterm,
-                                                     Some (type_asset),
-                                                     body
-                                                    ))
-        Tunit in
-
-     let res : M.mterm__node = M.Mletin (key_loced,
-                                        key_mterm,
-                                        None,
-                                        letinasset
-                                       ) in
-     res
-
-     in *)
+  in
 
   let to_instruction_node (n : (A.lident, A.ptyp, A.pterm, A.instruction) A.instruction_node) g f : ('id, 'instr) M.mterm_node =
     match n with
@@ -441,8 +420,7 @@ let to_model (ast : A.model) : M.model =
       M.Mselect (asset_name, fp, f q)
 
     | A.Icall (Some c, A.Cconst (A.Cremoveif), [AExpr p]) ->
-      M.Mseq []
-    (* extract_removeif (f c) (f p) *)
+      extract_removeif (f c) (f p)
 
     | A.Icall (aux, A.Cconst c, args) ->
       Format.eprintf "instr const unkown: %a with nb args: %d %s@." A.pp_const c (List.length args) (match aux with | Some _ -> "with aux" | _ -> "without aux");
