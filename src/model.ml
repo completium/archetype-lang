@@ -175,7 +175,7 @@ type ('id, 'term) mterm_node  =
   | Mget          of 'term * 'term
   | Mset          of 'term * 'term * 'term
   | Maddasset     of ident * 'term * 'term
-  | Maddfield     of ident * ident * 'term * 'term (* asset_name * field_name ... *)
+  | Maddfield     of ident * ident * 'term * 'term (* asset_name * field_name * asset instance * item *)
   | Maddlocal     of 'term * 'term
   | Mremoveasset  of ident * 'term * 'term
   | Mremovefield  of ident * ident * 'term * 'term
@@ -619,62 +619,62 @@ let mk_model ?(api_items = []) ?(decls = []) ?(functions = []) name storage veri
 
 (* -------------------------------------------------------------------- *)
 
-let map_term_node (f : 'id mterm_gen -> 'id mterm_gen) = function
-  | Mif (c, t, e)                -> Mif (f c, f t, f e)
-  | Mmatchwith (e, l)            -> Mmatchwith (e, List.map (fun (p, e) -> (p, f e)) l)
-  | Mapp (e, args)               -> Mapp (e, List.map f args)
-  | Msetbefore    e              -> Msetbefore    (f e)
-  | Msetunmoved   e              -> Msetunmoved   (f e)
-  | Msetadded     e              -> Msetadded     (f e)
-  | Msetremoved   e              -> Msetremoved   (f e)
-  | Msetiterated  e              -> Msetiterated  (f e)
-  | Msettoiterate e              -> Msettoiterate (f e)
-  | Mexternal (t, func, c, args) -> Mexternal (t, func, f c, List.map f args)
-  | Mget (c, k)                  -> Mget (f c, f k)
-  | Mset (c, k, v)               -> Mset (f c, f k, f v)
-  | Maddasset (an, c, i)         -> Maddasset (an,f c, f i)
-  | Maddfield (an, fn, c, i)     -> Maddfield (an, fn, f c, f i)
-  | Maddlocal (c, i)             -> Maddlocal (f c, f i)
-  | Mremoveasset (an, c, i)      -> Mremoveasset (an,f c, f i)
-  | Mremovefield (an, fn, c, i)  -> Mremovefield (an, fn, f c, f i)
-  | Mremovelocal (c, i)          -> Mremovelocal (f c, f i)
-  | Mclearasset (an, i)          -> Mclearasset (an, f i)
-  | Mclearfield (an, fn, i)      -> Mclearfield (an, fn, f i)
-  | Mclearlocal (i)              -> Mclearlocal (f i)
-  | Mreverseasset (an, i)        -> Mreverseasset (an, f i)
-  | Mreversefield (an, fn, i)    -> Mreversefield (an, fn, f i)
-  | Mreverselocal (i)            -> Mreverselocal (f i)
-  | Mselect (an, c, p)           -> Mselect (an, f c, f p)
-  | Msort (an, c, fn, k)         -> Msort (an, f c, fn, k)
-  | Mcontains (an, c, i)         -> Mcontains (an, f c, f i)
-  | Mnth (an, c, i)              -> Mnth (an, f c, f i)
-  | Mcount (an, c)               -> Mcount (an, f c)
-  | Msum (an, fd, c)             -> Msum (an, fd, f c)
-  | Mmin (an, fd, c)             -> Mmin (an, fd, f c)
-  | Mmax (an, fd, c)             -> Mmax (an, fd, f c)
-  | Mfail (msg)                  -> Mfail (f msg)
-  | Mmathmin (l, r)              -> Mmathmin (f l, f r)
-  | Mmathmax (l, r)             -> Mmathmax (f l, f r)
-  | Mand (l, r)                  -> Mand (f l, f r)
-  | Mor (l, r)                   -> Mor (f l, f r)
-  | Mimply (l, r)                -> Mimply (f l, f r)
-  | Mequiv  (l, r)               -> Mequiv (f l, f r)
-  | Mnot e                       -> Mnot (f e)
-  | Mequal (l, r)                -> Mequal (f l, f r)
-  | Mnequal (l, r)               -> Mnequal (f l, f r)
-  | Mgt (l, r)                   -> Mgt (f l, f r)
-  | Mge (l, r)                   -> Mge (f l, f r)
-  | Mlt (l, r)                   -> Mlt (f l, f r)
-  | Mle (l, r)                   -> Mle (f l, f r)
-  | Mplus (l, r)                 -> Mplus (f l, f r)
-  | Mminus (l, r)                -> Mminus (f l, f r)
-  | Mmult (l, r)                 -> Mmult (f l, f r)
-  | Mdiv (l, r)                  -> Mdiv (f l, f r)
-  | Mmodulo (l, r)               -> Mmodulo (f l, f r)
-  | Muplus e                     -> Muplus (f e)
-  | Muminus e                    -> Muminus (f e)
-  | Mrecord l                    -> Mrecord (List.map f l)
-  | Mletin (i, a, t, b)          -> Mletin (i, f a, t, f b)
+let map_term_node (ctx : 'c) (f : 'c -> 'id mterm_gen -> 'id mterm_gen) = function
+  | Mif (c, t, e)                -> Mif (f ctx c, f ctx t, f ctx e)
+  | Mmatchwith (e, l)            -> Mmatchwith (e, List.map (fun (p, e) -> (p, f ctx e)) l)
+  | Mapp (e, args)               -> Mapp (e, List.map (f ctx) args)
+  | Msetbefore    e              -> Msetbefore    (f ctx e)
+  | Msetunmoved   e              -> Msetunmoved   (f ctx e)
+  | Msetadded     e              -> Msetadded     (f ctx e)
+  | Msetremoved   e              -> Msetremoved   (f ctx e)
+  | Msetiterated  e              -> Msetiterated  (f ctx e)
+  | Msettoiterate e              -> Msettoiterate (f ctx e)
+  | Mexternal (t, func, c, args) -> Mexternal (t, func, f ctx c, List.map (f ctx) args)
+  | Mget (c, k)                  -> Mget (f ctx c, f ctx k)
+  | Mset (c, k, v)               -> Mset (f ctx c, f ctx k, f ctx v)
+  | Maddasset (an, c, i)         -> Maddasset (an,f ctx c, f ctx i)
+  | Maddfield (an, fn, c, i)     -> Maddfield (an, fn, f ctx c, f ctx i)
+  | Maddlocal (c, i)             -> Maddlocal (f ctx c, f ctx i)
+  | Mremoveasset (an, c, i)      -> Mremoveasset (an,f ctx c, f ctx i)
+  | Mremovefield (an, fn, c, i)  -> Mremovefield (an, fn, f ctx c, f ctx i)
+  | Mremovelocal (c, i)          -> Mremovelocal (f ctx c, f ctx i)
+  | Mclearasset (an, i)          -> Mclearasset (an, f ctx i)
+  | Mclearfield (an, fn, i)      -> Mclearfield (an, fn, f ctx i)
+  | Mclearlocal (i)              -> Mclearlocal (f ctx i)
+  | Mreverseasset (an, i)        -> Mreverseasset (an, f ctx i)
+  | Mreversefield (an, fn, i)    -> Mreversefield (an, fn, f ctx i)
+  | Mreverselocal (i)            -> Mreverselocal (f ctx i)
+  | Mselect (an, c, p)           -> Mselect (an, f ctx c, f ctx p)
+  | Msort (an, c, fn, k)         -> Msort (an, f ctx c, fn, k)
+  | Mcontains (an, c, i)         -> Mcontains (an, f ctx c, f ctx i)
+  | Mnth (an, c, i)              -> Mnth (an, f ctx c, f ctx i)
+  | Mcount (an, c)               -> Mcount (an, f ctx c)
+  | Msum (an, fd, c)             -> Msum (an, fd, f ctx c)
+  | Mmin (an, fd, c)             -> Mmin (an, fd, f ctx c)
+  | Mmax (an, fd, c)             -> Mmax (an, fd, f ctx c)
+  | Mfail (msg)                  -> Mfail (f ctx msg)
+  | Mmathmin (l, r)              -> Mmathmin (f ctx l, f ctx r)
+  | Mmathmax (l, r)             -> Mmathmax (f ctx l, f ctx r)
+  | Mand (l, r)                  -> Mand (f ctx l, f ctx r)
+  | Mor (l, r)                   -> Mor (f ctx l, f ctx r)
+  | Mimply (l, r)                -> Mimply (f ctx l, f ctx r)
+  | Mequiv  (l, r)               -> Mequiv (f ctx l, f ctx r)
+  | Mnot e                       -> Mnot (f ctx e)
+  | Mequal (l, r)                -> Mequal (f ctx l, f ctx r)
+  | Mnequal (l, r)               -> Mnequal (f ctx l, f ctx r)
+  | Mgt (l, r)                   -> Mgt (f ctx l, f ctx r)
+  | Mge (l, r)                   -> Mge (f ctx l, f ctx r)
+  | Mlt (l, r)                   -> Mlt (f ctx l, f ctx r)
+  | Mle (l, r)                   -> Mle (f ctx l, f ctx r)
+  | Mplus (l, r)                 -> Mplus (f ctx l, f ctx r)
+  | Mminus (l, r)                -> Mminus (f ctx l, f ctx r)
+  | Mmult (l, r)                 -> Mmult (f ctx l, f ctx r)
+  | Mdiv (l, r)                  -> Mdiv (f ctx l, f ctx r)
+  | Mmodulo (l, r)               -> Mmodulo (f ctx l, f ctx r)
+  | Muplus e                     -> Muplus (f ctx e)
+  | Muminus e                    -> Muminus (f ctx e)
+  | Mrecord l                    -> Mrecord (List.map (f ctx) l)
+  | Mletin (i, a, t, b)          -> Mletin (i, f ctx a, t, f ctx b)
   | Mvarstorevar v               -> Mvarstorevar v
   | Mvarstorecol v               -> Mvarstorecol v
   | Mvarenumval v                -> Mvarenumval  v
@@ -686,7 +686,7 @@ let map_term_node (f : 'id mterm_gen -> 'id mterm_gen) = function
   | Mtransferred                 -> Mtransferred
   | Mcaller                      -> Mcaller
   | Mbalance                     -> Mbalance
-  | Marray l                     -> Marray (List.map f l)
+  | Marray l                     -> Marray (List.map (f ctx) l)
   | Mint v                       -> Mint v
   | Muint v                      -> Muint v
   | Mbool v                      -> Mbool v
@@ -697,32 +697,33 @@ let map_term_node (f : 'id mterm_gen -> 'id mterm_gen) = function
   | Mcurrency (v, c)             -> Mcurrency (v, c)
   | Maddress v                   -> Maddress v
   | Mduration v                  -> Mduration v
-  | Mdot (e, i)                  -> Mdot (f e, i)
-  | Mtuple l                     -> Mtuple (List.map f l)
-  | Mfor (i, c, b)               -> Mfor (i, f c, f b)
-  | Mseq is                      -> Mseq (List.map f is)
-  | Massign (op, l, r)           -> Massign (op, l, f r)
-  | Massignfield (op, a, fi, r)  -> Massignfield (op, a, fi, f r)
-  | Mrequire (b, x)              -> Mrequire (b, f x)
-  | Mtransfer (x, b, q)          -> Mtransfer (f x, b, q)
+  | Mdot (e, i)                  -> Mdot (f ctx e, i)
+  | Mtuple l                     -> Mtuple (List.map (f ctx) l)
+  | Mfor (i, c, b)               -> Mfor (i, f ctx c, f ctx b)
+  | Mseq is                      -> Mseq (List.map (f ctx) is)
+  | Massign (op, l, r)           -> Massign (op, l, f ctx r)
+  | Massignfield (op, a, fi, r)  -> Massignfield (op, a, fi, f ctx r)
+  | Mrequire (b, x)              -> Mrequire (b, f ctx x)
+  | Mtransfer (x, b, q)          -> Mtransfer (f ctx x, b, q)
   | Mbreak                       -> Mbreak
-  | Massert x                    -> Massert (f x)
-  | Mreturn x                    -> Mreturn (f x)
-  | Mforall (i, t, e)            -> Mforall (i, t, f e)
-  | Mexists (i, t, e)            -> Mexists (i, t, f e)
-  | MsecMayBePerformedOnlyByRole   (l, r) -> MsecMayBePerformedOnlyByRole   (f l, f r)
-  | MsecMayBePerformedOnlyByAction (l, r) -> MsecMayBePerformedOnlyByAction (f l, f r)
-  | MsecMayBePerformedByRole       (l, r) -> MsecMayBePerformedByRole       (f l, f r)
-  | MsecMayBePerformedByAction     (l, r) -> MsecMayBePerformedByAction     (f l, f r)
-  | MsecTransferredBy              a      -> MsecTransferredBy              (f a)
-  | MsecTransferredTo              a      -> MsecTransferredTo              (f a)
+  | Massert x                    -> Massert (f ctx x)
+  | Mreturn x                    -> Mreturn (f ctx x)
+  | Mforall (i, t, e)            -> Mforall (i, t, f ctx e)
+  | Mexists (i, t, e)            -> Mexists (i, t, f ctx e)
+  | MsecMayBePerformedOnlyByRole   (l, r) -> MsecMayBePerformedOnlyByRole   (f ctx l, f ctx r)
+  | MsecMayBePerformedOnlyByAction (l, r) -> MsecMayBePerformedOnlyByAction (f ctx l, f ctx r)
+  | MsecMayBePerformedByRole       (l, r) -> MsecMayBePerformedByRole       (f ctx l, f ctx r)
+  | MsecMayBePerformedByAction     (l, r) -> MsecMayBePerformedByAction     (f ctx l, f ctx r)
+  | MsecTransferredBy              a      -> MsecTransferredBy              (f ctx a)
+  | MsecTransferredTo              a      -> MsecTransferredTo              (f ctx a)
 
-let map_gen_mterm g f (i : 'id mterm_gen) : 'id mterm_gen =
+let map_gen_mterm g f ctx (i : 'id mterm_gen) : 'id mterm_gen =
   {
     i with
-    node = g f i.node
+    node = g f ctx i.node
   }
-let map_term  f t = map_gen_mterm map_term_node f t
+let map_term f ctx t =
+  map_gen_mterm map_term_node f ctx t
 
 let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_gen) : 'a =
   match term.node with
@@ -1542,7 +1543,7 @@ end = struct
 
   let is_local_assigned id (b : mterm) =
     let rec rec_search_assign _ (t : mterm) =
-    match t.node with
+      match t.node with
       | Massign (_,i,_) when compare (unloc i) (unloc id)  = 0 -> raise FoundAssign
       | _ -> fold_term rec_search_assign false t in
     try rec_search_assign false b
