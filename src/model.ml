@@ -1329,6 +1329,7 @@ module Utils : sig
   val get_nth_record_val                 : int -> mterm -> mterm
   val dest_array                         : mterm -> mterm list
   val get_asset_type                     : mterm -> lident
+  val is_local_assigned                  : lident -> mterm -> bool
 
 end = struct
 
@@ -1536,4 +1537,15 @@ end = struct
        Format.eprintf "lf1: %d@." (List.length field_list);
        Format.eprintf "lf2: %d@." (List.length list); *)
     List.map2 (fun x y -> x, y) field_list list
+
+  exception FoundAssign
+
+  let is_local_assigned id (b : mterm) =
+    let rec rec_search_assign _ (t : mterm) =
+    match t.node with
+      | Massign (_,i,_) when compare (unloc i) (unloc id)  = 0 -> raise FoundAssign
+      | _ -> fold_term rec_search_assign false t in
+    try rec_search_assign false b
+    with _ -> true
+
 end

@@ -804,6 +804,8 @@ let mk_storage_api (m : M.model) records =
 let rec map_mterm m (mt : M.mterm) : loc_term =
   let t =
     match mt.node with
+    | M.Mif (c,t,{ node=M.Mseq []; type_=_})  ->
+      Tif (map_mterm m c, map_mterm m t, None)
     | M.Mif (c,t,e)  -> Tif (map_mterm m c, map_mterm m t, Some (map_mterm m e))
     | M.Mnot c       -> Tnot (map_mterm m c)
     | M.Mfail _      -> Traise Enotfound (* TODO : Mfail should pass the type of exception ... *)
@@ -854,6 +856,61 @@ let rec map_mterm m (mt : M.mterm) : loc_term =
           Tapp (with_dummy_loc (Tvar key),[map_mterm m t])
         ) l |> wdl in
       Tapp (loc_term (Tvar "mkacol"),[with_dummy_loc (Tlist (elts))])
+    | M.Mletin (id,v,_,b) ->
+      Tletin (M.Utils.is_local_assigned id b,map_lident id,None,map_mterm m v,map_mterm m b)
+    | M.Mselect (a,l,r) ->
+      Tapp (loc_term (Tvar ("select_"^a)),[map_mterm m l;map_mterm m r])
+    | M.Mnow -> Tnow (with_dummy_loc "_s")
+    | M.Mseq l -> Tseq (List.map (map_mterm m) l)
+    | M.Mfor (id,c,b) ->
+      Tfor (with_dummy_loc "i",
+            with_dummy_loc (
+              Tminus (with_dummy_loc Tyunit,with_dummy_loc (Tcard (map_mterm m c)),
+                      (loc_term (Tint Big_int.unit_big_int)))
+            ),
+            [],
+            with_dummy_loc (
+              Tletin (false,
+                      map_lident id,
+                      None,
+                      with_dummy_loc (
+                        Tapp (loc_term (Tvar (("get_"^(unloc (M.Utils.get_asset_type c))))),[
+                            loc_term (Tvar "_s");
+                            with_dummy_loc (Tnth (loc_term (Tvar "i"),map_mterm m c))
+                          ]
+                          )),
+                      map_mterm m b)))
+    | M.Massign (ValueAssign,id,v) -> Tassign (with_dummy_loc (Tvar (map_lident id)),map_mterm m v)
+    | M.Massign (MinusAssign,id,v) -> Tassign (with_dummy_loc (Tvar (map_lident id)),
+                                               with_dummy_loc (
+                                                 Tminus (with_dummy_loc Tyint,
+                                                         with_dummy_loc (Tvar (map_lident id)),
+                                                         map_mterm m v)))
+    | M.Massignfield (ValueAssign,id1,id2,v) ->
+      let id = with_dummy_loc (Tdoti (map_lident id1,map_lident id2)) in
+      Tassign (id,map_mterm m v)
+    | M.Massignfield (MinusAssign,id1,id2,v) ->
+      let id = with_dummy_loc (Tdoti (map_lident id1,map_lident id2)) in
+      Tassign (id,
+               with_dummy_loc (
+                 Tminus (with_dummy_loc Tyint,
+                         id,
+                         map_mterm m v)))
+    | M.Mset (a,k,v) ->
+      Tapp (loc_term (Tvar ("set_"^(unloc (M.Utils.get_asset_type a)))),
+            [
+              loc_term (Tvar "_s");
+              map_mterm m k;
+              map_mterm m v
+            ])
+    | M.Mremovefield (a,f,k,v) ->
+      Tapp (loc_term (Tvar ("remove_"^a^"_"^f)),
+            [
+              loc_term (Tvar "_s");
+              map_mterm m k;
+              map_mterm m v
+            ]
+           )
     | _ -> Tnone in
   mk_loc mt.loc t
 

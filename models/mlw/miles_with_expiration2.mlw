@@ -36,6 +36,18 @@ module Miles_with_expiration_storage
         miles  : acol;
     } 
 
+    type owner_plain = {
+        addr_plain   : address;
+        miles_plain  : list mile;
+    } 
+
+    let plain_to_owner (pa : owner_plain) : owner 
+    =
+    {
+        addr = pa.addr_plain;
+        miles = mkacol (mapl id pa.miles_plain);
+    }
+
     let mk_default_owner () : owner = { addr = 0; miles = empty; } : owner
 
     type storage = {
@@ -240,10 +252,10 @@ module Miles_with_expiration_storage
          } in
          s.owner_assets <- set s.owner_assets (addr owner) new_owner)
     
-    let add_owner (s : storage) (new_owner : owner) (assets : list mile) : unit
+    let add_owner (s : storage) (new_owner : owner_plain) : unit
     raises { KeyExist, NotFound }
     (* input consistency *)
-    requires { let asset_keys = miles new_owner in card asset_keys = length assets }
+    (*requires { let asset_keys = miles new_owner in card asset_keys = length assets }
     requires { let asset_keys = miles new_owner in 
         forall i : int. 0 <= i < card asset_keys -> nth i asset_keys = id (gen_nth i assets) 
     }
@@ -271,7 +283,7 @@ module Miles_with_expiration_storage
         let asset_keys = miles new_owner in 
         (* let astorage = set_miles_to_storage asset_keys assets s in *)
         Amounts.sum s s.mile_keys = Amounts.sum (old s) (old s).mile_keys + Amounts.sum s asset_keys 
-    }
+    } *)
     =
     if mem (addr new_owner) s.owner_keys then
         raise KeyExist
