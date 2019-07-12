@@ -609,47 +609,102 @@ let mk_model ?(api_items = []) ?(decls = []) ?(functions = []) name storage veri
 
 (* -------------------------------------------------------------------- *)
 
+let cmp_ident (i1 : ident) (i2 : ident) : bool = String.equal i1 i2
+let cmp_lident (i1 : lident) (i2 : lident) : bool = cmp_ident (Location.unloc i1) (Location.unloc i2)
 let cmp_bool (b1 : bool) (b2 : bool) : bool = b1 = b2
 let cmp_assign_op (op1 : assignment_operator) (op2 : assignment_operator) : bool = op1 = op2
 let cmp_currency (c1 : currency) (c2 : currency) : bool = c1 = c2
+let cmp_container (c1 : container) (c2 : container) = c1 = c2
+let cmp_btyp (b1 : btyp) (b2 : btyp) : bool = b1 = b2
+let cmp_vset (v1 : vset) (v2 : vset) : bool = v1 = v2
+let cmp_trtyp (t1 : trtyp) (t2 : trtyp) : bool = t1 = t2
 
-let compare_mterm_node
+let rec cmp_type
+    (t1 : type_)
+    (t2 : type_)
+  : bool =
+  match t1, t2 with
+  | Tasset i1, Tasset i2                     -> cmp_lident i1 i2
+  | Tenum i1, Tenum i2                       -> cmp_lident i1 i2
+  | Tcontract i1, Tcontract i2               -> cmp_lident i1 i2
+  | Tbuiltin b1, Tbuiltin b2                 -> cmp_btyp b1 b2
+  | Tcontainer (t1, c1), Tcontainer (t2, c2) -> cmp_type t1 t2 && cmp_container c1 c2
+  | Toption t1, Toption t2                   -> cmp_type t1 t2
+  | Ttuple l1, Ttuple l2                     -> List.for_all2 cmp_type l1 l2
+  | Tunit, Tunit                             -> true
+  | Tentry, Tentry                           -> true
+  | Tprog t1, Tprog t2                       -> cmp_type t1 t2
+  | Tvset (v1, t1), Tvset (v2, t2)           -> cmp_vset v1 v2 && cmp_type t1 t2
+  | Ttrace t1, Ttrace t2                     -> cmp_trtyp t1 t2
+  | _ -> false
+
+let cmp_pattern_node
+    (cmpi  : 'id -> 'id -> bool)
+    (p1    : 'id pattern_node)
+    (p2    : 'id pattern_node)
+  : bool =
+  match p1, p2 with
+  | Pconst c1, Pconst c2 -> cmpi c1 c2
+  | Pwild, Pwild -> true
+  | _ -> false
+
+let cmp_pattern
+    (p1 : 'id pattern_gen)
+    (p2 : 'id pattern_gen)
+  : bool =
+  cmp_pattern_node cmp_lident p1.node p2.node
+
+let cmp_qualid_node
+    (cmp  : 'q -> 'q -> bool)
+    (cmpi : 'id -> 'id -> bool)
+    (p1   : ('id, 'q) qualid_node)
+    (p2   : ('id, 'q) qualid_node)
+  : bool =
+  match p1, p2 with
+  | Qident i1, Qident i2 -> cmpi i1 i2
+  | Qdot (q1, i1), Qdot (q2, i2) -> cmp q1 q2 && cmpi i1 i2
+  | _ -> false
+
+let rec cmp_qualid
+    (q1 : 'id qualid_gen)
+    (q2 : 'id qualid_gen)
+  : bool =
+  cmp_qualid_node cmp_qualid cmp_lident q1.node q2.node
+
+let cmp_mterm_node
     (cmp   : 'term -> 'term -> bool)
     (cmpi  : 'id -> 'id -> bool)
-    (cmpt  : type_ -> type_ -> bool)
-    (cmpp  : 'id pattern_gen-> 'id pattern_gen-> bool)
-    (cmpq  : 'id qualid_gen -> 'id qualid_gen -> bool)
     (term1 : ('id, 'term) mterm_node)
     (term2 : ('id, 'term) mterm_node)
   : bool =
   try
     match term1, term2 with
     | Mif (c1, t1, e1), Mif (c2, t2, e2)                                               -> cmp c1 c2 && cmp t1 t2 && cmp e1 e2
-    | Mmatchwith (e1, l1), Mmatchwith (e2, l2)                                         -> cmp e1 e2 && List.for_all2 (fun (p1, t1) (p2, t2) -> cmpp p1 p2 && cmp t1 t2) l1 l2
+    | Mmatchwith (e1, l1), Mmatchwith (e2, l2)                                         -> cmp e1 e2 && List.for_all2 (fun (p1, t1) (p2, t2) -> cmp_pattern p1 p2 && cmp t1 t2) l1 l2
     | Mapp (e1, args1), Mapp (e2, args2)                                               -> cmpi e1 e2 && List.for_all2 cmp args1 args2
     | Mexternal (t1, func1, c1, args1), Mexternal (t2, func2, c2, args2)               -> cmpi t1 t2 && cmpi func1 func2 && cmp c1 c2 && List.for_all2 cmp args1 args2
     | Mget (c1, k1), Mget (c2, k2)                                                     -> cmp c1 c2 && cmp k1 k2
     | Mset (c1, k1, v1), Mset (c2, k2, v2)                                             -> cmp c1 c2 && cmp k1 k2 && cmp v1 v2
-    | Maddasset (an1, c1, i1), Maddasset (an2, c2, i2)                                 -> String.equal an1 an2 && cmp c1 c2 && cmp i1 i2
-    | Maddfield (an1, fn1, c1, i1), Maddfield (an2, fn2, c2, i2)                       -> String.equal an1 an2 && String.equal fn1 fn2 && cmp c1 c2 && cmp i1 i2
+    | Maddasset (an1, c1, i1), Maddasset (an2, c2, i2)                                 -> cmp_ident an1 an2 && cmp c1 c2 && cmp i1 i2
+    | Maddfield (an1, fn1, c1, i1), Maddfield (an2, fn2, c2, i2)                       -> cmp_ident an1 an2 && cmp_ident fn1 fn2 && cmp c1 c2 && cmp i1 i2
     | Maddlocal (c1, i1), Maddlocal (c2, i2)                                           -> cmp c1 c2 && cmp i1 i2
-    | Mremoveasset (an1, c1, i1), Mremoveasset (an2, c2, i2)                           -> String.equal an1 an2 && cmp c1 c2 && cmp i1 i2
-    | Mremovefield (an1, fn1, c1, i1), Mremovefield (an2, fn2, c2, i2)                 -> String.equal an1 an2 && String.equal fn1 fn2 && cmp c1 c2 && cmp i1 i2
+    | Mremoveasset (an1, c1, i1), Mremoveasset (an2, c2, i2)                           -> cmp_ident an1 an2 && cmp c1 c2 && cmp i1 i2
+    | Mremovefield (an1, fn1, c1, i1), Mremovefield (an2, fn2, c2, i2)                 -> cmp_ident an1 an2 && cmp_ident fn1 fn2 && cmp c1 c2 && cmp i1 i2
     | Mremovelocal (c1, i1), Mremovelocal (c2, i2)                                     -> cmp c1 c2 && cmp i1 i2
-    | Mclearasset (an1, i1), Mclearasset (an2, i2)                                     -> String.equal an1 an2 && cmp i1 i2
-    | Mclearfield (an1, fn1, i1), Mclearfield (an2, fn2, i2)                           -> String.equal an1 an2 && String.equal fn1 fn2 && cmp i1 i2
+    | Mclearasset (an1, i1), Mclearasset (an2, i2)                                     -> cmp_ident an1 an2 && cmp i1 i2
+    | Mclearfield (an1, fn1, i1), Mclearfield (an2, fn2, i2)                           -> cmp_ident an1 an2 && cmp_ident fn1 fn2 && cmp i1 i2
     | Mclearlocal (i1), Mclearlocal (i2)                                               -> cmp i1 i2
-    | Mreverseasset (an1, i1), Mreverseasset (an2, i2)                                 -> String.equal an1 an2 && cmp i1 i2
-    | Mreversefield (an1, fn1, i1), Mreversefield (an2, fn2, i2)                       -> String.equal an1 an2 && String.equal fn1 fn2 && cmp i1 i2
+    | Mreverseasset (an1, i1), Mreverseasset (an2, i2)                                 -> cmp_ident an1 an2 && cmp i1 i2
+    | Mreversefield (an1, fn1, i1), Mreversefield (an2, fn2, i2)                       -> cmp_ident an1 an2 && cmp_ident fn1 fn2 && cmp i1 i2
     | Mreverselocal (i1), Mreverselocal (i2)                                           -> cmp i1 i2
-    | Mselect (an1, c1, p1), Mselect (an2, c2, p2)                                     -> String.equal an1 an2 && cmp c1 c2 && cmp p1 p2
-    | Msort (an1, c1, fn1, k1), Msort (an2, c2, fn2, k2)                               -> String.equal an1 an2 && cmp c1 c2 && String.equal fn1 fn2 && k1 = k2
-    | Mcontains (an1, c1, i1), Mcontains (an2, c2, i2)                                 -> String.equal an1 an2 && cmp c1 c2 && cmp i1 i2
-    | Mnth (an1, c1, i1), Mnth (an2, c2, i2)                                           -> String.equal an1 an2 && cmp c1 c2 && cmp i1 i2
-    | Mcount (an1, c1), Mcount (an2, c2)                                               -> String.equal an1 an2 && cmp c1 c2
-    | Msum (an1, fd1, c1), Msum (an2, fd2, c2)                                         -> String.equal an1 an2 && String.equal fd1 fd2 && cmp c1 c2
-    | Mmin (an1, fd1, c1), Mmin (an2, fd2, c2)                                         -> String.equal an1 an2 && String.equal fd1 fd2 && cmp c1 c2
-    | Mmax (an1, fd1, c1), Mmax (an2, fd2, c2)                                         -> String.equal an1 an2 && String.equal fd1 fd2 && cmp c1 c2
+    | Mselect (an1, c1, p1), Mselect (an2, c2, p2)                                     -> cmp_ident an1 an2 && cmp c1 c2 && cmp p1 p2
+    | Msort (an1, c1, fn1, k1), Msort (an2, c2, fn2, k2)                               -> cmp_ident an1 an2 && cmp c1 c2 && cmp_ident fn1 fn2 && k1 = k2
+    | Mcontains (an1, c1, i1), Mcontains (an2, c2, i2)                                 -> cmp_ident an1 an2 && cmp c1 c2 && cmp i1 i2
+    | Mnth (an1, c1, i1), Mnth (an2, c2, i2)                                           -> cmp_ident an1 an2 && cmp c1 c2 && cmp i1 i2
+    | Mcount (an1, c1), Mcount (an2, c2)                                               -> cmp_ident an1 an2 && cmp c1 c2
+    | Msum (an1, fd1, c1), Msum (an2, fd2, c2)                                         -> cmp_ident an1 an2 && cmpi fd1 fd2 && cmp c1 c2
+    | Mmin (an1, fd1, c1), Mmin (an2, fd2, c2)                                         -> cmp_ident an1 an2 && cmpi fd1 fd2 && cmp c1 c2
+    | Mmax (an1, fd1, c1), Mmax (an2, fd2, c2)                                         -> cmp_ident an1 an2 && cmpi fd1 fd2 && cmp c1 c2
     | Mfail (msg1), Mfail (msg2)                                                       -> cmp msg1 msg1
     | Mmathmin (l1, r1), Mmathmin (l2, r2)                                             -> cmp l1 l2 && cmp r1 r2
     | Mmathmax (l1, r1), Mmathmax (l2, r2)                                             -> cmp l1 l2 && cmp r1 r2
@@ -671,8 +726,8 @@ let compare_mterm_node
     | Mmodulo (l1, r1), Mmodulo (l2, r2)                                               -> cmp l1 l2 && cmp r1 r2
     | Muplus e1, Muplus e2                                                             -> cmp e1 e2
     | Muminus e1, Muminus e2                                                           -> cmp e1 e2
-    | Mrecord l1, Mrecord l2                                                           -> cmp l1 l2
-    | Mletin (i1, a1, t1, b1), Mletin (i2, a2, t2, b2)                                 -> cmpi i1 i2 && cmp a1 a2 && Option.cmp cmpt t1 t2 && cmp b1 b2
+    | Mrecord l1, Mrecord l2                                                           -> List.for_all2 cmp l1 l2
+    | Mletin (i1, a1, t1, b1), Mletin (i2, a2, t2, b2)                                 -> cmpi i1 i2 && cmp a1 a2 && Option.cmp cmp_type t1 t2 && cmp b1 b2
     | Mvarstorevar v1, Mvarstorevar v2                                                 -> cmpi v1 v2
     | Mvarstorecol v1, Mvarstorecol v2                                                 -> cmpi v1 v2
     | Mvarenumval v1, Mvarenumval v2                                                   -> cmpi v1 v2
@@ -688,13 +743,13 @@ let compare_mterm_node
     | Mint v1, Mint v2                                                                 -> Big_int.eq_big_int v1 v2
     | Muint v1, Muint v2                                                               -> Big_int.eq_big_int v1 v2
     | Mbool v1, Mbool v2                                                               -> cmp_bool v1 v2
-    | Menum v1, Menum v2                                                               -> String.equal v1 v2
+    | Menum v1, Menum v2                                                               -> cmp_ident v1 v2
     | Mrational (n1, d1), Mrational (n2, d2)                                           -> Big_int.eq_big_int n1 n2 && Big_int.eq_big_int d1 d2
-    | Mdate v1, Mdate v2                                                               -> String.equal v1 v2
-    | Mstring v1, Mstring v2                                                           -> String.equal v1 v2
+    | Mdate v1, Mdate v2                                                               -> cmp_ident v1 v2
+    | Mstring v1, Mstring v2                                                           -> cmp_ident v1 v2
     | Mcurrency (v1, c1), Mcurrency (v2, c2)                                           -> Big_int.eq_big_int v1 v2 && cmp_currency c1 c2
-    | Maddress v1, Maddress v2                                                         -> String.equal v1 v2
-    | Mduration v1, Mduration v2                                                       -> String.equal v1 v2
+    | Maddress v1, Maddress v2                                                         -> cmp_ident v1 v2
+    | Mduration v1, Mduration v2                                                       -> cmp_ident v1 v2
     | Mdotasset (e1, i1), Mdotasset (e2, i2)                                           -> cmp e1 e2 && cmpi i1 i2
     | Mdotcontract (e1, i1), Mdotcontract (e2, i2)                                     -> cmp e1 e2 && cmpi i1 i2
     | Mtuple l1, Mtuple l2                                                             -> List.for_all2 cmp l1 l2
@@ -702,12 +757,12 @@ let compare_mterm_node
     | Mseq is1, Mseq is2                                                               -> List.for_all2 cmp is1 is2
     | Massign (op1, l1, r1), Massign (op2, l2, r2)                                     -> cmp_assign_op op1 op2 && cmpi l1 l2 && cmp r1 r2
     | Massignfield (op1, a1, fi1, r1), Massignfield (op2, a2, fi2, r2)                 -> cmp_assign_op op1 op2 && cmpi a1 a2 && cmpi fi1 fi2 && cmp r1 r2
-    | Mtransfer (x1, b1, q1), Mtransfer (x2, b2, q2)                                   -> cmp x1 x2 && cmp_bool b1 b2 && Option.cmp cmpq q1 q2
+    | Mtransfer (x1, b1, q1), Mtransfer (x2, b2, q2)                                   -> cmp x1 x2 && cmp_bool b1 b2 && Option.cmp cmp_qualid q1 q2
     | Mbreak, Mbreak                                                                   -> true
     | Massert x1, Massert x2                                                           -> cmp x1 x2
     | Mreturn x1, Mreturn x2                                                           -> cmp x1 x2
-    | Mforall (i1, t1, e1), Mforall (i2, t2, e2)                                       -> cmpi i1 i2 && cmpt t1 t2 && cmp e1 e2
-    | Mexists (i1, t1, e1), Mexists (i2, t2, e2)                                       -> cmpi i1 i2 && cmpt t1 t2 && cmp e1 e2
+    | Mforall (i1, t1, e1), Mforall (i2, t2, e2)                                       -> cmpi i1 i2 && cmp_type t1 t2 && cmp e1 e2
+    | Mexists (i1, t1, e1), Mexists (i2, t2, e2)                                       -> cmpi i1 i2 && cmp_type t1 t2 && cmp e1 e2
     | Msetbefore e1, Msetbefore e2                                                     -> cmp e1 e2
     | Msetunmoved e1, Msetunmoved e2                                                   -> cmp e1 e2
     | Msetadded e1, Msetadded e2                                                       -> cmp e1 e2
@@ -723,6 +778,9 @@ let compare_mterm_node
     | _ -> false
   with
     _ -> false
+
+let rec cmp_mterm (term1 : mterm) (term2 : mterm) : bool =
+  cmp_mterm_node cmp_mterm cmp_lident term1.node term2.node
 
 (* -------------------------------------------------------------------- *)
 
