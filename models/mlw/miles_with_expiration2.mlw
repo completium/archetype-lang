@@ -33,29 +33,29 @@ module Miles_with_expiration_storage
 
     type owner = {
         addr   : address;
-        miles  : acol;
+        miles  : list mile;
     } 
 
-    type owner_plain = {
-        addr_plain   : address;
-        miles_plain  : list mile;
+    type owner_storage = {
+        addr_storage   : address;
+        miles_storage  : acol;
     } 
 
-    let plain_to_owner (pa : owner_plain) : owner 
+    let owner_to_storage (pa : owner) : owner_storage 
     =
     {
-        addr = pa.addr_plain;
-        miles = mkacol (mapl id pa.miles_plain);
+        addr_storage = pa.addr;
+        miles_storage = mkacol (mapl id pa.miles);
     }
 
-    let mk_default_owner () : owner = { addr = 0; miles = empty; } : owner
+    let mk_default_owner () : owner = { addr = 0; miles = Nil; } : owner
 
     type storage = {
         mutable admin            : role;
         mutable mile_keys        : acol;
         mutable mile_assets      : map mile;
         mutable owner_keys       : acol;
-        mutable owner_assets     : map owner;
+        mutable owner_assets     : map owner_storage;
          (* contract env *)
         mutable ops_             : transfers;
         (* transaction env *)
@@ -285,13 +285,13 @@ module Miles_with_expiration_storage
         Amounts.sum s s.mile_keys = Amounts.sum (old s) (old s).mile_keys + Amounts.sum s asset_keys 
     } *)
     =
-    if mem (addr new_owner) s.owner_keys then
+    if mem (addr_plain new_owner) s.owner_keys then
         raise KeyExist
     else
-        s.owner_keys <- add (addr new_owner) s.owner_keys;
-        s.owner_assets <- set s.owner_assets (addr new_owner) new_owner;
+        s.owner_keys <- add (addr_plain new_owner) s.owner_keys;
+        s.owner_assets <- set s.owner_assets (addr_plain new_owner) (plain_to_owner new_owner));
         s.tr_ <- s.tr_ ++ Tr.mk_trace s.ename_ (Tr.Add Owner);
-        let asset_keys = miles new_owner in
+        let asset_keys = miles (new_owner in
         for i = 0 to (card asset_keys) - 1 do
         invariant { s.mile_keys == union (old s).mile_keys (head i asset_keys) }
         invariant { s.added_miles == union (old s).added_miles (head i asset_keys) }

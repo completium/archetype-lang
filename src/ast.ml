@@ -1399,7 +1399,7 @@ let create_miles_with_expiration_ast () =
                                                                                    ~type_:(Tbuiltin VTuint))
                                                                         ]))
                                                             ~type_:(Tbuiltin VTuint)),
-                                                         (mk_sp (Pvar (dumloc "amount"))
+                                                         (mk_sp (Pvar (dumloc "quantity"))
                                                             ~type_:(Tbuiltin VTuint))
                                                         ))
                                              ~type_:(Tbuiltin VTbool)

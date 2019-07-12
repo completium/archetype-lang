@@ -277,6 +277,10 @@ let rec pp_term outer pos fmt = function
     Format.fprintf fmt "%a > %a"
       (pp_term e_default PRight) e1
       (pp_term e_default PRight) e2
+  | Tge (_,e1,e2) ->
+    Format.fprintf fmt "%a >= %a"
+      (pp_term e_default PRight) e1
+      (pp_term e_default PRight) e2
   | Tapp (f,[]) ->
     Format.fprintf fmt "%a ()"
       (pp_with_paren (pp_term outer pos)) f
@@ -323,10 +327,10 @@ let rec pp_term outer pos fmt = function
       pp_fun s
       (pp_term outer pos) e
   | Tfor (i,s,l,b) ->
-    Format.fprintf fmt "for %a = 0 to %a do@\n%a@\n  @[%a@]@\ndone"
+    Format.fprintf fmt "for %a = 0 to %a do%a@\n  @[%a@]@\ndone"
       pp_str i
       (pp_term outer pos) s
-      pp_invariants l
+      (pp_invariants true) l
       (pp_term outer pos) b
   | Ttry (b,e,c) ->
     Format.fprintf fmt "try@\n  @[%a@]@\nwith %a ->@\n  @[%a@]@\nend"
@@ -391,12 +395,13 @@ and pp_formula fmt f =
   Format.fprintf fmt "@[ [@expl:%a]@\n %a @]"
     pp_str f.id
     (pp_term e_default PRight) f.form
-and pp_invariants fmt invs =
+and pp_invariants nl fmt invs =
   if List.length invs = 0
   then pp_str fmt ""
   else
-    Format.fprintf fmt "invariant {@\n %a @\n} "
-      (pp_list "@\n}@\n invariant {@\n " pp_formula) invs
+    (if nl then pp_str fmt "\n";
+     Format.fprintf fmt "invariant {@\n %a @\n} "
+       (pp_list "@\n}@\n invariant {@\n " pp_formula) invs)
 and pp_ensures fmt ensures =
   if List.length ensures = 0
   then pp_str fmt ""
@@ -456,7 +461,7 @@ let pp_init fmt (f : field) =
 let pp_storage fmt (s : storage_struct) =
   Format.fprintf fmt "type storage_ = {@\n  @[%a @]@\n} %aby {@\n  @[%a @]@\n}"
     (pp_list ";@\n" pp_field) s.fields
-    pp_invariants s.invariants
+    (pp_invariants false) s.invariants
     (pp_list ";@\n" pp_init) s.fields
 
 (* -------------------------------------------------------------------------- *)

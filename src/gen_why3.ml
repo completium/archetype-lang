@@ -815,6 +815,7 @@ let rec map_mterm m (mt : M.mterm) : loc_term =
     | M.Mvarstorevar v  -> Tdoti (with_dummy_loc "_s", map_lident v)
     | M.Mcurrency (v,_) -> Tint v
     | M.Mgt (l, r)      -> Tgt (with_dummy_loc Tyint, map_mterm m l, map_mterm m r)
+    | M.Mge (l, r)      -> Tge (with_dummy_loc Tyint, map_mterm m l, map_mterm m r)
     | M.Mvarlocal v     -> Tvar (map_lident v)
     | M.Mint v          -> Tint v
     | M.Mdotasset (e,i) -> Tdot (map_mterm m e, mk_loc (loc i) (Tvar (map_lident i)))
@@ -850,12 +851,7 @@ let rec map_mterm m (mt : M.mterm) : loc_term =
       let fns = M.Utils.get_field_list m asset |> List.map map_lident in
       Trecord (None,(List.combine fns (List.map (map_mterm m) l)))
     | M.Marray l ->
-      let asset = M.Utils.get_asset_type mt in
-      let key = M.Utils.get_record_key m asset |> fst |> map_lident in
-      let elts = List.map (fun t ->
-          Tapp (with_dummy_loc (Tvar key),[map_mterm m t])
-        ) l |> wdl in
-      Tapp (loc_term (Tvar "mkacol"),[with_dummy_loc (Tlist (elts))])
+      Tapp (loc_term (Tvar "mkacol"),[with_dummy_loc (Tlist (l |> List.map (map_mterm m)))])
     | M.Mletin (id,v,_,b) ->
       Tletin (M.Utils.is_local_assigned id b,map_lident id,None,map_mterm m v,map_mterm m b)
     | M.Mselect (a,l,r) ->
@@ -911,6 +907,8 @@ let rec map_mterm m (mt : M.mterm) : loc_term =
               map_mterm m v
             ]
            )
+    | M.Msum (a,l,v) ->
+      Tapp (loc_term (Tvar ("sum_"^a)),[with_dummy_loc (Tvar (map_lident l)); map_mterm m v])
     | _ -> Tnone in
   mk_loc mt.loc t
 
