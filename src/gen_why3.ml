@@ -892,7 +892,7 @@ let rec map_mterm m (mt : M.mterm) : loc_term =
                  Tminus (with_dummy_loc Tyint,
                          id,
                          map_mterm m v)))
-    | M.Mset (a,k,v,_) ->
+    | M.Mset (a,k,v) ->
       Tapp (loc_term (Tvar ("set_"^(unloc (M.Utils.get_asset_type a)))),
             [
               loc_term (Tvar "_s");
