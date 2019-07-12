@@ -56,7 +56,7 @@ let generate_target_pt pt =
   | _ -> pt
 
 let remove_side_effect model =
-  let wse = Gen_reduce_side_effect.reduce_side_effect model in
+  let wse = Gen_reduce.reduce model in
   if !Options.opt_wse
   then (Format.printf "%a@." Model.pp_model model; raise Stop)
   else wse
