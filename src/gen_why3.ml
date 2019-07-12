@@ -822,12 +822,12 @@ let rec map_mterm m (mt : M.mterm) : loc_term =
     | M.Mcontains (a,_,r) ->
       Tapp (loc_term (Tvar (a^"_contains")),
             [loc_term (Tvar "_s");map_mterm m r])
-    | M.Maddfield (a,f,{ node = M.Mdotasset (c,_); type_= _ },i) ->
+    | M.Maddfield (a,f,{ node = M.Mdotasset (c,_); type_= _ },i,_) ->
       Tapp (loc_term (Tvar ("add_"^a^"_"^f)),
             [loc_term (Tvar "_s"); map_mterm m c; map_mterm m i])
     | M.Mget ({ node = M.Mvarstorecol n; type_ = _ },k) ->
       Tapp (loc_term (Tvar ("get_"^(unloc n))),[loc_term (Tvar "_s");map_mterm m k])
-    | M.Maddasset (n,_,i) when M.Utils.has_partition m n ->
+    | M.Maddasset (n,_,i,_) when M.Utils.has_partition m n ->
       let ritems = M.Utils.get_record_partitions m n in
       (* double loop : on ritmes and on i's corresponding record values *)
       Tseq (List.fold_left (fun acc (ritem : M.record_item) ->
@@ -844,7 +844,7 @@ let rec map_mterm m (mt : M.mterm) : loc_term =
               ] @ acc
             ) acc l
         ) [Tapp (loc_term (Tvar ("add_"^n)),[loc_term (Tvar "_s"); map_mterm m i])] ritems |> wdl)
-    | M.Maddasset (n,_,i) ->
+    | M.Maddasset (n,_,i,_) ->
       Tapp (loc_term (Tvar ("add_"^n)),[loc_term (Tvar "_s"); map_mterm m i])
     | M.Mrecord l ->
       let asset = M.Utils.get_asset_type mt in
@@ -892,7 +892,7 @@ let rec map_mterm m (mt : M.mterm) : loc_term =
                  Tminus (with_dummy_loc Tyint,
                          id,
                          map_mterm m v)))
-    | M.Mset (a,k,v) ->
+    | M.Mset (a,k,v,_) ->
       Tapp (loc_term (Tvar ("set_"^(unloc (M.Utils.get_asset_type a)))),
             [
               loc_term (Tvar "_s");

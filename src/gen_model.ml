@@ -296,7 +296,7 @@ let to_model (ast : A.model) : M.model =
     let key_loced : M.lident = dumloc (key_name) in
     let key_mterm : M.mterm = M.mk_mterm (M.Mvarlocal key_loced) type_container_asset in
 
-    let set_mterm : M.mterm = M.mk_mterm (M.Mset (asset_mterm, key_mterm, var_mterm)) Tunit in
+    let set_mterm : M.mterm = M.mk_mterm (M.Mset (asset_mterm, key_mterm, var_mterm, [])) Tunit in
 
     let seq : M.mterm list = (List.map (fun ((id, op, term) : ('a * A.operator * 'c)) -> M.mk_mterm
                                            (M.Massignfield (to_assign_operator op, var_name, id, term))
@@ -389,8 +389,8 @@ let to_model (ast : A.model) : M.model =
         let fp = f p in
         let fq = f q in
         match fp with
-        | {node = M.Mvarstorecol asset_name; _} -> M.Maddasset (unloc asset_name, fp, fq)
-        | {node = M.Mdotasset ({type_ = M.Tasset asset_name ; _}, f); _} -> M.Maddfield (unloc asset_name, unloc f, fp, fq)
+        | {node = M.Mvarstorecol asset_name; _} -> M.Maddasset (unloc asset_name, fp, fq, [])
+        | {node = M.Mdotasset ({type_ = M.Tasset asset_name ; _}, f); _} -> M.Maddfield (unloc asset_name, unloc f, fp, fq, [])
         | _ -> M.Maddlocal (fp, fq)
       )
 
@@ -800,11 +800,11 @@ let to_model (ast : A.model) : M.model =
         match term.node with
         | M.Mget ({node = M.Mvarstorecol asset_name; _}, _) ->
           Some (M.APIStorage (M.Get (unloc asset_name)))
-        | M.Mset ({node = M.Mvarstorecol asset_name; _}, _, _) ->
+        | M.Mset ({node = M.Mvarstorecol asset_name; _}, _, _, _) ->
           Some (M.APIStorage (M.Set (unloc asset_name)))
-        | M.Maddasset (asset_name, _, _) ->
+        | M.Maddasset (asset_name, _, _, _) ->
           Some (M.APIStorage (M.Add asset_name))
-        | M.Maddfield (asset_name, field_name, _, _) ->
+        | M.Maddfield (asset_name, field_name, _, _, _) ->
           Some (M.APIStorage (M.UpdateAdd (asset_name, field_name)))
         | M.Mremoveasset (asset_name, _, _) ->
           Some (M.APIStorage (M.Remove asset_name))
