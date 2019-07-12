@@ -70,6 +70,7 @@ type storage_const =
   | UpdateRemove     of ident * ident
   | UpdateClear      of ident * ident
   | UpdateReverse    of ident * ident
+  | ToKeys           of ident
 [@@deriving show {with_path = false}]
 
 type container_const =
@@ -241,6 +242,8 @@ type ('id, 'term) mterm_node  =
   | Mbreak
   | Massert       of 'term
   | Mreturn       of 'term
+  (* *)
+  | Mtokeys       of ident * 'term
   (* quantifiers *)
   | Mforall       of 'id * type_ * 'term
   | Mexists       of 'id * type_ * 'term
@@ -873,6 +876,7 @@ let map_term_node (ctx : 'c) (f : 'c -> 'id mterm_gen -> 'id mterm_gen) = functi
   | Mbreak                       -> Mbreak
   | Massert x                    -> Massert (f ctx x)
   | Mreturn x                    -> Mreturn (f ctx x)
+  | Mtokeys (an, x)              -> Mtokeys (an, f ctx x)
   | Mforall (i, t, e)            -> Mforall (i, t, f ctx e)
   | Mexists (i, t, e)            -> Mexists (i, t, f ctx e)
   | MsecMayBePerformedOnlyByRole   (l, r) -> MsecMayBePerformedOnlyByRole   (f ctx l, f ctx r)
@@ -980,6 +984,7 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mbreak                                -> accu
   | Massert x                             -> f accu x
   | Mreturn x                             -> f accu x
+  | Mtokeys (_, x)                        -> f accu x
   | Mforall (_, _, e)                     -> f accu e
   | Mexists (_, _, e)                     -> f accu e
   | MsecMayBePerformedOnlyByRole   (l, r) -> f (f accu l) r
@@ -1375,6 +1380,10 @@ let fold_map_term
     let xe, xa = f accu x in
     g (Mreturn xe), xa
 
+  | Mtokeys (an, x) ->
+    let xe, xa = f accu x in
+    g (Mtokeys (an, xe)), xa
+
   | Mforall (id, t, e) ->
     let ee, ea = f accu e in
     g (Mforall (id, t, ee)), ea
@@ -1544,6 +1553,7 @@ end = struct
     | UpdateRemove  (aid, fid) -> "update_remove_"  ^ aid ^ "_" ^ fid
     | UpdateClear   (aid, fid) -> "update_clear_"   ^ aid ^ "_" ^ fid
     | UpdateReverse (aid, fid) -> "update_reverse_" ^ aid ^ "_" ^ fid
+    | ToKeys         aid       -> "to_keys_" ^ aid
 
   let function_name_from_container_const = function
     | Add            _ -> "add"
