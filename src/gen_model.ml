@@ -3,6 +3,7 @@ open Tools
 
 module A = Ast
 module M = Model
+module I = Ident
 
 exception Anomaly of string
 type error_desc =
@@ -844,5 +845,38 @@ let to_model (ast : A.model) : M.model =
     {model with api_items = l }
   in
 
+  let rec gen_shallow_args (m : M.model) (id : I.ident) (t : M.type_) (acc : M.argument list)
+    : M.argument list =
+    match t with
+    | M.Tasset i when M.Utils.has_partition m (unloc i) ->
+      let colls = M.Utils.get_record_partitions m (unloc i) in
+      List.fold_left (fun acc (coll : M.record_item) ->
+          let id = id ^ "_" ^ (unloc coll.name) in
+          acc @ (gen_shallow_args m id coll.type_ [dumloc id,coll.type_,coll.default])
+      ) acc colls
+    | _ ->
+      let str = Format.asprintf "%a@." M.pp_type_ t in
+      print_endline str;
+      acc
+  in
+
+  let process_shallow_function m f =
+    let args = M.Utils.get_function_args f in
+    let args = List.fold_left (fun acc arg ->
+        let (id,t,e) = arg in
+        let shallow_args = gen_shallow_args m (unloc id) t [] in
+        acc @ (arg::shallow_args)
+      ) [] args in
+    print_endline ("nb args : "^(string_of_int (List.length args)));
+    let f = M.Utils.set_function_args f args in
+    f
+  in
+
+  let process_shallow_assets (m : M.model) : M.model = {
+    m with
+    functions = List.map (process_shallow_function m) m.functions
+  } in
+
   M.mk_model name storage verification ~decls:decls ~functions:functions
   |> process_api_storage
+  |> process_shallow_assets

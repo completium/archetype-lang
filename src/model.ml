@@ -1513,6 +1513,8 @@ module Utils : sig
   val dest_array                         : mterm -> mterm list
   val get_asset_type                     : mterm -> lident
   val is_local_assigned                  : lident -> mterm -> bool
+  val get_function_args                  : function__ -> argument list
+  val set_function_args                  : function__ -> argument list -> function__
 
 end = struct
 
@@ -1570,6 +1572,16 @@ end = struct
     | Sum      (aid, fid) -> "sum_"      ^ aid ^ "_" ^ fid
     | Min      (aid, fid) -> "min_"      ^ aid ^ "_" ^ fid
     | Max      (aid, fid) -> "max_"      ^ aid ^ "_" ^ fid
+
+  let get_function_args (f : function__) : argument list =
+    match f.node with
+    | Function (s,_) -> s.args
+    | Entry s        -> s.args
+
+  let set_function_args (f : function__) (args : argument list) : function__ =
+    match f.node with
+    | Function (s,t) -> { node = Function ({ s with args = args },t); verif = f.verif }
+    | Entry s        -> { node = Entry { s with args = args }; verif = f.verif }
 
   let is_record (d : decl_node) : bool =
     match d with
