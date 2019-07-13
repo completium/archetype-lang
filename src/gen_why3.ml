@@ -31,12 +31,12 @@ let mk_default_init = function
   | _ -> assert false
 
 let mk_diff_set_fields asset = [
-  { name = "added_"^asset  ; typ = Tycoll asset ; init = Tvar "empty"; mutable_ = true; };
-  { name = "removed_"^asset; typ = Tycoll asset ; init = Tvar "empty"; mutable_ = true; }
+  { name = "added_"^asset  ; typ = Tycoll asset; init = Tvar "empty"; mutable_ = true; };
+  { name = "removed_"^asset; typ = Tycoll asset; init = Tvar "empty"; mutable_ = true; }
 ]
 
 let mk_asset_fields asset = [
-  { name = asset^"_keys"   ; typ = Tycoll asset ; init = Tvar "empty"; mutable_ = true; };
+  { name = asset^"_keys"   ; typ = Tycoll asset; init = Tvar "empty"; mutable_ = true; };
   { name = asset^"_assets" ; typ = Tymap asset  ;
     init = Tvar ("const (mk_default_"^asset^" ())"); mutable_ = true; } ] @
   (mk_diff_set_fields asset)

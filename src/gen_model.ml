@@ -845,19 +845,37 @@ let to_model (ast : A.model) : M.model =
     {model with api_items = l }
   in
 
-  let rec gen_shallow_args (m : M.model) (id : I.ident) (t : M.type_) (acc : M.argument list)
+  let mk_type d = function
+    | M.Tcontainer ((Tasset i), _) ->
+      let rec rec_mk_type i acc =
+        if compare i 0 = 0 then
+          acc
+        else
+          rec_mk_type (i-1) (M.Tcontainer (acc, M.Collection))
+      in
+      rec_mk_type d (M.Tcontainer ((Tasset i), M.Collection))
+    | _ as t -> t
+  in
+
+  let rec gen_shallow_args (m : M.model) d (id : I.ident) (t : M.type_) (acc : M.argument list)
     : M.argument list =
     match t with
-    | M.Tasset i when M.Utils.has_partition m (unloc i) ->
-      let colls = M.Utils.get_record_partitions m (unloc i) in
-      List.fold_left (fun acc (coll : M.record_item) ->
-          let id = id ^ "_" ^ (unloc coll.name) in
-          acc @ (gen_shallow_args m id coll.type_ [dumloc id,coll.type_,coll.default])
-      ) acc colls
+    | M.Tasset i                 when M.Utils.has_partition m (unloc i) ->
+      extract_asset_collection m d id (unloc i) acc
+    | M.Tcontainer ((Tasset i), _) when M.Utils.has_partition m (unloc i) ->
+      extract_asset_collection m d id (unloc i) acc
     | _ ->
-      (*let str = Format.asprintf "%a@." M.pp_type_ t in
-        print_endline str;*)
+      let str = Format.asprintf "%a@." M.pp_type_ t in
+      print_endline str;
       acc
+  and extract_asset_collection m d id i acc =
+    let colls = M.Utils.get_record_partitions m i in
+    List.fold_left (fun acc (coll : M.record_item) ->
+        let id  = id ^ "_" ^ (unloc coll.name) in
+        let arg = dumloc id, mk_type d coll.type_, coll.default in
+        acc @ (gen_shallow_args m (succ d) id coll.type_ [arg])
+      ) acc colls
+
   in
 
   let has_shallow_vars id = List.mem_assoc (unloc id)
@@ -888,7 +906,7 @@ let to_model (ast : A.model) : M.model =
     (* mk initial context and shallowed arguments *)
     let (ctx,args) = List.fold_left (fun (ctx,acc) arg ->
         let (id,t,e) = arg in
-        let shallow_args = gen_shallow_args m (unloc id) t [] in
+        let shallow_args = gen_shallow_args m 1 (unloc id) t [] in
         (* init context with shallowed arguments *)
         let acc_ctx =
           if List.length shallow_args > 0 then
