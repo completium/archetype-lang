@@ -7,9 +7,10 @@ exception E_arg
 exception ArgError of string
 exception Stop
 
+let is_false_ast () : bool = !Options.fake_ast || !Options.fake_ast2
 
 let parse (filename, channel) =
-  if !Options.fake_ast
+  if is_false_ast()
   then ParseTree.mk_archetype()
   else
     let pt =
@@ -22,7 +23,7 @@ let parse (filename, channel) =
     else pt
 
 let preprocess_ext pt =
-  if !Options.fake_ast
+  if is_false_ast()
   then pt
   else
   if !Options.opt_pre_json then (Format.printf "%s\n" (Yojson.Safe.to_string (ParseTree.archetype_to_yojson pt)); raise Stop)
@@ -34,6 +35,8 @@ let type_ pt =
   let ast =
     if !Options.fake_ast
     then Ast.create_miles_with_expiration_ast ()
+    else if !Options.fake_ast2
+    then Ast.create_test_shallow_ast ()
     else Typing.typing Typing.empty pt
   in
   if !Options.opt_ast
@@ -163,6 +166,7 @@ let main () =
             exit 2), "LSP mode";
       "-F", Arg.Set Options.fake_ast, " Fake ast";
       "--fake-ast", Arg.Set Options.fake_ast, " Same as -F";
+      "-F2", Arg.Set Options.fake_ast2, " Fake ast test shallow";
       "-d", Arg.Set Options.debug_mode, " Debug mode";
     ] in
   let arg_usage = String.concat "\n" [
