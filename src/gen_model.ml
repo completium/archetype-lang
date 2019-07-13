@@ -903,11 +903,11 @@ let to_model (ast : A.model) : M.model =
     f
   in
 
-  let process_shallow_assets (m : M.model) : M.model = {
+  let process_shallow_types (m : M.model) : M.model = {
     m with
     functions = List.map (process_shallow_function m) m.functions
   } in
 
   M.mk_model name storage verification ~decls:decls ~functions:functions
   |> process_api_storage
-  |> process_shallow_assets
+  |> process_shallow_types
