@@ -855,20 +855,51 @@ let to_model (ast : A.model) : M.model =
           acc @ (gen_shallow_args m id coll.type_ [dumloc id,coll.type_,coll.default])
       ) acc colls
     | _ ->
-      let str = Format.asprintf "%a@." M.pp_type_ t in
-      print_endline str;
+      (*let str = Format.asprintf "%a@." M.pp_type_ t in
+        print_endline str;*)
       acc
+  in
+
+  let has_shallow_vars id = List.mem_assoc (unloc id)
+  in
+
+  let get_shallow_vars id (ctx : (I.ident * (M.lident * M.type_) list) list) : M.mterm list =
+    List.assoc (unloc id) ctx |> List.map (fun (i,t) ->
+        M.mk_mterm (M.Mvarlocal i) t
+      )
+  in
+
+  let rec map_shallow (ctx : (I.ident * (M.lident * M.type_) list) list) (t : M.mterm) : M.mterm =
+    let t_gen =
+      match t.node with
+      | M.Maddasset (n,e,{ M.node = M.Mvarlocal id;
+                           type_;
+                           subvars;
+                           loc },l) when has_shallow_vars id ctx ->
+        let shallow_vars = get_shallow_vars id ctx  in
+        M.Maddasset (n,e,{ node = M.Mvarlocal id; type_; subvars; loc },l @ shallow_vars)
+      | _ as tn -> M.map_term_node ctx map_shallow tn
+    in
+    M.mk_mterm ~loc:(t.loc) t_gen t.type_
   in
 
   let process_shallow_function m f =
     let args = M.Utils.get_function_args f in
-    let args = List.fold_left (fun acc arg ->
+    (* mk initial context and shallowed arguments *)
+    let (ctx,args) = List.fold_left (fun (ctx,acc) arg ->
         let (id,t,e) = arg in
         let shallow_args = gen_shallow_args m (unloc id) t [] in
-        acc @ (arg::shallow_args)
-      ) [] args in
+        (* init context with shallowed arguments *)
+        let acc_ctx =
+          if List.length shallow_args > 0 then
+            [unloc id,List.map (fun (i,t,_) -> (i,t)) shallow_args]
+          else
+            [] in
+        (ctx @ acc_ctx, acc @ (arg::shallow_args))
+      ) ([],[]) args in
     print_endline ("nb args : "^(string_of_int (List.length args)));
     let f = M.Utils.set_function_args f args in
+    let f = M.Utils.map_function_terms (map_shallow ctx) f in
     f
   in
 

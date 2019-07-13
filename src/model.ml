@@ -1515,6 +1515,7 @@ module Utils : sig
   val is_local_assigned                  : lident -> mterm -> bool
   val get_function_args                  : function__ -> argument list
   val set_function_args                  : function__ -> argument list -> function__
+  val map_function_terms                 : (mterm -> mterm) -> function__ -> function__
 
 end = struct
 
@@ -1530,7 +1531,7 @@ end = struct
     | NotaPartition
     | PartitionNotFound
     | NotanArray
-    | NotaRecord
+    | NotaRecord of mterm
     | NotanAssetType
   [@@deriving show {with_path = false}]
 
@@ -1612,7 +1613,7 @@ end = struct
   let get_nth_record_val pos (t : mterm) =
     match t.node with
     | Mrecord l -> List.nth l pos
-    | _ -> emit_error NotaRecord
+    | _ -> emit_error (NotaRecord t)
 
   let get_asset_type (t : mterm) : lident =
     match t.type_ with
@@ -1743,5 +1744,22 @@ end = struct
       | _ -> fold_term rec_search_assign false t in
     try rec_search_assign false b
     with _ -> true
+
+
+  (* TODO *)
+  let map_verification_terms (m : mterm -> mterm) (v : verification) : verification = v
+
+  let map_function_terms (m : mterm -> mterm) (f : function__) : function__ = {
+    node = begin
+      match f.node with
+      | Function (s,r) -> Function ({
+          s with body = m s.body;
+        },r)
+      | Entry s        -> Entry {
+          s with body = m s.body;
+        }
+    end;
+    verif = Option.map (map_verification_terms m) f.verif;
+  }
 
 end
