@@ -911,6 +911,9 @@ let to_model (ast : A.model) : M.model =
       )
   in
 
+  let to_ctx = List.map (fun t -> (M.Utils.dest_varlocal t,t.type_))
+  in
+
   let rec map_shallow_record m ctx (t : M.mterm) =
     match t.node with
     | M.Mrecord l ->
@@ -942,8 +945,16 @@ let to_model (ast : A.model) : M.model =
           M.Maddasset (n,e,a,l @ shallow_args)
         else
           M.Maddasset (n,e,a,l)
-      | M.Mletin (id,v,Some (Tasset a),b) when M.Utils.has_partition m (unloc a) ->
-        M.Mletin (id,v,Some (Tasset a),b)
+      | M.Mletin (id,v,t,b) when M.Utils.is_record v->
+        begin
+          match v.type_ with
+          | Tasset a when M.Utils.has_partition m (unloc a) ->
+            print_endline "LETIN";
+            let v,shallow_args = map_shallow_record m ctx v in
+            let ctx = ctx @ [unloc id, shallow_args |> to_ctx] in
+            M.Mletin (id,v,Some (Tasset a),map_shallow m ctx b)
+          | _ -> M.Mletin (id,v,t,map_shallow m ctx b)
+        end
       | _ as tn -> M.map_term_node ctx (map_shallow m) tn
     in
     M.mk_mterm ~loc:(t.loc) t_gen t.type_
