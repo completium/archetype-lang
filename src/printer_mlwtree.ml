@@ -120,33 +120,42 @@ let pp_logic fmt m =
 
 (* -------------------------------------------------------------------------- *)
 
+let needs_paren = function
+  | Tylist _ -> true
+  | _ -> false
+
 let pp_type fmt typ =
-  let rec typ_str t =
-    match t with
-    | Tyint         -> "int"
-    | Tystring      -> "string"
-    | Tydate        -> "date"
-    | Tyaddr        -> "address"
-    | Tyrole        -> "role"
-    | Tytez         -> "tez"
-    | Tystorage     -> "storage_"
-    | Tyunit        -> "unit"
-    | Tytransfers   -> "transfers"
-    | Tycoll i      -> "acol"
-    | Typartition _ -> "acol"
-    | Tymap i       -> "map "^i
-    | Tyrecord i    -> i
-    | Tyasset i     -> i
-    | Tyenum i      -> i
-    | Tyoption tt   -> "option "^(typ_str tt)
-    | Tylist tt     -> "list "^(typ_str tt)
-    | Tybool        -> "bool"
-    | Tyuint        -> "uint"
-    | Tycontract i  -> i
-    | Tyrational    -> "rational"
-    | Tyduration    -> "duration"
-    | Tykey         -> "key"
-    | Tytuple l     -> "("^(String.concat ", " (List.map typ_str l))^")"
+  let rec typ_str ?(pparen = false) t =
+    let str =
+      match t with
+      | Tyint         -> "int"
+      | Tystring      -> "string"
+      | Tydate        -> "date"
+      | Tyaddr        -> "address"
+      | Tyrole        -> "role"
+      | Tytez         -> "tez"
+      | Tystorage     -> "storage_"
+      | Tyunit        -> "unit"
+      | Tytransfers   -> "transfers"
+      | Tycoll i      -> "acol"
+      | Typartition _ -> "acol"
+      | Tymap i       -> "map "^i
+      | Tyrecord i    -> i
+      | Tyasset i     -> i
+      | Tyenum i      -> i
+      | Tyoption tt   -> "option "^(typ_str tt)
+      | Tylist tt     -> "list "^(typ_str ~pparen:(true) tt)
+      | Tybool        -> "bool"
+      | Tyuint        -> "uint"
+      | Tycontract i  -> i
+      | Tyrational    -> "rational"
+      | Tyduration    -> "duration"
+      | Tykey         -> "key"
+      | Tytuple l     -> "("^(String.concat ", " (List.map typ_str l))^")"
+    in
+    if pparen && (needs_paren t) then
+      "("^str^")"
+    else str
   in
   pp_str fmt (typ_str typ)
 

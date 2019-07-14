@@ -1516,6 +1516,10 @@ module Utils : sig
   val get_function_args                  : function__ -> argument list
   val set_function_args                  : function__ -> argument list -> function__
   val map_function_terms                 : (mterm -> mterm) -> function__ -> function__
+  val is_record                          : mterm -> bool
+  val is_varlocal                        : mterm -> bool
+  val dest_varlocal                      : mterm -> lident
+  val is_container                       : type_ -> bool
 
 end = struct
 
@@ -1761,5 +1765,26 @@ end = struct
     end;
     verif = Option.map (map_verification_terms m) f.verif;
   }
+
+  let is_record (t : mterm) =
+    match t.node with
+    | Mrecord _ -> true
+    | _ -> false
+
+  let is_varlocal (t : mterm) =
+    match t.node with
+    | Mvarlocal _ -> true
+    | _ -> false
+
+  let dest_varlocal (t : mterm) =
+    match t.node with
+    | Mvarlocal i -> i
+    | _ -> assert false
+
+
+  let is_container t =
+    match t with
+    | Tcontainer ((Tasset _),_) -> true
+    | _ -> false
 
 end

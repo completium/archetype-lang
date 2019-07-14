@@ -638,7 +638,7 @@ let rec map_mtype (t : M.type_) : loc_typ =
       | M.Tenum id                            -> Tyenum (map_lident id)
       | M.Tbuiltin v                          -> map_btype v
       | M.Tcontainer (Tasset id,M.Partition)  -> Typartition (map_lident id)
-      | M.Tcontainer (Tasset id,M.Collection) -> Tycoll (map_lident id)
+      | M.Tcontainer (t,M.Collection)         -> Tylist (map_mtype t).obj
       | M.Toption t                           -> Tyoption (map_mtype t).obj
       | M.Ttuple l                            -> Tytuple (l |> List.map map_mtype |> deloc)
       | M.Tunit                               -> Tyunit

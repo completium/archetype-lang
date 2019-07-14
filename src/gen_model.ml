@@ -865,8 +865,8 @@ let to_model (ast : A.model) : M.model =
     | M.Tcontainer ((Tasset i), _) when M.Utils.has_partition m (unloc i) ->
       extract_asset_collection m d id (unloc i) acc
     | _ ->
-      let str = Format.asprintf "%a@." M.pp_type_ t in
-      print_endline str;
+      (*let str = Format.asprintf "%a@." M.pp_type_ t in
+        print_endline str;*)
       acc
   and extract_asset_collection m d id i acc =
     let colls = M.Utils.get_record_partitions m i in
@@ -875,7 +875,31 @@ let to_model (ast : A.model) : M.model =
         let arg = dumloc id, mk_type d coll.type_, coll.default in
         acc @ (gen_shallow_args m (succ d) id coll.type_ [arg])
       ) acc colls
+  in
 
+  let gen_shallow_args (m : M.model) (id : M.lident) (t : M.type_) (arg : M.argument)
+    : ((I.ident * (M.lident * M.type_) list) list) * M.argument list =
+    match t with
+    | M.Tasset _ ->
+      let shallow_args = gen_shallow_args m 0 (unloc id) t [arg] in
+      let acc_ctx =
+        if List.length shallow_args > 1 then
+          [unloc id,List.map (fun (i,t,_) -> (i,t)) (List.tl shallow_args)]
+        else
+          [] in
+      (acc_ctx,shallow_args)
+    | M.Tcontainer (Tasset i, Collection) ->
+      let k,kt = M.Utils.get_record_key m i in
+      let arg = (id,M.Tcontainer (M.Tbuiltin kt,Collection),None) in
+      let arg_values = (dumloc ((unloc id)^"_values"),M.Tcontainer (Tasset i, Collection),None) in
+      let shallow_args = gen_shallow_args m 1 (unloc id) t [arg;arg_values] in
+      let acc_ctx =
+        if List.length shallow_args > 1 then
+          [unloc id,List.map (fun (i,t,_) -> (i,t)) (List.tl shallow_args)]
+        else
+          [] in
+      (acc_ctx,shallow_args)
+    | _ -> ([],[arg])
   in
 
   let has_shallow_vars id = List.mem_assoc (unloc id)
@@ -887,16 +911,40 @@ let to_model (ast : A.model) : M.model =
       )
   in
 
-  let rec map_shallow (ctx : (I.ident * (M.lident * M.type_) list) list) (t : M.mterm) : M.mterm =
+  let rec map_shallow_record m ctx (t : M.mterm) =
+    match t.node with
+    | M.Mrecord l ->
+      let (l,args) =
+        List.fold_left (fun (fields,args) f ->
+            let (f,shallow_args) = map_shallow_record m ctx f in
+            (fields @ [f], args @ shallow_args)
+          ) ([],[]) l
+      in
+      (M.mk_mterm (M.Mrecord l) t.type_,args)
+    | M.Mvarlocal id when M.Utils.is_container t.type_ ->
+      (t,get_shallow_vars id ctx)
+    | _ -> (t,[])
+  in
+
+  let rec map_shallow m (ctx : (I.ident * (M.lident * M.type_) list) list) (t : M.mterm) : M.mterm =
     let t_gen =
       match t.node with
-      | M.Maddasset (n,e,{ M.node = M.Mvarlocal id;
-                           type_;
-                           subvars;
-                           loc },l) when has_shallow_vars id ctx ->
-        let shallow_vars = get_shallow_vars id ctx  in
-        M.Maddasset (n,e,{ node = M.Mvarlocal id; type_; subvars; loc },l @ shallow_vars)
-      | _ as tn -> M.map_term_node ctx map_shallow tn
+      | M.Maddasset (n,e,a,l) when M.Utils.is_varlocal a ->
+        let id = M.Utils.dest_varlocal a in
+        if has_shallow_vars id ctx then
+          let shallow_vars = get_shallow_vars id ctx  in
+          M.Maddasset (n,e,a,l @ shallow_vars)
+        else  M.Maddasset (n,e,a,l)
+      | M.Maddasset (n,e,a,l) when M.Utils.is_record a ->
+        if M.Utils.has_partition m n
+        then
+          let a,shallow_args = map_shallow_record m ctx a in
+          M.Maddasset (n,e,a,l @ shallow_args)
+        else
+          M.Maddasset (n,e,a,l)
+      | M.Mletin (id,v,Some (Tasset a),b) when M.Utils.has_partition m (unloc a) ->
+        M.Mletin (id,v,Some (Tasset a),b)
+      | _ as tn -> M.map_term_node ctx (map_shallow m) tn
     in
     M.mk_mterm ~loc:(t.loc) t_gen t.type_
   in
@@ -906,18 +954,11 @@ let to_model (ast : A.model) : M.model =
     (* mk initial context and shallowed arguments *)
     let (ctx,args) = List.fold_left (fun (ctx,acc) arg ->
         let (id,t,e) = arg in
-        let shallow_args = gen_shallow_args m 1 (unloc id) t [] in
-        (* init context with shallowed arguments *)
-        let acc_ctx =
-          if List.length shallow_args > 0 then
-            [unloc id,List.map (fun (i,t,_) -> (i,t)) shallow_args]
-          else
-            [] in
-        (ctx @ acc_ctx, acc @ (arg::shallow_args))
+        let (acc_ctx,shallow_args) = gen_shallow_args m id t arg in
+        (ctx @ acc_ctx, acc @ shallow_args)
       ) ([],[]) args in
-    print_endline ("nb args : "^(string_of_int (List.length args)));
     let f = M.Utils.set_function_args f args in
-    let f = M.Utils.map_function_terms (map_shallow ctx) f in
+    let f = M.Utils.map_function_terms (map_shallow m ctx) f in
     f
   in
 

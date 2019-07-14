@@ -1086,9 +1086,9 @@ let create_test_shallow_ast () =
         ~args:[mk_decl (dumloc "a")
                  ~typ:(Tbuiltin VTaddress);
                mk_decl (dumloc "l1")
-                 ~typ:(Tcontainer (Tasset (dumloc "mile"), Partition));
+                 ~typ:(Tcontainer (Tasset (dumloc "mile"), Collection));
                mk_decl (dumloc "l2")
-                 ~typ:(Tcontainer (Tasset (dumloc "othermile"), Partition))
+                 ~typ:(Tcontainer (Tasset (dumloc "othermile"), Collection))
               ]
         ~effect:(
           mk_instr (Icall (Some (mk_sp (Pvar (dumloc "owner"))
@@ -1109,9 +1109,9 @@ let create_test_shallow_ast () =
         ~args:[mk_decl (dumloc "a")
                  ~typ:(Tbuiltin VTaddress);
                mk_decl (dumloc "l1")
-                 ~typ:(Tcontainer (Tasset (dumloc "mile"), Partition));
+                 ~typ:(Tcontainer (Tasset (dumloc "mile"), Collection));
                mk_decl (dumloc "l2")
-                 ~typ:(Tcontainer (Tasset (dumloc "othermile"), Partition))
+                 ~typ:(Tcontainer (Tasset (dumloc "othermile"), Collection))
               ]
         ~effect:(
           mk_instr (Iletin ((dumloc "o"),
