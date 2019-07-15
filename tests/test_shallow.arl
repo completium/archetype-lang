@@ -46,6 +46,19 @@ action add4 (a : address) (o1 : int) (o2 : int) (o3 : int) (o4 : int) = {
      } in
      owner.add o
   }
+   
+  
+action add5 (a : address) (o1 : int) (o2 : int) (o3 : int) (o4 : int) = {
+  effect {
+     owner.add { 
+         addr = a; 
+         miles1 = [ { id = o1; 
+                      othermiles = [ { oid = o2 };
+                                     { oid = o3 } ] } ]; 
+         miles2 = [ { oid = o4 } ]
+     }
+  }
+
 }
 
 
