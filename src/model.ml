@@ -325,16 +325,22 @@ type 'id storage_gen = 'id storage_item_gen list
 type storage = lident storage_gen
 [@@deriving show {with_path = false}]
 
-type 'id enum_item = {
+type 'id enum_item_gen = {
   name: 'id;
   invariants : 'id label_term_gen list;
 }
 [@@deriving show {with_path = false}]
 
-type 'id enum = {
+type enum_item = lident enum_item_gen
+[@@deriving show {with_path = false}]
+
+type 'id enum_gen = {
   name: 'id;
-  values: 'id enum_item list;
+  values: 'id enum_item_gen list;
 }
+[@@deriving show {with_path = false}]
+
+type enum = lident enum_gen
 [@@deriving show {with_path = false}]
 
 type 'id record_item_gen = {
@@ -517,7 +523,7 @@ type function__ = lident function__gen
 [@@deriving show {with_path = false}]
 
 type 'id decl_node_gen =
-  | Denum of 'id enum
+  | Denum of 'id enum_gen
   | Drecord of 'id record_gen
   | Dcontract of 'id contract_gen
 [@@deriving show {with_path = false}]
@@ -577,10 +583,10 @@ let mk_contract_signature ?(args=[]) ?(loc=Location.dummy) name : 'id contract_s
 let mk_contract ?(signatures=[]) ?init ?(loc=Location.dummy) name : 'id contract_gen =
   { name; signatures; init; loc }
 
-let mk_enum ?(values = []) name : 'id enum =
+let mk_enum ?(values = []) name : 'id enum_gen =
   { name; values }
 
-let mk_enum_item ?(invariants = []) name : 'id enum_item =
+let mk_enum_item ?(invariants = []) name : 'id enum_item_gen =
   { name; invariants }
 
 let mk_record ?(values = []) ?key name : 'id record_gen =

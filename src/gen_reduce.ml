@@ -1,7 +1,7 @@
 (* open Tools
    open Location
    open Ident *)
-(* open Model *)
+open Model
 
 exception Anomaly of string
 type error_desc =
@@ -15,5 +15,5 @@ let emit_error (desc : error_desc) =
   let str = Format.asprintf "%a@." pp_error_desc desc in
   raise (Anomaly str)
 
-let reduce (model : Model.model) : Model.model =
+let reduce (model : model) : model =
   model
