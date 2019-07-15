@@ -37,28 +37,25 @@ action add3 (a : address) (l1 : mile partition) (l2 : othermile partition) = {
 
 action add4 (a : address) (o1 : int) (o2 : int) (o3 : int) (o4 : int) = {
   effect {
-     let o = { 
-         addr = a; 
-         miles1 = [ { id = o1; 
+     let o = {
+         addr = a;
+         miles1 = [ { id = o1;
                       othermiles = [ { oid = o2 };
-                                     { oid = o3 } ] } ]; 
+                                     { oid = o3 } ] } ];
          miles2 = [ { oid = o4 } ]
      } in
      owner.add o
   }
-   
-  
+}
+
 action add5 (a : address) (o1 : int) (o2 : int) (o3 : int) (o4 : int) = {
   effect {
-     owner.add { 
-         addr = a; 
-         miles1 = [ { id = o1; 
+     owner.add {
+         addr = a;
+         miles1 = [ { id = o1;
                       othermiles = [ { oid = o2 };
-                                     { oid = o3 } ] } ]; 
+                                     { oid = o3 } ] } ];
          miles2 = [ { oid = o4 } ]
      }
   }
-
 }
-
-
