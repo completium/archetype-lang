@@ -218,8 +218,6 @@ end
 
 let to_liquidity (model : M.model) : T.tree =
 
-  (* let cont f x d = d @ f x in *)
-
   let add_decls (decl : M.decl_node) : T.decl list =
     match decl with
     | M.Denum (e : M.enum) ->
@@ -292,7 +290,7 @@ let to_liquidity (model : M.model) : T.tree =
   in
 
   let generate_api (x : M.api_item) : T.decl =
-    let def = ([], T.Tbasic Tunit, todo) in
+    let def = ([["_"], T.Tbasic Tunit], T.Tlocal "storage", todo) in
     let generate_api_storage = function
       | M.Get id -> Utils.get_asset model id
       | _ -> def
@@ -324,7 +322,11 @@ let to_liquidity (model : M.model) : T.tree =
     in
 
     let name = unloc f.name in
-    let args = List.map (fun (id, t, _) -> ([unloc id], to_type t)) f.args in
+    let args =
+      match f.args with
+      | [] -> [["_"], T.Tbasic Tunit]
+      | l  -> List.map (fun (id, t, _) -> ([unloc id], to_type t)) l
+    in
     let body = todo in (*mterm_to_expr f.body in*)
     T.Dfun (T.mk_fun name node args ret body)
   in
