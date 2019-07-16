@@ -50,10 +50,13 @@ let rec to_type = function
   | M.Tvset _
   | M.Ttrace _ -> emit_error UnsupportedFormulaType
 
+let storage_id     = "_s"
+let storage_var   = T.Evar storage_id
 let type_storage  = T.Tlocal "storage"
+let type_unit     = T.Tbasic Tunit
 let current_id id = T.Eapp (T.Edot (T.Evar "Current", id), [])
 
-let todo : T.expr = T.Evar "todo"
+let todo : T.expr = T.Evar "(*todo*) ()"
 
 let pattern_to_pattern (p : M.pattern) : T.pattern =
   match p.node with
@@ -281,7 +284,7 @@ let to_liquidity (model : M.model) : T.tree =
             in
             accu @ [(id, t, dv)])
           accu x.fields) [] storage in
-    let args = [["_"], T.Tbasic Tunit] in
+    let args = [] in
     let body = T.Erecord (None, List.map (
         fun (id, _, init) ->
           (id, init)
@@ -290,7 +293,7 @@ let to_liquidity (model : M.model) : T.tree =
   in
 
   let generate_api (x : M.api_item) : T.decl =
-    let def = ([["_"], T.Tbasic Tunit], T.Tlocal "storage", todo) in
+    let def = ([["_"], type_unit], type_unit, todo) in
     let generate_api_storage = function
       | M.Get id -> Utils.get_asset model id
       | _ -> def
@@ -316,18 +319,34 @@ let to_liquidity (model : M.model) : T.tree =
   in
 
   let generate_function (x : M.function__) : T.decl =
-    let node, f, ret = match x.node with
-      | Function (a, b) -> T.None, a, to_type b
-      | Entry a -> T.Entry, a, T.Ttuple [Tlist (Tlocal "operation"); Tlocal "storage"]
+    let node, f, args, ret = match x.node with
+      | Function (f, b) ->
+        let args =
+          match f.args with
+          | [] -> [["_"], type_unit]
+          | l  -> List.map (fun (id, t, _) -> ([unloc id], to_type t)) l
+        in
+        T.None, f, args, to_type b
+      | Entry f ->
+        let ret = T.Ttuple [Tlist (Tlocal "operation"); type_storage] in
+        let args : (ident list * T.type_) list =
+          match f.args with
+          | [] -> [["_s"], type_storage; ["_"], type_unit]
+          | l  ->
+            let ids, types =
+              List.fold_left (fun (ids, types) (id, t, _) -> ids @ [unloc id], types @ [to_type t]) ([], [])  l
+            in
+            [ids, T.Ttuple types] @ [["_s"], type_storage]
+        in
+        T.Entry, f, args, ret
     in
 
     let name = unloc f.name in
-    let args =
-      match f.args with
-      | [] -> [["_"], T.Tbasic Tunit]
-      | l  -> List.map (fun (id, t, _) -> ([unloc id], to_type t)) l
-    in
-    let body = todo in (*mterm_to_expr f.body in*)
+    let body =
+      (* if String.equal name "add"
+         then mterm_to_expr f.body
+         else *)
+      T.Etuple [Econtainer []; storage_var] in
     T.Dfun (T.mk_fun name node args ret body)
   in
 
