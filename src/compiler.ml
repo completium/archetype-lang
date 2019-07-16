@@ -106,6 +106,7 @@ let generate_target model =
 
   | Whyml ->
     model
+    |> shallow_asset
     |> generate_whyml
 
   | _ -> ()
