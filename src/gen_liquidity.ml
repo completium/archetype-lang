@@ -71,9 +71,13 @@ let mterm_to_expr (mt : M.mterm) : T.expr =
     | Mmatchwith (w, l)  -> T.Ematchwith (f w, List.map (fun ((p, e) : M.pattern * M.mterm) -> ([pattern_to_pattern p], f e)) l)
     | Mapp (i, args)     -> T.Eapp (Evar (fi i), List.map f args)
     (* | Mexternal     of 'id * 'id * 'term * ('term) list *)
-    (* | Mget          of 'term * 'term *)
+    | Mget (asset_name, arg) ->
+      let fun_name = M.Utils.function_name_from_storage_const (M.Get asset_name) in
+      T.Eapp (Evar fun_name, [storage_var; f arg])
     (* | Mset          of 'term * 'term * 'term *)
-    (* | Maddasset     of ident * 'term * 'term * 'term list *)
+    | Maddasset (asset_name, col, arg, _) ->
+      let fun_name = M.Utils.function_name_from_storage_const (M.Add asset_name) in
+      T.Eapp (Evar fun_name, [storage_var; f col; f arg])
     (* | Maddfield     of ident * ident * 'term * 'term  * 'term list asset_name * field_name * asset instance * item * shalow values *)
     (* | Maddlocal     of 'term * 'term *)
     (* | Mremoveasset  of ident * 'term * 'term *)
@@ -166,10 +170,10 @@ let mterm_to_expr (mt : M.mterm) : T.expr =
     | MsecMayBePerformedByAction _
     | MsecTransferredBy _
     | MsecTransferredTo _ -> emit_error UnsupportedFormulaExpression
-    | _ ->
-      Format.eprintf "expr: %a@\n" M.pp_mterm mt;
-      (* W.Evar "s", W.Tstorage; *)
-      assert false
+    | _ -> T.Elit (Lraw "(* TODO *)")
+    (* Format.eprintf "expr: %a@\n" M.pp_mterm mt;
+       (* W.Evar "s", W.Tstorage; *)
+       assert false *)
   in
   f mt
 
@@ -343,10 +347,9 @@ let to_liquidity (model : M.model) : T.tree =
 
     let name = unloc f.name in
     let body =
-      (* if String.equal name "add"
-         then mterm_to_expr f.body
-         else *)
-      T.Etuple [Econtainer []; storage_var] in
+      if String.equal name "add"
+      then mterm_to_expr f.body
+      else T.Etuple [Econtainer []; storage_var] in
     T.Dfun (T.mk_fun name node args ret body)
   in
 
