@@ -96,23 +96,17 @@ type builtin_const =
   | Max of type_
 [@@deriving show {with_path = false}]
 
-type 'id api_item_gen_node =
+type api_item_node =
   | APIStorage   of storage_const
   | APIContainer of container_const
   | APIFunction  of function_const
   | APIBuiltin   of builtin_const
 [@@deriving show {with_path = false}]
 
-type api_item_node = lident api_item_gen_node
-[@@deriving show {with_path = false}]
-
-type 'id api_item_gen = {
-  node: 'id api_item_gen_node;
+type api_item = {
+  node: api_item_node;
   only_formula: bool;
 }
-[@@deriving show {with_path = false}]
-
-type api_item = lident api_item_gen
 [@@deriving show {with_path = false}]
 
 type 'id pattern_node =
@@ -533,7 +527,7 @@ type decl_node = lident decl_node_gen
 
 type 'id model_gen = {
   name         : lident;
-  api_items    : 'id api_item_gen list;
+  api_items    : api_item list;
   decls        : 'id decl_node_gen list;
   storage      : 'id storage_gen;
   functions    : 'id function__gen list;
@@ -1500,6 +1494,7 @@ module Utils : sig
   val function_name_from_storage_const   : storage_const   -> string
   val function_name_from_container_const : container_const -> string
   val function_name_from_function_const  : function_const  -> string
+  val function_name_from_builtin_const   : builtin_const  -> string
   val get_records                        : model -> record list
   val get_storage                        : model -> storage
   val get_record                         : model -> lident -> record
@@ -1583,6 +1578,10 @@ end = struct
     | Sum      (aid, fid) -> "sum_"      ^ aid ^ "_" ^ fid
     | Min      (aid, fid) -> "min_"      ^ aid ^ "_" ^ fid
     | Max      (aid, fid) -> "max_"      ^ aid ^ "_" ^ fid
+
+  let function_name_from_builtin_const = function
+    | Min         _ -> "min"
+    | Max         _ -> "max"
 
   let get_function_args (f : function__) : argument list =
     match f.node with

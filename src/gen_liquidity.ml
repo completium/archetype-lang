@@ -53,6 +53,8 @@ let rec to_type = function
 let type_storage  = T.Tlocal "storage"
 let current_id id = T.Eapp (T.Edot (T.Evar "Current", id), [])
 
+let todo : T.expr = T.Evar "todo"
+
 let pattern_to_pattern (p : M.pattern) : T.pattern =
   match p.node with
   | M.Pwild    -> T.Pwild
@@ -168,6 +170,52 @@ let mterm_to_expr (mt : M.mterm) : T.expr =
   in
   f mt
 
+type sig_ = (ident list * T.type_) list * T.type_ * T.expr
+
+module Utils : sig
+  val get_asset      : M.model -> ident -> sig_
+  val contains_asset : M.model -> ident -> sig_
+end = struct
+  open Mltree
+  let failwith str = Eapp (Evar "failwith", [Elit (Lstring str)])
+
+  let get_asset (model : M.model) (asset_name : ident) : sig_ =
+    let asset = dumloc asset_name in
+    let _, key_type = M.Utils.get_record_key model asset in
+    let args = [(["s"; "key"], Ttuple [type_storage; Tbasic (btyp_to_basic key_type)])] in
+    let ret  = Tlocal asset_name in
+    let body =
+      Ematchwith (Eapp (Edot (Evar "Map", "find"),
+                        [
+                          Evar "key";
+                          Edot (Evar "s",
+                                asset_name ^ "_assets")
+                        ]),
+                  [
+                    ([Pexpr (Eapp (Evar "Some", [Evar "v"]))], Evar "v");
+                    ([Pwild],  failwith "not_found") ])
+    in
+    args, ret, body
+
+  let contains_asset (model : M.model) (asset_name : ident) : sig_ =
+    let asset = dumloc asset_name in
+    let _, key_type = M.Utils.get_record_key model asset in
+    let args = [(["s"; "key"], Ttuple [type_storage; Tbasic (btyp_to_basic key_type)])] in
+    let ret  = Tbasic Tbool in
+    let body =
+      Ematchwith (Eapp (Edot (Evar "Map", "find"),
+                        [
+                          Evar "key";
+                          Edot (Evar "s",
+                                asset_name ^ "_assets")
+                        ]),
+                  [
+                    ([Pexpr (Eapp (Evar "Some", [Evar "_"]))], Elit (Lbool true));
+                    ([Pwild],  Elit (Lbool false))])
+    in
+    args, ret, body
+end
+
 let to_liquidity (model : M.model) : T.tree =
 
   (* let cont f x d = d @ f x in *)
@@ -215,7 +263,6 @@ let to_liquidity (model : M.model) : T.tree =
   in
 
   let generate_storage (storage : M.storage) : T.decl * T.decl =
-    let name = "storage" in
     let fields : (ident * T.type_ * T.expr) list = List.fold_left (fun accu (x : M.lident M.storage_item_gen) ->
         List.fold_left (fun (accu : (ident * T.type_ * T.expr) list) (f : M.item_field) ->
             let id : ident  = unloc f.name in
@@ -241,36 +288,55 @@ let to_liquidity (model : M.model) : T.tree =
         fun (id, _, init) ->
           (id, init)
       ) fields) in
-    T.Dstruct (T.mk_struct name ~fields:fields), T.Dfun (T.mk_fun name Init args type_storage body)
+    T.Dstruct (T.mk_struct "storage" ~fields:fields), T.Dfun (T.mk_fun "initialize" Init args type_storage body)
   in
 
-  (* let generate_init (storage : M.storage) : T.decl =
-     let name = "initialize" in
-     let args = [] in
-     let ret =  in
-     let body = generate_init_instr model in
-     T.Dfun (T.mk_fun name Init args ret body)
-     in *)
+  let generate_api (x : M.api_item) : T.decl =
+    let def = ([], T.Tbasic Tunit, todo) in
+    let generate_api_storage = function
+      | M.Get id -> Utils.get_asset model id
+      | _ -> def
+    in
+    let generate_api_container = function
+      | _ -> def
+    in
+    let generate_api_function = function
+      | M.Contains id -> Utils.contains_asset model id
+      | _ -> def
+    in
+    let generate_api_builtin = function
+      | _ -> def
+    in
+    let (name, (args, ret, body)) : ident * sig_ =
+      match x.node with
+      | M.APIStorage   v -> M.Utils.function_name_from_storage_const v,   generate_api_storage v
+      | M.APIContainer v -> M.Utils.function_name_from_container_const v, generate_api_container v
+      | M.APIFunction  v -> M.Utils.function_name_from_function_const v,  generate_api_function v
+      | M.APIBuiltin   v -> M.Utils.function_name_from_builtin_const v,   generate_api_builtin v
+    in
+    T.Dfun (T.mk_fun name Inline args ret body)
+  in
 
-  (* let add_funs =
-     List.map (fun (x : W.function_struct) ->
-     let name = x.name in
-     let node : T.fun_node =
-       match x.kind with
-       | Function -> None
-       | Inline -> Inline
-       | Entry -> Entry
-     in
-     let args = List.map (fun (id, t) -> (id, to_type t) ) x.args in
-     let ret = to_type x.ret in
-     let body = expr_to_expr x.body in
-     T.Dfun (T.mk_fun name node args ret body))
-     in *)
+  let generate_function (x : M.function__) : T.decl =
+    let node, f, ret = match x.node with
+      | Function (a, b) -> T.None, a, to_type b
+      | Entry a -> T.Entry, a, T.Ttuple [Tlist (Tlocal "operation"); Tlocal "storage"]
+    in
+
+    let name = unloc f.name in
+    let args = List.map (fun (id, t, _) -> ([unloc id], to_type t)) f.args in
+    let body = todo in (*mterm_to_expr f.body in*)
+    T.Dfun (T.mk_fun name node args ret body)
+  in
 
   let name = unloc model.name in
   let decls = List.fold_left (fun accu (d : M.decl_node) -> accu @ add_decls d) [] model.decls in
   let storage, fun_init = generate_storage model.storage in
-  (* let funs =  *)
+  let apis = List.fold_left (fun accu (x : M.api_item) ->
+      if x.only_formula
+      then accu
+      else accu @ [generate_api x]) [] model.api_items in
+  let funs = List.fold_left (fun accu x -> accu @ [generate_function x]) [] model.functions in
 
-  let ds = decls @ [storage] @ [fun_init] in
+  let ds = decls @ [storage] @ [fun_init] @ apis @ funs in
   T.mk_tree name ~decls:ds
