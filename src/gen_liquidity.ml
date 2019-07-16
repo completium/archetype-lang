@@ -73,8 +73,10 @@ let mterm_to_expr (mt : M.mterm) : T.expr =
     (* | Mexternal     of 'id * 'id * 'term * ('term) list *)
     | Mget (asset_name, arg) ->
       let fun_name = M.Utils.function_name_from_storage_const (M.Get asset_name) in
+      T.Eapp (Evar fun_name, [Etuple [storage_var; f arg]])
+    | Mset (asset_name, k, arg) ->
+      let fun_name = M.Utils.function_name_from_storage_const (M.Set asset_name) in
       T.Eapp (Evar fun_name, [storage_var; f arg])
-    (* | Mset          of 'term * 'term * 'term *)
     | Maddasset (asset_name, col, arg, _) ->
       let fun_name = M.Utils.function_name_from_storage_const (M.Add asset_name) in
       T.Eapp (Evar fun_name, [storage_var; f col; f arg])
@@ -91,9 +93,15 @@ let mterm_to_expr (mt : M.mterm) : T.expr =
     (* | Mreverselocal of 'term *)
     (* | Mselect       of ident * 'term * 'term *)
     (* | Msort         of ident * 'term * ident * sort_kind *)
-    (* | Mcontains     of ident * 'term * 'term *)
-    (* | Mnth          of ident * 'term * 'term *)
-    (* | Mcount        of ident * 'term *)
+    | Mcontains (asset_name, c, arg) ->
+      let fun_name = M.Utils.function_name_from_function_const (M.Contains asset_name) in
+      T.Eapp (Evar fun_name, [f c; f arg])
+    | Mnth (asset_name, c, arg) ->
+      let fun_name = M.Utils.function_name_from_function_const (M.Nth asset_name) in
+      T.Eapp (Evar fun_name, [f c; f arg])
+    | Mcount (asset_name, c) ->
+      let fun_name = M.Utils.function_name_from_function_const (M.Count asset_name) in
+      T.Eapp (Evar fun_name, [f c])
     (* | Msum          of ident * 'id * 'term *)
     (* | Mmin          of ident * 'id * 'term *)
     (* | Mmax          of ident * 'id * 'term *)
@@ -118,12 +126,12 @@ let mterm_to_expr (mt : M.mterm) : T.expr =
     | Muminus e       -> T.Eunary (Uminus, f e)
     (* | Mrecord l       -> T.Erecord (None, List.map (fun (i, e) -> (fi i, f e)) l) *)
     (* | Mletin (i, e, l, e) -> T.Eletin (List.map (fun (ll, ee) -> (List.map (fun (i, t) -> (i, to_type t)) ll, f ee)) l, f e) *)
-    (* | Mvarstorevar  of 'id *)
-    (* | Mvarstorecol  of 'id *)
-    (* | Mvarenumval   of 'id *)
-    (* | Mvarlocal     of 'id *)
-    (* | Mvarfield     of 'id *)
-    (* | Mvarthe *)
+    | Mvarstorecol id     -> T.Edot (storage_var, fi id)
+    | Mvarstorevar id     -> T.Edot (storage_var, fi id)
+    | Mvarenumval id      -> T.Evar (fi id)
+    | Mvarlocal id        -> T.Evar (fi id)
+    | Mvarfield id        -> T.Evar (fi id)
+    | Mvarthe             -> T.Evar "the"
     | Mstate              -> T.Elit (Lraw "state")
     | Mnow                -> current_id "time"
     | Mtransferred        -> current_id "amount"
