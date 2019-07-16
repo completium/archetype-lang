@@ -911,22 +911,74 @@ let to_model (ast : A.model) : M.model =
       )
   in
 
-  let to_ctx = List.map (fun t -> (M.Utils.dest_varlocal t,t.type_))
-  in
-
-  let rec map_shallow_record m ctx (t : M.mterm) =
+  let record_to_key m n (t : M.mterm) =
+    let key_pos = M.Utils.get_key_pos m n in
     match t.node with
     | M.Mrecord l ->
-      let (l,args) =
-        List.fold_left (fun (fields,args) f ->
-            let (f,shallow_args) = map_shallow_record m ctx f in
-            (fields @ [f], args @ shallow_args)
+      let key = List.nth l key_pos in
+      key
+    | _ -> assert false
+  in
+
+  let tl = function
+    | [] -> []
+    | _ as l -> List.tl l
+  in
+
+  let rec map_shallow_record m ctx (t : M.mterm) : M.mterm list =
+    match t.node with
+    | M.Mrecord l ->
+      let fields,mapped =
+        List.fold_left (fun (fields,acc) f ->
+            let mapped_vals = map_shallow_record m ctx f in
+
+            (fields @ [List.hd mapped_vals],acc @ (List.tl mapped_vals))
           ) ([],[]) l
       in
-      (M.mk_mterm (M.Mrecord l) t.type_,args)
+      (M.mk_mterm (M.Mrecord fields) t.type_) :: mapped
     | M.Mvarlocal id when M.Utils.is_container t.type_ ->
-      (t,get_shallow_vars id ctx)
-    | _ -> (t,[])
+      t :: (get_shallow_vars id ctx)
+    | M.Marray l ->
+      begin
+        match t.type_ with
+        | Tcontainer (Tasset n, _) ->
+          (* split array in collection of keys and collection of shallow assets *)
+          (* each element of l is an asset : each asset must be transmuted to the key *)
+          let keys = List.map (record_to_key m n) l in
+          let array = M.mk_mterm (M.Marray keys) t.type_ in (* TODO : make real type *)
+          (*let str = Format.asprintf "%a@." M.pp_mterm array in
+            print_endline str;*)
+          let mapped_vals = List.map (map_shallow_record m ctx) l in
+          (* take head of mapped_vals *)
+          let hds = List.map List.hd mapped_vals in
+          let tls = List.flatten (List.map tl mapped_vals) in
+          array :: ([M.mk_mterm (M.Marray hds) t.type_] @ tls)
+        | _ -> [t]
+      end
+    | _ -> [t]
+  in
+
+  (* returns a list of pairs of 'id, value' to declare oas letin *)
+  let mk_new_letins prefix shallow_vals =
+    let _,letins = List.fold_left (fun (i,acc) v ->
+        if M.Utils.is_varlocal v
+        then (i,acc)
+        else (succ i,acc @ [dumloc (prefix^"_"^(string_of_int (succ i))),v])
+      ) (0,[]) shallow_vals in
+    letins
+  in
+
+  (* make context data for id from map_shallow_record values *)
+  let mk_ctx ctx id shallow_vals =
+    let (_,idctx) = List.fold_left (fun (i,acc) v ->
+        if M.Utils.is_varlocal v
+        then
+          let vid = M.Utils.dest_varlocal v in
+          (i, acc @ [vid,v.type_])
+        else
+          (succ i, acc @ [dumloc (id^"_"^(string_of_int (succ i))),v.type_])
+      ) (0,[]) shallow_vals in
+    ctx @ [id,idctx]
   in
 
   let rec map_shallow m (ctx : (I.ident * (M.lident * M.type_) list) list) (t : M.mterm) : M.mterm =
@@ -941,23 +993,29 @@ let to_model (ast : A.model) : M.model =
       | M.Maddasset (n,e,a,l) when M.Utils.is_record a ->
         if M.Utils.has_partition m n
         then
-          let a,shallow_args = map_shallow_record m ctx a in
-          M.Maddasset (n,e,a,l @ shallow_args)
+          let shallow_args = map_shallow_record m ctx a in
+          M.Maddasset (n,e,List.hd shallow_args,l @ (tl shallow_args))
         else
           M.Maddasset (n,e,a,l)
-      | M.Mletin (id,v,t,b) when M.Utils.is_record v->
+      | M.Mletin (id,v,t,b) when M.Utils.is_record v ->
         begin
           match v.type_ with
           | Tasset a when M.Utils.has_partition m (unloc a) ->
-            print_endline "LETIN";
-            let v,shallow_args = map_shallow_record m ctx v in
-            let ctx = ctx @ [unloc id, shallow_args |> to_ctx] in
-            M.Mletin (id,v,Some (Tasset a),map_shallow m ctx b)
+            let shallow_args = map_shallow_record m ctx v in
+            let new_letins   = mk_new_letins (unloc id) (tl shallow_args) in
+            let new_ctx      = mk_ctx ctx (unloc id) (tl shallow_args) in
+            M.Mletin (id,
+                      List.hd shallow_args,
+                      Some (Tasset a),
+                      map_letin_shallow m new_ctx b new_letins)
           | _ -> M.Mletin (id,v,t,map_shallow m ctx b)
         end
       | _ as tn -> M.map_term_node ctx (map_shallow m) tn
     in
     M.mk_mterm ~loc:(t.loc) t_gen t.type_
+  and map_letin_shallow m ctx b = function
+    | (id,v)::tl -> M.mk_mterm (M.Mletin (id,v,None,map_letin_shallow m ctx b tl)) v.type_
+    | [] -> map_shallow m ctx b
   in
 
   let process_shallow_function m f =

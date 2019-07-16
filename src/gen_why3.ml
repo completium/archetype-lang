@@ -661,7 +661,10 @@ let rec map_term (t : M.mterm) : loc_term = mk_loc t.loc (
     | M.Mint i      -> Tint i
     | M.Mvarlocal i -> Tvar (map_lident i)
     | M.Mgt (t1,t2) -> Tgt (with_dummy_loc Tyint,map_term t1,map_term t2)
-    | _ -> Tnottranslated
+    | _ ->
+      let str = Format.asprintf "Not translated : %a@." M.pp_mterm t in
+      print_endline str;
+      Tnottranslated
   )
 
 let map_record_term _ = map_term
@@ -828,7 +831,7 @@ let rec map_mterm m (mt : M.mterm) : loc_term =
     | M.Mget ({ node = M.Mvarstorecol n; type_ = _ },k) ->
       Tapp (loc_term (Tvar ("get_"^(unloc n))),[loc_term (Tvar "_s");map_mterm m k])
     | M.Maddasset (n,_,i,l) ->
-      Tapp (loc_term (Tvar ("add_"^n)),[loc_term (Tvar "_s"); map_mterm m i ] @ (List.map map_term l))
+      Tapp (loc_term (Tvar ("add_"^n)),[loc_term (Tvar "_s"); map_mterm m i ] @ (List.map (map_mterm m) l))
 (*    | M.Maddasset (n,_,i,_) when M.Utils.has_partition m n ->
       let ritems = M.Utils.get_record_partitions m n in
       (* double loop : on ritmes and on i's corresponding record values *)

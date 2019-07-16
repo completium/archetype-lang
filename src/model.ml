@@ -1520,6 +1520,7 @@ module Utils : sig
   val is_varlocal                        : mterm -> bool
   val dest_varlocal                      : mterm -> lident
   val is_container                       : type_ -> bool
+  val get_key_pos                        : model -> lident -> int
 
 end = struct
 
@@ -1786,5 +1787,20 @@ end = struct
     match t with
     | Tcontainer ((Tasset _),_) -> true
     | _ -> false
+
+
+  let get_key_pos m n : int =
+    get_records m |> List.fold_left (fun acc (record : record) ->
+        if compare (unloc n) record.name.pldesc = 0 then
+          let (k,_) = get_record_key m n in
+          (List.fold_left (fun acc (ritem : record_item) ->
+               if compare ritem.name.pldesc k.pldesc = 0 then
+                 succ acc
+               else
+                 acc
+             ) acc record.values)
+        else
+          acc
+      ) (-1)
 
 end
