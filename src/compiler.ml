@@ -9,6 +9,11 @@ exception Stop
 
 let is_false_ast () : bool = !Options.fake_ast || !Options.fake_ast2
 
+let print_model (model : Model.model) =
+  if !Options.opt_pretty_print_model
+  then Format.printf "%a@." Printer_model.pp_model model
+  else Format.printf "%a@." Model.pp_model model
+
 let parse (filename, channel) =
   if is_false_ast()
   then ParseTree.mk_archetype()
@@ -46,7 +51,7 @@ let type_ pt =
 let model ast =
   let model = Gen_model.to_model ast in
   if !Options.opt_model
-  then (Format.printf "%a@." Model.pp_model model; raise Stop)
+  then (print_model model; raise Stop)
   else model
 
 let generate_target_pt pt =
@@ -61,13 +66,13 @@ let generate_target_pt pt =
 let shallow_asset model =
   let wse = Gen_shallow_asset.shallow_asset model in
   if !Options.opt_sa
-  then (Format.printf "%a@." Model.pp_model model; raise Stop)
+  then (print_model model; raise Stop)
   else wse
 
 let remove_side_effect model =
   let wse = Gen_reduce.reduce model in
   if !Options.opt_wse
-  then (Format.printf "%a@." Model.pp_model model; raise Stop)
+  then (print_model model; raise Stop)
   else wse
 
 let generate_liquidity model =
@@ -156,6 +161,8 @@ let main () =
       "--reduced-ast", Arg.Set Options.opt_astr, " Same as -RA";
       "-M", Arg.Set Options.opt_model, " Print raw model";
       "--model", Arg.Set Options.opt_model, " Same as -M";
+      "-PM", Arg.Set Options.opt_pretty_print_model, " Pretty print parse tree";
+      "--pretty-print-model", Arg.Set Options.opt_pretty_print_model, " Same as -PM";
       "-SA", Arg.Set Options.opt_wse, " Print raw model with asset shallowing";
       "--shallow-asset", Arg.Set Options.opt_wse, " Same as -SA";
       "-W", Arg.Set Options.opt_wse, " Print raw model without side effect";
