@@ -82,6 +82,16 @@ let pp_record fmt (record : record) =
     (pp_option (fun fmt -> Format.fprintf fmt " identified by %a" pp_id)) record.key
     (pp_list "@\n" pp_record_item) record.values
 
+let pp_contract_signature fmt (cs : contract_signature) =
+  Format.fprintf fmt "%a : %a"
+    pp_id cs.name
+    (pp_list " -> " pp_type) cs.args
+
+let pp_contract fmt (contract : contract) =
+  Format.fprintf fmt "contract %a {@\n@[<v 2>  %a@]@\n}%a@\n"
+    pp_id contract.name
+    (pp_list "@\n" pp_contract_signature) contract.signatures
+    (pp_option pp_mterm) contract.init
 
 let pp_decl fmt (decl : decl_node) =
   match decl with
@@ -89,11 +99,45 @@ let pp_decl fmt (decl : decl_node) =
   | Drecord r -> pp_record fmt r
   | Dcontract c -> Format.fprintf fmt "TODO@."
 
+let rec pp_item_field_type fmt (ift : 'id item_field_type) =
+  match ift with
+  | FBasic b -> pp_btyp fmt b
+  | FAssetKeys (b, v) -> Format.fprintf fmt "asset keys %a of %a" pp_btyp b pp_id v
+  | FAssetRecord (b, v) -> Format.fprintf fmt "asset records %a of %a" pp_btyp b pp_id v
+  | FRecordCollection v  -> Format.fprintf fmt "record collection of %a" pp_id v
+  | FRecord v -> Format.fprintf fmt "record %a" pp_id v
+  | FEnum v -> Format.fprintf fmt "enum %a" pp_id v
+  | FContainer (c, ift) -> Format.fprintf fmt "(%a) %a" pp_item_field_type ift pp_container c
+
+let pp_item_field fmt (f : item_field) =
+  Format.fprintf fmt "%a : %a%a"
+    pp_id f.name
+    pp_item_field_type f.typ
+    (pp_option (fun fmt -> Format.fprintf fmt " := %a" pp_mterm)) f.default
+
+let pp_storage_item fmt (si : storage_item) =
+  Format.fprintf fmt "%a {@\n@[<v 2>  %a@]@\n}@\n"
+    pp_id si.name
+    (pp_list "@\n" pp_item_field) si.fields
+
+let pp_storage fmt (s : storage) =
+  Format.fprintf fmt "storage {@\n@[<v 2>  %a@]@\n}@\n"
+    (pp_list "" pp_storage_item) s
+
+let pp_argument fmt arg =
+  Format.fprintf fmt "%a"
+    pp_argument arg
+
 let pp_model fmt (model : model) =
-  Format.fprintf fmt "%a@\n@\n%a@\n@\n%a@."
+  Format.fprintf fmt "%a\
+                      @\n@\n%a\
+                      @\n@\n%a\
+                      @\n@\n%a\
+                      @."
     pp_id model.name
     (pp_list "@\n" pp_api_item) model.api_items
     (pp_list "@\n" pp_decl) model.decls
+    pp_storage model.storage
 
 (* -------------------------------------------------------------------------- *)
 let string_of__of_pp pp x =
