@@ -310,8 +310,8 @@ let pp_fun fmt (s : fun_struct) =
       | [e] -> Format.fprintf fmt "%a" pp_id e
       | l ->  Format.fprintf fmt "(%a)" (pp_list ", " pp_id) l
     in
-    match t with
-    | Tbasic Tunit -> Format.fprintf fmt "()"
+    match ids, t with
+    | ["_"], Tbasic Tunit -> Format.fprintf fmt "_"
     | _ ->
       Format.fprintf fmt "(%a : %a)"
         pp_ids ids

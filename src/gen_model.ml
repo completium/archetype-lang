@@ -12,6 +12,7 @@ type error_desc =
   | CannotConvertToAssignOperator
   | CannotSetApiItem
   | CannotExtractBody
+  | CannotExtractAssetName
   | AnyNotAuthorizedInTransitionTo of Location.t
   | TODO
 [@@deriving show {with_path = false}]
@@ -195,7 +196,13 @@ let to_model (ast : A.model) : M.model =
         M.Mapp (id, List.map (fun x -> term_arg_to_expr f x) args)
 
       | A.Pcall (Some p, A.Cconst A.Cget, [AExpr q]) ->
-        M.Mget (f p, f q)
+        let fp = f p in
+        let asset_name =
+          match fp with
+          | {node = Mvarstorecol an } -> unloc an
+          | _ -> emit_error (CannotExtractAssetName)
+        in
+        M.Mget (asset_name, f q)
 
       | A.Pcall (Some p, A.Cconst (A.Ccontains), [AExpr q]) ->
         let fp = f p in
@@ -291,13 +298,13 @@ let to_model (ast : A.model) : M.model =
     let var_name = dumloc ("_" ^ asset_name) in
     let var_mterm : M.mterm = M.mk_mterm (M.Mvarlocal var_name) type_asset in
 
-    let asset_mterm : M.mterm = M.mk_mterm (M.Mvarstorecol (dumloc (asset_name))) type_container_asset in
+    (* let asset_mterm : M.mterm = M.mk_mterm (M.Mvarstorecol (dumloc (asset_name))) type_container_asset in *)
 
     let key_name = "_k" in
     let key_loced : M.lident = dumloc (key_name) in
     let key_mterm : M.mterm = M.mk_mterm (M.Mvarlocal key_loced) type_container_asset in
 
-    let set_mterm : M.mterm = M.mk_mterm (M.Mset (asset_mterm, key_mterm, var_mterm)) Tunit in
+    let set_mterm : M.mterm = M.mk_mterm (M.Mset (asset_name, key_mterm, var_mterm)) Tunit in
 
     let seq : M.mterm list = (List.map (fun ((id, op, term) : ('a * A.operator * 'c)) -> M.mk_mterm
                                            (M.Massignfield (to_assign_operator op, var_name, id, term))
@@ -306,7 +313,7 @@ let to_model (ast : A.model) : M.model =
 
     let body : M.mterm = M.mk_mterm (M.Mseq seq) Tunit in
 
-    let get_mterm : M.mterm = M.mk_mterm (M.Mget (asset_mterm, key_mterm)) type_asset in
+    let get_mterm : M.mterm = M.mk_mterm (M.Mget (asset_name, key_mterm)) type_asset in
 
     let letinasset : M.mterm = M.mk_mterm (M.Mletin (var_name,
                                                      get_mterm,
@@ -799,10 +806,10 @@ let to_model (ast : A.model) : M.model =
       let accu = M.fold_term f accu term in
       let api_item : M.api_item_node option =
         match term.node with
-        | M.Mget ({node = M.Mvarstorecol asset_name; _}, _) ->
-          Some (M.APIStorage (M.Get (unloc asset_name)))
-        | M.Mset ({node = M.Mvarstorecol asset_name; _}, _, _) ->
-          Some (M.APIStorage (M.Set (unloc asset_name)))
+        | M.Mget (asset_name, _) ->
+          Some (M.APIStorage (M.Get asset_name))
+        | M.Mset (asset_name, _, _) ->
+          Some (M.APIStorage (M.Set asset_name))
         | M.Maddasset (asset_name, _, _, _) ->
           Some (M.APIStorage (M.Add asset_name))
         | M.Maddfield (asset_name, field_name, _, _, _) ->

@@ -828,8 +828,8 @@ let rec map_mterm m (mt : M.mterm) : loc_term =
     | M.Maddfield (a,f,{ node = M.Mdotasset (c,_); type_= _ },i,_) ->
       Tapp (loc_term (Tvar ("add_"^a^"_"^f)),
             [loc_term (Tvar "_s"); map_mterm m c; map_mterm m i])
-    | M.Mget ({ node = M.Mvarstorecol n; type_ = _ },k) ->
-      Tapp (loc_term (Tvar ("get_"^(unloc n))),[loc_term (Tvar "_s");map_mterm m k])
+    | M.Mget (n,k) ->
+      Tapp (loc_term (Tvar ("get_"^n)),[loc_term (Tvar "_s");map_mterm m k])
     | M.Maddasset (n,_,i,l) ->
       Tapp (loc_term (Tvar ("add_"^n)),[loc_term (Tvar "_s"); map_mterm m i ] @ (List.map (map_mterm m) l))
 (*    | M.Maddasset (n,_,i,_) when M.Utils.has_partition m n ->
@@ -898,7 +898,7 @@ let rec map_mterm m (mt : M.mterm) : loc_term =
                          id,
                          map_mterm m v)))
     | M.Mset (a,k,v) ->
-      Tapp (loc_term (Tvar ("set_"^(unloc (M.Utils.get_asset_type a)))),
+      Tapp (loc_term (Tvar ("set_"^a)),
             [
               loc_term (Tvar "_s");
               map_mterm m k;
