@@ -924,6 +924,9 @@ let to_model (ast : A.model) : M.model =
     | M.Mrecord l ->
       let key = List.nth l key_pos in
       key
+    | M.Mvarlocal _ ->
+      let (key,typ) = M.Utils.get_record_key m n in
+      M.mk_mterm (M.Mdotasset (t,key)) (M.Tbuiltin typ)
     | _ -> assert false
   in
 
