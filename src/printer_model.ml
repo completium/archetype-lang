@@ -11,7 +11,7 @@ let pp_currency fmt = function
 let pp_btyp fmt = function
   | Bbool       -> Format.fprintf fmt "bool"
   | Bint        -> Format.fprintf fmt "int"
-  | Buint       -> Format.fprintf fmt "unit"
+  | Buint       -> Format.fprintf fmt "uint"
   | Brational   -> Format.fprintf fmt "rational"
   | Bdate       -> Format.fprintf fmt "date"
   | Bduration   -> Format.fprintf fmt "duration"
@@ -55,7 +55,8 @@ let rec pp_type fmt t =
 
 
 let pp_mterm fmt mt =
-  Model.pp_mterm fmt mt
+  pp_str fmt "mterm_todo"
+(* Model.pp_mterm fmt mt *)
 
 let pp_api_item fmt (api_item : api_item) =
   Format.fprintf fmt "%a"
@@ -124,12 +125,27 @@ let pp_storage fmt (s : storage) =
   Format.fprintf fmt "storage {@\n@[<v 2>  %a@]@\n}@\n"
     (pp_list "" pp_storage_item) s
 
-let pp_argument fmt arg =
-  Format.fprintf fmt "%a"
-    pp_argument arg
+let pp_argument fmt ((id, t, dv) : argument) =
+  Format.fprintf fmt "%a %a%a"
+    pp_type t
+    pp_id id
+    (pp_option (fun fmt -> Format.fprintf fmt " := %a" pp_mterm)) dv
+
+let pp_function fmt f =
+  let k, fs, ret = match f.node with
+    | Entry f -> "entry", f, None
+    | Function (f, a) -> "function", f, Some a
+  in
+  Format.fprintf fmt "%a %a%a%a {@\n@[<v 2>  %a@]@\n}@\n"
+    pp_str k
+    pp_id fs.name
+    (fun fmt -> Format.fprintf fmt "(%a)" (pp_list ", " pp_argument)) fs.args
+    (pp_option (fun fmt -> Format.fprintf fmt " : %a" pp_type)) ret
+    pp_mterm fs.body
 
 let pp_model fmt (model : model) =
   Format.fprintf fmt "%a\
+                      @\n@\n%a\
                       @\n@\n%a\
                       @\n@\n%a\
                       @\n@\n%a\
@@ -138,6 +154,7 @@ let pp_model fmt (model : model) =
     (pp_list "@\n" pp_api_item) model.api_items
     (pp_list "@\n" pp_decl) model.decls
     pp_storage model.storage
+    (pp_list "@\n" pp_function) model.functions
 
 (* -------------------------------------------------------------------------- *)
 let string_of__of_pp pp x =
