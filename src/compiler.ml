@@ -58,6 +58,12 @@ let generate_target_pt pt =
     )
   | _ -> pt
 
+let shallow_asset model =
+  let wse = Gen_shallow_asset.shallow_asset model in
+  if !Options.opt_sa
+  then (Format.printf "%a@." Model.pp_model model; raise Stop)
+  else wse
+
 let remove_side_effect model =
   let wse = Gen_reduce.reduce model in
   if !Options.opt_wse
@@ -88,6 +94,7 @@ let generate_target model =
   match !Options.target with
   | Liquidity ->
     model
+    |> shallow_asset
     |> remove_side_effect
     |> generate_liquidity
     |> output_liquidity
@@ -149,6 +156,8 @@ let main () =
       "--reduced-ast", Arg.Set Options.opt_astr, " Same as -RA";
       "-M", Arg.Set Options.opt_model, " Print raw model";
       "--model", Arg.Set Options.opt_model, " Same as -M";
+      "-SA", Arg.Set Options.opt_wse, " Print raw model with asset shallowing";
+      "--shallow-asset", Arg.Set Options.opt_wse, " Same as -SA";
       "-W", Arg.Set Options.opt_wse, " Print raw model without side effect";
       "--without-side-effect", Arg.Set Options.opt_wse, " Same as -W";
       "-RTT", Arg.Set Options.opt_raw_target, " Print raw target tree";
