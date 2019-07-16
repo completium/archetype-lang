@@ -136,7 +136,7 @@ let pp_function fmt f =
     | Entry f -> "entry", f, None
     | Function (f, a) -> "function", f, Some a
   in
-  Format.fprintf fmt "%a %a%a%a {@\n@[<v 2>  %a@]@\n}@\n"
+  Format.fprintf fmt "%a %a %a%a {@\n@[<v 2>  %a@]@\n}@\n"
     pp_str k
     pp_id fs.name
     (fun fmt -> Format.fprintf fmt "(%a)" (pp_list ", " pp_argument)) fs.args
