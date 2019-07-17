@@ -157,14 +157,12 @@ let rec map_shallow m (ctx : (I.ident * (M.lident * M.type_) list) list) (t : M.
       let id = M.Utils.dest_varlocal a in
       if has_shallow_vars id ctx then
         let shallow_args = get_shallow_vars id ctx  in
-        (*M.Maddasset (n,e,a,l @ shallow_args)*)
         M.Mapp (dumloc ("add_shallow_"^n),shallow_args)
         else  M.Maddasset (n,e,a,l)
     | M.Maddasset (n,e,a,l) when M.Utils.is_record a ->
       if M.Utils.has_partition m n
       then
         let shallow_args = map_shallow_record m ctx a in
-        (*M.Maddasset (n,e,List.hd shallow_args,l @ (tl shallow_args))*)
         M.Mapp (dumloc ("add_shallow_"^n),shallow_args)
       else
         M.Maddasset (n,e,a,l)
