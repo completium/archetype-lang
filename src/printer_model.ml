@@ -1,4 +1,5 @@
 (* open Location *)
+open Tools
 open Model
 open Printer_tools
 
@@ -653,6 +654,13 @@ let pp_api_item fmt (api_item : api_item) =
     pp_api_item_node api_item.node
     (fun fmt x -> if x then pp_str fmt "\t[only_formula]" else pp_str fmt "") api_item.only_formula
 
+let pp_api_items fmt l =
+  if List.is_empty l
+  then pp_str fmt "no api items"
+  else
+    Format.fprintf fmt "api items:@\n%a@\n--@\n"
+      (pp_list "@\n" pp_api_item) l
+
 let pp_enum_item fmt (enum_item : enum_item) =
   Format.fprintf fmt "%a"
     pp_id enum_item.name
@@ -740,7 +748,7 @@ let pp_model fmt (model : model) =
                       @\n@\n%a\
                       @."
     pp_id model.name
-    (pp_list "@\n" pp_api_item) model.api_items
+    pp_api_items model.api_items
     (pp_list "@\n" pp_decl) model.decls
     pp_storage model.storage
     (pp_list "@\n" pp_function) model.functions
