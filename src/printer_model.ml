@@ -170,7 +170,8 @@ let pp_mterm fmt (mt : mterm) =
 
     | Mremoveasset (an, c, i) ->
       let pp fmt (an, c, i) =
-        Format.fprintf fmt "remove_%a (%a)"
+        Format.fprintf fmt "remove_%a (%a, %a)"
+          pp_str an
           f c
           f i
       in
@@ -178,9 +179,10 @@ let pp_mterm fmt (mt : mterm) =
 
     | Mremovefield (an, fn, c, i) ->
       let pp fmt (an, fn, c, i) =
-        Format.fprintf fmt "remove_%a_%a (%a)"
-          f c
+        Format.fprintf fmt "remove_%a_%a (%a, %a)"
+          pp_str an
           pp_str fn
+          f c
           f i
       in
       pp fmt (an, fn, c, i)
@@ -262,7 +264,8 @@ let pp_mterm fmt (mt : mterm) =
 
     | Mcontains (an, c, i) ->
       let pp fmt (an, c, i) =
-        Format.fprintf fmt "(%a).contains (%a)"
+        Format.fprintf fmt "contains_%a (%a, %a)"
+          pp_str an
           f c
           f i
       in
@@ -270,7 +273,8 @@ let pp_mterm fmt (mt : mterm) =
 
     | Mnth (an, c, i) ->
       let pp fmt (an, c, i) =
-        Format.fprintf fmt "(%a).nth (%a)"
+        Format.fprintf fmt "nth_%a (%a, %a)"
+          pp_str an
           f c
           f i
       in
@@ -278,32 +282,36 @@ let pp_mterm fmt (mt : mterm) =
 
     | Mcount (an, c) ->
       let pp fmt (an, c) =
-        Format.fprintf fmt "(%a).count()"
+        Format.fprintf fmt "count_%a (%a)"
+          pp_str an
           f c
       in
       pp fmt (an, c)
 
     | Msum (an, fd, c) ->
       let pp fmt (an, fd, c) =
-        Format.fprintf fmt "(%a).sum (%a)"
-          f c
+        Format.fprintf fmt "sum_%a_%a (%a)"
+          pp_str an
           pp_id fd
+          f c
       in
       pp fmt (an, fd, c)
 
     | Mmin (an, fd, c) ->
       let pp fmt (an, fd, c) =
-        Format.fprintf fmt "(%a).min (%a)"
-          f c
+        Format.fprintf fmt "min_%a_%a (%a)"
+          pp_str an
           pp_id fd
+          f c
       in
       pp fmt (an, fd, c)
 
     | Mmax (an, fd, c) ->
       let pp fmt (an, fd, c) =
-        Format.fprintf fmt "(%a).max (%a)"
-          f c
+        Format.fprintf fmt "max_%a_%a (%a)"
+          pp_str an
           pp_id fd
+          f c
       in
       pp fmt (an, fd, c)
 
