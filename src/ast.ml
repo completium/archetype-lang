@@ -1238,8 +1238,45 @@ let create_test_shallow_ast () =
                                  ~type_:(Tcontainer (Tasset (dumloc "othermile"), Partition)));
                              AExpr (mk_sp (Pvar (dumloc "m"))
                                       ~type_:(Tasset (dumloc "mile")))
-                           ])))
+                           ])));
 
+      mk_transaction_struct (dumloc "add7")
+        ~args:[mk_decl (dumloc "a")
+                 ~typ:(Tbuiltin VTaddress);
+               mk_decl (dumloc "o1")
+                 ~typ:(Tbuiltin VTint);
+               mk_decl (dumloc "o2")
+                 ~typ:(Tbuiltin VTint);
+               mk_decl (dumloc "o3")
+                 ~typ:(Tbuiltin VTint)
+              ]
+        ~effect:(
+          mk_instr (Icall (None,
+                           Cconst Cadd,
+                           [
+                             AExpr (
+                               mk_sp (Pdot (
+                                   mk_sp (Pcall (Some (mk_sp ~type_:(Tasset (dumloc "owner")) (Pvar (dumloc "owner"))),
+                                                 Cconst Cget,
+                                                 [AExpr (mk_sp (Pvar (dumloc "a"))
+                                                           ~type_:(Tbuiltin VTaddress))]))
+                                     ~type_:(Tasset (dumloc "owner")), dumloc "miles1"))
+                                 ~type_:(Tcontainer (Tasset (dumloc "othermile"), Partition)));
+                             AExpr (mk_sp (Precord [mk_sp (Pvar (dumloc "o1"))
+                                                      ~type_:(Tbuiltin VTint);
+                                                    mk_sp (Parray [mk_sp (Precord [mk_sp (Pvar (dumloc "o2"))
+                                                                                     ~type_:(Tbuiltin VTint)
+                                                                                  ])
+                                                                     ~type_:(Tasset (dumloc "othermile"));
+                                                                   mk_sp (Precord [mk_sp (Pvar (dumloc "o3"))
+                                                                                     ~type_:(Tbuiltin VTint)
+                                                                                  ])
+                                                                     ~type_:(Tasset (dumloc "othermile"))
+                                                                  ])
+                                                      ~type_:(Tcontainer (Tasset (dumloc "othermile"), Partition))
+                                                   ])
+                                      ~type_:(Tasset (dumloc "mile")))
+                           ])))
     ]
 
 

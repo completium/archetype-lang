@@ -135,7 +135,8 @@ let pp_mterm fmt (mt : mterm) =
 
     | Maddasset (an, c, i, es) ->
       let pp fmt (an, c, i, es) =
-        Format.fprintf fmt "add_%a (%a)%a"
+        Format.fprintf fmt "add_%a (%a, %a)%a"
+          pp_str an
           f c
           f i
           (fun fmt ->
@@ -147,9 +148,10 @@ let pp_mterm fmt (mt : mterm) =
 
     | Maddfield (an, fn, c, i, es) ->
       let pp fmt (an, fn, c, i, es) =
-        Format.fprintf fmt "add_%a_%a (%a)%a"
-          f c
+        Format.fprintf fmt "add_%a_%a (%a, %a)%a"
+          pp_str an
           pp_str fn
+          f c
           f i
           (fun fmt ->
              match es with
