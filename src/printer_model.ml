@@ -609,9 +609,49 @@ let pp_mterm fmt (mt : mterm) =
   in
   f fmt mt
 
+let pp_storage_const fmt = function
+  | Get an -> pp_str fmt ("get\t " ^ an)
+  | Set an -> pp_str fmt ("set\t " ^ an)
+  | Add an -> pp_str fmt ("add\t " ^ an)
+  | Remove an -> pp_str fmt ("remove\t " ^ an)
+  | Clear an -> pp_str fmt ("clear\t " ^ an)
+  | Reverse an -> pp_str fmt ("reverse " ^ an)
+  | UpdateAdd (an, fn) -> pp_str fmt ("add\t " ^ an ^ " " ^ fn)
+  | UpdateRemove (an, fn) -> pp_str fmt ("remove\t " ^ an ^ " " ^ fn)
+  | UpdateClear (an, fn) -> pp_str fmt ("clear\t " ^ an ^ " " ^ fn)
+  | UpdateReverse (an, fn) -> pp_str fmt ("reverse " ^ an ^ " " ^ fn)
+  | ToKeys an -> pp_str fmt ("to_keys\t " ^ an)
+
+let pp_container_const fmt = function
+  | Add t-> Format.fprintf fmt "add\t %a" pp_type t
+  | Remove t -> Format.fprintf fmt "remove\t %a" pp_type t
+  | Clear t -> Format.fprintf fmt "clear\t %a" pp_type t
+  | Reverse t -> Format.fprintf fmt "reverse %a" pp_type t
+
+let pp_function_const fmt = function
+  | Select an -> pp_str fmt ("select\t " ^ an)
+  | Sort (an, fn) -> pp_str fmt ("sort\t " ^ an ^ " " ^ fn)
+  | Contains an -> pp_str fmt ("contains " ^ an)
+  | Nth an -> pp_str fmt ("nth\t " ^ an)
+  | Count an -> pp_str fmt ("count\t " ^ an)
+  | Sum (an, fn) -> pp_str fmt ("sum\t " ^ an ^ " " ^ fn)
+  | Min (an, fn) -> pp_str fmt ("min\t " ^ an ^ " " ^ fn)
+  | Max (an, fn) -> pp_str fmt ("max\t " ^ an ^ " " ^ fn)
+
+let pp_builtin_const fmt = function
+  | Min t-> Format.fprintf fmt "min on %a" pp_type t
+  | Max t-> Format.fprintf fmt "max on %a" pp_type t
+
+let pp_api_item_node fmt = function
+  | APIStorage   v -> pp_storage_const fmt v
+  | APIContainer v -> pp_container_const fmt v
+  | APIFunction  v -> pp_function_const fmt v
+  | APIBuiltin   v -> pp_builtin_const fmt v
+
 let pp_api_item fmt (api_item : api_item) =
-  Format.fprintf fmt "%a"
+  Format.fprintf fmt "%a%a"
     pp_api_item_node api_item.node
+    (fun fmt x -> if x then pp_str fmt "\t[only_formula]" else pp_str fmt "") api_item.only_formula
 
 let pp_enum_item fmt (enum_item : enum_item) =
   Format.fprintf fmt "%a"
