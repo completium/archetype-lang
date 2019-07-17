@@ -1215,7 +1215,30 @@ let create_test_shallow_ast () =
                                                                      ~type_:(Tasset (dumloc "othermile")))])
                                                      ~type_:(Tcontainer (Tasset (dumloc "othermile"), Partition));
                                                   ])
-                                     ~type_:(Tasset (dumloc "owner")))])))
+                                     ~type_:(Tasset (dumloc "owner")))])));
+
+
+      mk_transaction_struct (dumloc "add6")
+        ~args:[mk_decl (dumloc "a")
+                 ~typ:(Tbuiltin VTaddress);
+               mk_decl (dumloc "m")
+                 ~typ:(Tasset (dumloc "mile"))
+              ]
+        ~effect:(
+          mk_instr (Icall (None,
+                           Cconst Cadd,
+                           [
+                             AExpr (
+                               mk_sp (Pdot (
+                                   mk_sp (Pcall (Some (mk_sp ~type_:(Tasset (dumloc "owner")) (Pvar (dumloc "owner"))),
+                                                 Cconst Cget,
+                                                 [AExpr (mk_sp (Pvar (dumloc "a"))
+                                                           ~type_:(Tbuiltin VTaddress))]))
+                                     ~type_:(Tasset (dumloc "owner")), dumloc "miles1"))
+                                 ~type_:(Tcontainer (Tasset (dumloc "othermile"), Partition)));
+                             AExpr (mk_sp (Pvar (dumloc "m"))
+                                      ~type_:(Tasset (dumloc "mile")))
+                           ])))
 
     ]
 
