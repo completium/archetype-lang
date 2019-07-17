@@ -255,6 +255,8 @@ type ('id, 'term) mterm_node  =
   | MsecMayBePerformedByAction     of 'term * 'term
   | MsecTransferredBy              of 'term
   | MsecTransferredTo              of 'term
+  (* security arg *)
+  | Manyaction
 [@@deriving show {with_path = false}]
 
 and 'id mterm_gen = {
@@ -885,6 +887,7 @@ let map_term_node (ctx : 'c) (f : 'c -> 'id mterm_gen -> 'id mterm_gen) = functi
   | MsecMayBePerformedByAction     (l, r) -> MsecMayBePerformedByAction     (f ctx l, f ctx r)
   | MsecTransferredBy              a      -> MsecTransferredBy              (f ctx a)
   | MsecTransferredTo              a      -> MsecTransferredTo              (f ctx a)
+  | Manyaction                   -> Manyaction
 
 let map_gen_mterm g f ctx (i : 'id mterm_gen) : 'id mterm_gen =
   {
@@ -993,6 +996,7 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | MsecMayBePerformedByAction     (l, r) -> f (f accu l) r
   | MsecTransferredBy              a      -> f accu a
   | MsecTransferredTo              a      -> f accu a
+  | Manyaction                            -> accu
 
 let fold_map_term
     (g : ('id, 'term) mterm_node -> 'term)
@@ -1413,6 +1417,9 @@ let fold_map_term
   | MsecTransferredTo a ->
     let ee, ea = f accu a in
     g (MsecTransferredTo ee), ea
+
+  | Manyaction ->
+    g (Manyaction), accu
 
 type ctx_model = {
   formula: bool;

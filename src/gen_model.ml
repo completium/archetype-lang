@@ -180,7 +180,11 @@ let to_model (ast : A.model) : M.model =
       | A.Pconst Ctransferred                  -> M.Mtransferred
       | A.Pconst Ccaller                       -> M.Mcaller
       | A.Pconst Cbalance                      -> M.Mbalance
-      | A.Pconst _                             -> assert false
+      | A.Pconst Canyaction                    -> M.Manyaction
+      | A.Pconst c                             ->
+        Format.eprintf "expr const unkown: %a@." A.pp_const c;
+        assert false
+
       | A.Ptuple l                             -> M.Mtuple (List.map f l)
       | A.Lquantifer (Forall, i, typ, term)    -> M.Mforall (i, ltyp_to_type typ, f term)
       | A.Lquantifer (Exists, i, typ, term)    -> M.Mexists (i, ltyp_to_type typ, f term)
@@ -250,6 +254,18 @@ let to_model (ast : A.model) : M.model =
           | _ -> "todo0"
         in
         M.Mselect (asset_name, fc, fp)
+
+      | A.Pcall (None, A.Cconst (A.Cmaybeperformedonlybyrole), [AExpr l; AExpr r]) ->
+        M.MsecMayBePerformedOnlyByRole (f l, f r)
+
+      | A.Pcall (None, A.Cconst (A.Cmaybeperformedonlybyaction), [AExpr l; AExpr r]) ->
+        M.MsecMayBePerformedOnlyByAction (f l, f r)
+
+      | A.Pcall (None, A.Cconst (A.Cmaybeperformedbyrole), [AExpr l; AExpr r]) ->
+        M.MsecMayBePerformedByRole (f l, f r)
+
+      | A.Pcall (None, A.Cconst (A.Cmaybeperformedbyaction), [AExpr l; AExpr r]) ->
+        M.MsecMayBePerformedByAction (f l, f r)
 
       | A.Pcall (aux, A.Cconst c, args) ->
         Format.eprintf "expr const unkown: %a with nb args: %d %s@." A.pp_const c (List.length args) (match aux with | Some _ -> "with aux" | _ -> "without aux");

@@ -613,6 +613,8 @@ let pp_mterm fmt (mt : mterm) =
     | MsecTransferredTo a ->
       Format.fprintf fmt "TransferredTo %a"
         f a
+
+    | Manyaction -> Format.fprintf fmt "anyaction"
   in
   f fmt mt
 
