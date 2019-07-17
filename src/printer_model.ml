@@ -505,9 +505,9 @@ let pp_mterm fmt (mt : mterm) =
     | Mduration v -> pp_str fmt v
     | Mdotasset (e, i)
     | Mdotcontract (e, i) ->
-      Format.fprintf fmt "%a.%a"
-        f e
+      Format.fprintf fmt "%a (%a)"
         pp_id i
+        f e
     | Mtuple l ->
       Format.fprintf fmt "(%a)"
         (pp_list ", " f) l
