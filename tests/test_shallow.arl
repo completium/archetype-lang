@@ -59,3 +59,9 @@ action add5 (a : address) (o1 : int) (o2 : int) (o3 : int) (o4 : int) = {
      }
   }
 }
+
+action add6 (a : address) (m : mile) = {
+  effect {
+     (owner.get a).miles1.add m
+  }
+}

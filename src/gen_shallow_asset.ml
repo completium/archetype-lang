@@ -19,7 +19,7 @@ let emit_error (desc : error_desc) =
   let str = Format.asprintf "%a@." pp_error_desc desc in
   raise (Anomaly str)
 
-let mk_type d = function
+(*let mk_type d = function
   | M.Tcontainer ((Tasset i), _) ->
     let rec rec_mk_type i acc =
       if compare i 0 = 0 then
@@ -28,7 +28,7 @@ let mk_type d = function
         rec_mk_type (i-1) (M.Tcontainer (acc, M.Collection))
     in
     rec_mk_type d (M.Tcontainer ((Tasset i), M.Collection))
-  | _ as t -> t
+  | _ as t -> t*)
 
 let rec gen_shallow_args (m : M.model) d (id : I.ident) (t : M.type_) (acc : M.argument list)
   : M.argument list =
@@ -45,10 +45,11 @@ and extract_asset_collection m d id i acc =
   let colls = M.Utils.get_record_partitions m i in
   List.fold_left (fun acc (coll : M.record_item) ->
       let id  = id ^ "_" ^ (unloc coll.name) in
-      let arg = dumloc id, mk_type d coll.type_, coll.default in
+      let arg = dumloc id, (*mk_type d*) coll.type_, coll.default in
       acc @ (gen_shallow_args m (succ d) id coll.type_ [arg])
     ) acc colls
 
+(* same as gen_shallow_args but returns context *)
 let gen_shallow_args (m : M.model) (id : M.lident) (t : M.type_) (arg : M.argument)
   : ((I.ident * (M.lident * M.type_) list) list) * M.argument list =
   match t with
@@ -155,14 +156,16 @@ let rec map_shallow m (ctx : (I.ident * (M.lident * M.type_) list) list) (t : M.
     | M.Maddasset (n,e,a,l) when M.Utils.is_varlocal a ->
       let id = M.Utils.dest_varlocal a in
       if has_shallow_vars id ctx then
-        let shallow_vars = get_shallow_vars id ctx  in
-        M.Maddasset (n,e,a,l @ shallow_vars)
+        let shallow_args = get_shallow_vars id ctx  in
+        (*M.Maddasset (n,e,a,l @ shallow_args)*)
+        M.Mapp (dumloc ("add_shallow_"^n),shallow_args)
         else  M.Maddasset (n,e,a,l)
     | M.Maddasset (n,e,a,l) when M.Utils.is_record a ->
       if M.Utils.has_partition m n
       then
         let shallow_args = map_shallow_record m ctx a in
-        M.Maddasset (n,e,List.hd shallow_args,l @ (tl shallow_args))
+        (*M.Maddasset (n,e,List.hd shallow_args,l @ (tl shallow_args))*)
+        M.Mapp (dumloc ("add_shallow_"^n),shallow_args)
       else
         M.Maddasset (n,e,a,l)
     | M.Mletin (id,v,t,b) when M.Utils.is_record v ->
@@ -197,7 +200,57 @@ let process_shallow_function m f =
   let f = M.Utils.map_function_terms (map_shallow m ctx) f in
   f
 
-let shallow_asset (model : M.model) : M.model = {
-  model with
-  functions = List.map (process_shallow_function model) model.functions
-}
+let rec gen_add_shallow_asset (arg : M.argument) : M.mterm =
+  let tnode =
+    match arg with
+    | id,Tasset a,_ ->
+      M.Maddasset (unloc a,
+                   M.mk_mterm (M.Mvarstorecol a) (Tcontainer (Tasset a,Collection)),
+                   M.mk_mterm (M.Mvarlocal id) (Tasset a),
+                   [])
+    | id,Tcontainer (Tasset a,_),_ ->
+      M.Mfor (dumloc "a",
+              M.mk_mterm (M.Mvarlocal id) (Tcontainer (Tasset a,Collection)),
+              gen_add_shallow_asset (dumloc "a",Tasset a,None)
+             )
+    | _,t,_ ->
+      let str = Format.asprintf "%a@." M.pp_type_ t in
+      print_endline str;
+      M.Mbreak in
+  M.mk_mterm tnode Tunit
+
+let gen_add_shallow_fun (model : M.model) (n : I.ident) : M.function__ =
+  let arg    = (dumloc "asset",M.Tasset (dumloc n),None) in
+  let _,args = gen_shallow_args model (dumloc "asset") (Tasset (dumloc n)) arg in
+  let body   =
+    if List.length args > 1
+    then M.mk_mterm (M.Mseq (List.map gen_add_shallow_asset args)) Tunit
+    else gen_add_shallow_asset (List.hd args) in
+  {
+    node = Function ({
+        name = dumloc ("add_shallow_"^n);
+        args = args;
+        body = body;
+        loc = Location.dummy;
+      },Tunit);
+    verif = None;
+  }
+
+let get_added_assets (model : M.model) : I.ident list =
+  let rec f ctx acc (t : M.mterm) =
+    match t.node with
+    | M.Maddasset (n,_,_,_) ->
+      if List.mem n acc then
+        acc
+      else acc @ [n]
+    | _ -> M.fold_term (f ctx) acc t
+  in
+  M.fold_model f model []
+
+let shallow_asset (model : M.model) : M.model =
+  let added_assets = get_added_assets model in
+  let add_asset_functions = List.map (gen_add_shallow_fun model) added_assets in
+  {
+    model with
+    functions = add_asset_functions@(List.map (process_shallow_function model) model.functions)
+  }
