@@ -124,7 +124,7 @@ let rec map_shallow_record m ctx (t : M.mterm) : M.mterm list =
         let hds = List.map List.hd mapped_vals in
         let tls = List.flatten (List.map tl mapped_vals) in
         array :: ([M.mk_mterm (M.Marray hds) t.type_] @ tls)
-        | _ -> [t]
+      | _ -> [t]
     end
   | _ -> [t]
 
@@ -153,19 +153,19 @@ let mk_ctx ctx id shallow_vals =
 let rec map_shallow m (ctx : (I.ident * (M.lident * M.type_) list) list) (t : M.mterm) : M.mterm =
   let t_gen =
     match t.node with
-    | M.Maddasset (n,e,a,l) when M.Utils.is_varlocal a ->
+    | M.Maddasset (n,a,l) when M.Utils.is_varlocal a ->
       let id = M.Utils.dest_varlocal a in
       if has_shallow_vars id ctx then
         let shallow_args = get_shallow_vars id ctx  in
         M.Mapp (dumloc ("add_shallow_"^n),shallow_args)
-        else  M.Maddasset (n,e,a,l)
-    | M.Maddasset (n,e,a,l) when M.Utils.is_record a ->
+      else  M.Maddasset (n,a,l)
+    | M.Maddasset (n,a,l) when M.Utils.is_record a ->
       if M.Utils.has_partition m n
       then
         let shallow_args = map_shallow_record m ctx a in
         M.Mapp (dumloc ("add_shallow_"^n),shallow_args)
       else
-        M.Maddasset (n,e,a,l)
+        M.Maddasset (n,a,l)
     | M.Mletin (id,v,t,b) when M.Utils.is_record v ->
       begin
         match v.type_ with
@@ -204,7 +204,6 @@ let rec gen_add_shallow_asset (arg : M.argument) : M.mterm =
     | id,Tasset a,_ ->
       M.Maddasset (unloc a,
                    M.mk_mterm (M.Mvarstorecol a) (Tcontainer (Tasset a,Collection)),
-                   M.mk_mterm (M.Mvarlocal id) (Tasset a),
                    [])
     | id,Tcontainer (Tasset a,_),_ ->
       M.Mfor (dumloc "a",
@@ -237,7 +236,7 @@ let gen_add_shallow_fun (model : M.model) (n : I.ident) : M.function__ =
 let get_added_assets (model : M.model) : I.ident list =
   let rec f ctx acc (t : M.mterm) =
     match t.node with
-    | M.Maddasset (n,_,_,_) ->
+    | M.Maddasset (n,_,_) ->
       if List.mem n acc then
         acc
       else acc @ [n]

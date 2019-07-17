@@ -341,24 +341,25 @@ let to_model (ast : A.model) : M.model =
 
   let extract_removeif (c : M.mterm) (p : M.mterm) : M.mterm__node =
     let asset_str = extract_asset_name c in
-    let key_str, key_type = A.Utils.get_asset_key ast (dumloc asset_str) |> fun (x, y) -> (unloc x, M.Tbuiltin (vtyp_to_btyp y)) in
+    (* let key_str, key_type = A.Utils.get_asset_key ast (dumloc asset_str) |> fun (x, y) -> (unloc x, M.Tbuiltin (vtyp_to_btyp y)) in *)
 
     let asset_name = dumloc asset_str in
-    let key_name = dumloc key_str in
+    (* let key_name = dumloc key_str in *)
     let type_asset = M.Tasset asset_name in
 
     let col_name = dumloc ("_col") in
     let col_var = M.mk_mterm (M.Mvarlocal col_name) type_asset in
 
     let asset_var_name = dumloc ("_asset") in
-    let asset_var = M.mk_mterm (M.Mvarlocal (dumloc ("_asset"))) type_asset in
+    (* let asset_var = M.mk_mterm (M.Mvarlocal (dumloc ("_asset"))) type_asset in *)
 
     let select : M.mterm =  M.mk_mterm (M.Mselect (asset_str, c, p) ) type_asset in
 
     let asset_sortcol : M.mterm = M.mk_mterm (M.Mvarstorecol asset_name) type_asset in
-    let asset_key : M.mterm = M.mk_mterm (M.Mdotasset (asset_var, key_name)) key_type in
+    (* let asset_key : M.mterm = M.mk_mterm (M.Mdotasset (asset_var, key_name)) key_type in *)
 
-    let remove : M.mterm = M.mk_mterm (M.Mremoveasset (asset_str, asset_sortcol, asset_key)) Tunit in
+    (* let remove : M.mterm = M.mk_mterm (M.Mremoveasset (asset_str, asset_sortcol, asset_key)) Tunit in *)
+    let remove : M.mterm = M.mk_mterm (M.Mremoveasset (asset_str, asset_sortcol)) Tunit in
 
     let for_ = M.mk_mterm (M.Mfor (col_name, col_var, remove) ) Tunit in
 
@@ -397,7 +398,7 @@ let to_model (ast : A.model) : M.model =
         let fp = f p in
         let fq = f q in
         match fp with
-        | {node = M.Mvarstorecol asset_name; _} -> M.Maddasset (unloc asset_name, fp, fq, [])
+        | {node = M.Mvarstorecol asset_name; _} -> M.Maddasset (unloc asset_name, fq, [])
         | {node = M.Mdotasset ({type_ = M.Tasset asset_name ; _} as arg, f); _} -> M.Maddfield (unloc asset_name, unloc f, arg, fq, [])
         | _ -> M.Maddlocal (fp, fq)
       )
@@ -407,7 +408,7 @@ let to_model (ast : A.model) : M.model =
         let fp = f p in
         let fq = f q in
         match fp with
-        | {node = M.Mvarstorecol asset_name; _} -> M.Mremoveasset (unloc asset_name, fp, fq)
+        | {node = M.Mvarstorecol asset_name; _} -> M.Mremoveasset (unloc asset_name, fq)
         | {node = M.Mdotasset ({type_ = M.Tasset asset_name ; _} as arg, f); _} -> M.Mremovefield (unloc asset_name, unloc f, arg, fq)
         | _ -> M.Mremovelocal (fp, fq)
       )
@@ -813,19 +814,19 @@ let to_model (ast : A.model) : M.model =
           Some (M.APIStorage (M.Get asset_name))
         | M.Mset (asset_name, _, _) ->
           Some (M.APIStorage (M.Set asset_name))
-        | M.Maddasset (asset_name, _, _, _) ->
+        | M.Maddasset (asset_name, _, _) ->
           Some (M.APIStorage (M.Add asset_name))
         | M.Maddfield (asset_name, field_name, _, _, _) ->
           Some (M.APIStorage (M.UpdateAdd (asset_name, field_name)))
-        | M.Mremoveasset (asset_name, _, _) ->
+        | M.Mremoveasset (asset_name, _) ->
           Some (M.APIStorage (M.Remove asset_name))
         | M.Mremovefield (asset_name, field_name, _, _) ->
           Some (M.APIStorage (M.UpdateRemove (asset_name, field_name)))
-        | M.Mclearasset (asset_name, _) ->
+        | M.Mclearasset (asset_name) ->
           Some (M.APIStorage (M.Clear asset_name))
         | M.Mclearfield (asset_name, field_name, _) ->
           Some (M.APIStorage (M.UpdateClear (asset_name, field_name)))
-        | M.Mreverseasset (asset_name, _) ->
+        | M.Mreverseasset (asset_name) ->
           Some (M.APIStorage (M.Reverse asset_name))
         | M.Mreversefield (asset_name, field_name, _) ->
           Some (M.APIStorage (M.UpdateReverse (asset_name, field_name)))

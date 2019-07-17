@@ -830,27 +830,27 @@ let rec map_mterm m (mt : M.mterm) : loc_term =
             [loc_term (Tvar "_s"); map_mterm m c; map_mterm m i])
     | M.Mget (n,k) ->
       Tapp (loc_term (Tvar ("get_"^n)),[loc_term (Tvar "_s");map_mterm m k])
-    | M.Maddasset (n,_,i,l) ->
+    | M.Maddasset (n,i,l) ->
       Tapp (loc_term (Tvar ("add_"^n)),[loc_term (Tvar "_s"); map_mterm m i ] @ (List.map (map_mterm m) l))
-(*    | M.Maddasset (n,_,i,_) when M.Utils.has_partition m n ->
-      let ritems = M.Utils.get_record_partitions m n in
-      (* double loop : on ritmes and on i's corresponding record values *)
-      Tseq (List.fold_left (fun acc (ritem : M.record_item) ->
-          let (pa,k,t) = M.Utils.get_partition_record_key m (dumloc n) ritem.name in
-          let pos = M.Utils.get_field_pos m (dumloc n) ritem.name in
-          let v = M.Utils.get_nth_record_val pos i in
-          let l = M.Utils.dest_array v in
-          List.fold_left (fun acc t ->
-              [
-                Tapp (loc_term (Tvar ("add_"^(unloc pa))), [
-                    loc_term (Tvar "_s");
-                    map_mterm m t
-                  ])
-              ] @ acc
-            ) acc l
-        ) [Tapp (loc_term (Tvar ("add_"^n)),[loc_term (Tvar "_s"); map_mterm m i])] ritems |> wdl) *)
-(*    | M.Maddasset (n,_,i,_) ->
-      Tapp (loc_term (Tvar ("add_"^n)),[loc_term (Tvar "_s"); map_mterm m i]) *)
+    (*    | M.Maddasset (n,_,i,_) when M.Utils.has_partition m n ->
+          let ritems = M.Utils.get_record_partitions m n in
+          (* double loop : on ritmes and on i's corresponding record values *)
+          Tseq (List.fold_left (fun acc (ritem : M.record_item) ->
+              let (pa,k,t) = M.Utils.get_partition_record_key m (dumloc n) ritem.name in
+              let pos = M.Utils.get_field_pos m (dumloc n) ritem.name in
+              let v = M.Utils.get_nth_record_val pos i in
+              let l = M.Utils.dest_array v in
+              List.fold_left (fun acc t ->
+                  [
+                    Tapp (loc_term (Tvar ("add_"^(unloc pa))), [
+                        loc_term (Tvar "_s");
+                        map_mterm m t
+                      ])
+                  ] @ acc
+                ) acc l
+            ) [Tapp (loc_term (Tvar ("add_"^n)),[loc_term (Tvar "_s"); map_mterm m i])] ritems |> wdl) *)
+    (*    | M.Maddasset (n,_,i,_) ->
+          Tapp (loc_term (Tvar ("add_"^n)),[loc_term (Tvar "_s"); map_mterm m i]) *)
     | M.Mrecord l ->
       let asset = M.Utils.get_asset_type mt in
       let fns = M.Utils.get_field_list m asset |> List.map map_lident in

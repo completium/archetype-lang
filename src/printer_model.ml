@@ -133,18 +133,17 @@ let pp_mterm fmt (mt : mterm) =
       in
       pp fmt (c, k, v)
 
-    | Maddasset (an, c, i, es) ->
-      let pp fmt (an, c, i, es) =
-        Format.fprintf fmt "add_%a (%a, %a)%a"
+    | Maddasset (an, i, es) ->
+      let pp fmt (an, i, es) =
+        Format.fprintf fmt "add_%a (%a)%a"
           pp_str an
-          f c
           f i
           (fun fmt ->
              match es with
              | [] -> (fun _ -> Format.fprintf fmt "")
              | _  -> Format.fprintf fmt " [%a]" (pp_list "; " f)) es
       in
-      pp fmt (an, c, i, es)
+      pp fmt (an, i, es)
 
     | Maddfield (an, fn, c, i, es) ->
       let pp fmt (an, fn, c, i, es) =
@@ -168,14 +167,13 @@ let pp_mterm fmt (mt : mterm) =
       in
       pp fmt (c, i)
 
-    | Mremoveasset (an, c, i) ->
-      let pp fmt (an, c, i) =
-        Format.fprintf fmt "remove_%a (%a, %a)"
+    | Mremoveasset (an, i) ->
+      let pp fmt (an, i) =
+        Format.fprintf fmt "remove_%a (%a)"
           pp_str an
-          f c
           f i
       in
-      pp fmt (an, c, i)
+      pp fmt (an, i)
 
     | Mremovefield (an, fn, c, i) ->
       let pp fmt (an, fn, c, i) =
@@ -195,13 +193,12 @@ let pp_mterm fmt (mt : mterm) =
       in
       pp fmt (c, i)
 
-    | Mclearasset (an, i) ->
-      let pp fmt (an, i) =
-        Format.fprintf fmt "clear_%a (%a)"
+    | Mclearasset (an) ->
+      let pp fmt (an) =
+        Format.fprintf fmt "clear_%a ()"
           pp_str an
-          f i
       in
-      pp fmt (an, i)
+      pp fmt (an)
 
     | Mclearfield (an, fn, i) ->
       let pp fmt (an, fn, i) =
@@ -219,13 +216,12 @@ let pp_mterm fmt (mt : mterm) =
       in
       pp fmt (i)
 
-    | Mreverseasset (an, i) ->
-      let pp fmt (an, i) =
-        Format.fprintf fmt "reverse_%a (%a)"
+    | Mreverseasset (an) ->
+      let pp fmt (an) =
+        Format.fprintf fmt "reverse_%a ()"
           pp_str an
-          f i
       in
-      pp fmt (an, i)
+      pp fmt (an)
 
     | Mreversefield (an, fn, i) ->
       let pp fmt (an, fn, i) =

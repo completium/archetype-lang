@@ -160,16 +160,16 @@ type ('id, 'term) mterm_node  =
   | Mexternal     of 'id * 'id * 'term * ('term) list
   | Mget          of ident * 'term
   | Mset          of ident * 'term * 'term
-  | Maddasset     of ident * 'term * 'term * 'term list
+  | Maddasset     of ident * 'term * 'term list
   | Maddfield     of ident * ident * 'term * 'term  * 'term list (* asset_name * field_name * asset instance * item * shalow values*)
   | Maddlocal     of 'term * 'term
-  | Mremoveasset  of ident * 'term * 'term
+  | Mremoveasset  of ident * 'term
   | Mremovefield  of ident * ident * 'term * 'term
   | Mremovelocal  of 'term * 'term
-  | Mclearasset   of ident * 'term
+  | Mclearasset   of ident
   | Mclearfield   of ident * ident * 'term
   | Mclearlocal   of 'term
-  | Mreverseasset of ident * 'term
+  | Mreverseasset of ident
   | Mreversefield of ident * ident * 'term
   | Mreverselocal of 'term
   | Mselect       of ident * 'term * 'term
@@ -688,16 +688,16 @@ let cmp_mterm_node
     | Mexternal (t1, func1, c1, args1), Mexternal (t2, func2, c2, args2)               -> cmpi t1 t2 && cmpi func1 func2 && cmp c1 c2 && List.for_all2 cmp args1 args2
     | Mget (c1, k1), Mget (c2, k2)                                                     -> cmp_ident c1 c2 && cmp k1 k2
     | Mset (c1, k1, v1), Mset (c2, k2, v2)                                             -> cmp_ident c1 c2 && cmp k1 k2 && cmp v1 v2
-    | Maddasset (an1, c1, i1, es1), Maddasset (an2, c2, i2, es2)                       -> cmp_ident an1 an2 && cmp c1 c2 && cmp i1 i2 && List.for_all2 cmp es1 es2
+    | Maddasset (an1, i1, es1), Maddasset (an2, i2, es2)                               -> cmp_ident an1 an2 && cmp i1 i2 && List.for_all2 cmp es1 es2
     | Maddfield (an1, fn1, c1, i1, es1), Maddfield (an2, fn2, c2, i2, es2)             -> cmp_ident an1 an2 && cmp_ident fn1 fn2 && cmp c1 c2 && cmp i1 i2 && List.for_all2 cmp es1 es2
     | Maddlocal (c1, i1), Maddlocal (c2, i2)                                           -> cmp c1 c2 && cmp i1 i2
-    | Mremoveasset (an1, c1, i1), Mremoveasset (an2, c2, i2)                           -> cmp_ident an1 an2 && cmp c1 c2 && cmp i1 i2
+    | Mremoveasset (an1, i1), Mremoveasset (an2, i2)                                   -> cmp_ident an1 an2 && cmp i1 i2
     | Mremovefield (an1, fn1, c1, i1), Mremovefield (an2, fn2, c2, i2)                 -> cmp_ident an1 an2 && cmp_ident fn1 fn2 && cmp c1 c2 && cmp i1 i2
     | Mremovelocal (c1, i1), Mremovelocal (c2, i2)                                     -> cmp c1 c2 && cmp i1 i2
-    | Mclearasset (an1, i1), Mclearasset (an2, i2)                                     -> cmp_ident an1 an2 && cmp i1 i2
+    | Mclearasset (an1), Mclearasset (an2)                                             -> cmp_ident an1 an2
     | Mclearfield (an1, fn1, i1), Mclearfield (an2, fn2, i2)                           -> cmp_ident an1 an2 && cmp_ident fn1 fn2 && cmp i1 i2
     | Mclearlocal (i1), Mclearlocal (i2)                                               -> cmp i1 i2
-    | Mreverseasset (an1, i1), Mreverseasset (an2, i2)                                 -> cmp_ident an1 an2 && cmp i1 i2
+    | Mreverseasset (an1), Mreverseasset (an2)                                         -> cmp_ident an1 an2
     | Mreversefield (an1, fn1, i1), Mreversefield (an2, fn2, i2)                       -> cmp_ident an1 an2 && cmp_ident fn1 fn2 && cmp i1 i2
     | Mreverselocal (i1), Mreverselocal (i2)                                           -> cmp i1 i2
     | Mselect (an1, c1, p1), Mselect (an2, c2, p2)                                     -> cmp_ident an1 an2 && cmp c1 c2 && cmp p1 p2
@@ -800,16 +800,16 @@ let map_term_node (ctx : 'c) (f : 'c -> 'id mterm_gen -> 'id mterm_gen) = functi
   | Mexternal (t, func, c, args) -> Mexternal (t, func, f ctx c, List.map (f ctx) args)
   | Mget (c, k)                  -> Mget (c, f ctx k)
   | Mset (c, k, v)               -> Mset (c, f ctx k, f ctx v)
-  | Maddasset (an, c, i, es)     -> Maddasset (an,f ctx c, f ctx i, List.map (f ctx) es)
+  | Maddasset (an, i, es)        -> Maddasset (an, f ctx i, List.map (f ctx) es)
   | Maddfield (an, fn, c, i, es) -> Maddfield (an, fn, f ctx c, f ctx i, List.map (f ctx) es)
   | Maddlocal (c, i)             -> Maddlocal (f ctx c, f ctx i)
-  | Mremoveasset (an, c, i)      -> Mremoveasset (an,f ctx c, f ctx i)
+  | Mremoveasset (an, i)         -> Mremoveasset (an, f ctx i)
   | Mremovefield (an, fn, c, i)  -> Mremovefield (an, fn, f ctx c, f ctx i)
   | Mremovelocal (c, i)          -> Mremovelocal (f ctx c, f ctx i)
-  | Mclearasset (an, i)          -> Mclearasset (an, f ctx i)
+  | Mclearasset (an)             -> Mclearasset (an)
   | Mclearfield (an, fn, i)      -> Mclearfield (an, fn, f ctx i)
   | Mclearlocal (i)              -> Mclearlocal (f ctx i)
-  | Mreverseasset (an, i)        -> Mreverseasset (an, f ctx i)
+  | Mreverseasset (an)           -> Mreverseasset (an)
   | Mreversefield (an, fn, i)    -> Mreversefield (an, fn, f ctx i)
   | Mreverselocal (i)            -> Mreverselocal (f ctx i)
   | Mselect (an, c, p)           -> Mselect (an, f ctx c, f ctx p)
@@ -908,16 +908,16 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mexternal (t, func, c, args)          -> List.fold_left f (f accu c) args
   | Mget (_, k)                           -> f accu k
   | Mset (c, k, v)                        -> f (f accu v) k
-  | Maddasset (an, c, i, es)              -> List.fold_left f (f (f accu c) i) es
+  | Maddasset (an, i, es)                 -> List.fold_left f (f accu i) es
   | Maddfield (an, fn, c, i, es)          -> List.fold_left f (f (f accu c) i) es
   | Maddlocal (c, i)                      -> f (f accu c) i
-  | Mremoveasset (an, c, i)               -> f (f accu c) i
+  | Mremoveasset (an, i)                  -> f accu i
   | Mremovefield (an, fn, c, i)           -> f (f accu c) i
   | Mremovelocal (c, i)                   -> f (f accu c) i
-  | Mclearasset (an, c)                   -> f accu c
+  | Mclearasset (an)                      -> accu
   | Mclearfield (an, fn, c)               -> f accu c
   | Mclearlocal (c)                       -> f accu c
-  | Mreverseasset (an, c)                 -> f accu c
+  | Mreverseasset (an)                    -> accu
   | Mreversefield (an, fn, c)             -> f accu c
   | Mreverselocal (c)                     -> f accu c
   | Mselect (an, c, p)                    -> f (f accu c) p
@@ -1073,11 +1073,10 @@ let fold_map_term
     let ve, va = f ka v in
     g (Mset (c, ke, ve)), va
 
-  | Maddasset (an, c, i, es) ->
-    let ce, ca = f accu c in
-    let ie, ia = f ca i in
+  | Maddasset (an, i, es) ->
+    let ie, ia = f accu i in
     let ee, ea = fold_term ia es in
-    g (Maddasset (an, ce, ie, ee)), ea
+    g (Maddasset (an, ie, ee)), ea
 
   | Maddfield (an, fn, c, i, es) ->
     let ce, ca = f accu c in
@@ -1090,10 +1089,9 @@ let fold_map_term
     let ie, ia = f ca i in
     g (Maddlocal (ce, ie)), ia
 
-  | Mremoveasset (an, c, i) ->
-    let ce, ca = f accu c in
-    let ie, ia = f ca i in
-    g (Mremoveasset (an, ce, ie)), ia
+  | Mremoveasset (an, i) ->
+    let ie, ia = f accu i in
+    g (Mremoveasset (an, ie)), ia
 
   | Mremovefield (an, fn, c, i) ->
     let ce, ca = f accu c in
@@ -1105,9 +1103,8 @@ let fold_map_term
     let ie, ia = f ca i in
     g (Mremovelocal (ce, ie)), ia
 
-  | Mclearasset (an, i) ->
-    let ie, ia = f accu i in
-    g (Mclearasset (an, ie)), ia
+  | Mclearasset (an) ->
+    g (Mclearasset (an)), accu
 
   | Mclearfield (an, fn, i) ->
     let ie, ia = f accu i in
@@ -1117,9 +1114,8 @@ let fold_map_term
     let ie, ia = f accu i in
     g (Mclearlocal (ie)), ia
 
-  | Mreverseasset (an, i) ->
-    let ie, ia = f accu i in
-    g (Mreverseasset (an, ie)), ia
+  | Mreverseasset (an) ->
+    g (Mreverseasset (an)), accu
 
   | Mreversefield (an, fn, i) ->
     let ie, ia = f accu i in

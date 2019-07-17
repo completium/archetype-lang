@@ -77,9 +77,9 @@ let mterm_to_expr (mt : M.mterm) : T.expr =
     | Mset (asset_name, k, arg) ->
       let fun_name = M.Utils.function_name_from_storage_const (M.Set asset_name) in
       T.Eapp (Evar fun_name, [storage_var; f arg])
-    | Maddasset (asset_name, col, arg, _) ->
+    | Maddasset (asset_name, arg, _) ->
       let fun_name = M.Utils.function_name_from_storage_const (M.Add asset_name) in
-      T.Eapp (Evar fun_name, [storage_var; f col; f arg])
+      T.Eapp (Evar fun_name, [storage_var; f arg])
     (* | Maddfield     of ident * ident * 'term * 'term  * 'term list asset_name * field_name * asset instance * item * shalow values *)
     (* | Maddlocal     of 'term * 'term *)
     (* | Mremoveasset  of ident * 'term * 'term *)
