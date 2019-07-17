@@ -728,6 +728,42 @@ let pp_storage fmt (s : storage) =
   Format.fprintf fmt "storage {@\n@[<v 2>  %a@]@\n}@\n"
     (pp_list "" pp_storage_item) s
 
+let pp_invariant fmt (inv : invariant) =
+  Format.fprintf fmt "invariant %a {@\n\
+                      @[<v 2>  %a@]@\n\
+                      }@\n"
+    pp_id inv.label
+    (pp_list "@\n" pp_mterm) inv.formulas
+
+let pp_specification fmt (s : specification) =
+  Format.fprintf fmt "specification %a {@\n\
+                      @[<v 2>  %a%a@]@\n}@\n"
+    pp_id s.name
+    pp_mterm s.formula
+    (fun fmt l ->
+       if List.is_empty l
+       then pp_str fmt ""
+       else Format.fprintf fmt "@\n%a"
+           (pp_list "@\n" pp_invariant) l) s.invariants
+
+let pp_assert_ fmt (s : assert_) =
+  Format.fprintf fmt "assert %a on %a {@\n\
+                      @[<v 2>  %a%a@]@\n}@\n"
+    pp_id s.name
+    pp_id s.label
+    pp_mterm s.formula
+    (fun fmt l ->
+       if List.is_empty l
+       then pp_str fmt ""
+       else Format.fprintf fmt "@\n%a"
+           (pp_list "@\n" pp_invariant) l) s.invariants
+
+let pp_verification fmt (v : verification) =
+  Format.fprintf fmt "verification {@\n\
+                      @[<v 2>  %a%a@]@\n}@\n@\n@\n"
+    (pp_list "@\n" pp_specification) v.specs
+    (pp_list "@\n" pp_assert_) v.asserts
+
 let pp_argument fmt ((id, t, dv) : argument) =
   Format.fprintf fmt "%a %a%a"
     pp_type t
@@ -739,15 +775,17 @@ let pp_function fmt f =
     | Entry f -> "entry", f, None
     | Function (f, a) -> "function", f, Some a
   in
-  Format.fprintf fmt "%a %a %a%a {@\n@[<v 2>  %a@]@\n}@\n"
+  Format.fprintf fmt "%a %a %a%a {@\n@[<v 2>  %a%a@]@\n}@\n"
     pp_str k
     pp_id fs.name
     (fun fmt -> Format.fprintf fmt "(%a)" (pp_list ", " pp_argument)) fs.args
     (pp_option (fun fmt -> Format.fprintf fmt " : %a" pp_type)) ret
+    (pp_option pp_verification) f.verif
     pp_mterm fs.body
 
 let pp_model fmt (model : model) =
   Format.fprintf fmt "%a\
+                      @\n@\n%a\
                       @\n@\n%a\
                       @\n@\n%a\
                       @\n@\n%a\
@@ -758,6 +796,7 @@ let pp_model fmt (model : model) =
     (pp_list "@\n" pp_decl) model.decls
     pp_storage model.storage
     (pp_list "@\n" pp_function) model.functions
+    pp_verification model.verification
 
 (* -------------------------------------------------------------------------- *)
 let string_of__of_pp pp x =
