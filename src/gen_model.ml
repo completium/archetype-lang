@@ -791,19 +791,22 @@ let to_model (ast : A.model) : M.model =
   in
 
   let process_api_storage (model : M.model) : M.model =
-    let add l i =
-      let e = List.fold_left (fun accu x ->
-          if x = i
-          then true
-          else accu) false l in
-      if e then
+
+
+    let add (ctx : M.ctx_model) (l : M.api_item list) (i :  M.api_item) =
+      let item = { i with only_formula = ctx.formula } in
+      let res, l = List.fold_left (fun (res, accu) (x : M.api_item) ->
+          if x.node = i.node
+          then (true, { item with only_formula = x.only_formula && ctx.formula }::accu)
+          else (res, x::accu)) (false, []) l in
+      if res then
         l
       else
-        i::l
+        item::l
     in
 
-    let rec f (accu : M.api_item list) (term : M.mterm) : M.api_item list =
-      let accu = M.fold_term f accu term in
+    let rec f (ctx : M.ctx_model) (accu : M.api_item list) (term : M.mterm) : M.api_item list =
+      let accu = M.fold_term (f ctx) accu term in
       let api_item : M.api_item_node option =
         match term.node with
         | M.Mget (asset_name, _) ->
@@ -845,7 +848,7 @@ let to_model (ast : A.model) : M.model =
         | _ -> None
       in
       match api_item with
-      | Some v -> add accu (Model.mk_api_item v)
+      | Some v -> add ctx accu (Model.mk_api_item v)
       | _ -> accu
     in
     let l = M.fold_model f model [] in

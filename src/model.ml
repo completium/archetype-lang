@@ -1418,46 +1418,53 @@ let fold_map_term
     let ee, ea = f accu a in
     g (MsecTransferredTo ee), ea
 
+type ctx_model = {
+  formula: bool;
+}
 
-let fold_model (f : 'a -> 'id mterm_gen -> 'a) (m : 'id model_gen) (accu : 'a) : 'a =
+let fold_model (f : ctx_model -> 'a -> 'id mterm_gen -> 'a) (m : 'id model_gen) (accu : 'a) : 'a =
+
+  let cif  : ctx_model = {formula = true}  in
+  let cof  : ctx_model = {formula = false} in
+
   let fold_left g l accu = List.fold_left (fun accu x -> g x accu) accu l in
 
-  let fold_verification (f : 'a -> 'id mterm_gen -> 'a) (v : 'id verification_gen) (accu : 'a) : 'a = (
-    let fold_label_term (f : 'a -> 'id mterm_gen -> 'a) (lt : 'id label_term_gen) (accu : 'a) : 'a =
-      f accu lt.term
+  let fold_verification (f : ctx_model -> 'a -> 'id mterm_gen -> 'a) (v : 'id verification_gen) (accu : 'a) : 'a = (
+    let fold_label_term (f : ctx_model -> 'a -> 'id mterm_gen -> 'a) (lt : 'id label_term_gen) (accu : 'a) : 'a =
+      f cif accu lt.term
     in
 
-    let fold_predicate (f : 'a -> 'id mterm_gen -> 'a) (p : 'id predicate_gen) (accu : 'a) : 'a =
+    let fold_predicate (f : ctx_model -> 'a -> 'id mterm_gen -> 'a) (p : 'id predicate_gen) (accu : 'a) : 'a =
       accu
-      |> (fun x -> List.fold_left (fun accu x -> x |> snd |> f accu) x p.args)
-      |> fun x -> f x p.body
+      |> (fun x -> List.fold_left (fun accu x -> x |> snd |> f cif accu) x p.args)
+      |> fun x -> f cif x p.body
     in
 
-    let fold_definition (f : 'a -> 'id mterm_gen -> 'a) (d : 'id definition_gen) (accu : 'a) : 'a =
-      f accu d.body
+    let fold_definition (f : ctx_model -> 'a -> 'id mterm_gen -> 'a) (d : 'id definition_gen) (accu : 'a) : 'a =
+      f cif accu d.body
     in
 
-    let fold_invariantt (f : 'a -> 'id mterm_gen -> 'a) (it : 'id * 'id label_term_gen list) (accu : 'a) : 'a =
+    let fold_invariantt (f : ctx_model -> 'a -> 'id mterm_gen -> 'a) (it : 'id * 'id label_term_gen list) (accu : 'a) : 'a =
       List.fold_left (fun accu x -> fold_label_term f x accu) accu (snd it)
     in
 
-    let fold_invariant (f : 'a -> 'id mterm_gen -> 'a) (spec : 'id invariant_gen) (accu : 'a) : 'a =
-      List.fold_left f accu spec.formulas
+    let fold_invariant (f : ctx_model -> 'a -> 'id mterm_gen -> 'a) (spec : 'id invariant_gen) (accu : 'a) : 'a =
+      List.fold_left (f cif) accu spec.formulas
     in
 
-    let fold_specification (f : 'a -> 'id mterm_gen -> 'a) (spec : 'id specification_gen) (accu : 'a) : 'a =
+    let fold_specification (f : ctx_model -> 'a -> 'id mterm_gen -> 'a) (spec : 'id specification_gen) (accu : 'a) : 'a =
       accu
-      |> (fun x -> f x spec.formula)
+      |> (fun x -> f cif x spec.formula)
       |> (fun x -> List.fold_left (fun accu (x : 'id invariant_gen) -> fold_invariant f x accu) x spec.invariants)
     in
 
-    let fold_variable (f : 'a -> 'id mterm_gen -> 'a) (spec : 'id variable_gen) (accu : 'a) : 'a =
+    let fold_variable (f : ctx_model -> 'a -> 'id mterm_gen -> 'a) (spec : 'id variable_gen) (accu : 'a) : 'a =
       accu
     in
 
-    let fold_assert (f : 'a -> 'id mterm_gen -> 'a) (assert_ : 'id assert_gen) (accu : 'a) : 'a =
+    let fold_assert (f : ctx_model -> 'a -> 'id mterm_gen -> 'a) (assert_ : 'id assert_gen) (accu : 'a) : 'a =
       accu
-      |> (fun x -> f accu assert_.formula)
+      |> (fun x -> f cif accu assert_.formula)
       |> (fun x -> List.fold_left (fun accu (x : 'id invariant_gen) -> fold_invariant f x accu) x assert_.invariants)
     in
 
@@ -1468,16 +1475,16 @@ let fold_model (f : 'a -> 'id mterm_gen -> 'a) (m : 'id model_gen) (accu : 'a) :
     |> fold_left (fold_label_term f) v.theorems
     |> fold_left (fold_variable f) v.variables
     |> fold_left (fold_invariantt f) v.invariants
-    |> (fun x -> List.fold_left (fun accu x -> f accu x) x v.effects)
+    |> (fun x -> List.fold_left (fun accu x -> f cif accu x) x v.effects)
     |> fold_left (fold_specification f) v.specs
     |> fold_left (fold_assert f) v.asserts
   ) in
 
-  let fold_action (f : 'a -> 'id mterm_gen -> 'a) (a : 'id function__gen) (accu : 'a) : 'a = (
+  let fold_action (f : ctx_model -> 'a -> 'id mterm_gen -> 'a) (a : 'id function__gen) (accu : 'a) : 'a = (
     let accu : 'a = (
       match a.node with
       | Function (fs, _)
-      | Entry fs -> fold_term f accu fs.body
+      | Entry fs -> fold_term (f cof) accu fs.body
     ) in
     Option.map_dfl (fun (x : 'id verification_gen) -> fold_verification f x accu) accu a.verif
   ) in
