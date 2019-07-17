@@ -398,7 +398,7 @@ let to_model (ast : A.model) : M.model =
         let fq = f q in
         match fp with
         | {node = M.Mvarstorecol asset_name; _} -> M.Maddasset (unloc asset_name, fp, fq, [])
-        | {node = M.Mdotasset ({type_ = M.Tasset asset_name ; _}, f); _} -> M.Maddfield (unloc asset_name, unloc f, fp, fq, [])
+        | {node = M.Mdotasset ({type_ = M.Tasset asset_name ; _} as arg, f); _} -> M.Maddfield (unloc asset_name, unloc f, arg, fq, [])
         | _ -> M.Maddlocal (fp, fq)
       )
 
@@ -408,7 +408,7 @@ let to_model (ast : A.model) : M.model =
         let fq = f q in
         match fp with
         | {node = M.Mvarstorecol asset_name; _} -> M.Mremoveasset (unloc asset_name, fp, fq)
-        | {node = M.Mdotasset ({type_ = M.Tasset asset_name ; _}, f); _} -> M.Mremovefield (unloc asset_name, unloc f, fp, fq)
+        | {node = M.Mdotasset ({type_ = M.Tasset asset_name ; _} as arg, f); _} -> M.Mremovefield (unloc asset_name, unloc f, arg, fq)
         | _ -> M.Mremovelocal (fp, fq)
       )
 
