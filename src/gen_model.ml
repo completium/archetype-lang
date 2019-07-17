@@ -208,15 +208,7 @@ let to_model (ast : A.model) : M.model =
         in
         M.Mget (asset_name, f q)
 
-      | A.Pcall (Some p, A.Cconst (A.Ccontains), [AExpr q]) ->
-        let fp = f p in
-        let asset_name =
-          match fp with
-          | {type_ = M.Tcontainer (M.Tasset asset_name, _); _} -> unloc asset_name
-          | _ -> assert false
-        in
-        M.Mcontains (asset_name, f p, f q)
-
+      | A.Pcall (Some p, A.Cconst (A.Ccontains), [AExpr q])
       | A.Pcall (None, A.Cconst (A.Ccontains), [AExpr p; AExpr q]) ->
         let fp = f p in
         let asset_name =
@@ -427,6 +419,24 @@ let to_model (ast : A.model) : M.model =
         | {node = M.Mvarstorecol asset_name; _} -> M.Mremoveasset (unloc asset_name, fq)
         | {node = M.Mdotasset ({type_ = M.Tasset asset_name ; _} as arg, f); _} -> M.Mremovefield (unloc asset_name, unloc f, arg, fq)
         | _ -> M.Mremovelocal (fp, fq)
+      )
+
+    | A.Icall (None, A.Cconst (A.Cclear), [AExpr p])
+    | A.Icall (Some p, A.Cconst (A.Cclear), []) -> (
+        let fp = f p in
+        match fp with
+        | {node = M.Mvarstorecol asset_name; _} -> M.Mclearasset (unloc asset_name)
+        | {node = M.Mdotasset ({type_ = M.Tasset asset_name ; _} as arg, f); _} -> M.Mclearfield (unloc asset_name, unloc f, arg)
+        | _ -> M.Mclearlocal (fp)
+      )
+
+    | A.Icall (None, A.Cconst (A.Creverse), [AExpr p])
+    | A.Icall (Some p, A.Cconst (A.Creverse), []) -> (
+        let fp = f p in
+        match fp with
+        | {node = M.Mvarstorecol asset_name; _} -> M.Mreverseasset (unloc asset_name)
+        | {node = M.Mdotasset ({type_ = M.Tasset asset_name ; _} as arg, f); _} -> M.Mreversefield (unloc asset_name, unloc f, arg)
+        | _ -> M.Mreverselocal (fp)
       )
 
     | A.Icall (Some p, A.Cconst (A.Cupdate), [AExpr k; AEffect e]) ->
