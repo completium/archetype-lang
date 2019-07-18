@@ -568,49 +568,17 @@ let to_model (ast : A.model) : M.model =
   let process_storage list =
     let variable_to_storage_items (var : (A.lident, A.type_, A.pterm) A.variable) : M.storage_item =
       let arg = var.decl in
-      let compute_field (type_ : A.type_) : M.item_field =
-        (* let rec ptyp_to_item_field_type = function
-           | A.Tbuiltin vtyp -> M.FBasic (vtyp_to_btyp vtyp)
-           | A.Tenum id      -> M.FEnum id
-           | A.Tasset id     -> M.FRecord id
-           | A.Tcontract x   -> M.FBasic Brole
-           | A.Tcontainer (ptyp, container) -> M.FContainer (to_container container, ptyp_to_item_field_type ptyp)
-           | A.Tentry
-           | A.Toption _
-           | A.Ttuple _      -> emit_error (UnsupportedTypeForFile type_)
-           in
-           let a = ptyp_to_item_field_type type_ in *)
-        let typ = ptyp_to_type type_ in
-        M.mk_item_field arg.name typ ?default:(Option.map to_mterm arg.default)
-      in
-
-      let storage_item = M.mk_storage_item arg.name in
-      let typ : A.type_ = Option.get arg.typ in {
-        storage_item with
-        fields = [compute_field typ];
-      }
+      let type_ : A.type_ = Option.get arg.typ in
+      let typ = ptyp_to_type type_ in
+      M.mk_storage_item arg.name typ ?default:(Option.map to_mterm arg.default)
     in
 
     let asset_to_storage_items (asset : A.asset) : M.storage_item =
       let asset_name = asset.name in
-      let compute_fields =
-        let key_asset_name = mkloc (loc asset_name) ("_" ^ (unloc asset_name)) in
-        [M.mk_item_field key_asset_name (M.Tcontainer (M.Tasset asset_name, Collection))
-           ~asset:asset_name]
-
-      (* let _, key_type = A.Utils.get_asset_key ast asset_name in
-         let key_asset_name = Location.mkloc (Location.loc asset_name) ((Location.unloc asset_name) ^ "_keys") in
-         let map_asset_name = Location.mkloc (Location.loc asset_name) ((Location.unloc asset_name) ^ "_assets") in
-         [M.mk_item_field key_asset_name (M. (vtyp_to_btyp key_type, asset_name))
-         ~asset:asset_name
-         (*?default:None TODO: uncomment this*);
-         M.mk_item_field map_asset_name (FAssetRecord (vtyp_to_btyp key_type, asset_name))
-         ~asset:asset_name
-         (* ~default:arg.default TODO: uncomment this*)] *)
-
-      in
-      M.mk_storage_item asset.name
-        ~fields:compute_fields
+      M.mk_storage_item
+        asset_name
+        (M.Tcontainer (Tasset asset_name, Collection))
+        ~asset:asset_name
         ~invariants:(List.map (fun x -> to_label_lterm x) asset.specs)
     in
 

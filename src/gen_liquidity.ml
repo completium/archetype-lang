@@ -266,43 +266,44 @@ let to_liquidity (model : M.model) : T.tree =
   in
 
   let generate_storage (storage : M.storage) : T.decl * T.decl =
-    let fields : (ident * T.type_ * T.expr) list = List.fold_left (fun accu (x : M.lident M.storage_item_gen) ->
-        List.fold_left (fun (accu : (ident * T.type_ * T.expr) list) (f : M.item_field) ->
-            match f.typ with
-            | M.Tcontainer (Tasset id, Collection) ->
-              let asset_id : ident  = unloc id in
-              let _, v = M.Utils.get_record_key model id in
+    let fields : (ident * T.type_ * T.expr) list =
+      List.fold_left (fun (accu : (ident * T.type_ * T.expr) list) (f : M.storage_item) ->
+          match f.typ with
+          | M.Tcontainer (Tasset id, Collection) ->
+            let asset_id : ident  = unloc id in
+            let _, v = M.Utils.get_record_key model id in
 
-              accu @ [(asset_id ^ "_keys",
-                       T.Tlist (Tbasic (btyp_to_basic v)),
-                       T.Econtainer []);
+            accu @ [(asset_id ^ "_keys",
+                     T.Tlist (Tbasic (btyp_to_basic v)),
+                     T.Econtainer []);
 
-                      (asset_id ^ "_assets",
-                       T.Tmap (Tbasic (btyp_to_basic v), Tlocal asset_id),
-                       T.Elit (Lmap (Tbasic (btyp_to_basic v), Tlocal asset_id)))]
-            | _ ->
-              let id : ident  = unloc f.name in
-              let t : T.type_ = to_type f.typ in
-              let dv =
-                match f.default with
-                | Some v -> mterm_to_expr v
-                | None ->
-                  match f.typ with
-                  | Tasset v          -> emit_error (UnsupportedDefaultValue (unloc v))
-                  | Tenum v           -> emit_error (UnsupportedDefaultValue (unloc v))
-                  | Tcontract v       -> emit_error (UnsupportedDefaultValue (unloc v))
-                  | Tbuiltin b        -> get_dv b
-                  | Tcontainer (_, t) -> T.Econtainer []
-                  | Toption _         -> T.Evar "None"
-                  | Ttuple _          -> emit_error (UnsupportedDefaultValue ("tuple"))
-                  | Tunit             -> emit_error (UnsupportedDefaultValue ("unit"))
-                  | Tentry            -> emit_error (UnsupportedDefaultValue ("entry"))
-                  | Tprog _           -> emit_error (UnsupportedDefaultValue ("prog"))
-                  | Tvset _           -> emit_error (UnsupportedDefaultValue ("vset"))
-                  | Ttrace _          -> emit_error (UnsupportedDefaultValue ("trace"))
-              in
-              accu @ [(id, t, dv)])
-          accu x.fields) [] storage in
+                    (asset_id ^ "_assets",
+                     T.Tmap (Tbasic (btyp_to_basic v), Tlocal asset_id),
+                     T.Elit (Lmap (Tbasic (btyp_to_basic v), Tlocal asset_id)))]
+
+          | _ ->
+            let id : ident  = unloc f.name in
+            let t : T.type_ = to_type f.typ in
+            let dv =
+              match f.default with
+              | Some v -> mterm_to_expr v
+              | None ->
+                match f.typ with
+                | Tasset v          -> emit_error (UnsupportedDefaultValue (unloc v))
+                | Tenum v           -> emit_error (UnsupportedDefaultValue (unloc v))
+                | Tcontract v       -> emit_error (UnsupportedDefaultValue (unloc v))
+                | Tbuiltin b        -> get_dv b
+                | Tcontainer (_, t) -> T.Econtainer []
+                | Toption _         -> T.Evar "None"
+                | Ttuple _          -> emit_error (UnsupportedDefaultValue ("tuple"))
+                | Tunit             -> emit_error (UnsupportedDefaultValue ("unit"))
+                | Tentry            -> emit_error (UnsupportedDefaultValue ("entry"))
+                | Tprog _           -> emit_error (UnsupportedDefaultValue ("prog"))
+                | Tvset _           -> emit_error (UnsupportedDefaultValue ("vset"))
+                | Ttrace _          -> emit_error (UnsupportedDefaultValue ("trace"))
+            in
+            accu @ [(id, t, dv)])
+        [] storage in
     let args = [] in
     let body = T.Erecord (None, List.map (
         fun (id, _, init) ->

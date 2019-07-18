@@ -293,23 +293,14 @@ type label_term = lident label_term_gen
    | FContainer        of container * 'id item_field_type
    [@@deriving show {with_path = false}] *)
 
-type 'id item_field_gen = {
-  asset   : 'id option;
-  name    : 'id;
-  typ     : type_;
-  ghost   : bool;
-  default : 'id mterm_gen option; (* initial value *)
-  loc     : Location.t [@opaque];
-}
-[@@deriving show {with_path = false}]
-
-type item_field = lident item_field_gen
-[@@deriving show {with_path = false}]
-
 type 'id storage_item_gen = {
   name        : 'id;
-  fields      : 'id item_field_gen list;
+  asset       : 'id option;
+  typ         : type_;
+  ghost       : bool;
+  default     : 'id mterm_gen option; (* initial value *)
   invariants  : lident label_term_gen list;
+  loc         : Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]
 
@@ -591,11 +582,8 @@ let mk_record ?(values = []) ?key name : 'id record_gen =
 let mk_record_item ?default name type_ : 'id record_item_gen =
   { name; type_; default }
 
-let mk_storage_item ?(fields = []) ?(invariants = []) name : 'id storage_item_gen =
-  { name; fields; invariants }
-
-let mk_item_field ?asset ?(ghost = false) ?default ?(loc = Location.dummy) name typ : 'id item_field_gen =
-  { asset; name; typ; ghost; default; loc }
+let mk_storage_item ?asset ?(ghost = false) ?default ?(invariants = []) ?(loc = Location.dummy) name typ : 'id storage_item_gen =
+  { name; asset; typ; ghost; default; invariants; loc }
 
 let mk_function_struct ?(args = []) ?(loc = Location.dummy) name body : function_struct =
   { name; args; body; loc }

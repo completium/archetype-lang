@@ -680,13 +680,15 @@ let map_record_values (values : M.record_item list) =
       }
     ) values
 
-let map_storage_items = List.fold_left (fun acc (items : M.storage_item) ->
+let map_storage_items _ = []
+
+(* List.fold_left (fun acc (items : M.storage_item) ->
     let extra_fields =
-      if List.length items.fields > 1 (* this is the way to detect assets ... *)
+      if List.length items > 1 (* this is the way to detect assets ... *)
       then (mk_diff_set_fields items.name.pldesc) |> loc_field |> deloc
       else []
     in
-    (List.fold_left (fun acc (item : M.item_field) ->
+    (List.fold_left (fun acc (item : M.storage_item) ->
          acc @
          match item.typ with
          | M.Tcontainer (Tasset id, Collection) ->
@@ -712,8 +714,8 @@ let map_storage_items = List.fold_left (fun acc (items : M.storage_item) ->
              init     = Option.fold map_record_term init_value item.default;
              mutable_ = true;
            }]
-       ) acc items.fields) @ extra_fields
-  ) []
+       ) acc items) @ extra_fields
+   ) [] *)
 
 (* prefixes with 'forall k_:key, mem k_ "asset"_keys ->  ...'
    replaces asset field "field" by '"field " (get "asset"_assets k_)'

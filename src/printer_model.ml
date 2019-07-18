@@ -706,29 +706,15 @@ let pp_decl fmt = function
   | Drecord r -> pp_record fmt r
   | Dcontract c -> pp_contract fmt c
 
-(* let rec pp_item_field_type fmt = function
-   | FBasic b -> pp_btyp fmt b
-   | FAssetKeys (b, v) -> Format.fprintf fmt "asset keys %a of %a" pp_btyp b pp_id v
-   | FAssetRecord (b, v) -> Format.fprintf fmt "asset records %a of %a" pp_btyp b pp_id v
-   | FRecordCollection v  -> Format.fprintf fmt "record collection of %a" pp_id v
-   | FRecord v -> Format.fprintf fmt "record %a" pp_id v
-   | FEnum v -> Format.fprintf fmt "enum %a" pp_id v
-   | FContainer (c, ift) -> Format.fprintf fmt "(%a) %a" pp_item_field_type ift pp_container c *)
-
-let pp_item_field fmt (f : item_field) =
-  Format.fprintf fmt "%a : %a%a"
-    pp_id f.name
-    pp_type f.typ
-    (pp_option (fun fmt -> Format.fprintf fmt " := %a" pp_mterm)) f.default
-
 let pp_storage_item fmt (si : storage_item) =
-  Format.fprintf fmt "%a {@\n@[<v 2>  %a@]@\n}@\n"
+  Format.fprintf fmt "%a : %a%a"
     pp_id si.name
-    (pp_list "@\n" pp_item_field) si.fields
+    pp_type si.typ
+    (pp_option (fun fmt -> Format.fprintf fmt " := %a" pp_mterm)) si.default
 
 let pp_storage fmt (s : storage) =
   Format.fprintf fmt "storage {@\n@[<v 2>  %a@]@\n}@\n"
-    (pp_list "" pp_storage_item) s
+    (pp_list "@\n" pp_storage_item) s
 
 let pp_invariant fmt (inv : invariant) =
   Format.fprintf fmt "invariant %a {@\n\
