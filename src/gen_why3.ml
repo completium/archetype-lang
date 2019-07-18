@@ -680,42 +680,37 @@ let map_record_values (values : M.record_item list) =
       }
     ) values
 
-let map_storage_items _ = []
-
-(* List.fold_left (fun acc (items : M.storage_item) ->
-    let extra_fields =
-      if List.length items > 1 (* this is the way to detect assets ... *)
-      then (mk_diff_set_fields items.name.pldesc) |> loc_field |> deloc
-      else []
-    in
-    (List.fold_left (fun acc (item : M.storage_item) ->
-         acc @
-         match item.typ with
-         | M.Tcontainer (Tasset id, Collection) ->
-           let _mk_field ?(mutable_ = false) name postfix typ_ dv =
-             (* let init_value = type_to_init typ_ in *)
-             let str_to_id str = map_lident (dumloc str) in
-             {
-               name     = map_lident (mkloc (loc name) ((unloc name) ^ postfix));
-               typ      = typ_;
-               init     = dumloc (Tvar (str_to_id "empty"));
-               mutable_ = mutable_;
-             } in
-           [
-             (* mk_field id "_keys"   (Tycoll (map_lident id)); *)
-             (* mk_field id "_assets" (Tymap (map_lident id)) *)
-           ]
-         | _ ->
-           let typ_ = map_mtype item.typ in
-           let init_value = type_to_init typ_ in
-           [{
-             name     = map_lident item.name;
-             typ      = typ_;
-             init     = Option.fold map_record_term init_value item.default;
-             mutable_ = true;
-           }]
-       ) acc items) @ extra_fields
-   ) [] *)
+let map_storage_items = List.fold_left (fun acc (item : M.storage_item) ->
+    acc @
+    match item.typ with
+    | M.Tcontainer (Tasset id, Collection) -> (* this is the way to detect assets ... *)
+      let asset_loc, asset_name = Location.deloc id in
+      let extra_fields = ((mk_diff_set_fields item.name.pldesc) |> loc_field |> deloc) in
+      let str_to_id str = map_lident (dumloc str) in
+      let mk_field name postfix typ_ dv =
+        (* let init_value = type_to_init typ_ in *)
+        {
+          name     = map_lident (mkloc (loc name) ((unloc name) ^ postfix));
+          typ      = with_dummy_loc typ_;
+          init     = with_dummy_loc dv;
+          mutable_ = true;
+        }
+      in
+      [
+        mk_field id "_keys"   (Tycoll (map_lident id)) (Tvar (str_to_id "empty"));
+        mk_field id "_assets" (Tymap (map_lident id)) (Tvar (mk_loc asset_loc ("const (mk_default_" ^ asset_name ^ " ())")))
+      ]
+      @ extra_fields
+    | _ ->
+      let typ_ = map_mtype item.typ in
+      let init_value = type_to_init typ_ in
+      [{
+        name     = map_lident item.name;
+        typ      = typ_;
+        init     = Option.fold map_record_term init_value item.default;
+        mutable_ = true;
+      }]
+  ) []
 
 (* prefixes with 'forall k_:key, mem k_ "asset"_keys ->  ...'
    replaces asset field "field" by '"field " (get "asset"_assets k_)'
