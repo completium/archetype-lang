@@ -644,8 +644,8 @@ let rec map_mtype (t : M.type_) : loc_typ =
       | M.Tunit                               -> Tyunit
       | _ -> assert false)
 
-let map_basic_type (typ : 'id M.item_field_type) : loc_typ =
-  let rec_map_basic_type = function
+(* let map_basic_type (typ : 'id M.item_field_type) : loc_typ =
+   let rec_map_basic_type = function
     | M.FBasic vt           -> map_btype vt
     | M.FAssetKeys (_,i)    -> Tycoll (map_lident i)
     | M.FAssetRecord (_,i)  -> Tymap (map_lident i)
@@ -653,7 +653,7 @@ let map_basic_type (typ : 'id M.item_field_type) : loc_typ =
     | M.FRecord i           -> Tyrecord (map_lident i)
     | M.FEnum i             -> Tyenum (map_lident i)
     | _ -> assert false in
-  with_dummy_loc (rec_map_basic_type typ)
+   with_dummy_loc (rec_map_basic_type typ) *)
 
 let rec map_term (t : M.mterm) : loc_term = mk_loc t.loc (
     match t.node with
@@ -687,9 +687,26 @@ let map_storage_items = List.fold_left (fun acc (items : M.storage_item) ->
       else []
     in
     (List.fold_left (fun acc (item : M.item_field) ->
-         let typ_ = map_basic_type item.typ in
-         let init_value = type_to_init typ_ in
-         acc @[{
+         acc @
+         match item.typ with
+         | M.Tcontainer (Tasset id, Collection) ->
+           let _mk_field ?(mutable_ = false) name postfix typ_ dv =
+             (* let init_value = type_to_init typ_ in *)
+             let str_to_id str = map_lident (dumloc str) in
+             {
+               name     = map_lident (mkloc (loc name) ((unloc name) ^ postfix));
+               typ      = typ_;
+               init     = dumloc (Tvar (str_to_id "empty"));
+               mutable_ = mutable_;
+             } in
+           [
+             (* mk_field id "_keys"   (Tycoll (map_lident id)); *)
+             (* mk_field id "_assets" (Tymap (map_lident id)) *)
+           ]
+         | _ ->
+           let typ_ = map_mtype item.typ in
+           let init_value = type_to_init typ_ in
+           [{
              name     = map_lident item.name;
              typ      = typ_;
              init     = Option.fold map_record_term init_value item.default;

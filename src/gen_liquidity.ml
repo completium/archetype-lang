@@ -251,16 +251,6 @@ let to_liquidity (model : M.model) : T.tree =
       emit_error TODO
   in
 
-  let rec ftype_to_type = function
-    | M.FBasic b              -> T.Tbasic (btyp_to_basic b)
-    | M.FAssetKeys (v, a)     -> T.Tlist (Tbasic (btyp_to_basic v))
-    | M.FAssetRecord (v, a)   -> T.Tmap (Tbasic (btyp_to_basic v), Tlocal (unloc a))
-    | M.FRecordCollection a   -> T.Tlist (Tlocal (unloc a))
-    | M.FRecord a             -> T.Tlocal (unloc a)
-    | M.FEnum a               -> T.Tlocal (unloc a)
-    | M.FContainer (_, t)     -> T.Tlist (ftype_to_type t)
-  in
-
   let get_dv = function
     | M.Bbool        -> T.Elit (Lbool false)
     | M.Bint         -> T.Elit (Lint Big_int.zero_big_int)
@@ -278,23 +268,40 @@ let to_liquidity (model : M.model) : T.tree =
   let generate_storage (storage : M.storage) : T.decl * T.decl =
     let fields : (ident * T.type_ * T.expr) list = List.fold_left (fun accu (x : M.lident M.storage_item_gen) ->
         List.fold_left (fun (accu : (ident * T.type_ * T.expr) list) (f : M.item_field) ->
-            let id : ident  = unloc f.name in
-            let t : T.type_ = ftype_to_type f.typ in
-            (* let dv = get_value id t f.default in *)
-            let dv : T.expr =
-              match f.default with
-              | Some v -> mterm_to_expr v
-              | None ->
-                match f.typ with
-                | M.FBasic b            -> get_dv b
-                | M.FAssetKeys (v, a)   -> T.Econtainer []
-                | M.FAssetRecord (v, a) -> T.Elit (Lmap (Tbasic (btyp_to_basic v), Tlocal (unloc a)))
-                | M.FRecordCollection a -> T.Econtainer []
-                | M.FRecord a           -> emit_error (UnsupportedDefaultValue (unloc a))
-                | M.FEnum a             -> emit_error (UnsupportedDefaultValue (unloc a))
-                | M.FContainer (_, t)   -> T.Econtainer []
-            in
-            accu @ [(id, t, dv)])
+            match f.typ with
+            | M.Tcontainer (Tasset id, Collection) ->
+              let asset_id : ident  = unloc id in
+              let _, v = M.Utils.get_record_key model id in
+
+              accu @ [(asset_id ^ "_keys",
+                       T.Tlist (Tbasic (btyp_to_basic v)),
+                       T.Econtainer []);
+
+                      (asset_id ^ "_assets",
+                       T.Tmap (Tbasic (btyp_to_basic v), Tlocal asset_id),
+                       T.Elit (Lmap (Tbasic (btyp_to_basic v), Tlocal asset_id)))]
+            | _ ->
+              let id : ident  = unloc f.name in
+              let t : T.type_ = to_type f.typ in
+              let dv =
+                match f.default with
+                | Some v -> mterm_to_expr v
+                | None ->
+                  match f.typ with
+                  | Tasset v          -> emit_error (UnsupportedDefaultValue (unloc v))
+                  | Tenum v           -> emit_error (UnsupportedDefaultValue (unloc v))
+                  | Tcontract v       -> emit_error (UnsupportedDefaultValue (unloc v))
+                  | Tbuiltin b        -> get_dv b
+                  | Tcontainer (_, t) -> T.Econtainer []
+                  | Toption _         -> T.Evar "None"
+                  | Ttuple _          -> emit_error (UnsupportedDefaultValue ("tuple"))
+                  | Tunit             -> emit_error (UnsupportedDefaultValue ("unit"))
+                  | Tentry            -> emit_error (UnsupportedDefaultValue ("entry"))
+                  | Tprog _           -> emit_error (UnsupportedDefaultValue ("prog"))
+                  | Tvset _           -> emit_error (UnsupportedDefaultValue ("vset"))
+                  | Ttrace _          -> emit_error (UnsupportedDefaultValue ("trace"))
+              in
+              accu @ [(id, t, dv)])
           accu x.fields) [] storage in
     let args = [] in
     let body = T.Erecord (None, List.map (

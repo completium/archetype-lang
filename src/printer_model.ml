@@ -706,19 +706,19 @@ let pp_decl fmt = function
   | Drecord r -> pp_record fmt r
   | Dcontract c -> pp_contract fmt c
 
-let rec pp_item_field_type fmt = function
-  | FBasic b -> pp_btyp fmt b
-  | FAssetKeys (b, v) -> Format.fprintf fmt "asset keys %a of %a" pp_btyp b pp_id v
-  | FAssetRecord (b, v) -> Format.fprintf fmt "asset records %a of %a" pp_btyp b pp_id v
-  | FRecordCollection v  -> Format.fprintf fmt "record collection of %a" pp_id v
-  | FRecord v -> Format.fprintf fmt "record %a" pp_id v
-  | FEnum v -> Format.fprintf fmt "enum %a" pp_id v
-  | FContainer (c, ift) -> Format.fprintf fmt "(%a) %a" pp_item_field_type ift pp_container c
+(* let rec pp_item_field_type fmt = function
+   | FBasic b -> pp_btyp fmt b
+   | FAssetKeys (b, v) -> Format.fprintf fmt "asset keys %a of %a" pp_btyp b pp_id v
+   | FAssetRecord (b, v) -> Format.fprintf fmt "asset records %a of %a" pp_btyp b pp_id v
+   | FRecordCollection v  -> Format.fprintf fmt "record collection of %a" pp_id v
+   | FRecord v -> Format.fprintf fmt "record %a" pp_id v
+   | FEnum v -> Format.fprintf fmt "enum %a" pp_id v
+   | FContainer (c, ift) -> Format.fprintf fmt "(%a) %a" pp_item_field_type ift pp_container c *)
 
 let pp_item_field fmt (f : item_field) =
   Format.fprintf fmt "%a : %a%a"
     pp_id f.name
-    pp_item_field_type f.typ
+    pp_type f.typ
     (pp_option (fun fmt -> Format.fprintf fmt " := %a" pp_mterm)) f.default
 
 let pp_storage_item fmt (si : storage_item) =

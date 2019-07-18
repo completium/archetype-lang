@@ -283,20 +283,20 @@ type 'id label_term_gen = {
 type label_term = lident label_term_gen
 [@@deriving show {with_path = false}]
 
-type 'id item_field_type =
-  | FBasic            of btyp
-  | FAssetKeys        of btyp * 'id
-  | FAssetRecord      of btyp * 'id
-  | FRecordCollection of 'id
-  | FRecord           of 'id
-  | FEnum             of 'id
-  | FContainer        of container * 'id item_field_type
-[@@deriving show {with_path = false}]
+(* type 'id item_field_type =
+   | FBasic            of btyp
+   | FAssetKeys        of btyp * 'id
+   | FAssetRecord      of btyp * 'id
+   | FRecordCollection of 'id
+   | FRecord           of 'id
+   | FEnum             of 'id
+   | FContainer        of container * 'id item_field_type
+   [@@deriving show {with_path = false}] *)
 
 type 'id item_field_gen = {
   asset   : 'id option;
   name    : 'id;
-  typ     : 'id item_field_type;
+  typ     : type_;
   ghost   : bool;
   default : 'id mterm_gen option; (* initial value *)
   loc     : Location.t [@opaque];
