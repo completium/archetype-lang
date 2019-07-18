@@ -75,7 +75,7 @@ type pattern =
 and expr =
   | Eletin of ((ident * type_) list * expr) list * expr
   | Etuple of expr list
-  | Eif of (expr * expr * expr)
+  | Eif of (expr * expr * expr option)
   | Ematchwith of expr * (pattern list * expr) list
   | Eapp of expr * expr list
   | Ebin of bin_operator * expr * expr

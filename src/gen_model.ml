@@ -130,12 +130,12 @@ let to_model (ast : A.model) : M.model =
     M.mk_mterm (M.Mnot x) (M.Tbuiltin Bbool)
   in
 
-  let unit : M.mterm = M.mk_mterm (M.Mseq []) M.Tunit in
+  (* let unit : M.mterm = M.mk_mterm (M.Mseq []) M.Tunit in *)
 
   let to_mterm_node : 't. ((A.lident, 't, (A.lident, 't) A.term_gen) A.term_node) -> ((A.lident, 't) A.term_gen -> M.mterm) -> ('t -> M.type_) -> (M.lident, M.mterm) M.mterm_node =
     fun n f ftyp ->
       match n with
-      | A.Pif (c, t, e)                -> M.Mif        (f c, f t, f e)
+      | A.Pif (c, t, e)                -> M.Mif        (f c, f t, Some (f e))
       | A.Pmatchwith (m, l)            -> M.Mmatchwith (f m, List.map (fun (p, e) -> (to_pattern p, f e)) l)
       | A.Plogical (A.And, l, r)       -> M.Mand       (f l, f r)
       | A.Plogical (A.Or, l, r)        -> M.Mor        (f l, f r)
@@ -218,16 +218,8 @@ let to_model (ast : A.model) : M.model =
         in
         M.Mcontains (asset_name, f p, f q)
 
+      | A.Pcall (Some p, A.Cconst (A.Csum), [AExpr q])
       | A.Pcall (None, A.Cconst (A.Csum), [AExpr p; AExpr q]) ->
-        let fp = f p in
-        let asset_name =
-          match fp with
-          | {type_ = M.Tcontainer (M.Tasset asset_name, _); _} -> unloc asset_name
-          | _ -> "todo"
-        in
-        M.Msum (asset_name, Location.dumloc "TODO", f q)
-
-      | A.Pcall (Some p, A.Cconst (A.Csum), [AExpr q]) ->
         let fp = f p in
         let asset_name =
           match fp with
@@ -378,7 +370,7 @@ let to_model (ast : A.model) : M.model =
 
   let to_instruction_node (n : (A.lident, A.ptyp, A.pterm, A.instruction) A.instruction_node) g f : ('id, 'instr) M.mterm_node =
     match n with
-    | A.Iif (c, t, e)           -> M.Mif (f c, g t, g e)
+    | A.Iif (c, t, e)           -> M.Mif (f c, g t, Some (g e))
     | A.Ifor (i, col, body)     -> M.Mfor (i, f col, g body)
     | A.Iletin (i, init, cont)  -> M.Mletin (i, f init, None, g cont) (* TODO *)
     | A.Iseq l                  -> M.Mseq (List.map g l)
@@ -390,7 +382,7 @@ let to_model (ast : A.model) : M.model =
         then term_not (f t)
         else (f t)
       in
-      M.Mif (cond, fail "required", unit)
+      M.Mif (cond, fail "required", None)
 
     | A.Itransfer (i, b, q)     -> M.Mtransfer (f i, b, Option.map to_qualid_gen q)
     | A.Ibreak                  -> M.Mbreak
@@ -668,7 +660,7 @@ let to_model (ast : A.model) : M.model =
         in
         let require : M.mterm = M.mk_mterm (M.Mnot (process_rexpr cb)) (M.Tbuiltin Bbool) ~loc:cb.loc in
         let fail_auth : M.mterm = fail "not_authorized_fun" in
-        M.mk_mterm (M.Mif (require, fail_auth, body)) M.Tunit in
+        M.mk_mterm (M.Mif (require, fail_auth, Some body)) M.Tunit in
       begin
         match transaction.calledby with
         | None -> body
@@ -686,7 +678,7 @@ let to_model (ast : A.model) : M.model =
         let term = to_mterm x.term in
         let cond : M.mterm = M.mk_mterm (M.Mnot term) (Tbuiltin Bbool) ~loc:x.loc in
         let fail_cond : M.mterm = fail msg in
-        M.mk_mterm (M.Mif (cond, fail_cond, body)) M.Tunit ~loc:x.loc
+        M.mk_mterm (M.Mif (cond, fail_cond, Some body)) M.Tunit ~loc:x.loc
       in
       match transaction.require with
       | None -> body
@@ -701,7 +693,7 @@ let to_model (ast : A.model) : M.model =
         let rhs : M.mterm = M.mk_mterm (M.Mcurrency (Big_int.zero_big_int, Tez)) type_currency in
         let eq : M.mterm = M.mk_mterm (M.Mequal (lhs, rhs)) (M.Tbuiltin Bbool) in
         let cond : M.mterm = M.mk_mterm (M.Mnot eq) (M.Tbuiltin Bbool) in
-        let at body : M.mterm = M.mk_mterm (M.Mif (cond, fail "not_accept_transfer", body)) M.Tunit in
+        let at body : M.mterm = M.mk_mterm (M.Mif (cond, fail "not_accept_transfer", Some body)) M.Tunit in
         at body
       else
         body
@@ -748,7 +740,7 @@ let to_model (ast : A.model) : M.model =
                in
 
                match cond with
-               | Some c -> M.mk_mterm (M.Mif (to_mterm c, code, acc)) Tunit
+               | Some c -> M.mk_mterm (M.Mif (to_mterm c, code, Some acc)) Tunit
                | None -> code
              ) t.trs body)
         in

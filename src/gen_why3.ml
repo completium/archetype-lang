@@ -807,9 +807,9 @@ let mk_storage_api (m : M.model) records =
 let rec map_mterm m (mt : M.mterm) : loc_term =
   let t =
     match mt.node with
-    | M.Mif (c,t,{ node=M.Mseq []; type_=_})  ->
+    | M.Mif (c,t,Some { node=M.Mseq []; type_=_})  ->
       Tif (map_mterm m c, map_mterm m t, None)
-    | M.Mif (c,t,e)  -> Tif (map_mterm m c, map_mterm m t, Some (map_mterm m e))
+    | M.Mif (c,t,e)  -> Tif (map_mterm m c, map_mterm m t, Option.map (map_mterm m) e)
     | M.Mnot c       -> Tnot (map_mterm m c)
     | M.Mfail _      -> Traise Enotfound (* TODO : Mfail should pass the type of exception ... *)
     | M.Mequal (l,r) -> Teq (with_dummy_loc Tyint,map_mterm m l,map_mterm m r)
@@ -925,7 +925,7 @@ let is_fail (t : M.mterm) =
 let flatten_if_fail m (t : M.mterm) : loc_term =
   let rec rec_flat acc (t : M.mterm) : loc_term list =
     match t.node with
-    | M.Mif (c,th,e) when is_fail th ->
+    | M.Mif (c,th, Some e) when is_fail th ->
       rec_flat (acc@[mk_loc t.loc (Tif (map_mterm m c, map_mterm m th,None))]) e
     | _ -> acc @ [map_mterm m t] in
   mk_loc t.loc (Tseq (rec_flat [] t))

@@ -1,4 +1,4 @@
-(* open Tools *)
+open Tools
 open Ident
 open Location
 
@@ -67,7 +67,7 @@ let mterm_to_expr (mt : M.mterm) : T.expr =
   let fi = unloc in
   let rec f (mt : M.mterm) =
     match mt.node with
-    | Mif (c, t, e)      -> T.Eif (f c, f t, f e)
+    | Mif (c, t, e)      -> T.Eif (f c, f t, Option.map f e)
     | Mmatchwith (w, l)  -> T.Ematchwith (f w, List.map (fun ((p, e) : M.pattern * M.mterm) -> ([pattern_to_pattern p], f e)) l)
     | Mapp (i, args)     -> T.Eapp (Evar (fi i), List.map f args)
     (* | Mexternal     of 'id * 'id * 'term * ('term) list *)

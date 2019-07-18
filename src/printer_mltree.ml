@@ -174,10 +174,10 @@ and pp_expr outer pos fmt = function
 
   | Eif (cond, then_, else_) ->
     let pp fmt (cond, then_, else_) =
-      Format.fprintf fmt "@[if %a@ then %a@ else %a@ @]"
+      Format.fprintf fmt "@[if %a@ then %a@%a @]"
         (pp_expr e_if PRight) cond
         (pp_expr e_then PRight) then_
-        (pp_expr e_else PRight) else_
+        (pp_option (fun fmt -> Format.fprintf fmt " else %a@" (pp_expr e_else PRight))) else_
     in
     (maybe_paren outer e_default pos pp) fmt (cond, then_, else_)
 

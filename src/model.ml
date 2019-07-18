@@ -154,7 +154,7 @@ type sort_kind =
 [@@deriving show {with_path = false}]
 
 type ('id, 'term) mterm_node  =
-  | Mif           of ('term * 'term * 'term)
+  | Mif           of ('term * 'term * 'term option)
   | Mmatchwith    of 'term * ('id pattern_gen * 'term) list
   | Mapp          of 'id * 'term list
   | Mexternal     of 'id * 'id * 'term * ('term) list
@@ -684,7 +684,7 @@ let cmp_mterm_node
   : bool =
   try
     match term1, term2 with
-    | Mif (c1, t1, e1), Mif (c2, t2, e2)                                               -> cmp c1 c2 && cmp t1 t2 && cmp e1 e2
+    | Mif (c1, t1, e1), Mif (c2, t2, e2)                                               -> cmp c1 c2 && cmp t1 t2 && Option.cmp cmp e1 e2
     | Mmatchwith (e1, l1), Mmatchwith (e2, l2)                                         -> cmp e1 e2 && List.for_all2 (fun (p1, t1) (p2, t2) -> cmp_pattern p1 p2 && cmp t1 t2) l1 l2
     | Mapp (e1, args1), Mapp (e2, args2)                                               -> cmpi e1 e2 && List.for_all2 cmp args1 args2
     | Mexternal (t1, func1, c1, args1), Mexternal (t2, func2, c2, args2)               -> cmpi t1 t2 && cmpi func1 func2 && cmp c1 c2 && List.for_all2 cmp args1 args2
@@ -790,7 +790,7 @@ let rec cmp_mterm (term1 : mterm) (term2 : mterm) : bool =
 (* -------------------------------------------------------------------- *)
 
 let map_term_node (ctx : 'c) (f : 'c -> 'id mterm_gen -> 'id mterm_gen) = function
-  | Mif (c, t, e)                -> Mif (f ctx c, f ctx t, f ctx e)
+  | Mif (c, t, e)                -> Mif (f ctx c, f ctx t, Option.map (f ctx) e)
   | Mmatchwith (e, l)            -> Mmatchwith (e, List.map (fun (p, e) -> (p, f ctx e)) l)
   | Mapp (e, args)               -> Mapp (e, List.map (f ctx) args)
   | Msetbefore    e              -> Msetbefore    (f ctx e)
@@ -899,7 +899,13 @@ let map_term f ctx t =
 
 let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_gen) : 'a =
   match term.node with
-  | Mif (c, t, e)                         -> f (f (f accu c) t) e
+  | Mif (c, t, e)                         ->
+    begin
+      let accu = f (f accu c) t in
+      match e with
+      | Some v -> f accu v
+      | None -> accu
+    end
   | Mmatchwith (e, l)                     -> List.fold_left (fun accu (_, a) -> f accu a) (f accu e) l
   | Mapp (_, args)                        -> List.fold_left f accu args
   | Msetbefore    e                       -> f accu e
@@ -1013,7 +1019,13 @@ let fold_map_term
   | Mif (c, t, e) ->
     let ce, ca = f accu c in
     let ti, ta = f ca t in
-    let ei, ea = f ta e in
+    let ei, ea =
+      match e with
+      | Some v ->
+        let a, b = f ta v in
+        Some a, b
+      | None -> None, ca
+    in
     g (Mif (ce, ti, ei)), ea
 
   | Mmatchwith (e, l) ->

@@ -83,10 +83,10 @@ let pp_mterm fmt (mt : mterm) =
   let rec f fmt (mtt : mterm) =
     match mtt.node with
     | Mif (c, t, e) ->
-      Format.printf "if %a@\nthen @[<v 2>%a@]@\nelse @[<v 2>%a@]"
+      Format.printf "if %a@\nthen @[<v 2>%a@]%a"
         f c
         f t
-        f e
+        (pp_option (fun fmt -> Format.printf "@\nelse @[<v 2>%a@]" f)) e
 
     | Mmatchwith (e, l) ->
       let pp fmt (e, l) =
