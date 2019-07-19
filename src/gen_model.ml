@@ -577,7 +577,7 @@ let to_model (ast : A.model) : M.model =
         | M.Brational   -> M.mk_mterm (M.Mrational (Big_int.zero_big_int, Big_int.unit_big_int)) (M.Tbuiltin b)
         | M.Bdate       -> emit_error (NoInitExprFor "date")
         | M.Bduration   -> M.mk_mterm (M.Mduration "0s") (M.Tbuiltin b)
-        | M.Bstring     -> M.mk_mterm (M.Mbool false) (M.Tbuiltin b)
+        | M.Bstring     -> M.mk_mterm (M.Mstring "") (M.Tbuiltin b)
         | M.Baddress    -> emit_error (NoInitExprFor "address")
         | M.Brole       -> emit_error (NoInitExprFor "role")
         | M.Bcurrency _ -> M.mk_mterm (M.Mcurrency (Big_int.zero_big_int, M.Tez)) (M.Tbuiltin b)

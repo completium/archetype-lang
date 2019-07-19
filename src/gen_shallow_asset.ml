@@ -150,7 +150,7 @@ let mk_ctx ctx id shallow_vals =
   in
   ctx @ [id,idctx]
 
-let rec map_shallow m (ctx : (I.ident * (M.lident * M.type_) list) list) (t : M.mterm) : M.mterm =
+let rec map_shallow (ctx : (I.ident * (M.lident * M.type_) list) list) m (t : M.mterm) : M.mterm =
   let t_gen =
     match t.node with
     | M.Maddasset (n,a,l) when M.Utils.is_varlocal a ->
@@ -189,14 +189,14 @@ let rec map_shallow m (ctx : (I.ident * (M.lident * M.type_) list) list) (t : M.
                     List.hd shallow_args,
                     Some (Tasset a),
                     map_letin_shallow m new_ctx b new_letins)
-        | _ -> M.Mletin (id,v,t,map_shallow m ctx b)
+        | _ -> M.Mletin (id,v,t,map_shallow ctx m b)
       end
-    | _ as tn -> M.map_term_node ctx (map_shallow m) tn
+    | _ as tn -> M.map_term_node ((map_shallow ctx) m) tn
   in
   M.mk_mterm ~loc:(t.loc) t_gen t.type_
 and map_letin_shallow m ctx b = function
   | (id,v)::tl -> M.mk_mterm (M.Mletin (id,v,None,map_letin_shallow m ctx b tl)) v.type_
-  | [] -> map_shallow m ctx b
+  | [] -> map_shallow ctx m b
 
 let process_shallow_function m f =
   let args = M.Utils.get_function_args f in
@@ -207,7 +207,7 @@ let process_shallow_function m f =
       (ctx @ acc_ctx, acc @ shallow_args)
     ) ([],[]) args in
   let f = M.Utils.set_function_args f args in
-  let f = M.Utils.map_function_terms (map_shallow m ctx) f in
+  let f = M.Utils.map_function_terms (map_shallow ctx m) f in
   f
 
 let rec gen_add_shallow_asset (arg : M.argument) : M.mterm =
