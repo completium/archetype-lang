@@ -486,6 +486,10 @@ let pp_mterm fmt (mt : mterm) =
     | Mtransferred   -> pp_str fmt "transferred"
     | Mcaller        -> pp_str fmt "caller"
     | Mbalance       -> pp_str fmt "balance"
+    | Mnone          -> pp_str fmt "None"
+    | Msome v        ->
+      Format.fprintf fmt "Some (%a)"
+        f v
     | Marray l ->
       Format.fprintf fmt "[%a]"
         (pp_list "; " f) l

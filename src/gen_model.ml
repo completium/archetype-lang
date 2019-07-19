@@ -587,7 +587,7 @@ let to_model (ast : A.model) : M.model =
       let init_default_value = function
         | M.Tbuiltin b        -> init_ b
         | M.Tcontainer (t, _) -> M.mk_mterm (M.Marray []) (M.Tcontainer(t, Collection))
-        | M.Toption t         -> M.mk_mterm (M.Mvarlocal (dumloc "None")) (M.Toption t)
+        | M.Toption t         -> M.mk_mterm (M.Mnone) (M.Toption t)
         | M.Tasset v
         | M.Tenum v
         | M.Tcontract v       -> emit_error (NoInitExprFor (unloc v))

@@ -214,6 +214,8 @@ type ('id, 'term) mterm_node  =
   | Mtransferred
   | Mcaller
   | Mbalance
+  | Mnone
+  | Msome         of 'term
   | Marray        of 'term list
   | Mint          of Core.big_int
   | Muint         of Core.big_int
@@ -844,6 +846,8 @@ let map_term_node (ctx : 'c) (f : 'c -> 'id mterm_gen -> 'id mterm_gen) = functi
   | Mtransferred                 -> Mtransferred
   | Mcaller                      -> Mcaller
   | Mbalance                     -> Mbalance
+  | Mnone                        -> Mnone
+  | Msome v                      -> Msome (f ctx v)
   | Marray l                     -> Marray (List.map (f ctx) l)
   | Mint v                       -> Mint v
   | Muint v                      -> Muint v
@@ -972,6 +976,8 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mtransferred                          -> accu
   | Mcaller                               -> accu
   | Mbalance                              -> accu
+  | Mnone                                 -> accu
+  | Msome v                               -> f accu v
   | Mtuple l                              -> List.fold_left f accu l
   | Mfor (i, c, b)                        -> f accu b
   | Mseq is                               -> List.fold_left f accu is
@@ -1335,6 +1341,13 @@ let fold_map_term
 
   | Mbalance ->
     g Mbalance, accu
+
+  | Mnone ->
+    g Mnone, accu
+
+  | Msome v ->
+    let ve, va = f accu v in
+    g (Msome ve), va
 
   | Mtuple l ->
     let (lp, la) = List.fold_left
