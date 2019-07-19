@@ -152,7 +152,7 @@ let mterm_to_expr (mt : M.mterm) : T.expr =
     | Mdotcontract (e, i) -> T.Edot (f e, fi i)
     | Mtuple l            -> T.Etuple (List.map f l)
     (* | Mfor          of ('id * 'term * 'term) *)
-    | Mseq _              -> emit_error (UnsupportedTranslationOf "sequence")
+    | Mseq l              -> T.Eseq (List.map f l)
     | Massign _           -> emit_error (UnsupportedTranslationOf "assignment value")
     | Massignfield _      -> emit_error (UnsupportedTranslationOf "assignment field")
     (* | Mtransfer     of ('term * bool * 'id qualid_gen option) *)

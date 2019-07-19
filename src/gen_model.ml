@@ -646,6 +646,19 @@ let to_model (ast : A.model) : M.model =
     process_fun_gen name args body loc verif (fun x -> M.Function (x, ret)) list
   in
 
+  let add_seq (s1 : M.mterm) (s2 : M.mterm) =
+    let extract (s : M.mterm) =
+      match s.node with
+        M.Mseq l -> l
+      | _ -> [s]
+    in
+
+    let l1 = extract s1 in
+    let l2 = extract s2 in
+
+    M.mk_mterm (M.Mseq (l1 @ l2)) M.Tunit
+  in
+
   let process_transaction (transaction : A.transaction) (list : M.function__ list) : M.function__ list =
     let process_calledby (body : M.mterm) : M.mterm =
       let process_cb (cb : A.rexpr) (body : M.mterm) : M.mterm =
@@ -674,7 +687,9 @@ let to_model (ast : A.model) : M.model =
         in
         let require : M.mterm = M.mk_mterm (M.Mnot (process_rexpr cb)) (M.Tbuiltin Bbool) ~loc:cb.loc in
         let fail_auth : M.mterm = fail "not_authorized_fun" in
-        M.mk_mterm (M.Mif (require, fail_auth, Some body)) M.Tunit in
+        let cond_if = M.mk_mterm (M.Mif (require, fail_auth, None)) M.Tunit in
+        add_seq cond_if body
+      in
       begin
         match transaction.calledby with
         | None -> body
@@ -692,7 +707,8 @@ let to_model (ast : A.model) : M.model =
         let term = to_mterm x.term in
         let cond : M.mterm = M.mk_mterm (M.Mnot term) (Tbuiltin Bbool) ~loc:x.loc in
         let fail_cond : M.mterm = fail msg in
-        M.mk_mterm (M.Mif (cond, fail_cond, Some body)) M.Tunit ~loc:x.loc
+        let cond_if = M.mk_mterm (M.Mif (cond, fail_cond, None)) M.Tunit ~loc:x.loc in
+        add_seq cond_if body
       in
       match transaction.require with
       | None -> body
@@ -707,8 +723,8 @@ let to_model (ast : A.model) : M.model =
         let rhs : M.mterm = M.mk_mterm (M.Mcurrency (Big_int.zero_big_int, Tez)) type_currency in
         let eq : M.mterm = M.mk_mterm (M.Mequal (lhs, rhs)) (M.Tbuiltin Bbool) in
         let cond : M.mterm = M.mk_mterm (M.Mnot eq) (M.Tbuiltin Bbool) in
-        let at body : M.mterm = M.mk_mterm (M.Mif (cond, fail "not_accept_transfer", Some body)) M.Tunit in
-        at body
+        let cond_if : M.mterm = M.mk_mterm (M.Mif (cond, fail "not_accept_transfer", None)) M.Tunit in
+        add_seq cond_if body
       else
         body
     in

@@ -278,6 +278,15 @@ and pp_expr outer pos fmt = function
     in
     (maybe_paren outer e_simple pos pp) fmt (l, r)
 
+  | Eseq l ->
+
+    let pp fmt l =
+      Format.fprintf fmt "%a"
+        (pp_list ";@ " (pp_expr e_simple PInfix)) l
+    in
+    (maybe_paren outer e_simple pos pp) fmt l
+
+
 let pp_struct_type fmt (s : type_struct) =
   let pp_item fmt ((id, t) : (ident * type_ option)) =
     Format.fprintf fmt "| %a%a"

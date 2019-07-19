@@ -85,7 +85,8 @@ and expr =
   | Econtainer of expr list
   | Elit of literal
   | Edot of expr * ident
-  | Eassign    of expr * expr
+  | Eassign of expr * expr
+  | Eseq of expr list
 [@@deriving show {with_path = false}]
 
 type type_struct = {
