@@ -251,20 +251,6 @@ let to_liquidity (model : M.model) : T.tree =
       emit_error TODO
   in
 
-  let get_dv = function
-    | M.Bbool        -> T.Elit (Lbool false)
-    | M.Bint         -> T.Elit (Lint Big_int.zero_big_int)
-    | M.Buint        -> T.Elit (Lint Big_int.zero_big_int)
-    | M.Brational    -> emit_error TODO
-    | M.Bdate        -> emit_error (UnsupportedDefaultValue "date")
-    | M.Bduration    -> T.Elit (Lint Big_int.zero_big_int)
-    | M.Bstring      -> T.Elit (Lstring "")
-    | M.Baddress     -> emit_error (UnsupportedDefaultValue "address")
-    | M.Brole        -> emit_error (UnsupportedDefaultValue "role")
-    | M.Bcurrency _  -> T.Elit (Lraw "0tz")
-    | M.Bkey         -> emit_error (UnsupportedDefaultValue "key")
-  in
-
   let generate_storage (storage : M.storage) : T.decl * T.decl =
     let fields : (ident * T.type_ * T.expr) list =
       List.fold_left (fun (accu : (ident * T.type_ * T.expr) list) (f : M.storage_item) ->
@@ -284,24 +270,7 @@ let to_liquidity (model : M.model) : T.tree =
           | _ ->
             let id : ident  = unloc f.name in
             let t : T.type_ = to_type f.typ in
-            let dv =
-              match f.default with
-              | Some v -> mterm_to_expr v
-              | None ->
-                match f.typ with
-                | Tasset v          -> emit_error (UnsupportedDefaultValue (unloc v))
-                | Tenum v           -> emit_error (UnsupportedDefaultValue (unloc v))
-                | Tcontract v       -> emit_error (UnsupportedDefaultValue (unloc v))
-                | Tbuiltin b        -> get_dv b
-                | Tcontainer (_, t) -> T.Econtainer []
-                | Toption _         -> T.Evar "None"
-                | Ttuple _          -> emit_error (UnsupportedDefaultValue ("tuple"))
-                | Tunit             -> emit_error (UnsupportedDefaultValue ("unit"))
-                | Tentry            -> emit_error (UnsupportedDefaultValue ("entry"))
-                | Tprog _           -> emit_error (UnsupportedDefaultValue ("prog"))
-                | Tvset _           -> emit_error (UnsupportedDefaultValue ("vset"))
-                | Ttrace _          -> emit_error (UnsupportedDefaultValue ("trace"))
-            in
+            let dv = mterm_to_expr f.default in
             accu @ [(id, t, dv)])
         [] storage in
     let args = [] in

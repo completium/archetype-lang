@@ -14,6 +14,7 @@ type error_desc =
   | CannotExtractBody
   | CannotExtractAssetName
   | AnyNotAuthorizedInTransitionTo of Location.t
+  | NoInitExprFor of string
   | TODO
 [@@deriving show {with_path = false}]
 
@@ -567,17 +568,55 @@ let to_model (ast : A.model) : M.model =
 
   let process_storage list =
     let variable_to_storage_items (var : (A.lident, A.type_, A.pterm) A.variable) : M.storage_item =
+
+      let init_ b =
+        match b with
+        | M.Bbool       -> M.mk_mterm (M.Mbool false) (M.Tbuiltin b)
+        | M.Bint        -> M.mk_mterm (M.Mint (Big_int.zero_big_int)) (M.Tbuiltin b)
+        | M.Buint       -> M.mk_mterm (M.Muint (Big_int.zero_big_int)) (M.Tbuiltin b)
+        | M.Brational   -> M.mk_mterm (M.Mrational (Big_int.zero_big_int, Big_int.unit_big_int)) (M.Tbuiltin b)
+        | M.Bdate       -> emit_error (NoInitExprFor "date")
+        | M.Bduration   -> M.mk_mterm (M.Mduration "0s") (M.Tbuiltin b)
+        | M.Bstring     -> M.mk_mterm (M.Mbool false) (M.Tbuiltin b)
+        | M.Baddress    -> emit_error (NoInitExprFor "address")
+        | M.Brole       -> emit_error (NoInitExprFor "role")
+        | M.Bcurrency _ -> M.mk_mterm (M.Mcurrency (Big_int.zero_big_int, M.Tez)) (M.Tbuiltin b)
+        | M.Bkey        -> emit_error (NoInitExprFor "key")
+      in
+
+      let init_default_value = function
+        | M.Tbuiltin b        -> init_ b
+        | M.Tcontainer (t, _) -> M.mk_mterm (M.Marray []) (M.Tcontainer(t, Collection))
+        | M.Toption t         -> M.mk_mterm (M.Mvarlocal (dumloc "None")) (M.Toption t)
+        | M.Tasset v
+        | M.Tenum v
+        | M.Tcontract v       -> emit_error (NoInitExprFor (unloc v))
+        | M.Ttuple _          -> emit_error (NoInitExprFor "tuple")
+        | M.Tunit             -> emit_error (NoInitExprFor "unit")
+        | M.Tentry            -> emit_error (NoInitExprFor "entry")
+        | M.Tprog _           -> emit_error (NoInitExprFor "prog")
+        | M.Tvset _           -> emit_error (NoInitExprFor "vset")
+        | M.Ttrace _          -> emit_error (NoInitExprFor "trace")
+      in
+
       let arg = var.decl in
       let type_ : A.type_ = Option.get arg.typ in
       let typ = ptyp_to_type type_ in
-      M.mk_storage_item arg.name typ ?default:(Option.map to_mterm arg.default)
+      let dv =
+        match arg.default with
+        | Some v -> to_mterm v
+        | None   -> init_default_value typ
+      in
+      M.mk_storage_item arg.name typ dv
     in
 
     let asset_to_storage_items (asset : A.asset) : M.storage_item =
       let asset_name = asset.name in
+      let typ_ = M.Tcontainer (Tasset asset_name, Collection) in
       M.mk_storage_item
         asset_name
-        (M.Tcontainer (Tasset asset_name, Collection))
+        typ_
+        (M.mk_mterm (M.Marray []) typ_)
         ~asset:asset_name
         ~invariants:(List.map (fun x -> to_label_lterm x) asset.specs)
     in

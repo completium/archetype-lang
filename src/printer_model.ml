@@ -710,7 +710,7 @@ let pp_storage_item fmt (si : storage_item) =
   Format.fprintf fmt "%a : %a%a"
     pp_id si.name
     pp_type si.typ
-    (pp_option (fun fmt -> Format.fprintf fmt " := %a" pp_mterm)) si.default
+    (fun fmt -> Format.fprintf fmt " := %a" pp_mterm) si.default
 
 let pp_storage fmt (s : storage) =
   Format.fprintf fmt "storage {@\n@[<v 2>  %a@]@\n}@\n"

@@ -298,7 +298,7 @@ type 'id storage_item_gen = {
   asset       : 'id option;
   typ         : type_;
   ghost       : bool;
-  default     : 'id mterm_gen option; (* initial value *)
+  default     : 'id mterm_gen; (* initial value *)
   invariants  : lident label_term_gen list;
   loc         : Location.t [@opaque];
 }
@@ -582,7 +582,7 @@ let mk_record ?(values = []) ?key name : 'id record_gen =
 let mk_record_item ?default name type_ : 'id record_item_gen =
   { name; type_; default }
 
-let mk_storage_item ?asset ?(ghost = false) ?default ?(invariants = []) ?(loc = Location.dummy) name typ : 'id storage_item_gen =
+let mk_storage_item ?asset ?(ghost = false) ?(invariants = []) ?(loc = Location.dummy) name typ default : 'id storage_item_gen =
   { name; asset; typ; ghost; default; invariants; loc }
 
 let mk_function_struct ?(args = []) ?(loc = Location.dummy) name body : function_struct =

@@ -707,7 +707,7 @@ let map_storage_items = List.fold_left (fun acc (item : M.storage_item) ->
       [{
         name     = map_lident item.name;
         typ      = typ_;
-        init     = Option.fold map_record_term init_value item.default;
+        init     = map_record_term init_value item.default;
         mutable_ = true;
       }]
   ) []
