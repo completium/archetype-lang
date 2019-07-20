@@ -259,7 +259,7 @@ let gen_add_shallow_field_fun (model : M.model) (n,f : I.ident * I.ident) : M.fu
             M.mk_mterm (M.Mvarlocal (dumloc "asset")) (Tasset (dumloc n)),
             M.mk_mterm (M.Mvarlocal (dumloc "added_asset")) (Tasset pa),
             [])) Tunit;
-      ] @ (List.map gen_add_shallow_asset asset_args))) Tunit in
+      ] @ (List.map gen_add_shallow_asset (List.tl asset_args)))) Tunit in
   {
     node = Function ({
         name = dumloc ("add_shallow_"^n^"_"^f);
