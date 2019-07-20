@@ -174,10 +174,10 @@ and pp_expr outer pos fmt = function
 
   | Eif (cond, then_, else_) ->
     let pp fmt (cond, then_, else_) =
-      Format.fprintf fmt "@[if %a@ then %a@%a @]"
+      Format.fprintf fmt "@[if %a@\nthen %a%a @]"
         (pp_expr e_if PRight) cond
         (pp_expr e_then PRight) then_
-        (pp_option (fun fmt -> Format.fprintf fmt " else %a@" (pp_expr e_else PRight))) else_
+        (pp_option (fun fmt -> Format.fprintf fmt "@\nelse %a" (pp_expr e_else PRight))) else_
     in
     (maybe_paren outer e_default pos pp) fmt (cond, then_, else_)
 
@@ -277,6 +277,15 @@ and pp_expr outer pos fmt = function
         (pp_expr e_simple PRight) r
     in
     (maybe_paren outer e_simple pos pp) fmt (l, r)
+
+  | Eseq l ->
+
+    let pp fmt l =
+      Format.fprintf fmt "%a"
+        (pp_list ";@ " (pp_expr e_simple PInfix)) l
+    in
+    (maybe_paren outer e_simple pos pp) fmt l
+
 
 let pp_struct_type fmt (s : type_struct) =
   let pp_item fmt ((id, t) : (ident * type_ option)) =
