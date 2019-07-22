@@ -53,6 +53,8 @@ type type_ =
   | Toption of type_
   | Ttuple of type_ list
   | Tunit
+  | Tstorage
+  | Toperation
   | Tentry
   | Tprog of type_
   | Tvset of vset * type_

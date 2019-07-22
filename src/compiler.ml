@@ -72,7 +72,7 @@ let shallow_asset model =
 let remove_side_effect model =
   let wse = Gen_reduce.reduce model in
   if !Options.opt_wse
-  then (print_model model; raise Stop)
+  then (print_model wse; raise Stop)
   else wse
 
 let generate_liquidity model =
@@ -164,8 +164,8 @@ let main () =
       "--model", Arg.Set Options.opt_model, " Same as -M";
       "-PM", Arg.Set Options.opt_pretty_print_model, " Pretty print parse tree";
       "--pretty-print-model", Arg.Set Options.opt_pretty_print_model, " Same as -PM";
-      "-SA", Arg.Set Options.opt_wse, " Print raw model with asset shallowing";
-      "--shallow-asset", Arg.Set Options.opt_wse, " Same as -SA";
+      "-SA", Arg.Set Options.opt_sa, " Print raw model with asset shallowing";
+      "--shallow-asset", Arg.Set Options.opt_sa, " Same as -SA";
       "-W", Arg.Set Options.opt_wse, " Print raw model without side effect";
       "--without-side-effect", Arg.Set Options.opt_wse, " Same as -W";
       "-RTT", Arg.Set Options.opt_raw_target, " Print raw target tree";

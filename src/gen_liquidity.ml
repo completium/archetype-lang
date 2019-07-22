@@ -45,6 +45,8 @@ let rec to_type = function
   | M.Toption t         -> T.Toption (to_type t)
   | M.Ttuple l          -> T.Ttuple (List.map to_type l)
   | M.Tunit             -> T.Tbasic Tunit
+  | M.Tstorage          -> T.Tlocal "storage"
+  | M.Toperation        -> T.Tlocal "operation"
   | M.Tentry
   | M.Tprog _
   | M.Tvset _

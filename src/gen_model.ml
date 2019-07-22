@@ -593,6 +593,8 @@ let to_model (ast : A.model) : M.model =
         | M.Tcontract v       -> emit_error (NoInitExprFor (unloc v))
         | M.Ttuple _          -> emit_error (NoInitExprFor "tuple")
         | M.Tunit             -> emit_error (NoInitExprFor "unit")
+        | M.Tstorage          -> emit_error (NoInitExprFor "storage")
+        | M.Toperation        -> emit_error (NoInitExprFor "operation")
         | M.Tentry            -> emit_error (NoInitExprFor "entry")
         | M.Tprog _           -> emit_error (NoInitExprFor "prog")
         | M.Tvset _           -> emit_error (NoInitExprFor "vset")

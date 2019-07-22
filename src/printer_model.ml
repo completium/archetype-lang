@@ -48,6 +48,10 @@ let rec pp_type fmt t =
       (pp_list " * " pp_type_) ts
   | Tunit ->
     Format.fprintf fmt "unit"
+  | Tstorage ->
+    Format.fprintf fmt "storage"
+  | Toperation ->
+    Format.fprintf fmt "operation"
   | Tentry ->
     Format.fprintf fmt "entry"
   | Tprog _
