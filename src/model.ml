@@ -1000,16 +1000,21 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | MsecTransferredTo              a      -> f accu a
   | Manyaction                            -> accu
 
-let fold_map_term
-    (g : ('id, 'term) mterm_node -> 'term)
-    (f : 'a -> 'id mterm_gen -> 'id mterm_gen * 'a)
-    (accu : 'a)
-    (term : 'id mterm_gen) : 'term * 'a =
+type s_red = {
+  with_ops : bool;
+}
 
-  let fold_term l acc = List.fold_left
-      (fun (pterms, accu) x ->
-         let p, accu = f accu x in
-         pterms @ [p], accu) ([], acc) l in
+let fold_map_term_list f acc l : 'term list * s_red =
+  List.fold_left
+    (fun (pterms, accu) x ->
+       let p, accu = f accu x in
+       pterms @ [p], accu) ([], acc) l
+
+let fold_map_term
+    (g : ('id, 'id mterm_gen) mterm_node -> 'id mterm_gen)
+    (f : s_red -> 'id mterm_gen -> 'id mterm_gen * s_red)
+    (accu : s_red)
+    (term : 'id mterm_gen) : 'id mterm_gen * s_red =
 
   match term.node with
   | Mif (c, t, e) ->
@@ -1087,14 +1092,14 @@ let fold_map_term
 
   | Maddasset (an, i, es) ->
     let ie, ia = f accu i in
-    let ee, ea = fold_term ia es in
+    let ee, ea = fold_map_term_list f ia es in
     g (Maddasset (an, ie, ee)), ea
 
   | Maddfield (an, fn, c, i, es) ->
     let ce, ca = f accu c in
     let ie, ia = f ca i in
-    let ee, ea = fold_term ia es in
-    g (Maddfield (an, fn, ce, ie, ee)), ia
+    let ee, ea = fold_map_term_list f ia es in
+    g (Maddfield (an, fn, ce, ie, ee)), ea
 
   | Maddlocal (c, i) ->
     let ce, ca = f accu c in
@@ -1274,16 +1279,13 @@ let fold_map_term
     g (Muminus ee), ea
 
   | Mrecord l ->
-    let (lp, la) = List.fold_left
-        (fun (pterms, accu) x ->
-           let p, accu = f accu x in
-           pterms @ [p], accu) ([], accu) l in
-    g (Mrecord lp), la
+    let le, la = fold_map_term_list f accu l in
+    g (Mrecord le), la
 
-  | Mletin (id, i, t, o) ->
+  | Mletin (idd, i, t, o) ->
     let ie, ia = f accu i in
     let oe, oa = f ia o in
-    g (Mletin (id, i, t, oe)), oa
+    g (Mletin (idd, i, t, oe)), oa
 
   | Mvarstorevar v ->
     g (Mvarstorevar v), accu
@@ -1304,11 +1306,8 @@ let fold_map_term
     g Mvarthe, accu
 
   | Marray l ->
-    let (lp, la) = List.fold_left
-        (fun (pterms, accu) x ->
-           let p, accu = f accu x in
-           pterms @ [p], accu) ([], accu) l in
-    g (Marray lp), la
+    let le, la = fold_map_term_list f accu l in
+    g (Marray le), la
 
   | Mint v                   -> g (Mint v), accu
   | Muint v                  -> g (Muint v), accu
@@ -1323,11 +1322,11 @@ let fold_map_term
 
   | Mdotasset (e, i) ->
     let ee, ea = f accu e in
-    g (Mdotasset (ee, id)), ea
+    g (Mdotasset (ee, i)), ea
 
   | Mdotcontract (e, i) ->
     let ee, ea = f accu e in
-    g (Mdotcontract (ee, id)), ea
+    g (Mdotcontract (ee, i)), ea
 
   | Mstate ->
     g Mstate, accu
@@ -1352,11 +1351,8 @@ let fold_map_term
     g (Msome ve), va
 
   | Mtuple l ->
-    let (lp, la) = List.fold_left
-        (fun (pterms, accu) x ->
-           let p, accu = f accu x in
-           pterms @ [p], accu) ([], accu) l in
-    g (Mtuple lp), la
+    let le, la = fold_map_term_list f accu l in
+    g (Mtuple le), la
 
   | Mfor (i, c, b) ->
     let ce, ca = f accu c in
