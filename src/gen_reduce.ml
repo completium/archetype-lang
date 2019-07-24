@@ -93,7 +93,7 @@ let rec process_mtern (s : s_red) (mt : mterm) : mterm * s_red =
 
 let process_body (mt : mterm) : mterm =
   let s : s_red = {
-    with_ops = true;
+    with_ops = false;
   } in
   let mt, s = process_mtern s mt in
   if s.with_ops

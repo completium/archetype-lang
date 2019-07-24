@@ -64,30 +64,25 @@ let generate_target_pt pt =
   | _ -> pt
 
 let shallow_asset model =
-  let wse = Gen_shallow_asset.shallow_asset model in
+  let model = Gen_shallow_asset.shallow_asset model in
   if !Options.opt_sa
   then (print_model model; raise Stop)
-  else wse
+  else model
 
 let remove_side_effect model =
-  let wse = Gen_reduce.reduce model in
+  let model = Gen_reduce.reduce model in
   if !Options.opt_wse
-  then (print_model wse; raise Stop)
-  else wse
+  then (print_model model; raise Stop)
+  else model
 
-let generate_liquidity model =
-  let tree = Gen_liquidity.to_liquidity model in
-  if !Options.opt_raw_target
-  then (Format.printf "%a@." Mltree.pp_tree tree; raise Stop)
-  else Format.asprintf "%a@." Printer_mltree.pp_tree tree
-
-let output_liquidity str =
+let output_liquidity model =
   if !Options.opt_liq_url
   then
+    let str = Format.asprintf "%a" Printer_model_liq.pp_model model in
     let encoded_src = Uri.pct_encode str in
     let url = "http://www.liquidity-lang.org/edit/?source=" ^ encoded_src in
     Format.printf "%s@\n" url
-  else Format.printf "%s" str
+  else Format.printf "%a@." Printer_model_liq.pp_model model
 
 let generate_whyml model =
   let mlw = Gen_why3.to_whyml model in
@@ -101,7 +96,6 @@ let generate_target model =
     model
     |> shallow_asset
     |> remove_side_effect
-    |> generate_liquidity
     |> output_liquidity
 
   | Whyml ->

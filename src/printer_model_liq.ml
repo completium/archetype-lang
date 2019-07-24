@@ -724,6 +724,10 @@ let pp_storage fmt (s : storage) =
   Format.fprintf fmt "storage {@\n@[<v 2>  %a@]@\n}@\n"
     (pp_list "@\n" pp_storage_item) s
 
+let pp_init_function fmt (s : storage) =
+  Format.fprintf fmt "storage {@\n@[<v 2>  %a@]@\n}@\n"
+    (pp_list "@\n" pp_storage_item) s
+
 let pp_invariant fmt (inv : invariant) =
   Format.fprintf fmt "invariant %a {@\n\
                       @[<v 2>  %a@]@\n\
@@ -780,7 +784,7 @@ let pp_function fmt f =
     pp_mterm fs.body
 
 let pp_model fmt (model : model) =
-  Format.fprintf fmt "%a\
+  Format.fprintf fmt "(* contract: %a*)@\n\
                       @\n@\n%a\
                       @\n@\n%a\
                       @\n@\n%a\
@@ -791,8 +795,8 @@ let pp_model fmt (model : model) =
     pp_api_items model.api_items
     (pp_list "@\n" pp_decl) model.decls
     pp_storage model.storage
+    pp_init_function model.storage
     (pp_list "@\n" pp_function) model.functions
-    pp_verification model.verification
 
 (* -------------------------------------------------------------------------- *)
 let string_of__of_pp pp x =
