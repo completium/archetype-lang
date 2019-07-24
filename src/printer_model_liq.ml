@@ -3,6 +3,18 @@ open Tools
 open Model
 open Printer_tools
 
+exception Anomaly of string
+
+type error_desc =
+  | UnsupportedBreak
+  | UnsupportedTerm of string
+[@@deriving show {with_path = false}]
+
+let emit_error (desc : error_desc) =
+  let str = Format.asprintf "%a@." pp_error_desc desc in
+  raise (Anomaly str)
+
+
 let pp_str fmt str =
   Format.fprintf fmt "%s" str
 
@@ -78,7 +90,7 @@ let pp_model fmt (model : model) =
     | Get an ->
       let _, t = Utils.get_record_key model (to_lident an) in
       Format.fprintf fmt
-        "let[@inline] get_%s ((s, key) : storage * %a) : %s =@\n  \
+        "let[@inline] get_%s (s, key : storage * %a) : %s =@\n  \
          match Map.find key s.%s_assets with@\n  \
          | Some v -> v@\n  \
          | _ -> failwith \"not_found\"@\n"
@@ -87,62 +99,78 @@ let pp_model fmt (model : model) =
         an
         an
     | Set an ->
+      let _, t = Utils.get_record_key model (to_lident an) in
       Format.fprintf fmt
-        "let[@inline] set_%s (s : storage) : unit =@\n  \
+        "let[@inline] set_%s (s, key, asset : storage * %a * %s) : storage =@\n  \
          () (*TODO*)@\n"
+        an
+        pp_btyp t
         an
 
     | Add an ->
       Format.fprintf fmt
-        "let[@inline] add_%s (s : storage) : unit =@\n  \
+        "let[@inline] add_%s (s, asset : storage * %s) : storage =@\n  \
          () (*TODO*)@\n"
-        an
+        an an
+
     | Remove an ->
+      let _, t = Utils.get_record_key model (to_lident an) in
       Format.fprintf fmt
-        "let[@inline] remove_%s (s : storage) : unit =@\n  \
+        "let[@inline] remove_%s (s, key : storage * %a) : storage =@\n  \
          () (*TODO*)@\n"
         an
+        pp_btyp t
 
     | Clear an ->
       Format.fprintf fmt
-        "let[@inline] clear_%s (s : storage) : unit =@\n  \
+        "let[@inline] clear_%s (s : storage) : storage =@\n  \
          () (*TODO*)@\n"
         an
 
     | Reverse an ->
       Format.fprintf fmt
-        "let[@inline] reverse_%s (s : storage) : unit =@\n  \
+        "let[@inline] reverse_%s (s : storage) : storage =@\n  \
          () (*TODO*)@\n"
         an
 
     | UpdateAdd (an, fn) ->
+      (* let _, t = Utils.get_record_key model (to_lident an) in *)
+      let ft, c = Utils.get_field_container model an fn in
       Format.fprintf fmt
-        "let[@inline] add_%s_%s (s : storage) : unit =@\n  \
+        "let[@inline] add_%s_%s (s, a, b : storage * %s * %s) : storage =@\n  \
          () (*TODO*)@\n"
-        an fn
+        an
+        fn
+        an
+        ft
 
     | UpdateRemove (an, fn) ->
+      let ft, c = Utils.get_field_container model an fn in
+      let _, t = Utils.get_record_key model (to_lident ft) in
       Format.fprintf fmt
-        "let[@inline] remove_%s_%s (s : storage) : unit =@\n  \
+        "let[@inline] remove_%s_%s (s, key : storage * %s * %a) : storage =@\n  \
          () (*TODO*)@\n"
-        an fn
+        an
+        fn
+        an
+        pp_btyp t
 
     | UpdateClear (an, fn) ->
       Format.fprintf fmt
-        "let[@inline] clear_%s_%s (s : storage) : unit =@\n  \
+        "let[@inline] clear_%s_%s (s : storage * %s) : storage =@\n  \
          () (*TODO*)@\n"
-        an fn
+        an fn an
 
     | UpdateReverse (an, fn) ->
       Format.fprintf fmt
-        "let[@inline] reverse_%s_%s (s : storage) : unit =@\n  \
+        "let[@inline] reverse_%s_%s (s : storage * %s) : storage =@\n  \
          () (*TODO*)@\n"
-        an fn
+        an fn an
 
 
     | ToKeys an ->
       Format.fprintf fmt
-        "let[@inline] to_keys_%s (s : storage) : unit =@\n  \
+        "let[@inline] to_keys_%s (s : storage) : storage =@\n  \
          () (*TODO*)@\n"
         an
   in
@@ -303,7 +331,7 @@ let pp_model fmt (model : model) =
 
       | Mget (c, k) ->
         let pp fmt (c, k) =
-          Format.fprintf fmt "get_%a (%a)"
+          Format.fprintf fmt "get_%a (_s, %a)"
             pp_str c
             f k
         in
@@ -311,7 +339,7 @@ let pp_model fmt (model : model) =
 
       | Mset (c, k, v) ->
         let pp fmt (c, k, v) =
-          Format.fprintf fmt "set_%a (%a, %a)"
+          Format.fprintf fmt "set_%a (_s, %a, %a)"
             pp_str c
             f k
             f v
@@ -320,27 +348,19 @@ let pp_model fmt (model : model) =
 
       | Maddasset (an, i, es) ->
         let pp fmt (an, i, es) =
-          Format.fprintf fmt "add_%a (%a)%a"
+          Format.fprintf fmt "add_%a (_s, %a)"
             pp_str an
             f i
-            (fun fmt ->
-               match es with
-               | [] -> (fun _ -> Format.fprintf fmt "")
-               | _  -> Format.fprintf fmt " [%a]" (pp_list "; " f)) es
         in
         pp fmt (an, i, es)
 
       | Maddfield (an, fn, c, i, es) ->
         let pp fmt (an, fn, c, i, es) =
-          Format.fprintf fmt "add_%a_%a (%a, %a)%a"
+          Format.fprintf fmt "add_%a_%a (_s, %a, %a)"
             pp_str an
             pp_str fn
             f c
             f i
-            (fun fmt ->
-               match es with
-               | [] -> (fun _ -> Format.fprintf fmt "")
-               | _  -> Format.fprintf fmt " [%a]" (pp_list "; " f)) es
         in
         pp fmt (an, fn, c, i, es)
 
@@ -354,7 +374,7 @@ let pp_model fmt (model : model) =
 
       | Mremoveasset (an, i) ->
         let pp fmt (an, i) =
-          Format.fprintf fmt "remove_%a (%a)"
+          Format.fprintf fmt "remove_%a (_s, %a)"
             pp_str an
             f i
         in
@@ -362,7 +382,7 @@ let pp_model fmt (model : model) =
 
       | Mremovefield (an, fn, c, i) ->
         let pp fmt (an, fn, c, i) =
-          Format.fprintf fmt "remove_%a_%a (%a, %a)"
+          Format.fprintf fmt "remove_%a_%a (_s, %a, %a)"
             pp_str an
             pp_str fn
             f c
@@ -380,14 +400,14 @@ let pp_model fmt (model : model) =
 
       | Mclearasset (an) ->
         let pp fmt (an) =
-          Format.fprintf fmt "clear_%a ()"
+          Format.fprintf fmt "clear_%a (_s)"
             pp_str an
         in
         pp fmt (an)
 
       | Mclearfield (an, fn, i) ->
         let pp fmt (an, fn, i) =
-          Format.fprintf fmt "clear_%a_%a (%a)"
+          Format.fprintf fmt "clear_%a_%a (_s, %a)"
             pp_str an
             pp_str fn
             f i
@@ -403,14 +423,14 @@ let pp_model fmt (model : model) =
 
       | Mreverseasset (an) ->
         let pp fmt (an) =
-          Format.fprintf fmt "reverse_%a ()"
+          Format.fprintf fmt "reverse_%a (_s)"
             pp_str an
         in
         pp fmt (an)
 
       | Mreversefield (an, fn, i) ->
         let pp fmt (an, fn, i) =
-          Format.fprintf fmt "reverse_%a_%a (%a)"
+          Format.fprintf fmt "reverse_%a_%a (_s, %a)"
             pp_str an
             pp_str fn
             f i
@@ -435,11 +455,11 @@ let pp_model fmt (model : model) =
 
       | Msort (an, c, fn, k) ->
         let pp fmt (an, c, fn, k) =
-          Format.fprintf fmt "sort_%a_%a (%a %a)"
+          Format.fprintf fmt "sort_%a_%a (%a)"
             pp_str an
             pp_str fn
             f c
-            pp_sort_kind k
+            (* pp_sort_kind k *) (* TODO: asc / desc *)
         in
         pp fmt (an, c, fn, k)
 
@@ -544,7 +564,7 @@ let pp_model fmt (model : model) =
 
       | Mnot e ->
         let pp fmt e =
-          Format.fprintf fmt "not %a"
+          Format.fprintf fmt "not (%a)"
             f e
         in
         pp fmt e
@@ -661,7 +681,7 @@ let pp_model fmt (model : model) =
           f a
           f b
       | Mvarstorevar v -> Format.fprintf fmt "_s.%a" pp_id v
-      | Mvarstorecol v -> pp_id fmt v
+      | Mvarstorecol v -> Format.fprintf fmt "%a_keys" pp_id v
       | Mvarenumval v  -> pp_id fmt v
       | Mvarfield v    -> pp_id fmt v
       | Mvarlocal v    -> pp_id fmt v
@@ -698,9 +718,9 @@ let pp_model fmt (model : model) =
       | Mduration v -> pp_str fmt v
       | Mdotasset (e, i)
       | Mdotcontract (e, i) ->
-        Format.fprintf fmt "%a (%a)"
-          pp_id i
+        Format.fprintf fmt "%a.%a"
           f e
+          pp_id i
       | Mtuple l ->
         Format.fprintf fmt "(%a)"
           (pp_list ", " f) l
@@ -710,7 +730,7 @@ let pp_model fmt (model : model) =
           f c
           f b
       | Mseq is ->
-        Format.fprintf fmt "(%a)"
+        Format.fprintf fmt "%a"
           (pp_list ";@\n" f) is
 
       | Massign (op, l, r) ->
@@ -729,7 +749,7 @@ let pp_model fmt (model : model) =
           (if b then " back" else "")
           f x
           (pp_option (fun fmt -> Format.fprintf fmt " to %a" pp_qualid)) q
-      | Mbreak -> pp_str fmt "break"
+      | Mbreak -> emit_error UnsupportedBreak
       | Massert x ->
         Format.fprintf fmt "assert %a"
           f x
@@ -740,70 +760,21 @@ let pp_model fmt (model : model) =
         Format.fprintf fmt "%s.to_keys (%a)"
           an
           f x
-      | Mforall (i, t, e) ->
-        Format.fprintf fmt "forall (%a : %a), %a"
-          pp_id i
-          pp_type t
-          f e
-      | Mexists (i, t, e) ->
-        Format.fprintf fmt "exists (%a : %a), %a"
-          pp_id i
-          pp_type t
-          f e
-
-      | Msetbefore e ->
-        Format.fprintf fmt "before %a"
-          f e
-
-      | Msetunmoved e ->
-        Format.fprintf fmt "unmoved %a"
-          f e
-
-      | Msetadded e ->
-        Format.fprintf fmt "added %a"
-          f e
-
-      | Msetremoved e ->
-        Format.fprintf fmt "removed %a"
-          f e
-
-      | Msetiterated e ->
-        Format.fprintf fmt "iterated %a"
-          f e
-
-      | Msettoiterate e ->
-        Format.fprintf fmt "to_iterate %a"
-          f e
-
-      | MsecMayBePerformedOnlyByRole (l, r) ->
-        Format.fprintf fmt "%a MayBePerformedOnlyByRole %a"
-          f l
-          f r
-
-      | MsecMayBePerformedOnlyByAction (l, r) ->
-        Format.fprintf fmt "%a MayBePerformedOnlyByAction %a"
-          f l
-          f r
-
-      | MsecMayBePerformedByRole (l, r) ->
-        Format.fprintf fmt "%a MayBePerformedByRole %a"
-          f l
-          f r
-
-      | MsecMayBePerformedByAction (l, r) ->
-        Format.fprintf fmt "%a MayBePerformedByAction %a"
-          f l
-          f r
-
-      | MsecTransferredBy a ->
-        Format.fprintf fmt "TransferredBy %a"
-          f a
-
-      | MsecTransferredTo a ->
-        Format.fprintf fmt "TransferredTo %a"
-          f a
-
-      | Manyaction -> Format.fprintf fmt "anyaction"
+      | Mforall _                        -> emit_error (UnsupportedTerm ("forall"))
+      | Mexists _                        -> emit_error (UnsupportedTerm ("exists"))
+      | Msetbefore _                     -> emit_error (UnsupportedTerm ("setbefore"))
+      | Msetunmoved _                    -> emit_error (UnsupportedTerm ("setunmoved"))
+      | Msetadded _                      -> emit_error (UnsupportedTerm ("setadded"))
+      | Msetremoved _                    -> emit_error (UnsupportedTerm ("setremoved"))
+      | Msetiterated _                   -> emit_error (UnsupportedTerm ("setiterated"))
+      | Msettoiterate _                  -> emit_error (UnsupportedTerm ("settoiterate"))
+      | MsecMayBePerformedOnlyByRole _   -> emit_error (UnsupportedTerm ("secMayBePerformedOnlyByRole"))
+      | MsecMayBePerformedOnlyByAction _ -> emit_error (UnsupportedTerm ("secMayBePerformedOnlyByAction"))
+      | MsecMayBePerformedByRole _       -> emit_error (UnsupportedTerm ("secMayBePerformedByRole"))
+      | MsecMayBePerformedByAction _     -> emit_error (UnsupportedTerm ("secMayBePerformedByAction"))
+      | MsecTransferredBy _              -> emit_error (UnsupportedTerm ("secTransferredBy"))
+      | MsecTransferredTo _              -> emit_error (UnsupportedTerm ("secTransferredTo"))
+      | Manyaction                       -> emit_error (UnsupportedTerm ("anyaction"))
     in
     f fmt mt
   in
@@ -900,9 +871,6 @@ let pp_model fmt (model : model) =
       | Entry f -> "let%entry", f, Some (Ttuple [Tcontainer (Toperation, Collection); Tstorage]), " (_s : storage)"
       | Function (f, a) -> "let", f, Some a, ""
     in
-    (* if not (String.equal (unloc fs.name) "add")
-       then ()
-       else *)
     Format.fprintf fmt "%a %a %a%s%a =@\n@[<v 2>  %a@]@\n"
       pp_str k
       pp_id fs.name

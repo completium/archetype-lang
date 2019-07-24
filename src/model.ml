@@ -1519,6 +1519,7 @@ module Utils : sig
   val get_record                         : model -> lident -> record
   val get_record_field                   : model -> (lident * lident) -> record_item
   val get_record_key                     : model -> lident -> (lident * btyp)
+  val get_field_container                : model -> ident -> ident -> (ident * container)
   val is_storage_attribute               : model -> lident -> bool
   val get_named_field_list               : model -> lident -> 'a list -> (lident * 'a) list
   val get_partitions                     : model -> (lident * record_item) list (* record id, record item *)
@@ -1720,6 +1721,12 @@ end = struct
     match key_field.type_ with
     | Tbuiltin v -> (key_id, v)
     | _ -> emit_error (RecordKeyTypeNotFound (unloc record_name))
+
+  let get_field_container model asset_name field_name : ident * container =
+    let f = get_record_field model (dumloc asset_name, dumloc field_name) in
+    match f with
+    | {type_ = Tcontainer (Tasset an, c)} -> (unloc an, c)
+    | _ -> assert false
 
   (* returns : asset name, key name, key type *)
   let get_partition_record_key model record field : (lident * lident * btyp) =
