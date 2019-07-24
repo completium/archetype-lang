@@ -78,7 +78,7 @@ let remove_side_effect model =
 let output_liquidity model =
   if !Options.opt_liq_url
   then
-    let str = Format.asprintf "%a" Printer_model_liq.pp_model model in
+    let str = Printer_model_liq.show_model model in
     let encoded_src = Uri.pct_encode str in
     let url = "http://www.liquidity-lang.org/edit/?source=" ^ encoded_src in
     Format.printf "%s@\n" url
