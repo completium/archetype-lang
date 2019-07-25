@@ -1,4 +1,5 @@
 open Location
+open Ident
 open Tools
 
 module A = Ast
@@ -843,7 +844,6 @@ let to_model (ast : A.model) : M.model =
 
   let process_api_storage (model : M.model) : M.model =
 
-
     let add (ctx : M.ctx_model) (l : M.api_item list) (i :  M.api_item) =
       let item = { i with only_formula = ctx.formula } in
       let res, l = List.fold_left (fun (res, accu) (x : M.api_item) ->
@@ -902,8 +902,85 @@ let to_model (ast : A.model) : M.model =
       | Some v -> add ctx accu (Model.mk_api_item v)
       | _ -> accu
     in
-    let l = M.fold_model f model [] in
-    {model with api_items = l }
+    let l = M.fold_model f model []
+            |> List.sort
+              (fun (i1 : M.api_item) (i2 : M.api_item) ->
+                 let criteria_asset_name () : int =
+                   let default = "_" in
+                   let get_asset_name = function
+                     | M.APIStorage (Get              an)     -> an
+                     | M.APIStorage (Set              an)     -> an
+                     | M.APIStorage (Add              an)     -> an
+                     | M.APIStorage (Remove           an)     -> an
+                     | M.APIStorage (Clear            an)     -> an
+                     | M.APIStorage (Reverse          an)     -> an
+                     | M.APIStorage (UpdateAdd       (an, _)) -> an
+                     | M.APIStorage (UpdateRemove    (an, _)) -> an
+                     | M.APIStorage (UpdateClear     (an, _)) -> an
+                     | M.APIStorage (UpdateReverse   (an, _)) -> an
+                     | M.APIStorage (ToKeys           an)     -> an
+                     | M.APIFunction (Select          an)     -> an
+                     | M.APIFunction (Sort           (an, _)) -> an
+                     | M.APIFunction (Contains        an)     -> an
+                     | M.APIFunction (Nth             an)     -> an
+                     | M.APIFunction (Count           an)     -> an
+                     | M.APIFunction (Sum            (an, _)) -> an
+                     | M.APIFunction (Min            (an, _)) -> an
+                     | M.APIFunction (Max            (an, _)) -> an
+                     | M.APIContainer _                       -> default
+                     | M.APIBuiltin _                         -> default
+                   in
+                   let asset_list : ident list = List.fold_left (fun accu (x : M.decl_node) ->
+                       match x with
+                       | Drecord r -> accu @ [unloc r.name]
+                       | _ -> accu
+                     ) [] model.decls in
+                   let get_idx (i : M.api_item) = List.index_of (fun x -> String.equal (get_asset_name i.node) x) asset_list in
+                   let idx1 = get_idx i1 in
+                   let idx2 = get_idx i2 in
+                   idx1 - idx2
+                 in
+
+                 let criteria_kind () : int =
+                   let get_kind = function
+                     | M.APIStorage   (Get           _) ->  1
+                     | M.APIStorage   (Set           _) ->  2
+                     | M.APIStorage   (Add           _) ->  3
+                     | M.APIStorage   (Remove        _) ->  4
+                     | M.APIStorage   (Clear         _) ->  5
+                     | M.APIStorage   (Reverse       _) ->  6
+                     | M.APIStorage   (UpdateAdd     _) ->  7
+                     | M.APIStorage   (UpdateRemove  _) ->  8
+                     | M.APIStorage   (UpdateClear   _) ->  9
+                     | M.APIStorage   (UpdateReverse _) -> 10
+                     | M.APIStorage   (ToKeys        _) -> 11
+                     | M.APIFunction  (Select        _) -> 12
+                     | M.APIFunction  (Sort          _) -> 13
+                     | M.APIFunction  (Contains      _) -> 14
+                     | M.APIFunction  (Nth           _) -> 15
+                     | M.APIFunction  (Count         _) -> 16
+                     | M.APIFunction  (Sum           _) -> 17
+                     | M.APIFunction  (Min           _) -> 18
+                     | M.APIFunction  (Max           _) -> 19
+                     | M.APIContainer (Add           _) -> 20
+                     | M.APIContainer (Remove        _) -> 21
+                     | M.APIContainer (Clear         _) -> 22
+                     | M.APIContainer (Reverse       _) -> 23
+                     | M.APIBuiltin   (Min           _) -> 24
+                     | M.APIBuiltin   (Max           _) -> 25
+                   in
+                   let idx1 = get_kind i1.node in
+                   let idx2 = get_kind i2.node in
+                   idx1 - idx2
+                 in
+
+                 let c1 = criteria_asset_name () in
+                 if c1 = 0
+                 then criteria_kind ()
+                 else c1
+              )
+    in
+    { model with api_items = l }
   in
 
   M.mk_model name storage verification ~decls:decls ~functions:functions

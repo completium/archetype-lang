@@ -165,6 +165,7 @@ module List : sig
   val xfilter       : ('a -> [`Left of 'b | `Right of 'c]) -> 'a list -> 'b list * 'c list
   val fold_left_map : ('a -> 'b -> 'a * 'c) -> 'a -> 'b list -> 'a * 'c list
   val assoc_all     : 'a -> ('a * 'b) list -> 'b list
+  val index_of      : ('a -> bool) -> 'a list -> int
 
   module Exn : sig
     val assoc : 'a -> ('a * 'b) list -> 'b option
@@ -257,6 +258,13 @@ end = struct
 
   let assoc_all (v : 'a) (xs : ('a * 'b) list) =
     pmap (fun (x, y) -> if x = v then Some y else None) xs
+
+  let index_of (pred : 'a -> bool) (l : 'a list) : int =
+    let rec aux idx = function
+      | [] -> -1
+      | q::t -> if (pred q) then idx else aux (idx + 1) t
+    in
+    aux 0 l
 
   module Exn = struct
     let assoc x xs =
