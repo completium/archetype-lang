@@ -204,7 +204,7 @@ type ('id, 'term) mterm_node  =
   | Muplus        of 'term
   | Muminus       of 'term
   | Mrecord       of 'term list
-  | Mletin        of 'id * 'term * type_ option * 'term
+  | Mletin        of 'id list * 'term * type_ option * 'term
   | Mvarstorevar  of 'id
   | Mvarstorecol  of 'id
   | Mvarenumval   of 'id
@@ -724,7 +724,7 @@ let cmp_mterm_node
     | Muplus e1, Muplus e2                                                             -> cmp e1 e2
     | Muminus e1, Muminus e2                                                           -> cmp e1 e2
     | Mrecord l1, Mrecord l2                                                           -> List.for_all2 cmp l1 l2
-    | Mletin (i1, a1, t1, b1), Mletin (i2, a2, t2, b2)                                 -> cmpi i1 i2 && cmp a1 a2 && Option.cmp cmp_type t1 t2 && cmp b1 b2
+    | Mletin (i1, a1, t1, b1), Mletin (i2, a2, t2, b2)                                 -> List.for_all2 cmpi i1 i2 && cmp a1 a2 && Option.cmp cmp_type t1 t2 && cmp b1 b2
     | Mvarstorevar v1, Mvarstorevar v2                                                 -> cmpi v1 v2
     | Mvarstorecol v1, Mvarstorecol v2                                                 -> cmpi v1 v2
     | Mvarenumval v1, Mvarenumval v2                                                   -> cmpi v1 v2

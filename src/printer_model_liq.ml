@@ -736,9 +736,9 @@ let pp_model fmt (model : model) =
       | Mrecord l ->
         Format.fprintf fmt "{%a}"
           (pp_list "; " f) l
-      | Mletin (i, a, t, b) ->
+      | Mletin (ids, a, t, b) ->
         Format.fprintf fmt "let %a%a = %a in@\n@[<v 2>%a@]"
-          pp_id i
+          (pp_list ", " pp_id) ids
           (pp_option (fun fmt -> Format.fprintf fmt  " : %a" pp_type)) t
           f a
           f b

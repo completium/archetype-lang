@@ -871,7 +871,7 @@ let rec map_mterm m (mt : M.mterm) : loc_term =
       Trecord (None,(List.combine fns (List.map (map_mterm m) l)))
     | M.Marray l ->
       Tapp (loc_term (Tvar "mkacol"),[with_dummy_loc (Tlist (l |> List.map (map_mterm m)))])
-    | M.Mletin (id,v,_,b) ->
+    | M.Mletin ([id],v,_,b) ->
       Tletin (M.Utils.is_local_assigned id b,map_lident id,None,map_mterm m v,map_mterm m b)
     | M.Mselect (a,l,r) ->
       Tapp (loc_term (Tvar ("select_"^a)),[map_mterm m l;map_mterm m r])

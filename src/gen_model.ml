@@ -158,7 +158,7 @@ let to_model (ast : A.model) : M.model =
       | A.Puarith (A.Uplus, e)         -> M.Muplus     (f e)
       | A.Puarith (A.Uminus, e)        -> M.Muminus    (f e)
       | A.Precord l                    -> M.Mrecord    (List.map f l)
-      | A.Pletin (id, init, typ, cont) -> M.Mletin     (id, f init, Option.map ftyp typ, f cont)
+      | A.Pletin (id, init, typ, cont) -> M.Mletin     ([id], f init, Option.map ftyp typ, f cont)
       | A.Pvar id when A.Utils.is_variable ast id   -> M.Mvarstorevar id
       | A.Pvar id when A.Utils.is_asset ast id      -> M.Mvarstorecol id
       | A.Pvar id when A.Utils.is_enum_value ast id -> M.Mvarenumval id
@@ -317,14 +317,14 @@ let to_model (ast : A.model) : M.model =
 
     let get_mterm : M.mterm = M.mk_mterm (M.Mget (asset_name, key_mterm)) type_asset in
 
-    let letinasset : M.mterm = M.mk_mterm (M.Mletin (var_name,
+    let letinasset : M.mterm = M.mk_mterm (M.Mletin ([var_name],
                                                      get_mterm,
                                                      Some (type_asset),
                                                      body
                                                     ))
         Tunit in
 
-    let res : M.mterm__node = M.Mletin (key_loced,
+    let res : M.mterm__node = M.Mletin ([key_loced],
                                         k,
                                         None,
                                         letinasset
@@ -365,7 +365,7 @@ let to_model (ast : A.model) : M.model =
 
     let for_ = M.mk_mterm (M.Mfor (col_name, col_var, remove) ) Tunit in
 
-    let res : M.mterm__node = M.Mletin (asset_var_name, select, Some type_asset, for_) in
+    let res : M.mterm__node = M.Mletin ([asset_var_name], select, Some type_asset, for_) in
     res
 
   in
@@ -374,7 +374,7 @@ let to_model (ast : A.model) : M.model =
     match n with
     | A.Iif (c, t, e)           -> M.Mif (f c, g t, Some (g e))
     | A.Ifor (i, col, body)     -> M.Mfor (i, f col, g body)
-    | A.Iletin (i, init, cont)  -> M.Mletin (i, f init, None, g cont) (* TODO *)
+    | A.Iletin (i, init, cont)  -> M.Mletin ([i], f init, None, g cont) (* TODO *)
     | A.Iseq l                  -> M.Mseq (List.map g l)
     | A.Imatchwith (m, l)       -> M.Mmatchwith (f m, List.map (fun (p, i) -> (to_pattern p, g i)) l)
     | A.Iassign (op, i, e)      -> M.Massign (to_assignment_operator op, i, to_mterm e)

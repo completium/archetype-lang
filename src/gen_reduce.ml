@@ -74,7 +74,7 @@ let rec process_mtern (s : s_red) (mt : mterm) : mterm * s_red =
       end
     in
     let mif = mk_mterm (Mif (c, t, e)) Tstorage in
-    let node = Mletin (storage_lident, mif, Some Tstorage, storage_var) in
+    let node = Mletin ([storage_lident], mif, Some Tstorage, storage_var) in
     mk_mterm node Tunit, s
 
 
@@ -99,7 +99,7 @@ let process_body (mt : mterm) : mterm =
   if s.with_ops
   then
     let init = mk_mterm (Marray []) operations_type in
-    mk_mterm (Mletin (operations_lident, init, Some operations_type, mt)) Tunit
+    mk_mterm (Mletin ([operations_lident], init, Some operations_type, mt)) Tunit
   else mt
 
 let process_functions (model : model) : model =

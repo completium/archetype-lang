@@ -178,24 +178,24 @@ let rec map_shallow (ctx : (I.ident * (M.lident * M.type_) list) list) m (t : M.
         let shallow_args = map_shallow_record m ctx v in
         M.Mapp (dumloc ("add_shallow_"^n^"_"^f),[a] @ shallow_args)
       else M.Maddfield (n,f,a,v,l)
-    | M.Mletin (id,v,t,b) when M.Utils.is_record v ->
+    | M.Mletin ([id],v,t,b) when M.Utils.is_record v ->
       begin
         match v.type_ with
         | Tasset a when M.Utils.has_partition m (unloc a) ->
           let shallow_args = map_shallow_record m ctx v in
           let new_letins   = mk_new_letins (unloc id) (tl shallow_args) in
           let new_ctx      = mk_ctx ctx (unloc id) (tl shallow_args) in
-          M.Mletin (id,
+          M.Mletin ([id],
                     List.hd shallow_args,
                     Some (Tasset a),
                     map_letin_shallow m new_ctx b new_letins)
-        | _ -> M.Mletin (id,v,t,map_shallow ctx m b)
+        | _ -> M.Mletin ([id],v,t,map_shallow ctx m b)
       end
     | _ as tn -> M.map_term_node ((map_shallow ctx) m) tn
   in
   M.mk_mterm ~loc:(t.loc) t_gen t.type_
 and map_letin_shallow m ctx b = function
-  | (id,v)::tl -> M.mk_mterm (M.Mletin (id,v,None,map_letin_shallow m ctx b tl)) v.type_
+  | (id,v)::tl -> M.mk_mterm (M.Mletin ([id],v,None,map_letin_shallow m ctx b tl)) v.type_
   | [] -> map_shallow ctx m b
 
 let process_shallow_function m f =
