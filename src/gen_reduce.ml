@@ -22,6 +22,8 @@ let operations_lident : lident = dumloc "_ops"
 let operations_type : type_ = Tcontainer (Toperation, Collection)
 let operations_var : mterm = mk_mterm (Mvarlocal operations_lident) operations_type
 
+let storage_operations_type : type_ = Ttuple [Tcontainer (Toperation, Collection); Tstorage]
+
 let is_fail (t : mterm) (e : mterm option) : bool =
   match t.node , e with
   | Mfail _, None -> true
@@ -29,6 +31,36 @@ let is_fail (t : mterm) (e : mterm option) : bool =
 
 let rec process_mtern (s : s_red) (mt : mterm) : mterm * s_red =
   let fold_list x y : mterm list * s_red = fold_map_term_list process_mtern x y in
+
+  let process_non_empty_list_term (s : s_red) (mts : mterm list) : mterm * s_red =
+
+    let split_last_list l : 'a * 'a list =
+      let rec split_last_list_rec accu l =
+        match l with
+        | [] -> assert false
+        | t::[] -> (t, (List.rev accu))
+        | t::l -> split_last_list_rec (t::accu) l
+      in
+      split_last_list_rec [] l
+    in
+    let last, list = split_last_list mts in
+
+    let last, s = process_mtern s last in
+
+    List.fold_right (fun x (accu, s) ->
+        let x, s = process_mtern s x in
+        match x with
+        | {type_ = Tstorage; _} ->
+          mk_mterm (Mletin ([storage_lident], x, Some Tstorage, accu)) Tunit, s
+        | {type_ = Tcontainer (Toperation, Collection); _} ->
+          mk_mterm (Mletin ([operations_lident], x, Some operations_type, accu)) Tunit, s
+        | {type_ = Ttuple [Tcontainer (Toperation, Collection); Tstorage]; _} ->
+          mk_mterm (Mletin ([storage_lident; operations_lident], x, Some storage_operations_type, accu)) Tunit, s
+        | _ ->
+          mk_mterm (Mseq [x ; accu]) Tunit, s
+      ) list (last, s)
+  in
+
   match mt.node with
   (* api storage *)
   | Maddasset (an, arg, l) ->
@@ -73,18 +105,31 @@ let rec process_mtern (s : s_red) (mt : mterm) : mterm * s_red =
         | None -> None, s
       end
     in
-    let mif = mk_mterm (Mif (c, t, e)) Tstorage in
-    let node = Mletin ([storage_lident], mif, Some Tstorage, storage_var) in
-    mk_mterm node Tunit, s
+    mk_mterm (Mif (c, t, e)) Tstorage, s
+
+  (* let node = Mletin ([storage_lident], mif, Some Tstorage, storage_var) in
+     mk_mterm node Tunit, s *)
 
 
 
-  (* | Mseq l ->
-     let node = List.fold_left (fun accu item -> accu) (Mseq []) l in
-     mk_mterm node Tunit *)
+  | Mseq l ->
+    begin
+      match l with
+      | [] -> mt, s
+      | i::[] ->
+        process_mtern s i
+      | _ -> process_non_empty_list_term s l
+    end
+
+  (* let node = List.fold_left (fun accu item -> accu) (Mseq []) l in
+     mk_mterm node Tunit, s *)
 
   (* operation *)
-  | Mtransfer _ -> { mt with type_ = Toperation }, {s with with_ops = true}
+  | Mtransfer _ ->
+    let ops =  { mt with type_ = Toperation } in
+    let node = Mapp (dumloc "add_list", [operations_var; ops]) in
+    let mt = mk_mterm node storage_operations_type in
+    mt, {s with with_ops = true}
 
   | _ ->
     let g (x : mterm__node) : mterm = { mt with node = x; } in
