@@ -956,7 +956,6 @@ let pp_model fmt (model : model) =
                       @\n%a\
                       @\n%a\
                       @\n%a\
-                      @\n(*%a*)\
                       @."
     pp_model_name ()
     (pp_list "@\n" pp_decl) model.decls
@@ -964,7 +963,6 @@ let pp_model fmt (model : model) =
     pp_init_function model.storage
     pp_utils model.api_items
     pp_api_items model.api_items
-    pp_str "let%entry main (_s : storage) _ : operation list * storage = [], _s"
     (pp_list "@\n" pp_function) model.functions
 
 (* -------------------------------------------------------------------------- *)

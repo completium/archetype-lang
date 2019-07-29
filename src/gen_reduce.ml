@@ -21,8 +21,9 @@ let storage_var : mterm = mk_mterm (Mvarlocal storage_lident) Tstorage
 let operations_lident : lident = dumloc "_ops"
 let operations_type : type_ = Tcontainer (Toperation, Collection)
 let operations_var : mterm = mk_mterm (Mvarlocal operations_lident) operations_type
+let operations_init : mterm = mk_mterm (Marray []) operations_type
 
-let storage_operations_type : type_ = Ttuple [Tcontainer (Toperation, Collection); Tstorage]
+let operations_storage_type : type_ = Ttuple [Tcontainer (Toperation, Collection); Tstorage]
 
 let is_fail (t : mterm) (e : mterm option) : bool =
   match t.node , e with
@@ -55,9 +56,9 @@ let rec process_mtern (s : s_red) (mt : mterm) : mterm * s_red =
         | {type_ = Tcontainer (Toperation, Collection); _} ->
           mk_mterm (Mletin ([operations_lident], x, Some operations_type, accu)) Tunit, s
         | {type_ = Ttuple [Tcontainer (Toperation, Collection); Tstorage]; _} ->
-          mk_mterm (Mletin ([storage_lident; operations_lident], x, Some storage_operations_type, accu)) Tunit, s
+          mk_mterm (Mletin ([operations_lident; storage_lident], x, Some operations_storage_type, accu)) Tunit, s
         | _ ->
-          mk_mterm (Mseq [x ; accu]) Tunit, s
+          mk_mterm (Mseq [x ; accu]) accu.type_, s
       ) list (last, s)
   in
 
@@ -128,7 +129,7 @@ let rec process_mtern (s : s_red) (mt : mterm) : mterm * s_red =
   | Mtransfer _ ->
     let ops =  { mt with type_ = Toperation } in
     let node = Mapp (dumloc "add_list", [operations_var; ops]) in
-    let mt = mk_mterm node storage_operations_type in
+    let mt = mk_mterm node operations_storage_type in
     mt, {s with with_ops = true}
 
   | _ ->
@@ -150,22 +151,55 @@ let process_body (mt : mterm) : mterm =
 let process_functions (model : model) : model =
   let process_function__ (function__ : function__) : function__ =
     let process_function_node (function_node : function_node) : function_node =
-      let process_fs (fs : function_struct) : function_struct =
-        let args = fs.args in
-        let body = process_body fs.body in
-        {
-          fs with
-          args = args;
-          body = body;
-        }
-      in
+      let get_type_return (mt : mterm) : type_ = Tstorage in
 
       match function_node with
       | Function (fs, t) ->
-        let fs = process_fs fs in
-        Function (fs, t)
+        begin
+          match t with
+          | Tunit ->
+            let ret : type_  = get_type_return fs.body in
+            let args, fun_body =
+              begin
+                match ret with
+                | Tstorage ->
+                  let seq = mk_mterm (Mseq [fs.body; storage_var]) Tstorage in
+                  let arg : argument = (storage_lident, Tstorage, None) in
+                  let args = arg::fs.args in
+                  args, seq
+                | Tcontainer (Toperation, Collection) ->
+                  let seq = mk_mterm (Mseq [fs.body; operations_var]) operations_type in
+                  let arg : argument = (operations_lident, operations_type, None) in
+                  let args = arg::fs.args in
+                  args, seq
+                | Ttuple [Tcontainer (Toperation, Collection); Tstorage] ->
+                  let ret = mk_mterm (Mtuple [operations_var; storage_var]) operations_storage_type in
+                  let seq = mk_mterm (Mseq [fs.body; ret]) operations_storage_type in
+                  let arg_s_ : argument = (storage_lident, Tstorage, None) in
+                  let arg_ops_ : argument = (operations_lident, operations_type, None) in
+                  let args = arg_s_::arg_ops_::fs.args  in
+                  args, seq
+                | _ -> assert false
+              end in
+            let body = process_body fun_body in
+            let fs = {
+              fs with
+              args = args;
+              body = body;
+            } in
+            Function (fs, ret)
+          | _ -> assert false
+        end
       | Entry fs ->
-        let fs = process_fs fs in
+
+        let ret = mk_mterm (Mtuple [operations_var; storage_var]) operations_storage_type in
+        let seq = mk_mterm (Mseq [fs.body; ret]) operations_storage_type in
+        let entry_body = mk_mterm (Mletin ([operations_lident], operations_init, Some operations_type, seq)) Tunit in
+        let body = process_body entry_body in
+        let fs = {
+          fs with
+          body = body;
+        } in
         Entry fs
     in
     {
