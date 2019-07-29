@@ -158,6 +158,12 @@ let rec process_mtern (ctx : ctx_red) (s : s_red) (mt : mterm) : mterm * s_red =
       | _ -> process_non_empty_list_term s l
     end
 
+  | Mfor (a, col, body) ->
+    let col, s = process_mtern ctx s col in
+    let body, s = process_mtern ctx s body in
+    let is = [storage_lident] in
+    mk_mterm (Mfold (a, is, col, body)) Tstorage, s
+
   (* let node = List.fold_left (fun accu item -> accu) (Mseq []) l in
      mk_mterm node Tunit, s *)
 
@@ -180,17 +186,18 @@ let process_body (ctx : ctx_red) (mt : mterm) : mterm =
   let mt, _s = process_mtern ctx s mt in
   mt
 
+let analyse_type (mt : mterm) : type_ = Tstorage
+
 let process_functions (model : model) : model =
   let process_functions l =
     let process_function__ (ctx : ctx_red) (function__ : function__) : function__ * ctx_red =
       let process_function_node (function_node : function_node) : function_node * ctx_red =
-        let get_type_return (mt : mterm) : type_ = Tstorage in
         match function_node with
         | Function (fs, t) ->
           begin
             match t with
             | Tunit ->
-              let ret : type_  = get_type_return fs.body in
+              let ret : type_  = analyse_type fs.body in
               let args, fun_body =
                 begin
                   match ret with

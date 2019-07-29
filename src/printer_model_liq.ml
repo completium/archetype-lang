@@ -791,6 +791,13 @@ let pp_model fmt (model : model) =
           pp_id i
           f c
           f b
+      | Mfold (i, is, c, b) ->
+        Format.fprintf fmt "List.fold (fun (%a, (%a)) ->@\n@[<v 4>%a@]) %a (%a)@\n"
+          pp_id i
+          (pp_list ", " pp_id) is
+          f b
+          f c
+          (pp_list ", " pp_id) is
       | Mseq is ->
         Format.fprintf fmt "%a"
           (pp_list ";@\n" f) is

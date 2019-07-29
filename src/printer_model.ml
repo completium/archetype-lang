@@ -528,6 +528,12 @@ let pp_mterm fmt (mt : mterm) =
         pp_id i
         f c
         f b
+    | Mfold (i, is, c, b) ->
+      Format.fprintf fmt "fold %a %a %a (@[<v 2>%a@])@\n"
+        pp_id i
+        (pp_list "%@," pp_id) is
+        f c
+        f b
     | Mseq is ->
       Format.fprintf fmt "(%a)"
         (pp_list ";@\n" f) is
