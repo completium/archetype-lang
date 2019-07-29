@@ -1000,11 +1000,7 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | MsecTransferredTo              a      -> f accu a
   | Manyaction                            -> accu
 
-type s_red = {
-  with_ops : bool;
-}
-
-let fold_map_term_list f acc l : 'term list * s_red =
+let fold_map_term_list f acc l : 'term list * 'a =
   List.fold_left
     (fun (pterms, accu) x ->
        let p, accu = f accu x in
@@ -1012,9 +1008,9 @@ let fold_map_term_list f acc l : 'term list * s_red =
 
 let fold_map_term
     (g : ('id, 'id mterm_gen) mterm_node -> 'id mterm_gen)
-    (f : s_red -> 'id mterm_gen -> 'id mterm_gen * s_red)
-    (accu : s_red)
-    (term : 'id mterm_gen) : 'id mterm_gen * s_red =
+    (f : 'a -> 'id mterm_gen -> 'id mterm_gen * 'a)
+    (accu : 'a)
+    (term : 'id mterm_gen) : 'id mterm_gen * 'a =
 
   match term.node with
   | Mif (c, t, e) ->

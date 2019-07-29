@@ -1,6 +1,6 @@
 open Tools
 open Location
-(* open Ident *)
+open Ident
 open Model
 
 exception Anomaly of string
@@ -30,8 +30,16 @@ let is_fail (t : mterm) (e : mterm option) : bool =
   | Mfail _, None -> true
   | _ -> false
 
-let rec process_mtern (s : s_red) (mt : mterm) : mterm * s_red =
-  let fold_list x y : mterm list * s_red = fold_map_term_list process_mtern x y in
+type s_red = {
+  with_ops : bool;
+}
+
+type ctx_red = {
+  local_fun_types : (ident * type_) list;
+}
+
+let rec process_mtern (ctx : ctx_red) (s : s_red) (mt : mterm) : mterm * s_red =
+  let fold_list x y : mterm list * s_red = fold_map_term_list (process_mtern ctx) x y in
 
   let process_non_empty_list_term (s : s_red) (mts : mterm list) : mterm * s_red =
 
@@ -46,10 +54,10 @@ let rec process_mtern (s : s_red) (mt : mterm) : mterm * s_red =
     in
     let last, list = split_last_list mts in
 
-    let last, s = process_mtern s last in
+    let last, s = process_mtern ctx s last in
 
     List.fold_right (fun x (accu, s) ->
-        let x, s = process_mtern s x in
+        let x, s = process_mtern ctx s x in
         match x with
         | {type_ = Tstorage; _} ->
           mk_mterm (Mletin ([storage_lident], x, Some Tstorage, accu)) Tunit, s
@@ -62,47 +70,75 @@ let rec process_mtern (s : s_red) (mt : mterm) : mterm * s_red =
       ) list (last, s)
   in
 
+  let get_type (ctx : ctx_red) (id : ident) : type_ =
+    List.assoc id ctx.local_fun_types
+  in
+
   match mt.node with
   (* api storage *)
   | Maddasset (an, arg, l) ->
-    let arg, s = process_mtern s arg in
+    let arg, s = process_mtern ctx s arg in
     let l, s = fold_list s l in
     mk_mterm (Maddasset (an, arg, l)) Tstorage, s
   | Maddfield (an, fn, col, arg, l) ->
-    let col, s = process_mtern s col in
-    let arg, s = process_mtern s arg in
+    let col, s = process_mtern ctx s col in
+    let arg, s = process_mtern ctx s arg in
     let l, s = fold_list s l in
     mk_mterm (Maddfield (an, fn, col, arg, l)) Tstorage, s
   (* | Maddlocal     of 'term * 'term *)
   | Mremoveasset (an, arg) ->
-    let arg, s = process_mtern s arg in
+    let arg, s = process_mtern ctx s arg in
     mk_mterm (Mremoveasset (an, arg)) Tstorage, s
   | Mremovefield (an, fn, col, arg) ->
-    let col, s = process_mtern s col in
-    let arg, s = process_mtern s arg in
+    let col, s = process_mtern ctx s col in
+    let arg, s = process_mtern ctx s arg in
     mk_mterm (Mremovefield (an, fn, col, arg)) Tstorage, s
   (* | Mremovelocal  of 'term * 'term *)
   | Mclearasset an ->
     mk_mterm (Mclearasset an) Tstorage, s
   | Mclearfield (an, fn, col) ->
-    let col, s = process_mtern s col in
+    let col, s = process_mtern ctx s col in
     mk_mterm (Mclearfield (an, fn, col)) Tstorage, s
   (* | Mclearlocal   of 'term *)
   | Mreverseasset an ->
     mk_mterm (Mreverseasset an) Tstorage, s
   | Mreversefield (an, fn, col) ->
-    let col, s = process_mtern s col in
+    let col, s = process_mtern ctx s col in
     mk_mterm (Mreversefield (an, fn, col)) Tstorage, s
   (* | Mreverselocal of 'term *)
+
+  (* app local *)
+  | Mapp (id, args) ->
+    let type_ = get_type ctx (unloc id) in
+    let args =
+      begin
+        match type_ with
+        | Tstorage ->
+          let args = storage_var::args in
+          args
+        | Tcontainer (Toperation, Collection) ->
+          let args = operations_var::args in
+          args
+        | Ttuple [Tcontainer (Toperation, Collection); Tstorage] ->
+          let args = storage_var::operations_var::args in
+          args
+        | _ -> args
+      end
+    in
+    {
+      mt with
+      node = Mapp (id, args);
+      type_ = type_;
+    }, s
 
   (* controls *)
   | Mif (_, t, e) when is_fail t e -> mt, s
   | Mif (c, t, e) ->
-    let t, s = process_mtern s t in
+    let t, s = process_mtern ctx s t in
     let e, s =
       begin
         match e with
-        | Some v -> process_mtern s v |> (fun (x, y) -> Some x, y)
+        | Some v -> process_mtern ctx s v |> (fun (x, y) -> Some x, y)
         | None -> None, s
       end
     in
@@ -118,7 +154,7 @@ let rec process_mtern (s : s_red) (mt : mterm) : mterm * s_red =
       match l with
       | [] -> mt, s
       | i::[] ->
-        process_mtern s i
+        process_mtern ctx s i
       | _ -> process_non_empty_list_term s l
     end
 
@@ -134,82 +170,91 @@ let rec process_mtern (s : s_red) (mt : mterm) : mterm * s_red =
 
   | _ ->
     let g (x : mterm__node) : mterm = { mt with node = x; } in
-    fold_map_term g process_mtern s mt
+    fold_map_term g (process_mtern ctx) s mt
 
 
-let process_body (mt : mterm) : mterm =
+let process_body (ctx : ctx_red) (mt : mterm) : mterm =
   let s : s_red = {
     with_ops = false;
   } in
-  let mt, s = process_mtern s mt in
-  if s.with_ops
-  then
-    let init = mk_mterm (Marray []) operations_type in
-    mk_mterm (Mletin ([operations_lident], init, Some operations_type, mt)) Tunit
-  else mt
+  let mt, _s = process_mtern ctx s mt in
+  mt
 
 let process_functions (model : model) : model =
-  let process_function__ (function__ : function__) : function__ =
-    let process_function_node (function_node : function_node) : function_node =
-      let get_type_return (mt : mterm) : type_ = Tstorage in
-
-      match function_node with
-      | Function (fs, t) ->
-        begin
-          match t with
-          | Tunit ->
-            let ret : type_  = get_type_return fs.body in
-            let args, fun_body =
-              begin
-                match ret with
-                | Tstorage ->
-                  let seq = mk_mterm (Mseq [fs.body; storage_var]) Tstorage in
-                  let arg : argument = (storage_lident, Tstorage, None) in
-                  let args = arg::fs.args in
-                  args, seq
-                | Tcontainer (Toperation, Collection) ->
-                  let seq = mk_mterm (Mseq [fs.body; operations_var]) operations_type in
-                  let arg : argument = (operations_lident, operations_type, None) in
-                  let args = arg::fs.args in
-                  args, seq
-                | Ttuple [Tcontainer (Toperation, Collection); Tstorage] ->
-                  let ret = mk_mterm (Mtuple [operations_var; storage_var]) operations_storage_type in
-                  let seq = mk_mterm (Mseq [fs.body; ret]) operations_storage_type in
-                  let arg_s_ : argument = (storage_lident, Tstorage, None) in
-                  let arg_ops_ : argument = (operations_lident, operations_type, None) in
-                  let args = arg_s_::arg_ops_::fs.args  in
-                  args, seq
-                | _ -> assert false
-              end in
-            let body = process_body fun_body in
-            let fs = {
-              fs with
-              args = args;
-              body = body;
-            } in
-            Function (fs, ret)
-          | _ -> assert false
-        end
-      | Entry fs ->
-
-        let ret = mk_mterm (Mtuple [operations_var; storage_var]) operations_storage_type in
-        let seq = mk_mterm (Mseq [fs.body; ret]) operations_storage_type in
-        let entry_body = mk_mterm (Mletin ([operations_lident], operations_init, Some operations_type, seq)) Tunit in
-        let body = process_body entry_body in
-        let fs = {
-          fs with
-          body = body;
-        } in
-        Entry fs
+  let process_functions l =
+    let process_function__ (ctx : ctx_red) (function__ : function__) : function__ * ctx_red =
+      let process_function_node (function_node : function_node) : function_node * ctx_red =
+        let get_type_return (mt : mterm) : type_ = Tstorage in
+        match function_node with
+        | Function (fs, t) ->
+          begin
+            match t with
+            | Tunit ->
+              let ret : type_  = get_type_return fs.body in
+              let args, fun_body =
+                begin
+                  match ret with
+                  | Tstorage ->
+                    let seq = mk_mterm (Mseq [fs.body; storage_var]) Tstorage in
+                    let arg : argument = (storage_lident, Tstorage, None) in
+                    let args = arg::fs.args in
+                    args, seq
+                  | Tcontainer (Toperation, Collection) ->
+                    let seq = mk_mterm (Mseq [fs.body; operations_var]) operations_type in
+                    let arg : argument = (operations_lident, operations_type, None) in
+                    let args = arg::fs.args in
+                    args, seq
+                  | Ttuple [Tcontainer (Toperation, Collection); Tstorage] ->
+                    let ret = mk_mterm (Mtuple [operations_var; storage_var]) operations_storage_type in
+                    let seq = mk_mterm (Mseq [fs.body; ret]) operations_storage_type in
+                    let arg_s_ : argument = (storage_lident, Tstorage, None) in
+                    let arg_ops_ : argument = (operations_lident, operations_type, None) in
+                    let args = arg_s_::arg_ops_::fs.args  in
+                    args, seq
+                  | _ -> assert false
+                end in
+              let body = process_body ctx fun_body in
+              let fs = {
+                fs with
+                args = args;
+                body = body;
+              } in
+              let ctx : ctx_red = {
+                ctx with
+                local_fun_types = (unloc fs.name, ret)::ctx.local_fun_types;
+              } in
+              Function (fs, ret), ctx
+            | _ -> assert false
+          end
+        | Entry fs ->
+          let ret = mk_mterm (Mtuple [operations_var; storage_var]) operations_storage_type in
+          let seq = mk_mterm (Mseq [fs.body; ret]) operations_storage_type in
+          let entry_body = mk_mterm (Mletin ([operations_lident], operations_init, Some operations_type, seq)) Tunit in
+          let body = process_body ctx entry_body in
+          let fs = {
+            fs with
+            body = body;
+          } in
+          Entry fs, ctx
+      in
+      let node, ctx = process_function_node function__.node in
+      {
+        function__ with
+        node = node;
+      }, ctx
     in
-    {
-      function__ with
-      node = process_function_node function__.node;
-    }
+    let ctx : ctx_red = {
+      local_fun_types = [];
+    } in
+    let res, _ = List.fold_left (fun (l, ctx) f ->
+        let item, ctx =  process_function__ ctx f in
+        (l @ [item], ctx)
+      ) ([], ctx) l in
+    res
   in
   {
     model with
-    functions = List.map (fun f -> process_function__ f) model.functions
+    functions = process_functions model.functions;
   }
 
 
