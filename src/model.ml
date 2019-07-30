@@ -17,7 +17,6 @@ type container =
 type btyp =
   | Bbool
   | Bint
-  | Buint
   | Brational
   | Bdate
   | Bduration

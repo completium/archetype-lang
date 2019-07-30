@@ -622,7 +622,6 @@ let type_to_init (typ : loc_typ) : loc_term =
 let map_btype = function
   | M.Bbool          -> Tybool
   | M.Bint           -> Tyint
-  | M.Buint          -> Tyint (* uint does not exist in mlw *)
   | M.Brational      -> Tyrational
   | M.Bdate          -> Tydate
   | M.Bduration      -> Tyduration

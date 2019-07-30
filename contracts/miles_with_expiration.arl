@@ -5,7 +5,7 @@ variable[%transferable%] admin role = @tz1aazS5ms5cbGkb6FN1wvWmN7yrMTTcr6wB
 (* id is a string because it is generated off-chain *)
 asset mile identified by id sorted by expiration = {
    id         : string;
-   amount     : uint;
+   amount     : int;
    expiration : date;
 } with {
   m1 : amount > 0
@@ -32,7 +32,7 @@ action add (ow : address) (newmile : mile) = {
    }
 }
 
-action consume (a : address) (quantity : uint) = {
+action consume (a : address) (quantity : int) = {
 
   verification {
     assert p1 at zero_remainder = {

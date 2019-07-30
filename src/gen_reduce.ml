@@ -24,6 +24,7 @@ let operations_var : mterm = mk_mterm (Mvarlocal operations_lident) operations_t
 let operations_init : mterm = mk_mterm (Marray []) operations_type
 
 let operations_storage_type : type_ = Ttuple [Tcontainer (Toperation, Collection); Tstorage]
+let operations_storage_var : mterm = mk_mterm (Mtuple [operations_var; storage_var]) operations_storage_type
 
 let is_fail (t : mterm) (e : mterm option) : bool =
   match t.node , e with
@@ -188,6 +189,13 @@ let process_body (ctx : ctx_red) (mt : mterm) : mterm =
 
 let analyse_type (mt : mterm) : type_ = Tstorage
 
+let merge_seq (mt1 : mterm) (mt2 : mterm) (t : type_) : mterm =
+  match mt1.node, mt1.node with
+  | Mseq l1, Mseq l2 -> mk_mterm (Mseq (l1 @ l2)) t
+  | _, Mseq l -> mk_mterm (Mseq ([mt1] @ l)) t
+  | Mseq l, _ -> mk_mterm (Mseq (l @ [mt2])) t
+  | _ -> mk_mterm (Mseq [mt1; mt2]) t
+
 let process_functions (model : model) : model =
   let process_functions l =
     let process_function__ (ctx : ctx_red) (function__ : function__) : function__ * ctx_red =
@@ -202,18 +210,17 @@ let process_functions (model : model) : model =
                 begin
                   match ret with
                   | Tstorage ->
-                    let seq = mk_mterm (Mseq [fs.body; storage_var]) Tstorage in
+                    let seq = merge_seq fs.body storage_var Tstorage in
                     let arg : argument = (storage_lident, Tstorage, None) in
                     let args = arg::fs.args in
                     args, seq
                   | Tcontainer (Toperation, Collection) ->
-                    let seq = mk_mterm (Mseq [fs.body; operations_var]) operations_type in
+                    let seq = merge_seq fs.body operations_var operations_type in
                     let arg : argument = (operations_lident, operations_type, None) in
                     let args = arg::fs.args in
                     args, seq
                   | Ttuple [Tcontainer (Toperation, Collection); Tstorage] ->
-                    let ret = mk_mterm (Mtuple [operations_var; storage_var]) operations_storage_type in
-                    let seq = mk_mterm (Mseq [fs.body; ret]) operations_storage_type in
+                    let seq = merge_seq fs.body operations_storage_var operations_storage_type in
                     let arg_s_ : argument = (storage_lident, Tstorage, None) in
                     let arg_ops_ : argument = (operations_lident, operations_type, None) in
                     let args = arg_s_::arg_ops_::fs.args  in

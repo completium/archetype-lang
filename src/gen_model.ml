@@ -40,7 +40,6 @@ let to_model (ast : A.model) : M.model =
   let vtyp_to_btyp = function
     | A.VTbool       -> M.Bbool
     | A.VTint        -> M.Bint
-    | A.VTuint       -> M.Buint
     | A.VTrational   -> M.Brational
     | A.VTdate       -> M.Bdate
     | A.VTduration   -> M.Bduration
@@ -574,7 +573,6 @@ let to_model (ast : A.model) : M.model =
         match b with
         | M.Bbool       -> M.mk_mterm (M.Mbool false) (M.Tbuiltin b)
         | M.Bint        -> M.mk_mterm (M.Mint (Big_int.zero_big_int)) (M.Tbuiltin b)
-        | M.Buint       -> M.mk_mterm (M.Muint (Big_int.zero_big_int)) (M.Tbuiltin b)
         | M.Brational   -> M.mk_mterm (M.Mrational (Big_int.zero_big_int, Big_int.unit_big_int)) (M.Tbuiltin b)
         | M.Bdate       -> emit_error (NoInitExprFor "date")
         | M.Bduration   -> M.mk_mterm (M.Mduration "0s") (M.Tbuiltin b)

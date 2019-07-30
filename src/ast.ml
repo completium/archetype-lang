@@ -20,7 +20,6 @@ type currency =
 type vtyp =
   | VTbool
   | VTint
-  | VTuint
   | VTrational
   | VTdate
   | VTduration
@@ -540,7 +539,7 @@ and model = (lident, type_, pterm, instruction) model_struct
 (* vtyp -> ptyp *)
 let vtbool       = Tbuiltin (VTbool      )
 let vtint        = Tbuiltin (VTint       )
-let vtuint       = Tbuiltin (VTuint      )
+(* let vtuint       = Tbuiltin (VTint      ) *)
 let vtrational   = Tbuiltin (VTrational  )
 let vtdate       = Tbuiltin (VTdate      )
 let vtduration   = Tbuiltin (VTduration  )
@@ -1296,12 +1295,12 @@ let create_miles_with_expiration_ast () =
         ~fields:[mk_decl (dumloc "id")
                    ~typ:(Tbuiltin VTstring);
                  mk_decl (dumloc "amount")
-                   ~typ:(Tbuiltin VTuint);
+                   ~typ:(Tbuiltin VTint);
                  mk_decl (dumloc "expiration")
                    ~typ:(Tbuiltin VTdate); ]
         ~specs:[mk_label_term (mk_sp (Pcomp (Gt,
                                              (mk_sp (Pvar (dumloc "amount"))
-                                                ~type_:(LTprog (Tbuiltin VTuint))
+                                                ~type_:(LTprog (Tbuiltin VTint))
                                              ),
                                              (mk_sp (Plit (mk_sp (BVint Big_int.zero_big_int)))
                                                 ~type_:(LTprog (Tbuiltin VTint))
@@ -1331,7 +1330,7 @@ let create_miles_with_expiration_ast () =
                                                (mk_sp (Pdot (mk_sp (Pvar (dumloc "newmile"))
                                                                ~type_:(Tasset (dumloc "mile")),
                                                              (dumloc "amount")))
-                                                  ~type_:(Tbuiltin VTuint)),
+                                                  ~type_:(Tbuiltin VTint)),
                                                (mk_sp (Plit (mk_sp (BVint Big_int.zero_big_int)))
                                                   ~type_:(Tbuiltin VTint)
                                                )))
@@ -1374,9 +1373,9 @@ let create_miles_with_expiration_ast () =
                                   mk_assert (dumloc "p1") (dumloc "zero_remainder")
                                     (mk_sp (Pcomp (Equal,
                                                    (mk_sp (Pvar (dumloc "remainder"))
-                                                      ~type_:(LTprog (Tbuiltin VTuint))),
+                                                      ~type_:(LTprog (Tbuiltin VTint))),
                                                    (mk_sp (Plit (mk_sp (BVint Big_int.zero_big_int)))
-                                                      ~type_:(LTprog (Tbuiltin VTuint)))
+                                                      ~type_:(LTprog (Tbuiltin VTint)))
                                                   ))
                                        ~type_:(LTprog (Tbuiltin VTbool)))
 
@@ -1386,23 +1385,23 @@ let create_miles_with_expiration_ast () =
                                           (mk_sp (Plogical (And,
                                                             (mk_sp (Pcomp (Le,
                                                                            (mk_sp (Plit (mk_sp (BVint Big_int.zero_big_int)))
-                                                                              ~type_:(LTprog (Tbuiltin VTuint))),
+                                                                              ~type_:(LTprog (Tbuiltin VTint))),
                                                                            (mk_sp (Pvar (dumloc "remainder"))
-                                                                              ~type_:(LTprog (Tbuiltin VTuint)))
+                                                                              ~type_:(LTprog (Tbuiltin VTint)))
                                                                           ))
                                                                ~type_:(LTprog (Tbuiltin VTbool))),
                                                             (mk_sp (Pcomp (Le,
                                                                            (mk_sp (Pvar (dumloc "remainder"))
-                                                                              ~type_:(LTprog (Tbuiltin VTuint))),
+                                                                              ~type_:(LTprog (Tbuiltin VTint))),
                                                                            (mk_sp (Pcall (None,
                                                                                           Cconst Csum,
                                                                                           [
                                                                                             AExpr (mk_sp (Pvar (dumloc "to_iter"))
                                                                                                      ~type_:(LTprog (Tasset (dumloc "mile"))));
                                                                                             AExpr (mk_sp (Pvar (dumloc "amount"))
-                                                                                                     ~type_:(LTprog (Tbuiltin VTuint)))
+                                                                                                     ~type_:(LTprog (Tbuiltin VTint)))
                                                                                           ]))
-                                                                              ~type_:(LTprog (Tbuiltin VTuint)))
+                                                                              ~type_:(LTprog (Tbuiltin VTint)))
                                                                           ))
                                                                ~type_:(LTprog (Tbuiltin VTbool)))))
                                              ~type_:(LTprog (Tbuiltin VTbool)))
@@ -1417,9 +1416,9 @@ let create_miles_with_expiration_ast () =
                                                                   Cconst Csum,
                                                                   [
                                                                     AExpr (mk_sp (Pvar (dumloc "amount"))
-                                                                             ~type_:(LTprog (Tbuiltin VTuint)))
+                                                                             ~type_:(LTprog (Tbuiltin VTint)))
                                                                   ]))
-                                                      ~type_:(LTprog (Tbuiltin VTuint))),
+                                                      ~type_:(LTprog (Tbuiltin VTint))),
                                                    mk_sp (Parith (Minus,
                                                                   (mk_sp (Pcall (None,
                                                                                  Cconst Csum,
@@ -1432,11 +1431,11 @@ let create_miles_with_expiration_ast () =
                                                                                                         ]))
                                                                                             ~type_:(LTprog (Tcontainer (Tasset (dumloc "mile"), Collection))));
                                                                                    AExpr (mk_sp (Pvar (dumloc "amount"))
-                                                                                            ~type_:(LTprog (Tbuiltin VTuint)))
+                                                                                            ~type_:(LTprog (Tbuiltin VTint)))
                                                                                  ]))
-                                                                     ~type_:(LTprog (Tbuiltin VTuint))),
+                                                                     ~type_:(LTprog (Tbuiltin VTint))),
                                                                   (mk_sp (Pvar (dumloc "quantity"))
-                                                                     ~type_:(LTprog (Tbuiltin VTuint)))
+                                                                     ~type_:(LTprog (Tbuiltin VTint)))
                                                                  ))
                                                      ~type_:(LTprog (Tbuiltin VTint))
                                                   ))
@@ -1520,9 +1519,9 @@ let create_miles_with_expiration_ast () =
                                                                                    ~type_:(LTprog (Tcontainer (Tasset (dumloc "mile"), Collection)))
                                                                                 );
                                                                           AExpr (mk_sp (Pvar (dumloc "amount"))
-                                                                                   ~type_:(LTprog (Tbuiltin VTuint)))
+                                                                                   ~type_:(LTprog (Tbuiltin VTint)))
                                                                         ]))
-                                                            ~type_:(LTprog (Tbuiltin VTuint))),
+                                                            ~type_:(LTprog (Tbuiltin VTint))),
 
                                                          mk_sp (Parith (Minus,
                                                                         mk_sp (Parith (Plus,
@@ -1532,15 +1531,15 @@ let create_miles_with_expiration_ast () =
                                                                                                         AExpr (mk_sp (Pvar (dumloc "mile"))
                                                                                                                  ~type_:(LTprog (Tcontainer (Tasset (dumloc "owner"), Collection))));
                                                                                                         AExpr (mk_sp (Pvar (dumloc "amount"))
-                                                                                                                 ~type_:(LTprog (Tbuiltin VTuint)))
+                                                                                                                 ~type_:(LTprog (Tbuiltin VTint)))
                                                                                                       ]))
-                                                                                          ~type_:(LTprog (Tbuiltin VTuint))),
+                                                                                          ~type_:(LTprog (Tbuiltin VTint))),
                                                                                        (mk_sp (Pvar (dumloc "quantity"))
-                                                                                          ~type_:(LTprog (Tbuiltin VTuint)))
+                                                                                          ~type_:(LTprog (Tbuiltin VTint)))
                                                                                       ))
                                                                           ~type_:(LTprog (Tbuiltin VTint)),
                                                                         mk_sp (Pvar (dumloc "remainder"))
-                                                                          ~type_:(LTprog (Tbuiltin VTuint))
+                                                                          ~type_:(LTprog (Tbuiltin VTint))
                                                                        ))
                                                            ~type_:(LTprog (Tbuiltin VTint))))
 
@@ -1585,7 +1584,7 @@ let create_miles_with_expiration_ast () =
         ~args:[mk_decl (dumloc "a")
                  ~typ:(Tbuiltin VTaddress);
                mk_decl (dumloc "quantity")
-                 ~typ:(Tbuiltin VTuint)
+                 ~typ:(Tbuiltin VTint)
               ]
         ~calledby:(mk_sp (Rqualid (mk_sp (Qident (dumloc "admin"))
                                      ~type_:(Tbuiltin VTrole)
@@ -1633,11 +1632,11 @@ let create_miles_with_expiration_ast () =
                                                                           AExpr (mk_sp (Pvar (dumloc "by_expiration"))
                                                                                    ~type_:(Tcontainer (Tasset (dumloc "mile"), Collection)));
                                                                           AExpr (mk_sp (Pvar (dumloc "amount"))
-                                                                                   ~type_:(Tbuiltin VTuint))
+                                                                                   ~type_:(Tbuiltin VTint))
                                                                         ]))
-                                                            ~type_:(Tbuiltin VTuint)),
+                                                            ~type_:(Tbuiltin VTint)),
                                                          (mk_sp (Pvar (dumloc "quantity"))
-                                                            ~type_:(Tbuiltin VTuint))
+                                                            ~type_:(Tbuiltin VTint))
                                                         ))
                                              ~type_:(Tbuiltin VTbool)
                                           )
@@ -1645,16 +1644,16 @@ let create_miles_with_expiration_ast () =
                       mk_instr (Iletin (
                           dumloc "remainder",
                           (mk_sp (Pvar (dumloc "quantity"))
-                             ~type_:(Tbuiltin VTuint)),
+                             ~type_:(Tbuiltin VTint)),
                           mk_instr (Ifor (dumloc "m",
                                           mk_sp (Pvar (dumloc "by_expiration"))
                                             ~type_:(Tcontainer (Tasset (dumloc "mile"), Collection)),
                                           mk_instr (Iif (
                                               (mk_sp (Pcomp (Gt,
                                                              (mk_sp (Pvar (dumloc "remainder"))
-                                                                ~type_:(Tbuiltin VTuint)),
+                                                                ~type_:(Tbuiltin VTint)),
                                                              (mk_sp (Plit (mk_sp (BVint Big_int.zero_big_int)))
-                                                                ~type_:(Tbuiltin VTuint))
+                                                                ~type_:(Tbuiltin VTint))
                                                             ))
                                                  ~type_:(Tbuiltin VTbool)
                                               ),
@@ -1665,9 +1664,9 @@ let create_miles_with_expiration_ast () =
                                                                         ~type_:(Tasset (dumloc "mile")),
                                                                       dumloc "amount"
                                                                     ))
-                                                                     ~type_:(Tbuiltin VTuint)),
+                                                                     ~type_:(Tbuiltin VTint)),
                                                                  (mk_sp (Pvar (dumloc "remainder"))
-                                                                    ~type_:(Tbuiltin VTuint))
+                                                                    ~type_:(Tbuiltin VTint))
                                                                 ))
                                                      ~type_:(Tbuiltin VTbool)
                                                   ),
@@ -1675,7 +1674,7 @@ let create_miles_with_expiration_ast () =
                                                       mk_instr (Iassign (ValueAssign,
                                                                          dumloc "remainder",
                                                                          (mk_sp (Plit (mk_sp (BVint Big_int.zero_big_int)))
-                                                                            ~type_:(Tbuiltin VTuint))));
+                                                                            ~type_:(Tbuiltin VTint))));
                                                       mk_instr (Icall (Some (mk_sp (Pvar (dumloc "mile"))
                                                                                ~type_:(Tcontainer (Tasset (dumloc "mile"), Collection))),
                                                                        Cconst Cupdate,
@@ -1690,7 +1689,7 @@ let create_miles_with_expiration_ast () =
                                                                            (dumloc "amount"),
                                                                            `Assign MinusAssign,
                                                                            mk_sp (Pvar (dumloc "remainder"))
-                                                                             ~type_:(Tbuiltin VTuint)
+                                                                             ~type_:(Tbuiltin VTint)
                                                                          ]
                                                                        ]
                                                                       )
@@ -1703,9 +1702,9 @@ let create_miles_with_expiration_ast () =
                                                                             ~type_:(Tasset (dumloc "mile")),
                                                                           dumloc "amount"
                                                                         ))
-                                                                         ~type_:(Tbuiltin VTuint)),
+                                                                         ~type_:(Tbuiltin VTint)),
                                                                      (mk_sp (Pvar (dumloc "remainder"))
-                                                                        ~type_:(Tbuiltin VTuint))
+                                                                        ~type_:(Tbuiltin VTint))
                                                                     ))
                                                          ~type_:(Tbuiltin VTbool)
                                                       ),
@@ -1713,7 +1712,7 @@ let create_miles_with_expiration_ast () =
                                                           mk_instr (Iassign (ValueAssign,
                                                                              dumloc "remainder",
                                                                              (mk_sp (Plit (mk_sp (BVint Big_int.zero_big_int)))
-                                                                                ~type_:(Tbuiltin VTuint))));
+                                                                                ~type_:(Tbuiltin VTint))));
                                                           mk_instr (Icall (Some (
                                                               (mk_sp (Pdot (
                                                                    mk_sp (Pvar (dumloc "ow"))
@@ -1740,7 +1739,7 @@ let create_miles_with_expiration_ast () =
                                                                                    mk_sp (Pvar (dumloc "m"))
                                                                                      ~type_:(Tasset (dumloc "mile")),
                                                                                    dumloc "amount"))
-                                                                                 ~type_:(Tbuiltin VTuint))));
+                                                                                 ~type_:(Tbuiltin VTint))));
                                                           mk_instr (Icall (Some (
                                                               (mk_sp (Pdot (
                                                                    mk_sp (Pvar (dumloc "ow"))

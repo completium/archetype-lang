@@ -4,10 +4,10 @@ variable[%transferable%] validator role
 
 asset account identified by owner = {
   owner  : role;
-  amount : uint;
+  amount : int;
 }
 
-action add (ow : role) (value : uint) = {
+action add (ow : role) (value : int) = {
   called by validator
   effect {
     if account.contains ow then
@@ -17,7 +17,7 @@ action add (ow : role) (value : uint) = {
   }
 }
 
-action consume (ow : role) (value : uint) = {
+action consume (ow : role) (value : int) = {
   verification {
     specification s1 = {
       (before.account.get ow).amount =

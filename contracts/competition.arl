@@ -16,7 +16,7 @@ variable oracle role
 
 asset submission = {
   competitor : competitor;
-  score      : uint;
+  score      : int;
   date       : date;
 }
 
@@ -31,7 +31,7 @@ transition confirm from Created = {
    to InProgress when { now > startdate }
 }
 
-action submit (competitor : competitor) (score[%signedby oracle%] : uint) = {
+action submit (competitor : competitor) (score[%signedby oracle%] : int) = {
   require {
     c1 : state = InProgress
   }

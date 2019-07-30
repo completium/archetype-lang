@@ -13,7 +13,6 @@ let pp_currency fmt = function
 let pp_btyp fmt = function
   | Bbool       -> Format.fprintf fmt "bool"
   | Bint        -> Format.fprintf fmt "int"
-  | Buint       -> Format.fprintf fmt "uint"
   | Brational   -> Format.fprintf fmt "rational"
   | Bdate       -> Format.fprintf fmt "date"
   | Bduration   -> Format.fprintf fmt "duration"

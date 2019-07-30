@@ -37,7 +37,6 @@ let pp_model fmt (model : model) =
   let pp_btyp fmt = function
     | Bbool       -> Format.fprintf fmt "bool"
     | Bint        -> Format.fprintf fmt "int"
-    | Buint       -> Format.fprintf fmt "nat"
     | Brational   -> Format.fprintf fmt "rational"
     | Bdate       -> Format.fprintf fmt "timestamp"
     | Bduration   -> Format.fprintf fmt "duration"
@@ -221,7 +220,6 @@ let pp_model fmt (model : model) =
 
     | Sum (an, fn) ->
       let show_zero = function
-        | Tbuiltin Buint -> "(0 : nat)"
         | _ -> "0"
       in
       let record_item = Utils.get_record_field model (dumloc an, dumloc fn) in

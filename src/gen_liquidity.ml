@@ -25,7 +25,6 @@ let emit_error (desc : error_desc) =
 let btyp_to_basic = function
   | M.Bbool         -> T.Tbool
   | M.Bint          -> T.Tint
-  | M.Buint         -> T.Tnat
   | M.Brational     -> emit_error TODO
   | M.Bdate         -> T.Ttimestamp
   | M.Bduration     -> T.Tint

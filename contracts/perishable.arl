@@ -34,7 +34,7 @@ asset p_contract = {
 
 asset shipment = {
   type     : productType;
-  count    : uint;
+  count    : int;
   p_c      : p_contract;
 } with states shipmentStatus
 
