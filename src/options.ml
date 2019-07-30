@@ -43,6 +43,7 @@ let opt_model = ref false
 let opt_pretty_print_model = ref false
 let opt_wse = ref false
 let opt_sa = ref false
+let opt_api = ref false
 let opt_raw_target = ref false
 let opt_liq_url = ref false
 let opt_cwse = ref false

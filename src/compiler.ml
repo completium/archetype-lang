@@ -75,6 +75,12 @@ let remove_side_effect model =
   then (print_model model; raise Stop)
   else model
 
+let generate_api_storage model =
+  let model = Gen_api_storage.generate_api_storage model in
+  if !Options.opt_api
+  then (print_model model; raise Stop)
+  else model
+
 let output_liquidity model =
   if !Options.opt_liq_url
   then
@@ -96,11 +102,13 @@ let generate_target model =
     model
     |> shallow_asset
     |> remove_side_effect
+    |> generate_api_storage
     |> output_liquidity
 
   | Whyml ->
     model
     |> shallow_asset
+    |> generate_api_storage
     |> generate_whyml
 
   | _ -> ()
@@ -168,6 +176,8 @@ let main () =
       "--liquidity-url", Arg.Set Options.opt_liq_url, " Same as -LU";
       "-CWSE", Arg.Set Options.opt_cwse, " Continue with syntax errors";
       "--continue-with-syntax-errors", Arg.Set Options.opt_cwse, " Same as -CWSE";
+      "-AS", Arg.Set Options.opt_api, " Stop at storage api computation";
+      "--api-storage", Arg.Set Options.opt_cwse, " Same as -AS";
       "--lsp", Arg.String (fun s -> match s with
           | "errors" -> Options.opt_lsp := true; Lsp.kind := Errors
           | "outline" -> Options.opt_lsp := true; Lsp.kind := Outline
