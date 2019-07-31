@@ -208,10 +208,17 @@ let pp_model fmt (model : model) =
 
   let pp_function_const fmt = function
     | Select an ->
+      let _, t = Utils.get_record_key model (to_lident an) in
       Format.fprintf fmt
-        "let[@inline] select_%s (_s : storage) : %s list =@\n  \
-         [] (*TODO*)@\n"
-        an an
+        "let[@inline] select_%s (s, c, p : storage * %a list * (%s -> bool)) : %a list =@\n  \
+         List.fold (fun (x, accu) ->@\n  \
+         let a = get_%s (s, x) in@\n  \
+         if p a@\n  \
+         then add_list x accu@\n  \
+         else accu@\n  \
+         ) c []@\n"
+        an pp_btyp t an pp_btyp t
+        an
 
     | Sort (an, fn) ->
       Format.fprintf fmt
@@ -530,7 +537,7 @@ let pp_model fmt (model : model) =
 
       | Mselect (an, c, p) ->
         let pp fmt (an, c, p) =
-          Format.fprintf fmt "select_%a (%a, %a)"
+          Format.fprintf fmt "select_%a (_s, %a, fun the -> %a)"
             pp_str an
             f c
             f p
@@ -784,7 +791,7 @@ let pp_model fmt (model : model) =
       | Mvarlocal v    -> pp_id fmt v
       | Mvarthe        -> pp_str fmt "the"
       | Mstate         -> pp_str fmt "state"
-      | Mnow           -> pp_str fmt "now"
+      | Mnow           -> pp_str fmt "Current.time()"
       | Mtransferred   -> pp_str fmt "Current.amount()"
       | Mcaller        -> pp_str fmt "Current.sender()"
       | Mbalance       -> pp_str fmt "Current.balance()"
