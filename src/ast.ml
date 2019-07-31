@@ -1297,9 +1297,9 @@ let create_miles_with_expiration_ast () =
   mk_model (dumloc "miles_with_expiration")
     ~variables:[
       mk_variable (mk_decl (dumloc "admin")
-                     ~typ:(Tbuiltin VTrole)
+                     ~typ:(Tbuiltin VTaddress)
                      ~default:(mk_sp (Plit (mk_sp (BVaddress "tz1aazS5ms5cbGkb6FN1wvWmN7yrMTTcr6wB")))
-                                 ~type_:(Tbuiltin VTaddress)))
+                                 ~type_:(Tbuiltin VTrole)))
     ]
     ~assets:[
       mk_asset (dumloc "mile")
@@ -1336,7 +1336,7 @@ let create_miles_with_expiration_ast () =
                  ~typ:(Tasset (dumloc "mile"))
               ]
         ~calledby:(mk_sp (Rqualid (mk_sp (Qident (dumloc "admin"))
-                                     ~type_:(Tbuiltin VTrole)
+                                     ~type_:(Tbuiltin VTaddress)
                                   )))
 
         ~require:[mk_label_term (mk_sp (Pcomp (Gt,
@@ -1600,7 +1600,7 @@ let create_miles_with_expiration_ast () =
                  ~typ:(Tbuiltin VTint)
               ]
         ~calledby:(mk_sp (Rqualid (mk_sp (Qident (dumloc "admin"))
-                                     ~type_:(Tbuiltin VTrole)
+                                     ~type_:(Tbuiltin VTaddress)
                                   )))
 
         ~effect:(
@@ -1779,7 +1779,7 @@ let create_miles_with_expiration_ast () =
       mk_transaction_struct (dumloc "clear_expired")
         ~args:[]
         ~calledby:(mk_sp (Rqualid (mk_sp (Qident (dumloc "admin"))
-                                     ~type_:(Tbuiltin VTrole)
+                                     ~type_:(Tbuiltin VTaddress)
                                   )))
 
 
@@ -1834,7 +1834,7 @@ let create_miles_with_expiration_ast () =
                              AExpr (mk_sp (Pconst Canyaction)
                                       ~type_:(LTtrace TRentry));
                              AExpr (mk_sp (Pvar (dumloc "admin"))
-                                      ~type_:(LTprog (Tbuiltin VTrole)))
+                                      ~type_:(LTprog (Tbuiltin VTaddress)))
                            ]))
                ~type_:(LTprog (Tbuiltin VTbool)));
           mk_specification (dumloc "g2")

@@ -65,7 +65,7 @@ let pp_model fmt (model : model) =
     | Bdate       -> Format.fprintf fmt "timestamp"
     | Bduration   -> Format.fprintf fmt "duration"
     | Bstring     -> Format.fprintf fmt "string"
-    | Baddress    -> Format.fprintf fmt "key_hash"
+    | Baddress    -> Format.fprintf fmt "address"
     | Brole       -> Format.fprintf fmt "key_hash"
     | Bcurrency c -> pp_currency fmt c
     | Bkey        -> Format.fprintf fmt "key"
@@ -964,7 +964,7 @@ let pp_model fmt (model : model) =
       | _ ->
         Format.fprintf fmt "%a = %a;"
           pp_id si.name
-          pp_mterm si.default
+          (pp_cast Rhs si.typ si.default.type_ pp_mterm) si.default
     in
 
     Format.fprintf fmt "let%%init initialize = {@\n@[<v 2>  %a@]@\n}@\n"

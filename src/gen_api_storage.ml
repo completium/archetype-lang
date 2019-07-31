@@ -25,49 +25,47 @@ let process_api_storage (model : model) : model =
 
   let rec f (ctx : ctx_model) (accu : api_item list) (term : mterm) : api_item list =
     let accu = fold_term (f ctx) accu term in
-    let api_item : api_item_node option =
+    let api_items : api_item_node list =
       match term.node with
       | Mget (asset_name, _) ->
-        Some (APIStorage (Get asset_name))
+        [APIStorage (Get asset_name)]
       | Mset (asset_name, _, _) ->
-        Some (APIStorage (Set asset_name))
+        [APIStorage (Set asset_name)]
       | Maddasset (asset_name, _, _) ->
-        Some (APIStorage (Add asset_name))
+        [APIStorage (Add asset_name)]
       | Maddfield (asset_name, field_name, _, _, _) ->
-        Some (APIStorage (UpdateAdd (asset_name, field_name)))
+        [APIStorage (UpdateAdd (asset_name, field_name))]
       | Mremoveasset (asset_name, _) ->
-        Some (APIStorage (Remove asset_name))
+        [APIStorage (Remove asset_name)]
       | Mremovefield (asset_name, field_name, _, _) ->
-        Some (APIStorage (UpdateRemove (asset_name, field_name)))
+        [APIStorage (UpdateRemove (asset_name, field_name))]
       | Mclearasset (asset_name) ->
-        Some (APIStorage (Clear asset_name))
+        [APIStorage (Clear asset_name)]
       | Mclearfield (asset_name, field_name, _) ->
-        Some (APIStorage (UpdateClear (asset_name, field_name)))
+        [APIStorage (UpdateClear (asset_name, field_name))]
       | Mreverseasset (asset_name) ->
-        Some (APIStorage (Reverse asset_name))
+        [APIStorage (Reverse asset_name)]
       | Mreversefield (asset_name, field_name, _) ->
-        Some (APIStorage (UpdateReverse (asset_name, field_name)))
+        [APIStorage (UpdateReverse (asset_name, field_name))]
       | Mselect (asset_name, _, _) ->
-        Some (APIFunction (Select asset_name))
+        [APIStorage (Get asset_name); APIFunction (Select asset_name)]
       | Msort (asset_name, _, field_name, _) ->
-        Some (APIFunction (Sort (asset_name, field_name)))
+        [APIFunction (Sort (asset_name, field_name))]
       | Mcontains (asset_name, _, _) ->
-        Some (APIFunction (Contains asset_name))
+        [APIFunction (Contains asset_name)]
       | Mnth (asset_name, _, _) ->
-        Some (APIFunction (Nth asset_name))
+        [APIFunction (Nth asset_name)]
       | Mcount (asset_name, _) ->
-        Some (APIFunction (Count asset_name))
+        [APIFunction (Count asset_name)]
       | Msum (asset_name, field_name, _) ->
-        Some (APIFunction (Sum (asset_name, unloc field_name)))
+        [APIFunction (Sum (asset_name, unloc field_name))]
       | Mmin (asset_name, field_name, _) ->
-        Some (APIFunction (Min (asset_name, unloc field_name)))
+        [APIFunction (Min (asset_name, unloc field_name))]
       | Mmax (asset_name, field_name, _) ->
-        Some (APIFunction (Max (asset_name, unloc field_name)))
-      | _ -> None
+        [APIFunction (Max (asset_name, unloc field_name))]
+      | _ -> []
     in
-    match api_item with
-    | Some v -> add ctx accu (Model.mk_api_item v)
-    | _ -> accu
+    List.fold_left (fun accu v -> add ctx accu (Model.mk_api_item v)) accu api_items
   in
   let l = fold_model f model []
           |> List.sort
