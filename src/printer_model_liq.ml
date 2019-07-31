@@ -756,8 +756,21 @@ let pp_model fmt (model : model) =
         pp fmt e
 
       | Mrecord l ->
+        let asset_name =
+          match mtt.type_ with
+          | Tasset asset_name -> asset_name
+          | _ -> assert false
+        in
+        let a = Utils.get_record model asset_name in
+        let ll = List.map (fun (x : record_item) -> x.name) a.values in
+
+        let lll = List.map2 (fun x y -> (x, y)) ll l in
+
         Format.fprintf fmt "{%a}"
-          (pp_list "; " f) l
+          (pp_list "; " (fun fmt (a, b)->
+               Format.fprintf fmt "%a = %a"
+                 pp_id a
+                 f b)) lll
       | Mletin (ids, a, t, b) ->
         Format.fprintf fmt "let %a%a = %a in@\n@[<v 2>%a@]"
           (pp_list ", " pp_id) ids
