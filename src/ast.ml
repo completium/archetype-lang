@@ -539,7 +539,6 @@ and model = (lident, type_, pterm, instruction) model_struct
 (* vtyp -> ptyp *)
 let vtbool       = Tbuiltin (VTbool      )
 let vtint        = Tbuiltin (VTint       )
-(* let vtuint       = Tbuiltin (VTint      ) *)
 let vtrational   = Tbuiltin (VTrational  )
 let vtdate       = Tbuiltin (VTdate      )
 let vtduration   = Tbuiltin (VTduration  )
@@ -1464,7 +1463,7 @@ let create_miles_with_expiration_ast () =
                                                                                 Cconst Cremoved,
                                                                                 [
                                                                                   AExpr (mk_sp (Pvar (dumloc "miles"))
-                                                                                           ~type_:(LTprog (Tcontainer (Tasset (dumloc "miles"), Collection))))
+                                                                                           ~type_:(LTprog (Tcontainer (Tasset (dumloc "mile"), Collection))))
                                                                                 ]))
                                                                     ~type_:(LTprog (Tcontainer (Tasset (dumloc "mile"), Collection))));
                                                            AExpr (mk_sp (Pcall (None,
@@ -1474,7 +1473,7 @@ let create_miles_with_expiration_ast () =
                                                                                                         (Pvar (dumloc "o"))
                                                                                                         ~type_:(LTprog (Tasset (dumloc "owner"))),
                                                                                                       dumloc "miles"))
-                                                                                           ~type_:(LTprog (Tcontainer (Tasset (dumloc "miles"), Collection))))
+                                                                                           ~type_:(LTprog (Tcontainer (Tasset (dumloc "mile"), Collection))))
                                                                                   ;
                                                                                   AExpr (mk_sp (Pcomp (Ge,
                                                                                                        mk_sp (Pdot (
@@ -1527,7 +1526,7 @@ let create_miles_with_expiration_ast () =
                                                                                                Cconst Cbefore,
                                                                                                [
                                                                                                  AExpr (mk_sp (Pvar (dumloc "mile"))
-                                                                                                          ~type_:(LTprog (Tcontainer (Tasset (dumloc "miles"), Collection))))
+                                                                                                          ~type_:(LTprog (Tcontainer (Tasset (dumloc "mile"), Collection))))
                                                                                                ]))
                                                                                    ~type_:(LTprog (Tcontainer (Tasset (dumloc "mile"), Collection)))
                                                                                 );
@@ -1595,7 +1594,7 @@ let create_miles_with_expiration_ast () =
 
 
         ~args:[mk_decl (dumloc "a")
-                 ~typ:(Tbuiltin VTaddress);
+                 ~typ:(Tbuiltin VTrole);
                mk_decl (dumloc "quantity")
                  ~typ:(Tbuiltin VTint)
               ]
@@ -1658,121 +1657,123 @@ let create_miles_with_expiration_ast () =
                           dumloc "remainder",
                           (mk_sp (Pvar (dumloc "quantity"))
                              ~type_:(Tbuiltin VTint)),
-                          mk_instr (Ifor (dumloc "m",
-                                          mk_sp (Pvar (dumloc "by_expiration"))
-                                            ~type_:(Tcontainer (Tasset (dumloc "mile"), Collection)),
-                                          mk_instr (Iif (
-                                              (mk_sp (Pcomp (Gt,
-                                                             (mk_sp (Pvar (dumloc "remainder"))
-                                                                ~type_:(Tbuiltin VTint)),
-                                                             (mk_sp (Plit (mk_sp (BVint Big_int.zero_big_int)))
-                                                                ~type_:(Tbuiltin VTint))
-                                                            ))
-                                                 ~type_:(Tbuiltin VTbool)
-                                              ),
-                                              mk_instr (Iif (
-                                                  (mk_sp (Pcomp (Gt,
-                                                                 (mk_sp (Pdot (
+                          mk_instr
+                            ~subvars:["remainder"]
+                            (Ifor (dumloc "m",
+                                   mk_sp (Pvar (dumloc "by_expiration"))
+                                     ~type_:(Tcontainer (Tasset (dumloc "mile"), Collection)),
+                                   mk_instr (Iif (
+                                       (mk_sp (Pcomp (Gt,
+                                                      (mk_sp (Pvar (dumloc "remainder"))
+                                                         ~type_:(Tbuiltin VTint)),
+                                                      (mk_sp (Plit (mk_sp (BVint Big_int.zero_big_int)))
+                                                         ~type_:(Tbuiltin VTint))
+                                                     ))
+                                          ~type_:(Tbuiltin VTbool)
+                                       ),
+                                       mk_instr (Iif (
+                                           (mk_sp (Pcomp (Gt,
+                                                          (mk_sp (Pdot (
+                                                               mk_sp (Pvar (dumloc "m"))
+                                                                 ~type_:(Tasset (dumloc "mile")),
+                                                               dumloc "amount"
+                                                             ))
+                                                              ~type_:(Tbuiltin VTint)),
+                                                          (mk_sp (Pvar (dumloc "remainder"))
+                                                             ~type_:(Tbuiltin VTint))
+                                                         ))
+                                              ~type_:(Tbuiltin VTbool)
+                                           ),
+                                           mk_instr (Iseq [
+                                               mk_instr (Iassign (ValueAssign,
+                                                                  dumloc "remainder",
+                                                                  (mk_sp (Plit (mk_sp (BVint Big_int.zero_big_int)))
+                                                                     ~type_:(Tbuiltin VTint))));
+                                               mk_instr (Icall (Some (mk_sp (Pvar (dumloc "mile"))
+                                                                        ~type_:(Tcontainer (Tasset (dumloc "mile"), Collection))),
+                                                                Cconst Cupdate,
+                                                                [
+                                                                  AExpr (mk_sp (Pdot (
                                                                       mk_sp (Pvar (dumloc "m"))
                                                                         ~type_:(Tasset (dumloc "mile")),
-                                                                      dumloc "amount"
+                                                                      dumloc "id"
                                                                     ))
-                                                                     ~type_:(Tbuiltin VTint)),
-                                                                 (mk_sp (Pvar (dumloc "remainder"))
-                                                                    ~type_:(Tbuiltin VTint))
-                                                                ))
-                                                     ~type_:(Tbuiltin VTbool)
-                                                  ),
-                                                  mk_instr (Iseq [
-                                                      mk_instr (Iassign (ValueAssign,
-                                                                         dumloc "remainder",
-                                                                         (mk_sp (Plit (mk_sp (BVint Big_int.zero_big_int)))
-                                                                            ~type_:(Tbuiltin VTint))));
-                                                      mk_instr (Icall (Some (mk_sp (Pvar (dumloc "mile"))
-                                                                               ~type_:(Tcontainer (Tasset (dumloc "mile"), Collection))),
-                                                                       Cconst Cupdate,
-                                                                       [
-                                                                         AExpr (mk_sp (Pdot (
-                                                                             mk_sp (Pvar (dumloc "m"))
-                                                                               ~type_:(Tasset (dumloc "mile")),
-                                                                             dumloc "id"
-                                                                           ))
-                                                                             ~type_:(Tbuiltin VTstring));
-                                                                         AEffect [
-                                                                           (dumloc "amount"),
-                                                                           `Assign MinusAssign,
-                                                                           mk_sp (Pvar (dumloc "remainder"))
-                                                                             ~type_:(Tbuiltin VTint)
-                                                                         ]
-                                                                       ]
-                                                                      )
+                                                                      ~type_:(Tbuiltin VTstring));
+                                                                  AEffect [
+                                                                    (dumloc "amount"),
+                                                                    `Assign MinusAssign,
+                                                                    mk_sp (Pvar (dumloc "remainder"))
+                                                                      ~type_:(Tbuiltin VTint)
+                                                                  ]
+                                                                ]
                                                                )
-                                                    ]),
-                                                  mk_instr (Iif (
-                                                      (mk_sp (Pcomp (Equal,
-                                                                     (mk_sp (Pdot (
+                                                        )
+                                             ]),
+                                           mk_instr (Iif (
+                                               (mk_sp (Pcomp (Equal,
+                                                              (mk_sp (Pdot (
+                                                                   mk_sp (Pvar (dumloc "m"))
+                                                                     ~type_:(Tasset (dumloc "mile")),
+                                                                   dumloc "amount"
+                                                                 ))
+                                                                  ~type_:(Tbuiltin VTint)),
+                                                              (mk_sp (Pvar (dumloc "remainder"))
+                                                                 ~type_:(Tbuiltin VTint))
+                                                             ))
+                                                  ~type_:(Tbuiltin VTbool)
+                                               ),
+                                               mk_instr (Iseq [
+                                                   mk_instr (Iassign (ValueAssign,
+                                                                      dumloc "remainder",
+                                                                      (mk_sp (Plit (mk_sp (BVint Big_int.zero_big_int)))
+                                                                         ~type_:(Tbuiltin VTint))));
+                                                   mk_instr (Icall (Some (
+                                                       (mk_sp (Pdot (
+                                                            mk_sp (Pvar (dumloc "ow"))
+                                                              ~type_:(Tasset (dumloc "owner")),
+                                                            dumloc "miles"
+                                                          ))
+                                                           ~type_:(Tcontainer (Tasset (dumloc "mile"), Partition)))),
+                                                                    Cconst Cremove,
+                                                                    [
+                                                                      AExpr (mk_sp (Pdot (
                                                                           mk_sp (Pvar (dumloc "m"))
                                                                             ~type_:(Tasset (dumloc "mile")),
-                                                                          dumloc "amount"
+                                                                          dumloc "id"
                                                                         ))
-                                                                         ~type_:(Tbuiltin VTint)),
-                                                                     (mk_sp (Pvar (dumloc "remainder"))
-                                                                        ~type_:(Tbuiltin VTint))
-                                                                    ))
-                                                         ~type_:(Tbuiltin VTbool)
-                                                      ),
-                                                      mk_instr (Iseq [
-                                                          mk_instr (Iassign (ValueAssign,
-                                                                             dumloc "remainder",
-                                                                             (mk_sp (Plit (mk_sp (BVint Big_int.zero_big_int)))
-                                                                                ~type_:(Tbuiltin VTint))));
-                                                          mk_instr (Icall (Some (
-                                                              (mk_sp (Pdot (
-                                                                   mk_sp (Pvar (dumloc "ow"))
-                                                                     ~type_:(Tasset (dumloc "owner")),
-                                                                   dumloc "miles"
-                                                                 ))
-                                                                  ~type_:(Tcontainer (Tasset (dumloc "mile"), Partition)))),
-                                                                           Cconst Cremove,
-                                                                           [
-                                                                             AExpr (mk_sp (Pdot (
-                                                                                 mk_sp (Pvar (dumloc "m"))
-                                                                                   ~type_:(Tasset (dumloc "mile")),
-                                                                                 dumloc "id"
-                                                                               ))
-                                                                                 ~type_:(Tbuiltin VTstring))]
-                                                            )
-                                                            )
-                                                        ]),
-                                                      mk_instr (Iseq [
-                                                          mk_instr (Iassign (MinusAssign,
-                                                                             dumloc "remainder",
-                                                                             (mk_sp (
-                                                                                 Pdot (
-                                                                                   mk_sp (Pvar (dumloc "m"))
-                                                                                     ~type_:(Tasset (dumloc "mile")),
-                                                                                   dumloc "amount"))
-                                                                                 ~type_:(Tbuiltin VTint))));
-                                                          mk_instr (Icall (Some (
-                                                              (mk_sp (Pdot (
-                                                                   mk_sp (Pvar (dumloc "ow"))
-                                                                     ~type_:(Tasset (dumloc "owner")),
-                                                                   dumloc "miles"
-                                                                 ))
-                                                                  ~type_:(Tcontainer (Tasset (dumloc "mile"), Partition)))),
-                                                                           Cconst Cremove,
-                                                                           [
-                                                                             AExpr (mk_sp (Pdot (
-                                                                                 mk_sp (Pvar (dumloc "m"))
-                                                                                   ~type_:(Tasset (dumloc "mile")),
-                                                                                 dumloc "id"
-                                                                               ))
-                                                                                 ~type_:(Tbuiltin VTstring))]
-                                                            )
-                                                            )
-                                                        ]))))),
-                                              mk_instr (Iseq []))
-                                            )))))]
+                                                                          ~type_:(Tbuiltin VTstring))]
+                                                     )
+                                                     )
+                                                 ]),
+                                               mk_instr (Iseq [
+                                                   mk_instr (Iassign (MinusAssign,
+                                                                      dumloc "remainder",
+                                                                      (mk_sp (
+                                                                          Pdot (
+                                                                            mk_sp (Pvar (dumloc "m"))
+                                                                              ~type_:(Tasset (dumloc "mile")),
+                                                                            dumloc "amount"))
+                                                                          ~type_:(Tbuiltin VTint))));
+                                                   mk_instr (Icall (Some (
+                                                       (mk_sp (Pdot (
+                                                            mk_sp (Pvar (dumloc "ow"))
+                                                              ~type_:(Tasset (dumloc "owner")),
+                                                            dumloc "miles"
+                                                          ))
+                                                           ~type_:(Tcontainer (Tasset (dumloc "mile"), Partition)))),
+                                                                    Cconst Cremove,
+                                                                    [
+                                                                      AExpr (mk_sp (Pdot (
+                                                                          mk_sp (Pvar (dumloc "m"))
+                                                                            ~type_:(Tasset (dumloc "mile")),
+                                                                          dumloc "id"
+                                                                        ))
+                                                                          ~type_:(Tbuiltin VTstring))]
+                                                     )
+                                                     )
+                                                 ]))))),
+                                       mk_instr (Iseq []))
+                                     )))))]
 
                     ))))));
 
@@ -1794,7 +1795,9 @@ let create_miles_with_expiration_ast () =
                                                   [
                                                     AExpr
                                                       (mk_sp (Pcomp (Lt,
-                                                                     mk_sp (Pvar (dumloc "expiration"))
+                                                                     mk_sp (Pdot (mk_sp (Pvar (dumloc "the"))
+                                                                                    ~type_:(Tasset (dumloc "owner")),
+                                                                                  dumloc "expiration"))
                                                                        ~type_:(Tbuiltin VTdate),
                                                                      mk_sp (Pconst Cnow)
                                                                        ~type_:(Tbuiltin VTdate)))

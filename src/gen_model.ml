@@ -347,24 +347,26 @@ let to_model (ast : A.model) : M.model =
     let asset_name = dumloc asset_str in
     (* let key_name = dumloc key_str in *)
     let type_asset = M.Tasset asset_name in
+    let _, t = A.Utils.get_asset_key ast (dumloc asset_str) in
 
-    let col_name = dumloc ("_col") in
-    let col_var = M.mk_mterm (M.Mvarlocal col_name) type_asset in
+    let assetv_str = dumloc ("_" ^ asset_str) in
+    let asset_var = M.mk_mterm (M.Mvarlocal assetv_str) type_asset in
 
-    let asset_var_name = dumloc ("_asset") in
-    (* let asset_var = M.mk_mterm (M.Mvarlocal (dumloc ("_asset"))) type_asset in *)
+    let assets_var_name = dumloc ("_assets") in
+    let type_assets = M.Tcontainer (Tbuiltin (vtyp_to_btyp t), Collection) in
+    let assets_var = M.mk_mterm (M.Mvarlocal assets_var_name) type_assets in
 
     let select : M.mterm =  M.mk_mterm (M.Mselect (asset_str, c, p) ) type_asset in
 
-    let asset_sortcol : M.mterm = M.mk_mterm (M.Mvarstorecol asset_name) type_asset in
+    (* let asset_sortcol : M.mterm = M.mk_mterm (M.Mvarstorecol asset_name) type_asset in *)
     (* let asset_key : M.mterm = M.mk_mterm (M.Mdotasset (asset_var, key_name)) key_type in *)
 
     (* let remove : M.mterm = M.mk_mterm (M.Mremoveasset (asset_str, asset_sortcol, asset_key)) Tunit in *)
-    let remove : M.mterm = M.mk_mterm (M.Mremoveasset (asset_str, asset_sortcol)) Tunit in
+    let remove : M.mterm = M.mk_mterm (M.Mremoveasset (asset_str, asset_var)) Tunit in
 
-    let for_ = M.mk_mterm (M.Mfor (col_name, col_var, remove) ) Tunit in
+    let for_ = M.mk_mterm (M.Mfor (assetv_str, assets_var, remove) ) Tunit in
 
-    let res : M.mterm__node = M.Mletin ([asset_var_name], select, Some type_asset, for_) in
+    let res : M.mterm__node = M.Mletin ([assets_var_name], select, Some type_assets, for_) in
     res
 
   in

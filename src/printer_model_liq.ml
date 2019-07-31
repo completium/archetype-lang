@@ -387,7 +387,7 @@ let pp_model fmt (model : model) =
     let rec f fmt (mtt : mterm) =
       match mtt.node with
       | Mif (c, t, e) ->
-        Format.fprintf fmt "if %a@\nthen @[<v 2>%a@]%a"
+        Format.fprintf fmt "(if %a@\nthen @[<v 2>%a@]%a)"
           f c
           f t
           (pp_option (fun fmt -> Format.fprintf fmt "@\nelse @[<v 2>%a@]" f)) e
@@ -582,10 +582,10 @@ let pp_model fmt (model : model) =
 
       | Msum (an, fd, c) ->
         let pp fmt (an, fd, c) =
-          Format.fprintf fmt "sum_%a_%a (%a)"
+          Format.fprintf fmt "sum_%a_%a (_s)"
             pp_str an
             pp_id fd
-            f c
+            (* f c *)
         in
         pp fmt (an, fd, c)
 
@@ -834,9 +834,25 @@ let pp_model fmt (model : model) =
           f c
           f b
       | Mfold (i, is, c, b) ->
-        Format.fprintf fmt "List.fold (fun (%a, (%a)) ->@\n@[<v 4>%a@]) %a (%a)@\n"
-          pp_id i
-          (pp_list ", " pp_id) is
+        let t : lident option =
+          match c with
+          | {node = Mvarstorecol an; _} -> Some an
+          | _ -> None
+        in
+
+        let cond = Option.is_some t in
+
+        Format.fprintf fmt
+          "List.fold (fun (%a, (%a)) ->@\n \
+           %a@[<v 4>%a@]) %a (%a)@\n"
+          pp_id i (pp_list ", " pp_id) is
+          (pp_do_if cond (fun fmt c ->
+               let an = Option.get t in
+               Format.fprintf fmt "let %a : %a = get_%a (_s, %a) in  @\n"
+                 pp_id i
+                 pp_id an
+                 pp_id an
+                 pp_id i)) c
           f b
           f c
           (pp_list ", " pp_id) is
