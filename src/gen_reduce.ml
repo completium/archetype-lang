@@ -190,7 +190,7 @@ let process_body (ctx : ctx_red) (mt : mterm) : mterm =
 let analyse_type (mt : mterm) : type_ = Tstorage
 
 let merge_seq (mt1 : mterm) (mt2 : mterm) (t : type_) : mterm =
-  match mt1.node, mt1.node with
+  match mt1.node, mt2.node with
   | Mseq l1, Mseq l2 -> mk_mterm (Mseq (l1 @ l2)) t
   | _, Mseq l -> mk_mterm (Mseq ([mt1] @ l)) t
   | Mseq l, _ -> mk_mterm (Mseq (l @ [mt2])) t

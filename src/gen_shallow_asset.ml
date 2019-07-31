@@ -213,14 +213,14 @@ let process_shallow_function m f =
 let rec gen_add_shallow_asset (arg : M.argument) : M.mterm =
   let tnode =
     match arg with
-    | id,Tasset a,_ ->
+    | id, Tasset a,_ ->
       M.Maddasset (unloc a,
-                   M.mk_mterm (M.Mvarstorecol a) (Tcontainer (Tasset a,Collection)),
+                   M.mk_mterm (M.Mvarlocal a) (Tcontainer (Tasset a, Collection)),
                    [])
     | id,Tcontainer (Tasset a,_),_ ->
-      M.Mfor (dumloc "a",
+      M.Mfor (a,
               M.mk_mterm (M.Mvarlocal id) (Tcontainer (Tasset a,Collection)),
-              gen_add_shallow_asset (dumloc "a",Tasset a,None)
+              gen_add_shallow_asset (a, Tasset a, None)
              )
     | _,t,_ ->
       let str = Format.asprintf "%a@." M.pp_type_ t in
@@ -229,8 +229,8 @@ let rec gen_add_shallow_asset (arg : M.argument) : M.mterm =
   M.mk_mterm tnode Tunit
 
 let gen_add_shallow_fun (model : M.model) (n : I.ident) : M.function__ =
-  let arg    = (dumloc "asset",M.Tasset (dumloc n),None) in
-  let _,args = gen_shallow_args model (dumloc "asset") (Tasset (dumloc n)) arg in
+  let arg    = (dumloc n,M.Tasset (dumloc n),None) in
+  let _,args = gen_shallow_args model (dumloc n) (Tasset (dumloc n)) arg in
   let body   =
     if List.length args > 1
     then M.mk_mterm (M.Mseq (List.map gen_add_shallow_asset args)) Tunit

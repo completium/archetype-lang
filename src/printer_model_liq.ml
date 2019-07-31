@@ -222,13 +222,13 @@ let pp_model fmt (model : model) =
     | Contains an ->
       let _, t = Utils.get_record_key model (to_lident an) in
       Format.fprintf fmt
-        "let[@inline] contains_%s ((s, key) : storage * %a) : bool =@\n  \
-         match Map.find key s.%s_assets with@\n  \
-         | Some _ -> true@\n  \
-         | _ -> false@\n"
+        "let[@inline] contains_%s ((l, key) : %a list * %a) : bool =@\n  \
+         List.fold (fun (x, accu) ->@\n    \
+         accu || x = key@\n  \
+         ) l false@\n"
         an
         pp_btyp t
-        an
+        pp_btyp t
 
     | Nth an ->
       Format.fprintf fmt
@@ -778,7 +778,7 @@ let pp_model fmt (model : model) =
           f a
           f b
       | Mvarstorevar v -> Format.fprintf fmt "_s.%a" pp_id v
-      | Mvarstorecol v -> Format.fprintf fmt "%a_keys" pp_id v
+      | Mvarstorecol v -> Format.fprintf fmt "_s.%a_keys" pp_id v
       | Mvarenumval v  -> pp_id fmt v
       | Mvarfield v    -> pp_id fmt v
       | Mvarlocal v    -> pp_id fmt v
