@@ -669,9 +669,10 @@ let to_model (ast : A.model) : M.model =
           | Rqualid q ->
             begin
               let qualid_to_pterm (q : A.qualid) : M.mterm =
-                let type_ = M.Tbuiltin Baddress in
                 match q.node with
                 | Qident i ->
+                  let t : A.ptyp = A.Utils.get_var_type ast i in
+                  let type_ = ptyp_to_type t in
                   M.mk_mterm (M.Mvarstorevar i) type_ ~loc:q.loc
                 (* | Qdot ({node = Qident a}, i) ->
                    M.mk_mterm (M.Mvarstorevar i) type_ ~loc:q.loc *)

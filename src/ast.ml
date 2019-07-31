@@ -916,6 +916,7 @@ module Utils : sig
   val is_variable               : model -> lident -> bool
   val is_asset                  : model -> lident -> bool
   val is_enum_value             : model -> lident -> bool
+  val get_var_type              : model -> lident -> type_
 
 end = struct
   open Tools
@@ -927,6 +928,7 @@ end = struct
     | AssetFieldNotFound of string * string
     | AssetKeyTypeNotFound of string
     | ContainerNotFound of string * string
+    | VariableNotFound
   [@@deriving show {with_path = false}]
 
   let emit_error (desc : error_desc) =
@@ -1028,6 +1030,17 @@ end = struct
     | Some _ -> true
     | None   -> false
 
+  let get_var_type (ast : model) (ident : lident) : type_ =
+    let var : type_ option =
+      List.fold_left (
+        fun accu (x : ('id, type_, 'term) variable) ->
+          if (String.equal (Location.unloc x.decl.name) (Location.unloc ident))
+          then x.decl.typ
+          else accu
+      ) None ast.variables in
+    match var with
+    | Some v -> v
+    | None -> emit_error VariableNotFound
 end
 
 (* -------------------------------------------------------------------- *)
@@ -1284,7 +1297,7 @@ let create_miles_with_expiration_ast () =
   mk_model (dumloc "miles_with_expiration")
     ~variables:[
       mk_variable (mk_decl (dumloc "admin")
-                     ~typ:(Tbuiltin VTaddress)
+                     ~typ:(Tbuiltin VTrole)
                      ~default:(mk_sp (Plit (mk_sp (BVaddress "tz1aazS5ms5cbGkb6FN1wvWmN7yrMTTcr6wB")))
                                  ~type_:(Tbuiltin VTaddress)))
     ]
