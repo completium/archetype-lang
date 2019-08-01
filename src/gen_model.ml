@@ -347,13 +347,14 @@ let to_model (ast : A.model) : M.model =
     let asset_name = dumloc asset_str in
     (* let key_name = dumloc key_str in *)
     let type_asset = M.Tasset asset_name in
-    let _, t = A.Utils.get_asset_key ast (dumloc asset_str) in
+    (* let _, t = A.Utils.get_asset_key ast (dumloc asset_str) in *)
 
     let assetv_str = dumloc ("_" ^ asset_str) in
     let asset_var = M.mk_mterm (M.Mvarlocal assetv_str) type_asset in
 
     let assets_var_name = dumloc ("_assets") in
-    let type_assets = M.Tcontainer (Tbuiltin (vtyp_to_btyp t), Collection) in
+    (* let type_assets = M.Tcontainer (Tbuiltin (vtyp_to_btyp t), Collection) in *)
+    let type_assets = M.Tcontainer (Tasset asset_name, Collection) in
     let assets_var = M.mk_mterm (M.Mvarlocal assets_var_name) type_assets in
 
     let select : M.mterm =  M.mk_mterm (M.Mselect (asset_str, c, p) ) type_asset in

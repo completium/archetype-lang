@@ -210,14 +210,14 @@ let pp_model fmt (model : model) =
     | Select an ->
       let _, t = Utils.get_record_key model (to_lident an) in
       Format.fprintf fmt
-        "let[@inline] select_%s (s, c, p : storage * %a list * (%s -> bool)) : %a list =@\n  \
+        "let[@inline] select_%s (s, c, p : storage * %a list * (%s -> bool)) : %s list =@\n  \
          List.fold (fun (x, accu) ->@\n  \
          let a = get_%s (s, x) in@\n  \
          if p a@\n  \
-         then add_list x accu@\n  \
+         then add_list a accu@\n  \
          else accu@\n  \
          ) c []@\n"
-        an pp_btyp t an pp_btyp t
+        an pp_btyp t an an
         an
 
     | Sort (an, fn) ->
@@ -464,20 +464,36 @@ let pp_model fmt (model : model) =
         pp fmt (c, i)
 
       | Mremoveasset (an, i) ->
+        let cond, str =
+          (match i.type_ with
+           | Tasset an ->
+             let k, _ = Utils.get_record_key model an in
+             true, "." ^ (unloc k)
+           | _ -> false, ""
+          ) in
         let pp fmt (an, i) =
-          Format.fprintf fmt "remove_%a (_s, %a)"
+          Format.fprintf fmt "remove_%a (_s, %a%a)"
             pp_str an
             f i
+            (pp_do_if cond pp_str) str
         in
         pp fmt (an, i)
 
       | Mremovefield (an, fn, c, i) ->
+        let cond, str =
+          (match i.type_ with
+           | Tasset an ->
+             let k, _ = Utils.get_record_key model an in
+             true, "." ^ (unloc k)
+           | _ -> false, ""
+          ) in
         let pp fmt (an, fn, c, i) =
-          Format.fprintf fmt "remove_%a_%a (_s, %a, %a)"
+          Format.fprintf fmt "remove_%a_%a (_s, %a, %a%a)"
             pp_str an
             pp_str fn
             f c
             f i
+            (pp_do_if cond pp_str) str
         in
         pp fmt (an, fn, c, i)
 
