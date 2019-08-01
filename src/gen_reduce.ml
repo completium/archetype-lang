@@ -37,6 +37,7 @@ type s_red = {
 
 type ctx_red = {
   local_fun_types : (ident * type_) list;
+  vars: (ident * type_) list;
 }
 
 let merge_seq (mt1 : mterm) (mt2 : mterm) : mterm =
@@ -67,15 +68,15 @@ let rec process_mtern (ctx : ctx_red) (s : s_red) (mt : mterm) : mterm * s_red =
         let x, s = process_mtern ctx s x in
         match x with
         | {type_ = Ttuple (Tcontainer(Toperation, Collection)::Tstorage::l); _} ->
-          mk_mterm (Mletin ([storage_lident; operations_lident] @ (List.fold_left (fun accu x -> (dumloc "_")::accu) [] l), x, None, accu)) x.type_, s
+          mk_mterm (Mletin ([storage_lident; operations_lident] @ (List.fold_left (fun accu x -> (dumloc "_")::accu) [] l), x, Some x.type_, accu)) x.type_, s
         | {type_ = Ttuple (Tstorage::l); _} ->
-          mk_mterm (Mletin ([storage_lident] @ (List.fold_left (fun accu x -> (dumloc "_")::accu) [] l), x, None, accu)) x.type_, s
+          mk_mterm (Mletin ([storage_lident] @ (List.fold_left (fun accu x -> (dumloc "_")::accu) [] l), x, Some x.type_, accu)) x.type_, s
         | {type_ = Ttuple (Tcontainer(Toperation, Collection)::l); _} ->
-          mk_mterm (Mletin ([operations_lident] @ (List.fold_left (fun accu x -> (dumloc "_")::accu) [] l), x, None, accu)) x.type_, s
+          mk_mterm (Mletin ([operations_lident] @ (List.fold_left (fun accu x -> (dumloc "_")::accu) [] l), x, Some x.type_, accu)) x.type_, s
         | {type_ = Tstorage; _} ->
-          mk_mterm (Mletin ([storage_lident], x, Some Tstorage, accu)) x.type_, s
+          mk_mterm (Mletin ([storage_lident], x, Some x.type_, accu)) x.type_, s
         | {type_ = Tcontainer (Toperation, Collection); _} ->
-          mk_mterm (Mletin ([operations_lident], x, Some operations_type, accu)) x.type_, s
+          mk_mterm (Mletin ([operations_lident], x, Some x.type_, accu)) x.type_, s
         | _ ->
           (* Format.eprintf "not_found: %a@\n" pp_mterm x; *)
           mk_mterm (Mseq [x ; accu]) accu.type_, s
@@ -143,6 +144,18 @@ let rec process_mtern (ctx : ctx_red) (s : s_red) (mt : mterm) : mterm * s_red =
 
   (* lambda calculus *)
   | Mletin (ids, init, t, body) ->
+    let extract_vars (ids : lident list) (t : type_ option) : (ident * type_) list =
+      begin
+        match ids, t with
+        | ids, Some Ttuple tl -> List.map2 (fun x y -> (unloc x, y)) ids tl
+        | [id], Some t -> [unloc id, t]
+        | _ -> []
+      end
+    in
+    let ctx = {
+      ctx with
+      vars = ctx.vars @ extract_vars ids t;
+    } in
     let init, s = process_mtern ctx s init in
     let body, s = process_mtern ctx s body in
     mk_mterm (Mletin (ids, init, t, body)) body.type_, s
@@ -183,28 +196,45 @@ let rec process_mtern (ctx : ctx_red) (s : s_red) (mt : mterm) : mterm * s_red =
     end
 
   | Mfor (a, col, body) ->
+
+    let get_subs (mt : mterm) =
+      let rec aux (accu : ident list) (mt : mterm) : ident list =
+        begin
+          match mt.node with
+          | Massign (_, a, b) ->
+            let id : ident = unloc a in
+            let res : ident list =
+              if List.mem id accu
+              then accu
+              else id::accu in
+            res
+          | _ -> fold_term aux accu mt
+        end
+      in
+      aux [] mt
+    in
     let col, s = process_mtern ctx s col in
-    let subs = [] in
-    let is = [storage_lident] @ (List.map dumloc subs) in
+
+    let subs : ident list = get_subs body in
+    let subs : (ident * type_) list = List.fold_left (fun accu (x : ident) ->
+        let res = List.assoc_opt x ctx.vars in
+        match res with
+        | Some v -> (x, v)::accu
+        | None -> accu) [] subs in
+    let is = [storage_lident] @ (List.map (fun (x, y) -> dumloc x) subs) in
     let t, s, body =
       match subs with
       | [] ->
-        (* | _ -> *)
         let body, s = process_mtern ctx s (merge_seq body storage_var) in
         Tstorage, s, body
       | _ ->
 
-        let type_res = Ttuple [Tstorage; Tbuiltin Bint] in
-        let var_rem : mterm = mk_mterm (Mvarlocal (dumloc (List.nth subs 0))) (Tbuiltin Bint) in
+        let type_res = Ttuple (Tstorage::(List.map snd subs)) in
+        let var_rem : mterm list = List.map (fun (x, y) -> mk_mterm (Mvarlocal (dumloc x)) y) subs in
         let var_res : mterm = mk_mterm (
-            Mtuple [mk_mterm (Mvarlocal storage_lident) Tstorage;
-                    var_rem]) type_res in
-        type_res, s, (
-          mk_mterm (Mif (
-              mk_mterm (Mgt (var_rem, mk_mterm (Mint Big_int.zero_big_int) (Tbuiltin Bint))) (Tbuiltin Bbool),
-              var_res,
-              Some var_res)) type_res
-        )
+            Mtuple (storage_var::var_rem)) type_res in
+        let body, s = process_mtern ctx s (merge_seq body var_res) in
+        type_res, s, body
     in
     mk_mterm (Mfold (a, is, col, body)) t, s
 
@@ -295,6 +325,7 @@ let process_functions (model : model) : model =
     in
     let ctx : ctx_red = {
       local_fun_types = [];
+      vars = [];
     } in
     let res, _ = List.fold_left (fun (l, ctx) f ->
         let item, ctx =  process_function__ ctx f in
