@@ -838,13 +838,13 @@ let rec map_mterm m (mt : M.mterm) : loc_term =
     | M.Mcontains (a,_,r) ->
       Tapp (loc_term (Tvar (a^"_contains")),
             [loc_term (Tvar "_s");map_mterm m r])
-    | M.Maddfield (a,f,{ node = M.Mdotasset (c,_); type_= _ },i,_) ->
+    | M.Maddfield (a,f,{ node = M.Mdotasset (c,_); type_= _ },i) ->
       Tapp (loc_term (Tvar ("add_"^a^"_"^f)),
             [loc_term (Tvar "_s"); map_mterm m c; map_mterm m i])
     | M.Mget (n,k) ->
       Tapp (loc_term (Tvar ("get_"^n)),[loc_term (Tvar "_s");map_mterm m k])
-    | M.Maddasset (n,i,l) ->
-      Tapp (loc_term (Tvar ("add_"^n)),[loc_term (Tvar "_s"); map_mterm m i ] @ (List.map (map_mterm m) l))
+    | M.Maddasset (n,i) ->
+      Tapp (loc_term (Tvar ("add_"^n)),[loc_term (Tvar "_s"); map_mterm m i ] (*@ (List.map (map_mterm m) l*))
     (*    | M.Maddasset (n,_,i,_) when M.Utils.has_partition m n ->
           let ritems = M.Utils.get_record_partitions m n in
           (* double loop : on ritmes and on i's corresponding record values *)
@@ -876,7 +876,7 @@ let rec map_mterm m (mt : M.mterm) : loc_term =
       Tapp (loc_term (Tvar ("select_"^a)),[map_mterm m l;map_mterm m r])
     | M.Mnow -> Tnow (with_dummy_loc "_s")
     | M.Mseq l -> Tseq (List.map (map_mterm m) l)
-    | M.Mfor (id,c,b) ->
+    | M.Mfor (id,s,c,b) ->
       Tfor (with_dummy_loc "i",
             with_dummy_loc (
               Tminus (with_dummy_loc Tyunit,with_dummy_loc (Tcard (map_mterm m c)),

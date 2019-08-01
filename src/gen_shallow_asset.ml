@@ -153,31 +153,31 @@ let mk_ctx ctx id shallow_vals =
 let rec map_shallow (ctx : (I.ident * (M.lident * M.type_) list) list) m (t : M.mterm) : M.mterm =
   let t_gen =
     match t.node with
-    | M.Maddasset (n,a,l) when M.Utils.is_varlocal a ->
+    | M.Maddasset (n,a) when M.Utils.is_varlocal a ->
       let id = M.Utils.dest_varlocal a in
       if has_shallow_vars id ctx then
         let shallow_args = get_shallow_vars id ctx  in
         M.Mapp (dumloc ("add_shallow_"^n),shallow_args)
-      else  M.Maddasset (n,a,l)
-    | M.Maddasset (n,a,l) when M.Utils.is_record a ->
+      else  M.Maddasset (n,a)
+    | M.Maddasset (n,a) when M.Utils.is_record a ->
       if M.Utils.has_partition m n
       then
         let shallow_args = map_shallow_record m ctx a in
         M.Mapp (dumloc ("add_shallow_"^n),shallow_args)
       else
-        M.Maddasset (n,a,l)
-    | M.Maddfield (n,f,a,v,l) when M.Utils.is_varlocal v ->
+        M.Maddasset (n,a)
+    | M.Maddfield (n,f,a,v) when M.Utils.is_varlocal v ->
       let id = M.Utils.dest_varlocal v in
       if has_shallow_vars id ctx then
         let shallow_args = get_shallow_vars id ctx in
         M.Mapp (dumloc ("add_shallow_"^n^"_"^f),[a] @ shallow_args)
-      else M.Maddfield (n,f,a,v,l)
-    | M.Maddfield (n,f,a,v,l) when M.Utils.is_record v ->
+      else M.Maddfield (n,f,a,v)
+    | M.Maddfield (n,f,a,v) when M.Utils.is_record v ->
       let vt = M.Utils.get_asset_type v in
       if M.Utils.has_partition m (unloc vt) then
         let shallow_args = map_shallow_record m ctx v in
         M.Mapp (dumloc ("add_shallow_"^n^"_"^f),[a] @ shallow_args)
-      else M.Maddfield (n,f,a,v,l)
+      else M.Maddfield (n,f,a,v)
     | M.Mletin ([id],v,t,b) when M.Utils.is_record v ->
       begin
         match v.type_ with
@@ -215,10 +215,10 @@ let rec gen_add_shallow_asset (arg : M.argument) : M.mterm =
     match arg with
     | id, Tasset a,_ ->
       M.Maddasset (unloc a,
-                   M.mk_mterm (M.Mvarlocal a) (Tcontainer (Tasset a, Collection)),
-                   [])
+                   M.mk_mterm (M.Mvarlocal a) (Tcontainer (Tasset a, Collection)))
     | id,Tcontainer (Tasset a,_),_ ->
       M.Mfor (a,
+              [],
               M.mk_mterm (M.Mvarlocal id) (Tcontainer (Tasset a,Collection)),
               gen_add_shallow_asset (a, Tasset a, None)
              )
@@ -257,8 +257,7 @@ let gen_add_shallow_field_fun (model : M.model) (n,f : I.ident * I.ident) : M.fu
             n,
             f,
             M.mk_mterm (M.Mvarlocal (dumloc "asset")) (Tasset (dumloc n)),
-            M.mk_mterm (M.Mvarlocal (dumloc "added_asset")) (Tasset pa),
-            [])) Tunit;
+            M.mk_mterm (M.Mvarlocal (dumloc "added_asset")) (Tasset pa))) Tunit;
       ] @ (List.map gen_add_shallow_asset (List.tl asset_args)))) Tunit in
   {
     node = Function ({
@@ -273,7 +272,7 @@ let gen_add_shallow_field_fun (model : M.model) (n,f : I.ident * I.ident) : M.fu
 let get_added_assets (model : M.model) : I.ident list =
   let rec f ctx acc (t : M.mterm) =
     match t.node with
-    | M.Maddasset (n,_,_) ->
+    | M.Maddasset (n,_) ->
       if List.mem n acc then
         acc
       else if M.Utils.has_partition model n then
@@ -286,7 +285,7 @@ let get_added_assets (model : M.model) : I.ident list =
 let get_added_asset_fields (model : M.model) : (I.ident * I.ident) list =
   let rec f ctx acc (t : M.mterm) =
     match t.node with
-    | M.Maddfield (n,fd,_,v,_) ->
+    | M.Maddfield (n,fd,_,v) ->
       if List.mem (n,fd) acc then
         acc
       else

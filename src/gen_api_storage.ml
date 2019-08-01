@@ -31,9 +31,9 @@ let process_api_storage (model : model) : model =
         [APIStorage (Get asset_name)]
       | Mset (asset_name, _, _) ->
         [APIStorage (Set asset_name)]
-      | Maddasset (asset_name, _, _) ->
+      | Maddasset (asset_name, _) ->
         [APIStorage (Add asset_name)]
-      | Maddfield (asset_name, field_name, _, _, _) ->
+      | Maddfield (asset_name, field_name, _, _) ->
         [APIStorage (UpdateAdd (asset_name, field_name))]
       | Mremoveasset (asset_name, _) ->
         [APIStorage (Remove asset_name)]

@@ -136,31 +136,23 @@ let pp_mterm fmt (mt : mterm) =
       in
       pp fmt (c, k, v)
 
-    | Maddasset (an, i, es) ->
-      let pp fmt (an, i, es) =
-        Format.fprintf fmt "add_%a (%a)%a"
+    | Maddasset (an, i) ->
+      let pp fmt (an, i) =
+        Format.fprintf fmt "add_%a (%a)"
           pp_str an
           f i
-          (fun fmt ->
-             match es with
-             | [] -> (fun _ -> Format.fprintf fmt "")
-             | _  -> Format.fprintf fmt " [%a]" (pp_list "; " f)) es
       in
-      pp fmt (an, i, es)
+      pp fmt (an, i)
 
-    | Maddfield (an, fn, c, i, es) ->
-      let pp fmt (an, fn, c, i, es) =
-        Format.fprintf fmt "add_%a_%a (%a, %a)%a"
+    | Maddfield (an, fn, c, i) ->
+      let pp fmt (an, fn, c, i) =
+        Format.fprintf fmt "add_%a_%a (%a, %a)"
           pp_str an
           pp_str fn
           f c
           f i
-          (fun fmt ->
-             match es with
-             | [] -> (fun _ -> Format.fprintf fmt "")
-             | _  -> Format.fprintf fmt " [%a]" (pp_list "; " f)) es
       in
-      pp fmt (an, fn, c, i, es)
+      pp fmt (an, fn, c, i)
 
     | Maddlocal (c, i) ->
       let pp fmt (c, i) =
@@ -522,7 +514,7 @@ let pp_mterm fmt (mt : mterm) =
     | Mtuple l ->
       Format.fprintf fmt "(%a)"
         (pp_list ", " f) l
-    | Mfor (i, c, b) ->
+    | Mfor (i, s, c, b) ->
       Format.fprintf fmt "for (%a in %a)@\n (@[<v 2>%a@])@\n"
         pp_id i
         f c

@@ -161,8 +161,8 @@ type ('id, 'term) mterm_node  =
   | Mexternal     of 'id * 'id * 'term * ('term) list
   | Mget          of ident * 'term
   | Mset          of ident * 'term * 'term
-  | Maddasset     of ident * 'term * 'term list
-  | Maddfield     of ident * ident * 'term * 'term  * 'term list (* asset_name * field_name * asset instance * item * shalow values*)
+  | Maddasset     of ident * 'term
+  | Maddfield     of ident * ident * 'term * 'term (* asset_name * field_name * asset instance * item * shalow values*)
   | Maddlocal     of 'term * 'term
   | Mremoveasset  of ident * 'term
   | Mremovefield  of ident * ident * 'term * 'term
@@ -231,7 +231,7 @@ type ('id, 'term) mterm_node  =
   | Mdotasset     of 'term * 'id
   | Mdotcontract  of 'term * 'id
   | Mtuple        of 'term list
-  | Mfor          of ('id * 'term * 'term)
+  | Mfor          of ('id * ident list *'term * 'term)
   | Mfold         of ('id * 'id list * 'term * 'term) (* ident list * collection * body *)
   | Mseq          of 'term list
   | Massign       of (assignment_operator * 'id * 'term)
@@ -682,8 +682,8 @@ let cmp_mterm_node
     | Mexternal (t1, func1, c1, args1), Mexternal (t2, func2, c2, args2)               -> cmpi t1 t2 && cmpi func1 func2 && cmp c1 c2 && List.for_all2 cmp args1 args2
     | Mget (c1, k1), Mget (c2, k2)                                                     -> cmp_ident c1 c2 && cmp k1 k2
     | Mset (c1, k1, v1), Mset (c2, k2, v2)                                             -> cmp_ident c1 c2 && cmp k1 k2 && cmp v1 v2
-    | Maddasset (an1, i1, es1), Maddasset (an2, i2, es2)                               -> cmp_ident an1 an2 && cmp i1 i2 && List.for_all2 cmp es1 es2
-    | Maddfield (an1, fn1, c1, i1, es1), Maddfield (an2, fn2, c2, i2, es2)             -> cmp_ident an1 an2 && cmp_ident fn1 fn2 && cmp c1 c2 && cmp i1 i2 && List.for_all2 cmp es1 es2
+    | Maddasset (an1, i1), Maddasset (an2, i2)                                         -> cmp_ident an1 an2 && cmp i1 i2
+    | Maddfield (an1, fn1, c1, i1), Maddfield (an2, fn2, c2, i2)                       -> cmp_ident an1 an2 && cmp_ident fn1 fn2 && cmp c1 c2 && cmp i1 i2
     | Maddlocal (c1, i1), Maddlocal (c2, i2)                                           -> cmp c1 c2 && cmp i1 i2
     | Mremoveasset (an1, i1), Mremoveasset (an2, i2)                                   -> cmp_ident an1 an2 && cmp i1 i2
     | Mremovefield (an1, fn1, c1, i1), Mremovefield (an2, fn2, c2, i2)                 -> cmp_ident an1 an2 && cmp_ident fn1 fn2 && cmp c1 c2 && cmp i1 i2
@@ -750,7 +750,7 @@ let cmp_mterm_node
     | Mdotasset (e1, i1), Mdotasset (e2, i2)                                           -> cmp e1 e2 && cmpi i1 i2
     | Mdotcontract (e1, i1), Mdotcontract (e2, i2)                                     -> cmp e1 e2 && cmpi i1 i2
     | Mtuple l1, Mtuple l2                                                             -> List.for_all2 cmp l1 l2
-    | Mfor (i1, c1, b1), Mfor (i2, c2, b2)                                             -> cmpi i1 i2 && cmp c1 c2 && cmp b1 b2
+    | Mfor (i1, s1, c1, b1), Mfor (i2, s2, c2, b2)                                     -> cmpi i1 i2 && List.for_all2 String.equal s1 s2 && cmp c1 c2 && cmp b1 b2
     | Mfold (i1, is1, c1, b1), Mfold (i2, is2, c2, b2)                                 -> cmpi i1 i2 && List.for_all2 cmpi is1 is2 && cmp c1 c2 && cmp b1 b2
     | Mseq is1, Mseq is2                                                               -> List.for_all2 cmp is1 is2
     | Massign (op1, l1, r1), Massign (op2, l2, r2)                                     -> cmp_assign_op op1 op2 && cmpi l1 l2 && cmp r1 r2
@@ -795,8 +795,8 @@ let map_term_node (f : 'id mterm_gen -> 'id mterm_gen) = function
   | Mexternal (t, func, c, args) -> Mexternal (t, func, f c, List.map f args)
   | Mget (c, k)                  -> Mget (c, f k)
   | Mset (c, k, v)               -> Mset (c, f k, f v)
-  | Maddasset (an, i, es)        -> Maddasset (an, f i, List.map f es)
-  | Maddfield (an, fn, c, i, es) -> Maddfield (an, fn, f c, f i, List.map f es)
+  | Maddasset (an, i)            -> Maddasset (an, f i)
+  | Maddfield (an, fn, c, i)     -> Maddfield (an, fn, f c, f i)
   | Maddlocal (c, i)             -> Maddlocal (f c, f i)
   | Mremoveasset (an, i)         -> Mremoveasset (an, f i)
   | Mremovefield (an, fn, c, i)  -> Mremovefield (an, fn, f c, f i)
@@ -865,7 +865,7 @@ let map_term_node (f : 'id mterm_gen -> 'id mterm_gen) = function
   | Mdotasset (e, i)             -> Mdotasset (f e, i)
   | Mdotcontract (e, i)          -> Mdotcontract (f e, i)
   | Mtuple l                     -> Mtuple (List.map f l)
-  | Mfor (i, c, b)               -> Mfor (i, f c, f b)
+  | Mfor (i, s, c, b)            -> Mfor (i, s, f c, f b)
   | Mfold (i, is, c, b)          -> Mfold (i, is, f c, f b)
   | Mseq is                      -> Mseq (List.map f is)
   | Massign (op, l, r)           -> Massign (op, l, f r)
@@ -913,8 +913,8 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mexternal (t, func, c, args)          -> List.fold_left f (f accu c) args
   | Mget (_, k)                           -> f accu k
   | Mset (c, k, v)                        -> f (f accu v) k
-  | Maddasset (an, i, es)                 -> List.fold_left f (f accu i) es
-  | Maddfield (an, fn, c, i, es)          -> List.fold_left f (f (f accu c) i) es
+  | Maddasset (an, i)                     -> f accu i
+  | Maddfield (an, fn, c, i)              -> f (f accu c) i
   | Maddlocal (c, i)                      -> f (f accu c) i
   | Mremoveasset (an, i)                  -> f accu i
   | Mremovefield (an, fn, c, i)           -> f (f accu c) i
@@ -983,7 +983,7 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mnone                                 -> accu
   | Msome v                               -> f accu v
   | Mtuple l                              -> List.fold_left f accu l
-  | Mfor (i, c, b)                        -> f (f accu c) b
+  | Mfor (i, s, c, b)                     -> f (f accu c) b
   | Mfold (i, is, c, b)                   -> f (f accu c) b
   | Mseq is                               -> List.fold_left f accu is
   | Massign (_, _, e)                     -> f accu e
@@ -1089,16 +1089,14 @@ let fold_map_term
     let ve, va = f ka v in
     g (Mset (c, ke, ve)), va
 
-  | Maddasset (an, i, es) ->
+  | Maddasset (an, i) ->
     let ie, ia = f accu i in
-    let ee, ea = fold_map_term_list f ia es in
-    g (Maddasset (an, ie, ee)), ea
+    g (Maddasset (an, ie)), ia
 
-  | Maddfield (an, fn, c, i, es) ->
+  | Maddfield (an, fn, c, i) ->
     let ce, ca = f accu c in
     let ie, ia = f ca i in
-    let ee, ea = fold_map_term_list f ia es in
-    g (Maddfield (an, fn, ce, ie, ee)), ea
+    g (Maddfield (an, fn, ce, ie)), ia
 
   | Maddlocal (c, i) ->
     let ce, ca = f accu c in
@@ -1353,10 +1351,10 @@ let fold_map_term
     let le, la = fold_map_term_list f accu l in
     g (Mtuple le), la
 
-  | Mfor (i, c, b) ->
+  | Mfor (i, s, c, b) ->
     let ce, ca = f accu c in
     let bi, ba = f ca b in
-    g (Mfor (i, ce, bi)), ba
+    g (Mfor (i, s, ce, bi)), ba
 
   | Mfold (i, is, c, b) ->
     let ce, ca = f accu c in

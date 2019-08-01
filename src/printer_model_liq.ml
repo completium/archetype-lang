@@ -387,7 +387,7 @@ let pp_model fmt (model : model) =
     let rec f fmt (mtt : mterm) =
       match mtt.node with
       | Mif (c, t, e) ->
-        Format.fprintf fmt "(if %a@\nthen @[<v 2>%a@]%a)"
+        Format.fprintf fmt "if @[%a@]@\nthen @[<v 2>%a@]%a"
           f c
           f t
           (pp_option (fun fmt -> Format.fprintf fmt "@\nelse @[<v 2>%a@]" f)) e
@@ -437,23 +437,23 @@ let pp_model fmt (model : model) =
         in
         pp fmt (c, k, v)
 
-      | Maddasset (an, i, es) ->
-        let pp fmt (an, i, es) =
+      | Maddasset (an, i) ->
+        let pp fmt (an, i) =
           Format.fprintf fmt "add_%a (_s, %a)"
             pp_str an
             f i
         in
-        pp fmt (an, i, es)
+        pp fmt (an, i)
 
-      | Maddfield (an, fn, c, i, es) ->
-        let pp fmt (an, fn, c, i, es) =
+      | Maddfield (an, fn, c, i) ->
+        let pp fmt (an, fn, c, i) =
           Format.fprintf fmt "add_%a_%a (_s, %a, %a)"
             pp_str an
             pp_str fn
             f c
             f i
         in
-        pp fmt (an, fn, c, i, es)
+        pp fmt (an, fn, c, i)
 
       | Maddlocal (c, i) ->
         let pp fmt (c, i) =
@@ -779,7 +779,7 @@ let pp_model fmt (model : model) =
                  pp_id a
                  f b)) lll
       | Mletin (ids, a, t, b) ->
-        Format.fprintf fmt "let %a%a = %a in@\n@[<v 2>%a@]"
+        Format.fprintf fmt "let %a%a = %a in@\n@[<v 2>  %a@]"
           (pp_list ", " pp_id) ids
           (pp_option (fun fmt -> Format.fprintf fmt  " : %a" pp_type)) t
           f a
@@ -828,7 +828,7 @@ let pp_model fmt (model : model) =
       | Mtuple l ->
         Format.fprintf fmt "(%a)"
           (pp_list ", " f) l
-      | Mfor (i, c, b) ->
+      | Mfor (i, s, c, b) ->
         Format.fprintf fmt "for (%a in %a)@\n (@[<v 2>%a@])@\n"
           pp_id i
           f c
