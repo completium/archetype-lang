@@ -182,12 +182,14 @@ let rec process_mtern (ctx : ctx_red) (s : s_red) (mt : mterm) : mterm * s_red =
       | _ -> process_non_empty_list_term s l
     end
 
-  | Mfor (a, subs, col, body) ->
+  | Mfor (a, col, body) ->
     let col, s = process_mtern ctx s col in
+    let subs = [] in
     let is = [storage_lident] @ (List.map dumloc subs) in
     let t, s, body =
       match subs with
       | [] ->
+        (* | _ -> *)
         let body, s = process_mtern ctx s (merge_seq body storage_var) in
         Tstorage, s, body
       | _ ->

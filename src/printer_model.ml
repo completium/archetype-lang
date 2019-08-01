@@ -514,7 +514,7 @@ let pp_mterm fmt (mt : mterm) =
     | Mtuple l ->
       Format.fprintf fmt "(%a)"
         (pp_list ", " f) l
-    | Mfor (i, s, c, b) ->
+    | Mfor (i, c, b) ->
       Format.fprintf fmt "for (%a in %a)@\n (@[<v 2>%a@])@\n"
         pp_id i
         f c

@@ -876,7 +876,7 @@ let rec map_mterm m (mt : M.mterm) : loc_term =
       Tapp (loc_term (Tvar ("select_"^a)),[map_mterm m l;map_mterm m r])
     | M.Mnow -> Tnow (with_dummy_loc "_s")
     | M.Mseq l -> Tseq (List.map (map_mterm m) l)
-    | M.Mfor (id,s,c,b) ->
+    | M.Mfor (id,c,b) ->
       Tfor (with_dummy_loc "i",
             with_dummy_loc (
               Tminus (with_dummy_loc Tyunit,with_dummy_loc (Tcard (map_mterm m c)),

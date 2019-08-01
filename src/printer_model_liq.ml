@@ -795,7 +795,7 @@ let pp_model fmt (model : model) =
                  pp_id a
                  f b)) lll
       | Mletin (ids, a, t, b) ->
-        Format.fprintf fmt "let %a%a = %a in@\n@[<v 2>  %a@]"
+        Format.fprintf fmt "let %a%a = %a in@\n@[%a@]"
           (pp_list ", " pp_id) ids
           (pp_option (fun fmt -> Format.fprintf fmt  " : %a" pp_type)) t
           f a
@@ -844,7 +844,7 @@ let pp_model fmt (model : model) =
       | Mtuple l ->
         Format.fprintf fmt "(%a)"
           (pp_list ", " f) l
-      | Mfor (i, s, c, b) ->
+      | Mfor (i, c, b) ->
         Format.fprintf fmt "for (%a in %a)@\n (@[<v 2>%a@])@\n"
           pp_id i
           f c

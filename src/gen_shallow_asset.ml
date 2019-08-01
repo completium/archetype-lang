@@ -218,7 +218,6 @@ let rec gen_add_shallow_asset (arg : M.argument) : M.mterm =
                    M.mk_mterm (M.Mvarlocal a) (Tcontainer (Tasset a, Collection)))
     | id,Tcontainer (Tasset a,_),_ ->
       M.Mfor (a,
-              [],
               M.mk_mterm (M.Mvarlocal id) (Tcontainer (Tasset a,Collection)),
               gen_add_shallow_asset (a, Tasset a, None)
              )

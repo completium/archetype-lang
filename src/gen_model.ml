@@ -365,14 +365,14 @@ let to_model (ast : A.model) : M.model =
     (* let remove : M.mterm = M.mk_mterm (M.Mremoveasset (asset_str, asset_sortcol, asset_key)) Tunit in *)
     let remove : M.mterm = M.mk_mterm (M.Mremoveasset (asset_str, asset_var)) Tunit in
 
-    let for_ = M.mk_mterm (M.Mfor (assetv_str, [], assets_var, remove) ) Tunit in
+    let for_ = M.mk_mterm (M.Mfor (assetv_str, assets_var, remove) ) Tunit in
 
     let res : M.mterm__node = M.Mletin ([assets_var_name], select, Some type_assets, for_) in
     res
 
   in
 
-  let to_instruction_node (n : (A.lident, A.ptyp, A.pterm, A.instruction) A.instruction_node) subs g f : ('id, 'instr) M.mterm_node =
+  let to_instruction_node (n : (A.lident, A.ptyp, A.pterm, A.instruction) A.instruction_node) g f : ('id, 'instr) M.mterm_node =
     let is_empty_seq (instr : A.instruction) =
       match instr.node with
       | A.Iseq [] -> true
@@ -382,7 +382,7 @@ let to_model (ast : A.model) : M.model =
     match n with
     | A.Iif (c, t, e) when is_empty_seq e -> M.Mif (f c, g t, None)
     | A.Iif (c, t, e)           -> M.Mif (f c, g t, Some (g e))
-    | A.Ifor (i, col, body)     -> M.Mfor (i, subs, f col, g body)
+    | A.Ifor (i, col, body)     -> M.Mfor (i, f col, g body)
     | A.Iletin (i, init, cont)  -> M.Mletin ([i], f init, None, g cont) (* TODO *)
     | A.Iseq l                  -> M.Mseq (List.map g l)
     | A.Imatchwith (m, l)       -> M.Mmatchwith (f m, List.map (fun (p, i) -> (to_pattern p, g i)) l)
@@ -466,7 +466,7 @@ let to_model (ast : A.model) : M.model =
   in
 
   let rec to_instruction (instr : A.instruction) : M.mterm =
-    let node = to_instruction_node instr.node instr.subvars to_instruction to_mterm in
+    let node = to_instruction_node instr.node to_instruction to_mterm in
     M.mk_mterm node (M.Tunit) ~subvars:instr.subvars ~loc:instr.loc
   in
 
