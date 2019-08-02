@@ -284,14 +284,14 @@ let to_model (ast : A.model) : M.model =
 
      let _k = k in
      let _myasset = myasset.get _k in
-     myasset.f1 := v1;
-     myasset.f2 := v2;
+     let _myasset = {id = _myasset.id; f1 = v1; f2 = v2} in
      set_myasset s _k _myasset *)
 
   let extract_letin (c : M.mterm) k (e : (A.lident * A.operator * M.mterm) list) : M.mterm__node =
 
     let asset_name = extract_asset_name c in
     let asset_loced = dumloc asset_name in
+    let asset = A.Utils.get_asset ast asset_loced in
 
     let type_asset = M.Tasset asset_loced in
     let type_container_asset = M.Tcontainer (type_asset, Collection) in
@@ -307,19 +307,48 @@ let to_model (ast : A.model) : M.model =
 
     let set_mterm : M.mterm = M.mk_mterm (M.Mset (asset_name, key_mterm, var_mterm)) Tunit in
 
-    let seq : M.mterm list = (List.map (fun ((id, op, term) : ('a * A.operator * 'c)) -> M.mk_mterm
+    let lref : (Ident.ident * (A.operator * M.mterm)) list = List.map (fun (x, y, z) -> (unloc x, (y, z))) e in
+    let lrecorditems =
+      List.fold_left (fun accu (x : (A.lident, A.ptyp, A.pterm) A.decl_gen) ->
+          let v = List.assoc_opt (unloc x.name) lref in
+          let type_ = ptyp_to_type (Option.get x.typ) in
+          let var = M.mk_mterm (Mdotasset (var_mterm, x.name)) type_ in
+          match v with
+          | Some y ->
+            accu @ [
+              let value = snd y in
+              match y |> fst |> to_assign_operator with
+              | M.ValueAssign -> value
+              | M.PlusAssign  -> M.mk_mterm (Mplus (var, value)) type_
+              | M.MinusAssign -> M.mk_mterm (Mminus (var, value)) type_
+              | M.MultAssign  -> M.mk_mterm (Mmult (var, value)) type_
+              | M.DivAssign   -> M.mk_mterm (Mdiv (var, value)) type_
+              | M.AndAssign   -> M.mk_mterm (Mand (var, value)) type_
+              | M.OrAssign    -> M.mk_mterm (Mor (var, value)) type_
+            ]
+          | _ -> accu @ [var]
+        ) [] asset.fields in
+    let record : M.mterm = M.mk_mterm (M.Mrecord lrecorditems) type_asset in
+
+    let letinasset : M.mterm = M.mk_mterm (M.Mletin ([var_name],
+                                                     record,
+                                                     Some (type_asset),
+                                                     set_mterm
+                                                    )) Tunit in
+
+    (* let seq : M.mterm list = (List.map (fun ((id, op, term) : ('a * A.operator * 'c)) -> M.mk_mterm
                                            (M.Massignfield (to_assign_operator op, var_name, id, term))
                                            Tunit
-                                       ) e) @ [set_mterm] in
+                                       ) e) @ [set_mterm] in *)
 
-    let body : M.mterm = M.mk_mterm (M.Mseq seq) Tunit in
+    (* let body : M.mterm = M.mk_mterm (M.Mseq seq) Tunit in *)
 
     let get_mterm : M.mterm = M.mk_mterm (M.Mget (asset_name, key_mterm)) type_asset in
 
     let letinasset : M.mterm = M.mk_mterm (M.Mletin ([var_name],
                                                      get_mterm,
                                                      Some (type_asset),
-                                                     body
+                                                     letinasset
                                                     ))
         Tunit in
 
