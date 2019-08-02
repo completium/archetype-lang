@@ -33,11 +33,13 @@ let is_fail (t : mterm) (e : mterm option) : bool =
 
 type s_red = {
   with_ops : bool;
+  types_: (ident * type_) list;
 }
 
 type ctx_red = {
   local_fun_types : (ident * type_) list;
   vars: (ident * type_) list;
+  target: mterm option;
 }
 
 let merge_seq (mt1 : mterm) (mt2 : mterm) : mterm =
@@ -65,43 +67,42 @@ let compute_side_effect (ctx : ctx_red) (mt : mterm) =
   in
   aux [] mt
 
-let rec process_mtern (ctx : ctx_red) (s : s_red) (mt : mterm) : mterm * s_red =
-  (* let fold_list x y : mterm list * s_red = fold_map_term_list (process_mtern ctx) x y in *)
-
-  let process_non_empty_list_term (s : s_red) (mts : mterm list) : mterm * s_red =
-    let split_last_list l : 'a * 'a list =
-      let rec split_last_list_rec accu l =
-        match l with
-        | [] -> assert false
-        | t::[] -> (t, (List.rev accu))
-        | t::l -> split_last_list_rec (t::accu) l
-      in
-      split_last_list_rec [] l
+let rec process_non_empty_list_term (ctx : ctx_red) (s : s_red) (mts : mterm list) : mterm * s_red =
+  let split_last_list l : 'a * 'a list =
+    let rec split_last_list_rec accu l =
+      match l with
+      | [] -> assert false
+      | t::[] -> (t, (List.rev accu))
+      | t::l -> split_last_list_rec (t::accu) l
     in
-    let last, list = split_last_list mts in
-
-    let last, s = process_mtern ctx s last in
-
-    List.fold_right (fun x (accu, s) ->
-        let x, s = process_mtern ctx s x in
-        match x with
-        | { node = Massign (op, id, value); _} ->
-          mk_mterm (Mletin ([id], value, Some value.type_, accu)) accu.type_, s
-        | {type_ = Ttuple (Tcontainer(Toperation, Collection)::Tstorage::l); _} ->
-          mk_mterm (Mletin ([storage_lident; operations_lident] @ (List.fold_left (fun accu x -> (dumloc "_")::accu) [] l), x, Some x.type_, accu)) x.type_, s
-        | {type_ = Ttuple (Tstorage::l); _} ->
-          mk_mterm (Mletin ([storage_lident] @ (List.fold_left (fun accu x -> (dumloc "_")::accu) [] l), x, Some x.type_, accu)) x.type_, s
-        | {type_ = Ttuple (Tcontainer(Toperation, Collection)::l); _} ->
-          mk_mterm (Mletin ([operations_lident] @ (List.fold_left (fun accu x -> (dumloc "_")::accu) [] l), x, Some x.type_, accu)) x.type_, s
-        | {type_ = Tstorage; _} ->
-          mk_mterm (Mletin ([storage_lident], x, Some x.type_, accu)) x.type_, s
-        | {type_ = Tcontainer (Toperation, Collection); _} ->
-          mk_mterm (Mletin ([operations_lident], x, Some x.type_, accu)) x.type_, s
-        | _ ->
-          (* Format.eprintf "not_found: %a@\n" pp_mterm x; *)
-          mk_mterm (Mseq [x ; accu]) accu.type_, s
-      ) list (last, s)
+    split_last_list_rec [] l
   in
+  let last, list = split_last_list mts in
+
+  let last, s = process_mtern ctx s last in
+
+  List.fold_right (fun x (accu, s) ->
+      let x, s = process_mtern ctx s x in
+      match x with
+      | { node = Massign (op, id, value); _} ->
+        mk_mterm (Mletin ([id], value, Some value.type_, accu)) accu.type_, s
+      | {type_ = Ttuple (Tcontainer(Toperation, Collection)::Tstorage::l); _} ->
+        mk_mterm (Mletin ([storage_lident; operations_lident] @ (List.fold_left (fun accu x -> (dumloc "_")::accu) [] l), x, Some x.type_, accu)) x.type_, s
+      | {type_ = Ttuple (Tstorage::l); _} ->
+        mk_mterm (Mletin ([storage_lident] @ (List.fold_left (fun accu x -> (dumloc "_")::accu) [] l), x, Some x.type_, accu)) x.type_, s
+      | {type_ = Ttuple (Tcontainer(Toperation, Collection)::l); _} ->
+        mk_mterm (Mletin ([operations_lident] @ (List.fold_left (fun accu x -> (dumloc "_")::accu) [] l), x, Some x.type_, accu)) x.type_, s
+      | {type_ = Tstorage; _} ->
+        mk_mterm (Mletin ([storage_lident], x, Some x.type_, accu)) x.type_, s
+      | {type_ = Tcontainer (Toperation, Collection); _} ->
+        mk_mterm (Mletin ([operations_lident], x, Some x.type_, accu)) x.type_, s
+      | _ ->
+        (* Format.eprintf "not_found: %a@\n" pp_mterm x; *)
+        mk_mterm (Mseq [x ; accu]) accu.type_, s
+    ) list (last, s)
+
+and process_mtern (ctx : ctx_red) (s : s_red) (mt : mterm) : mterm * s_red =
+  (* let fold_list x y : mterm list * s_red = fold_map_term_list (process_mtern ctx) x y in *)
 
   let get_type (ctx : ctx_red) (id : ident) : type_ =
     List.assoc id ctx.local_fun_types
@@ -204,7 +205,7 @@ let rec process_mtern (ctx : ctx_red) (s : s_red) (mt : mterm) : mterm * s_red =
       | [] -> mt, s
       | i::[] ->
         process_mtern ctx s i
-      | _ -> process_non_empty_list_term s l
+      | _ -> process_non_empty_list_term ctx s l
     end
 
   | Mfor (a, col, body) ->
@@ -245,8 +246,10 @@ let rec process_mtern (ctx : ctx_red) (s : s_red) (mt : mterm) : mterm * s_red =
 let process_body (ctx : ctx_red) (mt : mterm) : mterm =
   let s : s_red = {
     with_ops = false;
+    types_ = [];
   } in
-  let mt, _s = process_mtern ctx s mt in
+  let target = Option.get ctx.target in
+  let mt, _s = process_non_empty_list_term ctx s [mt; target] in
   mt
 
 let analyse_type (mt : mterm) : type_ = Tstorage
@@ -261,28 +264,29 @@ let process_functions (model : model) : model =
             match t with
             | Tunit ->
               let ret : type_  = analyse_type fs.body in
-              let args, fun_body =
+              let args, target =
                 begin
                   match ret with
                   | Tstorage ->
-                    let seq = merge_seq fs.body storage_var in
                     let arg : argument = (storage_lident, Tstorage, None) in
                     let args = arg::fs.args in
-                    args, seq
+                    args, storage_var
                   | Tcontainer (Toperation, Collection) ->
-                    let seq = merge_seq fs.body operations_var in
                     let arg : argument = (operations_lident, operations_type, None) in
                     let args = arg::fs.args in
-                    args, seq
+                    args, operations_var
                   | Ttuple [Tcontainer (Toperation, Collection); Tstorage] ->
-                    let seq = merge_seq fs.body operations_storage_var in
                     let arg_s_ : argument = (storage_lident, Tstorage, None) in
                     let arg_ops_ : argument = (operations_lident, operations_type, None) in
                     let args = arg_s_::arg_ops_::fs.args  in
-                    args, seq
+                    args, operations_storage_var
                   | _ -> assert false
                 end in
-              let body = process_body ctx fun_body in
+              let ctx : ctx_red = {
+                ctx with
+                target = Some target;
+              } in
+              let body = process_body ctx fs.body in
               let fs = {
                 fs with
                 args = args;
@@ -291,18 +295,25 @@ let process_functions (model : model) : model =
               let ctx : ctx_red = {
                 ctx with
                 local_fun_types = (unloc fs.name, ret)::ctx.local_fun_types;
+                target = None;
               } in
               Function (fs, ret), ctx
             | _ -> assert false
           end
         | Entry fs ->
-          let ret = mk_mterm (Mtuple [operations_var; storage_var]) operations_storage_type in
-          let seq = mk_mterm (Mseq [fs.body; ret]) operations_storage_type in
-          let entry_body = mk_mterm (Mletin ([operations_lident], operations_init, Some operations_type, seq)) seq.type_ in
+          let entry_body = mk_mterm (Mletin ([operations_lident], operations_init, Some operations_type, fs.body)) operations_storage_type in
+          let ctx = {
+            ctx with
+            target = Some operations_storage_var;
+          } in
           let body = process_body ctx entry_body in
           let fs = {
             fs with
             body = body;
+          } in
+          let ctx = {
+            ctx with
+            target = None;
           } in
           Entry fs, ctx
       in
@@ -315,6 +326,7 @@ let process_functions (model : model) : model =
     let ctx : ctx_red = {
       local_fun_types = [];
       vars = [];
+      target = None;
     } in
     let res, _ = List.fold_left (fun (l, ctx) f ->
         let item, ctx =  process_function__ ctx f in
