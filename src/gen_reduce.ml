@@ -47,6 +47,24 @@ let merge_seq (mt1 : mterm) (mt2 : mterm) : mterm =
   | Mseq l, _ -> mk_mterm (Mseq (l @ [mt2])) mt2.type_
   | _ -> mk_mterm (Mseq [mt1; mt2]) mt2.type_
 
+let compute_side_effect (ctx : ctx_red) (mt : mterm) =
+  let rec aux (accu : (ident * type_) list) (mt : mterm) : (ident * type_) list =
+    begin
+      match mt with
+      | { node = Massign (_, a, b); _} ->
+        let id : ident = unloc a in
+        let type_ = List.assoc_opt id ctx.vars in
+        (match type_ with
+         | Some v ->
+           if List.mem (id, v) accu
+           then accu
+           else (id, v)::accu
+         | None -> accu)
+      | _ -> fold_term aux accu mt
+    end
+  in
+  aux [] mt
+
 let rec process_mtern (ctx : ctx_red) (s : s_red) (mt : mterm) : mterm * s_red =
   (* let fold_list x y : mterm list * s_red = fold_map_term_list (process_mtern ctx) x y in *)
 
@@ -67,6 +85,8 @@ let rec process_mtern (ctx : ctx_red) (s : s_red) (mt : mterm) : mterm * s_red =
     List.fold_right (fun x (accu, s) ->
         let x, s = process_mtern ctx s x in
         match x with
+        | { node = Massign (op, id, value); _} ->
+          mk_mterm (Mletin ([id], value, Some value.type_, accu)) accu.type_, s
         | {type_ = Ttuple (Tcontainer(Toperation, Collection)::Tstorage::l); _} ->
           mk_mterm (Mletin ([storage_lident; operations_lident] @ (List.fold_left (fun accu x -> (dumloc "_")::accu) [] l), x, Some x.type_, accu)) x.type_, s
         | {type_ = Ttuple (Tstorage::l); _} ->
@@ -173,19 +193,11 @@ let rec process_mtern (ctx : ctx_red) (s : s_red) (mt : mterm) : mterm * s_red =
     in
     mk_mterm (Mif (c, t, e)) Tstorage, s
 
-  (* let node = Mletin ([storage_lident], mif, Some Tstorage, storage_var) in
-     mk_mterm node Tunit, s *)
-
-
-
   | Mseq l ->
-    let filter l : mterm list =
-      List.fold_right (fun (x : mterm) accu ->
-          match x.node with
-          | Massert _ -> accu
-          | _ -> x::accu
-        ) l [] in
-    let l : mterm list = filter l in
+    let l : mterm list = List.filter (fun (x : mterm) ->
+        match x.node with
+        | Massert _ -> false
+        | _ -> true) l in
 
     begin
       match l with
@@ -196,31 +208,8 @@ let rec process_mtern (ctx : ctx_red) (s : s_red) (mt : mterm) : mterm * s_red =
     end
 
   | Mfor (a, col, body) ->
-
-    let get_subs (mt : mterm) =
-      let rec aux (accu : ident list) (mt : mterm) : ident list =
-        begin
-          match mt.node with
-          | Massign (_, a, b) ->
-            let id : ident = unloc a in
-            let res : ident list =
-              if List.mem id accu
-              then accu
-              else id::accu in
-            res
-          | _ -> fold_term aux accu mt
-        end
-      in
-      aux [] mt
-    in
     let col, s = process_mtern ctx s col in
-
-    let subs : ident list = get_subs body in
-    let subs : (ident * type_) list = List.fold_left (fun accu (x : ident) ->
-        let res = List.assoc_opt x ctx.vars in
-        match res with
-        | Some v -> (x, v)::accu
-        | None -> accu) [] subs in
+    let subs : (ident * type_) list = compute_side_effect ctx body in
     let is = [storage_lident] @ (List.map (fun (x, y) -> dumloc x) subs) in
     let t, s, body =
       match subs with
