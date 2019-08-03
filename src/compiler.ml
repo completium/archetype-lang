@@ -90,6 +90,9 @@ let output_liquidity model =
     Format.printf "%s@\n" url
   else Format.printf "%a@." Printer_model_liq.pp_model model
 
+let output_ligo model =
+  Format.printf "%a@." Printer_model_ligo.pp_model model
+
 let generate_whyml model =
   let mlw = Gen_why3.to_whyml model in
   if !Options.opt_raw_target
@@ -104,6 +107,13 @@ let generate_target model =
     |> remove_side_effect
     |> generate_api_storage
     |> output_liquidity
+
+  | Ligo ->
+    model
+    |> shallow_asset
+    |> remove_side_effect
+    |> generate_api_storage
+    |> output_ligo
 
   | Whyml ->
     model
