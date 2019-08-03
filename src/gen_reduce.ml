@@ -26,6 +26,12 @@ let operations_init : mterm = mk_mterm (Marray []) operations_type
 let operations_storage_type : type_ = Ttuple [Tcontainer (Toperation, Collection); Tstorage]
 let operations_storage_var : mterm = mk_mterm (Mtuple [operations_var; storage_var]) operations_storage_type
 
+let rec simplify (mt : mterm) : mterm =
+  match mt.node with
+  | Mletin ([let_id], init, _, {node = (Mvarlocal var_id); _})
+  | Mletin ([let_id], init, _, {node = (Mtuple [{node = Mvarlocal var_id; _}]); _}) when String.equal (unloc let_id) (unloc var_id) -> simplify init
+  | _ -> map_term simplify mt
+
 let is_fail (t : mterm) (e : mterm option) : bool =
   match t.node , e with
   | Mfail _, None -> true
@@ -267,7 +273,7 @@ let process_body (ctx : ctx_red) (mt : mterm) : mterm =
   } in
   let target = Option.get ctx.target in
   let mt, _s = process_non_empty_list_term ctx s [mt; target] in
-  mt
+  simplify mt
 
 let analyse_type (mt : mterm) : type_ = Tstorage
 
