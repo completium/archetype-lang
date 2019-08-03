@@ -106,7 +106,7 @@ let rec process_non_empty_list_term (ctx : ctx_red) (s : s_red) (mts : mterm lis
         mk_mterm (Mletin ([operations_lident], x, Some x.type_, accu)) x.type_, s
       | _ ->
         (* Format.eprintf "not_found: %a@\n" pp_mterm x; *)
-        mk_mterm (Mseq [x ; accu]) accu.type_, s
+        merge_seq x accu, s
     ) list (last, s)
 
 and process_mtern (ctx : ctx_red) (s : s_red) (mt : mterm) : mterm * s_red =
@@ -195,8 +195,11 @@ and process_mtern (ctx : ctx_red) (s : s_red) (mt : mterm) : mterm * s_red =
     mk_mterm (Mletin (ids, init, t, body)) body.type_, s
 
   (* controls *)
-  | Mif (_, t, e) when is_fail t e -> mt, s
+  | Mif (c, t, e) when is_fail t e ->
+    let c, s = process_mtern ctx s c in
+    mk_mterm (Mif (c, t, None)) Tunit, s
   | Mif (c, t, e) ->
+    let c, s = process_mtern ctx s c in
     let target, subs =
       (match ctx.target with
        | Some {node = (Mtuple l); _} ->
@@ -215,7 +218,7 @@ and process_mtern (ctx : ctx_red) (s : s_red) (mt : mterm) : mterm * s_red =
         | None -> Some target, s(*{s with subs = subs}*)
       end
     in
-    mk_mterm (Mif (c, t, e)) Tstorage, s
+    mk_mterm (Mif (c, t, e)) target.type_, {s with subs = subs}
 
   | Mseq l ->
     let l : mterm list = List.filter (fun (x : mterm) ->
