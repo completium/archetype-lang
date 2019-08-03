@@ -1633,7 +1633,7 @@ let create_miles_with_expiration_ast () =
                                             ~type_:((Tbuiltin VTbool))
                                          )
                                  ]))
-                     ~type_:(Tasset (dumloc "owner"))
+                     ~type_:(Tcontainer (Tasset (dumloc "mile"), Collection))
                   ),
                   mk_instr (Iseq [
                       mk_instr (Irequire (true,
