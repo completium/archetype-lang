@@ -30,6 +30,17 @@ let rec simplify (mt : mterm) : mterm =
   match mt.node with
   | Mletin ([let_id], init, _, {node = (Mvarlocal var_id); _})
   | Mletin ([let_id], init, _, {node = (Mtuple [{node = Mvarlocal var_id; _}]); _}) when String.equal (unloc let_id) (unloc var_id) -> simplify init
+  | Mletin (ids, init, _, {node = (Mtuple tuples); _}) when
+      (
+        let cmp_lidents (ids1 : lident list) (ids2 : lident list) : bool = List.fold_left2 (fun accu x y -> accu && String.equal (unloc x) (unloc y)) true ids1 ids2 in
+        let tuples_ids, continue = List.fold_right (fun (x : mterm) (tuples_ids, continue) ->
+            match x.node with
+            | Mvarlocal id -> id::tuples_ids, continue
+            | _ -> tuples_ids, false) tuples ([], true) in
+        if (not continue) || List.compare_lengths ids tuples_ids <> 0
+        then false
+        else cmp_lidents ids tuples_ids)
+    -> simplify init
   | _ -> map_term simplify mt
 
 let is_fail (t : mterm) (e : mterm option) : bool =
@@ -95,15 +106,28 @@ let rec process_non_empty_list_term (ctx : ctx_red) (s : s_red) (mts : mterm lis
       let x, s = process_mtern ctx s x in
       match x with
       | { node = Massign (op, id, value); _} ->
+        let type_ = value.type_ in
+        let value =
+          let var = mk_mterm (Mvarlocal id) type_ in
+          match op with
+          | ValueAssign -> value
+          | PlusAssign  -> mk_mterm (Mplus (var, value)) type_
+          | MinusAssign -> mk_mterm (Mminus (var, value)) type_
+          | MultAssign  -> mk_mterm (Mmult (var, value)) type_
+          | DivAssign   -> mk_mterm (Mdiv (var, value)) type_
+          | AndAssign   -> mk_mterm (Mand (var, value)) type_
+          | OrAssign    -> mk_mterm (Mor (var, value)) type_
+        in
+
         mk_mterm (Mletin ([id], value, Some value.type_, accu)) accu.type_, s
       | {type_ = Ttuple (Tcontainer(Toperation, Collection)::Tstorage::l); _} ->
         mk_mterm (Mletin ([storage_lident; operations_lident] @ (List.fold_left (fun accu x -> (dumloc "_")::accu) [] l), x, Some x.type_, accu)) accu.type_, s
       | {type_ = Ttuple (Tstorage::l); _} ->
-        let aaa : lident list = (List.mapi (fun i x ->
+        let lidents : lident list = (List.mapi (fun i x ->
             if i < List.length s.subs
             then dumloc (List.nth s.subs i |> fst)
             else (dumloc "_")) l) in
-        mk_mterm (Mletin ([storage_lident] @ aaa, x, Some x.type_, accu)) accu.type_, s
+        mk_mterm (Mletin ([storage_lident] @ lidents, x, Some x.type_, accu)) accu.type_, s
       | {type_ = Ttuple (Tcontainer(Toperation, Collection)::l); _} ->
         mk_mterm (Mletin ([operations_lident] @ (List.fold_left (fun accu x -> (dumloc "_")::accu) [] l), x, Some x.type_, accu)) x.type_, s
       | {type_ = Tstorage; _} ->
@@ -247,6 +271,7 @@ and process_mtern (ctx : ctx_red) (s : s_red) (mt : mterm) : mterm * s_red =
                 (Ttuple (Tstorage::(List.map (fun (x, y : ident * type_) -> y) subs))) in
             l @ [target]
         ) in
+        let s = {s with subs = subs} in
         process_non_empty_list_term ctx s l
     end
 

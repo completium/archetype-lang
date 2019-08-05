@@ -292,7 +292,7 @@ let pp_model fmt (model : model) =
   let pp_utils fmt l =
     let pp_util_add fmt _ =
       Format.fprintf fmt
-        "@\nlet add_list elt l = elt::l@\n"
+        "@\nlet add_list elt l = List.rev (elt::(List.rev l))@\n"
     in
 
     let pp_util_remove fmt _ =
