@@ -140,7 +140,7 @@ let%entry consume (a, quantity : key_hash * int) (_s : storage) : operation list
                         then let (_s, remainder) : storage * int =
                                let remainder : int = 0 in
                                let _s : storage = remove_owner_miles (_s, ow, m.id) in
-                               (_s, remainder)in
+                               (_s, remainder) in
                           (_s, remainder)
                         else let (_s, remainder) : storage * int =
                                let remainder : int = m.amount in
