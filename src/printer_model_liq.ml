@@ -258,7 +258,7 @@ let pp_model fmt (model : model) =
       Format.fprintf fmt
         "let[@inline] sum_%s_%s (s : storage) : %a =@\n  \
          Map.fold (fun (x, accu) ->@\n  \
-         accu * x.(1).%s@\n  \
+         accu + x.(1).%s@\n  \
          ) s.%s_assets %s@\n"
         an fn pp_type t fn an (show_zero t)
 
@@ -386,11 +386,16 @@ let pp_model fmt (model : model) =
   let pp_mterm fmt (mt : mterm) =
     let rec f fmt (mtt : mterm) =
       match mtt.node with
-      | Mif (c, t, e) ->
-        Format.fprintf fmt "if @[%a@]@\nthen @[<v 2>%a@]%a"
+      | Mif (c, t, None) ->
+        Format.fprintf fmt "@[if %a@ then %a@]"
           f c
           f t
-          (pp_option (fun fmt -> Format.fprintf fmt "@\nelse @[<v 2>%a@]" f)) e
+
+      | Mif (c, t, Some e) ->
+        Format.fprintf fmt "@[if %a then @\n  @[%a @]@\nelse @\n  @[%a @]@]"
+          f c
+          f t
+          f e
 
       | Mmatchwith (e, l) ->
         let pp fmt (e, l) =
@@ -789,11 +794,17 @@ let pp_model fmt (model : model) =
 
         let lll = List.map2 (fun x y -> (x, y)) ll l in
 
-        Format.fprintf fmt "{%a}"
+        Format.fprintf fmt "{ %a }"
           (pp_list "; " (fun fmt (a, b)->
                Format.fprintf fmt "%a = %a"
                  pp_id a
                  f b)) lll
+      | Mletin (ids, ({node = Mseq l} as a), t, b) ->
+        Format.fprintf fmt "let %a%a =@\n%ain@\n@[%a@]"
+          (pp_if (List.length ids > 1) (pp_paren (pp_list ", " pp_id)) (pp_list ", " pp_id)) ids
+          (pp_option (fun fmt -> Format.fprintf fmt  " : %a" pp_type)) t
+          f a
+          f b
       | Mletin (ids, a, t, b) ->
         Format.fprintf fmt "let %a%a = %a in@\n@[%a@]"
           (pp_if (List.length ids > 1) (pp_paren (pp_list ", " pp_id)) (pp_list ", " pp_id)) ids
@@ -859,8 +870,8 @@ let pp_model fmt (model : model) =
         let cond = Option.is_some t in
 
         Format.fprintf fmt
-          "List.fold (fun (%a, (%a)) ->@\n \
-           %a@[<v 4>%a@]) %a (%a)@\n"
+          "List.fold (fun (%a, (%a)) ->@\n\
+           %a@[  %a@]) %a (%a)@\n"
           pp_id i (pp_list ", " pp_id) is
           (pp_do_if cond (fun fmt c ->
                let an = Option.get t in
@@ -873,7 +884,7 @@ let pp_model fmt (model : model) =
           f c
           (pp_list ", " pp_id) is
       | Mseq is ->
-        Format.fprintf fmt "%a"
+        Format.fprintf fmt "@[%a@]"
           (pp_list ";@\n" f) is
 
       | Massign (op, l, r) ->
