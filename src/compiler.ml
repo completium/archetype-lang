@@ -93,6 +93,9 @@ let output_liquidity model =
 let output_ligo model =
   Format.printf "%a@." Printer_model_ligo.pp_model model
 
+let output_smartpy model =
+  Format.printf "%a@." Printer_model_smartpy.pp_model model
+
 let generate_whyml model =
   let mlw = Gen_why3.to_whyml model in
   if !Options.opt_raw_target
@@ -114,6 +117,12 @@ let generate_target model =
     |> remove_side_effect
     |> generate_api_storage
     |> output_ligo
+
+  | SmartPy ->
+    model
+    |> shallow_asset
+    |> generate_api_storage
+    |> output_smartpy
 
   | Whyml ->
     model
@@ -143,6 +152,7 @@ let main () =
   let f = function
     | "liquidity" -> Options.target := Liquidity
     | "ligo"      -> Options.target := Ligo
+    | "smartpy"   -> Options.target := SmartPy
     | "whyml"     -> Options.target := Whyml
     | "markdown"  -> Options.target := Markdown
     |  s ->

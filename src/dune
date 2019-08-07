@@ -12,7 +12,7 @@
   (library_flags (-linkall))
   (modules tools core ident options location parseTree parser lexer symbol error position pureLexer parseError
   io printer_tools printer gen_markdown typing ast model gen_model printer_model gen_shallow_asset gen_api_storage
-  gen_reduce printer_model_liq printer_model_ligo gen_why3 mlwtree printer_mlwtree printer_whyml)
+  gen_reduce printer_model_liq printer_model_ligo printer_model_smartpy gen_why3 mlwtree printer_mlwtree printer_whyml)
   (libraries menhirLib uri digestif omd why3 ppx_deriving yojson ppx_deriving_yojson.runtime)
 )
 
