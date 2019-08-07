@@ -333,7 +333,7 @@ let pp_model fmt (model : model) =
 
   let pp_operator fmt op =
     let to_str = function
-      | ValueAssign -> ":="
+      | ValueAssign -> "="
       | PlusAssign -> "+="
       | MinusAssign -> "-="
       | MultAssign -> "*="
@@ -363,7 +363,7 @@ let pp_model fmt (model : model) =
     let rec f fmt (mtt : mterm) =
       match mtt.node with
       | Mif (c, { node = Mfail _}, None) ->
-        Format.fprintf fmt "@[sp.verify(%a)]"
+        Format.fprintf fmt "@[sp.verify(%a)@]"
           f c
 
       | Mif (c, t, None) ->
@@ -786,9 +786,9 @@ let pp_model fmt (model : model) =
           f a
           f b
       | Mletin (ids, a, t, b) ->
-        Format.fprintf fmt "let %a%a = %a in@\n@[%a@]"
+        Format.fprintf fmt "%a = %a@\n%a"
           (pp_if (List.length ids > 1) (pp_paren (pp_list ", " pp_id)) (pp_list ", " pp_id)) ids
-          (pp_option (fun fmt -> Format.fprintf fmt  " : %a" pp_type)) t
+          (* (pp_option (fun fmt -> Format.fprintf fmt  " : %a" pp_type)) t *)
           f a
           f b
       | Mvarstorevar v -> Format.fprintf fmt "self.data.%a" pp_id v
@@ -1067,7 +1067,7 @@ let pp_model fmt (model : model) =
                         \t# define a contract@\n\
                         \tc1 = %s()@\n\
                         \t# show its representation@\n\
-                        \thtml  = c1.fullHtml()@\n\
+                        \thtml = c1.fullHtml()@\n\
                         \tsetOutput(html)@\n\
                         \t@\n"
       name
@@ -1079,6 +1079,8 @@ let pp_model fmt (model : model) =
                       class %s(sp.Contract):@\n\
                       \t@[%a@]@\n\
                       \t@[%a@]@\n\
+                      \t#Functions@\n\
+                      @\n\
                       \t@[%a@]@\n\
                       @\n\
                       %a
