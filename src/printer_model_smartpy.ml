@@ -48,7 +48,7 @@ let pp_nothing (fmt : Format.formatter) = ()
 
 let pp_model fmt (model : model) =
 
-  let _pp_model_name (fmt : Format.formatter) _ =
+  let pp_model_name (fmt : Format.formatter) _ =
     Format.fprintf fmt "# contract: %a "
       pp_id model.name
   in
@@ -113,84 +113,78 @@ let pp_model fmt (model : model) =
     | Get an ->
       Format.fprintf fmt
         "def get_%s (self, key):@\n\
-         \tself.data.%s_assets[key]@\n"
+         \t\tself.data.%s_assets[key]@\n"
         an an
     | Set an ->
       Format.fprintf fmt
         "def set_%s (self, key, asset):@\n\
-         \tself.data.%s_assets[key] = asset@\n"
+         \t\tself.data.%s_assets[key] = asset@\n"
         an an
 
     | Add an ->
       let k, t = Utils.get_record_key model (to_lident an) in
       Format.fprintf fmt
         "def add_%s (self, asset):@\n\
-         \tkey = asset.%a@\n\
-         \tself.data.%s_keys.append(key)@\n\
-         \tself.data.%s_assets[key] = asset@\n"
+         \t\tkey = asset.%a@\n\
+         \t\tself.data.%s_keys.append(key)@\n\
+         \t\tself.data.%s_assets[key] = asset@\n"
         an pp_id k an an
 
     | Remove an ->
       Format.fprintf fmt
         "def remove_%s (self, key):@\n\
-         \tself.data.%s_keys.remove(key)@\n\
-         \tdel self.data.%s_assets[key]@\n"
+         \t\tself.data.%s_keys.remove(key)@\n\
+         \t\tdel self.data.%s_assets[key]@\n"
         an an an
 
     | Clear an ->
-      let k, t = Utils.get_record_key model (to_lident an) in
       Format.fprintf fmt
-        "let[@inline] clear_%s (s : storage) : storage =@\n  \
-         let s = s.%s_keys <- [] in@\n  \
-         s.%s_assets <- (%a, %s) map@\n"
-        an an an pp_btyp t an
+        "def clear_%s (self):@\n\
+         \t\t#TODO@\n"
+        an
 
     | Reverse an ->
       Format.fprintf fmt
-        "let[@inline] reverse_%s (s : storage) : storage =@\n  \
-         s.%s_keys <- List.rev s.%s_keys@\n"
-        an an an
+        "def reverse_%s (self):@\n\
+         \t\t#TODO@\n"
+        an
 
     | UpdateAdd (an, fn) ->
       let k, t = Utils.get_record_key model (to_lident an) in
-      (* let ft, c = Utils.get_field_container model an fn in *)
-      (* let kk, _ = Utils.get_record_key model (to_lident ft) in *)
       Format.fprintf fmt
         "def add_%s_%s (s, asset, b):@\n\
-         \tasset = asset.%s.insert(b)@\n\
-         \tself.data.%s_assets[asset.%a] = asset@\n"
+         \t\tasset = asset.%s.insert(b)@\n\
+         \t\tself.data.%s_assets[asset.%a] = asset@\n"
         an fn
         fn
         an pp_id k
 
     | UpdateRemove (an, fn) ->
       let k, t = Utils.get_record_key model (to_lident an) in
-      (* let ft, c = Utils.get_field_container model an fn in *)
-      (* let kk, tt = Utils.get_record_key model (to_lident ft) in *)
       Format.fprintf fmt
         "def remove_%s_%s (s, asset, key):@\n\
-         \tasset = asset.%s.pop(key)@\n\
-         \tself.data.%s_assets[asset.%a] = asset@\n"
+         \t\tasset = asset.%s.pop(key)@\n\
+         \t\tself.data.%s_assets[asset.%a] = asset@\n"
         an fn
         fn
         an pp_id k
 
     | UpdateClear (an, fn) ->
       Format.fprintf fmt
-        "let[@inline] clear_%s_%s (s : storage * %s) : storage =@\n  \
-         s (*TODO*)@\n"
-        an fn an
+        "def clear_%s_%s (self):@\n\
+         \t\t#TODO@\n"
+        an fn
 
     | UpdateReverse (an, fn) ->
       Format.fprintf fmt
-        "let[@inline] reverse_%s_%s (s : storage * %s) : storage =@\n  \
-         s (*TODO*)@\n"
-        an fn an
+        "def reverse_%s_%s (self):@\n\
+         \t\t#TODO@\n"
+        an fn
 
     | ToKeys an ->
       Format.fprintf fmt
-        "let[@inline] to_keys_%s (s : storage) : storage =@\n  \
-         s (*TODO*)@\n"
+        "def to_keys_%s (self):@\n\
+         \t\t#TODO@\n"
         an
   in
 
@@ -204,50 +198,63 @@ let pp_model fmt (model : model) =
   let pp_function_const fmt = function
     | Select an ->
       Format.fprintf fmt
-        "def select_%s (s, c, p):@\n\
-         \t[]@\n"
-        an
+        "def select_%s (self, c, p):@\n\
+         \t\treduce(@\n\
+         \t\t(lambda x, key:@\n\
+         \t\t\titem = get_%s(self, key)@\n\
+         \t\t\tif (p item):@\n\
+         \t\t\t\tx.insert (key)@\n\
+         \t\t\t\tx@\n\
+         \t\t\telse:@\n\
+         \t\t\t\tx@\n\
+         \t\t\t),@\n\
+         \t\tself.data.%s_keys,@\n\
+         \t\t[])@\n"
+        an an an
 
     | Sort (an, fn) ->
       Format.fprintf fmt
-        "let[@inline] sort_%s_%s (s : storage) : unit =@\n  \
-         () (*TODO*)@\n"
+        "def sort_%s_%s (s : storage) : unit =@\n  \
+         \t\t#TODO@\n"
         an fn
 
     | Contains an ->
       Format.fprintf fmt
         "def contains_%s (l, key):@\n\
-         \tkey in l@\n"
+         \t\tkey in l@\n"
         an
 
     | Nth an ->
       Format.fprintf fmt
-        "let[@inline] nth_%s (s : storage) : unit =@\n  \
-         () (*TODO*)@\n"
+        "def nth_%s (self):@\n\
+         \t\t#TODO@\n"
         an
 
     | Count an ->
       Format.fprintf fmt
-        "let[@inline] count_%s (s : storage) : unit =@\n  \
-         () (*TODO*)@\n"
+        "def count_%s (self):@\n\
+         \t\t#TODO@\n"
         an
 
     | Sum (an, fn) ->
       Format.fprintf fmt
         "def sum_%s_%s (self):@\n\
-         \treduce((lambda x, key: x[key].%s + y), s.%s_assets, 0)@\n"
-        an fn fn an
+         \t\treduce(@\n\
+         \t\t(lambda x, key: self.data.%s_assets[key].%s + x),@\n\
+         \t\tself.data.%s_keys,@\n\
+         \t\t0)@\n"
+        an fn an fn an
 
     | Min (an, fn) ->
       Format.fprintf fmt
-        "let[@inline] min_%s_%s (s : storage) : unit =@\n  \
-         () (*TODO*)@\n"
+        "def min_%s_%s (self):@\n\
+         \t\t#TODO@\n"
         an fn
 
     | Max (an, fn) ->
       Format.fprintf fmt
-        "let[@inline] max_%s_%s (s : storage) : unit =@\n  \
-         () (*TODO*)@\n"
+        "def max_%s_%s (self):@\n\
+         \t\t#TODO@\n"
         an fn
 
   in
@@ -264,59 +271,6 @@ let pp_model fmt (model : model) =
     | APIBuiltin   v -> pp_builtin_const fmt v
   in
 
-
-  let _pp_utils fmt l =
-    let pp_util_add fmt _ =
-      Format.fprintf fmt
-        "@\nlet add_list elt l = List.rev (elt::(List.rev l))@\n"
-    in
-
-    let pp_util_remove fmt _ =
-      Format.fprintf fmt
-        "@\nlet remove_list elt l =@\n  \
-         List.fold (fun (x, accu) ->@\n  \
-         if x = elt@\n  \
-         then accu@\n  \
-         else add_list elt accu@\n  \
-         ) [] l@\n"
-    in
-
-    let ga, gr = List.fold_left (fun (ga, gr) (x : api_item) ->
-        match x.node with
-        | APIStorage   (Get           _) -> (ga, gr)
-        | APIStorage   (Set           _) -> (ga, gr)
-        | APIStorage   (Add           _) -> (true, gr)
-        | APIStorage   (Remove        _) -> (true, true)
-        | APIStorage   (Clear         _) -> (ga, gr)
-        | APIStorage   (Reverse       _) -> (ga, gr)
-        | APIStorage   (UpdateAdd     _) -> (true, gr)
-        | APIStorage   (UpdateRemove  _) -> (true, true)
-        | APIStorage   (UpdateClear   _) -> (ga, gr)
-        | APIStorage   (UpdateReverse _) -> (ga, gr)
-        | APIStorage   (ToKeys        _) -> (ga, gr)
-        | APIFunction  (Select        _) -> (ga, gr)
-        | APIFunction  (Sort          _) -> (ga, gr)
-        | APIFunction  (Contains      _) -> (ga, gr)
-        | APIFunction  (Nth           _) -> (ga, gr)
-        | APIFunction  (Count         _) -> (ga, gr)
-        | APIFunction  (Sum           _) -> (ga, gr)
-        | APIFunction  (Min           _) -> (ga, gr)
-        | APIFunction  (Max           _) -> (ga, gr)
-        | APIContainer (Add           _) -> (ga, gr)
-        | APIContainer (Remove        _) -> (ga, gr)
-        | APIContainer (Clear         _) -> (ga, gr)
-        | APIContainer (Reverse       _) -> (ga, gr)
-        | APIBuiltin   (Min           _) -> (ga, gr)
-        | APIBuiltin   (Max           _) -> (ga, gr)
-      )   (false, false) l in
-    if   ga || gr
-    then
-      Format.fprintf fmt "(* Utils *)@\n%a%a@\n"
-        pp_util_add ()
-        (pp_do_if gr pp_util_remove) ()
-
-  in
-
   let pp_api_item fmt (api_item : api_item) =
     if api_item.only_formula
     then ()
@@ -327,8 +281,9 @@ let pp_model fmt (model : model) =
     if List.is_empty l
     then pp_nothing fmt
     else
-      Format.fprintf fmt "@[# API function@\n\t@[%a@]@\n@]"
-        (pp_list "@\n" pp_api_item) l
+      Format.fprintf fmt "# API function@\n%a@\n"
+        (* Format.pp_print_tab () *)
+        (pp_list "@\n\t" pp_api_item) l
   in
 
   let pp_operator fmt op =
@@ -367,12 +322,12 @@ let pp_model fmt (model : model) =
           f c
 
       | Mif (c, t, None) ->
-        Format.fprintf fmt "@[sp.if (%a):@\n %a@]"
+        Format.fprintf fmt "@[sp.if (%a):@\n @[<v 4>%a@]@]"
           f c
           f t
 
       | Mif (c, t, Some e) ->
-        Format.fprintf fmt "@[sp.if (%a):@\n\t@[%a@]@\nsp.else:@\n\t@[%a@]@]"
+        Format.fprintf fmt "@[sp.if (%a):@\n\t@[<v 4>%a@]@\nsp.else:@\n\t@[<v 4>%a@]@]"
           f c
           f t
           f e
@@ -391,7 +346,7 @@ let pp_model fmt (model : model) =
 
       | Mapp (e, args) ->
         let pp fmt (e, args) =
-          Format.fprintf fmt "%a (%a)"
+          Format.fprintf fmt "%a (self, %a)"
             pp_id e
             (pp_list ", " f) args
         in
@@ -838,7 +793,7 @@ let pp_model fmt (model : model) =
         Format.fprintf fmt "(%a)"
           (pp_list ", " f) l
       | Mfor (i, c, b) ->
-        Format.fprintf fmt "sp.for %a in %a:@\n\t@[%a@]@\n"
+        Format.fprintf fmt "sp.for %a in %a:@\n\t@[<v 4>%a@]@\n"
           pp_id i
           f c
           f b
@@ -866,8 +821,8 @@ let pp_model fmt (model : model) =
           f c
           (pp_list ", " pp_id) is
       | Mseq is ->
-        Format.fprintf fmt "@[%a@]"
-          (pp_list "@\n" f) is
+        Format.fprintf fmt "@[<v 4>%a@]"
+          (pp_list "@\n\t" f) is
 
       | Massign (op, l, r) ->
         Format.fprintf fmt "%a %a %a"
@@ -915,104 +870,9 @@ let pp_model fmt (model : model) =
     f fmt mt
   in
 
-  let pp_enum_item fmt (enum_item : enum_item) =
-    Format.fprintf fmt "| %a"
-      pp_id enum_item.name
-  in
-
-  let pp_enum fmt (enum : enum) =
-    Format.fprintf fmt "type %a =@\n[<v 2>  %a@]@\n"
-      pp_id enum.name
-      (pp_list "@\n" pp_enum_item) enum.values
-  in
-
-  let pp_record_item fmt (item : record_item) =
-    let pp_typ fmt t =
-      match t with
-      | Tcontainer (Tasset an, _) ->
-        let _, t = Utils.get_record_key model an in
-        Format.fprintf fmt "%a list"
-          pp_btyp t
-      | _ -> pp_type fmt t
-    in
-    Format.fprintf fmt "%a : %a;"
-      pp_id item.name
-      pp_typ item.type_
-      (* (pp_option (fun fmt -> Format.fprintf fmt " := %a" pp_mterm)) item.default *)
-  in
-
-  let pp_record fmt (record : record) =
-    Format.fprintf fmt "type %a = {@\n@[<v 2>  %a@]@\n}@\n"
-      pp_id record.name
-      (pp_list "@\n" pp_record_item) record.values
-  in
-
-  let _pp_decl fmt = function
-    | Denum e -> pp_enum fmt e
-    | Drecord r -> pp_record fmt r
-    | _ -> ()
-  in
-
-  let pp_storage_item fmt (si : storage_item) =
-    match si with
-    | { asset = Some an; _} ->
-      let _, t = Utils.get_record_key model an in
-      Format.fprintf fmt "%s_keys: %a list;@\n%s_assets: (%a, %s) map;"
-        (unloc an)
-        pp_btyp t
-        (unloc an)
-        pp_btyp t
-        (unloc an)
-
-    | _ ->
-      Format.fprintf fmt "%a : %a;"
-        pp_id si.name
-        pp_type si.typ
-  in
-
-  let _pp_storage fmt (s : storage) =
-    Format.fprintf fmt "type storage = {@\n@[<v 2>  %a@]@\n}@\n"
-      (pp_list "@\n" pp_storage_item) s
-  in
-
-  let _pp_init_function fmt (s : storage) =
-    let pp_storage_item fmt (si : storage_item) =
-      match si with
-      | { asset = Some an; _} ->
-        let _, t = Utils.get_record_key model an in
-        Format.fprintf fmt "%s_keys = [];@\n%s_assets = (Map : (%a, %s) map);"
-          (unloc an)
-          (unloc an)
-          pp_btyp t
-          (unloc an)
-
-      | _ ->
-        Format.fprintf fmt "%a = %a;"
-          pp_id si.name
-          (pp_cast Rhs si.typ si.default.type_ pp_mterm) si.default
-    in
-
-    Format.fprintf fmt "let%%init initialize = {@\n@[<v 2>  %a@]@\n}@\n"
-      (pp_list "@\n" pp_storage_item) s
-  in
-
-  let _pp_args fmt args =
-    match args with
-    | [] -> Format.fprintf fmt "()"
-    | [(id, t, _)] ->
-      Format.fprintf fmt "(%a : %a)"
-        pp_id id
-        pp_type t
-    | _   ->
-      Format.fprintf fmt "(%a : %a)"
-        (pp_list ", " (fun fmt (id, _, _) -> pp_id fmt id)) args
-        (pp_list " * " (fun fmt (_ , t, _) -> pp_type fmt t)) args
-
-  in
-
   let pp_function fmt f =
     let pp_prelude_entrypoint fmt _ =
-      Format.fprintf fmt "@@sp.entryPoint@\n"
+      Format.fprintf fmt "@@sp.entryPoint@\n\t"
     in
     let pp_args fmt f  =
       match f.node with
@@ -1025,26 +885,23 @@ let pp_model fmt (model : model) =
       | Entry f -> f
       | Function (f, a) -> f
     in
-    Format.fprintf fmt "@[%adef %a%a:@\n%a@]"
+    Format.fprintf fmt "%adef %a%a:@\n\t\t%a"
       (pp_do_if (match f.node with | Entry _ -> true | _ -> false) pp_prelude_entrypoint) ()
       pp_id fs.name
       pp_args f
       pp_mterm fs.body
-      (*  pp_id fs.name
-          pp_args fs.args
-          extra_arg
-          (pp_option (fun fmt -> Format.fprintf fmt " : %a" pp_type)) ret
-      *)
   in
 
-
+  let pp_functions fmt fs =
+    Format.fprintf fmt "%a"
+      (pp_list "@\n\t" pp_function) fs
+  in
 
   let pp_init_function fmt (s : storage) =
     let pp_storage_item fmt (si : storage_item) =
       match si with
       | { asset = Some an; _} ->
-        Format.fprintf fmt "%s_keys = [],@\n\
-                            %s_assets = {}"
+        Format.fprintf fmt "%s_keys = [],@\n\t\t%s_assets = {}"
           (unloc an)
           (unloc an)
 
@@ -1054,10 +911,10 @@ let pp_model fmt (model : model) =
           pp_mterm si.default
     in
 
-    Format.fprintf fmt "@[def __init__(self):@\n\
-                        \tself.init(@[%a@])@\n\
-                        @]"
-      (pp_list ",@\n" pp_storage_item) s
+    Format.fprintf fmt "def __init__(self):@\n\tself.init(%a)@\n"
+      ( Format.pp_print_list
+          ~pp_sep:(fun fmt () -> Format.fprintf fmt ",@\n\t\t")
+          pp_storage_item) s
   in
 
   let pp_test fmt name =
@@ -1074,21 +931,27 @@ let pp_model fmt (model : model) =
   in
 
   let name = "Mwe" in
-  Format.fprintf fmt "import smartpy as sp@\n\
+  Format.fprintf fmt "# Smartpy output generated by archetype@\n\
+                      @\n\
+                      %a@\n\
+                      @\n\
+                      @\n\
+                      import smartpy as sp@\n\
                       @\n\
                       class %s(sp.Contract):@\n\
-                      \t@[%a@]@\n\
-                      \t@[%a@]@\n\
+                      \t%a@\n\
+                      \t%a@\n\
                       \t#Functions@\n\
                       @\n\
                       \t@[%a@]@\n\
                       @\n\
                       %a
                       @."
+    pp_model_name ()
     name
     pp_init_function model.storage
     pp_api_items model.api_items
-    (pp_list "@\n" pp_function) model.functions
+    pp_functions model.functions
     pp_test name
 
 (* -------------------------------------------------------------------------- *)
