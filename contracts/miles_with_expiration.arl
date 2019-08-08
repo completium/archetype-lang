@@ -44,7 +44,7 @@ action consume (a : address) (quantity : int) = {
       mile.sum(the.amount) = before mile.sum(the.amount) - quantity
       invariants for loop {
         0 <= remainder <= to_iter.sum(amount);
-        before mile.sum(amount) = mile.sum(amount) + quantity - remainder
+        before mile.sum(the.amount) = mile.sum(the.amount) + quantity - remainder
       }
     }
 
