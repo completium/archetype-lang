@@ -87,7 +87,8 @@ let record_to_key m n (t : M.mterm) =
   | M.Mrecord l ->
     let key = List.nth l key_pos in
     key
-  | M.Mvarlocal _ ->
+  | M.Mvarlocal _
+  | M.Mvarparam _ ->
     let (key,typ) = M.Utils.get_record_key m n in
     M.mk_mterm (M.Mdotasset (t,key)) (M.Tbuiltin typ)
   | _ -> assert false

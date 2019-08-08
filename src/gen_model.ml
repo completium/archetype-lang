@@ -1,5 +1,5 @@
 open Location
-(* open Ident *)
+open Ident
 open Tools
 
 module A = Ast
@@ -675,10 +675,22 @@ let to_model (ast : A.model) : M.model =
     list @ [M.mk_function ?verif:verif node]
   in
 
+
+  let replace_var_by_param (args : M.argument list) mt : M.mterm =
+    let ident_args : ident list = List.map (fun (id, _, _) -> unloc id) args in
+    let is_arg (id : M.lident) = List.mem (unloc id) ident_args in
+    let rec aux (mt : M.mterm) : M.mterm =
+      match mt.node with
+      | M.Mvarlocal id when is_arg id -> {mt with node = M.Mvarparam id}
+      | _ -> M.map_term aux mt
+    in
+    aux mt
+  in
+
   let process_function (function_ : A.function_) (list : M.function__ list) : M.function__ list =
     let name  = function_.name in
     let args  = List.map (fun (x : (A.lident, A.ptyp, A.ptyp A.bval_gen) A.decl_gen) -> (x.name, (ptyp_to_type |@ Option.get) x.typ, None)) function_.args in
-    let body  = to_instruction function_.body in
+    let body  = to_instruction function_.body |> replace_var_by_param args in
     let loc   = function_.loc in
     let ret   = ptyp_to_type function_.return in
     let verif : M.verification option = Option.map to_verification function_.verification in
@@ -845,6 +857,7 @@ let to_model (ast : A.model) : M.model =
       |> process_requires
       |> process_accept_transfer
       |> process_calledby
+      |> replace_var_by_param args
     in
     let loc   = transaction.loc in
     let verif : M.verification option = Option.map to_verification transaction.verification in

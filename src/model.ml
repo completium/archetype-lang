@@ -208,6 +208,7 @@ type ('id, 'term) mterm_node  =
   | Mvarstorecol  of 'id
   | Mvarenumval   of 'id
   | Mvarlocal     of 'id
+  | Mvarparam     of 'id
   | Mvarfield     of 'id
   | Mvarthe
   | Mstate
@@ -751,6 +752,7 @@ let cmp_mterm_node
     | Mvarenumval v1, Mvarenumval v2                                                   -> cmpi v1 v2
     | Mvarfield v1, Mvarfield v2                                                       -> cmpi v1 v2
     | Mvarlocal v1, Mvarlocal v2                                                       -> cmpi v1 v2
+    | Mvarparam v1, Mvarparam v2                                                       -> cmpi v1 v2
     | Mvarthe, Mvarthe                                                                 -> true
     | Mstate, Mstate                                                                   -> true
     | Mnow, Mnow                                                                       -> true
@@ -864,6 +866,7 @@ let map_term_node (f : 'id mterm_gen -> 'id mterm_gen) = function
   | Mvarenumval v                -> Mvarenumval  v
   | Mvarfield v                  -> Mvarfield    v
   | Mvarlocal v                  -> Mvarlocal    v
+  | Mvarparam v                  -> Mvarparam    v
   | Mvarthe                      -> Mvarthe
   | Mstate                       -> Mstate
   | Mnow                         -> Mnow
@@ -982,6 +985,7 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mvarenumval _                         -> accu
   | Mvarfield _                           -> accu
   | Mvarlocal _                           -> accu
+  | Mvarparam _                           -> accu
   | Mvarthe                               -> accu
   | Marray l                              -> List.fold_left f accu l
   | Mint _                                -> accu
@@ -1325,6 +1329,9 @@ let fold_map_term
 
   | Mvarlocal v ->
     g (Mvarlocal v), accu
+
+  | Mvarparam v ->
+    g (Mvarparam v), accu
 
   | Mvarthe ->
     g Mvarthe, accu
