@@ -183,7 +183,7 @@ type ('id, 'term) mterm_node  =
   | Mmax          of ident * 'id * 'term
   | Mmathmax      of 'term * 'term
   | Mmathmin      of 'term * 'term
-  | Mfail         of 'term
+  | Mfail         of 'id fail_type_gen
   | Mand          of 'term * 'term
   | Mor           of 'term * 'term
   | Mimply        of 'term * 'term
@@ -275,6 +275,17 @@ and mterm = lident mterm_gen
 [@@deriving show {with_path = false}]
 
 and mterm__node = (lident, mterm) mterm_node
+[@@deriving show {with_path = false}]
+
+and 'id fail_type_gen =
+  | Invalid of 'id mterm_gen
+  | InvalidCaller
+  | InvalidCondition of ident option
+  | NoTransfer
+  | InvalidState
+[@@deriving show {with_path = false}]
+
+and fail_type = lident fail_type_gen
 [@@deriving show {with_path = false}]
 
 type 'id label_term_gen = {
@@ -616,6 +627,16 @@ let cmp_btyp (b1 : btyp) (b2 : btyp) : bool = b1 = b2
 let cmp_vset (v1 : vset) (v2 : vset) : bool = v1 = v2
 let cmp_trtyp (t1 : trtyp) (t2 : trtyp) : bool = t1 = t2
 
+let cmp_fail_type
+    (cmp : 'term -> 'term -> bool)
+    (ft1 : 'id fail_type_gen)
+    (ft2 : 'id fail_type_gen) : bool =
+  match ft1, ft2 with
+  | Invalid mt1, Invalid mt2 -> cmp mt1 mt2
+  | InvalidCaller, InvalidCaller -> true
+  | InvalidCondition c1, InvalidCondition c2 -> Option.cmp cmp_ident c1 c2
+  | _ -> false
+
 let rec cmp_type
     (t1 : type_)
     (t2 : type_)
@@ -702,7 +723,7 @@ let cmp_mterm_node
     | Msum (an1, fd1, c1), Msum (an2, fd2, c2)                                         -> cmp_ident an1 an2 && cmpi fd1 fd2 && cmp c1 c2
     | Mmin (an1, fd1, c1), Mmin (an2, fd2, c2)                                         -> cmp_ident an1 an2 && cmpi fd1 fd2 && cmp c1 c2
     | Mmax (an1, fd1, c1), Mmax (an2, fd2, c2)                                         -> cmp_ident an1 an2 && cmpi fd1 fd2 && cmp c1 c2
-    | Mfail (msg1), Mfail (msg2)                                                       -> cmp msg1 msg1
+    | Mfail ft1, Mfail ft2                                                             -> cmp_fail_type cmp ft1 ft2
     | Mmathmin (l1, r1), Mmathmin (l2, r2)                                             -> cmp l1 l2 && cmp r1 r2
     | Mmathmax (l1, r1), Mmathmax (l2, r2)                                             -> cmp l1 l2 && cmp r1 r2
     | Mand (l1, r1), Mand (l2, r2)                                                     -> cmp l1 l2 && cmp r1 r2
@@ -815,7 +836,7 @@ let map_term_node (f : 'id mterm_gen -> 'id mterm_gen) = function
   | Msum (an, fd, c)             -> Msum (an, fd, f c)
   | Mmin (an, fd, c)             -> Mmin (an, fd, f c)
   | Mmax (an, fd, c)             -> Mmax (an, fd, f c)
-  | Mfail (msg)                  -> Mfail (f msg)
+  | Mfail (ft)                   -> Mfail (ft)
   | Mmathmin (l, r)              -> Mmathmin (f l, f r)
   | Mmathmax (l, r)              -> Mmathmax (f l, f r)
   | Mand (l, r)                  -> Mand (f l, f r)
@@ -933,7 +954,7 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Msum (an, fd, c)                      -> f accu c
   | Mmin (an, fd, c)                      -> f accu c
   | Mmax (an, fd, c)                      -> f accu c
-  | Mfail (msg)                           -> f accu msg
+  | Mfail (ft)                            -> accu
   | Mmathmax (l, r)                       -> f (f accu l) r
   | Mmathmin (l, r)                       -> f (f accu l) r
   | Mand (l, r)                           -> f (f accu l) r
@@ -1174,9 +1195,15 @@ let fold_map_term
     let ce, ca = f accu c in
     g (Mmax (an, fd, ce)), ca
 
-  | Mfail (msg) ->
-    let msge, msga = f accu msg in
-    g (Mfail (msge)), msga
+  | Mfail ft ->
+    let fte, fta =
+      match ft with
+      | Invalid mt ->
+        let mte, accu = f accu mt in
+        Invalid mte, accu
+      | _ -> ft, accu
+    in
+    g (Mfail fte), fta
 
   | Mmathmax (l, r) ->
     let le, la = f accu l in

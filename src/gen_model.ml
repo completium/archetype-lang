@@ -122,9 +122,8 @@ let to_model (ast : A.model) : M.model =
         | A.AFun _ -> assert false (* TODO *)*)
   in
 
-  let fail msg : M.mterm =
-    let var = M.mk_mterm (M.Mstring msg) (M.Tbuiltin Bstring) in
-    M.mk_mterm (M.Mfail var) M.Tunit
+  let fail (ft : M.fail_type) : M.mterm =
+    M.mk_mterm (Mfail ft) M.Tunit
   in
 
   let term_not x : M.mterm =
@@ -422,7 +421,7 @@ let to_model (ast : A.model) : M.model =
         then term_not (f t)
         else (f t)
       in
-      M.Mif (cond, fail "required", None)
+      M.Mif (cond, fail (InvalidCondition None), None)
 
     | A.Itransfer (i, b, q)     -> M.Mtransfer (f i, b, Option.map to_qualid_gen q)
     | A.Ibreak                  -> M.Mbreak
@@ -431,7 +430,7 @@ let to_model (ast : A.model) : M.model =
     | A.Icall (i, Cid id, args) -> M.Mapp (id, Option.map_dfl (fun v -> [to_mterm v]) [] i @ List.map (term_arg_to_expr f) args)
 
     | A.Icall (_, A.Cconst (A.Cfail), [AExpr p]) ->
-      M.Mfail (f p)
+      M.Mfail (Invalid (f p))
 
     | A.Icall (None, A.Cconst (A.Cadd), [AExpr p; AExpr q])
     | A.Icall (Some p, A.Cconst (A.Cadd), [AExpr q]) -> (
@@ -727,7 +726,7 @@ let to_model (ast : A.model) : M.model =
             M.mk_mterm (M.Mequal (caller, addr)) (M.Tbuiltin Bbool) ~loc:rq.loc
         in
         let require : M.mterm = M.mk_mterm (M.Mnot (process_rexpr cb)) (M.Tbuiltin Bbool) ~loc:cb.loc in
-        let fail_auth : M.mterm = fail "not_authorized_fun" in
+        let fail_auth : M.mterm = fail InvalidCaller in
         let cond_if = M.mk_mterm (M.Mif (require, fail_auth, None)) M.Tunit in
         add_seq cond_if body
       in
@@ -740,14 +739,9 @@ let to_model (ast : A.model) : M.model =
 
     let process_requires (body : M.mterm) : M.mterm =
       let process_require (x : (A.lident, A.pterm) A.label_term) (body : M.mterm) : M.mterm =
-        let msg =
-          match x.label with
-          | Some label -> "require " ^ (unloc label) ^ " failed"
-          | _ -> "require failed"
-        in
         let term = to_mterm x.term in
         let cond : M.mterm = M.mk_mterm (M.Mnot term) (Tbuiltin Bbool) ~loc:x.loc in
-        let fail_cond : M.mterm = fail msg in
+        let fail_cond : M.mterm = fail (InvalidCondition (Option.map unloc x.label)) in
         let cond_if = M.mk_mterm (M.Mif (cond, fail_cond, None)) M.Tunit ~loc:x.loc in
         add_seq cond_if body
       in
@@ -764,7 +758,7 @@ let to_model (ast : A.model) : M.model =
         let rhs : M.mterm = M.mk_mterm (M.Mcurrency (Big_int.zero_big_int, Tez)) type_currency in
         let eq : M.mterm = M.mk_mterm (M.Mequal (lhs, rhs)) (M.Tbuiltin Bbool) in
         let cond : M.mterm = M.mk_mterm (M.Mnot eq) (M.Tbuiltin Bbool) in
-        let cond_if : M.mterm = M.mk_mterm (M.Mif (cond, fail "not_accept_transfer", None)) M.Tunit in
+        let cond_if : M.mterm = M.mk_mterm (M.Mif (cond, fail (NoTransfer), None)) M.Tunit in
         add_seq cond_if body
       else
         body
@@ -832,7 +826,7 @@ let to_model (ast : A.model) : M.model =
                 compute_patterns t.from in
 
               let pattern : M.pattern = M.mk_pattern M.Pwild in
-              let fail_instr : M.mterm = fail "not_valid_state" in
+              let fail_instr : M.mterm = fail InvalidState in
 
               let w = M.mk_mterm (M.Mvarstorevar state) (Tenum (dumloc "_state")) in
               M.mk_mterm (M.Mmatchwith (w, List.map (fun x -> (x, code)) list_patterns @ [pattern, fail_instr])) Tunit

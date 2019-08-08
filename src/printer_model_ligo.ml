@@ -623,9 +623,20 @@ let pp_model fmt (model : model) =
         in
         pp fmt (an, fd, c)
 
-      | Mfail (msg) ->
-        Format.fprintf fmt "Current.failwith %a"
-          f msg
+      | Mfail ft ->
+
+        let pp_fail_type fmt = function
+          | Invalid e -> f fmt e
+          | InvalidCaller -> Format.fprintf fmt "invalid caller"
+          | InvalidCondition c ->
+            Format.fprintf fmt "require %afailed"
+              (pp_option (pp_postfix " " pp_str)) c
+          | NoTransfer -> Format.fprintf fmt "no transfer"
+          | InvalidState -> Format.fprintf fmt "invalid state"
+        in
+
+        Format.fprintf fmt "Current.failwith \"%a\""
+          pp_fail_type ft
 
       | Mmathmin (l, r) ->
         Format.fprintf fmt "min (%a, %a)"
