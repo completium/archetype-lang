@@ -35,24 +35,23 @@ action add (ow : address) (newmile : mile) = {
 action consume (a : address) (quantity : int) = {
 
   verification {
+    
     assert p1 at zero_remainder = {
       remainder = 0
-      invariants for loop {
-        0 <= remainder <= to_iter.sum(amount)
-      }
     }
 
     specification p2 = {
       mile.sum(the.amount) = before mile.sum(the.amount) - quantity
       invariants for loop {
-        subset (removed miles) (ow.miles.select(expiration >= now))
+        0 <= remainder <= to_iter.sum(amount);
+        before mile.sum(amount) = mile.sum(amount) + quantity - remainder
       }
     }
 
     specification p3 = {
       forall m in removed mile, m.expiration >= now
       invariants for loop {
-        before mile.sum(amount) = mile.sum(amount) + quantity - remainder
+        subset (removed miles) (ow.miles.select(expiration >= now))
       }
     }
 
