@@ -33,29 +33,17 @@ module Miles_with_expiration_storage
 
     type owner = {
         addr   : address;
-        miles  : list mile;
+        miles  : acol;
     } 
 
-    type owner_storage = {
-        addr_storage   : address;
-        miles_storage  : acol;
-    } 
-
-    let owner_to_storage (pa : owner) : owner_storage 
-    =
-    {
-        addr_storage = pa.addr;
-        miles_storage = mkacol (mapl id pa.miles);
-    }
-
-    let mk_default_owner () : owner = { addr = 0; miles = Nil; } : owner
+    let mk_default_owner () : owner = { addr = 0; miles = empty; } : owner
 
     type storage = {
         mutable admin            : role;
         mutable mile_keys        : acol;
         mutable mile_assets      : map mile;
         mutable owner_keys       : acol;
-        mutable owner_assets     : map owner_storage;
+        mutable owner_assets     : map owner;
          (* contract env *)
         mutable ops_             : transfers;
         (* transaction env *)
@@ -252,10 +240,10 @@ module Miles_with_expiration_storage
          } in
          s.owner_assets <- set s.owner_assets (addr owner) new_owner)
     
-    let add_owner (s : storage) (new_owner : owner_plain) : unit
+    let add_owner (s : storage) (new_owner : owner) (assets : list mile) : unit
     raises { KeyExist, NotFound }
     (* input consistency *)
-    (*requires { let asset_keys = miles new_owner in card asset_keys = length assets }
+    requires { let asset_keys = miles new_owner in card asset_keys = length assets }
     requires { let asset_keys = miles new_owner in 
         forall i : int. 0 <= i < card asset_keys -> nth i asset_keys = id (gen_nth i assets) 
     }
@@ -283,15 +271,15 @@ module Miles_with_expiration_storage
         let asset_keys = miles new_owner in 
         (* let astorage = set_miles_to_storage asset_keys assets s in *)
         Amounts.sum s s.mile_keys = Amounts.sum (old s) (old s).mile_keys + Amounts.sum s asset_keys 
-    } *)
+    } 
     =
-    if mem (addr_plain new_owner) s.owner_keys then
+    if mem (addr new_owner) s.owner_keys then
         raise KeyExist
     else
-        s.owner_keys <- add (addr_plain new_owner) s.owner_keys;
-        s.owner_assets <- set s.owner_assets (addr_plain new_owner) (plain_to_owner new_owner));
+        s.owner_keys <- add (addr new_owner) s.owner_keys;
+        s.owner_assets <- set s.owner_assets (addr new_owner) (new_owner);
         s.tr_ <- s.tr_ ++ Tr.mk_trace s.ename_ (Tr.Add Owner);
-        let asset_keys = miles (new_owner in
+        let asset_keys = miles new_owner in
         for i = 0 to (card asset_keys) - 1 do
         invariant { s.mile_keys == union (old s).mile_keys (head i asset_keys) }
         invariant { s.added_miles == union (old s).added_miles (head i asset_keys) }

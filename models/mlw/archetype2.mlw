@@ -1,0 +1,195 @@
+theory Types
+
+  use int.Int
+
+  (* default type mapping *)
+  type key     = int
+  type role    = int
+  type address = int
+  type tez     = int
+  type date    = int
+  type string  = int
+
+  exception Break
+  exception NotFound
+  exception KeyExist
+  exception InvalidCaller
+  exception InvalidCondition
+
+end
+
+module IntListUtils
+  use int.Int
+  use list.List
+
+  let rec function fappend (l1 l2: list int) : list int 
+  variant { l1 }
+  =
+  match l1 with
+    | Nil -> l2
+    | Cons x1 r1 -> Cons x1 (fappend r1 l2)
+  end
+
+  let rec function fmem (x: int) (l: list int) : bool 
+  variant { l }
+  =
+  match l with
+    | Nil      -> false
+    | Cons e tl ->
+    if x = e 
+    then true
+    else fmem x tl
+    end
+
+  let rec remove_keys (l : list int) (keys : list int) : list int
+  variant { l }
+  = 
+  match l with
+  | Cons e tl ->
+    if fmem e keys
+    then remove_keys tl keys
+    else Cons e (remove_keys tl keys)
+  | Nil -> Nil
+  end
+
+end
+
+module AssetCollection
+
+  use Types
+  use IntListUtils
+  use list.List
+  use list.Length
+  use list.Nth
+  use int.Int
+  use option.Option
+
+  type t = abstract {}
+
+  val function sortf t : int
+  val function keyf  t : int
+
+  let rec predicate internal_mem (k : key) (l : list t) : bool 
+  variant { l }
+  = 
+  match l with
+  | Cons e tl ->
+    if keyf e = k
+    then true
+    else internal_mem k tl
+  | Nil -> false
+  end
+
+  type collection = {
+      content : list t
+  }
+
+  let function mem (k : key) (c : collection) = internal_mem k c.content
+
+  let function empty = { content = Nil }
+
+  let function add (c : collection) (a : t) = { content = Cons a c.content } 
+
+  let rec internal_set (l : list t) (k : key) (a : t) : list t  
+  variant { l }
+  = 
+  match l with
+  | Cons e tl ->
+    if keyf e = k 
+    then Cons a tl
+    else Cons e (internal_set tl k a)
+  | Nil -> Nil
+  end
+
+  let set (c : collection) (k : key) (a : t) : collection = { content = internal_set c.content k a }
+
+  let rec internal_remove (l : list t) (k : key) : list t
+  variant { l }
+  =
+  match l with
+  | Cons e tl ->
+    if keyf e = k
+    then tl
+    else Cons e (internal_remove tl k)
+  | Nil -> Nil
+  end
+
+  let remove (c : collection) (k : key) : collection = { content = internal_remove c.content k }
+
+  val function witness : t
+
+  let rec function internal_get (l : list t) (k : key) : t
+  variant { l }
+  =
+  match l with
+  | Cons e tl -> 
+    if keyf e = k
+    then e
+    else internal_get tl k
+  | Nil -> witness
+  end
+
+  let function get (c : collection) (k : key) : t = internal_get c.content k
+
+  let rec function to_ids (l : list t) : list key 
+  variant { l }
+  =
+  match l with
+  | Cons e tl -> Cons (keyf e) (to_ids tl)
+  | Nil -> Nil
+  end
+
+  let rec function internal_filter (l : list t) (test : t -> bool) : list t
+  variant { l }
+  ensures { forall a : t. internal_mem (keyf a) result -> test a }
+  = 
+  match l with
+  | Cons e tl -> 
+    if test e
+    then Cons e (internal_filter tl test)
+    else internal_filter tl test
+  end
+    
+  let function filter (c : collection) (test : t -> bool) : collection 
+  ensures { forall a : t. mem (keyf a) result -> test a }
+  = {
+      content = internal_filter (c.content) test;
+  }
+
+  let rec function internal_gets (l : list t) (keys : list int) : list t
+  variant { l }
+  =
+  match l with
+  | Cons e tl -> 
+    if fmem (keyf e) keys
+    then Cons e (internal_gets tl keys)
+    else internal_gets tl keys
+  | Nil -> Nil  
+  end
+
+  let function gets (c : collection) (keys : list int) : collection
+  = { content = internal_gets c.content keys }
+
+  let function card (c : collection) : int = length c.content
+
+  let nth (i : int) (c : collection) : t 
+  requires { 0 <= i < card c }
+  = 
+  match nth i c.content with
+  | Some v -> v
+  | None -> witness
+  end
+
+end
+
+
+
+theory Lib
+  
+  use export int.Int
+  use export Types
+  use export AssetCollection
+  use export IntListUtils
+
+
+end
