@@ -69,22 +69,25 @@ module AssetCollection
   val function sortf t : int
   val function keyf  t : int
 
-  let rec predicate internal_mem (k : key) (l : list t) : bool 
+  type collection = {
+      content : list t
+  }
+
+  (* membership *)
+  let rec predicate internal_contains (k : key) (l : list t) : bool 
   variant { l }
   = 
   match l with
   | Cons e tl ->
     if keyf e = k
     then true
-    else internal_mem k tl
+    else internal_contains k tl
   | Nil -> false
   end
 
-  type collection = {
-      content : list t
-  }
+  let function contains (k : key) (c : collection) = internal_contains k c.content
 
-  let function mem (k : key) (c : collection) = internal_mem k c.content
+  let function mem (a : t) (c : collection) = internal_contains (keyf a) c.content
 
   let function empty = { content = Nil }
 
@@ -139,23 +142,6 @@ module AssetCollection
   | Nil -> Nil
   end
 
-  let rec function internal_filter (l : list t) (test : t -> bool) : list t
-  variant { l }
-  ensures { forall a : t. internal_mem (keyf a) result -> test a }
-  = 
-  match l with
-  | Cons e tl -> 
-    if test e
-    then Cons e (internal_filter tl test)
-    else internal_filter tl test
-  end
-    
-  let function filter (c : collection) (test : t -> bool) : collection 
-  ensures { forall a : t. mem (keyf a) result -> test a }
-  = {
-      content = internal_filter (c.content) test;
-  }
-
   let rec function internal_gets (l : list t) (keys : list int) : list t
   variant { l }
   =
@@ -172,7 +158,7 @@ module AssetCollection
 
   let function card (c : collection) : int = length c.content
 
-  let nth (i : int) (c : collection) : t 
+  let function nth (i : int) (c : collection) : t 
   requires { 0 <= i < card c }
   = 
   match nth i c.content with
@@ -180,9 +166,51 @@ module AssetCollection
   | None -> witness
   end
 
+  let rec internal_proj (l : list t) (projf : t -> int) : list int
+  variant { l }
+  = 
+  match l with 
+  | Cons e tl -> Cons (projf e) (internal_proj tl projf)
+  | Nil -> Nil
+  end
+
+  let function proj (c : collection) (projf : t -> int) : list int = internal_proj c.content projf
+
 end
 
+module Sum 
 
+  use  int.Int
+  type container
+
+  val function f container int : int
+
+  let function sum (c : container) (i : int) (j : int) : int = 
+  let ref res = 0 in
+  for k = i to j - 1 do
+    res <- res + f c i
+  done;
+  res
+
+  axiom Sum_def_empty :
+    forall c : container, i j : int. j <= i -> sum c i j = 0
+
+  axiom Sum_def_non_empty :
+    forall c: container, i j : int. i < j -> sum c i j = f c i + sum c (i+1) j
+
+  lemma Sum_right_extension:
+    forall c : container, i j : int.
+    i < j -> sum c i j = sum c i (j-1) + f c (j-1)
+
+  lemma Sum_transitivity :
+    forall c : container, i k j : int. i <= k <= j ->
+    sum c i j = sum c i k + sum c k j
+
+  lemma Sum_eq :
+    forall c1 c2 : container, i j : int.
+    (forall k : int. i <= k < j -> f c1 k = f c2 k -> sum c1 i j = sum c2 i j)
+
+end
 
 theory Lib
   
