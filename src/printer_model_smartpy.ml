@@ -189,14 +189,14 @@ let pp_model fmt (model : model) =
   in
 
   let pp_container_const fmt = function
-    | Add t-> Format.fprintf fmt "add\t %a" pp_type t
-    | Remove t -> Format.fprintf fmt "remove\t %a" pp_type t
-    | Clear t -> Format.fprintf fmt "clear\t %a" pp_type t
-    | Reverse t -> Format.fprintf fmt "reverse %a" pp_type t
+    | AddItem t-> Format.fprintf fmt "add\t %a" pp_type t
+    | RemoveItem t -> Format.fprintf fmt "remove\t %a" pp_type t
+    | ClearItem t -> Format.fprintf fmt "clear\t %a" pp_type t
+    | ReverseItem t -> Format.fprintf fmt "reverse %a" pp_type t
   in
 
   let pp_function_const fmt = function
-    | Select an ->
+    | Select (an, _) ->
       Format.fprintf fmt
         "def select_%s (self, c, p):@\n\
          \t\treduce(@\n\
@@ -260,8 +260,8 @@ let pp_model fmt (model : model) =
   in
 
   let pp_builtin_const fmt = function
-    | Min t-> Format.fprintf fmt "min on %a" pp_type t
-    | Max t-> Format.fprintf fmt "max on %a" pp_type t
+    | MinBuiltin t-> Format.fprintf fmt "min on %a" pp_type t
+    | MaxBuiltin t-> Format.fprintf fmt "max on %a" pp_type t
   in
 
   let pp_api_item_node fmt = function
@@ -274,7 +274,7 @@ let pp_model fmt (model : model) =
   let pp_api_item fmt (api_item : api_item) =
     if api_item.only_formula
     then ()
-    else pp_api_item_node fmt api_item.node
+    else pp_api_item_node fmt api_item.node_item
   in
 
   let pp_api_items fmt l =

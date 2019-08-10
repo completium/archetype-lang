@@ -649,13 +649,14 @@ let pp_storage_const fmt = function
   | ToKeys an -> pp_str fmt ("to_keys\t " ^ an)
 
 let pp_container_const fmt = function
-  | Add t-> Format.fprintf fmt "add\t %a" pp_type t
-  | Remove t -> Format.fprintf fmt "remove\t %a" pp_type t
-  | Clear t -> Format.fprintf fmt "clear\t %a" pp_type t
-  | Reverse t -> Format.fprintf fmt "reverse %a" pp_type t
+  | AddItem t-> Format.fprintf fmt "add item\t %a" pp_type t
+  | RemoveItem t -> Format.fprintf fmt "remove item\t %a" pp_type t
+  | ClearItem t -> Format.fprintf fmt "clear item\t %a" pp_type t
+  | ReverseItem t -> Format.fprintf fmt "reverse item %a" pp_type t
 
 let pp_function_const fmt = function
-  | Select an -> pp_str fmt ("select\t " ^ an)
+  | Select (an, p) ->
+    Format.fprintf fmt "select\t %s %a" an pp_mterm p
   | Sort (an, fn) -> pp_str fmt ("sort\t " ^ an ^ " " ^ fn)
   | Contains an -> pp_str fmt ("contains " ^ an)
   | Nth an -> pp_str fmt ("nth\t " ^ an)
@@ -665,8 +666,8 @@ let pp_function_const fmt = function
   | Max (an, fn) -> pp_str fmt ("max\t " ^ an ^ " " ^ fn)
 
 let pp_builtin_const fmt = function
-  | Min t-> Format.fprintf fmt "min on %a" pp_type t
-  | Max t-> Format.fprintf fmt "max on %a" pp_type t
+  | MinBuiltin t-> Format.fprintf fmt "min on %a" pp_type t
+  | MaxBuiltin t-> Format.fprintf fmt "max on %a" pp_type t
 
 let pp_api_item_node fmt = function
   | APIStorage   v -> pp_storage_const fmt v
@@ -676,7 +677,7 @@ let pp_api_item_node fmt = function
 
 let pp_api_item fmt (api_item : api_item) =
   Format.fprintf fmt "%a%a"
-    pp_api_item_node api_item.node
+    pp_api_item_node api_item.node_item
     (fun fmt x -> if x then pp_str fmt "\t[only_formula]" else pp_str fmt "") api_item.only_formula
 
 let pp_api_items fmt l =

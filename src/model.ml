@@ -60,56 +60,6 @@ type type_ =
   | Ttrace of trtyp
 [@@deriving show {with_path = false}]
 
-type storage_const =
-  | Get              of ident
-  | Set              of ident
-  | Add              of ident
-  | Remove           of ident
-  | Clear            of ident
-  | Reverse          of ident
-  | UpdateAdd        of ident * ident
-  | UpdateRemove     of ident * ident
-  | UpdateClear      of ident * ident
-  | UpdateReverse    of ident * ident
-  | ToKeys           of ident
-[@@deriving show {with_path = false}]
-
-type container_const =
-  | Add      of type_
-  | Remove   of type_
-  | Clear    of type_
-  | Reverse  of type_
-[@@deriving show {with_path = false}]
-
-type function_const =
-  | Select           of ident
-  | Sort             of ident * ident
-  | Contains         of ident
-  | Nth              of ident
-  | Count            of ident
-  | Sum              of ident * ident
-  | Min              of ident * ident
-  | Max              of ident * ident
-[@@deriving show {with_path = false}]
-
-type builtin_const =
-  | Min of type_
-  | Max of type_
-[@@deriving show {with_path = false}]
-
-type api_item_node =
-  | APIStorage   of storage_const
-  | APIContainer of container_const
-  | APIFunction  of function_const
-  | APIBuiltin   of builtin_const
-[@@deriving show {with_path = false}]
-
-type api_item = {
-  node: api_item_node;
-  only_formula: bool;
-}
-[@@deriving show {with_path = false}]
-
 type 'id pattern_node =
   | Pwild
   | Pconst of 'id
@@ -287,6 +237,56 @@ and 'id fail_type_gen =
 [@@deriving show {with_path = false}]
 
 and fail_type = lident fail_type_gen
+[@@deriving show {with_path = false}]
+
+and storage_const =
+  | Get              of ident
+  | Set              of ident
+  | Add              of ident
+  | Remove           of ident
+  | Clear            of ident
+  | Reverse          of ident
+  | UpdateAdd        of ident * ident
+  | UpdateRemove     of ident * ident
+  | UpdateClear      of ident * ident
+  | UpdateReverse    of ident * ident
+  | ToKeys           of ident
+[@@deriving show {with_path = false}]
+
+and container_const =
+  | AddItem          of type_
+  | RemoveItem       of type_
+  | ClearItem        of type_
+  | ReverseItem      of type_
+[@@deriving show {with_path = false}]
+
+and function_const =
+  | Select           of ident * mterm
+  | Sort             of ident * ident
+  | Contains         of ident
+  | Nth              of ident
+  | Count            of ident
+  | Sum              of ident * ident
+  | Min              of ident * ident
+  | Max              of ident * ident
+[@@deriving show {with_path = false}]
+
+and builtin_const =
+  | MinBuiltin of type_
+  | MaxBuiltin of type_
+[@@deriving show {with_path = false}]
+
+and api_item_node =
+  | APIStorage   of storage_const
+  | APIContainer of container_const
+  | APIFunction  of function_const
+  | APIBuiltin   of builtin_const
+[@@deriving show {with_path = false}]
+
+and api_item = {
+  node_item: api_item_node;
+  only_formula: bool;
+}
 [@@deriving show {with_path = false}]
 
 type 'id label_term_gen = {
@@ -610,8 +610,8 @@ let mk_function ?verif node : 'id function__gen =
 let mk_signature ?(args = []) ?ret name : 'id signature_gen =
   { name; args; ret }
 
-let mk_api_item ?(only_formula = false) node =
-  { node; only_formula }
+let mk_api_item ?(only_formula = false) node_item =
+  { node_item; only_formula }
 
 let mk_model ?(api_items = []) ?(decls = []) ?(functions = []) name storage verification : model =
   { name; api_items; storage; decls; functions; verification}
@@ -1621,13 +1621,13 @@ end = struct
     | ToKeys         aid       -> "to_keys_" ^ aid
 
   let function_name_from_container_const = function
-    | Add            _ -> "add"
-    | Remove         _ -> "remove"
-    | Clear          _ -> "clear"
-    | Reverse        _ -> "reverse"
+    | AddItem            _ -> "add"
+    | RemoveItem         _ -> "remove"
+    | ClearItem          _ -> "clear"
+    | ReverseItem        _ -> "reverse"
 
   let function_name_from_function_const = function
-    | Select    aid       -> "select_"   ^ aid
+    | Select   (aid, _)   -> "select_"   ^ aid
     | Sort     (aid, fid) -> "sort_"     ^ aid ^ "_" ^ fid
     | Contains  aid       -> "contains_" ^ aid
     | Nth       aid       -> "nth_"      ^ aid
@@ -1637,8 +1637,8 @@ end = struct
     | Max      (aid, fid) -> "max_"      ^ aid ^ "_" ^ fid
 
   let function_name_from_builtin_const = function
-    | Min         _ -> "min"
-    | Max         _ -> "max"
+    | MinBuiltin         _ -> "min"
+    | MaxBuiltin         _ -> "max"
 
   let get_function_args (f : function__) : argument list =
     match f.node with

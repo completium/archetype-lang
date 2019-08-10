@@ -200,14 +200,14 @@ let pp_model fmt (model : model) =
   in
 
   let pp_container_const fmt = function
-    | Add t-> Format.fprintf fmt "add\t %a" pp_type t
-    | Remove t -> Format.fprintf fmt "remove\t %a" pp_type t
-    | Clear t -> Format.fprintf fmt "clear\t %a" pp_type t
-    | Reverse t -> Format.fprintf fmt "reverse %a" pp_type t
+    | AddItem t-> Format.fprintf fmt "add\t %a" pp_type t
+    | RemoveItem t -> Format.fprintf fmt "remove\t %a" pp_type t
+    | ClearItem t -> Format.fprintf fmt "clear\t %a" pp_type t
+    | ReverseItem t -> Format.fprintf fmt "reverse %a" pp_type t
   in
 
   let pp_function_const fmt = function
-    | Select an ->
+    | Select (an, _) ->
       let _, t = Utils.get_record_key model (to_lident an) in
       Format.fprintf fmt
         "let[@inline] select_%s (s, c, p : storage * %a list * (%s -> bool)) : %s list =@\n  \
@@ -277,8 +277,8 @@ let pp_model fmt (model : model) =
   in
 
   let pp_builtin_const fmt = function
-    | Min t-> Format.fprintf fmt "min on %a" pp_type t
-    | Max t-> Format.fprintf fmt "max on %a" pp_type t
+    | MinBuiltin t-> Format.fprintf fmt "min on %a" pp_type t
+    | MaxBuiltin t-> Format.fprintf fmt "max on %a" pp_type t
   in
 
   let pp_api_item_node fmt = function
@@ -306,7 +306,7 @@ let pp_model fmt (model : model) =
     in
 
     let ga, gr = List.fold_left (fun (ga, gr) (x : api_item) ->
-        match x.node with
+        match x.node_item with
         | APIStorage   (Get           _) -> (ga, gr)
         | APIStorage   (Set           _) -> (ga, gr)
         | APIStorage   (Add           _) -> (true, gr)
@@ -326,12 +326,12 @@ let pp_model fmt (model : model) =
         | APIFunction  (Sum           _) -> (ga, gr)
         | APIFunction  (Min           _) -> (ga, gr)
         | APIFunction  (Max           _) -> (ga, gr)
-        | APIContainer (Add           _) -> (ga, gr)
-        | APIContainer (Remove        _) -> (ga, gr)
-        | APIContainer (Clear         _) -> (ga, gr)
-        | APIContainer (Reverse       _) -> (ga, gr)
-        | APIBuiltin   (Min           _) -> (ga, gr)
-        | APIBuiltin   (Max           _) -> (ga, gr)
+        | APIContainer (AddItem       _) -> (ga, gr)
+        | APIContainer (RemoveItem    _) -> (ga, gr)
+        | APIContainer (ClearItem     _) -> (ga, gr)
+        | APIContainer (ReverseItem   _) -> (ga, gr)
+        | APIBuiltin   (MinBuiltin    _) -> (ga, gr)
+        | APIBuiltin   (MaxBuiltin    _) -> (ga, gr)
       )   (false, false) l in
     if   ga || gr
     then
@@ -344,7 +344,7 @@ let pp_model fmt (model : model) =
   let pp_api_item fmt (api_item : api_item) =
     if api_item.only_formula
     then ()
-    else pp_api_item_node fmt api_item.node
+    else pp_api_item_node fmt api_item.node_item
   in
 
   let pp_api_items fmt l =

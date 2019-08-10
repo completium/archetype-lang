@@ -14,7 +14,7 @@ let process_api_storage (model : model) : model =
   let add (ctx : ctx_model) (l : api_item list) (i :  api_item) =
     let item = { i with only_formula = ctx.formula } in
     let res, l = List.fold_left (fun (res, accu) (x : api_item) ->
-        if x.node = i.node
+        if x.node_item = i.node_item
         then (true, { item with only_formula = x.only_formula && ctx.formula }::accu)
         else (res, x::accu)) (false, []) l in
     if res then
@@ -47,8 +47,8 @@ let process_api_storage (model : model) : model =
         [APIStorage (Reverse asset_name)]
       | Mreversefield (asset_name, field_name, _) ->
         [APIStorage (UpdateReverse (asset_name, field_name))]
-      | Mselect (asset_name, _, _) ->
-        [APIStorage (Get asset_name); APIFunction (Select asset_name)]
+      | Mselect (asset_name, _, p) ->
+        [APIStorage (Get asset_name); APIFunction (Select (asset_name, p))]
       | Msort (asset_name, _, field_name, _) ->
         [APIFunction (Sort (asset_name, field_name))]
       | Mcontains (asset_name, _, _) ->
@@ -84,7 +84,7 @@ let process_api_storage (model : model) : model =
                    | APIStorage (UpdateClear     (an, _)) -> an
                    | APIStorage (UpdateReverse   (an, _)) -> an
                    | APIStorage (ToKeys           an)     -> an
-                   | APIFunction (Select          an)     -> an
+                   | APIFunction (Select         (an, _)) -> an
                    | APIFunction (Sort           (an, _)) -> an
                    | APIFunction (Contains        an)     -> an
                    | APIFunction (Nth             an)     -> an
@@ -100,7 +100,7 @@ let process_api_storage (model : model) : model =
                      | Drecord r -> accu @ [unloc r.name]
                      | _ -> accu
                    ) [] model.decls in
-                 let get_idx (i : api_item) = List.index_of (fun x -> String.equal (get_asset_name i.node) x) asset_list in
+                 let get_idx (i : api_item) = List.index_of (fun x -> String.equal (get_asset_name i.node_item) x) asset_list in
                  let idx1 = get_idx i1 in
                  let idx2 = get_idx i2 in
                  idx1 - idx2
@@ -127,15 +127,15 @@ let process_api_storage (model : model) : model =
                    | APIFunction  (Sum           _) -> 17
                    | APIFunction  (Min           _) -> 18
                    | APIFunction  (Max           _) -> 19
-                   | APIContainer (Add           _) -> 20
-                   | APIContainer (Remove        _) -> 21
-                   | APIContainer (Clear         _) -> 22
-                   | APIContainer (Reverse       _) -> 23
-                   | APIBuiltin   (Min           _) -> 24
-                   | APIBuiltin   (Max           _) -> 25
+                   | APIContainer (AddItem       _) -> 20
+                   | APIContainer (RemoveItem    _) -> 21
+                   | APIContainer (ClearItem     _) -> 22
+                   | APIContainer (ReverseItem   _) -> 23
+                   | APIBuiltin   (MinBuiltin    _) -> 24
+                   | APIBuiltin   (MaxBuiltin    _) -> 25
                  in
-                 let idx1 = get_kind i1.node in
-                 let idx2 = get_kind i2.node in
+                 let idx1 = get_kind i1.node_item in
+                 let idx2 = get_kind i2.node_item in
                  idx1 - idx2
                in
 
