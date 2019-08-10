@@ -803,6 +803,55 @@ let cmp_mterm_node
 let rec cmp_mterm (term1 : mterm) (term2 : mterm) : bool =
   cmp_mterm_node cmp_mterm cmp_lident term1.node term2.node
 
+let cmp_api_item_node (a1 : api_item_node) (a2 : api_item_node) : bool =
+  let cmp_storage_const (s1 : storage_const) (s2 : storage_const) : bool =
+    match s1, s2 with
+    | Get an1, Get an2  -> cmp_ident an1 an2
+    | Set an1 , Set an2 -> cmp_ident an1 an2
+    | Add an1 , Add an2 -> cmp_ident an1 an2
+    | Remove an1, Remove an2 -> cmp_ident an1 an2
+    | Clear an1, Clear an2 -> cmp_ident an1 an2
+    | Reverse an1, Reverse an2 -> cmp_ident an1 an2
+    | UpdateAdd (an1, fn1), UpdateAdd (an2, fn2) -> cmp_ident an1 an2 && cmp_ident fn1 fn2
+    | UpdateRemove (an1, fn1), UpdateRemove (an2, fn2) -> cmp_ident an1 an2 && cmp_ident fn1 fn2
+    | UpdateClear (an1, fn1), UpdateClear (an2, fn2) -> cmp_ident an1 an2 && cmp_ident fn1 fn2
+    | UpdateReverse (an1, fn1), UpdateReverse (an2, fn2) -> cmp_ident an1 an2 && cmp_ident fn1 fn2
+    | ToKeys an1, ToKeys an2 -> cmp_ident an1 an2
+    | _ -> false
+  in
+  let cmp_container_const (c1 : container_const) (c2 : container_const) : bool =
+    match c1, c2 with
+    | AddItem t1, AddItem t2         -> cmp_type t1 t2
+    | RemoveItem t1, RemoveItem t2   -> cmp_type t1 t2
+    | ClearItem t1, ClearItem t2     -> cmp_type t1 t2
+    | ReverseItem t1, ReverseItem t2 -> cmp_type t1 t2
+    | _ -> false
+  in
+  let cmp_function_const (f1 : function_const) (f2 : function_const) : bool =
+    match f1, f2 with
+    | Select (an1, p1), Select (an2, p2) -> cmp_ident an1 an2 && cmp_mterm p1 p2
+    | Sort (an1 , fn1), Sort (an2 , fn2) -> cmp_ident an1 an2 && cmp_ident fn1 fn2
+    | Contains an1, Contains an2         -> cmp_ident an1 an2
+    | Nth an1, Nth an2                   -> cmp_ident an1 an2
+    | Count an1, Count an2               -> cmp_ident an1 an2
+    | Sum (an1, fn1), Sum (an2, fn2)     -> cmp_ident an1 an2 && cmp_ident fn1 fn2
+    | Min (an1, fn1), Min (an2, fn2)     -> cmp_ident an1 an2 && cmp_ident fn1 fn2
+    | Max (an1, fn1), Max (an2, fn2)     -> cmp_ident an1 an2 && cmp_ident fn1 fn2
+    | _ -> false
+  in
+  let cmp_builtin_const (b1 : builtin_const) (b2 : builtin_const) : bool =
+    match b1, b2 with
+    | MinBuiltin t1, MinBuiltin t2 -> cmp_type t1 t2
+    | MaxBuiltin t1, MaxBuiltin t2 -> cmp_type t1 t2
+    | _ -> false
+  in
+  match a1, a2 with
+  | APIStorage s1, APIStorage s2     -> cmp_storage_const s1 s2
+  | APIContainer c1, APIContainer c2 -> cmp_container_const c1 c2
+  | APIFunction f1, APIFunction f2   -> cmp_function_const f1 f2
+  | APIBuiltin b1, APIBuiltin b2     -> cmp_builtin_const b1 b2
+  | _ -> false
+
 (* -------------------------------------------------------------------- *)
 
 let map_term_node (f : 'id mterm_gen -> 'id mterm_gen) = function

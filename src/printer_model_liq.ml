@@ -348,6 +348,21 @@ let pp_model fmt (model : model) =
   in
 
   let pp_api_items fmt l =
+    let filter_api_items l : api_item list =
+      let contains_select_asset_name a_name l : bool =
+        List.fold_left (fun accu x ->
+            match x.node_item with
+            | APIFunction  (Select (an, _)) -> accu || String.equal an a_name
+            | _ -> accu
+          ) false l
+      in
+      List.fold_right (fun (x : api_item) accu ->
+          match x.node_item with
+          | APIFunction  (Select (an, p)) when contains_select_asset_name an accu -> accu
+          | _ -> x::accu
+        ) l []
+    in
+    let l : api_item list = filter_api_items l in
     if List.is_empty l
     then pp_nothing fmt
     else

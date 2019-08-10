@@ -14,7 +14,7 @@ let process_api_storage (model : model) : model =
   let add (ctx : ctx_model) (l : api_item list) (i :  api_item) =
     let item = { i with only_formula = ctx.formula } in
     let res, l = List.fold_left (fun (res, accu) (x : api_item) ->
-        if x.node_item = i.node_item
+        if cmp_api_item_node x.node_item i.node_item
         then (true, { item with only_formula = x.only_formula && ctx.formula }::accu)
         else (res, x::accu)) (false, []) l in
     if res then
