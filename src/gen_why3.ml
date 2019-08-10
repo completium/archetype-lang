@@ -537,8 +537,10 @@ let map_lidents = List.map map_lident
 
 let type_to_init (typ : loc_typ) : loc_term =
   mk_loc typ.loc (match typ.obj with
-      | Typartition i -> Tvar (mk_loc typ.loc "empty")
-      | Tycoll i      -> Tvar (mk_loc typ.loc "empty")
+      | Typartition i -> Tdoti (mk_loc typ.loc (String.capitalize_ascii i.obj),
+                                mk_loc typ.loc "empty")
+      | Tycoll i      -> Tdoti (mk_loc typ.loc (String.capitalize_ascii i.obj),
+                                mk_loc typ.loc "empty")
       | Tymap i       -> Tvar (mk_loc typ.loc ("const (mk_default_"^i.obj^" ())"))
       | _             -> Tint Big_int.zero_big_int)
 
@@ -637,7 +639,8 @@ let mk_extended_invariant m n inv : loc_term =
   let replacements = List.map (fun f -> mk_app_field asset f) fields in
   let replaced = List.fold_left (fun acc (t1,t2) -> loc_replace t1 t2 acc) inv replacements in
   let prefix   = Tforall ([["a"],Tyasset (unloc_ident asset)],
-                          Timpl (Tmem ((unloc_ident asset), Tvar "a", Tvar (asset.obj^"_assets")),
+                          Timpl (Tmem ((unloc_ident asset), Tvar "a",
+                                       Tvar (mkId(asset.obj^"_assets"))),
                                  Ttobereplaced)) in
   loc_replace (with_dummy_loc Ttobereplaced) replaced (loc_term prefix)
 
