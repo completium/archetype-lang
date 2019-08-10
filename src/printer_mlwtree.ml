@@ -134,10 +134,10 @@ let pp_type fmt typ =
       | Tyaddr        -> "address"
       | Tyrole        -> "role"
       | Tytez         -> "tez"
-      | Tystorage     -> "storage_"
+      | Tystorage     -> "_storage"
       | Tyunit        -> "unit"
       | Tytransfers   -> "transfers"
-      | Tycoll i      -> "acol"
+      | Tycoll i      -> (String.capitalize_ascii i)^".collection"
       | Typartition _ -> "acol"
       | Tymap i       -> "map "^i
       | Tyrecord i    -> i
@@ -221,8 +221,14 @@ let rec pp_term outer pos fmt = function
       (pp_if_with_paren (pp_term e_then PRight)) t
       (pp_if_with_paren (pp_term e_else PRight)) e
   | Traise e -> Format.fprintf fmt "raise %a" pp_exn e
-  | Tmem (e1,e2) ->
-    Format.fprintf fmt "mem %a %a"
+  | Tmem (t,e1,e2) ->
+    Format.fprintf fmt "%a.mem %a %a"
+      pp_str (String.capitalize_ascii t)
+      (pp_with_paren (pp_term outer pos)) e1
+      (pp_with_paren (pp_term outer pos)) e2
+  | Tcontains (t,e1,e2) ->
+    Format.fprintf fmt "%a.contains %a %a"
+      pp_str (String.capitalize_ascii t)
       (pp_with_paren (pp_term outer pos)) e1
       (pp_with_paren (pp_term outer pos)) e2
   | Tlmem (e1,e2) ->
@@ -468,7 +474,7 @@ let pp_init fmt (f : field) =
     (pp_term e_default PRight) f.init
 
 let pp_storage fmt (s : storage_struct) =
-  Format.fprintf fmt "type storage_ = {@\n  @[%a @]@\n} %aby {@\n  @[%a @]@\n}"
+  Format.fprintf fmt "type _storage = {@\n  @[%a @]@\n} %aby {@\n  @[%a @]@\n}"
     (pp_list ";@\n" pp_field) s.fields
     (pp_invariants false) s.invariants
     (pp_list ";@\n" pp_init) s.fields
