@@ -379,7 +379,7 @@ let rec pp_term outer pos fmt = function
     Format.fprintf fmt "tail %a %a"
       (pp_with_paren (pp_term outer pos)) e1
       (pp_with_paren (pp_term outer pos)) e2
-  | Tnow i -> Format.fprintf fmt "get_now_ %a" pp_str i
+  | Tnow i -> Format.fprintf fmt "%a._now" pp_str i
   | Tmlist (e1,i1,i2,i3,e2) ->
     Format.fprintf fmt "@[match %a with@\n| Nil -> %a@\n| Cons %a %a -> @\n  @[%a@]@\nend@]"
       pp_str i1

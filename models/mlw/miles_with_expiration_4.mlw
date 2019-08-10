@@ -157,9 +157,8 @@ module Miles_with_expiration
   if not (fmem (s.caller) (Cons s.admin Nil)) then raise InvalidCaller;
   if nbmiles <= 0 then raise InvalidCondition;
   let o = Owner.get s.owner_assets ow in
-  let now = s.now in
-  let l = filter1 now (Mile.gets s.mile_assets o.miles) in
-  assert { forall m : mile. Mile.mem m l -> expiration m > now };
+  let l = filter1 s.now (Mile.gets s.mile_assets o.miles) in
+  assert { forall m : mile. Mile.mem m l -> expiration m > s.now };
   let ref remainder = 0 in
   for i = 0 to Mile.card l - 1 do
     let m = Mile.nth i l in

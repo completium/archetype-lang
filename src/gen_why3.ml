@@ -181,56 +181,89 @@ let mk_partition_axiom n f kt pa kpt : decl =
                                              [Tget (Tdoti ("s",n^"_assets"),Tvar "k1")])),
                                  Tmem (n, Tvar "k2",Tdoti ("s",pa^"_keys"))))))
 
-(* Filter template -----------------------------------------------------------*)
-
-let mk_filter n typ test : decl = Dfun {
-    name = "filter_"^n;
-    logic = Logic;
-    args = ["s",Tystorage; "c",Tycoll "" ];
-    returns = Tycoll "";
-    raises = [];
-    variants = [];
-    requires = [];
-    ensures = [
-      { id   = "filter_"^n^"_post1";
-        form = Tforall ([["k"],typ],Timpl (Tmem (n, Tvar "k",Tresult),test));
-      };
-      { id   = "filter_"^n^"_post2";
-        form = Tsubset (Tresult,(Tvar "c"));
-      }
-    ];
-    body = Tletfun (
-        {
-          name = "rec_filter";
-          logic = Rec;
-          args = ["l",Tylist Tyint]; (* TODO : should pass asset key type instead *)
-          returns = Tylist Tyint;
-          raises = [];
-          variants = [Tvar "l"];
-          requires = [];
-          ensures = [
-            { id   = "rec_filter_post1";
-              form = Tforall ([["k"],typ],
-                              Timpl (Tlmem (Tvar "k",Tresult),
-                                     test));
-            };
-            { id   = "rec_filter_post2";
-              form = Tforall ([["k"],typ],
-                              Timpl (Tlmem (Tvar "k",Tresult),
-                                     Tlmem (Tvar "k",Tvar "l")));
-            }];
-          body = Tmlist (Tnil,"l","k","tl",
-                         Tif(test,
-                             Tcons (Tvar "k",Tapp (Tvar ("rec_filter"),[Tvar "tl"])),
-                             Some (Tapp (Tvar ("rec_filter"),[Tvar "tl"])))
-                        );
-        },
-        Tapp (Tvar "mkacol",
-              [Tapp (Tvar ("rec_filter"),[Tdoti("c","content")])])
-      );
-  }
-
 (* API storage templates -----------------------------------------------------*)
+
+let get_select_id (m : M.model) asset test =
+  let rec internal_get_select_id acc = function
+    | (sc : M.api_item) :: tl ->
+      begin
+        match sc.node_item with
+        | M.APIFunction (Select (a,t)) ->
+          if compare a asset = 0 then
+            if M.cmp_mterm t test then
+              acc + 1
+            else
+              internal_get_select_id (acc + 1) tl
+          else
+            internal_get_select_id acc tl
+        | _ -> internal_get_select_id acc tl
+      end
+    | [] -> acc in
+  internal_get_select_id 0 m.api_items
+
+(* TODO : complete mapping *)
+let rec mk_select_test = function
+  | Tdot (Tvar v,f) when compare v "the" = 0 -> Tdot (Tvar "k",f)
+  | Tnow _ -> Tvar "_now"
+  | _ as t -> map_abstract_term mk_select_test id id t
+
+let mk_body asset mlw_test : term =
+  let capa = String.capitalize_ascii asset in
+  Tletfun (
+    {
+      name     = "internal_select";
+      logic    = Rec;
+      args     = [];
+      returns  = Tylist (Tyasset asset);
+      raises   = [];
+      variants = [Tvar "l"];
+      requires = [];
+      ensures  = [];
+      body     = Tmlist (Tnil,"l","k","tl",
+                         Tif(mk_select_test mlw_test,
+                             Tcons (Tvar "k",Tapp (Tvar ("internal_select"),[Tvar "tl"])),
+                             Some (Tapp (Tvar ("internal_select"),[Tvar "tl"])))
+                        );
+    },
+    Trecord (
+      None,
+      [capa^".content", Tapp (Tvar "internal_select",[Tdoti("c."^capa,"content")])]
+    )
+  )
+
+(* argument extraction is done on model's term because it is typed *)
+let extract_args test =
+  let rec internal_extract_args acc (term : M.mterm) =
+    match term.M.node with
+    | M.Mnow -> acc @ [term,"_now", Tydate]
+    | _ -> M.fold_term internal_extract_args acc term in
+  M.fold_term internal_extract_args [] test
+
+let mk_select_name m asset test = "select_"^asset^"_"^(string_of_int (get_select_id m asset test))
+
+let mk_select m asset test mlw_test only_formula =
+  let id =  mk_select_name m asset test in
+  let decl = Dfun {
+      name     = id;
+      logic    = if only_formula then Logic else NoMod;
+      args     = (extract_args test |> List.map (fun (_,a,b) -> a,b)) @ ["l",Tylist (Tyasset asset)];
+      returns  = Tycoll asset;
+      raises   = [];
+      variants = [];
+      requires = [];
+      ensures  = [
+        { id   = id;
+          form = Tforall (
+              [["a"],Tyasset asset],
+              Timpl (Tmem (asset,Tvar "a",Tresult),
+                     mk_select_test mlw_test
+                    )
+            );
+        }
+      ];
+      body     = mk_body asset mlw_test;
+    } in
+  decl
 
 
 let mk_contains asset keyt = Dfun {
@@ -666,40 +699,7 @@ let get_record_name = function
   | Drecord (n,_) -> n
   | _ -> assert false
 
-let mk_storage_api (m : M.model) records =
-  m.api_items |> List.fold_left (fun acc (sc : M.api_item) ->
-      match sc.node_item with
-      | M.APIStorage (Get n) ->
-        let k = M.Utils.get_record_key m (dumloc n) |> snd |> map_btype in
-        acc @ [mk_get_asset n k]
-      | M.APIStorage (Add n) ->
-        let k = M.Utils.get_record_key m (dumloc n) |> fst |> unloc in
-        acc @ [mk_add_asset n k]
-      | M.APIStorage (Set n) ->
-        let record = get_record n (records |> unloc_decl) in
-        let k      = M.Utils.get_record_key m (get_record_name record |> dumloc) |> fst |> unloc in
-        acc @ [mk_set_asset k record]
-      | M.APIStorage (UpdateAdd (a,pf)) ->
-        let k            = M.Utils.get_record_key m (dumloc a) |> fst |> unloc in
-        let (pa,addak,_) = M.Utils.get_partition_record_key m (dumloc a) (dumloc pf) in
-        acc @ [
-          mk_add_asset           pa.pldesc addak.pldesc;
-          mk_add_partition_field a k pf pa.pldesc addak.pldesc
-        ]
-      | M.APIStorage (UpdateRemove (n,f)) ->
-        let t         = M.Utils.get_record_key m (dumloc n) |> snd |> map_btype in
-        let (pa,_,pt) = M.Utils.get_partition_record_key m (dumloc n) (dumloc f) in
-        acc @ [
-          mk_rm_asset           pa.pldesc (pt |> map_btype);
-          mk_rm_partition_field n t f pa.pldesc (pt |> map_btype)
-        ]
-      | M.APIFunction (Contains n) ->
-        let t         =  M.Utils.get_record_key m (dumloc n) |> snd |> map_btype in
-        acc @ [ mk_contains n t ]
-      | _ -> acc
-    ) [] |> loc_decl |> deloc
-
-(* Entries --------------------------------------------------------------------*)
+let mk_var (i : ident) = Tvar i
 
 let rec map_mterm m (mt : M.mterm) : loc_term =
   let t =
@@ -757,7 +757,10 @@ let rec map_mterm m (mt : M.mterm) : loc_term =
     | M.Mletin ([id],v,_,b) ->
       Tletin (M.Utils.is_local_assigned id b,map_lident id,None,map_mterm m v,map_mterm m b)
     | M.Mselect (a,l,r) ->
-      Tapp (loc_term (Tvar ("select_"^a)),[map_mterm m l;map_mterm m r])
+      let args = extract_args r in
+      let id = mk_select_name m a r in
+      let argids = args |> List.map (fun (e,_,_) -> e) |> List.map (map_mterm m) in
+      Tapp (loc_term (Tvar id),argids @ [map_mterm m l])
     | M.Mnow -> Tnow (with_dummy_loc "_s")
     | M.Mseq l -> Tseq (List.map (map_mterm m) l)
     | M.Mfor (id,c,b) ->
@@ -813,6 +816,44 @@ let rec map_mterm m (mt : M.mterm) : loc_term =
       Tapp (loc_term (Tvar ("sum_"^a)),[with_dummy_loc (Tvar (map_lident l)); map_mterm m v])
     | _ -> Tnone in
   mk_loc mt.loc t
+
+let mk_storage_api (m : M.model) records =
+  m.api_items |> List.fold_left (fun acc (sc : M.api_item) ->
+      match sc.node_item with
+      | M.APIStorage (Get n) ->
+        let k = M.Utils.get_record_key m (dumloc n) |> snd |> map_btype in
+        acc @ [mk_get_asset n k]
+      | M.APIStorage (Add n) ->
+        let k = M.Utils.get_record_key m (dumloc n) |> fst |> unloc in
+        acc @ [mk_add_asset n k]
+      | M.APIStorage (Set n) ->
+        let record = get_record n (records |> unloc_decl) in
+        let k      = M.Utils.get_record_key m (get_record_name record |> dumloc) |> fst |> unloc in
+        acc @ [mk_set_asset k record]
+      | M.APIStorage (UpdateAdd (a,pf)) ->
+        let k            = M.Utils.get_record_key m (dumloc a) |> fst |> unloc in
+        let (pa,addak,_) = M.Utils.get_partition_record_key m (dumloc a) (dumloc pf) in
+        acc @ [
+          mk_add_asset           pa.pldesc addak.pldesc;
+          mk_add_partition_field a k pf pa.pldesc addak.pldesc
+        ]
+      | M.APIStorage (UpdateRemove (n,f)) ->
+        let t         = M.Utils.get_record_key m (dumloc n) |> snd |> map_btype in
+        let (pa,_,pt) = M.Utils.get_partition_record_key m (dumloc n) (dumloc f) in
+        acc @ [
+          mk_rm_asset           pa.pldesc (pt |> map_btype);
+          mk_rm_partition_field n t f pa.pldesc (pt |> map_btype)
+        ]
+      | M.APIFunction (Contains n) ->
+        let t         =  M.Utils.get_record_key m (dumloc n) |> snd |> map_btype in
+        acc @ [ mk_contains n t ]
+      | M.APIFunction (Select (asset,test)) ->
+        let mlw_test = map_mterm m test in
+        acc @ [ mk_select m asset test (mlw_test |> unloc_term) sc.only_formula ]
+      | _ -> acc
+    ) [] |> loc_decl |> deloc
+
+(* Entries --------------------------------------------------------------------*)
 
 let is_fail (t : M.mterm) =
   match t.node with
