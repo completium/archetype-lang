@@ -566,17 +566,6 @@ let rec map_mtype (t : M.type_) : loc_typ =
       | M.Tunit                               -> Tyunit
       | _ -> assert false)
 
-(* let map_basic_type (typ : 'id M.item_field_type) : loc_typ =
-   let rec_map_basic_type = function
-    | M.FBasic vt           -> map_btype vt
-    | M.FAssetKeys (_,i)    -> Tycoll (map_lident i)
-    | M.FAssetRecord (_,i)  -> Tymap (map_lident i)
-    | M.FRecordCollection i -> Tymap (map_lident i) (* ? *)
-    | M.FRecord i           -> Tyrecord (map_lident i)
-    | M.FEnum i             -> Tyenum (map_lident i)
-    | _ -> assert false in
-   with_dummy_loc (rec_map_basic_type typ) *)
-
 let rec map_term (t : M.mterm) : loc_term = mk_loc t.loc (
     match t.node with
     | M.Maddress v  -> Tint (sha v)
@@ -678,20 +667,6 @@ let mk_partition_axioms (m : M.model) =
       mk_partition_axiom n.pldesc item.name.pldesc kt pa.pldesc (pkt |> map_btype)
     ) |> loc_decl |> deloc
 
-(*let mk_record_get_fields m (r : M.record) =
-  let k,kt = M.Utils.get_record_key m r.name |> fun (x,y) -> (x, map_btype y) in
-  List.fold_left (fun acc (item : M.record_item) ->
-      if compare k.pldesc item.name.pldesc = 0 then
-        acc
-      else
-        let ft = unloc_type (map_mtype item.type_) in
-        acc @[mk_get_field r.name.pldesc kt item.name.pldesc ft]
-    ) [] r.values
-
-let mk_get_fields (m : M.model) =
-  M.Utils.get_records m |> List.map (mk_record_get_fields m) |> List.concat |> loc_decl |> deloc
-*)
-
 let rec get_record id = function
   | Drecord (n,_) as r :: tl when compare id n = 0 -> r
   | _ :: tl -> get_record id tl
@@ -732,26 +707,7 @@ let rec map_mterm m (mt : M.mterm) : loc_term =
     | M.Mget (n,k) ->
       Tapp (loc_term (Tvar ("get_"^n)),[loc_term (Tvar "_s");map_mterm m k])
     | M.Maddasset (n,i) ->
-      Tapp (loc_term (Tvar ("add_"^n)),[loc_term (Tvar "_s"); map_mterm m i ] (*@ (List.map (map_mterm m) l*))
-    (*    | M.Maddasset (n,_,i,_) when M.Utils.has_partition m n ->
-          let ritems = M.Utils.get_record_partitions m n in
-          (* double loop : on ritmes and on i's corresponding record values *)
-          Tseq (List.fold_left (fun acc (ritem : M.record_item) ->
-              let (pa,k,t) = M.Utils.get_partition_record_key m (dumloc n) ritem.name in
-              let pos = M.Utils.get_field_pos m (dumloc n) ritem.name in
-              let v = M.Utils.get_nth_record_val pos i in
-              let l = M.Utils.dest_array v in
-              List.fold_left (fun acc t ->
-                  [
-                    Tapp (loc_term (Tvar ("add_"^(unloc pa))), [
-                        loc_term (Tvar "_s");
-                        map_mterm m t
-                      ])
-                  ] @ acc
-                ) acc l
-            ) [Tapp (loc_term (Tvar ("add_"^n)),[loc_term (Tvar "_s"); map_mterm m i])] ritems |> wdl) *)
-    (*    | M.Maddasset (n,_,i,_) ->
-          Tapp (loc_term (Tvar ("add_"^n)),[loc_term (Tvar "_s"); map_mterm m i]) *)
+      Tapp (loc_term (Tvar ("add_"^n)),[loc_term (Tvar "_s"); map_mterm m i ])
     | M.Mrecord l ->
       let asset = M.Utils.get_asset_type mt in
       let fns = M.Utils.get_field_list m asset |> List.map map_lident in
