@@ -77,10 +77,10 @@ type ('e,'t,'i) abstract_term =
   | Tmlist  of 'e * 'i * 'i * 'i * 'e (* match list *)
   | Tcons   of 'e * 'e
   (* archetype lib *)
-  | Tadd    of 'e * 'e
-  | Tremove of 'e * 'e
-  | Tget    of 'e * 'e
-  | Tset    of 'e * 'e * 'e
+  | Tadd    of 'i * 'e * 'e
+  | Tremove of 'i * 'e * 'e
+  | Tget    of 'i * 'e * 'e
+  | Tset    of 'i * 'e * 'e * 'e
   | Tassign of 'e * 'e
   | Traise  of exn
   | Tconcat of 'e * 'e
@@ -128,7 +128,7 @@ type ('e,'t,'i) abstract_term =
   | Tsingl  of 'e
   | Thead   of 'e * 'e
   | Ttail   of 'e * 'e
-  | Tnth    of 'e * 'e
+  | Tnth    of 'i * 'e * 'e
   (* option *)
   | Tnone
   | Tsome   of 'e
@@ -288,10 +288,10 @@ and map_abstract_term
   | Tcard e            -> Tcard (map_e e)
   | Tmlist (e1,i1,i2,i3,e2) -> Tmlist (map_e e1, map_i i1, map_i i2, map_i i3, map_e e2)
   | Tcons (e1,e2)      -> Tcons (map_e e1, map_e e2)
-  | Tadd (e1,e2)       -> Tadd (map_e e1, map_e e2)
-  | Tremove (e1,e2)    -> Tremove (map_e e1, map_e e2)
-  | Tget (e1,e2)       -> Tget (map_e e1, map_e e2)
-  | Tset (e1,e2,e3)    -> Tset (map_e e1, map_e e2, map_e e3)
+  | Tadd (i1,e1,e2)       -> Tadd (map_i i1, map_e e1, map_e e2)
+  | Tremove (i,e1,e2)    -> Tremove (map_i i,map_e e1, map_e e2)
+  | Tget (i,e1,e2)       -> Tget (map_i i, map_e e1, map_e e2)
+  | Tset (i, e1,e2,e3)    -> Tset (map_i i, map_e e1, map_e e2, map_e e3)
   | Tassign (e1,e2)    -> Tassign (map_e e1, map_e e2)
   | Traise e           -> Traise e
   | Tconcat (e1,e2)    -> Tconcat (map_e e1, map_e e2)
@@ -331,7 +331,7 @@ and map_abstract_term
   | Tsingl e           -> Tsingl (map_e e)
   | Thead (e1,e2)      -> Thead (map_e e1, map_e e2)
   | Ttail (e1,e2)      -> Ttail (map_e e1, map_e e2)
-  | Tnth (e1,e2)       -> Tnth (map_e e1, map_e e2)
+  | Tnth (i,e1,e2)       -> Tnth (map_i i, map_e e1, map_e e2)
   | Tnone              -> Tnone
   | Tsome e            -> Tsome (map_e e)
   | Tenum i            -> Tenum (map_i i)
@@ -618,10 +618,10 @@ let compare_abstract_term
   | Tmlist (e1,i1,i2,i3,e2), Tmlist (f1,j1,j2,j3,f2) ->
     cmpe e1 f2 && cmpi i1 j1 && cmpi i2 j2 && cmpi i3 j3 && cmpe f1 f2
   | Tcons (e1,e2), Tcons (f1,f2) -> cmpe e1 f1 && cmpe e2 f2
-  | Tadd (e1,e2), Tadd (f1,f2) -> cmpe e1 f1 && cmpe e2 f2
-  | Tremove (e1,e2), Tremove (f1,f2) -> cmpe e1 f1 && cmpe e2 f2
-  | Tget (e1,e2), Tget (f1,f2) -> cmpe e1 f1 && cmpe e2 f2
-  | Tset (e1,e2,e3), Tset (f1,f2,f3) -> cmpe e1 f1 && cmpe e2 f2 && cmpe e3 f3
+  | Tadd (i1,e1,e2), Tadd (i2,f1,f2) -> cmpi i1 i2 && cmpe e1 f1 && cmpe e2 f2
+  | Tremove (i1,e1,e2), Tremove (i2,f1,f2) -> cmpi i1 i2 && cmpe e1 f1 && cmpe e2 f2
+  | Tget (i1,e1,e2), Tget (i2,f1,f2) -> cmpi i1 i2 && cmpe e1 f1 && cmpe e2 f2
+  | Tset (i1,e1,e2,e3), Tset (i2,f1,f2,f3) -> cmpi i1 i2 && cmpe e1 f1 && cmpe e2 f2 && cmpe e3 f3
   | Tassign (e1,e2), Tassign (f1,f2) -> cmpe e1 f1 && cmpe e2 f2
   | Traise e1, Traise e2 -> compare_exn e1 e2
   | Tconcat (e1,e2), Tconcat (f1,f2) -> cmpe e1 f1 && cmpe e2 f2
@@ -663,7 +663,7 @@ let compare_abstract_term
   | Tsingl e1, Tsingl e2 -> cmpe e1 e2
   | Thead (e1,e2), Thead (f1,f2) -> cmpe e1 f1 && cmpe e2 f2
   | Ttail (e1,e2), Ttail (f1,f2) -> cmpe e1 f1 && cmpe e2 f2
-  | Tnth (e1,e2), Tnth (f1,f2) -> cmpe e1 f1 && cmpe e2 f2
+  | Tnth (i1,e1,e2), Tnth (i2,f1,f2) -> cmpi i1 i2 && cmpe e1 f1 && cmpe e2 f2
   | Tnone, Tnone -> true
   | Tsome e1, Tsome e2 -> cmpe e1 e2
   | Tenum i1, Tenum i2 -> cmpi i1 i2

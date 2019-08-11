@@ -71,20 +71,22 @@ let mk_trace_clone = Dclone (["archetype";"Trace"], "Tr",
                               Ctype ("entry","entry");
                               Ctype ("field","field")])
 
-let mk_sum_clone field = Dclone (["archetype";"Sum"], String.capitalize_ascii field,
-                                 [Ctype ("storage","storage_");
-                                  Cval ("f","get_"^field)])
+let mk_sum_clone m asset field = Dclone ([gArchetypeDir;gArchetypeSum],
+                                         String.capitalize_ascii field,
+                                         [Ctype ("container",
+                                                 (String.capitalize_ascii asset)^".collection");
+                                          Cval ("f","get_"^field)])
 
-let mk_get_field asset ktyp field typ = Dfun {
+let mk_get_field_from_pos asset field = Dfun {
     name = "get_"^field;
     logic = Logic;
-    args = ["s",Tystorage; "k",ktyp];
-    returns = typ;
+    args = ["c",Tycoll asset; "i",Tyint];
+    returns = Tyint;
     raises = [];
     variants = [];
     requires = [];
     ensures = [];
-    body = Tapp (Tvar field,[Tget (Tdoti ("s",asset^"_assets"),Tvar "k")])
+    body = Tapp (Tvar field,[Tnth (asset,Tvar "i",Tvar "c")])
   }
 
 let mk_get_asset asset ktyp = Dfun {
@@ -97,11 +99,11 @@ let mk_get_asset asset ktyp = Dfun {
     requires = [];
     ensures = [
       { id   = "get_"^asset^"_post";
-        form = Tmem (asset, Tvar "k",Tdoti ("s",asset^"_keys"));
+        form = Tmem (asset, Tresult,Tdoti ("s",mkId(asset^"_assets")));
       }
     ];
-    body = Tif (Tnot (Tmem (asset, Tvar "k",Tdoti ("s",asset^"_keys"))), Traise Enotfound,
-                Some (Tget (Tdoti ("s",asset^"_assets"),Tvar "k")))
+    body = Tif (Tnot (Tcontains (asset, Tvar "k",Tdoti ("s",mkId(asset^"_assets")))), Traise Enotfound,
+                Some (Tget (asset, Tdoti ("s",mkId(asset^"_assets")),Tvar "k")))
   }
 
 let rec get_asset_key_typ key (fields : field list) =
@@ -125,7 +127,8 @@ let mk_set_ensures n key fields =
       else
         (succ i,acc@[{
              id   = "set_"^n^"_post"^(string_of_int i);
-             form = Teq (Tyint, Tapp (Tvar ("get_"^f.name),[Tvar "s";Tvar "k"]),
+             form = Teq (Tyint, Tapp (Tvar f.name,[Tget (n,
+                                                         Tdoti ("s",mkId(n^"_assets")), Tvar "k")]),
                          Tapp (Tvar f.name,[Tvar ("new_asset")]))
            }])
     ) (1,[]) fields)
@@ -140,10 +143,11 @@ let mk_set_asset key = function
       variants = [];
       requires = [];
       ensures = mk_set_ensures n key fields;
-      body = Tif (Tnot (Tmem (n, Tvar "k",Tdoti ("s",n^"_keys"))), Traise Enotfound,
+      body = Tif (Tnot (Tcontains (n, Tvar "k",Tdoti ("s",n^"_keys"))), Traise Enotfound,
                   Some (
-                    Tassign (Tdoti ("s",n^"_assets"),Tset (Tdoti ("s",n^"_assets"),
-                                                           Tvar "k",Tvar ("new_asset")))
+                    Tassign (Tdoti ("s",mkId (n^"_assets")),
+                             Tset (n,Tdoti ("s",mkId(n^"_assets")),
+                                   Tvar "k",Tvar ("new_asset")))
                   ))
     }
   | _ -> assert false
@@ -163,7 +167,7 @@ let mk_keys_eq_axiom n f ktyp : decl =
           Tforall ([["s"],Tystorage;["k"],ktyp],
                    Timpl (Tmem (n, Tvar "k",Tdoti ("s",n^"_keys")),
                           Teq (Tyint,
-                               Tapp (Tvar f,[Tget (Tdoti ("s",n^"_assets"),Tvar "k")]),
+                               Tapp (Tvar f,[Tget (n,Tdoti ("s",n^"_assets"),Tvar "k")]),
                                Tvar "k"))))
 
 (* n is the asset name
@@ -178,7 +182,7 @@ let mk_partition_axiom n f kt pa kpt : decl =
                    Timpl (Tmem (n, Tvar("k1"),Tdoti ("s",n^"_keys")),
                           Timpl (Tmem (n, Tvar "k2",
                                        Tapp (Tvar f,
-                                             [Tget (Tdoti ("s",n^"_assets"),Tvar "k1")])),
+                                             [Tget (n,Tdoti ("s",n^"_assets"),Tvar "k1")])),
                                  Tmem (n, Tvar "k2",Tdoti ("s",pa^"_keys"))))))
 
 (* API storage templates -----------------------------------------------------*)
@@ -313,22 +317,22 @@ let mk_add_asset asset key : decl = Dfun {
     requires = [];
     ensures  = [
       { id   = "add_"^asset^"_post_1";
-        form = Tmem (asset, Tdoti ("new_asset",key),
-                     Tdoti ("s",asset^"_keys"))
+        form = Tmem (asset, Tvar ("new_asset"),
+                     Tdoti ("s",mkId(asset^"_assets")))
       };
       { id   = "add_"^asset^"_post_2";
         form = Teq (Tycoll asset,
-                    Tdoti ("s",asset^"_keys"),
+                    Tdoti ("s",mkId(asset^"_assets")),
                     Tunion (Tdot (Told (Tvar "s"),
-                                  Tvar (asset^"_keys")),
-                            Tsingl (Tdoti ("new_asset",key))));
+                                  Tvar (mkId(asset^"_assets"))),
+                            Tsingl (Tvar "new_asset")));
       };
       { id   = "add_"^asset^"_post_3";
         form = Teq (Tycoll asset,
-                    Tdoti ("s","added_"^asset),
+                    Tdoti ("s",mkId(asset^"_assets_added")),
                     Tunion (Tdot (Told (Tvar "s"),
-                                  Tvar ("added_"^asset)),
-                            Tsingl (Tdoti ("new_asset",key))));
+                                  Tvar (mkId(asset^"_assets_added"))),
+                            Tsingl (Tvar ("new_asset"))));
       };
       { id   = "add_"^asset^"_post_4";
         form = Tempty (Tinter (Tdot(Told (Tvar "s"),Tvar (asset^"_keys")),
@@ -338,20 +342,18 @@ let mk_add_asset asset key : decl = Dfun {
 
     ];
     body     = Tseq [
-        Tif (Tmem (asset, Tdoti ("new_asset",key),
-                   Tdoti ("s",asset^"_keys")),
+        Tif (Tmem (asset, Tvar ("new_asset"),
+                   Tdoti ("s",mkId(asset^"_assets"))),
              Traise Ekeyexist, (* then *)
              Some (Tseq [      (* else *)
-                 Tassign (Tdoti ("s",asset^"_assets"),
-                          Tset (Tdoti ("s",asset^"_assets"),
-                                Tdoti("new_asset",key),
+                 Tassign (Tdoti ("s",mkId(asset^"_assets")),
+                          Tadd (asset,
+                                Tdoti ("s",asset^"_assets"),
                                 Tvar "new_asset"));
-                 Tassign (Tdoti ("s",asset^"_keys"),
-                          Tadd (Tdoti("new_asset",key),
-                                Tdoti ("s",asset^"_keys")));
-                 Tassign (Tdoti ("s","added_"^asset),
-                          Tadd (Tdoti("new_asset",key),
-                                Tdoti ("s","added_"^asset)))
+                 Tassign (Tdoti ("s",mkId(asset^"_assets_added")),
+                          Tadd (asset,
+                                Tdoti ("s",mkId(asset^"_assets_added")),
+                                Tvar "new_asset"))
                ]
                ))
       ];
@@ -367,36 +369,38 @@ let mk_rm_asset n ktyp : decl = Dfun {
     requires = [];
     ensures  = [
       { id   = "remove_"^n^"_post1";
-        form = Tnot (Tmem (n, Tvar ("k"),Tdoti ("s",n^"_keys")))
+        form = Tnot (Tcontains (n, Tvar ("k"),Tdoti ("s",mkId(n^"_assets"))))
       };
       { id   = "remove_"^n^"_post2";
         form = Teq (Tycoll n,
-                    Tdoti ("s",n^"_keys"),
+                    Tdoti ("s",mkId (n^"_assets")),
                     Tdiff (Tdot(Told (Tvar "s"),
-                                Tvar (n^"_keys")),
-                           Tsingl (Tvar "k")))
+                                Tvar (mkId (n^"_assets"))),
+                           Tsingl (Tget (n,Tdot (Told (Tvar "s"),Tvar (mkId(n^"_assets"))),Tvar "k"))))
       };
       { id   = "remove_"^n^"_post3";
         form = Teq (Tycoll n,
                     Tdoti ("s","removed_"^n),
                     Tunion (Tdot(Told (Tvar "s"),
-                                 Tvar ("removed_"^n)),
-                            Tsingl (Tvar "k")))
+                                 Tvar (mkId (n^"_assets_removed"))),
+                            Tsingl (Tget (n,Tdot (Told (Tvar "s"),Tvar (mkId(n^"_assets_removed"))),Tvar "k"))))
       };
     ];
-    body = Tif (Tnot (Tmem (n, Tvar "k",
+    body = Tif (Tnot (Tcontains (n, Tvar "k",
                             Tdoti ("s",n^"_keys"))),
                 Traise Enotfound,
                 Some (
                   Tseq [
-                    Tassign (Tdoti("s",n^"_keys"),
-                             Tremove (Tvar "k",
-                                      Tdoti("s",
-                                            n^"_keys")));
-                    Tassign (Tdoti("s","removed_"^n),
-                             Tadd (Tvar "k",
+                    Tassign (Tdoti("s",mkId (n^"_assets_removed")),
+                             Tadd (n,
                                    Tdoti("s",
-                                         "removed_"^n)))
+                                         mkId(n^"_assets_removed")),
+                                   Tget(n,Tdoti ("s",mkId (n^"_assets")), Tvar "k")));
+                    Tassign (Tdoti("s",mkId(n^"_assets")),
+                             Tremove (n,Tvar "k",
+                                      Tdoti("s",
+                                            mkId(n^"_assets"))))
+
                   ]));
   }
 
@@ -443,12 +447,12 @@ let mk_add_partition_field a ak pf adda addak : decl =
                Tletin (false, a^"_"^pf,None,
                        Tapp (Tvar pf,[Tvar "asset"]),
                        Tletin (false,"new_"^a^"_"^pf,None,
-                               Tadd (addak,Tvar (a^"_"^pf)),
+                               Tadd (adda,addak,Tvar (a^"_"^pf)),
                                Tletin (false,"new_asset",None,
                                        Trecord (Some (Tvar "asset"),
                                                 [pf,Tvar ("new_"^a^"_"^pf)]),
                                        Tassign (Tdoti ("s",a^"_assets"),
-                                                Tset (Tdoti ("s",a^"_assets"),
+                                                Tset (a, Tdoti ("s",a^"_assets"),
                                                       akey,
                                                       Tvar ("new_asset")))
                                       )))]));
@@ -491,18 +495,18 @@ let mk_rm_partition_field n ktyp f rmn rmktyp : decl = Dfun {
       Tif (Tnot (Tmem (n,Tvar "k",Tdoti ("s",n^"_keys"))), Traise Enotfound,
            Some (
              Tletin (false,n^"_asset",None,
-                     Tget (Tdoti ("s",n^"_assets"),Tvar "k"),
+                     Tget (n,Tdoti ("s",mkId (n^"_assets")),Tvar "k"),
                      Tletin (false,n^"_"^f,None,
                              Tapp (Tvar f,[Tvar (n^"_asset")]),
                              Tletin (false,"new_"^n^"_"^f,None,
-                                     Tremove (Tvar (rmn^"_k"),
+                                     Tremove (n,Tvar (rmn^"_k"),
                                               Tvar (n^"_"^f)),
                                      Tletin (false,"new_"^n^"_asset",None,
                                              Trecord (Some (Tvar (n^"_asset")),
                                                       [f,Tvar ("new_"^n^"_"^f)]),
                                              Tseq [
                                                Tassign (Tdoti ("s",n^"_assets"),
-                                                        Tset (Tdoti ("s",n^"_assets"),
+                                                        Tset (n, Tdoti ("s",n^"_assets"),
                                                               Tvar "k",
                                                               Tvar ("new_"^n^"_asset")));
                                                Tapp (Tvar ("remove_"^rmn),
@@ -680,7 +684,7 @@ let mk_partition_axioms (m : M.model) =
       mk_partition_axiom n.pldesc item.name.pldesc kt pa.pldesc (pkt |> map_btype)
     ) |> loc_decl |> deloc
 
-let mk_record_get_fields m (r : M.record) =
+(*let mk_record_get_fields m (r : M.record) =
   let k,kt = M.Utils.get_record_key m r.name |> fun (x,y) -> (x, map_btype y) in
   List.fold_left (fun acc (item : M.record_item) ->
       if compare k.pldesc item.name.pldesc = 0 then
@@ -692,6 +696,7 @@ let mk_record_get_fields m (r : M.record) =
 
 let mk_get_fields (m : M.model) =
   M.Utils.get_records m |> List.map (mk_record_get_fields m) |> List.concat |> loc_decl |> deloc
+*)
 
 let rec get_record id = function
   | Drecord (n,_) as r :: tl when compare id n = 0 -> r
@@ -780,7 +785,8 @@ let rec map_mterm m (mt : M.mterm) : loc_term =
                       with_dummy_loc (
                         Tapp (loc_term (Tvar (("get_"^(unloc (M.Utils.get_asset_type c))))),[
                             loc_term (Tvar "_s");
-                            with_dummy_loc (Tnth (loc_term (Tvar "i"),map_mterm m c))
+                            with_dummy_loc (Tnth (with_dummy_loc "TODO",
+                                                  loc_term (Tvar "i"),map_mterm m c))
                           ]
                           )),
                       map_mterm m b)))
@@ -829,6 +835,9 @@ let mk_storage_api (m : M.model) records =
       | M.APIStorage (Add n) ->
         let k = M.Utils.get_record_key m (dumloc n) |> fst |> unloc in
         acc @ [mk_add_asset n k]
+      | M.APIStorage (Remove n) ->
+        let kt = M.Utils.get_record_key m (dumloc n) |> snd |> map_btype in
+        acc @ [mk_rm_asset n kt]
       | M.APIStorage (Set n) ->
         let record = get_record n (records |> unloc_decl) in
         let k      = M.Utils.get_record_key m (get_record_name record |> dumloc) |> fst |> unloc in
@@ -837,14 +846,14 @@ let mk_storage_api (m : M.model) records =
         let k            = M.Utils.get_record_key m (dumloc a) |> fst |> unloc in
         let (pa,addak,_) = M.Utils.get_partition_record_key m (dumloc a) (dumloc pf) in
         acc @ [
-          mk_add_asset           pa.pldesc addak.pldesc;
+          (*mk_add_asset           pa.pldesc addak.pldesc;*)
           mk_add_partition_field a k pf pa.pldesc addak.pldesc
         ]
       | M.APIStorage (UpdateRemove (n,f)) ->
         let t         = M.Utils.get_record_key m (dumloc n) |> snd |> map_btype in
         let (pa,_,pt) = M.Utils.get_partition_record_key m (dumloc n) (dumloc f) in
         acc @ [
-          mk_rm_asset           pa.pldesc (pt |> map_btype);
+          (*mk_rm_asset           pa.pldesc (pt |> map_btype);*)
           mk_rm_partition_field n t f pa.pldesc (pt |> map_btype)
         ]
       | M.APIFunction (Contains n) ->
@@ -853,6 +862,9 @@ let mk_storage_api (m : M.model) records =
       | M.APIFunction (Select (asset,test)) ->
         let mlw_test = map_mterm m test in
         acc @ [ mk_select m asset test (mlw_test |> unloc_term) sc.only_formula ]
+      | M.APIFunction (Sum (asset,field)) when compare asset "todo" <> 0 ->
+        acc @ [ mk_get_field_from_pos asset field;
+                mk_sum_clone m asset field ]
       | _ -> acc
     ) [] |> loc_decl |> deloc
 
@@ -902,7 +914,6 @@ let to_whyml (m : M.model) : mlw_tree  =
   let storage          = M.Utils.get_storage m |> map_storage m in
   let axioms           = mk_axioms m in
   let partition_axioms = mk_partition_axioms m in
-  let get_fields       = mk_get_fields m in
   let storage_api      = mk_storage_api m (records |> wdl) in
   let entries          = mk_entries m in
   let usestorage       = mk_use_module storage_module in
@@ -913,7 +924,6 @@ let to_whyml (m : M.model) : mlw_tree  =
               [storage]        @
               axioms           @
               partition_axioms @
-              get_fields       @
               storage_api;
     };{
        name = cap (map_lident m.name);
