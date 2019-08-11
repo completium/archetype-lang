@@ -12,7 +12,11 @@ let gArchetypeColl  = "AssetCollection"
 let gArchetypeSum   = "Sum"
 let gArchetypeList  = "IntListUtils"
 
-let mkId s       = "_"^s
+let mkId s          = "_"^s
+
+let mksacId s        = mkId (s^"_assets")
+let mksaacId s       = mkId (s^"_assets_added")
+let mksracId s       = mkId (s^"_assets_removed")
 
 (* Utils -----------------------------------------------------------------------*)
 
@@ -92,11 +96,11 @@ let mk_get_asset asset ktyp = Dfun {
     requires = [];
     ensures = [
       { id   = "get_"^asset^"_post";
-        form = Tmem (asset, Tresult,Tdoti ("s",mkId(asset^"_assets")));
+        form = Tmem (asset, Tresult,Tdoti ("s",mksacId asset));
       }
     ];
-    body = Tif (Tnot (Tcontains (asset, Tvar "k",Tdoti ("s",mkId(asset^"_assets")))), Traise Enotfound,
-                Some (Tget (asset, Tdoti ("s",mkId(asset^"_assets")),Tvar "k")))
+    body = Tif (Tnot (Tcontains (asset, Tvar "k",Tdoti ("s",mksacId asset))), Traise Enotfound,
+                Some (Tget (asset, Tdoti ("s",mksacId asset),Tvar "k")))
   }
 
 let rec get_asset_key_typ key (fields : field list) =
