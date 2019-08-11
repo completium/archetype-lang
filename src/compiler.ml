@@ -96,7 +96,7 @@ let output_ligo model =
 let output_smartpy model =
   Format.printf "%a@." Printer_model_smartpy.pp_model model
 
-let generate_whyml model =
+let output_whyml model =
   let mlw = Gen_why3.to_whyml model in
   if !Options.opt_raw_target
   then Format.printf "%a@." Mlwtree.pp_mlw_tree mlw
@@ -128,7 +128,7 @@ let generate_target model =
     model
     |> shallow_asset
     |> generate_api_storage
-    |> generate_whyml
+    |> output_whyml
 
   | _ -> ()
 

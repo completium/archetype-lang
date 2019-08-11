@@ -1712,7 +1712,7 @@ end = struct
   let get_entry (f : function__) : verification option * function_struct =
     match f with
     | { node = Entry s; verif = v } -> (v,s)
-    | _                             -> assert false
+    | { node = Function (s,_); verif = v } -> (v,s)
 
   let get_entries m = List.filter is_entry m.functions |> List.map get_entry
 
