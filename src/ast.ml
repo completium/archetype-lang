@@ -1541,7 +1541,7 @@ let create_miles_with_expiration_ast () =
                                                                                                       Cconst Csum,
                                                                                                       [
                                                                                                         AExpr (mk_sp (Pvar (dumloc "mile"))
-                                                                                                                 ~type_:(LTprog (Tcontainer (Tasset (dumloc "owner"), Collection))));
+                                                                                                                 ~type_:(LTprog (Tcontainer (Tasset (dumloc "mile"), Collection))));
                                                                                                         AExpr (mk_sp (Pvar (dumloc "amount"))
                                                                                                                  ~type_:(LTprog (Tbuiltin VTint)))
                                                                                                       ]))
