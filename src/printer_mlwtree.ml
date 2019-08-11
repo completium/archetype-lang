@@ -245,12 +245,14 @@ let rec pp_term outer pos fmt = function
     Format.fprintf fmt "%a <- %a"
       (pp_with_paren (pp_term outer pos)) e1
       (pp_term outer pos) e2
-  | Tadd (e1,e2) ->
-    Format.fprintf fmt "add %a %a"
+  | Tadd (i,e1,e2) ->
+    Format.fprintf fmt "%a.add %a %a"
+      pp_str (String.capitalize_ascii i)
       (pp_with_paren (pp_term outer pos)) e1
       (pp_with_paren (pp_term outer pos)) e2
-  | Tset (e1,e2,e3) ->
-    Format.fprintf fmt "set %a %a %a"
+  | Tset (i,e1,e2,e3) ->
+    Format.fprintf fmt "%a.set %a %a %a"
+      pp_str (String.capitalize_ascii i)
       (pp_with_paren (pp_term outer pos)) e1
       (pp_with_paren (pp_term outer pos)) e2
       (pp_with_paren (pp_term outer pos)) e3
@@ -303,8 +305,9 @@ let rec pp_term outer pos fmt = function
     Format.fprintf fmt "%a %a"
       (pp_with_paren (pp_term outer pos)) f
       (pp_list " " (pp_with_paren (pp_term outer pos))) a
-  | Tget (e1,e2) ->
-    Format.fprintf fmt "get %a %a"
+  | Tget (i,e1,e2) ->
+    Format.fprintf fmt "%a.get %a %a"
+      pp_str (String.capitalize_ascii i)
       (pp_with_paren (pp_term outer pos)) e1
       (pp_with_paren (pp_term outer pos)) e2
   | Trecord (None,l) ->
@@ -361,8 +364,9 @@ let rec pp_term outer pos fmt = function
     Format.fprintf fmt "%a - %a"
       (pp_with_paren (pp_term outer pos)) e1
       (pp_with_paren (pp_term outer pos)) e2
-  | Tnth (e1,e2) ->
-    Format.fprintf fmt "nth %a %a"
+  | Tnth (i,e1,e2) ->
+    Format.fprintf fmt "%a.nth %a %a"
+      pp_str (String.capitalize_ascii i)
       (pp_with_paren (pp_term outer pos)) e1
       (pp_with_paren (pp_term outer pos)) e2
   | Tdle (_,e1,e2,e3) ->
@@ -379,7 +383,7 @@ let rec pp_term outer pos fmt = function
     Format.fprintf fmt "tail %a %a"
       (pp_with_paren (pp_term outer pos)) e1
       (pp_with_paren (pp_term outer pos)) e2
-  | Tnow i -> Format.fprintf fmt "get_now_ %a" pp_str i
+  | Tnow i -> Format.fprintf fmt "%a._now" pp_str i
   | Tmlist (e1,i1,i2,i3,e2) ->
     Format.fprintf fmt "@[match %a with@\n| Nil -> %a@\n| Cons %a %a -> @\n  @[%a@]@\nend@]"
       pp_str i1
@@ -391,8 +395,9 @@ let rec pp_term outer pos fmt = function
     Format.fprintf fmt "Cons %a %a"
       (pp_with_paren (pp_term outer pos)) e1
       (pp_with_paren (pp_term outer pos)) e2
-  | Tremove (e1,e2) ->
-    Format.fprintf fmt "remove %a %a"
+  | Tremove (i,e1,e2) ->
+    Format.fprintf fmt "%a.remove %a %a"
+      pp_str (String.capitalize_ascii i)
       (pp_with_paren (pp_term outer pos)) e1
       (pp_with_paren (pp_term outer pos)) e2
   | Tnottranslated -> pp_str fmt "NOT TRANSLATED"
