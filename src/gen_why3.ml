@@ -72,7 +72,8 @@ let mk_sum_clone m asset field = Dclone ([gArchetypeDir;gArchetypeSum],
                                          String.capitalize_ascii field,
                                          [Ctype ("container",
                                                  (String.capitalize_ascii asset)^".collection");
-                                          Cval ("f","get_"^field)])
+                                          Cval ("f",
+                                                "get_"^field)])
 
 let mk_get_field_from_pos asset field = Dfun {
     name = "get_"^field;
@@ -83,7 +84,12 @@ let mk_get_field_from_pos asset field = Dfun {
     variants = [];
     requires = [];
     ensures = [];
-    body = Tapp (Tvar field,[Tnth (asset,Tvar "i",Tvar "c")])
+    body = Tapp (Tvar field,
+                 [
+                   Tnth (asset,
+                         Tvar "i",
+                         Tvar "c")
+                 ])
   }
 
 let mk_get_asset asset ktyp = Dfun {
@@ -96,11 +102,21 @@ let mk_get_asset asset ktyp = Dfun {
     requires = [];
     ensures = [
       { id   = "get_"^asset^"_post";
-        form = Tmem (asset, Tresult,Tdoti ("s",mksacId asset));
+        form = Tmem (asset,
+                     Tresult,
+                     Tdoti ("s",
+                            mksacId asset));
       }
     ];
-    body = Tif (Tnot (Tcontains (asset, Tvar "k",Tdoti ("s",mksacId asset))), Traise Enotfound,
-                Some (Tget (asset, Tdoti ("s",mksacId asset),Tvar "k")))
+    body = Tif (Tnot (Tcontains (asset,
+                                 Tvar "k",
+                                 Tdoti ("s",
+                                        mksacId asset))),
+                Traise Enotfound,
+                Some (Tget (asset,
+                            Tdoti ("s",
+                                   mksacId asset),
+                            Tvar "k")))
   }
 
 let rec get_asset_key_typ key (fields : field list) =
@@ -114,7 +130,8 @@ let mk_update_fields n key =
       if compare f.name key = 0 then
         acc
       else
-        acc@[f.name,Tapp (Tvar f.name,[Tvar ("new_asset")])]
+        acc@[f.name,Tapp (Tvar f.name,
+                          [Tvar ("new_asset")])]
     ) []
 
 let mk_set_ensures n key fields =
@@ -124,9 +141,13 @@ let mk_set_ensures n key fields =
       else
         (succ i,acc@[{
              id   = "set_"^n^"_post"^(string_of_int i);
-             form = Teq (Tyint, Tapp (Tvar f.name,[Tget (n,
-                                                         Tdoti ("s",mkId(n^"_assets")), Tvar "k")]),
-                         Tapp (Tvar f.name,[Tvar ("new_asset")]))
+             form = Teq (Tyint,
+                         Tapp (Tvar f.name,
+                               [Tget (n,
+                                      Tdoti ("s",mksacId n),
+                                      Tvar "k")]),
+                         Tapp (Tvar f.name,
+                               [Tvar ("new_asset")]))
            }])
     ) (1,[]) fields)
 
@@ -140,10 +161,16 @@ let mk_set_asset key = function
       variants = [];
       requires = [];
       ensures = mk_set_ensures n key fields;
-      body = Tif (Tnot (Tcontains (n, Tvar "k",Tdoti ("s",mkId (n^"_assets")))), Traise Enotfound,
+      body = Tif (Tnot (Tcontains (n,
+                                   Tvar "k",
+                                   Tdoti ("s",
+                                          mkId (n^"_assets")))),
+                  Traise Enotfound,
                   Some (
-                    Tassign (Tdoti ("s",mkId (n^"_assets")),
-                             Tset (n,Tdoti ("s",mkId(n^"_assets")),
+                    Tassign (Tdoti ("s",
+                                    mkId (n^"_assets")),
+                             Tset (n,
+                                   Tdoti ("s",mkId(n^"_assets")),
                                    Tvar "k",Tvar ("new_asset")))
                   ))
     }
@@ -162,9 +189,14 @@ let mk_app_field (a : loc_ident) (f : loc_ident) : loc_term * loc_term  =
 let mk_keys_eq_axiom n f ktyp : decl =
   Daxiom ("eq_"^n^"_keys",
           Tforall ([["s"],Tystorage;["k"],ktyp],
-                   Timpl (Tmem (n, Tvar "k",Tdoti ("s",n^"_keys")),
+                   Timpl (Tmem (n,
+                                Tvar "k",
+                                Tdoti ("s",n^"_keys")),
                           Teq (Tyint,
-                               Tapp (Tvar f,[Tget (n,Tdoti ("s",n^"_assets"),Tvar "k")]),
+                               Tapp (Tvar f,
+                                     [Tget (n,
+                                            Tdoti ("s",n^"_assets"),
+                                            Tvar "k")]),
                                Tvar "k"))))
 
 (* n is the asset name
