@@ -883,6 +883,26 @@ let flatten_if_fail m (t : M.mterm) : loc_term =
     | _ -> acc @ [map_mterm m t] in
   mk_loc t.loc (Tseq (rec_flat [] t))
 
+let mk_functions m =
+  M.Utils.get_functions m |> List.map (
+    fun ((_ : M.verification option),
+         (s : M.function_struct),
+         (t : M.type_)) ->
+      Dfun {
+        name     = map_lident s.name;
+        logic    = NoMod;
+        args     = ([with_dummy_loc "_s",with_dummy_loc Tystorage] @
+                    (List.map (fun (i,t,_) ->
+                         (map_lident i, map_mtype t)
+                       ) s.args));
+        returns  = map_mtype t;
+        raises   = [Enotfound];
+        variants = [];
+        requires = [];        ensures  = [];
+        body     = flatten_if_fail m s.body;
+      }
+  )
+
 let mk_entries m =
   M.Utils.get_entries m |> List.map (
     fun ((_ : M.verification option),
@@ -915,6 +935,7 @@ let to_whyml (m : M.model) : mlw_tree  =
   let axioms           = mk_axioms m in
   let partition_axioms = mk_partition_axioms m in
   let storage_api      = mk_storage_api m (records |> wdl) in
+  let functions        = mk_functions m in
   let entries          = mk_entries m in
   let usestorage       = mk_use_module storage_module in
   let loct : loc_mlw_tree = [{
@@ -928,5 +949,6 @@ let to_whyml (m : M.model) : mlw_tree  =
     };{
        name = cap (map_lident m.name);
        decls = [uselib;usestorage] @
+               functions @
                entries;
      }] in unloc_tree loct

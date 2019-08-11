@@ -1611,6 +1611,7 @@ module Utils : sig
   val dest_partition                     : type_ -> lident
   val get_partition_record_key           : model -> lident -> lident -> (lident * lident * btyp)
   val get_entries                        : model -> (verification option * function_struct) list
+  val get_functions                      : model -> (verification option * function_struct* type_) list
   val has_partition                      : model -> ident -> bool
   val get_record_partitions              : model -> ident -> record_item list
   val get_field_list                     : model -> lident -> lident list
@@ -1709,12 +1710,24 @@ end = struct
     | { node = Entry _; verif = _ } -> true
     | _                             -> false
 
+  let is_function (f : function__) : bool =
+    match f with
+    | { node = Function _; verif = _ } -> true
+    | _                                -> false
+
   let get_entry (f : function__) : verification option * function_struct =
     match f with
     | { node = Entry s; verif = v } -> (v,s)
-    | { node = Function (s,_); verif = v } -> (v,s)
+    | _                             -> assert false
+
+  let get_function (f : function__) : verification option * function_struct * type_ =
+    match f with
+    | { node = Function (s,t); verif = v } -> (v,s,t)
+    | _                             -> assert false
 
   let get_entries m = List.filter is_entry m.functions |> List.map get_entry
+
+  let get_functions m = List.filter is_function m.functions |> List.map get_function
 
   let dest_record  = function
     | Drecord r -> r
