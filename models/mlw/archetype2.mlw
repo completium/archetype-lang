@@ -41,16 +41,55 @@ module IntListUtils
     else fmem x tl
     end
 
-  let rec remove_keys (l : list int) (keys : list int) : list int
+  let rec remove_key (l : list int) (k : int) : list int
   variant { l }
   = 
   match l with
   | Cons e tl ->
-    if fmem e keys
-    then remove_keys tl keys
-    else Cons e (remove_keys tl keys)
+    if e = k
+    then remove_key tl k
+    else Cons e (remove_key tl k)
   | Nil -> Nil
   end
+
+end
+
+theory Contract
+
+  use Types
+  use int.Int
+  use list.List
+  use list.Append
+  use array.Array
+
+  type storage = abstract mutable {}
+  val function get_balance storage : tez
+  val function get_transferred storage : tez
+  val function set_balance storage tez : unit
+
+  (* currency transfer during transaction *)
+  type transfer = {
+     destination_ : address;
+     amount_      : tez;
+  }
+
+  type transfers = list transfer
+
+  let no_transfer : transfers = Nil
+
+  let update_balance (s : storage)
+    ensures  { get_balance s = old (get_balance s) + (get_transferred s)}
+  =
+    let part_sum = get_balance s + get_transferred s in
+    set_balance s part_sum
+
+  let exec_transfer (s : storage) (a : address) (c : tez) (ops : transfers) : transfers
+    requires { c <= get_balance s }
+    ensures  { old (get_balance s) = (get_balance s) + c }
+  =
+    set_balance s (get_balance s - c);
+    let transfer = { destination_ = a; amount_ = c } in
+    ops ++ (Cons transfer Nil)
 
 end
 
@@ -288,6 +327,7 @@ theory Lib
   
   use export int.Int
   use export Types
+  use export Contract
   use export AssetCollection
   use export IntListUtils
 

@@ -79,6 +79,7 @@ type ('e,'t,'i) abstract_term =
   (* archetype lib *)
   | Tadd    of 'i * 'e * 'e
   | Tremove of 'i * 'e * 'e
+  | Tlistremove of 'i * 'e * 'e
   | Tget    of 'i * 'e * 'e
   | Tset    of 'i * 'e * 'e * 'e
   | Tassign of 'e * 'e
@@ -115,17 +116,17 @@ type ('e,'t,'i) abstract_term =
   | Timpl   of 'e * 'e
   | Told    of 'e
   | Tat     of 'e
-  | Tunion  of 'e * 'e
-  | Tinter  of 'e * 'e
-  | Tdiff   of 'e * 'e
-  | Tsubset of 'e * 'e
+  | Tunion  of 'i * 'e * 'e
+  | Tinter  of 'i * 'e * 'e
+  | Tdiff   of 'i * 'e * 'e
+  | Tsubset of 'i * 'e * 'e
   | Tassert of 'e
   (* set *)
   | Tmem    of 'i * 'e * 'e
   | Tcontains of 'i * 'e * 'e
   | Tlmem   of 'e * 'e
-  | Tempty  of 'e
-  | Tsingl  of 'e
+  | Tempty  of 'i * 'e
+  | Tsingl  of 'i * 'e
   | Thead   of 'e * 'e
   | Ttail   of 'e * 'e
   | Tnth    of 'i * 'e * 'e
@@ -290,6 +291,7 @@ and map_abstract_term
   | Tcons (e1,e2)      -> Tcons (map_e e1, map_e e2)
   | Tadd (i1,e1,e2)       -> Tadd (map_i i1, map_e e1, map_e e2)
   | Tremove (i,e1,e2)    -> Tremove (map_i i,map_e e1, map_e e2)
+  | Tlistremove (i,e1,e2) -> Tlistremove (map_i i,map_e e1, map_e e2)
   | Tget (i,e1,e2)       -> Tget (map_i i, map_e e1, map_e e2)
   | Tset (i, e1,e2,e3)    -> Tset (map_i i, map_e e1, map_e e2, map_e e3)
   | Tassign (e1,e2)    -> Tassign (map_e e1, map_e e2)
@@ -319,16 +321,16 @@ and map_abstract_term
   | Timpl (e1,e2)      -> Timpl (map_e e1, map_e e2)
   | Told e             -> Told (map_e e)
   | Tat e              -> Tat (map_e e)
-  | Tunion (e1,e2)     -> Tunion (map_e e1, map_e e2)
-  | Tinter (e1,e2)     -> Tinter (map_e e1, map_e e2)
-  | Tdiff (e1,e2)      -> Tdiff (map_e e1, map_e e2)
-  | Tsubset (e1,e2)    -> Tsubset (map_e e1, map_e e2)
+  | Tunion (i,e1,e2)     -> Tunion (map_i i, map_e e1, map_e e2)
+  | Tinter (i,e1,e2)     -> Tinter (map_i i, map_e e1, map_e e2)
+  | Tdiff (i,e1,e2)      -> Tdiff (map_i i, map_e e1, map_e e2)
+  | Tsubset (i,e1,e2)    -> Tsubset (map_i i, map_e e1, map_e e2)
   | Tresult            -> Tresult
   | Tmem (t,e1,e2)     -> Tmem (map_i t, map_e e1, map_e e2)
   | Tcontains (t,e1,e2) -> Tcontains (map_i t, map_e e1, map_e e2)
   | Tlmem (e1,e2)      -> Tlmem (map_e e1, map_e e2)
-  | Tempty e           -> Tempty (map_e e)
-  | Tsingl e           -> Tsingl (map_e e)
+  | Tempty (i,e)       -> Tempty (map_i i, map_e e)
+  | Tsingl (i,e)       -> Tsingl (map_i i, map_e e)
   | Thead (e1,e2)      -> Thead (map_e e1, map_e e2)
   | Ttail (e1,e2)      -> Ttail (map_e e1, map_e e2)
   | Tnth (i,e1,e2)       -> Tnth (map_i i, map_e e1, map_e e2)
@@ -620,6 +622,7 @@ let compare_abstract_term
   | Tcons (e1,e2), Tcons (f1,f2) -> cmpe e1 f1 && cmpe e2 f2
   | Tadd (i1,e1,e2), Tadd (i2,f1,f2) -> cmpi i1 i2 && cmpe e1 f1 && cmpe e2 f2
   | Tremove (i1,e1,e2), Tremove (i2,f1,f2) -> cmpi i1 i2 && cmpe e1 f1 && cmpe e2 f2
+  | Tlistremove (i1,e1,e2), Tlistremove (i2,f1,f2) -> cmpi i1 i2 && cmpe e1 f1 && cmpe e2 f2
   | Tget (i1,e1,e2), Tget (i2,f1,f2) -> cmpi i1 i2 && cmpe e1 f1 && cmpe e2 f2
   | Tset (i1,e1,e2,e3), Tset (i2,f1,f2,f3) -> cmpi i1 i2 && cmpe e1 f1 && cmpe e2 f2 && cmpe e3 f3
   | Tassign (e1,e2), Tassign (f1,f2) -> cmpe e1 f1 && cmpe e2 f2
@@ -651,16 +654,16 @@ let compare_abstract_term
   | Timpl (e1,e2), Timpl (f1,f2) -> cmpe e1 f1 && cmpe e2 f2
   | Told e1, Told e2 -> cmpe e1 e2
   | Tat e1, Tat e2 -> cmpe e1 e2
-  | Tunion (e1,e2), Tunion (f1,f2) -> cmpe e1 f1 && cmpe e2 f2
-  | Tinter (e1,e2), Tinter (f1,f2) -> cmpe e1 f1 && cmpe e2 f2
-  | Tdiff (e1,e2), Tdiff (f1,f2) -> cmpe e1 f1 && cmpe e2 f2
-  | Tsubset (e1,e2), Tsubset (f1,f2) -> cmpe e1 f1 && cmpe e2 f2
+  | Tunion (i1,e1,e2), Tunion (i2,f1,f2) -> cmpi i1 i2 && cmpe e1 f1 && cmpe e2 f2
+  | Tinter (i1,e1,e2), Tinter (i2,f1,f2) -> cmpi i1 i2 && cmpe e1 f1 && cmpe e2 f2
+  | Tdiff (i1,e1,e2), Tdiff (i2,f1,f2) -> cmpi i1 i2 && cmpe e1 f1 && cmpe e2 f2
+  | Tsubset (i1,e1,e2), Tsubset (i2,f1,f2) -> cmpi i1 i2 && cmpe e1 f1 && cmpe e2 f2
   | Tresult, Tresult -> true
   | Tmem (t1,e1,e2), Tmem (t2,f1,f2) -> cmpi t1 t2 && cmpe e1 f1 && cmpe e2 f2
   | Tcontains (t1,e1,e2), Tcontains (t2,f1,f2) -> cmpi t1 t2 && cmpe e1 f1 && cmpe e2 f2
   | Tlmem (e1,e2), Tlmem (f1,f2) -> cmpe e1 f1 && cmpe e2 f2
-  | Tempty e1, Tempty e2 -> cmpe e1 e2
-  | Tsingl e1, Tsingl e2 -> cmpe e1 e2
+  | Tempty (i1,e1), Tempty (i2,e2) -> cmpi i1 i2 && cmpe e1 e2
+  | Tsingl (i1,e1), Tsingl (i2,e2) -> cmpi i1 i2 && cmpe e1 e2
   | Thead (e1,e2), Thead (f1,f2) -> cmpe e1 f1 && cmpe e2 f2
   | Ttail (e1,e2), Ttail (f1,f2) -> cmpe e1 f1 && cmpe e2 f2
   | Tnth (i1,e1,e2), Tnth (i2,f1,f2) -> cmpi i1 i2 && cmpe e1 f1 && cmpe e2 f2

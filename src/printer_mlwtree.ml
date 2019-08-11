@@ -138,7 +138,7 @@ let pp_type fmt typ =
       | Tyunit        -> "unit"
       | Tytransfers   -> "transfers"
       | Tycoll i      -> (String.capitalize_ascii i)^".collection"
-      | Typartition _ -> "acol"
+      | Typartition _ -> "list key"
       | Tymap i       -> "map "^i
       | Tyrecord i    -> i
       | Tyasset i     -> i
@@ -260,26 +260,31 @@ let rec pp_term outer pos fmt = function
     Format.fprintf fmt "%a == %a" (pp_term outer pos) e1 (pp_term outer pos) e2
   | Teq (_, e1, e2) ->
     Format.fprintf fmt "%a = %a" (pp_term outer pos) e1 (pp_term outer pos) e2
-  | Tunion (e1, e2) ->
-    Format.fprintf fmt "union %a %a"
+  | Tunion (i, e1, e2) ->
+    Format.fprintf fmt "%a.union %a %a"
+      pp_str (String.capitalize_ascii i)
       (pp_with_paren (pp_term outer pos)) e1
       (pp_with_paren (pp_term outer pos)) e2
-  | Tinter (e1, e2) ->
-    Format.fprintf fmt "inter %a %a"
+  | Tinter (i,e1, e2) ->
+    Format.fprintf fmt "%a.inter %a %a"
+      pp_str (String.capitalize_ascii i)
       (pp_with_paren (pp_term outer pos)) e1
       (pp_with_paren (pp_term outer pos)) e2
-  | Tdiff (e1, e2) ->
-    Format.fprintf fmt "diff %a %a"
+  | Tdiff (i,e1, e2) ->
+    Format.fprintf fmt "%a.diff %a %a"
+      pp_str (String.capitalize_ascii i)
       (pp_with_paren (pp_term outer pos)) e1
       (pp_with_paren (pp_term outer pos)) e2
   | Told e ->
     Format.fprintf fmt "old %a"
       (pp_with_paren (pp_term outer pos)) e
-  | Tsingl e ->
-    Format.fprintf fmt "singleton %a"
+  | Tsingl (i,e) ->
+    Format.fprintf fmt "%a.singleton %a"
+      pp_str (String.capitalize_ascii i)
       (pp_with_paren (pp_term outer pos)) e
-  | Tempty e ->
-    Format.fprintf fmt "is_empty %a"
+  | Tempty (i,e) ->
+    Format.fprintf fmt "%a.is_empty %a"
+      pp_str (String.capitalize_ascii i)
       (pp_with_paren (pp_term outer pos)) e
   | Tint i -> pp_str fmt (Big_int.string_of_big_int i)
   | Tforall (ud,b) ->
@@ -296,6 +301,14 @@ let rec pp_term outer pos fmt = function
       (pp_term e_default PRight) e2
   | Tge (_,e1,e2) ->
     Format.fprintf fmt "%a >= %a"
+      (pp_term e_default PRight) e1
+      (pp_term e_default PRight) e2
+  | Tlt (_,e1,e2) ->
+    Format.fprintf fmt "%a < %a"
+      (pp_term e_default PRight) e1
+      (pp_term e_default PRight) e2
+  | Tle (_,e1,e2) ->
+    Format.fprintf fmt "%a <= %a"
       (pp_term e_default PRight) e1
       (pp_term e_default PRight) e2
   | Tapp (f,[]) ->
@@ -325,14 +338,6 @@ let rec pp_term outer pos fmt = function
   | Tnil -> pp_str fmt "Nil"
   | Tcaller i -> Format.fprintf fmt "get_caller_ %a" pp_str i
   | Ttransferred i -> Format.fprintf fmt "get_transferred_ %a" pp_str i
-  | Tle (_,e1,e2) ->
-    Format.fprintf fmt "%a <= %a"
-      (pp_term outer pos) e1
-      (pp_term outer pos) e2
-  | Tlt (_,e1,e2) ->
-    Format.fprintf fmt "%a < %a"
-      (pp_term outer pos) e1
-      (pp_term outer pos) e2
   | Tletin (r,i,t,b,e) ->
     Format.fprintf fmt "let%a %a%a = %a in@\n%a"
       pp_ref r
@@ -375,8 +380,9 @@ let rec pp_term outer pos fmt = function
       (pp_term outer pos) e2
       (pp_term outer pos) e3
   | Tresult -> pp_str fmt "result"
-  | Tsubset (e1,e2) ->
-    Format.fprintf fmt "subset %a %a"
+  | Tsubset (i,e1,e2) ->
+    Format.fprintf fmt "%a.subset %a %a"
+      pp_str (String.capitalize_ascii i)
       (pp_with_paren (pp_term outer pos)) e1
       (pp_with_paren (pp_term outer pos)) e2
   | Ttail (e1,e2) ->
@@ -397,6 +403,11 @@ let rec pp_term outer pos fmt = function
       (pp_with_paren (pp_term outer pos)) e2
   | Tremove (i,e1,e2) ->
     Format.fprintf fmt "%a.remove %a %a"
+      pp_str (String.capitalize_ascii i)
+      (pp_with_paren (pp_term outer pos)) e1
+      (pp_with_paren (pp_term outer pos)) e2
+  | Tlistremove (i,e1,e2) ->
+    Format.fprintf fmt "%a.remove_key %a %a"
       pp_str (String.capitalize_ascii i)
       (pp_with_paren (pp_term outer pos)) e1
       (pp_with_paren (pp_term outer pos)) e2
