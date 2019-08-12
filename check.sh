@@ -1,6 +1,6 @@
 #! /bin/bash
 
-BIN=./compiler.exe
+BIN=./archetype.exe
 EXTRACT=./extract.sh
 NB_ERR="0"
 NB_AST="0"

@@ -15,7 +15,7 @@ plugin:
 
 compiler:
 	$(MAKE) -C src compiler.exe
-	cp -f _build/default/src/compiler.exe .
+	ln -s _build/default/src/compiler.exe archetype.exe
 
 mlw:
 	$(MAKE) -C src mlw.exe

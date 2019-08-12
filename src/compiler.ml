@@ -225,10 +225,29 @@ let main () =
       "Available options:";
     ]  in
 
+  let check_flags_consistency () =
+    match !Options.target with
+    | None -> ()
+    | _ ->
+      if !Options.opt_nse
+      then Format.printf "Error: side effect removing is not compatible with language: %a.@\n"
+          Options.pp_target_lang !Options.target;
+
+      if !Options.opt_as
+      then Format.printf "Error: asset shallowing is not compatible with language: %a.@\n"
+          Options.pp_target_lang !Options.target;
+
+      if !Options.opt_nse || !Options.opt_as
+      then exit 1
+  in
+
   let ofilename = ref "" in
   let ochannel : in_channel option ref = ref None  in
   Arg.parse arg_list (fun s -> (ofilename := s;
                                 ochannel := Some (open_in s))) arg_usage;
+
+  check_flags_consistency();
+
   let filename, channel, dispose =
     match !ochannel with
     | Some c -> (!ofilename, c, true)
