@@ -176,7 +176,7 @@ let main () =
   let arg_list = Arg.align [
       "-t", Arg.String f, "<lang> Transcode to <lang> language";
       "--target", Arg.String f, " Same as -t";
-      "--list-target", Arg.Unit (fun _ -> Format.printf "target available:@\n  ligo@\n  whyml@\n  markdown@\n"; exit 0), " List available target languages";
+      "--list-target", Arg.Unit (fun _ -> Format.printf "target available:@\n  ligo@\n  smartpy@\n  ocaml@\n  whyml@\n  markdown@\n"; exit 0), " List available target languages";
       "--json", Arg.Set Options.opt_json, " Output Archetype parse tree in JSON representation";
       (* "--storage-policy", Arg.String (fun s -> match s with
           | "flat" -> Options.storage_policy := Flat
@@ -189,7 +189,7 @@ let main () =
       "-ext", Arg.Set Options.opt_ext, " Stop compilation at extensions processing step";
       "--extensions", Arg.Set Options.opt_ext, " Same as -ext";
       "-pt", Arg.Set Options.opt_pt, " Stop compilation at parse tree generation step";
-      "--pretty-print", Arg.Set Options.opt_pt, " Same as -pt";
+      "--parse-tree", Arg.Set Options.opt_pt, " Same as -pt";
       "-tast", Arg.Set Options.opt_tast, " Stop compilation at typed abstract syntax tree generation step";
       "--typed-abstract-syntax-tree", Arg.Set Options.opt_tast, " Same as -tast";
       "-nse", Arg.Set Options.opt_nse, " Active no side effect";
