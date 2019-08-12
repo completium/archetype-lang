@@ -123,8 +123,8 @@ type ('e,'t,'i) abstract_term =
   | Tassert of 'e
   (* set *)
   | Tmem    of 'i * 'e * 'e
+  | Tlmem    of 'i * 'e * 'e
   | Tcontains of 'i * 'e * 'e
-  | Tlmem   of 'e * 'e
   | Tempty  of 'i * 'e
   | Tsingl  of 'i * 'e
   | Thead   of 'e * 'e
@@ -327,8 +327,8 @@ and map_abstract_term
   | Tsubset (i,e1,e2)    -> Tsubset (map_i i, map_e e1, map_e e2)
   | Tresult            -> Tresult
   | Tmem (t,e1,e2)     -> Tmem (map_i t, map_e e1, map_e e2)
+  | Tlmem (t,e1,e2)     -> Tlmem (map_i t, map_e e1, map_e e2)
   | Tcontains (t,e1,e2) -> Tcontains (map_i t, map_e e1, map_e e2)
-  | Tlmem (e1,e2)      -> Tlmem (map_e e1, map_e e2)
   | Tempty (i,e)       -> Tempty (map_i i, map_e e)
   | Tsingl (i,e)       -> Tsingl (map_i i, map_e e)
   | Thead (e1,e2)      -> Thead (map_e e1, map_e e2)
@@ -660,8 +660,8 @@ let compare_abstract_term
   | Tsubset (i1,e1,e2), Tsubset (i2,f1,f2) -> cmpi i1 i2 && cmpe e1 f1 && cmpe e2 f2
   | Tresult, Tresult -> true
   | Tmem (t1,e1,e2), Tmem (t2,f1,f2) -> cmpi t1 t2 && cmpe e1 f1 && cmpe e2 f2
+  | Tlmem (t1,e1,e2), Tlmem (t2,f1,f2) -> cmpi t1 t2 && cmpe e1 f1 && cmpe e2 f2
   | Tcontains (t1,e1,e2), Tcontains (t2,f1,f2) -> cmpi t1 t2 && cmpe e1 f1 && cmpe e2 f2
-  | Tlmem (e1,e2), Tlmem (f1,f2) -> cmpe e1 f1 && cmpe e2 f2
   | Tempty (i1,e1), Tempty (i2,e2) -> cmpi i1 i2 && cmpe e1 e2
   | Tsingl (i1,e1), Tsingl (i2,e2) -> cmpi i1 i2 && cmpe e1 e2
   | Thead (e1,e2), Thead (f1,f2) -> cmpe e1 f1 && cmpe e2 f2

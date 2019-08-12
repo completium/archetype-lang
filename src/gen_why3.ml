@@ -207,12 +207,12 @@ let mk_keys_eq_axiom n f ktyp : decl =
 *)
 let mk_partition_axiom n f kt pa kpt : decl =
   Daxiom (n^"_"^f^"_is_partition",
-          Tforall ([["s"],Tystorage;["k1"],kt;["k2"],kpt],
-                   Timpl (Tmem (n, Tvar("k1"),Tdoti ("s",n^"_keys")),
-                          Timpl (Tmem (n, Tvar "k2",
-                                       Tapp (Tvar f,
-                                             [Tget (n,Tdoti ("s",n^"_assets"),Tvar "k1")])),
-                                 Tmem (n, Tvar "k2",Tdoti ("s",pa^"_keys"))))))
+          Tforall ([["s"],Tystorage;["a"],Tyasset n;["k"],kpt],
+                   Timpl (Tmem (n, Tvar("a"),Tdoti ("s",mksacId n)),
+                          Timpl (Tlmem (gArchetypeList,
+                                        Tvar "k",
+                                        Tapp (Tvar f, [Tvar "a"])),
+                                 Tcontains (pa, Tvar "k",Tdoti ("s",mksacId pa))))))
 
 (* API storage templates -----------------------------------------------------*)
 
@@ -921,7 +921,7 @@ let to_whyml (m : M.model) : mlw_tree  =
   let init_records     = records |> unloc_decl |> List.map mk_default_init |> loc_decl in
   let records          = zip records clones init_records |> deloc in
   let storage          = M.Utils.get_storage m |> map_storage m in
-  let axioms           = mk_axioms m in
+  (*let axioms           = mk_axioms m in*)
   let partition_axioms = mk_partition_axioms m in
   let storage_api      = mk_storage_api m (records |> wdl) in
   let functions        = mk_functions m in
@@ -932,7 +932,7 @@ let to_whyml (m : M.model) : mlw_tree  =
       decls = [uselib;uselist] @
               records          @
               [storage]        @
-              axioms           @
+              (*axioms           @*)
               partition_axioms @
               storage_api;
     };{

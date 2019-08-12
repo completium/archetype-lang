@@ -231,7 +231,7 @@ let rec pp_term outer pos fmt = function
       pp_str (String.capitalize_ascii t)
       (pp_with_paren (pp_term outer pos)) e1
       (pp_with_paren (pp_term outer pos)) e2
-  | Tlmem (e1,e2) ->
+  | Tlmem (i,e1,e2) ->
     Format.fprintf fmt "lmem %a %a"
       (pp_with_paren (pp_term outer pos)) e1
       (pp_with_paren (pp_term outer pos)) e2
@@ -256,8 +256,11 @@ let rec pp_term outer pos fmt = function
       (pp_with_paren (pp_term outer pos)) e1
       (pp_with_paren (pp_term outer pos)) e2
       (pp_with_paren (pp_term outer pos)) e3
-  | Teq (Tycoll _, e1, e2) ->
-    Format.fprintf fmt "%a == %a" (pp_term outer pos) e1 (pp_term outer pos) e2
+  | Teq (Tycoll a, e1, e2) ->
+    Format.fprintf fmt "%a.(==) %a %a"
+      pp_str (String.capitalize_ascii a)
+      (pp_with_paren (pp_term outer pos)) e1
+      (pp_with_paren (pp_term outer pos)) e2
   | Teq (_, e1, e2) ->
     Format.fprintf fmt "%a = %a" (pp_term outer pos) e1 (pp_term outer pos) e2
   | Tunion (i, e1, e2) ->

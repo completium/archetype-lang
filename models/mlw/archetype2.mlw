@@ -22,15 +22,15 @@ module IntListUtils
   use int.Int
   use list.List
 
-  let rec function fappend (l1 l2: list int) : list int 
+  let rec function lappend (l1 l2: list int) : list int 
   variant { l1 }
   =
   match l1 with
     | Nil -> l2
-    | Cons x1 r1 -> Cons x1 (fappend r1 l2)
+    | Cons x1 r1 -> Cons x1 (lappend r1 l2)
   end
 
-  let rec function fmem (x: int) (l: list int) : bool 
+  let rec function lmem (x: int) (l: list int) : bool 
   variant { l }
   =
   match l with
@@ -38,7 +38,7 @@ module IntListUtils
     | Cons e tl ->
     if x = e 
     then true
-    else fmem x tl
+    else lmem x tl
     end
 
   let rec remove_key (l : list int) (k : int) : list int
@@ -130,6 +130,8 @@ module AssetCollection
   let function contains (k : key) (c : collection) = internal_contains k c.content
 
   let function mem (a : t) (c : collection) = internal_contains (keyf a) c.content
+
+  predicate (==) (c1 c2 : collection) = forall a : t. mem a c1 <-> mem a c2
 
   predicate subset (c1 c2 : collection) = forall k : t. mem k c1 -> mem k c2
   
@@ -234,7 +236,7 @@ module AssetCollection
   =
   match l with
   | Cons e tl -> 
-    if fmem (keyf e) keys
+    if lmem (keyf e) keys
     then Cons e (internal_gets tl keys)
     else internal_gets tl keys
   | Nil -> Nil  
