@@ -205,9 +205,6 @@ let main () =
       "--shallow-asset", Arg.Set Options.opt_as, " Same as -sa";
       "-nse", Arg.Set Options.opt_nse, " Remove side effect";
       "--no-side-effect", Arg.Set Options.opt_nse, " Same as -nse";
-      "-r", Arg.Set Options.opt_raw, " Print raw tree";
-      "--raw", Arg.Set Options.opt_raw, " Same as -r";
-      "-json", Arg.Set Options.opt_json, " Print JSON format";
       "-lsp", Arg.String (fun s -> match s with
           | "errors" -> Options.opt_lsp := true; Lsp.kind := Errors
           | "outline" -> Options.opt_lsp := true; Lsp.kind := Outline
@@ -216,6 +213,9 @@ let main () =
               "Unknown lsp commands %s (use errors, outline)@." s;
             exit 2), "<request> Generate language server protocol response to <resquest>";
       "--list-lsp-request", Arg.Unit (fun _ -> Format.printf "request available:@\n  errors@\n  outline@\n"; exit 0), " List available request for lsp";
+      "-r", Arg.Set Options.opt_raw, " Print raw tree";
+      "--raw", Arg.Set Options.opt_raw, " Same as -r";
+      "-json", Arg.Set Options.opt_json, " Print JSON format";
       "-F", Arg.Set Options.fake_ast, " Fake ast";
       "-F2", Arg.Set Options.fake_ast2, " Fake ast test shallow";
     ] in
