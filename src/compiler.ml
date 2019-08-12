@@ -202,8 +202,8 @@ let main () =
       "--extensions", Arg.Set Options.opt_ext, " Same as -ext";
       "-tast", Arg.Set Options.opt_tast, " Generate typed abstract syntax tree";
       "--typed-abstract-syntax-tree", Arg.Set Options.opt_tast, " Same as -tast";
-      "-as", Arg.Set Options.opt_as, " Transform to shallow asset";
-      "--asset-shallowing", Arg.Set Options.opt_as, " Same as -as";
+      "-sa", Arg.Set Options.opt_as, " Transform to shallow asset";
+      "--shallow-asset", Arg.Set Options.opt_as, " Same as -sa";
       "-nse", Arg.Set Options.opt_nse, " Remove side effect";
       "--no-side-effect", Arg.Set Options.opt_nse, " Same as -nse";
       "-r", Arg.Set Options.opt_raw, " Print raw tree";
@@ -214,7 +214,7 @@ let main () =
           |  s ->
             Format.eprintf
               "Unknown lsp commands %s (use errors, outline)@." s;
-            exit 2), "<request> Generate language server protocol respond for resquest";
+            exit 2), "<request> Generate language server protocol responds to <resquest>";
       "--list-lsp-request", Arg.Unit (fun _ -> Format.printf "request available:@\n  errors@\n  outline@\n"; exit 0), " List available request for lsp";
       "-F", Arg.Set Options.fake_ast, " Fake ast";
       "-F2", Arg.Set Options.fake_ast2, " Fake ast test shallow";
