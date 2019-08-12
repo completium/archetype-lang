@@ -187,7 +187,6 @@ let main () =
       "-t", Arg.String f, "<lang> Transcode to <lang> language";
       "--target", Arg.String f, " Same as -t";
       "--list-target", Arg.Unit (fun _ -> Format.printf "target available:@\n  liquidity@\n  liquidity_url@\n  ligo@\n  smartpy@\n  ocaml@\n  whyml@\n  markdown@\n"; exit 0), " List available target languages";
-      "--json", Arg.Set Options.opt_json, " Print JSON representation";
       (* "--storage-policy", Arg.String (fun s -> match s with
           | "flat" -> Options.storage_policy := Flat
           | "record" -> Options.storage_policy := Record
@@ -208,19 +207,20 @@ let main () =
       "--no-side-effect", Arg.Set Options.opt_nse, " Same as -nse";
       "-r", Arg.Set Options.opt_raw, " Print raw tree";
       "--raw", Arg.Set Options.opt_raw, " Same as -r";
-      "--lsp", Arg.String (fun s -> match s with
+      "-json", Arg.Set Options.opt_json, " Print JSON representation";
+      "-lsp", Arg.String (fun s -> match s with
           | "errors" -> Options.opt_lsp := true; Lsp.kind := Errors
           | "outline" -> Options.opt_lsp := true; Lsp.kind := Outline
           |  s ->
             Format.eprintf
               "Unknown lsp commands %s (use errors, outline)@." s;
-            exit 2), "<request> Generate language server protocol responds to <resquest>";
+            exit 2), "<request> Generate language server protocol response to <resquest>";
       "--list-lsp-request", Arg.Unit (fun _ -> Format.printf "request available:@\n  errors@\n  outline@\n"; exit 0), " List available request for lsp";
       "-F", Arg.Set Options.fake_ast, " Fake ast";
       "-F2", Arg.Set Options.fake_ast2, " Fake ast test shallow";
     ] in
   let arg_usage = String.concat "\n" [
-      "usage : archetype [-pt | -ext | -tast | [-nse] [-as] | -t <lang>] [-r | --json] <file>";
+      "usage : archetype [-t <lang> | -pt | -ext | -tast | [-as] [-nse] ] [-r | -json] [-lsp <request>] <file>";
       "";
       "Available options:";
     ]  in
