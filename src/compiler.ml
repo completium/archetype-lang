@@ -10,9 +10,9 @@ exception Stop
 let is_false_ast () : bool = !Options.fake_ast || !Options.fake_ast2
 
 let print_model (model : Model.model) =
-  if !Options.opt_pretty_print_model
-  then Format.printf "%a@." Printer_model.pp_model model
-  else Format.printf "%a@." Model.pp_model model
+  if !Options.opt_raw_model
+  then Format.printf "%a@." Model.pp_model model
+  else Format.printf "%a@." Printer_model.pp_model model
 
 let parse (filename, channel) =
   if is_false_ast()
@@ -90,6 +90,9 @@ let output_liquidity model =
     Format.printf "%s@\n" url
   else Format.printf "%a@." Printer_model_liq.pp_model model
 
+let output_ocaml model =
+  Format.printf "%a@." Printer_model_ocaml.pp_model model
+
 let output_ligo model =
   Format.printf "%a@." Printer_model_ligo.pp_model model
 
@@ -104,6 +107,10 @@ let output_whyml model =
 
 let generate_target model =
   match !Options.target with
+  | None ->
+    model
+    |> print_model
+
   | Liquidity ->
     model
     |> shallow_asset
@@ -123,6 +130,13 @@ let generate_target model =
     |> shallow_asset
     |> generate_api_storage
     |> output_smartpy
+
+  | Ocaml ->
+    model
+    |> shallow_asset
+    |> remove_side_effect
+    |> generate_api_storage
+    |> output_liquidity
 
   | Whyml ->
     model
@@ -153,6 +167,7 @@ let main () =
     | "liquidity" -> Options.target := Liquidity
     | "ligo"      -> Options.target := Ligo
     | "smartpy"   -> Options.target := SmartPy
+    | "ocaml"     -> Options.target := Ocaml
     | "whyml"     -> Options.target := Whyml
     | "markdown"  -> Options.target := Markdown
     |  s ->
@@ -164,15 +179,15 @@ let main () =
       "-t", Arg.String f, "<lang> Transcode to <lang> language";
       "--target", Arg.String f, " Same as -t";
       "--list-target", Arg.Unit (fun _ -> Format.printf "target available:@\n  ligo@\n  whyml@\n  markdown@\n"; exit 0), " List available target languages";
-      "--json", Arg.Set Options.opt_json, " Output Archetype in JSON representation";
-      "--storage-policy", Arg.String (fun s -> match s with
+      "--json", Arg.Set Options.opt_json, " Output Archetype parse tree in JSON representation";
+      (* "--storage-policy", Arg.String (fun s -> match s with
           | "flat" -> Options.storage_policy := Flat
           | "record" -> Options.storage_policy := Record
           |  s ->
             Format.eprintf
               "Unknown policy %s (use record, flat)@." s;
             exit 2), "<policy> Set storage policy";
-      "--list-storage-policy", Arg.Unit (fun _ -> Format.printf "storage policy available:@\n  record@\n  flat@\n"; exit 0), " List storage policy";
+         "--list-storage-policy", Arg.Unit (fun _ -> Format.printf "storage policy available:@\n  record@\n  flat@\n"; exit 0), " List storage policy"; *)
       "-PP", Arg.Set Options.opt_pretty_print, " Pretty print parse tree";
       "--pretty-print", Arg.Set Options.opt_pretty_print, " Same as -PP";
       "-PPP", Arg.Set Options.opt_pretty_print, " Pretty print parse tree without extension";
@@ -184,8 +199,8 @@ let main () =
       "--reduced-ast", Arg.Set Options.opt_astr, " Same as -RA";
       "-M", Arg.Set Options.opt_model, " Print raw model";
       "--model", Arg.Set Options.opt_model, " Same as -M";
-      "-PM", Arg.Set Options.opt_pretty_print_model, " Pretty print parse tree";
-      "--pretty-print-model", Arg.Set Options.opt_pretty_print_model, " Same as -PM";
+      "-R", Arg.Set Options.opt_raw_model, " Pretty print parse tree";
+      "--raw", Arg.Set Options.opt_raw_model, " Same as -R";
       "-SA", Arg.Set Options.opt_sa, " Print raw model with asset shallowing";
       "--shallow-asset", Arg.Set Options.opt_sa, " Same as -SA";
       "-W", Arg.Set Options.opt_wse, " Print raw model without side effect";

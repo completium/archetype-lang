@@ -4,6 +4,7 @@ type target_lang =
   | SmartPy
   | Whyml
   | Markdown
+  | Ocaml
   | None
 [@@deriving show {with_path = false}]
 
@@ -24,7 +25,7 @@ type sorting_policy =
   | None
 [@@deriving show {with_path = false}]
 
-let target = ref (Liquidity : target_lang)
+let target = ref (None : target_lang)
 
 let storage_policy = ref Record
 let execution_mode = ref WithSideEffect
@@ -41,7 +42,7 @@ let opt_pre_parse = ref false
 let opt_ast = ref false
 let opt_astr = ref false
 let opt_model = ref false
-let opt_pretty_print_model = ref false
+let opt_raw_model = ref false
 let opt_wse = ref false
 let opt_sa = ref false
 let opt_api = ref false
