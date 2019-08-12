@@ -187,7 +187,7 @@ let main () =
       "-t", Arg.String f, "<lang> Transcode to <lang> language";
       "--target", Arg.String f, " Same as -t";
       "--list-target", Arg.Unit (fun _ -> Format.printf "target available:@\n  liquidity@\n  liquidity_url@\n  ligo@\n  smartpy@\n  ocaml@\n  whyml@\n  markdown@\n"; exit 0), " List available target languages";
-      "--json", Arg.Set Options.opt_json, " Output Archetype parse tree in JSON representation";
+      "--json", Arg.Set Options.opt_json, " Print JSON representation";
       (* "--storage-policy", Arg.String (fun s -> match s with
           | "flat" -> Options.storage_policy := Flat
           | "record" -> Options.storage_policy := Record
@@ -200,7 +200,7 @@ let main () =
       "--parse-tree", Arg.Set Options.opt_pt, " Same as -pt";
       "-ext", Arg.Set Options.opt_ext, " Process extensions";
       "--extensions", Arg.Set Options.opt_ext, " Same as -ext";
-      "-tast", Arg.Set Options.opt_tast, " Generate typed abstract syntax tree";
+      "-tast", Arg.Set Options.opt_tast, " Generate typed ast";
       "--typed-abstract-syntax-tree", Arg.Set Options.opt_tast, " Same as -tast";
       "-sa", Arg.Set Options.opt_as, " Transform to shallow asset";
       "--shallow-asset", Arg.Set Options.opt_as, " Same as -sa";
@@ -220,7 +220,7 @@ let main () =
       "-F2", Arg.Set Options.fake_ast2, " Fake ast test shallow";
     ] in
   let arg_usage = String.concat "\n" [
-      "usage : archetype [-pt | -ext | -tast | [-nse] [-as] | -t lang] [-r] file";
+      "usage : archetype [-pt | -ext | -tast | [-nse] [-as] | -t <lang>] [-r | --json] <file>";
       "";
       "Available options:";
     ]  in
