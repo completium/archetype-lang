@@ -270,7 +270,7 @@ let extract_args test =
     match term.M.node with
     | M.Mnow -> acc @ [term,"_now", Tydate]
     | _ -> M.fold_term internal_extract_args acc term in
-  M.fold_term internal_extract_args [] test
+  internal_extract_args [] test
 
 let mk_select_name m asset test = "select_"^asset^"_"^(string_of_int (get_select_id m asset test))
 
@@ -865,6 +865,15 @@ let mk_storage_api (m : M.model) records =
 
 (* Entries --------------------------------------------------------------------*)
 
+let fold_exns body : exn list =
+  let rec internal_fold_exn acc (term : M.mterm) =
+    match term.M.node with
+    | M.Mget _ -> acc @ [Enotfound]
+    | M.Mfor _ -> acc @ [Enotfound] (* mlw translation generates a get *)
+    | M.Maddasset _ -> acc @ [Ekeyexist]
+    | _ -> M.fold_term internal_fold_exn acc term in
+  Tools.List.dedup (internal_fold_exn [] body)
+
 let is_fail (t : M.mterm) =
   match t.node with
   | M.Mfail _ -> true
@@ -891,7 +900,7 @@ let mk_functions m =
                          (map_lident i, map_mtype t)
                        ) s.args));
         returns  = map_mtype t;
-        raises   = [Enotfound];
+        raises   = fold_exns s.body;
         variants = [];
         requires = [];        ensures  = [];
         body     = flatten_if_fail m s.body;
@@ -910,7 +919,7 @@ let mk_entries m =
                          (map_lident i, map_mtype t)
                        ) s.args));
         returns  = with_dummy_loc Tyunit;
-        raises   = [Enotfound];
+        raises   = fold_exns s.body;
         variants = [];
         requires = [];        ensures  = [];
         body     = flatten_if_fail m s.body;

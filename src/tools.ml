@@ -166,6 +166,7 @@ module List : sig
   val fold_left_map : ('a -> 'b -> 'a * 'c) -> 'a -> 'b list -> 'a * 'c list
   val assoc_all     : 'a -> ('a * 'b) list -> 'b list
   val index_of      : ('a -> bool) -> 'a list -> int
+  val dedup         : 'a list -> 'a list
 
   module Exn : sig
     val assoc : 'a -> ('a * 'b) list -> 'b option
@@ -265,6 +266,13 @@ end = struct
       | q::t -> if (pred q) then idx else aux (idx + 1) t
     in
     aux 0 l
+
+  let rec dedup = function
+    | e::tl ->
+      if List.mem e tl then
+        dedup tl
+      else e::(dedup tl)
+    | [] -> []
 
   module Exn = struct
     let assoc x xs =
