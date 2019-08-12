@@ -73,7 +73,8 @@ type ('e,'t,'i) abstract_term =
   (* list *)
   | Tlist   of 'e list
   | Tnil
-  | Tcard   of 'e
+  | Tcard   of 'i * 'e
+  | Tlcard   of 'i * 'e
   | Tmlist  of 'e * 'i * 'i * 'i * 'e (* match list *)
   | Tcons   of 'e * 'e
   (* archetype lib *)
@@ -130,6 +131,7 @@ type ('e,'t,'i) abstract_term =
   | Thead   of 'e * 'e
   | Ttail   of 'e * 'e
   | Tnth    of 'i * 'e * 'e
+  | Tlnth    of 'i * 'e * 'e
   (* option *)
   | Tnone
   | Tsome   of 'e
@@ -286,7 +288,8 @@ and map_abstract_term
   | Trmed  a           -> Trmed (map_i a)
   | Tlist l            -> Tlist (List.map map_e l)
   | Tnil               -> Tnil
-  | Tcard e            -> Tcard (map_e e)
+  | Tcard (i,e)        -> Tcard (map_i i, map_e e)
+  | Tlcard (i,e)       -> Tlcard (map_i i, map_e e)
   | Tmlist (e1,i1,i2,i3,e2) -> Tmlist (map_e e1, map_i i1, map_i i2, map_i i3, map_e e2)
   | Tcons (e1,e2)      -> Tcons (map_e e1, map_e e2)
   | Tadd (i1,e1,e2)       -> Tadd (map_i i1, map_e e1, map_e e2)
@@ -333,7 +336,8 @@ and map_abstract_term
   | Tsingl (i,e)       -> Tsingl (map_i i, map_e e)
   | Thead (e1,e2)      -> Thead (map_e e1, map_e e2)
   | Ttail (e1,e2)      -> Ttail (map_e e1, map_e e2)
-  | Tnth (i,e1,e2)       -> Tnth (map_i i, map_e e1, map_e e2)
+  | Tnth (i,e1,e2)     -> Tnth (map_i i, map_e e1, map_e e2)
+  | Tlnth (i,e1,e2)    -> Tlnth (map_i i, map_e e1, map_e e2)
   | Tnone              -> Tnone
   | Tsome e            -> Tsome (map_e e)
   | Tenum i            -> Tenum (map_i i)
@@ -616,7 +620,8 @@ let compare_abstract_term
   | Trmed  a1, Trmed a2 -> cmpi a1 a2
   | Tlist l1, Tlist l2 -> List.for_all2 cmpe l1 l2
   | Tnil, Tnil -> true
-  | Tcard e1, Tcard e2 -> cmpe e1 e2
+  | Tcard (i1,e1), Tcard (i2,e2) -> cmpi i1 i2 && cmpe e1 e2
+  | Tlcard (i1,e1), Tlcard (i2,e2) -> cmpi i1 i2 && cmpe e1 e2
   | Tmlist (e1,i1,i2,i3,e2), Tmlist (f1,j1,j2,j3,f2) ->
     cmpe e1 f2 && cmpi i1 j1 && cmpi i2 j2 && cmpi i3 j3 && cmpe f1 f2
   | Tcons (e1,e2), Tcons (f1,f2) -> cmpe e1 f1 && cmpe e2 f2
@@ -667,6 +672,7 @@ let compare_abstract_term
   | Thead (e1,e2), Thead (f1,f2) -> cmpe e1 f1 && cmpe e2 f2
   | Ttail (e1,e2), Ttail (f1,f2) -> cmpe e1 f1 && cmpe e2 f2
   | Tnth (i1,e1,e2), Tnth (i2,f1,f2) -> cmpi i1 i2 && cmpe e1 f1 && cmpe e2 f2
+  | Tlnth (i1,e1,e2), Tlnth (i2,f1,f2) -> cmpi i1 i2 && cmpe e1 f1 && cmpe e2 f2
   | Tnone, Tnone -> true
   | Tsome e1, Tsome e2 -> cmpe e1 e2
   | Tenum i1, Tenum i2 -> cmpi i1 i2

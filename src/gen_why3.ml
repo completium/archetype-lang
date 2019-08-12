@@ -714,6 +714,13 @@ let get_record_name = function
 
 let mk_var (i : ident) = Tvar i
 
+let get_for_fun = function
+  | M.Tcontainer (Tasset a,M.Collection) -> (fun (t1,t2) -> loc_term (Tnth  (unloc a,t1,t2))),
+                                            (fun t ->       loc_term (Tcard (unloc a,t)))
+  | M.Tcontainer (Tasset a,M.Partition)  -> (fun (t1,t2) -> loc_term (Tlnth (gArchetypeList,t1,t2))),
+                                            (fun t ->       loc_term (Tlcard (gArchetypeList,t)))
+  | _ -> assert false
+
 let rec map_mterm m (mt : M.mterm) : loc_term =
   let t =
     match mt.node with
@@ -760,9 +767,10 @@ let rec map_mterm m (mt : M.mterm) : loc_term =
     | M.Mnow -> Tnow (with_dummy_loc "_s")
     | M.Mseq l -> Tseq (List.map (map_mterm m) l)
     | M.Mfor (id,c,b) ->
+      let (nth,card) = get_for_fun c.type_ in
       Tfor (with_dummy_loc "i",
             with_dummy_loc (
-              Tminus (with_dummy_loc Tyunit,with_dummy_loc (Tcard (map_mterm m c)),
+              Tminus (with_dummy_loc Tyunit,card (map_mterm m c |> unloc_term),
                       (loc_term (Tint Big_int.unit_big_int)))
             ),
             [],
@@ -773,8 +781,7 @@ let rec map_mterm m (mt : M.mterm) : loc_term =
                       with_dummy_loc (
                         Tapp (loc_term (Tvar (("get_"^(unloc (M.Utils.get_asset_type c))))),[
                             loc_term (Tvar "_s");
-                            with_dummy_loc (Tnth (with_dummy_loc "TODO",
-                                                  loc_term (Tvar "i"),map_mterm m c))
+                            (nth (Tvar "i",map_mterm m c |> unloc_term))
                           ]
                           )),
                       map_mterm m b)))
@@ -937,7 +944,7 @@ let to_whyml (m : M.model) : mlw_tree  =
               storage_api;
     };{
        name = cap (map_lident m.name);
-       decls = [uselib;usestorage] @
+       decls = [uselib;uselist;usestorage] @
                functions @
                entries;
      }] in unloc_tree loct

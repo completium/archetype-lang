@@ -21,6 +21,7 @@ end
 module IntListUtils
   use int.Int
   use list.List
+  use list.Length
 
   let rec function lappend (l1 l2: list int) : list int 
   variant { l1 }
@@ -51,6 +52,21 @@ module IntListUtils
     else Cons e (remove_key tl k)
   | Nil -> Nil
   end
+
+  val lwitness : int
+
+  let rec lnth (l : list int) (i : int) : int
+  variant { l }
+  =
+  match l with
+  | Cons e tl ->
+    if i = 0
+    then e
+    else lnth tl (i - 1)
+  | Nil -> lwitness
+  end
+
+  let card (l : list int) : int = Length.length l
 
 end
 

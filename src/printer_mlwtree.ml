@@ -366,14 +366,25 @@ let rec pp_term outer pos fmt = function
   | Tassert e ->
     Format.fprintf fmt "assert { %a }"
       (pp_term outer pos) e
-  | Tcard e ->
-    Format.fprintf fmt "card %a" (pp_with_paren (pp_term outer pos)) e
+  | Tcard (i,e) ->
+    Format.fprintf fmt "%a.card %a"
+      pp_str (String.capitalize_ascii i)
+      (pp_with_paren (pp_term outer pos)) e
+  | Tlcard (i,e) ->
+    Format.fprintf fmt "%a.lcard %a"
+      pp_str (String.capitalize_ascii i)
+      (pp_with_paren (pp_term outer pos)) e
   | Tminus (_,e1,e2) ->
     Format.fprintf fmt "%a - %a"
       (pp_with_paren (pp_term outer pos)) e1
       (pp_with_paren (pp_term outer pos)) e2
   | Tnth (i,e1,e2) ->
     Format.fprintf fmt "%a.nth %a %a"
+      pp_str (String.capitalize_ascii i)
+      (pp_with_paren (pp_term outer pos)) e1
+      (pp_with_paren (pp_term outer pos)) e2
+  | Tlnth (i,e1,e2) ->
+    Format.fprintf fmt "%a.lnth %a %a"
       pp_str (String.capitalize_ascii i)
       (pp_with_paren (pp_term outer pos)) e1
       (pp_with_paren (pp_term outer pos)) e2
