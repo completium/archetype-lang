@@ -3,8 +3,6 @@ exception No_value
 exception Unsupported_yet
 exception Anomaly
 
-let debug_mode = ref false
-
 (* -------------------------------------------------------------------- *)
 let id = fun x -> x
 

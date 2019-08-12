@@ -9,8 +9,18 @@ exception Stop
 
 let is_false_ast () : bool = !Options.fake_ast || !Options.fake_ast2
 
-let print_model (model : Model.model) =
-  if !Options.opt_raw_model
+let output_pt (pt : ParseTree.archetype) =
+  if !Options.opt_json
+  then (Format.printf "%s\n" (Yojson.Safe.to_string (ParseTree.archetype_to_yojson pt)); raise Stop)
+  else if !Options.opt_raw
+  then Format.printf "%a@." Printer.pp_archetype pt
+  else Format.printf "%a@." ParseTree.pp_archetype pt
+
+let output_tast (ast : Ast.model) =
+  Format.printf "%a@." Ast.pp_model ast
+
+let output_model (model : Model.model) =
+  if !Options.opt_raw
   then Format.printf "%a@." Model.pp_model model
   else Format.printf "%a@." Printer_model.pp_model model
 
@@ -18,43 +28,26 @@ let parse (filename, channel) =
   if is_false_ast()
   then ParseTree.mk_archetype()
   else
-    let pt =
-      (if !Options.opt_cwse
-       then Io.parse_archetype
-       else Io.parse_archetype_strict) ~name:filename channel in
-    if !Options.opt_json then (Format.printf "%s\n" (Yojson.Safe.to_string (ParseTree.archetype_to_yojson pt)); raise Stop)
-    else if !Options.opt_parse then (Format.printf "%a\n" ParseTree.pp_archetype pt; raise Stop)
-    else if !Options.opt_pretty_print then (Format.printf "%a" Printer.pp_archetype pt; raise Stop)
-    else pt
+    Io.parse_archetype ~name:filename channel
+(* if !Options.opt_cwse
+   then Io.parse_archetype
+   else Io.parse_archetype_strict) ~name:filename channel *)
 
-let preprocess_ext pt =
+
+let preprocess_ext (pt : ParseTree.archetype) : ParseTree.archetype =
   if is_false_ast()
   then pt
-  else
-  if !Options.opt_pre_json then (Format.printf "%s\n" (Yojson.Safe.to_string (ParseTree.archetype_to_yojson pt)); raise Stop)
-  else if !Options.opt_pre_parse then (Format.printf "%a\n" ParseTree.pp_archetype pt; raise Stop)
-  else if !Options.opt_pre_pretty_print then (Format.printf "%a" Printer.pp_archetype pt; raise Stop)
-  else pt
+  else pt (* TODO: add extension process *)
 
-let type_ pt =
-  let ast =
-    if !Options.fake_ast
-    then Ast.create_miles_with_expiration_ast ()
-    else if !Options.fake_ast2
-    then Ast.create_test_shallow_ast ()
-    else Typing.typing Typing.empty pt
-  in
-  if !Options.opt_ast
-  then (Format.printf "%a@." Ast.pp_model ast; raise Stop)
-  else ast
+let type_ (pt : ParseTree.archetype) : Ast.model =
+  if !Options.fake_ast
+  then Ast.create_miles_with_expiration_ast ()
+  else if !Options.fake_ast2
+  then Ast.create_test_shallow_ast ()
+  else Typing.typing Typing.empty pt
 
-let model ast =
-  let model = Gen_model.to_model ast in
-  if !Options.opt_model
-  then (print_model model; raise Stop)
-  else model
 
-let generate_target_pt pt =
+let generate_target_pt (pt : ParseTree.archetype) : ParseTree.archetype =
   match !Options.target with
   | Markdown  -> (
       let md = Gen_markdown.pt_to_ast_omd pt in
@@ -63,26 +56,13 @@ let generate_target_pt pt =
     )
   | _ -> pt
 
-let shallow_asset model =
-  let model = Gen_shallow_asset.shallow_asset model in
-  if !Options.opt_sa
-  then (print_model model; raise Stop)
-  else model
-
-let remove_side_effect model =
-  let model = Gen_reduce.reduce model in
-  if !Options.opt_wse
-  then (print_model model; raise Stop)
-  else model
-
-let generate_api_storage model =
-  let model = Gen_api_storage.generate_api_storage model in
-  if !Options.opt_api
-  then (print_model model; raise Stop)
-  else model
+let generate_model       = Gen_model.to_model
+let shallow_asset        = Gen_shallow_asset.shallow_asset
+let remove_side_effect   = Gen_reduce.reduce
+let generate_api_storage = Gen_api_storage.generate_api_storage
 
 let output_liquidity model =
-  if !Options.opt_liq_url
+  if !Options.opt_lu
   then
     let str = Printer_model_liq.show_model model in
     let encoded_src = Uri.pct_encode str in
@@ -90,26 +70,40 @@ let output_liquidity model =
     Format.printf "%s@\n" url
   else Format.printf "%a@." Printer_model_liq.pp_model model
 
-let output_ocaml model =
-  Format.printf "%a@." Printer_model_ocaml.pp_model model
+let output_ocaml =
+  if !Options.opt_raw
+  then Format.printf "%a@." Model.pp_model
+  else Format.printf "%a@." Printer_model_ocaml.pp_model
 
-let output_ligo model =
-  Format.printf "%a@." Printer_model_ligo.pp_model model
+let output_ligo =
+  if !Options.opt_raw
+  then Format.printf "%a@." Model.pp_model
+  else Format.printf "%a@." Printer_model_ligo.pp_model
 
-let output_smartpy model =
-  Format.printf "%a@." Printer_model_smartpy.pp_model model
+let output_smartpy =
+  if !Options.opt_raw
+  then Format.printf "%a@." Model.pp_model
+  else Format.printf "%a@." Printer_model_smartpy.pp_model
 
 let output_whyml model =
   let mlw = Gen_why3.to_whyml model in
-  if !Options.opt_raw_target
+  if !Options.opt_raw
   then Format.printf "%a@." Mlwtree.pp_mlw_tree mlw
   else Format.printf "%a@." Printer_mlwtree.pp_mlw_tree mlw
 
+
+
 let generate_target model =
+
+  let cont c a = if c then a else (fun x -> x) in
+
   match !Options.target with
   | None ->
     model
-    |> print_model
+    |> cont !Options.opt_as  shallow_asset
+    |> cont !Options.opt_nse remove_side_effect
+    |> generate_api_storage
+    |> output_model
 
   | Liquidity ->
     model
@@ -149,13 +143,17 @@ let generate_target model =
 (* -------------------------------------------------------------------- *)
 
 let compile (filename, channel) =
-  Tools.debug_mode := !Options.debug_mode;
+  let cont c a x = if c then (a x; raise Stop) else x in
+
   (filename, channel)
   |> parse
+  |> cont !Options.opt_pt output_pt
   |> preprocess_ext
+  |> cont !Options.opt_pt output_pt
   |> generate_target_pt
   |> type_
-  |> model
+  |> cont !Options.opt_tast output_tast
+  |> generate_model
   |> generate_target
 
 let close dispose channel =
@@ -188,31 +186,18 @@ let main () =
               "Unknown policy %s (use record, flat)@." s;
             exit 2), "<policy> Set storage policy";
          "--list-storage-policy", Arg.Unit (fun _ -> Format.printf "storage policy available:@\n  record@\n  flat@\n"; exit 0), " List storage policy"; *)
-      "-PP", Arg.Set Options.opt_pretty_print, " Pretty print parse tree";
-      "--pretty-print", Arg.Set Options.opt_pretty_print, " Same as -PP";
-      "-PPP", Arg.Set Options.opt_pretty_print, " Pretty print parse tree without extension";
-      "--preprocess-pretty-print", Arg.Set Options.opt_pretty_print, " Same as -PPP";
-      "-P", Arg.Set Options.opt_parse, " Print raw parse tree";
-      "-A", Arg.Set Options.opt_ast, " Print raw ast";
-      "--ast", Arg.Set Options.opt_ast, " Same as -A";
-      "-RA", Arg.Set Options.opt_astr, " Print raw ast";
-      "--reduced-ast", Arg.Set Options.opt_astr, " Same as -RA";
-      "-M", Arg.Set Options.opt_model, " Print raw model";
-      "--model", Arg.Set Options.opt_model, " Same as -M";
-      "-R", Arg.Set Options.opt_raw_model, " Pretty print parse tree";
-      "--raw", Arg.Set Options.opt_raw_model, " Same as -R";
-      "-SA", Arg.Set Options.opt_sa, " Print raw model with asset shallowing";
-      "--shallow-asset", Arg.Set Options.opt_sa, " Same as -SA";
-      "-W", Arg.Set Options.opt_wse, " Print raw model without side effect";
-      "--without-side-effect", Arg.Set Options.opt_wse, " Same as -W";
-      "-RTT", Arg.Set Options.opt_raw_target, " Print raw target tree";
-      "--raw-target-tree", Arg.Set Options.opt_raw_target, " Same as -RTT";
-      "-LU", Arg.Set Options.opt_liq_url, " Print url of try liquidity";
-      "--liquidity-url", Arg.Set Options.opt_liq_url, " Same as -LU";
-      "-CWSE", Arg.Set Options.opt_cwse, " Continue with syntax errors";
-      "--continue-with-syntax-errors", Arg.Set Options.opt_cwse, " Same as -CWSE";
-      "-AS", Arg.Set Options.opt_api, " Stop at storage api computation";
-      "--api-storage", Arg.Set Options.opt_cwse, " Same as -AS";
+      "-ext", Arg.Set Options.opt_ext, " Stop compilation at extensions processing step";
+      "--extensions", Arg.Set Options.opt_ext, " Same as -ext";
+      "-pt", Arg.Set Options.opt_pt, " Stop compilation at parse tree generation step";
+      "--pretty-print", Arg.Set Options.opt_pt, " Same as -pt";
+      "-tast", Arg.Set Options.opt_tast, " Stop compilation at typed abstract syntax tree generation step";
+      "--typed-abstract-syntax-tree", Arg.Set Options.opt_tast, " Same as -tast";
+      "-nse", Arg.Set Options.opt_nse, " Active no side effect";
+      "--no-side-effect", Arg.Set Options.opt_nse, " Same as -nse";
+      "-as", Arg.Set Options.opt_as, " Active asset shallowing";
+      "--asset-shallowing", Arg.Set Options.opt_as, " Same as -as";
+      "-r", Arg.Set Options.opt_raw, " Active raw representation";
+      "--raw", Arg.Set Options.opt_raw, " Same as -r";
       "--lsp", Arg.String (fun s -> match s with
           | "errors" -> Options.opt_lsp := true; Lsp.kind := Errors
           | "outline" -> Options.opt_lsp := true; Lsp.kind := Outline
@@ -221,9 +206,7 @@ let main () =
               "Unknown lsp commands %s (use errors, outline)@." s;
             exit 2), "LSP mode";
       "-F", Arg.Set Options.fake_ast, " Fake ast";
-      "--fake-ast", Arg.Set Options.fake_ast, " Same as -F";
       "-F2", Arg.Set Options.fake_ast2, " Fake ast test shallow";
-      "-d", Arg.Set Options.debug_mode, " Debug mode";
     ] in
   let arg_usage = String.concat "\n" [
       "compiler [OPTIONS] FILE";
