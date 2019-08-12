@@ -200,14 +200,14 @@ let main () =
       "-ext", Arg.Set Options.opt_ext, " Process extensions";
       "--extensions", Arg.Set Options.opt_ext, " Same as -ext";
       "-tast", Arg.Set Options.opt_tast, " Generate typed ast";
-      "--typed-abstract-syntax-tree", Arg.Set Options.opt_tast, " Same as -tast";
+      "--typed-ast", Arg.Set Options.opt_tast, " Same as -tast";
       "-sa", Arg.Set Options.opt_as, " Transform to shallow asset";
       "--shallow-asset", Arg.Set Options.opt_as, " Same as -sa";
       "-nse", Arg.Set Options.opt_nse, " Remove side effect";
       "--no-side-effect", Arg.Set Options.opt_nse, " Same as -nse";
       "-r", Arg.Set Options.opt_raw, " Print raw tree";
       "--raw", Arg.Set Options.opt_raw, " Same as -r";
-      "-json", Arg.Set Options.opt_json, " Print JSON representation";
+      "-json", Arg.Set Options.opt_json, " Print JSON format";
       "-lsp", Arg.String (fun s -> match s with
           | "errors" -> Options.opt_lsp := true; Lsp.kind := Errors
           | "outline" -> Options.opt_lsp := true; Lsp.kind := Outline
@@ -220,7 +220,7 @@ let main () =
       "-F2", Arg.Set Options.fake_ast2, " Fake ast test shallow";
     ] in
   let arg_usage = String.concat "\n" [
-      "usage : archetype [-t <lang> | -pt | -ext | -tast | [-as] [-nse] ] [-r | -json] [-lsp <request>] <file>";
+      "usage : archetype [-t <lang> | -pt | -ext | -tast | [-as] [-nse] | -lsp <request>] [-r | -json] <file>";
       "";
       "Available options:";
     ]  in
