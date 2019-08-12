@@ -168,6 +168,7 @@ let pp_exn fmt e =
     | Enotfound         -> "NotFound"
     | Einvalidcaller    -> "InvalidCaller"
     | Einvalidcondition -> "InvalidCondition"
+    | Enotransfer       -> "NoTransfer"
     | Ebreak            -> "Break" in
   pp_str fmt e_str
 
@@ -339,8 +340,8 @@ let rec pp_term outer pos fmt = function
   | Tnot e -> Format.fprintf fmt "not %a" (pp_with_paren (pp_term outer pos)) e
   | Tlist l -> pp_tlist outer pos fmt l
   | Tnil -> pp_str fmt "Nil"
-  | Tcaller i -> Format.fprintf fmt "get_caller_ %a" pp_str i
-  | Ttransferred i -> Format.fprintf fmt "get_transferred_ %a" pp_str i
+  | Tcaller i -> Format.fprintf fmt "%a._caller" pp_str i
+  | Ttransferred i -> Format.fprintf fmt "%a._transferred" pp_str i
   | Tletin (r,i,t,b,e) ->
     Format.fprintf fmt "let%a %a%a = %a in@\n%a"
       pp_ref r

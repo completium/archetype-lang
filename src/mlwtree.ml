@@ -5,6 +5,7 @@ type exn =
   | Ekeyexist
   | Einvalidcaller
   | Einvalidcondition
+  | Enotransfer
   | Ebreak
 [@@deriving show {with_path = false}]
 

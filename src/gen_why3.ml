@@ -728,7 +728,10 @@ let rec map_mterm m (mt : M.mterm) : loc_term =
       Tif (map_mterm m c, map_mterm m t, None)
     | M.Mif (c,t,e)  -> Tif (map_mterm m c, map_mterm m t, Option.map (map_mterm m) e)
     | M.Mnot c       -> Tnot (map_mterm m c)
-    | M.Mfail _      -> Traise Enotfound (* TODO : Mfail should pass the type of exception ... *)
+    | M.Mfail InvalidCaller -> Traise Einvalidcaller
+    | M.Mfail NoTransfer -> Traise Enotransfer
+    | M.Mfail (InvalidCondition _) -> Traise Einvalidcondition
+    | M.Mfail _      -> Traise Enotfound
     | M.Mequal (l,r) -> Teq (with_dummy_loc Tyint,map_mterm m l,map_mterm m r)
     | M.Mcaller      -> Tcaller (with_dummy_loc "_s")
     | M.Mtransferred -> Ttransferred (with_dummy_loc "_s")
@@ -871,6 +874,9 @@ let fold_exns body : exn list =
     | M.Mget _ -> acc @ [Enotfound]
     | M.Mfor _ -> acc @ [Enotfound] (* mlw translation generates a get *)
     | M.Maddasset _ -> acc @ [Ekeyexist]
+    | M.Mfail InvalidCaller -> acc @ [Einvalidcaller]
+    | M.Mfail NoTransfer -> acc @ [Enotransfer]
+    | M.Mfail (InvalidCondition _) -> acc @ [Einvalidcondition]
     | _ -> M.fold_term internal_fold_exn acc term in
   Tools.List.dedup (internal_fold_exn [] body)
 

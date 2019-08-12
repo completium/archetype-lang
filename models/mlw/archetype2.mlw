@@ -15,6 +15,7 @@ theory Types
   exception KeyExist
   exception InvalidCaller
   exception InvalidCondition
+  exception NoTransfer
 
 end
 
