@@ -58,6 +58,7 @@ let generate_target_pt (pt : ParseTree.archetype) : ParseTree.archetype =
 
 let generate_model       = Gen_model.to_model
 let shallow_asset        = Gen_shallow_asset.shallow_asset
+let split_key_values     = Gen_split_key_values.split_key_values
 let remove_side_effect   = Gen_reduce.reduce
 let generate_api_storage = Gen_api_storage.generate_api_storage
 
@@ -105,7 +106,8 @@ let generate_target model =
   match !Options.target with
   | None ->
     model
-    |> cont !Options.opt_as  shallow_asset
+    |> cont !Options.opt_sa  shallow_asset
+    |> cont !Options.opt_skv split_key_values
     |> cont !Options.opt_nse remove_side_effect
     |> generate_api_storage
     |> output_model
@@ -201,8 +203,10 @@ let main () =
       "--extensions", Arg.Set Options.opt_ext, " Same as -ext";
       "-tast", Arg.Set Options.opt_tast, " Generate typed ast";
       "--typed-ast", Arg.Set Options.opt_tast, " Same as -tast";
-      "-sa", Arg.Set Options.opt_as, " Transform to shallow asset";
-      "--shallow-asset", Arg.Set Options.opt_as, " Same as -sa";
+      "-sa", Arg.Set Options.opt_sa, " Transform to shallow asset";
+      "--shallow-asset", Arg.Set Options.opt_sa, " Same as -sa";
+      "-skv", Arg.Set Options.opt_sa, " Split key value of collection of asset";
+      "--split-key-values", Arg.Set Options.opt_sa, " Same as -skv";
       "-nse", Arg.Set Options.opt_nse, " Transform to no side effect";
       "--no-side-effect", Arg.Set Options.opt_nse, " Same as -nse";
       "-lsp", Arg.String (fun s -> match s with
@@ -220,7 +224,7 @@ let main () =
       "-F2", Arg.Set Options.fake_ast2, " Fake ast test shallow";
     ] in
   let arg_usage = String.concat "\n" [
-      "usage : archetype [-t <lang> | -pt | -ext | -tast | [-as] [-nse] | -lsp <request>] [-r | -json] <file>";
+      "usage : archetype [-t <lang> | -pt | -ext | -tast | [-sa] [-skv] [-nse] | -lsp <request>] [-r | -json] <file>";
       "";
       "Available options:";
     ]  in
@@ -233,11 +237,15 @@ let main () =
       then Format.printf "Error: side effect removing is not compatible with language: %a.@\n"
           Options.pp_target_lang !Options.target;
 
-      if !Options.opt_as
+      if !Options.opt_sa
       then Format.printf "Error: asset shallowing is not compatible with language: %a.@\n"
           Options.pp_target_lang !Options.target;
 
-      if !Options.opt_nse || !Options.opt_as
+      if !Options.opt_skv
+      then Format.printf "Error: key values spliting of asset collection is not compatible with language: %a.@\n"
+          Options.pp_target_lang !Options.target;
+
+      if !Options.opt_nse || !Options.opt_sa || !Options.opt_skv
       then exit 1
   in
 

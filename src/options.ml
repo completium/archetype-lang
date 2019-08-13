@@ -39,8 +39,8 @@ let opt_pt   = ref false
 let opt_ext  = ref false
 let opt_tast = ref false
 let opt_nse  = ref false
-let opt_as   = ref false
-let opt_lu   = ref false
+let opt_sa   = ref false
+let opt_skv  = ref false
 let opt_raw  = ref false
 
 
