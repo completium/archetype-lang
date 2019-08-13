@@ -76,15 +76,7 @@ theory Contract
   use Types
   use int.Int
   use list.List
-  use list.Append
-  use array.Array
 
-  type storage = abstract mutable {}
-  val function get_balance storage : tez
-  val function get_transferred storage : tez
-  val function set_balance storage tez : unit
-
-  (* currency transfer during transaction *)
   type transfer = {
      destination_ : address;
      amount_      : tez;
@@ -93,20 +85,6 @@ theory Contract
   type transfers = list transfer
 
   let no_transfer : transfers = Nil
-
-  let update_balance (s : storage)
-    ensures  { get_balance s = old (get_balance s) + (get_transferred s)}
-  =
-    let part_sum = get_balance s + get_transferred s in
-    set_balance s part_sum
-
-  let exec_transfer (s : storage) (a : address) (c : tez) (ops : transfers) : transfers
-    requires { c <= get_balance s }
-    ensures  { old (get_balance s) = (get_balance s) + c }
-  =
-    set_balance s (get_balance s - c);
-    let transfer = { destination_ = a; amount_ = c } in
-    ops ++ (Cons transfer Nil)
 
 end
 

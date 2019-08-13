@@ -203,7 +203,7 @@ let main () =
       "--typed-ast", Arg.Set Options.opt_tast, " Same as -tast";
       "-sa", Arg.Set Options.opt_as, " Transform to shallow asset";
       "--shallow-asset", Arg.Set Options.opt_as, " Same as -sa";
-      "-nse", Arg.Set Options.opt_nse, " Remove side effect";
+      "-nse", Arg.Set Options.opt_nse, " Transform to no side effect";
       "--no-side-effect", Arg.Set Options.opt_nse, " Same as -nse";
       "-lsp", Arg.String (fun s -> match s with
           | "errors" -> Options.opt_lsp := true; Lsp.kind := Errors

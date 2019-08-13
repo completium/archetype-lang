@@ -542,8 +542,16 @@ let pp_axiom fmt (i,e) =
 
 (* -------------------------------------------------------------------------- *)
 
+let pp_val fmt (i,t) =
+  Format.fprintf fmt "val %a : %a"
+    pp_str i
+    pp_type t
+
+(* -------------------------------------------------------------------------- *)
+
 let pp_decl fmt = function
   | Duse l         -> Format.fprintf fmt "use %a" pp_qualid l
+  | Dval (i,t)     -> pp_val fmt (i,t)
   | Dclone (i,j,l) -> pp_clone fmt (i,j,l)
   | Denum (i,l)    -> pp_enum fmt (i,l)
   | Drecord (i,l)  -> pp_record fmt (i,l)
