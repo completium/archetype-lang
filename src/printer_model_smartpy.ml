@@ -95,6 +95,10 @@ let pp_model fmt (model : model) =
     | Ttuple ts ->
       Format.fprintf fmt "%a"
         (pp_list " * " pp_type) ts
+    | Tassoc (k, v) ->
+      Format.fprintf fmt "(%a, %a) map"
+        pp_btyp k
+        pp_type_ v
     | Tunit ->
       Format.fprintf fmt "unit"
     | Tstorage ->
@@ -819,6 +823,10 @@ let pp_model fmt (model : model) =
       | Mtuple l ->
         Format.fprintf fmt "(%a)"
           (pp_list ", " f) l
+      | Massoc (k, v) ->
+        Format.fprintf fmt "(%a : %a)"
+          f k
+          f v
       | Mfor (i, c, b) ->
         Format.fprintf fmt "sp.for %a in %a:@\n\t@[<v 4>%a@]@\n"
           pp_id i
@@ -850,7 +858,6 @@ let pp_model fmt (model : model) =
       | Mseq is ->
         Format.fprintf fmt "@[<v 4>%a@]"
           (pp_list "@\n\t" f) is
-
       | Massign (op, l, r) ->
         Format.fprintf fmt "%a %a %a"
           pp_id l
@@ -873,6 +880,12 @@ let pp_model fmt (model : model) =
           f x
       | Mreturn x ->
         Format.fprintf fmt "return %a"
+          f x
+      | Mshallow x ->
+        Format.fprintf fmt "%a"
+          f x
+      | Munshallow x ->
+        Format.fprintf fmt "%a"
           f x
       | Mtokeys (an, x) ->
         Format.fprintf fmt "%s.to_keys (%a)"

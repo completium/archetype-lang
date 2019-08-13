@@ -51,6 +51,7 @@ type type_ =
   | Tcontainer of type_ * container
   | Toption of type_
   | Ttuple of type_ list
+  | Tassoc of btyp * type_
   | Tunit
   | Tstorage
   | Toperation
@@ -182,6 +183,7 @@ type ('id, 'term) mterm_node  =
   | Mdotasset     of 'term * 'id
   | Mdotcontract  of 'term * 'id
   | Mtuple        of 'term list
+  | Massoc        of 'term * 'term
   | Mfor          of ('id * 'term * 'term)
   | Mfold         of ('id * 'id list * 'term * 'term) (* ident list * collection * body *)
   | Mseq          of 'term list
@@ -191,6 +193,9 @@ type ('id, 'term) mterm_node  =
   | Mbreak
   | Massert       of 'term
   | Mreturn       of 'term
+  (* shallowing *)
+  | Mshallow      of 'term
+  | Munshallow    of 'term
   (* *)
   | Mtokeys       of ident * 'term
   (* quantifiers *)
@@ -938,6 +943,7 @@ let map_term_node (f : 'id mterm_gen -> 'id mterm_gen) = function
   | Mdotasset (e, i)             -> Mdotasset (f e, i)
   | Mdotcontract (e, i)          -> Mdotcontract (f e, i)
   | Mtuple l                     -> Mtuple (List.map f l)
+  | Massoc (k, v)                -> Massoc (f k, f v)
   | Mfor (i, c, b)               -> Mfor (i, f c, f b)
   | Mfold (i, is, c, b)          -> Mfold (i, is, f c, f b)
   | Mseq is                      -> Mseq (List.map f is)
@@ -947,6 +953,8 @@ let map_term_node (f : 'id mterm_gen -> 'id mterm_gen) = function
   | Mbreak                       -> Mbreak
   | Massert x                    -> Massert (f x)
   | Mreturn x                    -> Mreturn (f x)
+  | Mshallow x                   -> Mshallow (f x)
+  | Munshallow x                 -> Munshallow (f x)
   | Mtokeys (an, x)              -> Mtokeys (an, f x)
   | Mforall (i, t, e)            -> Mforall (i, t, f e)
   | Mexists (i, t, e)            -> Mexists (i, t, f e)
@@ -1057,6 +1065,7 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mnone                                 -> accu
   | Msome v                               -> f accu v
   | Mtuple l                              -> List.fold_left f accu l
+  | Massoc (k, v)                         -> f (f accu k) v
   | Mfor (i, c, b)                        -> f (f accu c) b
   | Mfold (i, is, c, b)                   -> f (f accu c) b
   | Mseq is                               -> List.fold_left f accu is
@@ -1066,6 +1075,8 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mbreak                                -> accu
   | Massert x                             -> f accu x
   | Mreturn x                             -> f accu x
+  | Mshallow x                            -> f accu x
+  | Munshallow x                          -> f accu x
   | Mtokeys (_, x)                        -> f accu x
   | Mforall (_, _, e)                     -> f accu e
   | Mexists (_, _, e)                     -> f accu e
@@ -1434,6 +1445,11 @@ let fold_map_term
     let le, la = fold_map_term_list f accu l in
     g (Mtuple le), la
 
+  | Massoc (k, v) ->
+    let ke, ka = f accu k in
+    let ve, va = f ka v in
+    g (Massoc (ke, ve)), va
+
   | Mfor (i, c, b) ->
     let ce, ca = f accu c in
     let bi, ba = f ca b in
@@ -1473,6 +1489,14 @@ let fold_map_term
   | Mreturn x ->
     let xe, xa = f accu x in
     g (Mreturn xe), xa
+
+  | Mshallow x ->
+    let xe, xa = f accu x in
+    g (Mshallow xe), xa
+
+  | Munshallow x ->
+    let xe, xa = f accu x in
+    g (Munshallow xe), xa
 
   | Mtokeys (an, x) ->
     let xe, xa = f accu x in

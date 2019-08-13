@@ -629,6 +629,7 @@ let to_model (ast : A.model) : M.model =
         | M.Tenum v
         | M.Tcontract v       -> emit_error (NoInitExprFor (unloc v))
         | M.Ttuple _          -> emit_error (NoInitExprFor "tuple")
+        | M.Tassoc _          -> emit_error (NoInitExprFor "tassoc")
         | M.Tunit             -> emit_error (NoInitExprFor "unit")
         | M.Tstorage          -> emit_error (NoInitExprFor "storage")
         | M.Toperation        -> emit_error (NoInitExprFor "operation")

@@ -45,6 +45,10 @@ let rec pp_type fmt t =
   | Ttuple ts ->
     Format.fprintf fmt "%a"
       (pp_list " * " pp_type_) ts
+  | Tassoc (k, v) ->
+    Format.fprintf fmt "(%a, %a) map"
+      pp_btyp k
+      pp_type_ v
   | Tunit ->
     Format.fprintf fmt "unit"
   | Tstorage ->
@@ -526,6 +530,10 @@ let pp_mterm fmt (mt : mterm) =
     | Mtuple l ->
       Format.fprintf fmt "(%a)"
         (pp_list ", " f) l
+    | Massoc (k, v) ->
+      Format.fprintf fmt "(%a : %a)"
+        f k
+        f v
     | Mfor (i, c, b) ->
       Format.fprintf fmt "for (%a in %a)@\n (@[<v 2>%a@])@\n"
         pp_id i
@@ -563,6 +571,12 @@ let pp_mterm fmt (mt : mterm) =
         f x
     | Mreturn x ->
       Format.fprintf fmt "return %a"
+        f x
+    | Mshallow x ->
+      Format.fprintf fmt "%a"
+        f x
+    | Munshallow x ->
+      Format.fprintf fmt "%a"
         f x
     | Mtokeys (an, x) ->
       Format.fprintf fmt "%s.to_keys (%a)"
