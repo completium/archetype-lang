@@ -138,7 +138,7 @@ let pp_type fmt typ =
       | Tyunit        -> "unit"
       | Tytransfers   -> "transfers"
       | Tycoll i      -> (String.capitalize_ascii i)^".collection"
-      | Typartition _ -> "list key"
+      | Typartition i -> (String.capitalize_ascii i)^".collection"
       | Tymap i       -> "map "^i
       | Tyrecord i    -> i
       | Tyasset i     -> i
@@ -257,6 +257,10 @@ let rec pp_term outer pos fmt = function
       (pp_with_paren (pp_term outer pos)) e1
       (pp_with_paren (pp_term outer pos)) e2
       (pp_with_paren (pp_term outer pos)) e3
+  | Tcoll (i,e) ->
+    Format.fprintf fmt "%a.to_coll %a"
+      pp_str (String.capitalize_ascii i)
+      (pp_with_paren (pp_term outer pos)) e
   | Teq (Tycoll a, e1, e2) ->
     Format.fprintf fmt "%a.(==) %a %a"
       pp_str (String.capitalize_ascii a)
@@ -340,6 +344,7 @@ let rec pp_term outer pos fmt = function
   | Tnot e -> Format.fprintf fmt "not %a" (pp_with_paren (pp_term outer pos)) e
   | Tlist l -> pp_tlist outer pos fmt l
   | Tnil -> pp_str fmt "Nil"
+  | Temptycoll i -> Format.fprintf fmt "%a.empty" pp_str (String.capitalize_ascii i)
   | Tcaller i -> Format.fprintf fmt "%a._caller" pp_str i
   | Ttransferred i -> Format.fprintf fmt "%a._transferred" pp_str i
   | Tletin (r,i,t,b,e) ->
@@ -371,21 +376,12 @@ let rec pp_term outer pos fmt = function
     Format.fprintf fmt "%a.card %a"
       pp_str (String.capitalize_ascii i)
       (pp_with_paren (pp_term outer pos)) e
-  | Tlcard (i,e) ->
-    Format.fprintf fmt "%a.lcard %a"
-      pp_str (String.capitalize_ascii i)
-      (pp_with_paren (pp_term outer pos)) e
   | Tminus (_,e1,e2) ->
     Format.fprintf fmt "%a - %a"
       (pp_with_paren (pp_term outer pos)) e1
       (pp_with_paren (pp_term outer pos)) e2
   | Tnth (i,e1,e2) ->
     Format.fprintf fmt "%a.nth %a %a"
-      pp_str (String.capitalize_ascii i)
-      (pp_with_paren (pp_term outer pos)) e1
-      (pp_with_paren (pp_term outer pos)) e2
-  | Tlnth (i,e1,e2) ->
-    Format.fprintf fmt "%a.lnth %a %a"
       pp_str (String.capitalize_ascii i)
       (pp_with_paren (pp_term outer pos)) e1
       (pp_with_paren (pp_term outer pos)) e2

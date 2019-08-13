@@ -117,7 +117,8 @@ let rec map_shallow_record m ctx (t : M.mterm) : M.mterm list =
         (* split array in collection of keys and collection of shallow assets *)
         (* each element of l is an asset : each asset must be transmuted to the key *)
         let keys = List.map (record_to_key m n) l in
-        let array = M.mk_mterm (M.Marray keys) t.type_ in (* TODO : make real type *)
+        let typ  =  M.Utils.get_record_key m n |> snd in
+        let array = M.mk_mterm (M.Marray keys) (Tcontainer (Tbuiltin typ,Collection)) in
         (*let str = Format.asprintf "%a@." M.pp_mterm array in
             print_endline str;*)
         let mapped_vals = List.map (map_shallow_record m ctx) l in
@@ -219,7 +220,7 @@ let rec gen_add_shallow_asset (arg : M.argument) : M.mterm =
                    M.mk_mterm (M.Mvarlocal a) (Tcontainer (Tasset a, Collection)))
     | id,Tcontainer (Tasset a,_),_ ->
       M.Mfor (a,
-              M.mk_mterm (M.Mvarlocal id) (Tcontainer (Tasset a,Partition)),
+              M.mk_mterm (M.Mvarlocal id) (Tcontainer (Tasset a,Collection)),
               gen_add_shallow_asset (a, Tasset a, None)
              )
     | _,t,_ ->

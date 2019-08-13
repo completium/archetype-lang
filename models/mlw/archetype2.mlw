@@ -260,8 +260,6 @@ module AssetCollection
 
   let function proj (c : collection) (projf : t -> int) : list int = internal_proj c.content projf
 
-
-
   let rec function internal_tail (l : list t) (k : int) (i : int) 
   = 
   match l with
@@ -283,6 +281,8 @@ module AssetCollection
 
   axiom mem_tail: forall c : collection, i : int. 0 <= i < card c ->
   mem (nth i c) (tail i c)
+
+  let function to_coll (l : list t) = { content = l }
 
 end
 

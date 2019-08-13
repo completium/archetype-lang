@@ -74,8 +74,8 @@ type ('e,'t,'i) abstract_term =
   (* list *)
   | Tlist   of 'e list
   | Tnil
+  | Temptycoll of 'i
   | Tcard   of 'i * 'e
-  | Tlcard   of 'i * 'e
   | Tmlist  of 'e * 'i * 'i * 'i * 'e (* match list *)
   | Tcons   of 'e * 'e
   (* archetype lib *)
@@ -84,6 +84,7 @@ type ('e,'t,'i) abstract_term =
   | Tlistremove of 'i * 'e * 'e
   | Tget    of 'i * 'e * 'e
   | Tset    of 'i * 'e * 'e * 'e
+  | Tcoll   of 'i * 'e
   | Tassign of 'e * 'e
   | Traise  of exn
   | Tconcat of 'e * 'e
@@ -132,7 +133,6 @@ type ('e,'t,'i) abstract_term =
   | Thead   of 'e * 'e
   | Ttail   of 'e * 'e
   | Tnth    of 'i * 'e * 'e
-  | Tlnth    of 'i * 'e * 'e
   (* option *)
   | Tnone
   | Tsome   of 'e
@@ -290,8 +290,8 @@ and map_abstract_term
   | Trmed  a           -> Trmed (map_i a)
   | Tlist l            -> Tlist (List.map map_e l)
   | Tnil               -> Tnil
+  | Temptycoll i       -> Temptycoll (map_i i)
   | Tcard (i,e)        -> Tcard (map_i i, map_e e)
-  | Tlcard (i,e)       -> Tlcard (map_i i, map_e e)
   | Tmlist (e1,i1,i2,i3,e2) -> Tmlist (map_e e1, map_i i1, map_i i2, map_i i3, map_e e2)
   | Tcons (e1,e2)      -> Tcons (map_e e1, map_e e2)
   | Tadd (i1,e1,e2)       -> Tadd (map_i i1, map_e e1, map_e e2)
@@ -299,6 +299,7 @@ and map_abstract_term
   | Tlistremove (i,e1,e2) -> Tlistremove (map_i i,map_e e1, map_e e2)
   | Tget (i,e1,e2)       -> Tget (map_i i, map_e e1, map_e e2)
   | Tset (i, e1,e2,e3)    -> Tset (map_i i, map_e e1, map_e e2, map_e e3)
+  | Tcoll (i, e)       -> Tcoll (map_i i, map_e e)
   | Tassign (e1,e2)    -> Tassign (map_e e1, map_e e2)
   | Traise e           -> Traise e
   | Tconcat (e1,e2)    -> Tconcat (map_e e1, map_e e2)
@@ -339,7 +340,6 @@ and map_abstract_term
   | Thead (e1,e2)      -> Thead (map_e e1, map_e e2)
   | Ttail (e1,e2)      -> Ttail (map_e e1, map_e e2)
   | Tnth (i,e1,e2)     -> Tnth (map_i i, map_e e1, map_e e2)
-  | Tlnth (i,e1,e2)    -> Tlnth (map_i i, map_e e1, map_e e2)
   | Tnone              -> Tnone
   | Tsome e            -> Tsome (map_e e)
   | Tenum i            -> Tenum (map_i i)
@@ -623,8 +623,8 @@ let compare_abstract_term
   | Trmed  a1, Trmed a2 -> cmpi a1 a2
   | Tlist l1, Tlist l2 -> List.for_all2 cmpe l1 l2
   | Tnil, Tnil -> true
+  | Temptycoll i1, Temptycoll i2 -> cmpi i1 i2
   | Tcard (i1,e1), Tcard (i2,e2) -> cmpi i1 i2 && cmpe e1 e2
-  | Tlcard (i1,e1), Tlcard (i2,e2) -> cmpi i1 i2 && cmpe e1 e2
   | Tmlist (e1,i1,i2,i3,e2), Tmlist (f1,j1,j2,j3,f2) ->
     cmpe e1 f2 && cmpi i1 j1 && cmpi i2 j2 && cmpi i3 j3 && cmpe f1 f2
   | Tcons (e1,e2), Tcons (f1,f2) -> cmpe e1 f1 && cmpe e2 f2
@@ -633,6 +633,7 @@ let compare_abstract_term
   | Tlistremove (i1,e1,e2), Tlistremove (i2,f1,f2) -> cmpi i1 i2 && cmpe e1 f1 && cmpe e2 f2
   | Tget (i1,e1,e2), Tget (i2,f1,f2) -> cmpi i1 i2 && cmpe e1 f1 && cmpe e2 f2
   | Tset (i1,e1,e2,e3), Tset (i2,f1,f2,f3) -> cmpi i1 i2 && cmpe e1 f1 && cmpe e2 f2 && cmpe e3 f3
+  | Tcoll (i1,e1), Tcoll (i2,e2) -> cmpi i1 i2 && cmpe e1 e2
   | Tassign (e1,e2), Tassign (f1,f2) -> cmpe e1 f1 && cmpe e2 f2
   | Traise e1, Traise e2 -> compare_exn e1 e2
   | Tconcat (e1,e2), Tconcat (f1,f2) -> cmpe e1 f1 && cmpe e2 f2
@@ -675,7 +676,6 @@ let compare_abstract_term
   | Thead (e1,e2), Thead (f1,f2) -> cmpe e1 f1 && cmpe e2 f2
   | Ttail (e1,e2), Ttail (f1,f2) -> cmpe e1 f1 && cmpe e2 f2
   | Tnth (i1,e1,e2), Tnth (i2,f1,f2) -> cmpi i1 i2 && cmpe e1 f1 && cmpe e2 f2
-  | Tlnth (i1,e1,e2), Tlnth (i2,f1,f2) -> cmpi i1 i2 && cmpe e1 f1 && cmpe e2 f2
   | Tnone, Tnone -> true
   | Tsome e1, Tsome e2 -> cmpe e1 e2
   | Tenum i1, Tenum i2 -> cmpi i1 i2
