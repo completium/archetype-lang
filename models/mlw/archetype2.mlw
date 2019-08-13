@@ -226,7 +226,7 @@ module AssetCollection
   | Nil -> Nil
   end
 
-  let rec function internal_gets (l : list t) (keys : list int) : list t
+  let rec function internal_unshallow (l : list t) (keys : list int) : list t
   variant { l }
   =
   match l with
@@ -237,8 +237,8 @@ module AssetCollection
   | Nil -> Nil  
   end
 
-  let function gets (c : collection) (keys : list int) : collection
-  = { content = internal_gets c.content keys }
+  let function unshallow (c : collection) (keys : list int) : collection
+  = { content = internal_unshallow c.content keys }
 
 
   let function nth (i : int) (c : collection) : t 
