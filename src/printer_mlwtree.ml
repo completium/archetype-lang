@@ -376,6 +376,11 @@ let rec pp_term outer pos fmt = function
     Format.fprintf fmt "%a.card %a"
       pp_str (String.capitalize_ascii i)
       (pp_with_paren (pp_term outer pos)) e
+  | Tunshallow (i,e1,e2) ->
+    Format.fprintf fmt "%a.gets %a %a"
+      pp_str (String.capitalize_ascii i)
+      (pp_with_paren (pp_term outer pos)) e1
+      (pp_with_paren (pp_term outer pos)) e2
   | Tminus (_,e1,e2) ->
     Format.fprintf fmt "%a - %a"
       (pp_with_paren (pp_term outer pos)) e1

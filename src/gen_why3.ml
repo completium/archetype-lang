@@ -810,7 +810,24 @@ let rec map_mterm m (mt : M.mterm) : loc_term =
     | M.Mvarlocal v     -> Tvar (map_lident v)
     | M.Mvarparam v     -> Tvar (map_lident v)
     | M.Mint v          -> Tint v
-    | M.Mdotasset (e,i) -> Tdot (map_mterm m e, mk_loc (loc i) (Tvar (map_lident i)))
+    | M.Mdotasset (e,i) ->
+      (* unshallow asset collection *)
+      let asset = M.Utils.get_asset_type e in
+      let partitions = M.Utils.get_record_partitions m (asset |> unloc) in
+      if List.exists (fun (r : M.record_item) ->
+          compare (i |> unloc) (r.name |> unloc) = 0) partitions then
+        let rec get_partition_type = function
+          | (r : M.record_item)::tl
+            when compare (i |> unloc) (r.name |> unloc) = 0 -> r.type_
+          | r::tl -> get_partition_type tl
+          | [] -> assert false in
+        let t = get_partition_type partitions in
+        let pa = M.Utils.dest_partition t |> map_lident in
+        Tunshallow (pa,
+                    loc_term (mk_ac (pa |> Mlwtree.deloc)),
+                    with_dummy_loc (Tdot (map_mterm m e, mk_loc (loc i) (Tvar (map_lident i)))))
+      else
+        Tdot (map_mterm m e, mk_loc (loc i) (Tvar (map_lident i)))
     | M.Mcontains (a,_,r) -> Tapp (loc_term (Tvar (a^"_contains")),[map_mterm m r])
     | M.Maddfield (a,f,c,i) -> Tapp (loc_term (Tvar ("add_"^a^"_"^f)),
                                      [map_mterm m c; map_mterm m i])
