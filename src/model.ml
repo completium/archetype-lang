@@ -194,8 +194,8 @@ type ('id, 'term) mterm_node  =
   | Massert       of 'term
   | Mreturn       of 'term
   (* shallowing *)
-  | Mshallow      of 'term
-  | Munshallow    of 'term
+  | Mshallow      of 'id * 'term
+  | Munshallow    of 'id * 'term
   (* *)
   | Mtokeys       of ident * 'term
   (* quantifiers *)
@@ -274,6 +274,8 @@ and function_const =
   | Sum              of ident * ident
   | Min              of ident * ident
   | Max              of ident * ident
+  | Shallow          of ident
+  | Unshallow        of ident
 [@@deriving show {with_path = false}]
 
 and builtin_const =
@@ -988,8 +990,8 @@ let map_term_node (f : 'id mterm_gen -> 'id mterm_gen) = function
   | Mbreak                       -> Mbreak
   | Massert x                    -> Massert (f x)
   | Mreturn x                    -> Mreturn (f x)
-  | Mshallow x                   -> Mshallow (f x)
-  | Munshallow x                 -> Munshallow (f x)
+  | Mshallow (i, x)              -> Mshallow (i, f x)
+  | Munshallow (i, x)            -> Munshallow (i, f x)
   | Mtokeys (an, x)              -> Mtokeys (an, f x)
   | Mforall (i, t, e)            -> Mforall (i, t, f e)
   | Mexists (i, t, e)            -> Mexists (i, t, f e)
@@ -1110,8 +1112,8 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mbreak                                -> accu
   | Massert x                             -> f accu x
   | Mreturn x                             -> f accu x
-  | Mshallow x                            -> f accu x
-  | Munshallow x                          -> f accu x
+  | Mshallow (_, x)                       -> f accu x
+  | Munshallow (_, x)                     -> f accu x
   | Mtokeys (_, x)                        -> f accu x
   | Mforall (_, _, e)                     -> f accu e
   | Mexists (_, _, e)                     -> f accu e
@@ -1525,13 +1527,13 @@ let fold_map_term
     let xe, xa = f accu x in
     g (Mreturn xe), xa
 
-  | Mshallow x ->
+  | Mshallow (i, x) ->
     let xe, xa = f accu x in
-    g (Mshallow xe), xa
+    g (Mshallow (i,xe)), xa
 
-  | Munshallow x ->
+  | Munshallow (i, x) ->
     let xe, xa = f accu x in
-    g (Munshallow xe), xa
+    g (Munshallow (i, xe)), xa
 
   | Mtokeys (an, x) ->
     let xe, xa = f accu x in
@@ -1744,6 +1746,8 @@ end = struct
     | Sum      (aid, fid) -> "sum_"      ^ aid ^ "_" ^ fid
     | Min      (aid, fid) -> "min_"      ^ aid ^ "_" ^ fid
     | Max      (aid, fid) -> "max_"      ^ aid ^ "_" ^ fid
+    | Shallow  (aid)      -> "shallow_"  ^ aid
+    | Unshallow (aid)     -> "unshallow" ^ aid
 
   let function_name_from_builtin_const = function
     | MinBuiltin         _ -> "min"

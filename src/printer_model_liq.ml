@@ -277,6 +277,8 @@ let pp_model fmt (model : model) =
         "let[@inline] max_%s_%s (s : storage) : unit =@\n  \
          () (*TODO*)@\n"
         an fn
+    | Shallow _ -> assert false
+    | Unshallow _ -> assert false
 
   in
 
@@ -336,6 +338,8 @@ let pp_model fmt (model : model) =
         | APIContainer (ReverseItem   _) -> (ga, gr)
         | APIBuiltin   (MinBuiltin    _) -> (ga, gr)
         | APIBuiltin   (MaxBuiltin    _) -> (ga, gr)
+        | APIFunction  (Shallow       _) -> (ga, gr)
+        | APIFunction  (Unshallow     _) -> (ga, gr)
       )   (false, false) l in
     if   ga || gr
     then
@@ -945,11 +949,13 @@ let pp_model fmt (model : model) =
       | Mreturn x ->
         Format.fprintf fmt "return %a"
           f x
-      | Mshallow x ->
-        Format.fprintf fmt "%a"
+      | Mshallow (i, x) ->
+        Format.fprintf fmt "shallow_%a %a"
+          pp_id i
           f x
-      | Munshallow x ->
-        Format.fprintf fmt "%a"
+      | Munshallow (i, x) ->
+        Format.fprintf fmt "unshallow_%a %a"
+          pp_id i
           f x
       | Mtokeys (an, x) ->
         Format.fprintf fmt "%s.to_keys (%a)"

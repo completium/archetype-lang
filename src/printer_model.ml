@@ -572,11 +572,13 @@ let pp_mterm fmt (mt : mterm) =
     | Mreturn x ->
       Format.fprintf fmt "return %a"
         f x
-    | Mshallow x ->
-      Format.fprintf fmt "%a"
+    | Mshallow (i, x) ->
+      Format.fprintf fmt "shallow_%a %a"
+        pp_id i
         f x
-    | Munshallow x ->
-      Format.fprintf fmt "%a"
+    | Munshallow (i, x) ->
+      Format.fprintf fmt "unshallow_%a %a"
+        pp_id i
         f x
     | Mtokeys (an, x) ->
       Format.fprintf fmt "%s.to_keys (%a)"
@@ -678,6 +680,9 @@ let pp_function_const fmt = function
   | Sum (an, fn) -> pp_str fmt ("sum\t " ^ an ^ " " ^ fn)
   | Min (an, fn) -> pp_str fmt ("min\t " ^ an ^ " " ^ fn)
   | Max (an, fn) -> pp_str fmt ("max\t " ^ an ^ " " ^ fn)
+  | Shallow an -> pp_str fmt ("shallow\t " ^ an)
+  | Unshallow an -> pp_str fmt ("unshallow\t " ^ an)
+
 
 let pp_builtin_const fmt = function
   | MinBuiltin t-> Format.fprintf fmt "min on %a" pp_type t

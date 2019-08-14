@@ -982,8 +982,8 @@ let mk_functions m =
         name     = map_lident s.name;
         logic    = NoMod;
         args     = (List.map (fun (i,t,_) ->
-                         (map_lident i, map_mtype t)
-                       ) s.args);
+            (map_lident i, map_mtype t)
+          ) s.args);
         returns  = map_mtype t;
         raises   = fold_exns s.body;
         variants = [];
@@ -1000,8 +1000,8 @@ let mk_entries m =
         name     = map_lident s.name;
         logic    = NoMod;
         args     = (List.map (fun (i,t,_) ->
-                         (map_lident i, map_mtype t)
-                       ) s.args);
+            (map_lident i, map_mtype t)
+          ) s.args);
         returns  = with_dummy_loc Tyunit;
         raises   = fold_exns s.body;
         variants = [];
