@@ -42,11 +42,11 @@ let rec gen_shallow_args (m : M.model) d (id : I.ident) (t : M.type_) (acc : M.a
         print_endline str;*)
     acc
 and extract_asset_collection m d id i acc =
-  let colls = M.Utils.get_record_partitions m i in
-  List.fold_left (fun acc (coll : M.record_item) ->
-      let id  = id ^ "_" ^ (unloc coll.name) in
-      let arg = dumloc id, (*mk_type d*) coll.type_, coll.default in
-      acc @ (gen_shallow_args m (succ d) id coll.type_ [arg])
+  let colls = M.Utils.get_asset_partitions m i in
+  List.fold_left (fun acc (i,t,dv) ->
+      let id  = id ^ "_" ^ i in
+      let arg = dumloc id, (*mk_type d*) t, dv in
+      acc @ (gen_shallow_args m (succ d) id t [arg])
     ) acc colls
 
 (* same as gen_shallow_args but returns context *)
@@ -62,7 +62,7 @@ let gen_shallow_args (m : M.model) (id : M.lident) (t : M.type_) (arg : M.argume
         [] in
     (acc_ctx,shallow_args)
   | M.Tcontainer (Tasset i, Collection) ->
-    let k,kt = M.Utils.get_record_key m i in
+    let k,kt = M.Utils.get_asset_key m i in
     let arg = (id,M.Tcontainer (M.Tbuiltin kt,Collection),None) in
     let arg_values = (dumloc ((unloc id)^"_values"),M.Tcontainer (Tasset i, Collection),None) in
     let shallow_args = gen_shallow_args m 1 (unloc id) t [arg;arg_values] in
@@ -89,8 +89,8 @@ let record_to_key m n (t : M.mterm) =
     key
   | M.Mvarlocal _
   | M.Mvarparam _ ->
-    let (key,typ) = M.Utils.get_record_key m n in
-    M.mk_mterm (M.Mdotasset (t,key)) (M.Tbuiltin typ)
+    let (key,typ) = M.Utils.get_asset_key m n in
+    M.mk_mterm (M.Mdotasset (t,dumloc key)) (M.Tbuiltin typ)
   | _ -> assert false
 
 let tl = function
@@ -117,7 +117,7 @@ let rec map_shallow_record m ctx (t : M.mterm) : M.mterm list =
         (* split array in collection of keys and collection of shallow assets *)
         (* each element of l is an asset : each asset must be transmuted to the key *)
         let keys = List.map (record_to_key m n) l in
-        let typ  =  M.Utils.get_record_key m n |> snd in
+        let typ  =  M.Utils.get_asset_key m n |> snd in
         let array = M.mk_mterm (M.Marray keys) (Tcontainer (Tbuiltin typ,Collection)) in
         (*let str = Format.asprintf "%a@." M.pp_mterm array in
             print_endline str;*)
@@ -193,6 +193,23 @@ let rec map_shallow (ctx : (I.ident * (M.lident * M.type_) list) list) m (t : M.
                     map_letin_shallow m new_ctx b new_letins)
         | _ -> M.Mletin ([id],v,t,map_shallow ctx m b)
       end
+    | M.Mdotasset (e,i) ->
+      let asset = M.Utils.get_asset_type e in
+      let partitions = M.Utils.get_asset_partitions m (asset |> unloc) in
+      begin
+        if List.exists (fun (pi,pt,pd) ->
+          compare (i |> unloc) pi = 0) partitions then
+          let rec get_partition_type = function
+            | (pi,pt,pd)::tl
+              when compare (i |> unloc) pi = 0 -> pt
+            | r::tl -> get_partition_type tl
+            | [] -> assert false in
+          let ty = get_partition_type partitions in
+          let pa = M.Utils.dest_partition ty |> unloc in
+          M.Munshallow (pa,M.mk_mterm (M.Mdotasset (map_shallow ctx m e, i)) t.M.type_)
+        else
+          M.Mdotasset (map_shallow ctx m e,i)
+      end
     | _ as tn -> M.map_term_node ((map_shallow ctx) m) tn
   in
   M.mk_mterm ~loc:(t.loc) t_gen t.type_
@@ -247,9 +264,9 @@ let gen_add_shallow_fun (model : M.model) (n : I.ident) : M.function__ =
   }
 
 let gen_add_shallow_field_fun (model : M.model) (n,f : I.ident * I.ident) : M.function__ =
-  let pa,k,kt = M.Utils.get_partition_record_key model (dumloc n) (dumloc f) in
-  let arg    = (dumloc "added_asset",M.Tasset pa,None) in
-  let _,asset_args = gen_shallow_args model (dumloc "added_asset") (Tasset pa) arg in
+  let pa,k,kt = M.Utils.get_partition_asset_key model (dumloc n) (dumloc f) in
+  let arg    = (dumloc "added_asset",M.Tasset (dumloc pa),None) in
+  let _,asset_args = gen_shallow_args model (dumloc "added_asset") (Tasset (dumloc pa)) arg in
   let asset_arg = (dumloc "asset",M.Tasset (dumloc n),None) in
   let args = asset_arg::asset_args in
   let body   =
@@ -258,7 +275,7 @@ let gen_add_shallow_field_fun (model : M.model) (n,f : I.ident * I.ident) : M.fu
             n,
             f,
             M.mk_mterm (M.Mvarlocal (dumloc "asset")) (Tasset (dumloc n)),
-            M.mk_mterm (M.Mvarlocal (dumloc "added_asset")) (Tasset pa))) Tunit;
+            M.mk_mterm (M.Mvarlocal (dumloc "added_asset")) (Tasset (dumloc pa)))) Tunit;
       ] @ (List.map gen_add_shallow_asset (List.tl asset_args)))) Tunit in
   {
     node = Function ({
@@ -298,13 +315,33 @@ let get_added_asset_fields (model : M.model) : (I.ident * I.ident) list =
   in
   M.fold_model f model []
 
+let shallow_decls (model : M.model) decls : M.decl_node list =
+  let shallow_storage_type = function
+    | M.Tcontainer (Tasset a,_) ->
+      let keyt =  M.Utils.get_asset_key model a |> snd in
+      M.Tcontainer (Tbuiltin keyt,Collection)
+    | _ as t -> t in
+  List.map (fun (decl : M.decl_node) ->
+      match decl with
+      | M.Drecord r ->
+        M.Drecord {
+          r with
+          values = List.map (fun (ri : M.record_item) ->
+              { ri with type_ = shallow_storage_type ri.type_ } (* TODO : map default value *)
+            ) r.values
+        }
+      | _ as d -> d
+    ) decls
+
 let shallow_asset (model : M.model) : M.model =
   let added_assets = get_added_assets model in
   let added_asset_fields = get_added_asset_fields model in
   let add_asset_functions = List.map (gen_add_shallow_fun model) added_assets in
   let add_asset_field_functions = List.map (gen_add_shallow_field_fun model) added_asset_fields in
+  let shallowed_decls = shallow_decls model model.M.decls in
   {
     model with
+    decls     = shallowed_decls;
     functions = add_asset_functions @
                 add_asset_field_functions @
                 (List.map (process_shallow_function model) model.functions)

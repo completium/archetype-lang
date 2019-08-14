@@ -11,7 +11,7 @@ let split_key_values (model : model) : model =
     List.fold_right (fun x accu ->
         match x with
         | {asset = Some an; _} as f ->
-          let k, t = Utils.get_record_key model an in
+          let k, t = Utils.get_asset_key model an in
           let type_key = Tcontainer (Tbuiltin t, Collection) in
           let init_keys, init_assets =
             (* TODO: initialize with f.default value*)

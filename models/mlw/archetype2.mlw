@@ -232,8 +232,8 @@ module AssetCollection
   match l with
   | Cons e tl -> 
     if lmem (keyf e) keys
-    then Cons e (internal_gets tl keys)
-    else internal_gets tl keys
+    then Cons e (internal_unshallow tl keys)
+    else internal_unshallow tl keys
   | Nil -> Nil  
   end
 

@@ -64,9 +64,9 @@ let process_api_storage (model : model) : model =
       | Mmax (asset_name, field_name, _) ->
         [APIFunction (Max (asset_name, unloc field_name))]
       | Mshallow (asset_name, _) ->
-        [APIFunction (Shallow (unloc asset_name))]
+        [APIFunction (Shallow asset_name)]
       | Munshallow (asset_name, _) ->
-        [APIFunction (Unshallow (unloc asset_name))]
+        [APIFunction (Unshallow asset_name)]
       | _ -> []
     in
     List.fold_left (fun accu v -> add ctx accu (Model.mk_api_item v)) accu api_items

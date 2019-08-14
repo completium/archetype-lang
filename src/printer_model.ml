@@ -574,11 +574,11 @@ let pp_mterm fmt (mt : mterm) =
         f x
     | Mshallow (i, x) ->
       Format.fprintf fmt "shallow_%a %a"
-        pp_id i
+        pp_str i
         f x
     | Munshallow (i, x) ->
-      Format.fprintf fmt "unshallow_%a %a"
-        pp_id i
+      Format.fprintf fmt "unshallow_%a (%a)"
+        pp_str i
         f x
     | Mtokeys (an, x) ->
       Format.fprintf fmt "%s.to_keys (%a)"
@@ -714,7 +714,7 @@ let pp_info_enum fmt (ie : info_enum) =
 let pp_info_asset fmt (ia : info_asset) =
   Format.fprintf fmt "asset %a = {@\n  @[%a@]@\n}@\n"
     pp_ident ia.name
-    (pp_list "@\n" (fun fmt (i, t) ->
+    (pp_list "@\n" (fun fmt (i, t, _) ->
          Format.fprintf fmt "%a : %a%a"
            pp_ident i
            pp_type t

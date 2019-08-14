@@ -115,7 +115,7 @@ let pp_model fmt (model : model) =
 
   let pp_storage_const fmt = function
     | Get an ->
-      let _, t = Utils.get_record_key model (to_lident an) in
+      let _, t = Utils.get_asset_key model (to_lident an) in
       Format.fprintf fmt
         "let[@inline] get_%s (s, key : storage * %a) : %s =@\n  \
          match Map.find key s.%s_assets with@\n  \
@@ -123,23 +123,23 @@ let pp_model fmt (model : model) =
          | _ -> failwith \"not_found\"@\n"
         an pp_btyp t an an
     | Set an ->
-      let _, t = Utils.get_record_key model (to_lident an) in
+      let _, t = Utils.get_asset_key model (to_lident an) in
       Format.fprintf fmt
         "let[@inline] set_%s (s, key, asset : storage * %a * %s) : storage =@\n  \
          s.%s_assets <- Map.update key (Some asset) s.%s_assets@\n"
         an pp_btyp t an an an
 
     | Add an ->
-      let k, t = Utils.get_record_key model (to_lident an) in
+      let k, t = Utils.get_asset_key model (to_lident an) in
       Format.fprintf fmt
         "let[@inline] add_%s (s, asset : storage * %s) : storage =@\n  \
          let key = asset.%s in@\n  \
          let s = s.%s_keys <- add_list key s.%s_keys in@\n  \
          s.%s_assets <- Map.update key (Some asset) s.%s_assets@\n"
-        an an (unloc k) an an an an
+        an an k an an an an
 
     | Remove an ->
-      let _, t = Utils.get_record_key model (to_lident an) in
+      let _, t = Utils.get_asset_key model (to_lident an) in
       Format.fprintf fmt
         "let[@inline] remove_%s (s, key : storage * %a) : storage =@\n  \
          let s = s.%s_keys <- remove_list key s.%s_keys in@\n  \
@@ -147,7 +147,7 @@ let pp_model fmt (model : model) =
         an pp_btyp t an an an an
 
     | Clear an ->
-      let k, t = Utils.get_record_key model (to_lident an) in
+      let k, t = Utils.get_asset_key model (to_lident an) in
       Format.fprintf fmt
         "let[@inline] clear_%s (s : storage) : storage =@\n  \
          let s = s.%s_keys <- [] in@\n  \
@@ -161,28 +161,28 @@ let pp_model fmt (model : model) =
         an an an
 
     | UpdateAdd (an, fn) ->
-      let k, t = Utils.get_record_key model (to_lident an) in
+      let k, t = Utils.get_asset_key model (to_lident an) in
       let ft, c = Utils.get_field_container model an fn in
-      let kk, _ = Utils.get_record_key model (to_lident ft) in
+      let kk, _ = Utils.get_asset_key model (to_lident ft) in
       Format.fprintf fmt
         "let[@inline] add_%s_%s (s, a, b : storage * %s * %s) : storage =@\n  \
          let asset = a.%s <- add_list b.%a a.%s in@\n  \
          s.%s_assets <- Map.update a.%a (Some asset) s.%s_assets@\n"
         an fn an ft
-        fn pp_id kk fn
-        an pp_id k an
+        fn pp_str kk fn
+        an pp_str k an
 
     | UpdateRemove (an, fn) ->
-      let k, t = Utils.get_record_key model (to_lident an) in
+      let k, t = Utils.get_asset_key model (to_lident an) in
       let ft, c = Utils.get_field_container model an fn in
-      let kk, tt = Utils.get_record_key model (to_lident ft) in
+      let kk, tt = Utils.get_asset_key model (to_lident ft) in
       Format.fprintf fmt
         "let[@inline] remove_%s_%s (s, a, key : storage * %s * %a) : storage =@\n  \
          let asset = a.%s <- remove_list key a.%s in@\n  \
          s.%s_assets <- Map.update a.%a (Some asset) s.%s_assets@\n"
         an fn an pp_btyp tt
         fn fn
-        an pp_id k an
+        an pp_str k an
 
     | UpdateClear (an, fn) ->
       Format.fprintf fmt
@@ -212,7 +212,7 @@ let pp_model fmt (model : model) =
 
   let pp_function_const fmt = function
     | Select (an, _) ->
-      let _, t = Utils.get_record_key model (to_lident an) in
+      let _, t = Utils.get_asset_key model (to_lident an) in
       Format.fprintf fmt
         "let[@inline] select_%s (s, c, p : storage * %a list * (%s -> bool)) : %s list =@\n  \
          List.fold (fun (x, accu) ->@\n  \
@@ -231,7 +231,7 @@ let pp_model fmt (model : model) =
         an fn
 
     | Contains an ->
-      let _, t = Utils.get_record_key model (to_lident an) in
+      let _, t = Utils.get_asset_key model (to_lident an) in
       Format.fprintf fmt
         "let[@inline] contains_%s ((l, key) : %a list * %a) : bool =@\n  \
          List.fold (fun (x, accu) ->@\n    \
@@ -257,8 +257,7 @@ let pp_model fmt (model : model) =
       let show_zero = function
         | _ -> "0"
       in
-      let record_item = Utils.get_record_field model (dumloc an, dumloc fn) in
-      let t = record_item.type_ in
+      let _, t, _ = Utils.get_asset_field model (dumloc an, fn) in
       Format.fprintf fmt
         "let[@inline] sum_%s_%s (s : storage) : %a =@\n  \
          Map.fold (fun (x, accu) ->@\n  \
@@ -489,8 +488,8 @@ let pp_model fmt (model : model) =
         let cond, str =
           (match i.type_ with
            | Tasset an ->
-             let k, _ = Utils.get_record_key model an in
-             true, "." ^ (unloc k)
+             let k, _ = Utils.get_asset_key model an in
+             true, "." ^ k
            | _ -> false, ""
           ) in
         let pp fmt (an, i) =
@@ -505,8 +504,8 @@ let pp_model fmt (model : model) =
         let cond, str =
           (match i.type_ with
            | Tasset an ->
-             let k, _ = Utils.get_record_key model an in
-             true, "." ^ (unloc k)
+             let k, _ = Utils.get_asset_key model an in
+             true, "." ^ k
            | _ -> false, ""
           ) in
         let pp fmt (an, fn, c, i) =
@@ -817,8 +816,8 @@ let pp_model fmt (model : model) =
           | Tasset asset_name -> asset_name
           | _ -> assert false
         in
-        let a = Utils.get_record model asset_name in
-        let ll = List.map (fun (x : record_item) -> x.name) a.values in
+        let a = Utils.get_info_asset model asset_name in
+        let ll = List.map (fun (i,_,_) -> (dumloc i)) a.values in
 
         let lll = List.map2 (fun x y -> (x, y)) ll l in
 
@@ -939,11 +938,11 @@ let pp_model fmt (model : model) =
           f x
       | Mshallow (i, x) ->
         Format.fprintf fmt "shallow_%a %a"
-          pp_id i
+          pp_str i
           f x
       | Munshallow (i, x) ->
         Format.fprintf fmt "unshallow_%a %a"
-          pp_id i
+          pp_str i
           f x
       | Mtokeys (an, x) ->
         Format.fprintf fmt "%s.to_keys (%a)"
@@ -983,7 +982,7 @@ let pp_model fmt (model : model) =
     let pp_typ fmt t =
       match t with
       | Tcontainer (Tasset an, _) ->
-        let _, t = Utils.get_record_key model an in
+        let _, t = Utils.get_asset_key model an in
         Format.fprintf fmt "%a list"
           pp_btyp t
       | _ -> pp_type fmt t
@@ -1009,7 +1008,7 @@ let pp_model fmt (model : model) =
   let pp_storage_item fmt (si : storage_item) =
     match si with
     | { asset = Some an; _} ->
-      let _, t = Utils.get_record_key model an in
+      let _, t = Utils.get_asset_key model an in
       Format.fprintf fmt "%s_keys: %a list;@\n%s_assets: (%a, %s) map;"
         (unloc an)
         pp_btyp t
@@ -1032,7 +1031,7 @@ let pp_model fmt (model : model) =
     let pp_storage_item fmt (si : storage_item) =
       match si with
       | { asset = Some an; _} ->
-        let _, t = Utils.get_record_key model an in
+        let _, t = Utils.get_asset_key model an in
         Format.fprintf fmt "%s_keys = [];@\n%s_assets = (Map : (%a, %s) map);"
           (unloc an)
           (unloc an)

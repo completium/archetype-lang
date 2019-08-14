@@ -194,8 +194,8 @@ type ('id, 'term) mterm_node  =
   | Massert       of 'term
   | Mreturn       of 'term
   (* shallowing *)
-  | Mshallow      of 'id * 'term
-  | Munshallow    of 'id * 'term
+  | Mshallow      of ident * 'term
+  | Munshallow    of ident * 'term
   (* *)
   | Mtokeys       of ident * 'term
   (* quantifiers *)
@@ -305,7 +305,7 @@ type info_enum = {
 type info_asset = {
   name: ident;
   key: ident;
-  values: (ident * type_) list;
+  values: (ident * type_ * (lident mterm_gen option)) list;
 }
 [@@deriving show {with_path = false}]
 
@@ -879,6 +879,8 @@ let cmp_api_item_node (a1 : api_item_node) (a2 : api_item_node) : bool =
     | Sum (an1, fn1), Sum (an2, fn2)     -> cmp_ident an1 an2 && cmp_ident fn1 fn2
     | Min (an1, fn1), Min (an2, fn2)     -> cmp_ident an1 an2 && cmp_ident fn1 fn2
     | Max (an1, fn1), Max (an2, fn2)     -> cmp_ident an1 an2 && cmp_ident fn1 fn2
+    | Shallow an1, Shallow an2           -> cmp_ident an1 an2
+    | Unshallow an1, Unshallow an2       -> cmp_ident an1 an2
     | _ -> false
   in
   let cmp_builtin_const (b1 : builtin_const) (b2 : builtin_const) : bool =
@@ -1660,22 +1662,23 @@ module Utils : sig
   val function_name_from_container_const : container_const -> string
   val function_name_from_function_const  : function_const  -> string
   val function_name_from_builtin_const   : builtin_const  -> string
+  val get_assets                         : model -> info_asset list
   val get_records                        : model -> record list
   val get_storage                        : model -> storage
-  val get_record                         : model -> lident -> record
-  val get_record_field                   : model -> (lident * lident) -> record_item
-  val get_record_key                     : model -> lident -> (lident * btyp)
+  val get_info_asset                     : model -> lident -> info_asset
+  val get_asset_field                    : model -> (lident * ident) -> (ident * type_ * mterm option)
+  val get_asset_key                      : model -> lident -> (ident * btyp)
   val get_field_container                : model -> ident -> ident -> (ident * container)
   val is_storage_attribute               : model -> lident -> bool
-  val get_named_field_list               : model -> lident -> 'a list -> (lident * 'a) list
-  val get_partitions                     : model -> (lident * record_item) list (* record id, record item *)
+  val get_named_field_list               : model -> lident -> 'a list -> (ident * 'a) list
+  val get_partitions                     : model -> (ident * ident * type_) list (* record id, record item *)
   val dest_partition                     : type_ -> lident
-  val get_partition_record_key           : model -> lident -> lident -> (lident * lident * btyp)
+  val get_partition_asset_key            : model -> lident -> lident -> (ident * ident * btyp)
   val get_entries                        : model -> (verification option * function_struct) list
   val get_functions                      : model -> (verification option * function_struct* type_) list
   val has_partition                      : model -> ident -> bool
-  val get_record_partitions              : model -> ident -> record_item list
-  val get_field_list                     : model -> lident -> lident list
+  val get_asset_partitions               : model -> ident -> (ident * type_ * mterm option) list
+  val get_field_list                     : model -> lident -> ident list
   val get_field_pos                      : model -> lident -> lident -> int (* m, record, field *)
   val get_nth_record_val                 : int -> mterm -> mterm
   val dest_array                         : mterm -> mterm list
@@ -1698,9 +1701,9 @@ end = struct
   exception Anomaly of string
 
   type error_desc =
-    | RecordNotFound of string
-    | RecordFieldNotFound of string * string
-    | RecordKeyTypeNotFound of string
+    | AssetNotFound of string
+    | AssetFieldNotFound of string * string
+    | AssetKeyTypeNotFound of string
     | NotaPartition
     | PartitionNotFound
     | NotanArray
@@ -1763,10 +1766,10 @@ end = struct
     | Function (s,t) -> { node = Function ({ s with args = args },t); verif = f.verif }
     | Entry s        -> { node = Entry { s with args = args }; verif = f.verif }
 
-  let is_record (d : decl_node) : bool =
-    match d with
-    | Drecord _ -> true
-    | _          -> false
+  let is_asset (i : info_item) : bool =
+    match i with
+    | Iasset _ -> true
+    | _        -> false
 
   let is_entry (f : function__) : bool =
     match f with
@@ -1792,8 +1795,8 @@ end = struct
 
   let get_functions m = List.filter is_function m.functions |> List.map get_function
 
-  let dest_record  = function
-    | Drecord r -> r
+  let dest_asset  = function
+    | Iasset i -> i
     | _ -> emit_error NotaPartition
 
   let dest_array (t : mterm)  =
@@ -1812,51 +1815,62 @@ end = struct
     | Tcontainer (Tasset n, _) -> n
     | _ -> emit_error NotanAssetType
 
+  let get_assets m = m.info |> List.filter is_asset |> List.map dest_asset
+
+  let is_record (d : decl_node) : bool =
+    match d with
+    | Drecord _ -> true
+    | _          -> false
+
+  let dest_record  = function
+    | Drecord r -> r
+    | _ -> emit_error NotaPartition
+
   let get_records m = m.decls |> List.filter is_record |> List.map dest_record
 
-  let get_record model record_name : record =
+  let get_info_asset model record_name : info_asset =
     let id = unloc record_name in
-    let res = List.fold_left (fun accu (x : decl_node) ->
+    let res = List.fold_left (fun accu (x : info_item) ->
         match x with
-        | Drecord r when String.equal (unloc record_name) (unloc r.name) -> Some r
+        | Iasset r when String.equal (unloc record_name) r.name -> Some r
         | _ -> accu
-      ) None model.decls in
+      ) None model.info in
     match res with
     | Some v -> v
-    | _ -> emit_error (RecordNotFound id)
+    | _ -> emit_error (AssetNotFound id)
 
-  let get_partitions m : (lident * record_item) list=
-    get_records m |> List.fold_left (fun acc (record : record) ->
-        acc @ (List.fold_left (fun acc (ritem : record_item) ->
-            match ritem.type_ with
+  let get_partitions m : (ident * ident * type_) list=
+    get_assets m |> List.fold_left (fun acc (info : info_asset) ->
+        acc @ (List.fold_left (fun acc (i,t,_) ->
+            match t with
             | Tcontainer (Tasset _, Partition) ->
-              acc @ [record.name,ritem]
+              acc @ [info.name,i,t]
             | _ -> acc
-          ) [] record.values)
+          ) [] info.values)
       ) []
 
   let has_partition m asset : bool =
-    get_records m |> List.fold_left (fun acc (record : record) ->
-        if compare asset record.name.pldesc = 0 then
-          (List.fold_left (fun acc (ritem : record_item) ->
-               match ritem.type_ with
+    get_assets m |> List.fold_left (fun acc (info : info_asset) ->
+        if compare asset info.name = 0 then
+          (List.fold_left (fun acc (_,t,_) ->
+               match t with
                | Tcontainer (Tasset _, Partition) -> true
                | _ -> acc
-             ) false record.values)
+             ) false info.values)
         else
           acc
       ) false
 
 
-  let get_record_partitions m asset : record_item list =
-    get_records m |> List.fold_left (fun acc (record : record) ->
-        if compare asset record.name.pldesc = 0 then
-          (List.fold_left (fun acc (ritem : record_item) ->
-               match ritem.type_ with
+  let get_asset_partitions m asset : (ident * type_ * (lident mterm_gen option)) list =
+    get_assets m |> List.fold_left (fun acc (info : info_asset) ->
+        if compare asset info.name = 0 then
+          (List.fold_left (fun acc (i,t,d) ->
+               match t with
                | Tcontainer (Tasset _, Partition) ->
-                 acc @ [ritem]
+                 acc @ [i,t,d]
                | _ -> acc
-             ) [] record.values)
+             ) [] info.values)
         else
           acc
       ) []
@@ -1865,43 +1879,42 @@ end = struct
     | Tcontainer (Tasset p,Partition) -> p
     | _ -> assert false
 
-  let get_record_field model (record_name, field_name) =
-    let record = get_record model record_name in
-    let res = List.fold_left (fun accu (x : record_item) ->
-        if String.equal (unloc field_name) (unloc x.name) then
-          Some x
-        else accu) None record.values in
+  let get_asset_field model (record_name, field_name) =
+    let asset = get_info_asset model record_name in
+    let res = List.fold_left (fun accu (i,t,d : ident * type_ * (lident mterm_gen option)) ->
+        if String.equal field_name i then
+          Some (i,t,d)
+        else accu) None asset.values in
     match res with
     | Some v -> v
-    | _ -> emit_error (RecordFieldNotFound (unloc record_name, unloc field_name))
+    | _ -> emit_error (AssetFieldNotFound (unloc record_name, field_name))
 
-  let get_record_key model record_name : (lident * btyp) =
-    let record = get_record model record_name in
-    let key_id = Option.get record.key in
-    let key_field = get_record_field model (record_name, key_id) in
-    match key_field.type_ with
+  let get_asset_key model record_name : (ident * btyp) =
+    let asset = get_info_asset model record_name in
+    let key_id = asset.key in
+    let (_,key_typ,_) = get_asset_field model (record_name, key_id) in
+    match key_typ with
     | Tbuiltin v -> (key_id, v)
-    | _ -> emit_error (RecordKeyTypeNotFound (unloc record_name))
+    | _ -> emit_error (AssetKeyTypeNotFound (unloc record_name))
 
   let get_field_container model asset_name field_name : ident * container =
-    let f = get_record_field model (dumloc asset_name, dumloc field_name) in
-    match f with
-    | {type_ = Tcontainer (Tasset an, c)} -> (unloc an, c)
+    let (_,typ,_) = get_asset_field model (dumloc asset_name, field_name) in
+    match typ with
+    | Tcontainer (Tasset an, c) -> (unloc an, c)
     | _ -> assert false
 
   (* returns : asset name, key name, key type *)
-  let get_partition_record_key model record field : (lident * lident * btyp) =
+  let get_partition_asset_key model record field : (ident * ident * btyp) =
     let partitions = get_partitions model in
     let rec rec_get = function
-      | (r,(ri : record_item)) :: tl when compare r.pldesc record.pldesc = 0 &&
-                                          compare ri.name.pldesc field.pldesc = 0 ->
-        let pa  = dest_partition ri.type_ in
-        let k,t = get_record_key model pa in
-        (pa,k,t)
+      | (r,i,t) :: tl when compare r record.pldesc = 0 &&
+                           compare i field.pldesc = 0 ->
+        let pa  = dest_partition t in
+        let k,t = get_asset_key model pa in
+        (unloc pa,k,t)
       | _ :: tl -> rec_get tl
       | _ -> emit_error (PartitionNotFound) in
     rec_get partitions
-
 
   let get_storage model =
     model.storage
@@ -1912,14 +1925,14 @@ end = struct
     (List.fold_left (fun accu (x : storage_item) ->
          accu || String.equal (Location.unloc id) (Location.unloc x.name)) false items)
 
-  let get_field_list model record_name =
-    let record = get_record model record_name in
-    List.map (fun (x : record_item) -> x.name) record.values
+  let get_field_list (model : model) (record_name : lident) : ident list =
+    let asset = get_info_asset model record_name in
+      List.map (fun (i,_,_) -> i) asset.values
 
   let get_field_pos model record field =
     let l = get_field_list model record in
     let rec rec_get_pos i = function
-      | e :: tl when compare field.pldesc e.pldesc = 0 -> i
+      | e :: tl when compare field.pldesc e = 0 -> i
       | _ :: tl -> rec_get_pos (succ i) tl
       | [] -> assert false in
     rec_get_pos 0 l
@@ -1982,15 +1995,15 @@ end = struct
 
 
   let get_key_pos m n : int =
-    get_records m |> List.fold_left (fun acc (record : record) ->
-        if compare (unloc n) record.name.pldesc = 0 then
-          let (k,_) = get_record_key m n in
-          (List.fold_left (fun acc (ritem : record_item) ->
-               if compare ritem.name.pldesc k.pldesc = 0 then
+    get_assets m |> List.fold_left (fun acc (info : info_asset) ->
+        if compare (unloc n) info.name = 0 then
+          let (k,_) = get_asset_key m n in
+          (List.fold_left (fun acc (i,_,_) ->
+               if compare i k = 0 then
                  succ acc
                else
                  acc
-             ) acc record.values)
+             ) acc info.values)
         else
           acc
       ) (-1)
