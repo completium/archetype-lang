@@ -205,8 +205,8 @@ let main () =
       "--typed-ast", Arg.Set Options.opt_tast, " Same as -tast";
       "-sa", Arg.Set Options.opt_sa, " Transform to shallow asset";
       "--shallow-asset", Arg.Set Options.opt_sa, " Same as -sa";
-      "-skv", Arg.Set Options.opt_sa, " Split key value of collection of asset";
-      "--split-key-values", Arg.Set Options.opt_sa, " Same as -skv";
+      "-skv", Arg.Set Options.opt_skv, " Split key value of collection of asset";
+      "--split-key-values", Arg.Set Options.opt_skv, " Same as -skv";
       "-nse", Arg.Set Options.opt_nse, " Transform to no side effect";
       "--no-side-effect", Arg.Set Options.opt_nse, " Same as -nse";
       "-lsp", Arg.String (fun s -> match s with

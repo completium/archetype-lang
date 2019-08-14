@@ -48,7 +48,7 @@ let rec pp_type fmt t =
   | Tassoc (k, v) ->
     Format.fprintf fmt "(%a, %a) map"
       pp_btyp k
-      pp_type_ v
+      pp_type v
   | Tunit ->
     Format.fprintf fmt "unit"
   | Tstorage ->
