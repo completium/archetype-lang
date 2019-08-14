@@ -414,6 +414,16 @@ let to_model (ast : A.model) : M.model =
     in
     list @ List.map (fun x -> process_enum x) ast.enums in
 
+  let process_info_enums list =
+    let process_enum (e : A.enum) : M.info_item =
+      let name = unloc e.name in
+      let values = List.map (fun (x : (A.lident, A.type_, A.pterm) A.enum_item_struct) ->
+          unloc x.name) e.items in
+      let enum = M.mk_info_enum name ~values:values in
+      M.Ienum enum
+    in
+    list @ List.map (fun x -> process_enum x) ast.enums in
+
   let process_records list =
     let process_asset (a : A.asset) : M.decl_node =
       let values = List.map (fun (x : (A.lident, A.type_, A.pterm) A.decl_gen) ->
@@ -426,22 +436,12 @@ let to_model (ast : A.model) : M.model =
     list @ List.map (fun x -> process_asset x) ast.assets
   in
 
-  let process_info_enums list =
-    let process_enum (e : A.enum) : M.info_item =
-      let name = unloc e.name in
-      let values = List.map (fun (x : (A.lident, A.type_, A.pterm) A.enum_item_struct) ->
-          unloc x.name) e.items in
-      let enum = M.mk_info_enum name ~values:values in
-      M.Ienum enum
-    in
-    list @ List.map (fun x -> process_enum x) ast.enums in
-
   let process_info_records list =
     let process_asset (a : A.asset) : M.info_item =
       let values : (ident * M.type_ * M.mterm option) list = List.map (fun (x : (A.lident, A.type_, A.pterm) A.decl_gen) ->
           let typ = Option.map ptyp_to_type x.typ in
           unloc x.name, (Option.get typ), None) a.fields in (* TODO : set actual default value *)
-      let a : M.info_asset = M.mk_info_record (unloc a.name) (unloc (Option.get a.key)) ~values:values in
+      let a : M.info_asset = M.mk_info_asset (unloc a.name) (unloc (Option.get a.key)) ~values:values in
       M.Iasset a
     in
     list @ List.map (fun x -> process_asset x) ast.assets
@@ -646,87 +646,6 @@ let to_model (ast : A.model) : M.model =
     }
   in
 
-  let process_info_vars list =
-    let process_var (v : (A.lident, A.ptyp, A.pterm) A.variable) : M.info_item =
-      let decl = v.decl in
-      let name = unloc decl.name in
-      let type_ = ptyp_to_type (Option.get decl.typ) in
-      let init = Option.map to_mterm decl.default in
-      let var = M.mk_info_var name type_ ?init:init ~constant:v.constant in
-      M.Ivar var
-    in
-    list @ List.map (fun x -> process_var x) ast.variables in
-
-  let process_enums list =
-    let process_enum (e : A.enum) : M.decl_node =
-      let values = List.map (fun (x : (A.lident, A.type_, A.pterm) A.enum_item_struct) ->
-          let id : M.lident = x.name in
-          M.mk_enum_item id ~invariants:(List.map (fun x -> to_label_lterm x) x.invariants)
-        ) e.items in
-      let enum = M.mk_enum e.name ~values:values in
-      M.Denum enum
-    in
-    list @ List.map (fun x -> process_enum x) ast.enums in
-
-  let process_info_enums list =
-    let process_enum (e : A.enum) : M.info_item =
-      let name = unloc e.name in
-      let values = List.map (fun (x : (A.lident, A.type_, A.pterm) A.enum_item_struct) ->
-          unloc x.name) e.items in
-      let enum = M.mk_info_enum name ~values:values in
-      M.Ienum enum
-    in
-    list @ List.map (fun x -> process_enum x) ast.enums in
-
-  let process_records list =
-    let process_asset (a : A.asset) : M.decl_node =
-      let values = List.map (fun (x : (A.lident, A.type_, A.pterm) A.decl_gen) ->
-          let typ = Option.map ptyp_to_type x.typ in
-          let default = Option.map to_mterm x.default in
-          M.mk_record_item x.name (Option.get typ) ?default:default) a.fields in
-      let r : M.record = M.mk_record a.name ?key:a.key ~values:values in
-      M.Drecord r
-    in
-    list @ List.map (fun x -> process_asset x) ast.assets
-  in
-
-  let process_info_records list =
-    let process_asset (a : A.asset) : M.info_item =
-      let values : (ident * M.type_ * M.mterm option) list = List.map (fun (x : (A.lident, A.type_, A.pterm) A.decl_gen) ->
-          let typ = Option.map ptyp_to_type x.typ in
-          unloc x.name, (Option.get typ), None) a.fields in (* TODO : set actual default value *)
-      let a : M.info_asset = M.mk_info_asset (unloc a.name) (unloc (Option.get a.key)) ~values:values in
-      M.Iasset a
-    in
-    list @ List.map (fun x -> process_asset x) ast.assets
-  in
-
-  let process_contracts list =
-    let to_contract_signature (s : (A.lident, A.ptyp) A.signature) : M.contract_signature =
-      let name = s.name in
-      M.mk_contract_signature name ~args:(List.map (fun arg -> ptyp_to_type arg) s.args) ~loc:s.loc
-    in
-    let to_contract (c : (A.lident, A.ptyp, A.pterm) A.contract) : M.contract =
-      M.mk_contract c.name
-        ~signatures:(List.map to_contract_signature c.signatures)
-        ?init:(Option.map to_mterm c.init)
-        ~loc:c.loc
-    in
-    list @ List.map (fun (x : (A.lident, A.ptyp, A.pterm) A.contract) -> M.Dcontract (to_contract x)) ast.contracts
-  in
-
-  let process_info_contracts list =
-    let to_contract (c : (A.lident, A.ptyp, A.pterm) A.contract) : M.info_contract =
-      let signatures : (ident * M.type_ list) list =
-        List.map (fun (s : (A.lident, A.ptyp) A.signature) ->
-            unloc s.name, List.map ptyp_to_type s.args) c.signatures
-      in
-      M.mk_info_contract (unloc c.name) ~signatures:signatures
-    in
-    list @ List.map (fun (x : (A.lident, A.ptyp, A.pterm) A.contract) -> M.Icontract (to_contract x)) ast.contracts
-  in
-
->>>>>>> 6217ad60a1c22216cf3b52b8d42130fd34300d78
   let process_storage list =
     let variable_to_storage_items (var : (A.lident, A.type_, A.pterm) A.variable) : M.storage_item =
 
