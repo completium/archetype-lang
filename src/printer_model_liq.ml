@@ -212,16 +212,17 @@ let pp_model fmt (model : model) =
 
   let pp_function_const fmt = function
     | Select (an, _) ->
-      let _, t = Utils.get_asset_key model (to_lident an) in
+      let k, t = Utils.get_asset_key model (to_lident an) in
       Format.fprintf fmt
-        "let[@inline] select_%s (s, c, p : storage * %a list * (%s -> bool)) : %s list =@\n  \
+        "let[@inline] select_%s (s, c, p : storage * %a list * (%s -> bool)) : %a list =@\n  \
          List.fold (fun (x, accu) ->@\n  \
          let a = get_%s (s, x) in@\n  \
          if p a@\n  \
-         then add_list a accu@\n  \
+         then add_list a.%s accu@\n  \
          else accu@\n  \
          ) c []@\n"
-        an pp_btyp t an an
+        an pp_btyp t an pp_btyp t
+        k
         an
 
     | Sort (an, fn) ->
@@ -254,16 +255,21 @@ let pp_model fmt (model : model) =
         an
 
     | Sum (an, fn) ->
+      let _, tk = Utils.get_asset_key model (to_lident an) in
       let show_zero = function
         | _ -> "0"
       in
       let _, t, _ = Utils.get_asset_field model (dumloc an, fn) in
       Format.fprintf fmt
-        "let[@inline] sum_%s_%s (s : storage) : %a =@\n  \
-         Map.fold (fun (x, accu) ->@\n  \
-         accu + x.(1).%s@\n  \
-         ) s.%s_assets %s@\n"
-        an fn pp_type t fn an (show_zero t)
+        "let[@inline] sum_%s_%s (s, c : storage * %a list) : %a =@\n  \
+         List.fold (fun (k, accu) ->@\n    \
+         let x = get_%s (_s, k) in@\n    \
+         accu + x.%s@\n  \
+         ) c %s@\n"
+        an fn pp_btyp tk pp_type t
+        an
+        fn
+        (show_zero t)
 
     | Min (an, fn) ->
       Format.fprintf fmt
@@ -276,8 +282,8 @@ let pp_model fmt (model : model) =
         "let[@inline] max_%s_%s (s : storage) : unit =@\n  \
          () (*TODO*)@\n"
         an fn
-    | Shallow _ -> assert false
-    | Unshallow _ -> assert false
+    | Shallow _ -> ()
+    | Unshallow _ -> ()
 
   in
 
@@ -625,10 +631,10 @@ let pp_model fmt (model : model) =
 
       | Msum (an, fd, c) ->
         let pp fmt (an, fd, c) =
-          Format.fprintf fmt "sum_%a_%a (_s)"
+          Format.fprintf fmt "sum_%a_%a (_s, %a)"
             pp_str an
             pp_id fd
-            (* f c *)
+            f c
         in
         pp fmt (an, fd, c)
 

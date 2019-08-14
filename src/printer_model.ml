@@ -706,6 +706,13 @@ let pp_api_items fmt l =
     Format.fprintf fmt "api items:@\n%a@\n--@\n"
       (pp_list "@\n" pp_api_item) l
 
+let pp_info_var fmt (iv : info_var) =
+  Format.fprintf fmt "%s %a %a%a@\n"
+    (if iv.constant then "constant" else "variable")
+    pp_ident iv.name
+    pp_type iv.type_
+    (pp_option (pp_prefix " := " pp_mterm)) iv.init
+
 let pp_info_enum fmt (ie : info_enum) =
   Format.fprintf fmt "enum %a:@\n  @[%a@]@\n"
     pp_ident ie.name
@@ -714,10 +721,11 @@ let pp_info_enum fmt (ie : info_enum) =
 let pp_info_asset fmt (ia : info_asset) =
   Format.fprintf fmt "asset %a = {@\n  @[%a@]@\n}@\n"
     pp_ident ia.name
-    (pp_list "@\n" (fun fmt (i, t, _) ->
-         Format.fprintf fmt "%a : %a%a"
+    (pp_list "@\n" (fun fmt (i, t, init) ->
+         Format.fprintf fmt "%a : %a%a%a"
            pp_ident i
            pp_type t
+           (pp_option (pp_prefix " := " pp_mterm)) init
            (pp_do_if (String.equal ia.key i) pp_str) " [key]"
        )) ia.values
 
@@ -731,6 +739,7 @@ let pp_info_contract fmt (ic : info_contract) =
        )) ic.signatures
 
 let pp_info_item fmt = function
+  | Ivar iv -> pp_info_var fmt iv
   | Ienum ie -> pp_info_enum fmt ie
   | Iasset ia -> pp_info_asset fmt ia
   | Icontract ic -> pp_info_contract fmt ic
