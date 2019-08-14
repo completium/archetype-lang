@@ -296,6 +296,14 @@ and api_item = {
 }
 [@@deriving show {with_path = false}]
 
+type info_var = {
+  name: ident;
+  type_ : type_;
+  constant: bool;
+  init: mterm;
+}
+[@@deriving show {with_path = false}]
+
 type info_enum = {
   name: ident;
   values: ident list;
@@ -305,7 +313,7 @@ type info_enum = {
 type info_asset = {
   name: ident;
   key: ident;
-  values: (ident * type_ * (lident mterm_gen option)) list;
+  values: (ident * type_ * (mterm option)) list;
 }
 [@@deriving show {with_path = false}]
 
@@ -316,6 +324,7 @@ type info_contract = {
 [@@deriving show {with_path = false}]
 
 type info_item =
+  | Ivar of info_var
   | Ienum of info_enum
   | Iasset of info_asset
   | Icontract of info_contract
@@ -613,19 +622,25 @@ let mk_assert ?(invariants = []) name label formula =
 let mk_verification ?(predicates = []) ?(definitions = []) ?(axioms = []) ?(theorems = []) ?(variables = []) ?(invariants = []) ?(effects = []) ?(specs = []) ?(asserts = []) ?(loc = Location.dummy) () =
   { predicates; definitions; axioms; theorems; variables; invariants; effects; specs; asserts; loc}
 
-let mk_enum ?(values = []) name : 'id enum_gen =
-  { name; values }
+let mk_info_var ?(constant = false) name type_ init : info_var =
+  { name; type_; constant; init }
 
 let mk_info_enum ?(values = []) name : info_enum =
+  { name; values }
+
+let mk_info_asset ?(values = []) name key : info_asset =
+  { name; key; values }
+
+let mk_info_contract ?(signatures = []) name : info_contract =
+  { name; signatures }
+
+let mk_enum ?(values = []) name : 'id enum_gen =
   { name; values }
 
 let mk_enum_item ?(invariants = []) name : 'id enum_item_gen =
   { name; invariants }
 
 let mk_record ?(values = []) ?key name : 'id record_gen =
-  { name; key; values }
-
-let mk_info_record ?(values = []) name key : info_asset =
   { name; key; values }
 
 let mk_record_item ?default name type_ : 'id record_item_gen =
@@ -636,9 +651,6 @@ let mk_contract_signature ?(args=[]) ?(loc=Location.dummy) name : 'id contract_s
 
 let mk_contract ?(signatures=[]) ?init ?(loc=Location.dummy) name : 'id contract_gen =
   { name; signatures; init; loc }
-
-let mk_info_contract ?(signatures = []) name : info_contract =
-  { name; signatures }
 
 let mk_storage_item ?asset ?(ghost = false) ?(invariants = []) ?(loc = Location.dummy) name typ default : 'id storage_item_gen =
   { name; asset; typ; ghost; default; invariants; loc }
@@ -1927,7 +1939,7 @@ end = struct
 
   let get_field_list (model : model) (record_name : lident) : ident list =
     let asset = get_info_asset model record_name in
-      List.map (fun (i,_,_) -> i) asset.values
+    List.map (fun (i,_,_) -> i) asset.values
 
   let get_field_pos model record field =
     let l = get_field_list model record in

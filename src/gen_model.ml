@@ -605,7 +605,7 @@ let to_model (ast : A.model) : M.model =
       let values : (ident * M.type_ * M.mterm option) list = List.map (fun (x : (A.lident, A.type_, A.pterm) A.decl_gen) ->
           let typ = Option.map ptyp_to_type x.typ in
           unloc x.name, (Option.get typ), None) a.fields in (* TODO : set actual default value *)
-      let a : M.info_asset = M.mk_info_record (unloc a.name) (unloc (Option.get a.key)) ~values:values in
+      let a : M.info_asset = M.mk_info_asset (unloc a.name) (unloc (Option.get a.key)) ~values:values in
       M.Iasset a
     in
     list @ List.map (fun x -> process_asset x) ast.assets
