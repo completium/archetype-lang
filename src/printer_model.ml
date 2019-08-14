@@ -701,6 +701,42 @@ let pp_api_items fmt l =
     Format.fprintf fmt "api items:@\n%a@\n--@\n"
       (pp_list "@\n" pp_api_item) l
 
+let pp_info_enum fmt (ie : info_enum) =
+  Format.fprintf fmt "enum %a:@\n  @[%a@]@\n"
+    pp_ident ie.name
+    (pp_list "@\n" pp_ident) ie.values
+
+let pp_info_asset fmt (ia : info_asset) =
+  Format.fprintf fmt "asset %a = {@\n  @[%a@]@\n}@\n"
+    pp_ident ia.name
+    (pp_list "@\n" (fun fmt (i, t) ->
+         Format.fprintf fmt "%a : %a%a"
+           pp_ident i
+           pp_type t
+           (pp_do_if (String.equal ia.key i) pp_str) " [key]"
+       )) ia.values
+
+let pp_info_contract fmt (ic : info_contract) =
+  Format.fprintf fmt "contract %a:@\n  @[%a@]@\n"
+    pp_ident ic.name
+    (pp_list "@\n" (fun fmt (i, ts) ->
+         Format.fprintf fmt "%a : %a;"
+           pp_ident i
+           (pp_list ", " pp_type_) ts
+       )) ic.signatures
+
+let pp_info_item fmt = function
+  | Ienum ie -> pp_info_enum fmt ie
+  | Iasset ia -> pp_info_asset fmt ia
+  | Icontract ic -> pp_info_contract fmt ic
+
+let pp_infos fmt l =
+  if List.is_empty l
+  then pp_str fmt "no infos"
+  else
+    Format.fprintf fmt "info items:@\n@\n%a@\n--@\n"
+      (pp_list "@\n" pp_info_item) l
+
 let pp_enum_item fmt (enum_item : enum_item) =
   Format.fprintf fmt "%a"
     pp_id enum_item.name
@@ -810,9 +846,11 @@ let pp_model fmt (model : model) =
                       @\n@\n%a\
                       @\n@\n%a\
                       @\n@\n%a\
+                      @\n@\n%a\
                       @."
     pp_id model.name
     pp_api_items model.api_items
+    pp_infos model.info
     (pp_list "@\n" pp_decl) model.decls
     pp_storage model.storage
     (pp_list "@\n" pp_function) model.functions

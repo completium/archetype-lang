@@ -294,6 +294,31 @@ and api_item = {
 }
 [@@deriving show {with_path = false}]
 
+type info_enum = {
+  name: ident;
+  values: ident list;
+}
+[@@deriving show {with_path = false}]
+
+type info_asset = {
+  name: ident;
+  key: ident;
+  values: (ident * type_) list;
+}
+[@@deriving show {with_path = false}]
+
+type info_contract = {
+  name: ident;
+  signatures: (ident * type_ list) list;
+}
+[@@deriving show {with_path = false}]
+
+type info_item =
+  | Ienum of info_enum
+  | Iasset of info_asset
+  | Icontract of info_contract
+[@@deriving show {with_path = false}]
+
 type 'id label_term_gen = {
   label : 'id option;
   term : 'id mterm_gen;
@@ -542,6 +567,7 @@ type decl_node = lident decl_node_gen
 type 'id model_gen = {
   name         : lident;
   api_items    : api_item list;
+  info         : info_item list;
   decls        : 'id decl_node_gen list;
   storage      : 'id storage_gen;
   functions    : 'id function__gen list;
@@ -585,13 +611,10 @@ let mk_assert ?(invariants = []) name label formula =
 let mk_verification ?(predicates = []) ?(definitions = []) ?(axioms = []) ?(theorems = []) ?(variables = []) ?(invariants = []) ?(effects = []) ?(specs = []) ?(asserts = []) ?(loc = Location.dummy) () =
   { predicates; definitions; axioms; theorems; variables; invariants; effects; specs; asserts; loc}
 
-let mk_contract_signature ?(args=[]) ?(loc=Location.dummy) name : 'id contract_signature_gen =
-  { name; args; loc }
-
-let mk_contract ?(signatures=[]) ?init ?(loc=Location.dummy) name : 'id contract_gen =
-  { name; signatures; init; loc }
-
 let mk_enum ?(values = []) name : 'id enum_gen =
+  { name; values }
+
+let mk_info_enum ?(values = []) name : info_enum =
   { name; values }
 
 let mk_enum_item ?(invariants = []) name : 'id enum_item_gen =
@@ -600,8 +623,20 @@ let mk_enum_item ?(invariants = []) name : 'id enum_item_gen =
 let mk_record ?(values = []) ?key name : 'id record_gen =
   { name; key; values }
 
+let mk_info_record ?(values = []) name key : info_asset =
+  { name; key; values }
+
 let mk_record_item ?default name type_ : 'id record_item_gen =
   { name; type_; default }
+
+let mk_contract_signature ?(args=[]) ?(loc=Location.dummy) name : 'id contract_signature_gen =
+  { name; args; loc }
+
+let mk_contract ?(signatures=[]) ?init ?(loc=Location.dummy) name : 'id contract_gen =
+  { name; signatures; init; loc }
+
+let mk_info_contract ?(signatures = []) name : info_contract =
+  { name; signatures }
 
 let mk_storage_item ?asset ?(ghost = false) ?(invariants = []) ?(loc = Location.dummy) name typ default : 'id storage_item_gen =
   { name; asset; typ; ghost; default; invariants; loc }
@@ -618,8 +653,8 @@ let mk_signature ?(args = []) ?ret name : 'id signature_gen =
 let mk_api_item ?(only_formula = false) node_item =
   { node_item; only_formula }
 
-let mk_model ?(api_items = []) ?(decls = []) ?(functions = []) name storage verification : model =
-  { name; api_items; storage; decls; functions; verification}
+let mk_model ?(api_items = []) ?(info = []) ?(decls = []) ?(functions = []) name storage verification : model =
+  { name; api_items; info; storage; decls; functions; verification}
 
 (* -------------------------------------------------------------------- *)
 

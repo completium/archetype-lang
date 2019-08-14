@@ -19,6 +19,8 @@ let pp_list sep pp =
     pp
 
 (* -------------------------------------------------------------------------- *)
+let pp_ident = pp_str
+
 let pp_id fmt (id : lident) =
   Format.fprintf fmt "%s" (unloc id)
 
