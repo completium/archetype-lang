@@ -226,7 +226,7 @@ let to_model (ast : A.model) : M.model =
           | {type_ = M.Tcontainer (M.Tasset asset_name, _); _} -> unloc asset_name
           | _ -> "todo"
         in
-        M.Msum (asset_name, Location.dumloc "amount", f p) (* TODO : replace it by the right value*)
+        M.Msum (asset_name, Location.dumloc "amount", fp) (* TODO : replace it by the right value*)
 
       | A.Pcall (Some c, A.Cconst (A.Cselect), [AExpr p])
       | A.Pcall (None, A.Cconst (A.Cselect), [AExpr c; AExpr p]) ->
