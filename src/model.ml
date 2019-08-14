@@ -655,7 +655,7 @@ let mk_signature ?(args = []) ?ret name : 'id signature_gen =
 let mk_api_item ?(only_formula = false) node_item =
   { node_item; only_formula }
 
-let mk_model ?(api_items = []) ?(info = []) ?(decls = []) ?(functions = []) name storage verification : model =
+let mk_model ?(api_items = []) ?(info = []) ?(decls = []) ?(functions = []) ?(storage = []) ?(verification = mk_verification ())  storage name : model =
   { name; api_items; info; storage; decls; functions; verification}
 
 (* -------------------------------------------------------------------- *)

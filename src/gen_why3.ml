@@ -555,10 +555,10 @@ let mk_add_partition_field a ak pf adda addak : decl =
    rmn    : removed asset name
    rmktyp : removed asset key type
 *)
-let mk_rm_partition_field asset ktyp f rmed_asset rmktyp : decl = Dfun {
+let mk_rm_partition_field asset keyf f rmed_asset rmktyp : decl = Dfun {
     name     = "remove_"^asset^"_"^f;
     logic    = NoMod;
-    args     = ["k",ktyp; rmed_asset^"_k",rmktyp];
+    args     = ["a",Tyasset asset; rmed_asset^"_k",rmktyp];
     returns  = Tyunit;
     raises   = [Enotfound];
     variants = [];
@@ -591,43 +591,38 @@ let mk_rm_partition_field asset ktyp f rmed_asset rmktyp : decl = Dfun {
       };
     ];
     body     =
-      Tif (Tnot (Tcontains (asset,
-                            Tvar "k",
-                            mk_ac asset)),
+      Tif (Tnot (Tmem (asset,
+                       Tvar "a",
+                       mk_ac asset)),
            Traise Enotfound,
            Some (
              Tletin (false,
-                     asset^"_asset",
+                     asset^"_"^f,
                      None,
-                     Tget (asset,
-                           mk_ac asset,
-                           Tvar "k"),
+                     Tapp (Tvar f,
+                           [Tvar ("a")]),
                      Tletin (false,
-                             asset^"_"^f,
+                             "new_"^asset^"_"^f,
                              None,
-                             Tapp (Tvar f,
-                                   [Tvar (asset^"_asset")]),
+                             Tlistremove (gArchetypeList,
+                                          Tvar (asset^"_"^f),
+                                          Tvar (rmed_asset^"_k")),
                              Tletin (false,
-                                     "new_"^asset^"_"^f,
+                                     "new_"^asset^"_asset",
                                      None,
-                                     Tlistremove (gArchetypeList,
-                                                  Tvar (asset^"_"^f),
-                                                  Tvar (rmed_asset^"_k")),
-                                     Tletin (false,
-                                             "new_"^asset^"_asset",
-                                             None,
-                                             Trecord (Some (Tvar (asset^"_asset")),
-                                                      [f,Tvar ("new_"^asset^"_"^f)]),
-                                             Tseq [
-                                               Tassign (mk_ac asset,
-                                                        Tset (asset,
-                                                              mk_ac asset,
-                                                              Tvar "k",
-                                                              Tvar ("new_"^asset^"_asset")));
-                                               Tapp (Tvar ("remove_"^rmed_asset),
-                                                     [Tvar (rmed_asset^"_k")])
-                                             ]
-                                            ))))));
+                                     Trecord (Some (Tvar ("a")),
+                                              [f,Tvar ("new_"^asset^"_"^f)]),
+                                     Tseq [
+                                       Tassign (mk_ac asset,
+                                                Tset (asset,
+                                                      mk_ac asset,
+                                                      Tapp (Tvar keyf,
+                                                            [Tvar "a"]),
+                                                      Tvar ("new_"^asset^"_asset")));
+                                       Tapp (Tvar ("remove_"^rmed_asset),
+                                             [Tvar (rmed_asset^"_k")])
+                                     ]
+                                    )))));
   }
 
 (* ----------------------------------------------------------------------------*)
@@ -904,6 +899,11 @@ let rec map_mterm m (mt : M.mterm) : loc_term =
       Tapp (loc_term (Tvar ((mk_sum_clone_id a (f |> unloc))^".sum")),[map_mterm m l])
     | M.Mapp (f,args) ->
       Tapp (mk_loc (map_lident f).loc (Tvar (map_lident f)),List.map (map_mterm m) args)
+    | M.Mminus (l,r) -> Tminus (with_dummy_loc Tyint, map_mterm m l, map_mterm m r)
+    | M.Mplus (l,r)  -> Tplus  (with_dummy_loc Tyint, map_mterm m l, map_mterm m r)
+    | M.Mvarstorecol n -> loc_term (mk_ac (n |> unloc)) |> Mlwtree.deloc
+    | M.Mremoveasset (n,a) -> Tapp (loc_term (Tvar ("remove_"^n)),
+                                    [map_mterm m a])
     | _ -> Tnone in
   mk_loc mt.loc t
 
@@ -931,7 +931,7 @@ let mk_storage_api (m : M.model) records =
           mk_add_partition_field a k pf pa addak
         ]
       | M.APIStorage (UpdateRemove (n,f)) ->
-        let t         = M.Utils.get_asset_key m (dumloc n) |> snd |> map_btype in
+        let t         = M.Utils.get_asset_key m (dumloc n) |> fst in
         let (pa,_,pt) = M.Utils.get_partition_asset_key m (dumloc n) (dumloc f) in
         acc @ [
           (*mk_rm_asset           pa.pldesc (pt |> map_btype);*)
@@ -963,6 +963,7 @@ let fold_exns body : exn list =
     | M.Mfail InvalidCaller -> acc @ [Einvalidcaller]
     | M.Mfail NoTransfer -> acc @ [Enotransfer]
     | M.Mfail (InvalidCondition _) -> acc @ [Einvalidcondition]
+    | M.Mremoveasset _ -> acc @ [Enotfound]
     | _ -> M.fold_term internal_fold_exn acc term in
   Tools.List.dedup (internal_fold_exn [] body)
 
