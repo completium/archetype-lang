@@ -292,31 +292,34 @@ module Sum
   type container
 
   val function f container int : int
+  val function card container : int
 
-  let function sum (c : container) (i : int) (j : int) : int = 
+  let function partial_sum (c : container) (i : int) (j : int) : int = 
   let ref res = 0 in
   for k = i to j - 1 do
     res <- res + f c i
   done;
   res
 
+  let function sum (c : container) : int = partial_sum c 0 (card c) 
+
   axiom Sum_def_empty :
-    forall c : container, i j : int. j <= i -> sum c i j = 0
+    forall c : container, i j : int. j <= i -> partial_sum c i j = 0
 
   axiom Sum_def_non_empty :
-    forall c: container, i j : int. i < j -> sum c i j = f c i + sum c (i+1) j
+    forall c: container, i j : int. i < j -> partial_sum c i j = f c i + partial_sum c (i+1) j
 
   lemma Sum_right_extension:
     forall c : container, i j : int.
-    i < j -> sum c i j = sum c i (j-1) + f c (j-1)
+    i < j -> partial_sum c i j = partial_sum c i (j-1) + f c (j-1)
 
   lemma Sum_transitivity :
     forall c : container, i k j : int. i <= k <= j ->
-    sum c i j = sum c i k + sum c k j
+    partial_sum c i j = partial_sum c i k + partial_sum c k j
 
   lemma Sum_eq :
     forall c1 c2 : container, i j : int.
-    (forall k : int. i <= k < j -> f c1 k = f c2 k -> sum c1 i j = sum c2 i j)
+    (forall k : int. i <= k < j -> f c1 k = f c2 k -> partial_sum c1 i j = partial_sum c2 i j)
 
 end
 

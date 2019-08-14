@@ -77,6 +77,7 @@ type ('e,'t,'i) abstract_term =
   | Temptycoll of 'i
   | Tcard   of 'i * 'e
   | Tunshallow  of 'i * 'e * 'e
+  | Tshallow  of 'i * 'e * 'e
   | Tmlist  of 'e * 'i * 'i * 'i * 'e (* match list *)
   | Tcons   of 'e * 'e
   (* archetype lib *)
@@ -294,6 +295,7 @@ and map_abstract_term
   | Temptycoll i       -> Temptycoll (map_i i)
   | Tcard (i,e)        -> Tcard (map_i i, map_e e)
   | Tunshallow (i,e1,e2) -> Tunshallow (map_i i, map_e e1, map_e e2)
+  | Tshallow (i,e1,e2) -> Tshallow (map_i i, map_e e1, map_e e2)
   | Tmlist (e1,i1,i2,i3,e2) -> Tmlist (map_e e1, map_i i1, map_i i2, map_i i3, map_e e2)
   | Tcons (e1,e2)      -> Tcons (map_e e1, map_e e2)
   | Tadd (i1,e1,e2)       -> Tadd (map_i i1, map_e e1, map_e e2)
@@ -628,6 +630,7 @@ let compare_abstract_term
   | Temptycoll i1, Temptycoll i2 -> cmpi i1 i2
   | Tcard (i1,e1), Tcard (i2,e2) -> cmpi i1 i2 && cmpe e1 e2
   | Tunshallow (i1,e1,f1), Tunshallow (i2,e2,f2) -> cmpi i1 i2 && cmpe e1 e2 && cmpe f1 f2
+  | Tshallow (i1,e1,f1), Tshallow (i2,e2,f2) -> cmpi i1 i2 && cmpe e1 e2 && cmpe f1 f2
   | Tmlist (e1,i1,i2,i3,e2), Tmlist (f1,j1,j2,j3,f2) ->
     cmpe e1 f2 && cmpi i1 j1 && cmpi i2 j2 && cmpi i3 j3 && cmpe f1 f2
   | Tcons (e1,e2), Tcons (f1,f2) -> cmpe e1 f1 && cmpe e2 f2

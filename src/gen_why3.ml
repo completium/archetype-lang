@@ -81,13 +81,18 @@ let mk_trace_clone = Dclone (["archetype";"Trace"], "Tr",
                               Ctype ("entry","entry");
                               Ctype ("field","field")])
 
+let mk_sum_clone_id a f = (String.capitalize_ascii a) ^ (String.capitalize_ascii f)
+
 let mk_sum_clone m asset field =
   Dclone ([gArchetypeDir;gArchetypeSum],
-          String.capitalize_ascii field,
+          mk_sum_clone_id asset field,
           [Ctype ("container",
                   (String.capitalize_ascii asset)^".collection");
            Cval ("f",
-                 "get_"^field)])
+                 "get_"^field);
+           Cval ("card",
+                 (String.capitalize_ascii asset)^".card")
+          ])
 
 let mk_get_field_from_pos asset field = Dfun {
     name = "get_"^field;
@@ -315,7 +320,7 @@ let mk_select m asset test mlw_test only_formula =
 
 
 let mk_contains asset keyt = Dfun {
-    name     = asset^"_contains";
+    name     = "contains_"^asset;
     logic    = NoMod;
     args     = ["k",keyt];
     returns  = Tybool;
@@ -349,7 +354,6 @@ let mk_unshallow asset keyt = Dfun {
                            mk_ac asset,
                            Tvar "l")
   }
-
 
 (* basic getters *)
 
@@ -826,6 +830,7 @@ let rec map_mterm m (mt : M.mterm) : loc_term =
     | M.Mint v          -> Tint v
     | M.Mdotasset (e,i) -> Tdot (map_mterm m e, mk_loc (loc i) (Tvar (map_lident i)))
     | M.Munshallow (a,e) -> Tapp (loc_term (Tvar ("unshallow_"^a)),[map_mterm m e])
+    | M.Mshallow (a,e) -> Tapp (loc_term (Tvar ("shallow_"^a)),[map_mterm m e])
     | M.Mcontains (a,_,r) -> Tapp (loc_term (Tvar ("contains_"^a)),[map_mterm m r])
     | M.Maddfield (a,f,c,i) -> Tapp (loc_term (Tvar ("add_"^a^"_"^f)),
                                      [map_mterm m c; map_mterm m i])
@@ -895,8 +900,8 @@ let rec map_mterm m (mt : M.mterm) : loc_term =
               map_mterm m v
             ]
            )
-    | M.Msum (a,l,v) ->
-      Tapp (loc_term (Tvar ("sum_"^a)),[with_dummy_loc (Tvar (map_lident l)); map_mterm m v])
+    | M.Msum (a,f,l) ->
+      Tapp (loc_term (Tvar ((mk_sum_clone_id a (f |> unloc))^".sum")),[map_mterm m l])
     | M.Mapp (f,args) ->
       Tapp (mk_loc (map_lident f).loc (Tvar (map_lident f)),List.map (map_mterm m) args)
     | _ -> Tnone in
