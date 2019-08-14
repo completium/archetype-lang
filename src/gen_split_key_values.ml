@@ -6,6 +6,13 @@ open Model
 let asset_keys an = an ^ "_keys"
 let asset_assets an = an ^ "_assets"
 
+let to_lident f lident =
+  let l, v = deloc lident in
+  mkloc l (f v)
+
+let lident_asset_keys = to_lident asset_keys
+let lident_asset_assets = to_lident asset_assets
+
 let split_key_values (model : model) : model =
   let storage =
     List.fold_right (fun x accu ->
@@ -38,6 +45,67 @@ let split_key_values (model : model) : model =
         | _ -> x::accu)
       model.storage []
   in
+
+  let rec f (ctx : ctx_model) (x : mterm) : mterm =
+    match x.node with
+    | Mselect (an, col, pred) ->
+      let col = f ctx col in
+      let pred = f ctx pred in
+      let k, t = Utils.get_asset_key model (dumloc an) in
+      { x with node = Mselect (an, col, pred); type_ = Tcontainer (Tbuiltin t, Collection)}
+
+    | Mletin (ids, init, _, body) ->
+      let init = f ctx init in
+      let body = f ctx body in
+      { x with node = Mletin (ids, init, Some (init.type_), body); type_ = body.type_}
+    | Mvarstorecol an ->
+      (
+        let k, t = Utils.get_asset_key model an in
+        { x with node = Mvarstorecol (lident_asset_keys an); type_ = Tcontainer (Tbuiltin t, Collection) }
+      )
+    | Mfor (id, col, body) ->
+
+      let is_argument_plain_asset_collection (col : mterm) =
+        let id =
+          match col.node with
+          | Mvarlocal an -> Some an
+          | _ -> None
+        in
+
+        match id, ctx.fs with
+        | Some an, Some ({args = args }) ->
+          List.fold_left (fun accu (name, type_, _) ->
+              match type_ with
+              | Tcontainer (Tasset _, _) when String.equal (unloc an) (unloc name) -> true
+              | _ -> accu
+            ) false args
+        | _ -> false
+      in
+
+      let an =
+        match col.type_ with
+        | Tcontainer (Tasset an, _) -> an
+        | _ -> assert false
+      in
+      let k, t = Utils.get_asset_key model an in
+
+      let col = f ctx col in
+      let body = f ctx body in
+      let body =
+        if is_argument_plain_asset_collection col
+        then
+          body
+        else
+          let key = mk_mterm (Mvarlocal id) (Tbuiltin t) in
+          let get = mk_mterm (Mget (unloc an, key)) (Tasset an) in
+          let body = mk_mterm (Mletin ([id], get, Some (Tasset an), body)) (body.type_) in
+          body
+      in
+      { x with node =  Mfor (id, col, body) }
+    | _ -> map_mterm (f ctx) x
+  in
+
+  let model = map_mterm_model f model in
 
   { model with
     storage = storage

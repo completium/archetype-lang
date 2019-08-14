@@ -41,7 +41,7 @@ let rec simplify (mt : mterm) : mterm =
         then false
         else cmp_lidents ids tuples_ids)
     -> simplify init
-  | _ -> map_term simplify mt
+  | _ -> map_mterm simplify mt
 
 let is_fail (t : mterm) (e : mterm option) : bool =
   match t.node , e with
@@ -58,13 +58,6 @@ type ctx_red = {
   vars: (ident * type_) list;
   target: mterm option;
 }
-
-let merge_seq (mt1 : mterm) (mt2 : mterm) : mterm =
-  match mt1.node, mt2.node with
-  | Mseq l1, Mseq l2 -> mk_mterm (Mseq (l1 @ l2)) mt2.type_
-  | _, Mseq l -> mk_mterm (Mseq ([mt1] @ l)) mt2.type_
-  | Mseq l, _ -> mk_mterm (Mseq (l @ [mt2])) mt2.type_
-  | _ -> mk_mterm (Mseq [mt1; mt2]) mt2.type_
 
 let rec compute_side_effect_aux (ctx : ctx_red)(accu : (ident * type_) list) (mt : mterm) : (ident * type_) list =
   match mt.node with

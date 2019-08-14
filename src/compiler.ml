@@ -73,6 +73,7 @@ let output_liquidity_url model =
   else
     let str = Printer_model_liq.show_model model in
     let encoded_src = Uri.pct_encode str in
+    let encoded_src = Str.global_replace (Str.regexp "\\+") "%2B" encoded_src in
     let url = "http://www.liquidity-lang.org/edit/?source=" ^ encoded_src in
     Format.printf "%s@\n" url
 
@@ -116,6 +117,7 @@ let generate_target model =
   | LiquidityUrl ->
     model
     |> shallow_asset
+    |> split_key_values
     |> remove_side_effect
     |> generate_api_storage
     |> (match !Options.target with

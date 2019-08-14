@@ -535,18 +535,18 @@ let pp_mterm fmt (mt : mterm) =
         f k
         f v
     | Mfor (i, c, b) ->
-      Format.fprintf fmt "for (%a in %a)@\n (@[<v 2>%a@])@\n"
+      Format.fprintf fmt "for (%a in %a) (@\n  @[%a@]@\n)@\n"
         pp_id i
         f c
         f b
     | Mfold (i, is, c, b) ->
-      Format.fprintf fmt "fold %a %a %a (@[<v 2>%a@])@\n"
+      Format.fprintf fmt "fold %a %a %a (@\n  @[%a@]@\n)@\n"
         pp_id i
         (pp_list "%@," pp_id) is
         f c
         f b
     | Mseq is ->
-      Format.fprintf fmt "(%a)"
+      Format.fprintf fmt "%a"
         (pp_list ";@\n" f) is
 
     | Massign (op, l, r) ->

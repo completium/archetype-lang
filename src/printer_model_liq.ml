@@ -47,7 +47,16 @@ let to_lident = dumloc
 let pp_nothing (fmt : Format.formatter) = ()
 
 let pp_model fmt (model : model) =
-
+  let remove_shallow (model : model) : model =
+    let rec aux (ctx : ctx_model) (mt : mterm) : mterm =
+      match mt.node with
+      | Mshallow (_, x)
+      | Munshallow (_, x) -> aux ctx x
+      | _ -> map_mterm (aux ctx) mt
+    in
+    map_mterm_model aux model
+  in
+  let model = remove_shallow model in
   let pp_model_name (fmt : Format.formatter) _ =
     Format.fprintf fmt "(* contract: %a *)"
       pp_id model.name
@@ -98,7 +107,7 @@ let pp_model fmt (model : model) =
     | Tassoc (k, v) ->
       Format.fprintf fmt "(%a, %a) map"
         pp_btyp k
-        pp_type_ v
+        pp_type v
     | Tunit ->
       Format.fprintf fmt "unit"
     | Tstorage ->
@@ -222,8 +231,8 @@ let pp_model fmt (model : model) =
          else accu@\n  \
          ) c []@\n"
         an pp_btyp t an pp_btyp t
-        k
         an
+        k
 
     | Sort (an, fn) ->
       Format.fprintf fmt
@@ -263,7 +272,7 @@ let pp_model fmt (model : model) =
       Format.fprintf fmt
         "let[@inline] sum_%s_%s (s, c : storage * %a list) : %a =@\n  \
          List.fold (fun (k, accu) ->@\n    \
-         let x = get_%s (_s, k) in@\n    \
+         let x = get_%s (s, k) in@\n    \
          accu + x.%s@\n  \
          ) c %s@\n"
         an fn pp_btyp tk pp_type t
@@ -355,9 +364,7 @@ let pp_model fmt (model : model) =
   in
 
   let pp_api_item fmt (api_item : api_item) =
-    if api_item.only_formula
-    then ()
-    else pp_api_item_node fmt api_item.node_item
+    pp_api_item_node fmt api_item.node_item
   in
 
   let pp_api_items fmt l =
@@ -370,9 +377,12 @@ let pp_model fmt (model : model) =
           ) false l
       in
       List.fold_right (fun (x : api_item) accu ->
-          match x.node_item with
-          | APIFunction  (Select (an, p)) when contains_select_asset_name an accu -> accu
-          | _ -> x::accu
+          if x.only_formula
+          then accu
+          else
+            match x.node_item with
+            | APIFunction  (Select (an, p)) when contains_select_asset_name an accu -> accu
+            | _ -> x::accu
         ) l []
     in
     let l : api_item list = filter_api_items l in
@@ -851,7 +861,7 @@ let pp_model fmt (model : model) =
           f a
           f b
       | Mvarstorevar v -> Format.fprintf fmt "_s.%a" pp_id v
-      | Mvarstorecol v -> Format.fprintf fmt "_s.%a_keys" pp_id v
+      | Mvarstorecol v -> Format.fprintf fmt "_s.%a" pp_id v
       | Mvarenumval v  -> pp_id fmt v
       | Mvarfield v    -> pp_id fmt v
       | Mvarlocal v    -> pp_id fmt v
@@ -867,8 +877,22 @@ let pp_model fmt (model : model) =
         Format.fprintf fmt "Some (%a)"
           f v
       | Marray l ->
-        Format.fprintf fmt "[%a]"
-          (pp_list "; " f) l
+        begin
+          match mtt.type_ with
+          | Tassoc (k , v) ->
+            begin
+              match l with
+              | [] -> Format.fprintf fmt "(Map : (%a, %a) map)"
+                        pp_btyp k
+                        pp_type v
+              | _ ->
+                Format.fprintf fmt "[%a]"
+                  (pp_list "; " f) l
+            end
+          | _ ->
+            Format.fprintf fmt "[%a]"
+              (pp_list "; " f) l
+        end
       | Mint v -> pp_big_int fmt v
       | Muint v -> pp_big_int fmt v
       | Mbool b -> pp_str fmt (if b then "true" else "false")
@@ -905,25 +929,10 @@ let pp_model fmt (model : model) =
           f c
           f b
       | Mfold (i, is, c, b) ->
-        let t : lident option =
-          match c with
-          | {node = Mvarstorecol an; _} -> Some an
-          | _ -> None
-        in
-
-        let cond = Option.is_some t in
-
         Format.fprintf fmt
           "List.fold (fun (%a, (%a)) ->@\n\
-           %a@[  %a@]) %a (%a)@\n"
+           @[  %a@]) %a (%a)@\n"
           pp_id i (pp_list ", " pp_id) is
-          (pp_do_if cond (fun fmt c ->
-               let an = Option.get t in
-               Format.fprintf fmt "let %a : %a = get_%a (_s, %a) in  @\n"
-                 pp_id i
-                 pp_id an
-                 pp_id an
-                 pp_id i)) c
           f b
           f c
           (pp_list ", " pp_id) is
@@ -1024,20 +1033,9 @@ let pp_model fmt (model : model) =
   in
 
   let pp_storage_item fmt (si : storage_item) =
-    match si with
-    | { asset = Some an; _} ->
-      let _, t = Utils.get_asset_key model an in
-      Format.fprintf fmt "%s_keys: %a list;@\n%s_assets: (%a, %s) map;"
-        (unloc an)
-        pp_btyp t
-        (unloc an)
-        pp_btyp t
-        (unloc an)
-
-    | _ ->
-      Format.fprintf fmt "%a : %a;"
-        pp_id si.name
-        pp_type si.typ
+    Format.fprintf fmt "%a : %a;"
+      pp_id si.name
+      pp_type si.typ
   in
 
   let pp_storage fmt (s : storage) =
@@ -1047,19 +1045,9 @@ let pp_model fmt (model : model) =
 
   let pp_init_function fmt (s : storage) =
     let pp_storage_item fmt (si : storage_item) =
-      match si with
-      | { asset = Some an; _} ->
-        let _, t = Utils.get_asset_key model an in
-        Format.fprintf fmt "%s_keys = [];@\n%s_assets = (Map : (%a, %s) map);"
-          (unloc an)
-          (unloc an)
-          pp_btyp t
-          (unloc an)
-
-      | _ ->
-        Format.fprintf fmt "%a = %a;"
-          pp_id si.name
-          (pp_cast Rhs si.typ si.default.type_ pp_mterm) si.default
+      Format.fprintf fmt "%a = %a;"
+        pp_id si.name
+        (pp_cast Rhs si.typ si.default.type_ pp_mterm) si.default
     in
 
     Format.fprintf fmt "let%%init initialize = {@\n@[<v 2>  %a@]@\n}@\n"

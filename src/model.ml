@@ -1022,8 +1022,44 @@ let map_gen_mterm g f (i : 'id mterm_gen) : 'id mterm_gen =
     i with
     node = g f i.node
   }
-let map_term f t =
+
+let map_mterm f t =
   map_gen_mterm map_term_node f t
+
+type ctx_model = {
+  formula: bool;
+  fs : function_struct option;
+}
+
+let mk_ctx_model ?(formula = false) ?fs () : ctx_model =
+  { formula; fs }
+
+let map_mterm_model_exec (f : ctx_model -> mterm -> mterm) (model : model) : model =
+  let map_function_struct (fs : function_struct) : function_struct =
+    let ctx = mk_ctx_model () ~fs:fs in
+    let body = f ctx fs.body in
+    { fs with body = body }
+  in
+  let map_function (fun_ : function__) : function__ = (
+    let node = match fun_.node with
+      | Function (fs, ret) -> Function (map_function_struct fs, ret)
+      | Entry fs -> Entry (map_function_struct fs)
+    in
+    { fun_ with node = node}
+  ) in
+
+  let functions = List.map map_function model.functions in
+  { model with
+    functions = functions;
+  }
+
+let map_mterm_model_formula (f : ctx_model -> mterm -> mterm) (model : model) : model =
+  model
+
+let map_mterm_model (f : ctx_model -> mterm -> mterm) (model : model) : model =
+  model
+  |> map_mterm_model_exec f
+  |> map_mterm_model_formula f
 
 let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_gen) : 'a =
   match term.node with
@@ -1592,14 +1628,10 @@ let fold_map_term
   | Manyaction ->
     g (Manyaction), accu
 
-type ctx_model = {
-  formula: bool;
-}
-
 let fold_model (f : ctx_model -> 'a -> 'id mterm_gen -> 'a) (m : 'id model_gen) (accu : 'a) : 'a =
 
-  let cif  : ctx_model = {formula = true}  in
-  let cof  : ctx_model = {formula = false} in
+  let cif  : ctx_model = mk_ctx_model () ~formula:true  in
+  let cof  : ctx_model = mk_ctx_model () ~formula:false in
 
   let fold_left g l accu = List.fold_left (fun accu x -> g x accu) accu l in
 
@@ -1658,7 +1690,7 @@ let fold_model (f : ctx_model -> 'a -> 'id mterm_gen -> 'a) (m : 'id model_gen) 
     let accu : 'a = (
       match a.node with
       | Function (fs, _)
-      | Entry fs -> fold_term (f cof) accu fs.body
+      | Entry fs -> fold_term (f {cof with fs = Some fs}) accu fs.body
     ) in
     Option.map_dfl (fun (x : 'id verification_gen) -> fold_verification f x accu) accu a.verif
   ) in
@@ -1668,6 +1700,16 @@ let fold_model (f : ctx_model -> 'a -> 'id mterm_gen -> 'a) (m : 'id model_gen) 
   |> fold_verification f m.verification
 
 (* -------------------------------------------------------------------- *)
+
+let merge_seq (mt1 : mterm) (mt2 : mterm) : mterm =
+  match mt1.node, mt2.node with
+  | Mseq l1, Mseq l2 -> mk_mterm (Mseq (l1 @ l2)) mt2.type_
+  | _, Mseq l -> mk_mterm (Mseq ([mt1] @ l)) mt2.type_
+  | Mseq l, _ -> mk_mterm (Mseq (l @ [mt2])) mt2.type_
+  | _ -> mk_mterm (Mseq [mt1; mt2]) mt2.type_
+
+(* -------------------------------------------------------------------- *)
+
 module Utils : sig
 
   val function_name_from_storage_const   : storage_const   -> string

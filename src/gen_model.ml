@@ -725,7 +725,7 @@ let to_model (ast : A.model) : M.model =
     let rec aux (mt : M.mterm) : M.mterm =
       match mt.node with
       | M.Mvarlocal id when is_arg id -> {mt with node = M.Mvarparam id}
-      | _ -> M.map_term aux mt
+      | _ -> M.map_mterm aux mt
     in
     aux mt
   in
