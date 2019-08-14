@@ -707,11 +707,11 @@ let pp_api_items fmt l =
       (pp_list "@\n" pp_api_item) l
 
 let pp_info_var fmt (iv : info_var) =
-  Format.fprintf fmt "%s %a %a := %a@\n"
+  Format.fprintf fmt "%s %a %a%a@\n"
     (if iv.constant then "constant" else "variable")
     pp_ident iv.name
     pp_type iv.type_
-    pp_mterm iv.init
+    (pp_option (pp_prefix " := " pp_mterm)) iv.init
 
 let pp_info_enum fmt (ie : info_enum) =
   Format.fprintf fmt "enum %a:@\n  @[%a@]@\n"

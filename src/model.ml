@@ -300,7 +300,7 @@ type info_var = {
   name: ident;
   type_ : type_;
   constant: bool;
-  init: mterm;
+  init: mterm option;
 }
 [@@deriving show {with_path = false}]
 
@@ -622,8 +622,8 @@ let mk_assert ?(invariants = []) name label formula =
 let mk_verification ?(predicates = []) ?(definitions = []) ?(axioms = []) ?(theorems = []) ?(variables = []) ?(invariants = []) ?(effects = []) ?(specs = []) ?(asserts = []) ?(loc = Location.dummy) () =
   { predicates; definitions; axioms; theorems; variables; invariants; effects; specs; asserts; loc}
 
-let mk_info_var ?(constant = false) name type_ init : info_var =
-  { name; type_; constant; init }
+let mk_info_var ?(constant = false) ?init name type_ : info_var =
+  { name; type_; constant; init}
 
 let mk_info_enum ?(values = []) name : info_enum =
   { name; values }

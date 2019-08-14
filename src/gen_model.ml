@@ -567,6 +567,17 @@ let to_model (ast : A.model) : M.model =
     }
   in
 
+  let process_info_vars list =
+    let process_var (v : (A.lident, A.ptyp, A.pterm) A.variable) : M.info_item =
+      let decl = v.decl in
+      let name = unloc decl.name in
+      let type_ = ptyp_to_type (Option.get decl.typ) in
+      let init = Option.map to_mterm decl.default in
+      let var = M.mk_info_var name type_ ?init:init ~constant:v.constant in
+      M.Ivar var
+    in
+    list @ List.map (fun x -> process_var x) ast.variables in
+
   let process_enums list =
     let process_enum (e : A.enum) : M.decl_node =
       let values = List.map (fun (x : (A.lident, A.type_, A.pterm) A.enum_item_struct) ->
@@ -922,6 +933,7 @@ let to_model (ast : A.model) : M.model =
 
   let info =
     []
+    |> process_info_vars
     |> process_info_enums
     |> process_info_records
     |> process_info_contracts
