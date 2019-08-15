@@ -15,10 +15,10 @@ type owner = {
 
 type storage = {
   admin : address;
-  mile_keys: string list;
-  mile_assets: (string, mile) map;
-  owner_keys: key_hash list;
-  owner_assets: (key_hash, owner) map;
+  mile_keys : string list;
+  mile_assets : (string, mile) map;
+  owner_keys : key_hash list;
+  owner_assets : (key_hash, owner) map;
 }
 
 let%init initialize = {
@@ -41,8 +41,7 @@ let remove_list elt l =
   ) [] l
 
 
-(* API function *)
-let[@inline] get_mile (s, key : storage * string) : mile =
+(* API function *)let[@inline] get_mile (s, key : storage * string) : mile =
   match Map.find key s.mile_assets with
   | Some v -> v
   | _ -> failwith "not_found"
@@ -59,18 +58,21 @@ let[@inline] remove_mile (s, key : storage * string) : storage =
   let s = s.mile_keys <- remove_list key s.mile_keys in
   s.mile_assets <- Map.update key None s.mile_assets
 
-let[@inline] select_mile (s, c, p : storage * string list * (mile -> bool)) : mile list =
+let[@inline] select_mile (s, c, p : storage * string list * (mile -> bool)) : string list =
   List.fold (fun (x, accu) ->
   let a = get_mile (s, x) in
   if p a
-  then add_list a accu
+  then add_list a.id accu
   else accu
   ) c []
 
-let[@inline] sum_mile_amount (s : storage) : int =
-  Map.fold (fun (x, accu) ->
-  accu + x.(1).amount
-  ) s.mile_assets 0
+let[@inline] sum_mile_amount (s, c : storage * string list) : int =
+  List.fold (fun (k, accu) ->
+    let x = get_mile (s, k) in
+    accu + x.amount
+  ) c 0
+
+
 
 let[@inline] get_owner (s, key : storage * key_hash) : owner =
   match Map.find key s.owner_assets with
@@ -96,7 +98,6 @@ let[@inline] contains_owner ((l, key) : key_hash list * key_hash) : bool =
   ) l false
 
 
-
 let add_shallow_owner (_s, owner, owner_miles : storage * owner * mile list) : storage =
   let _s : storage = add_owner (_s, owner) in
   List.fold (fun (mile, (_s)) ->
@@ -106,9 +107,8 @@ let add_shallow_owner (_s, owner, owner_miles : storage * owner * mile list) : s
 let%entry add (ow, newmile : key_hash * mile) (_s : storage) : operation list * storage =
   let _ops : operation list = [] in
   let _s : storage =
-  if not (Current.sender() = _s.admin)
-  then Current.failwith "not_authorized_fun";
-  if not (Current.amount() = 0tz) then Current.failwith "not_accept_transfer";
+  if not (Current.sender() = _s.admin) then Current.failwith "invalid caller";
+  if not (Current.amount() = 0tz) then Current.failwith "no transfer";
   if not (newmile.amount > 0) then Current.failwith "require c1 failed";
   if contains_owner (_s.owner_keys, ow) then 
     add_owner_miles (_s, get_owner (_s, ow), newmile) 
@@ -119,47 +119,48 @@ let%entry add (ow, newmile : key_hash * mile) (_s : storage) : operation list * 
 let%entry consume (a, quantity : key_hash * int) (_s : storage) : operation list * storage =
   let _ops : operation list = [] in
   let (_s, remainder) : storage * int =
-  if not (Current.sender() = _s.admin)
-  then Current.failwith "not_authorized_fun";
-  if not (Current.amount() = 0tz) then Current.failwith "not_accept_transfer";
+  if not (Current.sender() = _s.admin) then Current.failwith "invalid caller";
+  if not (Current.amount() = 0tz) then Current.failwith "no transfer";
   let ow : owner = get_owner (_s, a) in
-  let by_expiration : mile list = select_mile (_s, ow.miles, fun the -> the.expiration > Current.time()) in
-  if not (sum_mile_amount (_s) >= quantity) then Current.failwith "required";
+  let by_expiration : string list = select_mile (_s, ow.miles, fun the -> the.expiration > Current.time()) in
+  if not (sum_mile_amount (_s, by_expiration) >= quantity)
+  then Current.failwith "require failed";
   let remainder : int = quantity in
   List.fold (fun (m, (_s, remainder)) ->
-    if remainder > 0 then 
-      if m.amount > remainder then 
+    let m : mile = get_mile (_s, m) in
+  if remainder > 0 then 
+    if m.amount > remainder then 
+      let remainder : int = 0 in
+      let _s : storage = let _k : string = m.id in
+      let _mile : mile = get_mile (_s, _k) in
+      let _mile : mile = { id = _mile.id; amount = _mile.amount - remainder; expiration = _mile.expiration } in
+      set_mile (_s, _k, _mile) in
+      (_s, remainder) 
+    else 
+      if m.amount = remainder then 
         let remainder : int = 0 in
-        let _s : storage = let _k = m.id in
-        let _mile : mile = get_mile (_s, _k) in
-        let _mile : mile = { id = _mile.id; amount = _mile.amount - remainder; expiration = _mile.expiration } in
-        set_mile (_s, _k, _mile) in
+        let _s : storage = remove_owner_miles (_s, ow, m.id) in
         (_s, remainder) 
       else 
-        if m.amount = remainder then 
-          let remainder : int = 0 in
-          let _s : storage = remove_owner_miles (_s, ow, m.id) in
-          (_s, remainder) 
-        else 
-          let remainder : int = remainder - m.amount in
-          let _s : storage = remove_owner_miles (_s, ow, m.id) in
-          (_s, remainder)   
-    else 
-      (_s, remainder) ) by_expiration (_s, remainder)
+        let remainder : int = remainder - m.amount in
+        let _s : storage = remove_owner_miles (_s, ow, m.id) in
+        (_s, remainder)   
+  else 
+    (_s, remainder) ) by_expiration (_s, remainder)
   in
   (_ops, _s)
 
 let%entry clear_expired () (_s : storage) : operation list * storage =
   let _ops : operation list = [] in
   let _s : storage =
-  if not (Current.sender() = _s.admin)
-  then Current.failwith "not_authorized_fun";
-  if not (Current.amount() = 0tz) then Current.failwith "not_accept_transfer";
+  if not (Current.sender() = _s.admin) then Current.failwith "invalid caller";
+  if not (Current.amount() = 0tz) then Current.failwith "no transfer";
   List.fold (fun (o, (_s)) ->
-  let o : owner = get_owner (_s, o) in  
-    let _assets : mile list = select_mile (_s, o.miles, fun the -> the.expiration < Current.time()) in
+    let o : owner = get_owner (_s, o) in
+  let _assets : string list = select_mile (_s, o.miles, fun the -> the.expiration < Current.time()) in
   List.fold (fun (_mile, (_s)) ->
-    remove_mile (_s, _mile.id)) _assets (_s)
+    let _mile : mile = get_mile (_s, _mile) in
+  remove_mile (_s, _mile.id)) _assets (_s)
   ) _s.owner_keys (_s)
   in
   (_ops, _s)
