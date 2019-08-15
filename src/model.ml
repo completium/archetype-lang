@@ -1036,13 +1036,14 @@ type 'id ctx_model_gen = {
   fs : 'id function_struct_gen option;
   label: 'id option;
   spec_id : 'id option;
+  assert_id : 'id option;
   invariant_id : 'id option;
 }
 
 type ctx_model = lident ctx_model_gen
 
-let mk_ctx_model ?(formula = false) ?fs ?label ?spec_id ?invariant_id () : 'id ctx_model_gen =
-  { formula; fs; label; spec_id; invariant_id }
+let mk_ctx_model ?(formula = false) ?fs ?label ?spec_id ?assert_id ?invariant_id () : 'id ctx_model_gen =
+  { formula; fs; label; spec_id; assert_id; invariant_id }
 
 let map_mterm_model_exec (f : ctx_model -> mterm -> mterm) (model : model) : model =
   let map_function_struct (fs : function_struct) : function_struct =
@@ -1771,7 +1772,7 @@ let fold_model (f : 'id ctx_model_gen -> 'a -> 'id mterm_gen -> 'a) (m : 'id mod
     in
 
     let fold_assert (ctx : 'id ctx_model_gen) (f : 'id ctx_model_gen -> 'a -> 'id mterm_gen -> 'a) (assert_ : 'id assert_gen) (accu : 'a) : 'a =
-      let ctx = { ctx with spec_id = Some assert_.name} in
+      let ctx = { ctx with assert_id = Some assert_.name} in
       accu
       |> (fun x -> f ctx accu assert_.formula)
       |> (fun x -> List.fold_left (fun accu (x : 'id invariant_gen) -> fold_invariant ctx f x accu) x assert_.invariants)
