@@ -622,6 +622,15 @@ let pp_model fmt (model : model) =
         in
         pp fmt (an, c, i)
 
+      | Mmem (an, c, i) ->
+        let pp fmt (an, c, i) =
+          Format.fprintf fmt "mem_%a (%a, %a)"
+            pp_str an
+            f c
+            f i
+        in
+        pp fmt (an, c, i)
+
       | Mnth (an, c, i) ->
         let pp fmt (an, c, i) =
           Format.fprintf fmt "nth_%a (%a, %a)"

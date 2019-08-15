@@ -23,6 +23,34 @@ let emit_error (desc : error_desc) =
   let str = Format.asprintf "%a@." pp_error_desc desc in
   raise (Anomaly str)
 
+let rec type_to_coll t : M.mterm =
+  match t with
+  | M.Tasset i -> M.mk_mterm (M.Mvarstorecol i) (M.Tcontainer (M.Tasset i,M.Collection))
+  | M.Tcontainer (Tasset i,Collection) -> M.mk_mterm (M.Mvarstorecol i) t
+  | M.Tvset (VSadded, typ) ->
+    let coll = type_to_coll typ in
+    M.mk_mterm (Msetadded coll) coll.M.type_
+  | M.Tvset (VSremoved, typ) ->
+    let coll = type_to_coll typ in
+    M.mk_mterm (Msetremoved coll) coll.M.type_
+  | _ -> assert false
+
+let rec reduce_forall (t : M.mterm) : M.mterm =
+  match t.node with
+  | M.Mforall (i,typ,b) ->
+    let coll = type_to_coll typ in
+    let asset = M.Utils.get_asset_type coll in
+    M.mk_mterm (M.Mforall (i,
+                           M.Tasset asset,
+                           M.mk_mterm (M.Mimply (
+                               M.mk_mterm (M.Mmem (unloc asset,
+                                                   M.mk_mterm (M.Mvarlocal i) (M.Tasset asset),
+                                                   coll))
+                                 M.Tunit,
+                               b)
+                             ) t.M.type_)) t.M.type_
+    | _ -> M.map_mterm reduce_forall t
+
 let to_model (ast : A.model) : M.model =
 
   let to_container c =
@@ -71,9 +99,11 @@ let to_model (ast : A.model) : M.model =
 
   let rec ltyp_to_type t : M.type_ =
     match t with
-    | A.LTprog t      -> ptyp_to_type t
-    | A.LTvset (v, t) -> ltyp_to_type t
-    | A.LTtrace tr    -> M.Ttrace (to_trtyp tr)
+    | A.LTprog t              -> ptyp_to_type t
+    | A.LTvset (VSremoved, t) -> M.Tvset (M.VSremoved, ltyp_to_type t)
+    | A.LTvset (VSadded, t)   -> M.Tvset (M.VSadded, ltyp_to_type t)
+    | A.LTvset (_, t)         -> ltyp_to_type t
+    | A.LTtrace tr            -> M.Ttrace (to_trtyp tr)
   in
 
   let to_assignment_operator = function
@@ -596,15 +626,17 @@ let to_model (ast : A.model) : M.model =
   in
 
   let to_invariant (i : (A.lident, A.ptyp) A.invariant) :M.invariant  =
-    M.mk_invariant i.label ~formulas:(List.map lterm_to_mterm i.formulas)
+    M.mk_invariant i.label ~formulas:(List.map lterm_to_mterm i.formulas |> List.map reduce_forall)
   in
 
   let to_spec (s : (A.lident, A.type_) A.specification) : M.specification  =
-    M.mk_specification s.name (lterm_to_mterm s.formula) ~invariants:(List.map to_invariant s.invariants)
+    M.mk_specification s.name (lterm_to_mterm s.formula |> reduce_forall)
+      ~invariants:(List.map to_invariant s.invariants)
   in
 
   let to_assert (a : (A.lident, A.type_) A.assert_) : M.assert_  =
-    M.mk_assert a.name a.label (lterm_to_mterm a.formula) ~invariants:(List.map to_invariant a.invariants)
+    M.mk_assert a.name a.label (lterm_to_mterm a.formula |> reduce_forall)
+      ~invariants:(List.map to_invariant a.invariants)
   in
 
   let to_verification (v : (A.lident, A.ptyp, A.pterm) A.verification) : M.verification =
