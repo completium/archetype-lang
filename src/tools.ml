@@ -165,6 +165,7 @@ module List : sig
   val assoc_all     : 'a -> ('a * 'b) list -> 'b list
   val index_of      : ('a -> bool) -> 'a list -> int
   val dedup         : 'a list -> 'a list
+  val last          : 'a list -> 'a
 
   module Exn : sig
     val assoc : 'a -> ('a * 'b) list -> 'b option
@@ -271,6 +272,11 @@ end = struct
         dedup tl
       else e::(dedup tl)
     | [] -> []
+
+  let rec last = function
+    | [] -> raise Not_found
+    | [e] -> e
+    | _::t -> last t
 
   module Exn = struct
     let assoc x xs =

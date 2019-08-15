@@ -2173,8 +2173,8 @@ end = struct
 
   let get_formulas m acc (i : ident) : (lident option * mterm) list =
     let internal_get (ctx : ctx_model) (acc : (lident option * mterm) list) t =
-      match ctx.invariant_id with
-      | Some v when cmp_ident i (unloc v) -> acc @ [ctx.spec_id,t]
+      match ctx.spec_id, ctx.invariant_id with
+      | Some _, Some v when cmp_ident i (unloc v) -> acc @ [ctx.spec_id,t]
       | _ -> acc in
     fold_model internal_get m acc
 

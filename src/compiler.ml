@@ -61,6 +61,7 @@ let shallow_asset        = Gen_shallow_asset.shallow_asset
 let split_key_values     = Gen_split_key_values.split_key_values
 let remove_side_effect   = Gen_reduce.reduce
 let generate_api_storage = Gen_api_storage.generate_api_storage
+let exec_process model   = model |> Gen_transform.remove_label |> Gen_transform.flat_sequence
 
 let output_liquidity model =
   if !Options.opt_raw
@@ -116,6 +117,7 @@ let generate_target model =
   | Liquidity
   | LiquidityUrl ->
     model
+    |> exec_process
     |> shallow_asset
     |> split_key_values
     |> remove_side_effect
@@ -127,6 +129,7 @@ let generate_target model =
 
   | Ligo ->
     model
+    |> exec_process
     |> shallow_asset
     |> remove_side_effect
     |> generate_api_storage
@@ -134,12 +137,14 @@ let generate_target model =
 
   | SmartPy ->
     model
+    |> exec_process
     |> shallow_asset
     |> generate_api_storage
     |> output_smartpy
 
   | Ocaml ->
     model
+    |> exec_process
     |> shallow_asset
     |> remove_side_effect
     |> generate_api_storage
