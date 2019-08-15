@@ -1064,6 +1064,7 @@ let map_mterm_model_exec (f : ctx_model -> mterm -> mterm) (model : model) : mod
 let map_mterm_model_formula (f : ctx_model -> mterm -> mterm) (model : model) : model =
   let map_verification (ctx : ctx_model) (f : ctx_model -> mterm -> mterm) (v : verification) : verification = (
     let map_label_term (f : ctx_model -> mterm -> mterm) (lt : label_term) : label_term =
+      let ctx = { ctx with label = lt.label } in
       { lt with
         term = f ctx lt.term }
     in
