@@ -945,7 +945,8 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
           Format.printf "%a@\n" M.pp_mterm formula;
           Tassert (map_mterm m ctx formula)
         | _ -> assert false
-        end
+      end
+    | M.Mand (l,r)-> Tand (map_mterm m ctx r,map_mterm m ctx r)
     | _ -> Tnone in
   mk_loc mt.loc t
 and mk_invariants (m : M.model) ctx (lbl : ident option) invs =

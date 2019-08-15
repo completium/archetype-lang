@@ -119,6 +119,8 @@ type ('e,'t,'i) abstract_term =
   | Tforall of (('t,'i) abstract_univ_decl list) * 'e
   | Tresult
   | Timpl   of 'e * 'e
+  | Tand    of 'e * 'e
+  | Tor    of 'e * 'e
   | Told    of 'e
   | Tat     of 'e
   | Tunion  of 'i * 'e * 'e
@@ -329,6 +331,8 @@ and map_abstract_term
   | Taddr s            -> Taddr s
   | Tforall (l,e)      -> Tforall (List.map (map_abstract_univ_decl map_t map_i) l, map_e e)
   | Timpl (e1,e2)      -> Timpl (map_e e1, map_e e2)
+  | Tor (e1,e2)        -> Tor (map_e e1, map_e e2)
+  | Tand (e1,e2)       -> Tand (map_e e1, map_e e2)
   | Told e             -> Told (map_e e)
   | Tat e              -> Tat (map_e e)
   | Tunion (i,e1,e2)     -> Tunion (map_i i, map_e e1, map_e e2)
@@ -667,6 +671,8 @@ let compare_abstract_term
       List.for_all2 cmpi i1 i2 && cmpt t1 t2
     ) l1 l2 && cmpe e1 e2
   | Timpl (e1,e2), Timpl (f1,f2) -> cmpe e1 f1 && cmpe e2 f2
+  | Tor (e1,e2), Tor (f1,f2) -> cmpe e1 f1 && cmpe e2 f2
+  | Tand (e1,e2), Tand (f1,f2) -> cmpe e1 f1 && cmpe e2 f2
   | Told e1, Told e2 -> cmpe e1 e2
   | Tat e1, Tat e2 -> cmpe e1 e2
   | Tunion (i1,e1,e2), Tunion (i2,f1,f2) -> cmpi i1 i2 && cmpe e1 f1 && cmpe e2 f2
