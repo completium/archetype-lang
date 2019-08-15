@@ -940,8 +940,10 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
                                     [map_mterm m ctx a])
     | M.Mlabel lbl ->
       begin
-        match M.Utils.get_assert m (Some (M.mk_mterm M.Mnone M.Tunit)) (unloc lbl) with
-        | Some formula -> Tassert (map_mterm m ctx formula)
+        match M.Utils.get_formula m None (unloc lbl) with
+        | Some formula ->
+          Format.printf "%a@\n" M.pp_mterm formula;
+          Tassert (map_mterm m ctx formula)
         | _ -> assert false
         end
     | _ -> Tnone in

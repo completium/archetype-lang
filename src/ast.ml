@@ -1387,8 +1387,8 @@ let create_miles_with_expiration_ast () =
 
       mk_transaction_struct (dumloc "consume")
         ?verification: (Some (mk_verification ()
-                                ~asserts:[
-                                  mk_assert (dumloc "p1") (dumloc "zero_remainder")
+                                ~specs:[
+                                  mk_specification (dumloc "zero_remainder")
                                     (mk_sp (Pcomp (Equal,
                                                    (mk_sp (Pvar (dumloc "remainder"))
                                                       ~type_:(LTprog (Tbuiltin VTint))),
@@ -1424,10 +1424,7 @@ let create_miles_with_expiration_ast () =
                                                                ~type_:(LTprog (Tbuiltin VTbool)))))
                                              ~type_:(LTprog (Tbuiltin VTbool)))
                                         ]
-                                    ]
-                                ]
-
-                                ~specs:[
+                                    ];
                                   mk_specification (dumloc "p2")
                                     (mk_sp (Pcomp (Equal,
                                                    (mk_sp (Pcall (Some (mk_sp ~type_:(LTprog (Tasset (dumloc "mile"))) (Pvar (dumloc "mile"))),
