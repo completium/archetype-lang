@@ -1854,7 +1854,8 @@ module Utils : sig
   val dest_varlocal                      : mterm -> lident
   val is_container                       : type_ -> bool
   val get_key_pos                        : model -> lident -> int
-  val get_formulas                       : model -> (lident option * mterm) list -> ident -> (lident option * mterm) list
+  val get_invariants                     : model -> (lident * mterm) list -> ident -> (lident * mterm) list
+  val get_assert                         : model -> mterm option -> ident -> mterm option
 
 end = struct
 
@@ -2171,10 +2172,23 @@ end = struct
           acc
       ) (-1)
 
-  let get_formulas m acc (i : ident) : (lident option * mterm) list =
-    let internal_get (ctx : ctx_model) (acc : (lident option * mterm) list) t =
-      match ctx.spec_id, ctx.invariant_id with
-      | Some _, Some v when cmp_ident i (unloc v) -> acc @ [ctx.spec_id,t]
+  let get_invariants m acc (i : ident) : (lident * mterm) list =
+    let internal_get (ctx : ctx_model) (acc : (lident * mterm) list) t =
+      match ctx.invariant_id with
+      | Some v when cmp_ident i (unloc v) ->
+        begin
+          match ctx.assert_id, ctx.spec_id with
+          | None, Some l -> acc @ [l,t]
+          | Some l, None -> acc @ [l,t]
+          | _ -> acc
+        end
+      | _ -> acc in
+    fold_model internal_get m acc
+
+  let get_assert m acc (i : ident) : mterm option =
+    let internal_get (ctx : ctx_model) (acc : mterm option) t =
+      match ctx.assert_id with
+      | Some v when cmp_ident i (unloc v) -> Some t
       | _ -> acc in
     fold_model internal_get m acc
 

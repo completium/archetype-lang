@@ -867,7 +867,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | M.Mseq l -> Tseq (List.map (map_mterm m ctx) l)
     | M.Mfor (id,c,b,lbl) ->
       let (nth,card) = get_for_fun c.type_ in
-      let invariants = Option.fold (M.Utils.get_formulas m) [] lbl |> mk_invariants m ctx lbl in
+      let invariants = Option.fold (M.Utils.get_invariants m) [] lbl |> mk_invariants m ctx lbl in
       Tfor (with_dummy_loc "i",
             with_dummy_loc (
               Tminus (with_dummy_loc Tyunit,card (map_mterm m ctx c |> unloc_term),
@@ -938,13 +938,19 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | M.Mimply (a,b) -> Timpl (map_mterm m ctx a, map_mterm m ctx b)
     | M.Mremoveasset (n,a) -> Tapp (loc_term (Tvar ("remove_"^n)),
                                     [map_mterm m ctx a])
+    | M.Mlabel lbl ->
+      begin
+        match M.Utils.get_assert m (Some (M.mk_mterm M.Mnone M.Tunit)) (unloc lbl) with
+        | Some formula -> Tassert (map_mterm m ctx formula)
+        | _ -> assert false
+        end
     | _ -> Tnone in
   mk_loc mt.loc t
 and mk_invariants (m : M.model) ctx (lbl : ident option) invs =
-  List.map (fun ((ilbl : M.lident option),(i : M.mterm)) ->
+  List.map (fun ((ilbl : M.lident),(i : M.mterm)) ->
         let iid =
           match lbl,ilbl with
-          | Some a, Some b -> (unloc b) ^ "_" ^ a
+          | Some a, b -> (unloc b) ^ "_" ^ a
           | _ -> "toto" in
       { id =  with_dummy_loc iid; form = map_mterm m ctx i }
     ) invs
