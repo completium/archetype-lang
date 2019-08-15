@@ -58,6 +58,25 @@ let split_key_values (model : model) : model =
       let init = f ctx init in
       let body = f ctx body in
       { x with node = Mletin (ids, init, Some (init.type_), body); type_ = body.type_}
+
+    | Mdotasset (e, i) ->
+      let asset = Utils.get_asset_type e in
+      let partitions = Utils.get_asset_partitions model (asset |> unloc) in
+      if List.exists (fun (pi, pt, pd) ->
+          compare (i |> unloc) pi = 0) partitions then
+        let rec get_partition_type = function
+          | (pi,pt,pd)::tl
+            when compare (i |> unloc) pi = 0 -> pt
+          | r::tl -> get_partition_type tl
+          | [] -> assert false in
+        let ty = get_partition_type partitions in
+        let pa = Utils.dest_partition ty |> unloc in
+        mk_mterm (Mshallow (pa, { x with node = Mdotasset (f ctx e, i) })) ty
+      else
+        { x with node = Mdotasset (f ctx e, i) }
+
+
+
     | Mvarstorecol an ->
       (
         let k, t = Utils.get_asset_key model an in
