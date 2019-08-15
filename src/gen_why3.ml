@@ -867,6 +867,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | M.Mseq l -> Tseq (List.map (map_mterm m ctx) l)
     | M.Mfor (id,c,b,lbl) ->
       let (nth,card) = get_for_fun c.type_ in
+      (*let invariants = Option.fold (M.Utils.get_formulas m) [] lbl |> mk_invariants in*)
       Tfor (with_dummy_loc "i",
             with_dummy_loc (
               Tminus (with_dummy_loc Tyunit,card (map_mterm m ctx c |> unloc_term),

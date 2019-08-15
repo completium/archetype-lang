@@ -1845,6 +1845,7 @@ module Utils : sig
   val dest_varlocal                      : mterm -> lident
   val is_container                       : type_ -> bool
   val get_key_pos                        : model -> lident -> int
+  val get_formulas                       : model -> mterm list -> lident -> mterm list
 
 end = struct
 
@@ -2160,5 +2161,12 @@ end = struct
         else
           acc
       ) (-1)
+
+  let get_formulas m acc (i : lident) : mterm list =
+    let internal_get (ctx : ctx_model) (acc : mterm list) t =
+      match ctx.label with
+      | Some v when cmp_lident i v -> acc @ [t]
+      | _ -> acc in
+    fold_model internal_get m acc
 
 end
