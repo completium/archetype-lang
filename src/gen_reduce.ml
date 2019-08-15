@@ -268,7 +268,7 @@ and process_mtern (ctx : ctx_red) (s : s_red) (mt : mterm) : mterm * s_red =
         process_non_empty_list_term ctx s l
     end
 
-  | Mfor (a, col, body) ->
+  | Mfor (a, col, body, _) ->
     let col, s = process_mtern ctx s col in
     let subs : (ident * type_) list = compute_side_effect ctx body in
     let is = [storage_lident] @ (List.map (fun (x, y) -> dumloc x) subs) in

@@ -347,9 +347,9 @@ let mk_unshallow asset keyt = Dfun {
     variants = [];
     requires = [];
     ensures  = [
-(*      { id   = asset^"_unshallow_1";
-        form =
-        }*)];
+      (*      { id   = asset^"_unshallow_1";
+              form =
+              }*)];
     body     = Tunshallow (asset,
                            mk_ac asset,
                            Tvar "l")
@@ -865,7 +865,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
       Tapp (loc_term (Tvar id),argids @ [map_mterm m ctx l])
     | M.Mnow -> Tnow (with_dummy_loc gs)
     | M.Mseq l -> Tseq (List.map (map_mterm m ctx) l)
-    | M.Mfor (id,c,b) ->
+    | M.Mfor (id,c,b,lbl) ->
       let (nth,card) = get_for_fun c.type_ in
       Tfor (with_dummy_loc "i",
             with_dummy_loc (
@@ -916,13 +916,13 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | M.Mplus (l,r)  -> Tplus  (with_dummy_loc Tyint, map_mterm m ctx l, map_mterm m ctx r)
     | M.Mvarstorecol n ->
       let coll =
-          match ctx.old, ctx.lmod with
-          | false, Nomod   -> mk_ac (n |> unloc)
-          | false, Added   -> mk_ac_added (n |> unloc)
-          | false, Removed -> mk_ac_rmed (n |> unloc)
-          | true, Nomod    -> mk_ac_old (n |> unloc)
-          | true, Added    -> mk_ac_old_added (n |> unloc)
-          | true, Removed  -> mk_ac_old_rmed (n |> unloc)
+        match ctx.old, ctx.lmod with
+        | false, Nomod   -> mk_ac (n |> unloc)
+        | false, Added   -> mk_ac_added (n |> unloc)
+        | false, Removed -> mk_ac_rmed (n |> unloc)
+        | true, Nomod    -> mk_ac_old (n |> unloc)
+        | true, Added    -> mk_ac_old_added (n |> unloc)
+        | true, Removed  -> mk_ac_old_rmed (n |> unloc)
       in
       loc_term coll |> Mlwtree.deloc
     | M.Msetbefore c -> map_mterm m { ctx with old = true } c |> Mlwtree.deloc
@@ -1015,9 +1015,9 @@ let flatten_if_fail m (t : M.mterm) : loc_term =
 
 let mk_requires m acc (v : M.verification) =
   acc @ (List.map (fun (spec : M.specification) -> {
-      id = spec.name |> map_lident;
-      form = map_mterm m init_ctx spec.formula
-    }) v.specs)
+        id = spec.name |> map_lident;
+        form = map_mterm m init_ctx spec.formula
+      }) v.specs)
 
 let mk_functions m =
   M.Utils.get_functions m |> List.map (

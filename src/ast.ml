@@ -1659,6 +1659,7 @@ let create_miles_with_expiration_ast () =
                              ~type_:(Tbuiltin VTint)),
                           mk_instr
                             ~subvars:["remainder"]
+                            ~label:"loop"
                             (Ifor (dumloc "m",
                                    mk_sp (Pvar (dumloc "by_expiration"))
                                      ~type_:(Tcontainer (Tasset (dumloc "mile"), Collection)),

@@ -82,7 +82,7 @@ let split_key_values (model : model) : model =
         let k, t = Utils.get_asset_key model an in
         { x with node = Mvarstorecol (lident_asset_keys an); type_ = Tcontainer (Tbuiltin t, Collection) }
       )
-    | Mfor (id, col, body) ->
+    | Mfor (id, col, body, lbl) ->
 
       let is_argument_plain_asset_collection (col : mterm) =
         let id =
@@ -120,7 +120,7 @@ let split_key_values (model : model) : model =
           let body = mk_mterm (Mletin ([id], get, Some (Tasset an), body)) (body.type_) in
           body
       in
-      { x with node =  Mfor (id, col, body) }
+      { x with node =  Mfor (id, col, body, lbl) }
     | _ -> map_mterm (f ctx) x
   in
 

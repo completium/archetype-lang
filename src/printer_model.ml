@@ -543,8 +543,9 @@ let pp_mterm fmt (mt : mterm) =
       Format.fprintf fmt "(%a : %a)"
         f k
         f v
-    | Mfor (i, c, b) ->
-      Format.fprintf fmt "for (%a in %a) (@\n  @[%a@]@\n)@\n"
+    | Mfor (i, c, b, l) ->
+      Format.fprintf fmt "%afor (%a in %a) (@\n  @[%a@]@\n)@\n"
+        (pp_option (pp_postfix " : " pp_str)) l
         pp_id i
         f c
         f b

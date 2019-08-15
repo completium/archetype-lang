@@ -838,7 +838,7 @@ let pp_model fmt (model : model) =
         Format.fprintf fmt "(%a : %a)"
           f k
           f v
-      | Mfor (i, c, b) ->
+      | Mfor (i, c, b, _) ->
         Format.fprintf fmt "sp.for %a in %a:@\n\t@[<v 4>%a@]@\n"
           pp_id i
           f c

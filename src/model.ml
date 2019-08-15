@@ -185,7 +185,7 @@ type ('id, 'term) mterm_node  =
   | Mdotcontract  of 'term * 'id
   | Mtuple        of 'term list
   | Massoc        of 'term * 'term
-  | Mfor          of ('id * 'term * 'term)
+  | Mfor          of ('id * 'term * 'term * ident option)
   | Mfold         of ('id * 'id list * 'term * 'term) (* ident list * collection * body *)
   | Mseq          of 'term list
   | Massign       of (assignment_operator * 'id * 'term)
@@ -829,7 +829,7 @@ let cmp_mterm_node
     | Mdotasset (e1, i1), Mdotasset (e2, i2)                                           -> cmp e1 e2 && cmpi i1 i2
     | Mdotcontract (e1, i1), Mdotcontract (e2, i2)                                     -> cmp e1 e2 && cmpi i1 i2
     | Mtuple l1, Mtuple l2                                                             -> List.for_all2 cmp l1 l2
-    | Mfor (i1, c1, b1), Mfor (i2, c2, b2)                                             -> cmpi i1 i2 && cmp c1 c2 && cmp b1 b2
+    | Mfor (i1, c1, b1, lbl1), Mfor (i2, c2, b2, lbl2)                                 -> cmpi i1 i2 && cmp c1 c2 && cmp b1 b2 && Option.cmp cmp_ident lbl1 lbl2
     | Mfold (i1, is1, c1, b1), Mfold (i2, is2, c2, b2)                                 -> cmpi i1 i2 && List.for_all2 cmpi is1 is2 && cmp c1 c2 && cmp b1 b2
     | Mseq is1, Mseq is2                                                               -> List.for_all2 cmp is1 is2
     | Massign (op1, l1, r1), Massign (op2, l2, r2)                                     -> cmp_assign_op op1 op2 && cmpi l1 l2 && cmp r1 r2
@@ -998,7 +998,7 @@ let map_term_node (f : 'id mterm_gen -> 'id mterm_gen) = function
   | Mdotcontract (e, i)          -> Mdotcontract (f e, i)
   | Mtuple l                     -> Mtuple (List.map f l)
   | Massoc (k, v)                -> Massoc (f k, f v)
-  | Mfor (i, c, b)               -> Mfor (i, f c, f b)
+  | Mfor (i, c, b, lbl)          -> Mfor (i, f c, f b, lbl)
   | Mfold (i, is, c, b)          -> Mfold (i, is, f c, f b)
   | Mseq is                      -> Mseq (List.map f is)
   | Massign (op, l, r)           -> Massign (op, l, f r)
@@ -1057,7 +1057,87 @@ let map_mterm_model_exec (f : ctx_model -> mterm -> mterm) (model : model) : mod
   }
 
 let map_mterm_model_formula (f : ctx_model -> mterm -> mterm) (model : model) : model =
-  model
+  let map_verification (ctx : ctx_model) (f : ctx_model -> mterm -> mterm) (v : verification) : verification = (
+    let map_label_term (f : ctx_model -> mterm -> mterm) (lt : label_term) : label_term =
+      { lt with
+        term = f ctx lt.term }
+    in
+
+    let map_predicate (f : ctx_model -> mterm -> mterm) (p : predicate) : predicate =
+      { p with
+        args = List.map (fun (x, y) -> (x, f ctx y)) p.args;
+        body = f ctx p.body;
+      }
+    in
+
+    let map_definition (f : ctx_model -> mterm -> mterm) (d : definition) : definition =
+      { d with
+        body = f ctx d.body
+      }
+    in
+
+    let map_invariantt (f : ctx_model -> mterm -> mterm) ((it_id, it_lt) : 'id * 'id label_term_gen list) : 'id * 'id label_term_gen list =
+      (it_id, List.map (map_label_term f) it_lt)
+    in
+
+    let map_invariant (f : ctx_model -> mterm -> mterm) (spec : invariant) : invariant =
+      { spec with
+        formulas = List.map (f ctx) spec.formulas;
+      }
+    in
+
+    let map_specification (f : ctx_model -> mterm -> mterm) (spec : specification) : specification =
+      { spec with
+        formula = f ctx spec.formula;
+        invariants = List.map (map_invariant f) spec.invariants;
+      }
+    in
+
+    let map_variable (f : ctx_model -> mterm -> mterm) (spec : variable) : variable =
+      spec
+    in
+
+    let map_assert (f : ctx_model -> mterm -> mterm) (assert_ : assert_) : assert_ =
+      { assert_ with
+        formula = f ctx assert_.formula;
+        invariants = List.map (map_invariant f) assert_.invariants;
+      }
+    in
+
+
+    { v with
+      predicates = List.map (map_predicate f) v.predicates;
+      definitions = List.map (map_definition f) v.definitions;
+      axioms = List.map (map_label_term f) v.axioms;
+      theorems = List.map (map_label_term f) v.theorems;
+      variables = List.map (map_variable f) v.variables;
+      invariants = List.map (map_invariantt f) v.invariants;
+      effects = List.map (f ctx) v.effects;
+      specs = List.map (map_specification f) v.specs;
+      asserts = List.map (map_assert f) v.asserts;
+    }
+  ) in
+
+  let ctx : ctx_model = mk_ctx_model () ~formula:true in
+
+  let map_function (f : ctx_model -> mterm -> mterm) (fun_ : function__) : function__ =
+    let fs : function_struct =
+      match fun_.node with
+      | Function (fs, _) -> fs
+      | Entry fs -> fs
+    in
+    let ctx = { ctx with fs = Some fs } in
+    { fun_ with
+      verif = Option.map (map_verification ctx f) fun_.verif;
+    }
+  in
+
+
+  { model with
+    functions = List.map (map_function f) model.functions;
+    verification = map_verification ctx f model.verification
+  }
+
 
 let map_mterm_model (f : ctx_model -> mterm -> mterm) (model : model) : model =
   model
@@ -1157,7 +1237,7 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Msome v                               -> f accu v
   | Mtuple l                              -> List.fold_left f accu l
   | Massoc (k, v)                         -> f (f accu k) v
-  | Mfor (i, c, b)                        -> f (f accu c) b
+  | Mfor (i, c, b, lbl)                   -> f (f accu c) b
   | Mfold (i, is, c, b)                   -> f (f accu c) b
   | Mseq is                               -> List.fold_left f accu is
   | Massign (_, _, e)                     -> f accu e
@@ -1546,10 +1626,10 @@ let fold_map_term
     let ve, va = f ka v in
     g (Massoc (ke, ve)), va
 
-  | Mfor (i, c, b) ->
+  | Mfor (i, c, b, lbl) ->
     let ce, ca = f accu c in
     let bi, ba = f ca b in
-    g (Mfor (i, ce, bi)), ba
+    g (Mfor (i, ce, bi, lbl)), ba
 
   | Mfold (i, is, c, b) ->
     let ce, ca = f accu c in

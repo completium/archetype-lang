@@ -1,6 +1,7 @@
 open Location
 open Ident
 open Tools
+open Gen_transform
 
 module A = Ast
 module M = Model
@@ -22,34 +23,6 @@ type error_desc =
 let emit_error (desc : error_desc) =
   let str = Format.asprintf "%a@." pp_error_desc desc in
   raise (Anomaly str)
-
-let rec type_to_coll t : M.mterm =
-  match t with
-  | M.Tasset i -> M.mk_mterm (M.Mvarstorecol i) (M.Tcontainer (M.Tasset i,M.Collection))
-  | M.Tcontainer (Tasset i,Collection) -> M.mk_mterm (M.Mvarstorecol i) t
-  | M.Tvset (VSadded, typ) ->
-    let coll = type_to_coll typ in
-    M.mk_mterm (Msetadded coll) coll.M.type_
-  | M.Tvset (VSremoved, typ) ->
-    let coll = type_to_coll typ in
-    M.mk_mterm (Msetremoved coll) coll.M.type_
-  | _ -> assert false
-
-let rec reduce_forall (t : M.mterm) : M.mterm =
-  match t.node with
-  | M.Mforall (i,typ,b) ->
-    let coll = type_to_coll typ in
-    let asset = M.Utils.get_asset_type coll in
-    M.mk_mterm (M.Mforall (i,
-                           M.Tasset asset,
-                           M.mk_mterm (M.Mimply (
-                               M.mk_mterm (M.Mmem (unloc asset,
-                                                   M.mk_mterm (M.Mvarlocal i) (M.Tasset asset),
-                                                   coll))
-                                 M.Tunit,
-                               b)
-                             ) t.M.type_)) t.M.type_
-    | _ -> M.map_mterm reduce_forall t
 
 let to_model (ast : A.model) : M.model =
 
@@ -426,7 +399,7 @@ let to_model (ast : A.model) : M.model =
     (* let remove : M.mterm = M.mk_mterm (M.Mremoveasset (asset_str, asset_sortcol, asset_key)) Tunit in *)
     let remove : M.mterm = M.mk_mterm (M.Mremoveasset (asset_str, asset_key)) Tunit in
 
-    let for_ = M.mk_mterm (M.Mfor (assetv_str, assets_var, remove) ) Tunit in
+    let for_ = M.mk_mterm (M.Mfor (assetv_str, assets_var, remove, None) ) Tunit in
 
     let res : M.mterm__node = M.Mletin ([assets_var_name], select, Some type_assets, for_) in
     res
@@ -509,7 +482,7 @@ let to_model (ast : A.model) : M.model =
     |> process_info_contracts
   in
 
-  let to_instruction_node (n : (A.lident, A.ptyp, A.pterm, A.instruction) A.instruction_node) g f : ('id, 'instr) M.mterm_node =
+  let to_instruction_node (n : (A.lident, A.ptyp, A.pterm, A.instruction) A.instruction_node) lbl g f : ('id, 'instr) M.mterm_node =
     let is_empty_seq (instr : A.instruction) =
       match instr.node with
       | A.Iseq [] -> true
@@ -519,7 +492,7 @@ let to_model (ast : A.model) : M.model =
     match n with
     | A.Iif (c, t, e) when is_empty_seq e -> M.Mif (f c, g t, None)
     | A.Iif (c, t, e)           -> M.Mif (f c, g t, Some (g e))
-    | A.Ifor (i, col, body)     -> M.Mfor (i, f col, g body)
+    | A.Ifor (i, col, body)     -> M.Mfor (i, f col, g body, lbl)
     | A.Iletin (i, init, cont)  -> M.Mletin ([i], f init, Option.map ptyp_to_type init.type_, g cont) (* TODO *)
     | A.Iseq l                  -> M.Mseq (List.map g l)
     | A.Imatchwith (m, l)       -> M.Mmatchwith (f m, List.map (fun (p, i) -> (to_pattern p, g i)) l)
@@ -603,7 +576,7 @@ let to_model (ast : A.model) : M.model =
   in
 
   let rec to_instruction (instr : A.instruction) : M.mterm =
-    let node = to_instruction_node instr.node to_instruction to_mterm in
+    let node = to_instruction_node instr.node instr.label to_instruction to_mterm in
     M.mk_mterm node (M.Tunit) ~subvars:instr.subvars ~loc:instr.loc
   in
 
@@ -626,16 +599,16 @@ let to_model (ast : A.model) : M.model =
   in
 
   let to_invariant (i : (A.lident, A.ptyp) A.invariant) :M.invariant  =
-    M.mk_invariant i.label ~formulas:(List.map lterm_to_mterm i.formulas |> List.map reduce_forall)
+    M.mk_invariant i.label ~formulas:(List.map lterm_to_mterm i.formulas)
   in
 
   let to_spec (s : (A.lident, A.type_) A.specification) : M.specification  =
-    M.mk_specification s.name (lterm_to_mterm s.formula |> reduce_forall)
+    M.mk_specification s.name (lterm_to_mterm s.formula)
       ~invariants:(List.map to_invariant s.invariants)
   in
 
   let to_assert (a : (A.lident, A.type_) A.assert_) : M.assert_  =
-    M.mk_assert a.name a.label (lterm_to_mterm a.formula |> reduce_forall)
+    M.mk_assert a.name a.label (lterm_to_mterm a.formula)
       ~invariants:(List.map to_invariant a.invariants)
   in
 
@@ -966,3 +939,4 @@ let to_model (ast : A.model) : M.model =
   in
 
   M.mk_model ~info:info ~decls:decls ~functions:functions ~verification:verification storage name
+  |> reduce_forall

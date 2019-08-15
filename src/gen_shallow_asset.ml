@@ -198,7 +198,7 @@ let rec map_shallow (ctx : (I.ident * (M.lident * M.type_) list) list) m (t : M.
       let partitions = M.Utils.get_asset_partitions m (asset |> unloc) in
       begin
         if List.exists (fun (pi,pt,pd) ->
-          compare (i |> unloc) pi = 0) partitions then
+            compare (i |> unloc) pi = 0) partitions then
           let rec get_partition_type = function
             | (pi,pt,pd)::tl
               when compare (i |> unloc) pi = 0 -> pt
@@ -238,7 +238,8 @@ let rec gen_add_shallow_asset (arg : M.argument) : M.mterm =
     | id,Tcontainer (Tasset a,_),_ ->
       M.Mfor (a,
               M.mk_mterm (M.Mvarlocal id) (Tcontainer (Tasset a,Collection)),
-              gen_add_shallow_asset (a, Tasset a, None)
+              gen_add_shallow_asset (a, Tasset a, None),
+              None
              )
     | _,t,_ ->
       let str = Format.asprintf "%a@." M.pp_type_ t in
