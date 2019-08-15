@@ -1046,20 +1046,21 @@ let mk_ctx_model ?(formula = false) ?fs ?label ?spec_id ?assert_id ?invariant_id
   { formula; fs; label; spec_id; assert_id; invariant_id }
 
 let map_mterm_model_exec (f : ctx_model -> mterm -> mterm) (model : model) : model =
-  let map_function_struct (fs : function_struct) : function_struct =
-    let ctx = mk_ctx_model () ~fs:fs in
+  let map_function_struct (ctx : ctx_model) (fs : function_struct) : function_struct =
+    let ctx = { ctx with fs = Some fs } in
     let body = f ctx fs.body in
     { fs with body = body }
   in
-  let map_function (fun_ : function__) : function__ = (
+  let map_function (ctx : ctx_model) (fun_ : function__) : function__ = (
     let node = match fun_.node with
-      | Function (fs, ret) -> Function (map_function_struct fs, ret)
-      | Entry fs -> Entry (map_function_struct fs)
+      | Function (fs, ret) -> Function (map_function_struct ctx fs, ret)
+      | Entry fs -> Entry (map_function_struct ctx fs)
     in
     { fun_ with node = node}
   ) in
 
-  let functions = List.map map_function model.functions in
+  let ctx = mk_ctx_model () in
+  let functions = List.map (map_function ctx) model.functions in
   { model with
     functions = functions;
   }
@@ -1097,6 +1098,7 @@ let map_mterm_model_formula (f : ctx_model -> mterm -> mterm) (model : model) : 
     in
 
     let map_specification (f : ctx_model -> mterm -> mterm) (spec : specification) : specification =
+      let ctx = { ctx with spec_id = Some spec.name} in
       { spec with
         formula = f ctx spec.formula;
         invariants = List.map (map_invariant f) spec.invariants;
@@ -1108,13 +1110,14 @@ let map_mterm_model_formula (f : ctx_model -> mterm -> mterm) (model : model) : 
     in
 
     let map_assert (f : ctx_model -> mterm -> mterm) (assert_ : assert_) : assert_ =
+      let ctx = { ctx with assert_id = Some assert_.name} in
       { assert_ with
         formula = f ctx assert_.formula;
         invariants = List.map (map_invariant f) assert_.invariants;
       }
     in
 
-
+    let ctx = { ctx with formula = true} in
     { v with
       predicates = List.map (map_predicate f) v.predicates;
       definitions = List.map (map_definition f) v.definitions;
@@ -1128,7 +1131,7 @@ let map_mterm_model_formula (f : ctx_model -> mterm -> mterm) (model : model) : 
     }
   ) in
 
-  let ctx : ctx_model = mk_ctx_model () ~formula:true in
+  let ctx : ctx_model = mk_ctx_model () in
 
   let map_function (f : ctx_model -> mterm -> mterm) (fun_ : function__) : function__ =
     let fs : function_struct =
@@ -1141,7 +1144,6 @@ let map_mterm_model_formula (f : ctx_model -> mterm -> mterm) (model : model) : 
       verif = Option.map (map_verification ctx f) fun_.verif;
     }
   in
-
 
   { model with
     functions = List.map (map_function f) model.functions;
