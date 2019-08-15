@@ -36,7 +36,7 @@ action consume (a : address) (quantity : int) = {
 
   verification {
 
-    specification zero_remainder = {
+    specification p1 = {
       remainder = 0
     }
 
@@ -90,7 +90,7 @@ action consume (a : address) (quantity : int) = {
              ow.miles.remove m.id
            )
          );
-       label zero_remainder)
+       label p1)
      )
   }
 }
