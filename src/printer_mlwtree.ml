@@ -359,10 +359,10 @@ let rec pp_term outer pos fmt = function
       pp_fun s
       (pp_term outer pos) e
   | Tfor (i,s,l,b) ->
-    Format.fprintf fmt "for %a = 0 to %a do%a@\n  @[%a@]@\ndone"
+    Format.fprintf fmt "for %a = 0 to %a do@\n@[%a@]@\n  @[%a@]@\ndone"
       pp_str i
       (pp_term outer pos) s
-      (pp_invariants true) l
+      (pp_invariants false) l
       (pp_term outer pos) b
   | Ttry (b,e,c) ->
     Format.fprintf fmt "try@\n  @[%a@]@\nwith %a ->@\n  @[%a@]@\nend"
@@ -388,6 +388,10 @@ let rec pp_term outer pos fmt = function
       (pp_with_paren (pp_term outer pos)) e2
   | Tminus (_,e1,e2) ->
     Format.fprintf fmt "%a - %a"
+      (pp_with_paren (pp_term outer pos)) e1
+      (pp_with_paren (pp_term outer pos)) e2
+  | Tplus (_,e1,e2) ->
+    Format.fprintf fmt "%a + %a"
       (pp_with_paren (pp_term outer pos)) e1
       (pp_with_paren (pp_term outer pos)) e2
   | Tnth (i,e1,e2) ->
@@ -453,7 +457,7 @@ and pp_invariants nl fmt invs =
   else
     (if nl then pp_str fmt "\n";
      Format.fprintf fmt "invariant {@\n %a @\n} "
-       (pp_list "@\n}@\n invariant {@\n " pp_formula) invs)
+       (pp_list "@\n}@\ninvariant {@\n " pp_formula) invs)
 and pp_ensures fmt ensures =
   if List.length ensures = 0
   then pp_str fmt ""

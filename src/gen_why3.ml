@@ -867,13 +867,13 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | M.Mseq l -> Tseq (List.map (map_mterm m ctx) l)
     | M.Mfor (id,c,b,lbl) ->
       let (nth,card) = get_for_fun c.type_ in
-      (*let invariants = Option.fold (M.Utils.get_formulas m) [] lbl |> mk_invariants in*)
+      let invariants = Option.fold (M.Utils.get_formulas m) [] lbl |> mk_invariants m ctx lbl in
       Tfor (with_dummy_loc "i",
             with_dummy_loc (
               Tminus (with_dummy_loc Tyunit,card (map_mterm m ctx c |> unloc_term),
                       (loc_term (Tint Big_int.unit_big_int)))
             ),
-            [],
+            invariants,
             with_dummy_loc (
               Tletin (false,
                       map_lident id,
@@ -940,6 +940,14 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
                                     [map_mterm m ctx a])
     | _ -> Tnone in
   mk_loc mt.loc t
+and mk_invariants (m : M.model) ctx (lbl : ident option) invs =
+  List.map (fun ((ilbl : M.lident option),(i : M.mterm)) ->
+        let iid =
+          match lbl,ilbl with
+          | Some a, Some b -> (unloc b) ^ "_" ^ a
+          | _ -> "toto" in
+      { id =  with_dummy_loc iid; form = map_mterm m ctx i }
+    ) invs
 
 let mk_storage_api (m : M.model) records =
   m.api_items |> List.fold_left (fun acc (sc : M.api_item) ->
