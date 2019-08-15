@@ -1760,6 +1760,7 @@ let fold_model (f : 'id ctx_model_gen -> 'a -> 'id mterm_gen -> 'a) (m : 'id mod
     in
 
     let fold_specification (ctx : 'id ctx_model_gen) (f : 'id ctx_model_gen -> 'a -> 'id mterm_gen -> 'a) (spec : 'id specification_gen) (accu : 'a) : 'a =
+      let ctx = { ctx with spec_id = Some spec.name} in
       accu
       |> (fun x -> f ctx x spec.formula)
       |> (fun x -> List.fold_left (fun accu (x : 'id invariant_gen) -> fold_invariant ctx f x accu) x spec.invariants)
