@@ -972,6 +972,7 @@ let pp_model fmt (model : model) =
       | Mreturn x ->
         Format.fprintf fmt "return %a"
           f x
+      | Mlabel i -> ()
       | Mshallow (i, x) ->
         Format.fprintf fmt "shallow_%a %a"
           pp_str i

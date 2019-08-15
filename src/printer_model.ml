@@ -582,6 +582,9 @@ let pp_mterm fmt (mt : mterm) =
     | Mreturn x ->
       Format.fprintf fmt "return %a"
         f x
+    | Mlabel i ->
+      Format.fprintf fmt "label %a"
+        pp_id i
     | Mshallow (i, x) ->
       Format.fprintf fmt "shallow_%a %a"
         pp_str i
