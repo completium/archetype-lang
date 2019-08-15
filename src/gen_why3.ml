@@ -941,9 +941,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | M.Mlabel lbl ->
       begin
         match M.Utils.get_formula m None (unloc lbl) with
-        | Some formula ->
-          Format.printf "%a@\n" M.pp_mterm formula;
-          Tassert (map_mterm m ctx formula)
+        | Some formula -> Tassert (map_mterm m ctx formula)
         | _ -> assert false
       end
     | M.Mand (l,r)-> Tand (map_mterm m ctx r,map_mterm m ctx r)
