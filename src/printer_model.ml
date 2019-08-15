@@ -843,9 +843,8 @@ let pp_assert_ fmt (s : assert_) =
 
 let pp_verification fmt (v : verification) =
   Format.fprintf fmt "verification {@\n\
-                      @[<v 2>  %a%a@]@\n}@\n@\n@\n"
+                      @[<v 2>  %a@]@\n}@\n@\n@\n"
     (pp_list "@\n" pp_specification) v.specs
-    (pp_list "@\n" pp_assert_) v.asserts
 
 let pp_argument fmt ((id, t, dv) : argument) =
   Format.fprintf fmt "%a %a%a"

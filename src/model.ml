@@ -551,7 +551,6 @@ type 'id verification_gen = {
   invariants  : ('id * 'id label_term_gen list) list;
   effects     : 'id mterm_gen list;
   specs       : 'id specification_gen list;
-  asserts     : 'id assert_gen list;
   loc         : Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]
@@ -622,7 +621,7 @@ let mk_assert ?(invariants = []) name label formula =
   { name; label; formula; invariants }
 
 let mk_verification ?(predicates = []) ?(definitions = []) ?(axioms = []) ?(theorems = []) ?(variables = []) ?(invariants = []) ?(effects = []) ?(specs = []) ?(asserts = []) ?(loc = Location.dummy) () =
-  { predicates; definitions; axioms; theorems; variables; invariants; effects; specs; asserts; loc}
+  { predicates; definitions; axioms; theorems; variables; invariants; effects; specs; loc}
 
 let mk_info_var ?(constant = false) ?init name type_ : info_var =
   { name; type_; constant; init}
@@ -1036,14 +1035,13 @@ type 'id ctx_model_gen = {
   fs : 'id function_struct_gen option;
   label: 'id option;
   spec_id : 'id option;
-  assert_id : 'id option;
   invariant_id : 'id option;
 }
 
 type ctx_model = lident ctx_model_gen
 
-let mk_ctx_model ?(formula = false) ?fs ?label ?spec_id ?assert_id ?invariant_id () : 'id ctx_model_gen =
-  { formula; fs; label; spec_id; assert_id; invariant_id }
+let mk_ctx_model ?(formula = false) ?fs ?label ?spec_id ?invariant_id () : 'id ctx_model_gen =
+  { formula; fs; label; spec_id; invariant_id }
 
 let map_mterm_model_exec (f : ctx_model -> mterm -> mterm) (model : model) : model =
   let map_function_struct (ctx : ctx_model) (fs : function_struct) : function_struct =
@@ -1109,14 +1107,6 @@ let map_mterm_model_formula (f : ctx_model -> mterm -> mterm) (model : model) : 
       spec
     in
 
-    let map_assert (f : ctx_model -> mterm -> mterm) (assert_ : assert_) : assert_ =
-      let ctx = { ctx with assert_id = Some assert_.name} in
-      { assert_ with
-        formula = f ctx assert_.formula;
-        invariants = List.map (map_invariant f) assert_.invariants;
-      }
-    in
-
     let ctx = { ctx with formula = true} in
     { v with
       predicates = List.map (map_predicate f) v.predicates;
@@ -1127,7 +1117,6 @@ let map_mterm_model_formula (f : ctx_model -> mterm -> mterm) (model : model) : 
       invariants = List.map (map_invariantt f) v.invariants;
       effects = List.map (f ctx) v.effects;
       specs = List.map (map_specification f) v.specs;
-      asserts = List.map (map_assert f) v.asserts;
     }
   ) in
 
@@ -1773,13 +1762,6 @@ let fold_model (f : 'id ctx_model_gen -> 'a -> 'id mterm_gen -> 'a) (m : 'id mod
       accu
     in
 
-    let fold_assert (ctx : 'id ctx_model_gen) (f : 'id ctx_model_gen -> 'a -> 'id mterm_gen -> 'a) (assert_ : 'id assert_gen) (accu : 'a) : 'a =
-      let ctx = { ctx with assert_id = Some assert_.name} in
-      accu
-      |> (fun x -> f ctx accu assert_.formula)
-      |> (fun x -> List.fold_left (fun accu (x : 'id invariant_gen) -> fold_invariant ctx f x accu) x assert_.invariants)
-    in
-
     let ctx = { ctx with formula = true } in
 
     accu
@@ -1791,7 +1773,6 @@ let fold_model (f : 'id ctx_model_gen -> 'a -> 'id mterm_gen -> 'a) (m : 'id mod
     |> fold_left (fold_invariantt ctx f) v.invariants
     |> (fun x -> List.fold_left (fun accu x -> f ctx accu x) x v.effects)
     |> fold_left (fold_specification ctx f) v.specs
-    |> fold_left (fold_assert ctx f) v.asserts
   ) in
 
   let fold_action (ctx : 'id ctx_model_gen) (f : 'id ctx_model_gen -> 'a -> 'id mterm_gen -> 'a) (a : 'id function__gen) (accu : 'a) : 'a = (

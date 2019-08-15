@@ -608,11 +608,6 @@ let to_model (ast : A.model) : M.model =
       ~invariants:(List.map to_invariant s.invariants)
   in
 
-  let to_assert (a : (A.lident, A.type_) A.assert_) : M.assert_  =
-    M.mk_assert a.name a.label (lterm_to_mterm a.formula)
-      ~invariants:(List.map to_invariant a.invariants)
-  in
-
   let to_verification (v : (A.lident, A.ptyp, A.pterm) A.verification) : M.verification =
     let predicates  = List.map to_predicate   v.predicates  in
     let definitions = List.map to_definition  v.definitions in
@@ -622,7 +617,6 @@ let to_model (ast : A.model) : M.model =
     let invariants  = List.map (fun (a, l) -> (a, List.map (fun x -> to_label_lterm x) l)) v.invariants in
     let effects     = Option.map_dfl (fun x -> [to_mterm x]) [] v.effect in
     let specs       = List.map to_spec        v.specs       in
-    let asserts     = List.map to_assert      v.asserts     in
     M.mk_verification
       ~predicates:predicates
       ~definitions:definitions
@@ -632,7 +626,6 @@ let to_model (ast : A.model) : M.model =
       ~invariants:invariants
       ~effects:effects
       ~specs:specs
-      ~asserts:asserts
       ~loc:v.loc ()
   in
 
@@ -647,7 +640,6 @@ let to_model (ast : A.model) : M.model =
       invariants  = verif.invariants @ v.invariants;
       effects     = verif.effects @ v.effects;
       specs       = verif.specs @ v.specs;
-      asserts     = verif.asserts @ v.asserts;
       loc         = Location.merge verif.loc v.loc;
     }
   in
