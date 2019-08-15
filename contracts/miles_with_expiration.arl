@@ -36,7 +36,7 @@ action consume (a : address) (quantity : int) = {
 
   verification {
 
-    assert p1 at zero_remainder = {
+    specification zero_remainder = {
       remainder = 0
     }
 
