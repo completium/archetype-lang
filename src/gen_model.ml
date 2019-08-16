@@ -224,8 +224,8 @@ let to_model (ast : A.model) : M.model =
         in
         M.Msum (asset_name, Location.dumloc "amount", fp) (* TODO : replace it by the right value*)
 
-      | A.Pcall (Some c, A.Cconst (A.Cselect), [AExpr p])
-      | A.Pcall (None, A.Cconst (A.Cselect), [AExpr c; AExpr p]) ->
+      | A.Pcall (Some c, A.Cconst (A.Cselect), [AFun (pi, pt, p)])
+      | A.Pcall (None, A.Cconst (A.Cselect), [AExpr c; AFun (pi, pt, p)]) ->
         let fc = f c in
         let fp = f p in
         let asset_name =
@@ -248,7 +248,13 @@ let to_model (ast : A.model) : M.model =
         M.MsecMayBePerformedByAction (f l, f r)
 
       | A.Pcall (aux, A.Cconst c, args) ->
-        Format.eprintf "expr const unkown: %a with nb args: %d %s@." A.pp_const c (List.length args) (match aux with | Some _ -> "with aux" | _ -> "without aux");
+        Format.eprintf "expr const unkown: %a with nb args: %d [%a] %s@."
+          A.pp_const c
+          (List.length args)
+          (Printer_tools.pp_list "; " (fun fmt x ->
+               let str = match x with | A.AExpr _ -> "AExpr" | A.AEffect _ -> "AEffect" | A.AFun _ -> "AFun" in
+               Printer_tools.pp_str fmt str)) args
+          (match aux with | Some _ -> "with aux" | _ -> "without aux");
         assert false
 
       | A.PsecurityActionRole _ ->
@@ -898,10 +904,7 @@ let to_model (ast : A.model) : M.model =
 
     let list  = list |> cont process_function ast.functions in
     let name  = transaction.name in
-    let args, body =
-      if String.equal (unloc transaction.name) "consume"
-      then [], (M.mk_mterm (M.Mseq []) M.Tunit)
-      else process_body_args () in
+    let args, body = process_body_args () in
     let body =
       body
       |> process_requires
