@@ -165,8 +165,13 @@ let compile (filename, channel) =
 let close dispose channel =
   if dispose then close_in channel
 
+let set_margin i =
+  Format.pp_set_margin Format.std_formatter i;
+  Format.pp_set_margin Format.err_formatter i
+
 (* -------------------------------------------------------------------- *)
 let main () =
+  set_margin 300;
   let f = function
     | "liquidity"     -> Options.target := Liquidity
     | "liquidity_url" -> Options.target := LiquidityUrl
