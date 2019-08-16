@@ -1429,7 +1429,7 @@ let create_miles_with_expiration_ast () =
                                 ~specs:[
                                   mk_specification (dumloc "p2")
                                     (mk_sp (Pcomp (Equal,
-                                                   (mk_sp (Pcall (Some (mk_sp ~type_:((Tasset (dumloc "mile"))) (Pvar (dumloc "mile"))),
+                                                   (mk_sp (Pcall (Some (mk_sp ~type_:(Tcontainer (Tasset (dumloc "mile"),Collection)) (Pvar (dumloc "mile"))),
                                                                   Cconst Csum,
                                                                   [
                                                                     AExpr (mk_sp (Pvar (dumloc "amount"))
@@ -1462,12 +1462,12 @@ let create_miles_with_expiration_ast () =
                                       mk_invariant (dumloc "loop")
                                         ~formulas:[
                                           (mk_sp (Pcall (None,
-                                                         Cid (dumloc "subset"),
+                                                         Cconst Csubset,
                                                          [
                                                            AExpr (mk_sp (Pcall (None,
                                                                                 Cconst Cremoved,
                                                                                 [
-                                                                                  AExpr (mk_sp (Pvar (dumloc "miles"))
+                                                                                  AExpr (mk_sp (Pvar (dumloc "mile"))
                                                                                            ~type_:((Tcontainer (Tasset (dumloc "mile"), Collection))))
                                                                                 ]))
                                                                     ~type_:((Tcontainer (Tasset (dumloc "mile"), Collection))));
@@ -1475,7 +1475,7 @@ let create_miles_with_expiration_ast () =
                                                                                 Cconst Cselect,
                                                                                 [
                                                                                   AExpr (mk_sp (Pdot (mk_sp
-                                                                                                        (Pvar (dumloc "o"))
+                                                                                                        (Pvar (dumloc "ow"))
                                                                                                         ~type_:((Tasset (dumloc "owner"))),
                                                                                                       dumloc "miles"))
                                                                                            ~type_:((Tcontainer (Tasset (dumloc "mile"), Collection))))
@@ -1567,10 +1567,10 @@ let create_miles_with_expiration_ast () =
 
                                   mk_specification (dumloc "p4")
                                     (mk_sp (Pcall (None,
-                                                   Cid (dumloc "is_empty"),
+                                                   Cconst Cisempty,
                                                    [
                                                      AExpr (mk_sp (Pcall (None,
-                                                                          Cid (dumloc "added"),
+                                                                          Cconst Cadded,
                                                                           [AExpr (mk_sp (Pvar (dumloc "mile"))
                                                                                     ~type_:((Tcontainer (Tasset (dumloc "mile"), Collection))))
                                                                           ]))
@@ -1582,10 +1582,10 @@ let create_miles_with_expiration_ast () =
                                       mk_invariant (dumloc "loop")
                                         ~formulas:[
                                           (mk_sp (Pcall (None,
-                                                         Cid (dumloc "is_empty"),
+                                                         Cconst Cisempty,
                                                          [
                                                            AExpr (mk_sp (Pcall (None,
-                                                                                Cid (dumloc "added"),
+                                                                                Cconst Cadded,
                                                                                 [AExpr (mk_sp (Pvar (dumloc "mile"))
                                                                                           ~type_:((Tcontainer (Tasset (dumloc "mile"), Collection))))
                                                                                 ]))

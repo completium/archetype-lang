@@ -128,6 +128,7 @@ type ('id, 'term) mterm_node  =
   | Msort         of ident * 'term * ident * sort_kind
   | Mcontains     of ident * 'term * 'term
   | Mmem          of ident * 'term * 'term
+  | Msubset       of ident * 'term * 'term
   | Mnth          of ident * 'term * 'term
   | Mcount        of ident * 'term
   | Msum          of ident * 'id * 'term
@@ -140,6 +141,7 @@ type ('id, 'term) mterm_node  =
   | Mor           of 'term * 'term
   | Mimply        of 'term * 'term
   | Mequiv        of 'term * 'term
+  | Misempty      of ident * 'term
   | Mnot          of 'term
   | Mequal        of 'term * 'term
   | Mnequal       of 'term * 'term
@@ -781,6 +783,7 @@ let cmp_mterm_node
     | Msort (an1, c1, fn1, k1), Msort (an2, c2, fn2, k2)                               -> cmp_ident an1 an2 && cmp c1 c2 && cmp_ident fn1 fn2 && k1 = k2
     | Mcontains (an1, c1, i1), Mcontains (an2, c2, i2)                                 -> cmp_ident an1 an2 && cmp c1 c2 && cmp i1 i2
     | Mmem (an1, c1, i1), Mmem (an2, c2, i2)                                           -> cmp_ident an1 an2 && cmp c1 c2 && cmp i1 i2
+    | Msubset (an1, c1, i1), Msubset (an2, c2, i2)                                     -> cmp_ident an1 an2 && cmp c1 c2 && cmp i1 i2
     | Mnth (an1, c1, i1), Mnth (an2, c2, i2)                                           -> cmp_ident an1 an2 && cmp c1 c2 && cmp i1 i2
     | Mcount (an1, c1), Mcount (an2, c2)                                               -> cmp_ident an1 an2 && cmp c1 c2
     | Msum (an1, fd1, c1), Msum (an2, fd2, c2)                                         -> cmp_ident an1 an2 && cmpi fd1 fd2 && cmp c1 c2
@@ -793,6 +796,7 @@ let cmp_mterm_node
     | Mor (l1, r1), Mor (l2, r2)                                                       -> cmp l1 l2 && cmp r1 r2
     | Mimply (l1, r1), Mimply (l2, r2)                                                 -> cmp l1 l2 && cmp r1 r2
     | Mequiv (l1, r1), Mequiv (l2, r2)                                                 -> cmp l1 l2 && cmp r1 r2
+    | Misempty (l1, r1), Misempty (l2, r2)                                             -> cmp_ident l1 l2 && cmp r1 r2
     | Mnot e1, Mnot e2                                                                 -> cmp e1 e2
     | Mequal (l1, r1), Mequal (l2, r2)                                                 -> cmp l1 l2 && cmp r1 r2
     | Mnequal (l1, r1), Mnequal (l2, r2)                                               -> cmp l1 l2 && cmp r1 r2
@@ -947,6 +951,7 @@ let map_term_node (f : 'id mterm_gen -> 'id mterm_gen) = function
   | Msort (an, c, fn, k)         -> Msort (an, f c, fn, k)
   | Mcontains (an, c, i)         -> Mcontains (an, f c, f i)
   | Mmem (an, c, i)              -> Mmem (an, f c, f i)
+  | Msubset (an, c, i)           -> Msubset (an, f c, f i)
   | Mnth (an, c, i)              -> Mnth (an, f c, f i)
   | Mcount (an, c)               -> Mcount (an, f c)
   | Msum (an, fd, c)             -> Msum (an, fd, f c)
@@ -959,6 +964,7 @@ let map_term_node (f : 'id mterm_gen -> 'id mterm_gen) = function
   | Mor (l, r)                   -> Mor (f l, f r)
   | Mimply (l, r)                -> Mimply (f l, f r)
   | Mequiv  (l, r)               -> Mequiv (f l, f r)
+  | Misempty (l, r)              -> Misempty (l, f r)
   | Mnot e                       -> Mnot (f e)
   | Mequal (l, r)                -> Mequal (f l, f r)
   | Mnequal (l, r)               -> Mnequal (f l, f r)
@@ -1187,6 +1193,7 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Msort (an, c, p, _)                   -> f accu c
   | Mcontains (an, c, i)                  -> f (f accu c) i
   | Mmem (an, c, i)                       -> f (f accu c) i
+  | Msubset (an, c, i)                    -> f (f accu c) i
   | Mnth      (an, c, i)                  -> f (f accu c) i
   | Mcount (an, c)                        -> f accu c
   | Msum (an, fd, c)                      -> f accu c
@@ -1199,6 +1206,7 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mor (l, r)                            -> f (f accu l) r
   | Mimply (l, r)                         -> f (f accu l) r
   | Mequiv  (l, r)                        -> f (f accu l) r
+  | Misempty  (l, r)                      -> f accu r
   | Mnot e                                -> f accu e
   | Mequal (l, r)                         -> f (f accu l) r
   | Mnequal (l, r)                        -> f (f accu l) r
@@ -1422,6 +1430,11 @@ let fold_map_term
     let ie, ia = f ca i in
     g (Mmem (an, ce, ie)), ia
 
+  | Msubset (an, c, i) ->
+    let ce, ca = f accu c in
+    let ie, ia = f ca i in
+    g (Msubset (an, ce, ie)), ia
+
   | Mnth (an, c, i) ->
     let ce, ca = f accu c in
     let ie, ia = f ca i in
@@ -1482,6 +1495,10 @@ let fold_map_term
     let le, la = f accu l in
     let re, ra = f la r in
     g (Mequiv (le, re)), ra
+
+  | Misempty  (l, r) ->
+    let re, ra = f accu r in
+    g (Misempty (l, re)), ra
 
   | Mnot e ->
     let ee, ea = f accu e in
@@ -2110,8 +2127,22 @@ end = struct
     with _ -> true
 
 
-  (* TODO *)
-  let map_verification_terms (m : mterm -> mterm) (v : verification) : verification = v
+  let map_invariant_terms (m : mterm -> mterm) (i : invariant) : invariant = {
+    i with
+    formulas = List.map m i.formulas
+  }
+
+  let map_specification_terms (m : mterm -> mterm) (s : specification) : specification = {
+    s with
+    formula = m s.formula;
+    invariants = List.map (map_invariant_terms m) s.invariants
+  }
+
+  let map_verification_terms (m : mterm -> mterm) (v : verification) : verification = {
+    v with
+    specs = List.map (map_specification_terms m) v.specs
+  }
+
 
   let map_function_terms (m : mterm -> mterm) (f : function__) : function__ = {
     node = begin

@@ -340,8 +340,8 @@ let mk_contains asset keyt = Dfun {
 
 let mk_unshallow asset keyt = Dfun {
     name     = "unshallow_"^asset;
-    logic    = NoMod;
-    args     = ["l",Tylist keyt];
+    logic    = Logic;
+    args     = ["c",Tycoll asset;"l",Tylist keyt];
     returns  = Tycoll asset;
     raises   = [];
     variants = [];
@@ -351,7 +351,7 @@ let mk_unshallow asset keyt = Dfun {
               form =
               }*)];
     body     = Tunshallow (asset,
-                           mk_ac asset,
+                           Tvar "c",
                            Tvar "l")
   }
 
@@ -837,7 +837,11 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | M.Mvarparam v     -> Tvar (map_lident v)
     | M.Mint v          -> Tint v
     | M.Mdotasset (e,i) -> Tdot (map_mterm m ctx e, mk_loc (loc i) (Tvar (map_lident i)))
-    | M.Munshallow (a,e) -> Tapp (loc_term (Tvar ("unshallow_"^a)),[map_mterm m ctx e])
+    | M.Munshallow (a,e) ->
+      Tapp (loc_term (Tvar ("unshallow_"^a)),
+            [map_mterm m ctx (M.mk_mterm (M.Mvarstorecol (dumloc a))
+                                (M.Tcontainer (Tasset (dumloc a),Collection)));
+             map_mterm m ctx e])
     | M.Mshallow (a,e) -> Tapp (loc_term (Tvar ("shallow_"^a)),[map_mterm m ctx e])
     | M.Mcontains (a,_,r) -> Tapp (loc_term (Tvar ("contains_"^a)),[map_mterm m ctx r])
     | M.Maddfield (a,f,c,i) -> Tapp (loc_term (Tvar ("add_"^a^"_"^f)),
@@ -945,6 +949,8 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
         | _ -> assert false
       end
     | M.Mand (l,r)-> Tand (map_mterm m ctx r,map_mterm m ctx r)
+    | M.Misempty (l,r) -> Tempty (with_dummy_loc l,map_mterm m ctx r)
+    | M.Msubset (n,l,r) -> Tsubset (with_dummy_loc n,map_mterm m ctx l,map_mterm m ctx r)
     | _ -> Tnone in
   mk_loc mt.loc t
 and mk_invariants (m : M.model) ctx (lbl : ident option) invs =

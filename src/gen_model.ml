@@ -194,6 +194,11 @@ let to_model (ast : A.model) : M.model =
       | A.Pcall (aux, A.Cid id, args) ->
         M.Mapp (id, List.map (fun x -> term_arg_to_expr f x) args)
 
+      | A.Pcall (_, A.Cconst A.Cisempty, [AExpr p]) ->
+        let fp = f p in
+        let asset_name = M.Utils.get_asset_type fp |> unloc in
+        M.Misempty (asset_name, fp)
+
       | A.Pcall (Some p, A.Cconst A.Cget, [AExpr q]) ->
         let fp = f p in
         let asset_name =
@@ -206,22 +211,19 @@ let to_model (ast : A.model) : M.model =
       | A.Pcall (Some p, A.Cconst (A.Ccontains), [AExpr q])
       | A.Pcall (None, A.Cconst (A.Ccontains), [AExpr p; AExpr q]) ->
         let fp = f p in
-        let asset_name =
-          match fp with
-          | {type_ = M.Tcontainer (M.Tasset asset_name, _); _} -> unloc asset_name
-          | _ -> "todo"
-        in
-        M.Mcontains (asset_name, f p, f q)
+        let asset_name = M.Utils.get_asset_type fp |> unloc in
+        M.Mcontains (asset_name, fp, f q)
 
       | A.Pcall (Some p, A.Cconst (A.Csum), [AExpr q])
       | A.Pcall (None, A.Cconst (A.Csum), [AExpr p; AExpr q]) ->
         let fp = f p in
-        let asset_name =
-          match fp with
-          | {type_ = M.Tcontainer (M.Tasset asset_name, _); _} -> unloc asset_name
-          | _ -> "todo"
-        in
+        let asset_name = M.Utils.get_asset_type fp |> unloc in
         M.Msum (asset_name, Location.dumloc "amount", fp) (* TODO : replace it by the right value*)
+
+      | A.Pcall (None, A.Cconst A.Csubset, [AExpr p; AExpr q]) ->
+        let fp =  f p in
+        let asset_name = M.Utils.get_asset_type fp |> unloc in
+        M.Msubset (asset_name, fp, f q)
 
       | A.Pcall (Some c, A.Cconst (A.Cselect), [AExpr p])
       | A.Pcall (None, A.Cconst (A.Cselect), [AExpr c; AExpr p]) ->

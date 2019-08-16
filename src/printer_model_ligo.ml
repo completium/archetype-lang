@@ -609,6 +609,15 @@ let pp_model fmt (model : model) =
         in
         pp fmt (an, c, i)
 
+      | Msubset (an, c, i) ->
+        let pp fmt (an, c, i) =
+          Format.fprintf fmt "subset_%a (%a, %a)"
+            pp_str an
+            f c
+            f i
+        in
+        pp fmt (an, c, i)
+
       | Mnth (an, c, i) ->
         let pp fmt (an, c, i) =
           Format.fprintf fmt "nth_%a (%a, %a)"
@@ -706,6 +715,14 @@ let pp_model fmt (model : model) =
         let pp fmt (l, r) =
           Format.fprintf fmt "%a <-> %a"
             f l
+            f r
+        in
+        pp fmt (l, r)
+
+      | Misempty  (l, r) ->
+        let pp fmt (l, r) =
+          Format.fprintf fmt "isempty_%a %a"
+            pp_str l
             f r
         in
         pp fmt (l, r)
