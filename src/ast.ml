@@ -1047,7 +1047,7 @@ end = struct
 end
 
 (* -------------------------------------------------------------------- *)
-(*
+
 let create_fake_ast () =
   mk_model (dumloc "fake")
     ~variables:[
@@ -1316,12 +1316,12 @@ let create_miles_with_expiration_ast () =
                    ~typ:(Tbuiltin VTdate); ]
         ~specs:[mk_label_term (mk_sp (Pcomp (Gt,
                                              (mk_sp (Pvar (dumloc "amount"))
-                                                ~type_:(LTprog (Tbuiltin VTint))
+                                                ~type_:((Tbuiltin VTint))
                                              ),
                                              (mk_sp (Plit (mk_sp (BVint Big_int.zero_big_int)))
-                                                ~type_:(LTprog (Tbuiltin VTint))
+                                                ~type_:((Tbuiltin VTint))
                                              )))
-                                 ~type_:(LTprog (Tbuiltin VTbool)))
+                                 ~type_:((Tbuiltin VTbool)))
                   ~label:(dumloc "m1")];
       mk_asset (dumloc "owner")
         ~key:(dumloc "addr")
@@ -1391,11 +1391,11 @@ let create_miles_with_expiration_ast () =
                                     (dumloc "p1")
                                     (mk_sp (Pcomp (Equal,
                                                    (mk_sp (Pvar (dumloc "remainder"))
-                                                      ~type_:(LTprog (Tbuiltin VTint))),
+                                                      ~type_:((Tbuiltin VTint))),
                                                    (mk_sp (Plit (mk_sp (BVint Big_int.zero_big_int)))
-                                                      ~type_:(LTprog (Tbuiltin VTint)))
+                                                      ~type_:((Tbuiltin VTint)))
                                                   ))
-                                       ~type_:(LTprog (Tbuiltin VTbool)))
+                                       ~type_:((Tbuiltin VTbool)))
 
                                     ~invariants:[
                                       mk_invariant (dumloc "loop")
@@ -1403,39 +1403,39 @@ let create_miles_with_expiration_ast () =
                                           (mk_sp (Plogical (And,
                                                             (mk_sp (Pcomp (Le,
                                                                            (mk_sp (Plit (mk_sp (BVint Big_int.zero_big_int)))
-                                                                              ~type_:(LTprog (Tbuiltin VTint))),
+                                                                              ~type_:((Tbuiltin VTint))),
                                                                            (mk_sp (Pvar (dumloc "remainder"))
-                                                                              ~type_:(LTprog (Tbuiltin VTint)))
+                                                                              ~type_:((Tbuiltin VTint)))
                                                                           ))
-                                                               ~type_:(LTprog (Tbuiltin VTbool))),
+                                                               ~type_:((Tbuiltin VTbool))),
                                                             (mk_sp (Pcomp (Le,
                                                                            (mk_sp (Pvar (dumloc "remainder"))
-                                                                              ~type_:(LTprog (Tbuiltin VTint))),
+                                                                              ~type_:((Tbuiltin VTint))),
                                                                            (mk_sp (Pcall (None,
                                                                                           Cconst Csum,
                                                                                           [
                                                                                             AExpr (mk_sp (Pvar (dumloc "to_iter"))
-                                                                                                     ~type_:(LTprog (Tasset (dumloc "mile"))));
+                                                                                                     ~type_:((Tasset (dumloc "mile"))));
                                                                                             AExpr (mk_sp (Pvar (dumloc "amount"))
-                                                                                                     ~type_:(LTprog (Tbuiltin VTint)))
+                                                                                                     ~type_:((Tbuiltin VTint)))
                                                                                           ]))
-                                                                              ~type_:(LTprog (Tbuiltin VTint)))
+                                                                              ~type_:((Tbuiltin VTint)))
                                                                           ))
-                                                               ~type_:(LTprog (Tbuiltin VTbool)))))
-                                             ~type_:(LTprog (Tbuiltin VTbool)))
+                                                               ~type_:((Tbuiltin VTbool)))))
+                                             ~type_:((Tbuiltin VTbool)))
                                         ]
                                     ]
                                 ]
                                 ~specs:[
                                   mk_specification (dumloc "p2")
                                     (mk_sp (Pcomp (Equal,
-                                                   (mk_sp (Pcall (Some (mk_sp ~type_:(LTprog (Tasset (dumloc "mile"))) (Pvar (dumloc "mile"))),
+                                                   (mk_sp (Pcall (Some (mk_sp ~type_:((Tasset (dumloc "mile"))) (Pvar (dumloc "mile"))),
                                                                   Cconst Csum,
                                                                   [
                                                                     AExpr (mk_sp (Pvar (dumloc "amount"))
-                                                                             ~type_:(LTprog (Tbuiltin VTint)))
+                                                                             ~type_:((Tbuiltin VTint)))
                                                                   ]))
-                                                      ~type_:(LTprog (Tbuiltin VTint))),
+                                                      ~type_:((Tbuiltin VTint))),
                                                    mk_sp (Parith (Minus,
                                                                   (mk_sp (Pcall (None,
                                                                                  Cconst Csum,
@@ -1444,19 +1444,19 @@ let create_miles_with_expiration_ast () =
                                                                                                         Cconst Cbefore,
                                                                                                         [
                                                                                                           AExpr (mk_sp (Pvar (dumloc "mile"))
-                                                                                                                   ~type_:(LTprog (Tcontainer (Tasset (dumloc "mile"), Collection))))
+                                                                                                                   ~type_:((Tcontainer (Tasset (dumloc "mile"), Collection))))
                                                                                                         ]))
-                                                                                            ~type_:(LTprog (Tcontainer (Tasset (dumloc "mile"), Collection))));
+                                                                                            ~type_:((Tcontainer (Tasset (dumloc "mile"), Collection))));
                                                                                    AExpr (mk_sp (Pvar (dumloc "amount"))
-                                                                                            ~type_:(LTprog (Tbuiltin VTint)))
+                                                                                            ~type_:((Tbuiltin VTint)))
                                                                                  ]))
-                                                                     ~type_:(LTprog (Tbuiltin VTint))),
+                                                                     ~type_:((Tbuiltin VTint))),
                                                                   (mk_sp (Pvar (dumloc "quantity"))
-                                                                     ~type_:(LTprog (Tbuiltin VTint)))
+                                                                     ~type_:((Tbuiltin VTint)))
                                                                  ))
-                                                     ~type_:(LTprog (Tbuiltin VTint))
+                                                     ~type_:((Tbuiltin VTint))
                                                   ))
-                                       ~type_:(LTprog (Tbuiltin VTbool)))
+                                       ~type_:((Tbuiltin VTbool)))
 
                                     ~invariants:[
                                       mk_invariant (dumloc "loop")
@@ -1468,36 +1468,36 @@ let create_miles_with_expiration_ast () =
                                                                                 Cconst Cremoved,
                                                                                 [
                                                                                   AExpr (mk_sp (Pvar (dumloc "miles"))
-                                                                                           ~type_:(LTprog (Tcontainer (Tasset (dumloc "mile"), Collection))))
+                                                                                           ~type_:((Tcontainer (Tasset (dumloc "mile"), Collection))))
                                                                                 ]))
-                                                                    ~type_:(LTprog (Tcontainer (Tasset (dumloc "mile"), Collection))));
+                                                                    ~type_:((Tcontainer (Tasset (dumloc "mile"), Collection))));
                                                            AExpr (mk_sp (Pcall (None,
                                                                                 Cconst Cselect,
                                                                                 [
                                                                                   AExpr (mk_sp (Pdot (mk_sp
                                                                                                         (Pvar (dumloc "o"))
-                                                                                                        ~type_:(LTprog (Tasset (dumloc "owner"))),
+                                                                                                        ~type_:((Tasset (dumloc "owner"))),
                                                                                                       dumloc "miles"))
-                                                                                           ~type_:(LTprog (Tcontainer (Tasset (dumloc "mile"), Collection))))
+                                                                                           ~type_:((Tcontainer (Tasset (dumloc "mile"), Collection))))
                                                                                   ;
                                                                                   AExpr (mk_sp (Pcomp (Ge,
                                                                                                        mk_sp (Pdot (
                                                                                                            mk_sp (Pvar (dumloc "the"))
-                                                                                                             ~type_:(LTprog (Tasset (dumloc "mile"))),
+                                                                                                             ~type_:((Tasset (dumloc "mile"))),
                                                                                                            dumloc "expiration"
                                                                                                          ))
-                                                                                                         ~type_:(LTprog (Tbuiltin VTdate)),
+                                                                                                         ~type_:((Tbuiltin VTdate)),
                                                                                                        mk_sp (Pconst Cnow)
-                                                                                                         ~type_:(LTprog (Tbuiltin VTdate))
+                                                                                                         ~type_:((Tbuiltin VTdate))
                                                                                                       ))
-                                                                                           ~type_:(LTprog (Tbuiltin VTbool))
+                                                                                           ~type_:((Tbuiltin VTbool))
                                                                                         )
                                                                                 ]
 
                                                                                ))
-                                                                    ~type_:(LTprog (Tcontainer (Tasset (dumloc "mile"), Collection))));
+                                                                    ~type_:((Tcontainer (Tasset (dumloc "mile"), Collection))));
                                                          ]))
-                                             ~type_:(LTprog (Tbuiltin VTbool)))
+                                             ~type_:((Tbuiltin VTbool)))
                                         ]
                                     ];
 
@@ -1505,20 +1505,20 @@ let create_miles_with_expiration_ast () =
 
                                   mk_specification (dumloc "p3")
                                     (mk_sp
-                                       (Lquantifer (Forall,
+                                       (Pquantifer (Forall,
                                                     dumloc "m",
-                                                    LTvset (VSremoved, LTprog (Tasset (dumloc "mile")) ),
+                                                    Tasset (dumloc "mile"),
                                                     (mk_sp (Pcomp (Ge,
                                                                    (mk_sp (Pdot (mk_sp (Pvar (dumloc "m"))
-                                                                                   ~type_:(LTprog (Tasset (dumloc "mile"))),
+                                                                                   ~type_:((Tasset (dumloc "mile"))),
                                                                                  (dumloc "expiration")))
-                                                                      ~type_:(LTprog (Tbuiltin VTdate))),
+                                                                      ~type_:((Tbuiltin VTdate))),
                                                                    (mk_sp (Pconst Cnow)
-                                                                      ~type_:(LTprog (Tbuiltin VTdate)))
+                                                                      ~type_:((Tbuiltin VTdate)))
                                                                   ))
-                                                       ~type_:(LTprog (Tbuiltin VTbool))
+                                                       ~type_:((Tbuiltin VTbool))
                                                     )))
-                                       ~type_:(LTprog (Tbuiltin VTbool)))
+                                       ~type_:((Tbuiltin VTbool)))
 
                                     ~invariants:[
                                       mk_invariant (dumloc "loop")
@@ -1531,14 +1531,14 @@ let create_miles_with_expiration_ast () =
                                                                                                Cconst Cbefore,
                                                                                                [
                                                                                                  AExpr (mk_sp (Pvar (dumloc "mile"))
-                                                                                                          ~type_:(LTprog (Tcontainer (Tasset (dumloc "mile"), Collection))))
+                                                                                                          ~type_:((Tcontainer (Tasset (dumloc "mile"), Collection))))
                                                                                                ]))
-                                                                                   ~type_:(LTprog (Tcontainer (Tasset (dumloc "mile"), Collection)))
+                                                                                   ~type_:((Tcontainer (Tasset (dumloc "mile"), Collection)))
                                                                                 );
                                                                           AExpr (mk_sp (Pvar (dumloc "amount"))
-                                                                                   ~type_:(LTprog (Tbuiltin VTint)))
+                                                                                   ~type_:((Tbuiltin VTint)))
                                                                         ]))
-                                                            ~type_:(LTprog (Tbuiltin VTint))),
+                                                            ~type_:((Tbuiltin VTint))),
 
                                                          mk_sp (Parith (Minus,
                                                                         mk_sp (Parith (Plus,
@@ -1546,21 +1546,21 @@ let create_miles_with_expiration_ast () =
                                                                                                       Cconst Csum,
                                                                                                       [
                                                                                                         AExpr (mk_sp (Pvar (dumloc "mile"))
-                                                                                                                 ~type_:(LTprog (Tcontainer (Tasset (dumloc "mile"), Collection))));
+                                                                                                                 ~type_:((Tcontainer (Tasset (dumloc "mile"), Collection))));
                                                                                                         AExpr (mk_sp (Pvar (dumloc "amount"))
-                                                                                                                 ~type_:(LTprog (Tbuiltin VTint)))
+                                                                                                                 ~type_:((Tbuiltin VTint)))
                                                                                                       ]))
-                                                                                          ~type_:(LTprog (Tbuiltin VTint))),
+                                                                                          ~type_:((Tbuiltin VTint))),
                                                                                        (mk_sp (Pvar (dumloc "quantity"))
-                                                                                          ~type_:(LTprog (Tbuiltin VTint)))
+                                                                                          ~type_:((Tbuiltin VTint)))
                                                                                       ))
-                                                                          ~type_:(LTprog (Tbuiltin VTint)),
+                                                                          ~type_:((Tbuiltin VTint)),
                                                                         mk_sp (Pvar (dumloc "remainder"))
-                                                                          ~type_:(LTprog (Tbuiltin VTint))
+                                                                          ~type_:((Tbuiltin VTint))
                                                                        ))
-                                                           ~type_:(LTprog (Tbuiltin VTint))))
+                                                           ~type_:((Tbuiltin VTint))))
 
-                                             ~type_:(LTprog (Tbuiltin VTbool)))
+                                             ~type_:((Tbuiltin VTbool)))
                                         ]
                                     ];
 
@@ -1572,11 +1572,11 @@ let create_miles_with_expiration_ast () =
                                                      AExpr (mk_sp (Pcall (None,
                                                                           Cid (dumloc "added"),
                                                                           [AExpr (mk_sp (Pvar (dumloc "mile"))
-                                                                                    ~type_:(LTprog (Tcontainer (Tasset (dumloc "mile"), Collection))))
+                                                                                    ~type_:((Tcontainer (Tasset (dumloc "mile"), Collection))))
                                                                           ]))
-                                                              ~type_:(LTprog (Tcontainer (Tasset (dumloc "mile"), Collection))))
+                                                              ~type_:((Tcontainer (Tasset (dumloc "mile"), Collection))))
                                                    ]))
-                                       ~type_:(LTprog (Tbuiltin VTbool)))
+                                       ~type_:((Tbuiltin VTbool)))
 
                                     ~invariants:[
                                       mk_invariant (dumloc "loop")
@@ -1587,11 +1587,11 @@ let create_miles_with_expiration_ast () =
                                                            AExpr (mk_sp (Pcall (None,
                                                                                 Cid (dumloc "added"),
                                                                                 [AExpr (mk_sp (Pvar (dumloc "mile"))
-                                                                                          ~type_:(LTprog (Tcontainer (Tasset (dumloc "mile"), Collection))))
+                                                                                          ~type_:((Tcontainer (Tasset (dumloc "mile"), Collection))))
                                                                                 ]))
-                                                                    ~type_:(LTprog (Tcontainer (Tasset (dumloc "mile"), Collection))))
+                                                                    ~type_:((Tcontainer (Tasset (dumloc "mile"), Collection))))
                                                          ]))
-                                             ~type_:(LTprog (Tbuiltin VTbool)))
+                                             ~type_:((Tbuiltin VTbool)))
                                         ]
                                     ]
                                 ]
@@ -1821,20 +1821,20 @@ let create_miles_with_expiration_ast () =
         ~verification:(mk_verification ()
                          ~specs:[
                            mk_specification (dumloc "s3")
-                             (mk_sp (Lquantifer (Forall,
+                             (mk_sp (Pquantifer (Forall,
                                                  dumloc "m",
-                                                 LTvset (VSremoved, LTprog (Tasset (dumloc "mile")) ),
+                                                 Tasset (dumloc "mile"),
                                                  (mk_sp (Pcomp (Lt,
                                                                 (mk_sp (Pdot (mk_sp (Pvar (dumloc "m"))
-                                                                                ~type_:(LTprog (Tasset (dumloc "mile"))),
+                                                                                ~type_:((Tasset (dumloc "mile"))),
                                                                               (dumloc "expiration")))
-                                                                   ~type_:(LTprog (Tbuiltin VTdate))),
+                                                                   ~type_:((Tbuiltin VTdate))),
                                                                 (mk_sp (Pconst Cnow)
-                                                                   ~type_:(LTprog (Tbuiltin VTdate)))
+                                                                   ~type_:((Tbuiltin VTdate)))
                                                                ))
-                                                    ~type_:(LTprog (Tbuiltin VTbool))
+                                                    ~type_:((Tbuiltin VTbool))
                                                  )))
-                                ~type_:(LTprog (Tbuiltin VTbool)))
+                                ~type_:((Tbuiltin VTbool)))
                          ])
     ]
 
@@ -1846,11 +1846,11 @@ let create_miles_with_expiration_ast () =
                            Cconst Cmaybeperformedonlybyrole,
                            [
                              AExpr (mk_sp (Pconst Canyaction)
-                                      ~type_:(LTtrace TRentry));
+                                      ~type_:(Ttrace TRentry));
                              AExpr (mk_sp (Pvar (dumloc "admin"))
-                                      ~type_:(LTprog (Tbuiltin VTaddress)))
+                                      ~type_:((Tbuiltin VTaddress)))
                            ]))
-               ~type_:(LTprog (Tbuiltin VTbool)));
+               ~type_:((Tbuiltin VTbool)));
           mk_specification (dumloc "g2")
             (mk_sp (Pcall (None,
                            Cconst Cmaybeperformedonlybyaction,
@@ -1860,20 +1860,20 @@ let create_miles_with_expiration_ast () =
                                  Cid (dumloc "remove"),
                                  [
                                    AExpr (mk_sp (Pvar (dumloc "mile"))
-                                            ~type_:(LTprog (Tcontainer (Tasset (dumloc "mile"), Collection)))
+                                            ~type_:((Tcontainer (Tasset (dumloc "mile"), Collection)))
                                          )]))
-                                 ~type_:(LTtrace TRentry)
+                                 ~type_:(Ttrace TRentry)
                                );
                              AExpr (mk_sp (Plogical (
                                  Or,
                                  mk_sp (Pvar (dumloc "consume"))
-                                   ~type_:(LTtrace TRentry),
+                                   ~type_:(Ttrace TRentry),
                                  mk_sp (Pvar (dumloc "clear_expired"))
-                                   ~type_:(LTtrace TRentry))
+                                   ~type_:(Ttrace TRentry))
                                )
-                                 ~type_:(LTtrace TRentry))
+                                 ~type_:(Ttrace TRentry))
                            ]))
-               ~type_:(LTprog (Tbuiltin VTbool)));
+               ~type_:((Tbuiltin VTbool)));
           mk_specification (dumloc "g3")
             (mk_sp (Pcall (None,
                            Cconst Cmaybeperformedonlybyaction,
@@ -1883,18 +1883,17 @@ let create_miles_with_expiration_ast () =
                                  Cid (dumloc "add"),
                                  [
                                    AExpr (mk_sp (Pvar (dumloc "mile"))
-                                            ~type_:(LTtrace TRaction)
+                                            ~type_:(Ttrace TRaction)
                                          )
                                  ]))
-                                 ~type_:(LTtrace TRaction)
+                                 ~type_:(Ttrace TRaction)
                                ))
-                                 ~type_:(LTtrace TRaction)
+                                 ~type_:(Ttrace TRaction)
                                );
                              AExpr (mk_sp (Pvar (dumloc "consume"))
-                                      ~type_:(LTtrace TRentry)
+                                      ~type_:(Ttrace TRentry)
                                    )
                            ]))
-               ~type_:(LTprog (Tbuiltin VTbool)))
+               ~type_:((Tbuiltin VTbool)))
         ]
     ]
-*)
