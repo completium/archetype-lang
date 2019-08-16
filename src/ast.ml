@@ -281,7 +281,7 @@ type 'id call_kind =
 [@@deriving show {with_path = false}]
 
 type ('id, 'typ, 'term) term_node  =
-  | Lquantifer of quantifier * 'id * type_ * 'term
+  | Pquantifer of quantifier * 'id * type_ * 'term
   | Pif of ('term * 'term * 'term)
   | Pmatchwith of 'term * ('id pattern_gen * 'term) list
   | Pcall of ('term option * 'id call_kind * (('id, 'typ, 'term) term_arg) list)
@@ -605,7 +605,7 @@ let mk_id type_ id : qualid =
     label = None; }
 
 let map_term_node (f : ('id, type_) term_gen -> ('id, type_) term_gen) = function
-  | Lquantifer (q, i, t, e) -> Lquantifer (q, i, t, f e)
+  | Pquantifer (q, i, t, e) -> Pquantifer (q, i, t, f e)
   | Pif (c, t, e)           -> Pif (f c, f t, f e)
   | Pmatchwith (e, l)       -> Pmatchwith (e, List.map (fun (p, e) -> (p, f e)) l)
   | Pcall (i, e, args)      ->
@@ -661,7 +661,7 @@ let map_instr f i = map_gen map_instr_node f i
 
 let fold_term (f: 'a -> 't -> 'a) (accu : 'a) (term : ('id, type_) term_gen) =
   match term.node with
-  | Lquantifer (_, _, _, e) -> f accu e
+  | Pquantifer (_, _, _, e) -> f accu e
   | Pif (c, t, e)           -> f (f (f accu c) t) e
   | Pmatchwith (e, l)       -> List.fold_left (fun accu (_, a) -> f accu a) (f accu e) l
   | Pcall (_, _, args)      -> List.fold_left (fun accu (arg : ('id, 'typ, 'term) term_arg) -> match arg with
@@ -718,9 +718,9 @@ let fold_instr_expr fi fe accu instr =
 
 let fold_map_term g f (accu : 'a) (term : ('id, type_) term_gen) : 'term * 'a =
   match term.node with
-  | Lquantifer (q, id, t, e) ->
+  | Pquantifer (q, id, t, e) ->
     let ee, ea = f accu e in
-    g (Lquantifer (q, id, t, ee)), ea
+    g (Pquantifer (q, id, t, ee)), ea
 
   | Pif (c, t, e) ->
     let ce, ca = f accu c in

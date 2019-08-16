@@ -1201,7 +1201,7 @@ let rec for_xexpr (mode : emode_t) (env : env) ?(ety : M.ptyp option) (tope : PT
               | PT.Forall -> M.Forall
               | PT.Exists -> M.Exists in
 
-            mk_sp (Some M.vtbool) (M.Lquantifer (qt, x, xty, body))
+            mk_sp (Some M.vtbool) (M.Pquantifer (qt, x, xty, body))
       end
 
     | Esecurity { pldesc = SMayBePerformedOnlyByRole (s1, s2) } ->
