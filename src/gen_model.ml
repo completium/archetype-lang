@@ -604,7 +604,12 @@ let to_model (ast : A.model) : M.model =
   in
 
   let to_spec (s : (A.lident, A.type_) A.specification) : M.specification  =
-    M.mk_specification s.name (lterm_to_mterm s.formula)
+    M.mk_specification s.name Spec (lterm_to_mterm s.formula)
+      ~invariants:(List.map to_invariant s.invariants)
+  in
+
+  let to_assert (s : (A.lident, A.type_) A.assert_) : M.specification  =
+    M.mk_specification s.name Assert (lterm_to_mterm s.formula)
       ~invariants:(List.map to_invariant s.invariants)
   in
 
@@ -616,7 +621,7 @@ let to_model (ast : A.model) : M.model =
     let variables   = List.map (fun x -> to_variable x) v.variables in
     let invariants  = List.map (fun (a, l) -> (a, List.map (fun x -> to_label_lterm x) l)) v.invariants in
     let effects     = Option.map_dfl (fun x -> [to_mterm x]) [] v.effect in
-    let specs       = List.map to_spec        v.specs       in
+    let specs       = List.map to_spec v.specs @ List.map to_assert v.asserts in
     M.mk_verification
       ~predicates:predicates
       ~definitions:definitions

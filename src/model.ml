@@ -520,8 +520,14 @@ type invariant = lident invariant_gen
 [@@deriving show {with_path = false}]
 
 
+type spec_mode =
+  | Spec
+  | Assert
+[@@deriving show {with_path = false}]
+
 type 'id specification_gen = {
   name: 'id;
+  mode: spec_mode;
   formula: 'id mterm_gen;
   invariants: ('id invariant_gen) list;
 }
@@ -614,8 +620,8 @@ let mk_definition ?(loc = Location.dummy) name typ var body =
 let mk_invariant ?(formulas = []) label =
   { label; formulas }
 
-let mk_specification ?(invariants = []) name formula =
-  { name; formula; invariants }
+let mk_specification ?(invariants = []) name mode formula =
+  { name; mode; formula; invariants }
 
 let mk_assert ?(invariants = []) name label formula =
   { name; label; formula; invariants }
