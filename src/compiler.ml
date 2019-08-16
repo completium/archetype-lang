@@ -17,7 +17,9 @@ let output_pt (pt : ParseTree.archetype) =
   else Format.printf "%a@." Printer.pp_archetype pt
 
 let output_tast (ast : Ast.model) =
-  Format.printf "%a@." Ast.pp_model ast
+  if !Options.opt_raw
+  then Format.printf "%a@." Ast.pp_model ast
+  else Format.printf "%a@." Printer_ast.pp_ast ast
 
 let output_model (model : Model.model) =
   if !Options.opt_raw
