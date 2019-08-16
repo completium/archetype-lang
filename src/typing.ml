@@ -321,6 +321,7 @@ type vardecl = {
   vr_name : M.lident;
   vr_type : M.ptyp;
   vr_kind : [`Constant | `Variable | `Ghost];
+  vr_def  : M.pterm option;
   vr_core : M.const option;
 }
 
@@ -610,7 +611,8 @@ end = struct
         Some { vr_name = a.as_name;
                vr_type = M.Tcontainer (M.Tasset a.as_name, M.Collection);
                vr_kind = `Constant;
-               vr_core = None; }
+               vr_core = None;
+               vr_def  = None; }
 
       | _ -> None
 
@@ -722,7 +724,7 @@ let empty : env =
 
   let env =
     let mk vr_name vr_type vr_core = {
-      vr_name; vr_type; vr_core = Some vr_core; vr_kind = `Constant
+      vr_name; vr_type; vr_core = Some vr_core; vr_def = None; vr_kind = `Constant
     } in
 
     List.fold_left
@@ -1896,7 +1898,8 @@ let for_varfun_decl (env : env) (decl : varfun loced) =
 
     let ty   = for_type env ty in
     let e    = Option.map (for_expr env ?ety:ty) e in
-    let dty  = if   Option.is_some ty
+    let dty  =
+      if   Option.is_some ty
       then ty
       else Option.bind (fun e -> e.M.type_) e in
     let ctt  = match ctt with
@@ -1906,7 +1909,8 @@ let for_varfun_decl (env : env) (decl : varfun loced) =
     if Option.is_some dty then begin
       let decl = {
         vr_name = x  ; vr_type = Option.get dty;
-        vr_kind = ctt; vr_core = None          ; } in
+        vr_kind = ctt; vr_core = None          ;
+        vr_def  = e; } in
 
       if   (check_and_emit_name_free env x)
       then (Env.Var.push env decl, Some (`Variable decl))
@@ -2129,7 +2133,7 @@ let variables_of_fdecls fdecls =
         M.{ decl =
               M.{ name    = decl.vr_name;
                   typ     = Some decl.vr_type;
-                  default = None;
+                  default = decl.vr_def;
                   loc     = loc decl.vr_name; };
             constant = decl.vr_kind = `Constant;
             from     = None;
