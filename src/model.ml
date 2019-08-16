@@ -520,8 +520,14 @@ type invariant = lident invariant_gen
 [@@deriving show {with_path = false}]
 
 
+type spec_mode =
+  | Post
+  | Assert
+[@@deriving show {with_path = false}]
+
 type 'id specification_gen = {
   name: 'id;
+  mode: spec_mode;
   formula: 'id mterm_gen;
   invariants: ('id invariant_gen) list;
 }
@@ -614,8 +620,8 @@ let mk_definition ?(loc = Location.dummy) name typ var body =
 let mk_invariant ?(formulas = []) label =
   { label; formulas }
 
-let mk_specification ?(invariants = []) name formula =
-  { name; formula; invariants }
+let mk_specification ?(invariants = []) name mode formula =
+  { name; mode; formula; invariants }
 
 let mk_assert ?(invariants = []) name label formula =
   { name; label; formula; invariants }
@@ -1839,6 +1845,7 @@ module Utils : sig
   val get_key_pos                        : model -> lident -> int
   val get_invariants                     : model -> (lident * mterm) list -> ident -> (lident * mterm) list
   val get_formula                        : model -> mterm option -> ident -> mterm option
+  val is_post                            : specification -> bool
 
 end = struct
 
@@ -2173,5 +2180,10 @@ end = struct
       | None, Some v when cmp_ident i (unloc v) -> Some t
       | _ -> acc in
     fold_model internal_get m acc
+
+  let is_post (s : specification) =
+    match s.mode with
+    | Post -> true
+    | _ -> false
 
 end
