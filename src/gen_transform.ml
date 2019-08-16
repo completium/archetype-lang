@@ -65,3 +65,11 @@ let flat_sequence (model : model) : model =
     | _ -> map_mterm (aux ctx) mt
   in
   map_mterm_model aux model
+
+let replace_lit_address_by_role (model : model) : model =
+  let rec aux (ctx : ctx_model) (mt : mterm) : mterm =
+    match mt.node with
+    | Maddress _ as node -> mk_mterm node (Tbuiltin Brole)
+    | _ -> map_mterm (aux ctx) mt
+  in
+  map_mterm_model aux model

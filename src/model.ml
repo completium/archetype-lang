@@ -1050,6 +1050,11 @@ let mk_ctx_model ?(formula = false) ?fs ?label ?spec_id ?invariant_id () : 'id c
   { formula; fs; label; spec_id; invariant_id }
 
 let map_mterm_model_exec (f : ctx_model -> mterm -> mterm) (model : model) : model =
+  let map_storage_item (ctx : ctx_model) (si : storage_item) : storage_item = (
+    { si with
+      default = f ctx si.default;
+    }
+  ) in
   let map_function_struct (ctx : ctx_model) (fs : function_struct) : function_struct =
     let ctx = { ctx with fs = Some fs } in
     let body = f ctx fs.body in
@@ -1064,9 +1069,11 @@ let map_mterm_model_exec (f : ctx_model -> mterm -> mterm) (model : model) : mod
   ) in
 
   let ctx = mk_ctx_model () in
+  let storage = List.map (map_storage_item ctx) model.storage in
   let functions = List.map (map_function ctx) model.functions in
   { model with
     functions = functions;
+    storage = storage;
   }
 
 let map_mterm_model_formula (f : ctx_model -> mterm -> mterm) (model : model) : model =

@@ -49,7 +49,7 @@ let shallow_asset        = Gen_shallow_asset.shallow_asset
 let split_key_values     = Gen_split_key_values.split_key_values
 let remove_side_effect   = Gen_reduce.reduce
 let generate_api_storage = Gen_api_storage.generate_api_storage
-let exec_process model   = model |> Gen_transform.remove_label |> Gen_transform.flat_sequence
+let exec_process model   = model |> Gen_transform.replace_lit_address_by_role |> Gen_transform.remove_label |> Gen_transform.flat_sequence
 
 let output_liquidity model =
   if !Options.opt_raw

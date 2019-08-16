@@ -891,7 +891,10 @@ let to_model (ast : A.model) : M.model =
 
     let list  = list |> cont process_function ast.functions in
     let name  = transaction.name in
-    let args, body = process_body_args () in
+    let args, body =
+      if String.equal (unloc transaction.name) "consume" || String.equal (unloc transaction.name) "clear_expired"
+      then [], (M.mk_mterm (M.Mseq []) M.Tunit)
+      else process_body_args () in
     let body =
       body
       |> process_requires
