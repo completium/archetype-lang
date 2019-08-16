@@ -152,6 +152,7 @@ let to_model (ast : A.model) : M.model =
       | A.Puarith (A.Uminus, e)        -> M.Muminus    (f e)
       | A.Precord l                    -> M.Mrecord    (List.map f l)
       | A.Pletin (id, init, typ, cont) -> M.Mletin     ([id], f init, Option.map ftyp typ, f cont)
+      | A.Pvar {pldesc = "now"}                -> M.Mnow (* TODO: use const Cnow instead *)
       | A.Pvar id when A.Utils.is_variable ast id   -> M.Mvarstorevar id
       | A.Pvar id when A.Utils.is_asset ast id      -> M.Mvarstorecol id
       | A.Pvar id when A.Utils.is_enum_value ast id -> M.Mvarenumval id
@@ -363,7 +364,7 @@ let to_model (ast : A.model) : M.model =
        _col_asset.remove _asset.key
   *)
 
-  let extract_removeif (m : M.model) (c : M.mterm) (p : M.mterm) : M.mterm__node =
+  let extract_removeif (m : M.model) (c : M.mterm) (pid, tid, p : M.lident * M.type_* M.mterm) : M.mterm__node =
     let asset_str = extract_asset_name c in
     (* let key_str, key_type = A.Utils.get_asset_key ast (dumloc asset_str) |> fun (x, y) -> (unloc x, M.Tbuiltin (vtyp_to_btyp y)) in *)
 
@@ -560,11 +561,17 @@ let to_model (ast : A.model) : M.model =
       in
       M.Mselect (asset_name, fp, f q)
 
-    | A.Icall (Some c, A.Cconst (A.Cremoveif), [AExpr p]) ->
-      extract_removeif (M.mk_model ~info:info [] (dumloc ""))(f c) (f p)
+    | A.Icall (Some c, A.Cconst (A.Cremoveif), [AFun (i, t, p)]) ->
+      extract_removeif (M.mk_model ~info:info [] (dumloc ""))(f c) (i, ptyp_to_type t, f p)
 
     | A.Icall (aux, A.Cconst c, args) ->
-      Format.eprintf "instr const unkown: %a with nb args: %d %s@." A.pp_const c (List.length args) (match aux with | Some _ -> "with aux" | _ -> "without aux");
+      Format.eprintf "instr const unkown: %a with nb args: %d [%a] %s@."
+        A.pp_const c
+        (List.length args)
+        (Printer_tools.pp_list "; " (fun fmt (x : A.pterm_arg) ->
+             let str = match x with | AExpr _ -> "AExpr" | AEffect _ -> "AEffect" | AFun _ -> "AFun" in
+             Printer_tools.pp_str fmt str)) args
+        (match aux with | Some _ -> "with aux" | _ -> "without aux");
       assert false
   in
 
@@ -892,7 +899,7 @@ let to_model (ast : A.model) : M.model =
     let list  = list |> cont process_function ast.functions in
     let name  = transaction.name in
     let args, body =
-      if String.equal (unloc transaction.name) "consume" || String.equal (unloc transaction.name) "clear_expired"
+      if String.equal (unloc transaction.name) "consume"
       then [], (M.mk_mterm (M.Mseq []) M.Tunit)
       else process_body_args () in
     let body =
