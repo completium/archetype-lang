@@ -604,7 +604,7 @@ let to_model (ast : A.model) : M.model =
   in
 
   let to_spec (s : (A.lident, A.type_) A.specification) : M.specification  =
-    M.mk_specification s.name Spec (lterm_to_mterm s.formula)
+    M.mk_specification s.name Post (lterm_to_mterm s.formula)
       ~invariants:(List.map to_invariant s.invariants)
   in
 

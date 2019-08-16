@@ -521,7 +521,7 @@ type invariant = lident invariant_gen
 
 
 type spec_mode =
-  | Spec
+  | Post
   | Assert
 [@@deriving show {with_path = false}]
 
@@ -1845,6 +1845,7 @@ module Utils : sig
   val get_key_pos                        : model -> lident -> int
   val get_invariants                     : model -> (lident * mterm) list -> ident -> (lident * mterm) list
   val get_formula                        : model -> mterm option -> ident -> mterm option
+  val is_post                            : specification -> bool
 
 end = struct
 
@@ -2179,5 +2180,10 @@ end = struct
       | None, Some v when cmp_ident i (unloc v) -> Some t
       | _ -> acc in
     fold_model internal_get m acc
+
+  let is_post (s : specification) =
+    match s.mode with
+    | Post -> true
+    | _ -> false
 
 end

@@ -1029,11 +1029,11 @@ let flatten_if_fail m (t : M.mterm) : loc_term =
     | _ -> acc @ [map_mterm m init_ctx t] in
   mk_loc t.loc (Tseq (rec_flat [] t))
 
-let mk_requires m acc (v : M.verification) =
+let mk_ensures m acc (v : M.verification) =
   acc @ (List.map (fun (spec : M.specification) -> {
         id = spec.name |> map_lident;
         form = map_mterm m init_ctx spec.formula
-      }) v.specs)
+      }) (v.specs |> List.filter M.Utils.is_post))
 
 let mk_functions m =
   M.Utils.get_functions m |> List.map (
@@ -1050,7 +1050,7 @@ let mk_functions m =
         raises   = fold_exns s.body;
         variants = [];
         requires = [];
-        ensures  = Option.fold (mk_requires m) [] v;
+        ensures  = Option.fold (mk_ensures m) [] v;
         body     = flatten_if_fail m s.body;
       }
   )
@@ -1069,7 +1069,7 @@ let mk_entries m =
         raises   = fold_exns s.body;
         variants = [];
         requires = [];
-        ensures  = Option.fold (mk_requires m) [] v;
+        ensures  = Option.fold (mk_ensures m) [] v;
         body     = flatten_if_fail m s.body;
       }
   )
