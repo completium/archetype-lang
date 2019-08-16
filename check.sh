@@ -1,6 +1,6 @@
 #! /bin/bash
 
-BIN=./compiler.exe
+BIN=./archetype.exe
 EXTRACT=./extract.sh
 NB_ERR="0"
 NB_AST="0"
@@ -8,13 +8,13 @@ NB_MOD="0"
 
 process () {
     printf '%-50s' $1
-    $BIN -PP $i > /dev/null 2> /dev/null
+    $BIN -pt -r $i > /dev/null 2> /dev/null
     RET=`echo $?`
     if [ ${RET} -eq 0 ]; then
 	      echo -ne "\033[32m OK \033[0m"
 
         if [[ $i == *"contracts"* ]]; then
-            $BIN -A $i > /dev/null 2> /dev/null
+            $BIN -tast $i > /dev/null 2> /dev/null
             RET=`echo $?`
             if [ ${RET} -eq 0 ]; then
 	              echo -ne "    \033[32m OK \033[0m"
@@ -23,7 +23,7 @@ process () {
                 NB_AST=$((${NB_AST} + 1))
             fi
 
-            $BIN -M $i > /dev/null 2> /dev/null
+            $BIN $i > /dev/null 2> /dev/null
             RET=`echo $?`
             if [ ${RET} -eq 0 ]; then
 	              echo -ne "    \033[32m OK \033[0m"

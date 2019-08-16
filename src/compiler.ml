@@ -7,51 +7,38 @@ exception E_arg
 exception ArgError of string
 exception Stop
 
+let output_pt (pt : ParseTree.archetype) =
+  if !Options.opt_json
+  then (Format.printf "%s\n" (Yojson.Safe.to_string (ParseTree.archetype_to_yojson pt)); raise Stop)
+  else if !Options.opt_raw
+  then Format.printf "%a@." ParseTree.pp_archetype pt
+  else Format.printf "%a@." Printer.pp_archetype pt
+
+let output_tast (ast : Ast.model) =
+  Format.printf "%a@." Ast.pp_model ast
+
+let output_model (model : Model.model) =
+  if !Options.opt_raw
+  then Format.printf "%a@." Model.pp_model model
+  else Format.printf "%a@." Printer_model.pp_model model
 
 let parse (filename, channel) =
-  if !Options.fake_ast
-  then ParseTree.mk_archetype()
-  else
-    let pt =
-      (if !Options.opt_cwse
-       then Io.parse_archetype
-       else Io.parse_archetype_strict) ~name:filename channel in
-    if !Options.opt_json then (Format.printf "%s\n" (Yojson.Safe.to_string (ParseTree.archetype_to_yojson pt)); raise Stop)
-    else if !Options.opt_parse then (Format.printf "%a\n" ParseTree.pp_archetype pt; raise Stop)
-    else if !Options.opt_pretty_print then (Format.printf "%a" Printer.pp_archetype pt; raise Stop)
-    else pt
+  Io.parse_archetype ~name:filename channel
+(* if !Options.opt_cwse
+   then Io.parse_archetype
+   else Io.parse_archetype_strict) ~name:filename channel *)
 
-let preprocess_ext pt =
-  if !Options.fake_ast
-  then pt
-  else
-  if !Options.opt_pre_json then (Format.printf "%s\n" (Yojson.Safe.to_string (ParseTree.archetype_to_yojson pt)); raise Stop)
-  else if !Options.opt_pre_parse then (Format.printf "%a\n" ParseTree.pp_archetype pt; raise Stop)
-  else if !Options.opt_pre_pretty_print then (Format.printf "%a" Printer.pp_archetype pt; raise Stop)
-  else pt
+
+let preprocess_ext (pt : ParseTree.archetype) : ParseTree.archetype =
+  pt (* TODO: add extension process *)
 
 let type_ pt =
   let ast = Typing.typing Typing.empty pt in
-  if !Options.opt_ast
+  if !Options.opt_tast
   then (Format.printf "%a@." Ast.pp_model ast; raise Stop)
   else ast
 
-let reduce_ast ast =
-  if !Options.no_reduce
-  then ast
-  else
-    let rast = Gen_reduce.reduce_ast ast in
-    if !Options.opt_astr
-    then (Format.printf "%a@." Ast.pp_model rast; raise Stop)
-    else rast
-
-let model ast =
-  let model = Gen_model.to_model ast in
-  if !Options.opt_model
-  then (Format.printf "%a@." Model.pp_model model; raise Stop)
-  else model
-
-let generate_target_pt pt =
+let generate_target_pt (pt : ParseTree.archetype) : ParseTree.archetype =
   match !Options.target with
   | Markdown  -> (
       let md = Gen_markdown.pt_to_ast_omd pt in
@@ -60,57 +47,122 @@ let generate_target_pt pt =
     )
   | _ -> pt
 
-let remove_side_effect model =
-  let wse = Gen_reduce_side_effect.reduce_side_effect model in
-  if !Options.opt_wse
-  then (Format.printf "%a@." Model.pp_model model; raise Stop)
-  else wse
+let generate_model       = Gen_model.to_model
+let shallow_asset        = Gen_shallow_asset.shallow_asset
+let split_key_values     = Gen_split_key_values.split_key_values
+let remove_side_effect   = Gen_reduce.reduce
+let generate_api_storage = Gen_api_storage.generate_api_storage
+let exec_process model   = model |> Gen_transform.remove_label |> Gen_transform.flat_sequence
 
-let generate_liquidity model =
-  let tree = Gen_liquidity.to_liquidity model in
-  if !Options.opt_raw_target
-  then (Format.printf "%a@." Mltree.pp_tree tree; raise Stop)
-  else Format.asprintf "%a@." Printer_mltree.pp_tree tree
+let output_liquidity model =
+  if !Options.opt_raw
+  then Format.printf "%a@." Model.pp_model model
+  else Format.printf "%a@." Printer_model_liq.pp_model model
 
-let output_liquidity str =
-  if !Options.opt_liq_url
-  then
+let output_liquidity_url model =
+  if !Options.opt_raw
+  then Format.printf "%a@." Model.pp_model model
+  else
+    let str = Printer_model_liq.show_model model in
     let encoded_src = Uri.pct_encode str in
+    let encoded_src = Str.global_replace (Str.regexp "\\+") "%2B" encoded_src in
     let url = "http://www.liquidity-lang.org/edit/?source=" ^ encoded_src in
     Format.printf "%s@\n" url
-  else Format.printf "%s" str
 
-let generate_whyml model =
+let output_ocaml =
+  if !Options.opt_raw
+  then Format.printf "%a@." Model.pp_model
+  else Format.printf "%a@." Printer_model_ocaml.pp_model
+
+let output_ligo =
+  if !Options.opt_raw
+  then Format.printf "%a@." Model.pp_model
+  else Format.printf "%a@." Printer_model_ligo.pp_model
+
+let output_smartpy =
+  if !Options.opt_raw
+  then Format.printf "%a@." Model.pp_model
+  else Format.printf "%a@." Printer_model_smartpy.pp_model
+
+let output_whyml model =
   let mlw = Gen_why3.to_whyml model in
-  if !Options.opt_raw_target
+  if !Options.opt_raw
   then Format.printf "%a@." Mlwtree.pp_mlw_tree mlw
   else Format.printf "%a@." Printer_mlwtree.pp_mlw_tree mlw
 
+
+
 let generate_target model =
+
+  let cont c a = if c then a else (fun x -> x) in
+
   match !Options.target with
-  | Liquidity ->
+  | None ->
     model
+    |> cont !Options.opt_sa  shallow_asset
+    |> cont !Options.opt_skv split_key_values
+    |> cont !Options.opt_nse remove_side_effect
+    |> generate_api_storage
+    |> output_model
+
+  | Liquidity
+  | LiquidityUrl ->
+    model
+    |> exec_process
+    |> shallow_asset
+    |> split_key_values
     |> remove_side_effect
-    |> generate_liquidity
+    |> generate_api_storage
+    |> (match !Options.target with
+        | Liquidity -> output_liquidity
+        | LiquidityUrl -> output_liquidity_url
+        | _ -> assert false)
+
+  | Ligo ->
+    model
+    |> exec_process
+    |> shallow_asset
+    |> remove_side_effect
+    |> generate_api_storage
+    |> output_ligo
+
+  | SmartPy ->
+    model
+    |> exec_process
+    |> shallow_asset
+    |> generate_api_storage
+    |> output_smartpy
+
+  | Ocaml ->
+    model
+    |> exec_process
+    |> shallow_asset
+    |> remove_side_effect
+    |> generate_api_storage
     |> output_liquidity
 
   | Whyml ->
     model
-    |> generate_whyml
+    |> shallow_asset
+    |> generate_api_storage
+    |> output_whyml
 
   | _ -> ()
 
 (* -------------------------------------------------------------------- *)
 
 let compile (filename, channel) =
-  Tools.debug_mode := !Options.debug_mode;
+  let cont c a x = if c then (a x; raise Stop) else x in
+
   (filename, channel)
   |> parse
+  |> cont !Options.opt_pt output_pt
   |> preprocess_ext
+  |> cont !Options.opt_pt output_pt
   |> generate_target_pt
   |> type_
-  |> reduce_ast
-  |> model
+  |> cont !Options.opt_tast output_tast
+  |> generate_model
   |> generate_target
 
 let close dispose channel =
@@ -119,10 +171,13 @@ let close dispose channel =
 (* -------------------------------------------------------------------- *)
 let main () =
   let f = function
-    | "liquidity" -> Options.target := Liquidity
-    | "ligo"      -> Options.target := Ligo
-    | "whyml"     -> Options.target := Whyml
-    | "markdown"  -> Options.target := Markdown
+    | "liquidity"     -> Options.target := Liquidity
+    | "liquidity_url" -> Options.target := LiquidityUrl
+    | "ligo"          -> Options.target := Ligo
+    | "smartpy"       -> Options.target := SmartPy
+    | "ocaml"         -> Options.target := Ocaml
+    | "whyml"         -> Options.target := Whyml
+    | "markdown"      -> Options.target := Markdown
     |  s ->
       Format.eprintf
         "Unknown target %s (--list-target to see available target)@." s;
@@ -131,58 +186,74 @@ let main () =
   let arg_list = Arg.align [
       "-t", Arg.String f, "<lang> Transcode to <lang> language";
       "--target", Arg.String f, " Same as -t";
-      "--list-target", Arg.Unit (fun _ -> Format.printf "target available:@\n  ligo@\n  whyml@\n  markdown@\n"; exit 0), " List available target languages";
-      "--json", Arg.Set Options.opt_json, " Output Archetype in JSON representation";
-      "--storage-policy", Arg.String (fun s -> match s with
+      "--list-target", Arg.Unit (fun _ -> Format.printf "target available:@\n  liquidity@\n  liquidity_url@\n  ligo@\n  smartpy@\n  ocaml@\n  whyml@\n  markdown@\n"; exit 0), " List available target languages";
+      (* "--storage-policy", Arg.String (fun s -> match s with
           | "flat" -> Options.storage_policy := Flat
           | "record" -> Options.storage_policy := Record
           |  s ->
             Format.eprintf
               "Unknown policy %s (use record, flat)@." s;
             exit 2), "<policy> Set storage policy";
-      "--list-storage-policy", Arg.Unit (fun _ -> Format.printf "storage policy available:@\n  record@\n  flat@\n"; exit 0), " List storage policy";
-      "-PP", Arg.Set Options.opt_pretty_print, " Pretty print parse tree";
-      "--pretty-print", Arg.Set Options.opt_pretty_print, " Same as -PP";
-      "-PPP", Arg.Set Options.opt_pretty_print, " Pretty print parse tree without extension";
-      "--preprocess-pretty-print", Arg.Set Options.opt_pretty_print, " Same as -PPP";
-      "-P", Arg.Set Options.opt_parse, " Print raw parse tree";
-      "-A", Arg.Set Options.opt_ast, " Print raw ast";
-      "--ast", Arg.Set Options.opt_ast, " Same as -A";
-      "-RA", Arg.Set Options.opt_astr, " Print raw ast";
-      "--reduced-ast", Arg.Set Options.opt_astr, " Same as -RA";
-      "-M", Arg.Set Options.opt_model, " Print raw model";
-      "--model", Arg.Set Options.opt_model, " Same as -M";
-      "-W", Arg.Set Options.opt_wse, " Print raw model without side effect";
-      "--without-side-effect", Arg.Set Options.opt_wse, " Same as -W";
-      "-RTT", Arg.Set Options.opt_raw_target, " Print raw target tree";
-      "--raw-target-tree", Arg.Set Options.opt_raw_target, " Same as -RTT";
-      "-LU", Arg.Set Options.opt_liq_url, " Print url of try liquidity";
-      "--liquidity-url", Arg.Set Options.opt_liq_url, " Same as -LU";
-      "-CWSE", Arg.Set Options.opt_cwse, " Continue with syntax errors";
-      "--continue-with-syntax-errors", Arg.Set Options.opt_cwse, " Same as -CWSE";
-      "--lsp", Arg.String (fun s -> match s with
+         "--list-storage-policy", Arg.Unit (fun _ -> Format.printf "storage policy available:@\n  record@\n  flat@\n"; exit 0), " List storage policy"; *)
+      "-pt", Arg.Set Options.opt_pt, " Generate parse tree";
+      "--parse-tree", Arg.Set Options.opt_pt, " Same as -pt";
+      "-ext", Arg.Set Options.opt_ext, " Process extensions";
+      "--extensions", Arg.Set Options.opt_ext, " Same as -ext";
+      "-tast", Arg.Set Options.opt_tast, " Generate typed ast";
+      "--typed-ast", Arg.Set Options.opt_tast, " Same as -tast";
+      "-sa", Arg.Set Options.opt_sa, " Transform to shallow asset";
+      "--shallow-asset", Arg.Set Options.opt_sa, " Same as -sa";
+      "-skv", Arg.Set Options.opt_skv, " Split key value of collection of asset";
+      "--split-key-values", Arg.Set Options.opt_skv, " Same as -skv";
+      "-nse", Arg.Set Options.opt_nse, " Transform to no side effect";
+      "--no-side-effect", Arg.Set Options.opt_nse, " Same as -nse";
+      "-lsp", Arg.String (fun s -> match s with
           | "errors" -> Options.opt_lsp := true; Lsp.kind := Errors
           | "outline" -> Options.opt_lsp := true; Lsp.kind := Outline
           |  s ->
             Format.eprintf
               "Unknown lsp commands %s (use errors, outline)@." s;
-            exit 2), "LSP mode";
+            exit 2), "<request> Generate language server protocol response to <resquest>";
+      "--list-lsp-request", Arg.Unit (fun _ -> Format.printf "request available:@\n  errors@\n  outline@\n"; exit 0), " List available request for lsp";
+      "-r", Arg.Set Options.opt_raw, " Print raw tree";
+      "--raw", Arg.Set Options.opt_raw, " Same as -r";
+      "-json", Arg.Set Options.opt_json, " Print JSON format";
       "-F", Arg.Set Options.fake_ast, " Fake ast";
-      "--fake-ast", Arg.Set Options.fake_ast, " Same as -F";
-      "-NR", Arg.Set Options.no_reduce, " No reduce processing";
-      "--no-reduce", Arg.Set Options.no_reduce, " Same as -NR";
-      "-d", Arg.Set Options.debug_mode, " Debug mode";
+      "-F2", Arg.Set Options.fake_ast2, " Fake ast test shallow";
     ] in
   let arg_usage = String.concat "\n" [
-      "compiler [OPTIONS] FILE";
+      "usage : archetype [-t <lang> | -pt | -ext | -tast | [-sa] [-skv] [-nse] | -lsp <request>] [-r | -json] <file>";
       "";
       "Available options:";
     ]  in
+
+  let check_flags_consistency () =
+    match !Options.target with
+    | None -> ()
+    | _ ->
+      if !Options.opt_nse
+      then Format.printf "Error: side effect removing is not compatible with language: %a.@\n"
+          Options.pp_target_lang !Options.target;
+
+      if !Options.opt_sa
+      then Format.printf "Error: asset shallowing is not compatible with language: %a.@\n"
+          Options.pp_target_lang !Options.target;
+
+      if !Options.opt_skv
+      then Format.printf "Error: key values spliting of asset collection is not compatible with language: %a.@\n"
+          Options.pp_target_lang !Options.target;
+
+      if !Options.opt_nse || !Options.opt_sa || !Options.opt_skv
+      then exit 1
+  in
 
   let ofilename = ref "" in
   let ochannel : in_channel option ref = ref None  in
   Arg.parse arg_list (fun s -> (ofilename := s;
                                 ochannel := Some (open_in s))) arg_usage;
+
+  check_flags_consistency();
+
   let filename, channel, dispose =
     match !ochannel with
     | Some c -> (!ofilename, c, true)

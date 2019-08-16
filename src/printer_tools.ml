@@ -9,6 +9,9 @@ type lident = ident loced
 let pp_str fmt str =
   Format.fprintf fmt "%s" str
 
+let pp_big_int fmt bi =
+  Format.fprintf fmt "%s" (Big_int.string_of_big_int bi)
+
 (* -------------------------------------------------------------------------- *)
 let pp_list sep pp =
   Format.pp_print_list
@@ -16,6 +19,8 @@ let pp_list sep pp =
     pp
 
 (* -------------------------------------------------------------------------- *)
+let pp_ident = pp_str
+
 let pp_id fmt (id : lident) =
   Format.fprintf fmt "%s" (unloc id)
 

@@ -2,7 +2,7 @@ archetype erc721
 
 constant name string
 
-constant total uint
+constant total int
 
 constant symbol string
 

@@ -1,6 +1,6 @@
 #! /bin/bash
 
-BIN=./compiler.exe
+BIN=./archetype.exe
 EXTRACT=./extract.sh
 NB_ERR="0"
 NB_OUT="0"
@@ -12,13 +12,13 @@ NB_EXT="0"
 process () {
     printf '%-50s' $1
     REF=$i.ref
-    $BIN -P $i > $REF 2> /dev/null
+    $BIN -pt -r $i > $REF 2> /dev/null
     RET=`echo $?`
     if [ ${RET} -eq 0 ]; then
 	      echo -ne "\033[32m OK \033[0m"
 
         OUT=$i.out
-        $BIN -PP $i 2> /dev/null | $BIN -P > $OUT 2> /dev/null
+        $BIN -pt $i 2> /dev/null | $BIN -pt -r > $OUT 2> /dev/null
         RET=`echo $?`
         if [ ${RET} -eq 0 ]; then
     	      echo -ne "     \033[32m OK \033[0m"

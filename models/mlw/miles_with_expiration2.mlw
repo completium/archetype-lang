@@ -271,13 +271,13 @@ module Miles_with_expiration_storage
         let asset_keys = miles new_owner in 
         (* let astorage = set_miles_to_storage asset_keys assets s in *)
         Amounts.sum s s.mile_keys = Amounts.sum (old s) (old s).mile_keys + Amounts.sum s asset_keys 
-    }
+    } 
     =
     if mem (addr new_owner) s.owner_keys then
         raise KeyExist
     else
         s.owner_keys <- add (addr new_owner) s.owner_keys;
-        s.owner_assets <- set s.owner_assets (addr new_owner) new_owner;
+        s.owner_assets <- set s.owner_assets (addr new_owner) (new_owner);
         s.tr_ <- s.tr_ ++ Tr.mk_trace s.ename_ (Tr.Add Owner);
         let asset_keys = miles new_owner in
         for i = 0 to (card asset_keys) - 1 do

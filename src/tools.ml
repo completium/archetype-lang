@@ -3,8 +3,6 @@ exception No_value
 exception Unsupported_yet
 exception Anomaly
 
-let debug_mode = ref false
-
 (* -------------------------------------------------------------------- *)
 let id = fun x -> x
 
@@ -86,6 +84,7 @@ module Option : sig
   val map_dfl     : ('a -> 'b) -> 'b -> 'a option -> 'b
   val get_as_list : 'a option -> 'a list
   val flatten     : 'a option option -> 'a option
+  val cmp         : ('a -> 'a -> bool) -> 'a option -> 'a option -> bool
 
   val fst : ('a * 'b) option -> 'a option
   val snd : ('a * 'b) option -> 'b option
@@ -135,6 +134,12 @@ end = struct
 
   let flatten = function Some (Some v) -> Some v | _ -> None
 
+  let cmp c i1 i2 =
+    match i1, i2 with
+    | Some v1, Some v2 -> c v1 v2
+    | None, None -> true
+    | _ -> false
+
   let fst = fun x -> map fst x
   let snd = fun x -> map snd x
 end
@@ -158,6 +163,9 @@ module List : sig
   val xfilter       : ('a -> [`Left of 'b | `Right of 'c]) -> 'a list -> 'b list * 'c list
   val fold_left_map : ('a -> 'b -> 'a * 'c) -> 'a -> 'b list -> 'a * 'c list
   val assoc_all     : 'a -> ('a * 'b) list -> 'b list
+  val index_of      : ('a -> bool) -> 'a list -> int
+  val dedup         : 'a list -> 'a list
+  val last          : 'a list -> 'a
 
   module Exn : sig
     val assoc     : 'a -> ('a * 'b) list -> 'b option
@@ -252,6 +260,25 @@ end = struct
 
   let assoc_all (v : 'a) (xs : ('a * 'b) list) =
     pmap (fun (x, y) -> if x = v then Some y else None) xs
+
+  let index_of (pred : 'a -> bool) (l : 'a list) : int =
+    let rec aux idx = function
+      | [] -> -1
+      | q::t -> if (pred q) then idx else aux (idx + 1) t
+    in
+    aux 0 l
+
+  let rec dedup = function
+    | e::tl ->
+      if List.mem e tl then
+        dedup tl
+      else e::(dedup tl)
+    | [] -> []
+
+  let rec last = function
+    | [] -> raise Not_found
+    | [e] -> e
+    | _::t -> last t
 
   module Exn = struct
     let assoc x xs =

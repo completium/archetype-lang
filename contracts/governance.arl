@@ -15,7 +15,7 @@ asset voter identified by address = {
 
 asset ballot identified by value = {
   value   : string;
-  nbvotes : uint;
+  nbvotes : int;
 }
 
 asset winner = {

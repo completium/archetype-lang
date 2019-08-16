@@ -68,6 +68,7 @@ module Map
 
   (* import non ghost equality on integer *)
   use int.Int
+  use list.List
   use Types
 
   type map 'value = key -> 'value
@@ -80,6 +81,13 @@ module Map
   = fun (y : key) -> if y = x then v else f y
 
   let function const (v : 'value) : map 'value = fun _ -> v
+
+  let rec mapl (f: 'a -> 'b) (l: list 'a) : list 'b =
+  variant { l }
+    match l with
+    | Nil      -> Nil
+    | Cons x r -> Cons (f x) (mapl f r)
+    end
 
 end
 

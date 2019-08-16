@@ -1,0 +1,177 @@
+module Miles_with_expiration_storage
+
+  use archetype2.Lib
+  use list.List
+
+    type mile = {
+        id         : int;
+        amount     : int;
+        expiration : date;
+    }  
+
+    clone archetype2.AssetCollection as Mile with 
+        type t     = mile,
+        val  sortf = id
+
+    let function get_amount (c : Mile.collection) (i : int) = amount (Mile.nth i c)
+
+    clone archetype2.Sum as Amount with
+        type container = Mile.collection,
+        val  f         = get_amount
+
+    let function filter1 (now : date) (c : Mile.collection) : Mile.collection 
+    ensures { forall e : mile. Mile.mem e result -> expiration e > now }
+    =
+      let rec internal_filter (l : list mile) : list mile
+      ensures { forall e : mile. Mile.internal_contains (id e) result -> expiration e > now }
+      variant { l }
+      =
+      match l with
+      | Cons e tl -> 
+        if expiration e > now then
+          Cons e (internal_filter tl)
+        else internal_filter tl
+      | Nil -> Nil
+      end in
+      { Mile.content = internal_filter c.Mile.content }
+
+    let mk_default_mile () = { id = 0; amount = 0; expiration = 0; } : mile
+
+    type owner = {
+        addr   : address;
+        miles  : list key;  (* assets are shallow *)
+    } 
+
+    clone archetype2.AssetCollection as Owner with 
+        type t     = owner,
+        val  sortf = addr
+
+    let mk_default_owner () : owner = { addr = 0; miles = Nil; } : owner
+
+    type storage = {
+        mutable admin        : address;
+        mutable mile_assets  : Mile.collection;
+        mutable owner_assets : Owner.collection;
+        caller               : address;
+        now                  : date;
+    } invariant {
+        forall m : mile. Mile.mem m mile_assets -> amount m > 0
+    }
+
+    (* storage API *)
+    let add_mile (s : storage) (new_asset : mile) : unit
+    raises { KeyExist }
+    =
+    if Mile.mem new_asset s.mile_assets then
+        raise KeyExist
+    else
+        s.mile_assets <- Mile.add s.mile_assets new_asset
+
+    let remove_mile (s : storage) (k : key) : unit
+    raises { NotFound }
+    =
+    if not (Mile.contains k s.mile_assets) then
+       raise NotFound
+    else
+        s.mile_assets <- Mile.remove s.mile_assets k
+
+    let add_owner_miles (s : storage) (a : owner) (new_assets : list mile) : unit
+    raises { KeyExist, NotFound }
+    =
+    if not (Owner.mem a s.owner_assets) then
+        raise NotFound
+    else
+       (let rec iter_add (l : list mile) : unit
+        raises { KeyExist }
+        variant { l }
+        = 
+        match l with
+        | Cons e tl -> add_mile s e; iter_add tl
+        | Nil -> () 
+        end in
+        iter_add new_assets;
+        let new_asset = { a with miles = fappend a.miles (Mile.to_ids new_assets) } in
+        s.owner_assets <- Owner.set s.owner_assets (addr a) new_asset)
+    
+    let remove_owner_miles (s : storage) (a : owner) (assets : list key) : unit
+    raises { NotFound }
+    =
+    if not (Owner.mem a s.owner_assets) then
+        raise NotFound
+    else
+       (let rec iter_remove (l : list key) : unit
+        raises { NotFound }
+        variant { l }
+        = 
+        match l with
+        | Cons e tl -> remove_mile s e; iter_remove tl
+        | Nil -> () 
+        end in
+        iter_remove assets;
+        let new_asset = { a with miles = remove_keys a.miles assets } in
+        s.owner_assets <- Owner.set s.owner_assets (addr a) new_asset)
+
+    let add_owner (s : storage) (new_asset : owner) (miles_assets : list mile) : unit
+    raises { NotFound, KeyExist }
+    = 
+    if Owner.mem new_asset s.owner_assets then
+        raise KeyExist
+    else
+        (s.owner_assets <- Owner.add s.owner_assets new_asset;
+         add_owner_miles s new_asset miles_assets)
+    
+    let remove_owner (s : storage) (k : key) : unit
+    raises { NotFound }
+    = 
+    if not (Owner.contains k s.owner_assets) then
+        raise NotFound
+    else
+        (let a = Owner.get s.owner_assets k in
+        s.owner_assets <- Owner.remove s.owner_assets k;
+        remove_owner_miles s a a.miles)
+
+end
+
+module Miles_with_expiration
+
+  use Miles_with_expiration_storage
+  use archetype2.Lib
+  use list.List
+
+  let add (s : storage) (ow : key) (newmile : mile) : unit
+  raises { KeyExist, NotFound, InvalidCaller, InvalidCondition }
+  =
+  if not (fmem (s.caller) (Cons s.admin Nil)) then raise InvalidCaller;
+  if not (amount newmile > 0) then raise InvalidCondition;
+  if Owner.contains ow s.owner_assets then
+    let owner = Owner.get s.owner_assets ow in
+    add_owner_miles s owner (Cons newmile Nil)
+  else
+    let new_owner = { addr = ow; miles = (Cons (id newmile) Nil); } in
+    let assets = Cons newmile Nil in
+    add_owner s new_owner assets
+
+  let consume (s : storage) (ow : address) (nbmiles : int) : unit
+  raises { NotFound, InvalidCaller, InvalidCondition }
+  =
+  if not (fmem (s.caller) (Cons s.admin Nil)) then raise InvalidCaller;
+  if nbmiles <= 0 then raise InvalidCondition;
+  let o = Owner.get s.owner_assets ow in
+  let l = filter1 s.now (Mile.gets s.mile_assets o.miles) in
+  assert { forall m : mile. Mile.mem m l -> expiration m > s.now };
+  let ref remainder = 0 in
+  for i = 0 to Mile.card l - 1 do
+    let m = Mile.nth i l in
+    if remainder > 0 then (
+      if m.amount > remainder then (  
+        s.mile_assets <- Mile.set s.mile_assets (id m) { m with amount  = m.amount - remainder };
+        remainder <- 0)
+      else if m.amount = remainder then (
+        remainder <- 0;
+        remove_owner_miles s o (Cons m.id Nil))
+      else (
+        remainder <- remainder - (amount m);
+        remove_owner_miles s o (Cons m.id Nil))
+    )
+  done
+end

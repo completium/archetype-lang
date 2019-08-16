@@ -1,0 +1,77 @@
+archetype test_shallow
+
+asset othermile identified by oid = {
+  oid : int;
+}
+
+asset mile identified by id = {
+  id : int;
+  othermiles : othermile partition;
+}
+
+
+asset owner identified by addr = {
+  addr : address;
+  miles1 : mile partition;
+  miles2 : othermile partition;
+}
+
+action add1 (ow : owner) = {
+  effect {
+      owner.add ow
+  }
+}
+
+action add2 (a : address) (l1 : mile partition) (l2 : othermile partition) = {
+  effect {
+     owner.add { addr = a; miles1 = l1; miles2 = l2 }
+  }
+}
+
+action add3 (a : address) (l1 : mile partition) (l2 : othermile partition) = {
+  effect {
+     let o = { addr = a; miles1 = l1; miles2 = l2 } in
+     owner.add o
+  }
+}
+
+action add4 (a : address) (o1 : int) (o2 : int) (o3 : int) (o4 : int) = {
+  effect {
+     let o = {
+         addr = a;
+         miles1 = [ { id = o1;
+                      othermiles = [ { oid = o2 };
+                                     { oid = o3 } ] } ];
+         miles2 = [ { oid = o4 } ]
+     } in
+     owner.add o
+  }
+}
+
+action add5 (a : address) (o1 : int) (o2 : int) (o3 : int) (o4 : int) = {
+  effect {
+     owner.add {
+         addr = a;
+         miles1 = [ { id = o1;
+                      othermiles = [ { oid = o2 };
+                                     { oid = o3 } ] } ];
+         miles2 = [ { oid = o4 } ]
+     }
+  }
+}
+
+action add6 (a : address) (m : mile) = {
+  effect {
+     (owner.get a).miles1.add m
+  }
+}
+
+action add7 (a : address) (o1 : int) (o2 : int) (o3 : int) = {
+  effect {
+     (owner.get a).miles1.add { 
+        id = o1;
+        othermiles = [  { oid = o2 };
+                        { oid = o3 } ] 
+       }
+  }
+}
