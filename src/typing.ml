@@ -1044,27 +1044,27 @@ let rec for_xexpr (mode : emode_t) (env : env) ?(ety : M.ptyp option) (tope : PT
           for_xexpr env ?ety (mkloc (loc tope) (PT.Emethod (pe, x, [])))
         else
 
-        let e = for_xexpr env pe in
+          let e = for_xexpr env pe in
 
-        match Option.map Type.as_asset e.M.type_ with
-        | None ->
-          bailout ()
+          match Option.map Type.as_asset e.M.type_ with
+          | None ->
+            bailout ()
 
-        | Some None ->
-          Env.emit_error env (loc pe, AssetExpected);
-          bailout ()
+          | Some None ->
+            Env.emit_error env (loc pe, AssetExpected);
+            bailout ()
 
-        | Some (Some asset) -> begin
-            let asset = Env.Asset.get env (unloc asset) in
+          | Some (Some asset) -> begin
+              let asset = Env.Asset.get env (unloc asset) in
 
-            match List.Exn.assoc_map unloc (unloc x) asset.as_fields with
-            | None ->
-              let err = UnknownField (unloc asset.as_name, unloc x) in
-              Env.emit_error env (loc x, err); bailout ()
+              match List.Exn.assoc_map unloc (unloc x) asset.as_fields with
+              | None ->
+                let err = UnknownField (unloc asset.as_name, unloc x) in
+                Env.emit_error env (loc x, err); bailout ()
 
-            | Some fty ->
-              mk_sp (Some fty) (M.Pdot (e, x))
-          end
+              | Some fty ->
+                mk_sp (Some fty) (M.Pdot (e, x))
+            end
       end
 
     | Eapp (Foperator { pldesc = op }, args) -> begin
@@ -1194,33 +1194,33 @@ let rec for_xexpr (mode : emode_t) (env : env) ?(ety : M.ptyp option) (tope : PT
               Env.inscope env (fun env ->
                   let _ : bool = check_and_emit_name_free env x in
                   let env = Env.Local.push env (unloc x, xty) in
-                  env, for_formula env body) in 
+                  env, for_formula env body) in
 
             let qt =
               match qt with
               | PT.Forall -> M.Forall
               | PT.Exists -> M.Exists in
 
-            mk_sp (Some M.vtbool) (M.Lquantifer (qt, x, M.LTprog xty, body))
+            mk_sp (Some M.vtbool) (M.Lquantifer (qt, x, xty, body))
       end
 
     | Esecurity { pldesc = SMayBePerformedOnlyByRole (s1, s2) } ->
-        if mode <> `Formula then begin
-          Env.emit_error env (loc tope, SecurityInExpr);
-          bailout ()
-        end else
-          let s1 = for_action_description env s1 in
-          let s2 = for_security_role env s2 in
-          mk_sp (Some M.vtbool) (M.PsecurityActionRole (s1, s2))
+      if mode <> `Formula then begin
+        Env.emit_error env (loc tope, SecurityInExpr);
+        bailout ()
+      end else
+        let s1 = for_action_description env s1 in
+        let s2 = for_security_role env s2 in
+        mk_sp (Some M.vtbool) (M.PsecurityActionRole (s1, s2))
 
     | Esecurity { pldesc = SMayBePerformedOnlyByAction (s1, s2) } ->
-        if mode <> `Formula then begin
-          Env.emit_error env (loc tope, SecurityInExpr);
-          bailout ()
-        end else
-          let s1 = for_action_description env s1 in
-          let s2 = for_security_action env s2 in
-          mk_sp (Some M.vtbool) (M.PsecurityActionRole (s1, s2))
+      if mode <> `Formula then begin
+        Env.emit_error env (loc tope, SecurityInExpr);
+        bailout ()
+      end else
+        let s1 = for_action_description env s1 in
+        let s2 = for_security_action env s2 in
+        mk_sp (Some M.vtbool) (M.PsecurityActionRole (s1, s2))
 
     | Eapp      _
     | Elabel    _
@@ -1447,7 +1447,7 @@ and for_formula (env : env) (topf : PT.expr) : M.pterm =
 and for_action_description (env : env) (sa : PT.security_arg) : M.action_description =
   match unloc sa with
   | Sident { pldesc = "anyaction" } ->
-      M.ADAny
+    M.ADAny
 
   | Sapp (act, [{ pldesc = PT.Sident asset }]) -> begin
       let asset = mkloc (loc asset) (PT.Eterm (None, None, asset)) in
@@ -1455,15 +1455,15 @@ and for_action_description (env : env) (sa : PT.security_arg) : M.action_descrip
 
       match snd asset with
       | None ->
-          M.ADAny
+        M.ADAny
 
       | Some (decl, _) ->
-          M.ADOp (unloc act, decl.as_name)
+        M.ADOp (unloc act, decl.as_name)
     end
 
   | _ ->
-      Env.emit_error env (loc sa, InvalidActionDescription);
-      M.ADAny
+    Env.emit_error env (loc sa, InvalidActionDescription);
+    M.ADAny
 
 (* -------------------------------------------------------------------- *)
 and for_security_action (env : env) (sa : PT.security_arg) : M.security_action list =
@@ -1477,23 +1477,23 @@ and for_security_action (env : env) (sa : PT.security_arg) : M.security_action l
     end
 
   | Slist sas ->
-      List.flatten (List.map (for_security_action env) sas)
+    List.flatten (List.map (for_security_action env) sas)
 
   | _ ->
-      Format.eprintf "%a@." PT.pp_security_arg sa;
+    Format.eprintf "%a@." PT.pp_security_arg sa;
 
-      Env.emit_error env (loc sa, InvalidSecurityAction);
-      []
+    Env.emit_error env (loc sa, InvalidSecurityAction);
+    []
 
 (* -------------------------------------------------------------------- *)
 and for_security_role (env : env) (sa : PT.security_arg) : M.security_role list =
   match unloc sa with
   | Sident id ->
-      Option.get_as_list (for_role env id)
+    Option.get_as_list (for_role env id)
 
   | _ ->
-      Env.emit_error env (loc sa, InvalidSecurityRole);
-      []
+    Env.emit_error env (loc sa, InvalidSecurityRole);
+    []
 
 (* -------------------------------------------------------------------- *)
 and for_role (env : env) (name : PT.lident) =
@@ -1654,9 +1654,9 @@ let rec for_instruction (env : env) (i : PT.expr) : env * M.instruction =
           let env =
             match aname with
             | None ->
-                env
+              env
             | Some aname ->
-                Option.fold (fun env lbl ->
+              Option.fold (fun env lbl ->
                   if (check_and_emit_name_free env lbl) then
                     Env.Label.push env (unloc lbl, `Loop aname)
                   else env) env lbl
@@ -1727,22 +1727,22 @@ let for_verification_item (env : env) (v : PT.verification_item) : env * env ive
     (env, `Variable (x, e))
 
   | PT.Vassert (x, tg, f, invs) -> begin
-    let env0 =
-      match Env.Label.lookup env (unloc tg) with
-      | None ->
+      let env0 =
+        match Env.Label.lookup env (unloc tg) with
+        | None ->
           Env.emit_error env (loc tg, UnknownLabel (unloc tg));
           env
-      | Some (env, _) ->
+        | Some (env, _) ->
           env
-    in
+      in
 
-    let for_inv (lbl, linvs) =
-      (lbl, List.map (for_formula env0) linvs) in
+      let for_inv (lbl, linvs) =
+        (lbl, List.map (for_formula env0) linvs) in
 
-    let f    = for_formula env0 f in
-    let invs = List.map for_inv invs in
+      let f    = for_formula env0 f in
+      let invs = List.map for_inv invs in
 
-    (env, `Assert (x, tg, f, invs))
+      (env, `Assert (x, tg, f, invs))
     end
 
   | PT.Veffect i ->
@@ -1754,15 +1754,15 @@ let for_verification_item (env : env) (v : PT.verification_item) : env * env ive
       let env0 =
         match Env.Label.lookup env (unloc lbl) with
         | None ->
-            Env.emit_error env (loc lbl, UnknownLabel (unloc lbl));
-            env
+          Env.emit_error env (loc lbl, UnknownLabel (unloc lbl));
+          env
         | Some (_, `Plain) ->
-            Env.emit_error env (loc lbl, NonLoopLabel (unloc lbl));
-            env
+          Env.emit_error env (loc lbl, NonLoopLabel (unloc lbl));
+          env
         | Some (env, `Loop aname) ->
-            let ty = M.Tasset (mkloc (loc lbl) aname) in
-            let ty = M.Tcontainer (ty, M.Subset) in
-            Env.Local.push env ("to_iter", ty)
+          let ty = M.Tasset (mkloc (loc lbl) aname) in
+          let ty = M.Tcontainer (ty, M.Subset) in
+          Env.Local.push env ("to_iter", ty)
       in (lbl, List.map (for_formula env0) linvs) in
     let f    =
       let env0 = Option.fst (Env.Label.lookup env (unloc x)) in
@@ -1985,28 +1985,28 @@ let for_acttx_decl (env : env) (decl : acttx loced) =
   | `Action (x, args, pt, i_exts, _exts) -> begin
       let env, decl =
         Env.inscope env (fun env ->
-          let env, args   = for_args_decl env args in
-          let env, effect = Option.foldmap for_instruction env (Option.fst i_exts) in
-          let callby      = Option.map (for_callby env) (Option.fst pt.calledby) in
-          let callby      = Option.get_dfl [] callby in
-          let env, reqs   = Option.foldmap for_lbls_expr env (Option.fst pt.require) in
-          let env, verif  = Option.foldmap for_verification env pt.verif in
+            let env, args   = for_args_decl env args in
+            let env, effect = Option.foldmap for_instruction env (Option.fst i_exts) in
+            let callby      = Option.map (for_callby env) (Option.fst pt.calledby) in
+            let callby      = Option.get_dfl [] callby in
+            let env, reqs   = Option.foldmap for_lbls_expr env (Option.fst pt.require) in
+            let env, verif  = Option.foldmap for_verification env pt.verif in
 
-          let decl =
-            { ad_name   = x;
-              ad_args   = List.pmap (fun x -> x) args;
-              ad_callby = callby;
-              ad_effect = effect;
-              ad_reqs   = Option.get_dfl [] reqs;
-              ad_verif  = Option.get_dfl [] verif; } in
+            let decl =
+              { ad_name   = x;
+                ad_args   = List.pmap (fun x -> x) args;
+                ad_callby = callby;
+                ad_effect = effect;
+                ad_reqs   = Option.get_dfl [] reqs;
+                ad_verif  = Option.get_dfl [] verif; } in
 
-          (env, decl))
+            (env, decl))
 
       in (Env.Action.push env decl, decl)
     end
 
   | `Transition (x, args, tgt, from_, actions, tx, _exts) ->
-      assert false
+    assert false
     (*
 
     let _env0  = for_args_decl env args in
@@ -2130,36 +2130,36 @@ let assets_of_adecls adecls =
 let variables_of_fdecls fdecls =
   let for1 = function
     | `Variable (decl : vardecl) ->
-        M.{ decl =
-              M.{ name    = decl.vr_name;
-                  typ     = Some decl.vr_type;
-                  default = decl.vr_def;
-                  loc     = loc decl.vr_name; };
-            constant = decl.vr_kind = `Constant;
-            from     = None;
-            to_      = None;
-            loc      = loc decl.vr_name; }
+      M.{ decl =
+            M.{ name    = decl.vr_name;
+                typ     = Some decl.vr_type;
+                default = decl.vr_def;
+                loc     = loc decl.vr_name; };
+          constant = decl.vr_kind = `Constant;
+          from     = None;
+          to_      = None;
+          loc      = loc decl.vr_name; }
 
   in List.map for1 (List.pmap (fun x -> x) fdecls)
 
 (* -------------------------------------------------------------------- *)
 let verifications_of_iverifications =
   let env0 = M.{
-    predicates  = [];
-    definitions = [];
-    axioms      = [];
-    theorems    = [];
-    variables   = [];
-    invariants  = [];
-    effect      = None;
-    specs       = [];
-    asserts     = [];
-    loc         = L.dummy;      (* FIXME *) } in
+      predicates  = [];
+      definitions = [];
+      axioms      = [];
+      theorems    = [];
+      variables   = [];
+      invariants  = [];
+      effect      = None;
+      specs       = [];
+      asserts     = [];
+      loc         = L.dummy;      (* FIXME *) } in
 
   let do1 env (iverif : env iverification) =
     match iverif with
     | _ ->
-        env                     (* FIXME *)
+      env                     (* FIXME *)
 
   in fun iverifs -> List.fold_left do1 env0 iverifs
 
@@ -2169,14 +2169,14 @@ let transactions_of_tdecls tdecls =
     M.{ name = tdecl.ad_name;
         args =
           List.map (fun (x, xty) ->
-            M.{ name = x; typ = Some xty; default = None; loc = loc x; })
+              M.{ name = x; typ = Some xty; default = None; loc = loc x; })
             tdecl.ad_args;
         calledby        = None;        (* FIXME *)
         accept_transfer = true;        (* FIXME *)
         require         = Some (
-          List.map
-            (fun (x, c) -> M.{ label = x; term = c; loc = L.dummy; }) (* FIXME *)
-            tdecl.ad_reqs);
+            List.map
+              (fun (x, c) -> M.{ label = x; term = c; loc = L.dummy; }) (* FIXME *)
+              tdecl.ad_reqs);
         transition      = None;        (* FIXME *)
         verification    = Some (verifications_of_iverifications tdecl.ad_verif);
         functions       = [];          (* FIXME *)

@@ -30,13 +30,11 @@ type vtyp =
   | VTkey
 [@@deriving show {with_path = false}]
 
-type vset =
-  | VSremoved
-  | VSadded
-  | VSstable
-  | VSbefore
-  | VSafter
-  | VSfixed
+type trtyp =
+  | TRentry
+  | TRaction (* add; remove; update *)
+  | TRasset
+  | TRfield
 [@@deriving show {with_path = false}]
 
 type ptyp =
@@ -48,26 +46,10 @@ type ptyp =
   | Ttuple of ptyp list
   | Toption of ptyp
   | Tentry (* entry of external contract *)
+  | Ttrace of trtyp
 [@@deriving show {with_path = false}]
-
-type trtyp =
-  | TRentry
-  | TRaction (* add; remove; update *)
-  | TRasset
-  | TRfield
-[@@deriving show {with_path = false}]
-
-type ltyp =
-  | LTprog of ptyp
-  | LTvset of vset * ltyp
-  | LTtrace of trtyp
-[@@deriving show {with_path = false}]
-
 
 type type_ = ptyp (* type of pterm *)
-[@@deriving show {with_path = false}]
-
-type ltype_ = ltyp (* type of lterm *)
 [@@deriving show {with_path = false}]
 
 (* operators and constants *)
@@ -299,7 +281,7 @@ type 'id call_kind =
 [@@deriving show {with_path = false}]
 
 type ('id, 'typ, 'term) term_node  =
-  | Lquantifer of quantifier * 'id * ltype_ * 'term
+  | Lquantifer of quantifier * 'id * type_ * 'term
   | Pif of ('term * 'term * 'term)
   | Pmatchwith of 'term * ('id pattern_gen * 'term) list
   | Pcall of ('term option * 'id call_kind * (('id, 'typ, 'term) term_arg) list)
@@ -339,9 +321,6 @@ type ('id, 'typ, 'term) term_poly = ('typ, ('id, 'typ, 'term) term_node) struct_
 [@@deriving show {with_path = false}]
 
 type ('id, 'typ) term_gen = ('id, 'typ, ('id, 'typ) term_gen) term_poly
-[@@deriving show {with_path = false}]
-
-type lterm = (lident, ltype_) term_gen
 [@@deriving show {with_path = false}]
 
 type pterm = (lident, type_) term_gen
@@ -401,8 +380,8 @@ type ('id, 'typ, 'term) variable = {
 
 type ('id, 'typ) predicate = {
   name : 'id;
-  args : ('id * (('id, ltype_) term_gen)) list;
-  body : ('id, ltype_) term_gen;
+  args : ('id * (('id, type_) term_gen)) list;
+  body : ('id, type_) term_gen;
   loc  : Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]
@@ -411,20 +390,20 @@ type ('id, 'typ) definition = {
   name : 'id;
   typ  : 'typ;
   var  : 'id;
-  body : ('id, ltype_) term_gen;
+  body : ('id, type_) term_gen;
   loc  : Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]
 
 type ('id, 'typ) invariant = {
   label: 'id;
-  formulas: (('id, ltype_) term_gen) list;
+  formulas: (('id, type_) term_gen) list;
 }
 [@@deriving show {with_path = false}]
 
 type ('id, 'typ) specification = {
   name: 'id;
-  formula: ('id, ltype_) term_gen;
+  formula: ('id, type_) term_gen;
   invariants: (('id, 'typ) invariant) list;
 }
 [@@deriving show {with_path = false}]
@@ -432,7 +411,7 @@ type ('id, 'typ) specification = {
 type ('id, 'typ) assert_ = {
   name: 'id;
   label: 'id;
-  formula: ('id, ltype_) term_gen;
+  formula: ('id, type_) term_gen;
   invariants: ('id, 'typ) invariant list;
 }
 [@@deriving show {with_path = false}]
@@ -440,10 +419,10 @@ type ('id, 'typ) assert_ = {
 type ('id, 'typ, 'term) verification = {
   predicates  : ('id, 'typ) predicate list;
   definitions : ('id, 'typ) definition list;
-  axioms      : ('id, ('id, ltype_) term_gen) label_term list;
-  theorems    : ('id, ('id, ltype_) term_gen) label_term list;
+  axioms      : ('id, ('id, type_) term_gen) label_term list;
+  theorems    : ('id, ('id, type_) term_gen) label_term list;
   variables   : ('id, 'typ, 'term) variable list;
-  invariants  : ('id * ('id, ('id, ltype_) term_gen) label_term list) list;
+  invariants  : ('id * ('id, ('id, type_) term_gen) label_term list) list;
   effect      : 'term option;
   specs       : ('id, 'typ) specification list;
   asserts     : ('id, 'typ) assert_ list;
@@ -494,7 +473,7 @@ type transaction = (lident, type_, pterm, instruction) transaction_struct
 type ('id, 'typ, 'term) enum_item_struct = {
   name : 'id;
   initial : bool;
-  invariants : ('id, ('id, ltype_) term_gen) label_term list;
+  invariants : ('id, ('id, type_) term_gen) label_term list;
   loc : Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]
@@ -517,7 +496,7 @@ type ('id, 'typ, 'term) asset_struct = {
   state   : 'id option;
   role    : bool;
   init    : 'term option;
-  specs   : ('id, ('id, ltype_) term_gen) label_term list;
+  specs   : ('id, ('id, type_) term_gen) label_term list;
   loc     : Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]

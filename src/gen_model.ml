@@ -51,6 +51,13 @@ let to_model (ast : A.model) : M.model =
     | A.VTkey        -> M.Bkey
   in
 
+  let to_trtyp = function
+    | A.TRentry  -> M.TRentry
+    | A.TRaction -> M.TRaction
+    | A.TRasset  -> M.TRasset
+    | A.TRfield  -> M.TRfield
+  in
+
   let rec ptyp_to_type (t : A.ptyp) : M.type_ =
     match t with
     | A.Tasset id          -> M.Tasset id
@@ -61,22 +68,7 @@ let to_model (ast : A.model) : M.model =
     | A.Ttuple l           -> M.Ttuple (List.map ptyp_to_type l)
     | A.Tentry             -> M.Tentry
     | A.Toption t          -> M.Toption (ptyp_to_type t)
-  in
-
-  let to_trtyp = function
-    | A.TRentry  -> M.TRentry
-    | A.TRaction -> M.TRaction
-    | A.TRasset  -> M.TRasset
-    | A.TRfield  -> M.TRfield
-  in
-
-  let rec ltyp_to_type t : M.type_ =
-    match t with
-    | A.LTprog t              -> ptyp_to_type t
-    | A.LTvset (VSremoved, t) -> M.Tvset (M.VSremoved, ltyp_to_type t)
-    | A.LTvset (VSadded, t)   -> M.Tvset (M.VSadded, ltyp_to_type t)
-    | A.LTvset (_, t)         -> ltyp_to_type t
-    | A.LTtrace tr            -> M.Ttrace (to_trtyp tr)
+    | A.Ttrace tr          -> M.Ttrace (to_trtyp tr)
   in
 
   let to_assignment_operator = function
@@ -189,8 +181,8 @@ let to_model (ast : A.model) : M.model =
         assert false
 
       | A.Ptuple l                             -> M.Mtuple (List.map f l)
-      | A.Lquantifer (Forall, i, typ, term)    -> M.Mforall (i, ltyp_to_type typ, f term)
-      | A.Lquantifer (Exists, i, typ, term)    -> M.Mexists (i, ltyp_to_type typ, f term)
+      | A.Lquantifer (Forall, i, typ, term)    -> M.Mforall (i, ptyp_to_type typ, f term)
+      | A.Lquantifer (Exists, i, typ, term)    -> M.Mexists (i, ptyp_to_type typ, f term)
 
       | A.Pcall (_, A.Cconst A.Cbefore,    [AExpr p]) -> M.Msetbefore    (f p)
       | A.Pcall (_, A.Cconst A.Cunmoved,   [AExpr p]) -> M.Msetunmoved   (f p)
@@ -271,14 +263,8 @@ let to_model (ast : A.model) : M.model =
     M.mk_mterm node type_ ~loc:pterm.loc
   in
 
-  let rec lterm_to_mterm (lterm : A.lterm) : M.mterm =
-    let node = to_mterm_node lterm.node lterm_to_mterm ltyp_to_type in
-    let type_ = ltyp_to_type (Option.get lterm.type_) in
-    M.mk_mterm node type_ ~loc:lterm.loc
-  in
-
-  let to_label_lterm (x : ('id, ('id, A.ltype_) A.term_gen) A.label_term) : M.label_term =
-    M.mk_label_term (lterm_to_mterm x.term) ?label:x.label ~loc:x.loc
+  let to_label_lterm (x : ('id, ('id, A.type_) A.term_gen) A.label_term) : M.label_term =
+    M.mk_label_term (to_mterm x.term) ?label:x.label ~loc:x.loc
   in
 
 
@@ -588,11 +574,11 @@ let to_model (ast : A.model) : M.model =
   in
 
   let to_predicate (p : ('a, A.ptyp) A.predicate) : M.predicate =
-    M.mk_predicate p.name (lterm_to_mterm p.body) ~args:(List.map (fun (id, body) -> (id, lterm_to_mterm body)) p.args) ~loc:p.loc
+    M.mk_predicate p.name (to_mterm p.body) ~args:(List.map (fun (id, body) -> (id, to_mterm body)) p.args) ~loc:p.loc
   in
 
   let to_definition (d : ('a, A.ptyp) A.definition ): M.definition =
-    M.mk_definition d.name (ptyp_to_type d.typ) d.var (lterm_to_mterm d.body) ~loc:d.loc
+    M.mk_definition d.name (ptyp_to_type d.typ) d.var (to_mterm d.body) ~loc:d.loc
   in
 
   let to_variable (v : (A.lident, A.ptyp, A.pterm) A.variable) : M.variable =
@@ -606,16 +592,16 @@ let to_model (ast : A.model) : M.model =
   in
 
   let to_invariant (i : (A.lident, A.ptyp) A.invariant) :M.invariant  =
-    M.mk_invariant i.label ~formulas:(List.map lterm_to_mterm i.formulas)
+    M.mk_invariant i.label ~formulas:(List.map to_mterm i.formulas)
   in
 
   let to_spec (s : (A.lident, A.type_) A.specification) : M.specification  =
-    M.mk_specification s.name Post (lterm_to_mterm s.formula)
+    M.mk_specification s.name Post (to_mterm s.formula)
       ~invariants:(List.map to_invariant s.invariants)
   in
 
   let to_assert (s : (A.lident, A.type_) A.assert_) : M.specification  =
-    M.mk_specification s.name Assert (lterm_to_mterm s.formula)
+    M.mk_specification s.name Assert (to_mterm s.formula)
       ~invariants:(List.map to_invariant s.invariants)
   in
 

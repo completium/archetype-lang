@@ -48,6 +48,8 @@ let rec pp_ptyp fmt (t : ptyp) =
       (pp_list " * " pp_type_) ts
   | Tentry ->
     Format.fprintf fmt "entry"
+  | Ttrace _ ->
+    Format.fprintf fmt "trace"
 
 let rec pp_qualid fmt (q : qualid) =
   match q.node with
@@ -855,10 +857,10 @@ let pp_function fmt f =
     (pp_option pp_verification) f.verif
     pp_mterm fs.body *)
 
-let pp_label_term fmt (lt : (lident, (lident, ltype_) term_gen) label_term) =
+let pp_label_term fmt (lt : (lident, (lident, type_) term_gen) label_term) =
   Format.fprintf fmt "%a%a"
     (pp_option (pp_postfix " : " pp_id)) lt.label
-    pp_lterm lt.term
+    pp_pterm lt.term
 
 let pp_variable fmt (v : (lident, ptyp, pterm) variable) =
   Format.fprintf fmt "%a %a%a%a%a"
