@@ -1414,8 +1414,9 @@ let create_miles_with_expiration_ast () =
                                                                            (mk_sp (Pcall (None,
                                                                                           Cconst Csum,
                                                                                           [
-                                                                                            AExpr (mk_sp (Pvar (dumloc "to_iter"))
-                                                                                                     ~type_:((Tasset (dumloc "mile"))));
+                                                                                            AExpr (mk_sp (Pcall (None,Cconst Ctoiterate, [AExpr (mk_sp (Pvar (dumloc "by_expiration"))
+                                                                                                                                                   ~type_:(Tcontainer(Tasset (dumloc "mile"),Collection)))]))
+                                                                                                     ~type_:((Tcontainer (Tasset (dumloc "mile"),Collection))));
                                                                                             AExpr (mk_sp (Pvar (dumloc "amount"))
                                                                                                      ~type_:((Tbuiltin VTint)))
                                                                                           ]))

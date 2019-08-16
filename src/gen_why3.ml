@@ -948,9 +948,12 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
         | Some formula -> Tassert (map_mterm m ctx formula)
         | _ -> assert false
       end
-    | M.Mand (l,r)-> Tand (map_mterm m ctx r,map_mterm m ctx r)
+    | M.Mand (l,r)-> Tand (map_mterm m ctx l,map_mterm m ctx r)
     | M.Misempty (l,r) -> Tempty (with_dummy_loc l,map_mterm m ctx r)
     | M.Msubset (n,l,r) -> Tsubset (with_dummy_loc n,map_mterm m ctx l,map_mterm m ctx r)
+    | M.Msettoiterate c ->
+      let n = M.Utils.get_asset_type mt |> map_lident in
+      Ttoiter (n,with_dummy_loc "i",map_mterm m ctx c) (* TODO : should retrieve actual idx value *)
     | _ -> Tnone in
   mk_loc mt.loc t
 and mk_invariants (m : M.model) ctx (lbl : ident option) invs =

@@ -380,6 +380,11 @@ let rec pp_term outer pos fmt = function
   | Tassert e ->
     Format.fprintf fmt "assert { %a }"
       (pp_term outer pos) e
+  | Ttoiter (a,i,e) ->
+    Format.fprintf fmt "%a.tail %a %a"
+      pp_str (String.capitalize_ascii a)
+      pp_str i
+      (pp_with_paren (pp_term outer pos)) e
   | Tcard (i,e) ->
     Format.fprintf fmt "%a.card %a"
       pp_str (String.capitalize_ascii i)
