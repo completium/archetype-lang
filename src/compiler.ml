@@ -7,6 +7,8 @@ exception E_arg
 exception ArgError of string
 exception Stop
 
+let is_false_ast () : bool = !Options.fake_ast || !Options.fake_ast2
+
 let output_pt (pt : ParseTree.archetype) =
   if !Options.opt_json
   then (Format.printf "%s\n" (Yojson.Safe.to_string (ParseTree.archetype_to_yojson pt)); raise Stop)
@@ -15,9 +17,7 @@ let output_pt (pt : ParseTree.archetype) =
   else Format.printf "%a@." Printer.pp_archetype pt
 
 let output_tast (ast : Ast.model) =
-  if !Options.opt_raw
-  then Format.printf "%a@." Ast.pp_model ast
-  else Format.printf "%a@." Printer_ast.pp_ast ast
+  Format.printf "%a@." Ast.pp_model ast
 
 let output_model (model : Model.model) =
   if !Options.opt_raw
@@ -25,14 +25,27 @@ let output_model (model : Model.model) =
   else Format.printf "%a@." Printer_model.pp_model model
 
 let parse (filename, channel) =
-  Io.parse_archetype ~name:filename channel
+  if is_false_ast()
+  then ParseTree.mk_archetype()
+  else
+    Io.parse_archetype ~name:filename channel
 (* if !Options.opt_cwse
    then Io.parse_archetype
    else Io.parse_archetype_strict) ~name:filename channel *)
 
 
 let preprocess_ext (pt : ParseTree.archetype) : ParseTree.archetype =
-  pt (* TODO: add extension process *)
+  if is_false_ast()
+  then pt
+  else pt (* TODO: add extension process *)
+
+let type_ (pt : ParseTree.archetype) : Ast.model =
+  if !Options.fake_ast
+  then Ast.create_miles_with_expiration_ast ()
+  else if !Options.fake_ast2
+  then Ast.create_test_shallow_ast ()
+  else Typing.typing Typing.empty pt
+
 
 let generate_target_pt (pt : ParseTree.archetype) : ParseTree.archetype =
   match !Options.target with
@@ -43,7 +56,6 @@ let generate_target_pt (pt : ParseTree.archetype) : ParseTree.archetype =
     )
   | _ -> pt
 
-let type_                = Typing.typing Typing.empty
 let generate_model       = Gen_model.to_model
 let shallow_asset        = Gen_shallow_asset.shallow_asset
 let split_key_values     = Gen_split_key_values.split_key_values
@@ -165,6 +177,7 @@ let compile (filename, channel) =
 let close dispose channel =
   if dispose then close_in channel
 
+(* -------------------------------------------------------------------- *)
 let set_margin i =
   Format.pp_set_margin Format.std_formatter i;
   Format.pp_set_margin Format.err_formatter i
