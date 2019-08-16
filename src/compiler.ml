@@ -15,7 +15,9 @@ let output_pt (pt : ParseTree.archetype) =
   else Format.printf "%a@." Printer.pp_archetype pt
 
 let output_tast (ast : Ast.model) =
-  Format.printf "%a@." Ast.pp_model ast
+  if !Options.opt_raw
+  then Format.printf "%a@." Ast.pp_model ast
+  else Format.printf "%a@." Printer_ast.pp_ast ast
 
 let output_model (model : Model.model) =
   if !Options.opt_raw
@@ -32,12 +34,6 @@ let parse (filename, channel) =
 let preprocess_ext (pt : ParseTree.archetype) : ParseTree.archetype =
   pt (* TODO: add extension process *)
 
-let type_ pt =
-  let ast = Typing.typing Typing.empty pt in
-  if !Options.opt_tast
-  then (Format.printf "%a@." Ast.pp_model ast; raise Stop)
-  else ast
-
 let generate_target_pt (pt : ParseTree.archetype) : ParseTree.archetype =
   match !Options.target with
   | Markdown  -> (
@@ -47,6 +43,7 @@ let generate_target_pt (pt : ParseTree.archetype) : ParseTree.archetype =
     )
   | _ -> pt
 
+let type_                = Typing.typing Typing.empty
 let generate_model       = Gen_model.to_model
 let shallow_asset        = Gen_shallow_asset.shallow_asset
 let split_key_values     = Gen_split_key_values.split_key_values
@@ -161,7 +158,7 @@ let compile (filename, channel) =
   |> cont !Options.opt_pt output_pt
   |> generate_target_pt
   |> type_
-  |> cont !Options.opt_tast output_tast
+  |> cont !Options.opt_ast output_tast
   |> generate_model
   |> generate_target
 
@@ -199,8 +196,8 @@ let main () =
       "--parse-tree", Arg.Set Options.opt_pt, " Same as -pt";
       "-ext", Arg.Set Options.opt_ext, " Process extensions";
       "--extensions", Arg.Set Options.opt_ext, " Same as -ext";
-      "-tast", Arg.Set Options.opt_tast, " Generate typed ast";
-      "--typed-ast", Arg.Set Options.opt_tast, " Same as -tast";
+      "-ast", Arg.Set Options.opt_ast, " Generate typed ast";
+      "--typed-ast", Arg.Set Options.opt_ast, " Same as -tast";
       "-sa", Arg.Set Options.opt_sa, " Transform to shallow asset";
       "--shallow-asset", Arg.Set Options.opt_sa, " Same as -sa";
       "-skv", Arg.Set Options.opt_skv, " Split key value of collection of asset";
