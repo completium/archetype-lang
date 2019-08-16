@@ -160,7 +160,9 @@ module List : sig
   val assoc_all     : 'a -> ('a * 'b) list -> 'b list
 
   module Exn : sig
-    val assoc : 'a -> ('a * 'b) list -> 'b option
+    val assoc     : 'a -> ('a * 'b) list -> 'b option
+    val find      : ('a -> bool) -> 'a list -> 'a option
+    val assoc_map : ('a -> 'b) -> 'b -> ('a * 'c) list -> 'c option
   end
 end = struct
   include List
@@ -254,6 +256,12 @@ end = struct
   module Exn = struct
     let assoc x xs =
       try Some (List.assoc x xs) with Not_found -> None
+
+    let find f xs =
+      try Some (List.find f xs) with Not_found -> None
+
+    let assoc_map f x xs =
+      Option.map snd (find (fun (x', _) -> x = f x') xs)
   end
 end
 

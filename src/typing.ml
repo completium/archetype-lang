@@ -125,7 +125,6 @@ type error_desc =
 type error = L.t * error_desc
 
 (* -------------------------------------------------------------------- *)
-type effect  = unit
 type argtype = [`Type of M.type_ | `Effect of ident]
 
 (* -------------------------------------------------------------------- *)
@@ -313,8 +312,8 @@ let methods = Mid.of_list methods
 (* -------------------------------------------------------------------- *)
 type assetdecl = {
   as_name   : M.lident;
-  as_fields : (ident * M.ptyp) list;
-  as_pk     : ident;
+  as_fields : (M.lident * M.ptyp) list;
+  as_pk     : M.lident;
 }
 
 (* -------------------------------------------------------------------- *)
@@ -326,8 +325,25 @@ type vardecl = {
 }
 
 (* -------------------------------------------------------------------- *)
-type actiondecl = {
-  ad_name : M.lident;
+type 'env iverification = [
+  | `Predicate     of M.lident * (M.lident * M.ptyp) list * M.pterm
+  | `Definition    of M.lident * (M.lident * M.ptyp) option * M.pterm
+  | `Axiom         of M.lident * M.pterm
+  | `Theorem       of M.lident * M.pterm
+  | `Variable      of M.lident * M.pterm option
+  | `Assert        of M.lident * M.lident * M.pterm * (M.lident * M.pterm list) list
+  | `Effect        of 'env * M.instruction
+  | `Specification of M.lident * M.pterm * (M.lident * M.pterm list) list
+]
+
+(* -------------------------------------------------------------------- *)
+type 'env actiondecl = {
+  ad_name   : M.lident;
+  ad_args   : (M.lident * M.ptyp) list;
+  ad_callby : M.lident list;
+  ad_effect : M.instruction option;
+  ad_reqs   : (M.lident option * M.pterm) list;
+  ad_verif  : 'env iverification list;
 }
 
 (* -------------------------------------------------------------------- *)
@@ -375,7 +391,7 @@ module Env : sig
     | `Global     of vardecl
     | `Proc       of procsig
     | `Asset      of assetdecl
-    | `Action     of actiondecl
+    | `Action     of t actiondecl
     | `Transition of transitiondecl
     | `Field      of ident
   ]
@@ -438,10 +454,10 @@ module Env : sig
   end
 
   module Action : sig
-    val lookup  : t -> ident -> actiondecl option
-    val get     : t -> ident -> actiondecl
+    val lookup  : t -> ident -> t actiondecl option
+    val get     : t -> ident -> t actiondecl
     val exists  : t -> ident -> bool
-    val push    : t -> actiondecl -> t
+    val push    : t -> t actiondecl -> t
   end
 
   module Transition : sig
@@ -463,7 +479,7 @@ end = struct
     | `Global     of vardecl
     | `Proc       of procsig
     | `Asset      of assetdecl
-    | `Action     of actiondecl
+    | `Action     of t actiondecl
     | `Transition of transitiondecl
     | `Field      of ident
   ]
@@ -640,15 +656,16 @@ end = struct
       Option.bind
         (function
           | `Field nm ->
-            let decl = get env nm in
-            Some (decl, List.assoc fname decl.as_fields)
+            let decl  = get env nm in
+            let field = List.Exn.assoc_map unloc fname decl.as_fields in
+            Some (decl, Option.get field)
           | _ -> None)
         (Mid.find_opt fname env.env_bindings)
 
     let push (env : t) ({ as_name = nm } as decl : assetdecl) : t =
       let env = push env (unloc nm) (`Asset decl) in
       List.fold_left
-        (fun env (x, _) -> push env x (`Field (unloc nm)))
+        (fun env (x, _) -> push env (unloc x) (`Field (unloc nm)))
         env decl.as_fields
   end
 
@@ -664,7 +681,7 @@ end = struct
     let get (env : t) (name : ident) =
       Option.get (lookup env name)
 
-    let push (env : t) (act : actiondecl) =
+    let push (env : t) (act : t actiondecl) =
       push env (unloc act.ad_name) (`Action act)
   end
 
@@ -991,7 +1008,7 @@ let rec for_xexpr (mode : emode_t) (env : env) ?(ety : M.ptyp option) (tope : PT
 
             | [asset] ->
               let fields =
-                List.map (fun (fname, ftype) ->
+                List.map (fun ({ pldesc = fname }, ftype) ->
                     match Mid.find_opt fname fields with
                     | None ->
                       let err = MissingFieldInRecordLiteral fname in
@@ -1038,7 +1055,7 @@ let rec for_xexpr (mode : emode_t) (env : env) ?(ety : M.ptyp option) (tope : PT
         | Some (Some asset) -> begin
             let asset = Env.Asset.get env (unloc asset) in
 
-            match List.Exn.assoc (unloc x) asset.as_fields with
+            match List.Exn.assoc_map unloc (unloc x) asset.as_fields with
             | None ->
               let err = UnknownField (unloc asset.as_name, unloc x) in
               Env.emit_error env (loc x, err); bailout ()
@@ -1366,7 +1383,8 @@ and for_arg_effect mode (env : env) (asset : assetdecl) (tope : PT.expr) =
 
       | Some (op, x) -> begin
           try
-            let fty = List.assoc (unloc x) asset.as_fields in
+            let fty = List.Exn.assoc_map unloc (unloc x) asset.as_fields in
+            let fty = Option.get fty in
             let op  = for_assignment_operator op in
             let e   = for_assign_expr mode env (loc x) (op, fty) e in
 
@@ -1492,11 +1510,12 @@ let for_expr (env : env) ?(ety : M.type_ option) (tope : PT.expr) : M.pterm =
   for_xexpr `Expr env ?ety tope
 
 (* -------------------------------------------------------------------- *)
-let for_lbl_expr (env : env) (topf : PT.label_expr) : env * M.pterm =
-  env, for_expr env (snd (unloc topf))
+let for_lbl_expr (env : env) (topf : PT.label_expr) : env * (M.lident option * M.pterm) =
+  (* FIXME: check for duplicates *)
+  env, (fst (unloc topf), for_expr env (snd (unloc topf)))
 
 (* -------------------------------------------------------------------- *)
-let for_lbls_expr (env : env) (topf : PT.label_exprs) : env * M.pterm list =
+let for_lbls_expr (env : env) (topf : PT.label_exprs) : env * (M.lident option * M.pterm) list =
   List.fold_left_map for_lbl_expr env topf
 
 (* -------------------------------------------------------------------- *)
@@ -1673,7 +1692,7 @@ let rec for_instruction (env : env) (i : PT.expr) : env * M.instruction =
     env, mki (Iseq [])
 
 (* -------------------------------------------------------------------- *)
-let for_verification_item (env : env) (v : PT.verification_item) =
+let for_verification_item (env : env) (v : PT.verification_item) : env * env iverification =
   match unloc v with
   | PT.Vpredicate (x, args, f) ->
     let env, (args, f) =
@@ -1890,9 +1909,9 @@ let for_varfun_decl (env : env) (decl : varfun loced) =
         vr_kind = ctt; vr_core = None          ; } in
 
       if   (check_and_emit_name_free env x)
-      then Env.Var.push env decl
-      else env
-    end else env
+      then (Env.Var.push env decl, Some (`Variable decl))
+      else (env, None)
+    end else (env, None)
 
   | `Function fdecl ->
     let env, _   = Env.inscope env (fun env ->
@@ -1900,11 +1919,11 @@ let for_varfun_decl (env : env) (decl : varfun loced) =
         let rty    = Option.bind (for_type env) fdecl.ret_t in
         let _body  = for_expr env ?ety:rty fdecl.body in
         let _verif = Option.map (for_verification env) fdecl.verif in
-        env, ()) in env
+        env, ()) in (env, None)
 
 (* -------------------------------------------------------------------- *)
 let for_varfuns_decl (env : env) (decls : varfun loced list) =
-  List.fold_left for_varfun_decl env decls
+  List.fold_left_map for_varfun_decl env decls
 
 (* -------------------------------------------------------------------- *)
 let for_asset_decl (env : env) (decl : PT.asset_decl loced) =
@@ -1927,7 +1946,7 @@ let for_asset_decl (env : env) (decl : PT.asset_decl loced) =
 
   if Env.Asset.exists env (unloc x) then begin
     Env.emit_error env (loc x, DuplicatedAssetName (unloc x));
-    env
+    (env, None)
   end else
     let module E = struct exception Bailout end in
 
@@ -1936,42 +1955,50 @@ let for_asset_decl (env : env) (decl : PT.asset_decl loced) =
       raise E.Bailout
     end;
 
-    let get_field_type { pldesc = (x, ty, e) } =
+    let get_field_type { plloc = loc; pldesc = (x, ty, e) } =
       let ty =
         if   Option.is_some ty
         then ty
         else Option.bind (fun e -> e.M.type_) e
-      in (x, Option.get_fdfl (fun () -> raise E.Bailout) ty)
+      in (mkloc loc x, Option.get_fdfl (fun () -> raise E.Bailout) ty)
     in
 
     try
       let decl = {
         as_name   = x;
         as_fields = List.map get_field_type fields;
-        as_pk     = proj3_1 (unloc (List.hd fields));
-      } in Env.Asset.push env decl
-    with E.Bailout -> env
+        as_pk     = L.lmap proj3_1 (List.hd fields);
+      } in (Env.Asset.push env decl, Some decl)
+    with E.Bailout -> (env, None)
 
 (* -------------------------------------------------------------------- *)
 let for_assets_decl (env : env) (decls : PT.asset_decl loced list) =
-  List.fold_left for_asset_decl env decls
+  List.fold_left_map for_asset_decl env decls
 
 (* -------------------------------------------------------------------- *)
 let for_acttx_decl (env : env) (decl : acttx loced) =
   match unloc decl with
   | `Action (x, args, pt, i_exts, _exts) -> begin
-      let env, _ =
+      let env, decl =
         Env.inscope env (fun env ->
-          let env         = (fst (for_args_decl env args)) in
+          let env, args   = for_args_decl env args in
           let env, effect = Option.foldmap for_instruction env (Option.fst i_exts) in
           let callby      = Option.map (for_callby env) (Option.fst pt.calledby) in
-          let _callby     = Option.get_dfl [] callby in
+          let callby      = Option.get_dfl [] callby in
           let env, reqs   = Option.foldmap for_lbls_expr env (Option.fst pt.require) in
           let env, verif  = Option.foldmap for_verification env pt.verif in
 
-          (env, ()))
+          let decl =
+            { ad_name   = x;
+              ad_args   = List.pmap (fun x -> x) args;
+              ad_callby = callby;
+              ad_effect = effect;
+              ad_reqs   = Option.get_dfl [] reqs;
+              ad_verif  = Option.get_dfl [] verif; } in
 
-      in Env.Action.push env { ad_name = x; }
+          (env, decl))
+
+      in (Env.Action.push env decl, decl)
     end
 
   | `Transition (x, args, tgt, from_, actions, tx, _exts) ->
@@ -1990,7 +2017,7 @@ let for_acttx_decl (env : env) (decl : acttx loced) =
     *)
 (* -------------------------------------------------------------------- *)
 let for_acttxs_decl (env : env) (decls : acttx loced list) =
-  List.fold_left for_acttx_decl env decls
+  List.fold_left_map for_acttx_decl env decls
 
 (* -------------------------------------------------------------------- *)
 let for_verifs_decl (env : env) (decls : PT.verification loced list) =
@@ -2070,11 +2097,90 @@ let for_grouped_declarations (env : env) (toploc, g) =
     | _ ->
       (None, env) in
 
-  let env = for_assets_decl  env g.gr_assets  in
-  let env = for_varfuns_decl env g.gr_varfuns in
-  let env = for_acttxs_decl  env g.gr_acttxs  in
+  let env, adecls = for_assets_decl  env g.gr_assets  in
+  let env, fdecls = for_varfuns_decl env g.gr_varfuns in
+  let env, tdecls = for_acttxs_decl  env g.gr_acttxs  in
+  let env, vdecls = for_verifs_decl  env g.gr_verifs in
 
-  for_verifs_decl env g.gr_verifs
+  (env, (adecls, fdecls, tdecls, vdecls))
+
+(* -------------------------------------------------------------------- *)
+let assets_of_adecls adecls =
+  let for1 (decl : assetdecl) =
+    let for_field (f, fty) =
+      M.{ name = f; typ = Some fty; default = None; loc = loc f; } in
+
+    M.{ name   = decl.as_name;
+        fields = List.map for_field decl.as_fields;
+        key    = Some decl.as_pk;
+        sort   = [];             (* FIXME *)
+        state  = None;           (* FIXME *)
+        role   = false;          (* FIXME *)
+        init   = None;           (* FIXME *)
+        specs  = [];             (* FIXME *)
+        loc    = loc decl.as_name; }
+
+  in List.map for1 (List.pmap (fun x -> x) adecls)
+
+(* -------------------------------------------------------------------- *)
+let variables_of_fdecls fdecls =
+  let for1 = function
+    | `Variable (decl : vardecl) ->
+        M.{ decl =
+              M.{ name    = decl.vr_name;
+                  typ     = Some decl.vr_type;
+                  default = None;
+                  loc     = loc decl.vr_name; };
+            constant = decl.vr_kind = `Constant;
+            from     = None;
+            to_      = None;
+            loc      = loc decl.vr_name; }
+
+  in List.map for1 (List.pmap (fun x -> x) fdecls)
+
+(* -------------------------------------------------------------------- *)
+let verifications_of_iverifications =
+  let env0 = M.{
+    predicates  = [];
+    definitions = [];
+    axioms      = [];
+    theorems    = [];
+    variables   = [];
+    invariants  = [];
+    effect      = None;
+    specs       = [];
+    asserts     = [];
+    loc         = L.dummy;      (* FIXME *) } in
+
+  let do1 env (iverif : env iverification) =
+    match iverif with
+    | _ ->
+        env                     (* FIXME *)
+
+  in fun iverifs -> List.fold_left do1 env0 iverifs
+
+(* -------------------------------------------------------------------- *)
+let transactions_of_tdecls tdecls =
+  let for1 tdecl =
+    M.{ name = tdecl.ad_name;
+        args =
+          List.map (fun (x, xty) ->
+            M.{ name = x; typ = Some xty; default = None; loc = loc x; })
+            tdecl.ad_args;
+        calledby        = None;        (* FIXME *)
+        accept_transfer = true;        (* FIXME *)
+        require         = Some (
+          List.map
+            (fun (x, c) -> M.{ label = x; term = c; loc = L.dummy; }) (* FIXME *)
+            tdecl.ad_reqs);
+        transition      = None;        (* FIXME *)
+        verification    = Some (verifications_of_iverifications tdecl.ad_verif);
+        functions       = [];          (* FIXME *)
+        effect          = tdecl.ad_effect;
+        side            = false;       (* FIXME *)
+        loc             = loc tdecl.ad_name; }
+
+  in List.map for1 tdecls
 
 (* -------------------------------------------------------------------- *)
 let for_declarations (env : env) (decls : (PT.declaration list) loced) : M.model =
@@ -2083,9 +2189,14 @@ let for_declarations (env : env) (decls : (PT.declaration list) loced) : M.model
   match unloc decls with
   | { pldesc = Darchetype (x, _exts) } :: decls ->
     let groups = group_declarations decls in
-    let _env = for_grouped_declarations env (toploc, groups) in
+    let _env, decls = for_grouped_declarations env (toploc, groups) in
+    let adecls, fdecls, tdecls, _vdecls = decls in
 
-    M.mk_model x
+    M.mk_model
+      ~assets:(assets_of_adecls adecls)
+      ~variables:(variables_of_fdecls fdecls)
+      ~transactions:(transactions_of_tdecls tdecls)
+      x
 
   | _ ->
     Env.emit_error env (loc decls, InvalidArcheTypeDecl);
