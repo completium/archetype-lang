@@ -193,6 +193,12 @@ let to_model (ast : A.model) : M.model =
       | A.Pcall (aux, A.Cconst c, args) ->
         Format.eprintf "expr const unkown: %a with nb args: %d %s@." A.pp_const c (List.length args) (match aux with | Some _ -> "with aux" | _ -> "without aux");
         assert false
+
+      | A.PsecurityActionRole _ ->
+        assert false
+
+      | A.PsecurityActionAction _ ->
+        assert false
   in
 
   let rec to_mterm (pterm : A.pterm) : M.mterm =

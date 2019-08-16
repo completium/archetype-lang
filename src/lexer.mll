@@ -18,6 +18,8 @@
 
   let keywords_ =
     [
+      "None"                , NONE           ;
+      "Some"                , SOME           ;
       "action"              , ACTION         ;
       "and"                 , AND            ;
       "archetype"           , ARCHETYPE      ;
@@ -42,8 +44,8 @@
       "extension"           , EXTENSION      ;
       "failif"              , FAILIF         ;
       "false"               , FALSE          ;
-      "forall"              , FORALL         ;
       "for"                 , FOR            ;
+      "forall"              , FORALL         ;
       "from"                , FROM           ;
       "function"            , FUNCTION       ;
       "identified"          , IDENTIFIED     ;
@@ -57,13 +59,12 @@
       "let"                 , LET            ;
       "match"               , MATCH          ;
       "namespace"           , NAMESPACE      ;
-      "None"                , NONE           ;
       "not"                 , NOT            ;
       "of"                  , OF             ;
       "on"                  , ON             ;
+      "option"              , OPTION         ;
       "or"                  , OR             ;
       "otherwise"           , OTHERWISE      ;
-      "option"              , OPTION         ;
       "partition"           , PARTITION      ;
       "predicate"           , PREDICATE      ;
       "record"              , RECORD         ;
@@ -71,7 +72,6 @@
       "require"             , REQUIRE        ;
       "return"              , RETURN         ;
       "sorted"              , SORTED         ;
-      "Some"                , SOME           ;
       "specification"       , SPECIFICATION  ;
       "states"              , STATES         ;
       "then"                , THEN           ;

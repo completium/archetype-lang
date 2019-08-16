@@ -134,6 +134,7 @@ type const =
   | Cany
   | Canyaction
   (* function *)
+  | Cisempty
   | Cget
   | Cadd
   | Caddnofail
@@ -152,6 +153,7 @@ type const =
   | Csum
   | Cmax
   | Cmin
+  | Csubset
   (* vset *)
   | Cbefore
   | Cunmoved
@@ -315,6 +317,8 @@ type ('id, 'typ, 'term) term_node  =
   | Pdot of 'term * 'id
   | Pconst of const
   | Ptuple of 'term list
+  | PsecurityActionRole of action_description * security_role list
+  | PsecurityActionAction of action_description * security_action list
 [@@deriving show {with_path = false}]
 
 and ('id, 'typ, 'term) term_arg =
@@ -323,6 +327,12 @@ and ('id, 'typ, 'term) term_arg =
   | AEffect of ('id * operator * 'term) list
 [@@deriving show {with_path = false}]
 
+and action_description = 
+  | ADAny
+  | ADOp  of string * lident
+
+and security_role   = lident
+and security_action = lident
 
 (* -------------------------------------------------------------------- *)
 
@@ -638,6 +648,8 @@ let map_term_node (f : ('id, type_) term_gen -> ('id, type_) term_gen) = functio
   | Pdot (e, i)             -> Pdot (f e, i)
   | Pconst c                -> Pconst c
   | Ptuple l                -> Ptuple (List.map f l)
+  | PsecurityActionRole _   as e -> e
+  | PsecurityActionAction _ as e -> e
 
 let map_instr_node f = function
   | Iif (c, t, e)       -> Iif (c, f t, f e)
@@ -690,6 +702,8 @@ let fold_term (f: 'a -> 't -> 'a) (accu : 'a) (term : ('id, type_) term_gen) =
   | Pdot (e, _)             -> f accu e
   | Pconst _                -> accu
   | Ptuple l                -> List.fold_left f accu l
+  | PsecurityActionRole _   -> accu
+  | PsecurityActionAction _ -> accu
 
 let fold_instr f accu instr =
   match instr.node with
@@ -820,6 +834,11 @@ let fold_map_term g f (accu : 'a) (term : ('id, type_) term_gen) : 'term * 'a =
            pterms @ [p], accu) ([], accu) l in
     g (Ptuple lp), la
 
+  | PsecurityActionRole _ as e ->
+      g e, accu
+
+  | PsecurityActionAction _ as e ->
+      g e, accu
 
 let fold_map_instr_term gi ge fi fe (accu : 'a) instr : 'instr * 'a =
   match instr.node with

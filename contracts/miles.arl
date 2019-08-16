@@ -20,8 +20,8 @@ action add (ow : role) (value : uint) = {
 action consume (ow : role) (value : uint) = {
   verification {
     specification s1 = {
-      (before.account.get ow).amount =
-        (after.account.get ow).amount + value
+      (before account.get ow).amount =
+        (after account.get ow).amount + value
     }
   }
 

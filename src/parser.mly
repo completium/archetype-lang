@@ -93,10 +93,10 @@
 %token LET
 %token LPAREN
 %token MATCH
-%token MAY_BE_PERFORMED_ONLY_BY_ROLE
-%token MAY_BE_PERFORMED_ONLY_BY_ACTION
-%token MAY_BE_PERFORMED_BY_ROLE
 %token MAY_BE_PERFORMED_BY_ACTION
+%token MAY_BE_PERFORMED_BY_ROLE
+%token MAY_BE_PERFORMED_ONLY_BY_ACTION
+%token MAY_BE_PERFORMED_ONLY_BY_ROLE
 %token MINUS
 %token MINUSEQUAL
 %token MULT
@@ -126,8 +126,8 @@
 %token RETURN
 %token RPAREN
 %token SEMI_COLON
-%token SORTED
 %token SOME
+%token SORTED
 %token SPECIFICATION
 %token STATES
 %token THEN
@@ -399,7 +399,7 @@ verif_items:
         { let l = split_seq_label xs in
             let ll = List.map (fun x ->
             let loc, (id, e) = Location.deloc x in
-            let lbl : lident = Tools.Option.get id in
+            let lbl = Tools.Option.get id in
             mkloc loc (Vspecification (lbl, e, []))) l in
             (ll, exts) }
 
@@ -647,7 +647,7 @@ expr_r:
      { Ebreak }
 
  | FOR LPAREN x=ident IN y=expr RPAREN body=expr %prec prec_for
-     { Efor (x, y, body) }
+     { Efor (None, x, y, body) }
 
  | IF c=expr THEN t=expr
      { Eif (c, t, None) }
@@ -742,17 +742,13 @@ simple_expr_r:
  | x=literal
      { Eliteral x }
 
- | s=ident COLONCOLON x=ident
-     { Eterm (None, Some s, x) }
+ | LPAREN
+     s=ioption(postfix(ident, COLONCOLON)) x=ident AT l=ident
+   RPAREN
+     { Eterm (Some l, s, x) }
 
- | x=ident
-     { Eterm (None, None, x) }
-
- | LPAREN s=ident COLONCOLON x=ident AT l=ident RPAREN
-     { Eterm (Some l, Some s, x) }
-
- | LPAREN x=ident AT l=ident RPAREN
-     { Eterm (Some l, None, x) }
+ | s=ioption(postfix(ident, COLONCOLON)) x=ident
+     { Eterm (None, s, x) }
 
  | INVALID_EXPR
      { Einvalid }
@@ -876,3 +872,6 @@ security_arg_ext_unloc:
 | id=ident BUT arg=security_arg      { Sbut (id, arg) }
 | id=ident TO arg=security_arg       { Sto (id, arg) }
 | x=security_arg_unloc               { x }
+
+%inline postfix(X, P):
+| x=X P { x }

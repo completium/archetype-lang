@@ -5,7 +5,7 @@ variable[%transferable%] admin role = @tz1aazS5ms5cbGkb6FN1wvWmN7yrMTTcr6wB
 (* id is a string because it is generated off-chain *)
 asset mile identified by id sorted by expiration = {
    id         : string;
-   amount     : uint;
+   amount     : int;
    expiration : date;
 } with {
   m1 : amount > 0
@@ -32,34 +32,33 @@ action add (ow : address) (newmile : mile) = {
    }
 }
 
-action consume (a : address) (quantity : uint) = {
+action consume (a : address) (quantity : int) = {
 
   verification {
-    assert p1 at zero_remainder = {
+
+    specification p1 = {
       remainder = 0
-      invariants for loop {
-        0 <= remainder <= to_iter.sum(amount)
-      }
     }
 
     specification p2 = {
-      mile.sum(the.amount) = before mile.sum(the.amount) - quantity
+      mile.sum(the.amount) = mile.before.sum(the.amount) - quantity
       invariants for loop {
-        subset (removed miles) (ow.miles.select(expiration >= now))
+        0 <= remainder <= to_iter.sum(the.amount);
+        mile.before.sum(the.amount) = mile.sum(the.amount) + quantity - remainder
       }
     }
 
     specification p3 = {
-      forall m in removed mile, m.expiration >= now
+      forall m in mile.removed, m.expiration >= now
       invariants for loop {
-        before mile.sum(amount) = mile.sum(amount) + quantity - remainder
+        ow.miles.removed.subset (ow.miles.select(the.expiration >= now))
       }
     }
 
     specification p4 = {
-      is_empty (added mile)
+      mile.added.isempty
       invariants for loop {
-        is_empty (added mile)
+        mile.added.isempty
       }
     }
   }
@@ -91,7 +90,7 @@ action consume (a : address) (quantity : uint) = {
              ow.miles.remove m.id
            )
          );
-       label zero_remainder)
+       label p1)
      )
   }
 }
@@ -114,7 +113,7 @@ verification {
 action clear_expired = {
   verification {
     specification s3 = {
-      forall m in removed mile, m.expiration < now
+      forall m in mile.removed, m.expiration < now
     }
   }
 

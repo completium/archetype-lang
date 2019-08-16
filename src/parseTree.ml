@@ -131,7 +131,7 @@ type expr_unloc =
   | Eassign       of assignment_operator * expr * expr
   | Eif           of expr * expr * expr option
   | Ebreak
-  | Efor          of lident * expr * expr
+  | Efor          of lident option * lident * expr * expr
   | Eassert       of expr
   | Eseq          of expr * expr
   | Eletin        of lident * type_t option * expr * expr * expr option
@@ -144,6 +144,16 @@ type expr_unloc =
   | Esecurity     of security
   | Einvalid
 [@@deriving yojson, show {with_path = false}]
+
+and scope = [
+  | `Added
+  | `After
+  | `Before
+  | `Fixed
+  | `Removed
+  | `Stable
+]
+[@@derive yojson, show {with_path = false}]
 
 and quantifier_kind =
   | Qcollection of expr

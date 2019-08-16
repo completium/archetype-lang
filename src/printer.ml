@@ -216,10 +216,18 @@ let pp_pattern fmt p =
   | Pwild ->  Format.fprintf fmt "| _"
   | Pref i ->  Format.fprintf fmt "| %a" pp_id i
 
+let string_of_scope (s : scope) =
+  match s with
+  | `Added   -> "added"
+  | `After   -> "after"
+  | `Before  -> "before"
+  | `Fixed   -> "fixed"
+  | `Removed -> "removed"
+  | `Stable  -> "stable"
+
 let rec pp_expr outer pos fmt a =
   let e = unloc a in
   match e with
-
   | Eterm (l, e, id) ->
 
     let pp fmt (l, e, id) =
@@ -430,7 +438,7 @@ let rec pp_expr outer pos fmt a =
     pp fmt
 
 
-  | Efor (id, expr, body) ->
+  | Efor (None, id, expr, body) ->
 
     let pp fmt (id, expr, body) =
       Format.fprintf fmt "for (%a in %a) (@\n@[<v 2>  %a@]@\n)"
@@ -440,6 +448,9 @@ let rec pp_expr outer pos fmt a =
     in
     (maybe_paren outer e_default pos pp) fmt (id, expr, body)
 
+  | Efor (Some lbl, id, expr, body) ->
+      pp_expr outer pos fmt
+        (mkloc (loc a) (Elabel (lbl, mkloc (loc a) (Efor (None, id, expr, body)))))
 
   | Eassert e ->
 
