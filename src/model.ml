@@ -1863,6 +1863,7 @@ module Utils : sig
   val get_invariants                     : model -> (lident * mterm) list -> ident -> (lident * mterm) list
   val get_formula                        : model -> mterm option -> ident -> mterm option
   val is_post                            : specification -> bool
+  val get_sum_fields                     : model -> ident -> ident list
 
 end = struct
 
@@ -2216,5 +2217,13 @@ end = struct
     match s.mode with
     | Post -> true
     | _ -> false
+
+  let get_sum_fields m a =
+    List.fold_left (fun acc (ai : api_item) ->
+        match ai.node_item with
+        | APIFunction (Sum (asset,field)) when compare a asset = 0 ->
+          acc @ [field]
+        | _ -> acc
+      ) [] m.api_items
 
 end

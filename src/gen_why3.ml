@@ -150,7 +150,26 @@ let mk_update_fields n key =
                           [Tvar ("new_asset")])]
     ) []
 
-let mk_set_ensures n key fields =
+let mk_set_sum_ensures m a =
+  List.fold_left (fun acc f ->
+      acc @ [{
+          id = "set_"^a^"_sum_post";
+          form = Teq (Tyint,
+                      Tapp (Tvar ((mk_sum_clone_id a f)^".sum"),
+                            [mk_ac_old a]),
+                      Tplus (Tyint,
+                             Tminus (Tyint,
+                                     Tapp (Tvar ((mk_sum_clone_id a f)^".sum"),
+                                           [mk_ac_old a]),
+                                     Tdoti("new_asset",f)),
+                             Tdot(
+                               Tget(a,
+                                    mk_ac_old a,
+                                    Tvar "k"),
+                               Tvar f)))
+        }]) [] (M.Utils.get_sum_fields m a)
+
+let mk_set_ensures m n key fields =
   snd (List.fold_left (fun (i,acc) (f:field) ->
       if compare f.name key = 0 then
         (i,acc)
@@ -164,10 +183,10 @@ let mk_set_ensures n key fields =
                                       Tvar "k")]),
                          Tapp (Tvar f.name,
                                [Tvar ("new_asset")]))
-           }])
+           }] @ (mk_set_sum_ensures m n))
     ) (1,[]) fields)
 
-let mk_set_asset key = function
+let mk_set_asset m key = function
   | Drecord (asset, fields) ->  Dfun {
       name = "set_"^asset;
       logic = NoMod;
@@ -176,7 +195,7 @@ let mk_set_asset key = function
       raises = [ Enotfound ];
       variants = [];
       requires = [];
-      ensures = mk_set_ensures asset key fields;
+      ensures = mk_set_ensures m asset key fields;
       body = Tif (Tnot (Tcontains (asset,
                                    Tvar "k",
                                    mk_ac asset)),
@@ -374,8 +393,20 @@ let gen_field_getters = function
     List.map (gen_field_getter n) fs
   | _ -> assert false
 
-(* TODO : add postconditions *)
-let mk_add_asset asset key : decl = Dfun {
+let mk_add_sum_ensures m a =
+  List.fold_left (fun acc f ->
+      acc @ [{
+          id = "add_"^a^"_sum_post";
+          form = Teq (Tyint,
+                      Tapp (Tvar ((mk_sum_clone_id a f)^".sum"),
+                            [mk_ac a]),
+                      Tplus (Tyint,
+                             Tapp (Tvar ((mk_sum_clone_id a f)^".sum"),
+                                   [mk_ac_old a]),
+                             Tdoti("new_asset",f)))
+        }]) [] (M.Utils.get_sum_fields m a)
+
+let mk_add_asset m asset key : decl = Dfun {
     name     = "add_"^asset;
     logic    = NoMod;
     args     = ["new_asset",Tyasset asset];
@@ -411,7 +442,7 @@ let mk_add_asset asset key : decl = Dfun {
                               ));
       };
 
-    ];
+    ] @ (mk_add_sum_ensures m asset);
     body     = Tseq [
         Tif (Tmem (asset,
                    Tvar ("new_asset"),
@@ -431,7 +462,23 @@ let mk_add_asset asset key : decl = Dfun {
       ];
   }
 
-let mk_rm_asset asset ktyp : decl = Dfun {
+let mk_rm_sum_ensures m a =
+  List.fold_left (fun acc f ->
+      acc @ [{
+          id = "remove_"^a^"_sum_post";
+          form = Teq (Tyint,
+                      Tapp (Tvar ((mk_sum_clone_id a f)^".sum"),
+                            [mk_ac a]),
+                      Tminus (Tyint,
+                              Tapp (Tvar ((mk_sum_clone_id a f)^".sum"),
+                                    [mk_ac_old a]),
+                              Tdot(Tget (a,
+                                         mk_ac_old a,
+                                         Tvar "k"),
+                                   Tvar f)))
+        }]) [] (M.Utils.get_sum_fields m a)
+
+let mk_rm_asset m asset ktyp : decl = Dfun {
     name     = "remove_"^asset;
     logic    = NoMod;
     args     = ["k",ktyp];
@@ -465,7 +512,7 @@ let mk_rm_asset asset ktyp : decl = Dfun {
                                           mk_ac_old_rmed asset,
                                           Tvar "k"))))
       };
-    ];
+    ] @ (mk_rm_sum_ensures m asset);
     body = Tif (Tnot (Tcontains (asset,
                                  Tvar "k",
                                  mk_ac asset)),
@@ -492,7 +539,7 @@ let mk_rm_asset asset ktyp : decl = Dfun {
    adda    : added asset name
    addktyp : removed asset key type
 *)
-let mk_add_partition_field a ak pf adda addak : decl =
+let mk_add_partition_field m a ak pf adda addak : decl =
   let akey  = Tapp (Tvar ak,[Tvar "asset"]) in
   let addak = Tapp (Tvar addak,[Tvar "new_asset"]) in
   Dfun {
@@ -525,7 +572,7 @@ let mk_add_partition_field a ak pf adda addak : decl =
                             Tsingl (adda,
                                     Tvar "new_asset")))
       };
-    ];
+    ] @ (mk_add_sum_ensures m adda); (* for partition, same sum post as for add *)
     body     =
       Tif (Tnot (Tmem (a,
                        Tvar "asset",
@@ -555,10 +602,10 @@ let mk_add_partition_field a ak pf adda addak : decl =
    rmn    : removed asset name
    rmktyp : removed asset key type
 *)
-let mk_rm_partition_field asset keyf f rmed_asset rmktyp : decl = Dfun {
+let mk_rm_partition_field m asset keyf f rmed_asset rmktyp : decl = Dfun {
     name     = "remove_"^asset^"_"^f;
     logic    = NoMod;
-    args     = ["a",Tyasset asset; rmed_asset^"_k",rmktyp];
+    args     = ["a",Tyasset asset; "k",rmktyp];
     returns  = Tyunit;
     raises   = [Enotfound];
     variants = [];
@@ -566,7 +613,7 @@ let mk_rm_partition_field asset keyf f rmed_asset rmktyp : decl = Dfun {
     ensures  = [
       { id   = "remove_"^asset^"_"^f^"_post1";
         form = Tnot (Tcontains (rmed_asset,
-                                Tvar (rmed_asset^"_k"),
+                                Tvar ("k"),
                                 mk_ac rmed_asset))
       };
       { id   = "remove_"^asset^"_"^f^"_post2";
@@ -577,7 +624,7 @@ let mk_rm_partition_field asset keyf f rmed_asset rmktyp : decl = Dfun {
                            Tsingl (rmed_asset,
                                    Tget (rmed_asset,
                                          mk_ac_old rmed_asset,
-                                         Tvar (rmed_asset^"_k")))))
+                                         Tvar ("k")))))
       };
       { id   = "remove_"^asset^"_"^f^"_post3";
         form = Teq (Tycoll rmed_asset,
@@ -587,9 +634,9 @@ let mk_rm_partition_field asset keyf f rmed_asset rmktyp : decl = Dfun {
                             Tsingl (rmed_asset,
                                     Tget (rmed_asset,
                                           mk_ac_old rmed_asset,
-                                          Tvar (rmed_asset^"_k")))))
+                                          Tvar ("k")))))
       };
-    ];
+    ] @ (mk_rm_sum_ensures m rmed_asset); (* for partition, same sum post as rm_asset *)
     body     =
       Tif (Tnot (Tmem (asset,
                        Tvar "a",
@@ -606,7 +653,7 @@ let mk_rm_partition_field asset keyf f rmed_asset rmktyp : decl = Dfun {
                              None,
                              Tlistremove (gArchetypeList,
                                           Tvar (asset^"_"^f),
-                                          Tvar (rmed_asset^"_k")),
+                                          Tvar ("k")),
                              Tletin (false,
                                      "new_"^asset^"_asset",
                                      None,
@@ -620,7 +667,7 @@ let mk_rm_partition_field asset keyf f rmed_asset rmktyp : decl = Dfun {
                                                             [Tvar "a"]),
                                                       Tvar ("new_"^asset^"_asset")));
                                        Tapp (Tvar ("remove_"^rmed_asset),
-                                             [Tvar (rmed_asset^"_k")])
+                                             [Tvar ("k")])
                                      ]
                                     )))));
   }
@@ -973,27 +1020,27 @@ let mk_storage_api (m : M.model) records =
         acc @ [mk_get_asset n k]
       | M.APIStorage (Add n) ->
         let k = M.Utils.get_asset_key m (dumloc n) |> fst in
-        acc @ [mk_add_asset n k]
+        acc @ [mk_add_asset m n k]
       | M.APIStorage (Remove n) ->
         let kt = M.Utils.get_asset_key m (dumloc n) |> snd |> map_btype in
-        acc @ [mk_rm_asset n kt]
+        acc @ [mk_rm_asset m n kt]
       | M.APIStorage (Set n) ->
         let record = get_record n (records |> unloc_decl) in
         let k      = M.Utils.get_asset_key m (get_record_name record |> dumloc) |> fst in
-        acc @ [mk_set_asset k record]
+        acc @ [mk_set_asset m k record]
       | M.APIStorage (UpdateAdd (a,pf)) ->
         let k            = M.Utils.get_asset_key m (dumloc a) |> fst in
         let (pa,addak,_) = M.Utils.get_partition_asset_key m (dumloc a) (dumloc pf) in
         acc @ [
           (*mk_add_asset           pa.pldesc addak.pldesc;*)
-          mk_add_partition_field a k pf pa addak
+          mk_add_partition_field m a k pf pa addak
         ]
       | M.APIStorage (UpdateRemove (n,f)) ->
         let t         = M.Utils.get_asset_key m (dumloc n) |> fst in
         let (pa,_,pt) = M.Utils.get_partition_asset_key m (dumloc n) (dumloc f) in
         acc @ [
           (*mk_rm_asset           pa.pldesc (pt |> map_btype);*)
-          mk_rm_partition_field n t f pa (pt |> map_btype)
+          mk_rm_partition_field m n t f pa (pt |> map_btype)
         ]
       | M.APIFunction (Contains n) ->
         let t         =  M.Utils.get_asset_key m (dumloc n) |> snd |> map_btype in

@@ -122,7 +122,7 @@ module AssetCollection
   | Nil -> false
   end
 
-  let function contains (k : key) (c : collection) = internal_contains k c.content
+  let function contains (k : key) (c : collection) : bool = internal_contains k c.content
 
   let function mem (a : t) (c : collection) = internal_contains (keyf a) c.content
 
@@ -207,6 +207,7 @@ module AssetCollection
 
   let rec function internal_get (l : list t) (k : key) : t
   variant { l }
+  ensures { internal_contains k l -> result <> witness }
   =
   match l with
   | Cons e tl -> 
@@ -216,7 +217,9 @@ module AssetCollection
   | Nil -> witness
   end
 
-  let function get (c : collection) (k : key) : t = internal_get c.content k
+  let function get (c : collection) (k : key) : t 
+  ensures { contains k c -> result <> witness }
+  = internal_get c.content k
 
   let rec function to_ids (l : list t) : list key 
   variant { l }
