@@ -1144,7 +1144,7 @@ let rec for_xexpr (mode : emode_t) (env : env) ?(ety : M.ptyp option) (tope : PT
           | `T typ   -> Some typ
           | `The     -> Some (M.Tasset asset.as_name)
           | `SubColl -> Some (M.Tcontainer (M.Tasset asset.as_name, M.Collection))
-          | `Ref i   -> Mint.find_opt i amap
+          | `Ref i   -> Some (Mint.find i amap)
           | _        -> assert false
         in
 
@@ -1376,6 +1376,8 @@ and for_gen_method_call mode env theloc (the, m, args) =
           match arg with
           | M.AExpr { M.type_ = Some ty } ->
             aout := Mint.add i ty !aout
+          | M.AFun (_, _, { M.type_ = Some ty }) ->
+            aout := Mint.add i ty !aout
           | _ -> ()) args; !aout in
 
     Some (the, asset, method_, args, amap)
@@ -1489,8 +1491,6 @@ and for_security_action (env : env) (sa : PT.security_arg) : M.security_action l
     List.flatten (List.map (for_security_action env) sas)
 
   | _ ->
-    Format.eprintf "%a@." PT.pp_security_arg sa;
-
     Env.emit_error env (loc sa, InvalidSecurityAction);
     []
 
