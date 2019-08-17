@@ -318,11 +318,11 @@ type assetdecl = {
 
 (* -------------------------------------------------------------------- *)
 type vardecl = {
-  vr_name : M.lident;
-  vr_type : M.ptyp;
-  vr_kind : [`Constant | `Variable | `Ghost];
-  vr_def  : M.pterm option;
-  vr_core : M.const option;
+  vr_name   : M.lident;
+  vr_type   : M.ptyp;
+  vr_kind   : [`Constant | `Variable | `Ghost];
+  vr_def    : (M.pterm * [`Inline | `Std]) option;
+  vr_core   : M.const option;
 }
 
 (* -------------------------------------------------------------------- *)
@@ -724,7 +724,8 @@ let empty : env =
 
   let env =
     let mk vr_name vr_type vr_core = {
-      vr_name; vr_type; vr_core = Some vr_core; vr_def = None; vr_kind = `Constant
+      vr_name; vr_type; vr_core = Some vr_core;
+      vr_def = None; vr_kind = `Constant
     } in
 
     List.fold_left
@@ -865,8 +866,13 @@ let rec for_xexpr (mode : emode_t) (env : env) ?(ety : M.ptyp option) (tope : PT
         | Some (`Local xty) ->
           mk_sp (Some xty) (M.Pvar x)
 
-        | Some (`Global decl) ->
-          mk_sp (Some decl.vr_type) (M.Pvar x)
+        | Some (`Global decl) -> begin
+          match decl.vr_def with
+          | Some (body, `Inline) ->
+            body
+          | _ ->
+            mk_sp (Some decl.vr_type) (M.Pvar x)
+          end
 
         | Some (`Asset decl) ->
           let typ = M.Tcontainer ((M.Tasset decl.as_name), M.Collection) in
@@ -1910,7 +1916,7 @@ let for_varfun_decl (env : env) (decl : varfun loced) =
       let decl = {
         vr_name = x  ; vr_type = Option.get dty;
         vr_kind = ctt; vr_core = None          ;
-        vr_def  = e; } in
+        vr_def  = Option.map (fun e -> (e, `Std)) e; } in
 
       if   (check_and_emit_name_free env x)
       then (Env.Var.push env decl, Some (`Variable decl))
@@ -2133,7 +2139,7 @@ let variables_of_fdecls fdecls =
       M.{ decl =
             M.{ name    = decl.vr_name;
                 typ     = Some decl.vr_type;
-                default = decl.vr_def;
+                default = Option.fst decl.vr_def;
                 loc     = loc decl.vr_name; };
           constant = decl.vr_kind = `Constant;
           from     = None;
