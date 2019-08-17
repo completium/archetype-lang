@@ -219,6 +219,7 @@ module AssetCollection
 
   let function get (c : collection) (k : key) : t 
   ensures { contains k c -> result <> witness }
+  ensures { forall a : t. mem a c -> k = keyf a -> result = a }
   = internal_get c.content k
 
   let rec function to_ids (l : list t) : list key 
