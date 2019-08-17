@@ -1162,7 +1162,7 @@ let rec for_xexpr (mode : emode_t) (env : env) ?(ety : M.ptyp option) (tope : PT
         let rty =
           match method_.mth_totality, mode with
           | `Partial, `Formula ->
-            Option.map (fun x -> M.Toption x) rty
+            rty (* Option.map (fun x -> M.Toption x) rty *)
           | _, _ ->
             rty in
 
