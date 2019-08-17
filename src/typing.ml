@@ -723,10 +723,13 @@ let empty : env =
       env core_types in
 
   let env =
-    let mk vr_name vr_type vr_core = {
-      vr_name; vr_type; vr_core = Some vr_core;
-      vr_def = None; vr_kind = `Constant
-    } in
+    let mk vr_name vr_type vr_core =
+      let def = M.Pconst vr_core in
+      let def = M.{ node = def; type_ = Some vr_type; label = None; loc = L.dummy } in
+
+      { vr_name; vr_type; vr_core = Some vr_core;
+        vr_def = Some (def, `Inline); vr_kind = `Constant
+      } in
 
     List.fold_left
       (fun env (name, const, ty) ->
