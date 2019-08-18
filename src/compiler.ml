@@ -235,6 +235,7 @@ let main () =
       "-r", Arg.Set Options.opt_raw, " Print raw tree";
       "--raw", Arg.Set Options.opt_raw, " Same as -r";
       "-json", Arg.Set Options.opt_json, " Print JSON format";
+      "-v", Arg.String (fun s -> Options.add_vids s), "<id> process verification identifiers";
       "-F", Arg.Set Options.fake_ast, " Fake ast";
       "-F2", Arg.Set Options.fake_ast2, " Fake ast test shallow";
     ] in
@@ -268,6 +269,12 @@ let main () =
   let ochannel : in_channel option ref = ref None  in
   Arg.parse arg_list (fun s -> (ofilename := s;
                                 ochannel := Some (open_in s))) arg_usage;
+
+  (* if List.length !Options.opt_vids > 0
+     then (
+     List.iter (fun x -> Format.printf "%s@\n" x) !Options.opt_vids;
+     exit 1
+     ); *)
 
   check_flags_consistency();
 
