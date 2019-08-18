@@ -380,7 +380,7 @@ type ('id, 'typ, 'term) variable = {
 
 type ('id, 'typ) predicate = {
   name : 'id;
-  args : ('id * (('id, type_) term_gen)) list;
+  args : ('id * type_) list;
   body : ('id, type_) term_gen;
   loc  : Location.t [@opaque];
 }

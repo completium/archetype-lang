@@ -489,7 +489,7 @@ type variable = lident variable_gen
 
 type 'id predicate_gen = {
   name : 'id;
-  args : ('id * ('id mterm_gen)) list;
+  args : ('id * type_) list;
   body : 'id mterm_gen;
   loc  : Location.t [@opaque];
 }
@@ -1086,7 +1086,7 @@ let map_mterm_model_formula (f : ctx_model -> mterm -> mterm) (model : model) : 
 
     let map_predicate (f : ctx_model -> mterm -> mterm) (p : predicate) : predicate =
       { p with
-        args = List.map (fun (x, y) -> (x, f ctx y)) p.args;
+        args = List.map (fun (x, y) -> (x, y)) p.args;
         body = f ctx p.body;
       }
     in
@@ -1747,7 +1747,6 @@ let fold_model (f : 'id ctx_model_gen -> 'a -> 'id mterm_gen -> 'a) (m : 'id mod
 
     let fold_predicate (ctx : 'id ctx_model_gen) (f : 'id ctx_model_gen -> 'a -> 'id mterm_gen -> 'a) (p : 'id predicate_gen) (accu : 'a) : 'a =
       accu
-      |> (fun x -> List.fold_left (fun accu x -> x |> snd |> f ctx accu) x p.args)
       |> fun x -> f ctx x p.body
     in
 

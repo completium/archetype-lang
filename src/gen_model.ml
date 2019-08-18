@@ -587,7 +587,7 @@ let to_model (ast : A.model) : M.model =
   in
 
   let to_predicate (p : ('a, A.ptyp) A.predicate) : M.predicate =
-    M.mk_predicate p.name (to_mterm p.body) ~args:(List.map (fun (id, body) -> (id, to_mterm body)) p.args) ~loc:p.loc
+    M.mk_predicate p.name (to_mterm p.body) ~args:(List.map (fun (id, type_) -> (id, ptyp_to_type type_)) p.args) ~loc:p.loc
   in
 
   let to_definition (d : ('a, A.ptyp) A.definition ): M.definition =
