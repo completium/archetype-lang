@@ -75,7 +75,7 @@ let pp_model fmt (model : model) =
     | Bduration   -> Format.fprintf fmt "duration"
     | Bstring     -> Format.fprintf fmt "string"
     | Baddress    -> Format.fprintf fmt "address"
-    | Brole       -> Format.fprintf fmt "key_hash"
+    | Brole       -> Format.fprintf fmt "address"
     | Bcurrency c -> pp_currency fmt c
     | Bkey        -> Format.fprintf fmt "key"
   in
@@ -918,7 +918,9 @@ let pp_model fmt (model : model) =
         Format.fprintf fmt "%a%a"
           pp_big_int v
           pp_currency c
-      | Maddress v -> pp_str fmt v
+      | Maddress v ->
+        Format.fprintf fmt "(%a : address)"
+          pp_str v
       | Mduration v -> pp_str fmt v
       | Mdotasset (e, i)
       | Mdotcontract (e, i) ->

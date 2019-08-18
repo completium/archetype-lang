@@ -214,15 +214,19 @@ let to_model (ast : A.model) : M.model =
         in
         M.Mcontains (asset_name, f p, f q)
 
-      | A.Pcall (Some p, A.Cconst (A.Csum), [AExpr q])
-      | A.Pcall (None, A.Cconst (A.Csum), [AExpr p; AExpr q]) ->
+      | A.Pcall (Some p, A.Cconst (A.Csum), [AFun (_, _, q)]) ->
         let fp = f p in
         let asset_name =
           match fp with
           | {type_ = M.Tcontainer (M.Tasset asset_name, _); _} -> unloc asset_name
-          | _ -> "todo"
+          | _ -> assert false
         in
-        M.Msum (asset_name, Location.dumloc "amount", fp) (* TODO : replace it by the right value*)
+        let field_name =
+          match q.node with
+          | A.Pdot (_, fn) -> fn
+          | _ -> assert false
+        in
+        M.Msum (asset_name, field_name, fp)
 
       | A.Pcall (Some c, A.Cconst (A.Cselect), [AFun (pi, pt, p)])
       | A.Pcall (None, A.Cconst (A.Cselect), [AExpr c; AFun (pi, pt, p)]) ->
