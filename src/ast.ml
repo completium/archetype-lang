@@ -1693,10 +1693,6 @@ let create_miles_with_expiration_ast () =
                                                     ~type_:(Tbuiltin VTbool)
                                                  ),
                                                  mk_instr (Iseq [
-                                                     mk_instr (Iassign (ValueAssign,
-                                                                        dumloc "remainder",
-                                                                        (mk_sp (Plit (mk_sp (BVint Big_int.zero_big_int)))
-                                                                           ~type_:(Tbuiltin VTint))));
                                                      mk_instr (Icall (Some (mk_sp (Pvar (dumloc "mile"))
                                                                               ~type_:(Tcontainer (Tasset (dumloc "mile"), Collection))),
                                                                       Cconst Cupdate,
@@ -1715,7 +1711,11 @@ let create_miles_with_expiration_ast () =
                                                                         ]
                                                                       ]
                                                                      )
-                                                              )
+                                                              );
+                                                     mk_instr (Iassign (ValueAssign,
+                                                                        dumloc "remainder",
+                                                                        (mk_sp (Plit (mk_sp (BVint Big_int.zero_big_int)))
+                                                                           ~type_:(Tbuiltin VTint))))
                                                    ]),
                                                  mk_instr (Iif (
                                                      (mk_sp (Pcomp (Equal,

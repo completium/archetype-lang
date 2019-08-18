@@ -219,8 +219,10 @@ module AssetCollection
 
   let function get (c : collection) (k : key) : t 
   ensures { contains k c -> result <> witness }
-  ensures { forall a : t. mem a c -> k = keyf a -> result = a }
   = internal_get c.content k
+
+  (*axiom get_from_key : forall a : t, c : collection.
+  mem a c ->  get c (keyf a) = a*)
 
   let rec function to_ids (l : list t) : list key 
   variant { l }
