@@ -290,6 +290,7 @@ let methods : (string * method_) list =
     ("update"      , mk M.Cupdate       `Effect `Total   ([`Pk; `Effect ], None));
     ("updatenofail", mk M.Cupdatenofail `Effect `Total   ([`Pk; `Effect ], None));
     ("clear"       , mk M.Cclear        `Effect `Total   ([             ], None));
+    ("reverse"     , mk M.Creverse      `Effect `Total   ([             ], None));
     ("contains"    , mk M.Ccontains     `Pure   `Total   ([`Pk          ], Some (`T M.vtbool)));
     ("subset"      , mk M.Csubset       `Pure   `Total   ([`SubColl     ], Some (`T M.vtbool)));
     ("nth"         , mk M.Cnth          `Pure   `Partial ([`T    M.vtint], Some (`Asset)));
