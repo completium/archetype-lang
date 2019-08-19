@@ -449,8 +449,8 @@ let rec pp_expr outer pos fmt a =
     (maybe_paren outer e_default pos pp) fmt (id, expr, body)
 
   | Efor (Some lbl, id, expr, body) ->
-      pp_expr outer pos fmt
-        (mkloc (loc a) (Elabel (lbl, mkloc (loc a) (Efor (None, id, expr, body)))))
+    pp_expr outer pos fmt
+      (mkloc (loc a) (Elabel (lbl, mkloc (loc a) (Efor (None, id, expr, body)))))
 
   | Eassert e ->
 
@@ -475,7 +475,7 @@ let rec pp_expr outer pos fmt a =
     let pp fmt (id, t, e, body, other) =
       Format.fprintf fmt "@[@[<hv 0>let %a%a =@;<1 2>%a@;<1 0>in@]@ %a%a@]" (*"let %a = %a in %a"*)
         pp_id id
-        (pp_option pp_type) t
+        (pp_option (pp_prefix " : " pp_type)) t
         (pp_expr e_in PLeft) e
         (pp_expr e_in PRight) body
         (pp_option (fun fmt e ->
