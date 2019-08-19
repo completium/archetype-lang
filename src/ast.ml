@@ -149,9 +149,9 @@ type const =
   | Cmaybeperformedbyaction
 [@@deriving show {with_path = false}]
 
-type ('typ, 'node) struct_poly = {
+type ('node) struct_poly = {
   node : 'node;                   (* kind of object *)
-  type_ : 'typ option;            (* type of object *)
+  type_ : ptyp option;            (* type of object *)
   label : ident option;           (* label (typically for instruction) *)
   loc : Location.t [@opaque];     (* location of object *)
 }
@@ -159,60 +159,50 @@ type ('typ, 'node) struct_poly = {
 
 (* -------------------------------------------------------------------- *)
 
-type ('id, 'typ, 'qualid) qualid_poly = ('typ, (('id, 'qualid) qualid_node)) struct_poly
+type 'id qualid_gen = ('id qualid_node) struct_poly
 [@@deriving show {with_path = false}]
 
-and ('id, 'qualid) qualid_node =
+and 'id qualid_node =
   | Qident of 'id
-  | Qdot of 'qualid * 'id
+  | Qdot of 'id qualid_gen * 'id
 [@@deriving show {with_path = false}]
 
-type ('id, 'typ) qualid_gen = ('id, 'typ, ('id, 'typ) qualid_gen) qualid_poly
+type qualid = lident qualid_gen
 [@@deriving show {with_path = false}]
-
-type qualid = (lident, type_) qualid_gen
-[@@deriving show {with_path = false}]
-
 
 (* -------------------------------------------------------------------- *)
 
-type ('id, 'typ, 'rexpr) rexpr_poly = ('typ, ('id, 'typ, 'rexpr) rexpr_node) struct_poly
+type 'id rexpr_gen = ('id rexpr_node) struct_poly
 [@@deriving show {with_path = false}]
 
-and ('id, 'typ, 'rexpr) rexpr_node =
-  | Rqualid of ('id, 'typ) qualid_gen
-  | Ror of 'rexpr * 'rexpr
+and 'id rexpr_node =
+  | Rqualid of 'id qualid_gen
+  | Ror of 'id rexpr_gen * 'id rexpr_gen
   | Raddress of 'id
 [@@deriving show {with_path = false}]
 
-type ('id, 'typ) rexpr_gen = ('id, 'typ, ('id, 'typ) rexpr_gen) rexpr_poly
-[@@deriving show {with_path = false}]
-
-type rexpr = (lident, type_) rexpr_gen
+type rexpr = lident rexpr_gen
 [@@deriving show {with_path = false}]
 
 
 (* -------------------------------------------------------------------- *)
 
-type ('id, 'typ, 'sexpr) sexpr_poly = ('typ, ('id, 'sexpr) sexpr_node) struct_poly
+type 'id sexpr_gen = ('id sexpr_node) struct_poly
 [@@deriving show {with_path = false}]
 
-and ('id, 'sexpr) sexpr_node =
+and 'id sexpr_node =
   | Sref of 'id
-  | Sor of 'sexpr * 'sexpr
+  | Sor of 'id sexpr_gen * 'id sexpr_gen
   | Sany
 [@@deriving show {with_path = false}]
 
-type ('id, 'typ) sexpr_gen = ('id, 'typ, ('id, 'typ) sexpr_gen) sexpr_poly
-[@@deriving show {with_path = false}]
-
-type sexpr = (lident, type_) sexpr_gen
+type sexpr = lident sexpr_gen
 [@@deriving show {with_path = false}]
 
 (* -------------------------------------------------------------------- *)
 
 (* basic variable *)
-type 'typ bval_poly = ('typ, bval_node) struct_poly
+type bval_gen = bval_node struct_poly
 [@@deriving show {with_path = false}]
 
 and bval_node =
@@ -221,33 +211,22 @@ and bval_node =
   | BVbool         of bool
   | BVenum         of string
   | BVrational     of Core.big_int * Core.big_int
-  | BVdate         of string (* TODO : find a date structure *)
+  | BVdate         of string
   | BVstring       of string
   | BVcurrency     of currency * Core.big_int
   | BVaddress      of string
   | BVduration     of string
 [@@deriving show {with_path = false}]
 
-type 'typ bval_gen = 'typ bval_poly
-[@@deriving show {with_path = false}]
-
-type bval = type_ bval_gen
+type bval = bval_gen
 [@@deriving show {with_path = false}]
 
 
 (* -------------------------------------------------------------------- *)
 
-type ('id, 'typ, 'term) decl_gen = {
-  name    : 'id;
-  typ     : 'typ option;
-  default : 'term option;
-  loc     : Location.t [@opaque];
-}
-[@@deriving show {with_path = false}]
-
-type ('id, 'typ) signature = {
+type 'id signature = {
   name : 'id;
-  args: 'typ list;
+  args: ptyp list;
   loc: Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]
@@ -260,52 +239,51 @@ type quantifier =
 
 (* -------------------------------------------------------------------- *)
 
-type ('id, 'pattern) pattern_poly = ('id, ('id, 'pattern) pattern_node) struct_poly
+type 'id pattern_gen = ('id pattern_node) struct_poly
 [@@deriving show {with_path = false}]
 
-and ('id, 'pattern) pattern_node =
+and 'id pattern_node =
   | Mwild
   | Mconst of 'id
-[@@deriving show {with_path = false}]
-
-type ('id) pattern_gen = ('id, 'id pattern_gen) pattern_poly
 [@@deriving show {with_path = false}]
 
 type pattern = lident pattern_gen
 [@@deriving show {with_path = false}]
 
 
+(* -------------------------------------------------------------------- *)
+
 type 'id call_kind =
   | Cid of 'id
   | Cconst of const
 [@@deriving show {with_path = false}]
 
-type ('id, 'typ, 'term) term_node  =
-  | Pquantifer of quantifier * 'id * type_ * 'term
-  | Pif of ('term * 'term * 'term)
-  | Pmatchwith of 'term * ('id pattern_gen * 'term) list
-  | Pcall of ('term option * 'id call_kind * (('id, 'typ, 'term) term_arg) list)
-  | Plogical of logical_operator * 'term * 'term
-  | Pnot of 'term
-  | Pcomp of comparison_operator * 'term * 'term
-  | Parith of arithmetic_operator * 'term * 'term
-  | Puarith of unary_arithmetic_operator * 'term
-  | Precord of 'term list
-  | Pletin of 'id * 'term * 'typ option * 'term
+type 'id term_node  =
+  | Pquantifer of quantifier * 'id * type_ * 'id term_gen
+  | Pif of ('id term_gen * 'id term_gen * 'id term_gen)
+  | Pmatchwith of 'id term_gen * ('id pattern_gen * 'id term_gen) list
+  | Pcall of ('id term_gen option * 'id call_kind * ('id term_arg) list)
+  | Plogical of logical_operator * 'id term_gen * 'id term_gen
+  | Pnot of 'id term_gen
+  | Pcomp of comparison_operator * 'id term_gen * 'id term_gen
+  | Parith of arithmetic_operator * 'id term_gen * 'id term_gen
+  | Puarith of unary_arithmetic_operator * 'id term_gen
+  | Precord of 'id term_gen list
+  | Pletin of 'id * 'id term_gen * ptyp option * 'id term_gen
   | Pvar of 'id
-  | Parray of 'term list
-  | Plit of 'typ bval_gen
-  | Pdot of 'term * 'id
+  | Parray of 'id term_gen list
+  | Plit of bval
+  | Pdot of 'id term_gen * 'id
   | Pconst of const
-  | Ptuple of 'term list
+  | Ptuple of 'id term_gen list
   | PsecurityActionRole of action_description * security_role list
   | PsecurityActionAction of action_description * security_action list
 [@@deriving show {with_path = false}]
 
-and ('id, 'typ, 'term) term_arg =
-  | AExpr   of 'term
-  | AFun    of 'id * 'typ * 'term
-  | AEffect of ('id * operator * 'term) list
+and 'id term_arg =
+  | AExpr   of 'id term_gen
+  | AFun    of 'id * ptyp * 'id term_gen
+  | AEffect of ('id * operator * 'id term_gen) list
 [@@deriving show {with_path = false}]
 
 and action_description =
@@ -317,212 +295,219 @@ and security_action = lident
 
 (* -------------------------------------------------------------------- *)
 
-type ('id, 'typ, 'term) term_poly = ('typ, ('id, 'typ, 'term) term_node) struct_poly
+and 'id term_poly = ('id term_node) struct_poly
 [@@deriving show {with_path = false}]
 
-type ('id, 'typ) term_gen = ('id, 'typ, ('id, 'typ) term_gen) term_poly
+and 'id term_gen = 'id term_poly
 [@@deriving show {with_path = false}]
 
-type pterm = (lident, type_) term_gen
+type pterm = lident term_gen
 [@@deriving show {with_path = false}]
 
-type pterm_arg = (lident, ptyp, pterm) term_arg
+type pterm_arg = lident term_arg
 [@@deriving show {with_path = false}]
 
 (* -------------------------------------------------------------------- *)
 
-type ('id, 'typ, 'term, 'instr) instruction_poly = {
-  node : ('id, 'typ, 'term, 'instr) instruction_node;
+type 'id instruction_poly = {
+  node : 'id instruction_node;
   label: string option;
   subvars : ident list;
   loc : Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]
 
-and ('id, 'typ, 'term, 'instr) instruction_node =
-  | Iif of ('term * 'instr * 'instr)                              (* condition * then_ * else_ *)
-  | Ifor of ('id * 'term * 'instr)                                (* id * collection * body *)
-  | Iletin of ('id * 'term * 'instr)                              (* id * init * body *)
-  | Iseq of 'instr list                                           (* lhs ; rhs*)
-  | Imatchwith of 'term * ('id pattern_gen * 'instr) list         (* match 'term with ('pattern * 'instr) list *)
-  | Iassign of (assignment_operator * 'id * 'term)                (* $2 assignment_operator $3 *)
-  | Irequire of (bool * 'term)                                    (* $1 ? require : failif *)
-  | Itransfer of ('term * bool * ('id, 'typ) qualid_gen option)   (* value * back * dest *)
+and 'id instruction_node =
+  | Iif of ('id term_gen * 'id instruction_gen * 'id instruction_gen)         (* condition * then_ * else_ *)
+  | Ifor of ('id * 'id term_gen * 'id instruction_gen)                        (* id * collection * body *)
+  | Iletin of ('id * 'id term_gen * 'id instruction_gen)                      (* id * init * body *)
+  | Iseq of 'id instruction_gen list                                          (* lhs ; rhs*)
+  | Imatchwith of 'id term_gen * ('id pattern_gen * 'id instruction_gen) list (* match term with ('pattern * 'id instruction_gen) list *)
+  | Iassign of (assignment_operator * 'id * 'id term_gen)                     (* $2 assignment_operator $3 *)
+  | Irequire of (bool * 'id term_gen)                                         (* $1 ? require : failif *)
+  | Itransfer of ('id term_gen * bool * 'id qualid_gen option)                (* value * back * dest *)
   | Ibreak
-  | Iassert of 'term
-  | Icall of ('term option * 'id call_kind * (('id, 'typ, 'term) term_arg) list)
-  | Ireturn of 'term
+  | Iassert of 'id term_gen
+  | Icall of ('id term_gen option * 'id call_kind * ('id term_arg) list)
+  | Ireturn of 'id term_gen
   | Ilabel of 'id
 [@@deriving show {with_path = false}]
 
-and ('id, 'typ, 'term) instruction_gen = ('id, 'typ, 'term, ('id, 'typ, 'term) instruction_gen) instruction_poly
+and 'id instruction_gen = 'id instruction_poly
 
-and instruction = (lident, ptyp, pterm, instruction) instruction_poly
+and instruction = lident instruction_poly
 
 
+type 'id decl_gen = {
+  name    : 'id;
+  typ     : ptyp option;
+  default : 'id term_gen option;
+  loc     : Location.t [@opaque];
+}
+[@@deriving show {with_path = false}]
 (* -------------------------------------------------------------------- *)
 
-type ('id, 'term) label_term = {
+type 'id label_term = {
   label : 'id option;
-  term : 'term;
+  term : 'id term_gen;
   loc  : Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]
 
-type ('id, 'typ, 'term) variable = {
-  decl         : ('id, 'typ, 'term) decl_gen; (* TODO *)
+type 'id variable = {
+  decl         : 'id decl_gen; (* TODO *)
   constant     : bool;
-  from         : ('id, 'typ) qualid_gen option;
-  to_          : ('id, 'typ) qualid_gen option;
+  from         : 'id qualid_gen option;
+  to_          : 'id qualid_gen option;
   loc          : Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]
 
-type ('id, 'typ) predicate = {
+type 'id predicate = {
   name : 'id;
   args : ('id * type_) list;
-  body : ('id, type_) term_gen;
+  body : 'id term_gen;
   loc  : Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]
 
-type ('id, 'typ) definition = {
+type 'id definition = {
   name : 'id;
-  typ  : 'typ;
+  typ  : type_;
   var  : 'id;
-  body : ('id, type_) term_gen;
+  body : 'id term_gen;
   loc  : Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]
 
-type ('id, 'typ) invariant = {
+type 'id invariant = {
   label: 'id;
-  formulas: (('id, type_) term_gen) list;
+  formulas: 'id term_gen list;
 }
 [@@deriving show {with_path = false}]
 
-type ('id, 'typ) specification = {
+type 'id specification = {
   name: 'id;
-  formula: ('id, type_) term_gen;
-  invariants: (('id, 'typ) invariant) list;
+  formula: 'id term_gen;
+  invariants: 'id invariant list;
 }
 [@@deriving show {with_path = false}]
 
-type ('id, 'typ) assert_ = {
+type 'id assert_ = {
   name: 'id;
   label: 'id;
-  formula: ('id, type_) term_gen;
-  invariants: ('id, 'typ) invariant list;
+  formula: 'id term_gen;
+  invariants: 'id invariant list;
 }
 [@@deriving show {with_path = false}]
 
-type ('id, 'typ, 'term) verification = {
-  predicates  : ('id, 'typ) predicate list;
-  definitions : ('id, 'typ) definition list;
-  axioms      : ('id, ('id, type_) term_gen) label_term list;
-  theorems    : ('id, ('id, type_) term_gen) label_term list;
-  variables   : ('id, 'typ, 'term) variable list;
-  invariants  : ('id * ('id, ('id, type_) term_gen) label_term list) list;
-  effect      : 'term option;
-  specs       : ('id, 'typ) specification list;
-  asserts     : ('id, 'typ) assert_ list;
+type 'id verification = {
+  predicates  : 'id predicate list;
+  definitions : 'id definition list;
+  axioms      : 'id label_term list;
+  theorems    : 'id label_term list;
+  variables   : 'id variable list;
+  invariants  : ('id * 'id label_term list) list;
+  effect      : 'id term_gen option;
+  specs       : 'id specification list;
+  asserts     : 'id assert_ list;
   loc         : Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]
 
-type ('id, 'typ, 'term) function_struct = {
+type 'id function_struct = {
   name         : 'id;
-  args         : (('id, 'typ, 'typ bval_gen) decl_gen) list;
-  body         : ('id, 'typ, 'term) instruction_gen;
-  verification : ('id, 'typ, 'term) verification option;
-  return       : 'typ;
-  fvs          : (ident * 'typ) list [@opaque];
+  args         : ('id decl_gen) list;
+  body         : 'id instruction_gen;
+  verification : 'id verification option;
+  return       : ptyp;
+  fvs          : (ident * ptyp) list [@opaque];
   loc          : Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]
 
-type function_ = (lident, type_, pterm) function_struct
+type function_ = lident function_struct
 [@@deriving show {with_path = false}]
 
-type ('id, 'typ, 'term, 'instr) transition = {
-  from : ('id, 'typ) sexpr_gen;
+type 'id transition = {
+  from : 'id sexpr_gen;
   on   : ('id * 'id) option;
-  trs  : ('id * 'term option * 'instr option) list; (* to * condition * action*)
+  trs  : ('id * 'id term_gen option * 'id instruction_gen option) list; (* to * condition * action*)
 }
 [@@deriving show {with_path = false}]
 
-type ('id, 'typ, 'term, 'instr) transaction_struct = {
+type 'id transaction_struct = {
   name            : 'id;
-  args            : (('id, 'typ, 'typ bval_gen) decl_gen) list;
-  calledby        : ('id, 'typ) rexpr_gen option;
+  args            : ('id decl_gen) list;
+  calledby        : 'id rexpr_gen option;
   accept_transfer : bool;
-  require         : ('id, 'term) label_term list option;
-  transition      : ('id, 'typ, 'term, 'instr) transition option;
-  verification    : ('id, 'typ, 'term) verification option;
-  functions       : ('id, 'typ, 'term) function_struct list;
-  effect          : ('id, 'typ, 'term) instruction_gen option;
+  require         : 'id label_term list option;
+  transition      : ('id transition) option;
+  verification    : 'id verification option;
+  functions       : 'id function_struct list;
+  effect          : 'id instruction_gen option;
   loc             : Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]
 
-type transaction = (lident, type_, pterm, instruction) transaction_struct
+type transaction = lident transaction_struct
 [@@deriving show {with_path = false}]
 
-type ('id, 'typ, 'term) enum_item_struct = {
+type 'id enum_item_struct = {
   name : 'id;
   initial : bool;
-  invariants : ('id, ('id, type_) term_gen) label_term list;
+  invariants : 'id label_term list;
   loc : Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]
 
-type ('id, 'typ, 'term) enum_struct = {
+type 'id enum_struct = {
   name : 'id; (* "_state" if it's coming from Dstates constructor *)
-  items : ('id, 'typ, 'term) enum_item_struct list;
+  items : ('id enum_item_struct) list;
   loc : Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]
 
-type enum = (lident, type_, pterm) enum_struct
+type enum = lident enum_struct
 [@@deriving show {with_path = false}]
 
-type ('id, 'typ, 'term) asset_struct = {
+type 'id asset_struct = {
   name    : 'id;
-  fields  : ('id, 'typ, 'term) decl_gen list;
+  fields  : 'id decl_gen list;
   key     : 'id option;   (* TODO: option ? *)
   sort    : 'id list;
   state   : 'id option;
   role    : bool;
-  init    : 'term option;
-  specs   : ('id, ('id, type_) term_gen) label_term list;
+  init    : 'id term_gen option;
+  specs   : 'id label_term list;
   loc     : Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]
 
-type asset = (lident, type_, pterm) asset_struct
+type asset = lident asset_struct
 
-type ('id, 'typ, 'term) contract = {
+type 'id contract = {
   name       : 'id;
-  signatures : ('id, 'typ) signature list;
-  init       : 'term option;
+  signatures : 'id signature list;
+  init       : 'id term_gen option;
   loc        : Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]
 
-type ('id, 'typ, 'term, 'instr)  model_struct = {
+type 'id model_struct = {
   name          : 'id;
-  variables     : ('id, 'typ, 'term) variable list;
-  assets        : ('id, 'typ, 'term) asset_struct list;
-  functions     : ('id, 'typ, 'term) function_struct list;
-  transactions  : ('id, 'typ, 'term, 'instr) transaction_struct list;
-  enums         : ('id, 'typ, 'term) enum_struct list;
-  contracts     : ('id, 'typ, 'term) contract list;
-  verifications : ('id, 'typ, 'term) verification list;
+  variables     : 'id variable list;
+  assets        : 'id asset_struct list;
+  functions     : 'id function_struct list;
+  transactions  : 'id transaction_struct list;
+  enums         : 'id enum_struct list;
+  contracts     : 'id contract list;
+  verifications : 'id verification list;
   loc           : Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]
 
-and model = (lident, type_, pterm, instruction) model_struct
+and model = lident model_struct
 
 (* vtyp -> ptyp *)
 let vtbool       = Tbuiltin (VTbool      )
@@ -578,7 +563,7 @@ let mk_transition ?on ?(trs = []) from =
 let mk_transaction_struct ?(args = []) ?calledby ?(accept_transfer = false) ?require ?transition ?verification ?(functions = []) ?effect ?(loc = Location.dummy) name =
   { name; args; calledby; accept_transfer; require; transition; verification; functions; effect; loc }
 
-let mk_enum_item ?(initial = false) ?(invariants = []) ?(loc = Location.dummy) name : ('id, 'typ, 'term) enum_item_struct =
+let mk_enum_item ?(initial = false) ?(invariants = []) ?(loc = Location.dummy) name : 'id enum_item_struct =
   { name; initial; invariants; loc }
 
 let mk_enum ?(items = []) ?(loc = Location.dummy) name =
@@ -602,12 +587,12 @@ let mk_id type_ id : qualid =
     node  = Qident id;
     label = None; }
 
-let map_term_node (f : ('id, type_) term_gen -> ('id, type_) term_gen) = function
+let map_term_node (f : 'id term_gen -> 'id term_gen) = function
   | Pquantifer (q, i, t, e) -> Pquantifer (q, i, t, f e)
   | Pif (c, t, e)           -> Pif (f c, f t, f e)
   | Pmatchwith (e, l)       -> Pmatchwith (e, List.map (fun (p, e) -> (p, f e)) l)
   | Pcall (i, e, args)      ->
-    Pcall (i, e, List.map (fun (arg : ('id, 'typ, 'term) term_arg) -> match arg with
+    Pcall (i, e, List.map (fun (arg : 'id term_arg) -> match arg with
         | AExpr e -> AExpr (f e)
         | AFun (x, xty, e) -> AFun (x, xty, f e)
         | AEffect l -> AEffect (List.map (fun (id, op, e) -> (id, op, f e)) l)) args)
@@ -642,7 +627,7 @@ let map_instr_node f = function
   | Ireturn x           -> Ireturn x
   | Ilabel x            -> Ilabel x
 
-let map_gen_poly g f (i : ('id, 'typ) struct_poly) : ('id, 'typ) struct_poly =
+let map_gen_poly g f (i : 'id struct_poly) : 'id struct_poly =
   {
     i with
     node = g f i.node
@@ -657,12 +642,12 @@ let map_gen g f i =
 let map_term  f t = map_gen_poly map_term_node  f t
 let map_instr f i = map_gen map_instr_node f i
 
-let fold_term (f: 'a -> 't -> 'a) (accu : 'a) (term : ('id, type_) term_gen) =
+let fold_term (f: 'a -> 't -> 'a) (accu : 'a) (term : 'id term_gen) =
   match term.node with
   | Pquantifer (_, _, _, e) -> f accu e
   | Pif (c, t, e)           -> f (f (f accu c) t) e
   | Pmatchwith (e, l)       -> List.fold_left (fun accu (_, a) -> f accu a) (f accu e) l
-  | Pcall (_, _, args)      -> List.fold_left (fun accu (arg : ('id, 'typ, 'term) term_arg) -> match arg with
+  | Pcall (_, _, args)      -> List.fold_left (fun accu (arg : 'id term_arg) -> match arg with
       | AExpr e -> f accu e
       | AFun (_, _, e) -> f accu e
       | AEffect l -> List.fold_left (fun accu (_, _, e) -> f accu e) accu l ) accu args
@@ -714,7 +699,7 @@ let fold_instr_expr fi fe accu instr =
   | Ireturn x           -> fe accu x
   | Ilabel x            -> fi accu x
 
-let fold_map_term g f (accu : 'a) (term : ('id, type_) term_gen) : 'term * 'a =
+let fold_map_term g f (accu : 'a) (term : 'id term_gen) : 'term * 'a =
   match term.node with
   | Pquantifer (q, id, t, e) ->
     let ee, ea = f accu e in
@@ -740,7 +725,7 @@ let fold_map_term g f (accu : 'a) (term : ('id, type_) term_gen) : 'term * 'a =
   | Pcall (a, id, args) ->
     let ((argss, argsa) : 'c list * 'a) =
       List.fold_left
-        (fun (pterms, accu) (x : ('id, 'typ, 'term) term_arg) ->
+        (fun (pterms, accu) (x : 'id term_arg) ->
            let p, accu =
              match x with
              | AExpr a -> f accu a |> fun (x, acc) -> (Some (AExpr x), acc)
@@ -819,7 +804,7 @@ let fold_map_term g f (accu : 'a) (term : ('id, type_) term_gen) : 'term * 'a =
   | PsecurityActionAction _ as e ->
     g e, accu
 
-let fold_map_instr_term gi ge fi fe (accu : 'a) instr : 'instr * 'a =
+let fold_map_instr_term gi ge fi fe (accu : 'a) instr : 'id instruction_gen * 'a =
   match instr.node with
   | Iif (c, t, e) ->
     let ce, ca = fe accu c in
@@ -838,7 +823,7 @@ let fold_map_instr_term gi ge fi fe (accu : 'a) instr : 'instr * 'a =
     gi (Iletin (i, je, bi)), ba
 
   | Iseq is ->
-    let (isi, isa) : ('instr list * 'a) =
+    let (isi, isa) : ('id instruction_gen list * 'a) =
       List.fold_left
         (fun ((instrs, accu) : ('b list * 'c)) x ->
            let bi, accu = fi accu x in
@@ -908,7 +893,7 @@ let fold_map_instr_term gi ge fi fe (accu : 'a) instr : 'instr * 'a =
 module Utils : sig
 
   val get_asset                 : model -> lident -> asset
-  val get_asset_field           : model -> (lident * lident ) -> (lident, ptyp, pterm) decl_gen
+  val get_asset_field           : model -> (lident * lident ) -> lident decl_gen
   val get_asset_key             : model -> lident -> (lident * vtyp)
   val get_container_asset_field : model -> (lident * lident ) -> container
   val get_named_field_list      : model -> lident -> pterm list -> (lident * pterm) list
@@ -946,9 +931,9 @@ end = struct
     | Some v -> v
     | _ -> emit_error (AssetNotFound (unloc asset_name))
 
-  let get_asset_field ast (asset_name, field_name) =
+  let get_asset_field ast (asset_name, field_name) : 'id decl_gen=
     let asset = get_asset ast asset_name in
-    let res = List.fold_left (fun accu (x : ('id, 'typ, 'term) decl_gen) -> if String.equal (unloc field_name) (unloc x.name) then Some x else accu) None asset.fields in
+    let res = List.fold_left (fun accu (x : 'id decl_gen) -> if String.equal (unloc field_name) (unloc x.name) then Some x else accu) None asset.fields in
     match res with
     | Some v -> v
     | _ -> emit_error (AssetFieldNotFound (unloc asset_name, unloc field_name))
@@ -969,7 +954,7 @@ end = struct
 
   let get_field_list ast asset_name =
     let asset = get_asset ast asset_name in
-    List.map (fun (x : (lident, 'a, 'b) decl_gen) -> x.name) asset.fields
+    List.map (fun (x : lident decl_gen) -> x.name) asset.fields
 
   let get_named_field_list ast asset_name list =
     let field_list = get_field_list ast asset_name in
@@ -980,21 +965,21 @@ end = struct
     List.map2 (fun x y -> x, y) field_list list
 
   let get_enum_opt ast ident =
-    List.fold_left (fun accu (x : ('id, 'typ, 'term) enum_struct) ->
+    List.fold_left (fun accu (x : 'id enum_struct) ->
         if (Location.unloc x.name) = (Location.unloc ident)
         then Some x
         else accu
       ) None ast.enums
 
   let get_asset_opt ast ident =
-    List.fold_left (fun accu (x : ('id, 'typ, 'term) asset_struct) ->
+    List.fold_left (fun accu (x : 'id asset_struct) ->
         if (Location.unloc x.name) = (Location.unloc ident)
         then Some x
         else accu
       ) None ast.assets
 
   let get_contract_opt ast ident =
-    List.fold_left (fun accu (x : ('id, 'typ, 'term) contract) ->
+    List.fold_left (fun accu (x : 'id contract) ->
         if (Location.unloc x.name) = (Location.unloc ident)
         then Some x
         else accu
@@ -1002,15 +987,15 @@ end = struct
 
   let get_enum_values ast ident =
     List.fold_left (
-      fun accu (x : ('id, 'typ, 'term) enum_struct) ->
-        if List.fold_left (fun accu (x : ('id, 'typ, 'term) enum_item_struct) -> accu || (Location.unloc x.name) = (Location.unloc ident)) false x.items
+      fun accu (x : 'id enum_struct) ->
+        if List.fold_left (fun accu (x : 'id enum_item_struct) -> accu || (Location.unloc x.name) = (Location.unloc ident)) false x.items
         then (Some x.name)
         else accu
     ) None ast.enums
 
-  let get_variable_opt ast ident : ('id, 'typ, 'term) variable option =
+  let get_variable_opt ast ident : 'id variable option =
     List.fold_left (
-      fun accu (x : ('id, 'typ, 'term) variable) ->
+      fun accu (x : 'id variable) ->
         if (String.equal (Location.unloc x.decl.name) (Location.unloc ident))
         then Some x
         else accu
@@ -1034,7 +1019,7 @@ end = struct
   let get_var_type (ast : model) (ident : lident) : type_ =
     let var : type_ option =
       List.fold_left (
-        fun accu (x : ('id, type_, 'term) variable) ->
+        fun accu (x : 'id variable) ->
           if (String.equal (Location.unloc x.decl.name) (Location.unloc ident))
           then x.decl.typ
           else accu

@@ -360,37 +360,37 @@ let rec pp_instruction fmt (i : instruction) =
     Format.fprintf fmt "label %a"
       pp_id id
 
-let pp_label_term fmt (lt : (lident, (lident, type_) term_gen) label_term) =
+let pp_label_term fmt (lt : lident label_term) =
   Format.fprintf fmt "%a%a"
     (pp_option (pp_postfix " : " pp_id)) lt.label
     pp_pterm lt.term
 
-let pp_predicate fmt (p : (lident, ptyp) predicate) =
+let pp_predicate fmt (p : lident predicate) =
   Format.fprintf fmt "predicate %a (%a) =@\n  @[%a@]"
     pp_id p.name
     (pp_list ", " (fun fmt (id, typ) -> Format.fprintf fmt "%a : %a" pp_id id pp_ptyp typ)) p.args
     pp_pterm p.body
 
-let pp_variable_verif fmt (v : (lident, ptyp, pterm) variable) =
+let pp_variable_verif fmt (v : lident variable) =
   let decl = v.decl in
   Format.fprintf fmt "variable %a%a%a"
     pp_id decl.name
     (pp_option (pp_prefix " " pp_ptyp)) decl.typ
     (pp_option (pp_prefix " := " pp_pterm)) decl.default
 
-let pp_definitions fmt (d : (lident, ptyp) definition) =
+let pp_definitions fmt (d : lident definition) =
   Format.fprintf fmt "definition %a =@\n  @[{ %a : %a | %a }@]"
     pp_id d.name
     pp_id d.var
     pp_ptyp d.typ
     pp_pterm d.body
 
-let pp_invariant fmt (i : (lident, ptyp) invariant) =
+let pp_invariant fmt (i : lident invariant) =
   Format.fprintf fmt "invariant of %a@\n  @[%a@]"
     pp_id i.label
     (pp_list "@\n" pp_pterm) i.formulas
 
-let pp_specification fmt (s : (lident, ptyp) specification) : unit =
+let pp_specification fmt (s : lident specification) : unit =
   Format.fprintf fmt "specification %a@\n  @[%a]@\n%a@\n"
     pp_id s.name
     pp_pterm s.formula
@@ -399,23 +399,23 @@ let pp_specification fmt (s : (lident, ptyp) specification) : unit =
           Format.fprintf fmt "invariants@\n  @[%a@]"
             (pp_list "@\n" pp_invariant) l)) s.invariants
 
-let pp_assert fmt (s : (lident, ptyp) assert_) : unit =
+let pp_assert fmt (s : lident assert_) : unit =
   Format.fprintf fmt "assert %a on %a @\n  @[%a]@\n%a@\n"
     pp_id s.name
     pp_id s.label
     pp_pterm s.formula
     (pp_no_empty_list pp_invariant) s.invariants
 
-let pp_verification fmt (v : (lident, ptyp, pterm) verification) =
+let pp_verification fmt (v : lident verification) =
   Format.fprintf fmt "%a%a%a%a%a%a%a%a%a@\n"
     (pp_no_empty_list pp_predicate) v.predicates
     (pp_no_empty_list pp_definitions) v.definitions
     (pp_no_empty_list (fun fmt -> Format.fprintf fmt "axioms:@\n  @[%a@]@\n" pp_label_term)) v.axioms
     (pp_no_empty_list (fun fmt -> Format.fprintf fmt "theorems:@\n  @[%a@]@\n" pp_label_term)) v.theorems
     (pp_no_empty_list pp_variable_verif) v.variables
-    (pp_no_empty_list (fun fmt (id, l : lident * (lident, (lident, type_) term_gen) label_term list) ->
+    (pp_no_empty_list (fun fmt (id, l : lident * lident label_term list) ->
          Format.fprintf fmt "invariants:@\n  @[%a@]@\n"
-           (pp_list "@\n" (fun fmt (lt : (lident, (lident, type_) term_gen) label_term) ->
+           (pp_list "@\n" (fun fmt (lt : lident label_term) ->
                 Format.fprintf fmt "%a : %a"
                   pp_id id
                   pp_label_term lt
@@ -424,7 +424,7 @@ let pp_verification fmt (v : (lident, ptyp, pterm) verification) =
     (pp_no_empty_list pp_specification) v.specs
     (pp_no_empty_list pp_assert) v.asserts
 
-let pp_variable fmt (v : (lident, ptyp, pterm) variable) =
+let pp_variable fmt (v : lident variable) =
   Format.fprintf fmt "%a %a%a%a%a"
     pp_ptyp (Option.get v.decl.typ)
     pp_id v.decl.name
@@ -432,13 +432,13 @@ let pp_variable fmt (v : (lident, ptyp, pterm) variable) =
     (pp_option (pp_prefix " to " pp_qualid)) v.to_
     (pp_option (pp_prefix " := " pp_pterm)) v.decl.default
 
-let pp_field fmt (f : (lident, ptyp, pterm) decl_gen) =
+let pp_field fmt (f : lident decl_gen) =
   Format.fprintf fmt "%a : %a%a"
     pp_id f.name
     (pp_option pp_ptyp) f.typ
     (pp_option (pp_prefix " := " pp_pterm)) f.default
 
-let pp_asset fmt (a : (lident, ptyp, pterm) asset_struct) =
+let pp_asset fmt (a : lident asset_struct) =
   Format.fprintf fmt "asset %a%a%a = {@\n  @[%a@]@\n}%a%a%a@\n"
     pp_id a.name
     (pp_option (pp_prefix " identified by " pp_id)) a.key
@@ -451,7 +451,7 @@ let pp_asset fmt (a : (lident, ptyp, pterm) asset_struct) =
           Format.fprintf fmt " with {@[%a@]}"
             (pp_list ";@\n" pp_label_term))) a.specs
 
-let pp_enum_item fmt (ei : (lident, ptyp, pterm) enum_item_struct) =
+let pp_enum_item fmt (ei : lident enum_item_struct) =
   Format.fprintf fmt "| %a%a%a"
     pp_id ei.name
     (pp_do_if ei.initial pp_str) " initial"
@@ -460,12 +460,12 @@ let pp_enum_item fmt (ei : (lident, ptyp, pterm) enum_item_struct) =
           Format.fprintf fmt " with {@[%a@]}"
             (pp_list ";@\n" pp_label_term))) ei.invariants
 
-let pp_enum fmt (e : (lident, ptyp, pterm) enum_struct) =
+let pp_enum fmt (e : lident enum_struct) =
   Format.fprintf fmt "enum %a =@\n  @[%a@]@\n"
     pp_id e.name
     (pp_list "@\n" pp_enum_item) e.items
 
-let pp_signature fmt (s : (lident, ptyp) signature) =
+let pp_signature fmt (s : lident signature) =
   Format.fprintf fmt "%a: %a"
     pp_id s.name
     (fun fmt x ->
@@ -473,7 +473,7 @@ let pp_signature fmt (s : (lident, ptyp) signature) =
        then pp_str fmt "()"
        else (pp_list ", " pp_ptyp) fmt x) s.args
 
-let pp_contract fmt (c : (lident, ptyp, pterm) contract) =
+let pp_contract fmt (c : lident contract) =
   Format.fprintf fmt "contract %a =@\n  @[%a@]@\n"
     pp_id c.name
     (pp_list "@\n" pp_signature) c.signatures
@@ -510,7 +510,7 @@ let pp_transition fmt t =
 let pp_function fmt (f : function_) =
   Format.fprintf fmt "function %a (%a) : %a =@\n  @[%a%a@]@\n"
     pp_id f.name
-    (pp_list ", " (fun fmt (x : (lident, ptyp, bval) decl_gen) ->
+    (pp_list ", " (fun fmt (x : lident decl_gen) ->
          Format.fprintf fmt "%a : %a"
            pp_id x.name
            pp_ptyp (Option.get x.typ)
@@ -522,7 +522,7 @@ let pp_function fmt (f : function_) =
 let pp_transaction fmt (t : transaction) =
   Format.fprintf fmt "transaction %a (%a) =@\n  @[%a%a%a%a%a%a%a@]\n"
     pp_id t.name
-    (pp_list ", " (fun fmt (x : (lident, ptyp, bval) decl_gen) ->
+    (pp_list ", " (fun fmt (x : lident decl_gen) ->
          Format.fprintf fmt "%a : %a"
            pp_id x.name
            pp_ptyp (Option.get x.typ)

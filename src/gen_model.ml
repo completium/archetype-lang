@@ -85,7 +85,7 @@ let to_model (ast : A.model) : M.model =
     | _ -> emit_error CannotConvertToAssignOperator
   in
 
-  let rec to_qualid_node (n : ('a, 'b) A.qualid_node) : ('id, 'qualid) M.qualid_node =
+  let rec to_qualid_node (n : A.lident A.qualid_node) : ('id, 'qualid) M.qualid_node =
     match n with
     | A.Qident i    -> M.Qident i
     | A.Qdot (d, i) -> M.Qdot (to_qualid_gen d, i)
@@ -96,7 +96,7 @@ let to_model (ast : A.model) : M.model =
     M.mk_qualid node type_
   in
 
-  let to_pattern_node (n : (A.lident, A.lident A.pattern_gen) A.pattern_node) : 'id M.pattern_node =
+  let to_pattern_node (n : A.lident A.pattern_node) : 'id M.pattern_node =
     match n with
     | A.Mconst id -> M.Pconst id
     | A.Mwild    -> M.Pwild
@@ -107,7 +107,7 @@ let to_model (ast : A.model) : M.model =
     M.mk_pattern node ~loc:p.loc
   in
 
-  let term_arg_to_expr : 't. ((A.lident, 't) A.term_gen -> M.mterm) -> ((A.lident, 't, (A.lident, 't) A.term_gen) A.term_arg) -> M.mterm =
+  let term_arg_to_expr : 't. (A.lident A.term_gen -> M.mterm) -> (A.lident A.term_arg) -> M.mterm =
     fun f a ->
       match a with
       | A.AExpr x -> f x
@@ -126,145 +126,144 @@ let to_model (ast : A.model) : M.model =
 
   (* let unit : M.mterm = M.mk_mterm (M.Mseq []) M.Tunit in *)
 
-  let to_mterm_node : 't. ((A.lident, 't, (A.lident, 't) A.term_gen) A.term_node) -> ((A.lident, 't) A.term_gen -> M.mterm) -> ('t -> M.type_) -> (M.lident, M.mterm) M.mterm_node =
-    fun n f ftyp ->
-      match n with
-      | A.Pif (c, t, e)                -> M.Mif        (f c, f t, Some (f e))
-      | A.Pmatchwith (m, l)            -> M.Mmatchwith (f m, List.map (fun (p, e) -> (to_pattern p, f e)) l)
-      | A.Plogical (A.And, l, r)       -> M.Mand       (f l, f r)
-      | A.Plogical (A.Or, l, r)        -> M.Mor        (f l, f r)
-      | A.Plogical (A.Imply, l, r)     -> M.Mimply     (f l, f r)
-      | A.Plogical (A.Equiv, l, r)     -> M.Mequiv     (f l, f r)
-      | A.Pnot e                       -> M.Mnot       (f e)
-      | A.Pcomp (A.Equal, l, r)        -> M.Mequal     (f l, f r)
-      | A.Pcomp (A.Nequal, l, r)       -> M.Mnequal    (f l, f r)
-      | A.Pcomp (A.Gt, l, r)           -> M.Mgt        (f l, f r)
-      | A.Pcomp (A.Ge, l, r)           -> M.Mge        (f l, f r)
-      | A.Pcomp (A.Lt, l, r)           -> M.Mlt        (f l, f r)
-      | A.Pcomp (A.Le, l, r)           -> M.Mle        (f l, f r)
-      | A.Parith (A.Plus, l, r)        -> M.Mplus      (f l, f r)
-      | A.Parith (A.Minus, l, r)       -> M.Mminus     (f l, f r)
-      | A.Parith (A.Mult, l, r)        -> M.Mmult      (f l, f r)
-      | A.Parith (A.Div, l, r)         -> M.Mdiv       (f l, f r)
-      | A.Parith (A.Modulo, l, r)      -> M.Mmodulo    (f l, f r)
-      | A.Puarith (A.Uplus, e)         -> M.Muplus     (f e)
-      | A.Puarith (A.Uminus, e)        -> M.Muminus    (f e)
-      | A.Precord l                    -> M.Mrecord    (List.map f l)
-      | A.Pletin (id, init, typ, cont) -> M.Mletin     ([id], f init, Option.map ftyp typ, f cont)
-      | A.Pvar {pldesc = "now"}                -> M.Mnow (* TODO: use const Cnow instead *)
-      | A.Pvar id when A.Utils.is_variable ast id   -> M.Mvarstorevar id
-      | A.Pvar id when A.Utils.is_asset ast id      -> M.Mvarstorecol id
-      | A.Pvar id when A.Utils.is_enum_value ast id -> M.Mvarenumval id
-      | A.Pvar id                                   -> M.Mvarlocal id
-      | A.Parray l                             -> M.Marray (List.map f l)
-      | A.Plit ({node = BVint i; _})           -> M.Mint i
-      | A.Plit ({node = BVuint i; _})          -> M.Muint i
-      | A.Plit ({node = BVbool b; _})          -> M.Mbool b
-      | A.Plit ({node = BVenum s; _})          -> M.Menum s
-      | A.Plit ({node = BVrational (d, n); _}) -> M.Mrational (d, n)
-      | A.Plit ({node = BVdate s; _})          -> M.Mdate s
-      | A.Plit ({node = BVstring s; _})        -> M.Mstring s
-      | A.Plit ({node = BVcurrency (c, i); _}) -> M.Mcurrency (i, to_currency c)
-      | A.Plit ({node = BVaddress s; _})       -> M.Maddress s
-      | A.Plit ({node = BVduration s; _})      -> M.Mduration s
-      | A.Pdot (d, i) ->
-        (* handle dot contract too *)
-        M.Mdotasset (f d, i)
-      | A.Pconst Cstate                        -> M.Mstate
-      | A.Pconst Cnow                          -> M.Mnow
-      | A.Pconst Ctransferred                  -> M.Mtransferred
-      | A.Pconst Ccaller                       -> M.Mcaller
-      | A.Pconst Cbalance                      -> M.Mbalance
-      | A.Pconst Canyaction                    -> M.Manyaction
-      | A.Pconst c                             ->
-        Format.eprintf "expr const unkown: %a@." A.pp_const c;
-        assert false
+  let to_mterm_node (n : A.lident A.term_node) (f : A.lident A.term_gen -> M.mterm) (ftyp : 't -> M.type_) : (M.lident, M.mterm) M.mterm_node =
+    match n with
+    | A.Pif (c, t, e)                -> M.Mif        (f c, f t, Some (f e))
+    | A.Pmatchwith (m, l)            -> M.Mmatchwith (f m, List.map (fun (p, e) -> (to_pattern p, f e)) l)
+    | A.Plogical (A.And, l, r)       -> M.Mand       (f l, f r)
+    | A.Plogical (A.Or, l, r)        -> M.Mor        (f l, f r)
+    | A.Plogical (A.Imply, l, r)     -> M.Mimply     (f l, f r)
+    | A.Plogical (A.Equiv, l, r)     -> M.Mequiv     (f l, f r)
+    | A.Pnot e                       -> M.Mnot       (f e)
+    | A.Pcomp (A.Equal, l, r)        -> M.Mequal     (f l, f r)
+    | A.Pcomp (A.Nequal, l, r)       -> M.Mnequal    (f l, f r)
+    | A.Pcomp (A.Gt, l, r)           -> M.Mgt        (f l, f r)
+    | A.Pcomp (A.Ge, l, r)           -> M.Mge        (f l, f r)
+    | A.Pcomp (A.Lt, l, r)           -> M.Mlt        (f l, f r)
+    | A.Pcomp (A.Le, l, r)           -> M.Mle        (f l, f r)
+    | A.Parith (A.Plus, l, r)        -> M.Mplus      (f l, f r)
+    | A.Parith (A.Minus, l, r)       -> M.Mminus     (f l, f r)
+    | A.Parith (A.Mult, l, r)        -> M.Mmult      (f l, f r)
+    | A.Parith (A.Div, l, r)         -> M.Mdiv       (f l, f r)
+    | A.Parith (A.Modulo, l, r)      -> M.Mmodulo    (f l, f r)
+    | A.Puarith (A.Uplus, e)         -> M.Muplus     (f e)
+    | A.Puarith (A.Uminus, e)        -> M.Muminus    (f e)
+    | A.Precord l                    -> M.Mrecord    (List.map f l)
+    | A.Pletin (id, init, typ, cont) -> M.Mletin     ([id], f init, Option.map ftyp typ, f cont)
+    | A.Pvar {pldesc = "now"}                -> M.Mnow (* TODO: use const Cnow instead *)
+    | A.Pvar id when A.Utils.is_variable ast id   -> M.Mvarstorevar id
+    | A.Pvar id when A.Utils.is_asset ast id      -> M.Mvarstorecol id
+    | A.Pvar id when A.Utils.is_enum_value ast id -> M.Mvarenumval id
+    | A.Pvar id                                   -> M.Mvarlocal id
+    | A.Parray l                             -> M.Marray (List.map f l)
+    | A.Plit ({node = BVint i; _})           -> M.Mint i
+    | A.Plit ({node = BVuint i; _})          -> M.Muint i
+    | A.Plit ({node = BVbool b; _})          -> M.Mbool b
+    | A.Plit ({node = BVenum s; _})          -> M.Menum s
+    | A.Plit ({node = BVrational (d, n); _}) -> M.Mrational (d, n)
+    | A.Plit ({node = BVdate s; _})          -> M.Mdate s
+    | A.Plit ({node = BVstring s; _})        -> M.Mstring s
+    | A.Plit ({node = BVcurrency (c, i); _}) -> M.Mcurrency (i, to_currency c)
+    | A.Plit ({node = BVaddress s; _})       -> M.Maddress s
+    | A.Plit ({node = BVduration s; _})      -> M.Mduration s
+    | A.Pdot (d, i) ->
+      (* handle dot contract too *)
+      M.Mdotasset (f d, i)
+    | A.Pconst Cstate                        -> M.Mstate
+    | A.Pconst Cnow                          -> M.Mnow
+    | A.Pconst Ctransferred                  -> M.Mtransferred
+    | A.Pconst Ccaller                       -> M.Mcaller
+    | A.Pconst Cbalance                      -> M.Mbalance
+    | A.Pconst Canyaction                    -> M.Manyaction
+    | A.Pconst c                             ->
+      Format.eprintf "expr const unkown: %a@." A.pp_const c;
+      assert false
 
-      | A.Ptuple l                             -> M.Mtuple (List.map f l)
-      | A.Pquantifer (Forall, i, typ, term)    -> M.Mforall (i, ptyp_to_type typ, f term)
-      | A.Pquantifer (Exists, i, typ, term)    -> M.Mexists (i, ptyp_to_type typ, f term)
+    | A.Ptuple l                             -> M.Mtuple (List.map f l)
+    | A.Pquantifer (Forall, i, typ, term)    -> M.Mforall (i, ptyp_to_type typ, f term)
+    | A.Pquantifer (Exists, i, typ, term)    -> M.Mexists (i, ptyp_to_type typ, f term)
 
-      | A.Pcall (_, A.Cconst A.Cbefore,    [AExpr p]) -> M.Msetbefore    (f p)
-      | A.Pcall (_, A.Cconst A.Cunmoved,   [AExpr p]) -> M.Msetunmoved   (f p)
-      | A.Pcall (_, A.Cconst A.Cadded,     [AExpr p]) -> M.Msetadded     (f p)
-      | A.Pcall (_, A.Cconst A.Cremoved,   [AExpr p]) -> M.Msetremoved   (f p)
-      | A.Pcall (_, A.Cconst A.Citerated,  [AExpr p]) -> M.Msetiterated  (f p)
-      | A.Pcall (_, A.Cconst A.Ctoiterate, [AExpr p]) -> M.Msettoiterate (f p)
+    | A.Pcall (_, A.Cconst A.Cbefore,    [AExpr p]) -> M.Msetbefore    (f p)
+    | A.Pcall (_, A.Cconst A.Cunmoved,   [AExpr p]) -> M.Msetunmoved   (f p)
+    | A.Pcall (_, A.Cconst A.Cadded,     [AExpr p]) -> M.Msetadded     (f p)
+    | A.Pcall (_, A.Cconst A.Cremoved,   [AExpr p]) -> M.Msetremoved   (f p)
+    | A.Pcall (_, A.Cconst A.Citerated,  [AExpr p]) -> M.Msetiterated  (f p)
+    | A.Pcall (_, A.Cconst A.Ctoiterate, [AExpr p]) -> M.Msettoiterate (f p)
 
-      | A.Pcall (aux, A.Cid id, args) ->
-        M.Mapp (id, List.map (fun x -> term_arg_to_expr f x) args)
+    | A.Pcall (aux, A.Cid id, args) ->
+      M.Mapp (id, List.map (fun x -> term_arg_to_expr f x) args)
 
-      | A.Pcall (Some p, A.Cconst A.Cget, [AExpr q]) ->
-        let fp = f p in
-        let asset_name =
-          match fp with
-          | {node = Mvarstorecol an } -> unloc an
-          | _ -> emit_error (CannotExtractAssetName)
-        in
-        M.Mget (asset_name, f q)
+    | A.Pcall (Some p, A.Cconst A.Cget, [AExpr q]) ->
+      let fp = f p in
+      let asset_name =
+        match fp with
+        | {node = Mvarstorecol an } -> unloc an
+        | _ -> emit_error (CannotExtractAssetName)
+      in
+      M.Mget (asset_name, f q)
 
-      | A.Pcall (Some p, A.Cconst (A.Ccontains), [AExpr q])
-      | A.Pcall (None, A.Cconst (A.Ccontains), [AExpr p; AExpr q]) ->
-        let fp = f p in
-        let asset_name =
-          match fp with
-          | {type_ = M.Tcontainer (M.Tasset asset_name, _); _} -> unloc asset_name
-          | _ -> "todo"
-        in
-        M.Mcontains (asset_name, f p, f q)
+    | A.Pcall (Some p, A.Cconst (A.Ccontains), [AExpr q])
+    | A.Pcall (None, A.Cconst (A.Ccontains), [AExpr p; AExpr q]) ->
+      let fp = f p in
+      let asset_name =
+        match fp with
+        | {type_ = M.Tcontainer (M.Tasset asset_name, _); _} -> unloc asset_name
+        | _ -> "todo"
+      in
+      M.Mcontains (asset_name, f p, f q)
 
-      | A.Pcall (Some p, A.Cconst (A.Csum), [AFun (_, _, q)]) ->
-        let fp = f p in
-        let asset_name =
-          match fp with
-          | {type_ = M.Tcontainer (M.Tasset asset_name, _); _} -> unloc asset_name
-          | _ -> assert false
-        in
-        let field_name =
-          match q.node with
-          | A.Pdot (_, fn) -> fn
-          | _ -> assert false
-        in
-        M.Msum (asset_name, field_name, fp)
+    | A.Pcall (Some p, A.Cconst (A.Csum), [AFun (_, _, q)]) ->
+      let fp = f p in
+      let asset_name =
+        match fp with
+        | {type_ = M.Tcontainer (M.Tasset asset_name, _); _} -> unloc asset_name
+        | _ -> assert false
+      in
+      let field_name =
+        match q.node with
+        | A.Pdot (_, fn) -> fn
+        | _ -> assert false
+      in
+      M.Msum (asset_name, field_name, fp)
 
-      | A.Pcall (Some c, A.Cconst (A.Cselect), [AFun (pi, pt, p)])
-      | A.Pcall (None, A.Cconst (A.Cselect), [AExpr c; AFun (pi, pt, p)]) ->
-        let fc = f c in
-        let fp = f p in
-        let asset_name =
-          match fc with
-          | {type_ = M.Tcontainer (M.Tasset asset_name, _); _} -> unloc asset_name
-          | _ -> "todo0"
-        in
-        M.Mselect (asset_name, fc, fp)
+    | A.Pcall (Some c, A.Cconst (A.Cselect), [AFun (pi, pt, p)])
+    | A.Pcall (None, A.Cconst (A.Cselect), [AExpr c; AFun (pi, pt, p)]) ->
+      let fc = f c in
+      let fp = f p in
+      let asset_name =
+        match fc with
+        | {type_ = M.Tcontainer (M.Tasset asset_name, _); _} -> unloc asset_name
+        | _ -> "todo0"
+      in
+      M.Mselect (asset_name, fc, fp)
 
-      | A.Pcall (None, A.Cconst (A.Cmaybeperformedonlybyrole), [AExpr l; AExpr r]) ->
-        M.MsecMayBePerformedOnlyByRole (f l, f r)
+    | A.Pcall (None, A.Cconst (A.Cmaybeperformedonlybyrole), [AExpr l; AExpr r]) ->
+      M.MsecMayBePerformedOnlyByRole (f l, f r)
 
-      | A.Pcall (None, A.Cconst (A.Cmaybeperformedonlybyaction), [AExpr l; AExpr r]) ->
-        M.MsecMayBePerformedOnlyByAction (f l, f r)
+    | A.Pcall (None, A.Cconst (A.Cmaybeperformedonlybyaction), [AExpr l; AExpr r]) ->
+      M.MsecMayBePerformedOnlyByAction (f l, f r)
 
-      | A.Pcall (None, A.Cconst (A.Cmaybeperformedbyrole), [AExpr l; AExpr r]) ->
-        M.MsecMayBePerformedByRole (f l, f r)
+    | A.Pcall (None, A.Cconst (A.Cmaybeperformedbyrole), [AExpr l; AExpr r]) ->
+      M.MsecMayBePerformedByRole (f l, f r)
 
-      | A.Pcall (None, A.Cconst (A.Cmaybeperformedbyaction), [AExpr l; AExpr r]) ->
-        M.MsecMayBePerformedByAction (f l, f r)
+    | A.Pcall (None, A.Cconst (A.Cmaybeperformedbyaction), [AExpr l; AExpr r]) ->
+      M.MsecMayBePerformedByAction (f l, f r)
 
-      | A.Pcall (aux, A.Cconst c, args) ->
-        Format.eprintf "expr const unkown: %a with nb args: %d [%a] %s@."
-          A.pp_const c
-          (List.length args)
-          (Printer_tools.pp_list "; " (fun fmt x ->
-               let str = match x with | A.AExpr _ -> "AExpr" | A.AEffect _ -> "AEffect" | A.AFun _ -> "AFun" in
-               Printer_tools.pp_str fmt str)) args
-          (match aux with | Some _ -> "with aux" | _ -> "without aux");
-        assert false
+    | A.Pcall (aux, A.Cconst c, args) ->
+      Format.eprintf "expr const unkown: %a with nb args: %d [%a] %s@."
+        A.pp_const c
+        (List.length args)
+        (Printer_tools.pp_list "; " (fun fmt x ->
+             let str = match x with | A.AExpr _ -> "AExpr" | A.AEffect _ -> "AEffect" | A.AFun _ -> "AFun" in
+             Printer_tools.pp_str fmt str)) args
+        (match aux with | Some _ -> "with aux" | _ -> "without aux");
+      assert false
 
-      | A.PsecurityActionRole _ ->
-        assert false
+    | A.PsecurityActionRole _ ->
+      assert false
 
-      | A.PsecurityActionAction _ ->
-        assert false
+    | A.PsecurityActionAction _ ->
+      assert false
   in
 
   let rec to_mterm (pterm : A.pterm) : M.mterm =
@@ -273,7 +272,7 @@ let to_model (ast : A.model) : M.model =
     M.mk_mterm node type_ ~loc:pterm.loc
   in
 
-  let to_label_lterm (x : ('id, ('id, A.type_) A.term_gen) A.label_term) : M.label_term =
+  let to_label_lterm (x : A.lident A.label_term) : M.label_term =
     M.mk_label_term (to_mterm x.term) ?label:x.label ~loc:x.loc
   in
 
@@ -313,7 +312,7 @@ let to_model (ast : A.model) : M.model =
 
     let lref : (Ident.ident * (A.operator * M.mterm)) list = List.map (fun (x, y, z) -> (unloc x, (y, z))) e in
     let lrecorditems =
-      List.fold_left (fun accu (x : (A.lident, A.ptyp, A.pterm) A.decl_gen) ->
+      List.fold_left (fun accu (x : A.lident A.decl_gen) ->
           let v = List.assoc_opt (unloc x.name) lref in
           let type_ = ptyp_to_type (Option.get x.typ) in
           let var = M.mk_mterm (Mdotasset (var_mterm, x.name)) type_ in
@@ -410,7 +409,7 @@ let to_model (ast : A.model) : M.model =
 
   let process_enums list =
     let process_enum (e : A.enum) : M.decl_node =
-      let values = List.map (fun (x : (A.lident, A.type_, A.pterm) A.enum_item_struct) ->
+      let values = List.map (fun (x : A.lident A.enum_item_struct) ->
           let id : M.lident = x.name in
           M.mk_enum_item id ~invariants:(List.map (fun x -> to_label_lterm x) x.invariants)
         ) e.items in
@@ -422,7 +421,7 @@ let to_model (ast : A.model) : M.model =
   let process_info_enums list =
     let process_enum (e : A.enum) : M.info_item =
       let name = unloc e.name in
-      let values = List.map (fun (x : (A.lident, A.type_, A.pterm) A.enum_item_struct) ->
+      let values = List.map (fun (x : A.lident A.enum_item_struct) ->
           unloc x.name) e.items in
       let enum = M.mk_info_enum name ~values:values in
       M.Ienum enum
@@ -431,7 +430,7 @@ let to_model (ast : A.model) : M.model =
 
   let process_records list =
     let process_asset (a : A.asset) : M.decl_node =
-      let values = List.map (fun (x : (A.lident, A.type_, A.pterm) A.decl_gen) ->
+      let values = List.map (fun (x : A.lident A.decl_gen) ->
           let typ = Option.map ptyp_to_type x.typ in
           let default = Option.map to_mterm x.default in
           M.mk_record_item x.name (Option.get typ) ?default:default) a.fields in
@@ -443,7 +442,7 @@ let to_model (ast : A.model) : M.model =
 
   let process_info_records list =
     let process_asset (a : A.asset) : M.info_item =
-      let values : (ident * M.type_ * M.mterm option) list = List.map (fun (x : (A.lident, A.type_, A.pterm) A.decl_gen) ->
+      let values : (ident * M.type_ * M.mterm option) list = List.map (fun (x : A.lident A.decl_gen) ->
           let typ = Option.map ptyp_to_type x.typ in
           unloc x.name, (Option.get typ), None) a.fields in (* TODO : set actual default value *)
       let a : M.info_asset = M.mk_info_asset (unloc a.name) (unloc (Option.get a.key)) ~values:values in
@@ -453,28 +452,28 @@ let to_model (ast : A.model) : M.model =
   in
 
   let process_contracts list =
-    let to_contract_signature (s : (A.lident, A.ptyp) A.signature) : M.contract_signature =
+    let to_contract_signature (s : A.lident A.signature) : M.contract_signature =
       let name = s.name in
       M.mk_contract_signature name ~args:(List.map (fun arg -> ptyp_to_type arg) s.args) ~loc:s.loc
     in
-    let to_contract (c : (A.lident, A.ptyp, A.pterm) A.contract) : M.contract =
+    let to_contract (c : A.lident A.contract) : M.contract =
       M.mk_contract c.name
         ~signatures:(List.map to_contract_signature c.signatures)
         ?init:(Option.map to_mterm c.init)
         ~loc:c.loc
     in
-    list @ List.map (fun (x : (A.lident, A.ptyp, A.pterm) A.contract) -> M.Dcontract (to_contract x)) ast.contracts
+    list @ List.map (fun (x : A.lident A.contract) -> M.Dcontract (to_contract x)) ast.contracts
   in
 
   let process_info_contracts list =
-    let to_contract (c : (A.lident, A.ptyp, A.pterm) A.contract) : M.info_contract =
+    let to_contract (c : A.lident A.contract) : M.info_contract =
       let signatures : (ident * M.type_ list) list =
-        List.map (fun (s : (A.lident, A.ptyp) A.signature) ->
+        List.map (fun (s : A.lident A.signature) ->
             unloc s.name, List.map ptyp_to_type s.args) c.signatures
       in
       M.mk_info_contract (unloc c.name) ~signatures:signatures
     in
-    list @ List.map (fun (x : (A.lident, A.ptyp, A.pterm) A.contract) -> M.Icontract (to_contract x)) ast.contracts
+    list @ List.map (fun (x : A.lident A.contract) -> M.Icontract (to_contract x)) ast.contracts
   in
 
   let info =
@@ -484,7 +483,7 @@ let to_model (ast : A.model) : M.model =
     |> process_info_contracts
   in
 
-  let to_instruction_node (n : (A.lident, A.ptyp, A.pterm, A.instruction) A.instruction_node) lbl g f : ('id, 'instr) M.mterm_node =
+  let to_instruction_node (n : A.lident A.instruction_node) lbl g f : ('id, 'instr) M.mterm_node =
     let is_empty_seq (instr : A.instruction) =
       match instr.node with
       | A.Iseq [] -> true
@@ -589,17 +588,17 @@ let to_model (ast : A.model) : M.model =
     M.mk_mterm node (M.Tunit) ~subvars:instr.subvars ~loc:instr.loc
   in
 
-  let to_predicate (p : ('a, A.ptyp) A.predicate) : M.predicate =
+  let to_predicate (p : A.lident A.predicate) : M.predicate =
     M.mk_predicate p.name (to_mterm p.body) ~args:(List.map (fun (id, type_) -> (id, ptyp_to_type type_)) p.args) ~loc:p.loc
   in
 
-  let to_definition (d : ('a, A.ptyp) A.definition ): M.definition =
+  let to_definition (d : A.lident A.definition ): M.definition =
     M.mk_definition d.name (ptyp_to_type d.typ) d.var (to_mterm d.body) ~loc:d.loc
   in
 
-  let to_variable (v : (A.lident, A.ptyp, A.pterm) A.variable) : M.variable =
+  let to_variable (v : A.lident A.variable) : M.variable =
     M.mk_variable
-      ((fun (arg : (A.lident, A.ptyp, A.pterm) A.decl_gen) : (M.lident * M.type_ * M.mterm option) ->
+      ((fun (arg : A.lident A.decl_gen) : (M.lident * M.type_ * M.mterm option) ->
           (arg.name, ptyp_to_type (Option.get arg.typ), Option.map to_mterm arg.default)) v.decl)
       ~constant:v.constant
       ?from:(Option.map to_qualid_gen v.from)
@@ -607,21 +606,21 @@ let to_model (ast : A.model) : M.model =
       ~loc:v.loc
   in
 
-  let to_invariant (i : (A.lident, A.ptyp) A.invariant) :M.invariant  =
+  let to_invariant (i : A.lident A.invariant) :M.invariant  =
     M.mk_invariant i.label ~formulas:(List.map to_mterm i.formulas)
   in
 
-  let to_spec (s : (A.lident, A.type_) A.specification) : M.specification  =
+  let to_spec (s : A.lident A.specification) : M.specification  =
     M.mk_specification s.name Post (to_mterm s.formula)
       ~invariants:(List.map to_invariant s.invariants)
   in
 
-  let to_assert (s : (A.lident, A.type_) A.assert_) : M.specification  =
+  let to_assert (s : A.lident A.assert_) : M.specification  =
     M.mk_specification s.name Assert (to_mterm s.formula)
       ~invariants:(List.map to_invariant s.invariants)
   in
 
-  let to_verification (v : (A.lident, A.ptyp, A.pterm) A.verification) : M.verification =
+  let to_verification (v : A.lident A.verification) : M.verification =
     let predicates  = List.map to_predicate   v.predicates  in
     let definitions = List.map to_definition  v.definitions in
     let axioms      = List.map to_label_lterm v.axioms      in
@@ -642,7 +641,7 @@ let to_model (ast : A.model) : M.model =
       ~loc:v.loc ()
   in
 
-  let cont_verification (v : (A.lident, A.ptyp, A.pterm) A.verification) (verif : M.verification) : M.verification =
+  let cont_verification (v : A.lident A.verification) (verif : M.verification) : M.verification =
     let v = to_verification v in
     { verif with
       predicates  = verif.predicates @ v.predicates;
@@ -658,7 +657,7 @@ let to_model (ast : A.model) : M.model =
   in
 
   let process_storage list =
-    let variable_to_storage_items (var : (A.lident, A.type_, A.pterm) A.variable) : M.storage_item =
+    let variable_to_storage_items (var : A.lident A.variable) : M.storage_item =
 
       let init_ b =
         match b with
@@ -745,7 +744,7 @@ let to_model (ast : A.model) : M.model =
       (function_ : A.function_)
       (list : M.function__ list) : M.function__ list =
     let name  = function_.name in
-    let args  = List.map (fun (x : (A.lident, A.ptyp, A.ptyp A.bval_gen) A.decl_gen) -> (x.name, (ptyp_to_type |@ Option.get) x.typ, None)) function_.args in
+    let args  = List.map (fun (x : A.lident A.decl_gen) -> (x.name, (ptyp_to_type |@ Option.get) x.typ, None)) function_.args in
     let body  = to_instruction function_.body |> replace_var_by_param args in
     let loc   = function_.loc in
     let ret   = ptyp_to_type function_.return in
@@ -806,7 +805,7 @@ let to_model (ast : A.model) : M.model =
     in
 
     let process_requires (body : M.mterm) : M.mterm =
-      let process_require (x : (A.lident, A.pterm) A.label_term) (body : M.mterm) : M.mterm =
+      let process_require (x : A.lident A.label_term) (body : M.mterm) : M.mterm =
         let term = to_mterm x.term in
         let cond : M.mterm = M.mk_mterm (M.Mnot term) (Tbuiltin Bbool) ~loc:x.loc in
         let fail_cond : M.mterm = fail (InvalidCondition (Option.map unloc x.label)) in
@@ -815,7 +814,7 @@ let to_model (ast : A.model) : M.model =
       in
       match transaction.require with
       | None -> body
-      | Some requires -> List.fold_right (fun (x : (A.lident, A.pterm) A.label_term) (accu : M.mterm) -> process_require x accu) requires body
+      | Some requires -> List.fold_right (fun (x : A.lident A.label_term) (accu : M.mterm) -> process_require x accu) requires body
     in
 
     let process_accept_transfer (body : M.mterm) : M.mterm =
@@ -833,7 +832,7 @@ let to_model (ast : A.model) : M.model =
     in
 
     let process_body_args () : M.argument list * M.mterm =
-      let args  = List.map (fun (x : (A.lident, A.ptyp, A.ptyp A.bval_gen) A.decl_gen) -> (x.name, (ptyp_to_type |@ Option.get) x.typ, None)) transaction.args in
+      let args  = List.map (fun (x : A.lident A.decl_gen) -> (x.name, (ptyp_to_type |@ Option.get) x.typ, None)) transaction.args in
       match transaction.transition, transaction.effect with
       | None, Some e ->
         let body = to_instruction e in
