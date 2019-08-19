@@ -126,6 +126,19 @@ let to_model (ast : A.model) : M.model =
 
   (* let unit : M.mterm = M.mk_mterm (M.Mseq []) M.Tunit in *)
 
+
+  let extract_asset_name (mterm : M.mterm) : ident =
+    match mterm with
+    | {type_ = Tcontainer (Tasset asset_name, _); _} -> unloc asset_name
+    | _ -> assert false
+  in
+
+  let extract_field_name (id, type_, body : A.lident * A.ptyp * A.pterm) : M.lident =
+    match body.node with
+    | A.Pdot (_, fn) -> fn
+    | _ -> assert false
+  in
+
   let to_mterm_node (n : A.lident A.term_node) (f : A.lident A.term_gen -> M.mterm) (ftyp : 't -> M.type_) : (M.lident, M.mterm) M.mterm_node =
     match n with
     | A.Pif (c, t, e)                -> M.Mif        (f c, f t, Some (f e))
@@ -193,41 +206,13 @@ let to_model (ast : A.model) : M.model =
     | A.Pcall (aux, A.Cid id, args) ->
       M.Mapp (id, List.map (fun x -> term_arg_to_expr f x) args)
 
-    | A.Pcall (Some p, A.Cconst A.Cget, [AExpr q]) ->
+    | A.Pcall (Some p, A.Cconst (A.Cget), [AExpr q]) ->
       let fp = f p in
-      let asset_name =
-        match fp with
-        | {node = Mvarstorecol an } -> unloc an
-        | _ -> emit_error (CannotExtractAssetName)
-      in
-      M.Mget (asset_name, f q)
+      let fq = f q in
+      let asset_name = extract_asset_name fp in
+      M.Mget (asset_name, fq)
 
-    | A.Pcall (Some p, A.Cconst (A.Ccontains), [AExpr q])
-    | A.Pcall (None, A.Cconst (A.Ccontains), [AExpr p; AExpr q]) ->
-      let fp = f p in
-      let asset_name =
-        match fp with
-        | {type_ = M.Tcontainer (M.Tasset asset_name, _); _} -> unloc asset_name
-        | _ -> "todo"
-      in
-      M.Mcontains (asset_name, f p, f q)
-
-    | A.Pcall (Some p, A.Cconst (A.Csum), [AFun (_, _, q)]) ->
-      let fp = f p in
-      let asset_name =
-        match fp with
-        | {type_ = M.Tcontainer (M.Tasset asset_name, _); _} -> unloc asset_name
-        | _ -> assert false
-      in
-      let field_name =
-        match q.node with
-        | A.Pdot (_, fn) -> fn
-        | _ -> assert false
-      in
-      M.Msum (asset_name, field_name, fp)
-
-    | A.Pcall (Some c, A.Cconst (A.Cselect), [AFun (pi, pt, p)])
-    | A.Pcall (None, A.Cconst (A.Cselect), [AExpr c; AFun (pi, pt, p)]) ->
+    | A.Pcall (Some c, A.Cconst (A.Cselect), [AFun (pi, pt, p)]) ->
       let fc = f c in
       let fp = f p in
       let asset_name =
@@ -236,6 +221,40 @@ let to_model (ast : A.model) : M.model =
         | _ -> "todo0"
       in
       M.Mselect (asset_name, fc, fp)
+
+    | A.Pcall (Some p, A.Cconst (A.Ccontains), [AExpr q]) ->
+      let fp = f p in
+      let asset_name =
+        match fp with
+        | {type_ = M.Tcontainer (M.Tasset asset_name, _); _} -> unloc asset_name
+        | _ -> "todo"
+      in
+      M.Mcontains (asset_name, f p, f q)
+
+    (* TODO: nth *)
+
+    | A.Pcall (Some p, A.Cconst (A.Ccount), []) ->
+      let fp = f p in
+      let asset_name = extract_asset_name fp in
+      M.Mcount (asset_name, fp)
+
+    | A.Pcall (Some p, A.Cconst (A.Csum), [AFun (qi, qt, q)]) ->
+      let fp = f p in
+      let asset_name = extract_asset_name fp in
+      let field_name = extract_field_name (qi, qt, q) in
+      M.Msum (asset_name, field_name, fp)
+
+    | A.Pcall (Some p, A.Cconst (A.Cmin), [AFun (qi, qt, q)]) ->
+      let fp = f p in
+      let asset_name = extract_asset_name fp in
+      let field_name = extract_field_name (qi, qt, q) in
+      M.Mmin (asset_name, field_name, fp)
+
+    | A.Pcall (Some p, A.Cconst (A.Cmax), [AFun (qi, qt, q)]) ->
+      let fp = f p in
+      let asset_name = extract_asset_name fp in
+      let field_name = extract_field_name (qi, qt, q) in
+      M.Mmax (asset_name, field_name, fp)
 
     | A.Pcall (None, A.Cconst (A.Cmaybeperformedonlybyrole), [AExpr l; AExpr r]) ->
       M.MsecMayBePerformedOnlyByRole (f l, f r)
@@ -516,7 +535,6 @@ let to_model (ast : A.model) : M.model =
     | A.Icall (_, A.Cconst (A.Cfail), [AExpr p]) ->
       M.Mfail (Invalid (f p))
 
-    | A.Icall (None, A.Cconst (A.Cadd), [AExpr p; AExpr q])
     | A.Icall (Some p, A.Cconst (A.Cadd), [AExpr q]) -> (
         let fp = f p in
         let fq = f q in
@@ -526,7 +544,6 @@ let to_model (ast : A.model) : M.model =
         | _ -> M.Maddlocal (fp, fq)
       )
 
-    | A.Icall (None, A.Cconst (A.Cremove), [AExpr p; AExpr q])
     | A.Icall (Some p, A.Cconst (A.Cremove), [AExpr q]) -> (
         let fp = f p in
         let fq = f q in
@@ -536,7 +553,6 @@ let to_model (ast : A.model) : M.model =
         | _ -> M.Mremovelocal (fp, fq)
       )
 
-    | A.Icall (None, A.Cconst (A.Cclear), [AExpr p])
     | A.Icall (Some p, A.Cconst (A.Cclear), []) -> (
         let fp = f p in
         match fp with
@@ -545,7 +561,6 @@ let to_model (ast : A.model) : M.model =
         | _ -> M.Mclearlocal (fp)
       )
 
-    | A.Icall (None, A.Cconst (A.Creverse), [AExpr p])
     | A.Icall (Some p, A.Cconst (A.Creverse), []) -> (
         let fp = f p in
         match fp with
@@ -559,15 +574,6 @@ let to_model (ast : A.model) : M.model =
       let k = f k in
       let e = List.map (fun (a, b, c) -> (a, b, f c)) e in
       extract_letin p k e
-
-    | A.Icall (None, A.Cconst (A.Cselect), [AExpr p; AExpr q]) ->
-      let fp = f p in
-      let asset_name =
-        match fp with
-        | {type_ = M.Tcontainer (M.Tasset asset_name, _); _} -> unloc asset_name
-        | _ -> assert false
-      in
-      M.Mselect (asset_name, fp, f q)
 
     | A.Icall (Some c, A.Cconst (A.Cremoveif), [AFun (i, t, p)]) ->
       extract_removeif (M.mk_model ~info:info [] (dumloc ""))(f c) (i, ptyp_to_type t, f p)

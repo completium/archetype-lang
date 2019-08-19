@@ -489,7 +489,7 @@ let pp_mterm fmt (mt : mterm) =
       Format.fprintf fmt "{%a}"
         (pp_list "; " f) l
     | Mletin (ids, a, t, b) ->
-      Format.fprintf fmt "let %a%a = %a in@\n@[<v 2>%a@]"
+      Format.fprintf fmt "let %a%a = %a in@\n%a"
         (pp_list ", " pp_id) ids
         (pp_option (fun fmt -> Format.fprintf fmt  " : %a" pp_type)) t
         f a
