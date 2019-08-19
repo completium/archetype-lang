@@ -5,7 +5,6 @@ open Gen_transform
 
 module A = Ast
 module M = Model
-module I = Ident
 
 exception Anomaly of string
 type error_desc =

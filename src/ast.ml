@@ -434,7 +434,6 @@ type ('id, 'typ, 'term) function_struct = {
   name         : 'id;
   args         : (('id, 'typ, 'typ bval_gen) decl_gen) list;
   body         : ('id, 'typ, 'term) instruction_gen;
-  side         : bool; (* true if function contains a failwith call *)
   verification : ('id, 'typ, 'term) verification option;
   return       : 'typ;
   fvs          : (ident * 'typ) list [@opaque];
@@ -462,7 +461,6 @@ type ('id, 'typ, 'term, 'instr) transaction_struct = {
   verification    : ('id, 'typ, 'term) verification option;
   functions       : ('id, 'typ, 'term) function_struct list;
   effect          : ('id, 'typ, 'term) instruction_gen option;
-  side            : bool;
   loc             : Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]
@@ -571,14 +569,14 @@ let mk_assert ?(invariants = []) name label formula =
 let mk_verification ?(predicates = []) ?(definitions = []) ?(axioms = []) ?(theorems = []) ?(variables = []) ?(invariants = []) ?effect ?(specs = []) ?(asserts = []) ?(loc = Location.dummy) () =
   { predicates; definitions; axioms; theorems; variables; invariants; effect; specs; asserts; loc}
 
-let mk_function_struct ?(args = []) ?verification ?(side = false) ?(fvs = []) ?(loc = Location.dummy) name body return =
-  { name; args; body; verification; side; return; fvs; loc }
+let mk_function_struct ?(args = []) ?verification ?(fvs = []) ?(loc = Location.dummy) name body return =
+  { name; args; body; verification; return; fvs; loc }
 
 let mk_transition ?on ?(trs = []) from =
   { from; on; trs }
 
-let mk_transaction_struct ?(args = []) ?calledby ?(accept_transfer = false) ?require ?transition ?verification ?(functions = []) ?effect ?(side = false) ?(loc = Location.dummy) name =
-  { name; args; calledby; accept_transfer; require; transition; verification; functions; effect; side; loc }
+let mk_transaction_struct ?(args = []) ?calledby ?(accept_transfer = false) ?require ?transition ?verification ?(functions = []) ?effect ?(loc = Location.dummy) name =
+  { name; args; calledby; accept_transfer; require; transition; verification; functions; effect; loc }
 
 let mk_enum_item ?(initial = false) ?(invariants = []) ?(loc = Location.dummy) name : ('id, 'typ, 'term) enum_item_struct =
   { name; initial; invariants; loc }

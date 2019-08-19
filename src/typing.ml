@@ -870,11 +870,11 @@ let rec for_xexpr (mode : emode_t) (env : env) ?(ety : M.ptyp option) (tope : PT
           mk_sp (Some xty) (M.Pvar x)
 
         | Some (`Global decl) -> begin
-          match decl.vr_def with
-          | Some (body, `Inline) ->
-            body
-          | _ ->
-            mk_sp (Some decl.vr_type) (M.Pvar x)
+            match decl.vr_def with
+            | Some (body, `Inline) ->
+              body
+            | _ ->
+              mk_sp (Some decl.vr_type) (M.Pvar x)
           end
 
         | Some (`Asset decl) ->
@@ -2190,7 +2190,6 @@ let transactions_of_tdecls tdecls =
         verification    = Some (verifications_of_iverifications tdecl.ad_verif);
         functions       = [];          (* FIXME *)
         effect          = tdecl.ad_effect;
-        side            = false;       (* FIXME *)
         loc             = loc tdecl.ad_name; }
 
   in List.map for1 tdecls
