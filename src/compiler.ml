@@ -12,7 +12,7 @@ let output_pt (pt : ParseTree.archetype) =
   then (Format.printf "%s\n" (Yojson.Safe.to_string (ParseTree.archetype_to_yojson pt)); raise Stop)
   else if !Options.opt_raw
   then Format.printf "%a@." ParseTree.pp_archetype pt
-  else Format.printf "%a@." Printer.pp_archetype pt
+  else Format.printf "%a@." Printer_pt.pp_archetype pt
 
 let output_tast (ast : Ast.model) =
   if !Options.opt_raw
