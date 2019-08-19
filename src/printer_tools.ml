@@ -1,6 +1,7 @@
 open Core
 open Location
 open Ident
+open Tools
 
 exception Anomaly of string
 
@@ -17,6 +18,11 @@ let pp_list sep pp =
   Format.pp_print_list
     ~pp_sep:(fun fmt () -> Format.fprintf fmt "%(%)" sep)
     pp
+
+let pp_no_empty_list pp fmt l =
+  if List.is_empty l
+  then ()
+  else (pp_list "@\n" pp) fmt l
 
 (* -------------------------------------------------------------------------- *)
 let pp_ident = pp_str
