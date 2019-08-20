@@ -181,6 +181,8 @@ type ('e,'t,'i) abstract_storage_struct = {
 type 'i abstract_clone_subst =
   | Ctype  of 'i * 'i
   | Cval   of 'i * 'i
+  | Cfun   of 'i * 'i
+  | Cpred  of 'i * 'i
 [@@deriving show {with_path = false}]
 
 type ('e,'t,'i) abstract_decl =
@@ -379,6 +381,8 @@ let map_abstract_storage_struct
 let map_abstract_clone_subst (map_i : 'i1 -> 'i2) = function
   | Ctype (i1,i2) -> Ctype (map_i i1, map_i i2)
   | Cval  (i1,i2) -> Cval  (map_i i1, map_i i2)
+  | Cfun  (i1,i2) -> Cfun  (map_i i1, map_i i2)
+  | Cpred  (i1,i2) -> Cpred  (map_i i1, map_i i2)
 
 let map_abstract_decl
     (map_e : 'e1 -> 'e2)

@@ -549,6 +549,8 @@ let pp_qualid fmt q = Format.fprintf fmt "%a" (pp_list "." pp_str) q
 let pp_clone_subst fmt = function
   | Ctype (i,j) -> Format.fprintf fmt "type %a = %a" pp_str i pp_str j
   | Cval (i,j)  -> Format.fprintf fmt "val %a = %a" pp_str i pp_str j
+  | Cfun (i,j)  -> Format.fprintf fmt "function %a = %a" pp_str i pp_str j
+  | Cpred (i,j)  -> Format.fprintf fmt "predicate %a = %a" pp_str i pp_str j
 
 let pp_clone fmt (i,j,l) =
   Format.fprintf fmt "clone %a as %a with @[%a@]"

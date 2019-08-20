@@ -1413,8 +1413,7 @@ let create_miles_with_expiration_ast () =
                                                                               ~type_:((Tbuiltin VTint))),
                                                                            (mk_sp (Pcall (None,
                                                                                           Cconst Csum,
-                                                                                          [
-                                                                                            AExpr (mk_sp (Pcall (None,Cconst Ctoiterate, [AExpr (mk_sp (Pvar (dumloc "by_expiration"))
+                                                                                          [ AExpr (mk_sp (Pcall (None,Cconst Ctoiterate, [AExpr (mk_sp (Pvar (dumloc "by_expiration"))
                                                                                                                                                    ~type_:(Tcontainer(Tasset (dumloc "mile"),Collection)))]))
                                                                                                      ~type_:((Tcontainer (Tasset (dumloc "mile"),Collection))));
                                                                                             AExpr (mk_sp (Pvar (dumloc "amount"))
@@ -1472,30 +1471,7 @@ let create_miles_with_expiration_ast () =
                                                                                            ~type_:((Tcontainer (Tasset (dumloc "mile"), Collection))))
                                                                                 ]))
                                                                     ~type_:((Tcontainer (Tasset (dumloc "mile"), Collection))));
-                                                           AExpr (mk_sp (Pcall (None,
-                                                                                Cconst Cselect,
-                                                                                [
-                                                                                  AExpr (mk_sp (Pdot (mk_sp
-                                                                                                        (Pvar (dumloc "ow"))
-                                                                                                        ~type_:((Tasset (dumloc "owner"))),
-                                                                                                      dumloc "miles"))
-                                                                                           ~type_:((Tcontainer (Tasset (dumloc "mile"), Collection))))
-                                                                                  ;
-                                                                                  AExpr (mk_sp (Pcomp (Ge,
-                                                                                                       mk_sp (Pdot (
-                                                                                                           mk_sp (Pvar (dumloc "the"))
-                                                                                                             ~type_:((Tasset (dumloc "mile"))),
-                                                                                                           dumloc "expiration"
-                                                                                                         ))
-                                                                                                         ~type_:((Tbuiltin VTdate)),
-                                                                                                       mk_sp (Pconst Cnow)
-                                                                                                         ~type_:((Tbuiltin VTdate))
-                                                                                                      ))
-                                                                                           ~type_:((Tbuiltin VTbool))
-                                                                                        )
-                                                                                ]
-
-                                                                               ))
+                                                           AExpr (mk_sp (Pvar (dumloc "by_expiration"))
                                                                     ~type_:((Tcontainer (Tasset (dumloc "mile"), Collection))));
                                                          ]))
                                              ~type_:((Tbuiltin VTbool)))
@@ -1654,6 +1630,17 @@ let create_miles_with_expiration_ast () =
                                                                         ]))
                                                             ~type_:(Tbuiltin VTint)),
                                                          (mk_sp (Pvar (dumloc "quantity"))
+                                                            ~type_:(Tbuiltin VTint))
+                                                        ))
+                                             ~type_:(Tbuiltin VTbool)
+                                          )
+                                         ));
+                      mk_instr (Irequire (true,
+                                          (mk_sp (Pcomp (Ge,
+
+                                                         (mk_sp (Pvar (dumloc "quantity"))
+                                                            ~type_:(Tbuiltin VTint)),
+                                                         (mk_sp (Plit (mk_sp (BVint Big_int.zero_big_int)))
                                                             ~type_:(Tbuiltin VTint))
                                                         ))
                                              ~type_:(Tbuiltin VTbool)

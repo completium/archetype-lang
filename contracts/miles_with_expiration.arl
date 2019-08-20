@@ -51,7 +51,7 @@ action consume (a : address) (quantity : int) = {
     specification p3 = {
       forall m in mile.removed, m.expiration >= now
       invariants for loop {
-        ow.miles.removed.subset (ow.miles.select(the.expiration >= now))
+        ow.miles.removed.subset by_expiration
       }
     }
 

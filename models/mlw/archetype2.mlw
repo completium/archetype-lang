@@ -94,7 +94,6 @@ module AssetCollection
   use IntListUtils
   use list.List
   use list.Length
-  use list.Nth
   use int.Int
   use option.Option
 
@@ -129,12 +128,19 @@ module AssetCollection
   predicate (==) (c1 c2 : collection) = forall a : t. mem a c1 <-> mem a c2
 
   predicate subset (c1 c2 : collection) = forall k : t. mem k c1 -> mem k c2
+
+  lemma subset_transitivity: forall c1 c2 c3 : collection.
+  subset c1 c2 ->
+  subset c2 c3 ->
+  subset c1 c3
   
   let function empty = { content = Nil }
 
   let function singleton (a : t) : collection = { content = Cons a Nil; }
 
   lemma mem_singleton: forall k1 k2 : t. mem k1 (singleton k2) -> k1 = k2
+
+  lemma card_singleton: forall a : t. card (singleton a) = 1
 
   predicate is_empty (c : collection) = forall m : t. not (mem m c)
 
@@ -157,10 +163,7 @@ module AssetCollection
 
   lemma subset_union1: forall c1 c2 : collection. subset c1 (union c1 c2)
 
-  lemma subset_union2: forall c1 c2 : collection. subset c2 (union c1 c2) 
-
-  (*lemma split_mem : forall l : list 'a, x y : 'a.
-   Mem.mem x l \/ x = y <-> Mem.mem x (l ++ (Cons y Nil))*)   
+  lemma subset_union2: forall c1 c2 : collection. subset c2 (union c1 c2)  
 
   lemma card_union: forall c1 c2 : collection.
   card (union c1 c2) = card c1 + card c2 - card (inter c1 c2)
@@ -221,9 +224,6 @@ module AssetCollection
   ensures { contains k c -> result <> witness }
   = internal_get c.content k
 
-  (*axiom get_from_key : forall a : t, c : collection.
-  mem a c ->  get c (keyf a) = a*)
-
   let rec function to_ids (l : list t) : list key 
   variant { l }
   =
@@ -246,15 +246,24 @@ module AssetCollection
   let function unshallow (c : collection) (keys : list int) : collection
   = { content = internal_unshallow c.content keys }
 
+  let rec function internal_nth (i : int) (l : list t) : t 
+  variant { l }
+  = 
+  match l with
+  | Cons e tl -> if i = 0 then e else internal_nth (i - 1) tl
+  | Nil -> witness
+  end
 
   let function nth (i : int) (c : collection) : t 
   ensures { 0 <= i < card c -> result <> witness }
   ensures { 0 <= i < card c -> mem result c }
-  = 
-  match nth i c.content with
-  | Some v -> v
-  | None -> witness
-  end
+  = internal_nth i c.content
+
+  lemma nth_singleton: forall a : t. a <> witness -> nth 0 (singleton a) = a
+
+  lemma mem_nth: forall c : collection, i : int.
+  0 <= i < card c ->
+  mem (nth i c) c
 
   let rec internal_proj (l : list t) (projf : t -> int) : list int
   variant { l }
@@ -285,8 +294,12 @@ module AssetCollection
   axiom tail_add: forall c : collection, i : int. 0 <= i < card c ->
   tail (i+1) c = diff (tail i c) (singleton (nth i c))
 
-  axiom mem_tail: forall c : collection, i : int. 0 <= i < card c ->
-  mem (nth i c) (tail i c)
+  axiom tail_nth: forall c : collection, i j : int.
+  0 <= j < card c ->
+  0 <= i < card c - j ->
+  nth i (tail j c) = nth (i+j) c
+
+  axiom tail_subset: forall i : int, c : collection. subset (tail i c) c
 
   let function to_coll (l : list t) = { content = l }
 
@@ -299,6 +312,10 @@ module Sum
 
   val function f container int : int
   val function card container : int
+  function inter container container : container
+  function union container container : container
+  function diff  container container : container
+  predicate subset container container
 
   let function partial_sum (c : container) (i : int) (j : int) : int = 
   let ref res = 0 in
@@ -309,6 +326,7 @@ module Sum
 
   let function sum (c : container) : int = partial_sum c 0 (card c) 
 
+  (* sum over empty i zero *)
   axiom Sum_def_empty :
     forall c : container, i j : int. j <= i -> partial_sum c i j = 0
 
@@ -326,6 +344,15 @@ module Sum
   lemma Sum_eq :
     forall c1 c2 : container, i j : int.
     (forall k : int. i <= k < j -> f c1 k = f c2 k -> partial_sum c1 i j = partial_sum c2 i j)
+
+  lemma sum_union:
+    forall c1 c2 : container.
+    sum (union c1 c2) = sum c1 + sum c2 - sum (inter c1 c2)
+
+  lemma sum_diff:
+    forall c1 c2 : container.
+    subset c2 c1 ->
+    sum (diff c1 c2) = sum c1 - sum c2  
 
 end
 

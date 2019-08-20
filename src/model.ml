@@ -1745,58 +1745,57 @@ let fold_map_term
   | Manyaction ->
     g (Manyaction), accu
 
-let fold_model (f : 'id ctx_model_gen -> 'a -> 'id mterm_gen -> 'a) (m : 'id model_gen) (accu : 'a) : 'a =
+let fold_left g l accu = List.fold_left (fun accu x -> g x accu) accu l
 
-  let fold_left g l accu = List.fold_left (fun accu x -> g x accu) accu l in
+let fold_verification (ctx : 'id ctx_model_gen) (f : 'id ctx_model_gen -> 'a -> 'id mterm_gen -> 'a) (v : 'id verification_gen) (accu : 'a) : 'a =
+  let fold_label_term (ctx : 'id ctx_model_gen) (f : 'id ctx_model_gen -> 'a -> 'id mterm_gen -> 'a) (lt : 'id label_term_gen) (accu : 'a) : 'a =
+    let ctx = { ctx with label = lt.label } in
+    f ctx accu lt.term
+  in
 
-  let fold_verification (ctx : 'id ctx_model_gen) (f : 'id ctx_model_gen -> 'a -> 'id mterm_gen -> 'a) (v : 'id verification_gen) (accu : 'a) : 'a = (
-    let fold_label_term (ctx : 'id ctx_model_gen) (f : 'id ctx_model_gen -> 'a -> 'id mterm_gen -> 'a) (lt : 'id label_term_gen) (accu : 'a) : 'a =
-      let ctx = { ctx with label = lt.label } in
-      f ctx accu lt.term
-    in
-
-    let fold_predicate (ctx : 'id ctx_model_gen) (f : 'id ctx_model_gen -> 'a -> 'id mterm_gen -> 'a) (p : 'id predicate_gen) (accu : 'a) : 'a =
-      accu
-      |> (fun x -> List.fold_left (fun accu x -> x |> snd |> f ctx accu) x p.args)
-      |> fun x -> f ctx x p.body
-    in
-
-    let fold_definition (ctx : 'id ctx_model_gen) (f : 'id ctx_model_gen -> 'a -> 'id mterm_gen -> 'a) (d : 'id definition_gen) (accu : 'a) : 'a =
-      f ctx accu d.body
-    in
-
-    let fold_invariantt (ctx : 'id ctx_model_gen) (f : 'id ctx_model_gen -> 'a -> 'id mterm_gen -> 'a) (it : 'id * 'id label_term_gen list) (accu : 'a) : 'a =
-      List.fold_left (fun accu x -> fold_label_term ctx f x accu) accu (snd it)
-    in
-
-    let fold_invariant (ctx : 'id ctx_model_gen) (f : 'id ctx_model_gen -> 'a -> 'id mterm_gen -> 'a) (spec : 'id invariant_gen) (accu : 'a) : 'a =
-      let ctx = {ctx with invariant_id = Some spec.label } in
-      List.fold_left (f ctx) accu spec.formulas
-    in
-
-    let fold_specification (ctx : 'id ctx_model_gen) (f : 'id ctx_model_gen -> 'a -> 'id mterm_gen -> 'a) (spec : 'id specification_gen) (accu : 'a) : 'a =
-      let ctx = { ctx with spec_id = Some spec.name} in
-      accu
-      |> (fun x -> f ctx x spec.formula)
-      |> (fun x -> List.fold_left (fun accu (x : 'id invariant_gen) -> fold_invariant ctx f x accu) x spec.invariants)
-    in
-
-    let fold_variable (ctx : 'id ctx_model_gen) (f : 'id ctx_model_gen -> 'a -> 'id mterm_gen -> 'a) (spec : 'id variable_gen) (accu : 'a) : 'a =
-      accu
-    in
-
-    let ctx = { ctx with formula = true } in
-
+  let fold_predicate (ctx : 'id ctx_model_gen) (f : 'id ctx_model_gen -> 'a -> 'id mterm_gen -> 'a) (p : 'id predicate_gen) (accu : 'a) : 'a =
     accu
-    |> fold_left (fold_predicate ctx f) v.predicates
-    |> fold_left (fold_definition ctx f) v.definitions
-    |> fold_left (fold_label_term ctx f) v.axioms
-    |> fold_left (fold_label_term ctx f) v.theorems
-    |> fold_left (fold_variable ctx f) v.variables
-    |> fold_left (fold_invariantt ctx f) v.invariants
-    |> (fun x -> List.fold_left (fun accu x -> f ctx accu x) x v.effects)
-    |> fold_left (fold_specification ctx f) v.specs
-  ) in
+    |> (fun x -> List.fold_left (fun accu x -> x |> snd |> f ctx accu) x p.args)
+    |> fun x -> f ctx x p.body
+  in
+
+  let fold_definition (ctx : 'id ctx_model_gen) (f : 'id ctx_model_gen -> 'a -> 'id mterm_gen -> 'a) (d : 'id definition_gen) (accu : 'a) : 'a =
+    f ctx accu d.body
+  in
+
+  let fold_invariantt (ctx : 'id ctx_model_gen) (f : 'id ctx_model_gen -> 'a -> 'id mterm_gen -> 'a) (it : 'id * 'id label_term_gen list) (accu : 'a) : 'a =
+    List.fold_left (fun accu x -> fold_label_term ctx f x accu) accu (snd it)
+  in
+
+  let fold_invariant (ctx : 'id ctx_model_gen) (f : 'id ctx_model_gen -> 'a -> 'id mterm_gen -> 'a) (spec : 'id invariant_gen) (accu : 'a) : 'a =
+    let ctx = {ctx with invariant_id = Some spec.label } in
+    List.fold_left (f ctx) accu spec.formulas
+  in
+
+  let fold_specification (ctx : 'id ctx_model_gen) (f : 'id ctx_model_gen -> 'a -> 'id mterm_gen -> 'a) (spec : 'id specification_gen) (accu : 'a) : 'a =
+    let ctx = { ctx with spec_id = Some spec.name} in
+    accu
+    |> (fun x -> f ctx x spec.formula)
+    |> (fun x -> List.fold_left (fun accu (x : 'id invariant_gen) -> fold_invariant ctx f x accu) x spec.invariants)
+  in
+
+  let fold_variable (ctx : 'id ctx_model_gen) (f : 'id ctx_model_gen -> 'a -> 'id mterm_gen -> 'a) (spec : 'id variable_gen) (accu : 'a) : 'a =
+    accu
+  in
+
+  let ctx = { ctx with formula = true } in
+
+  accu
+  |> fold_left (fold_predicate ctx f) v.predicates
+  |> fold_left (fold_definition ctx f) v.definitions
+  |> fold_left (fold_label_term ctx f) v.axioms
+  |> fold_left (fold_label_term ctx f) v.theorems
+  |> fold_left (fold_variable ctx f) v.variables
+  |> fold_left (fold_invariantt ctx f) v.invariants
+  |> (fun x -> List.fold_left (fun accu x -> f ctx accu x) x v.effects)
+  |> fold_left (fold_specification ctx f) v.specs
+
+let fold_model (f : 'id ctx_model_gen -> 'a -> 'id mterm_gen -> 'a) (m : 'id model_gen) (accu : 'a) : 'a =
 
   let fold_action (ctx : 'id ctx_model_gen) (f : 'id ctx_model_gen -> 'a -> 'id mterm_gen -> 'a) (a : 'id function__gen) (accu : 'a) : 'a = (
     let accu : 'a = (
@@ -1861,9 +1860,10 @@ module Utils : sig
   val is_container                       : type_ -> bool
   val get_key_pos                        : model -> lident -> int
   val get_invariants                     : model -> (lident * mterm) list -> ident -> (lident * mterm) list
-  val get_formula                        : model -> mterm option -> ident -> mterm option
+  val get_formula                       : model -> mterm option -> ident -> mterm option
   val is_post                            : specification -> bool
   val get_sum_fields                     : model -> ident -> ident list
+  val get_added_removed_sets             : model -> verification option -> ((lident, lident mterm_gen) mterm_node) list
 
 end = struct
 
@@ -2225,5 +2225,14 @@ end = struct
           acc @ [field]
         | _ -> acc
       ) [] m.api_items
+
+  let get_added_removed_sets m v : ((lident,(lident mterm_gen)) mterm_node) list =
+    let rec internal_fold_add_remove ctx acc (term : mterm) =
+      match term.node with
+      | Msetadded e -> acc @ [ Msetadded e ]
+      | Msetremoved e -> acc @ [ Msetremoved e ]
+      | _ -> fold_term (internal_fold_add_remove ctx) acc term in
+    Tools.List.dedup (Option.map_dfl (fun (x : verification) ->
+        fold_verification (mk_ctx_model ()) internal_fold_add_remove x []) [] v)
 
 end

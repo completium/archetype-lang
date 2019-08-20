@@ -84,14 +84,23 @@ let mk_trace_clone = Dclone (["archetype";"Trace"], "Tr",
 let mk_sum_clone_id a f = (String.capitalize_ascii a) ^ (String.capitalize_ascii f)
 
 let mk_sum_clone m asset field =
+  let asset = String.capitalize_ascii asset in
   Dclone ([gArchetypeDir;gArchetypeSum],
           mk_sum_clone_id asset field,
           [Ctype ("container",
-                  (String.capitalize_ascii asset)^".collection");
+                  asset^".collection");
            Cval ("f",
                  "get_"^field);
            Cval ("card",
-                 (String.capitalize_ascii asset)^".card")
+                 asset^".card");
+           Cfun ("union",
+                 asset^".union");
+           Cfun ("inter",
+                 asset^".inter");
+           Cfun ("diff",
+                 asset^".diff");
+           Cpred("subset",
+                 asset^".subset")
           ])
 
 let mk_get_field_from_pos asset field = Dfun {
@@ -317,13 +326,18 @@ let mk_select m asset test mlw_test only_formula =
       variants = [];
       requires = [];
       ensures  = [
-        { id   = id;
+        { id   = id^"_post_1";
           form = Tforall (
               [["a"],Tyasset asset],
               Timpl (Tmem (asset,Tvar "a",Tresult),
                      mk_select_test mlw_test
                     )
             );
+        };
+        { id   = id^"_post_2";
+          form = Tsubset (asset,
+                          Tresult,
+                          Tvar "c");
         }
       ];
       body     = mk_body asset mlw_test;
@@ -359,9 +373,11 @@ let mk_unshallow asset keyt = Dfun {
     variants = [];
     requires = [];
     ensures  = [
-      (*      { id   = asset^"_unshallow_1";
-              form =
-              }*)];
+      { id   = asset^"_unshallow_post_1";
+        form = Tsubset (asset,
+                        Tresult,
+                        Tvar "c")
+      }];
     body     = Tunshallow (asset,
                            Tvar "c",
                            Tvar "l")
@@ -1059,6 +1075,24 @@ let mk_ensures m acc (v : M.verification) =
         form = map_mterm m init_ctx spec.formula
       }) (v.specs |> List.filter M.Utils.is_post))
 
+let mk_require n i a f = {
+  id = with_dummy_loc (n^"_require_"^(string_of_int i));
+  form = loc_term (Tempty (a,f))
+}
+
+(* TODO : should plunge in called functions body *)
+let mk_requires m n v =
+  M.Utils.get_added_removed_sets m v |> List.mapi (fun i t  ->
+      match t with
+      | M.Msetadded e ->
+        let a = M.Utils.get_asset_type e |> unloc in
+        mk_require n i a (mk_ac_added a)
+      | M.Msetremoved e ->
+        let a = M.Utils.get_asset_type e |> unloc in
+        mk_require n i a (mk_ac_rmed a)
+      | _ -> assert false
+    )
+
 let mk_functions m =
   M.Utils.get_functions m |> List.map (
     fun ((v : M.verification option),
@@ -1073,7 +1107,7 @@ let mk_functions m =
         returns  = map_mtype t;
         raises   = fold_exns s.body;
         variants = [];
-        requires = [];
+        requires = mk_requires m (s.name |> unloc) v;
         ensures  = Option.fold (mk_ensures m) [] v;
         body     = flatten_if_fail m s.body;
       }
@@ -1092,7 +1126,7 @@ let mk_entries m =
         returns  = with_dummy_loc Tyunit;
         raises   = fold_exns s.body;
         variants = [];
-        requires = [];
+        requires = mk_requires m (s.name |> unloc) v;
         ensures  = Option.fold (mk_ensures m) [] v;
         body     = flatten_if_fail m s.body;
       }
