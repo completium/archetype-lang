@@ -275,7 +275,7 @@ let rec pp_expr outer pos fmt a =
     let pp fmt (e, l) =
       let pp_item fmt (op, e) =
         Format.fprintf fmt "%a %a"
-          pp_comparison_operator op
+          pp_str (comparison_operator_to_str (unloc op))
           pp_simple_expr e
       in
       Format.fprintf fmt "%a %a"

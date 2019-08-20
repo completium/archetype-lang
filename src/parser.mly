@@ -706,9 +706,14 @@ order_operation:
      { Eapp ( Foperator op, [e1; e2]) }
 
 order_operations:
- | e=order_operation { e }
- | e1=loc(order_operations) op=loc(ord_operator) e2=expr
-    { Eapp ( Foperator op, [e1; e2]) }
+  | e=order_operation { e }
+  | ops=loc(order_operations) op=loc(ordering_operator) e=expr
+    {
+      match unloc ops with
+      | Eapp (Foperator ({pldesc = `Cmp opa; plloc = lo}), [lhs; rhs]) -> Emulticomp (lhs, [mkloc lo opa, rhs; op, e])
+      | Emulticomp (a, l) -> Emulticomp (a, l @ [op, e])
+      | _ -> assert false
+    }
 
 %inline app_args:
  | LPAREN RPAREN     { [] }
