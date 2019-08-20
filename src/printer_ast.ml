@@ -51,26 +51,20 @@ let rec pp_ptyp fmt (t : ptyp) =
     Format.fprintf fmt "%a"
       pp_trtyp t
 
-let rec pp_qualid fmt (q : qualid) =
-  match q.node with
-  | Qdot (q, i) ->
-    Format.fprintf fmt "%a.%a"
-      pp_qualid q
-      pp_id i
-  | Qident i -> pp_id fmt i
-
 let pp_bval fmt (bval : bval) =
-  match bval.node with
-  | BVint v           -> pp_big_int fmt v
-  | BVuint v          -> pp_big_int fmt v
-  | BVbool v          -> pp_str fmt (if v then "true" else "false")
-  | BVenum v          -> pp_str fmt v
-  | BVrational (n, d) -> Format.fprintf fmt "(%a div %a)" pp_big_int n pp_big_int d
-  | BVdate v          -> pp_str fmt v
-  | BVstring s        -> pp_str fmt s
-  | BVcurrency (c, v) -> Format.fprintf fmt "%a %a" pp_big_int v pp_currency c
-  | BVaddress v       -> pp_str fmt v
-  | BVduration v      -> pp_str fmt v
+  let pp_node fmt = function
+    | BVint v           -> pp_big_int fmt v
+    | BVuint v          -> pp_big_int fmt v
+    | BVbool v          -> pp_str fmt (if v then "true" else "false")
+    | BVenum v          -> pp_str fmt v
+    | BVrational (n, d) -> Format.fprintf fmt "(%a div %a)" pp_big_int n pp_big_int d
+    | BVdate v          -> pp_str fmt v
+    | BVstring s        -> pp_str fmt s
+    | BVcurrency (c, v) -> Format.fprintf fmt "%a %a" pp_big_int v pp_currency c
+    | BVaddress v       -> pp_str fmt v
+    | BVduration v      -> pp_str fmt v
+  in
+  pp_struct_poly pp_node fmt bval
 
 let pp_logical_operator fmt = function
   | And   -> pp_str fmt "and"
@@ -137,9 +131,11 @@ let pp_quantifier fmt = function
   | Exists -> pp_str fmt "exists"
 
 let pp_pattern fmt (p : pattern) =
-  match p.node with
-  | Mconst c -> pp_id fmt c
-  | Mwild    -> pp_str fmt "_"
+  let pp_node fmt = function
+    | Mconst c -> pp_id fmt c
+    | Mwild    -> pp_str fmt "_"
+  in
+  pp_struct_poly pp_node fmt p
 
 let to_const = function
   | Cstate        -> "state"
@@ -497,22 +493,26 @@ let pp_contract fmt (c : lident contract) =
     (pp_list "@\n" pp_signature) c.signatures
 
 let rec pp_rexpr fmt (r : rexpr) =
-  match r.node with
-  | Rqualid q -> pp_qualid fmt q
-  | Ror (lhs, rhs) ->
-    Format.fprintf fmt "%a or %a"
-      pp_rexpr lhs
-      pp_rexpr rhs
-  | Raddress a -> pp_id fmt a
+  let pp_node fmt = function
+    | Rqualid q -> pp_qualid fmt q
+    | Ror (lhs, rhs) ->
+      Format.fprintf fmt "%a or %a"
+        pp_rexpr lhs
+        pp_rexpr rhs
+    | Raddress a -> pp_id fmt a
+  in
+  pp_struct_poly pp_node fmt r
 
 let rec pp_sexpr fmt (s : sexpr) =
-  match s.node with
-  | Sref id -> pp_id fmt id
-  | Sor (lhs, rhs) ->
-    Format.fprintf fmt "%a or %a"
-      pp_sexpr lhs
-      pp_sexpr rhs
-  | Sany -> pp_str fmt "any"
+  let pp_node fmt = function
+    | Sref id -> pp_id fmt id
+    | Sor (lhs, rhs) ->
+      Format.fprintf fmt "%a or %a"
+        pp_sexpr lhs
+        pp_sexpr rhs
+    | Sany -> pp_str fmt "any"
+  in
+  pp_struct_poly pp_node fmt s
 
 let pp_transition fmt t =
   Format.fprintf fmt "transition from %a%a =@\n  @[%a@]\n"
