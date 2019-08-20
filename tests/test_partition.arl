@@ -1,0 +1,18 @@
+archetype test_asset
+
+asset my_asset identified by id = {
+  id : string;
+  value : int;
+}
+
+asset other_asset identified by id_other = {
+  id_other : string;
+  value_other : int;
+  mypartition : my_asset partition;
+}
+
+action main = {
+  effect {
+    my_asset.add { id = "id"; value = 0 } (* fail *)
+  }
+}
