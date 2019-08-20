@@ -113,14 +113,24 @@ let pp_operator fmt = function
   | `Unary   op -> pp_unary_arithmetic_operator fmt op
   | `Assign  op -> pp_assignment_operator fmt op
 
+let pp_struct_poly pp_node fmt (s : 'a struct_poly) =
+  if !Options.opt_typed then
+    Format.fprintf fmt "(%a : %a)"
+      pp_node s.node
+      (pp_option pp_ptyp) s.type_
+  else
+    pp_node fmt s.node
+
 let rec pp_qualid fmt (q : qualid) =
-  match q.node with
-  | Qident i ->
-    pp_id fmt i
-  | Qdot (q, i) ->
-    Format.fprintf fmt "%a.%a"
-      pp_qualid q
-      pp_id i
+  let pp_node fmt = function
+    | Qident i ->
+      pp_id fmt i
+    | Qdot (q, i) ->
+      Format.fprintf fmt "%a.%a"
+        pp_qualid q
+        pp_id i
+  in
+  pp_struct_poly pp_node fmt q
 
 let pp_quantifier fmt = function
   | Forall -> pp_str fmt "forall"
@@ -179,102 +189,105 @@ let pp_call_kind fmt = function
   | Cconst c -> pp_str fmt (to_const c)
 
 let rec pp_pterm fmt (pterm : pterm) =
-  match pterm.node with
-  | Pquantifer (q, i, t, b) ->
-    Format.fprintf fmt "%a (%a : %a), %a"
-      pp_quantifier q
-      pp_id i
-      pp_ptyp t
-      pp_pterm b
+  let pp_node fmt = function
+    | Pquantifer (q, i, t, b) ->
+      Format.fprintf fmt "%a (%a : %a), %a"
+        pp_quantifier q
+        pp_id i
+        pp_ptyp t
+        pp_pterm b
 
-  | Pif (c, t, e) ->
-    Format.fprintf fmt "if %a@\nthen @[%a@]@\nelse @[%a@]"
-      pp_pterm c
-      pp_pterm t
-      pp_pterm e
+    | Pif (c, t, e) ->
+      Format.fprintf fmt "if %a@\nthen @[%a@]@\nelse @[%a@]"
+        pp_pterm c
+        pp_pterm t
+        pp_pterm e
 
-  | Pmatchwith (m, ps) ->
-    Format.fprintf fmt "match %a with@\n  @[%a@]@\n"
-      pp_pterm m
-      (pp_list "@\n" (fun fmt (p, i) ->
-           Format.fprintf fmt "| %a -> %a"
-             pp_pattern p
-             pp_pterm i)) ps
+    | Pmatchwith (m, ps) ->
+      Format.fprintf fmt "match %a with@\n  @[%a@]@\n"
+        pp_pterm m
+        (pp_list "@\n" (fun fmt (p, i) ->
+             Format.fprintf fmt "| %a -> %a"
+               pp_pattern p
+               pp_pterm i)) ps
 
-  | Pcall (meth, kind, args) ->
-    Format.fprintf fmt "%a%a (%a)"
-      (pp_option (pp_postfix "." pp_pterm)) meth
-      pp_call_kind kind
-      (pp_list ", " pp_term_arg) args
+    | Pcall (meth, kind, args) ->
+      Format.fprintf fmt "%a%a (%a)"
+        (pp_option (pp_postfix "." pp_pterm)) meth
+        pp_call_kind kind
+        (pp_list ", " pp_term_arg) args
 
-  | Plogical (op, lhs, rhs) ->
-    Format.fprintf fmt "%a %a %a"
-      pp_pterm lhs
-      pp_logical_operator op
-      pp_pterm rhs
+    | Plogical (op, lhs, rhs) ->
+      Format.fprintf fmt "%a %a %a"
+        pp_pterm lhs
+        pp_logical_operator op
+        pp_pterm rhs
 
-  | Pnot pt ->
-    Format.fprintf fmt "not %a"
-      pp_pterm pt
+    | Pnot pt ->
+      Format.fprintf fmt "not %a"
+        pp_pterm pt
 
-  | Pcomp (op, lhs, rhs) ->
-    Format.fprintf fmt "%a %a %a"
-      pp_pterm lhs
-      pp_comparison_operator op
-      pp_pterm rhs
+    | Pcomp (op, lhs, rhs) ->
+      Format.fprintf fmt "%a %a %a"
+        pp_pterm lhs
+        pp_comparison_operator op
+        pp_pterm rhs
 
-  | Parith (op, lhs, rhs) ->
-    Format.fprintf fmt "%a %a %a"
-      pp_pterm lhs
-      pp_arithmetic_operator op
-      pp_pterm rhs
+    | Parith (op, lhs, rhs) ->
+      Format.fprintf fmt "%a %a %a"
+        pp_pterm lhs
+        pp_arithmetic_operator op
+        pp_pterm rhs
 
-  | Puarith (op, p) ->
-    Format.fprintf fmt "%a%a"
-      pp_unary_arithmetic_operator op
-      pp_pterm p
+    | Puarith (op, p) ->
+      Format.fprintf fmt "%a%a"
+        pp_unary_arithmetic_operator op
+        pp_pterm p
 
-  | Precord l ->
-    Format.fprintf fmt "{%a}"
-      (pp_list "; " pp_pterm) l
+    | Precord l ->
+      Format.fprintf fmt "{%a}"
+        (pp_list "; " pp_pterm) l
 
-  | Pletin (id, init, _, body) ->
-    Format.fprintf fmt "let %a = %a in@\n%a"
-      pp_id id
-      pp_pterm init
-      pp_pterm body
+    | Pletin (id, init, t, body) ->
+      Format.fprintf fmt "let %a%a= %a in@\n%a"
+        pp_id id
+        (pp_option (pp_prefix " : " pp_ptyp)) t
+        pp_pterm init
+        pp_pterm body
 
-  | Pvar id ->
-    pp_id fmt id
+    | Pvar id ->
+      pp_id fmt id
 
-  | Parray l ->
-    Format.fprintf fmt "[%a]"
-      (pp_list "; " pp_pterm) l
+    | Parray l ->
+      Format.fprintf fmt "[%a]"
+        (pp_list "; " pp_pterm) l
 
-  | Plit v ->
-    pp_bval fmt v
+    | Plit v ->
+      pp_bval fmt v
 
-  | Pdot (e, i) ->
-    Format.fprintf fmt "%a.%a"
-      pp_pterm e
-      pp_id i
+    | Pdot (e, i) ->
+      Format.fprintf fmt "%a.%a"
+        pp_pterm e
+        pp_id i
 
-  | Pconst c ->
-    pp_str fmt (to_const c)
+    | Pconst c ->
+      pp_str fmt (to_const c)
 
-  | Ptuple l ->
-    Format.fprintf fmt "(%a)"
-      (pp_list ", " pp_pterm) l
+    | Ptuple l ->
+      Format.fprintf fmt "(%a)"
+        (pp_list ", " pp_pterm) l
 
-  | PsecurityActionRole (desc, s) ->
-    Format.fprintf fmt "security action role %a %a"
-      pp_action_description desc
-      (pp_list " " pp_security_role) s
+    | PsecurityActionRole (desc, s) ->
+      Format.fprintf fmt "security action role %a %a"
+        pp_action_description desc
+        (pp_list " " pp_security_role) s
 
-  | PsecurityActionAction (desc, s) ->
-    Format.fprintf fmt "security action action %a %a"
-      pp_action_description desc
-      (pp_list " " pp_security_role) s
+    | PsecurityActionAction (desc, s) ->
+      Format.fprintf fmt "security action action %a %a"
+        pp_action_description desc
+        (pp_list " " pp_security_role) s
+  in
+  pp_struct_poly pp_node fmt pterm
 
 and pp_term_arg fmt = function
   | AExpr pt -> pp_pterm fmt pt
@@ -291,74 +304,79 @@ and pp_term_arg fmt = function
            pp_operator op
            pp_pterm pt)) fmt l
 
+let pp_instruction_poly pp fmt i =
+  pp fmt i.node
+
 let rec pp_instruction fmt (i : instruction) =
-  match i.node with
-  | Iif (c, t, e) ->
-    Format.fprintf fmt "if %a@\nthen @[%a@]@\nelse @[%a@]"
-      pp_pterm c
-      pp_instruction t
-      pp_instruction e
+  let pp_node fmt = function
+    | Iif (c, t, e) ->
+      Format.fprintf fmt "if %a@\nthen @[%a@]@\nelse @[%a@]"
+        pp_pterm c
+        pp_instruction t
+        pp_instruction e
 
-  | Ifor (id, c, body) ->
-    Format.fprintf fmt "for (%a in %a)@\n  @[%a@]"
-      pp_id id
-      pp_pterm c
-      pp_instruction body
+    | Ifor (id, c, body) ->
+      Format.fprintf fmt "for (%a in %a)@\n  @[%a@]"
+        pp_id id
+        pp_pterm c
+        pp_instruction body
 
-  | Iletin (id, init, body) ->
-    Format.fprintf fmt "let %a = %a in@\n%a"
-      pp_id id
-      pp_pterm init
-      pp_instruction body
+    | Iletin (id, init, body) ->
+      Format.fprintf fmt "let %a = %a in@\n%a"
+        pp_id id
+        pp_pterm init
+        pp_instruction body
 
-  | Iseq l ->
-    if List.is_empty l
-    then pp_str fmt "()"
-    else (pp_list ";@\n" pp_instruction) fmt l
+    | Iseq l ->
+      if List.is_empty l
+      then pp_str fmt "()"
+      else (pp_list ";@\n" pp_instruction) fmt l
 
-  | Imatchwith (m, ps) ->
-    Format.fprintf fmt "match %a with@\n  @[%a@]@\n"
-      pp_pterm m
-      (pp_list "@\n" (fun fmt (p, i) ->
-           Format.fprintf fmt "| %a -> %a"
-             pp_pattern p
-             pp_instruction i)) ps
+    | Imatchwith (m, ps) ->
+      Format.fprintf fmt "match %a with@\n  @[%a@]@\n"
+        pp_pterm m
+        (pp_list "@\n" (fun fmt (p, i) ->
+             Format.fprintf fmt "| %a -> %a"
+               pp_pattern p
+               pp_instruction i)) ps
 
-  | Iassign (op, id, value) ->
-    Format.fprintf fmt "%a %a %a"
-      pp_id id
-      pp_assignment_operator op
-      pp_pterm value
+    | Iassign (op, id, value) ->
+      Format.fprintf fmt "%a %a %a"
+        pp_id id
+        pp_assignment_operator op
+        pp_pterm value
 
-  | Irequire (k, pt) ->
-    Format.fprintf fmt "%a (%a)"
-      pp_str (if k then "require" else "failwith")
-      pp_pterm pt
+    | Irequire (k, pt) ->
+      Format.fprintf fmt "%a (%a)"
+        pp_str (if k then "require" else "failwith")
+        pp_pterm pt
 
-  | Itransfer (value, back, dest) ->
-    Format.fprintf fmt "transfer %a"
-      (pp_do_if back pp_str) "back"
+    | Itransfer (value, back, dest) ->
+      Format.fprintf fmt "transfer %a"
+        (pp_do_if back pp_str) "back"
 
-  | Ibreak ->
-    pp_str fmt "break"
+    | Ibreak ->
+      pp_str fmt "break"
 
-  | Iassert pt ->
-    Format.fprintf fmt "assert %a"
-      pp_pterm pt
+    | Iassert pt ->
+      Format.fprintf fmt "assert %a"
+        pp_pterm pt
 
-  | Icall (meth, kind, args) ->
-    Format.fprintf fmt "%a%a (%a)"
-      (pp_option (pp_postfix "." pp_pterm)) meth
-      pp_call_kind kind
-      (pp_list ", " pp_term_arg) args
+    | Icall (meth, kind, args) ->
+      Format.fprintf fmt "%a%a (%a)"
+        (pp_option (pp_postfix "." pp_pterm)) meth
+        pp_call_kind kind
+        (pp_list ", " pp_term_arg) args
 
-  | Ireturn pt ->
-    Format.fprintf fmt "return %a"
-      pp_pterm pt
+    | Ireturn pt ->
+      Format.fprintf fmt "return %a"
+        pp_pterm pt
 
-  | Ilabel id ->
-    Format.fprintf fmt "label %a"
-      pp_id id
+    | Ilabel id ->
+      Format.fprintf fmt "label %a"
+        pp_id id
+  in
+  pp_instruction_poly pp_node fmt i
 
 let pp_label_term fmt (lt : lident label_term) =
   Format.fprintf fmt "%a%a"

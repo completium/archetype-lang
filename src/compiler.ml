@@ -202,7 +202,8 @@ let main () =
       "-ext", Arg.Set Options.opt_ext, " Process extensions";
       "--extensions", Arg.Set Options.opt_ext, " Same as -ext";
       "-ast", Arg.Set Options.opt_ast, " Generate typed ast";
-      "--typed-ast", Arg.Set Options.opt_ast, " Same as -tast";
+      "--typed-ast", Arg.Set Options.opt_ast, " Same as -ast";
+      "--typed", Arg.Set Options.opt_typed, " Display type in ast output";
       "-sa", Arg.Set Options.opt_sa, " Transform to shallow asset";
       "--shallow-asset", Arg.Set Options.opt_sa, " Same as -sa";
       "-skv", Arg.Set Options.opt_skv, " Split key value of collection of asset";

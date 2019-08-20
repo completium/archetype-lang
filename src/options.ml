@@ -33,15 +33,16 @@ let execution_mode = ref WithSideEffect
 let sorting_policy = ref OnTheFly
 
 
-let opt_lsp  = ref false
-let opt_json = ref false
-let opt_pt   = ref false
-let opt_ext  = ref false
-let opt_ast  = ref false
-let opt_nse  = ref false
-let opt_sa   = ref false
-let opt_skv  = ref false
-let opt_raw  = ref false
+let opt_lsp   = ref false
+let opt_json  = ref false
+let opt_pt    = ref false
+let opt_ext   = ref false
+let opt_ast   = ref false
+let opt_typed = ref false
+let opt_nse   = ref false
+let opt_sa    = ref false
+let opt_skv   = ref false
+let opt_raw   = ref false
 
 
 
