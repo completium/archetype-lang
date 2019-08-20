@@ -51,6 +51,14 @@ let rec pp_ptyp fmt (t : ptyp) =
     Format.fprintf fmt "%a"
       pp_trtyp t
 
+let pp_struct_poly pp_node fmt (s : 'a struct_poly) =
+  if !Options.opt_typed then
+    Format.fprintf fmt "(%a : %a)"
+      pp_node s.node
+      (pp_option pp_ptyp) s.type_
+  else
+    pp_node fmt s.node
+
 let pp_bval fmt (bval : bval) =
   let pp_node fmt = function
     | BVint v           -> pp_big_int fmt v
@@ -106,14 +114,6 @@ let pp_operator fmt = function
   | `Arith   op -> pp_arithmetic_operator fmt op
   | `Unary   op -> pp_unary_arithmetic_operator fmt op
   | `Assign  op -> pp_assignment_operator fmt op
-
-let pp_struct_poly pp_node fmt (s : 'a struct_poly) =
-  if !Options.opt_typed then
-    Format.fprintf fmt "(%a : %a)"
-      pp_node s.node
-      (pp_option pp_ptyp) s.type_
-  else
-    pp_node fmt s.node
 
 let rec pp_qualid fmt (q : qualid) =
   let pp_node fmt = function
@@ -318,8 +318,9 @@ let rec pp_instruction fmt (i : instruction) =
         pp_instruction body
 
     | Iletin (id, init, body) ->
-      Format.fprintf fmt "let %a = %a in@\n%a"
+      Format.fprintf fmt "let %a%a = %a in@\n%a"
         pp_id id
+        (pp_option (pp_prefix " : " pp_ptyp)) init.type_
         pp_pterm init
         pp_instruction body
 
