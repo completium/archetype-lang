@@ -42,7 +42,6 @@
 %token AT_ADD
 %token AT_REMOVE
 %token AT_UPDATE
-%token AXIOM
 %token BACK
 %token BREAK
 %token BUT
@@ -88,6 +87,7 @@
 %token LBRACE
 %token LBRACKET
 %token LBRACKETPERCENT
+%token LEMMA
 %token LESS
 %token LESSEQUAL
 %token LET
@@ -352,8 +352,8 @@ function_decl:
 %inline verif_definition:
 | DEFINITION id=ident EQUAL LBRACE a=ident COLON t=type_t PIPE e=expr RBRACE { Vdefinition (id, t, a, e) }
 
-%inline verif_axiom:
-| AXIOM id=ident EQUAL x=braced(expr) { Vaxiom (id, x) }
+%inline verif_lemma:
+| LEMMA id=ident EQUAL x=braced(expr) { Vlemma (id, x) }
 
 %inline verif_theorem:
 | THEOREM id=ident EQUAL x=braced(expr) { Vtheorem (id, x) }
@@ -381,7 +381,7 @@ function_decl:
 verif_items:
 | ds=loc(verif_definition)*
   ps=loc(verif_predicate)*
-  xs=loc(verif_axiom)*
+  xs=loc(verif_lemma)*
   ts=loc(verif_theorem)*
   vs=loc(verif_variable)*
   es=loc(verif_effect)*

@@ -629,7 +629,7 @@ let to_model (ast : A.model) : M.model =
   let to_verification (v : A.lident A.verification) : M.verification =
     let predicates  = List.map to_predicate   v.predicates  in
     let definitions = List.map to_definition  v.definitions in
-    let axioms      = List.map to_label_lterm v.axioms      in
+    let lemmas      = List.map to_label_lterm v.lemmas      in
     let theorems    = List.map to_label_lterm v.theorems    in
     let variables   = List.map (fun x -> to_variable x) v.variables in
     let invariants  = List.map (fun (a, l) -> (a, List.map (fun x -> to_label_lterm x) l)) v.invariants in
@@ -638,7 +638,7 @@ let to_model (ast : A.model) : M.model =
     M.mk_verification
       ~predicates:predicates
       ~definitions:definitions
-      ~axioms:axioms
+      ~lemmas:lemmas
       ~theorems:theorems
       ~variables:variables
       ~invariants:invariants
@@ -652,7 +652,7 @@ let to_model (ast : A.model) : M.model =
     { verif with
       predicates  = verif.predicates @ v.predicates;
       definitions = verif.definitions @ v.definitions;
-      axioms      = verif.axioms @ v.axioms;
+      lemmas      = verif.lemmas @ v.lemmas;
       theorems    = verif.theorems @ v.theorems;
       variables   = verif.variables @ v.variables;
       invariants  = verif.invariants @ v.invariants;

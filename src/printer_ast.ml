@@ -425,7 +425,7 @@ let pp_verification fmt (v : lident verification) =
   Format.fprintf fmt "%a%a%a%a%a%a%a%a%a@\n"
     (pp_no_empty_list pp_predicate) v.predicates
     (pp_no_empty_list pp_definitions) v.definitions
-    (pp_no_empty_list (fun fmt -> Format.fprintf fmt "axioms:@\n  @[%a@]@\n" pp_label_term)) v.axioms
+    (pp_no_empty_list (fun fmt -> Format.fprintf fmt "axioms:@\n  @[%a@]@\n" pp_label_term)) v.lemmas
     (pp_no_empty_list (fun fmt -> Format.fprintf fmt "theorems:@\n  @[%a@]@\n" pp_label_term)) v.theorems
     (pp_no_empty_list pp_variable_verif) v.variables
     (pp_no_empty_list (fun fmt (id, l : lident * lident label_term list) ->

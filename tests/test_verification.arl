@@ -10,7 +10,7 @@ action myaction = {
       forall x in col1, forall y in col2, x = y
     }
 
-    axiom myaxiom = {
+    lemma myaxiom = {
       forall x in col1, forall y in col2, x = y
     }
 

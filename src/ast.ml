@@ -404,7 +404,7 @@ type 'id assert_ = {
 type 'id verification = {
   predicates  : 'id predicate list;
   definitions : 'id definition list;
-  axioms      : 'id label_term list;
+  lemmas      : 'id label_term list;
   theorems    : 'id label_term list;
   variables   : 'id variable list;
   invariants  : ('id * 'id label_term list) list;
@@ -551,8 +551,8 @@ let mk_specification ?(invariants = []) name formula =
 let mk_assert ?(invariants = []) name label formula =
   { name; label; formula; invariants }
 
-let mk_verification ?(predicates = []) ?(definitions = []) ?(axioms = []) ?(theorems = []) ?(variables = []) ?(invariants = []) ?effect ?(specs = []) ?(asserts = []) ?(loc = Location.dummy) () =
-  { predicates; definitions; axioms; theorems; variables; invariants; effect; specs; asserts; loc}
+let mk_verification ?(predicates = []) ?(definitions = []) ?(lemmas = []) ?(theorems = []) ?(variables = []) ?(invariants = []) ?effect ?(specs = []) ?(asserts = []) ?(loc = Location.dummy) () =
+  { predicates; definitions; lemmas; theorems; variables; invariants; effect; specs; asserts; loc}
 
 let mk_function_struct ?(args = []) ?verification ?(fvs = []) ?(loc = Location.dummy) name body return =
   { name; args; body; verification; return; fvs; loc }

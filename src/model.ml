@@ -551,7 +551,7 @@ type assert_ = lident assert_gen
 type 'id verification_gen = {
   predicates  : 'id predicate_gen list;
   definitions : 'id definition_gen list;
-  axioms      : 'id label_term_gen list;
+  lemmas      : 'id label_term_gen list;
   theorems    : 'id label_term_gen list;
   variables   : 'id variable_gen list;
   invariants  : ('id * 'id label_term_gen list) list;
@@ -626,8 +626,8 @@ let mk_specification ?(invariants = []) name mode formula =
 let mk_assert ?(invariants = []) name label formula =
   { name; label; formula; invariants }
 
-let mk_verification ?(predicates = []) ?(definitions = []) ?(axioms = []) ?(theorems = []) ?(variables = []) ?(invariants = []) ?(effects = []) ?(specs = []) ?(asserts = []) ?(loc = Location.dummy) () =
-  { predicates; definitions; axioms; theorems; variables; invariants; effects; specs; loc}
+let mk_verification ?(predicates = []) ?(definitions = []) ?(lemmas = []) ?(theorems = []) ?(variables = []) ?(invariants = []) ?(effects = []) ?(specs = []) ?(asserts = []) ?(loc = Location.dummy) () =
+  { predicates; definitions; lemmas; theorems; variables; invariants; effects; specs; loc}
 
 let mk_info_var ?(constant = false) ?init name type_ : info_var =
   { name; type_; constant; init}
@@ -1124,7 +1124,7 @@ let map_mterm_model_formula (f : ctx_model -> mterm -> mterm) (model : model) : 
     { v with
       predicates = List.map (map_predicate f) v.predicates;
       definitions = List.map (map_definition f) v.definitions;
-      axioms = List.map (map_label_term f) v.axioms;
+      lemmas = List.map (map_label_term f) v.lemmas;
       theorems = List.map (map_label_term f) v.theorems;
       variables = List.map (map_variable f) v.variables;
       invariants = List.map (map_invariantt f) v.invariants;
@@ -1779,7 +1779,7 @@ let fold_model (f : 'id ctx_model_gen -> 'a -> 'id mterm_gen -> 'a) (m : 'id mod
     accu
     |> fold_left (fold_predicate ctx f) v.predicates
     |> fold_left (fold_definition ctx f) v.definitions
-    |> fold_left (fold_label_term ctx f) v.axioms
+    |> fold_left (fold_label_term ctx f) v.lemmas
     |> fold_left (fold_label_term ctx f) v.theorems
     |> fold_left (fold_variable ctx f) v.variables
     |> fold_left (fold_invariantt ctx f) v.invariants

@@ -330,7 +330,7 @@ type vardecl = {
 type 'env iverification = [
   | `Predicate     of M.lident * (M.lident * M.ptyp) list * M.pterm
   | `Definition    of M.lident * (M.lident * M.ptyp) option * M.pterm
-  | `Axiom         of M.lident * M.pterm
+  | `Lemma         of M.lident * M.pterm
   | `Theorem       of M.lident * M.pterm
   | `Variable      of M.lident * M.pterm option
   | `Assert        of M.lident * M.lident * M.pterm * (M.lident * M.pterm list) list
@@ -1727,9 +1727,9 @@ let for_verification_item (env : env) (v : PT.verification_item) : env * env ive
           (env, (arg, f)))
     in env, `Definition (x, arg, f)
 
-  | PT.Vaxiom (x, f) ->
+  | PT.Vlemma (x, f) ->
     let f = for_formula env f in
-    (env, `Axiom (x, f))
+    (env, `Lemma (x, f))
 
   | PT.Vtheorem (x, f) ->
     let f = for_formula env f in
@@ -2161,7 +2161,7 @@ let verifications_of_iverifications =
   let env0 = M.{
       predicates  = [];
       definitions = [];
-      axioms      = [];
+      lemmas      = [];
       theorems    = [];
       variables   = [];
       invariants  = [];

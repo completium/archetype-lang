@@ -795,8 +795,8 @@ let pp_verification_item fmt = function
       pp_type typ
       (pp_expr e_default PNone) body
 
-  | Vaxiom (id, body) ->
-    Format.fprintf fmt "axiom %a = {@\n@[<v 2>  %a@]@\n}"
+  | Vlemma (id, body) ->
+    Format.fprintf fmt "lemma %a = {@\n@[<v 2>  %a@]@\n}"
       pp_id id
       (pp_expr e_default PNone) body
 

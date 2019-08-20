@@ -26,7 +26,6 @@
       "assert"              , ASSERT         ;
       "asset"               , ASSET          ;
       "at"                  , AT             ;
-      "axiom"               , AXIOM          ;
       "back"                , BACK           ;
       "break"               , BREAK          ;
       "but"                 , BUT            ;
@@ -56,6 +55,7 @@
       "instance"            , INSTANCE       ;
       "invariants"          , INVARIANTS     ;
       "label"               , LABEL          ;
+      "lemma"               , LEMMA          ;
       "let"                 , LET            ;
       "match"               , MATCH          ;
       "namespace"           , NAMESPACE      ;
