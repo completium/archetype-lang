@@ -271,6 +271,18 @@ let rec pp_expr outer pos fmt a =
     in
     (maybe_paren outer e_dot pos pp) fmt (lhs, rhs)
 
+  | Emulticomp (e, l) ->
+    let pp fmt (e, l) =
+      let pp_item fmt (op, e) =
+        Format.fprintf fmt "%a %a"
+          pp_comparison_operator op
+          pp_simple_expr e
+      in
+      Format.fprintf fmt "%a %a"
+        pp_simple_expr e
+        (pp_list " " pp_item) l
+    in
+    (maybe_paren outer e_default pos pp) fmt (e, l)
 
   | Erecord l ->
 

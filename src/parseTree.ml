@@ -123,6 +123,7 @@ type expr_unloc =
   | Erecord       of record_item list
   | Etuple        of expr list
   | Edot          of expr * lident
+  | Emulticomp    of expr * (comparison_operator * expr) list
   | Eapp          of function_ * expr list
   | Emethod       of expr * lident * expr list
   | Etransfer     of expr * bool * lident option

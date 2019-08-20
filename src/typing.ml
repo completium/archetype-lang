@@ -1077,6 +1077,10 @@ let rec for_xexpr (mode : emode_t) (env : env) ?(ety : M.ptyp option) (tope : PT
             end
       end
 
+    | Emulticomp (e, l) ->
+      (* FIXME *)
+      assert false
+
     | Eapp (Foperator { pldesc = op }, args) -> begin
         let args = List.map (for_xexpr env) args in
         let na   = List.length args in
