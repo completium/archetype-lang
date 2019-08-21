@@ -32,6 +32,16 @@ let lexbuf_from_channel = fun name channel ->
   };
   lexbuf
 
+let lexbuf_from_string = fun name str ->
+  let lexbuf = Lexing.from_string str in
+  lexbuf.Lexing.lex_curr_p <- {
+    Lexing.pos_fname = name;
+    Lexing.pos_lnum  = 1;
+    Lexing.pos_bol   = 0;
+    Lexing.pos_cnum  = 0
+  };
+  lexbuf
+
 (* -------------------------------------------------------------------- *)
 
 let check_brackets_balance () =
@@ -193,6 +203,14 @@ let parse_archetype ?(name = "") (inc : in_channel) =
 
 let parse_archetype_strict ?(name = "") (inc : in_channel) =
   let pt = parse_archetype inc ?name:(Some name) in
+  match !Error.errors with
+  | [] -> pt
+  | l -> raise (Error.ParseError !Error.errors)
+
+let parse_archetype_strict_from_string ?(name = "") (input : string) =
+  Error.resume_on_error ();
+  let lexbuf = lexbuf_from_string name input in
+  let pt = parse lexbuf in
   match !Error.errors with
   | [] -> pt
   | l -> raise (Error.ParseError !Error.errors)
