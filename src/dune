@@ -46,8 +46,3 @@
   (libraries archetype menhirLib why3)
   (public_name archetype)
   (name     compiler))
-
-(executable
-  (libraries archetype alcotest)
-  (modules check)
-  (name check))

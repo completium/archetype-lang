@@ -1,4 +1,4 @@
-open Archetype
+(*open Archetype*)
 
 (* Build with `ocamlbuild -pkg alcotest simple.byte` *)
 

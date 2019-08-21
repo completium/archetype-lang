@@ -4,7 +4,7 @@
 .PHONY: all merlin build build-deps run clean
 
 # --------------------------------------------------------------------
-all: build compiler merlin check_bin # plugin
+all: build compiler merlin test_bin # plugin
 
 build:
 	@dune build
@@ -17,9 +17,9 @@ compiler:
 	$(MAKE) -C src compiler.exe
 	ln -fs _build/default/src/compiler.exe archetype.exe
 
-check_bin:
-	$(MAKE) -C src check.exe
-	ln -fs _build/default/src/check.exe check.exe
+test_bin:
+	$(MAKE) -C test test.exe
+	ln -fs _build/default/test/test.exe test.exe
 
 mlw:
 	$(MAKE) -C src mlw.exe
@@ -40,6 +40,7 @@ install:
 clean:
 	@dune clean
 	$(MAKE) -C src clean
+	$(MAKE) -C test clean
 
 check:
 	./check_pp.sh

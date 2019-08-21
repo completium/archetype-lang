@@ -4,22 +4,16 @@
 .PHONY: all run clean merlin __force__
 
 PROFILE  ?= dev
-COMPILER := compiler.exe
+TEST := test.exe
 
 # --------------------------------------------------------------------
-all: $(COMPILER)  .merlin
+all: $(TEST)  .merlin
 
 run: __force__
 	dune exec ./$(COMPILER)
 
-compiler: __force__
-	dune build --profile=$(PROFILE) compiler.exe
-
-mlw: __force__
-	dune build --profile=$(PROFILE) mlw.exe
-
-plugin: __force__
-	dune build --profile=$(PROFILE) archetype_plugin.cmxs
+test: __force__
+	dune build --profile=$(PROFILE) test.exe
 
 clean: __force__
 	dune clean
@@ -28,9 +22,6 @@ merlin: .merlin
 
 # --------------------------------------------------------------------
 %.exe: __force__
-	dune build --profile=$(PROFILE) $@
-
-%.cmxs: __force__
 	dune build --profile=$(PROFILE) $@
 
 .merlin: __force__
