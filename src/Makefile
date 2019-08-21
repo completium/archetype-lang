@@ -15,6 +15,9 @@ run: __force__
 compiler: __force__
 	dune build --profile=$(PROFILE) compiler.exe
 
+check_bin: __force__
+	dune build --profile=$(PROFILE) check.exe
+
 mlw: __force__
 	dune build --profile=$(PROFILE) mlw.exe
 

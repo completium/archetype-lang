@@ -4,7 +4,7 @@
 .PHONY: all merlin build build-deps run clean
 
 # --------------------------------------------------------------------
-all: build compiler merlin # plugin
+all: build compiler merlin check_bin # plugin
 
 build:
 	@dune build
@@ -16,6 +16,10 @@ plugin:
 compiler:
 	$(MAKE) -C src compiler.exe
 	ln -fs _build/default/src/compiler.exe archetype.exe
+
+check_bin:
+	$(MAKE) -C src check.exe
+	ln -fs _build/default/src/check.exe check.exe
 
 mlw:
 	$(MAKE) -C src mlw.exe
@@ -41,4 +45,4 @@ check:
 	./check_pp.sh
 
 build-deps:
-	opam install dune.1.10.0 menhir.20190620 uri.2.2.1 digestif.0.7.2 omd.1.3.1 why3.1.2.0 ppx_deriving.4.3 ppx_deriving_yojson.3.4
+	opam install dune.1.10.0 menhir.20190620 uri.2.2.1 digestif.0.7.2 omd.1.3.1 why3.1.2.0 ppx_deriving.4.3 ppx_deriving_yojson.3.4 alcotest.0.8.5
