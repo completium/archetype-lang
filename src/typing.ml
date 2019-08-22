@@ -296,7 +296,7 @@ let methods : (string * method_) list =
     ("nth"         , mk M.Cnth          `Pure   `Partial ([`T    M.vtint], Some (`Asset)));
     ("select"      , mk M.Cselect       `Pure   `Total   ([`Pred        ], Some (`SubColl)));
     ("sort"        , mk M.Csort         `Pure   `Total   ([`Field       ], Some (`SubColl)));
-    ("count"       , mk M.Ccount        `Pure   `Total   ([             ], Some (`SubColl)));
+    ("count"       , mk M.Ccount        `Pure   `Total   ([             ], Some (`T M.vtint)));
     ("sum"         , mk M.Csum          `Pure   `Total   ([`RExpr       ], Some (`Ref 0)));
     ("max"         , mk M.Cmax          `Pure   `Partial ([`RExpr       ], Some (`Ref 0)));
     ("min"         , mk M.Cmin          `Pure   `Partial ([`RExpr       ], Some (`Ref 0)));

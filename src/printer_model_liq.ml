@@ -160,7 +160,7 @@ let pp_model fmt (model : model) =
       Format.fprintf fmt
         "let[@inline] clear_%s (s : storage) : storage =@\n  \
          let s = s.%s_keys <- [] in@\n  \
-         s.%s_assets <- (%a, %s) map@\n"
+         s.%s_assets <- (Map : (%a, %s) map)@\n"
         an an an pp_btyp t an
 
     | Reverse an ->
@@ -195,13 +195,13 @@ let pp_model fmt (model : model) =
 
     | UpdateClear (an, fn) ->
       Format.fprintf fmt
-        "let[@inline] clear_%s_%s (s : storage * %s) : storage =@\n  \
+        "let[@inline] clear_%s_%s (s, a : storage * %s) : storage =@\n  \
          s (*TODO*)@\n"
         an fn an
 
     | UpdateReverse (an, fn) ->
       Format.fprintf fmt
-        "let[@inline] reverse_%s_%s (s : storage * %s) : storage =@\n  \
+        "let[@inline] reverse_%s_%s (s, a : storage * %s) : storage =@\n  \
          s (*TODO*)@\n"
         an fn an
 
@@ -217,6 +217,18 @@ let pp_model fmt (model : model) =
     | RemoveItem t -> Format.fprintf fmt "remove\t %a" pp_type t
     | ClearItem t -> Format.fprintf fmt "clear\t %a" pp_type t
     | ReverseItem t -> Format.fprintf fmt "reverse %a" pp_type t
+  in
+
+  let show_zero = function
+    | _ -> "0"
+  in
+
+  let get_min = function
+    | _ -> "0"
+  in
+
+  let get_max = function
+    | _ -> "0"
   in
 
   let pp_function_const fmt = function
@@ -258,39 +270,63 @@ let pp_model fmt (model : model) =
         an
 
     | Count an ->
+      let _, t = Utils.get_asset_key model (to_lident an) in
       Format.fprintf fmt
-        "let[@inline] count_%s (s : storage) : unit =@\n  \
-         () (*TODO*)@\n"
+        "let[@inline] count_%s (l : %a list) : int =@\n  \
+         List.fold (fun (_, accu) ->@\n    \
+         accu + 1@\n  \
+         ) l 0@\n"
         an
+        pp_btyp t
 
     | Sum (an, fn) ->
       let _, tk = Utils.get_asset_key model (to_lident an) in
-      let show_zero = function
-        | _ -> "0"
-      in
       let _, t, _ = Utils.get_asset_field model (dumloc an, fn) in
       Format.fprintf fmt
-        "let[@inline] sum_%s_%s (s, c : storage * %a list) : %a =@\n  \
+        "let[@inline] sum_%s_%s (s, l : storage * %a list) : %a =@\n  \
          List.fold (fun (k, accu) ->@\n    \
          let x = get_%s (s, k) in@\n    \
          accu + x.%s@\n  \
-         ) c %s@\n"
+         ) l %s@\n"
         an fn pp_btyp tk pp_type t
         an
         fn
         (show_zero t)
 
     | Min (an, fn) ->
+      let _, tk = Utils.get_asset_key model (to_lident an) in
+      let _, t, _ = Utils.get_asset_field model (dumloc an, fn) in
       Format.fprintf fmt
-        "let[@inline] min_%s_%s (s : storage) : unit =@\n  \
-         () (*TODO*)@\n"
-        an fn
+        "let[@inline] min_%s_%s (s, l : storage * %a list) : %a =@\n  \
+         List.fold (fun (k, accu) ->@\n    \
+         let x = get_%s (s, k) in@\n    \
+         if accu > x.%s@\n  \
+         then x.%s@\n  \
+         else accu@\n  \
+         ) l %s@\n"
+        an fn pp_btyp tk pp_type t
+        an
+        fn
+        fn
+        (get_max t)
 
     | Max (an, fn) ->
+      let _, tk = Utils.get_asset_key model (to_lident an) in
+      let _, t, _ = Utils.get_asset_field model (dumloc an, fn) in
       Format.fprintf fmt
-        "let[@inline] max_%s_%s (s : storage) : unit =@\n  \
-         () (*TODO*)@\n"
-        an fn
+        "let[@inline] max_%s_%s (s, l : storage * %a list) : %a =@\n  \
+         List.fold (fun (k, accu) ->@\n    \
+         let x = get_%s (s, k) in@\n    \
+         if accu < x.%s@\n  \
+         then x.%s@\n  \
+         else accu@\n  \
+         ) l %s@\n"
+        an fn pp_btyp tk pp_type t
+        an
+        fn
+        fn
+        (get_min t)
+
     | Shallow _ -> ()
     | Unshallow _ -> ()
 
@@ -389,7 +425,7 @@ let pp_model fmt (model : model) =
     if List.is_empty l
     then pp_nothing fmt
     else
-      Format.fprintf fmt "(* API function *)%a@\n"
+      Format.fprintf fmt "(* API function *)@\n%a@\n"
         (pp_list "@\n" pp_api_item) l
   in
 
@@ -659,7 +695,7 @@ let pp_model fmt (model : model) =
 
       | Mmin (an, fd, c) ->
         let pp fmt (an, fd, c) =
-          Format.fprintf fmt "min_%a_%a (%a)"
+          Format.fprintf fmt "min_%a_%a (_s, %a)"
             pp_str an
             pp_id fd
             f c
@@ -668,7 +704,7 @@ let pp_model fmt (model : model) =
 
       | Mmax (an, fd, c) ->
         let pp fmt (an, fd, c) =
-          Format.fprintf fmt "max_%a_%a (%a)"
+          Format.fprintf fmt "max_%a_%a (_s, %a)"
             pp_str an
             pp_id fd
             f c

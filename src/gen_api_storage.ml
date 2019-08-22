@@ -58,11 +58,11 @@ let process_api_storage (model : model) : model =
       | Mcount (asset_name, _) ->
         [APIFunction (Count asset_name)]
       | Msum (asset_name, field_name, _) ->
-        [APIFunction (Sum (asset_name, unloc field_name))]
+        [APIStorage (Get asset_name); APIFunction (Sum (asset_name, unloc field_name))]
       | Mmin (asset_name, field_name, _) ->
-        [APIFunction (Min (asset_name, unloc field_name))]
+        [APIStorage (Get asset_name); APIFunction (Min (asset_name, unloc field_name))]
       | Mmax (asset_name, field_name, _) ->
-        [APIFunction (Max (asset_name, unloc field_name))]
+        [APIStorage (Get asset_name); APIFunction (Max (asset_name, unloc field_name))]
       | Mshallow (asset_name, _) ->
         [APIFunction (Shallow asset_name)]
       | Munshallow (asset_name, _) ->
