@@ -239,14 +239,6 @@ let pp_model fmt (model : model) =
     | _ -> "0"
   in
 
-  let get_min = function
-    | _ -> "0"
-  in
-
-  let get_max = function
-    | _ -> "0"
-  in
-
   let pp_function_const fmt = function
     | Select (an, _) ->
       let k, t = Utils.get_asset_key model (to_lident an) in
@@ -314,34 +306,42 @@ let pp_model fmt (model : model) =
       let _, t, _ = Utils.get_asset_field model (dumloc an, fn) in
       Format.fprintf fmt
         "let[@inline] min_%s_%s (s, l : storage * %a list) : %a =@\n  \
+         match l with@\n  \
+         | [] -> failwith \"empty list\"@\n  \
+         | e::t ->@\n  \
+         let init = (get_my_asset (s, e)).%s in@\n    \
          List.fold (fun (k, accu) ->@\n    \
          let x = get_%s (s, k) in@\n    \
          if accu > x.%s@\n  \
          then x.%s@\n  \
          else accu@\n  \
-         ) l %s@\n"
+         ) t init@\n"
         an fn pp_btyp tk pp_type t
+        fn
         an
         fn
         fn
-        (get_max t)
 
     | Max (an, fn) ->
       let _, tk = Utils.get_asset_key model (to_lident an) in
       let _, t, _ = Utils.get_asset_field model (dumloc an, fn) in
       Format.fprintf fmt
         "let[@inline] max_%s_%s (s, l : storage * %a list) : %a =@\n  \
+         match l with@\n  \
+         | [] -> failwith \"empty list\"@\n  \
+         | e::t ->@\n  \
+         let init = (get_my_asset (s, e)).%s in@\n    \
          List.fold (fun (k, accu) ->@\n    \
          let x = get_%s (s, k) in@\n    \
          if accu < x.%s@\n  \
          then x.%s@\n  \
          else accu@\n  \
-         ) l %s@\n"
+         ) t init@\n"
         an fn pp_btyp tk pp_type t
+        fn
         an
         fn
         fn
-        (get_min t)
 
     | Shallow _ -> ()
     | Unshallow _ -> ()
