@@ -194,16 +194,32 @@ let pp_model fmt (model : model) =
         an pp_str k an
 
     | UpdateClear (an, fn) ->
+      let k, t = Utils.get_asset_key model (to_lident an) in
       Format.fprintf fmt
         "let[@inline] clear_%s_%s (s, a : storage * %s) : storage =@\n  \
-         s (*TODO*)@\n"
+         let key = a.%s in@\n  \
+         let asset = get_%s (s, key) in@\n  \
+         let asset = asset.%s <- [] in@\n  \
+         s.%s_assets <- Map.update a.%s (Some asset) s.%s_assets@\n"
         an fn an
+        k
+        an
+        fn
+        an k an
 
     | UpdateReverse (an, fn) ->
+      let k, t = Utils.get_asset_key model (to_lident an) in
       Format.fprintf fmt
         "let[@inline] reverse_%s_%s (s, a : storage * %s) : storage =@\n  \
-         s (*TODO*)@\n"
+         let key = a.%s in@\n  \
+         let asset = get_%s (s, key) in@\n  \
+         let asset = asset.%s <- List.rev asset.%s in@\n  \
+         s.%s_assets <- Map.update a.%s (Some asset) s.%s_assets@\n"
         an fn an
+        k
+        an
+        fn fn
+        an k an
 
     | ToKeys an ->
       Format.fprintf fmt
@@ -235,13 +251,13 @@ let pp_model fmt (model : model) =
     | Select (an, _) ->
       let k, t = Utils.get_asset_key model (to_lident an) in
       Format.fprintf fmt
-        "let[@inline] select_%s (s, c, p : storage * %a list * (%s -> bool)) : %a list =@\n  \
+        "let[@inline] select_%s (s, l, p : storage * %a list * (%s -> bool)) : %a list =@\n  \
          List.fold (fun (x, accu) ->@\n  \
          let a = get_%s (s, x) in@\n  \
          if p a@\n  \
          then add_list a.%s accu@\n  \
          else accu@\n  \
-         ) c []@\n"
+         ) l []@\n"
         an pp_btyp t an pp_btyp t
         an
         k
