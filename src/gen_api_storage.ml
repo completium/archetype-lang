@@ -54,7 +54,7 @@ let process_api_storage (model : model) : model =
       | Mcontains (asset_name, _, _) ->
         [APIFunction (Contains asset_name)]
       | Mnth (asset_name, _, _) ->
-        [APIFunction (Nth asset_name)]
+        [APIStorage (Get asset_name); APIFunction (Nth asset_name)]
       | Mcount (asset_name, _) ->
         [APIFunction (Count asset_name)]
       | Msum (asset_name, field_name, _) ->

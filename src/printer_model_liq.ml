@@ -272,9 +272,26 @@ let pp_model fmt (model : model) =
         pp_btyp t
 
     | Nth an ->
+      let _, t = Utils.get_asset_key model (to_lident an) in
       Format.fprintf fmt
-        "let[@inline] nth_%s (s : storage) : unit =@\n  \
-         () (*TODO*)@\n"
+        "let[@inline] nth_%s (s, l, idx : storage * %a list * int) : %s =@\n  \
+         match l with@\n  \
+         | [] -> failwith \"empty list\"@\n  \
+         | _ ->@\n  \
+         begin@\n  \
+         let cpt = idx in@\n  \
+         let _, res =@\n  \
+         List.fold (fun (x, accu) ->@\n  \
+         let cpt, res = accu in@\n  \
+         if cpt = 0@\n  \
+         then (cpt - 1, Some x)@\n  \
+         else (cpt - 1, res)@\n  \
+         ) l (cpt, None) in@\n  \
+         match res with@\n  \
+         | None -> failwith \"index out of bounds\"@\n  \
+         | Some k -> get_%s (s, k)@\n  \
+         end@\n"
+        an pp_btyp t an
         an
 
     | Count an ->
