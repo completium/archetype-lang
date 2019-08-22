@@ -1859,11 +1859,12 @@ module Utils : sig
   val dest_varlocal                      : mterm -> lident
   val is_container                       : type_ -> bool
   val get_key_pos                        : model -> lident -> int
-  val get_invariants                     : model -> (lident * mterm) list -> ident -> (lident * mterm) list
+  val get_loop_invariants                : model -> (lident * mterm) list -> ident -> (lident * mterm) list
   val get_formula                       : model -> mterm option -> ident -> mterm option
   val is_post                            : specification -> bool
   val get_sum_fields                     : model -> ident -> ident list
   val get_added_removed_sets             : model -> verification option -> ((lident, lident mterm_gen) mterm_node) list
+  val get_storage_invariants             : model -> (ident * ident * mterm) list
 
 end = struct
 
@@ -2194,7 +2195,8 @@ end = struct
           acc
       ) (-1)
 
-  let get_invariants m acc (i : ident) : (lident * mterm) list =
+  (* i is the loop label *)
+  let get_loop_invariants m acc (i : ident) : (lident * mterm) list =
     let internal_get (ctx : ctx_model) (acc : (lident * mterm) list) t =
       match ctx.invariant_id with
       | Some v when cmp_ident i (unloc v) ->
@@ -2234,5 +2236,16 @@ end = struct
       | _ -> fold_term (internal_fold_add_remove ctx) acc term in
     Tools.List.dedup (Option.map_dfl (fun (x : verification) ->
         fold_verification (mk_ctx_model ()) internal_fold_add_remove x []) [] v)
+
+  (* returns asset name * invariant name * invariant term *)
+  let get_storage_invariants (m : model) : (ident * ident * mterm) list =
+    List.fold_left (fun acc (i : storage_item) ->
+        let n = i.name |> unloc in
+        List.fold_left (fun acc (lt : label_term) ->
+            let inv_name = Tools.Option.fold (fun _ l -> unloc l) "" lt.label in
+            let inv_term = lt.term in
+            acc @ [n, inv_name, inv_term]
+        ) acc i.invariants
+    ) [] m.storage
 
 end

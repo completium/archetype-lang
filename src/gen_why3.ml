@@ -741,6 +741,28 @@ let map_storage_items = List.fold_left (fun acc (item : M.storage_item) ->
       }]
   ) []
 
+
+let is_local_invariant m an t =
+  let rec internal_is_local acc (term : M.mterm) =
+    match term.M.node with
+    | M.Mforall (i,M.Tasset a,b) -> not (compare (a |> unloc) an = 0)
+    | M.Msum (a,_,_) -> not (compare a an = 0)
+    | M.Mmax (a,_,_) -> not (compare a an = 0)
+    | M.Mmin (a,_,_) -> not (compare a an = 0)
+    | M.Mselect (a,_,_) -> not (compare a an = 0)
+    | _ -> M.fold_term internal_is_local acc term in
+  internal_is_local true t
+
+let does_not_add_asset m an b =
+  let rec internal_does_not_add acc (term : M.mterm) =
+    match term.M.node with
+    | M.Maddasset (a,_) ->  not (compare a an = 0)
+    | M.Maddfield (a,f,_,_) ->
+      let (pa,_,_) = M.Utils.get_partition_asset_key m (dumloc a) (dumloc f) in
+      not (compare pa an = 0)
+    | _ -> M.fold_term internal_does_not_add acc term in
+  internal_does_not_add true b
+
 (* prefixes with 'forall k_:key, mem k_ "asset"_keys ->  ...'
    replaces asset field "field" by '"field " (get "asset"_assets k_)'
    TODO : make sure there is no collision between "k_" and invariant vars
@@ -749,23 +771,31 @@ let map_storage_items = List.fold_left (fun acc (item : M.storage_item) ->
    n is the asset name
    inv is the invariant to extend
 *)
-let mk_extended_invariant m n inv : loc_term =
+let mk_invariant m n ?(for_loop = false) inv : loc_term =
   let r        = M.Utils.get_info_asset m n in
   let fields   = r.values |> List.map (fun (i,_,_) -> i) |> wdl in
   let asset    = map_lident n in
   let replacements = List.map (fun f -> mk_app_field asset f) fields in
   let replaced = List.fold_left (fun acc (t1,t2) -> loc_replace t1 t2 acc) inv replacements in
+  let asset_coll =
+    if for_loop then
+      mk_ac (unloc n)
+    else
+      Tvar (mk_ac_id asset.obj)
+  in
   let prefix   = Tforall ([["a"],Tyasset (unloc_ident asset)],
                           Timpl (Tmem ((unloc_ident asset),
                                        Tvar "a",
-                                       Tvar (mk_ac_id asset.obj)),
+                                       asset_coll),
                                  Ttobereplaced)) in
   loc_replace (with_dummy_loc Ttobereplaced) replaced (loc_term prefix)
 
-let map_extended_label_term m n (lt : M.label_term) = {
+let mk_storage_invariant m n (lt : M.label_term) = {
   id = Option.fold (fun _ x -> map_lident x)  (with_dummy_loc "") lt.label;
-  form = mk_extended_invariant m n (map_term lt.term);
+  form = mk_invariant m n (map_term lt.term);
 }
+
+let mk_loop_invariant m n inv : loc_term = mk_invariant m (dumloc n) ~for_loop:(true) inv
 
 let map_record m (r : M.record) =
   Drecord (map_lident r.name, map_record_values r.values)
@@ -781,7 +811,7 @@ let map_storage m (l : M.storage) =
   Dstorage {
     fields     = (map_storage_items l)@(mk_const_fields false |> loc_field |> deloc);
     invariants = List.concat (List.map (fun (item : M.storage_item) ->
-        List.map (map_extended_label_term m item.name) item.invariants) l)
+        List.map (mk_storage_invariant m item.name) item.invariants) l)
   }
 
 let mk_axioms (m : M.model) =
@@ -885,13 +915,12 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | M.Mseq l -> Tseq (List.map (map_mterm m ctx) l)
     | M.Mfor (id,c,b,lbl) ->
       let (nth,card) = get_for_fun c.type_ in
-      let invariants = Option.fold (M.Utils.get_invariants m) [] lbl |> mk_invariants m ctx lbl in
       Tfor (with_dummy_loc "i",
             with_dummy_loc (
               Tminus (with_dummy_loc Tyunit,card (map_mterm m ctx c |> unloc_term),
                       (loc_term (Tint Big_int.unit_big_int)))
             ),
-            invariants,
+            mk_invariants m ctx lbl b,
             with_dummy_loc (
               Tletin (false,
                       map_lident id,
@@ -987,14 +1016,30 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
       Ttoiter (n,with_dummy_loc "i",map_mterm m ctx c) (* TODO : should retrieve actual idx value *)
     | _ -> Tnone in
   mk_loc mt.loc t
-and mk_invariants (m : M.model) ctx (lbl : ident option) invs =
-  List.map (fun ((ilbl : M.lident),(i : M.mterm)) ->
+and mk_invariants (m : M.model) ctx (lbl : ident option) lbody =
+  let loop_invariants =
+    Option.fold (M.Utils.get_loop_invariants m) [] lbl |>
+    List.map (fun ((ilbl : M.lident),(i : M.mterm)) ->
         let iid =
           match lbl,ilbl with
           | Some a, b -> (unloc b) ^ "_" ^ a
-          | _ -> "toto" in
-      { id =  with_dummy_loc iid; form = map_mterm m ctx i }
-    ) invs
+          | None, b -> (unloc b) in
+        { id =  with_dummy_loc iid; form = map_mterm m ctx i }
+      ) in
+  let storage_loop_invariants =
+    M.Utils.get_storage_invariants m |>
+    List.fold_left (fun acc (an,inn,t) ->
+        if is_local_invariant m an t && does_not_add_asset m an lbody
+        then
+          let iid =
+            match lbl with
+            | Some a -> inn^"_"^a
+            | _ -> inn in
+          acc @ [{ id = with_dummy_loc iid;
+                   form = mk_loop_invariant m an (map_mterm m ctx t) }]
+        else acc
+      ) ([] : (loc_term, loc_ident) abstract_formula list) in
+  loop_invariants @ storage_loop_invariants
 
 let mk_storage_api (m : M.model) records =
   m.api_items |> List.fold_left (fun acc (sc : M.api_item) ->
