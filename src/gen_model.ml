@@ -130,13 +130,17 @@ let to_model (ast : A.model) : M.model =
   let extract_asset_name (mterm : M.mterm) : ident =
     match mterm with
     | {type_ = Tcontainer (Tasset asset_name, _); _} -> unloc asset_name
-    | _ -> assert false
+    | _ ->
+      Format.printf "extract_asset_name error: %a@\n" M.pp_type_ mterm.type_;
+      assert false
   in
 
   let extract_field_name (id, type_, body : A.lident * A.ptyp * A.pterm) : M.lident =
     match body.node with
     | A.Pdot (_, fn) -> fn
-    | _ -> assert false
+    | _ ->
+      Format.printf "extract_field_name error: %a@\n" A.pp_pterm body;
+      assert false
   in
 
   let to_mterm_node (n : A.lident A.term_node) (f : A.lident A.term_gen -> M.mterm) (ftyp : 't -> M.type_) : (M.lident, M.mterm) M.mterm_node =
@@ -163,7 +167,6 @@ let to_model (ast : A.model) : M.model =
     | A.Puarith (A.Uminus, e)        -> M.Muminus    (f e)
     | A.Precord l                    -> M.Mrecord    (List.map f l)
     | A.Pletin (id, init, typ, cont) -> M.Mletin     ([id], f init, Option.map ftyp typ, f cont)
-    | A.Pvar {pldesc = "now"}                -> M.Mnow (* TODO: use const Cnow instead *)
     | A.Pvar id when A.Utils.is_variable ast id   -> M.Mvarstorevar id
     | A.Pvar id when A.Utils.is_asset ast id      -> M.Mvarstorecol id
     | A.Pvar id when A.Utils.is_enum_value ast id -> M.Mvarenumval id
@@ -212,26 +215,29 @@ let to_model (ast : A.model) : M.model =
       let asset_name = extract_asset_name fp in
       M.Mget (asset_name, fq)
 
-    | A.Pcall (Some c, A.Cconst (A.Cselect), [AFun (pi, pt, p)]) ->
-      let fc = f c in
+    | A.Pcall (Some p, A.Cconst (A.Cselect), [AFun (qi, qt, q)]) ->
       let fp = f p in
-      let asset_name =
-        match fc with
-        | {type_ = M.Tcontainer (M.Tasset asset_name, _); _} -> unloc asset_name
-        | _ -> "todo0"
-      in
-      M.Mselect (asset_name, fc, fp)
+      let fq = f q in
+      let asset_name = extract_asset_name fp in
+      M.Mselect (asset_name, fp, fq)
+
+    | A.Pcall (Some p, A.Cconst (A.Csort), [AFun (qi, qt, q)]) ->
+      let fp = f p in
+      let asset_name = extract_asset_name fp in
+      let field_name = extract_field_name (qi, qt, q) in
+      M.Msort (asset_name, fp, unloc field_name, SKasc)
 
     | A.Pcall (Some p, A.Cconst (A.Ccontains), [AExpr q]) ->
       let fp = f p in
-      let asset_name =
-        match fp with
-        | {type_ = M.Tcontainer (M.Tasset asset_name, _); _} -> unloc asset_name
-        | _ -> "todo"
-      in
-      M.Mcontains (asset_name, f p, f q)
+      let fq = f q in
+      let asset_name = extract_asset_name fp in
+      M.Mcontains (asset_name, fp, fq)
 
-    (* TODO: nth *)
+    | A.Pcall (Some p, A.Cconst (A.Cnth), [AExpr q]) ->
+      let fp = f p in
+      let fq = f q in
+      let asset_name = extract_asset_name fp in
+      M.Mnth (asset_name, fp, fq)
 
     | A.Pcall (Some p, A.Cconst (A.Ccount), []) ->
       let fp = f p in

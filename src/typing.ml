@@ -1079,7 +1079,9 @@ let rec for_xexpr (mode : emode_t) (env : env) ?(ety : M.ptyp option) (tope : PT
 
     | Emulticomp (e, l) ->
       (* FIXME *)
-      assert false
+      let type_bool = Some (M.Tbuiltin VTbool) in
+      let bval = mk_sp type_bool (M.BVbool false) in
+      mk_sp type_bool (M.Plit bval)
 
     | Eapp (Foperator { pldesc = op }, args) -> begin
         let args = List.map (for_xexpr env) args in
