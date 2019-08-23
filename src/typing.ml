@@ -173,15 +173,15 @@ let rgtypes =
     M.VTrational ]
 
 (* -------------------------------------------------------------------- *)
+let cmpsigs : (PT.operator * (M.vtyp list * M.vtyp)) list =
+  let ops  = [PT.Gt; PT.Ge; PT.Lt; PT.Le] in
+  let sigs = List.map (fun ty -> ([ty; ty], M.VTbool)) cmptypes in
+  List.mappdt (fun op sig_ -> (`Cmp op, sig_)) ops sigs
+
 let opsigs =
   let eqsigs : (PT.operator * (M.vtyp list * M.vtyp)) list =
     let ops  = [PT.Equal; PT.Nequal] in
     let sigs = List.map (fun ty -> ([ty; ty], M.VTbool)) eqtypes in
-    List.mappdt (fun op sig_ -> (`Cmp op, sig_)) ops sigs in
-
-  let cmpsigs : (PT.operator * (M.vtyp list * M.vtyp)) list =
-    let ops  = [PT.Gt; PT.Ge; PT.Lt; PT.Le] in
-    let sigs = List.map (fun ty -> ([ty; ty], M.VTbool)) cmptypes in
     List.mappdt (fun op sig_ -> (`Cmp op, sig_)) ops sigs in
 
   let grptypes : (PT.operator * (M.vtyp list * M.vtyp)) list =
@@ -253,7 +253,8 @@ type groups = {
 *)
 
 let globals = [
-  ("now", M.Cnow, M.vtdate);
+  ("now"    , M.Cnow    , M.vtdate);
+  ("balance", M.Cbalance, M.vtcurrency M.Tez);
 ]
 
 type method_ = {
@@ -1078,10 +1079,49 @@ let rec for_xexpr (mode : emode_t) (env : env) ?(ety : M.ptyp option) (tope : PT
       end
 
     | Emulticomp (e, l) ->
-      (* FIXME *)
-      let type_bool = Some (M.Tbuiltin VTbool) in
-      let bval = mk_sp type_bool (M.BVbool false) in
-      mk_sp type_bool (M.Plit bval)
+        let e = for_xexpr env e in
+        let l = List.map (snd_map (for_xexpr env)) l in
+
+        let _, aout =
+          List.fold_left_map (fun e ({ pldesc = op }, e') ->
+            match e.M.type_, e'.M.type_ with
+            | Some ty, Some ty' ->
+                let filter (sig_ : opsig) =
+                  if 2 <> List.length sig_.osl_sig then false else
+                  List.for_all2 Type.equal [ty; ty'] sig_.osl_sig in
+
+                let aout =
+                  match List.filter filter (List.assoc_all (`Cmp op) opsigs) with
+                  | [] ->
+                    Env.emit_error env (loc tope, NoMatchingOperator);
+                    None
+      
+                  | _::_::_ ->
+                    Env.emit_error env (loc tope, MultipleMatchingOperator);
+                    None
+        
+                  | [sig_] ->
+                    Some (mk_sp (Some sig_.osl_ret) (M.Pcomp (tt_cmp_operator op, e, e')))
+
+                in (e', aout)
+
+            | _, _ ->
+                e', None)
+          e l in
+
+        begin match List.pmap (fun x -> x) aout with
+        | [] ->
+            let lit = M.{ node  = M.BVbool true;
+                          type_ = Some M.vtbool;
+                          loc   = loc tope;
+                          label = None; } in
+            mk_sp (Some M.vtbool) (M.Plit lit)
+
+        | e :: es ->
+            List.fold_left (fun e e' ->
+              (mk_sp (Some M.vtbool) (M.Plogical (tt_logical_operator And, e, e'))))
+            e es
+        end
 
     | Eapp (Foperator { pldesc = op }, args) -> begin
         let args = List.map (for_xexpr env) args in
