@@ -1987,7 +1987,7 @@ let for_varfuns_decl (env : env) (decls : varfun loced list) =
 
 (* -------------------------------------------------------------------- *)
 let for_asset_decl (env : env) (decl : PT.asset_decl loced) =
-  let (x, fields, _, _, _, _) = unloc decl in
+  let (x, fields, _, inv, _, _) = unloc decl in
 
   let for_field field =
     let PT.Ffield (f, fty, init, _) = unloc field in
@@ -2200,7 +2200,7 @@ let variables_of_fdecls fdecls =
 
 (* -------------------------------------------------------------------- *)
 let verifications_of_iverifications =
-  let env0 = M.{
+  let env0 : M.lident M.verification = M.{
       predicates  = [];
       definitions = [];
       lemmas      = [];
@@ -2212,22 +2212,59 @@ let verifications_of_iverifications =
       asserts     = [];
       loc         = L.dummy;      (* FIXME *) } in
 
-  let do1 env (iverif : env iverification) =
+  let do1 (env : M.lident M.verification) (iverif : env iverification) =
     match iverif with
+    | `Specification (x, e, invs) ->
+      let spec =
+        let for_inv (lbl, inv) =
+          M.{ label = lbl; formulas = inv }
+        in
+          M.{ name       = x;
+              formula    = e;
+              invariants = List.map for_inv invs; }
+      in { env with M.specs = env.specs @ [spec] }
+
+    | `Assert (x, l, form, invs) ->
+        let asst =
+          let for_inv (lbl, inv) =
+            M.{ label = lbl; formulas = inv }
+          in
+            M.{ name       = x;
+                label      = l;
+                formula    = form;
+                invariants = List.map for_inv invs; }
+        in { env with M.asserts = env.asserts @ [asst] }
+
     | _ ->
-      env                     (* FIXME *)
+        assert false
 
   in fun iverifs -> List.fold_left do1 env0 iverifs
 
 (* -------------------------------------------------------------------- *)
 let transactions_of_tdecls tdecls =
+  let for_calledby cb : M.rexpr option =
+    match cb with [] -> None | c :: cb ->
+
+    let for1 = fun x ->
+      M.{ node  = M.Raddress x;
+          type_ = None;
+          label = None;
+          loc   = loc x } in
+    Some (List.fold_left (fun acc c' ->
+            M.{ node  = M.Ror (acc, for1 c');
+                type_ = None;
+                label = None;
+                loc   = L.dummy; }) (for1 c) cb)
+    in
+
+
   let for1 tdecl =
     M.{ name = tdecl.ad_name;
         args =
           List.map (fun (x, xty) ->
               M.{ name = x; typ = Some xty; default = None; loc = loc x; })
             tdecl.ad_args;
-        calledby        = None;        (* FIXME *)
+        calledby        = for_calledby tdecl.ad_callby;
         accept_transfer = true;        (* FIXME *)
         require         = Some (
             List.map
@@ -2249,12 +2286,13 @@ let for_declarations (env : env) (decls : (PT.declaration list) loced) : M.model
   | { pldesc = Darchetype (x, _exts) } :: decls ->
     let groups = group_declarations decls in
     let _env, decls = for_grouped_declarations env (toploc, groups) in
-    let adecls, fdecls, tdecls, _vdecls = decls in
+    let adecls, fdecls, tdecls, vdecls = decls in
 
     M.mk_model
       ~assets:(assets_of_adecls adecls)
       ~variables:(variables_of_fdecls fdecls)
       ~transactions:(transactions_of_tdecls tdecls)
+      ~verifications:(List.map verifications_of_iverifications vdecls)
       x
 
   | _ ->
