@@ -910,7 +910,7 @@ let rec for_xexpr (mode : emode_t) (env : env) ?(ety : M.ptyp option) (tope : PT
 
         match ety with
         | Some (M.Tcontainer (_, _)) ->
-          mk_sp ety (M.Parray es)
+          mk_sp ety (M.Parray (e :: es))
 
         | _ ->
           Env.emit_error env (loc tope, CannotInferCollectionType);
@@ -1662,7 +1662,7 @@ let rec for_instruction (env : env) (i : PT.expr) : env * M.instruction =
             for_assign_expr `Expr env (loc plv) (op, fty) pe
         in
 
-        env, mki (M.Iassign (M.ValueAssign, x, e))
+        env, mki (M.Iassign (op, x, e))
       end
 
     | Etransfer (e, back, to_) ->
@@ -1740,7 +1740,7 @@ let rec for_instruction (env : env) (i : PT.expr) : env * M.instruction =
         if (check_and_emit_name_free env lbl) then
           Env.Label.push env (unloc lbl, `Plain)
         else env in
-      env, mki (Iseq [])
+      env, mki (Ilabel lbl)
 
     | _ ->
       Env.emit_error env (loc i, InvalidInstruction);
@@ -2246,7 +2246,8 @@ let transactions_of_tdecls tdecls =
     match cb with [] -> None | c :: cb ->
 
     let for1 = fun x ->
-      M.{ node  = M.Raddress x;
+      let name = M.{ node = M.Qident x; type_ = None; label = None; loc = loc x; } in
+      M.{ node  = M.Rqualid name;
           type_ = None;
           label = None;
           loc   = loc x } in
