@@ -316,6 +316,7 @@ type assetdecl = {
   as_name   : M.lident;
   as_fields : (M.lident * M.ptyp) list;
   as_pk     : M.lident;
+  as_invs   : (M.lident option * M.pterm) list;
 }
 
 (* -------------------------------------------------------------------- *)
@@ -1577,12 +1578,17 @@ let for_lbls_expr (env : env) (topf : PT.label_exprs) : env * (M.lident option *
   List.fold_left_map for_lbl_expr env topf
 
 (* -------------------------------------------------------------------- *)
-let for_lbl_formula (env : env) (topf : PT.label_expr) : env * M.pterm =
-  env, for_formula env (snd (unloc topf))
+let for_lbl_formula (env : env) (topf : PT.label_expr) : env * (M.lident option * M.pterm) =
+  (* FIXME: check for duplicates *)
+  env, (fst (unloc topf), for_formula env (snd (unloc topf)))
+
+(* -------------------------------------------------------------------- *)
+let for_xlbls_formula (env : env) (topf : PT.label_exprs) : env * (M.lident option * M.pterm) list =
+  List.fold_left_map for_lbl_formula env topf
 
 (* -------------------------------------------------------------------- *)
 let for_lbls_formula (env : env) (topf : PT.label_exprs) : env * M.pterm list =
-  List.fold_left_map for_lbl_formula env topf
+  snd_map (List.map snd) (List.fold_left_map for_lbl_formula env topf)
 
 (* -------------------------------------------------------------------- *)
 let for_arg_decl (env : env) ((x, ty, _) : PT.lident_typ) =
@@ -1987,7 +1993,7 @@ let for_varfuns_decl (env : env) (decls : varfun loced list) =
 
 (* -------------------------------------------------------------------- *)
 let for_asset_decl (env : env) (decl : PT.asset_decl loced) =
-  let (x, fields, _, inv, _, _) = unloc decl in
+  let (x, fields, _, invs, _, _) = unloc decl in
 
   let for_field field =
     let PT.Ffield (f, fty, init, _) = unloc field in
@@ -2023,11 +2029,26 @@ let for_asset_decl (env : env) (decl : PT.asset_decl loced) =
       in (mkloc loc x, Option.get_fdfl (fun () -> raise E.Bailout) ty)
     in
 
+    let env, invs =
+      let for1 env = function
+        | PT.APOconstraints invs ->
+            Env.inscope env (fun env ->
+              let env =
+                List.fold_left (fun env { pldesc = (f, fty, _) } ->
+                    Option.fold (fun env fty -> Env.Local.push env (f, fty)) env fty)
+                  env fields
+              in for_xlbls_formula env invs)
+
+        | _ ->
+            env, []
+      in List.fold_left_map for1 env invs in
+
     try
       let decl = {
         as_name   = x;
         as_fields = List.map get_field_type fields;
         as_pk     = L.lmap proj3_1 (List.hd fields);
+        as_invs   = List.flatten invs;
       } in (Env.Asset.push env decl, Some decl)
     with E.Bailout -> (env, None)
 
@@ -2170,6 +2191,9 @@ let assets_of_adecls adecls =
     let for_field (f, fty) =
       M.{ name = f; typ = Some fty; default = None; loc = loc f; } in
 
+    let spec (l, f) =
+      M.{ label = l; term = f; loc = f.loc } in
+
     M.{ name   = decl.as_name;
         fields = List.map for_field decl.as_fields;
         key    = Some decl.as_pk;
@@ -2177,7 +2201,7 @@ let assets_of_adecls adecls =
         state  = None;           (* FIXME *)
         role   = false;          (* FIXME *)
         init   = None;           (* FIXME *)
-        specs  = [];             (* FIXME *)
+        specs  = List.map spec decl.as_invs;
         loc    = loc decl.as_name; }
 
   in List.map for1 (List.pmap (fun x -> x) adecls)
