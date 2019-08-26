@@ -29,7 +29,8 @@ let to_model (ast : A.model) : M.model =
     match c with
     | A.Collection -> M.Collection
     | A.Partition  -> M.Partition
-    | _            -> emit_error (NotSupportedContainer (Format.asprintf "%a@." A.pp_container c))
+    | A.Subset     -> M.Collection
+    (* | _            -> emit_error (NotSupportedContainer (Format.asprintf "%a@." A.pp_container c)) *)
   in
 
   let to_currency = function
@@ -199,12 +200,12 @@ let to_model (ast : A.model) : M.model =
     | A.Pquantifer (Forall, i, typ, term)    -> M.Mforall (i, ptyp_to_type typ, f term)
     | A.Pquantifer (Exists, i, typ, term)    -> M.Mexists (i, ptyp_to_type typ, f term)
 
-    | A.Pcall (_, A.Cconst A.Cbefore,    [AExpr p]) -> M.Msetbefore    (f p)
-    | A.Pcall (_, A.Cconst A.Cunmoved,   [AExpr p]) -> M.Msetunmoved   (f p)
-    | A.Pcall (_, A.Cconst A.Cadded,     [AExpr p]) -> M.Msetadded     (f p)
-    | A.Pcall (_, A.Cconst A.Cremoved,   [AExpr p]) -> M.Msetremoved   (f p)
-    | A.Pcall (_, A.Cconst A.Citerated,  [AExpr p]) -> M.Msetiterated  (f p)
-    | A.Pcall (_, A.Cconst A.Ctoiterate, [AExpr p]) -> M.Msettoiterate (f p)
+    | A.Pcall (Some p, A.Cconst A.Cbefore,    []) -> M.Msetbefore    (f p)
+    | A.Pcall (Some p, A.Cconst A.Cunmoved,   []) -> M.Msetunmoved   (f p)
+    | A.Pcall (Some p, A.Cconst A.Cadded,     []) -> M.Msetadded     (f p)
+    | A.Pcall (Some p, A.Cconst A.Cremoved,   []) -> M.Msetremoved   (f p)
+    | A.Pcall (Some p, A.Cconst A.Citerated,  []) -> M.Msetiterated  (f p)
+    | A.Pcall (Some p, A.Cconst A.Ctoiterate, []) -> M.Msettoiterate (f p)
 
     | A.Pcall (aux, A.Cid id, args) ->
       M.Mapp (id, List.map (fun x -> term_arg_to_expr f x) args)
