@@ -24,6 +24,11 @@ let pp_no_empty_list pp fmt l =
   then ()
   else (pp_list "@\n" pp) fmt l
 
+let pp_no_empty_list2 pp fmt l =
+  if List.is_empty l
+  then ()
+  else Format.fprintf fmt "%a@\n" (pp_no_empty_list pp) l
+
 (* -------------------------------------------------------------------------- *)
 let pp_ident = pp_str
 
