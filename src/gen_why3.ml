@@ -6,7 +6,7 @@ open Mlwtree
 
 (* Constants -------------------------------------------------------------------*)
 
-let gArchetypeDir   = "archetype2"
+let gArchetypeDir   = "archetype3"
 let gArchetypeLib   = "Lib"
 let gArchetypeColl  = "AssetCollection"
 let gArchetypeSum   = "Sum"
