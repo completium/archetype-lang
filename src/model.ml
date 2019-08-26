@@ -128,6 +128,7 @@ type ('id, 'term) mterm_node  =
   | Msort         of ident * 'term * ident * sort_kind
   | Mcontains     of ident * 'term * 'term
   | Mmem          of ident * 'term * 'term
+  | Msubset       of ident * 'term * 'term
   | Mnth          of ident * 'term * 'term
   | Mcount        of ident * 'term
   | Msum          of ident * 'id * 'term
@@ -140,6 +141,7 @@ type ('id, 'term) mterm_node  =
   | Mor           of 'term * 'term
   | Mimply        of 'term * 'term
   | Mequiv        of 'term * 'term
+  | Misempty      of ident * 'term
   | Mnot          of 'term
   | Mequal        of 'term * 'term
   | Mnequal       of 'term * 'term
@@ -781,6 +783,7 @@ let cmp_mterm_node
     | Msort (an1, c1, fn1, k1), Msort (an2, c2, fn2, k2)                               -> cmp_ident an1 an2 && cmp c1 c2 && cmp_ident fn1 fn2 && k1 = k2
     | Mcontains (an1, c1, i1), Mcontains (an2, c2, i2)                                 -> cmp_ident an1 an2 && cmp c1 c2 && cmp i1 i2
     | Mmem (an1, c1, i1), Mmem (an2, c2, i2)                                           -> cmp_ident an1 an2 && cmp c1 c2 && cmp i1 i2
+    | Msubset (an1, c1, i1), Msubset (an2, c2, i2)                                     -> cmp_ident an1 an2 && cmp c1 c2 && cmp i1 i2
     | Mnth (an1, c1, i1), Mnth (an2, c2, i2)                                           -> cmp_ident an1 an2 && cmp c1 c2 && cmp i1 i2
     | Mcount (an1, c1), Mcount (an2, c2)                                               -> cmp_ident an1 an2 && cmp c1 c2
     | Msum (an1, fd1, c1), Msum (an2, fd2, c2)                                         -> cmp_ident an1 an2 && cmpi fd1 fd2 && cmp c1 c2
@@ -793,6 +796,7 @@ let cmp_mterm_node
     | Mor (l1, r1), Mor (l2, r2)                                                       -> cmp l1 l2 && cmp r1 r2
     | Mimply (l1, r1), Mimply (l2, r2)                                                 -> cmp l1 l2 && cmp r1 r2
     | Mequiv (l1, r1), Mequiv (l2, r2)                                                 -> cmp l1 l2 && cmp r1 r2
+    | Misempty (l1, r1), Misempty (l2, r2)                                             -> cmp_ident l1 l2 && cmp r1 r2
     | Mnot e1, Mnot e2                                                                 -> cmp e1 e2
     | Mequal (l1, r1), Mequal (l2, r2)                                                 -> cmp l1 l2 && cmp r1 r2
     | Mnequal (l1, r1), Mnequal (l2, r2)                                               -> cmp l1 l2 && cmp r1 r2
@@ -947,6 +951,7 @@ let map_term_node (f : 'id mterm_gen -> 'id mterm_gen) = function
   | Msort (an, c, fn, k)         -> Msort (an, f c, fn, k)
   | Mcontains (an, c, i)         -> Mcontains (an, f c, f i)
   | Mmem (an, c, i)              -> Mmem (an, f c, f i)
+  | Msubset (an, c, i)           -> Msubset (an, f c, f i)
   | Mnth (an, c, i)              -> Mnth (an, f c, f i)
   | Mcount (an, c)               -> Mcount (an, f c)
   | Msum (an, fd, c)             -> Msum (an, fd, f c)
@@ -959,6 +964,7 @@ let map_term_node (f : 'id mterm_gen -> 'id mterm_gen) = function
   | Mor (l, r)                   -> Mor (f l, f r)
   | Mimply (l, r)                -> Mimply (f l, f r)
   | Mequiv  (l, r)               -> Mequiv (f l, f r)
+  | Misempty (l, r)              -> Misempty (l, f r)
   | Mnot e                       -> Mnot (f e)
   | Mequal (l, r)                -> Mequal (f l, f r)
   | Mnequal (l, r)               -> Mnequal (f l, f r)
@@ -1194,6 +1200,7 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Msort (an, c, p, _)                   -> f accu c
   | Mcontains (an, c, i)                  -> f (f accu c) i
   | Mmem (an, c, i)                       -> f (f accu c) i
+  | Msubset (an, c, i)                    -> f (f accu c) i
   | Mnth      (an, c, i)                  -> f (f accu c) i
   | Mcount (an, c)                        -> f accu c
   | Msum (an, fd, c)                      -> f accu c
@@ -1206,6 +1213,7 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mor (l, r)                            -> f (f accu l) r
   | Mimply (l, r)                         -> f (f accu l) r
   | Mequiv  (l, r)                        -> f (f accu l) r
+  | Misempty  (l, r)                      -> f accu r
   | Mnot e                                -> f accu e
   | Mequal (l, r)                         -> f (f accu l) r
   | Mnequal (l, r)                        -> f (f accu l) r
@@ -1429,6 +1437,11 @@ let fold_map_term
     let ie, ia = f ca i in
     g (Mmem (an, ce, ie)), ia
 
+  | Msubset (an, c, i) ->
+    let ce, ca = f accu c in
+    let ie, ia = f ca i in
+    g (Msubset (an, ce, ie)), ia
+
   | Mnth (an, c, i) ->
     let ce, ca = f accu c in
     let ie, ia = f ca i in
@@ -1489,6 +1502,10 @@ let fold_map_term
     let le, la = f accu l in
     let re, ra = f la r in
     g (Mequiv (le, re)), ra
+
+  | Misempty  (l, r) ->
+    let re, ra = f accu r in
+    g (Misempty (l, re)), ra
 
   | Mnot e ->
     let ee, ea = f accu e in
@@ -1735,57 +1752,55 @@ let fold_map_term
   | Manyaction ->
     g (Manyaction), accu
 
+let fold_left g l accu = List.fold_left (fun accu x -> g x accu) accu l
+
+let fold_verification (ctx : 'id ctx_model_gen) (f : 'id ctx_model_gen -> 'a -> 'id mterm_gen -> 'a) (v : 'id verification_gen) (accu : 'a) : 'a =
+  let fold_label_term (ctx : 'id ctx_model_gen) (f : 'id ctx_model_gen -> 'a -> 'id mterm_gen -> 'a) (lt : 'id label_term_gen) (accu : 'a) : 'a =
+    let ctx = { ctx with label = lt.label } in
+    f ctx accu lt.term
+  in
+
+  let fold_predicate (ctx : 'id ctx_model_gen) (f : 'id ctx_model_gen -> 'a -> 'id mterm_gen -> 'a) (p : 'id predicate_gen) (accu : 'a) : 'a =
+    accu
+    |> fun x -> f ctx x p.body
+  in
+  let fold_definition (ctx : 'id ctx_model_gen) (f : 'id ctx_model_gen -> 'a -> 'id mterm_gen -> 'a) (d : 'id definition_gen) (accu : 'a) : 'a =
+    f ctx accu d.body
+  in
+
+  let fold_invariantt (ctx : 'id ctx_model_gen) (f : 'id ctx_model_gen -> 'a -> 'id mterm_gen -> 'a) (it : 'id * 'id label_term_gen list) (accu : 'a) : 'a =
+    List.fold_left (fun accu x -> fold_label_term ctx f x accu) accu (snd it)
+  in
+
+  let fold_invariant (ctx : 'id ctx_model_gen) (f : 'id ctx_model_gen -> 'a -> 'id mterm_gen -> 'a) (spec : 'id invariant_gen) (accu : 'a) : 'a =
+    let ctx = {ctx with invariant_id = Some spec.label } in
+    List.fold_left (f ctx) accu spec.formulas
+  in
+
+  let fold_specification (ctx : 'id ctx_model_gen) (f : 'id ctx_model_gen -> 'a -> 'id mterm_gen -> 'a) (spec : 'id specification_gen) (accu : 'a) : 'a =
+    let ctx = { ctx with spec_id = Some spec.name} in
+    accu
+    |> (fun x -> f ctx x spec.formula)
+    |> (fun x -> List.fold_left (fun accu (x : 'id invariant_gen) -> fold_invariant ctx f x accu) x spec.invariants)
+  in
+
+  let fold_variable (ctx : 'id ctx_model_gen) (f : 'id ctx_model_gen -> 'a -> 'id mterm_gen -> 'a) (spec : 'id variable_gen) (accu : 'a) : 'a =
+    accu
+  in
+
+  let ctx = { ctx with formula = true } in
+  accu
+  |> fold_left (fold_predicate ctx f) v.predicates
+  |> fold_left (fold_definition ctx f) v.definitions
+  |> fold_left (fold_label_term ctx f) v.lemmas
+  |> fold_left (fold_label_term ctx f) v.theorems
+  |> fold_left (fold_variable ctx f) v.variables
+  |> fold_left (fold_invariantt ctx f) v.invariants
+  |> (fun x -> List.fold_left (fun accu x -> f ctx accu x) x v.effects)
+  |> fold_left (fold_specification ctx f) v.specs
+
 let fold_model (f : 'id ctx_model_gen -> 'a -> 'id mterm_gen -> 'a) (m : 'id model_gen) (accu : 'a) : 'a =
 
-  let fold_left g l accu = List.fold_left (fun accu x -> g x accu) accu l in
-
-  let fold_verification (ctx : 'id ctx_model_gen) (f : 'id ctx_model_gen -> 'a -> 'id mterm_gen -> 'a) (v : 'id verification_gen) (accu : 'a) : 'a = (
-    let fold_label_term (ctx : 'id ctx_model_gen) (f : 'id ctx_model_gen -> 'a -> 'id mterm_gen -> 'a) (lt : 'id label_term_gen) (accu : 'a) : 'a =
-      let ctx = { ctx with label = lt.label } in
-      f ctx accu lt.term
-    in
-
-    let fold_predicate (ctx : 'id ctx_model_gen) (f : 'id ctx_model_gen -> 'a -> 'id mterm_gen -> 'a) (p : 'id predicate_gen) (accu : 'a) : 'a =
-      accu
-      |> fun x -> f ctx x p.body
-    in
-
-    let fold_definition (ctx : 'id ctx_model_gen) (f : 'id ctx_model_gen -> 'a -> 'id mterm_gen -> 'a) (d : 'id definition_gen) (accu : 'a) : 'a =
-      f ctx accu d.body
-    in
-
-    let fold_invariantt (ctx : 'id ctx_model_gen) (f : 'id ctx_model_gen -> 'a -> 'id mterm_gen -> 'a) (it : 'id * 'id label_term_gen list) (accu : 'a) : 'a =
-      List.fold_left (fun accu x -> fold_label_term ctx f x accu) accu (snd it)
-    in
-
-    let fold_invariant (ctx : 'id ctx_model_gen) (f : 'id ctx_model_gen -> 'a -> 'id mterm_gen -> 'a) (spec : 'id invariant_gen) (accu : 'a) : 'a =
-      let ctx = {ctx with invariant_id = Some spec.label } in
-      List.fold_left (f ctx) accu spec.formulas
-    in
-
-    let fold_specification (ctx : 'id ctx_model_gen) (f : 'id ctx_model_gen -> 'a -> 'id mterm_gen -> 'a) (spec : 'id specification_gen) (accu : 'a) : 'a =
-      let ctx = { ctx with spec_id = Some spec.name} in
-      accu
-      |> (fun x -> f ctx x spec.formula)
-      |> (fun x -> List.fold_left (fun accu (x : 'id invariant_gen) -> fold_invariant ctx f x accu) x spec.invariants)
-    in
-
-    let fold_variable (ctx : 'id ctx_model_gen) (f : 'id ctx_model_gen -> 'a -> 'id mterm_gen -> 'a) (spec : 'id variable_gen) (accu : 'a) : 'a =
-      accu
-    in
-
-    let ctx = { ctx with formula = true } in
-
-    accu
-    |> fold_left (fold_predicate ctx f) v.predicates
-    |> fold_left (fold_definition ctx f) v.definitions
-    |> fold_left (fold_label_term ctx f) v.lemmas
-    |> fold_left (fold_label_term ctx f) v.theorems
-    |> fold_left (fold_variable ctx f) v.variables
-    |> fold_left (fold_invariantt ctx f) v.invariants
-    |> (fun x -> List.fold_left (fun accu x -> f ctx accu x) x v.effects)
-    |> fold_left (fold_specification ctx f) v.specs
-  ) in
 
   let fold_action (ctx : 'id ctx_model_gen) (f : 'id ctx_model_gen -> 'a -> 'id mterm_gen -> 'a) (a : 'id function__gen) (accu : 'a) : 'a = (
     let accu : 'a = (
@@ -1849,9 +1864,12 @@ module Utils : sig
   val dest_varlocal                      : mterm -> lident
   val is_container                       : type_ -> bool
   val get_key_pos                        : model -> lident -> int
-  val get_invariants                     : model -> (lident * mterm) list -> ident -> (lident * mterm) list
-  val get_formula                        : model -> mterm option -> ident -> mterm option
+  val get_loop_invariants                : model -> (lident * mterm) list -> ident -> (lident * mterm) list
+  val get_formula                       : model -> mterm option -> ident -> mterm option
   val is_post                            : specification -> bool
+  val get_sum_fields                     : model -> ident -> ident list
+  val get_added_removed_sets             : model -> verification option -> ((lident, lident mterm_gen) mterm_node) list
+  val get_storage_invariants             : model -> (ident * ident * mterm) list
 
 end = struct
 
@@ -2116,8 +2134,22 @@ end = struct
     with _ -> true
 
 
-  (* TODO *)
-  let map_verification_terms (m : mterm -> mterm) (v : verification) : verification = v
+  let map_invariant_terms (m : mterm -> mterm) (i : invariant) : invariant = {
+    i with
+    formulas = List.map m i.formulas
+  }
+
+  let map_specification_terms (m : mterm -> mterm) (s : specification) : specification = {
+    s with
+    formula = m s.formula;
+    invariants = List.map (map_invariant_terms m) s.invariants
+  }
+
+  let map_verification_terms (m : mterm -> mterm) (v : verification) : verification = {
+    v with
+    specs = List.map (map_specification_terms m) v.specs
+  }
+
 
   let map_function_terms (m : mterm -> mterm) (f : function__) : function__ = {
     node = begin
@@ -2168,7 +2200,8 @@ end = struct
           acc
       ) (-1)
 
-  let get_invariants m acc (i : ident) : (lident * mterm) list =
+  (* i is the loop label *)
+  let get_loop_invariants m acc (i : ident) : (lident * mterm) list =
     let internal_get (ctx : ctx_model) (acc : (lident * mterm) list) t =
       match ctx.invariant_id with
       | Some v when cmp_ident i (unloc v) ->
@@ -2191,5 +2224,33 @@ end = struct
     match s.mode with
     | Post -> true
     | _ -> false
+
+  let get_sum_fields m a =
+    List.fold_left (fun acc (ai : api_item) ->
+        match ai.node_item with
+        | APIFunction (Sum (asset,field)) when compare a asset = 0 ->
+          acc @ [field]
+        | _ -> acc
+      ) [] m.api_items
+
+  let get_added_removed_sets m v : ((lident,(lident mterm_gen)) mterm_node) list =
+    let rec internal_fold_add_remove ctx acc (term : mterm) =
+      match term.node with
+      | Msetadded e -> acc @ [ Msetadded e ]
+      | Msetremoved e -> acc @ [ Msetremoved e ]
+      | _ -> fold_term (internal_fold_add_remove ctx) acc term in
+    Tools.List.dedup (Option.map_dfl (fun (x : verification) ->
+        fold_verification (mk_ctx_model ()) internal_fold_add_remove x []) [] v)
+
+  (* returns asset name * invariant name * invariant term *)
+  let get_storage_invariants (m : model) : (ident * ident * mterm) list =
+    List.fold_left (fun acc (i : storage_item) ->
+        let n = i.name |> unloc in
+        List.fold_left (fun acc (lt : label_term) ->
+            let inv_name = Tools.Option.fold (fun _ l -> unloc l) "" lt.label in
+            let inv_term = lt.term in
+            acc @ [n, inv_name, inv_term]
+          ) acc i.invariants
+      ) [] m.storage
 
 end

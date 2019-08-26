@@ -122,8 +122,12 @@ module AssetCollection
   | Nil -> true
   end
 
+  val function witness : t
+
   type collection = {
       content : list t
+  } invariant {
+    not (internal_contains (keyf witness) content)
   } invariant {
     unique content
   }
@@ -154,6 +158,7 @@ module AssetCollection
   let function empty = { content = Nil }
 
   let function singleton (a : t) : collection 
+  requires { keyf a <> keyf witness }
   = { content = Cons a Nil; }
 
   axiom mem_singleton: forall k1 k2 : t. mem k1 (singleton k2) -> k1 = k2
@@ -192,12 +197,14 @@ module AssetCollection
 
   (* Storage API *)
 
-  let add (c : collection) (a : t) 
+  let add (c : collection) (a : t)
+  requires { keyf a <> keyf witness } 
   ensures { mem a result }
   ensures { result = union c (singleton a) }
   = { content = Cons a c.content } 
 
   let set (c : collection) (k : key) (a : t) : collection 
+  requires { keyf a <> keyf witness }
   = 
   let rec internal_set (l : list t) (k : key) (a : t) : list t 
   variant { l }
@@ -210,7 +217,6 @@ module AssetCollection
   | Nil -> Nil
   end in
   { content = internal_set c.content k a }
-
 
   let remove (c : collection) (k : key) : collection 
   =
@@ -226,19 +232,18 @@ module AssetCollection
   end in
   { content = internal_remove c.content k }
 
-  let function get (c : collection) (k : key) : option t 
-  ensures { match result with | Some e -> contains k c | None -> true  end }
+  let function get (c : collection) (k : key) : t 
+  ensures { mem result c \/ result = witness }
   =
-  let rec function internal_get (l : list t) (k : key) : option t
+  let rec function internal_get (l : list t) (k : key) : t
   variant { l }
-  ensures { match result with | Some e -> internal_contains k l | None -> true end }
   =
   match l with
   | Cons e tl -> 
     if keyf e = k
-    then Some e
+    then e
     else internal_get tl k
-  | Nil -> None
+  | Nil -> witness
   end in 
   internal_get c.content k 
 
@@ -264,22 +269,19 @@ module AssetCollection
   end in
   { content = internal_unshallow c.content keys }
 
-  let function nth (i : int) (c : collection) : option t
-  requires { 0 <= i < card c } 
-  ensures { match result with | Some e -> mem e c | None -> false end }
+  let function nth (i : int) (c : collection) : t 
+  ensures { mem result c \/ result = witness }
   = 
-  let rec function internal_nth (i : int) (l : list t) : option t
+  let rec function internal_nth (i : int) (l : list t) : t
   variant { l }
-  requires { 0 <= i < length l }
-  ensures { match result with | Some e -> internal_contains (keyf e) l | None -> false end }
   = 
   match l with
-  | Cons e tl -> if i = 0 then Some e else internal_nth (i - 1) tl
-  | Nil -> None
+  | Cons e tl -> if i = 0 then e else internal_nth (i - 1) tl
+  | Nil -> witness
   end in
   internal_nth i c.content
 
-  lemma nth_singleton: forall a : t. nth 0 (singleton a) = Some a
+  lemma nth_singleton: forall a : t. keyf a <> keyf witness -> nth 0 (singleton a) = a
 
   let function proj (c : collection) (projf : t -> int) : list int 
   = 
@@ -311,26 +313,17 @@ module AssetCollection
 
   axiom tail_add: forall c : collection, i : int. 
   0 <= i < card c ->
-  match nth i c with
-  | Some e -> tail (i+1) c = diff (tail i c) (singleton e)
-  | None -> false
-  end
+  tail (i+1) c = diff (tail i c) (singleton (nth i c))
   
   axiom tail_nth: forall c : collection, i j : int.
   0 <= j < card c ->
   0 <= i < card c - j ->
-  match nth i (tail j c) with
-  | Some e1 ->
-    match nth (i+j) c with
-    | Some e2 -> e1 = e2
-    | None -> false
-    end
-  | None -> false
-  end
+  nth i (tail j c) = nth (i+j) c
 
   axiom tail_subset: forall i : int, c : collection. subset (tail i c) c
 
   let function to_coll (l : list t) 
+  requires { forall a : t. lmem (keyf a) (to_ids l) -> keyf a <> keyf witness }
   = { content = l }
   
   goal sanity_check : false
@@ -349,22 +342,18 @@ module Sum
   function diff  container container : container
   predicate subset container container
 
-  let function partial_sum (c : container) (i : int) (j : int) : int = 
-  if 0 <= i < j <= card c then
+  let function sum (c : container) : int = 
     let ref res = 0 in
-    for k = i to j - 1 do
-      res <- res + f c i
+    for k = 0 to card c - 1 do
+      res <- res + f c k
     done;
     res
-  else 0
-
-  let function sum (c : container) : int = partial_sum c 0 (card c) 
 
   (* sum over empty i zero *)
   axiom Sum_def_empty :
-    forall c : container, i j : int. j <= i -> partial_sum c i j = 0
+    forall c : container. card c = 0 -> sum c = 0
 
-  axiom Sum_def_non_empty :
+(*  axiom Sum_def_non_empty :
     forall c: container, i j : int. 0 <= i < j <= card c -> partial_sum c i j = f c i + partial_sum c (i+1) j
 
   lemma Sum_right_extension:
@@ -378,7 +367,7 @@ module Sum
   lemma Sum_eq :
     forall c1 c2 : container, i j : int.
     (forall k : int. i <= k < j -> f c1 k = f c2 k -> partial_sum c1 i j = partial_sum c2 i j)
-
+*)
   lemma sum_union:
     forall c1 c2 : container.
     sum (union c1 c2) = sum c1 + sum c2 - sum (inter c1 c2)
@@ -386,7 +375,7 @@ module Sum
   lemma sum_diff:
     forall c1 c2 : container.
     subset c2 c1 ->
-    sum (diff c1 c2) = sum c1 - sum c2  
+    sum (diff c1 c2) = sum c1 - sum c2 
 
 end
 

@@ -128,6 +128,7 @@ type ('e,'t,'i) abstract_term =
   | Tdiff   of 'i * 'e * 'e
   | Tsubset of 'i * 'e * 'e
   | Tassert of 'e
+  | Ttoiter of 'i * 'i * 'e
   (* set *)
   | Tmem    of 'i * 'e * 'e
   | Tlmem    of 'i * 'e * 'e
@@ -180,6 +181,8 @@ type ('e,'t,'i) abstract_storage_struct = {
 type 'i abstract_clone_subst =
   | Ctype  of 'i * 'i
   | Cval   of 'i * 'i
+  | Cfun   of 'i * 'i
+  | Cpred  of 'i * 'i
 [@@deriving show {with_path = false}]
 
 type ('e,'t,'i) abstract_decl =
@@ -281,6 +284,7 @@ and map_abstract_term
                                 map_e b)
   | Ttry (b,e,c)       -> Ttry (map_e b, e, map_e c)
   | Tassert e          -> Tassert (map_e e)
+  | Ttoiter (a,i,e)    -> Ttoiter (map_i a, map_i i, map_e e)
   | Tvar i             -> Tvar (map_i i)
   | Trecord (e,l)      -> Trecord (Option.map map_e e, List.map (fun (i,v) ->
       (map_i i,map_e v)) l)
@@ -377,6 +381,8 @@ let map_abstract_storage_struct
 let map_abstract_clone_subst (map_i : 'i1 -> 'i2) = function
   | Ctype (i1,i2) -> Ctype (map_i i1, map_i i2)
   | Cval  (i1,i2) -> Cval  (map_i i1, map_i i2)
+  | Cfun  (i1,i2) -> Cfun  (map_i i1, map_i i2)
+  | Cpred  (i1,i2) -> Cpred  (map_i i1, map_i i2)
 
 let map_abstract_decl
     (map_e : 'e1 -> 'e2)
@@ -614,6 +620,7 @@ let compare_abstract_term
     List.for_all2 (compare_abstract_formula cmpe cmpi) l1 l2 && cmpe b1 b2
   | Ttry (b1,e1,c1), Ttry (b2,e2,c2) -> cmpe b1 b2 && compare_exn e1 e2 && cmpe c1 c2
   | Tassert e1, Tassert e2 -> cmpe e1 e2
+  | Ttoiter (a1,i1,e1), Ttoiter (a2,i2,e2) -> cmpi a1 a2 && cmpi i1 i2 && cmpe e1 e2
   | Tvar i1, Tvar i2 -> cmpi i1 i2
   | Trecord (None,l1), Trecord (None,l2) ->
     List.for_all2 (fun (i1,j1) (i2,j2) ->

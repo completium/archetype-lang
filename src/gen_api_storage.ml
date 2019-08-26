@@ -114,25 +114,25 @@ let process_api_storage (model : model) : model =
 
                let criteria_kind () : int =
                  let get_kind = function
-                   | APIStorage   (Get           _) ->  1
-                   | APIStorage   (Set           _) ->  2
-                   | APIStorage   (Add           _) ->  3
-                   | APIStorage   (Remove        _) ->  4
-                   | APIStorage   (Clear         _) ->  5
-                   | APIStorage   (Reverse       _) ->  6
-                   | APIStorage   (UpdateAdd     _) ->  7
-                   | APIStorage   (UpdateRemove  _) ->  8
-                   | APIStorage   (UpdateClear   _) ->  9
-                   | APIStorage   (UpdateReverse _) -> 10
-                   | APIStorage   (ToKeys        _) -> 11
-                   | APIFunction  (Select        _) -> 12
-                   | APIFunction  (Sort          _) -> 13
-                   | APIFunction  (Contains      _) -> 14
-                   | APIFunction  (Nth           _) -> 15
-                   | APIFunction  (Count         _) -> 16
-                   | APIFunction  (Sum           _) -> 17
-                   | APIFunction  (Min           _) -> 18
-                   | APIFunction  (Max           _) -> 19
+                   | APIFunction  (Nth           _) ->  1
+                   | APIFunction  (Count         _) ->  2
+                   | APIFunction  (Sum           _) ->  3
+                   | APIFunction  (Min           _) ->  4
+                   | APIFunction  (Max           _) ->  5
+                   | APIStorage   (Get           _) ->  6
+                   | APIStorage   (Set           _) ->  7
+                   | APIStorage   (Add           _) ->  8
+                   | APIStorage   (Remove        _) ->  9
+                   | APIStorage   (Clear         _) -> 10
+                   | APIStorage   (Reverse       _) -> 11
+                   | APIStorage   (UpdateAdd     _) -> 12
+                   | APIStorage   (UpdateRemove  _) -> 13
+                   | APIStorage   (UpdateClear   _) -> 14
+                   | APIStorage   (UpdateReverse _) -> 15
+                   | APIStorage   (ToKeys        _) -> 16
+                   | APIFunction  (Select        _) -> 17
+                   | APIFunction  (Sort          _) -> 18
+                   | APIFunction  (Contains      _) -> 19
                    | APIContainer (AddItem       _) -> 20
                    | APIContainer (RemoveItem    _) -> 21
                    | APIContainer (ClearItem     _) -> 22

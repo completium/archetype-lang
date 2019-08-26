@@ -59,3 +59,8 @@ let opt_raw   = ref false
 
 let fake_ast = ref false
 let fake_ast2 = ref false
+
+
+let opt_vids : (string list) ref = ref []
+let add_vids s =
+  opt_vids := s::!opt_vids
