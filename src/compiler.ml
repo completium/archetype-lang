@@ -41,13 +41,15 @@ let preprocess_ext (pt : ParseTree.archetype) : ParseTree.archetype =
   then pt
   else pt (* TODO: add extension process *)
 
-let type_ (pt : ParseTree.archetype) : Ast.model =
-  if !Options.fake_ast
-  then Ast.create_miles_with_expiration_ast ()
-  else if !Options.fake_ast2
-  then Ast.create_test_shallow_ast ()
-  else Typing.typing Typing.empty pt
+(* let type_ (pt : ParseTree.archetype) : Ast.model =
+   if !Options.fake_ast
+   then Ast.create_miles_with_expiration_ast ()
+   else if !Options.fake_ast2
+   then Ast.create_test_shallow_ast ()
+   else Typing.typing Typing.empty pt *)
 
+let type_ (pt : ParseTree.archetype) : Ast.model =
+  Typing.typing Typing.empty pt
 
 let generate_target_pt (pt : ParseTree.archetype) : ParseTree.archetype =
   match !Options.target with

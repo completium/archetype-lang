@@ -1030,7 +1030,7 @@ end = struct
 end
 
 (* -------------------------------------------------------------------- *)
-
+(*
 let create_fake_ast () =
   mk_model (dumloc "fake")
     ~variables:[
@@ -1868,3 +1868,4 @@ let create_miles_with_expiration_ast () =
                ~type_:((Tbuiltin VTbool)))
         ]
     ]
+*)
