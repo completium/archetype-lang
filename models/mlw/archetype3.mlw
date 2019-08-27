@@ -127,8 +127,6 @@ module AssetCollection
   type collection = {
       content : list t
   } invariant {
-    not (internal_contains (keyf witness) content)
-  } invariant {
     unique content
   }
 
@@ -141,6 +139,9 @@ module AssetCollection
   let function mem (a : t) (c : collection) 
   = 
   internal_contains (keyf a) c.content
+
+  lemma no_witness : forall c : collection, a : t.
+  mem a c -> keyf a <> keyf witness
 
   let function card (c : collection) : int 
   ensures { result >= 0 }
@@ -165,7 +166,7 @@ module AssetCollection
 
   lemma card_singleton: forall a : t. card (singleton a) = 1
 
-  predicate is_empty (c : collection) = forall m : t. not (mem m c)
+  predicate is_empty (c : collection) = is_nil c.content
 
   lemma mem_empty : is_empty empty
 
@@ -187,6 +188,10 @@ module AssetCollection
   lemma subset_union1: forall c1 c2 : collection. subset c1 (union c1 c2)
 
   lemma subset_union2: forall c1 c2 : collection. subset c2 (union c1 c2)  
+
+  lemma subset_singleton: forall a : t, c : collection.
+  keyf a <> keyf witness ->
+  subset (singleton a) c <-> mem a c
 
   lemma card_union: forall c1 c2 : collection.
   card (union c1 c2) = card c1 + card c2 - card (inter c1 c2)
@@ -233,7 +238,7 @@ module AssetCollection
   { content = internal_remove c.content k }
 
   let function get (c : collection) (k : key) : t 
-  ensures { mem result c \/ result = witness }
+  ensures { mem result c \/ not (contains k c) }
   =
   let rec function internal_get (l : list t) (k : key) : t
   variant { l }
@@ -270,7 +275,7 @@ module AssetCollection
   { content = internal_unshallow c.content keys }
 
   let function nth (i : int) (c : collection) : t 
-  ensures { mem result c \/ result = witness }
+  ensures { 0 <= i < card c -> mem result c /\ keyf result <> keyf witness}
   = 
   let rec function internal_nth (i : int) (l : list t) : t
   variant { l }
@@ -282,6 +287,8 @@ module AssetCollection
   internal_nth i c.content
 
   lemma nth_singleton: forall a : t. keyf a <> keyf witness -> nth 0 (singleton a) = a
+
+  (*lemma nth_valid: forall c : collection, i : int. 0 <= i < card c -> keyf (nth i c) <> keyf witness  *)
 
   let function proj (c : collection) (projf : t -> int) : list int 
   = 
@@ -307,6 +314,11 @@ module AssetCollection
   end in
   { content = internal_tail c.content 0 i }
 
+  lemma tail_mem: forall i j : int, c : collection.
+  0<= i <= j < card c ->
+  mem (nth j c) (tail i c)
+
+  axiom tail_subset: forall i : int, c : collection. subset (tail i c) c
   axiom tail_card: forall c : collection, i : int. 0 <= i < card c -> card (tail i c) = card c - i 
   axiom tail_empty: forall c : collection, i : int.  i >= card c ->  tail i c = empty
   axiom tail_all: forall c : collection. tail 0 c = c 
@@ -319,8 +331,6 @@ module AssetCollection
   0 <= j < card c ->
   0 <= i < card c - j ->
   nth i (tail j c) = nth (i+j) c
-
-  axiom tail_subset: forall i : int, c : collection. subset (tail i c) c
 
   let function to_coll (l : list t) 
   requires { forall a : t. lmem (keyf a) (to_ids l) -> keyf a <> keyf witness }
