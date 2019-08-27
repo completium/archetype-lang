@@ -311,7 +311,11 @@ let pp_model fmt (model : model) =
       Format.fprintf fmt
         "let[@inline] sum_%s_%s (s, l : storage * %a list) : %a =@\n  \
          List.fold (fun (k, accu) ->@\n    \
-         let x = get_%s (s, k) in@\n    \
+         let x = @\n   \
+         match Map.find k s.%s_assets with@\n  \
+         | Some v -> v@\n  \
+         | _ -> failwith \"not_found\" @\n    \
+         in@\n    \
          accu + x.%s@\n  \
          ) l %s@\n"
         an fn pp_btyp tk pp_type t
@@ -327,14 +331,24 @@ let pp_model fmt (model : model) =
          match l with@\n  \
          | [] -> failwith \"empty list\"@\n  \
          | e::t ->@\n  \
-         let init = (get_my_asset (s, e)).%s in@\n    \
+         let x = @\n   \
+         match Map.find e s.%s_assets with@\n  \
+         | Some v -> v@\n  \
+         | _ -> failwith \"not_found\" @\n    \
+         in@\n    \
+         let init = x.%s in@\n    \
          List.fold (fun (k, accu) ->@\n    \
-         let x = get_%s (s, k) in@\n    \
+         let x = @\n   \
+         match Map.find k s.%s_assets with@\n  \
+         | Some v -> v@\n  \
+         | _ -> failwith \"not_found\" @\n    \
+         in@\n    \
          if accu > x.%s@\n  \
          then x.%s@\n  \
          else accu@\n  \
          ) t init@\n"
         an fn pp_btyp tk pp_type t
+        an
         fn
         an
         fn
@@ -348,14 +362,24 @@ let pp_model fmt (model : model) =
          match l with@\n  \
          | [] -> failwith \"empty list\"@\n  \
          | e::t ->@\n  \
-         let init = (get_my_asset (s, e)).%s in@\n    \
+         let x = @\n   \
+         match Map.find e s.%s_assets with@\n  \
+         | Some v -> v@\n  \
+         | _ -> failwith \"not_found\" @\n    \
+         in@\n    \
+         let init = x.%s in@\n    \
          List.fold (fun (k, accu) ->@\n    \
-         let x = get_%s (s, k) in@\n    \
+         let x = @\n   \
+         match Map.find k s.%s_assets with@\n  \
+         | Some v -> v@\n  \
+         | _ -> failwith \"not_found\" @\n    \
+         in@\n    \
          if accu < x.%s@\n  \
          then x.%s@\n  \
          else accu@\n  \
          ) t init@\n"
         an fn pp_btyp tk pp_type t
+        an
         fn
         an
         fn
