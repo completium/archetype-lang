@@ -127,8 +127,6 @@ module AssetCollection
   type collection = {
       content : list t
   } invariant {
-    not (internal_contains (keyf witness) content)
-  } invariant {
     unique content
   }
 
@@ -141,6 +139,9 @@ module AssetCollection
   let function mem (a : t) (c : collection) 
   = 
   internal_contains (keyf a) c.content
+
+  lemma no_witness : forall c : collection, a : t.
+  mem a c -> keyf a <> keyf witness
 
   let function card (c : collection) : int 
   ensures { result >= 0 }
@@ -165,7 +166,7 @@ module AssetCollection
 
   lemma card_singleton: forall a : t. card (singleton a) = 1
 
-  predicate is_empty (c : collection) = forall m : t. not (mem m c)
+  predicate is_empty (c : collection) = is_nil c.content
 
   lemma mem_empty : is_empty empty
 
@@ -187,6 +188,10 @@ module AssetCollection
   lemma subset_union1: forall c1 c2 : collection. subset c1 (union c1 c2)
 
   lemma subset_union2: forall c1 c2 : collection. subset c2 (union c1 c2)  
+
+  lemma subset_singleton: forall a : t, c : collection.
+  keyf a <> keyf witness ->
+  subset (singleton a) c <-> mem a c
 
   lemma card_union: forall c1 c2 : collection.
   card (union c1 c2) = card c1 + card c2 - card (inter c1 c2)
@@ -233,7 +238,7 @@ module AssetCollection
   { content = internal_remove c.content k }
 
   let function get (c : collection) (k : key) : t 
-  ensures { mem result c \/ result = witness }
+  ensures { mem result c \/ not (contains k c) }
   =
   let rec function internal_get (l : list t) (k : key) : t
   variant { l }
@@ -270,7 +275,7 @@ module AssetCollection
   { content = internal_unshallow c.content keys }
 
   let function nth (i : int) (c : collection) : t 
-  ensures { mem result c \/ result = witness }
+  ensures { 0 <= i < card c -> mem result c /\ keyf result <> keyf witness}
   = 
   let rec function internal_nth (i : int) (l : list t) : t
   variant { l }
@@ -282,6 +287,8 @@ module AssetCollection
   internal_nth i c.content
 
   lemma nth_singleton: forall a : t. keyf a <> keyf witness -> nth 0 (singleton a) = a
+
+  (*lemma nth_valid: forall c : collection, i : int. 0 <= i < card c -> keyf (nth i c) <> keyf witness  *)
 
   let function proj (c : collection) (projf : t -> int) : list int 
   = 
@@ -307,6 +314,11 @@ module AssetCollection
   end in
   { content = internal_tail c.content 0 i }
 
+  lemma tail_mem: forall i j : int, c : collection.
+  0<= i <= j < card c ->
+  mem (nth j c) (tail i c)
+
+  axiom tail_subset: forall i : int, c : collection. subset (tail i c) c
   axiom tail_card: forall c : collection, i : int. 0 <= i < card c -> card (tail i c) = card c - i 
   axiom tail_empty: forall c : collection, i : int.  i >= card c ->  tail i c = empty
   axiom tail_all: forall c : collection. tail 0 c = c 
@@ -320,10 +332,7 @@ module AssetCollection
   0 <= i < card c - j ->
   nth i (tail j c) = nth (i+j) c
 
-  axiom tail_subset: forall i : int, c : collection. subset (tail i c) c
-
   let function to_coll (l : list t) 
-  requires { forall a : t. lmem (keyf a) (to_ids l) -> keyf a <> keyf witness }
   = { content = l }
   
   goal sanity_check : false
@@ -334,40 +343,42 @@ module Sum
 
   use  int.Int
   type container
+  type t
 
   val function f container int : int
+  val function field t : int
+  val function nth int container : t
   val function card container : int
   function inter container container : container
   function union container container : container
   function diff  container container : container
   predicate subset container container
+  predicate is_empty container
+  val function singleton t : container
+  val function witness : t
+  val function keyf t : int
 
   let function sum (c : container) : int = 
     let ref res = 0 in
-    for k = 0 to card c - 1 do
-      res <- res + f c k
+    for i = 0 to card c - 1 do
+      res <- res + f c i
     done;
     res
 
-  (* sum over empty i zero *)
-  axiom Sum_def_empty :
+  (* sum over empty is zero *)
+  lemma sum_empty:
     forall c : container. card c = 0 -> sum c = 0
 
-(*  axiom Sum_def_non_empty :
-    forall c: container, i j : int. 0 <= i < j <= card c -> partial_sum c i j = f c i + partial_sum c (i+1) j
-
-  lemma Sum_right_extension:
-    forall c : container, i j : int.
-    i < j -> partial_sum c i j = partial_sum c i (j-1) + f c (j-1)
-
-  lemma Sum_transitivity :
-    forall c : container, i k j : int. i <= k <= j ->
-    partial_sum c i j = partial_sum c i k + partial_sum c k j
-
-  lemma Sum_eq :
-    forall c1 c2 : container, i j : int.
-    (forall k : int. i <= k < j -> f c1 k = f c2 k -> partial_sum c1 i j = partial_sum c2 i j)
-*)
+  lemma sum_ge_zero:
+    forall c : container.
+    not (is_empty c) ->
+    (forall i : int. 0 <= i < card c -> f c i >= 0) ->
+    sum c >= 0
+  
+  lemma sum_singleton: forall a : t.
+  keyf a <> keyf witness ->
+  sum (singleton a) = field a
+  
   lemma sum_union:
     forall c1 c2 : container.
     sum (union c1 c2) = sum c1 + sum c2 - sum (inter c1 c2)
