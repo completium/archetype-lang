@@ -1082,49 +1082,49 @@ let rec for_xexpr (mode : emode_t) (env : env) ?(ety : M.ptyp option) (tope : PT
       end
 
     | Emulticomp (e, l) ->
-        let e = for_xexpr env e in
-        let l = List.map (snd_map (for_xexpr env)) l in
+      let e = for_xexpr env e in
+      let l = List.map (snd_map (for_xexpr env)) l in
 
-        let _, aout =
-          List.fold_left_map (fun e ({ pldesc = op }, e') ->
+      let _, aout =
+        List.fold_left_map (fun e ({ pldesc = op }, e') ->
             match e.M.type_, e'.M.type_ with
             | Some ty, Some ty' ->
-                let filter (sig_ : opsig) =
-                  if 2 <> List.length sig_.osl_sig then false else
+              let filter (sig_ : opsig) =
+                if 2 <> List.length sig_.osl_sig then false else
                   List.for_all2 Type.equal [ty; ty'] sig_.osl_sig in
 
-                let aout =
-                  match List.filter filter (List.assoc_all (`Cmp op) opsigs) with
-                  | [] ->
-                    Env.emit_error env (loc tope, NoMatchingOperator);
-                    None
+              let aout =
+                match List.filter filter (List.assoc_all (`Cmp op) opsigs) with
+                | [] ->
+                  Env.emit_error env (loc tope, NoMatchingOperator);
+                  None
 
-                  | _::_::_ ->
-                    Env.emit_error env (loc tope, MultipleMatchingOperator);
-                    None
+                | _::_::_ ->
+                  Env.emit_error env (loc tope, MultipleMatchingOperator);
+                  None
 
-                  | [sig_] ->
-                    Some (mk_sp (Some sig_.osl_ret) (M.Pcomp (tt_cmp_operator op, e, e')))
+                | [sig_] ->
+                  Some (mk_sp (Some sig_.osl_ret) (M.Pcomp (tt_cmp_operator op, e, e')))
 
-                in (e', aout)
+              in (e', aout)
 
             | _, _ ->
-                e', None)
+              e', None)
           e l in
 
-        begin match List.pmap (fun x -> x) aout with
+      begin match List.pmap (fun x -> x) aout with
         | [] ->
-            let lit = M.{ node  = M.BVbool true;
-                          type_ = Some M.vtbool;
-                          loc   = loc tope;
-                          label = None; } in
-            mk_sp (Some M.vtbool) (M.Plit lit)
+          let lit = M.{ node  = M.BVbool true;
+                        type_ = Some M.vtbool;
+                        loc   = loc tope;
+                        label = None; } in
+          mk_sp (Some M.vtbool) (M.Plit lit)
 
         | e :: es ->
-            List.fold_left (fun e e' ->
+          List.fold_left (fun e e' ->
               (mk_sp (Some M.vtbool) (M.Plogical (tt_logical_operator And, e, e'))))
             e es
-        end
+      end
 
     | Eapp (Foperator { pldesc = op }, args) -> begin
         let args = List.map (for_xexpr env) args in
@@ -1383,8 +1383,8 @@ and for_gen_method_call mode env theloc (the, m, args) =
       match aty with
       | `Pk ->
         let _, pk = List.find
-                      (fun (x, _) -> unloc x = unloc asset.as_pk)
-                      asset.as_fields in
+            (fun (x, _) -> unloc x = unloc asset.as_pk)
+            asset.as_fields in
         M.AExpr (for_xexpr mode env ~ety:pk arg)
 
       | `The ->
@@ -2029,14 +2029,14 @@ let for_asset_decl (env : env) (decl : PT.asset_decl loced) =
 
     let do1 (pk, sortk) = function
       | PT.AOidentifiedby newpk ->
-          if Option.is_some pk then
-            Env.emit_error env (loc newpk, DuplicatedPKey);
-          let newpk = dokey newpk in
-          ((if Option.is_some pk then pk else newpk), sortk)
+        if Option.is_some pk then
+          Env.emit_error env (loc newpk, DuplicatedPKey);
+        let newpk = dokey newpk in
+        ((if Option.is_some pk then pk else newpk), sortk)
 
       | PT.AOsortedby newsortk ->
-          let newsortk = dokey newsortk in
-          (pk, Option.fold (fun sortk newsortk -> newsortk :: sortk) sortk newsortk)
+        let newsortk = dokey newsortk in
+        (pk, Option.fold (fun sortk newsortk -> newsortk :: sortk) sortk newsortk)
 
     in List.fold_left do1 (None, []) opts in
 
@@ -2045,7 +2045,7 @@ let for_asset_decl (env : env) (decl : PT.asset_decl loced) =
   let env, invs =
     let for1 env = function
       | PT.APOconstraints invs ->
-          Env.inscope env (fun env ->
+        Env.inscope env (fun env ->
             let env =
               List.fold_left (fun env { pldesc = (f, fty, _) } ->
                   Option.fold (fun env fty -> Env.Local.push env (f, fty)) env fty)
@@ -2053,7 +2053,7 @@ let for_asset_decl (env : env) (decl : PT.asset_decl loced) =
             in for_xlbls_formula env invs)
 
       | _ ->
-          env, []
+        env, []
     in List.fold_left_map for1 env invs in
 
   if Env.Asset.exists env (unloc x) then begin
@@ -2080,8 +2080,8 @@ let for_asset_decl (env : env) (decl : PT.asset_decl loced) =
         as_name   = x;
         as_fields = List.map get_field_type fields;
         as_pk     = Option.get_fdfl
-                      (fun () -> L.lmap proj3_1 (List.hd fields))
-                      pk;
+            (fun () -> L.lmap proj3_1 (List.hd fields))
+            pk;
         as_sortk  = sortk;
         as_invs   = List.flatten invs;
       } in (Env.Asset.push env decl, Some decl)
@@ -2232,7 +2232,7 @@ let assets_of_adecls adecls =
     M.{ name   = decl.as_name;
         fields = List.map for_field decl.as_fields;
         key    = Some decl.as_pk;
-        sort   = [];             (* FIXME *)
+        sort   = decl.as_sortk;
         state  = None;           (* FIXME *)
         role   = false;          (* FIXME *)
         init   = None;           (* FIXME *)
@@ -2278,24 +2278,24 @@ let verifications_of_iverifications =
         let for_inv (lbl, inv) =
           M.{ label = lbl; formulas = inv }
         in
-          M.{ name       = x;
-              formula    = e;
-              invariants = List.map for_inv invs; }
+        M.{ name       = x;
+            formula    = e;
+            invariants = List.map for_inv invs; }
       in { env with M.specs = env.specs @ [spec] }
 
     | `Assert (x, l, form, invs) ->
-        let asst =
-          let for_inv (lbl, inv) =
-            M.{ label = lbl; formulas = inv }
-          in
-            M.{ name       = x;
-                label      = l;
-                formula    = form;
-                invariants = List.map for_inv invs; }
-        in { env with M.asserts = env.asserts @ [asst] }
+      let asst =
+        let for_inv (lbl, inv) =
+          M.{ label = lbl; formulas = inv }
+        in
+        M.{ name       = x;
+            label      = l;
+            formula    = form;
+            invariants = List.map for_inv invs; }
+      in { env with M.asserts = env.asserts @ [asst] }
 
     | _ ->
-        assert false
+      assert false
 
   in fun iverifs -> List.fold_left do1 env0 iverifs
 
@@ -2304,18 +2304,18 @@ let transactions_of_tdecls tdecls =
   let for_calledby cb : M.rexpr option =
     match cb with [] -> None | c :: cb ->
 
-    let for1 = fun x ->
-      let name = M.{ node = M.Qident x; type_ = None; label = None; loc = loc x; } in
-      M.{ node  = M.Rqualid name;
-          type_ = None;
-          label = None;
-          loc   = loc x } in
-    Some (List.fold_left (fun acc c' ->
-            M.{ node  = M.Ror (acc, for1 c');
-                type_ = None;
-                label = None;
-                loc   = L.dummy; }) (for1 c) cb)
-    in
+      let for1 = fun x ->
+        let name = M.{ node = M.Qident x; type_ = None; label = None; loc = loc x; } in
+        M.{ node  = M.Rqualid name;
+            type_ = None;
+            label = None;
+            loc   = loc x } in
+      Some (List.fold_left (fun acc c' ->
+          M.{ node  = M.Ror (acc, for1 c');
+              type_ = None;
+              label = None;
+              loc   = L.dummy; }) (for1 c) cb)
+  in
 
 
   let for1 tdecl =

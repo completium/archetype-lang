@@ -94,7 +94,7 @@ process () {
 	      echo -e "    \033[31m KO \033[0m"
         NB_ERR=$((${NB_ERR} + 1))
     fi
-    #rm -f ${OUT_LIQ} ${OUT_MLW}
+    rm -f ${OUT_LIQ} ${OUT_MLW}
 }
 
 printf '%-48s%s' '' '  PARSE   AST    MODEL  EX_OUT'
