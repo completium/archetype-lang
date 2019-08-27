@@ -11,6 +11,7 @@ NB_EXEC_OUTPUT="0"
 NB_EXEC_COMPIL="0"
 NB_WHYML_OUTPUT="0"
 NB_WHYML_COMPIL="0"
+WITH_EX="0"
 
 process () {
     printf '%-50s' $1
@@ -46,19 +47,23 @@ process () {
             RET=`echo $?`
             if [ ${RET} -eq 0 ]; then
 	            echo -ne "    \033[32m OK \033[0m"
-                ${LIQUIDITY_BIN} ${OUT_LIQ} > /dev/null 2> /dev/null
-                RET=`echo $?`
-                if [ ${RET} -eq 0 ]; then
-	                echo -ne "    \033[32m OK \033[0m"
-                else
-	                echo -ne "    \033[31m KO \033[0m"
-                    NB_EXEC_COMPIL=$((${NB_EXEC_COMPIL} + 1))
+                if [ ${WITH_EX} -eq 1 ]; then
+                    ${LIQUIDITY_BIN} ${OUT_LIQ} > /dev/null 2> /dev/null
+                    RET=`echo $?`
+                    if [ ${RET} -eq 0 ]; then
+	                    echo -ne "    \033[32m OK \033[0m"
+                    else
+	                    echo -ne "    \033[31m KO \033[0m"
+                        NB_EXEC_COMPIL=$((${NB_EXEC_COMPIL} + 1))
+                    fi
                 fi
             else
 	            echo -ne "    \033[31m KO \033[0m"
-                echo -ne "    \033[31m KO \033[0m"
                 NB_EXEC_OUTPUT=$((${NB_EXEC_OUTPUT} + 1))
-                NB_EXEC_COMPIL=$((${NB_EXEC_COMPIL} + 1))
+                if [ ${WITH_EX} -eq 1 ]; then
+                    echo -ne "    \033[31m KO \033[0m"
+                    NB_EXEC_COMPIL=$((${NB_EXEC_COMPIL} + 1))
+                fi
             fi
 
 
@@ -67,18 +72,18 @@ process () {
             RET=`echo $?`
             if [ ${RET} -eq 0 ]; then
 	            echo -ne "    \033[32m OK \033[0m"
-                ${WHY3BIN} prove ${OUT_MLW} > /dev/null 2> /dev/null
-            RET=`echo $?`
-            if [ ${RET} -eq 0 ]; then
-	            echo -ne "    \033[32m OK \033[0m"
+                ${WHY3BIN} prove -L ./models/mlw ${OUT_MLW} > /dev/null 2> /dev/null
+                RET=`echo $?`
+                if [ ${RET} -eq 0 ]; then
+	                echo -ne "    \033[32m OK \033[0m"
+                else
+	                echo -ne "    \033[31m KO \033[0m"
+                    NB_WHYML_COMPIL=$((${NB_WHYML_COMPIL} + 1))
+                fi
             else
 	            echo -ne "    \033[31m KO \033[0m"
-                NB_WHYML_COMPIL=$((${NB_WHYML_COMPIL} + 1))
-            fi
-            else
-	            echo -ne "    \033[31m KO \033[0m"
-                echo -ne "    \033[31m KO \033[0m"
                 NB_WHYML_OUTPUT=$((${NB_WHYML_OUTPUT} + 1))
+                echo -ne "    \033[31m KO \033[0m"
                 NB_WHYML_COMPIL=$((${NB_WHYML_COMPIL} + 1))
             fi
         fi
@@ -89,10 +94,14 @@ process () {
 	      echo -e "    \033[31m KO \033[0m"
         NB_ERR=$((${NB_ERR} + 1))
     fi
-    rm -f ${OUT_LIQ} ${OUT_MLW}
+    #rm -f ${OUT_LIQ} ${OUT_MLW}
 }
 
-printf '%-48s%s\n' '' '  PARSE   AST    MODEL  EX_OUT  EX_COMP  WHY_OUT  WHY_COMP'
+printf '%-48s%s' '' '  PARSE   AST    MODEL  EX_OUT'
+if [ ${WITH_EX} -eq 1 ]; then
+    printf '  EX_COMP'
+fi
+printf '  WHY_OUT  WHY_COMP\n'
 
 for i in contracts/*.arl; do
   process $i
