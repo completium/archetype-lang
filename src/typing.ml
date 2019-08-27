@@ -1096,11 +1096,11 @@ let rec for_xexpr (mode : emode_t) (env : env) ?(ety : M.ptyp option) (tope : PT
                   | [] ->
                     Env.emit_error env (loc tope, NoMatchingOperator);
                     None
-      
+
                   | _::_::_ ->
                     Env.emit_error env (loc tope, MultipleMatchingOperator);
                     None
-        
+
                   | [sig_] ->
                     Some (mk_sp (Some sig_.osl_ret) (M.Pcomp (tt_cmp_operator op, e, e')))
 
@@ -1724,7 +1724,7 @@ let rec for_instruction (env : env) (i : PT.expr) : env * M.instruction =
                   else env) env lbl
           in for_instruction env i) in
 
-      env, mki (M.Ifor (x, e, i))
+      env, mki (M.Ifor (x, e, i)) ?label:(Option.map unloc lbl)
 
     | Erequire e ->
       let e = for_formula env e in
