@@ -12,6 +12,7 @@ type currency =
 type container =
   | Collection
   | Partition
+  | List
 [@@deriving show {with_path = false}]
 
 type btyp =

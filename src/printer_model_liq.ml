@@ -83,6 +83,7 @@ let pp_model fmt (model : model) =
   let pp_container fmt = function
     | Collection -> Format.fprintf fmt "list"
     | Partition  -> Format.fprintf fmt "list"
+    | List       -> Format.fprintf fmt "list"
   in
 
   let rec pp_type fmt t =
