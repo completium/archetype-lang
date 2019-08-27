@@ -2042,8 +2042,6 @@ let for_asset_decl (env : env) (decl : PT.asset_decl loced) =
 
   let sortk = List.rev sortk in
 
-  Format.eprintf "%d\n%!" (List.length sortk);
-
   let env, invs =
     let for1 env = function
       | PT.APOconstraints invs ->
