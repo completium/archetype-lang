@@ -67,6 +67,7 @@ type error_desc =
   | DuplicatedFieldInAssetDecl         of ident
   | DuplicatedFieldInRecordLiteral     of ident
   | DuplicatedInitMarkForCtor
+  | DuplicatedPKey
   | DuplicatedVarDecl                  of ident
   | AnonymousFieldInEffect
   | EmptyStateDecl
@@ -316,6 +317,7 @@ type assetdecl = {
   as_name   : M.lident;
   as_fields : (M.lident * M.ptyp) list;
   as_pk     : M.lident;
+  as_sortk  : M.lident list;
   as_invs   : (M.lident option * M.pterm) list;
 }
 
@@ -1380,7 +1382,9 @@ and for_gen_method_call mode env theloc (the, m, args) =
     let doarg arg (aty : mthtyp) =
       match aty with
       | `Pk ->
-        let pk = List.assoc asset.as_pk asset.as_fields in
+        let _, pk = List.find
+                      (fun (x, _) -> unloc x = unloc asset.as_pk)
+                      asset.as_fields in
         M.AExpr (for_xexpr mode env ~ety:pk arg)
 
       | `The ->
@@ -1993,7 +1997,7 @@ let for_varfuns_decl (env : env) (decls : varfun loced list) =
 
 (* -------------------------------------------------------------------- *)
 let for_asset_decl (env : env) (decl : PT.asset_decl loced) =
-  let (x, fields, _, invs, _, _) = unloc decl in
+  let (x, fields, opts, invs, _, _) = unloc decl in
 
   let for_field field =
     let PT.Ffield (f, fty, init, _) = unloc field in
@@ -2008,7 +2012,51 @@ let for_asset_decl (env : env) (decl : PT.asset_decl loced) =
        Env.emit_error env (lc, DuplicatedFieldInAssetDecl name))
     (List.find_dup (fun x -> proj3_1 (unloc x)) fields);
 
+  let get_field name =
+    List.Exn.find
+      (fun { pldesc = (x, _, _) } -> x = name)
+      fields
+  in
+
   (* FIXME: check for duplicated type name? *)
+
+  let pk, sortk =
+    let dokey key =
+      if Option.is_none (get_field (unloc key)) then begin
+        Env.emit_error env (loc key, UnknownFieldName (unloc key));
+        None
+      end else Some key in
+
+    let do1 (pk, sortk) = function
+      | PT.AOidentifiedby newpk ->
+          if Option.is_some pk then
+            Env.emit_error env (loc newpk, DuplicatedPKey);
+          let newpk = dokey newpk in
+          ((if Option.is_some pk then pk else newpk), sortk)
+
+      | PT.AOsortedby newsortk ->
+          let newsortk = dokey newsortk in
+          (pk, Option.fold (fun sortk newsortk -> newsortk :: sortk) sortk newsortk)
+
+    in List.fold_left do1 (None, []) opts in
+
+  let sortk = List.rev sortk in
+
+  Format.eprintf "%d\n%!" (List.length sortk);
+
+  let env, invs =
+    let for1 env = function
+      | PT.APOconstraints invs ->
+          Env.inscope env (fun env ->
+            let env =
+              List.fold_left (fun env { pldesc = (f, fty, _) } ->
+                  Option.fold (fun env fty -> Env.Local.push env (f, fty)) env fty)
+                env fields
+            in for_xlbls_formula env invs)
+
+      | _ ->
+          env, []
+    in List.fold_left_map for1 env invs in
 
   if Env.Asset.exists env (unloc x) then begin
     Env.emit_error env (loc x, DuplicatedAssetName (unloc x));
@@ -2029,25 +2077,14 @@ let for_asset_decl (env : env) (decl : PT.asset_decl loced) =
       in (mkloc loc x, Option.get_fdfl (fun () -> raise E.Bailout) ty)
     in
 
-    let env, invs =
-      let for1 env = function
-        | PT.APOconstraints invs ->
-            Env.inscope env (fun env ->
-              let env =
-                List.fold_left (fun env { pldesc = (f, fty, _) } ->
-                    Option.fold (fun env fty -> Env.Local.push env (f, fty)) env fty)
-                  env fields
-              in for_xlbls_formula env invs)
-
-        | _ ->
-            env, []
-      in List.fold_left_map for1 env invs in
-
     try
       let decl = {
         as_name   = x;
         as_fields = List.map get_field_type fields;
-        as_pk     = L.lmap proj3_1 (List.hd fields);
+        as_pk     = Option.get_fdfl
+                      (fun () -> L.lmap proj3_1 (List.hd fields))
+                      pk;
+        as_sortk  = sortk;
         as_invs   = List.flatten invs;
       } in (Env.Asset.push env decl, Some decl)
     with E.Bailout -> (env, None)
