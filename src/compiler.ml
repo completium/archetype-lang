@@ -62,6 +62,7 @@ let generate_target_pt (pt : ParseTree.archetype) : ParseTree.archetype =
 
 let generate_model       = Gen_model.to_model
 let shallow_asset        = Gen_shallow_asset.shallow_asset
+let extend_iter          = Gen_transform.extend_loop_iter
 let split_key_values     = Gen_split_key_values.split_key_values
 let remove_side_effect   = Gen_reduce.reduce
 let generate_api_storage = Gen_api_storage.generate_api_storage
@@ -156,6 +157,7 @@ let generate_target model =
 
   | Whyml ->
     model
+    |> extend_iter
     |> shallow_asset
     |> generate_api_storage
     |> output_whyml

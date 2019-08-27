@@ -306,7 +306,7 @@ let methods : (string * method_) list =
     ("added"       , mk M.Cadded        `Pure   `Total   ([             ], Some (`SubColl)));
     ("removed"     , mk M.Cremoved      `Pure   `Total   ([             ], Some (`SubColl)));
     ("iterated"    , mk M.Citerated     `Pure   `Total   ([             ], Some (`SubColl)));
-    ("toiterate"   , mk M.Ctoiterate    `Pure   `Total   ([             ], Some (`SubColl)));
+    ("to_iter"     , mk M.Ctoiterate    `Pure   `Total   ([             ], Some (`SubColl)));
   ]
 
 let methods = Mid.of_list methods
