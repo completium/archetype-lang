@@ -333,7 +333,6 @@ module AssetCollection
   nth i (tail j c) = nth (i+j) c
 
   let function to_coll (l : list t) 
-  requires { forall a : t. lmem (keyf a) (to_ids l) -> keyf a <> keyf witness }
   = { content = l }
   
   goal sanity_check : false
@@ -344,40 +343,42 @@ module Sum
 
   use  int.Int
   type container
+  type t
 
   val function f container int : int
+  val function field t : int
+  val function nth int container : t
   val function card container : int
   function inter container container : container
   function union container container : container
   function diff  container container : container
   predicate subset container container
+  predicate is_empty container
+  val function singleton t : container
+  val function witness : t
+  val function keyf t : int
 
   let function sum (c : container) : int = 
     let ref res = 0 in
-    for k = 0 to card c - 1 do
-      res <- res + f c k
+    for i = 0 to card c - 1 do
+      res <- res + f c i
     done;
     res
 
-  (* sum over empty i zero *)
-  axiom Sum_def_empty :
+  (* sum over empty is zero *)
+  lemma sum_empty:
     forall c : container. card c = 0 -> sum c = 0
 
-(*  axiom Sum_def_non_empty :
-    forall c: container, i j : int. 0 <= i < j <= card c -> partial_sum c i j = f c i + partial_sum c (i+1) j
-
-  lemma Sum_right_extension:
-    forall c : container, i j : int.
-    i < j -> partial_sum c i j = partial_sum c i (j-1) + f c (j-1)
-
-  lemma Sum_transitivity :
-    forall c : container, i k j : int. i <= k <= j ->
-    partial_sum c i j = partial_sum c i k + partial_sum c k j
-
-  lemma Sum_eq :
-    forall c1 c2 : container, i j : int.
-    (forall k : int. i <= k < j -> f c1 k = f c2 k -> partial_sum c1 i j = partial_sum c2 i j)
-*)
+  lemma sum_ge_zero:
+    forall c : container.
+    not (is_empty c) ->
+    (forall i : int. 0 <= i < card c -> f c i >= 0) ->
+    sum c >= 0
+  
+  lemma sum_singleton: forall a : t.
+  keyf a <> keyf witness ->
+  sum (singleton a) = field a
+  
   lemma sum_union:
     forall c1 c2 : container.
     sum (union c1 c2) = sum c1 + sum c2 - sum (inter c1 c2)

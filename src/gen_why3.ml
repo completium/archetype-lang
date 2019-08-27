@@ -83,24 +83,36 @@ let mk_trace_clone = Dclone (["archetype";"Trace"], "Tr",
 
 let mk_sum_clone_id a f = (String.capitalize_ascii a) ^ (String.capitalize_ascii f)
 
-let mk_sum_clone m asset field =
-  let asset = String.capitalize_ascii asset in
+let mk_sum_clone m asset key field =
+  let cap_asset = String.capitalize_ascii asset in
   Dclone ([gArchetypeDir;gArchetypeSum],
           mk_sum_clone_id asset field,
           [Ctype ("container",
-                  asset^".collection");
+                  cap_asset^".collection");
+           Ctype ("t",
+                  asset);
            Cval ("f",
                  "get_"^field);
+           Cval ("field",
+                 field);
            Cval ("card",
-                 asset^".card");
+                 cap_asset^".card");
            Cfun ("union",
-                 asset^".union");
+                 cap_asset^".union");
            Cfun ("inter",
-                 asset^".inter");
+                 cap_asset^".inter");
            Cfun ("diff",
-                 asset^".diff");
+                 cap_asset^".diff");
+           Cpred("is_empty",
+                 cap_asset^".is_empty");
            Cpred("subset",
-                 asset^".subset")
+                 cap_asset^".subset");
+           Cval ("singleton",
+                 cap_asset^".singleton");
+           Cval ("witness",
+                 cap_asset^".witness");
+           Cval ("keyf",
+                 key);
           ])
 
 let mk_get_field_from_pos asset field = Dfun {
@@ -1078,8 +1090,9 @@ let mk_storage_api (m : M.model) records =
         let mlw_test = map_mterm m init_ctx test in
         acc @ [ mk_select m asset test (mlw_test |> unloc_term) sc.only_formula ]
       | M.APIFunction (Sum (asset,field)) when compare asset "todo" <> 0 ->
+        let key      = M.Utils.get_asset_key m (dumloc asset) |> fst in
         acc @ [ mk_get_field_from_pos asset field;
-                mk_sum_clone m asset field ]
+                mk_sum_clone m asset key field ]
       | M.APIFunction (Unshallow n) ->
         let t         =  M.Utils.get_asset_key m (dumloc n) |> snd |> map_btype in
         acc @ [ mk_unshallow n t ]
