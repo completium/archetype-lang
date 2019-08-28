@@ -1,7 +1,6 @@
 open Location
 open Ident
 open Tools
-open Gen_transform
 
 module A = Ast
 module M = Model
@@ -197,8 +196,8 @@ let to_model (ast : A.model) : M.model =
       assert false
 
     | A.Ptuple l                             -> M.Mtuple (List.map f l)
-    | A.Pquantifer (Forall, i, (_, typ), term)    -> M.Mforall (i, ptyp_to_type typ, f term)
-    | A.Pquantifer (Exists, i, (_, typ), term)    -> M.Mexists (i, ptyp_to_type typ, f term)
+    | A.Pquantifer (Forall, i, (coll, typ), term)    -> M.Mforall (i, ptyp_to_type typ, Option.map f coll, f term)
+    | A.Pquantifer (Exists, i, (coll, typ), term)    -> M.Mexists (i, ptyp_to_type typ, Option.map f coll, f term)
 
     | A.Pcall (Some p, A.Cconst A.Cbefore,    []) -> M.Msetbefore    (f p)
     | A.Pcall (Some p, A.Cconst A.Cunmoved,   []) -> M.Msetunmoved   (f p)
@@ -968,4 +967,3 @@ let to_model (ast : A.model) : M.model =
   in
 
   M.mk_model ~info:info ~decls:decls ~functions:functions ~verification:verification storage name
-  |> reduce_forall

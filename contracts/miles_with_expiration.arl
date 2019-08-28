@@ -51,7 +51,7 @@ action consume (a : address) (quantity : int) = {
     specification p3 = {
       forall m in mile.removed, m.expiration >= now
       invariants for loop {
-        ow.miles.removed.subset by_expiration
+        mile.removed.subset by_expiration
       }
     }
 
@@ -65,6 +65,8 @@ action consume (a : address) (quantity : int) = {
 
   called by admin
 
+  require { r2 : quantity >= 0  }
+
   effect {
     let ow = owner.get a in
     let by_expiration = ow.miles.select(the.expiration > now) in
@@ -75,11 +77,8 @@ action consume (a : address) (quantity : int) = {
       then (
         if m.amount > remainder
         then (
-          remainder := 0;  (* this should be after instruction below
-                              this is to demonstrate verification
-                              capacity to not verify contract in this
-                              state *)
-          mile.update m.id { amount  -= remainder }
+          mile.update m.id { amount  -= remainder };
+          remainder := 0
         )
         else if m.amount = remainder
         then (

@@ -205,8 +205,8 @@ type ('id, 'term) mterm_node  =
   (* *)
   | Mtokeys       of ident * 'term
   (* quantifiers *)
-  | Mforall       of 'id * type_ * 'term
-  | Mexists       of 'id * type_ * 'term
+  | Mforall       of 'id * type_ * 'term option * 'term
+  | Mexists       of 'id * type_ * 'term option * 'term
   (* security predicates *)
   | Msetbefore    of 'term
   | Msetunmoved   of 'term
@@ -851,8 +851,8 @@ let cmp_mterm_node
     | Mbreak, Mbreak                                                                   -> true
     | Massert x1, Massert x2                                                           -> cmp x1 x2
     | Mreturn x1, Mreturn x2                                                           -> cmp x1 x2
-    | Mforall (i1, t1, e1), Mforall (i2, t2, e2)                                       -> cmpi i1 i2 && cmp_type t1 t2 && cmp e1 e2
-    | Mexists (i1, t1, e1), Mexists (i2, t2, e2)                                       -> cmpi i1 i2 && cmp_type t1 t2 && cmp e1 e2
+    | Mforall (i1, t1, t2, e1), Mforall (i2, t3, t4, e2)                               -> cmpi i1 i2 && cmp_type t1 t3 && Option.cmp cmp t2 t4 && cmp e1 e2
+    | Mexists (i1, t1, t2, e1), Mforall (i2, t3, t4, e2)                               -> cmpi i1 i2 && cmp_type t1 t3 && Option.cmp cmp t2 t4 && cmp e1 e2
     | Msetbefore e1, Msetbefore e2                                                     -> cmp e1 e2
     | Msetunmoved e1, Msetunmoved e2                                                   -> cmp e1 e2
     | Msetadded e1, Msetadded e2                                                       -> cmp e1 e2
@@ -865,6 +865,10 @@ let cmp_mterm_node
     | MsecMayBePerformedByAction (l1, r1), MsecMayBePerformedByAction (l2, r2)         -> cmp l1 l2 && cmp r1 r2
     | MsecTransferredBy a1, MsecTransferredBy a2                                       -> cmp a1 a2
     | MsecTransferredTo a1, MsecTransferredTo a2                                       -> cmp a1 a2
+    | Mshallow (i1, x1), Mshallow (i2, x2)                                             -> cmp x1 x2 && cmp_ident i1 i2
+    | Mlisttocoll (i1, x1), Mlisttocoll (i2, x2)                                       -> cmp x1 x2 && cmp_ident i1 i2
+    | Munshallow (i1, x1), Munshallow (i2, x2)                                         -> cmp x1 x2 && cmp_ident i1 i2
+
     | _ -> false
   with
     _ -> false
@@ -1027,8 +1031,10 @@ let map_term_node (f : 'id mterm_gen -> 'id mterm_gen) = function
   | Mlisttocoll (i, x)           -> Mlisttocoll (i, f x)
   | Munshallow (i, x)            -> Munshallow (i, f x)
   | Mtokeys (an, x)              -> Mtokeys (an, f x)
-  | Mforall (i, t, e)            -> Mforall (i, t, f e)
-  | Mexists (i, t, e)            -> Mexists (i, t, f e)
+  | Mforall (i, t, Some s, e)    -> Mforall (i, t, Some (f s), f e)
+  | Mforall (i, t, None, e)      -> Mforall (i, t, None, f e)
+  | Mexists (i, t, Some s, e)    -> Mexists (i, t, Some (f s), f e)
+  | Mexists (i, t, None, e)      -> Mexists (i, t, None, f e)
   | MsecMayBePerformedOnlyByRole   (l, r) -> MsecMayBePerformedOnlyByRole   (f l, f r)
   | MsecMayBePerformedOnlyByAction (l, r) -> MsecMayBePerformedOnlyByAction (f l, f r)
   | MsecMayBePerformedByRole       (l, r) -> MsecMayBePerformedByRole       (f l, f r)
@@ -1277,8 +1283,10 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mlisttocoll (_, x)                    -> f accu x
   | Munshallow (_, x)                     -> f accu x
   | Mtokeys (_, x)                        -> f accu x
-  | Mforall (_, _, e)                     -> f accu e
-  | Mexists (_, _, e)                     -> f accu e
+  | Mforall (_, _, Some s, e)             -> f (f accu s) e
+  | Mforall (_, _, None, e)               -> f accu e
+  | Mexists (_, _, Some s, e)             -> f (f accu s) e
+  | Mexists (_, _, None, e)               -> f accu e
   | MsecMayBePerformedOnlyByRole   (l, r) -> f (f accu l) r
   | MsecMayBePerformedOnlyByAction (l, r) -> f (f accu l) r
   | MsecMayBePerformedByRole       (l, r) -> f (f accu l) r
@@ -1722,13 +1730,23 @@ let fold_map_term
     let xe, xa = f accu x in
     g (Mtokeys (an, xe)), xa
 
-  | Mforall (id, t, e) ->
+  | Mforall (id, t, Some s, e) ->
     let ee, ea = f accu e in
-    g (Mforall (id, t, ee)), ea
+    let se, sa = f accu s in
+    g (Mforall (id, t, Some se, ee)), sa
 
-  | Mexists (id, t, e) ->
+  | Mforall (id, t, None, e) ->
     let ee, ea = f accu e in
-    g (Mexists (id, t, ee)), ea
+    g (Mforall (id, t, None, ee)), ea
+
+  | Mexists (id, t, Some s, e) ->
+    let ee, ea = f accu e in
+    let se, sa = f accu s in
+    g (Mexists (id, t, Some se, ee)), sa
+
+  | Mexists (id, t, None, e) ->
+    let ee, ea = f accu e in
+    g (Mexists (id, t, None, ee)), ea
 
   | MsecMayBePerformedOnlyByRole (l, r) ->
     let le, la = f accu l in

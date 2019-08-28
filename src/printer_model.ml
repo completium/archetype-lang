@@ -619,15 +619,27 @@ let pp_mterm fmt (mt : mterm) =
       Format.fprintf fmt "%s.to_keys (%a)"
         an
         f x
-    | Mforall (i, t, e) ->
+    | Mforall (i, t, None, e) ->
       Format.fprintf fmt "forall (%a : %a), %a"
         pp_id i
         pp_type t
         f e
-    | Mexists (i, t, e) ->
+    | Mforall (i, t, Some s, e) ->
+      Format.fprintf fmt "forall (%a : %a) in %a, %a"
+        pp_id i
+        pp_type t
+        f s
+        f e
+    | Mexists (i, t, None, e) ->
       Format.fprintf fmt "exists (%a : %a), %a"
         pp_id i
         pp_type t
+        f e
+    | Mexists (i, t, Some s, e) ->
+      Format.fprintf fmt "exists (%a : %a) in %a, %a"
+        pp_id i
+        pp_type t
+        f s
         f e
 
     | Msetbefore e ->

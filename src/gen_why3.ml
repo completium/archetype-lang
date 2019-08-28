@@ -775,7 +775,7 @@ let map_storage_items = List.fold_left (fun acc (item : M.storage_item) ->
 let is_local_invariant m an t =
   let rec internal_is_local acc (term : M.mterm) =
     match term.M.node with
-    | M.Mforall (i,M.Tasset a,b) -> not (compare (a |> unloc) an = 0)
+    | M.Mforall (i,M.Tasset a,_,b) -> not (compare (a |> unloc) an = 0)
     | M.Msum (a,_,_) -> not (compare a an = 0)
     | M.Mmax (a,_,_) -> not (compare a an = 0)
     | M.Mmin (a,_,_) -> not (compare a an = 0)
@@ -1024,11 +1024,19 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | M.Msetbefore c -> map_mterm m { ctx with old = true } c |> Mlwtree.deloc
     | M.Msetadded c ->  map_mterm m { ctx with lmod = Added } c |> Mlwtree.deloc
     | M.Msetremoved c -> map_mterm m { ctx with lmod = Removed } c |> Mlwtree.deloc
-    | M.Mforall (i,t,b) ->
+    | M.Mforall (i,t,None,b) ->
       let asset = M.Utils.get_asset_type (M.mk_mterm (M.Mbool false) t) |> unloc in
       Tforall (
         [[i |> map_lident],loc_type (Tyasset asset)],
         map_mterm m ctx b)
+    | M.Mforall (i,t,Some coll,b) ->
+      let asset = M.Utils.get_asset_type (M.mk_mterm (M.Mbool false) t) |> unloc in
+      Tforall (
+        [[i |> map_lident],loc_type (Tyasset asset)],
+        with_dummy_loc (Timpl (with_dummy_loc (Tmem (with_dummy_loc asset,
+                                                     loc_term (Tvar (unloc i)),
+                                                     map_mterm m ctx coll)),
+                               map_mterm m ctx b)))
     | M.Mmem (a,e,c) -> Tmem (with_dummy_loc a, map_mterm m ctx e, map_mterm m ctx c)
     | M.Mimply (a,b) -> Timpl (map_mterm m ctx a, map_mterm m ctx b)
     | M.Mlabel lbl ->
