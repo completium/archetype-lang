@@ -1100,6 +1100,7 @@ let pp_model fmt (model : model) =
         Format.fprintf fmt "%s.to_keys (%a)"
           an
           f x
+      | Mlisttocoll (_, x) -> f fmt x
       | Mforall _                        -> emit_error (UnsupportedTerm ("forall"))
       | Mexists _                        -> emit_error (UnsupportedTerm ("exists"))
       | Msetbefore _                     -> emit_error (UnsupportedTerm ("setbefore"))
@@ -1115,7 +1116,6 @@ let pp_model fmt (model : model) =
       | MsecTransferredBy _              -> emit_error (UnsupportedTerm ("secTransferredBy"))
       | MsecTransferredTo _              -> emit_error (UnsupportedTerm ("secTransferredTo"))
       | Manyaction                       -> emit_error (UnsupportedTerm ("anyaction"))
-      | Mlisttocoll _                    -> emit_error (UnsupportedTerm ("listtocoll"))
     in
     f fmt mt
   in
