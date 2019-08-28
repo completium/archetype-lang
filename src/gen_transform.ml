@@ -72,3 +72,6 @@ let extend_loop_iter (model : model) : model =
       | _ -> map_mterm (internal_map_inv_iter ctx) t in
     map_mterm_model internal_map_inv_iter model in
   map_invariant_iter ()
+
+let extend_removeif (model : model) : model =
+  model

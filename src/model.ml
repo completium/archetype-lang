@@ -119,6 +119,7 @@ type ('id, 'term) mterm_node  =
   | Mremoveasset  of ident * 'term
   | Mremovefield  of ident * ident * 'term * 'term
   | Mremovelocal  of 'term * 'term
+  | Mremoveif     of ident * 'term * 'term
   | Mclearasset   of ident
   | Mclearfield   of ident * ident * 'term
   | Mclearlocal   of 'term
@@ -778,6 +779,7 @@ let cmp_mterm_node
     | Mremovelocal (c1, i1), Mremovelocal (c2, i2)                                     -> cmp c1 c2 && cmp i1 i2
     | Mclearasset (an1), Mclearasset (an2)                                             -> cmp_ident an1 an2
     | Mclearfield (an1, fn1, i1), Mclearfield (an2, fn2, i2)                           -> cmp_ident an1 an2 && cmp_ident fn1 fn2 && cmp i1 i2
+    | Mremoveif (an1, fn1, i1), Mremoveif (an2, fn2, i2)                           -> cmp_ident an1 an2 && cmp fn1 fn2 && cmp i1 i2
     | Mclearlocal (i1), Mclearlocal (i2)                                               -> cmp i1 i2
     | Mreverseasset (an1), Mreverseasset (an2)                                         -> cmp_ident an1 an2
     | Mreversefield (an1, fn1, i1), Mreversefield (an2, fn2, i2)                       -> cmp_ident an1 an2 && cmp_ident fn1 fn2 && cmp i1 i2
@@ -950,6 +952,7 @@ let map_term_node (f : 'id mterm_gen -> 'id mterm_gen) = function
   | Mremovelocal (c, i)          -> Mremovelocal (f c, f i)
   | Mclearasset (an)             -> Mclearasset (an)
   | Mclearfield (an, fn, i)      -> Mclearfield (an, fn, f i)
+  | Mremoveif (an, fn, i)        -> Mremoveif (an, f fn, f i)
   | Mclearlocal (i)              -> Mclearlocal (f i)
   | Mreverseasset (an)           -> Mreverseasset (an)
   | Mreversefield (an, fn, i)    -> Mreversefield (an, fn, f i)
@@ -1202,6 +1205,7 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mremovelocal (c, i)                   -> f (f accu c) i
   | Mclearasset (an)                      -> accu
   | Mclearfield (an, fn, c)               -> f accu c
+  | Mremoveif (an, fn, c)                 -> f (f accu fn) c
   | Mclearlocal (c)                       -> f accu c
   | Mreverseasset (an)                    -> accu
   | Mreversefield (an, fn, c)             -> f accu c
@@ -1415,6 +1419,11 @@ let fold_map_term
   | Mclearfield (an, fn, i) ->
     let ie, ia = f accu i in
     g (Mclearfield (an, fn, ie)), ia
+
+  | Mremoveif (an, fn, i) ->
+    let ie, ia = f accu i in
+    let fe, fa = f ia fn in
+    g (Mremoveif (an, fe, ie)), fa
 
   | Mclearlocal i ->
     let ie, ia = f accu i in

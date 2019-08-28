@@ -940,6 +940,7 @@ let pp_model fmt (model : model) =
       | MsecTransferredBy _              -> emit_error (UnsupportedTerm ("secTransferredBy"))
       | MsecTransferredTo _              -> emit_error (UnsupportedTerm ("secTransferredTo"))
       | Manyaction                       -> emit_error (UnsupportedTerm ("anyaction"))
+      | Mremoveif _                      -> emit_error (UnsupportedTerm ("removeif"))
     in
     f fmt mt
   in

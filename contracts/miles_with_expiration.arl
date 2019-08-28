@@ -113,13 +113,16 @@ action clear_expired = {
   verification {
     specification s3 = {
       forall m in mile.removed, m.expiration < now
+      invariants for loop2 {
+        forall m in mile.removed, m.expiration < now
+      }
     }
   }
 
   called by admin
 
   effect {
-    for (o in owner) (
+    loop2 : for (o in owner) (
       o.miles.removeif (the.expiration < now)
     )
   }

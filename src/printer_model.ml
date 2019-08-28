@@ -209,6 +209,15 @@ let pp_mterm fmt (mt : mterm) =
       in
       pp fmt (an, fn, i)
 
+    | Mremoveif (an, fn, i) ->
+      let pp fmt (an, fn, i) =
+        Format.fprintf fmt "removeif_%a (%a) (%a)"
+          pp_str an
+          f fn
+          f i
+      in
+      pp fmt (an, fn, i)
+
     | Mclearlocal (i) ->
       let pp fmt (i) =
         Format.fprintf fmt "clear (%a)"
