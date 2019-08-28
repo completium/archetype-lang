@@ -2325,7 +2325,7 @@ let transactions_of_tdecls tdecls =
               M.{ name = x; typ = Some xty; default = None; loc = loc x; })
             tdecl.ad_args;
         calledby        = for_calledby tdecl.ad_callby;
-        accept_transfer = true;        (* FIXME *)
+        accept_transfer = false;        (* FIXME; false is default *)
         require         = Some (
             List.map
               (fun (x, c) -> M.{ label = x; term = c; loc = L.dummy; }) (* FIXME *)
