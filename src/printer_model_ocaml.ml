@@ -279,6 +279,7 @@ let pp_model fmt (model : model) =
         an fn
     | Shallow _ -> assert false
     | Unshallow _ -> assert false
+    | Listtocoll _ -> assert false
   in
 
   let pp_builtin_const fmt = function
@@ -339,6 +340,7 @@ let pp_model fmt (model : model) =
         | APIBuiltin   (MaxBuiltin    _) -> (ga, gr)
         | APIFunction  (Shallow       _) -> (ga, gr)
         | APIFunction  (Unshallow     _) -> (ga, gr)
+        | APIFunction  (Listtocoll    _) -> (ga, gr)
       )   (false, false) l in
     if   ga || gr
     then
@@ -1002,6 +1004,7 @@ let pp_model fmt (model : model) =
       | MsecTransferredBy _              -> emit_error (UnsupportedTerm ("secTransferredBy"))
       | MsecTransferredTo _              -> emit_error (UnsupportedTerm ("secTransferredTo"))
       | Manyaction                       -> emit_error (UnsupportedTerm ("anyaction"))
+      | Mlisttocoll _                    -> emit_error (UnsupportedTerm ("listtocoll"))
     in
     f fmt mt
   in

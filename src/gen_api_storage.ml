@@ -67,6 +67,8 @@ let process_api_storage (model : model) : model =
         [APIFunction (Shallow asset_name)]
       | Munshallow (asset_name, _) ->
         [APIFunction (Unshallow asset_name)]
+      | Mlisttocoll (asset_name, _) ->
+        [APIFunction (Listtocoll asset_name)]
       | _ -> []
     in
     List.fold_left (fun accu v -> add ctx accu (Model.mk_api_item v)) accu api_items
@@ -100,6 +102,7 @@ let process_api_storage (model : model) : model =
                    | APIBuiltin _                         -> default
                    | APIFunction (Shallow         an)     -> an
                    | APIFunction (Unshallow       an)     -> an
+                   | APIFunction (Listtocoll      an)     -> an
                  in
                  let asset_list : ident list = List.fold_left (fun accu (x : decl_node) ->
                      match x with
@@ -141,6 +144,7 @@ let process_api_storage (model : model) : model =
                    | APIBuiltin   (MaxBuiltin    _) -> 25
                    | APIFunction  (Shallow       _) -> 26
                    | APIFunction  (Unshallow     _) -> 27
+                   | APIFunction  (Listtocoll    _) -> 28
                  in
                  let idx1 = get_kind i1.node_item in
                  let idx2 = get_kind i2.node_item in

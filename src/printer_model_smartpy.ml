@@ -263,6 +263,7 @@ let pp_model fmt (model : model) =
         an fn
     | Shallow _ -> assert false
     | Unshallow _ -> assert false
+    | Listtocoll _ -> assert false
 
   in
 
@@ -938,6 +939,7 @@ let pp_model fmt (model : model) =
       | MsecTransferredBy _              -> emit_error (UnsupportedTerm ("secTransferredBy"))
       | MsecTransferredTo _              -> emit_error (UnsupportedTerm ("secTransferredTo"))
       | Manyaction                       -> emit_error (UnsupportedTerm ("anyaction"))
+      | Mlisttocoll _                    -> emit_error (UnsupportedTerm ("listtocoll"))
     in
     f fmt mt
   in

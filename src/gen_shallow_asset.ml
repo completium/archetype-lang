@@ -125,7 +125,8 @@ let rec map_shallow_record m ctx (t : M.mterm) : M.mterm list =
         (* take head of mapped_vals *)
         let hds = List.map List.hd mapped_vals in
         let tls = List.flatten (List.map tl mapped_vals) in
-        array :: ([M.mk_mterm (M.Marray hds) t.type_] @ tls)
+        array :: ([M.mk_mterm (M.Mlisttocoll (unloc n,
+                                              M.mk_mterm (M.Marray hds) t.type_)) t.type_] @ tls)
       | _ -> [t]
     end
   | _ -> [t]
@@ -346,4 +347,4 @@ let shallow_asset (model : M.model) : M.model =
     functions = add_asset_functions @
                 add_asset_field_functions @
                 (List.map (process_shallow_function model) model.functions)
-  }
+  } |> Gen_api_storage.process_api_storage

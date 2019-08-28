@@ -607,6 +607,10 @@ let pp_mterm fmt (mt : mterm) =
       Format.fprintf fmt "shallow_%a %a"
         pp_str i
         f x
+    | Mlisttocoll (i, x) ->
+      Format.fprintf fmt "listtocoll_%a %a"
+        pp_str i
+        f x
     | Munshallow (i, x) ->
       Format.fprintf fmt "unshallow_%a (%a)"
         pp_str i
@@ -713,7 +717,7 @@ let pp_function_const fmt = function
   | Max (an, fn) -> pp_str fmt ("max\t " ^ an ^ " " ^ fn)
   | Shallow an -> pp_str fmt ("shallow\t " ^ an)
   | Unshallow an -> pp_str fmt ("unshallow\t " ^ an)
-
+  | Listtocoll an -> pp_str fmt ("listtocoll\t " ^ an)
 
 let pp_builtin_const fmt = function
   | MinBuiltin t-> Format.fprintf fmt "min on %a" pp_type t

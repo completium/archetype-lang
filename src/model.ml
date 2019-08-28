@@ -201,6 +201,7 @@ type ('id, 'term) mterm_node  =
   (* shallowing *)
   | Mshallow      of ident * 'term
   | Munshallow    of ident * 'term
+  | Mlisttocoll   of ident * 'term
   (* *)
   | Mtokeys       of ident * 'term
   (* quantifiers *)
@@ -281,6 +282,7 @@ and function_const =
   | Max              of ident * ident
   | Shallow          of ident
   | Unshallow        of ident
+  | Listtocoll       of ident
 [@@deriving show {with_path = false}]
 
 and builtin_const =
@@ -1022,6 +1024,7 @@ let map_term_node (f : 'id mterm_gen -> 'id mterm_gen) = function
   | Mreturn x                    -> Mreturn (f x)
   | Mlabel i                     -> Mlabel i
   | Mshallow (i, x)              -> Mshallow (i, f x)
+  | Mlisttocoll (i, x)           -> Mlisttocoll (i, f x)
   | Munshallow (i, x)            -> Munshallow (i, f x)
   | Mtokeys (an, x)              -> Mtokeys (an, f x)
   | Mforall (i, t, e)            -> Mforall (i, t, f e)
@@ -1271,6 +1274,7 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mreturn x                             -> f accu x
   | Mlabel _                              -> accu
   | Mshallow (_, x)                       -> f accu x
+  | Mlisttocoll (_, x)                    -> f accu x
   | Munshallow (_, x)                     -> f accu x
   | Mtokeys (_, x)                        -> f accu x
   | Mforall (_, _, e)                     -> f accu e
@@ -1706,6 +1710,10 @@ let fold_map_term
     let xe, xa = f accu x in
     g (Mshallow (i,xe)), xa
 
+  | Mlisttocoll (i, x) ->
+    let xe, xa = f accu x in
+    g (Mlisttocoll (i,xe)), xa
+
   | Munshallow (i, x) ->
     let xe, xa = f accu x in
     g (Munshallow (i, xe)), xa
@@ -1920,16 +1928,17 @@ end = struct
     | ReverseItem        _ -> "reverse"
 
   let function_name_from_function_const = function
-    | Select   (aid, _)   -> "select_"   ^ aid
-    | Sort     (aid, fid) -> "sort_"     ^ aid ^ "_" ^ fid
-    | Contains  aid       -> "contains_" ^ aid
-    | Nth       aid       -> "nth_"      ^ aid
-    | Count     aid       -> "count_"    ^ aid
-    | Sum      (aid, fid) -> "sum_"      ^ aid ^ "_" ^ fid
-    | Min      (aid, fid) -> "min_"      ^ aid ^ "_" ^ fid
-    | Max      (aid, fid) -> "max_"      ^ aid ^ "_" ^ fid
-    | Shallow  (aid)      -> "shallow_"  ^ aid
-    | Unshallow (aid)     -> "unshallow" ^ aid
+    | Select   (aid, _)    -> "select_"   ^ aid
+    | Sort     (aid, fid)  -> "sort_"     ^ aid ^ "_" ^ fid
+    | Contains  aid        -> "contains_" ^ aid
+    | Nth       aid        -> "nth_"      ^ aid
+    | Count     aid        -> "count_"    ^ aid
+    | Sum      (aid, fid)  -> "sum_"      ^ aid ^ "_" ^ fid
+    | Min      (aid, fid)  -> "min_"      ^ aid ^ "_" ^ fid
+    | Max      (aid, fid)  -> "max_"      ^ aid ^ "_" ^ fid
+    | Shallow  (aid)       -> "shallow_"  ^ aid
+    | Unshallow (aid)      -> "unshallow" ^ aid
+    | Listtocoll aid       -> "listtocoll_" ^ aid
 
   let function_name_from_builtin_const = function
     | MinBuiltin         _ -> "min"

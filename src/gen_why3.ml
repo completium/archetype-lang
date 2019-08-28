@@ -395,6 +395,24 @@ let mk_unshallow asset keyt = Dfun {
                            Tvar "l")
   }
 
+let mk_listtocoll asset = Dfun {
+    name     = "listtocoll_"^asset;
+    logic    = Logic;
+    args     = ["l",Tylist (Tyasset asset)];
+    returns  = Tycoll asset;
+    raises   = [];
+    variants = [];
+    requires = [];
+    ensures  = [
+(*      { id   = asset^"_unshallow_post_1";
+        form = Tsubset (asset,
+                        Tresult,
+                        Tvar "c")
+        }*)];
+    body     = Tcoll (asset,
+                      Tvar "l")
+  }
+
 (* basic getters *)
 
 let gen_field_getter n field = Dfun {
@@ -908,11 +926,10 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
       let asset = M.Utils.get_asset_type mt in
       let fns = M.Utils.get_field_list m asset |> wdl in
       Trecord (None,(List.combine fns (List.map (map_mterm m ctx) l)))
+    | M.Mlisttocoll (n,l) -> Tapp (loc_term (Tvar ("listtocoll_"^n)),[map_mterm m ctx l])
     | M.Marray l ->
       begin
         match mt.type_ with
-        | Tcontainer (Tasset asset,_) ->
-          Tcoll(map_lident asset,with_dummy_loc (Tlist (l |> List.map (map_mterm m ctx))))
         | Tcontainer (_,_) -> Tlist (l |> List.map (map_mterm m ctx))
         | _ -> assert false
       end
@@ -1096,6 +1113,8 @@ let mk_storage_api (m : M.model) records =
       | M.APIFunction (Unshallow n) ->
         let t         =  M.Utils.get_asset_key m (dumloc n) |> snd |> map_btype in
         acc @ [ mk_unshallow n t ]
+      | M.APIFunction (Listtocoll n) ->
+        acc @ [ mk_listtocoll n ]
       | _ -> acc
     ) [] |> loc_decl |> deloc
 
