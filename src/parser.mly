@@ -157,7 +157,7 @@
 %token <string> DURATION
 %token <string> DATE
 
-%nonassoc prec_for prec_transfer
+%nonassoc prec_transfer
 
 %nonassoc TO IN
 
@@ -646,7 +646,7 @@ expr_r:
  | BREAK
      { Ebreak }
 
- | FOR LPAREN x=ident IN y=expr RPAREN body=expr %prec prec_for
+ | FOR LPAREN x=ident IN y=expr RPAREN body=simple_expr
      { Efor (None, x, y, body) }
 
  | IF c=expr THEN t=expr
@@ -654,8 +654,6 @@ expr_r:
 
  | IF c=expr THEN t=expr ELSE e=expr
      { Eif (c, t, Some e) }
-
- | MATCH x=expr WITH xs=branchs END { Ematchwith (x, xs) }
 
  | xs=snl2(COMMA, simple_expr)
      { Etuple xs }
@@ -732,6 +730,9 @@ expr_with_app_unloc:
  | x=loc(simple_expr_r) { x }
 
 simple_expr_r:
+
+ | MATCH x=expr WITH xs=branchs END { Ematchwith (x, xs) }
+
  | x=simple_expr DOT y=ident
      { Edot (x, y) }
 
