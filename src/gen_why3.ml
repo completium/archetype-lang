@@ -1160,23 +1160,26 @@ let mk_ensures m acc (v : M.verification) =
         form = map_mterm m init_ctx spec.formula
       }) (v.specs |> List.filter M.Utils.is_post))
 
-let mk_require n i a f = {
+let mk_require n i t = {
   id = with_dummy_loc (n^"_require_"^(string_of_int i));
-  form = loc_term (Tempty (a,f))
+  form = t
 }
 
 (* TODO : should plunge in called functions body *)
 let mk_requires m n v =
-  M.Utils.get_added_removed_sets m v |> List.mapi (fun i t  ->
+  M.Utils.get_added_removed_sets m v
+  |> List.map (fun t ->
       match t with
       | M.Msetadded e ->
         let a = M.Utils.get_asset_type e |> unloc in
-        mk_require n i a (mk_ac_added a)
+        loc_term (Tempty (a,mk_ac_added a))
       | M.Msetremoved e ->
         let a = M.Utils.get_asset_type e |> unloc in
-        mk_require n i a (mk_ac_rmed a)
+        loc_term (Tempty (a,mk_ac_rmed a))
       | _ -> assert false
     )
+  |> Tools.List.dedup
+  |> List.mapi (fun i t  -> mk_require n i t)
 
 let mk_functions m =
   M.Utils.get_functions m |> List.map (
