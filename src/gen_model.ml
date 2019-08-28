@@ -197,8 +197,8 @@ let to_model (ast : A.model) : M.model =
       assert false
 
     | A.Ptuple l                             -> M.Mtuple (List.map f l)
-    | A.Pquantifer (Forall, i, typ, term)    -> M.Mforall (i, ptyp_to_type typ, f term)
-    | A.Pquantifer (Exists, i, typ, term)    -> M.Mexists (i, ptyp_to_type typ, f term)
+    | A.Pquantifer (Forall, i, (_, typ), term)    -> M.Mforall (i, ptyp_to_type typ, f term)
+    | A.Pquantifer (Exists, i, (_, typ), term)    -> M.Mexists (i, ptyp_to_type typ, f term)
 
     | A.Pcall (Some p, A.Cconst A.Cbefore,    []) -> M.Msetbefore    (f p)
     | A.Pcall (Some p, A.Cconst A.Cunmoved,   []) -> M.Msetunmoved   (f p)

@@ -259,7 +259,7 @@ type 'id call_kind =
 [@@deriving show {with_path = false}]
 
 type 'id term_node  =
-  | Pquantifer of quantifier * 'id * type_ * 'id term_gen
+  | Pquantifer of quantifier * 'id * ('id term_gen option * type_) * 'id term_gen
   | Pif of ('id term_gen * 'id term_gen * 'id term_gen)
   | Pmatchwith of 'id term_gen * ('id pattern_gen * 'id term_gen) list
   | Pcall of ('id term_gen option * 'id call_kind * ('id term_arg) list)

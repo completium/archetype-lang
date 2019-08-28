@@ -1241,13 +1241,13 @@ let rec for_xexpr (mode : emode_t) (env : env) ?(ety : M.ptyp option) (tope : PT
           match
             match xty with
             | PT.Qcollection xe ->
-              Option.map
-                (fun (ad, _) -> M.Tasset ad.as_name)
-                (snd (for_asset_collection_expr mode env xe))
+              let ast, xe = for_asset_collection_expr mode env xe in
+              Option.map (fun (ad, _) -> (Some ast, M.Tasset ad.as_name)) xe
             | PT.Qtype ty ->
-              for_type env ty
+              let ty = for_type env ty in
+              Option.map (fun ty -> (None, ty)) ty
           with
-          | None -> bailout () | Some xty ->
+          | None -> bailout () | Some (ast, xty) ->
 
             let _, body =
               Env.inscope env (fun env ->
@@ -1260,7 +1260,7 @@ let rec for_xexpr (mode : emode_t) (env : env) ?(ety : M.ptyp option) (tope : PT
               | PT.Forall -> M.Forall
               | PT.Exists -> M.Exists in
 
-            mk_sp (Some M.vtbool) (M.Pquantifer (qt, x, xty, body))
+            mk_sp (Some M.vtbool) (M.Pquantifer (qt, x, (ast, xty), body))
       end
 
     | Esecurity { pldesc = SMayBePerformedOnlyByRole (s1, s2) } ->

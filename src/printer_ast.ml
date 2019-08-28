@@ -192,7 +192,7 @@ let pp_action_description fmt = function
 
 let rec pp_pterm fmt (pterm : pterm) =
   let pp_node fmt = function
-    | Pquantifer (q, i, t, b) ->
+    | Pquantifer (q, i, (_, t), b) ->
       Format.fprintf fmt "%a (%a : %a), %a"
         pp_quantifier q
         pp_id i
