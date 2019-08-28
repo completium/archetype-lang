@@ -1069,7 +1069,7 @@ type ctx_model = (lident, unit) ctx_model_gen
 let mk_ctx_model ?(formula = false) ?fs ?label ?spec_id ?invariant_id custom : ('id, 't) ctx_model_gen =
   { formula; fs; label; spec_id; invariant_id; custom}
 
-let map_mterm_model_exec (f : ('id, 't) ctx_model_gen -> mterm -> mterm) (model : model) : model =
+let map_mterm_model_exec custom (f : ('id, 't) ctx_model_gen -> mterm -> mterm) (model : model) : model =
   let map_storage_item (ctx : ('id, 't) ctx_model_gen) (si : storage_item) : storage_item = (
     { si with
       default = f ctx si.default;
@@ -1088,7 +1088,7 @@ let map_mterm_model_exec (f : ('id, 't) ctx_model_gen -> mterm -> mterm) (model 
     { fun_ with node = node}
   ) in
 
-  let ctx = mk_ctx_model () in
+  let ctx = mk_ctx_model custom in
   let storage = List.map (map_storage_item ctx) model.storage in
   let functions = List.map (map_function ctx) model.functions in
   { model with
@@ -1096,7 +1096,7 @@ let map_mterm_model_exec (f : ('id, 't) ctx_model_gen -> mterm -> mterm) (model 
     storage = storage;
   }
 
-let map_mterm_model_formula (f : ('id, 't) ctx_model_gen -> mterm -> mterm) (model : model) : model =
+let map_mterm_model_formula custom (f : ('id, 't) ctx_model_gen -> mterm -> mterm) (model : model) : model =
   let map_verification (ctx : ('id, 't) ctx_model_gen) (f : ('id, 't) ctx_model_gen -> mterm -> mterm) (v : verification) : verification = (
     let map_label_term (f : ('id, 't) ctx_model_gen -> mterm -> mterm) (lt : label_term) : label_term =
       let ctx = { ctx with label = lt.label } in
@@ -1153,7 +1153,7 @@ let map_mterm_model_formula (f : ('id, 't) ctx_model_gen -> mterm -> mterm) (mod
     }
   ) in
 
-  let ctx : ('id, 't) ctx_model_gen = mk_ctx_model () in
+  let ctx : ('id, 't) ctx_model_gen = mk_ctx_model custom in
 
   let map_function (f : ('id, 't) ctx_model_gen -> mterm -> mterm) (fun_ : function__) : function__ =
     let fs : function_struct =
@@ -1173,10 +1173,13 @@ let map_mterm_model_formula (f : ('id, 't) ctx_model_gen -> mterm -> mterm) (mod
   }
 
 
-let map_mterm_model (f : ('id, 't) ctx_model_gen -> mterm -> mterm) (model : model) : model =
+let map_mterm_model_gen custom (f : ('id, 't) ctx_model_gen -> mterm -> mterm) (model : model) : model =
   model
-  |> map_mterm_model_exec f
-  |> map_mterm_model_formula f
+  |> map_mterm_model_exec custom f
+  |> map_mterm_model_formula custom f
+
+let map_mterm_model (f : ('id, 't) ctx_model_gen -> mterm -> mterm) (model : model) : model =
+  map_mterm_model_gen () f model
 
 let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_gen) : 'a =
   match term.node with
