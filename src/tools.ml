@@ -25,6 +25,7 @@ module String : sig
 
   val starts : pattern:string -> string -> bool
   val ends   : pattern:string -> string -> bool
+  val up_firstcase : string -> string
 end = struct
   include String
 
@@ -61,6 +62,11 @@ end = struct
       true
 
     with E.No -> false
+
+  let up_firstcase str =
+    match str with
+    | "" -> ""
+    | _ -> (Stdlib.String.uppercase_ascii (String.sub str 0 1)) ^ String.sub str 1 (String.length str - 1)
 end
 
 (* -------------------------------------------------------------------- *)
