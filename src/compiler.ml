@@ -67,6 +67,7 @@ let split_key_values     = Gen_split_key_values.split_key_values
 let remove_side_effect   = Gen_reduce.reduce
 let generate_api_storage = Gen_api_storage.generate_api_storage
 let exec_process model   = model |> Gen_transform.replace_lit_address_by_role |> Gen_transform.remove_label |> Gen_transform.flat_sequence
+let extend_removeif      = Gen_transform.extend_removeif
 
 let output_liquidity model =
   if !Options.opt_raw
@@ -178,6 +179,7 @@ let compile (filename, channel) =
   |> type_
   |> cont !Options.opt_ast output_tast
   |> generate_model
+  |> extend_removeif
   |> generate_target
 
 let close dispose channel =

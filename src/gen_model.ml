@@ -400,49 +400,6 @@ let to_model (ast : A.model) : M.model =
 
   in
 
-
-  (* col.removeif pred
-
-     let _col = col.select pred in
-     for (_asset in _col)
-       _col_asset.remove _asset.key
-  *)
-
-  let extract_removeif (m : M.model) (c : M.mterm) (pid, tid, p : M.lident * M.type_* M.mterm) : M.mterm__node =
-    let asset_str = extract_asset_name c in
-    (* let key_str, key_type = A.Utils.get_asset_key ast (dumloc asset_str) |> fun (x, y) -> (unloc x, M.Tbuiltin (vtyp_to_btyp y)) in *)
-
-    let asset_name = dumloc asset_str in
-    (* let key_name = dumloc key_str in *)
-    let type_asset = M.Tasset asset_name in
-    (* let _, t = A.Utils.get_asset_key ast (dumloc asset_str) in *)
-
-    let assetv_str = dumloc ("_" ^ asset_str) in
-    let asset_var = M.mk_mterm (M.Mvarlocal assetv_str) type_asset in
-
-    let key, key_type = M.Utils.get_asset_key m asset_name in
-    let asset_key : M.mterm = M.mk_mterm (M.Mdotasset (asset_var,dumloc key)) (Tbuiltin key_type) in
-
-    let assets_var_name = dumloc ("_assets") in
-    (* let type_assets = M.Tcontainer (Tbuiltin (vtyp_to_btyp t), Collection) in *)
-    let type_assets = M.Tcontainer (Tasset asset_name, Collection) in
-    let assets_var = M.mk_mterm (M.Mvarlocal assets_var_name) type_assets in
-
-    let select : M.mterm =  M.mk_mterm (M.Mselect (asset_str, c, p) ) type_asset in
-
-    (* let asset_sortcol : M.mterm = M.mk_mterm (M.Mvarstorecol asset_name) type_asset in *)
-    (* let asset_key : M.mterm = M.mk_mterm (M.Mdotasset (asset_var, key_name)) key_type in *)
-
-    (* let remove : M.mterm = M.mk_mterm (M.Mremoveasset (asset_str, asset_sortcol, asset_key)) Tunit in *)
-    let remove : M.mterm = M.mk_mterm (M.Mremoveasset (asset_str, asset_key)) Tunit in
-
-    let for_ = M.mk_mterm (M.Mfor (assetv_str, assets_var, remove, None) ) Tunit in
-
-    let res : M.mterm__node = M.Mletin ([assets_var_name], select, Some type_assets, for_) in
-    res
-
-  in
-
   let process_enums list =
     let process_enum (e : A.enum) : M.decl_node =
       let values = List.map (fun (x : A.lident A.enum_item_struct) ->
@@ -592,8 +549,11 @@ let to_model (ast : A.model) : M.model =
       let e = List.map (fun (a, b, c) -> (a, b, f c)) e in
       extract_letin p k e
 
-    | A.Icall (Some c, A.Cconst (A.Cremoveif), [AFun (i, t, p)]) ->
-      extract_removeif (M.mk_model ~info:info [] (dumloc ""))(f c) (i, ptyp_to_type t, f p)
+    | A.Icall (Some p, A.Cconst (A.Cremoveif), [AFun (qi, qtt, q)]) ->
+      let fp = f p in
+      let fq = f q in
+      let asset_name = extract_asset_name fp in
+      M.Mremoveif (asset_name, fp, fq)
 
     | A.Icall (aux, A.Cconst c, args) ->
       Format.eprintf "instr const unkown: %a with nb args: %d [%a] %s@."

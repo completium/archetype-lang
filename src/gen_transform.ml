@@ -73,5 +73,67 @@ let extend_loop_iter (model : model) : model =
     map_mterm_model internal_map_inv_iter model in
   map_invariant_iter ()
 
+type loop_ctx = (lident, Ident.ident list) ctx_model_gen
+
 let extend_removeif (model : model) : model =
-  model
+  let loop_ids = ref [] in
+  let idx = ref 0 in
+  let rec internal_extend (ctx : loop_ctx) (t : mterm) : mterm =
+    match t.node with
+    | Mfor (i, c, b, Some lbl) ->
+      let new_ctx = { ctx with custom = ctx.custom @ [lbl] } in
+      mk_mterm (Mfor (i,
+                      internal_extend new_ctx c,
+                      internal_extend new_ctx b,
+                      Some lbl)) t.type_
+    | Mremoveif (asset, p, q) ->
+      let lasset = dumloc asset in
+      let type_asset = Tasset lasset in
+
+      let assetv_str = dumloc ("_" ^ asset) in
+      let asset_var = mk_mterm (Mvarlocal assetv_str) type_asset in
+
+      let key, key_type = Utils.get_asset_key model lasset in
+      let asset_key : mterm = mk_mterm (Mdotasset (asset_var,dumloc key)) (Tbuiltin key_type) in
+
+      let assets_var_name = dumloc ("_assets") in
+      let type_assets = Tcontainer (Tasset lasset, Collection) in
+      let assets_var = mk_mterm (Mvarlocal assets_var_name) type_assets in
+
+      let select : mterm =  mk_mterm (Mselect (asset, p, q) ) type_asset in
+
+      let remove : mterm = mk_mterm (Mremoveasset (asset, asset_key)) Tunit in
+
+      let id = "removeif_loop" ^ (string_of_int !idx) in
+      idx := succ !idx;
+      if List.length ctx.custom > 0 then
+        let upper_id = List.hd (List.rev ctx.custom) in
+        loop_ids := !loop_ids @ [upper_id,id]
+      else ();
+
+      let for_ = mk_mterm (Mfor (assetv_str, assets_var, remove, Some id)) Tunit in
+
+      let res : mterm__node = Mletin ([assets_var_name], select, Some type_assets, for_) in
+      mk_mterm res Tunit
+    | _ -> map_mterm (internal_extend ctx) t in
+  map_mterm_model_gen [] internal_extend model |>
+  fun m ->  {
+    m with
+    functions = List.map (fun (f : function__) -> {
+          f with
+          verif = Option.map (fun (v : verification) -> {
+                v with
+                specs = List.map (fun (spec : specification) -> {
+                      spec with
+                      invariants =
+                        List.fold_left (fun acc (inv : invariant) ->
+                            if List.mem_assoc (unloc inv.label) !loop_ids then
+                              let loop_id = List.assoc (unloc inv.label) !loop_ids in
+                              let loop_inv = { inv with label = dumloc loop_id } in
+                              acc @ [inv; loop_inv]
+                            else acc @ [inv]
+                          ) [] spec.invariants
+                    }) v.specs
+              }) f.verif
+        }) m.functions
+  }
