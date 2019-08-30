@@ -260,7 +260,8 @@ let gen_add_shallow_fun (model : M.model) (n : I.ident) : M.function__ =
         name = dumloc ("add_shallow_"^n);
         args = args;
         body = body;
-        loc = Location.dummy;
+        src  = Endo;
+        loc  = Location.dummy;
       },Tunit);
     verif = None;
   }
@@ -284,7 +285,8 @@ let gen_add_shallow_field_fun (model : M.model) (n,f : I.ident * I.ident) : M.fu
         name = dumloc ("add_shallow_"^n^"_"^f);
         args = args;
         body = body;
-        loc = Location.dummy;
+        src  = Endo;
+        loc  = Location.dummy;
       },Tunit);
     verif = None;
   }

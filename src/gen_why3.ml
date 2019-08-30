@@ -1181,8 +1181,10 @@ let mk_requires m n v =
   |> Tools.List.dedup
   |> List.mapi (fun i t  -> mk_require n i t)
 
-let mk_functions m =
-  M.Utils.get_functions m |> List.map (
+let is_src src (_,f,_) = f.M.src = src
+
+let mk_functions src m =
+  M.Utils.get_functions m |> List.filter (is_src src) |> List.map (
     fun ((v : M.verification option),
          (s : M.function_struct),
          (t : M.type_)) ->
@@ -1200,6 +1202,9 @@ let mk_functions m =
         body     = flatten_if_fail m s.body;
       }
   )
+
+let mk_endo_functions = mk_functions M.Endo
+let mk_exo_functions = mk_functions M.Exo
 
 let mk_entries m =
   M.Utils.get_entries m |> List.map (
@@ -1235,7 +1240,8 @@ let to_whyml (m : M.model) : mlw_tree  =
   (*let axioms           = mk_axioms m in*)
   let partition_axioms = mk_partition_axioms m in
   let storage_api      = mk_storage_api m (records |> wdl) in
-  let functions        = mk_functions m in
+  let endo             = mk_endo_functions m in
+  let functions        = mk_exo_functions m in
   let entries          = mk_entries m in
   let usestorage       = mk_use_module storage_module in
   let loct : loc_mlw_tree = [{
@@ -1245,7 +1251,8 @@ let to_whyml (m : M.model) : mlw_tree  =
               [storage;storageval]   @
               (*axioms                 @*)
               partition_axioms       @
-              storage_api;
+              storage_api            @
+              endo;
     };{
        name = cap (map_lident m.name);
        decls = [uselib;uselist;usestorage] @
