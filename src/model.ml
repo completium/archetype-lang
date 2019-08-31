@@ -1913,7 +1913,7 @@ module Utils : sig
   val is_post                            : specification -> bool
   val get_sum_fields                     : model -> ident -> ident list
   val get_added_removed_sets             : model -> verification option -> ((lident, lident mterm_gen) mterm_node) list
-  val get_storage_invariants             : model -> (ident * ident * mterm) list
+  val get_storage_invariants             : model -> ident option -> (ident * ident * mterm) list
 
 end = struct
 
@@ -2288,14 +2288,21 @@ end = struct
         fold_verification (mk_ctx_model ()) internal_fold_add_remove x []) [] v)
 
   (* returns asset name * invariant name * invariant term *)
-  let get_storage_invariants (m : model) : (ident * ident * mterm) list =
+  let get_storage_invariants (m : model) (asset : ident option) : (ident * ident * mterm) list =
     List.fold_left (fun acc (i : storage_item) ->
         let n = i.name |> unloc in
-        List.fold_left (fun acc (lt : label_term) ->
-            let inv_name = Tools.Option.fold (fun _ l -> unloc l) "" lt.label in
-            let inv_term = lt.term in
-            acc @ [n, inv_name, inv_term]
-          ) acc i.invariants
+        let do_fold =
+          match asset with
+          | Some a when compare n a = 0 -> true
+          | _ -> true
+        in
+        if do_fold then
+          List.fold_left (fun acc (lt : label_term) ->
+              let inv_name = Tools.Option.fold (fun _ l -> unloc l) "" lt.label in
+              let inv_term = lt.term in
+              acc @ [n, inv_name, inv_term]
+            ) acc i.invariants
+        else acc
       ) [] m.storage
 
 end
