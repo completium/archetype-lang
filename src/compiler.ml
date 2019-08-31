@@ -137,6 +137,7 @@ let generate_target model =
     model
     |> exec_process
     |> shallow_asset
+    |> split_key_values
     |> remove_side_effect
     |> generate_api_storage
     |> output_ligo
