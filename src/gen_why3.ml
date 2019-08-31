@@ -829,14 +829,29 @@ let mk_unshallow asset keyt = Dfun {
                            Tvar "l")
   }
 
-let mk_listtocoll asset = Dfun {
+let mk_api_precond m a src =
+  M.Utils.get_storage_invariants m (Some a)
+  |> List.fold_left (fun acc (_,lbl,t) ->
+      if is_local_invariant m a t then
+        acc @ [{
+          id = lbl;
+          form = unloc_term (mk_invariant m (dumloc a) src (map_mterm m init_ctx t))
+        }]
+      else acc
+    ) []
+
+let mk_add_asset_precond m a id = mk_api_precond m a (`Preasset id)
+
+let mk_listtocoll_precond m a id = mk_api_precond m a (`Prelist id)
+
+let mk_listtocoll m asset = Dfun {
     name     = "listtocoll_"^asset;
     logic    = Logic;
     args     = ["l",Tylist (Tyasset asset)];
     returns  = Tycoll asset;
     raises   = [];
     variants = [];
-    requires = [];
+    requires = mk_listtocoll_precond m asset "l";
     ensures  = [
 (*      { id   = asset^"_unshallow_post_1";
         form = Tsubset (asset,
@@ -920,7 +935,7 @@ let mk_add_asset m asset key : decl = Dfun {
     returns  = Tyunit;
     raises   = [Ekeyexist];
     variants = [];
-    requires = [];
+    requires = mk_add_asset_precond m asset "new_asset";
     ensures  = mk_add_ensures m ("add_"^asset) asset "new_asset";
     body     = Tseq [
         Tif (Tmem (asset,
@@ -1027,7 +1042,7 @@ let mk_add_partition_field m a ak pf adda addak : decl =
     returns  = Tyunit;
     raises   = [Enotfound;Ekeyexist];
     variants = [];
-    requires = [];
+    requires = mk_add_asset_precond m adda "new_asset";
     ensures  = mk_add_ensures m ("add_"^a^"_"^pf) adda "new_asset";
     body     =
       Tif (Tnot (Tmem (a,
@@ -1147,7 +1162,7 @@ let mk_storage_api (m : M.model) records =
         let t         =  M.Utils.get_asset_key m (dumloc n) |> snd |> map_btype in
         acc @ [ mk_unshallow n t ]
       | M.APIFunction (Listtocoll n) ->
-        acc @ [ mk_listtocoll n ]
+        acc @ [ mk_listtocoll m n ]
       | _ -> acc
     ) [] |> loc_decl |> deloc
 

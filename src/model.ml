@@ -2294,6 +2294,7 @@ end = struct
         let do_fold =
           match asset with
           | Some a when compare n a = 0 -> true
+          | Some _ -> false
           | _ -> true
         in
         if do_fold then
