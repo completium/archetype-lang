@@ -224,12 +224,6 @@ let mk_set_asset m key = function
     }
   | _ -> assert false
 
-(* f --> f (get a_assets k) *)
-let mk_app_field (a : loc_ident) (f : loc_ident) : loc_term * loc_term  =
-  let arg   : term     = Tvar "a" in
-  let loc_f : loc_term = mk_loc f.loc (Tvar f) in
-  (loc_f,with_dummy_loc (Tapp (loc_f,[loc_term arg])))
-
 (* n is the asset name
    f is the name of the key field
    ktyp is the key type
@@ -801,31 +795,51 @@ let does_not_add_asset m an b =
    n is the asset name
    inv is the invariant to extend
 *)
-let mk_invariant m n ?(for_loop = false) inv : loc_term =
+
+(* f --> f a *)
+let mk_app_field (a : loc_ident) (f : loc_ident) : loc_term * loc_term  =
+  let arg   : term     = Tvar "a" in
+  let loc_f : loc_term = mk_loc f.loc (Tvar f) in
+  (loc_f,with_dummy_loc (Tapp (loc_f,[loc_term arg])))
+
+let mk_invariant m n src inv : loc_term =
   let r        = M.Utils.get_info_asset m n in
   let fields   = r.values |> List.map (fun (i,_,_) -> i) |> wdl in
   let asset    = map_lident n in
   let replacements = List.map (fun f -> mk_app_field asset f) fields in
-  let replaced = List.fold_left (fun acc (t1,t2) -> loc_replace t1 t2 acc) inv replacements in
-  let asset_coll =
-    if for_loop then
-      mk_ac (unloc n)
-    else
-      Tvar (mk_ac_id asset.obj)
+  let replacing = List.fold_left (fun acc (t1,t2) -> loc_replace t1 t2 acc) inv replacements in
+  let mem_pred =
+    match src with
+    | `Storage -> Tmem ((unloc_ident asset),
+                        Tvar "a",
+                        Tvar (mk_ac_id asset.obj))
+    | `Loop    -> Tmem ((unloc_ident asset),
+                        Tvar "a",
+                        mk_ac (unloc n))
+    | `PreList arg ->
+      let key = M.Utils.get_asset_key m n |> fst in
+      Tapp (Tvar ((String.capitalize_ascii (unloc n))^".internal_contains"),
+            [Tdoti ("a",key); Tvar arg])
+    | `PreColl arg -> Tmem ((unloc_ident asset),
+                            Tvar "a",
+                            Tvar arg)
+    | _ -> Tnone
   in
   let prefix   = Tforall ([["a"],Tyasset (unloc_ident asset)],
-                          Timpl (Tmem ((unloc_ident asset),
-                                       Tvar "a",
-                                       asset_coll),
+                          Timpl (mem_pred,
                                  Ttobereplaced)) in
-  loc_replace (with_dummy_loc Ttobereplaced) replaced (loc_term prefix)
+  loc_replace (with_dummy_loc Ttobereplaced) replacing (loc_term prefix)
 
 let mk_storage_invariant m n (lt : M.label_term) = {
   id = Option.fold (fun _ x -> map_lident x)  (with_dummy_loc "") lt.label;
-  form = mk_invariant m n (map_term lt.term);
+  form = mk_invariant m n `Storage (map_term lt.term);
 }
 
-let mk_loop_invariant m n inv : loc_term = mk_invariant m (dumloc n) ~for_loop:(true) inv
+let mk_pre_list m n arg inv : loc_term = mk_invariant m (dumloc n) (`Prelist arg) inv
+
+let mk_pre_coll m n arg inv : loc_term = mk_invariant m (dumloc n) (`Precoll arg) inv
+
+let mk_loop_invariant m n inv : loc_term = mk_invariant m (dumloc n) `Loop inv
 
 let map_record m (r : M.record) =
   Drecord (map_lident r.name, map_record_values r.values)
