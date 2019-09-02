@@ -1279,7 +1279,7 @@ let rec for_xexpr (mode : emode_t) (env : env) ?(ety : M.ptyp option) (tope : PT
       end else
         let s1 = for_action_description env s1 in
         let s2 = for_security_action env s2 in
-        mk_sp (Some M.vtbool) (M.PsecurityActionRole (s1, s2))
+        mk_sp (Some M.vtbool) (M.PsecurityActionAction (s1, s2))
 
     | Eapp      _
     | Elabel    _

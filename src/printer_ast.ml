@@ -76,7 +76,7 @@ let pp_bval fmt (bval : bval) =
     | BVdate v          -> pp_str fmt v
     | BVstring s        -> pp_str fmt s
     | BVcurrency (c, v) -> Format.fprintf fmt "%a %a" pp_big_int v pp_currency c
-    | BVaddress v       -> pp_str fmt v
+    | BVaddress v       -> Format.fprintf fmt "@@%a" pp_str v
     | BVduration v      -> pp_str fmt v
   in
   pp_struct_poly pp_node fmt bval
@@ -156,7 +156,7 @@ let to_const = function
   | Cnone         -> "none"
   | Cany          -> "any"
   | Canyaction    -> "anyaction"
-  | Cisempty      -> "is_empty"
+  | Cisempty      -> "isempty"
   | Cget          -> "get"
   | Cadd          -> "add"
   | Caddnofail    -> "addnofail"
@@ -194,7 +194,7 @@ let pp_call_kind fmt = function
 let pp_security_role = pp_lident
 
 let pp_action_description fmt = function
-  | ADAny -> pp_str fmt "any"
+  | ADAny -> pp_str fmt "anyaction"
   | ADOp (a, b) -> Format.fprintf fmt "(%s %a)" a pp_id b
 
 let rec pp_pterm fmt (pterm : pterm) =
@@ -231,10 +231,10 @@ let rec pp_pterm fmt (pterm : pterm) =
 
     | Pcall (meth, kind, args) ->
       let pp fmt (meth, kind, args) =
-        Format.fprintf fmt "%a%a (%a)"
+        Format.fprintf fmt "%a%a %a"
           (pp_option (pp_postfix "." pp_pterm)) meth
           pp_call_kind kind
-          (pp_list ", " pp_term_arg) args
+          (pp_list " " pp_term_arg) args
       in
       (pp_with_paren pp) fmt (meth, kind, args)
 
@@ -339,17 +339,26 @@ let rec pp_pterm fmt (pterm : pterm) =
 
     | PsecurityActionRole (desc, s) ->
       let pp fmt (desc, s) =
-        Format.fprintf fmt "%a security action role %a"
+        Format.fprintf fmt "[_[ %a may be performed only by role %a ]_]"
           pp_action_description desc
-          (pp_list " " pp_security_role) s
+          (fun fmt s ->
+             if List.length s = 1
+             then pp_security_role fmt (List.nth s 0)
+             else Format.fprintf fmt "[%a]" (pp_list " or " pp_security_role) s
+          ) s
       in
       (pp_with_paren pp) fmt (desc, s)
 
     | PsecurityActionAction (desc, s) ->
       let pp fmt (desc, s) =
-        Format.fprintf fmt "%a security action action %a"
+        Format.fprintf fmt "[_[ %a may be performed only by action %a ]_]"
           pp_action_description desc
-          (pp_list " " pp_security_role) s
+          (fun fmt s ->
+             if List.length s = 1
+             then pp_security_role fmt (List.nth s 0)
+             else Format.fprintf fmt "[%a]" (pp_list " or " pp_security_role) s
+          ) s
+
       in
       (pp_with_paren pp) fmt (desc, s)
   in
@@ -358,23 +367,35 @@ let rec pp_pterm fmt (pterm : pterm) =
 and pp_term_arg fmt = function
   | AExpr pt -> pp_pterm fmt pt
   | AFun (id, t, pt) ->
-    Format.fprintf fmt "(%a : %a) -> %a"
-      pp_id id
-      pp_ptyp t
-      pp_pterm pt
+    if !Options.opt_typed
+    then
+      Format.fprintf fmt "(%a : %a) -> %a"
+        pp_id id
+        pp_ptyp t
+        pp_pterm pt
+    else
+      pp_pterm fmt pt
 
   | AEffect l ->
-    (pp_list " " (fun fmt (id, op, pt) ->
-         Format.fprintf fmt "%a %a %a"
-           pp_id id
-           pp_operator op
-           pp_pterm pt)) fmt l
+    Format.fprintf fmt "{ %a }"
+      (pp_list "; " (fun fmt (id, op, pt) ->
+           Format.fprintf fmt "%a %a %a"
+             pp_id id
+             pp_operator op
+             pp_pterm pt)) l
 
 let pp_instruction_poly pp fmt i =
   pp fmt i.node
 
 let rec pp_instruction fmt (i : instruction) =
   let pp_node fmt = function
+    | Iif (c, t, {node = Iseq []; _}) ->
+      let pp fmt (c, t) =
+        Format.fprintf fmt "if %a@\nthen @[%a@]"
+          pp_pterm c
+          pp_instruction t
+      in
+      (pp_with_paren pp) fmt (c, t)
     | Iif (c, t, e) ->
       let pp fmt (c, t, e) =
         Format.fprintf fmt "if %a@\nthen @[%a@]@\nelse @[%a@]"
@@ -386,7 +407,8 @@ let rec pp_instruction fmt (i : instruction) =
 
     | Ifor (id, c, body) ->
       let pp fmt (id, c, body) =
-        Format.fprintf fmt "for (%a in %a)@\n  @[%a@]"
+        Format.fprintf fmt "%afor (%a in %a)@\n  @[%a@]"
+          (fun fmt x -> match x with Some v -> (Format.fprintf fmt "%a : " pp_str v) | _ -> ()) i.label
           pp_id id
           pp_pterm c
           pp_instruction body
@@ -461,10 +483,10 @@ let rec pp_instruction fmt (i : instruction) =
 
     | Icall (meth, kind, args) ->
       let pp fmt (meth, kind, args) =
-        Format.fprintf fmt "%a%a (%a)"
+        Format.fprintf fmt "%a%a %a"
           (pp_option (pp_postfix "." pp_pterm)) meth
           pp_call_kind kind
-          (pp_list ", " pp_term_arg) args
+          (pp_list " " pp_term_arg) args
       in
       (pp_with_paren pp) fmt (meth, kind, args)
 
@@ -510,46 +532,55 @@ let pp_definitions fmt (d : lident definition) =
     pp_pterm d.body
 
 let pp_invariant fmt (i : lident invariant) =
-  Format.fprintf fmt "invariant of %a = {@\n  @[%a@]@\n}"
+  Format.fprintf fmt "invariants for %a {@\n  @[%a@]@\n}"
     pp_id i.label
-    (pp_list "@\n" pp_pterm) i.formulas
-
-let pp_specification fmt (s : lident specification) : unit =
-  Format.fprintf fmt "specification %a = {@\n  @[%a%a@]@\n}"
-    pp_id s.name
-    pp_pterm s.formula
-    (pp_do_if (not (List.is_empty s.invariants))
-       (fun fmt l ->
-          Format.fprintf fmt "@\n  @[%a@]"
-            (pp_list "@\n" pp_invariant) l)) s.invariants
+    (pp_list ";@\n" pp_pterm) i.formulas
 
 let pp_assert fmt (s : lident assert_) : unit =
-  Format.fprintf fmt "assert %a on %a = {@\n  @[%a%a@]@\n}"
+  Format.fprintf fmt "assert %a at %a = {@\n  @[%a@\n%a@]@\n}"
     pp_id s.name
     pp_id s.label
     pp_pterm s.formula
-    (pp_no_empty_list pp_invariant) s.invariants
+    (pp_no_empty_list_with_sep "@\n" pp_invariant) s.invariants
+
+let pp_specification fmt (s : lident specification) : unit =
+  Format.fprintf fmt "specification %a = {@\n  @[%a@\n%a@]@\n}"
+    pp_id s.name
+    pp_pterm s.formula
+    (pp_no_empty_list_with_sep "@\n" pp_invariant) s.invariants
 
 let pp_verification fmt (v : lident verification) =
-  Format.fprintf fmt "@[%a%a%a%a%a%a%a%a%a@]@\n"
-    (pp_no_empty_list2 pp_predicate) v.predicates
-    (pp_no_empty_list2 pp_definitions) v.definitions
-    (pp_no_empty_list2 (fun fmt -> Format.fprintf fmt "axioms:@\n  @[%a@]@\n" pp_label_term)) v.lemmas
-    (pp_no_empty_list2 (fun fmt -> Format.fprintf fmt "theorems:@\n  @[%a@]@\n" pp_label_term)) v.theorems
-    (pp_no_empty_list2 pp_variable_verif) v.variables
-    (pp_no_empty_list2 (fun fmt (id, l : lident * lident label_term list) ->
-         Format.fprintf fmt "invariants:@\n  @[%a@]@\n"
-           (pp_list "@\n" (fun fmt (lt : lident label_term) ->
-                Format.fprintf fmt "%a : %a"
-                  pp_id id
-                  pp_label_term lt
-              )) l)) v.invariants
-    (pp_option (fun fmt -> Format.fprintf fmt "effect {@\n  @[%a@]}@\n" pp_pterm)) v.effect
-    (pp_no_empty_list2 pp_specification) v.specs
-    (pp_no_empty_list pp_assert) v.asserts
+  let empty = List.is_empty v.predicates
+              && List.is_empty v.definitions
+              && List.is_empty v.lemmas
+              && List.is_empty v.theorems
+              && List.is_empty v.variables
+              && List.is_empty v.invariants
+              && List.is_empty v.asserts
+              && List.is_empty v.specs
+  in
+  if empty
+  then ()
+  else
+    Format.fprintf fmt "verification {@\n  @[%a%a%a%a%a%a%a%a%a@]@\n}@\n"
+      (pp_no_empty_list2 pp_predicate) v.predicates
+      (pp_no_empty_list2 pp_definitions) v.definitions
+      (pp_no_empty_list2 (fun fmt -> Format.fprintf fmt "axioms:@\n  @[%a@]@\n" pp_label_term)) v.lemmas
+      (pp_no_empty_list2 (fun fmt -> Format.fprintf fmt "theorems:@\n  @[%a@]@\n" pp_label_term)) v.theorems
+      (pp_no_empty_list2 pp_variable_verif) v.variables
+      (pp_no_empty_list2 (fun fmt (id, l : lident * lident label_term list) ->
+           Format.fprintf fmt "invariants:@\n  @[%a@]@\n"
+             (pp_list "@\n" (fun fmt (lt : lident label_term) ->
+                  Format.fprintf fmt "%a : %a"
+                    pp_id id
+                    pp_label_term lt
+                )) l)) v.invariants
+      (pp_option (fun fmt -> Format.fprintf fmt "effect {@\n  @[%a@]}@\n" pp_pterm)) v.effect
+      (pp_no_empty_list2 pp_assert) v.asserts
+      (pp_no_empty_list2 pp_specification) v.specs
 
 let pp_variable fmt (v : lident variable) =
-  Format.fprintf fmt "%s %a %a%a%a%a"
+  Format.fprintf fmt "%s %a %a%a%a%a@\n"
     (if v.constant then "constant" else "variable")
     pp_id v.decl.name
     pp_ptyp (Option.get v.decl.typ)
@@ -626,7 +657,7 @@ let rec pp_sexpr fmt (s : sexpr) =
   pp_struct_poly pp_node fmt s
 
 let pp_transition fmt t =
-  Format.fprintf fmt "transition from %a%a =@\n  @[%a@]\n"
+  Format.fprintf fmt "transition from %a%a =@\n  @[%a@]@\n"
     pp_sexpr t.from
     (pp_option (pp_prefix " on " (fun fmt (x, y) -> Format.fprintf fmt "%a.%a" pp_id x pp_id y))) t.on
     (pp_list "@\n" (fun fmt (to_, cond, action) ->
@@ -656,11 +687,11 @@ let pp_transaction fmt (t : transaction) =
            pp_id x.name
            pp_ptyp (Option.get x.typ)
        )) t.args
+    (pp_option pp_verification) t.verification
     (pp_option (fun fmt -> Format.fprintf fmt "called by %a@\n" pp_rexpr)) t.calledby
     (pp_do_if t.accept_transfer (fun fmt _ -> Format.fprintf fmt "accept transfer@\n")) ()
     (pp_option (pp_list "@\n " (fun fmt -> Format.fprintf fmt "require {@\n  @[%a@]@\n}@\n" pp_label_term))) t.require
     (pp_option (fun fmt x -> Format.fprintf fmt "transition:@\n  @[%a@]@\n" pp_transition x)) t.transition
-    (pp_option pp_verification) t.verification
     (pp_list "@\n" pp_function) t.functions
     (pp_option (fun fmt x -> Format.fprintf fmt "effect {@\n  @[%a@]@\n}@\n" pp_instruction x)) t.effect
 
@@ -682,7 +713,7 @@ let pp_ast fmt (ast : model) =
     (pp_no_empty_list2 pp_contract) ast.contracts
     (pp_no_empty_list2 pp_function) ast.functions
     (pp_no_empty_list2 pp_transaction) ast.transactions
-    (pp_no_empty_list (fun fmt -> Format.fprintf fmt "verification {@\n  @[%a@]@\n}"pp_verification)) ast.verifications
+    (pp_no_empty_list2 pp_verification) ast.verifications
 
 (* -------------------------------------------------------------------------- *)
 let string_of__of_pp pp x =

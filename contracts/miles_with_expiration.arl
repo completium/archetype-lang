@@ -94,21 +94,6 @@ action consume (a : address) (quantity : int) = {
   }
 }
 
-verification {
-  (* this ensures that any mile was added with the ‘add’ action *)
-  specification g1 = {
-    [_[ anyaction may be performed only by role admin]_]
-  }
-
-  specification g2 = {
-    [_[ (remove mile) may be performed only by action [consume or clear_expired] ]_]
-  }
-
-  specification g3 = {
-    not ( [_[ (add mile) may be performed only by action consume]_] )
-  }
-}
-
 action clear_expired = {
   verification {
     specification s3 = {
@@ -125,5 +110,20 @@ action clear_expired = {
     loop2 : for (o in owner) (
       o.miles.removeif (the.expiration < now)
     )
+  }
+}
+
+verification {
+  (* this ensures that any mile was added with the ‘add’ action *)
+  specification g1 = {
+    [_[ anyaction may be performed only by role admin]_]
+  }
+
+  specification g2 = {
+    [_[ (remove mile) may be performed only by action [consume or clear_expired] ]_]
+  }
+
+  specification g3 = {
+    not ( [_[ (add mile) may be performed only by action consume]_] )
   }
 }
