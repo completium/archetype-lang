@@ -19,10 +19,13 @@ let pp_list sep pp =
     ~pp_sep:(fun fmt () -> Format.fprintf fmt "%(%)" sep)
     pp
 
-let pp_no_empty_list pp fmt l =
+let pp_no_empty_list_with_sep sep pp fmt l =
   if List.is_empty l
   then ()
-  else (pp_list "@\n" pp) fmt l
+  else (pp_list sep pp) fmt l
+
+let pp_no_empty_list pp fmt l =
+  pp_no_empty_list_with_sep "@\n" pp fmt l
 
 let pp_no_empty_list2 pp fmt l =
   if List.is_empty l

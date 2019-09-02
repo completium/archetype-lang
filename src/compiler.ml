@@ -226,6 +226,8 @@ let main () =
       "-ast", Arg.Set Options.opt_ast, " Generate typed ast";
       "--typed-ast", Arg.Set Options.opt_ast, " Same as -ast";
       "--typed", Arg.Set Options.opt_typed, " Display type in ast output";
+      "-ap", Arg.Set Options.opt_all_parenthesis, " Display all parenthesis in printer";
+      "--typed", Arg.Set Options.opt_all_parenthesis, " Same as -ap";
       "-sa", Arg.Set Options.opt_sa, " Transform to shallow asset";
       "--shallow-asset", Arg.Set Options.opt_sa, " Same as -sa";
       "-skv", Arg.Set Options.opt_skv, " Split key value of collection of asset";
