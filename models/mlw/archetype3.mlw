@@ -69,8 +69,6 @@ module IntListUtils
 
   let lcard (l : list int) : int = Length.length l
 
-  goal sanity_check2 : false 
-
 end
 
 theory Contract
@@ -99,10 +97,11 @@ module AssetCollection
   use int.Int
   use option.Option
 
-  type t = abstract {}
+  type t = abstract {}        (* asset type          *)
+  val function sortf t : int  (* asset sort function *)
+  val function keyf  t : int  (* asset key function  *)
 
-  val function sortf t : int
-  val function keyf  t : int
+  predicate le (a b : t) = keyf a <= keyf b
 
   let rec function internal_contains (k : key) (l : list t) : bool 
   variant { l }
@@ -115,19 +114,72 @@ module AssetCollection
   | Nil -> false
   end 
 
-  predicate unique (l : list t) 
-  = 
+  clone list.Sorted      as S with type t  = t, 
+                              predicate le = le,
+                              goal Transitive.Trans
+
+  use list.Permut
+
+  let rec function insert (a : t) (l : list t) : list t
+  requires { S.sorted l }
+  variant { l }
+  ensures { S.sorted result }
+  ensures { permut (Cons a l) result }
+  ensures { internal_contains (keyf a) result }
+  =
   match l with
-  | Cons e tl -> not (internal_contains (keyf e) tl)
-  | Nil -> true
+  | Cons e tl ->
+    if keyf a <= keyf e then
+      Cons a l
+    else
+      Cons e (insert a tl)
+  | Nil -> Cons a Nil
   end
+
+  let rec function internal_sort (l : list t) : list t
+  variant { l }
+  ensures { S.sorted result }
+  ensures { permut l result }
+  =
+  match l with
+  | Cons e tl -> insert e (internal_sort tl)
+  | Nil -> Nil
+  end
+
+  inductive unique (l : list t) =
+  | unique_nil: unique (Nil : list t)
+  | unique_one: forall a : t. unique (Cons a Nil)
+  | unique_many: 
+    forall a : t, l : list t.
+      not (internal_contains (keyf a) l) ->
+      unique l ->
+      unique (Cons a l)
 
   val function witness : t
 
+  predicate internal_no_witness (l : list t) = 
+    forall a : t.
+    internal_contains (keyf a) l -> keyf a <> keyf witness
+
+  lemma unique_insert : forall a : t, l : list t.
+  not (internal_contains (keyf a) l) ->
+  unique l -> 
+  unique (insert a l)
+
+  lemma no_witness_insert : forall a: t, l : list t.
+  keyf a <> keyf witness ->
+  internal_no_witness l -> 
+  internal_no_witness (insert a l)
+
+  (* asset collection type *)
   type collection = {
       content : list t
   } invariant {
     unique content
+  } invariant {
+    internal_no_witness content
+  } invariant {
+    S.sorted content
   }
 
   (* SET THEORY *)
@@ -140,14 +192,13 @@ module AssetCollection
   = 
   internal_contains (keyf a) c.content
 
-  lemma no_witness : forall c : collection, a : t.
-  mem a c -> keyf a <> keyf witness
-
   let function card (c : collection) : int 
   ensures { result >= 0 }
   = length c.content
 
   predicate (==) (c1 c2 : collection) = forall a : t. mem a c1 <-> mem a c2
+
+  axiom reflexivity : forall c1 c2 : collection. c1 == c2 -> c1 = c2
 
   predicate subset (c1 c2 : collection) = forall k : t. mem k c1 -> mem k c2
 
@@ -164,20 +215,100 @@ module AssetCollection
 
   axiom mem_singleton: forall k1 k2 : t. mem k1 (singleton k2) -> k1 = k2
 
-  lemma card_singleton: forall a : t. card (singleton a) = 1
+  lemma card_singleton: forall a : t. keyf a <> keyf witness -> card (singleton a) = 1
 
   predicate is_empty (c : collection) = is_nil c.content
 
   lemma mem_empty : is_empty empty
 
-  function diff (c1 c2 : collection) : collection
-  axiom diff_def: forall c1 c2 : collection, x : t. mem x (diff c1 c2) <-> mem x c1 /\ not (mem x c2)
+  let function diff (c1 c2 : collection) : collection
+  ensures {
+    forall x : t. mem x result <-> mem x c1 /\ not (mem x c2)
+  }
+  = 
+  let rec internal_diff (l : list t) : list t
+  requires { unique l }
+  requires { S.sorted l }
+  requires { forall a : t.
+    internal_contains (keyf a) l -> keyf a <> keyf witness
+  }
+  variant { l } 
+  ensures {
+    forall x : t. internal_contains (keyf x) result <-> internal_contains (keyf x) l /\ not (mem x c2)
+  }
+  ensures { unique result }
+  ensures { internal_no_witness result }
+  ensures { S.sorted result }
+  =
+  match l with
+  | Cons e tl ->
+    if mem e c2 then
+      internal_diff tl
+    else 
+      Cons e (internal_diff tl)
+  | Nil -> Nil
+  end in
+  { content = internal_diff c1.content }
 
-  function inter (c1 c2 : collection) : collection
-  axiom inter_def : forall c1 c2 : collection, x : t. mem x (inter c1 c2) <-> mem x c1 /\ mem x c2 
+  let function inter (c1 c2 : collection) : collection
+  ensures { 
+    forall x : t. mem x result <-> mem x c1 /\ mem x c2 
+  }
+  =
+  let rec internal_inter (l : list t) : list t
+  requires { unique l }
+  requires { forall a : t.
+    internal_contains (keyf a) l -> keyf a <> keyf witness
+  }
+  variant { l }
+  ensures {
+    forall x : t. internal_contains (keyf x) result <-> internal_contains (keyf x) l /\ mem x c2 
+  }
+  ensures { unique result }
+  ensures { 
+    forall a : t.
+    internal_contains (keyf a) result -> keyf a <> keyf witness
+  }
+  =
+  match l with
+  | Cons e tl ->
+    if not (mem e c2) then
+      internal_inter tl
+    else
+      Cons e (internal_inter tl)
+  | Nil -> Nil
+  end in
+  { content = internal_sort (internal_inter c1.content) } 
 
-  function union (c1 c2 : collection) : collection
-  axiom union_def : forall c1 c2 : collection, x : t. mem x (union c1 c2) <-> mem x c1 \/ mem x c2
+  let function union (c1 c2 : collection) : collection
+  ensures {
+     forall x : t. mem x result <-> mem x c1 \/ mem x c2
+  }
+  =
+  let rec internal_union (l : list t) : list t
+  requires { unique l }
+  requires { forall a : t.
+    internal_contains (keyf a) l -> keyf a <> keyf witness
+  }
+  variant { l }
+  ensures {
+    forall x : t. internal_contains (keyf x) result <-> internal_contains (keyf x) l \/ mem x c2
+  }
+  ensures { unique result }
+  ensures { 
+    forall a : t.
+    internal_contains (keyf a) result -> keyf a <> keyf witness
+  }
+  =
+  match l with
+  | Cons e tl ->
+    if mem e c2 then
+      internal_union tl
+    else
+      Cons e (internal_union tl)
+  | Nil -> c2.content
+  end in
+  { content = internal_sort (internal_union c1.content) }
 
   lemma subset_diff: forall c1 c2 : collection. subset (diff c1 c2) c1
 
@@ -203,10 +334,11 @@ module AssetCollection
   (* Storage API *)
 
   let add (c : collection) (a : t)
-  requires { keyf a <> keyf witness } 
+  requires { keyf a <> keyf witness }
+  requires { not (mem a c) } 
   ensures { mem a result }
-  ensures { result = union c (singleton a) }
-  = { content = Cons a c.content } 
+  ensures { result = union (singleton a) c }
+  = { content = insert a c.content } 
 
   let set (c : collection) (k : key) (a : t) : collection 
   requires { keyf a <> keyf witness }
