@@ -698,14 +698,7 @@ let pp_transaction fmt (t : transaction) =
 
 let pp_ast fmt (ast : model) =
   Format.fprintf fmt "archetype %a@\n@\n\
-                      %a\
-                      %a\
-                      %a\
-                      %a\
-                      %a\
-                      %a\
-                      %a\
-                      @."
+                      %a%a%a%a%a%a%a@."
     pp_id ast.name
     (pp_no_empty_list2 pp_variable) ast.variables
     (pp_no_empty_list2 pp_asset) ast.assets

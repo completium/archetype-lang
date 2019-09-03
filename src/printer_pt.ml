@@ -453,7 +453,7 @@ let rec pp_expr outer pos fmt a =
   | Efor (None, id, expr, body) ->
 
     let pp fmt (id, expr, body) =
-      Format.fprintf fmt "for (%a in %a) (@\n@[<v 2>  %a@]@\n)"
+      Format.fprintf fmt "for (%a in %a) (@\n  @[%a@]@\n)"
         pp_id id
         (pp_expr e_default PNone) expr
         (pp_expr e_for PNone) body
@@ -752,7 +752,7 @@ let pp_asset_post_option fmt (apo : asset_post_option) =
     Format.fprintf fmt " with states %a"
       pp_id i
   | APOconstraints cs ->
-    Format.fprintf fmt " with {@[<v 0>%a@]}"
+    Format.fprintf fmt " with {@\n  @[%a@]@\n}"
       (pp_list ";@\n" pp_label_expr) cs
   | APOinit e ->
     Format.fprintf fmt " initialized by %a"
@@ -764,18 +764,18 @@ let map_option f x =
   | None -> ()
 
 let pp_invariants fmt (lbl, is) =
-  Format.fprintf fmt "invariants for %a {@\n@[<v 2>  %a@]@\n}"
+  Format.fprintf fmt "invariants for %a {@\n  @[%a@]@\n}"
     pp_id lbl
     (pp_list ";@\n" (pp_expr e_default PNone)) is
 
 let pp_specification fmt (id, f, is) =
-  Format.fprintf fmt "specification %a = {@\n@[<v 2>  %a@]@\n@[<v 2>  %a@]@\n}"
+  Format.fprintf fmt "specification %a = {@\n  @[%a@]@\n  @[%a@]@\n}"
     pp_id id
     (pp_expr e_default PNone) f
     (pp_list "@\n" pp_invariants) is
 
 let pp_assert fmt (id, lbl, f, is) =
-  Format.fprintf fmt "assert %a at %a = {@\n@[<v 2>  %a@]@\n@[<v 2>  %a@]@\n}"
+  Format.fprintf fmt "assert %a at %a = {@\n  @[%a@]@\n  @[%a@]@\n}"
     pp_id id
     pp_id lbl
     (pp_expr e_default PNone) f
@@ -783,25 +783,25 @@ let pp_assert fmt (id, lbl, f, is) =
 
 let pp_verification_item fmt = function
   | Vpredicate (id, args, body) ->
-    Format.fprintf fmt "predicate %a %a = {@\n@[<v 2>  %a@\n}"
+    Format.fprintf fmt "predicate %a %a = {@\n  @[%a@]@\n}"
       pp_id id
       pp_fun_args args
       (pp_expr e_default PNone) body
 
   | Vdefinition (id, typ, var, body) ->
-    Format.fprintf fmt "definition %a =@\n@[<v 2>  { %a : %a | %a }@]"
+    Format.fprintf fmt "definition %a =@\n@[{ %a : %a | %a }@]"
       pp_id id
       pp_id var
       pp_type typ
       (pp_expr e_default PNone) body
 
   | Vlemma (id, body) ->
-    Format.fprintf fmt "lemma %a = {@\n@[<v 2>  %a@]@\n}"
+    Format.fprintf fmt "lemma %a = {@\n  @[%a@]@\n}"
       pp_id id
       (pp_expr e_default PNone) body
 
   | Vtheorem (id, body) ->
-    Format.fprintf fmt "theorem %a = {@\n@[<v 2>  %a@]@\n}"
+    Format.fprintf fmt "theorem %a = {@\n  @[%a@]@\n}"
       pp_id id
       (pp_expr e_default PNone) body
 
@@ -812,7 +812,7 @@ let pp_verification_item fmt = function
       (pp_option (fun fmt x -> Format.fprintf fmt " = %a" (pp_expr e_equal PRight) x)) dv
 
   | Veffect e ->
-    Format.fprintf fmt "effect {@\n@[<v 2>  %a@]@\n}"
+    Format.fprintf fmt "effect {@\n  @[%a@]@\n}"
       (pp_expr e_default PNone) e
 
   | Vassert (id, lbl, f, is) -> pp_assert fmt (id, lbl, f, is)
@@ -833,7 +833,7 @@ let pp_function fmt (f : s_function) =
                   fun fmt (x : verification) ->
                     let (items, exts) = unloc x in
                     let items = List.map unloc items in
-                    Format.fprintf fmt "verification%a {@\n@[<v 2>  %a@]@\n}"
+                    Format.fprintf fmt "verification%a {@\n  @[%a@]@\n}"
                       pp_extensions exts
                       pp_verification_items items
                 )) f.verif
@@ -850,7 +850,7 @@ let pp_verif fmt (items, exts) =
      end *)
   | _ ->
     begin
-      Format.fprintf fmt "verification%a {@\n@[<v 2>  %a@]@\n}@\n"
+      Format.fprintf fmt "verification%a {@\n  @[%a@]@\n}@\n"
         pp_extensions exts
         pp_verification_items items
     end
@@ -868,7 +868,7 @@ let pp_action_properties fmt (props : action_properties) =
   if (props.accept_transfer)
   then Format.fprintf fmt "accept transfer@\n";
   map_option (fun (cs, exts) ->
-      Format.fprintf fmt "require%a{@\n@[<v 2>  %a@]}@\n"
+      Format.fprintf fmt "require%a{@\n  @[%a@]@\n}@\n"
         pp_extensions exts
         pp_label_exprs cs) props.require;
   (pp_list "@\n" pp_function) fmt (List.map unloc props.functions)
@@ -882,7 +882,7 @@ let pp_transition fmt (to_, conditions, effect) =
             pp_extensions exts
             (pp_expr e_default PNone) e)) conditions
     (pp_option (fun fmt (e, exts) ->
-         Format.fprintf fmt "@\nwith effect%a {@\n@[<v 2>  %a@]}"
+         Format.fprintf fmt "@\nwith effect%a {@\n  @[%a@]@\n}"
            pp_extensions exts
            pp_simple_expr e)) effect
 
@@ -923,7 +923,7 @@ let rec pp_declaration fmt { pldesc = e; _ } =
       (fun fmt ids -> (
            match ids with
            | [] -> ()
-           | l -> Format.fprintf fmt " =@\n@[<v 2>@]%a"
+           | l -> Format.fprintf fmt " =@\n  @[%a@]"
                     (pp_list "@\n" (pp_prefix "| " pp_ident_state)) l
          )) ids
 
@@ -933,7 +933,7 @@ let rec pp_declaration fmt { pldesc = e; _ } =
       (pp_option pp_asset_operation) ops
       pp_id id
       (pp_prefix " " (pp_list " @," pp_asset_option)) opts
-      (pp_do_if (List.length fields > 0) ((fun fmt -> Format.fprintf fmt " = {@\n@[<v 2>%a@]}@\n" (pp_list "@\n" pp_field)))) fields
+      (pp_do_if (List.length fields > 0) ((fun fmt -> Format.fprintf fmt " = {@\n  @[%a@]@\n}@\n" (pp_list "@\n" pp_field)))) fields
       (pp_list "@\n" pp_asset_post_option) apo
 
   | Daction (id, args, props, code, exts) ->
@@ -944,10 +944,10 @@ let rec pp_declaration fmt { pldesc = e; _ } =
       (pp_do_if (not (is_empty_action_properties_opt props code))
          (fun fmt x ->
             let pr, cod = x in
-            Format.fprintf fmt " = {@\n@[<v 2>%a%a@]@\n}"
+            Format.fprintf fmt " = {@\n  @[%a%a@]@\n}"
               pp_action_properties pr
               (pp_option (fun fmt (code, exts) ->
-                   Format.fprintf fmt "effect%a {@\n@[<v 2>  %a@]}@\n"
+                   Format.fprintf fmt "effect%a {@\n  @[%a@]@\n}@\n"
                      pp_extensions exts
                      (pp_expr e_default PNone) code
                  )) cod)) (props, code)
@@ -964,7 +964,7 @@ let rec pp_declaration fmt { pldesc = e; _ } =
          )) on
       pp_simple_expr from
       (fun fmt (pr, ts) ->
-         Format.fprintf fmt " = {@\n@[<v 2>  %a%a@]@\n}"
+         Format.fprintf fmt " = {@\n  @[%a%a@]@\n}"
            (pp_do_if (not (is_empty_action_properties_opt props None)) pp_action_properties) pr
            (pp_list "@\n" pp_transition) ts) (props, trs)
 
@@ -974,12 +974,12 @@ let rec pp_declaration fmt { pldesc = e; _ } =
       (pp_option (pp_prefix " " (pp_list " " pp_simple_expr))) args
 
   | Dnamespace (id, ds) ->
-    Format.fprintf fmt "namespace %a {@\n@[<v 2>  %a@]@\n}"
+    Format.fprintf fmt "namespace %a {@\n  @[%a@]@\n}"
       pp_id id
       (pp_list "\n" pp_declaration) ds
 
   | Dcontract (id, xs, exts) ->
-    Format.fprintf fmt "contract%a %a = {@\n@[<v 2>  %a@]@\n}"
+    Format.fprintf fmt "contract%a %a = {@\n  @[%a@]@\n}"
       pp_extensions exts
       pp_id id
       (pp_list "@\n" pp_signature) xs
@@ -1001,7 +1001,7 @@ let pp_archetype fmt { pldesc = m; _ } =
   | Marchetype es ->
     Format.fprintf fmt "%a@\n" (pp_list "@\n@\n" pp_declaration) es
   | Mextension (id, ds, es) ->
-    Format.fprintf fmt "archetype extension %a (@\n@[<v 2>  %a@]@\n) = {@\n@[<v 2>  %a@]@\n}@\n"
+    Format.fprintf fmt "archetype extension %a (@\n  @[%a@]@\n) = {@\n  @[%a@]@\n}@\n"
       pp_id id
       (pp_list "@,\n" pp_declaration) ds
       (pp_list "@,\n" pp_declaration) es
