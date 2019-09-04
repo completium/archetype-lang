@@ -45,7 +45,7 @@ let replace_lit_address_by_role (model : model) : model =
 (* transforms vars "to_iter" and "itereated" to M.toiterated and M.iterated
    with iterated collection as argument
    it works if loop lables are unique over the contract
- *)
+*)
 let extend_loop_iter (model : model) : model =
   let get_for_collections () =
     let rec internal_get_for (ctx : ctx_model) acc (t : mterm) =
@@ -137,3 +137,20 @@ let extend_removeif (model : model) : model =
               }) f.verif
         }) m.functions
   }
+
+let process_single_field_storage (model : model) : model =
+  match model.storage with
+  | [i] ->
+    let field_name = unloc i.name in
+    let storage_id = dumloc "_s" in
+    let rec aux (ctx : ctx_model) (mt : mterm) : mterm =
+      match mt.node with
+      | Mvarstorevar a when String.equal (unloc a) field_name ->
+        mk_mterm (Mvarlocal storage_id) mt.type_
+      | Massign (op, a, v) when String.equal (unloc a) field_name ->
+        let vv = map_mterm (aux ctx) v in
+        mk_mterm (Massign (op, storage_id, vv)) mt.type_
+      | _ -> map_mterm (aux ctx) mt
+    in
+    map_mterm_model aux model
+  | _   -> model

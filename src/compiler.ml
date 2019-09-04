@@ -68,6 +68,7 @@ let remove_side_effect   = Gen_reduce.reduce
 let generate_api_storage = Gen_api_storage.generate_api_storage
 let exec_process model   = model |> Gen_transform.replace_lit_address_by_role |> Gen_transform.remove_label |> Gen_transform.flat_sequence
 let extend_removeif      = Gen_transform.extend_removeif
+let post_process_liq     = Gen_transform.process_single_field_storage
 
 let output_liquidity model =
   if !Options.opt_raw
@@ -124,6 +125,7 @@ let generate_target model =
   | LiquidityUrl ->
     model
     |> exec_process
+    |> post_process_liq
     |> shallow_asset
     |> split_key_values
     |> remove_side_effect

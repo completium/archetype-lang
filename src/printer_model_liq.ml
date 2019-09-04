@@ -1169,8 +1169,14 @@ let pp_model fmt (model : model) =
   in
 
   let pp_storage fmt (s : storage) =
-    Format.fprintf fmt "type storage = {@\n@[<v 2>  %a@]@\n}@\n"
-      (pp_list "@\n" pp_storage_item) s
+    match s with
+    | [] -> pp_str fmt "type storage = unit@\n"
+    | [i] ->
+      Format.fprintf fmt "type storage = %a@\n"
+        pp_type i.typ
+    | _ ->
+      Format.fprintf fmt "type storage = {@\n@[<v 2>  %a@]@\n}@\n"
+        (pp_list "@\n" pp_storage_item) s
   in
 
   let pp_init_function fmt (s : storage) =
@@ -1180,8 +1186,14 @@ let pp_model fmt (model : model) =
         (pp_cast Rhs si.typ si.default.type_ pp_mterm) si.default
     in
 
-    Format.fprintf fmt "let%%init initialize = {@\n@[<v 2>  %a@]@\n}@\n"
-      (pp_list "@\n" pp_storage_item) s
+    match s with
+    | [] -> pp_str fmt "let%%init initialize = ()@\n"
+    | [i] ->
+      Format.fprintf fmt "let%%init initialize = %a@\n"
+        (pp_cast Rhs i.typ i.default.type_ pp_mterm) i.default
+    | _ ->
+      Format.fprintf fmt "let%%init initialize = {@\n  @[%a@]@\n}@\n"
+        (pp_list "@\n" pp_storage_item) s
   in
 
   let pp_args fmt args =
