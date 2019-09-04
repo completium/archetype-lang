@@ -107,6 +107,15 @@ let to_model (ast : A.model) : M.model =
     M.mk_pattern node ~loc:p.loc
   in
 
+  let to_comparison (op : A.comparison_operator) : M.comparison_operator =
+    match op with
+    | Gt -> Gt
+    | Ge -> Ge
+    | Lt -> Lt
+    | Le -> Le
+    | _ -> assert false
+  in
+
   let term_arg_to_expr : 't. (A.lident A.term_gen -> M.mterm) -> (A.lident A.term_arg) -> M.mterm =
     fun f a ->
       match a with
@@ -152,6 +161,7 @@ let to_model (ast : A.model) : M.model =
     | A.Plogical (A.Imply, l, r)     -> M.Mimply     (f l, f r)
     | A.Plogical (A.Equiv, l, r)     -> M.Mequiv     (f l, f r)
     | A.Pnot e                       -> M.Mnot       (f e)
+    | A.Pmulticomp (e, l)            -> M.Mmulticomp (f e, List.map (fun (op, e) -> (to_comparison op, f e)) l)
     | A.Pcomp (A.Equal, l, r)        -> M.Mequal     (f l, f r)
     | A.Pcomp (A.Nequal, l, r)       -> M.Mnequal    (f l, f r)
     | A.Pcomp (A.Gt, l, r)           -> M.Mgt        (f l, f r)
@@ -406,14 +416,14 @@ let to_model (ast : A.model) : M.model =
           let id : M.lident = x.name in
           M.mk_enum_item id ~invariants:(List.map (fun x -> to_label_lterm x) x.invariants)
         ) e.items in
-      let enum = M.mk_enum e.name ~values:values in
+      let enum = M.mk_enum (A.Utils.get_enum_name e) ~values:values in
       M.Denum enum
     in
     list @ List.map (fun x -> process_enum x) ast.enums in
 
   let process_info_enums list =
     let process_enum (e : A.enum) : M.info_item =
-      let name = unloc e.name in
+      let name = unloc (A.Utils.get_enum_name e) in
       let values = List.map (fun (x : A.lident A.enum_item_struct) ->
           unloc x.name) e.items in
       let enum = M.mk_info_enum name ~values:values in

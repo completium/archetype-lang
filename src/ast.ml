@@ -265,6 +265,7 @@ type 'id term_node  =
   | Pcall of ('id term_gen option * 'id call_kind * ('id term_arg) list)
   | Plogical of logical_operator * 'id term_gen * 'id term_gen
   | Pnot of 'id term_gen
+  | Pmulticomp of 'id term_gen * (comparison_operator * 'id term_gen) list
   | Pcomp of comparison_operator * 'id term_gen * 'id term_gen
   | Parith of arithmetic_operator * 'id term_gen * 'id term_gen
   | Puarith of unary_arithmetic_operator * 'id term_gen
@@ -461,8 +462,14 @@ type 'id enum_item_struct = {
 }
 [@@deriving show {with_path = false}]
 
+type 'id  enum_kind =
+  | EKenum of 'id
+  | EKstate
+[@@deriving show {with_path = false}]
+
 type 'id enum_struct = {
-  name : 'id; (* "_state" if it's coming from Dstates constructor *)
+  (* name : 'id; "_state" if it's coming from Dstates constructor *)
+  kind: 'id enum_kind;
   items : ('id enum_item_struct) list;
   loc : Location.t [@opaque];
 }
@@ -566,8 +573,8 @@ let mk_transaction_struct ?(args = []) ?calledby ?(accept_transfer = false) ?req
 let mk_enum_item ?(initial = false) ?(invariants = []) ?(loc = Location.dummy) name : 'id enum_item_struct =
   { name; initial; invariants; loc }
 
-let mk_enum ?(items = []) ?(loc = Location.dummy) name =
-  { name; items; loc }
+let mk_enum ?(items = []) ?(loc = Location.dummy) kind =
+  { kind; items; loc }
 
 let mk_decl ?typ ?default ?(loc = Location.dummy) name =
   { name; typ; default; loc }
@@ -598,6 +605,7 @@ let map_term_node (f : 'id term_gen -> 'id term_gen) = function
         | AEffect l -> AEffect (List.map (fun (id, op, e) -> (id, op, f e)) l)) args)
   | Plogical (op, l, r)     -> Plogical (op, f l, f r)
   | Pnot e                  -> Pnot (f e)
+  | Pmulticomp (e, l)       -> Pmulticomp (f e, List.map (fun (op, e) -> (op, f e)) l)
   | Pcomp (c, l, r)         -> Pcomp (c, f l, f r)
   | Parith (op, l, r)       -> Parith (op, f l, f r)
   | Puarith (op, e)         -> Puarith (op, f e)
@@ -653,6 +661,7 @@ let fold_term (f: 'a -> 't -> 'a) (accu : 'a) (term : 'id term_gen) =
       | AEffect l -> List.fold_left (fun accu (_, _, e) -> f accu e) accu l ) accu args
   | Plogical (_, l, r)      -> f (f accu l) r
   | Pnot e                  -> f accu e
+  | Pmulticomp (e, l)       -> List.fold_left (fun accu (_, a) -> f accu a) (f accu e) l
   | Pcomp (_, l, r)         -> f (f accu l) r
   | Parith (_, l, r)        -> f (f accu l) r
   | Puarith (_, e)          -> f accu e
@@ -720,7 +729,7 @@ let fold_map_term g f (accu : 'a) (term : 'id term_gen) : 'term * 'a =
            [(p, i)] @ ps, accu) ([], ea) l
     in
 
-    g (Pmatchwith (ee, l)), psa
+    g (Pmatchwith (ee, pse)), psa
 
   | Pcall (a, id, args) ->
     let ((argss, argsa) : 'c list * 'a) =
@@ -744,6 +753,17 @@ let fold_map_term g f (accu : 'a) (term : 'id term_gen) : 'term * 'a =
   | Pnot e ->
     let ee, ea = f accu e in
     g (Pnot ee), ea
+
+  | Pmulticomp (e, l) ->
+    let ee, ea = f accu e in
+    let (le, la) =
+      List.fold_left
+        (fun (ps, accu) (p, i) ->
+           let pa, accu = f accu i in
+           [(p, i)] @ ps, accu) ([], ea) l
+    in
+
+    g (Pmulticomp (ee, le)), la
 
   | Pcomp (op, l, r) ->
     let le, la = f accu l in
@@ -903,6 +923,7 @@ module Utils : sig
   val is_asset                  : model -> lident -> bool
   val is_enum_value             : model -> lident -> bool
   val get_var_type              : model -> lident -> type_
+  val get_enum_name             : lident enum_struct -> lident
 
 end = struct
   open Tools
@@ -964,9 +985,14 @@ end = struct
        Format.eprintf "lf2: %d@." (List.length list); *)
     List.map2 (fun x y -> x, y) field_list list
 
+  let get_enum_name (e : 'id enum_struct) =
+    match e.kind with
+    | EKenum id -> id
+    | EKstate -> dumloc "_state"
+
   let get_enum_opt ast ident =
     List.fold_left (fun accu (x : 'id enum_struct) ->
-        if (Location.unloc x.name) = (Location.unloc ident)
+        if (Location.unloc (get_enum_name x)) = (Location.unloc ident)
         then Some x
         else accu
       ) None ast.enums
@@ -989,7 +1015,7 @@ end = struct
     List.fold_left (
       fun accu (x : 'id enum_struct) ->
         if List.fold_left (fun accu (x : 'id enum_item_struct) -> accu || (Location.unloc x.name) = (Location.unloc ident)) false x.items
-        then (Some x.name)
+        then (Some (get_enum_name x))
         else accu
     ) None ast.enums
 

@@ -410,6 +410,19 @@ let pp_mterm fmt (mt : mterm) =
       in
       pp fmt e
 
+    | Mmulticomp (e, l) ->
+      let pp fmt (e, l) =
+        let pp_item fmt (op, e) =
+          Format.fprintf fmt "%a %a"
+            pp_comparison_operator op
+            f e
+        in
+        Format.fprintf fmt "%a %a"
+          f e
+          (pp_list " " pp_item) l
+      in
+      pp fmt (e, l)
+
     | Mequal (l, r) ->
       let pp fmt (l, r) =
         Format.fprintf fmt "%a = %a"

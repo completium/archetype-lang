@@ -852,6 +852,9 @@ let pp_model fmt (model : model) =
         in
         pp fmt e
 
+      | Mmulticomp (e, l) ->
+        assert false
+
       | Mequal (l, r) ->
         let pp fmt (l, r : mterm * mterm) =
           Format.fprintf fmt "%a = %a"

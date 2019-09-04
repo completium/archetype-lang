@@ -76,6 +76,13 @@ type 'id pattern_gen = {
 type pattern = lident pattern_gen
 [@@deriving show {with_path = false}]
 
+type comparison_operator =
+  | Gt
+  | Ge
+  | Lt
+  | Le
+[@@deriving show {with_path = false}]
+
 type assignment_operator =
   | ValueAssign
   | PlusAssign
@@ -145,6 +152,7 @@ type ('id, 'term) mterm_node  =
   | Mequiv        of 'term * 'term
   | Misempty      of ident * 'term
   | Mnot          of 'term
+  | Mmulticomp    of 'term * (comparison_operator * 'term) list
   | Mequal        of 'term * 'term
   | Mnequal       of 'term * 'term
   | Mgt           of 'term * 'term
@@ -698,6 +706,7 @@ let cmp_container (c1 : container) (c2 : container) = c1 = c2
 let cmp_btyp (b1 : btyp) (b2 : btyp) : bool = b1 = b2
 let cmp_vset (v1 : vset) (v2 : vset) : bool = v1 = v2
 let cmp_trtyp (t1 : trtyp) (t2 : trtyp) : bool = t1 = t2
+let cmp_comparison_operator (op1 : comparison_operator) (op2 : comparison_operator) : bool = op1 = op2
 
 let cmp_fail_type
     (cmp : 'term -> 'term -> bool)
@@ -783,7 +792,7 @@ let cmp_mterm_node
     | Mremovelocal (c1, i1), Mremovelocal (c2, i2)                                     -> cmp c1 c2 && cmp i1 i2
     | Mclearasset (an1), Mclearasset (an2)                                             -> cmp_ident an1 an2
     | Mclearfield (an1, fn1, i1), Mclearfield (an2, fn2, i2)                           -> cmp_ident an1 an2 && cmp_ident fn1 fn2 && cmp i1 i2
-    | Mremoveif (an1, fn1, i1), Mremoveif (an2, fn2, i2)                           -> cmp_ident an1 an2 && cmp fn1 fn2 && cmp i1 i2
+    | Mremoveif (an1, fn1, i1), Mremoveif (an2, fn2, i2)                               -> cmp_ident an1 an2 && cmp fn1 fn2 && cmp i1 i2
     | Mclearlocal (i1), Mclearlocal (i2)                                               -> cmp i1 i2
     | Mreverseasset (an1), Mreverseasset (an2)                                         -> cmp_ident an1 an2
     | Mreversefield (an1, fn1, i1), Mreversefield (an2, fn2, i2)                       -> cmp_ident an1 an2 && cmp_ident fn1 fn2 && cmp i1 i2
@@ -807,6 +816,7 @@ let cmp_mterm_node
     | Mequiv (l1, r1), Mequiv (l2, r2)                                                 -> cmp l1 l2 && cmp r1 r2
     | Misempty (l1, r1), Misempty (l2, r2)                                             -> cmp_ident l1 l2 && cmp r1 r2
     | Mnot e1, Mnot e2                                                                 -> cmp e1 e2
+    | Mmulticomp (e1, l1), Mmulticomp (e2, l2)                                         -> cmp e1 e2 && List.for_all2 (fun (op1, t1) (op2, t2) -> cmp_comparison_operator op1 op2 && cmp t1 t2) l1 l2
     | Mequal (l1, r1), Mequal (l2, r2)                                                 -> cmp l1 l2 && cmp r1 r2
     | Mnequal (l1, r1), Mnequal (l2, r2)                                               -> cmp l1 l2 && cmp r1 r2
     | Mgt (l1, r1), Mgt (l2, r2)                                                       -> cmp l1 l2 && cmp r1 r2
@@ -980,6 +990,7 @@ let map_term_node (f : 'id mterm_gen -> 'id mterm_gen) = function
   | Mequiv  (l, r)               -> Mequiv (f l, f r)
   | Misempty (l, r)              -> Misempty (l, f r)
   | Mnot e                       -> Mnot (f e)
+  | Mmulticomp (e, l)            -> Mmulticomp (f e, List.map (fun (op, e) -> (op, f e)) l)
   | Mequal (l, r)                -> Mequal (f l, f r)
   | Mnequal (l, r)               -> Mnequal (f l, f r)
   | Mgt (l, r)                   -> Mgt (f l, f r)
@@ -1237,6 +1248,7 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mequiv  (l, r)                        -> f (f accu l) r
   | Misempty  (l, r)                      -> f accu r
   | Mnot e                                -> f accu e
+  | Mmulticomp (e, l)                     -> List.fold_left (fun accu (_, a) -> f accu a) (f accu e) l
   | Mequal (l, r)                         -> f (f accu l) r
   | Mnequal (l, r)                        -> f (f accu l) r
   | Mgt (l, r)                            -> f (f accu l) r
@@ -1341,7 +1353,7 @@ let fold_map_term
            [(p, i)] @ ps, accu) ([], ea) l
     in
 
-    g (Mmatchwith (ee, l)), psa
+    g (Mmatchwith (ee, pse)), psa
 
   | Mapp (id, args) ->
     let ((argss, argsa) : 'c list * 'a) =
@@ -1536,6 +1548,17 @@ let fold_map_term
   | Misempty  (l, r) ->
     let re, ra = f accu r in
     g (Misempty (l, re)), ra
+
+  | Mmulticomp (e, l) ->
+    let ee, ea = f accu e in
+    let (le, la) =
+      List.fold_left
+        (fun (ps, accu) (p, i) ->
+           let pa, accu = f accu i in
+           [(p, i)] @ ps, accu) ([], ea) l
+    in
+
+    g (Mmulticomp (ee, le)), la
 
   | Mnot e ->
     let ee, ea = f accu e in

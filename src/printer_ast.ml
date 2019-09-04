@@ -254,6 +254,19 @@ let rec pp_pterm fmt (pterm : pterm) =
       in
       (pp_with_paren pp) fmt pt
 
+    | Pmulticomp (e, l) ->
+      let pp fmt (e, l) =
+        let pp_item fmt (op, e) =
+          Format.fprintf fmt "%a %a"
+            pp_comparison_operator op
+            pp_pterm e
+        in
+        Format.fprintf fmt "%a %a"
+          pp_pterm e
+          (pp_list " " pp_item) l
+      in
+      (pp_with_paren pp) fmt (e, l)
+
     | Pcomp (op, lhs, rhs) ->
       let pp fmt (op, lhs, rhs) =
         Format.fprintf fmt "%a %a %a"
@@ -617,8 +630,12 @@ let pp_enum_item fmt (ei : lident enum_item_struct) =
             (pp_list ";@\n" pp_label_term))) ei.invariants
 
 let pp_enum fmt (e : lident enum_struct) =
-  Format.fprintf fmt "enum %a =@\n  @[%a@]@\n"
-    pp_id e.name
+  Format.fprintf fmt "%a =@\n  @[%a@]@\n"
+    (fun fmt e ->
+       match e.kind with
+       | EKenum id -> Format.fprintf fmt "enum %a" pp_id id
+       | EKstate -> pp_str fmt "states"
+    ) e
     (pp_list "@\n" pp_enum_item) e.items
 
 let pp_signature fmt (s : lident signature) =
@@ -656,17 +673,6 @@ let rec pp_sexpr fmt (s : sexpr) =
   in
   pp_struct_poly pp_node fmt s
 
-let pp_transition fmt t =
-  Format.fprintf fmt "transition from %a%a =@\n  @[%a@]@\n"
-    pp_sexpr t.from
-    (pp_option (pp_prefix " on " (fun fmt (x, y) -> Format.fprintf fmt "%a.%a" pp_id x pp_id y))) t.on
-    (pp_list "@\n" (fun fmt (to_, cond, action) ->
-         Format.fprintf fmt "to %a%a@\n%a@\n"
-           pp_id to_
-           (pp_option (fun fmt x -> (Format.fprintf fmt " when %a" pp_pterm x))) cond
-           (pp_option (fun fmt x -> (Format.fprintf fmt "with effect {@\n  @[%a@]}@\n" pp_instruction x))) action
-       )) t.trs
-
 let pp_function fmt (f : function_) =
   Format.fprintf fmt "function %a (%a) : %a =@\n  @[%a%a@]@\n"
     pp_id f.name
@@ -679,8 +685,8 @@ let pp_function fmt (f : function_) =
     (pp_option pp_verification) f.verification
     pp_instruction f.body
 
-let pp_transaction fmt (t : transaction) =
-  Format.fprintf fmt "action %a %a = {@\n  @[%a%a%a%a%a%a%a@]@\n}@\n"
+let pp_transaction_action fmt (t : transaction) =
+  Format.fprintf fmt "action %a %a = {@\n  @[%a%a%a%a%a%a@]@\n}@\n"
     pp_id t.name
     (pp_list " " (fun fmt (x : lident decl_gen) ->
          Format.fprintf fmt "(%a : %a)"
@@ -691,10 +697,41 @@ let pp_transaction fmt (t : transaction) =
     (pp_option (fun fmt -> Format.fprintf fmt "called by %a@\n" pp_rexpr)) t.calledby
     (pp_do_if t.accept_transfer (fun fmt _ -> Format.fprintf fmt "accept transfer@\n")) ()
     (pp_option (pp_list "@\n " (fun fmt -> Format.fprintf fmt "require {@\n  @[%a@]@\n}@\n" pp_label_term))) t.require
-    (pp_option (fun fmt x -> Format.fprintf fmt "transition:@\n  @[%a@]@\n" pp_transition x)) t.transition
     (pp_list "@\n" pp_function) t.functions
     (pp_option (fun fmt x -> Format.fprintf fmt "effect {@\n  @[%a@]@\n}@\n" pp_instruction x)) t.effect
 
+let rec pp_sexpr fmt (sexpr : sexpr) =
+  match sexpr.node with
+  | Sref id -> pp_id fmt id
+  | Sor (lhs, rhs) -> Format.fprintf fmt "%a or %a" pp_sexpr lhs pp_sexpr rhs
+  | Sany -> pp_str fmt "any"
+
+let pp_transaction_transition fmt (t : transaction) (tr : lident transition) =
+  Format.fprintf fmt "transition %a %a from %a%a = {@\n  @[%a%a%a%a%a%a@]@\n}@\n"
+    pp_id t.name
+    (pp_list " " (fun fmt (x : lident decl_gen) ->
+         Format.fprintf fmt "(%a : %a)"
+           pp_id x.name
+           pp_ptyp (Option.get x.typ)
+       )) t.args
+    pp_sexpr tr.from
+    (pp_option (pp_prefix " on " (fun fmt (x, y) -> Format.fprintf fmt "%a.%a" pp_id x pp_id y))) tr.on
+    (pp_option pp_verification) t.verification
+    (pp_option (fun fmt -> Format.fprintf fmt "called by %a@\n" pp_rexpr)) t.calledby
+    (pp_do_if t.accept_transfer (fun fmt _ -> Format.fprintf fmt "accept transfer@\n")) ()
+    (pp_option (pp_list "@\n " (fun fmt -> Format.fprintf fmt "require {@\n  @[%a@]@\n}@\n" pp_label_term))) t.require
+    (pp_list "@\n" pp_function) t.functions
+    (pp_list "@\n" (fun fmt (to_, cond, action) ->
+         Format.fprintf fmt "to %a%a@\n%a@\n"
+           pp_id to_
+           (pp_option (fun fmt x -> (Format.fprintf fmt " when %a" pp_pterm x))) cond
+           (pp_option (fun fmt x -> (Format.fprintf fmt "with effect {@\n  @[%a@]}@\n" pp_instruction x))) action
+       )) tr.trs
+
+let pp_transaction fmt (t : transaction) =
+  match t.transition with
+  | Some tr -> pp_transaction_transition fmt t tr
+  | None -> pp_transaction_action fmt t
 
 let pp_ast fmt (ast : model) =
   Format.fprintf fmt "archetype %a@\n@\n\
