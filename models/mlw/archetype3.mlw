@@ -116,11 +116,11 @@ module AssetCollection
   type t = abstract {}        (* asset type          *)
   val function sortf t : int  (* asset sort function *)
   val function keyf  t : int  (* asset key function  *)
-  val function eqf t t : bool (* asset equality *)
+  val function eqf t t : bool (* asset equality      *)
 
   predicate lt (a b : t) = sortf a <= sortf b
 
-  lemma eqf_extensionality : forall a1 a2 : t. eqf a1 a2 -> a1 = a2
+  axiom eqf_extensionality : forall a1 a2 : t. eqf a1 a2 -> a1 = a2
 
   let rec function internal_mem (a : t) (l : list t) : bool 
   variant { l }
@@ -160,7 +160,7 @@ module AssetCollection
     forall a : t.
     internal_mem a l -> a <> witness*)
 
-  inductive no_witness (l : list t) = 
+  inductive no_witness (_ : list t) = 
   | no_wit_nil : no_witness Nil
   | no_wit_many : 
     forall a : t, l : list t.
@@ -242,7 +242,7 @@ module AssetCollection
 
   predicate (==) (c1 c2 : collection) = forall a : t. mem a c1 <-> mem a c2
 
-  axiom reflexivity : forall c1 c2 : collection. c1 == c2 -> c1 = c2
+  lemma extensionality : forall c1 c2 : collection. c1 == c2 -> c1 = c2
 
   predicate subset (c1 c2 : collection) = forall k : t. mem k c1 -> mem k c2
 
