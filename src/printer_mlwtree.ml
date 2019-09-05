@@ -350,6 +350,9 @@ let rec pp_term outer pos fmt = function
   | Tenum i -> pp_str fmt i
   | Tsome e -> Format.fprintf fmt "Some %a" (pp_with_paren (pp_term e_default PRight)) e
   | Tnot e -> Format.fprintf fmt "not %a" (pp_with_paren (pp_term outer pos)) e
+  | Tpand (e1,e2) -> Format.fprintf fmt "(%a && %a)"
+                       (pp_with_paren (pp_term outer pos)) e1
+                       (pp_with_paren (pp_term outer pos)) e2
   | Tlist l -> pp_tlist outer pos fmt l
   | Tnil -> pp_str fmt "Nil"
   | Temptycoll i -> Format.fprintf fmt "%a.empty" pp_str (String.capitalize_ascii i)

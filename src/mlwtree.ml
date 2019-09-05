@@ -101,6 +101,7 @@ type ('e,'t,'i) abstract_term =
   | Tdiv    of 't * 'e * 'e
   | Tmod    of 't * 'e * 'e
   | Tnot    of 'e
+  | Tpand   of 'e * 'e
   (* comp *)
   | Teq     of 't * 'e * 'e
   | Tlt     of 't * 'e * 'e
@@ -322,6 +323,7 @@ and map_abstract_term
   | Tdiv (t,l,r)       -> Tdiv (map_t t, map_e l, map_e r)
   | Tmod (t,l,r)       -> Tmod (map_t t, map_e l, map_e r)
   | Tnot e             -> Tnot (map_e e)
+  | Tpand (e1,e2)      -> Tpand (map_e e1,map_e e2)
   | Teq (t,l,r)        -> Teq (map_t t, map_e l, map_e r)
   | Tlt (t,l,r)        -> Tlt (map_t t, map_e l, map_e r)
   | Tle (t,l,r)        -> Tle (map_t t, map_e l, map_e r)
@@ -663,6 +665,7 @@ let compare_abstract_term
   | Tdiv (t1,l1,r1), Tdiv (t2,l2,r2) -> cmpt t1 t2 && cmpe l1 l2 && cmpe r1 r2
   | Tmod (t1,l1,r1), Tmod (t2,l2,r2) -> cmpt t1 t2 && cmpe l1 l2 && cmpe r1 r2
   | Tnot e1, Tnot e2 -> cmpe e1 e2
+  | Tpand (e1,e2), Tpand (e3,e4) -> cmpe e1 e3 && cmpe e2 e4
   | Teq (t1,l1,r1), Teq (t2,l2,r2) -> cmpt t1 t2 && cmpe l1 l2 && cmpe r1 r2
   | Tlt (t1,l1,r1), Tlt (t2,l2,r2) -> cmpt t1 t2 && cmpe l1 l2 && cmpe r1 r2
   | Tle (t1,l1,r1), Tle (t2,l2,r2) -> cmpt t1 t2 && cmpe l1 l2 && cmpe r1 r2

@@ -250,9 +250,9 @@ let loc_decl   = List.map loc_decl
 let loc_field  = List.map loc_field
 let deloc (l : 'a list) = List.map deloc l
 
-let rec zip l1 l2 l3 =
-  match l1,l2,l3 with
-  | e1::tl1,e2::tl2,e3::tl3 -> e1::e2::e3::(zip tl1 tl2 tl3)
+let rec zip l1 l2 l3 l4 =
+  match l1,l2,l3,l4 with
+  | e1::tl1,e2::tl2,e3::tl3,e4::tl4 -> e1::e2::e3::e4::(zip tl1 tl2 tl3 tl4)
   | _ -> []
 
 let cap s = mk_loc s.loc (String.capitalize_ascii s.obj)
@@ -403,9 +403,8 @@ let mk_invariant m n src inv : loc_term =
                           Tvar variable,
                           mk_ac (unloc n))
       | `Prelist arg ->
-        let key = M.Utils.get_asset_key m n |> fst in
-        Tapp (Tvar ((String.capitalize_ascii (unloc n))^".internal_contains"),
-              [Tdoti (variable,key); Tvar arg])
+        Tapp (Tvar ((String.capitalize_ascii (unloc n))^".internal_mem"),
+              [Tvar variable; Tvar arg])
       | `Precoll arg -> Tmem ((unloc_ident asset),
                               Tvar variable,
                               Tvar arg)
@@ -429,15 +428,44 @@ let mk_pre_asset m n arg inv : loc_term = mk_invariant m (dumloc n) (`Preasset a
 
 let mk_loop_invariant m n inv : loc_term = mk_invariant m (dumloc n) `Loop inv
 
+let mk_eq_asset m (r : M.record) =
+  let cmps = List.map (fun (item : M.record_item) ->
+      let f1 = Tdoti("a1",unloc item.name) in
+      let f2 = Tdoti("a2",unloc item.name) in
+      match item.type_ with
+      | Tcontainer _ -> Tapp (Tvar "eql",[f1;f2])
+      | _ ->            Teq (Tyint,f1,f2)
+    ) r.values in
+  Dfun  {
+    name = "eq_"^(unloc r.name) |> with_dummy_loc;
+    logic = Logic;
+    args = ["a1" |> with_dummy_loc, Tyasset (map_lident r.name) |> with_dummy_loc;
+            "a2" |> with_dummy_loc, Tyasset (map_lident r.name) |> with_dummy_loc];
+    returns = Tybool |> with_dummy_loc;
+    raises = [];
+    variants = [];
+    requires = [];
+    ensures = [];
+    body = List.fold_left (fun acc cmp ->
+        Tpand (acc,cmp)
+      ) (List.hd cmps) (List.tl cmps) |> loc_term;
+  }
+
 let map_record m (r : M.record) =
   Drecord (map_lident r.name, map_record_values r.values)
 
 let record_to_clone m (r : M.info_asset) =
   let (key,_) = M.Utils.get_asset_key m (dumloc r.name) in
+  let sort =
+    if List.length r.sort > 0 then
+      List.hd r.sort
+    else key in (* asset are sorted on key be default *)
   Dclone ([gArchetypeDir;gArchetypeColl] |> wdl,
           String.capitalize_ascii r.name |> with_dummy_loc,
           [Ctype ("t" |> with_dummy_loc, r.name |> with_dummy_loc);
-           Cval  ("keyf" |> with_dummy_loc, key |> with_dummy_loc)])
+           Cval  ("keyf" |> with_dummy_loc, key |> with_dummy_loc);
+           Cval  ("sortf" |> with_dummy_loc, sort |> with_dummy_loc);
+           Cval  ("eqf" |> with_dummy_loc, "eq_"^r.name |> with_dummy_loc)])
 
 let map_storage m (l : M.storage) =
   Dstorage {
@@ -1303,14 +1331,19 @@ let mk_entries m =
 
 (* ----------------------------------------------------------------------------*)
 
+let is_record = function
+  | Drecord _ -> true
+  | _ -> false
+
 let to_whyml (m : M.model) : mlw_tree  =
   let storage_module   = with_dummy_loc (String.capitalize_ascii (m.name.pldesc^"_storage")) in
   let uselib           = mk_use in
   let uselist          = mk_use_list in
   let records          = M.Utils.get_records m |> List.map (map_record m) |> wdl in
+  let eq_assets        = M.Utils.get_records m |> List.map (mk_eq_asset m) |> wdl in
   let clones           = M.Utils.get_assets m  |> List.map (record_to_clone m) |> wdl in
   let init_records     = records |> unloc_decl |> List.map mk_default_init |> loc_decl in
-  let records          = zip records clones init_records |> deloc in
+  let records          = zip records eq_assets init_records clones |> deloc in
   let storage          = M.Utils.get_storage m |> map_storage m in
   let storageval       = Dval (with_dummy_loc gs, with_dummy_loc Tystorage) in
   (*let axioms           = mk_axioms m in*)

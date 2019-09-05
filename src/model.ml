@@ -329,6 +329,7 @@ type info_enum = {
 type info_asset = {
   name: ident;
   key: ident;
+  sort: ident list;
   values: (ident * type_ * (mterm option)) list;
 }
 [@@deriving show {with_path = false}]
@@ -653,8 +654,8 @@ let mk_info_var ?(constant = false) ?init name type_ : info_var =
 let mk_info_enum ?(values = []) name : info_enum =
   { name; values }
 
-let mk_info_asset ?(values = []) name key : info_asset =
-  { name; key; values }
+let mk_info_asset ?(values = []) ?(sort = []) name key : info_asset =
+  { name; key; sort; values }
 
 let mk_info_contract ?(signatures = []) name : info_contract =
   { name; signatures }
