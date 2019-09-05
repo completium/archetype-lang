@@ -21,10 +21,34 @@ let output_tast (ast : Ast.model) =
   then Format.printf "%a@." Ast.pp_model ast
   else Format.printf "%a@." Printer_ast.pp_ast ast
 
-let output_model (model : Model.model) =
+let output (model : Model.model) =
   if !Options.opt_raw
   then Format.printf "%a@." Model.pp_model model
-  else Format.printf "%a@." Printer_model.pp_model model
+  else
+    let printer =
+      match !Options.target with
+      | None         -> Printer_model.pp_model
+      | Liquidity    -> Printer_model_liq.pp_model
+      | LiquidityUrl ->
+        fun fmt model ->
+          let str = Printer_model_liq.show_model model in
+          let encoded_src = Uri.pct_encode str in
+          let encoded_src = Str.global_replace (Str.regexp "\\+") "%2B" encoded_src in
+          let url = "http://www.liquidity-lang.org/edit/?source=" ^ encoded_src in
+          Format.fprintf fmt "%s@\n" url
+      | Ligo         -> Printer_model_ligo.pp_model
+      | SmartPy      -> Printer_model_smartpy.pp_model
+      | Ocaml        -> Printer_model_ocaml.pp_model
+      | Whyml        ->
+        fun fmt model ->
+          let mlw = Gen_why3.to_whyml model in
+          if !Options.opt_raw_whytree
+          then Format.fprintf fmt "%a@." Mlwtree.pp_mlw_tree mlw
+          else Format.fprintf fmt "%a@." Printer_mlwtree.pp_mlw_tree mlw
+      | _            -> fun fmt _ -> ()
+    in
+    Format.printf "%a@." printer model
+
 
 let parse (filename, channel) =
   if is_false_ast()
@@ -70,44 +94,6 @@ let exec_process model   = model |> Gen_transform.replace_lit_address_by_role |>
 let extend_removeif      = Gen_transform.extend_removeif
 let post_process_liq     = Gen_transform.process_single_field_storage
 
-let output_liquidity model =
-  if !Options.opt_raw
-  then Format.printf "%a@." Model.pp_model model
-  else Format.printf "%a@." Printer_model_liq.pp_model model
-
-let output_liquidity_url model =
-  if !Options.opt_raw
-  then Format.printf "%a@." Model.pp_model model
-  else
-    let str = Printer_model_liq.show_model model in
-    let encoded_src = Uri.pct_encode str in
-    let encoded_src = Str.global_replace (Str.regexp "\\+") "%2B" encoded_src in
-    let url = "http://www.liquidity-lang.org/edit/?source=" ^ encoded_src in
-    Format.printf "%s@\n" url
-
-let output_ocaml =
-  if !Options.opt_raw
-  then Format.printf "%a@." Model.pp_model
-  else Format.printf "%a@." Printer_model_ocaml.pp_model
-
-let output_ligo =
-  if !Options.opt_raw
-  then Format.printf "%a@." Model.pp_model
-  else Format.printf "%a@." Printer_model_ligo.pp_model
-
-let output_smartpy =
-  if !Options.opt_raw
-  then Format.printf "%a@." Model.pp_model
-  else Format.printf "%a@." Printer_model_smartpy.pp_model
-
-let output_whyml model =
-  let mlw = Gen_why3.to_whyml model in
-  if !Options.opt_raw
-  then Format.printf "%a@." Mlwtree.pp_mlw_tree mlw
-  else Format.printf "%a@." Printer_mlwtree.pp_mlw_tree mlw
-
-
-
 let generate_target model =
 
   let cont c a = if c then a else (fun x -> x) in
@@ -119,7 +105,7 @@ let generate_target model =
     |> cont !Options.opt_skv split_key_values
     |> cont !Options.opt_nse remove_side_effect
     |> generate_api_storage
-    |> output_model
+    |> output
 
   | Liquidity
   | LiquidityUrl ->
@@ -130,26 +116,22 @@ let generate_target model =
     |> split_key_values
     |> remove_side_effect
     |> generate_api_storage
-    |> (match !Options.target with
-        | Liquidity -> output_liquidity
-        | LiquidityUrl -> output_liquidity_url
-        | _ -> assert false)
+    |> output
 
   | Ligo ->
     model
     |> exec_process
     |> shallow_asset
     |> split_key_values
-    |> remove_side_effect
     |> generate_api_storage
-    |> output_ligo
+    |> output
 
   | SmartPy ->
     model
     |> exec_process
     |> shallow_asset
     |> generate_api_storage
-    |> output_smartpy
+    |> output
 
   | Ocaml ->
     model
@@ -157,14 +139,14 @@ let generate_target model =
     |> shallow_asset
     |> remove_side_effect
     |> generate_api_storage
-    |> output_liquidity
+    |> output
 
   | Whyml ->
     model
     |> extend_iter
     |> shallow_asset
     |> generate_api_storage
-    |> output_whyml
+    |> output
 
   | _ -> ()
 
@@ -244,8 +226,10 @@ let main () =
               "Unknown lsp commands %s (use errors, outline)@." s;
             exit 2), "<request> Generate language server protocol response to <resquest>";
       "--list-lsp-request", Arg.Unit (fun _ -> Format.printf "request available:@\n  errors@\n  outline@\n"; exit 0), " List available request for lsp";
-      "-r", Arg.Set Options.opt_raw, " Print raw tree";
+      "-r", Arg.Set Options.opt_raw, " Print raw model tree";
       "--raw", Arg.Set Options.opt_raw, " Same as -r";
+      "-ry", Arg.Set Options.opt_raw_whytree, " Print raw model tree";
+      "--raw-whytree", Arg.Set Options.opt_raw_whytree, " Same as -r";
       "-json", Arg.Set Options.opt_json, " Print JSON format";
       "-v", Arg.String (fun s -> Options.add_vids s), "<id> process verification identifiers";
       "-F", Arg.Set Options.fake_ast, " Fake ast";

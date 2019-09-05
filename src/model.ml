@@ -1932,11 +1932,12 @@ module Utils : sig
   val is_container                       : type_ -> bool
   val get_key_pos                        : model -> lident -> int
   val get_loop_invariants                : model -> (lident * mterm) list -> ident -> (lident * mterm) list
-  val get_formula                       : model -> mterm option -> ident -> mterm option
+  val get_formula                        : model -> mterm option -> ident -> mterm option
   val is_post                            : specification -> bool
   val get_sum_fields                     : model -> ident -> ident list
   val get_added_removed_sets             : model -> verification option -> ((lident, lident mterm_gen) mterm_node) list
   val get_storage_invariants             : model -> ident option -> (ident * ident * mterm) list
+  val is_field_storage                   : model -> ident -> bool
 
 end = struct
 
@@ -2328,5 +2329,11 @@ end = struct
             ) acc i.invariants
         else acc
       ) [] m.storage
+
+  let is_field_storage (m : model) (id : ident) : bool =
+    let l : ident list =
+      List.fold_left (fun accu (x : storage_item) ->
+          (unloc x.name)::accu) [] m.storage  in
+    List.mem id l
 
 end
