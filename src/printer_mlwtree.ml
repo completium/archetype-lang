@@ -563,8 +563,15 @@ let pp_clone fmt (i,j,l) =
 
 (* -------------------------------------------------------------------------- *)
 
-let pp_axiom fmt (i,e) =
-  Format.fprintf fmt "axiom %a:@\n  @[%a@]"
+let pp_theotyp fmt = function
+  | Theo  -> pp_str fmt "theorem"
+  | Axiom -> pp_str fmt "axiom"
+  | Lemma -> pp_str fmt "lemma"
+  | Goal  -> pp_str fmt "goal"
+
+let pp_theorem fmt (t,i,e) =
+  Format.fprintf fmt "%a %a:@\n  @[%a@]"
+    pp_theotyp t
     pp_str i
     (pp_term e_default PRight) e
 
@@ -578,14 +585,14 @@ let pp_val fmt (i,t) =
 (* -------------------------------------------------------------------------- *)
 
 let pp_decl fmt = function
-  | Duse l         -> Format.fprintf fmt "use %a" pp_qualid l
-  | Dval (i,t)     -> pp_val fmt (i,t)
-  | Dclone (i,j,l) -> pp_clone fmt (i,j,l)
-  | Denum (i,l)    -> pp_enum fmt (i,l)
-  | Drecord (i,l)  -> pp_record fmt (i,l)
-  | Dstorage s     -> pp_storage fmt s
-  | Daxiom (i,e)   -> pp_axiom fmt (i,e)
-  | Dfun s         -> pp_fun fmt s
+  | Duse l           -> Format.fprintf fmt "use %a" pp_qualid l
+  | Dval (i,t)       -> pp_val fmt (i,t)
+  | Dclone (i,j,l)   -> pp_clone fmt (i,j,l)
+  | Denum (i,l)      -> pp_enum fmt (i,l)
+  | Drecord (i,l)    -> pp_record fmt (i,l)
+  | Dstorage s       -> pp_storage fmt s
+  | Dtheorem (t,i,e) -> pp_theorem fmt (t,i,e)
+  | Dfun s           -> pp_fun fmt s
 
 let pp_module fmt (m : mlw_module) =
   Format.fprintf fmt "module %a@\n  @[%a@]@\nend"

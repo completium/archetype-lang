@@ -186,6 +186,13 @@ type 'i abstract_clone_subst =
   | Cpred  of 'i * 'i
 [@@deriving show {with_path = false}]
 
+type theotyp =
+  | Theo
+  | Axiom
+  | Lemma
+  | Goal
+[@@deriving show {with_path = false}]
+
 type ('e,'t,'i) abstract_decl =
   | Duse     of 'i abstract_qualid
   | Dval     of 'i * 't
@@ -193,7 +200,7 @@ type ('e,'t,'i) abstract_decl =
   | Denum    of 'i * 'i list
   | Drecord  of 'i * (('e,'t,'i) abstract_field) list
   | Dstorage of ('e,'t,'i) abstract_storage_struct
-  | Daxiom   of 'i * 'e
+  | Dtheorem of theotyp * 'i * 'e
   | Dfun     of ('e,'t,'i) abstract_fun_struct
 [@@deriving show {with_path = false}]
 
@@ -395,11 +402,11 @@ let map_abstract_decl
   | Dclone (q,i,l)  -> Dclone (map_abstract_qualid map_i q,
                                map_i i,
                                List.map (map_abstract_clone_subst map_i) l)
-  | Denum (i,l)     -> Denum (map_i i, List.map map_i l)
-  | Drecord (i,l)   -> Drecord (map_i i, List.map (map_abstract_field map_e map_t map_i) l)
-  | Dstorage s      -> Dstorage (map_abstract_storage_struct map_e map_t map_i s)
-  | Daxiom (i,e)    -> Daxiom (map_i i, map_e e)
-  | Dfun f          -> Dfun (map_abstract_fun_struct map_e map_t map_i f)
+  | Denum (i,l)      -> Denum (map_i i, List.map map_i l)
+  | Drecord (i,l)    -> Drecord (map_i i, List.map (map_abstract_field map_e map_t map_i) l)
+  | Dstorage s       -> Dstorage (map_abstract_storage_struct map_e map_t map_i s)
+  | Dtheorem (t,i,e) -> Dtheorem (t,map_i i, map_e e)
+  | Dfun f           -> Dfun (map_abstract_fun_struct map_e map_t map_i f)
 
 
 let map_abstract_module

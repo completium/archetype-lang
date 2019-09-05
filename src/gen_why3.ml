@@ -121,17 +121,18 @@ let mk_sum_clone m asset key field =
    ktyp is the key type
 *)
 let mk_keys_eq_axiom n f ktyp : decl =
-  Daxiom ("eq_"^n^"_keys",
-          Tforall ([["s"],Tystorage;["k"],ktyp],
-                   Timpl (Tmem (n,
-                                Tvar "k",
-                                Tdoti ("s",n^"_keys")),
-                          Teq (Tyint,
-                               Tapp (Tvar f,
-                                     [Tget (n,
-                                            Tdoti ("s",n^"_assets"),
-                                            Tvar "k")]),
-                               Tvar "k"))))
+  Dtheorem (Axiom,
+            "eq_"^n^"_keys",
+            Tforall ([["s"],Tystorage;["k"],ktyp],
+                     Timpl (Tmem (n,
+                                  Tvar "k",
+                                  Tdoti ("s",n^"_keys")),
+                            Teq (Tyint,
+                                 Tapp (Tvar f,
+                                       [Tget (n,
+                                              Tdoti ("s",n^"_assets"),
+                                              Tvar "k")]),
+                                 Tvar "k"))))
 
 (* asset is the asset name
    f is the partition field name
@@ -140,18 +141,19 @@ let mk_keys_eq_axiom n f ktyp : decl =
    kpt is the partionned asset key type
 *)
 let mk_partition_axiom asset f kt pa kpt : decl =
-  Daxiom (asset^"_"^f^"_is_partition",
-          Tforall ([["s"],Tystorage;["a"],Tyasset asset;["k"],kpt],
-                   Timpl (Tmem (asset,
-                                Tvar("a"),
-                                mk_ac_sv "s" asset),
-                          Timpl (Tlmem (gArchetypeList,
-                                        Tvar "k",
-                                        Tapp (Tvar f,
-                                              [Tvar "a"])),
-                                 Tcontains (pa,
-                                            Tvar "k",
-                                            mk_ac_sv "s" pa)))))
+  Dtheorem (Axiom,
+            asset^"_"^f^"_is_partition",
+            Tforall ([["s"],Tystorage;["a"],Tyasset asset;["k"],kpt],
+                     Timpl (Tmem (asset,
+                                  Tvar("a"),
+                                  mk_ac_sv "s" asset),
+                            Timpl (Tlmem (gArchetypeList,
+                                          Tvar "k",
+                                          Tapp (Tvar f,
+                                                [Tvar "a"])),
+                                   Tcontains (pa,
+                                              Tvar "k",
+                                              mk_ac_sv "s" pa)))))
 
 (* Select --------------------------------------------------------------------*)
 
@@ -450,6 +452,16 @@ let mk_eq_asset m (r : M.record) =
         Tpand (acc,cmp)
       ) (List.hd cmps) (List.tl cmps) |> loc_term;
   }
+
+let mk_eq_extensionality m (r : M.record) : loc_decl =
+  let asset = unloc r.name in
+  Dtheorem (Lemma,
+            asset^"_extensionality",
+            Tforall ([["a1";"a2"],Tyasset asset],
+                     Timpl (Tapp (Tvar ("eq_"^asset),
+                                  [Tvar "a1";Tvar "a2"]),
+                            Teq (Tyasset asset,Tvar "a1",Tvar "a2")
+                    ))) |> Mlwtree.loc_decl
 
 let map_record m (r : M.record) =
   Drecord (map_lident r.name, map_record_values r.values)
@@ -1331,16 +1343,13 @@ let mk_entries m =
 
 (* ----------------------------------------------------------------------------*)
 
-let is_record = function
-  | Drecord _ -> true
-  | _ -> false
-
 let to_whyml (m : M.model) : mlw_tree  =
   let storage_module   = with_dummy_loc (String.capitalize_ascii (m.name.pldesc^"_storage")) in
   let uselib           = mk_use in
   let uselist          = mk_use_list in
   let records          = M.Utils.get_records m |> List.map (map_record m) |> wdl in
   let eq_assets        = M.Utils.get_records m |> List.map (mk_eq_asset m) |> wdl in
+  let eq_exten         = M.Utils.get_records m |> List.map (mk_eq_extensionality m) |> deloc in
   let clones           = M.Utils.get_assets m  |> List.map (record_to_clone m) |> wdl in
   let init_records     = records |> unloc_decl |> List.map mk_default_init |> loc_decl in
   let records          = zip records eq_assets init_records clones |> deloc in
@@ -1357,6 +1366,7 @@ let to_whyml (m : M.model) : mlw_tree  =
       name  = storage_module;
       decls = [uselib;uselist]       @
               records                @
+              eq_exten               @
               [storage;storageval]   @
               (*axioms                 @*)
               partition_axioms       @
