@@ -5,15 +5,15 @@ archetype extension onlyonce (
 ) = {
 
   action tr = {
-    verification {
+    specification {
       variable call_count int = 0
       effect {
         label step;
         call_count += 1
       }
-      specification o1 = {
+      postcondition o1 = {
         none
-        invariants for step {
+        invariant for step {
           requires -> call_count = 0;
           call_count <= 1
         }

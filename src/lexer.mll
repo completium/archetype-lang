@@ -53,8 +53,7 @@
       "initial"             , INITIAL        ;
       "initialized"         , INITIALIZED    ;
       "instance"            , INSTANCE       ;
-      "invariants"          , INVARIANTS     ;
-      "label"               , LABEL          ;
+      "invariant"           , INVARIANT     ;
       "lemma"               , LEMMA          ;
       "let"                 , LET            ;
       "match"               , MATCH          ;
@@ -67,6 +66,7 @@
       "otherwise"           , OTHERWISE      ;
       "partition"           , PARTITION      ;
       "predicate"           , PREDICATE      ;
+      "postcondition"       , POSTCONDITION  ;
       "record"              , RECORD         ;
       "ref"                 , REF            ;
       "require"             , REQUIRE        ;
@@ -82,7 +82,6 @@
       "transition"          , TRANSITION     ;
       "true"                , TRUE           ;
       "variable"            , VARIABLE       ;
-      "verification"        , VERIFICATION   ;
       "when"                , WHEN           ;
       "with"                , WITH           ;
     ]

@@ -132,13 +132,12 @@ type expr_unloc =
   | Eif           of expr * expr * expr option
   | Ebreak
   | Efor          of lident option * lident * expr * expr
-  | Eassert       of expr
   | Eseq          of expr * expr
   | Eletin        of lident * type_t option * expr * expr * expr option
   | Ematchwith    of expr * (pattern list * expr) list
   | Equantifier   of quantifier * lident * quantifier_kind * expr
   | Elabel        of lident * expr
-  | Eilabel       of lident
+  | Eassert       of lident
   | Ereturn       of expr
   | Eoption       of option_
   | Esecurity     of security

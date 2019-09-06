@@ -92,8 +92,8 @@ function transition_to_finished = {
 
 action contribute = {
 
-  verification {
-    specification p1 = {
+  specification {
+    postcondition p1 = {
         let c = contributor.get caller in
         transferred = transferred_to(caller) + c.contrib - (old c.contrib)
     }

@@ -69,14 +69,14 @@ transition bury from Voting = {
   }
 }
 
-verification {
-  specification s3 = {
+specification {
+  postcondition s3 = {
     startdate < deadline
   }
-  specification s4 = {
+  postcondition s4 = {
     (voter.select(voter.hasVoted = true)).count() = ballot.sum(nbvotes)
   }
-  specification s5 = {
+  postcondition s5 = {
     forall w in winner,
            forall b in ballot,
              b.nbvotes <= ballot.get(w.value).nbvotes

@@ -6,8 +6,8 @@ archetype extension test_namespace (
 
   variable avariable type
 
-  verification {
-    specification c1 = {
+  specification {
+    postcondition c1 = {
       a::myvariable = 1
     }
   }

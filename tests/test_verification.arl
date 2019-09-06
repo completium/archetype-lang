@@ -1,7 +1,7 @@
 archetype test_verification
 
 action myaction = {
- verification {
+ specification {
 
     definition mydef =
      { x : early | forall x in col1, x = x }
@@ -24,17 +24,17 @@ action myaction = {
       x := y
     }
 
-    assert a1 at aaa = {
+    assert a1 = {
       x = y
-      invariants for myloop {
+      invariant for myloop {
         x = 0;
         y = 0
       }
     }
 
-    specification s1 = {
+    postcondition s1 = {
       x = y
-      invariants for myloop {
+      invariant for myloop {
         x = 0;
         y = 0
       }

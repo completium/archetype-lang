@@ -13,8 +13,8 @@ asset tokenHolder identified by holder = {
 
 action transferTokens (th : tokenHolder) (quantity : int) = {
 
-  verification {
-    specification s1 = {
+  specification {
+    postcondition s1 = {
       before tokenHolder.sum(tokens) = tokenHolder.sum(tokens)
     }
   }

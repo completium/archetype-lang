@@ -31,8 +31,8 @@ transition insured from Created = {
 }
 
 transition confirm from Insured = {
-  verification {
-    specification s1 = {
+  specification {
+    postcondition s1 = {
       balance = 0
     }
   }

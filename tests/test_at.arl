@@ -1,12 +1,12 @@
 archetype test_specification
 
 action tr = {
-  verification {
-    specification s1 = {
+  specification {
+    postcondition s1 = {
       (x at label_in_code) -> x
     }
 
-    specification s2 = {
+    postcondition s2 = {
       (s::x at label_in_code) -> x
     }
   }

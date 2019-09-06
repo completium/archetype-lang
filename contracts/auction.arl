@@ -37,8 +37,8 @@ action reclaim = {
  }
 }
 
-verification {
-  specification s1 = {
+specification {
+  postcondition s1 = {
     forall a in address,
       bid.contains a -> balance > (bid.get a).value
   }

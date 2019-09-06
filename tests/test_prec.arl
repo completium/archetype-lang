@@ -12,12 +12,12 @@ variable x int = a * b + c
 variable y int = (a * b) + c
 variable y int = a * (b + c)
 
-verification {
-  specification s1 = {
+specification {
+  postcondition s1 = {
     z -> y -> x
   }
 
-  specification s2 = {
+  postcondition s2 = {
     (z -> y) -> x
   }
 }

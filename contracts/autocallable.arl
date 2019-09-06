@@ -76,7 +76,7 @@ asset fixing identified by observation = {
 
 function compute_expected (d : date) : tez = {
 
-  verification {
+  specification {
 
     (** etrigger is defined as the set of early assets for which
         the trigger condition is true *)
@@ -105,7 +105,7 @@ function compute_expected (d : date) : tez = {
 
     (* … TODO finish specs *)
     (** expected is the sum of redemption nominal and interests *)
-    specification p_expected = {
+    postcondition p_expected = {
         let expected =
           let ftrigger = first etrigger in
           (* early redemption *)

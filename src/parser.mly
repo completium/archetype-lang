@@ -82,8 +82,7 @@
 %token INITIAL
 %token INITIALIZED
 %token INSTANCE
-%token INVARIANTS
-%token LABEL
+%token INVARIANT
 %token LBRACE
 %token LBRACKET
 %token LBRACKETPERCENT
@@ -115,6 +114,7 @@
 %token PIPE
 %token PLUS
 %token PLUSEQUAL
+%token POSTCONDITION
 %token PREDICATE
 %token RBRACE
 %token RBRACKET
@@ -139,7 +139,6 @@
 %token TRUE
 %token UNDERSCORE
 %token VARIABLE
-%token VERIFICATION
 %token WHEN
 %token WITH
 
@@ -365,7 +364,7 @@ function_decl:
 | EFFECT e=braced(expr) { Veffect e }
 
 %inline invars:
-| INVARIANTS FOR id=ident xs=braced(expr) { (id, split_seq xs) }
+| INVARIANT FOR id=ident xs=braced(expr) { (id, split_seq xs) }
 
 %inline spec_body:
 | e=expr xs=invars*  { (e, xs) }
@@ -375,7 +374,7 @@ function_decl:
     { let e, xs = sp in Vassert (id, e, xs) }
 
 %inline verif_specification:
-| SPECIFICATION id=ident EQUAL sp=braced(spec_body)
+| POSTCONDITION id=ident EQUAL sp=braced(spec_body)
     { let e, xs = sp in Vspecification (id, e, xs) }
 
 verif_items:
@@ -390,18 +389,18 @@ verif_items:
    { ds @ ps @ xs @ ts @ vs @ es @ bs @ ss }
 
 %inline verification:
-| VERIFICATION exts=option(extensions) LBRACE
+| SPECIFICATION exts=option(extensions) LBRACE
     xs=verif_items RBRACE
         { (xs, exts) }
 
-| VERIFICATION exts=option(extensions) LBRACE
-    xs=expr RBRACE
-        { let l = split_seq_label xs in
-            let ll = List.map (fun x ->
-            let loc, (id, e) = Location.deloc x in
-            let lbl = Tools.Option.get id in
-            mkloc loc (Vspecification (lbl, e, []))) l in
-            (ll, exts) }
+// | VERIFICATION exts=option(extensions) LBRACE
+//     xs=expr RBRACE
+//         { let l = split_seq_label xs in
+//             let ll = List.map (fun x ->
+//             let loc, (id, e) = Location.deloc x in
+//             let lbl = Tools.Option.get id in
+//             mkloc loc (Vspecification (lbl, e, []))) l in
+//             (ll, exts) }
 
 verification_fun:
 | x=loc(verification) { x }
@@ -673,8 +672,8 @@ expr_r:
  | label=ident COLON e=expr
      { Elabel (label, e) }
 
- | LABEL id=ident
-     { Eilabel id }
+ | ASSERT id=ident
+     { Eassert id }
 
  | BREAK
      { Ebreak }

@@ -1293,7 +1293,6 @@ let rec for_xexpr (mode : emode_t) (env : env) ?(ety : M.ptyp option) (tope : PT
 
     | Eapp      _
     | Elabel    _
-    | Eilabel   _
     | Eassert   _
     | Eassign   _
     | Ebreak
@@ -1755,7 +1754,7 @@ let rec for_instruction (env : env) (i : PT.expr) : env * M.instruction =
       Env.emit_error env (loc s, OrphanedLabel (unloc s));
       for_instruction env e
 
-    | Eilabel lbl ->
+    | Eassert lbl ->
       let env =
         if (check_and_emit_name_free env lbl) then
           Env.Label.push env (unloc lbl, `Plain)

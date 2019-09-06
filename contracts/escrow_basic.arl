@@ -47,8 +47,8 @@ transition[%onlyonce%] cancel from Confirmed = {
   }
 }
 
-verification {
-  specification s1 = {
+specification {
+  postcondition s1 = {
     [_[transfers may be performed only by role oracle]_]
   }
 }

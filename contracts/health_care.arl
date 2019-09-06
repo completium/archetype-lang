@@ -52,8 +52,10 @@ action declare_consultation (v : tez) = {
 }
 
 action pay_doctor (docid : address) = {
-  verification {
-    idem_balance_pay_doctor : balance = before balance
+  specification {
+    postcondition idem_balance_pay_doctor = {
+      balance = before balance
+    }
   }
   called by insurer
   accept transfer
@@ -68,8 +70,10 @@ action pay_doctor (docid : address) = {
 }
 
 action pay_fee = {
-  verification {
-    idem_balance_pay_fee : balance = before balance
+  specification {
+    postcondition idem_balance_pay_fee = {
+      balance = before balance
+    }
   }
   called by patient
   accept transfer
@@ -85,8 +89,10 @@ action pay_fee = {
 }
 
 action pay_consulation = {
-  verification {
-    idem_balance_pay_consultation : balance = before balance
+  specification {
+    postcondition idem_balance_pay_consultation = {
+      balance = before balance
+    }
   }
   called by patient
   accept transfer

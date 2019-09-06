@@ -34,30 +34,30 @@ action add (ow : address) (newmile : mile) = {
 
 action consume (a : address) (quantity : int) = {
 
-  verification {
+  specification {
 
     assert p1 = {
       remainder = 0
     }
 
-    specification p2 = {
+    postcondition p2 = {
       mile.sum(the.amount) = mile.before.sum(the.amount) - quantity
-      invariants for loop {
+      invariant for loop {
         0 <= remainder <= to_iter.sum(the.amount);
         mile.before.sum(the.amount) = mile.sum(the.amount) + quantity - remainder
       }
     }
 
-    specification p3 = {
+    postcondition p3 = {
       forall m in mile.removed, m.expiration >= now
-      invariants for loop {
+      invariant for loop {
         mile.removed.subset by_expiration
       }
     }
 
-    specification p4 = {
+    postcondition p4 = {
       mile.added.isempty
-      invariants for loop {
+      invariant for loop {
         mile.added.isempty
       }
     }
@@ -90,15 +90,15 @@ action consume (a : address) (quantity : int) = {
         )
       )
     );
-    label p1
+    assert p1
   }
 }
 
 action clear_expired = {
-  verification {
-    specification s3 = {
+  specification {
+    postcondition s3 = {
       forall m in mile.removed, m.expiration < now
-      invariants for loop2 {
+      invariant for loop2 {
         forall m in mile.removed, m.expiration < now
       }
     }

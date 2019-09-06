@@ -19,8 +19,8 @@ states =
   | Collected (* owner has collected payment *)
 
 transition confirm from Insured = {
-  verification {
-    specification s1 = {
+  specification {
+    postcondition s1 = {
       balance = 0
     }
   }

@@ -464,15 +464,6 @@ let rec pp_expr outer pos fmt a =
     pp_expr outer pos fmt
       (mkloc (loc a) (Elabel (lbl, mkloc (loc a) (Efor (None, id, expr, body)))))
 
-  | Eassert e ->
-
-    let pp fmt e =
-      Format.fprintf fmt "assert (%a)"
-        (pp_expr e_default PNone) e
-    in
-    (maybe_paren outer e_default pos pp) fmt e
-
-
   | Eseq (x, y) ->
 
     let pp fmt (x, y) =
@@ -524,10 +515,10 @@ let rec pp_expr outer pos fmt a =
     in
     (maybe_paren outer e_colon pos pp) fmt (i, x)
 
-  | Eilabel i ->
+  | Eassert i ->
 
     let pp fmt i =
-      Format.fprintf fmt "label %a"
+      Format.fprintf fmt "assert %a"
         pp_id i
     in
     (maybe_paren outer e_colon pos pp) fmt i
@@ -756,12 +747,12 @@ let map_option f x =
   | None -> ()
 
 let pp_invariants fmt (lbl, is) =
-  Format.fprintf fmt "invariants for %a {@\n  @[%a@]@\n}"
+  Format.fprintf fmt "invariant for %a {@\n  @[%a@]@\n}"
     pp_id lbl
     (pp_list ";@\n" (pp_expr e_default PNone)) is
 
 let pp_specification fmt (id, f, is) =
-  Format.fprintf fmt "specification %a = {@\n  @[%a@]@\n  @[%a@]@\n}"
+  Format.fprintf fmt "postcondition %a = {@\n  @[%a@]@\n  @[%a@]@\n}"
     pp_id id
     (pp_expr e_default PNone) f
     (pp_list "@\n" pp_invariants) is
@@ -825,7 +816,7 @@ let pp_function fmt (f : s_function) =
                   fun fmt (x : verification) ->
                     let (items, exts) = unloc x in
                     let items = List.map unloc items in
-                    Format.fprintf fmt "verification%a {@\n  @[%a@]@\n}"
+                    Format.fprintf fmt "specification%a {@\n  @[%a@]@\n}"
                       pp_extensions exts
                       pp_verification_items items
                 )) f.verif
@@ -842,7 +833,7 @@ let pp_verif fmt (items, exts) =
      end *)
   | _ ->
     begin
-      Format.fprintf fmt "verification%a {@\n  @[%a@]@\n}@\n"
+      Format.fprintf fmt "specification%a {@\n  @[%a@]@\n}@\n"
         pp_extensions exts
         pp_verification_items items
     end
