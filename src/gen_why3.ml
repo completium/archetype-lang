@@ -663,7 +663,7 @@ let map_storage m (l : M.storage) =
     invariants = List.concat (List.map (fun (item : M.storage_item) ->
         List.map (mk_storage_invariant m item.name) item.invariants) l) @
                  (List.fold_left (fun acc spec ->
-                      acc @ (mk_spec_invariant `Storage spec)) [] m.verification.postconditions)
+                      acc @ (mk_spec_invariant `Storage spec)) [] m.specification.postconditions)
   }
 
 let mk_axioms (m : M.model) =
@@ -923,7 +923,7 @@ and mk_invariants (m : M.model) ctx (lbl : ident option) lbody =
         else acc
       ) ([] : (loc_term, loc_ident) abstract_formula list) in
   let security_loop_invariants =
-    m.verification.postconditions
+    m.specification.postconditions
     |> List.filter is_security
     |> List.map (fun (spec : M.postcondition) ->
         let id =
@@ -1450,7 +1450,7 @@ let flatten_if_fail m (t : M.mterm) : loc_term =
     | _ -> acc @ [map_mterm m init_ctx t] in
   mk_loc t.loc (Tseq (rec_flat [] t))
 
-let mk_ensures m acc (v : M.verification) =
+let mk_ensures m acc (v : M.specification) =
   acc @ (List.map (fun (spec : M.postcondition) -> {
         id = spec.name |> map_lident;
         form = map_mterm m init_ctx spec.formula
@@ -1541,7 +1541,7 @@ let mk_entry_require m idents =
 
 let mk_functions src m =
   M.Utils.get_functions m |> List.filter (is_src src) |> List.map (
-    fun ((v : M.verification option),
+    fun ((v : M.specification option),
          (s : M.function_struct),
          (t : M.type_)) ->
       Dfun {
@@ -1567,7 +1567,7 @@ let mk_exo_functions = mk_functions M.Exo
 
 let mk_entries m =
   M.Utils.get_entries m |> List.map (
-    fun ((v : M.verification option),
+    fun ((v : M.specification option),
          (s : M.function_struct)) ->
       Dfun {
         name     = map_lident s.name;

@@ -263,7 +263,7 @@ let gen_add_shallow_fun (model : M.model) (n : I.ident) : M.function__ =
         src  = Endo;
         loc  = Location.dummy;
       },Tunit);
-    verif = None;
+    spec = None;
   }
 
 let gen_add_shallow_field_fun (model : M.model) (n,f : I.ident * I.ident) : M.function__ =
@@ -288,7 +288,7 @@ let gen_add_shallow_field_fun (model : M.model) (n,f : I.ident * I.ident) : M.fu
         src  = Endo;
         loc  = Location.dummy;
       },Tunit);
-    verif = None;
+    spec = None;
   }
 
 let get_added_assets (model : M.model) : I.ident list =

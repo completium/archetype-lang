@@ -121,7 +121,7 @@ let extend_removeif (model : model) : model =
     m with
     functions = List.map (fun (f : function__) -> {
           f with
-          verif = Option.map (fun (v : verification) -> {
+          spec = Option.map (fun (v : specification) -> {
                 v with
                 postconditions = List.map (fun (postcondition : postcondition) -> {
                       postcondition with
@@ -134,7 +134,7 @@ let extend_removeif (model : model) : model =
                             else acc @ [inv]
                           ) [] postcondition.invariants
                     }) v.postconditions
-              }) f.verif
+              }) f.spec
         }) m.functions
   }
 

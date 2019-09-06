@@ -241,7 +241,7 @@ type groups = {
   gr_assets      : PT.asset_decl              loced list;
   gr_varfuns     : varfun                     loced list;
   gr_acttxs      : acttx                      loced list;
-  gr_verifs      : PT.verification            loced list;
+  gr_specs      : PT.specification            loced list;
 }
 
 (* -------------------------------------------------------------------- *)
@@ -331,7 +331,7 @@ type vardecl = {
 }
 
 (* -------------------------------------------------------------------- *)
-type 'env iverification = [
+type 'env ispecification = [
   | `Predicate     of M.lident * (M.lident * M.ptyp) list * M.pterm
   | `Definition    of M.lident * (M.lident * M.ptyp) option * M.pterm
   | `Lemma         of M.lident * M.pterm
@@ -349,7 +349,7 @@ type 'env actiondecl = {
   ad_callby : M.lident list;
   ad_effect : M.instruction option;
   ad_reqs   : (M.lident option * M.pterm) list;
-  ad_verif  : 'env iverification list;
+  ad_spec  : 'env ispecification list;
 }
 
 (* -------------------------------------------------------------------- *)
@@ -1769,7 +1769,7 @@ let rec for_instruction (env : env) (i : PT.expr) : env * M.instruction =
     env, mki (Iseq [])
 
 (* -------------------------------------------------------------------- *)
-let for_verification_item (env : env) (v : PT.verification_item) : env * env iverification =
+let for_specification_item (env : env) (v : PT.specification_item) : env * env ispecification =
   match unloc v with
   | PT.Vpredicate (x, args, f) ->
     let env, (args, f) =
@@ -1847,8 +1847,8 @@ let for_verification_item (env : env) (v : PT.verification_item) : env * env ive
     (env, `Postcondition (x, f, invs))
 
 (* -------------------------------------------------------------------- *)
-let for_verification (env : env) (v : PT.verification) =
-  List.fold_left_map for_verification_item env (fst (unloc v))
+let for_specification (env : env) (v : PT.specification) =
+  List.fold_left_map for_specification_item env (fst (unloc v))
 
 (* -------------------------------------------------------------------- *)
 let for_named_state (env : env) (x : PT.lident) =
@@ -1889,10 +1889,10 @@ let for_action_properties (env : env) (act : PT.action_properties) =
   let calledby = Option.map (fun (x, _) -> for_callby env x) act.calledby in
   let env, req = Option.foldmap
       (fun env (x, _) -> for_lbls_formula env x) env act.require in
-  let verif    = Option.map (for_verification env) act.verif in
+  let spec    = Option.map (for_specification env) act.spec in
   let funs     = List.map (for_function env) act.functions in
 
-  (env, (calledby, req, verif, funs))
+  (env, (calledby, req, spec, funs))
 
 (* -------------------------------------------------------------------- *)
 let for_effect (env : env) (effect : PT.expr) =
@@ -1997,7 +1997,7 @@ let for_varfun_decl (env : env) (decl : varfun loced) =
         let env    = fst (for_args_decl env fdecl.args) in
         let rty    = Option.bind (for_type env) fdecl.ret_t in
         let _body  = for_expr env ?ety:rty fdecl.body in
-        let _verif = Option.map (for_verification env) fdecl.verif in
+        let _spec = Option.map (for_specification env) fdecl.spec in
         env, ()) in (env, None)
 
 (* -------------------------------------------------------------------- *)
@@ -2111,7 +2111,7 @@ let for_acttx_decl (env : env) (decl : acttx loced) =
             let callby      = Option.map (for_callby env) (Option.fst pt.calledby) in
             let callby      = Option.get_dfl [] callby in
             let env, reqs   = Option.foldmap for_lbls_expr env (Option.fst pt.require) in
-            let env, verif  = Option.foldmap for_verification env pt.verif in
+            let env, spec  = Option.foldmap for_specification env pt.spec in
 
             let decl =
               { ad_name   = x;
@@ -2119,7 +2119,7 @@ let for_acttx_decl (env : env) (decl : acttx loced) =
                 ad_callby = callby;
                 ad_effect = effect;
                 ad_reqs   = Option.get_dfl [] reqs;
-                ad_verif  = Option.get_dfl [] verif; } in
+                ad_spec  = Option.get_dfl [] spec; } in
 
             (env, decl))
 
@@ -2145,9 +2145,9 @@ let for_acttxs_decl (env : env) (decls : acttx loced list) =
   List.fold_left_map for_acttx_decl env decls
 
 (* -------------------------------------------------------------------- *)
-let for_verifs_decl (env : env) (decls : PT.verification loced list) =
+let for_specs_decl (env : env) (decls : PT.specification loced list) =
   List.fold_left_map
-    (fun env { pldesc = x } -> for_verification env x)
+    (fun env { pldesc = x } -> for_specification env x)
     env decls
 
 (* -------------------------------------------------------------------- *)
@@ -2159,7 +2159,7 @@ let group_declarations (decls : (PT.declaration list)) =
     gr_assets     = [];
     gr_varfuns    = [];
     gr_acttxs     = [];
-    gr_verifs     = [];
+    gr_specs     = [];
   } in
 
   let for1 { plloc = loc; pldesc = decl } (g : groups) =
@@ -2190,8 +2190,8 @@ let group_declarations (decls : (PT.declaration list)) =
     | PT.Dfunction infos ->
       { g with gr_varfuns = mk (`Function infos) :: g.gr_varfuns }
 
-    | PT.Dverification infos ->
-      { g with gr_verifs = mk infos :: g.gr_verifs }
+    | PT.Dspecification infos ->
+      { g with gr_specs = mk infos :: g.gr_specs }
 
     | Dinstance _
     | Dcontract  _
@@ -2225,7 +2225,7 @@ let for_grouped_declarations (env : env) (toploc, g) =
   let env, adecls = for_assets_decl  env g.gr_assets  in
   let env, fdecls = for_varfuns_decl env g.gr_varfuns in
   let env, tdecls = for_acttxs_decl  env g.gr_acttxs  in
-  let env, vdecls = for_verifs_decl  env g.gr_verifs in
+  let env, vdecls = for_specs_decl  env g.gr_specs in
 
   (env, (adecls, fdecls, tdecls, vdecls))
 
@@ -2267,8 +2267,8 @@ let variables_of_fdecls fdecls =
   in List.map for1 (List.pmap (fun x -> x) fdecls)
 
 (* -------------------------------------------------------------------- *)
-let verifications_of_iverifications =
-  let env0 : M.lident M.verification = M.{
+let specifications_of_ispecifications =
+  let env0 : M.lident M.specification = M.{
       predicates  = [];
       definitions = [];
       lemmas      = [];
@@ -2280,8 +2280,8 @@ let verifications_of_iverifications =
       asserts     = [];
       loc         = L.dummy;      (* FIXME *) } in
 
-  let do1 (env : M.lident M.verification) (iverif : env iverification) =
-    match iverif with
+  let do1 (env : M.lident M.specification) (ispec : env ispecification) =
+    match ispec with
     | `Postcondition (x, e, invs) ->
       let spec =
         let for_inv (lbl, inv) =
@@ -2306,7 +2306,7 @@ let verifications_of_iverifications =
     | _ ->
       assert false
 
-  in fun iverifs -> List.fold_left do1 env0 iverifs
+  in fun ispecs -> List.fold_left do1 env0 ispecs
 
 (* -------------------------------------------------------------------- *)
 let transactions_of_tdecls tdecls =
@@ -2340,7 +2340,7 @@ let transactions_of_tdecls tdecls =
               (fun (x, c) -> M.{ label = x; term = c; loc = L.dummy; }) (* FIXME *)
               tdecl.ad_reqs);
         transition      = None;        (* FIXME *)
-        verification    = Some (verifications_of_iverifications tdecl.ad_verif);
+        specification    = Some (specifications_of_ispecifications tdecl.ad_spec);
         functions       = [];          (* FIXME *)
         effect          = tdecl.ad_effect;
         loc             = loc tdecl.ad_name; }
@@ -2361,7 +2361,7 @@ let for_declarations (env : env) (decls : (PT.declaration list) loced) : M.model
       ~assets:(assets_of_adecls adecls)
       ~variables:(variables_of_fdecls fdecls)
       ~transactions:(transactions_of_tdecls tdecls)
-      ~verifications:(List.map verifications_of_iverifications vdecls)
+      ~specifications:(List.map specifications_of_ispecifications vdecls)
       x
 
   | _ ->

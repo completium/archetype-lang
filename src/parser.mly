@@ -13,7 +13,7 @@
       accept_transfer = false;
       require         = None;
       functions       = [];
-      verif           = None;
+      spec            = None;
     }
 
   let rec split_seq e =
@@ -252,7 +252,7 @@ declaration_r:
  | x=namespace          { x }
  | x=contract           { x }
  | x=function_decl      { x }
- | x=verification_decl  { x }
+ | x=specification_decl { x }
  | x=security_decl      { x }
  | INVALID_DECL         { Dinvalid }
 
@@ -320,7 +320,7 @@ signature:
 
 %inline fun_body:
 | e=expr { (None, e) }
-|  s=verification_fun
+| s=specification_fun
       EFFECT e=braced(expr)
         { (Some s, e) }
 
@@ -332,7 +332,7 @@ signature:
     name  = id;
     args  = xs;
     ret_t = r;
-    verif = s;
+    spec = s;
     body  = e;
   }
 }
@@ -345,22 +345,22 @@ function_decl:
 | f=function_gen
     { Dfunction f }
 
-%inline verif_predicate:
+%inline spec_predicate:
 | PREDICATE id=ident xs=function_args EQUAL e=braced(expr) { Vpredicate (id, xs, e) }
 
-%inline verif_definition:
+%inline spec_definition:
 | DEFINITION id=ident EQUAL LBRACE a=ident COLON t=type_t PIPE e=expr RBRACE { Vdefinition (id, t, a, e) }
 
-%inline verif_lemma:
+%inline spec_lemma:
 | LEMMA id=ident EQUAL x=braced(expr) { Vlemma (id, x) }
 
-%inline verif_theorem:
+%inline spec_theorem:
 | THEOREM id=ident EQUAL x=braced(expr) { Vtheorem (id, x) }
 
-%inline verif_variable:
+%inline spec_variable:
 | VARIABLE id=ident t=type_t dv=default_value? { Vvariable (id, t, dv) }
 
-%inline verif_effect:
+%inline spec_effect:
 | EFFECT e=braced(expr) { Veffect e }
 
 %inline invars:
@@ -369,44 +369,35 @@ function_decl:
 %inline spec_body:
 | e=expr xs=invars*  { (e, xs) }
 
-%inline verif_assert:
+%inline spec_assert:
 | ASSERT id=ident EQUAL sp=braced(spec_body)
     { let e, xs = sp in Vassert (id, e, xs) }
 
-%inline verif_postcondition:
+%inline spec_postcondition:
 | POSTCONDITION id=ident EQUAL sp=braced(spec_body)
     { let e, xs = sp in Vpostcondition (id, e, xs) }
 
-verif_items:
-| ds=loc(verif_definition)*
-  ps=loc(verif_predicate)*
-  xs=loc(verif_lemma)*
-  ts=loc(verif_theorem)*
-  vs=loc(verif_variable)*
-  es=loc(verif_effect)*
-  bs=loc(verif_assert)*
-  ss=loc(verif_postcondition)*
+spec_items:
+| ds=loc(spec_definition)*
+  ps=loc(spec_predicate)*
+  xs=loc(spec_lemma)*
+  ts=loc(spec_theorem)*
+  vs=loc(spec_variable)*
+  es=loc(spec_effect)*
+  bs=loc(spec_assert)*
+  ss=loc(spec_postcondition)*
    { ds @ ps @ xs @ ts @ vs @ es @ bs @ ss }
 
-%inline verification:
+%inline specification:
 | SPECIFICATION exts=option(extensions) LBRACE
-    xs=verif_items RBRACE
+    xs=spec_items RBRACE
         { (xs, exts) }
 
-// | VERIFICATION exts=option(extensions) LBRACE
-//     xs=expr RBRACE
-//         { let l = split_seq_label xs in
-//             let ll = List.map (fun x ->
-//             let loc, (id, e) = Location.deloc x in
-//             let lbl = Tools.Option.get id in
-//             mkloc loc (Vspecification (lbl, e, []))) l in
-//             (ll, exts) }
+specification_fun:
+| x=loc(specification) { x }
 
-verification_fun:
-| x=loc(verification) { x }
-
-verification_decl:
-| x=loc(verification)      { Dverification x }
+specification_decl:
+| x=loc(specification)      { Dspecification x }
 
 security_pred_unloc:
 | id=ident args=security_arg+ {
@@ -439,7 +430,7 @@ security_decl_unloc:
         { (xs, exts) }
 
 security_decl:
-| x=loc(security_decl_unloc)      { Dverification x }
+| x=loc(security_decl_unloc)      { Dspecification x }
 
 enum:
 | STATES exts=extensions? xs=equal_enum_values
@@ -566,10 +557,10 @@ transition:
 | EQUAL LBRACE xs=action_properties e=effect? RBRACE { (xs, e) }
 
 action_properties:
-  sp=verification_fun? cb=calledby? at=boption(ACCEPT_TRANSFER) cs=require? fs=function_item*
+  sp=specification_fun? cb=calledby? at=boption(ACCEPT_TRANSFER) cs=require? fs=function_item*
   {
     {
-      verif           = sp;
+      spec            = sp;
       calledby        = cb;
       accept_transfer = at;
       require         = cs;

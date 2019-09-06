@@ -217,7 +217,7 @@ type args = lident_typ list
 type invariants = (lident * expr list) list
 [@@deriving yojson, show {with_path = false}]
 
-type verification_item_unloc =
+type specification_item_unloc =
   | Vpredicate of lident * args * expr
   | Vdefinition of lident * type_t * lident * expr
   | Vlemma of lident * expr
@@ -228,20 +228,20 @@ type verification_item_unloc =
   | Vpostcondition of (lident * expr * invariants)
 [@@deriving yojson, show {with_path = false}]
 
-type verification_item = verification_item_unloc loced
+type specification_item = specification_item_unloc loced
 [@@deriving yojson, show {with_path = false}]
 
-type verification_unloc = verification_item list * exts
+type specification_unloc = specification_item list * exts
 [@@deriving yojson, show {with_path = false}]
 
-type verification = verification_unloc loced
+type specification = specification_unloc loced
 [@@deriving yojson, show {with_path = false}]
 
 type s_function = {
   name  : lident;
   args  : args;
   ret_t : type_t option;
-  verif : verification option;
+  spec : specification option;
   body  : expr;
 }
 [@@deriving yojson, show {with_path = false}]
@@ -250,7 +250,7 @@ type action_properties = {
   calledby        : (expr * exts) option;
   accept_transfer : bool;
   require         : (label_exprs * exts) option;
-  verif           : verification option;
+  spec           : specification option;
   functions       : (s_function loced) list;
 }
 [@@deriving yojson, show {with_path = false}]
@@ -282,7 +282,7 @@ type declaration_unloc =
   | Dextension     of extension_decl
   | Dnamespace     of namespace_decl
   | Dfunction      of s_function
-  | Dverification  of verification
+  | Dspecification  of specification
   | Dinvalid
 [@@deriving yojson, show {with_path = false}]
 

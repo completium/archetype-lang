@@ -764,7 +764,7 @@ let pp_assert fmt (id, f, is) =
     (pp_expr e_default PNone) f
     (pp_list "@\n" pp_invariants) is
 
-let pp_verification_item fmt = function
+let pp_specification_item fmt = function
   | Vpredicate (id, args, body) ->
     Format.fprintf fmt "predicate %a %a = {@\n  @[%a@]@\n}"
       pp_id id
@@ -802,48 +802,48 @@ let pp_verification_item fmt = function
 
   | Vpostcondition (id, f, xs) -> pp_postcondition fmt (id, f, xs)
 
-let pp_verification_items = pp_list "@\n@\n" pp_verification_item
+let pp_specification_items = pp_list "@\n@\n" pp_specification_item
 
 let pp_function fmt (f : s_function) =
   Format.fprintf fmt "function %a %a%a %a@\n"
     pp_id f.name
     pp_fun_args f.args
     (pp_option (pp_prefix " : " pp_type)) f.ret_t
-    (pp_if (match f.verif with | Some _ -> true | None -> false)
+    (pp_if (match f.spec with | Some _ -> true | None -> false)
          (fun fmt (f : s_function) ->
             Format.fprintf fmt "= {@\n%a@\neffect@\n{%a}}"
               (pp_option (
-                  fun fmt (x : verification) ->
+                  fun fmt (x : specification) ->
                     let (items, exts) = unloc x in
                     let items = List.map unloc items in
                     Format.fprintf fmt "specification%a {@\n  @[%a@]@\n}"
                       pp_extensions exts
-                      pp_verification_items items
-                )) f.verif
+                      pp_specification_items items
+                )) f.spec
               (pp_expr e_default PNone) f.body)
          (fun fmt (f : s_function) ->
             Format.fprintf fmt "= {@\n%a@\n}" (pp_expr e_equal PRight) f.body)) f
 
-let pp_verif fmt (items, exts) =
+let pp_spec fmt (items, exts) =
   let items = items |> List.map (fun x -> x |> unloc) in
   match items with
   (* | l when List.fold_left (fun accu x -> match x with | Vassert _ | Vspecification _ -> accu | _ -> false) true l ->
      begin
-      Format.fprintf fmt "%a@\n" pp_verification_items items
+      Format.fprintf fmt "%a@\n" pp_specification_items items
      end *)
   | _ ->
     begin
       Format.fprintf fmt "specification%a {@\n  @[%a@]@\n}@\n"
         pp_extensions exts
-        pp_verification_items items
+        pp_specification_items items
     end
 
 let pp_action_properties fmt (props : action_properties) =
   map_option (
     fun v ->
       let items, exts = v |> unloc in
-      pp_verif fmt (items, exts)
-  ) props.verif;
+      pp_spec fmt (items, exts)
+  ) props.spec;
   map_option (fun (e, exts) ->
       Format.fprintf fmt "called by%a %a@\n"
         pp_extensions exts
@@ -871,7 +871,7 @@ let pp_transition fmt (to_, conditions, effect) =
 
 let rec pp_declaration fmt { pldesc = e; _ } =
   let is_empty_action_properties_opt (ap : action_properties) (a : 'a option) =
-    match ap.calledby, ap.require, ap.functions, ap.verif, a with
+    match ap.calledby, ap.require, ap.functions, ap.spec, a with
     | None, None, [], None, None -> true
     | _ -> false in
   match e with
@@ -971,9 +971,9 @@ let rec pp_declaration fmt { pldesc = e; _ } =
     Format.fprintf fmt "%a"
       pp_function f
 
-  | Dverification v ->
+  | Dspecification v ->
     let items, exts = v |> unloc in
-    pp_verif fmt (items, exts)
+    pp_spec fmt (items, exts)
 
   | Dinvalid ->
     Format.fprintf fmt "(* invalid declaration *)"

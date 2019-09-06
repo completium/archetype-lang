@@ -587,7 +587,7 @@ type 'id assert_gen = {
 type assert_ = lident assert_gen
 [@@deriving show {with_path = false}]
 
-type 'id verification_gen = {
+type 'id specification_gen = {
   predicates     : 'id predicate_gen list;
   definitions    : 'id definition_gen list;
   lemmas         : 'id label_term_gen list;
@@ -600,12 +600,12 @@ type 'id verification_gen = {
 }
 [@@deriving show {with_path = false}]
 
-type verification = lident verification_gen
+type specification = lident specification_gen
 [@@deriving show {with_path = false}]
 
 type 'id function__gen = {
   node:  'id function_node_gen;
-  verif: 'id verification_gen option;
+  spec: 'id specification_gen option;
 }
 [@@deriving show {with_path = false}]
 
@@ -628,7 +628,7 @@ type 'id model_gen = {
   decls        : 'id decl_node_gen list;
   storage      : 'id storage_gen;
   functions    : 'id function__gen list;
-  verification : 'id verification_gen;
+  specification : 'id specification_gen;
 }
 [@@deriving show {with_path = false}]
 
@@ -665,7 +665,7 @@ let mk_postcondition ?(invariants = []) name mode formula =
 let mk_assert ?(invariants = []) name label formula =
   { name; label; formula; invariants }
 
-let mk_verification ?(predicates = []) ?(definitions = []) ?(lemmas = []) ?(theorems = []) ?(variables = []) ?(invariants = []) ?(effects = []) ?(postconditions = []) ?(asserts = []) ?(loc = Location.dummy) () =
+let mk_specification ?(predicates = []) ?(definitions = []) ?(lemmas = []) ?(theorems = []) ?(variables = []) ?(invariants = []) ?(effects = []) ?(postconditions = []) ?(asserts = []) ?(loc = Location.dummy) () =
   { predicates; definitions; lemmas; theorems; variables; invariants; effects; postconditions; loc}
 
 let mk_info_var ?(constant = false) ?init name type_ : info_var =
@@ -704,8 +704,8 @@ let mk_storage_item ?asset ?(ghost = false) ?(invariants = []) ?(loc = Location.
 let mk_function_struct ?(args = []) ?(loc = Location.dummy) ?(src = Exo) name body : function_struct =
   { name; args; src; body; loc }
 
-let mk_function ?verif node : 'id function__gen =
-  { node; verif }
+let mk_function ?spec node : 'id function__gen =
+  { node; spec }
 
 let mk_signature ?(args = []) ?ret name : 'id signature_gen =
   { name; args; ret }
@@ -713,8 +713,8 @@ let mk_signature ?(args = []) ?ret name : 'id signature_gen =
 let mk_api_item ?(only_formula = false) node_item =
   { node_item; only_formula }
 
-let mk_model ?(api_items = []) ?(info = []) ?(decls = []) ?(functions = []) ?(storage = []) ?(verification = mk_verification ())  storage name : model =
-  { name; api_items; info; storage; decls; functions; verification}
+let mk_model ?(api_items = []) ?(info = []) ?(decls = []) ?(functions = []) ?(storage = []) ?(specification = mk_specification ())  storage name : model =
+  { name; api_items; info; storage; decls; functions; specification}
 
 (* -------------------------------------------------------------------- *)
 
@@ -1142,7 +1142,7 @@ let map_mterm_model_exec custom (f : ('id, 't) ctx_model_gen -> mterm -> mterm) 
   }
 
 let map_mterm_model_formula custom (f : ('id, 't) ctx_model_gen -> mterm -> mterm) (model : model) : model =
-  let map_verification (ctx : ('id, 't) ctx_model_gen) (f : ('id, 't) ctx_model_gen -> mterm -> mterm) (v : verification) : verification = (
+  let map_specification (ctx : ('id, 't) ctx_model_gen) (f : ('id, 't) ctx_model_gen -> mterm -> mterm) (v : specification) : specification = (
     let map_label_term (f : ('id, 't) ctx_model_gen -> mterm -> mterm) (lt : label_term) : label_term =
       let ctx = { ctx with label = lt.label } in
       { lt with
@@ -1208,13 +1208,13 @@ let map_mterm_model_formula custom (f : ('id, 't) ctx_model_gen -> mterm -> mter
     in
     let ctx = { ctx with fs = Some fs } in
     { fun_ with
-      verif = Option.map (map_verification ctx f) fun_.verif;
+      spec = Option.map (map_specification ctx f) fun_.spec;
     }
   in
 
   { model with
     functions = List.map (map_function f) model.functions;
-    verification = map_verification ctx f model.verification
+    specification = map_specification ctx f model.specification
   }
 
 
@@ -1861,7 +1861,7 @@ let fold_map_term
 
 let fold_left g l accu = List.fold_left (fun accu x -> g x accu) accu l
 
-let fold_verification (ctx : ('id, 't) ctx_model_gen) (f : ('id, 't) ctx_model_gen -> 'a -> 'id mterm_gen -> 'a) (v : 'id verification_gen) (accu : 'a) : 'a =
+let fold_specification (ctx : ('id, 't) ctx_model_gen) (f : ('id, 't) ctx_model_gen -> 'a -> 'id mterm_gen -> 'a) (v : 'id specification_gen) (accu : 'a) : 'a =
   let fold_label_term (ctx : ('id, 't) ctx_model_gen) (f : ('id, 't) ctx_model_gen -> 'a -> 'id mterm_gen -> 'a) (lt : 'id label_term_gen) (accu : 'a) : 'a =
     let ctx = { ctx with label = lt.label } in
     f ctx accu lt.term
@@ -1915,14 +1915,14 @@ let fold_model (f : ('id, 't) ctx_model_gen -> 'a -> 'id mterm_gen -> 'a) (m : '
       | Function (fs, _)
       | Entry fs -> fold_term (f {ctx with fs = Some fs}) accu fs.body
     ) in
-    Option.map_dfl (fun (x : 'id verification_gen) -> fold_verification ctx f x accu) accu a.verif
+    Option.map_dfl (fun (x : 'id specification_gen) -> fold_specification ctx f x accu) accu a.spec
   ) in
 
   let ctx  : ctx_model = mk_ctx_model () in
 
   accu
   |> fold_left (fold_action ctx f) m.functions
-  |> fold_verification ctx f m.verification
+  |> fold_specification ctx f m.specification
 
 (* -------------------------------------------------------------------- *)
 
@@ -1955,8 +1955,8 @@ module Utils : sig
   val dest_partition                     : type_ -> lident
   val get_partition_asset_key            : model -> lident -> lident -> (ident * ident * btyp)
   val get_partition_assets               : model -> ident -> ident list
-  val get_entries                        : model -> (verification option * function_struct) list
-  val get_functions                      : model -> (verification option * function_struct* type_) list
+  val get_entries                        : model -> (specification option * function_struct) list
+  val get_functions                      : model -> (specification option * function_struct* type_) list
   val has_partition                      : model -> ident -> bool
   val get_asset_partitions               : model -> ident -> (ident * type_ * mterm option) list
   val get_field_list                     : model -> lident -> ident list
@@ -1977,7 +1977,7 @@ module Utils : sig
   val get_formula                        : model -> mterm option -> ident -> mterm option
   val is_post                            : postcondition -> bool
   val get_sum_fields                     : model -> ident -> ident list
-  val get_added_removed_sets             : model -> verification option -> ((lident, lident mterm_gen) mterm_node) list
+  val get_added_removed_sets             : model -> specification option -> ((lident, lident mterm_gen) mterm_node) list
   val get_storage_invariants             : model -> ident option -> (ident * ident * mterm) list
   val is_field_storage                   : model -> ident -> bool
   val with_trace                         : model -> bool
@@ -2054,8 +2054,8 @@ end = struct
 
   let set_function_args (f : function__) (args : argument list) : function__ =
     match f.node with
-    | Function (s,t) -> { node = Function ({ s with args = args },t); verif = f.verif }
-    | Entry s        -> { node = Entry { s with args = args }; verif = f.verif }
+    | Function (s,t) -> { node = Function ({ s with args = args },t); spec = f.spec }
+    | Entry s        -> { node = Entry { s with args = args }; spec = f.spec }
 
   let is_asset (i : info_item) : bool =
     match i with
@@ -2064,22 +2064,22 @@ end = struct
 
   let is_entry (f : function__) : bool =
     match f with
-    | { node = Entry _; verif = _ } -> true
+    | { node = Entry _; spec = _ } -> true
     | _                             -> false
 
   let is_function (f : function__) : bool =
     match f with
-    | { node = Function _; verif = _ } -> true
+    | { node = Function _; spec = _ } -> true
     | _                                -> false
 
-  let get_entry (f : function__) : verification option * function_struct =
+  let get_entry (f : function__) : specification option * function_struct =
     match f with
-    | { node = Entry s; verif = v } -> (v,s)
+    | { node = Entry s; spec = v } -> (v,s)
     | _                             -> assert false
 
-  let get_function (f : function__) : verification option * function_struct * type_ =
+  let get_function (f : function__) : specification option * function_struct * type_ =
     match f with
-    | { node = Function (s,t); verif = v } -> (v,s,t)
+    | { node = Function (s,t); spec = v } -> (v,s,t)
     | _                             -> assert false
 
   let get_entries m = List.filter is_entry m.functions |> List.map get_entry
@@ -2272,7 +2272,7 @@ end = struct
     invariants = List.map (map_invariant_terms m) s.invariants
   }
 
-  let map_verification_terms (m : mterm -> mterm) (v : verification) : verification = {
+  let map_specification_terms (m : mterm -> mterm) (v : specification) : specification = {
     v with
     postconditions = List.map (map_postcondition_terms m) v.postconditions
   }
@@ -2288,7 +2288,7 @@ end = struct
           s with body = m s.body;
         }
     end;
-    verif = Option.map (map_verification_terms m) f.verif;
+    spec = Option.map (map_specification_terms m) f.spec;
   }
 
   let is_record (t : mterm) =
@@ -2366,8 +2366,8 @@ end = struct
       | Msetadded e -> acc @ [ Msetadded e ]
       | Msetremoved e -> acc @ [ Msetremoved e ]
       | _ -> fold_term (internal_fold_add_remove ctx) acc term in
-    Tools.List.dedup (Option.map_dfl (fun (x : verification) ->
-        fold_verification (mk_ctx_model ()) internal_fold_add_remove x []) [] v)
+    Tools.List.dedup (Option.map_dfl (fun (x : specification) ->
+        fold_specification (mk_ctx_model ()) internal_fold_add_remove x []) [] v)
 
   (* returns asset name * invariant name * invariant term *)
   let get_storage_invariants (m : model) (asset : ident option) : (ident * ident * mterm) list =

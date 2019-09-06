@@ -601,7 +601,7 @@ let pp_module fmt (m : mlw_module) =
 
 let pp_mlw_tree fmt (tree : mlw_tree) =
   Format.fprintf fmt "%a"
-  (pp_list "@\n" pp_module) tree
+    (pp_list "@\n" pp_module) tree
 
 (* -------------------------------------------------------------------------- *)
 let string_of__of_pp pp x =

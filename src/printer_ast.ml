@@ -548,7 +548,7 @@ let pp_predicate fmt (p : lident predicate) =
     (pp_list ", " (fun fmt (id, typ) -> Format.fprintf fmt "%a : %a" pp_id id pp_ptyp typ)) p.args
     pp_pterm p.body
 
-let pp_variable_verif fmt (v : lident variable) =
+let pp_variable_spec fmt (v : lident variable) =
   let decl = v.decl in
   Format.fprintf fmt "variable %a%a%a"
     pp_id decl.name
@@ -580,7 +580,7 @@ let pp_postcondition fmt (s : lident postcondition) : unit =
     pp_pterm s.formula
     (pp_no_empty_list_with_sep "@\n" pp_invariant) s.invariants
 
-let pp_verification fmt (v : lident verification) =
+let pp_specification fmt (v : lident specification) =
   let empty = List.is_empty v.predicates
               && List.is_empty v.definitions
               && List.is_empty v.lemmas
@@ -593,12 +593,12 @@ let pp_verification fmt (v : lident verification) =
   if empty
   then ()
   else
-    Format.fprintf fmt "verification {@\n  @[%a%a%a%a%a%a%a%a%a@]@\n}@\n"
+    Format.fprintf fmt "specification {@\n  @[%a%a%a%a%a%a%a%a%a@]@\n}@\n"
       (pp_no_empty_list2 pp_predicate) v.predicates
       (pp_no_empty_list2 pp_definitions) v.definitions
       (pp_no_empty_list2 (fun fmt -> Format.fprintf fmt "axioms:@\n  @[%a@]@\n" pp_label_term)) v.lemmas
       (pp_no_empty_list2 (fun fmt -> Format.fprintf fmt "theorems:@\n  @[%a@]@\n" pp_label_term)) v.theorems
-      (pp_no_empty_list2 pp_variable_verif) v.variables
+      (pp_no_empty_list2 pp_variable_spec) v.variables
       (pp_no_empty_list2 (fun fmt (id, l : lident * lident label_term list) ->
            Format.fprintf fmt "invariants:@\n  @[%a@]@\n"
              (pp_list "@\n" (fun fmt (lt : lident label_term) ->
@@ -700,7 +700,7 @@ let pp_function fmt (f : function_) =
            pp_ptyp (Option.get x.typ)
        )) f.args
     pp_ptyp f.return
-    (pp_option pp_verification) f.verification
+    (pp_option pp_specification) f.specification
     pp_instruction f.body
 
 let pp_transaction_action fmt (t : transaction) =
@@ -711,7 +711,7 @@ let pp_transaction_action fmt (t : transaction) =
            pp_id x.name
            pp_ptyp (Option.get x.typ)
        )) t.args
-    (pp_option pp_verification) t.verification
+    (pp_option pp_specification) t.specification
     (pp_option (fun fmt -> Format.fprintf fmt "called by %a@\n" pp_rexpr)) t.calledby
     (pp_do_if t.accept_transfer (fun fmt _ -> Format.fprintf fmt "accept transfer@\n")) ()
     (pp_option (pp_list "@\n " (fun fmt -> Format.fprintf fmt "require {@\n  @[%a@]@\n}@\n" pp_label_term))) t.require
@@ -734,7 +734,7 @@ let pp_transaction_transition fmt (t : transaction) (tr : lident transition) =
        )) t.args
     pp_sexpr tr.from
     (pp_option (pp_prefix " on " (fun fmt (x, y) -> Format.fprintf fmt "%a.%a" pp_id x pp_id y))) tr.on
-    (pp_option pp_verification) t.verification
+    (pp_option pp_specification) t.specification
     (pp_option (fun fmt -> Format.fprintf fmt "called by %a@\n" pp_rexpr)) t.calledby
     (pp_do_if t.accept_transfer (fun fmt _ -> Format.fprintf fmt "accept transfer@\n")) ()
     (pp_option (pp_list "@\n " (fun fmt -> Format.fprintf fmt "require {@\n  @[%a@]@\n}@\n" pp_label_term))) t.require
@@ -761,7 +761,7 @@ let pp_ast fmt (ast : model) =
     (pp_no_empty_list2 pp_contract) ast.contracts
     (pp_no_empty_list2 pp_function) ast.functions
     (pp_no_empty_list2 pp_transaction) ast.transactions
-    (pp_no_empty_list2 pp_verification) ast.verifications
+    (pp_no_empty_list2 pp_specification) ast.specifications
 
 (* -------------------------------------------------------------------------- *)
 let string_of__of_pp pp x =

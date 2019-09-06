@@ -630,7 +630,7 @@ let to_model (ast : A.model) : M.model =
       ~invariants:(List.map to_invariant s.invariants)
   in
 
-  let to_verification (v : A.lident A.verification) : M.verification =
+  let to_specification (v : A.lident A.specification) : M.specification =
     let predicates     = List.map to_predicate   v.predicates  in
     let definitions    = List.map to_definition  v.definitions in
     let lemmas         = List.map to_label_lterm v.lemmas      in
@@ -639,7 +639,7 @@ let to_model (ast : A.model) : M.model =
     let invariants     = List.map (fun (a, l) -> (a, List.map (fun x -> to_label_lterm x) l)) v.invariants in
     let effects        = Option.map_dfl (fun x -> [to_mterm x]) [] v.effect in
     let postconditions = List.map to_postcondition v.specs @ List.map to_assert v.asserts in
-    M.mk_verification
+    M.mk_specification
       ~predicates:predicates
       ~definitions:definitions
       ~lemmas:lemmas
@@ -651,18 +651,18 @@ let to_model (ast : A.model) : M.model =
       ~loc:v.loc ()
   in
 
-  let cont_verification (v : A.lident A.verification) (verif : M.verification) : M.verification =
-    let v = to_verification v in
-    { verif with
-      predicates     = verif.predicates @ v.predicates;
-      definitions    = verif.definitions @ v.definitions;
-      lemmas         = verif.lemmas @ v.lemmas;
-      theorems       = verif.theorems @ v.theorems;
-      variables      = verif.variables @ v.variables;
-      invariants     = verif.invariants @ v.invariants;
-      effects        = verif.effects @ v.effects;
-      postconditions = verif.postconditions @ v.postconditions;
-      loc            = Location.merge verif.loc v.loc;
+  let cont_specification (v : A.lident A.specification) (spec : M.specification) : M.specification =
+    let v = to_specification v in
+    { spec with
+      predicates     = spec.predicates @ v.predicates;
+      definitions    = spec.definitions @ v.definitions;
+      lemmas         = spec.lemmas @ v.lemmas;
+      theorems       = spec.theorems @ v.theorems;
+      variables      = spec.variables @ v.variables;
+      invariants     = spec.invariants @ v.invariants;
+      effects        = spec.effects @ v.effects;
+      postconditions = spec.postconditions @ v.postconditions;
+      loc            = Location.merge spec.loc v.loc;
     }
   in
 
@@ -731,11 +731,11 @@ let to_model (ast : A.model) : M.model =
 
   let cont f x l = List.fold_left (fun accu x -> f x accu) l x in
 
-  let process_fun_gen name args (body : M.mterm) loc verif f (list : M.function__ list) : M.function__ list =
+  let process_fun_gen name args (body : M.mterm) loc spec f (list : M.function__ list) : M.function__ list =
     let node = f (M.mk_function_struct name body
                     ~args:args
                     ~loc:loc) in
-    list @ [M.mk_function ?verif:verif node]
+    list @ [M.mk_function ?spec:spec node]
   in
 
 
@@ -758,8 +758,8 @@ let to_model (ast : A.model) : M.model =
     let body  = to_instruction function_.body |> replace_var_by_param args in
     let loc   = function_.loc in
     let ret   = ptyp_to_type function_.return in
-    let verif : M.verification option = Option.map to_verification function_.verification in
-    process_fun_gen name args body loc verif (fun x -> M.Function (x, ret)) list
+    let spec : M.specification option = Option.map to_specification function_.specification in
+    process_fun_gen name args body loc spec (fun x -> M.Function (x, ret)) list
   in
 
   let add_seq (s1 : M.mterm) (s2 : M.mterm) =
@@ -925,9 +925,9 @@ let to_model (ast : A.model) : M.model =
       |> replace_var_by_param args
     in
     let loc   = transaction.loc in
-    let verif : M.verification option = Option.map to_verification transaction.verification in
+    let spec : M.specification option = Option.map to_specification transaction.specification in
 
-    process_fun_gen name args body loc verif (fun x -> M.Entry x) list
+    process_fun_gen name args body loc spec (fun x -> M.Entry x) list
   in
 
   let name = ast.name in
@@ -948,9 +948,9 @@ let to_model (ast : A.model) : M.model =
     |> cont process_transaction ast.transactions
   in
 
-  let verification =
-    M.mk_verification ()
-    |> (fun verif -> List.fold_left (fun accu x -> cont_verification x accu) verif ast.verifications)
+  let specification =
+    M.mk_specification ()
+    |> (fun spec -> List.fold_left (fun accu x -> cont_specification x accu) spec ast.specifications)
   in
 
-  M.mk_model ~info:info ~decls:decls ~functions:functions ~verification:verification storage name
+  M.mk_model ~info:info ~decls:decls ~functions:functions ~specification:specification storage name

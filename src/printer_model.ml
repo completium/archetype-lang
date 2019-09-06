@@ -928,8 +928,8 @@ let pp_assert_ fmt (s : assert_) =
        else Format.fprintf fmt "@\n%a"
            (pp_list "@\n" pp_invariant) l) s.invariants
 
-let pp_verification fmt (v : verification) =
-  Format.fprintf fmt "verification {@\n\
+let pp_specification fmt (v : specification) =
+  Format.fprintf fmt "specification {@\n\
                       @[<v 2>  %a@]@\n}@\n@\n@\n"
     (pp_list "@\n" pp_postcondition) v.postconditions
 
@@ -949,7 +949,7 @@ let pp_function fmt f =
     pp_id fs.name
     (fun fmt -> Format.fprintf fmt "(%a)" (pp_list ", " pp_argument)) fs.args
     (pp_option (fun fmt -> Format.fprintf fmt " : %a" pp_type)) ret
-    (pp_option pp_verification) f.verif
+    (pp_option pp_specification) f.spec
     pp_mterm fs.body
 
 let pp_model fmt (model : model) =
@@ -967,7 +967,7 @@ let pp_model fmt (model : model) =
     (pp_list "@\n" pp_decl) model.decls
     pp_storage model.storage
     (pp_list "@\n" pp_function) model.functions
-    pp_verification model.verification
+    pp_specification model.specification
 
 (* -------------------------------------------------------------------------- *)
 let string_of__of_pp pp x =

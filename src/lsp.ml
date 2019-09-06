@@ -170,10 +170,10 @@ let mk_outline_from_invariants (invariants : ParseTree.invariants) =
       mk_outline (Location.unloc id, symbol_kind_to_int Property, Location.loc id)
     ) invariants
 
-let mk_outline_from_verification (verif : ParseTree.verification) =
-  let vis, _ = Location.unloc verif in
+let mk_outline_from_specification (spec : ParseTree.specification) =
+  let vis, _ = Location.unloc spec in
 
-  List.fold_right (fun (i : ParseTree.verification_item) accu ->
+  List.fold_right (fun (i : ParseTree.specification_item) accu ->
       let l, v = Location.deloc i in
       match v with
       | Vassert (id, _, ivs)
@@ -199,12 +199,12 @@ let make_outline_from_decl (d : ParseTree.declaration) gl =
   | Dinstance (id, _, _, _) -> [mk_outline (Location.unloc id, symbol_kind_to_int Variable, l)]
   | Denum (ek, (li, _)) -> make_outline_from_enum (ek, li, l)
   | Dasset (id, _, _, post_options, _, _) -> [mk_outline (Location.unloc id, symbol_kind_to_int Struct, l)] @ mk_outline_post_options post_options
-  | Daction (id, _, ap, _, _) -> mk_outline (Location.unloc id, symbol_kind_to_int Function, l) :: (Option.map_dfl mk_outline_from_verification [] ap.verif)
+  | Daction (id, _, ap, _, _) -> mk_outline (Location.unloc id, symbol_kind_to_int Function, l) :: (Option.map_dfl mk_outline_from_specification [] ap.spec)
   | Dtransition (id, _, _, _, _, _, _) -> [mk_outline (Location.unloc id, symbol_kind_to_int Function, l)]
   | Dcontract (id, _, _) -> [mk_outline (Location.unloc id, symbol_kind_to_int Object, l)]
   | Dfunction s -> [mk_outline (Location.unloc s.name, symbol_kind_to_int Function, l)]
   | Dnamespace (id, _) -> [mk_outline (Location.unloc id, symbol_kind_to_int Namespace, l)]
-  | Dverification verif -> mk_outline_from_verification verif
+  | Dspecification spec -> mk_outline_from_specification spec
   | _ -> []
 
 let process_errors () =

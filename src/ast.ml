@@ -403,7 +403,7 @@ type 'id assert_ = {
 }
 [@@deriving show {with_path = false}]
 
-type 'id verification = {
+type 'id specification = {
   predicates  : 'id predicate list;
   definitions : 'id definition list;
   lemmas      : 'id label_term list;
@@ -421,7 +421,7 @@ type 'id function_struct = {
   name         : 'id;
   args         : ('id decl_gen) list;
   body         : 'id instruction_gen;
-  verification : 'id verification option;
+  specification : 'id specification option;
   return       : ptyp;
   fvs          : (ident * ptyp) list [@opaque];
   loc          : Location.t [@opaque];
@@ -445,7 +445,7 @@ type 'id transaction_struct = {
   accept_transfer : bool;
   require         : 'id label_term list option;
   transition      : ('id transition) option;
-  verification    : 'id verification option;
+  specification    : 'id specification option;
   functions       : 'id function_struct list;
   effect          : 'id instruction_gen option;
   loc             : Location.t [@opaque];
@@ -510,7 +510,7 @@ type 'id model_struct = {
   transactions  : 'id transaction_struct list;
   enums         : 'id enum_struct list;
   contracts     : 'id contract list;
-  verifications : 'id verification list;
+  specifications : 'id specification list;
   loc           : Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]
@@ -559,17 +559,17 @@ let mk_postcondition ?(invariants = []) name formula =
 let mk_assert ?(invariants = []) name label formula =
   { name; label; formula; invariants }
 
-let mk_verification ?(predicates = []) ?(definitions = []) ?(lemmas = []) ?(theorems = []) ?(variables = []) ?(invariants = []) ?effect ?(specs = []) ?(asserts = []) ?(loc = Location.dummy) () =
+let mk_specification ?(predicates = []) ?(definitions = []) ?(lemmas = []) ?(theorems = []) ?(variables = []) ?(invariants = []) ?effect ?(specs = []) ?(asserts = []) ?(loc = Location.dummy) () =
   { predicates; definitions; lemmas; theorems; variables; invariants; effect; specs; asserts; loc}
 
-let mk_function_struct ?(args = []) ?verification ?(fvs = []) ?(loc = Location.dummy) name body return =
-  { name; args; body; verification; return; fvs; loc }
+let mk_function_struct ?(args = []) ?specification ?(fvs = []) ?(loc = Location.dummy) name body return =
+  { name; args; body; specification; return; fvs; loc }
 
 let mk_transition ?on ?(trs = []) from =
   { from; on; trs }
 
-let mk_transaction_struct ?(args = []) ?calledby ?(accept_transfer = false) ?require ?transition ?verification ?(functions = []) ?effect ?(loc = Location.dummy) name =
-  { name; args; calledby; accept_transfer; require; transition; verification; functions; effect; loc }
+let mk_transaction_struct ?(args = []) ?calledby ?(accept_transfer = false) ?require ?transition ?specification ?(functions = []) ?effect ?(loc = Location.dummy) name =
+  { name; args; calledby; accept_transfer; require; transition; specification; functions; effect; loc }
 
 let mk_enum_item ?(initial = false) ?(invariants = []) ?(loc = Location.dummy) name : 'id enum_item_struct =
   { name; initial; invariants; loc }
@@ -586,8 +586,8 @@ let mk_asset ?(fields = []) ?key ?(sort = []) ?state ?(role = false) ?init ?(spe
 let mk_contract ?(signatures = []) ?init ?(loc = Location.dummy) name =
   { name; signatures; init; loc }
 
-let mk_model ?(variables = []) ?(assets = []) ?(functions = []) ?(transactions = []) ?(enums = []) ?(contracts = []) ?(verifications = []) ?(loc = Location.dummy) name =
-  { name; variables; assets; functions; transactions; enums; contracts; verifications; loc }
+let mk_model ?(variables = []) ?(assets = []) ?(functions = []) ?(transactions = []) ?(enums = []) ?(contracts = []) ?(specifications = []) ?(loc = Location.dummy) name =
+  { name; variables; assets; functions; transactions; enums; contracts; specifications; loc }
 
 let mk_id type_ id : qualid =
   { type_ = Some type_;
