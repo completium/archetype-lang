@@ -354,7 +354,7 @@ let to_model (ast : A.model) : M.model =
     let key_loced : M.lident = dumloc (key_name) in
     let key_mterm : M.mterm = M.mk_mterm (M.Mvarlocal key_loced) type_container_asset in
 
-    let set_mterm : M.mterm = M.mk_mterm (M.Mset (asset_name, key_mterm, var_mterm)) Tunit in
+    let set_mterm : M.mterm = M.mk_mterm (M.Mset (asset_name, List.map (fun (id, _, _) -> unloc id) e, key_mterm, var_mterm)) Tunit in
 
     let lref : (Ident.ident * (A.operator * M.mterm)) list = List.map (fun (x, y, z) -> (unloc x, (y, z))) e in
     let lrecorditems =
