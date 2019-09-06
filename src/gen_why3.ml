@@ -40,6 +40,40 @@ let mk_use_module m = Duse [deloc m]  |> loc_decl |> deloc
 
 (* Trace -------------------------------------------------------------------------*)
 
+type change =
+  | Add of ident
+  | Rm of ident
+  | Update of ident
+  | Transfer of ident
+  | Get of ident
+  | Iterate of ident
+  | Call of ident
+
+let mk_trace tr =
+  let change_term =
+    match tr with
+    | Add id -> Tapp (Tdoti("Tr",
+                           "TrAdd_"),
+                     [Tvar (String.capitalize_ascii id)])
+    | Rm id -> Tapp (Tdoti("Tr",
+                           "TrRm_"),
+                     [Tvar (String.capitalize_ascii id)])
+    | Update id -> Tapp (Tdoti("Tr",
+                           "TrUpdate_"),
+                     [Tvar (String.capitalize_ascii id)])
+    | Get id -> Tapp (Tdoti("Tr",
+                            "TrGet_"),
+                      [Tvar (String.capitalize_ascii id)])
+    | _ -> assert false
+  in
+  let tr = Tdoti(gs,
+                 mk_id "tr") in
+  Tassign (tr,
+           Tcons (change_term,
+                  tr)
+  ) |> loc_term
+
+
 let mk_trace_asset m =
   Denum ("_asset",
          M.Utils.get_assets m
@@ -567,6 +601,11 @@ let init_ctx = {
   lmod = Nomod;
 }
 
+let mk_trace_seq m t chs =
+  if M.Utils.with_trace m then
+    Tseq ([with_dummy_loc t] @ (List.map mk_trace chs))
+  else t
+
 let rec map_mterm m ctx (mt : M.mterm) : loc_term =
   let t =
     match mt.node with
@@ -598,10 +637,17 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
              map_mterm m ctx e])
     | M.Mshallow (a,e) -> Tapp (loc_term (Tvar ("shallow_"^a)),[map_mterm m ctx e])
     | M.Mcontains (a,_,r) -> Tapp (loc_term (Tvar ("contains_"^a)),[map_mterm m ctx r])
-    | M.Maddfield (a,f,c,i) -> Tapp (loc_term (Tvar ("add_"^a^"_"^f)),
-                                     [map_mterm m ctx c; map_mterm m ctx i])
+    | M.Maddfield (a,f,c,i) ->
+      let t,_,_ = M.Utils.get_partition_asset_key m (dumloc a) (dumloc f) in
+      mk_trace_seq m
+        (Tapp (loc_term (Tvar ("add_"^a^"_"^f)),
+               [map_mterm m ctx c; map_mterm m ctx i]))
+        [Update f; Add t]
     | M.Mget (n,k) -> Tapp (loc_term (Tvar ("get_"^n)),[map_mterm m ctx k])
-    | M.Maddasset (n,i) -> Tapp (loc_term (Tvar ("add_"^n)),[map_mterm m ctx i ])
+    | M.Maddasset (n,i) ->
+      mk_trace_seq m
+        (Tapp (loc_term (Tvar ("add_"^n)),[map_mterm m ctx i ]))
+        [Add n]
     | M.Mrecord l ->
       let asset = M.Utils.get_asset_type mt in
       let fns = M.Utils.get_field_list m asset |> wdl in
@@ -665,25 +711,29 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
                                     ])))
     | M.Mremovefield (a,f,k,v) ->
       let t,_,_ = M.Utils.get_partition_asset_key m (dumloc a) (dumloc f) in
-      Tletin (false,
-              with_dummy_loc ("_rm"^t),
-              None,
-              with_dummy_loc (Tapp (loc_term (Tvar ("get_"^t)),
-                                    [map_mterm m ctx v])),
-              with_dummy_loc (Tapp (loc_term (Tvar ("remove_"^a^"_"^f)),
-                                    [
-                                      map_mterm m ctx k;
-                                      loc_term (Tvar ("_rm"^t))
-                                    ]
-                                   )))
+      mk_trace_seq m
+        (Tletin (false,
+                 with_dummy_loc ("_rm"^t),
+                 None,
+                 with_dummy_loc (Tapp (loc_term (Tvar ("get_"^t)),
+                                       [map_mterm m ctx v])),
+                 with_dummy_loc (Tapp (loc_term (Tvar ("remove_"^a^"_"^f)),
+                                       [
+                                         map_mterm m ctx k;
+                                         loc_term (Tvar ("_rm"^t))
+                                       ]
+                                      ))))
+        [Update f; Rm t]
     | M.Mremoveasset (n,a) ->
-      Tletin (false,
-              with_dummy_loc ("_rm"^n),
-              None,
-              with_dummy_loc (Tapp (loc_term (Tvar ("get_"^n)),
-                                    [map_mterm m ctx a])),
-              with_dummy_loc (Tapp (loc_term (Tvar ("remove_"^n)),
-                    [loc_term (Tvar ("_rm"^n))])))
+      mk_trace_seq m
+        (Tletin (false,
+                 with_dummy_loc ("_rm"^n),
+                 None,
+                 with_dummy_loc (Tapp (loc_term (Tvar ("get_"^n)),
+                                       [map_mterm m ctx a])),
+                 with_dummy_loc (Tapp (loc_term (Tvar ("remove_"^n)),
+                                       [loc_term (Tvar ("_rm"^n))]))))
+        [Rm n]
     | M.Msum (a,f,l) ->
       Tapp (loc_term (Tvar ((mk_sum_clone_id a (f |> unloc))^".sum")),[map_mterm m ctx l])
     | M.Mapp (f,args) ->
