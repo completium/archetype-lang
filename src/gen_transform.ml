@@ -123,8 +123,8 @@ let extend_removeif (model : model) : model =
           f with
           verif = Option.map (fun (v : verification) -> {
                 v with
-                specs = List.map (fun (spec : specification) -> {
-                      spec with
+                postconditions = List.map (fun (postcondition : postcondition) -> {
+                      postcondition with
                       invariants =
                         List.fold_left (fun acc (inv : invariant) ->
                             if List.mem_assoc (unloc inv.label) !loop_ids then
@@ -132,8 +132,8 @@ let extend_removeif (model : model) : model =
                               let loop_inv = { inv with label = dumloc loop_id } in
                               acc @ [inv; loop_inv]
                             else acc @ [inv]
-                          ) [] spec.invariants
-                    }) v.specs
+                          ) [] postcondition.invariants
+                    }) v.postconditions
               }) f.verif
         }) m.functions
   }

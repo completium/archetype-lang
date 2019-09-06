@@ -751,7 +751,7 @@ let pp_invariants fmt (lbl, is) =
     pp_id lbl
     (pp_list ";@\n" (pp_expr e_default PNone)) is
 
-let pp_specification fmt (id, f, is) =
+let pp_postcondition fmt (id, f, is) =
   Format.fprintf fmt "postcondition %a = {@\n  @[%a@]@\n  @[%a@]@\n}"
     pp_id id
     (pp_expr e_default PNone) f
@@ -800,7 +800,7 @@ let pp_verification_item fmt = function
 
   | Vassert (id, f, is) -> pp_assert fmt (id, f, is)
 
-  | Vspecification (id, f, xs) -> pp_specification fmt (id, f, xs)
+  | Vpostcondition (id, f, xs) -> pp_postcondition fmt (id, f, xs)
 
 let pp_verification_items = pp_list "@\n@\n" pp_verification_item
 

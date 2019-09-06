@@ -564,7 +564,7 @@ type spec_mode =
   | Assert
 [@@deriving show {with_path = false}]
 
-type 'id specification_gen = {
+type 'id postcondition_gen = {
   name: 'id;
   mode: spec_mode;
   formula: 'id mterm_gen;
@@ -572,7 +572,7 @@ type 'id specification_gen = {
 }
 [@@deriving show {with_path = false}]
 
-type specification = lident specification_gen
+type postcondition = lident postcondition_gen
 [@@deriving show {with_path = false}]
 
 
@@ -588,15 +588,15 @@ type assert_ = lident assert_gen
 [@@deriving show {with_path = false}]
 
 type 'id verification_gen = {
-  predicates  : 'id predicate_gen list;
-  definitions : 'id definition_gen list;
-  lemmas      : 'id label_term_gen list;
-  theorems    : 'id label_term_gen list;
-  variables   : 'id variable_gen list;
-  invariants  : ('id * 'id label_term_gen list) list;
-  effects     : 'id mterm_gen list;
-  specs       : 'id specification_gen list;
-  loc         : Location.t [@opaque];
+  predicates     : 'id predicate_gen list;
+  definitions    : 'id definition_gen list;
+  lemmas         : 'id label_term_gen list;
+  theorems       : 'id label_term_gen list;
+  variables      : 'id variable_gen list;
+  invariants     : ('id * 'id label_term_gen list) list;
+  effects        : 'id mterm_gen list;
+  postconditions : 'id postcondition_gen list;
+  loc            : Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]
 
@@ -659,14 +659,14 @@ let mk_definition ?(loc = Location.dummy) name typ var body =
 let mk_invariant ?(formulas = []) label =
   { label; formulas }
 
-let mk_specification ?(invariants = []) name mode formula =
+let mk_postcondition ?(invariants = []) name mode formula =
   { name; mode; formula; invariants }
 
 let mk_assert ?(invariants = []) name label formula =
   { name; label; formula; invariants }
 
-let mk_verification ?(predicates = []) ?(definitions = []) ?(lemmas = []) ?(theorems = []) ?(variables = []) ?(invariants = []) ?(effects = []) ?(specs = []) ?(asserts = []) ?(loc = Location.dummy) () =
-  { predicates; definitions; lemmas; theorems; variables; invariants; effects; specs; loc}
+let mk_verification ?(predicates = []) ?(definitions = []) ?(lemmas = []) ?(theorems = []) ?(variables = []) ?(invariants = []) ?(effects = []) ?(postconditions = []) ?(asserts = []) ?(loc = Location.dummy) () =
+  { predicates; definitions; lemmas; theorems; variables; invariants; effects; postconditions; loc}
 
 let mk_info_var ?(constant = false) ?init name type_ : info_var =
   { name; type_; constant; init}
@@ -1173,7 +1173,7 @@ let map_mterm_model_formula custom (f : ('id, 't) ctx_model_gen -> mterm -> mter
       }
     in
 
-    let map_specification (f : ('id, 't) ctx_model_gen -> mterm -> mterm) (spec : specification) : specification =
+    let map_postcondition (f : ('id, 't) ctx_model_gen -> mterm -> mterm) (spec : postcondition) : postcondition =
       let ctx = { ctx with spec_id = Some spec.name} in
       { spec with
         formula = f ctx spec.formula;
@@ -1194,7 +1194,7 @@ let map_mterm_model_formula custom (f : ('id, 't) ctx_model_gen -> mterm -> mter
       variables = List.map (map_variable f) v.variables;
       invariants = List.map (map_invariantt f) v.invariants;
       effects = List.map (f ctx) v.effects;
-      specs = List.map (map_specification f) v.specs;
+      postconditions = List.map (map_postcondition f) v.postconditions;
     }
   ) in
 
@@ -1884,7 +1884,7 @@ let fold_verification (ctx : ('id, 't) ctx_model_gen) (f : ('id, 't) ctx_model_g
     List.fold_left (f ctx) accu spec.formulas
   in
 
-  let fold_specification (ctx : ('id, 't) ctx_model_gen) (f : ('id, 't) ctx_model_gen -> 'a -> 'id mterm_gen -> 'a) (spec : 'id specification_gen) (accu : 'a) : 'a =
+  let fold_postcondition (ctx : ('id, 't) ctx_model_gen) (f : ('id, 't) ctx_model_gen -> 'a -> 'id mterm_gen -> 'a) (spec : 'id postcondition_gen) (accu : 'a) : 'a =
     let ctx = { ctx with spec_id = Some spec.name} in
     accu
     |> (fun x -> f ctx x spec.formula)
@@ -1904,7 +1904,7 @@ let fold_verification (ctx : ('id, 't) ctx_model_gen) (f : ('id, 't) ctx_model_g
   |> fold_left (fold_variable ctx f) v.variables
   |> fold_left (fold_invariantt ctx f) v.invariants
   |> (fun x -> List.fold_left (fun accu x -> f ctx accu x) x v.effects)
-  |> fold_left (fold_specification ctx f) v.specs
+  |> fold_left (fold_postcondition ctx f) v.postconditions
 
 let fold_model (f : ('id, 't) ctx_model_gen -> 'a -> 'id mterm_gen -> 'a) (m : 'id model_gen) (accu : 'a) : 'a =
 
@@ -1975,7 +1975,7 @@ module Utils : sig
   val get_key_pos                        : model -> lident -> int
   val get_loop_invariants                : model -> (lident * mterm) list -> ident -> (lident * mterm) list
   val get_formula                        : model -> mterm option -> ident -> mterm option
-  val is_post                            : specification -> bool
+  val is_post                            : postcondition -> bool
   val get_sum_fields                     : model -> ident -> ident list
   val get_added_removed_sets             : model -> verification option -> ((lident, lident mterm_gen) mterm_node) list
   val get_storage_invariants             : model -> ident option -> (ident * ident * mterm) list
@@ -2266,7 +2266,7 @@ end = struct
     formulas = List.map m i.formulas
   }
 
-  let map_specification_terms (m : mterm -> mterm) (s : specification) : specification = {
+  let map_postcondition_terms (m : mterm -> mterm) (s : postcondition) : postcondition = {
     s with
     formula = m s.formula;
     invariants = List.map (map_invariant_terms m) s.invariants
@@ -2274,7 +2274,7 @@ end = struct
 
   let map_verification_terms (m : mterm -> mterm) (v : verification) : verification = {
     v with
-    specs = List.map (map_specification_terms m) v.specs
+    postconditions = List.map (map_postcondition_terms m) v.postconditions
   }
 
 
@@ -2347,7 +2347,7 @@ end = struct
       | _ -> acc in
     fold_model internal_get m acc
 
-  let is_post (s : specification) =
+  let is_post (s : postcondition) =
     match s.mode with
     | Post -> true
     | _ -> false

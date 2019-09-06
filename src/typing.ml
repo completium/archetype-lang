@@ -339,7 +339,7 @@ type 'env iverification = [
   | `Variable      of M.lident * M.pterm option
   | `Assert        of M.lident * M.pterm * (M.lident * M.pterm list) list
   | `Effect        of 'env * M.instruction
-  | `Specification of M.lident * M.pterm * (M.lident * M.pterm list) list
+  | `Postcondition of M.lident * M.pterm * (M.lident * M.pterm list) list
 ]
 
 (* -------------------------------------------------------------------- *)
@@ -1824,7 +1824,7 @@ let for_verification_item (env : env) (v : PT.verification_item) : env * env ive
     let i = for_instruction env i in
     (env, `Effect i)
 
-  | PT.Vspecification (x, f, invs) ->
+  | PT.Vpostcondition (x, f, invs) ->
     let for_inv (lbl, linvs) =
       let env0 =
         match Env.Label.lookup env (unloc lbl) with
@@ -1844,7 +1844,7 @@ let for_verification_item (env : env) (v : PT.verification_item) : env * env ive
       let env0 = Option.get_dfl env env0 in
       for_formula env0 f in
     let invs = List.map for_inv invs in
-    (env, `Specification (x, f, invs))
+    (env, `Postcondition (x, f, invs))
 
 (* -------------------------------------------------------------------- *)
 let for_verification (env : env) (v : PT.verification) =
@@ -2282,7 +2282,7 @@ let verifications_of_iverifications =
 
   let do1 (env : M.lident M.verification) (iverif : env iverification) =
     match iverif with
-    | `Specification (x, e, invs) ->
+    | `Postcondition (x, e, invs) ->
       let spec =
         let for_inv (lbl, inv) =
           M.{ label = lbl; formulas = inv }

@@ -177,7 +177,7 @@ let mk_outline_from_verification (verif : ParseTree.verification) =
       let l, v = Location.deloc i in
       match v with
       | Vassert (id, _, ivs)
-      | Vspecification (id, _, ivs) ->
+      | Vpostcondition (id, _, ivs) ->
         [(mk_outline (Location.unloc id, symbol_kind_to_int Property, l))]
         @ mk_outline_from_invariants ivs
         @ accu

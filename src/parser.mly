@@ -373,9 +373,9 @@ function_decl:
 | ASSERT id=ident EQUAL sp=braced(spec_body)
     { let e, xs = sp in Vassert (id, e, xs) }
 
-%inline verif_specification:
+%inline verif_postcondition:
 | POSTCONDITION id=ident EQUAL sp=braced(spec_body)
-    { let e, xs = sp in Vspecification (id, e, xs) }
+    { let e, xs = sp in Vpostcondition (id, e, xs) }
 
 verif_items:
 | ds=loc(verif_definition)*
@@ -385,7 +385,7 @@ verif_items:
   vs=loc(verif_variable)*
   es=loc(verif_effect)*
   bs=loc(verif_assert)*
-  ss=loc(verif_specification)*
+  ss=loc(verif_postcondition)*
    { ds @ ps @ xs @ ts @ vs @ es @ bs @ ss }
 
 %inline verification:
@@ -427,7 +427,7 @@ security_pred:
 
 security_item_unloc:
 | lbl=ident COLON e=security_pred SEMI_COLON {
-     Vspecification (lbl, e, [])
+     Vpostcondition (lbl, e, [])
      }
 
 %inline security_item:

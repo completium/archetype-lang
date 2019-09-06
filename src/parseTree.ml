@@ -225,7 +225,7 @@ type verification_item_unloc =
   | Vvariable of lident * type_t * expr option
   | Veffect of expr
   | Vassert of (lident * expr * invariants)
-  | Vspecification of (lident * expr * invariants)
+  | Vpostcondition of (lident * expr * invariants)
 [@@deriving yojson, show {with_path = false}]
 
 type verification_item = verification_item_unloc loced

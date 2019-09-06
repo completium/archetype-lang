@@ -388,7 +388,7 @@ type 'id invariant = {
 }
 [@@deriving show {with_path = false}]
 
-type 'id specification = {
+type 'id postcondition = {
   name: 'id;
   formula: 'id term_gen;
   invariants: 'id invariant list;
@@ -411,7 +411,7 @@ type 'id verification = {
   variables   : 'id variable list;
   invariants  : ('id * 'id label_term list) list;
   effect      : 'id term_gen option;
-  specs       : 'id specification list;
+  specs       : 'id postcondition list;
   asserts     : 'id assert_ list;
   loc         : Location.t [@opaque];
 }
@@ -553,7 +553,7 @@ let mk_definition ?(loc = Location.dummy) name typ var body =
 let mk_invariant ?(formulas = []) label =
   { label; formulas }
 
-let mk_specification ?(invariants = []) name formula =
+let mk_postcondition ?(invariants = []) name formula =
   { name; formula; invariants }
 
 let mk_assert ?(invariants = []) name label formula =

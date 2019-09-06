@@ -574,8 +574,8 @@ let pp_assert fmt (s : lident assert_) : unit =
     pp_pterm s.formula
     (pp_no_empty_list_with_sep "@\n" pp_invariant) s.invariants
 
-let pp_specification fmt (s : lident specification) : unit =
-  Format.fprintf fmt "specification %a = {@\n  @[%a@\n%a@]@\n}"
+let pp_postcondition fmt (s : lident postcondition) : unit =
+  Format.fprintf fmt "postcondition %a = {@\n  @[%a@\n%a@]@\n}"
     pp_id s.name
     pp_pterm s.formula
     (pp_no_empty_list_with_sep "@\n" pp_invariant) s.invariants
@@ -608,7 +608,7 @@ let pp_verification fmt (v : lident verification) =
                 )) l)) v.invariants
       (pp_option (fun fmt -> Format.fprintf fmt "effect {@\n  @[%a@]}@\n" pp_pterm)) v.effect
       (pp_no_empty_list2 pp_assert) v.asserts
-      (pp_no_empty_list2 pp_specification) v.specs
+      (pp_no_empty_list2 pp_postcondition) v.specs
 
 let pp_variable fmt (v : lident variable) =
   Format.fprintf fmt "%s %a %a%a%a%a@\n"

@@ -438,7 +438,7 @@ let adds_asset m an b =
     | _ -> M.fold_term internal_adds acc term in
   internal_adds false b
 
-let is_security (s : M.specification) =
+let is_security (s : M.postcondition) =
   match s.formula.node with
   | M.MOnlyByRole _ -> true
   | M.MOnlyInAction _ -> true
@@ -536,7 +536,7 @@ let map_security_pred loc (t : M.mterm) =
       (entries |> List.map unloc |> List.map String.capitalize_ascii)
   | _ -> Tnottranslated
 
-let mk_spec_invariant loc (spec : M.specification) =
+let mk_spec_invariant loc (spec : M.postcondition) =
   if is_security spec then
     [
       {
@@ -663,7 +663,7 @@ let map_storage m (l : M.storage) =
     invariants = List.concat (List.map (fun (item : M.storage_item) ->
         List.map (mk_storage_invariant m item.name) item.invariants) l) @
                  (List.fold_left (fun acc spec ->
-                      acc @ (mk_spec_invariant `Storage spec)) [] m.verification.specs)
+                      acc @ (mk_spec_invariant `Storage spec)) [] m.verification.postconditions)
   }
 
 let mk_axioms (m : M.model) =
@@ -923,9 +923,9 @@ and mk_invariants (m : M.model) ctx (lbl : ident option) lbody =
         else acc
       ) ([] : (loc_term, loc_ident) abstract_formula list) in
   let security_loop_invariants =
-    m.verification.specs
+    m.verification.postconditions
     |> List.filter is_security
-    |> List.map (fun (spec : M.specification) ->
+    |> List.map (fun (spec : M.postcondition) ->
         let id =
           match lbl with
           | Some a -> (unloc spec.name) ^ "_" ^ a
@@ -1451,10 +1451,10 @@ let flatten_if_fail m (t : M.mterm) : loc_term =
   mk_loc t.loc (Tseq (rec_flat [] t))
 
 let mk_ensures m acc (v : M.verification) =
-  acc @ (List.map (fun (spec : M.specification) -> {
+  acc @ (List.map (fun (spec : M.postcondition) -> {
         id = spec.name |> map_lident;
         form = map_mterm m init_ctx spec.formula
-      }) (v.specs |> List.filter M.Utils.is_post))
+      }) (v.postconditions |> List.filter M.Utils.is_post))
 
 let mk_require n i t = {
   id = with_dummy_loc (n^"_require_"^(string_of_int i));

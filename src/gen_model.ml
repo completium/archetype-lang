@@ -620,25 +620,25 @@ let to_model (ast : A.model) : M.model =
     M.mk_invariant i.label ~formulas:(List.map to_mterm i.formulas)
   in
 
-  let to_spec (s : A.lident A.specification) : M.specification  =
-    M.mk_specification s.name Post (to_mterm s.formula)
+  let to_postcondition (s : A.lident A.postcondition) : M.postcondition  =
+    M.mk_postcondition s.name Post (to_mterm s.formula)
       ~invariants:(List.map to_invariant s.invariants)
   in
 
-  let to_assert (s : A.lident A.assert_) : M.specification  =
-    M.mk_specification s.name Assert (to_mterm s.formula)
+  let to_assert (s : A.lident A.assert_) : M.postcondition  =
+    M.mk_postcondition s.name Assert (to_mterm s.formula)
       ~invariants:(List.map to_invariant s.invariants)
   in
 
   let to_verification (v : A.lident A.verification) : M.verification =
-    let predicates  = List.map to_predicate   v.predicates  in
-    let definitions = List.map to_definition  v.definitions in
-    let lemmas      = List.map to_label_lterm v.lemmas      in
-    let theorems    = List.map to_label_lterm v.theorems    in
-    let variables   = List.map (fun x -> to_variable x) v.variables in
-    let invariants  = List.map (fun (a, l) -> (a, List.map (fun x -> to_label_lterm x) l)) v.invariants in
-    let effects     = Option.map_dfl (fun x -> [to_mterm x]) [] v.effect in
-    let specs       = List.map to_spec v.specs @ List.map to_assert v.asserts in
+    let predicates     = List.map to_predicate   v.predicates  in
+    let definitions    = List.map to_definition  v.definitions in
+    let lemmas         = List.map to_label_lterm v.lemmas      in
+    let theorems       = List.map to_label_lterm v.theorems    in
+    let variables      = List.map (fun x -> to_variable x) v.variables in
+    let invariants     = List.map (fun (a, l) -> (a, List.map (fun x -> to_label_lterm x) l)) v.invariants in
+    let effects        = Option.map_dfl (fun x -> [to_mterm x]) [] v.effect in
+    let postconditions = List.map to_postcondition v.specs @ List.map to_assert v.asserts in
     M.mk_verification
       ~predicates:predicates
       ~definitions:definitions
@@ -647,22 +647,22 @@ let to_model (ast : A.model) : M.model =
       ~variables:variables
       ~invariants:invariants
       ~effects:effects
-      ~specs:specs
+      ~postconditions:postconditions
       ~loc:v.loc ()
   in
 
   let cont_verification (v : A.lident A.verification) (verif : M.verification) : M.verification =
     let v = to_verification v in
     { verif with
-      predicates  = verif.predicates @ v.predicates;
-      definitions = verif.definitions @ v.definitions;
-      lemmas      = verif.lemmas @ v.lemmas;
-      theorems    = verif.theorems @ v.theorems;
-      variables   = verif.variables @ v.variables;
-      invariants  = verif.invariants @ v.invariants;
-      effects     = verif.effects @ v.effects;
-      specs       = verif.specs @ v.specs;
-      loc         = Location.merge verif.loc v.loc;
+      predicates     = verif.predicates @ v.predicates;
+      definitions    = verif.definitions @ v.definitions;
+      lemmas         = verif.lemmas @ v.lemmas;
+      theorems       = verif.theorems @ v.theorems;
+      variables      = verif.variables @ v.variables;
+      invariants     = verif.invariants @ v.invariants;
+      effects        = verif.effects @ v.effects;
+      postconditions = verif.postconditions @ v.postconditions;
+      loc            = Location.merge verif.loc v.loc;
     }
   in
 
