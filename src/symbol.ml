@@ -22,6 +22,7 @@ let string_of_token = function
   | SORTED          -> "SORTED"
   | SOME            -> "SOME"
   | SEMI_COLON      -> "SEMI_COLON"
+  | SECURITY      -> "SECURITY"
   | RPAREN          -> "RPAREN"
   | RETURN          -> "RETURN"
   | REQUIRE         -> "REQUIRE"
@@ -148,6 +149,7 @@ let string_of_symbol = function
   | X (T T_SORTED) -> "sorted"
   | X (T T_SOME) -> "some"
   | X (T T_SEMI_COLON) -> ";"
+  | X (T T_SECURITY) -> "security"
   | X (T T_RPAREN) -> ")"
   | X (T T_RETURN) -> "return"
   | X (T T_REQUIRE) -> "require"
@@ -277,8 +279,14 @@ let string_of_symbol = function
   | X (N N_security_unloc) -> "a security block"
   | X (N N_security_arg_unloc) -> "a security argument"
   | X (N N_security_arg_ext_unloc) -> "a security argument"
+  | X (N N_security_decl_unloc) -> "a security declaration"
+  | X (N N_security_decl) -> "a security declaration"
+  (* | X (N N_security_item_unloc) -> "a security item" *)
+  (* | X (N N_nonempty_list_security_item_) -> "a security item" *)
   | X (N N_nonempty_list_security_arg_) -> "a non empty list of security argument"
   | X (N N_nonempty_list_terminated_field_SEMI_COLON__) -> "a non empty list of field terminated by ;"
+  (* | X (N N_security_pred_unloc) -> "a security predicate" *)
+  (* | X (N N_security_pred) -> "a security predicate" *)
   | X (N N_simple_expr_r) -> "a simple expression"
   | X (N N_signature) -> "a signature"
   | X (N N_separated_nonempty_list_SEMI_COLON_record_item_) -> "a non empty list of record item by ;"

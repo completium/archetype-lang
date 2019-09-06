@@ -125,6 +125,7 @@
 %token REQUIRE
 %token RETURN
 %token RPAREN
+%token SECURITY
 %token SEMI_COLON
 %token SOME
 %token SORTED
@@ -255,6 +256,7 @@ declaration_r:
  | x=contract           { x }
  | x=function_decl      { x }
  | x=verification_decl  { x }
+ | x=security_decl      { x }
  | INVALID_DECL         { Dinvalid }
 
 archetype:
@@ -408,6 +410,48 @@ verification_fun:
 
 verification_decl:
 | x=loc(verification)      { Dverification x }
+
+security_pred_unloc:
+| id=ident args=security_arg+ {
+    let args : list = args in
+    match unloc id, args with
+    | "only_by_role",           [lhs, rhs] -> assert false (*Esecurity (dumloc (SMayBePerformedOnlyByRole (lhs, rhs)))*)
+    | "only_in_action",         [lhs, rhs] -> assert false (*Esecurity (dumloc (SMayBePerformedOnlyByAction (lhs, rhs)))*)
+    | "only_by_role_in_action", [lhs, rhs] -> assert false
+    | "not_by_role",            [lhs, rhs] -> assert false
+    | "not_in_action",          [lhs, rhs] -> assert false
+    | "not_by_role_in_action",  [lhs, rhs] -> assert false
+    | _ -> assert false
+
+    (*Eapp ( Foperator (dumloc Not), [dumloc (Esecurity SMayBePerformedOnlyByAction (lhs, rhs))])*)
+}
+
+security_pred:
+| x=loc(security_pred_unloc) { x }
+
+security_item_unloc:
+| lbl=ident COLON e=security_pred {
+     Vspecification (lbl, e, [])
+     }
+
+%inline security_item:
+| x=loc(security_item_unloc) { x }
+
+security_decl_unloc:
+| SECURITY exts=option(extensions) LBRACE
+            xs=expr RBRACE
+        { let l = split_seq_label xs in
+            let ll = List.map (fun x ->
+            let loc, (id, e) = Location.deloc x in
+            let lbl = Tools.Option.get id in
+            mkloc loc (Vspecification (lbl, e, []))) l in
+            (ll, exts) }
+
+//    xs=security_item+ RBRACE
+//        { (xs, exts) }
+
+security_decl:
+| x=loc(security_decl_unloc)      { Dverification x }
 
 enum:
 | STATES exts=extensions? xs=equal_enum_values

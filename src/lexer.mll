@@ -71,6 +71,7 @@
       "ref"                 , REF            ;
       "require"             , REQUIRE        ;
       "return"              , RETURN         ;
+      "security"            , SECURITY       ;
       "sorted"              , SORTED         ;
       "specification"       , SPECIFICATION  ;
       "states"              , STATES         ;

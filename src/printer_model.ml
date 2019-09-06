@@ -87,6 +87,17 @@ let pp_pattern fmt (p : pattern) =
   | Pconst i -> pp_id fmt i
   | Pwild -> pp_str fmt "_"
 
+let pp_action_description fmt ad =
+  match ad with
+  | ADany         -> pp_str fmt "anyaction"
+  | ADadd      id -> Format.fprintf fmt "(add %a)" pp_ident id
+  | ADremove   id -> Format.fprintf fmt "(remove %a)" pp_ident id
+  | ADupdate   id -> Format.fprintf fmt "(update %a)" pp_ident id
+  | ADtransfer id -> Format.fprintf fmt "(transfer %a)" pp_ident id
+  | ADget      id -> Format.fprintf fmt "(get %a)" pp_ident id
+  | ADiterate  id -> Format.fprintf fmt "(iterate %a)" pp_ident id
+  | ADcall     id -> Format.fprintf fmt "(call %a)" pp_ident id
+
 let pp_mterm fmt (mt : mterm) =
   let rec f fmt (mtt : mterm) =
     match mtt.node with
@@ -696,25 +707,37 @@ let pp_mterm fmt (mt : mterm) =
       Format.fprintf fmt "to_iterate %a"
         f e
 
-    | MsecMayBePerformedOnlyByRole (l, r) ->
-      Format.fprintf fmt "%a MayBePerformedOnlyByRole %a"
-        f l
-        f r
+    | MOnlyByRole (l, r) ->
+      Format.fprintf fmt "only_by_role %a [%a]"
+        pp_action_description l
+        (pp_list " or " pp_id) r
 
-    | MsecMayBePerformedOnlyByAction (l, r) ->
-      Format.fprintf fmt "%a MayBePerformedOnlyByAction %a"
-        f l
-        f r
+    | MOnlyInAction (l, r) ->
+      Format.fprintf fmt "only_in_action %a [%a]"
+        pp_action_description l
+        (pp_list " or " pp_id) r
 
-    | MsecMayBePerformedByRole (l, r) ->
-      Format.fprintf fmt "%a MayBePerformedByRole %a"
-        f l
-        f r
+    | MOnlyByRoleInAction (l, r, q) ->
+      Format.fprintf fmt "only_by_role_in_action %a %a %a"
+        pp_action_description l
+        (pp_list " or " pp_id) r
+        (pp_list " or " pp_id) q
 
-    | MsecMayBePerformedByAction (l, r) ->
-      Format.fprintf fmt "%a MayBePerformedByAction %a"
-        f l
-        f r
+    | MNotByRole (l, r) ->
+      Format.fprintf fmt "not_by_role %a [%a]"
+        pp_action_description l
+        (pp_list " or " pp_id) r
+
+    | MNotInAction (l, r) ->
+      Format.fprintf fmt "not_in_action %a [%a]"
+        pp_action_description l
+        (pp_list " or " pp_id) r
+
+    | MNotByRoleInAction (l, r, q) ->
+      Format.fprintf fmt "not_by_role_in_action %a [%a] [%a]"
+        pp_action_description l
+        (pp_list " or " pp_id) r
+        (pp_list " or " pp_id) q
 
     | MsecTransferredBy a ->
       Format.fprintf fmt "TransferredBy %a"

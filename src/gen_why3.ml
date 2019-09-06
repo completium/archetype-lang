@@ -53,14 +53,14 @@ let mk_trace tr =
   let change_term =
     match tr with
     | Add id -> Tapp (Tdoti("Tr",
-                           "TrAdd_"),
-                     [Tvar (String.capitalize_ascii id)])
+                            "TrAdd_"),
+                      [Tvar (String.capitalize_ascii id)])
     | Rm id -> Tapp (Tdoti("Tr",
                            "TrRm_"),
                      [Tvar (String.capitalize_ascii id)])
     | Update id -> Tapp (Tdoti("Tr",
-                           "TrUpdate_"),
-                     [Tvar (String.capitalize_ascii id)])
+                               "TrUpdate_"),
+                         [Tvar (String.capitalize_ascii id)])
     | Get id -> Tapp (Tdoti("Tr",
                             "TrGet_"),
                       [Tvar (String.capitalize_ascii id)])
@@ -71,7 +71,7 @@ let mk_trace tr =
   Tassign (tr,
            Tcons (change_term,
                   tr)
-  ) |> loc_term
+          ) |> loc_term
 
 
 let mk_trace_asset m =
@@ -441,7 +441,7 @@ let adds_asset m an b =
 
 let is_security (t : M.mterm) =
   match t.M.node with
-  | M.MsecMayBePerformedOnlyByRole _ -> true
+  | M.MOnlyByRole _ -> true
   | _ -> false
 
 let mk_spec_invariant loc (spec : M.specification) =
@@ -721,17 +721,17 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
                          map_mterm m ctx v)))
     | M.Mset (a,l,k,v) ->
       mk_trace_seq m
-      (Tletin (false,
-               with_dummy_loc ("_old"^a),
-               None,
-               with_dummy_loc (Tapp (loc_term (Tvar ("get_"^a)),
-                                     [map_mterm m ctx k])),
-               with_dummy_loc (Tapp (loc_term (Tvar ("set_"^a)),
-                                     [
-                                       loc_term (Tvar ("_old"^a));
-                                       map_mterm m ctx v
-                                     ]))))
-      (List.map (fun f -> Update f) l)
+        (Tletin (false,
+                 with_dummy_loc ("_old"^a),
+                 None,
+                 with_dummy_loc (Tapp (loc_term (Tvar ("get_"^a)),
+                                       [map_mterm m ctx k])),
+                 with_dummy_loc (Tapp (loc_term (Tvar ("set_"^a)),
+                                       [
+                                         loc_term (Tvar ("_old"^a));
+                                         map_mterm m ctx v
+                                       ]))))
+        (List.map (fun f -> Update f) l)
     | M.Mremovefield (a,f,k,v) ->
       let t,_,_ = M.Utils.get_partition_asset_key m (dumloc a) (dumloc f) in
       mk_trace_seq m

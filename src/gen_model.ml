@@ -152,6 +152,20 @@ let to_model (ast : A.model) : M.model =
       assert false
   in
 
+  let to_action_description (ad : A.action_description) : M.action_description=
+    match ad with
+    | ADAny -> M.ADany
+    | ADOp ("add", id)      -> M.ADadd (unloc id)
+    | ADOp ("remove", id)   -> M.ADremove    (unloc id)
+    | ADOp ("update", id)   -> M.ADupdate    (unloc id)
+    | ADOp ("transfer", id) -> M.ADtransfer  (unloc id)
+    | ADOp ("get", id)      -> M.ADget       (unloc id)
+    | ADOp ("iterate", id)  -> M.ADiterate   (unloc id)
+    | ADOp ("call", id)     -> M.ADcall      (unloc id)
+    | _ -> assert false
+  in
+
+
   let to_mterm_node (n : A.lident A.term_node) (f : A.lident A.term_gen -> M.mterm) (ftyp : 't -> M.type_) : (M.lident, M.mterm) M.mterm_node =
     match n with
     | A.Pif (c, t, e)                -> M.Mif        (f c, f t, Some (f e))
@@ -283,17 +297,17 @@ let to_model (ast : A.model) : M.model =
       let field_name = extract_field_name (qi, qt, q) in
       M.Mmax (asset_name, field_name, fp)
 
-    | A.Pcall (None, A.Cconst (A.Cmaybeperformedonlybyrole), [AExpr l; AExpr r]) ->
-      M.MsecMayBePerformedOnlyByRole (f l, f r)
+    (* | A.Pcall (None, A.Cconst (A.Cmaybeperformedonlybyrole), [AExpr l; AExpr r]) ->
+       M.MsecMayBePerformedOnlyByRole (f l, f r)
 
-    | A.Pcall (None, A.Cconst (A.Cmaybeperformedonlybyaction), [AExpr l; AExpr r]) ->
-      M.MsecMayBePerformedOnlyByAction (f l, f r)
+       | A.Pcall (None, A.Cconst (A.Cmaybeperformedonlybyaction), [AExpr l; AExpr r]) ->
+       M.MsecMayBePerformedOnlyByAction (f l, f r)
 
-    | A.Pcall (None, A.Cconst (A.Cmaybeperformedbyrole), [AExpr l; AExpr r]) ->
-      M.MsecMayBePerformedByRole (f l, f r)
+       | A.Pcall (None, A.Cconst (A.Cmaybeperformedbyrole), [AExpr l; AExpr r]) ->
+       M.MsecMayBePerformedByRole (f l, f r)
 
-    | A.Pcall (None, A.Cconst (A.Cmaybeperformedbyaction), [AExpr l; AExpr r]) ->
-      M.MsecMayBePerformedByAction (f l, f r)
+       | A.Pcall (None, A.Cconst (A.Cmaybeperformedbyaction), [AExpr l; AExpr r]) ->
+       M.MsecMayBePerformedByAction (f l, f r) *)
 
     | A.Pcall (aux, A.Cconst c, args) ->
       Format.eprintf "expr const unkown: %a with nb args: %d [%a] %s@."
@@ -305,11 +319,11 @@ let to_model (ast : A.model) : M.model =
         (match aux with | Some _ -> "with aux" | _ -> "without aux");
       assert false
 
-    | A.PsecurityActionRole _ ->
-      M.Mvarlocal (dumloc "TODO")
+    | A.PsecurityActionRole (action, roles) ->
+      M.MOnlyByRole (to_action_description action, roles)
 
-    | A.PsecurityActionAction _ ->
-      M.Mvarlocal (dumloc "TODO")
+    | A.PsecurityActionAction (action, actions) ->
+      M.MOnlyInAction (to_action_description action, actions)
   in
 
   let rec to_mterm (pterm : A.pterm) : M.mterm =
