@@ -520,7 +520,7 @@ let pp_model fmt (model : model) =
 
       | Mnequal (l, r) ->
         let pp fmt (l, r : mterm * mterm) =
-          Format.fprintf fmt "%a <> %a"
+          Format.fprintf fmt "%a =/= %a"
             (pp_cast Lhs l.type_ r.type_ f) l
             (pp_cast Rhs l.type_ r.type_ f) r
         in
@@ -642,10 +642,10 @@ let pp_model fmt (model : model) =
       | Mvarparam v    -> pp_str fmt ("action." ^ (unloc v))
       | Mvarthe        -> pp_str fmt "the"
       | Mstate         -> pp_str fmt "state"
-      | Mnow           -> pp_str fmt "Current.time()"
+      | Mnow           -> pp_str fmt "now"
       | Mtransferred   -> pp_str fmt "amount"
-      | Mcaller        -> pp_str fmt "Current.sender()"
-      | Mbalance       -> pp_str fmt "Current.balance()"
+      | Mcaller        -> pp_str fmt "sender"
+      | Mbalance       -> pp_str fmt "balance"
       | Mnone          -> pp_str fmt "None"
       | Msome v        ->
         Format.fprintf fmt "Some (%a)"
@@ -783,15 +783,20 @@ let pp_model fmt (model : model) =
   in
 
   let pp_action_action (fmt : Format.formatter) (action : action) =
-    Format.fprintf fmt
-      "type action_%a is record [@\n  \
-       @[%a@]@\n\
-       ]@\n"
-      pp_str action.fun_name
-      (pp_list "@\n" (fun fmt (id, t) ->
-           Format.fprintf fmt "%a : %a;"
-             pp_str id
-             pp_type t)) action.args
+    match action.args with
+    | [] ->
+      Format.fprintf fmt "type action_%a is unit@\n"
+        pp_str action.fun_name
+    | _ ->
+      Format.fprintf fmt
+        "type action_%a is record [@\n  \
+         @[%a@]@\n\
+         ]@\n"
+        pp_str action.fun_name
+        (pp_list "@\n" (fun fmt (id, t) ->
+             Format.fprintf fmt "%a : %a;"
+               pp_str id
+               pp_type t)) action.args
   in
 
   let pp_action_type (fmt : Format.formatter) _ =
@@ -849,6 +854,313 @@ let pp_model fmt (model : model) =
       (pp_list "@\n" pp_storage_item) model.storage
   in
 
+
+  let pp_storage_const fmt = function
+    | Get an ->
+      let _, t = Utils.get_asset_key model (to_lident an) in
+      Format.fprintf fmt
+        "function get_%s (const s : storage_type; const key : %a) : %s is@\n  \
+         begin@\n    \
+         const res : %s = get_force(key , s.%s_assets);@\n  \
+         end with (res)@\n"
+        an pp_btyp t an an an
+    | Set an ->
+      (* let _, t = Utils.get_asset_key model (to_lident an) in *)
+      Format.fprintf fmt "// TODO api storage: Set"
+    (* "let[@inline] set_%s (s, key, asset : storage * %a * %s) : storage =@\n  \
+       s.%s_assets <- Map.update key (Some asset) s.%s_assets@\n"
+       an pp_btyp t an an an *)
+
+    | Add an ->
+      (* let k, t = Utils.get_asset_key model (to_lident an) in *)
+      Format.fprintf fmt "// TODO api storage: Add"
+    (* "let[@inline] add_%s (s, asset : storage * %s) : storage =@\n  \
+       let key = asset.%s in@\n  \
+       let s = s.%s_keys <- add_list key s.%s_keys in@\n  \
+       s.%s_assets <- Map.update key (Some asset) s.%s_assets@\n"
+       an an k an an an an *)
+
+    | Remove an ->
+      (* let _, t = Utils.get_asset_key model (to_lident an) in *)
+      Format.fprintf fmt "// TODO api storage: Remove"
+    (* "let[@inline] remove_%s (s, key : storage * %a) : storage =@\n  \
+       let s = s.%s_keys <- remove_list key s.%s_keys in@\n  \
+       s.%s_assets <- Map.update key None s.%s_assets@\n"
+       an pp_btyp t an an an an *)
+
+    | Clear an ->
+      (* let k, t = Utils.get_asset_key model (to_lident an) in *)
+      Format.fprintf fmt "// TODO api storage: Clear"
+    (* "let[@inline] clear_%s (s : storage) : storage =@\n  \
+       let s = s.%s_keys <- [] in@\n  \
+       s.%s_assets <- (Map : (%a, %s) map)@\n"
+       an an an pp_btyp t an *)
+
+    | Reverse an ->
+      Format.fprintf fmt "// TODO api storage: Reverse"
+    (* "let[@inline] reverse_%s (s : storage) : storage =@\n  \
+       s.%s_keys <- List.rev s.%s_keys@\n"
+       an an an *)
+
+    | UpdateAdd (an, fn) ->
+      (* let k, t = Utils.get_asset_key model (to_lident an) in
+         let ft, c = Utils.get_field_container model an fn in
+         let kk, _ = Utils.get_asset_key model (to_lident ft) in *)
+      Format.fprintf fmt "// TODO api storage: UpdateAdd"
+    (* "let[@inline] add_%s_%s (s, a, b : storage * %s * %s) : storage =@\n  \
+       let asset = a.%s <- add_list b.%a a.%s in@\n  \
+       s.%s_assets <- Map.update a.%a (Some asset) s.%s_assets@\n"
+       an fn an ft
+       fn pp_str kk fn
+       an pp_str k an *)
+
+    | UpdateRemove (an, fn) ->
+      (* let k, t = Utils.get_asset_key model (to_lident an) in
+         let ft, c = Utils.get_field_container model an fn in
+         let kk, tt = Utils.get_asset_key model (to_lident ft) in *)
+      Format.fprintf fmt "// TODO api storage: UpdateRemove"
+    (* "let[@inline] remove_%s_%s (s, a, key : storage * %s * %a) : storage =@\n  \
+       let asset = a.%s <- remove_list key a.%s in@\n  \
+       s.%s_assets <- Map.update a.%a (Some asset) s.%s_assets@\n"
+       an fn an pp_btyp tt
+       fn fn
+       an pp_str k an *)
+
+    | UpdateClear (an, fn) ->
+      (* let k, t = Utils.get_asset_key model (to_lident an) in *)
+      Format.fprintf fmt "// TODO api storage: UpdateClear"
+    (* "let[@inline] clear_%s_%s (s, a : storage * %s) : storage =@\n  \
+       let key = a.%s in@\n  \
+       let asset = get_%s (s, key) in@\n  \
+       let asset = asset.%s <- [] in@\n  \
+       s.%s_assets <- Map.update a.%s (Some asset) s.%s_assets@\n"
+       an fn an
+       k
+       an
+       fn
+       an k an *)
+
+    | UpdateReverse (an, fn) ->
+      (* let k, t = Utils.get_asset_key model (to_lident an) in *)
+      Format.fprintf fmt "// TODO api storage: UpdateReverse"
+    (* "let[@inline] reverse_%s_%s (s, a : storage * %s) : storage =@\n  \
+       let key = a.%s in@\n  \
+       let asset = get_%s (s, key) in@\n  \
+       let asset = asset.%s <- List.rev asset.%s in@\n  \
+       s.%s_assets <- Map.update a.%s (Some asset) s.%s_assets@\n"
+       an fn an
+       k
+       an
+       fn fn
+       an k an *)
+
+    | ToKeys an ->
+      Format.fprintf fmt "// TODO api storage: ToKeys"
+      (* "let[@inline] to_keys_%s (s : storage) : storage =@\n  \
+         s (*TODO*)@\n"
+         an *)
+  in
+
+  let pp_container_const fmt = function
+    | AddItem t-> Format.fprintf fmt "add\t %a" pp_type t
+    | RemoveItem t -> Format.fprintf fmt "remove\t %a" pp_type t
+    | ClearItem t -> Format.fprintf fmt "clear\t %a" pp_type t
+    | ReverseItem t -> Format.fprintf fmt "reverse %a" pp_type t
+  in
+
+  let pp_function_const fmt = function
+    | Select (an, _) ->
+      (* let k, t = Utils.get_asset_key model (to_lident an) in *)
+      Format.fprintf fmt "// TODO api storage: Select"
+    (* "let[@inline] select_%s (s, l, p : storage * %a list * (%s -> bool)) : %a list =@\n  \
+       List.fold (fun (x, accu) ->@\n  \
+       let a = get_%s (s, x) in@\n  \
+       if p a@\n  \
+       then add_list a.%s accu@\n  \
+       else accu@\n  \
+       ) l []@\n"
+       an pp_btyp t an pp_btyp t
+       an
+       k *)
+
+    | Sort (an, fn) ->
+      Format.fprintf fmt "// TODO api storage: Sort"
+    (* "let[@inline] sort_%s_%s (s : storage) : unit =@\n  \
+       () (*TODO*)@\n"
+       an fn *)
+
+    | Contains an ->
+      (* let _, t = Utils.get_asset_key model (to_lident an) in *)
+      Format.fprintf fmt "// TODO api storage: Contains"
+    (* "let[@inline] contains_%s ((l, key) : %a list * %a) : bool =@\n  \
+       List.fold (fun (x, accu) ->@\n    \
+       accu || x = key@\n  \
+       ) l false@\n"
+       an
+       pp_btyp t
+       pp_btyp t *)
+
+    | Nth an ->
+      (* let _, t = Utils.get_asset_key model (to_lident an) in *)
+      Format.fprintf fmt "// TODO api storage: Nth"
+    (* "let[@inline] nth_%s (s, l, idx : storage * %a list * int) : %s =@\n  \
+       match l with@\n  \
+       | [] -> failwith \"empty list\"@\n  \
+       | _ ->@\n  \
+       begin@\n  \
+       let cpt = idx in@\n  \
+       let _, res =@\n  \
+       List.fold (fun (x, accu) ->@\n  \
+       let cpt, res = accu in@\n  \
+       if cpt = 0@\n  \
+       then (cpt - 1, Some x)@\n  \
+       else (cpt - 1, res)@\n  \
+       ) l (cpt, None) in@\n  \
+       match res with@\n  \
+       | None -> failwith \"index out of bounds\"@\n  \
+       | Some k -> get_%s (s, k)@\n  \
+       end@\n"
+       an pp_btyp t an
+       an *)
+
+    | Count an ->
+      (* let _, t = Utils.get_asset_key model (to_lident an) in *)
+      Format.fprintf fmt "// TODO api storage: Count"
+    (* "let[@inline] count_%s (l : %a list) : int =@\n  \
+       List.fold (fun (_, accu) ->@\n    \
+       accu + 1@\n  \
+       ) l 0@\n"
+       an
+       pp_btyp t *)
+
+    | Sum (an, fn) ->
+      (* let _, tk = Utils.get_asset_key model (to_lident an) in
+         let _, t, _ = Utils.get_asset_field model (dumloc an, fn) in *)
+      Format.fprintf fmt "// TODO api storage: Sum"
+    (* "let[@inline] sum_%s_%s (s, l : storage * %a list) : %a =@\n  \
+       List.fold (fun (k, accu) ->@\n    \
+       let x = @\n   \
+       match Map.find k s.%s_assets with@\n  \
+       | Some v -> v@\n  \
+       | _ -> failwith \"not_found\" @\n    \
+       in@\n    \
+       accu + x.%s@\n  \
+       ) l %s@\n"
+       an fn pp_btyp tk pp_type t
+       an
+       fn
+       (show_zero t) *)
+
+    | Min (an, fn) ->
+      (* let _, tk = Utils.get_asset_key model (to_lident an) in
+         let _, t, _ = Utils.get_asset_field model (dumloc an, fn) in *)
+      Format.fprintf fmt "// TODO api storage: Min"
+    (* "let[@inline] min_%s_%s (s, l : storage * %a list) : %a =@\n  \
+       match l with@\n  \
+       | [] -> failwith \"empty list\"@\n  \
+       | e::t ->@\n  \
+       let x = @\n   \
+       match Map.find e s.%s_assets with@\n  \
+       | Some v -> v@\n  \
+       | _ -> failwith \"not_found\" @\n    \
+       in@\n    \
+       let init = x.%s in@\n    \
+       List.fold (fun (k, accu) ->@\n    \
+       let x = @\n   \
+       match Map.find k s.%s_assets with@\n  \
+       | Some v -> v@\n  \
+       | _ -> failwith \"not_found\" @\n    \
+       in@\n    \
+       if accu > x.%s@\n  \
+       then x.%s@\n  \
+       else accu@\n  \
+       ) t init@\n"
+       an fn pp_btyp tk pp_type t
+       an
+       fn
+       an
+       fn
+       fn *)
+
+    | Max (an, fn) ->
+      (* let _, tk = Utils.get_asset_key model (to_lident an) in
+         let _, t, _ = Utils.get_asset_field model (dumloc an, fn) in *)
+      Format.fprintf fmt "// TODO api storage: Max"
+    (* "let[@inline] max_%s_%s (s, l : storage * %a list) : %a =@\n  \
+       match l with@\n  \
+       | [] -> failwith \"empty list\"@\n  \
+       | e::t ->@\n  \
+       let x = @\n   \
+       match Map.find e s.%s_assets with@\n  \
+       | Some v -> v@\n  \
+       | _ -> failwith \"not_found\" @\n    \
+       in@\n    \
+       let init = x.%s in@\n    \
+       List.fold (fun (k, accu) ->@\n    \
+       let x = @\n   \
+       match Map.find k s.%s_assets with@\n  \
+       | Some v -> v@\n  \
+       | _ -> failwith \"not_found\" @\n    \
+       in@\n    \
+       if accu < x.%s@\n  \
+       then x.%s@\n  \
+       else accu@\n  \
+       ) t init@\n"
+       an fn pp_btyp tk pp_type t
+       an
+       fn
+       an
+       fn
+       fn *)
+
+    | Shallow _ -> ()
+    | Unshallow _ -> ()
+    | Listtocoll _ -> ()
+
+  in
+
+  let pp_builtin_const fmt = function
+    | MinBuiltin t-> Format.fprintf fmt "min on %a" pp_type t
+    | MaxBuiltin t-> Format.fprintf fmt "max on %a" pp_type t
+  in
+
+  let pp_api_item_node fmt = function
+    | APIStorage   v -> pp_storage_const fmt v
+    | APIContainer v -> pp_container_const fmt v
+    | APIFunction  v -> pp_function_const fmt v
+    | APIBuiltin   v -> pp_builtin_const fmt v
+  in
+
+  let pp_api_item fmt (api_item : api_item) =
+    pp_api_item_node fmt api_item.node_item
+  in
+
+  let pp_api_items fmt _ =
+    let filter_api_items l : api_item list =
+      let contains_select_asset_name a_name l : bool =
+        List.fold_left (fun accu x ->
+            match x.node_item with
+            | APIFunction  (Select (an, _)) -> accu || String.equal an a_name
+            | _ -> accu
+          ) false l
+      in
+      List.fold_right (fun (x : api_item) accu ->
+          if x.only_formula
+          then accu
+          else
+            match x.node_item with
+            | APIFunction  (Select (an, p)) when contains_select_asset_name an accu -> accu
+            | _ -> x::accu
+        ) l []
+    in
+    let l : api_item list = filter_api_items model.api_items in
+    if List.is_empty l
+    then pp_nothing fmt
+    else
+      Format.fprintf fmt "(* API function *)@\n@\n%a@\n"
+        (pp_list "@\n" pp_api_item) l
+  in
+
   let pp_function (fmt : Format.formatter) (f : function__) =
     match f.node with
     | Entry fs ->
@@ -860,7 +1172,12 @@ let pp_model fmt (model : model) =
          end with ((nil : list(operation)), s)@\n"
         pp_id name
         pp_id name
-        pp_mterm fs.body
+        (fun fmt x -> begin
+             match unloc name with
+             | "add" | "consume" | "clear_expired" -> pp_str fmt "skip"
+             | _ -> pp_mterm fmt x
+           end) fs.body
+
     | Function _ -> ()
   in
 
@@ -890,11 +1207,13 @@ let pp_model fmt (model : model) =
                       %a@\n\
                       %a@\n\
                       %a@\n\
+                      %a@\n\
                       @."
     pp_model_name ()
     pp_decls ()
     pp_storage ()
     pp_action_type ()
+    pp_api_items ()
     pp_functions ()
     pp_main_function ()
 
