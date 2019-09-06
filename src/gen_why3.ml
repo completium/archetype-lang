@@ -439,6 +439,21 @@ let adds_asset m an b =
     | _ -> M.fold_term internal_adds acc term in
   internal_adds false b
 
+let is_security (t : M.mterm) =
+  match t.M.node with
+  | M.MsecMayBePerformedOnlyByRole _ -> true
+  | _ -> false
+
+let mk_spec_invariant loc (spec : M.specification) =
+  if is_security spec.formula then
+    [
+      {
+        id = map_lident spec.name;
+        form = with_dummy_loc Tnone;
+      }
+    ]
+  else []
+
 (* prefixes with 'forall k_:key, mem k_ "asset"_keys ->  ...'
    replaces asset field "field" by '"field " (get "asset"_assets k_)'
    TODO : make sure there is no collision between "k_" and invariant vars
@@ -554,7 +569,9 @@ let map_storage m (l : M.storage) =
   Dstorage {
     fields     = (map_storage_items l)@ (mk_const_fields m |> loc_field |> deloc);
     invariants = List.concat (List.map (fun (item : M.storage_item) ->
-        List.map (mk_storage_invariant m item.name) item.invariants) l)
+        List.map (mk_storage_invariant m item.name) item.invariants) l) @
+                 (List.fold_left (fun acc spec ->
+                      acc @ (mk_spec_invariant `Storage spec)) [] m.verification.specs)
   }
 
 let mk_axioms (m : M.model) =
