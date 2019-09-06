@@ -67,7 +67,7 @@ let extend_loop_iter (model : model) : model =
         else
           t in
       match t.node with
-      | Mvarlocal v when cmp_lident v (dumloc "to_iter") -> mk_term `Toiterate
+      | Mvarlocal v when cmp_lident v (dumloc "toiterate") -> mk_term `Toiterate
       | Mvarlocal v when cmp_lident v (dumloc "iterated") -> mk_term `Iterated
       | _ -> map_mterm (internal_map_inv_iter ctx) t in
     map_mterm_model internal_map_inv_iter model in
