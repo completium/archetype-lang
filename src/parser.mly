@@ -371,8 +371,8 @@ function_decl:
 | e=expr xs=invars*  { (e, xs) }
 
 %inline verif_assert:
-| ASSERT id=ident AT lbl=ident EQUAL sp=braced(spec_body)
-    { let e, xs = sp in Vassert (id, lbl, e, xs) }
+| ASSERT id=ident EQUAL sp=braced(spec_body)
+    { let e, xs = sp in Vassert (id, e, xs) }
 
 %inline verif_specification:
 | SPECIFICATION id=ident EQUAL sp=braced(spec_body)

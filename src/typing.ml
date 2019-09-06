@@ -337,7 +337,7 @@ type 'env iverification = [
   | `Lemma         of M.lident * M.pterm
   | `Theorem       of M.lident * M.pterm
   | `Variable      of M.lident * M.pterm option
-  | `Assert        of M.lident * M.lident * M.pterm * (M.lident * M.pterm list) list
+  | `Assert        of M.lident * M.pterm * (M.lident * M.pterm list) list
   | `Effect        of 'env * M.instruction
   | `Specification of M.lident * M.pterm * (M.lident * M.pterm list) list
 ]
@@ -1802,11 +1802,11 @@ let for_verification_item (env : env) (v : PT.verification_item) : env * env ive
     let e  = Option.map (for_expr env ?ety:ty) e in
     (env, `Variable (x, e))
 
-  | PT.Vassert (x, tg, f, invs) -> begin
+  | PT.Vassert (x, f, invs) -> begin
       let env0 =
-        match Env.Label.lookup env (unloc tg) with
+        match Env.Label.lookup env (unloc x) with
         | None ->
-          Env.emit_error env (loc tg, UnknownLabel (unloc tg));
+          Env.emit_error env (loc x, UnknownLabel (unloc x));
           env
         | Some (env, _) ->
           env
@@ -1818,7 +1818,7 @@ let for_verification_item (env : env) (v : PT.verification_item) : env * env ive
       let f    = for_formula env0 f in
       let invs = List.map for_inv invs in
 
-      (env, `Assert (x, tg, f, invs))
+      (env, `Assert (x, f, invs))
     end
 
   | PT.Veffect i ->
@@ -2293,13 +2293,13 @@ let verifications_of_iverifications =
             invariants = List.map for_inv invs; }
       in { env with M.specs = env.specs @ [spec] }
 
-    | `Assert (x, l, form, invs) ->
+    | `Assert (x, form, invs) ->
       let asst =
         let for_inv (lbl, inv) =
           M.{ label = lbl; formulas = inv }
         in
         M.{ name       = x;
-            label      = l;
+            label      = x;
             formula    = form;
             invariants = List.map for_inv invs; }
       in { env with M.asserts = env.asserts @ [asst] }

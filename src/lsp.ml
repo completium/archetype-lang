@@ -176,7 +176,7 @@ let mk_outline_from_verification (verif : ParseTree.verification) =
   List.fold_right (fun (i : ParseTree.verification_item) accu ->
       let l, v = Location.deloc i in
       match v with
-      | Vassert (id, _, _, ivs)
+      | Vassert (id, _, ivs)
       | Vspecification (id, _, ivs) ->
         [(mk_outline (Location.unloc id, symbol_kind_to_int Property, l))]
         @ mk_outline_from_invariants ivs

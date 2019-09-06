@@ -225,7 +225,7 @@ type verification_item_unloc =
   | Vtheorem of lident * expr
   | Vvariable of lident * type_t * expr option
   | Veffect of expr
-  | Vassert of (lident * lident * expr * invariants)
+  | Vassert of (lident * expr * invariants)
   | Vspecification of (lident * expr * invariants)
 [@@deriving yojson, show {with_path = false}]
 

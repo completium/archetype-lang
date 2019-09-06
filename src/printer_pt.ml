@@ -766,10 +766,10 @@ let pp_specification fmt (id, f, is) =
     (pp_expr e_default PNone) f
     (pp_list "@\n" pp_invariants) is
 
-let pp_assert fmt (id, lbl, f, is) =
-  Format.fprintf fmt "assert %a at %a = {@\n  @[%a@]@\n  @[%a@]@\n}"
+let pp_assert fmt (id, f, is) =
+  Format.fprintf fmt "assert %a = {@\n  @[%a@]@\n  @[%a@]@\n}"
     pp_id id
-    pp_id lbl
+
     (pp_expr e_default PNone) f
     (pp_list "@\n" pp_invariants) is
 
@@ -807,7 +807,7 @@ let pp_verification_item fmt = function
     Format.fprintf fmt "effect {@\n  @[%a@]@\n}"
       (pp_expr e_default PNone) e
 
-  | Vassert (id, lbl, f, is) -> pp_assert fmt (id, lbl, f, is)
+  | Vassert (id, f, is) -> pp_assert fmt (id, f, is)
 
   | Vspecification (id, f, xs) -> pp_specification fmt (id, f, xs)
 
