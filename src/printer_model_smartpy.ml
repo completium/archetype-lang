@@ -391,14 +391,14 @@ let pp_model fmt (model : model) =
         in
         pp fmt (c, k)
 
-      | Mset (c, k, v) ->
-        let pp fmt (c, k, v) =
+      | Mset (c, l, k, v) ->
+        let pp fmt (c, l, k, v) =
           Format.fprintf fmt "set_%a (self, %a, %a)"
             pp_str c
             f k
             f v
         in
-        pp fmt (c, k, v)
+        pp fmt (c, l, k, v)
 
       | Maddasset (an, i) ->
         let pp fmt (an, i) =

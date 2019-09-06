@@ -59,7 +59,7 @@ let mk_trace_field m =
          (M.Utils.get_assets m
           |> List.map (fun (a : M.info_asset) ->
               List.map (fun (n,_,_) -> String.capitalize_ascii n) a.values
-           )
+            )
           |> List.flatten))
   |> loc_decl
 
@@ -499,7 +499,7 @@ let mk_eq_extensionality m (r : M.record) : loc_decl =
                      Timpl (Tapp (Tvar ("eq_"^asset),
                                   [Tvar "a1";Tvar "a2"]),
                             Teq (Tyasset asset,Tvar "a1",Tvar "a2")
-                    ))) |> Mlwtree.loc_decl
+                           ))) |> Mlwtree.loc_decl
 
 let map_record m (r : M.record) =
   Drecord (map_lident r.name, map_record_values r.values)
@@ -652,7 +652,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
                  Tminus (with_dummy_loc Tyint,
                          id,
                          map_mterm m ctx v)))
-    | M.Mset (a,k,v) ->
+    | M.Mset (a,l,k,v) ->
       Tletin (false,
               with_dummy_loc ("_old"^a),
               None,
@@ -683,7 +683,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
               with_dummy_loc (Tapp (loc_term (Tvar ("get_"^n)),
                                     [map_mterm m ctx a])),
               with_dummy_loc (Tapp (loc_term (Tvar ("remove_"^n)),
-                    [loc_term (Tvar ("_rm"^n))])))
+                                    [loc_term (Tvar ("_rm"^n))])))
     | M.Msum (a,f,l) ->
       Tapp (loc_term (Tvar ((mk_sum_clone_id a (f |> unloc))^".sum")),[map_mterm m ctx l])
     | M.Mapp (f,args) ->
@@ -793,12 +793,12 @@ let mk_get_asset asset key ktyp = Dfun {
       };
       { id   = "get_"^asset^"_post_2";
         form = Tforall ([["a"],Tyasset asset],
-                         Timpl (Teq (Tyint,
-                                     Tvar "k",
-                                     Tdoti ("a",key)),
-                                Teq (Tyasset asset,
-                                     Tresult,
-                                     Tvar "a")))
+                        Timpl (Teq (Tyint,
+                                    Tvar "k",
+                                    Tdoti ("a",key)),
+                               Teq (Tyasset asset,
+                                    Tresult,
+                                    Tvar "a")))
       }
     ];
     body = Tif (Tnot (Tcontains (asset,
@@ -912,9 +912,9 @@ let mk_api_precond m a src =
   |> List.fold_left (fun acc (_,lbl,t) ->
       if is_local_invariant m a t then
         acc @ [{
-          id = lbl;
-          form = unloc_term (mk_invariant m (dumloc a) src (map_mterm m init_ctx t))
-        }]
+            id = lbl;
+            form = unloc_term (mk_invariant m (dumloc a) src (map_mterm m init_ctx t))
+          }]
       else acc
     ) []
 
@@ -931,11 +931,11 @@ let mk_listtocoll m asset = Dfun {
     variants = [];
     requires = mk_listtocoll_precond m asset "l";
     ensures  = [
-(*      { id   = asset^"_unshallow_post_1";
-        form = Tsubset (asset,
-                        Tresult,
-                        Tvar "c")
-        }*)];
+      (*      { id   = asset^"_unshallow_post_1";
+              form = Tsubset (asset,
+                              Tresult,
+                              Tvar "c")
+              }*)];
     body     = Tcoll (asset,
                       Tvar "l")
   }
@@ -1002,7 +1002,7 @@ let mk_add_ensures m p a e =
                              mk_ac_old_added a,
                              Tsingl (a,
                                      Tvar e)
-                              ));
+                            ));
     };
   ] @ (mk_add_sum_ensures m a e)
 
@@ -1311,9 +1311,9 @@ let mk_preconds m args body : ((loc_term,loc_ident) abstract_formula) list =
               (* TODO : should be more specific : the real question is
                  'is the element id added?' *)
               acc @ [{
-                id = with_dummy_loc lbl;
-                form = mk_pre_asset m n (unloc id) (map_mterm m init_ctx t)
-              }]
+                  id = with_dummy_loc lbl;
+                  form = mk_pre_asset m n (unloc id) (map_mterm m init_ctx t)
+                }]
             else
               acc
           ) []
@@ -1328,7 +1328,7 @@ let mk_preconds m args body : ((loc_term,loc_ident) abstract_formula) list =
               acc @ [{
                   id = with_dummy_loc lbl;
                   form = mk_pre_coll m n (unloc id) (map_mterm m init_ctx t)
-              }]
+                }]
             else
               acc
           ) []

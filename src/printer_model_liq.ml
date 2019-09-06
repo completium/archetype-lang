@@ -567,7 +567,7 @@ let pp_model fmt (model : model) =
         in
         pp fmt (c, k)
 
-      | Mset (c, k, v) ->
+      | Mset (c, l, k, v) ->
         let pp fmt (c, k, v) =
           Format.fprintf fmt "set_%a (_s, %a, %a)"
             pp_str c

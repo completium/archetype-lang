@@ -141,10 +141,10 @@ and process_mtern (ctx : ctx_red) (s : s_red) (mt : mterm) : mterm * s_red =
 
   match mt.node with
   (* api storage *)
-  | Mset (an, col, value) ->
+  | Mset (an, l, col, value) ->
     let col, s = process_mtern ctx s col in
     let value, s = process_mtern ctx s value in
-    mk_mterm (Mset (an, col, value)) Tstorage, s
+    mk_mterm (Mset (an, l, col, value)) Tstorage, s
   | Maddasset (an, arg) ->
     let arg, s = process_mtern ctx s arg in
     mk_mterm (Maddasset (an, arg)) Tstorage, s

@@ -132,14 +132,14 @@ let pp_mterm fmt (mt : mterm) =
       in
       pp fmt (c, k)
 
-    | Mset (c, k, v) ->
-      let pp fmt (c, k, v) =
+    | Mset (c, l, k, v) ->
+      let pp fmt (c, l, k, v) =
         Format.fprintf fmt "set_%a (%a, %a)"
           pp_str c
           f k
           f v
       in
-      pp fmt (c, k, v)
+      pp fmt (c, l, k, v)
 
     | Maddasset (an, i) ->
       let pp fmt (an, i) =

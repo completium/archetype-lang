@@ -29,7 +29,7 @@ let process_api_storage (model : model) : model =
       match term.node with
       | Mget (asset_name, _) ->
         [APIStorage (Get asset_name)]
-      | Mset (asset_name, _, _) ->
+      | Mset (asset_name, _, _, _) ->
         [APIStorage (Set asset_name)]
       | Maddasset (asset_name, _) ->
         [APIStorage (Add asset_name)]

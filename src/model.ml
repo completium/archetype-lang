@@ -119,7 +119,7 @@ type ('id, 'term) mterm_node  =
   | Mapp          of 'id * 'term list
   | Mexternal     of 'id * 'id * 'term * ('term) list
   | Mget          of ident * 'term
-  | Mset          of ident * 'term * 'term
+  | Mset          of ident * ident list * 'term * 'term (*asset_name * field_name modified * ... *)
   | Maddasset     of ident * 'term
   | Maddfield     of ident * ident * 'term * 'term (* asset_name * field_name * asset instance * item * shalow values*)
   | Maddlocal     of 'term * 'term
@@ -784,7 +784,7 @@ let cmp_mterm_node
     | Mapp (e1, args1), Mapp (e2, args2)                                               -> cmpi e1 e2 && List.for_all2 cmp args1 args2
     | Mexternal (t1, func1, c1, args1), Mexternal (t2, func2, c2, args2)               -> cmpi t1 t2 && cmpi func1 func2 && cmp c1 c2 && List.for_all2 cmp args1 args2
     | Mget (c1, k1), Mget (c2, k2)                                                     -> cmp_ident c1 c2 && cmp k1 k2
-    | Mset (c1, k1, v1), Mset (c2, k2, v2)                                             -> cmp_ident c1 c2 && cmp k1 k2 && cmp v1 v2
+    | Mset (c1, l1, k1, v1), Mset (c2, l2, k2, v2)                                     -> cmp_ident c1 c2 && List.for_all2 cmp_ident l1 l2 && cmp k1 k2 && cmp v1 v2
     | Maddasset (an1, i1), Maddasset (an2, i2)                                         -> cmp_ident an1 an2 && cmp i1 i2
     | Maddfield (an1, fn1, c1, i1), Maddfield (an2, fn2, c2, i2)                       -> cmp_ident an1 an2 && cmp_ident fn1 fn2 && cmp c1 c2 && cmp i1 i2
     | Maddlocal (c1, i1), Maddlocal (c2, i2)                                           -> cmp c1 c2 && cmp i1 i2
@@ -958,7 +958,7 @@ let map_term_node (f : 'id mterm_gen -> 'id mterm_gen) = function
   | Msettoiterate e              -> Msettoiterate (f e)
   | Mexternal (t, func, c, args) -> Mexternal (t, func, f c, List.map f args)
   | Mget (c, k)                  -> Mget (c, f k)
-  | Mset (c, k, v)               -> Mset (c, f k, f v)
+  | Mset (c, l, k, v)            -> Mset (c, l, f k, f v)
   | Maddasset (an, i)            -> Maddasset (an, f i)
   | Maddfield (an, fn, c, i)     -> Maddfield (an, fn, f c, f i)
   | Maddlocal (c, i)             -> Maddlocal (f c, f i)
@@ -1216,7 +1216,7 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Msettoiterate e                       -> f accu e
   | Mexternal (t, func, c, args)          -> List.fold_left f (f accu c) args
   | Mget (_, k)                           -> f accu k
-  | Mset (c, k, v)                        -> f (f accu v) k
+  | Mset (c, l, k, v)                     -> f (f accu v) k
   | Maddasset (an, i)                     -> f accu i
   | Maddfield (an, fn, c, i)              -> f (f accu c) i
   | Maddlocal (c, i)                      -> f (f accu c) i
@@ -1401,10 +1401,10 @@ let fold_map_term
     let ke, ka = f accu k in
     g (Mget (c, ke)), ka
 
-  | Mset (c, k, v) ->
+  | Mset (c, l, k, v) ->
     let ke, ka = f accu k in
     let ve, va = f ka v in
-    g (Mset (c, ke, ve)), va
+    g (Mset (c, l, ke, ve)), va
 
   | Maddasset (an, i) ->
     let ie, ia = f accu i in
