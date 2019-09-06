@@ -41,38 +41,37 @@ let mk_use_module m = Duse [deloc m]  |> loc_decl |> deloc
 (* Trace -------------------------------------------------------------------------*)
 
 type change =
-  | Add of ident
-  | Rm of ident
-  | Update of ident
-  | Transfer of ident
-  | Get of ident
-  | Iterate of ident
-  | Call of ident
+  | CAdd of ident
+  | CRm of ident
+  | CUpdate of ident
+  | CTransfer of ident
+  | CGet of ident
+  | CIterate of ident
+  | CCall of ident
+
+let mk_change_term tr =
+  match tr with
+  | CAdd id -> Tapp (Tdoti("Tr",
+                          "TrAdd_"),
+                    [Tvar (String.capitalize_ascii id)])
+  | CRm id -> Tapp (Tdoti("Tr",
+                         "TrRm_"),
+                   [Tvar (String.capitalize_ascii id)])
+  | CUpdate id -> Tapp (Tdoti("Tr",
+                             "TrUpdate_"),
+                       [Tvar (String.capitalize_ascii id)])
+  | CGet id -> Tapp (Tdoti("Tr",
+                          "TrGet_"),
+                    [Tvar (String.capitalize_ascii id)])
+  | _ -> assert false
 
 let mk_trace tr =
-  let change_term =
-    match tr with
-    | Add id -> Tapp (Tdoti("Tr",
-                            "TrAdd_"),
-                      [Tvar (String.capitalize_ascii id)])
-    | Rm id -> Tapp (Tdoti("Tr",
-                           "TrRm_"),
-                     [Tvar (String.capitalize_ascii id)])
-    | Update id -> Tapp (Tdoti("Tr",
-                               "TrUpdate_"),
-                         [Tvar (String.capitalize_ascii id)])
-    | Get id -> Tapp (Tdoti("Tr",
-                            "TrGet_"),
-                      [Tvar (String.capitalize_ascii id)])
-    | _ -> assert false
-  in
-  let tr = Tdoti(gs,
-                 mk_id "tr") in
-  Tassign (tr,
-           Tcons (change_term,
-                  tr)
+  let gstr = Tdoti(gs,
+                   mk_id "tr") in
+  Tassign (gstr,
+           Tcons (mk_change_term tr,
+                  gstr)
           ) |> loc_term
-
 
 let mk_trace_asset m =
   Denum ("_asset",
@@ -439,17 +438,110 @@ let adds_asset m an b =
     | _ -> M.fold_term internal_adds acc term in
   internal_adds false b
 
-let is_security (t : M.mterm) =
-  match t.M.node with
+let is_security (s : M.specification) =
+  match s.formula.node with
   | M.MOnlyByRole _ -> true
+  | M.MOnlyInAction _ -> true
+  | M.MOnlyByRoleInAction _ -> true
   | _ -> false
 
+let map_action_to_change = function
+  | M.ADadd i      -> CAdd i
+  | M.ADremove i   -> CRm i
+  | M.ADupdate i   -> CUpdate i
+  | M.ADtransfer i -> CTransfer i
+  | M.ADget i      -> CGet i
+  | M.ADiterate i  -> CIterate i
+  | M.ADcall i     -> CCall i
+  | _ -> assert false
+
+let map_security_pred loc (t : M.mterm) =
+  let vars =
+    ["tr";"caller";"entry"]
+    |> List.map mk_id
+    |> List.map (fun v ->
+        match loc with
+        | `Storage -> Tvar (v)
+        | `Loop    -> Tdoti(gs,v)
+      )
+  in
+  let tr = List.nth vars 0 in
+  let caller = List.nth vars 1 in
+  let entry = List.nth vars 2 in
+  let mk_eq a b opt = Teq (Tyint,a,
+                           if opt then
+                             Tsome (Tvar b)
+                           else
+                             match loc with
+                             | `Storage -> Tvar b
+                             | `Loop    -> Tdoti(gs,b)
+                          ) in
+  let mk_performed_by t l opt =
+    Tapp (Tvar "Tr.performed_by",
+          [tr;
+           List.fold_left (fun acc r ->
+               Tor (acc,mk_eq t r opt)
+             ) (mk_eq t (List.hd l) opt) (List.tl l) ])
+  in
+  let mk_changes_performed_by t a l opt =
+    Tapp (Tvar "Tr.changes_performed_by",
+          [tr;
+           Tcons (map_action_to_change a |> mk_change_term,Tnil);
+           List.fold_left (fun acc r ->
+               Tor (acc,mk_eq t r opt)
+             ) (mk_eq t (List.hd l) opt) (List.tl l) ])
+  in
+  let mk_performed_by_2 t1 t2 l1 l2 =
+    Tapp (Tvar "Tr.performed_by",
+          [tr;
+           Tand (
+             List.fold_left (fun acc r ->
+                 Tor (acc,mk_eq t1 r false)
+               ) (mk_eq t1 (List.hd l1) false) (List.tl l2),
+             List.fold_left (fun acc r ->
+                 Tor (acc,mk_eq t2 r true)
+               ) (mk_eq t2 (List.hd l1) true) (List.tl l2))])
+  in
+  let mk_changes_performed_by_2 t1 t2 a l1 l2 =
+    Tapp (Tvar "Tr.performed_by",
+          [tr;
+           Tcons (map_action_to_change a |> mk_change_term,Tnil);
+           Tand (
+             List.fold_left (fun acc r ->
+                 Tor (acc,mk_eq t1 r false)
+               ) (mk_eq t1 (List.hd l1) false) (List.tl l2),
+             List.fold_left (fun acc r ->
+                 Tor (acc,mk_eq t2 r true)
+               ) (mk_eq t2 (List.hd l1) true) (List.tl l2))])
+  in
+  match t.M.node with
+  | M.MOnlyByRole (ADany,roles)     ->
+    mk_performed_by caller (roles |> List.map unloc) false
+  | M.MOnlyInAction (ADany,entries) ->
+    mk_performed_by entry (entries |> List.map unloc |> List.map String.capitalize_ascii) true
+  | M.MOnlyByRole (a,roles)         ->
+    mk_changes_performed_by caller a (roles |> List.map unloc) false
+  | M.MOnlyInAction (a,entries)     ->
+    mk_changes_performed_by entry
+      a
+      (entries |> List.map unloc |> List.map String.capitalize_ascii)
+      true
+  | M.MOnlyByRoleInAction (ADany,roles,entries) ->
+    mk_performed_by_2 caller entry
+      (roles |> List.map unloc)
+      (entries |> List.map unloc |> List.map String.capitalize_ascii)
+  | M.MOnlyByRoleInAction (a,roles,entries) ->
+    mk_changes_performed_by_2 caller entry a
+      (roles |> List.map unloc)
+      (entries |> List.map unloc |> List.map String.capitalize_ascii)
+  | _ -> Tnottranslated
+
 let mk_spec_invariant loc (spec : M.specification) =
-  if is_security spec.formula then
+  if is_security spec then
     [
       {
         id = map_lident spec.name;
-        form = with_dummy_loc Tnone;
+        form = map_security_pred loc spec.formula |> loc_term;
       }
     ]
   else []
@@ -658,17 +750,18 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
       mk_trace_seq m
         (Tapp (loc_term (Tvar ("add_"^a^"_"^f)),
                [map_mterm m ctx c; map_mterm m ctx i]))
-        [Update f; Add t]
+        [CUpdate f; CAdd t]
     | M.Mget (n,k) -> Tapp (loc_term (Tvar ("get_"^n)),[map_mterm m ctx k])
     | M.Maddshallow (n,l) ->
-      let pa = M.Utils.get_partition_assets m n |> List.map (fun a -> Add (String.capitalize_ascii a)) in
+      let pa = M.Utils.get_partition_assets m n |> List.map (fun a ->
+          CAdd (String.capitalize_ascii a)) in
       mk_trace_seq m
         (Tapp (loc_term (Tvar ("add_shallow_"^n)),List.map (map_mterm m ctx) l))
-        ([Add n] @ pa)
+        ([CAdd n] @ pa)
     | M.Maddasset (n,i) ->
       mk_trace_seq m
         (Tapp (loc_term (Tvar ("add_"^n)),[map_mterm m ctx i ]))
-        [Add n]
+        [CAdd n]
     | M.Mrecord l ->
       let asset = M.Utils.get_asset_type mt in
       let fns = M.Utils.get_field_list m asset |> wdl in
@@ -731,7 +824,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
                                          loc_term (Tvar ("_old"^a));
                                          map_mterm m ctx v
                                        ]))))
-        (List.map (fun f -> Update f) l)
+        (List.map (fun f -> CUpdate f) l)
     | M.Mremovefield (a,f,k,v) ->
       let t,_,_ = M.Utils.get_partition_asset_key m (dumloc a) (dumloc f) in
       mk_trace_seq m
@@ -746,7 +839,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
                                          loc_term (Tvar ("_rm"^t))
                                        ]
                                       ))))
-        [Update f; Rm t]
+        [CUpdate f; CRm t]
     | M.Mremoveasset (n,a) ->
       mk_trace_seq m
         (Tletin (false,
@@ -756,7 +849,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
                                        [map_mterm m ctx a])),
                  with_dummy_loc (Tapp (loc_term (Tvar ("remove_"^n)),
                                        [loc_term (Tvar ("_rm"^n))]))))
-        [Rm n]
+        [CRm n]
     | M.Msum (a,f,l) ->
       Tapp (loc_term (Tvar ((mk_sum_clone_id a (f |> unloc))^".sum")),[map_mterm m ctx l])
     | M.Mapp (f,args) ->
@@ -829,7 +922,19 @@ and mk_invariants (m : M.model) ctx (lbl : ident option) lbody =
                    form = mk_loop_invariant m an (map_mterm m ctx t) }]
         else acc
       ) ([] : (loc_term, loc_ident) abstract_formula list) in
-  loop_invariants @ storage_loop_invariants
+  let security_loop_invariants =
+    m.verification.specs
+    |> List.filter is_security
+    |> List.map (fun (spec : M.specification) ->
+          let id =
+            match lbl with
+            | Some a -> (unloc spec.name) ^ "_" ^ a
+            | _ -> unloc spec.name in
+          { id = with_dummy_loc id;
+            form = map_security_pred `Loop spec.formula |> loc_term; }
+      )
+  in
+  loop_invariants @ storage_loop_invariants @ security_loop_invariants
 
 (* API storage templates -----------------------------------------------------*)
 
