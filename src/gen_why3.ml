@@ -11,6 +11,7 @@ let gArchetypeLib   = "Lib"
 let gArchetypeColl  = "AssetCollection"
 let gArchetypeSum   = "Sum"
 let gArchetypeList  = "IntListUtils"
+let gArchetypeTrace = "Trace"
 
 let mk_id i          = "_"^i
 
@@ -31,11 +32,53 @@ let mk_ac_old_rmed a  = Tdot (Told (Tvar gs), Tvar (mk_ac_rmed_id a))
 
 let mk_ac_sv s a      = Tdoti (s, mk_ac_id a)
 
-(* Storage -----------------------------------------------------------------------*)
+(* Use ---------------------------------------------------------------------------*)
 
 let mk_use = Duse [gArchetypeDir;gArchetypeLib] |> loc_decl |> deloc
 let mk_use_list = Duse ["list";"List"] |> loc_decl |> deloc
 let mk_use_module m = Duse [deloc m]  |> loc_decl |> deloc
+
+(* Trace -------------------------------------------------------------------------*)
+
+let mk_trace_asset m =
+  Denum ("_asset",
+         M.Utils.get_assets m
+         |> List.map (fun (a : M.info_asset) -> String.capitalize_ascii a.name))
+  |> loc_decl
+
+let mk_trace_entry m =
+  Denum ("_entry",
+         M.Utils.get_entries m
+         |> List.map (fun (_, (f : M.function_struct)) -> String.capitalize_ascii (unloc f.name)))
+  |> loc_decl
+
+let mk_trace_field m =
+  Denum ("_field",
+         (M.Utils.get_variables m
+          |> List.map (fun (v : M.storage_item) -> String.capitalize_ascii (unloc v.name))) @
+         (M.Utils.get_assets m
+          |> List.map (fun (a : M.info_asset) ->
+              List.map (fun (n,_,_) -> String.capitalize_ascii n) a.values
+           )
+          |> List.flatten))
+  |> loc_decl
+
+let mk_trace_clone () =
+  Dclone ([gArchetypeDir;gArchetypeTrace], "Tr",
+          [Ctype ("_asset","_asset");
+           Ctype ("_entry","_entry");
+           Ctype ("_field","_field")])
+  |> loc_decl
+
+let mk_trace_utils m =
+  if M.Utils.with_trace m then [
+    mk_trace_asset m;
+    mk_trace_entry m;
+    mk_trace_field m;
+    mk_trace_clone ()
+  ] else []
+
+(* Storage -----------------------------------------------------------------------*)
 
 let mk_default_init = function
   | Drecord (n,fs) ->
@@ -62,24 +105,19 @@ let mk_collection_field asset to_id = {
   mutable_ = true;
 }
 
-let mk_const_fields with_trace = [
+let mk_const_fields m = [
   { name = mk_id "ops"   ; typ = Tyrecord "transfers" ; init = Tvar "Nil"; mutable_ = true; };
   { name = mk_id "balance" ;     typ = Tytez; init = Tint Big_int.zero_big_int; mutable_ = false; };
   { name = mk_id "transferred" ; typ = Tytez; init = Tint Big_int.zero_big_int; mutable_ = false; };
   { name = mk_id "caller"    ; typ = Tyaddr;  init = Tint Big_int.zero_big_int; mutable_ = false; };
-  { name = mk_id "now"       ; typ = Tydate;  init = Tint Big_int.zero_big_int; mutable_ = false; };
+  { name = mk_id "now"       ; typ = Tydate;  init = Tint Big_int.zero_big_int; mutable_ = false; }
 ] @
-  if with_trace then
+  if M.Utils.with_trace m then
     [
-      { name = mk_id "tr"; typ = Tyrecord "Tr.log" ; init = Tvar "Nil"; mutable_ = true; };
-      { name = mk_id "ename"; typ = Tyoption (Tyenum "entry"); init = Tnone; mutable_ = true;}
+      { name = mk_id "entry"     ; typ = Tyoption (Tyasset "_entry"); init = Tnone; mutable_ = false; };
+      { name = mk_id "tr"        ; typ = Tyasset ("Tr._traces"); init = Tnil; mutable_ = true; }
     ]
   else []
-
-let mk_trace_clone = Dclone (["archetype";"Trace"], "Tr",
-                             [Ctype ("asset","asset");
-                              Ctype ("entry","entry");
-                              Ctype ("field","field")])
 
 let mk_sum_clone_id a f = (String.capitalize_ascii a) ^ (String.capitalize_ascii f)
 
@@ -160,7 +198,7 @@ let mk_partition_axiom asset f kt pa kpt : decl =
 (* TODO : complete mapping *)
 let rec mk_select_test = function
   | Tdot (Tvar v,f) when compare v "the" = 0 -> Tdot (Tvar "a",f)
-  | Tnow _ -> Tvar "_now"
+  | Tnow _ -> Tvar (mk_id "now")
   | _ as t -> map_abstract_term mk_select_test id id t
 
 let mk_select_body asset mlw_test : term =
@@ -191,7 +229,7 @@ let mk_select_body asset mlw_test : term =
 let extract_args test =
   let rec internal_extract_args acc (term : M.mterm) =
     match term.M.node with
-    | M.Mnow -> acc @ [term,"_now", Tydate]
+    | M.Mnow -> acc @ [term,mk_id "now", Tydate]
     | _ -> M.fold_term internal_extract_args acc term in
   internal_extract_args [] test
 
@@ -481,7 +519,7 @@ let record_to_clone m (r : M.info_asset) =
 
 let map_storage m (l : M.storage) =
   Dstorage {
-    fields     = (map_storage_items l)@(mk_const_fields false |> loc_field |> deloc);
+    fields     = (map_storage_items l)@ (mk_const_fields m |> loc_field |> deloc);
     invariants = List.concat (List.map (fun (item : M.storage_item) ->
         List.map (mk_storage_invariant m item.name) item.invariants) l)
   }
@@ -1299,6 +1337,30 @@ let mk_preconds m args body : ((loc_term,loc_ident) abstract_formula) list =
 
 let is_src src (_,f,_) = f.M.src = src
 
+let mk_entry_require m idents =
+  if M.Utils.with_trace m && List.length idents > 0 then
+    let mk_entry_eq id = Teq (Tyint,
+                              Tdoti (gs,mk_id "entry"),
+                              Tsome (Tvar (String.capitalize_ascii id))) in
+    [
+      {
+        id = with_dummy_loc "entry_require";
+        form =
+          List.fold_left (fun acc id ->
+              Tor (acc,mk_entry_eq id)
+            ) (mk_entry_eq (List.hd idents)) (List.tl idents)
+          |> loc_term
+      };
+      {
+        id = with_dummy_loc "empty_trace";
+        form = Teq (Tyint,
+                    Tdoti (gs,mk_id "tr"),
+                    Tnil)
+               |> loc_term
+      }
+    ]
+  else []
+
 let mk_functions src m =
   M.Utils.get_functions m |> List.filter (is_src src) |> List.map (
     fun ((v : M.verification option),
@@ -1313,7 +1375,10 @@ let mk_functions src m =
         returns  = map_mtype t;
         raises   = fold_exns s.body;
         variants = [];
-        requires = (mk_requires m (s.name |> unloc) v) @ (mk_preconds m s.args s.body);
+        requires =
+          (mk_entry_require m (M.Utils.get_callers m (unloc s.name))) @
+          (mk_requires m (s.name |> unloc) v) @
+          (mk_preconds m s.args s.body);
         ensures  = Option.fold (mk_ensures m) [] v;
         body     = flatten_if_fail m s.body;
       }
@@ -1335,7 +1400,8 @@ let mk_entries m =
         returns  = with_dummy_loc Tyunit;
         raises   = fold_exns s.body;
         variants = [];
-        requires = mk_requires m (s.name |> unloc) v;
+        requires = (mk_entry_require m [unloc s.name]) @
+                   (mk_requires m (unloc s.name) v);
         ensures  = Option.fold (mk_ensures m) [] v;
         body     = flatten_if_fail m s.body;
       }
@@ -1347,6 +1413,7 @@ let to_whyml (m : M.model) : mlw_tree  =
   let storage_module   = with_dummy_loc (String.capitalize_ascii (m.name.pldesc^"_storage")) in
   let uselib           = mk_use in
   let uselist          = mk_use_list in
+  let traceutils       = mk_trace_utils m |> deloc in
   let records          = M.Utils.get_records m |> List.map (map_record m) |> wdl in
   let eq_assets        = M.Utils.get_records m |> List.map (mk_eq_asset m) |> wdl in
   let eq_exten         = M.Utils.get_records m |> List.map (mk_eq_extensionality m) |> deloc in
@@ -1364,7 +1431,8 @@ let to_whyml (m : M.model) : mlw_tree  =
   let usestorage       = mk_use_module storage_module in
   let loct : loc_mlw_tree = [{
       name  = storage_module;
-      decls = [uselib;uselist]       @
+      decls = [uselib]               @
+              traceutils             @
               records                @
               eq_exten               @
               [storage;storageval]   @

@@ -19,6 +19,41 @@ theory Types
 
 end
 
+module Trace
+
+  use Types
+  use list.List
+  use list.Mem
+  use option.Option
+
+  type _asset
+  type _entry
+  type _field
+
+  type _action = 
+  | TrRm_ _asset
+  | TrAdd_ _asset
+  | TrUpdate_ _field
+  | TrGet_ _asset
+  | TrIterate _asset
+  | TrTransfer int
+  | TrCallContract int
+
+  type _traces = list _action
+
+  predicate changes_performed_by (changes : _traces) (tr : _traces) (p : bool) = 
+  forall x : _action.
+  mem x tr ->
+  mem x changes ->
+  p
+
+  predicate performed_by  (tr : _traces) (p : bool) = 
+  forall x : _action.
+  mem x tr ->
+  p
+
+end
+
 module IntListUtils
   use int.Int
   use list.List
@@ -557,10 +592,12 @@ end
 theory Lib
   
   use export int.Int
+  use export list.List
+  use export option.Option
   use export Types
   use export Contract
   use export AssetCollection
   use export IntListUtils
-
+  use export Trace
 
 end

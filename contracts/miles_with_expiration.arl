@@ -116,7 +116,7 @@ action clear_expired = {
 verification {
   (* this ensures that any mile was added with the ‘add’ action *)
   specification g1 = {
-    [_[ anyaction may be performed only by role admin]_]
+    [_[ anyaction may be performed only by role admin ]_]
   }
 
   specification g2 = {
@@ -124,6 +124,6 @@ verification {
   }
 
   specification g3 = {
-    not ( [_[ (add mile) may be performed only by action consume]_] )
+    not ([_[ (add mile) may be performed only by action consume ]_])
   }
 }

@@ -1904,6 +1904,7 @@ module Utils : sig
   val function_name_from_builtin_const   : builtin_const  -> string
   val get_assets                         : model -> info_asset list
   val get_records                        : model -> record list
+  val get_variables                      : model -> storage_item list
   val get_storage                        : model -> storage
   val get_info_asset                     : model -> lident -> info_asset
   val get_asset_field                    : model -> (lident * ident) -> (ident * type_ * mterm option)
@@ -1939,6 +1940,8 @@ module Utils : sig
   val get_added_removed_sets             : model -> verification option -> ((lident, lident mterm_gen) mterm_node) list
   val get_storage_invariants             : model -> ident option -> (ident * ident * mterm) list
   val is_field_storage                   : model -> ident -> bool
+  val with_trace                         : model -> bool
+  val get_callers                        : model -> ident -> ident list
 
 end = struct
 
@@ -2075,6 +2078,13 @@ end = struct
     | _ -> emit_error NotaPartition
 
   let get_records m = m.decls |> List.filter is_record |> List.map dest_record
+
+  let is_variable (d : storage_item) : bool =
+    match d.asset with
+    | None -> true
+    | _    -> false
+
+  let get_variables m = m.storage |> List.filter is_variable
 
   let get_info_asset model record_name : info_asset =
     let id = unloc record_name in
@@ -2336,5 +2346,11 @@ end = struct
       List.fold_left (fun accu (x : storage_item) ->
           (unloc x.name)::accu) [] m.storage  in
     List.mem id l
+
+
+  let with_trace (m : model) : bool = true
+
+  (* returns the list of entries calling the function named 'name' *)
+  let get_callers (m : model) (name : ident) : ident list = [] (* TODO *)
 
 end
