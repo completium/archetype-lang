@@ -438,8 +438,8 @@ let adds_asset m an b =
     | _ -> M.fold_term internal_adds acc term in
   internal_adds false b
 
-let is_security (t : M.mterm) =
-  match t.M.node with
+let is_security (s : M.specification) =
+  match s.formula.node with
   | M.MOnlyByRole _ -> true
   | M.MOnlyInAction _ -> true
   | M.MOnlyByRoleInAction _ -> true
@@ -468,32 +468,39 @@ let map_security_pred loc (t : M.mterm) =
   let tr = List.nth vars 0 in
   let caller = List.nth vars 1 in
   let entry = List.nth vars 2 in
-  let mk_eq a b = Teq (Tyint,a,Tvar b) in
-  let mk_performed_by t l =
+  let mk_eq a b opt = Teq (Tyint,a,
+                           if opt then
+                             Tsome (Tvar b)
+                           else
+                             match loc with
+                             | `Storage -> Tvar b
+                             | `Loop    -> Tdoti(gs,b)
+                          ) in
+  let mk_performed_by t l opt =
     Tapp (Tvar "Tr.performed_by",
           [tr;
            List.fold_left (fun acc r ->
-               Tor (acc,mk_eq t r)
-             ) (mk_eq t (List.hd l)) (List.tl l) ])
+               Tor (acc,mk_eq t r opt)
+             ) (mk_eq t (List.hd l) opt) (List.tl l) ])
   in
-  let mk_changes_performed_by t a l =
+  let mk_changes_performed_by t a l opt =
     Tapp (Tvar "Tr.changes_performed_by",
           [tr;
            Tcons (map_action_to_change a |> mk_change_term,Tnil);
            List.fold_left (fun acc r ->
-               Tor (acc,mk_eq t r)
-             ) (mk_eq t (List.hd l)) (List.tl l) ])
+               Tor (acc,mk_eq t r opt)
+             ) (mk_eq t (List.hd l) opt) (List.tl l) ])
   in
   let mk_performed_by_2 t1 t2 l1 l2 =
     Tapp (Tvar "Tr.performed_by",
           [tr;
            Tand (
              List.fold_left (fun acc r ->
-                 Tor (acc,mk_eq t1 r)
-               ) (mk_eq t1 (List.hd l1)) (List.tl l2),
+                 Tor (acc,mk_eq t1 r false)
+               ) (mk_eq t1 (List.hd l1) false) (List.tl l2),
              List.fold_left (fun acc r ->
-                 Tor (acc,mk_eq t2 r)
-               ) (mk_eq t2 (List.hd l1)) (List.tl l2))])
+                 Tor (acc,mk_eq t2 r true)
+               ) (mk_eq t2 (List.hd l1) true) (List.tl l2))])
   in
   let mk_changes_performed_by_2 t1 t2 a l1 l2 =
     Tapp (Tvar "Tr.performed_by",
@@ -501,29 +508,40 @@ let map_security_pred loc (t : M.mterm) =
            Tcons (map_action_to_change a |> mk_change_term,Tnil);
            Tand (
              List.fold_left (fun acc r ->
-                 Tor (acc,mk_eq t1 r)
-               ) (mk_eq t1 (List.hd l1)) (List.tl l2),
+                 Tor (acc,mk_eq t1 r false)
+               ) (mk_eq t1 (List.hd l1) false) (List.tl l2),
              List.fold_left (fun acc r ->
-                 Tor (acc,mk_eq t2 r)
-               ) (mk_eq t2 (List.hd l1)) (List.tl l2))])
+                 Tor (acc,mk_eq t2 r true)
+               ) (mk_eq t2 (List.hd l1) true) (List.tl l2))])
   in
   match t.M.node with
-  | M.MOnlyByRole (ADany,roles)     -> mk_performed_by caller (roles |> List.map unloc)
-  | M.MOnlyInAction (ADany,entries) -> mk_performed_by entry (entries |> List.map unloc)
-  | M.MOnlyByRole (a,roles)         -> mk_changes_performed_by caller a (roles |> List.map unloc)
-  | M.MOnlyInAction (a,entries)     -> mk_changes_performed_by entry a (entries |> List.map unloc)
+  | M.MOnlyByRole (ADany,roles)     ->
+    mk_performed_by caller (roles |> List.map unloc) false
+  | M.MOnlyInAction (ADany,entries) ->
+    mk_performed_by entry (entries |> List.map unloc |> List.map String.capitalize_ascii) true
+  | M.MOnlyByRole (a,roles)         ->
+    mk_changes_performed_by caller a (roles |> List.map unloc) false
+  | M.MOnlyInAction (a,entries)     ->
+    mk_changes_performed_by entry
+      a
+      (entries |> List.map unloc |> List.map String.capitalize_ascii)
+      true
   | M.MOnlyByRoleInAction (ADany,roles,entries) ->
-    mk_performed_by_2 caller entry (roles |> List.map unloc) (entries |> List.map unloc)
+    mk_performed_by_2 caller entry
+      (roles |> List.map unloc)
+      (entries |> List.map unloc |> List.map String.capitalize_ascii)
   | M.MOnlyByRoleInAction (a,roles,entries) ->
-    mk_changes_performed_by_2 caller entry a (roles |> List.map unloc) (entries |> List.map unloc)
+    mk_changes_performed_by_2 caller entry a
+      (roles |> List.map unloc)
+      (entries |> List.map unloc |> List.map String.capitalize_ascii)
   | _ -> Tnottranslated
 
 let mk_spec_invariant loc (spec : M.specification) =
-  if is_security spec.formula then
+  if is_security spec then
     [
       {
         id = map_lident spec.name;
-        form = with_dummy_loc Tnone;
+        form = map_security_pred loc spec.formula |> loc_term;
       }
     ]
   else []
@@ -904,7 +922,19 @@ and mk_invariants (m : M.model) ctx (lbl : ident option) lbody =
                    form = mk_loop_invariant m an (map_mterm m ctx t) }]
         else acc
       ) ([] : (loc_term, loc_ident) abstract_formula list) in
-  loop_invariants @ storage_loop_invariants
+  let security_loop_invariants =
+    m.verification.specs
+    |> List.filter is_security
+    |> List.map (fun (spec : M.specification) ->
+          let id =
+            match lbl with
+            | Some a -> (unloc spec.name) ^ "_" ^ a
+            | _ -> unloc spec.name in
+          { id = with_dummy_loc id;
+            form = map_security_pred `Loop spec.formula |> loc_term; }
+      )
+  in
+  loop_invariants @ storage_loop_invariants @ security_loop_invariants
 
 (* API storage templates -----------------------------------------------------*)
 
