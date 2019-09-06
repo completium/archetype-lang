@@ -117,6 +117,7 @@ type ('id, 'term) mterm_node  =
   | Mif           of ('term * 'term * 'term option)
   | Mmatchwith    of 'term * ('id pattern_gen * 'term) list
   | Mapp          of 'id * 'term list
+  | Maddshallow   of ident * 'term list
   | Mexternal     of 'id * 'id * 'term * ('term) list
   | Mget          of ident * 'term
   | Mset          of ident * ident list * 'term * 'term (*asset_name * field_name modified * ... *)
@@ -782,6 +783,7 @@ let cmp_mterm_node
     | Mif (c1, t1, e1), Mif (c2, t2, e2)                                               -> cmp c1 c2 && cmp t1 t2 && Option.cmp cmp e1 e2
     | Mmatchwith (e1, l1), Mmatchwith (e2, l2)                                         -> cmp e1 e2 && List.for_all2 (fun (p1, t1) (p2, t2) -> cmp_pattern p1 p2 && cmp t1 t2) l1 l2
     | Mapp (e1, args1), Mapp (e2, args2)                                               -> cmpi e1 e2 && List.for_all2 cmp args1 args2
+    | Maddshallow (e1, args1), Maddshallow (e2, args2)                                 -> cmp_ident e1 e2 && List.for_all2 cmp args1 args2
     | Mexternal (t1, func1, c1, args1), Mexternal (t2, func2, c2, args2)               -> cmpi t1 t2 && cmpi func1 func2 && cmp c1 c2 && List.for_all2 cmp args1 args2
     | Mget (c1, k1), Mget (c2, k2)                                                     -> cmp_ident c1 c2 && cmp k1 k2
     | Mset (c1, l1, k1, v1), Mset (c2, l2, k2, v2)                                     -> cmp_ident c1 c2 && List.for_all2 cmp_ident l1 l2 && cmp k1 k2 && cmp v1 v2
@@ -950,6 +952,7 @@ let map_term_node (f : 'id mterm_gen -> 'id mterm_gen) = function
   | Mif (c, t, e)                -> Mif (f c, f t, Option.map f e)
   | Mmatchwith (e, l)            -> Mmatchwith (e, List.map (fun (p, e) -> (p, f e)) l)
   | Mapp (e, args)               -> Mapp (e, List.map f args)
+  | Maddshallow (e, args)        -> Maddshallow (e, List.map f args)
   | Msetbefore    e              -> Msetbefore    (f e)
   | Msetunmoved   e              -> Msetunmoved   (f e)
   | Msetadded     e              -> Msetadded     (f e)
@@ -1208,6 +1211,7 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
     end
   | Mmatchwith (e, l)                     -> List.fold_left (fun accu (_, a) -> f accu a) (f accu e) l
   | Mapp (_, args)                        -> List.fold_left f accu args
+  | Maddshallow (_, args)                 -> List.fold_left f accu args
   | Msetbefore    e                       -> f accu e
   | Msetunmoved   e                       -> f accu e
   | Msetadded     e                       -> f accu e
@@ -1364,6 +1368,15 @@ let fold_map_term
            pterms @ [p], accu) ([], accu) args
     in
     g (Mapp (id, argss)), argsa
+
+  | Maddshallow (id, args) ->
+    let ((argss, argsa) : 'c list * 'a) =
+      List.fold_left
+        (fun (pterms, accu) x ->
+           let p, accu = f accu x in
+           pterms @ [p], accu) ([], accu) args
+    in
+    g (Maddshallow (id, argss)), argsa
 
   | Msetbefore e ->
     let ee, ea = f accu e in
@@ -1915,6 +1928,7 @@ module Utils : sig
   val get_partitions                     : model -> (ident * ident * type_) list (* record id, record item *)
   val dest_partition                     : type_ -> lident
   val get_partition_asset_key            : model -> lident -> lident -> (ident * ident * btyp)
+  val get_partition_assets               : model -> ident -> ident list
   val get_entries                        : model -> (verification option * function_struct) list
   val get_functions                      : model -> (verification option * function_struct* type_) list
   val has_partition                      : model -> ident -> bool
@@ -2060,11 +2074,12 @@ end = struct
     | Mrecord l -> List.nth l pos
     | _ -> emit_error (NotaRecord t)
 
-  let get_asset_type (t : mterm) : lident =
-    match t.type_ with
+  let type_to_asset = function
     | Tasset n -> n
     | Tcontainer (Tasset n, _) -> n
     | _ -> emit_error NotanAssetType
+
+  let get_asset_type (t : mterm) : lident = type_to_asset t.type_
 
   let get_assets m = m.info |> List.filter is_asset |> List.map dest_asset
 
@@ -2160,6 +2175,12 @@ end = struct
     match typ with
     | Tcontainer (Tasset an, c) -> (unloc an, c)
     | _ -> assert false
+
+  let get_partition_assets model asset : ident list =
+    get_partitions model
+    |> List.filter (fun (a,_,_) -> compare asset a = 0)
+    |> List.map (fun (_,_,t) -> type_to_asset t)
+    |> List.map unloc
 
   (* returns : asset name, key name, key type *)
   let get_partition_asset_key model record field : (ident * ident * btyp) =

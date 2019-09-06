@@ -551,6 +551,14 @@ let pp_model fmt (model : model) =
         in
         pp fmt (e, args)
 
+      | Maddshallow (e, args) ->
+        let pp fmt (e, args) =
+          Format.fprintf fmt "add_shallow_%a (%a)"
+            pp_str e
+            (pp_list ", " f) args
+        in
+        pp fmt (e, args)
+
       | Mexternal (_, _, c, args) ->
         let pp fmt (c, args) =
           Format.fprintf fmt "%a (%a)"

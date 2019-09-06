@@ -418,7 +418,6 @@ let map_storage_items = List.fold_left (fun acc (item : M.storage_item) ->
       }]
   ) []
 
-
 let is_local_invariant m an t =
   let rec internal_is_local acc (term : M.mterm) =
     match term.M.node with
@@ -644,6 +643,11 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
                [map_mterm m ctx c; map_mterm m ctx i]))
         [Update f; Add t]
     | M.Mget (n,k) -> Tapp (loc_term (Tvar ("get_"^n)),[map_mterm m ctx k])
+    | M.Maddshallow (n,l) ->
+      let pa = M.Utils.get_partition_assets m n |> List.map (fun a -> Add (String.capitalize_ascii a)) in
+      mk_trace_seq m
+        (Tapp (loc_term (Tvar ("add_shallow_"^n)),List.map (map_mterm m ctx) l))
+        ([Add n] @ pa)
     | M.Maddasset (n,i) ->
       mk_trace_seq m
         (Tapp (loc_term (Tvar ("add_"^n)),[map_mterm m ctx i ]))
@@ -699,16 +703,18 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
                          id,
                          map_mterm m ctx v)))
     | M.Mset (a,l,k,v) ->
-      Tletin (false,
-              with_dummy_loc ("_old"^a),
-              None,
-              with_dummy_loc (Tapp (loc_term (Tvar ("get_"^a)),
-                                    [map_mterm m ctx k])),
-              with_dummy_loc (Tapp (loc_term (Tvar ("set_"^a)),
-                                    [
-                                      loc_term (Tvar ("_old"^a));
-                                      map_mterm m ctx v
-                                    ])))
+      mk_trace_seq m
+      (Tletin (false,
+               with_dummy_loc ("_old"^a),
+               None,
+               with_dummy_loc (Tapp (loc_term (Tvar ("get_"^a)),
+                                     [map_mterm m ctx k])),
+               with_dummy_loc (Tapp (loc_term (Tvar ("set_"^a)),
+                                     [
+                                       loc_term (Tvar ("_old"^a));
+                                       map_mterm m ctx v
+                                     ]))))
+      (List.map (fun f -> Update f) l)
     | M.Mremovefield (a,f,k,v) ->
       let t,_,_ = M.Utils.get_partition_asset_key m (dumloc a) (dumloc f) in
       mk_trace_seq m
