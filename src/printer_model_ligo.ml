@@ -390,7 +390,7 @@ let pp_model fmt (model : model) =
         in
         pp fmt (an, c, i)
 
-      | Msubset (an, c, i) ->
+      | Msubsetof (an, c, i) ->
         let pp fmt (an, c, i) =
           Format.fprintf fmt "subset_%a (%a, %a)"
             pp_str an

@@ -134,7 +134,7 @@ type const =
   | Csum
   | Cmax
   | Cmin
-  | Csubset
+  | Csubsetof
   (* vset *)
   | Cbefore
   | Cunmoved

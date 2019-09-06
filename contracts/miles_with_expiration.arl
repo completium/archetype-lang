@@ -43,7 +43,7 @@ action consume (a : address) (quantity : int) = {
     postcondition p2 = {
       mile.sum(the.amount) = mile.before.sum(the.amount) - quantity
       invariant for loop {
-        0 <= remainder <= to_iter.sum(the.amount);
+        0 <= remainder <= toiterate.sum(the.amount);
         mile.before.sum(the.amount) = mile.sum(the.amount) + quantity - remainder
       }
     }
@@ -51,7 +51,7 @@ action consume (a : address) (quantity : int) = {
     postcondition p3 = {
       forall m in mile.removed, m.expiration >= now
       invariant for loop {
-        mile.removed.subset by_expiration
+        mile.removed.subsetof by_expiration
       }
     }
 

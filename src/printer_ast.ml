@@ -175,7 +175,7 @@ let to_const = function
   | Csum          -> "sum"
   | Cmax          -> "max"
   | Cmin          -> "min"
-  | Csubset       -> "subset"
+  | Csubsetof     -> "subsetof"
   | Cbefore       -> "before"
   | Cunmoved      -> "unmoved"
   | Cadded        -> "added"

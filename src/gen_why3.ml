@@ -52,17 +52,17 @@ type change =
 let mk_change_term tr =
   match tr with
   | CAdd id -> Tapp (Tdoti("Tr",
-                          "TrAdd_"),
-                    [Tvar (String.capitalize_ascii id)])
+                           "TrAdd_"),
+                     [Tvar (String.capitalize_ascii id)])
   | CRm id -> Tapp (Tdoti("Tr",
-                         "TrRm_"),
-                   [Tvar (String.capitalize_ascii id)])
-  | CUpdate id -> Tapp (Tdoti("Tr",
-                             "TrUpdate_"),
-                       [Tvar (String.capitalize_ascii id)])
-  | CGet id -> Tapp (Tdoti("Tr",
-                          "TrGet_"),
+                          "TrRm_"),
                     [Tvar (String.capitalize_ascii id)])
+  | CUpdate id -> Tapp (Tdoti("Tr",
+                              "TrUpdate_"),
+                        [Tvar (String.capitalize_ascii id)])
+  | CGet id -> Tapp (Tdoti("Tr",
+                           "TrGet_"),
+                     [Tvar (String.capitalize_ascii id)])
   | _ -> assert false
 
 let mk_trace tr =
@@ -893,7 +893,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
       end
     | M.Mand (l,r)-> Tand (map_mterm m ctx l,map_mterm m ctx r)
     | M.Misempty (l,r) -> Tempty (with_dummy_loc l,map_mterm m ctx r)
-    | M.Msubset (n,l,r) -> Tsubset (with_dummy_loc n,map_mterm m ctx l,map_mterm m ctx r)
+    | M.Msubsetof (n,l,r) -> Tsubset (with_dummy_loc n,map_mterm m ctx l,map_mterm m ctx r)
     | M.Msettoiterate c ->
       let n = M.Utils.get_asset_type mt |> map_lident in
       Ttoiter (n,with_dummy_loc "i",map_mterm m ctx c) (* TODO : should retrieve actual idx value *)
@@ -926,12 +926,12 @@ and mk_invariants (m : M.model) ctx (lbl : ident option) lbody =
     m.verification.specs
     |> List.filter is_security
     |> List.map (fun (spec : M.specification) ->
-          let id =
-            match lbl with
-            | Some a -> (unloc spec.name) ^ "_" ^ a
-            | _ -> unloc spec.name in
-          { id = with_dummy_loc id;
-            form = map_security_pred `Loop spec.formula |> loc_term; }
+        let id =
+          match lbl with
+          | Some a -> (unloc spec.name) ^ "_" ^ a
+          | _ -> unloc spec.name in
+        { id = with_dummy_loc id;
+          form = map_security_pred `Loop spec.formula |> loc_term; }
       )
   in
   loop_invariants @ storage_loop_invariants @ security_loop_invariants

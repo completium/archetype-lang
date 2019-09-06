@@ -138,7 +138,7 @@ type ('id, 'term) mterm_node  =
   | Msort         of ident * 'term * ident * sort_kind
   | Mcontains     of ident * 'term * 'term
   | Mmem          of ident * 'term * 'term
-  | Msubset       of ident * 'term * 'term
+  | Msubsetof       of ident * 'term * 'term
   | Mnth          of ident * 'term * 'term
   | Mcount        of ident * 'term
   | Msum          of ident * 'id * 'term
@@ -826,7 +826,7 @@ let cmp_mterm_node
     | Msort (an1, c1, fn1, k1), Msort (an2, c2, fn2, k2)                               -> cmp_ident an1 an2 && cmp c1 c2 && cmp_ident fn1 fn2 && k1 = k2
     | Mcontains (an1, c1, i1), Mcontains (an2, c2, i2)                                 -> cmp_ident an1 an2 && cmp c1 c2 && cmp i1 i2
     | Mmem (an1, c1, i1), Mmem (an2, c2, i2)                                           -> cmp_ident an1 an2 && cmp c1 c2 && cmp i1 i2
-    | Msubset (an1, c1, i1), Msubset (an2, c2, i2)                                     -> cmp_ident an1 an2 && cmp c1 c2 && cmp i1 i2
+    | Msubsetof (an1, c1, i1), Msubsetof (an2, c2, i2)                                     -> cmp_ident an1 an2 && cmp c1 c2 && cmp i1 i2
     | Mnth (an1, c1, i1), Mnth (an2, c2, i2)                                           -> cmp_ident an1 an2 && cmp c1 c2 && cmp i1 i2
     | Mcount (an1, c1), Mcount (an2, c2)                                               -> cmp_ident an1 an2 && cmp c1 c2
     | Msum (an1, fd1, c1), Msum (an2, fd2, c2)                                         -> cmp_ident an1 an2 && cmpi fd1 fd2 && cmp c1 c2
@@ -1003,7 +1003,7 @@ let map_term_node (f : 'id mterm_gen -> 'id mterm_gen) = function
   | Msort (an, c, fn, k)          -> Msort (an, f c, fn, k)
   | Mcontains (an, c, i)          -> Mcontains (an, f c, f i)
   | Mmem (an, c, i)               -> Mmem (an, f c, f i)
-  | Msubset (an, c, i)            -> Msubset (an, f c, f i)
+  | Msubsetof (an, c, i)            -> Msubsetof (an, f c, f i)
   | Mnth (an, c, i)               -> Mnth (an, f c, f i)
   | Mcount (an, c)                -> Mcount (an, f c)
   | Msum (an, fd, c)              -> Msum (an, fd, f c)
@@ -1264,7 +1264,7 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Msort (an, c, p, _)                   -> f accu c
   | Mcontains (an, c, i)                  -> f (f accu c) i
   | Mmem (an, c, i)                       -> f (f accu c) i
-  | Msubset (an, c, i)                    -> f (f accu c) i
+  | Msubsetof (an, c, i)                    -> f (f accu c) i
   | Mnth      (an, c, i)                  -> f (f accu c) i
   | Mcount (an, c)                        -> f accu c
   | Msum (an, fd, c)                      -> f accu c
@@ -1521,10 +1521,10 @@ let fold_map_term
     let ie, ia = f ca i in
     g (Mmem (an, ce, ie)), ia
 
-  | Msubset (an, c, i) ->
+  | Msubsetof (an, c, i) ->
     let ce, ca = f accu c in
     let ie, ia = f ca i in
-    g (Msubset (an, ce, ie)), ia
+    g (Msubsetof (an, ce, ie)), ia
 
   | Mnth (an, c, i) ->
     let ce, ca = f accu c in

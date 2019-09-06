@@ -294,7 +294,7 @@ let methods : (string * method_) list =
     ("clear"       , mk M.Cclear        `Effect `Total   ([             ], None));
     ("reverse"     , mk M.Creverse      `Effect `Total   ([             ], None));
     ("contains"    , mk M.Ccontains     `Pure   `Total   ([`Pk          ], Some (`T M.vtbool)));
-    ("subset"      , mk M.Csubset       `Pure   `Total   ([`SubColl     ], Some (`T M.vtbool)));
+    ("subsetof"    , mk M.Csubsetof     `Pure   `Total   ([`SubColl     ], Some (`T M.vtbool)));
     ("nth"         , mk M.Cnth          `Pure   `Partial ([`T    M.vtint], Some (`Asset)));
     ("select"      , mk M.Cselect       `Pure   `Total   ([`Pred        ], Some (`SubColl)));
     ("sort"        , mk M.Csort         `Pure   `Total   ([`Field       ], Some (`SubColl)));
@@ -307,7 +307,7 @@ let methods : (string * method_) list =
     ("added"       , mk M.Cadded        `Pure   `Total   ([             ], Some (`SubColl)));
     ("removed"     , mk M.Cremoved      `Pure   `Total   ([             ], Some (`SubColl)));
     ("iterated"    , mk M.Citerated     `Pure   `Total   ([             ], Some (`SubColl)));
-    ("to_iter"     , mk M.Ctoiterate    `Pure   `Total   ([             ], Some (`SubColl)));
+    ("toiterate"   , mk M.Ctoiterate    `Pure   `Total   ([             ], Some (`SubColl)));
   ]
 
 let methods = Mid.of_list methods
@@ -1837,7 +1837,7 @@ let for_verification_item (env : env) (v : PT.verification_item) : env * env ive
         | Some (env, `Loop aname) ->
           let ty = M.Tasset (mkloc (loc lbl) aname) in
           let ty = M.Tcontainer (ty, M.Subset) in
-          Env.Local.push env ("to_iter", ty)
+          Env.Local.push env ("toiterate", ty)
       in (lbl, List.map (for_formula env0) linvs) in
     let f    =
       let env0 = Option.fst (Env.Label.lookup env (unloc x)) in

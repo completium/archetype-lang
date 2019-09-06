@@ -233,11 +233,11 @@ let to_model (ast : A.model) : M.model =
     | A.Pcall (aux, A.Cid id, args) ->
       M.Mapp (id, List.map (fun x -> term_arg_to_expr f x) args)
 
-    | A.Pcall (Some p, A.Cconst (A.Csubset), [AExpr q]) ->
+    | A.Pcall (Some p, A.Cconst (A.Csubsetof), [AExpr q]) ->
       let fp = f p in
       let fq = f q in
       let asset_name = extract_asset_name fp in
-      M.Msubset (asset_name, fp, fq)
+      M.Msubsetof (asset_name, fp, fq)
 
     | A.Pcall (Some p, A.Cconst (A.Cisempty), []) ->
       let fp = f p in
