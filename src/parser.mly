@@ -93,8 +93,6 @@
 %token LET
 %token LPAREN
 %token MATCH
-%token MAY_BE_PERFORMED_BY_ACTION
-%token MAY_BE_PERFORMED_BY_ROLE
 %token MAY_BE_PERFORMED_ONLY_BY_ACTION
 %token MAY_BE_PERFORMED_ONLY_BY_ROLE
 %token MINUS
@@ -413,24 +411,23 @@ verification_decl:
 
 security_pred_unloc:
 | id=ident args=security_arg+ {
-    let args : list = args in
     match unloc id, args with
-    | "only_by_role",           [lhs, rhs] -> assert false (*Esecurity (dumloc (SMayBePerformedOnlyByRole (lhs, rhs)))*)
-    | "only_in_action",         [lhs, rhs] -> assert false (*Esecurity (dumloc (SMayBePerformedOnlyByAction (lhs, rhs)))*)
-    | "only_by_role_in_action", [lhs, rhs] -> assert false
-    | "not_by_role",            [lhs, rhs] -> assert false
-    | "not_in_action",          [lhs, rhs] -> assert false
-    | "not_by_role_in_action",  [lhs, rhs] -> assert false
+    | "only_by_role",           [a; b]    -> Esecurity (dumloc (SOnlyByRole (a, b)))
+    | "only_in_action",         [a; b]    -> Esecurity (dumloc (SOnlyInAction (a, b)))
+    | "only_by_role_in_action", [a; b; c] -> Esecurity (dumloc (SOnlyByRoleInAction (a, b, c)))
+    | "not_by_role",            [a; b]    -> Eapp ( (Foperator (dumloc (`Unary Not))), [dumloc (Esecurity (dumloc (SOnlyByRole (a, b))))])
+    | "not_in_action",          [a; b]    -> Eapp ( (Foperator (dumloc (`Unary Not))), [dumloc (Esecurity (dumloc (SOnlyInAction (a, b))))])
+    | "not_by_role_in_action",  [a; b; c] -> Eapp ( (Foperator (dumloc (`Unary Not))), [dumloc (Esecurity (dumloc (SOnlyByRoleInAction (a, b, c))))])
+    | "transferred_by",         [a]       -> Esecurity (dumloc (STransferredBy (a)))
+    | "transferred_to",         [a]       -> Esecurity (dumloc (STransferredTo (a)))
     | _ -> assert false
-
-    (*Eapp ( Foperator (dumloc Not), [dumloc (Esecurity SMayBePerformedOnlyByAction (lhs, rhs))])*)
 }
 
 security_pred:
 | x=loc(security_pred_unloc) { x }
 
 security_item_unloc:
-| lbl=ident COLON e=security_pred {
+| lbl=ident COLON e=security_pred SEMI_COLON {
      Vspecification (lbl, e, [])
      }
 
@@ -439,16 +436,8 @@ security_item_unloc:
 
 security_decl_unloc:
 | SECURITY exts=option(extensions) LBRACE
-            xs=expr RBRACE
-        { let l = split_seq_label xs in
-            let ll = List.map (fun x ->
-            let loc, (id, e) = Location.deloc x in
-            let lbl = Tools.Option.get id in
-            mkloc loc (Vspecification (lbl, e, []))) l in
-            (ll, exts) }
-
-//    xs=security_item+ RBRACE
-//        { (xs, exts) }
+    xs=security_item+ RBRACE
+        { (xs, exts) }
 
 security_decl:
 | x=loc(security_decl_unloc)      { Dverification x }
@@ -896,13 +885,9 @@ record_item:
 
 security_unloc:
 | lhs=security_arg MAY_BE_PERFORMED_ONLY_BY_ROLE rhs=security_arg
-    { SMayBePerformedOnlyByRole (lhs, rhs) }
+    { SOnlyByRole (lhs, rhs) }
 | lhs=security_arg MAY_BE_PERFORMED_ONLY_BY_ACTION rhs=security_arg
-    { SMayBePerformedOnlyByAction (lhs, rhs) }
-| lhs=security_arg MAY_BE_PERFORMED_BY_ROLE rhs=security_arg
-    { SMayBePerformedByRole (lhs, rhs) }
-| lhs=security_arg MAY_BE_PERFORMED_BY_ACTION rhs=security_arg
-    { SMayBePerformedByAction (lhs, rhs) }
+    { SOnlyInAction (lhs, rhs) }
 | TRANSFERRED_BY arg=security_arg
     { STransferredBy arg }
 | TRANSFERRED_TO arg=security_arg

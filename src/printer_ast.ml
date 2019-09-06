@@ -374,6 +374,24 @@ let rec pp_pterm fmt (pterm : pterm) =
 
       in
       (pp_with_paren pp) fmt (desc, s)
+
+    | PsecurityActionRoleAction (desc, s, a) ->
+      let pp fmt (desc, s, a) =
+        Format.fprintf fmt "[_[ %a may be performed only by role %a in action %a ]_]"
+          pp_action_description desc
+          (fun fmt s ->
+             if List.length s = 1
+             then pp_security_role fmt (List.nth s 0)
+             else Format.fprintf fmt "[%a]" (pp_list " or " pp_security_role) s
+          ) s
+          (fun fmt s ->
+             if List.length s = 1
+             then pp_security_role fmt (List.nth s 0)
+             else Format.fprintf fmt "[%a]" (pp_list " or " pp_security_role) s
+          ) a
+
+      in
+      (pp_with_paren pp) fmt (desc, s, a)
   in
   pp_struct_poly pp_node fmt pterm
 

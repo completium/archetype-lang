@@ -105,10 +105,9 @@ and security_arg = security_arg_unloc loced
 [@@deriving yojson, show {with_path = false}]
 
 type security_unloc =
-  | SMayBePerformedOnlyByRole of security_arg * security_arg
-  | SMayBePerformedOnlyByAction of security_arg * security_arg
-  | SMayBePerformedByRole of security_arg * security_arg
-  | SMayBePerformedByAction of security_arg * security_arg
+  | SOnlyByRole of security_arg * security_arg
+  | SOnlyInAction of security_arg * security_arg
+  | SOnlyByRoleInAction of security_arg * security_arg * security_arg
   | STransferredBy of security_arg
   | STransferredTo of security_arg
 [@@deriving yojson, show {with_path = false}]

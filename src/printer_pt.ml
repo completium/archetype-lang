@@ -562,23 +562,13 @@ let rec pp_expr outer pos fmt a =
       let pp_security_pred fmt arg =
         let s = unloc s in
         match s with
-        | SMayBePerformedOnlyByRole (lhs, rhs) ->
+        | SOnlyByRole (lhs, rhs) ->
           Format.fprintf fmt "%a may be performed only by role %a"
             pp_security_arg lhs
             pp_security_arg rhs
 
-        | SMayBePerformedOnlyByAction (lhs, rhs) ->
+        | SOnlyInAction (lhs, rhs) ->
           Format.fprintf fmt "%a may be performed only by action %a"
-            pp_security_arg lhs
-            pp_security_arg rhs
-
-        | SMayBePerformedByRole (lhs, rhs) ->
-          Format.fprintf fmt "%a may be performed by role %a"
-            pp_security_arg lhs
-            pp_security_arg rhs
-
-        | SMayBePerformedByAction (lhs, rhs) ->
-          Format.fprintf fmt "%a may be performed by action %a"
             pp_security_arg lhs
             pp_security_arg rhs
 
@@ -589,6 +579,8 @@ let rec pp_expr outer pos fmt a =
         | STransferredTo arg ->
           Format.fprintf fmt "transferred to %a"
             pp_security_arg arg
+
+        | _ -> assert false
       in
       Format.fprintf fmt "[_[ %a ]_]"
         pp_security_pred s

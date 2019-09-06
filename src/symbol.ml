@@ -55,8 +55,6 @@ let string_of_token = function
   | MINUS           -> "MINUS"
   | MAY_BE_PERFORMED_ONLY_BY_ROLE -> "may be performed only by role"
   | MAY_BE_PERFORMED_ONLY_BY_ACTION -> "may be performed only by action"
-  | MAY_BE_PERFORMED_BY_ROLE -> "may be performed by by"
-  | MAY_BE_PERFORMED_BY_ACTION -> "may be performed by action"
   | MATCH           -> "MATCH"
   | LPAREN          -> "LPAREN"
   | LET             -> "LET"
@@ -182,8 +180,6 @@ let string_of_symbol = function
   | X (T T_MINUS) -> "-"
   | X (T T_MAY_BE_PERFORMED_ONLY_BY_ROLE) -> "may be performed only by role"
   | X (T T_MAY_BE_PERFORMED_ONLY_BY_ACTION) -> "may be performed only by action"
-  | X (T T_MAY_BE_PERFORMED_BY_ROLE) -> "may be performed by by"
-  | X (T T_MAY_BE_PERFORMED_BY_ACTION) -> "may be performed by action"
   | X (T T_MATCH) -> "match"
   | X (T T_LPAREN) -> "("
   | X (T T_LET) -> "let"
@@ -281,12 +277,12 @@ let string_of_symbol = function
   | X (N N_security_arg_ext_unloc) -> "a security argument"
   | X (N N_security_decl_unloc) -> "a security declaration"
   | X (N N_security_decl) -> "a security declaration"
-  (* | X (N N_security_item_unloc) -> "a security item" *)
-  (* | X (N N_nonempty_list_security_item_) -> "a security item" *)
+  | X (N N_security_item_unloc) -> "a security item"
+  | X (N N_nonempty_list_security_item_) -> "a security item"
   | X (N N_nonempty_list_security_arg_) -> "a non empty list of security argument"
   | X (N N_nonempty_list_terminated_field_SEMI_COLON__) -> "a non empty list of field terminated by ;"
-  (* | X (N N_security_pred_unloc) -> "a security predicate" *)
-  (* | X (N N_security_pred) -> "a security predicate" *)
+  | X (N N_security_pred_unloc) -> "a security predicate"
+  | X (N N_security_pred) -> "a security predicate"
   | X (N N_simple_expr_r) -> "a simple expression"
   | X (N N_signature) -> "a signature"
   | X (N N_separated_nonempty_list_SEMI_COLON_record_item_) -> "a non empty list of record item by ;"
