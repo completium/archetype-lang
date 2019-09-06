@@ -324,6 +324,9 @@ let to_model (ast : A.model) : M.model =
 
     | A.PsecurityActionAction (action, actions) ->
       M.MOnlyInAction (to_action_description action, actions)
+
+    | A.PsecurityActionRoleAction (action, roles, actions) ->
+      M.MOnlyByRoleInAction (to_action_description action, roles, actions)
   in
 
   let rec to_mterm (pterm : A.pterm) : M.mterm =

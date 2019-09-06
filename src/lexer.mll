@@ -118,8 +118,6 @@ let date     = day ('T' hour ( timezone )?)?
 let accept_transfer = "accept" blank+ "transfer"
 let may_be_performed_only_by_role = "may" blank+ "be" blank+ "performed" blank+ "only" blank+ "by" blank+ "role"
 let may_be_performed_only_by_action = "may" blank+ "be" blank+ "performed" blank+ "only" blank+ "by" blank+ "action"
-let may_be_performed_by_role = "may" blank+ "be" blank+ "performed" blank+ "by" blank+ "role"
-let may_be_performed_by_action = "may" blank+ "be" blank+ "performed" blank+ "by" blank+ "action"
 let transferred_by = "transferred" blank+ "by"
 let transferred_to = "transferred" blank+ "to"
 
@@ -129,8 +127,6 @@ rule token = parse
   | accept_transfer       { ACCEPT_TRANSFER }
   | may_be_performed_only_by_role   { MAY_BE_PERFORMED_ONLY_BY_ROLE }
   | may_be_performed_only_by_action { MAY_BE_PERFORMED_ONLY_BY_ACTION }
-  | may_be_performed_by_role        { MAY_BE_PERFORMED_BY_ROLE }
-  | may_be_performed_by_action      { MAY_BE_PERFORMED_BY_ACTION }
   | transferred_by                  { TRANSFERRED_BY }
   | transferred_to                  { TRANSFERRED_TO }
   | blank+                { token lexbuf }

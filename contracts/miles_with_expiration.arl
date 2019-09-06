@@ -113,30 +113,9 @@ action clear_expired = {
   }
 }
 
-  (*  this ensures that any mile was added with the ‘add’ action *)
-
-(* verification {
-  specification g1 = {
-    [_[ anyaction may be performed only by role admin ]_]
-  }
-
-  specification g2 = {
-    [_[ (remove mile) may be performed only by action [consume or clear_expired] ]_]
-  }
-
-  specification g3 = {
-    not ([_[ (add mile) may be performed only by action consume ]_])
-  }
-} *)
-
 security {
-  g1 : [_[ anyaction may be performed only by role admin ]_];
-  g2 : [_[ (remove mile) may be performed only by action [consume or clear_expired] ]_];
-  g3 : not ([_[ (add mile) may be performed only by action consume ]_])
+  (*  this ensures that any mile was added with the ‘add’ action *)
+  g1 : only_by_role anyaction admin;
+  g2 : only_in_action (remove mile) [consume or clear_expired];
+  g3 : not_in_action (add mile) consume;
 }
-
-(* security {
-  g1 : only_by_role anyaction admin
-  g2 : only_in_action (remove mile) [consume or clear_expired]
-  g3 : not_in_action (add mile) consume
-} *)

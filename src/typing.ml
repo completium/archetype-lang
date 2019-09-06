@@ -1263,7 +1263,7 @@ let rec for_xexpr (mode : emode_t) (env : env) ?(ety : M.ptyp option) (tope : PT
             mk_sp (Some M.vtbool) (M.Pquantifer (qt, x, (ast, xty), body))
       end
 
-    | Esecurity { pldesc = SMayBePerformedOnlyByRole (s1, s2) } ->
+    | Esecurity { pldesc = SOnlyByRole (s1, s2) } ->
       if mode <> `Formula then begin
         Env.emit_error env (loc tope, SecurityInExpr);
         bailout ()
@@ -1272,7 +1272,7 @@ let rec for_xexpr (mode : emode_t) (env : env) ?(ety : M.ptyp option) (tope : PT
         let s2 = for_security_role env s2 in
         mk_sp (Some M.vtbool) (M.PsecurityActionRole (s1, s2))
 
-    | Esecurity { pldesc = SMayBePerformedOnlyByAction (s1, s2) } ->
+    | Esecurity { pldesc = SOnlyInAction (s1, s2) } ->
       if mode <> `Formula then begin
         Env.emit_error env (loc tope, SecurityInExpr);
         bailout ()
@@ -1280,6 +1280,16 @@ let rec for_xexpr (mode : emode_t) (env : env) ?(ety : M.ptyp option) (tope : PT
         let s1 = for_action_description env s1 in
         let s2 = for_security_action env s2 in
         mk_sp (Some M.vtbool) (M.PsecurityActionAction (s1, s2))
+
+    | Esecurity { pldesc = SOnlyByRoleInAction (s1, s2, s3) } ->
+      if mode <> `Formula then begin
+        Env.emit_error env (loc tope, SecurityInExpr);
+        bailout ()
+      end else
+        let s1 = for_action_description env s1 in
+        let s2 = for_security_role env s2 in
+        let s3 = for_security_action env s3 in
+        mk_sp (Some M.vtbool) (M.PsecurityActionRoleAction (s1, s2, s3))
 
     | Eapp      _
     | Elabel    _

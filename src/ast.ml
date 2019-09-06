@@ -279,6 +279,7 @@ type 'id term_node  =
   | Ptuple of 'id term_gen list
   | PsecurityActionRole of action_description * security_role list
   | PsecurityActionAction of action_description * security_action list
+  | PsecurityActionRoleAction of action_description * security_role list * security_action list
 [@@deriving show {with_path = false}]
 
 and 'id term_arg =
@@ -619,6 +620,7 @@ let map_term_node (f : 'id term_gen -> 'id term_gen) = function
   | Ptuple l                -> Ptuple (List.map f l)
   | PsecurityActionRole _   as e -> e
   | PsecurityActionAction _ as e -> e
+  | PsecurityActionRoleAction _ as e -> e
 
 let map_instr_node f = function
   | Iif (c, t, e)       -> Iif (c, f t, f e)
@@ -675,6 +677,7 @@ let fold_term (f: 'a -> 't -> 'a) (accu : 'a) (term : 'id term_gen) =
   | Ptuple l                -> List.fold_left f accu l
   | PsecurityActionRole _   -> accu
   | PsecurityActionAction _ -> accu
+  | PsecurityActionRoleAction _   -> accu
 
 let fold_instr f accu instr =
   match instr.node with
@@ -822,6 +825,9 @@ let fold_map_term g f (accu : 'a) (term : 'id term_gen) : 'term * 'a =
     g e, accu
 
   | PsecurityActionAction _ as e ->
+    g e, accu
+
+  | PsecurityActionRoleAction _ as e ->
     g e, accu
 
 let fold_map_instr_term gi ge fi fe (accu : 'a) instr : 'id instruction_gen * 'a =
