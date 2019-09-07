@@ -20,8 +20,8 @@ action add (ow : role) (value : int) = {
 action consume (ow : role) (value : int) = {
   specification {
     postcondition s1 = {
-      (before account.get ow).amount =
-        (after account.get ow).amount + value
+      (account.before.get ow).amount =
+        (account.get ow).amount + value
     }
   }
 
