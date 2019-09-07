@@ -176,6 +176,8 @@ let to_const = function
   | Cmax          -> "max"
   | Cmin          -> "min"
   | Csubsetof     -> "subsetof"
+  | Chead         -> "head"
+  | Ctail         -> "tail"
   | Cbefore       -> "before"
   | Cunmoved      -> "unmoved"
   | Cadded        -> "added"

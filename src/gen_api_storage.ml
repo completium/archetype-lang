@@ -69,6 +69,10 @@ let process_api_storage (model : model) : model =
         [APIFunction (Unshallow asset_name)]
       | Mlisttocoll (asset_name, _) ->
         [APIFunction (Listtocoll asset_name)]
+      | Mhead (asset_name, _, _) ->
+        [APIFunction (Head asset_name)]
+      | Mtail (asset_name, _, _) ->
+        [APIFunction (Tail asset_name)]
       | _ -> []
     in
     List.fold_left (fun accu v -> add ctx accu (Model.mk_api_item v)) accu api_items
@@ -103,6 +107,8 @@ let process_api_storage (model : model) : model =
                    | APIFunction (Shallow         an)     -> an
                    | APIFunction (Unshallow       an)     -> an
                    | APIFunction (Listtocoll      an)     -> an
+                   | APIFunction (Head            an)     -> an
+                   | APIFunction (Tail            an)     -> an
                  in
                  let asset_list : ident list = List.fold_left (fun accu (x : decl_node) ->
                      match x with
@@ -145,6 +151,8 @@ let process_api_storage (model : model) : model =
                    | APIFunction  (Shallow       _) -> 26
                    | APIFunction  (Unshallow     _) -> 27
                    | APIFunction  (Listtocoll    _) -> 28
+                   | APIFunction  (Head          _) -> 29
+                   | APIFunction  (Tail          _) -> 30
                  in
                  let idx1 = get_kind i1.node_item in
                  let idx2 = get_kind i2.node_item in

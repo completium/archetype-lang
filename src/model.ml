@@ -146,6 +146,8 @@ type ('id, 'term) mterm_node  =
   | Mmax          of ident * 'id * 'term
   | Mmathmax      of 'term * 'term
   | Mmathmin      of 'term * 'term
+  | Mhead         of ident * 'term * 'term
+  | Mtail         of ident * 'term * 'term
   | Mfail         of 'id fail_type_gen
   | Mand          of 'term * 'term
   | Mor           of 'term * 'term
@@ -295,6 +297,8 @@ and function_const =
   | Shallow          of ident
   | Unshallow        of ident
   | Listtocoll       of ident
+  | Head             of ident
+  | Tail             of ident
 [@@deriving show {with_path = false}]
 
 and builtin_const =
@@ -826,7 +830,7 @@ let cmp_mterm_node
     | Msort (an1, c1, fn1, k1), Msort (an2, c2, fn2, k2)                               -> cmp_ident an1 an2 && cmp c1 c2 && cmp_ident fn1 fn2 && k1 = k2
     | Mcontains (an1, c1, i1), Mcontains (an2, c2, i2)                                 -> cmp_ident an1 an2 && cmp c1 c2 && cmp i1 i2
     | Mmem (an1, c1, i1), Mmem (an2, c2, i2)                                           -> cmp_ident an1 an2 && cmp c1 c2 && cmp i1 i2
-    | Msubsetof (an1, c1, i1), Msubsetof (an2, c2, i2)                                     -> cmp_ident an1 an2 && cmp c1 c2 && cmp i1 i2
+    | Msubsetof (an1, c1, i1), Msubsetof (an2, c2, i2)                                 -> cmp_ident an1 an2 && cmp c1 c2 && cmp i1 i2
     | Mnth (an1, c1, i1), Mnth (an2, c2, i2)                                           -> cmp_ident an1 an2 && cmp c1 c2 && cmp i1 i2
     | Mcount (an1, c1), Mcount (an2, c2)                                               -> cmp_ident an1 an2 && cmp c1 c2
     | Msum (an1, fd1, c1), Msum (an2, fd2, c2)                                         -> cmp_ident an1 an2 && cmpi fd1 fd2 && cmp c1 c2
@@ -835,6 +839,8 @@ let cmp_mterm_node
     | Mfail ft1, Mfail ft2                                                             -> cmp_fail_type cmp ft1 ft2
     | Mmathmin (l1, r1), Mmathmin (l2, r2)                                             -> cmp l1 l2 && cmp r1 r2
     | Mmathmax (l1, r1), Mmathmax (l2, r2)                                             -> cmp l1 l2 && cmp r1 r2
+    | Mhead (an1, c1, i1), Mhead (an2, c2, i2)                                         -> cmp_ident an1 an2 && cmp c1 c2 && cmp i1 i2
+    | Mtail (an1, c1, i1), Mtail (an2, c2, i2)                                         -> cmp_ident an1 an2 && cmp c1 c2 && cmp i1 i2
     | Mand (l1, r1), Mand (l2, r2)                                                     -> cmp l1 l2 && cmp r1 r2
     | Mor (l1, r1), Mor (l2, r2)                                                       -> cmp l1 l2 && cmp r1 r2
     | Mimply (l1, r1), Mimply (l2, r2)                                                 -> cmp l1 l2 && cmp r1 r2
@@ -1003,7 +1009,7 @@ let map_term_node (f : 'id mterm_gen -> 'id mterm_gen) = function
   | Msort (an, c, fn, k)          -> Msort (an, f c, fn, k)
   | Mcontains (an, c, i)          -> Mcontains (an, f c, f i)
   | Mmem (an, c, i)               -> Mmem (an, f c, f i)
-  | Msubsetof (an, c, i)            -> Msubsetof (an, f c, f i)
+  | Msubsetof (an, c, i)          -> Msubsetof (an, f c, f i)
   | Mnth (an, c, i)               -> Mnth (an, f c, f i)
   | Mcount (an, c)                -> Mcount (an, f c)
   | Msum (an, fd, c)              -> Msum (an, fd, f c)
@@ -1012,6 +1018,8 @@ let map_term_node (f : 'id mterm_gen -> 'id mterm_gen) = function
   | Mfail (ft)                    -> Mfail (ft)
   | Mmathmin (l, r)               -> Mmathmin (f l, f r)
   | Mmathmax (l, r)               -> Mmathmax (f l, f r)
+  | Mhead (an, c, i)              -> Mhead (an, f c, f i)
+  | Mtail (an, c, i)              -> Mtail (an, f c, f i)
   | Mand (l, r)                   -> Mand (f l, f r)
   | Mor (l, r)                    -> Mor (f l, f r)
   | Mimply (l, r)                 -> Mimply (f l, f r)
@@ -1264,8 +1272,8 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Msort (an, c, p, _)                   -> f accu c
   | Mcontains (an, c, i)                  -> f (f accu c) i
   | Mmem (an, c, i)                       -> f (f accu c) i
-  | Msubsetof (an, c, i)                    -> f (f accu c) i
-  | Mnth      (an, c, i)                  -> f (f accu c) i
+  | Msubsetof (an, c, i)                  -> f (f accu c) i
+  | Mnth (an, c, i)                       -> f (f accu c) i
   | Mcount (an, c)                        -> f accu c
   | Msum (an, fd, c)                      -> f accu c
   | Mmin (an, fd, c)                      -> f accu c
@@ -1273,6 +1281,8 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mfail (ft)                            -> accu
   | Mmathmax (l, r)                       -> f (f accu l) r
   | Mmathmin (l, r)                       -> f (f accu l) r
+  | Mhead (_, c, i)                       -> f (f accu c) i
+  | Mtail (_, c, i)                       -> f (f accu c) i
   | Mand (l, r)                           -> f (f accu l) r
   | Mor (l, r)                            -> f (f accu l) r
   | Mimply (l, r)                         -> f (f accu l) r
@@ -1557,15 +1567,25 @@ let fold_map_term
     in
     g (Mfail fte), fta
 
+  | Mmathmin (l, r) ->
+    let le, la = f accu l in
+    let re, ra = f la r in
+    g (Mmathmin (le, re)), ra
+
   | Mmathmax (l, r) ->
     let le, la = f accu l in
     let re, ra = f la r in
     g (Mmathmax (le, re)), ra
 
-  | Mmathmin (l, r) ->
-    let le, la = f accu l in
-    let re, ra = f la r in
-    g (Mmathmin (le, re)), ra
+  | Mhead (an, c, i) ->
+    let ce, ca = f accu c in
+    let ie, ia = f ca i in
+    g (Mhead (an, ce, ie)), ia
+
+  | Mtail (an, c, i) ->
+    let ce, ca = f accu c in
+    let ie, ia = f ca i in
+    g (Mtail (an, ce, ie)), ia
 
   | Mand (l, r) ->
     let le, la = f accu l in
@@ -2031,17 +2051,19 @@ end = struct
     | ReverseItem        _ -> "reverse"
 
   let function_name_from_function_const = function
-    | Select   (aid, _)    -> "select_"   ^ aid
-    | Sort     (aid, fid)  -> "sort_"     ^ aid ^ "_" ^ fid
-    | Contains  aid        -> "contains_" ^ aid
-    | Nth       aid        -> "nth_"      ^ aid
-    | Count     aid        -> "count_"    ^ aid
-    | Sum      (aid, fid)  -> "sum_"      ^ aid ^ "_" ^ fid
-    | Min      (aid, fid)  -> "min_"      ^ aid ^ "_" ^ fid
-    | Max      (aid, fid)  -> "max_"      ^ aid ^ "_" ^ fid
-    | Shallow  (aid)       -> "shallow_"  ^ aid
-    | Unshallow (aid)      -> "unshallow" ^ aid
+    | Select    (aid, _)   -> "select_"     ^ aid
+    | Sort      (aid, fid) -> "sort_"       ^ aid ^ "_" ^ fid
+    | Contains   aid       -> "contains_"   ^ aid
+    | Nth        aid       -> "nth_"        ^ aid
+    | Count      aid       -> "count_"      ^ aid
+    | Sum       (aid, fid) -> "sum_"        ^ aid ^ "_" ^ fid
+    | Min       (aid, fid) -> "min_"        ^ aid ^ "_" ^ fid
+    | Max       (aid, fid) -> "max_"        ^ aid ^ "_" ^ fid
+    | Shallow    aid       -> "shallow_"    ^ aid
+    | Unshallow  aid       -> "unshallow"   ^ aid
     | Listtocoll aid       -> "listtocoll_" ^ aid
+    | Head       aid       -> "head_"       ^ aid
+    | Tail       aid       -> "tail_"       ^ aid
 
   let function_name_from_builtin_const = function
     | MinBuiltin         _ -> "min"

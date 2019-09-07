@@ -382,6 +382,18 @@ let pp_mterm fmt (mt : mterm) =
         f l
         f r
 
+    | Mhead (an, c, i) ->
+      Format.fprintf fmt "head_%a (%a, %a)"
+        pp_str an
+        f c
+        f i
+
+    | Mtail (an, c, i) ->
+      Format.fprintf fmt "tail_%a (%a, %a)"
+        pp_str an
+        f c
+        f i
+
     | Mand (l, r) ->
       let pp fmt (l, r) =
         Format.fprintf fmt "%a and %a"
@@ -783,6 +795,8 @@ let pp_function_const fmt = function
   | Shallow an -> pp_str fmt ("shallow\t " ^ an)
   | Unshallow an -> pp_str fmt ("unshallow\t " ^ an)
   | Listtocoll an -> pp_str fmt ("listtocoll\t " ^ an)
+  | Head an -> pp_str fmt ("head\t " ^ an)
+  | Tail an -> pp_str fmt ("tail\t " ^ an)
 
 let pp_builtin_const fmt = function
   | MinBuiltin t-> Format.fprintf fmt "min on %a" pp_type t

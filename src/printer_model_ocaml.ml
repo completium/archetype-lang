@@ -280,6 +280,18 @@ let pp_model fmt (model : model) =
     | Shallow _ -> assert false
     | Unshallow _ -> assert false
     | Listtocoll _ -> assert false
+
+    | Head an ->
+      Format.fprintf fmt
+        "let[@inline] head_%s (s : storage) : unit =@\n  \
+         () (*TODO*)@\n"
+        an
+
+    | Tail an ->
+      Format.fprintf fmt
+        "let[@inline] tail_%s (s : storage) : unit =@\n  \
+         () (*TODO*)@\n"
+        an
   in
 
   let pp_builtin_const fmt = function
@@ -341,6 +353,8 @@ let pp_model fmt (model : model) =
         | APIFunction  (Shallow       _) -> (ga, gr)
         | APIFunction  (Unshallow     _) -> (ga, gr)
         | APIFunction  (Listtocoll    _) -> (ga, gr)
+        | APIFunction  (Head          _) -> (ga, gr)
+        | APIFunction  (Tail          _) -> (ga, gr)
       )   (false, false) l in
     if   ga || gr
     then
@@ -702,6 +716,18 @@ let pp_model fmt (model : model) =
         Format.fprintf fmt "max (%a, %a)"
           f l
           f r
+
+      | Mhead (an, c, i) ->
+        Format.fprintf fmt "head_%a (%a, %a)"
+          pp_str an
+          f c
+          f i
+
+      | Mtail (an, c, i) ->
+        Format.fprintf fmt "tail_%a (%a, %a)"
+          pp_str an
+          f c
+          f i
 
       | Mand (l, r) ->
         let pp fmt (l, r) =

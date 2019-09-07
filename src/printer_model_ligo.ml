@@ -468,6 +468,18 @@ let pp_model fmt (model : model) =
           f l
           f r
 
+      | Mhead (an, c, i) ->
+        Format.fprintf fmt "head_%a (%a, %a)"
+          pp_str an
+          f c
+          f i
+
+      | Mtail (an, c, i) ->
+        Format.fprintf fmt "tail_%a (%a, %a)"
+          pp_str an
+          f c
+          f i
+
       | Mand (l, r) ->
         let pp fmt (l, r) =
           Format.fprintf fmt "%a and %a"
@@ -1126,6 +1138,8 @@ let pp_model fmt (model : model) =
     | Shallow _ -> ()
     | Unshallow _ -> ()
     | Listtocoll _ -> ()
+    | Head an -> Format.fprintf fmt "// TODO api storage: head"
+    | Tail an -> Format.fprintf fmt "// TODO api storage: tail"
 
   in
 

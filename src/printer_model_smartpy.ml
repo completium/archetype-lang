@@ -264,7 +264,17 @@ let pp_model fmt (model : model) =
     | Shallow _ -> assert false
     | Unshallow _ -> assert false
     | Listtocoll _ -> assert false
+    | Head an ->
+      Format.fprintf fmt
+        "def head_%s (self):@\n\
+         \t\t#TODO@\n"
+        an
 
+    | Tail an ->
+      Format.fprintf fmt
+        "def tail_%s (self):@\n\
+         \t\t#TODO@\n"
+        an
   in
 
   let pp_builtin_const fmt = function
@@ -636,6 +646,18 @@ let pp_model fmt (model : model) =
         Format.fprintf fmt "max (%a, %a)"
           f l
           f r
+
+      | Mhead (an, c, i) ->
+        Format.fprintf fmt "head_%a (%a, %a)"
+          pp_str an
+          f c
+          f i
+
+      | Mtail (an, c, i) ->
+        Format.fprintf fmt "tail_%a (%a, %a)"
+          pp_str an
+          f c
+          f i
 
       | Mand (l, r) ->
         let pp fmt (l, r) =

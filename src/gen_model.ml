@@ -297,6 +297,18 @@ let to_model (ast : A.model) : M.model =
       let field_name = extract_field_name (qi, qt, q) in
       M.Mmax (asset_name, field_name, fp)
 
+    | A.Pcall (Some p, A.Cconst (A.Chead), [AExpr e]) ->
+      let fp = f p in
+      let fe = f e in
+      let asset_name = extract_asset_name fp in
+      M.Mhead (asset_name, fp, fe)
+
+    | A.Pcall (Some p, A.Cconst (A.Ctail), [AExpr e]) ->
+      let fp = f p in
+      let fe = f e in
+      let asset_name = extract_asset_name fp in
+      M.Mtail (asset_name, fp, fe)
+
     (* | A.Pcall (None, A.Cconst (A.Cmaybeperformedonlybyrole), [AExpr l; AExpr r]) ->
        M.MsecMayBePerformedOnlyByRole (f l, f r)
 

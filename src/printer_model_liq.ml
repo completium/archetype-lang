@@ -389,6 +389,28 @@ let pp_model fmt (model : model) =
     | Unshallow _ -> ()
     | Listtocoll _ -> ()
 
+    | Head an ->
+      let _, t = Utils.get_asset_key model (to_lident an) in
+      Format.fprintf fmt
+        "let[@inline] head_%s (l : %a list) : %a list =@\n  \
+         List.fold (fun (_, accu) ->@\n    \
+         accu@\n  \
+         ) l []@\n"
+        an
+        pp_btyp t
+        pp_btyp t
+
+    | Tail an ->
+      let _, t = Utils.get_asset_key model (to_lident an) in
+      Format.fprintf fmt
+        "let[@inline] tail_%s (l : %a list)  : %a list =@\n  \
+         List.fold (fun (_, accu) ->@\n    \
+         accu@\n  \
+         ) l []@\n"
+        an
+        pp_btyp t
+        pp_btyp t
+
   in
 
   let pp_builtin_const fmt = function
@@ -450,6 +472,8 @@ let pp_model fmt (model : model) =
         | APIFunction  (Shallow       _) -> (ga, gr)
         | APIFunction  (Unshallow     _) -> (ga, gr)
         | APIFunction  (Listtocoll    _) -> (ga, gr)
+        | APIFunction  (Head          _) -> (ga, gr)
+        | APIFunction  (Tail          _) -> (ga, gr)
       )   (false, false) l in
     if   ga || gr
     then
@@ -812,6 +836,18 @@ let pp_model fmt (model : model) =
         Format.fprintf fmt "max (%a, %a)"
           f l
           f r
+
+      | Mhead (an, c, i) ->
+        Format.fprintf fmt "head_%a (%a, %a)"
+          pp_str an
+          f c
+          f i
+
+      | Mtail (an, c, i) ->
+        Format.fprintf fmt "tail_%a (%a, %a)"
+          pp_str an
+          f c
+          f i
 
       | Mand (l, r) ->
         let pp fmt (l, r) =

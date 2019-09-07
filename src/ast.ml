@@ -135,6 +135,8 @@ type const =
   | Cmax
   | Cmin
   | Csubsetof
+  | Chead
+  | Ctail
   (* vset *)
   | Cbefore
   | Cunmoved
