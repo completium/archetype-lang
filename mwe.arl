@@ -20,7 +20,7 @@ action add (ow : address) (m : mile) = {
 action consume (ow : address) (nb : int) = {
     specification {
         postcondition p1 = {
-            p1 : (owner.get ow).count = (owner.get ow).before.count - nb
+            (owner.get ow).miles.count() = (owner.get ow).miles.before.count() - nb
         } 
     }
     effect {
