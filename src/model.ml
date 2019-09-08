@@ -200,6 +200,7 @@ type ('id, 'term) mterm_node  =
   | Mtuple        of 'term list
   | Massoc        of 'term * 'term
   | Mfor          of ('id * 'term * 'term * ident option)
+  | Miter          of ('id * 'term * 'term * 'term * ident option)
   | Mfold         of ('id * 'id list * 'term * 'term) (* ident list * collection * body *)
   | Mseq          of 'term list
   | Massign       of (assignment_operator * 'id * 'term)
@@ -889,6 +890,7 @@ let cmp_mterm_node
     | Mdotcontract (e1, i1), Mdotcontract (e2, i2)                                     -> cmp e1 e2 && cmpi i1 i2
     | Mtuple l1, Mtuple l2                                                             -> List.for_all2 cmp l1 l2
     | Mfor (i1, c1, b1, lbl1), Mfor (i2, c2, b2, lbl2)                                 -> cmpi i1 i2 && cmp c1 c2 && cmp b1 b2 && Option.cmp cmp_ident lbl1 lbl2
+    | Miter (i1, a1, b1, c1, lbl1), Miter (i2, a2, b2, c2, lbl2)                       -> cmpi i1 i2 && cmp a1 a2 && cmp b1 b2 && cmp c1 c2 && Option.cmp cmp_ident lbl1 lbl2
     | Mfold (i1, is1, c1, b1), Mfold (i2, is2, c2, b2)                                 -> cmpi i1 i2 && List.for_all2 cmpi is1 is2 && cmp c1 c2 && cmp b1 b2
     | Mseq is1, Mseq is2                                                               -> List.for_all2 cmp is1 is2
     | Massign (op1, l1, r1), Massign (op2, l2, r2)                                     -> cmp_assign_op op1 op2 && cmpi l1 l2 && cmp r1 r2
@@ -1071,6 +1073,7 @@ let map_term_node (f : 'id mterm_gen -> 'id mterm_gen) = function
   | Mtuple l                      -> Mtuple (List.map f l)
   | Massoc (k, v)                 -> Massoc (f k, f v)
   | Mfor (i, c, b, lbl)           -> Mfor (i, f c, f b, lbl)
+  | Miter (i, a, b, c, lbl)       -> Miter (i, f a, f b, f c, lbl)
   | Mfold (i, is, c, b)           -> Mfold (i, is, f c, f b)
   | Mseq is                       -> Mseq (List.map f is)
   | Massign (op, l, r)            -> Massign (op, l, f r)
@@ -1334,6 +1337,7 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mtuple l                              -> List.fold_left f accu l
   | Massoc (k, v)                         -> f (f accu k) v
   | Mfor (i, c, b, lbl)                   -> f (f accu c) b
+  | Miter (i, a, b, c, lbl)               -> f (f (f accu a) b) c
   | Mfold (i, is, c, b)                   -> f (f accu c) b
   | Mseq is                               -> List.fold_left f accu is
   | Massign (_, _, e)                     -> f accu e
@@ -1776,6 +1780,12 @@ let fold_map_term
     let ce, ca = f accu c in
     let bi, ba = f ca b in
     g (Mfor (i, ce, bi, lbl)), ba
+
+  | Miter (i, a, b, c, lbl) ->
+    let ae, aa = f accu a in
+    let be, ba = f aa b in
+    let ce, ca = f ba c in
+    g (Miter (i, ae, be, ce, lbl)), ca
 
   | Mfold (i, is, c, b) ->
     let ce, ca = f accu c in

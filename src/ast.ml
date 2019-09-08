@@ -323,6 +323,7 @@ type 'id instruction_poly = {
 and 'id instruction_node =
   | Iif of ('id term_gen * 'id instruction_gen * 'id instruction_gen)         (* condition * then_ * else_ *)
   | Ifor of ('id * 'id term_gen * 'id instruction_gen)                        (* id * collection * body *)
+  | Iiter of ('id * 'id term_gen* 'id term_gen * 'id instruction_gen)         (* id * bound_min * bound_max * body *)
   | Iletin of ('id * 'id term_gen * 'id instruction_gen)                      (* id * init * body *)
   | Iseq of 'id instruction_gen list                                          (* lhs ; rhs*)
   | Imatchwith of 'id term_gen * ('id pattern_gen * 'id instruction_gen) list (* match term with ('pattern * 'id instruction_gen) list *)
@@ -626,6 +627,7 @@ let map_term_node (f : 'id term_gen -> 'id term_gen) = function
 let map_instr_node f = function
   | Iif (c, t, e)       -> Iif (c, f t, f e)
   | Ifor (i, c, b)      -> Ifor (i, c, f b)
+  | Iiter (i, a, b, c)  -> Iiter (i, a, b, f c)
   | Iletin (i, c, b)    -> Iletin (i, c, f b)
   | Iseq is             -> Iseq (List.map f is)
   | Imatchwith (a, ps)  -> Imatchwith (a, ps)
@@ -682,24 +684,26 @@ let fold_term (f: 'a -> 't -> 'a) (accu : 'a) (term : 'id term_gen) =
 
 let fold_instr f accu instr =
   match instr.node with
-  | Iif (c, t, e)    -> f (f accu t) e
-  | Ifor (i, c, b)   -> f accu b
-  | Iletin (i, j, b) -> f accu b
-  | Iseq is          -> List.fold_left f accu is
-  | Imatchwith _     -> accu
-  | Iassign _        -> accu
-  | Irequire _       -> accu
-  | Itransfer _      -> accu
-  | Ibreak           -> accu
-  | Iassert _        -> accu
-  | Icall _          -> accu
-  | Ireturn _        -> accu
-  | Ilabel _         -> accu
+  | Iif (c, t, e)      -> f (f accu t) e
+  | Ifor (i, c, b)     -> f accu b
+  | Iiter (i, a, b, c) -> f accu c
+  | Iletin (i, j, b)   -> f accu b
+  | Iseq is            -> List.fold_left f accu is
+  | Imatchwith _       -> accu
+  | Iassign _          -> accu
+  | Irequire _         -> accu
+  | Itransfer _        -> accu
+  | Ibreak             -> accu
+  | Iassert _          -> accu
+  | Icall _            -> accu
+  | Ireturn _          -> accu
+  | Ilabel _           -> accu
 
 let fold_instr_expr fi fe accu instr =
   match instr.node with
   | Iif (c, t, e)       -> fi (fi (fe accu c) t) e
   | Ifor (i, c, b)      -> fi (fe accu c) b
+  | Iiter (i, a, b, c)  -> fi (fe (fe accu a) b) c
   | Iletin (i, j, b)    -> fi (fe accu j) b
   | Iseq is             -> List.fold_left fi accu is
   | Imatchwith (a, ps)  -> List.fold_left (fun accu (_, i) -> fi accu i) (fe accu a) ps
@@ -843,6 +847,12 @@ let fold_map_instr_term gi ge fi fe (accu : 'a) instr : 'id instruction_gen * 'a
     let ce, ca = fe accu c in
     let bi, ba = fi ca b in
     gi (Ifor (i, ce, bi)), ba
+
+  | Iiter (i, a, b, c) ->
+    let ae, aa = fe accu a in
+    let be, ba = fe aa b in
+    let ce, ca = fi ba c in
+    gi (Iiter (i, ae, be, ce)), ca
 
   | Iletin (i, j, b) ->
     let je, ja = fe accu j in

@@ -525,6 +525,7 @@ let to_model (ast : A.model) : M.model =
     | A.Iif (c, t, e) when is_empty_seq e -> M.Mif (f c, g t, None)
     | A.Iif (c, t, e)           -> M.Mif (f c, g t, Some (g e))
     | A.Ifor (i, col, body)     -> M.Mfor (i, f col, g body, lbl)
+    | A.Iiter (i, a, b, body)   -> M.Miter (i, f a, f b, g body, lbl)
     | A.Iletin (i, init, cont)  -> M.Mletin ([i], f init, Option.map ptyp_to_type init.type_, g cont) (* TODO *)
     | A.Iseq l                  -> M.Mseq (List.map g l)
     | A.Imatchwith (m, l)       -> M.Mmatchwith (f m, List.map (fun (p, i) -> (to_pattern p, g i)) l)

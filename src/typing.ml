@@ -1297,6 +1297,7 @@ let rec for_xexpr (mode : emode_t) (env : env) ?(ety : M.ptyp option) (tope : PT
     | Ebreak
     | Efailif   _
     | Efor      _
+    | Eiter     _
     | Eif       _
     | Erequire  _
     | Ereturn   _
@@ -1737,6 +1738,17 @@ let rec for_instruction (env : env) (i : PT.expr) : env * M.instruction =
           in for_instruction env i) in
 
       env, mki (M.Ifor (x, e, i)) ?label:(Option.map unloc lbl)
+
+    | Eiter (lbl, x, a, b, i) ->
+      let zero_b = M.mk_sp (M.BVint Big_int.zero_big_int) ~type_:M.vtint in
+      let zero : M.pterm = M.mk_sp (M.Plit zero_b) ~type_:M.vtint in
+      let a = Option.map_dfl (fun x -> for_expr env ~ety:M.vtint x) zero a in
+      let b = for_expr env ~ety:M.vtint b in
+      let env, i = Env.inscope env (fun env ->
+          let _ : bool = check_and_emit_name_free env x in
+          let env = Env.Local.push env (unloc x, M.vtint) in
+          for_instruction env i) in
+      env, mki (M.Iiter (x, a, b, i)) ?label:(Option.map unloc lbl)
 
     | Erequire e ->
       let e = for_formula env e in

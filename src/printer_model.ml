@@ -614,11 +614,18 @@ let pp_mterm fmt (mt : mterm) =
         f k
         f v
     | Mfor (i, c, b, l) ->
-      Format.fprintf fmt "%afor (%a in %a) (@\n  @[%a@]@\n)@\n"
-        (pp_option (pp_postfix " : " pp_str)) l
+      Format.fprintf fmt "for %a(%a in %a) (@\n  @[%a@]@\n)@\n"
+        (pp_option (fun fmt -> Format.fprintf fmt ": %a " pp_str)) l
         pp_id i
         f c
         f b
+    | Miter (i, a, b, c, l) ->
+      Format.fprintf fmt "iter %a(%a from %a to %a) (@\n  @[%a@]@\n)@\n"
+        (pp_option (fun fmt -> Format.fprintf fmt ": %a " pp_str)) l
+        pp_id i
+        f a
+        f b
+        f c
     | Mfold (i, is, c, b) ->
       Format.fprintf fmt "fold %a %a %a (@\n  @[%a@]@\n)@\n"
         pp_id i

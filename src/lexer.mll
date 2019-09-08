@@ -53,7 +53,8 @@
       "initial"             , INITIAL        ;
       "initialized"         , INITIALIZED    ;
       "instance"            , INSTANCE       ;
-      "invariant"           , INVARIANT     ;
+      "invariant"           , INVARIANT      ;
+      "iter"                , ITER           ;
       "lemma"               , LEMMA          ;
       "let"                 , LET            ;
       "match"               , MATCH          ;

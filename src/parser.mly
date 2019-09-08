@@ -75,6 +75,7 @@
 %token INITIALIZED
 %token INSTANCE
 %token INVARIANT
+%token ITER
 %token LBRACE
 %token LBRACKET
 %token LBRACKETPERCENT
@@ -646,6 +647,10 @@ ident_typ_q:
 |                  { None }
 | OTHERWISE o=expr { Some o }
 
+%inline from_expr:
+|                { None }
+| FROM e=expr    { Some e }
+
 expr_r:
  | q=quantifier id=ident t=quant_kind COMMA y=expr
      { Equantifier (q, id, t, y) }
@@ -671,6 +676,9 @@ expr_r:
 
  | FOR lbl=colon_ident LPAREN x=ident IN y=expr RPAREN body=simple_expr
      { Efor (lbl, x, y, body) }
+
+ | ITER lbl=colon_ident LPAREN x=ident a=from_expr TO b=expr RPAREN body=simple_expr
+     { Eiter (lbl, x, a, b, body) }
 
  | IF c=expr THEN t=expr
      { Eif (c, t, None) }

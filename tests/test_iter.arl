@@ -1,0 +1,22 @@
+archetype test_iter
+
+variable mystring string = "mystring"
+
+asset myasset identified by str = {
+  str : string;
+}
+
+action tr = {
+  effect {
+    for (i in myasset) (
+      mystring := "newvalue"
+    );
+    iter (i to 10) (
+      mystring := "newvalue"
+    );
+    iter (i from 1 to 10) (
+      if (i = 0)
+      then mystring := "newvalue"
+    )
+  }
+}

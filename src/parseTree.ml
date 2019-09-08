@@ -132,6 +132,7 @@ type expr_unloc =
   | Eif           of expr * expr * expr option
   | Ebreak
   | Efor          of lident option * lident * expr * expr
+  | Eiter         of lident option * lident * expr option * expr * expr
   | Eseq          of expr * expr
   | Eletin        of lident * type_t option * expr * expr * expr option
   | Ematchwith    of expr * (pattern list * expr) list

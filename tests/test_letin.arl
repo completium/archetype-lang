@@ -1,3 +1,5 @@
+archetype test_letin
+
 action tr = {
   effect {
     for (i in list) (

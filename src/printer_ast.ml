@@ -439,13 +439,24 @@ let rec pp_instruction fmt (i : instruction) =
 
     | Ifor (id, c, body) ->
       let pp fmt (id, c, body) =
-        Format.fprintf fmt "%afor (%a in %a)@\n  @[%a@]"
-          (fun fmt x -> match x with Some v -> (Format.fprintf fmt "%a : " pp_str v) | _ -> ()) i.label
+        Format.fprintf fmt "for %a(%a in %a)@\n  @[%a@]"
+          (fun fmt x -> match x with Some v -> (Format.fprintf fmt ": %a " pp_str v) | _ -> ()) i.label
           pp_id id
           pp_pterm c
           pp_instruction body
       in
       (pp_with_paren pp) fmt (id, c, body)
+
+    | Iiter (id, a, b, body) ->
+      let pp fmt (id, a, b, body) =
+        Format.fprintf fmt "iter %a(%a from %a to %a)@\n  @[%a@]"
+          (fun fmt x -> match x with Some v -> (Format.fprintf fmt ": %a " pp_str v) | _ -> ()) i.label
+          pp_id id
+          pp_pterm a
+          pp_pterm b
+          pp_instruction body
+      in
+      (pp_with_paren pp) fmt (id, a, b, body)
 
     | Iletin (id, init, body) ->
       let pp fmt (id, init, body) =

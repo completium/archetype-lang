@@ -731,6 +731,7 @@ let pp_model fmt (model : model) =
           pp_id i
           f c
           f b
+      | Miter (i, a, b, c, _) -> Format.fprintf fmt "TODO: iter@\n"
       | Mfold (i, is, c, b) ->
         Format.fprintf fmt
           "List.fold (fun (%a, (%a)) ->@\n\

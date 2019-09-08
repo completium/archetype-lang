@@ -452,14 +452,26 @@ let rec pp_expr outer pos fmt a =
 
   | Efor (lbl, id, expr, body) ->
 
-    let pp fmt (id, expr, body) =
+    let pp fmt (lbl, id, expr, body) =
       Format.fprintf fmt "for %a(%a in %a) (@\n  @[%a@]@\n)"
         (pp_option (fun fmt -> Format.fprintf fmt ": %a " pp_id)) lbl
         pp_id id
         (pp_expr e_default PNone) expr
         (pp_expr e_for PNone) body
     in
-    (maybe_paren outer e_default pos pp) fmt (id, expr, body)
+    (maybe_paren outer e_default pos pp) fmt (lbl, id, expr, body)
+
+  | Eiter (lbl, id, a, b, body) ->
+
+    let pp fmt (lbl, id, a, b, body) =
+      Format.fprintf fmt "iter %a(%a %ato %a) (@\n  @[%a@]@\n)"
+        (pp_option (fun fmt -> Format.fprintf fmt ": %a " pp_id)) lbl
+        pp_id id
+        (pp_option (fun fmt -> Format.fprintf fmt "from %a " (pp_expr e_default PNone))) a
+        (pp_expr e_default PNone) b
+        (pp_expr e_for PNone) body
+    in
+    (maybe_paren outer e_default pos pp) fmt (lbl, id, a, b, body)
 
   | Eseq (x, y) ->
 
