@@ -33,8 +33,7 @@ let to_model (ast : A.model) : M.model =
   in
 
   let to_currency = function
-    | A.Tez   -> M.Tez
-    | A.Mutez -> M.Mutez
+    | A.Mtez -> M.Mtez
   in
 
   let vtyp_to_btyp = function
@@ -691,7 +690,7 @@ let to_model (ast : A.model) : M.model =
         | M.Bstring     -> M.mk_mterm (M.Mstring "") (M.Tbuiltin b)
         | M.Baddress    -> emit_error (NoInitExprFor "address")
         | M.Brole       -> emit_error (NoInitExprFor "role")
-        | M.Bcurrency _ -> M.mk_mterm (M.Mcurrency (Big_int.zero_big_int, M.Tez)) (M.Tbuiltin b)
+        | M.Bcurrency _ -> M.mk_mterm (M.Mcurrency (Big_int.zero_big_int, M.Mtez)) (M.Tbuiltin b)
         | M.Bkey        -> emit_error (NoInitExprFor "key")
       in
 
@@ -842,9 +841,9 @@ let to_model (ast : A.model) : M.model =
     let process_accept_transfer (body : M.mterm) : M.mterm =
       if (not transaction.accept_transfer)
       then
-        let type_currency = M.Tbuiltin (Bcurrency Tez) in
+        let type_currency = M.Tbuiltin (Bcurrency Mtez) in
         let lhs : M.mterm = M.mk_mterm (M.Mtransferred) type_currency in
-        let rhs : M.mterm = M.mk_mterm (M.Mcurrency (Big_int.zero_big_int, Tez)) type_currency in
+        let rhs : M.mterm = M.mk_mterm (M.Mcurrency (Big_int.zero_big_int, Mtez)) type_currency in
         let eq : M.mterm = M.mk_mterm (M.Mequal (lhs, rhs)) (M.Tbuiltin Bbool) in
         let cond : M.mterm = M.mk_mterm (M.Mnot eq) (M.Tbuiltin Bbool) in
         let cond_if : M.mterm = M.mk_mterm (M.Mif (cond, fail (NoTransfer), None)) M.Tunit in

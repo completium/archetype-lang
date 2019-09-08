@@ -87,6 +87,10 @@ let pp_model fmt (model : model) =
       pp_id model.name
   in
 
+  let pp_currency fmt = function
+    | Mtez -> Format.fprintf fmt "mtez"
+  in
+
   let pp_btyp fmt = function
     | Bbool       -> Format.fprintf fmt "bool"
     | Bint        -> Format.fprintf fmt "int"
@@ -702,8 +706,7 @@ let pp_model fmt (model : model) =
       | Mcurrency (v, c) ->
         let v =
           match c with
-          | Tez   -> Big_int.mult_big_int v (Big_int.big_int_of_int 1000)
-          | Mutez -> v
+          | Mtez -> v
         in
         Format.fprintf fmt "%amtz"
           pp_big_int v

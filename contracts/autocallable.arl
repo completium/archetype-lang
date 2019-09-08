@@ -4,7 +4,7 @@ constant issuer role = @tz1KksC8RvjUWAbXYJuNrUbontHGor25Cztk
 constant owner  role = @tz1uNrUbontHGor25CztkKksC8RvjUWAbXYJ
 constant oracle role = @tz1r25CztkKksC8RvjuNrUWAbXYJUbontHGo (* exchange *)
 
-constant nominal tez = 1000tz
+constant nominal mtez = 1000mtz
 
 constant trade      date = 2017-03-14T00:00:00
 constant init       date = 2017-03-14T00:00:00
@@ -140,7 +140,7 @@ function compute_expected (d : date) : tez = {
   }
 
   effect {
-    let expected = 0tz in
+    let expected = 0mtz in
     let terminated = false in
     let redeem_date = final in
     (* early redemption *)

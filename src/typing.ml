@@ -150,8 +150,7 @@ let eqtypes =
     M.VTstring         ;
     M.VTaddress        ;
     M.VTrole           ;
-    M.VTcurrency Tez   ;
-    M.VTcurrency Mutez ;
+    M.VTcurrency Mtez  ;
     M.VTkey            ]
 
 let cmptypes =
@@ -160,14 +159,12 @@ let cmptypes =
     M.VTdate           ;
     M.VTduration       ;
     M.VTstring         ;
-    M.VTcurrency Tez   ;
-    M.VTcurrency Mutez ]
+    M.VTcurrency Mtez  ]
 
 let grptypes =
   [ M.VTdate           ;
     M.VTduration       ;
-    M.VTcurrency Tez   ;
-    M.VTcurrency Mutez ]
+    M.VTcurrency Mtez  ]
 
 let rgtypes =
   [ M.VTint      ;
@@ -212,8 +209,7 @@ let opsigs =
   let others : (PT.operator * (M.vtyp list * M.vtyp)) list =
     [ `Arith PT.Plus, ([M.VTdate    ; M.VTduration      ], M.VTdate)             ;
       `Arith PT.Plus, ([M.VTint     ; M.VTduration      ], M.VTduration)         ;
-      `Arith PT.Mult, ([M.VTrational; M.VTcurrency Tez  ], M.VTcurrency M.Tez)   ;
-      `Arith PT.Mult, ([M.VTrational; M.VTcurrency Mutez], M.VTcurrency M.Mutez) ] in
+      `Arith PT.Mult, ([M.VTrational; M.VTcurrency Mtez ], M.VTcurrency M.Mtez)  ] in
 
   eqsigs @ cmpsigs @ grptypes @ rgtypes @ ariths @ bools @ others
 
@@ -255,7 +251,7 @@ type groups = {
 
 let globals = [
   ("now"    , M.Cnow    , M.vtdate);
-  ("balance", M.Cbalance, M.vtcurrency M.Tez);
+  ("balance", M.Cbalance, M.vtcurrency M.Mtez);
 ]
 
 type method_ = {
@@ -374,15 +370,15 @@ let procsig_of_operator (_op : PT.operator) : procsig =
 
 (* -------------------------------------------------------------------- *)
 let core_types = [
-  ("string"  , M.vtstring        );
-  ("int"     , M.vtint           );
-  ("uint"    , M.vtint           ); (* FIXME *)
-  ("bool"    , M.vtbool          );
-  ("role"    , M.vtrole          );
-  ("address" , M.vtaddress       );
-  ("date"    , M.vtdate          );
-  ("tez"     , M.vtcurrency M.Tez);
-  ("duration", M.vtduration      );
+  ("string"  , M.vtstring         );
+  ("int"     , M.vtint            );
+  ("uint"    , M.vtint            ); (* FIXME *)
+  ("bool"    , M.vtbool           );
+  ("role"    , M.vtrole           );
+  ("address" , M.vtaddress        );
+  ("date"    , M.vtdate           );
+  ("mtez"    , M.vtcurrency M.Mtez);
+  ("duration", M.vtduration       );
 ]
 
 (* -------------------------------------------------------------------- *)
@@ -844,8 +840,8 @@ let for_literal (_env : env) (topv : PT.literal loced) : M.bval =
   | Lstring s ->
     mk_sp M.vtstring (M.BVstring s)
 
-  | Ltz tz ->
-    mk_sp (M.vtcurrency M.Tez) (M.BVcurrency (M.Tez, tz))
+  | Lmtz tz ->
+    mk_sp (M.vtcurrency M.Mtez) (M.BVcurrency (M.Mtez, tz))
 
   | Laddress a ->
     mk_sp M.vtaddress (M.BVaddress a)
@@ -1688,7 +1684,7 @@ let rec for_instruction (env : env) (i : PT.expr) : env * M.instruction =
     | Etransfer (e, back, to_) ->
       let to_ = Option.bind (for_role env) to_ in
       let to_ = Option.map (M.mk_id M.vtrole) to_ in
-      let e   = for_expr env ~ety:(M.vtcurrency M.Tez) e in
+      let e   = for_expr env ~ety:(M.vtcurrency M.Mtez) e in
       env, mki (Itransfer (e, back, to_))
 
     | Eif (c, bit, bif) ->

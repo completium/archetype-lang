@@ -13,8 +13,7 @@ type container =
 [@@deriving show {with_path = false}]
 
 type currency =
-  | Tez
-  | Mutez
+  | Mtez
 [@@deriving show {with_path = false}]
 
 type vtyp =

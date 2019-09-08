@@ -5,7 +5,7 @@ variable str string
 action myaction = {
   accept transfer
   effect {
-    if (transferred = 1tz)
+    if (transferred = 1mtz)
     then fail "not_found"
   }
 }

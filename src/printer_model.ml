@@ -7,8 +7,7 @@ let pp_str fmt str =
   Format.fprintf fmt "%s" str
 
 let pp_currency fmt = function
-  | Tez   -> Format.fprintf fmt "tz"
-  | Mutez -> Format.fprintf fmt "mtz"
+  | Mtez -> Format.fprintf fmt "mtez"
 
 let pp_btyp fmt = function
   | Bbool       -> Format.fprintf fmt "bool"

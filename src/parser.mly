@@ -142,7 +142,7 @@
 %token <string> STRING
 %token <Big_int.big_int> NUMBER
 %token <Big_int.big_int * Big_int.big_int> RATIONAL
-%token <Big_int.big_int> TZ
+%token <Big_int.big_int> MTZ
 %token <string> ADDRESS
 %token <string> DURATION
 %token <string> DATE
@@ -812,7 +812,7 @@ simple_expr_r:
 literal:
  | x=NUMBER     { Lnumber   x }
  | x=RATIONAL   { let n, d = x in Lrational (n, d) }
- | x=TZ         { Ltz       x }
+ | x=MTZ        { Lmtz      x }
  | x=STRING     { Lstring   x }
  | x=ADDRESS    { Laddress  x }
  | x=bool_value { Lbool     x }

@@ -13,8 +13,7 @@ let pp_with_paren pp fmt =
 let pp_no_paren pp fmt = pp fmt
 
 let pp_currency fmt = function
-  | Tez   -> Format.fprintf fmt "tz"
-  | Mutez -> Format.fprintf fmt "mtz"
+  | Mtez -> Format.fprintf fmt "mtez"
 
 let pp_vtyp fmt = function
   | VTbool       -> Format.fprintf fmt "bool"

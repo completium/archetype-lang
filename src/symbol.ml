@@ -6,7 +6,7 @@ let string_of_token = function
   | WHEN            -> "WHEN"
   | VARIABLE        -> "VARIABLE"
   | UNDERSCORE      -> "UNDERSCORE"
-  | TZ n            -> Printf.sprintf "TZ(%s)" (Big_int.string_of_big_int n)
+  | MTZ n           -> Printf.sprintf "MTZ(%s)" (Big_int.string_of_big_int n)
   | TRUE            -> "TRUE"
   | TRANSITION      -> "TRANSITION"
   | TRANSFERRED_TO  -> "TRANSFERRED_TO"
@@ -130,7 +130,7 @@ let string_of_symbol = function
   | X (T T_WHEN) -> "when"
   | X (T T_VARIABLE) -> "variable"
   | X (T T_UNDERSCORE) -> "_"
-  | X (T T_TZ) -> "a tez"
+  | X (T T_MTZ) -> "a mtez"
   | X (T T_TRUE) -> "true"
   | X (T T_TRANSITION) -> "transition"
   | X (T T_TRANSFERRED_TO) -> "transferred to"
