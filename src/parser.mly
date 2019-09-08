@@ -384,6 +384,14 @@ spec_items:
     xs=spec_items RBRACE
         { (xs, exts) }
 
+| SPECIFICATION exts=option(extensions) LBRACE
+    xs=label_exprs RBRACE
+        { let ll = List.map (fun x ->
+            let loc, (id, e) = Location.deloc x in
+            let lbl = Tools.Option.get id in
+            mkloc loc (Vpostcondition (lbl, e, []))) xs in
+            (ll, exts) }
+
 specification_fun:
 | x=loc(specification) { x }
 

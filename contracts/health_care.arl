@@ -98,9 +98,7 @@ action pay_fee = {
 
 action pay_consulation = {
   specification {
-    postcondition idem_balance_pay_consultation = {
-      balance = before balance
-    }
+    idem_balance_pay_consultation : balance = before balance;
   }
   called by patient
   accept transfer
