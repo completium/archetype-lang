@@ -13,7 +13,7 @@ variable deadline date = 2019-01-01T00:00:00
 action place_bid = {
 
   require {
-    c1 : now < deadline
+    c1 : now < deadline;
   }
 
   effect {
@@ -28,8 +28,8 @@ action reclaim = {
 
  require {
    c1 : now < deadline;
-   c2 : let bc = bid.get caller in
-        bc < max_bid
+   c2 : (let bc = bid.get caller in
+         bc < max_bid);
  }
 
  effect {

@@ -1294,7 +1294,6 @@ let rec for_xexpr (mode : emode_t) (env : env) ?(ety : M.ptyp option) (tope : PT
         mk_sp (Some M.vtbool) (M.PsecurityActionRoleAction (s1, s2, s3))
 
     | Eapp      _
-    | Elabel    _
     | Eassert   _
     | Eassign   _
     | Ebreak
@@ -1748,13 +1747,6 @@ let rec for_instruction (env : env) (i : PT.expr) : env * M.instruction =
     | Efailif e ->
       let e = for_formula env e in
       env, mki (M.Irequire (false, e))
-
-    | Elabel (s, { pldesc = Efor (_, x, y, body) }) ->
-      for_instruction env (mkloc (loc i) (PT.Efor (Some s, x, y, body)))
-
-    | Elabel (s, e) ->
-      Env.emit_error env (loc s, OrphanedLabel (unloc s));
-      for_instruction env e
 
     | Eassert lbl ->
       let env =

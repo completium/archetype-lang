@@ -8,7 +8,7 @@ asset mile identified by id sorted by expiration = {
    amount     : int;
    expiration : date;
 } with {
-  m1 : amount > 0
+  m1 : amount > 0;
 }
 
 (* a partition ensures there is no direct access to mile collection *)
@@ -21,7 +21,7 @@ action add (ow : address) (newmile : mile) = {
    called by admin
 
    require {
-     c1 : newmile.amount > 0
+     c1 : newmile.amount > 0;
    }
 
    effect {
@@ -65,14 +65,16 @@ action consume (a : address) (quantity : int) = {
 
   called by admin
 
-  require { r2 : quantity >= 0  }
+  require {
+    r2 : quantity >= 0;
+  }
 
   effect {
     let ow = owner.get a in
     let by_expiration = ow.miles.select(the.expiration > now) in
     require (by_expiration.sum(the.amount) >= quantity);
     let remainder = quantity in
-    loop : for (m in by_expiration) (
+    for : loop (m in by_expiration) (
       if remainder > 0
       then (
         if m.amount > remainder
@@ -107,7 +109,7 @@ action clear_expired = {
   called by admin
 
   effect {
-    loop2 : for (o in owner) (
+    for : loop2 (o in owner) (
       o.miles.removeif (the.expiration < now)
     )
   }

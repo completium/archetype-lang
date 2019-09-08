@@ -17,9 +17,9 @@ archetype extension signedbyall (
 
   action aTransaction = {
     require {
-      requires;
-      <%aTransaction>_signedbyall : 
-         signer_<%aTransaction>.count() = roles.length
+      r : requires;
+      <%aTransaction>_signedbyall :
+         signer_<%aTransaction>.count() = roles.length;
     }
   }
 }

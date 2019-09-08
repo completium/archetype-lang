@@ -32,7 +32,7 @@ archetype extension delegable (
   action aTransaction (anasset : anAsset) = {
      called by none
      require {
-       c1 : (<%aRole>Operators.get anasset.arole).operators.contains caller
+       c1 : (<%aRole>Operators.get anasset.arole).operators.contains caller;
      }
   }
 

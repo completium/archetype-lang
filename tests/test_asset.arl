@@ -3,7 +3,9 @@ archetype test_asset
 asset my_asset_simple identified by str = {
   str : string;
   i : int;
-} with { a1 : i >= 1 }
+} with {
+   a1 : i >= 1;
+}
 
 asset my_asset identified by i = {
   i : int;
@@ -23,6 +25,10 @@ my_asset_all identified by str sorted by id = {
   i : int;
 }
 with states st
-with { a1 : i >= 1; a2 : i <= 10 }
-initialized by [ { @toto; Init; 9 };
-                 { @tata; InProgress; 8 } ]
+with {
+  a1 : i >= 1;
+  a2 : i <= 10;
+} initialized by [
+  { @toto; Init; 9 };
+  { @tata; InProgress; 8 }
+]

@@ -313,6 +313,7 @@ let string_of_symbol = function
   | X (N N_nonempty_list_signature_) -> "a non empty list of signature"
   | X (N N_nonempty_list_pipe_ident_) -> "a non empty list of pipe identifier"
   | X (N N_nonempty_list_loc_pattern__) -> "a non empty list of pattern"
+  | X (N N_nonempty_list_label_expr_) -> "an non empty list of label expr"
   | X (N N_nonempty_list_ident_typ_q_item_) -> "a non empty list of typed identifier"
   | X (N N_nonempty_list_ident_) -> "a non empty list of identifier"
   | X (N N_nonempty_list_function_arg_) -> "a non empty list of function argument"

@@ -30,7 +30,7 @@ specification {
 action place_bid = {
 
   require {
-    c1 : auction_start <= now <= auction_end
+    c1 : auction_start <= now <= auction_end;
   }
 
   effect {
@@ -70,7 +70,7 @@ action place_bid = {
 (* onlyonce extension specifies that one cannot withdraw more than once *)
 action[%onlyonce%] withdraw = {
   require {
-    c2 : pending_returns.contains caller
+    c2 : pending_returns.contains caller;
   }
   effect {
     transfer (pending_returns.get caller).val to caller;

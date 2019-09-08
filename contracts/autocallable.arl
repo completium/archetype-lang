@@ -29,7 +29,7 @@ asset early identified by observation = {
   value       : rational;
 } with {
   i1 : 0 <= trigger <= 1;
-  i2 : 0 <= value   <= 1
+  i2 : 0 <= value   <= 1;
 } initialized by [
   { 2018-03-14T00:00:00; 2018-03-28T00:00:00; 0.95; 1 };
   { 2018-06-14T00:00:00; 2018-06-28T00:00:00; 0.95; 1 };
@@ -48,7 +48,7 @@ asset interest identified by observation = {
   barrier     : rational;
   rate        : rational;
 } with {
-  i3 : 0 <= barrier <= 1
+  i3 : 0 <= barrier <= 1;
 } initialized by [
   { 2017-06-14T00:00:00; 2017-06-28T00:00:00; 0.5; 2.025  };
   { 2017-09-14T00:00:00; 2017-09-28T00:00:00; 0.5; 4.05   };
@@ -144,7 +144,7 @@ function compute_expected (d : date) : tez = {
     let terminated = false in
     let redeem_date = final in
     (* early redemption *)
-    redeemloop : for (e in early) (
+    for : redeemloop (e in early) (
       if e.redemption <= cd
       then (* is there early redemption ? *)
         let v = fixing.get e.observation in
@@ -176,7 +176,7 @@ function compute_expected (d : date) : tez = {
          expected += worst * nominal;
     (* expected interests *)
     let exp_interests = 0.0 in
-    interestloop : for (i in interest) (
+    for : interestloop (i in interest) (
       if i.observation <= redem_date and i.payment <= cd
       then
         let v = fixing.get i.observation in

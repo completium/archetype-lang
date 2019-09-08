@@ -36,7 +36,9 @@ transition cancel from Created = {
 
 action[%signedbyall [patient; insurer]%] register_doctor (docid : address) = {
   (*signed by [insurer; patient]*)
-  require { r1 : state = Running }
+  require {
+     r1 : state = Running;
+  }
   effect {
     doctor.add { id = docid }
   }
@@ -44,7 +46,9 @@ action[%signedbyall [patient; insurer]%] register_doctor (docid : address) = {
 
 action declare_consultation (v : tez) = {
   called by doctor  (* <-> require { doctor.contains caller } *)
-  require { r2 : state = Running }
+  require {
+     r2 : state = Running;
+  }
   effect {
     doctor.update caller { debt += v };
     consultation_debt += min v deductible
@@ -59,7 +63,9 @@ action pay_doctor (docid : address) = {
   }
   called by insurer
   accept transfer
-  require { r3 : state = Running }
+  require {
+    r3 : state = Running;
+  }
   effect {
     let debt = (doctor.get docid).debt in
     let decrease = min transferred debt in
@@ -77,7 +83,9 @@ action pay_fee = {
   }
   called by patient
   accept transfer
-  require { r4 : state = Running }
+  require {
+    r4 : state = Running;
+  }
   effect {
     let nb_periods = (now - last_fee) / period in  (* div is euclidean *)
     let due = nb_periods * fee in
@@ -96,7 +104,9 @@ action pay_consulation = {
   }
   called by patient
   accept transfer
-  require { r5 : state = Running }
+  require {
+    r5 : state = Running;
+  }
   effect {
     let decrease = min (transferred, consultation_debt) in
     transfer decrease to insurer;

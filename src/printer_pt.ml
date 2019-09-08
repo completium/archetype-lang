@@ -450,19 +450,16 @@ let rec pp_expr outer pos fmt a =
     pp fmt
 
 
-  | Efor (None, id, expr, body) ->
+  | Efor (lbl, id, expr, body) ->
 
     let pp fmt (id, expr, body) =
-      Format.fprintf fmt "for (%a in %a) (@\n  @[%a@]@\n)"
+      Format.fprintf fmt "for %a(%a in %a) (@\n  @[%a@]@\n)"
+        (pp_option (fun fmt -> Format.fprintf fmt ": %a " pp_id)) lbl
         pp_id id
         (pp_expr e_default PNone) expr
         (pp_expr e_for PNone) body
     in
     (maybe_paren outer e_default pos pp) fmt (id, expr, body)
-
-  | Efor (Some lbl, id, expr, body) ->
-    pp_expr outer pos fmt
-      (mkloc (loc a) (Elabel (lbl, mkloc (loc a) (Efor (None, id, expr, body)))))
 
   | Eseq (x, y) ->
 
@@ -505,15 +502,6 @@ let rec pp_expr outer pos fmt a =
         (pp_expr e_comma PRight) body
     in
     (maybe_paren outer e_default pos pp) fmt (q, id, t, body)
-
-  | Elabel (i, x) ->
-
-    let pp fmt (i, x) =
-      Format.fprintf fmt "%a : %a"
-        pp_id i
-        (pp_expr e_colon PRight) x
-    in
-    (maybe_paren outer e_colon pos pp) fmt (i, x)
 
   | Eassert i ->
 
@@ -708,11 +696,11 @@ let pp_asset_operation fmt (e : asset_operation) =
 
 let pp_label_expr fmt (le : label_expr) =
   let (lbl, e) = unloc le in
-  Format.fprintf fmt "%a%a"
+  Format.fprintf fmt "%a%a;"
     (pp_option (pp_postfix " : " pp_id)) lbl
     (pp_expr e_colon PRight) e
 
-let pp_label_exprs xs = (pp_list ";@\n" pp_label_expr) xs
+let pp_label_exprs xs = (pp_list "@\n" pp_label_expr) xs
 
 let pp_enum_option fmt = function
   | EOinitial ->
@@ -736,7 +724,7 @@ let pp_asset_post_option fmt (apo : asset_post_option) =
       pp_id i
   | APOconstraints cs ->
     Format.fprintf fmt " with {@\n  @[%a@]@\n}"
-      (pp_list ";@\n" pp_label_expr) cs
+      pp_label_exprs cs
   | APOinit e ->
     Format.fprintf fmt " initialized by %a"
       pp_simple_expr e

@@ -21,14 +21,6 @@
     | Eseq (a, b) -> (split_seq a) @ (split_seq b)
     | _ -> [e]
 
-  let rec split_seq_label e =
-    let loc, f = deloc e in
-    match f with
-    | Eseq (a, b) -> (split_seq_label a) @ (split_seq_label b)
-    | Elabel (lbl, e) -> [mkloc loc (Some lbl, e)]
-    | Eterm _ -> [mkloc loc (None, e)]
-    | _ -> (emit_error (Location.loc e); raise Tools.Anomaly)
-
 %}
 
 %token ACCEPT_TRANSFER
@@ -163,7 +155,6 @@
 
 %right OTHERWISE
 %right THEN ELSE
-%nonassoc COLON
 
 %nonassoc COLONEQUAL PLUSEQUAL MINUSEQUAL MULTEQUAL DIVEQUAL ANDEQUAL OREQUAL
 
@@ -459,7 +450,7 @@ enum_values:
 
 enum_option:
 | INITIAL              { EOinitial }
-| WITH xs=braced(expr) { EOspecification (split_seq_label xs) }
+| WITH xs=braced(label_exprs) { EOspecification (xs) }
 
 types:
 | xs=separated_nonempty_list(COMMA, type_t) { xs }
@@ -502,7 +493,7 @@ asset:
 
 asset_post_option:
 | WITH STATES x=ident           { APOstates x }
-| WITH xs=braced(expr)          { APOconstraints (split_seq_label xs) }
+| WITH xs=braced(label_exprs)   { APOconstraints (xs) }
 | INITIALIZED BY e=simple_expr  { APOinit e }
 
 %inline asset_post_options:
@@ -572,8 +563,8 @@ calledby:
  | CALLED BY exts=option(extensions) x=expr { (x, exts) }
 
 require:
- | REQUIRE exts=option(extensions) xs=braced(expr)
-       { (split_seq_label xs, exts) }
+ | REQUIRE exts=option(extensions) xs=braced(label_exprs)
+       { (xs, exts) }
 
 %inline require_value:
 | WHEN exts=option(extensions) e=braced(expr) { (e, exts) }
@@ -639,6 +630,10 @@ ident_typ_q:
 |                { None }
 | COLON t=type_s { Some t }
 
+%inline colon_ident:
+|                { None }
+| COLON i=ident  { Some i }
+
 %inline otherwise:
 |                  { None }
 | OTHERWISE o=expr { Some o }
@@ -660,17 +655,14 @@ expr_r:
  | e1=expr SEMI_COLON e2=expr
      { Eseq (e1, e2) }
 
- | label=ident COLON e=expr
-     { Elabel (label, e) }
-
  | ASSERT id=ident
      { Eassert id }
 
  | BREAK
      { Ebreak }
 
- | FOR LPAREN x=ident IN y=expr RPAREN body=simple_expr
-     { Efor (None, x, y, body) }
+ | FOR lbl=colon_ident LPAREN x=ident IN y=expr RPAREN body=simple_expr
+     { Efor (lbl, x, y, body) }
 
  | IF c=expr THEN t=expr
      { Eif (c, t, None) }
@@ -784,6 +776,15 @@ simple_expr_r:
 
  | x=paren(expr_r)
      { x }
+
+%inline label_exprs:
+| l=label_expr+ { l }
+
+%inline label_expr:
+| le=loc(label_expr_unloc) { le }
+
+%inline label_expr_unloc:
+| id=ident COLON e=expr SEMI_COLON { (Some id, e) }
 
 /*%inline ident_typs:
  | xs=ident+ COLON ty=type_t

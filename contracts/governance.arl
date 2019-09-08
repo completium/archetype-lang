@@ -24,14 +24,14 @@ asset winner = {
 
 (* state machine *)
 states =
- | Created initial with { s1 : is_empty winner }
- | Voting          with { s2 : is_empty winner }
+ | Created initial with { s1 : is_empty winner; }
+ | Voting          with { s2 : is_empty winner; }
  | Buried
 
 action register (voter : address) = {
   called by chairperson
   require {
-    c1 : state = Created
+    c1 : state = Created;
   }
   effect {
     voter.add { address = voter; hasVoted = false }
@@ -46,7 +46,7 @@ action vote (val : string) = {
    called by voter
    require {
      c2 : state = Voting;
-     c3 : (voter.get caller).hasVoted = false
+     c3 : (voter.get caller).hasVoted = false;
    }
 
    effect {
@@ -57,7 +57,7 @@ action vote (val : string) = {
 
 transition bury from Voting = {
   require {
-    c4 : now > deadline
+    c4 : now > deadline;
   }
   to Buried
   with effect {

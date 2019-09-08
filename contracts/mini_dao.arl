@@ -13,7 +13,7 @@ action withdraw = {
     }
     require {
         r1 : shares.get(caller).value > 0;
-        r2 : balance >= shares.get(caller).value
+        r2 : balance >= shares.get(caller).value;
     }
     effect {
         let v = shares.get(caller).value in

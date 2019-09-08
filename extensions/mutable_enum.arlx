@@ -8,7 +8,7 @@ archetype extension mutable_enum (
 
     called by arole
     require {
-      mutable_enum_<%arole> : state <= new_state
+      mutable_enum_<%arole> : state <= new_state;
     }
     effect {
       anenum := new_val

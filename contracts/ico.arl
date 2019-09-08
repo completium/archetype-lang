@@ -44,7 +44,7 @@ asset[@add @remove @update owner (state = Init)]
    list         : whitelist;
    contrib      : int = 0;
 } with {
-  c1 : contrib >= 0
+  c1 : contrib >= 0;
 }
 
 states[%incr_mutable_st owner%] =
@@ -103,8 +103,8 @@ action contribute = {
      c1 : contributor.contains caller;
      c2 : is_running ();
      c3 : transferred >= min_contribution;
-     c4 : let c = contributor.get caller in
-            not (c.list = Silver and transferred >= max_contrib_silver)
+     c4 : (let c = contributor.get caller in
+           not (c.list = Silver and transferred >= max_contrib_silver));
   }
 
   effect {
@@ -142,7 +142,7 @@ action[%onlyonce%] withdraw = {
   require {
     c5 : state = Round2Finished;
     c6 : nb_tez_raised <= soft_cap;
-    c7 : (contributor.get caller).contribution > 0
+    c7 : (contributor.get caller).contribution > 0;
   }
 
   effect {
