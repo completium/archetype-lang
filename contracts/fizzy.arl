@@ -14,8 +14,8 @@ enum status =
 asset insurance = {
   productid : string;
   limit     : date;
-  premium   : tez;
-  indemnity : tez;
+  premium   : mtez;
+  indemnity : mtez;
   stat      : status = Created;
 }
 
@@ -72,7 +72,7 @@ specification {
     [_[anyaction may be performed only by role owner]_]
   }
 
-  (* this contract does not transfer any tez *)
+  (* this contract does not transfer any mtez *)
   postcondition s2 = {
     transfers_by_tx anytx = 0
   }

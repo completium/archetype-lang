@@ -8,14 +8,14 @@ variable[%mutable organiser (instate Created)%] startdate date
 (* deadline *)
 variable[%mutable organiser (instate Created)%] deadline date
 
-variable[%traceable%] prize tez from organizer = 3500
+variable[%traceable%] prize mtez from organizer = 3500mtz
 
 variable competitor role
 
 variable oracle role
 
 asset submission = {
-  competitor : competitor;
+  competitor : role;
   score      : int;
   date       : date;
 }

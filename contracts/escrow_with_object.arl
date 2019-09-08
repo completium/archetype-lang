@@ -10,17 +10,17 @@ variable[%transferable%] creditor role = seller
 
 variable oracle role
 
-variable[%traceable%] price tez from buyer to creditor
+variable[%traceable%] price mtez from buyer to creditor
 
 variable[%traceable%] [%mutable_signed [buyer, debitor] (instate Created)%]
-     penalty tez from seller to debitor = 0.1 * price
+     penalty mtez from seller to debitor = 0.1 * price
 
 (* action deadline *)
 variable[%mutable (buyer or seller) (instate Created)%] deadline date
 
 (* type taskStatus = {
      date : date;
-     status : string of [ “OK” | “KO” ]
+     status : string of [ "OK" | "KO" ]
    }
 *)
 variable[%signedby oracle%] taskStatus object = "https://oracle.io/tskstat.schema.json"

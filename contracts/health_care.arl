@@ -44,7 +44,7 @@ action[%signedbyall [patient; insurer]%] register_doctor (docid : address) = {
   }
 }
 
-action declare_consultation (v : tez) = {
+action declare_consultation (v : mtez) = {
   called by doctor  (* <-> require { doctor.contains caller } *)
   require {
      r2 : state = Running;

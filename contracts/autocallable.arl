@@ -74,7 +74,7 @@ asset fixing identified by observation = {
 
 (* EXPECTED PAYMENT COMPUTATION *)
 
-function compute_expected (d : date) : tez = {
+function compute_expected (d : date) : mtez = {
 
   specification {
 
@@ -191,7 +191,7 @@ function compute_expected (d : date) : tez = {
 }
 
 (* PAYMENT action *)
-variable actual_payment tez = 0
+variable actual_payment mtez = 0mtz
 
 action pay_note = {
    called by issuer

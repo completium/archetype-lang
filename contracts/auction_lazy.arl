@@ -2,7 +2,7 @@ archetype auction_lazy
 
 asset bid identified by incumbent = {
   incumbent : address;
-  val : tez;
+  val : mtez;
 }
 
 variable deadline date = 2019-01-01T00:00:00
