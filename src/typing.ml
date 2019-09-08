@@ -250,8 +250,10 @@ type groups = {
 *)
 
 let globals = [
-  ("now"    , M.Cnow    , M.vtdate);
-  ("balance", M.Cbalance, M.vtcurrency M.Mtez);
+  ("now"    ,     M.Cnow    , M.vtdate);
+  ("balance",     M.Cbalance, M.vtcurrency M.Mtez);
+  ("transferred", M.Ctransferred, M.vtcurrency M.Mtez);
+  ("caller",      M.Ccaller,  M.vtaddress);
 ]
 
 type method_ = {
