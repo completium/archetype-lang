@@ -12,7 +12,7 @@ action place_bid = {
     c1 : now < deadline;
   }
   effect {
-    bid.add { incumbent = caller; val = transferred }
+    bid.add({ incumbent = caller; val = transferred })
   }
 }
 
@@ -20,18 +20,18 @@ action place_bid = {
 action reclaim (witness : address) = {
   require {
     c2 : now < deadline;
-    c3 : (let bc = (bid.get caller).val in
-          let bw = (bid.get witness).val in
+    c3 : (let bc = bid.get(caller).val in
+          let bw = bid.get(witness).val in
           bc < bw);
   }
   effect {
-    transfer (bid.get caller).val to caller
+    transfer bid.get(caller).val to caller
   }
 }
 
 specification {
   postcondition s1 = {
     forall a in address,
-      bid.contains a -> balance > (bid.get a).val
+      bid.contains(a) -> balance > bid.get(a).val
   }
 }

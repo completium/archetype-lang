@@ -29,6 +29,6 @@ asset bond = {
 action publish (bond : bond) = {
   called by bond.issuer  (* see acl file *)
   effect {
-    bond.add bond
+    bond.add(bond)
   }
 }

@@ -39,7 +39,7 @@ asset vehicle identified by vin = {
 action placeOrder (neworder : order) = {
   called by neworder.orderer
   effect {
-    order.add neworder
+    order.add(neworder)
   }
 }
 
@@ -48,7 +48,7 @@ transition assign_vin (vin : string) (detail : vehicledetail) on ok : order from
 
   to Vin_assigned
   with effect {
-     vehicule.add { vin = vin; detail = detail }
+     vehicule.add ({ vin = vin; detail = detail })
   }
 }
 
@@ -56,9 +56,9 @@ transition assign_owner on ok : order from any = {
   to Owner_assigned
   with effect {
     (* set vehicule state *)
-    (order.get ok).vehicule.state := Active;
+    order.get(ok).vehicule.state := Active;
     (* set vehicule owner *)
-    (order.get ok).vehicule.owner := order.orderer
+    order.get(ok).vehicule.owner := order.orderer
   }
 }
 

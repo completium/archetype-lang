@@ -29,9 +29,9 @@ action addflightinsurance (fi : string) (* flight id *)
     called by creator
 
     effect {
-      flight.addifnotexist { id = fi };
-      let f = flight.get id in
-      f.insurances.add i
+      flight.addifnotexist({ id = fi });
+      let f = flight.get(id) in
+      f.insurances.add(i)
     }
 }
 
@@ -41,7 +41,7 @@ action updatestatus (fi : string) (arrival : date) = {
     called by creator
 
     effect {
-      let f = flight.get id in
+      let f = flight.get(id) in
       for (i in f.insurances)
         match i.status with
         | Created ->
@@ -57,7 +57,7 @@ action manual (fi : string) (pr : string) (newst : status) = {
     called by creator
 
     effect {
-      let f = flight.get fi in
+      let f = flight.get(fi) in
       for (i in f.insurances.select(product = pr))
         match i.status with
          | Created -> i.status := newst
@@ -74,7 +74,7 @@ specification {
 
   (* this contract does not transfer any mtez *)
   postcondition s2 = {
-    transfers_by_tx anytx = 0
+    transfers_by_tx(anytx) = 0
   }
 
   (* transaction “updatestatus” is not the only one to potentially

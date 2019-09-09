@@ -18,20 +18,20 @@ asset owner identified by addr = {
 
 action add1 (ow : owner) = {
   effect {
-      owner.add ow
+      owner.add(ow)
   }
 }
 
 action add2 (a : address) (l1 : mile partition) (l2 : othermile partition) = {
   effect {
-     owner.add { addr = a; miles1 = l1; miles2 = l2 }
+     owner.add({ addr = a; miles1 = l1; miles2 = l2 })
   }
 }
 
 action add3 (a : address) (l1 : mile partition) (l2 : othermile partition) = {
   effect {
      let o = { addr = a; miles1 = l1; miles2 = l2 } in
-     owner.add o
+     owner.add(o)
   }
 }
 
@@ -44,34 +44,34 @@ action add4 (a : address) (o1 : int) (o2 : int) (o3 : int) (o4 : int) = {
                                      { oid = o3 } ] } ];
          miles2 = [ { oid = o4 } ]
      } in
-     owner.add o
+     owner.add(o)
   }
 }
 
 action add5 (a : address) (o1 : int) (o2 : int) (o3 : int) (o4 : int) = {
   effect {
-     owner.add {
+     owner.add ({
          addr = a;
          miles1 = [ { id = o1;
                       othermiles = [ { oid = o2 };
                                      { oid = o3 } ] } ];
          miles2 = [ { oid = o4 } ]
-     }
+     })
   }
 }
 
 action add6 (a : address) (m : mile) = {
   effect {
-     (owner.get a).miles1.add m
+     owner.get(a).miles1.add(m)
   }
 }
 
 action add7 (a : address) (o1 : int) (o2 : int) (o3 : int) = {
   effect {
-     (owner.get a).miles1.add { 
+     owner.get(a).miles1.add ({
         id = o1;
         othermiles = [  { oid = o2 };
-                        { oid = o3 } ] 
-       }
+                        { oid = o3 } ]
+       })
   }
 }

@@ -342,7 +342,7 @@ let rec pp_expr outer pos fmt a =
         (fun fmt args ->
            match args with
            | [] -> Format.fprintf fmt "()"
-           | _ -> Format.fprintf fmt " %a" (pp_list " " pp_simple_expr) args) args
+           | _ -> Format.fprintf fmt " (%a)" (pp_list " " pp_simple_expr) args) args
     in
     (maybe_paren outer e_app pos pp) fmt (id, args)
 
@@ -355,7 +355,7 @@ let rec pp_expr outer pos fmt a =
         (fun fmt args ->
            match args with
            | [] -> Format.fprintf fmt "()"
-           | _ -> Format.fprintf fmt " %a" (pp_list " " pp_simple_expr) args) args
+           | _ -> Format.fprintf fmt "(%a)" (pp_list " " pp_simple_expr) args) args
     in
     (maybe_paren outer e_app pos pp) fmt (e, id, args)
 

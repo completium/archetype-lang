@@ -14,6 +14,6 @@ action add (c : certificate) = {
   called by admin
 
   effect {
-    certificate.add c
+    certificate.add(c)
   }
 }

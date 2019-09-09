@@ -10,7 +10,7 @@ archetype extension action_delegation (
     effect {
       effects;
       <%aTransaction>_space::Operator.remove
-      (<%aTransaction>_space::Operator.get anasset)
+      (<%aTransaction>_space::Operator.get (anasset))
     }
   }
 
@@ -23,7 +23,7 @@ archetype extension action_delegation (
     action setDelegate (Operator : Operator) = {
       called by Operator.anasset.arole
       effect {
-        Operator.add Operator
+        Operator.add(Operator)
       }
     }
 
@@ -31,17 +31,17 @@ archetype extension action_delegation (
       called by Operator.anasset.arole
 
       effect {
-        Operator.remove Operator
+        Operator.remove(Operator)
       }
     }
 
     action from_addr (anasset : anAsset) = {
       require {
-        c1 : (Operator.get anasset).operator = caller;
+        c1 : Operator.get(anasset).operator = caller;
       }
 
       effect {
-        Operator.remove (Operator.get anasset)
+        Operator.remove (Operator.get(anasset))
       }
     }
   }

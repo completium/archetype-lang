@@ -6,6 +6,6 @@ action myaction = {
   accept transfer
   effect {
     if (transferred = 1mtz)
-    then fail "not_found"
+    then fail ("not_found")
   }
 }

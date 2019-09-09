@@ -30,14 +30,14 @@ asset business identified by id = {
 transition transit (fk : string) on ak : animal from In_field = {
  to In_transit
  with effect {
-   (field.get fk).business.incomingAnimals.add (animal.get ak)
+   field.get(fk).business.incomingAnimals.add (animal.get(ak))
  }
 }
 
 transition arrival (toField : field) on ak : animal from In_transit = {
   to In_field
   with effect {
-    (animal.get ak).field := toField;
-    toField.business.incomingAnimals.remove ak
+    animal.get(ak).field := toField;
+    toField.business.incomingAnimals.remove(ak)
   }
 }

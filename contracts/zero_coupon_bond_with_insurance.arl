@@ -62,6 +62,6 @@ transition collect from Repaid = {
   with effect {
     if balance >= payment
     then transfer balance to owner
-    else guarantee_fund.pay owner payment
+    else guarantee_fund.pay (owner, payment)
   }
 }

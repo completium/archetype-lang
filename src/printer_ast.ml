@@ -232,7 +232,7 @@ let rec pp_pterm fmt (pterm : pterm) =
 
     | Pcall (meth, kind, args) ->
       let pp fmt (meth, kind, args) =
-        Format.fprintf fmt "%a%a %a"
+        Format.fprintf fmt "%a%a(%a)"
           (pp_option (pp_postfix "." pp_pterm)) meth
           pp_call_kind kind
           (pp_list " " pp_term_arg) args
@@ -526,7 +526,7 @@ let rec pp_instruction fmt (i : instruction) =
 
     | Icall (meth, kind, args) ->
       let pp fmt (meth, kind, args) =
-        Format.fprintf fmt "%a%a %a"
+        Format.fprintf fmt "%a%a(%a)"
           (pp_option (pp_postfix "." pp_pterm)) meth
           pp_call_kind kind
           (pp_list " " pp_term_arg) args

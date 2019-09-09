@@ -17,14 +17,14 @@ action credit = {
 action add_contract (contract_ : insured_contract) = {
   called by admin
   effect {
-    insured_contract.addifnotexist contract_
+    insured_contract.addifnotexist(contract_)
   }
 }
 
 action pay (recipient : address) (amount : mtez) = {
   require {
-    c1 : insured_contract.contains caller;
-    c2 : amount <= (insured_contract.get caller).max_transfer;
+    c1 : insured_contract.contains(caller);
+    c2 : amount <= insured_contract.get(caller).max_transfer;
   }
 
   effect {

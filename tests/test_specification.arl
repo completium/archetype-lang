@@ -3,10 +3,10 @@ archetype test_specification
 action tr = {
   specification {
     postcondition s1 = {
-      forall x in t, P x -> y
+      forall x in t, P(x) -> y
     }
     postcondition s2 = {
-      exists x in t, P x and P y
+      exists x in t, P(x) and P(y)
     }
   }
 }
