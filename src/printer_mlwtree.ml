@@ -191,13 +191,6 @@ let pp_lettyp fmt = function
 
 (* -------------------------------------------------------------------------- *)
 
-let pp_raise fmt raises =
-  if List.length raises = 0
-  then pp_str fmt ""
-  else
-    Format.fprintf fmt "raises { %a }@\n"
-      (pp_list ", " pp_exn) raises
-
 let pp_arg fmt (id, t) =
   Format.fprintf fmt "(%a : %a)"
     pp_id id
@@ -452,6 +445,7 @@ let rec pp_term outer pos fmt = function
       pp_str (String.capitalize_ascii i)
       (pp_with_paren (pp_term outer pos)) e1
       (pp_with_paren (pp_term outer pos)) e2
+  | Texn e -> Format.fprintf fmt "%a" pp_exn e
   | Tnottranslated -> pp_str fmt "NOT TRANSLATED"
   | _ -> pp_str fmt "NOT IMPLEMENTED"
 and pp_recfield fmt (n,t) =
@@ -499,10 +493,16 @@ and pp_fun fmt (s : fun_struct) =
     pp_args s.args
     pp_type s.returns
     pp_variants s.variants
-    pp_raise s.raises
+    (pp_raise e_top PRight) s.raises
     pp_requires s.requires
     pp_ensures s.ensures
     (pp_term e_top PRight) s.body
+and pp_raise outer pos fmt raises =
+  if List.length raises = 0
+  then pp_str fmt ""
+  else
+    Format.fprintf fmt "@[raises { %a }@\n@]"
+      (pp_list " }@\nraises { " (pp_term outer pos)) raises
 
 (* -------------------------------------------------------------------------- *)
 

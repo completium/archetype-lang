@@ -11,9 +11,11 @@ asset owner identified by addr = {
                                 but ensures one mile belongs to one and only one owner ... *)
 }
 
-action add (ow : address) (m : mile) = {
+action add (ow : address) (nb : int) = {
     effect {
-        (owner.get ow).miles.add m
+        iter (i to nb) (
+            (owner.get ow).miles.add { id = "toto"; expiration = now }
+        )
     }
 }
 
@@ -24,7 +26,7 @@ action consume (ow : address) (nb : int) = {
         } 
     }
     effect {
-        for (m in (owner.get ow).miles.select(the.expiration > now)) (
+        for (m in (owner.get ow).miles.select(the.expiration > now).head(nb)) (
             (owner.get ow).miles.remove m.id
         )
     }

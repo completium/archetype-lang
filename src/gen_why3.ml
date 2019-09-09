@@ -960,7 +960,7 @@ let mk_get_asset asset key ktyp = Dfun {
     logic = NoMod;
     args = ["k",ktyp];
     returns = Tyasset asset;
-    raises = [ Enotfound ];
+    raises = [ Texn Enotfound ];
     variants = [];
     requires = [];
     ensures = [
@@ -970,13 +970,10 @@ let mk_get_asset asset key ktyp = Dfun {
                      mk_ac asset);
       };
       { id   = "get_"^asset^"_post_2";
-        form = Tforall ([["a"],Tyasset asset],
-                        Timpl (Teq (Tyint,
-                                    Tvar "k",
-                                    Tdoti ("a",key)),
-                               Teq (Tyasset asset,
-                                    Tresult,
-                                    Tvar "a")))
+        form = Teq(Tyint,
+                   Tdot (Tresult,
+                         Tvar key),
+                   Tvar "k")
       }
     ];
     body = Tif (Tnot (Tcontains (asset,
@@ -1029,7 +1026,7 @@ let mk_set_asset m key = function
       logic = NoMod;
       args = ["old_asset", Tyasset asset; "new_asset", Tyasset asset];
       returns = Tyunit;
-      raises = [ Enotfound ];
+      raises = [ Texn Enotfound ];
       variants = [];
       requires = [];
       ensures = mk_set_ensures m asset key fields;
@@ -1189,7 +1186,7 @@ let mk_add_asset m asset key : decl = Dfun {
     logic    = NoMod;
     args     = ["new_asset",Tyasset asset];
     returns  = Tyunit;
-    raises   = [Ekeyexist];
+    raises   = [ Texn Ekeyexist];
     variants = [];
     requires = mk_add_asset_precond m asset "new_asset";
     ensures  = mk_add_ensures m ("add_"^asset) asset "new_asset";
@@ -1256,7 +1253,7 @@ let mk_rm_asset m asset key : decl = Dfun {
     logic    = NoMod;
     args     = ["a", Tyasset asset];
     returns  = Tyunit;
-    raises   = [Enotfound];
+    raises   = [Texn Enotfound];
     variants = [];
     requires = [];
     ensures  = mk_rm_ensures m ("remove_"^asset) asset "a";
@@ -1291,19 +1288,25 @@ let mk_rm_asset m asset key : decl = Dfun {
 let mk_add_partition_field m a ak pf adda addak : decl =
   let akey  = Tapp (Tvar ak,[Tvar "asset"]) in
   let addak = Tapp (Tvar addak,[Tvar "new_asset"]) in
+  let cond_raise  = Tnot (Tcontains (a,
+                                     Tdoti("asset",ak),
+                                     mk_ac_old a)) in
+  let cond  = Tnot (Tcontains (a,
+                               Tdoti("asset",ak),
+                               mk_ac a)) in
   Dfun {
     name     = "add_"^a^"_"^pf;
     logic    = NoMod;
     args     = ["asset",Tyasset a; "new_asset",Tyasset adda];
     returns  = Tyunit;
-    raises   = [Enotfound;Ekeyexist];
+    raises   = [Timpl (Texn Enotfound,
+                       cond_raise);
+                Texn Ekeyexist];
     variants = [];
     requires = mk_add_asset_precond m adda "new_asset";
     ensures  = mk_add_ensures m ("add_"^a^"_"^pf) adda "new_asset";
     body     =
-      Tif (Tnot (Tmem (a,
-                       Tvar "asset",
-                       mk_ac a)),
+      Tif (cond,
            Traise Enotfound,
            Some (Tseq [
                Tapp (Tvar ("add_"^adda),
@@ -1334,7 +1337,7 @@ let mk_rm_partition_field m asset keyf f rmed_asset rmkey : decl = Dfun {
     logic    = NoMod;
     args     = ["asset",Tyasset asset; "rm_asset",Tyasset rmed_asset];
     returns  = Tyunit;
-    raises   = [Enotfound];
+    raises   = [Texn Enotfound];
     variants = [];
     requires = [];
     ensures  = mk_rm_ensures m ("remove_"^asset^"_"^f) rmed_asset "rm_asset";
@@ -1424,16 +1427,16 @@ let mk_storage_api (m : M.model) records =
 
 (* Entries --------------------------------------------------------------------*)
 
-let fold_exns body : exn list =
+let fold_exns body : term list =
   let rec internal_fold_exn acc (term : M.mterm) =
     match term.M.node with
-    | M.Mget _ -> acc @ [Enotfound]
-    | M.Maddasset _ -> acc @ [Ekeyexist]
-    | M.Maddfield _ -> acc @ [Enotfound;Ekeyexist]
-    | M.Mfail InvalidCaller -> acc @ [Einvalidcaller]
-    | M.Mfail NoTransfer -> acc @ [Enotransfer]
-    | M.Mfail (InvalidCondition _) -> acc @ [Einvalidcondition]
-    | M.Mremoveasset _ -> acc @ [Enotfound]
+    | M.Mget _ -> acc @ [Texn Enotfound]
+    | M.Maddasset _ -> acc @ [Texn Ekeyexist]
+    | M.Maddfield _ -> acc @ [Texn Enotfound; Texn Ekeyexist]
+    | M.Mfail InvalidCaller -> acc @ [Texn Einvalidcaller]
+    | M.Mfail NoTransfer -> acc @ [Texn Enotransfer]
+    | M.Mfail (InvalidCondition _) -> acc @ [Texn Einvalidcondition]
+    | M.Mremoveasset _ -> acc @ [Texn Enotfound]
     | _ -> M.fold_term internal_fold_exn acc term in
   Tools.List.dedup (internal_fold_exn [] body)
 
@@ -1551,7 +1554,7 @@ let mk_functions src m =
             (map_lident i, map_mtype t)
           ) s.args);
         returns  = map_mtype t;
-        raises   = fold_exns s.body;
+        raises   = fold_exns s.body |> List.map loc_term;
         variants = [];
         requires =
           (mk_entry_require m (M.Utils.get_callers m (unloc s.name))) @
@@ -1576,7 +1579,7 @@ let mk_entries m =
             (map_lident i, map_mtype t)
           ) s.args);
         returns  = with_dummy_loc Tyunit;
-        raises   = fold_exns s.body;
+        raises   = fold_exns s.body |> List.map loc_term;
         variants = [];
         requires = (mk_entry_require m [unloc s.name]) @
                    (mk_requires m (unloc s.name) v);

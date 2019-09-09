@@ -89,6 +89,7 @@ type ('e,'t,'i) abstract_term =
   | Tcoll   of 'i * 'e
   | Tassign of 'e * 'e
   | Traise  of exn
+  | Texn    of exn
   | Tconcat of 'e * 'e
   (* trace *)
   | Tmktr   of 'e * 'e
@@ -157,7 +158,7 @@ and ('e,'t,'i) abstract_fun_struct = {
   logic    : fmod;
   args     : ('i * 't) list;
   returns  : 't;
-  raises   :  exn list;
+  raises   : 'e list;
   variants : 'e list;
   requires : (('e,'i) abstract_formula) list;
   ensures  : (('e,'i) abstract_formula) list;
@@ -271,7 +272,7 @@ and map_abstract_fun_struct
   logic    = f.logic;
   args     = List.map (fun (a,t) -> (map_i a, map_t t)) f.args;
   returns  = map_t f.returns;
-  raises   = f.raises;
+  raises   = List.map map_e f.raises;
   variants = List.map map_e f.variants;
   requires = List.map (map_abstract_formula map_e map_i) f.requires;
   ensures  = List.map (map_abstract_formula map_e map_i) f.ensures;
@@ -320,6 +321,7 @@ and map_abstract_term
   | Tcoll (i, e)       -> Tcoll (map_i i, map_e e)
   | Tassign (e1,e2)    -> Tassign (map_e e1, map_e e2)
   | Traise e           -> Traise e
+  | Texn e             -> Texn e
   | Tconcat (e1,e2)    -> Tconcat (map_e e1, map_e e2)
   | Tmktr (e1,e2)      -> Tmktr (map_e e1, map_e e2)
   | Ttradd i           -> Ttradd (map_i i)
@@ -603,7 +605,7 @@ let compare_abstract_fun_struct
       cmpi i1 i2 && cmpt t1 t2
     ) s1.args s2.args &&
   cmpt s1.returns s2.returns &&
-  List.for_all2 compare_exn s1.raises s2.raises &&
+  List.for_all2 cmpe s1.raises s2.raises &&
   List.for_all2 cmpe s1.variants s2.variants &&
   List.for_all2 (compare_abstract_formula cmpe cmpi) s1.requires s2.requires &&
   List.for_all2 (compare_abstract_formula cmpe cmpi) s1.ensures s2.ensures &&
@@ -662,6 +664,7 @@ let compare_abstract_term
   | Tcoll (i1,e1), Tcoll (i2,e2) -> cmpi i1 i2 && cmpe e1 e2
   | Tassign (e1,e2), Tassign (f1,f2) -> cmpe e1 f1 && cmpe e2 f2
   | Traise e1, Traise e2 -> compare_exn e1 e2
+  | Texn e1, Texn e2 -> compare_exn e1 e2
   | Tconcat (e1,e2), Tconcat (f1,f2) -> cmpe e1 f1 && cmpe e2 f2
   | Tmktr (e1,e2), Tmktr (f1,f2) -> cmpe e1 f1 && cmpe e2 f2
   | Ttradd i1, Ttradd i2 -> cmpi i1 i2
@@ -710,7 +713,7 @@ let compare_abstract_term
   | Tenum i1, Tenum i2 -> cmpi i1 i2
   | Tnottranslated, Tnottranslated -> true
   | Ttobereplaced, Ttobereplaced -> true
-  | _ -> false
+  | _ -> false (* TODO : compare exception ? *)
 
 (* replace --------------------------------------------------------------------*)
 
