@@ -8,6 +8,6 @@ transition mytr from First = {
   to Second
   when { true }
   with effect {
-    fail "not_found"
+    fail ("not_found")
   }
 }

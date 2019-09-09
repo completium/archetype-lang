@@ -18,21 +18,21 @@ archetype extension delegable (
   action setDelegate<%aRole> (arole : role) (operator : address) = {
      called by arole
      effect {
-       (<%aRole>Operators.get owner).operators.add operator
+       <%aRole>Operators.get(owner).operators.add(operator)
      }
   }
 
   action rmDelegate<%aRole> (afield : arole) (operator : address) = {
      called by arole
      effect {
-       (<%aRole>Operators.get owner).operators.remove operator
+       <%aRole>Operators.get(owner).operators.remove(operator)
      }
   }
 
   action aTransaction (anasset : anAsset) = {
      called by none
      require {
-       c1 : (<%aRole>Operators.get anasset.arole).operators.contains caller;
+       c1 : <%aRole>Operators.get(anasset.arole).operators.contains(caller);
      }
   }
 

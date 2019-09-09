@@ -15,15 +15,15 @@ action transferTokens (th : tokenHolder) (quantity : int) = {
 
   specification {
     postcondition s1 = {
-      before tokenHolder.sum(tokens) = tokenHolder.sum(tokens)
+      before.tokenHolder.sum(tokens) = tokenHolder.sum(tokens)
     }
   }
 
   called by th.holder
 
   effect {
-    tokenHolder.update th.holder {tokens += quantity};
-    tokenHolder.update caller {tokens -= quantity}
+    tokenHolder.update (th.holder, {tokens += quantity});
+    tokenHolder.update (caller, {tokens -= quantity})
   }
 
 }

@@ -1380,6 +1380,12 @@ and for_gen_method_call mode env theloc (the, m, args) =
       | Some method_ -> method_
     in
 
+    let args =
+      match args with
+      | [ {pldesc = Etuple l; _} ] -> l
+      | _ -> args
+    in
+
     let ne = List.length (fst method_.mth_sig) in
     let ng = List.length args in
 

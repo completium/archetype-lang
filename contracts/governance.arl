@@ -3,10 +3,10 @@ archetype governance
 variable[%transferable%] chairperson role
 
 (* vote start *)
-variable[%mutable chairperson (instate Created)%] startDate date
+variable[%mutable chairperson (instate (Created))%] startDate date
 
 (* vote deadline *)
-variable[%mutable chairperson (instate Created)%] deadline date
+variable[%mutable chairperson (instate (Created))%] deadline date
 
 asset voter identified by address = {
   address : role;
@@ -24,8 +24,8 @@ asset winner = {
 
 (* state machine *)
 states =
- | Created initial with { s1 : is_empty winner; }
- | Voting          with { s2 : is_empty winner; }
+ | Created initial with { s1 : is_empty(winner); }
+ | Voting          with { s2 : is_empty(winner); }
  | Buried
 
 action register (voter : address) = {
@@ -34,7 +34,7 @@ action register (voter : address) = {
     c1 : state = Created;
   }
   effect {
-    voter.add { address = voter; hasVoted = false }
+    voter.add({ address = voter; hasVoted = false })
   }
 }
 
@@ -46,12 +46,12 @@ action vote (val : string) = {
    called by voter
    require {
      c2 : state = Voting;
-     c3 : (voter.get caller).hasVoted = false;
+     c3 : voter.get(caller).hasVoted = false;
    }
 
    effect {
-     (voter.get caller).hasVoted := true;
-     ballot.update value { nbvotes += 1 } { nbvotes = 0 }
+     voter.get(caller).hasVoted := true;
+     ballot.update (value, { nbvotes += 1 }, { nbvotes = 0 })
    }
 }
 
@@ -64,7 +64,7 @@ transition bury from Voting = {
     let nbvotesMax = ballot.max(nbvotes) in
     for (b in ballot) (
       if (b.nbvotes = nbvotesMax)
-      then winner.add { value = b.val }
+      then winner.add({ value = b.val })
     )
   }
 }

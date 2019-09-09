@@ -15,8 +15,8 @@ variable incentiveR mtez from receiver = payment
 
 variable incentiveS mtez from receiver = 0.2 * payment
 
-%traceable (payment + incentiveR) (receiver)
-%traceable (incentiveS) (shipper)
+%traceable (payment + incentiveR, receiver)
+%traceable (incentiveS, shipper)
 
 states =
  | Created initial

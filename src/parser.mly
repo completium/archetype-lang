@@ -284,7 +284,7 @@ value_option:
 | TO x=ident { x }
 
 dextension:
-| PERCENT x=ident xs=nonempty_list(simple_expr)? { Dextension (x, xs) }
+| PERCENT x=ident arg=option(simple_expr) { Dextension (x, arg) }
 
 %inline extensions:
 | xs=extension+ { xs }
@@ -293,7 +293,7 @@ dextension:
 | e=loc(extension_r) { e }
 
 extension_r:
-| LBRACKETPERCENT x=ident xs=option(simple_expr+) PERCENTRBRACKET { Eextension (x, xs) }
+| LBRACKETPERCENT x=ident arg=option(simple_expr) PERCENTRBRACKET { Eextension (x, arg) }
 
 namespace:
 | NAMESPACE x=ident xs=braced(declarations) { Dnamespace (x, xs) }
@@ -721,12 +721,6 @@ expr_r:
  | op=loc(un_operator) x=expr
      { Eapp ( Foperator op, [x]) }
 
- | id=ident a=app_args
-     { Eapp ( Fident id, a) }
-
- | x=simple_expr DOT id=ident a=app_args
-     { Emethod (x, id, a) }
-
  | x=simple_expr_r
      { x }
 
@@ -745,17 +739,8 @@ order_operations:
     }
 
 %inline app_args:
- | LPAREN RPAREN     { [] }
- | xs=simple_expr+   { xs }
-
-%inline simple_expr_with_app:
- | x=loc(expr_with_app_unloc) { x }
-
-expr_with_app_unloc:
- | id=ident a=app_args
-     { Eapp ( Fident id, a) }
- | x=simple_expr_r
-     { x }
+ | LPAREN RPAREN         { [] }
+ | LPAREN x=expr RPAREN  { [x] }
 
 %inline simple_expr:
  | x=loc(simple_expr_r) { x }
@@ -764,8 +749,14 @@ simple_expr_r:
 
  | MATCH x=expr WITH xs=branchs END { Ematchwith (x, xs) }
 
+ | id=ident a=app_args
+     { Eapp ( Fident id, a) }
+
  | x=simple_expr DOT y=ident
      { Edot (x, y) }
+
+ | x=simple_expr DOT id=ident a=app_args
+     { Emethod (x, id, a) }
 
  | LBRACKET RBRACKET
      { Earray [] }
@@ -814,8 +805,8 @@ simple_expr_r:
      { List.map (fun id -> (id, ty, None)) ids }*/
 
 %inline quant_kind:
-| COLON t=type_s               { Qtype t }
-| IN    e=simple_expr_with_app { Qcollection e }
+| COLON t=type_s      { Qtype t }
+| IN    e=simple_expr { Qcollection e }
 
 literal:
  | x=NUMBER     { Lnumber   x }
@@ -885,7 +876,7 @@ record_item:
 | AT_UPDATE { AOupdate }
 
 %inline asset_operation:
-| xs=asset_operation_enum+ args=option(simple_expr+) { AssetOperation (xs, args) }
+| xs=asset_operation_enum+ args=option(simple_expr) { AssetOperation (xs, args) }
 
 %inline security:
  | e=loc(bracket2(security_unloc)) { e }

@@ -8,7 +8,7 @@ archetype extension signedby (
 
   action aTransaction (signed_<%anarg> : signature) = {
     require {
-      c1 : check_signature anarg signed_<%anarg> key_<%arole>;
+      c1 : check_signature (anarg, signed_<%anarg>, key_<%arole>);
     }
   }
 
