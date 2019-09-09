@@ -338,7 +338,6 @@ let string_of_symbol = function
   | X (N N_function_decl) -> "a function declaration"
   | X (N N_field_r) -> "a field"
   | X (N N_extension_r) -> "an extension"
-  | X (N N_expr_with_app_unloc) -> "an expression"
   | X (N N_expr_r) -> "an expression"
   | X (N N_equal_enum_values) -> "enum values with equal operator"
   | X (N N_enum_values) -> "enum values"

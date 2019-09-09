@@ -721,12 +721,6 @@ expr_r:
  | op=loc(un_operator) x=expr
      { Eapp ( Foperator op, [x]) }
 
- | id=ident a=app_args
-     { Eapp ( Fident id, a) }
-
- | x=simple_expr DOT id=ident a=app_args
-     { Emethod (x, id, a) }
-
  | x=simple_expr_r
      { x }
 
@@ -745,17 +739,8 @@ order_operations:
     }
 
 %inline app_args:
- | LPAREN RPAREN     { [] }
- | xs=simple_expr+   { xs }
-
-%inline simple_expr_with_app:
- | x=loc(expr_with_app_unloc) { x }
-
-expr_with_app_unloc:
- | id=ident a=app_args
-     { Eapp ( Fident id, a) }
- | x=simple_expr_r
-     { x }
+ | LPAREN RPAREN         { [] }
+ | LPAREN x=expr RPAREN  { [x] }
 
 %inline simple_expr:
  | x=loc(simple_expr_r) { x }
@@ -764,8 +749,14 @@ simple_expr_r:
 
  | MATCH x=expr WITH xs=branchs END { Ematchwith (x, xs) }
 
+ | id=ident a=app_args
+     { Eapp ( Fident id, a) }
+
  | x=simple_expr DOT y=ident
      { Edot (x, y) }
+
+ | x=simple_expr DOT id=ident a=app_args
+     { Emethod (x, id, a) }
 
  | LBRACKET RBRACKET
      { Earray [] }
@@ -814,8 +805,8 @@ simple_expr_r:
      { List.map (fun id -> (id, ty, None)) ids }*/
 
 %inline quant_kind:
-| COLON t=type_s               { Qtype t }
-| IN    e=simple_expr_with_app { Qcollection e }
+| COLON t=type_s      { Qtype t }
+| IN    e=simple_expr { Qcollection e }
 
 literal:
  | x=NUMBER     { Lnumber   x }
