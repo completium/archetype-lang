@@ -204,7 +204,7 @@ let to_model (ast : A.model) : M.model =
     | A.Plit ({node = BVstring s; _})        -> M.Mstring s
     | A.Plit ({node = BVcurrency (c, i); _}) -> M.Mcurrency (i, to_currency c)
     | A.Plit ({node = BVaddress s; _})       -> M.Maddress s
-    | A.Plit ({node = BVduration s; _})      -> M.Mduration s
+    | A.Plit ({node = BVduration d; _})      -> M.Mduration d
     | A.Pdot (d, i) ->
       (* handle dot contract too *)
       M.Mdotasset (f d, i)
@@ -687,7 +687,7 @@ let to_model (ast : A.model) : M.model =
         | M.Bint        -> M.mk_mterm (M.Mint (Big_int.zero_big_int)) (M.Tbuiltin b)
         | M.Brational   -> M.mk_mterm (M.Mrational (Big_int.zero_big_int, Big_int.unit_big_int)) (M.Tbuiltin b)
         | M.Bdate       -> emit_error (NoInitExprFor "date")
-        | M.Bduration   -> M.mk_mterm (M.Mduration "0s") (M.Tbuiltin b)
+        | M.Bduration   -> M.mk_mterm (M.Mduration (Core.mk_duration ())) (M.Tbuiltin b)
         | M.Bstring     -> M.mk_mterm (M.Mstring "") (M.Tbuiltin b)
         | M.Baddress    -> emit_error (NoInitExprFor "address")
         | M.Brole       -> emit_error (NoInitExprFor "role")

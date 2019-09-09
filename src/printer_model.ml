@@ -600,7 +600,7 @@ let pp_mterm fmt (mt : mterm) =
         pp_big_int v
         pp_currency c
     | Maddress v -> pp_str fmt v
-    | Mduration v -> pp_str fmt v
+    | Mduration v -> Core.pp_duration_for_printer fmt v
     | Mdotasset (e, i)
     | Mdotcontract (e, i) ->
       Format.fprintf fmt "%a (%a)"

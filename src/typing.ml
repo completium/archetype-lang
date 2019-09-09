@@ -849,7 +849,7 @@ let for_literal (_env : env) (topv : PT.literal loced) : M.bval =
     mk_sp M.vtaddress (M.BVaddress a)
 
   | Lduration d ->
-    mk_sp M.vtduration (M.BVduration d)
+    mk_sp M.vtduration (M.BVduration (Core.string_to_duration d))
 
   | Ldate d ->
     mk_sp M.vtdate (M.BVdate d)

@@ -216,7 +216,7 @@ and bval_node =
   | BVstring       of string
   | BVcurrency     of currency * Core.big_int
   | BVaddress      of string
-  | BVduration     of string
+  | BVduration     of Core.duration
 [@@deriving show {with_path = false}]
 
 type bval = bval_gen

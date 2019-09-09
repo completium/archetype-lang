@@ -876,7 +876,7 @@ let pp_model fmt (model : model) =
       | Maddress v ->
         Format.fprintf fmt "sp.address(\"%a\")"
           pp_str v
-      | Mduration v -> pp_str fmt v
+      | Mduration v -> Core.pp_duration_in_seconds fmt v
       | Mdotasset (e, i)
       | Mdotcontract (e, i) ->
         Format.fprintf fmt "%a.%a"

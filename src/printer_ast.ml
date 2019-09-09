@@ -76,7 +76,7 @@ let pp_bval fmt (bval : bval) =
     | BVstring s        -> pp_str fmt s
     | BVcurrency (c, v) -> Format.fprintf fmt "%a %a" pp_big_int v pp_currency c
     | BVaddress v       -> Format.fprintf fmt "@@%a" pp_str v
-    | BVduration v      -> pp_str fmt v
+    | BVduration v      -> Core.pp_duration_for_printer fmt v
   in
   pp_struct_poly pp_node fmt bval
 

@@ -194,7 +194,7 @@ type ('id, 'term) mterm_node  =
   | Mstring       of string
   | Mcurrency     of Core.big_int * currency
   | Maddress      of string
-  | Mduration     of string
+  | Mduration     of Core.duration
   | Mdotasset     of 'term * 'id
   | Mdotcontract  of 'term * 'id
   | Mtuple        of 'term list
@@ -885,7 +885,7 @@ let cmp_mterm_node
     | Mstring v1, Mstring v2                                                           -> cmp_ident v1 v2
     | Mcurrency (v1, c1), Mcurrency (v2, c2)                                           -> Big_int.eq_big_int v1 v2 && cmp_currency c1 c2
     | Maddress v1, Maddress v2                                                         -> cmp_ident v1 v2
-    | Mduration v1, Mduration v2                                                       -> cmp_ident v1 v2
+    | Mduration v1, Mduration v2                                                       -> Core.cmp_duration v1 v2
     | Mdotasset (e1, i1), Mdotasset (e2, i2)                                           -> cmp e1 e2 && cmpi i1 i2
     | Mdotcontract (e1, i1), Mdotcontract (e2, i2)                                     -> cmp e1 e2 && cmpi i1 i2
     | Mtuple l1, Mtuple l2                                                             -> List.for_all2 cmp l1 l2
