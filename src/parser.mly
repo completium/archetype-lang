@@ -284,7 +284,7 @@ value_option:
 | TO x=ident { x }
 
 dextension:
-| PERCENT x=ident xs=nonempty_list(simple_expr)? { Dextension (x, xs) }
+| PERCENT x=ident arg=option(simple_expr) { Dextension (x, arg) }
 
 %inline extensions:
 | xs=extension+ { xs }
@@ -293,7 +293,7 @@ dextension:
 | e=loc(extension_r) { e }
 
 extension_r:
-| LBRACKETPERCENT x=ident xs=option(simple_expr+) PERCENTRBRACKET { Eextension (x, xs) }
+| LBRACKETPERCENT x=ident arg=option(simple_expr) PERCENTRBRACKET { Eextension (x, arg) }
 
 namespace:
 | NAMESPACE x=ident xs=braced(declarations) { Dnamespace (x, xs) }
@@ -876,7 +876,7 @@ record_item:
 | AT_UPDATE { AOupdate }
 
 %inline asset_operation:
-| xs=asset_operation_enum+ args=option(simple_expr+) { AssetOperation (xs, args) }
+| xs=asset_operation_enum+ args=option(simple_expr) { AssetOperation (xs, args) }
 
 %inline security:
  | e=loc(bracket2(security_unloc)) { e }

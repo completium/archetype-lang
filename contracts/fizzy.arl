@@ -19,7 +19,7 @@ asset insurance = {
   stat      : status = Created;
 }
 
-asset[@add creator none] flight identified by id = {
+asset[@add creator (none)] flight identified by id = {
   id         : string;
   insurances : insurance partition;
 }

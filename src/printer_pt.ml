@@ -651,7 +651,7 @@ and pp_extension fmt { pldesc = e; _ } =
   | Eextension (id, args) ->
     Format.fprintf fmt "[%%%a%a%%]"
       pp_id id
-      (pp_option (pp_prefix " " (pp_list " " pp_simple_expr))) args
+      (pp_option (pp_prefix " " pp_simple_expr)) args
 
 and pp_extensions x = (pp_option (pp_list " " pp_extension)) x
 
@@ -704,7 +704,7 @@ let pp_asset_operation fmt (e : asset_operation) =
   match e with
   | AssetOperation (x, y) -> Format.fprintf fmt "[%a%a]"
                                (pp_list " " pp_asset_operation_enum) x
-                               (pp_option (pp_prefix " " (pp_list " " pp_simple_expr))) y
+                               (pp_option (pp_prefix " " pp_simple_expr)) y
 
 let pp_label_expr fmt (le : label_expr) =
   let (lbl, e) = unloc le in
@@ -954,7 +954,7 @@ let rec pp_declaration fmt { pldesc = e; _ } =
   | Dextension (id, args) ->
     Format.fprintf fmt "%%%a%a"
       pp_id id
-      (pp_option (pp_prefix " " (pp_list " " pp_simple_expr))) args
+      (pp_option (pp_prefix " " pp_simple_expr)) args
 
   | Dnamespace (id, ds) ->
     Format.fprintf fmt "namespace %a {@\n  @[%a@]@\n}"
