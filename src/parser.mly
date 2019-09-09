@@ -8,6 +8,11 @@
     let pos : Position.t list = [Tools.location_to_position loc] in
     Error.error_alert pos str (fun _ -> ())
 
+  let emit_error_msg loc msg =
+    let str : string = "syntax error: " ^ msg in
+    let pos : Position.t list = [Tools.location_to_position loc] in
+    Error.error_alert pos str (fun _ -> ())
+
   let dummy_action_properties = {
       calledby        = None;
       accept_transfer = false;
@@ -85,8 +90,6 @@
 %token LET
 %token LPAREN
 %token MATCH
-%token MAY_BE_PERFORMED_ONLY_BY_ACTION
-%token MAY_BE_PERFORMED_ONLY_BY_ROLE
 %token MINUS
 %token MINUSEQUAL
 %token MULT
@@ -126,8 +129,6 @@
 %token THEOREM
 %token TO
 %token TRANSFER
-%token TRANSFERRED_BY
-%token TRANSFERRED_TO
 %token TRANSITION
 %token TRUE
 %token UNDERSCORE
@@ -410,7 +411,8 @@ security_pred_unloc:
     | "not_by_role_in_action",  [a; b; c] -> Eapp ( (Foperator (dumloc (`Unary Not))), [dumloc (Esecurity (dumloc (SOnlyByRoleInAction (a, b, c))))])
     | "transferred_by",         [a]       -> Esecurity (dumloc (STransferredBy (a)))
     | "transferred_to",         [a]       -> Esecurity (dumloc (STransferredTo (a)))
-    | _ -> assert false
+    | "no_fail",                [a]       -> Esecurity (dumloc (SNoFail (a)))
+    | _ -> emit_error_msg (Location.make $startpos $endpos) ((unloc id) ^ " is not a security predicate"); assert false
 }
 
 security_pred:
@@ -882,14 +884,17 @@ record_item:
  | e=loc(bracket2(security_unloc)) { e }
 
 security_unloc:
-| lhs=security_arg MAY_BE_PERFORMED_ONLY_BY_ROLE rhs=security_arg
-    { SOnlyByRole (lhs, rhs) }
-| lhs=security_arg MAY_BE_PERFORMED_ONLY_BY_ACTION rhs=security_arg
-    { SOnlyInAction (lhs, rhs) }
-| TRANSFERRED_BY arg=security_arg
-    { STransferredBy arg }
-| TRANSFERRED_TO arg=security_arg
-    { STransferredTo arg }
+| id=ident args=security_arg*
+    { match unloc id, args with
+    | "only_by_role",           [a; b]    -> SOnlyByRole (a, b)
+    | "only_in_action",         [a; b]    -> SOnlyInAction (a, b)
+    | "only_by_role_in_action", [a; b; c] -> SOnlyByRoleInAction (a, b, c)
+    | "transferred_by",         [a]       -> STransferredBy a
+    | "transferred_to",         [a]       -> STransferredTo a
+    | "no_fail",                [a]       -> SNoFail a
+    | _ -> emit_error_msg (Location.make $startpos $endpos) ((unloc id) ^ " is not a security predicate"); assert false
+     }
+
 
 %inline security_arg:
  | e=loc(security_arg_unloc) { e }

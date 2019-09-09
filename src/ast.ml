@@ -281,6 +281,7 @@ type 'id term_node  =
   | PsecurityActionRole of action_description * security_role list
   | PsecurityActionAction of action_description * security_action list
   | PsecurityActionRoleAction of action_description * security_role list * security_action list
+  | PsecurityActionNoFail of action_description
 [@@deriving show {with_path = false}]
 
 and 'id term_arg =
@@ -623,6 +624,7 @@ let map_term_node (f : 'id term_gen -> 'id term_gen) = function
   | PsecurityActionRole _   as e -> e
   | PsecurityActionAction _ as e -> e
   | PsecurityActionRoleAction _ as e -> e
+  | PsecurityActionNoFail _ as e -> e
 
 let map_instr_node f = function
   | Iif (c, t, e)       -> Iif (c, f t, f e)
@@ -664,23 +666,24 @@ let fold_term (f: 'a -> 't -> 'a) (accu : 'a) (term : 'id term_gen) =
       | AExpr e -> f accu e
       | AFun (_, _, e) -> f accu e
       | AEffect l -> List.fold_left (fun accu (_, _, e) -> f accu e) accu l ) accu args
-  | Plogical (_, l, r)      -> f (f accu l) r
-  | Pnot e                  -> f accu e
-  | Pmulticomp (e, l)       -> List.fold_left (fun accu (_, a) -> f accu a) (f accu e) l
-  | Pcomp (_, l, r)         -> f (f accu l) r
-  | Parith (_, l, r)        -> f (f accu l) r
-  | Puarith (_, e)          -> f accu e
-  | Precord l               -> List.fold_left f accu l
-  | Pletin (_, a, _, b)     -> f (f accu a) b
-  | Pvar _                  -> accu
-  | Parray l                -> List.fold_left f accu l
-  | Plit _                  -> accu
-  | Pdot (e, _)             -> f accu e
-  | Pconst _                -> accu
-  | Ptuple l                -> List.fold_left f accu l
-  | PsecurityActionRole _   -> accu
-  | PsecurityActionAction _ -> accu
-  | PsecurityActionRoleAction _   -> accu
+  | Plogical (_, l, r)          -> f (f accu l) r
+  | Pnot e                      -> f accu e
+  | Pmulticomp (e, l)           -> List.fold_left (fun accu (_, a) -> f accu a) (f accu e) l
+  | Pcomp (_, l, r)             -> f (f accu l) r
+  | Parith (_, l, r)            -> f (f accu l) r
+  | Puarith (_, e)              -> f accu e
+  | Precord l                   -> List.fold_left f accu l
+  | Pletin (_, a, _, b)         -> f (f accu a) b
+  | Pvar _                      -> accu
+  | Parray l                    -> List.fold_left f accu l
+  | Plit _                      -> accu
+  | Pdot (e, _)                 -> f accu e
+  | Pconst _                    -> accu
+  | Ptuple l                    -> List.fold_left f accu l
+  | PsecurityActionRole _       -> accu
+  | PsecurityActionAction _     -> accu
+  | PsecurityActionRoleAction _ -> accu
+  | PsecurityActionNoFail _     -> accu
 
 let fold_instr f accu instr =
   match instr.node with
@@ -833,6 +836,9 @@ let fold_map_term g f (accu : 'a) (term : 'id term_gen) : 'term * 'a =
     g e, accu
 
   | PsecurityActionRoleAction _ as e ->
+    g e, accu
+
+  | PsecurityActionNoFail _ as e ->
     g e, accu
 
 let fold_map_instr_term gi ge fi fe (accu : 'a) instr : 'id instruction_gen * 'a =

@@ -758,12 +758,16 @@ let pp_mterm fmt (mt : mterm) =
         (pp_list " or " pp_id) q
 
     | MsecTransferredBy a ->
-      Format.fprintf fmt "TransferredBy %a"
+      Format.fprintf fmt "transferred_by %a"
         f a
 
     | MsecTransferredTo a ->
-      Format.fprintf fmt "TransferredTo %a"
+      Format.fprintf fmt "transferred_to %a"
         f a
+
+    | MsecNoFail desc ->
+      Format.fprintf fmt "no_fail %a"
+        pp_action_description desc
 
     | Manyaction -> Format.fprintf fmt "anyaction"
   in

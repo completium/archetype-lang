@@ -1164,6 +1164,7 @@ let pp_model fmt (model : model) =
       | MNotByRoleInAction _             -> emit_error (UnsupportedTerm ("notByRoleInAction"))
       | MsecTransferredBy _              -> emit_error (UnsupportedTerm ("secTransferredBy"))
       | MsecTransferredTo _              -> emit_error (UnsupportedTerm ("secTransferredTo"))
+      | MsecNoFail  _                    -> emit_error (UnsupportedTerm ("secMsecNoFail"))
       | Manyaction                       -> emit_error (UnsupportedTerm ("anyaction"))
       | Mremoveif _                      -> emit_error (UnsupportedTerm ("removeif"))
     in

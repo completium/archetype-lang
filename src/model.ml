@@ -235,6 +235,7 @@ type ('id, 'term) mterm_node  =
   | MNotByRoleInAction  of action_description * security_role list * security_action list
   | MsecTransferredBy   of 'term
   | MsecTransferredTo   of 'term
+  | MsecNoFail          of action_description
   (* security arg *)
   | Manyaction
 [@@deriving show {with_path = false}]
@@ -915,6 +916,7 @@ let cmp_mterm_node
     | MNotByRoleInAction (l1, r1, q1), MNotByRoleInAction (l2, r2, q2)                 -> cmp_action_description l1 l2 && List.for_all2 cmp_security_role r1 r2 && List.for_all2 cmp_security_action q1 q2
     | MsecTransferredBy a1, MsecTransferredBy a2                                       -> cmp a1 a2
     | MsecTransferredTo a1, MsecTransferredTo a2                                       -> cmp a1 a2
+    | MsecNoFail a1, MsecNoFail a2                                                     -> cmp_action_description a1 a2
     | Mshallow (i1, x1), Mshallow (i2, x2)                                             -> cmp x1 x2 && cmp_ident i1 i2
     | Mlisttocoll (i1, x1), Mlisttocoll (i2, x2)                                       -> cmp x1 x2 && cmp_ident i1 i2
     | Munshallow (i1, x1), Munshallow (i2, x2)                                         -> cmp x1 x2 && cmp_ident i1 i2
@@ -1099,6 +1101,7 @@ let map_term_node (f : 'id mterm_gen -> 'id mterm_gen) = function
   | MNotByRoleInAction  (l, r, q) -> MNotByRoleInAction (l, r, q)
   | MsecTransferredBy     a       -> MsecTransferredBy (f a)
   | MsecTransferredTo     a       -> MsecTransferredTo (f a)
+  | MsecNoFail a                  -> MsecNoFail a
   | Manyaction                    -> Manyaction
 
 let map_gen_mterm g f (i : 'id mterm_gen) : 'id mterm_gen =
@@ -1363,6 +1366,7 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | MNotByRoleInAction  (l, r, q)         -> accu
   | MsecTransferredBy              a      -> f accu a
   | MsecTransferredTo              a      -> f accu a
+  | MsecNoFail                     a      -> accu
   | Manyaction                            -> accu
 
 let fold_map_term_list f acc l : 'term list * 'a =
@@ -1884,6 +1888,9 @@ let fold_map_term
   | MsecTransferredTo a ->
     let ee, ea = f accu a in
     g (MsecTransferredTo ee), ea
+
+  | MsecNoFail a ->
+    g (MsecNoFail a), accu
 
   | Manyaction ->
     g (Manyaction), accu

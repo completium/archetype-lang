@@ -67,20 +67,17 @@ action manual (fi : string) (pr : string) (newst : status) = {
 }
 
 specification {
-  (* any action on storage is performed only by the owner *)
-  postcondition s1 = {
-    [_[anyaction may be performed only by role owner]_]
-  }
-
   (* this contract does not transfer any mtez *)
   postcondition s2 = {
     transfers_by_tx(anytx) = 0
   }
+}
 
-  (* transaction “updatestatus” is not the only one to potentially
+security {
+  (* any action on storage is performed only by the owner *)
+  s1 : only_by_role anyaction creator;
+
+  (* transaction "updatestatus" is not the only one to potentially
     perform an update of insurance status *)
-  postcondition s3 = {
-    [_[(update insurance.stat) may be performed only by action
-                                          [updatestatus or manual] ]_]
-  }
+  s3 : only_in_action (update insurance.stat) [updatestatus or manual];
 }

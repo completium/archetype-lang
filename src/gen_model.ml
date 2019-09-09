@@ -338,6 +338,9 @@ let to_model (ast : A.model) : M.model =
 
     | A.PsecurityActionRoleAction (action, roles, actions) ->
       M.MOnlyByRoleInAction (to_action_description action, roles, actions)
+
+    | A.PsecurityActionNoFail (action) ->
+      M.MsecNoFail (to_action_description action)
   in
 
   let rec to_mterm (pterm : A.pterm) : M.mterm =

@@ -393,6 +393,13 @@ let rec pp_pterm fmt (pterm : pterm) =
 
       in
       (pp_with_paren pp) fmt (desc, s, a)
+
+    | PsecurityActionNoFail (a) ->
+      let pp fmt a =
+        Format.fprintf fmt "[_[ no_fail %a ]_]"
+          pp_action_description a
+      in
+      (pp_with_paren pp) fmt a
   in
   pp_struct_poly pp_node fmt pterm
 
