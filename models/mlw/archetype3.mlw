@@ -500,7 +500,42 @@ module AssetCollection
   end in
   internal_proj c.content projf
 
+  use int.MinMax
+
+  let function head (i : int) (c : collection) : collection
+  ensures { card result = min i (card c) }
+  ensures { subset result c }
+  ensures { i >= card c - 1 -> result  = c }
+  ensures { i < 0 -> result = empty }
+  =
+  let rec function internal_head (l : list t) (k : int) 
+  =
+  match l with
+  | Cons e tl ->
+    if k <= i then
+      Cons e (internal_head tl (k+1))
+    else
+      Nil
+  | Nil -> Nil 
+  end in
+  { content = internal_head c.content 0 } 
+
+  lemma head_add: forall c : collection, i : int. 
+  0 <= i < card c - 1 ->
+  head (i+1) c = union (head i c) (singleton (nth i c))
+  
+  lemma head_nth: forall c : collection, i j : int.
+  0 <= i < j < card c ->
+  nth i (head j c) = nth i c
+
   let function tail (i : int) (c : collection) : collection  
+  ensures { subset result c }
+  ensures { 0 <= i < card c -> card result = card c - i }
+  ensures { i >= card c ->  result = empty }
+  ensures { 
+    forall j: int. 0<= i <= j < card c ->
+    mem (nth j c) result 
+  }
   = 
   let rec function internal_tail (l : list t) (k : int) (i : int) 
   = 
@@ -513,20 +548,13 @@ module AssetCollection
   end in
   { content = internal_tail c.content 0 i }
 
-  lemma tail_mem: forall i j : int, c : collection.
-  0<= i <= j < card c ->
-  mem (nth j c) (tail i c)
+  lemma tail_all: forall c : collection. tail 0 c = c 
 
-  axiom tail_subset: forall i : int, c : collection. subset (tail i c) c
-  axiom tail_card: forall c : collection, i : int. 0 <= i < card c -> card (tail i c) = card c - i 
-  axiom tail_empty: forall c : collection, i : int.  i >= card c ->  tail i c = empty
-  axiom tail_all: forall c : collection. tail 0 c = c 
-
-  axiom tail_add: forall c : collection, i : int. 
+  lemma tail_add: forall c : collection, i : int. 
   0 <= i < card c ->
   tail (i+1) c = diff (tail i c) (singleton (nth i c))
   
-  axiom tail_nth: forall c : collection, i j : int.
+  lemma tail_nth: forall c : collection, i j : int.
   0 <= j < card c ->
   0 <= i < card c - j ->
   nth i (tail j c) = nth (i+j) c
