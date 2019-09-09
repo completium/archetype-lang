@@ -40,7 +40,7 @@ action[%signedbyall [patient; insurer]%] register_doctor (docid : address) = {
      r1 : state = Running;
   }
   effect {
-    doctor.add { id = docid }
+    doctor.add ({ id = docid })
   }
 }
 
@@ -50,15 +50,15 @@ action declare_consultation (v : mtez) = {
      r2 : state = Running;
   }
   effect {
-    doctor.update caller { debt += v };
-    consultation_debt += min v deductible
+    doctor.update(caller, { debt += v });
+    consultation_debt += min (v, deductible)
   }
 }
 
 action pay_doctor (docid : address) = {
   specification {
     postcondition idem_balance_pay_doctor = {
-      balance = before balance
+      balance = before.balance
     }
   }
   called by insurer
@@ -67,18 +67,18 @@ action pay_doctor (docid : address) = {
     r3 : state = Running;
   }
   effect {
-    let debt = (doctor.get docid).debt in
-    let decrease = min transferred debt in
+    let debt = doctor.get(docid).debt in
+    let decrease = min (transferred, debt) in
     transfer decrease to docid;
     transfer (transferred - decrease) to insurer;
-    doctor.update docid { debt -= decrease }
+    doctor.update (docid, { debt -= decrease })
   }
 }
 
 action pay_fee = {
   specification {
     postcondition idem_balance_pay_fee = {
-      balance = before balance
+      balance = before.balance
     }
   }
   called by patient
@@ -89,7 +89,7 @@ action pay_fee = {
   effect {
     let nb_periods = (now - last_fee) / period in  (* div is euclidean *)
     let due = nb_periods * fee in
-    let decrease = min transferred due in
+    let decrease = min (transferred, due) in
     transfer decrease to insrurer;
     transfer (transferred - decrease) to patient;
     last_fee := last_fee + period * nb_periods     (* last_fee <> now because div is euclidean *)
@@ -98,7 +98,7 @@ action pay_fee = {
 
 action pay_consulation = {
   specification {
-    idem_balance_pay_consultation : balance = before balance;
+    idem_balance_pay_consultation : balance = before.balance;
   }
   called by patient
   accept transfer

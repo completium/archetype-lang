@@ -3,10 +3,10 @@ archetype competition
 variable[%transferable%] organiser role
 
 (* start date *)
-variable[%mutable organiser (instate Created)%] startdate date
+variable[%mutable organiser (instate (Created))%] startdate date
 
 (* deadline *)
-variable[%mutable organiser (instate Created)%] deadline date
+variable[%mutable organiser (instate (Created))%] deadline date
 
 variable[%traceable%] prize mtez from organizer = 3500mtz
 
@@ -37,9 +37,9 @@ action submit (competitor : competitor) (score[%signedby oracle%] : int) = {
   }
 
   effect {
-    submission.add { competitor = competitor;
-                     score = score;
-                     date = now }
+    submission.add ({ competitor = competitor;
+                      score = score;
+                      date = now })
   }
 }
 

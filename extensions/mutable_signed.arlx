@@ -1,6 +1,6 @@
 archetype extension mutable_signed (
 
-  variable[%mutable_signed roles cond%] avariable type
+  variable[%mutable_signed (roles, cond)%] avariable type
 
 ) = {
 

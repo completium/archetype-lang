@@ -300,8 +300,8 @@ let methods : (string * method_) list =
     ("max"         , mk M.Cmax          `Pure   `Partial ([`RExpr       ], Some (`Ref 0)));
     ("min"         , mk M.Cmin          `Pure   `Partial ([`RExpr       ], Some (`Ref 0)));
     ("subsetof"    , mk M.Csubsetof     `Pure   `Total   ([`SubColl     ], Some (`T M.vtbool)));
-    ("head"        , mk M.Chead         `Pure   `Partial ([`T M.vtint   ], Some (`SubColl)));
-    ("tail"        , mk M.Ctail         `Pure   `Partial ([`T M.vtint   ], Some (`SubColl)));
+    ("head"        , mk M.Chead         `Pure   `Total   ([`T M.vtint   ], Some (`SubColl)));
+    ("tail"        , mk M.Ctail         `Pure   `Total   ([`T M.vtint   ], Some (`SubColl)));
     ("before"      , mk M.Cbefore       `Pure   `Total   ([             ], Some (`SubColl)));
     ("unmoved"     , mk M.Cunmoved      `Pure   `Total   ([             ], Some (`SubColl)));
     ("added"       , mk M.Cadded        `Pure   `Total   ([             ], Some (`SubColl)));
@@ -1378,6 +1378,12 @@ and for_gen_method_call mode env theloc (the, m, args) =
         Env.emit_error env (loc m, NoSuchMethod (unloc m));
         raise E.Bailout
       | Some method_ -> method_
+    in
+
+    let args =
+      match args with
+      | [ {pldesc = Etuple l; _} ] -> l
+      | _ -> args
     in
 
     let ne = List.length (fst method_.mth_sig) in

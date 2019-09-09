@@ -94,16 +94,16 @@ action contribute = {
 
   specification {
     postcondition p1 = {
-        let c = contributor.get caller in
-        transferred = transferred_to(caller) + c.contrib - (old c.contrib)
+        let c = contributor.get(caller) in
+        transferred = transferred_to(caller) + c.contrib - (old (c.contrib))
     }
   }
 
   require {
-     c1 : contributor.contains caller;
+     c1 : contributor.contains(caller);
      c2 : is_running ();
      c3 : transferred >= min_contribution;
-     c4 : (let c = contributor.get caller in
+     c4 : (let c = contributor.get(caller) in
            not (c.list = Silver and transferred >= max_contrib_silver));
   }
 
@@ -142,11 +142,11 @@ action[%onlyonce%] withdraw = {
   require {
     c5 : state = Round2Finished;
     c6 : nb_tez_raised <= soft_cap;
-    c7 : (contributor.get caller).contribution > 0;
+    c7 : contributor.get(caller).contribution > 0;
   }
 
   effect {
-    let c = contributor.get caller in
+    let c = contributor.get(caller) in
     transfer c.contribution to caller;
     (* do not forget this *)
     c.contribution := 0

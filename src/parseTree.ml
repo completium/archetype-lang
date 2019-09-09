@@ -194,7 +194,7 @@ and label_exprs = label_expr list
 
 (* -------------------------------------------------------------------- *)
 and extension_unloc =
-  | Eextension of lident * expr list option (** extension *)
+  | Eextension of lident * expr option (** extension *)
 [@@deriving yojson, show {with_path = false}]
 
 and extension = extension_unloc loced
@@ -331,7 +331,7 @@ and contract_decl =
   lident * signature list * exts
 
 and extension_decl =
-  lident * expr list option
+  lident * expr option
 
 and namespace_decl =
   lident * declaration list
@@ -371,7 +371,7 @@ and asset_operation_enum =
 [@@deriving yojson, show {with_path = false}]
 
 and asset_operation =
-  | AssetOperation of asset_operation_enum list * expr list option
+  | AssetOperation of asset_operation_enum list * expr option
 [@@deriving yojson, show {with_path = false}]
 
 (* -------------------------------------------------------------------- *)

@@ -17,8 +17,8 @@ action place_bid = {
   }
 
   effect {
-    bid.add { incumbent = caller; value = transferred };
-    max_bid := max transferred max_bid
+    bid.add({ incumbent = caller; value = transferred });
+    max_bid := max (transferred, max_bid)
   }
 }
 
@@ -28,18 +28,18 @@ action reclaim = {
 
  require {
    c1 : now < deadline;
-   c2 : (let bc = bid.get caller in
+   c2 : (let bc = bid.get(caller) in
          bc < max_bid);
  }
 
  effect {
-   transfer (bid.get caller) to caller
+   transfer bid.get(caller) to caller
  }
 }
 
 specification {
   postcondition s1 = {
     forall a in address,
-      bid.contains a -> balance > (bid.get a).value
+      bid.contains (a) -> balance > bid.get(a).value
   }
 }
