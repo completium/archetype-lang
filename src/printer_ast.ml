@@ -50,7 +50,7 @@ let rec pp_ptyp fmt (t : ptyp) =
       pp_type_ t
   | Ttuple ts ->
     Format.fprintf fmt "%a"
-      (pp_list " * " pp_type_) ts
+      (pp_list " * " pp_ptyp) ts
   | Tentry ->
     Format.fprintf fmt "entry"
   | Ttrace t ->

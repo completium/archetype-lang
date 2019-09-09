@@ -54,11 +54,18 @@ let mk_duration
   seconds = seconds;
 }
 
-let string_to_duration (input : string) =
-  let extract_value c =
-    if String.contains input c
-    then Big_int.zero_big_int
-    else Big_int.zero_big_int
+let string_to_duration (input : string) : duration =
+  let extract_value c : big_int  =
+    let pattern = "[0-9]+" ^ (String.make 1 c) in
+    let re = Str.regexp pattern in
+    try
+      match Str.search_forward re input 0 with
+      | _ ->
+        let str = Str.matched_group 0 input in
+        let str = (String.sub str 0 ((String.length str) - 1)) in
+        Big_int.big_int_of_string str
+    with
+      Not_found -> Big_int.zero_big_int
   in
   let weeks   = extract_value 'w' in
   let days    = extract_value 'd' in
@@ -83,6 +90,13 @@ let cmp_duration (d1 : duration) (d2 : duration) : bool =
   && cmp_aux d1.seconds d2.seconds
 
 let pp_duration_for_printer fmt (d : duration) =
+  let is_zero : bool =
+    Big_int.eq_big_int d.weeks   Big_int.zero_big_int
+    && Big_int.eq_big_int d.days    Big_int.zero_big_int
+    && Big_int.eq_big_int d.hours   Big_int.zero_big_int
+    && Big_int.eq_big_int d.minutes Big_int.zero_big_int
+    && Big_int.eq_big_int d.seconds Big_int.zero_big_int
+  in
   let pp_aux (postfix : string) fmt (n : big_int) =
     if Big_int.eq_big_int Big_int.zero_big_int n
     then ()
@@ -91,12 +105,15 @@ let pp_duration_for_printer fmt (d : duration) =
         pp_big_int n
         postfix
   in
-  Format.fprintf fmt "%a%a%a%a%a"
-    (pp_aux "w") d.weeks
-    (pp_aux "d") d.days
-    (pp_aux "h") d.hours
-    (pp_aux "m") d.minutes
-    (pp_aux "s") d.seconds
+  if is_zero
+  then Format.fprintf fmt "0s"
+  else
+    Format.fprintf fmt "%a%a%a%a%a"
+      (pp_aux "w") d.weeks
+      (pp_aux "d") d.days
+      (pp_aux "h") d.hours
+      (pp_aux "m") d.minutes
+      (pp_aux "s") d.seconds
 
 let duration_to_seconds (d : duration) : big_int =
   Big_int.zero_big_int

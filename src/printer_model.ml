@@ -44,7 +44,7 @@ let rec pp_type fmt t =
       pp_type_ t
   | Ttuple ts ->
     Format.fprintf fmt "%a"
-      (pp_list " * " pp_type_) ts
+      (pp_list " * " pp_type) ts
   | Tassoc (k, v) ->
     Format.fprintf fmt "(%a, %a) map"
       pp_btyp k

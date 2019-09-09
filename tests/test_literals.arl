@@ -1,10 +1,17 @@
+archetype test_literals
+
 variable i int = 1
 variable f rational = 1.1
 variable r rational = 2 div 6
 variable s string = "str"
 variable a address = @tz1KmuhR6P52hw6xs5P69BXJYAURaznhvN1k
-variable duration duration = 1w2d3h4m5s (* 1 year 2 months 3 weeks 4 days
-                                               9 hours 8 minutes 7 seconds*)
+variable d duration = 3w8d4h34m18s (* 3 weeks 8 days 4 hours 34 minutes 18 seconds *)
 variable deadline date = 2019-01-01T00:00:00 (* iso 8601 *)
 variable mycollection (int collection) = [1; 2; 3]
 variable mytuple (int * int) = 1, 2
+
+action main = {
+  effect {
+    i := 0
+  }
+}
