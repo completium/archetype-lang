@@ -15,6 +15,8 @@ let emit_error (desc : error_desc) =
   let str = Format.asprintf "%a@." pp_error_desc desc in
   raise (Anomaly str)
 
+let const_storage = "s_"
+
 type operator =
   | Equal
   | Nequal
@@ -185,7 +187,7 @@ let pp_model fmt (model : model) =
           f t
 
       | Mif (c, t, Some e) ->
-        Format.fprintf fmt "@[if (%a) then @\n  @[%a@]@\nelse @\n  @[%a @]@]"
+        Format.fprintf fmt "@[if %a then @\n  @[%a @]@\nelse @\n  @[%a @]@]"
           f c
           f t
           f e
@@ -212,8 +214,10 @@ let pp_model fmt (model : model) =
 
       | Maddshallow (e, args) ->
         let pp fmt (e, args) =
-          Format.fprintf fmt "add_shallow_%a (%a)"
+          Format.fprintf fmt " %s := add_shallow_%a (%s, %a)"
+            const_storage
             pp_str e
+            const_storage
             (pp_list ", " f) args
         in
         pp fmt (e, args)
@@ -228,16 +232,18 @@ let pp_model fmt (model : model) =
 
       | Mget (c, k) ->
         let pp fmt (c, k) =
-          Format.fprintf fmt "get_%a (_s, %a)"
+          Format.fprintf fmt "get_%a (%s, %a)"
             pp_str c
+            const_storage
             f k
         in
         pp fmt (c, k)
 
       | Mset (c, l, k, v) ->
         let pp fmt (c, l, k, v) =
-          Format.fprintf fmt "set_%a (_s, %a, %a)"
+          Format.fprintf fmt "set_%a (%s, %a, %a)"
             pp_str c
+            const_storage
             f k
             f v
         in
@@ -245,17 +251,21 @@ let pp_model fmt (model : model) =
 
       | Maddasset (an, i) ->
         let pp fmt (an, i) =
-          Format.fprintf fmt "add_%a (_s, %a)"
+          Format.fprintf fmt "%s := add_%a (%s, %a)"
+            const_storage
             pp_str an
+            const_storage
             f i
         in
         pp fmt (an, i)
 
       | Maddfield (an, fn, c, i) ->
         let pp fmt (an, fn, c, i) =
-          Format.fprintf fmt "add_%a_%a (_s, %a, %a)"
+          Format.fprintf fmt "%s := add_%a_%a (%s, %a, %a)"
+            const_storage
             pp_str an
             pp_str fn
+            const_storage
             f c
             f i
         in
@@ -278,8 +288,9 @@ let pp_model fmt (model : model) =
            | _ -> false, ""
           ) in
         let pp fmt (an, i) =
-          Format.fprintf fmt "remove_%a (_s, %a%a)"
+          Format.fprintf fmt "remove_%a (%s, %a%a)"
             pp_str an
+            const_storage
             f i
             (pp_do_if cond pp_str) str
         in
@@ -294,9 +305,10 @@ let pp_model fmt (model : model) =
            | _ -> false, ""
           ) in
         let pp fmt (an, fn, c, i) =
-          Format.fprintf fmt "remove_%a_%a (_s, %a, %a%a)"
+          Format.fprintf fmt "remove_%a_%a (%s, %a, %a%a)"
             pp_str an
             pp_str fn
+            const_storage
             f c
             f i
             (pp_do_if cond pp_str) str
@@ -313,16 +325,18 @@ let pp_model fmt (model : model) =
 
       | Mclearasset (an) ->
         let pp fmt (an) =
-          Format.fprintf fmt "clear_%a (_s)"
+          Format.fprintf fmt "clear_%a (%s)"
             pp_str an
+            const_storage
         in
         pp fmt (an)
 
       | Mclearfield (an, fn, i) ->
         let pp fmt (an, fn, i) =
-          Format.fprintf fmt "clear_%a_%a (_s, %a)"
+          Format.fprintf fmt "clear_%a_%a (%s, %a)"
             pp_str an
             pp_str fn
+            const_storage
             f i
         in
         pp fmt (an, fn, i)
@@ -336,16 +350,18 @@ let pp_model fmt (model : model) =
 
       | Mreverseasset (an) ->
         let pp fmt (an) =
-          Format.fprintf fmt "reverse_%a (_s)"
+          Format.fprintf fmt "reverse_%a (%s)"
             pp_str an
+            const_storage
         in
         pp fmt (an)
 
       | Mreversefield (an, fn, i) ->
         let pp fmt (an, fn, i) =
-          Format.fprintf fmt "reverse_%a_%a (_s, %a)"
+          Format.fprintf fmt "reverse_%a_%a (%s, %a)"
             pp_str an
             pp_str fn
+            const_storage
             f i
         in
         pp fmt (an, fn, i)
@@ -359,8 +375,9 @@ let pp_model fmt (model : model) =
 
       | Mselect (an, c, p) ->
         let pp fmt (an, c, p) =
-          Format.fprintf fmt "select_%a (_s, %a, fun the -> %a)"
+          Format.fprintf fmt "select_%a (%s, %a, fun the -> %a)"
             pp_str an
+            const_storage
             f c
             f p
         in
@@ -422,27 +439,30 @@ let pp_model fmt (model : model) =
 
       | Msum (an, fd, c) ->
         let pp fmt (an, fd, c) =
-          Format.fprintf fmt "sum_%a_%a (_s, %a)"
+          Format.fprintf fmt "sum_%a_%a (%s, %a)"
             pp_str an
             pp_id fd
+            const_storage
             f c
         in
         pp fmt (an, fd, c)
 
       | Mmin (an, fd, c) ->
         let pp fmt (an, fd, c) =
-          Format.fprintf fmt "min_%a_%a (_s, %a)"
+          Format.fprintf fmt "min_%a_%a (%s, %a)"
             pp_str an
             pp_id fd
+            const_storage
             f c
         in
         pp fmt (an, fd, c)
 
       | Mmax (an, fd, c) ->
         let pp fmt (an, fd, c) =
-          Format.fprintf fmt "max_%a_%a (_s, %a)"
+          Format.fprintf fmt "max_%a_%a (%s, %a)"
             pp_str an
             pp_id fd
+            const_storage
             f c
         in
         pp fmt (an, fd, c)
@@ -647,9 +667,9 @@ let pp_model fmt (model : model) =
 
         let lll = List.map2 (fun x y -> (x, y)) ll l in
 
-        Format.fprintf fmt "{ %a }"
-          (pp_list "; " (fun fmt (a, b)->
-               Format.fprintf fmt "%a = %a"
+        Format.fprintf fmt "record@\n  @[%a@]@\nend"
+          (pp_list "@\n" (fun fmt (a, b)->
+               Format.fprintf fmt "%a = %a;"
                  pp_id a
                  f b)) lll
       | Mletin (ids, a, t, b) ->
@@ -658,8 +678,8 @@ let pp_model fmt (model : model) =
           (pp_option (fun fmt -> Format.fprintf fmt  " : %a" pp_type)) t
           f a
           f b
-      | Mvarstorevar v -> Format.fprintf fmt "_s.%a" pp_id v
-      | Mvarstorecol v -> Format.fprintf fmt "_s.%a" pp_id v
+      | Mvarstorevar v -> Format.fprintf fmt "%s.%a" const_storage pp_id v
+      | Mvarstorecol v -> Format.fprintf fmt "%s.%a" const_storage pp_id v
       | Mvarenumval v  -> pp_id fmt v
       | Mvarfield v    -> pp_id fmt v
       | Mvarlocal v    -> pp_id fmt v
@@ -688,8 +708,8 @@ let pp_model fmt (model : model) =
                   (pp_list "; " f) l
             end
           | _ ->
-            Format.fprintf fmt "[%a]"
-              (pp_list "; " f) l
+            Format.fprintf fmt "list@\n  @[%a@]@\nend"
+              (pp_list "@\n" (fun fmt -> Format.fprintf fmt "%a;" f)) l
         end
       | Mint v -> pp_big_int fmt v
       | Muint v -> pp_big_int fmt v
@@ -727,10 +747,11 @@ let pp_model fmt (model : model) =
           f k
           f v
       | Mfor (i, c, b, _) ->
-        Format.fprintf fmt "for (%a in %a)@\n (@[<v 2>%a@])@\n"
-          pp_id i
-          f c
-          f b
+        Format.fprintf fmt ""
+      (* Format.fprintf fmt "for (%a in %a)@\n (@[<v 2>%a@])@\n"
+         pp_id i
+         f c
+         f b *)
       | Miter (i, a, b, c, _) -> Format.fprintf fmt "TODO: iter@\n"
       | Mfold (i, is, c, b) ->
         Format.fprintf fmt
@@ -900,7 +921,13 @@ let pp_model fmt (model : model) =
 
     | Add an ->
       (* let k, t = Utils.get_asset_key model (to_lident an) in *)
-      Format.fprintf fmt "// TODO api storage: Add"
+      Format.fprintf fmt
+        "function add_%s (const s : storage_type; const a : %s) : storage_type is@\n  \
+         begin@\n    \
+         skip@\n  \
+         end with (s)@\n"
+        an an
+
     (* "let[@inline] add_%s (s, asset : storage * %s) : storage =@\n  \
        let key = asset.%s in@\n  \
        let s = s.%s_keys <- add_list key s.%s_keys in@\n  \
@@ -930,10 +957,16 @@ let pp_model fmt (model : model) =
        an an an *)
 
     | UpdateAdd (an, fn) ->
-      (* let k, t = Utils.get_asset_key model (to_lident an) in
-         let ft, c = Utils.get_field_container model an fn in
-         let kk, _ = Utils.get_asset_key model (to_lident ft) in *)
-      Format.fprintf fmt "// TODO api storage: UpdateAdd"
+      (* let k, t = Utils.get_asset_key model (to_lident an) in *)
+      let ft, c = Utils.get_field_container model an fn in
+      (* let kk, _ = Utils.get_asset_key model (to_lident ft) in *)
+      Format.fprintf fmt
+        "function add_%s_%s (const s : storage_type; const a : %s; const b : %s) : storage_type is@\n  \
+         begin@\n    \
+         skip@\n  \
+         end with (s)@\n"
+        an fn an ft
+
     (* "let[@inline] add_%s_%s (s, a, b : storage * %s * %s) : storage =@\n  \
        let asset = a.%s <- add_list b.%a a.%s in@\n  \
        s.%s_assets <- Map.update a.%a (Some asset) s.%s_assets@\n"
@@ -1018,7 +1051,18 @@ let pp_model fmt (model : model) =
 
     | Contains an ->
       (* let _, t = Utils.get_asset_key model (to_lident an) in *)
-      Format.fprintf fmt "// TODO api storage: Contains"
+      let _, t = Utils.get_asset_key model (to_lident an) in
+      Format.fprintf fmt
+        "function contains_%s (const l : list(%a); const key : %a) : bool is@\n  \
+         var r : bool := False;@\n  \
+         function aggregate (const i : address) : unit is@\n  \
+         begin@\n    \
+         r := r or i = key;@\n  \
+         end with unit@\n  \
+         begin@\n    \
+         list_iter(l, aggregate)@\n  \
+         end with r@\n"
+        an pp_btyp t pp_btyp t
     (* "let[@inline] contains_%s ((l, key) : %a list * %a) : bool =@\n  \
        List.fold (fun (x, accu) ->@\n    \
        accu || x = key@\n  \
@@ -1195,19 +1239,41 @@ let pp_model fmt (model : model) =
     | Entry fs ->
       let name = fs.name in
       Format.fprintf fmt
-        "function %a(const action : action_%a; const s : storage_type) : (list(operation) * storage_type) is@\n  \
+        "function %a(const action : action_%a; const %s : storage_type) : (list(operation) * storage_type) is@\n  \
          begin@\n    \
          @[%a@]@\n  \
-         end with ((nil : list(operation)), s)@\n"
+         end with ((nil : list(operation)), %s)@\n"
         pp_id name
         pp_id name
+        const_storage
         (fun fmt x -> begin
              match unloc name with
-             | "add" | "consume" | "clear_expired" -> pp_str fmt "skip"
+             | "consume" | "clear_expired" -> pp_str fmt "skip"
              | _ -> pp_mterm fmt x
            end) fs.body
+        const_storage
 
-    | Function _ -> ()
+    | Function (fs, _) ->
+      let name = fs.name in
+      Format.fprintf fmt
+        "function %a(const %s : storage_type%a) : storage_type is@\n  \
+         begin@\n    \
+         %a@\n  \
+         end with (%s)@\n"
+        pp_id name
+        const_storage
+        (pp_list "" (fun fmt ((id, type_, _) : argument) ->
+             Format.fprintf fmt
+               "; const %a : %a"
+               pp_id id
+               pp_type type_
+           )) fs.args
+        (fun fmt x -> begin
+             match unloc name with
+             (* | "add_owner_miles" -> pp_str fmt "skip" *)
+             | _ -> pp_mterm fmt x
+           end) fs.body
+        const_storage
   in
 
   let pp_functions (fmt : Format.formatter) _ =
@@ -1217,15 +1283,17 @@ let pp_model fmt (model : model) =
   let pp_main_function (fmt : Format.formatter) _ =
     let actions = LigoUtils.get_actions model in
     Format.fprintf fmt
-      "function main(const action : action ; const s : storage_type) : (list(operation) * storage_type) is@\n  \
+      "function main(const action : action ; const %s : storage_type) : (list(operation) * storage_type) is@\n  \
        block {skip} with@\n  \
        case action of@\n  \
        @[%a@]@\n  \
        end@\n"
+      const_storage
       (pp_list "@\n"
-         (fun fmt action -> Format.fprintf fmt "| %s (a) -> %s(a, s)"
+         (fun fmt action -> Format.fprintf fmt "| %s (a) -> %s(a, %s)"
              action.name
              action.fun_name
+             const_storage
          )) actions
   in
 
