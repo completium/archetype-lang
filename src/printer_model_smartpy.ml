@@ -260,9 +260,9 @@ let pp_model fmt (model : model) =
         "def max_%s_%s (self):@\n\
          \t\t#TODO@\n"
         an fn
-    | Shallow _ -> assert false
-    | Unshallow _ -> assert false
-    | Listtocoll _ -> assert false
+    | Shallow _ -> ()
+    | Unshallow _ -> ()
+    | Listtocoll _ -> ()
     | Head an ->
       Format.fprintf fmt
         "def head_%s (self):@\n\
@@ -313,7 +313,7 @@ let pp_model fmt (model : model) =
     if List.is_empty l
     then pp_nothing fmt
     else
-      Format.fprintf fmt "# API function@\n%a@\n"
+      Format.fprintf fmt "# API function@\n@\n\t%a@\n"
         (* Format.pp_print_tab () *)
         (pp_list "@\n\t" pp_api_item) l
   in
@@ -1005,7 +1005,7 @@ let pp_model fmt (model : model) =
 
   let pp_functions fmt fs =
     Format.fprintf fmt "%a"
-      (pp_list "@\n\t" pp_function) fs
+      (pp_list "@\n@\n\t" pp_function) fs
   in
 
   let pp_init_function fmt (s : storage) =
