@@ -1263,33 +1263,33 @@ let rec for_xexpr (mode : emode_t) (env : env) ?(ety : M.ptyp option) (tope : PT
             mk_sp (Some M.vtbool) (M.Pquantifer (qt, x, (ast, xty), body))
       end
 
-    | Esecurity { pldesc = SOnlyByRole (s1, s2) } ->
-      if mode <> `Formula then begin
+    (* | Esecurity { pldesc = SOnlyByRole (s1, s2) } ->
+       if mode <> `Formula then begin
         Env.emit_error env (loc tope, SecurityInExpr);
         bailout ()
-      end else
+       end else
         let s1 = for_action_description env s1 in
         let s2 = for_security_role env s2 in
         mk_sp (Some M.vtbool) (M.PsecurityActionRole (s1, s2))
 
-    | Esecurity { pldesc = SOnlyInAction (s1, s2) } ->
-      if mode <> `Formula then begin
+       | Esecurity { pldesc = SOnlyInAction (s1, s2) } ->
+       if mode <> `Formula then begin
         Env.emit_error env (loc tope, SecurityInExpr);
         bailout ()
-      end else
+       end else
         let s1 = for_action_description env s1 in
         let s2 = for_security_action env s2 in
         mk_sp (Some M.vtbool) (M.PsecurityActionAction (s1, s2))
 
-    | Esecurity { pldesc = SOnlyByRoleInAction (s1, s2, s3) } ->
-      if mode <> `Formula then begin
+       | Esecurity { pldesc = SOnlyByRoleInAction (s1, s2, s3) } ->
+       if mode <> `Formula then begin
         Env.emit_error env (loc tope, SecurityInExpr);
         bailout ()
-      end else
+       end else
         let s1 = for_action_description env s1 in
         let s2 = for_security_role env s2 in
         let s3 = for_security_action env s3 in
-        mk_sp (Some M.vtbool) (M.PsecurityActionRoleAction (s1, s2, s3))
+        mk_sp (Some M.vtbool) (M.PsecurityActionRoleAction (s1, s2, s3)) *)
 
     | Eapp      _
     | Eassert   _
@@ -1305,7 +1305,6 @@ let rec for_xexpr (mode : emode_t) (env : env) ?(ety : M.ptyp option) (tope : PT
     | Eseq      _
     | Eterm     _
     | Etransfer _
-    | Esecurity _
     | Einvalid ->
       Env.emit_error env (loc tope, InvalidExpression);
       bailout ()
@@ -2202,6 +2201,8 @@ let group_declarations (decls : (PT.declaration list)) =
 
     | PT.Dspecification infos ->
       { g with gr_specs = mk infos :: g.gr_specs }
+
+    | PT.Dsecurity infos -> assert false
 
     | Dinstance _
     | Dcontract  _

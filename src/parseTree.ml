@@ -92,30 +92,6 @@ type pattern_unloc =
 type pattern = pattern_unloc loced
 [@@deriving yojson, show {with_path = false}]
 
-type security_arg_unloc =
-  | Sident of lident
-  | Sdot   of lident * lident
-  | Slist of security_arg list
-  | Sapp of lident * security_arg list
-  | Sbut of lident * security_arg
-  | Sto of lident * security_arg
-[@@deriving yojson, show {with_path = false}]
-
-and security_arg = security_arg_unloc loced
-[@@deriving yojson, show {with_path = false}]
-
-type security_unloc =
-  | SOnlyByRole         of security_arg * security_arg
-  | SOnlyInAction       of security_arg * security_arg
-  | SOnlyByRoleInAction of security_arg * security_arg * security_arg
-  | STransferredBy      of security_arg
-  | STransferredTo      of security_arg
-  | SNoFail             of security_arg
-[@@deriving yojson, show {with_path = false}]
-
-and security = security_unloc loced
-[@@deriving yojson, show {with_path = false}]
-
 type expr_unloc =
   | Eterm         of (lident option * lident option * lident)
   | Eliteral      of literal
@@ -141,7 +117,6 @@ type expr_unloc =
   | Eassert       of lident
   | Ereturn       of expr
   | Eoption       of option_
-  | Esecurity     of security
   | Einvalid
 [@@deriving yojson, show {with_path = false}]
 
@@ -238,6 +213,30 @@ type specification_unloc = specification_item list * exts
 type specification = specification_unloc loced
 [@@deriving yojson, show {with_path = false}]
 
+type security_arg_unloc =
+  | Sident of lident
+  | Sdot   of lident * lident
+  | Slist of security_arg list
+  | Sapp of lident * security_arg list
+  | Sbut of lident * security_arg
+  | Sto of lident * security_arg
+[@@deriving yojson, show {with_path = false}]
+
+and security_arg = security_arg_unloc loced
+[@@deriving yojson, show {with_path = false}]
+
+type security_item_unloc = lident * lident * security_arg list
+[@@deriving yojson, show {with_path = false}]
+
+type security_item = security_item_unloc loced
+[@@deriving yojson, show {with_path = false}]
+
+type security_unloc = security_item list * exts
+[@@deriving yojson, show {with_path = false}]
+
+and security = security_unloc loced
+[@@deriving yojson, show {with_path = false}]
+
 type s_function = {
   name  : lident;
   args  : args;
@@ -283,7 +282,8 @@ type declaration_unloc =
   | Dextension     of extension_decl
   | Dnamespace     of namespace_decl
   | Dfunction      of s_function
-  | Dspecification  of specification
+  | Dspecification of specification
+  | Dsecurity      of security
   | Dinvalid
 [@@deriving yojson, show {with_path = false}]
 

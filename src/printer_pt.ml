@@ -523,70 +523,6 @@ let rec pp_expr outer pos fmt a =
     in
     (maybe_paren outer e_colon pos pp) fmt i
 
-  | Esecurity x ->
-
-    let pp fmt s =
-      let rec pp_security_arg fmt arg =
-        let arg = unloc arg in
-        match arg with
-        | Sident id -> pp_id fmt id
-        | Sdot (a, b) ->
-          Format.fprintf fmt "%a.%a"
-            pp_id a
-            pp_id b
-        | Slist l ->
-          Format.fprintf fmt "[%a]"
-            (pp_list " or " pp_security_arg) l
-        | Sapp (id, args) ->
-          Format.fprintf fmt "(%a %a)"
-            pp_id id
-            (pp_list "@ " pp_security_arg) args
-        | Sbut (id, arg) ->
-          Format.fprintf fmt "(%a but %a)"
-            pp_id id
-            pp_security_arg arg
-        | Sto (id, arg) ->
-          Format.fprintf fmt "(%a to %a)"
-            pp_id id
-            pp_security_arg arg
-      in
-      let pp_security_pred fmt arg =
-        let s = unloc s in
-        match s with
-        | SOnlyByRole (a, b) ->
-          Format.fprintf fmt "only_by_role %a %a"
-            pp_security_arg a
-            pp_security_arg b
-
-        | SOnlyInAction (a, b) ->
-          Format.fprintf fmt "only_in_action %a %a"
-            pp_security_arg a
-            pp_security_arg b
-
-        | SOnlyByRoleInAction (a, b, c) ->
-          Format.fprintf fmt "only_by_role_in_action %a %a %a"
-            pp_security_arg a
-            pp_security_arg b
-            pp_security_arg c
-
-        | STransferredBy arg ->
-          Format.fprintf fmt "transferred by %a"
-            pp_security_arg arg
-
-        | STransferredTo arg ->
-          Format.fprintf fmt "transferred to %a"
-            pp_security_arg arg
-
-        | SNoFail arg ->
-          Format.fprintf fmt "no_fail %a"
-            pp_security_arg arg
-
-      in
-      Format.fprintf fmt "[_[ %a ]_]"
-        pp_security_pred s
-    in
-    (maybe_paren outer e_default pos pp) fmt x
-
   | Einvalid -> Format.fprintf fmt "(* invalid expr *)"
 
 
@@ -847,6 +783,45 @@ let pp_spec fmt (items, exts) =
         pp_specification_items items
     end
 
+let pp_security fmt (items, exts) =
+  let rec pp_security_arg fmt arg =
+    let arg = unloc arg in
+    match arg with
+    | Sident id -> pp_id fmt id
+    | Sdot (a, b) ->
+      Format.fprintf fmt "%a.%a"
+        pp_id a
+        pp_id b
+    | Slist l ->
+      Format.fprintf fmt "[%a]"
+        (pp_list " or " pp_security_arg) l
+    | Sapp (id, args) ->
+      Format.fprintf fmt "(%a %a)"
+        pp_id id
+        (pp_list "@ " pp_security_arg) args
+    | Sbut (id, arg) ->
+      Format.fprintf fmt "(%a but %a)"
+        pp_id id
+        pp_security_arg arg
+    | Sto (id, arg) ->
+      Format.fprintf fmt "(%a to %a)"
+        pp_id id
+        pp_security_arg arg
+  in
+  let pp_security_item fmt (s : security_item) =
+    let (label, id, args) = unloc s in
+    Format.fprintf fmt "%a : %a %a;"
+      pp_id label
+      pp_id id
+      (pp_list " " pp_security_arg) args
+  in
+  let pp_security_items =
+    pp_list "@\n" pp_security_item
+  in
+  Format.fprintf fmt "security%a {@\n  @[%a@]@\n}@\n"
+    pp_extensions exts
+    pp_security_items items
+
 let pp_action_properties fmt (props : action_properties) =
   map_option (
     fun v ->
@@ -983,6 +958,10 @@ let rec pp_declaration fmt { pldesc = e; _ } =
   | Dspecification v ->
     let items, exts = v |> unloc in
     pp_spec fmt (items, exts)
+
+  | Dsecurity v ->
+    let items, exts = v |> unloc in
+    pp_security fmt (items, exts)
 
   | Dinvalid ->
     Format.fprintf fmt "(* invalid declaration *)"

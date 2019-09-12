@@ -206,9 +206,6 @@ snl2(separator, X):
 %inline bracket(X):
 | LBRACKET x=X RBRACKET { x }
 
-%inline bracket2(X):
-| LBRACKET UNDERSCORE LBRACKET x=X RBRACKET UNDERSCORE RBRACKET { x }
-
 start_expr:
 | x=expr EOF { x }
 
@@ -400,28 +397,9 @@ specification_fun:
 specification_decl:
 | x=loc(specification)      { Dspecification x }
 
-security_pred_unloc:
-| id=ident args=security_arg+ {
-    match unloc id, args with
-    | "only_by_role",           [a; b]    -> Esecurity (dumloc (SOnlyByRole (a, b)))
-    | "only_in_action",         [a; b]    -> Esecurity (dumloc (SOnlyInAction (a, b)))
-    | "only_by_role_in_action", [a; b; c] -> Esecurity (dumloc (SOnlyByRoleInAction (a, b, c)))
-    | "not_by_role",            [a; b]    -> Eapp ( (Foperator (dumloc (`Unary Not))), [dumloc (Esecurity (dumloc (SOnlyByRole (a, b))))])
-    | "not_in_action",          [a; b]    -> Eapp ( (Foperator (dumloc (`Unary Not))), [dumloc (Esecurity (dumloc (SOnlyInAction (a, b))))])
-    | "not_by_role_in_action",  [a; b; c] -> Eapp ( (Foperator (dumloc (`Unary Not))), [dumloc (Esecurity (dumloc (SOnlyByRoleInAction (a, b, c))))])
-    | "transferred_by",         [a]       -> Esecurity (dumloc (STransferredBy (a)))
-    | "transferred_to",         [a]       -> Esecurity (dumloc (STransferredTo (a)))
-    | "no_fail",                [a]       -> Esecurity (dumloc (SNoFail (a)))
-    | _ -> emit_error_msg (Location.make $startpos $endpos) ((unloc id) ^ " is not a security predicate"); assert false
-}
-
-security_pred:
-| x=loc(security_pred_unloc) { x }
-
-security_item_unloc:
-| lbl=ident COLON e=security_pred SEMI_COLON {
-     Vpostcondition (lbl, e, [])
-     }
+%inline security_item_unloc:
+| lbl=ident COLON id=ident args=security_arg+ SEMI_COLON
+    { (lbl, id, args) }
 
 %inline security_item:
 | x=loc(security_item_unloc) { x }
@@ -432,7 +410,7 @@ security_decl_unloc:
         { (xs, exts) }
 
 security_decl:
-| x=loc(security_decl_unloc)      { Dspecification x }
+| x=loc(security_decl_unloc)      { Dsecurity x }
 
 enum:
 | STATES exts=extensions? xs=equal_enum_values
@@ -712,9 +690,6 @@ expr_r:
  | NONE
      { Eoption ONone }
 
- | x=security
-    { Esecurity x }
-
  | x=order_operations %prec prec_order { x }
 
  | e1=expr op=loc(bin_operator) e2=expr
@@ -879,22 +854,6 @@ record_item:
 
 %inline asset_operation:
 | xs=asset_operation_enum+ args=option(simple_expr) { AssetOperation (xs, args) }
-
-%inline security:
- | e=loc(bracket2(security_unloc)) { e }
-
-security_unloc:
-| id=ident args=security_arg*
-    { match unloc id, args with
-    | "only_by_role",           [a; b]    -> SOnlyByRole (a, b)
-    | "only_in_action",         [a; b]    -> SOnlyInAction (a, b)
-    | "only_by_role_in_action", [a; b; c] -> SOnlyByRoleInAction (a, b, c)
-    | "transferred_by",         [a]       -> STransferredBy a
-    | "transferred_to",         [a]       -> STransferredTo a
-    | "no_fail",                [a]       -> SNoFail a
-    | _ -> emit_error_msg (Location.make $startpos $endpos) ((unloc id) ^ " is not a security predicate"); assert false
-     }
-
 
 %inline security_arg:
  | e=loc(security_arg_unloc) { e }
