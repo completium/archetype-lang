@@ -576,8 +576,14 @@ let pp_specification fmt (v : lident specification) =
       (pp_no_empty_list2 pp_postcondition) v.specs
 
 let pp_security fmt (s : security) =
-  let pp_security_action = pp_id in
-  let pp_security_actions fmt = Format.fprintf fmt "[%a]" (pp_list " or " pp_security_action) in
+  let pp_security_action fmt (a : security_action)=
+    match a with
+    | Sany -> Format.fprintf fmt "any"
+    | Sentry l ->
+      if List.length l = 1
+      then pp_id fmt (List.nth l 0)
+      else Format.fprintf fmt "[%a]" (pp_list " or " pp_id) l
+  in
   let pp_security_role = pp_id in
   let pp_security_roles fmt = Format.fprintf fmt "[%a]" (pp_list " or " pp_security_role) in
   let pp_security_predicate fmt (sp : security_predicate) =
@@ -587,32 +593,32 @@ let pp_security fmt (s : security) =
         pp_action_description ad
         pp_security_roles roles
 
-    | SonlyInAction (ad, actions) ->
+    | SonlyInAction (ad, action) ->
       Format.fprintf fmt "only_in_action %a %a"
         pp_action_description ad
-        pp_security_actions actions
+        pp_security_action action
 
-    | SonlyByRoleInAction (ad, roles, actions) ->
+    | SonlyByRoleInAction (ad, roles, action) ->
       Format.fprintf fmt "only_by_role_in_action %a %a %a"
         pp_action_description ad
         pp_security_roles roles
-        pp_security_actions actions
+        pp_security_action action
 
     | SnotByRole (ad, roles) ->
       Format.fprintf fmt "not_by_role %a %a"
         pp_action_description ad
         pp_security_roles roles
 
-    | SnotInAction (ad, actions) ->
+    | SnotInAction (ad, action) ->
       Format.fprintf fmt "not_in_action %a %a"
         pp_action_description ad
-        pp_security_actions actions
+        pp_security_action action
 
-    | SnotByRoleInAction (ad, roles, actions) ->
+    | SnotByRoleInAction (ad, roles, action) ->
       Format.fprintf fmt "not_by_role_in_action %a %a %a"
         pp_action_description ad
         pp_security_roles roles
-        pp_security_actions actions
+        pp_security_action action
 
     | StransferredBy ad ->
       Format.fprintf fmt "transferred_by %a"
@@ -622,9 +628,9 @@ let pp_security fmt (s : security) =
       Format.fprintf fmt "transferred_to %a"
         pp_action_description ad
 
-    | SnoFail ad ->
+    | SnoFail action ->
       Format.fprintf fmt "no_fail %a"
-        pp_action_description ad
+        pp_security_action action
   in
 
   let pp_security_item fmt (si : security_item) =

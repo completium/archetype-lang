@@ -672,16 +672,21 @@ let to_model (ast : A.model) : M.model =
     let to_security_item (si : A.security_item) : M.security_item =
       let to_security_predicate (sn : A.security_predicate) : M.security_predicate =
         let to_security_node (sn : A.security_node) : M.security_node =
+          let to_security_action (sa : A.security_action) : M.security_action =
+            match sa with
+            | Sany -> Sany
+            | Sentry l -> Sentry l
+          in
           match sn with
-          | SonlyByRole         (ad, roles)          -> SonlyByRole         (to_action_description ad, roles)
-          | SonlyInAction       (ad, actions)        -> SonlyInAction       (to_action_description ad, actions)
-          | SonlyByRoleInAction (ad, roles, actions) -> SonlyByRoleInAction (to_action_description ad, roles, actions)
-          | SnotByRole          (ad, roles)          -> SnotByRole          (to_action_description ad, roles)
-          | SnotInAction        (ad, actions)        -> SnotInAction        (to_action_description ad, actions)
-          | SnotByRoleInAction  (ad, roles, actions) -> SnotByRoleInAction  (to_action_description ad, roles, actions)
-          | StransferredBy      (ad)                 -> StransferredBy      (to_action_description ad)
-          | StransferredTo      (ad)                 -> StransferredTo      (to_action_description ad)
-          | SnoFail             (ad)                 -> SnoFail             (to_action_description ad)
+          | SonlyByRole         (ad, roles)         -> SonlyByRole         (to_action_description ad, roles)
+          | SonlyInAction       (ad, action)        -> SonlyInAction       (to_action_description ad, to_security_action action)
+          | SonlyByRoleInAction (ad, roles, action) -> SonlyByRoleInAction (to_action_description ad, roles, to_security_action action)
+          | SnotByRole          (ad, roles)         -> SnotByRole          (to_action_description ad, roles)
+          | SnotInAction        (ad, action)        -> SnotInAction        (to_action_description ad, to_security_action action)
+          | SnotByRoleInAction  (ad, roles, action) -> SnotByRoleInAction  (to_action_description ad, roles, to_security_action action)
+          | StransferredBy      (ad)                -> StransferredBy      (to_action_description ad)
+          | StransferredTo      (ad)                -> StransferredTo      (to_action_description ad)
+          | SnoFail             (action)            -> SnoFail             (to_security_action action)
         in
         M.mk_security_predicate (to_security_node sn.s_node) ~loc:sn.loc
       in

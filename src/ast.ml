@@ -286,7 +286,11 @@ and action_description =
   | ADOp  of string * lident
 
 and security_role   = lident
-and security_action = lident
+
+and security_action =
+  | Sany
+  | Sentry of lident list
+[@@deriving show {with_path = false}]
 
 (* -------------------------------------------------------------------- *)
 

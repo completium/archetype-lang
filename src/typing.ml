@@ -1292,13 +1292,13 @@ let rec for_xexpr (mode : emode_t) (env : env) ?(ety : M.ptyp option) (tope : PT
         let s3 = for_security_action env s3 in
         mk_sp (Some M.vtbool) (M.PsecurityActionRoleAction (s1, s2, s3)) *)
 
-    | Esecurity { pldesc = SNoFail s } ->
-      if mode <> `Formula then begin
+    (* | Esecurity { pldesc = SNoFail s } ->
+       if mode <> `Formula then begin
         Env.emit_error env (loc tope, SecurityInExpr);
         bailout ()
-      end else
+       end else
         let s = for_security_action env s in
-        mk_sp (Some M.vtbool) (M.PsecurityActionNoFail s)
+        mk_sp (Some M.vtbool) (M.PsecurityActionNoFail s) *)
 
     | Eapp      _
     | Eassert   _
@@ -1559,7 +1559,7 @@ and for_security_action (env : env) (sa : PT.security_arg) : M.security_action l
 
       if Option.is_none ad then
         Env.emit_error env (loc id, UnknownAction (unloc id));
-      Option.get_as_list (Option.map (fun ad -> ad.ad_name) ad)
+      Option.get_as_list (Option.map (fun ad -> M.Sentry [ad.ad_name]) ad)
     end
 
   | Slist sas ->
