@@ -438,11 +438,11 @@ let adds_asset m an b =
     | _ -> M.fold_term internal_adds acc term in
   internal_adds false b
 
-let is_security (s : M.postcondition) =
-  match s.formula.node with
-  (* | M.MOnlyByRole _ -> true
-     | M.MOnlyInAction _ -> true
-     | M.MOnlyByRoleInAction _ -> true *)
+let is_only_security (s : M.security_predicate) =
+  match s.s_node with
+   | M.SonlyByRole _ -> true
+   | M.SonlyInAction _ -> true
+   | M.SonlyByRoleInAction _ -> true
   | _ -> false
 
 let map_action_to_change = function
@@ -455,9 +455,8 @@ let map_action_to_change = function
   | M.ADcall i     -> CCall i
   | _ -> assert false
 
-let map_security_pred loc (t : M.mterm) = Tnottranslated
-(* let map_security_pred loc (t : M.mterm) =
-   let vars =
+let map_security_pred loc (t : M.security_predicate) =
+  let vars =
     ["tr";"caller";"entry"]
     |> List.map mk_id
     |> List.map (fun v ->
@@ -515,34 +514,34 @@ let map_security_pred loc (t : M.mterm) = Tnottranslated
                  Tor (acc,mk_eq t2 r true)
                ) (mk_eq t2 (List.hd l1) true) (List.tl l2))])
    in
-   match t.M.node with
-   | M.MOnlyByRole (ADany,roles)     ->
+   match t.M.s_node with
+   | M.SonlyByRole (ADany,roles)     ->
     mk_performed_by caller (roles |> List.map unloc) false
-   | M.MOnlyInAction (ADany,Sentry entries) ->
+   | M.SonlyInAction (ADany,Sentry entries) ->
     mk_performed_by entry (entries |> List.map unloc |> List.map String.capitalize_ascii) true
-   | M.MOnlyByRole (a,roles)         ->
+   | M.SonlyByRole (a,roles)         ->
     mk_changes_performed_by caller a (roles |> List.map unloc) false
-   | M.MOnlyInAction (a,Sentry entries)     ->
+   | M.SonlyInAction (a,Sentry entries)     ->
     mk_changes_performed_by entry
       a
       (entries |> List.map unloc |> List.map String.capitalize_ascii)
       true
-   | M.MOnlyByRoleInAction (ADany,roles,Sentry entries) ->
+   | M.SonlyByRoleInAction (ADany,roles,Sentry entries) ->
     mk_performed_by_2 caller entry
       (roles |> List.map unloc)
       (entries |> List.map unloc |> List.map String.capitalize_ascii)
-   | M.MOnlyByRoleInAction (a,roles,Sentry entries) ->
+   | M.SonlyByRoleInAction (a,roles,Sentry entries) ->
     mk_changes_performed_by_2 caller entry a
       (roles |> List.map unloc)
       (entries |> List.map unloc |> List.map String.capitalize_ascii)
-   | _ -> Tnottranslated *)
+   | _ -> Tnottranslated
 
-let mk_spec_invariant loc (spec : M.postcondition) =
-  if is_security spec then
+let mk_spec_invariant loc (sec : M.security_item) =
+  if is_only_security sec.predicate then
     [
       {
-        id = map_lident spec.name;
-        form = map_security_pred loc spec.formula |> loc_term;
+        id = map_lident sec.label;
+        form = map_security_pred loc sec.predicate |> loc_term;
       }
     ]
   else []
@@ -663,8 +662,8 @@ let map_storage m (l : M.storage) =
     fields     = (map_storage_items l)@ (mk_const_fields m |> loc_field |> deloc);
     invariants = List.concat (List.map (fun (item : M.storage_item) ->
         List.map (mk_storage_invariant m item.name) item.invariants) l) @
-                 (List.fold_left (fun acc spec ->
-                      acc @ (mk_spec_invariant `Storage spec)) [] m.specification.postconditions)
+                 (List.fold_left (fun acc sec ->
+                      acc @ (mk_spec_invariant `Storage sec)) [] m.security.items)
   }
 
 let mk_axioms (m : M.model) =
@@ -924,15 +923,15 @@ and mk_invariants (m : M.model) ctx (lbl : ident option) lbody =
         else acc
       ) ([] : (loc_term, loc_ident) abstract_formula list) in
   let security_loop_invariants =
-    m.specification.postconditions
-    |> List.filter is_security
-    |> List.map (fun (spec : M.postcondition) ->
+    m.security.items
+    |> List.filter (fun i -> is_only_security i.M.predicate)
+    |> List.map (fun (sec : M.security_item) ->
         let id =
           match lbl with
-          | Some a -> (unloc spec.name) ^ "_" ^ a
-          | _ -> unloc spec.name in
+          | Some a -> (unloc sec.label) ^ "_" ^ a
+          | _ -> unloc sec.label in
         { id = with_dummy_loc id;
-          form = map_security_pred `Loop spec.formula |> loc_term; }
+          form = map_security_pred `Loop sec.predicate |> loc_term; }
       )
   in
   loop_invariants @ storage_loop_invariants @ security_loop_invariants
