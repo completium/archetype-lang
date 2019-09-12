@@ -724,52 +724,6 @@ let pp_mterm fmt (mt : mterm) =
     | Msettoiterate e ->
       Format.fprintf fmt "to_iterate %a"
         f e
-
-    | MOnlyByRole (l, r) ->
-      Format.fprintf fmt "only_by_role %a [%a]"
-        pp_action_description l
-        (pp_list " or " pp_id) r
-
-    | MOnlyInAction (l, r) ->
-      Format.fprintf fmt "only_in_action %a [%a]"
-        pp_action_description l
-        (pp_list " or " pp_id) r
-
-    | MOnlyByRoleInAction (l, r, q) ->
-      Format.fprintf fmt "only_by_role_in_action %a %a %a"
-        pp_action_description l
-        (pp_list " or " pp_id) r
-        (pp_list " or " pp_id) q
-
-    | MNotByRole (l, r) ->
-      Format.fprintf fmt "not_by_role %a [%a]"
-        pp_action_description l
-        (pp_list " or " pp_id) r
-
-    | MNotInAction (l, r) ->
-      Format.fprintf fmt "not_in_action %a [%a]"
-        pp_action_description l
-        (pp_list " or " pp_id) r
-
-    | MNotByRoleInAction (l, r, q) ->
-      Format.fprintf fmt "not_by_role_in_action %a [%a] [%a]"
-        pp_action_description l
-        (pp_list " or " pp_id) r
-        (pp_list " or " pp_id) q
-
-    | MsecTransferredBy a ->
-      Format.fprintf fmt "transferred_by %a"
-        f a
-
-    | MsecTransferredTo a ->
-      Format.fprintf fmt "transferred_to %a"
-        f a
-
-    | MsecNoFail desc ->
-      Format.fprintf fmt "no_fail %a"
-        pp_action_description desc
-
-    | Manyaction -> Format.fprintf fmt "anyaction"
   in
   f fmt mt
 
@@ -957,6 +911,71 @@ let pp_specification fmt (v : specification) =
                       @[<v 2>  %a@]@\n}@\n@\n@\n"
     (pp_list "@\n" pp_postcondition) v.postconditions
 
+let pp_security fmt (s : security) =
+  let pp_security_action = pp_id in
+  let pp_security_actions fmt = Format.fprintf fmt "[%a]" (pp_list " or " pp_security_action) in
+  let pp_security_role = pp_id in
+  let pp_security_roles fmt = Format.fprintf fmt "[%a]" (pp_list " or " pp_security_role) in
+  let pp_security_predicate fmt (sp : security_predicate) =
+    match sp.s_node with
+    | SonlyByRole (ad, roles) ->
+      Format.fprintf fmt "only_by_role %a %a"
+        pp_action_description ad
+        pp_security_roles roles
+
+    | SonlyInAction (ad, actions) ->
+      Format.fprintf fmt "only_in_action %a %a"
+        pp_action_description ad
+        pp_security_actions actions
+
+    | SonlyByRoleInAction (ad, roles, actions) ->
+      Format.fprintf fmt "only_by_role_in_action %a %a %a"
+        pp_action_description ad
+        pp_security_roles roles
+        pp_security_actions actions
+
+    | SnotByRole (ad, roles) ->
+      Format.fprintf fmt "not_by_role %a %a"
+        pp_action_description ad
+        pp_security_roles roles
+
+    | SnotInAction (ad, actions) ->
+      Format.fprintf fmt "not_in_action %a %a"
+        pp_action_description ad
+        pp_security_actions actions
+
+    | SnotByRoleInAction (ad, roles, actions) ->
+      Format.fprintf fmt "not_by_role_in_action %a %a %a"
+        pp_action_description ad
+        pp_security_roles roles
+        pp_security_actions actions
+
+    | StransferredBy ad ->
+      Format.fprintf fmt "transferred_by %a"
+        pp_action_description ad
+
+    | StransferredTo ad ->
+      Format.fprintf fmt "transferred_to %a"
+        pp_action_description ad
+
+    | SnoFail ad ->
+      Format.fprintf fmt "no_fail %a"
+        pp_action_description ad
+  in
+
+  let pp_security_item fmt (si : security_item) =
+    Format.fprintf fmt "%a : %a;@\n"
+      pp_id si.label
+      pp_security_predicate si.predicate
+  in
+  let empty = List.is_empty s.items
+  in
+  if empty
+  then ()
+  else
+    Format.fprintf fmt "security {@\n  @[%a@]@\n}@\n"
+      (pp_no_empty_list2 pp_security_item) s.items
+
 let pp_argument fmt ((id, t, dv) : argument) =
   Format.fprintf fmt "%a %a%a"
     pp_type t
@@ -984,6 +1003,7 @@ let pp_model fmt (model : model) =
                       @\n@\n%a\
                       @\n@\n%a\
                       @\n@\n%a\
+                      @\n@\n%a\
                       @."
     pp_id model.name
     pp_api_items model.api_items
@@ -992,6 +1012,7 @@ let pp_model fmt (model : model) =
     pp_storage model.storage
     (pp_list "@\n" pp_function) model.functions
     pp_specification model.specification
+    pp_security model.security
 
 (* -------------------------------------------------------------------------- *)
 let string_of__of_pp pp x =

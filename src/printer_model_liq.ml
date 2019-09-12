@@ -1156,16 +1156,6 @@ let pp_model fmt (model : model) =
       | Msetremoved _                    -> emit_error (UnsupportedTerm ("setremoved"))
       | Msetiterated _                   -> emit_error (UnsupportedTerm ("setiterated"))
       | Msettoiterate _                  -> emit_error (UnsupportedTerm ("settoiterate"))
-      | MOnlyByRole _                    -> emit_error (UnsupportedTerm ("onlyByRole"))
-      | MOnlyInAction _                  -> emit_error (UnsupportedTerm ("onlyInAction"))
-      | MOnlyByRoleInAction _            -> emit_error (UnsupportedTerm ("onlyByRoleInAction"))
-      | MNotByRole _                     -> emit_error (UnsupportedTerm ("notByRole"))
-      | MNotInAction _                   -> emit_error (UnsupportedTerm ("notInAction"))
-      | MNotByRoleInAction _             -> emit_error (UnsupportedTerm ("notByRoleInAction"))
-      | MsecTransferredBy _              -> emit_error (UnsupportedTerm ("secTransferredBy"))
-      | MsecTransferredTo _              -> emit_error (UnsupportedTerm ("secTransferredTo"))
-      | MsecNoFail  _                    -> emit_error (UnsupportedTerm ("secMsecNoFail"))
-      | Manyaction                       -> emit_error (UnsupportedTerm ("anyaction"))
       | Mremoveif _                      -> emit_error (UnsupportedTerm ("removeif"))
     in
     f fmt mt

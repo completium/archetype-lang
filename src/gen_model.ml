@@ -151,7 +151,7 @@ let to_model (ast : A.model) : M.model =
       assert false
   in
 
-  let _to_action_description (ad : A.action_description) : M.action_description=
+  let to_action_description (ad : A.action_description) : M.action_description=
     match ad with
     | ADAny -> M.ADany
     | ADOp ("add", id)      -> M.ADadd (unloc id)
@@ -213,7 +213,6 @@ let to_model (ast : A.model) : M.model =
     | A.Pconst Ctransferred                  -> M.Mtransferred
     | A.Pconst Ccaller                       -> M.Mcaller
     | A.Pconst Cbalance                      -> M.Mbalance
-    | A.Pconst Canyaction                    -> M.Manyaction
     | A.Pconst c                             ->
       Format.eprintf "expr const unkown: %a@." A.pp_const c;
       assert false
@@ -681,6 +680,37 @@ let to_model (ast : A.model) : M.model =
     }
   in
 
+  let cont_security (s : A.security) (sec : M.security) : M.security =
+    let to_security_item (si : A.security_item) : M.security_item =
+      let to_security_predicate (sn : A.security_predicate) : M.security_predicate =
+        let to_security_node (sn : A.security_node) : M.security_node =
+          match sn with
+          | SonlyByRole         (ad, roles)          -> SonlyByRole         (to_action_description ad, roles)
+          | SonlyInAction       (ad, actions)        -> SonlyInAction       (to_action_description ad, actions)
+          | SonlyByRoleInAction (ad, roles, actions) -> SonlyByRoleInAction (to_action_description ad, roles, actions)
+          | SnotByRole          (ad, roles)          -> SnotByRole          (to_action_description ad, roles)
+          | SnotInAction        (ad, actions)        -> SnotInAction        (to_action_description ad, actions)
+          | SnotByRoleInAction  (ad, roles, actions) -> SnotByRoleInAction  (to_action_description ad, roles, actions)
+          | StransferredBy      (ad)                 -> StransferredBy      (to_action_description ad)
+          | StransferredTo      (ad)                 -> StransferredTo      (to_action_description ad)
+          | SnoFail             (ad)                 -> SnoFail             (to_action_description ad)
+        in
+        M.mk_security_predicate (to_security_node sn.s_node) ~loc:sn.loc
+      in
+      M.mk_security_item
+        si.label
+        (to_security_predicate si.predicate)
+        ~loc:si.loc
+    in
+
+    let new_s : M.security = M.mk_security
+        ~items:(List.map to_security_item s.items)
+        ~loc:s.loc
+        ()
+    in
+    { sec with items = sec.items @ new_s.items; loc = new_s.loc; }
+  in
+
   let process_storage list =
     let variable_to_storage_items (var : A.lident A.variable) : M.storage_item =
 
@@ -968,4 +998,9 @@ let to_model (ast : A.model) : M.model =
     |> (fun spec -> List.fold_left (fun accu x -> cont_specification x accu) spec ast.specifications)
   in
 
-  M.mk_model ~info:info ~decls:decls ~functions:functions ~specification:specification storage name
+  let security =
+    M.mk_security ()
+    |> (fun sec -> List.fold_left (fun accu x -> cont_security x accu) sec ast.securities)
+  in
+
+  M.mk_model ~info:info ~decls:decls ~functions:functions ~specification:specification ~security:security storage name

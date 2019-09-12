@@ -576,31 +576,43 @@ let pp_specification fmt (v : lident specification) =
       (pp_no_empty_list2 pp_postcondition) v.specs
 
 let pp_security fmt (s : security) =
+  let pp_security_action = pp_id in
+  let pp_security_actions fmt = Format.fprintf fmt "[%a]" (pp_list " or " pp_security_action) in
+  let pp_security_role = pp_id in
+  let pp_security_roles fmt = Format.fprintf fmt "[%a]" (pp_list " or " pp_security_role) in
   let pp_security_predicate fmt (sp : security_predicate) =
     match sp.s_node with
     | SonlyByRole (ad, roles) ->
-      Format.fprintf fmt "only_by_role %a"
+      Format.fprintf fmt "only_by_role %a %a"
         pp_action_description ad
+        pp_security_roles roles
 
     | SonlyInAction (ad, actions) ->
-      Format.fprintf fmt "only_in_action %a"
+      Format.fprintf fmt "only_in_action %a %a"
         pp_action_description ad
+        pp_security_actions actions
 
     | SonlyByRoleInAction (ad, roles, actions) ->
-      Format.fprintf fmt "only_by_role_in_action %a"
+      Format.fprintf fmt "only_by_role_in_action %a %a %a"
         pp_action_description ad
+        pp_security_roles roles
+        pp_security_actions actions
 
     | SnotByRole (ad, roles) ->
-      Format.fprintf fmt "not_by_role %a"
+      Format.fprintf fmt "not_by_role %a %a"
         pp_action_description ad
+        pp_security_roles roles
 
     | SnotInAction (ad, actions) ->
-      Format.fprintf fmt "not_in_action %a"
+      Format.fprintf fmt "not_in_action %a %a"
         pp_action_description ad
+        pp_security_actions actions
 
     | SnotByRoleInAction (ad, roles, actions) ->
-      Format.fprintf fmt "not_by_role_in_action %a"
+      Format.fprintf fmt "not_by_role_in_action %a %a %a"
         pp_action_description ad
+        pp_security_roles roles
+        pp_security_actions actions
 
     | StransferredBy ad ->
       Format.fprintf fmt "transferred_by %a"
@@ -620,13 +632,13 @@ let pp_security fmt (s : security) =
       pp_id si.label
       pp_security_predicate si.predicate
   in
-  let empty = List.is_empty s
+  let empty = List.is_empty s.items
   in
   if empty
   then ()
   else
     Format.fprintf fmt "security {@\n  @[%a@]@\n}@\n"
-      (pp_no_empty_list2 pp_security_item) s
+      (pp_no_empty_list2 pp_security_item) s.items
 
 let pp_variable fmt (v : lident variable) =
   Format.fprintf fmt "%s %a %a%a%a%a@\n"

@@ -440,9 +440,9 @@ let adds_asset m an b =
 
 let is_security (s : M.postcondition) =
   match s.formula.node with
-  | M.MOnlyByRole _ -> true
-  | M.MOnlyInAction _ -> true
-  | M.MOnlyByRoleInAction _ -> true
+  (* | M.MOnlyByRole _ -> true
+     | M.MOnlyInAction _ -> true
+     | M.MOnlyByRoleInAction _ -> true *)
   | _ -> false
 
 let map_action_to_change = function
@@ -455,8 +455,9 @@ let map_action_to_change = function
   | M.ADcall i     -> CCall i
   | _ -> assert false
 
-let map_security_pred loc (t : M.mterm) =
-  let vars =
+let map_security_pred loc (t : M.mterm) = Tnottranslated
+(* let map_security_pred loc (t : M.mterm) =
+   let vars =
     ["tr";"caller";"entry"]
     |> List.map mk_id
     |> List.map (fun v ->
@@ -464,11 +465,11 @@ let map_security_pred loc (t : M.mterm) =
         | `Storage -> Tvar (v)
         | `Loop    -> Tdoti(gs,v)
       )
-  in
-  let tr = List.nth vars 0 in
-  let caller = List.nth vars 1 in
-  let entry = List.nth vars 2 in
-  let mk_eq a b opt = Teq (Tyint,a,
+   in
+   let tr = List.nth vars 0 in
+   let caller = List.nth vars 1 in
+   let entry = List.nth vars 2 in
+   let mk_eq a b opt = Teq (Tyint,a,
                            if opt then
                              Tsome (Tvar b)
                            else
@@ -476,22 +477,22 @@ let map_security_pred loc (t : M.mterm) =
                              | `Storage -> Tvar b
                              | `Loop    -> Tdoti(gs,b)
                           ) in
-  let mk_performed_by t l opt =
+   let mk_performed_by t l opt =
     Tapp (Tvar "Tr.performed_by",
           [tr;
            List.fold_left (fun acc r ->
                Tor (acc,mk_eq t r opt)
              ) (mk_eq t (List.hd l) opt) (List.tl l) ])
-  in
-  let mk_changes_performed_by t a l opt =
+   in
+   let mk_changes_performed_by t a l opt =
     Tapp (Tvar "Tr.changes_performed_by",
           [tr;
            Tcons (map_action_to_change a |> mk_change_term,Tnil);
            List.fold_left (fun acc r ->
                Tor (acc,mk_eq t r opt)
              ) (mk_eq t (List.hd l) opt) (List.tl l) ])
-  in
-  let mk_performed_by_2 t1 t2 l1 l2 =
+   in
+   let mk_performed_by_2 t1 t2 l1 l2 =
     Tapp (Tvar "Tr.performed_by",
           [tr;
            Tand (
@@ -501,8 +502,8 @@ let map_security_pred loc (t : M.mterm) =
              List.fold_left (fun acc r ->
                  Tor (acc,mk_eq t2 r true)
                ) (mk_eq t2 (List.hd l1) true) (List.tl l2))])
-  in
-  let mk_changes_performed_by_2 t1 t2 a l1 l2 =
+   in
+   let mk_changes_performed_by_2 t1 t2 a l1 l2 =
     Tapp (Tvar "Tr.performed_by",
           [tr;
            Tcons (map_action_to_change a |> mk_change_term,Tnil);
@@ -513,28 +514,28 @@ let map_security_pred loc (t : M.mterm) =
              List.fold_left (fun acc r ->
                  Tor (acc,mk_eq t2 r true)
                ) (mk_eq t2 (List.hd l1) true) (List.tl l2))])
-  in
-  match t.M.node with
-  | M.MOnlyByRole (ADany,roles)     ->
+   in
+   match t.M.node with
+   | M.MOnlyByRole (ADany,roles)     ->
     mk_performed_by caller (roles |> List.map unloc) false
-  | M.MOnlyInAction (ADany,entries) ->
+   | M.MOnlyInAction (ADany,entries) ->
     mk_performed_by entry (entries |> List.map unloc |> List.map String.capitalize_ascii) true
-  | M.MOnlyByRole (a,roles)         ->
+   | M.MOnlyByRole (a,roles)         ->
     mk_changes_performed_by caller a (roles |> List.map unloc) false
-  | M.MOnlyInAction (a,entries)     ->
+   | M.MOnlyInAction (a,entries)     ->
     mk_changes_performed_by entry
       a
       (entries |> List.map unloc |> List.map String.capitalize_ascii)
       true
-  | M.MOnlyByRoleInAction (ADany,roles,entries) ->
+   | M.MOnlyByRoleInAction (ADany,roles,entries) ->
     mk_performed_by_2 caller entry
       (roles |> List.map unloc)
       (entries |> List.map unloc |> List.map String.capitalize_ascii)
-  | M.MOnlyByRoleInAction (a,roles,entries) ->
+   | M.MOnlyByRoleInAction (a,roles,entries) ->
     mk_changes_performed_by_2 caller entry a
       (roles |> List.map unloc)
       (entries |> List.map unloc |> List.map String.capitalize_ascii)
-  | _ -> Tnottranslated
+   | _ -> Tnottranslated *)
 
 let mk_spec_invariant loc (spec : M.postcondition) =
   if is_security spec then

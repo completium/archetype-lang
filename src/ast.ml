@@ -436,7 +436,10 @@ type security_item = {
 }
 [@@deriving show {with_path = false}]
 
-type security = security_item list
+type security = {
+  items       : security_item list;
+  loc         : Location.t [@opaque];
+}
 [@@deriving show {with_path = false}]
 
 type 'id function_struct = {

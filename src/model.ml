@@ -226,18 +226,6 @@ type ('id, 'term) mterm_node  =
   | Msetremoved   of 'term
   | Msetiterated  of 'term
   | Msettoiterate of 'term
-  (* security predicates *)
-  | MOnlyByRole         of action_description * security_role list
-  | MOnlyInAction       of action_description * security_action list
-  | MOnlyByRoleInAction of action_description * security_role list * security_action list
-  | MNotByRole          of action_description * security_role list
-  | MNotInAction        of action_description * security_action list
-  | MNotByRoleInAction  of action_description * security_role list * security_action list
-  | MsecTransferredBy   of 'term
-  | MsecTransferredTo   of 'term
-  | MsecNoFail          of action_description
-  (* security arg *)
-  | Manyaction
 [@@deriving show {with_path = false}]
 
 and 'id mterm_gen = {
@@ -605,6 +593,37 @@ type 'id specification_gen = {
 }
 [@@deriving show {with_path = false}]
 
+type security_node =
+  | SonlyByRole         of action_description * security_role list
+  | SonlyInAction       of action_description * security_action list
+  | SonlyByRoleInAction of action_description * security_role list * security_action list
+  | SnotByRole          of action_description * security_role list
+  | SnotInAction        of action_description * security_action list
+  | SnotByRoleInAction  of action_description * security_role list * security_action list
+  | StransferredBy      of action_description
+  | StransferredTo      of action_description
+  | SnoFail             of action_description
+[@@deriving show {with_path = false}]
+
+type security_predicate = {
+  s_node: security_node;
+  loc: Location.t [@opaque];
+}
+[@@deriving show {with_path = false}]
+
+type security_item = {
+  label       : lident;
+  predicate   : security_predicate;
+  loc         : Location.t [@opaque];
+}
+[@@deriving show {with_path = false}]
+
+type security = {
+  items : security_item list;
+  loc   : Location.t [@opaque];
+}
+[@@deriving show {with_path = false}]
+
 type specification = lident specification_gen
 [@@deriving show {with_path = false}]
 
@@ -634,6 +653,7 @@ type 'id model_gen = {
   storage      : 'id storage_gen;
   functions    : 'id function__gen list;
   specification : 'id specification_gen;
+  security     : security;
 }
 [@@deriving show {with_path = false}]
 
@@ -672,6 +692,15 @@ let mk_assert ?(invariants = []) name label formula =
 
 let mk_specification ?(predicates = []) ?(definitions = []) ?(lemmas = []) ?(theorems = []) ?(variables = []) ?(invariants = []) ?(effects = []) ?(postconditions = []) ?(asserts = []) ?(loc = Location.dummy) () =
   { predicates; definitions; lemmas; theorems; variables; invariants; effects; postconditions; loc}
+
+let mk_security_predicate ?(loc = Location.dummy) s_node : security_predicate =
+  { s_node; loc }
+
+let mk_security_item ?(loc = Location.dummy) label predicate : security_item =
+  { label; predicate; loc }
+
+let mk_security ?(items = []) ?(loc = Location.dummy) () : security =
+  { items; loc }
 
 let mk_info_var ?(constant = false) ?init name type_ : info_var =
   { name; type_; constant; init}
@@ -718,8 +747,8 @@ let mk_signature ?(args = []) ?ret name : 'id signature_gen =
 let mk_api_item ?(only_formula = false) node_item =
   { node_item; only_formula }
 
-let mk_model ?(api_items = []) ?(info = []) ?(decls = []) ?(functions = []) ?(storage = []) ?(specification = mk_specification ())  storage name : model =
-  { name; api_items; info; storage; decls; functions; specification}
+let mk_model ?(api_items = []) ?(info = []) ?(decls = []) ?(functions = []) ?(storage = []) ?(specification = mk_specification ()) ?(security = mk_security ()) storage name : model =
+  { name; api_items; info; storage; decls; functions; specification; security }
 
 (* -------------------------------------------------------------------- *)
 
@@ -908,15 +937,6 @@ let cmp_mterm_node
     | Msetremoved e1, Msetremoved   e2                                                 -> cmp e1 e2
     | Msetiterated e1, Msetiterated  e2                                                -> cmp e1 e2
     | Msettoiterate e1, Msettoiterate e2                                               -> cmp e1 e2
-    | MOnlyByRole (l1, r1), MOnlyByRole (l2, r2)                                       -> cmp_action_description l1 l2 && List.for_all2 cmp_security_role r1 r2
-    | MOnlyInAction (l1, r1), MOnlyInAction (l2, r2)                                   -> cmp_action_description l1 l2 && List.for_all2 cmp_security_action r1 r2
-    | MOnlyByRoleInAction (l1, r1, q1), MOnlyByRoleInAction (l2, r2, q2)               -> cmp_action_description l1 l2 && List.for_all2 cmp_security_role r1 r2 && List.for_all2 cmp_security_action q1 q2
-    | MNotByRole (l1, r1), MNotByRole (l2, r2)                                         -> cmp_action_description l1 l2 && List.for_all2 cmp_security_role r1 r2
-    | MNotInAction (l1, r1), MNotInAction (l2, r2)                                     -> cmp_action_description l1 l2 && List.for_all2 cmp_security_action r1 r2
-    | MNotByRoleInAction (l1, r1, q1), MNotByRoleInAction (l2, r2, q2)                 -> cmp_action_description l1 l2 && List.for_all2 cmp_security_role r1 r2 && List.for_all2 cmp_security_action q1 q2
-    | MsecTransferredBy a1, MsecTransferredBy a2                                       -> cmp a1 a2
-    | MsecTransferredTo a1, MsecTransferredTo a2                                       -> cmp a1 a2
-    | MsecNoFail a1, MsecNoFail a2                                                     -> cmp_action_description a1 a2
     | Mshallow (i1, x1), Mshallow (i2, x2)                                             -> cmp x1 x2 && cmp_ident i1 i2
     | Mlisttocoll (i1, x1), Mlisttocoll (i2, x2)                                       -> cmp x1 x2 && cmp_ident i1 i2
     | Munshallow (i1, x1), Munshallow (i2, x2)                                         -> cmp x1 x2 && cmp_ident i1 i2
@@ -1093,16 +1113,6 @@ let map_term_node (f : 'id mterm_gen -> 'id mterm_gen) = function
   | Mforall (i, t, None, e)       -> Mforall (i, t, None, f e)
   | Mexists (i, t, Some s, e)     -> Mexists (i, t, Some (f s), f e)
   | Mexists (i, t, None, e)       -> Mexists (i, t, None, f e)
-  | MOnlyByRole   (l, r)          -> MOnlyByRole   (l, r)
-  | MOnlyInAction (l, r)          -> MOnlyInAction (l, r)
-  | MOnlyByRoleInAction (l, r, q) -> MOnlyByRoleInAction (l, r, q)
-  | MNotByRole          (l, r)    -> MNotByRole (l, r)
-  | MNotInAction        (l, r)    -> MNotInAction (l, r)
-  | MNotByRoleInAction  (l, r, q) -> MNotByRoleInAction (l, r, q)
-  | MsecTransferredBy     a       -> MsecTransferredBy (f a)
-  | MsecTransferredTo     a       -> MsecTransferredTo (f a)
-  | MsecNoFail a                  -> MsecNoFail a
-  | Manyaction                    -> Manyaction
 
 let map_gen_mterm g f (i : 'id mterm_gen) : 'id mterm_gen =
   {
@@ -1358,16 +1368,6 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mforall (_, _, None, e)               -> f accu e
   | Mexists (_, _, Some s, e)             -> f (f accu s) e
   | Mexists (_, _, None, e)               -> f accu e
-  | MOnlyByRole   (l, r)                  -> accu
-  | MOnlyInAction (l, r)                  -> accu
-  | MOnlyByRoleInAction (l, r, q)         -> accu
-  | MNotByRole          (l, r)            -> accu
-  | MNotInAction        (l, r)            -> accu
-  | MNotByRoleInAction  (l, r, q)         -> accu
-  | MsecTransferredBy              a      -> f accu a
-  | MsecTransferredTo              a      -> f accu a
-  | MsecNoFail                     a      -> accu
-  | Manyaction                            -> accu
 
 let fold_map_term_list f acc l : 'term list * 'a =
   List.fold_left
@@ -1862,38 +1862,6 @@ let fold_map_term
   | Mexists (id, t, None, e) ->
     let ee, ea = f accu e in
     g (Mexists (id, t, None, ee)), ea
-
-  | MOnlyByRole (l, r) ->
-    g (MOnlyByRole (l, r)), accu
-
-  | MOnlyInAction (l, r) ->
-    g (MOnlyInAction (l, r)), accu
-
-  | MOnlyByRoleInAction (l, r, q) ->
-    g (MOnlyByRoleInAction (l, r, q)), accu
-
-  | MNotByRole (l, r) ->
-    g (MNotByRole (l, r)), accu
-
-  | MNotInAction (l, r) ->
-    g (MNotInAction (l, r)), accu
-
-  | MNotByRoleInAction (l, r, q) ->
-    g (MNotByRoleInAction (l, r, q)), accu
-
-  | MsecTransferredBy a ->
-    let ee, ea = f accu a in
-    g (MsecTransferredBy ee), ea
-
-  | MsecTransferredTo a ->
-    let ee, ea = f accu a in
-    g (MsecTransferredTo ee), ea
-
-  | MsecNoFail a ->
-    g (MsecNoFail a), accu
-
-  | Manyaction ->
-    g (Manyaction), accu
 
 let fold_left g l accu = List.fold_left (fun accu x -> g x accu) accu l
 
