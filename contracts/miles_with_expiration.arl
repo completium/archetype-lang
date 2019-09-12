@@ -120,4 +120,5 @@ security {
   g1 : only_by_role anyaction admin;
   g2 : only_in_action (remove mile) [consume or clear_expired];
   g3 : not_in_action (add mile) consume;
+  g4 : no_fail add;
 }

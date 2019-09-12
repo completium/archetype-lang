@@ -328,18 +328,6 @@ let to_model (ast : A.model) : M.model =
              Printer_tools.pp_str fmt str)) args
         (match aux with | Some _ -> "with aux" | _ -> "without aux");
       assert false
-
-  (* | A.PsecurityActionRole (action, roles) ->
-     M.MOnlyByRole (to_action_description action, roles)
-
-     | A.PsecurityActionAction (action, actions) ->
-     M.MOnlyInAction (to_action_description action, actions)
-
-     | A.PsecurityActionRoleAction (action, roles, actions) ->
-     M.MOnlyByRoleInAction (to_action_description action, roles, actions)
-
-     | A.PsecurityActionNoFail (action) ->
-     M.MsecNoFail (to_action_description action) *)
   in
 
   let rec to_mterm (pterm : A.pterm) : M.mterm =

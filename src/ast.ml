@@ -413,14 +413,14 @@ type 'id specification = {
 
 type security_node =
   | SonlyByRole         of action_description * security_role list
-  | SonlyInAction       of action_description * security_action list
-  | SonlyByRoleInAction of action_description * security_role list * security_action list
+  | SonlyInAction       of action_description * security_action
+  | SonlyByRoleInAction of action_description * security_role list * security_action
   | SnotByRole          of action_description * security_role list
-  | SnotInAction        of action_description * security_action list
-  | SnotByRoleInAction  of action_description * security_role list * security_action list
+  | SnotInAction        of action_description * security_action
+  | SnotByRoleInAction  of action_description * security_role list * security_action
   | StransferredBy      of action_description
   | StransferredTo      of action_description
-  | SnoFail             of action_description
+  | SnoFail             of security_action
 [@@deriving show {with_path = false}]
 
 type security_predicate = {

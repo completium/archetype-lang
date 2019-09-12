@@ -58,7 +58,7 @@ type ('e,'t,'i) abstract_term =
   | Tif     of 'e * 'e * 'e option
   | Tapp    of 'e * 'e list
   | Tfor    of 'i * 'e * ('e,'i) abstract_formula list * 'e
-  | Ttry    of 'e * exn * 'e
+  | Ttry    of 'e * (exn * 'e) list
   | Tvar    of 'i
   (* record *)
   | Trecord of 'e option * ('i * 'e) list (* { 'e with 'i = 'e; } *)
@@ -119,12 +119,14 @@ type ('e,'t,'i) abstract_term =
   | Taddr   of string
   (* spec *)
   | Tforall of (('t,'i) abstract_univ_decl list) * 'e
+  | Texists of (('t,'i) abstract_univ_decl list) * 'e
   | Tresult
   | Timpl   of 'e * 'e
   | Tand    of 'e * 'e
   | Tor    of 'e * 'e
   | Told    of 'e
   | Tat     of 'e
+  | Tfalse
   | Tunion  of 'i * 'e * 'e
   | Tinter  of 'i * 'e * 'e
   | Tdiff   of 'i * 'e * 'e
@@ -291,7 +293,7 @@ and map_abstract_term
                                 map_e s,
                                 List.map (map_abstract_formula map_e map_i) l,
                                 map_e b)
-  | Ttry (b,e,c)       -> Ttry (map_e b, e, map_e c)
+  | Ttry (b,l)       -> Ttry (map_e b, List.map (fun (exn,e) -> (exn,map_e e)) l)
   | Tassert e          -> Tassert (map_e e)
   | Ttoiter (a,i,e)    -> Ttoiter (map_i a, map_i i, map_e e)
   | Tvar i             -> Tvar (map_i i)
@@ -345,11 +347,13 @@ and map_abstract_term
   | Tint i             -> Tint i
   | Taddr s            -> Taddr s
   | Tforall (l,e)      -> Tforall (List.map (map_abstract_univ_decl map_t map_i) l, map_e e)
+  | Texists (l,e)      -> Texists (List.map (map_abstract_univ_decl map_t map_i) l, map_e e)
   | Timpl (e1,e2)      -> Timpl (map_e e1, map_e e2)
   | Tor (e1,e2)        -> Tor (map_e e1, map_e e2)
   | Tand (e1,e2)       -> Tand (map_e e1, map_e e2)
   | Told e             -> Told (map_e e)
   | Tat e              -> Tat (map_e e)
+  | Tfalse             -> Tfalse
   | Tunion (i,e1,e2)     -> Tunion (map_i i, map_e e1, map_e e2)
   | Tinter (i,e1,e2)     -> Tinter (map_i i, map_e e1, map_e e2)
   | Tdiff (i,e1,e2)      -> Tdiff (map_i i, map_e e1, map_e e2)
@@ -629,7 +633,9 @@ let compare_abstract_term
   | Tfor (i1,s1,l1,b1), Tfor (i2,s2,l2,b2) ->
     cmpi i1 i2 && cmpe s1 s2 &&
     List.for_all2 (compare_abstract_formula cmpe cmpi) l1 l2 && cmpe b1 b2
-  | Ttry (b1,e1,c1), Ttry (b2,e2,c2) -> cmpe b1 b2 && compare_exn e1 e2 && cmpe c1 c2
+  | Ttry (b1,l1), Ttry (b2,l2) -> cmpe b1 b2 &&
+                                  List.for_all2 (fun (exn1,e1) (exn2,e2) ->
+                                      compare_exn exn1 exn2 && cmpe e1 e2) l1 l2
   | Tassert e1, Tassert e2 -> cmpe e1 e2
   | Ttoiter (a1,i1,e1), Ttoiter (a2,i2,e2) -> cmpi a1 a2 && cmpi i1 i2 && cmpe e1 e2
   | Tvar i1, Tvar i2 -> cmpi i1 i2
@@ -690,11 +696,15 @@ let compare_abstract_term
   | Tforall (l1,e1), Tforall (l2,e2) -> List.for_all2 (fun (i1,t1) (i2,t2) ->
       List.for_all2 cmpi i1 i2 && cmpt t1 t2
     ) l1 l2 && cmpe e1 e2
+  | Texists (l1,e1), Texists (l2,e2) -> List.for_all2 (fun (i1,t1) (i2,t2) ->
+      List.for_all2 cmpi i1 i2 && cmpt t1 t2
+    ) l1 l2 && cmpe e1 e2
   | Timpl (e1,e2), Timpl (f1,f2) -> cmpe e1 f1 && cmpe e2 f2
   | Tor (e1,e2), Tor (f1,f2) -> cmpe e1 f1 && cmpe e2 f2
   | Tand (e1,e2), Tand (f1,f2) -> cmpe e1 f1 && cmpe e2 f2
   | Told e1, Told e2 -> cmpe e1 e2
   | Tat e1, Tat e2 -> cmpe e1 e2
+  | Tfalse, Tfalse -> true
   | Tunion (i1,e1,e2), Tunion (i2,f1,f2) -> cmpi i1 i2 && cmpe e1 f1 && cmpe e2 f2
   | Tinter (i1,e1,e2), Tinter (i2,f1,f2) -> cmpi i1 i2 && cmpe e1 f1 && cmpe e2 f2
   | Tdiff (i1,e1,e2), Tdiff (i2,f1,f2) -> cmpi i1 i2 && cmpe e1 f1 && cmpe e2 f2

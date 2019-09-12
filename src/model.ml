@@ -322,7 +322,9 @@ and action_description =
 and security_role   = lident
 [@@deriving show {with_path = false}]
 
-and security_action = lident
+and security_action =
+  | Sany
+  | Sentry of lident list
 [@@deriving show {with_path = false}]
 
 type info_var = {
@@ -595,14 +597,14 @@ type 'id specification_gen = {
 
 type security_node =
   | SonlyByRole         of action_description * security_role list
-  | SonlyInAction       of action_description * security_action list
-  | SonlyByRoleInAction of action_description * security_role list * security_action list
+  | SonlyInAction       of action_description * security_action
+  | SonlyByRoleInAction of action_description * security_role list * security_action
   | SnotByRole          of action_description * security_role list
-  | SnotInAction        of action_description * security_action list
-  | SnotByRoleInAction  of action_description * security_role list * security_action list
+  | SnotInAction        of action_description * security_action
+  | SnotByRoleInAction  of action_description * security_role list * security_action
   | StransferredBy      of action_description
   | StransferredTo      of action_description
-  | SnoFail             of action_description
+  | SnoFail             of security_action
 [@@deriving show {with_path = false}]
 
 type security_predicate = {
@@ -764,7 +766,11 @@ let cmp_trtyp (t1 : trtyp) (t2 : trtyp) : bool = t1 = t2
 let cmp_comparison_operator (op1 : comparison_operator) (op2 : comparison_operator) : bool = op1 = op2
 let cmp_action_description (ad1 : action_description) (ad2 : action_description) : bool = ad1 = ad2
 let cmp_security_role = cmp_lident
-let cmp_security_action = cmp_lident
+let cmp_security_action s1 s2 =
+  match s1, s2 with
+  | Sany, Sany -> true
+  | Sentry e1, Sentry e2 -> List.for_all2 cmp_lident e1 e2
+  | _ -> false
 
 let cmp_fail_type
     (cmp : 'term -> 'term -> bool)
@@ -1986,6 +1992,7 @@ module Utils : sig
   val is_field_storage                   : model -> ident -> bool
   val with_trace                         : model -> bool
   val get_callers                        : model -> ident -> ident list
+  val no_fail                            : model -> ident -> bool
 
 end = struct
 
@@ -2405,5 +2412,20 @@ end = struct
 
   (* returns the list of entries calling the function named 'name' *)
   let get_callers (m : model) (name : ident) : ident list = [] (* TODO *)
+
+  (* is there a no_fail predicate on an entry called fn ? *)
+  let no_fail (m : model) (fn : ident) : bool =
+    List.fold_left (fun acc (p : security_item) ->
+        if not acc then
+          match p.predicate.s_node with
+          | SnoFail Sany -> true
+          | SnoFail (Sentry l) ->
+            if l |> List.map unloc |> List.mem fn then
+              true
+            else
+              false
+          | _ -> false
+        else true
+      ) false (m.security.items)
 
 end
