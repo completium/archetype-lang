@@ -281,7 +281,7 @@ type 'id term_node  =
   | PsecurityActionRole of action_description * security_role list
   | PsecurityActionAction of action_description * security_action list
   | PsecurityActionRoleAction of action_description * security_role list * security_action list
-  | PsecurityActionNoFail of action_description
+  | PsecurityActionNoFail of security_action list
 [@@deriving show {with_path = false}]
 
 and 'id term_arg =

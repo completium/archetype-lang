@@ -228,14 +228,14 @@ type ('id, 'term) mterm_node  =
   | Msettoiterate of 'term
   (* security predicates *)
   | MOnlyByRole         of action_description * security_role list
-  | MOnlyInAction       of action_description * security_action list
-  | MOnlyByRoleInAction of action_description * security_role list * security_action list
+  | MOnlyInAction       of action_description * security_action
+  | MOnlyByRoleInAction of action_description * security_role list * security_action
   | MNotByRole          of action_description * security_role list
-  | MNotInAction        of action_description * security_action list
-  | MNotByRoleInAction  of action_description * security_role list * security_action list
+  | MNotInAction        of action_description * security_action
+  | MNotByRoleInAction  of action_description * security_role list * security_action
   | MsecTransferredBy   of 'term
   | MsecTransferredTo   of 'term
-  | MsecNoFail          of action_description
+  | MsecNoFail          of security_action
   (* security arg *)
   | Manyaction
 [@@deriving show {with_path = false}]
@@ -334,7 +334,9 @@ and action_description =
 and security_role   = lident
 [@@deriving show {with_path = false}]
 
-and security_action = lident
+and security_action =
+  | Sany
+  | Sentry of lident list
 [@@deriving show {with_path = false}]
 
 type info_var = {
@@ -735,7 +737,11 @@ let cmp_trtyp (t1 : trtyp) (t2 : trtyp) : bool = t1 = t2
 let cmp_comparison_operator (op1 : comparison_operator) (op2 : comparison_operator) : bool = op1 = op2
 let cmp_action_description (ad1 : action_description) (ad2 : action_description) : bool = ad1 = ad2
 let cmp_security_role = cmp_lident
-let cmp_security_action = cmp_lident
+let cmp_security_action s1 s2 =
+  match s1, s2 with
+  | Sany, Sany -> true
+  | Sentry e1, Sentry e2 -> List.for_all2 cmp_lident e1 e2
+  | _ -> false
 
 let cmp_fail_type
     (cmp : 'term -> 'term -> bool)
@@ -909,14 +915,14 @@ let cmp_mterm_node
     | Msetiterated e1, Msetiterated  e2                                                -> cmp e1 e2
     | Msettoiterate e1, Msettoiterate e2                                               -> cmp e1 e2
     | MOnlyByRole (l1, r1), MOnlyByRole (l2, r2)                                       -> cmp_action_description l1 l2 && List.for_all2 cmp_security_role r1 r2
-    | MOnlyInAction (l1, r1), MOnlyInAction (l2, r2)                                   -> cmp_action_description l1 l2 && List.for_all2 cmp_security_action r1 r2
-    | MOnlyByRoleInAction (l1, r1, q1), MOnlyByRoleInAction (l2, r2, q2)               -> cmp_action_description l1 l2 && List.for_all2 cmp_security_role r1 r2 && List.for_all2 cmp_security_action q1 q2
+    | MOnlyInAction (l1, r1), MOnlyInAction (l2, r2)                                   -> cmp_action_description l1 l2 && cmp_security_action r1 r2
+    | MOnlyByRoleInAction (l1, r1, q1), MOnlyByRoleInAction (l2, r2, q2)               -> cmp_action_description l1 l2 && List.for_all2 cmp_security_role r1 r2 && cmp_security_action q1 q2
     | MNotByRole (l1, r1), MNotByRole (l2, r2)                                         -> cmp_action_description l1 l2 && List.for_all2 cmp_security_role r1 r2
-    | MNotInAction (l1, r1), MNotInAction (l2, r2)                                     -> cmp_action_description l1 l2 && List.for_all2 cmp_security_action r1 r2
-    | MNotByRoleInAction (l1, r1, q1), MNotByRoleInAction (l2, r2, q2)                 -> cmp_action_description l1 l2 && List.for_all2 cmp_security_role r1 r2 && List.for_all2 cmp_security_action q1 q2
+    | MNotInAction (l1, r1), MNotInAction (l2, r2)                                     -> cmp_action_description l1 l2 && cmp_security_action r1 r2
+    | MNotByRoleInAction (l1, r1, q1), MNotByRoleInAction (l2, r2, q2)                 -> cmp_action_description l1 l2 && List.for_all2 cmp_security_role r1 r2 && cmp_security_action q1 q2
     | MsecTransferredBy a1, MsecTransferredBy a2                                       -> cmp a1 a2
     | MsecTransferredTo a1, MsecTransferredTo a2                                       -> cmp a1 a2
-    | MsecNoFail a1, MsecNoFail a2                                                     -> cmp_action_description a1 a2
+    | MsecNoFail a1, MsecNoFail a2                                                     -> cmp_security_action a1 a2
     | Mshallow (i1, x1), Mshallow (i2, x2)                                             -> cmp x1 x2 && cmp_ident i1 i2
     | Mlisttocoll (i1, x1), Mlisttocoll (i2, x2)                                       -> cmp x1 x2 && cmp_ident i1 i2
     | Munshallow (i1, x1), Munshallow (i2, x2)                                         -> cmp x1 x2 && cmp_ident i1 i2
@@ -2018,6 +2024,7 @@ module Utils : sig
   val is_field_storage                   : model -> ident -> bool
   val with_trace                         : model -> bool
   val get_callers                        : model -> ident -> ident list
+  val no_fail                            : model -> ident -> bool
 
 end = struct
 
@@ -2437,5 +2444,20 @@ end = struct
 
   (* returns the list of entries calling the function named 'name' *)
   let get_callers (m : model) (name : ident) : ident list = [] (* TODO *)
+
+  (* is there a no_fail predicate on an entry called fn ? *)
+  let no_fail (m : model) (fn : ident) : bool =
+    List.fold_left (fun acc (p : postcondition) ->
+        if not acc then
+          match p.formula.node with
+          | MsecNoFail Sany -> true
+          | MsecNoFail (Sentry l) ->
+            if l |> List.map unloc |> List.mem fn then
+              true
+            else
+              false
+          | _ -> false
+        else true
+      ) false (m.specification.postconditions)
 
 end

@@ -733,13 +733,13 @@ let pp_mterm fmt (mt : mterm) =
     | MOnlyInAction (l, r) ->
       Format.fprintf fmt "only_in_action %a [%a]"
         pp_action_description l
-        (pp_list " or " pp_id) r
+        pp_security_action r
 
     | MOnlyByRoleInAction (l, r, q) ->
       Format.fprintf fmt "only_by_role_in_action %a %a %a"
         pp_action_description l
         (pp_list " or " pp_id) r
-        (pp_list " or " pp_id) q
+        pp_security_action q
 
     | MNotByRole (l, r) ->
       Format.fprintf fmt "not_by_role %a [%a]"
@@ -749,13 +749,13 @@ let pp_mterm fmt (mt : mterm) =
     | MNotInAction (l, r) ->
       Format.fprintf fmt "not_in_action %a [%a]"
         pp_action_description l
-        (pp_list " or " pp_id) r
+        pp_security_action r
 
     | MNotByRoleInAction (l, r, q) ->
       Format.fprintf fmt "not_by_role_in_action %a [%a] [%a]"
         pp_action_description l
         (pp_list " or " pp_id) r
-        (pp_list " or " pp_id) q
+        pp_security_action q
 
     | MsecTransferredBy a ->
       Format.fprintf fmt "transferred_by %a"
@@ -765,9 +765,9 @@ let pp_mterm fmt (mt : mterm) =
       Format.fprintf fmt "transferred_to %a"
         f a
 
-    | MsecNoFail desc ->
+    | MsecNoFail a ->
       Format.fprintf fmt "no_fail %a"
-        pp_action_description desc
+        pp_security_action a
 
     | Manyaction -> Format.fprintf fmt "anyaction"
   in

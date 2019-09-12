@@ -334,13 +334,13 @@ let to_model (ast : A.model) : M.model =
       M.MOnlyByRole (to_action_description action, roles)
 
     | A.PsecurityActionAction (action, actions) ->
-      M.MOnlyInAction (to_action_description action, actions)
+      M.MOnlyInAction (to_action_description action, Sentry actions)
 
     | A.PsecurityActionRoleAction (action, roles, actions) ->
-      M.MOnlyByRoleInAction (to_action_description action, roles, actions)
+      M.MOnlyByRoleInAction (to_action_description action, roles, Sentry actions)
 
-    | A.PsecurityActionNoFail (action) ->
-      M.MsecNoFail (to_action_description action)
+    | A.PsecurityActionNoFail (entry) ->
+      M.MsecNoFail (Sentry entry)
   in
 
   let rec to_mterm (pterm : A.pterm) : M.mterm =

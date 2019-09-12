@@ -517,20 +517,20 @@ let map_security_pred loc (t : M.mterm) =
   match t.M.node with
   | M.MOnlyByRole (ADany,roles)     ->
     mk_performed_by caller (roles |> List.map unloc) false
-  | M.MOnlyInAction (ADany,entries) ->
+  | M.MOnlyInAction (ADany,Sentry entries) ->
     mk_performed_by entry (entries |> List.map unloc |> List.map String.capitalize_ascii) true
   | M.MOnlyByRole (a,roles)         ->
     mk_changes_performed_by caller a (roles |> List.map unloc) false
-  | M.MOnlyInAction (a,entries)     ->
+  | M.MOnlyInAction (a,Sentry entries)     ->
     mk_changes_performed_by entry
       a
       (entries |> List.map unloc |> List.map String.capitalize_ascii)
       true
-  | M.MOnlyByRoleInAction (ADany,roles,entries) ->
+  | M.MOnlyByRoleInAction (ADany,roles,Sentry entries) ->
     mk_performed_by_2 caller entry
       (roles |> List.map unloc)
       (entries |> List.map unloc |> List.map String.capitalize_ascii)
-  | M.MOnlyByRoleInAction (a,roles,entries) ->
+  | M.MOnlyByRoleInAction (a,roles,Sentry entries) ->
     mk_changes_performed_by_2 caller entry a
       (roles |> List.map unloc)
       (entries |> List.map unloc |> List.map String.capitalize_ascii)
@@ -938,6 +938,15 @@ and mk_invariants (m : M.model) ctx (lbl : ident option) lbody =
 
 (* API storage templates -----------------------------------------------------*)
 
+let mk_key_found_cond old asset var =
+  Tcontains (asset,
+             var,
+             match old with
+             | `Old -> mk_ac_old asset
+             | `Curr -> mk_ac asset)
+
+let mk_not_found_cond old asset var = Tnot (mk_key_found_cond old asset var)
+
 let mk_get_field_from_pos asset field = Dfun {
     name = "get_"^field;
     logic = Logic;
@@ -960,7 +969,8 @@ let mk_get_asset asset key ktyp = Dfun {
     logic = NoMod;
     args = ["k",ktyp];
     returns = Tyasset asset;
-    raises = [ Texn Enotfound ];
+    raises = [ Timpl (Texn Enotfound,
+                      mk_not_found_cond `Old asset (Tvar "k"))];
     variants = [];
     requires = [];
     ensures = [
@@ -976,9 +986,7 @@ let mk_get_asset asset key ktyp = Dfun {
                    Tvar "k")
       }
     ];
-    body = Tif (Tnot (Tcontains (asset,
-                                 Tvar "k",
-                                 mk_ac asset)),
+    body = Tif (mk_not_found_cond `Curr asset (Tvar "k"),
                 Traise Enotfound,
                 Some (Tget (asset,
                             mk_ac asset,
@@ -1026,13 +1034,12 @@ let mk_set_asset m key = function
       logic = NoMod;
       args = ["old_asset", Tyasset asset; "new_asset", Tyasset asset];
       returns = Tyunit;
-      raises = [ Texn Enotfound ];
+      raises = [ Timpl (Texn Enotfound,
+                        mk_not_found_cond `Old asset (Tdoti ("old_asset",key)))];
       variants = [];
       requires = [];
       ensures = mk_set_ensures m asset key fields;
-      body = Tif (Tnot (Tmem (asset,
-                              Tvar "old_asset",
-                              mk_ac asset)),
+      body = Tif (mk_not_found_cond `Curr asset (Tdoti ("old_asset",key)),
                   Traise Enotfound,
                   Some (
                     Tassign (mk_ac asset,
@@ -1186,14 +1193,13 @@ let mk_add_asset m asset key : decl = Dfun {
     logic    = NoMod;
     args     = ["new_asset",Tyasset asset];
     returns  = Tyunit;
-    raises   = [ Texn Ekeyexist];
+    raises   = [ Timpl (Texn Ekeyexist,
+                        mk_not_found_cond `Old asset (Tdoti ("new_asset", key)))];
     variants = [];
     requires = mk_add_asset_precond m asset "new_asset";
     ensures  = mk_add_ensures m ("add_"^asset) asset "new_asset";
     body     = Tseq [
-        Tif (Tmem (asset,
-                   Tvar ("new_asset"),
-                   mk_ac asset),
+        Tif (mk_not_found_cond `Curr asset (Tdoti ("new_asset", key)),
              Traise Ekeyexist, (* then *)
              Some (Tseq [      (* else *)
                  Tassign (mk_ac asset,
@@ -1248,18 +1254,18 @@ let mk_rm_ensures m p a e =
     }
   ] @ (mk_rm_sum_ensures m a e)
 
-let mk_rm_asset m asset key : decl = Dfun {
+let mk_rm_asset m asset key : decl =
+  Dfun {
     name     = "remove_"^asset;
     logic    = NoMod;
     args     = ["a", Tyasset asset];
     returns  = Tyunit;
-    raises   = [Texn Enotfound];
+    raises   = [Timpl (Texn Enotfound,
+                       mk_not_found_cond `Old asset (Tdoti ("a",key)))];
     variants = [];
     requires = [];
     ensures  = mk_rm_ensures m ("remove_"^asset) asset "a";
-    body = Tif (Tnot (Tmem (asset,
-                            Tvar "a",
-                            mk_ac asset)),
+    body = Tif (mk_not_found_cond `Curr asset (Tdoti ("a",key)),
                 Traise Enotfound,
                 Some (
                   Tseq [
@@ -1286,27 +1292,23 @@ let mk_rm_asset m asset key : decl = Dfun {
    addktyp : removed asset key type
 *)
 let mk_add_partition_field m a ak pf adda addak : decl =
+  let addak_cond = mk_key_found_cond `Old adda (Tdoti ("new_asset", addak)) in
   let akey  = Tapp (Tvar ak,[Tvar "asset"]) in
   let addak = Tapp (Tvar addak,[Tvar "new_asset"]) in
-  let cond_raise  = Tnot (Tcontains (a,
-                                     Tdoti("asset",ak),
-                                     mk_ac_old a)) in
-  let cond  = Tnot (Tcontains (a,
-                               Tdoti("asset",ak),
-                               mk_ac a)) in
   Dfun {
     name     = "add_"^a^"_"^pf;
     logic    = NoMod;
     args     = ["asset",Tyasset a; "new_asset",Tyasset adda];
     returns  = Tyunit;
     raises   = [Timpl (Texn Enotfound,
-                       cond_raise);
-                Texn Ekeyexist];
+                       mk_not_found_cond `Old a (Tdoti ("asset",ak)));
+                Timpl (Texn Ekeyexist,
+                        addak_cond)];
     variants = [];
     requires = mk_add_asset_precond m adda "new_asset";
     ensures  = mk_add_ensures m ("add_"^a^"_"^pf) adda "new_asset";
     body     =
-      Tif (cond,
+      Tif (mk_not_found_cond `Curr a (Tdoti ("asset",ak)),
            Traise Enotfound,
            Some (Tseq [
                Tapp (Tvar ("add_"^adda),
@@ -1337,14 +1339,13 @@ let mk_rm_partition_field m asset keyf f rmed_asset rmkey : decl = Dfun {
     logic    = NoMod;
     args     = ["asset",Tyasset asset; "rm_asset",Tyasset rmed_asset];
     returns  = Tyunit;
-    raises   = [Texn Enotfound];
+    raises   = [Timpl (Texn Enotfound,
+                       mk_not_found_cond `Old asset (Tdoti ("asset",keyf))) ];
     variants = [];
     requires = [];
     ensures  = mk_rm_ensures m ("remove_"^asset^"_"^f) rmed_asset "rm_asset";
     body     =
-      Tif (Tnot (Tmem (asset,
-                       Tvar "asset",
-                       mk_ac asset)),
+      Tif (mk_not_found_cond `Curr asset (Tdoti ("asset",keyf)),
            Traise Enotfound,
            Some (
              Tletin (false,
@@ -1542,19 +1543,54 @@ let mk_entry_require m idents =
     ]
   else []
 
+let add_raise_ctx args src m exn =
+  match src with
+  | M.Endo ->
+    begin
+      match exn with
+      | Texn Ekeyexist ->
+        if List.length args > 0 then
+          let mk_ctx (id,t) =
+            let id = Mlwtree.deloc id in
+            match Mlwtree.deloc t with
+            | Tyasset a ->
+              let a = Mlwtree.deloc a in
+              let key,_ = M.Utils.get_asset_key m (dumloc a) in
+              mk_key_found_cond `Old a (Tdoti (a,key))
+            | Typartition a | Tycoll a ->
+              let a = Mlwtree.deloc a in
+              let key,_ = M.Utils.get_asset_key m (dumloc a) in
+              Texists ([["a"],Tyasset a],
+                       Tand (mk_key_found_cond `Old a (Tdoti("a",key)),
+                             Tcontains (a,
+                                        Tdoti ("a",key),
+                                        Tvar (id))))
+            | _ -> exn
+          in
+          let ctx = List.fold_left (fun acc arg ->
+              Tor (acc,mk_ctx arg)
+            ) (mk_ctx (List.hd args)) (List.tl args) in
+          Timpl (exn, ctx)
+        else exn
+      | _ -> exn
+    end
+  | _ -> exn
+
+(* for now (src = `Endo) means the function is 'add_shallow_xxx' *)
 let mk_functions src m =
   M.Utils.get_functions m |> List.filter (is_src src) |> List.map (
     fun ((v : M.specification option),
          (s : M.function_struct),
          (t : M.type_)) ->
+      let args = (List.map (fun (i,t,_) ->
+          (map_lident i, map_mtype t)
+        ) s.args) in
       Dfun {
         name     = map_lident s.name;
         logic    = NoMod;
-        args     = (List.map (fun (i,t,_) ->
-            (map_lident i, map_mtype t)
-          ) s.args);
+        args     = args;
         returns  = map_mtype t;
-        raises   = fold_exns s.body |> List.map loc_term;
+        raises   = fold_exns s.body |> List.map (add_raise_ctx args src m) |> List.map loc_term;
         variants = [];
         requires =
           (mk_entry_require m (M.Utils.get_callers m (unloc s.name))) @
@@ -1588,6 +1624,25 @@ let mk_entries m =
       }
   )
 
+let rm_fail_exn = List.filter (fun e ->
+    match unloc_term e with
+    | Texn Enotfound
+    | Texn Ekeyexist -> false
+    | _ -> true)
+
+let process_no_fail m (d : (loc_term, loc_typ, loc_ident) abstract_decl) =
+    match d with
+    | Dfun f ->
+      if M.Utils.no_fail m (Mlwtree.deloc f.name) then
+        Dfun { f with
+               raises = rm_fail_exn f.raises;
+               body   = loc_term (Ttry (unloc_term f.body,
+                                        [Enotfound,Tassert Tfalse;
+                                         Ekeyexist,Tassert Tfalse]));
+             }
+      else d
+    | _ -> d
+
 (* ----------------------------------------------------------------------------*)
 
 let to_whyml (m : M.model) : mlw_tree  =
@@ -1608,7 +1663,7 @@ let to_whyml (m : M.model) : mlw_tree  =
   let storage_api      = mk_storage_api m (records |> wdl) in
   let endo             = mk_endo_functions m in
   let functions        = mk_exo_functions m in
-  let entries          = mk_entries m in
+  let entries          = mk_entries m |> List.map (process_no_fail m) in
   let usestorage       = mk_use_module storage_module in
   let loct : loc_mlw_tree = [{
       name  = storage_module;

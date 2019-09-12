@@ -292,6 +292,10 @@ let rec pp_term outer pos fmt = function
     Format.fprintf fmt "@[forall %a.@\n%a@]"
       (pp_list ", " pp_univ_decl) ud
       (pp_term e_default PRight) b
+  | Texists (ud,b) ->
+    Format.fprintf fmt "@[exists %a.@\n%a@]"
+      (pp_list ", " pp_univ_decl) ud
+      (pp_term e_default PRight) b
   | Timpl (e1,e2) ->
     Format.fprintf fmt "@[%a ->@\n%a @]"
       (pp_term e_default PRight) e1
@@ -300,6 +304,7 @@ let rec pp_term outer pos fmt = function
     Format.fprintf fmt "%a /\\ %a"
       (pp_term e_default PRight) e1
       (pp_term e_default PRight) e2
+  | Tfalse -> Format.fprintf fmt "false"
   | Tor (e1,e2) ->
     Format.fprintf fmt "%a \\/ %a"
       (pp_term e_default PRight) e1
@@ -368,11 +373,10 @@ let rec pp_term outer pos fmt = function
       (pp_term outer pos) s
       (pp_invariants false) l
       (pp_term outer pos) b
-  | Ttry (b,e,c) ->
-    Format.fprintf fmt "try@\n  @[%a@]@\nwith %a ->@\n  @[%a@]@\nend"
+  | Ttry (b,l) ->
+    Format.fprintf fmt "try@\n  @[%a@]@\nwith @\n@[%a@]@\nend"
       (pp_term outer pos) b
-      pp_exn e
-      (pp_term outer pos) c
+      (pp_list "@\n" pp_catch) l
   | Tassert e ->
     Format.fprintf fmt "assert { %a }"
       (pp_term outer pos) e
@@ -503,6 +507,10 @@ and pp_raise outer pos fmt raises =
   else
     Format.fprintf fmt "@[raises { %a }@\n@]"
       (pp_list " }@\nraises { " (pp_term outer pos)) raises
+and pp_catch fmt (exn,e) =
+  Format.fprintf fmt "| %a -> %a"
+    pp_exn exn
+    (pp_term e_top PRight) e
 
 (* -------------------------------------------------------------------------- *)
 
