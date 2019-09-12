@@ -585,7 +585,11 @@ let pp_security fmt (s : security) =
       else Format.fprintf fmt "[%a]" (pp_list " or " pp_id) l
   in
   let pp_security_role = pp_id in
-  let pp_security_roles fmt = Format.fprintf fmt "[%a]" (pp_list " or " pp_security_role) in
+  let pp_security_roles fmt l =
+    if List.length l = 1
+    then pp_id fmt (List.nth l 0)
+    else Format.fprintf fmt "[%a]" (pp_list " or " pp_security_role) l
+  in
   let pp_security_predicate fmt (sp : security_predicate) =
     match sp.s_node with
     | SonlyByRole (ad, roles) ->
@@ -628,13 +632,13 @@ let pp_security fmt (s : security) =
       Format.fprintf fmt "transferred_to %a"
         pp_action_description ad
 
-    | SnoFail action ->
-      Format.fprintf fmt "no_fail %a"
+    | SnoStorageFail action ->
+      Format.fprintf fmt "no_storage_fail %a"
         pp_security_action action
   in
 
   let pp_security_item fmt (si : security_item) =
-    Format.fprintf fmt "%a : %a;@\n"
+    Format.fprintf fmt "%a : %a;"
       pp_id si.label
       pp_security_predicate si.predicate
   in
@@ -644,7 +648,7 @@ let pp_security fmt (s : security) =
   then ()
   else
     Format.fprintf fmt "security {@\n  @[%a@]@\n}@\n"
-      (pp_no_empty_list2 pp_security_item) s.items
+      (pp_no_empty_list pp_security_item) s.items
 
 let pp_variable fmt (v : lident variable) =
   Format.fprintf fmt "%s %a %a%a%a%a@\n"

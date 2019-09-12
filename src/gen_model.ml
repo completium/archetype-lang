@@ -686,7 +686,7 @@ let to_model (ast : A.model) : M.model =
           | SnotByRoleInAction  (ad, roles, action) -> SnotByRoleInAction  (to_action_description ad, roles, to_security_action action)
           | StransferredBy      (ad)                -> StransferredBy      (to_action_description ad)
           | StransferredTo      (ad)                -> StransferredTo      (to_action_description ad)
-          | SnoFail             (action)            -> SnoFail             (to_security_action action)
+          | SnoStorageFail      (action)            -> SnoStorageFail      (to_security_action action)
         in
         M.mk_security_predicate (to_security_node sn.s_node) ~loc:sn.loc
       in

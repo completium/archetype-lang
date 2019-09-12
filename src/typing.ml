@@ -119,6 +119,7 @@ type error_desc =
   | UnknownProcedure                   of ident
   | UnknownState                       of ident
   | UnknownTypeName                    of ident
+  | UnknownSecurityPredicate           of ident * int
   | UnpureInFormula
   | VoidMethodInExpr
 [@@deriving show {with_path = false}]
@@ -1290,9 +1291,9 @@ let rec for_xexpr (mode : emode_t) (env : env) ?(ety : M.ptyp option) (tope : PT
         let s1 = for_action_description env s1 in
         let s2 = for_security_role env s2 in
         let s3 = for_security_action env s3 in
-        mk_sp (Some M.vtbool) (M.PsecurityActionRoleAction (s1, s2, s3)) *)
+        mk_sp (Some M.vtbool) (M.PsecurityActionRoleAction (s1, s2, s3))
 
-    (* | Esecurity { pldesc = SNoFail s } ->
+       | Esecurity { pldesc = SNoFail s } ->
        if mode <> `Formula then begin
         Env.emit_error env (loc tope, SecurityInExpr);
         bailout ()
@@ -1552,22 +1553,32 @@ and for_action_description (env : env) (sa : PT.security_arg) : M.action_descrip
     M.ADAny
 
 (* -------------------------------------------------------------------- *)
-and for_security_action (env : env) (sa : PT.security_arg) : M.security_action list =
+and for_security_action (env : env) (sa : PT.security_arg) : M.security_action =
   match unloc sa with
-  | Sident id -> begin
-      let ad = Env.Action.lookup env (unloc id) in
+  | Sident id ->
+    begin
+      match unloc id with
+      | "anyaction" -> Sany
+      | _           ->
+        let ad = Env.Action.lookup env (unloc id) in
 
-      if Option.is_none ad then
-        Env.emit_error env (loc id, UnknownAction (unloc id));
-      Option.get_as_list (Option.map (fun ad -> M.Sentry [ad.ad_name]) ad)
+        if Option.is_none ad then
+          Env.emit_error env (loc id, UnknownAction (unloc id));
+
+        Sentry [id]
     end
 
   | Slist sas ->
-    List.flatten (List.map (for_security_action env) sas)
+    M.Sentry (List.flatten (List.map (
+        fun x ->
+          let a = for_security_action env x in
+          match a with
+          | Sentry ids -> ids
+          | _ -> assert false) sas))
 
   | _ ->
     Env.emit_error env (loc sa, InvalidSecurityAction);
-    []
+    Sentry []
 
 (* -------------------------------------------------------------------- *)
 and for_security_role (env : env) (sa : PT.security_arg) : M.security_role list =
@@ -1865,17 +1876,50 @@ let for_specification_item (env : env) (v : PT.specification_item) : env * env i
     (env, `Postcondition (x, f, invs))
 
 (* -------------------------------------------------------------------- *)
-let for_security_item (env : env) (v : PT.security_item) : env * env ispecification =
-  match unloc v with
-  | _ -> assert false
+let for_security_item (env : env) (v : PT.security_item) : env * M.security_item =
+  let l, (lbl, name, args) = Location.deloc v in
+
+  (* FIXME: check and add label in env *)
+
+  let security_node : M.security_node =
+    let id = unloc name in
+    match id, args with
+    | "only_by_role",           [a; b]    -> M.SonlyByRole         (for_action_description env a, for_security_role env b)
+    | "only_in_action",         [a; b]    -> M.SonlyInAction       (for_action_description env a, for_security_action env b)
+    | "only_by_role_in_action", [a; b; c] -> M.SonlyByRoleInAction (for_action_description env a, for_security_role env b, for_security_action env b)
+    | "not_by_role",            [a; b]    -> M.SnotByRole          (for_action_description env a, for_security_role env b)
+    | "not_in_action",          [a; b]    -> M.SnotInAction        (for_action_description env a, for_security_action env b)
+    | "not_by_role_in_action",  [a; b; c] -> M.SnotByRoleInAction  (for_action_description env a, for_security_role env b, for_security_action env b)
+    | "transferred_by",         [a]       -> M.StransferredBy      (for_action_description env a)
+    | "transferred_to",         [a]       -> M.StransferredTo      (for_action_description env a)
+    | "no_storage_fail",        [a]       -> M.SnoStorageFail      (for_security_action env a)
+    | _ -> Env.emit_error env (loc v, UnknownSecurityPredicate (id, List.length args)); assert false
+  in
+
+  let security_predicate : M.security_predicate = M.{
+      s_node = security_node;
+      loc = l;
+    }
+  in
+
+  let security_item : M.security_item = M.{
+      label = lbl;
+      predicate = security_predicate;
+      loc = l;
+    }
+  in
+
+  env, security_item
 
 (* -------------------------------------------------------------------- *)
 let for_specification (env : env) (v : PT.specification) =
   List.fold_left_map for_specification_item env (fst (unloc v))
 
 (* -------------------------------------------------------------------- *)
-let for_security (env : env) (v : PT.security) =
-  List.fold_left_map for_security_item env (fst (unloc v))
+let for_security (env : env) (v : PT.security) : env * M.security =
+  let env, items = List.fold_left_map for_security_item env (fst (unloc v)) in
+  env, M.{ items = items;
+           loc = loc v }
 
 (* -------------------------------------------------------------------- *)
 let for_named_state (env : env) (x : PT.lident) =
@@ -2346,8 +2390,6 @@ let specifications_of_ispecifications =
 
   in fun ispecs -> List.fold_left do1 env0 ispecs
 
-let security_item_of_sdecls _ = assert false
-
 (* -------------------------------------------------------------------- *)
 let transactions_of_tdecls tdecls =
   let for_calledby cb : M.rexpr option =
@@ -2402,7 +2444,7 @@ let for_declarations (env : env) (decls : (PT.declaration list) loced) : M.model
       ~variables:(variables_of_fdecls fdecls)
       ~transactions:(transactions_of_tdecls tdecls)
       ~specifications:(List.map specifications_of_ispecifications vdecls)
-      ~securities:(List.map security_item_of_sdecls sdecls)
+      ~securities:sdecls
       x
 
   | _ ->

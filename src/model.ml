@@ -604,7 +604,7 @@ type security_node =
   | SnotByRoleInAction  of action_description * security_role list * security_action
   | StransferredBy      of action_description
   | StransferredTo      of action_description
-  | SnoFail             of security_action
+  | SnoStorageFail      of security_action
 [@@deriving show {with_path = false}]
 
 type security_predicate = {
@@ -2418,8 +2418,8 @@ end = struct
     List.fold_left (fun acc (p : security_item) ->
         if not acc then
           match p.predicate.s_node with
-          | SnoFail Sany -> true
-          | SnoFail (Sentry l) ->
+          | SnoStorageFail Sany -> true
+          | SnoStorageFail (Sentry l) ->
             if l |> List.map unloc |> List.mem fn then
               true
             else

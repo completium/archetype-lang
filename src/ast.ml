@@ -281,17 +281,6 @@ and 'id term_arg =
   | AEffect of ('id * operator * 'id term_gen) list
 [@@deriving show {with_path = false}]
 
-and action_description =
-  | ADAny
-  | ADOp  of string * lident
-
-and security_role   = lident
-
-and security_action =
-  | Sany
-  | Sentry of lident list
-[@@deriving show {with_path = false}]
-
 (* -------------------------------------------------------------------- *)
 
 and 'id term_poly = ('id term_node) struct_poly
@@ -415,6 +404,19 @@ type 'id specification = {
 }
 [@@deriving show {with_path = false}]
 
+type action_description =
+  | ADAny
+  | ADOp  of string * lident
+[@@deriving show {with_path = false}]
+
+type security_role   = lident
+[@@deriving show {with_path = false}]
+
+type security_action =
+  | Sany
+  | Sentry of lident list
+[@@deriving show {with_path = false}]
+
 type security_node =
   | SonlyByRole         of action_description * security_role list
   | SonlyInAction       of action_description * security_action
@@ -424,7 +426,7 @@ type security_node =
   | SnotByRoleInAction  of action_description * security_role list * security_action
   | StransferredBy      of action_description
   | StransferredTo      of action_description
-  | SnoFail             of security_action
+  | SnoStorageFail      of security_action
 [@@deriving show {with_path = false}]
 
 type security_predicate = {
