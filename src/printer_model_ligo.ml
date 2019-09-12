@@ -909,38 +909,54 @@ let pp_model fmt (model : model) =
       Format.fprintf fmt
         "function get_%s (const s : storage_type; const key : %a) : %s is@\n  \
          begin@\n    \
-         const res : %s = get_force(key , s.%s_assets);@\n  \
+         const res : %s = get_force(key, s.%s_assets);@\n  \
          end with (res)@\n"
         an pp_btyp t an an an
+
     | Set an ->
-      (* let _, t = Utils.get_asset_key model (to_lident an) in *)
-      Format.fprintf fmt "// TODO api storage: Set"
-    (* "let[@inline] set_%s (s, key, asset : storage * %a * %s) : storage =@\n  \
-       s.%s_assets <- Map.update key (Some asset) s.%s_assets@\n"
-       an pp_btyp t an an an *)
+      let _, t = Utils.get_asset_key model (to_lident an) in
+      Format.fprintf fmt
+        "function set_%s (const s : storage_type; const key : %a; const a : %s) : storage_type is@\n  \
+         begin@\n    \
+         const map_local : map(%a, %s) = s.%s_assets;@\n    \
+         map_local[key] := a;@\n    \
+         s.%s_assets := map_local;@\n  \
+         end with (s)@\n"
+        an pp_btyp t an
+        pp_btyp t an an
+        an
 
     | Add an ->
-      (* let k, t = Utils.get_asset_key model (to_lident an) in *)
+      let k, t = Utils.get_asset_key model (to_lident an) in
       Format.fprintf fmt
         "function add_%s (const s : storage_type; const a : %s) : storage_type is@\n  \
          begin@\n    \
-         skip@\n  \
+         const key : %a = a.%s;@\n    \
+         s.%s_keys := cons(key, s.%s_keys);@\n    \
+         const map_local : map(%a, %s) = s.%s_assets;@\n    \
+         map_local[key] := a;@\n    \
+         s.%s_assets := map_local;@\n  \
          end with (s)@\n"
         an an
-
-    (* "let[@inline] add_%s (s, asset : storage * %s) : storage =@\n  \
-       let key = asset.%s in@\n  \
-       let s = s.%s_keys <- add_list key s.%s_keys in@\n  \
-       s.%s_assets <- Map.update key (Some asset) s.%s_assets@\n"
-       an an k an an an an *)
+        pp_btyp t k
+        an an
+        pp_btyp t an an
+        an
 
     | Remove an ->
-      (* let _, t = Utils.get_asset_key model (to_lident an) in *)
-      Format.fprintf fmt "// TODO api storage: Remove"
-    (* "let[@inline] remove_%s (s, key : storage * %a) : storage =@\n  \
-       let s = s.%s_keys <- remove_list key s.%s_keys in@\n  \
-       s.%s_assets <- Map.update key None s.%s_assets@\n"
-       an pp_btyp t an an an an *)
+      let _, t = Utils.get_asset_key model (to_lident an) in
+      Format.fprintf fmt
+        "function remove_%s (const s : storage_type; const key : %a) : storage_type is@\n  \
+         begin@\n    \
+         // TODO: remove key of s.%s_keys@\n    \
+         const map_local : map(%a, %s) = s.%s_assets;@\n    \
+         remove key from map map_local;@\n    \
+         s.%s_assets := map_local;@\n  \
+         end with (s)@\n"
+        an pp_btyp t
+        an
+        pp_btyp t an an
+        an
 
     | Clear an ->
       (* let k, t = Utils.get_asset_key model (to_lident an) in *)
@@ -957,15 +973,23 @@ let pp_model fmt (model : model) =
        an an an *)
 
     | UpdateAdd (an, fn) ->
-      (* let k, t = Utils.get_asset_key model (to_lident an) in *)
+      let k, t = Utils.get_asset_key model (to_lident an) in
       let ft, c = Utils.get_field_container model an fn in
       (* let kk, _ = Utils.get_asset_key model (to_lident ft) in *)
       Format.fprintf fmt
         "function add_%s_%s (const s : storage_type; const a : %s; const b : %s) : storage_type is@\n  \
          begin@\n    \
-         skip@\n  \
+         const key : %a = a.%s;@\n    \
+         s.%s_keys := cons(key, s.%s_keys);@\n    \
+         const map_local : map(%a, %s) = s.%s_assets;@\n    \
+         map_local[key] := a;@\n    \
+         s.%s_assets := map_local;@\n  \
          end with (s)@\n"
         an fn an ft
+        pp_btyp t k
+        an an
+        pp_btyp t an an
+        an
 
     (* "let[@inline] add_%s_%s (s, a, b : storage * %s * %s) : storage =@\n  \
        let asset = a.%s <- add_list b.%a a.%s in@\n  \
@@ -1050,12 +1074,11 @@ let pp_model fmt (model : model) =
        an fn *)
 
     | Contains an ->
-      (* let _, t = Utils.get_asset_key model (to_lident an) in *)
       let _, t = Utils.get_asset_key model (to_lident an) in
       Format.fprintf fmt
         "function contains_%s (const l : list(%a); const key : %a) : bool is@\n  \
          var r : bool := False;@\n  \
-         function aggregate (const i : address) : unit is@\n  \
+         function aggregate (const i : %a) : unit is@\n  \
          begin@\n    \
          r := r or i = key;@\n  \
          end with unit@\n  \
@@ -1063,13 +1086,7 @@ let pp_model fmt (model : model) =
          list_iter(l, aggregate)@\n  \
          end with r@\n"
         an pp_btyp t pp_btyp t
-    (* "let[@inline] contains_%s ((l, key) : %a list * %a) : bool =@\n  \
-       List.fold (fun (x, accu) ->@\n    \
-       accu || x = key@\n  \
-       ) l false@\n"
-       an
-       pp_btyp t
-       pp_btyp t *)
+        pp_btyp t
 
     | Nth an ->
       (* let _, t = Utils.get_asset_key model (to_lident an) in *)
@@ -1105,22 +1122,28 @@ let pp_model fmt (model : model) =
        pp_btyp t *)
 
     | Sum (an, fn) ->
-      (* let _, tk = Utils.get_asset_key model (to_lident an) in
-         let _, t, _ = Utils.get_asset_field model (dumloc an, fn) in *)
-      Format.fprintf fmt "// TODO api storage: Sum"
-    (* "let[@inline] sum_%s_%s (s, l : storage * %a list) : %a =@\n  \
-       List.fold (fun (k, accu) ->@\n    \
-       let x = @\n   \
-       match Map.find k s.%s_assets with@\n  \
-       | Some v -> v@\n  \
-       | _ -> failwith \"not_found\" @\n    \
-       in@\n    \
-       accu + x.%s@\n  \
-       ) l %s@\n"
-       an fn pp_btyp tk pp_type t
-       an
-       fn
-       (show_zero t) *)
+      let get_zero = function
+        | _ -> "0"
+      in
+
+      let _, tk = Utils.get_asset_key model (to_lident an) in
+      let _, t, _ = Utils.get_asset_field model (dumloc an, fn) in
+      Format.fprintf fmt
+        "function sum_%s_%s (const s : storage_type; const l : list(%a)) : %a is@\n  \
+         var r : %a := %s;@\n  \
+         function aggregate (const i : %a) : unit is@\n  \
+         begin@\n    \
+         const a : %s = get_force(i, s.%s_assets);@\n    \
+         r := r + a.%s;@\n  \
+         end with unit@\n  \
+         begin@\n    \
+         list_iter(l, aggregate)@\n  \
+         end with r@\n"
+        an fn pp_btyp tk pp_type t
+        pp_type t (get_zero t)
+        pp_btyp tk
+        an an
+        fn
 
     | Min (an, fn) ->
       (* let _, tk = Utils.get_asset_key model (to_lident an) in
