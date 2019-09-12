@@ -183,10 +183,6 @@ let to_const = function
   | Cremoved      -> "removed"
   | Citerated     -> "iterated"
   | Ctoiterate    -> "toiterate"
-  | Cmaybeperformedonlybyrole   -> "may be performed only by role"
-  | Cmaybeperformedonlybyaction -> "may be performed only by action"
-  | Cmaybeperformedbyrole       -> "may be performed by role"
-  | Cmaybeperformedbyaction     -> "may be performed by action"
 
 let pp_call_kind fmt = function
   | Cid id -> pp_id fmt id
@@ -350,56 +346,6 @@ let rec pp_pterm fmt (pterm : pterm) =
           (pp_list ", " pp_pterm) l
       in
       (pp_no_paren pp) fmt l
-
-    | PsecurityActionRole (desc, s) ->
-      let pp fmt (desc, s) =
-        Format.fprintf fmt "[_[ %a may be performed only by role %a ]_]"
-          pp_action_description desc
-          (fun fmt s ->
-             if List.length s = 1
-             then pp_security_role fmt (List.nth s 0)
-             else Format.fprintf fmt "[%a]" (pp_list " or " pp_security_role) s
-          ) s
-      in
-      (pp_with_paren pp) fmt (desc, s)
-
-    | PsecurityActionAction (desc, s) ->
-      let pp fmt (desc, s) =
-        Format.fprintf fmt "[_[ %a may be performed only by action %a ]_]"
-          pp_action_description desc
-          (fun fmt s ->
-             if List.length s = 1
-             then pp_security_role fmt (List.nth s 0)
-             else Format.fprintf fmt "[%a]" (pp_list " or " pp_security_role) s
-          ) s
-
-      in
-      (pp_with_paren pp) fmt (desc, s)
-
-    | PsecurityActionRoleAction (desc, s, a) ->
-      let pp fmt (desc, s, a) =
-        Format.fprintf fmt "[_[ %a may be performed only by role %a in action %a ]_]"
-          pp_action_description desc
-          (fun fmt s ->
-             if List.length s = 1
-             then pp_security_role fmt (List.nth s 0)
-             else Format.fprintf fmt "[%a]" (pp_list " or " pp_security_role) s
-          ) s
-          (fun fmt s ->
-             if List.length s = 1
-             then pp_security_role fmt (List.nth s 0)
-             else Format.fprintf fmt "[%a]" (pp_list " or " pp_security_role) s
-          ) a
-
-      in
-      (pp_with_paren pp) fmt (desc, s, a)
-
-    | PsecurityActionNoFail (a) ->
-      let pp fmt a =
-        Format.fprintf fmt "[_[ no_fail %a ]_]"
-          pp_action_description a
-      in
-      (pp_with_paren pp) fmt a
   in
   pp_struct_poly pp_node fmt pterm
 
@@ -629,6 +575,59 @@ let pp_specification fmt (v : lident specification) =
       (pp_no_empty_list2 pp_assert) v.asserts
       (pp_no_empty_list2 pp_postcondition) v.specs
 
+let pp_security fmt (s : security) =
+  let pp_security_predicate fmt (sp : security_predicate) =
+    match sp.s_node with
+    | SonlyByRole (ad, roles) ->
+      Format.fprintf fmt "only_by_role %a"
+        pp_action_description ad
+
+    | SonlyInAction (ad, actions) ->
+      Format.fprintf fmt "only_in_action %a"
+        pp_action_description ad
+
+    | SonlyByRoleInAction (ad, roles, actions) ->
+      Format.fprintf fmt "only_by_role_in_action %a"
+        pp_action_description ad
+
+    | SnotByRole (ad, roles) ->
+      Format.fprintf fmt "not_by_role %a"
+        pp_action_description ad
+
+    | SnotInAction (ad, actions) ->
+      Format.fprintf fmt "not_in_action %a"
+        pp_action_description ad
+
+    | SnotByRoleInAction (ad, roles, actions) ->
+      Format.fprintf fmt "not_by_role_in_action %a"
+        pp_action_description ad
+
+    | StransferredBy ad ->
+      Format.fprintf fmt "transferred_by %a"
+        pp_action_description ad
+
+    | StransferredTo ad ->
+      Format.fprintf fmt "transferred_to %a"
+        pp_action_description ad
+
+    | SnoFail ad ->
+      Format.fprintf fmt "no_fail %a"
+        pp_action_description ad
+  in
+
+  let pp_security_item fmt (si : security_item) =
+    Format.fprintf fmt "%a : %a;@\n"
+      pp_id si.label
+      pp_security_predicate si.predicate
+  in
+  let empty = List.is_empty s
+  in
+  if empty
+  then ()
+  else
+    Format.fprintf fmt "security {@\n  @[%a@]@\n}@\n"
+      (pp_no_empty_list2 pp_security_item) s
+
 let pp_variable fmt (v : lident variable) =
   Format.fprintf fmt "%s %a %a%a%a%a@\n"
     (if v.constant then "constant" else "variable")
@@ -772,7 +771,7 @@ let pp_transaction fmt (t : transaction) =
 
 let pp_ast fmt (ast : model) =
   Format.fprintf fmt "archetype %a@\n@\n\
-                      %a%a%a%a%a%a%a@."
+                      %a%a%a%a%a%a%a%a@."
     pp_id ast.name
     (pp_no_empty_list2 pp_variable) ast.variables
     (pp_no_empty_list2 pp_asset) ast.assets
@@ -781,6 +780,7 @@ let pp_ast fmt (ast : model) =
     (pp_no_empty_list2 pp_function) ast.functions
     (pp_no_empty_list2 pp_transaction) ast.transactions
     (pp_no_empty_list2 pp_specification) ast.specifications
+    (pp_no_empty_list2 pp_security) ast.securities
 
 (* -------------------------------------------------------------------------- *)
 let string_of__of_pp pp x =

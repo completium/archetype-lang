@@ -237,7 +237,8 @@ type groups = {
   gr_assets      : PT.asset_decl              loced list;
   gr_varfuns     : varfun                     loced list;
   gr_acttxs      : acttx                      loced list;
-  gr_specs      : PT.specification            loced list;
+  gr_specs       : PT.specification           loced list;
+  gr_secs        : PT.security                loced list;
 }
 
 (* -------------------------------------------------------------------- *)
@@ -1856,8 +1857,17 @@ let for_specification_item (env : env) (v : PT.specification_item) : env * env i
     (env, `Postcondition (x, f, invs))
 
 (* -------------------------------------------------------------------- *)
+let for_security_item (env : env) (v : PT.security_item) : env * env ispecification =
+  match unloc v with
+  | _ -> assert false
+
+(* -------------------------------------------------------------------- *)
 let for_specification (env : env) (v : PT.specification) =
   List.fold_left_map for_specification_item env (fst (unloc v))
+
+(* -------------------------------------------------------------------- *)
+let for_security (env : env) (v : PT.security) =
+  List.fold_left_map for_security_item env (fst (unloc v))
 
 (* -------------------------------------------------------------------- *)
 let for_named_state (env : env) (x : PT.lident) =
@@ -2160,6 +2170,12 @@ let for_specs_decl (env : env) (decls : PT.specification loced list) =
     env decls
 
 (* -------------------------------------------------------------------- *)
+let for_secs_decl (env : env) (decls : PT.security loced list) =
+  List.fold_left_map
+    (fun env { pldesc = x } -> for_security env x)
+    env decls
+
+(* -------------------------------------------------------------------- *)
 let group_declarations (decls : (PT.declaration list)) =
   let empty = {
     gr_archetypes = [];
@@ -2168,7 +2184,8 @@ let group_declarations (decls : (PT.declaration list)) =
     gr_assets     = [];
     gr_varfuns    = [];
     gr_acttxs     = [];
-    gr_specs     = [];
+    gr_specs      = [];
+    gr_secs       = [];
   } in
 
   let for1 { plloc = loc; pldesc = decl } (g : groups) =
@@ -2202,7 +2219,8 @@ let group_declarations (decls : (PT.declaration list)) =
     | PT.Dspecification infos ->
       { g with gr_specs = mk infos :: g.gr_specs }
 
-    | PT.Dsecurity infos -> assert false
+    | PT.Dsecurity infos ->
+      { g with gr_secs = mk infos :: g.gr_secs }
 
     | Dinstance _
     | Dcontract  _
@@ -2236,9 +2254,10 @@ let for_grouped_declarations (env : env) (toploc, g) =
   let env, adecls = for_assets_decl  env g.gr_assets  in
   let env, fdecls = for_varfuns_decl env g.gr_varfuns in
   let env, tdecls = for_acttxs_decl  env g.gr_acttxs  in
-  let env, vdecls = for_specs_decl  env g.gr_specs in
+  let env, vdecls = for_specs_decl   env g.gr_specs   in
+  let env, sdecls = for_secs_decl    env g.gr_secs   in
 
-  (env, (adecls, fdecls, tdecls, vdecls))
+  (env, (adecls, fdecls, tdecls, vdecls, sdecls))
 
 (* -------------------------------------------------------------------- *)
 let assets_of_adecls adecls =
@@ -2319,6 +2338,8 @@ let specifications_of_ispecifications =
 
   in fun ispecs -> List.fold_left do1 env0 ispecs
 
+let security_item_of_sdecls _ = assert false
+
 (* -------------------------------------------------------------------- *)
 let transactions_of_tdecls tdecls =
   let for_calledby cb : M.rexpr option =
@@ -2366,13 +2387,14 @@ let for_declarations (env : env) (decls : (PT.declaration list) loced) : M.model
   | { pldesc = Darchetype (x, _exts) } :: decls ->
     let groups = group_declarations decls in
     let _env, decls = for_grouped_declarations env (toploc, groups) in
-    let adecls, fdecls, tdecls, vdecls = decls in
+    let adecls, fdecls, tdecls, vdecls, sdecls = decls in
 
     M.mk_model
       ~assets:(assets_of_adecls adecls)
       ~variables:(variables_of_fdecls fdecls)
       ~transactions:(transactions_of_tdecls tdecls)
       ~specifications:(List.map specifications_of_ispecifications vdecls)
+      ~securities:(List.map security_item_of_sdecls sdecls)
       x
 
   | _ ->

@@ -143,11 +143,6 @@ type const =
   | Cremoved
   | Citerated
   | Ctoiterate
-  (* predicates *)
-  | Cmaybeperformedonlybyrole
-  | Cmaybeperformedonlybyaction
-  | Cmaybeperformedbyrole
-  | Cmaybeperformedbyaction
 [@@deriving show {with_path = false}]
 
 type ('node) struct_poly = {
@@ -278,10 +273,6 @@ type 'id term_node  =
   | Pdot of 'id term_gen * 'id
   | Pconst of const
   | Ptuple of 'id term_gen list
-  | PsecurityActionRole of action_description * security_role list
-  | PsecurityActionAction of action_description * security_action list
-  | PsecurityActionRoleAction of action_description * security_role list * security_action list
-  | PsecurityActionNoFail of action_description
 [@@deriving show {with_path = false}]
 
 and 'id term_arg =
@@ -420,14 +411,42 @@ type 'id specification = {
 }
 [@@deriving show {with_path = false}]
 
+type security_node =
+  | SonlyByRole         of action_description * security_role list
+  | SonlyInAction       of action_description * security_action list
+  | SonlyByRoleInAction of action_description * security_role list * security_action list
+  | SnotByRole          of action_description * security_role list
+  | SnotInAction        of action_description * security_action list
+  | SnotByRoleInAction  of action_description * security_role list * security_action list
+  | StransferredBy      of action_description
+  | StransferredTo      of action_description
+  | SnoFail             of action_description
+[@@deriving show {with_path = false}]
+
+type security_predicate = {
+  s_node: security_node;
+  loc: Location.t [@opaque];
+}
+[@@deriving show {with_path = false}]
+
+type security_item = {
+  label       : lident;
+  predicate   : security_predicate;
+  loc         : Location.t [@opaque];
+}
+[@@deriving show {with_path = false}]
+
+type security = security_item list
+[@@deriving show {with_path = false}]
+
 type 'id function_struct = {
-  name         : 'id;
-  args         : ('id decl_gen) list;
-  body         : 'id instruction_gen;
+  name          : 'id;
+  args          : ('id decl_gen) list;
+  body          : 'id instruction_gen;
   specification : 'id specification option;
-  return       : ptyp;
-  fvs          : (ident * ptyp) list [@opaque];
-  loc          : Location.t [@opaque];
+  return        : ptyp;
+  fvs           : (ident * ptyp) list [@opaque];
+  loc           : Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]
 
@@ -448,7 +467,7 @@ type 'id transaction_struct = {
   accept_transfer : bool;
   require         : 'id label_term list option;
   transition      : ('id transition) option;
-  specification    : 'id specification option;
+  specification   : 'id specification option;
   functions       : 'id function_struct list;
   effect          : 'id instruction_gen option;
   loc             : Location.t [@opaque];
@@ -514,6 +533,7 @@ type 'id model_struct = {
   enums         : 'id enum_struct list;
   contracts     : 'id contract list;
   specifications : 'id specification list;
+  securities    : security list;
   loc           : Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]
@@ -589,8 +609,8 @@ let mk_asset ?(fields = []) ?key ?(sort = []) ?state ?(role = false) ?init ?(spe
 let mk_contract ?(signatures = []) ?init ?(loc = Location.dummy) name =
   { name; signatures; init; loc }
 
-let mk_model ?(variables = []) ?(assets = []) ?(functions = []) ?(transactions = []) ?(enums = []) ?(contracts = []) ?(specifications = []) ?(loc = Location.dummy) name =
-  { name; variables; assets; functions; transactions; enums; contracts; specifications; loc }
+let mk_model ?(variables = []) ?(assets = []) ?(functions = []) ?(transactions = []) ?(enums = []) ?(contracts = []) ?(specifications = []) ?(securities = []) ?(loc = Location.dummy) name =
+  { name; variables; assets; functions; transactions; enums; contracts; specifications; securities; loc }
 
 let mk_id type_ id : qualid =
   { type_ = Some type_;
@@ -621,10 +641,6 @@ let map_term_node (f : 'id term_gen -> 'id term_gen) = function
   | Pdot (e, i)             -> Pdot (f e, i)
   | Pconst c                -> Pconst c
   | Ptuple l                -> Ptuple (List.map f l)
-  | PsecurityActionRole _   as e -> e
-  | PsecurityActionAction _ as e -> e
-  | PsecurityActionRoleAction _ as e -> e
-  | PsecurityActionNoFail _ as e -> e
 
 let map_instr_node f = function
   | Iif (c, t, e)       -> Iif (c, f t, f e)
@@ -680,10 +696,6 @@ let fold_term (f: 'a -> 't -> 'a) (accu : 'a) (term : 'id term_gen) =
   | Pdot (e, _)                 -> f accu e
   | Pconst _                    -> accu
   | Ptuple l                    -> List.fold_left f accu l
-  | PsecurityActionRole _       -> accu
-  | PsecurityActionAction _     -> accu
-  | PsecurityActionRoleAction _ -> accu
-  | PsecurityActionNoFail _     -> accu
 
 let fold_instr f accu instr =
   match instr.node with
@@ -828,18 +840,6 @@ let fold_map_term g f (accu : 'a) (term : 'id term_gen) : 'term * 'a =
            let p, accu = f accu x in
            pterms @ [p], accu) ([], accu) l in
     g (Ptuple lp), la
-
-  | PsecurityActionRole _ as e ->
-    g e, accu
-
-  | PsecurityActionAction _ as e ->
-    g e, accu
-
-  | PsecurityActionRoleAction _ as e ->
-    g e, accu
-
-  | PsecurityActionNoFail _ as e ->
-    g e, accu
 
 let fold_map_instr_term gi ge fi fe (accu : 'a) instr : 'id instruction_gen * 'a =
   match instr.node with
