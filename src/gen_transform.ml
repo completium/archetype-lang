@@ -90,13 +90,13 @@ let extend_removeif (model : model) : model =
       let lasset = dumloc asset in
       let type_asset = Tasset lasset in
 
-      let assetv_str = dumloc ("_" ^ asset) in
+      let assetv_str = dumloc (asset ^ "_") in
       let asset_var = mk_mterm (Mvarlocal assetv_str) type_asset in
 
       let key, key_type = Utils.get_asset_key model lasset in
       let asset_key : mterm = mk_mterm (Mdotasset (asset_var,dumloc key)) (Tbuiltin key_type) in
 
-      let assets_var_name = dumloc ("_assets") in
+      let assets_var_name = dumloc ("assets_") in
       let type_assets = Tcontainer (Tasset lasset, Collection) in
       let assets_var = mk_mterm (Mvarlocal assets_var_name) type_assets in
 

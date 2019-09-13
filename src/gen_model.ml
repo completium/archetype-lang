@@ -363,12 +363,12 @@ let to_model (ast : A.model) : M.model =
     let type_asset = M.Tasset asset_loced in
     let type_container_asset = M.Tcontainer (type_asset, Collection) in
 
-    let var_name = dumloc ("_" ^ asset_name) in
+    let var_name = dumloc (asset_name ^ "_") in
     let var_mterm : M.mterm = M.mk_mterm (M.Mvarlocal var_name) type_asset in
 
     (* let asset_mterm : M.mterm = M.mk_mterm (M.Mvarstorecol (dumloc (asset_name))) type_container_asset in *)
 
-    let key_name = "_k" in
+    let key_name = "k_" in
     let key_loced : M.lident = dumloc (key_name) in
     let key_mterm : M.mterm = M.mk_mterm (M.Mvarlocal key_loced) type_container_asset in
 
