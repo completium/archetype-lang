@@ -888,7 +888,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | M.Mlabel lbl ->
       begin
         match M.Utils.get_formula m None (unloc lbl) with
-        | Some formula -> Tassert (map_mterm m ctx formula)
+        | Some formula -> Tassert (Some (map_lident lbl),map_mterm m ctx formula)
         | _ -> assert false
       end
     | M.Mand (l,r)-> Tand (map_mterm m ctx l,map_mterm m ctx r)
@@ -1633,14 +1633,17 @@ let rm_fail_exn = List.filter (fun e ->
 let process_no_fail m (d : (loc_term, loc_typ, loc_ident) abstract_decl) =
   match d with
   | Dfun f ->
-    if M.Utils.no_fail m (Mlwtree.deloc f.name) then
-      Dfun { f with
-             raises = rm_fail_exn f.raises;
-             body   = loc_term (Ttry (unloc_term f.body,
-                                      [Enotfound,Tassert Tfalse;
-                                       Ekeyexist,Tassert Tfalse]));
-           }
-    else d
+    begin
+      match M.Utils.no_fail m (Mlwtree.deloc f.name) with
+      | Some id ->
+        Dfun { f with
+               raises = rm_fail_exn f.raises;
+               body   = loc_term (Ttry (unloc_term f.body,
+                                        [Enotfound,Tassert (Some ("security_"^(unloc id)),Tfalse);
+                                         Ekeyexist,Tassert (Some ("security_"^(unloc id)),Tfalse)]));
+             }
+      | _ -> d
+    end
   | _ -> d
 
 (* ----------------------------------------------------------------------------*)

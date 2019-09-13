@@ -1992,7 +1992,7 @@ module Utils : sig
   val is_field_storage                   : model -> ident -> bool
   val with_trace                         : model -> bool
   val get_callers                        : model -> ident -> ident list
-  val no_fail                            : model -> ident -> bool
+  val no_fail                            : model -> ident -> lident option
 
 end = struct
 
@@ -2414,18 +2414,21 @@ end = struct
   let get_callers (m : model) (name : ident) : ident list = [] (* TODO *)
 
   (* is there a no_fail predicate on an entry called fn ? *)
-  let no_fail (m : model) (fn : ident) : bool =
+  let no_fail (m : model) (fn : ident) : lident option =
     List.fold_left (fun acc (p : security_item) ->
-        if not acc then
-          match p.predicate.s_node with
-          | SnoStorageFail Sany -> true
-          | SnoStorageFail (Sentry l) ->
-            if l |> List.map unloc |> List.mem fn then
-              true
-            else
-              false
-          | _ -> false
-        else true
-      ) false (m.security.items)
+        match acc with
+        | None ->
+          begin
+            match p.predicate.s_node with
+            | SnoStorageFail Sany -> Some p.label
+            | SnoStorageFail (Sentry l) ->
+              if l |> List.map unloc |> List.mem fn then
+                Some p.label
+              else
+                None
+            | _ -> None
+          end
+        | _ -> acc
+      ) None (m.security.items)
 
 end

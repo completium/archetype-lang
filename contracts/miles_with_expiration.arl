@@ -22,6 +22,7 @@ action add (ow : address) (newmile : mile) = {
 
    require {
      c1 : newmile.amount > 0;
+     c2 : not(mile.contains(newmile.id));
    }
 
    effect {

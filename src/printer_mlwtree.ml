@@ -377,8 +377,12 @@ let rec pp_term outer pos fmt = function
     Format.fprintf fmt "try@\n  @[%a@]@\nwith @\n@[%a@]@\nend"
       (pp_term outer pos) b
       (pp_list "@\n" pp_catch) l
-  | Tassert e ->
+  | Tassert (None,e) ->
     Format.fprintf fmt "assert { %a }"
+      (pp_term outer pos) e
+  | Tassert (Some lbl,e) ->
+    Format.fprintf fmt "assert { [@expl:%a] %a }"
+      pp_str lbl
       (pp_term outer pos) e
   | Ttoiter (a,i,e) ->
     Format.fprintf fmt "%a.tail %a %a"
