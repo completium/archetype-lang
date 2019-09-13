@@ -63,7 +63,7 @@ let pp_model fmt (model : model) =
   in
 
   let pp_currency fmt = function
-    | Mtez -> Format.fprintf fmt "mtez"
+    | Mtez -> Format.fprintf fmt "tez"
   in
 
   let pp_btyp fmt = function
@@ -1074,9 +1074,9 @@ let pp_model fmt (model : model) =
         Format.fprintf fmt "\"%a\""
           pp_str v
       | Mcurrency (v, c) ->
-        Format.fprintf fmt "%a%a"
-          pp_big_int v
-          pp_currency c
+        let b : Big_int.big_int = Big_int.mult_int_big_int 1000000 v in
+        Format.fprintf fmt "%atz"
+          pp_big_int b
       | Maddress v ->
         Format.fprintf fmt "(%a : address)"
           pp_str v
@@ -1094,15 +1094,15 @@ let pp_model fmt (model : model) =
           f k
           f v
       | Mfor (i, c, b, _) ->
-        Format.fprintf fmt "for (%a in %a)@\n (@[<v 2>%a@])@\n"
+        Format.fprintf fmt "for (%a in %a) (@\n  @[%a@])@\n"
           pp_id i
           f c
           f b
       | Miter (i, a, b, c, _) -> Format.fprintf fmt "TODO: iter@\n"
       | Mfold (i, is, c, b) ->
         Format.fprintf fmt
-          "List.fold (fun (%a, (%a)) ->@\n\
-           @[  %a@]) %a (%a)@\n"
+          "List.fold (fun (%a, (%a)) ->@\n  \
+           @[%a@]) %a (%a)@\n"
           pp_id i (pp_list ", " pp_id) is
           f b
           f c
@@ -1167,7 +1167,7 @@ let pp_model fmt (model : model) =
   in
 
   let pp_enum fmt (enum : enum) =
-    Format.fprintf fmt "type %a =@\n[<v 2>  %a@]@\n"
+    Format.fprintf fmt "type %a =@\n  @[%a@]@\n"
       pp_id enum.name
       (pp_list "@\n" pp_enum_item) enum.values
   in
@@ -1188,7 +1188,7 @@ let pp_model fmt (model : model) =
   in
 
   let pp_record fmt (record : record) =
-    Format.fprintf fmt "type %a = {@\n@[<v 2>  %a@]@\n}@\n"
+    Format.fprintf fmt "type %a = {@\n  @[%a@]@\n}@\n"
       pp_id record.name
       (pp_list "@\n" pp_record_item) record.values
   in
@@ -1212,7 +1212,7 @@ let pp_model fmt (model : model) =
       Format.fprintf fmt "type storage = %a@\n"
         pp_type i.typ
     | _ ->
-      Format.fprintf fmt "type storage = {@\n@[<v 2>  %a@]@\n}@\n"
+      Format.fprintf fmt "type storage = {@\n  @[%a@]@\n}@\n"
         (pp_list "@\n" pp_storage_item) s
   in
 

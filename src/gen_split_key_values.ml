@@ -87,7 +87,7 @@ let split_key_values (model : model) : model =
       let is_argument_plain_asset_collection (col : mterm) =
         let id =
           match col.node with
-          | Mvarlocal an -> Some an
+          | Mvarparam an -> Some an
           | _ -> None
         in
 

@@ -174,6 +174,8 @@ and process_mtern (ctx : ctx_red) (s : s_red) (mt : mterm) : mterm * s_red =
     mk_mterm (Mreversefield (an, fn, col)) Tstorage, s
   (* | Mreverselocal of 'term *)
 
+  | Maddshallow (an, args) ->
+    mk_mterm (Maddshallow (an, storage_var::args)) Tstorage, s
 
   (* app local *)
   | Mapp (id, args) ->
