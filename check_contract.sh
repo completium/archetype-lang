@@ -28,7 +28,8 @@ process_liquidity () {
         GRET=1
     fi
     echo ""
-    rm -fr $OUT contracts/miles_with_expiration_*.tz
+    FILEOUT=`echo $FILE | sed s/\\\\./_/g`
+    rm -fr $OUT ${FILEOUT}*.tz
 }
 
 process_ligo () {
@@ -55,7 +56,7 @@ process_ligo () {
         GRET=1
     fi
     echo ""
-    rm -fr $OUT $FILE.pp.ligo
+    rm -fr $OUT *.pp.ligo $TZ
 }
 
 process_smartpy () {
@@ -101,7 +102,7 @@ process_ocaml () {
         GRET=1
     fi
     echo ""
-    rm -fr $OUT $FILE.cm*
+    rm -fr $OUT $FILE.cm* a.out
 }
 
 process_whyml () {

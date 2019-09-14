@@ -23,5 +23,9 @@ _build
 why3/archetype_plugin.cmxs
 archetype.install
 contracts/*.liq
+contracts/*.ligo
+contracts/*.py
 contracts/*.mlw
+contracts/*.ml
+contracts/*.cm*
 contracts/*.tz
