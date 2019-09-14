@@ -92,7 +92,7 @@ let remove_side_effect   = Gen_reduce.reduce
 let generate_api_storage = Gen_api_storage.generate_api_storage
 let exec_process model   = model |> Gen_transform.replace_lit_address_by_role |> Gen_transform.remove_label |> Gen_transform.flat_sequence
 let extend_removeif      = Gen_transform.extend_removeif
-let post_process_liq     = Gen_transform.process_single_field_storage
+let post_process_functional_language     = Gen_transform.process_single_field_storage
 
 let generate_target model =
 
@@ -111,7 +111,7 @@ let generate_target model =
   | LiquidityUrl ->
     model
     |> exec_process
-    |> post_process_liq
+    |> post_process_functional_language
     |> shallow_asset
     |> split_key_values
     |> remove_side_effect
@@ -136,7 +136,7 @@ let generate_target model =
   | Ocaml ->
     model
     |> exec_process
-    |> post_process_liq
+    |> post_process_functional_language
     |> shallow_asset
     |> split_key_values
     |> remove_side_effect
