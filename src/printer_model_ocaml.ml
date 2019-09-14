@@ -73,9 +73,9 @@ let pp_model fmt (model : model) =
        exception Exception of string@\n\
        @\n\
        module Current : sig@\n  \
-       val sender : unit -> address@\n  \
-       val amount : unit -> tez@\n  \
-       val time : unit -> timestamp@\n  \
+       val sender   : unit -> address@\n  \
+       val amount   : unit -> tez@\n  \
+       val time     : unit -> timestamp@\n  \
        val failwith : string -> unit@\n\
        end = struct@\n  \
        let sender _ = \"\"@\n  \
