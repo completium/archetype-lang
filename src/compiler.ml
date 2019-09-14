@@ -136,6 +136,7 @@ let generate_target model =
   | Ocaml ->
     model
     |> exec_process
+    |> post_process_liq
     |> shallow_asset
     |> split_key_values
     |> remove_side_effect

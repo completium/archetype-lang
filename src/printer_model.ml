@@ -884,32 +884,33 @@ let pp_invariant fmt (inv : invariant) =
     (pp_list "@\n" pp_mterm) inv.formulas
 
 let pp_postcondition fmt (postcondition : postcondition) =
-  Format.fprintf fmt "postcondition %a {@\n\
-                      @[<v 2>  %a%a@]@\n}@\n"
+  Format.fprintf fmt "postcondition %a {@\n  @[%a%a@]@\n}@\n"
     pp_id postcondition.name
     pp_mterm postcondition.formula
     (fun fmt l ->
        if List.is_empty l
-       then pp_str fmt ""
+       then ()
        else Format.fprintf fmt "@\n%a"
            (pp_list "@\n" pp_invariant) l) postcondition.invariants
 
 let pp_assert_ fmt (s : assert_) =
-  Format.fprintf fmt "assert %a on %a {@\n\
-                      @[<v 2>  %a%a@]@\n}@\n"
+  Format.fprintf fmt "assert %a on %a {@\n  @[%a%a@]@\n}@\n"
     pp_id s.name
     pp_id s.label
     pp_mterm s.formula
     (fun fmt l ->
        if List.is_empty l
        then pp_str fmt ""
-       else Format.fprintf fmt "@\n%a"
+       else Format.fprintf fmt "%a@\n"
            (pp_list "@\n" pp_invariant) l) s.invariants
 
 let pp_specification fmt (v : specification) =
-  Format.fprintf fmt "specification {@\n\
-                      @[<v 2>  %a@]@\n}@\n@\n@\n"
-    (pp_list "@\n" pp_postcondition) v.postconditions
+  let empty = List.is_empty v.postconditions in
+  if empty
+  then ()
+  else
+    Format.fprintf fmt "specification {@\n  @[%a@]@\n}@\n"
+      (pp_list "@\n" pp_postcondition) v.postconditions
 
 let pp_security fmt (s : security) =
   let pp_security_action fmt (a : security_action)=

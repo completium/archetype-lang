@@ -507,44 +507,6 @@ let pp_label_term fmt (lt : lident label_term) =
     (pp_option (pp_postfix " : " pp_id)) lt.label
     pp_pterm lt.term
 
-let pp_predicate fmt (p : lident predicate) =
-  Format.fprintf fmt "predicate %a (%a) =@\n  @[%a@]"
-    pp_id p.name
-    (pp_list ", " (fun fmt (id, typ) -> Format.fprintf fmt "%a : %a" pp_id id pp_ptyp typ)) p.args
-    pp_pterm p.body
-
-let pp_variable_spec fmt (v : lident variable) =
-  let decl = v.decl in
-  Format.fprintf fmt "variable %a%a%a"
-    pp_id decl.name
-    (pp_option (pp_prefix " " pp_ptyp)) decl.typ
-    (pp_option (pp_prefix " := " pp_pterm)) decl.default
-
-let pp_definitions fmt (d : lident definition) =
-  Format.fprintf fmt "definition %a =@\n  @[{ %a : %a | %a }@]"
-    pp_id d.name
-    pp_id d.var
-    pp_ptyp d.typ
-    pp_pterm d.body
-
-let pp_invariant fmt (i : lident invariant) =
-  Format.fprintf fmt "invariants for %a {@\n  @[%a@]@\n}"
-    pp_id i.label
-    (pp_list ";@\n" pp_pterm) i.formulas
-
-let pp_assert fmt (s : lident assert_) : unit =
-  Format.fprintf fmt "assert %a at %a = {@\n  @[%a@\n%a@]@\n}"
-    pp_id s.name
-    pp_id s.label
-    pp_pterm s.formula
-    (pp_no_empty_list_with_sep "@\n" pp_invariant) s.invariants
-
-let pp_postcondition fmt (s : lident postcondition) : unit =
-  Format.fprintf fmt "postcondition %a = {@\n  @[%a@\n%a@]@\n}"
-    pp_id s.name
-    pp_pterm s.formula
-    (pp_no_empty_list_with_sep "@\n" pp_invariant) s.invariants
-
 let pp_specification fmt (v : lident specification) =
   let empty = List.is_empty v.predicates
               && List.is_empty v.definitions
@@ -554,6 +516,44 @@ let pp_specification fmt (v : lident specification) =
               && List.is_empty v.invariants
               && List.is_empty v.asserts
               && List.is_empty v.specs
+  in
+  let pp_predicate fmt (p : lident predicate) =
+    Format.fprintf fmt "predicate %a (%a) =@\n  @[%a@]"
+      pp_id p.name
+      (pp_list ", " (fun fmt (id, typ) -> Format.fprintf fmt "%a : %a" pp_id id pp_ptyp typ)) p.args
+      pp_pterm p.body
+  in
+  let pp_definitions fmt (d : lident definition) =
+    Format.fprintf fmt "definition %a =@\n  @[{ %a : %a | %a }@]"
+      pp_id d.name
+      pp_id d.var
+      pp_ptyp d.typ
+      pp_pterm d.body
+  in
+  let pp_variable_spec fmt (v : lident variable) =
+    let decl = v.decl in
+    Format.fprintf fmt "variable %a%a%a"
+      pp_id decl.name
+      (pp_option (pp_prefix " " pp_ptyp)) decl.typ
+      (pp_option (pp_prefix " := " pp_pterm)) decl.default
+  in
+  let pp_invariant fmt (i : lident invariant) =
+    Format.fprintf fmt "invariants for %a {@\n  @[%a@]@\n}"
+      pp_id i.label
+      (pp_list ";@\n" pp_pterm) i.formulas
+  in
+  let pp_assert fmt (s : lident assert_) : unit =
+    Format.fprintf fmt "assert %a at %a = {@\n  @[%a@\n%a@]@\n}"
+      pp_id s.name
+      pp_id s.label
+      pp_pterm s.formula
+      (pp_no_empty_list_with_sep "@\n" pp_invariant) s.invariants
+  in
+  let pp_postcondition fmt (s : lident postcondition) : unit =
+    Format.fprintf fmt "postcondition %a = {@\n  @[%a@\n%a@]@\n}"
+      pp_id s.name
+      pp_pterm s.formula
+      (pp_no_empty_list_with_sep "@\n" pp_invariant) s.invariants
   in
   if empty
   then ()

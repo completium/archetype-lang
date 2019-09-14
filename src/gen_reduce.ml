@@ -302,7 +302,8 @@ let process_body (ctx : ctx_red) (mt : mterm) : mterm =
     subs = [];
   } in
   let target = Option.get ctx.target in
-  let mt, _s = process_non_empty_list_term ctx s [mt; target] in
+  let bb = extract_list mt target in
+  let mt, _s = process_non_empty_list_term ctx s bb in
   simplify mt
 
 let analyse_type (mt : mterm) : type_ = Tstorage

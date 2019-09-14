@@ -838,24 +838,27 @@ let pp_model fmt (model : model) =
         Format.fprintf fmt "@[%a@]"
           (pp_list ";@\n" f) is
 
-      | Massign (op, l, r) ->
-        let lhs : ident =
-          if Utils.is_field_storage model (unloc l)
-          then "s." ^ (unloc l)
-          else (unloc l)
-        in
-        Format.fprintf fmt "%s := %a"
-          lhs
+      | Massign (op, lhs, r) ->
+        Format.fprintf fmt "%a := %a"
+          (
+            fun fmt x ->
+              if Utils.is_field_storage model (unloc x)
+              then
+                Format.fprintf fmt "%s.%s"
+                  const_storage
+                  (unloc x)
+              else pp_id fmt x
+          ) lhs
           (
             fun fmt r ->
               match op with
               | ValueAssign -> f fmt r
-              | PlusAssign  -> Format.fprintf fmt "%s + %a" lhs f r
-              | MinusAssign -> Format.fprintf fmt "%s - %a" lhs f r
-              | MultAssign  -> Format.fprintf fmt "%s * %a" lhs f r
-              | DivAssign   -> Format.fprintf fmt "%s / %a" lhs f r
-              | AndAssign   -> Format.fprintf fmt "%s and %a" lhs f r
-              | OrAssign    -> Format.fprintf fmt "%s or %a" lhs f r
+              | PlusAssign  -> Format.fprintf fmt "%a + %a" pp_id lhs f r
+              | MinusAssign -> Format.fprintf fmt "%a - %a" pp_id lhs f r
+              | MultAssign  -> Format.fprintf fmt "%a * %a" pp_id lhs f r
+              | DivAssign   -> Format.fprintf fmt "%a / %a" pp_id lhs f r
+              | AndAssign   -> Format.fprintf fmt "%a and %a" pp_id lhs f r
+              | OrAssign    -> Format.fprintf fmt "%a or %a" pp_id lhs f r
           ) r
 
       | Massignfield (op, a, field , r) ->

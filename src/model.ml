@@ -1943,6 +1943,11 @@ let merge_seq (mt1 : mterm) (mt2 : mterm) : mterm =
   | Mseq l, _ -> mk_mterm (Mseq (l @ [mt2])) mt2.type_
   | _ -> mk_mterm (Mseq [mt1; mt2]) mt2.type_
 
+let extract_list (mt : mterm) (e : mterm) =
+  match mt with
+  | { node = Mseq l; _} -> l @ [e]
+  | _ -> [mt; e]
+
 (* -------------------------------------------------------------------- *)
 
 module Utils : sig
@@ -2403,10 +2408,9 @@ end = struct
 
   let is_field_storage (m : model) (id : ident) : bool =
     let l : ident list =
-      List.fold_left (fun accu (x : storage_item) ->
-          (unloc x.name)::accu) [] m.storage  in
+      List.map (fun (x : storage_item) -> (unloc x.name)) m.storage
+    in
     List.mem id l
-
 
   let with_trace (m : model) : bool = true
 
