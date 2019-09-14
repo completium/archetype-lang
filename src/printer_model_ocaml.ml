@@ -69,6 +69,8 @@ let pp_model fmt (model : model) =
        type address = string@\n\
        type timestamp = int@\n\
        type tez = int@\n\
+       type rational = float@\n\
+       type duration = int@\n\
        @\n\
        exception Exception of string@\n\
        @\n\
@@ -81,7 +83,7 @@ let pp_model fmt (model : model) =
        let sender _ = \"\"@\n  \
        let amount _ = 0@\n  \
        let time _ = 0@\n  \
-       let failwith _ = ()@\n\
+       let failwith s = failwith s@\n\
        end@\n"
   in
 
@@ -152,7 +154,7 @@ let pp_model fmt (model : model) =
         "let get_%s (s, key : storage * %a) : %s =@\n  \
          match List.assoc_opt key s.%s_assets with@\n  \
          | Some v -> v@\n  \
-         | _ -> raise (Exception \"not_found\")@\n"
+         | _ -> failwith \"not_found\"@\n"
         an pp_btyp t an an
 
     | Set an ->
@@ -203,7 +205,7 @@ let pp_model fmt (model : model) =
         "let reverse_%s (s : storage) : storage =@\n  \
          { s with@\n    \
          %s_keys = List.rev s.%s_keys;@\n    \
-         %s_assets = List.rev asset s.%s_assets; }@\n"
+         %s_assets = List.rev s.%s_assets; }@\n"
         an
         an an
         an an
@@ -235,11 +237,11 @@ let pp_model fmt (model : model) =
     | UpdateClear (an, fn) ->
       let k, t = Utils.get_asset_key model (to_lident an) in
       Format.fprintf fmt
-        "let[@inline] clear_%s_%s (s, a : storage * %s) : storage =@\n  \
+        "let clear_%s_%s (s, a : storage * %s) : storage =@\n  \
          let key = a.%s in@\n  \
          let asset = get_%s (s, key) in@\n  \
-         let asset = asset.%s <- [] in@\n  \
-         s.%s_assets <- Map.update a.%s (Some asset) s.%s_assets@\n"
+         let asset = { asset with %s = [] } in@\n  \
+         { s with %s_assets = put_map a.%s asset s.%s_assets }@\n"
         an fn an
         k
         an
@@ -249,11 +251,11 @@ let pp_model fmt (model : model) =
     | UpdateReverse (an, fn) ->
       let k, t = Utils.get_asset_key model (to_lident an) in
       Format.fprintf fmt
-        "let[@inline] reverse_%s_%s (s, a : storage * %s) : storage =@\n  \
+        "let reverse_%s_%s (s, a : storage * %s) : storage =@\n  \
          let key = a.%s in@\n  \
          let asset = get_%s (s, key) in@\n  \
-         let asset = asset.%s <- List.rev asset.%s in@\n  \
-         s.%s_assets <- Map.update a.%s (Some asset) s.%s_assets@\n"
+         let asset = { asset with %s = List.rev asset.%s } in@\n  \
+         { s with %s_assets = put_map a.%s asset s.%s_assets }@\n"
         an fn an
         k
         an
@@ -262,7 +264,7 @@ let pp_model fmt (model : model) =
 
     | ToKeys an ->
       Format.fprintf fmt
-        "let[@inline] to_keys_%s (s : storage) : storage =@\n  \
+        "let to_keys_%s (s : storage) : storage =@\n  \
          s (*TODO*)@\n"
         an
   in
@@ -295,7 +297,7 @@ let pp_model fmt (model : model) =
 
     | Sort (an, fn) ->
       Format.fprintf fmt
-        "let[@inline] sort_%s_%s (s : storage) : unit =@\n  \
+        "let sort_%s_%s (s : storage) : unit =@\n  \
          () (*TODO*)@\n"
         an fn
 
@@ -336,10 +338,8 @@ let pp_model fmt (model : model) =
     | Count an ->
       let _, t = Utils.get_asset_key model (to_lident an) in
       Format.fprintf fmt
-        "let[@inline] count_%s (l : %a list) : int =@\n  \
-         List.fold (fun (_, accu) ->@\n    \
-         accu + 1@\n  \
-         ) l 0@\n"
+        "let count_%s (l : %a list) : int =@\n  \
+         List.length l@\n"
         an
         pp_btyp t
 
@@ -352,7 +352,7 @@ let pp_model fmt (model : model) =
          let x =@\n        \
          match List.assoc_opt k s.%s_assets with@\n        \
          | Some v -> v@\n        \
-         | _ -> raise (Exception \"not_found\")@\n      \
+         | _ -> failwith \"not_found\"@\n      \
          in@\n      \
          accu + x.%s@\n    \
          ) l %s@\n"
@@ -365,25 +365,25 @@ let pp_model fmt (model : model) =
       let _, tk = Utils.get_asset_key model (to_lident an) in
       let _, t, _ = Utils.get_asset_field model (dumloc an, fn) in
       Format.fprintf fmt
-        "let[@inline] min_%s_%s (s, l : storage * %a list) : %a =@\n  \
+        "let min_%s_%s (s, l : storage * %a list) : %a =@\n  \
          match l with@\n  \
          | [] -> failwith \"empty list\"@\n  \
-         | e::t ->@\n  \
-         let x = @\n   \
-         match Map.find e s.%s_assets with@\n  \
-         | Some v -> v@\n  \
+         | e::t ->@\n    \
+         let x = @\n      \
+         match List.assoc_opt e s.%s_assets with@\n      \
+         | Some v -> v@\n      \
          | _ -> failwith \"not_found\" @\n    \
          in@\n    \
          let init = x.%s in@\n    \
-         List.fold (fun (k, accu) ->@\n    \
-         let x = @\n   \
-         match Map.find k s.%s_assets with@\n  \
-         | Some v -> v@\n  \
-         | _ -> failwith \"not_found\" @\n    \
-         in@\n    \
-         if accu > x.%s@\n  \
-         then x.%s@\n  \
-         else accu@\n  \
+         List.fold_right (fun k accu ->@\n        \
+         let x = @\n          \
+         match List.assoc_opt k s.%s_assets with@\n          \
+         | Some v -> v@\n          \
+         | _ -> failwith \"not_found\" @\n        \
+         in@\n        \
+         if accu > x.%s@\n        \
+         then x.%s@\n        \
+         else accu@\n      \
          ) t init@\n"
         an fn pp_btyp tk pp_type t
         an
@@ -396,25 +396,25 @@ let pp_model fmt (model : model) =
       let _, tk = Utils.get_asset_key model (to_lident an) in
       let _, t, _ = Utils.get_asset_field model (dumloc an, fn) in
       Format.fprintf fmt
-        "let[@inline] max_%s_%s (s, l : storage * %a list) : %a =@\n  \
+        "let max_%s_%s (s, l : storage * %a list) : %a =@\n  \
          match l with@\n  \
          | [] -> failwith \"empty list\"@\n  \
-         | e::t ->@\n  \
-         let x = @\n   \
-         match Map.find e s.%s_assets with@\n  \
-         | Some v -> v@\n  \
+         | e::t ->@\n    \
+         let x = @\n      \
+         match List.assoc_opt e s.%s_assets with@\n      \
+         | Some v -> v@\n      \
          | _ -> failwith \"not_found\" @\n    \
          in@\n    \
          let init = x.%s in@\n    \
-         List.fold (fun (k, accu) ->@\n    \
-         let x = @\n   \
-         match Map.find k s.%s_assets with@\n  \
-         | Some v -> v@\n  \
-         | _ -> failwith \"not_found\" @\n    \
-         in@\n    \
-         if accu < x.%s@\n  \
-         then x.%s@\n  \
-         else accu@\n  \
+         List.fold_right (fun k accu ->@\n        \
+         let x = @\n          \
+         match List.assoc_opt k s.%s_assets with@\n          \
+         | Some v -> v@\n          \
+         | _ -> failwith \"not_found\" @\n        \
+         in@\n        \
+         if accu < x.%s@\n        \
+         then x.%s@\n        \
+         else accu@\n      \
          ) t init@\n"
         an fn pp_btyp tk pp_type t
         an
@@ -430,7 +430,7 @@ let pp_model fmt (model : model) =
     | Head an ->
       let _, t = Utils.get_asset_key model (to_lident an) in
       Format.fprintf fmt
-        "let[@inline] head_%s (l : %a list) : %a list =@\n  \
+        "let head_%s (l : %a list) : %a list =@\n  \
          List.fold (fun (_, accu) ->@\n    \
          accu@\n  \
          ) l []@\n"
@@ -441,7 +441,7 @@ let pp_model fmt (model : model) =
     | Tail an ->
       let _, t = Utils.get_asset_key model (to_lident an) in
       Format.fprintf fmt
-        "let[@inline] tail_%s (l : %a list)  : %a list =@\n  \
+        "let tail_%s (l : %a list)  : %a list =@\n  \
          List.fold (fun (_, accu) ->@\n    \
          accu@\n  \
          ) l []@\n"
@@ -873,7 +873,7 @@ let pp_model fmt (model : model) =
           | InvalidState -> Format.fprintf fmt "invalid state"
         in
 
-        Format.fprintf fmt "raise (Exception \"%a\")"
+        Format.fprintf fmt "failwith \"%a\""
           pp_fail_type ft
 
       | Mmathmin (l, r) ->
@@ -1114,10 +1114,12 @@ let pp_model fmt (model : model) =
       | Mbool b -> pp_str fmt (if b then "true" else "false")
       | Menum v -> pp_str fmt v
       | Mrational (n, d) ->
-        Format.fprintf fmt "(%a div %a)"
+        Format.fprintf fmt "(%a. /. %a.)"
           pp_big_int n
           pp_big_int d
-      | Mdate v -> pp_str fmt v
+      | Mdate v ->
+        Format.fprintf fmt "\"%a\""
+          pp_str v
       | Mstring v ->
         Format.fprintf fmt "\"%a\""
           pp_str v
