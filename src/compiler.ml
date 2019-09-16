@@ -6,6 +6,7 @@ exception Compiler_error
 exception E_arg
 exception ArgError of string
 exception Stop
+exception Type_error
 
 let is_false_ast () : bool = !Options.fake_ast || !Options.fake_ast2
 
@@ -91,9 +92,14 @@ let split_key_values     = Gen_split_key_values.split_key_values
 let remove_side_effect   = Gen_reduce.reduce
 let generate_api_storage = Gen_api_storage.generate_api_storage
 let exec_process model   = model |> Gen_transform.replace_lit_address_by_role |> Gen_transform.remove_label |> Gen_transform.flat_sequence
-let check_partition_access = Gen_transform.check_partition_access
+let check_partition_access = Gen_transform.check_partition_access Typing.empty
 let extend_removeif      = Gen_transform.extend_removeif
 let post_process_functional_language     = Gen_transform.process_single_field_storage
+
+let check_typing_error a =
+  if Tools.List.is_empty !Error.errors
+  then a
+  else raise Type_error
 
 let generate_target model =
 
@@ -167,8 +173,9 @@ let compile (filename, channel) =
   |> type_
   |> cont !Options.opt_ast output_tast
   |> generate_model
-  |> check_partition_access Typing.empty
+  |> check_partition_access
   |> extend_removeif
+  |> check_typing_error
   |> generate_target
 
 let close dispose channel =
@@ -305,6 +312,9 @@ let main () =
     (* List.map (fun (_ps, _s) -> ()) l; *)
     (* Format.eprintf "%s.\n" s *)
     exit 1
+  | Type_error ->
+    close dispose channel;
+    exit 2
 (* | Reduce.ReduceError (msg, l) ->
    close dispose channel;
    Printf.eprintf "%s%s.\n" msg (match l with | None -> "" | Some l -> (Location.tostring l));
