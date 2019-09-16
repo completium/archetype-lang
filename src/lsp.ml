@@ -256,9 +256,7 @@ let process (filename, channel) =
                   |> Gen_model.to_model
                   |> Gen_transform.check_partition_access Typing.empty in
           ();
-          if List.is_empty !Error.errors
-          then ()
-          else process_errors ()
+          process_errors ()
         else
           process_errors ()
     with
