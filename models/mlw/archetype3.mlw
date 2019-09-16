@@ -176,11 +176,6 @@ module AssetCollection
   use list.NumOcc
   use list.Permut
 
-  (*predicate occur_one (l : list t) =
-  forall a : t.
-    internal_mem a l ->
-    num_occ a l = 1*)
-
   inductive occur_one (l : list t) =
   | occur_nil: occur_one (Nil : list t)
   | occur_many: 
@@ -190,10 +185,6 @@ module AssetCollection
       occur_one (Cons a l)
 
   val function witness : t
-
-  (*predicate no_witness (l : list t) = 
-    forall a : t.
-    internal_mem a l -> a <> witness*)
 
   inductive no_witness (_ : list t) = 
   | no_wit_nil : no_witness Nil
@@ -250,12 +241,11 @@ module AssetCollection
     S.sorted content
   }
 
+  predicate sorted (c : collection) = S.sorted c.content
+
   (* SET THEORY *)
   
-  let function contains (k : key) (c : collection) : bool 
-  requires { k <> keyf witness }
-  =
-  let rec internal_contains (k : key) (l : list t) : bool
+  let rec function internal_contains (k : key) (l : list t) : bool
   variant { l }
   =
   match l with
@@ -264,7 +254,11 @@ module AssetCollection
     then true
     else internal_contains k tl
   | Nil -> false
-  end in
+  end
+
+  let function contains (k : key) (c : collection) : bool 
+  requires { k <> keyf witness }
+  =
   internal_contains k c.content
 
   let function mem (a : t) (c : collection) 
@@ -474,16 +468,17 @@ module AssetCollection
   end in
   { content = internal_unshallow c.content keys }
 
-  let function nth (i : int) (c : collection) : t 
-  ensures { 0 <= i < card c -> mem result c /\ result <> witness}
-  = 
   let rec function internal_nth (i : int) (l : list t) : t
   variant { l }
   = 
   match l with
   | Cons e tl -> if i = 0 then e else internal_nth (i - 1) tl
   | Nil -> witness
-  end in
+  end
+
+  let function nth (i : int) (c : collection) : t 
+  ensures { 0 <= i < card c -> mem result c /\ result <> witness}
+  = 
   internal_nth i c.content
 
   lemma nth_singleton: forall a : t. a <> witness -> nth 0 (singleton a) = a
@@ -561,8 +556,12 @@ module AssetCollection
   nth i (tail j c) = nth (i+j) c
 
   let function to_coll (l : list t) 
+  ensures { sorted result <-> S.sorted l }
+  ensures { forall k : key. contains k result <-> internal_contains k l }
+  ensures { forall a : t. mem a result <-> internal_mem a l }
+  ensures { forall i : int. eqf (nth i result) (internal_nth i l) }
   = { content = l }
- 
+
   goal sanity_check : false
 
 end
