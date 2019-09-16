@@ -147,7 +147,7 @@ let pp_error_desc fmt e =
   | EmptyStateDecl                     -> Format.fprintf fmt ""
   | ExpressionExpected                 -> Format.fprintf fmt ""
   | FormulaExpected                    -> Format.fprintf fmt ""
-  | IncompatibleTypes (t1, t2)         -> Format.fprintf fmt "%a %a" M.pp_ptyp t1 M.pp_ptyp t2
+  | IncompatibleTypes (t1, t2)         -> Format.fprintf fmt "%a %a" Printer_ast.pp_ptyp t1 Printer_ast.pp_ptyp t2
   | InvalidActionDescription           -> Format.fprintf fmt ""
   | InvalidActionExpression            -> Format.fprintf fmt ""
   | InvalidArcheTypeDecl               -> Format.fprintf fmt ""
