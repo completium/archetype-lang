@@ -196,7 +196,7 @@ let pp_error_desc fmt e =
   | UnknownSecurityPredicate (i, n)    -> Format.fprintf fmt "Error in security predicate: %a %i" pp_ident i n
   | UnpureInFormula                    -> Format.fprintf fmt "Cannot use expression with side effect"
   | VoidMethodInExpr                   -> Format.fprintf fmt "Expecting arguments"
-  | AssetPartitionnedby (i, l)         -> Format.fprintf fmt "Cannot write asset collection: asset %a is partitionned by field(s) (%a)" pp_ident i (Printer_tools.pp_list ", " pp_ident) l
+  | AssetPartitionnedby (i, l)         -> Format.fprintf fmt "Cannot write asset collection directly: asset %a is partitionned by field(s) (%a)" pp_ident i (Printer_tools.pp_list ", " pp_ident) l
 
 (* -------------------------------------------------------------------- *)
 type argtype = [`Type of M.type_ | `Effect of ident]
