@@ -91,6 +91,7 @@ let split_key_values     = Gen_split_key_values.split_key_values
 let remove_side_effect   = Gen_reduce.reduce
 let generate_api_storage = Gen_api_storage.generate_api_storage
 let exec_process model   = model |> Gen_transform.replace_lit_address_by_role |> Gen_transform.remove_label |> Gen_transform.flat_sequence
+let check_partition_access = Gen_transform.check_partition_access
 let extend_removeif      = Gen_transform.extend_removeif
 let post_process_functional_language     = Gen_transform.process_single_field_storage
 
@@ -166,6 +167,7 @@ let compile (filename, channel) =
   |> type_
   |> cont !Options.opt_ast output_tast
   |> generate_model
+  |> check_partition_access Typing.empty
   |> extend_removeif
   |> generate_target
 

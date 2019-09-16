@@ -1998,6 +1998,7 @@ module Utils : sig
   val with_trace                         : model -> bool
   val get_callers                        : model -> ident -> ident list
   val no_fail                            : model -> ident -> lident option
+  val type_to_asset                      : type_ -> lident
 
 end = struct
 

@@ -122,6 +122,7 @@ type error_desc =
   | UnknownSecurityPredicate           of ident * int
   | UnpureInFormula
   | VoidMethodInExpr
+  | AssetPartitionnedby                of ident * ident list
 [@@deriving show {with_path = false}]
 
 type error = L.t * error_desc

@@ -154,3 +154,34 @@ let process_single_field_storage (model : model) : model =
     in
     map_mterm_model aux model
   | _   -> model
+
+(* raises errors if direct update/add/remove to partitioned asset *)
+let check_partition_access (env : Typing.env) (model : model) : model =
+  let partitions = Utils.get_partitions model in
+  let partitionned_assets =
+    partitions
+    |> List.map (fun (_,_,t) -> Utils.type_to_asset t)
+    |> List.map unloc
+  in
+  let get_partitions a =
+    List.fold_left (fun acc (_,f,t) ->
+        if compare a (unloc (Utils.type_to_asset t)) = 0 then
+          acc @ [f]
+        else acc
+      ) [] partitions in
+  let emit_error loc a =
+    Typing.Env.emit_error env (
+      loc,
+      Typing.AssetPartitionnedby (a, get_partitions a));
+    true in
+  (* woud need a model iterator here *)
+  let raise_access_error () =
+    let rec internal_raise (ctx : ctx_model) acc (t : mterm) =
+      match t.node with
+      | Maddasset (a, _) when List.mem a partitionned_assets -> emit_error t.loc a
+      | Mremoveasset (a, _) when List.mem a partitionned_assets -> emit_error t.loc a
+      | _ -> fold_term (internal_raise ctx) acc t
+    in
+    fold_model internal_raise model false in
+  let _ = raise_access_error () in
+  model

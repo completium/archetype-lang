@@ -248,7 +248,18 @@ let process (filename, channel) =
     try
       let pt = Io.parse_archetype ~name:filename channel in
       if (List.is_empty !Error.errors)
-      then ( let _ = Typing.typing Typing.empty pt in ());
-      process_errors ()
+      then
+        let ast = Typing.typing Typing.empty pt in
+        if List.is_empty !Error.errors
+        then
+          let _ = ast
+                  |> Gen_model.to_model
+                  |> Gen_transform.check_partition_access Typing.empty in
+          ();
+          if List.is_empty !Error.errors
+          then ()
+          else process_errors ()
+        else
+          process_errors ()
     with
     | _ -> process_errors ()
