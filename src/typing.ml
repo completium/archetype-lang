@@ -102,6 +102,7 @@ type error_desc =
   | NameIsAlreadyBound                 of ident
   | NoMatchingOperator
   | NoSuchMethod                       of ident
+  | NoSuchSecurityPredicate            of ident
   | NonLoopLabel                       of ident
   | NotARole                           of ident
   | NumericExpressionExpected
@@ -119,7 +120,6 @@ type error_desc =
   | UnknownProcedure                   of ident
   | UnknownState                       of ident
   | UnknownTypeName                    of ident
-  | UnknownSecurityPredicate           of ident * int
   | UnpureInFormula
   | VoidMethodInExpr
   | AssetPartitionnedby                of ident * ident list
@@ -176,6 +176,7 @@ let pp_error_desc fmt e =
   | NameIsAlreadyBound i               -> Format.fprintf fmt "Name is already used: %a" pp_ident i
   | NoMatchingOperator                 -> Format.fprintf fmt "No matching operator"
   | NoSuchMethod i                     -> Format.fprintf fmt "No such method: %a" pp_ident i
+  | NoSuchSecurityPredicate i          -> Format.fprintf fmt "No such security predicate: %a" pp_ident i
   | NonLoopLabel i                     -> Format.fprintf fmt "Not a loop lable: %a" pp_ident i
   | NotARole i                         -> Format.fprintf fmt "Not a role: %a" pp_ident i
   | NumericExpressionExpected          -> Format.fprintf fmt "Expecting numerical expression"
@@ -193,7 +194,6 @@ let pp_error_desc fmt e =
   | UnknownProcedure i                 -> Format.fprintf fmt "Unknown procedure: %a" pp_ident i
   | UnknownState i                     -> Format.fprintf fmt "Unknown state: %a" pp_ident i
   | UnknownTypeName i                  -> Format.fprintf fmt "Unknown type: %a" pp_ident i
-  | UnknownSecurityPredicate (i, n)    -> Format.fprintf fmt "Error in security predicate: %a %i" pp_ident i n
   | UnpureInFormula                    -> Format.fprintf fmt "Cannot use expression with side effect"
   | VoidMethodInExpr                   -> Format.fprintf fmt "Expecting arguments"
   | AssetPartitionnedby (i, l)         -> Format.fprintf fmt "Cannot write asset collection directly: asset %a is partitionned by field(s) (%a)" pp_ident i (Printer_tools.pp_list ", " pp_ident) l
@@ -330,7 +330,7 @@ let globals = [
   ("caller",      M.Ccaller,  M.vtaddress);
 ]
 
-type method_ = {
+type  method_ = {
   mth_name     : M.const;
   mth_purity   : [`Pure | `Effect];
   mth_totality : [`Total | `Partial];
@@ -387,6 +387,36 @@ let methods : (string * method_) list =
 let methods = Mid.of_list methods
 
 (* -------------------------------------------------------------------- *)
+
+type security_pred_ = {
+  sp_sig: sptyp list;
+  (* sp_fun: PT.security_arg list -> M.security_node *)
+}
+and sptyp = [
+  | `ActionDesc
+  | `Role
+  | `Action
+]
+
+let security_preds : (string * security_pred_) list =
+  let mk sp_sig =
+    { sp_sig }
+  in [
+    ("only_by_role",           mk [`ActionDesc; `Role]);
+    ("only_in_action",         mk [`ActionDesc; `Action]);
+    ("only_by_role_in_action", mk [`ActionDesc; `Role; `Action]);
+    ("not_by_role",            mk [`ActionDesc; `Role]);
+    ("not_in_action",          mk [`ActionDesc; `Action]);
+    ("not_by_role_in_action",  mk [`ActionDesc; `Role; `Action]);
+    ("transferred_by",         mk [`ActionDesc]);
+    ("transferred_to",         mk [`ActionDesc]);
+    ("no_storage_fail",        mk [`Action])
+  ]
+
+let security_preds = Mid.of_list security_preds
+
+(* -------------------------------------------------------------------- *)
+
 type assetdecl = {
   as_name   : M.lident;
   as_fields : (M.lident * M.ptyp) list;
@@ -1337,42 +1367,6 @@ let rec for_xexpr (mode : emode_t) (env : env) ?(ety : M.ptyp option) (tope : PT
             mk_sp (Some M.vtbool) (M.Pquantifer (qt, x, (ast, xty), body))
       end
 
-    (* | Esecurity { pldesc = SOnlyByRole (s1, s2) } ->
-       if mode <> `Formula then begin
-        Env.emit_error env (loc tope, SecurityInExpr);
-        bailout ()
-       end else
-        let s1 = for_action_description env s1 in
-        let s2 = for_security_role env s2 in
-        mk_sp (Some M.vtbool) (M.PsecurityActionRole (s1, s2))
-
-       | Esecurity { pldesc = SOnlyInAction (s1, s2) } ->
-       if mode <> `Formula then begin
-        Env.emit_error env (loc tope, SecurityInExpr);
-        bailout ()
-       end else
-        let s1 = for_action_description env s1 in
-        let s2 = for_security_action env s2 in
-        mk_sp (Some M.vtbool) (M.PsecurityActionAction (s1, s2))
-
-       | Esecurity { pldesc = SOnlyByRoleInAction (s1, s2, s3) } ->
-       if mode <> `Formula then begin
-        Env.emit_error env (loc tope, SecurityInExpr);
-        bailout ()
-       end else
-        let s1 = for_action_description env s1 in
-        let s2 = for_security_role env s2 in
-        let s3 = for_security_action env s3 in
-        mk_sp (Some M.vtbool) (M.PsecurityActionRoleAction (s1, s2, s3))
-
-       | Esecurity { pldesc = SNoFail s } ->
-       if mode <> `Formula then begin
-        Env.emit_error env (loc tope, SecurityInExpr);
-        bailout ()
-       end else
-        let s = for_security_action env s in
-        mk_sp (Some M.vtbool) (M.PsecurityActionNoFail s) *)
-
     | Eapp      _
     | Eassert   _
     | Eassign   _
@@ -1447,7 +1441,7 @@ and for_asset_collection_expr mode (env : env) (tope : PT.expr) =
   in (ast, typ)
 
 (* -------------------------------------------------------------------- *)
-and for_gen_method_call mode env theloc (the, m, args) =
+and  for_gen_method_call mode env theloc (the, m, args) =
   let module E = struct exception Bailout end in
 
   try
@@ -1948,40 +1942,72 @@ let for_specification_item (env : env) (v : PT.specification_item) : env * env i
     (env, `Postcondition (x, f, invs))
 
 (* -------------------------------------------------------------------- *)
-let for_security_item (env : env) (v : PT.security_item) : env * M.security_item =
-  let l, (lbl, name, args) = Location.deloc v in
+let for_security_item (env : env) (v : PT.security_item) : (env * M.security_item) option =
+  let module E = struct exception Bailout end in
 
-  (* FIXME: check and add label in env *)
+  try
+    let l, (lbl, name, args) = Location.deloc v in
 
-  let security_node : M.security_node =
-    let id = unloc name in
-    match id, args with
-    | "only_by_role",           [a; b]    -> M.SonlyByRole         (for_action_description env a, for_security_role env b)
-    | "only_in_action",         [a; b]    -> M.SonlyInAction       (for_action_description env a, for_security_action env b)
-    | "only_by_role_in_action", [a; b; c] -> M.SonlyByRoleInAction (for_action_description env a, for_security_role env b, for_security_action env b)
-    | "not_by_role",            [a; b]    -> M.SnotByRole          (for_action_description env a, for_security_role env b)
-    | "not_in_action",          [a; b]    -> M.SnotInAction        (for_action_description env a, for_security_action env b)
-    | "not_by_role_in_action",  [a; b; c] -> M.SnotByRoleInAction  (for_action_description env a, for_security_role env b, for_security_action env b)
-    | "transferred_by",         [a]       -> M.StransferredBy      (for_action_description env a)
-    | "transferred_to",         [a]       -> M.StransferredTo      (for_action_description env a)
-    | "no_storage_fail",        [a]       -> M.SnoStorageFail      (for_security_action env a)
-    | _ -> Env.emit_error env (loc v, UnknownSecurityPredicate (id, List.length args)); assert false
-  in
+    (* FIXME: check and add label in env *)
 
-  let security_predicate : M.security_predicate = M.{
-      s_node = security_node;
-      loc = l;
-    }
-  in
+    let sp_ =
+      match Mid.find_opt (unloc name) security_preds with
+      | None ->
+        Env.emit_error env (loc name, NoSuchSecurityPredicate (unloc name));
+        raise E.Bailout
+      | Some method_ -> method_
+    in
 
-  let security_item : M.security_item = M.{
-      label = lbl;
-      predicate = security_predicate;
-      loc = l;
-    }
-  in
+    let ne = List.length sp_.sp_sig in
+    let ng = List.length args in
 
-  env, security_item
+    if ne <> ng then begin
+      Env.emit_error env (l, InvalidNumberOfArguments (ne, ng));
+      raise E.Bailout
+    end;
+
+    (* let doarg arg (aty : sptyp) =
+       match aty with
+       | `ActionDesc ->
+        for_action_description env arg
+       | `Role ->
+        for_security_role env arg
+       | `Action ->
+        for_security_action env arg
+
+       | _ -> assert false
+       in *)
+
+    let security_node : M.security_node =
+      let id = unloc name in
+      match id, args with
+      | "only_by_role",           [a; b]    -> M.SonlyByRole         (for_action_description env a, for_security_role env b)
+      | "only_in_action",         [a; b]    -> M.SonlyInAction       (for_action_description env a, for_security_action env b)
+      | "only_by_role_in_action", [a; b; c] -> M.SonlyByRoleInAction (for_action_description env a, for_security_role env b, for_security_action env c)
+      | "not_by_role",            [a; b]    -> M.SnotByRole          (for_action_description env a, for_security_role env b)
+      | "not_in_action",          [a; b]    -> M.SnotInAction        (for_action_description env a, for_security_action env b)
+      | "not_by_role_in_action",  [a; b; c] -> M.SnotByRoleInAction  (for_action_description env a, for_security_role env b, for_security_action env c)
+      | "transferred_by",         [a]       -> M.StransferredBy      (for_action_description env a)
+      | "transferred_to",         [a]       -> M.StransferredTo      (for_action_description env a)
+      | "no_storage_fail",        [a]       -> M.SnoStorageFail      (for_security_action env a)
+      | _ -> assert false
+    in
+
+    let security_predicate : M.security_predicate = M.{
+        s_node = security_node;
+        loc = l;
+      }
+    in
+
+    let security_item : M.security_item = M.{
+        label = lbl;
+        predicate = security_predicate;
+        loc = l;
+      }
+    in
+
+    Some (env, security_item)
+  with E.Bailout -> None
 
 (* -------------------------------------------------------------------- *)
 let for_specification (env : env) (v : PT.specification) =
@@ -1989,7 +2015,11 @@ let for_specification (env : env) (v : PT.specification) =
 
 (* -------------------------------------------------------------------- *)
 let for_security (env : env) (v : PT.security) : env * M.security =
-  let env, items = List.fold_left_map for_security_item env (fst (unloc v)) in
+  let env, items = List.fold_left (fun (env, items) x ->
+      match for_security_item env x with
+      | Some (e, v) -> (e, v::items)
+      | None -> (env, items)
+    ) (env, []) (fst (unloc v)) in
   env, M.{ items = items;
            loc = loc v }
 
