@@ -852,17 +852,26 @@ let to_model (ast : A.model) : M.model =
       end
     in
 
-    let process_requires (body : M.mterm) : M.mterm =
-      let process_require (x : A.lident A.label_term) (body : M.mterm) : M.mterm =
-        let term = to_mterm x.term in
-        let cond : M.mterm = M.mk_mterm (M.Mnot term) (Tbuiltin Bbool) ~loc:x.loc in
-        let fail_cond : M.mterm = fail (InvalidCondition (Option.map unloc x.label)) in
-        let cond_if = M.mk_mterm (M.Mif (cond, fail_cond, None)) M.Tunit ~loc:x.loc in
-        add_seq cond_if body
+    let process b (x : A.lident A.label_term) (body : M.mterm) : M.mterm =
+      let term = to_mterm x.term in
+      let cond : M.mterm =
+        match b with
+        | `Require ->  M.mk_mterm (M.Mnot term) (Tbuiltin Bbool) ~loc:x.loc
+        | `Failif -> term
       in
-      match transaction.require with
+      let fail_cond : M.mterm = fail (InvalidCondition (Option.map unloc x.label)) in
+      let cond_if = M.mk_mterm (M.Mif (cond, fail_cond, None)) M.Tunit ~loc:x.loc in
+      add_seq cond_if body
+    in
+    let apply b li body =
+      match li with
       | None -> body
-      | Some requires -> List.fold_right (fun (x : A.lident A.label_term) (accu : M.mterm) -> process_require x accu) requires body
+      | Some l -> List.fold_right (fun (x : A.lident A.label_term) (accu : M.mterm) -> process b x accu) l body
+    in
+    let process_requires (body : M.mterm) : M.mterm =
+      body
+      |>  apply `Failif  transaction.failif
+      |>  apply `Require transaction.require
     in
 
     let process_accept_transfer (body : M.mterm) : M.mterm =

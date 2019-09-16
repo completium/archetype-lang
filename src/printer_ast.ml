@@ -744,7 +744,7 @@ let pp_function fmt (f : function_) =
     pp_instruction f.body
 
 let pp_transaction_action fmt (t : transaction) =
-  Format.fprintf fmt "action %a %a = {@\n  @[%a%a%a%a%a%a@]@\n}@\n"
+  Format.fprintf fmt "action %a %a = {@\n  @[%a%a%a%a%a%a%a@]@\n}@\n"
     pp_id t.name
     (pp_list " " (fun fmt (x : lident decl_gen) ->
          Format.fprintf fmt "(%a : %a)"
@@ -755,6 +755,7 @@ let pp_transaction_action fmt (t : transaction) =
     (pp_option (fun fmt -> Format.fprintf fmt "called by %a@\n" pp_rexpr)) t.calledby
     (pp_do_if t.accept_transfer (fun fmt _ -> Format.fprintf fmt "accept transfer@\n")) ()
     (pp_option (pp_list "@\n " (fun fmt -> Format.fprintf fmt "require {@\n  @[%a@]@\n}@\n" pp_label_term))) t.require
+    (pp_option (pp_list "@\n " (fun fmt -> Format.fprintf fmt "failif {@\n  @[%a@]@\n}@\n" pp_label_term))) t.failif
     (pp_list "@\n" pp_function) t.functions
     (pp_option (fun fmt x -> Format.fprintf fmt "effect {@\n  @[%a@]@\n}@\n" pp_instruction x)) t.effect
 

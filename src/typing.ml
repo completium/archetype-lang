@@ -453,6 +453,7 @@ type 'env actiondecl = {
   ad_callby : M.lident list;
   ad_effect : M.instruction option;
   ad_reqs   : (M.lident option * M.pterm) list;
+  ad_fais   : (M.lident option * M.pterm) list;
   ad_spec  : 'env ispecification list;
 }
 
@@ -2062,10 +2063,12 @@ let for_action_properties (env : env) (act : PT.action_properties) =
   let calledby = Option.map (fun (x, _) -> for_callby env x) act.calledby in
   let env, req = Option.foldmap
       (fun env (x, _) -> for_lbls_formula env x) env act.require in
+  let env, fai = Option.foldmap
+      (fun env (x, _) -> for_lbls_formula env x) env act.failif in
   let spec    = Option.map (for_specification env) act.spec in
   let funs     = List.map (for_function env) act.functions in
 
-  (env, (calledby, req, spec, funs))
+  (env, (calledby, req, fai, spec, funs))
 
 (* -------------------------------------------------------------------- *)
 let for_effect (env : env) (effect : PT.expr) =
@@ -2284,6 +2287,7 @@ let for_acttx_decl (env : env) (decl : acttx loced) =
             let callby      = Option.map (for_callby env) (Option.fst pt.calledby) in
             let callby      = Option.get_dfl [] callby in
             let env, reqs   = Option.foldmap for_lbls_expr env (Option.fst pt.require) in
+            let env, fais   = Option.foldmap for_lbls_expr env (Option.fst pt.failif) in
             let env, spec  = Option.foldmap for_specification env pt.spec in
 
             let decl =
@@ -2292,7 +2296,8 @@ let for_acttx_decl (env : env) (decl : acttx loced) =
                 ad_callby = callby;
                 ad_effect = effect;
                 ad_reqs   = Option.get_dfl [] reqs;
-                ad_spec  = Option.get_dfl [] spec; } in
+                ad_fais   = Option.get_dfl [] fais;
+                ad_spec   = Option.get_dfl [] spec; } in
 
             (env, decl))
 
@@ -2523,6 +2528,10 @@ let transactions_of_tdecls tdecls =
             List.map
               (fun (x, c) -> M.{ label = x; term = c; loc = L.dummy; }) (* FIXME *)
               tdecl.ad_reqs);
+        failif         = Some (
+            List.map
+              (fun (x, c) -> M.{ label = x; term = c; loc = L.dummy; }) (* FIXME *)
+              tdecl.ad_fais);
         transition      = None;        (* FIXME *)
         specification    = Some (specifications_of_ispecifications tdecl.ad_spec);
         functions       = [];          (* FIXME *)
