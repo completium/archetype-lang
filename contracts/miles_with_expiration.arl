@@ -26,7 +26,6 @@ action add (ow : address) (newmile : mile) = {
    }
 
    effect {
-     mile.add (newmile);
      if owner.contains(ow) then
       owner.get(ow).miles.add (newmile)
      else
