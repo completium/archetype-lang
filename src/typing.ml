@@ -127,6 +127,77 @@ type error_desc =
 
 type error = L.t * error_desc
 
+let pp_error_desc fmt e =
+  match e with
+  | AssetExpected                      -> Format.fprintf fmt ""
+  | AssetWithoutFields                 -> Format.fprintf fmt ""
+  | BindingInExpr                      -> Format.fprintf fmt ""
+  | CannotInferAnonRecord              -> Format.fprintf fmt ""
+  | CannotInferCollectionType          -> Format.fprintf fmt ""
+  | CollectionExpected                 -> Format.fprintf fmt ""
+  | DivergentExpr                      -> Format.fprintf fmt ""
+  | DuplicatedAssetName i              -> Format.fprintf fmt ": %a" pp_ident i
+  | DuplicatedCtorName i               -> Format.fprintf fmt ": %a" pp_ident i
+  | DuplicatedFieldInAssetDecl i       -> Format.fprintf fmt ": %a" pp_ident i
+  | DuplicatedFieldInRecordLiteral i   -> Format.fprintf fmt ": %a" pp_ident i
+  | DuplicatedInitMarkForCtor          -> Format.fprintf fmt ""
+  | DuplicatedPKey                     -> Format.fprintf fmt ""
+  | DuplicatedVarDecl i                -> Format.fprintf fmt ": %a" pp_ident i
+  | AnonymousFieldInEffect             -> Format.fprintf fmt ""
+  | EmptyStateDecl                     -> Format.fprintf fmt ""
+  | ExpressionExpected                 -> Format.fprintf fmt ""
+  | FormulaExpected                    -> Format.fprintf fmt ""
+  | IncompatibleTypes (t1, t2)         -> Format.fprintf fmt "%a %a" M.pp_ptyp t1 M.pp_ptyp t2
+  | InvalidActionDescription           -> Format.fprintf fmt ""
+  | InvalidActionExpression            -> Format.fprintf fmt ""
+  | InvalidArcheTypeDecl               -> Format.fprintf fmt ""
+  | InvalidAssetCollectionExpr         -> Format.fprintf fmt ""
+  | InvalidAssetExpression             -> Format.fprintf fmt ""
+  | InvalidCallByExpression            -> Format.fprintf fmt ""
+  | InvalidExpressionForEffect         -> Format.fprintf fmt ""
+  | InvalidExpression                  -> Format.fprintf fmt ""
+  | InvalidFieldsCountInRecordLiteral  -> Format.fprintf fmt ""
+  | InvalidLValue                      -> Format.fprintf fmt ""
+  | InvalidFormula                     -> Format.fprintf fmt ""
+  | InvalidInstruction                 -> Format.fprintf fmt ""
+  | InvalidNumberOfArguments (n1, n2)  -> Format.fprintf fmt ": %i %i" n1 n2
+  | InvalidRoleExpression              -> Format.fprintf fmt ""
+  | InvalidSecurityAction              -> Format.fprintf fmt ""
+  | InvalidSecurityRole                -> Format.fprintf fmt ""
+  | InvalidStateExpression             -> Format.fprintf fmt ""
+  | LetInElseInInstruction             -> Format.fprintf fmt ""
+  | MissingFieldInRecordLiteral i      -> Format.fprintf fmt ": %a" pp_ident i
+  | MixedAnonInRecordLiteral           -> Format.fprintf fmt ""
+  | MixedFieldNamesInRecordLiteral l   -> Format.fprintf fmt ": %a" (Printer_tools.pp_list "@ " pp_ident) l
+  | MoreThanOneInitState l             -> Format.fprintf fmt ": %a" (Printer_tools.pp_list "@ " pp_ident) l
+  | MultipleInitialMarker              -> Format.fprintf fmt ""
+  | MultipleMatchingOperator           -> Format.fprintf fmt ""
+  | MultipleStateDeclaration           -> Format.fprintf fmt ""
+  | NameIsAlreadyBound i               -> Format.fprintf fmt ": %a" pp_ident i
+  | NoMatchingOperator                 -> Format.fprintf fmt ""
+  | NoSuchMethod i                     -> Format.fprintf fmt ": %a" pp_ident i
+  | NonLoopLabel i                     -> Format.fprintf fmt ": %a" pp_ident i
+  | NotARole i                         -> Format.fprintf fmt ": %a" pp_ident i
+  | NumericExpressionExpected          -> Format.fprintf fmt ""
+  | OpInRecordLiteral                  -> Format.fprintf fmt ""
+  | OrphanedLabel i                    -> Format.fprintf fmt ": %a" pp_ident i
+  | ReadOnlyGlobal i                   -> Format.fprintf fmt ": %a" pp_ident i
+  | SecurityInExpr                     -> Format.fprintf fmt ""
+  | SpecOperatorInExpr                 -> Format.fprintf fmt ""
+  | UnknownAction i                    -> Format.fprintf fmt ": %a" pp_ident i
+  | UnknownAsset i                     -> Format.fprintf fmt ": %a" pp_ident i
+  | UnknownField (i1, i2)              -> Format.fprintf fmt ": %a %a" pp_ident i1 pp_ident i2
+  | UnknownFieldName i                 -> Format.fprintf fmt ": %a" pp_ident i
+  | UnknownLabel i                     -> Format.fprintf fmt ": %a" pp_ident i
+  | UnknownLocalOrVariable i           -> Format.fprintf fmt ": %a" pp_ident i
+  | UnknownProcedure i                 -> Format.fprintf fmt ": %a" pp_ident i
+  | UnknownState i                     -> Format.fprintf fmt ": %a" pp_ident i
+  | UnknownTypeName i                  -> Format.fprintf fmt ": %a" pp_ident i
+  | UnknownSecurityPredicate (i, n)    -> Format.fprintf fmt ": %a %i" pp_ident i n
+  | UnpureInFormula                    -> Format.fprintf fmt ""
+  | VoidMethodInExpr                   -> Format.fprintf fmt ""
+  | AssetPartitionnedby (i, l)         -> Format.fprintf fmt ": %a %a" pp_ident i (Printer_tools.pp_list "@ " pp_ident) l
+
 (* -------------------------------------------------------------------- *)
 type argtype = [`Type of M.type_ | `Effect of ident]
 
