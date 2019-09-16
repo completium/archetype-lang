@@ -17,6 +17,7 @@
       calledby        = None;
       accept_transfer = false;
       require         = None;
+      failif          = None;
       functions       = [];
       spec            = None;
     }
@@ -537,13 +538,14 @@ transition:
 | EQUAL LBRACE xs=action_properties e=effect? RBRACE { (xs, e) }
 
 action_properties:
-  sp=specification_fun? cb=calledby? at=boption(ACCEPT_TRANSFER) cs=require? fs=function_item*
+  sp=specification_fun? cb=calledby? at=boption(ACCEPT_TRANSFER) cs=require? fi=failif? fs=function_item*
   {
     {
       spec            = sp;
       calledby        = cb;
       accept_transfer = at;
       require         = cs;
+      failif          = fi;
       functions       = fs;
     }
   }
@@ -552,7 +554,11 @@ calledby:
  | CALLED BY exts=option(extensions) x=expr { (x, exts) }
 
 require:
- | REQUIRE exts=option(extensions) xs=braced(label_exprs)
+ | REQUIRE exts=option(extensions) xs=braced(label_exprs_or_not)
+       { (xs, exts) }
+
+failif:
+ | FAILIF exts=option(extensions) xs=braced(label_exprs_or_not)
        { (xs, exts) }
 
 %inline require_value:
@@ -762,6 +768,10 @@ simple_expr_r:
      { x }
 
 %inline label_exprs:
+| l=label_expr+ { l }
+
+%inline label_exprs_or_not:
+| /* empty */ { [] }
 | l=label_expr+ { l }
 
 %inline label_expr:

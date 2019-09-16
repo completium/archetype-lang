@@ -1,0 +1,23 @@
+archetype test_action
+
+constant admin role = @tz1fakeadress
+
+action myaction = {
+  specification {
+    postcondition c1 = {
+      true -> true
+    }
+  }
+  called by admin
+  accept transfer
+  require {
+    r1: true;
+  }
+  failif {
+    f1: false;
+  }
+  effect {
+    let a : int = 0 in
+    a := 1
+  }
+}

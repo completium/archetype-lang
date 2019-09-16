@@ -250,7 +250,8 @@ type action_properties = {
   calledby        : (expr * exts) option;
   accept_transfer : bool;
   require         : (label_exprs * exts) option;
-  spec           : specification option;
+  failif          : (label_exprs * exts) option;
+  spec            : specification option;
   functions       : (s_function loced) list;
 }
 [@@deriving yojson, show {with_path = false}]

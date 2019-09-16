@@ -838,6 +838,10 @@ let pp_action_properties fmt (props : action_properties) =
       Format.fprintf fmt "require%a{@\n  @[%a@]@\n}@\n"
         pp_extensions exts
         pp_label_exprs cs) props.require;
+  map_option (fun (cs, exts) ->
+      Format.fprintf fmt "failif%a{@\n  @[%a@]@\n}@\n"
+        pp_extensions exts
+        pp_label_exprs cs) props.failif;
   (pp_list "@\n" pp_function) fmt (List.map unloc props.functions)
 
 let pp_transition fmt (to_, conditions, effect) =
