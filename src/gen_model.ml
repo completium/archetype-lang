@@ -816,9 +816,10 @@ let to_model (ast : A.model) : M.model =
   let process_transaction (transaction : A.transaction) (list : M.function__ list) : M.function__ list =
     let process_calledby (body : M.mterm) : M.mterm =
       let process_cb (cb : A.rexpr) (body : M.mterm) : M.mterm =
-        let rec process_rexpr (rq : A.rexpr) : M.mterm =
+        let rec process_rexpr (rq : A.rexpr) : M.mterm option =
           let caller : M.mterm = M.mk_mterm M.Mcaller (M.Tbuiltin Baddress) in
           match rq.node with
+          | Rany -> None
           | Rqualid q ->
             begin
               let qualid_to_pterm (q : A.qualid) : M.mterm =
@@ -832,18 +833,23 @@ let to_model (ast : A.model) : M.model =
                 | _ -> emit_error TODO
               in
               let addr : M.mterm = qualid_to_pterm q in
-              M.mk_mterm (M.Mequal (caller, addr)) (M.Tbuiltin Bbool) ~loc:rq.loc
+              Some (M.mk_mterm (M.Mequal (caller, addr)) (M.Tbuiltin Bbool) ~loc:rq.loc)
             end
           | Ror (l, r) ->
-            M.mk_mterm (M.Mor (process_rexpr l, process_rexpr r)) (M.Tbuiltin Bbool) ~loc:rq.loc
+            let l = Option.get (process_rexpr l) in
+            let r = Option.get (process_rexpr r) in
+            Some (M.mk_mterm (M.Mor (l, r)) (M.Tbuiltin Bbool) ~loc:rq.loc)
           | Raddress a ->
             let addr   : M.mterm = M.mk_mterm (M.Maddress (unloc a)) (M.Tbuiltin Baddress) in
-            M.mk_mterm (M.Mequal (caller, addr)) (M.Tbuiltin Bbool) ~loc:rq.loc
+            Some (M.mk_mterm (M.Mequal (caller, addr)) (M.Tbuiltin Bbool) ~loc:rq.loc)
         in
-        let require : M.mterm = M.mk_mterm (M.Mnot (process_rexpr cb)) (M.Tbuiltin Bbool) ~loc:cb.loc in
-        let fail_auth : M.mterm = fail InvalidCaller in
-        let cond_if = M.mk_mterm (M.Mif (require, fail_auth, None)) M.Tunit in
-        add_seq cond_if body
+        match process_rexpr cb with
+        | Some a ->
+          let require : M.mterm = M.mk_mterm (M.Mnot (a)) (M.Tbuiltin Bbool) ~loc:cb.loc in
+          let fail_auth : M.mterm = fail InvalidCaller in
+          let cond_if = M.mk_mterm (M.Mif (require, fail_auth, None)) M.Tunit in
+          add_seq cond_if body
+        | _ -> body
       in
       begin
         match transaction.calledby with

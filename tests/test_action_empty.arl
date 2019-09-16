@@ -4,7 +4,7 @@ action myaction = {
   specification {
   }
   (* accept transfer *)
-  (* called by any *)
+  called by any
   require {
   }
   failif {

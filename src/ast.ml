@@ -172,6 +172,7 @@ type 'id rexpr_gen = ('id rexpr_node) struct_poly
 [@@deriving show {with_path = false}]
 
 and 'id rexpr_node =
+  | Rany
   | Rqualid of 'id qualid_gen
   | Ror of 'id rexpr_gen * 'id rexpr_gen
   | Raddress of 'id

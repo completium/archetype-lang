@@ -2048,6 +2048,9 @@ let for_function (env : env) (f : PT.s_function loced) : unit =
 (* -------------------------------------------------------------------- *)
 let rec for_callby (env : env) (cb : PT.expr) =
   match unloc cb with
+  | Eterm (None, None, name) when String.equal (unloc name) "any" ->
+    [name]
+
   | Eterm (None, None, name) ->
     Option.get_as_list (for_role env name)
 
@@ -2503,8 +2506,14 @@ let transactions_of_tdecls tdecls =
     match cb with [] -> None | c :: cb ->
 
       let for1 = fun x ->
-        let name = M.{ node = M.Qident x; type_ = None; label = None; loc = loc x; } in
-        M.{ node  = M.Rqualid name;
+        let node =
+          match unloc x with
+          | "any" -> M.Rany
+          | _ ->
+            let name = M.{ node = M.Qident x; type_ = None; label = None; loc = loc x; } in
+            M.Rqualid name
+        in
+        M.{ node  = node;
             type_ = None;
             label = None;
             loc   = loc x } in

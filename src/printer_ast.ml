@@ -711,6 +711,7 @@ let pp_contract fmt (c : lident contract) =
 
 let rec pp_rexpr fmt (r : rexpr) =
   let pp_node fmt = function
+    | Rany -> pp_str fmt "any"
     | Rqualid q -> pp_qualid fmt q
     | Ror (lhs, rhs) ->
       Format.fprintf fmt "%a or %a"
