@@ -37,10 +37,16 @@ type position =
 
 type env = {
   f: function__ option;
+  select_preds: mterm list;
 }
 
-let mk_env ?f () : env =
-  {  f  }
+let mk_env ?f ?(select_preds=[]) () : env =
+  { f; select_preds }
+
+let get_preds_index l e : int =
+  match List.index_of (fun x -> Model.cmp_mterm x e) l with
+  | -1 -> assert false
+  | _ as i -> i
 
 let pp_cast (pos : position) (ltype : type_) (rtype : type_) (pp : 'a -> mterm -> unit) (fmt : Format.formatter) =
   match pos, ltype, rtype with
@@ -410,7 +416,7 @@ let pp_model fmt (model : model) =
         pp fmt (i)
 
       | Mselect (an, c, p) ->
-        let index : int = 0 in
+        let index : int = get_preds_index env.select_preds p in
         let pp fmt (an, c, p) =
           Format.fprintf fmt "select_%a_%i (%s, %a)"
             pp_str an index
@@ -979,7 +985,7 @@ let pp_model fmt (model : model) =
   in
 
 
-  let pp_storage_const fmt = function
+  let pp_storage_const (env : env) fmt = function
     | Get an ->
       let _, t = Utils.get_asset_key model (to_lident an) in
       Format.fprintf fmt
@@ -1135,18 +1141,19 @@ let pp_model fmt (model : model) =
          an *)
   in
 
-  let pp_container_const fmt = function
+  let pp_container_const (env : env) fmt = function
     | AddItem t-> Format.fprintf fmt "add\t %a" pp_type t
     | RemoveItem t -> Format.fprintf fmt "remove\t %a" pp_type t
     | ClearItem t -> Format.fprintf fmt "clear\t %a" pp_type t
     | ReverseItem t -> Format.fprintf fmt "reverse %a" pp_type t
   in
 
-  let pp_function_const fmt = function
+  let pp_function_const (env : env) fmt = function
     | Select (an, f) ->
       let k, t = Utils.get_asset_key model (to_lident an) in
+      let i = get_preds_index env.select_preds f in
       Format.fprintf fmt
-        "function select_%s_0 (const s : storage_type; const l : list(%a)) : list(%a) is@\n  \
+        "function select_%s_%i (const s : storage_type; const l : list(%a)) : list(%a) is@\n  \
          var l : list(%a) := (nil : list(%a));@\n  \
          function aggregate (const i : %a) : unit is@\n  \
          begin@\n    \
@@ -1159,7 +1166,7 @@ let pp_model fmt (model : model) =
          begin@\n    \
          list_iter(l, aggregate)@\n  \
          end with l@\n"
-        an pp_btyp t pp_btyp t
+        an i pp_btyp t pp_btyp t
         pp_btyp t pp_btyp t
         pp_btyp t
         an an
@@ -1341,23 +1348,23 @@ let pp_model fmt (model : model) =
 
   in
 
-  let pp_builtin_const fmt = function
+  let pp_builtin_const (env : env) fmt = function
     | MinBuiltin t-> Format.fprintf fmt "min on %a" pp_type t
     | MaxBuiltin t-> Format.fprintf fmt "max on %a" pp_type t
   in
 
-  let pp_api_item_node fmt = function
-    | APIStorage   v -> pp_storage_const fmt v
-    | APIContainer v -> pp_container_const fmt v
-    | APIFunction  v -> pp_function_const fmt v
-    | APIBuiltin   v -> pp_builtin_const fmt v
+  let pp_api_item_node (env : env) fmt = function
+    | APIStorage   v -> pp_storage_const env fmt v
+    | APIContainer v -> pp_container_const env fmt v
+    | APIFunction  v -> pp_function_const env fmt v
+    | APIBuiltin   v -> pp_builtin_const env fmt v
   in
 
-  let pp_api_item fmt (api_item : api_item) =
-    pp_api_item_node fmt api_item.node_item
+  let pp_api_item (env : env) fmt (api_item : api_item) =
+    pp_api_item_node env fmt api_item.node_item
   in
 
-  let pp_api_items fmt _ =
+  let pp_api_items (env : env) fmt _ =
     let filter_api_items l : api_item list =
       List.fold_right (fun (x : api_item) accu ->
           if x.only_formula
@@ -1370,10 +1377,11 @@ let pp_model fmt (model : model) =
     then pp_nothing fmt
     else
       Format.fprintf fmt "(* API function *)@\n@\n%a@\n"
-        (pp_list "@\n" pp_api_item) l
+        (pp_list "@\n" (pp_api_item env)) l
   in
 
-  let pp_function (fmt : Format.formatter) (f : function__) =
+  let pp_function (env : env) (fmt : Format.formatter) (f : function__) =
+    let env = {env with f = Some f} in
     match f.node with
     | Entry fs ->
       let name = fs.name in
@@ -1389,7 +1397,7 @@ let pp_model fmt (model : model) =
              match unloc name with
              (* | "clear_expired" *)
              (* | "consume" -> pp_str fmt "skip" *)
-             | _ -> pp_mterm (mk_env ~f:f ()) fmt x
+             | _ -> pp_mterm env fmt x
            end) fs.body
         const_storage
 
@@ -1411,13 +1419,13 @@ let pp_model fmt (model : model) =
         (fun fmt x -> begin
              match unloc name with
              (* | "add_owner_miles" -> pp_str fmt "skip" *)
-             | _ -> pp_mterm (mk_env ~f:f ()) fmt x
+             | _ -> pp_mterm env fmt x
            end) fs.body
         const_storage
   in
 
-  let pp_functions (fmt : Format.formatter) _ =
-    (pp_list "@\n" pp_function) fmt model.functions
+  let pp_functions (env : env) (fmt : Format.formatter) _ =
+    (pp_list "@\n" (pp_function env)) fmt model.functions
   in
 
   let pp_main_function (fmt : Format.formatter) _ =
@@ -1437,6 +1445,21 @@ let pp_model fmt (model : model) =
          )) actions
   in
 
+  let compute_env _ =
+    let select_preds =
+      List.fold_right (fun x accu ->
+          match x.only_formula, x.node_item with
+          | false, APIFunction (Select (_, pred)) ->
+            if not (List.exists (Model.cmp_mterm pred) accu)
+            then pred::accu
+            else accu
+          | _ -> accu
+        ) model.api_items []
+    in
+    mk_env ~select_preds:select_preds ()
+  in
+
+  let env = compute_env () in
   Format.fprintf fmt "// LIGO output generated by archetype@\n@\n\
                       %a@\n\
                       %a@\n\
@@ -1450,8 +1473,8 @@ let pp_model fmt (model : model) =
     pp_decls ()
     pp_storage ()
     pp_action_type ()
-    pp_api_items ()
-    pp_functions ()
+    (pp_api_items env) ()
+    (pp_functions env) ()
     pp_main_function ()
 
 (* -------------------------------------------------------------------------- *)
