@@ -330,7 +330,7 @@ let globals = [
   ("caller",      M.Ccaller,  M.vtaddress);
 ]
 
-type  method_ = {
+type method_ = {
   mth_name     : M.const;
   mth_purity   : [`Pure | `Effect];
   mth_totality : [`Total | `Partial];
@@ -1441,7 +1441,7 @@ and for_asset_collection_expr mode (env : env) (tope : PT.expr) =
   in (ast, typ)
 
 (* -------------------------------------------------------------------- *)
-and  for_gen_method_call mode env theloc (the, m, args) =
+and for_gen_method_call mode env theloc (the, m, args) =
   let module E = struct exception Bailout end in
 
   try
