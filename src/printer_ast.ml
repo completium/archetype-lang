@@ -753,8 +753,8 @@ let pp_transaction_action fmt (t : transaction) =
            pp_ptyp (Option.get x.typ)
        )) t.args
     (pp_option pp_specification) t.specification
-    (pp_option (fun fmt -> Format.fprintf fmt "called by %a@\n" pp_rexpr)) t.calledby
     (pp_do_if t.accept_transfer (fun fmt _ -> Format.fprintf fmt "accept transfer@\n")) ()
+    (pp_option (fun fmt -> Format.fprintf fmt "called by %a@\n" pp_rexpr)) t.calledby
     (pp_option (pp_list "@\n " (fun fmt -> Format.fprintf fmt "require {@\n  @[%a@]@\n}@\n" pp_label_term))) t.require
     (pp_option (pp_list "@\n " (fun fmt -> Format.fprintf fmt "failif {@\n  @[%a@]@\n}@\n" pp_label_term))) t.failif
     (pp_list "@\n" pp_function) t.functions

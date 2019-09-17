@@ -3,7 +3,7 @@ archetype test_action_empty
 action myaction = {
   specification {
   }
-  (* accept transfer *)
+  refuse transfer
   called by any
   require {
   }

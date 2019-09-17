@@ -116,11 +116,13 @@ let hour     = digit digit ':' digit digit ( ':' digit digit )?
 let timezone = ('+' digit digit ':' digit digit | 'Z')
 let date     = day ('T' hour ( timezone )?)?
 let accept_transfer = "accept" blank+ "transfer"
+let refuse_transfer = "refuse" blank+ "transfer"
 
 (* -------------------------------------------------------------------- *)
 rule token = parse
   | newline               { Lexing.new_line lexbuf; token lexbuf }
   | accept_transfer       { ACCEPT_TRANSFER }
+  | refuse_transfer       { REFUSE_TRANSFER }
   | blank+                { token lexbuf }
 
   | "@add"                { AT_ADD }

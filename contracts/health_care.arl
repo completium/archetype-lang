@@ -61,8 +61,8 @@ action pay_doctor (docid : address) = {
       balance = before.balance
     }
   }
-  called by insurer
   accept transfer
+  called by insurer
   require {
     r3 : state = Running;
   }
@@ -81,8 +81,8 @@ action pay_fee = {
       balance = before.balance
     }
   }
-  called by patient
   accept transfer
+  called by patient
   require {
     r4 : state = Running;
   }
@@ -100,8 +100,8 @@ action pay_consulation = {
   specification {
     idem_balance_pay_consultation : balance = before.balance;
   }
-  called by patient
   accept transfer
+  called by patient
   require {
     r5 : state = Running;
   }

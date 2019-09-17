@@ -828,12 +828,12 @@ let pp_action_properties fmt (props : action_properties) =
       let items, exts = v |> unloc in
       pp_spec fmt (items, exts)
   ) props.spec;
+  if (props.accept_transfer)
+  then Format.fprintf fmt "accept transfer@\n";
   map_option (fun (e, exts) ->
       Format.fprintf fmt "called by%a %a@\n"
         pp_extensions exts
         (pp_expr e_default PNone) e) props.calledby;
-  if (props.accept_transfer)
-  then Format.fprintf fmt "accept transfer@\n";
   map_option (fun (cs, exts) ->
       Format.fprintf fmt "require%a{@\n  @[%a@]@\n}@\n"
         pp_extensions exts

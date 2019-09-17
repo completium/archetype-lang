@@ -247,8 +247,8 @@ type s_function = {
 [@@deriving yojson, show {with_path = false}]
 
 type action_properties = {
-  calledby        : (expr * exts) option;
   accept_transfer : bool;
+  calledby        : (expr * exts) option;
   require         : (label_exprs * exts) option;
   failif          : (label_exprs * exts) option;
   spec            : specification option;

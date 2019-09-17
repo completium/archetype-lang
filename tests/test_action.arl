@@ -8,8 +8,8 @@ action myaction = {
       true -> true
     }
   }
-  called by admin
   accept transfer
+  called by admin
   require {
     r1: true;
   }

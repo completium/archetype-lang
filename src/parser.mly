@@ -117,6 +117,7 @@
 %token RBRACKET
 %token RECORD
 %token REF
+%token REFUSE_TRANSFER
 %token REQUIRE
 %token RETURN
 %token RPAREN
@@ -537,13 +538,18 @@ transition:
 | { (dummy_action_properties, None) }
 | EQUAL LBRACE xs=action_properties e=effect? RBRACE { (xs, e) }
 
+%inline accept_transfer:
+| /* empty */     { false }
+| REFUSE_TRANSFER { false }
+| ACCEPT_TRANSFER { true }
+
 action_properties:
-  sp=specification_fun? cb=calledby? at=boption(ACCEPT_TRANSFER) cs=require? fi=failif? fs=function_item*
+  sp=specification_fun? at=accept_transfer cb=calledby? cs=require? fi=failif? fs=function_item*
   {
     {
       spec            = sp;
-      calledby        = cb;
       accept_transfer = at;
+      calledby        = cb;
       require         = cs;
       failif          = fi;
       functions       = fs;
