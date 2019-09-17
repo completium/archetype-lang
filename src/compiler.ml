@@ -79,8 +79,10 @@ let type_ (pt : ParseTree.archetype) : Ast.model =
 let generate_target_pt (pt : ParseTree.archetype) : ParseTree.archetype =
   match !Options.target with
   | Markdown  -> (
-      let md = Gen_markdown.pt_to_ast_omd pt in
-      Format.printf "%s@." (Omd.to_markdown md);
+      (* let md = Gen_markdown.pt_to_ast_omd pt in
+         Format.printf "%s@." (Omd.to_markdown md);
+         raise Stop *)
+      Format.printf "%a@." Printer_pt_markdown.pp_archetype pt;
       raise Stop
     )
   | _ -> pt
