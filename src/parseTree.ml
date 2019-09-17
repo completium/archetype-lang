@@ -164,7 +164,7 @@ and expr = expr_unloc loced
 and lident_typ = lident * type_t * extension list option
 [@@deriving yojson, show {with_path = false}]
 
-and label_expr = (lident option * expr) loced
+and label_expr = (lident * expr) loced
 
 and label_exprs = label_expr list
 

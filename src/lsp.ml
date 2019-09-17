@@ -144,7 +144,7 @@ let symbol_kind_to_int = function
   | TypeParameter -> 26
 
 let mk_outline_from_label_exprs (x : ParseTree.label_exprs) =
-  (List.map (fun (x : ParseTree.label_expr)  -> let i, _ = Location.unloc x in let id = (Option.get i) in mk_outline (Location.unloc id, symbol_kind_to_int Property, Location.loc id)) x)
+  (List.map (fun (x : ParseTree.label_expr)  -> let id, _ = Location.unloc x in mk_outline (Location.unloc id, symbol_kind_to_int Property, Location.loc id)) x)
 
 let mk_outline_post_options (post_options : ParseTree.asset_post_option list) =
   let aux (a : ParseTree.asset_post_option) =
@@ -153,9 +153,7 @@ let mk_outline_post_options (post_options : ParseTree.asset_post_option list) =
       List.map (fun (x : ParseTree.label_expr) ->
           let lo, v = Location.deloc x in
           let id, formula = v in
-          match id with
-          | Some id -> [mk_outline (Location.unloc id, symbol_kind_to_int Property, lo)]
-          | _ -> []
+          [mk_outline (Location.unloc id, symbol_kind_to_int Property, lo)]
         ) l
       |> List.flatten
     | _ -> []

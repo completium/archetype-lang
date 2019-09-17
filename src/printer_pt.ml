@@ -654,7 +654,7 @@ let pp_asset_operation fmt (e : asset_operation) =
 let pp_label_expr fmt (le : label_expr) =
   let (lbl, e) = unloc le in
   Format.fprintf fmt "%a%a;"
-    (pp_option (pp_postfix " : " pp_id)) lbl
+    (pp_postfix " : " pp_id) lbl
     (pp_expr e_colon PRight) e
 
 let pp_label_exprs xs = (pp_list "@\n" pp_label_expr) xs

@@ -388,8 +388,7 @@ spec_items:
 | SPECIFICATION exts=option(extensions) LBRACE
     xs=label_exprs RBRACE
         { let ll = List.map (fun x ->
-            let loc, (id, e) = Location.deloc x in
-            let lbl = Tools.Option.get id in
+            let loc, (lbl, e) = Location.deloc x in
             mkloc loc (Vpostcondition (lbl, e, []))) xs in
             (ll, exts) }
 
@@ -784,18 +783,7 @@ simple_expr_r:
 | le=loc(label_expr_unloc) { le }
 
 %inline label_expr_unloc:
-| id=ident COLON e=expr SEMI_COLON { (Some id, e) }
-
-/*%inline ident_typs:
- | xs=ident+ COLON ty=type_t
-     { List.map (fun x -> (x, ty, None)) xs }
-
- | xs=ident_typ+
-     { List.flatten xs }
-
-%inline ident_typ:
- | LPAREN ids=ident+ COLON ty=type_t RPAREN
-     { List.map (fun id -> (id, ty, None)) ids }*/
+| id=ident COLON e=expr SEMI_COLON { (id, e) }
 
 %inline quant_kind:
 | COLON t=type_s      { Qtype t }

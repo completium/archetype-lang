@@ -119,8 +119,14 @@ let pp_archetype fmt pt =
           (pp_list "@\n" pp_asset_decl) assets
     in
 
+    let pp_called_by = (pp_option (fun fmt (x, _) -> Format.fprintf fmt "`called by ` %a@\n" pp_expr x)) in
     let pp_actions fmt _ =
       let pp_action_decl fmt ((name, args, action_properties, _ , exts) : action_decl) =
+        let pp_formula fmt (label, f : ident * expr) =
+          Format.fprintf fmt "##### %a@\n`%a`"
+            pp_str label
+            pp_expr f
+        in
         let pp_args fmt l =
           let pp_arg fmt (id, type_, _exts : lident_typ) =
             Format.fprintf fmt "|%a||%a|"
@@ -136,11 +142,6 @@ let pp_archetype fmt pt =
               (pp_list "@\n" pp_arg) l
         in
         let pp_formulas fmt (l : (ident * expr) list) =
-          let pp_formula fmt (label, f) =
-            Format.fprintf fmt "##### %a@\n`%a`"
-              pp_str label
-              pp_expr f
-          in
           if List.is_empty l
           then ()
           else
@@ -160,15 +161,28 @@ let pp_archetype fmt pt =
               | _ -> accu
             ) l [])
         in
-        Format.fprintf fmt "### %a@\n\
-                            %a\
-                            %a\
-                            %a\
-                            @\n"
-          pp_id name
-          (pp_option (fun fmt (x, _) -> Format.fprintf fmt "`called by` %a@\n" pp_expr x)) action_properties.calledby
-          pp_args args
-          pp_formulas formulas
+        let pp_rf name fmt (l : (label_exprs * exts) option) =
+          let l =
+            l
+            |> Option.get_as_list
+            |> List.map fst
+            |> List.flatten
+            |> List.map unloc
+            |> List.map (fun (x, y) -> unloc x, y)
+          in
+          if List.is_empty l
+          then ()
+          else
+            Format.fprintf fmt "#### %a @\n%a@\n"
+              pp_str name
+              (pp_list "@\n" pp_formula) l
+        in
+        Format.fprintf fmt "### %a@\n" pp_id name;
+        pp_called_by fmt action_properties.calledby;
+        pp_args fmt args;
+        (pp_rf "require") fmt action_properties.require;
+        (pp_rf "failif") fmt action_properties.failif;
+        pp_formulas fmt formulas;
       in
       let actions : action_decl list =
         List.fold_right (fun x accu -> x |> unloc |> function | Daction a -> a::accu | _ -> accu) es []
@@ -178,6 +192,21 @@ let pp_archetype fmt pt =
       | _ ->
         Format.fprintf fmt "## Actions@\n@\n%a"
           (pp_list "@\n" pp_action_decl) actions
+    in
+
+    let pp_transitions fmt _ =
+      let pp_transition_decl fmt (name, args, _, _, action_properties, transitions, exts : transition_decl) =
+        Format.fprintf fmt "### %a@\n" pp_id name;
+        pp_called_by fmt action_properties.calledby;
+      in
+      let transitions : transition_decl list =
+        List.fold_right (fun x accu -> x |> unloc |> function | Dtransition a -> a::accu | _ -> accu) es []
+      in
+      match transitions with
+      | [] -> ()
+      | _ ->
+        Format.fprintf fmt "## Transitions@\n@\n%a"
+          (pp_list "@\n" pp_transition_decl) transitions
     in
 
     let pp_sec_preds fmt _ =
@@ -239,6 +268,7 @@ let pp_archetype fmt pt =
     pp_title fmt ();
     pp_roles fmt ();
     pp_assets fmt ();
+    pp_transitions fmt ();
     pp_actions fmt ();
     pp_sec_preds fmt ()
   in
