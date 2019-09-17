@@ -47,7 +47,7 @@ let pp_archetype fmt pt =
       let pp_variable_decl fmt (id, type_, dv, vos, variable_kind, exts : variable_decl) =
         Format.fprintf fmt
           "### %a@\n@\n\
-           |                |   |@\n\
+           | Attribute              | Value  |@\n\
            |----------------|---|---|@\n\
            | Kind           | %a  |@\n\
            | Address        | %a  |@\n\
@@ -144,7 +144,7 @@ let pp_archetype fmt pt =
           if List.is_empty l
           then ()
           else
-            Format.fprintf fmt "#### Formal Specification@\n%a@\n"
+            Format.fprintf fmt "#### Postconditions @\n%a@\n"
               (pp_list "@\n" pp_formula) l
         in
         let formulas : (ident * expr) list =
@@ -156,7 +156,6 @@ let pp_archetype fmt pt =
           |> List.map unloc
           |>  (fun l -> List.fold_right (fun x accu ->
               match x with
-              | Vassert (l, e, _)
               | Vpostcondition (l, e, _) -> (unloc l, e)::accu
               | _ -> accu
             ) l [])
