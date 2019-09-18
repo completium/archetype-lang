@@ -23,3 +23,9 @@ depends: [
   "ppx_deriving"        { = "4.3" }
   "ppx_deriving_yojson" { = "3.4" }
 ]
+
+synopsis:
+  "Archetype is a domain-specific language (DSL) to develop smart contracts on the Tezos blockchain, with a specific focus on contract security."
+
+description:
+  "DSL to develop smart contracts on the Tezos blockchain."
