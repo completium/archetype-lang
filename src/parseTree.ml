@@ -148,6 +148,7 @@ and function_ =
 and literal =
   | Lnumber   of Core.big_int
   | Lrational of Core.big_int * Core.big_int
+  | Ltz       of Core.big_int
   | Lmtz      of Core.big_int
   | Laddress  of string
   | Lstring   of string

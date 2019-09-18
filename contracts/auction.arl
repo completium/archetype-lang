@@ -1,10 +1,10 @@
 archetype auction
 
-variable max_bid mtez = 0mtz
+variable max_bid tez = 0tz
 
 asset bid identified by incumbent = {
   incumbent : address;
-  value : mtez;
+  value : tez;
 }
 
 variable deadline date = 2019-01-01T00:00:00

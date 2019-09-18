@@ -2,7 +2,7 @@ archetype mini_dao
 
 asset shares identified by addr = {
     addr : address;
-    value : mtez;
+    value : tez;
 }
 
 action withdraw = {
@@ -18,6 +18,6 @@ action withdraw = {
     effect {
         let v = shares.get(caller).value in
         transfer v to caller;
-        shares.update (caller, { value = 0mtz })
+        shares.update (caller, { value = 0tz })
     }
 }

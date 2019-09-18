@@ -537,6 +537,7 @@ and pp_literal fmt lit =
   | Lrational (d, n) -> Format.fprintf fmt "%s div %s"
                           (Big_int.string_of_big_int d)
                           (Big_int.string_of_big_int n)
+  | Ltz       n -> Format.fprintf fmt "%stz" (Big_int.string_of_big_int n)
   | Lmtz      n -> Format.fprintf fmt "%smtz" (Big_int.string_of_big_int n)
   | Laddress  a -> Format.fprintf fmt "@%s" a
   | Lstring   s -> Format.fprintf fmt "\"%s\"" s

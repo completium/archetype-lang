@@ -114,10 +114,6 @@ let pp_model fmt (model : model) =
       pp_id model.name
   in
 
-  let pp_currency fmt = function
-    | Mtez -> Format.fprintf fmt "mtez"
-  in
-
   let pp_btyp fmt = function
     | Bbool       -> Format.fprintf fmt "bool"
     | Bint        -> Format.fprintf fmt "int"
@@ -127,7 +123,7 @@ let pp_model fmt (model : model) =
     | Bstring     -> Format.fprintf fmt "string"
     | Baddress    -> Format.fprintf fmt "address"
     | Brole       -> Format.fprintf fmt "address"
-    | Bcurrency c -> pp_currency fmt c
+    | Bcurrency   -> Format.fprintf fmt "tez"
     | Bkey        -> Format.fprintf fmt "key"
   in
 
@@ -773,12 +769,15 @@ let pp_model fmt (model : model) =
         Format.fprintf fmt "\"%a\""
           pp_str v
       | Mcurrency (v, c) ->
-        let v =
+        begin
           match c with
-          | Mtez -> v
-        in
-        Format.fprintf fmt "%amtz"
-          pp_big_int v
+          | Mtz ->
+            Format.fprintf fmt "%amtz"
+              pp_big_int v
+          | Tz ->
+            Format.fprintf fmt "%atz"
+              pp_big_int v
+        end
       | Maddress v ->
         Format.fprintf fmt "(%a : address)"
           pp_str v

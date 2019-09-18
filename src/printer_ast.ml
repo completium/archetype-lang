@@ -13,7 +13,8 @@ let pp_with_paren pp fmt =
 let pp_no_paren pp fmt = pp fmt
 
 let pp_currency fmt = function
-  | Mtez -> Format.fprintf fmt "mtez"
+  | Tz -> Format.fprintf fmt "tz"
+  | Mtz -> Format.fprintf fmt "mtz"
 
 let pp_vtyp fmt = function
   | VTbool       -> Format.fprintf fmt "bool"
@@ -24,7 +25,7 @@ let pp_vtyp fmt = function
   | VTstring     -> Format.fprintf fmt "string"
   | VTaddress    -> Format.fprintf fmt "address"
   | VTrole       -> Format.fprintf fmt "role"
-  | VTcurrency c -> pp_currency fmt c
+  | VTcurrency   -> Format.fprintf fmt "tez"
   | VTkey        -> Format.fprintf fmt "key"
 
 let pp_container fmt = function
@@ -74,7 +75,7 @@ let pp_bval fmt (bval : bval) =
     | BVrational (n, d) -> Format.fprintf fmt "(%a div %a)" pp_big_int n pp_big_int d
     | BVdate v          -> pp_str fmt v
     | BVstring s        -> pp_str fmt s
-    | BVcurrency (c, v) -> Format.fprintf fmt "%a %a" pp_big_int v pp_currency c
+    | BVcurrency (c, v) -> Format.fprintf fmt "%a%a" pp_big_int v pp_currency c
     | BVaddress v       -> Format.fprintf fmt "@@%a" pp_str v
     | BVduration v      -> Core.pp_duration_for_printer fmt v
   in

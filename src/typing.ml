@@ -223,7 +223,7 @@ let eqtypes =
     M.VTstring         ;
     M.VTaddress        ;
     M.VTrole           ;
-    M.VTcurrency Mtez  ;
+    M.VTcurrency       ;
     M.VTkey            ]
 
 let cmptypes =
@@ -232,12 +232,12 @@ let cmptypes =
     M.VTdate           ;
     M.VTduration       ;
     M.VTstring         ;
-    M.VTcurrency Mtez  ]
+    M.VTcurrency       ]
 
 let grptypes =
   [ M.VTdate           ;
     M.VTduration       ;
-    M.VTcurrency Mtez  ]
+    M.VTcurrency       ]
 
 let rgtypes =
   [ M.VTint      ;
@@ -282,7 +282,7 @@ let opsigs =
   let others : (PT.operator * (M.vtyp list * M.vtyp)) list =
     [ `Arith PT.Plus, ([M.VTdate    ; M.VTduration      ], M.VTdate)             ;
       `Arith PT.Plus, ([M.VTint     ; M.VTduration      ], M.VTduration)         ;
-      `Arith PT.Mult, ([M.VTrational; M.VTcurrency Mtez ], M.VTcurrency M.Mtez)  ] in
+      `Arith PT.Mult, ([M.VTrational; M.VTcurrency      ], M.VTcurrency       )  ] in
 
   eqsigs @ cmpsigs @ grptypes @ rgtypes @ ariths @ bools @ others
 
@@ -325,8 +325,8 @@ type groups = {
 
 let globals = [
   ("now"    ,     M.Cnow    , M.vtdate);
-  ("balance",     M.Cbalance, M.vtcurrency M.Mtez);
-  ("transferred", M.Ctransferred, M.vtcurrency M.Mtez);
+  ("balance",     M.Cbalance, M.vtcurrency);
+  ("transferred", M.Ctransferred, M.vtcurrency);
   ("caller",      M.Ccaller,  M.vtaddress);
 ]
 
@@ -484,7 +484,7 @@ let core_types = [
   ("role"     , M.vtrole           );
   ("address"  , M.vtaddress        );
   ("date"     , M.vtdate           );
-  ("mtez"     , M.vtcurrency M.Mtez);
+  ("tez"      , M.vtcurrency       );
   ("duration" , M.vtduration       );
 ]
 
@@ -948,7 +948,10 @@ let for_literal (_env : env) (topv : PT.literal loced) : M.bval =
     mk_sp M.vtstring (M.BVstring s)
 
   | Lmtz tz ->
-    mk_sp (M.vtcurrency M.Mtez) (M.BVcurrency (M.Mtez, tz))
+    mk_sp (M.vtcurrency) (M.BVcurrency (M.Mtz, tz))
+
+  | Ltz tz ->
+    mk_sp (M.vtcurrency) (M.BVcurrency (M.Tz,  tz))
 
   | Laddress a ->
     mk_sp M.vtaddress (M.BVaddress a)
@@ -1779,7 +1782,7 @@ let rec for_instruction (env : env) (i : PT.expr) : env * M.instruction =
     | Etransfer (e, back, to_) ->
       let to_ = Option.bind (for_role env) to_ in
       let to_ = Option.map (M.mk_id M.vtrole) to_ in
-      let e   = for_expr env ~ety:(M.vtcurrency M.Mtez) e in
+      let e   = for_expr env ~ety:M.vtcurrency e in
       env, mki (Itransfer (e, back, to_))
 
     | Eif (c, bit, bif) ->
