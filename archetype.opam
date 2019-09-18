@@ -25,7 +25,7 @@ depends: [
 ]
 
 synopsis:
-  "Archetype is a domain-specific language (DSL) to develop smart contracts on the Tezos blockchain, with a specific focus on contract security."
+  "Archetype is a domain-specific language (DSL) to develop smart contracts on the Tezos blockchain, with a specific focus on contract security"
 
 description:
-  "DSL to develop smart contracts on the Tezos blockchain."
+  "DSL to develop smart contracts on the Tezos blockchain"
