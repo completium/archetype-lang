@@ -4,7 +4,7 @@ constant issuer role = @tz1KksC8RvjUWAbXYJuNrUbontHGor25Cztk
 constant owner  role = @tz1uNrUbontHGor25CztkKksC8RvjUWAbXYJ
 constant oracle role = @tz1r25CztkKksC8RvjuNrUWAbXYJUbontHGo (* exchange *)
 
-constant nominal mtez = 1000mtz
+constant nominal tez = 1000tz
 
 constant trade      date = 2017-03-14T00:00:00
 constant init       date = 2017-03-14T00:00:00
@@ -74,7 +74,7 @@ asset fixing identified by observation = {
 
 (* EXPECTED PAYMENT COMPUTATION *)
 
-function compute_expected (d : date) : mtez = {
+function compute_expected (d : date) : tez = {
 
   specification {
 
@@ -140,7 +140,7 @@ function compute_expected (d : date) : mtez = {
   }
 
   effect {
-    let expected = 0mtz in
+    let expected = 0tz in
     let terminated = false in
     let redeem_date = final in
     (* early redemption *)
@@ -191,7 +191,7 @@ function compute_expected (d : date) : mtez = {
 }
 
 (* PAYMENT action *)
-variable actual_payment mtez = 0mtz
+variable actual_payment tez = 0tz
 
 action pay_note = {
    called by issuer

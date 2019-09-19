@@ -13,7 +13,8 @@ type container =
 [@@deriving show {with_path = false}]
 
 type currency =
-  | Mtez
+  | Tz
+  | Mtz
 [@@deriving show {with_path = false}]
 
 type vtyp =
@@ -25,7 +26,7 @@ type vtyp =
   | VTstring
   | VTaddress
   | VTrole
-  | VTcurrency of currency
+  | VTcurrency
   | VTkey
 [@@deriving show {with_path = false}]
 
@@ -560,7 +561,7 @@ let vtduration   = Tbuiltin (VTduration  )
 let vtstring     = Tbuiltin (VTstring    )
 let vtaddress    = Tbuiltin (VTaddress   )
 let vtrole       = Tbuiltin (VTrole      )
-let vtcurrency c = Tbuiltin (VTcurrency c)
+let vtcurrency   = Tbuiltin (VTcurrency  )
 let vtkey        = Tbuiltin (VTkey       )
 
 (* mk functions *)

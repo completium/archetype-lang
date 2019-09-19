@@ -6,7 +6,7 @@ let string_of_token = function
   | WHEN            -> "WHEN"
   | VARIABLE        -> "VARIABLE"
   | UNDERSCORE      -> "UNDERSCORE"
-  | MTZ n           -> Printf.sprintf "MTZ(%s)" (Big_int.string_of_big_int n)
+  | TZ n            -> Printf.sprintf "TZ(%s)" (Big_int.string_of_big_int n)
   | TRUE            -> "TRUE"
   | TRANSITION      -> "TRANSITION"
   | TRANSFER        -> "TRANSFER"
@@ -50,6 +50,7 @@ let string_of_token = function
   | NAMESPACE       -> "NAMESPACE"
   | MULTEQUAL       -> "MULTEQUAL"
   | MULT            -> "MULT"
+  | MTZ n           -> Printf.sprintf "MTZ(%s)" (Big_int.string_of_big_int n)
   | MINUSEQUAL      -> "MINUSEQUAL"
   | MINUS           -> "MINUS"
   | MATCH           -> "MATCH"
@@ -128,7 +129,7 @@ let string_of_symbol = function
   | X (T T_WHEN) -> "when"
   | X (T T_VARIABLE) -> "variable"
   | X (T T_UNDERSCORE) -> "_"
-  | X (T T_MTZ) -> "a mtez"
+  | X (T T_TZ) -> "a tz"
   | X (T T_TRUE) -> "true"
   | X (T T_TRANSITION) -> "transition"
   | X (T T_TRANSFER) -> "transfer"
@@ -172,6 +173,7 @@ let string_of_symbol = function
   | X (T T_NAMESPACE) -> "namespace"
   | X (T T_MULTEQUAL) -> "*="
   | X (T T_MULT) -> "*"
+  | X (T T_MTZ) -> "a mtz"
   | X (T T_MINUSEQUAL) -> "-="
   | X (T T_MINUS) -> "-"
   | X (T T_MATCH) -> "match"

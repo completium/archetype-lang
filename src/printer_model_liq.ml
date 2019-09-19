@@ -62,10 +62,6 @@ let pp_model fmt (model : model) =
       pp_id model.name
   in
 
-  let pp_currency fmt = function
-    | Mtez -> Format.fprintf fmt "tez"
-  in
-
   let pp_btyp fmt = function
     | Bbool       -> Format.fprintf fmt "bool"
     | Bint        -> Format.fprintf fmt "int"
@@ -75,7 +71,7 @@ let pp_model fmt (model : model) =
     | Bstring     -> Format.fprintf fmt "string"
     | Baddress    -> Format.fprintf fmt "address"
     | Brole       -> Format.fprintf fmt "address"
-    | Bcurrency c -> pp_currency fmt c
+    | Bcurrency   -> Format.fprintf fmt "tez"
     | Bkey        -> Format.fprintf fmt "key"
   in
 

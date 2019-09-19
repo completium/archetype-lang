@@ -3,10 +3,10 @@ archetype zero_coupon_bond
 variable issuer role  = @tz1KksC8RvjUWAbXYJuNrUbontHGor25Cztk (* seller 'Alice' *)
 
 variable owner role = @tz1KmuhR6P52hw6xs5P69BXJYAURaznhvN1k
-(* buyer 'Bob'; receives 11 mtez in one-year *)
+(* buyer 'Bob'; receives 11 tez in one-year *)
 
 
-variable price mtez from owner = 10mtz
+variable price tez from owner = 10tz
 
 variable payment mtez from issuer to owner = 11mtz * price
 

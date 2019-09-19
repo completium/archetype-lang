@@ -106,6 +106,7 @@ let newline = '\n'
 let digit   = ['0'-'9']
 let dec     = digit+ '.' digit+
 let div     = digit+ blank+ "div" blank+ digit+
+let tz      = digit+ "tz"
 let mtz     = digit+ "mtz"
 let var     = "<%" ['a'-'z' 'A'-'Z'] ['a'-'z' 'A'-'Z' '0'-'9' '_' ]* '>'
 let ident   = (['a'-'z' 'A'-'Z'] | var)  (['a'-'z' 'A'-'Z' '0'-'9' '_' ] | var)*
@@ -129,6 +130,7 @@ rule token = parse
   | "@remove"             { AT_REMOVE }
   | "@update"             { AT_UPDATE }
   | ident as id           { try  Hashtbl.find keywords id with Not_found -> IDENT id }
+  | tz as t               { TZ  (Big_int.big_int_of_string (String.sub t 0 ((String.length t) - 2))) }
   | mtz as t              { MTZ (Big_int.big_int_of_string (String.sub t 0 ((String.length t) - 3))) }
   | dec as input          {
       let l = Str.split (Str.regexp "\\.") input in

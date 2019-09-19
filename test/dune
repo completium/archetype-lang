@@ -1,4 +1,0 @@
-(executable
-  (libraries archetype alcotest)
-  (modules test)
-  (name test))

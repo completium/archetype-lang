@@ -5,7 +5,8 @@ type lident = ident Location.loced
 [@@deriving show {with_path = false}]
 
 type currency =
-  | Mtez
+  | Tz
+  | Mtz
 [@@deriving show {with_path = false}]
 
 type container =
@@ -23,7 +24,7 @@ type btyp =
   | Bstring
   | Baddress
   | Brole
-  | Bcurrency of currency
+  | Bcurrency
   | Bkey
 [@@deriving show {with_path = false}]
 
