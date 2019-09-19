@@ -23,8 +23,8 @@ depends: [
   "ocaml"               { >= "4.07.0" }
   "dune"                { >= "1.10.0"  }
   "menhir"
-  "uri"                 { >= "2.2.1" }
-  "digestif"            { >= "0.7.2" }
+  "uri"
+  "digestif"
   "why3"                { >= "1.2.0" }
   "yojson"
   "ppx_deriving"

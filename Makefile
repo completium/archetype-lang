@@ -41,4 +41,4 @@ check:
 	./check_pp.sh
 
 build-deps:
-	opam install dune.1.10.0 menhir.20190620 uri.2.2.1 digestif.0.7.2 why3.1.2.0 ppx_deriving ppx_deriving_yojson
+	opam install dune.1.10.0 menhir.20190620 uri digestif why3.1.2.0 ppx_deriving ppx_deriving_yojson
