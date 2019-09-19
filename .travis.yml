@@ -13,7 +13,6 @@ env:
   matrix:
   - OCAML_VERSION=4.07.0
   - OCAML_VERSION=4.08.0
-  - OCAML_VERSION=4.08.1
 
 before_install:
   # Obtain and install opam locally.
@@ -24,7 +23,7 @@ before_install:
   - opam update
   - opam switch "$OCAML_VERSION"
   - eval $(opam env)
-  - opam install dune.1.10.0 menhir.20190620 uri digestif why3.1.2.0 ppx_deriving ppx_deriving_yojson
+  - opam install dune.1.10.0 menhir.20190620 uri digestif.0.7.3 why3.1.2.0 ppx_deriving ppx_deriving_yojson
   - make all
 
 script:
