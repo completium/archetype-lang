@@ -15,7 +15,7 @@ action transferTokens (th : tokenHolder) (quantity : int) = {
 
   specification {
     postcondition s1 = {
-      before.tokenHolder.sum(tokens) = tokenHolder.sum(tokens)
+      before.tokenHolder.sum(tokens) = tokenHolder.sum(the.tokens)
     }
   }
 

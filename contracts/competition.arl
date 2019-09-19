@@ -24,7 +24,7 @@ asset submission = {
 states =
  | Created     initial
  | InProgress
- | Done        with { s1 : balance = 0; }
+ | Done        with { s1 : balance = 0mtz; }
  | Closed
 
 transition confirm from Created = {

@@ -30,10 +30,9 @@ states =
  | Created initial
  | Aborted
  | Confirmed
- | Canceled    with { s1 : balance = 0; }
- | Transferred with { s2 : transferred_to(buyer) = price;
-                      s3 : balance = 0;
-                      s4 : needs(oracle);
+ | Canceled    with { s1 : balance = 0mtz; }
+ | Transferred with { s2 : transferred_to price buyer;
+                      s3 : balance = 0mtz;
                     }
 
 transition abort from Created = {
@@ -61,16 +60,3 @@ transition finalize (task : taskStatus) from any = {
   }
 }
 
-specification {
-  postcondition s5 = {
-    state = Transferred or state = Canceled -> balance = 0
-  }
-
-  postcondition s6 = {
-    state = Transferred or state = Canceled -> needs(oracle)
-  }
-
-  postcondition s7 = {
-    state = Transferred -> receives(buyer) = price
-  }
-}

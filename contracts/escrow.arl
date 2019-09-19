@@ -24,7 +24,7 @@ states =
  | Aborted
  | Confirmed
  | Canceled
- | Transferred with { i1 : balance = 0; }
+ | Transferred with { i1 : balance = 0mtz; }
 
 transition abort from Created = {
   called by buyer or seller

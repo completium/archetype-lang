@@ -1,11 +1,11 @@
 archetype auction_zilliqa
 
 variable highest_bid mtez = 0mtz
-variable highest_bidder address = 0
+variable highest_bidder address = @0
 
 variable beneficiary address = @tz1KmuhR6P52hw6xs5P69BXJYAURaznhvN1k
 
-asset pending_returns identified by incumbent = {
+asset pending_return identified by incumbent = {
   incumbent   : address;
   val         : mtez;
 }
@@ -70,10 +70,10 @@ action place_bid = {
 (* onlyonce extension specifies that one cannot withdraw more than once *)
 action[%onlyonce%] withdraw = {
   require {
-    c2 : pending_returns.contains(caller);
+    c2 : pending_return.contains(caller);
   }
   effect {
-    transfer pending_returns.get(caller).val to caller;
+    transfer pending_return.get(caller).val to caller;
     pending_return.remove(caller)
   }
 }

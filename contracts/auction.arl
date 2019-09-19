@@ -33,7 +33,7 @@ action reclaim = {
  }
 
  effect {
-   transfer bid.get(caller) to caller
+   transfer bid.get(caller).value to caller
  }
 }
 

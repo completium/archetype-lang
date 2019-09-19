@@ -14,10 +14,10 @@ variable deadline date = 2019-06-01T00:00:00
 (* state machine *)
 states =
  | Created initial
- | Aborted   with { i1 : balance = 0; }
+ | Aborted   with { i1 : balance = 0mtz; }
  | Confirmed with { i2 : balance = price; }
- | Canceled  with { i3 : balance = 0; }
- | Completed with { i4 : balance = 0; }
+ | Canceled  with { i3 : balance = 0mtz; }
+ | Completed with { i4 : balance = 0mtz; }
 
 transition abort from Created = {
   called by buyer or seller
