@@ -12,6 +12,7 @@ env:
   - OPAMVERBOSE="true"
   matrix:
   - OCAML_VERSION=4.07.0
+  - OCAML_VERSION=4.08.0
 
 before_install:
   # Obtain and install opam locally.
@@ -31,3 +32,4 @@ script:
 notifications:
   email:
     - guillaume.duhamel@edukera.com
+    - archetype-dev@edukera.com
