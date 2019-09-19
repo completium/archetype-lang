@@ -216,7 +216,7 @@ end = struct
   let find_dup (type a b) (key : a -> b) (xs : a list) : (a * a) option =
     let module M = Map.Make(struct
         type t = b
-        let compare (x : b) (y : b) = (Stdlib.Pervasives.compare x y)
+        let compare (x : b) (y : b) = (Stdlib.compare x y)
       end) in
 
     let module E = struct exception Found of a * a end in
@@ -236,7 +236,7 @@ end = struct
   let undup (type a b) (key : a -> b) (xs : a list) =
     let module M = Set.Make(struct
         type t = b
-        let compare = (Stdlib.Pervasives.compare : t -> t -> int)
+        let compare = (Stdlib.compare : t -> t -> int)
       end) in
 
     List.rev (snd (List.fold_left (fun (seen, acc) x ->
@@ -337,7 +337,7 @@ module Set = Set
 (* -------------------------------------------------------------------- *)
 module Mint = Map.Make(struct
     type t = int
-    let compare = (Stdlib.Pervasives.compare : t -> t -> int)
+    let compare = (Stdlib.compare : t -> t -> int)
   end)
 
 (* -------------------------------------------------------------------- *)

@@ -1,6 +1,5 @@
-description: "Archetype language compiler"
-
-synopsis:
+synopsis: "Archetype language compiler"
+description:
 """
 Archetype is a domain-specific language (DSL) to develop smart contracts on the Tezos blockchain,
 with a specific focus on contract security
@@ -28,6 +27,6 @@ depends: [
   "digestif"            { >= "0.7.2" }
   "why3"                { >= "1.2.0" }
   "yojson"              { >= "1.7.0" }
-  "ppx_deriving"        { >= "4.3" }
-  "ppx_deriving_yojson" { >= "3.4" }
+  "ppx_deriving"
+  "ppx_deriving_yojson"
 ]

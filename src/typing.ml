@@ -1111,7 +1111,7 @@ let rec for_xexpr (mode : emode_t) (env : env) ?(ety : M.ptyp option) (tope : PT
                   assets asset
               ) fmap []) in
 
-          let assets = List.sort Pervasives.compare assets in
+          let assets = List.sort Stdlib.compare assets in
 
           let fields =
             Mid.map (fun (asset, es) ->
