@@ -31,7 +31,7 @@ states =
  | Aborted
  | Confirmed
  | Canceled    with { s1 : balance = 0mtz; }
- | Transferred with { s2 : transferred_to price buyer;
+ | Transferred with { s2 : transferred_to (price, buyer);
                       s3 : balance = 0mtz;
                     }
 
