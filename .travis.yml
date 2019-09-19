@@ -32,4 +32,5 @@ script:
 notifications:
   email:
     - guillaume.duhamel@edukera.com
+    - benoit.rognier@edukera.com
     - archetype-dev@edukera.com
