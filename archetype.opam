@@ -24,9 +24,13 @@ depends: [
   "dune"                { >= "1.10.0" }
   "menhir"
   "uri"
-  "digestif"            { = "0.7.3" }
+  "digestif"
   "why3"                { >= "1.2.0" }
   "yojson"
   "ppx_deriving"
   "ppx_deriving_yojson"
+]
+
+conflicts: [
+  "digestif"            { = "0.7.4" }
 ]
