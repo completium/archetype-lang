@@ -355,7 +355,13 @@ let to_model (ast : A.model) : M.model =
      let _myasset = {id = _myasset.id; f1 = v1; f2 = v2} in
      set_myasset s _k _myasset *)
 
-  let extract_letin (c : M.mterm) k (e : (A.lident * A.operator * M.mterm) list) : M.mterm__node =
+  let extract_letin (c : M.mterm) (k : M.mterm) (e : (A.lident * A.operator * M.mterm) list) : M.mterm__node =
+
+    let asset_aaa =
+      match k.node with
+      | M.Mdotasset (a, _) -> Some a
+      | _ -> None
+    in
 
     let asset_name = extract_asset_name c in
     let asset_loced = dumloc asset_name in
@@ -371,7 +377,12 @@ let to_model (ast : A.model) : M.model =
 
     let key_name = "k_" in
     let key_loced : M.lident = dumloc (key_name) in
-    let key_mterm : M.mterm = M.mk_mterm (M.Mvarlocal key_loced) type_container_asset in
+    let key_mterm : M.mterm =
+      match asset_aaa with
+      | Some _ -> k
+      | _ ->
+        M.mk_mterm (M.Mvarlocal key_loced) type_container_asset
+    in
 
     let set_mterm : M.mterm = M.mk_mterm (M.Mset (asset_name, List.map (fun (id, _, _) -> unloc id) e, key_mterm, var_mterm)) Tunit in
 
@@ -411,7 +422,12 @@ let to_model (ast : A.model) : M.model =
 
     (* let body : M.mterm = M.mk_mterm (M.Mseq seq) Tunit in *)
 
-    let get_mterm : M.mterm = M.mk_mterm (M.Mget (asset_name, key_mterm)) type_asset in
+    let get_mterm : M.mterm =
+      match asset_aaa with
+      | Some a -> a
+      | _ ->
+        M.mk_mterm (M.Mget (asset_name, key_mterm)) type_asset
+    in
 
     let letinasset : M.mterm = M.mk_mterm (M.Mletin ([var_name],
                                                      get_mterm,
@@ -420,11 +436,15 @@ let to_model (ast : A.model) : M.model =
                                                     ))
         Tunit in
 
-    let res : M.mterm__node = M.Mletin ([key_loced],
-                                        k,
-                                        None,
-                                        letinasset
-                                       ) in
+    let res : M.mterm__node =
+      match asset_aaa with
+      | Some _ -> letinasset.node
+      | _ ->
+        M.Mletin ([key_loced],
+                  k,
+                  None,
+                  letinasset
+                 ) in
     res
 
   in
