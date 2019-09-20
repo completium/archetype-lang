@@ -496,7 +496,7 @@ module AssetCollection
   end in
   internal_proj c.content projf
 
-  use int.MinMax
+  (*use int.MinMax
 
   let function head (i : int) (c : collection) : collection
   ensures { card result = min i (card c) }
@@ -522,7 +522,7 @@ module AssetCollection
   
   lemma head_nth: forall c : collection, i j : int.
   0 <= i < j < card c ->
-  nth i (head j c) = nth i c
+  nth i (head j c) = nth i c*)
 
   let function tail (i : int) (c : collection) : collection  
   ensures { subset result c }
