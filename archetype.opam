@@ -25,7 +25,8 @@ depends: [
   "menhir"
   "uri"
   "digestif"
-  "why3"                { >= "1.2.0" }
+  "num"
+  "str"
   "yojson"
   "ppx_deriving"
   "ppx_deriving_yojson"
