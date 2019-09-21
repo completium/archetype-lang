@@ -196,7 +196,7 @@ let pp_error_desc fmt e =
   | UnknownTypeName i                  -> Format.fprintf fmt "Unknown type: %a" pp_ident i
   | UnpureInFormula                    -> Format.fprintf fmt "Cannot use expression with side effect"
   | VoidMethodInExpr                   -> Format.fprintf fmt "Expecting arguments"
-  | AssetPartitionnedby (i, l)         -> Format.fprintf fmt "Cannot write asset collection directly: asset %a is partitionned by field(s) (%a)" pp_ident i (Printer_tools.pp_list ", " pp_ident) l
+  | AssetPartitionnedby (i, l)         -> Format.fprintf fmt "Cannot access asset collection: asset %a is partitionned by field(s) (%a)" pp_ident i (Printer_tools.pp_list ", " pp_ident) l
 
 (* -------------------------------------------------------------------- *)
 type argtype = [`Type of M.type_ | `Effect of ident]

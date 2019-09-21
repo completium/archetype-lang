@@ -180,6 +180,7 @@ let check_partition_access (env : Typing.env) (model : model) : model =
       match t.node with
       | Maddasset (a, _) when List.mem a partitionned_assets -> emit_error t.loc a
       | Mremoveasset (a, _) when List.mem a partitionned_assets -> emit_error t.loc a
+      | Mremoveif(a, { node = (Mvarstorecol _); loc = _}, _) when List.mem a partitionned_assets -> emit_error t.loc a
       | _ -> fold_term (internal_raise ctx) acc t
     in
     fold_model internal_raise model false in
