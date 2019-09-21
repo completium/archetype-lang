@@ -25,6 +25,6 @@
     (pps ppx_deriving.std ppx_deriving_yojson)
   )
   (modules lsp compiler)
-  (libraries archetype menhirLib why3)
+  (libraries archetype menhirLib)
   (public_name archetype)
   (name     compiler))
