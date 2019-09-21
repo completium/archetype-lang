@@ -1,5 +1,5 @@
-(lang dune 1.9)
+(lang dune 1.10)
 (using menhir 2.0)
 (name archetype)
-(version 0.1.1-31-ga755c57-dirty)
+(version 0.1.5)
 (allow_approximate_merlin)
