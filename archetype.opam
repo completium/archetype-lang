@@ -1,3 +1,6 @@
+version: "0.1.1-31-ga755c57-dirty"
+version: "0.1.1-31-ga755c57-dirty"
+version: "0.1.1-31-ga755c57"
 synopsis: "Archetype language compiler"
 description:
 """
@@ -16,7 +19,8 @@ license: "MIT"
 doc: "https://docs.archetype-lang.org/"
 
 build: [
-  ["dune" "build" "-p" name "-j" jobs]
+  [ "dune" "subst" ]
+  [ "dune" "build" "-p" name "-j" jobs ]
 ]
 
 depends: [
