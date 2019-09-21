@@ -813,12 +813,17 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
                          id,
                          map_mterm m ctx v)))
     | M.Mset (a,l,k,v) ->
+      let asset =
+        match k.node with
+        | M.Mdotasset (a,_) -> map_mterm m ctx a
+        | _ -> with_dummy_loc (Tapp (loc_term (Tvar ("get_"^a)),
+                                     [map_mterm m ctx v]))
+      in
       mk_trace_seq m
         (Tletin (false,
                  with_dummy_loc ("_old"^a),
                  None,
-                 with_dummy_loc (Tapp (loc_term (Tvar ("get_"^a)),
-                                       [map_mterm m ctx k])),
+                 asset,
                  with_dummy_loc (Tapp (loc_term (Tvar ("set_"^a)),
                                        [
                                          loc_term (Tvar ("_old"^a));
@@ -827,12 +832,17 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
         (List.map (fun f -> CUpdate f) l)
     | M.Mremovefield (a,f,k,v) ->
       let t,_,_ = M.Utils.get_partition_asset_key m (dumloc a) (dumloc f) in
+      let asset =
+        match v.node with
+        | M.Mdotasset (a,_) -> map_mterm m ctx a
+        | _ -> with_dummy_loc (Tapp (loc_term (Tvar ("get_"^t)),
+                                    [map_mterm m ctx v]))
+      in
       mk_trace_seq m
         (Tletin (false,
                  with_dummy_loc ("_rm"^t),
                  None,
-                 with_dummy_loc (Tapp (loc_term (Tvar ("get_"^t)),
-                                       [map_mterm m ctx v])),
+                 asset,
                  with_dummy_loc (Tapp (loc_term (Tvar ("remove_"^a^"_"^f)),
                                        [
                                          map_mterm m ctx k;

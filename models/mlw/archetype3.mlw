@@ -176,11 +176,22 @@ module AssetCollection
   use list.NumOcc
   use list.Permut
 
+  let rec function internal_contains (k : key) (l : list t) : bool
+  variant { l }
+  =
+  match l with
+  | Cons e tl ->
+    if keyf e = k
+    then true
+    else internal_contains k tl
+  | Nil -> false
+  end
+
   inductive occur_one (l : list t) =
   | occur_nil: occur_one (Nil : list t)
   | occur_many: 
     forall a : t, l : list t.
-      not (mem a l) ->
+      not (internal_contains (keyf a) l) ->
       occur_one l ->
       occur_one (Cons a l)
 
@@ -244,17 +255,6 @@ module AssetCollection
   predicate sorted (c : collection) = S.sorted c.content
 
   (* SET THEORY *)
-  
-  let rec function internal_contains (k : key) (l : list t) : bool
-  variant { l }
-  =
-  match l with
-  | Cons e tl ->
-    if keyf e = k
-    then true
-    else internal_contains k tl
-  | Nil -> false
-  end
 
   let function contains (k : key) (c : collection) : bool 
   requires { k <> keyf witness }
@@ -265,6 +265,12 @@ module AssetCollection
   (*ensures { result <-> contains (keyf a) c }*)
   = 
   internal_mem a c.content
+
+  lemma keyf_injective: forall c : collection, a b : t.
+    mem a c ->
+    mem b c ->
+    keyf a = keyf b ->
+    a = b
 
   let function card (c : collection) : int 
   ensures { result >= 0 }
