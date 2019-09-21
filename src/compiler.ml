@@ -185,6 +185,10 @@ let set_margin i =
   Format.pp_set_margin Format.std_formatter i;
   Format.pp_set_margin Format.err_formatter i
 
+let print_version () =
+  Format.printf "%s@\n" Options.version;
+  exit 0
+
 (* -------------------------------------------------------------------- *)
 let main () =
   set_margin 300;
@@ -241,9 +245,11 @@ let main () =
       "-ry", Arg.Set Options.opt_raw_whytree, " Print raw model tree";
       "--raw-whytree", Arg.Set Options.opt_raw_whytree, " Same as -r";
       "-json", Arg.Set Options.opt_json, " Print JSON format";
-      "-v", Arg.String (fun s -> Options.add_vids s), "<id> process specication identifiers";
+      "-V", Arg.String (fun s -> Options.add_vids s), "<id> process specication identifiers";
       "-F", Arg.Set Options.fake_ast, " Fake ast";
       "-F2", Arg.Set Options.fake_ast2, " Fake ast test shallow";
+      "-v", Arg.Unit (fun () -> print_version ()), "Show version number and exit";
+      "--version", Arg.Unit (fun () -> print_version ()), "Same as -v";
     ] in
   let arg_usage = String.concat "\n" [
       "usage : archetype [-t <lang> | -pt | -ext | -tast | [-sa] [-skv] [-nse] | -lsp <request>] [-r | -json] <file>";
