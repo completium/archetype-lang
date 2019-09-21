@@ -26,7 +26,7 @@ before_install:
   - opam update
   - opam switch "$OCAML_VERSION"
   - eval $(opam env)
-  - opam install dune.1.10.0 menhir.20190620 uri digestif.0.7.3 num str ppx_deriving ppx_deriving_yojson
+  - opam install dune.1.10.0 menhir.20190620 uri digestif.0.7.3 num ppx_deriving ppx_deriving_yojson
   - make all
 
 script:
