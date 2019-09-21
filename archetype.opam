@@ -26,7 +26,6 @@ depends: [
   "uri"
   "digestif"
   "num"
-  "str"
   "yojson"
   "ppx_deriving"
   "ppx_deriving_yojson"
