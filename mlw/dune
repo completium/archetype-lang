@@ -1,0 +1,3 @@
+(install
+ (files archetype.mlw)
+ (section share))
