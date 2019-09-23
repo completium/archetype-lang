@@ -1,6 +1,8 @@
 open Archetype
 open Tools
 
+module PT = ParseTree
+
 type kind =
   | Errors
   | Outline
@@ -143,14 +145,14 @@ let symbol_kind_to_int = function
   | Operator -> 25
   | TypeParameter -> 26
 
-let mk_outline_from_label_exprs (x : ParseTree.label_exprs) =
-  (List.map (fun (x : ParseTree.label_expr)  -> let id, _ = Location.unloc x in mk_outline (Location.unloc id, symbol_kind_to_int Property, Location.loc id)) x)
+let mk_outline_from_label_exprs (x : PT.label_exprs) =
+  (List.map (fun (x : PT.label_expr)  -> let id, _ = Location.unloc x in mk_outline (Location.unloc id, symbol_kind_to_int Property, Location.loc id)) x)
 
-let mk_outline_post_options (post_options : ParseTree.asset_post_option list) =
-  let aux (a : ParseTree.asset_post_option) =
+let mk_outline_post_options (post_options : PT.asset_post_option list) =
+  let aux (a : PT.asset_post_option) =
     match a with
-    | ParseTree.APOconstraints l ->
-      List.map (fun (x : ParseTree.label_expr) ->
+    | PT.APOconstraints l ->
+      List.map (fun (x : PT.label_expr) ->
           let lo, v = Location.deloc x in
           let id, formula = v in
           [mk_outline (Location.unloc id, symbol_kind_to_int Property, lo)]
@@ -162,16 +164,16 @@ let mk_outline_post_options (post_options : ParseTree.asset_post_option list) =
   |> List.map aux
   |> List.flatten
 
-let mk_outline_from_invariants (invariants : ParseTree.invariants) =
+let mk_outline_from_invariants (invariants : PT.invariants) =
   List.map (fun x ->
       let id, _ = x in
       mk_outline (Location.unloc id, symbol_kind_to_int Property, Location.loc id)
     ) invariants
 
-let mk_outline_from_specification (spec : ParseTree.specification) =
+let mk_outline_from_specification (spec : PT.specification) =
   let vis, _ = Location.unloc spec in
 
-  List.fold_right (fun (i : ParseTree.specification_item) accu ->
+  List.fold_right (fun (i : PT.specification_item) accu ->
       let l, v = Location.deloc i in
       match v with
       | Vassert (id, _, ivs)
@@ -181,7 +183,17 @@ let mk_outline_from_specification (spec : ParseTree.specification) =
         @ accu
       | _ -> accu) vis []
 
-let make_outline_from_enum ((ek, li, l) : (ParseTree.enum_kind * 'a * 'b) ) =
+let mk_outline_from_security (sec : PT.security) =
+  let sec_loc, sec = Location.deloc sec in
+  mk_outline ("security", symbol_kind_to_int Namespace, sec_loc)
+  ::(
+    List.fold_right (fun (x : PT.security_item) accu ->
+        let secitem_loc, (id, _, _) = Location.deloc x in
+        (mk_outline (Location.unloc id, symbol_kind_to_int Property, secitem_loc))::accu) (fst sec) []
+  )
+
+
+let make_outline_from_enum ((ek, li, l) : (PT.enum_kind * 'a * 'b) ) =
   let outline = mk_outline ((match ek with | EKenum i -> (Location.unloc i) | EKstate -> "states"), symbol_kind_to_int Enum, l) in
   outline :: (List.map (fun (id, _) -> mk_outline(Location.unloc id, symbol_kind_to_int EnumMember, Location.loc id) ) li)
 (*
@@ -189,7 +201,7 @@ let make_outline_from_enum ((ek, li, l) : (ParseTree.enum_kind * 'a * 'b) ) =
   {outline with
    children = List.map (fun (id, _) -> mk_outline(Location.unloc id, symbol_kind_to_int EnumMember, Location.loc id) ) li } *)
 
-let make_outline_from_decl (d : ParseTree.declaration) gl =
+let make_outline_from_decl (d : PT.declaration) gl =
   let l, v = Location.deloc d in
   match v with
   | Darchetype (id, _) -> [mk_outline (Location.unloc id, symbol_kind_to_int Class, gl)]
@@ -203,6 +215,7 @@ let make_outline_from_decl (d : ParseTree.declaration) gl =
   | Dfunction s -> [mk_outline (Location.unloc s.name, symbol_kind_to_int Function, l)]
   | Dnamespace (id, _) -> [mk_outline (Location.unloc id, symbol_kind_to_int Namespace, l)]
   | Dspecification spec -> mk_outline_from_specification spec
+  | Dsecurity sec -> mk_outline_from_security sec
   | _ -> []
 
 let process_errors () =
