@@ -188,13 +188,13 @@ let parse lexbuf =
   in
   let checkpoint = main lexbuf.lex_curr_p in
   check_brackets_balance ();
-  if List.length !Error.errors > 0
-  then ParseTree.mk_archetype ()
-  else
+  match !Error.errors with
+  | [] ->
     begin
       let lexer = Lexer.start in
       run (`FoundNothingAt checkpoint) checkpoint lexer checkpoint
     end
+  | l -> raise (Error.ParseError !Error.errors)
 
 let parse_archetype ?(name = "") (inc : in_channel) =
   Error.resume_on_error ();
