@@ -29,14 +29,6 @@ let output (model : Model.model) =
     let printer =
       match !Options.target with
       | None         -> Printer_model.pp_model
-      | Liquidity    -> Printer_model_liq.pp_model
-      | LiquidityUrl ->
-        fun fmt model ->
-          let str = Printer_model_liq.show_model model in
-          let encoded_src = Uri.pct_encode str in
-          let encoded_src = Str.global_replace (Str.regexp "\\+") "%2B" encoded_src in
-          let url = "http://www.liquidity-lang.org/edit/?source=" ^ encoded_src in
-          Format.fprintf fmt "%s@\n" url
       | Ligo         -> Printer_model_ligo.pp_model
       | SmartPy      -> Printer_model_smartpy.pp_model
       | Ocaml        -> Printer_model_ocaml.pp_model
@@ -113,17 +105,6 @@ let generate_target model =
     |> generate_api_storage
     |> output
 
-  | Liquidity
-  | LiquidityUrl ->
-    model
-    |> exec_process
-    |> post_process_functional_language
-    |> shallow_asset
-    |> split_key_values
-    |> remove_side_effect
-    |> generate_api_storage
-    |> output
-
   | Ligo ->
     model
     |> exec_process
@@ -193,8 +174,6 @@ let print_version () =
 let main () =
   set_margin 300;
   let f = function
-    | "liquidity"     -> Options.target := Liquidity
-    | "liquidity_url" -> Options.target := LiquidityUrl
     | "ligo"          -> Options.target := Ligo
     | "smartpy"       -> Options.target := SmartPy
     | "ocaml"         -> Options.target := Ocaml

@@ -1,6 +1,4 @@
 type target_lang =
-  | Liquidity
-  | LiquidityUrl
   | Ligo
   | SmartPy
   | Whyml
