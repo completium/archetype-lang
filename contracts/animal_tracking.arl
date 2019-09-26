@@ -10,31 +10,31 @@ enum movement =
  | In_field initial
  | In_transit
 
-asset animal identified by id = {
+asset animal identified by id {
  id       : string;
  status   : movement;
  typ      : animal;
  location : field;
 }
 
-asset field identified by name = {
+asset field identified by name {
   name     : string;
   business : business;
 } with states movement
 
-asset business identified by id = {
+asset business identified by id {
   id              : string;
   incomingAnimals : animal collection;
 }
 
-transition transit (fk : string) on ak : animal from In_field = {
+transition transit (fk : string) on ak : animal from In_field {
  to In_transit
  with effect {
    field.get(fk).business.incomingAnimals.add (animal.get(ak))
  }
 }
 
-transition arrival (toField : field) on ak : animal from In_transit = {
+transition arrival (toField : field) on ak : animal from In_transit {
   to In_field
   with effect {
     animal.get(ak).field := toField;

@@ -4,7 +4,7 @@ states =
 | First
 | Second
 
-transition mytr from First = {
+transition mytr from First {
   to Second
   when { true }
   with effect {

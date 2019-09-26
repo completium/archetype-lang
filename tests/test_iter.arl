@@ -2,11 +2,11 @@ archetype test_iter
 
 variable mystring string = "mystring"
 
-asset myasset identified by str = {
+asset myasset identified by str {
   str : string;
 }
 
-action tr = {
+action tr {
   effect {
     for (i in myasset) (
       mystring := "newvalue"

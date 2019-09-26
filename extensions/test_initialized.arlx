@@ -1,8 +1,8 @@
 archetype extension testInitialized (
   variable[%testInitialized%] aVariable string
-) = {
+) {
 
-  asset test_<%aTransaction> = {
+  asset test_<%aTransaction> {
     myvariable : string;
   } initialized by [{"a_string"}]
 

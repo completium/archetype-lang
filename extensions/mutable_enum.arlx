@@ -2,9 +2,9 @@ archetype extension mutable_enum (
 
   enum[%mutable_enum arole%] anenum
 
-) = {
+) {
 
-  action set_state_<%arole> (new_val : anenum) = {
+  action set_state_<%arole> (new_val : anenum) {
 
     called by arole
     require {

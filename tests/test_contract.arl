@@ -1,6 +1,6 @@
 archetype test_contract
 
-contract mycontract = {
+contract mycontract {
   action myaction1 : address, tez
   action myaction2 : string
   action pay

@@ -1,16 +1,16 @@
 archetype test_quantifier
 
 specification {
-  postcondition s1 = {
+  postcondition s1 {
     forall x in asset1, x
   }
-  postcondition s2 = {
+  postcondition s2 {
     forall (x in asset1), x
   }
-  postcondition s3 = {
+  postcondition s3 {
     forall (x in asset1) (y in asset2), x
   }
-  postcondition s4 = {
+  postcondition s4 {
     forall (x z t in asset1) (y in asset2), x
   }
 }

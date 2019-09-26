@@ -4,17 +4,17 @@ constant name string = "myerc20"
 
 constant total int = 1000
 
-asset tokenHolder identified by holder = {
+asset tokenHolder identified by holder {
     holder[%delegable%] : role;
     tokens : int;
 } initialized by [
   { caller; total }
 ]
 
-action transferTokens (th : tokenHolder) (quantity : int) = {
+action transferTokens (th : tokenHolder) (quantity : int) {
 
   specification {
-    postcondition s1 = {
+    postcondition s1 {
       before.tokenHolder.sum(tokens) = tokenHolder.sum(the.tokens)
     }
   }

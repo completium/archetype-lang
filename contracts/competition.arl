@@ -14,7 +14,7 @@ variable competitor role
 
 variable oracle role
 
-asset submission = {
+asset submission {
   competitor : role;
   score      : int;
   date       : date;
@@ -27,11 +27,11 @@ states =
  | Done        with { s1 : balance = 0mtz; }
  | Closed
 
-transition confirm from Created = {
+transition confirm from Created {
    to InProgress when { now > startdate }
 }
 
-action submit (competitor : competitor) (score[%signedby oracle%] : int) = {
+action submit (competitor : competitor) (score[%signedby oracle%] : int) {
   require {
     c1 : state = InProgress;
   }
@@ -43,7 +43,7 @@ action submit (competitor : competitor) (score[%signedby oracle%] : int) = {
   }
 }
 
-transition decide from InProgress = {
+transition decide from InProgress {
 
   require {
     c2 : now > deadline;

@@ -3,7 +3,7 @@ archetype test_security
 variable admin role = @tz1aazS5ms5cbGkb6FN1wvWmN7yrMTTcr6wB
 variable i int = 0
 
-action main = {
+action main {
   effect {
     i := 1
   }

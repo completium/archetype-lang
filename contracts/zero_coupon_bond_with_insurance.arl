@@ -5,7 +5,7 @@ variable issuer role = @tz1KksC8RvjUWAbXYJuNrUbontHGor25Cztk (* seller ‘Alice�
 variable owner role  = @tz1KmuhR6P52hw6xs5P69BXJYAURaznhvN1k
 (* buyer ‘Bob’; receives 11 tez in one-year *)
 
-contract insurance = {
+contract insurance {
    action pay : address, tez
 }
 
@@ -24,15 +24,15 @@ states =
  | Repaid    (* issuer has transferred payment to contract *)
  | Collected (* owner has collected payment *)
 
-transition insured from Created = {
+transition insured from Created {
   called by insurance
 
   to Insured
 }
 
-transition confirm from Insured = {
+transition confirm from Insured {
   specification {
-    postcondition s1 = {
+    postcondition s1 {
       balance = 0
     }
   }
@@ -45,7 +45,7 @@ transition confirm from Insured = {
   }
 }
 
-transition repay from Confirmed = {
+transition repay from Confirmed {
   called by issuer
 
   to Repaid
@@ -54,7 +54,7 @@ transition repay from Confirmed = {
   }
 }
 
-transition collect from Repaid = {
+transition collect from Repaid {
   called by owner
 
   to Collected

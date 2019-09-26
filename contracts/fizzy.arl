@@ -11,7 +11,7 @@ enum status =
 | Redirected       (* flight redirected                   *)
 | Diverted         (* flight diverted                     *)
 
-asset insurance = {
+asset insurance {
   productid : string;
   limit     : date;
   premium   : tez;
@@ -19,13 +19,13 @@ asset insurance = {
   stat      : status = Created;
 }
 
-asset[@add creator (none)] flight identified by id = {
+asset[@add creator (none)] flight identified by id {
   id         : string;
   insurances : insurance partition;
 }
 
 action addflightinsurance (fi : string) (* flight id *)
-                               (i : insurance) = {
+                               (i : insurance) {
     called by creator
 
     effect {
@@ -36,7 +36,7 @@ action addflightinsurance (fi : string) (* flight id *)
 }
 
 (* data should be signed by oracle ... *)
-action updatestatus (fi : string) (arrival : date) = {
+action updatestatus (fi : string) (arrival : date) {
 
     called by creator
 
@@ -52,7 +52,7 @@ action updatestatus (fi : string) (arrival : date) = {
     }
 }
 
-action manual (fi : string) (pr : string) (newst : status) = {
+action manual (fi : string) (pr : string) (newst : status) {
 
     called by creator
 
@@ -68,7 +68,7 @@ action manual (fi : string) (pr : string) (newst : status) = {
 
 specification {
   (* this contract does not transfer any tez *)
-  postcondition s2 = {
+  postcondition s2 {
     transfers_by_tx(anytx) = 0
   }
 }

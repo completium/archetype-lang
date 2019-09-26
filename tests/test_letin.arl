@@ -1,6 +1,6 @@
 archetype test_letin
 
-action tr = {
+action tr {
   effect {
     for (i in list) (
       let x = toto in

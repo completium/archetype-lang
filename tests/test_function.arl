@@ -1,6 +1,6 @@
-function f0 = { body }
-function f1 : t = { body }
-function f2 (x : int) = { body }
-function f3 (x : int) : t = { body }
-function f4 (x : int) (y : int) = { body }
-function f5 (x : int) (y : int) : t = { body }
+function f0 { body }
+function f1 : t { body }
+function f2 (x : int) { body }
+function f3 (x : int) : t { body }
+function f4 (x : int) (y : int) { body }
+function f5 (x : int) (y : int) : t { body }

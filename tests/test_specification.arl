@@ -1,11 +1,11 @@
 archetype test_specification
 
-action tr = {
+action tr {
   specification {
-    postcondition s1 = {
+    postcondition s1 {
       forall x in t, P(x) -> y
     }
-    postcondition s2 = {
+    postcondition s2 {
       exists x in t, P(x) and P(y)
     }
   }

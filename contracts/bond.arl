@@ -10,23 +10,23 @@ enum period =
  | Month
  | Year
 
-asset issuer identified by id = {
+asset issuer identified by id {
   id   : role;
   name : string;
 }
 
-asset paymentFrequency = {
+asset paymentFrequency {
   periodMultiplier : unit;
   period           : period;
 }
 
-asset bond = {
+asset bond {
   couponType       : couponType;
   paymentFrequency : paymentFrequency;
   issuer           : issuer;
 }
 
-action publish (bond : bond) = {
+action publish (bond : bond) {
   called by bond.issuer  (* see acl file *)
   effect {
     bond.add(bond)

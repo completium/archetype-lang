@@ -1,24 +1,24 @@
 archetype test_error
 
-action main = {
+action main {
   effect {
     when
   }
 }
 
-action main2 = {
+action main2 {
   effect {
     f(); to
   }
 }
 
-action main3 = {
+action main3 {
   effect {
     definition; f()
   }
 }
 
-action main4 = {
+action main4 {
   effect {
     f(); transition; g()
   }

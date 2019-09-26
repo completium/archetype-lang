@@ -1,6 +1,6 @@
 archetype test_action_empty
 
-action myaction = {
+action myaction {
   specification {
   }
   refuse transfer

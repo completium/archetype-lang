@@ -2,7 +2,7 @@ archetype tests_conditions
 
 variable i int = 0
 
-action a1 = {
+action a1 {
   require {
     c1 : 1 = 2;
     c2 : true;
@@ -10,7 +10,7 @@ action a1 = {
   }
 }
 
-action a2 = {
+action a2 {
   require {
     c1 : 1 = 2;
     c2 : true;

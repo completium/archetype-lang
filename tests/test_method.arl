@@ -1,23 +1,23 @@
 archetype test_asset
 
-asset asset_0 identified by id0 = {
+asset asset_0 identified by id0 {
   id0 : string;
   value0 : int;
 }
 
-asset my_asset identified by id = {
+asset my_asset identified by id {
   id : string;
   value : int;
   col : asset_0 collection;
 }
 
-action main = {
+action main {
   effect {
     let asset0_id = "id0" in
-    let asset0_var : asset_0 = {id0 = asset0_id; value0 = 0 } in
+    let asset0_var : asset_0 = { id0 = asset0_id; value0 = 0 } in
 
     let my_asset_id = "id" in
-    let my_asset_var : my_asset = {id = my_asset_id; value = 0; col = []} in
+    let my_asset_var : my_asset = { id = my_asset_id; value = 0; col = [] } in
     my_asset.add(my_asset_var);
     my_asset.remove(my_asset_id);
     my_asset.clear();

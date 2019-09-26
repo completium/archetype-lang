@@ -18,7 +18,7 @@ variable[%traceable%] [%mutable_signed ([buyer, debitor], instate (Created))%]
 (* action deadline *)
 variable[%mutable (buyer or seller, instate (Created))%] deadline date
 
-(* type taskStatus = {
+(* type taskStatus {
      date : date;
      status : string of [ "OK" | "KO" ]
    }
@@ -35,17 +35,17 @@ states =
                       s3 : balance = 0mtz;
                     }
 
-transition abort from Created = {
+transition abort from Created {
   called by buyer or seller
 
   to Aborted
 }
 
-transition[%signedbyall [{buyer}; {seller}]%] confirm from Created = {
+transition[%signedbyall [{buyer}; {seller}]%] confirm from Created {
   to Confirmed when { balance = price + penalty }
 }
 
-transition finalize (task : taskStatus) from any = {
+transition finalize (task : taskStatus) from any {
   to Transferred
   when { task.date <= deadline and task.status }
   with effect {

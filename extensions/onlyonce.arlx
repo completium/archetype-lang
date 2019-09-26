@@ -2,16 +2,16 @@ archetype extension onlyonce (
 
   action[%onlyonce%] tr
 
-) = {
+) {
 
-  action tr = {
+  action tr {
     specification {
       variable call_count int = 0
       effect {
         label(step);
         call_count += 1
       }
-      postcondition o1 = {
+      postcondition o1 {
         none
         invariant for step {
           requires -> call_count = 0;

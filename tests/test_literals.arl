@@ -12,7 +12,7 @@ variable deadline date = 2019-01-01T00:00:00 (* iso 8601 *)
 variable mycollection (int collection) = [1; 2; 3]
 variable mytuple (int * int) = 1, 2
 
-action main = {
+action main {
   effect {
     i := 0
   }

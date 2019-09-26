@@ -5,7 +5,7 @@ variable highest_bidder address = @0
 
 variable beneficiary address = @tz1KmuhR6P52hw6xs5P69BXJYAURaznhvN1k
 
-asset pending_return identified by incumbent = {
+asset pending_return identified by incumbent {
   incumbent   : address;
   val         : tz;
 }
@@ -18,16 +18,16 @@ variable auction_start date = 2019-01-01T00:00:00
 variable auction_end   date = 2019-02-01T00:00:00
 
 specification {
-  postcondition highest_is_not_pending = {
+  postcondition highest_is_not_pending {
     not (pending_return.contains(highest_bidder))
   }
-  postcondition highest_is_highest = {
+  postcondition highest_is_highest {
     forall pr in prending_return,
       pr.val <= highest_bid and pr.incumbent <> highest_bidder
   }
 }
 
-action place_bid = {
+action place_bid {
 
   require {
     c1 : auction_start <= now <= auction_end;
@@ -68,7 +68,7 @@ action place_bid = {
 }
 
 (* onlyonce extension specifies that one cannot withdraw more than once *)
-action[%onlyonce%] withdraw = {
+action[%onlyonce%] withdraw {
   require {
     c2 : pending_return.contains(caller);
   }
@@ -78,7 +78,7 @@ action[%onlyonce%] withdraw = {
   }
 }
 
-transition endAuction from Open = {
+transition endAuction from Open {
   to Closed
   when { now > auction_end }
   with effect {

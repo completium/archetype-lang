@@ -1,20 +1,29 @@
 archetype test_verification
 
-action myaction = {
+asset col1 {
+  id1 : string;
+}
+
+asset col2 {
+  id2 : string;
+}
+
+action myaction {
  specification {
 
-    definition mydef =
-     { x : early | forall x in col1, x = x }
+    definition mydef {
+      x : early | forall x in col1, x = x
+    }
 
-    predicate mypredicate (a : int) = {
+    predicate mypredicate (a : int) {
       forall x in col1, forall y in col2, x = y
     }
 
-    lemma myaxiom = {
+    lemma myaxiom {
       forall x in col1, forall y in col2, x = y
     }
 
-    theorem mytheorem = {
+    theorem mytheorem {
       forall x in col1, forall y in col2, x = y
     }
 
@@ -24,7 +33,7 @@ action myaction = {
       x := y
     }
 
-    assert a1 = {
+    assert a1 {
       x = y
       invariant for myloop {
         x = 0;
@@ -32,7 +41,7 @@ action myaction = {
       }
     }
 
-    postcondition s1 = {
+    postcondition s1 {
       x = y
       invariant for myloop {
         x = 0;

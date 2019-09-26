@@ -8,17 +8,17 @@ variable[%mutable chairperson (instate (Created))%] startDate date
 (* vote deadline *)
 variable[%mutable chairperson (instate (Created))%] deadline date
 
-asset voter identified by address = {
+asset voter identified by address {
   address : role;
   hasVoted : bool;
 }
 
-asset ballot identified by value = {
+asset ballot identified by value {
   value   : string;
   nbvotes : int;
 }
 
-asset winner = {
+asset winner {
   value : string;
 }
 
@@ -28,7 +28,7 @@ states =
  | Voting          with { s2 : isempty(winner); }
  | Buried
 
-action register (v : role) = {
+action register (v : role) {
   called by chairperson
   require {
     c1 : state = Created;
@@ -38,11 +38,11 @@ action register (v : role) = {
   }
 }
 
-transition start from Created = {
+transition start from Created {
    to Vote when { now > startDate }
 }
 
-action vote (val : string) = {
+action vote (val : string) {
    called by voter
    require {
      c2 : state = Voting;
@@ -55,7 +55,7 @@ action vote (val : string) = {
    }
 }
 
-transition bury from Voting = {
+transition bury from Voting {
   require {
     c4 : now > deadline;
   }
@@ -70,13 +70,13 @@ transition bury from Voting = {
 }
 
 specification {
-  postcondition s3 = {
+  postcondition s3 {
     startdate < deadline
   }
-  postcondition s4 = {
+  postcondition s4 {
     (voter.select(voter.hasVoted = true)).count() = ballot.sum(nbvotes)
   }
-  postcondition s5 = {
+  postcondition s5 {
     forall w in winner,
            forall b in ballot,
              b.nbvotes <= ballot.get(w.value).nbvotes

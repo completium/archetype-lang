@@ -11,7 +11,7 @@ variable last_fee date
 
 variable consultation_debt tez = 0tz
 
-asset doctor identified by id = {
+asset doctor identified by id {
   id   : role;
   debt : tez = 0tz;
 }
@@ -21,7 +21,7 @@ states =
 | Running
 | Canceled
 
-transition[%signedbyall [patient; insurer]%] confirm from Created = {
+transition[%signedbyall [patient; insurer]%] confirm from Created {
   (*signed by [insrurer; patient]*)
   to Running
   with effect {
@@ -29,12 +29,12 @@ transition[%signedbyall [patient; insurer]%] confirm from Created = {
   }
 }
 
-transition cancel from Created = {
+transition cancel from Created {
   called by insurer or patient
   to Canceled
 }
 
-action[%signedbyall [patient; insurer]%] register_doctor (docid : address) = {
+action[%signedbyall [patient; insurer]%] register_doctor (docid : address) {
   (*signed by [insurer; patient]*)
   require {
      r1 : state = Running;
@@ -44,7 +44,7 @@ action[%signedbyall [patient; insurer]%] register_doctor (docid : address) = {
   }
 }
 
-action declare_consultation (v : tez) = {
+action declare_consultation (v : tez) {
   called by doctor  (* <-> require { doctor.contains caller } *)
   require {
      r2 : state = Running;
@@ -55,9 +55,9 @@ action declare_consultation (v : tez) = {
   }
 }
 
-action pay_doctor (docid : address) = {
+action pay_doctor (docid : address) {
   specification {
-    postcondition idem_balance_pay_doctor = {
+    postcondition idem_balance_pay_doctor {
       balance = before.balance
     }
   }
@@ -75,9 +75,9 @@ action pay_doctor (docid : address) = {
   }
 }
 
-action pay_fee = {
+action pay_fee {
   specification {
-    postcondition idem_balance_pay_fee = {
+    postcondition idem_balance_pay_fee {
       balance = before.balance
     }
   }
@@ -96,7 +96,7 @@ action pay_fee = {
   }
 }
 
-action pay_consulation = {
+action pay_consulation {
   specification {
     idem_balance_pay_consultation : balance = before.balance;
   }

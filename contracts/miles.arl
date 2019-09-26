@@ -2,12 +2,12 @@ archetype miles
 
 variable[%transferable%] validator role
 
-asset account identified by owner = {
+asset account identified by owner {
   owner  : role;
   amount : int;
 }
 
-action add (ow : role) (value : int) = {
+action add (ow : role) (value : int) {
   called by validator
   effect {
     if account.contains(ow) then
@@ -17,9 +17,9 @@ action add (ow : role) (value : int) = {
   }
 }
 
-action consume (ow : role) (value : int) = {
+action consume (ow : role) (value : int) {
   specification {
-    postcondition s1 = {
+    postcondition s1 {
       account.before.get(ow).amount =
         account.get(ow).amount + value
     }

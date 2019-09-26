@@ -2,7 +2,7 @@ archetype test_transferred
 
 variable str string
 
-action myaction = {
+action myaction {
   accept transfer
   effect {
     if (transferred = 1mtz)

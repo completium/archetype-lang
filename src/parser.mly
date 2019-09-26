@@ -220,7 +220,7 @@ archetype_r:
  | x=archetype_extension      EOF { x }
 
 archetype_extension:
- | ARCHETYPE EXTENSION id=ident xs=paren(declarations) EQUAL ys=braced(declarations)
+ | ARCHETYPE EXTENSION id=ident xs=paren(declarations) ys=braced(declarations)
      { Mextension (id, xs, ys) }
 
 implementation_archetype:
@@ -300,7 +300,7 @@ namespace:
 | NAMESPACE x=ident xs=braced(declarations) { Dnamespace (x, xs) }
 
 contract:
-| CONTRACT exts=option(extensions) x=ident EQUAL
+| CONTRACT exts=option(extensions) x=ident
     xs=braced(signatures)
          { Dcontract (x, xs, exts) }
 
@@ -319,7 +319,7 @@ signature:
 
 %inline function_gen:
  | FUNCTION id=ident xs=function_args
-     r=function_return? EQUAL LBRACE b=fun_body RBRACE {
+     r=function_return? LBRACE b=fun_body RBRACE {
   let (s, e) = b in
   {
     name  = id;
@@ -339,16 +339,16 @@ function_decl:
     { Dfunction f }
 
 %inline spec_predicate:
-| PREDICATE id=ident xs=function_args EQUAL e=braced(expr) { Vpredicate (id, xs, e) }
+| PREDICATE id=ident xs=function_args e=braced(expr) { Vpredicate (id, xs, e) }
 
 %inline spec_definition:
-| DEFINITION id=ident EQUAL LBRACE a=ident COLON t=type_t PIPE e=expr RBRACE { Vdefinition (id, t, a, e) }
+| DEFINITION id=ident LBRACE a=ident COLON t=type_t PIPE e=expr RBRACE { Vdefinition (id, t, a, e) }
 
 %inline spec_lemma:
-| LEMMA id=ident EQUAL x=braced(expr) { Vlemma (id, x) }
+| LEMMA id=ident x=braced(expr) { Vlemma (id, x) }
 
 %inline spec_theorem:
-| THEOREM id=ident EQUAL x=braced(expr) { Vtheorem (id, x) }
+| THEOREM id=ident x=braced(expr) { Vtheorem (id, x) }
 
 %inline spec_variable:
 | VARIABLE id=ident t=type_t dv=default_value? { Vvariable (id, t, dv) }
@@ -363,11 +363,11 @@ function_decl:
 | e=expr xs=invars*  { (e, xs) }
 
 %inline spec_assert:
-| ASSERT id=ident EQUAL sp=braced(spec_body)
+| ASSERT id=ident sp=braced(spec_body)
     { let e, xs = sp in Vassert (id, e, xs) }
 
 %inline spec_postcondition:
-| POSTCONDITION id=ident EQUAL sp=braced(spec_body)
+| POSTCONDITION id=ident sp=braced(spec_body)
     { let e, xs = sp in Vpostcondition (id, e, xs) }
 
 spec_items:
@@ -491,7 +491,7 @@ asset_post_option:
  | xs=asset_post_option* { xs }
 
 %inline asset_fields:
-| EQUAL fields=braced(fields) { fields }
+| fields=braced(fields) { fields }
 
 %inline asset_options:
 | xs=asset_option+ { xs }
@@ -531,12 +531,12 @@ on_value:
 
 transition:
   TRANSITION exts=option(extensions) x=ident
-    args=function_args on=on_value? FROM f=expr EQUAL LBRACE xs=action_properties trs=transitions RBRACE
+    args=function_args on=on_value? FROM f=expr LBRACE xs=action_properties trs=transitions RBRACE
       { Dtransition (x, args, on, f, xs, trs, exts) }
 
 %inline transitems_eq:
 | { (dummy_action_properties, None) }
-| EQUAL LBRACE xs=action_properties e=effect? RBRACE { (xs, e) }
+| LBRACE xs=action_properties e=effect? RBRACE { (xs, e) }
 
 %inline accept_transfer:
 | /* empty */     { false }

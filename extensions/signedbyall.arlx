@@ -2,20 +2,20 @@ archetype extension signedbyall (
 
   action[%signedbyall roles%] aTransaction
 
-) = {
+) {
 
-  asset signer_<%aTransaction> identified by id_<%aTransation> = {
+  asset signer_<%aTransaction> identified by id_<%aTransation> {
     id_<%aTransaction> : address;
   }
 
-  action sign_<%aTransaction> = {
+  action sign_<%aTransaction> {
     called by roles
     effect {
       signer.add({ id_<%aTransaction> = caller })
     }
   }
 
-  action aTransaction = {
+  action aTransaction {
     require {
       r : requires;
       <%aTransaction>_signedbyall :

@@ -22,7 +22,7 @@ constant sg_strike  rational = 23.4725 (* ~ 0.5 * sg_initial  *)
 constant ubs_strike rational = 15.98   (* ~ 0.5 * ubs_initial *)
 
 (* CONTRACT DATA *)
-asset early identified by observation = {
+asset early identified by observation {
   observation : date;
   redemption  : date;
   trigger     : rational;
@@ -42,7 +42,7 @@ asset early identified by observation = {
   { 2020-03-16T00:00:00; 2020-03-30T00:00:00; 0.70; 1 }
 ]
 
-asset interest identified by observation = {
+asset interest identified by observation {
   observation : date;
   payment     : date;
   barrier     : rational;
@@ -65,7 +65,7 @@ asset interest identified by observation = {
 ]
 
 (* underlyings values *)
-asset fixing identified by observation = {
+asset fixing identified by observation {
   observation : date;
   bac : rational;  (* Bank of America Corporation *)
   sg  : rational;  (* Société Générale *)
@@ -74,13 +74,13 @@ asset fixing identified by observation = {
 
 (* EXPECTED PAYMENT COMPUTATION *)
 
-function compute_expected (d : date) : tez = {
+function compute_expected (d : date) : tez {
 
   specification {
 
     (** etrigger is defined as the set of early assets for which
         the trigger condition is true *)
-    definition etrigger = { e : early |
+    definition etrigger { e : early |
       forall f in fixing,
         if e.obs = f.obs
         then (* trigger condition *)
@@ -91,7 +91,7 @@ function compute_expected (d : date) : tez = {
 
     (** ibarrier is defined as the set of interest assets for which
         the barrier condition is true *)
-    definition ibarrier = { i : interest |
+    definition ibarrier { i : interest |
       forall f in fixing,
         (* retrieving the first element of etrigger *)
         let efirst = first(etrigger) in
@@ -105,7 +105,7 @@ function compute_expected (d : date) : tez = {
 
     (* … TODO finish specs *)
     (** expected is the sum of redemption nominal and interests *)
-    postcondition p_expected = {
+    postcondition p_expected {
         let expected =
           let ftrigger = first(etrigger) in
           (* early redemption *)
@@ -193,14 +193,14 @@ function compute_expected (d : date) : tez = {
 (* PAYMENT action *)
 variable actual_payment tez = 0tz
 
-action pay_note = {
+action pay_note {
    called by issuer
    effect {
       actual_payment += transferred
    }
 }
 
-action add_fixing (f[%signedby oracle%] : fixing) = {
+action add_fixing (f[%signedby oracle%] : fixing) {
   effect {
     fixing.add(f)
   }
@@ -215,22 +215,22 @@ states =
  | Terminated
 
 (** Used by owner to confirm transaction. It transfers the price of contract (nominal) *)
-transition confirm from Created = {
+transition confirm from Created {
    called by owner
    to Confirmed when { transferred = nominal }
 }
 
-transition cancel from Created = {
+transition cancel from Created {
    called by owner or issuer
    to Canceled
 }
 
-transition check from Confirmed = {
+transition check from Confirmed {
   called by owner
   to Defaulted when { actual_payment < compute_expected(now) }
 }
 
-transition terminate from Confirmed = {
+transition terminate from Confirmed {
   called by issuer
   to Terminated when { actual_payment >= compute_expected(now) }
 }

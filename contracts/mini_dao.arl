@@ -1,13 +1,13 @@
 archetype mini_dao
 
-asset shares identified by addr = {
+asset shares identified by addr {
     addr : address;
     value : tez;
 }
 
-action withdraw = {
+action withdraw {
     specification {
-        postcondition p1 = {
+        postcondition p1 {
             balance = before.balance - shares.get(caller).value
         }
     }

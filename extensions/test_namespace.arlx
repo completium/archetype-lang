@@ -2,12 +2,12 @@ archetype extension test_namespace (
 
   variable[%test_namespace%] avariable type
 
-) = {
+) {
 
   variable avariable type
 
   specification {
-    postcondition c1 = {
+    postcondition c1 {
       a::myvariable = 1
     }
   }

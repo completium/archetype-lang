@@ -1,4 +1,4 @@
-action tr = {
+action tr {
   effect {
     let x = 0 in
       foo;

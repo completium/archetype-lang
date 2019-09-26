@@ -1,7 +1,7 @@
 archetype test_bound_value
 
 specification {
-  postcondition s1 = {
+  postcondition s1 {
     0 < x <= 1
   }
 }

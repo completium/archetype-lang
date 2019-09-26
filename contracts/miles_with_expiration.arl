@@ -3,7 +3,7 @@ archetype miles_with_expiration
 variable[%transferable%] admin role = @tz1aazS5ms5cbGkb6FN1wvWmN7yrMTTcr6wB
 
 (* id is a string because it is generated off-chain *)
-asset mile identified by id sorted by expiration = {
+asset mile identified by id sorted by expiration {
    id         : string;
    amount     : int;
    expiration : date;
@@ -12,12 +12,12 @@ asset mile identified by id sorted by expiration = {
 }
 
 (* a partition ensures there is no direct access to mile collection *)
-asset owner identified by addr = {
+asset owner identified by addr {
   addr  : role;
   miles : mile partition; (* injective (owner x mile) *)
 }
 
-action add (ow : address) (newmile : mile) = {
+action add (ow : address) (newmile : mile) {
    called by admin
 
    require {
@@ -36,15 +36,15 @@ action add (ow : address) (newmile : mile) = {
    }
 }
 
-action consume (a : address) (quantity : int) = {
+action consume (a : address) (quantity : int) {
 
   specification {
 
-    assert p1 = {
+    assert p1 {
       remainder = 0
     }
 
-    postcondition p2 = {
+    postcondition p2 {
       mile.sum(the.amount) = mile.before.sum(the.amount) - quantity
       invariant for loop {
         0 <= remainder <= toiterate.sum(the.amount);
@@ -52,14 +52,14 @@ action consume (a : address) (quantity : int) = {
       }
     }
 
-    postcondition p3 = {
+    postcondition p3 {
       forall m in mile.removed, m.expiration >= now
       invariant for loop {
         mile.removed.subsetof(by_expiration)
       }
     }
 
-    postcondition p4 = {
+    postcondition p4 {
       mile.added.isempty
       invariant for loop {
         mile.added.isempty
@@ -100,9 +100,9 @@ action consume (a : address) (quantity : int) = {
   }
 }
 
-action clear_expired = {
+action clear_expired {
   specification {
-    postcondition s3 = {
+    postcondition s3 {
       forall m in mile.removed, m.expiration < now
       invariant for loop2 {
         forall m in mile.removed, m.expiration < now
