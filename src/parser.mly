@@ -400,7 +400,7 @@ specification_decl:
 | x=loc(specification)      { Dspecification x }
 
 %inline security_item_unloc:
-| lbl=ident COLON id=ident args=security_arg+ SEMI_COLON
+| lbl=ident COLON id=ident args=security_args SEMI_COLON
     { (lbl, id, args) }
 
 %inline security_item:
@@ -860,6 +860,9 @@ record_item:
 
 %inline asset_operation:
 | xs=asset_operation_enum+ args=option(simple_expr) { AssetOperation (xs, args) }
+
+%inline security_args:
+| args=paren(separated_list(COMMA, security_arg)) { args}
 
 %inline security_arg:
  | e=loc(security_arg_unloc) { e }

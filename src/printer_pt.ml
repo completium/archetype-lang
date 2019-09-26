@@ -811,10 +811,10 @@ let pp_security fmt (items, exts) =
   in
   let pp_security_item fmt (s : security_item) =
     let (label, id, args) = unloc s in
-    Format.fprintf fmt "%a : %a %a;"
+    Format.fprintf fmt "%a : %a (%a);"
       pp_id label
       pp_id id
-      (pp_list " " pp_security_arg) args
+      (pp_list ", " pp_security_arg) args
   in
   let pp_security_items =
     pp_list "@\n" pp_security_item

@@ -48,5 +48,5 @@ transition[%onlyonce%] cancel from Confirmed {
 }
 
 security {
-  s1 : only_by_role transfers oracle;
+  s1 : only_by_role (transfers, oracle);
 }

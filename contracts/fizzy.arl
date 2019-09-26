@@ -75,9 +75,9 @@ specification {
 
 security {
   (* any action on storage is performed only by the owner *)
-  s1 : only_by_role anyaction creator;
+  s1 : only_by_role (anyaction, creator);
 
   (* transaction "updatestatus" is not the only one to potentially
     perform an update of insurance status *)
-  s3 : only_in_action (update insurance.stat) [updatestatus or manual];
+  s3 : only_in_action ((update insurance.stat), [updatestatus or manual]);
 }

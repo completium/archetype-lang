@@ -3,6 +3,10 @@ archetype test_security
 variable admin role = @tz1aazS5ms5cbGkb6FN1wvWmN7yrMTTcr6wB
 variable i int = 0
 
+asset myasset {
+  id : string;
+}
+
 action main {
   effect {
     i := 1
@@ -10,8 +14,8 @@ action main {
 }
 
 security {
-  g1 : only_by_role anyaction admin;
-  g2 : only_in_action (remove mile) [main or main];
-  g3 : not_in_action (add mile) main;
-  g4 : no_fail main;
+  g1 : only_by_role (anyaction, admin);
+  g2 : only_in_action ((remove myasset), [main or main]);
+  g3 : not_in_action ((add myasset), main);
+  g4 : no_storage_fail (main);
 }
