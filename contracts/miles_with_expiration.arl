@@ -6,7 +6,7 @@ variable[%transferable%] admin role = @tz1aazS5ms5cbGkb6FN1wvWmN7yrMTTcr6wB
 asset mile identified by id sorted by expiration {
    id         : string;
    amount     : int;
-   expiration : date;
+   expiration : date
 } with {
   m1 : amount > 0;
 }
@@ -14,7 +14,7 @@ asset mile identified by id sorted by expiration {
 (* a partition ensures there is no direct access to mile collection *)
 asset owner identified by addr {
   addr  : role;
-  miles : mile partition; (* injective (owner x mile) *)
+  miles : mile partition (* injective (owner x mile) *)
 }
 
 action add (ow : address) (newmile : mile) {
@@ -124,5 +124,5 @@ security {
   g1 : only_by_role (anyaction, admin);
   g2 : only_in_action ((remove mile), [consume or clear_expired]);
   g3 : not_in_action ((add mile), consume);
-  g4 : no_storage_fail (add);
+  g4 : no_storage_fail (add)
 }

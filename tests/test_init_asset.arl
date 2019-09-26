@@ -1,7 +1,7 @@
 archetype test_asset
 
 asset my_asset_simple identified by str {
-  str : string;
+  str : string
 }
 
 asset my_asset identified by id {

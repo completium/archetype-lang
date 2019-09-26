@@ -1,23 +1,23 @@
 archetype mini_dao
 
 asset shares identified by addr {
-    addr : address;
-    value : tez;
+  addr : address;
+  value : tez
 }
 
 action withdraw {
-    specification {
-        postcondition p1 {
-            balance = before.balance - shares.get(caller).value
-        }
+  specification {
+    postcondition p1 {
+      balance = before.balance - shares.get(caller).value
     }
-    require {
-        r1 : shares.get(caller).value > 0mtz;
-        r2 : balance >= shares.get(caller).value;
-    }
-    effect {
-        let v = shares.get(caller).value in
-        transfer v to caller;
-        shares.update (caller, { value = 0tz })
-    }
+  }
+  require {
+    r1 : shares.get(caller).value > 0mtz;
+    r2 : balance >= shares.get(caller).value;
+  }
+  effect {
+    let v = shares.get(caller).value in
+    transfer v to caller;
+    shares.update (caller, { value = 0tz })
+  }
 }

@@ -171,6 +171,7 @@
 
 %nonassoc EQUAL NEQUAL
 %nonassoc prec_order
+%nonassoc prec_labelexpr
 %left GREATER GREATEREQUAL LESS LESSEQUAL
 
 %left PLUS MINUS
@@ -190,6 +191,10 @@
     { pldesc = x;
       plloc  = Location.make $startpos $endpos; }
       }
+
+sl(separator, X):
+/* empty */             { [] }
+| l = snl(separator, X) { l }
 
 snl(separator, X):
   x = X { [ x ] }
@@ -387,7 +392,7 @@ spec_items:
         { (xs, exts) }
 
 | SPECIFICATION exts=option(extensions) LBRACE
-    xs=label_exprs RBRACE
+    xs=label_exprs_non_empty RBRACE
         { let ll = List.map (fun x ->
             let loc, (lbl, e) = Location.deloc x in
             mkloc loc (Vpostcondition (lbl, e, []))) xs in
@@ -400,7 +405,7 @@ specification_decl:
 | x=loc(specification)      { Dspecification x }
 
 %inline security_item_unloc:
-| lbl=ident COLON id=ident args=security_args SEMI_COLON
+| lbl=ident COLON id=ident args=security_args
     { (lbl, id, args) }
 
 %inline security_item:
@@ -408,7 +413,7 @@ specification_decl:
 
 security_decl_unloc:
 | SECURITY exts=option(extensions) LBRACE
-    xs=security_item+ RBRACE
+    xs=sl(SEMI_COLON, security_item) RBRACE
         { (xs, exts) }
 
 security_decl:
@@ -437,10 +442,10 @@ enum_values:
 
 %inline enum_options:
 | /* nothing */    { [] }
-| xs=enum_option+ { xs }
+| xs=enum_option+  { xs }
 
 enum_option:
-| INITIAL              { EOinitial }
+| INITIAL                     { EOinitial }
 | WITH xs=braced(label_exprs) { EOspecification (xs) }
 
 types:
@@ -501,7 +506,7 @@ asset_option:
 | SORTED BY x=ident     { AOsortedby x }
 
 %inline fields:
-| xs=terminated(field, SEMI_COLON)+ { xs }
+| xs=sl(SEMI_COLON, field) { xs }
 
 field_r:
 | x=ident exts=option(extensions)
@@ -560,11 +565,11 @@ calledby:
  | CALLED BY exts=option(extensions) x=expr { (x, exts) }
 
 require:
- | REQUIRE exts=option(extensions) xs=braced(label_exprs_or_not)
+ | REQUIRE exts=option(extensions) xs=braced(label_exprs)
        { (xs, exts) }
 
 failif:
- | FAILIF exts=option(extensions) xs=braced(label_exprs_or_not)
+ | FAILIF exts=option(extensions) xs=braced(label_exprs)
        { (xs, exts) }
 
 %inline require_value:
@@ -774,17 +779,17 @@ simple_expr_r:
      { x }
 
 %inline label_exprs:
-| l=label_expr+ { l }
+| /* empty */   { [] }
+| l=label_exprs_non_empty { l }
 
-%inline label_exprs_or_not:
-| /* empty */ { [] }
-| l=label_expr+ { l }
+%inline label_exprs_non_empty:
+| l=snl(SEMI_COLON, label_expr) { l }
 
 %inline label_expr:
 | le=loc(label_expr_unloc) { le }
 
-%inline label_expr_unloc:
-| id=ident COLON e=expr SEMI_COLON { (id, e) }
+label_expr_unloc:
+| id=ident COLON e=expr %prec prec_labelexpr { (id, e) }
 
 %inline quant_kind:
 | COLON t=type_s      { Qtype t }

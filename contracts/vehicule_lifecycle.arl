@@ -14,14 +14,14 @@ enum order_state =
   | Delivered
 
 asset vehicledetail {
-  id : string;
+  id : string
 }
 
 asset order {
    status       : order_sate;
    manufacturer : manufacturer;
    orderer      : owner;
-   details      : vehicledetail;
+   details      : vehicledetail
 }
 
 enum vehicle_state =
@@ -33,7 +33,7 @@ asset vehicle identified by vin {
    vin          : string;
    owner        : owner;
    detail       : vehicledetail;
-   color        : string;
+   color        : string
 } with states vehicle_state
 
 action placeOrder (neworder : order) {

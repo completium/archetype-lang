@@ -13,15 +13,15 @@ enum shipmentStatus =
  | Arrived
 
 asset grower identified by id {
-  id : role;
+  id : role
 }
 
 asset importer identified by id {
-  id : role;
+  id : role
 }
 
 asset importer identified by id {
-  id : role;
+  id : role
 }
 
 asset p_contract {
@@ -29,13 +29,13 @@ asset p_contract {
   shipper         : shipper;
   importer        : importer;
   arrivalDateTime : date;
-  unitPrice       : rational;
+  unitPrice       : rational
 }
 
 asset shipment {
   type     : productType;
   count    : int;
-  p_c      : p_contract;
+  p_c      : p_contract
 } with states shipmentStatus
 
 transition payOut (arrival : date) on sk : shipment from In_transit {

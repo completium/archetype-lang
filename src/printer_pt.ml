@@ -585,7 +585,7 @@ and pp_fun_args fmt args =
 and pp_field fmt { pldesc = f; _ } =
   match f with
   | Ffield (id, typ, dv, exts) ->
-    Format.fprintf fmt "%a%a : %a%a;"
+    Format.fprintf fmt "%a%a : %a%a"
       pp_id id
       pp_extensions exts
       pp_type typ
@@ -654,11 +654,11 @@ let pp_asset_operation fmt (e : asset_operation) =
 
 let pp_label_expr fmt (le : label_expr) =
   let (lbl, e) = unloc le in
-  Format.fprintf fmt "%a%a;"
+  Format.fprintf fmt "%a%a"
     (pp_postfix " : " pp_id) lbl
     (pp_expr e_colon PRight) e
 
-let pp_label_exprs xs = (pp_list "@\n" pp_label_expr) xs
+let pp_label_exprs xs = (pp_list ";@\n" pp_label_expr) xs
 
 let pp_enum_option fmt = function
   | EOinitial ->
@@ -811,13 +811,13 @@ let pp_security fmt (items, exts) =
   in
   let pp_security_item fmt (s : security_item) =
     let (label, id, args) = unloc s in
-    Format.fprintf fmt "%a : %a (%a);"
+    Format.fprintf fmt "%a : %a (%a)"
       pp_id label
       pp_id id
       (pp_list ", " pp_security_arg) args
   in
   let pp_security_items =
-    pp_list "@\n" pp_security_item
+    pp_list ";@\n" pp_security_item
   in
   Format.fprintf fmt "security%a {@\n  @[%a@]@\n}@\n"
     pp_extensions exts
@@ -905,7 +905,7 @@ let rec pp_declaration fmt { pldesc = e; _ } =
       (pp_option pp_asset_operation) ops
       pp_id id
       (pp_prefix " " (pp_list " @," pp_asset_option)) opts
-      (pp_do_if (List.length fields > 0) ((fun fmt -> Format.fprintf fmt " {@\n  @[%a@]@\n}@\n" (pp_list "@\n" pp_field)))) fields
+      (pp_do_if (List.length fields > 0) ((fun fmt -> Format.fprintf fmt " {@\n  @[%a@]@\n}@\n" (pp_list ";@\n" pp_field)))) fields
       (pp_list "@\n" pp_asset_post_option) apo
 
   | Daction (id, args, props, code, exts) ->
