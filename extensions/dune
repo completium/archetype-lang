@@ -1,0 +1,18 @@
+(install
+ (section share)
+ (files
+  (action_delegation.arlx as extensions/action_delegation.arlx)
+  (delegable.arlx as extensions/delegable.arlx)
+  (mutable.arlx as extensions/mutable.arlx)
+  (mutable_enum.arlx as extensions/mutable_enum.arlx)
+  (mutable_signed.arlx as extensions/mutable_signed.arlx)
+  (onlyonce.arlx as extensions/onlyonce.arlx)
+  (signedbyall.arlx as extensions/signedbyall.arlx)
+  (signedby.arlx as extensions/signedby.arlx)
+  (signedby_at_object_level.arlx as extensions/signedby_at_object_level.arlx)
+  (test_initialized.arlx as extensions/test_initialized.arlx)
+  (test_namespace.arlx as extensions/test_namespace.arlx)
+  (traceable.arlx as extensions/traceable.arlx)
+  (transferable.arlx as extensions/transferable.arlx)
+ )
+)
