@@ -919,7 +919,8 @@ and mk_invariants (m : M.model) ctx (lbl : ident option) lbody =
           | None, b -> (unloc b) in
         { id =  with_dummy_loc iid; form = map_mterm m ctx i }
       ) in
-  let storage_loop_invariants =
+  let storage_loop_invariants = (* in storage invariants are strong :
+                                         no need to repeat them in loop *)
     M.Utils.get_storage_invariants m None |>
     List.fold_left (fun acc (an,inn,t) ->
         if is_local_invariant m an t && not (adds_asset m an lbody)
@@ -947,6 +948,17 @@ and mk_invariants (m : M.model) ctx (lbl : ident option) lbody =
   loop_invariants @ storage_loop_invariants @ security_loop_invariants
 
 (* API storage templates -----------------------------------------------------*)
+
+let mk_api_precond m a src =
+  M.Utils.get_storage_invariants m (Some a)
+  |> List.fold_left (fun acc (_,lbl,t) ->
+      if is_local_invariant m a t then
+        acc @ [{
+            id = lbl;
+            form = unloc_term (mk_invariant m (dumloc a) src (map_mterm m init_ctx t))
+          }]
+      else acc
+    ) []
 
 let mk_key_found_cond old asset var =
   Tcontains (asset,
@@ -1038,6 +1050,8 @@ let mk_set_ensures m n key fields =
            }])
     ) (1,[]) fields) @ (mk_set_sum_ensures m n)
 
+let mk_set_asset_precond m a id = mk_api_precond m a (`Preasset id)
+
 let mk_set_asset m key = function
   | Drecord (asset, fields) ->  Dfun {
       name = "set_"^asset;
@@ -1047,7 +1061,7 @@ let mk_set_asset m key = function
       raises = [ Timpl (Texn Enotfound,
                         mk_not_found_cond `Old asset (Tdoti ("old_asset",key)))];
       variants = [];
-      requires = [];
+      requires = mk_set_asset_precond m asset "new_asset";
       ensures = mk_set_ensures m asset key fields;
       body = Tif (mk_not_found_cond `Curr asset (Tdoti ("old_asset",key)),
                   Traise Enotfound,
@@ -1098,17 +1112,6 @@ let mk_unshallow asset keyt = Dfun {
                            Tvar "c",
                            Tvar "l")
   }
-
-let mk_api_precond m a src =
-  M.Utils.get_storage_invariants m (Some a)
-  |> List.fold_left (fun acc (_,lbl,t) ->
-      if is_local_invariant m a t then
-        acc @ [{
-            id = lbl;
-            form = unloc_term (mk_invariant m (dumloc a) src (map_mterm m init_ctx t))
-          }]
-      else acc
-    ) []
 
 let mk_add_asset_precond m a id = mk_api_precond m a (`Preasset id)
 
