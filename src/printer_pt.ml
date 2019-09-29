@@ -797,15 +797,15 @@ let pp_security fmt (items, exts) =
       Format.fprintf fmt "[%a]"
         (pp_list " or " pp_security_arg) l
     | Sapp (id, args) ->
-      Format.fprintf fmt "(%a %a)"
+      Format.fprintf fmt "%a (%a)"
         pp_id id
-        (pp_list "@ " pp_security_arg) args
+        (pp_list ",@ " pp_security_arg) args
     | Sbut (id, arg) ->
-      Format.fprintf fmt "(%a but %a)"
+      Format.fprintf fmt "%a but %a"
         pp_id id
         pp_security_arg arg
     | Sto (id, arg) ->
-      Format.fprintf fmt "(%a to %a)"
+      Format.fprintf fmt "%a to %a"
         pp_id id
         pp_security_arg arg
   in

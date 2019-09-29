@@ -90,13 +90,13 @@ let pp_pattern fmt (p : pattern) =
 let pp_action_description fmt ad =
   match ad with
   | ADany         -> pp_str fmt "anyaction"
-  | ADadd      id -> Format.fprintf fmt "(add %a)" pp_ident id
-  | ADremove   id -> Format.fprintf fmt "(remove %a)" pp_ident id
-  | ADupdate   id -> Format.fprintf fmt "(update %a)" pp_ident id
-  | ADtransfer id -> Format.fprintf fmt "(transfer %a)" pp_ident id
-  | ADget      id -> Format.fprintf fmt "(get %a)" pp_ident id
-  | ADiterate  id -> Format.fprintf fmt "(iterate %a)" pp_ident id
-  | ADcall     id -> Format.fprintf fmt "(call %a)" pp_ident id
+  | ADadd      id -> Format.fprintf fmt "add (%a)" pp_ident id
+  | ADremove   id -> Format.fprintf fmt "remove (%a)" pp_ident id
+  | ADupdate   id -> Format.fprintf fmt "update (%a)" pp_ident id
+  | ADtransfer id -> Format.fprintf fmt "transfer (%a)" pp_ident id
+  | ADget      id -> Format.fprintf fmt "get (%a)" pp_ident id
+  | ADiterate  id -> Format.fprintf fmt "iterate (%a)" pp_ident id
+  | ADcall     id -> Format.fprintf fmt "call (%a)" pp_ident id
 
 let pp_mterm fmt (mt : mterm) =
   let rec f fmt (mtt : mterm) =
@@ -931,47 +931,47 @@ let pp_security fmt (s : security) =
   let pp_security_predicate fmt (sp : security_predicate) =
     match sp.s_node with
     | SonlyByRole (ad, roles) ->
-      Format.fprintf fmt "only_by_role %a %a"
+      Format.fprintf fmt "only_by_role (%a, %a)"
         pp_action_description ad
         pp_security_roles roles
 
     | SonlyInAction (ad, action) ->
-      Format.fprintf fmt "only_in_action %a %a"
+      Format.fprintf fmt "only_in_action (%a, %a)"
         pp_action_description ad
         pp_security_action action
 
     | SonlyByRoleInAction (ad, roles, action) ->
-      Format.fprintf fmt "only_by_role_in_action %a %a %a"
+      Format.fprintf fmt "only_by_role_in_action (%a, %a, %a)"
         pp_action_description ad
         pp_security_roles roles
         pp_security_action action
 
     | SnotByRole (ad, roles) ->
-      Format.fprintf fmt "not_by_role %a %a"
+      Format.fprintf fmt "not_by_role (%a, %a)"
         pp_action_description ad
         pp_security_roles roles
 
     | SnotInAction (ad, action) ->
-      Format.fprintf fmt "not_in_action %a %a"
+      Format.fprintf fmt "not_in_action (%a, %a)"
         pp_action_description ad
         pp_security_action action
 
     | SnotByRoleInAction (ad, roles, action) ->
-      Format.fprintf fmt "not_by_role_in_action %a %a %a"
+      Format.fprintf fmt "not_by_role_in_action (%a, %a, %a)"
         pp_action_description ad
         pp_security_roles roles
         pp_security_action action
 
     | StransferredBy ad ->
-      Format.fprintf fmt "transferred_by %a"
+      Format.fprintf fmt "transferred_by (%a)"
         pp_action_description ad
 
     | StransferredTo ad ->
-      Format.fprintf fmt "transferred_to %a"
+      Format.fprintf fmt "transferred_to (%a)"
         pp_action_description ad
 
     | SnoStorageFail action ->
-      Format.fprintf fmt "no_storage_fail %a"
+      Format.fprintf fmt "no_storage_fail (%a)"
         pp_security_action action
   in
 

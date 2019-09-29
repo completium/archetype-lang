@@ -269,10 +269,8 @@ let string_of_symbol = function
   | X (N N_snl2_COMMA_simple_expr_) -> "a non empty list of simple expression separated by  ,"
   | X (N N_snl2_OR_security_arg_) -> "a non empty list of security argument separated by  OR"
   | X (N N_security_arg_unloc) -> "a security argument"
-  | X (N N_security_arg_ext_unloc) -> "a security argument"
   | X (N N_security_decl_unloc) -> "a security declaration"
   | X (N N_security_decl) -> "a security declaration"
-  | X (N N_nonempty_list_security_arg_) -> "a non empty list of security argument"
   | X (N N_simple_expr_r) -> "a simple expression"
   | X (N N_signature) -> "a signature"
   | X (N N_separated_nonempty_list_SEMI_COLON_record_item_) -> "a non empty list of record item by ;"
@@ -358,6 +356,8 @@ let string_of_symbol = function
   | X (N N_sl_SEMI_COLON_field_) -> "a list of field"
   | X (N N_snl_SEMI_COLON_label_expr_) -> "a non empty list of label expr"
   | X (N N_label_expr_unloc) -> "a label expr"
+  | X (N N_snl_COMMA_security_arg_) -> "a non empty list of security argument"
+  | X (N N_sl_COMMA_security_arg_) -> "a list of security argument"
 
 let string_of_item (p, i) =
   string_of_symbol (lhs p) ^ " -> "

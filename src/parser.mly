@@ -873,16 +873,13 @@ record_item:
  | e=loc(security_arg_unloc) { e }
 
 security_arg_unloc:
-| id=ident                           { Sident id }
-| a=ident DOT b=ident                { Sdot (a, b) }
-| xs=bracket(snl2(OR, security_arg)) { Slist xs }
-| x=paren(security_arg_ext_unloc)    { x }
-
-security_arg_ext_unloc:
-| id=ident xs=security_arg+          { Sapp (id, xs) }
-| id=ident BUT arg=security_arg      { Sbut (id, arg) }
-| id=ident TO arg=security_arg       { Sto (id, arg) }
-| x=security_arg_unloc               { x }
+| id=ident                                     { Sident id }
+| a=ident DOT b=ident                          { Sdot (a, b) }
+| xs=bracket(snl2(OR, security_arg))           { Slist xs }
+| id=ident xs=paren(sl(COMMA, security_arg))   { Sapp (id, xs) }
+| id=ident BUT arg=security_arg                { Sbut (id, arg) }
+| id=ident TO arg=security_arg                 { Sto (id, arg) }
+| x=paren(security_arg_unloc)                  { x }
 
 %inline postfix(X, P):
 | x=X P { x }

@@ -193,7 +193,7 @@ let pp_security_role = pp_lident
 
 let pp_action_description fmt = function
   | ADAny -> pp_str fmt "anyaction"
-  | ADOp (a, b) -> Format.fprintf fmt "(%s %a)" a pp_id b
+  | ADOp (a, b) -> Format.fprintf fmt "%s (%a)" a pp_id b
 
 let rec pp_pterm fmt (pterm : pterm) =
   let pp_node fmt = function
@@ -594,47 +594,47 @@ let pp_security fmt (s : security) =
   let pp_security_predicate fmt (sp : security_predicate) =
     match sp.s_node with
     | SonlyByRole (ad, roles) ->
-      Format.fprintf fmt "only_by_role %a %a"
+      Format.fprintf fmt "only_by_role (%a, %a)"
         pp_action_description ad
         pp_security_roles roles
 
     | SonlyInAction (ad, action) ->
-      Format.fprintf fmt "only_in_action %a %a"
+      Format.fprintf fmt "only_in_action (%a, %a)"
         pp_action_description ad
         pp_security_action action
 
     | SonlyByRoleInAction (ad, roles, action) ->
-      Format.fprintf fmt "only_by_role_in_action %a %a %a"
+      Format.fprintf fmt "only_by_role_in_action (%a, %a, %a)"
         pp_action_description ad
         pp_security_roles roles
         pp_security_action action
 
     | SnotByRole (ad, roles) ->
-      Format.fprintf fmt "not_by_role %a %a"
+      Format.fprintf fmt "not_by_role (%a, %a)"
         pp_action_description ad
         pp_security_roles roles
 
     | SnotInAction (ad, action) ->
-      Format.fprintf fmt "not_in_action %a %a"
+      Format.fprintf fmt "not_in_action (%a, %a)"
         pp_action_description ad
         pp_security_action action
 
     | SnotByRoleInAction (ad, roles, action) ->
-      Format.fprintf fmt "not_by_role_in_action %a %a %a"
+      Format.fprintf fmt "not_by_role_in_action (%a, %a, %a)"
         pp_action_description ad
         pp_security_roles roles
         pp_security_action action
 
     | StransferredBy ad ->
-      Format.fprintf fmt "transferred_by %a"
+      Format.fprintf fmt "transferred_by (%a)"
         pp_action_description ad
 
     | StransferredTo ad ->
-      Format.fprintf fmt "transferred_to %a"
+      Format.fprintf fmt "transferred_to (%a)"
         pp_action_description ad
 
     | SnoStorageFail action ->
-      Format.fprintf fmt "no_storage_fail %a"
+      Format.fprintf fmt "no_storage_fail (%a)"
         pp_security_action action
   in
 
