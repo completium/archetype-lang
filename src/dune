@@ -24,7 +24,7 @@
   (preprocess
     (pps ppx_deriving.std ppx_deriving_yojson)
   )
-  (modules lsp compiler)
+  (modules lsp services compiler)
   (libraries archetype menhirLib)
   (public_name archetype)
   (name     compiler))

@@ -784,31 +784,31 @@ let pp_spec fmt (items, exts) =
         pp_specification_items items
     end
 
+let rec pp_security_arg fmt arg =
+  let arg = unloc arg in
+  match arg with
+  | Sident id -> pp_id fmt id
+  | Sdot (a, b) ->
+    Format.fprintf fmt "%a.%a"
+      pp_id a
+      pp_id b
+  | Slist l ->
+    Format.fprintf fmt "[%a]"
+      (pp_list " or " pp_security_arg) l
+  | Sapp (id, args) ->
+    Format.fprintf fmt "%a (%a)"
+      pp_id id
+      (pp_list ",@ " pp_security_arg) args
+  | Sbut (id, arg) ->
+    Format.fprintf fmt "%a but %a"
+      pp_id id
+      pp_security_arg arg
+  | Sto (id, arg) ->
+    Format.fprintf fmt "%a to %a"
+      pp_id id
+      pp_security_arg arg
+
 let pp_security fmt (items, exts) =
-  let rec pp_security_arg fmt arg =
-    let arg = unloc arg in
-    match arg with
-    | Sident id -> pp_id fmt id
-    | Sdot (a, b) ->
-      Format.fprintf fmt "%a.%a"
-        pp_id a
-        pp_id b
-    | Slist l ->
-      Format.fprintf fmt "[%a]"
-        (pp_list " or " pp_security_arg) l
-    | Sapp (id, args) ->
-      Format.fprintf fmt "%a (%a)"
-        pp_id id
-        (pp_list ",@ " pp_security_arg) args
-    | Sbut (id, arg) ->
-      Format.fprintf fmt "%a but %a"
-        pp_id id
-        pp_security_arg arg
-    | Sto (id, arg) ->
-      Format.fprintf fmt "%a to %a"
-        pp_id id
-        pp_security_arg arg
-  in
   let pp_security_item fmt (s : security_item) =
     let (label, id, args) = unloc s in
     Format.fprintf fmt "%a : %a (%a)"

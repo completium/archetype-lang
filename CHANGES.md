@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 ## [Unreleased]
+### Added
+ - Add services module in order to handle vscode extension
 
 ### Changed
  - Update syntax for security predicate arguments

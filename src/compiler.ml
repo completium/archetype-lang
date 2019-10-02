@@ -219,6 +219,13 @@ let main () =
               "Unknown lsp commands %s (use errors, outline)@." s;
             exit 2), "<request> Generate language server protocol response to <resquest>";
       "--list-lsp-request", Arg.Unit (fun _ -> Format.printf "request available:@\n  errors@\n  outline@\n"; exit 0), " List available request for lsp";
+      "--service", Arg.String (fun s -> match s with
+          | "get_properties" -> Options.opt_service := true; Services.service := GetProperties
+          |  s ->
+            Format.eprintf
+              "Unknown service request %s (--list-service-request to view all requests)@." s;
+            exit 2), "<request> Generate service response to <resquest>";
+      "--list-services-request", Arg.Unit (fun _ -> Format.printf "request available:@\n  get_properties@\n"; exit 0), " List available request for service";
       "-r", Arg.Set Options.opt_raw, " Print raw model tree";
       "--raw", Arg.Set Options.opt_raw, " Same as -r";
       "-ry", Arg.Set Options.opt_raw_whytree, " Print raw model tree";
@@ -275,9 +282,12 @@ let main () =
     | _ -> ("<stdin>", stdin, false) in
 
   try
-    if !Options.opt_lsp
-    then Lsp.process (filename, channel)
-    else compile (filename, channel);
+    begin
+      match !Options.opt_lsp, !Options.opt_service with
+      | true, _ -> Lsp.process (filename, channel)
+      | _, true -> Services.process (filename, channel)
+      | _ -> compile (filename, channel)
+    end;
     close dispose channel
 
   with
