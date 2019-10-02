@@ -1541,9 +1541,8 @@ and for_arg_effect mode (env : env) (asset : assetdecl) (tope : PT.expr) =
         map
 
       | Some (op, x) -> begin
-          try
-            let fty = List.Exn.assoc_map unloc (unloc x) asset.as_fields in
-            let fty = Option.get fty in
+          match List.Exn.assoc_map unloc (unloc x) asset.as_fields with
+          | Some fty ->
             let op  = for_assignment_operator op in
             let e   = for_assign_expr mode env (loc x) (op, fty) e in
 
@@ -1553,8 +1552,8 @@ and for_arg_effect mode (env : env) (asset : assetdecl) (tope : PT.expr) =
             end else
               Mid.add (unloc x) (x, `Assign op, e) map
 
-          with Not_found ->
-            Env.emit_error env (loc x, UnknownFieldName (unloc x));
+          | None ->
+            Env.emit_error env (loc x, UnknownField (unloc asset.as_name, unloc x));
             map
         end
     in
