@@ -28,14 +28,22 @@ type location = {
 [@@deriving yojson, show {with_path = false}]
 
 type kind =
+  | Assert
   | PostCondition
   | SecurityPredicate
+[@@deriving yojson, show {with_path = false}]
+
+type invariant = {
+  label : string;
+  formulas: string list;
+}
 [@@deriving yojson, show {with_path = false}]
 
 type property = {
   kind : kind;
   id : string;
   formula: string;
+  invariants: invariant list;
   location : location;
 }
 [@@deriving yojson, show {with_path = false}]
@@ -60,19 +68,30 @@ let mk_location (loc : Location.t) : location = {
   end_  = mk_position loc.loc_end loc.loc_echar;
 }
 
-let mk_property kind id formula location =
-  { kind; id; formula; location }
+let mk_invariant label formulas =
+  { label; formulas }
+
+let mk_property ?(invariants=[]) kind id formula location =
+  { kind; id; formula; invariants; location }
 
 let mk_property_get_property status obj : result_get_property =
   { status; obj }
 
 let extract_properties (pt : archetype) : property list =
   let ep_specification_item (spi : specification_item) : property option =
-    match unloc spi with
-    | Vpostcondition (label, formula, invs) ->
+    let f (label, formula, invs) m =
       let formula = Format.asprintf "%a" Printer_pt.pp_simple_expr formula in
       let location = mk_location (loc spi) in
-      Some (mk_property PostCondition (unloc label) formula location)
+      let invariants = List.map (fun (x, y : lident * expr list) ->
+          let formulas = List.map (Format.asprintf "%a" Printer_pt.pp_simple_expr) y in
+          mk_invariant (unloc x) formulas) invs in
+      Some (mk_property ~invariants:invariants m (unloc label) formula location)
+    in
+    match unloc spi with
+    | Vassert (label, formula, invs) ->
+      f (label, formula, invs) Assert
+    | Vpostcondition (label, formula, invs) ->
+      f (label, formula, invs) PostCondition
     | _ -> None
   in
 

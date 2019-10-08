@@ -223,9 +223,9 @@ let main () =
           | "get_properties" -> Options.opt_service := true; Services.service := GetProperties
           |  s ->
             Format.eprintf
-              "Unknown service request %s (--list-service-request to view all requests)@." s;
-            exit 2), "<request> Generate service response to <resquest>";
-      "--list-services-request", Arg.Unit (fun _ -> Format.printf "request available:@\n  get_properties@\n"; exit 0), " List available request for service";
+              "Unknown service %s (--list-services to view all services)@." s;
+            exit 2), "<service> Generate service response to <service>";
+      "--list-services", Arg.Unit (fun _ -> Format.printf "services available:@\n  get_properties@\n"; exit 0), " List available services";
       "-r", Arg.Set Options.opt_raw, " Print raw model tree";
       "--raw", Arg.Set Options.opt_raw, " Same as -r";
       "-ry", Arg.Set Options.opt_raw_whytree, " Print raw model tree";
