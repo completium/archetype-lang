@@ -28,6 +28,7 @@ type location = {
 [@@deriving yojson, show {with_path = false}]
 
 type kind =
+  | StorageInvariant
   | Assert
   | PostCondition
   | SecurityPredicate
@@ -111,6 +112,23 @@ let extract_properties (pt : archetype) : property list =
   in
 
   let ep_decl = function
+    | Dasset (_, _, _, a, _, _) ->
+      begin
+        a
+        |> List.fold_left (fun accu x ->
+            match x with
+            | APOconstraints l -> l @ accu
+            | _ -> accu
+          ) []
+        |> List.map (fun (x : label_expr) ->
+            let loca, (label, formula) = Location.deloc x in
+            let formula = Format.asprintf "%a" Printer_pt.pp_simple_expr formula in
+            let location = mk_location (loca) in
+
+            mk_property StorageInvariant (unloc label) formula location
+          )
+      end
+
     | Dfunction f ->
       begin
         match f.spec with
