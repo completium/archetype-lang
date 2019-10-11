@@ -228,7 +228,28 @@ let prune_properties (model : model) : model =
         items = List.filter (fun (x : security_item) -> remain (unloc x.label)) sec.items
       } in
     let process_asset model : model =
-      model
+      let prune_storage_item (model, s : model * storage_item) : model * storage_item =
+        match s.asset with
+        | Some an ->
+          let model, invs =
+            List.fold_left (fun (model, accu: model * lident label_term_gen list) (x : lident label_term_gen) ->
+                if Option.is_some x.label && remain (unloc (Option.get x.label)) then
+                  (model, accu @ [x])
+                else
+                  ({model with api_verif = model.api_verif @ [StorageInvariant ((unloc (Option.get x.label)), unloc an, x.term) ] }, accu)
+              ) (model,[]) s.invariants in
+          model, { s with invariants = invs}
+        | _ -> (model, s)
+      in
+      let (model, storage) : model * storage_item list =
+        List.fold_left_map
+          (fun (state : model) (x : storage_item) ->
+             prune_storage_item (state, x)
+          ) model model.storage in
+      {
+        model with
+        storage = storage;
+      }
     in
     let model =
       model

@@ -870,11 +870,17 @@ let pp_decl fmt = function
   | Drecord r -> pp_record fmt r
   | Dcontract c -> pp_contract fmt c
 
+let pp_label_term fmt (lt : label_term) =
+  Format.fprintf fmt "%a : %a"
+    (pp_option pp_id) lt.label
+    pp_mterm lt.term
+
 let pp_storage_item fmt (si : storage_item) =
-  Format.fprintf fmt "%a : %a%a"
+  Format.fprintf fmt "%a : %a%a%a"
     pp_id si.name
     pp_type si.typ
     (fun fmt -> Format.fprintf fmt " := %a" pp_mterm) si.default
+    (pp_do_if (not (List.is_empty si.invariants)) (fun fmt xs -> Format.fprintf fmt " with {%a}" (pp_list "; " pp_label_term) xs)) si.invariants
 
 let pp_storage fmt (s : storage) =
   Format.fprintf fmt "storage {@\n@[<v 2>  %a@]@\n}@\n"
