@@ -192,12 +192,35 @@ let prune_properties (model : model) : model =
   | "" -> model
   | fp_id ->
     let remain id = String.equal id fp_id in
+    let prune_mterm (mt : mterm) : mterm =
+      let rec aux (mt : mterm) : mterm =
+        match mt.node with
+        | Mseq l ->
+          let ll =
+            l
+            |> List.map aux
+            |> List.filter (fun (x : mterm) -> match x.node with | Mlabel id -> remain (unloc id) | _ -> true)
+          in
+          { mt with node = Mseq ll }
+        | _ -> map_mterm aux mt
+      in
+      aux mt
+    in
     let prune_specs (spec : specification) : specification =
       { spec with
         postconditions = List.filter (fun (x : postcondition) -> remain (unloc x.name)) spec.postconditions
       } in
     let prune_function__ (f : function__) : function__ =
+      let prune_function_node (fn : function_node) : function_node =
+        let prune_function_struct (fs : function_struct) : function_struct =
+          { fs with
+            body = prune_mterm fs.body } in
+        match fn with
+        | Function (fs, r) -> Function (prune_function_struct fs, r)
+        | Entry fs -> Entry (prune_function_struct fs)
+      in
       { f with
+        node = prune_function_node f.node;
         spec = Option.map prune_specs f.spec; }
     in
     let prune_secs (sec : security) : security =
