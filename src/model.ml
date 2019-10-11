@@ -297,10 +297,10 @@ and builtin_const =
 [@@deriving show {with_path = false}]
 
 and api_item_node =
-  | APIStorage   of storage_const
-  | APIContainer of container_const
-  | APIFunction  of function_const
-  | APIBuiltin   of builtin_const
+  | APIStorage      of storage_const
+  | APIContainer    of container_const
+  | APIFunction     of function_const
+  | APIBuiltin      of builtin_const
 [@@deriving show {with_path = false}]
 
 and api_item = {
@@ -308,6 +308,9 @@ and api_item = {
   only_formula: bool;
 }
 [@@deriving show {with_path = false}]
+
+and api_verif =
+  | StorageInvariant of (ident * ident * mterm)
 
 and action_description =
   | ADany
@@ -653,6 +656,7 @@ type decl_node = lident decl_node_gen
 type 'id model_gen = {
   name         : lident;
   api_items    : api_item list;
+  api_verif    : api_verif list;
   info         : info_item list;
   decls        : 'id decl_node_gen list;
   storage      : 'id storage_gen;
@@ -752,8 +756,8 @@ let mk_signature ?(args = []) ?ret name : 'id signature_gen =
 let mk_api_item ?(only_formula = false) node_item =
   { node_item; only_formula }
 
-let mk_model ?(api_items = []) ?(info = []) ?(decls = []) ?(functions = []) ?(storage = []) ?(specification = mk_specification ()) ?(security = mk_security ()) storage name : model =
-  { name; api_items; info; storage; decls; functions; specification; security }
+let mk_model ?(api_items = []) ?(api_verif = []) ?(info = []) ?(decls = []) ?(functions = []) ?(storage = []) ?(specification = mk_specification ()) ?(security = mk_security ()) storage name : model =
+  { name; api_items; api_verif; info; storage; decls; functions; specification; security }
 
 (* -------------------------------------------------------------------- *)
 
@@ -1002,11 +1006,18 @@ let cmp_api_item_node (a1 : api_item_node) (a2 : api_item_node) : bool =
     | _ -> false
   in
   match a1, a2 with
-  | APIStorage s1, APIStorage s2     -> cmp_storage_const s1 s2
-  | APIContainer c1, APIContainer c2 -> cmp_container_const c1 c2
-  | APIFunction f1, APIFunction f2   -> cmp_function_const f1 f2
-  | APIBuiltin b1, APIBuiltin b2     -> cmp_builtin_const b1 b2
+  | APIStorage s1, APIStorage s2           -> cmp_storage_const s1 s2
+  | APIContainer c1, APIContainer c2       -> cmp_container_const c1 c2
+  | APIFunction f1, APIFunction f2         -> cmp_function_const f1 f2
+  | APIBuiltin b1, APIBuiltin b2           -> cmp_builtin_const b1 b2
   | _ -> false
+
+(* -------------------------------------------------------------------- *)
+
+let cmp_api_verif (v1 : api_verif) (v2 : api_verif) : bool =
+  match v1, v2 with
+  | StorageInvariant (l1, an1, mt1), StorageInvariant (l2, an2, mt2) -> cmp_ident l1 l2 && cmp_ident an1 an2 && cmp_mterm mt1 mt2
+(* | _ -> false *)
 
 (* -------------------------------------------------------------------- *)
 

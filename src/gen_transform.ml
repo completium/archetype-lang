@@ -227,6 +227,13 @@ let prune_properties (model : model) : model =
       { sec with
         items = List.filter (fun (x : security_item) -> remain (unloc x.label)) sec.items
       } in
+    let process_asset model : model =
+      model
+    in
+    let model =
+      model
+      |> process_asset
+    in
     { model with
       functions = List.map prune_function__ model.functions;
       specification = prune_specs model.specification;

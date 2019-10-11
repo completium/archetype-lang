@@ -768,10 +768,13 @@ let pp_builtin_const fmt = function
   | MaxBuiltin t-> Format.fprintf fmt "max on %a" pp_type t
 
 let pp_api_item_node fmt = function
-  | APIStorage   v -> pp_storage_const fmt v
-  | APIContainer v -> pp_container_const fmt v
-  | APIFunction  v -> pp_function_const fmt v
-  | APIBuiltin   v -> pp_builtin_const fmt v
+  | APIStorage      v -> pp_storage_const fmt v
+  | APIContainer    v -> pp_container_const fmt v
+  | APIFunction     v -> pp_function_const fmt v
+  | APIBuiltin      v -> pp_builtin_const fmt v
+
+let pp_api_verif fmt = function
+  | StorageInvariant (l, an, mt) -> Format.fprintf fmt "storage_invariant on %a %a %a" pp_ident l pp_ident an pp_mterm mt
 
 let pp_api_item fmt (api_item : api_item) =
   Format.fprintf fmt "%a%a"
@@ -1016,9 +1019,11 @@ let pp_model fmt (model : model) =
                       @\n@\n%a\
                       @\n@\n%a\
                       @\n@\n%a\
+                      @\n@\n%a\
                       @."
     pp_id model.name
     pp_api_items model.api_items
+    (pp_list "@\n" pp_api_verif) model.api_verif
     pp_infos model.info
     (pp_list "@\n" pp_decl) model.decls
     pp_storage model.storage
