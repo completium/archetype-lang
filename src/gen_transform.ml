@@ -186,3 +186,26 @@ let check_partition_access (env : Typing.env) (model : model) : model =
     fold_model internal_raise model false in
   let _ = raise_access_error () in
   model
+
+let prune_properties (model : model) : model =
+  match !Options.opt_property_focused with
+  | "" -> model
+  | fp_id ->
+    let remain id = String.equal id fp_id in
+    let prune_specs (spec : specification) : specification =
+      { spec with
+        postconditions = List.filter (fun (x : postcondition) -> remain (unloc x.name)) spec.postconditions
+      } in
+    let prune_function__ (f : function__) : function__ =
+      { f with
+        spec = Option.map prune_specs f.spec; }
+    in
+    let prune_secs (sec : security) : security =
+      { sec with
+        items = List.filter (fun (x : security_item) -> remain (unloc x.label)) sec.items
+      } in
+    { model with
+      functions = List.map prune_function__ model.functions;
+      specification = prune_specs model.specification;
+      security = prune_secs model.security
+    }

@@ -8,8 +8,6 @@ exception ArgError of string
 exception Stop
 exception Type_error
 
-let is_false_ast () : bool = !Options.fake_ast || !Options.fake_ast2
-
 let output_pt (pt : ParseTree.archetype) =
   if !Options.opt_json
   then (Format.printf "%s\n" (Yojson.Safe.to_string (ParseTree.archetype_to_yojson pt)); raise Stop)
@@ -44,19 +42,14 @@ let output (model : Model.model) =
 
 
 let parse (filename, channel) =
-  if is_false_ast()
-  then ParseTree.mk_archetype()
-  else
-    Io.parse_archetype ~name:filename channel
+  Io.parse_archetype ~name:filename channel
 (* if !Options.opt_cwse
    then Io.parse_archetype
    else Io.parse_archetype_strict) ~name:filename channel *)
 
 
 let preprocess_ext (pt : ParseTree.archetype) : ParseTree.archetype =
-  if is_false_ast()
-  then pt
-  else pt (* TODO: add extension process *)
+  pt (* TODO: add extension process *)
 
 (* let type_ (pt : ParseTree.archetype) : Ast.model =
    if !Options.fake_ast
@@ -86,6 +79,7 @@ let exec_process model   = model |> Gen_transform.replace_lit_address_by_role |>
 let check_partition_access = Gen_transform.check_partition_access Typing.empty
 let extend_removeif      = Gen_transform.extend_removeif
 let post_process_functional_language     = Gen_transform.process_single_field_storage
+let prune_properties     = Gen_transform.prune_properties
 
 let check_typing_error a =
   if Tools.List.is_empty !Error.errors
@@ -153,6 +147,7 @@ let compile (filename, channel) =
   |> type_
   |> cont !Options.opt_ast output_tast
   |> generate_model
+  |> prune_properties
   |> check_partition_access
   |> extend_removeif
   |> check_typing_error
@@ -211,6 +206,8 @@ let main () =
       "--split-key-values", Arg.Set Options.opt_skv, " Same as -skv";
       "-nse", Arg.Set Options.opt_nse, " Transform to no side effect";
       "--no-side-effect", Arg.Set Options.opt_nse, " Same as -nse";
+      "-fp", Arg.String (fun s -> Options.opt_property_focused := s), " Focus property";
+      "--focus-property", Arg.String (fun s -> Options.opt_property_focused := s), " Same as -fp";
       "-lsp", Arg.String (fun s -> match s with
           | "errors" -> Options.opt_lsp := true; Lsp.kind := Errors
           | "outline" -> Options.opt_lsp := true; Lsp.kind := Outline
@@ -232,8 +229,6 @@ let main () =
       "--raw-whytree", Arg.Set Options.opt_raw_whytree, " Same as -r";
       "-json", Arg.Set Options.opt_json, " Print JSON format";
       "-V", Arg.String (fun s -> Options.add_vids s), "<id> process specication identifiers";
-      "-F", Arg.Set Options.fake_ast, " Fake ast";
-      "-F2", Arg.Set Options.fake_ast2, " Fake ast test shallow";
       "-v", Arg.Unit (fun () -> print_version ()), " Show version number and exit";
       "--version", Arg.Unit (fun () -> print_version ()), " Same as -v";
     ] in

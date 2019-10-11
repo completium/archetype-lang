@@ -48,7 +48,7 @@ let opt_skv   = ref false
 let opt_raw   = ref false
 let opt_raw_whytree = ref false
 
-
+let opt_property_focused = ref ""
 
 (* let opt_pre_json = ref false
    let opt_pre_pretty_print = ref false
@@ -60,10 +60,6 @@ let opt_raw_whytree = ref false
    let opt_api = ref false
    let opt_cwse = ref false
    let debug_mode = ref false *)
-
-let fake_ast = ref false
-let fake_ast2 = ref false
-
 
 let opt_vids : (string list) ref = ref []
 let add_vids s =
