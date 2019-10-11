@@ -158,7 +158,7 @@ let pp_archetype fmt pt =
           |> List.map unloc
           |>  (fun l -> List.fold_right (fun x accu ->
               match x with
-              | Vpostcondition (l, e, _) -> (unloc l, e)::accu
+              | Vpostcondition (l, e, _, _) -> (unloc l, e)::accu
               | _ -> accu
             ) l [])
         in

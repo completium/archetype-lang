@@ -201,8 +201,8 @@ type specification_item_unloc =
   | Vtheorem of lident * expr
   | Vvariable of lident * type_t * expr option
   | Veffect of expr
-  | Vassert of (lident * expr * invariants)
-  | Vpostcondition of (lident * expr * invariants)
+  | Vassert of (lident * expr * invariants * lident list)
+  | Vpostcondition of (lident * expr * invariants * lident list)
 [@@deriving yojson, show {with_path = false}]
 
 type specification_item = specification_item_unloc loced

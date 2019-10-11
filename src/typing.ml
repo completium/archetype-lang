@@ -1899,7 +1899,7 @@ let for_specification_item (env : env) (v : PT.specification_item) : env * env i
     let e  = Option.map (for_expr env ?ety:ty) e in
     (env, `Variable (x, e))
 
-  | PT.Vassert (x, f, invs) -> begin
+  | PT.Vassert (x, f, invs, _) -> begin
       let env0 =
         match Env.Label.lookup env (unloc x) with
         | None ->
@@ -1922,7 +1922,7 @@ let for_specification_item (env : env) (v : PT.specification_item) : env * env i
     let i = for_instruction env i in
     (env, `Effect i)
 
-  | PT.Vpostcondition (x, f, invs) ->
+  | PT.Vpostcondition (x, f, invs, _) ->
     let for_inv (lbl, linvs) =
       let env0 =
         match Env.Label.lookup env (unloc lbl) with

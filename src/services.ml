@@ -89,9 +89,9 @@ let extract_properties (pt : archetype) : property list =
       Some (mk_property ~invariants:invariants m (unloc label) formula location)
     in
     match unloc spi with
-    | Vassert (label, formula, invs) ->
+    | Vassert (label, formula, invs, _) ->
       f (label, formula, invs) Assert
-    | Vpostcondition (label, formula, invs) ->
+    | Vpostcondition (label, formula, invs, _) ->
       f (label, formula, invs) PostCondition
     | _ -> None
   in

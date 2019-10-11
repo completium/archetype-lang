@@ -5,6 +5,7 @@ let string_of_token = function
   | WITH            -> "WITH"
   | WHEN            -> "WHEN"
   | VARIABLE        -> "VARIABLE"
+  | USE             -> "USE"
   | UNDERSCORE      -> "UNDERSCORE"
   | TZ n            -> Printf.sprintf "TZ(%s)" (Big_int.string_of_big_int n)
   | TRUE            -> "TRUE"
@@ -128,6 +129,7 @@ let string_of_symbol = function
   | X (T T_WITH) -> "with"
   | X (T T_WHEN) -> "when"
   | X (T T_VARIABLE) -> "variable"
+  | X (T T_USE) -> "use"
   | X (T T_UNDERSCORE) -> "_"
   | X (T T_TZ) -> "a tz"
   | X (T T_TRUE) -> "true"

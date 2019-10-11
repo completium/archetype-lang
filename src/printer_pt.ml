@@ -697,18 +697,25 @@ let pp_invariants fmt (lbl, is) =
     pp_id lbl
     (pp_list ";@\n" (pp_expr e_default PNone)) is
 
-let pp_postcondition fmt (id, f, is) =
-  Format.fprintf fmt "postcondition %a {@\n  @[%a@]@\n  @[%a@]@\n}"
+let pp_invariantss fmt is =
+  (pp_do_if (match is with | [] -> false | _ -> true) (fun fmt -> Format.fprintf fmt "@\n  @[%a@]" (pp_list "@\n" pp_invariants))) fmt is
+
+let pp_use fmt u =
+  (pp_do_if (match u with | [] -> false | _ -> true) (fun fmt -> Format.fprintf fmt "@\n  @[use: %a;@]" (pp_list "@ " pp_id))) fmt u
+
+let pp_postcondition fmt (id, f, is, u) =
+  Format.fprintf fmt "postcondition %a {@\n  @[%a@]%a%a@\n}"
     pp_id id
     (pp_expr e_default PNone) f
-    (pp_list "@\n" pp_invariants) is
+    pp_invariantss is
+    pp_use u
 
-let pp_assert fmt (id, f, is) =
-  Format.fprintf fmt "assert %a {@\n  @[%a@]@\n  @[%a@]@\n}"
+let pp_assert fmt (id, f, is, u) =
+  Format.fprintf fmt "assert %a {@\n  @[%a@]%a%a@\n}"
     pp_id id
-
     (pp_expr e_default PNone) f
-    (pp_list "@\n" pp_invariants) is
+    pp_invariantss is
+    pp_use u
 
 let pp_specification_item fmt = function
   | Vpredicate (id, args, body) ->
@@ -744,9 +751,9 @@ let pp_specification_item fmt = function
     Format.fprintf fmt "effect {@\n  @[%a@]@\n}"
       (pp_expr e_default PNone) e
 
-  | Vassert (id, f, is) -> pp_assert fmt (id, f, is)
+  | Vassert (id, f, is, u) -> pp_assert fmt (id, f, is, u)
 
-  | Vpostcondition (id, f, xs) -> pp_postcondition fmt (id, f, xs)
+  | Vpostcondition (id, f, xs, u) -> pp_postcondition fmt (id, f, xs, u)
 
 let pp_specification_items = pp_list "@\n@\n" pp_specification_item
 

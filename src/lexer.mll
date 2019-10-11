@@ -82,6 +82,7 @@
       "transfer"            , TRANSFER       ;
       "transition"          , TRANSITION     ;
       "true"                , TRUE           ;
+      "use"                 , USE            ;
       "variable"            , VARIABLE       ;
       "when"                , WHEN           ;
       "with"                , WITH           ;

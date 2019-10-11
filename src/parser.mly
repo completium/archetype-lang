@@ -133,6 +133,7 @@
 %token TRANSFER
 %token TRANSITION
 %token TRUE
+%token USE
 %token UNDERSCORE
 %token VARIABLE
 %token WHEN
@@ -364,16 +365,20 @@ function_decl:
 %inline invars:
 | INVARIANT FOR id=ident xs=braced(expr) { (id, split_seq xs) }
 
+%inline uses:
+| /* empty */ { [] }
+| USE COLON ids=ident+ SEMI_COLON { ids }
+
 %inline spec_body:
-| e=expr xs=invars*  { (e, xs) }
+| e=expr xs=invars* u=uses { (e, xs, u) }
 
 %inline spec_assert:
 | ASSERT id=ident sp=braced(spec_body)
-    { let e, xs = sp in Vassert (id, e, xs) }
+    { let e, xs, u = sp in Vassert (id, e, xs, u) }
 
 %inline spec_postcondition:
 | POSTCONDITION id=ident sp=braced(spec_body)
-    { let e, xs = sp in Vpostcondition (id, e, xs) }
+    { let e, xs, u = sp in Vpostcondition (id, e, xs, u) }
 
 spec_items:
 | ds=loc(spec_definition)*
@@ -395,7 +400,7 @@ spec_items:
     xs=label_exprs_non_empty RBRACE
         { let ll = List.map (fun x ->
             let loc, (lbl, e) = Location.deloc x in
-            mkloc loc (Vpostcondition (lbl, e, []))) xs in
+            mkloc loc (Vpostcondition (lbl, e, [], []))) xs in
             (ll, exts) }
 
 specification_fun:
