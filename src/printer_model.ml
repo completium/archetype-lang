@@ -880,30 +880,30 @@ let pp_storage fmt (s : storage) =
 let pp_invariant fmt (inv : invariant) =
   Format.fprintf fmt "invariant %a {@\n\
                       @[<v 2>  %a@]@\n\
-                      }@\n"
+                      }"
     pp_id inv.label
     (pp_list "@\n" pp_mterm) inv.formulas
 
+let pp_invariants fmt is =
+  (pp_do_if (match is with | [] -> false | _ -> true) (fun fmt -> Format.fprintf fmt "@\n  @[%a@]" (pp_list "@\n" pp_invariant))) fmt is
+
+let pp_use fmt u =
+  (pp_do_if (match u with | [] -> false | _ -> true) (fun fmt -> Format.fprintf fmt "@\n  @[use: %a;@]" (pp_list "@ " pp_id))) fmt u
+
 let pp_postcondition fmt (postcondition : postcondition) =
-  Format.fprintf fmt "postcondition %a {@\n  @[%a%a@]@\n}@\n"
+  Format.fprintf fmt "postcondition %a {@\n  @[%a@]%a%a@\n}@\n"
     pp_id postcondition.name
     pp_mterm postcondition.formula
-    (fun fmt l ->
-       if List.is_empty l
-       then ()
-       else Format.fprintf fmt "@\n%a"
-           (pp_list "@\n" pp_invariant) l) postcondition.invariants
+    pp_invariants postcondition.invariants
+    pp_use postcondition.uses
 
 let pp_assert_ fmt (s : assert_) =
-  Format.fprintf fmt "assert %a on %a {@\n  @[%a%a@]@\n}@\n"
+  Format.fprintf fmt "assert %a on %a {@\n  @[%a@]%a%a@\n}@\n"
     pp_id s.name
     pp_id s.label
     pp_mterm s.formula
-    (fun fmt l ->
-       if List.is_empty l
-       then pp_str fmt ""
-       else Format.fprintf fmt "%a@\n"
-           (pp_list "@\n" pp_invariant) l) s.invariants
+    pp_invariants s.invariants
+    pp_use s.uses
 
 let pp_specification fmt (v : specification) =
   let empty = List.is_empty v.postconditions in

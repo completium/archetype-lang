@@ -381,6 +381,7 @@ type 'id postcondition = {
   name: 'id;
   formula: 'id term_gen;
   invariants: 'id invariant list;
+  uses: 'id list;
 }
 [@@deriving show {with_path = false}]
 
@@ -389,6 +390,7 @@ type 'id assert_ = {
   label: 'id;
   formula: 'id term_gen;
   invariants: 'id invariant list;
+  uses: 'id list;
 }
 [@@deriving show {with_path = false}]
 
@@ -588,11 +590,11 @@ let mk_definition ?(loc = Location.dummy) name typ var body =
 let mk_invariant ?(formulas = []) label =
   { label; formulas }
 
-let mk_postcondition ?(invariants = []) name formula =
-  { name; formula; invariants }
+let mk_postcondition ?(invariants = []) ?(uses = []) name formula =
+  { name; formula; invariants; uses }
 
-let mk_assert ?(invariants = []) name label formula =
-  { name; label; formula; invariants }
+let mk_assert ?(invariants = []) ?(uses = []) name label formula =
+  { name; label; formula; invariants; uses }
 
 let mk_specification ?(predicates = []) ?(definitions = []) ?(lemmas = []) ?(theorems = []) ?(variables = []) ?(invariants = []) ?effect ?(specs = []) ?(asserts = []) ?(loc = Location.dummy) () =
   { predicates; definitions; lemmas; theorems; variables; invariants; effect; specs; asserts; loc}

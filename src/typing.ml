@@ -441,9 +441,9 @@ type 'env ispecification = [
   | `Lemma         of M.lident * M.pterm
   | `Theorem       of M.lident * M.pterm
   | `Variable      of M.lident * M.pterm option
-  | `Assert        of M.lident * M.pterm * (M.lident * M.pterm list) list
+  | `Assert        of M.lident * M.pterm * (M.lident * M.pterm list) list * M.lident list
   | `Effect        of 'env * M.instruction
-  | `Postcondition of M.lident * M.pterm * (M.lident * M.pterm list) list
+  | `Postcondition of M.lident * M.pterm * (M.lident * M.pterm list) list * M.lident list
 ]
 
 (* -------------------------------------------------------------------- *)
@@ -1899,7 +1899,7 @@ let for_specification_item (env : env) (v : PT.specification_item) : env * env i
     let e  = Option.map (for_expr env ?ety:ty) e in
     (env, `Variable (x, e))
 
-  | PT.Vassert (x, f, invs, _) -> begin
+  | PT.Vassert (x, f, invs, uses) -> begin
       let env0 =
         match Env.Label.lookup env (unloc x) with
         | None ->
@@ -1915,14 +1915,14 @@ let for_specification_item (env : env) (v : PT.specification_item) : env * env i
       let f    = for_formula env0 f in
       let invs = List.map for_inv invs in
 
-      (env, `Assert (x, f, invs))
+      (env, `Assert (x, f, invs, uses))
     end
 
   | PT.Veffect i ->
     let i = for_instruction env i in
     (env, `Effect i)
 
-  | PT.Vpostcondition (x, f, invs, _) ->
+  | PT.Vpostcondition (x, f, invs, uses) ->
     let for_inv (lbl, linvs) =
       let env0 =
         match Env.Label.lookup env (unloc lbl) with
@@ -1942,7 +1942,7 @@ let for_specification_item (env : env) (v : PT.specification_item) : env * env i
       let env0 = Option.get_dfl env env0 in
       for_formula env0 f in
     let invs = List.map for_inv invs in
-    (env, `Postcondition (x, f, invs))
+    (env, `Postcondition (x, f, invs, uses))
 
 (* -------------------------------------------------------------------- *)
 let for_security_item (env : env) (v : PT.security_item) : (env * M.security_item) option =
@@ -2023,7 +2023,7 @@ let for_security (env : env) (v : PT.security) : env * M.security =
       | Some (e, v) -> (e, v::items)
       | None -> (env, items)
     ) (env, []) (fst (unloc v)) in
-  env, M.{ items = items;
+  env, M.{ items = List.rev items;
            loc = loc v }
 
 (* -------------------------------------------------------------------- *)
@@ -2476,17 +2476,18 @@ let specifications_of_ispecifications =
 
   let do1 (env : M.lident M.specification) (ispec : env ispecification) =
     match ispec with
-    | `Postcondition (x, e, invs) ->
+    | `Postcondition (x, e, invs, uses) ->
       let spec =
         let for_inv (lbl, inv) =
           M.{ label = lbl; formulas = inv }
         in
         M.{ name       = x;
             formula    = e;
-            invariants = List.map for_inv invs; }
+            invariants = List.map for_inv invs;
+            uses       = uses; }
       in { env with M.specs = env.specs @ [spec] }
 
-    | `Assert (x, form, invs) ->
+    | `Assert (x, form, invs, uses) ->
       let asst =
         let for_inv (lbl, inv) =
           M.{ label = lbl; formulas = inv }
@@ -2494,7 +2495,8 @@ let specifications_of_ispecifications =
         M.{ name       = x;
             label      = x;
             formula    = form;
-            invariants = List.map for_inv invs; }
+            invariants = List.map for_inv invs;
+            uses       = uses; }
       in { env with M.asserts = env.asserts @ [asst] }
 
     | _ ->

@@ -565,6 +565,7 @@ type 'id postcondition_gen = {
   mode: spec_mode;
   formula: 'id mterm_gen;
   invariants: ('id invariant_gen) list;
+  uses: 'id list;
 }
 [@@deriving show {with_path = false}]
 
@@ -577,6 +578,7 @@ type 'id assert_gen = {
   label: 'id;
   formula: 'id mterm_gen;
   invariants: 'id invariant_gen list;
+  uses: 'id list;
 }
 [@@deriving show {with_path = false}]
 
@@ -687,11 +689,11 @@ let mk_definition ?(loc = Location.dummy) name typ var body =
 let mk_invariant ?(formulas = []) label =
   { label; formulas }
 
-let mk_postcondition ?(invariants = []) name mode formula =
-  { name; mode; formula; invariants }
+let mk_postcondition ?(invariants = []) ?(uses = []) name mode formula =
+  { name; mode; formula; invariants; uses }
 
-let mk_assert ?(invariants = []) name label formula =
-  { name; label; formula; invariants }
+let mk_assert ?(invariants = []) ?(uses = []) name label formula =
+  { name; label; formula; invariants; uses }
 
 let mk_specification ?(predicates = []) ?(definitions = []) ?(lemmas = []) ?(theorems = []) ?(variables = []) ?(invariants = []) ?(effects = []) ?(postconditions = []) ?(asserts = []) ?(loc = Location.dummy) () =
   { predicates; definitions; lemmas; theorems; variables; invariants; effects; postconditions; loc}
@@ -1929,7 +1931,7 @@ let fold_model (f : ('id, 't) ctx_model_gen -> 'a -> 'id mterm_gen -> 'a) (m : '
     Option.map_dfl (fun (x : 'id specification_gen) -> fold_specification ctx f x accu) accu a.spec
   ) in
 
-  let ctx  : ctx_model = mk_ctx_model () in
+  let ctx : ctx_model = mk_ctx_model () in
 
   accu
   |> fold_left (fold_action ctx f) m.functions

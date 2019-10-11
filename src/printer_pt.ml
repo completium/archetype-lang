@@ -692,13 +692,13 @@ let map_option f x =
   | Some y -> f y
   | None -> ()
 
-let pp_invariants fmt (lbl, is) =
+let pp_invariant fmt (lbl, is) =
   Format.fprintf fmt "invariant for %a {@\n  @[%a@]@\n}"
     pp_id lbl
     (pp_list ";@\n" (pp_expr e_default PNone)) is
 
-let pp_invariantss fmt is =
-  (pp_do_if (match is with | [] -> false | _ -> true) (fun fmt -> Format.fprintf fmt "@\n  @[%a@]" (pp_list "@\n" pp_invariants))) fmt is
+let pp_invariants fmt is =
+  (pp_do_if (match is with | [] -> false | _ -> true) (fun fmt -> Format.fprintf fmt "@\n  @[%a@]" (pp_list "@\n" pp_invariant))) fmt is
 
 let pp_use fmt u =
   (pp_do_if (match u with | [] -> false | _ -> true) (fun fmt -> Format.fprintf fmt "@\n  @[use: %a;@]" (pp_list "@ " pp_id))) fmt u
@@ -707,14 +707,14 @@ let pp_postcondition fmt (id, f, is, u) =
   Format.fprintf fmt "postcondition %a {@\n  @[%a@]%a%a@\n}"
     pp_id id
     (pp_expr e_default PNone) f
-    pp_invariantss is
+    pp_invariants is
     pp_use u
 
 let pp_assert fmt (id, f, is, u) =
   Format.fprintf fmt "assert %a {@\n  @[%a@]%a%a@\n}"
     pp_id id
     (pp_expr e_default PNone) f
-    pp_invariantss is
+    pp_invariants is
     pp_use u
 
 let pp_specification_item fmt = function

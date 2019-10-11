@@ -543,18 +543,26 @@ let pp_specification fmt (v : lident specification) =
       pp_id i.label
       (pp_list ";@\n" pp_pterm) i.formulas
   in
+  let pp_invariants fmt is =
+    (pp_do_if (match is with | [] -> false | _ -> true) (fun fmt -> Format.fprintf fmt "@\n  @[%a@]" (pp_list "@\n" pp_invariant))) fmt is
+  in
+  let pp_use fmt u =
+    (pp_do_if (match u with | [] -> false | _ -> true) (fun fmt -> Format.fprintf fmt "@\n  @[use: %a;@]" (pp_list "@ " pp_id))) fmt u
+  in
   let pp_assert fmt (s : lident assert_) : unit =
-    Format.fprintf fmt "assert %a at %a = {@\n  @[%a@\n%a@]@\n}"
+    Format.fprintf fmt "assert %a at %a = {@\n  @[%a@]%a%a@\n}"
       pp_id s.name
       pp_id s.label
       pp_pterm s.formula
-      (pp_no_empty_list_with_sep "@\n" pp_invariant) s.invariants
+      pp_invariants s.invariants
+      pp_use s.uses
   in
   let pp_postcondition fmt (s : lident postcondition) : unit =
-    Format.fprintf fmt "postcondition %a = {@\n  @[%a@\n%a@]@\n}"
+    Format.fprintf fmt "postcondition %a = {@\n  @[%a@]%a%a@\n}"
       pp_id s.name
       pp_pterm s.formula
-      (pp_no_empty_list_with_sep "@\n" pp_invariant) s.invariants
+      pp_invariants s.invariants
+      pp_use s.uses
   in
   if empty
   then ()

@@ -645,12 +645,12 @@ let to_model (ast : A.model) : M.model =
 
   let to_postcondition (s : A.lident A.postcondition) : M.postcondition  =
     M.mk_postcondition s.name Post (to_mterm s.formula)
-      ~invariants:(List.map to_invariant s.invariants)
+      ~invariants:(List.map to_invariant s.invariants) ~uses:s.uses
   in
 
   let to_assert (s : A.lident A.assert_) : M.postcondition  =
     M.mk_postcondition s.name Assert (to_mterm s.formula)
-      ~invariants:(List.map to_invariant s.invariants)
+      ~invariants:(List.map to_invariant s.invariants) ~uses:s.uses
   in
 
   let to_specification (v : A.lident A.specification) : M.specification =
