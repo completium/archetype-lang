@@ -191,7 +191,7 @@ let prune_properties (model : model) : model =
   match !Options.opt_property_focused with
   | "" -> model
   | fp_id ->
-    let remain id = String.equal id fp_id in
+    let remain_id id = String.equal id fp_id in
     let prune_mterm (mt : mterm) : mterm =
       let rec aux (mt : mterm) : mterm =
         match mt.node with
@@ -199,7 +199,7 @@ let prune_properties (model : model) : model =
           let ll =
             l
             |> List.map aux
-            |> List.filter (fun (x : mterm) -> match x.node with | Mlabel id -> remain (unloc id) | _ -> true)
+            |> List.filter (fun (x : mterm) -> match x.node with | Mlabel id -> remain_id (unloc id) | _ -> true)
           in
           { mt with node = Mseq ll }
         | _ -> map_mterm aux mt
@@ -208,7 +208,7 @@ let prune_properties (model : model) : model =
     in
     let prune_specs (spec : specification) : specification =
       { spec with
-        postconditions = List.filter (fun (x : postcondition) -> remain (unloc x.name)) spec.postconditions
+        postconditions = List.filter (fun (x : postcondition) -> remain_id (unloc x.name)) spec.postconditions
       } in
     let prune_function__ (f : function__) : function__ =
       let prune_function_node (fn : function_node) : function_node =
@@ -225,7 +225,7 @@ let prune_properties (model : model) : model =
     in
     let prune_secs (sec : security) : security =
       { sec with
-        items = List.filter (fun (x : security_item) -> remain (unloc x.label)) sec.items
+        items = List.filter (fun (x : security_item) -> remain_id (unloc x.label)) sec.items
       } in
     let process_asset model : model =
       let prune_storage_item (model, s : model * storage_item) : model * storage_item =
@@ -233,7 +233,7 @@ let prune_properties (model : model) : model =
         | Some an ->
           let model, invs =
             List.fold_left (fun (model, accu: model * lident label_term_gen list) (x : lident label_term_gen) ->
-                if Option.is_some x.label && remain (unloc (Option.get x.label)) then
+                if Option.is_some x.label && remain_id (unloc (Option.get x.label)) then
                   (model, accu @ [x])
                 else
                   ({model with api_verif = model.api_verif @ [StorageInvariant ((unloc (Option.get x.label)), unloc an, x.term) ] }, accu)

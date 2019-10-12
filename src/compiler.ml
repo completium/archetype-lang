@@ -93,6 +93,7 @@ let generate_target model =
   match !Options.target with
   | None ->
     model
+    |> prune_properties
     |> cont !Options.opt_sa  shallow_asset
     |> cont !Options.opt_skv split_key_values
     |> cont !Options.opt_nse remove_side_effect
@@ -126,6 +127,7 @@ let generate_target model =
 
   | Whyml ->
     model
+    |> prune_properties
     |> extend_iter
     |> shallow_asset
     |> generate_api_storage
@@ -147,7 +149,6 @@ let compile (filename, channel) =
   |> type_
   |> cont !Options.opt_ast output_tast
   |> generate_model
-  |> prune_properties
   |> check_partition_access
   |> extend_removeif
   |> check_typing_error

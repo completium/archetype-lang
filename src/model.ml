@@ -138,7 +138,7 @@ type ('id, 'term) mterm_node  =
   | Msort         of ident * 'term * ident * sort_kind
   | Mcontains     of ident * 'term * 'term
   | Mmem          of ident * 'term * 'term
-  | Msubsetof       of ident * 'term * 'term
+  | Msubsetof     of ident * 'term * 'term
   | Mnth          of ident * 'term * 'term
   | Mcount        of ident * 'term
   | Msum          of ident * 'id * 'term
@@ -2013,6 +2013,7 @@ module Utils : sig
   val get_callers                        : model -> ident -> ident list
   val no_fail                            : model -> ident -> lident option
   val type_to_asset                      : type_ -> lident
+  val get_map_function                   : model -> (ident * ident list) list
 
 end = struct
 
@@ -2449,5 +2450,24 @@ end = struct
           end
         | _ -> acc
       ) None (m.security.items)
+
+  let get_map_function (m : model) : (ident * ident list) list =
+    let fun_ids : (ident * function_struct) list =
+      List.map
+        (fun (f : function__) ->
+           match f.node with
+           | Function (fs, _) -> unloc fs.name, fs
+           | Entry fs-> unloc fs.name, fs)
+        m.functions
+    in
+    let fun_id_list = List.map fst fun_ids in
+    let rec extract_fun_id accu (mt : mterm) : ident list =
+      let l = fold_term extract_fun_id accu mt in
+      match mt.node with
+      | Mapp (id, args) when (List.exists (fun x -> (String.equal (unloc id) x)) fun_id_list) ->
+        l @ [unloc id]
+      | _ -> l
+    in
+    List.map (fun (name, fs : ident * function_struct) -> name, extract_fun_id [] fs.body) fun_ids
 
 end
