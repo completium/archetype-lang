@@ -579,6 +579,9 @@ let mk_invariant m n src inv : loc_term =
       | `Storage -> Tmem ((unloc_ident asset),
                           Tvar variable,
                           Tvar (mk_ac_id asset.obj))
+      | `Axiom   -> Tmem ((unloc_ident asset),
+                          Tvar variable,
+                          Tdoti ("s", mk_ac_id asset.obj))
       | `Loop    -> Tmem ((unloc_ident asset),
                           Tvar variable,
                           mk_ac (unloc n))
@@ -590,9 +593,17 @@ let mk_invariant m n src inv : loc_term =
                               Tvar arg)
       | _ -> Tnone
     in
-    let prefix   = Tforall ([[variable],Tyasset (unloc_ident asset)],
-                            Timpl (mem_pred,
-                                   Ttobereplaced)) in
+    let prefix   =
+      match src with
+      | `Axiom ->
+        Tforall ([["s"],Tystorage],
+                 Tforall ([[variable],Tyasset (unloc_ident asset)],
+                          Timpl (mem_pred,
+                                 Ttobereplaced)))
+      | _ ->
+        Tforall ([[variable],Tyasset (unloc_ident asset)],
+                 Timpl (mem_pred,
+                        Ttobereplaced)) in
     loc_replace (with_dummy_loc Ttobereplaced) replacing (loc_term prefix)
 
 let mk_storage_invariant m n (lt : M.label_term) = {
@@ -607,6 +618,8 @@ let mk_pre_coll m n arg inv : loc_term = mk_invariant m (dumloc n) (`Precoll arg
 let mk_pre_asset m n arg inv : loc_term = mk_invariant m (dumloc n) (`Preasset arg) inv
 
 let mk_loop_invariant m n inv : loc_term = mk_invariant m (dumloc n) `Loop inv
+
+let mk_axiom_invariant m n inv : loc_term = mk_invariant m (dumloc n) `Axiom inv
 
 let mk_eq_asset m (r : M.record) =
   let cmps = List.map (fun (item : M.record_item) ->
@@ -665,13 +678,6 @@ let map_storage m (l : M.storage) =
                  (List.fold_left (fun acc sec ->
                       acc @ (mk_spec_invariant `Storage sec)) [] m.security.items)
   }
-
-let mk_axioms (m : M.model) =
-  let records = M.Utils.get_assets m |> List.map (fun (r : M.info_asset) -> dumloc (r.name)) in
-  let keys    = records |> List.map (M.Utils.get_asset_key m) in
-  List.map2 (fun r (k,kt) ->
-      mk_keys_eq_axiom r.pldesc k (map_btype kt)
-    ) records keys |> loc_decl |> deloc
 
 let mk_partition_axioms (m : M.model) =
   M.Utils.get_partitions m |> List.map (fun (n,i,_) ->
@@ -947,7 +953,24 @@ and mk_invariants (m : M.model) ctx (lbl : ident option) lbody =
   in
   loop_invariants @ storage_loop_invariants @ security_loop_invariants
 
-(* API storage templates -----------------------------------------------------*)
+(* Verfication API -----------------------------------------------------------*)
+
+let mk_axioms (m : M.model) : (loc_term, loc_typ, loc_ident) abstract_decl list =
+  List.map (fun apiv ->
+      match apiv with
+      | M.StorageInvariant (id,asset,formula) ->
+        Dtheorem (Axiom,
+                  with_dummy_loc (asset^"_"^id^"_axiom"),
+                  mk_axiom_invariant m asset (map_mterm m init_ctx formula))
+    ) m.api_verif
+  (*let records = M.Utils.get_assets m |> List.map (fun (r : M.info_asset) -> dumloc (r.name)) in
+  let keys    = records |> List.map (M.Utils.get_asset_key m) in
+  List.map2 (fun r (k,kt) ->
+      mk_keys_eq_axiom r.pldesc k (map_btype kt)
+    ) records keys |> loc_decl |> deloc*)
+
+
+(* Storage API templates -----------------------------------------------------*)
 
 let mk_api_precond m a src =
   M.Utils.get_storage_invariants m (Some a)
@@ -1674,7 +1697,7 @@ let to_whyml (m : M.model) : mlw_tree  =
   let records          = zip records eq_assets init_records clones |> deloc in
   let storage          = M.Utils.get_storage m |> map_storage m in
   let storageval       = Dval (with_dummy_loc gs, with_dummy_loc Tystorage) in
-  (*let axioms           = mk_axioms m in*)
+  let axioms           = mk_axioms m in
   let partition_axioms = mk_partition_axioms m in
   let storage_api      = mk_storage_api m (records |> wdl) in
   let endo             = mk_endo_functions m in
@@ -1688,7 +1711,7 @@ let to_whyml (m : M.model) : mlw_tree  =
               records                @
               eq_exten               @
               [storage;storageval]   @
-              (*axioms                 @*)
+              axioms                 @
               partition_axioms       @
               storage_api            @
               endo;
