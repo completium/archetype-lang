@@ -191,7 +191,33 @@ let prune_properties (model : model) : model =
   match !Options.opt_property_focused with
   | "" -> model
   | fp_id ->
-    let remain_id id = String.equal id fp_id in
+    let p_ids =
+      fp_id::
+      (match Model.Utils.retrieve_property model fp_id with
+       | Ppostcondition (p, f_id) -> List.map unloc p.uses
+       | _ -> [])
+    in
+
+    let p_funs =
+      begin
+        let all_funs =
+          model.functions
+          |> List.map (fun (x : function__) -> x.node)
+          |> List.map ((function | Entry fs -> fs | Function (fs, _) -> fs))
+          |> List.map (fun (x : function_struct) -> unloc x.name) in
+        let add l x = if List.mem x l then l else x::l in
+        List.fold_left (fun accu p_id ->
+            match Model.Utils.retrieve_property model fp_id with
+            | Ppostcondition (p, Some f_id) -> add accu f_id
+            | Ppostcondition _     -> all_funs
+            | PstorageInvariant _  -> all_funs
+            | PsecurityPredicate _ -> all_funs
+          ) [] p_ids
+      end
+    in
+
+    let remain_id id = List.exists (String.equal id) p_ids in
+    let remain_function id = List.exists (String.equal id) p_funs in
     let prune_mterm (mt : mterm) : mterm =
       let rec aux (mt : mterm) : mterm =
         match mt.node with
@@ -255,8 +281,10 @@ let prune_properties (model : model) : model =
       model
       |> process_asset
     in
+    let f1 = (fun (fs : function_struct) -> remain_function (unloc fs.name)) in
+    let f2 = (fun (x : function__) -> match x.node with | Entry fs -> fs | Function (fs, _) -> fs) in
     { model with
-      functions = List.map prune_function__ model.functions;
+      functions = List.map prune_function__ (List.filter (f1 |@ f2) model.functions);
       specification = prune_specs model.specification;
       security = prune_secs model.security
     }

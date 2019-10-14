@@ -654,16 +654,22 @@ type decl_node = lident decl_node_gen
 [@@deriving show {with_path = false}]
 
 type 'id model_gen = {
-  name         : lident;
-  api_items    : api_item list;
-  api_verif    : api_verif list;
-  info         : info_item list;
-  decls        : 'id decl_node_gen list;
-  storage      : 'id storage_gen;
-  functions    : 'id function__gen list;
+  name          : lident;
+  api_items     : api_item list;
+  api_verif     : api_verif list;
+  info          : info_item list;
+  decls         : 'id decl_node_gen list;
+  storage       : 'id storage_gen;
+  functions     : 'id function__gen list;
   specification : 'id specification_gen;
-  security     : security;
+  security      : security;
 }
+[@@deriving show {with_path = false}]
+
+type property =
+  | Ppostcondition of postcondition * ident option
+  | PstorageInvariant of label_term
+  | PsecurityPredicate of security_item
 [@@deriving show {with_path = false}]
 
 type model = lident model_gen
@@ -2014,6 +2020,8 @@ module Utils : sig
   val no_fail                            : model -> ident -> lident option
   val type_to_asset                      : type_ -> lident
   val get_map_function                   : model -> (ident * ident list) list
+  val retrieve_all_properties            : model -> (ident * property) list
+  val retrieve_property                  : model -> ident -> property
 
 end = struct
 
@@ -2469,5 +2477,34 @@ end = struct
       | _ -> l
     in
     List.map (fun (name, fs : ident * function_struct) -> name, extract_fun_id [] fs.body) fun_ids
+
+  let retrieve_all_properties (m : model) : (ident * property) list =
+    let fold_storage (s : storage_item) : (ident * property) list =
+      List.map (fun (x : label_term) -> ((unloc |@ Option.get) x.label , PstorageInvariant x)) s.invariants
+    in
+
+    let fold_specification (fun_id : ident option) (sp : specification): (ident * property) list =
+      []
+      |> (@) (List.map (fun (pc : postcondition) -> (unloc pc.name, Ppostcondition (pc, fun_id))) sp.postconditions)
+    in
+    let fold_function (f : function__) : (ident * property) list =
+      let name =
+        match f.node with
+        | Entry fs -> unloc fs.name
+        | Function (fs, _) -> unloc fs.name
+      in
+      []
+      |> (@) (Option.map_dfl (fold_specification (Some name)) [] f.spec)
+    in
+    []
+    |> (@) (List.map fold_storage m.storage)
+    |> (@) (List.map fold_function m.functions) |> List.flatten
+    |> (@) (fold_specification None m.specification)
+    |> (@) (List.map (fun (x : security_item) -> (unloc x.label, PsecurityPredicate x)) m.security.items)
+
+
+  let retrieve_property (m : model) (id : ident) : property =
+    let properties = retrieve_all_properties m in
+    List.assoc id properties
 
 end
