@@ -582,6 +582,9 @@ let mk_invariant m n src inv : loc_term =
       | `Axiom   -> Tmem ((unloc_ident asset),
                           Tvar variable,
                           Tdoti ("s", mk_ac_id asset.obj))
+      | `Axiom2   -> Tmem ((unloc_ident asset),
+                          Tvar variable,
+                          Tvar ("c"))
       | `Loop    -> Tmem ((unloc_ident asset),
                           Tvar variable,
                           mk_ac (unloc n))
@@ -600,6 +603,16 @@ let mk_invariant m n src inv : loc_term =
                  Tforall ([[variable],Tyasset (unloc_ident asset)],
                           Timpl (mem_pred,
                                  Ttobereplaced)))
+      | `Axiom2 -> (* invariant is true for any sub collection of storage collection *)
+        Tforall ([["s"],Tystorage],
+                 Tforall ([["c"],Tycoll (unloc n)],
+                          Timpl (
+                            Tsubset (unloc n,
+                                     Tvar "c",
+                                     Tdoti ("s", mk_ac_id asset.obj)),
+                            Tforall ([[variable],Tyasset (unloc_ident asset)],
+                                   Timpl (mem_pred,
+                                          Ttobereplaced)))))
       | _ ->
         Tforall ([[variable],Tyasset (unloc_ident asset)],
                  Timpl (mem_pred,
@@ -620,6 +633,7 @@ let mk_pre_asset m n arg inv : loc_term = mk_invariant m (dumloc n) (`Preasset a
 let mk_loop_invariant m n inv : loc_term = mk_invariant m (dumloc n) `Loop inv
 
 let mk_axiom_invariant m n inv : loc_term = mk_invariant m (dumloc n) `Axiom inv
+let mk_axiom2_invariant m n inv : loc_term = mk_invariant m (dumloc n) `Axiom2 inv
 
 let mk_eq_asset m (r : M.record) =
   let cmps = List.map (fun (item : M.record_item) ->
@@ -956,13 +970,18 @@ and mk_invariants (m : M.model) ctx (lbl : ident option) lbody =
 (* Verfication API -----------------------------------------------------------*)
 
 let mk_axioms (m : M.model) : (loc_term, loc_typ, loc_ident) abstract_decl list =
-  List.map (fun apiv ->
+  List.fold_left (fun acc apiv ->
       match apiv with
       | M.StorageInvariant (id,asset,formula) ->
-        Dtheorem (Axiom,
-                  with_dummy_loc (asset^"_"^id^"_axiom"),
-                  mk_axiom_invariant m asset (map_mterm m init_ctx formula))
-    ) m.api_verif
+        acc @ [
+          Dtheorem (Axiom,
+                    with_dummy_loc (asset^"_"^id^"_axiom"),
+                    mk_axiom_invariant m asset (map_mterm m init_ctx formula));
+          Dtheorem (Axiom,
+                    with_dummy_loc (asset^"_"^id^"_axiom_2"),
+                    mk_axiom2_invariant m asset (map_mterm m init_ctx formula))]
+
+    ) [] m.api_verif
   (*let records = M.Utils.get_assets m |> List.map (fun (r : M.info_asset) -> dumloc (r.name)) in
   let keys    = records |> List.map (M.Utils.get_asset_key m) in
   List.map2 (fun r (k,kt) ->
@@ -972,12 +991,12 @@ let mk_axioms (m : M.model) : (loc_term, loc_typ, loc_ident) abstract_decl list 
 
 (* Storage API templates -----------------------------------------------------*)
 
-let mk_api_precond m a src =
+let mk_api_precond m apid a src =
   M.Utils.get_storage_invariants m (Some a)
   |> List.fold_left (fun acc (_,lbl,t) ->
       if is_local_invariant m a t then
         acc @ [{
-            id = lbl;
+            id = "require_"^apid^"_"^lbl;
             form = unloc_term (mk_invariant m (dumloc a) src (map_mterm m init_ctx t))
           }]
       else acc
@@ -1073,7 +1092,7 @@ let mk_set_ensures m n key fields =
            }])
     ) (1,[]) fields) @ (mk_set_sum_ensures m n)
 
-let mk_set_asset_precond m a id = mk_api_precond m a (`Preasset id)
+let mk_set_asset_precond m apid a id = mk_api_precond m apid a (`Preasset id)
 
 let mk_set_asset m key = function
   | Drecord (asset, fields) ->  Dfun {
@@ -1084,7 +1103,7 @@ let mk_set_asset m key = function
       raises = [ Timpl (Texn Enotfound,
                         mk_not_found_cond `Old asset (Tdoti ("old_asset",key)))];
       variants = [];
-      requires = mk_set_asset_precond m asset "new_asset";
+      requires = mk_set_asset_precond m ("set_"^asset) asset "new_asset";
       ensures = mk_set_ensures m asset key fields;
       body = Tif (mk_not_found_cond `Curr asset (Tdoti ("old_asset",key)),
                   Traise Enotfound,
@@ -1136,9 +1155,9 @@ let mk_unshallow asset keyt = Dfun {
                            Tvar "l")
   }
 
-let mk_add_asset_precond m a id = mk_api_precond m a (`Preasset id)
+let mk_add_asset_precond m apid a id = mk_api_precond m apid a (`Preasset id)
 
-let mk_listtocoll_precond m a id = mk_api_precond m a (`Prelist id)
+let mk_listtocoll_precond m apid a id = mk_api_precond m apid a (`Prelist id)
 
 let mk_listtocoll m asset = Dfun {
     name     = "listtocoll_"^asset;
@@ -1147,7 +1166,7 @@ let mk_listtocoll m asset = Dfun {
     returns  = Tycoll asset;
     raises   = [];
     variants = [];
-    requires = mk_listtocoll_precond m asset "l";
+    requires = mk_listtocoll_precond m ("listtocoll_"^asset) asset "l";
     ensures  = [
       (*      { id   = asset^"_unshallow_post_1";
               form = Tsubset (asset,
@@ -1232,7 +1251,7 @@ let mk_add_asset m asset key : decl = Dfun {
     raises   = [ Timpl (Texn Ekeyexist,
                         mk_not_found_cond `Old asset (Tdoti ("new_asset", key)))];
     variants = [];
-    requires = mk_add_asset_precond m asset "new_asset";
+    requires = mk_add_asset_precond m ("add_"^asset) asset "new_asset";
     ensures  = mk_add_ensures m ("add_"^asset) asset "new_asset";
     body     = Tseq [
         Tif (mk_not_found_cond `Curr asset (Tdoti ("new_asset", key)),
@@ -1341,7 +1360,7 @@ let mk_add_partition_field m a ak pf adda addak : decl =
                 Timpl (Texn Ekeyexist,
                        addak_cond)];
     variants = [];
-    requires = mk_add_asset_precond m adda "new_asset";
+    requires = mk_add_asset_precond m ("add_"^a^"_"^pf) adda "new_asset";
     ensures  = mk_add_ensures m ("add_"^a^"_"^pf) adda "new_asset";
     body     =
       Tif (mk_not_found_cond `Curr a (Tdoti ("asset",ak)),
@@ -1698,7 +1717,7 @@ let to_whyml (m : M.model) : mlw_tree  =
   let storage          = M.Utils.get_storage m |> map_storage m in
   let storageval       = Dval (with_dummy_loc gs, with_dummy_loc Tystorage) in
   let axioms           = mk_axioms m in
-  let partition_axioms = mk_partition_axioms m in
+  (*let partition_axioms = mk_partition_axioms m in*)
   let storage_api      = mk_storage_api m (records |> wdl) in
   let endo             = mk_endo_functions m in
   let functions        = mk_exo_functions m in
@@ -1712,7 +1731,7 @@ let to_whyml (m : M.model) : mlw_tree  =
               eq_exten               @
               [storage;storageval]   @
               axioms                 @
-              partition_axioms       @
+              (*partition_axioms       @*)
               storage_api            @
               endo;
     };{
