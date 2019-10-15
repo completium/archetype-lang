@@ -5,9 +5,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
-## [Unreleased]
+## [0.1.6] - 2018-10-15
 ### Added
- - Add services module in order to handle vscode extension
+ - Add focus property commmand for vscode extension
 
 ### Changed
  - Update syntax for security predicate arguments
