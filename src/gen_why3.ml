@@ -977,7 +977,7 @@ let mk_axioms (m : M.model) : (loc_term, loc_typ, loc_ident) abstract_decl list 
           Dtheorem (Axiom,
                     with_dummy_loc (asset^"_"^id^"_axiom"),
                     mk_axiom_invariant m asset (map_mterm m init_ctx formula));
-          Dtheorem (Axiom,
+          Dtheorem (Lemma,
                     with_dummy_loc (asset^"_"^id^"_axiom_2"),
                     mk_axiom2_invariant m asset (map_mterm m init_ctx formula))]
 
