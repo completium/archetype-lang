@@ -288,3 +288,33 @@ let prune_properties (model : model) : model =
       specification = prune_specs model.specification;
       security = prune_secs model.security
     }
+
+let replace_declvar_by_letin (model : model) : model =
+  let rec aux c (mt : mterm) : mterm =
+    match mt.node with
+    | Mseq l ->
+      let ll = List.fold_right (fun (x : mterm) accu ->
+          match x.node with
+          | Mdeclvar (ids, t, v) ->
+            begin
+              let init = aux c v in
+              let body =
+                match accu with
+                | [] -> assert false
+                | [i] -> i
+                | lll -> mk_mterm (Mseq accu) (List.last lll).type_
+              in
+              let res = mk_mterm (Mletin(ids, init, t, body)) body.type_ in
+              [ res ]
+            end
+          | _ ->
+            begin
+              let t = aux c x in
+              t::accu
+            end
+        ) l [] in
+      { mt with node = Mseq ll }
+    | Mdeclvar _ -> assert false
+    | _ -> map_mterm (aux c) mt
+  in
+  Model.map_mterm_model aux model

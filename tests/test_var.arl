@@ -5,6 +5,6 @@ variable n int
 action main (str : string) {
   effect {
     var i = 0;
-    n := i
+    n := 0
   }
 }

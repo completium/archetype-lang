@@ -80,6 +80,7 @@ let check_partition_access = Gen_transform.check_partition_access Typing.empty
 let extend_removeif      = Gen_transform.extend_removeif
 let post_process_functional_language     = Gen_transform.process_single_field_storage
 let prune_properties     = Gen_transform.prune_properties
+let replace_declvar_by_letin = Gen_transform.replace_declvar_by_letin
 
 let check_typing_error a =
   if Tools.List.is_empty !Error.errors
@@ -117,6 +118,7 @@ let generate_target model =
 
   | Ocaml ->
     model
+    |> replace_declvar_by_letin
     |> exec_process
     |> post_process_functional_language
     |> shallow_asset
