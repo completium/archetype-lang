@@ -191,6 +191,7 @@ let to_model (ast : A.model) : M.model =
     | A.Puarith (A.Uminus, e)        -> M.Muminus    (f e)
     | A.Precord l                    -> M.Mrecord    (List.map f l)
     | A.Pletin (id, init, typ, cont) -> M.Mletin     ([id], f init, Option.map ftyp typ, f cont)
+    | A.Pdeclvar (i, t, v)           -> M.Mdeclvar   ([i], Option.map ftyp t, f v)
     | A.Pvar id when A.Utils.is_variable ast id   -> M.Mvarstorevar id
     | A.Pvar id when A.Utils.is_asset ast id      -> M.Mvarstorecol id
     | A.Pvar id when A.Utils.is_enum_value ast id -> M.Mvarenumval id
@@ -538,6 +539,7 @@ let to_model (ast : A.model) : M.model =
     | A.Ifor (i, col, body)     -> M.Mfor (i, f col, g body, lbl)
     | A.Iiter (i, a, b, body)   -> M.Miter (i, f a, f b, g body, lbl)
     | A.Iletin (i, init, cont)  -> M.Mletin ([i], f init, Option.map ptyp_to_type init.type_, g cont) (* TODO *)
+    | A.Ideclvar (i, v)         -> M.Mdeclvar ([i], Option.map ptyp_to_type v.type_, f v) (* TODO *)
     | A.Iseq l                  -> M.Mseq (List.map g l)
     | A.Imatchwith (m, l)       -> M.Mmatchwith (f m, List.map (fun (p, i) -> (to_pattern p, g i)) l)
     | A.Iassign (op, i, e)      -> M.Massign (to_assignment_operator op, i, to_mterm e)

@@ -135,6 +135,7 @@
 %token TRUE
 %token USE
 %token UNDERSCORE
+%token VAR
 %token VARIABLE
 %token WHEN
 %token WITH
@@ -666,6 +667,9 @@ expr_r:
 
  | LET i=ident t=colon_type_opt EQUAL e=expr IN y=expr o=otherwise
      { Eletin (i, t, e, y, o) }
+
+ | VAR i=ident t=colon_type_opt EQUAL e=expr
+     { Evar (i, t, e) }
 
  | e1=expr SEMI_COLON e2=expr
      { Eseq (e1, e2) }

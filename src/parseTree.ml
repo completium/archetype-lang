@@ -112,6 +112,7 @@ type expr_unloc =
   | Eiter         of lident option * lident * expr option * expr * expr
   | Eseq          of expr * expr
   | Eletin        of lident * type_t option * expr * expr * expr option
+  | Evar          of lident * type_t option * expr
   | Ematchwith    of expr * (pattern list * expr) list
   | Equantifier   of quantifier * lident * quantifier_kind * expr
   | Eassert       of lident

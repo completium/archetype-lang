@@ -565,6 +565,11 @@ let pp_mterm fmt (mt : mterm) =
         (pp_option (fun fmt -> Format.fprintf fmt  " : %a" pp_type)) t
         f a
         f b
+    | Mdeclvar (ids, t, v) ->
+      Format.fprintf fmt "var %a%a = %a"
+        (pp_list ", " pp_id) ids
+        (pp_option (fun fmt -> Format.fprintf fmt  " : %a" pp_type)) t
+        f v
     | Mvarstorevar v -> pp_id fmt v
     | Mvarstorecol v -> pp_id fmt v
     | Mvarenumval v  -> pp_id fmt v

@@ -716,6 +716,11 @@ let pp_model fmt (model : model) =
           (pp_option (fun fmt -> Format.fprintf fmt  " : %a" pp_type)) t
           f a
           f b
+      | Mdeclvar (ids, t, v) ->
+        Format.fprintf fmt "const %a%a = %a"
+          (pp_if (List.length ids > 1) (pp_paren (pp_list ", " pp_id)) (pp_list ", " pp_id)) ids
+          (pp_option (fun fmt -> Format.fprintf fmt  " : %a" pp_type)) t
+          f v
       | Mvarstorevar v -> Format.fprintf fmt "%s.%a" const_storage pp_id v
       | Mvarstorecol v -> Format.fprintf fmt "%s.%a" const_storage pp_id v
       | Mvarenumval v  -> pp_id fmt v

@@ -1338,6 +1338,9 @@ let rec for_xexpr (mode : emode_t) (env : env) ?(ety : M.ptyp option) (tope : PT
     | Eletin (_lv, _t, _e1, _e2, _c) ->
       assert false
 
+    | Evar (_lv, _t, _e1) ->
+      assert false
+
     | Ematchwith (_e, _bs) ->
       assert false
 
@@ -1807,6 +1810,12 @@ let rec for_instruction (env : env) (i : PT.expr) : env * M.instruction =
             for_instruction env e2) in
 
       env, mki (M.Iletin (x, e, body))
+
+    | Evar (x, ty, v) ->
+      let ty = Option.bind (for_type env) ty in
+      let v  = for_expr env ?ety:ty v in
+
+      env, mki (M.Ideclvar (x, v))
 
     | Efor (lbl, x, e, i) ->
       let e, asset = for_asset_collection_expr `Expr env e in

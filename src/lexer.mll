@@ -83,6 +83,7 @@
       "transition"          , TRANSITION     ;
       "true"                , TRUE           ;
       "use"                 , USE            ;
+      "var"                 , VAR            ;
       "variable"            , VARIABLE       ;
       "when"                , WHEN           ;
       "with"                , WITH           ;

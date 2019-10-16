@@ -171,6 +171,7 @@ type ('id, 'term) mterm_node  =
   | Muminus       of 'term
   | Mrecord       of 'term list
   | Mletin        of 'id list * 'term * type_ option * 'term
+  | Mdeclvar      of 'id list * type_ option * 'term
   | Mvarstorevar  of 'id
   | Mvarstorecol  of 'id
   | Mvarenumval   of 'id
@@ -912,6 +913,7 @@ let cmp_mterm_node
     | Muminus e1, Muminus e2                                                           -> cmp e1 e2
     | Mrecord l1, Mrecord l2                                                           -> List.for_all2 cmp l1 l2
     | Mletin (i1, a1, t1, b1), Mletin (i2, a2, t2, b2)                                 -> List.for_all2 cmpi i1 i2 && cmp a1 a2 && Option.cmp cmp_type t1 t2 && cmp b1 b2
+    | Mdeclvar (i1, t1, v1), Mdeclvar (i2, t2, v2)                                     -> List.for_all2 cmpi i1 i2 && Option.cmp cmp_type t1 t2 && cmp v1 v2
     | Mvarstorevar v1, Mvarstorevar v2                                                 -> cmpi v1 v2
     | Mvarstorecol v1, Mvarstorecol v2                                                 -> cmpi v1 v2
     | Mvarenumval v1, Mvarenumval v2                                                   -> cmpi v1 v2
@@ -1091,6 +1093,7 @@ let map_term_node (f : 'id mterm_gen -> 'id mterm_gen) = function
   | Muminus e                     -> Muminus (f e)
   | Mrecord l                     -> Mrecord (List.map f l)
   | Mletin (i, a, t, b)           -> Mletin (i, f a, t, f b)
+  | Mdeclvar (i, t, v)            -> Mdeclvar (i, t, f v)
   | Mvarstorevar v                -> Mvarstorevar v
   | Mvarstorecol v                -> Mvarstorecol v
   | Mvarenumval v                 -> Mvarenumval  v
@@ -1346,6 +1349,7 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Muminus e                             -> f accu e
   | Mrecord l                             -> List.fold_left f accu l
   | Mletin (_, a, _, b)                   -> f (f accu a) b
+  | Mdeclvar (_, _, v)                    -> f accu v
   | Mvarstorevar _                        -> accu
   | Mvarstorecol _                        -> accu
   | Mvarenumval _                         -> accu
@@ -1730,6 +1734,10 @@ let fold_map_term
     let ie, ia = f accu i in
     let oe, oa = f ia o in
     g (Mletin (idd, i, t, oe)), oa
+
+  | Mdeclvar (ids, t, v) ->
+    let ve, va = f accu v in
+    g (Mdeclvar (ids, t, ve)), va
 
   | Mvarstorevar v ->
     g (Mvarstorevar v), accu

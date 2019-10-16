@@ -269,6 +269,7 @@ type 'id term_node  =
   | Puarith of unary_arithmetic_operator * 'id term_gen
   | Precord of 'id term_gen list
   | Pletin of 'id * 'id term_gen * ptyp option * 'id term_gen
+  | Pdeclvar of 'id * ptyp option * 'id term_gen
   | Pvar of 'id
   | Parray of 'id term_gen list
   | Plit of bval
@@ -312,7 +313,8 @@ and 'id instruction_node =
   | Ifor of ('id * 'id term_gen * 'id instruction_gen)                        (* id * collection * body *)
   | Iiter of ('id * 'id term_gen* 'id term_gen * 'id instruction_gen)         (* id * bound_min * bound_max * body *)
   | Iletin of ('id * 'id term_gen * 'id instruction_gen)                      (* id * init * body *)
-  | Iseq of 'id instruction_gen list                                          (* lhs ; rhs*)
+  | Ideclvar of 'id * 'id term_gen                                            (* id * init *)
+  | Iseq of 'id instruction_gen list                                          (* lhs ; rhs *)
   | Imatchwith of 'id term_gen * ('id pattern_gen * 'id instruction_gen) list (* match term with ('pattern * 'id instruction_gen) list *)
   | Iassign of (assignment_operator * 'id * 'id term_gen)                     (* $2 assignment_operator $3 *)
   | Irequire of (bool * 'id term_gen)                                         (* $1 ? require : failif *)
@@ -649,6 +651,7 @@ let map_term_node (f : 'id term_gen -> 'id term_gen) = function
   | Puarith (op, e)         -> Puarith (op, f e)
   | Precord l               -> Precord (List.map f l)
   | Pletin (i, a, t, b)     -> Pletin (i, f a, t, f b)
+  | Pdeclvar (i, t, v)      -> Pdeclvar (i, t, f v)
   | Pvar v                  -> Pvar v
   | Parray l                -> Parray (List.map f l)
   | Plit l                  -> Plit l
@@ -661,6 +664,7 @@ let map_instr_node f = function
   | Ifor (i, c, b)      -> Ifor (i, c, f b)
   | Iiter (i, a, b, c)  -> Iiter (i, a, b, f c)
   | Iletin (i, c, b)    -> Iletin (i, c, f b)
+  | Ideclvar (i, v)     -> Ideclvar (i, v)
   | Iseq is             -> Iseq (List.map f is)
   | Imatchwith (a, ps)  -> Imatchwith (a, ps)
   | Iassign (op, l, r)  -> Iassign (op, l, r)
@@ -704,6 +708,7 @@ let fold_term (f: 'a -> 't -> 'a) (accu : 'a) (term : 'id term_gen) =
   | Puarith (_, e)              -> f accu e
   | Precord l                   -> List.fold_left f accu l
   | Pletin (_, a, _, b)         -> f (f accu a) b
+  | Pdeclvar (i, t, v)          -> f accu v
   | Pvar _                      -> accu
   | Parray l                    -> List.fold_left f accu l
   | Plit _                      -> accu
@@ -717,6 +722,7 @@ let fold_instr f accu instr =
   | Ifor (i, c, b)     -> f accu b
   | Iiter (i, a, b, c) -> f accu c
   | Iletin (i, j, b)   -> f accu b
+  | Ideclvar (i, v)    -> accu
   | Iseq is            -> List.fold_left f accu is
   | Imatchwith _       -> accu
   | Iassign _          -> accu
@@ -734,6 +740,7 @@ let fold_instr_expr fi fe accu instr =
   | Ifor (i, c, b)      -> fi (fe accu c) b
   | Iiter (i, a, b, c)  -> fi (fe (fe accu a) b) c
   | Iletin (i, j, b)    -> fi (fe accu j) b
+  | Ideclvar (i, v)     -> fe accu v
   | Iseq is             -> List.fold_left fi accu is
   | Imatchwith (a, ps)  -> List.fold_left (fun accu (_, i) -> fi accu i) (fe accu a) ps
   | Iassign (_, _, e)   -> fe accu e
@@ -828,6 +835,10 @@ let fold_map_term g f (accu : 'a) (term : 'id term_gen) : 'term * 'a =
     let oe, oa = f ia o in
     g (Pletin (id, i, t, oe)), oa
 
+  | Pdeclvar (i, t, v) ->
+    let ve, va = f accu v in
+    g (Pdeclvar (i, t, ve)), va
+
   | Pvar id ->
     g (Pvar id), accu
 
@@ -878,6 +889,10 @@ let fold_map_instr_term gi ge fi fe (accu : 'a) instr : 'id instruction_gen * 'a
     let je, ja = fe accu j in
     let bi, ba = fi ja b in
     gi (Iletin (i, je, bi)), ba
+
+  | Ideclvar (i, v) ->
+    let ve, va = fe accu v in
+    gi (Ideclvar (i, ve)), va
 
   | Iseq is ->
     let (isi, isa) : ('id instruction_gen list * 'a) =

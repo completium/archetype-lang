@@ -7,6 +7,7 @@ exception Anomaly of string
 
 type error_desc =
   | UnsupportedBreak
+  | UnsupportedDeclVar
   | UnsupportedTerm of string
 [@@deriving show {with_path = false}]
 
@@ -1074,6 +1075,8 @@ let pp_model fmt (model : model) =
           (pp_option (fun fmt -> Format.fprintf fmt  " : %a" pp_type)) t
           f a
           f b
+      | Mdeclvar (ids, t, v) ->
+        emit_error UnsupportedDeclVar
       | Mvarstorevar v -> Format.fprintf fmt "_s.%a" pp_id v
       | Mvarstorecol v -> Format.fprintf fmt "_s.%a" pp_id v
       | Mvarenumval v  -> pp_id fmt v

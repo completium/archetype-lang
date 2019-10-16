@@ -496,6 +496,15 @@ let rec pp_expr outer pos fmt a =
     in
     (maybe_paren outer e_default pos pp) fmt (id, t, e, body, other)
 
+  | Evar (id, t, e) ->
+
+    let pp fmt (id, t, e) =
+      Format.fprintf fmt "var %a%a = %a"
+        pp_id id
+        (pp_option (pp_prefix " : " pp_type)) t
+        (pp_expr e_in PLeft) e
+    in
+    (maybe_paren outer e_default pos pp) fmt (id, t, e)
 
   | Equantifier (q, id, t, body) ->
 
