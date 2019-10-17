@@ -1814,6 +1814,13 @@ let rec for_instruction (env : env) (i : PT.expr) : env * M.instruction =
     | Evar (x, ty, v) ->
       let ty = Option.bind (for_type env) ty in
       let v  = for_expr env ?ety:ty v in
+      let env =
+        let _ : bool = check_and_emit_name_free env x in
+        if Option.is_some v.M.type_ then
+          Env.Local.push env (unloc x, Option.get v.M.type_)
+        else env
+
+      in
 
       env, mki (M.Ideclvar (x, v))
 
