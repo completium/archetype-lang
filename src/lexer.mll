@@ -151,7 +151,9 @@ rule token = parse
   | date as d             { DATE (d) }
 
 
+  | "//"                  { comment_line lexbuf; token lexbuf }
   | "(*"                  { comment lexbuf; token lexbuf }
+  | "/*"                  { comment2 lexbuf; token lexbuf }
   | "\""                  { STRING (Buffer.contents (string (Buffer.create 0) lexbuf)) }
   | "::"                  { COLONCOLON }
   | "("                   { LPAREN }
@@ -200,6 +202,18 @@ and comment = parse
   | newline { Lexing.new_line lexbuf; comment lexbuf }
   | _       { comment lexbuf }
   | eof     { lex_error lexbuf "unterminated comment" }
+
+and comment2 = parse
+  | "*/"    { () }
+  | "/*"    { comment2 lexbuf; comment2 lexbuf }
+  | newline { Lexing.new_line lexbuf; comment2 lexbuf }
+  | _       { comment2 lexbuf }
+  | eof     { lex_error lexbuf "unterminated comment" }
+
+and comment_line = parse
+  | newline { Lexing.new_line lexbuf }
+  | _       { comment_line lexbuf }
+  | eof     { () }
 
 and string buf = parse
   | "\""          { buf }
