@@ -129,6 +129,7 @@ let generate_target model =
 
   | Whyml ->
     model
+    |> replace_declvar_by_letin
     |> prune_properties
     |> extend_iter
     |> shallow_asset
