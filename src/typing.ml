@@ -1683,8 +1683,11 @@ let for_expr (env : env) ?(ety : M.type_ option) (tope : PT.expr) : M.pterm =
 
 (* -------------------------------------------------------------------- *)
 let for_lbl_expr (env : env) (topf : PT.label_expr) : env * (M.lident option * M.pterm) =
-  (* FIXME: check for duplicates *)
-  env, (Some (fst (unloc topf)), for_expr env (snd (unloc topf)))
+  if check_and_emit_name_free env (fst (unloc topf)) then
+    let env = Env.Label.push env (unloc (fst (unloc topf)), `Plain) in
+    env, (Some (fst (unloc topf)), for_expr env (snd (unloc topf)))
+  else
+    env, (None, for_expr env (snd (unloc topf)))
 
 (* -------------------------------------------------------------------- *)
 let for_lbls_expr (env : env) (topf : PT.label_exprs) : env * (M.lident option * M.pterm) list =
@@ -1692,8 +1695,11 @@ let for_lbls_expr (env : env) (topf : PT.label_exprs) : env * (M.lident option *
 
 (* -------------------------------------------------------------------- *)
 let for_lbl_formula (env : env) (topf : PT.label_expr) : env * (M.lident option * M.pterm) =
-  (* FIXME: check for duplicates *)
-  env, (Some (fst (unloc topf)), for_formula env (snd (unloc topf)))
+  if check_and_emit_name_free env (fst (unloc topf)) then
+    let env = Env.Label.push env (unloc (fst (unloc topf)), `Plain) in
+    env, (Some (fst (unloc topf)), for_formula env (snd (unloc topf)))
+  else
+    env, (None, for_formula env (snd (unloc topf)))
 
 (* -------------------------------------------------------------------- *)
 let for_xlbls_formula (env : env) (topf : PT.label_exprs) : env * (M.lident option * M.pterm) list =
