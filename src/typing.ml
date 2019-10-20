@@ -1516,6 +1516,9 @@ and for_gen_method_call mode env theloc (the, m, args) =
         let ty = M.Tcontainer (Tasset asset.as_name, M.Collection) in
         M.AExpr (for_xexpr mode env ~ety:ty arg)
 
+      | `T ty ->
+        M.AExpr (for_xexpr mode env ~ety:ty arg)
+
       | _ ->
         assert false
 
