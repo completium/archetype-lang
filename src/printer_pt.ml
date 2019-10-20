@@ -228,21 +228,11 @@ let string_of_scope (s : scope) =
 let rec pp_expr outer pos fmt a =
   let e = unloc a in
   match e with
-  | Eterm (l, e, id) ->
+  | Eterm (false, id) ->
+    pp_id fmt id
 
-    let pp fmt (l, e, id) =
-      let f fmt (e, id) = Format.fprintf fmt "%a%a"
-          (pp_option (pp_postfix "::" pp_id)) e
-          pp_id id in
-      begin
-        match l with
-        | Some l -> Format.fprintf fmt "(%a at %a)"
-                      f (e, id)
-                      pp_id l
-        | None -> f fmt (e, id)
-      end
-    in
-    pp fmt (l, e, id)
+  | Eterm (true, id) ->
+    Format.fprintf fmt "before.%a" pp_id id
 
   | Eliteral x ->
 

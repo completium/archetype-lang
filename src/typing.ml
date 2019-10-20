@@ -57,6 +57,7 @@ end
 type error_desc =
   | AssetExpected
   | AssetWithoutFields
+  | BeforeOnLocalVar
   | BindingInExpr
   | CannotInferAnonRecord
   | CannotInferCollectionType
@@ -134,6 +135,7 @@ let pp_error_desc fmt e =
   match e with
   | AssetExpected                      -> pp "Asset expected"
   | AssetWithoutFields                 -> pp "Asset without fields"
+  | BeforeOnLocalVar                   -> pp "Local variables do not support the `before' modifier"
   | BindingInExpr                      -> pp "Binding in expression"
   | CannotInferAnonRecord              -> pp "Cannot infer a non record"
   | CannotInferCollectionType          -> pp "Cannot infer collection type"
@@ -379,7 +381,6 @@ let methods : (string * method_) list =
     ("subsetof"    , mk M.Csubsetof     `Pure   `Total   ([`SubColl     ], Some (`T M.vtbool)));
     ("head"        , mk M.Chead         `Pure   `Total   ([`T M.vtint   ], Some (`SubColl)));
     ("tail"        , mk M.Ctail         `Pure   `Total   ([`T M.vtint   ], Some (`SubColl)));
-    ("before"      , mk M.Cbefore       `Pure   `Total   ([             ], Some (`SubColl)));
     ("unmoved"     , mk M.Cunmoved      `Pure   `Total   ([             ], Some (`SubColl)));
     ("added"       , mk M.Cadded        `Pure   `Total   ([             ], Some (`SubColl)));
     ("removed"     , mk M.Cremoved      `Pure   `Total   ([             ], Some (`SubColl)));
@@ -976,26 +977,28 @@ let rec for_xexpr (mode : emode_t) (env : env) ?(ety : M.ptyp option) (tope : PT
   let bailout = fun () -> raise E.Bailout in
 
   let mk_sp type_ node = M.mk_sp ~loc:(loc tope) ?type_ node in
-  let dummy type_ : M.pterm = mk_sp type_ (M.Pvar (mkloc (loc tope) "<error>")) in
+  let dummy type_ : M.pterm = mk_sp type_ (M.Pvar (false, mkloc (loc tope) "<error>")) in
 
   let doit () =
     match unloc tope with
-    | Eterm (None, None, x) -> begin
+    | Eterm (before, x) -> begin
         match Env.lookup env (unloc x) with
         | Some (`Local xty) ->
-          mk_sp (Some xty) (M.Pvar x)
+          if before then
+            Env.emit_error env (loc tope, BeforeOnLocalVar);
+          mk_sp (Some xty) (M.Pvar (false, x))
 
         | Some (`Global decl) -> begin
             match decl.vr_def with
             | Some (body, `Inline) ->
               body
             | _ ->
-              mk_sp (Some decl.vr_type) (M.Pvar x)
+              mk_sp (Some decl.vr_type) (M.Pvar (before, x))
           end
 
         | Some (`Asset decl) ->
           let typ = M.Tcontainer ((M.Tasset decl.as_name), M.Collection) in
-          mk_sp (Some typ) (M.Pvar x)
+          mk_sp (Some typ) (M.Pvar (before, x))
 
         | _ ->
           Env.emit_error env (loc x, UnknownLocalOrVariable (unloc x));
@@ -1389,7 +1392,6 @@ let rec for_xexpr (mode : emode_t) (env : env) ?(ety : M.ptyp option) (tope : PT
     | Ereturn   _
     | Eoption   _
     | Eseq      _
-    | Eterm     _
     | Etransfer _
     | Einvalid ->
       Env.emit_error env (loc tope, InvalidExpression);
@@ -1615,7 +1617,7 @@ and for_action_description (env : env) (sa : PT.security_arg) : M.action_descrip
     M.ADAny
 
   | Sapp (act, [{ pldesc = PT.Sident asset }]) -> begin
-      let asset = mkloc (loc asset) (PT.Eterm (None, None, asset)) in
+      let asset = mkloc (loc asset) (PT.Eterm (false, asset)) in
       let asset = for_asset_collection_expr `Formula env asset in
 
       match snd asset with
@@ -1731,7 +1733,7 @@ let for_args_decl (env : env) (xs : PT.args) =
 (* -------------------------------------------------------------------- *)
 let for_lvalue (env : env) (e : PT.expr) : (M.lident * M.ptyp) option =
   match unloc e with
-  | Eterm (None, None, x) -> begin
+  | Eterm (false, x) -> begin
       match Env.lookup env (unloc x) with
       | Some (`Local xty) ->
         Some (x, xty)
@@ -2064,7 +2066,7 @@ let for_named_state (env : env) (x : PT.lident) =
 (* -------------------------------------------------------------------- *)
 let for_state (env : env) (st : PT.expr) : ident option =
   match unloc st with
-  | Eterm (None, None, x) ->
+  | Eterm (false, x) ->
     for_named_state env x
 
   | _ ->
@@ -2078,10 +2080,10 @@ let for_function (env : env) (f : PT.s_function loced) : unit =
 (* -------------------------------------------------------------------- *)
 let rec for_callby (env : env) (cb : PT.expr) =
   match unloc cb with
-  | Eterm (None, None, name) when String.equal (unloc name) "any" ->
+  | Eterm (false, name) when String.equal (unloc name) "any" ->
     [name]
 
-  | Eterm (None, None, name) ->
+  | Eterm (false, name) ->
     Option.get_as_list (for_role env name)
 
   | Eapp (Foperator { pldesc = `Logical Or }, [e1; e2]) ->

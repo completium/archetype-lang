@@ -93,7 +93,7 @@ type pattern = pattern_unloc loced
 [@@deriving yojson, show {with_path = false}]
 
 type expr_unloc =
-  | Eterm         of (lident option * lident option * lident)
+  | Eterm         of bool * lident
   | Eliteral      of literal
   | Earray        of expr list
   | Erecord       of record_item list

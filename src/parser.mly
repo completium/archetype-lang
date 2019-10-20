@@ -36,18 +36,17 @@
 %token ARCHETYPE
 %token ASSERT
 %token ASSET
-%token AT
 %token AT_ADD
 %token AT_REMOVE
 %token AT_UPDATE
 %token BACK
+%token BEFORE
 %token BREAK
 %token BUT
 %token BY
 %token CALLED
 %token COLLECTION
 %token COLON
-%token COLONCOLON
 %token COLONEQUAL
 %token COMMA
 %token CONSTANT
@@ -773,13 +772,8 @@ simple_expr_r:
  | x=literal
      { Eliteral x }
 
- | LPAREN
-     s=ioption(postfix(ident, COLONCOLON)) x=ident AT l=ident
-   RPAREN
-     { Eterm (Some l, s, x) }
-
- | s=ioption(postfix(ident, COLONCOLON)) x=ident
-     { Eterm (None, s, x) }
+ | b=boption(postfix(BEFORE, DOT)) x=ident
+     { Eterm (b, x) }
 
  | INVALID_EXPR
      { Einvalid }
