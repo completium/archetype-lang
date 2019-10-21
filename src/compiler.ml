@@ -136,6 +136,17 @@ let generate_target model =
     |> generate_api_storage
     |> output
 
+  | Why3 ->
+    model
+    |> replace_declvar_by_letin
+    |> prune_properties
+    |> extend_iter
+    |> shallow_asset
+    |> generate_api_storage
+    |> Gen_why3.to_whyml
+    |> Gen_ptree.to_ptree
+    |> (fun x -> Format.printf "%a@." Why3ml_pp.Output_mlw.print_mlw_file x)
+
   | _ -> ()
 
 (* -------------------------------------------------------------------- *)
@@ -177,6 +188,7 @@ let main () =
     | "smartpy"       -> Options.target := SmartPy
     | "ocaml"         -> Options.target := Ocaml
     | "whyml"         -> Options.target := Whyml
+    | "why3"          -> Options.target := Why3
     | "markdown"      -> Options.target := Markdown
     |  s ->
       Format.eprintf
