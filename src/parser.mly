@@ -36,6 +36,7 @@
 %token ARCHETYPE
 %token ASSERT
 %token ASSET
+%token AT
 %token AT_ADD
 %token AT_REMOVE
 %token AT_UPDATE
@@ -778,6 +779,9 @@ simple_expr_r:
 
  | b=boption(postfix(BEFORE, DOT)) x=ident
      { let st = { before = b; label = None; } in Eterm (st, x) }
+
+ | LPAREN x=ident AT l=ident RPAREN
+     { let st = { before = false; label = Some l; } in Eterm (st, x) }
 
  | INVALID_EXPR
      { Einvalid }
