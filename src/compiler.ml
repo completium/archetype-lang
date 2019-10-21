@@ -244,6 +244,8 @@ let main () =
       "-ry", Arg.Set Options.opt_raw_whytree, " Print raw model tree";
       "--raw-whytree", Arg.Set Options.opt_raw_whytree, " Same as -r";
       "-json", Arg.Set Options.opt_json, " Print JSON format";
+      "--ppwhy3", Arg.Set Options.opt_ppwhy3, " Print whyml file";
+      "--ppwhy3-raw", Arg.Set Options.opt_ppwhy3_ast, " Print raw whyml file";
       "-V", Arg.String (fun s -> Options.add_vids s), "<id> process specication identifiers";
       "-v", Arg.Unit (fun () -> print_version ()), " Show version number and exit";
       "--version", Arg.Unit (fun () -> print_version ()), " Same as -v";
@@ -293,11 +295,18 @@ let main () =
     | _ -> ("<stdin>", stdin, false) in
 
   try
+
     begin
-      match !Options.opt_lsp, !Options.opt_service with
-      | true, _ -> Lsp.process (filename, channel)
-      | _, true -> Services.process (filename, channel)
-      | _ -> compile (filename, channel)
+      match !Options.opt_ppwhy3, !Options.opt_ppwhy3_ast with
+      | true, _ -> Why3ml_pp.print (filename, channel) `Mlw
+      | _, true -> Why3ml_pp.print (filename, channel) `Ast
+      | _ ->
+        begin
+          match !Options.opt_lsp, !Options.opt_service with
+          | true, _ -> Lsp.process (filename, channel)
+          | _, true -> Services.process (filename, channel)
+          | _ -> compile (filename, channel)
+        end;
     end;
     close dispose channel
 

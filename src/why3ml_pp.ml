@@ -499,4 +499,15 @@ module Output ( M : Ast_or_mlw) = struct
 end
 
 module Output_ast = Output(struct let pp_kind = Ast and pp_loc = false end)
-module Output_mlw = Output(struct let pp_kind = Mlw and pp_loc = true  end)
+module Output_mlw = Output(struct let pp_kind = Mlw and pp_loc = false  end)
+
+let print (fname, channel : string * in_channel) k =
+  let lb = Lexing.from_channel channel in
+  Loc.set_file fname lb;
+  let mlw_file = Lexer.parse_mlw_file lb in
+  let f =
+    match k with
+    | `Ast -> Output_ast.print_mlw_file
+    | `Mlw -> Output_mlw.print_mlw_file
+  in
+  Format.printf "%a@." f mlw_file
