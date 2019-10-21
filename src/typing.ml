@@ -981,7 +981,8 @@ let rec for_xexpr (mode : emode_t) (env : env) ?(ety : M.ptyp option) (tope : PT
 
   let doit () =
     match unloc tope with
-    | Eterm (before, x) -> begin
+    | Eterm (st, x) -> begin
+        let before = st.before in
         match Env.lookup env (unloc x) with
         | Some (`Local xty) ->
           if before then
@@ -1382,6 +1383,7 @@ let rec for_xexpr (mode : emode_t) (env : env) ?(ety : M.ptyp option) (tope : PT
 
     | Eapp      _
     | Eassert   _
+    | Elabel    _
     | Eassign   _
     | Ebreak
     | Efailif   _
@@ -1617,7 +1619,8 @@ and for_action_description (env : env) (sa : PT.security_arg) : M.action_descrip
     M.ADAny
 
   | Sapp (act, [{ pldesc = PT.Sident asset }]) -> begin
-      let asset = mkloc (loc asset) (PT.Eterm (false, asset)) in
+      let st : PT.s_term = PT.mk_s_term () in
+      let asset = mkloc (loc asset) (PT.Eterm (st, asset)) in
       let asset = for_asset_collection_expr `Formula env asset in
 
       match snd asset with
@@ -1733,7 +1736,7 @@ let for_args_decl (env : env) (xs : PT.args) =
 (* -------------------------------------------------------------------- *)
 let for_lvalue (env : env) (e : PT.expr) : (M.lident * M.ptyp) option =
   match unloc e with
-  | Eterm (false, x) -> begin
+  | Eterm ({ before = false; _ }, x) -> begin
       match Env.lookup env (unloc x) with
       | Some (`Local xty) ->
         Some (x, xty)
@@ -2066,7 +2069,7 @@ let for_named_state (env : env) (x : PT.lident) =
 (* -------------------------------------------------------------------- *)
 let for_state (env : env) (st : PT.expr) : ident option =
   match unloc st with
-  | Eterm (false, x) ->
+  | Eterm ({ before = false; _ }, x) ->
     for_named_state env x
 
   | _ ->
@@ -2080,10 +2083,10 @@ let for_function (env : env) (f : PT.s_function loced) : unit =
 (* -------------------------------------------------------------------- *)
 let rec for_callby (env : env) (cb : PT.expr) =
   match unloc cb with
-  | Eterm (false, name) when String.equal (unloc name) "any" ->
+  | Eterm ({ before = false; _ }, name) when String.equal (unloc name) "any" ->
     [name]
 
-  | Eterm (false, name) ->
+  | Eterm ({ before = false; _ }, name) ->
     Option.get_as_list (for_role env name)
 
   | Eapp (Foperator { pldesc = `Logical Or }, [e1; e2]) ->

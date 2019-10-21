@@ -228,11 +228,20 @@ let string_of_scope (s : scope) =
 let rec pp_expr outer pos fmt a =
   let e = unloc a in
   match e with
-  | Eterm (false, id) ->
-    pp_id fmt id
+  | Eterm (st, id) ->
+    begin
+      let pp_before fmt pp x =
+        Format.fprintf fmt "before.%a" pp x
+      in
+      let pp_label fmt lbl pp x =
+        Format.fprintf fmt "(%a at %a)" pp x pp_str lbl
+      in
 
-  | Eterm (true, id) ->
-    Format.fprintf fmt "before.%a" pp_id id
+      match st.before, st.label with
+      | true, _ -> pp_before fmt pp_id id
+      | _, Some lbl -> pp_label fmt (unloc lbl) pp_id id
+      | _ -> pp_id fmt id
+    end
 
   | Eliteral x ->
 
@@ -518,6 +527,14 @@ let rec pp_expr outer pos fmt a =
 
     let pp fmt i =
       Format.fprintf fmt "assert %a"
+        pp_id i
+    in
+    (maybe_paren outer e_colon pos pp) fmt i
+
+  | Elabel i ->
+
+    let pp fmt i =
+      Format.fprintf fmt "label %a"
         pp_id i
     in
     (maybe_paren outer e_colon pos pp) fmt i

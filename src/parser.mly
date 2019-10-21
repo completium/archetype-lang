@@ -81,6 +81,7 @@
 %token INSTANCE
 %token INVARIANT
 %token ITER
+%token LABEL
 %token LBRACE
 %token LBRACKET
 %token LBRACKETPERCENT
@@ -676,6 +677,9 @@ expr_r:
  | ASSERT id=ident
      { Eassert id }
 
+ | LABEL id=ident
+     { Elabel id }
+
  | BREAK
      { Ebreak }
 
@@ -773,7 +777,7 @@ simple_expr_r:
      { Eliteral x }
 
  | b=boption(postfix(BEFORE, DOT)) x=ident
-     { Eterm (b, x) }
+     { let st = { before = b; label = None; } in Eterm (st, x) }
 
  | INVALID_EXPR
      { Einvalid }

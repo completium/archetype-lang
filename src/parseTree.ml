@@ -92,8 +92,14 @@ type pattern_unloc =
 type pattern = pattern_unloc loced
 [@@deriving yojson, show {with_path = false}]
 
+type s_term = {
+  before: bool;
+  label: lident option;
+}
+[@@deriving yojson, show {with_path = false}]
+
 type expr_unloc =
-  | Eterm         of bool * lident
+  | Eterm         of s_term * lident
   | Eliteral      of literal
   | Earray        of expr list
   | Erecord       of record_item list
@@ -116,6 +122,7 @@ type expr_unloc =
   | Ematchwith    of expr * (pattern list * expr) list
   | Equantifier   of quantifier * lident * quantifier_kind * expr
   | Eassert       of lident
+  | Elabel        of lident
   | Ereturn       of expr
   | Eoption       of option_
   | Einvalid
@@ -389,3 +396,6 @@ and archetype = archetype_unloc loced
 
 let mk_archetype ?(decls=[]) ?(loc=dummy) () =
   mkloc loc (Marchetype decls)
+
+let mk_s_term ?(before=false) ?label () : s_term =
+  { before = before; label = label }

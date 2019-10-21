@@ -55,6 +55,7 @@
       "instance"            , INSTANCE       ;
       "invariant"           , INVARIANT      ;
       "iter"                , ITER           ;
+      "label"               , LABEL          ;
       "lemma"               , LEMMA          ;
       "let"                 , LET            ;
       "match"               , MATCH          ;
