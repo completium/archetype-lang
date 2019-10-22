@@ -8,16 +8,32 @@ module M = Mlwtree
 module P = Ptree
 module E = Expr
 
-let mk_ident s = P.{ id_str = s; id_ats = []; id_loc = Loc.dummy_position }
+let unloc (x : 'a M.with_loc) = x.obj
+let loc   (x : 'a M.with_loc) = (*x.loc*) Loc.dummy_position
 
-let mk_qualid l =
+let mk_ident_intern f g (x : 'a) =
+  let str = f x in
+  let l = g x in
+  P.{ id_str = str; id_ats = []; id_loc = l }
+
+let mk_ident_str (str : string) =
+  mk_ident_intern (fun x -> x) (fun _ -> Loc.dummy_position) str
+
+let mk_ident (s : M.loc_ident) =
+  mk_ident_intern unloc loc s
+
+let mk_qualid_intern f (l : 'a list) =
   let rec aux l =
     match l with
     | [] -> assert false
-    | [x] -> P.Qident(mk_ident x)
-    | x::r -> P.Qdot(aux r,mk_ident x)
+    | [x] -> P.Qident(f x)
+    | x::r -> P.Qdot(aux r,f x)
   in
   aux (List.rev l)
+
+let mk_qualid_str (l : string list) = mk_qualid_intern mk_ident_str l
+
+let mk_qualid l = mk_qualid_intern mk_ident l
 
 let use_import l =
   let qid_id_opt = (mk_qualid l, None) in
@@ -63,48 +79,51 @@ let mk_field ?(f_loc=Loc.dummy_position) ?(f_mutable=false) ?(f_ghost=false) f_i
 let mk_binder ?(loc=Loc.dummy_position) ?ident ?(ghost=false) ?pty () : P.binder =
   (loc, ident, ghost, pty)
 
-let to_type = function
-  | M.Tyint          -> P.PTtyapp(mk_qualid ["int"], [])
-  | M.Tyuint         -> P.PTtyapp(mk_qualid [""], [])
-  | M.Tybool         -> P.PTtyapp(mk_qualid [""], [])
-  | M.Tystring       -> P.PTtyapp(mk_qualid ["string"], [])
-  | M.Tyrational     -> P.PTtyapp(mk_qualid [""], [])
-  | M.Tyaddr         -> P.PTtyapp(mk_qualid [""], [])
-  | M.Tyrole         -> P.PTtyapp(mk_qualid ["role"], [])
-  | M.Tykey          -> P.PTtyapp(mk_qualid [""], [])
-  | M.Tydate         -> P.PTtyapp(mk_qualid ["date"], [])
-  | M.Tyduration     -> P.PTtyapp(mk_qualid [""], [])
-  | M.Tytez          -> P.PTtyapp(mk_qualid [""], [])
-  | M.Tystorage      -> P.PTtyapp(mk_qualid [""], [])
-  | M.Tytransfers    -> P.PTtyapp(mk_qualid [""], [])
-  | M.Tyunit         -> P.PTtyapp(mk_qualid [""], [])
-  | M.Tycontract id  -> P.PTtyapp(mk_qualid [""], [])
-  | M.Tyrecord id    -> P.PTtyapp(mk_qualid [""], [])
-  | M.Tycoll id      -> P.PTtyapp(mk_qualid [""], [])
-  | M.Tymap id       -> P.PTtyapp(mk_qualid [""], [])
-  | M.Tyasset id     -> P.PTtyapp(mk_qualid [""], [])
-  | M.Typartition id -> P.PTtyapp(mk_qualid [""], [])
-  | M.Tyenum id      -> P.PTtyapp(mk_qualid [""], [])
-  | M.Tyoption t     -> P.PTtyapp(mk_qualid [""], [])
-  | M.Tylist t       -> P.PTtyapp(mk_qualid [""], [])
-  | M.Tytuple tl     -> P.PTtyapp(mk_qualid [""], [])
+let to_type t =
+  match unloc t with
+  | M.Tyint          -> P.PTtyapp(mk_qualid_str ["int"], [])
+  | M.Tyuint         -> P.PTtyapp(mk_qualid_str [""], [])
+  | M.Tybool         -> P.PTtyapp(mk_qualid_str [""], [])
+  | M.Tystring       -> P.PTtyapp(mk_qualid_str ["string"], [])
+  | M.Tyrational     -> P.PTtyapp(mk_qualid_str [""], [])
+  | M.Tyaddr         -> P.PTtyapp(mk_qualid_str [""], [])
+  | M.Tyrole         -> P.PTtyapp(mk_qualid_str ["role"], [])
+  | M.Tykey          -> P.PTtyapp(mk_qualid_str [""], [])
+  | M.Tydate         -> P.PTtyapp(mk_qualid_str ["date"], [])
+  | M.Tyduration     -> P.PTtyapp(mk_qualid_str [""], [])
+  | M.Tytez          -> P.PTtyapp(mk_qualid_str [""], [])
+  | M.Tystorage      -> P.PTtyapp(mk_qualid_str [""], [])
+  | M.Tytransfers    -> P.PTtyapp(mk_qualid_str [""], [])
+  | M.Tyunit         -> P.PTtyapp(mk_qualid_str [""], [])
+  | M.Tycontract id  -> P.PTtyapp(mk_qualid_str [""], [])
+  | M.Tyrecord id    -> P.PTtyapp(mk_qualid_str [""], [])
+  | M.Tycoll id      -> P.PTtyapp(mk_qualid_str [""], [])
+  | M.Tymap id       -> P.PTtyapp(mk_qualid_str [""], [])
+  | M.Tyasset id     -> P.PTtyapp(mk_qualid_str [""], [])
+  | M.Typartition id -> P.PTtyapp(mk_qualid_str [""], [])
+  | M.Tyenum id      -> P.PTtyapp(mk_qualid_str [""], [])
+  | M.Tyoption t     -> P.PTtyapp(mk_qualid_str [""], [])
+  | M.Tylist t       -> P.PTtyapp(mk_qualid_str [""], [])
+  | M.Tytuple tl     -> P.PTtyapp(mk_qualid_str [""], [])
 
-let to_term = function
+let to_term t =
+  match unloc t with
   | _ -> P.Ttrue (* TODO *)
 
-let to_expr = function
+let to_expr e =
+  match unloc e with
   | _ -> P.Etrue (* TODO *)
 
-let to_field (x : (M.term, M.typ, string) M.abstract_field) : P.field =
+let to_field (x : (M.loc_term, M.loc_typ, M.loc_ident) M.abstract_field) : P.field =
   let ident : P.ident = mk_ident x.name in
   let t : P.pty = to_type x.typ in
   mk_field ident t
 
-let to_ptree (mlwtree : M.mlw_tree) : P.mlw_file =
-  let to_module (m : (M.term, M.typ, M.ident) M.abstract_module ) : P.ident * P.decl list =
+let to_ptree (mlwtree : M.loc_mlw_tree) : P.mlw_file =
+  let to_module (m : (M.loc_term, M.loc_typ, M.loc_ident) M.abstract_module ) : P.ident * P.decl list =
     let id = m.name in
     let decls = List.fold_right (
-        fun (x : (M.term, M.typ, string) M.abstract_decl) accu ->
+        fun (x : (M.loc_term, M.loc_typ, M.loc_ident) M.abstract_decl) accu ->
           match x with
           | Duse ids -> (use_import ids)::accu
           | Dval (i, t) -> (
@@ -140,21 +159,20 @@ let to_ptree (mlwtree : M.mlw_tree) : P.mlw_file =
               let fields = List.map to_field s.fields in
               let type_def = (P.TDrecord fields) in
               let wit : (P.qualid * P.expr) list =
-                List.map (fun (x : (M.term, M.typ, string) M.abstract_field) -> (
+                List.map (fun (x : (M.loc_term, M.loc_typ, M.loc_ident) M.abstract_field) -> (
                       let q = mk_qualid [x.name] in
                       let e = mk_expr (to_expr x.init) in
-                      (q, e)
-                    )) s.fields in
+                      (q, e)))
+                  s.fields in
               let invs : P.term list =
-                List.map (fun (x : (M.term, string) M.abstract_formula) ->
-                    mk_term (to_term x.form
-                            )) s.invariants in
-              P.Dtype [mk_type ~td_inv:invs ~td_wit:wit (mk_ident "_storage") type_def ]
+                List.map (fun (x : (M.loc_term, M.loc_ident) M.abstract_formula) ->
+                    mk_term (to_term x.form))
+                  s.invariants in
+              P.Dtype [mk_type ~td_inv:invs ~td_wit:wit (mk_ident_str "_storage") type_def ]
             )::accu
           | Dtheorem (t, i, e) -> (
               let k =
                 match t with
-                | Theo  -> assert false
                 | Axiom -> Decl.Paxiom
                 | Lemma -> Decl.Plemma
                 | Goal  -> Decl.Pgoal

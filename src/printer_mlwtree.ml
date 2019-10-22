@@ -576,7 +576,6 @@ let pp_clone fmt (i,j,l) =
 (* -------------------------------------------------------------------------- *)
 
 let pp_theotyp fmt = function
-  | Theo  -> pp_str fmt "theorem"
   | Axiom -> pp_str fmt "axiom"
   | Lemma -> pp_str fmt "lemma"
   | Goal  -> pp_str fmt "goal"

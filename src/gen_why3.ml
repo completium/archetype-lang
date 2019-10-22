@@ -583,8 +583,8 @@ let mk_invariant m n src inv : loc_term =
                           Tvar variable,
                           Tdoti ("s", mk_ac_id asset.obj))
       | `Axiom2   -> Tmem ((unloc_ident asset),
-                          Tvar variable,
-                          Tvar ("c"))
+                           Tvar variable,
+                           Tvar ("c"))
       | `Loop    -> Tmem ((unloc_ident asset),
                           Tvar variable,
                           mk_ac (unloc n))
@@ -611,8 +611,8 @@ let mk_invariant m n src inv : loc_term =
                                      Tvar "c",
                                      Tdoti ("s", mk_ac_id asset.obj)),
                             Tforall ([[variable],Tyasset (unloc_ident asset)],
-                                   Timpl (mem_pred,
-                                          Ttobereplaced)))))
+                                     Timpl (mem_pred,
+                                            Ttobereplaced)))))
       | _ ->
         Tforall ([[variable],Tyasset (unloc_ident asset)],
                  Timpl (mem_pred,
@@ -856,7 +856,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
         match v.node with
         | M.Mdotasset (a,_) -> map_mterm m ctx a
         | _ -> with_dummy_loc (Tapp (loc_term (Tvar ("get_"^t)),
-                                    [map_mterm m ctx v]))
+                                     [map_mterm m ctx v]))
       in
       mk_trace_seq m
         (Tletin (false,
@@ -982,11 +982,11 @@ let mk_axioms (m : M.model) : (loc_term, loc_typ, loc_ident) abstract_decl list 
                     mk_axiom2_invariant m asset (map_mterm m init_ctx formula))]
 
     ) [] m.api_verif
-  (*let records = M.Utils.get_assets m |> List.map (fun (r : M.info_asset) -> dumloc (r.name)) in
+(*let records = M.Utils.get_assets m |> List.map (fun (r : M.info_asset) -> dumloc (r.name)) in
   let keys    = records |> List.map (M.Utils.get_asset_key m) in
   List.map2 (fun r (k,kt) ->
-      mk_keys_eq_axiom r.pldesc k (map_btype kt)
-    ) records keys |> loc_decl |> deloc*)
+    mk_keys_eq_axiom r.pldesc k (map_btype kt)
+  ) records keys |> loc_decl |> deloc*)
 
 
 (* Storage API templates -----------------------------------------------------*)
@@ -1703,7 +1703,7 @@ let process_no_fail m (d : (loc_term, loc_typ, loc_ident) abstract_decl) =
 
 (* ----------------------------------------------------------------------------*)
 
-let to_whyml (m : M.model) : mlw_tree  =
+let to_loc_mlw_tree (m : M.model) : loc_mlw_tree =
   let storage_module   = with_dummy_loc (String.capitalize_ascii (m.name.pldesc^"_storage")) in
   let uselib           = mk_use in
   let uselist          = mk_use_list in
@@ -1739,4 +1739,9 @@ let to_whyml (m : M.model) : mlw_tree  =
        decls = [uselib;uselist;usestorage] @
                functions @
                entries;
-     }] in unloc_tree loct
+     }] in loct
+
+let to_mlw_tree (m : M.model) : mlw_tree  =
+  m
+  |> to_loc_mlw_tree
+  |> unloc_tree

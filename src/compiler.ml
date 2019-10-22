@@ -32,7 +32,7 @@ let output (model : Model.model) =
       | Ocaml        -> Printer_model_ocaml.pp_model
       | Whyml        ->
         fun fmt model ->
-          let mlw = Gen_why3.to_whyml model in
+          let mlw = Gen_why3.to_mlw_tree model in
           if !Options.opt_raw_whytree
           then Format.fprintf fmt "%a@." Mlwtree.pp_mlw_tree mlw
           else Format.fprintf fmt "%a@." Printer_mlwtree.pp_mlw_tree mlw
@@ -143,7 +143,7 @@ let generate_target model =
     |> extend_iter
     |> shallow_asset
     |> generate_api_storage
-    |> Gen_why3.to_whyml
+    |> Gen_why3.to_loc_mlw_tree
     |> Gen_ptree.to_ptree
     |> Why3ml_pp.print (match !Options.opt_raw with | true -> `Ast | false -> `Mlw)
 

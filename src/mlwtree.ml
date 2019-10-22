@@ -190,7 +190,6 @@ type 'i abstract_clone_subst =
 [@@deriving show {with_path = false}]
 
 type theotyp =
-  | Theo
   | Axiom
   | Lemma
   | Goal
@@ -645,7 +644,7 @@ let compare_abstract_term
         cmpi i1 i2 && cmpe j1 j2) l1 l2
   | Trecord (Some e1,l1), Trecord (Some e2,l2) ->
     cmpe e1 e2 && List.for_all2 (fun (i1,j1) (i2,j2) ->
-      cmpi i1 i2 && cmpe j1 j2) l1 l2
+        cmpi i1 i2 && cmpe j1 j2) l1 l2
   | Tdot (l1,r1), Tdot (l2,r2) -> cmpe r1 r2 && cmpe l1 l2
   | Tdoti (l1,r1), Tdoti (l2,r2) -> cmpi r1 r2 && cmpi l1 l2
   | Tename,Tename -> true
