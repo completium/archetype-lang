@@ -145,7 +145,7 @@ let generate_target model =
     |> generate_api_storage
     |> Gen_why3.to_whyml
     |> Gen_ptree.to_ptree
-    |> (fun x -> Format.printf "%a@." Why3ml_pp.Output_mlw.print_mlw_file x)
+    |> Why3ml_pp.print (match !Options.opt_raw with | true -> `Ast | false -> `Mlw)
 
   | _ -> ()
 
@@ -298,8 +298,8 @@ let main () =
 
     begin
       match !Options.opt_ppwhy3, !Options.opt_ppwhy3_ast with
-      | true, _ -> Why3ml_pp.print (filename, channel) `Mlw
-      | _, true -> Why3ml_pp.print (filename, channel) `Ast
+      | true, _ -> Why3ml_pp.parse_and_print `Mlw (filename, channel)
+      | _, true -> Why3ml_pp.parse_and_print `Ast (filename, channel)
       | _ ->
         begin
           match !Options.opt_lsp, !Options.opt_service with

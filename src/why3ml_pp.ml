@@ -501,13 +501,19 @@ end
 module Output_ast = Output(struct let pp_kind = Ast and pp_loc = false end)
 module Output_mlw = Output(struct let pp_kind = Mlw and pp_loc = false  end)
 
-let print (fname, channel : string * in_channel) k =
+let parse (fname, channel : string * in_channel) =
   let lb = Lexing.from_channel channel in
   Loc.set_file fname lb;
-  let mlw_file = Lexer.parse_mlw_file lb in
+  Lexer.parse_mlw_file lb
+
+let print k mlw_file =
   let f =
     match k with
     | `Ast -> Output_ast.print_mlw_file
     | `Mlw -> Output_mlw.print_mlw_file
   in
   Format.printf "%a@." f mlw_file
+
+let parse_and_print k (fname, channel : string * in_channel) =
+  let mlw_file = parse (fname, channel) in
+  print k mlw_file
