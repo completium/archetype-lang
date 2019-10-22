@@ -60,6 +60,9 @@ let mk_spec ?(sp_pre=[]) ?(sp_post=[]) ?(sp_xpost=[]) ?(sp_reads=[]) ?(sp_writes
 let mk_field ?(f_loc=Loc.dummy_position) ?(f_mutable=false) ?(f_ghost=false) f_ident f_pty : P.field =
   { f_loc; f_ident; f_pty; f_mutable; f_ghost}
 
+let mk_binder ?(loc=Loc.dummy_position) ?ident ?(ghost=false) ?pty () : P.binder =
+  (loc, ident, ghost, pty)
+
 let to_type = function
   | M.Tyint          -> P.PTtyapp(mk_qualid ["int"], [])
   | M.Tyuint         -> P.PTtyapp(mk_qualid [""], [])
@@ -138,9 +141,9 @@ let to_ptree (mlwtree : M.mlw_tree) : P.mlw_file =
               let type_def = (P.TDrecord fields) in
               let wit : (P.qualid * P.expr) list =
                 List.map (fun (x : (M.term, M.typ, string) M.abstract_field) -> (
-                      let name = x.name in
-                      let e = x.init in
-                      (mk_ident name, to_expr e)
+                      let q = mk_qualid [x.name] in
+                      let e = mk_expr (to_expr x.init) in
+                      (q, e)
                     )) s.fields in
               let invs : P.term list =
                 List.map (fun (x : (M.term, string) M.abstract_formula) ->
@@ -164,9 +167,11 @@ let to_ptree (mlwtree : M.mlw_tree) : P.mlw_file =
               let ident = mk_ident s.name in
               let ghost = false in
               let rs_kind = E.RKnone in
-              let expr = mk_expr (to_expr s.body) in
-              (* | Efun of binder list * pty option * pattern * Ity.mask * spec * expr *)
-              (* let expr = mk_expr (P.Efun ) in *)
+              let binders : P.binder list = [mk_binder () ~pty:(P.PTtuple[]) ] in
+              let expr : P.expr = mk_expr (to_expr s.body) in
+              let pattern : P.pattern = mk_pattern P.Pwild in
+              let spec : P.spec = mk_spec () in
+              let expr = mk_expr (P.Efun(binders, None, pattern, Ity.MaskVisible, spec, expr)) in
               P.Dlet(ident, ghost, rs_kind, expr)
             )::accu
       ) m.decls [] in
