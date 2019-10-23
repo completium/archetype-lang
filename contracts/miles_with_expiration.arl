@@ -45,10 +45,10 @@ action consume (a : address) (quantity : int) {
     }
 
     postcondition p2 {
-      mile.sum(the.amount) = mile.before.sum(the.amount) - quantity
+      mile.sum(the.amount) = before.mile.sum(the.amount) - quantity
       invariant for loop {
         0 <= remainder <= toiterate.sum(the.amount);
-        mile.before.sum(the.amount) = mile.sum(the.amount) + quantity - remainder
+        before.mile.sum(the.amount) = mile.sum(the.amount) + quantity - remainder
       }
     }
 

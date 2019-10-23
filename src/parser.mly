@@ -777,8 +777,11 @@ simple_expr_r:
  | x=literal
      { Eliteral x }
 
- | b=boption(postfix(BEFORE, DOT)) x=ident
-     { let st = { before = b; label = None; } in Eterm (st, x) }
+ | x=ident
+     { let st = { before = false; label = None; } in Eterm (st, x) }
+
+ | BEFORE DOT x=ident
+     { let st = { before = true; label = None; } in Eterm (st, x) }
 
  | LPAREN x=ident AT l=ident RPAREN
      { let st = { before = false; label = Some l; } in Eterm (st, x) }

@@ -9,40 +9,33 @@ archetype extension action_delegation (
   action aTransaction {
     effect {
       effects;
-      <%aTransaction>_space::Operator.remove
-      (<%aTransaction>_space::Operator.get (anasset))
+      Operator.remove
+      (Operator.get (anasset))
     }
   }
 
-  namespace <%aTransaction>_space {
-    asset Operator identified by anasset {
-      anasset  : anAsset;
-      operator : address;
+  asset Operator identified by anasset {
+    anasset  : anAsset;
+    operator : address;
+  }
+  action setDelegate (Operator : Operator) {
+    called by Operator.anasset.arole
+    effect {
+      Operator.add(Operator)
     }
-
-    action setDelegate (Operator : Operator) {
-      called by Operator.anasset.arole
-      effect {
-        Operator.add(Operator)
-      }
+  }
+  action rmDelegate (Operator : Operator) {
+    called by Operator.anasset.arole
+    effect {
+      Operator.remove(Operator)
     }
-
-    action rmDelegate (Operator : Operator) {
-      called by Operator.anasset.arole
-
-      effect {
-        Operator.remove(Operator)
-      }
+  }
+  action from_addr (anasset : anAsset) {
+    require {
+      c1 : Operator.get(anasset).operator = caller;
     }
-
-    action from_addr (anasset : anAsset) {
-      require {
-        c1 : Operator.get(anasset).operator = caller;
-      }
-
-      effect {
-        Operator.remove (Operator.get(anasset))
-      }
+    effect {
+      Operator.remove (Operator.get(anasset))
     }
   }
 }

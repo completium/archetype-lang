@@ -364,7 +364,6 @@ let string_of_symbol = function
   | X (N N_label_expr_unloc) -> "a label expr"
   | X (N N_snl_COMMA_security_arg_) -> "a non empty list of security argument"
   | X (N N_sl_COMMA_security_arg_) -> "a list of security argument"
-  | X (N N_boption_postfix_BEFORE_DOT__) -> "a identifier"
 
 let string_of_item (p, i) =
   string_of_symbol (lhs p) ^ " -> "
