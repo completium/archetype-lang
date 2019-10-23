@@ -119,6 +119,12 @@ let to_field (x : (M.loc_term, M.loc_typ, M.loc_ident) M.abstract_field) : P.fie
   let t : P.pty = to_type x.typ in
   mk_field ident t
 
+let extract_fun_args s =
+  match s.args with
+  | [] -> mk_binder () ~pty:(P.PTtuple[])
+  | _ -> mk_binder () ~pty:(P.PTtuple[])
+
+
 let to_ptree (mlwtree : M.loc_mlw_tree) : P.mlw_file =
   let to_module (m : (M.loc_term, M.loc_typ, M.loc_ident) M.abstract_module ) : P.ident * P.decl list =
     let id = m.name in
@@ -153,7 +159,7 @@ let to_ptree (mlwtree : M.loc_mlw_tree) : P.mlw_file =
           | Drecord (i, l) -> (
               let fields : P.field list =
                 List.map to_field l in
-              P.Dtype [mk_type (mk_ident id) (P.TDrecord fields)]
+              P.Dtype [mk_type (mk_ident i) (P.TDrecord fields)]
             )::accu
           | Dstorage s -> (
               let fields = List.map to_field s.fields in
@@ -184,8 +190,8 @@ let to_ptree (mlwtree : M.loc_mlw_tree) : P.mlw_file =
           | Dfun s -> (
               let ident = mk_ident s.name in
               let ghost = false in
-              let rs_kind = E.RKnone in
-              let binders : P.binder list = [mk_binder () ~pty:(P.PTtuple[]) ] in
+              let rs_kind = E.RKfunc in
+              let binders : P.binder list = extract_fun_args s in
               let expr : P.expr = mk_expr (to_expr s.body) in
               let pattern : P.pattern = mk_pattern P.Pwild in
               let spec : P.spec = mk_spec () in
