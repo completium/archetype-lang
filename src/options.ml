@@ -49,7 +49,6 @@ let opt_skv   = ref false
 let opt_raw   = ref false
 let opt_raw_whytree = ref false
 let opt_ppwhy3 = ref false
-let opt_ppwhy3_ast = ref false
 
 let opt_property_focused = ref ""
 

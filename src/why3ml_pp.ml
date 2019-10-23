@@ -157,12 +157,20 @@ module Output ( M : Ast_or_mlw) = struct
   let print_attr fmt a =
     match a with
     | ATstr attribute -> fprintf fmt (ast_or_mlw "ATstr(%a)" "%a") print_attribute attribute
-    | ATpos position -> fprintf fmt (ast_or_mlw "ATpos(%a)" "[#%a]") print_loc position
+    | ATpos position ->
+      match M.pp_loc with
+      | true -> fprintf fmt (ast_or_mlw "ATpos(%a)" "[#%a]") print_loc position
+      | false -> ()
+
+  let pp_location fmt x =
+    match M.pp_loc with
+    | true -> fprintf fmt "@ [#%a]" print_loc x
+    | false -> ()
 
   let print_ident fmt i =
     match pp_kind with
     | Ast -> fprintf fmt "ident(id_str:%s,id_ats:%a,id_loc(%a))" i.id_str (Pp.print_list Pp.comma print_attr) i.id_ats print_loc i.id_loc
-    | Mlw -> fprintf fmt "@[%a@ [#%a] %a@]" print_ident_str i print_loc i.id_loc
+    | Mlw -> fprintf fmt "@[%a%a %a@]" print_ident_str i pp_location i.id_loc
                (Pp.print_list Pp.space print_attr) i.id_ats
 
   (*s Types *)
@@ -467,7 +475,7 @@ module Output ( M : Ast_or_mlw) = struct
       (
         match pp_kind with
         | Ast -> fprintf fmt "Duseimport(%a,%a,%a)" print_loc loc print_import import (Pp.print_list Pp.comma (Pp.print_pair print_qualid (Pp.print_option print_ident))) qualid_id_opt_l
-        | Mlw -> fprintf fmt "@[use %a [#%a] %a@]" print_import import print_loc loc (Pp.print_list Pp.comma ((Pp.print_pair_delim Pp.nothing Pp.nothing Pp.nothing) print_qualid (Pp.print_option print_ident))) qualid_id_opt_l
+        | Mlw -> fprintf fmt "@[use %a%a %a@]" print_import import pp_location loc (Pp.print_list Pp.comma ((Pp.print_pair_delim Pp.nothing Pp.nothing Pp.nothing) print_qualid (Pp.print_option print_ident))) qualid_id_opt_l
       )
     | Dimport(qualid) [@if WHY3VERSION >= 130] -> fprintf fmt (ast_or_mlw "Dimport(%a)" "@[<hov 2>import %a@]") print_qualid qualid
     | Dscope(loc,import,id,decls) [@if WHY3VERSION >= 130] ->
