@@ -452,7 +452,7 @@ let rec pp_expr outer pos fmt a =
   | Efor (lbl, id, expr, body) ->
 
     let pp fmt (lbl, id, expr, body) =
-      Format.fprintf fmt "for %a(%a in %a) (@\n  @[%a@]@\n)"
+      Format.fprintf fmt "for %a%a in %a do@\n  @[%a@]@\ndone"
         (pp_option (fun fmt -> Format.fprintf fmt ": %a " pp_id)) lbl
         pp_id id
         (pp_expr e_default PNone) expr
@@ -463,7 +463,7 @@ let rec pp_expr outer pos fmt a =
   | Eiter (lbl, id, a, b, body) ->
 
     let pp fmt (lbl, id, a, b, body) =
-      Format.fprintf fmt "iter %a(%a %ato %a) (@\n  @[%a@]@\n)"
+      Format.fprintf fmt "iter %a%a %ato %a do@\n  @[%a@]@\ndone"
         (pp_option (fun fmt -> Format.fprintf fmt ": %a " pp_id)) lbl
         pp_id id
         (pp_option (fun fmt -> Format.fprintf fmt "from %a " (pp_expr e_default PNone))) a

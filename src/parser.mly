@@ -55,6 +55,8 @@
 %token DEFINITION
 %token DIV
 %token DIVEQUAL
+%token DO
+%token DONE
 %token DOT
 %token EFFECT
 %token ELSE
@@ -684,10 +686,10 @@ expr_r:
  | BREAK
      { Ebreak }
 
- | FOR lbl=colon_ident LPAREN x=ident IN y=expr RPAREN body=simple_expr
+ | FOR lbl=colon_ident x=ident IN y=expr DO body=expr DONE
      { Efor (lbl, x, y, body) }
 
- | ITER lbl=colon_ident LPAREN x=ident a=from_expr TO b=expr RPAREN body=simple_expr
+ | ITER lbl=colon_ident x=ident a=from_expr TO b=expr DO body=expr DONE
      { Eiter (lbl, x, a, b, body) }
 
  | IF c=expr THEN t=expr
@@ -777,11 +779,8 @@ simple_expr_r:
  | x=literal
      { Eliteral x }
 
- | x=ident
-     { let st = { before = false; label = None; } in Eterm (st, x) }
-
- | BEFORE DOT x=ident
-     { let st = { before = true; label = None; } in Eterm (st, x) }
+ | b=before_dot x=ident
+     { let st = { before = b; label = None; } in Eterm (st, x) }
 
  | LPAREN x=ident AT l=ident RPAREN
      { let st = { before = false; label = Some l; } in Eterm (st, x) }
@@ -791,6 +790,10 @@ simple_expr_r:
 
  | x=paren(expr_r)
      { x }
+
+%inline before_dot:
+ |            { false }
+ | BEFORE DOT { true }
 
 %inline label_exprs:
 | /* empty */   { [] }

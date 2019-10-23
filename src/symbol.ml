@@ -96,6 +96,8 @@ let string_of_token = function
   | ELSE            -> "ELSE"
   | EFFECT          -> "EFFECT"
   | DURATION s      -> Printf.sprintf "DURATION(%s)" s
+  | DO              -> "DO"
+  | DONE            -> "DONE"
   | DOT             -> "DOT"
   | DIVEQUAL        -> "DIVEQUAL"
   | DIV             -> "DIV"
@@ -222,6 +224,8 @@ let string_of_symbol = function
   | X (T T_ELSE) -> "else"
   | X (T T_EFFECT) -> "effect"
   | X (T T_DURATION) -> "duration"
+  | X (T T_DO) -> "do"
+  | X (T T_DONE) -> "done"
   | X (T T_DOT) -> "."
   | X (T T_DIVEQUAL) -> "/="
   | X (T T_DIV) -> "/"

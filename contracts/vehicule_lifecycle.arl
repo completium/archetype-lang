@@ -77,7 +77,8 @@ transition scrapVehicle on vk : vehicule from (Off_the_road or Active) {
 
 action scrapVehiclebyColor (color : string) {
   effect {
-    for (v in vehicule.select(vehicule.color = color))
+    for v in vehicule.select(vehicule.color = color) do
       v.state := Scrapped
+    done
   }
 }

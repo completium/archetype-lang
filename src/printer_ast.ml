@@ -404,7 +404,7 @@ let rec pp_instruction fmt (i : instruction) =
 
     | Ifor (id, c, body) ->
       let pp fmt (id, c, body) =
-        Format.fprintf fmt "for %a(%a in %a)@\n  @[%a@]"
+        Format.fprintf fmt "for %a%a in %a do@\n  @[%a@]@\ndone"
           (fun fmt x -> match x with Some v -> (Format.fprintf fmt ": %a " pp_str v) | _ -> ()) i.label
           pp_id id
           pp_pterm c
@@ -414,7 +414,7 @@ let rec pp_instruction fmt (i : instruction) =
 
     | Iiter (id, a, b, body) ->
       let pp fmt (id, a, b, body) =
-        Format.fprintf fmt "iter %a(%a from %a to %a)@\n  @[%a@]"
+        Format.fprintf fmt "iter %a%a from %a to %a do@\n  @[%a@]@\ndone"
           (fun fmt x -> match x with Some v -> (Format.fprintf fmt ": %a " pp_str v) | _ -> ()) i.label
           pp_id id
           pp_pterm a

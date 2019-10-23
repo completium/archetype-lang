@@ -36,6 +36,8 @@
       "constant"            , CONSTANT       ;
       "contract"            , CONTRACT       ;
       "definition"          , DEFINITION     ;
+      "do"                  , DO             ;
+      "done"                , DONE           ;
       "effect"              , EFFECT         ;
       "else"                , ELSE           ;
       "end"                 , END            ;

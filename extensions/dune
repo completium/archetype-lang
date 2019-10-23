@@ -11,7 +11,6 @@
   (signedby.arlx as extensions/signedby.arlx)
   (signedby_at_object_level.arlx as extensions/signedby_at_object_level.arlx)
   (test_initialized.arlx as extensions/test_initialized.arlx)
-  (test_namespace.arlx as extensions/test_namespace.arlx)
   (traceable.arlx as extensions/traceable.arlx)
   (transferable.arlx as extensions/transferable.arlx)
  )

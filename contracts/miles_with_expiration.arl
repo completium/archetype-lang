@@ -78,7 +78,7 @@ action consume (a : address) (quantity : int) {
     let by_expiration = ow.miles.select(the.expiration > now) in
     require (by_expiration.sum(the.amount) >= quantity);
     let remainder = quantity in
-    for : loop (m in by_expiration) (
+    for : loop m in by_expiration do
       if remainder > 0
       then (
         if m.amount > remainder
@@ -95,7 +95,7 @@ action consume (a : address) (quantity : int) {
           ow.miles.remove(m.id)
         )
       )
-    );
+    done;
     assert p1
   }
 }
@@ -113,9 +113,9 @@ action clear_expired {
   called by admin
 
   effect {
-    for : loop2 (o in owner) (
+    for : loop2 o in owner do
       o.miles.removeif (the.expiration < now)
-    )
+    done
   }
 }
 

@@ -62,10 +62,10 @@ transition bury from Voting {
   to Buried
   with effect {
     let nbvotesMax = ballot.max(nbvotes) in
-    for (b in ballot) (
+    for b in ballot do
       if (b.nbvotes = nbvotesMax)
       then winner.add({ value = b.val })
-    )
+    done
   }
 }
 

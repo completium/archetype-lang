@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
  - Add variable declaration `var id = val`
 
+### Changed
+ - Update syntax for for and iter loop `for : loop i in col do ... done`
+
+### Removed
+ - Remove namespace syntax
+
 ## [0.1.6] - 2018-10-15
 ### Added
  - Add focus property command for vscode extension
