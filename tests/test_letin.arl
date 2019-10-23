@@ -2,10 +2,10 @@ archetype test_letin
 
 action tr {
   effect {
-    for (i in list) (
+    for i in list do
       let x = toto in
       toto;
       tata
-    )
+    done
   }
 }

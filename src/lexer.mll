@@ -27,6 +27,7 @@
       "asset"               , ASSET          ;
       "at"                  , AT             ;
       "back"                , BACK           ;
+      "before"              , BEFORE         ;
       "break"               , BREAK          ;
       "but"                 , BUT            ;
       "by"                  , BY             ;
@@ -35,6 +36,8 @@
       "constant"            , CONSTANT       ;
       "contract"            , CONTRACT       ;
       "definition"          , DEFINITION     ;
+      "do"                  , DO             ;
+      "done"                , DONE           ;
       "effect"              , EFFECT         ;
       "else"                , ELSE           ;
       "end"                 , END            ;
@@ -55,6 +58,7 @@
       "instance"            , INSTANCE       ;
       "invariant"           , INVARIANT      ;
       "iter"                , ITER           ;
+      "label"               , LABEL          ;
       "lemma"               , LEMMA          ;
       "let"                 , LET            ;
       "match"               , MATCH          ;
@@ -155,7 +159,6 @@ rule token = parse
   | "(*"                  { comment lexbuf; token lexbuf }
   | "/*"                  { comment2 lexbuf; token lexbuf }
   | "\""                  { STRING (Buffer.contents (string (Buffer.create 0) lexbuf)) }
-  | "::"                  { COLONCOLON }
   | "("                   { LPAREN }
   | ")"                   { RPAREN }
   | "[%"                  { LBRACKETPERCENT }

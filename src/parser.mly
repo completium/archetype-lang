@@ -41,13 +41,13 @@
 %token AT_REMOVE
 %token AT_UPDATE
 %token BACK
+%token BEFORE
 %token BREAK
 %token BUT
 %token BY
 %token CALLED
 %token COLLECTION
 %token COLON
-%token COLONCOLON
 %token COLONEQUAL
 %token COMMA
 %token CONSTANT
@@ -55,6 +55,8 @@
 %token DEFINITION
 %token DIV
 %token DIVEQUAL
+%token DO
+%token DONE
 %token DOT
 %token EFFECT
 %token ELSE
@@ -82,6 +84,7 @@
 %token INSTANCE
 %token INVARIANT
 %token ITER
+%token LABEL
 %token LBRACE
 %token LBRACKET
 %token LBRACKETPERCENT
@@ -677,13 +680,16 @@ expr_r:
  | ASSERT id=ident
      { Eassert id }
 
+ | LABEL id=ident
+     { Elabel id }
+
  | BREAK
      { Ebreak }
 
- | FOR lbl=colon_ident LPAREN x=ident IN y=expr RPAREN body=simple_expr
+ | FOR lbl=colon_ident x=ident IN y=expr DO body=expr DONE
      { Efor (lbl, x, y, body) }
 
- | ITER lbl=colon_ident LPAREN x=ident a=from_expr TO b=expr RPAREN body=simple_expr
+ | ITER lbl=colon_ident x=ident a=from_expr TO b=expr DO body=expr DONE
      { Eiter (lbl, x, a, b, body) }
 
  | IF c=expr THEN t=expr
@@ -773,19 +779,21 @@ simple_expr_r:
  | x=literal
      { Eliteral x }
 
- | LPAREN
-     s=ioption(postfix(ident, COLONCOLON)) x=ident AT l=ident
-   RPAREN
-     { Eterm (Some l, s, x) }
+ | b=before_dot x=ident
+     { let st = { before = b; label = None; } in Eterm (st, x) }
 
- | s=ioption(postfix(ident, COLONCOLON)) x=ident
-     { Eterm (None, s, x) }
+ | LPAREN x=ident AT l=ident RPAREN
+     { let st = { before = false; label = Some l; } in Eterm (st, x) }
 
  | INVALID_EXPR
      { Einvalid }
 
  | x=paren(expr_r)
      { x }
+
+%inline before_dot:
+ |            { false }
+ | BEFORE DOT { true }
 
 %inline label_exprs:
 | /* empty */   { [] }

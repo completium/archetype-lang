@@ -192,10 +192,10 @@ let to_model (ast : A.model) : M.model =
     | A.Precord l                    -> M.Mrecord    (List.map f l)
     | A.Pletin (id, init, typ, cont) -> M.Mletin     ([id], f init, Option.map ftyp typ, f cont)
     | A.Pdeclvar (i, t, v)           -> M.Mdeclvar   ([i], Option.map ftyp t, f v)
-    | A.Pvar id when A.Utils.is_variable ast id   -> M.Mvarstorevar id
-    | A.Pvar id when A.Utils.is_asset ast id      -> M.Mvarstorecol id
-    | A.Pvar id when A.Utils.is_enum_value ast id -> M.Mvarenumval id
-    | A.Pvar id                                   -> M.Mvarlocal id
+    | A.Pvar (_, id) when A.Utils.is_variable ast id   -> M.Mvarstorevar id
+    | A.Pvar (_, id) when A.Utils.is_asset ast id      -> M.Mvarstorecol id
+    | A.Pvar (_, id) when A.Utils.is_enum_value ast id -> M.Mvarenumval id
+    | A.Pvar (_, id)                                   -> M.Mvarlocal id
     | A.Parray l                             -> M.Marray (List.map f l)
     | A.Plit ({node = BVint i; _})           -> M.Mint i
     | A.Plit ({node = BVuint i; _})          -> M.Muint i

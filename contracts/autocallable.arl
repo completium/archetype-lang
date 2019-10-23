@@ -144,7 +144,7 @@ function compute_expected (d : date) : tez {
     let terminated = false in
     let redeem_date = final in
     (* early redemption *)
-    for : redeemloop (e in early) (
+    for : redeemloop e in early do
       if e.redemption <= cd
       then (* is there early redemption ? *)
         let v = fixing.get(e.observation) in
@@ -158,7 +158,7 @@ function compute_expected (d : date) : tez {
         )
       else (* no need to check future observation *)
         break
-    );
+    done;
     (* redemption *)
     if not terminated and redemption <= cd
     then
@@ -176,7 +176,7 @@ function compute_expected (d : date) : tez {
          expected += worst * nominal;
     (* expected interests *)
     let exp_interests = 0.0 in
-    for : interestloop (i in interest) (
+    for : interestloop i in interest do
       if i.observation <= redem_date and i.payment <= cd
       then
         let v = fixing.get(i.observation) in
@@ -184,7 +184,7 @@ function compute_expected (d : date) : tez {
            and v.sg  >= i.barrier * sg_initial
            and v.ubs >= i.barrier * ubs_initial
         then exp_interests := i.rate * nominal
-    );
+    done;
     expected += exp_interests;
     return expected
   }

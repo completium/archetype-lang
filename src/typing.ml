@@ -57,6 +57,7 @@ end
 type error_desc =
   | AssetExpected
   | AssetWithoutFields
+  | BeforeOnLocalVar
   | BindingInExpr
   | CannotInferAnonRecord
   | CannotInferCollectionType
@@ -127,76 +128,80 @@ type error_desc =
 
 type error = L.t * error_desc
 
+(* -------------------------------------------------------------------- *)
 let pp_error_desc fmt e =
+  let pp s = Format.fprintf fmt s in
+
   match e with
-  | AssetExpected                      -> Format.fprintf fmt "Asset expected"
-  | AssetWithoutFields                 -> Format.fprintf fmt "Asset without fields"
-  | BindingInExpr                      -> Format.fprintf fmt "Binding in expression"
-  | CannotInferAnonRecord              -> Format.fprintf fmt "Cannot infer a non record"
-  | CannotInferCollectionType          -> Format.fprintf fmt "Cannot infer collection type"
-  | CollectionExpected                 -> Format.fprintf fmt "Collection expected"
-  | DivergentExpr                      -> Format.fprintf fmt "Divergent expression"
-  | DuplicatedAssetName i              -> Format.fprintf fmt "Duplicated asset name: %a" pp_ident i
-  | DuplicatedCtorName i               -> Format.fprintf fmt "Duplicated constructor name: %a" pp_ident i
-  | DuplicatedFieldInAssetDecl i       -> Format.fprintf fmt "Duplicated field in asset declaration: %a" pp_ident i
-  | DuplicatedFieldInRecordLiteral i   -> Format.fprintf fmt "Duplicated field in record literal: %a" pp_ident i
-  | DuplicatedInitMarkForCtor          -> Format.fprintf fmt "Duplicated 'initialized by' section for asset"
-  | DuplicatedPKey                     -> Format.fprintf fmt "Duplicated key"
-  | DuplicatedVarDecl i                -> Format.fprintf fmt "Duplicated variable declaration: %a" pp_ident i
-  | AnonymousFieldInEffect             -> Format.fprintf fmt "Anonymous field in effect"
-  | EmptyStateDecl                     -> Format.fprintf fmt "Empty state declaration"
-  | ExpressionExpected                 -> Format.fprintf fmt "Expression expected"
-  | FormulaExpected                    -> Format.fprintf fmt "Formula expected"
-  | IncompatibleTypes (t1, t2)         -> Format.fprintf fmt "Incompatible types: found '%a' but expected '%a'" Printer_ast.pp_ptyp t1 Printer_ast.pp_ptyp t2
-  | InvalidActionDescription           -> Format.fprintf fmt "Invalid action description"
-  | InvalidActionExpression            -> Format.fprintf fmt "Invalid action expression"
-  | InvalidArcheTypeDecl               -> Format.fprintf fmt "Invalid Archetype declaration"
-  | InvalidAssetCollectionExpr         -> Format.fprintf fmt "Invalid asset collection expression"
-  | InvalidAssetExpression             -> Format.fprintf fmt "Invalid asset expression"
-  | InvalidCallByExpression            -> Format.fprintf fmt "Invalid 'Calledby' expression"
-  | InvalidExpressionForEffect         -> Format.fprintf fmt "Invalid expression for effect"
-  | InvalidExpression                  -> Format.fprintf fmt "Invalid expression"
-  | InvalidFieldsCountInRecordLiteral  -> Format.fprintf fmt "Invalid fields count in record literal"
-  | InvalidLValue                      -> Format.fprintf fmt "Invalid value"
-  | InvalidFormula                     -> Format.fprintf fmt "Invalid formula"
-  | InvalidInstruction                 -> Format.fprintf fmt "Invalid instruction"
-  | InvalidNumberOfArguments (n1, n2)  -> Format.fprintf fmt "Invalid number of arguments: found '%i', but expected '%i'" n1 n2
-  | InvalidRoleExpression              -> Format.fprintf fmt "Invalid role expression"
-  | InvalidSecurityAction              -> Format.fprintf fmt "Invalid security action"
-  | InvalidSecurityRole                -> Format.fprintf fmt "Invalid security role"
-  | InvalidStateExpression             -> Format.fprintf fmt "Invalid state expression"
-  | LetInElseInInstruction             -> Format.fprintf fmt "Let In else in Instruction"
-  | MissingFieldInRecordLiteral i      -> Format.fprintf fmt "Missing field in record literal: %a" pp_ident i
-  | MixedAnonInRecordLiteral           -> Format.fprintf fmt "Mixed anonymous in record literal"
-  | MixedFieldNamesInRecordLiteral l   -> Format.fprintf fmt "Mixed field names in record literal: %a" (Printer_tools.pp_list "," pp_ident) l
-  | MoreThanOneInitState l             -> Format.fprintf fmt "More than one initial state: %a" (Printer_tools.pp_list ", " pp_ident) l
-  | MultipleInitialMarker              -> Format.fprintf fmt "Multiple 'initial' marker"
-  | MultipleMatchingOperator           -> Format.fprintf fmt "Mutliple matching operator"
-  | MultipleStateDeclaration           -> Format.fprintf fmt "Multiple state declaration"
-  | NameIsAlreadyBound i               -> Format.fprintf fmt "Name is already used: %a" pp_ident i
-  | NoMatchingOperator                 -> Format.fprintf fmt "No matching operator"
-  | NoSuchMethod i                     -> Format.fprintf fmt "No such method: %a" pp_ident i
-  | NoSuchSecurityPredicate i          -> Format.fprintf fmt "No such security predicate: %a" pp_ident i
-  | NonLoopLabel i                     -> Format.fprintf fmt "Not a loop lable: %a" pp_ident i
-  | NotARole i                         -> Format.fprintf fmt "Not a role: %a" pp_ident i
-  | NumericExpressionExpected          -> Format.fprintf fmt "Expecting numerical expression"
-  | OpInRecordLiteral                  -> Format.fprintf fmt "Operation in record literal"
-  | OrphanedLabel i                    -> Format.fprintf fmt "Label not used: %a" pp_ident i
-  | ReadOnlyGlobal i                   -> Format.fprintf fmt "Global is read only: %a" pp_ident i
-  | SecurityInExpr                     -> Format.fprintf fmt "Found securtiy predicate in expression"
-  | SpecOperatorInExpr                 -> Format.fprintf fmt "Specification operator in expression"
-  | UnknownAction i                    -> Format.fprintf fmt "Unknown action: %a" pp_ident i
-  | UnknownAsset i                     -> Format.fprintf fmt "Unknown asset: %a" pp_ident i
-  | UnknownField (i1, i2)              -> Format.fprintf fmt "Unknown field: asset %a does not have a field %a" pp_ident i1 pp_ident i2
-  | UnknownFieldName i                 -> Format.fprintf fmt "Unknown field name: %a" pp_ident i
-  | UnknownLabel i                     -> Format.fprintf fmt "Unknown label: %a" pp_ident i
-  | UnknownLocalOrVariable i           -> Format.fprintf fmt "Unknown local or variable: %a" pp_ident i
-  | UnknownProcedure i                 -> Format.fprintf fmt "Unknown procedure: %a" pp_ident i
-  | UnknownState i                     -> Format.fprintf fmt "Unknown state: %a" pp_ident i
-  | UnknownTypeName i                  -> Format.fprintf fmt "Unknown type: %a" pp_ident i
-  | UnpureInFormula                    -> Format.fprintf fmt "Cannot use expression with side effect"
-  | VoidMethodInExpr                   -> Format.fprintf fmt "Expecting arguments"
-  | AssetPartitionnedby (i, l)         -> Format.fprintf fmt "Cannot access asset collection: asset %a is partitionned by field(s) (%a)" pp_ident i (Printer_tools.pp_list ", " pp_ident) l
+  | AssetExpected                      -> pp "Asset expected"
+  | AssetWithoutFields                 -> pp "Asset without fields"
+  | BeforeOnLocalVar                   -> pp "Local variables do not support the `before' modifier"
+  | BindingInExpr                      -> pp "Binding in expression"
+  | CannotInferAnonRecord              -> pp "Cannot infer a non record"
+  | CannotInferCollectionType          -> pp "Cannot infer collection type"
+  | CollectionExpected                 -> pp "Collection expected"
+  | DivergentExpr                      -> pp "Divergent expression"
+  | DuplicatedAssetName i              -> pp "Duplicated asset name: %a" pp_ident i
+  | DuplicatedCtorName i               -> pp "Duplicated constructor name: %a" pp_ident i
+  | DuplicatedFieldInAssetDecl i       -> pp "Duplicated field in asset declaration: %a" pp_ident i
+  | DuplicatedFieldInRecordLiteral i   -> pp "Duplicated field in record literal: %a" pp_ident i
+  | DuplicatedInitMarkForCtor          -> pp "Duplicated 'initialized by' section for asset"
+  | DuplicatedPKey                     -> pp "Duplicated key"
+  | DuplicatedVarDecl i                -> pp "Duplicated variable declaration: %a" pp_ident i
+  | AnonymousFieldInEffect             -> pp "Anonymous field in effect"
+  | EmptyStateDecl                     -> pp "Empty state declaration"
+  | ExpressionExpected                 -> pp "Expression expected"
+  | FormulaExpected                    -> pp "Formula expected"
+  | IncompatibleTypes (t1, t2)         -> pp "Incompatible types: found '%a' but expected '%a'" Printer_ast.pp_ptyp t1 Printer_ast.pp_ptyp t2
+  | InvalidActionDescription           -> pp "Invalid action description"
+  | InvalidActionExpression            -> pp "Invalid action expression"
+  | InvalidArcheTypeDecl               -> pp "Invalid Archetype declaration"
+  | InvalidAssetCollectionExpr         -> pp "Invalid asset collection expression"
+  | InvalidAssetExpression             -> pp "Invalid asset expression"
+  | InvalidCallByExpression            -> pp "Invalid 'Calledby' expression"
+  | InvalidExpressionForEffect         -> pp "Invalid expression for effect"
+  | InvalidExpression                  -> pp "Invalid expression"
+  | InvalidFieldsCountInRecordLiteral  -> pp "Invalid fields count in record literal"
+  | InvalidLValue                      -> pp "Invalid value"
+  | InvalidFormula                     -> pp "Invalid formula"
+  | InvalidInstruction                 -> pp "Invalid instruction"
+  | InvalidNumberOfArguments (n1, n2)  -> pp "Invalid number of arguments: found '%i', but expected '%i'" n1 n2
+  | InvalidRoleExpression              -> pp "Invalid role expression"
+  | InvalidSecurityAction              -> pp "Invalid security action"
+  | InvalidSecurityRole                -> pp "Invalid security role"
+  | InvalidStateExpression             -> pp "Invalid state expression"
+  | LetInElseInInstruction             -> pp "Let In else in Instruction"
+  | MissingFieldInRecordLiteral i      -> pp "Missing field in record literal: %a" pp_ident i
+  | MixedAnonInRecordLiteral           -> pp "Mixed anonymous in record literal"
+  | MixedFieldNamesInRecordLiteral l   -> pp "Mixed field names in record literal: %a" (Printer_tools.pp_list "," pp_ident) l
+  | MoreThanOneInitState l             -> pp "More than one initial state: %a" (Printer_tools.pp_list ", " pp_ident) l
+  | MultipleInitialMarker              -> pp "Multiple 'initial' marker"
+  | MultipleMatchingOperator           -> pp "Mutliple matching operator"
+  | MultipleStateDeclaration           -> pp "Multiple state declaration"
+  | NameIsAlreadyBound i               -> pp "Name is already used: %a" pp_ident i
+  | NoMatchingOperator                 -> pp "No matching operator"
+  | NoSuchMethod i                     -> pp "No such method: %a" pp_ident i
+  | NoSuchSecurityPredicate i          -> pp "No such security predicate: %a" pp_ident i
+  | NonLoopLabel i                     -> pp "Not a loop lable: %a" pp_ident i
+  | NotARole i                         -> pp "Not a role: %a" pp_ident i
+  | NumericExpressionExpected          -> pp "Expecting numerical expression"
+  | OpInRecordLiteral                  -> pp "Operation in record literal"
+  | OrphanedLabel i                    -> pp "Label not used: %a" pp_ident i
+  | ReadOnlyGlobal i                   -> pp "Global is read only: %a" pp_ident i
+  | SecurityInExpr                     -> pp "Found securtiy predicate in expression"
+  | SpecOperatorInExpr                 -> pp "Specification operator in expression"
+  | UnknownAction i                    -> pp "Unknown action: %a" pp_ident i
+  | UnknownAsset i                     -> pp "Unknown asset: %a" pp_ident i
+  | UnknownField (i1, i2)              -> pp "Unknown field: asset %a does not have a field %a" pp_ident i1 pp_ident i2
+  | UnknownFieldName i                 -> pp "Unknown field name: %a" pp_ident i
+  | UnknownLabel i                     -> pp "Unknown label: %a" pp_ident i
+  | UnknownLocalOrVariable i           -> pp "Unknown local or variable: %a" pp_ident i
+  | UnknownProcedure i                 -> pp "Unknown procedure: %a" pp_ident i
+  | UnknownState i                     -> pp "Unknown state: %a" pp_ident i
+  | UnknownTypeName i                  -> pp "Unknown type: %a" pp_ident i
+  | UnpureInFormula                    -> pp "Cannot use expression with side effect"
+  | VoidMethodInExpr                   -> pp "Expecting arguments"
+  | AssetPartitionnedby (i, l)         -> pp "Cannot access asset collection: asset %a is partitionned by field(s) (%a)" pp_ident i (Printer_tools.pp_list ", " pp_ident) l
 
 (* -------------------------------------------------------------------- *)
 type argtype = [`Type of M.type_ | `Effect of ident]
@@ -376,7 +381,6 @@ let methods : (string * method_) list =
     ("subsetof"    , mk M.Csubsetof     `Pure   `Total   ([`SubColl     ], Some (`T M.vtbool)));
     ("head"        , mk M.Chead         `Pure   `Total   ([`T M.vtint   ], Some (`SubColl)));
     ("tail"        , mk M.Ctail         `Pure   `Total   ([`T M.vtint   ], Some (`SubColl)));
-    ("before"      , mk M.Cbefore       `Pure   `Total   ([             ], Some (`SubColl)));
     ("unmoved"     , mk M.Cunmoved      `Pure   `Total   ([             ], Some (`SubColl)));
     ("added"       , mk M.Cadded        `Pure   `Total   ([             ], Some (`SubColl)));
     ("removed"     , mk M.Cremoved      `Pure   `Total   ([             ], Some (`SubColl)));
@@ -973,26 +977,29 @@ let rec for_xexpr (mode : emode_t) (env : env) ?(ety : M.ptyp option) (tope : PT
   let bailout = fun () -> raise E.Bailout in
 
   let mk_sp type_ node = M.mk_sp ~loc:(loc tope) ?type_ node in
-  let dummy type_ : M.pterm = mk_sp type_ (M.Pvar (mkloc (loc tope) "<error>")) in
+  let dummy type_ : M.pterm = mk_sp type_ (M.Pvar (false, mkloc (loc tope) "<error>")) in
 
   let doit () =
     match unloc tope with
-    | Eterm (None, None, x) -> begin
+    | Eterm (st, x) -> begin
+        let before = st.before in
         match Env.lookup env (unloc x) with
         | Some (`Local xty) ->
-          mk_sp (Some xty) (M.Pvar x)
+          if before then
+            Env.emit_error env (loc tope, BeforeOnLocalVar);
+          mk_sp (Some xty) (M.Pvar (false, x))
 
         | Some (`Global decl) -> begin
             match decl.vr_def with
             | Some (body, `Inline) ->
               body
             | _ ->
-              mk_sp (Some decl.vr_type) (M.Pvar x)
+              mk_sp (Some decl.vr_type) (M.Pvar (before, x))
           end
 
         | Some (`Asset decl) ->
           let typ = M.Tcontainer ((M.Tasset decl.as_name), M.Collection) in
-          mk_sp (Some typ) (M.Pvar x)
+          mk_sp (Some typ) (M.Pvar (before, x))
 
         | _ ->
           Env.emit_error env (loc x, UnknownLocalOrVariable (unloc x));
@@ -1376,6 +1383,7 @@ let rec for_xexpr (mode : emode_t) (env : env) ?(ety : M.ptyp option) (tope : PT
 
     | Eapp      _
     | Eassert   _
+    | Elabel    _
     | Eassign   _
     | Ebreak
     | Efailif   _
@@ -1386,7 +1394,6 @@ let rec for_xexpr (mode : emode_t) (env : env) ?(ety : M.ptyp option) (tope : PT
     | Ereturn   _
     | Eoption   _
     | Eseq      _
-    | Eterm     _
     | Etransfer _
     | Einvalid ->
       Env.emit_error env (loc tope, InvalidExpression);
@@ -1513,6 +1520,9 @@ and for_gen_method_call mode env theloc (the, m, args) =
         let ty = M.Tcontainer (Tasset asset.as_name, M.Collection) in
         M.AExpr (for_xexpr mode env ~ety:ty arg)
 
+      | `T ty ->
+        M.AExpr (for_xexpr mode env ~ety:ty arg)
+
       | _ ->
         assert false
 
@@ -1609,7 +1619,8 @@ and for_action_description (env : env) (sa : PT.security_arg) : M.action_descrip
     M.ADAny
 
   | Sapp (act, [{ pldesc = PT.Sident asset }]) -> begin
-      let asset = mkloc (loc asset) (PT.Eterm (None, None, asset)) in
+      let st : PT.s_term = PT.mk_s_term () in
+      let asset = mkloc (loc asset) (PT.Eterm (st, asset)) in
       let asset = for_asset_collection_expr `Formula env asset in
 
       match snd asset with
@@ -1680,8 +1691,11 @@ let for_expr (env : env) ?(ety : M.type_ option) (tope : PT.expr) : M.pterm =
 
 (* -------------------------------------------------------------------- *)
 let for_lbl_expr (env : env) (topf : PT.label_expr) : env * (M.lident option * M.pterm) =
-  (* FIXME: check for duplicates *)
-  env, (Some (fst (unloc topf)), for_expr env (snd (unloc topf)))
+  if check_and_emit_name_free env (fst (unloc topf)) then
+    let env = Env.Label.push env (unloc (fst (unloc topf)), `Plain) in
+    env, (Some (fst (unloc topf)), for_expr env (snd (unloc topf)))
+  else
+    env, (None, for_expr env (snd (unloc topf)))
 
 (* -------------------------------------------------------------------- *)
 let for_lbls_expr (env : env) (topf : PT.label_exprs) : env * (M.lident option * M.pterm) list =
@@ -1689,8 +1703,11 @@ let for_lbls_expr (env : env) (topf : PT.label_exprs) : env * (M.lident option *
 
 (* -------------------------------------------------------------------- *)
 let for_lbl_formula (env : env) (topf : PT.label_expr) : env * (M.lident option * M.pterm) =
-  (* FIXME: check for duplicates *)
-  env, (Some (fst (unloc topf)), for_formula env (snd (unloc topf)))
+  if check_and_emit_name_free env (fst (unloc topf)) then
+    let env = Env.Label.push env (unloc (fst (unloc topf)), `Plain) in
+    env, (Some (fst (unloc topf)), for_formula env (snd (unloc topf)))
+  else
+    env, (None, for_formula env (snd (unloc topf)))
 
 (* -------------------------------------------------------------------- *)
 let for_xlbls_formula (env : env) (topf : PT.label_exprs) : env * (M.lident option * M.pterm) list =
@@ -1719,7 +1736,7 @@ let for_args_decl (env : env) (xs : PT.args) =
 (* -------------------------------------------------------------------- *)
 let for_lvalue (env : env) (e : PT.expr) : (M.lident * M.ptyp) option =
   match unloc e with
-  | Eterm (None, None, x) -> begin
+  | Eterm ({ before = false; _ }, x) -> begin
       match Env.lookup env (unloc x) with
       | Some (`Local xty) ->
         Some (x, xty)
@@ -2052,7 +2069,7 @@ let for_named_state (env : env) (x : PT.lident) =
 (* -------------------------------------------------------------------- *)
 let for_state (env : env) (st : PT.expr) : ident option =
   match unloc st with
-  | Eterm (None, None, x) ->
+  | Eterm ({ before = false; _ }, x) ->
     for_named_state env x
 
   | _ ->
@@ -2066,10 +2083,10 @@ let for_function (env : env) (f : PT.s_function loced) : unit =
 (* -------------------------------------------------------------------- *)
 let rec for_callby (env : env) (cb : PT.expr) =
   match unloc cb with
-  | Eterm (None, None, name) when String.equal (unloc name) "any" ->
+  | Eterm ({ before = false; _ }, name) when String.equal (unloc name) "any" ->
     [name]
 
-  | Eterm (None, None, name) ->
+  | Eterm ({ before = false; _ }, name) ->
     Option.get_as_list (for_role env name)
 
   | Eapp (Foperator { pldesc = `Logical Or }, [e1; e2]) ->

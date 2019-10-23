@@ -8,15 +8,15 @@ asset myasset identified by str {
 
 action tr {
   effect {
-    for (i in myasset) (
+    for i in myasset do
       mystring := "newvalue"
-    );
-    iter (i to 10) (
+    done;
+    iter i to 10 do
       mystring := "newvalue"
-    );
-    iter (i from 1 to 10) (
+    done;
+    iter i from 1 to 10 do
       if (i = 0)
       then mystring := "newvalue"
-    )
+    done
   }
 }

@@ -317,11 +317,13 @@ let rec pp_pterm fmt (pterm : pterm) =
       in
       (pp_with_paren pp) fmt (i, t, v)
 
-    | Pvar id ->
-      let pp fmt id =
-        pp_id fmt id
+    | Pvar (b, id) ->
+      let pp fmt (b, id) =
+        if   b
+        then Format.fprintf fmt "before.%a" pp_id id
+        else pp_id fmt id
       in
-      (pp_no_paren pp) fmt id
+      (pp_no_paren pp) fmt (b, id)
 
     | Parray l ->
       let pp fmt l =
@@ -402,7 +404,7 @@ let rec pp_instruction fmt (i : instruction) =
 
     | Ifor (id, c, body) ->
       let pp fmt (id, c, body) =
-        Format.fprintf fmt "for %a(%a in %a)@\n  @[%a@]"
+        Format.fprintf fmt "for %a%a in %a do@\n  @[%a@]@\ndone"
           (fun fmt x -> match x with Some v -> (Format.fprintf fmt ": %a " pp_str v) | _ -> ()) i.label
           pp_id id
           pp_pterm c
@@ -412,7 +414,7 @@ let rec pp_instruction fmt (i : instruction) =
 
     | Iiter (id, a, b, body) ->
       let pp fmt (id, a, b, body) =
-        Format.fprintf fmt "iter %a(%a from %a to %a)@\n  @[%a@]"
+        Format.fprintf fmt "iter %a%a from %a to %a do@\n  @[%a@]@\ndone"
           (fun fmt x -> match x with Some v -> (Format.fprintf fmt ": %a " pp_str v) | _ -> ()) i.label
           pp_id id
           pp_pterm a

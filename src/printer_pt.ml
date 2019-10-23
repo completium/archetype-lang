@@ -228,21 +228,20 @@ let string_of_scope (s : scope) =
 let rec pp_expr outer pos fmt a =
   let e = unloc a in
   match e with
-  | Eterm (l, e, id) ->
+  | Eterm (st, id) ->
+    begin
+      let pp_before fmt pp x =
+        Format.fprintf fmt "before.%a" pp x
+      in
+      let pp_label fmt lbl pp x =
+        Format.fprintf fmt "(%a at %a)" pp x pp_str lbl
+      in
 
-    let pp fmt (l, e, id) =
-      let f fmt (e, id) = Format.fprintf fmt "%a%a"
-          (pp_option (pp_postfix "::" pp_id)) e
-          pp_id id in
-      begin
-        match l with
-        | Some l -> Format.fprintf fmt "(%a at %a)"
-                      f (e, id)
-                      pp_id l
-        | None -> f fmt (e, id)
-      end
-    in
-    pp fmt (l, e, id)
+      match st.before, st.label with
+      | true, _ -> pp_before fmt pp_id id
+      | _, Some lbl -> pp_label fmt (unloc lbl) pp_id id
+      | _ -> pp_id fmt id
+    end
 
   | Eliteral x ->
 
@@ -453,7 +452,7 @@ let rec pp_expr outer pos fmt a =
   | Efor (lbl, id, expr, body) ->
 
     let pp fmt (lbl, id, expr, body) =
-      Format.fprintf fmt "for %a(%a in %a) (@\n  @[%a@]@\n)"
+      Format.fprintf fmt "for %a%a in %a do@\n  @[%a@]@\ndone"
         (pp_option (fun fmt -> Format.fprintf fmt ": %a " pp_id)) lbl
         pp_id id
         (pp_expr e_default PNone) expr
@@ -464,7 +463,7 @@ let rec pp_expr outer pos fmt a =
   | Eiter (lbl, id, a, b, body) ->
 
     let pp fmt (lbl, id, a, b, body) =
-      Format.fprintf fmt "iter %a(%a %ato %a) (@\n  @[%a@]@\n)"
+      Format.fprintf fmt "iter %a%a %ato %a do@\n  @[%a@]@\ndone"
         (pp_option (fun fmt -> Format.fprintf fmt ": %a " pp_id)) lbl
         pp_id id
         (pp_option (fun fmt -> Format.fprintf fmt "from %a " (pp_expr e_default PNone))) a
@@ -528,6 +527,14 @@ let rec pp_expr outer pos fmt a =
 
     let pp fmt i =
       Format.fprintf fmt "assert %a"
+        pp_id i
+    in
+    (maybe_paren outer e_colon pos pp) fmt i
+
+  | Elabel i ->
+
+    let pp fmt i =
+      Format.fprintf fmt "label %a"
         pp_id i
     in
     (maybe_paren outer e_colon pos pp) fmt i
