@@ -1,3 +1,4 @@
+open Tools
 open Why3
 
 let config : Whyconf.config = Whyconf.read_config None
@@ -7,6 +8,10 @@ let env : Env.env = Env.create_env (Whyconf.loadpath main)
 module M = Mlwtree
 module P = Ptree
 module E = Expr
+
+let break_id    = "'Break"
+let continue_id = "'Continue"
+let return_id   = "'Return"
 
 let unloc (x : 'a M.with_loc) = x.obj
 let loc   (x : 'a M.with_loc) = (*x.loc*) Loc.dummy_position
@@ -79,11 +84,11 @@ let mk_field ?(f_loc=Loc.dummy_position) ?(f_mutable=false) ?(f_ghost=false) f_i
 let mk_binder ?(loc=Loc.dummy_position) ?ident ?(ghost=false) ?pty () : P.binder =
   (loc, ident, ghost, pty)
 
-let to_type t =
+let to_type (t : M.loc_typ) =
   match unloc t with
   | M.Tyint          -> P.PTtyapp(mk_qualid_str ["int"], [])
   | M.Tyuint         -> P.PTtyapp(mk_qualid_str [""], [])
-  | M.Tybool         -> P.PTtyapp(mk_qualid_str [""], [])
+  | M.Tybool         -> P.PTtyapp(mk_qualid_str ["bool"], [])
   | M.Tystring       -> P.PTtyapp(mk_qualid_str ["string"], [])
   | M.Tyrational     -> P.PTtyapp(mk_qualid_str [""], [])
   | M.Tyaddr         -> P.PTtyapp(mk_qualid_str [""], [])
@@ -99,7 +104,7 @@ let to_type t =
   | M.Tyrecord id    -> P.PTtyapp(mk_qualid_str [""], [])
   | M.Tycoll id      -> P.PTtyapp(mk_qualid_str [""], [])
   | M.Tymap id       -> P.PTtyapp(mk_qualid_str [""], [])
-  | M.Tyasset id     -> P.PTtyapp(mk_qualid_str [""], [])
+  | M.Tyasset id     -> P.PTtyapp(mk_qualid     [id], [])
   | M.Typartition id -> P.PTtyapp(mk_qualid_str [""], [])
   | M.Tyenum id      -> P.PTtyapp(mk_qualid_str [""], [])
   | M.Tyoption t     -> P.PTtyapp(mk_qualid_str [""], [])
@@ -110,20 +115,99 @@ let to_term t =
   match unloc t with
   | _ -> P.Ttrue (* TODO *)
 
-let to_expr e =
+let rec to_expr (e : M.loc_term) =
+  let f = mk_expr |@ to_expr in
   match unloc e with
-  | _ -> P.Etrue (* TODO *)
+  | M.Tseq l                  -> P.Etrue
+  | M.Tif (i,t, None)         -> assert false
+  | M.Tif (i,t, Some e)       -> P.Etrue
+  | M.Traise e                -> assert false
+  | M.Tmem (t,e1,e2)          -> assert false
+  | M.Tcontains (t,e1,e2)     -> P.Etrue
+  | M.Tlmem (i,e1,e2)         -> assert false
+  | M.Tvar i                  -> P.Etrue
+  | M.Tdoti (i1,i2)           -> P.Eidapp(mk_qualid [i2], [mk_expr (P.Eident (mk_qualid [i1]))])
+  | M.Tdot (e1,e2)            -> assert false
+  | M.Tassign (e1,e2)         -> assert false
+  | M.Tadd (i,e1,e2)          -> assert false
+  | M.Tset (i,e1,e2,e3)       -> assert false
+  | M.Tcoll (i,e)             -> P.Etrue
+  (* | M.Teq (M.Tycoll a, e1, e2)  -> assert false *)
+  | M.Teq (_, e1, e2)         -> P.Einnfix(f e1, mk_ident_str (Ident.op_infix "="), f e2)
+  | M.Tunion (i, e1, e2)      -> assert false
+  | M.Tinter (i,e1, e2)       -> assert false
+  | M.Tdiff (i,e1, e2)        -> assert false
+  | M.Told e                  -> assert false
+  | M.Tsingl (i,e)            -> assert false
+  | M.Tempty (i,e)            -> assert false
+  | M.Tint i                  -> (
+      let i : BigInt.t = BigInt.of_string (Big_int.string_of_big_int i) in
+      let s : Number.int_constant = {il_kind = ILitDec; il_int = i } in
+      let a = Number.ConstInt s in
+      P.Econst a)
+  | M.Tforall (ud,b)          -> assert false
+  | M.Texists (ud,b)          -> assert false
+  | M.Timpl (e1,e2)           -> assert false
+  | M.Tand (e1,e2)            -> assert false
+  | M.Tfalse                  -> P.Efalse
+  | M.Tor (e1,e2)             -> assert false
+  | M.Tgt (_,e1,e2)           -> assert false
+  | M.Tge (_,e1,e2)           -> assert false
+  | M.Tlt (_,e1,e2)           -> assert false
+  | M.Tle (_,e1,e2)           -> assert false
+  | M.Tapp (f,[])             -> assert false
+  | M.Tapp (f,a)              -> P.Etrue
+  | M.Tget (i,e1,e2)          -> assert false
+  | M.Trecord (None,l)        -> P.Erecord (List.map (fun (q, v) -> (mk_qualid [q], f v)) l)
+  | M.Trecord (Some e,l)      -> assert false
+  | M.Tnone                   -> P.Etrue
+  | M.Tenum i                 -> assert false
+  | M.Tsome e                 -> assert false
+  | M.Tnot e                  -> assert false
+  | M.Tpand (e1,e2)           -> P.Eand (f e1, f e2)
+  | M.Tlist l                 -> assert false
+  | M.Tnil                    -> P.Etrue
+  | M.Temptycoll i            -> P.Etrue
+  | M.Tcaller i               -> assert false
+  | M.Ttransferred i          -> assert false
+  | M.Tletin (r,i,t,b,e)      -> assert false
+  | M.Tletfun (s,e)           -> P.Etrue
+  | M.Tfor (i,s,l,b)          -> assert false
+  | M.Ttry (b,l)              -> P.Etrue
+  | M.Tassert (None,e)        -> assert false
+  | M.Tassert (Some lbl,e )   -> assert false
+  | M.Ttoiter (a,i,e)         -> assert false
+  | M.Tcard (i,e)             -> assert false
+  | M.Tunshallow (i,e1,e2)    -> P.Etrue
+  | M.Tshallow (i,e1,e2)      -> assert false
+  | M.Tminus (_,e1,e2)        -> assert false
+  | M.Tplus (_,e1,e2)         -> assert false
+  | M.Tnth (i,e1,e2)          -> assert false
+  | M.Tdle (_,e1,e2,e3)       -> assert false
+  | M.Tresult                 -> assert false
+  | M.Tsubset (i,e1,e2)       -> assert false
+  | M.Ttail (e1,e2)           -> assert false
+  | M.Tnow i                  -> assert false
+  | M.Tmlist (e1,i1,i2,i3,e2) -> assert false
+  | M.Tcons (e1,e2)           -> assert false
+  | M.Tremove (i,e1,e2)       -> assert false
+  | M.Tlistremove (i,e1,e2)   -> assert false
+  | M.Texn e                  -> assert false
+  | _ -> assert false (* TODO *)
 
 let to_field (x : (M.loc_term, M.loc_typ, M.loc_ident) M.abstract_field) : P.field =
   let ident : P.ident = mk_ident x.name in
   let t : P.pty = to_type x.typ in
   mk_field ident t
 
-let extract_fun_args s =
+let extract_fun_args (s : (M.loc_term, M.loc_typ, M.loc_ident) M.abstract_fun_struct) =
   match s.args with
-  | [] -> mk_binder () ~pty:(P.PTtuple[])
-  | _ -> mk_binder () ~pty:(P.PTtuple[])
+  | [] -> [mk_binder () ~pty:(P.PTtuple[])]
+  | _ ->
+    List.map (fun (i, t) -> mk_binder () ~ident:(mk_ident i) ~pty:(to_type t)) s.args
 
+let mk_return e =
+  mk_expr (P.Eoptexn(mk_ident_str return_id, Ity.MaskVisible, e))
 
 let to_ptree (mlwtree : M.loc_mlw_tree) : P.mlw_file =
   let to_module (m : (M.loc_term, M.loc_typ, M.loc_ident) M.abstract_module ) : P.ident * P.decl list =
@@ -190,12 +274,13 @@ let to_ptree (mlwtree : M.loc_mlw_tree) : P.mlw_file =
           | Dfun s -> (
               let ident = mk_ident s.name in
               let ghost = false in
-              let rs_kind = E.RKfunc in
+              let rs_kind = if List.is_empty s.args then E.RKnone else E.RKfunc in
               let binders : P.binder list = extract_fun_args s in
-              let expr : P.expr = mk_expr (to_expr s.body) in
+              let ret = Some (to_type s.returns) in
+              let body : P.expr = mk_expr (to_expr s.body) in
               let pattern : P.pattern = mk_pattern P.Pwild in
               let spec : P.spec = mk_spec () in
-              let expr = mk_expr (P.Efun(binders, None, pattern, Ity.MaskVisible, spec, expr)) in
+              let expr = mk_expr (P.Efun(binders, ret, pattern, Ity.MaskVisible, spec, mk_return body)) in
               P.Dlet(ident, ghost, rs_kind, expr)
             )::accu
       ) m.decls [] in
