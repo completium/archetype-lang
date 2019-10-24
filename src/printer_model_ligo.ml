@@ -1033,13 +1033,25 @@ let pp_model fmt (model : model) =
       let _, t = Utils.get_asset_key model (to_lident an) in
       Format.fprintf fmt
         "function remove_%s (const s : storage_type; const key : %a) : storage_type is@\n  \
+         var new_keys : list(%a) := (nil : list(%a));@\n  \
+         function aux (const i : %a) : unit is@\n  \
          begin@\n    \
-         // TODO: remove key of s.%s_keys@\n    \
+         if (key =/= i) then@\n      \
+         new_keys := cons(i, new_keys);@\n    \
+         else@\n      \
+         skip;@\n  \
+         end with unit@\n  \
+         begin@\n    \
+         list_iter(s.%s_keys, aux);@\n    \
+         s.%s_keys := new_keys;@\n    \
          const map_local : map(%a, %s) = s.%s_assets;@\n    \
          remove key from map map_local;@\n    \
          s.%s_assets := map_local;@\n  \
          end with (s)@\n"
         an pp_btyp t
+        pp_btyp t pp_btyp t
+        pp_btyp t
+        an
         an
         pp_btyp t an an
         an
@@ -1061,28 +1073,25 @@ let pp_model fmt (model : model) =
     | UpdateAdd (an, fn) ->
       let k, t = Utils.get_asset_key model (to_lident an) in
       let ft, c = Utils.get_field_container model an fn in
-      (* let kk, _ = Utils.get_asset_key model (to_lident ft) in *)
+      let kk, _ = Utils.get_asset_key model (to_lident ft) in
       Format.fprintf fmt
         "function add_%s_%s (const s : storage_type; const a : %s; const b : %s) : storage_type is@\n  \
          begin@\n    \
-         const key : %a = a.%s;@\n    \
-         s.%s_keys := cons(key, s.%s_keys);@\n    \
+         const asset_key : %a = a.%s;@\n    \
+         const asset_val : %s = get_%s(s, asset_key);@\n    \
+         asset_val.%s := cons(b.%s, asset_val.%s);@\n    \
          const map_local : map(%a, %s) = s.%s_assets;@\n    \
-         map_local[key] := a;@\n    \
-         s.%s_assets := map_local;@\n  \
+         map_local[asset_key] := asset_val;@\n    \
+         s.%s_assets := map_local;@\n    \
+         s := add_%s(s, b);@\n  \
          end with (s)@\n"
         an fn an ft
         pp_btyp t k
         an an
+        fn kk fn
         pp_btyp t an an
         an
-
-    (* "let[@inline] add_%s_%s (s, a, b : storage * %s * %s) : storage =@\n  \
-       let asset = a.%s <- add_list b.%a a.%s in@\n  \
-       s.%s_assets <- Map.update a.%a (Some asset) s.%s_assets@\n"
-       an fn an ft
-       fn pp_str kk fn
-       an pp_str k an *)
+        ft
 
     | UpdateRemove (an, fn) ->
       let k, t = Utils.get_asset_key model (to_lident an) in
@@ -1090,25 +1099,34 @@ let pp_model fmt (model : model) =
       let kk, tt = Utils.get_asset_key model (to_lident ft) in
       Format.fprintf fmt
         "function remove_%s_%s (const s : storage_type; const a : %s; const key : %a) : storage_type is@\n  \
+         var new_keys : list(%a) := (nil : list(%a));@\n  \
+         function aux (const i : %a) : unit is@\n  \
          begin@\n    \
-         const key : %a = a.%s;@\n    \
-         // TODO: remove key of %s.%s@\n    \
+         if (key =/= i) then@\n      \
+         new_keys := cons(i, new_keys);@\n    \
+         else@\n      \
+         skip;@\n  \
+         end with unit@\n  \
+         begin@\n    \
+         const asset_key : %a = a.%s;@\n    \
+         const asset_val : %s = get_%s(s, asset_key);@\n    \
+         list_iter(asset_val.%s, aux);@\n    \
+         asset_val.%s := new_keys;@\n    \
          const map_local : map(%a, %s) = s.%s_assets;@\n    \
-         remove key from map map_local;@\n    \
-         s.%s_assets := map_local;@\n  \
+         map_local[asset_key] := asset_val;@\n    \
+         s.%s_assets := map_local;@\n    \
+         s := remove_%s(s, key);@\n  \
          end with (s)@\n"
         an fn an pp_btyp tt
+        pp_btyp tt pp_btyp tt
+        pp_btyp tt
         pp_btyp t k
-        an fn
+        an an
+        fn
+        fn
         pp_btyp t an an
         an
-
-    (* "let[@inline] remove_%s_%s (s, a, key : storage * %s * %a) : storage =@\n  \
-       let asset = a.%s <- remove_list key a.%s in@\n  \
-       s.%s_assets <- Map.update a.%a (Some asset) s.%s_assets@\n"
-       an fn an pp_btyp tt
-       fn fn
-       an pp_str k an *)
+        ft
 
     | UpdateClear (an, fn) ->
       (* let k, t = Utils.get_asset_key model (to_lident an) in *)
@@ -1158,51 +1176,24 @@ let pp_model fmt (model : model) =
       let i = get_preds_index env.select_preds f in
       Format.fprintf fmt
         "function select_%s_%i (const s : storage_type; const l : list(%a)) : list(%a) is@\n  \
-         var l : list(%a) := (nil : list(%a));@\n  \
+         var res : list(%a) := (nil : list(%a));@\n  \
          function aggregate (const i : %a) : unit is@\n  \
          begin@\n    \
          const the : %s = get_force(i, s.%s_assets);@\n    \
          if (%a) then@\n      \
-         l := cons(the.%s, l);@\n    \
+         res := cons(the.%s, res);@\n    \
          else@\n      \
          skip;@\n  \
          end with unit@\n  \
          begin@\n    \
          list_iter(l, aggregate)@\n  \
-         end with l@\n"
+         end with res@\n"
         an i pp_btyp t pp_btyp t
         pp_btyp t pp_btyp t
         pp_btyp t
         an an
         (pp_mterm (mk_env ())) f
         k
-
-
-    (* function select_mile_0 (const s : storage_type; const l : list(string)) : list(string) is
-       var l : list(string) := (nil : list(string));
-       function aggregate (const i : string) : unit is
-       begin
-       const the : mile = get_force(i, s.mile_assets);
-       if (the.expiration < now) then
-       l := (cons(the.id, l));
-       else
-       skip;
-       end with unit
-       begin
-       list_iter(l, aggregate)
-       end with l *)
-
-    (* Format.fprintf fmt "// TODO api storage: Select" *)
-    (* "let[@inline] select_%s (s, l, p : storage * %a list * (%s -> bool)) : %a list =@\n  \
-       List.fold (fun (x, accu) ->@\n  \
-       let a = get_%s (s, x) in@\n  \
-       if p a@\n  \
-       then add_list a.%s accu@\n  \
-       else accu@\n  \
-       ) l []@\n"
-       an pp_btyp t an pp_btyp t
-       an
-       k *)
 
     | Sort (an, fn) ->
       Format.fprintf fmt "// TODO api storage: Sort"
