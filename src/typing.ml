@@ -1973,6 +1973,8 @@ module SecurityPred = struct
     | V0 : unit validator
     | VC : 'a mode * 'b validator -> ('a * 'b) validator
 
+  let (^:) m v = VC (m, v)
+
   exception ArgCountError
 
   let rec vdlen : type a . a validator -> int =
@@ -1998,17 +2000,17 @@ module SecurityPred = struct
   let pclen (PredC (_, vd)) = vdlen vd
 
   let vd1 f m =
-    PredC ((fun (x, ()) -> f x), VC (m, V0))
+    PredC ((fun (x, ()) -> f x), m ^: V0)
 
   let vd2 f m1 m2 =
     PredC
       ((fun (x, (y, ())) -> f x y),
-       VC (m1, (VC (m2, V0))))
+       m1 ^: m2 ^: V0)
 
   let vd3 f m1 m2 m3 =
     PredC
       ((fun (x, (y, (z, ()))) -> f x y z),
-       VC (m1, (VC (m2, (VC (m3, V0))))))
+       m1 ^: m2 ^: m3 ^: V0)
 
   let validate_and_build env (PredC (f, vd)) args =
     f (validate env (vd, args))
