@@ -298,11 +298,6 @@ let opsigs =
   List.map (snd_map doit) opsigs
 
 (* -------------------------------------------------------------------- *)
-type varfun = [
-  | `Variable of PT.variable_decl
-  | `Function of PT.s_function
-]
-
 type acttx = [
   | `Action     of PT.action_decl
   | `Transition of PT.transition_decl
@@ -313,7 +308,8 @@ type groups = {
   gr_states      : PT.enum_decl               loced list;
   gr_enums       : (PT.lident * PT.enum_decl) loced list;
   gr_assets      : PT.asset_decl              loced list;
-  gr_varfuns     : varfun                     loced list;
+  gr_vars        : PT.variable_decl           loced list;
+  gr_funs        : PT.s_function              loced list;
   gr_acttxs      : acttx                      loced list;
   gr_specs       : PT.specification           loced list;
   gr_secs        : PT.security                loced list;
@@ -2153,43 +2149,50 @@ let for_state_decl (env : env) (state : state loced) =
     env, Some (unloc ictor, List.map (fun (x, _, inv) -> (x, inv)) ctors)
 
 (* -------------------------------------------------------------------- *)
-let for_varfun_decl (env : env) (decl : varfun loced) =
-  match unloc decl with
-  | `Variable (x, ty, e, _tgts, ctt, _) ->
-    (* FIXME: handle tgts *)
+let for_var_decl (env : env) (decl : PT.variable_decl loced) =
+  (* FIXME: handle tgts *)
 
-    let ty   = for_type env ty in
-    let e    = Option.map (for_expr env ?ety:ty) e in
-    let dty  =
-      if   Option.is_some ty
-      then ty
-      else Option.bind (fun e -> e.M.type_) e in
-    let ctt  = match ctt with
-      | VKconstant -> `Constant
-      | VKvariable -> `Variable in
+  let (x, ty, e, _tgts, ctt, _) = unloc decl in
 
-    if Option.is_some dty then begin
-      let decl = {
-        vr_name = x  ; vr_type = Option.get dty;
-        vr_kind = ctt; vr_core = None          ;
-        vr_def  = Option.map (fun e -> (e, `Std)) e; } in
+  let ty   = for_type env ty in
+  let e    = Option.map (for_expr env ?ety:ty) e in
+  let dty  =
+    if   Option.is_some ty
+    then ty
+    else Option.bind (fun e -> e.M.type_) e in
+  let ctt  = match ctt with
+    | VKconstant -> `Constant
+    | VKvariable -> `Variable in
 
-      if   (check_and_emit_name_free env x)
-      then (Env.Var.push env decl, Some (`Variable decl))
-      else (env, None)
-    end else (env, None)
+  if Option.is_some dty then begin
+    let decl = {
+      vr_name = x  ; vr_type = Option.get dty;
+      vr_kind = ctt; vr_core = None          ;
+      vr_def  = Option.map (fun e -> (e, `Std)) e; } in
 
-  | `Function fdecl ->
-    let env, _   = Env.inscope env (fun env ->
-        let env    = fst (for_args_decl env fdecl.args) in
-        let rty    = Option.bind (for_type env) fdecl.ret_t in
-        let _body  = for_expr env ?ety:rty fdecl.body in
-        let _spec = Option.map (for_specification env) fdecl.spec in
-        env, ()) in (env, None)
+    if   (check_and_emit_name_free env x)
+    then (Env.Var.push env decl, Some decl)
+    else (env, None)
+  end else (env, None)
 
 (* -------------------------------------------------------------------- *)
-let for_varfuns_decl (env : env) (decls : varfun loced list) =
-  List.fold_left_map for_varfun_decl env decls
+let for_vars_decl (env : env) (decls : PT.variable_decl loced list) =
+  List.fold_left_map for_var_decl env decls
+
+(* -------------------------------------------------------------------- *)
+let for_fun_decl (env : env) (fdecl : PT.s_function loced) =
+  let fdecl = unloc fdecl in
+
+  let env, _   = Env.inscope env (fun env ->
+      let env   = fst (for_args_decl env fdecl.args) in
+      let rty   = Option.bind (for_type env) fdecl.ret_t in
+      let _body = for_expr env ?ety:rty fdecl.body in
+      let _spec = Option.map (for_specification env) fdecl.spec in
+      env, ()) in (env, Some ())
+
+(* -------------------------------------------------------------------- *)
+let for_funs_decl (env : env) (decls : PT.s_function loced list) =
+  List.fold_left_map for_fun_decl env decls
 
 (* -------------------------------------------------------------------- *)
 let for_asset_decl (env : env) (decl : PT.asset_decl loced) =
@@ -2360,7 +2363,8 @@ let group_declarations (decls : (PT.declaration list)) =
     gr_states     = [];
     gr_enums      = [];
     gr_assets     = [];
-    gr_varfuns    = [];
+    gr_vars       = [];
+    gr_funs       = [];
     gr_acttxs     = [];
     gr_specs      = [];
     gr_secs       = [];
@@ -2374,7 +2378,7 @@ let group_declarations (decls : (PT.declaration list)) =
       { g with gr_archetypes = mk (x, exts) :: g.gr_archetypes }
 
     | PT.Dvariable infos ->
-      { g with gr_varfuns = mk (`Variable infos) :: g.gr_varfuns }
+      { g with gr_vars = mk infos :: g.gr_vars }
 
     | PT.Denum (PT.EKstate, infos) ->
       { g with gr_states = mk infos :: g.gr_states }
@@ -2392,7 +2396,7 @@ let group_declarations (decls : (PT.declaration list)) =
       { g with gr_acttxs = mk (`Transition infos) :: g.gr_acttxs }
 
     | PT.Dfunction infos ->
-      { g with gr_varfuns = mk (`Function infos) :: g.gr_varfuns }
+      { g with gr_funs = mk infos :: g.gr_funs }
 
     | PT.Dspecification infos ->
       { g with gr_specs = mk infos :: g.gr_specs }
@@ -2416,6 +2420,8 @@ let for_grouped_declarations (env : env) (toploc, g) =
   if List.length g.gr_states > 1 then
     Env.emit_error env (toploc, MultipleStateDeclaration);
 
+  let env, vdecls = for_vars_decl env g.gr_vars in
+
   let _state, env =
     let for1 { plloc = loc; pldesc = state } =
       match for_state_decl env (mkloc loc (fst state)) with
@@ -2430,12 +2436,12 @@ let for_grouped_declarations (env : env) (toploc, g) =
       (None, env) in
 
   let env, adecls = for_assets_decl  env g.gr_assets  in
-  let env, fdecls = for_varfuns_decl env g.gr_varfuns in
+  let env, fdecls = for_funs_decl    env g.gr_funs in
   let env, tdecls = for_acttxs_decl  env g.gr_acttxs  in
-  let env, vdecls = for_specs_decl   env g.gr_specs   in
+  let env, cdecls = for_specs_decl   env g.gr_specs   in
   let env, sdecls = for_secs_decl    env g.gr_secs   in
 
-  (env, (adecls, fdecls, tdecls, vdecls, sdecls))
+  (env, (adecls, vdecls, fdecls, tdecls, cdecls, sdecls))
 
 (* -------------------------------------------------------------------- *)
 let assets_of_adecls adecls =
@@ -2459,18 +2465,17 @@ let assets_of_adecls adecls =
   in List.map for1 (List.pmap (fun x -> x) adecls)
 
 (* -------------------------------------------------------------------- *)
-let variables_of_fdecls fdecls =
-  let for1 = function
-    | `Variable (decl : vardecl) ->
-      M.{ decl =
-            M.{ name    = decl.vr_name;
-                typ     = Some decl.vr_type;
-                default = Option.fst decl.vr_def;
-                loc     = loc decl.vr_name; };
-          constant = decl.vr_kind = `Constant;
-          from     = None;
-          to_      = None;
-          loc      = loc decl.vr_name; }
+let variables_of_vdecls fdecls =
+  let for1 (decl : vardecl) =
+    M.{ decl =
+          M.{ name    = decl.vr_name;
+              typ     = Some decl.vr_type;
+              default = Option.fst decl.vr_def;
+              loc     = loc decl.vr_name; };
+        constant = decl.vr_kind = `Constant;
+        from     = None;
+        to_      = None;
+        loc      = loc decl.vr_name; }
 
   in List.map for1 (List.pmap (fun x -> x) fdecls)
 
@@ -2579,13 +2584,13 @@ let for_declarations (env : env) (decls : (PT.declaration list) loced) : M.model
   | { pldesc = Darchetype (x, _exts) } :: decls ->
     let groups = group_declarations decls in
     let _env, decls = for_grouped_declarations env (toploc, groups) in
-    let adecls, fdecls, tdecls, vdecls, sdecls = decls in
+    let adecls, vdecls, _fdecls, tdecls, cdecls, sdecls = decls in
 
     M.mk_model
       ~assets:(assets_of_adecls adecls)
-      ~variables:(variables_of_fdecls fdecls)
+      ~variables:(variables_of_vdecls vdecls)
       ~transactions:(transactions_of_tdecls tdecls)
-      ~specifications:(List.map specifications_of_ispecifications vdecls)
+      ~specifications:(List.map specifications_of_ispecifications cdecls)
       ~securities:sdecls
       x
 
