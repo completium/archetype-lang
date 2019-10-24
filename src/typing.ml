@@ -399,32 +399,6 @@ let methods : (string * method_) list =
 let methods = Mid.of_list methods
 
 (* -------------------------------------------------------------------- *)
-type security_pred = {
-  sp_sig: sptyp list;
-  (* sp_fun: PT.security_arg list -> M.security_node *)
-}
-and sptyp = [
-  | `ActionDesc
-  | `Role
-  | `Action
-]
-
-let security_preds : (string * security_pred) list =
-  let mk sp_sig = { sp_sig } in [
-    ("only_by_role",           mk [`ActionDesc; `Role]);
-    ("only_in_action",         mk [`ActionDesc; `Action]);
-    ("only_by_role_in_action", mk [`ActionDesc; `Role; `Action]);
-    ("not_by_role",            mk [`ActionDesc; `Role]);
-    ("not_in_action",          mk [`ActionDesc; `Action]);
-    ("not_by_role_in_action",  mk [`ActionDesc; `Role; `Action]);
-    ("transferred_by",         mk [`ActionDesc]);
-    ("transferred_to",         mk [`ActionDesc]);
-    ("no_storage_fail",        mk [`Action])
-  ]
-
-let security_preds = Mid.of_list security_preds
-
-(* -------------------------------------------------------------------- *)
 type assetdecl = {
   as_name   : M.lident;
   as_fields : (M.lident * M.ptyp) list;
@@ -1983,68 +1957,114 @@ let for_specification_item (env : env) (v : PT.specification_item) : env * env i
     (env, `Postcondition (x, f, invs, uses))
 
 (* -------------------------------------------------------------------- *)
+module SecurityPred = struct
+  type _ mode =
+    | ActionDesc : M.action_description mode
+    | Role       : M.lident list        mode
+    | Action     : M.security_action    mode
+
+  type sptype = [
+    | `ActionDesc
+    | `Role
+    | `Action
+  ]
+
+  let validate1 (type a) (env : env) (mode : a mode) (v : PT.security_arg) : a =
+    match mode with
+    | ActionDesc -> for_action_description env v
+    | Role       -> for_security_role      env v
+    | Action     -> for_security_action    env v
+
+  type _ validator =
+    | V0 : unit validator
+    | VC : 'a mode * 'b validator -> ('a * 'b) validator
+
+  exception ArgCountError
+
+  let rec vdlen : type a . a validator -> int =
+    function V0 -> 0 | VC (_, vd) -> 1 + vdlen vd
+
+  let rec validate
+    : type a . env -> a validator * PT.security_arg list -> a
+  = fun env -> function
+    | V0, [] ->
+        ()
+
+    | VC (m, vd), v :: args ->
+        let v    = validate1 env m    v     in
+        let args = validate  env (vd, args) in
+        (v, args)
+
+    | _, _ ->
+        raise ArgCountError
+
+  type predc =
+    | PredC : ('a -> M.security_node) * 'a validator -> predc
+
+  let pclen (PredC (_, vd)) = vdlen vd
+
+  let vd1 f m =
+    PredC ((fun (x, ()) -> f x), VC (m, V0))
+
+  let vd2 f m1 m2 =
+    PredC
+      ((fun (x, (y, ())) -> f x y),
+       VC (m1, (VC (m2, V0))))
+
+  let vd3 f m1 m2 m3 =
+    PredC
+      ((fun (x, (y, (z, ()))) -> f x y z),
+       VC (m1, (VC (m2, (VC (m3, V0))))))
+
+  let validate_and_build env (PredC (f, vd)) args =
+    f (validate env (vd, args))
+
+  let preds = [
+    "only_by_role",           vd2 (fun x y   -> M.SonlyByRole         (x, y)   ) ActionDesc Role;
+    "only_in_action",         vd2 (fun x y   -> M.SonlyInAction       (x, y)   ) ActionDesc Action;
+    "only_by_role_in_action", vd3 (fun x y z -> M.SonlyByRoleInAction (x, y, z)) ActionDesc Role Action;
+    "not_by_role",            vd2 (fun x y   -> M.SnotByRole          (x, y)   ) ActionDesc Role;
+    "not_in_action",          vd2 (fun x y   -> M.SnotInAction        (x, y)   ) ActionDesc Action;
+    "not_by_role_in_action",  vd3 (fun x y z -> M.SnotByRoleInAction  (x, y, z)) ActionDesc Role Action;
+    "transferred_by",         vd1 (fun x     -> M.StransferredBy      (x)      ) ActionDesc;
+    "transferred_to",         vd1 (fun x     -> M.StransferredTo      (x)      ) ActionDesc;
+    "no_storage_fail",        vd1 (fun x     -> M.SnoStorageFail      (x)      ) Action;
+  ]
+
+  let preds = Mid.of_list preds
+end
+
+(* -------------------------------------------------------------------- *)
 let for_security_item (env : env) (v : PT.security_item) : (env * M.security_item) option =
   let module E = struct exception Bailout end in
 
   try
-    let l, (lbl, name, args) = Location.deloc v in
+    let loc, (label, name, args) = Location.deloc v in
 
     (* FIXME: check and add label in env *)
 
-    let sp_ =
-      match Mid.find_opt (unloc name) security_preds with
+    let sp =
+      match Mid.find_opt (unloc name) SecurityPred.preds with
       | None ->
-        Env.emit_error env (loc name, NoSuchSecurityPredicate (unloc name));
+        Env.emit_error env (L.loc name, NoSuchSecurityPredicate (unloc name));
         raise E.Bailout
       | Some method_ -> method_
     in
 
-    let ne = List.length sp_.sp_sig in
+    let ne = SecurityPred.pclen sp in
     let ng = List.length args in
 
     if ne <> ng then begin
-      Env.emit_error env (l, InvalidNumberOfArguments (ne, ng));
+      Env.emit_error env (loc, InvalidNumberOfArguments (ne, ng));
       raise E.Bailout
     end;
 
-    (* let doarg arg (aty : sptyp) =
-       match aty with
-       | `ActionDesc ->
-        for_action_description env arg
-       | `Role ->
-        for_security_role env arg
-       | `Action ->
-        for_security_action env arg
-
-       | _ -> assert false
-       in *)
-
     let security_node : M.security_node =
-      let id = unloc name in
-      match id, args with
-      | "only_by_role",           [a; b]    -> M.SonlyByRole         (for_action_description env a, for_security_role env b)
-      | "only_in_action",         [a; b]    -> M.SonlyInAction       (for_action_description env a, for_security_action env b)
-      | "only_by_role_in_action", [a; b; c] -> M.SonlyByRoleInAction (for_action_description env a, for_security_role env b, for_security_action env c)
-      | "not_by_role",            [a; b]    -> M.SnotByRole          (for_action_description env a, for_security_role env b)
-      | "not_in_action",          [a; b]    -> M.SnotInAction        (for_action_description env a, for_security_action env b)
-      | "not_by_role_in_action",  [a; b; c] -> M.SnotByRoleInAction  (for_action_description env a, for_security_role env b, for_security_action env c)
-      | "transferred_by",         [a]       -> M.StransferredBy      (for_action_description env a)
-      | "transferred_to",         [a]       -> M.StransferredTo      (for_action_description env a)
-      | "no_storage_fail",        [a]       -> M.SnoStorageFail      (for_security_action env a)
-      | _ -> assert false
+      SecurityPred.validate_and_build env sp args
     in
 
-    let security_predicate : M.security_predicate = M.{
-        s_node = security_node;
-        loc = l;
-      }
-    in
-
-    let security_item : M.security_item = M.{
-        label = lbl;
-        predicate = security_predicate;
-        loc = l;
-      }
+    let security_item : M.security_item =
+      M.{ loc; label; predicate = M.{ loc; s_node = security_node; }; }
     in
 
     Some (env, security_item)
