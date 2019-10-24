@@ -381,6 +381,9 @@ and pp_term_arg fmt = function
              pp_operator op
              pp_pterm pt)) l
 
+  | ASorting (b, f) ->
+      assert false              (* ASorting-FIX *)
+
 let pp_instruction_poly pp fmt i =
   pp fmt i.node
 

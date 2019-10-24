@@ -641,9 +641,11 @@ let map_term_node (f : 'id term_gen -> 'id term_gen) = function
   | Pmatchwith (e, l)       -> Pmatchwith (e, List.map (fun (p, e) -> (p, f e)) l)
   | Pcall (i, e, args)      ->
     Pcall (i, e, List.map (fun (arg : 'id term_arg) -> match arg with
-        | AExpr e -> AExpr (f e)
-        | AFun (x, xty, e) -> AFun (x, xty, f e)
-        | AEffect l -> AEffect (List.map (fun (id, op, e) -> (id, op, f e)) l)) args)
+          | AExpr e -> AExpr (f e)
+          | AFun (x, xty, e) -> AFun (x, xty, f e)
+          | AEffect l -> AEffect (List.map (fun (id, op, e) -> (id, op, f e)) l)
+          | ASorting (b, f) -> ASorting (b, f))
+        args)
   | Plogical (op, l, r)     -> Plogical (op, f l, f r)
   | Pnot e                  -> Pnot (f e)
   | Pmulticomp (e, l)       -> Pmulticomp (f e, List.map (fun (op, e) -> (op, f e)) l)
