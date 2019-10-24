@@ -54,6 +54,12 @@ end = struct
 end
 
 (* -------------------------------------------------------------------- *)
+type opsig = {
+  osl_sig : M.ptyp list;
+  osl_ret : M.ptyp;
+} [@@deriving show {with_path = false}]
+
+(* -------------------------------------------------------------------- *)
 type error_desc =
   | AssetExpected
   | AssetWithoutFields
@@ -98,10 +104,10 @@ type error_desc =
   | MixedFieldNamesInRecordLiteral     of ident list
   | MoreThanOneInitState               of ident list
   | MultipleInitialMarker
-  | MultipleMatchingOperator
+  | MultipleMatchingOperator           of PT.operator * M.ptyp list * opsig list
   | MultipleStateDeclaration
   | NameIsAlreadyBound                 of ident
-  | NoMatchingOperator
+  | NoMatchingOperator                 of PT.operator * M.ptyp list
   | NoSuchMethod                       of ident
   | NoSuchSecurityPredicate            of ident
   | NonLoopLabel                       of ident
@@ -176,10 +182,8 @@ let pp_error_desc fmt e =
   | MixedFieldNamesInRecordLiteral l   -> pp "Mixed field names in record literal: %a" (Printer_tools.pp_list "," pp_ident) l
   | MoreThanOneInitState l             -> pp "More than one initial state: %a" (Printer_tools.pp_list ", " pp_ident) l
   | MultipleInitialMarker              -> pp "Multiple 'initial' marker"
-  | MultipleMatchingOperator           -> pp "Mutliple matching operator"
   | MultipleStateDeclaration           -> pp "Multiple state declaration"
   | NameIsAlreadyBound i               -> pp "Name is already used: %a" pp_ident i
-  | NoMatchingOperator                 -> pp "No matching operator"
   | NoSuchMethod i                     -> pp "No such method: %a" pp_ident i
   | NoSuchSecurityPredicate i          -> pp "No such security predicate: %a" pp_ident i
   | NonLoopLabel i                     -> pp "Not a loop lable: %a" pp_ident i
@@ -201,8 +205,26 @@ let pp_error_desc fmt e =
   | UnknownTypeName i                  -> pp "Unknown type: %a" pp_ident i
   | UnpureInFormula                    -> pp "Cannot use expression with side effect"
   | VoidMethodInExpr                   -> pp "Expecting arguments"
-  | AssetPartitionnedby (i, l)         -> pp "Cannot access asset collection: asset %a is partitionned by field(s) (%a)" pp_ident i (Printer_tools.pp_list ", " pp_ident) l
 
+  | AssetPartitionnedby (i, l)         ->
+      pp
+        "Cannot access asset collection: asset %a is partitionned by field(s) (%a)"
+        pp_ident i (Printer_tools.pp_list ", " pp_ident) l
+
+  | NoMatchingOperator (op, sig_) ->
+      pp "No matches for operator %a(%a)"
+        PT.pp_operator op
+        (Printer_tools.pp_list ", " M.pp_ptyp) sig_
+
+  | MultipleMatchingOperator (op, sig_, sigs) -> 
+      pp "Multiple matches for operator %a(%a): %a"
+        PT.pp_operator op
+        (Printer_tools.pp_list ", " M.pp_ptyp) sig_
+        (Printer_tools.pp_list ", " (fun fmt sig_ ->
+           Format.fprintf fmt "(%a) -> %a"
+             (Printer_tools.pp_list " * " M.pp_ptyp) sig_.osl_sig
+             M.pp_ptyp sig_.osl_ret)) sigs
+ 
 (* -------------------------------------------------------------------- *)
 type argtype = [`Type of M.type_ | `Effect of ident]
 
@@ -210,12 +232,6 @@ type argtype = [`Type of M.type_ | `Effect of ident]
 type procsig = {
   psl_sig  : argtype list;
   psl_ret  : M.ptyp;
-}
-
-(* -------------------------------------------------------------------- *)
-type opsig = {
-  osl_sig : M.ptyp list;
-  osl_ret : M.ptyp;
 }
 
 (* -------------------------------------------------------------------- *)
@@ -1183,11 +1199,13 @@ let rec for_xexpr (mode : emode_t) (env : env) ?(ety : M.ptyp option) (tope : PT
               let aout =
                 match List.filter filter (List.assoc_all (`Cmp op) opsigs) with
                 | [] ->
-                  Env.emit_error env (loc tope, NoMatchingOperator);
+                  Env.emit_error env (loc tope,
+                    NoMatchingOperator (`Cmp op, [ty; ty']));
                   None
 
-                | _::_::_ ->
-                  Env.emit_error env (loc tope, MultipleMatchingOperator);
+                | _::_::_ as sigs ->
+                  Env.emit_error env (loc tope,
+                    MultipleMatchingOperator (`Cmp op, [ty; ty'], sigs));
                   None
 
                 | [sig_] ->
@@ -1227,11 +1245,13 @@ let rec for_xexpr (mode : emode_t) (env : env) ?(ety : M.ptyp option) (tope : PT
         let sig_ =
           match List.filter filter (List.assoc_all op opsigs) with
           | [] ->
-            Env.emit_error env (loc tope, NoMatchingOperator);
+            let sig_ = List.map (fun x -> Option.get x.M.type_) args in
+            Env.emit_error env (loc tope, NoMatchingOperator (op, sig_));
             bailout ()
 
-          | _::_::_ ->
-            Env.emit_error env (loc tope, MultipleMatchingOperator);
+          | _::_::_ as sigs ->
+            let sig_ = List.map (fun x -> Option.get x.M.type_) args in
+            Env.emit_error env (loc tope, (MultipleMatchingOperator (op, sig_, sigs)));
             bailout ()
 
           | [sig_] ->
