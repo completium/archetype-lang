@@ -97,6 +97,7 @@ type error_desc =
   | InvalidRoleExpression
   | InvalidSecurityAction
   | InvalidSecurityRole
+  | InvalidSortingExpression
   | InvalidStateExpression
   | LetInElseInInstruction
   | MissingFieldInRecordLiteral        of ident
@@ -176,6 +177,7 @@ let pp_error_desc fmt e =
   | InvalidRoleExpression              -> pp "Invalid role expression"
   | InvalidSecurityAction              -> pp "Invalid security action"
   | InvalidSecurityRole                -> pp "Invalid security role"
+  | InvalidSortingExpression           -> pp "Invalid sorting expression"
   | InvalidStateExpression             -> pp "Invalid state expression"
   | LetInElseInInstruction             -> pp "Let In else in Instruction"
   | MissingFieldInRecordLiteral i      -> pp "Missing field in record literal: %a" pp_ident i
@@ -355,7 +357,7 @@ and mthtyp = [
   | `Effect
   | `Asset
   | `SubColl
-  | `Field
+  | `Cmp
   | `Pred
   | `RExpr
   | `Ref      of int
@@ -379,7 +381,7 @@ let methods : (string * method_) list =
     ("nth"         , mk M.Cnth          `Pure   `Partial ([`T M.vtint   ], Some (`Asset)));
     ("reverse"     , mk M.Creverse      `Effect `Total   ([             ], None));
     ("select"      , mk M.Cselect       `Pure   `Total   ([`Pred        ], Some (`SubColl)));
-    ("sort"        , mk M.Csort         `Pure   `Total   ([`Field       ], Some (`SubColl)));
+    ("sort"        , mk M.Csort         `Pure   `Total   ([`Cmp         ], Some (`SubColl)));
     ("count"       , mk M.Ccount        `Pure   `Total   ([             ], Some (`T M.vtint)));
     ("sum"         , mk M.Csum          `Pure   `Total   ([`RExpr       ], Some (`Ref 0)));
     ("max"         , mk M.Cmax          `Pure   `Partial ([`RExpr       ], Some (`Ref 0)));
@@ -1287,6 +1289,7 @@ let rec for_xexpr (mode : emode_t) (env : env) ?(ety : M.ptyp option) (tope : PT
         let type_of_mthtype = function
           | `T typ   -> Some typ
           | `The     -> Some (M.Tasset asset.as_name)
+          | `Asset   -> Some (M.Tasset asset.as_name)
           | `SubColl -> Some (M.Tcontainer (M.Tasset asset.as_name, M.Collection))
           | `Ref i   -> Some (Mint.find i amap)
           | _        -> assert false
@@ -1501,6 +1504,29 @@ and for_gen_method_call mode env theloc (the, m, args) =
 
       | `T ty ->
         M.AExpr (for_xexpr mode env ~ety:ty arg)
+
+      | `Cmp -> begin
+          let asc, field =
+            match unloc arg with
+            | Eterm ({ before = false; label = None; }, f) ->
+                (true, Some f)
+            | Eapp (Fident { pldesc = ("asc" | "desc") as order },
+                    [{pldesc = Eterm ({ before = false; label = None; }, f) }]) ->
+                (order = "asc", Some f)
+            | _ ->
+                Env.emit_error env (loc arg, InvalidSortingExpression);
+                (true, None) in
+
+          let field = Option.bind (fun f ->
+            match List.Exn.assoc_map unloc (unloc f) asset.as_fields with
+            | None ->
+                Env.emit_error env (loc f, UnknownFieldName (unloc f));
+                None
+            | Some _ -> Some f) field in
+
+          let field = Option.get_fdfl (fun () -> mkloc (loc arg) "<error>") field in
+          M.ASorting (asc, field)
+        end
 
       | _ ->
         assert false

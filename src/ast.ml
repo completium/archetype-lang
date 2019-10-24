@@ -279,9 +279,10 @@ type 'id term_node  =
 [@@deriving show {with_path = false}]
 
 and 'id term_arg =
-  | AExpr   of 'id term_gen
-  | AFun    of 'id * ptyp * 'id term_gen
-  | AEffect of ('id * operator * 'id term_gen) list
+  | AExpr    of 'id term_gen
+  | AFun     of 'id * ptyp * 'id term_gen
+  | AEffect  of ('id * operator * 'id term_gen) list
+  | ASorting of bool * 'id
 [@@deriving show {with_path = false}]
 
 (* -------------------------------------------------------------------- *)
@@ -697,9 +698,11 @@ let fold_term (f: 'a -> 't -> 'a) (accu : 'a) (term : 'id term_gen) =
   | Pif (c, t, e)           -> f (f (f accu c) t) e
   | Pmatchwith (e, l)       -> List.fold_left (fun accu (_, a) -> f accu a) (f accu e) l
   | Pcall (_, _, args)      -> List.fold_left (fun accu (arg : 'id term_arg) -> match arg with
-      | AExpr e -> f accu e
-      | AFun (_, _, e) -> f accu e
-      | AEffect l -> List.fold_left (fun accu (_, _, e) -> f accu e) accu l ) accu args
+        | AExpr e -> f accu e
+        | AFun (_, _, e) -> f accu e
+        | AEffect l -> List.fold_left (fun accu (_, _, e) -> f accu e) accu l
+        | ASorting _ -> accu)
+      accu args
   | Plogical (_, l, r)          -> f (f accu l) r
   | Pnot e                      -> f accu e
   | Pmulticomp (e, l)           -> List.fold_left (fun accu (_, a) -> f accu a) (f accu e) l

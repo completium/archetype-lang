@@ -326,7 +326,7 @@ let to_model (ast : A.model) : M.model =
         A.pp_const c
         (List.length args)
         (Printer_tools.pp_list "; " (fun fmt x ->
-             let str = match x with | A.AExpr _ -> "AExpr" | A.AEffect _ -> "AEffect" | A.AFun _ -> "AFun" in
+             let str = match x with | A.AExpr _ -> "AExpr" | A.AEffect _ -> "AEffect" | A.AFun _ -> "AFun" | A.ASorting _ -> "ASorting" in
              Printer_tools.pp_str fmt str)) args
         (match aux with | Some _ -> "with aux" | _ -> "without aux");
       assert false
@@ -612,7 +612,7 @@ let to_model (ast : A.model) : M.model =
         A.pp_const c
         (List.length args)
         (Printer_tools.pp_list "; " (fun fmt (x : A.pterm_arg) ->
-             let str = match x with | AExpr _ -> "AExpr" | AEffect _ -> "AEffect" | AFun _ -> "AFun" in
+             let str = match x with | AExpr _ -> "AExpr" | AEffect _ -> "AEffect" | AFun _ -> "AFun" | ASorting _ -> "ASorting" in
              Printer_tools.pp_str fmt str)) args
         (match aux with | Some _ -> "with aux" | _ -> "without aux");
       assert false
