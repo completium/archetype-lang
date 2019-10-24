@@ -118,6 +118,7 @@ type error_desc =
   | ReadOnlyGlobal                     of ident
   | SecurityInExpr
   | SpecOperatorInExpr
+  | UninitializedVar
   | UnknownAction                      of ident
   | UnknownAsset                       of ident
   | UnknownField                       of ident * ident
@@ -194,6 +195,7 @@ let pp_error_desc fmt e =
   | ReadOnlyGlobal i                   -> pp "Global is read only: %a" pp_ident i
   | SecurityInExpr                     -> pp "Found securtiy predicate in expression"
   | SpecOperatorInExpr                 -> pp "Specification operator in expression"
+  | UninitializedVar                   -> pp "This variable declaration is missing an initializer"
   | UnknownAction i                    -> pp "Unknown action: %a" pp_ident i
   | UnknownAsset i                     -> pp "Unknown asset: %a" pp_ident i
   | UnknownField (i1, i2)              -> pp "Unknown field: asset %a does not have a field %a" pp_ident i1 pp_ident i2
@@ -332,14 +334,6 @@ type groups = {
 }
 
 (* -------------------------------------------------------------------- *)
-(*
-  (M.Cstate      , ([], `State))                     ;
-  (M.Cnow        , ([], `Type M.vtdate))             ;
-  (M.Ctransferred, ([], `Type (M.vtcurrency M.Tez))) ;
-  (M.Ccaller     , ([], `Caller))                    ;
-  (M.Cbalance    , ([], `Type (M.vtcurrency M.Tez))) ]
-*)
-
 let globals = [
   ("now"    ,     M.Cnow    , M.vtdate);
   ("balance",     M.Cbalance, M.vtcurrency);
@@ -403,8 +397,7 @@ let methods : (string * method_) list =
 let methods = Mid.of_list methods
 
 (* -------------------------------------------------------------------- *)
-
-type security_pred_ = {
+type security_pred = {
   sp_sig: sptyp list;
   (* sp_fun: PT.security_arg list -> M.security_node *)
 }
@@ -414,10 +407,8 @@ and sptyp = [
   | `Action
 ]
 
-let security_preds : (string * security_pred_) list =
-  let mk sp_sig =
-    { sp_sig }
-  in [
+let security_preds : (string * security_pred) list =
+  let mk sp_sig = { sp_sig } in [
     ("only_by_role",           mk [`ActionDesc; `Role]);
     ("only_in_action",         mk [`ActionDesc; `Action]);
     ("only_by_role_in_action", mk [`ActionDesc; `Role; `Action]);
@@ -432,7 +423,6 @@ let security_preds : (string * security_pred_) list =
 let security_preds = Mid.of_list security_preds
 
 (* -------------------------------------------------------------------- *)
-
 type assetdecl = {
   as_name   : M.lident;
   as_fields : (M.lident * M.ptyp) list;
@@ -2032,6 +2022,7 @@ let for_security_item (env : env) (v : PT.security_item) : (env * M.security_ite
     in
 
     Some (env, security_item)
+
   with E.Bailout -> None
 
 (* -------------------------------------------------------------------- *)
@@ -2172,10 +2163,10 @@ let for_state_decl (env : env) (state : state loced) =
 let for_var_decl (env : env) (decl : PT.variable_decl loced) =
   (* FIXME: handle tgts *)
 
-  let (x, ty, e, _tgts, ctt, _) = unloc decl in
+  let (x, ty, pe, _tgts, ctt, _) = unloc decl in
 
   let ty   = for_type env ty in
-  let e    = Option.map (for_expr env ?ety:ty) e in
+  let e    = Option.map (for_expr env ?ety:ty) pe in
   let dty  =
     if   Option.is_some ty
     then ty
@@ -2183,6 +2174,9 @@ let for_var_decl (env : env) (decl : PT.variable_decl loced) =
   let ctt  = match ctt with
     | VKconstant -> `Constant
     | VKvariable -> `Variable in
+
+  if Option.is_none pe then
+    Env.emit_error env (loc decl, UninitializedVar);
 
   if Option.is_some dty then begin
     let decl = {
