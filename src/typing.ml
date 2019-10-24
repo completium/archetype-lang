@@ -1963,12 +1963,6 @@ module SecurityPred = struct
     | Role       : M.lident list        mode
     | Action     : M.security_action    mode
 
-  type sptype = [
-    | `ActionDesc
-    | `Role
-    | `Action
-  ]
-
   let validate1 (type a) (env : env) (mode : a mode) (v : PT.security_arg) : a =
     match mode with
     | ActionDesc -> for_action_description env v
