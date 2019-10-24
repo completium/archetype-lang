@@ -85,31 +85,34 @@ let mk_binder ?(loc=Loc.dummy_position) ?ident ?(ghost=false) ?pty () : P.binder
   (loc, ident, ghost, pty)
 
 let to_type (t : M.loc_typ) =
-  match unloc t with
-  | M.Tyint          -> P.PTtyapp(mk_qualid_str ["int"], [])
-  | M.Tyuint         -> P.PTtyapp(mk_qualid_str [""], [])
-  | M.Tybool         -> P.PTtyapp(mk_qualid_str ["bool"], [])
-  | M.Tystring       -> P.PTtyapp(mk_qualid_str ["string"], [])
-  | M.Tyrational     -> P.PTtyapp(mk_qualid_str [""], [])
-  | M.Tyaddr         -> P.PTtyapp(mk_qualid_str [""], [])
-  | M.Tyrole         -> P.PTtyapp(mk_qualid_str ["role"], [])
-  | M.Tykey          -> P.PTtyapp(mk_qualid_str [""], [])
-  | M.Tydate         -> P.PTtyapp(mk_qualid_str ["date"], [])
-  | M.Tyduration     -> P.PTtyapp(mk_qualid_str [""], [])
-  | M.Tytez          -> P.PTtyapp(mk_qualid_str [""], [])
-  | M.Tystorage      -> P.PTtyapp(mk_qualid_str [""], [])
-  | M.Tytransfers    -> P.PTtyapp(mk_qualid_str [""], [])
-  | M.Tyunit         -> P.PTtyapp(mk_qualid_str [""], [])
-  | M.Tycontract id  -> P.PTtyapp(mk_qualid_str [""], [])
-  | M.Tyrecord id    -> P.PTtyapp(mk_qualid_str [""], [])
-  | M.Tycoll id      -> P.PTtyapp(mk_qualid_str [""], [])
-  | M.Tymap id       -> P.PTtyapp(mk_qualid_str [""], [])
-  | M.Tyasset id     -> P.PTtyapp(mk_qualid     [id], [])
-  | M.Typartition id -> P.PTtyapp(mk_qualid_str [""], [])
-  | M.Tyenum id      -> P.PTtyapp(mk_qualid_str [""], [])
-  | M.Tyoption t     -> P.PTtyapp(mk_qualid_str [""], [])
-  | M.Tylist t       -> P.PTtyapp(mk_qualid_str [""], [])
-  | M.Tytuple tl     -> P.PTtyapp(mk_qualid_str [""], [])
+  let rec f (t : M.loc_ident M.abstract_type) : P.pty =
+    match t with
+    | M.Tyint          -> P.PTtyapp(mk_qualid_str ["int"], [])
+    | M.Tyuint         -> assert false
+    | M.Tybool         -> P.PTtyapp(mk_qualid_str ["bool"], [])
+    | M.Tystring       -> P.PTtyapp(mk_qualid_str ["string"], [])
+    | M.Tyrational     -> assert false
+    | M.Tyaddr         -> P.PTtyapp(mk_qualid_str ["TODO_addr"], [])
+    | M.Tyrole         -> P.PTtyapp(mk_qualid_str ["role"], [])
+    | M.Tykey          -> assert false
+    | M.Tydate         -> P.PTtyapp(mk_qualid_str ["date"], [])
+    | M.Tyduration     -> assert false
+    | M.Tytez          -> P.PTtyapp(mk_qualid_str ["tez"], [])
+    | M.Tystorage      -> assert false
+    | M.Tytransfers    -> assert false
+    | M.Tyunit         -> P.PTtyapp(mk_qualid_str ["TODO_unit"], [])
+    | M.Tycontract id  -> assert false
+    | M.Tyrecord id    -> P.PTtyapp(mk_qualid_str ["TODO_record"], [])
+    | M.Tycoll id      -> P.PTtyapp(mk_qualid_str ["TODO_coll"], [])
+    | M.Tymap id       -> assert false
+    | M.Tyasset id     -> P.PTtyapp(mk_qualid     [id], [])
+    | M.Typartition id -> P.PTtyapp(mk_qualid_str ["TODO_partition"], [])
+    | M.Tyenum id      -> assert false
+    | M.Tyoption t     -> P.PTtyapp(mk_qualid_str ["TODO_option"], [])
+    | M.Tylist t       -> P.PTtyapp(mk_qualid_str ["list"], [f t])
+    | M.Tytuple tl     -> assert false
+  in
+  f (unloc t)
 
 let to_term t =
   match unloc t with
@@ -156,7 +159,11 @@ let rec to_expr (e : M.loc_term) =
   | M.Tlt (_,e1,e2)           -> assert false
   | M.Tle (_,e1,e2)           -> assert false
   | M.Tapp (f,[])             -> assert false
-  | M.Tapp (f,a)              -> P.Etrue
+  | M.Tapp (fi,a)             -> (
+      (List.fold_left (fun accu (x : M.loc_term) ->
+           mk_expr (P.Eapply (f x, accu)))
+          (f fi) a).expr_desc
+    )
   | M.Tget (i,e1,e2)          -> assert false
   | M.Trecord (None,l)        -> P.Erecord (List.map (fun (q, v) -> (mk_qualid [q], f v)) l)
   | M.Trecord (Some e,l)      -> assert false
@@ -182,7 +189,7 @@ let rec to_expr (e : M.loc_term) =
   | M.Tshallow (i,e1,e2)      -> assert false
   | M.Tminus (_,e1,e2)        -> assert false
   | M.Tplus (_,e1,e2)         -> assert false
-  | M.Tnth (i,e1,e2)          -> assert false
+  | M.Tnth (i,e1,e2)          -> P.Etrue
   | M.Tdle (_,e1,e2,e3)       -> assert false
   | M.Tresult                 -> assert false
   | M.Tsubset (i,e1,e2)       -> assert false
