@@ -1715,7 +1715,7 @@ let for_args_decl (env : env) (xs : PT.args) =
 (* -------------------------------------------------------------------- *)
 let for_lvalue (env : env) (e : PT.expr) : (M.lident * M.ptyp) option =
   match unloc e with
-  | Eterm ({ before = false; _ }, x) -> begin
+  | Eterm ({ before = false; label = None; }, x) -> begin
       match Env.lookup env (unloc x) with
       | Some (`Local xty) ->
         Some (x, xty)
@@ -2049,7 +2049,7 @@ let for_named_state (env : env) (x : PT.lident) =
 (* -------------------------------------------------------------------- *)
 let for_state (env : env) (st : PT.expr) : M.lident =
   match unloc st with
-  | Eterm ({ before = false; _ }, x) ->
+  | Eterm ({ before = false; label = None; }, x) ->
     for_named_state env x
 
   | _ ->
@@ -2063,10 +2063,11 @@ let for_function (env : env) (f : PT.s_function loced) : unit =
 (* -------------------------------------------------------------------- *)
 let rec for_callby (env : env) (cb : PT.expr) =
   match unloc cb with
-  | Eterm ({ before = false; _ }, name) when String.equal (unloc name) "any" ->
-    [name]
+  | Eterm ({ before = false; label = None; }, name)
+      when String.equal (unloc name) "any"
+    -> [name]
 
-  | Eterm ({ before = false; _ }, name) ->
+  | Eterm ({ before = false; label = None; }, name) ->
     Option.get_as_list (for_role env name)
 
   | Eapp (Foperator { pldesc = `Logical Or }, [e1; e2]) ->
