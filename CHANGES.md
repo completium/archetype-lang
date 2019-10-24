@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Added
  - Add variable declaration `var id = val`
+ - Typing for transition entry
 
 ### Changed
  - Update syntax for for and iter loop `for : loop i in col do ... done`

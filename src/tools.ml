@@ -165,6 +165,7 @@ module List : sig
   include module type of List
 
   val is_empty      : 'a list -> bool
+  val is_not_empty  : 'a list -> bool
   val as_seq1       : 'a list -> 'a option
   val as_seq2       : 'a list -> ('a * 'a) option
   val make          : (int -> 'a) -> int -> 'a list
@@ -189,6 +190,7 @@ end = struct
   include List
 
   let is_empty = function [] -> true | _ -> false
+  let is_not_empty x = not (is_empty x)
 
   let as_seq1 = function [x] -> Some x | _ -> None
   let as_seq2 = function [x; y] -> Some (x, y) | _ -> None

@@ -318,3 +318,40 @@ let replace_declvar_by_letin (model : model) : model =
     | _ -> map_mterm (aux c) mt
   in
   Model.map_mterm_model aux model
+
+let remove_get_dot (model : model) : model =
+  let extract_get_dot (mt : mterm) : mterm * (lident * mterm) list =
+    let rec aux (accu : (lident * mterm) list) (mt : mterm) : mterm * (lident * mterm) list =
+      match mt.node with
+      | Mdotasset ({node = Mget _ ; _ } as v , id) ->
+        begin
+          let var_id = dumloc "a" in (* TODO: get a fresh id *)
+          let var = mk_mterm (Mvarlocal var_id) v.type_ in
+          let new_mt = mk_mterm (Mdotasset (var, id)) mt.type_ in
+          (new_mt, (var_id, v)::accu)
+        end
+      | _ ->
+        let g (x : mterm__node) : mterm = { mt with node = x; } in
+        Model.fold_map_term g aux accu mt
+    in
+    aux [] mt
+  in
+  let is_get_dot (mt : mterm) : bool =
+    mt
+    |> extract_get_dot
+    |> snd
+    |> List.is_not_empty
+  in
+  let rec aux c (mt : mterm) : mterm =
+    match mt.node with
+    | Mletin (ids, init, t, body) when is_get_dot init ->
+      begin
+        let (new_init, l) : mterm * (lident * mterm) list = extract_get_dot init in
+        List.fold_right
+          (fun (id, v) accu ->
+             mk_mterm (Mletin ([id], v, Some v.type_, accu)) accu.type_
+          ) l (mk_mterm (Mletin (ids, new_init, t, body)) mt.type_)
+      end
+    | _ -> map_mterm (aux c) mt
+  in
+  Model.map_mterm_model aux model
