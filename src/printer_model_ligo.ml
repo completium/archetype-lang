@@ -809,7 +809,7 @@ let pp_model fmt (model : model) =
             begin
               let _, t = Utils.get_asset_key model an in
               match t with
-              | Bstring -> "string", "\"\"", false
+              | Bstring -> "string", "nth_list_string (loop_col_, loop_index_)", false
               | Baddress | Brole -> "address", "(\"\" : address)", false
               | _ -> "", "", false
             end
@@ -1375,6 +1375,26 @@ let pp_model fmt (model : model) =
         (pp_list "@\n" (pp_api_item env)) l
   in
 
+  let pp_utils (fmt : Format.formatter) _ =
+    Format.fprintf fmt "(* Utils *)@\n@\n";
+    Format.fprintf fmt
+      "function nth_list_string (const l : list(string); const idx : nat) : string is@\n  \
+       var r : string := \"\";@\n  \
+       var i : nat := 0n;@\n  \
+       function aux (const e : string) : unit is@\n  \
+       begin@\n    \
+       if idx = i then@\n      \
+       r := string_concat(r, e);@\n    \
+       else@\n      \
+       skip;@\n    \
+       i := i + 1n;@\n  \
+       end with unit@\n  \
+       begin@\n    \
+       list_iter(l, aux);@\n  \
+       end with r@\n"
+
+  in
+
   let pp_function (env : env) (fmt : Format.formatter) (f : function__) =
     let env = {env with f = Some f} in
     match f.node with
@@ -1463,11 +1483,13 @@ let pp_model fmt (model : model) =
                       %a@\n\
                       %a@\n\
                       %a@\n\
+                      %a@\n\
                       @."
     pp_model_name ()
     pp_decls ()
     pp_storage ()
     pp_action_type ()
+    pp_utils ()
     (pp_api_items env) ()
     (pp_functions env) ()
     pp_main_function ()
