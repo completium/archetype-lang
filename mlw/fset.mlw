@@ -1,0 +1,97 @@
+(* ------------------------------------------------------------------------ *)
+module Undup
+use export list.List
+use export list.Mem
+use export list.Distinct
+
+function undup (xs : list 'a) : list 'a =
+  match xs with
+  | Nil ->
+      Nil
+  | Cons x xs ->
+      if mem x xs then undup xs else Cons x (undup xs)
+  end
+end
+
+(* ------------------------------------------------------------------------ *)
+module ListFilter
+use export list.List
+
+function filter (p : 'a -> bool) (xs : list 'a) : list 'a =
+  match xs with
+  | Nil ->
+      Nil
+  | Cons y ys ->
+      if p y then Cons y (filter p ys) else filter p ys
+  end
+end
+
+(* ------------------------------------------------------------------------ *)
+theory FSet
+
+(* ------------------------------------------------------------------------ *)
+use list.ListRich
+use list.Distinct
+use list.Quant
+use ListFilter
+use Undup
+
+(* ------------------------------------------------------------------------ *)
+type t
+
+(* ------------------------------------------------------------------------ *)
+val function eqt : t -> t -> bool
+
+(* ------------------------------------------------------------------------ *)
+axiom eqP : forall x y. eqt x y <-> x = y
+
+(* ------------------------------------------------------------------------ *)
+val function norm (xs : list t) : list t
+
+(* ------------------------------------------------------------------------ *)
+predicate normed (xs : list t) =
+  norm xs = xs
+
+(* ------------------------------------------------------------------------ *)
+axiom normP : forall xs. permut (undup xs) (norm xs)
+
+(* ------------------------------------------------------------------------ *)
+type fset = {
+  contents : list t;
+} invariant {
+  normed contents
+} by { contents = Nil }
+
+(* ------------------------------------------------------------------------ *)
+predicate fmem (x : t) (s : fset) =
+  mem x s.contents
+
+(* ------------------------------------------------------------------------ *)
+let function mk (xs : list t) : fset =
+  { contents = norm xs; }
+
+(* ------------------------------------------------------------------------ *)
+lemma mem_mk :
+  forall xs x. fmem x (mk xs) <-> mem x xs
+
+(* ------------------------------------------------------------------------ *)
+function fset0 : fset =
+  mk Nil
+
+(* ------------------------------------------------------------------------ *)
+function fsetU (s1 s2 : fset) : fset =
+  mk (s1.contents ++ s2.contents)
+
+(* ------------------------------------------------------------------------ *)
+function fsetI (s1 s2 : fset) : fset =
+  mk (filter (fun x -> Quant.mem eqt x s2.contents) s1.contents)
+
+(* ------------------------------------------------------------------------ *)
+function fsetD (s1 s2 : fset) : fset =
+  mk (filter (fun x -> not (Quant.mem eqt x s2.contents) )s1.contents)
+
+(* ------------------------------------------------------------------------ *)
+function fcard (s : fset) : int =
+  length s.contents
+
+end
