@@ -211,24 +211,24 @@ let pp_error_desc fmt e =
   | VoidMethodInExpr                   -> pp "Expecting arguments"
 
   | AssetPartitionnedby (i, l)         ->
-      pp
-        "Cannot access asset collection: asset %a is partitionned by field(s) (%a)"
-        pp_ident i (Printer_tools.pp_list ", " pp_ident) l
+    pp
+      "Cannot access asset collection: asset %a is partitionned by field(s) (%a)"
+      pp_ident i (Printer_tools.pp_list ", " pp_ident) l
 
   | NoMatchingOperator (op, sig_) ->
-      pp "No matches for operator %a(%a)"
-        PT.pp_operator op
-        (Printer_tools.pp_list ", " M.pp_ptyp) sig_
+    pp "No matches for operator %a(%a)"
+      PT.pp_operator op
+      (Printer_tools.pp_list ", " M.pp_ptyp) sig_
 
-  | MultipleMatchingOperator (op, sig_, sigs) -> 
-      pp "Multiple matches for operator %a(%a): %a"
-        PT.pp_operator op
-        (Printer_tools.pp_list ", " M.pp_ptyp) sig_
-        (Printer_tools.pp_list ", " (fun fmt sig_ ->
+  | MultipleMatchingOperator (op, sig_, sigs) ->
+    pp "Multiple matches for operator %a(%a): %a"
+      PT.pp_operator op
+      (Printer_tools.pp_list ", " M.pp_ptyp) sig_
+      (Printer_tools.pp_list ", " (fun fmt sig_ ->
            Format.fprintf fmt "(%a) -> %a"
              (Printer_tools.pp_list " * " M.pp_ptyp) sig_.osl_sig
              M.pp_ptyp sig_.osl_ret)) sigs
- 
+
 (* -------------------------------------------------------------------- *)
 type argtype = [`Type of M.type_ | `Effect of ident]
 
@@ -1166,12 +1166,12 @@ let rec for_xexpr (mode : emode_t) (env : env) ?(ety : M.ptyp option) (tope : PT
                 match List.filter filter (List.assoc_all (`Cmp op) opsigs) with
                 | [] ->
                   Env.emit_error env (loc tope,
-                    NoMatchingOperator (`Cmp op, [ty; ty']));
+                                      NoMatchingOperator (`Cmp op, [ty; ty']));
                   None
 
                 | _::_::_ as sigs ->
                   Env.emit_error env (loc tope,
-                    MultipleMatchingOperator (`Cmp op, [ty; ty'], sigs));
+                                      MultipleMatchingOperator (`Cmp op, [ty; ty'], sigs));
                   None
 
                 | [sig_] ->
@@ -1483,20 +1483,20 @@ and for_gen_method_call mode env theloc (the, m, args) =
           let asc, field =
             match unloc arg with
             | Eterm ({ before = false; label = None; }, f) ->
-                (true, Some f)
+              (true, Some f)
             | Eapp (Fident { pldesc = ("asc" | "desc") as order },
                     [{pldesc = Eterm ({ before = false; label = None; }, f) }]) ->
-                (order = "asc", Some f)
+              (order = "asc", Some f)
             | _ ->
-                Env.emit_error env (loc arg, InvalidSortingExpression);
-                (true, None) in
+              Env.emit_error env (loc arg, InvalidSortingExpression);
+              (true, None) in
 
           let field = Option.bind (fun f ->
-            match List.Exn.assoc_map unloc (unloc f) asset.as_fields with
-            | None ->
+              match List.Exn.assoc_map unloc (unloc f) asset.as_fields with
+              | None ->
                 Env.emit_error env (loc f, UnknownFieldName (unloc f));
                 None
-            | Some _ -> Some f) field in
+              | Some _ -> Some f) field in
 
           let field = Option.get_fdfl (fun () -> mkloc (loc arg) "<error>") field in
           M.ASorting (asc, field)
@@ -1982,16 +1982,16 @@ module SecurityPred = struct
 
   let rec validate
     : type a . env -> a validator * PT.security_arg list -> a
-  = fun env -> function
-    | V0, [] ->
+    = fun env -> function
+      | V0, [] ->
         ()
 
-    | VC (m, vd), v :: args ->
+      | VC (m, vd), v :: args ->
         let v    = validate1 env m    v     in
         let args = validate  env (vd, args) in
         (v, args)
 
-    | _, _ ->
+      | _, _ ->
         raise ArgCountError
 
   type predc =
@@ -2106,7 +2106,7 @@ let for_function (env : env) (f : PT.s_function loced) : unit =
 let rec for_callby (env : env) (cb : PT.expr) =
   match unloc cb with
   | Eterm ({ before = false; label = None; }, name)
-      when String.equal (unloc name) "any"
+    when String.equal (unloc name) "any"
     -> [name]
 
   | Eterm ({ before = false; label = None; }, name) ->
@@ -2372,30 +2372,30 @@ let for_acttx_decl (env : env) (decl : acttx loced) =
     end
 
   | `Transition (x, args, tgt, from_, actions, tx, _exts) ->
-      let env, decl =
-        Env.inscope env (fun env ->
-            let env, args  = for_args_decl env args in
-            let from_ = for_state env from_ in
-            let env, (callby, reqs, fais, spec, _) =
-              for_action_properties env actions in
-            let env, tx =
-              List.fold_left_map for_transition env tx in
+    let env, decl =
+      Env.inscope env (fun env ->
+          let env, args  = for_args_decl env args in
+          let from_ = for_state env from_ in
+          let env, (callby, reqs, fais, spec, _) =
+            for_action_properties env actions in
+          let env, tx =
+            List.fold_left_map for_transition env tx in
 
-            if Option.is_some tgt then
-              assert false;
+          if Option.is_some tgt then
+            assert false;
 
-            let decl =
-              { ad_name   = x;
-                ad_args   = List.pmap (fun x -> x) args;
-                ad_callby = Option.get_dfl [] callby;
-                ad_effect = Some (`Tx (from_, tx));
-                ad_reqs   = Option.get_dfl [] reqs;
-                ad_fais   = Option.get_dfl [] fais;
-                ad_spec   = Option.get_dfl [] spec; } in
+          let decl =
+            { ad_name   = x;
+              ad_args   = List.pmap (fun x -> x) args;
+              ad_callby = Option.get_dfl [] callby;
+              ad_effect = Some (`Tx (from_, tx));
+              ad_reqs   = Option.get_dfl [] reqs;
+              ad_fais   = Option.get_dfl [] fais;
+              ad_spec   = Option.get_dfl [] spec; } in
 
-            (env, decl))
+          (env, decl))
 
-      in (Env.TAction.push env decl, decl)
+    in (Env.TAction.push env decl, decl)
 
 (* -------------------------------------------------------------------- *)
 let for_acttxs_decl (env : env) (decls : acttx loced list) =
@@ -2479,7 +2479,7 @@ let for_grouped_declarations (env : env) (toploc, g) =
 
   let env, vdecls = for_vars_decl env g.gr_vars in
 
-  let _state, env =
+  let state, env =
     let for1 { plloc = loc; pldesc = state } =
       match for_state_decl env (mkloc loc (fst state)) with
       | env, Some state -> Some (env, state)
@@ -2498,7 +2498,24 @@ let for_grouped_declarations (env : env) (toploc, g) =
   let env, cdecls = for_specs_decl   env g.gr_specs   in
   let env, sdecls = for_secs_decl    env g.gr_secs   in
 
-  (env, (adecls, vdecls, fdecls, tdecls, cdecls, sdecls))
+  (env, (state, adecls, vdecls, fdecls, tdecls, cdecls, sdecls))
+
+(* -------------------------------------------------------------------- *)
+let enums_of_statedecl (s : statedecl option) : M.enum list =
+  match s with
+  | None -> []
+  | Some s ->
+    let v = M.{
+        kind = EKstate;
+        items = List.map (fun (id, invs : (M.lident * (M.lident option * M.pterm) list)) -> M.{
+            name = id;
+            initial = String.equal (unloc id) s.sd_init;
+            invariants = List.map (fun (label, inv : M.lident option * M.pterm) -> M.mk_label_term ?label:label inv) invs;
+            loc = Location.dummy;
+          }) s.sd_ctors;
+        loc = Location.dummy;
+      } in
+    [v]
 
 (* -------------------------------------------------------------------- *)
 let assets_of_adecls adecls =
@@ -2593,8 +2610,8 @@ let transactions_of_tdecls tdecls =
         in M.mk_sp ~loc:(loc x) node in
 
       Some (List.fold_left (fun acc c' ->
-              M.mk_sp (M.Ror (acc, for1 c')))
-           (for1 c) cb)
+          M.mk_sp (M.Ror (acc, for1 c')))
+          (for1 c) cb)
   in
 
   let for1 tdecl =
@@ -2603,12 +2620,12 @@ let transactions_of_tdecls tdecls =
     let transition =
       match tdecl.ad_effect with
       | Some (`Tx (from_, x)) ->
-          let from_ = M.mk_sp ~loc:(loc from_) (M.Sref from_) in
+        let from_ = M.mk_sp ~loc:(loc from_) (M.Sref from_) in
 
-          Some (M.{ from = from_; on = None; trs =
-            List.map
-              (fun tx ->(tx.tx_state, tx.tx_when, tx.tx_effect))
-              x }) 
+        Some (M.{ from = from_; on = None; trs =
+                                             List.map
+                                               (fun tx ->(tx.tx_state, tx.tx_when, tx.tx_effect))
+                                               x })
 
       | _ -> None in
 
@@ -2641,9 +2658,10 @@ let for_declarations (env : env) (decls : (PT.declaration list) loced) : M.model
   | { pldesc = Darchetype (x, _exts) } :: decls ->
     let groups = group_declarations decls in
     let _env, decls = for_grouped_declarations env (toploc, groups) in
-    let adecls, vdecls, _fdecls, tdecls, cdecls, sdecls = decls in
+    let state, adecls, vdecls, _fdecls, tdecls, cdecls, sdecls = decls in
 
     M.mk_model
+      ~enums:(enums_of_statedecl state (* TODO: append enums *))
       ~assets:(assets_of_adecls adecls)
       ~variables:(variables_of_vdecls vdecls)
       ~transactions:(transactions_of_tdecls tdecls)

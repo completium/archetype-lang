@@ -641,10 +641,10 @@ let map_term_node (f : 'id term_gen -> 'id term_gen) = function
   | Pmatchwith (e, l)       -> Pmatchwith (e, List.map (fun (p, e) -> (p, f e)) l)
   | Pcall (i, e, args)      ->
     Pcall (i, e, List.map (fun (arg : 'id term_arg) -> match arg with
-          | AExpr e -> AExpr (f e)
-          | AFun (x, xty, e) -> AFun (x, xty, f e)
-          | AEffect l -> AEffect (List.map (fun (id, op, e) -> (id, op, f e)) l)
-          | ASorting (b, f) -> ASorting (b, f))
+        | AExpr e -> AExpr (f e)
+        | AFun (x, xty, e) -> AFun (x, xty, f e)
+        | AEffect l -> AEffect (List.map (fun (id, op, e) -> (id, op, f e)) l)
+        | ASorting (b, f) -> ASorting (b, f))
         args)
   | Plogical (op, l, r)     -> Plogical (op, f l, f r)
   | Pnot e                  -> Pnot (f e)
@@ -700,10 +700,10 @@ let fold_term (f: 'a -> 't -> 'a) (accu : 'a) (term : 'id term_gen) =
   | Pif (c, t, e)           -> f (f (f accu c) t) e
   | Pmatchwith (e, l)       -> List.fold_left (fun accu (_, a) -> f accu a) (f accu e) l
   | Pcall (_, _, args)      -> List.fold_left (fun accu (arg : 'id term_arg) -> match arg with
-        | AExpr e -> f accu e
-        | AFun (_, _, e) -> f accu e
-        | AEffect l -> List.fold_left (fun accu (_, _, e) -> f accu e) accu l
-        | ASorting _ -> accu)
+      | AExpr e -> f accu e
+      | AFun (_, _, e) -> f accu e
+      | AEffect l -> List.fold_left (fun accu (_, _, e) -> f accu e) accu l
+      | ASorting _ -> accu)
       accu args
   | Plogical (_, l, r)          -> f (f accu l) r
   | Pnot e                      -> f accu e
@@ -1045,7 +1045,7 @@ end = struct
   let get_enum_name (e : 'id enum_struct) =
     match e.kind with
     | EKenum id -> id
-    | EKstate -> dumloc "_state"
+    | EKstate -> dumloc "state"
 
   let get_enum_opt ast ident =
     List.fold_left (fun accu (x : 'id enum_struct) ->

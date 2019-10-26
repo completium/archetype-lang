@@ -47,6 +47,7 @@ type trtyp =
 type type_ =
   | Tasset of lident
   | Tenum of lident
+  | Tstate
   | Tcontract of lident
   | Tbuiltin of btyp
   | Tcontainer of type_ * container
@@ -179,7 +180,7 @@ type ('id, 'term) mterm_node  =
   | Mvarparam     of 'id
   | Mvarfield     of 'id
   | Mvarthe
-  | Mstate
+  | Mvarstate
   | Mnow
   | Mtransferred
   | Mcaller
@@ -207,6 +208,7 @@ type ('id, 'term) mterm_node  =
   | Mseq          of 'term list
   | Massign       of (assignment_operator * 'id * 'term)
   | Massignfield  of (assignment_operator * 'id * 'id * 'term)
+  | Massignstate  of 'term
   | Mtransfer     of ('term * bool * 'id qualid_gen option)
   | Mbreak
   | Massert       of 'term
@@ -387,8 +389,13 @@ type label_term = lident label_term_gen
    | FContainer        of container * 'id item_field_type
    [@@deriving show {with_path = false}] *)
 
+type 'id storage_id =
+  | SIid of 'id
+  | SIstate
+[@@deriving show {with_path = false}]
+
 type 'id storage_item_gen = {
-  name        : 'id;
+  name        : 'id; (* TODO: storage_id *)
   asset       : 'id option;
   typ         : type_;
   ghost       : bool;
@@ -921,7 +928,7 @@ let cmp_mterm_node
     | Mvarlocal v1, Mvarlocal v2                                                       -> cmpi v1 v2
     | Mvarparam v1, Mvarparam v2                                                       -> cmpi v1 v2
     | Mvarthe, Mvarthe                                                                 -> true
-    | Mstate, Mstate                                                                   -> true
+    | Mvarstate, Mvarstate                                                             -> true
     | Mnow, Mnow                                                                       -> true
     | Mtransferred, Mtransferred                                                       -> true
     | Mcaller, Mcaller                                                                 -> true
@@ -946,6 +953,7 @@ let cmp_mterm_node
     | Mseq is1, Mseq is2                                                               -> List.for_all2 cmp is1 is2
     | Massign (op1, l1, r1), Massign (op2, l2, r2)                                     -> cmp_assign_op op1 op2 && cmpi l1 l2 && cmp r1 r2
     | Massignfield (op1, a1, fi1, r1), Massignfield (op2, a2, fi2, r2)                 -> cmp_assign_op op1 op2 && cmpi a1 a2 && cmpi fi1 fi2 && cmp r1 r2
+    | Massignstate x1, Massignstate x2                                                 -> cmp x1 x2
     | Mtransfer (x1, b1, q1), Mtransfer (x2, b2, q2)                                   -> cmp x1 x2 && cmp_bool b1 b2 && Option.cmp cmp_qualid q1 q2
     | Mbreak, Mbreak                                                                   -> true
     | Massert x1, Massert x2                                                           -> cmp x1 x2
@@ -1101,7 +1109,7 @@ let map_term_node (f : 'id mterm_gen -> 'id mterm_gen) = function
   | Mvarlocal v                   -> Mvarlocal    v
   | Mvarparam v                   -> Mvarparam    v
   | Mvarthe                       -> Mvarthe
-  | Mstate                        -> Mstate
+  | Mvarstate                     -> Mvarstate
   | Mnow                          -> Mnow
   | Mtransferred                  -> Mtransferred
   | Mcaller                       -> Mcaller
@@ -1129,6 +1137,7 @@ let map_term_node (f : 'id mterm_gen -> 'id mterm_gen) = function
   | Mseq is                       -> Mseq (List.map f is)
   | Massign (op, l, r)            -> Massign (op, l, f r)
   | Massignfield (op, a, fi, r)   -> Massignfield (op, a, fi, f r)
+  | Massignstate x                -> Massignstate (f x)
   | Mtransfer (x, b, q)           -> Mtransfer (f x, b, q)
   | Mbreak                        -> Mbreak
   | Massert x                     -> Massert (f x)
@@ -1370,7 +1379,7 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mduration _                           -> accu
   | Mdotasset (e, i)                      -> f accu e
   | Mdotcontract (e, i)                   -> f accu e
-  | Mstate                                -> accu
+  | Mvarstate                             -> accu
   | Mnow                                  -> accu
   | Mtransferred                          -> accu
   | Mcaller                               -> accu
@@ -1385,6 +1394,7 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mseq is                               -> List.fold_left f accu is
   | Massign (_, _, e)                     -> f accu e
   | Massignfield (_, _, _, e)             -> f accu e
+  | Massignstate x                        -> f accu x
   | Mtransfer (x, _, _)                   -> f accu x
   | Mbreak                                -> accu
   | Massert x                             -> f accu x
@@ -1783,8 +1793,8 @@ let fold_map_term
     let ee, ea = f accu e in
     g (Mdotcontract (ee, i)), ea
 
-  | Mstate ->
-    g Mstate, accu
+  | Mvarstate ->
+    g Mvarstate, accu
 
   | Mnow ->
     g Mnow, accu
@@ -1844,6 +1854,10 @@ let fold_map_term
   | Massignfield (op, a, fi, x) ->
     let xe, xa = f accu x in
     g (Massignfield (op, a, fi, xe)), xa
+
+  | Massignstate x ->
+    let xe, xa = f accu x in
+    g (Massignstate xe), xa
 
   | Mtransfer (x, b, q) ->
     let xe, xa = f accu x in

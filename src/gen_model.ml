@@ -210,7 +210,7 @@ let to_model (ast : A.model) : M.model =
     | A.Pdot (d, i) ->
       (* handle dot contract too *)
       M.Mdotasset (f d, i)
-    | A.Pconst Cstate                        -> M.Mstate
+    | A.Pconst Cstate                        -> M.Mvarstate
     | A.Pconst Cnow                          -> M.Mnow
     | A.Pconst Ctransferred                  -> M.Mtransferred
     | A.Pconst Ccaller                       -> M.Mcaller
@@ -728,6 +728,25 @@ let to_model (ast : A.model) : M.model =
   in
 
   let process_storage list =
+    let state_to_storage_items (es : A.enum list) l : M.storage_item list =
+      let es = List.filter (fun (x : A.enum) -> match x.kind with | EKstate -> true | _ -> false ) es in
+      match es with
+      | [] -> l
+      | [e] ->
+        begin
+          let init_val = List.fold_left (fun accu (x : A.lident A.enum_item_struct) ->
+              match x.initial with
+              | true -> Some x.name
+              | _ -> accu
+            ) None e.items in
+          let iv = Option.get init_val in
+          let dv = M.mk_mterm (M.Mvarlocal iv) (M.Tstate) in
+          let field = M.mk_storage_item (dumloc "state") Tstate dv in
+          field::l
+        end
+      | _ -> assert false
+    in
+
     let variable_to_storage_items (var : A.lident A.variable) : M.storage_item =
 
       let init_ b =
@@ -760,6 +779,7 @@ let to_model (ast : A.model) : M.model =
         | M.Tprog _           -> emit_error (NoInitExprFor "prog")
         | M.Tvset _           -> emit_error (NoInitExprFor "vset")
         | M.Ttrace _          -> emit_error (NoInitExprFor "trace")
+        | M.Tstate            -> emit_error (NoInitExprFor "state")
       in
 
       let arg = var.decl in
@@ -786,6 +806,7 @@ let to_model (ast : A.model) : M.model =
 
     let cont f x l = l @ (List.map f x) in
     []
+    |> state_to_storage_items (ast.enums)
     |> cont variable_to_storage_items ast.variables
     |> cont asset_to_storage_items ast.assets
   in
@@ -929,7 +950,6 @@ let to_model (ast : A.model) : M.model =
           | Some (id, id2) -> args @ [(id, M.Tasset id2, None)]
           | None -> args
         in
-        let state : M.lident = dumloc "_state" in
         let build_code (body : M.mterm) : M.mterm =
           (List.fold_right (fun ((id, cond, effect) : (A.lident * A.pterm option * A.instruction option)) (acc : M.mterm) : M.mterm ->
                let tre : M.mterm =
@@ -946,11 +966,11 @@ let to_model (ast : A.model) : M.model =
 
                      (* M.mk_mterm (M.Mcall Icall (Some asset, Cconst Cupdate, args)) Tunit *)
 
-                     emit_error TODO
+                     assert false
                    )
                  | _ ->
-                   let a : M.mterm = M.mk_mterm (M.Mvarlocal id) (M.Tbuiltin Bbool) ~loc:(Location.loc id) in
-                   M.mk_mterm (M.Massign (ValueAssign, state, a)) Tunit in
+                   let a : M.mterm = M.mk_mterm (M.Mvarlocal id) (M.Tstate) ~loc:(Location.loc id) in
+                   M.mk_mterm (M.Massignstate a) Tunit in
                let code : M.mterm =
                  match effect with
                  | Some e -> M.mk_mterm (M.Mseq [tre; to_instruction e]) Tunit
@@ -981,8 +1001,8 @@ let to_model (ast : A.model) : M.model =
               let pattern : M.pattern = M.mk_pattern M.Pwild in
               let fail_instr : M.mterm = fail InvalidState in
 
-              let w = M.mk_mterm (M.Mvarstorevar state) (Tenum (dumloc "_state")) in
-              M.mk_mterm (M.Mmatchwith (w, List.map (fun x -> (x, code)) list_patterns @ [pattern, fail_instr])) Tunit
+              let w = M.mk_mterm (M.Mvarstate) Tstate in
+              M.mk_mterm (M.Mmatchwith (w, List.map (fun x -> (x, body)) list_patterns @ [pattern, fail_instr])) Tunit
             end
         in
         args, body

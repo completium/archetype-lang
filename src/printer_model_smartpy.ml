@@ -81,6 +81,8 @@ let pp_model fmt (model : model) =
     match t with
     | Tasset an ->
       Format.fprintf fmt "%a" pp_id an
+    | Tstate ->
+      Format.fprintf fmt "state"
     | Tenum en ->
       Format.fprintf fmt "%a" pp_id en
     | Tcontract cn ->
@@ -851,7 +853,7 @@ let pp_model fmt (model : model) =
       | Mvarlocal v    -> pp_id fmt v
       | Mvarparam v    -> pp_id fmt v
       | Mvarthe        -> pp_str fmt "the"
-      | Mstate         -> pp_str fmt "state"
+      | Mvarstate      -> pp_str fmt "state_"
       | Mnow           -> pp_str fmt "sp.currentTime"
       | Mtransferred   -> pp_str fmt "sp.amount"
       | Mcaller        -> pp_str fmt "sp.sender"
@@ -932,6 +934,9 @@ let pp_model fmt (model : model) =
           pp_id l
           pp_operator op
           f r
+      | Massignstate x ->
+        Format.fprintf fmt "state = %a"
+          f x
       | Massignfield (op, a, field , r) ->
         Format.fprintf fmt "%a.%a %a %a"
           pp_id a
