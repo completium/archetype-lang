@@ -5,6 +5,7 @@ use export list.List
 use export list.Length
 use export list.Mem
 use export list.Distinct
+use export list.Permut
 
 function undup (xs : list 'a) : list 'a =
   match xs with
@@ -23,6 +24,11 @@ lemma mem_undup :
 
 lemma distinct_undup :
   forall xs [@induction] : list 'a. distinct (undup xs)
+
+lemma perm_eq_mem :
+  forall xs ys : list 'a.
+       (forall v. mem v xs <-> mem v ys)
+    -> permut (undup xs) (undup ys)
 end
 
 (* ------------------------------------------------------------------------ *)
@@ -53,6 +59,7 @@ end
 theory FSet
 
 (* ------------------------------------------------------------------------ *)
+use int.Int
 use list.ListRich
 use list.Distinct
 use list.Quant
@@ -78,6 +85,7 @@ predicate normed (xs : list t) =
 (* ------------------------------------------------------------------------ *)
 axiom normP : forall xs. permut (undup xs) (norm xs)
 axiom normK : forall xs. norm (norm xs) = norm xs
+axiom normI : forall xs ys. permut (undup xs) (undup ys) -> norm xs = norm ys
 
 (* ------------------------------------------------------------------------ *)
 type fset = {
@@ -89,6 +97,10 @@ type fset = {
 (* ------------------------------------------------------------------------ *)
 predicate fmem (x : t) (s : fset) =
   mem x s.contents
+
+(* ------------------------------------------------------------------------ *)
+predicate (==) (s1 s2 : fset) =
+  forall x. fmem x s1 <-> fmem x s2
 
 (* ------------------------------------------------------------------------ *)
 let function mk (xs : list t) : fset =
@@ -117,6 +129,14 @@ function fsetD (s1 s2 : fset) : fset =
 (* ------------------------------------------------------------------------ *)
 function fcard (s : fset) : int =
   length s.contents
+
+(* ------------------------------------------------------------------------ *)
+predicate fsubset (s1 s2 : fset) =
+  forall x. fmem x s1 -> fmem x s2
+
+(* ------------------------------------------------------------------------ *)
+predicate fdisjoint (s1 s2 : fset) =
+  fsetI s1 s2 == fset0
 
 (* ------------------------------------------------------------------------ *)
 axiom qmemP : forall eq : 'a -> 'a -> bool. forall x xs.
@@ -150,5 +170,90 @@ lemma in_fsetI :
 (* ------------------------------------------------------------------------ *)
 lemma in_fsetD :
   forall x s1 s2. (fmem x (fsetD s1 s2)) <-> (fmem x s1 /\ not (fmem x s2))
+
+(* ------------------------------------------------------------------------ *)
+lemma fsubset_eq : forall s1 s2.
+  s1 == s2 <-> (fsubset s1 s2 /\ fsubset s2 s1)
+
+(* ------------------------------------------------------------------------ *)
+lemma fsubset0 : forall s. fsubset fset0 s
+
+(* ------------------------------------------------------------------------ *)
+lemma fsubsetUl : forall s1 s2. fsubset s1 (fsetU s1 s2)
+
+(* ------------------------------------------------------------------------ *)
+lemma fsubsetUr : forall s1 s2. fsubset s2 (fsetU s1 s2)
+
+(* ------------------------------------------------------------------------ *)
+lemma fsubsetIl : forall s1 s2. fsubset (fsetI s1 s2) s1
+
+(* ------------------------------------------------------------------------ *)
+lemma fsubsetIr : forall s1 s2. fsubset (fsetI s1 s2) s2
+
+(* ------------------------------------------------------------------------ *)
+lemma fsubsetD : forall s1 s2. fsubset (fsetD s1 s2) s1
+
+(* ------------------------------------------------------------------------ *)
+lemma fsetU_id : forall s1 s2. fsubset s1 s2 -> fsetU s1 s2 == s2
+
+(* ------------------------------------------------------------------------ *)
+lemma fsetU0 : forall s. fsetU s fset0 == s
+
+(* ------------------------------------------------------------------------ *)
+lemma fset0U : forall s. fsetU fset0 s == s
+
+(* ------------------------------------------------------------------------ *)
+lemma fsetUC : forall s1 s2. fsetU s1 s2 == fsetU s2 s1
+
+(* ------------------------------------------------------------------------ *)
+lemma fsetUA : forall s1 s2 s3. fsetU (fsetU s1 s2) s3 == fsetU s1 (fsetU s2 s3)
+
+(* ------------------------------------------------------------------------ *)
+lemma fsetI_id : forall s1 s2. fsubset s1 s2 -> fsetI s1 s2 == s1
+
+(* ------------------------------------------------------------------------ *)
+lemma fsetI0 : forall s. fsetI s fset0 == fset0
+
+(* ------------------------------------------------------------------------ *)
+lemma fset0I : forall s. fsetI fset0 s == fset0
+
+(* ------------------------------------------------------------------------ *)
+lemma fsetIC : forall s1 s2. fsetI s1 s2 == fsetI s2 s1
+
+(* ------------------------------------------------------------------------ *)
+lemma fsetIA : forall s1 s2 s3. fsetI (fsetI s1 s2) s3 == fsetI s1 (fsetI s2 s3)
+
+(* ------------------------------------------------------------------------ *)
+lemma fsetID : forall s1 s2. fsetU (fsetI s1 s2) (fsetD s1 s2) == s1
+
+(* ------------------------------------------------------------------------ *)
+lemma fsetD0 : forall s. fsetD s fset0 == s
+
+(* ------------------------------------------------------------------------ *)
+lemma fcard0 : fcard fset0 = 0
+
+(* ------------------------------------------------------------------------ *)
+lemma fcard_disjoint : forall s1 s2. fdisjoint s1 s2 ->
+  fcard (fsetU s1 s2) = fcard s1 + fcard s2
+
+(* ------------------------------------------------------------------------ *)
+lemma fcard_eq : forall s1 s2. s1 == s2 -> fcard s1 = fcard s2
+
+(* ------------------------------------------------------------------------ *)
+lemma disjointID : forall s1 s2. fdisjoint (fsetI s1 s2) (fsetD s1 s2)
+
+(* ------------------------------------------------------------------------ *)
+lemma disjointDU : forall s1 s2. fdisjoint (fsetD s1 s2) s2
+
+(* ------------------------------------------------------------------------ *)
+lemma fsetUD : forall s1 s2. fsetU (fsetD s1 s2) s2 == fsetU s1 s2
+
+(* ------------------------------------------------------------------------ *)
+lemma fcardUD : forall s1 s2. fcard (fsetU s1 s2) = fcard (fsetD s1 s2) + fcard s2
+
+(* ------------------------------------------------------------------------ *)
+lemma fcardUI : forall s1 s2.
+  fcard (fsetU s1 s2) + fcard (fsetI s1 s2) = fcard s1 + fcard s2
+
 
 end
