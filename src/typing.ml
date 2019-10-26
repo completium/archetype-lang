@@ -447,9 +447,11 @@ type 'env tactiondecl = {
 
 (* -------------------------------------------------------------------- *)
 type statedecl = {
-  sd_ctors : (M.lident * (M.lident option * M.pterm) list) list;
+  sd_ctors : ctordecl list;
   sd_init  : ident;
 }
+
+and ctordecl = M.lident * (M.lident option * M.pterm) list
 
 (* -------------------------------------------------------------------- *)
 let pterm_arg_as_pterm = function M.AExpr e -> Some e | _ -> None
@@ -2505,17 +2507,16 @@ let enums_of_statedecl (s : statedecl option) : M.enum list =
   match s with
   | None -> []
   | Some s ->
-    let v = M.{
-        kind = EKstate;
-        items = List.map (fun (id, invs : (M.lident * (M.lident option * M.pterm) list)) -> M.{
-            name = id;
-            initial = String.equal (unloc id) s.sd_init;
-            invariants = List.map (fun (label, inv : M.lident option * M.pterm) -> M.mk_label_term ?label:label inv) invs;
-            loc = Location.dummy;
-          }) s.sd_ctors;
-        loc = Location.dummy;
+      let for_ctor1 ((id, invs) : ctordecl) = M.{
+        name       = id;
+        initial    = String.equal (unloc id) s.sd_init;
+        invariants = List.map (fun (label, inv) -> M.mk_label_term ?label inv) invs;
+        loc        = Location.dummy;
       } in
-    [v]
+
+      let items = List.map for_ctor1 s.sd_ctors in
+
+      [M.{ kind = EKstate; items = items; loc = Location.dummy; }]
 
 (* -------------------------------------------------------------------- *)
 let assets_of_adecls adecls =
