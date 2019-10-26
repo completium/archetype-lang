@@ -1,6 +1,8 @@
 (* ------------------------------------------------------------------------ *)
 module Undup
+use int.Int
 use export list.List
+use export list.Length
 use export list.Mem
 use export list.Distinct
 
@@ -11,11 +13,24 @@ function undup (xs : list 'a) : list 'a =
   | Cons x xs ->
       if mem x xs then undup xs else Cons x (undup xs)
   end
+
+lemma length_undup :
+  forall xs [@induction] : list 'a. length (undup xs) <= length xs
+
+lemma mem_undup :
+  forall xs [@induction] : list 'a. forall x.
+    mem x xs <-> mem x (undup xs)
+
+lemma distinct_undup :
+  forall xs [@induction] : list 'a. distinct (undup xs)
 end
 
 (* ------------------------------------------------------------------------ *)
 module ListFilter
+use int.Int
 use export list.List
+use export list.Mem
+use export list.Length
 
 function filter (p : 'a -> bool) (xs : list 'a) : list 'a =
   match xs with
@@ -24,6 +39,14 @@ function filter (p : 'a -> bool) (xs : list 'a) : list 'a =
   | Cons y ys ->
       if p y then Cons y (filter p ys) else filter p ys
   end
+  
+lemma length_filter :
+  forall p. forall xs [@induction] : list 'a.
+    length (filter p xs) <= length xs
+    
+lemma mem_filter :
+  forall p. forall xs [@induction] : list 'a. forall x.
+    mem x (filter p xs) <-> (mem x xs /\ p x)
 end
 
 (* ------------------------------------------------------------------------ *)
@@ -54,6 +77,7 @@ predicate normed (xs : list t) =
 
 (* ------------------------------------------------------------------------ *)
 axiom normP : forall xs. permut (undup xs) (norm xs)
+axiom normK : forall xs. norm (norm xs) = norm xs
 
 (* ------------------------------------------------------------------------ *)
 type fset = {
@@ -88,10 +112,43 @@ function fsetI (s1 s2 : fset) : fset =
 
 (* ------------------------------------------------------------------------ *)
 function fsetD (s1 s2 : fset) : fset =
-  mk (filter (fun x -> not (Quant.mem eqt x s2.contents) )s1.contents)
+  mk (filter (fun x -> not (Quant.mem eqt x s2.contents)) s1.contents)
 
 (* ------------------------------------------------------------------------ *)
 function fcard (s : fset) : int =
   length s.contents
+
+(* ------------------------------------------------------------------------ *)
+axiom qmemP : forall eq : 'a -> 'a -> bool. forall x xs.
+      Quant.mem eq x xs
+  <-> exists y. eq x y /\ mem y xs
+
+(* ------------------------------------------------------------------------ *)
+lemma qmem_memP :
+  forall xs ys z.
+        mem z (filter (fun x -> Quant.mem eqt x xs) ys)
+    <-> (mem z xs /\ mem z ys)
+
+(* ------------------------------------------------------------------------ *)
+lemma qmem_memNP :
+  forall xs ys z.
+        mem z (filter (fun x -> not (Quant.mem eqt x xs)) ys)
+    <-> (not (mem z xs) /\ mem z ys)
+
+(* ------------------------------------------------------------------------ *)
+lemma in_fset0 :
+  forall x. not (fmem x fset0)
+
+(* ------------------------------------------------------------------------ *)
+lemma in_fsetU :
+  forall x s1 s2. (fmem x (fsetU s1 s2)) <-> (fmem x s1 \/ fmem x s2)
+
+(* ------------------------------------------------------------------------ *)
+lemma in_fsetI :
+  forall x s1 s2. (fmem x (fsetI s1 s2)) <-> (fmem x s1 /\ fmem x s2)
+
+(* ------------------------------------------------------------------------ *)
+lemma in_fsetD :
+  forall x s1 s2. (fmem x (fsetD s1 s2)) <-> (fmem x s1 /\ not (fmem x s2))
 
 end
