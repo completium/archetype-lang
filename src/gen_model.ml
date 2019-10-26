@@ -973,7 +973,7 @@ let to_model (ast : A.model) : M.model =
                    M.mk_mterm (M.Massignstate a) Tunit in
                let code : M.mterm =
                  match effect with
-                 | Some e -> M.mk_mterm (M.Mseq [tre; to_instruction e]) Tunit
+                 | Some e -> M.mk_mterm (M.Mseq [to_instruction e; tre]) Tunit
                  | None -> tre
                in
 
