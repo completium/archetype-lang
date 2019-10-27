@@ -2471,6 +2471,16 @@ let group_declarations (decls : (PT.declaration list)) =
   in List.fold_right for1 decls empty
 
 (* -------------------------------------------------------------------- *)
+type decls = {
+  state     : statedecl option;
+  variables : vardecl option list;
+  assets    : assetdecl option list;
+  functions : unit option list;
+  acttxs    : env tactiondecl list;
+  specs     : env ispecification list list;
+  secspecs  : M.security list;
+}
+
 let for_grouped_declarations (env : env) (toploc, g) =
   if not (List.is_empty g.gr_archetypes) then
     Env.emit_error env (toploc, InvalidArcheTypeDecl);
@@ -2478,7 +2488,7 @@ let for_grouped_declarations (env : env) (toploc, g) =
   if List.length g.gr_states > 1 then
     Env.emit_error env (toploc, MultipleStateDeclaration);
 
-  let env, vdecls = for_vars_decl env g.gr_vars in
+  let env, variables = for_vars_decl env g.gr_vars in
 
   let state, env =
     let for1 { plloc = loc; pldesc = state } =
@@ -2493,13 +2503,15 @@ let for_grouped_declarations (env : env) (toploc, g) =
     | _ ->
       (None, env) in
 
-  let env, adecls = for_assets_decl  env g.gr_assets  in
-  let env, fdecls = for_funs_decl    env g.gr_funs in
-  let env, tdecls = for_acttxs_decl  env g.gr_acttxs  in
-  let env, cdecls = for_specs_decl   env g.gr_specs   in
-  let env, sdecls = for_secs_decl    env g.gr_secs   in
+  let env, assets    = for_assets_decl  env g.gr_assets  in
+  let env, functions = for_funs_decl    env g.gr_funs in
+  let env, acttxs    = for_acttxs_decl  env g.gr_acttxs  in
+  let env, specs     = for_specs_decl   env g.gr_specs   in
+  let env, secspecs  = for_secs_decl    env g.gr_secs   in
 
-  (env, (state, adecls, vdecls, fdecls, tdecls, cdecls, sdecls))
+  let output = { state; variables; assets; functions; acttxs; specs; secspecs; } in
+
+  (env, output)
 
 (* -------------------------------------------------------------------- *)
 let enums_of_statedecl (s : statedecl option) : M.enum list =
@@ -2657,15 +2669,14 @@ let for_declarations (env : env) (decls : (PT.declaration list) loced) : M.model
   | { pldesc = Darchetype (x, _exts) } :: decls ->
     let groups = group_declarations decls in
     let _env, decls = for_grouped_declarations env (toploc, groups) in
-    let state, adecls, vdecls, _fdecls, tdecls, cdecls, sdecls = decls in
 
     M.mk_model
-      ~enums:(enums_of_statedecl state (* TODO: append enums *))
-      ~assets:(assets_of_adecls adecls)
-      ~variables:(variables_of_vdecls vdecls)
-      ~transactions:(transactions_of_tdecls tdecls)
-      ~specifications:(List.map specifications_of_ispecifications cdecls)
-      ~securities:sdecls
+      ~enums:(enums_of_statedecl decls.state (* TODO: append enums *))
+      ~assets:(assets_of_adecls decls.assets)
+      ~variables:(variables_of_vdecls decls.variables)
+      ~transactions:(transactions_of_tdecls decls.acttxs)
+      ~specifications:(List.map specifications_of_ispecifications decls.specs)
+      ~securities:(decls.secspecs)
       x
 
   | _ ->
