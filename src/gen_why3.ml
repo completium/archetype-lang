@@ -88,7 +88,7 @@ let mk_trace_entry m =
 let mk_trace_field m =
   Denum ("_field",
          (M.Utils.get_variables m
-          |> List.map (fun (v : M.storage_item) -> String.capitalize_ascii (unloc v.name))) @
+          |> List.map (fun (v : M.storage_item) -> String.capitalize_ascii (Model.Utils.get_storage_id_name v.id))) @
          (M.Utils.get_assets m
           |> List.map (fun (a : M.info_asset) ->
               List.map (fun (n,_,_) -> String.capitalize_ascii n) a.values
@@ -410,7 +410,7 @@ let map_storage_items = List.fold_left (fun acc (item : M.storage_item) ->
       let typ_ = map_mtype item.typ in
       let init_value = type_to_init typ_ in
       [{
-        name     = item.name |> unloc |> with_dummy_loc;
+        name     = Model.Utils.get_storage_id_name item.id |> with_dummy_loc;
         typ      = typ_;
         init     = map_record_term init_value item.default;
         mutable_ = true;
@@ -583,8 +583,8 @@ let mk_invariant m n src inv : loc_term =
                           Tvar variable,
                           Tdoti ("s", mk_ac_id asset.obj))
       | `Axiom2   -> Tmem ((unloc_ident asset),
-                          Tvar variable,
-                          Tvar ("c"))
+                           Tvar variable,
+                           Tvar ("c"))
       | `Loop    -> Tmem ((unloc_ident asset),
                           Tvar variable,
                           mk_ac (unloc n))
@@ -611,8 +611,8 @@ let mk_invariant m n src inv : loc_term =
                                      Tvar "c",
                                      Tdoti ("s", mk_ac_id asset.obj)),
                             Tforall ([[variable],Tyasset (unloc_ident asset)],
-                                   Timpl (mem_pred,
-                                          Ttobereplaced)))))
+                                     Timpl (mem_pred,
+                                            Ttobereplaced)))))
       | _ ->
         Tforall ([[variable],Tyasset (unloc_ident asset)],
                  Timpl (mem_pred,
@@ -688,7 +688,10 @@ let map_storage m (l : M.storage) =
   Dstorage {
     fields     = (map_storage_items l)@ (mk_const_fields m |> loc_field |> deloc);
     invariants = List.concat (List.map (fun (item : M.storage_item) ->
-        List.map (mk_storage_invariant m item.name) item.invariants) l) @
+        List.map (mk_storage_invariant m (match item.id with
+            | SIname name -> name
+            | SIstate -> dumloc "state")
+          ) item.invariants) l) @
                  (List.fold_left (fun acc sec ->
                       acc @ (mk_spec_invariant `Storage sec)) [] m.security.items)
   }
@@ -856,7 +859,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
         match v.node with
         | M.Mdotasset (a,_) -> map_mterm m ctx a
         | _ -> with_dummy_loc (Tapp (loc_term (Tvar ("get_"^t)),
-                                    [map_mterm m ctx v]))
+                                     [map_mterm m ctx v]))
       in
       mk_trace_seq m
         (Tletin (false,
@@ -982,11 +985,11 @@ let mk_axioms (m : M.model) : (loc_term, loc_typ, loc_ident) abstract_decl list 
                     mk_axiom2_invariant m asset (map_mterm m init_ctx formula))]
 
     ) [] m.api_verif
-  (*let records = M.Utils.get_assets m |> List.map (fun (r : M.info_asset) -> dumloc (r.name)) in
+(*let records = M.Utils.get_assets m |> List.map (fun (r : M.info_asset) -> dumloc (r.name)) in
   let keys    = records |> List.map (M.Utils.get_asset_key m) in
   List.map2 (fun r (k,kt) ->
-      mk_keys_eq_axiom r.pldesc k (map_btype kt)
-    ) records keys |> loc_decl |> deloc*)
+    mk_keys_eq_axiom r.pldesc k (map_btype kt)
+  ) records keys |> loc_decl |> deloc*)
 
 
 (* Storage API templates -----------------------------------------------------*)

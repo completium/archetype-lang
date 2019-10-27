@@ -1261,7 +1261,7 @@ let pp_model fmt (model : model) =
 
   let pp_storage_item fmt (si : storage_item) =
     Format.fprintf fmt "%a : %a;"
-      pp_id si.name
+      pp_str (Model.Utils.get_storage_id_name si.id)
       pp_type si.typ
   in
 
@@ -1279,7 +1279,7 @@ let pp_model fmt (model : model) =
   let pp_init_function fmt (s : storage) =
     let pp_storage_item fmt (si : storage_item) =
       Format.fprintf fmt "%a = %a;"
-        pp_id si.name
+        pp_str (Model.Utils.get_storage_id_name si.id)
         (pp_cast Rhs si.typ si.default.type_ pp_mterm) si.default
     in
 

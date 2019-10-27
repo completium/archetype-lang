@@ -25,7 +25,7 @@ let split_key_values (model : model) : model =
             Marray [], Marray []
           in
           let asset_keys =
-            mk_storage_item (dumloc (asset_keys (unloc an)))
+            mk_storage_item (SIname (dumloc (asset_keys (unloc an))))
               type_key
               (mk_mterm init_keys type_key)
               ~asset:an
@@ -34,7 +34,7 @@ let split_key_values (model : model) : model =
           in
           let type_asset = Tassoc (t, Tasset an) in
           let asset_assets =
-            mk_storage_item (dumloc (asset_assets (unloc an)))
+            mk_storage_item (SIname (dumloc (asset_assets (unloc an))))
               type_asset
               (mk_mterm init_assets type_asset)
               ~asset:an

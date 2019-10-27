@@ -141,18 +141,24 @@ let extend_removeif (model : model) : model =
 let process_single_field_storage (model : model) : model =
   match model.storage with
   | [i] ->
-    let field_name = unloc i.name in
-    let storage_id = dumloc "_s" in
-    let rec aux (ctx : ctx_model) (mt : mterm) : mterm =
-      match mt.node with
-      | Mvarstorevar a when String.equal (unloc a) field_name ->
-        mk_mterm (Mvarlocal storage_id) mt.type_
-      | Massign (op, a, v) when String.equal (unloc a) field_name ->
-        let vv = map_mterm (aux ctx) v in
-        mk_mterm (Massign (op, storage_id, vv)) mt.type_
-      | _ -> map_mterm (aux ctx) mt
-    in
-    map_mterm_model aux model
+    begin
+      match i.id with
+      | SIname name ->
+        begin
+          let storage_id = dumloc "_s" in
+          let rec aux (ctx : ctx_model) (mt : mterm) : mterm =
+            match mt.node with
+            | Mvarstorevar a when String.equal (unloc a) (unloc name) ->
+              mk_mterm (Mvarlocal storage_id) mt.type_
+            | Massign (op, a, v) when String.equal (unloc a) (unloc name) ->
+              let vv = map_mterm (aux ctx) v in
+              mk_mterm (Massign (op, storage_id, vv)) mt.type_
+            | _ -> map_mterm (aux ctx) mt
+          in
+          map_mterm_model aux model
+        end
+      | SIstate -> model
+    end
   | _   -> model
 
 (* raises errors if direct update/add/remove to partitioned asset *)

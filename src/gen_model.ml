@@ -741,7 +741,7 @@ let to_model (ast : A.model) : M.model =
             ) None e.items in
           let iv = Option.get init_val in
           let dv = M.mk_mterm (M.Mvarlocal iv) (M.Tstate) in
-          let field = M.mk_storage_item (dumloc "state") Tstate dv in
+          let field = M.mk_storage_item M.SIstate Tstate dv in
           field::l
         end
       | _ -> assert false
@@ -790,14 +790,14 @@ let to_model (ast : A.model) : M.model =
         | Some v -> to_mterm v
         | None   -> init_default_value typ
       in
-      M.mk_storage_item arg.name typ dv
+      M.mk_storage_item (M.SIname arg.name) typ dv
     in
 
     let asset_to_storage_items (asset : A.asset) : M.storage_item =
       let asset_name = asset.name in
       let typ_ = M.Tcontainer (Tasset asset_name, Collection) in
       M.mk_storage_item
-        asset_name
+        (M.SIname asset_name)
         typ_
         (M.mk_mterm (M.Marray []) typ_)
         ~asset:asset_name

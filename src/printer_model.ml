@@ -887,7 +887,7 @@ let pp_label_term fmt (lt : label_term) =
 
 let pp_storage_item fmt (si : storage_item) =
   Format.fprintf fmt "%a : %a%a%a"
-    pp_id si.name
+    pp_str (Model.Utils.get_storage_id_name si.id)
     pp_type si.typ
     (fun fmt -> Format.fprintf fmt " := %a" pp_mterm) si.default
     (pp_do_if (not (List.is_empty si.invariants)) (fun fmt xs -> Format.fprintf fmt " with {%a}" (pp_list "; " pp_label_term) xs)) si.invariants

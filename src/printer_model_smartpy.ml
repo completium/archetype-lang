@@ -1019,7 +1019,7 @@ let pp_model fmt (model : model) =
 
       | _ ->
         Format.fprintf fmt "%a = %a"
-          pp_id si.name
+          pp_str (Model.Utils.get_storage_id_name si.id)
           pp_mterm si.default
     in
 

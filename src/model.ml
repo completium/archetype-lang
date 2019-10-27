@@ -390,12 +390,12 @@ type label_term = lident label_term_gen
    [@@deriving show {with_path = false}] *)
 
 type 'id storage_id =
-  | SIid of 'id
+  | SIname of 'id
   | SIstate
 [@@deriving show {with_path = false}]
 
 type 'id storage_item_gen = {
-  name        : 'id; (* TODO: storage_id *)
+  id          : 'id storage_id;
   asset       : 'id option;
   typ         : type_;
   ghost       : bool;
@@ -755,8 +755,8 @@ let mk_contract_signature ?(args=[]) ?(loc=Location.dummy) name : 'id contract_s
 let mk_contract ?(signatures=[]) ?init ?(loc=Location.dummy) name : 'id contract_gen =
   { name; signatures; init; loc }
 
-let mk_storage_item ?asset ?(ghost = false) ?(invariants = []) ?(loc = Location.dummy) name typ default : 'id storage_item_gen =
-  { name; asset; typ; ghost; default; invariants; loc }
+let mk_storage_item ?asset ?(ghost = false) ?(invariants = []) ?(loc = Location.dummy) id typ default : 'id storage_item_gen =
+  { id; asset; typ; ghost; default; invariants; loc }
 
 let mk_function_struct ?(args = []) ?(loc = Location.dummy) ?(src = Exo) name body : function_struct =
   { name; args; src; body; loc }
@@ -2044,6 +2044,7 @@ module Utils : sig
   val get_map_function                   : model -> (ident * ident list) list
   val retrieve_all_properties            : model -> (ident * property) list
   val retrieve_property                  : model -> ident -> property
+  val get_storage_id_name                : lident storage_id -> ident
 
 end = struct
 
@@ -2292,7 +2293,11 @@ end = struct
     let s = get_storage model in
     let items = s in
     (List.fold_left (fun accu (x : storage_item) ->
-         accu || String.equal (Location.unloc id) (Location.unloc x.name)) false items)
+         accu ||
+         match x.id with
+         | SIname name -> String.equal (Location.unloc id) (Location.unloc name)
+         | SIstate -> false
+       ) false items)
 
   let get_field_list (model : model) (record_name : lident) : ident list =
     let asset = get_info_asset model record_name in
@@ -2436,7 +2441,10 @@ end = struct
   (* returns asset name * invariant name * invariant term *)
   let get_storage_invariants (m : model) (asset : ident option) : (ident * ident * mterm) list =
     List.fold_left (fun acc (i : storage_item) ->
-        let n = i.name |> unloc in
+        let name = match i.id with
+          | SIname name -> name
+          | SIstate -> dumloc "state" in
+        let n = name |> unloc in
         let do_fold =
           match asset with
           | Some a when compare n a = 0 -> true
@@ -2454,7 +2462,10 @@ end = struct
 
   let is_field_storage (m : model) (id : ident) : bool =
     let l : ident list =
-      List.map (fun (x : storage_item) -> (unloc x.name)) m.storage
+      List.map (fun (x : storage_item) -> (
+            match x.id with
+            | SIname name -> unloc name
+            | SIstate -> "state")) m.storage
     in
     List.mem id l
 
@@ -2528,5 +2539,10 @@ end = struct
   let retrieve_property (m : model) (id : ident) : property =
     let properties = retrieve_all_properties m in
     List.assoc id properties
+
+  let get_storage_id_name (id : lident storage_id) : ident =
+    match id with
+    | SIname name -> unloc name
+    | SIstate -> "state"
 
 end
