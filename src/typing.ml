@@ -442,7 +442,8 @@ type 'env tactiondecl = {
   ad_effect : [`Raw of M.instruction | `Tx of M.lident * txeffect list] option;
   ad_reqs   : (M.lident option * M.pterm) list;
   ad_fais   : (M.lident option * M.pterm) list;
-  ad_spec  : 'env ispecification list;
+  ad_spec   : 'env ispecification list;
+  ad_actfs  : bool;
 }
 
 (* -------------------------------------------------------------------- *)
@@ -2362,7 +2363,8 @@ let for_acttx_decl (env : env) (decl : acttx loced) =
                 ad_effect = Option.map (fun x -> `Raw x) effect;
                 ad_reqs   = Option.get_dfl [] reqs;
                 ad_fais   = Option.get_dfl [] fais;
-                ad_spec   = Option.get_dfl [] spec; } in
+                ad_spec   = Option.get_dfl [] spec;
+                ad_actfs  = pt.accept_transfer; } in
 
             (env, decl))
 
@@ -2389,9 +2391,10 @@ let for_acttx_decl (env : env) (decl : acttx loced) =
               ad_effect = Some (`Tx (from_, tx));
               ad_reqs   = Option.get_dfl [] reqs;
               ad_fais   = Option.get_dfl [] fais;
-              ad_spec   = Option.get_dfl [] spec; } in
+              ad_spec   = Option.get_dfl [] spec;
+              ad_actfs  = actions.accept_transfer; }
 
-          (env, decl))
+          in (env, decl))
 
     in (Env.TAction.push env decl, decl)
 
@@ -2620,9 +2623,8 @@ let transactions_of_tdecls tdecls =
         let from_ = M.mk_sp ~loc:(loc from_) (M.Sref from_) in
 
         Some (M.{ from = from_; on = None; trs =
-                                             List.map
-                                               (fun tx ->(tx.tx_state, tx.tx_when, tx.tx_effect))
-                                               x })
+          List.map
+            (fun tx ->(tx.tx_state, tx.tx_when, tx.tx_effect)) x })
 
       | _ -> None in
 
@@ -2636,7 +2638,7 @@ let transactions_of_tdecls tdecls =
               M.{ name = x; typ = Some xty; default = None; loc = loc x; })
             tdecl.ad_args;
         calledby        = for_calledby tdecl.ad_callby;
-        accept_transfer = false;        (* FIXME; false is default *)
+        accept_transfer = tdecl.ad_actfs;
         require         = Some (List.map mkl tdecl.ad_reqs);
         failif          = Some (List.map mkl tdecl.ad_fais);
         transition      = transition;
