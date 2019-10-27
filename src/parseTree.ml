@@ -332,7 +332,7 @@ and action_decl =
 and transition_decl =
   lident
   * args
-  * (lident * lident) option
+  * (lident * type_t) option
   * expr
   * action_properties
   * transition

@@ -69,7 +69,6 @@ type error_desc =
   | CannotInferCollectionType
   | CollectionExpected
   | DivergentExpr
-  | DuplicatedAssetName                of ident
   | DuplicatedCtorName                 of ident
   | DuplicatedFieldInAssetDecl         of ident
   | DuplicatedFieldInRecordLiteral     of ident
@@ -77,14 +76,15 @@ type error_desc =
   | DuplicatedPKey
   | DuplicatedVarDecl                  of ident
   | AnonymousFieldInEffect
-  | EmptyStateDecl
+  | EmptyEnumDecl
   | ExpressionExpected
+  | ForeignState                       of ident option * ident option
   | FormulaExpected
   | IncompatibleTypes                  of M.ptyp * M.ptyp
   | InvalidActionDescription
   | InvalidActionExpression
   | InvalidArcheTypeDecl
-  | InvalidAssetCollectionExpr
+  | InvalidAssetCollectionExpr         of M.ptyp
   | InvalidAssetExpression
   | InvalidCallByExpression
   | InvalidExpressionForEffect
@@ -104,6 +104,7 @@ type error_desc =
   | MixedAnonInRecordLiteral
   | MixedFieldNamesInRecordLiteral     of ident list
   | MoreThanOneInitState               of ident list
+  | MultipleAssetStateDeclaration
   | MultipleInitialMarker
   | MultipleMatchingOperator           of PT.operator * M.ptyp list * opsig list
   | MultipleStateDeclaration
@@ -112,6 +113,7 @@ type error_desc =
   | NoSuchMethod                       of ident
   | NoSuchSecurityPredicate            of ident
   | NonLoopLabel                       of ident
+  | NotAnAssetType
   | NotARole                           of ident
   | NumericExpressionExpected
   | OpInRecordLiteral
@@ -122,6 +124,7 @@ type error_desc =
   | UninitializedVar
   | UnknownAction                      of ident
   | UnknownAsset                       of ident
+  | UnknownEnum                        of ident
   | UnknownField                       of ident * ident
   | UnknownFieldName                   of ident
   | UnknownLabel                       of ident
@@ -149,7 +152,6 @@ let pp_error_desc fmt e =
   | CannotInferCollectionType          -> pp "Cannot infer collection type"
   | CollectionExpected                 -> pp "Collection expected"
   | DivergentExpr                      -> pp "Divergent expression"
-  | DuplicatedAssetName i              -> pp "Duplicated asset name: %a" pp_ident i
   | DuplicatedCtorName i               -> pp "Duplicated constructor name: %a" pp_ident i
   | DuplicatedFieldInAssetDecl i       -> pp "Duplicated field in asset declaration: %a" pp_ident i
   | DuplicatedFieldInRecordLiteral i   -> pp "Duplicated field in record literal: %a" pp_ident i
@@ -157,20 +159,21 @@ let pp_error_desc fmt e =
   | DuplicatedPKey                     -> pp "Duplicated key"
   | DuplicatedVarDecl i                -> pp "Duplicated variable declaration: %a" pp_ident i
   | AnonymousFieldInEffect             -> pp "Anonymous field in effect"
-  | EmptyStateDecl                     -> pp "Empty state declaration"
+  | EmptyEnumDecl                      -> pp "Empty state/enum declaration"
   | ExpressionExpected                 -> pp "Expression expected"
+  | ForeignState (i1, i2)              -> pp "Expecting a state of %a, not %a" pp_ident (Option.get_dfl "<global>" i1) pp_ident (Option.get_dfl "<global>" i2)
   | FormulaExpected                    -> pp "Formula expected"
   | IncompatibleTypes (t1, t2)         -> pp "Incompatible types: found '%a' but expected '%a'" Printer_ast.pp_ptyp t1 Printer_ast.pp_ptyp t2
   | InvalidActionDescription           -> pp "Invalid action description"
   | InvalidActionExpression            -> pp "Invalid action expression"
   | InvalidArcheTypeDecl               -> pp "Invalid Archetype declaration"
-  | InvalidAssetCollectionExpr         -> pp "Invalid asset collection expression"
+  | InvalidAssetCollectionExpr ty      -> pp "Invalid asset collection expression: %a" M.pp_ptyp ty
   | InvalidAssetExpression             -> pp "Invalid asset expression"
   | InvalidCallByExpression            -> pp "Invalid 'Calledby' expression"
   | InvalidExpressionForEffect         -> pp "Invalid expression for effect"
   | InvalidExpression                  -> pp "Invalid expression"
   | InvalidFieldsCountInRecordLiteral  -> pp "Invalid fields count in record literal"
-  | InvalidLValue                      -> pp "Invalid value"
+  | InvalidLValue                      -> pp "Invalid left-value"
   | InvalidFormula                     -> pp "Invalid formula"
   | InvalidInstruction                 -> pp "Invalid instruction"
   | InvalidNumberOfArguments (n1, n2)  -> pp "Invalid number of arguments: found '%i', but expected '%i'" n1 n2
@@ -184,12 +187,14 @@ let pp_error_desc fmt e =
   | MixedAnonInRecordLiteral           -> pp "Mixed anonymous in record literal"
   | MixedFieldNamesInRecordLiteral l   -> pp "Mixed field names in record literal: %a" (Printer_tools.pp_list "," pp_ident) l
   | MoreThanOneInitState l             -> pp "More than one initial state: %a" (Printer_tools.pp_list ", " pp_ident) l
+  | MultipleAssetStateDeclaration      -> pp "Multiple asset states declaration"
   | MultipleInitialMarker              -> pp "Multiple 'initial' marker"
   | MultipleStateDeclaration           -> pp "Multiple state declaration"
   | NameIsAlreadyBound i               -> pp "Name is already used: %a" pp_ident i
   | NoSuchMethod i                     -> pp "No such method: %a" pp_ident i
   | NoSuchSecurityPredicate i          -> pp "No such security predicate: %a" pp_ident i
   | NonLoopLabel i                     -> pp "Not a loop lable: %a" pp_ident i
+  | NotAnAssetType                     -> pp "Not an asset type"
   | NotARole i                         -> pp "Not a role: %a" pp_ident i
   | NumericExpressionExpected          -> pp "Expecting numerical expression"
   | OpInRecordLiteral                  -> pp "Operation in record literal"
@@ -200,6 +205,7 @@ let pp_error_desc fmt e =
   | UninitializedVar                   -> pp "This variable declaration is missing an initializer"
   | UnknownAction i                    -> pp "Unknown action: %a" pp_ident i
   | UnknownAsset i                     -> pp "Unknown asset: %a" pp_ident i
+  | UnknownEnum i                      -> pp "Unknown enum: %a" pp_ident i
   | UnknownField (i1, i2)              -> pp "Unknown field: asset %a does not have a field %a" pp_ident i1 pp_ident i2
   | UnknownFieldName i                 -> pp "Unknown field name: %a" pp_ident i
   | UnknownLabel i                     -> pp "Unknown label: %a" pp_ident i
@@ -405,6 +411,7 @@ type assetdecl = {
   as_pk     : M.lident;
   as_sortk  : M.lident list;
   as_invs   : (M.lident option * M.pterm) list;
+  as_state  : M.lident option;
 }
 
 (* -------------------------------------------------------------------- *)
@@ -448,6 +455,7 @@ type 'env tactiondecl = {
 
 (* -------------------------------------------------------------------- *)
 type statedecl = {
+  sd_name  : M.lident option;
   sd_ctors : ctordecl list;
   sd_init  : ident;
 }
@@ -481,15 +489,16 @@ module Env : sig
   type label_kind = [`Plain | `Loop of ident]
 
   type entry = [
-    | `Label      of t * label_kind
-    | `State      of statedecl
-    | `Type       of M.ptyp
-    | `Local      of M.ptyp
-    | `Global     of vardecl
-    | `Proc       of procsig
-    | `Asset      of assetdecl
-    | `Action     of t tactiondecl
-    | `Field      of ident
+    | `Label       of t * label_kind
+    | `State       of statedecl
+    | `StateByCtor of statedecl
+    | `Type        of M.ptyp
+    | `Local       of M.ptyp
+    | `Global      of vardecl
+    | `Proc        of procsig
+    | `Asset       of assetdecl
+    | `Action      of t tactiondecl
+    | `Field       of ident
   ]
 
   type ecallback = error -> unit
@@ -537,7 +546,10 @@ module Env : sig
   end
 
   module State : sig
-    val byname : t -> ident -> ident option
+    val lookup : t -> ident -> statedecl option
+    val get    : t -> ident -> statedecl
+    val exists : t -> ident -> bool
+    val byctor : t -> ident -> statedecl option
     val push   : t -> statedecl -> t
   end
 
@@ -561,15 +573,16 @@ end = struct
   type label_kind = [`Plain | `Loop of ident]
 
   type entry = [
-    | `Label      of t * label_kind
-    | `State      of statedecl
-    | `Type       of M.ptyp
-    | `Local      of M.ptyp
-    | `Global     of vardecl
-    | `Proc       of procsig
-    | `Asset      of assetdecl
-    | `Action     of t tactiondecl
-    | `Field      of ident
+    | `Label       of t * label_kind
+    | `State       of statedecl
+    | `StateByCtor of statedecl
+    | `Type        of M.ptyp
+    | `Local       of M.ptyp
+    | `Global      of vardecl
+    | `Proc        of procsig
+    | `Asset       of assetdecl
+    | `Action      of t tactiondecl
+    | `Field       of ident
   ]
 
   and t = {
@@ -646,6 +659,7 @@ end = struct
       match entry with
       | `Type  x    -> Some x
       | `Asset decl -> Some (M.Tasset decl.as_name)
+      | `State decl -> Some (M.Tenum (Option.get decl.sd_name))
       | _           -> None
 
     let lookup (env : t) (name : ident) =
@@ -662,15 +676,33 @@ end = struct
   end
 
   module State = struct
-    let byname (env : t) (name : ident) =
+    let proj (entry : entry) =
+      match entry with
+      | `State x -> Some x
+      | _        -> None
+
+    let lookup (env : t) (name : ident) =
+      lookup_gen proj env name
+
+    let exists (env : t) (name : ident) =
+      Option.is_some (lookup env name)
+
+    let get (env : t) (name : ident) =
+      Option.get (lookup env name)
+
+    let byctor (env : t) (name : ident) =
       match Mid.find_opt name env.env_bindings with
-      | Some (`State _) -> Some name
+      | Some (`StateByCtor decl) -> Some decl
       | _ -> None
 
     let push (env : t) (decl : statedecl) =
-      List.fold_left
-        (fun env ({ pldesc = name }, _) -> (push env name (`State decl)))
-        env decl.sd_ctors
+      let env =
+        List.fold_left
+          (fun env ({ pldesc = name }, _) -> (push env name (`StateByCtor decl)))
+          env decl.sd_ctors in
+      Option.fold
+        (fun env name -> push env name (`State decl))
+        env (Option.map unloc decl.sd_name)
   end
 
   module Local = struct
@@ -886,6 +918,17 @@ let rec for_type_exn (env : env) (ty : PT.type_t) : M.ptyp =
 
 let for_type (env : env) (ty : PT.type_t) : M.ptyp option =
   try Some (for_type_exn env ty) with InvalidType -> None
+
+(* -------------------------------------------------------------------- *)
+let for_asset_type (env : env) (ty : PT.type_t) : M.lident option =
+  match Option.map Type.as_asset (for_type env ty) with
+  | None ->
+      None
+  | Some None ->
+      Env.emit_error env (loc ty, NotAnAssetType);
+      None
+  | Some (Some x) ->
+      Some x
 
 (* -------------------------------------------------------------------- *)
 let for_literal (_env : env) (topv : PT.literal loced) : M.bval =
@@ -1125,7 +1168,6 @@ let rec for_xexpr (mode : emode_t) (env : env) ?(ety : M.ptyp option) (tope : PT
         if Mid.mem (unloc x) methods then
           for_xexpr env ?ety (mkloc (loc tope) (PT.Emethod (pe, x, [])))
         else
-
           let e = for_xexpr env pe in
 
           match Option.map Type.as_asset e.M.type_ with
@@ -1401,7 +1443,8 @@ and for_asset_collection_expr mode (env : env) (tope : PT.expr) =
       None
 
     | Some None ->
-      Env.emit_error env (loc tope, InvalidAssetCollectionExpr);
+      Env.emit_error env
+        (loc tope, InvalidAssetCollectionExpr (Option.get ast.M.type_));
       None
 
     | Some (Some (asset, c)) ->
@@ -1712,21 +1755,45 @@ let for_args_decl (env : env) (xs : PT.args) =
   List.fold_left_map for_arg_decl env xs
 
 (* -------------------------------------------------------------------- *)
-let for_lvalue (env : env) (e : PT.expr) : (M.lident * M.ptyp) option =
+let for_lvalue (env : env) (e : PT.expr) : (M.lvalue * M.ptyp) option =
   match unloc e with
   | Eterm ({ before = false; label = None; }, x) -> begin
       match Env.lookup env (unloc x) with
       | Some (`Local xty) ->
-        Some (x, xty)
+        Some (`Var x, xty)
 
       | Some (`Global vd) ->
         if vd.vr_kind <> `Variable then
           Env.emit_error env (loc e, ReadOnlyGlobal (unloc x));
-        Some (x, vd.vr_type)
+        Some (`Var x, vd.vr_type)
 
       | _ ->
         Env.emit_error env (loc e, UnknownLocalOrVariable (unloc x));
         None
+    end
+
+  | Edot (pnm, x) -> begin
+      let nm = for_xexpr `Expr env pnm in
+
+      match Option.map Type.as_asset nm.M.type_ with
+      | None ->
+        None
+
+       | Some None ->
+         Env.emit_error env (loc pnm, AssetExpected);
+         None
+
+       | Some (Some asset) -> begin
+         let asset = Env.Asset.get env (unloc asset) in
+
+         match List.Exn.assoc_map unloc (unloc x) asset.as_fields with
+        | None ->
+            let err = UnknownField (unloc asset.as_name, unloc x) in
+            Env.emit_error env (loc x, err); None
+
+        | Some fty ->
+          Some (`Field (nm, x), fty)
+      end
     end
 
   | _ ->
@@ -1761,7 +1828,9 @@ let rec for_instruction (env : env) (i : PT.expr) : env * M.instruction =
 
     | Eassign (op, plv, pe) -> begin
         let lv = for_lvalue env plv in
-        let x  = Option.get_dfl (mkloc (loc plv) "<error>") (Option.map fst lv) in
+        let x  = Option.get_dfl
+                   (`Var (mkloc (loc plv) "<error>"))
+                   (Option.map fst lv) in
         let op = for_assignment_operator op in
 
         let e  =
@@ -2081,17 +2150,26 @@ let for_security (env : env) (v : PT.security) : env * M.security =
            loc = loc v }
 
 (* -------------------------------------------------------------------- *)
-let for_named_state (env : env) (x : PT.lident) =
-  let state = Env.State.byname env (unloc x) in
-  if Option.is_none state then
+let for_named_state ?enum (env : env) (x : PT.lident) =
+  match Env.State.byctor env (unloc x) with
+  | None ->
     Env.emit_error env (loc x, UnknownState (unloc x));
-  mkloc (loc x) (Option.get_dfl "<error>" state)
+    mkloc (loc x) "<error>"
+
+  | Some state ->
+    let sname = Option.map unloc state.sd_name in
+
+    if enum <> sname then begin
+      Env.emit_error env (loc x, ForeignState (enum, sname));
+      mkloc (loc x) "<error>"      
+    end else
+      x
 
 (* -------------------------------------------------------------------- *)
-let for_state (env : env) (st : PT.expr) : M.lident =
+let for_state ?enum (env : env) (st : PT.expr) : M.lident =
   match unloc st with
   | Eterm ({ before = false; label = None; }, x) ->
-    for_named_state env x
+    for_named_state ?enum env x
 
   | _ ->
     Env.emit_error env (loc st, InvalidStateExpression);
@@ -2133,8 +2211,8 @@ let for_effect (env : env) (effect : PT.expr) =
   for_instruction env effect
 
 (* -------------------------------------------------------------------- *)
-let for_transition (env : env) (state, when_, effect) =
-  let tx_state  = for_named_state env state in
+let for_transition ?enum (env : env) (state, when_, effect) =
+  let tx_state  = for_named_state ?enum env state in
   let tx_when   =
     Option.map (for_formula env) (Option.fst when_) in
   let env, tx_effect =
@@ -2143,16 +2221,16 @@ let for_transition (env : env) (state, when_, effect) =
   env, { tx_state; tx_when; tx_effect; }
 
 (* -------------------------------------------------------------------- *)
-type state = ((PT.lident * PT.enum_option list) list)
+type enum_core = ((PT.lident * PT.enum_option list) list)
 
-let for_state_decl (env : env) (state : state loced) =
+let for_core_enum_decl (env : env) (enum : enum_core loced) =
   (* FIXME: check that ctor names are available *)
 
-  let ctors = unloc state in
+  let ctors = unloc enum in
 
   match ctors with
   | [] ->
-    Env.emit_error env (loc state, EmptyStateDecl);
+    Env.emit_error env (loc enum, EmptyEnumDecl);
     env, None
 
   | _ ->
@@ -2196,10 +2274,27 @@ let for_state_decl (env : env) (state : state loced) =
         proj3_1 (List.hd ctors)
       | init :: ictors ->
         if not (List.is_empty ictors) then
-          Env.emit_error env (loc state, MultipleInitialMarker);
+          Env.emit_error env (loc enum, MultipleInitialMarker);
         init in
 
     env, Some (unloc ictor, List.map (fun (x, _, inv) -> (x, inv)) ctors)
+
+(* -------------------------------------------------------------------- *)
+let for_enum_decl (env : env) (decl : (PT.lident * PT.enum_decl) loced) =
+  let (name, (ctors, _)) = unloc decl in
+  let env, ctors = for_core_enum_decl env (mkloc (loc decl) ctors) in
+  let env, decl =
+    Option.foldbind (fun env (sd_init, sd_ctors) ->
+      let enum = { sd_name = Some name; sd_ctors; sd_init; } in
+      if   check_and_emit_name_free env name
+      then Env.State.push env enum, None
+      else env, Some enum) env ctors in
+
+  env, decl
+
+(* -------------------------------------------------------------------- *)
+let for_enums_decl (env : env) (decls : (PT.lident * PT.enum_decl) loced list) =
+  List.fold_left_map for_enum_decl env decls
 
 (* -------------------------------------------------------------------- *)
 let for_var_decl (env : env) (decl : PT.variable_decl loced) =
@@ -2251,8 +2346,8 @@ let for_funs_decl (env : env) (decls : PT.s_function loced list) =
   List.fold_left_map for_fun_decl env decls
 
 (* -------------------------------------------------------------------- *)
-let for_asset_decl (env : env) (decl : PT.asset_decl loced) =
-  let (x, fields, opts, invs, _, _) = unloc decl in
+let for_asset_decl ?(force = false) (env : env) (decl : PT.asset_decl loced) =
+  let (x, fields, opts, postopts, _ (* FIXME *), _) = unloc decl in
 
   let for_field field =
     let PT.Ffield (f, fty, init, _) = unloc field in
@@ -2301,18 +2396,42 @@ let for_asset_decl (env : env) (decl : PT.asset_decl loced) =
     let for1 env = function
       | PT.APOconstraints invs ->
         Env.inscope env (fun env ->
-            let env =
-              List.fold_left (fun env { pldesc = (f, fty, _) } ->
-                  Option.fold (fun env fty -> Env.Local.push env (f, fty)) env fty)
-                env fields
-            in for_xlbls_formula env invs)
+          let env =
+            List.fold_left (fun env { pldesc = (f, fty, _) } ->
+                Option.fold (fun env fty -> Env.Local.push env (f, fty)) env fty)
+              env fields
+          in for_xlbls_formula env invs)
 
       | _ ->
         env, []
-    in List.fold_left_map for1 env invs in
 
-  if Env.Asset.exists env (unloc x) then begin
-    Env.emit_error env (loc x, DuplicatedAssetName (unloc x));
+    in List.fold_left_map for1 env postopts in
+
+  let state =
+    let for1 = function
+      | PT.APOstates x -> begin
+          match Env.State.lookup env (unloc x) with
+          | None ->
+              Env.emit_error env (loc x, UnknownEnum (unloc x));
+              None
+          | Some _ ->
+              Some x
+        end
+          
+      | _ ->
+          None in
+
+    match List.map for1 postopts with
+    | _ :: _ :: _ ->
+        Env.emit_error env (loc decl, MultipleAssetStateDeclaration);
+        None
+    | [] | [None] ->
+        None
+    | [Some st] ->
+        Some st
+  in
+
+  if not force && not (check_and_emit_name_free env x) then begin
     (env, None)
   end else
     let module E = struct exception Bailout end in
@@ -2339,12 +2458,26 @@ let for_asset_decl (env : env) (decl : PT.asset_decl loced) =
             pk;
         as_sortk  = sortk;
         as_invs   = List.flatten invs;
+        as_state  = state;
       } in (Env.Asset.push env decl, Some decl)
     with E.Bailout -> (env, None)
 
 (* -------------------------------------------------------------------- *)
-let for_assets_decl (env : env) (decls : PT.asset_decl loced list) =
-  List.fold_left_map for_asset_decl env decls
+let for_assets_decl (env as env0 : env) (decls : PT.asset_decl loced list) =
+  let b, env = List.fold_left (fun (b, env) decl ->
+    let (name, _, _, _, _, _) = unloc decl in
+    let b = b && check_and_emit_name_free env name in
+    let d = { as_name   = name;
+              as_fields = [];
+              as_pk     = mkloc Location.dummy "";
+              as_sortk  = [];
+              as_invs   = [];
+              as_state  = None; } in
+    (b, Env.Asset.push env d)) (true, env) decls in
+
+  if b then
+    List.fold_left_map (for_asset_decl ~force:true) env decls
+  else (env0, List.map (fun _ -> None)  decls)
 
 (* -------------------------------------------------------------------- *)
 let for_acttx_decl (env : env) (decl : acttx loced) =
@@ -2374,15 +2507,26 @@ let for_acttx_decl (env : env) (decl : acttx loced) =
   | `Transition (x, args, tgt, from_, actions, tx, _exts) ->
     let env, decl =
       Env.inscope env (fun env ->
-          let env, args  = for_args_decl env args in
-          let from_ = for_state env from_ in
+          let env, args = for_args_decl env args in
+          let env, enum =
+            Option.foldbind (fun env (vtg, ttg) ->
+              Option.foldbind (fun env aname ->
+                let asset = Env.Asset.get env (unloc aname) in
+                let env =
+                  if check_and_emit_name_free env vtg then
+                    let field = Env.Asset.byfield env (unloc asset.as_pk) in
+                    let field = Option.get field in
+                    Env.Local.push env (unloc vtg, snd field)
+                  else env in
+                (env, Option.map unloc asset.as_state))
+              env (for_asset_type env ttg))
+            env tgt in
+
+          let from_ = for_state ?enum env from_ in
           let env, (callby, reqs, fais, spec, _) =
             for_action_properties env actions in
           let env, tx =
-            List.fold_left_map for_transition env tx in
-
-          if Option.is_some tgt then
-            assert false;
+            List.fold_left_map (for_transition ?enum) env tx in
 
           let decl =
             { ad_name   = x;
@@ -2474,6 +2618,7 @@ let group_declarations (decls : (PT.declaration list)) =
 type decls = {
   state     : statedecl option;
   variables : vardecl option list;
+  enums     : statedecl option list;
   assets    : assetdecl option list;
   functions : unit option list;
   acttxs    : env tactiondecl list;
@@ -2492,26 +2637,28 @@ let for_grouped_declarations (env : env) (toploc, g) =
 
   let state, env =
     let for1 { plloc = loc; pldesc = state } =
-      match for_state_decl env (mkloc loc (fst state)) with
+      match for_core_enum_decl env (mkloc loc (fst state)) with
       | env, Some state -> Some (env, state)
       | _  , None       -> None in
 
     match List.pmap for1 g.gr_states with
     | (env, (init, ctors)) :: _ ->
-      let decl = { sd_ctors = ctors; sd_init = init; } in
+      let decl = { sd_name = None; sd_ctors = ctors; sd_init = init; } in
       (Some decl, Env.State.push env decl)
     | _ ->
       (None, env) in
 
+  let env, enums     = for_enums_decl   env g.gr_enums   in
   let env, assets    = for_assets_decl  env g.gr_assets  in
-  let env, functions = for_funs_decl    env g.gr_funs in
+  let env, functions = for_funs_decl    env g.gr_funs    in
   let env, acttxs    = for_acttxs_decl  env g.gr_acttxs  in
   let env, specs     = for_specs_decl   env g.gr_specs   in
-  let env, secspecs  = for_secs_decl    env g.gr_secs   in
+  let env, secspecs  = for_secs_decl    env g.gr_secs    in
 
-  let output = { state; variables; assets; functions; acttxs; specs; secspecs; } in
+  let output =
+    { state; variables; enums; assets; functions; acttxs; specs; secspecs; }
 
-  (env, output)
+  in (env, output)
 
 (* -------------------------------------------------------------------- *)
 let enums_of_statedecl (s : statedecl option) : M.enum list =
@@ -2542,7 +2689,7 @@ let assets_of_adecls adecls =
         fields = List.map for_field decl.as_fields;
         key    = Some decl.as_pk;
         sort   = decl.as_sortk;
-        state  = None;           (* FIXME *)
+        state  = decl.as_state;
         role   = false;          (* FIXME *)
         init   = None;           (* FIXME *)
         specs  = List.map spec decl.as_invs;

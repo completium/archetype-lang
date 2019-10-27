@@ -88,6 +88,7 @@ module Option : sig
   val bind        : ('a -> 'b option) -> 'a option -> 'b option
   val fold        : ('a -> 'b -> 'a) -> 'a -> 'b option -> 'a
   val foldmap     : ('a -> 'b -> 'a * 'c) -> 'a -> 'b option -> 'a * 'c option
+  val foldbind    : ('a -> 'b -> 'a * 'c option) -> 'a -> 'b option -> 'a * 'c option
   val map_dfl     : ('a -> 'b) -> 'b -> 'a option -> 'b
   val get_as_list : 'a option -> 'a list
   val flatten     : 'a option option -> 'a option
@@ -140,6 +141,10 @@ end = struct
   let foldmap f state = function
     | None   -> state, None
     | Some v -> let state, aout = f state v in state, Some aout
+
+  let foldbind f state = function
+    | None   -> state, None
+    | Some v -> let state, aout = f state v in state, aout
 
   let map_dfl f n = function None -> n | Some x -> f x
 

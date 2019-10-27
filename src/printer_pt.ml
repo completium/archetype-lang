@@ -955,7 +955,7 @@ let rec pp_declaration fmt { pldesc = e; _ } =
       (pp_option (fun fmt (a, b) ->
            Format.fprintf fmt " on %a : %a"
              pp_id a
-             pp_id b
+             pp_type b
          )) on
       pp_simple_expr from
       (fun fmt (pr, ts) ->

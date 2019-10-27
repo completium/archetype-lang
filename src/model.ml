@@ -207,7 +207,7 @@ type ('id, 'term) mterm_node  =
   | Mfold         of ('id * 'id list * 'term * 'term) (* ident list * collection * body *)
   | Mseq          of 'term list
   | Massign       of (assignment_operator * 'id * 'term)
-  | Massignfield  of (assignment_operator * 'id * 'id * 'term)
+  | Massignfield  of (assignment_operator * 'term * 'id * 'term)
   | Massignstate  of 'term
   | Mtransfer     of ('term * bool * 'id qualid_gen option)
   | Mbreak
@@ -952,7 +952,7 @@ let cmp_mterm_node
     | Mfold (i1, is1, c1, b1), Mfold (i2, is2, c2, b2)                                 -> cmpi i1 i2 && List.for_all2 cmpi is1 is2 && cmp c1 c2 && cmp b1 b2
     | Mseq is1, Mseq is2                                                               -> List.for_all2 cmp is1 is2
     | Massign (op1, l1, r1), Massign (op2, l2, r2)                                     -> cmp_assign_op op1 op2 && cmpi l1 l2 && cmp r1 r2
-    | Massignfield (op1, a1, fi1, r1), Massignfield (op2, a2, fi2, r2)                 -> cmp_assign_op op1 op2 && cmpi a1 a2 && cmpi fi1 fi2 && cmp r1 r2
+    | Massignfield (op1, a1, fi1, r1), Massignfield (op2, a2, fi2, r2)                 -> cmp_assign_op op1 op2 && cmp a1 a2 && cmpi fi1 fi2 && cmp r1 r2
     | Massignstate x1, Massignstate x2                                                 -> cmp x1 x2
     | Mtransfer (x1, b1, q1), Mtransfer (x2, b2, q2)                                   -> cmp x1 x2 && cmp_bool b1 b2 && Option.cmp cmp_qualid q1 q2
     | Mbreak, Mbreak                                                                   -> true

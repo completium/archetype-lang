@@ -939,7 +939,7 @@ let pp_model fmt (model : model) =
           f x
       | Massignfield (op, a, field , r) ->
         Format.fprintf fmt "%a.%a %a %a"
-          pp_id a
+          f a
           pp_id field
           pp_operator op
           f r

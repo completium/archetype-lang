@@ -825,10 +825,10 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
                                                  Tminus (with_dummy_loc Tyint,
                                                          with_dummy_loc (Tvar (map_lident id)),
                                                          map_mterm m ctx v)))
-    | M.Massignfield (ValueAssign,id1,id2,v) ->
+    | M.Massignfield (ValueAssign,{node = M.Mvarstorecol id1},id2,v) ->
       let id = with_dummy_loc (Tdoti (map_lident id1,map_lident id2)) in
       Tassign (id,map_mterm m ctx v)
-    | M.Massignfield (MinusAssign,id1,id2,v) ->
+    | M.Massignfield (MinusAssign,{node = M.Mvarstorecol id1},id2,v) ->
       let id = with_dummy_loc (Tdoti (map_lident id1,map_lident id2)) in
       Tassign (id,
                with_dummy_loc (

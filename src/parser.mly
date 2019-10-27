@@ -541,7 +541,7 @@ transition_to_item:
  | xs=transition_to_item+ { xs }
 
 on_value:
- | ON x=ident COLON y=ident { x, y }
+ | ON LPAREN x=ident COLON y=type_t RPAREN { x, y }
 
 transition:
   TRANSITION exts=option(extensions) x=ident
