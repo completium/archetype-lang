@@ -858,10 +858,6 @@ let tt_cmp_operator (op : PT.comparison_operator) =
   | Le     -> M.Le
 
 (* -------------------------------------------------------------------- *)
-let get_asset_method (name : string) =
-  None                          (* FIXME *)
-
-(* -------------------------------------------------------------------- *)
 exception InvalidType
 
 let rec for_type_exn (env : env) (ty : PT.type_t) : M.ptyp =
