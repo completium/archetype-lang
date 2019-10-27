@@ -30,3 +30,4 @@ contracts/*.ml
 contracts/*.cm*
 contracts/*.tz
 contracts/*.md
+attic/
