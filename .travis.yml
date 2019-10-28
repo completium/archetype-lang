@@ -36,4 +36,5 @@ notifications:
   email:
     - guillaume.duhamel@edukera.com
     - benoit.rognier@edukera.com
+    - pierre-yves@strub.nu
     - archetype-dev@edukera.com

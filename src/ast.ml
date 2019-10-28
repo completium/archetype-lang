@@ -304,7 +304,6 @@ type pterm_arg = lident term_arg
 type 'id instruction_poly = {
   node : 'id instruction_node;
   label: string option;
-  subvars : ident list;
   loc : Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]
@@ -468,7 +467,6 @@ type 'id function_struct = {
   body          : 'id instruction_gen;
   specification : 'id specification option;
   return        : ptyp;
-  fvs           : (ident * ptyp) list [@opaque];
   loc           : Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]
@@ -581,8 +579,8 @@ let vtkey        = Tbuiltin (VTkey       )
 let mk_sp ?label ?(loc = Location.dummy) ?type_ node =
   { node; type_; label; loc; }
 
-let mk_instr ?label ?(loc = Location.dummy) ?(subvars=[]) node =
-  { node; label; subvars; loc }
+let mk_instr ?label ?(loc = Location.dummy) node =
+  { node; label; loc }
 
 let mk_label_term ?label ?(loc = Location.dummy) term =
   { label; term; loc }
@@ -608,8 +606,8 @@ let mk_assert ?(invariants = []) ?(uses = []) name label formula =
 let mk_specification ?(predicates = []) ?(definitions = []) ?(lemmas = []) ?(theorems = []) ?(variables = []) ?(invariants = []) ?effect ?(specs = []) ?(asserts = []) ?(loc = Location.dummy) () =
   { predicates; definitions; lemmas; theorems; variables; invariants; effect; specs; asserts; loc}
 
-let mk_function_struct ?(args = []) ?specification ?(fvs = []) ?(loc = Location.dummy) name body return =
-  { name; args; body; specification; return; fvs; loc }
+let mk_function_struct ?(args = []) ?specification ?(loc = Location.dummy) name body return =
+  { name; args; body; specification; return; loc }
 
 let mk_transition ?on ?(trs = []) from =
   { from; on; trs }

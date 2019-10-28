@@ -621,7 +621,7 @@ let to_model (ast : A.model) : M.model =
 
   let rec to_instruction (instr : A.instruction) : M.mterm =
     let node = to_instruction_node instr.node instr.label to_instruction to_mterm in
-    M.mk_mterm node (M.Tunit) ~subvars:instr.subvars ~loc:instr.loc
+    M.mk_mterm node (M.Tunit) ~loc:instr.loc
   in
 
   let to_predicate (p : A.lident A.predicate) : M.predicate =

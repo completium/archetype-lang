@@ -235,7 +235,6 @@ type ('id, 'term) mterm_node  =
 and 'id mterm_gen = {
   node: ('id, 'id mterm_gen) mterm_node;
   type_: type_;
-  subvars: ident list;
   loc : Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]
@@ -689,8 +688,8 @@ let mk_qualid ?(loc = Location.dummy) node type_ : 'id qualid_gen =
 let mk_pattern ?(loc = Location.dummy) node : 'id pattern_gen =
   { node; loc}
 
-let mk_mterm ?(subvars = []) ?(loc = Location.dummy) node type_ : 'id mterm_gen =
-  { node; type_; subvars; loc}
+let mk_mterm ?(loc = Location.dummy) node type_ : 'id mterm_gen =
+  { node; type_; loc}
 
 let mk_label_term ?label ?(loc = Location.dummy) term : 'id label_term_gen =
   { label; term; loc }

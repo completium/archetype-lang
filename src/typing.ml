@@ -1809,8 +1809,8 @@ let rec for_instruction (env : env) (i : PT.expr) : env * M.instruction =
 
   let bailout () = raise E.Failure in
 
-  let mki ?label ?(subvars = [] (* FIXME *)) node : M.instruction =
-    M.{ node; label; subvars; loc = loc i; } in
+  let mki ?label node : M.instruction =
+    M.{ node; label; loc = loc i; } in
 
   let mkseq i1 i2 =
     let asblock = function M.{ node = Iseq is } -> is | _ as i -> [i] in
@@ -2193,7 +2193,6 @@ let for_function (env : env) (fdecl : PT.s_function loced) =
       if check_and_emit_name_free env fdecl.name then
         let body =
           M.{ node    = M.Ireturn body;
-              subvars = [];
               loc     = loc fdecl.body;
               label   = None; } in
 
@@ -2800,7 +2799,6 @@ let functions_of_fdecls fdecls =
         body          = decl.fs_body;
         specification = specs; 
         return        = decl.fs_retty;
-        fvs           = [];      (* FIXME *)
         loc           = loc decl.fs_name; }
      
   in List.map for1 (List.pmap (fun x -> x) fdecls)
