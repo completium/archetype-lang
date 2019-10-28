@@ -531,7 +531,6 @@ type 'id asset_struct = {
   key     : 'id option;   (* TODO: option ? *)
   sort    : 'id list;
   state   : 'id option;
-  role    : bool;
   init    : 'id term_gen option;
   specs   : 'id label_term list;
   loc     : Location.t [@opaque];
@@ -627,8 +626,8 @@ let mk_enum ?(items = []) ?(loc = Location.dummy) kind =
 let mk_decl ?typ ?default ?(loc = Location.dummy) name =
   { name; typ; default; loc }
 
-let mk_asset ?(fields = []) ?key ?(sort = []) ?state ?(role = false) ?init ?(specs = []) ?(loc = Location.dummy) name   =
-  { name; fields; key; sort; state; role; init; specs; loc }
+let mk_asset ?(fields = []) ?key ?(sort = []) ?state ?init ?(specs = []) ?(loc = Location.dummy) name   =
+  { name; fields; key; sort; state; init; specs; loc }
 
 let mk_contract ?(signatures = []) ?init ?(loc = Location.dummy) name =
   { name; signatures; init; loc }

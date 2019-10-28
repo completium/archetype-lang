@@ -2721,7 +2721,6 @@ let assets_of_adecls adecls =
         key    = Some decl.as_pk;
         sort   = decl.as_sortk;
         state  = decl.as_state;
-        role   = false;          (* FIXME *)
         init   = None;           (* FIXME *)
         specs  = List.map spec decl.as_invs;
         loc    = loc decl.as_name; }
