@@ -2687,20 +2687,25 @@ let for_grouped_declarations (env : env) (toploc, g) =
   in (env, output)
 
 (* -------------------------------------------------------------------- *)
-let enums_of_statedecl (s : statedecl option) : M.enum list =
-  match s with
-  | None -> []
-  | Some s ->
-      let for_ctor1 ((id, invs) : ctordecl) = M.{
-        name       = id;
-        initial    = String.equal (unloc id) s.sd_init;
-        invariants = List.map (fun (label, inv) -> M.mk_label_term ?label inv) invs;
-        loc        = Location.dummy;
-      } in
+let enums_of_statedecl (enums : statedecl list) : M.enum list =
+  let for1 tg =
+    let for_ctor1 ((id, invs) : ctordecl) =
+      let invs = List.map (fun (label, inv) -> M.mk_label_term ?label inv) invs in
 
-      let items = List.map for_ctor1 s.sd_ctors in
+      M.{ name       = id;
+          initial    = String.equal (unloc id) tg.sd_init;
+          invariants = invs;
+          loc        = Location.dummy; } in
 
-      [M.{ kind = EKstate; items = items; loc = Location.dummy; }]
+    let items = List.map for_ctor1 tg.sd_ctors in
+    let kind  =
+      Option.get_dfl
+        M.EKstate
+        (Option.map (fun x -> M.EKenum x) tg.sd_name) in
+
+    M.{ kind; items; loc = Location.dummy; }
+
+  in List.map for1 enums
 
 (* -------------------------------------------------------------------- *)
 let assets_of_adecls adecls =
@@ -2863,7 +2868,7 @@ let for_declarations (env : env) (decls : (PT.declaration list) loced) : M.model
     let _env, decls = for_grouped_declarations env (toploc, groups) in
 
     M.mk_model
-      ~enums:(enums_of_statedecl decls.state (* TODO: append enums *))
+      ~enums:(enums_of_statedecl (List.pmap id (decls.state :: decls.enums)))
       ~assets:(assets_of_adecls decls.assets)
       ~variables:(variables_of_vdecls decls.variables)
       ~transactions:(transactions_of_tdecls decls.acttxs)
