@@ -239,12 +239,6 @@ let pp_error_desc fmt e =
 type argtype = [`Type of M.type_ | `Effect of ident]
 
 (* -------------------------------------------------------------------- *)
-type procsig = {
-  psl_sig  : argtype list;
-  psl_ret  : M.ptyp;
-}
-
-(* -------------------------------------------------------------------- *)
 let eqtypes =
   [ M.VTbool           ;
     M.VTint            ;
@@ -436,6 +430,15 @@ type 'env ispecification = [
 ]
 
 (* -------------------------------------------------------------------- *)
+type 'env fundecl = {
+  fs_name  : M.lident;
+  fs_args  : (M.lident * M.ptyp) list;
+  fs_retty : M.ptyp;
+  fs_body  : M.instruction;
+  fs_spec  : 'env ispecification list option;
+}
+
+(* -------------------------------------------------------------------- *)
 type txeffect = {
   tx_state  : M.lident;
   tx_when   : M.pterm option;
@@ -447,6 +450,7 @@ type 'env tactiondecl = {
   ad_args   : (M.lident * M.ptyp) list;
   ad_callby : M.lident list;
   ad_effect : [`Raw of M.instruction | `Tx of M.lident * txeffect list] option;
+  ad_funs   : 'env fundecl option list;
   ad_reqs   : (M.lident option * M.pterm) list;
   ad_fais   : (M.lident option * M.pterm) list;
   ad_spec   : 'env ispecification list;
@@ -464,10 +468,6 @@ and ctordecl = M.lident * (M.lident option * M.pterm) list
 
 (* -------------------------------------------------------------------- *)
 let pterm_arg_as_pterm = function M.AExpr e -> Some e | _ -> None
-
-(* -------------------------------------------------------------------- *)
-let procsig_of_operator (_op : PT.operator) : procsig =
-  assert false
 
 (* -------------------------------------------------------------------- *)
 let core_types = [
@@ -495,9 +495,9 @@ module Env : sig
     | `Type        of M.ptyp
     | `Local       of M.ptyp
     | `Global      of vardecl
-    | `Proc        of procsig
     | `Asset       of assetdecl
     | `Action      of t tactiondecl
+    | `Function    of t fundecl
     | `Field       of ident
   ]
 
@@ -539,10 +539,11 @@ module Env : sig
     val push   : t -> vardecl -> t
   end
 
-  module Proc : sig
-    val lookup : t -> ident -> procsig option
-    val get    : t -> ident -> procsig
+  module Function : sig
+    val lookup : t -> ident -> t fundecl option
+    val get    : t -> ident -> t fundecl
     val exists : t -> ident -> bool
+    val push   : t -> t fundecl -> t
   end
 
   module State : sig
@@ -579,9 +580,9 @@ end = struct
     | `Type        of M.ptyp
     | `Local       of M.ptyp
     | `Global      of vardecl
-    | `Proc        of procsig
     | `Asset       of assetdecl
     | `Action      of t tactiondecl
+    | `Function    of t fundecl
     | `Field       of ident
   ]
 
@@ -748,8 +749,8 @@ end = struct
       push env (unloc decl.vr_name) (`Global decl)
   end
 
-  module Proc = struct
-    let proj = function `Proc x -> Some x | _ -> None
+  module Function = struct
+    let proj = function `Function x -> Some x | _ -> None
 
     let lookup (env : t) (name : ident) =
       lookup_gen proj env name
@@ -759,6 +760,9 @@ end = struct
 
     let get (env : t) (name : ident) =
       Option.get (lookup env name)
+
+    let push (env : t) (decl : t fundecl) =
+      push env (unloc decl.fs_name) (`Function decl)
   end
 
   module Asset = struct
@@ -1805,7 +1809,7 @@ let rec for_instruction (env : env) (i : PT.expr) : env * M.instruction =
 
   let bailout () = raise E.Failure in
 
-  let mki ?label ?(subvars=[]) node : M.instruction =
+  let mki ?label ?(subvars = [] (* FIXME *)) node : M.instruction =
     M.{ node; label; subvars; loc = loc i; } in
 
   let mkseq i1 i2 =
@@ -2176,8 +2180,31 @@ let for_state ?enum (env : env) (st : PT.expr) : M.lident =
     mkloc (loc st) "<error>"
 
 (* -------------------------------------------------------------------- *)
-let for_function (env : env) (f : PT.s_function loced) : unit =
-  assert false
+let for_function (env : env) (fdecl : PT.s_function loced) =
+  let fdecl = unloc fdecl in
+
+  Env.inscope env (fun env ->
+    let env, args = for_args_decl env fdecl.args in
+    let rty       = Option.bind (for_type env) fdecl.ret_t in
+    let body      = for_expr env ?ety:rty fdecl.body in
+    let env, spec = Option.foldmap for_specification env fdecl.spec in
+
+    if Option.is_some rty && not (List.exists Option.is_none args) then
+      if check_and_emit_name_free env fdecl.name then
+        let body =
+          M.{ node    = M.Ireturn body;
+              subvars = [];
+              loc     = loc fdecl.body;
+              label   = None; } in
+
+        (env, Some {
+                fs_name  = fdecl.name;
+                fs_args  = List.pmap id args;
+                fs_retty = Option.get rty;
+                fs_body  = body;
+                fs_spec  = spec; })
+      else (env, None)
+    else (env, None))
 
 (* -------------------------------------------------------------------- *)
 let rec for_callby (env : env) (cb : PT.expr) =
@@ -2202,7 +2229,7 @@ let for_action_properties (env : env) (act : PT.action_properties) =
   let env, req  = Option.foldmap for_lbls_formula env (Option.fst act.require) in
   let env, fai  = Option.foldmap for_lbls_formula env (Option.fst act.failif) in
   let env, spec = Option.foldmap for_specification env act.spec in
-  let funs      = List.map (for_function env) act.functions in
+  let env, funs = List.fold_left_map for_function env act.functions in
 
   (env, (calledby, req, fai, spec, funs))
 
@@ -2332,14 +2359,9 @@ let for_vars_decl (env : env) (decls : PT.variable_decl loced list) =
 
 (* -------------------------------------------------------------------- *)
 let for_fun_decl (env : env) (fdecl : PT.s_function loced) =
-  let fdecl = unloc fdecl in
+  let env, decl = for_function env fdecl in
 
-  let env, _   = Env.inscope env (fun env ->
-      let env   = fst (for_args_decl env fdecl.args) in
-      let rty   = Option.bind (for_type env) fdecl.ret_t in
-      let _body = for_expr env ?ety:rty fdecl.body in
-      let _spec = Option.map (for_specification env) fdecl.spec in
-      env, ()) in (env, Some ())
+  (Option.fold (fun env decl -> Env.Function.push env decl) env decl, decl)
 
 (* -------------------------------------------------------------------- *)
 let for_funs_decl (env : env) (decls : PT.s_function loced list) =
@@ -2486,14 +2508,17 @@ let for_acttx_decl (env : env) (decl : acttx loced) =
       let env, decl =
         Env.inscope env (fun env ->
             let env, args   = for_args_decl env args in
-            let env, effect = Option.foldmap for_instruction env (Option.fst i_exts) in
-            let env, (callby, reqs, fais, spec, _) = for_action_properties env pt in
+            let env, effect =
+              Option.foldmap for_instruction env (Option.fst i_exts) in
+            let env, (callby, reqs, fais, spec, funs) =
+              for_action_properties env pt in
 
             let decl =
               { ad_name   = x;
                 ad_args   = List.pmap (fun x -> x) args;
                 ad_callby = Option.get_dfl [] callby;
                 ad_effect = Option.map (fun x -> `Raw x) effect;
+                ad_funs   = funs;
                 ad_reqs   = Option.get_dfl [] reqs;
                 ad_fais   = Option.get_dfl [] fais;
                 ad_spec   = Option.get_dfl [] spec;
@@ -2523,7 +2548,7 @@ let for_acttx_decl (env : env) (decl : acttx loced) =
             env tgt in
 
           let from_ = for_state ?enum env from_ in
-          let env, (callby, reqs, fais, spec, _) =
+          let env, (callby, reqs, fais, spec, funs) =
             for_action_properties env actions in
           let env, tx =
             List.fold_left_map (for_transition ?enum) env tx in
@@ -2533,6 +2558,7 @@ let for_acttx_decl (env : env) (decl : acttx loced) =
               ad_args   = List.pmap (fun x -> x) args;
               ad_callby = Option.get_dfl [] callby;
               ad_effect = Some (`Tx (from_, tx));
+              ad_funs   = funs;
               ad_reqs   = Option.get_dfl [] reqs;
               ad_fais   = Option.get_dfl [] fais;
               ad_spec   = Option.get_dfl [] spec;
@@ -2620,7 +2646,7 @@ type decls = {
   variables : vardecl option list;
   enums     : statedecl option list;
   assets    : assetdecl option list;
-  functions : unit option list;
+  functions : env fundecl option list;
   acttxs    : env tactiondecl list;
   specs     : env ispecification list list;
   secspecs  : M.security list;
@@ -2757,6 +2783,25 @@ let specifications_of_ispecifications =
   in fun ispecs -> List.fold_left do1 env0 ispecs
 
 (* -------------------------------------------------------------------- *)
+let functions_of_fdecls fdecls =
+  let for1 (decl : env fundecl) =
+    let args = List.map (fun (x, ty) -> M.{
+      name = x; typ = Some ty; default = None; loc = loc x;
+    }) decl.fs_args in
+
+    let specs = Option.map specifications_of_ispecifications decl.fs_spec in
+
+    M.{ name          = decl.fs_name;
+        args          = args;
+        body          = decl.fs_body;
+        specification = specs; 
+        return        = decl.fs_retty;
+        fvs           = [];      (* FIXME *)
+        loc           = loc decl.fs_name; }
+     
+  in List.map for1 (List.pmap (fun x -> x) fdecls)
+
+(* -------------------------------------------------------------------- *)
 let transactions_of_tdecls tdecls =
   let for_calledby cb : M.rexpr option =
     match cb with [] -> None | c :: cb ->
@@ -2802,7 +2847,7 @@ let transactions_of_tdecls tdecls =
         failif          = Some (List.map mkl tdecl.ad_fais);
         transition      = transition;
         specification   = Some (specifications_of_ispecifications tdecl.ad_spec);
-        functions       = [];          (* FIXME *)
+        functions       = functions_of_fdecls tdecl.ad_funs;
         effect          = effect;
         loc             = loc tdecl.ad_name; }
 
@@ -2822,6 +2867,7 @@ let for_declarations (env : env) (decls : (PT.declaration list) loced) : M.model
       ~assets:(assets_of_adecls decls.assets)
       ~variables:(variables_of_vdecls decls.variables)
       ~transactions:(transactions_of_tdecls decls.acttxs)
+      ~functions:(functions_of_fdecls decls.functions)
       ~specifications:(List.map specifications_of_ispecifications decls.specs)
       ~securities:(decls.secspecs)
       x
