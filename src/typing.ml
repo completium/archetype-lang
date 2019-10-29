@@ -113,6 +113,7 @@ type error_desc =
   | NoSuchMethod                       of ident
   | NoSuchSecurityPredicate            of ident
   | NonLoopLabel                       of ident
+  | NotAKeyOfType
   | NotAnAssetType
   | NotARole                           of ident
   | NumericExpressionExpected
@@ -194,7 +195,8 @@ let pp_error_desc fmt e =
   | NoSuchMethod i                     -> pp "No such method: %a" pp_ident i
   | NoSuchSecurityPredicate i          -> pp "No such security predicate: %a" pp_ident i
   | NonLoopLabel i                     -> pp "Not a loop lable: %a" pp_ident i
-  | NotAnAssetType                     -> pp "Not an asset type"
+  | NotAKeyOfType                      -> pp "pkey-of type expected"
+  | NotAnAssetType                     -> pp "Asset type expected"
   | NotARole i                         -> pp "Not a role: %a" pp_ident i
   | NumericExpressionExpected          -> pp "Expecting numerical expression"
   | OpInRecordLiteral                  -> pp "Operation in record literal"
@@ -945,6 +947,15 @@ let for_asset_type (env : env) (ty : PT.type_t) : M.lident option =
       None
   | Some (Some x) ->
       Some x
+
+(* -------------------------------------------------------------------- *)
+let for_asset_keyof_type (env : env) (ty : PT.type_t) : M.lident option =
+  match unloc ty with
+  | PT.Tkeyof t ->
+      for_asset_type env t
+  | _ ->
+      Env.emit_error env (loc ty, NotAKeyOfType);
+      None
 
 (* -------------------------------------------------------------------- *)
 let for_literal (_env : env) (topv : PT.literal loced) : M.bval =
@@ -2555,7 +2566,7 @@ let for_acttx_decl (env : env) (decl : acttx loced) =
                     Env.Local.push env (unloc vtg, snd field)
                   else env in
                 (env, Option.map unloc asset.as_state))
-              env (for_asset_type env ttg))
+              env (for_asset_keyof_type env ttg))
             env tgt in
 
           let from_ = for_state ?enum env from_ in
