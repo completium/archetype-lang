@@ -1396,8 +1396,18 @@ let rec for_xexpr (mode : emode_t) (env : env) ?(ety : M.ptyp option) (tope : PT
 
       aout
 
-    | Eletin (_lv, _t, _e1, _e2, _c) ->
-      assert false
+    | Eletin (x, ty, e1, e2, None) ->
+      let ty = Option.bind (for_type env) ty in
+      let e  = for_xexpr env ?ety:ty e1 in
+      let body =
+        let _ : bool = check_and_emit_name_free env x in
+          let env =
+            if Option.is_some e.M.type_ then
+              Env.Local.push env (unloc x, Option.get e.M.type_)
+            else env
+          in for_xexpr env e2 in
+
+      mk_sp body.M.type_ (M.Pletin (x, e, ty, body))
 
     | Evar (_lv, _t, _e1) ->
       assert false
@@ -1469,6 +1479,7 @@ let rec for_xexpr (mode : emode_t) (env : env) ?(ety : M.ptyp option) (tope : PT
             mk_sp (Some M.vtbool) (M.Pquantifer (qt, x, (ast, xty), body))
       end
 
+    | Eletin    _
     | Eapp      _
     | Eassert   _
     | Elabel    _
