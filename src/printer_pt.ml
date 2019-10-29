@@ -953,7 +953,7 @@ let rec pp_declaration fmt { pldesc = e; _ } =
       pp_id id
       pp_fun_args args
       (pp_option (fun fmt (a, b) ->
-           Format.fprintf fmt " on %a : %a"
+           Format.fprintf fmt " on (%a : %a)"
              pp_id a
              pp_type b
          )) on
