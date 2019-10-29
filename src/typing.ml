@@ -14,7 +14,8 @@ module Type : sig
   val as_asset_collection : M.ptyp -> (M.lident * M.container) option
   val as_tuple            : M.ptyp -> (M.ptyp list) option
 
-  val is_numeric : M.ptyp -> bool
+  val is_numeric  : M.ptyp -> bool
+  val is_currency : M.ptyp -> bool
 
   val equal      : M.ptyp -> M.ptyp -> bool
   val compatible : from_:M.ptyp -> to_:M.ptyp -> bool
@@ -28,11 +29,10 @@ end = struct
     | _ -> None
 
   let is_numeric = function
-    | M.Tbuiltin (M.VTint | M.VTrational) ->
-      true
+    | M.Tbuiltin (M.VTint | M.VTrational) -> true |  _ -> false
 
-    | _ ->
-      false
+  let is_currency = function
+    | M.Tbuiltin (M.VTcurrency) -> true | _ -> false
 
   let equal = ((=) : M.ptyp -> M.ptyp -> bool)
 
@@ -99,6 +99,7 @@ type error_desc =
   | InvalidSecurityRole
   | InvalidSortingExpression
   | InvalidStateExpression
+  | InvalidTypeForVarWithFromTo
   | LetInElseInInstruction
   | MissingFieldInRecordLiteral        of ident
   | MixedAnonInRecordLiteral
@@ -107,6 +108,7 @@ type error_desc =
   | MultipleAssetStateDeclaration
   | MultipleInitialMarker
   | MultipleMatchingOperator           of PT.operator * M.ptyp list * opsig list
+  | MultipleOrMissingFromToInVarDecl
   | MultipleStateDeclaration
   | NameIsAlreadyBound                 of ident
   | NoMatchingOperator                 of PT.operator * M.ptyp list
@@ -183,6 +185,7 @@ let pp_error_desc fmt e =
   | InvalidSecurityRole                -> pp "Invalid security role"
   | InvalidSortingExpression           -> pp "Invalid sorting expression"
   | InvalidStateExpression             -> pp "Invalid state expression"
+  | InvalidTypeForVarWithFromTo        -> pp "A variable with a from/to declaration must be of type currency"
   | LetInElseInInstruction             -> pp "Let In else in Instruction"
   | MissingFieldInRecordLiteral i      -> pp "Missing field in record literal: %a" pp_ident i
   | MixedAnonInRecordLiteral           -> pp "Mixed anonymous in record literal"
@@ -190,6 +193,7 @@ let pp_error_desc fmt e =
   | MoreThanOneInitState l             -> pp "More than one initial state: %a" (Printer_tools.pp_list ", " pp_ident) l
   | MultipleAssetStateDeclaration      -> pp "Multiple asset states declaration"
   | MultipleInitialMarker              -> pp "Multiple 'initial' marker"
+  | MultipleOrMissingFromToInVarDecl   -> pp "Variable declaration must have a single from/to specification"
   | MultipleStateDeclaration           -> pp "Multiple state declaration"
   | NameIsAlreadyBound i               -> pp "Name is already used: %a" pp_ident i
   | NoSuchMethod i                     -> pp "No such method: %a" pp_ident i
@@ -416,6 +420,7 @@ type vardecl = {
   vr_type   : M.ptyp;
   vr_kind   : [`Constant | `Variable | `Ghost];
   vr_def    : (M.pterm * [`Inline | `Std]) option;
+  vr_tgt    : (M.lident * M.lident) option;
   vr_core   : M.const option;
 }
 
@@ -734,6 +739,7 @@ end = struct
                vr_type = M.Tcontainer (M.Tasset a.as_name, M.Collection);
                vr_kind = `Constant;
                vr_core = None;
+               vr_tgt  = None;
                vr_def  = None; }
 
       | _ -> None
@@ -836,7 +842,7 @@ let empty : env =
       let def = M.Pconst vr_core in
       let def = M.mk_sp ~type_:vr_type  def in
 
-      { vr_name; vr_type; vr_core = Some vr_core;
+      { vr_name; vr_type; vr_core = Some vr_core; vr_tgt = None;
         vr_def = Some (def, `Inline); vr_kind = `Constant
       } in
 
@@ -2347,9 +2353,7 @@ let for_enums_decl (env : env) (decls : (PT.lident * PT.enum_decl) loced list) =
 
 (* -------------------------------------------------------------------- *)
 let for_var_decl (env : env) (decl : PT.variable_decl loced) =
-  (* FIXME: handle tgts *)
-
-  let (x, ty, pe, _tgts, ctt, _) = unloc decl in
+  let (x, ty, pe, tgt, ctt, _) = unloc decl in
 
   let ty   = for_type env ty in
   let e    = Option.map (for_expr env ?ety:ty) pe in
@@ -2364,16 +2368,47 @@ let for_var_decl (env : env) (decl : PT.variable_decl loced) =
   if Option.is_none pe then
     Env.emit_error env (loc decl, UninitializedVar);
 
-  if Option.is_some dty then begin
+  let tgt =
+    let for1 = function
+      | PT.VOfrom x -> (`From, for_role env x)
+      | PT.VOto   x -> (`To  , for_role env x)
+    in List.map for1 (Option.get_dfl [] tgt) in
+
+  let (tf, tt) =
+    let for1 (f, t) =
+      function (`From, x) -> (x :: f, t) | (`To, x) -> (f, x :: t)
+    in List.fold_left for1 ([], []) tgt in
+
+  let tgtc = (List.length tf, List.length tt) in
+
+  if tgtc <> (0, 0) && tgtc <> (1, 1) then
+    Env.emit_error env (loc decl, MultipleOrMissingFromToInVarDecl);
+
+  match dty with
+  | None ->
+    (env, None)
+
+  | Some dty ->
+    if tgtc <> (0, 0) then begin
+      if not (Type.is_currency dty) then
+        Env.emit_error env (loc decl, InvalidTypeForVarWithFromTo);
+    end;
+
+    let vtgt =
+      match tf, tt with
+      | [Some tf], [Some tt] -> Some (tf, tt)
+      | _ -> None
+    in
+
     let decl = {
-      vr_name = x  ; vr_type = Option.get dty;
-      vr_kind = ctt; vr_core = None          ;
+      vr_name = x  ; vr_type = dty;
+      vr_kind = ctt; vr_core = None;
+      vr_tgt  = vtgt;
       vr_def  = Option.map (fun e -> (e, `Std)) e; } in
 
     if   (check_and_emit_name_free env x)
     then (Env.Var.push env decl, Some decl)
     else (env, None)
-  end else (env, None)
 
 (* -------------------------------------------------------------------- *)
 let for_vars_decl (env : env) (decls : PT.variable_decl loced list) =
@@ -2751,6 +2786,11 @@ let assets_of_adecls adecls =
 
 (* -------------------------------------------------------------------- *)
 let variables_of_vdecls fdecls =
+  let mktgt x =
+    M.mk_sp
+      ~loc:(loc x) ~type_:(M.Tbuiltin (M.VTrole))
+      (M.Qident x) in (* FIXME: type? *)
+
   let for1 (decl : vardecl) =
     M.{ decl =
           M.{ name    = decl.vr_name;
@@ -2758,8 +2798,8 @@ let variables_of_vdecls fdecls =
               default = Option.fst decl.vr_def;
               loc     = loc decl.vr_name; };
         constant = decl.vr_kind = `Constant;
-        from     = None;
-        to_      = None;
+        from     = Option.map (fun (x, _) -> mktgt x) decl.vr_tgt;
+        to_      = Option.map (fun (_, x) -> mktgt x) decl.vr_tgt;
         loc      = loc decl.vr_name; }
 
   in List.map for1 (List.pmap (fun x -> x) fdecls)
