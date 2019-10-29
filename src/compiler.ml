@@ -6,7 +6,20 @@ exception Compiler_error
 exception E_arg
 exception ArgError of string
 exception Stop
-exception Type_error
+exception Stop_error of int
+
+let parse_error      = 2
+let type_error       = 3
+let model_error      = 4
+let post_model_error = 5
+let gen_output_error = 6
+
+let raise_if_error code f x =
+  let res = f x in
+  if Tools.List.is_not_empty !Error.errors then
+    raise (Stop_error code)
+  else
+    res
 
 let output_pt (pt : ParseTree.archetype) =
   if !Options.opt_json
@@ -32,7 +45,7 @@ let output (model : Model.model) =
       | Ocaml        -> Printer_model_ocaml.pp_model
       | Whyml        ->
         fun fmt model ->
-          let mlw = Gen_why3.to_whyml model in
+          let mlw = raise_if_error gen_output_error Gen_why3.to_whyml model in
           if !Options.opt_raw_whytree
           then Format.fprintf fmt "%a@." Mlwtree.pp_mlw_tree mlw
           else Format.fprintf fmt "%a@." Printer_mlwtree.pp_mlw_tree mlw
@@ -83,11 +96,6 @@ let prune_properties          = Gen_transform.prune_properties
 let replace_declvar_by_letin  = Gen_transform.replace_declvar_by_letin
 let remove_get_dot            = Gen_transform.remove_get_dot
 
-let check_typing_error a =
-  if Tools.List.is_empty !Error.errors
-  then a
-  else raise Type_error
-
 let generate_target model =
 
   let cont c a = if c then a else (fun x -> x) in
@@ -95,7 +103,7 @@ let generate_target model =
   match !Options.target with
   | None ->
     model
-    |> prune_properties
+    |> raise_if_error post_model_error prune_properties
     |> cont !Options.opt_sa  shallow_asset
     |> cont !Options.opt_skv split_key_values
     |> cont !Options.opt_nse remove_side_effect
@@ -147,17 +155,16 @@ let compile (filename, channel) =
   let cont c a x = if c then (a x; raise Stop) else x in
 
   (filename, channel)
-  |> parse
+  |> raise_if_error parse_error parse
   |> cont !Options.opt_pt output_pt
-  |> preprocess_ext
+  |> raise_if_error parse_error preprocess_ext
   |> cont !Options.opt_pt output_pt
-  |> generate_target_pt
-  |> type_
+  |> raise_if_error parse_error generate_target_pt
+  |> raise_if_error type_error type_
   |> cont !Options.opt_ast output_tast
-  |> generate_model
-  |> check_partition_access
-  |> extend_removeif
-  |> check_typing_error
+  |> raise_if_error model_error generate_model
+  |> raise_if_error post_model_error check_partition_access
+  |> raise_if_error post_model_error extend_removeif
   |> generate_target
 
 let close dispose channel =
@@ -308,9 +315,9 @@ let main () =
     (* List.map (fun (_ps, _s) -> ()) l; *)
     (* Format.eprintf "%s.\n" s *)
     exit 1
-  | Type_error ->
+  | Stop_error i ->
     close dispose channel;
-    exit 2
+    exit i
 (* | Reduce.ReduceError (msg, l) ->
    close dispose channel;
    Printf.eprintf "%s%s.\n" msg (match l with | None -> "" | Some l -> (Location.tostring l));
