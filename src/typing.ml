@@ -147,6 +147,30 @@ type error_desc =
 type error = L.t * error_desc
 
 (* -------------------------------------------------------------------- *)
+let pp_operator fmt (op : PT.operator) : unit =
+  let pp = Printer_tools.pp_str fmt in
+  match op with
+  | `Logical And   -> pp "and"
+  | `Logical Or    -> pp "or"
+  | `Logical Imply -> pp "->"
+  | `Logical Equiv -> pp "<->"
+  | `Cmp Equal     -> pp "="
+  | `Cmp Nequal    -> pp "<>"
+  | `Cmp Gt        -> pp ">"
+  | `Cmp Ge        -> pp ">="
+  | `Cmp Lt        -> pp "<"
+  | `Cmp Le        -> pp "<="
+  | `Arith Plus    -> pp "+"
+  | `Arith Minus   -> pp "-"
+  | `Arith Mult    -> pp "*"
+  | `Arith Div     -> pp "/"
+  | `Arith Modulo  -> pp "%"
+  | `Unary Uplus   -> pp "unary +"
+  | `Unary Uminus  -> pp "unary -"
+  | `Unary Not     -> pp "not"
+
+
+(* -------------------------------------------------------------------- *)
 let pp_error_desc fmt e =
   let pp s = Format.fprintf fmt s in
 
@@ -237,12 +261,12 @@ let pp_error_desc fmt e =
 
   | NoMatchingOperator (op, sig_) ->
     pp "No matches for operator %a(%a)"
-      PT.pp_operator op
+      pp_operator op
       (Printer_tools.pp_list ", " M.pp_ptyp) sig_
 
   | MultipleMatchingOperator (op, sig_, sigs) ->
     pp "Multiple matches for operator %a(%a): %a"
-      PT.pp_operator op
+      pp_operator op
       (Printer_tools.pp_list ", " M.pp_ptyp) sig_
       (Printer_tools.pp_list ", " (fun fmt sig_ ->
            Format.fprintf fmt "(%a) -> %a"
