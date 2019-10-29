@@ -334,8 +334,8 @@ module Output ( M : Ast_or_mlw) = struct
         | Mlw -> fprintf fmt "@[<hv 0>@[let %a%a =@ %a in@]@ @[%a@]@]" print_ghost ghost print_ident_str ident print_expr expr1 print_expr expr2
       )
     | Erec(fundef_list,expr) -> fprintf fmt (ast_or_mlw "Erec(%a,%a)" "Erec(%a,%a)") (Pp.print_list Pp.comma print_fundef) fundef_list print_expr expr
-    | Efun(binder_list,pty_option,pattern,mask,spec,expr) -> fprintf fmt (ast_or_mlw "Efun(%a,%a,%a,%a,%a)" "Efun(%a,%a,%a,%a,%a)") (Pp.print_list Pp.comma (print_binder ~paren:false)) binder_list (Pp.print_option print_pty) pty_option print_mask mask print_spec spec print_expr expr
-    | Eany(param_list,rs_kind,pty_option,pattern,mask,spec) -> fprintf fmt (ast_or_mlw "Eany(%a,%a,%a,%a,%a)" "Eany(%a,%a,%a,%a,%a)") (Pp.print_list Pp.comma print_param) param_list print_rs_kind rs_kind (Pp.print_option print_pty) pty_option print_mask mask print_spec spec
+    | Efun(binder_list,pty_option,_pattern,mask,spec,expr) -> fprintf fmt (ast_or_mlw "Efun(%a,%a,%a,%a,%a)" "Efun(%a,%a,%a,%a,%a)") (Pp.print_list Pp.comma (print_binder ~paren:false)) binder_list (Pp.print_option print_pty) pty_option print_mask mask print_spec spec print_expr expr
+    | Eany(param_list,rs_kind,pty_option,_pattern,mask,spec) -> fprintf fmt (ast_or_mlw "Eany(%a,%a,%a,%a,%a)" "Eany(%a,%a,%a,%a,%a)") (Pp.print_list Pp.comma print_param) param_list print_rs_kind rs_kind (Pp.print_option print_pty) pty_option print_mask mask print_spec spec
     | Etuple(expr_list) -> fprintf fmt (ast_or_mlw "Etuple(%a)" "(%a)") (Pp.print_list Pp.comma print_expr) expr_list
     | Erecord qualid_expr_list -> fprintf fmt (ast_or_mlw "Erecord(%a)" "Erecord(%a)") (Pp.print_list Pp.comma (Pp.print_pair print_qualid print_expr)) qualid_expr_list
     | Eupdate(expr,qualid_expr_list) -> fprintf fmt (ast_or_mlw "Eupdate(%a,%a)" "Eupdate(%a,%a)") print_expr expr (Pp.print_list Pp.comma (Pp.print_pair print_qualid print_expr)) qualid_expr_list
@@ -374,7 +374,7 @@ module Output ( M : Ast_or_mlw) = struct
   and print_exn_branch fmt (qualid,pattern_option,expr) =
     fprintf fmt (ast_or_mlw "exn_branch(%a,%a,%a)" "exn_branch(%a,%a,%a)") print_qualid qualid (Pp.print_option print_pattern) pattern_option print_expr expr
 
-  and print_fundef fmt (ident,ghost,rs_kind,binder_list,pty_option,pattern,mask,spec,expr) =
+  and print_fundef fmt (ident,ghost,rs_kind,binder_list,pty_option,_pattern,mask,spec,expr) =
     match pp_kind with
     | Ast -> fprintf fmt "fundef(%a,%a,%a,%a,%a,%a,%a,%a)" print_ident_str ident print_ghost ghost print_rs_kind rs_kind (Pp.print_list Pp.comma (print_binder ~paren:false)) binder_list (Pp.print_option print_pty) pty_option print_mask mask print_spec spec print_expr expr
     | Mlw -> fprintf fmt "%a%a @[%a@]: %a@\n%a@\n=@ %a" print_ghost ghost print_ident_str ident (Pp.print_list Pp.space (print_binder ~paren:true)) binder_list (Pp.print_option print_pty) pty_option print_spec spec print_expr expr

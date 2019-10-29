@@ -14,7 +14,7 @@ let continue_id = "'Continue"
 let return_id   = "'Return"
 
 let unloc (x : 'a M.with_loc) = x.obj
-let loc   (x : 'a M.with_loc) = (*x.loc*) Loc.dummy_position
+let loc   (_x : 'a M.with_loc) = (*x.loc*) Loc.dummy_position
 
 let mk_ident_intern f g (x : 'a) =
   let str = f x in
@@ -87,30 +87,30 @@ let mk_binder ?(loc=Loc.dummy_position) ?ident ?(ghost=false) ?pty () : P.binder
 let to_type (t : M.loc_typ) =
   let rec f (t : M.loc_ident M.abstract_type) : P.pty =
     match t with
-    | M.Tyint          -> P.PTtyapp(mk_qualid_str ["int"], [])
-    | M.Tyuint         -> assert false
-    | M.Tybool         -> P.PTtyapp(mk_qualid_str ["bool"], [])
-    | M.Tystring       -> P.PTtyapp(mk_qualid_str ["string"], [])
-    | M.Tyrational     -> assert false
-    | M.Tyaddr         -> P.PTtyapp(mk_qualid_str ["TODO_addr"], [])
-    | M.Tyrole         -> P.PTtyapp(mk_qualid_str ["role"], [])
-    | M.Tykey          -> assert false
-    | M.Tydate         -> P.PTtyapp(mk_qualid_str ["date"], [])
-    | M.Tyduration     -> assert false
-    | M.Tytez          -> P.PTtyapp(mk_qualid_str ["tez"], [])
-    | M.Tystorage      -> assert false
-    | M.Tytransfers    -> assert false
-    | M.Tyunit         -> P.PTtyapp(mk_qualid_str ["TODO_unit"], [])
-    | M.Tycontract id  -> assert false
-    | M.Tyrecord id    -> P.PTtyapp(mk_qualid_str ["TODO_record"], [])
-    | M.Tycoll id      -> P.PTtyapp(mk_qualid_str ["TODO_coll"], [])
-    | M.Tymap id       -> assert false
-    | M.Tyasset id     -> P.PTtyapp(mk_qualid     [id], [])
-    | M.Typartition id -> P.PTtyapp(mk_qualid_str ["TODO_partition"], [])
-    | M.Tyenum id      -> assert false
-    | M.Tyoption t     -> P.PTtyapp(mk_qualid_str ["TODO_option"], [])
-    | M.Tylist t       -> P.PTtyapp(mk_qualid_str ["list"], [f t])
-    | M.Tytuple tl     -> assert false
+    | M.Tyint           -> P.PTtyapp(mk_qualid_str ["int"], [])
+    | M.Tyuint          -> assert false
+    | M.Tybool          -> P.PTtyapp(mk_qualid_str ["bool"], [])
+    | M.Tystring        -> P.PTtyapp(mk_qualid_str ["string"], [])
+    | M.Tyrational      -> assert false
+    | M.Tyaddr          -> P.PTtyapp(mk_qualid_str ["TODO_addr"], [])
+    | M.Tyrole          -> P.PTtyapp(mk_qualid_str ["role"], [])
+    | M.Tykey           -> assert false
+    | M.Tydate          -> P.PTtyapp(mk_qualid_str ["date"], [])
+    | M.Tyduration      -> assert false
+    | M.Tytez           -> P.PTtyapp(mk_qualid_str ["tez"], [])
+    | M.Tystorage       -> assert false
+    | M.Tytransfers     -> assert false
+    | M.Tyunit          -> P.PTtyapp(mk_qualid_str ["TODO_unit"], [])
+    | M.Tycontract _id  -> assert false
+    | M.Tyrecord _id    -> P.PTtyapp(mk_qualid_str ["TODO_record"], [])
+    | M.Tycoll _id      -> P.PTtyapp(mk_qualid_str ["TODO_coll"], [])
+    | M.Tymap _id       -> assert false
+    | M.Tyasset id      -> P.PTtyapp(mk_qualid     [id], [])
+    | M.Typartition _id -> P.PTtyapp(mk_qualid_str ["TODO_partition"], [])
+    | M.Tyenum _id      -> assert false
+    | M.Tyoption _t     -> P.PTtyapp(mk_qualid_str ["TODO_option"], [])
+    | M.Tylist t        -> P.PTtyapp(mk_qualid_str ["list"], [f t])
+    | M.Tytuple _tl     -> assert false
   in
   f (unloc t)
 
@@ -121,85 +121,85 @@ let to_term t =
 let rec to_expr (e : M.loc_term) =
   let f = mk_expr |@ to_expr in
   match unloc e with
-  | M.Tseq l                  -> P.Etrue
-  | M.Tif (i,t, None)         -> assert false
-  | M.Tif (i,t, Some e)       -> P.Etrue
-  | M.Traise e                -> assert false
-  | M.Tmem (t,e1,e2)          -> assert false
-  | M.Tcontains (t,e1,e2)     -> P.Etrue
-  | M.Tlmem (i,e1,e2)         -> assert false
-  | M.Tvar i                  -> P.Etrue
-  | M.Tdoti (i1,i2)           -> P.Eidapp(mk_qualid [i2], [mk_expr (P.Eident (mk_qualid [i1]))])
-  | M.Tdot (e1,e2)            -> assert false
-  | M.Tassign (e1,e2)         -> assert false
-  | M.Tadd (i,e1,e2)          -> assert false
-  | M.Tset (i,e1,e2,e3)       -> assert false
-  | M.Tcoll (i,e)             -> P.Etrue
+  | M.Tseq _l                  -> P.Etrue
+  | M.Tif (_i,_t, None)        -> assert false
+  | M.Tif (_i,_t, Some _e)     -> P.Etrue
+  | M.Traise _e                -> assert false
+  | M.Tmem (_t,_e1,_e2)        -> assert false
+  | M.Tcontains (_t,_e1,_e2)   -> P.Etrue
+  | M.Tlmem (_i,_e1,_e2)       -> assert false
+  | M.Tvar _i                  -> P.Etrue
+  | M.Tdoti (i1,i2)            -> P.Eidapp(mk_qualid [i2], [mk_expr (P.Eident (mk_qualid [i1]))])
+  | M.Tdot (_e1,_e2)           -> assert false
+  | M.Tassign (_e1,_e2)        -> assert false
+  | M.Tadd (_i,_e1,_e2)        -> assert false
+  | M.Tset (_i,_e1,_e2,_e3)    -> assert false
+  | M.Tcoll (_i,_e)            -> P.Etrue
   (* | M.Teq (M.Tycoll a, e1, e2)  -> assert false *)
-  | M.Teq (_, e1, e2)         -> P.Einnfix(f e1, mk_ident_str (Ident.op_infix "="), f e2)
-  | M.Tunion (i, e1, e2)      -> assert false
-  | M.Tinter (i,e1, e2)       -> assert false
-  | M.Tdiff (i,e1, e2)        -> assert false
-  | M.Told e                  -> assert false
-  | M.Tsingl (i,e)            -> assert false
-  | M.Tempty (i,e)            -> assert false
-  | M.Tint i                  -> (
+  | M.Teq (_, e1, e2)          -> P.Einnfix(f e1, mk_ident_str (Ident.op_infix "="), f e2)
+  | M.Tunion (_i, _e1, _e2)    -> assert false
+  | M.Tinter (_i,_e1, _e2)     -> assert false
+  | M.Tdiff (_i,_e1, _e2)      -> assert false
+  | M.Told _e                  -> assert false
+  | M.Tsingl (_i,_e)           -> assert false
+  | M.Tempty (_i,_e)           -> assert false
+  | M.Tint i                   -> (
       let i : BigInt.t = BigInt.of_string (Big_int.string_of_big_int i) in
       let s : Number.int_constant = {il_kind = ILitDec; il_int = i } in
       let a = Number.ConstInt s in
       P.Econst a)
-  | M.Tforall (ud,b)          -> assert false
-  | M.Texists (ud,b)          -> assert false
-  | M.Timpl (e1,e2)           -> assert false
-  | M.Tand (e1,e2)            -> assert false
-  | M.Tfalse                  -> P.Efalse
-  | M.Tor (e1,e2)             -> assert false
-  | M.Tgt (_,e1,e2)           -> assert false
-  | M.Tge (_,e1,e2)           -> assert false
-  | M.Tlt (_,e1,e2)           -> assert false
-  | M.Tle (_,e1,e2)           -> assert false
-  | M.Tapp (f,[])             -> assert false
-  | M.Tapp (fi,a)             -> (
+  | M.Tforall (_ud,_b)          -> assert false
+  | M.Texists (_ud,_b)          -> assert false
+  | M.Timpl (_e1,_e2)           -> assert false
+  | M.Tand (_e1,_e2)            -> assert false
+  | M.Tfalse                    -> P.Efalse
+  | M.Tor (_e1,_e2)             -> assert false
+  | M.Tgt (_,_e1,_e2)           -> assert false
+  | M.Tge (_,_e1,_e2)           -> assert false
+  | M.Tlt (_,_e1,_e2)           -> assert false
+  | M.Tle (_,_e1,_e2)           -> assert false
+  | M.Tapp (_f,[])              -> assert false
+  | M.Tapp (fi,a)               -> (
       (List.fold_left (fun accu (x : M.loc_term) ->
            mk_expr (P.Eapply (f x, accu)))
           (f fi) a).expr_desc
     )
-  | M.Tget (i,e1,e2)          -> assert false
-  | M.Trecord (None,l)        -> P.Erecord (List.map (fun (q, v) -> (mk_qualid [q], f v)) l)
-  | M.Trecord (Some e,l)      -> assert false
-  | M.Tnone                   -> P.Etrue
-  | M.Tenum i                 -> assert false
-  | M.Tsome e                 -> assert false
-  | M.Tnot e                  -> assert false
-  | M.Tpand (e1,e2)           -> P.Eand (f e1, f e2)
-  | M.Tlist l                 -> assert false
-  | M.Tnil                    -> P.Etrue
-  | M.Temptycoll i            -> P.Etrue
-  | M.Tcaller i               -> assert false
-  | M.Ttransferred i          -> assert false
-  | M.Tletin (r,i,t,b,e)      -> assert false
-  | M.Tletfun (s,e)           -> P.Etrue
-  | M.Tfor (i,s,l,b)          -> assert false
-  | M.Ttry (b,l)              -> P.Etrue
-  | M.Tassert (None,e)        -> assert false
-  | M.Tassert (Some lbl,e )   -> assert false
-  | M.Ttoiter (a,i,e)         -> assert false
-  | M.Tcard (i,e)             -> assert false
-  | M.Tunshallow (i,e1,e2)    -> P.Etrue
-  | M.Tshallow (i,e1,e2)      -> assert false
-  | M.Tminus (_,e1,e2)        -> assert false
-  | M.Tplus (_,e1,e2)         -> assert false
-  | M.Tnth (i,e1,e2)          -> P.Etrue
-  | M.Tdle (_,e1,e2,e3)       -> assert false
-  | M.Tresult                 -> assert false
-  | M.Tsubset (i,e1,e2)       -> assert false
-  | M.Ttail (e1,e2)           -> assert false
-  | M.Tnow i                  -> assert false
-  | M.Tmlist (e1,i1,i2,i3,e2) -> assert false
-  | M.Tcons (e1,e2)           -> assert false
-  | M.Tremove (i,e1,e2)       -> assert false
-  | M.Tlistremove (i,e1,e2)   -> assert false
-  | M.Texn e                  -> assert false
+  | M.Tget (_i,_e1,_e2)         -> assert false
+  | M.Trecord (None,l)          -> P.Erecord (List.map (fun (q, v) -> (mk_qualid [q], f v)) l)
+  | M.Trecord (Some _e,_l)      -> assert false
+  | M.Tnone                     -> P.Etrue
+  | M.Tenum _i                  -> assert false
+  | M.Tsome _e                  -> assert false
+  | M.Tnot _e                   -> assert false
+  | M.Tpand (e1,e2)             -> P.Eand (f e1, f e2)
+  | M.Tlist _l                  -> assert false
+  | M.Tnil                      -> P.Etrue
+  | M.Temptycoll _i             -> P.Etrue
+  | M.Tcaller _i                -> assert false
+  | M.Ttransferred _i           -> assert false
+  | M.Tletin (_r,_i,_t,_b,_e)   -> assert false
+  | M.Tletfun (_s,_e)           -> P.Etrue
+  | M.Tfor (_i,_s,_l,_b)        -> assert false
+  | M.Ttry (_b,_l)              -> P.Etrue
+  | M.Tassert (None,_e)         -> assert false
+  | M.Tassert (Some _lbl,_e )   -> assert false
+  | M.Ttoiter (_a,_i,_e)        -> assert false
+  | M.Tcard (_i,_e)             -> assert false
+  | M.Tunshallow (_i,_e1,_e2)   -> P.Etrue
+  | M.Tshallow (_i,_e1,_e2)     -> assert false
+  | M.Tminus (_,_e1,_e2)        -> assert false
+  | M.Tplus (_,_e1,_e2)         -> assert false
+  | M.Tnth (_i,_e1,_e2)         -> P.Etrue
+  | M.Tdle (_,_e1,_e2,_e3)      -> assert false
+  | M.Tresult                   -> assert false
+  | M.Tsubset (_i,_e1,_e2)      -> assert false
+  | M.Ttail (_e1,_e2)           -> assert false
+  | M.Tnow _i                   -> assert false
+  | M.Tmlist (_e1,_i1,_i2,_i3,_e2) -> assert false
+  | M.Tcons (_e1,_e2)           -> assert false
+  | M.Tremove (_i,_e1,_e2)      -> assert false
+  | M.Tlistremove (_i,_e1,_e2)  -> assert false
+  | M.Texn _e                   -> assert false
   | _ -> assert false (* TODO *)
 
 let to_field (x : (M.loc_term, M.loc_typ, M.loc_ident) M.abstract_field) : P.field =
@@ -223,7 +223,7 @@ let to_ptree (mlwtree : M.loc_mlw_tree) : P.mlw_file =
         fun (x : (M.loc_term, M.loc_typ, M.loc_ident) M.abstract_decl) accu ->
           match x with
           | Duse ids -> (use_import ids)::accu
-          | Dval (i, t) -> (
+          | Dval (i, _t) -> (
               let ident = mk_ident i in
               let ghost = false in
               let rs_kind = E.RKnone in
