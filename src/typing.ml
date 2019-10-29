@@ -16,6 +16,7 @@ module Type : sig
 
   val is_numeric  : M.ptyp -> bool
   val is_currency : M.ptyp -> bool
+  val is_option   : M.ptyp -> bool
 
   val equal      : M.ptyp -> M.ptyp -> bool
   val compatible : from_:M.ptyp -> to_:M.ptyp -> bool
@@ -33,6 +34,9 @@ end = struct
 
   let is_currency = function
     | M.Tbuiltin (M.VTcurrency) -> true | _ -> false
+
+  let is_option = function
+    | M.Toption _ -> true | _ -> false
 
   let equal = ((=) : M.ptyp -> M.ptyp -> bool)
 
@@ -102,6 +106,7 @@ type error_desc =
   | InvalidStateExpression
   | InvalidTypeForVarWithFromTo
   | LetInElseInInstruction
+  | LetInElseOnNonOption
   | MissingFieldInRecordLiteral        of ident
   | MixedAnonInRecordLiteral
   | MixedFieldNamesInRecordLiteral     of ident list
@@ -215,7 +220,8 @@ let pp_error_desc fmt e =
   | InvalidSortingExpression           -> pp "Invalid sorting expression"
   | InvalidStateExpression             -> pp "Invalid state expression"
   | InvalidTypeForVarWithFromTo        -> pp "A variable with a from/to declaration must be of type currency"
-  | LetInElseInInstruction             -> pp "Let In else in Instruction"
+  | LetInElseInInstruction             -> pp "Let In else in instruction"
+  | LetInElseOnNonOption               -> pp "Let in else on non-option type"
   | MissingFieldInRecordLiteral i      -> pp "Missing field in record literal: %a" pp_ident i
   | MixedAnonInRecordLiteral           -> pp "Mixed anonymous in record literal"
   | MixedFieldNamesInRecordLiteral l   -> pp "Mixed field names in record literal: %a" (Printer_tools.pp_list "," pp_ident) l
@@ -1420,7 +1426,7 @@ let rec for_xexpr (mode : emode_t) (env : env) ?(ety : M.ptyp option) (tope : PT
 
       aout
 
-    | Eletin (x, ty, e1, e2, None) ->
+    | Eletin (x, ty, e1, e2, oe) ->
       let ty = Option.bind (for_type env) ty in
       let e  = for_xexpr env ?ety:ty e1 in
       let body =
@@ -1431,7 +1437,19 @@ let rec for_xexpr (mode : emode_t) (env : env) ?(ety : M.ptyp option) (tope : PT
             else env
           in for_xexpr env e2 in
 
-      mk_sp body.M.type_ (M.Pletin (x, e, ty, body, None))
+      let oe =
+        Option.bind (fun (bty, oe) ->
+          match bty with
+          | M.Toption bty ->
+            Some (for_xexpr env ~ety:bty oe)
+
+          | _ ->
+            Env.emit_error env (loc tope, LetInElseOnNonOption);
+            None
+        ) (Option.map2 pair body.M.type_ oe)
+      in
+
+      mk_sp body.M.type_ (M.Pletin (x, e, ty, body, oe))
 
     | Evar (_lv, _t, _e1) ->
       assert false
@@ -1503,7 +1521,6 @@ let rec for_xexpr (mode : emode_t) (env : env) ?(ety : M.ptyp option) (tope : PT
             mk_sp (Some M.vtbool) (M.Pquantifer (qt, x, (ast, xty), body))
       end
 
-    | Eletin    _
     | Eapp      _
     | Eassert   _
     | Elabel    _
@@ -2146,7 +2163,7 @@ let rec for_instruction (env : env) (i : PT.expr) : env * M.instruction =
             match Mstr.find (unloc cname) bsm, wd with
             | Some k, _ ->
                 Some (List.nth is k)
-            | None, _ ->
+            | None, Some _ ->
                 None
             | None, None ->
                 Some (mki (Iseq []))

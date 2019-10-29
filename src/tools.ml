@@ -19,6 +19,8 @@ let pair_map f g (x, y) = (f x, g y)
 
 let swap = fun (x, y) -> (y, x)
 
+let pair x y = (x, y)
+
 (* -------------------------------------------------------------------- *)
 module String : sig
   include module type of String
@@ -85,6 +87,7 @@ module Option : sig
   val get_list    : ('a option) list -> 'a list
   val iter        : ('a -> unit) -> 'a option -> unit
   val map         : ('a -> 'b) -> 'a option -> 'b option
+  val map2        : ('a -> 'b -> 'c) -> 'a option -> 'b option -> 'c option
   val bind        : ('a -> 'b option) -> 'a option -> 'b option
   val fold        : ('a -> 'b -> 'a) -> 'a -> 'b option -> 'a
   val foldmap     : ('a -> 'b -> 'a * 'c) -> 'a -> 'b option -> 'a * 'c option
@@ -133,6 +136,11 @@ end = struct
   let iter f = function None -> () | Some x -> f x
 
   let map f = function None -> None | Some x -> Some (f x)
+
+  let map2 f x y =
+    match x, y with
+    | Some x, Some y -> Some (f x y)
+    | _     , _      -> None
 
   let bind f = function None -> None | Some x -> f x
 
