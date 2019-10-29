@@ -842,7 +842,7 @@ let fold_map_term g f (accu : 'a) (term : 'id term_gen) : 'term * 'a =
   | Pletin (id, i, t, o) ->
     let ie, ia = f accu i in
     let oe, oa = f ia o in
-    g (Pletin (id, i, t, oe)), oa
+    g (Pletin (id, ie, t, oe)), oa
 
   | Pdeclvar (i, t, v) ->
     let ve, va = f accu v in

@@ -1742,7 +1742,7 @@ let fold_map_term
   | Mletin (idd, i, t, o) ->
     let ie, ia = f accu i in
     let oe, oa = f ia o in
-    g (Mletin (idd, i, t, oe)), oa
+    g (Mletin (idd, ie, t, oe)), oa
 
   | Mdeclvar (ids, t, v) ->
     let ve, va = f accu v in
