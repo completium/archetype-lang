@@ -55,7 +55,6 @@
       "in"                  , IN             ;
       "initial"             , INITIAL        ;
       "initialized"         , INITIALIZED    ;
-      "instance"            , INSTANCE       ;
       "invariant"           , INVARIANT      ;
       "iter"                , ITER           ;
       "pkey"                , PKEY           ;

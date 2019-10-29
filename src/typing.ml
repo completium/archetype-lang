@@ -2894,7 +2894,6 @@ let group_declarations (decls : (PT.declaration list)) =
     | PT.Dsecurity infos ->
       { g with gr_secs = mk infos :: g.gr_secs }
 
-    | Dinstance _
     | Dcontract  _
     | Dnamespace _
     | Dextension _

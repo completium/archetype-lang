@@ -81,7 +81,6 @@
 %token IN
 %token INITIAL
 %token INITIALIZED
-%token INSTANCE
 %token INVARIANT
 %token ITER
 %token LABEL
@@ -247,7 +246,6 @@ declaration_r:
  | x=archetype          { x }
  | x=constant           { x }
  | x=variable           { x }
- | x=instance           { x }
  | x=enum               { x }
  | x=asset              { x }
  | x=action             { x }
@@ -274,10 +272,6 @@ constant:
 variable:
   | x=vc_decl(VARIABLE) { let x, t, z, dv, exts = x in
                           Dvariable (x, t, dv, z, VKvariable, exts) }
-
-instance:
-  | INSTANCE exts=option(extensions) v=ident OF t=ident dv=default_value
-    { Dinstance (v, t, dv, exts) }
 
 %inline value_options:
 | xs=value_option+ { xs }
