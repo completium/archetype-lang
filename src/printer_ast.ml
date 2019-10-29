@@ -198,7 +198,7 @@ let pp_action_description fmt = function
 let rec pp_pterm fmt (pterm : pterm) =
   let pp_node fmt = function
     | Pquantifer (q, i, (a, t), b) ->
-      let pp fmt (q, i, (a, t), b) =
+      let pp fmt (q, i, (_a, t), b) =
         Format.fprintf fmt "%a (%a : %a), %a"
           pp_quantifier q
           pp_id i
@@ -382,8 +382,8 @@ and pp_term_arg fmt = function
              pp_operator op
              pp_pterm pt)) l
 
-  | ASorting (b, f) ->
-      assert false              (* ASorting-FIX *)
+  | ASorting (_b, f) ->
+    pp_id fmt f
 
 let pp_instruction_poly pp fmt i =
   pp fmt i.node
@@ -493,8 +493,10 @@ let rec pp_instruction fmt (i : instruction) =
 
     | Itransfer (value, back, dest) ->
       let pp fmt (value, back, dest) =
-        Format.fprintf fmt "transfer %a"
+        Format.fprintf fmt "transfer %a %a%a"
           (pp_do_if back pp_str) "back"
+          pp_pterm value
+          (pp_option (fun fmt -> Format.fprintf fmt " to %a" pp_qualid)) dest
       in
       (pp_with_paren pp) fmt (value, back, dest)
 

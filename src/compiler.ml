@@ -49,7 +49,7 @@ let output (model : Model.model) =
           if !Options.opt_raw_whytree
           then Format.fprintf fmt "%a@." Mlwtree.pp_mlw_tree mlw
           else Format.fprintf fmt "%a@." Printer_mlwtree.pp_mlw_tree mlw
-      | _            -> fun fmt _ -> ()
+      | _            -> fun _fmt _ -> ()
     in
     Format.printf "%a@." printer model
 
@@ -310,7 +310,7 @@ let main () =
     close dispose channel;
     Printf.eprintf "%s.\n" s;
     exit 1
-  | Error.ParseError l ->
+  | Error.ParseError _ ->
     close dispose channel;
     (* List.map (fun (_ps, _s) -> ()) l; *)
     (* Format.eprintf "%s.\n" s *)

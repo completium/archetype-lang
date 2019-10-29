@@ -62,7 +62,7 @@ let gen_shallow_args (m : M.model) (id : M.lident) (t : M.type_) (arg : M.argume
         [] in
     (acc_ctx,shallow_args)
   | M.Tcontainer (Tasset i, Collection) ->
-    let k,kt = M.Utils.get_asset_key m i in
+    let _k,kt = M.Utils.get_asset_key m i in
     let arg = (id,M.Tcontainer (M.Tbuiltin kt,Collection),None) in
     let arg_values = (dumloc ((unloc id)^"_values"),M.Tcontainer (Tasset i, Collection),None) in
     let shallow_args = gen_shallow_args m 1 (unloc id) t [arg;arg_values] in
@@ -199,12 +199,12 @@ let rec map_shallow (ctx : (I.ident * (M.lident * M.type_) list) list) m (t : M.
       let asset = M.Utils.get_asset_type e in
       let partitions = M.Utils.get_asset_partitions m (asset |> unloc) in
       begin
-        if List.exists (fun (pi,pt,pd) ->
+        if List.exists (fun (pi,_pt,_pd) ->
             compare (i |> unloc) pi = 0) partitions then
           let rec get_partition_type = function
-            | (pi,pt,pd)::tl
+            | (pi,pt,_pd)::_tl
               when compare (i |> unloc) pi = 0 -> pt
-            | r::tl -> get_partition_type tl
+            | _r::tl -> get_partition_type tl
             | [] -> assert false in
           let ty = get_partition_type partitions in
           let pa = M.Utils.dest_partition ty |> unloc in
@@ -223,7 +223,7 @@ let process_shallow_function m f =
   let args = M.Utils.get_function_args f in
   (* mk initial context and shallowed arguments *)
   let (ctx,args) = List.fold_left (fun (ctx,acc) arg ->
-      let (id,t,e) = arg in
+      let (id,t,_e) = arg in
       let (acc_ctx,shallow_args) = gen_shallow_args m id t arg in
       (ctx @ acc_ctx, acc @ shallow_args)
     ) ([],[]) args in
@@ -234,7 +234,7 @@ let process_shallow_function m f =
 let rec gen_add_shallow_asset (arg : M.argument) : M.mterm =
   let tnode =
     match arg with
-    | id, Tasset a,_ ->
+    | _id, Tasset a,_ ->
       M.Maddasset (unloc a,
                    M.mk_mterm (M.Mvarlocal a) (Tcontainer (Tasset a, Collection)))
     | id,Tcontainer (Tasset a,_),_ ->
@@ -268,7 +268,7 @@ let gen_add_shallow_fun (model : M.model) (n : I.ident) : M.function__ =
   }
 
 let gen_add_shallow_field_fun (model : M.model) (n,f : I.ident * I.ident) : M.function__ =
-  let pa,k,kt = M.Utils.get_partition_asset_key model (dumloc n) (dumloc f) in
+  let pa,_k,_kt = M.Utils.get_partition_asset_key model (dumloc n) (dumloc f) in
   let arg    = (dumloc "added_asset",M.Tasset (dumloc pa),None) in
   let _,asset_args = gen_shallow_args model (dumloc "added_asset") (Tasset (dumloc pa)) arg in
   let asset_arg = (dumloc "asset",M.Tasset (dumloc n),None) in

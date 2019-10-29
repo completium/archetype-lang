@@ -712,7 +712,7 @@ let mk_postcondition ?(invariants = []) ?(uses = []) name mode formula =
 let mk_assert ?(invariants = []) ?(uses = []) name label formula =
   { name; label; formula; invariants; uses }
 
-let mk_specification ?(predicates = []) ?(definitions = []) ?(lemmas = []) ?(theorems = []) ?(variables = []) ?(invariants = []) ?(effects = []) ?(postconditions = []) ?(asserts = []) ?(loc = Location.dummy) () =
+let mk_specification ?(predicates = []) ?(definitions = []) ?(lemmas = []) ?(theorems = []) ?(variables = []) ?(invariants = []) ?(effects = []) ?(postconditions = []) ?(loc = Location.dummy) () =
   { predicates; definitions; lemmas; theorems; variables; invariants; effects; postconditions; loc}
 
 let mk_security_predicate ?(loc = Location.dummy) s_node : security_predicate =
@@ -769,7 +769,7 @@ let mk_signature ?(args = []) ?ret name : 'id signature_gen =
 let mk_api_item ?(only_formula = false) node_item =
   { node_item; only_formula }
 
-let mk_model ?(api_items = []) ?(api_verif = []) ?(info = []) ?(decls = []) ?(functions = []) ?(storage = []) ?(specification = mk_specification ()) ?(security = mk_security ()) storage name : model =
+let mk_model ?(api_items = []) ?(api_verif = []) ?(info = []) ?(decls = []) ?(functions = []) ?(storage = []) ?(specification = mk_specification ()) ?(security = mk_security ()) name : model =
   { name; api_items; api_verif; info; storage; decls; functions; specification; security }
 
 (* -------------------------------------------------------------------- *)
@@ -1241,7 +1241,7 @@ let map_mterm_model_formula custom (f : ('id, 't) ctx_model_gen -> mterm -> mter
       }
     in
 
-    let map_variable (f : ('id, 't) ctx_model_gen -> mterm -> mterm) (spec : variable) : variable =
+    let map_variable (_f : ('id, 't) ctx_model_gen -> mterm -> mterm) (spec : variable) : variable =
       spec
     in
 
@@ -1304,33 +1304,33 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Msetremoved   e                       -> f accu e
   | Msetiterated  e                       -> f accu e
   | Msettoiterate e                       -> f accu e
-  | Mexternal (t, func, c, args)          -> List.fold_left f (f accu c) args
+  | Mexternal (_, _, c, args)             -> List.fold_left f (f accu c) args
   | Mget (_, k)                           -> f accu k
-  | Mset (c, l, k, v)                     -> f (f accu v) k
-  | Maddasset (an, i)                     -> f accu i
-  | Maddfield (an, fn, c, i)              -> f (f accu c) i
+  | Mset (_, _, k, v)                     -> f (f accu v) k
+  | Maddasset (_, i)                      -> f accu i
+  | Maddfield (_, _, c, i)                -> f (f accu c) i
   | Maddlocal (c, i)                      -> f (f accu c) i
-  | Mremoveasset (an, i)                  -> f accu i
-  | Mremovefield (an, fn, c, i)           -> f (f accu c) i
+  | Mremoveasset (_, i)                   -> f accu i
+  | Mremovefield (_, _, c, i)             -> f (f accu c) i
   | Mremovelocal (c, i)                   -> f (f accu c) i
-  | Mclearasset (an)                      -> accu
-  | Mclearfield (an, fn, c)               -> f accu c
-  | Mremoveif (an, fn, c)                 -> f (f accu fn) c
+  | Mclearasset _                         -> accu
+  | Mclearfield (_, _, c)                 -> f accu c
+  | Mremoveif (_, fn, c)                  -> f (f accu fn) c
   | Mclearlocal (c)                       -> f accu c
-  | Mreverseasset (an)                    -> accu
-  | Mreversefield (an, fn, c)             -> f accu c
+  | Mreverseasset _                       -> accu
+  | Mreversefield (_, _, c)               -> f accu c
   | Mreverselocal (c)                     -> f accu c
-  | Mselect (an, c, p)                    -> f (f accu c) p
-  | Msort (an, c, p, _)                   -> f accu c
-  | Mcontains (an, c, i)                  -> f (f accu c) i
-  | Mmem (an, c, i)                       -> f (f accu c) i
-  | Msubsetof (an, c, i)                  -> f (f accu c) i
-  | Mnth (an, c, i)                       -> f (f accu c) i
-  | Mcount (an, c)                        -> f accu c
-  | Msum (an, fd, c)                      -> f accu c
-  | Mmin (an, fd, c)                      -> f accu c
-  | Mmax (an, fd, c)                      -> f accu c
-  | Mfail (ft)                            -> accu
+  | Mselect (_, c, p)                     -> f (f accu c) p
+  | Msort (_, c, _, _)                    -> f accu c
+  | Mcontains (_, c, i)                   -> f (f accu c) i
+  | Mmem (_, c, i)                        -> f (f accu c) i
+  | Msubsetof (_, c, i)                   -> f (f accu c) i
+  | Mnth (_, c, i)                        -> f (f accu c) i
+  | Mcount (_, c)                         -> f accu c
+  | Msum (_, _, c)                        -> f accu c
+  | Mmin (_, _, c)                        -> f accu c
+  | Mmax (_, _, c)                        -> f accu c
+  | Mfail _                               -> accu
   | Mmathmax (l, r)                       -> f (f accu l) r
   | Mmathmin (l, r)                       -> f (f accu l) r
   | Mhead (_, c, i)                       -> f (f accu c) i
@@ -1339,7 +1339,7 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mor (l, r)                            -> f (f accu l) r
   | Mimply (l, r)                         -> f (f accu l) r
   | Mequiv  (l, r)                        -> f (f accu l) r
-  | Misempty  (l, r)                      -> f accu r
+  | Misempty  (_, r)                      -> f accu r
   | Mnot e                                -> f accu e
   | Mmulticomp (e, l)                     -> List.fold_left (fun accu (_, a) -> f accu a) (f accu e) l
   | Mequal (l, r)                         -> f (f accu l) r
@@ -1376,8 +1376,8 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mcurrency _                           -> accu
   | Maddress _                            -> accu
   | Mduration _                           -> accu
-  | Mdotasset (e, i)                      -> f accu e
-  | Mdotcontract (e, i)                   -> f accu e
+  | Mdotasset (e, _)                      -> f accu e
+  | Mdotcontract (e, _)                   -> f accu e
   | Mvarstate                             -> accu
   | Mnow                                  -> accu
   | Mtransferred                          -> accu
@@ -1387,9 +1387,9 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Msome v                               -> f accu v
   | Mtuple l                              -> List.fold_left f accu l
   | Massoc (k, v)                         -> f (f accu k) v
-  | Mfor (i, c, b, lbl)                   -> f (f accu c) b
-  | Miter (i, a, b, c, lbl)               -> f (f (f accu a) b) c
-  | Mfold (i, is, c, b)                   -> f (f accu c) b
+  | Mfor (_, c, b, _)                     -> f (f accu c) b
+  | Miter (_, a, b, c, _)                 -> f (f (f accu a) b) c
+  | Mfold (_, _, c, b)                    -> f (f accu c) b
   | Mseq is                               -> List.fold_left f accu is
   | Massign (_, _, e)                     -> f accu e
   | Massignfield (_, _, _, e)             -> f accu e
@@ -1438,8 +1438,8 @@ let fold_map_term
     let (pse, psa) =
       List.fold_left
         (fun (ps, accu) (p, i) ->
-           let pa, accu = f accu i in
-           [(p, i)] @ ps, accu) ([], ea) l
+           let ia, accu = f accu i in
+           [(p, ia)] @ ps, accu) ([], ea) l
     in
 
     g (Mmatchwith (ee, pse)), psa
@@ -1662,8 +1662,8 @@ let fold_map_term
     let (le, la) =
       List.fold_left
         (fun (ps, accu) (p, i) ->
-           let pa, accu = f accu i in
-           [(p, i)] @ ps, accu) ([], ea) l
+           let ia, accu = f accu i in
+           [(p, ia)] @ ps, accu) ([], ea) l
     in
 
     g (Mmulticomp (ee, le)), la
@@ -1898,7 +1898,7 @@ let fold_map_term
 
   | Mforall (id, t, Some s, e) ->
     let ee, ea = f accu e in
-    let se, sa = f accu s in
+    let se, sa = f ea s in
     g (Mforall (id, t, Some se, ee)), sa
 
   | Mforall (id, t, None, e) ->
@@ -1907,7 +1907,7 @@ let fold_map_term
 
   | Mexists (id, t, Some s, e) ->
     let ee, ea = f accu e in
-    let se, sa = f accu s in
+    let se, sa = f ea s in
     g (Mexists (id, t, Some se, ee)), sa
 
   | Mexists (id, t, None, e) ->
@@ -1946,7 +1946,7 @@ let fold_specification (ctx : ('id, 't) ctx_model_gen) (f : ('id, 't) ctx_model_
     |> (fun x -> List.fold_left (fun accu (x : 'id invariant_gen) -> fold_invariant ctx f x accu) x spec.invariants)
   in
 
-  let fold_variable (ctx : ('id, 't) ctx_model_gen) (f : ('id, 't) ctx_model_gen -> 'a -> 'id mterm_gen -> 'a) (spec : 'id variable_gen) (accu : 'a) : 'a =
+  let fold_variable (_ctx : ('id, 't) ctx_model_gen) (_f : ('id, 't) ctx_model_gen -> 'a -> 'id mterm_gen -> 'a) (_spec : 'id variable_gen) (accu : 'a) : 'a =
     accu
   in
 
@@ -2280,8 +2280,8 @@ end = struct
   let get_partition_asset_key model record field : (ident * ident * btyp) =
     let partitions = get_partitions model in
     let rec rec_get = function
-      | (r,i,t) :: tl when compare r record.pldesc = 0 &&
-                           compare i field.pldesc = 0 ->
+      | (r,i,t) :: _tl when compare r record.pldesc = 0 &&
+                            compare i field.pldesc = 0 ->
         let pa  = dest_partition t in
         let k,t = get_asset_key model pa in
         (unloc pa,k,t)
@@ -2309,7 +2309,7 @@ end = struct
   let get_field_pos model record field =
     let l = get_field_list model record in
     let rec rec_get_pos i = function
-      | e :: tl when compare field.pldesc e = 0 -> i
+      | e :: _tl when compare field.pldesc e = 0 -> i
       | _ :: tl -> rec_get_pos (succ i) tl
       | [] -> assert false in
     rec_get_pos 0 l
@@ -2432,7 +2432,7 @@ end = struct
         | _ -> acc
       ) [] m.api_items
 
-  let get_added_removed_sets m v : ((lident,(lident mterm_gen)) mterm_node) list =
+  let get_added_removed_sets (_m : model) v : ((lident,(lident mterm_gen)) mterm_node) list =
     let rec internal_fold_add_remove ctx acc (term : mterm) =
       match term.node with
       | Msetadded e -> acc @ [ Msetadded e ]
@@ -2472,10 +2472,10 @@ end = struct
     in
     List.mem id l
 
-  let with_trace (m : model) : bool = true
+  let with_trace (_m : model) : bool = true
 
   (* returns the list of entries calling the function named 'name' *)
-  let get_callers (m : model) (name : ident) : ident list = [] (* TODO *)
+  let get_callers (_m : model) (_name : ident) : ident list = [] (* TODO *)
 
   (* is there a no_fail predicate on an entry called fn ? *)
   let no_fail (m : model) (fn : ident) : lident option =
@@ -2508,7 +2508,7 @@ end = struct
     let rec extract_fun_id accu (mt : mterm) : ident list =
       let l = fold_term extract_fun_id accu mt in
       match mt.node with
-      | Mapp (id, args) when (List.exists (fun x -> (String.equal (unloc id) x)) fun_id_list) ->
+      | Mapp (id, _args) when (List.exists (fun x -> (String.equal (unloc id) x)) fun_id_list) ->
         l @ [unloc id]
       | _ -> l
     in

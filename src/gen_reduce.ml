@@ -61,7 +61,7 @@ type ctx_red = {
 
 let rec compute_side_effect_aux (ctx : ctx_red)(accu : (ident * type_) list) (mt : mterm) : (ident * type_) list =
   match mt.node with
-  | Massign (_, a, b) ->
+  | Massign (_, a, _b) ->
     let id : ident = unloc a in
     let type_ = List.assoc_opt id ctx.vars in
     (match type_ with
@@ -114,15 +114,15 @@ let rec process_non_empty_list_term (ctx : ctx_red) (s : s_red) (mts : mterm lis
 
         mk_mterm (Mletin ([id], value, Some value.type_, accu, None)) accu.type_, s
       | {type_ = Ttuple (Tcontainer(Toperation, Collection)::Tstorage::l); _} ->
-        mk_mterm (Mletin ([storage_lident; operations_lident] @ (List.fold_left (fun accu x -> (dumloc "_")::accu) [] l), x, Some x.type_, accu, None)) accu.type_, s
+        mk_mterm (Mletin ([storage_lident; operations_lident] @ (List.fold_left (fun accu _x -> (dumloc "_")::accu) [] l), x, Some x.type_, accu, None)) accu.type_, s
       | {type_ = Ttuple (Tstorage::l); _} ->
-        let lidents : lident list = (List.mapi (fun i x ->
+        let lidents : lident list = (List.mapi (fun i _x ->
             if i < List.length s.subs
             then dumloc (List.nth s.subs i |> fst)
             else (dumloc "_")) l) in
         mk_mterm (Mletin ([storage_lident] @ lidents, x, Some x.type_, accu, None)) accu.type_, s
       | {type_ = Ttuple (Tcontainer(Toperation, Collection)::l); _} ->
-        mk_mterm (Mletin ([operations_lident] @ (List.fold_left (fun accu x -> (dumloc "_")::accu) [] l), x, Some x.type_, accu, None)) x.type_, s
+        mk_mterm (Mletin ([operations_lident] @ (List.fold_left (fun accu _x -> (dumloc "_")::accu) [] l), x, Some x.type_, accu, None)) x.type_, s
       | {type_ = Tstorage; _} ->
         mk_mterm (Mletin ([storage_lident], x, Some x.type_, accu, None)) accu.type_, s
       | {type_ = Tcontainer (Toperation, Collection); _} ->
@@ -227,10 +227,10 @@ and process_mtern (ctx : ctx_red) (s : s_red) (mt : mterm) : mterm * s_red =
     let c, s = process_mtern ctx s c in
     let target, subs =
       (match ctx.target with
-       | Some {node = (Mtuple l); _} ->
+       | Some {node = (Mtuple _l); _} ->
          let subs : (ident * type_) list = compute_side_effect_for_list ctx ([t] @ (Option.map_dfl (fun x -> [x]) [] e)) in
          mk_mterm (Mtuple (storage_var::(List.map (fun (x, y : ident * type_) -> mk_mterm (Mvarlocal (dumloc x)) y) subs)))
-           (Ttuple (Tstorage::(List.map (fun (x, y : ident * type_) -> y) subs))), subs
+           (Ttuple (Tstorage::(List.map (fun (_x, y : ident * type_) -> y) subs))), subs
        | _ -> storage_var, [])
     in
     (* let t, s = process_mtern ctx s t in *)
@@ -263,7 +263,7 @@ and process_mtern (ctx : ctx_red) (s : s_red) (mt : mterm) : mterm * s_red =
           | [] -> l
           | _ ->
             let target = mk_mterm (Mtuple (storage_var::(List.map (fun (x, y : ident * type_) -> mk_mterm (Mvarlocal (dumloc x)) y) subs)))
-                (Ttuple (Tstorage::(List.map (fun (x, y : ident * type_) -> y) subs))) in
+                (Ttuple (Tstorage::(List.map (fun (_x, y : ident * type_) -> y) subs))) in
             l @ [target]
         ) in
         let s = {s with subs = subs} in
@@ -273,7 +273,7 @@ and process_mtern (ctx : ctx_red) (s : s_red) (mt : mterm) : mterm * s_red =
   | Mfor (a, col, body, _) ->
     let col, s = process_mtern ctx s col in
     let subs : (ident * type_) list = compute_side_effect ctx body in
-    let is = [storage_lident] @ (List.map (fun (x, y) -> dumloc x) subs) in
+    let is = [storage_lident] @ (List.map (fun (x, _y) -> dumloc x) subs) in
     let type_tuple = Ttuple ([Tstorage] @ List.map snd subs) in
     let tuple : mterm = mk_mterm (Mtuple ([storage_var] @ List.map (fun (x, y) -> mk_mterm (Mvarlocal (dumloc x)) y) subs)) type_tuple in
     let ctx = {
@@ -306,7 +306,7 @@ let process_body (ctx : ctx_red) (mt : mterm) : mterm =
   let mt, _s = process_non_empty_list_term ctx s bb in
   simplify mt
 
-let analyse_type (mt : mterm) : type_ = Tstorage
+let analyse_type (_mt : mterm) : type_ = Tstorage
 
 let process_functions (model : model) : model =
   let process_functions l =

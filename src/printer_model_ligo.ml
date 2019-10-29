@@ -61,7 +61,7 @@ let pp_str fmt str =
 
 let to_lident = dumloc
 
-let pp_nothing (fmt : Format.formatter) = ()
+let pp_nothing (_fmt : Format.formatter) = ()
 
 type action = {
   name : ident;
@@ -277,7 +277,7 @@ let pp_model fmt (model : model) =
         pp fmt (c, k)
 
       | Mset (c, l, k, v) ->
-        let pp fmt (c, l, k, v) =
+        let pp fmt (c, _l, k, v) =
           Format.fprintf fmt "%s := set_%a (%s, %a, %a)"
             const_storage
             pp_str c
@@ -415,7 +415,7 @@ let pp_model fmt (model : model) =
 
       | Mselect (an, c, p) ->
         let index : int = get_preds_index env.select_preds p in
-        let pp fmt (an, c, p) =
+        let pp fmt (an, c, _p) =
           Format.fprintf fmt "select_%a_%i (%s, %a)"
             pp_str an index
             const_storage
@@ -424,7 +424,7 @@ let pp_model fmt (model : model) =
         pp fmt (an, c, p)
 
       | Msort (an, c, fn, k) ->
-        let pp fmt (an, c, fn, k) =
+        let pp fmt (an, c, fn, _k) =
           Format.fprintf fmt "sort_%a_%a (%a)"
             pp_str an
             pp_str fn
@@ -591,7 +591,7 @@ let pp_model fmt (model : model) =
         in
         pp fmt e
 
-      | Mmulticomp (e, l) ->
+      | Mmulticomp (_e, _l) ->
         assert false
 
       | Mequal (l, r) ->
@@ -837,7 +837,7 @@ let pp_model fmt (model : model) =
                  f b
           ) ()
 
-      | Miter (i, a, b, c, _) -> Format.fprintf fmt "TODO: iter@\n"
+      | Miter (_i, _a, _b, _c, _) -> Format.fprintf fmt "TODO: iter@\n"
       | Mfold (i, is, c, b) ->
         Format.fprintf fmt
           "List.fold (fun (%a, (%a)) ->@\n\
@@ -894,7 +894,7 @@ let pp_model fmt (model : model) =
       | Mreturn x ->
         Format.fprintf fmt "return %a"
           f x
-      | Mlabel i -> ()
+      | Mlabel _i -> ()
       | Mshallow (i, x) ->
         Format.fprintf fmt "shallow_%a %a"
           pp_str i
@@ -969,9 +969,9 @@ let pp_model fmt (model : model) =
 
   let pp_decl (fmt : Format.formatter) (decl : decl_node) =
     match decl with
-    | Denum e -> ()
+    | Denum _e -> ()
     | Drecord r -> pp_record fmt r
-    | Dcontract c -> ()
+    | Dcontract _c -> ()
   in
 
   let pp_decls (fmt : Format.formatter) _ =
@@ -994,7 +994,7 @@ let pp_model fmt (model : model) =
   in
 
 
-  let pp_storage_const (env : env) fmt = function
+  let pp_storage_const (_env : env) fmt = function
     | Get an ->
       let _, t = Utils.get_asset_key model (to_lident an) in
       Format.fprintf fmt
@@ -1061,7 +1061,7 @@ let pp_model fmt (model : model) =
         pp_btyp t an an
         an
 
-    | Clear an ->
+    | Clear _an ->
       (* let k, t = Utils.get_asset_key model (to_lident an) in *)
       Format.fprintf fmt "// TODO api storage: Clear"
     (* "let[@inline] clear_%s (s : storage) : storage =@\n  \
@@ -1069,7 +1069,7 @@ let pp_model fmt (model : model) =
        s.%s_assets <- (Map : (%a, %s) map)@\n"
        an an an pp_btyp t an *)
 
-    | Reverse an ->
+    | Reverse _an ->
       Format.fprintf fmt "// TODO api storage: Reverse"
     (* "let[@inline] reverse_%s (s : storage) : storage =@\n  \
        s.%s_keys <- List.rev s.%s_keys@\n"
@@ -1077,7 +1077,7 @@ let pp_model fmt (model : model) =
 
     | UpdateAdd (an, fn) ->
       let k, t = Utils.get_asset_key model (to_lident an) in
-      let ft, c = Utils.get_field_container model an fn in
+      let ft, _c = Utils.get_field_container model an fn in
       let kk, _ = Utils.get_asset_key model (to_lident ft) in
       Format.fprintf fmt
         "function add_%s_%s (const s : storage_type; const a : %s; const b : %s) : storage_type is@\n  \
@@ -1100,8 +1100,8 @@ let pp_model fmt (model : model) =
 
     | UpdateRemove (an, fn) ->
       let k, t = Utils.get_asset_key model (to_lident an) in
-      let ft, c = Utils.get_field_container model an fn in
-      let kk, tt = Utils.get_asset_key model (to_lident ft) in
+      let ft, _c = Utils.get_field_container model an fn in
+      let _kk, tt = Utils.get_asset_key model (to_lident ft) in
       Format.fprintf fmt
         "function remove_%s_%s (const s : storage_type; const a : %s; const key : %a) : storage_type is@\n  \
          var new_keys : list(%a) := (nil : list(%a));@\n  \
@@ -1133,7 +1133,7 @@ let pp_model fmt (model : model) =
         an
         ft
 
-    | UpdateClear (an, fn) ->
+    | UpdateClear (_an, _fn) ->
       (* let k, t = Utils.get_asset_key model (to_lident an) in *)
       Format.fprintf fmt "// TODO api storage: UpdateClear"
     (* "let[@inline] clear_%s_%s (s, a : storage * %s) : storage =@\n  \
@@ -1147,7 +1147,7 @@ let pp_model fmt (model : model) =
        fn
        an k an *)
 
-    | UpdateReverse (an, fn) ->
+    | UpdateReverse (_an, _fn) ->
       (* let k, t = Utils.get_asset_key model (to_lident an) in *)
       Format.fprintf fmt "// TODO api storage: UpdateReverse"
     (* "let[@inline] reverse_%s_%s (s, a : storage * %s) : storage =@\n  \
@@ -1161,14 +1161,14 @@ let pp_model fmt (model : model) =
        fn fn
        an k an *)
 
-    | ToKeys an ->
+    | ToKeys _an ->
       Format.fprintf fmt "// TODO api storage: ToKeys"
       (* "let[@inline] to_keys_%s (s : storage) : storage =@\n  \
          s (*TODO*)@\n"
          an *)
   in
 
-  let pp_container_const (env : env) fmt = function
+  let pp_container_const (_env : env) fmt = function
     | AddItem t-> Format.fprintf fmt "add\t %a" pp_type t
     | RemoveItem t -> Format.fprintf fmt "remove\t %a" pp_type t
     | ClearItem t -> Format.fprintf fmt "clear\t %a" pp_type t
@@ -1200,7 +1200,7 @@ let pp_model fmt (model : model) =
         (pp_mterm (mk_env ())) f
         k
 
-    | Sort (an, fn) ->
+    | Sort (_an, _fn) ->
       Format.fprintf fmt "// TODO api storage: Sort"
     (* "let[@inline] sort_%s_%s (s : storage) : unit =@\n  \
        () (*TODO*)@\n"
@@ -1221,7 +1221,7 @@ let pp_model fmt (model : model) =
         an pp_btyp t pp_btyp t
         pp_btyp t
 
-    | Nth an ->
+    | Nth _an ->
       (* let _, t = Utils.get_asset_key model (to_lident an) in *)
       Format.fprintf fmt "// TODO api storage: Nth"
     (* "let[@inline] nth_%s (s, l, idx : storage * %a list * int) : %s =@\n  \
@@ -1244,7 +1244,7 @@ let pp_model fmt (model : model) =
        an pp_btyp t an
        an *)
 
-    | Count an ->
+    | Count _an ->
       (* let _, t = Utils.get_asset_key model (to_lident an) in *)
       Format.fprintf fmt "// TODO api storage: Count"
     (* "let[@inline] count_%s (l : %a list) : int =@\n  \
@@ -1278,7 +1278,7 @@ let pp_model fmt (model : model) =
         an an
         fn
 
-    | Min (an, fn) ->
+    | Min (_an, _fn) ->
       (* let _, tk = Utils.get_asset_key model (to_lident an) in
          let _, t, _ = Utils.get_asset_field model (dumloc an, fn) in *)
       Format.fprintf fmt "// TODO api storage: Min"
@@ -1309,7 +1309,7 @@ let pp_model fmt (model : model) =
        fn
        fn *)
 
-    | Max (an, fn) ->
+    | Max (_an, _fn) ->
       (* let _, tk = Utils.get_asset_key model (to_lident an) in
          let _, t, _ = Utils.get_asset_field model (dumloc an, fn) in *)
       Format.fprintf fmt "// TODO api storage: Max"
@@ -1343,12 +1343,12 @@ let pp_model fmt (model : model) =
     | Shallow _ -> ()
     | Unshallow _ -> ()
     | Listtocoll _ -> ()
-    | Head an -> Format.fprintf fmt "// TODO api storage: head"
-    | Tail an -> Format.fprintf fmt "// TODO api storage: tail"
+    | Head _an -> Format.fprintf fmt "// TODO api storage: head"
+    | Tail _an -> Format.fprintf fmt "// TODO api storage: tail"
 
   in
 
-  let pp_builtin_const (env : env) fmt = function
+  let pp_builtin_const (_env : env) fmt = function
     | MinBuiltin t-> Format.fprintf fmt "min on %a" pp_type t
     | MaxBuiltin t-> Format.fprintf fmt "max on %a" pp_type t
   in

@@ -200,7 +200,7 @@ let prune_properties (model : model) : model =
     let p_ids =
       fp_id::
       (match Model.Utils.retrieve_property model fp_id with
-       | Ppostcondition (p, f_id) -> List.map unloc p.uses
+       | Ppostcondition (p, _f_id) -> List.map unloc p.uses
        | _ -> [])
     in
 
@@ -212,9 +212,9 @@ let prune_properties (model : model) : model =
           |> List.map ((function | Entry fs -> fs | Function (fs, _) -> fs))
           |> List.map (fun (x : function_struct) -> unloc x.name) in
         let add l x = if List.mem x l then l else x::l in
-        List.fold_left (fun accu p_id ->
+        List.fold_left (fun accu _p_id ->
             match Model.Utils.retrieve_property model fp_id with
-            | Ppostcondition (p, Some f_id) -> add accu f_id
+            | Ppostcondition (_p, Some f_id) -> add accu f_id
             | Ppostcondition _     -> all_funs
             | PstorageInvariant _  -> all_funs
             | PsecurityPredicate _ -> all_funs

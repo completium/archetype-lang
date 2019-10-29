@@ -144,7 +144,7 @@ let to_model (ast : A.model) : M.model =
       assert false
   in
 
-  let extract_field_name (id, type_, body : A.lident * A.ptyp * A.pterm) : M.lident =
+  let extract_field_name (_id, _type_, body : A.lident * A.ptyp * A.pterm) : M.lident =
     match body.node with
     | A.Pdot (_, fn) -> fn
     | _ ->
@@ -230,7 +230,7 @@ let to_model (ast : A.model) : M.model =
     | A.Pcall (Some p, A.Cconst A.Citerated,  []) -> M.Msetiterated  (f p)
     | A.Pcall (Some p, A.Cconst A.Ctoiterate, []) -> M.Msettoiterate (f p)
 
-    | A.Pcall (aux, A.Cid id, args) ->
+    | A.Pcall (_, A.Cid id, args) ->
       M.Mapp (id, List.map (fun x -> term_arg_to_expr f x) args)
 
     | A.Pcall (Some p, A.Cconst (A.Csubsetof), [AExpr q]) ->
@@ -250,7 +250,7 @@ let to_model (ast : A.model) : M.model =
       let asset_name = extract_asset_name fp in
       M.Mget (asset_name, fq)
 
-    | A.Pcall (Some p, A.Cconst (A.Cselect), [AFun (qi, qt, q)]) ->
+    | A.Pcall (Some p, A.Cconst (A.Cselect), [AFun (_qi, _qt, q)]) ->
       let fp = f p in
       let fq = f q in
       let asset_name = extract_asset_name fp in
@@ -605,7 +605,7 @@ let to_model (ast : A.model) : M.model =
       let e = List.map (fun (a, b, c) -> (a, b, f c)) e in
       extract_letin p k e
 
-    | A.Icall (Some p, A.Cconst (A.Cremoveif), [AFun (qi, qtt, q)]) ->
+    | A.Icall (Some p, A.Cconst (A.Cremoveif), [AFun (_qi, _qtt, q)]) ->
       let fp = f p in
       let fq = f q in
       let asset_name = extract_asset_name fp in
@@ -731,7 +731,7 @@ let to_model (ast : A.model) : M.model =
     { sec with items = sec.items @ new_s.items; loc = new_s.loc; }
   in
 
-  let process_storage list =
+  let process_storage _ =
     let state_to_storage_items (es : A.enum list) l : M.storage_item list =
       let es = List.filter (fun (x : A.enum) -> match x.kind with | EKstate -> true | _ -> false ) es in
       match es with
@@ -958,7 +958,7 @@ let to_model (ast : A.model) : M.model =
           (List.fold_right (fun ((id, cond, effect) : (A.lident * A.pterm option * A.instruction option)) (acc : M.mterm) : M.mterm ->
                let tre : M.mterm =
                  match t.on with
-                 | Some (id, id_asset) ->
+                 | Some (_id, _id_asset) ->
                    (
                      (* let asset : M.mterm = M.mk_mterm (M.Mvarstorecol id_asset) (M.Tasset id_asset) in *)
 
@@ -1058,4 +1058,4 @@ let to_model (ast : A.model) : M.model =
     |> (fun sec -> List.fold_left (fun accu x -> cont_security x accu) sec ast.securities)
   in
 
-  M.mk_model ~info:info ~decls:decls ~functions:functions ~specification:specification ~security:security storage name
+  M.mk_model ~info:info ~decls:decls ~functions:functions ~specification:specification ~security:security ~storage:storage name

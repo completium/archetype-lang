@@ -44,7 +44,7 @@ let pp_str fmt str =
 
 let to_lident = dumloc
 
-let pp_nothing (fmt : Format.formatter) = ()
+let pp_nothing (_fmt : Format.formatter) = ()
 
 let pp_model fmt (model : model) =
 
@@ -129,7 +129,7 @@ let pp_model fmt (model : model) =
         an an
 
     | Add an ->
-      let k, t = Utils.get_asset_key model (to_lident an) in
+      let k, _t = Utils.get_asset_key model (to_lident an) in
       Format.fprintf fmt
         "def add_%s (self, asset):@\n\
          \t\tkey = asset.%a@\n\
@@ -157,7 +157,7 @@ let pp_model fmt (model : model) =
         an
 
     | UpdateAdd (an, fn) ->
-      let k, t = Utils.get_asset_key model (to_lident an) in
+      let k, _t = Utils.get_asset_key model (to_lident an) in
       Format.fprintf fmt
         "def add_%s_%s (s, asset, b):@\n\
          \t\tasset = asset.%s.insert(b)@\n\
@@ -167,7 +167,7 @@ let pp_model fmt (model : model) =
         an pp_str k
 
     | UpdateRemove (an, fn) ->
-      let k, t = Utils.get_asset_key model (to_lident an) in
+      let k, _t = Utils.get_asset_key model (to_lident an) in
       Format.fprintf fmt
         "def remove_%s_%s (s, asset, key):@\n\
          \t\tasset = asset.%s.pop(key)@\n\
@@ -308,7 +308,7 @@ let pp_model fmt (model : model) =
       in
       List.fold_right (fun (x : api_item) accu ->
           match x.node_item with
-          | APIFunction  (Select (an, p)) when contains_select_asset_name an accu -> accu
+          | APIFunction  (Select (an, _p)) when contains_select_asset_name an accu -> accu
           | _ -> x::accu
         ) l []
     in
@@ -412,7 +412,7 @@ let pp_model fmt (model : model) =
         pp fmt (c, k)
 
       | Mset (c, l, k, v) ->
-        let pp fmt (c, l, k, v) =
+        let pp fmt (c, _l, k, v) =
           Format.fprintf fmt "set_%a (self, %a, %a)"
             pp_str c
             f k
@@ -544,7 +544,7 @@ let pp_model fmt (model : model) =
         pp fmt (an, c, p)
 
       | Msort (an, c, fn, k) ->
-        let pp fmt (an, c, fn, k) =
+        let pp fmt (an, c, fn, _k) =
           Format.fprintf fmt "sort_%a_%a (%a)"
             pp_str an
             pp_str fn
@@ -598,7 +598,7 @@ let pp_model fmt (model : model) =
         pp fmt (an, c)
 
       | Msum (an, fd, c) ->
-        let pp fmt (an, fd, c) =
+        let pp fmt (an, fd, _c) =
           Format.fprintf fmt "sum_%a_%a (self)"
             pp_str an
             pp_id fd
@@ -708,7 +708,7 @@ let pp_model fmt (model : model) =
         in
         pp fmt e
 
-      | Mmulticomp (e, l) ->
+      | Mmulticomp (_e, _l) ->
         assert false
 
       | Mequal (l, r) ->
@@ -829,19 +829,19 @@ let pp_model fmt (model : model) =
                Format.fprintf fmt "%a = %a"
                  pp_id a
                  f b)) lll
-      | Mletin (ids, ({node = Mseq l} as a), t, b, _) ->
+      | Mletin (ids, ({node = Mseq _l} as a), t, b, _) ->
         Format.fprintf fmt "let %a%a =@\n%ain@\n@[%a@]"
           (pp_if (List.length ids > 1) (pp_paren (pp_list ", " pp_id)) (pp_list ", " pp_id)) ids
           (pp_option (fun fmt -> Format.fprintf fmt  " : %a" pp_type)) t
           f a
           f b
-      | Mletin (ids, a, t, b, _) ->
+      | Mletin (ids, a, _t, b, _) ->
         Format.fprintf fmt "%a = %a@\n%a"
           (pp_if (List.length ids > 1) (pp_paren (pp_list ", " pp_id)) (pp_list ", " pp_id)) ids
           (* (pp_option (fun fmt -> Format.fprintf fmt  " : %a" pp_type)) t *)
           f a
           f b
-      | Mdeclvar (ids, t, v) ->
+      | Mdeclvar (ids, _t, v) ->
         Format.fprintf fmt "%a = %a"
           (pp_if (List.length ids > 1) (pp_paren (pp_list ", " pp_id)) (pp_list ", " pp_id)) ids
           (* (pp_option (fun fmt -> Format.fprintf fmt  " : %a" pp_type)) t *)
@@ -902,7 +902,7 @@ let pp_model fmt (model : model) =
           pp_id i
           f c
           f b
-      | Miter (i, a, b, c, _) -> Format.fprintf fmt "TODO: iter@\n"
+      | Miter (_i, _a, _b, _c, _) -> Format.fprintf fmt "TODO: iter@\n"
       | Mfold (i, is, c, b) ->
         let t : lident option =
           match c with
@@ -916,7 +916,7 @@ let pp_model fmt (model : model) =
           "List.fold (fun (%a, (%a)) ->@\n\
            %a@[  %a@]) %a (%a)@\n"
           pp_id i (pp_list ", " pp_id) is
-          (pp_do_if cond (fun fmt c ->
+          (pp_do_if cond (fun fmt _c ->
                let an = Option.get t in
                Format.fprintf fmt "let %a : %a = get_%a (_s, %a) in  @\n"
                  pp_id i
@@ -955,7 +955,7 @@ let pp_model fmt (model : model) =
       | Mreturn x ->
         Format.fprintf fmt "return %a"
           f x
-      | Mlabel i -> ()
+      | Mlabel _i -> ()
       | Mshallow (i, x) ->
         Format.fprintf fmt "shallow_%a %a"
           pp_str i
@@ -995,7 +995,7 @@ let pp_model fmt (model : model) =
     in
     let fs = match f.node with
       | Entry f -> f
-      | Function (f, a) -> f
+      | Function (f, _a) -> f
     in
     Format.fprintf fmt "%adef %a%a:@\n\t\t%a"
       (pp_do_if (match f.node with | Entry _ -> true | _ -> false) pp_prelude_entrypoint) ()

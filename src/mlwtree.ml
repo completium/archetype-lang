@@ -660,8 +660,8 @@ let compare_abstract_term
   | Tcard (i1,e1), Tcard (i2,e2) -> cmpi i1 i2 && cmpe e1 e2
   | Tunshallow (i1,e1,f1), Tunshallow (i2,e2,f2) -> cmpi i1 i2 && cmpe e1 e2 && cmpe f1 f2
   | Tshallow (i1,e1,f1), Tshallow (i2,e2,f2) -> cmpi i1 i2 && cmpe e1 e2 && cmpe f1 f2
-  | Tmlist (e1,i1,i2,i3,e2), Tmlist (f1,j1,j2,j3,f2) ->
-    cmpe e1 f2 && cmpi i1 j1 && cmpi i2 j2 && cmpi i3 j3 && cmpe f1 f2
+  | Tmlist (e11,i11,i21,i31,e21), Tmlist (e12,i12,i22,i32,e22) ->
+    cmpe e11 e12 && cmpi i11 i12 && cmpi i21 i22 && cmpi i31 i32 && cmpe e21 e22
   | Tcons (e1,e2), Tcons (f1,f2) -> cmpe e1 f1 && cmpe e2 f2
   | Tadd (i1,e1,e2), Tadd (i2,f1,f2) -> cmpi i1 i2 && cmpe e1 f1 && cmpe e2 f2
   | Tremove (i1,e1,e2), Tremove (i2,f1,f2) -> cmpi i1 i2 && cmpe e1 f1 && cmpe e2 f2

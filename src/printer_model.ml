@@ -154,7 +154,7 @@ let pp_mterm fmt (mt : mterm) =
       pp fmt (c, k)
 
     | Mset (c, l, k, v) ->
-      let pp fmt (c, l, k, v) =
+      let pp fmt (c, _l, k, v) =
         Format.fprintf fmt "set_%a (%a, %a)"
           pp_str c
           f k

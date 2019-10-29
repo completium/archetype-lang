@@ -699,40 +699,42 @@ let map_gen g f i =
 let map_term  f t = map_gen_poly map_term_node  f t
 let map_instr f i = map_gen map_instr_node f i
 
+let fold_term_arg (f : 'id term_gen -> 'a -> 'a) (accu : 'a) (arg : 'id term_arg) =
+  match arg with
+  | AExpr e -> f accu e
+  | AFun (_, _, e) -> f accu e
+  | AEffect l -> List.fold_left (fun accu (_, _, e) -> f accu e) accu l
+  | ASorting _ -> accu
+
 let fold_term (f: 'a -> 't -> 'a) (accu : 'a) (term : 'id term_gen) =
   match term.node with
   | Pquantifer (_, _, _, e) -> f accu e
   | Pif (c, t, e)           -> f (f (f accu c) t) e
   | Pmatchwith (e, l)       -> List.fold_left (fun accu (_, a) -> f accu a) (f accu e) l
-  | Pcall (_, _, args)      -> List.fold_left (fun accu (arg : 'id term_arg) -> match arg with
-      | AExpr e -> f accu e
-      | AFun (_, _, e) -> f accu e
-      | AEffect l -> List.fold_left (fun accu (_, _, e) -> f accu e) accu l
-      | ASorting _ -> accu)
-      accu args
-  | Plogical (_, l, r)          -> f (f accu l) r
-  | Pnot e                      -> f accu e
-  | Pmulticomp (e, l)           -> List.fold_left (fun accu (_, a) -> f accu a) (f accu e) l
-  | Pcomp (_, l, r)             -> f (f accu l) r
-  | Parith (_, l, r)            -> f (f accu l) r
-  | Puarith (_, e)              -> f accu e
-  | Precord l                   -> List.fold_left f accu l
-  | Pletin (_, a, _, b, o)      -> let tmp = f (f accu a) b in Option.map_dfl (f tmp) tmp o
-  | Pdeclvar (i, t, v)          -> f accu v
-  | Pvar _                      -> accu
-  | Parray l                    -> List.fold_left f accu l
-  | Plit _                      -> accu
-  | Pdot (e, _)                 -> f accu e
-  | Pconst _                    -> accu
-  | Ptuple l                    -> List.fold_left f accu l
+  | Pcall (_, _, args)      -> List.fold_left (fold_term_arg f) accu args
+  | Plogical (_, l, r)      -> f (f accu l) r
+  | Pnot e                  -> f accu e
+  | Pmulticomp (e, l)       -> List.fold_left (fun accu (_, a) -> f accu a) (f accu e) l
+  | Pcomp (_, l, r)         -> f (f accu l) r
+  | Parith (_, l, r)        -> f (f accu l) r
+  | Puarith (_, e)          -> f accu e
+  | Precord l               -> List.fold_left f accu l
+  | Pletin (_, a, _, b, o)  -> let tmp = f (f accu a) b in Option.map_dfl (f tmp) tmp o
+  | Pdeclvar (_, _, v)      -> f accu v
+  | Pvar _                  -> accu
+  | Parray l                -> List.fold_left f accu l
+  | Plit _                  -> accu
+  | Pdot (e, _)             -> f accu e
+  | Pconst _                -> accu
+  | Ptuple l                -> List.fold_left f accu l
 
 let fold_instr f accu instr =
   match instr.node with
-  | Iif (c, t, e)      -> f (f accu t) e
-  | Ifor (i, c, b)     -> f accu b
-  | Iiter (i, a, b, c) -> f accu c
-  | Iletin (i, j, b)   -> f accu b
-  | Ideclvar (i, v)    -> accu
+  | Iif (_, t, e)      -> f (f accu t) e
+  | Ifor (_, _, b)     -> f accu b
+  | Iiter (_, _, _, c) -> f accu c
+  | Iletin (_, _, b)   -> f accu b
+  | Ideclvar (_, _)    -> accu
   | Iseq is            -> List.fold_left f accu is
   | Imatchwith _       -> accu
   | Iassign _          -> accu
@@ -747,10 +749,10 @@ let fold_instr f accu instr =
 let fold_instr_expr fi fe accu instr =
   match instr.node with
   | Iif (c, t, e)       -> fi (fi (fe accu c) t) e
-  | Ifor (i, c, b)      -> fi (fe accu c) b
-  | Iiter (i, a, b, c)  -> fi (fe (fe accu a) b) c
-  | Iletin (i, j, b)    -> fi (fe accu j) b
-  | Ideclvar (i, v)     -> fe accu v
+  | Ifor (_, c, b)      -> fi (fe accu c) b
+  | Iiter (_, a, b, c)  -> fi (fe (fe accu a) b) c
+  | Iletin (_, j, b)    -> fi (fe accu j) b
+  | Ideclvar (_, v)     -> fe accu v
   | Iseq is             -> List.fold_left fi accu is
   | Imatchwith (a, ps)  -> List.fold_left (fun accu (_, i) -> fi accu i) (fe accu a) ps
   | Iassign (_, _, e)   -> fe accu e
@@ -758,7 +760,7 @@ let fold_instr_expr fi fe accu instr =
   | Itransfer (x, _, _) -> fe accu x
   | Ibreak              -> accu
   | Iassert x           -> fe accu x
-  | Icall (x, id, args) -> fi accu instr
+  | Icall (x, _, args)  -> let accu = Option.map_dfl (fe accu) accu x in List.fold_left (fold_term_arg fe) accu args
   | Ireturn x           -> fe accu x
   | Ilabel x            -> fi accu x
 
@@ -779,8 +781,8 @@ let fold_map_term g f (accu : 'a) (term : 'id term_gen) : 'term * 'a =
     let (pse, psa) =
       List.fold_left
         (fun (ps, accu) (p, i) ->
-           let pa, accu = f accu i in
-           [(p, i)] @ ps, accu) ([], ea) l
+           let ia, accu = f accu i in
+           [(p, ia)] @ ps, accu) ([], ea) l
     in
 
     g (Pmatchwith (ee, pse)), psa
@@ -792,7 +794,6 @@ let fold_map_term g f (accu : 'a) (term : 'id term_gen) : 'term * 'a =
            let p, accu =
              match x with
              | AExpr a -> f accu a |> fun (x, acc) -> (Some (AExpr x), acc)
-             | AFun (_, _, e) -> assert false
              | _ -> None, accu in
            let x = match p with | Some a -> a | None -> x in
            pterms @ [x], accu) ([], accu) args
@@ -813,8 +814,8 @@ let fold_map_term g f (accu : 'a) (term : 'id term_gen) : 'term * 'a =
     let (le, la) =
       List.fold_left
         (fun (ps, accu) (p, i) ->
-           let pa, accu = f accu i in
-           [(p, i)] @ ps, accu) ([], ea) l
+           let ia, accu = f accu i in
+           [(p, ia)] @ ps, accu) ([], ea) l
     in
 
     g (Pmulticomp (ee, le)), la
@@ -880,7 +881,7 @@ let fold_map_term g f (accu : 'a) (term : 'id term_gen) : 'term * 'a =
            pterms @ [p], accu) ([], accu) l in
     g (Ptuple lp), la
 
-let fold_map_instr_term gi ge fi fe (accu : 'a) instr : 'id instruction_gen * 'a =
+let fold_map_instr_term gi _ge fi fe (accu : 'a) instr : 'id instruction_gen * 'a =
   match instr.node with
   | Iif (c, t, e) ->
     let ce, ca = fe accu c in
@@ -923,11 +924,11 @@ let fold_map_instr_term gi ge fi fe (accu : 'a) instr : 'id instruction_gen * 'a
     let (pse, psa) =
       List.fold_left
         (fun (ps, accu) (p, i) ->
-           let pa, accu = fi accu i in
-           [(p, i)] @ ps, accu) ([], aa) ps
+           let ia, accu = fi accu i in
+           [(p, ia)] @ ps, accu) ([], aa) ps
     in
 
-    gi (Imatchwith (ae, ps)), psa
+    gi (Imatchwith (ae, pse)), psa
 
   | Iassign (op, id, x) ->
     let xe, xa = fe accu x in

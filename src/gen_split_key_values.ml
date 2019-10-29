@@ -18,7 +18,7 @@ let split_key_values (model : model) : model =
     List.fold_right (fun x accu ->
         match x with
         | {asset = Some an; _} as f ->
-          let k, t = Utils.get_asset_key model an in
+          let _k, t = Utils.get_asset_key model an in
           let type_key = Tcontainer (Tbuiltin t, Collection) in
           let init_keys, init_assets =
             (* TODO: initialize with f.default value*)
@@ -51,7 +51,7 @@ let split_key_values (model : model) : model =
     | Mselect (an, col, pred) ->
       let col = f ctx col in
       let pred = f ctx pred in
-      let k, t = Utils.get_asset_key model (dumloc an) in
+      let _k, t = Utils.get_asset_key model (dumloc an) in
       { x with node = Mselect (an, col, pred); type_ = Tcontainer (Tbuiltin t, Collection)}
 
     | Mletin (ids, init, _, body, o) ->
@@ -62,12 +62,12 @@ let split_key_values (model : model) : model =
     | Mdotasset (e, i) ->
       let asset = Utils.get_asset_type e in
       let partitions = Utils.get_asset_partitions model (asset |> unloc) in
-      if List.exists (fun (pi, pt, pd) ->
+      if List.exists (fun (pi, _pt, _pd) ->
           compare (i |> unloc) pi = 0) partitions then
         let rec get_partition_type = function
-          | (pi,pt,pd)::tl
+          | (pi,pt,_pd)::_tl
             when compare (i |> unloc) pi = 0 -> pt
-          | r::tl -> get_partition_type tl
+          | _r::tl -> get_partition_type tl
           | [] -> assert false in
         let ty = get_partition_type partitions in
         let pa = Utils.dest_partition ty |> unloc in
@@ -79,7 +79,7 @@ let split_key_values (model : model) : model =
 
     | Mvarstorecol an ->
       (
-        let k, t = Utils.get_asset_key model an in
+        let _k, t = Utils.get_asset_key model an in
         { x with node = Mvarstorecol (lident_asset_keys an); type_ = Tcontainer (Tbuiltin t, Collection) }
       )
     | Mfor (id, col, body, lbl) ->
@@ -106,7 +106,7 @@ let split_key_values (model : model) : model =
         | Tcontainer (Tasset an, _) -> an
         | _ -> assert false
       in
-      let k, t = Utils.get_asset_key model an in
+      let _k, t = Utils.get_asset_key model an in
 
       let col = f ctx col in
       let body = f ctx body in

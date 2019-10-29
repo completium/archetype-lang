@@ -154,7 +154,7 @@ let mk_outline_post_options (post_options : PT.asset_post_option list) =
     | PT.APOconstraints l ->
       List.map (fun (x : PT.label_expr) ->
           let lo, v = Location.deloc x in
-          let id, formula = v in
+          let id, _formula = v in
           [mk_outline (Location.unloc id, symbol_kind_to_int Property, lo)]
         ) l
       |> List.flatten
