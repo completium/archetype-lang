@@ -232,7 +232,7 @@ let rec pp_pterm fmt (pterm : pterm) =
         Format.fprintf fmt "%a%a(%a)"
           (pp_option (pp_postfix "." pp_pterm)) meth
           pp_call_kind kind
-          (pp_list " " pp_term_arg) args
+          (pp_list ", " pp_term_arg) args
       in
       (pp_with_paren pp) fmt (meth, kind, args)
 
@@ -450,7 +450,7 @@ let rec pp_instruction fmt (i : instruction) =
       let pp fmt l =
         if List.is_empty l
         then pp_str fmt "()"
-        else (pp_list ";@\n" pp_instruction) fmt l
+        else pp_paren (pp_list ";@\n" pp_instruction) fmt l
       in
       (pp_with_paren pp) fmt l
 
@@ -518,7 +518,7 @@ let rec pp_instruction fmt (i : instruction) =
         Format.fprintf fmt "%a%a(%a)"
           (pp_option (pp_postfix "." pp_pterm)) meth
           pp_call_kind kind
-          (pp_list " " pp_term_arg) args
+          (pp_list ", " pp_term_arg) args
       in
       (pp_with_paren pp) fmt (meth, kind, args)
 
@@ -531,7 +531,7 @@ let rec pp_instruction fmt (i : instruction) =
 
     | Ilabel id ->
       let pp fmt id =
-        Format.fprintf fmt "label %a"
+        Format.fprintf fmt "assert %a" (** TODO: must be label *)
           pp_id id
       in
       (pp_with_paren pp) fmt id
@@ -574,7 +574,7 @@ let pp_specification fmt (v : lident specification) =
       (pp_option (pp_prefix " := " pp_pterm)) decl.default
   in
   let pp_invariant fmt (i : lident invariant) =
-    Format.fprintf fmt "invariants for %a {@\n  @[%a@]@\n}"
+    Format.fprintf fmt "invariant for %a {@\n  @[%a@]@\n}"
       pp_id i.label
       (pp_list ";@\n" pp_pterm) i.formulas
   in
@@ -585,15 +585,14 @@ let pp_specification fmt (v : lident specification) =
     (pp_do_if (match u with | [] -> false | _ -> true) (fun fmt -> Format.fprintf fmt "@\n  @[use: %a;@]" (pp_list "@ " pp_id))) fmt u
   in
   let pp_assert fmt (s : lident assert_) : unit =
-    Format.fprintf fmt "assert %a at %a = {@\n  @[%a@]%a%a@\n}"
+    Format.fprintf fmt "assert %a {@\n  @[%a@]%a%a@\n}"
       pp_id s.name
-      pp_id s.label
       pp_pterm s.formula
       pp_invariants s.invariants
       pp_use s.uses
   in
   let pp_postcondition fmt (s : lident postcondition) : unit =
-    Format.fprintf fmt "postcondition %a = {@\n  @[%a@]%a%a@\n}"
+    Format.fprintf fmt "postcondition %a {@\n  @[%a@]%a%a@\n}"
       pp_id s.name
       pp_pterm s.formula
       pp_invariants s.invariants
@@ -710,7 +709,7 @@ let pp_field fmt (f : lident decl_gen) =
     (pp_option (pp_prefix " := " pp_pterm)) f.default
 
 let pp_asset fmt (a : lident asset_struct) =
-  Format.fprintf fmt "asset %a%a%a = {@\n  @[%a@]@\n}%a%a%a@\n"
+  Format.fprintf fmt "asset %a%a%a {@\n  @[%a@]@\n}%a%a%a@\n"
     pp_id a.name
     (pp_option (pp_prefix " identified by " pp_id)) a.key
     (pp_do_if (not (List.is_empty a.sort)) (pp_prefix " sorted by " (pp_list ", " pp_id))) a.sort
@@ -789,7 +788,7 @@ let pp_function fmt (f : function_) =
     pp_instruction f.body
 
 let pp_transaction_action fmt (t : transaction) =
-  Format.fprintf fmt "action %a %a = {@\n  @[%a%a%a%a%a%a%a@]@\n}@\n"
+  Format.fprintf fmt "action %a %a {@\n  @[%a%a%a%a%a%a%a@]@\n}@\n"
     pp_id t.name
     (pp_list " " (fun fmt (x : lident decl_gen) ->
          Format.fprintf fmt "(%a : %a)"
@@ -811,7 +810,7 @@ let rec pp_sexpr fmt (sexpr : sexpr) =
   | Sany -> pp_str fmt "any"
 
 let pp_transaction_transition fmt (t : transaction) (tr : lident transition) =
-  Format.fprintf fmt "transition %a %a from %a%a = {@\n  @[%a%a%a%a%a%a@]@\n}@\n"
+  Format.fprintf fmt "transition %a %a from %a%a {@\n  @[%a%a%a%a%a%a@]@\n}@\n"
     pp_id t.name
     (pp_list " " (fun fmt (x : lident decl_gen) ->
          Format.fprintf fmt "(%a : %a)"
