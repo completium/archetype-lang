@@ -38,6 +38,6 @@ asset shipment {
   p_c      : p_contract
 } with states shipmentStatus
 
-transition payOut (arrival : date) on sk : shipment from In_transit {
+transition payOut (arrival : date) on (sk : shipment) from In_transit {
   to Arrived
 }

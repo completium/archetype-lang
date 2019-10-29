@@ -113,7 +113,7 @@ let extend_removeif (model : model) : model =
 
       let for_ = mk_mterm (Mfor (assetv_str, assets_var, remove, Some id)) Tunit in
 
-      let res : mterm__node = Mletin ([assets_var_name], select, Some type_assets, for_) in
+      let res : mterm__node = Mletin ([assets_var_name], select, Some type_assets, for_, None) in
       mk_mterm res Tunit
     | _ -> map_mterm (internal_extend ctx) t in
   map_mterm_model_gen [] internal_extend model |>
@@ -141,18 +141,24 @@ let extend_removeif (model : model) : model =
 let process_single_field_storage (model : model) : model =
   match model.storage with
   | [i] ->
-    let field_name = unloc i.name in
-    let storage_id = dumloc "_s" in
-    let rec aux (ctx : ctx_model) (mt : mterm) : mterm =
-      match mt.node with
-      | Mvarstorevar a when String.equal (unloc a) field_name ->
-        mk_mterm (Mvarlocal storage_id) mt.type_
-      | Massign (op, a, v) when String.equal (unloc a) field_name ->
-        let vv = map_mterm (aux ctx) v in
-        mk_mterm (Massign (op, storage_id, vv)) mt.type_
-      | _ -> map_mterm (aux ctx) mt
-    in
-    map_mterm_model aux model
+    begin
+      match i.id with
+      | SIname name ->
+        begin
+          let storage_id = dumloc "_s" in
+          let rec aux (ctx : ctx_model) (mt : mterm) : mterm =
+            match mt.node with
+            | Mvarstorevar a when String.equal (unloc a) (unloc name) ->
+              mk_mterm (Mvarlocal storage_id) mt.type_
+            | Massign (op, a, v) when String.equal (unloc a) (unloc name) ->
+              let vv = map_mterm (aux ctx) v in
+              mk_mterm (Massign (op, storage_id, vv)) mt.type_
+            | _ -> map_mterm (aux ctx) mt
+          in
+          map_mterm_model aux model
+        end
+      | SIstate -> model
+    end
   | _   -> model
 
 (* raises errors if direct update/add/remove to partitioned asset *)
@@ -194,7 +200,7 @@ let prune_properties (model : model) : model =
     let p_ids =
       fp_id::
       (match Model.Utils.retrieve_property model fp_id with
-       | Ppostcondition (p, f_id) -> List.map unloc p.uses
+       | Ppostcondition (p, _f_id) -> List.map unloc p.uses
        | _ -> [])
     in
 
@@ -206,9 +212,9 @@ let prune_properties (model : model) : model =
           |> List.map ((function | Entry fs -> fs | Function (fs, _) -> fs))
           |> List.map (fun (x : function_struct) -> unloc x.name) in
         let add l x = if List.mem x l then l else x::l in
-        List.fold_left (fun accu p_id ->
+        List.fold_left (fun accu _p_id ->
             match Model.Utils.retrieve_property model fp_id with
-            | Ppostcondition (p, Some f_id) -> add accu f_id
+            | Ppostcondition (_p, Some f_id) -> add accu f_id
             | Ppostcondition _     -> all_funs
             | PstorageInvariant _  -> all_funs
             | PsecurityPredicate _ -> all_funs
@@ -304,7 +310,7 @@ let replace_declvar_by_letin (model : model) : model =
                 | [i] -> i
                 | lll -> mk_mterm (Mseq accu) (List.last lll).type_
               in
-              let res = mk_mterm (Mletin(ids, init, t, body)) body.type_ in
+              let res = mk_mterm (Mletin(ids, init, t, body, None)) body.type_ in
               [ res ]
             end
           | _ ->
@@ -315,6 +321,43 @@ let replace_declvar_by_letin (model : model) : model =
         ) l [] in
       { mt with node = Mseq ll }
     | Mdeclvar _ -> assert false
+    | _ -> map_mterm (aux c) mt
+  in
+  Model.map_mterm_model aux model
+
+let remove_get_dot (model : model) : model =
+  let extract_get_dot (mt : mterm) : mterm * (lident * mterm) list =
+    let rec aux (accu : (lident * mterm) list) (mt : mterm) : mterm * (lident * mterm) list =
+      match mt.node with
+      | Mdotasset ({node = Mget _ ; _ } as v , id) ->
+        begin
+          let var_id = dumloc "a" in (* TODO: get a fresh id *)
+          let var = mk_mterm (Mvarlocal var_id) v.type_ in
+          let new_mt = mk_mterm (Mdotasset (var, id)) mt.type_ in
+          (new_mt, (var_id, v)::accu)
+        end
+      | _ ->
+        let g (x : mterm__node) : mterm = { mt with node = x; } in
+        Model.fold_map_term g aux accu mt
+    in
+    aux [] mt
+  in
+  let is_get_dot (mt : mterm) : bool =
+    mt
+    |> extract_get_dot
+    |> snd
+    |> List.is_not_empty
+  in
+  let rec aux c (mt : mterm) : mterm =
+    match mt.node with
+    | Mletin (ids, init, t, body, o) when is_get_dot init ->
+      begin
+        let (new_init, l) : mterm * (lident * mterm) list = extract_get_dot init in
+        List.fold_right
+          (fun (id, v) accu ->
+             mk_mterm (Mletin ([id], v, Some v.type_, accu, None)) accu.type_
+          ) l (mk_mterm (Mletin (ids, new_init, t, body, o)) mt.type_)
+      end
     | _ -> map_mterm (aux c) mt
   in
   Model.map_mterm_model aux model

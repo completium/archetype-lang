@@ -20,6 +20,7 @@ type type_r =
   | Tcontainer of type_t * container
   | Ttuple of type_t list
   | Toption of type_t
+  | Tkeyof of type_t
 [@@deriving yojson, show {with_path = false}]
 
 and type_t = type_r loced
@@ -119,7 +120,7 @@ type expr_unloc =
   | Eseq          of expr * expr
   | Eletin        of lident * type_t option * expr * expr * expr option
   | Evar          of lident * type_t option * expr
-  | Ematchwith    of expr * (pattern list * expr) list
+  | Ematchwith    of expr * branch list
   | Equantifier   of quantifier * lident * quantifier_kind * expr
   | Eassert       of lident
   | Elabel        of lident
@@ -127,6 +128,8 @@ type expr_unloc =
   | Eoption       of option_
   | Einvalid
 [@@deriving yojson, show {with_path = false}]
+
+and branch = (pattern list * expr)
 
 and scope = [
   | `Added
@@ -283,7 +286,6 @@ type enum_kind =
 type declaration_unloc =
   | Darchetype     of lident * exts
   | Dvariable      of variable_decl
-  | Dinstance      of instance_decl
   | Denum          of enum_kind * enum_decl
   | Dasset         of asset_decl
   | Daction        of action_decl
@@ -304,12 +306,6 @@ and variable_decl =
   * value_option list option
   * variable_kind
   * exts
-
-and instance_decl = (* instance[%exts%] var of contract_type = e *)
-  lident   (* var *)
-  * lident (* contract_type *)
-  * expr   (* e *)
-  * exts   (* exts *)
 
 and enum_decl =
   (lident * enum_option list) list * exts
@@ -332,7 +328,7 @@ and action_decl =
 and transition_decl =
   lident
   * args
-  * (lident * lident) option
+  * (lident * type_t) option
   * expr
   * action_properties
   * transition

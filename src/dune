@@ -17,7 +17,7 @@
   gen_reduce printer_model_ligo printer_model_smartpy printer_model_ocaml
   gen_why3 mlwtree printer_mlwtree why3ml_pp gen_ptree
   )
-  (libraries menhirLib digestif num str ppx_deriving yojson ppx_deriving_yojson.runtime why3)
+  (libraries menhirLib digestif num str ppx_deriving yojson ppx_deriving_yojson.runtime)
 )
 
 (executable

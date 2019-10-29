@@ -4,16 +4,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-
 ## [Unreleased]
+
+## [0.1.8] - 2018-10-25
 ### Added
  - Add variable declaration `var id = val`
+ - Typing for transition entry
 
 ### Changed
  - Update syntax for for and iter loop `for : loop i in col do ... done`
 
 ### Removed
  - Remove namespace syntax
+
+### Fixed
+ - Improve LIGO generation
+
 
 ## [0.1.6] - 2018-10-15
 ### Added

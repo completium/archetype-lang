@@ -19,6 +19,8 @@ let pair_map f g (x, y) = (f x, g y)
 
 let swap = fun (x, y) -> (y, x)
 
+let pair x y = (x, y)
+
 (* -------------------------------------------------------------------- *)
 module String : sig
   include module type of String
@@ -85,9 +87,11 @@ module Option : sig
   val get_list    : ('a option) list -> 'a list
   val iter        : ('a -> unit) -> 'a option -> unit
   val map         : ('a -> 'b) -> 'a option -> 'b option
+  val map2        : ('a -> 'b -> 'c) -> 'a option -> 'b option -> 'c option
   val bind        : ('a -> 'b option) -> 'a option -> 'b option
   val fold        : ('a -> 'b -> 'a) -> 'a -> 'b option -> 'a
   val foldmap     : ('a -> 'b -> 'a * 'c) -> 'a -> 'b option -> 'a * 'c option
+  val foldbind    : ('a -> 'b -> 'a * 'c option) -> 'a -> 'b option -> 'a * 'c option
   val map_dfl     : ('a -> 'b) -> 'b -> 'a option -> 'b
   val get_as_list : 'a option -> 'a list
   val flatten     : 'a option option -> 'a option
@@ -133,6 +137,11 @@ end = struct
 
   let map f = function None -> None | Some x -> Some (f x)
 
+  let map2 f x y =
+    match x, y with
+    | Some x, Some y -> Some (f x y)
+    | _     , _      -> None
+
   let bind f = function None -> None | Some x -> f x
 
   let fold f state = function None -> state | Some v -> f state v
@@ -140,6 +149,10 @@ end = struct
   let foldmap f state = function
     | None   -> state, None
     | Some v -> let state, aout = f state v in state, Some aout
+
+  let foldbind f state = function
+    | None   -> state, None
+    | Some v -> let state, aout = f state v in state, aout
 
   let map_dfl f n = function None -> n | Some x -> f x
 
@@ -165,6 +178,7 @@ module List : sig
   include module type of List
 
   val is_empty      : 'a list -> bool
+  val is_not_empty  : 'a list -> bool
   val as_seq1       : 'a list -> 'a option
   val as_seq2       : 'a list -> ('a * 'a) option
   val make          : (int -> 'a) -> int -> 'a list
@@ -174,6 +188,7 @@ module List : sig
   val find_dup      : ('a -> 'b) -> 'a list -> ('a * 'a) option
   val undup         : ('a -> 'b) -> 'a list -> 'a list
   val xfilter       : ('a -> [`Left of 'b | `Right of 'c]) -> 'a list -> 'b list * 'c list
+  val fold_lefti    : (int -> 'a -> 'b -> 'a) -> 'a -> 'b list -> 'a
   val fold_left_map : ('a -> 'b -> 'a * 'c) -> 'a -> 'b list -> 'a * 'c list
   val assoc_all     : 'a -> ('a * 'b) list -> 'b list
   val index_of      : ('a -> bool) -> 'a list -> int
@@ -189,6 +204,7 @@ end = struct
   include List
 
   let is_empty = function [] -> true | _ -> false
+  let is_not_empty x = not (is_empty x)
 
   let as_seq1 = function [x] -> Some x | _ -> None
   let as_seq2 = function [x; y] -> Some (x, y) | _ -> None
@@ -263,6 +279,9 @@ end = struct
 
     in fun xs -> doit ([], []) xs
 
+  let fold_lefti f state xs =
+    fst (List.fold_left (fun (state, i) x -> (f i state x, i+1)) (state, 0) xs)
+
   let fold_left_map f state xs =
     let state, xs =
       List.fold_left (fun (state, acc) x ->
@@ -314,6 +333,8 @@ module Map : sig
 
     val of_list : ?last:bool -> (key * 'a) list -> 'a t
     val collect : ('a -> key) -> ('a * 'b list) list -> ('a * 'b list) list
+    val mem     : key -> 'a t -> bool
+    val change  : key -> ('a option -> 'a) -> 'a t -> 'a t
   end
 end = struct
   module type OrderedType = Map.OrderedType
@@ -335,6 +356,15 @@ end = struct
       List.map
         (fun k -> (k, find (key k) map))
         (List.undup key (List.map fst xs))
+
+    let mem (k : key) (m : 'a t) : bool =
+      try  ignore (find k m : 'a); true
+      with Not_found -> false
+
+    let change (k : key) (f : 'a option -> 'a) (m : 'a t) : 'a t =
+      let v = try Some (find k m) with Not_found -> None in
+      add k (f v) m
+
   end
 end
 
@@ -346,6 +376,9 @@ module Mint = Map.Make(struct
     type t = int
     let compare = (Stdlib.compare : t -> t -> int)
   end)
+
+(* -------------------------------------------------------------------- *)
+module Mstr = Map.Make(String)
 
 (* -------------------------------------------------------------------- *)
 let norm_hex_string (s : string) =

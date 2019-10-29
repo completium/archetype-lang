@@ -144,7 +144,7 @@ let to_model (ast : A.model) : M.model =
       assert false
   in
 
-  let extract_field_name (id, type_, body : A.lident * A.ptyp * A.pterm) : M.lident =
+  let extract_field_name (_id, _type_, body : A.lident * A.ptyp * A.pterm) : M.lident =
     match body.node with
     | A.Pdot (_, fn) -> fn
     | _ ->
@@ -168,30 +168,30 @@ let to_model (ast : A.model) : M.model =
 
   let to_mterm_node (n : A.lident A.term_node) (f : A.lident A.term_gen -> M.mterm) (ftyp : 't -> M.type_) : (M.lident, M.mterm) M.mterm_node =
     match n with
-    | A.Pif (c, t, e)                -> M.Mif        (f c, f t, Some (f e))
-    | A.Pmatchwith (m, l)            -> M.Mmatchwith (f m, List.map (fun (p, e) -> (to_pattern p, f e)) l)
-    | A.Plogical (A.And, l, r)       -> M.Mand       (f l, f r)
-    | A.Plogical (A.Or, l, r)        -> M.Mor        (f l, f r)
-    | A.Plogical (A.Imply, l, r)     -> M.Mimply     (f l, f r)
-    | A.Plogical (A.Equiv, l, r)     -> M.Mequiv     (f l, f r)
-    | A.Pnot e                       -> M.Mnot       (f e)
-    | A.Pmulticomp (e, l)            -> M.Mmulticomp (f e, List.map (fun (op, e) -> (to_comparison op, f e)) l)
-    | A.Pcomp (A.Equal, l, r)        -> M.Mequal     (f l, f r)
-    | A.Pcomp (A.Nequal, l, r)       -> M.Mnequal    (f l, f r)
-    | A.Pcomp (A.Gt, l, r)           -> M.Mgt        (f l, f r)
-    | A.Pcomp (A.Ge, l, r)           -> M.Mge        (f l, f r)
-    | A.Pcomp (A.Lt, l, r)           -> M.Mlt        (f l, f r)
-    | A.Pcomp (A.Le, l, r)           -> M.Mle        (f l, f r)
-    | A.Parith (A.Plus, l, r)        -> M.Mplus      (f l, f r)
-    | A.Parith (A.Minus, l, r)       -> M.Mminus     (f l, f r)
-    | A.Parith (A.Mult, l, r)        -> M.Mmult      (f l, f r)
-    | A.Parith (A.Div, l, r)         -> M.Mdiv       (f l, f r)
-    | A.Parith (A.Modulo, l, r)      -> M.Mmodulo    (f l, f r)
-    | A.Puarith (A.Uplus, e)         -> M.Muplus     (f e)
-    | A.Puarith (A.Uminus, e)        -> M.Muminus    (f e)
-    | A.Precord l                    -> M.Mrecord    (List.map f l)
-    | A.Pletin (id, init, typ, cont) -> M.Mletin     ([id], f init, Option.map ftyp typ, f cont)
-    | A.Pdeclvar (i, t, v)           -> M.Mdeclvar   ([i], Option.map ftyp t, f v)
+    | A.Pif (c, t, e)                   -> M.Mif        (f c, f t, Some (f e))
+    | A.Pmatchwith (m, l)               -> M.Mmatchwith (f m, List.map (fun (p, e) -> (to_pattern p, f e)) l)
+    | A.Plogical (A.And, l, r)          -> M.Mand       (f l, f r)
+    | A.Plogical (A.Or, l, r)           -> M.Mor        (f l, f r)
+    | A.Plogical (A.Imply, l, r)        -> M.Mimply     (f l, f r)
+    | A.Plogical (A.Equiv, l, r)        -> M.Mequiv     (f l, f r)
+    | A.Pnot e                          -> M.Mnot       (f e)
+    | A.Pmulticomp (e, l)               -> M.Mmulticomp (f e, List.map (fun (op, e) -> (to_comparison op, f e)) l)
+    | A.Pcomp (A.Equal, l, r)           -> M.Mequal     (f l, f r)
+    | A.Pcomp (A.Nequal, l, r)          -> M.Mnequal    (f l, f r)
+    | A.Pcomp (A.Gt, l, r)              -> M.Mgt        (f l, f r)
+    | A.Pcomp (A.Ge, l, r)              -> M.Mge        (f l, f r)
+    | A.Pcomp (A.Lt, l, r)              -> M.Mlt        (f l, f r)
+    | A.Pcomp (A.Le, l, r)              -> M.Mle        (f l, f r)
+    | A.Parith (A.Plus, l, r)           -> M.Mplus      (f l, f r)
+    | A.Parith (A.Minus, l, r)          -> M.Mminus     (f l, f r)
+    | A.Parith (A.Mult, l, r)           -> M.Mmult      (f l, f r)
+    | A.Parith (A.Div, l, r)            -> M.Mdiv       (f l, f r)
+    | A.Parith (A.Modulo, l, r)         -> M.Mmodulo    (f l, f r)
+    | A.Puarith (A.Uplus, e)            -> M.Muplus     (f e)
+    | A.Puarith (A.Uminus, e)           -> M.Muminus    (f e)
+    | A.Precord l                       -> M.Mrecord    (List.map f l)
+    | A.Pletin (id, init, typ, body, o) -> M.Mletin     ([id], f init, Option.map ftyp typ, f body, Option.map f o)
+    | A.Pdeclvar (i, t, v)              -> M.Mdeclvar   ([i], Option.map ftyp t, f v)
     | A.Pvar (_, id) when A.Utils.is_variable ast id   -> M.Mvarstorevar id
     | A.Pvar (_, id) when A.Utils.is_asset ast id      -> M.Mvarstorecol id
     | A.Pvar (_, id) when A.Utils.is_enum_value ast id -> M.Mvarenumval id
@@ -210,7 +210,7 @@ let to_model (ast : A.model) : M.model =
     | A.Pdot (d, i) ->
       (* handle dot contract too *)
       M.Mdotasset (f d, i)
-    | A.Pconst Cstate                        -> M.Mstate
+    | A.Pconst Cstate                        -> M.Mvarstate
     | A.Pconst Cnow                          -> M.Mnow
     | A.Pconst Ctransferred                  -> M.Mtransferred
     | A.Pconst Ccaller                       -> M.Mcaller
@@ -230,7 +230,7 @@ let to_model (ast : A.model) : M.model =
     | A.Pcall (Some p, A.Cconst A.Citerated,  []) -> M.Msetiterated  (f p)
     | A.Pcall (Some p, A.Cconst A.Ctoiterate, []) -> M.Msettoiterate (f p)
 
-    | A.Pcall (aux, A.Cid id, args) ->
+    | A.Pcall (_, A.Cid id, args) ->
       M.Mapp (id, List.map (fun x -> term_arg_to_expr f x) args)
 
     | A.Pcall (Some p, A.Cconst (A.Csubsetof), [AExpr q]) ->
@@ -250,7 +250,7 @@ let to_model (ast : A.model) : M.model =
       let asset_name = extract_asset_name fp in
       M.Mget (asset_name, fq)
 
-    | A.Pcall (Some p, A.Cconst (A.Cselect), [AFun (qi, qt, q)]) ->
+    | A.Pcall (Some p, A.Cconst (A.Cselect), [AFun (_qi, _qt, q)]) ->
       let fp = f p in
       let fq = f q in
       let asset_name = extract_asset_name fp in
@@ -326,7 +326,7 @@ let to_model (ast : A.model) : M.model =
         A.pp_const c
         (List.length args)
         (Printer_tools.pp_list "; " (fun fmt x ->
-             let str = match x with | A.AExpr _ -> "AExpr" | A.AEffect _ -> "AEffect" | A.AFun _ -> "AFun" in
+             let str = match x with | A.AExpr _ -> "AExpr" | A.AEffect _ -> "AEffect" | A.AFun _ -> "AFun" | A.ASorting _ -> "ASorting" in
              Printer_tools.pp_str fmt str)) args
         (match aux with | Some _ -> "with aux" | _ -> "without aux");
       assert false
@@ -413,7 +413,8 @@ let to_model (ast : A.model) : M.model =
     let letinasset : M.mterm = M.mk_mterm (M.Mletin ([var_name],
                                                      record,
                                                      Some (type_asset),
-                                                     set_mterm
+                                                     set_mterm,
+                                                     None
                                                     )) Tunit in
 
     (* let seq : M.mterm list = (List.map (fun ((id, op, term) : ('a * A.operator * 'c)) -> M.mk_mterm
@@ -433,7 +434,8 @@ let to_model (ast : A.model) : M.model =
     let letinasset : M.mterm = M.mk_mterm (M.Mletin ([var_name],
                                                      get_mterm,
                                                      Some (type_asset),
-                                                     letinasset
+                                                     letinasset,
+                                                     None
                                                     ))
         Tunit in
 
@@ -444,7 +446,8 @@ let to_model (ast : A.model) : M.model =
         M.Mletin ([key_loced],
                   k,
                   None,
-                  letinasset
+                  letinasset,
+                  None
                  ) in
     res
 
@@ -538,11 +541,12 @@ let to_model (ast : A.model) : M.model =
     | A.Iif (c, t, e)           -> M.Mif (f c, g t, Some (g e))
     | A.Ifor (i, col, body)     -> M.Mfor (i, f col, g body, lbl)
     | A.Iiter (i, a, b, body)   -> M.Miter (i, f a, f b, g body, lbl)
-    | A.Iletin (i, init, cont)  -> M.Mletin ([i], f init, Option.map ptyp_to_type init.type_, g cont) (* TODO *)
+    | A.Iletin (i, init, cont)  -> M.Mletin ([i], f init, Option.map ptyp_to_type init.type_, g cont, None) (* TODO *)
     | A.Ideclvar (i, v)         -> M.Mdeclvar ([i], Option.map ptyp_to_type v.type_, f v) (* TODO *)
     | A.Iseq l                  -> M.Mseq (List.map g l)
     | A.Imatchwith (m, l)       -> M.Mmatchwith (f m, List.map (fun (p, i) -> (to_pattern p, g i)) l)
-    | A.Iassign (op, i, e)      -> M.Massign (to_assignment_operator op, i, to_mterm e)
+    | A.Iassign (op, `Var x, e) -> M.Massign (to_assignment_operator op, x, to_mterm e)
+    | A.Iassign (op, `Field (nm, x), e) -> M.Massignfield (to_assignment_operator op, to_mterm nm, x, to_mterm e)
     | A.Irequire (b, t)         ->
       let cond : M.mterm =
         if b
@@ -601,7 +605,7 @@ let to_model (ast : A.model) : M.model =
       let e = List.map (fun (a, b, c) -> (a, b, f c)) e in
       extract_letin p k e
 
-    | A.Icall (Some p, A.Cconst (A.Cremoveif), [AFun (qi, qtt, q)]) ->
+    | A.Icall (Some p, A.Cconst (A.Cremoveif), [AFun (_qi, _qtt, q)]) ->
       let fp = f p in
       let fq = f q in
       let asset_name = extract_asset_name fp in
@@ -612,7 +616,7 @@ let to_model (ast : A.model) : M.model =
         A.pp_const c
         (List.length args)
         (Printer_tools.pp_list "; " (fun fmt (x : A.pterm_arg) ->
-             let str = match x with | AExpr _ -> "AExpr" | AEffect _ -> "AEffect" | AFun _ -> "AFun" in
+             let str = match x with | AExpr _ -> "AExpr" | AEffect _ -> "AEffect" | AFun _ -> "AFun" | ASorting _ -> "ASorting" in
              Printer_tools.pp_str fmt str)) args
         (match aux with | Some _ -> "with aux" | _ -> "without aux");
       assert false
@@ -620,7 +624,7 @@ let to_model (ast : A.model) : M.model =
 
   let rec to_instruction (instr : A.instruction) : M.mterm =
     let node = to_instruction_node instr.node instr.label to_instruction to_mterm in
-    M.mk_mterm node (M.Tunit) ~subvars:instr.subvars ~loc:instr.loc
+    M.mk_mterm node (M.Tunit) ~loc:instr.loc
   in
 
   let to_predicate (p : A.lident A.predicate) : M.predicate =
@@ -727,7 +731,26 @@ let to_model (ast : A.model) : M.model =
     { sec with items = sec.items @ new_s.items; loc = new_s.loc; }
   in
 
-  let process_storage list =
+  let process_storage _ =
+    let state_to_storage_items (es : A.enum list) l : M.storage_item list =
+      let es = List.filter (fun (x : A.enum) -> match x.kind with | EKstate -> true | _ -> false ) es in
+      match es with
+      | [] -> l
+      | [e] ->
+        begin
+          let init_val = List.fold_left (fun accu (x : A.lident A.enum_item_struct) ->
+              match x.initial with
+              | true -> Some x.name
+              | _ -> accu
+            ) None e.items in
+          let iv = Option.get init_val in
+          let dv = M.mk_mterm (M.Mvarlocal iv) (M.Tstate) in
+          let field = M.mk_storage_item M.SIstate Tstate dv in
+          field::l
+        end
+      | _ -> assert false
+    in
+
     let variable_to_storage_items (var : A.lident A.variable) : M.storage_item =
 
       let init_ b =
@@ -760,6 +783,7 @@ let to_model (ast : A.model) : M.model =
         | M.Tprog _           -> emit_error (NoInitExprFor "prog")
         | M.Tvset _           -> emit_error (NoInitExprFor "vset")
         | M.Ttrace _          -> emit_error (NoInitExprFor "trace")
+        | M.Tstate            -> emit_error (NoInitExprFor "state")
       in
 
       let arg = var.decl in
@@ -770,14 +794,14 @@ let to_model (ast : A.model) : M.model =
         | Some v -> to_mterm v
         | None   -> init_default_value typ
       in
-      M.mk_storage_item arg.name typ dv
+      M.mk_storage_item (M.SIname arg.name) typ dv
     in
 
     let asset_to_storage_items (asset : A.asset) : M.storage_item =
       let asset_name = asset.name in
       let typ_ = M.Tcontainer (Tasset asset_name, Collection) in
       M.mk_storage_item
-        asset_name
+        (M.SIname asset_name)
         typ_
         (M.mk_mterm (M.Marray []) typ_)
         ~asset:asset_name
@@ -786,6 +810,7 @@ let to_model (ast : A.model) : M.model =
 
     let cont f x l = l @ (List.map f x) in
     []
+    |> state_to_storage_items (ast.enums)
     |> cont variable_to_storage_items ast.variables
     |> cont asset_to_storage_items ast.assets
   in
@@ -929,12 +954,11 @@ let to_model (ast : A.model) : M.model =
           | Some (id, id2) -> args @ [(id, M.Tasset id2, None)]
           | None -> args
         in
-        let state : M.lident = dumloc "_state" in
         let build_code (body : M.mterm) : M.mterm =
           (List.fold_right (fun ((id, cond, effect) : (A.lident * A.pterm option * A.instruction option)) (acc : M.mterm) : M.mterm ->
                let tre : M.mterm =
                  match t.on with
-                 | Some (id, id_asset) ->
+                 | Some (_id, _id_asset) ->
                    (
                      (* let asset : M.mterm = M.mk_mterm (M.Mvarstorecol id_asset) (M.Tasset id_asset) in *)
 
@@ -946,14 +970,14 @@ let to_model (ast : A.model) : M.model =
 
                      (* M.mk_mterm (M.Mcall Icall (Some asset, Cconst Cupdate, args)) Tunit *)
 
-                     emit_error TODO
+                     assert false
                    )
                  | _ ->
-                   let a : M.mterm = M.mk_mterm (M.Mvarlocal id) (M.Tbuiltin Bbool) ~loc:(Location.loc id) in
-                   M.mk_mterm (M.Massign (ValueAssign, state, a)) Tunit in
+                   let a : M.mterm = M.mk_mterm (M.Mvarlocal id) (M.Tstate) ~loc:(Location.loc id) in
+                   M.mk_mterm (M.Massignstate a) Tunit in
                let code : M.mterm =
                  match effect with
-                 | Some e -> M.mk_mterm (M.Mseq [tre; to_instruction e]) Tunit
+                 | Some e -> M.mk_mterm (M.Mseq [to_instruction e; tre]) Tunit
                  | None -> tre
                in
 
@@ -981,8 +1005,8 @@ let to_model (ast : A.model) : M.model =
               let pattern : M.pattern = M.mk_pattern M.Pwild in
               let fail_instr : M.mterm = fail InvalidState in
 
-              let w = M.mk_mterm (M.Mvarstorevar state) (Tenum (dumloc "_state")) in
-              M.mk_mterm (M.Mmatchwith (w, List.map (fun x -> (x, code)) list_patterns @ [pattern, fail_instr])) Tunit
+              let w = M.mk_mterm (M.Mvarstate) Tstate in
+              M.mk_mterm (M.Mmatchwith (w, List.map (fun x -> (x, body)) list_patterns @ [pattern, fail_instr])) Tunit
             end
         in
         args, body
@@ -1034,4 +1058,4 @@ let to_model (ast : A.model) : M.model =
     |> (fun sec -> List.fold_left (fun accu x -> cont_security x accu) sec ast.securities)
   in
 
-  M.mk_model ~info:info ~decls:decls ~functions:functions ~specification:specification ~security:security storage name
+  M.mk_model ~info:info ~decls:decls ~functions:functions ~specification:specification ~security:security ~storage:storage name

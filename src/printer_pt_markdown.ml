@@ -45,7 +45,7 @@ let pp_archetype fmt pt =
     in
 
     let pp_roles fmt _ =
-      let pp_variable_decl fmt (id, type_, dv, vos, variable_kind, exts : variable_decl) =
+      let pp_variable_decl fmt (id, _type_, dv, _vos, variable_kind, exts : variable_decl) =
         Format.fprintf fmt
           "### %a@\n@\n\
            | Attribute              | Value  |@\n\
@@ -85,7 +85,7 @@ let pp_archetype fmt pt =
         let fields = fields |> List.map unloc in
         let pp_asset_field fmt (f : field_unloc) =
           match f with
-          | Ffield (id, type_, dv, exts) ->
+          | Ffield (id, type_, _dv, _exts) ->
             let attributes : ident list =
               []
               |>
@@ -122,7 +122,7 @@ let pp_archetype fmt pt =
 
     let pp_called_by = (pp_option (fun fmt (x, _) -> Format.fprintf fmt "`called by ` %a@\n" pp_expr x)) in
     let pp_actions fmt _ =
-      let pp_action_decl fmt ((name, args, action_properties, _ , exts) : action_decl) =
+      let pp_action_decl fmt ((name, args, action_properties, _ , _exts) : action_decl) =
         let pp_formula fmt (label, f : ident * expr) =
           Format.fprintf fmt "##### %a@\n`%a`"
             pp_str label
@@ -196,7 +196,7 @@ let pp_archetype fmt pt =
     in
 
     let pp_transitions fmt _ =
-      let pp_transition_decl fmt (name, args, _, _, action_properties, transitions, exts : transition_decl) =
+      let pp_transition_decl fmt (name, _args, _, _, action_properties, _transitions, _exts : transition_decl) =
         Format.fprintf fmt "### %a@\n" pp_id name;
         pp_called_by fmt action_properties.calledby;
       in
@@ -277,7 +277,7 @@ let pp_archetype fmt pt =
   match unloc pt with
   | Marchetype es ->
     pp_marchetype fmt es
-  | Mextension (id, ds, es) -> ()
+  | Mextension (_id, _ds, _es) -> ()
 
 (* -------------------------------------------------------------------------- *)
 let string_of__of_pp pp x =

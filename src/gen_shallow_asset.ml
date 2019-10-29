@@ -62,7 +62,7 @@ let gen_shallow_args (m : M.model) (id : M.lident) (t : M.type_) (arg : M.argume
         [] in
     (acc_ctx,shallow_args)
   | M.Tcontainer (Tasset i, Collection) ->
-    let k,kt = M.Utils.get_asset_key m i in
+    let _k,kt = M.Utils.get_asset_key m i in
     let arg = (id,M.Tcontainer (M.Tbuiltin kt,Collection),None) in
     let arg_values = (dumloc ((unloc id)^"_values"),M.Tcontainer (Tasset i, Collection),None) in
     let shallow_args = gen_shallow_args m 1 (unloc id) t [arg;arg_values] in
@@ -181,7 +181,7 @@ let rec map_shallow (ctx : (I.ident * (M.lident * M.type_) list) list) m (t : M.
         let shallow_args = map_shallow_record m ctx v in
         M.Mapp (dumloc ("add_shallow_"^n^"_"^f),[a] @ shallow_args)
       else M.Maddfield (n,f,a,v)
-    | M.Mletin ([id],v,t,b) when M.Utils.is_record v ->
+    | M.Mletin ([id],v,t,b,o) when M.Utils.is_record v ->
       begin
         match v.type_ with
         | Tasset a when M.Utils.has_partition m (unloc a) ->
@@ -191,19 +191,20 @@ let rec map_shallow (ctx : (I.ident * (M.lident * M.type_) list) list) m (t : M.
           M.Mletin ([id],
                     List.hd shallow_args,
                     Some (Tasset a),
-                    map_letin_shallow m new_ctx b new_letins)
-        | _ -> M.Mletin ([id],v,t,map_shallow ctx m b)
+                    map_letin_shallow m new_ctx b new_letins,
+                    None)
+        | _ -> M.Mletin ([id],v,t,map_shallow ctx m b,o)
       end
     | M.Mdotasset (e,i) ->
       let asset = M.Utils.get_asset_type e in
       let partitions = M.Utils.get_asset_partitions m (asset |> unloc) in
       begin
-        if List.exists (fun (pi,pt,pd) ->
+        if List.exists (fun (pi,_pt,_pd) ->
             compare (i |> unloc) pi = 0) partitions then
           let rec get_partition_type = function
-            | (pi,pt,pd)::tl
+            | (pi,pt,_pd)::_tl
               when compare (i |> unloc) pi = 0 -> pt
-            | r::tl -> get_partition_type tl
+            | _r::tl -> get_partition_type tl
             | [] -> assert false in
           let ty = get_partition_type partitions in
           let pa = M.Utils.dest_partition ty |> unloc in
@@ -215,14 +216,14 @@ let rec map_shallow (ctx : (I.ident * (M.lident * M.type_) list) list) m (t : M.
   in
   M.mk_mterm ~loc:(t.loc) t_gen t.type_
 and map_letin_shallow m ctx b = function
-  | (id,v)::tl -> M.mk_mterm (M.Mletin ([id],v,None,map_letin_shallow m ctx b tl)) v.type_
+  | (id,v)::tl -> M.mk_mterm (M.Mletin ([id],v,None,map_letin_shallow m ctx b tl,None)) v.type_
   | [] -> map_shallow ctx m b
 
 let process_shallow_function m f =
   let args = M.Utils.get_function_args f in
   (* mk initial context and shallowed arguments *)
   let (ctx,args) = List.fold_left (fun (ctx,acc) arg ->
-      let (id,t,e) = arg in
+      let (id,t,_e) = arg in
       let (acc_ctx,shallow_args) = gen_shallow_args m id t arg in
       (ctx @ acc_ctx, acc @ shallow_args)
     ) ([],[]) args in
@@ -233,7 +234,7 @@ let process_shallow_function m f =
 let rec gen_add_shallow_asset (arg : M.argument) : M.mterm =
   let tnode =
     match arg with
-    | id, Tasset a,_ ->
+    | _id, Tasset a,_ ->
       M.Maddasset (unloc a,
                    M.mk_mterm (M.Mvarlocal a) (Tcontainer (Tasset a, Collection)))
     | id,Tcontainer (Tasset a,_),_ ->
@@ -267,7 +268,7 @@ let gen_add_shallow_fun (model : M.model) (n : I.ident) : M.function__ =
   }
 
 let gen_add_shallow_field_fun (model : M.model) (n,f : I.ident * I.ident) : M.function__ =
-  let pa,k,kt = M.Utils.get_partition_asset_key model (dumloc n) (dumloc f) in
+  let pa,_k,_kt = M.Utils.get_partition_asset_key model (dumloc n) (dumloc f) in
   let arg    = (dumloc "added_asset",M.Tasset (dumloc pa),None) in
   let _,asset_args = gen_shallow_args model (dumloc "added_asset") (Tasset (dumloc pa)) arg in
   let asset_arg = (dumloc "asset",M.Tasset (dumloc n),None) in

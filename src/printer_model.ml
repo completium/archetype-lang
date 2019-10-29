@@ -31,6 +31,8 @@ let rec pp_type fmt t =
   match t with
   | Tasset an ->
     Format.fprintf fmt "%a" pp_id an
+  | Tstate ->
+    Format.fprintf fmt "state"
   | Tenum en ->
     Format.fprintf fmt "%a" pp_id en
   | Tcontract cn ->
@@ -152,7 +154,7 @@ let pp_mterm fmt (mt : mterm) =
       pp fmt (c, k)
 
     | Mset (c, l, k, v) ->
-      let pp fmt (c, l, k, v) =
+      let pp fmt (c, _l, k, v) =
         Format.fprintf fmt "set_%a (%a, %a)"
           pp_str c
           f k
@@ -559,12 +561,13 @@ let pp_mterm fmt (mt : mterm) =
     | Mrecord l ->
       Format.fprintf fmt "{%a}"
         (pp_list "; " f) l
-    | Mletin (ids, a, t, b) ->
-      Format.fprintf fmt "let %a%a = %a in@\n%a"
+    | Mletin (ids, a, t, b, o) ->
+      Format.fprintf fmt "let %a%a = %a in@\n%a%a"
         (pp_list ", " pp_id) ids
         (pp_option (fun fmt -> Format.fprintf fmt  " : %a" pp_type)) t
         f a
         f b
+        (pp_option (fun fmt -> Format.fprintf fmt " otherwise %a" f)) o
     | Mdeclvar (ids, t, v) ->
       Format.fprintf fmt "var %a%a = %a"
         (pp_list ", " pp_id) ids
@@ -577,7 +580,7 @@ let pp_mterm fmt (mt : mterm) =
     | Mvarlocal v    -> pp_id fmt v
     | Mvarparam v    -> pp_id fmt v
     | Mvarthe        -> pp_str fmt "the"
-    | Mstate         -> pp_str fmt "state"
+    | Mvarstate      -> pp_str fmt "state"
     | Mnow           -> pp_str fmt "now"
     | Mtransferred   -> pp_str fmt "transferred"
     | Mcaller        -> pp_str fmt "caller"
@@ -649,10 +652,13 @@ let pp_mterm fmt (mt : mterm) =
         f r
     | Massignfield (op, a, field , r) ->
       Format.fprintf fmt "%a.%a %a %a"
-        pp_id a
+        f a
         pp_id field
         pp_operator op
         f r
+    | Massignstate x ->
+      Format.fprintf fmt "state = %a"
+        f x
     | Mtransfer (x, b, q) ->
       Format.fprintf fmt "transfer%s %a%a"
         (if b then " back" else "")
@@ -882,7 +888,7 @@ let pp_label_term fmt (lt : label_term) =
 
 let pp_storage_item fmt (si : storage_item) =
   Format.fprintf fmt "%a : %a%a%a"
-    pp_id si.name
+    pp_str (Model.Utils.get_storage_id_name si.id)
     pp_type si.typ
     (fun fmt -> Format.fprintf fmt " := %a" pp_mterm) si.default
     (pp_do_if (not (List.is_empty si.invariants)) (fun fmt xs -> Format.fprintf fmt " with {%a}" (pp_list "; " pp_label_term) xs)) si.invariants

@@ -45,7 +45,7 @@ let pp_str fmt str =
 
 let to_lident = dumloc
 
-let pp_nothing (fmt : Format.formatter) = ()
+let pp_nothing (_fmt : Format.formatter) = ()
 
 let pp_model fmt (model : model) =
   let remove_shallow (model : model) : model =
@@ -111,6 +111,8 @@ let pp_model fmt (model : model) =
     match t with
     | Tasset an ->
       Format.fprintf fmt "%a" pp_id an
+    | Tstate ->
+      Format.fprintf fmt "state"
     | Tenum en ->
       Format.fprintf fmt "%a" pp_id en
     | Tcontract cn ->
@@ -164,7 +166,7 @@ let pp_model fmt (model : model) =
         an an
 
     | Add an ->
-      let k, t = Utils.get_asset_key model (to_lident an) in
+      let k, _t = Utils.get_asset_key model (to_lident an) in
       Format.fprintf fmt
         "let add_%s (s, asset : storage * %s) : storage =@\n  \
          let key = asset.%s in@\n  \
@@ -208,8 +210,8 @@ let pp_model fmt (model : model) =
         an an
 
     | UpdateAdd (an, fn) ->
-      let k, t = Utils.get_asset_key model (to_lident an) in
-      let ft, c = Utils.get_field_container model an fn in
+      let k, _t = Utils.get_asset_key model (to_lident an) in
+      let ft, _c = Utils.get_field_container model an fn in
       let kk, _ = Utils.get_asset_key model (to_lident ft) in
       Format.fprintf fmt
         "let add_%s_%s (s, a, b : storage * %s * %s) : storage =@\n  \
@@ -220,9 +222,9 @@ let pp_model fmt (model : model) =
         an pp_str k an
 
     | UpdateRemove (an, fn) ->
-      let k, t = Utils.get_asset_key model (to_lident an) in
-      let ft, c = Utils.get_field_container model an fn in
-      let kk, tt = Utils.get_asset_key model (to_lident ft) in
+      let k, _t = Utils.get_asset_key model (to_lident an) in
+      let ft, _c = Utils.get_field_container model an fn in
+      let _kk, tt = Utils.get_asset_key model (to_lident ft) in
       Format.fprintf fmt
         "let remove_%s_%s (s, a, key : storage * %s * %a) : storage =@\n  \
          let asset = { a with %s = remove_list key a.%s } in@\n  \
@@ -232,7 +234,7 @@ let pp_model fmt (model : model) =
         an pp_str k an
 
     | UpdateClear (an, fn) ->
-      let k, t = Utils.get_asset_key model (to_lident an) in
+      let k, _t = Utils.get_asset_key model (to_lident an) in
       Format.fprintf fmt
         "let clear_%s_%s (s, a : storage * %s) : storage =@\n  \
          let key = a.%s in@\n  \
@@ -246,7 +248,7 @@ let pp_model fmt (model : model) =
         an k an
 
     | UpdateReverse (an, fn) ->
-      let k, t = Utils.get_asset_key model (to_lident an) in
+      let k, _t = Utils.get_asset_key model (to_lident an) in
       Format.fprintf fmt
         "let reverse_%s_%s (s, a : storage * %s) : storage =@\n  \
          let key = a.%s in@\n  \
@@ -547,7 +549,7 @@ let pp_model fmt (model : model) =
           then accu
           else
             match x.node_item with
-            | APIFunction  (Select (an, p)) when contains_select_asset_name an accu -> accu
+            | APIFunction  (Select (an, _p)) when contains_select_asset_name an accu -> accu
             | _ -> x::accu
         ) l []
     in
@@ -645,7 +647,7 @@ let pp_model fmt (model : model) =
         in
         pp fmt (c, k)
 
-      | Mset (c, l, k, v) ->
+      | Mset (c, _l, k, v) ->
         let pp fmt (c, k, v) =
           Format.fprintf fmt "set_%a (_s, %a, %a)"
             pp_str c
@@ -778,7 +780,7 @@ let pp_model fmt (model : model) =
         pp fmt (an, c, p)
 
       | Msort (an, c, fn, k) ->
-        let pp fmt (an, c, fn, k) =
+        let pp fmt (an, c, fn, _k) =
           Format.fprintf fmt "sort_%a_%a (%a)"
             pp_str an
             pp_str fn
@@ -942,7 +944,7 @@ let pp_model fmt (model : model) =
         in
         pp fmt e
 
-      | Mmulticomp (e, l) ->
+      | Mmulticomp (_e, _l) ->
         assert false
 
       | Mequal (l, r) ->
@@ -1063,19 +1065,19 @@ let pp_model fmt (model : model) =
                Format.fprintf fmt "%a = %a"
                  pp_id a
                  f b)) lll
-      | Mletin (ids, ({node = Mseq l} as a), t, b) ->
+      | Mletin (ids, ({node = Mseq _l} as a), t, b, _) ->
         Format.fprintf fmt "let %a%a =@\n  @[%a@]in@\n@[%a@]"
           (pp_if (List.length ids > 1) (pp_paren (pp_list ", " pp_id)) (pp_list ", " pp_id)) ids
           (pp_option (fun fmt -> Format.fprintf fmt  " : %a" pp_type)) t
           f a
           f b
-      | Mletin (ids, a, t, b) ->
+      | Mletin (ids, a, t, b, _) ->
         Format.fprintf fmt "let %a%a = %a in@\n@[%a@]"
           (pp_if (List.length ids > 1) (pp_paren (pp_list ", " pp_id)) (pp_list ", " pp_id)) ids
           (pp_option (fun fmt -> Format.fprintf fmt  " : %a" pp_type)) t
           f a
           f b
-      | Mdeclvar (ids, t, v) ->
+      | Mdeclvar (_ids, _t, _v) ->
         emit_error UnsupportedDeclVar
       | Mvarstorevar v -> Format.fprintf fmt "_s.%a" pp_id v
       | Mvarstorecol v -> Format.fprintf fmt "_s.%a" pp_id v
@@ -1084,7 +1086,7 @@ let pp_model fmt (model : model) =
       | Mvarlocal v    -> pp_id fmt v
       | Mvarparam v    -> pp_id fmt v
       | Mvarthe        -> pp_str fmt "the"
-      | Mstate         -> pp_str fmt "state"
+      | Mvarstate      -> pp_str fmt "state_"
       | Mnow           -> pp_str fmt "Current.time()"
       | Mtransferred   -> pp_str fmt "Current.amount()"
       | Mcaller        -> pp_str fmt "Current.sender()"
@@ -1096,7 +1098,7 @@ let pp_model fmt (model : model) =
       | Marray l ->
         begin
           match mtt.type_ with
-          | Tassoc (k , v) ->
+          | Tassoc (_k , _v) ->
             begin
               match l with
               | [] -> Format.fprintf fmt "[]"
@@ -1153,7 +1155,7 @@ let pp_model fmt (model : model) =
           pp_id i
           f c
           f b
-      | Miter (i, a, b, c, _) -> Format.fprintf fmt "TODO: iter@\n"
+      | Miter (_i, _a, _b, _c, _) -> Format.fprintf fmt "TODO: iter@\n"
       | Mfold (i, is, c, b) ->
         Format.fprintf fmt
           "List.fold_left (fun (%a) %a ->@\n    \
@@ -1173,10 +1175,13 @@ let pp_model fmt (model : model) =
           f r
       | Massignfield (op, a, field , r) ->
         Format.fprintf fmt "%a.%a %a %a"
-          pp_id a
+          f a
           pp_id field
           pp_operator op
           f r
+      | Massignstate x ->
+        Format.fprintf fmt "state_ = %a"
+          f x
       | Mtransfer (x, b, q) ->
         Format.fprintf fmt "transfer%s %a%a"
           (if b then " back" else "")
@@ -1189,7 +1194,7 @@ let pp_model fmt (model : model) =
       | Mreturn x ->
         Format.fprintf fmt "return %a"
           f x
-      | Mlabel i -> ()
+      | Mlabel _i -> ()
       | Mshallow (i, x) ->
         Format.fprintf fmt "shallow_%a %a"
           pp_str i
@@ -1256,7 +1261,7 @@ let pp_model fmt (model : model) =
 
   let pp_storage_item fmt (si : storage_item) =
     Format.fprintf fmt "%a : %a;"
-      pp_id si.name
+      pp_str (Model.Utils.get_storage_id_name si.id)
       pp_type si.typ
   in
 
@@ -1274,7 +1279,7 @@ let pp_model fmt (model : model) =
   let pp_init_function fmt (s : storage) =
     let pp_storage_item fmt (si : storage_item) =
       Format.fprintf fmt "%a = %a;"
-        pp_id si.name
+        pp_str (Model.Utils.get_storage_id_name si.id)
         (pp_cast Rhs si.typ si.default.type_ pp_mterm) si.default
     in
 

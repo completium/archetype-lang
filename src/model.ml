@@ -47,6 +47,7 @@ type trtyp =
 type type_ =
   | Tasset of lident
   | Tenum of lident
+  | Tstate
   | Tcontract of lident
   | Tbuiltin of btyp
   | Tcontainer of type_ * container
@@ -170,7 +171,7 @@ type ('id, 'term) mterm_node  =
   | Muplus        of 'term
   | Muminus       of 'term
   | Mrecord       of 'term list
-  | Mletin        of 'id list * 'term * type_ option * 'term
+  | Mletin        of 'id list * 'term * type_ option * 'term * 'term option
   | Mdeclvar      of 'id list * type_ option * 'term
   | Mvarstorevar  of 'id
   | Mvarstorecol  of 'id
@@ -179,7 +180,7 @@ type ('id, 'term) mterm_node  =
   | Mvarparam     of 'id
   | Mvarfield     of 'id
   | Mvarthe
-  | Mstate
+  | Mvarstate
   | Mnow
   | Mtransferred
   | Mcaller
@@ -206,7 +207,8 @@ type ('id, 'term) mterm_node  =
   | Mfold         of ('id * 'id list * 'term * 'term) (* ident list * collection * body *)
   | Mseq          of 'term list
   | Massign       of (assignment_operator * 'id * 'term)
-  | Massignfield  of (assignment_operator * 'id * 'id * 'term)
+  | Massignfield  of (assignment_operator * 'term * 'id * 'term)
+  | Massignstate  of 'term
   | Mtransfer     of ('term * bool * 'id qualid_gen option)
   | Mbreak
   | Massert       of 'term
@@ -233,7 +235,6 @@ type ('id, 'term) mterm_node  =
 and 'id mterm_gen = {
   node: ('id, 'id mterm_gen) mterm_node;
   type_: type_;
-  subvars: ident list;
   loc : Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]
@@ -387,8 +388,13 @@ type label_term = lident label_term_gen
    | FContainer        of container * 'id item_field_type
    [@@deriving show {with_path = false}] *)
 
+type 'id storage_id =
+  | SIname of 'id
+  | SIstate
+[@@deriving show {with_path = false}]
+
 type 'id storage_item_gen = {
-  name        : 'id;
+  id          : 'id storage_id;
   asset       : 'id option;
   typ         : type_;
   ghost       : bool;
@@ -682,8 +688,8 @@ let mk_qualid ?(loc = Location.dummy) node type_ : 'id qualid_gen =
 let mk_pattern ?(loc = Location.dummy) node : 'id pattern_gen =
   { node; loc}
 
-let mk_mterm ?(subvars = []) ?(loc = Location.dummy) node type_ : 'id mterm_gen =
-  { node; type_; subvars; loc}
+let mk_mterm ?(loc = Location.dummy) node type_ : 'id mterm_gen =
+  { node; type_; loc}
 
 let mk_label_term ?label ?(loc = Location.dummy) term : 'id label_term_gen =
   { label; term; loc }
@@ -706,7 +712,7 @@ let mk_postcondition ?(invariants = []) ?(uses = []) name mode formula =
 let mk_assert ?(invariants = []) ?(uses = []) name label formula =
   { name; label; formula; invariants; uses }
 
-let mk_specification ?(predicates = []) ?(definitions = []) ?(lemmas = []) ?(theorems = []) ?(variables = []) ?(invariants = []) ?(effects = []) ?(postconditions = []) ?(asserts = []) ?(loc = Location.dummy) () =
+let mk_specification ?(predicates = []) ?(definitions = []) ?(lemmas = []) ?(theorems = []) ?(variables = []) ?(invariants = []) ?(effects = []) ?(postconditions = []) ?(loc = Location.dummy) () =
   { predicates; definitions; lemmas; theorems; variables; invariants; effects; postconditions; loc}
 
 let mk_security_predicate ?(loc = Location.dummy) s_node : security_predicate =
@@ -748,8 +754,8 @@ let mk_contract_signature ?(args=[]) ?(loc=Location.dummy) name : 'id contract_s
 let mk_contract ?(signatures=[]) ?init ?(loc=Location.dummy) name : 'id contract_gen =
   { name; signatures; init; loc }
 
-let mk_storage_item ?asset ?(ghost = false) ?(invariants = []) ?(loc = Location.dummy) name typ default : 'id storage_item_gen =
-  { name; asset; typ; ghost; default; invariants; loc }
+let mk_storage_item ?asset ?(ghost = false) ?(invariants = []) ?(loc = Location.dummy) id typ default : 'id storage_item_gen =
+  { id; asset; typ; ghost; default; invariants; loc }
 
 let mk_function_struct ?(args = []) ?(loc = Location.dummy) ?(src = Exo) name body : function_struct =
   { name; args; src; body; loc }
@@ -763,7 +769,7 @@ let mk_signature ?(args = []) ?ret name : 'id signature_gen =
 let mk_api_item ?(only_formula = false) node_item =
   { node_item; only_formula }
 
-let mk_model ?(api_items = []) ?(api_verif = []) ?(info = []) ?(decls = []) ?(functions = []) ?(storage = []) ?(specification = mk_specification ()) ?(security = mk_security ()) storage name : model =
+let mk_model ?(api_items = []) ?(api_verif = []) ?(info = []) ?(decls = []) ?(functions = []) ?(storage = []) ?(specification = mk_specification ()) ?(security = mk_security ()) name : model =
   { name; api_items; api_verif; info; storage; decls; functions; specification; security }
 
 (* -------------------------------------------------------------------- *)
@@ -912,7 +918,7 @@ let cmp_mterm_node
     | Muplus e1, Muplus e2                                                             -> cmp e1 e2
     | Muminus e1, Muminus e2                                                           -> cmp e1 e2
     | Mrecord l1, Mrecord l2                                                           -> List.for_all2 cmp l1 l2
-    | Mletin (i1, a1, t1, b1), Mletin (i2, a2, t2, b2)                                 -> List.for_all2 cmpi i1 i2 && cmp a1 a2 && Option.cmp cmp_type t1 t2 && cmp b1 b2
+    | Mletin (i1, a1, t1, b1, o1), Mletin (i2, a2, t2, b2, o2)                         -> List.for_all2 cmpi i1 i2 && cmp a1 a2 && Option.cmp cmp_type t1 t2 && cmp b1 b2 && Option.cmp cmp o1 o2
     | Mdeclvar (i1, t1, v1), Mdeclvar (i2, t2, v2)                                     -> List.for_all2 cmpi i1 i2 && Option.cmp cmp_type t1 t2 && cmp v1 v2
     | Mvarstorevar v1, Mvarstorevar v2                                                 -> cmpi v1 v2
     | Mvarstorecol v1, Mvarstorecol v2                                                 -> cmpi v1 v2
@@ -921,7 +927,7 @@ let cmp_mterm_node
     | Mvarlocal v1, Mvarlocal v2                                                       -> cmpi v1 v2
     | Mvarparam v1, Mvarparam v2                                                       -> cmpi v1 v2
     | Mvarthe, Mvarthe                                                                 -> true
-    | Mstate, Mstate                                                                   -> true
+    | Mvarstate, Mvarstate                                                             -> true
     | Mnow, Mnow                                                                       -> true
     | Mtransferred, Mtransferred                                                       -> true
     | Mcaller, Mcaller                                                                 -> true
@@ -945,7 +951,8 @@ let cmp_mterm_node
     | Mfold (i1, is1, c1, b1), Mfold (i2, is2, c2, b2)                                 -> cmpi i1 i2 && List.for_all2 cmpi is1 is2 && cmp c1 c2 && cmp b1 b2
     | Mseq is1, Mseq is2                                                               -> List.for_all2 cmp is1 is2
     | Massign (op1, l1, r1), Massign (op2, l2, r2)                                     -> cmp_assign_op op1 op2 && cmpi l1 l2 && cmp r1 r2
-    | Massignfield (op1, a1, fi1, r1), Massignfield (op2, a2, fi2, r2)                 -> cmp_assign_op op1 op2 && cmpi a1 a2 && cmpi fi1 fi2 && cmp r1 r2
+    | Massignfield (op1, a1, fi1, r1), Massignfield (op2, a2, fi2, r2)                 -> cmp_assign_op op1 op2 && cmp a1 a2 && cmpi fi1 fi2 && cmp r1 r2
+    | Massignstate x1, Massignstate x2                                                 -> cmp x1 x2
     | Mtransfer (x1, b1, q1), Mtransfer (x2, b2, q2)                                   -> cmp x1 x2 && cmp_bool b1 b2 && Option.cmp cmp_qualid q1 q2
     | Mbreak, Mbreak                                                                   -> true
     | Massert x1, Massert x2                                                           -> cmp x1 x2
@@ -1092,7 +1099,7 @@ let map_term_node (f : 'id mterm_gen -> 'id mterm_gen) = function
   | Muplus e                      -> Muplus (f e)
   | Muminus e                     -> Muminus (f e)
   | Mrecord l                     -> Mrecord (List.map f l)
-  | Mletin (i, a, t, b)           -> Mletin (i, f a, t, f b)
+  | Mletin (i, a, t, b, o)        -> Mletin (i, f a, t, f b, Option.map f o)
   | Mdeclvar (i, t, v)            -> Mdeclvar (i, t, f v)
   | Mvarstorevar v                -> Mvarstorevar v
   | Mvarstorecol v                -> Mvarstorecol v
@@ -1101,7 +1108,7 @@ let map_term_node (f : 'id mterm_gen -> 'id mterm_gen) = function
   | Mvarlocal v                   -> Mvarlocal    v
   | Mvarparam v                   -> Mvarparam    v
   | Mvarthe                       -> Mvarthe
-  | Mstate                        -> Mstate
+  | Mvarstate                     -> Mvarstate
   | Mnow                          -> Mnow
   | Mtransferred                  -> Mtransferred
   | Mcaller                       -> Mcaller
@@ -1129,6 +1136,7 @@ let map_term_node (f : 'id mterm_gen -> 'id mterm_gen) = function
   | Mseq is                       -> Mseq (List.map f is)
   | Massign (op, l, r)            -> Massign (op, l, f r)
   | Massignfield (op, a, fi, r)   -> Massignfield (op, a, fi, f r)
+  | Massignstate x                -> Massignstate (f x)
   | Mtransfer (x, b, q)           -> Mtransfer (f x, b, q)
   | Mbreak                        -> Mbreak
   | Massert x                     -> Massert (f x)
@@ -1233,7 +1241,7 @@ let map_mterm_model_formula custom (f : ('id, 't) ctx_model_gen -> mterm -> mter
       }
     in
 
-    let map_variable (f : ('id, 't) ctx_model_gen -> mterm -> mterm) (spec : variable) : variable =
+    let map_variable (_f : ('id, 't) ctx_model_gen -> mterm -> mterm) (spec : variable) : variable =
       spec
     in
 
@@ -1296,33 +1304,33 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Msetremoved   e                       -> f accu e
   | Msetiterated  e                       -> f accu e
   | Msettoiterate e                       -> f accu e
-  | Mexternal (t, func, c, args)          -> List.fold_left f (f accu c) args
+  | Mexternal (_, _, c, args)             -> List.fold_left f (f accu c) args
   | Mget (_, k)                           -> f accu k
-  | Mset (c, l, k, v)                     -> f (f accu v) k
-  | Maddasset (an, i)                     -> f accu i
-  | Maddfield (an, fn, c, i)              -> f (f accu c) i
+  | Mset (_, _, k, v)                     -> f (f accu v) k
+  | Maddasset (_, i)                      -> f accu i
+  | Maddfield (_, _, c, i)                -> f (f accu c) i
   | Maddlocal (c, i)                      -> f (f accu c) i
-  | Mremoveasset (an, i)                  -> f accu i
-  | Mremovefield (an, fn, c, i)           -> f (f accu c) i
+  | Mremoveasset (_, i)                   -> f accu i
+  | Mremovefield (_, _, c, i)             -> f (f accu c) i
   | Mremovelocal (c, i)                   -> f (f accu c) i
-  | Mclearasset (an)                      -> accu
-  | Mclearfield (an, fn, c)               -> f accu c
-  | Mremoveif (an, fn, c)                 -> f (f accu fn) c
+  | Mclearasset _                         -> accu
+  | Mclearfield (_, _, c)                 -> f accu c
+  | Mremoveif (_, fn, c)                  -> f (f accu fn) c
   | Mclearlocal (c)                       -> f accu c
-  | Mreverseasset (an)                    -> accu
-  | Mreversefield (an, fn, c)             -> f accu c
+  | Mreverseasset _                       -> accu
+  | Mreversefield (_, _, c)               -> f accu c
   | Mreverselocal (c)                     -> f accu c
-  | Mselect (an, c, p)                    -> f (f accu c) p
-  | Msort (an, c, p, _)                   -> f accu c
-  | Mcontains (an, c, i)                  -> f (f accu c) i
-  | Mmem (an, c, i)                       -> f (f accu c) i
-  | Msubsetof (an, c, i)                  -> f (f accu c) i
-  | Mnth (an, c, i)                       -> f (f accu c) i
-  | Mcount (an, c)                        -> f accu c
-  | Msum (an, fd, c)                      -> f accu c
-  | Mmin (an, fd, c)                      -> f accu c
-  | Mmax (an, fd, c)                      -> f accu c
-  | Mfail (ft)                            -> accu
+  | Mselect (_, c, p)                     -> f (f accu c) p
+  | Msort (_, c, _, _)                    -> f accu c
+  | Mcontains (_, c, i)                   -> f (f accu c) i
+  | Mmem (_, c, i)                        -> f (f accu c) i
+  | Msubsetof (_, c, i)                   -> f (f accu c) i
+  | Mnth (_, c, i)                        -> f (f accu c) i
+  | Mcount (_, c)                         -> f accu c
+  | Msum (_, _, c)                        -> f accu c
+  | Mmin (_, _, c)                        -> f accu c
+  | Mmax (_, _, c)                        -> f accu c
+  | Mfail _                               -> accu
   | Mmathmax (l, r)                       -> f (f accu l) r
   | Mmathmin (l, r)                       -> f (f accu l) r
   | Mhead (_, c, i)                       -> f (f accu c) i
@@ -1331,7 +1339,7 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mor (l, r)                            -> f (f accu l) r
   | Mimply (l, r)                         -> f (f accu l) r
   | Mequiv  (l, r)                        -> f (f accu l) r
-  | Misempty  (l, r)                      -> f accu r
+  | Misempty  (_, r)                      -> f accu r
   | Mnot e                                -> f accu e
   | Mmulticomp (e, l)                     -> List.fold_left (fun accu (_, a) -> f accu a) (f accu e) l
   | Mequal (l, r)                         -> f (f accu l) r
@@ -1348,7 +1356,7 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Muplus e                              -> f accu e
   | Muminus e                             -> f accu e
   | Mrecord l                             -> List.fold_left f accu l
-  | Mletin (_, a, _, b)                   -> f (f accu a) b
+  | Mletin (_, a, _, b, o)                -> let tmp = f (f accu a) b in Option.map_dfl (f tmp) tmp o
   | Mdeclvar (_, _, v)                    -> f accu v
   | Mvarstorevar _                        -> accu
   | Mvarstorecol _                        -> accu
@@ -1368,9 +1376,9 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mcurrency _                           -> accu
   | Maddress _                            -> accu
   | Mduration _                           -> accu
-  | Mdotasset (e, i)                      -> f accu e
-  | Mdotcontract (e, i)                   -> f accu e
-  | Mstate                                -> accu
+  | Mdotasset (e, _)                      -> f accu e
+  | Mdotcontract (e, _)                   -> f accu e
+  | Mvarstate                             -> accu
   | Mnow                                  -> accu
   | Mtransferred                          -> accu
   | Mcaller                               -> accu
@@ -1379,12 +1387,13 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Msome v                               -> f accu v
   | Mtuple l                              -> List.fold_left f accu l
   | Massoc (k, v)                         -> f (f accu k) v
-  | Mfor (i, c, b, lbl)                   -> f (f accu c) b
-  | Miter (i, a, b, c, lbl)               -> f (f (f accu a) b) c
-  | Mfold (i, is, c, b)                   -> f (f accu c) b
+  | Mfor (_, c, b, _)                     -> f (f accu c) b
+  | Miter (_, a, b, c, _)                 -> f (f (f accu a) b) c
+  | Mfold (_, _, c, b)                    -> f (f accu c) b
   | Mseq is                               -> List.fold_left f accu is
   | Massign (_, _, e)                     -> f accu e
   | Massignfield (_, _, _, e)             -> f accu e
+  | Massignstate x                        -> f accu x
   | Mtransfer (x, _, _)                   -> f accu x
   | Mbreak                                -> accu
   | Massert x                             -> f accu x
@@ -1429,8 +1438,8 @@ let fold_map_term
     let (pse, psa) =
       List.fold_left
         (fun (ps, accu) (p, i) ->
-           let pa, accu = f accu i in
-           [(p, i)] @ ps, accu) ([], ea) l
+           let ia, accu = f accu i in
+           [(p, ia)] @ ps, accu) ([], ea) l
     in
 
     g (Mmatchwith (ee, pse)), psa
@@ -1653,8 +1662,8 @@ let fold_map_term
     let (le, la) =
       List.fold_left
         (fun (ps, accu) (p, i) ->
-           let pa, accu = f accu i in
-           [(p, i)] @ ps, accu) ([], ea) l
+           let ia, accu = f accu i in
+           [(p, ia)] @ ps, accu) ([], ea) l
     in
 
     g (Mmulticomp (ee, le)), la
@@ -1730,10 +1739,14 @@ let fold_map_term
     let le, la = fold_map_term_list f accu l in
     g (Mrecord le), la
 
-  | Mletin (idd, i, t, o) ->
+  | Mletin (idd, i, t, b, o) ->
     let ie, ia = f accu i in
-    let oe, oa = f ia o in
-    g (Mletin (idd, i, t, oe)), oa
+    let be, ba = f ia b in
+    let oe, oa =
+      match o with
+      | Some o -> f ba o |> (fun (x, y) -> (Some x, y))
+      | None -> (None, ba) in
+    g (Mletin (idd, ie, t, be, oe)), oa
 
   | Mdeclvar (ids, t, v) ->
     let ve, va = f accu v in
@@ -1783,8 +1796,8 @@ let fold_map_term
     let ee, ea = f accu e in
     g (Mdotcontract (ee, i)), ea
 
-  | Mstate ->
-    g Mstate, accu
+  | Mvarstate ->
+    g Mvarstate, accu
 
   | Mnow ->
     g Mnow, accu
@@ -1845,6 +1858,10 @@ let fold_map_term
     let xe, xa = f accu x in
     g (Massignfield (op, a, fi, xe)), xa
 
+  | Massignstate x ->
+    let xe, xa = f accu x in
+    g (Massignstate xe), xa
+
   | Mtransfer (x, b, q) ->
     let xe, xa = f accu x in
     g (Mtransfer (xe, b, q)), xa
@@ -1881,7 +1898,7 @@ let fold_map_term
 
   | Mforall (id, t, Some s, e) ->
     let ee, ea = f accu e in
-    let se, sa = f accu s in
+    let se, sa = f ea s in
     g (Mforall (id, t, Some se, ee)), sa
 
   | Mforall (id, t, None, e) ->
@@ -1890,7 +1907,7 @@ let fold_map_term
 
   | Mexists (id, t, Some s, e) ->
     let ee, ea = f accu e in
-    let se, sa = f accu s in
+    let se, sa = f ea s in
     g (Mexists (id, t, Some se, ee)), sa
 
   | Mexists (id, t, None, e) ->
@@ -1929,7 +1946,7 @@ let fold_specification (ctx : ('id, 't) ctx_model_gen) (f : ('id, 't) ctx_model_
     |> (fun x -> List.fold_left (fun accu (x : 'id invariant_gen) -> fold_invariant ctx f x accu) x spec.invariants)
   in
 
-  let fold_variable (ctx : ('id, 't) ctx_model_gen) (f : ('id, 't) ctx_model_gen -> 'a -> 'id mterm_gen -> 'a) (spec : 'id variable_gen) (accu : 'a) : 'a =
+  let fold_variable (_ctx : ('id, 't) ctx_model_gen) (_f : ('id, 't) ctx_model_gen -> 'a -> 'id mterm_gen -> 'a) (_spec : 'id variable_gen) (accu : 'a) : 'a =
     accu
   in
 
@@ -2030,6 +2047,7 @@ module Utils : sig
   val get_map_function                   : model -> (ident * ident list) list
   val retrieve_all_properties            : model -> (ident * property) list
   val retrieve_property                  : model -> ident -> property
+  val get_storage_id_name                : lident storage_id -> ident
 
 end = struct
 
@@ -2262,8 +2280,8 @@ end = struct
   let get_partition_asset_key model record field : (ident * ident * btyp) =
     let partitions = get_partitions model in
     let rec rec_get = function
-      | (r,i,t) :: tl when compare r record.pldesc = 0 &&
-                           compare i field.pldesc = 0 ->
+      | (r,i,t) :: _tl when compare r record.pldesc = 0 &&
+                            compare i field.pldesc = 0 ->
         let pa  = dest_partition t in
         let k,t = get_asset_key model pa in
         (unloc pa,k,t)
@@ -2278,7 +2296,11 @@ end = struct
     let s = get_storage model in
     let items = s in
     (List.fold_left (fun accu (x : storage_item) ->
-         accu || String.equal (Location.unloc id) (Location.unloc x.name)) false items)
+         accu ||
+         match x.id with
+         | SIname name -> String.equal (Location.unloc id) (Location.unloc name)
+         | SIstate -> false
+       ) false items)
 
   let get_field_list (model : model) (record_name : lident) : ident list =
     let asset = get_info_asset model record_name in
@@ -2287,7 +2309,7 @@ end = struct
   let get_field_pos model record field =
     let l = get_field_list model record in
     let rec rec_get_pos i = function
-      | e :: tl when compare field.pldesc e = 0 -> i
+      | e :: _tl when compare field.pldesc e = 0 -> i
       | _ :: tl -> rec_get_pos (succ i) tl
       | [] -> assert false in
     rec_get_pos 0 l
@@ -2410,7 +2432,7 @@ end = struct
         | _ -> acc
       ) [] m.api_items
 
-  let get_added_removed_sets m v : ((lident,(lident mterm_gen)) mterm_node) list =
+  let get_added_removed_sets (_m : model) v : ((lident,(lident mterm_gen)) mterm_node) list =
     let rec internal_fold_add_remove ctx acc (term : mterm) =
       match term.node with
       | Msetadded e -> acc @ [ Msetadded e ]
@@ -2422,7 +2444,10 @@ end = struct
   (* returns asset name * invariant name * invariant term *)
   let get_storage_invariants (m : model) (asset : ident option) : (ident * ident * mterm) list =
     List.fold_left (fun acc (i : storage_item) ->
-        let n = i.name |> unloc in
+        let name = match i.id with
+          | SIname name -> name
+          | SIstate -> dumloc "state" in
+        let n = name |> unloc in
         let do_fold =
           match asset with
           | Some a when compare n a = 0 -> true
@@ -2440,14 +2465,17 @@ end = struct
 
   let is_field_storage (m : model) (id : ident) : bool =
     let l : ident list =
-      List.map (fun (x : storage_item) -> (unloc x.name)) m.storage
+      List.map (fun (x : storage_item) -> (
+            match x.id with
+            | SIname name -> unloc name
+            | SIstate -> "state")) m.storage
     in
     List.mem id l
 
-  let with_trace (m : model) : bool = true
+  let with_trace (_m : model) : bool = true
 
   (* returns the list of entries calling the function named 'name' *)
-  let get_callers (m : model) (name : ident) : ident list = [] (* TODO *)
+  let get_callers (_m : model) (_name : ident) : ident list = [] (* TODO *)
 
   (* is there a no_fail predicate on an entry called fn ? *)
   let no_fail (m : model) (fn : ident) : lident option =
@@ -2480,7 +2508,7 @@ end = struct
     let rec extract_fun_id accu (mt : mterm) : ident list =
       let l = fold_term extract_fun_id accu mt in
       match mt.node with
-      | Mapp (id, args) when (List.exists (fun x -> (String.equal (unloc id) x)) fun_id_list) ->
+      | Mapp (id, _args) when (List.exists (fun x -> (String.equal (unloc id) x)) fun_id_list) ->
         l @ [unloc id]
       | _ -> l
     in
@@ -2514,5 +2542,10 @@ end = struct
   let retrieve_property (m : model) (id : ident) : property =
     let properties = retrieve_all_properties m in
     List.assoc id properties
+
+  let get_storage_id_name (id : lident storage_id) : ident =
+    match id with
+    | SIname name -> unloc name
+    | SIstate -> "state"
 
 end

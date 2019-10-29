@@ -81,7 +81,6 @@
 %token IN
 %token INITIAL
 %token INITIALIZED
-%token INSTANCE
 %token INVARIANT
 %token ITER
 %token LABEL
@@ -111,6 +110,7 @@
 %token PARTITION
 %token PERCENT
 %token PERCENTRBRACKET
+%token PKEY
 %token PIPE
 %token PLUS
 %token PLUSEQUAL
@@ -246,7 +246,6 @@ declaration_r:
  | x=archetype          { x }
  | x=constant           { x }
  | x=variable           { x }
- | x=instance           { x }
  | x=enum               { x }
  | x=asset              { x }
  | x=action             { x }
@@ -273,10 +272,6 @@ constant:
 variable:
   | x=vc_decl(VARIABLE) { let x, t, z, dv, exts = x in
                           Dvariable (x, t, dv, z, VKvariable, exts) }
-
-instance:
-  | INSTANCE exts=option(extensions) v=ident OF t=ident dv=default_value
-    { Dinstance (v, t, dv, exts) }
 
 %inline value_options:
 | xs=value_option+ { xs }
@@ -466,6 +461,7 @@ types:
 type_r:
 | x=type_s xs=type_tuples { Ttuple (x::xs) }
 | x=type_s_unloc          { x }
+| PKEY OF ty=type_s       { Tkeyof ty }
 
 %inline type_s:
 | x=loc(type_s_unloc)     { x }
@@ -541,7 +537,7 @@ transition_to_item:
  | xs=transition_to_item+ { xs }
 
 on_value:
- | ON x=ident COLON y=ident { x, y }
+ | ON LPAREN x=ident COLON y=type_t RPAREN { x, y }
 
 transition:
   TRANSITION exts=option(extensions) x=ident

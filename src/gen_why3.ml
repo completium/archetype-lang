@@ -88,7 +88,7 @@ let mk_trace_entry m =
 let mk_trace_field m =
   Denum ("_field",
          (M.Utils.get_variables m
-          |> List.map (fun (v : M.storage_item) -> String.capitalize_ascii (unloc v.name))) @
+          |> List.map (fun (v : M.storage_item) -> String.capitalize_ascii (Model.Utils.get_storage_id_name v.id))) @
          (M.Utils.get_assets m
           |> List.map (fun (a : M.info_asset) ->
               List.map (fun (n,_,_) -> String.capitalize_ascii n) a.values
@@ -154,7 +154,7 @@ let mk_const_fields m = [
 
 let mk_sum_clone_id a f = (String.capitalize_ascii a) ^ (String.capitalize_ascii f)
 
-let mk_sum_clone m asset key field =
+let mk_sum_clone _m asset key field =
   let cap_asset = String.capitalize_ascii asset in
   Dclone ([gArchetypeDir;gArchetypeSum],
           mk_sum_clone_id asset field,
@@ -211,7 +211,7 @@ let mk_keys_eq_axiom n f ktyp : decl =
    pa is the partitionned asset name
    kpt is the partionned asset key type
 *)
-let mk_partition_axiom asset f kt pa kpt : decl =
+let mk_partition_axiom asset f _kt pa kpt : decl =
   Dtheorem (Axiom,
             asset^"_"^f^"_is_partition",
             Tforall ([["s"],Tystorage;["a"],Tyasset asset;["k"],kpt],
@@ -410,17 +410,17 @@ let map_storage_items = List.fold_left (fun acc (item : M.storage_item) ->
       let typ_ = map_mtype item.typ in
       let init_value = type_to_init typ_ in
       [{
-        name     = item.name |> unloc |> with_dummy_loc;
+        name     = Model.Utils.get_storage_id_name item.id |> with_dummy_loc;
         typ      = typ_;
         init     = map_record_term init_value item.default;
         mutable_ = true;
       }]
   ) []
 
-let is_local_invariant m an t =
+let is_local_invariant _m an t =
   let rec internal_is_local acc (term : M.mterm) =
     match term.M.node with
-    | M.Mforall (i,M.Tasset a,_,b) -> not (compare (a |> unloc) an = 0)
+    | M.Mforall (_i,M.Tasset a,_,_b) -> not (compare (a |> unloc) an = 0)
     | M.Msum (a,_,_) -> not (compare a an = 0)
     | M.Mmax (a,_,_) -> not (compare a an = 0)
     | M.Mmin (a,_,_) -> not (compare a an = 0)
@@ -635,7 +635,7 @@ let mk_loop_invariant m n inv : loc_term = mk_invariant m (dumloc n) `Loop inv
 let mk_axiom_invariant m n inv : loc_term = mk_invariant m (dumloc n) `Axiom inv
 let mk_axiom2_invariant m n inv : loc_term = mk_invariant m (dumloc n) `Axiom2 inv
 
-let mk_eq_asset m (r : M.record) =
+let mk_eq_asset _m (r : M.record) =
   let cmps = List.map (fun (item : M.record_item) ->
       let f1 = Tdoti("a1",unloc item.name) in
       let f2 = Tdoti("a2",unloc item.name) in
@@ -658,7 +658,7 @@ let mk_eq_asset m (r : M.record) =
       ) (List.hd cmps) (List.tl cmps) |> loc_term;
   }
 
-let mk_eq_extensionality m (r : M.record) : loc_decl =
+let mk_eq_extensionality _m (r : M.record) : loc_decl =
   let asset = unloc r.name in
   Dtheorem (Lemma,
             asset^"_extensionality",
@@ -668,7 +668,7 @@ let mk_eq_extensionality m (r : M.record) : loc_decl =
                             Teq (Tyasset asset,Tvar "a1",Tvar "a2")
                            ))) |> Mlwtree.loc_decl
 
-let map_record m (r : M.record) =
+let map_record _m (r : M.record) =
   Drecord (map_lident r.name, map_record_values r.values)
 
 let record_to_clone m (r : M.info_asset) =
@@ -688,7 +688,10 @@ let map_storage m (l : M.storage) =
   Dstorage {
     fields     = (map_storage_items l)@ (mk_const_fields m |> loc_field |> deloc);
     invariants = List.concat (List.map (fun (item : M.storage_item) ->
-        List.map (mk_storage_invariant m item.name) item.invariants) l) @
+        List.map (mk_storage_invariant m (match item.id with
+            | SIname name -> name
+            | SIstate -> dumloc "state")
+          ) item.invariants) l) @
                  (List.fold_left (fun acc sec ->
                       acc @ (mk_spec_invariant `Storage sec)) [] m.security.items)
   }
@@ -701,7 +704,7 @@ let mk_partition_axioms (m : M.model) =
     ) |> loc_decl |> deloc
 
 let rec get_record id = function
-  | Drecord (n,_) as r :: tl when compare id n = 0 -> r
+  | Drecord (n,_) as r :: _tl when compare id n = 0 -> r
   | _ :: tl -> get_record id tl
   | [] -> assert false
 
@@ -793,7 +796,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
         | Tcontainer (_,_) -> Tlist (l |> List.map (map_mterm m ctx))
         | _ -> assert false
       end
-    | M.Mletin ([id],v,_,b) ->
+    | M.Mletin ([id],v,_,b,_o) ->
       Tletin (M.Utils.is_local_assigned id b,map_lident id,None,map_mterm m ctx v,map_mterm m ctx b)
     | M.Mselect (a,l,r) ->
       let args = extract_args r in
@@ -822,10 +825,10 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
                                                  Tminus (with_dummy_loc Tyint,
                                                          with_dummy_loc (Tvar (map_lident id)),
                                                          map_mterm m ctx v)))
-    | M.Massignfield (ValueAssign,id1,id2,v) ->
+    | M.Massignfield (ValueAssign,{node = M.Mvarstorecol id1},id2,v) ->
       let id = with_dummy_loc (Tdoti (map_lident id1,map_lident id2)) in
       Tassign (id,map_mterm m ctx v)
-    | M.Massignfield (MinusAssign,id1,id2,v) ->
+    | M.Massignfield (MinusAssign,{node = M.Mvarstorecol id1},id2,v) ->
       let id = with_dummy_loc (Tdoti (map_lident id1,map_lident id2)) in
       Tassign (id,
                with_dummy_loc (
@@ -1179,7 +1182,7 @@ let mk_listtocoll m asset = Dfun {
 
 (* basic getters *)
 
-let gen_field_getter n field = Dfun {
+let gen_field_getter n _field = Dfun {
     name     = n;
     logic    = Logic;
     args     = [];

@@ -154,7 +154,7 @@ let mk_outline_post_options (post_options : PT.asset_post_option list) =
     | PT.APOconstraints l ->
       List.map (fun (x : PT.label_expr) ->
           let lo, v = Location.deloc x in
-          let id, formula = v in
+          let id, _formula = v in
           [mk_outline (Location.unloc id, symbol_kind_to_int Property, lo)]
         ) l
       |> List.flatten
@@ -206,7 +206,6 @@ let make_outline_from_decl (d : PT.declaration) gl =
   match v with
   | Darchetype (id, _) -> [mk_outline (Location.unloc id, symbol_kind_to_int Class, gl)]
   | Dvariable (id, _, _, _, _, _) -> [mk_outline (Location.unloc id, symbol_kind_to_int Variable, l)]
-  | Dinstance (id, _, _, _) -> [mk_outline (Location.unloc id, symbol_kind_to_int Variable, l)]
   | Denum (ek, (li, _)) -> make_outline_from_enum (ek, li, l)
   | Dasset (id, _, _, post_options, _, _) -> [mk_outline (Location.unloc id, symbol_kind_to_int Struct, l)] @ mk_outline_post_options post_options
   | Daction (id, _, ap, _, _) -> mk_outline (Location.unloc id, symbol_kind_to_int Function, l) :: (Option.map_dfl mk_outline_from_specification [] ap.spec)

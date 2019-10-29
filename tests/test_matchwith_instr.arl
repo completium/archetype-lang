@@ -1,0 +1,21 @@
+archetype MatchWithInInstr
+
+enum t =
+  | C1
+  | C2
+  | C3
+  | C4
+  | C5
+
+action myaction (x : t) {
+  effect {
+  let v = 0 in
+
+  match x with
+  | C1 | C2 -> v := 0
+  | C3 -> v := 1
+  | _ -> v := 2
+  end
+  }
+}
+

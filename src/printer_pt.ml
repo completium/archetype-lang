@@ -125,7 +125,10 @@ let rec pp_type outer pos fmt e =
       "%a option"
       pp_type_default x
 
-
+  | Tkeyof t ->
+      Format.fprintf fmt
+        "pkey of %a"
+        pp_type_default t
 
 let pp_type fmt e = pp_type e_default PNone fmt e
 
@@ -901,13 +904,6 @@ let rec pp_declaration fmt { pldesc = e; _ } =
       (pp_option (pp_prefix " " (pp_list " " pp_value_option))) opts
       (pp_option (pp_prefix " = " (pp_expr e_equal PRight))) dv
 
-  | Dinstance (id, t, dv, exts) ->
-    Format.fprintf fmt "instance%a %a of %a = %a"
-      pp_extensions exts
-      pp_id id
-      pp_id t
-      (pp_expr e_equal PRight) dv
-
   | Denum (id, (ids, exts)) ->
     Format.fprintf fmt "%a%a"
       (fun fmt id -> (
@@ -953,9 +949,9 @@ let rec pp_declaration fmt { pldesc = e; _ } =
       pp_id id
       pp_fun_args args
       (pp_option (fun fmt (a, b) ->
-           Format.fprintf fmt " on %a : %a"
+           Format.fprintf fmt " on (%a : %a)"
              pp_id a
-             pp_id b
+             pp_type b
          )) on
       pp_simple_expr from
       (fun fmt (pr, ts) ->
