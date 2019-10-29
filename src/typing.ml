@@ -920,6 +920,18 @@ let rec for_type_exn (env : env) (ty : PT.type_t) : M.ptyp =
   | Toption ty ->
     M.Toption (for_type_exn env ty)
 
+  | Tkeyof ty -> begin
+    match for_type_exn env ty with
+    | M.Tasset x ->
+        let decl = Env.Asset.get env (unloc x) in
+        let ctor = Env.Asset.byfield env (unloc decl.as_pk) in
+        snd (Option.get ctor)
+
+    | _ ->
+        Env.emit_error env (loc ty, NotAnAssetType);
+        raise InvalidType
+    end
+
 let for_type (env : env) (ty : PT.type_t) : M.ptyp option =
   try Some (for_type_exn env ty) with InvalidType -> None
 

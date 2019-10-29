@@ -20,6 +20,7 @@ type type_r =
   | Tcontainer of type_t * container
   | Ttuple of type_t list
   | Toption of type_t
+  | Tkeyof of type_t
 [@@deriving yojson, show {with_path = false}]
 
 and type_t = type_r loced

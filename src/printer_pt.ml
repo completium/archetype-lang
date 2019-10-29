@@ -125,7 +125,10 @@ let rec pp_type outer pos fmt e =
       "%a option"
       pp_type_default x
 
-
+  | Tkeyof t ->
+      Format.fprintf fmt
+        "pkey of %a"
+        pp_type_default t
 
 let pp_type fmt e = pp_type e_default PNone fmt e
 

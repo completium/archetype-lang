@@ -111,6 +111,7 @@
 %token PARTITION
 %token PERCENT
 %token PERCENTRBRACKET
+%token PKEY
 %token PIPE
 %token PLUS
 %token PLUSEQUAL
@@ -466,6 +467,7 @@ types:
 type_r:
 | x=type_s xs=type_tuples { Ttuple (x::xs) }
 | x=type_s_unloc          { x }
+| PKEY OF ty=type_s       { Tkeyof ty }
 
 %inline type_s:
 | x=loc(type_s_unloc)     { x }

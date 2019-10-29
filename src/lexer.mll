@@ -58,6 +58,7 @@
       "instance"            , INSTANCE       ;
       "invariant"           , INVARIANT      ;
       "iter"                , ITER           ;
+      "pkey"                , PKEY           ;
       "label"               , LABEL          ;
       "lemma"               , LEMMA          ;
       "let"                 , LET            ;
