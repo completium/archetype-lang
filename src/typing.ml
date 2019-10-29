@@ -630,7 +630,7 @@ end = struct
     let env = { env with env_bindings = Mid.add name entry env.env_bindings } in
 
     match entry with
-    | `Local _x -> { env with env_locals = Sid.add name env.env_locals }
+    | `Local _ -> { env with env_locals = Sid.add name env.env_locals }
     | _        -> env
 
   let open_ (env : t) =
@@ -1435,7 +1435,7 @@ let rec for_xexpr (mode : emode_t) (env : env) ?(ety : M.ptyp option) (tope : PT
             match Mstr.find (unloc cname) bsm, wd with
             | Some i, _ ->
                 Some (List.nth es i)
-            | None  , Some _i ->
+            | None, Some _ ->
                 None
             | None, None ->
                 Some (dummy bty)
@@ -1508,7 +1508,7 @@ let rec for_xexpr (mode : emode_t) (env : env) ?(ety : M.ptyp option) (tope : PT
         if not (Type.compatible ~from_ ~to_) then
           Env.emit_error env (loc tope, IncompatibleTypes (from_, to_));
 
-      | _, Some _to_ ->
+      | _, Some _ ->
         Env.emit_error env (loc tope, ExpressionExpected)
 
       | _, _ ->
@@ -2122,7 +2122,7 @@ let rec for_instruction (env : env) (i : PT.expr) : env * M.instruction =
             match Mstr.find (unloc cname) bsm, wd with
             | Some k, _ ->
                 Some (List.nth is k)
-            | None  , Some _k ->
+            | None, _ ->
                 None
             | None, None ->
                 Some (mki (Iseq []))
