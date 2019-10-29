@@ -829,13 +829,13 @@ let pp_model fmt (model : model) =
                Format.fprintf fmt "%a = %a"
                  pp_id a
                  f b)) lll
-      | Mletin (ids, ({node = Mseq l} as a), t, b) ->
+      | Mletin (ids, ({node = Mseq l} as a), t, b, _) ->
         Format.fprintf fmt "let %a%a =@\n%ain@\n@[%a@]"
           (pp_if (List.length ids > 1) (pp_paren (pp_list ", " pp_id)) (pp_list ", " pp_id)) ids
           (pp_option (fun fmt -> Format.fprintf fmt  " : %a" pp_type)) t
           f a
           f b
-      | Mletin (ids, a, t, b) ->
+      | Mletin (ids, a, t, b, _) ->
         Format.fprintf fmt "%a = %a@\n%a"
           (pp_if (List.length ids > 1) (pp_paren (pp_list ", " pp_id)) (pp_list ", " pp_id)) ids
           (* (pp_option (fun fmt -> Format.fprintf fmt  " : %a" pp_type)) t *)

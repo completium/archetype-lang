@@ -298,13 +298,14 @@ let rec pp_pterm fmt (pterm : pterm) =
       in
       (pp_no_paren pp) fmt l
 
-    | Pletin (id, init, t, body) ->
+    | Pletin (id, init, t, body, otherwise) ->
       let pp fmt (id, init, t, body) =
-        Format.fprintf fmt "let %a%a= %a in@\n%a"
+        Format.fprintf fmt "let %a%a= %a in@\n%a%a"
           pp_id id
           (pp_option (pp_prefix " : " pp_ptyp)) t
           pp_pterm init
           pp_pterm body
+          (pp_option (fun fmt -> Format.fprintf fmt " otherwise %a" pp_pterm)) otherwise
       in
       (pp_with_paren pp) fmt (id, init, t, body)
 

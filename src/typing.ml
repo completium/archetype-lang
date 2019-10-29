@@ -1407,7 +1407,7 @@ let rec for_xexpr (mode : emode_t) (env : env) ?(ety : M.ptyp option) (tope : PT
             else env
           in for_xexpr env e2 in
 
-      mk_sp body.M.type_ (M.Pletin (x, e, ty, body))
+      mk_sp body.M.type_ (M.Pletin (x, e, ty, body, None))
 
     | Evar (_lv, _t, _e1) ->
       assert false
@@ -2358,7 +2358,7 @@ let for_named_state ?enum (env : env) (x : PT.lident) =
 
     if enum <> sname then begin
       Env.emit_error env (loc x, ForeignState (enum, sname));
-      mkloc (loc x) "<error>"      
+      mkloc (loc x) "<error>"
     end else
       x
 
@@ -2660,7 +2660,7 @@ let for_asset_decl ?(force = false) (env : env) (decl : PT.asset_decl loced) =
           | Some _ ->
               Some x
         end
-          
+
       | _ ->
           None in
 
@@ -3023,10 +3023,10 @@ let functions_of_fdecls fdecls =
     M.{ name          = decl.fs_name;
         args          = args;
         body          = decl.fs_body;
-        specification = specs; 
+        specification = specs;
         return        = decl.fs_retty;
         loc           = loc decl.fs_name; }
-     
+
   in List.map for1 (List.pmap (fun x -> x) fdecls)
 
 (* -------------------------------------------------------------------- *)

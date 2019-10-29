@@ -796,7 +796,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
         | Tcontainer (_,_) -> Tlist (l |> List.map (map_mterm m ctx))
         | _ -> assert false
       end
-    | M.Mletin ([id],v,_,b) ->
+    | M.Mletin ([id],v,_,b,_o) ->
       Tletin (M.Utils.is_local_assigned id b,map_lident id,None,map_mterm m ctx v,map_mterm m ctx b)
     | M.Mselect (a,l,r) ->
       let args = extract_args r in

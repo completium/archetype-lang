@@ -168,30 +168,30 @@ let to_model (ast : A.model) : M.model =
 
   let to_mterm_node (n : A.lident A.term_node) (f : A.lident A.term_gen -> M.mterm) (ftyp : 't -> M.type_) : (M.lident, M.mterm) M.mterm_node =
     match n with
-    | A.Pif (c, t, e)                -> M.Mif        (f c, f t, Some (f e))
-    | A.Pmatchwith (m, l)            -> M.Mmatchwith (f m, List.map (fun (p, e) -> (to_pattern p, f e)) l)
-    | A.Plogical (A.And, l, r)       -> M.Mand       (f l, f r)
-    | A.Plogical (A.Or, l, r)        -> M.Mor        (f l, f r)
-    | A.Plogical (A.Imply, l, r)     -> M.Mimply     (f l, f r)
-    | A.Plogical (A.Equiv, l, r)     -> M.Mequiv     (f l, f r)
-    | A.Pnot e                       -> M.Mnot       (f e)
-    | A.Pmulticomp (e, l)            -> M.Mmulticomp (f e, List.map (fun (op, e) -> (to_comparison op, f e)) l)
-    | A.Pcomp (A.Equal, l, r)        -> M.Mequal     (f l, f r)
-    | A.Pcomp (A.Nequal, l, r)       -> M.Mnequal    (f l, f r)
-    | A.Pcomp (A.Gt, l, r)           -> M.Mgt        (f l, f r)
-    | A.Pcomp (A.Ge, l, r)           -> M.Mge        (f l, f r)
-    | A.Pcomp (A.Lt, l, r)           -> M.Mlt        (f l, f r)
-    | A.Pcomp (A.Le, l, r)           -> M.Mle        (f l, f r)
-    | A.Parith (A.Plus, l, r)        -> M.Mplus      (f l, f r)
-    | A.Parith (A.Minus, l, r)       -> M.Mminus     (f l, f r)
-    | A.Parith (A.Mult, l, r)        -> M.Mmult      (f l, f r)
-    | A.Parith (A.Div, l, r)         -> M.Mdiv       (f l, f r)
-    | A.Parith (A.Modulo, l, r)      -> M.Mmodulo    (f l, f r)
-    | A.Puarith (A.Uplus, e)         -> M.Muplus     (f e)
-    | A.Puarith (A.Uminus, e)        -> M.Muminus    (f e)
-    | A.Precord l                    -> M.Mrecord    (List.map f l)
-    | A.Pletin (id, init, typ, cont) -> M.Mletin     ([id], f init, Option.map ftyp typ, f cont)
-    | A.Pdeclvar (i, t, v)           -> M.Mdeclvar   ([i], Option.map ftyp t, f v)
+    | A.Pif (c, t, e)                   -> M.Mif        (f c, f t, Some (f e))
+    | A.Pmatchwith (m, l)               -> M.Mmatchwith (f m, List.map (fun (p, e) -> (to_pattern p, f e)) l)
+    | A.Plogical (A.And, l, r)          -> M.Mand       (f l, f r)
+    | A.Plogical (A.Or, l, r)           -> M.Mor        (f l, f r)
+    | A.Plogical (A.Imply, l, r)        -> M.Mimply     (f l, f r)
+    | A.Plogical (A.Equiv, l, r)        -> M.Mequiv     (f l, f r)
+    | A.Pnot e                          -> M.Mnot       (f e)
+    | A.Pmulticomp (e, l)               -> M.Mmulticomp (f e, List.map (fun (op, e) -> (to_comparison op, f e)) l)
+    | A.Pcomp (A.Equal, l, r)           -> M.Mequal     (f l, f r)
+    | A.Pcomp (A.Nequal, l, r)          -> M.Mnequal    (f l, f r)
+    | A.Pcomp (A.Gt, l, r)              -> M.Mgt        (f l, f r)
+    | A.Pcomp (A.Ge, l, r)              -> M.Mge        (f l, f r)
+    | A.Pcomp (A.Lt, l, r)              -> M.Mlt        (f l, f r)
+    | A.Pcomp (A.Le, l, r)              -> M.Mle        (f l, f r)
+    | A.Parith (A.Plus, l, r)           -> M.Mplus      (f l, f r)
+    | A.Parith (A.Minus, l, r)          -> M.Mminus     (f l, f r)
+    | A.Parith (A.Mult, l, r)           -> M.Mmult      (f l, f r)
+    | A.Parith (A.Div, l, r)            -> M.Mdiv       (f l, f r)
+    | A.Parith (A.Modulo, l, r)         -> M.Mmodulo    (f l, f r)
+    | A.Puarith (A.Uplus, e)            -> M.Muplus     (f e)
+    | A.Puarith (A.Uminus, e)           -> M.Muminus    (f e)
+    | A.Precord l                       -> M.Mrecord    (List.map f l)
+    | A.Pletin (id, init, typ, body, o) -> M.Mletin     ([id], f init, Option.map ftyp typ, f body, Option.map f o)
+    | A.Pdeclvar (i, t, v)              -> M.Mdeclvar   ([i], Option.map ftyp t, f v)
     | A.Pvar (_, id) when A.Utils.is_variable ast id   -> M.Mvarstorevar id
     | A.Pvar (_, id) when A.Utils.is_asset ast id      -> M.Mvarstorecol id
     | A.Pvar (_, id) when A.Utils.is_enum_value ast id -> M.Mvarenumval id
@@ -413,7 +413,8 @@ let to_model (ast : A.model) : M.model =
     let letinasset : M.mterm = M.mk_mterm (M.Mletin ([var_name],
                                                      record,
                                                      Some (type_asset),
-                                                     set_mterm
+                                                     set_mterm,
+                                                     None
                                                     )) Tunit in
 
     (* let seq : M.mterm list = (List.map (fun ((id, op, term) : ('a * A.operator * 'c)) -> M.mk_mterm
@@ -433,7 +434,8 @@ let to_model (ast : A.model) : M.model =
     let letinasset : M.mterm = M.mk_mterm (M.Mletin ([var_name],
                                                      get_mterm,
                                                      Some (type_asset),
-                                                     letinasset
+                                                     letinasset,
+                                                     None
                                                     ))
         Tunit in
 
@@ -444,7 +446,8 @@ let to_model (ast : A.model) : M.model =
         M.Mletin ([key_loced],
                   k,
                   None,
-                  letinasset
+                  letinasset,
+                  None
                  ) in
     res
 
@@ -538,7 +541,7 @@ let to_model (ast : A.model) : M.model =
     | A.Iif (c, t, e)           -> M.Mif (f c, g t, Some (g e))
     | A.Ifor (i, col, body)     -> M.Mfor (i, f col, g body, lbl)
     | A.Iiter (i, a, b, body)   -> M.Miter (i, f a, f b, g body, lbl)
-    | A.Iletin (i, init, cont)  -> M.Mletin ([i], f init, Option.map ptyp_to_type init.type_, g cont) (* TODO *)
+    | A.Iletin (i, init, cont)  -> M.Mletin ([i], f init, Option.map ptyp_to_type init.type_, g cont, None) (* TODO *)
     | A.Ideclvar (i, v)         -> M.Mdeclvar ([i], Option.map ptyp_to_type v.type_, f v) (* TODO *)
     | A.Iseq l                  -> M.Mseq (List.map g l)
     | A.Imatchwith (m, l)       -> M.Mmatchwith (f m, List.map (fun (p, i) -> (to_pattern p, g i)) l)

@@ -113,7 +113,7 @@ let extend_removeif (model : model) : model =
 
       let for_ = mk_mterm (Mfor (assetv_str, assets_var, remove, Some id)) Tunit in
 
-      let res : mterm__node = Mletin ([assets_var_name], select, Some type_assets, for_) in
+      let res : mterm__node = Mletin ([assets_var_name], select, Some type_assets, for_, None) in
       mk_mterm res Tunit
     | _ -> map_mterm (internal_extend ctx) t in
   map_mterm_model_gen [] internal_extend model |>
@@ -310,7 +310,7 @@ let replace_declvar_by_letin (model : model) : model =
                 | [i] -> i
                 | lll -> mk_mterm (Mseq accu) (List.last lll).type_
               in
-              let res = mk_mterm (Mletin(ids, init, t, body)) body.type_ in
+              let res = mk_mterm (Mletin(ids, init, t, body, None)) body.type_ in
               [ res ]
             end
           | _ ->
@@ -350,13 +350,13 @@ let remove_get_dot (model : model) : model =
   in
   let rec aux c (mt : mterm) : mterm =
     match mt.node with
-    | Mletin (ids, init, t, body) when is_get_dot init ->
+    | Mletin (ids, init, t, body, o) when is_get_dot init ->
       begin
         let (new_init, l) : mterm * (lident * mterm) list = extract_get_dot init in
         List.fold_right
           (fun (id, v) accu ->
-             mk_mterm (Mletin ([id], v, Some v.type_, accu)) accu.type_
-          ) l (mk_mterm (Mletin (ids, new_init, t, body)) mt.type_)
+             mk_mterm (Mletin ([id], v, Some v.type_, accu, None)) accu.type_
+          ) l (mk_mterm (Mletin (ids, new_init, t, body, o)) mt.type_)
       end
     | _ -> map_mterm (aux c) mt
   in

@@ -1,5 +1,6 @@
 open Location
 open Ident
+open Tools
 
 type lident = ident loced
 
@@ -268,7 +269,7 @@ type 'id term_node  =
   | Parith of arithmetic_operator * 'id term_gen * 'id term_gen
   | Puarith of unary_arithmetic_operator * 'id term_gen
   | Precord of 'id term_gen list
-  | Pletin of 'id * 'id term_gen * ptyp option * 'id term_gen
+  | Pletin of 'id * 'id term_gen * ptyp option * 'id term_gen * 'id term_gen option (* ident * init * type * body * otherwise *)
   | Pdeclvar of 'id * ptyp option * 'id term_gen
   | Pvar of bool * 'id
   | Parray of 'id term_gen list
@@ -657,7 +658,7 @@ let map_term_node (f : 'id term_gen -> 'id term_gen) = function
   | Parith (op, l, r)       -> Parith (op, f l, f r)
   | Puarith (op, e)         -> Puarith (op, f e)
   | Precord l               -> Precord (List.map f l)
-  | Pletin (i, a, t, b)     -> Pletin (i, f a, t, f b)
+  | Pletin (i, a, t, b, o)     -> Pletin (i, f a, t, f b, Option.map f o)
   | Pdeclvar (i, t, v)      -> Pdeclvar (i, t, f v)
   | Pvar (b, v)             -> Pvar (b, v)
   | Parray l                -> Parray (List.map f l)
@@ -716,7 +717,7 @@ let fold_term (f: 'a -> 't -> 'a) (accu : 'a) (term : 'id term_gen) =
   | Parith (_, l, r)            -> f (f accu l) r
   | Puarith (_, e)              -> f accu e
   | Precord l                   -> List.fold_left f accu l
-  | Pletin (_, a, _, b)         -> f (f accu a) b
+  | Pletin (_, a, _, b, o)      -> let tmp = f (f accu a) b in Option.map_dfl (f tmp) tmp o
   | Pdeclvar (i, t, v)          -> f accu v
   | Pvar _                      -> accu
   | Parray l                    -> List.fold_left f accu l
@@ -839,10 +840,14 @@ let fold_map_term g f (accu : 'a) (term : 'id term_gen) : 'term * 'a =
            pterms @ [p], accu) ([], accu) l in
     g (Precord lp), la
 
-  | Pletin (id, i, t, o) ->
+  | Pletin (id, i, t, b, o) ->
     let ie, ia = f accu i in
-    let oe, oa = f ia o in
-    g (Pletin (id, ie, t, oe)), oa
+    let be, ba = f ia b in
+    let oe, oa =
+      match o with
+      | Some o -> f ba o |> (fun (x, y) -> (Some x, y))
+      | None -> (None, ba) in
+    g (Pletin (id, ie, t, be, oe)), oa
 
   | Pdeclvar (i, t, v) ->
     let ve, va = f accu v in

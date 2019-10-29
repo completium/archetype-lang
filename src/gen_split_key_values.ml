@@ -54,10 +54,10 @@ let split_key_values (model : model) : model =
       let k, t = Utils.get_asset_key model (dumloc an) in
       { x with node = Mselect (an, col, pred); type_ = Tcontainer (Tbuiltin t, Collection)}
 
-    | Mletin (ids, init, _, body) ->
+    | Mletin (ids, init, _, body, o) ->
       let init = f ctx init in
       let body = f ctx body in
-      { x with node = Mletin (ids, init, Some (init.type_), body); type_ = body.type_}
+      { x with node = Mletin (ids, init, Some (init.type_), body, o); type_ = body.type_}
 
     | Mdotasset (e, i) ->
       let asset = Utils.get_asset_type e in
@@ -117,7 +117,7 @@ let split_key_values (model : model) : model =
         else
           let key = mk_mterm (Mvarlocal id) (Tbuiltin t) in
           let get = mk_mterm (Mget (unloc an, key)) (Tasset an) in
-          let body = mk_mterm (Mletin ([id], get, Some (Tasset an), body)) (body.type_) in
+          let body = mk_mterm (Mletin ([id], get, Some (Tasset an), body, None)) (body.type_) in
           body
       in
       { x with node =  Mfor (id, col, body, lbl) }
