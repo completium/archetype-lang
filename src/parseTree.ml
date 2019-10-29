@@ -120,7 +120,7 @@ type expr_unloc =
   | Eseq          of expr * expr
   | Eletin        of lident * type_t option * expr * expr * expr option
   | Evar          of lident * type_t option * expr
-  | Ematchwith    of expr * (pattern list * expr) list
+  | Ematchwith    of expr * branch list
   | Equantifier   of quantifier * lident * quantifier_kind * expr
   | Eassert       of lident
   | Elabel        of lident
@@ -128,6 +128,8 @@ type expr_unloc =
   | Eoption       of option_
   | Einvalid
 [@@deriving yojson, show {with_path = false}]
+
+and branch = (pattern list * expr)
 
 and scope = [
   | `Added

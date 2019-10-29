@@ -180,6 +180,7 @@ module List : sig
   val find_dup      : ('a -> 'b) -> 'a list -> ('a * 'a) option
   val undup         : ('a -> 'b) -> 'a list -> 'a list
   val xfilter       : ('a -> [`Left of 'b | `Right of 'c]) -> 'a list -> 'b list * 'c list
+  val fold_lefti    : (int -> 'a -> 'b -> 'a) -> 'a -> 'b list -> 'a
   val fold_left_map : ('a -> 'b -> 'a * 'c) -> 'a -> 'b list -> 'a * 'c list
   val assoc_all     : 'a -> ('a * 'b) list -> 'b list
   val index_of      : ('a -> bool) -> 'a list -> int
@@ -270,6 +271,9 @@ end = struct
 
     in fun xs -> doit ([], []) xs
 
+  let fold_lefti f state xs =
+    fst (List.fold_left (fun (state, i) x -> (f i state x, i+1)) (state, 0) xs)
+
   let fold_left_map f state xs =
     let state, xs =
       List.fold_left (fun (state, acc) x ->
@@ -321,6 +325,8 @@ module Map : sig
 
     val of_list : ?last:bool -> (key * 'a) list -> 'a t
     val collect : ('a -> key) -> ('a * 'b list) list -> ('a * 'b list) list
+    val mem     : key -> 'a t -> bool
+    val change  : key -> ('a option -> 'a) -> 'a t -> 'a t
   end
 end = struct
   module type OrderedType = Map.OrderedType
@@ -342,6 +348,15 @@ end = struct
       List.map
         (fun k -> (k, find (key k) map))
         (List.undup key (List.map fst xs))
+
+    let mem (k : key) (m : 'a t) : bool =
+      try  ignore (find k m : 'a); true
+      with Not_found -> false
+
+    let change (k : key) (f : 'a option -> 'a) (m : 'a t) : 'a t =
+      let v = try Some (find k m) with Not_found -> None in
+      add k (f v) m
+
   end
 end
 
@@ -353,6 +368,9 @@ module Mint = Map.Make(struct
     type t = int
     let compare = (Stdlib.compare : t -> t -> int)
   end)
+
+(* -------------------------------------------------------------------- *)
+module Mstr = Map.Make(String)
 
 (* -------------------------------------------------------------------- *)
 let norm_hex_string (s : string) =
