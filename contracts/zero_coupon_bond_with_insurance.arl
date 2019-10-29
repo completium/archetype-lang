@@ -9,7 +9,7 @@ contract insurance {
    action pay : address, tez
 }
 
-instance zero_insr of insurance = @KT1GabhR5P52hw6xs5P69BXJYAURaznhvN1k
+variable zero_insur insurance = @KT1GabhR5P52hw6xs5P69BXJYAURaznhvN1k
 
 variable price tez from owner = 10
 
@@ -25,16 +25,14 @@ states =
  | Collected (* owner has collected payment *)
 
 transition insured from Created {
-  called by insurance
+  called by zero_insur
 
   to Insured
 }
 
 transition confirm from Insured {
   specification {
-    postcondition s1 {
-      balance = 0
-    }
+    s1 : balance = 0
   }
 
   to Confirmed
@@ -62,6 +60,6 @@ transition collect from Repaid {
   with effect {
     if balance >= payment
     then transfer balance to owner
-    else guarantee_fund.pay (owner, payment)
+    else zero_insur.pay (owner, payment)
   }
 }
