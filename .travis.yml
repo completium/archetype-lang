@@ -1,5 +1,8 @@
+language: generic
 dist: xenial
-language: c
+
+services:
+  - docker
 
 cache:
   directories:
@@ -19,18 +22,19 @@ env:
 
 before_install:
   # Obtain and install opam locally.
-  - sudo wget https://github.com/ocaml/opam/releases/download/2.0.0/opam-2.0.0-x86_64-linux -O /usr/bin/opam
-  - sudo chmod 755 /usr/bin/opam
+  - sudo add-apt-repository -y ppa:avsm/ppa
+  - sudo apt-get -y update
+  - sudo apt-get -y install opam ocaml-nox
   # Initialize the switch.
-  - opam init -a --disable-sandboxing --compiler="$OCAML_VERSION"
-  - opam update
-  - opam switch "$OCAML_VERSION"
-  - eval $(opam env)
-  - opam install dune menhir.20190620 digestif.0.7.3 num ppx_deriving ppx_deriving_yojson
-  - make all
+  - opam init -a --disable-sandboxing --compiler="${OCAML_VERSION}"
+  - opam install depext
+  - opam pin add -n archetype .
+  - opam depext archetype
+  - opam install --deps-only archetype
 
 script:
-  - make check
+  - opam config exec make all
+  - opam config exec make check
 
 notifications:
   email:
