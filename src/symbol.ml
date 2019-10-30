@@ -53,6 +53,7 @@ let string_of_token = function
   | NAMESPACE       -> "NAMESPACE"
   | MULTEQUAL       -> "MULTEQUAL"
   | MULT            -> "MULT"
+  | MUTZ n          -> Printf.sprintf "MUTZ(%s)" (Big_int.string_of_big_int n)
   | MTZ n           -> Printf.sprintf "MTZ(%s)" (Big_int.string_of_big_int n)
   | MINUSEQUAL      -> "MINUSEQUAL"
   | MINUS           -> "MINUS"
@@ -182,6 +183,7 @@ let string_of_symbol = function
   | X (T T_MULTEQUAL) -> "*="
   | X (T T_MULT) -> "*"
   | X (T T_MTZ) -> "a mtz"
+  | X (T T_MUTZ) -> "a mutz"
   | X (T T_MINUSEQUAL) -> "-="
   | X (T T_MINUS) -> "-"
   | X (T T_MATCH) -> "match"

@@ -33,8 +33,9 @@ let to_model (ast : A.model) : M.model =
   in
 
   let to_currency = function
-    | A.Tz  -> M.Tz
-    | A.Mtz -> M.Mtz
+    | A.Tz   -> M.Tz
+    | A.Mtz  -> M.Mtz
+    | A.Mutz -> M.Mutz
   in
 
   let vtyp_to_btyp = function
