@@ -84,6 +84,11 @@ let mk_field ?(f_loc=Loc.dummy_position) ?(f_mutable=false) ?(f_ghost=false) f_i
 let mk_binder ?(loc=Loc.dummy_position) ?ident ?(ghost=false) ?pty () : P.binder =
   (loc, ident, ghost, pty)
 
+let name_term (id_opt : P.ident option) def t =
+  let name = Opt.fold (fun _ (id : P.ident) -> id.id_str) def id_opt in
+  let attr = P.ATstr (Ident.create_attribute ("hyp_name:" ^ name)) in
+  P.{ term_loc = t.term_loc; term_desc = Tattr (attr, t) }
+
 let to_type (t : M.loc_typ) =
   let rec f (t : M.loc_ident M.abstract_type) : P.pty =
     match t with
@@ -352,7 +357,12 @@ let to_ptree (mlwtree : M.loc_mlw_tree) : P.mlw_file =
                   s.fields in
               let invs : P.term list =
                 List.map (fun (x : (M.loc_term, M.loc_ident) M.abstract_formula) ->
-                    mk_term (to_term x.form))
+                    let formula = mk_term (to_term x.form) in
+                    let id = "expl:" ^ unloc x.id in
+                    let inv = mk_term (P.Tattr (P.ATstr (Ident.create_attribute id), formula)) in
+                    let i = name_term None "LoopInvariant" inv in
+                    i
+                  )
                   s.invariants in
               P.Dtype [mk_type ~td_inv:invs ~td_wit:wit (mk_ident_str "_storage") type_def ]
             )::accu
