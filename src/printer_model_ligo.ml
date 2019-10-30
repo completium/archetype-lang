@@ -778,11 +778,14 @@ let pp_model fmt (model : model) =
       | Mcurrency (v, c) ->
         begin
           match c with
+          | Tz ->
+            Format.fprintf fmt "%atz"
+              pp_big_int v
           | Mtz ->
             Format.fprintf fmt "%amtz"
               pp_big_int v
-          | Tz ->
-            Format.fprintf fmt "%atz"
+          | Mutz ->
+            Format.fprintf fmt "%amutz"
               pp_big_int v
         end
       | Maddress v ->

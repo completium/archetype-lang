@@ -1027,11 +1027,14 @@ let for_literal (_env : env) (topv : PT.literal loced) : M.bval =
   | Lstring s ->
     mk_sp M.vtstring (M.BVstring s)
 
+  | Ltz tz ->
+    mk_sp (M.vtcurrency) (M.BVcurrency (M.Tz,  tz))
+
   | Lmtz tz ->
     mk_sp (M.vtcurrency) (M.BVcurrency (M.Mtz, tz))
 
-  | Ltz tz ->
-    mk_sp (M.vtcurrency) (M.BVcurrency (M.Tz,  tz))
+  | Lmutz tz ->
+    mk_sp (M.vtcurrency) (M.BVcurrency (M.Mutz, tz))
 
   | Laddress a ->
     mk_sp M.vtaddress (M.BVaddress a)

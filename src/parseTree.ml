@@ -161,6 +161,7 @@ and literal =
   | Lrational of Core.big_int * Core.big_int
   | Ltz       of Core.big_int
   | Lmtz      of Core.big_int
+  | Lmutz     of Core.big_int
   | Laddress  of string
   | Lstring   of string
   | Lbool     of bool

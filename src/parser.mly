@@ -153,6 +153,7 @@
 %token <Big_int.big_int * Big_int.big_int> RATIONAL
 %token <Big_int.big_int> TZ
 %token <Big_int.big_int> MTZ
+%token <Big_int.big_int> MUTZ
 %token <string> ADDRESS
 %token <string> DURATION
 %token <string> DATE
@@ -813,6 +814,7 @@ literal:
  | x=RATIONAL   { let n, d = x in Lrational (n, d) }
  | x=TZ         { Ltz       x }
  | x=MTZ        { Lmtz      x }
+ | x=MUTZ       { Lmutz     x }
  | x=STRING     { Lstring   x }
  | x=ADDRESS    { Laddress  x }
  | x=bool_value { Lbool     x }
