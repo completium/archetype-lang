@@ -167,7 +167,12 @@ let to_model (ast : A.model) : M.model =
   in
 
 
-  let to_mterm_node (n : A.lident A.term_node) (f : A.lident A.term_gen -> M.mterm) (ftyp : 't -> M.type_) : (M.lident, M.mterm) M.mterm_node =
+  let to_mterm_node (n : A.lident A.term_node) (f : A.lident A.term_gen -> M.mterm) (ftyp : 't -> M.type_) (pterm : A.pterm) : (M.lident, M.mterm) M.mterm_node =
+    let process_before b e =
+      if b
+      then (M.Msetbefore (M.mk_mterm e (ftyp (Option.get pterm.type_)) ~loc:pterm.loc))
+      else e
+    in
     match n with
     | A.Pif (c, t, e)                   -> M.Mif        (f c, f t, Some (f e))
     | A.Pmatchwith (m, l)               -> M.Mmatchwith (f m, List.map (fun (p, e) -> (to_pattern p, f e)) l)
@@ -190,13 +195,13 @@ let to_model (ast : A.model) : M.model =
     | A.Parith (A.Modulo, l, r)         -> M.Mmodulo    (f l, f r)
     | A.Puarith (A.Uplus, e)            -> M.Muplus     (f e)
     | A.Puarith (A.Uminus, e)           -> M.Muminus    (f e)
-    | A.Precord l                       -> M.Mrecord    (List.map f l)
+    | A.Precord l                       -> M.Mrecord    (List.map f l)| A.Pcall (Some p, A.Cconst A.Cbefore,    []) -> M.Msetbefore    (f p)
     | A.Pletin (id, init, typ, body, o) -> M.Mletin     ([id], f init, Option.map ftyp typ, f body, Option.map f o)
     | A.Pdeclvar (i, t, v)              -> M.Mdeclvar   ([i], Option.map ftyp t, f v)
-    | A.Pvar (_, id) when A.Utils.is_variable ast id   -> M.Mvarstorevar id
-    | A.Pvar (_, id) when A.Utils.is_asset ast id      -> M.Mvarstorecol id
-    | A.Pvar (_, id) when A.Utils.is_enum_value ast id -> M.Mvarenumval id
-    | A.Pvar (_, id)                                   -> M.Mvarlocal id
+    | A.Pvar (b, id) when A.Utils.is_variable ast id   -> let e = M.Mvarstorevar id in process_before b e
+    | A.Pvar (b, id) when A.Utils.is_asset ast id      -> let e = M.Mvarstorecol id in process_before b e
+    | A.Pvar (b, id) when A.Utils.is_enum_value ast id -> let e = M.Mvarenumval  id in process_before b e
+    | A.Pvar (b, id)                                   -> let e = M.Mvarstorevar id in process_before b e
     | A.Parray l                             -> M.Marray (List.map f l)
     | A.Plit ({node = BVint i; _})           -> M.Mint i
     | A.Plit ({node = BVuint i; _})          -> M.Muint i
@@ -224,7 +229,7 @@ let to_model (ast : A.model) : M.model =
     | A.Pquantifer (Forall, i, (coll, typ), term)    -> M.Mforall (i, ptyp_to_type typ, Option.map f coll, f term)
     | A.Pquantifer (Exists, i, (coll, typ), term)    -> M.Mexists (i, ptyp_to_type typ, Option.map f coll, f term)
 
-    | A.Pcall (Some p, A.Cconst A.Cbefore,    []) -> M.Msetbefore    (f p)
+    (* | A.Pcall (Some p, A.Cconst A.Cbefore,    []) -> M.Msetbefore    (f p) *)
     | A.Pcall (Some p, A.Cconst A.Cunmoved,   []) -> M.Msetunmoved   (f p)
     | A.Pcall (Some p, A.Cconst A.Cadded,     []) -> M.Msetadded     (f p)
     | A.Pcall (Some p, A.Cconst A.Cremoved,   []) -> M.Msetremoved   (f p)
@@ -334,7 +339,7 @@ let to_model (ast : A.model) : M.model =
   in
 
   let rec to_mterm (pterm : A.pterm) : M.mterm =
-    let node = to_mterm_node pterm.node to_mterm ptyp_to_type in
+    let node = to_mterm_node pterm.node to_mterm ptyp_to_type pterm in
     let type_ = ptyp_to_type (Option.get pterm.type_) in
     M.mk_mterm node type_ ~loc:pterm.loc
   in
