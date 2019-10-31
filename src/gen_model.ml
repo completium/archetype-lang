@@ -201,7 +201,7 @@ let to_model (ast : A.model) : M.model =
     | A.Pvar (b, id) when A.Utils.is_variable ast id   -> let e = M.Mvarstorevar id in process_before b e
     | A.Pvar (b, id) when A.Utils.is_asset ast id      -> let e = M.Mvarstorecol id in process_before b e
     | A.Pvar (b, id) when A.Utils.is_enum_value ast id -> let e = M.Mvarenumval  id in process_before b e
-    | A.Pvar (b, id)                                   -> let e = M.Mvarstorevar id in process_before b e
+    | A.Pvar (b, id)                                   -> let e = M.Mvarlocal    id in process_before b e
     | A.Parray l                             -> M.Marray (List.map f l)
     | A.Plit ({node = BVint i; _})           -> M.Mint i
     | A.Plit ({node = BVuint i; _})          -> M.Muint i
