@@ -961,6 +961,25 @@ let check_and_emit_name_free (env : env) (x : M.lident) =
     Env.emit_error env (loc x, NameIsAlreadyBound (unloc x));
   free
 
+(* --------------------------------------------------------------------- *)
+let select_operator env loc (op, tys) =
+  let filter (sig_ : opsig) =
+    Type.sig_compatible ~from_:tys ~to_:sig_.osl_sig in
+
+  match List.filter filter (List.assoc_all op opsigs) with
+  | [] ->
+      Env.emit_error env
+        (loc, NoMatchingOperator (op, tys));
+      None
+
+  | _::_::_ as sigs ->
+      Env.emit_error env
+        (loc, MultipleMatchingOperator (op, tys, sigs));
+                None
+
+  | [sig_] ->
+      Some sig_
+
 (* -------------------------------------------------------------------- *)
 let for_container (_ : env) = function
   | PT.Collection-> M.Collection
@@ -1342,26 +1361,14 @@ let rec for_xexpr (mode : emode_t) (env : env) ?(ety : M.ptyp option) (tope : PT
       let _, aout =
         List.fold_left_map (fun e ({ pldesc = op }, e') ->
             match e.M.type_, e'.M.type_ with
-            | Some ty, Some ty' ->
-              let filter (sig_ : opsig) =
-                Type.sig_compatible ~from_:[ty; ty'] ~to_:sig_.osl_sig in
-
+            | Some ty, Some ty' -> begin
               let aout =
-                match List.filter filter (List.assoc_all (`Cmp op) opsigs) with
-                | [] ->
-                  Env.emit_error env (loc tope,
-                    NoMatchingOperator (`Cmp op, [ty; ty']));
-                  None
-
-                | _::_::_ as sigs ->
-                  Env.emit_error env (loc tope,
-                    MultipleMatchingOperator (`Cmp op, [ty; ty'], sigs));
-                  None
-
-                | [sig_] ->
-                  Some (mk_sp (Some sig_.osl_ret) (M.Pcomp (tt_cmp_operator op, e, e')))
-
+                Option.map (fun sig_ ->
+                  let term = M.Pcomp (tt_cmp_operator op, e, e') in
+                  mk_sp (Some sig_.osl_ret) term
+                ) (select_operator env (loc tope) (`Cmp op, [ty; ty']))
               in (e', aout)
+            end
 
             | _, _ ->
               e', None)
@@ -1385,24 +1392,10 @@ let rec for_xexpr (mode : emode_t) (env : env) ?(ety : M.ptyp option) (tope : PT
           bailout ();
 
         let aty = List.map (fun a -> Option.get a.M.type_) args in
-
-        let filter (sig_ : opsig) =
-          Type.sig_compatible ~from_:aty ~to_:sig_.osl_sig in
-
         let sig_ =
-          match List.filter filter (List.assoc_all op opsigs) with
-          | [] ->
-            let sig_ = List.map (fun x -> Option.get x.M.type_) args in
-            Env.emit_error env (loc tope, NoMatchingOperator (op, sig_));
-            bailout ()
-
-          | _::_::_ as sigs ->
-            let sig_ = List.map (fun x -> Option.get x.M.type_) args in
-            Env.emit_error env (loc tope, (MultipleMatchingOperator (op, sig_, sigs)));
-            bailout ()
-
-          | [sig_] ->
-            sig_ in
+          Option.get_fdfl
+            (fun () -> bailout ())
+            (select_operator env (loc tope) (op, aty)) in
 
         let aout =
           match op with
