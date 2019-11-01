@@ -18,9 +18,9 @@ module Type : sig
   val is_currency : M.ptyp -> bool
   val is_option   : M.ptyp -> bool
 
-  val equal      : M.ptyp -> M.ptyp -> bool
+  val equal : M.ptyp -> M.ptyp -> bool
 
-  val compatible : from_:M.ptyp -> to_:M.ptyp -> bool
+  val compatible     : from_:M.ptyp -> to_:M.ptyp -> bool
   val sig_compatible : from_:M.ptyp list -> to_:M.ptyp list -> bool
 end = struct
   let as_container = function M.Tcontainer (ty, c) -> Some (ty, c) | _ -> None
