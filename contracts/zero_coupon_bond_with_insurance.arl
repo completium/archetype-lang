@@ -11,11 +11,11 @@ contract insurance {
 
 variable zero_insur insurance = @KT1GabhR5P52hw6xs5P69BXJYAURaznhvN1k
 
-variable price tez from owner = 10
+variable price tez from owner to owner = 10tz
 
-variable payment tez from issuer to owner = 11 * price
+variable payment tez from issuer = 11 * price
 
-variable maturity date
+variable maturity date = now
 
 states =
  | Created initial
@@ -32,7 +32,7 @@ transition insured from Created {
 
 transition confirm from Insured {
   specification {
-    s1 : balance = 0
+    s1 : balance = 0tz
   }
 
   to Confirmed

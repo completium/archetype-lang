@@ -748,7 +748,7 @@ let pp_signature fmt (s : lident signature) =
        then pp_str fmt "()"
        else (pp_list ", " pp_ptyp) fmt x) s.args
 
-let pp_contract fmt (c : lident contract) =
+let pp_contract fmt (c : contract) =
   Format.fprintf fmt "contract %a =@\n  @[%a@]@\n"
     pp_id c.name
     (pp_list "@\n" pp_signature) c.signatures

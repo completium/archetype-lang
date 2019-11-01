@@ -508,24 +508,24 @@ let to_model (ast : A.model) : M.model =
       let name = s.name in
       M.mk_contract_signature name ~args:(List.map (fun arg -> ptyp_to_type arg) s.args) ~loc:s.loc
     in
-    let to_contract (c : A.lident A.contract) : M.contract =
+    let to_contract (c : A.contract) : M.contract =
       M.mk_contract c.name
         ~signatures:(List.map to_contract_signature c.signatures)
         ?init:(Option.map to_mterm c.init)
         ~loc:c.loc
     in
-    list @ List.map (fun (x : A.lident A.contract) -> M.Dcontract (to_contract x)) ast.contracts
+    list @ List.map (fun (x : A.contract) -> M.Dcontract (to_contract x)) ast.contracts
   in
 
   let process_info_contracts list =
-    let to_contract (c : A.lident A.contract) : M.info_contract =
+    let to_contract (c : A.contract) : M.info_contract =
       let signatures : (ident * M.type_ list) list =
         List.map (fun (s : A.lident A.signature) ->
             unloc s.name, List.map ptyp_to_type s.args) c.signatures
       in
       M.mk_info_contract (unloc c.name) ~signatures:signatures
     in
-    list @ List.map (fun (x : A.lident A.contract) -> M.Icontract (to_contract x)) ast.contracts
+    list @ List.map (fun (x : A.contract) -> M.Icontract (to_contract x)) ast.contracts
   in
 
   let info =

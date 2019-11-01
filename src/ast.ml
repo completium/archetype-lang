@@ -539,13 +539,15 @@ type 'id asset_struct = {
 
 type asset = lident asset_struct
 
-type 'id contract = {
+type 'id contract_struct = {
   name       : 'id;
   signatures : 'id signature list;
   init       : 'id term_gen option;
   loc        : Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]
+
+and contract = lident contract_struct
 
 type 'id model_struct = {
   name          : 'id;
@@ -554,7 +556,7 @@ type 'id model_struct = {
   functions     : 'id function_struct list;
   transactions  : 'id transaction_struct list;
   enums         : 'id enum_struct list;
-  contracts     : 'id contract list;
+  contracts     : 'id contract_struct list;
   specifications : 'id specification list;
   securities    : security list;
   loc           : Location.t [@opaque];
@@ -1073,7 +1075,7 @@ end = struct
       ) None ast.assets
 
   let get_contract_opt ast ident =
-    List.fold_left (fun accu (x : 'id contract) ->
+    List.fold_left (fun accu (x : 'id contract_struct) ->
         if (Location.unloc x.name) = (Location.unloc ident)
         then Some x
         else accu

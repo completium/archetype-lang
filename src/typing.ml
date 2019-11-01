@@ -14,9 +14,10 @@ module Type : sig
   val as_asset_collection : M.ptyp -> (M.lident * M.container) option
   val as_tuple            : M.ptyp -> (M.ptyp list) option
 
-  val is_numeric  : M.ptyp -> bool
-  val is_currency : M.ptyp -> bool
-  val is_option   : M.ptyp -> bool
+  val is_numeric   : M.ptyp -> bool
+  val is_currency  : M.ptyp -> bool
+  val is_primitive : M.ptyp -> bool
+  val is_option    : M.ptyp -> bool
 
   val equal : M.ptyp -> M.ptyp -> bool
 
@@ -37,6 +38,9 @@ end = struct
   let is_currency = function
     | M.Tbuiltin (M.VTcurrency) -> true | _ -> false
 
+  let is_primitive = function
+    | M.Tbuiltin _ -> true | _ -> false
+
   let is_option = function
     | M.Toption _ -> true | _ -> false
 
@@ -50,10 +54,15 @@ end = struct
     | M.Tbuiltin bfrom, M.Tbuiltin bto -> begin
         match bfrom, bto with
         | M.VTaddress, M.VTrole
+        | M.VTrole   , M.VTaddress
         | M.VTint    , M.VTrational -> true
 
         | _, _ -> false
       end
+
+    | M.Tcontract _, M.Tbuiltin (M.VTaddress | M.VTrole) (* FIXME *)
+    | M.Tbuiltin (M.VTaddress | M.VTrole), M.Tcontract _ ->
+      true
 
     | _, _ ->
       false
@@ -80,6 +89,7 @@ type error_desc =
   | CannotInferCollectionType
   | CollectionExpected
   | DivergentExpr
+  | DuplicatedContractEntryName        of ident
   | DuplicatedCtorName                 of ident
   | DuplicatedFieldInAssetDecl         of ident
   | DuplicatedFieldInRecordLiteral     of ident
@@ -130,6 +140,7 @@ type error_desc =
   | NotAKeyOfType
   | NotAnAssetType
   | NotAnEnumType
+  | NotAPrimitiveType
   | NotARole                           of ident
   | NumericExpressionExpected
   | OpInRecordLiteral
@@ -141,6 +152,7 @@ type error_desc =
   | UninitializedVar
   | UnknownAction                      of ident
   | UnknownAsset                       of ident
+  | UnknowContractEntryPoint           of ident * ident
   | UnknownEnum                        of ident
   | UnknownField                       of ident * ident
   | UnknownFieldName                   of ident
@@ -195,6 +207,7 @@ let pp_error_desc fmt e =
   | CannotInferCollectionType          -> pp "Cannot infer collection type"
   | CollectionExpected                 -> pp "Collection expected"
   | DivergentExpr                      -> pp "Divergent expression"
+  | DuplicatedContractEntryName i      -> pp "Duplicated contract entry name: %a" pp_ident i
   | DuplicatedCtorName i               -> pp "Duplicated constructor name: %a" pp_ident i
   | DuplicatedFieldInAssetDecl i       -> pp "Duplicated field in asset declaration: %a" pp_ident i
   | DuplicatedFieldInRecordLiteral i   -> pp "Duplicated field in record literal: %a" pp_ident i
@@ -243,6 +256,7 @@ let pp_error_desc fmt e =
   | NotAKeyOfType                      -> pp "pkey-of type expected"
   | NotAnAssetType                     -> pp "Asset type expected"
   | NotAnEnumType                      -> pp "Enumeration type expected"
+  | NotAPrimitiveType                  -> pp "Primitive type expected"
   | NotARole i                         -> pp "Not a role: %a" pp_ident i
   | NumericExpressionExpected          -> pp "Expecting numerical expression"
   | OpInRecordLiteral                  -> pp "Operation in record literal"
@@ -254,6 +268,7 @@ let pp_error_desc fmt e =
   | UninitializedVar                   -> pp "This variable declaration is missing an initializer"
   | UnknownAction i                    -> pp "Unknown action: %a" pp_ident i
   | UnknownAsset i                     -> pp "Unknown asset: %a" pp_ident i
+  | UnknowContractEntryPoint (c, m)    -> pp "Unknown contract entry point: %s.%s" c m
   | UnknownEnum i                      -> pp "Unknown enum: %a" pp_ident i
   | UnknownField (i1, i2)              -> pp "Unknown field: asset %a does not have a field %a" pp_ident i1 pp_ident i2
   | UnknownFieldName i                 -> pp "Unknown field name: %a" pp_ident i
@@ -383,6 +398,7 @@ type groups = {
   gr_acttxs      : acttx                      loced list;
   gr_specs       : PT.specification           loced list;
   gr_secs        : PT.security                loced list;
+  gr_externals   : PT.contract_decl           loced list;
 }
 
 (* -------------------------------------------------------------------- *)
@@ -518,6 +534,12 @@ type statedecl = {
 and ctordecl = M.lident * (M.lident option * M.pterm) list
 
 (* -------------------------------------------------------------------- *)
+type contractdecl = {
+  ct_name    : M.lident;
+  ct_entries : (M.lident * M.ptyp list) list;
+}
+
+(* -------------------------------------------------------------------- *)
 let pterm_arg_as_pterm = function M.AExpr e -> Some e | _ -> None
 
 (* -------------------------------------------------------------------- *)
@@ -550,6 +572,7 @@ module Env : sig
     | `Action      of t tactiondecl
     | `Function    of t fundecl
     | `Field       of ident
+    | `Contract    of contractdecl
   ]
 
   type ecallback = error -> unit
@@ -619,6 +642,13 @@ module Env : sig
     val exists  : t -> ident -> bool
     val push    : t -> t tactiondecl -> t
   end
+
+  module Contract : sig
+    val lookup  : t -> ident -> contractdecl option
+    val get     : t -> ident -> contractdecl
+    val exists  : t -> ident -> bool
+    val push    : t -> contractdecl -> t
+  end
 end = struct
   type ecallback = error -> unit
 
@@ -635,6 +665,7 @@ end = struct
     | `Action      of t tactiondecl
     | `Function    of t fundecl
     | `Field       of ident
+    | `Contract    of contractdecl
   ]
 
   and t = {
@@ -709,10 +740,11 @@ end = struct
   module Type = struct
     let proj (entry : entry) =
       match entry with
-      | `Type  x    -> Some x
-      | `Asset decl -> Some (M.Tasset decl.as_name)
-      | `State decl -> Some (M.Tenum (Option.get decl.sd_name))
-      | _           -> None
+      | `Type  x       -> Some x
+      | `Asset decl    -> Some (M.Tasset decl.as_name)
+      | `State decl    -> Some (M.Tenum (Option.get decl.sd_name))
+      | `Contract decl -> Some (M.Tcontract decl.ct_name)
+      | _              -> None
 
     let lookup (env : t) (name : ident) =
       lookup_gen proj env name
@@ -869,6 +901,22 @@ end = struct
 
     let push (env : t) (act : t tactiondecl) =
       push env (unloc act.ad_name) (`Action act)
+  end
+
+  module Contract = struct
+    let proj = function `Contract x -> Some x | _ -> None
+
+    let lookup (env : t) (name : ident) =
+      lookup_gen proj env name
+
+    let exists (env : t) (name : ident) =
+      Option.is_some (lookup env name)
+
+    let get (env : t) (name : ident) =
+      Option.get (lookup env name)
+
+    let push (env : t) (ctt : contractdecl) =
+      push env (unloc ctt.ct_name) (`Contract ctt)
   end
 end
 
@@ -1390,7 +1438,7 @@ let rec for_xexpr (mode : emode_t) (env : env) ?(ety : M.ptyp option) (tope : PT
       end
 
     | Emethod (the, m, args) -> begin
-        let infos = for_gen_method_call mode env (loc tope) (the, m, args) in
+        let infos = for_gen_method_call mode env (loc tope) (`Parsed the, m, args) in
         let the, asset, method_, args, amap = Option.get_fdfl bailout infos in
 
         let type_of_mthtype = function
@@ -1504,7 +1552,7 @@ let rec for_xexpr (mode : emode_t) (env : env) ?(ety : M.ptyp option) (tope : PT
           match
             match xty with
             | PT.Qcollection xe ->
-              let ast, xe = for_asset_collection_expr mode env xe in
+              let ast, xe = for_asset_collection_expr mode env (`Parsed xe) in
               Option.map (fun (ad, _) -> (Some ast, M.Tasset ad.as_name)) xe
             | PT.Qtype ty ->
               let ty = for_type env ty in
@@ -1652,8 +1700,13 @@ and for_asset_expr mode (env : env) (tope : PT.expr) =
   in (ast, typ)
 
 (* -------------------------------------------------------------------- *)
-and for_asset_collection_expr mode (env : env) (tope : PT.expr) =
-  let ast = for_xexpr mode env tope in
+and for_asset_collection_expr mode (env : env) tope =
+  let ast =
+    match tope with
+    | `Typed   ast -> ast
+    | `Parsed tope -> for_xexpr mode env tope
+  in
+
   let typ =
     match Option.map Type.as_asset_collection ast.M.type_ with
     | None ->
@@ -1661,7 +1714,7 @@ and for_asset_collection_expr mode (env : env) (tope : PT.expr) =
 
     | Some None ->
       Env.emit_error env
-        (loc tope, InvalidAssetCollectionExpr (Option.get ast.M.type_));
+        (ast.M.loc, InvalidAssetCollectionExpr (Option.get ast.M.type_));
       None
 
     | Some (Some (asset, c)) ->
@@ -1859,7 +1912,7 @@ and for_action_description (env : env) (sa : PT.security_arg) : M.action_descrip
   | Sapp (act, [{ pldesc = PT.Sident asset }]) -> begin
       let st : PT.s_term = PT.mk_s_term () in
       let asset = mkloc (loc asset) (PT.Eterm (st, asset)) in
-      let asset = for_asset_collection_expr `Formula env asset in
+      let asset = for_asset_collection_expr `Formula env (`Parsed asset) in
 
       match snd asset with
       | None ->
@@ -2033,10 +2086,45 @@ let rec for_instruction (env : env) (i : PT.expr) : env * M.instruction =
 
   try
     match unloc i with
-    | Emethod (the, m, args) ->
-      let infos = for_gen_method_call `Expr env (loc i) (the, m, args) in
-      let the, _asset, method_, args, _ = Option.get_fdfl bailout infos in
-      env, mki (M.Icall (Some the, M.Cconst method_.mth_name, args))
+    | Emethod (pthe, m, args) -> begin
+      let the = for_xexpr `Expr env pthe in
+
+      match the.M.type_ with
+      | Some (M.Tcontract ctt) -> begin
+        let ctt = Env.Contract.get env (unloc ctt) in
+        match List.Exn.assoc_map unloc (unloc m) ctt.ct_entries with
+        | None ->
+          let exn = UnknowContractEntryPoint (unloc ctt.ct_name, unloc m) in
+          Env.emit_error env (loc m, exn); bailout ()
+
+        | Some entry ->
+          let args = match args with
+            | [ {pldesc = Etuple l; _} ] -> l
+            | _ -> args
+          in
+
+          let na, ne = List.length args, List.length entry in
+          if na <> ne then begin
+            let loc = Location.mergeall (loc pthe :: List.map loc args) in
+            Env.emit_error env (loc, InvalidNumberOfArguments (na, ne));
+            bailout ()
+          end;
+
+          let args =
+            List.map2
+              (fun arg ety -> for_xexpr `Expr env ~ety arg)
+              args entry in
+
+          let args = List.map (fun x -> M.AExpr x) args in
+
+          env, mki (M.Icall (Some the, M.Cid m, args))
+      end
+
+      | _ -> 
+        let infos = for_gen_method_call `Expr env (loc i) (`Typed the, m, args) in
+        let the, _asset, method_, args, _ = Option.get_fdfl bailout infos in
+        env, mki (M.Icall (Some the, M.Cconst method_.mth_name, args))
+    end
 
     | Eseq (i1, i2) ->
       let env, i1 = for_instruction env i1 in
@@ -2106,7 +2194,7 @@ let rec for_instruction (env : env) (i : PT.expr) : env * M.instruction =
       env, mki (M.Ideclvar (x, v))
 
     | Efor (lbl, x, e, i) ->
-      let e, asset = for_asset_collection_expr `Expr env e in
+      let e, asset = for_asset_collection_expr `Expr env (`Parsed e) in
       let asset = Option.map fst asset in
       let env, i = Env.inscope env (fun env ->
           let _ : bool = check_and_emit_name_free env x in
@@ -2766,6 +2854,36 @@ let for_assets_decl (env as env0 : env) (decls : PT.asset_decl loced list) =
   else (env0, List.map (fun _ -> None)  decls)
 
 (* -------------------------------------------------------------------- *)
+let for_contract_decl (env : env) (decl : PT.contract_decl loced) =
+  let name, sigs, _ = unloc decl in
+  let entries =
+    List.pmap (fun (PT.Ssignature (ename, psig)) ->
+      let for1 pty =
+        let ty = for_type env pty in
+        Option.bind (fun ty ->
+          if not (Type.is_primitive ty) then begin
+            Env.emit_error env (loc pty, NotAPrimitiveType);
+            None
+          end else Some ty) ty in
+  
+        let sig_ = List.map for1 psig in
+
+        if List.length sig_ = List.length psig then
+          Some (ename, List.pmap id sig_)
+        else None
+    ) sigs in
+
+  let cdecl = { ct_name = name; ct_entries = entries; } in
+
+  if check_and_emit_name_free env name then
+    (Env.Contract.push env cdecl, Some cdecl)
+  else (env, None)
+
+(* -------------------------------------------------------------------- *)
+let for_contracts_decl (env : env) (decls : PT.contract_decl loced list) =
+  List.fold_left_map for_contract_decl env decls
+
+(* -------------------------------------------------------------------- *)
 let for_acttx_decl (env : env) (decl : acttx loced) =
   match unloc decl with
   | `Action (x, args, pt, i_exts, _exts) -> begin
@@ -2860,6 +2978,7 @@ let group_declarations (decls : (PT.declaration list)) =
     gr_acttxs     = [];
     gr_specs      = [];
     gr_secs       = [];
+    gr_externals  = [];
   } in
 
   let for1 { plloc = loc; pldesc = decl } (g : groups) =
@@ -2896,9 +3015,11 @@ let group_declarations (decls : (PT.declaration list)) =
     | PT.Dsecurity infos ->
       { g with gr_secs = mk infos :: g.gr_secs }
 
-    | Dcontract  _
-    | Dnamespace _
-    | Dextension _
+    | PT.Dcontract infos ->
+      { g with gr_externals = mk infos :: g.gr_externals }
+
+    | Dnamespace _  -> assert false
+    | Dextension _  -> assert false
     | Dinvalid      -> assert false
 
   in List.fold_right for1 decls empty
@@ -2906,6 +3027,7 @@ let group_declarations (decls : (PT.declaration list)) =
 (* -------------------------------------------------------------------- *)
 type decls = {
   state     : statedecl option;
+  contracts : contractdecl option list;
   variables : vardecl option list;
   enums     : statedecl option list;
   assets    : assetdecl option list;
@@ -2935,16 +3057,18 @@ let for_grouped_declarations (env : env) (toploc, g) =
     | _ ->
       (None, env) in
 
-  let env, enums     = for_enums_decl   env g.gr_enums   in
-  let env, variables = for_vars_decl    env g.gr_vars    in
-  let env, assets    = for_assets_decl  env g.gr_assets  in
-  let env, functions = for_funs_decl    env g.gr_funs    in
-  let env, acttxs    = for_acttxs_decl  env g.gr_acttxs  in
-  let env, specs     = for_specs_decl   env g.gr_specs   in
-  let env, secspecs  = for_secs_decl    env g.gr_secs    in
+  let env, contracts = for_contracts_decl env g.gr_externals in
+  let env, enums     = for_enums_decl     env g.gr_enums     in
+  let env, variables = for_vars_decl      env g.gr_vars      in
+  let env, assets    = for_assets_decl    env g.gr_assets    in
+  let env, functions = for_funs_decl      env g.gr_funs      in
+  let env, acttxs    = for_acttxs_decl    env g.gr_acttxs    in
+  let env, specs     = for_specs_decl     env g.gr_specs     in
+  let env, secspecs  = for_secs_decl      env g.gr_secs      in
 
   let output =
-    { state; variables; enums; assets; functions; acttxs; specs; secspecs; }
+    { state    ; contracts; variables; enums   ; assets;
+      functions; acttxs   ; specs    ; secspecs;       }
 
   in (env, output)
 
@@ -3008,6 +3132,19 @@ let variables_of_vdecls fdecls =
         loc      = loc decl.vr_name; }
 
   in List.map for1 (List.pmap (fun x -> x) fdecls)
+
+(* -------------------------------------------------------------------- *)
+let contracts_of_cdecls (decls : contractdecl option list) =
+  let for1 (decl : contractdecl) =
+    let for_sig ((name, args) : M.lident * M.ptyp list) =
+      M.{ name; args; loc = loc name; } in
+
+    M.{ name       = decl.ct_name;
+        signatures = List.map for_sig decl.ct_entries;
+        loc        = loc decl.ct_name;
+        init       = None; }
+
+  in List.map for1 (List.pmap id decls)
 
 (* -------------------------------------------------------------------- *)
 let specifications_of_ispecifications =
@@ -3140,6 +3277,7 @@ let for_declarations (env : env) (decls : (PT.declaration list) loced) : M.model
       ~functions:(functions_of_fdecls decls.functions)
       ~specifications:(List.map specifications_of_ispecifications decls.specs)
       ~securities:(decls.secspecs)
+      ~contracts:(contracts_of_cdecls decls.contracts)
       x
 
   | _ ->
