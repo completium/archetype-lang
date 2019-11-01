@@ -289,16 +289,16 @@ let pp_error_desc fmt e =
   | NoMatchingOperator (op, sig_) ->
     pp "No matches for operator %a(%a)"
       pp_operator op
-      (Printer_tools.pp_list ", " M.pp_ptyp) sig_
+      (Printer_tools.pp_list ", " Printer_ast.pp_ptyp) sig_
 
   | MultipleMatchingOperator (op, sig_, sigs) ->
     pp "Multiple matches for operator %a(%a): %a"
       pp_operator op
-      (Printer_tools.pp_list ", " M.pp_ptyp) sig_
+      (Printer_tools.pp_list ", " Printer_ast.pp_ptyp) sig_
       (Printer_tools.pp_list ", " (fun fmt sig_ ->
            Format.fprintf fmt "(%a) -> %a"
-             (Printer_tools.pp_list " * " M.pp_ptyp) sig_.osl_sig
-             M.pp_ptyp sig_.osl_ret)) sigs
+             (Printer_tools.pp_list " * " Printer_ast.pp_ptyp) sig_.osl_sig
+             Printer_ast.pp_ptyp sig_.osl_ret)) sigs
 
 (* -------------------------------------------------------------------- *)
 type argtype = [`Type of M.type_ | `Effect of ident]
