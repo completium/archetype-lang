@@ -19,7 +19,9 @@ module Type : sig
   val is_option   : M.ptyp -> bool
 
   val equal      : M.ptyp -> M.ptyp -> bool
+
   val compatible : from_:M.ptyp -> to_:M.ptyp -> bool
+  val sig_compatible : from_:M.ptyp list -> to_:M.ptyp list -> bool
 end = struct
   let as_container = function M.Tcontainer (ty, c) -> Some (ty, c) | _ -> None
   let as_asset     = function M.Tasset     x       -> Some x       | _ -> None
@@ -55,6 +57,10 @@ end = struct
 
     | _, _ ->
       false
+
+  let sig_compatible ~(from_ : M.ptyp list) ~(to_ : M.ptyp list) =
+       List.length from_ = List.length to_
+    && List.for_all2 (fun from_ to_ -> compatible ~from_ ~to_) from_ to_
 end
 
 (* -------------------------------------------------------------------- *)
@@ -1290,8 +1296,7 @@ let rec for_xexpr (mode : emode_t) (env : env) ?(ety : M.ptyp option) (tope : PT
             match e.M.type_, e'.M.type_ with
             | Some ty, Some ty' ->
               let filter (sig_ : opsig) =
-                if 2 <> List.length sig_.osl_sig then false else
-                  List.for_all2 Type.equal [ty; ty'] sig_.osl_sig in
+                Type.sig_compatible ~from_:[ty; ty'] ~to_:sig_.osl_sig in
 
               let aout =
                 match List.filter filter (List.assoc_all (`Cmp op) opsigs) with
@@ -1327,17 +1332,14 @@ let rec for_xexpr (mode : emode_t) (env : env) ?(ety : M.ptyp option) (tope : PT
 
     | Eapp (Foperator { pldesc = op }, args) -> begin
         let args = List.map (for_xexpr env) args in
-        let na   = List.length args in
 
         if List.exists (fun arg -> Option.is_none arg.M.type_) args then
           bailout ();
 
-        let filter (sig_ : opsig) =
-          if na <> List.length sig_.osl_sig then false else
+        let aty = List.map (fun a -> Option.get a.M.type_) args in
 
-            List.for_all2
-              (fun arg ty -> Type.equal (Option.get arg.M.type_) ty) (* FIXME *)
-              args sig_.osl_sig in
+        let filter (sig_ : opsig) =
+          Type.sig_compatible ~from_:aty ~to_:sig_.osl_sig in
 
         let sig_ =
           match List.filter filter (List.assoc_all op opsigs) with
