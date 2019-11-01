@@ -19,7 +19,8 @@ module Type : sig
   val is_primitive : M.ptyp -> bool
   val is_option    : M.ptyp -> bool
 
-  val equal : M.ptyp -> M.ptyp -> bool
+  val equal     : M.ptyp -> M.ptyp -> bool
+  val sig_equal : M.ptyp list -> M.ptyp list -> bool
 
   val compatible     : from_:M.ptyp -> to_:M.ptyp -> bool
   val sig_compatible : from_:M.ptyp list -> to_:M.ptyp list -> bool
@@ -70,6 +71,10 @@ end = struct
   let sig_compatible ~(from_ : M.ptyp list) ~(to_ : M.ptyp list) =
        List.length from_ = List.length to_
     && List.for_all2 (fun from_ to_ -> compatible ~from_ ~to_) from_ to_
+
+  let sig_equal tys1 tys2 =
+       List.length tys1 = List.length tys2
+    && List.for_all2 equal tys1 tys2
 end
 
 (* -------------------------------------------------------------------- *)
@@ -972,10 +977,29 @@ let select_operator env loc (op, tys) =
         (loc, NoMatchingOperator (op, tys));
       None
 
-  | _::_::_ as sigs ->
-      Env.emit_error env
-        (loc, MultipleMatchingOperator (op, tys, sigs));
-                None
+  | _::_::_ as sigs -> begin
+      let module E = struct exception Bailout end in
+
+      try
+        let sig_ =
+          match
+            List.filter
+              (fun sig_ -> Type.sig_equal sig_.osl_sig tys)
+              sigs
+          with [sig_] -> sig_ | _ -> raise E.Bailout in
+
+        List.iter (fun sig2 ->
+          if not (Type.sig_compatible ~from_:sig_.osl_sig ~to_:sig2.osl_sig) then
+            raise E.Bailout
+        ) sigs;
+
+        Some sig_
+
+      with E.Bailout ->
+        Env.emit_error env
+          (loc, MultipleMatchingOperator (op, tys, sigs));
+        None
+    end
 
   | [sig_] ->
       Some sig_
