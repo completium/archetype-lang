@@ -120,7 +120,7 @@ type error_desc =
   | MultipleAssetStateDeclaration
   | MultipleInitialMarker
   | MultipleMatchingOperator           of PT.operator * M.ptyp list * opsig list
-  | MultipleOrMissingFromToInVarDecl
+  | MultipleFromToInVarDecl
   | MultipleStateDeclaration
   | NameIsAlreadyBound                 of ident
   | NoMatchingOperator                 of PT.operator * M.ptyp list
@@ -234,7 +234,7 @@ let pp_error_desc fmt e =
   | MoreThanOneInitState l             -> pp "More than one initial state: %a" (Printer_tools.pp_list ", " pp_ident) l
   | MultipleAssetStateDeclaration      -> pp "Multiple asset states declaration"
   | MultipleInitialMarker              -> pp "Multiple 'initial' marker"
-  | MultipleOrMissingFromToInVarDecl   -> pp "Variable declaration must have a single from/to specification"
+  | MultipleFromToInVarDecl            -> pp "Variable declaration must have at most one from/to specification"
   | MultipleStateDeclaration           -> pp "Multiple state declaration"
   | NameIsAlreadyBound i               -> pp "Name is already used: %a" pp_ident i
   | NoSuchMethod i                     -> pp "No such method: %a" pp_ident i
@@ -464,7 +464,7 @@ type vardecl = {
   vr_type   : M.ptyp;
   vr_kind   : [`Constant | `Variable | `Ghost | `Enum];
   vr_def    : (M.pterm * [`Inline | `Std]) option;
-  vr_tgt    : (M.lident * M.lident) option;
+  vr_tgt    : M.lident option * M.lident option;
   vr_core   : M.const option;
 }
 
@@ -784,7 +784,7 @@ end = struct
                vr_type = M.Tcontainer (M.Tasset a.as_name, M.Collection);
                vr_kind = `Constant;
                vr_core = None;
-               vr_tgt  = None;
+               vr_tgt  = (None, None);
                vr_def  = None; }
 
       | `StateByCtor (enum, ctor) when Option.is_some enum.sd_name ->
@@ -792,7 +792,7 @@ end = struct
                vr_type = M.Tenum (Option.get enum.sd_name);
                vr_kind = `Enum;
                vr_core = None;
-               vr_tgt  = None;
+               vr_tgt  = (None, None);
                vr_def  = None; }
 
       | _ -> None
@@ -895,7 +895,7 @@ let empty : env =
       let def = M.Pconst vr_core in
       let def = M.mk_sp ~type_:vr_type  def in
 
-      { vr_name; vr_type; vr_core = Some vr_core; vr_tgt = None;
+      { vr_name; vr_type; vr_core = Some vr_core; vr_tgt = (None, None);
         vr_def = Some (def, `Inline); vr_kind = `Constant
       } in
 
@@ -1302,12 +1302,12 @@ let rec for_xexpr (mode : emode_t) (env : env) ?(ety : M.ptyp option) (tope : PT
                 match List.filter filter (List.assoc_all (`Cmp op) opsigs) with
                 | [] ->
                   Env.emit_error env (loc tope,
-                                      NoMatchingOperator (`Cmp op, [ty; ty']));
+                    NoMatchingOperator (`Cmp op, [ty; ty']));
                   None
 
                 | _::_::_ as sigs ->
                   Env.emit_error env (loc tope,
-                                      MultipleMatchingOperator (`Cmp op, [ty; ty'], sigs));
+                    MultipleMatchingOperator (`Cmp op, [ty; ty'], sigs));
                   None
 
                 | [sig_] ->
@@ -2591,8 +2591,8 @@ let for_var_decl (env : env) (decl : PT.variable_decl loced) =
 
   let tgtc = (List.length tf, List.length tt) in
 
-  if tgtc <> (0, 0) && tgtc <> (1, 1) then
-    Env.emit_error env (loc decl, MultipleOrMissingFromToInVarDecl);
+  if tgtc <> (0, 0) && (fst tgtc > 1 || snd tgtc > 1) then
+    Env.emit_error env (loc decl, MultipleFromToInVarDecl);
 
   match dty with
   | None ->
@@ -2604,16 +2604,13 @@ let for_var_decl (env : env) (decl : PT.variable_decl loced) =
         Env.emit_error env (loc decl, InvalidTypeForVarWithFromTo);
     end;
 
-    let vtgt =
-      match tf, tt with
-      | [Some tf], [Some tt] -> Some (tf, tt)
-      | _ -> None
-    in
+    let vtgt_tf = match tf with [Some tf] -> Some tf | _ -> None in
+    let vtgt_tt = match tt with [Some tt] -> Some tt | _ -> None in
 
     let decl = {
       vr_name = x  ; vr_type = dty;
       vr_kind = ctt; vr_core = None;
-      vr_tgt  = vtgt;
+      vr_tgt  = (vtgt_tf, vtgt_tt);
       vr_def  = Option.map (fun e -> (e, `Std)) e; } in
 
     if   (check_and_emit_name_free env x)
@@ -3006,8 +3003,8 @@ let variables_of_vdecls fdecls =
               default = Option.fst decl.vr_def;
               loc     = loc decl.vr_name; };
         constant = decl.vr_kind = `Constant;
-        from     = Option.map (fun (x, _) -> mktgt x) decl.vr_tgt;
-        to_      = Option.map (fun (_, x) -> mktgt x) decl.vr_tgt;
+        from     = Option.map mktgt (fst decl.vr_tgt);
+        to_      = Option.map mktgt (snd decl.vr_tgt);
         loc      = loc decl.vr_name; }
 
   in List.map for1 (List.pmap (fun x -> x) fdecls)
