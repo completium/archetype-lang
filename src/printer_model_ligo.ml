@@ -3,6 +3,7 @@ open Tools
 open Model
 open Printer_tools
 open Ident
+open Ligo_fun
 
 exception Anomaly of string
 
@@ -1405,45 +1406,36 @@ let pp_model fmt (model : model) =
 
   let pp_function (env : env) (fmt : Format.formatter) (f : function__) =
     let env = {env with f = Some f} in
-    match f.node with
-    | Entry fs ->
-      let name = fs.name in
+    let ligo_fun = to_ligo_fun f in
+    let name = ligo_fun.name in
+    match ligo_fun.ret with
+    | None ->
       Format.fprintf fmt
-        "function %a(const action : action_%a; const %s : storage_type) : (list(operation) * storage_type) is@\n  \
+        "function %s(const action : action_%s; const %s : storage_type) : (list(operation) * storage_type) is@\n  \
          begin@\n    \
          @[%a@]@\n  \
          end with ((nil : list(operation)), %s)@\n"
-        pp_id name
-        pp_id name
+        name
+        name
         const_storage
-        (fun fmt x -> begin
-             match unloc name with
-             (* | "clear_expired" *)
-             (* | "consume" -> pp_str fmt "skip" *)
-             | _ -> pp_mterm env fmt x
-           end) fs.body
+        (pp_mterm env) ligo_fun.body
         const_storage
 
-    | Function (fs, _) ->
-      let name = fs.name in
+    | Some _ret ->
       Format.fprintf fmt
-        "function %a(const %s : storage_type%a) : storage_type is@\n  \
+        "function %s(const %s : storage_type%a) : storage_type is@\n  \
          begin@\n    \
          @[%a@]@\n  \
          end with (%s)@\n"
-        pp_id name
+        name
         const_storage
-        (pp_list "" (fun fmt ((id, type_, _) : argument) ->
+        (pp_list "" (fun fmt (id, type_ : ident * type_) ->
              Format.fprintf fmt
-               "; const %a : %a"
-               pp_id id
+               "; const %s : %a"
+               id
                pp_type type_
-           )) fs.args
-        (fun fmt x -> begin
-             match unloc name with
-             (* | "add_owner_miles" -> pp_str fmt "skip" *)
-             | _ -> pp_mterm env fmt x
-           end) fs.body
+           )) ligo_fun.args
+        (pp_mterm env) ligo_fun.body
         const_storage
   in
 
