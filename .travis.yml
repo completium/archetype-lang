@@ -24,7 +24,7 @@ before_install:
   # Obtain and install opam locally.
   - sudo add-apt-repository -y ppa:avsm/ppa
   - sudo apt-get -y update
-  - sudo apt-get -y install opam ocaml-nox
+  - sudo apt-get -y install opam ocaml-nox ligo
   # Initialize the switch.
   - opam init -a --disable-sandboxing --compiler="${OCAML_VERSION}"
   - opam install depext

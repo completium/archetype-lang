@@ -20,14 +20,14 @@ process_ligo () {
       GRET=1
     fi
 
-#    ligo compile-contract $OUT main > $TZ
-#    T=`head -c 1 out.tz`
-#    if [ $T = "{" ]; then
-#	      echo -ne "\033[32m OK \033[0m"
-#    else
-#	      echo -ne "\033[31m KO \033[0m"
-#        GRET=1
-#    fi
+    ligo compile-contract $OUT main > $TZ
+    T=`head -c 1 out.tz`
+    if [ $T = "{" ]; then
+	      echo -ne "\033[32m OK \033[0m"
+    else
+	      echo -ne "\033[31m KO \033[0m"
+        GRET=1
+    fi
     echo ""
     rm -fr $OUT *.pp.ligo $TZ
 }
