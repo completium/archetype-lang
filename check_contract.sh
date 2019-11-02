@@ -2,35 +2,8 @@
 
 BIN=./archetype.exe
 BIN_WHY3=why3
-LIB_ARCHETYPE=./models/mlw
+LIB_ARCHETYPE=./mlw
 GRET=0
-
-process_liquidity () {
-    echo -ne "liquidity: "
-    FILE=$1
-    OUT=$FILE.liq
-    rm -fr $OUT
-    $BIN -t liquidity $FILE > $OUT
-    RET=`echo $?`
-    if [ ${RET} -eq 0 ]; then
-	    echo -ne "\033[32m OK \033[0m"
-    else
-	    echo -ne "\033[31m KO \033[0m"
-        GRET=1
-    fi
-
-    ~/liquidity/_obuild/liquidity/liquidity.byte $OUT > /dev/null 2> /dev/null
-    RET=`echo $?`
-    if [ ${RET} -eq 0 ]; then
-	    echo -ne "\033[32m OK \033[0m"
-    else
-	    echo -ne "\033[31m KO \033[0m"
-        GRET=1
-    fi
-    echo ""
-    FILEOUT=`echo $FILE | sed s/\\\\./_/g`
-    rm -fr $OUT ${FILEOUT}*.tz
-}
 
 process_ligo () {
     echo -ne "ligo:      "
@@ -44,17 +17,17 @@ process_ligo () {
 	    echo -ne "\033[32m OK \033[0m"
     else
 	    echo -ne "\033[31m KO \033[0m"
-        GRET=1
+      GRET=1
     fi
 
-    ligo compile-contract $OUT main > $TZ
-    T=`head -c 1 out.tz`
-    if [ $T = "{" ]; then
-	      echo -ne "\033[32m OK \033[0m"
-    else
-	      echo -ne "\033[31m KO \033[0m"
-        GRET=1
-    fi
+#    ligo compile-contract $OUT main > $TZ
+#    T=`head -c 1 out.tz`
+#    if [ $T = "{" ]; then
+#	      echo -ne "\033[32m OK \033[0m"
+#    else
+#	      echo -ne "\033[31m KO \033[0m"
+#        GRET=1
+#    fi
     echo ""
     rm -fr $OUT *.pp.ligo $TZ
 }
@@ -134,9 +107,8 @@ process_whyml () {
 process () {
     FILE=$1
     echo -e "process: " $FILE
-    process_liquidity $FILE
     process_ligo $FILE
-    process_smartpy $FILE
+#    process_smartpy $FILE
     process_ocaml $FILE
     process_whyml $FILE
 }

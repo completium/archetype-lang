@@ -31,6 +31,7 @@ before_install:
   - opam pin add -n archetype .
   - opam depext archetype
   - opam install --deps-only archetype
+  - opam install why3.1.2.1
 
 script:
   - opam config exec make all
