@@ -1406,18 +1406,52 @@ let pp_model fmt (model : model) =
 
   let pp_function (env : env) (fmt : Format.formatter) (f : function__) =
     let env = {env with f = Some f} in
+    let pp_default_value fmt t =
+      let pp = pp_str in
+      match t with
+      | Tbuiltin Bint -> pp fmt "0"
+      | _ -> pp fmt "FIXME"
+    in
+    let pp_variables fmt vars =
+      match vars with
+      | [] -> ()
+      | _ ->
+        Format.fprintf fmt "@[%a@]@\n  "
+          (pp_list "@\n" (fun fmt (name, type_) ->
+               Format.fprintf fmt "var %s : %a := %a;"
+                 name
+                 pp_type type_
+                 pp_default_value type_)) vars
+    in
+    let pp_iterfuns fmt (iterfuns : s_interfun list) =
+      match iterfuns with
+      | [] -> ()
+      | _ ->
+        Format.fprintf fmt "@[%a@]@\n  "
+          (pp_list "@\n" (fun fmt (interfun : s_interfun) ->
+               Format.fprintf fmt
+                 "function %s (const mid : string) : unit is@\n  \
+                  begin@\n  \
+                  @[%a@]@\n  \
+                  end with unit"
+                  interfun.loop_id
+                  (pp_mterm env) interfun.body
+             )) iterfuns
+    in
     let ligo_fun = to_ligo_fun f in
     let name = ligo_fun.name in
     match ligo_fun.ret with
     | None ->
       Format.fprintf fmt
         "function %s(const action : action_%s; const %s : storage_type) : (list(operation) * storage_type) is@\n  \
+         %a\
+         %a\
          begin@\n    \
          @[%a@]@\n  \
          end with ((nil : list(operation)), %s)@\n"
-        name
-        name
-        const_storage
+        name name const_storage
+        pp_variables ligo_fun.vars
+        pp_iterfuns ligo_fun.iterfuns
         (pp_mterm env) ligo_fun.body
         const_storage
 
