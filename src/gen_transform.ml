@@ -361,3 +361,63 @@ let remove_get_dot (model : model) : model =
     | _ -> map_mterm (aux c) mt
   in
   Model.map_mterm_model aux model
+
+let assign_loop_label (model : model) : model =
+  let loop_labels = ref
+      begin
+        let rec aux ctx accu (mt : mterm) : Ident.ident list =
+          match mt.node with
+          | Mfor (_, col, body, Some label) ->
+            begin
+              let accu = fold_term (aux ctx) accu col in
+              let accu = fold_term (aux ctx) accu body in
+              label::accu
+            end
+          | Miter (_, min, max, body, Some label) ->
+            begin
+              let accu = fold_term (aux ctx) accu min in
+              let accu = fold_term (aux ctx) accu max in
+              let accu = fold_term (aux ctx) accu body in
+              label::accu
+            end
+          | _ -> fold_term (aux ctx) accu mt
+        in
+        fold_model aux model []
+      end
+  in
+
+  let get_loop_label ctx : Ident.ident =
+    let prefix =
+      "loop_" ^
+      (match ctx.fs, ctx.spec_id, ctx.label, ctx.invariant_id with
+       | Some fs, _, _, _ -> unloc fs.name
+       | _, Some a, _, _
+       | _, _, Some a, _
+       | _, _, _, Some a  -> unloc a
+       | _ -> assert false)
+      ^ "_"
+    in
+    let n = ref 0 in
+    begin
+      while List.mem (prefix ^ (string_of_int !n)) !loop_labels do
+        n := !n + 1
+      done;
+      let res = prefix ^ (string_of_int !n) in
+      loop_labels := res::!loop_labels;
+      res
+    end
+  in
+
+
+  let rec aux ctx (mt : mterm) : mterm =
+    match mt.node with
+    | Mfor (a, col, body, None) ->
+      begin
+        let ncol  = map_mterm (aux ctx) col in
+        let nbody = map_mterm (aux ctx) body in
+        let label = get_loop_label ctx in
+        { mt with node = Mfor (a, ncol, nbody, Some label)}
+      end
+    | _ -> map_mterm (aux ctx) mt
+  in
+  map_mterm_model aux model
