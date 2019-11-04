@@ -805,8 +805,8 @@ let pp_model fmt (model : model) =
         Format.fprintf fmt "(%a : %a)"
           f k
           f v
-      | Mfor (i, c, b, _) ->
-        let t, dv, sep =
+      | Mfor _ -> assert false
+        (* let t, dv, sep =
           match c with
           | {type_ = Tcontainer (Tbuiltin Bstring, _)} -> "string", "\"\"", false
           | {type_ = Tcontainer (Tbuiltin (Baddress | Brole), _)} -> "address", "(\"\" : address)", false
@@ -839,7 +839,7 @@ let pp_model fmt (model : model) =
                                    @[%a@];@\n  \ "
                  pp_id i t dv
                  f b
-          ) ()
+          ) () *)
 
       | Miter (_i, _a, _b, _c, _) -> Format.fprintf fmt "TODO: iter@\n"
       | Mfold (i, is, c, b) ->
@@ -1384,26 +1384,6 @@ let pp_model fmt (model : model) =
         (pp_list "@\n" (pp_api_item env)) l
   in
 
-  let pp_utils (fmt : Format.formatter) _ =
-    Format.fprintf fmt "(* Utils *)@\n@\n";
-    Format.fprintf fmt
-      "function nth_list_string (const l : list(string); const idx : nat) : string is@\n  \
-       var r : string := \"\";@\n  \
-       var i : nat := 0n;@\n  \
-       function aux (const e : string) : unit is@\n  \
-       begin@\n    \
-       if idx = i then@\n      \
-       r := string_concat(r, e);@\n    \
-       else@\n      \
-       skip;@\n    \
-       i := i + 1n;@\n  \
-       end with unit@\n  \
-       begin@\n    \
-       list_iter(l, aux);@\n  \
-       end with r@\n"
-
-  in
-
   let pp_function (env : env) (fmt : Format.formatter) (f : function__) =
     let env = {env with f = Some f} in
     let pp_default_value fmt t =
@@ -1430,11 +1410,12 @@ let pp_model fmt (model : model) =
         Format.fprintf fmt "@[%a@]@\n  "
           (pp_list "@\n" (fun fmt (interfun : s_interfun) ->
                Format.fprintf fmt
-                 "function %s (const mid : string) : unit is@\n  \
+                 "function %s (const %s : string) : unit is@\n  \
                   begin@\n  \
                   @[%a@]@\n  \
                   end with unit"
                   interfun.loop_id
+                  interfun.arg_id
                   (pp_mterm env) interfun.body
              )) iterfuns
     in
@@ -1517,13 +1498,11 @@ let pp_model fmt (model : model) =
                       %a@\n\
                       %a@\n\
                       %a@\n\
-                      %a@\n\
                       @."
     pp_model_name ()
     pp_decls ()
     pp_storage ()
     pp_action_type ()
-    pp_utils ()
     (pp_api_items env) ()
     (pp_functions env) ()
     pp_main_function ()

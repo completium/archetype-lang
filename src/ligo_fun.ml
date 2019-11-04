@@ -40,22 +40,21 @@ let to_ligo_fun (f : function__) : ligo_fun =
   let body, iterfuns =
     begin
       let rec aux (accu : s_interfun list) (mt : mterm) : mterm * s_interfun list =
+        let g (x : mterm__node) : mterm = { mt with node = x; } in
         match mt.node with
         | Mfor(arg_id, c, body, Some label) ->
+          let nbody, accu = fold_map_term g aux accu body in
           let app_id = dumloc "list_iter" in
           let fun_name = label in
           let n = mk_mterm (Mvarlocal (dumloc fun_name)) Tunit in
           let mtt : mterm = mk_mterm (Mapp(app_id, [c; n])) Tunit in
-          let interfun = mk_s_interfun fun_name (unloc arg_id) c.type_ body in
+          let interfun = mk_s_interfun fun_name (unloc arg_id) c.type_ nbody in
           mtt, interfun::accu
-        | _ ->
-          begin
-            let g (x : mterm__node) : mterm = { mt with node = x; } in
-            fold_map_term g aux accu mt
-          end
+        | _ -> fold_map_term g aux accu mt
       in
       aux accu fs.body
     end
   in
+  let iterfuns = List.rev iterfuns in
   let ligo_fun = mk_ligo_fun ?ret:ret ~vars:vars ~iterfuns:iterfuns name body in
   ligo_fun
