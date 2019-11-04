@@ -200,6 +200,8 @@ module AssetCollection
 
   type collection = F.fset
 
+  val function witness : t
+
   let rec function internal_mem (a : t) (l : list t) : bool 
   variant { l }
   ensures { result = true <-> mem a l }
@@ -215,6 +217,7 @@ module AssetCollection
   (* SET THEORY *)
 
   let rec function contains_key (k : key) (l : list t) : bool
+  requires { k <> keyf witness }
   variant { l }
   =
   match l with
@@ -230,6 +233,9 @@ module AssetCollection
   contains_key k (F.content c)
 
   predicate mem (a : t) (c : collection) = F.fmem a c
+
+  axiom no_witness: forall a : t, c : collection.
+  mem a c -> a <> witness
 
   let function card (c : collection) : int 
   ensures { result >= 0 }
@@ -259,24 +265,28 @@ module AssetCollection
 
   (* singleton *)
   let function singleton (a : t) : collection 
+  requires { a <> witness }
   = { F.content = Cons a Nil; }
 
   lemma mem_singleton: forall k1 k2 : t. mem k1 (singleton k2) -> k1 = k2
 
-  lemma card_singleton: forall a : t. card (singleton a) = 1
+  lemma card_singleton: forall a : t. a <> witness -> card (singleton a) = 1
 
   lemma subset_singleton: forall a : t, c : collection.
+  a <> witness ->
   subset (singleton a) c <-> mem a c
 
   (* Storage API *)
 
   let add (c : collection) (a : t)
   requires { not (mem a c) } 
+  requires { a <> witness }
   ensures { mem a result }
   ensures { result = union (singleton a) c }
   = { F.content = S.insert a (F.content c) } 
 
   let set (c : collection) (k : key) (a : t) : collection 
+  requires { a <> witness }
   = 
   let rec internal_set (l : list t) (k : key) (a : t) : list t 
   variant { l }
@@ -324,14 +334,13 @@ module AssetCollection
   end in 
   internal_get (F.content c) k 
 
-  let get (c : collection) (k : key) : t 
-  raises { NotFound }
+  let function get (c : collection) (k : key) : t 
   ensures { mem result c \/ not (contains k c) }
   =
   match oget c k with
-  | None   -> raise NotFound
-  | Some a -> a 
-  end
+  | Some a -> a
+  | None -> witness
+  end 
 
  let rec function to_ids (l : list t) : list key 
   variant { l }
@@ -355,12 +364,12 @@ module AssetCollection
   end in
   { F.content = internal_unshallow (F.content c) keys }
 
-  let rec function internal_nth (i : int) (l : list t) : option t
+  let rec function internal_nth (i : int) (l : list t) : t
   variant { l }
   = 
   match l with
-  | Cons e tl -> if i = 0 then Some e else internal_nth (i - 1) tl
-  | Nil -> None
+  | Cons e tl -> if i = 0 then e else internal_nth (i - 1) tl
+  | Nil -> witness
   end
 
   let function onth (i : int) (c : collection) : option t 
@@ -372,18 +381,21 @@ module AssetCollection
     end 
   }
   = 
+  let rec function internal_onth (i : int) (l : list t) : option t
+  variant { l }
+  = 
+  match l with
+  | Cons e tl -> if i = 0 then Some e else internal_onth (i - 1) tl
+  | Nil -> None
+  end in
+  internal_onth i (F.content c)
+
+  let function nth (i : int) (c : collection) : t 
+  ensures { 0 <= i < card c -> mem result c /\ result <> witness}
+  = 
   internal_nth i (F.content c)
 
-  let nth (i : int) (c : collection) : t
-  raises { NotFound }
-  ensures { 0 <= i < card c -> mem result c }
-  = 
-  match onth i c with
-  | None -> raise NotFound
-  | Some a -> a
-  end
-
-  lemma nth_singleton: forall a : t. onth 0 (singleton a) = Some a
+  lemma nth_singleton: forall a : t. a <> witness -> nth 0 (singleton a) = a
 
   let function proj (c : collection) (projf : t -> int) : list int 
   = 
@@ -430,10 +442,7 @@ module AssetCollection
   ensures { i >= card c ->  result = empty }
   ensures { 
     forall j: int. 0<= i <= j < card c ->
-    match onth j c with
-    | None   -> false
-    | Some a -> mem a result
-    end
+    mem (nth j c) result 
   }
   = 
   let rec function internal_tail (l : list t) (k : int) (i : int) 
@@ -451,41 +460,18 @@ module AssetCollection
 
   lemma tail_add: forall c : collection, i : int. 
   0 <= i < card c ->
-  match onth i c with
-  | None -> false
-  | Some a -> tail (i+1) c = diff (tail i c) (singleton a)
-  end
+  tail (i+1) c = diff (tail i c) (singleton (nth i c))
 
-  (* lemma tail_subset: forall c : collection, i : int.
-  0 <= i < card c ->
-  subset (tail (i+1) c) (tail i c) *)
-  
   lemma tail_nth: forall c : collection, i j : int.
   0 <= j < card c ->
   0 <= i < card c - j ->
-  match onth (i+j) c with
-  | None -> false
-  | Some a2 -> 
-    match onth i (tail j c) with
-    | None -> false
-    | Some a1 -> a1 = a2
-    end
-  end
-
+  nth i (tail j c) = nth (i+j) c
+  
   let function to_coll (l : list t) 
   (*ensures { S.sorted result <-> S.sorted l }*)
   ensures { forall k : key. contains k result <-> contains_key k l }
   ensures { forall a : t. mem a result <-> internal_mem a l }
-  ensures { forall i : int. 
-  match onth i result with
-  | None -> false
-  | Some a1 -> 
-    match internal_nth i l with 
-    | None -> false
-    | Some a2 -> eqf a1 a2 
-    end
-  end
-  }
+  ensures { forall i : int. eqf (nth i result) (internal_nth i l) }
   = { F.content = l }
 
   goal sanity_check : false
