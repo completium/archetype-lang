@@ -2575,8 +2575,17 @@ end = struct
           in
           Mrecord l
         end
-        | Tcontainer _ -> Marray []
+      | Tcontainer _ -> Marray []
       | _ -> Mstring "FIXME"
-
-    in mk_mterm (aux t) t
+    in
+    let tt =
+      match t with
+      | Tcontainer (Tasset an, c) ->
+        begin
+          let _, t = get_asset_key m an in
+          Tcontainer (Tbuiltin t, c)
+        end
+      | _ -> t
+    in
+    mk_mterm (aux t) tt
 end

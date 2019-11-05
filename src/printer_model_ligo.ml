@@ -1417,7 +1417,7 @@ let pp_model fmt (model : model) =
                  (pp_mterm env) interfun.body
              )) iterfuns
     in
-    let ligo_fun = to_ligo_fun f in
+    let ligo_fun = to_ligo_fun model f in
     let name = ligo_fun.name in
     match ligo_fun.ret with
     | None ->
