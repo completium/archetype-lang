@@ -226,7 +226,7 @@ let rec pp_term outer pos fmt = function
       (pp_with_paren (pp_term outer pos)) e1
       (pp_with_paren (pp_term outer pos)) e2
   | Tlmem (_i,e1,e2) ->
-    Format.fprintf fmt "lmem %a %a"
+    Format.fprintf fmt "mem_key %a %a"
       (pp_with_paren (pp_term outer pos)) e1
       (pp_with_paren (pp_term outer pos)) e2
   | Tvar i -> pp_str fmt i
@@ -391,6 +391,14 @@ let rec pp_term outer pos fmt = function
       (pp_with_paren (pp_term outer pos)) e
   | Tcard (i,e) ->
     Format.fprintf fmt "%a.card %a"
+      pp_str (String.capitalize_ascii i)
+      (pp_with_paren (pp_term outer pos)) e
+  | Tmkcoll (i,e) ->
+    Format.fprintf fmt "%a.mk %a"
+      pp_str (String.capitalize_ascii i)
+      (pp_with_paren (pp_term outer pos)) e
+  | Tcontent (i,e) ->
+    Format.fprintf fmt "%a.content %a"
       pp_str (String.capitalize_ascii i)
       (pp_with_paren (pp_term outer pos)) e
   | Tunshallow (i,e1,e2) ->

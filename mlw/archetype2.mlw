@@ -355,7 +355,7 @@ module AssetCollection
   end in
   { F.content = internal_unshallow (F.content c) keys }
 
-  let rec internal_nth (i : int) (l : list t) : option t
+  let rec function internal_nth (i : int) (l : list t) : option t
   variant { l }
   = 
   match l with
@@ -364,8 +364,13 @@ module AssetCollection
   end
 
   let function onth (i : int) (c : collection) : option t 
-  ensures { 0 <= i < card c -> exists a. result = Some a /\ mem a c }
-  ensures { i >= card c -> result = None }
+  ensures { 
+    0 <= i < card c -> 
+    match result with
+    | Some a -> mem a c
+    | None -> false
+    end 
+  }
   = 
   internal_nth i (F.content c)
 
@@ -450,20 +455,37 @@ module AssetCollection
   | None -> false
   | Some a -> tail (i+1) c = diff (tail i c) (singleton a)
   end
+
+  (* lemma tail_subset: forall c : collection, i : int.
+  0 <= i < card c ->
+  subset (tail (i+1) c) (tail i c) *)
   
-  (*lemma tail_nth: forall c : collection, i j : int.
+  lemma tail_nth: forall c : collection, i j : int.
   0 <= j < card c ->
   0 <= i < card c - j ->
   match onth (i+j) c with
   | None -> false
-  | Some a1 -> nth i (tail j c) = nth (i+j) c
-  end*)
+  | Some a2 -> 
+    match onth i (tail j c) with
+    | None -> false
+    | Some a1 -> a1 = a2
+    end
+  end
 
   let function to_coll (l : list t) 
   (*ensures { S.sorted result <-> S.sorted l }*)
   ensures { forall k : key. contains k result <-> contains_key k l }
-  (*ensures { forall a : t. mem a result <-> mem a l }*)
-  (*ensures { forall i : int. eqf (nth i result) (internal_nth i l) }*)
+  ensures { forall a : t. mem a result <-> internal_mem a l }
+  ensures { forall i : int. 
+  match onth i result with
+  | None -> false
+  | Some a1 -> 
+    match internal_nth i l with 
+    | None -> false
+    | Some a2 -> eqf a1 a2 
+    end
+  end
+  }
   = { F.content = l }
 
   goal sanity_check : false
