@@ -10,7 +10,7 @@ let gArchetypeDir   = "archetype"
 let gArchetypeLib   = "Lib"
 let gArchetypeColl  = "AssetCollection"
 let gArchetypeSum   = "Sum"
-let gArchetypeList  = "IntListUtils"
+let gArchetypeList  = "KeyListUtils"
 let gArchetypeTrace = "Trace"
 
 let mk_id i          = "_"^i
@@ -252,10 +252,10 @@ let mk_select_body asset mlw_test : term =
                              Some (Tapp (Tvar ("internal_select"),[Tvar "tl"])))
                         );
     },
-    Trecord (
-      None,
-      [capa^".content", Tapp (Tvar "internal_select",[Tdoti("c."^capa,"content")])]
-    )
+    Tmkcoll (capa,
+             Tapp (Tvar "internal_select",
+                   [Tcontent (capa,
+                              Tvar "c")]))
   )
 
 (* argument extraction is done on model's term because it is typed *)
@@ -640,7 +640,7 @@ let mk_eq_asset _m (r : M.record) =
       let f1 = Tdoti("a1",unloc item.name) in
       let f2 = Tdoti("a2",unloc item.name) in
       match item.type_ with
-      | Tcontainer _ -> Tapp (Tvar "eql",[f1;f2])
+      | Tcontainer _ -> Tapp (Tvar "eq_keyl",[f1;f2])
       | _ ->            Teq (Tyint,f1,f2)
     ) r.values in
   Dfun  {
@@ -1415,9 +1415,9 @@ let mk_rm_partition_field m asset keyf f rmed_asset rmkey : decl = Dfun {
                              "new_"^asset^"_"^f,
                              None,
                              Tlistremove (gArchetypeList,
-                                          Tvar (asset^"_"^f),
                                           Tdoti ("rm_asset",
-                                                 rmkey)),
+                                                 rmkey),
+                                          Tvar (asset^"_"^f)),
                              Tletin (false,
                                      "new_"^asset^"_asset",
                                      None,
