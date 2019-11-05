@@ -2049,6 +2049,7 @@ module Utils : sig
   val retrieve_all_properties            : model -> (ident * property) list
   val retrieve_property                  : model -> ident -> property
   val get_storage_id_name                : lident storage_id -> ident
+  val get_default_value                  : model -> type_ -> mterm
 
 end = struct
 
@@ -2549,4 +2550,33 @@ end = struct
     | SIname name -> unloc name
     | SIstate -> "state"
 
+  let rec get_default_value (m : model) (t : type_) =
+    let aux = function
+      | Tbuiltin Bbool       -> Mbool false
+      | Tbuiltin Bint        -> Mint Big_int.zero_big_int
+      | Tbuiltin Brational   -> Mrational (Big_int.zero_big_int, Big_int.zero_big_int)
+      | Tbuiltin Bdate       -> Mdate "0"
+      | Tbuiltin Bduration   -> Mduration (Core.mk_duration ())
+      | Tbuiltin Bstring     -> Mstring ""
+      | Tbuiltin Baddress    -> Maddress "tz1_default"
+      | Tbuiltin Brole       -> Maddress "tz1_default"
+      | Tbuiltin Bcurrency   -> Mcurrency (Big_int.zero_big_int, Tz)
+      | Tbuiltin Bkey        -> Maddress "tz1_default"
+      | Tasset asset_name    ->
+        begin
+          let a = get_info_asset m asset_name in
+          let l : mterm list =
+            List.map (
+              fun (_, t, value : 'a * type_ * mterm option) ->
+                match value with
+                | Some v -> v
+                | _ -> get_default_value m t
+            ) a.values
+          in
+          Mrecord l
+        end
+        | Tcontainer _ -> Marray []
+      | _ -> Mstring "FIXME"
+
+    in mk_mterm (aux t) t
 end

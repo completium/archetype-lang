@@ -10,27 +10,30 @@ let remove_label (model : model) : model =
   in
   map_mterm_model aux model
 
+let rec flat_sequence_mterm (mt : mterm) =
+  match mt.node with
+  | Mseq l ->
+    begin
+      match l with
+      | [] -> mt
+      | [e] -> e
+      | l ->
+        let l = List.fold_right (fun (x : mterm) accu ->
+            match x.node with
+            | Mseq [] -> accu
+            | _ -> x::accu) l [] in
+        begin
+          match l with
+          | [] -> mk_mterm (Mseq []) Tunit
+          | [e] -> e
+          | _ -> mk_mterm (Mseq l) (List.last l).type_
+        end
+    end
+  | _ -> map_mterm flat_sequence_mterm mt
+
 let flat_sequence (model : model) : model =
-  let rec aux (ctx : ctx_model) (mt : mterm) : mterm =
-    match mt.node with
-    | Mseq l ->
-      begin
-        match l with
-        | [] -> mt
-        | [e] -> e
-        | l ->
-          let l = List.fold_right (fun (x : mterm) accu ->
-              match x.node with
-              | Mseq [] -> accu
-              | _ -> x::accu) l [] in
-          begin
-            match l with
-            | [] -> mk_mterm (Mseq []) Tunit
-            | [e] -> e
-            | _ -> mk_mterm (Mseq l) (List.last l).type_
-          end
-      end
-    | _ -> map_mterm (aux ctx) mt
+  let aux (_ctx : ctx_model) (mt : mterm) : mterm =
+    flat_sequence_mterm mt
   in
   map_mterm_model aux model
 
