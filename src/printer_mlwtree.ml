@@ -398,7 +398,7 @@ let rec pp_term outer pos fmt = function
       pp_str (String.capitalize_ascii i)
       (pp_with_paren (pp_term outer pos)) e
   | Tcontent (i,e) ->
-    Format.fprintf fmt "%a.content %a"
+    Format.fprintf fmt "%a.elts %a"
       pp_str (String.capitalize_ascii i)
       (pp_with_paren (pp_term outer pos)) e
   | Tunshallow (i,e1,e2) ->

@@ -195,11 +195,24 @@ module AssetCollection
   clone ListUtils   as AU   with type t   = t,
                                  val  eqt = eqf
 
-  type collection = F.fset
-
   val function witness : t
 
-  (* SET THEORY *)
+  type collection = {
+    content : F.fset
+  } invariant {
+    forall a : t.
+    F.fmem a content -> a <> witness
+  } by {
+    content = F.fset0;
+  } 
+
+  let function elts (c : collection) : list t = F.content c.content
+
+  let mk (l : list t) : collection = {
+      content = F.mk l
+  }
+
+  let function from_fset (s : F.fset) : collection = { content = s }
 
   let function internal_mem (a : t) (l : list t) : bool = AU.mem a l
 
@@ -217,43 +230,35 @@ module AssetCollection
 
   let function contains (k : key) (c : collection) : bool 
   =
-  contains_key k (F.content c)
+  contains_key k (F.content c.content)
 
-  predicate mem (a : t) (c : collection) = F.fmem a c
+  (* SET THEORY *)
+  let function empty : collection = from_fset F.fset0
 
-  axiom no_witness: forall a : t, c : collection.
-  mem a c -> a <> witness
+  predicate is_empty (c : collection) = is_nil (elts c)
+
+  predicate mem (a : t) (c : collection) = F.fmem a c.content
+
+  lemma mem_empty : is_empty empty
 
   let function card (c : collection) : int 
   ensures { result >= 0 }
-  = F.fcard c
+  = F.fcard c.content
 
-  predicate (==) (c1 c2 : collection) = F.(==) c1 c2
+  predicate (==) (c1 c2 : collection) = F.(==) c1.content c2.content
 
-  predicate subset (c1 c2 : collection) = F.fsubset c1 c2
+  predicate subset (c1 c2 : collection) = F.fsubset c1.content c2.content
 
-  lemma subset_transitivity: forall c1 c2 c3 : collection.
-  subset c1 c2 ->
-  subset c2 c3 ->
-  subset c1 c3
+  function diff (c1 c2 : collection) : collection = from_fset  (F.fsetD c1.content c2.content)
 
-  function diff (c1 c2 : collection) : collection = F.fsetD c1 c2
+  function inter (c1 c2 : collection) : collection = from_fset (F.fsetI c1.content c2.content)
 
-  function inter (c1 c2 : collection) : collection = F.fsetI c1 c2
-
-  function union (c1 c2 : collection) : collection = F.fsetU c1 c2
-
-  (* empty *)
-  let function empty = { F.content = Nil }
-
-  predicate is_empty (c : collection) = is_nil (F.content c)
-
-  lemma mem_empty : is_empty empty
+  function union (c1 c2 : collection) : collection = from_fset (F.fsetU c1.content c2.content)
 
   (* singleton *)
   let function singleton (a : t) : collection 
   requires { a <> witness }
-  = { F.content = Cons a Nil; }
+  = mk (Cons a Nil)
 
   lemma mem_singleton: forall k1 k2 : t. mem k1 (singleton k2) -> k1 = k2
 
@@ -270,7 +275,7 @@ module AssetCollection
   requires { a <> witness }
   ensures { mem a result }
   ensures { result = union (singleton a) c }
-  = { F.content = S.insert a (F.content c) } 
+  = mk (S.insert a (elts c))
 
   let set (c : collection) (k : key) (a : t) : collection 
   requires { a <> witness }
@@ -285,7 +290,7 @@ module AssetCollection
     else Cons e (internal_set tl k a)
   | Nil -> Nil
   end in
-  { F.content = internal_set (F.content c) k a }
+  mk (internal_set (elts c) k a)
 
   let remove (c : collection) (k : key) : collection 
   =
@@ -299,7 +304,7 @@ module AssetCollection
     else Cons e (internal_remove tl k)
   | Nil -> Nil
   end in
-  { F.content = internal_remove (F.content c) k }
+  mk (internal_remove (elts c) k)
 
   let function oget (c : collection) (k : key) : option t 
   ensures { 
@@ -319,7 +324,7 @@ module AssetCollection
     else internal_get tl k
   | Nil -> None
   end in 
-  internal_get (F.content c) k 
+  internal_get (elts c) k 
 
   let function get (c : collection) (k : key) : t 
   ensures { mem result c \/ not (contains k c) }
@@ -349,7 +354,7 @@ module AssetCollection
     else internal_unshallow tl keys
   | Nil -> Nil  
   end in
-  { F.content = internal_unshallow (F.content c) keys }
+  mk (internal_unshallow (elts c) keys)
 
   let rec function internal_nth (i : int) (l : list t) : t
   variant { l }
@@ -375,12 +380,12 @@ module AssetCollection
   | Cons e tl -> if i = 0 then Some e else internal_onth (i - 1) tl
   | Nil -> None
   end in
-  internal_onth i (F.content c)
+  internal_onth i (elts c)
 
   let function nth (i : int) (c : collection) : t 
   ensures { 0 <= i < card c -> mem result c /\ result <> witness}
   = 
-  internal_nth i (F.content c)
+  internal_nth i (elts c)
 
   lemma nth_singleton: forall a : t. a <> witness -> nth 0 (singleton a) = a
 
@@ -393,7 +398,7 @@ module AssetCollection
   | Cons e tl -> Cons (projf e) (internal_proj tl projf)
   | Nil -> Nil
   end in
-  internal_proj (F.content c) projf
+  internal_proj (elts c) projf
 
   (*use int.MinMax
 
@@ -441,7 +446,7 @@ module AssetCollection
     else Cons e (internal_tail tl (k+1) i)
   | Nil -> Nil
   end in
-  { F.content = internal_tail (F.content c) 0 i }
+  mk (internal_tail (elts c) 0 i)
 
   lemma tail_all: forall c : collection. tail 0 c = c 
 
@@ -459,15 +464,9 @@ module AssetCollection
   ensures { forall k : key. contains k result <-> contains_key k l }
   ensures { forall a : t. mem a result <-> M.mem a l }
   ensures { forall i : int. eqf (nth i result) (internal_nth i l) }
-  = { F.content = l }
+  = mk l
 
   goal sanity_check : false
-
-  let content (c : collection) : list t = F.content c
-
-  let mk (l : list t) : collection = {
-      F.content = l
-  }
 
 end
 

@@ -111,7 +111,7 @@ lemma mem_mk :
   forall xs x. fmem x (mk xs) <-> mem x xs
 
 (* ------------------------------------------------------------------------ *)
-function fset0 : fset =
+let function fset0 : fset =
   mk Nil
 
 (* ------------------------------------------------------------------------ *)
@@ -192,6 +192,10 @@ lemma fsubsetIr : forall s1 s2. fsubset (fsetI s1 s2) s2
 
 (* ------------------------------------------------------------------------ *)
 lemma fsubsetD : forall s1 s2. fsubset (fsetD s1 s2) s1
+
+(* ------------------------------------------------------------------------ *)
+lemma fsubset_trans : forall s1 s2 s3. 
+  fsubset s1 s2 -> fsubset s2 s3 -> fsubset s1 s3
 
 (* ------------------------------------------------------------------------ *)
 lemma fsetU_id : forall s1 s2. fsubset s1 s2 -> fsetU s1 s2 == s2
