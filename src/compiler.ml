@@ -117,6 +117,7 @@ let generate_target model =
     |> exec_process
     |> shallow_asset
     |> split_key_values
+    |> Gen_transform.assign_loop_label
     |> generate_api_storage
     |> output
 

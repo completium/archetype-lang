@@ -939,7 +939,7 @@ let to_model (ast : A.model) : M.model =
       then
         let type_currency = M.Tbuiltin Bcurrency in
         let lhs : M.mterm = M.mk_mterm (M.Mtransferred) type_currency in
-        let rhs : M.mterm = M.mk_mterm (M.Mcurrency (Big_int.zero_big_int, Mtz)) type_currency in
+        let rhs : M.mterm = M.mk_mterm (M.Mcurrency (Big_int.zero_big_int, Tz)) type_currency in
         let eq : M.mterm = M.mk_mterm (M.Mequal (lhs, rhs)) (M.Tbuiltin Bbool) in
         let cond : M.mterm = M.mk_mterm (M.Mnot eq) (M.Tbuiltin Bbool) in
         let cond_if : M.mterm = M.mk_mterm (M.Mif (cond, fail (NoTransfer), None)) M.Tunit in

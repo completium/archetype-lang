@@ -3,6 +3,7 @@ open Tools
 open Model
 open Printer_tools
 open Ident
+open Ligo_fun
 
 exception Anomaly of string
 
@@ -748,20 +749,25 @@ let pp_model fmt (model : model) =
           f v
       | Marray l ->
         begin
-          match mtt.type_ with
-          | Tassoc (k , v) ->
-            begin
-              match l with
-              | [] -> Format.fprintf fmt "(Map : (%a, %a) map)"
-                        pp_btyp k
-                        pp_type v
-              | _ ->
-                Format.fprintf fmt "[%a]"
-                  (pp_list "; " f) l
-            end
+          match l with
+          | [] -> Format.fprintf fmt "(nil : %a)" pp_type mtt.type_
           | _ ->
-            Format.fprintf fmt "list@\n  @[%a@]@\nend"
-              (pp_list "@\n" (fun fmt -> Format.fprintf fmt "%a;" f)) l
+            begin
+              match mtt.type_ with
+              | Tassoc (k , v) ->
+                begin
+                  match l with
+                  | [] -> Format.fprintf fmt "(Map : (%a, %a) map)"
+                            pp_btyp k
+                            pp_type v
+                  | _ ->
+                    Format.fprintf fmt "[%a]"
+                      (pp_list "; " f) l
+                end
+              | _ ->
+                Format.fprintf fmt "list@\n  @[%a@]@\nend"
+                  (pp_list "@\n" (fun fmt -> Format.fprintf fmt "%a;" f)) l
+            end
         end
       | Mint v -> pp_big_int fmt v
       | Muint v -> pp_big_int fmt v
@@ -777,19 +783,17 @@ let pp_model fmt (model : model) =
           pp_str v
       | Mcurrency (v, c) ->
         begin
-          match c with
-          | Tz ->
-            Format.fprintf fmt "%atz"
-              pp_big_int v
-          | Mtz ->
-            Format.fprintf fmt "%amtz"
-              pp_big_int v
-          | Mutz ->
-            Format.fprintf fmt "%amutz"
-              pp_big_int v
+          let v =
+            match c with
+            | Tz -> Big_int.mult_int_big_int 1000 v
+            | Mtz -> v
+            | Mutz -> assert false
+          in
+          Format.fprintf fmt "%amtz"
+            pp_big_int v
         end
       | Maddress v ->
-        Format.fprintf fmt "(%a : address)"
+        Format.fprintf fmt "(\"%a\" : address)"
           pp_str v
       | Mduration v -> Core.pp_duration_in_seconds fmt v
       | Mdotasset (e, i)
@@ -804,41 +808,41 @@ let pp_model fmt (model : model) =
         Format.fprintf fmt "(%a : %a)"
           f k
           f v
-      | Mfor (i, c, b, _) ->
-        let t, dv, sep =
-          match c with
-          | {type_ = Tcontainer (Tbuiltin Bstring, _)} -> "string", "\"\"", false
-          | {type_ = Tcontainer (Tbuiltin (Baddress | Brole), _)} -> "address", "(\"\" : address)", false
-          | {type_ = Tcontainer (Tasset an, _); node = Mvarparam _ } -> unloc an, "nth_" ^ unloc an ^ "(s_, loop_index_)", true
-          | {type_ = Tcontainer (Tasset an, _)} ->
-            begin
-              let _, t = Utils.get_asset_key model an in
-              match t with
-              | Bstring -> "string", "nth_list_string (loop_col_, loop_index_)", false
-              | Baddress | Brole -> "address", "(\"\" : address)", false
-              | _ -> "", "", false
-            end
-          | _ ->
-            "FIXME", "FIXME", false
+      | Mfor _ -> assert false
+      (* let t, dv, sep =
+         match c with
+         | {type_ = Tcontainer (Tbuiltin Bstring, _)} -> "string", "\"\"", false
+         | {type_ = Tcontainer (Tbuiltin (Baddress | Brole), _)} -> "address", "(\"\" : address)", false
+         | {type_ = Tcontainer (Tasset an, _); node = Mvarparam _ } -> unloc an, "nth_" ^ unloc an ^ "(s_, loop_index_)", true
+         | {type_ = Tcontainer (Tasset an, _)} ->
+          begin
+            let _, t = Utils.get_asset_key model an in
+            match t with
+            | Bstring -> "string", "nth_list_string (loop_col_, loop_index_)", false
+            | Baddress | Brole -> "address", "(\"\" : address)", false
+            | _ -> "", "", false
+          end
+         | _ ->
+          "FIXME", "FIXME", false
 
-        in
-        Format.fprintf fmt
-          "const loop_col_ : list(%s) = %a;@\n\
-           var loop_index_ : nat := 0n;@\n\
-           while (loop_index_ < size(loop_col_)) block {@\n  \
-           %a\
-           loop_index_ := loop_index_ + 1n;@\n\
-           }"
-          t f c
-          (fun fmt _ ->
-             if sep
-             then ()
-             else
-               Format.fprintf fmt "const %a : %s = %s;@\n  \
-                                   @[%a@];@\n  \ "
-                 pp_id i t dv
-                 f b
-          ) ()
+         in
+         Format.fprintf fmt
+         "const loop_col_ : list(%s) = %a;@\n\
+         var loop_index_ : nat := 0n;@\n\
+         while (loop_index_ < size(loop_col_)) block {@\n  \
+         %a\
+         loop_index_ := loop_index_ + 1n;@\n\
+         }"
+         t f c
+         (fun fmt _ ->
+           if sep
+           then ()
+           else
+             Format.fprintf fmt "const %a : %s = %s;@\n  \
+                                 @[%a@];@\n  \ "
+               pp_id i t dv
+               f b
+         ) () *)
 
       | Miter (_i, _a, _b, _c, _) -> Format.fprintf fmt "TODO: iter@\n"
       | Mfold (i, is, c, b) ->
@@ -1383,67 +1387,72 @@ let pp_model fmt (model : model) =
         (pp_list "@\n" (pp_api_item env)) l
   in
 
-  let pp_utils (fmt : Format.formatter) _ =
-    Format.fprintf fmt "(* Utils *)@\n@\n";
-    Format.fprintf fmt
-      "function nth_list_string (const l : list(string); const idx : nat) : string is@\n  \
-       var r : string := \"\";@\n  \
-       var i : nat := 0n;@\n  \
-       function aux (const e : string) : unit is@\n  \
-       begin@\n    \
-       if idx = i then@\n      \
-       r := string_concat(r, e);@\n    \
-       else@\n      \
-       skip;@\n    \
-       i := i + 1n;@\n  \
-       end with unit@\n  \
-       begin@\n    \
-       list_iter(l, aux);@\n  \
-       end with r@\n"
-
-  in
-
   let pp_function (env : env) (fmt : Format.formatter) (f : function__) =
     let env = {env with f = Some f} in
-    match f.node with
-    | Entry fs ->
-      let name = fs.name in
+    let pp_variables fmt vars =
+      match vars with
+      | [] -> ()
+      | _ ->
+        Format.fprintf fmt "@[%a@]@\n  "
+          (pp_list "@\n" (fun fmt (name, type_) ->
+               Format.fprintf fmt "var %s : %a := %a;"
+                 name
+                 pp_type type_
+                 (pp_mterm env) (Model.Utils.get_default_value model type_))) vars
+    in
+    let pp_iterfuns fmt (iterfuns : s_interfun list) =
+      match iterfuns with
+      | [] -> ()
+      | _ ->
+        Format.fprintf fmt "@[%a@]@\n  "
+          (pp_list "@\n" (fun fmt (interfun : s_interfun) ->
+               Format.fprintf fmt
+                 "function %s (const %s : %a) : unit is@\n  \
+                  begin@\n  \
+                  @[%a@]@\n  \
+                  end with unit"
+                 interfun.loop_id
+                 interfun.arg_id
+                 pp_type interfun.arg_type
+                 (pp_mterm env) interfun.body
+             )) iterfuns
+    in
+    let ligo_fun = to_ligo_fun model f in
+    let name = ligo_fun.name in
+    match ligo_fun.ret with
+    | None ->
       Format.fprintf fmt
-        "function %a(const action : action_%a; const %s : storage_type) : (list(operation) * storage_type) is@\n  \
+        "function %s(const action : action_%s; const %s : storage_type) : (list(operation) * storage_type) is@\n  \
+         %a\
+         %a\
          begin@\n    \
          @[%a@]@\n  \
          end with ((nil : list(operation)), %s)@\n"
-        pp_id name
-        pp_id name
-        const_storage
-        (fun fmt x -> begin
-             match unloc name with
-             (* | "clear_expired" *)
-             (* | "consume" -> pp_str fmt "skip" *)
-             | _ -> pp_mterm env fmt x
-           end) fs.body
+        name name const_storage
+        pp_variables ligo_fun.vars
+        pp_iterfuns ligo_fun.iterfuns
+        (pp_mterm env) ligo_fun.body
         const_storage
 
-    | Function (fs, _) ->
-      let name = fs.name in
+    | Some _ret ->
       Format.fprintf fmt
-        "function %a(const %s : storage_type%a) : storage_type is@\n  \
+        "function %s(const %s : storage_type%a) : storage_type is@\n  \
+         %a\
+         %a\
          begin@\n    \
          @[%a@]@\n  \
          end with (%s)@\n"
-        pp_id name
+        name
         const_storage
-        (pp_list "" (fun fmt ((id, type_, _) : argument) ->
+        (pp_list "" (fun fmt (id, type_ : ident * type_) ->
              Format.fprintf fmt
-               "; const %a : %a"
-               pp_id id
+               "; const %s : %a"
+               id
                pp_type type_
-           )) fs.args
-        (fun fmt x -> begin
-             match unloc name with
-             (* | "add_owner_miles" -> pp_str fmt "skip" *)
-             | _ -> pp_mterm env fmt x
-           end) fs.body
+           )) ligo_fun.args
+        pp_variables ligo_fun.vars
+        pp_iterfuns ligo_fun.iterfuns
+        (pp_mterm env) ligo_fun.body
         const_storage
   in
 
@@ -1491,13 +1500,11 @@ let pp_model fmt (model : model) =
                       %a@\n\
                       %a@\n\
                       %a@\n\
-                      %a@\n\
                       @."
     pp_model_name ()
     pp_decls ()
     pp_storage ()
     pp_action_type ()
-    pp_utils ()
     (pp_api_items env) ()
     (pp_functions env) ()
     pp_main_function ()
