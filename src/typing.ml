@@ -88,7 +88,7 @@ type error_desc =
   | AlienPattern
   | AssetExpected
   | AssetWithoutFields
-  | BeforeMeaningless
+  | BeforeIrrelevant                   of [`Local | `State]
   | BindingInExpr
   | CannotInferAnonRecord
   | CannotInferCollectionType
@@ -206,7 +206,8 @@ let pp_error_desc fmt e =
   | AlienPattern                       -> pp "This pattern does not belong to the enumeration"
   | AssetExpected                      -> pp "Asset expected"
   | AssetWithoutFields                 -> pp "Asset without fields"
-  | BeforeMeaningless                  -> pp "The `before' modifier is useless here"
+  | BeforeIrrelevant `Local            -> pp "The `before' cannot be used on local variables"
+  | BeforeIrrelevant `State            -> pp "The `before' cannot be used on state constructors"
   | BindingInExpr                      -> pp "Binding in expression"
   | CannotInferAnonRecord              -> pp "Cannot infer a non record"
   | CannotInferCollectionType          -> pp "Cannot infer collection type"
@@ -1162,7 +1163,7 @@ let rec for_xexpr (mode : emode_t) (env : env) ?(ety : M.ptyp option) (tope : PT
         match Env.lookup env (unloc x) with
         | Some (`Local xty) ->
           if before then
-            Env.emit_error env (loc tope, BeforeMeaningless);
+            Env.emit_error env (loc tope, BeforeIrrelevant (`Local));
           mk_sp (Some xty) (M.Pvar (false, x))
 
         | Some (`Global decl) -> begin
@@ -1179,7 +1180,7 @@ let rec for_xexpr (mode : emode_t) (env : env) ?(ety : M.ptyp option) (tope : PT
 
         | Some (`StateByCtor (decl, _)) when Option.is_some decl.sd_name ->
           if before then
-            Env.emit_error env (loc tope, BeforeMeaningless);
+            Env.emit_error env (loc tope, BeforeIrrelevant (`State));
 
           let typ = M.Tenum (Option.get decl.sd_name) in
           mk_sp (Some typ) (M.Pvar (false, x))
