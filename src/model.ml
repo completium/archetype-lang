@@ -1440,7 +1440,8 @@ let fold_map_term
       List.fold_left
         (fun (ps, accu) (p, i) ->
            let ia, accu = f accu i in
-           [(p, ia)] @ ps, accu) ([], ea) l
+           (p, ia)::ps, accu) ([], ea) l
+      |> (fun (x, y) -> (List.rev x, y))
     in
 
     g (Mmatchwith (ee, pse)), psa

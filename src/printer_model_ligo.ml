@@ -232,10 +232,10 @@ let pp_model fmt (model : model) =
 
       | Mmatchwith (e, l) ->
         let pp fmt (e, l) =
-          Format.fprintf fmt "match %a with@\n@[<v 2>%a@]"
+          Format.fprintf fmt "case %a of@\n  @[%a@]@\nend"
             f e
             (pp_list "@\n" (fun fmt (p, x) ->
-                 Format.fprintf fmt "| %a -> %a"
+                 Format.fprintf fmt "| %a -> block {@\n  @[%a@]@\n}"
                    pp_pattern p
                    f x
                )) l

@@ -112,7 +112,7 @@ let pp_mterm fmt (mt : mterm) =
 
     | Mmatchwith (e, l) ->
       let pp fmt (e, l) =
-        Format.fprintf fmt "match %a with@\n@[<v 2>%a@]"
+        Format.fprintf fmt "match %a with@\n  @[%a@]"
           f e
           (pp_list "@\n" (fun fmt (p, x) ->
                Format.fprintf fmt "| %a -> %a"
