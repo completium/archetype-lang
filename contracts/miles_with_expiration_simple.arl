@@ -36,9 +36,9 @@ action consume (ow : address) (qty : int) {
              otherwise true
              invariant for loop {
                 let op = owner.get(ow) in
-                o.miles.sum(the.quantity) = 
-                  before.op.miles.sum(the.quantity) - qty + remainder
-                  otherwise true;
+                    op.miles.sum(the.quantity) = 
+                        before.op.miles.sum(the.quantity) - qty + remainder
+                otherwise true;
                 0 <= remainder <= toiterate.sum(the.quantity)
             }
         }
