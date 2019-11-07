@@ -1481,7 +1481,7 @@ let rec for_xexpr (mode : emode_t) (env : env) ?(ety : M.ptyp option) (tope : PT
         let rty =
           match method_.mth_totality, mode with
           | `Partial, `Formula ->
-            rty (* Option.map (fun x -> M.Toption x) rty *)
+            (* rty *) Option.map (fun x -> M.Toption x) rty
           | _, _ ->
             rty in
 
@@ -2137,7 +2137,7 @@ let rec for_instruction (env : env) (i : PT.expr) : env * M.instruction =
           env, mki (M.Icall (Some the, M.Cid m, args))
       end
 
-      | _ -> 
+      | _ ->
         let infos = for_gen_method_call `Expr env (loc i) (`Typed the, m, args) in
         let the, _asset, method_, args, _ = Option.get_fdfl bailout infos in
         env, mki (M.Icall (Some the, M.Cconst method_.mth_name, args))
@@ -2882,7 +2882,7 @@ let for_contract_decl (env : env) (decl : PT.contract_decl loced) =
             Env.emit_error env (loc pty, NotAPrimitiveType);
             None
           end else Some ty) ty in
-  
+
         let sig_ = List.map for1 psig in
 
         if List.length sig_ = List.length psig then
