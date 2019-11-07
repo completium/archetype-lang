@@ -1481,7 +1481,7 @@ let rec for_xexpr (mode : emode_t) (env : env) ?(ety : M.ptyp option) (tope : PT
         let rty =
           match method_.mth_totality, mode with
           | `Partial, `Formula ->
-            (* rty *) Option.map (fun x -> M.Toption x) rty
+            Option.map (fun x -> M.Toption x) rty
           | _, _ ->
             rty in
 
@@ -1497,27 +1497,25 @@ let rec for_xexpr (mode : emode_t) (env : env) ?(ety : M.ptyp option) (tope : PT
       aout
 
     | Eletin (x, ty, e1, e2, oe) ->
-      let ty = Option.bind (for_type env) ty in
-      let e  = for_xexpr env ?ety:ty e1 in
+      let ty  = Option.bind (for_type env) ty in
+      let e   = for_xexpr env ?ety:ty e1 in
+      let bty =
+        if Option.is_some oe then
+          Option.bind (fun bty ->
+            match bty with
+            | M.Toption bty -> Some bty
+            | _ -> Env.emit_error env (loc tope, LetInElseOnNonOption); None
+          ) e.M.type_
+        else e.M.type_ in
+
       let body =
         let _ : bool = check_and_emit_name_free env x in
           let env =
-            if Option.is_some e.M.type_ then
-              Env.Local.push env (unloc x, Option.get e.M.type_)
-            else env
+            Option.fold (fun env bty ->
+              Env.Local.push env (unloc x, bty)) env bty
           in for_xexpr env e2 in
 
-      let oe =
-        Option.bind (fun (bty, oe) ->
-          match bty with
-          | M.Toption bty ->
-            Some (for_xexpr env ~ety:bty oe)
-
-          | _ ->
-            Env.emit_error env (loc tope, LetInElseOnNonOption);
-            None
-        ) (Option.map2 pair body.M.type_ oe)
-      in
+      let oe = Option.map (fun oe -> for_xexpr env ?ety:body.M.type_ oe) oe in
 
       mk_sp body.M.type_ (M.Pletin (x, e, ty, body, oe))
 
