@@ -520,7 +520,7 @@ let pp_model fmt (model : model) =
           | InvalidState -> Format.fprintf fmt "invalid state"
         in
 
-        Format.fprintf fmt "fail \"%a\""
+        Format.fprintf fmt "failwith (\"%a\")"
           pp_fail_type ft
 
       | Mmathmin (l, r) ->
