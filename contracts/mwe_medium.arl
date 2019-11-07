@@ -1,0 +1,69 @@
+archetype mwe_medium
+
+constant admin role = @tz1aazS5ms5cbGkb6FN1wvWmN7yrMTTcr6wB
+
+asset mile identified by id {
+    id : string;
+    expiration : date;
+    quantity : int
+} with {
+    i0: quantity > 0;
+}
+
+asset owner identified by addr {
+    addr : address;
+    miles : mile partition;
+}
+
+action add (ow : address) (newmile : mile) {
+    called by admin
+	failif {
+	    f1: mile.contains(newmile.id)
+	}
+	effect {
+	    if owner.contains(ow) then
+	        owner.get(ow).miles.add(newmile)
+	    else
+	        owner.add({ addr = ow; miles = [newmile] })
+	}
+}
+
+action consume (ow : address) (qty : int) {
+    specification {
+        postcondition p0 {
+             mile.sum(the.quantity) = before.mile.sum(the.quantity) - qty
+             invariant for loop {
+                mile.sum(the.quantity) =
+                  before.mile.sum(the.quantity) - qty + remainder;
+                0 <= remainder <= toiterate.sum(the.quantity)
+            }
+        }
+    }
+    called by admin
+    require {
+        r2: qty > 0;
+        r3: owner.contains(ow)
+    }
+    effect {
+    	var o = owner.get(ow);
+        var valid_miles = o.miles.select(the.expiration > now);
+        require ( valid_miles.sum(the.quantity) >= qty );
+        var remainder = qty;
+        for:loop m in valid_miles do
+            if remainder > 0 then (
+                if m.quantity <= remainder then (
+                    remainder -= m.quantity;
+                    o.miles.remove(m.id)
+                ) else (
+                    mile.update(m.id, { quantity -= remainder });
+                    remainder := 0
+                )
+            )
+        done
+    }
+}
+
+security {
+    s0 : only_by_role (anyaction, admin);
+    s1 : no_storage_fail (add);
+}

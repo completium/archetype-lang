@@ -24,6 +24,11 @@ let mk_s_interfun loop_id arg_id arg_type body =
 let mk_ligo_fun ?(args=[]) ?ret ?(vars=[]) ?(iterfuns=[]) name body : ligo_fun =
   { name; ret; args; vars; iterfuns; body }
 
+type ligo_fun_accu = {
+  funs : s_interfun list;
+  vars : ident list;
+}
+
 let to_ligo_fun (model : model) (f : function__) : ligo_fun =
   let fs, ret =
     match f.node with
@@ -31,30 +36,25 @@ let to_ligo_fun (model : model) (f : function__) : ligo_fun =
     | Entry  fs -> fs, None
   in
   let name = unloc fs.name in
-  let accu : s_interfun list = [] in
-  let extract_side_var_ids mt :Ident.ident list =
-    let rec aux (refs, accu : string list * Ident.ident list) (mt : mterm) : string list * Ident.ident list =
+  let extract_side_var_ids mt (vars : (ident * type_) list) : ident list =
+    let var_ids = List.map fst vars in
+    let rec aux (refs, accu : string list * ident list) (mt : mterm) : string list * ident list =
       match mt.node with
-      | Mletin (ids, init, _, body, _) ->
-        begin
-          let refs, accu = fold_term aux (refs, accu) init in
-          let refs = (List.map unloc ids) @ refs in
-          fold_term aux (refs, accu) body
-        end
-      | Massign (_, a, v) when not (List.mem (unloc a) refs) ->
+      | Mvarlocal a when (List.mem (unloc a) var_ids) ->
+        let str = unloc a in
+        refs, str::accu
+      | Massign (_, a, v) when (List.mem (unloc a) var_ids) ->
         let str = unloc a in
         (* List.iter (fun x -> Format.eprintf "refs: %s@\n" x) refs;
            Format.eprintf "str: %s@\n" str; *)
-        let refs, accu = fold_term aux (refs, accu) v in
+        let refs, accu = aux (refs, accu) v in
         refs, str::accu
       | _ -> fold_term aux (refs, accu) mt
     in
     let _, res = aux ([], []) mt in
     res
   in
-  let var_ids = ref [] in
-  let add_vars = List.iter (fun x -> if List.mem x !var_ids then var_ids := x::!var_ids) in
-  let _seek_type body id : type_ =
+  let seek_type body id : type_ =
     let rec aux accu (mt : mterm) : type_ option =
       match mt.node with
       | Mletin ([{pldesc = i; _}], _, t, _, _) when String.equal i id -> t
@@ -69,24 +69,23 @@ let to_ligo_fun (model : model) (f : function__) : ligo_fun =
     | Mletin ([{pldesc = i; _}], {node = Mget (an, _)}, _, _, _) -> String.equal i id && String.equal asset_name an
     | _ -> false
   in
-  let body, iterfuns =
+  let body, accu =
     begin
-      let rec aux (accu : s_interfun list) (mt : mterm) : mterm * s_interfun list =
+      let rec aux (env : (ident * type_) list) (accu : ligo_fun_accu) (mt : mterm) : mterm * ligo_fun_accu =
         let g (x : mterm__node) : mterm = { mt with node = x; } in
         match mt.node with
+        | Mletin ([id], init, Some type_, body, None) ->
+          begin
+            let ninit, accu = aux env accu init in
+            let env = (unloc id, type_)::env in
+            let nbody, accu = aux env accu body in
+            let new_mt = mk_mterm (Mletin ([id], ninit, Some type_, nbody, None)) nbody.type_ in
+            new_mt, accu
+          end
         | Mfor(arg_id, c, body, Some label) ->
           begin
-            let nbody, accu = fold_map_term g aux accu body in
-            let vids = extract_side_var_ids nbody in
-            (match name with
-             | "consume" ->
-               List.iter (fun x -> Format.eprintf "v: %s@\n" x) vids
-             | _ -> ());
-            add_vars vids;
-            (match name with
-             | "consume" ->
-               List.iter (fun x -> Format.eprintf "@\nvar_id: %s@\n" x) !var_ids
-             | _ -> ());
+            let nbody, accu = aux env accu body in
+            let vids = extract_side_var_ids nbody env in
             let app_id = dumloc "list_iter" in
             let fun_name = label in
             let n = mk_mterm (Mvarlocal (dumloc fun_name)) Tunit in
@@ -104,20 +103,24 @@ let to_ligo_fun (model : model) (f : function__) : ligo_fun =
               end
             in
             let interfun = mk_s_interfun fun_name (unloc arg_id) typ nbody in
-            mtt, interfun::accu
+            let accu =
+              { accu with
+                funs = interfun::accu.funs;
+                vars = List.fold_left (fun accu x -> if List.mem x accu then accu else x::accu) accu.vars vids}
+            in
+            mtt, accu
           end
-        | _ -> fold_map_term g aux accu mt
+        | _ -> fold_map_term g (aux env) accu mt
       in
-      aux accu fs.body
+      let accu : ligo_fun_accu = {
+        funs = [];
+        vars = [];
+      } in
+      aux [] accu fs.body
     end
   in
-  let iterfuns = List.rev iterfuns in
-  (* let vars : (ident * type_) list = List.map (fun x -> (x, (seek_type body x))) !var_ids in *)
-  let vars =
-    match name with
-    | "consume" -> [("remainder", Tbuiltin Bint); ("ow", Tasset (dumloc "owner"))]
-    | _ -> []
-  in
+  let iterfuns = List.rev accu.funs in
+  let vars : (ident * type_) list = List.map (fun x -> (x, (seek_type body x))) accu.vars in
   let body =
     let rec aux (mt : mterm) : mterm =
       match mt.node with
