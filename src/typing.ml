@@ -2293,6 +2293,10 @@ let rec for_instruction (env : env) (i : PT.expr) : env * M.instruction =
     env, mki (Iseq [])
 
 (* -------------------------------------------------------------------- *)
+let for_effect (env : env) (effect : PT.expr) =
+   Env.inscope env (fun env -> for_instruction env effect)
+
+(* -------------------------------------------------------------------- *)
 let for_specification_item (env : env) (v : PT.specification_item) : env * env ispecification =
   match unloc v with
   | PT.Vpredicate (x, args, f) ->
@@ -2345,7 +2349,7 @@ let for_specification_item (env : env) (v : PT.specification_item) : env * env i
     end
 
   | PT.Veffect i ->
-    let i = for_instruction env i in
+    let i = for_effect env i in
     (env, `Effect i)
 
   | PT.Vpostcondition (x, f, invs, uses) ->
@@ -2573,10 +2577,6 @@ let for_action_properties (env : env) (act : PT.action_properties) =
   let env, funs = List.fold_left_map for_function env act.functions in
 
   (env, (calledby, req, fai, spec, funs))
-
-(* -------------------------------------------------------------------- *)
-let for_effect (env : env) (effect : PT.expr) =
-  for_instruction env effect
 
 (* -------------------------------------------------------------------- *)
 let for_transition ?enum (env : env) (state, when_, effect) =
@@ -2906,7 +2906,7 @@ let for_acttx_decl (env : env) (decl : acttx loced) =
         Env.inscope env (fun env ->
             let env, args   = for_args_decl env args in
             let env, effect =
-              Option.foldmap for_instruction env (Option.fst i_exts) in
+              Option.foldmap for_effect env (Option.fst i_exts) in
             let env, (callby, reqs, fais, spec, funs) =
               for_action_properties env pt in
 
