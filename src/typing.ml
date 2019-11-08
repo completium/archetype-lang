@@ -69,11 +69,11 @@ end = struct
       false
 
   let sig_compatible ~(from_ : M.ptyp list) ~(to_ : M.ptyp list) =
-       List.length from_ = List.length to_
+    List.length from_ = List.length to_
     && List.for_all2 (fun from_ to_ -> compatible ~from_ ~to_) from_ to_
 
   let sig_equal tys1 tys2 =
-       List.length tys1 = List.length tys2
+    List.length tys1 = List.length tys2
     && List.for_all2 equal tys1 tys2
 end
 
@@ -692,7 +692,7 @@ end = struct
     env.env_error e
 
   let name_free (env : t) (x : ident) =
-       Option.map fst (Mid.find_opt x env.env_bindings)
+    Option.map fst (Mid.find_opt x env.env_bindings)
     |> Option.map_dfl (fun x -> `Clash x) `Free
 
   let lookup_entry (env : t) (name : ident) : entry option =
@@ -703,7 +703,7 @@ end = struct
 
   let push (env : t) ?(loc : Location.t option) (name : ident) (entry : entry) =
     let env = { env with
-      env_bindings = Mid.add name (loc, entry) env.env_bindings } in
+                env_bindings = Mid.add name (loc, entry) env.env_bindings } in
 
     match entry with
     | `Local _ -> { env with env_locals = Sid.add name env.env_locals }
@@ -792,7 +792,7 @@ end = struct
       let env =
         List.fold_left
           (fun env (name, _) ->
-            (push env ~loc:(loc name) (unloc name) (`StateByCtor (decl, name))))
+             (push env ~loc:(loc name) (unloc name) (`StateByCtor (decl, name))))
           env decl.sd_ctors in
       Option.fold
         (fun env name -> push env name (`State decl))
@@ -938,7 +938,7 @@ let empty : env =
     let str : string = Format.asprintf "%a@." pp_error_desc error in
     let pos : Position.t list = [location_to_position lc] in
     Error.error_alert pos str (fun _ -> ());
-    in
+  in
 
   let env = Env.create cb in
 
@@ -967,11 +967,11 @@ let empty : env =
 let check_and_emit_name_free (env : env) (x : M.lident) =
   match Env.name_free env (unloc x) with
   | `Free ->
-      true
+    true
 
   | `Clash olc ->
-      Env.emit_error env (loc x, NameIsAlreadyBound (unloc x, olc));
-      false
+    Env.emit_error env (loc x, NameIsAlreadyBound (unloc x, olc));
+    false
 
 (* --------------------------------------------------------------------- *)
 let select_operator env loc (op, tys) =
@@ -980,9 +980,9 @@ let select_operator env loc (op, tys) =
 
   match List.filter filter (List.assoc_all op opsigs) with
   | [] ->
-      Env.emit_error env
-        (loc, NoMatchingOperator (op, tys));
-      None
+    Env.emit_error env
+      (loc, NoMatchingOperator (op, tys));
+    None
 
   | _::_::_ as sigs -> begin
       let module E = struct exception Bailout end in
@@ -996,9 +996,9 @@ let select_operator env loc (op, tys) =
           with [sig_] -> sig_ | _ -> raise E.Bailout in
 
         List.iter (fun sig2 ->
-          if not (Type.sig_compatible ~from_:sig_.osl_sig ~to_:sig2.osl_sig) then
-            raise E.Bailout
-        ) sigs;
+            if not (Type.sig_compatible ~from_:sig_.osl_sig ~to_:sig2.osl_sig) then
+              raise E.Bailout
+          ) sigs;
 
         Some sig_
 
@@ -1009,7 +1009,7 @@ let select_operator env loc (op, tys) =
     end
 
   | [sig_] ->
-      Some sig_
+    Some sig_
 
 (* -------------------------------------------------------------------- *)
 let for_container (_ : env) = function
@@ -1080,13 +1080,13 @@ let rec for_type_exn (env : env) (ty : PT.type_t) : M.ptyp =
     M.Toption (for_type_exn env ty)
 
   | Tkeyof ty -> begin
-    match for_type_exn env ty with
-    | M.Tasset x ->
+      match for_type_exn env ty with
+      | M.Tasset x ->
         let decl = Env.Asset.get env (unloc x) in
         let ctor = Env.Asset.byfield env (unloc decl.as_pk) in
         snd (Option.get ctor)
 
-    | _ ->
+      | _ ->
         Env.emit_error env (loc ty, NotAnAssetType);
         raise InvalidType
     end
@@ -1098,21 +1098,21 @@ let for_type (env : env) (ty : PT.type_t) : M.ptyp option =
 let for_asset_type (env : env) (ty : PT.type_t) : M.lident option =
   match Option.map Type.as_asset (for_type env ty) with
   | None ->
-      None
+    None
   | Some None ->
-      Env.emit_error env (loc ty, NotAnAssetType);
-      None
+    Env.emit_error env (loc ty, NotAnAssetType);
+    None
   | Some (Some x) ->
-      Some x
+    Some x
 
 (* -------------------------------------------------------------------- *)
 let for_asset_keyof_type (env : env) (ty : PT.type_t) : M.lident option =
   match unloc ty with
   | PT.Tkeyof t ->
-      for_asset_type env t
+    for_asset_type env t
   | _ ->
-      Env.emit_error env (loc ty, NotAKeyOfType);
-      None
+    Env.emit_error env (loc ty, NotAKeyOfType);
+    None
 
 (* -------------------------------------------------------------------- *)
 let for_literal (_env : env) (topv : PT.literal loced) : M.bval =
@@ -1160,36 +1160,42 @@ let rec for_xexpr (mode : emode_t) (env : env) ?(ety : M.ptyp option) (tope : PT
   let bailout = fun () -> raise E.Bailout in
 
   let mk_sp type_ node = M.mk_sp ~loc:(loc tope) ?type_ node in
-  let dummy type_ : M.pterm = mk_sp type_ (M.Pvar (false, mkloc (loc tope) "<error>")) in
+  let dummy type_ : M.pterm = mk_sp type_ (M.Pvar (VTnone, mkloc (loc tope) "<error>")) in
 
   let doit () =
     match unloc tope with
     | Eterm (st, x) -> begin
         let before = st.before in
+        let vt =
+          match st.before, st.label with
+          | true, _     -> M.VTbefore
+          | _, Some lbl -> M.VTat (unloc lbl)
+          | _           -> M.VTnone
+        in
         match Env.lookup_entry env (unloc x) with
         | Some (`Local xty) ->
           if before then
             Env.emit_error env (loc tope, BeforeIrrelevant (`Local));
-          mk_sp (Some xty) (M.Pvar (false, x))
+          mk_sp (Some xty) (M.Pvar (VTnone, x))
 
         | Some (`Global decl) -> begin
             match decl.vr_def with
             | Some (body, `Inline) ->
               body
             | _ ->
-              mk_sp (Some decl.vr_type) (M.Pvar (before, x))
+              mk_sp (Some decl.vr_type) (M.Pvar (vt, x))
           end
 
         | Some (`Asset decl) ->
           let typ = M.Tcontainer ((M.Tasset decl.as_name), M.Collection) in
-          mk_sp (Some typ) (M.Pvar (before, x))
+          mk_sp (Some typ) (M.Pvar (vt, x))
 
         | Some (`StateByCtor (decl, _)) when Option.is_some decl.sd_name ->
           if before then
             Env.emit_error env (loc tope, BeforeIrrelevant (`State));
 
           let typ = M.Tenum (Option.get decl.sd_name) in
-          mk_sp (Some typ) (M.Pvar (false, x))
+          mk_sp (Some typ) (M.Pvar (VTnone, x))
 
         | _ ->
           Env.emit_error env (loc x, UnknownLocalOrVariable (unloc x));
@@ -1393,13 +1399,13 @@ let rec for_xexpr (mode : emode_t) (env : env) ?(ety : M.ptyp option) (tope : PT
         List.fold_left_map (fun e ({ pldesc = op }, e') ->
             match e.M.type_, e'.M.type_ with
             | Some ty, Some ty' -> begin
-              let aout =
-                Option.map (fun sig_ ->
-                  let term = M.Pcomp (tt_cmp_operator op, e, e') in
-                  mk_sp (Some sig_.osl_ret) term
-                ) (select_operator env (loc tope) (`Cmp op, [ty; ty']))
-              in (e', aout)
-            end
+                let aout =
+                  Option.map (fun sig_ ->
+                      let term = M.Pcomp (tt_cmp_operator op, e, e') in
+                      mk_sp (Some sig_.osl_ret) term
+                    ) (select_operator env (loc tope) (`Cmp op, [ty; ty']))
+                in (e', aout)
+              end
 
             | _, _ ->
               e', None)
@@ -1509,18 +1515,18 @@ let rec for_xexpr (mode : emode_t) (env : env) ?(ety : M.ptyp option) (tope : PT
       let bty =
         if Option.is_some oe then
           Option.bind (fun bty ->
-            match bty with
-            | M.Toption bty -> Some bty
-            | _ -> Env.emit_error env (loc tope, LetInElseOnNonOption); None
-          ) e.M.type_
+              match bty with
+              | M.Toption bty -> Some bty
+              | _ -> Env.emit_error env (loc tope, LetInElseOnNonOption); None
+            ) e.M.type_
         else e.M.type_ in
 
       let env, body =
         let _ : bool = check_and_emit_name_free env x in
-          Env.inscope env (fun env ->
+        Env.inscope env (fun env ->
             let env =
               Option.fold (fun env bty ->
-                Env.Local.push env (x, bty)) env bty
+                  Env.Local.push env (x, bty)) env bty
             in env, for_xexpr env e2) in
 
       let oe = Option.map (fun oe -> for_xexpr env ?ety:body.M.type_ oe) oe in
@@ -1534,37 +1540,37 @@ let rec for_xexpr (mode : emode_t) (env : env) ?(ety : M.ptyp option) (tope : PT
         match for_gen_matchwith mode env (loc tope) e bs with
         | None -> bailout () | Some (decl, me, (wd, bsm), es) ->
 
-        let es  = List.map (for_xexpr env) es in
-        let bty = List.find_opt (fun e -> Option.is_some e.M.type_) es in
-        let bty = Option.bind (fun e -> e.M.type_) bty in
+          let es  = List.map (for_xexpr env) es in
+          let bty = List.find_opt (fun e -> Option.is_some e.M.type_) es in
+          let bty = Option.bind (fun e -> e.M.type_) bty in
 
-        Option.iter (fun bty ->
-          List.iter (fun be ->
-            Option.iter (fun ety ->
-              if not (Type.equal bty ety) then
-                Env.emit_error env (loc tope, IncompatibleTypes (ety, bty))
-            ) be.M.type_)
-          es
-        ) bty;
+          Option.iter (fun bty ->
+              List.iter (fun be ->
+                  Option.iter (fun ety ->
+                      if not (Type.equal bty ety) then
+                        Env.emit_error env (loc tope, IncompatibleTypes (ety, bty))
+                    ) be.M.type_)
+                es
+            ) bty;
 
-        let aout = List.pmap (fun (cname, _) ->
-          let ctor = M.mk_sp (M.Mconst cname) in (* FIXME: loc ? *)
-          let bse  =
-            match Mstr.find (unloc cname) bsm, wd with
-            | Some i, _ ->
-                Some (List.nth es i)
-            | None, Some _ ->
-                None
-            | None, None ->
-                Some (dummy bty)
-          in Option.map (fun bse -> (ctor, bse)) bse) decl.sd_ctors in
+          let aout = List.pmap (fun (cname, _) ->
+              let ctor = M.mk_sp (M.Mconst cname) in (* FIXME: loc ? *)
+              let bse  =
+                match Mstr.find (unloc cname) bsm, wd with
+                | Some i, _ ->
+                  Some (List.nth es i)
+                | None, Some _ ->
+                  None
+                | None, None ->
+                  Some (dummy bty)
+              in Option.map (fun bse -> (ctor, bse)) bse) decl.sd_ctors in
 
-        let aout =
-          Option.fold
-            (fun aout extra -> aout @ [M.mk_sp M.Mwild, extra])
-            aout (Option.map (List.nth es) wd) in
+          let aout =
+            Option.fold
+              (fun aout extra -> aout @ [M.mk_sp M.Mwild, extra])
+              aout (Option.map (List.nth es) wd) in
 
-        mk_sp bty (M.Pmatchwith (me, aout))
+          mk_sp bty (M.Pmatchwith (me, aout))
       end
 
     | Equantifier (qt, x, xty, body) -> begin
@@ -1642,68 +1648,68 @@ and for_gen_matchwith (mode : emode_t) (env : env) theloc pe bs =
 
   match me.M.type_ with
   | None ->
-      None
+    None
 
   | Some (M.Tenum x) ->
-      let decl = Env.State.get env (unloc x) in
-      let bsm  = List.map (fun (ct, _) -> (unloc ct, None)) decl.sd_ctors in
-      let bsm  = Mstr.of_list bsm in
+    let decl = Env.State.get env (unloc x) in
+    let bsm  = List.map (fun (ct, _) -> (unloc ct, None)) decl.sd_ctors in
+    let bsm  = Mstr.of_list bsm in
 
-      let wd, bsm = List.fold_lefti (fun bse bsm (pts, _) ->
-          List.fold_left (fun (wd, bsm) pt ->
+    let wd, bsm = List.fold_lefti (fun bse bsm (pts, _) ->
+        List.fold_left (fun (wd, bsm) pt ->
             let module E = struct exception Bailout end in
 
             try
               begin match unloc pt with
-              | PT.Pref pid ->
+                | PT.Pref pid ->
                   if not (Mstr.mem (unloc pid) bsm) then begin
                   end;
-              | PT.Pwild -> () end;
+                | PT.Pwild -> () end;
 
               match unloc pt with
               | PT.Pref pid ->
-                  let bsm =
-                    Mstr.change (unloc pid) (function
+                let bsm =
+                  Mstr.change (unloc pid) (function
                       | None   ->
-                          Env.emit_error env (loc pt, AlienPattern);
-                          raise E.Bailout
+                        Env.emit_error env (loc pt, AlienPattern);
+                        raise E.Bailout
 
                       | Some None when Option.is_none wd ->
-                          Some (bse)
+                        Some (bse)
 
                       | Some _ ->
-                          Env.emit_error env (loc pt, UselessPattern);
-                          raise E.Bailout
+                        Env.emit_error env (loc pt, UselessPattern);
+                        raise E.Bailout
                     ) bsm
-                  in (wd, bsm)
+                in (wd, bsm)
 
               | PT.Pwild -> begin
                   match wd with
                   | None when Mstr.exists (fun _ v -> Option.is_none v) bsm ->
-                      (Some bse, bsm)
+                    (Some bse, bsm)
 
                   | _ ->
-                      Env.emit_error env (loc pt, UselessPattern);
-                      raise E.Bailout
+                    Env.emit_error env (loc pt, UselessPattern);
+                    raise E.Bailout
                 end
 
             with E.Bailout -> (wd, bsm)) bsm pts
-        ) (None, bsm) bs in
+      ) (None, bsm) bs in
 
-      if Option.is_none wd then begin
-        let missing = Mstr.bindings bsm in
-        let missing = List.filter (fun (_, v) -> Option.is_none v) missing in
-        let missing = List.sort String.compare (List.map fst missing) in
+    if Option.is_none wd then begin
+      let missing = Mstr.bindings bsm in
+      let missing = List.filter (fun (_, v) -> Option.is_none v) missing in
+      let missing = List.sort String.compare (List.map fst missing) in
 
-        if not (List.is_empty missing) then
-          Env.emit_error env (theloc, PartialMatch missing)
-      end;
+      if not (List.is_empty missing) then
+        Env.emit_error env (theloc, PartialMatch missing)
+    end;
 
-      Some (decl, me, (wd, bsm), (List.map snd bs))
+    Some (decl, me, (wd, bsm), (List.map snd bs))
 
   | Some _ ->
-      Env.emit_error env (loc pe, NotAnEnumType);
-      None
+    Env.emit_error env (loc pe, NotAnEnumType);
+    None
 
 (* -------------------------------------------------------------------- *)
 and for_asset_expr mode (env : env) (tope : PT.expr) =
@@ -2072,21 +2078,21 @@ let for_lvalue (env : env) (e : PT.expr) : (M.lvalue * M.ptyp) option =
       | None ->
         None
 
-       | Some None ->
-         Env.emit_error env (loc pnm, AssetExpected);
-         None
+      | Some None ->
+        Env.emit_error env (loc pnm, AssetExpected);
+        None
 
-       | Some (Some asset) -> begin
-         let asset = Env.Asset.get env (unloc asset) in
+      | Some (Some asset) -> begin
+          let asset = Env.Asset.get env (unloc asset) in
 
-         match List.Exn.assoc_map unloc (unloc x) asset.as_fields with
-        | None ->
+          match List.Exn.assoc_map unloc (unloc x) asset.as_fields with
+          | None ->
             let err = UnknownField (unloc asset.as_name, unloc x) in
             Env.emit_error env (loc x, err); None
 
-        | Some fty ->
-          Some (`Field (nm, x), fty)
-      end
+          | Some fty ->
+            Some (`Field (nm, x), fty)
+        end
     end
 
   | _ ->
@@ -2110,44 +2116,44 @@ let rec for_instruction (env : env) (i : PT.expr) : env * M.instruction =
   try
     match unloc i with
     | Emethod (pthe, m, args) -> begin
-      let the = for_xexpr `Expr env pthe in
+        let the = for_xexpr `Expr env pthe in
 
-      match the.M.type_ with
-      | Some (M.Tcontract ctt) -> begin
-        let ctt = Env.Contract.get env (unloc ctt) in
-        match List.Exn.assoc_map unloc (unloc m) ctt.ct_entries with
-        | None ->
-          let exn = UnknowContractEntryPoint (unloc ctt.ct_name, unloc m) in
-          Env.emit_error env (loc m, exn); bailout ()
+        match the.M.type_ with
+        | Some (M.Tcontract ctt) -> begin
+            let ctt = Env.Contract.get env (unloc ctt) in
+            match List.Exn.assoc_map unloc (unloc m) ctt.ct_entries with
+            | None ->
+              let exn = UnknowContractEntryPoint (unloc ctt.ct_name, unloc m) in
+              Env.emit_error env (loc m, exn); bailout ()
 
-        | Some entry ->
-          let args = match args with
-            | [ {pldesc = Etuple l; _} ] -> l
-            | _ -> args
-          in
+            | Some entry ->
+              let args = match args with
+                | [ {pldesc = Etuple l; _} ] -> l
+                | _ -> args
+              in
 
-          let na, ne = List.length args, List.length entry in
-          if na <> ne then begin
-            let loc = Location.mergeall (loc pthe :: List.map loc args) in
-            Env.emit_error env (loc, InvalidNumberOfArguments (na, ne));
-            bailout ()
-          end;
+              let na, ne = List.length args, List.length entry in
+              if na <> ne then begin
+                let loc = Location.mergeall (loc pthe :: List.map loc args) in
+                Env.emit_error env (loc, InvalidNumberOfArguments (na, ne));
+                bailout ()
+              end;
 
-          let args =
-            List.map2
-              (fun arg ety -> for_xexpr `Expr env ~ety arg)
-              args entry in
+              let args =
+                List.map2
+                  (fun arg ety -> for_xexpr `Expr env ~ety arg)
+                  args entry in
 
-          let args = List.map (fun x -> M.AExpr x) args in
+              let args = List.map (fun x -> M.AExpr x) args in
 
-          env, mki (M.Icall (Some the, M.Cid m, args))
+              env, mki (M.Icall (Some the, M.Cid m, args))
+          end
+
+        | _ ->
+          let infos = for_gen_method_call `Expr env (loc i) (`Typed the, m, args) in
+          let the, _asset, method_, args, _ = Option.get_fdfl bailout infos in
+          env, mki (M.Icall (Some the, M.Cconst method_.mth_name, args))
       end
-
-      | _ ->
-        let infos = for_gen_method_call `Expr env (loc i) (`Typed the, m, args) in
-        let the, _asset, method_, args, _ = Option.get_fdfl bailout infos in
-        env, mki (M.Icall (Some the, M.Cconst method_.mth_name, args))
-    end
 
     | Eseq (i1, i2) ->
       let env, i1 = for_instruction env i1 in
@@ -2157,8 +2163,8 @@ let rec for_instruction (env : env) (i : PT.expr) : env * M.instruction =
     | Eassign (op, plv, pe) -> begin
         let lv = for_lvalue env plv in
         let x  = Option.get_dfl
-                   (`Var (mkloc (loc plv) "<error>"))
-                   (Option.map fst lv) in
+            (`Var (mkloc (loc plv) "<error>"))
+            (Option.map fst lv) in
         let op = for_assignment_operator op in
 
         let e  =
@@ -2196,8 +2202,8 @@ let rec for_instruction (env : env) (i : PT.expr) : env * M.instruction =
             let _ : bool = check_and_emit_name_free env x in
             let env =
               Option.fold (fun env ty ->
-                Env.Local.push env (x, ty)
-              ) env e.M.type_
+                  Env.Local.push env (x, ty)
+                ) env e.M.type_
             in for_instruction env e2) in
 
       env, mki (M.Iletin (x, e, body))
@@ -2270,26 +2276,26 @@ let rec for_instruction (env : env) (i : PT.expr) : env * M.instruction =
         match for_gen_matchwith `Expr env (loc i) e bs with
         | None -> bailout () | Some (decl, me, (wd, bsm), is) ->
 
-        let env, is = List.fold_left_map for_instruction env is in
+          let env, is = List.fold_left_map for_instruction env is in
 
-        let aout = List.pmap (fun (cname, _) ->
-          let ctor = M.mk_sp (M.Mconst cname) in (* FIXME: loc ? *)
-          let bse  =
-            match Mstr.find (unloc cname) bsm, wd with
-            | Some k, _ ->
-                Some (List.nth is k)
-            | None, Some _ ->
-                None
-            | None, None ->
-                Some (mki (Iseq []))
-          in Option.map (fun bse -> (ctor, bse)) bse) decl.sd_ctors in
+          let aout = List.pmap (fun (cname, _) ->
+              let ctor = M.mk_sp (M.Mconst cname) in (* FIXME: loc ? *)
+              let bse  =
+                match Mstr.find (unloc cname) bsm, wd with
+                | Some k, _ ->
+                  Some (List.nth is k)
+                | None, Some _ ->
+                  None
+                | None, None ->
+                  Some (mki (Iseq []))
+              in Option.map (fun bse -> (ctor, bse)) bse) decl.sd_ctors in
 
-        let aout =
-          Option.fold
-            (fun aout extra -> aout @ [M.mk_sp M.Mwild, extra])
-            aout (Option.map (List.nth is) wd) in
+          let aout =
+            Option.fold
+              (fun aout extra -> aout @ [M.mk_sp M.Mwild, extra])
+              aout (Option.map (List.nth is) wd) in
 
-        env, mki (M.Imatchwith (me, aout))
+          env, mki (M.Imatchwith (me, aout))
       end
 
     | _ ->
@@ -2301,7 +2307,7 @@ let rec for_instruction (env : env) (i : PT.expr) : env * M.instruction =
 
 (* -------------------------------------------------------------------- *)
 let for_effect (env : env) (effect : PT.expr) =
-   Env.inscope env (fun env -> for_instruction env effect)
+  Env.inscope env (fun env -> for_instruction env effect)
 
 (* -------------------------------------------------------------------- *)
 let for_specification_item (env : env) (v : PT.specification_item) : env * env ispecification =
@@ -2537,26 +2543,26 @@ let for_function (env : env) (fdecl : PT.s_function loced) =
   let fdecl = unloc fdecl in
 
   Env.inscope env (fun env ->
-    let env, args = for_args_decl env fdecl.args in
-    let rty       = Option.bind (for_type env) fdecl.ret_t in
-    let body      = for_expr env ?ety:rty fdecl.body in
-    let env, spec = Option.foldmap for_specification env fdecl.spec in
+      let env, args = for_args_decl env fdecl.args in
+      let rty       = Option.bind (for_type env) fdecl.ret_t in
+      let body      = for_expr env ?ety:rty fdecl.body in
+      let env, spec = Option.foldmap for_specification env fdecl.spec in
 
-    if Option.is_some rty && not (List.exists Option.is_none args) then
-      if check_and_emit_name_free env fdecl.name then
-        let body =
-          M.{ node    = M.Ireturn body;
-              loc     = loc fdecl.body;
-              label   = None; } in
+      if Option.is_some rty && not (List.exists Option.is_none args) then
+        if check_and_emit_name_free env fdecl.name then
+          let body =
+            M.{ node    = M.Ireturn body;
+                loc     = loc fdecl.body;
+                label   = None; } in
 
-        (env, Some {
-                fs_name  = fdecl.name;
-                fs_args  = List.pmap id args;
-                fs_retty = Option.get rty;
-                fs_body  = body;
-                fs_spec  = spec; })
-      else (env, None)
-    else (env, None))
+          (env, Some {
+              fs_name  = fdecl.name;
+              fs_args  = List.pmap id args;
+              fs_retty = Option.get rty;
+              fs_body  = body;
+              fs_spec  = spec; })
+        else (env, None)
+      else (env, None))
 
 (* -------------------------------------------------------------------- *)
 let rec for_callby (env : env) (cb : PT.expr) =
@@ -2660,10 +2666,10 @@ let for_enum_decl (env : env) (decl : (PT.lident * PT.enum_decl) loced) =
   let env, ctors = for_core_enum_decl env (mkloc (loc decl) ctors) in
   let env, decl =
     Option.foldbind (fun env (sd_init, sd_ctors) ->
-      let enum = { sd_name = Some name; sd_ctors; sd_init; } in
-      if   check_and_emit_name_free env name
-      then Env.State.push env enum, None
-      else env, Some enum) env ctors in
+        let enum = { sd_name = Some name; sd_ctors; sd_init; } in
+        if   check_and_emit_name_free env name
+        then Env.State.push env enum, None
+        else env, Some enum) env ctors in
 
   env, decl
 
@@ -2792,12 +2798,12 @@ let for_asset_decl ?(force = false) (env : env) (decl : PT.asset_decl loced) =
     let for1 env = function
       | PT.APOconstraints invs ->
         Env.inscope env (fun env ->
-          let env =
-            List.fold_left (fun env { pldesc = (f, fty, _); plloc = loc; } ->
-                Option.fold (fun env fty ->
-                  Env.Local.push env (mkloc loc f, fty)) env fty)
-              env fields
-          in for_xlbls_formula env invs)
+            let env =
+              List.fold_left (fun env { pldesc = (f, fty, _); plloc = loc; } ->
+                  Option.fold (fun env fty ->
+                      Env.Local.push env (mkloc loc f, fty)) env fty)
+                env fields
+            in for_xlbls_formula env invs)
 
       | _ ->
         env, []
@@ -2809,23 +2815,23 @@ let for_asset_decl ?(force = false) (env : env) (decl : PT.asset_decl loced) =
       | PT.APOstates x -> begin
           match Env.State.lookup env (unloc x) with
           | None ->
-              Env.emit_error env (loc x, UnknownEnum (unloc x));
-              None
+            Env.emit_error env (loc x, UnknownEnum (unloc x));
+            None
           | Some _ ->
-              Some x
+            Some x
         end
 
       | _ ->
-          None in
+        None in
 
     match List.map for1 postopts with
     | _ :: _ :: _ ->
-        Env.emit_error env (loc decl, MultipleAssetStateDeclaration);
-        None
+      Env.emit_error env (loc decl, MultipleAssetStateDeclaration);
+      None
     | [] | [None] ->
-        None
+      None
     | [Some st] ->
-        Some st
+      Some st
   in
 
   if not force && not (check_and_emit_name_free env x) then begin
@@ -2862,15 +2868,15 @@ let for_asset_decl ?(force = false) (env : env) (decl : PT.asset_decl loced) =
 (* -------------------------------------------------------------------- *)
 let for_assets_decl (env as env0 : env) (decls : PT.asset_decl loced list) =
   let b, env = List.fold_left (fun (b, env) decl ->
-    let (name, _, _, _, _, _) = unloc decl in
-    let b = b && check_and_emit_name_free env name in
-    let d = { as_name   = name;
-              as_fields = [];
-              as_pk     = mkloc Location.dummy "";
-              as_sortk  = [];
-              as_invs   = [];
-              as_state  = None; } in
-    (b, Env.Asset.push env d)) (true, env) decls in
+      let (name, _, _, _, _, _) = unloc decl in
+      let b = b && check_and_emit_name_free env name in
+      let d = { as_name   = name;
+                as_fields = [];
+                as_pk     = mkloc Location.dummy "";
+                as_sortk  = [];
+                as_invs   = [];
+                as_state  = None; } in
+      (b, Env.Asset.push env d)) (true, env) decls in
 
   if b then
     List.fold_left_map (for_asset_decl ~force:true) env decls
@@ -2881,20 +2887,20 @@ let for_contract_decl (env : env) (decl : PT.contract_decl loced) =
   let name, sigs, _ = unloc decl in
   let entries =
     List.pmap (fun (PT.Ssignature (ename, psig)) ->
-      let for1 pty =
-        let ty = for_type env pty in
-        Option.bind (fun ty ->
-          if not (Type.is_primitive ty) then begin
-            Env.emit_error env (loc pty, NotAPrimitiveType);
-            None
-          end else Some ty) ty in
+        let for1 pty =
+          let ty = for_type env pty in
+          Option.bind (fun ty ->
+              if not (Type.is_primitive ty) then begin
+                Env.emit_error env (loc pty, NotAPrimitiveType);
+                None
+              end else Some ty) ty in
 
         let sig_ = List.map for1 psig in
 
         if List.length sig_ = List.length psig then
           Some (ename, List.pmap id sig_)
         else None
-    ) sigs in
+      ) sigs in
 
   let cdecl = { ct_name = name; ct_entries = entries; } in
 
@@ -2940,17 +2946,17 @@ let for_acttx_decl (env : env) (decl : acttx loced) =
           let env, args = for_args_decl env args in
           let env, enum =
             Option.foldbind (fun env (vtg, ttg) ->
-              Option.foldbind (fun env aname ->
-                let asset = Env.Asset.get env (unloc aname) in
-                let env =
-                  if check_and_emit_name_free env vtg then
-                    let field = Env.Asset.byfield env (unloc asset.as_pk) in
-                    let field = Option.get field in
-                    Env.Local.push env (vtg, snd field)
-                  else env in
-                (env, Option.map unloc asset.as_state))
-              env (for_asset_keyof_type env ttg))
-            env tgt in
+                Option.foldbind (fun env aname ->
+                    let asset = Env.Asset.get env (unloc aname) in
+                    let env =
+                      if check_and_emit_name_free env vtg then
+                        let field = Env.Asset.byfield env (unloc asset.as_pk) in
+                        let field = Option.get field in
+                        Env.Local.push env (vtg, snd field)
+                      else env in
+                    (env, Option.map unloc asset.as_state))
+                  env (for_asset_keyof_type env ttg))
+              env tgt in
 
           let from_ = for_state ?enum env from_ in
           let env, (callby, reqs, fais, spec, funs) =
@@ -3217,8 +3223,8 @@ let specifications_of_ispecifications =
 let functions_of_fdecls fdecls =
   let for1 (decl : env fundecl) =
     let args = List.map (fun (x, ty) -> M.{
-      name = x; typ = Some ty; default = None; loc = loc x;
-    }) decl.fs_args in
+        name = x; typ = Some ty; default = None; loc = loc x;
+      }) decl.fs_args in
 
     let specs = Option.map specifications_of_ispecifications decl.fs_spec in
 
@@ -3257,8 +3263,8 @@ let transactions_of_tdecls tdecls =
         let from_ = M.mk_sp ~loc:(loc from_) (M.Sref from_) in
 
         Some (M.{ from = from_; on = None; trs =
-          List.map
-            (fun tx ->(tx.tx_state, tx.tx_when, tx.tx_effect)) x })
+                                             List.map
+                                               (fun tx ->(tx.tx_state, tx.tx_when, tx.tx_effect)) x })
 
       | _ -> None in
 

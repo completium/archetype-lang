@@ -168,10 +168,11 @@ let to_model (ast : A.model) : M.model =
 
 
   let to_mterm_node (n : A.lident A.term_node) (f : A.lident A.term_gen -> M.mterm) (ftyp : 't -> M.type_) (pterm : A.pterm) : (M.lident, M.mterm) M.mterm_node =
-    let process_before b e =
-      if b
-      then (M.Msetbefore (M.mk_mterm e (ftyp (Option.get pterm.type_)) ~loc:pterm.loc))
-      else e
+    let process_before vt e =
+      match vt with
+      | A.VTbefore -> M.Msetbefore (M.mk_mterm e (ftyp (Option.get pterm.type_)) ~loc:pterm.loc)
+      | A.VTat lbl -> M.Msetat (lbl, M.mk_mterm e (ftyp (Option.get pterm.type_)) ~loc:pterm.loc)
+      | A.VTnone -> e
     in
     match n with
     | A.Pif (c, t, e)                   -> M.Mif        (f c, f t, Some (f e))
@@ -254,7 +255,12 @@ let to_model (ast : A.model) : M.model =
       let fp = f p in
       let fq = f q in
       let asset_name = extract_asset_name fp in
-      M.Mget (asset_name, fq)
+      begin
+        match p.node with
+        | Pvar (VTbefore, _) -> M.Mgetbefore (asset_name, fq)
+        | Pvar (VTat lbl, _) -> M.Mgetat (asset_name, lbl, fq)
+        | _ -> M.Mget (asset_name, fq)
+      end
 
     | A.Pcall (Some p, A.Cconst (A.Cselect), [AFun (_qi, _qt, q)]) ->
       let fp = f p in

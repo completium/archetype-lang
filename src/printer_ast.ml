@@ -319,13 +319,14 @@ let rec pp_pterm fmt (pterm : pterm) =
       in
       (pp_with_paren pp) fmt (i, t, v)
 
-    | Pvar (b, id) ->
-      let pp fmt (b, id) =
-        if   b
-        then Format.fprintf fmt "before.%a" pp_id id
-        else pp_id fmt id
+    | Pvar (vt, id) ->
+      let pp fmt (vt, id) =
+        match vt with
+        | VTbefore -> Format.fprintf fmt "before.%a" pp_id id
+        | VTat lbl -> Format.fprintf fmt "at(%s).%a" lbl pp_id id
+        | VTnone   -> pp_id fmt id
       in
-      (pp_no_paren pp) fmt (b, id)
+      (pp_no_paren pp) fmt (vt, id)
 
     | Parray l ->
       let pp fmt l =

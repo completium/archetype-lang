@@ -121,6 +121,8 @@ type ('id, 'term) mterm_node  =
   | Maddshallow   of ident * 'term list
   | Mexternal     of 'id * 'id * 'term * ('term) list
   | Mget          of ident * 'term
+  | Mgetbefore    of ident * 'term
+  | Mgetat        of ident * ident * 'term (* asset_name * label * value *)
   | Mset          of ident * ident list * 'term * 'term (*asset_name * field_name modified * ... *)
   | Maddasset     of ident * 'term
   | Maddfield     of ident * ident * 'term * 'term (* asset_name * field_name * asset instance * item * shalow values*)
@@ -225,6 +227,7 @@ type ('id, 'term) mterm_node  =
   | Mexists       of 'id * type_ * 'term option * 'term
   (* security predicates *)
   | Msetbefore    of 'term
+  | Msetat        of ident * 'term
   | Msetunmoved   of 'term
   | Msetadded     of 'term
   | Msetremoved   of 'term
@@ -868,6 +871,8 @@ let cmp_mterm_node
     | Maddshallow (e1, args1), Maddshallow (e2, args2)                                 -> cmp_ident e1 e2 && List.for_all2 cmp args1 args2
     | Mexternal (t1, func1, c1, args1), Mexternal (t2, func2, c2, args2)               -> cmpi t1 t2 && cmpi func1 func2 && cmp c1 c2 && List.for_all2 cmp args1 args2
     | Mget (c1, k1), Mget (c2, k2)                                                     -> cmp_ident c1 c2 && cmp k1 k2
+    | Mgetbefore (c1, k1), Mgetbefore (c2, k2)                                         -> cmp_ident c1 c2 && cmp k1 k2
+    | Mgetat (c1, d1, k1), Mgetat (c2, d2, k2)                                         -> cmp_ident c1 c2 && cmp_ident d1 d2 && cmp k1 k2
     | Mset (c1, l1, k1, v1), Mset (c2, l2, k2, v2)                                     -> cmp_ident c1 c2 && List.for_all2 cmp_ident l1 l2 && cmp k1 k2 && cmp v1 v2
     | Maddasset (an1, i1), Maddasset (an2, i2)                                         -> cmp_ident an1 an2 && cmp i1 i2
     | Maddfield (an1, fn1, c1, i1), Maddfield (an2, fn2, c2, i2)                       -> cmp_ident an1 an2 && cmp_ident fn1 fn2 && cmp c1 c2 && cmp i1 i2
@@ -960,6 +965,7 @@ let cmp_mterm_node
     | Mforall (i1, t1, t2, e1), Mforall (i2, t3, t4, e2)                               -> cmpi i1 i2 && cmp_type t1 t3 && Option.cmp cmp t2 t4 && cmp e1 e2
     | Mexists (i1, t1, t2, e1), Mforall (i2, t3, t4, e2)                               -> cmpi i1 i2 && cmp_type t1 t3 && Option.cmp cmp t2 t4 && cmp e1 e2
     | Msetbefore e1, Msetbefore e2                                                     -> cmp e1 e2
+    | Msetat (lbl1, e1), Msetat (lbl2, e2)                                             -> cmp_ident lbl1 lbl2 && cmp e1 e2
     | Msetunmoved e1, Msetunmoved e2                                                   -> cmp e1 e2
     | Msetadded e1, Msetadded e2                                                       -> cmp e1 e2
     | Msetremoved e1, Msetremoved   e2                                                 -> cmp e1 e2
@@ -1042,6 +1048,7 @@ let map_term_node (f : 'id mterm_gen -> 'id mterm_gen) = function
   | Mapp (e, args)                -> Mapp (e, List.map f args)
   | Maddshallow (e, args)         -> Maddshallow (e, List.map f args)
   | Msetbefore    e               -> Msetbefore    (f e)
+  | Msetat (lbl, e)               -> Msetat        (lbl, f e)
   | Msetunmoved   e               -> Msetunmoved   (f e)
   | Msetadded     e               -> Msetadded     (f e)
   | Msetremoved   e               -> Msetremoved   (f e)
@@ -1049,6 +1056,8 @@ let map_term_node (f : 'id mterm_gen -> 'id mterm_gen) = function
   | Msettoiterate e               -> Msettoiterate (f e)
   | Mexternal (t, func, c, args)  -> Mexternal (t, func, f c, List.map f args)
   | Mget (c, k)                   -> Mget (c, f k)
+  | Mgetbefore (c, k)             -> Mgetbefore (c, f k)
+  | Mgetat (c, d, k)              -> Mgetat (c, d, f k)
   | Mset (c, l, k, v)             -> Mset (c, l, f k, f v)
   | Maddasset (an, i)             -> Maddasset (an, f i)
   | Maddfield (an, fn, c, i)      -> Maddfield (an, fn, f c, f i)
@@ -1299,6 +1308,7 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mapp (_, args)                        -> List.fold_left f accu args
   | Maddshallow (_, args)                 -> List.fold_left f accu args
   | Msetbefore    e                       -> f accu e
+  | Msetat   (_, e)                       -> f accu e
   | Msetunmoved   e                       -> f accu e
   | Msetadded     e                       -> f accu e
   | Msetremoved   e                       -> f accu e
@@ -1306,6 +1316,8 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Msettoiterate e                       -> f accu e
   | Mexternal (_, _, c, args)             -> List.fold_left f (f accu c) args
   | Mget (_, k)                           -> f accu k
+  | Mgetbefore (_, k)                     -> f accu k
+  | Mgetat (_, _, k)                      -> f accu k
   | Mset (_, _, k, v)                     -> f (f accu v) k
   | Maddasset (_, i)                      -> f accu i
   | Maddfield (_, _, c, i)                -> f (f accu c) i
@@ -1467,6 +1479,10 @@ let fold_map_term
     let ee, ea = f accu e in
     g (Msetbefore ee), ea
 
+  | Msetat (lbl, e) ->
+    let ee, ea = f accu e in
+    g (Msetat (lbl, ee)), ea
+
   | Msetunmoved e ->
     let ee, ea = f accu e in
     g (Msetunmoved ee), ea
@@ -1498,6 +1514,14 @@ let fold_map_term
   | Mget (c, k) ->
     let ke, ka = f accu k in
     g (Mget (c, ke)), ka
+
+  | Mgetbefore (c, k) ->
+    let ke, ka = f accu k in
+    g (Mgetbefore (c, ke)), ka
+
+  | Mgetat (c, d, k) ->
+    let ke, ka = f accu k in
+    g (Mgetat (c, d, ke)), ka
 
   | Mset (c, l, k, v) ->
     let ke, ka = f accu k in
@@ -2234,7 +2258,7 @@ end = struct
     | _ -> emit_error (EnumNotFound id)
 
   (* let get_state_values (m : model) : ident list =
-    [] *)
+     [] *)
 
   let get_partitions m : (ident * ident * type_) list=
     get_assets m |> List.fold_left (fun acc (info : info_asset) ->

@@ -154,6 +154,23 @@ let pp_mterm fmt (mt : mterm) =
       in
       pp fmt (c, k)
 
+    | Mgetbefore (c, k) ->
+      let pp fmt (c, k) =
+        Format.fprintf fmt "get_%a_before (%a)"
+          pp_str c
+          f k
+      in
+      pp fmt (c, k)
+
+    | Mgetat (c, d, k) ->
+      let pp fmt (c, d, k) =
+        Format.fprintf fmt "get_%a_at_%a (%a)"
+          pp_str c
+          pp_str d
+          f k
+      in
+      pp fmt (c, d, k)
+
     | Mset (c, l, k, v) ->
       let pp fmt (c, _l, k, v) =
         Format.fprintf fmt "set_%a (%a, %a)"
@@ -716,6 +733,11 @@ let pp_mterm fmt (mt : mterm) =
 
     | Msetbefore e ->
       Format.fprintf fmt "before %a"
+        f e
+
+    | Msetat (lbl, e) ->
+      Format.fprintf fmt "at(%a) %a"
+        pp_str lbl
         f e
 
     | Msetunmoved e ->

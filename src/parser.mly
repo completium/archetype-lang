@@ -776,11 +776,8 @@ simple_expr_r:
  | x=literal
      { Eliteral x }
 
- | b=before_dot x=ident
-     { let st = { before = b; label = None; } in Eterm (st, x) }
-
- | LPAREN x=ident AT l=ident RPAREN
-     { let st = { before = false; label = Some l; } in Eterm (st, x) }
+ | vt=vt_dot x=ident
+     { let st = { before = fst vt; label = snd vt; } in Eterm (st, x) }
 
  | INVALID_EXPR
      { Einvalid }
@@ -788,9 +785,10 @@ simple_expr_r:
  | x=paren(expr_r)
      { x }
 
-%inline before_dot:
- |            { false }
- | BEFORE DOT { true }
+%inline vt_dot:
+ |            { false, None }
+ | BEFORE DOT { true, None }
+ | AT LPAREN l=ident RPAREN DOT { false, Some l }
 
 %inline label_exprs:
 | /* empty */   { [] }

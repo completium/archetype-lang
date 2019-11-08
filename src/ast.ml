@@ -258,6 +258,12 @@ type 'id call_kind =
   | Cconst of const
 [@@deriving show {with_path = false}]
 
+type var_temporality =
+  | VTbefore
+  | VTat of ident
+  | VTnone
+[@@deriving show {with_path = false}]
+
 type 'id term_node  =
   | Pquantifer of quantifier * 'id * ('id term_gen option * type_) * 'id term_gen
   | Pif of ('id term_gen * 'id term_gen * 'id term_gen)
@@ -272,7 +278,7 @@ type 'id term_node  =
   | Precord of 'id term_gen list
   | Pletin of 'id * 'id term_gen * ptyp option * 'id term_gen * 'id term_gen option (* ident * init * type * body * otherwise *)
   | Pdeclvar of 'id * ptyp option * 'id term_gen
-  | Pvar of bool * 'id
+  | Pvar of var_temporality * 'id
   | Parray of 'id term_gen list
   | Plit of bval
   | Pdot of 'id term_gen * 'id

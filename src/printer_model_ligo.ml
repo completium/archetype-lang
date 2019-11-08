@@ -927,12 +927,15 @@ let pp_model fmt (model : model) =
       | Mforall _                        -> emit_error (UnsupportedTerm ("forall"))
       | Mexists _                        -> emit_error (UnsupportedTerm ("exists"))
       | Msetbefore _                     -> emit_error (UnsupportedTerm ("setbefore"))
+      | Msetat     _                     -> emit_error (UnsupportedTerm ("setat"))
       | Msetunmoved _                    -> emit_error (UnsupportedTerm ("setunmoved"))
       | Msetadded _                      -> emit_error (UnsupportedTerm ("setadded"))
       | Msetremoved _                    -> emit_error (UnsupportedTerm ("setremoved"))
       | Msetiterated _                   -> emit_error (UnsupportedTerm ("setiterated"))
       | Msettoiterate _                  -> emit_error (UnsupportedTerm ("settoiterate"))
       | Mremoveif _                      -> emit_error (UnsupportedTerm ("removeif"))
+      | Mgetat _                         -> emit_error (UnsupportedTerm ("getat"))
+      | Mgetbefore _                     -> emit_error (UnsupportedTerm ("getbefore"))
     in
     f fmt mt
   in

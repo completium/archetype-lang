@@ -38,7 +38,7 @@ action consume (ow : address) (qty : int) {
             otherwise true
             invariant for loop {
                 let before_o = before.owner.get(ow) in
-                    o.miles.sum(the.quantity) = 
+                    o.miles.sum(the.quantity) =
                         before_o.miles.sum(the.quantity) - qty + remainder
                 otherwise true;
                 0 <= remainder <= toiterate.sum(the.quantity)
@@ -71,5 +71,5 @@ action consume (ow : address) (qty : int) {
 
 security {
     s0 : only_by_role (anyaction, admin);
-    s1 : no_storage_fail (add); 
+    s1 : no_storage_fail (add);
 }
