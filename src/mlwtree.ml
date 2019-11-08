@@ -129,6 +129,7 @@ type ('e,'t,'i) abstract_term =
   | Told    of 'e
   | Tat     of 'e
   | Tfalse
+  | Ttrue
   | Tunion  of 'i * 'e * 'e
   | Tinter  of 'i * 'e * 'e
   | Tdiff   of 'i * 'e * 'e
@@ -144,6 +145,7 @@ type ('e,'t,'i) abstract_term =
   | Thead   of 'e * 'e
   | Ttail   of 'e * 'e
   | Tnth    of 'i * 'e * 'e
+  | Twitness of 'i
   (* option *)
   | Tnone
   | Tsome   of 'e
@@ -357,7 +359,6 @@ and map_abstract_term
   | Tand (e1,e2)       -> Tand (map_e e1, map_e e2)
   | Told e             -> Told (map_e e)
   | Tat e              -> Tat (map_e e)
-  | Tfalse             -> Tfalse
   | Tunion (i,e1,e2)     -> Tunion (map_i i, map_e e1, map_e e2)
   | Tinter (i,e1,e2)     -> Tinter (map_i i, map_e e1, map_e e2)
   | Tdiff (i,e1,e2)      -> Tdiff (map_i i, map_e e1, map_e e2)
@@ -371,11 +372,14 @@ and map_abstract_term
   | Thead (e1,e2)      -> Thead (map_e e1, map_e e2)
   | Ttail (e1,e2)      -> Ttail (map_e e1, map_e e2)
   | Tnth (i,e1,e2)     -> Tnth (map_i i, map_e e1, map_e e2)
+  | Twitness i         -> Twitness (map_i i)
   | Tnone              -> Tnone
   | Tsome e            -> Tsome (map_e e)
   | Tenum i            -> Tenum (map_i i)
   | Ttobereplaced      -> Ttobereplaced
   | Tnottranslated     -> Tnottranslated
+  | Ttrue              -> Ttrue
+  | Tfalse             -> Tfalse
 
 let map_abstract_field
     (map_e : 'e1 -> 'e2)
@@ -712,6 +716,7 @@ let compare_abstract_term
   | Told e1, Told e2 -> cmpe e1 e2
   | Tat e1, Tat e2 -> cmpe e1 e2
   | Tfalse, Tfalse -> true
+  | Ttrue, Ttrue -> true
   | Tunion (i1,e1,e2), Tunion (i2,f1,f2) -> cmpi i1 i2 && cmpe e1 f1 && cmpe e2 f2
   | Tinter (i1,e1,e2), Tinter (i2,f1,f2) -> cmpi i1 i2 && cmpe e1 f1 && cmpe e2 f2
   | Tdiff (i1,e1,e2), Tdiff (i2,f1,f2) -> cmpi i1 i2 && cmpe e1 f1 && cmpe e2 f2
@@ -725,6 +730,7 @@ let compare_abstract_term
   | Thead (e1,e2), Thead (f1,f2) -> cmpe e1 f1 && cmpe e2 f2
   | Ttail (e1,e2), Ttail (f1,f2) -> cmpe e1 f1 && cmpe e2 f2
   | Tnth (i1,e1,e2), Tnth (i2,f1,f2) -> cmpi i1 i2 && cmpe e1 f1 && cmpe e2 f2
+  | Twitness i1, Twitness i2 -> cmpi i1 i2
   | Tnone, Tnone -> true
   | Tsome e1, Tsome e2 -> cmpe e1 e2
   | Tenum i1, Tenum i2 -> cmpi i1 i2

@@ -21,8 +21,7 @@ type btyp =
   | Bint
   | Brational
   | Bdate
-  | Bduration
-  | Bstring
+  | Bduration  | Bstring
   | Baddress
   | Brole
   | Bcurrency

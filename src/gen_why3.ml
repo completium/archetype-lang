@@ -725,17 +725,21 @@ type logical_mod = Nomod | Added | Removed
 type logical_context = {
   old  : bool;
   lmod : logical_mod;
+  localold : ident list;
 }
 
 let init_ctx = {
   old = false;
   lmod = Nomod;
+  localold = [];
 }
 
 let mk_trace_seq m t chs =
   if M.Utils.with_trace m then
     Tseq ([with_dummy_loc t] @ (List.map mk_trace chs))
   else t
+
+let is_old (_t : M.mterm) = false
 
 let rec map_mterm m ctx (mt : M.mterm) : loc_term =
   let t =
@@ -796,8 +800,20 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
         | Tcontainer (_,_) -> Tlist (l |> List.map (map_mterm m ctx))
         | _ -> assert false
       end
-    | M.Mletin ([id],v,_,b,_o) ->
+    | M.Mletin ([id],v,_,b,None) ->
       Tletin (M.Utils.is_local_assigned id b,map_lident id,None,map_mterm m ctx v,map_mterm m ctx b)
+    | M.Mletin ([id], { node = M.Mget (a,k); type_ = _ }, _, b, Some e) -> (* logical *)
+      Tletin (M.Utils.is_local_assigned id b,
+              map_lident id,
+              None,
+              Tget (loc_ident a,
+                    loc_term (mk_ac a),
+                    map_mterm m ctx k) |> with_dummy_loc,
+              Tif (Tnot (Teq (Tyint,
+                              Tvar (unloc id),
+                              Twitness a)) |> loc_term,
+                   map_mterm m ctx b,
+                   Some (map_mterm m ctx e)) |> with_dummy_loc)
     | M.Mselect (a,l,r) ->
       let args = extract_args r in
       let id = mk_select_name m a r in
@@ -930,6 +946,8 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | M.Msettoiterate c ->
       let n = M.Utils.get_asset_type mt |> map_lident in
       Ttoiter (n,with_dummy_loc "i",map_mterm m ctx c) (* TODO : should retrieve actual idx value *)
+    | M.Mbool false -> Tfalse
+    | M.Mbool true -> Ttrue
     | _ -> Tnone in
   mk_loc mt.loc t
 and mk_invariants (m : M.model) ctx (lbl : ident option) lbody =
