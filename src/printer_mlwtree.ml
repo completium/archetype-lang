@@ -151,6 +151,7 @@ let pp_type fmt typ =
       | Tyrational    -> "rational"
       | Tyduration    -> "duration"
       | Tykey         -> "key"
+      | Tystate       -> "state"
       | Tytuple l     -> "("^(String.concat ", " (List.map typ_str l))^")"
     in
     if pparen && (needs_paren t) then

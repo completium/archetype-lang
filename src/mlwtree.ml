@@ -41,6 +41,7 @@ type 'i abstract_type =
   | Tymap of 'i
   | Tyasset of 'i
   | Typartition of 'i
+  | Tystate
   | Tyenum of 'i
   | Tyoption of 'i abstract_type
   | Tylist of 'i abstract_type
@@ -51,11 +52,17 @@ type 'i abstract_type =
 type ('t,'i) abstract_univ_decl = 'i list * 't
 [@@deriving show {with_path = false}]
 
+type 'i pattern_node =
+  | Twild
+  | Tconst of 'i
+[@@deriving show {with_path = false}]
+
 type ('e,'t,'i) abstract_term =
   | Tseq    of 'e list
   | Tletin  of bool * 'i * 't option * 'e * 'e
   | Tletfun of ('e,'t,'i) abstract_fun_struct * 'e
   | Tif     of 'e * 'e * 'e option
+  | Tmatch  of 'e * ('i pattern_node * 'e) list
   | Tapp    of 'e * 'e list
   | Tfor    of 'i * 'e * ('e,'i) abstract_formula list * 'e
   | Ttry    of 'e * (exn * 'e) list
@@ -254,6 +261,7 @@ let rec map_abstract_type (map_i : 'i1 -> 'i2) = function
   | Tyrational    -> Tyrational
   | Tyduration    -> Tyduration
   | Tykey         -> Tykey
+  | Tystate        -> Tystate
   | Tytuple l     -> Tytuple (List.map (map_abstract_type map_i) l)
 
 let map_abstract_univ_decl
@@ -261,6 +269,10 @@ let map_abstract_univ_decl
     (map_i : 'i1 -> 'i2)
     (ids,t : ('t1,'i1) abstract_univ_decl) : ('t2,'i2) abstract_univ_decl =
   (List.map map_i ids, map_t t)
+
+let map_pattern map = function
+  | Twild -> Twild
+  | Tconst i -> Tconst (map i)
 
 let rec map_abstract_formula
     (map_e : 'e1 -> 'e2)
@@ -292,6 +304,7 @@ and map_abstract_term
   | Tletin (r,i,t,b,e) -> Tletin (r,map_i i, Option.map map_t t, map_e b, map_e e)
   | Tletfun (s,e)      -> Tletfun (map_abstract_fun_struct map_e map_t map_i s, map_e e)
   | Tif (i,t,e)        -> Tif (map_e i, map_e t, Option.map map_e e)
+  | Tmatch (t,l)       -> Tmatch (map_e t, List.map (fun (p,t) -> (map_pattern map_i p,map_e t)) l)
   | Tapp (f,a)         -> Tapp (map_e f, List.map map_e a)
   | Tfor (i,s,l,b)     -> Tfor (map_i i,
                                 map_e s,
@@ -586,6 +599,7 @@ let rec compare_abstract_type
   | Tystorage, Tystorage -> true
   | Tytransfers, Tytransfers -> true
   | Tyunit, Tyunit -> true
+  | Tystate, Tystate -> true
   | Tycontract i1, Tycontract i2 -> cmpi i1 i2
   | Tyrecord i1, Tyrecord i2 -> cmpi i1 i2
   | Tycoll i1, Tycoll i2 -> cmpi i1 i2
@@ -623,6 +637,12 @@ let compare_abstract_fun_struct
   List.for_all2 (compare_abstract_formula cmpe cmpi) s1.ensures s2.ensures &&
   cmpe s1.body s2.body
 
+let compare_pattern cmp p1 p2 =
+  match p1,p2 with
+  | Twild, Twild -> true
+  | Tconst i1, Tconst i2 -> cmp i1 i2
+  | _,_ -> false
+
 let compare_abstract_term
     (cmpe : 'e -> 'e -> bool)
     (cmpt : 't -> 't -> bool)
@@ -637,6 +657,9 @@ let compare_abstract_term
     compare_abstract_fun_struct cmpe cmpt cmpi s1 s2 && cmpe e1 e2
   | Tif (i1,t1,None), Tif (i2,t2,None) -> cmpe i1 i2 && cmpe t1 t2
   | Tif (i1,t1,Some e1), Tif (i2,t2,Some e2) -> cmpe i1 i2 && cmpe t1 t2 && cmpe e1 e2
+  | Tmatch (t1,l1), Tmatch (t2,l2) -> cmpe t1 t2 && List.for_all2 (fun (p1,e1) (p2,e2) ->
+      cmpe e1 e2 && compare_pattern cmpi p1 p2
+    ) l1 l2
   | Tapp (f1,a1), Tapp (f2,a2) -> cmpe f1 f2 && List.for_all2 cmpe a1 a2
   | Tfor (i1,s1,l1,b1), Tfor (i2,s2,l2,b2) ->
     cmpi i1 i2 && cmpe s1 s2 &&

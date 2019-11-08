@@ -74,10 +74,13 @@ let mk_trace tr =
           ) |> loc_term
 
 let mk_trace_asset m =
-  Denum ("_asset",
-         M.Utils.get_assets m
-         |> List.map (fun (a : M.info_asset) -> String.capitalize_ascii a.name))
-  |> loc_decl
+  let assets = M.Utils.get_assets m in
+  if List.length assets > 0 then
+    [ Denum ("_asset",
+             assets
+             |> List.map (fun (a : M.info_asset) -> String.capitalize_ascii a.name))
+      |> loc_decl]
+  else []
 
 let mk_trace_entry m =
   Denum ("_entry",
@@ -104,12 +107,12 @@ let mk_trace_clone () =
   |> loc_decl
 
 let mk_trace_utils m =
-  if M.Utils.with_trace m then [
-    mk_trace_asset m;
-    mk_trace_entry m;
-    mk_trace_field m;
-    mk_trace_clone ()
-  ] else []
+  if M.Utils.with_trace m then
+    (mk_trace_asset m) @ [
+      mk_trace_entry m;
+      mk_trace_field m;
+      mk_trace_clone ()
+    ] else []
 
 (* Storage -----------------------------------------------------------------------*)
 
@@ -370,6 +373,7 @@ let rec map_mtype (t : M.type_) : loc_typ =
       | M.Toption t                           -> Tyoption (map_mtype t).obj
       | M.Ttuple l                            -> Tytuple (l |> List.map map_mtype |> deloc)
       | M.Tunit                               -> Tyunit
+      | M.Tstate                              -> Tystate
       | _ -> assert false)
 
 let rec map_term (t : M.mterm) : loc_term = mk_loc t.loc (
@@ -671,6 +675,9 @@ let mk_eq_extensionality _m (r : M.record) : loc_decl =
 let map_record _m (r : M.record) =
   Drecord (map_lident r.name, map_record_values r.values)
 
+let map_enum _m (e : M.enum) : (loc_term,loc_typ,loc_ident) abstract_decl =
+  Denum (map_lident e.name, List.map (fun (item : M.enum_item) -> map_lident item.name) e.values)
+
 let record_to_clone m (r : M.info_asset) =
   let (key,_) = M.Utils.get_asset_key m (dumloc r.name) in
   let sort =
@@ -740,6 +747,11 @@ let mk_trace_seq m t chs =
   else t
 
 let is_old (_t : M.mterm) = false
+
+let map_mpattern (p : M.lident M.pattern_node) =
+  match p with
+  | M.Pwild -> Twild
+  | M.Pconst i -> Tconst (map_lident i)
 
 let rec map_mterm m ctx (mt : M.mterm) : loc_term =
   let t =
@@ -948,6 +960,10 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
       Ttoiter (n,with_dummy_loc "i",map_mterm m ctx c) (* TODO : should retrieve actual idx value *)
     | M.Mbool false -> Tfalse
     | M.Mbool true -> Ttrue
+    | M.Mmatchwith (t,l) ->
+      Tmatch (map_mterm m ctx t, List.map (fun ((p : M.lident M.pattern_gen),e) ->
+          (map_mpattern p.node,map_mterm m ctx e)
+        ) l)
     | _ -> Tnone in
   mk_loc mt.loc t
 and mk_invariants (m : M.model) ctx (lbl : ident option) lbody =
@@ -1729,6 +1745,7 @@ let to_whyml (m : M.model) : mlw_tree  =
   let uselib           = mk_use in
   let uselist          = mk_use_list in
   let traceutils       = mk_trace_utils m |> deloc in
+  let enums            = M.Utils.get_enums m |> List.map (map_enum m) in
   let records          = M.Utils.get_records m |> List.map (map_record m) |> wdl in
   let eq_assets        = M.Utils.get_records m |> List.map (mk_eq_asset m) |> wdl in
   let eq_exten         = M.Utils.get_records m |> List.map (mk_eq_extensionality m) |> deloc in
@@ -1748,6 +1765,7 @@ let to_whyml (m : M.model) : mlw_tree  =
       name  = storage_module;
       decls = [uselib]               @
               traceutils             @
+              enums                  @
               records                @
               eq_exten               @
               [storage;storageval]   @

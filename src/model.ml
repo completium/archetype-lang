@@ -2003,6 +2003,7 @@ module Utils : sig
   val function_name_from_function_const  : function_const  -> string
   val function_name_from_builtin_const   : builtin_const  -> string
   val get_assets                         : model -> info_asset list
+  val get_enums                          : model -> enum list
   val get_records                        : model -> record list
   val get_variables                      : model -> storage_item list
   val get_storage                        : model -> storage
@@ -2187,6 +2188,18 @@ end = struct
   let dest_record  = function
     | Drecord r -> r
     | _ -> emit_error NotaPartition
+
+
+  let is_enum (d : decl_node) : bool =
+    match d with
+    | Denum _ -> true
+    | _          -> false
+
+  let dest_enum  = function
+    | Denum e -> e
+    | _ -> emit_error NotaPartition
+
+  let get_enums m = m.decls |> List.filter is_enum |> List.map dest_enum
 
   let get_records m = m.decls |> List.filter is_record |> List.map dest_record
 
