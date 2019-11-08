@@ -2007,6 +2007,7 @@ module Utils : sig
   val get_variables                      : model -> storage_item list
   val get_storage                        : model -> storage
   val get_info_asset                     : model -> lident -> info_asset
+  val get_info_enum                      : model -> ident -> info_enum
   val get_asset_field                    : model -> (lident * ident) -> (ident * type_ * mterm option)
   val get_asset_key                      : model -> lident -> (ident * btyp)
   val get_field_container                : model -> ident -> ident -> (ident * container)
@@ -2067,6 +2068,7 @@ end = struct
     | NotanArray
     | NotaRecord of mterm
     | NotanAssetType
+    | EnumNotFound of string
   [@@deriving show {with_path = false}]
 
   let emit_error (desc : error_desc) =
@@ -2207,6 +2209,19 @@ end = struct
     match res with
     | Some v -> v
     | _ -> emit_error (AssetNotFound id)
+
+  let get_info_enum (m : model) (id : ident) : info_enum =
+    let res = List.fold_left (fun accu (x : info_item) ->
+        match x with
+        | Ienum r when String.equal id r.name -> Some r
+        | _ -> accu
+      ) None m.info in
+    match res with
+    | Some v -> v
+    | _ -> emit_error (EnumNotFound id)
+
+  (* let get_state_values (m : model) : ident list =
+    [] *)
 
   let get_partitions m : (ident * ident * type_) list=
     get_assets m |> List.fold_left (fun acc (info : info_asset) ->
