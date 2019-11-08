@@ -746,7 +746,10 @@ let mk_trace_seq m t chs =
     Tseq ([with_dummy_loc t] @ (List.map mk_trace chs))
   else t
 
-let is_old (_t : M.mterm) = false
+let is_old (ctx : logical_context) (t : M.mterm) =
+  match t.node with
+  | M.Mdotasset ({ node = M.Mvarlocal id;  type_ = _},_) -> List.mem (unloc id) ctx.localold
+  | _ -> false
 
 let map_mpattern (p : M.lident M.pattern_node) =
   match p with
@@ -778,6 +781,10 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | M.Mint v          -> Tint v
     | M.Mdotasset (e,i) -> Tdot (map_mterm m ctx e, mk_loc (loc i) (Tvar (map_lident i)))
     | M.Munshallow (a,e) ->
+      let ctx =
+        if is_old ctx e then
+          { ctx with old = true }
+        else ctx in
       Tapp (loc_term (Tvar ("unshallow_"^a)),
             [map_mterm m ctx (M.mk_mterm (M.Mvarstorecol (dumloc a))
                                 (M.Tcontainer (Tasset (dumloc a),Collection)));
@@ -820,6 +827,19 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
               None,
               Tget (loc_ident a,
                     loc_term (mk_ac a),
+                    map_mterm m ctx k) |> with_dummy_loc,
+              Tif (Tnot (Teq (Tyint,
+                              Tvar (unloc id),
+                              Twitness a)) |> loc_term,
+                   map_mterm m ctx b,
+                   Some (map_mterm m ctx e)) |> with_dummy_loc)
+    | M.Mletin ([id], { node = M.Mgetbefore (a,k); type_ = _ }, _, b, Some e) -> (* logical *)
+      let ctx = { ctx with (*old = true;*) localold = ctx.localold @ [unloc id] } in
+      Tletin (M.Utils.is_local_assigned id b,
+              map_lident id,
+              None,
+              Tget (loc_ident a,
+                    loc_term (mk_ac_old a),
                     map_mterm m ctx k) |> with_dummy_loc,
               Tif (Tnot (Teq (Tyint,
                               Tvar (unloc id),
