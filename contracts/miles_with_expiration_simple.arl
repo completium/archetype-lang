@@ -36,7 +36,7 @@ action consume (ow : address) (qty : int) {
                 o.miles.sum(the.quantity) = before_o.miles.sum(the.quantity) - qty
                 otherwise true
             otherwise true
-             invariant for loop {
+            invariant for loop {
                 let before_o = before.owner.get(ow) in
                     o.miles.sum(the.quantity) = 
                         before_o.miles.sum(the.quantity) - qty + remainder
