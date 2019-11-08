@@ -237,7 +237,7 @@ let rec pp_expr outer pos fmt a =
         Format.fprintf fmt "before.%a" pp x
       in
       let pp_label fmt lbl pp x =
-        Format.fprintf fmt "(%a at %a)" pp x pp_str lbl
+        Format.fprintf fmt "at(%a).%a"  pp_str lbl pp x
       in
 
       match st.before, st.label with

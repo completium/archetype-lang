@@ -3,11 +3,7 @@ archetype test_specification
 action tr {
   specification {
     postcondition s1 {
-      (x at label_in_code) -> x
+      at(label_in_code).x -> x
     }
-
-    (* postcondition s2 {
-      (s::x at label_in_code) -> x
-    } *)
   }
 }
