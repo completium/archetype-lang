@@ -424,3 +424,52 @@ let assign_loop_label (model : model) : model =
     | _ -> map_mterm (aux ctx) mt
   in
   map_mterm_model aux model
+
+
+let remove_wild_pattern (model : model) : model =
+  let rec aux c (mt : mterm) : mterm =
+    match mt.node with
+    | Mmatchwith (e, l) ->
+      let e = aux c e in
+      let l = List.map (fun (x, y) -> x, aux c y) l in
+
+      let pl : (string * mterm) list =
+        begin
+          let values : string list =
+            begin
+              let enum_info : info_enum =
+                match e.type_ with
+                | Tstate   -> Model.Utils.get_info_enum model "state"
+                | Tenum id -> Model.Utils.get_info_enum model (unloc id)
+                | _ -> assert false
+              in
+              enum_info.values
+            end
+          in
+          let mterm_default : mterm option =
+            List.fold_left (
+              fun accu (p, e : pattern * mterm) ->
+                match p.node with
+                | Pwild -> Some e
+                | _ -> accu
+            ) None l in
+          let seek_mterm x =
+            List.fold_left (
+              fun accu (p, e : pattern * mterm) ->
+                match p.node with
+                | Pconst id when String.equal (Location.unloc id) x -> Some e
+                | _ -> accu
+            ) None l in
+          List.map (fun x ->
+              let e = seek_mterm x in
+              match e with
+              | Some e -> (x, e)
+              | None -> x, Option.get mterm_default
+            ) values
+        end
+      in
+      let l = List.map (fun (id, e) -> mk_pattern (Pconst (dumloc id)), e) pl in
+      mk_mterm (Mmatchwith (e, l)) mt.type_
+    | _ -> map_mterm (aux c) mt
+  in
+  Model.map_mterm_model aux model

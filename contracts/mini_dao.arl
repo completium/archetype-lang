@@ -12,7 +12,7 @@ action withdraw {
     }
   }
   require {
-    r1 : shares.get(caller).value > 0mtz;
+    r1 : shares.get(caller).value > 0tz;
     r2 : balance >= shares.get(caller).value;
   }
   effect {

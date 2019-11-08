@@ -17,6 +17,7 @@ let emit_error (desc : error_desc) =
   raise (Anomaly str)
 
 let const_storage = "s_"
+let const_state = "state"
 
 type operator =
   | Equal
@@ -198,7 +199,7 @@ let pp_model fmt (model : model) =
 
   let pp_pattern fmt (p : pattern) =
     match p.node with
-    | Pconst i -> pp_id fmt i
+    | Pconst i -> Format.fprintf fmt "%a(unit)" pp_id i
     | Pwild -> pp_str fmt "_"
   in
 
@@ -728,7 +729,13 @@ let pp_model fmt (model : model) =
       | Mvarstorecol v -> Format.fprintf fmt "%s.%a" const_storage pp_id v
       | Mvarenumval v  -> pp_id fmt v
       | Mvarfield v    -> pp_id fmt v
-      | Mvarlocal v    -> pp_id fmt v
+      | Mvarlocal v    ->
+        begin
+        match mtt.type_ with
+        | Tstate
+        | Tenum _ -> Format.fprintf fmt "%a (unit)" pp_id v
+        | _ -> pp_id fmt v
+       end
       | Mvarparam v    ->
         Format.fprintf fmt "%a%a"
           (fun fmt x ->
@@ -738,7 +745,7 @@ let pp_model fmt (model : model) =
           ) env.f
           pp_id v
       | Mvarthe        -> pp_str fmt "the"
-      | Mvarstate      -> pp_str fmt "state_"
+      | Mvarstate      -> Format.fprintf fmt "%s.%s" const_storage const_state
       | Mnow           -> pp_str fmt "now"
       | Mtransferred   -> pp_str fmt "amount"
       | Mcaller        -> pp_str fmt "sender"
@@ -785,11 +792,11 @@ let pp_model fmt (model : model) =
         begin
           let v =
             match c with
-            | Tz -> Big_int.mult_int_big_int 1000 v
-            | Mtz -> v
+            | Tz -> v
+            | Mtz -> Big_int.mult_int_big_int 1000 v
             | Mutz -> assert false
           in
-          Format.fprintf fmt "%amtz"
+          Format.fprintf fmt "%atz"
             pp_big_int v
         end
       | Maddress v ->
@@ -887,7 +894,9 @@ let pp_model fmt (model : model) =
           pp_operator op
           f r
       | Massignstate x ->
-        Format.fprintf fmt "state_ = %a"
+        Format.fprintf fmt "%s.%s := %a"
+          const_storage
+          const_state
           f x
       | Mtransfer (x, b, q) ->
         Format.fprintf fmt "transfer%s %a%a"
@@ -958,14 +967,27 @@ let pp_model fmt (model : model) =
              action.fun_name)) actions
   in
 
-  let pp_record_item (fmt : Format.formatter) (record_item : record_item) =
+
+  let pp_enum (fmt : Format.formatter) (enum : enum) =
+    let pp_enum_item (fmt : Format.formatter) (enum_item : enum_item) =
+      Format.fprintf fmt
+        "| %a of unit "
+        pp_id enum_item.name
+    in
     Format.fprintf fmt
-      "%a : %a;"
-      pp_id record_item.name
-      pp_type record_item.type_
+      "type %a is@\n  \
+       @[%a@]@\n"
+      pp_id enum.name
+      (pp_list "@\n" pp_enum_item) enum.values
   in
 
   let pp_record (fmt : Format.formatter) (record : record) =
+    let pp_record_item (fmt : Format.formatter) (record_item : record_item) =
+      Format.fprintf fmt
+        "%a : %a;"
+        pp_id record_item.name
+        pp_type record_item.type_
+    in
     Format.fprintf fmt
       "type %a is record [@\n  \
        @[%a@]@\n\
@@ -976,7 +998,7 @@ let pp_model fmt (model : model) =
 
   let pp_decl (fmt : Format.formatter) (decl : decl_node) =
     match decl with
-    | Denum _e -> ()
+    | Denum e -> pp_enum fmt e
     | Drecord r -> pp_record fmt r
     | Dcontract _c -> ()
   in

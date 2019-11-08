@@ -16,11 +16,11 @@ constant deadline date = 2019-06-01T00:00:00
 (* state machine *)
 states =
  | Created initial
- | Aborted   with { s0 : balance = 0mtz }
- | Confirmed with { s1 : balance = 0mtz (* price + penalty *) }
- | Canceled  with { s2 : balance = 0mtz }
- | Completed with { s3 : balance = 0mtz;
-                    (* s4 : transferred_to(seller) = price + penalty; *) 
+ | Aborted   with { s0 : balance = 0tz }
+ | Confirmed with { s1 : balance = price + penalty }
+ | Canceled  with { s2 : balance = 0tz }
+ | Completed with { s3 : balance = 0tz;
+                    (* s4 : transferred_to(seller) = price + penalty; *)
                   }
 
 transition abort from Created {

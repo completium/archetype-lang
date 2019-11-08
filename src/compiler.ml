@@ -95,6 +95,7 @@ let post_process_fun_language = Gen_transform.process_single_field_storage
 let prune_properties          = Gen_transform.prune_properties
 let replace_declvar_by_letin  = Gen_transform.replace_declvar_by_letin
 let remove_get_dot            = Gen_transform.remove_get_dot
+let remove_wild_pattern       = Gen_transform.remove_wild_pattern
 
 let generate_target model =
 
@@ -113,6 +114,7 @@ let generate_target model =
   | Ligo ->
     model
     |> replace_declvar_by_letin
+    |> remove_wild_pattern
     |> remove_get_dot
     |> exec_process
     |> shallow_asset

@@ -30,9 +30,9 @@ states =
  | Created initial
  | Aborted
  | Confirmed
- | Canceled    with { s1 : balance = 0mtz; }
+ | Canceled    with { s1 : balance = 0tz; }
  | Transferred with { s2 : transferred_to (price, buyer);
-                      s3 : balance = 0mtz;
+                      s3 : balance = 0tz;
                     }
 
 transition abort from Created {
