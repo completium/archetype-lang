@@ -6,6 +6,7 @@ variable r rational = 2 div 6
 variable s string = "str"
 variable ctz tez = 1tz
 variable cmtz tez = 1mtz
+variable cmutz tez = 1mutz
 variable a address = @tz1KmuhR6P52hw6xs5P69BXJYAURaznhvN1k
 variable d duration = 3w8d4h34m18s (* 3 weeks 8 days 4 hours 34 minutes 18 seconds *)
 variable deadline date = 2019-01-01T00:00:00 (* iso 8601 *)
