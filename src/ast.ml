@@ -326,7 +326,7 @@ and 'id instruction_node =
   | Imatchwith of 'id term_gen * ('id pattern_gen * 'id instruction_gen) list (* match term with ('pattern * 'id instruction_gen) list *)
   | Iassign of (assignment_operator * 'id lvalue_gen * 'id term_gen)          (* $2 assignment_operator $3 *)
   | Irequire of (bool * 'id term_gen)                                         (* $1 ? require : failif *)
-  | Itransfer of ('id term_gen * bool * 'id qualid_gen option)                (* value * back * dest *)
+  | Itransfer of ('id term_gen * 'id term_gen)                                (* value * dest *)
   | Ibreak
   | Iassert of 'id term_gen
   | Icall of ('id term_gen option * 'id call_kind * ('id term_arg) list)
@@ -766,7 +766,7 @@ let fold_instr_expr fi fe accu instr =
   | Imatchwith (a, ps)  -> List.fold_left (fun accu (_, i) -> fi accu i) (fe accu a) ps
   | Iassign (_, _, e)   -> fe accu e
   | Irequire (_, x)     -> fe accu x
-  | Itransfer (x, _, _) -> fe accu x
+  | Itransfer (v, d)    -> fe (fe accu v) d
   | Ibreak              -> accu
   | Iassert x           -> fe accu x
   | Icall (x, _, args)  -> let accu = Option.map_dfl (fe accu) accu x in List.fold_left (fold_term_arg fe) accu args
@@ -947,9 +947,10 @@ let fold_map_instr_term gi _ge fi fe (accu : 'a) instr : 'id instruction_gen * '
     let xe, xa = fe accu x in
     gi (Irequire (b, xe)), xa
 
-  | Itransfer (x, b, q) ->
-    let xe, xa = fe accu x in
-    gi (Itransfer (xe, b, q)), xa
+  | Itransfer (v, d) ->
+    let ve, va = fe accu v in
+    let de, da = fe va d in
+    gi (Itransfer (ve, de)), da
 
   | Ibreak ->
     gi (Ibreak), accu

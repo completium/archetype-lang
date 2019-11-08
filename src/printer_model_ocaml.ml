@@ -574,14 +574,14 @@ let pp_model fmt (model : model) =
     pp_str fmt (to_str op)
   in
 
-  let rec pp_qualid fmt (q : qualid) =
+  (* let rec pp_qualid fmt (q : qualid) =
     match q.node with
     | Qdot (q, i) ->
       Format.fprintf fmt "%a.%a"
         pp_qualid q
         pp_id i
     | Qident i -> pp_id fmt i
-  in
+  in *)
 
   let pp_pattern fmt (p : pattern) =
     match p.node with
@@ -1183,11 +1183,10 @@ let pp_model fmt (model : model) =
       | Massignstate x ->
         Format.fprintf fmt "state_ = %a"
           f x
-      | Mtransfer (x, b, q) ->
-        Format.fprintf fmt "transfer%s %a%a"
-          (if b then " back" else "")
-          f x
-          (pp_option (fun fmt -> Format.fprintf fmt " to %a" pp_qualid)) q
+      | Mtransfer (v, d) ->
+        Format.fprintf fmt "transfer %a to %a"
+          f v
+          f d
       | Mbreak -> emit_error UnsupportedBreak
       | Massert x ->
         Format.fprintf fmt "assert %a"

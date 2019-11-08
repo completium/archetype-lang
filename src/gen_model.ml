@@ -567,7 +567,7 @@ let to_model (ast : A.model) : M.model =
       in
       M.Mif (cond, fail (InvalidCondition None), None)
 
-    | A.Itransfer (i, b, q)     -> M.Mtransfer (f i, b, Option.map to_qualid_gen q)
+    | A.Itransfer (d, v)        -> M.Mtransfer (f d, f v)
     | A.Ibreak                  -> M.Mbreak
     | A.Iassert e               -> M.Massert (f e)
     | A.Ireturn e               -> M.Mreturn (f e)
