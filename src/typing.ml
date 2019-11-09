@@ -1176,13 +1176,22 @@ let rec for_xexpr (mode : emode_t) (env : env) ?(ety : M.ptyp option) (tope : PT
               Env.emit_error env (loc tope, BeforeWithLabel);
               M.VTnone
 
-          | true, None  -> M.VTbefore
-          | _, Some lbl -> M.VTat (unloc lbl)
-          | _           -> M.VTnone
+          | true , None ->
+              M.VTbefore
+
+          | false, Some lbl ->
+              if Env.Label.exists env (unloc lbl) then begin
+                Env.emit_error env (loc lbl, UnknownLabel (unloc lbl));
+                M.VTnone
+              end else M.VTat (unloc lbl)
+
+          | false, None ->
+              M.VTnone
         in
 
         let vt =
-          if vt <> M.VTnone && mode = `Formula then begin
+          let hasvt = st.before || Option.is_some st.label in
+          if hasvt then begin
             Env.emit_error env (loc tope, BeforeOrLabelInExpr); M.VTnone
           end else vt in
 
