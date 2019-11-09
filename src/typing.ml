@@ -156,6 +156,7 @@ type error_desc =
   | ReadOnlyGlobal                     of ident
   | SecurityInExpr
   | SpecOperatorInExpr
+  | TransferWithoutDest
   | UninitializedVar
   | UnknownAction                      of ident
   | UnknownAsset                       of ident
@@ -276,6 +277,7 @@ let pp_error_desc fmt e =
   | ReadOnlyGlobal i                   -> pp "Global is read only: %a" pp_ident i
   | SecurityInExpr                     -> pp "Found securtiy predicate in expression"
   | SpecOperatorInExpr                 -> pp "Specification operator in expression"
+  | TransferWithoutDest                -> pp "Transfer without destination"
   | UninitializedVar                   -> pp "This variable declaration is missing an initializer"
   | UnknownAction i                    -> pp "Unknown action: %a" pp_ident i
   | UnknownAsset i                     -> pp "Unknown asset: %a" pp_ident i
@@ -2202,18 +2204,37 @@ let rec for_instruction (env : env) (i : PT.expr) : env * M.instruction =
         env, mki (M.Iassign (op, x, e))
       end
 
-    | Etransfer (e, _back, to_) ->
+    | Etransfer (e, back, to_) ->
       let to_ = Option.bind (for_role env) to_ in
-      let to_ = Option.map (M.mk_id M.vtrole) to_ in
-      let dest =
-        begin
-          match to_ with
-          | Some {node = Qident id; _} -> M.mk_sp (M.Pvar (VTnone, id)) ~type_:M.vtrole
-          | _ -> M.mk_sp (M.Pvar (VTnone, dumloc "FIXME")) ~type_:M.vtrole (* FIXME *)
-        end
-      in
       let e   = for_expr env ~ety:M.vtcurrency e in
-      env, mki (Itransfer (e, dest))
+      let to_ =
+        match to_ with
+        | None -> begin
+            match e.M.node with
+            | Pvar (M.VTnone, { pldesc = x }) ->
+                Env.Var.lookup env x |> Option.bind (fun vd ->
+                  if back then fst vd.vr_tgt else snd vd.vr_tgt
+                )
+            | _ -> None
+          end
+
+        | Some to_ ->
+            Some to_
+      in
+
+      let to_ =
+        Option.map
+          (fun x -> M.mk_sp (M.Pvar (VTnone, x)) ~type_:M.vtrole)
+          to_ in
+
+      if Option.is_none to_ then
+        Env.emit_error env (loc i, TransferWithoutDest);
+
+      let to_ = Option.get_fdfl (fun () ->
+        M.mk_sp (M.Pvar (VTnone, dumloc "<error>")) ~type_:M.vtrole
+      ) to_ in
+
+      env, mki (Itransfer (e, to_))
 
     | Eif (c, bit, bif) ->
       let c        = for_expr env ~ety:M.vtbool c in
