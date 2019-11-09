@@ -88,6 +88,7 @@ type error_desc =
   | AlienPattern
   | AssetExpected
   | AssetWithoutFields
+  | BeforeOrLabelInExpr
   | BeforeIrrelevant                   of [`Local | `State]
   | BeforeWithLabel
   | BindingInExpr
@@ -209,6 +210,7 @@ let pp_error_desc fmt e =
   | AssetWithoutFields                 -> pp "Asset without fields"
   | BeforeIrrelevant `Local            -> pp "The `before' modifier cannot be used on local variables"
   | BeforeIrrelevant `State            -> pp "The `before' modifier cannot be used on state constructors"
+  | BeforeOrLabelInExpr                -> pp "The `before' or label modifiers can only be used in formulas"
   | BeforeWithLabel                    -> pp "Cannot use `before' labels at the same time"
   | BindingInExpr                      -> pp "Binding in expression"
   | CannotInferAnonRecord              -> pp "Cannot infer a non record"
@@ -1178,6 +1180,12 @@ let rec for_xexpr (mode : emode_t) (env : env) ?(ety : M.ptyp option) (tope : PT
           | _, Some lbl -> M.VTat (unloc lbl)
           | _           -> M.VTnone
         in
+
+        let vt =
+          if vt <> M.VTnone && mode = `Formula then begin
+            Env.emit_error env (loc tope, BeforeOrLabelInExpr); M.VTnone
+          end else vt in
+
         match Env.lookup_entry env (unloc x) with
         | Some (`Local xty) ->
           if before then
