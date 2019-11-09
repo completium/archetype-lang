@@ -2181,9 +2181,15 @@ let rec for_instruction (env : env) (i : PT.expr) : env * M.instruction =
 
     | Etransfer (e, _back, to_) ->
       let to_ = Option.bind (for_role env) to_ in
-      let _to_ = Option.map (M.mk_id M.vtrole) to_ in
+      let to_ = Option.map (M.mk_id M.vtrole) to_ in
+      let dest =
+        begin
+          match to_ with
+          | Some {node = Qident id; _} -> M.mk_sp (M.Pvar (VTnone, id)) ~type_:M.vtrole
+          | _ -> M.mk_sp (M.Pvar (VTnone, dumloc "FIXME")) ~type_:M.vtrole (* FIXME *)
+        end
+      in
       let e   = for_expr env ~ety:M.vtcurrency e in
-      let dest = M.mk_sp (M.Pvar (VTnone, dumloc "dest")) in (* FIXME *)
       env, mki (Itransfer (e, dest))
 
     | Eif (c, bit, bif) ->
