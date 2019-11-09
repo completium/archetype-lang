@@ -1,9 +1,26 @@
-archetype test_specification
+archetype test_at
 
-action tr {
+variable v int = 1
+
+action anaction {
   specification {
-    postcondition s1 {
-      at(label_in_code).x -> x
+    postcondition p1 {
+      at(l1).a = 0 and
+      at(l1).v = 1 and
+      at(l2).a = 2 and
+      at(l2).v = 3 and
+      a = 4 and
+      v = 5
     }
+  }
+
+  effect {
+    var a : int = 0;
+    label l1;
+    a := 2;
+    v := 3;
+    label l2;
+    a := 4;
+    v := 5
   }
 }

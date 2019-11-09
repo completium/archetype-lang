@@ -1,0 +1,15 @@
+archetype bad_at_unknown_label
+
+action anaction {
+  specification {
+    postcondition p1 {
+      at(l2).a = 0
+    }
+  }
+
+  effect {
+    var a : int = 0;
+    label l1;
+    a := 2
+  }
+}
