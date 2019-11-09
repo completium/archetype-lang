@@ -1193,7 +1193,7 @@ let rec for_xexpr (mode : emode_t) (env : env) ?(ety : M.ptyp option) (tope : PT
 
         let vt =
           let hasvt = st.before || Option.is_some st.label in
-          if hasvt then begin
+          if hasvt && mode <> `Formula then begin
             Env.emit_error env (loc tope, BeforeOrLabelInExpr); M.VTnone
           end else vt in
 
