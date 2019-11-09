@@ -89,6 +89,7 @@ type error_desc =
   | AssetExpected
   | AssetWithoutFields
   | BeforeIrrelevant                   of [`Local | `State]
+  | BeforeWithLabel
   | BindingInExpr
   | CannotInferAnonRecord
   | CannotInferCollectionType
@@ -208,6 +209,7 @@ let pp_error_desc fmt e =
   | AssetWithoutFields                 -> pp "Asset without fields"
   | BeforeIrrelevant `Local            -> pp "The `before' modifier cannot be used on local variables"
   | BeforeIrrelevant `State            -> pp "The `before' modifier cannot be used on state constructors"
+  | BeforeWithLabel                    -> pp "Cannot use `before' labels at the same time"
   | BindingInExpr                      -> pp "Binding in expression"
   | CannotInferAnonRecord              -> pp "Cannot infer a non record"
   | CannotInferCollectionType          -> pp "Cannot infer collection type"
@@ -1168,7 +1170,11 @@ let rec for_xexpr (mode : emode_t) (env : env) ?(ety : M.ptyp option) (tope : PT
         let before = st.before in
         let vt =
           match st.before, st.label with
-          | true, _     -> M.VTbefore
+          | true, Some _ ->
+              Env.emit_error env (loc tope, BeforeWithLabel);
+              M.VTnone
+
+          | true, None  -> M.VTbefore
           | _, Some lbl -> M.VTat (unloc lbl)
           | _           -> M.VTnone
         in
