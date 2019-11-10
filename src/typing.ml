@@ -2879,19 +2879,20 @@ let for_asset_decl ?(force = false) (env : env) (decl : PT.asset_decl loced) =
 
   let state =
     let for1 = function
-      | PT.APOstates x -> begin
-          match Env.State.lookup env (unloc x) with
-          | None ->
-            Env.emit_error env (loc x, UnknownEnum (unloc x));
-            None
-          | Some _ ->
-            Some x
-        end
+      | PT.APOstates x ->
+          let aout =
+            match Env.State.lookup env (unloc x) with
+            | None ->
+              Env.emit_error env (loc x, UnknownEnum (unloc x));
+              None
+            | Some _ ->
+              Some x
+          in Some aout
 
       | _ ->
         None in
 
-    match List.map for1 postopts with
+    match List.pmap for1 postopts with
     | _ :: _ :: _ ->
       Env.emit_error env (loc decl, MultipleAssetStateDeclaration);
       None
