@@ -1,0 +1,21 @@
+archetype bad_at_var_not_in_env
+
+variable v int = 1
+
+action anaction {
+  specification {
+    postcondition p1 {
+      at(l1).a = 0
+    }
+  }
+
+  effect {
+    v := 2;
+    label l1;
+    var a : int = 0;
+    a := 2;
+    label l2;
+    a := 3;
+    v := 4
+  }
+}

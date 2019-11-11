@@ -77,13 +77,13 @@ let pp_operator fmt op =
   in
   pp_str fmt (to_str op)
 
-let rec pp_qualid fmt (q : qualid) =
+(* let rec pp_qualid fmt (q : qualid) =
   match q.node with
   | Qdot (q, i) ->
     Format.fprintf fmt "%a.%a"
       pp_qualid q
       pp_id i
-  | Qident i -> pp_id fmt i
+  | Qident i -> pp_id fmt i *)
 
 let pp_pattern fmt (p : pattern) =
   match p.node with
@@ -677,11 +677,10 @@ let pp_mterm fmt (mt : mterm) =
     | Massignstate x ->
       Format.fprintf fmt "state = %a"
         f x
-    | Mtransfer (x, b, q) ->
-      Format.fprintf fmt "transfer%s %a%a"
-        (if b then " back" else "")
-        f x
-        (pp_option (fun fmt -> Format.fprintf fmt " to %a" pp_qualid)) q
+    | Mtransfer (v, d) ->
+      Format.fprintf fmt "transfer %a to %a"
+        f v
+        f d
     | Mbreak -> pp_str fmt "break"
     | Massert x ->
       Format.fprintf fmt "assert %a"

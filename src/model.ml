@@ -211,7 +211,7 @@ type ('id, 'term) mterm_node  =
   | Massign       of (assignment_operator * 'id * 'term)
   | Massignfield  of (assignment_operator * 'term * 'id * 'term)
   | Massignstate  of 'term
-  | Mtransfer     of ('term * bool * 'id qualid_gen option)
+  | Mtransfer     of ('term * 'term) (* value * dest *)
   | Mbreak
   | Massert       of 'term
   | Mreturn       of 'term
@@ -958,7 +958,7 @@ let cmp_mterm_node
     | Massign (op1, l1, r1), Massign (op2, l2, r2)                                     -> cmp_assign_op op1 op2 && cmpi l1 l2 && cmp r1 r2
     | Massignfield (op1, a1, fi1, r1), Massignfield (op2, a2, fi2, r2)                 -> cmp_assign_op op1 op2 && cmp a1 a2 && cmpi fi1 fi2 && cmp r1 r2
     | Massignstate x1, Massignstate x2                                                 -> cmp x1 x2
-    | Mtransfer (x1, b1, q1), Mtransfer (x2, b2, q2)                                   -> cmp x1 x2 && cmp_bool b1 b2 && Option.cmp cmp_qualid q1 q2
+    | Mtransfer (v1, d1), Mtransfer (v2, d2)                                           -> cmp v1 v2 && cmp d1 d2
     | Mbreak, Mbreak                                                                   -> true
     | Massert x1, Massert x2                                                           -> cmp x1 x2
     | Mreturn x1, Mreturn x2                                                           -> cmp x1 x2
@@ -1146,7 +1146,7 @@ let map_term_node (f : 'id mterm_gen -> 'id mterm_gen) = function
   | Massign (op, l, r)            -> Massign (op, l, f r)
   | Massignfield (op, a, fi, r)   -> Massignfield (op, a, fi, f r)
   | Massignstate x                -> Massignstate (f x)
-  | Mtransfer (x, b, q)           -> Mtransfer (f x, b, q)
+  | Mtransfer (v, d)              -> Mtransfer (f v, f d)
   | Mbreak                        -> Mbreak
   | Massert x                     -> Massert (f x)
   | Mreturn x                     -> Mreturn (f x)
@@ -1406,7 +1406,7 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Massign (_, _, e)                     -> f accu e
   | Massignfield (_, _, _, e)             -> f accu e
   | Massignstate x                        -> f accu x
-  | Mtransfer (x, _, _)                   -> f accu x
+  | Mtransfer (v, d)                      -> f (f accu v) d
   | Mbreak                                -> accu
   | Massert x                             -> f accu x
   | Mreturn x                             -> f accu x
@@ -1887,9 +1887,10 @@ let fold_map_term
     let xe, xa = f accu x in
     g (Massignstate xe), xa
 
-  | Mtransfer (x, b, q) ->
-    let xe, xa = f accu x in
-    g (Mtransfer (xe, b, q)), xa
+  | Mtransfer (v, d) ->
+    let ve, va = f accu v in
+    let de, da = f va d in
+    g (Mtransfer (ve, de)), da
 
   | Mbreak ->
     g (Mbreak), accu

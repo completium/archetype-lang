@@ -493,14 +493,13 @@ let rec pp_instruction fmt (i : instruction) =
       in
       (pp_with_paren pp) fmt (k, pt)
 
-    | Itransfer (value, back, dest) ->
-      let pp fmt (value, back, dest) =
-        Format.fprintf fmt "transfer %a %a%a"
-          (pp_do_if back pp_str) "back"
+    | Itransfer (value, dest) ->
+      let pp fmt (value, dest) =
+        Format.fprintf fmt "transfer %a to %a"
           pp_pterm value
-          (pp_option (fun fmt -> Format.fprintf fmt " to %a" pp_qualid)) dest
+          pp_pterm dest
       in
-      (pp_with_paren pp) fmt (value, back, dest)
+      (pp_with_paren pp) fmt (value, dest)
 
     | Ibreak ->
       let pp fmt () =
