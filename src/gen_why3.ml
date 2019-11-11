@@ -235,7 +235,7 @@ let mk_transfer () =
   let decl : (term, typ, ident) abstract_decl = Dfun {
     name     = "transfer";
     logic    = NoMod;
-    args     = ["t", Tyaddr; "a", Tyint];
+    args     = ["a", Tyint; "t", Tyaddr];
       returns  = Tyunit;
       raises   = [];
       variants = [];
@@ -798,13 +798,6 @@ let map_mpattern (p : M.lident M.pattern_node) =
   | M.Pwild -> Twild
   | M.Pconst i -> Tconst (map_lident i)
 
-let rec map_qualid (q : M.qualid) : loc_term =
-let map_qualid_node (n : ((M.lident,M.qualid) M.qualid_node)) = 
-match n with
-| M.Qident i -> (Tvar (map_lident i)) |> with_dummy_loc
-| M.Qdot (q,i) -> Tdot ((Tvar (map_lident i)) |> with_dummy_loc, map_qualid q) |> with_dummy_loc in
-map_qualid_node q.node
-
 let rec map_mterm m ctx (mt : M.mterm) : loc_term =
   let t =
     match mt.node with
@@ -1036,7 +1029,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | M.Mvarstate -> loc_term (Tdoti (gs, "state")) |> Mlwtree.deloc
     | M.Massignstate v -> Tassign (loc_term (Tdoti(gs, "state")), map_mterm m ctx v)
     | M.Mor (a,b) -> Tor (map_mterm m ctx a, map_mterm m ctx b)
-    | M.Mtransfer (t, false, Some a) -> Tapp(loc_term (Tvar "transfer"),[map_qualid a;map_mterm m ctx t])
+    | M.Mtransfer (a,t) -> Tapp(loc_term (Tvar "transfer"),[map_mterm m ctx a;map_mterm m ctx t])
     | M.Mbalance -> loc_term (Tdoti(gs,"_balance")) |> Mlwtree.deloc
     | _ -> Tnone in
   mk_loc mt.loc t
