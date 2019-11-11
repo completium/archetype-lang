@@ -16,6 +16,7 @@ theory Types
   exception InvalidCaller
   exception InvalidCondition
   exception NoTransfer
+  exception InvalidState
 
 end
 
@@ -64,6 +65,11 @@ theory Contract
   type transfer = {
      destination_ : address;
      amount_      : tez;
+  }
+
+  let mk_transfer (d : address) (a : tez) : transfer = {
+    destination_ = d;
+    amount_ = a;
   }
 
   type transfers = list transfer

@@ -143,7 +143,7 @@ let mk_collection_field asset to_id = {
 
 let mk_const_fields m = [
   { name = mk_id "ops"   ; typ = Tyrecord "transfers" ; init = Tvar "Nil"; mutable_ = true; };
-  { name = mk_id "balance" ;     typ = Tytez; init = Tint Big_int.zero_big_int; mutable_ = false; };
+  { name = mk_id "balance" ;     typ = Tytez; init = Tint Big_int.zero_big_int; mutable_ = true; };
   { name = mk_id "transferred" ; typ = Tytez; init = Tint Big_int.zero_big_int; mutable_ = false; };
   { name = mk_id "caller"    ; typ = Tyaddr;  init = Tint Big_int.zero_big_int; mutable_ = false; };
   { name = mk_id "now"       ; typ = Tydate;  init = Tint Big_int.zero_big_int; mutable_ = false; }
@@ -228,6 +228,44 @@ let mk_partition_axiom asset f _kt pa kpt : decl =
                                    Tcontains (pa,
                                               Tvar "k",
                                               mk_ac_sv "s" pa)))))
+
+(* Transfer ------------------------------------------------------------------*)
+
+let mk_transfer () = 
+  let decl : (term, typ, ident) abstract_decl = Dfun {
+    name     = "transfer";
+    logic    = NoMod;
+    args     = ["t", Tyaddr; "a", Tyint];
+      returns  = Tyunit;
+      raises   = [];
+      variants = [];
+      requires = [];
+      ensures  = [
+        { id   = "transfer_post_1";
+          form = Teq(Tyint, 
+            Tdoti(gs,"_balance"), 
+            Tminus(Tyint,
+              Tdot(Told (Tvar gs),Tvar "_balance"),
+              Tvar "a"))
+        }
+      ];
+      body     = Tseq[
+        Tassign (
+          Tdoti(gs,"_ops"),
+          Tcons (
+            Tapp(Tvar "mk_transfer",[Tvar "t";Tvar "a"]),
+            Tdoti(gs,"_ops")
+          ));
+          Tassign (
+            Tdoti (gs,"_balance"),
+            Tminus (Tyint,
+              Tdoti (gs,"_balance"),
+              Tvar "a"
+            )
+          )
+      ]
+  } in
+  loc_decl decl |> deloc
 
 (* Select --------------------------------------------------------------------*)
 
@@ -378,10 +416,14 @@ let rec map_mtype (t : M.type_) : loc_typ =
 
 let rec map_term (t : M.mterm) : loc_term = mk_loc t.loc (
     match t.node with
-    | M.Maddress v  -> Tint (sha v)
-    | M.Mint i      -> Tint i
-    | M.Mvarlocal i -> Tvar (map_lident i)
-    | M.Mgt (t1,t2) -> Tgt (with_dummy_loc Tyint,map_term t1,map_term t2)
+    | M.Maddress v           -> Tint (sha v)
+    | M.Mint i               -> Tint i
+    | M.Mvarlocal i          -> Tvar (map_lident i)
+    | M.Mgt (t1,t2)          -> Tgt (with_dummy_loc Tyint,map_term t1,map_term t2)
+    | M.Mcurrency (i,M.Tz)   -> Tint (Big_int.mult_int_big_int 1000000 i)
+    | M.Mcurrency (i,M.Mtz)  -> Tint (Big_int.mult_int_big_int 1000 i)
+    | M.Mcurrency (i,M.Mutz) -> Tint i
+    | M.Mdate s              -> Tint (Core.date_str_to_big_int s)
     | _ ->
       let str = Format.asprintf "Not translated : %a@." M.pp_mterm t in
       print_endline str;
@@ -756,6 +798,13 @@ let map_mpattern (p : M.lident M.pattern_node) =
   | M.Pwild -> Twild
   | M.Pconst i -> Tconst (map_lident i)
 
+let rec map_qualid (q : M.qualid) : loc_term =
+let map_qualid_node (n : ((M.lident,M.qualid) M.qualid_node)) = 
+match n with
+| M.Qident i -> (Tvar (map_lident i)) |> with_dummy_loc
+| M.Qdot (q,i) -> Tdot ((Tvar (map_lident i)) |> with_dummy_loc, map_qualid q) |> with_dummy_loc in
+map_qualid_node q.node
+
 let rec map_mterm m ctx (mt : M.mterm) : loc_term =
   let t =
     match mt.node with
@@ -766,7 +815,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | M.Mfail InvalidCaller -> Traise Einvalidcaller
     | M.Mfail NoTransfer -> Traise Enotransfer
     | M.Mfail (InvalidCondition _) -> Traise Einvalidcondition
-    | M.Mfail _      -> Traise Enotfound
+    | M.Mfail InvalidState -> Traise Einvalidstate
     | M.Mequal (l,r) -> Teq (with_dummy_loc Tyint,map_mterm m ctx l,map_mterm m ctx r)
     | M.Mcaller      -> Tcaller (with_dummy_loc gs)
     | M.Mtransferred -> Ttransferred (with_dummy_loc gs)
@@ -984,6 +1033,11 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
       Tmatch (map_mterm m ctx t, List.map (fun ((p : M.lident M.pattern_gen),e) ->
           (map_mpattern p.node,map_mterm m ctx e)
         ) l)
+    | M.Mvarstate -> loc_term (Tdoti (gs, "state")) |> Mlwtree.deloc
+    | M.Massignstate v -> Tassign (loc_term (Tdoti(gs, "state")), map_mterm m ctx v)
+    | M.Mor (a,b) -> Tor (map_mterm m ctx a, map_mterm m ctx b)
+    | M.Mtransfer (t, false, Some a) -> Tapp(loc_term (Tvar "transfer"),[map_qualid a;map_mterm m ctx t])
+    | M.Mbalance -> loc_term (Tdoti(gs,"_balance")) |> Mlwtree.deloc
     | _ -> Tnone in
   mk_loc mt.loc t
 and mk_invariants (m : M.model) ctx (lbl : ident option) lbody =
@@ -1549,7 +1603,7 @@ let fold_exns body : term list =
     | M.Mfail InvalidCaller -> acc @ [Texn Einvalidcaller]
     | M.Mfail NoTransfer -> acc @ [Texn Enotransfer]
     | M.Mfail (InvalidCondition _) -> acc @ [Texn Einvalidcondition]
-    | M.Mremoveasset _ -> acc @ [Texn Enotfound]
+    | M.Mfail InvalidState -> acc @ [Texn Einvalidstate]
     | _ -> M.fold_term internal_fold_exn acc term in
   Tools.List.dedup (internal_fold_exn [] body)
 
@@ -1776,6 +1830,7 @@ let to_whyml (m : M.model) : mlw_tree  =
   let storageval       = Dval (with_dummy_loc gs, with_dummy_loc Tystorage) in
   let axioms           = mk_axioms m in
   (*let partition_axioms = mk_partition_axioms m in*)
+  let transfer         = if M.Utils.with_transfer m then [mk_transfer ()] else [] in
   let storage_api      = mk_storage_api m (records |> wdl) in
   let endo             = mk_endo_functions m in
   let functions        = mk_exo_functions m in
@@ -1791,6 +1846,7 @@ let to_whyml (m : M.model) : mlw_tree  =
               [storage;storageval]   @
               axioms                 @
               (*partition_axioms       @*)
+              transfer               @
               storage_api            @
               endo;
     };{

@@ -169,6 +169,7 @@ let pp_exn fmt e =
     | Enotfound         -> "NotFound"
     | Einvalidcaller    -> "InvalidCaller"
     | Einvalidcondition -> "InvalidCondition"
+    | Einvalidstate     -> "InvalidState"
     | Enotransfer       -> "NoTransfer"
     | Ebreak            -> "Break" in
   pp_str fmt e_str
@@ -201,6 +202,12 @@ let pp_args fmt l =
   if List.length l = 0
   then pp_str fmt "()"
   else Format.fprintf fmt "%a" (pp_list " " pp_arg) l
+
+(* -------------------------------------------------------------------------- *)
+
+let pp_pattern fmt = function
+  | Twild -> pp_str fmt "_"
+  | Tconst a -> pp_id fmt a
 
 (* -------------------------------------------------------------------------- *)
 
@@ -308,7 +315,7 @@ let rec pp_term outer pos fmt = function
   | Tfalse -> Format.fprintf fmt "false"
   | Ttrue -> Format.fprintf fmt "true"
   | Tor (e1,e2) ->
-    Format.fprintf fmt "%a \\/ %a"
+    Format.fprintf fmt "%a || %a"
       (pp_term e_default PRight) e1
       (pp_term e_default PRight) e2
   | Tgt (_,e1,e2) ->
@@ -452,6 +459,10 @@ let rec pp_term outer pos fmt = function
       pp_str i2
       pp_str i3
       (pp_term outer pos) e2
+  | Tmatch (t,l) ->
+    Format.fprintf fmt "@[match %a with@\n| %a @\nend@]"
+      (pp_term outer pos) t
+      (pp_list "@\n|" pp_case) l
   | Tcons (e1,e2) ->
     Format.fprintf fmt "Cons %a %a"
       (pp_with_paren (pp_term outer pos)) e1
@@ -528,6 +539,10 @@ and pp_catch fmt (exn,e) =
   Format.fprintf fmt "| %a -> %a"
     pp_exn exn
     (pp_term e_top PRight) e
+and pp_case fmt (p,t) =
+  Format.fprintf fmt "%a -> %a"
+     pp_pattern p
+     (pp_term e_top PRight) t
 
 (* -------------------------------------------------------------------------- *)
 

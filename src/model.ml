@@ -2076,6 +2076,7 @@ module Utils : sig
   val retrieve_property                  : model -> ident -> property
   val get_storage_id_name                : lident storage_id -> ident
   val get_default_value                  : model -> type_ -> mterm
+  val with_transfer                      : model -> bool
 
 end = struct
 
@@ -2384,8 +2385,18 @@ end = struct
       | Massign (_,i,_) when compare (unloc i) (unloc id)  = 0 -> raise FoundAssign
       | _ -> fold_term rec_search_assign false t in
     try rec_search_assign false b
-    with _ -> true
+    with FoundAssign -> true
 
+
+  exception FoundTransfer
+
+  let with_transfer (model : model) : bool = 
+    let rec rec_search_transfer ctx _ (t : mterm) = 
+      match t.node with
+      | Mtransfer (_,_,_) -> raise FoundTransfer
+      | _ -> fold_term (rec_search_transfer ctx) false t in
+  try fold_model rec_search_transfer model false
+  with FoundTransfer -> true
 
   let map_invariant_terms (m : mterm -> mterm) (i : invariant) : invariant = {
     i with

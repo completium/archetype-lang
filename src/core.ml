@@ -126,3 +126,5 @@ let duration_to_seconds (d : duration) : big_int =
 let pp_duration_in_seconds fmt (d : duration) =
   let s = duration_to_seconds d in
   Format.fprintf fmt "%a" pp_big_int s
+
+let date_str_to_big_int _ = Big_int.zero_big_int

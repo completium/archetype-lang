@@ -5,6 +5,7 @@ type exn =
   | Ekeyexist
   | Einvalidcaller
   | Einvalidcondition
+  | Einvalidstate
   | Enotransfer
   | Ebreak
 [@@deriving show {with_path = false}]
@@ -570,6 +571,7 @@ let compare_exn e1 e2 =
   | Ekeyexist, Ekeyexist -> true
   | Einvalidcaller, Einvalidcaller -> true
   | Einvalidcondition, Einvalidcondition -> true
+   | Einvalidstate, Einvalidstate -> true
   | Ebreak, Ebreak -> true
   | _ -> false
 
