@@ -1,12 +1,22 @@
 archetype test_specification
 
+asset myasset {
+  id: string;
+  val: bool;
+}
+
 action tr {
   specification {
     postcondition s1 {
-      forall x in t, P(x) -> y
+      forall x in myasset, x.val
     }
     postcondition s2 {
-      exists x in t, P(x) and P(y)
+      exists x in myasset, x.val
     }
+  }
+
+  effect {
+    var i : int = 10;
+    i := 1
   }
 }
