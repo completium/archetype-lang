@@ -7,6 +7,10 @@ asset myasset {
 
 action tr {
   specification {
+    effect {
+      let a = myasset.get("id") in
+      a.val := true
+    }
     postcondition s1 {
       forall x in myasset, x.val
     }
@@ -16,7 +20,7 @@ action tr {
   }
 
   effect {
-    var i : int = 10;
-    i := 1
-  }
+      var i : int = 10;
+      i := 1
+    }
 }
