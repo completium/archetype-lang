@@ -1597,6 +1597,7 @@ let fold_exns body : term list =
     | M.Mfail NoTransfer -> acc @ [Texn Enotransfer]
     | M.Mfail (InvalidCondition _) -> acc @ [Texn Einvalidcondition]
     | M.Mfail InvalidState -> acc @ [Texn Einvalidstate]
+    | M.Mremoveasset _ -> acc @ [Texn Enotfound]
     | _ -> M.fold_term internal_fold_exn acc term in
   Tools.List.dedup (internal_fold_exn [] body)
 
