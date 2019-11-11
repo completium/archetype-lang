@@ -18,6 +18,7 @@ let emit_error (desc : error_desc) =
 
 let const_storage = "s_"
 let const_state = "state"
+let const_operations = "ops_"
 
 type operator =
   | Equal
@@ -189,13 +190,13 @@ let pp_model fmt (model : model) =
   in
 
   (* let rec pp_qualid fmt (q : qualid) =
-    match q.node with
-    | Qdot (q, i) ->
+     match q.node with
+     | Qdot (q, i) ->
       Format.fprintf fmt "%a.%a"
         pp_qualid q
         pp_id i
-    | Qident i -> pp_id fmt i
-  in *)
+     | Qident i -> pp_id fmt i
+     in *)
 
   let pp_pattern fmt (p : pattern) =
     match p.node with
@@ -215,12 +216,12 @@ let pp_model fmt (model : model) =
             f x
       in
       match mtt.node with
-      | Mif (c, t, None) when (match t.node with | Mfail _ -> true | _ -> false) ->
+      | Mif (c, t, (None | Some {node = Mseq []; _})) when (match t.node with | Mfail _ -> true | _ -> false) ->
         Format.fprintf fmt "@[if (%a) then @[%a@] else skip@]"
           f c
           f t
 
-      | Mif (c, t, None) ->
+      | Mif (c, t, (None | Some {node = Mseq []; _}) ) ->
         Format.fprintf fmt "@[if %a then%a@\nelse @\n  skip@]"
           pp_mterm_block c
           pp_mterm_block t
@@ -731,11 +732,11 @@ let pp_model fmt (model : model) =
       | Mvarfield v    -> pp_id fmt v
       | Mvarlocal v    ->
         begin
-        match mtt.type_ with
-        | Tstate
-        | Tenum _ -> Format.fprintf fmt "%a (unit)" pp_id v
-        | _ -> pp_id fmt v
-       end
+          match mtt.type_ with
+          | Tstate
+          | Tenum _ -> Format.fprintf fmt "%a (unit)" pp_id v
+          | _ -> pp_id fmt v
+        end
       | Mvarparam v    ->
         Format.fprintf fmt "%a%a"
           (fun fmt x ->
@@ -899,7 +900,7 @@ let pp_model fmt (model : model) =
           const_state
           f x
       | Mtransfer (v, d) ->
-        Format.fprintf fmt "transfer %a to %a"
+        Format.fprintf fmt "const op : operation = transaction(unit , %a, %a)"
           f v
           f d
       | Mbreak -> emit_error UnsupportedBreak
@@ -1449,14 +1450,16 @@ let pp_model fmt (model : model) =
         "function %s(const action : action_%s; const %s : storage_type) : (list(operation) * storage_type) is@\n  \
          %a\
          %a\
+         %a\
          begin@\n    \
          @[%a@]@\n  \
-         end with ((nil : list(operation)), %s)@\n"
+         end with (%s, %s)@\n"
         name name const_storage
+        (pp_do_if ligo_fun.transfer pp_variables) [const_operations, Tcontainer (Toperation, List)]
         pp_variables ligo_fun.vars
         pp_iterfuns ligo_fun.iterfuns
         (pp_mterm env) ligo_fun.body
-        const_storage
+        (if ligo_fun.transfer then const_operations else "(nil : list(operation))") const_storage
 
     | Some _ret ->
       Format.fprintf fmt

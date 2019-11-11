@@ -2077,6 +2077,7 @@ module Utils : sig
   val retrieve_property                  : model -> ident -> property
   val get_storage_id_name                : lident storage_id -> ident
   val get_default_value                  : model -> type_ -> mterm
+  val with_transfer_for_mterm            : mterm -> bool
   val with_transfer                      : model -> bool
 
 end = struct
@@ -2391,13 +2392,20 @@ end = struct
 
   exception FoundTransfer
 
-  let with_transfer (model : model) : bool = 
-    let rec rec_search_transfer ctx _ (t : mterm) = 
+  let with_transfer_for_mterm_intern _ctx accu (mt : mterm) : bool =
+    let rec aux accu (t : mterm) =
       match t.node with
-      | Mtransfer (_,_,_) -> raise FoundTransfer
-      | _ -> fold_term (rec_search_transfer ctx) false t in
-  try fold_model rec_search_transfer model false
-  with FoundTransfer -> true
+      | Mtransfer _ -> raise FoundTransfer
+      | _ -> fold_term aux accu t in
+    aux accu mt
+
+  let with_transfer_for_mterm (mt : mterm) : bool =
+    try with_transfer_for_mterm_intern () false mt
+    with FoundTransfer -> true
+
+  let with_transfer (model : model) : bool =
+    try fold_model with_transfer_for_mterm_intern model false
+    with FoundTransfer -> true
 
   let map_invariant_terms (m : mterm -> mterm) (i : invariant) : invariant = {
     i with

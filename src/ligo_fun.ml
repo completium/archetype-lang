@@ -15,14 +15,15 @@ type ligo_fun = {
   args: (ident * type_) list;
   vars: (ident * type_) list;
   iterfuns: s_interfun list;
+  transfer: bool;
   body: mterm;
 }
 
 let mk_s_interfun loop_id arg_id arg_type body =
   { loop_id; arg_id; arg_type; body }
 
-let mk_ligo_fun ?(args=[]) ?ret ?(vars=[]) ?(iterfuns=[]) name body : ligo_fun =
-  { name; ret; args; vars; iterfuns; body }
+let mk_ligo_fun ?(args=[]) ?ret ?(vars=[]) ?(iterfuns=[]) ?(transfer=false) name body : ligo_fun =
+  { name; ret; args; vars; iterfuns; transfer; body }
 
 type ligo_fun_accu = {
   funs : s_interfun list;
@@ -137,5 +138,6 @@ let to_ligo_fun (model : model) (f : function__) : ligo_fun =
     | Function (fs, _) -> List.map (fun (x, y, _) -> unloc x, y) fs.args
     | _ -> []
   in
-  let ligo_fun = mk_ligo_fun ~args:args ?ret:ret ~vars:vars ~iterfuns:iterfuns name body in
+  let transfer = Model.Utils.with_transfer_for_mterm body in
+  let ligo_fun = mk_ligo_fun ~args:args ?ret:ret ~vars:vars ~iterfuns:iterfuns ~transfer:transfer name body in
   ligo_fun
