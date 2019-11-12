@@ -414,55 +414,6 @@ let rec map_mtype (t : M.type_) : loc_typ =
       | M.Tstate                              -> Tystate
       | _ -> assert false)
 
-let rec map_term (t : M.mterm) : loc_term = mk_loc t.loc (
-    match t.node with
-    | M.Maddress v           -> Tint (sha v)
-    | M.Mint i               -> Tint i
-    | M.Mvarlocal i          -> Tvar (map_lident i)
-    | M.Mgt (t1,t2)          -> Tgt (with_dummy_loc Tyint,map_term t1,map_term t2)
-    | M.Mcurrency (i,M.Tz)   -> Tint (Big_int.mult_int_big_int 1000000 i)
-    | M.Mcurrency (i,M.Mtz)  -> Tint (Big_int.mult_int_big_int 1000 i)
-    | M.Mcurrency (i,M.Mutz) -> Tint i
-    | M.Mdate s              -> Tint (Core.date_str_to_big_int s)
-    | _ ->
-      let str = Format.asprintf "Not translated : %a@." M.pp_mterm t in
-      print_endline str;
-      Tnottranslated
-  )
-
-let map_record_term _ = map_term
-
-let map_record_values (values : M.record_item list) =
-  List.map (fun (value : M.record_item) ->
-      let typ_ = map_mtype value.type_ in
-      let init_value = type_to_init typ_ in {
-        name     = map_lident value.name;
-        typ      = typ_;
-        init     = Option.fold map_record_term init_value value.default;
-        mutable_ = false;
-      }
-    ) values
-
-let map_storage_items = List.fold_left (fun acc (item : M.storage_item) ->
-    acc @
-    match item.typ with
-    | M.Tcontainer (Tasset id, Collection) ->
-      let id = unloc id in [
-        mk_collection_field id mk_ac_id;
-        mk_collection_field id mk_ac_added_id;
-        mk_collection_field id mk_ac_rmed_id
-      ]
-    | _ ->
-      let typ_ = map_mtype item.typ in
-      let init_value = type_to_init typ_ in
-      [{
-        name     = Model.Utils.get_storage_id_name item.id |> with_dummy_loc;
-        typ      = typ_;
-        init     = map_record_term init_value item.default;
-        mutable_ = true;
-      }]
-  ) []
-
 let is_local_invariant _m an t =
   let rec internal_is_local acc (term : M.mterm) =
     match term.M.node with
@@ -683,7 +634,9 @@ let mk_axiom2_invariant m n inv : loc_term = mk_invariant m (dumloc n) `Axiom2 i
 
 let mk_state_invariant _m _v (lbl : M.lident option) (t : loc_term) = {
   id = Option.fold (fun _ x -> map_lident x)  (with_dummy_loc "") lbl;
-  form = t
+  form = Timpl (
+          loc_term (Teq(Tyint,Tvar "state", Tvar (unloc _v))),
+          t) |> with_dummy_loc
 }
 
 let mk_eq_asset _m (r : M.record) =
@@ -718,9 +671,6 @@ let mk_eq_extensionality _m (r : M.record) : loc_decl =
                                   [Tvar "a1";Tvar "a2"]),
                             Teq (Tyasset asset,Tvar "a1",Tvar "a2")
                            ))) |> Mlwtree.loc_decl
-
-let map_record _m (r : M.record) =
-  Drecord (map_lident r.name, map_record_values r.values)
 
 let map_enum _m (e : M.enum) : (loc_term,loc_typ,loc_ident) abstract_decl =
   Denum (map_lident e.name, List.map (fun (item : M.enum_item) -> map_lident item.name) e.values)
@@ -809,7 +759,6 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | M.Mcaller      -> Tcaller (with_dummy_loc gs)
     | M.Mtransferred -> Ttransferred (with_dummy_loc gs)
     | M.Mvarstorevar v  -> Tdoti (with_dummy_loc gs, map_lident v)
-    | M.Mcurrency (v,_) -> Tint v
     | M.Mgt (l, r)      -> Tgt (with_dummy_loc Tyint, map_mterm m ctx l, map_mterm m ctx r)
     | M.Mge (l, r)      -> Tge (with_dummy_loc Tyint, map_mterm m ctx l, map_mterm m ctx r)
     | M.Mlt (l, r)      -> Tlt (with_dummy_loc Tyint, map_mterm m ctx l, map_mterm m ctx r)
@@ -1037,7 +986,16 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
         | Inv -> loc_term (Tvar "_balance") |> Mlwtree.deloc
         | _ -> loc_term (Tdoti (gs, "_balance")) |> Mlwtree.deloc
       end
-    | _ -> Tnone in
+    | M.Maddress v           -> Tint (sha v)
+    | M.Mcurrency (i,M.Tz)   -> Tint (Big_int.mult_int_big_int 1000000 i)
+    | M.Mcurrency (i,M.Mtz)  -> Tint (Big_int.mult_int_big_int 1000 i)
+    | M.Mcurrency (i,M.Mutz) -> Tint i
+    | M.Mdate s              -> Tint (Core.date_str_to_big_int s)
+    | _ ->
+      let str = Format.asprintf "Not translated : %a@." M.pp_mterm mt in
+      print_endline str;
+      Tnottranslated
+  in
   mk_loc mt.loc t
 and mk_invariants (m : M.model) ctx (lbl : ident option) lbody =
   let loop_invariants =
@@ -1077,10 +1035,47 @@ and mk_invariants (m : M.model) ctx (lbl : ident option) lbody =
   in
   loop_invariants @ storage_loop_invariants @ security_loop_invariants
 
+(* Storage mapping -----------------------------------------------------------*)
+
+let map_record_values m (values : M.record_item list) =
+  List.map (fun (value : M.record_item) ->
+      let typ_ = map_mtype value.type_ in
+      let init_value = type_to_init typ_ in {
+        name     = map_lident value.name;
+        typ      = typ_;
+        init     = Option.fold (fun _ -> map_mterm m init_ctx) init_value value.default;
+        mutable_ = false;
+      }
+    ) values
+
+let map_record m (r : M.record) =
+  Drecord (map_lident r.name, map_record_values m r.values)
+
+let map_storage_items m = List.fold_left (fun acc (item : M.storage_item) ->
+    acc @
+    match item.typ with
+    | M.Tcontainer (Tasset id, Collection) ->
+      let id = unloc id in [
+        mk_collection_field id mk_ac_id;
+        mk_collection_field id mk_ac_added_id;
+        mk_collection_field id mk_ac_rmed_id
+      ]
+    | _ ->
+      let typ_ = map_mtype item.typ in
+      (* let init_value = type_to_init typ_ in *)
+      [{
+        name     = Model.Utils.get_storage_id_name item.id |> with_dummy_loc;
+        typ      = typ_;
+        init     = map_mterm m init_ctx item.default;
+        mutable_ = true;
+      }]
+  ) []
+
+
 let map_storage m (l : M.storage) = 
   let ctx = { init_ctx with lctx = Inv } in
   Dstorage {
-    fields     = (map_storage_items l)@ (mk_const_fields m |> loc_field |> deloc);
+    fields     = (map_storage_items m l)@ (mk_const_fields m |> loc_field |> deloc);
     invariants = List.concat (List.map (fun (item : M.storage_item) ->
         List.map (fun (inv : M.label_term) -> mk_storage_invariant m (match item.id with
             | SIname name -> name
