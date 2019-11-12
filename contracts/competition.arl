@@ -1,18 +1,18 @@
 archetype competition
 
-variable[%transferable%] organiser role
+variable[%transferable%] organizer role = @tz1organizer
 
 (* start date *)
-variable[%mutable organiser (instate (Created))%] startdate date
+variable[%mutable organiser (instate (Created))%] startdate date = 2019-11-12T00:00:00
 
 (* deadline *)
-variable[%mutable organiser (instate (Created))%] deadline date
+variable[%mutable organiser (instate (Created))%] deadline date = 2020-11-12T00:00:00
 
 variable[%traceable%] prize tez = 3500tz
 
-variable competitor role
+variable competitor role = @tz1competitor
 
-variable oracle role
+variable oracle role = @tz1oracle
 
 asset submission {
   competitor : role;
@@ -31,7 +31,7 @@ transition confirm from Created {
    to InProgress when { now > startdate }
 }
 
-action submit (competitor : competitor) (score[%signedby oracle%] : int) {
+action submit (competitor : key of competitor) (score[%signedby oracle%] : int) {
   require {
     c1 : state = InProgress;
   }
