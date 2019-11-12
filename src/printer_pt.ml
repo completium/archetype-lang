@@ -199,13 +199,6 @@ let pp_assignment_operator_record fmt op =
 let pp_assignment_operator_expr fmt op =
   Format.fprintf fmt "%s" (assignment_operator_expr_to_str op)
 
-let rec pp_qualid fmt (q : ParseTree.qualid) =
-  match q with
-  | Qident i -> Format.fprintf fmt "%a" pp_id i
-  | Qdot (q, i) -> Format.fprintf fmt "%a.%a"
-                     pp_qualid q
-                     pp_id i
-
 let quantifier_to_str op =
   match op with
   | Forall -> "forall"

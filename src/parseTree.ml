@@ -80,11 +80,6 @@ type operator = [
 ]
 [@@deriving yojson, show {with_path = false}]
 
-type qualid =
-  | Qident of lident
-  | Qdot of qualid * lident
-[@@deriving yojson, show {with_path = false}]
-
 type pattern_unloc =
   | Pwild
   | Pref of lident
