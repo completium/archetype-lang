@@ -222,7 +222,7 @@ let pp_model fmt (model : model) =
           f t
 
       | Mif (c, t, (None | Some {node = Mseq []; _}) ) ->
-        Format.fprintf fmt "@[if %a then%a@\nelse @\n  skip@]"
+        Format.fprintf fmt "@[if %a then%a@\nelse@\n  skip@]"
           pp_mterm_block c
           pp_mterm_block t
 
@@ -900,9 +900,11 @@ let pp_model fmt (model : model) =
           const_state
           f x
       | Mtransfer (v, d) ->
-        Format.fprintf fmt "const op : operation = transaction(unit , %a, %a)"
+        Format.fprintf fmt "%s := cons(transaction(unit, %a, (get_contract(%a) : contract(unit))), %s)"
+          const_operations
           f v
           f d
+          const_operations
       | Mbreak -> emit_error UnsupportedBreak
       | Massert x ->
         Format.fprintf fmt "assert %a"
