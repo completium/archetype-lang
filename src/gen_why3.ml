@@ -665,9 +665,9 @@ let mk_invariant m n src inv : loc_term =
                         Ttobereplaced)) in
     loc_replace (with_dummy_loc Ttobereplaced) replacing (loc_term prefix)
 
-let mk_storage_invariant m n (lt : M.label_term) = {
-  id = Option.fold (fun _ x -> map_lident x)  (with_dummy_loc "") lt.label;
-  form = mk_invariant m n `Storage (map_term lt.term);
+let mk_storage_invariant m n (lbl : M.lident option) (t : loc_term) = {
+  id = Option.fold (fun _ x -> map_lident x)  (with_dummy_loc "") lbl;
+  form = mk_invariant m n `Storage t;
 }
 
 let mk_pre_list m n arg inv : loc_term = mk_invariant m (dumloc n) (`Prelist arg) inv
@@ -680,6 +680,11 @@ let mk_loop_invariant m n inv : loc_term = mk_invariant m (dumloc n) `Loop inv
 
 let mk_axiom_invariant m n inv : loc_term = mk_invariant m (dumloc n) `Axiom inv
 let mk_axiom2_invariant m n inv : loc_term = mk_invariant m (dumloc n) `Axiom2 inv
+
+let mk_state_invariant _m _v (lbl : M.lident option) (t : loc_term) = {
+  id = Option.fold (fun _ x -> map_lident x)  (with_dummy_loc "") lbl;
+  form = t
+}
 
 let mk_eq_asset _m (r : M.record) =
   let cmps = List.map (fun (item : M.record_item) ->
@@ -733,18 +738,6 @@ let record_to_clone m (r : M.info_asset) =
            Cval  ("sortf" |> with_dummy_loc, sort |> with_dummy_loc);
            Cval  ("eqf" |> with_dummy_loc, "eq_"^r.name |> with_dummy_loc)])
 
-let map_storage m (l : M.storage) =
-  Dstorage {
-    fields     = (map_storage_items l)@ (mk_const_fields m |> loc_field |> deloc);
-    invariants = List.concat (List.map (fun (item : M.storage_item) ->
-        List.map (mk_storage_invariant m (match item.id with
-            | SIname name -> name
-            | SIstate -> dumloc "state")
-          ) item.invariants) l) @
-                 (List.fold_left (fun acc sec ->
-                      acc @ (mk_spec_invariant `Storage sec)) [] m.security.items)
-  }
-
 let mk_partition_axioms (m : M.model) =
   M.Utils.get_partitions m |> List.map (fun (n,i,_) ->
       let kt     = M.Utils.get_asset_key m (dumloc n) |> snd |> map_btype in
@@ -770,14 +763,17 @@ let get_for_fun = function
 
 
 type logical_mod = Nomod | Added | Removed
+type lctx = Inv | Other
 
 type logical_context = {
+  lctx : lctx;
   old  : bool;
   lmod : logical_mod;
   localold : ident list;
 }
 
 let init_ctx = {
+  lctx = Other;
   old = false;
   lmod = Nomod;
   localold = [];
@@ -1026,11 +1022,21 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
       Tmatch (map_mterm m ctx t, List.map (fun ((p : M.lident M.pattern_gen),e) ->
           (map_mpattern p.node,map_mterm m ctx e)
         ) l)
-    | M.Mvarstate -> loc_term (Tdoti (gs, "state")) |> Mlwtree.deloc
+    | M.Mvarstate -> 
+      begin
+        match ctx.lctx with 
+        | Inv -> loc_term (Tvar "state") |> Mlwtree.deloc
+        | _ -> loc_term (Tdoti (gs, "state")) |> Mlwtree.deloc
+      end
     | M.Massignstate v -> Tassign (loc_term (Tdoti(gs, "state")), map_mterm m ctx v)
     | M.Mor (a,b) -> Tor (map_mterm m ctx a, map_mterm m ctx b)
     | M.Mtransfer (a,t) -> Tapp(loc_term (Tvar "transfer"),[map_mterm m ctx a;map_mterm m ctx t])
-    | M.Mbalance -> loc_term (Tdoti(gs,"_balance")) |> Mlwtree.deloc
+    | M.Mbalance -> 
+      begin
+        match ctx.lctx with 
+        | Inv -> loc_term (Tvar "_balance") |> Mlwtree.deloc
+        | _ -> loc_term (Tdoti (gs, "_balance")) |> Mlwtree.deloc
+      end
     | _ -> Tnone in
   mk_loc mt.loc t
 and mk_invariants (m : M.model) ctx (lbl : ident option) lbody =
@@ -1070,6 +1076,29 @@ and mk_invariants (m : M.model) ctx (lbl : ident option) lbody =
       )
   in
   loop_invariants @ storage_loop_invariants @ security_loop_invariants
+
+let map_storage m (l : M.storage) = 
+  let ctx = { init_ctx with lctx = Inv } in
+  Dstorage {
+    fields     = (map_storage_items l)@ (mk_const_fields m |> loc_field |> deloc);
+    invariants = List.concat (List.map (fun (item : M.storage_item) ->
+        List.map (fun (inv : M.label_term) -> mk_storage_invariant m (match item.id with
+            | SIname name -> name
+            | SIstate -> dumloc "state") inv.label (map_mterm m ctx inv.term)
+          ) item.invariants) l) @
+                (List.fold_left (fun acc sec ->
+                    acc @ (mk_spec_invariant `Storage sec)) [] m.security.items) @
+                (List.fold_left (fun acc decl -> 
+                  match decl with
+                  | M.Denum e ->
+                    List.fold_left (fun acc (value : M.enum_item) -> 
+                      acc @ List.map (fun (inv : M.label_term) ->
+                        mk_state_invariant m value.name inv.label (map_mterm m ctx inv.term)
+                      ) value.invariants
+                    ) acc e.values
+                  | _ -> acc 
+                ) [] m.decls)
+  }
 
 (* Verfication API -----------------------------------------------------------*)
 
