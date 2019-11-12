@@ -26,7 +26,6 @@
       "assert"              , ASSERT         ;
       "asset"               , ASSET          ;
       "at"                  , AT             ;
-      "back"                , BACK           ;
       "before"              , BEFORE         ;
       "break"               , BREAK          ;
       "but"                 , BUT            ;

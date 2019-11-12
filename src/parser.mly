@@ -40,7 +40,6 @@
 %token AT_ADD
 %token AT_REMOVE
 %token AT_UPDATE
-%token BACK
 %token BEFORE
 %token BREAK
 %token BUT
@@ -158,9 +157,7 @@
 %token <string> DURATION
 %token <string> DATE
 
-%nonassoc prec_transfer
-
-%nonassoc TO IN
+%nonassoc IN
 
 %left COMMA SEMI_COLON
 
@@ -263,8 +260,8 @@ archetype:
 | ARCHETYPE exts=option(extensions) x=ident { Darchetype (x, exts) }
 
 vc_decl(X):
-| X exts=extensions? x=ident t=type_t z=option(value_options) dv=default_value?
-    { (x, t, z, dv, exts) }
+| X exts=extensions? x=ident t=type_t dv=default_value?
+    { (x, t, None, dv, exts) }
 
 constant:
   | x=vc_decl(CONSTANT) { let x, t, z, dv, exts = x in
@@ -274,21 +271,8 @@ variable:
   | x=vc_decl(VARIABLE) { let x, t, z, dv, exts = x in
                           Dvariable (x, t, dv, z, VKvariable, exts) }
 
-%inline value_options:
-| xs=value_option+ { xs }
-
-value_option:
-| x=from_value { VOfrom x }
-| x=to_value   { VOto x }
-
 %inline default_value:
 | EQUAL x=expr { x }
-
-%inline from_value:
-| FROM x=ident { x }
-
-%inline to_value:
-| TO x=ident { x }
 
 dextension:
 | PERCENT x=ident arg=option(simple_expr) { Dextension (x, arg) }
@@ -701,8 +685,8 @@ expr_r:
  | x=expr op=assignment_operator_expr y=expr
      { Eassign (op, x, y) }
 
- | TRANSFER back=boption(BACK) x=simple_expr y=ioption(to_value) %prec prec_transfer
-     { Etransfer (x, back, y) }
+ | TRANSFER x=simple_expr TO y=simple_expr
+     { Etransfer (x, y) }
 
  | REQUIRE x=simple_expr
      { Erequire x }

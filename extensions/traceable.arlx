@@ -1,12 +1,12 @@
 archetype extension traceable (
 
-  variable[%traceable%] anamount tez from fromP to toP
+  variable[%traceable%] anamount tez /*from fromP to toP*/
 
 ) {
 
   action transfer_<%anamount> {
     accept transfer
-    called by fromP
+    /*called by fromP*/
     require {
       c1 : transferred = anamount;
     }

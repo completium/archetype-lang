@@ -8,7 +8,7 @@ variable[%mutable organiser (instate (Created))%] startdate date
 (* deadline *)
 variable[%mutable organiser (instate (Created))%] deadline date
 
-variable[%traceable%] prize tez from organizer = 3500tz
+variable[%traceable%] prize tez = 3500tz
 
 variable competitor role
 
@@ -76,6 +76,6 @@ transition decide from InProgress {
                then (
                  let first = submissions.nth(0).competitor in
                  transfer prize to first)
-               else transfer back prize
+               else transfer prize to organizer
   }
 }

@@ -4,16 +4,16 @@ variable shipper role
 
 variable receiver role
 
-variable payment tez from receiver to shipper
+variable payment tez
 
 variable deliveryDate date
 
 variable businessDays day
 
 (* extra blockchain incentives *)
-variable incentiveR tez from receiver = payment
+variable incentiveR tez = payment
 
-variable incentiveS tez from receiver = 0.2 * payment
+variable incentiveS tez = 0.2 * payment
 
 %traceable (payment + incentiveR, receiver)
 %traceable (incentiveS, shipper)
@@ -36,9 +36,9 @@ transition unilateral_abort from Created {
 
   to Aborted
   with effect {
-    transfer back incentiveR;
-    transfer back payment;
-    transfer back incentiveS
+    transfer incentiveR to receiver;
+    transfer payment to receiver;
+    transfer incentiveS to receiver
   }
 }
 
@@ -47,9 +47,9 @@ transition[%signedbyall [shipper, receiver]%] abort from Signed {
 
   to Aborted
   with effect {
-    transfer back incentiveR;
-    transfer back payment;
-    transfer back incentiveS
+    transfer incentiveR to receiver;
+    transfer payment to receiver;
+    transfer incentiveS to receiver
   }
 }
 
@@ -59,9 +59,9 @@ transition confirm from Signed {
   to Delivered
   with effect {
      deliveryDate := now;
-     transfer back incentiveR;
-     transfer payment;
-     transfer back incentiveS
+     transfer incentiveR to receiver;
+     transfer payment to shipper;
+     transfer incentiveS to receiver
   }
 }
 

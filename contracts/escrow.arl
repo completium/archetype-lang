@@ -10,10 +10,10 @@ variable[%transferable%] creditor role = seller
 
 variable oracle role
 
-variable[%traceable%] price tez from buyer to creditor
+variable[%traceable%] price tez
 
 variable[%traceable%] [%mutable_signed ([{buyer}; {debitor}], (state = Created))%]
-     penalty tez from seller to debitor = 0.1 * price
+     penalty tez = 0.1 * price
 
 (* action deadline *)
 variable[%mutable ((buyer or seller), (instate (Created)))%] deadline date
@@ -41,8 +41,8 @@ transition transfer_ from Confirmed {
 
   to Transferred when { now < deadline }
   with effect {
-    transfer price;
-    transfer back penalty
+    transfer price to creditor;
+    transfer penalty to seller
   }
 }
 
@@ -51,7 +51,7 @@ transition cancel from Confirmed {
 
   to Canceled
   with effect {
-    transfer penalty;
-    transfer back price
+    transfer penalty to debitor;
+    transfer price to buyer
   }
 }

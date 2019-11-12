@@ -109,7 +109,7 @@ type expr_unloc =
   | Emulticomp    of expr * (comparison_operator loced * expr) list
   | Eapp          of function_ * expr list
   | Emethod       of expr * lident * expr list
-  | Etransfer     of expr * bool * lident option
+  | Etransfer     of expr * expr
   | Erequire      of expr
   | Efailif       of expr
   | Eassign       of assignment_operator * expr * expr

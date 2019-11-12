@@ -2212,35 +2212,9 @@ let rec for_instruction (env : env) (i : PT.expr) : env * M.instruction =
         env, mki (M.Iassign (op, x, e))
       end
 
-    | Etransfer (e, back, to_) ->
-      let to_ = Option.bind (for_role env) to_ in
+    | Etransfer (e, d) ->
       let e   = for_expr env ~ety:M.vtcurrency e in
-      let to_ =
-        match to_ with
-        | None -> begin
-            match e.M.node with
-            | Pvar (M.VTnone, { pldesc = x }) ->
-                Env.Var.lookup env x |> Option.bind (fun vd ->
-                  if back then fst vd.vr_tgt else snd vd.vr_tgt
-                )
-            | _ -> None
-          end
-
-        | Some to_ ->
-            Some to_
-      in
-
-      let to_ =
-        Option.map
-          (fun x -> M.mk_sp (M.Pvar (VTnone, x)) ~type_:M.vtrole)
-          to_ in
-
-      if Option.is_none to_ then
-        Env.emit_error env (loc i, TransferWithoutDest);
-
-      let to_ = Option.get_fdfl (fun () ->
-        M.mk_sp (M.Pvar (VTnone, dumloc "<error>")) ~type_:M.vtrole
-      ) to_ in
+      let to_ = for_expr env ~ety:M.vtrole d in
 
       env, mki (Itransfer (e, to_))
 
