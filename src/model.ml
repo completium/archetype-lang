@@ -2506,19 +2506,28 @@ end = struct
 
   (* returns asset name * invariant name * invariant term *)
   let get_storage_invariants (m : model) (asset_name : ident option) : (ident * ident * mterm) list =
-    match asset_name with
-    | None -> []
-    | Some asset_name ->
-      try
-        let assets : lident asset_gen list = get_assets m in
-        let asset : lident asset_gen = List.find (fun (x : lident asset_gen) -> cmp_ident (unloc x.name) asset_name) assets in
-        List.fold_left (fun acc (lt : label_term) ->
-            let inv_name = Tools.Option.fold (fun _ l -> unloc l) "" (Some lt.label) in
-            let inv_term = lt.term in
-            acc @ [asset_name, inv_name, inv_term]
-          ) [] asset.invariants
-      with
-      | Not_found -> []
+    try
+      let assets : lident asset_gen list = get_assets m in
+      let assets : lident asset_gen list =
+        begin
+          match asset_name with
+          | Some asset_name -> List.filter (fun (x : lident asset_gen) -> cmp_ident (unloc x.name) asset_name) assets
+          | _ -> assets
+        end
+      in
+      assets
+      |>
+      List.map (fun (asset : asset) ->
+          List.map (fun (lt : label_term) ->
+              let inv_name = Tools.Option.fold (fun _ l -> unloc l) "" (Some lt.label) in
+              let inv_term = lt.term in
+              [unloc asset.name, inv_name, inv_term]
+            ) asset.invariants
+        )
+      |> List.flatten
+      |> List.flatten
+    with
+    | Not_found -> []
 
   let is_field_storage (m : model) (id : ident) : bool =
     let l : ident list = List.map (fun (x : storage_item) -> unloc x.id) m.storage in
