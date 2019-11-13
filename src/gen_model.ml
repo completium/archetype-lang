@@ -497,7 +497,7 @@ let to_model (ast : A.model) : M.model =
         let typ = Option.map ptyp_to_type x.typ in
         let default = Option.map to_mterm x.default in
         M.mk_asset_item x.name (Option.get typ) ?default:default) a.fields in
-    let r : M.asset = M.mk_asset a.name ?key:a.key ~values:values ~invariants:(List.map (fun x -> to_label_lterm x) a.specs) in
+    let r : M.asset = M.mk_asset a.name (unloc (Option.get a.key)) ~values:values ~sort:(List.map unloc (a.sort)) ~invariants:(List.map (fun x -> to_label_lterm x) a.specs) in
     M.Dasset r
   in
 

@@ -459,8 +459,9 @@ type asset_item = lident asset_item_gen
 
 type 'id asset_gen = {
   name: 'id;
-  key: 'id option;
   values: 'id asset_item_gen list;
+  key: ident;
+  sort: ident list;
   invariants  : lident label_term_gen list;
 }
 [@@deriving show {with_path = false}]
@@ -764,8 +765,8 @@ let mk_enum ?(values = []) name : 'id enum_gen =
 let mk_enum_item ?(invariants = []) name : 'id enum_item_gen =
   { name; invariants }
 
-let mk_asset ?(values = []) ?(invariants = []) ?key name : 'id asset_gen =
-  { name; key; values; invariants }
+let mk_asset ?(values = []) ?(sort=[]) ?(invariants = []) name key : 'id asset_gen =
+  { name; values; sort; key; invariants }
 
 let mk_asset_item ?default name type_ : 'id asset_item_gen =
   { name; type_; default }
