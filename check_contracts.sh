@@ -1,6 +1,11 @@
 #! /bin/bash
 
-CONTRACTS="empty.arl miles_with_expiration.arl escrow_without_spec.arl"
+CONTRACTS="\
+empty.arl \
+miles_with_expiration.arl \
+escrow_without_spec.arl \
+"
+
 RET=0
 
 for i in $CONTRACTS; do

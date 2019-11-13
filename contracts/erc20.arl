@@ -25,7 +25,7 @@ asset tokenHolder identified by holder {
   { holder = caller; tokens = total; allowances = [] }
 ]
 
-action dotransfer (dest : string(*key of tokenHolder*)) (value : int) {
+action dotransfer (dest : pkey of tokenHolder) (value : int) {
 
   specification {
     p1 : before.tokenHolder.sum(tokens) = tokenHolder.sum(tokens);
@@ -47,7 +47,7 @@ action dotransfer (dest : string(*key of tokenHolder*)) (value : int) {
   }
 
   effect {
-    tokenHolder.update( dest.holder, { tokens += value });
+    tokenHolder.update( tokenHolder.get(dest).holder, { tokens += value });
     tokenHolder.update( caller, { tokens -= value })
   }
 }
