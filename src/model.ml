@@ -426,6 +426,18 @@ type 'id enum_item_gen = {
 type enum_item = lident enum_item_gen
 [@@deriving show {with_path = false}]
 
+type 'id var_gen = {
+  name: 'id;
+  type_: type_;
+  constant: bool;
+  default: 'id mterm_gen option;
+  invariants: 'id label_term_gen list;
+  loc: Location.t;
+}
+[@@deriving show {with_path = false}]
+
+type var = lident var_gen
+
 type 'id enum_gen = {
   name: 'id;
   values: 'id enum_item_gen list;
@@ -658,6 +670,7 @@ type function__ = lident function__gen
 [@@deriving show {with_path = false}]
 
 type 'id decl_node_gen =
+  | Dvar of 'id var_gen
   | Denum of 'id enum_gen
   | Dasset of 'id asset_gen
   | Dcontract of 'id contract_gen
@@ -741,6 +754,9 @@ let mk_info_asset ?(values = []) ?(sort = []) name key : info_asset =
 
 let mk_info_contract ?(signatures = []) name : info_contract =
   { name; signatures }
+
+let mk_var ?(constant=false) ?(invariants=[]) ?default ?(loc = Location.dummy) name type_ : 'id var_gen =
+  { name; type_; default; constant; invariants; loc }
 
 let mk_enum ?(values = []) name : 'id enum_gen =
   { name; values }

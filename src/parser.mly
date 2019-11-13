@@ -259,17 +259,21 @@ declaration_r:
 archetype:
 | ARCHETYPE exts=option(extensions) x=ident { Darchetype (x, exts) }
 
+%inline invariants:
+| /* empty */                 { [] }
+| WITH xs=braced(label_exprs) { xs }
+
 vc_decl(X):
-| X exts=extensions? x=ident t=type_t dv=default_value?
-    { (x, t, None, dv, exts) }
+| X exts=extensions? x=ident t=type_t dv=default_value? invs=invariants
+    { (x, t, None, dv, invs, exts) }
 
 constant:
-  | x=vc_decl(CONSTANT) { let x, t, z, dv, exts = x in
-                          Dvariable (x, t, dv, z, VKconstant, exts) }
+  | x=vc_decl(CONSTANT) { let x, t, z, dv, invs, exts = x in
+                          Dvariable (x, t, dv, z, VKconstant, invs, exts) }
 
 variable:
-  | x=vc_decl(VARIABLE) { let x, t, z, dv, exts = x in
-                          Dvariable (x, t, dv, z, VKvariable, exts) }
+  | x=vc_decl(VARIABLE) { let x, t, z, dv, invs, exts = x in
+                          Dvariable (x, t, dv, z, VKvariable, invs, exts) }
 
 %inline default_value:
 | EQUAL x=expr { x }

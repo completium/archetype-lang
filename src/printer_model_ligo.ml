@@ -1003,6 +1003,7 @@ let pp_model fmt (model : model) =
 
   let pp_decl (fmt : Format.formatter) (decl : decl_node) =
     match decl with
+    | Dvar _ -> ()
     | Denum e -> pp_enum fmt e
     | Dasset r -> pp_asset fmt r
     | Dcontract _c -> ()

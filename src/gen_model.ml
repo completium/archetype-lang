@@ -465,16 +465,22 @@ let to_model (ast : A.model) : M.model =
 
   in
 
-  let process_enums list =
-    let process_enum (e : A.enum) : M.decl_node =
-      let values = List.map (fun (x : A.lident A.enum_item_struct) ->
-          let id : M.lident = x.name in
-          M.mk_enum_item id ~invariants:(List.map (fun x -> to_label_lterm x) x.invariants)
-        ) e.items in
-      let enum = M.mk_enum (A.Utils.get_enum_name e) ~values:values in
-      M.Denum enum
-    in
-    list @ List.map (fun x -> process_enum x) ast.enums in
+
+  let process_var (v : A.lident A.variable) : M.decl_node =
+    let t : M.type_ = ptyp_to_type (Option.get v.decl.typ) in
+    let invariants = List.map (fun x -> to_label_lterm x) v.invs in
+    let var : M.var = M.mk_var v.decl.name t ~constant:v.constant ?default:(Option.map to_mterm v.decl.default) ~invariants:invariants ~loc:v.loc in
+    M.Dvar var
+  in
+
+  let process_enum (e : A.enum) : M.decl_node =
+    let values = List.map (fun (x : A.lident A.enum_item_struct) ->
+        let id : M.lident = x.name in
+        M.mk_enum_item id ~invariants:(List.map (fun x -> to_label_lterm x) x.invariants)
+      ) e.items in
+    let enum = M.mk_enum (A.Utils.get_enum_name e) ~values:values in
+    M.Denum enum
+  in
 
   let process_info_enums list =
     let process_enum (e : A.enum) : M.info_item =
@@ -486,16 +492,13 @@ let to_model (ast : A.model) : M.model =
     in
     list @ List.map (fun x -> process_enum x) ast.enums in
 
-  let process_assets list =
-    let process_asset (a : A.asset) : M.decl_node =
-      let values = List.map (fun (x : A.lident A.decl_gen) ->
-          let typ = Option.map ptyp_to_type x.typ in
-          let default = Option.map to_mterm x.default in
-          M.mk_asset_item x.name (Option.get typ) ?default:default) a.fields in
-      let r : M.asset = M.mk_asset a.name ?key:a.key ~values:values ~invariants:(List.map (fun x -> to_label_lterm x) a.specs) in
-      M.Dasset r
-    in
-    list @ List.map (fun x -> process_asset x) ast.assets
+  let process_asset (a : A.asset) : M.decl_node =
+    let values = List.map (fun (x : A.lident A.decl_gen) ->
+        let typ = Option.map ptyp_to_type x.typ in
+        let default = Option.map to_mterm x.default in
+        M.mk_asset_item x.name (Option.get typ) ?default:default) a.fields in
+    let r : M.asset = M.mk_asset a.name ?key:a.key ~values:values ~invariants:(List.map (fun x -> to_label_lterm x) a.specs) in
+    M.Dasset r
   in
 
   let process_info_assets list =
@@ -509,18 +512,15 @@ let to_model (ast : A.model) : M.model =
     list @ List.map (fun x -> process_asset x) ast.assets
   in
 
-  let process_contracts list =
-    let to_contract_signature (s : A.lident A.signature) : M.contract_signature =
-      let name = s.name in
-      M.mk_contract_signature name ~args:(List.map (fun arg -> ptyp_to_type arg) s.args) ~loc:s.loc
-    in
-    let to_contract (c : A.contract) : M.contract =
-      M.mk_contract c.name
-        ~signatures:(List.map to_contract_signature c.signatures)
-        ?init:(Option.map to_mterm c.init)
-        ~loc:c.loc
-    in
-    list @ List.map (fun (x : A.contract) -> M.Dcontract (to_contract x)) ast.contracts
+  let to_contract_signature (s : A.lident A.signature) : M.contract_signature =
+    let name = s.name in
+    M.mk_contract_signature name ~args:(List.map (fun arg -> ptyp_to_type arg) s.args) ~loc:s.loc
+  in
+  let to_contract (c : A.contract) : M.contract =
+    M.mk_contract c.name
+      ~signatures:(List.map to_contract_signature c.signatures)
+      ?init:(Option.map to_mterm c.init)
+      ~loc:c.loc
   in
 
   let process_info_contracts list =
@@ -1046,9 +1046,10 @@ let to_model (ast : A.model) : M.model =
 
   let decls =
     []
-    |> process_enums
-    |> process_assets
-    |> process_contracts
+    |> (@) (List.map (fun x -> process_var x) ast.variables)
+    |> (@) (List.map (fun x -> process_enum x) ast.enums)
+    |> (@) (List.map (fun x -> process_asset x) ast.assets)
+    |> (@) (List.map (fun x -> M.Dcontract (to_contract x)) ast.contracts)
   in
 
   let storage_items = process_storage () in

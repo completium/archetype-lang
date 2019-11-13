@@ -888,14 +888,15 @@ let rec pp_declaration fmt { pldesc = e; _ } =
       pp_extensions exts
       pp_id id
 
-  | Dvariable (id, typ, dv, opts, kind, exts) ->
-    Format.fprintf fmt "%a%a %a %a%a%a"
+  | Dvariable (id, typ, dv, opts, kind, invs, exts) ->
+    Format.fprintf fmt "%a%a %a %a%a%a%a"
       pp_str (match kind with | VKvariable -> "variable" | VKconstant -> "constant")
       pp_extensions exts
       pp_id id
       pp_type typ
       (pp_option (pp_prefix " " (pp_list " " pp_value_option))) opts
       (pp_option (pp_prefix " = " (pp_expr e_equal PRight))) dv
+      (pp_do_if (List.length invs > 0) (fun fmt x -> Format.fprintf fmt "@\nwith {@\n  @[%a@]@\n}" pp_label_exprs x)) invs
 
   | Denum (id, (ids, exts)) ->
     Format.fprintf fmt "%a%a"

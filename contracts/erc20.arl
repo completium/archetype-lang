@@ -1,29 +1,53 @@
 archetype erc20
 
-constant name string = "myerc20"
+constant name string = "mytoken"
 
 constant total int = 1000
+with {
+  i0: total > 0
+}
+
+asset allowance {
+    allowed : address;
+    amount  : int;
+} with {
+    i2 : amount > 0;
+}
 
 asset tokenHolder identified by holder {
-    holder[%delegable%] : role;
-    tokens : int;
+    holder     : address;
+    tokens     : int;
+    allowances : allowance collection;
+} with {
+    i1: tokens >= 0;
+    i2: allowances.sum(the.amount) <= tokens;
 } initialized by [
-  { caller; total }
+  { holder = caller; tokens = total; allowances = [] }
 ]
 
-action transferTokens (th : tokenHolder) (quantity : int) {
+action dotransfer (dest : string(*key of tokenHolder*)) (value : int) {
 
   specification {
-    postcondition s1 {
-      before.tokenHolder.sum(tokens) = tokenHolder.sum(the.tokens)
-    }
+    p1 : before.tokenHolder.sum(tokens) = tokenHolder.sum(tokens);
+    p2 : let th = tokenHolder.get(th) in
+         th.tokens = before.th.tokens + value
+         otherwise true;
+    p3 : let thc = tokenHolder.get(caller) in
+         thc.tokens = before.thc.tokens - value
+         otherwise true;
+    p4 : forall t in tokenHolder,
+         if t <> th then
+         if t <> caller then
+         t.tokens = before.t.tokens
   }
 
-  called by th.holder
+  failif {
+    f0 : value < 0;
+    f1 : tokenHolder.get(caller).tokens < value
+  }
 
   effect {
-    tokenHolder.update (th.holder, {tokens += quantity});
-    tokenHolder.update (caller, {tokens -= quantity})
+    tokenHolder.update( dest.holder, { tokens += value });
+    tokenHolder.update( caller, { tokens -= value })
   }
-
 }

@@ -1087,7 +1087,7 @@ let map_storage m (l : M.storage) =
                 let asset = List.find (fun (x : M.asset) -> cmp_ident (unloc x.name) asset_name) assets in
                 asset.invariants
               with
-              | Not_found -> []
+              | Not_found -> assert false
             end
           | _ -> [] in
 

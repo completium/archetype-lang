@@ -761,6 +761,11 @@ let pp_mterm fmt (mt : mterm) =
   in
   f fmt mt
 
+let pp_label_term fmt (lt : label_term) =
+  Format.fprintf fmt "%a : %a"
+    (pp_option pp_id) lt.label
+    pp_mterm lt.term
+
 let pp_storage_const fmt = function
   | Get an -> pp_str fmt ("get\t " ^ an)
   | Set an -> pp_str fmt ("set\t " ^ an)
@@ -866,6 +871,12 @@ let pp_infos fmt l =
     Format.fprintf fmt "info items:@\n@\n%a@\n--@\n"
       (pp_list "@\n" pp_info_item) l
 
+let pp_var fmt (var : var) =
+  Format.fprintf fmt "%a %a%a"
+    pp_id var.name
+    pp_type var.type_
+    (pp_do_if (not (List.is_empty var.invariants)) (fun fmt xs -> Format.fprintf fmt "@\nwith {@\n  @[%a@]@\n}@\n" (pp_list ";@\n" pp_label_term) xs)) var.invariants
+
 let pp_enum_item fmt (enum_item : enum_item) =
   Format.fprintf fmt "%a"
     pp_id enum_item.name
@@ -886,7 +897,7 @@ let pp_asset fmt (asset : asset) =
     pp_id asset.name
     (pp_option (fun fmt -> Format.fprintf fmt " identified by %a" pp_id)) asset.key
     (pp_list "@\n" pp_asset_item) asset.values
-    (pp_do_if (not (List.is_empty asset.invariants)) (fun fmt xs -> Format.fprintf fmt " with {%a}" (pp_list "; " pp_label_term) xs)) asset.invariants
+    (pp_do_if (not (List.is_empty asset.invariants)) (fun fmt xs -> Format.fprintf fmt "@\nwith {@\n  @[%a@]@\n}@\n" (pp_list ";@\n" pp_label_term) xs)) asset.invariants
 
 
 let pp_contract_signature fmt (cs : contract_signature) =
@@ -901,14 +912,10 @@ let pp_contract fmt (contract : contract) =
     (pp_option pp_mterm) contract.init
 
 let pp_decl fmt = function
+  | Dvar v -> pp_var fmt v
   | Denum e -> pp_enum fmt e
   | Dasset r -> pp_asset fmt r
   | Dcontract c -> pp_contract fmt c
-
-let pp_label_term fmt (lt : label_term) =
-  Format.fprintf fmt "%a : %a"
-    (pp_option pp_id) lt.label
-    pp_mterm lt.term
 
 let pp_storage_item fmt (si : storage_item) =
   Format.fprintf fmt "%a : %a%a"

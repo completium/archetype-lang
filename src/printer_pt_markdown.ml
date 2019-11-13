@@ -46,7 +46,7 @@ let pp_archetype fmt pt =
     in
 
     let pp_roles fmt _ =
-      let pp_variable_decl fmt (id, _type_, dv, _vos, variable_kind, exts : variable_decl) =
+      let pp_variable_decl fmt (id, _type_, dv, _vos, variable_kind, _invs, exts : variable_decl) =
         Format.fprintf fmt
           "### %a@\n@\n\
            | Attribute              | Value  |@\n\
@@ -70,7 +70,7 @@ let pp_archetype fmt pt =
           ) exts
       in
       let roles : variable_decl list =
-        List.fold_right (fun x accu -> x |> unloc |> function | Dvariable ((_, {pldesc = Tref {pldesc = "role"}; _}, _ , _, _ ,_) as a) -> a::accu | _ -> accu) es []
+        List.fold_right (fun x accu -> x |> unloc |> function | Dvariable ((_, {pldesc = Tref {pldesc = "role"}; _}, _, _, _, _, _) as a) -> a::accu | _ -> accu) es []
       in
       match roles with
       | [] -> ()

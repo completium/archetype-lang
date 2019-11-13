@@ -2720,7 +2720,7 @@ let for_enums_decl (env : env) (decls : (PT.lident * PT.enum_decl) loced list) =
 
 (* -------------------------------------------------------------------- *)
 let for_var_decl (env : env) (decl : PT.variable_decl loced) =
-  let (x, ty, pe, tgt, ctt, _) = unloc decl in
+  let (x, ty, pe, tgt, ctt, _invs, _) = unloc decl in
 
   let ty   = for_type env ty in
   let e    = Option.map (for_expr env ?ety:ty) pe in
@@ -3202,6 +3202,7 @@ let variables_of_vdecls fdecls =
         constant = decl.vr_kind = `Constant;
         from     = Option.map mktgt (fst decl.vr_tgt);
         to_      = Option.map mktgt (snd decl.vr_tgt);
+        invs     = []; (* TODO *)
         loc      = loc decl.vr_name; }
 
   in List.map for1 (List.pmap (fun x -> x) fdecls)

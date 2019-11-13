@@ -301,6 +301,7 @@ and variable_decl =
   * expr option
   * value_option list option
   * variable_kind
+  * label_exprs
   * exts
 
 and enum_decl =
