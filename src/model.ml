@@ -337,7 +337,7 @@ and security_action =
 [@@deriving show {with_path = false}]
 
 type 'id label_term_gen = {
-  label : 'id option;
+  label : 'id;
   term : 'id mterm_gen;
   loc  : Location.t [@opaque];
 }
@@ -394,6 +394,7 @@ type enum_item = lident enum_item_gen
 type 'id var_gen = {
   name: 'id;
   type_: type_;
+  original_type: type_;
   constant: bool;
   default: 'id mterm_gen option;
   invariants: 'id label_term_gen list;
@@ -676,7 +677,7 @@ let mk_pattern ?(loc = Location.dummy) node : 'id pattern_gen =
 let mk_mterm ?(loc = Location.dummy) node type_ : 'id mterm_gen =
   { node; type_; loc}
 
-let mk_label_term ?label ?(loc = Location.dummy) term : 'id label_term_gen =
+let mk_label_term ?(loc = Location.dummy) term label : 'id label_term_gen =
   { label; term; loc }
 
 let mk_variable ?(constant = false) ?from ?to_ ?(loc = Location.dummy) decl =
@@ -709,8 +710,8 @@ let mk_security_item ?(loc = Location.dummy) label predicate : security_item =
 let mk_security ?(items = []) ?(loc = Location.dummy) () : security =
   { items; loc }
 
-let mk_var ?(constant=false) ?(invariants=[]) ?default ?(loc = Location.dummy) name type_ : 'id var_gen =
-  { name; type_; default; constant; invariants; loc }
+let mk_var ?(constant=false) ?(invariants=[]) ?default ?(loc = Location.dummy) name type_ original_type : 'id var_gen =
+  { name; type_; default; constant; invariants; original_type; loc }
 
 let mk_enum ?(values = []) name : 'id enum_gen =
   { name; values }
@@ -1186,7 +1187,7 @@ let map_mterm_model_exec custom (f : ('id, 't) ctx_model_gen -> mterm -> mterm) 
 let map_mterm_model_formula custom (f : ('id, 't) ctx_model_gen -> mterm -> mterm) (model : model) : model =
   let map_specification (ctx : ('id, 't) ctx_model_gen) (f : ('id, 't) ctx_model_gen -> mterm -> mterm) (v : specification) : specification = (
     let map_label_term (f : ('id, 't) ctx_model_gen -> mterm -> mterm) (lt : label_term) : label_term =
-      let ctx = { ctx with label = lt.label } in
+      let ctx = { ctx with label = Some lt.label } in
       { lt with
         term = f ctx lt.term }
     in
@@ -1917,7 +1918,7 @@ let fold_left g l accu = List.fold_left (fun accu x -> g x accu) accu l
 
 let fold_specification (ctx : ('id, 't) ctx_model_gen) (f : ('id, 't) ctx_model_gen -> 'a -> 'id mterm_gen -> 'a) (v : 'id specification_gen) (accu : 'a) : 'a =
   let fold_label_term (ctx : ('id, 't) ctx_model_gen) (f : ('id, 't) ctx_model_gen -> 'a -> 'id mterm_gen -> 'a) (lt : 'id label_term_gen) (accu : 'a) : 'a =
-    let ctx = { ctx with label = lt.label } in
+    let ctx = { ctx with label = Some lt.label } in
     f ctx accu lt.term
   in
 
@@ -2512,7 +2513,7 @@ end = struct
         let assets : lident asset_gen list = get_assets m in
         let asset : lident asset_gen = List.find (fun (x : lident asset_gen) -> cmp_ident (unloc x.name) asset_name) assets in
         List.fold_left (fun acc (lt : label_term) ->
-            let inv_name = Tools.Option.fold (fun _ l -> unloc l) "" lt.label in
+            let inv_name = Tools.Option.fold (fun _ l -> unloc l) "" (Some lt.label) in
             let inv_term = lt.term in
             acc @ [asset_name, inv_name, inv_term]
           ) [] asset.invariants
@@ -2567,7 +2568,7 @@ end = struct
 
   let retrieve_all_properties (m : model) : (ident * property) list =
     let fold_decl = function
-      | Dasset r -> List.map (fun (x : label_term) -> ((unloc |@ Option.get) x.label, PstorageInvariant x)) r.invariants
+      | Dasset r -> List.map (fun (x : label_term) -> (unloc x.label, PstorageInvariant x)) r.invariants
       | _ -> []
     in
     let fold_specification (fun_id : ident option) (sp : specification): (ident * property) list =

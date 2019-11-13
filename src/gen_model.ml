@@ -351,7 +351,7 @@ let to_model (ast : A.model) : M.model =
   in
 
   let to_label_lterm (x : A.lident A.label_term) : M.label_term =
-    M.mk_label_term (to_mterm x.term) ?label:x.label ~loc:x.loc
+    M.mk_label_term (to_mterm x.term) (Option.get x.label) ~loc:x.loc
   in
 
 
@@ -469,7 +469,7 @@ let to_model (ast : A.model) : M.model =
   let process_var (v : A.lident A.variable) : M.decl_node =
     let t : M.type_ = ptyp_to_type (Option.get v.decl.typ) in
     let invariants = List.map (fun x -> to_label_lterm x) v.invs in
-    let var : M.var = M.mk_var v.decl.name t ~constant:v.constant ?default:(Option.map to_mterm v.decl.default) ~invariants:invariants ~loc:v.loc in
+    let var : M.var = M.mk_var v.decl.name t t ~constant:v.constant ?default:(Option.map to_mterm v.decl.default) ~invariants:invariants ~loc:v.loc in
     M.Dvar var
   in
 

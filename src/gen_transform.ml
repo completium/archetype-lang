@@ -237,12 +237,12 @@ let prune_properties (model : model) : model =
       aux mt
     in
     let prune_decl = function
-      | Dasset r -> Dasset {r with invariants = List.filter (fun (x : label_term) -> remain_id (unloc (Option.get (x.label)))) r.invariants }
+      | Dasset r -> Dasset {r with invariants = List.filter (fun (x : label_term) -> remain_id (unloc (x.label))) r.invariants }
       | Denum e ->
         begin
           let values = List.map (
               fun (x : enum_item) ->
-                {x with invariants = List.filter (fun (x : label_term) -> remain_id (unloc (Option.get (x.label)))) x.invariants }
+                {x with invariants = List.filter (fun (x : label_term) -> remain_id (unloc (x.label))) x.invariants }
             ) e.values in
           Denum { e with values = values; }
         end

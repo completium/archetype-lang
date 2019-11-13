@@ -763,7 +763,7 @@ let pp_mterm fmt (mt : mterm) =
 
 let pp_label_term fmt (lt : label_term) =
   Format.fprintf fmt "%a : %a"
-    (pp_option pp_id) lt.label
+    pp_id lt.label
     pp_mterm lt.term
 
 let pp_storage_const fmt = function

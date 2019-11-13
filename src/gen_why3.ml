@@ -616,8 +616,8 @@ let mk_invariant m n src inv : loc_term =
                         Ttobereplaced)) in
     loc_replace (with_dummy_loc Ttobereplaced) replacing (loc_term prefix)
 
-let mk_storage_invariant m n (lbl : M.lident option) (t : loc_term) = {
-  id = Option.fold (fun _ x -> map_lident x)  (with_dummy_loc "") lbl;
+let mk_storage_invariant m n (lbl : M.lident) (t : loc_term) = {
+  id = map_lident lbl;
   form = mk_invariant m n `Storage t;
 }
 
@@ -632,8 +632,8 @@ let mk_loop_invariant m n inv : loc_term = mk_invariant m (dumloc n) `Loop inv
 let mk_axiom_invariant m n inv : loc_term = mk_invariant m (dumloc n) `Axiom inv
 let mk_axiom2_invariant m n inv : loc_term = mk_invariant m (dumloc n) `Axiom2 inv
 
-let mk_state_invariant _m _v (lbl : M.lident option) (t : loc_term) = {
-  id = Option.fold (fun _ x -> map_lident x)  (with_dummy_loc "") lbl;
+let mk_state_invariant _m _v (lbl : M.lident) (t : loc_term) = {
+  id = map_lident lbl;
   form = Timpl (
       loc_term (Teq(Tyint,Tvar "state", Tvar (unloc _v))),
       t) |> with_dummy_loc
