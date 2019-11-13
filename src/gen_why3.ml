@@ -74,7 +74,7 @@ let mk_trace tr =
           ) |> loc_term
 
 let mk_trace_asset m =
-  let assets = M.Utils.get_assets m in
+  let assets = M.Utils.get_info_assets m in
   if List.length assets > 0 then
     [ Denum ("_asset",
              assets
@@ -91,8 +91,8 @@ let mk_trace_entry m =
 let mk_trace_field m =
   Denum ("_field",
          (M.Utils.get_variables m
-          |> List.map (fun (v : M.storage_item) -> String.capitalize_ascii (Model.Utils.get_storage_id_name v.id))) @
-         (M.Utils.get_assets m
+          |> List.map (fun (v : M.storage_item) -> String.capitalize_ascii (unloc v.id))) @
+         (M.Utils.get_info_assets m
           |> List.map (fun (a : M.info_asset) ->
               List.map (fun (n,_,_) -> String.capitalize_ascii n) a.values
             )
@@ -639,8 +639,8 @@ let mk_state_invariant _m _v (lbl : M.lident option) (t : loc_term) = {
       t) |> with_dummy_loc
 }
 
-let mk_eq_asset _m (r : M.record) =
-  let cmps = List.map (fun (item : M.record_item) ->
+let mk_eq_asset _m (r : M.asset) =
+  let cmps = List.map (fun (item : M.asset_item) ->
       let f1 = Tdoti("a1",unloc item.name) in
       let f2 = Tdoti("a2",unloc item.name) in
       match item.type_ with
@@ -662,7 +662,7 @@ let mk_eq_asset _m (r : M.record) =
       ) (List.hd cmps) (List.tl cmps) |> loc_term;
   }
 
-let mk_eq_extensionality _m (r : M.record) : loc_decl =
+let mk_eq_extensionality _m (r : M.asset) : loc_decl =
   let asset = unloc r.name in
   Dtheorem (Lemma,
             asset^"_extensionality",
@@ -795,7 +795,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
       mk_trace_seq m
         (Tapp (loc_term (Tvar ("add_"^n)),[map_mterm m ctx i ]))
         [CAdd n]
-    | M.Mrecord l ->
+    | M.Masset l ->
       let asset = M.Utils.get_asset_type mt in
       let fns = M.Utils.get_field_list m asset |> wdl in
       Trecord (None,(List.combine fns (List.map (map_mterm m ctx) l)))
@@ -1037,8 +1037,8 @@ and mk_invariants (m : M.model) ctx (lbl : ident option) lbody =
 
 (* Storage mapping -----------------------------------------------------------*)
 
-let map_record_values m (values : M.record_item list) =
-  List.map (fun (value : M.record_item) ->
+let map_record_values m (values : M.asset_item list) =
+  List.map (fun (value : M.asset_item) ->
       let typ_ = map_mtype value.type_ in
       let init_value = type_to_init typ_ in {
         name     = map_lident value.name;
@@ -1048,7 +1048,7 @@ let map_record_values m (values : M.record_item list) =
       }
     ) values
 
-let map_record m (r : M.record) =
+let map_record m (r : M.asset) =
   Drecord (map_lident r.name, map_record_values m r.values)
 
 let map_storage_items m = List.fold_left (fun acc (item : M.storage_item) ->
@@ -1064,7 +1064,7 @@ let map_storage_items m = List.fold_left (fun acc (item : M.storage_item) ->
       let typ_ = map_mtype item.typ in
       (* let init_value = type_to_init typ_ in *)
       [{
-        name     = Model.Utils.get_storage_id_name item.id |> with_dummy_loc;
+        name     = unloc item.id |> with_dummy_loc;
         typ      = typ_;
         init     = map_mterm m init_ctx item.default;
         mutable_ = true;
@@ -1077,10 +1077,20 @@ let map_storage m (l : M.storage) =
   Dstorage {
     fields     = (map_storage_items m l)@ (mk_const_fields m |> loc_field |> deloc);
     invariants = List.concat (List.map (fun (item : M.storage_item) ->
-        let storage_id = (match item.id with
-            | SIname name -> name
-            | SIstate -> dumloc "state") in
-        let invs : M.label_term list = [] (* FIXME *) in
+        let storage_id = item.id in
+        let invs : M.label_term list =
+          match item.model_type with
+          | MTasset asset_name ->
+            begin
+              try
+                let assets = M.Utils.get_assets m in
+                let asset = List.find (fun (x : M.asset) -> cmp_ident (unloc x.name) asset_name) assets in
+                asset.invariants
+              with
+              | Not_found -> []
+            end
+          | _ -> [] in
+
         (* Model.Utils.get_storage_invariants m (Some (unloc storage_id)) in *)
         List.map (fun (inv : M.label_term) -> mk_storage_invariant m storage_id inv.label (map_mterm m ctx inv.term)) invs) l) @
                  (List.fold_left (fun acc sec ->
@@ -1840,10 +1850,10 @@ let to_whyml (m : M.model) : mlw_tree  =
   let uselist          = mk_use_list in
   let traceutils       = mk_trace_utils m |> deloc in
   let enums            = M.Utils.get_enums m |> List.map (map_enum m) in
-  let records          = M.Utils.get_records m |> List.map (map_record m) |> wdl in
-  let eq_assets        = M.Utils.get_records m |> List.map (mk_eq_asset m) |> wdl in
-  let eq_exten         = M.Utils.get_records m |> List.map (mk_eq_extensionality m) |> deloc in
-  let clones           = M.Utils.get_assets m  |> List.map (record_to_clone m) |> wdl in
+  let records          = M.Utils.get_assets m |> List.map (map_record m) |> wdl in
+  let eq_assets        = M.Utils.get_assets m |> List.map (mk_eq_asset m) |> wdl in
+  let eq_exten         = M.Utils.get_assets m |> List.map (mk_eq_extensionality m) |> deloc in
+  let clones           = M.Utils.get_info_assets m  |> List.map (record_to_clone m) |> wdl in
   let init_records     = records |> unloc_decl |> List.map mk_default_init |> loc_decl in
   let records          = zip records eq_assets init_records clones |> deloc in
   let storage          = M.Utils.get_storage m |> map_storage m in

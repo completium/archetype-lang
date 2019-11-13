@@ -114,7 +114,7 @@ let process_api_storage (model : model) : model =
                  in
                  let asset_list : ident list = List.fold_left (fun accu (x : decl_node) ->
                      match x with
-                     | Drecord r -> accu @ [unloc r.name]
+                     | Dasset r -> accu @ [unloc r.name]
                      | _ -> accu
                    ) [] model.decls in
                  let get_idx (i : api_item) = List.index_of (fun x -> String.equal (get_asset_name i.node_item) x) asset_list in

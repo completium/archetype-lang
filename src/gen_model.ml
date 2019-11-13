@@ -196,7 +196,7 @@ let to_model (ast : A.model) : M.model =
     | A.Parith (A.Modulo, l, r)         -> M.Mmodulo    (f l, f r)
     | A.Puarith (A.Uplus, e)            -> M.Muplus     (f e)
     | A.Puarith (A.Uminus, e)           -> M.Muminus    (f e)
-    | A.Precord l                       -> M.Mrecord    (List.map f l)| A.Pcall (Some p, A.Cconst A.Cbefore,    []) -> M.Msetbefore    (f p)
+    | A.Precord l                       -> M.Masset     (List.map f l)| A.Pcall (Some p, A.Cconst A.Cbefore,    []) -> M.Msetbefore    (f p)
     | A.Pletin (id, init, typ, body, o) -> M.Mletin     ([id], f init, Option.map ftyp typ, f body, Option.map f o)
     | A.Pdeclvar (i, t, v)              -> M.Mdeclvar   ([i], Option.map ftyp t, f v)
     | A.Pvar (b, id) when A.Utils.is_variable ast id   -> let e = M.Mvarstorevar id in process_before b e
@@ -400,7 +400,7 @@ let to_model (ast : A.model) : M.model =
     let set_mterm : M.mterm = M.mk_mterm (M.Mset (asset_name, List.map (fun (id, _, _) -> unloc id) e, key_mterm, var_mterm)) Tunit in
 
     let lref : (Ident.ident * (A.operator * M.mterm)) list = List.map (fun (x, y, z) -> (unloc x, (y, z))) e in
-    let lrecorditems =
+    let lassetitems =
       List.fold_left (fun accu (x : A.lident A.decl_gen) ->
           let v = List.assoc_opt (unloc x.name) lref in
           let type_ = ptyp_to_type (Option.get x.typ) in
@@ -420,10 +420,10 @@ let to_model (ast : A.model) : M.model =
             ]
           | _ -> accu @ [var]
         ) [] asset.fields in
-    let record : M.mterm = M.mk_mterm (M.Mrecord lrecorditems) type_asset in
+    let asset : M.mterm = M.mk_mterm (M.Masset lassetitems) type_asset in
 
     let letinasset : M.mterm = M.mk_mterm (M.Mletin ([var_name],
-                                                     record,
+                                                     asset,
                                                      Some (type_asset),
                                                      set_mterm,
                                                      None
@@ -486,19 +486,19 @@ let to_model (ast : A.model) : M.model =
     in
     list @ List.map (fun x -> process_enum x) ast.enums in
 
-  let process_records list =
+  let process_assets list =
     let process_asset (a : A.asset) : M.decl_node =
       let values = List.map (fun (x : A.lident A.decl_gen) ->
           let typ = Option.map ptyp_to_type x.typ in
           let default = Option.map to_mterm x.default in
-          M.mk_record_item x.name (Option.get typ) ?default:default) a.fields in
-      let r : M.record = M.mk_record a.name ?key:a.key ~values:values ~invariants:(List.map (fun x -> to_label_lterm x) a.specs) in
-      M.Drecord r
+          M.mk_asset_item x.name (Option.get typ) ?default:default) a.fields in
+      let r : M.asset = M.mk_asset a.name ?key:a.key ~values:values ~invariants:(List.map (fun x -> to_label_lterm x) a.specs) in
+      M.Dasset r
     in
     list @ List.map (fun x -> process_asset x) ast.assets
   in
 
-  let process_info_records list =
+  let process_info_assets list =
     let process_asset (a : A.asset) : M.info_item =
       let values : (ident * M.type_ * M.mterm option) list = List.map (fun (x : A.lident A.decl_gen) ->
           let typ = Option.map ptyp_to_type x.typ in
@@ -537,7 +537,7 @@ let to_model (ast : A.model) : M.model =
   let info =
     []
     |> process_info_enums
-    |> process_info_records
+    |> process_info_assets
     |> process_info_contracts
   in
 
@@ -757,7 +757,7 @@ let to_model (ast : A.model) : M.model =
             ) None e.items in
           let iv = Option.get init_val in
           let dv = M.mk_mterm (M.Mvarlocal iv) (M.Tstate) in
-          let field = M.mk_storage_item M.SIstate Tstate dv in
+          let field = M.mk_storage_item (dumloc "state") M.MTstate Tstate dv in
           field::l
         end
       | _ -> assert false
@@ -799,6 +799,7 @@ let to_model (ast : A.model) : M.model =
       in
 
       let arg = var.decl in
+      let mt = if var.constant then M.MTconst else M.MTvar in
       let type_ : A.type_ = Option.get arg.typ in
       let typ = ptyp_to_type type_ in
       let dv =
@@ -806,17 +807,17 @@ let to_model (ast : A.model) : M.model =
         | Some v -> to_mterm v
         | None   -> init_default_value typ
       in
-      M.mk_storage_item (M.SIname arg.name) typ dv
+      M.mk_storage_item arg.name mt typ dv
     in
 
     let asset_to_storage_items (asset : A.asset) : M.storage_item =
       let asset_name = asset.name in
       let typ_ = M.Tcontainer (Tasset asset_name, Collection) in
       M.mk_storage_item
-        (M.SIname asset_name)
+        asset_name
+        (M.MTasset (unloc asset_name))
         typ_
         (M.mk_mterm (M.Marray []) typ_)
-        ~asset:asset_name
     in
 
     let cont f x l = l @ (List.map f x) in
@@ -1046,7 +1047,7 @@ let to_model (ast : A.model) : M.model =
   let decls =
     []
     |> process_enums
-    |> process_records
+    |> process_assets
     |> process_contracts
   in
 

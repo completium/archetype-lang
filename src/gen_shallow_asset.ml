@@ -81,10 +81,10 @@ let get_shallow_vars id (ctx : (I.ident * (M.lident * M.type_) list) list) : M.m
       M.mk_mterm (M.Mvarlocal i) t
     )
 
-let record_to_key m n (t : M.mterm) =
+let asset_to_key m n (t : M.mterm) =
   let key_pos = M.Utils.get_key_pos m n in
   match t.node with
-  | M.Mrecord l ->
+  | M.Masset l ->
     let key = List.nth l key_pos in
     key
   | M.Mvarlocal _
@@ -97,17 +97,17 @@ let tl = function
   | [] -> []
   | _ as l -> List.tl l
 
-let rec map_shallow_record m ctx (t : M.mterm) : M.mterm list =
+let rec map_shallow_asset m ctx (t : M.mterm) : M.mterm list =
   match t.node with
-  | M.Mrecord l ->
+  | M.Masset l ->
     let fields,mapped =
       List.fold_left (fun (fields,acc) f ->
-          let mapped_vals = map_shallow_record m ctx f in
+          let mapped_vals = map_shallow_asset m ctx f in
 
           (fields @ [List.hd mapped_vals],acc @ (List.tl mapped_vals))
         ) ([],[]) l
     in
-    (M.mk_mterm (M.Mrecord fields) t.type_) :: mapped
+    (M.mk_mterm (M.Masset fields) t.type_) :: mapped
   | M.Mvarlocal id when M.Utils.is_container t.type_ ->
     t :: (get_shallow_vars id ctx)
   | M.Marray l ->
@@ -116,12 +116,12 @@ let rec map_shallow_record m ctx (t : M.mterm) : M.mterm list =
       | Tcontainer (Tasset n, _) ->
         (* split array in collection of keys and collection of shallow assets *)
         (* each element of l is an asset : each asset must be transmuted to the key *)
-        let keys = List.map (record_to_key m n) l in
+        let keys = List.map (asset_to_key m n) l in
         let typ  =  M.Utils.get_asset_key m n |> snd in
         let array = M.mk_mterm (M.Marray keys) (Tcontainer (Tbuiltin typ,Collection)) in
         (*let str = Format.asprintf "%a@." M.pp_mterm array in
             print_endline str;*)
-        let mapped_vals = List.map (map_shallow_record m ctx) l in
+        let mapped_vals = List.map (map_shallow_asset m ctx) l in
         (* take head of mapped_vals *)
         let hds = List.map List.hd mapped_vals in
         let tls = List.flatten (List.map tl mapped_vals) in
@@ -140,7 +140,7 @@ let mk_new_letins prefix shallow_vals =
     ) (0,[]) shallow_vals in
   letins
 
-(* make context data for id from map_shallow_record values *)
+(* make context data for id from map_shallow_asset values *)
 let mk_ctx ctx id shallow_vals =
   let (_,idctx) = List.fold_left (fun (i,acc) v ->
       if M.Utils.is_varlocal v
@@ -162,10 +162,10 @@ let rec map_shallow (ctx : (I.ident * (M.lident * M.type_) list) list) m (t : M.
         let shallow_args = get_shallow_vars id ctx  in
         M.Maddshallow (n,shallow_args)
       else  M.Maddasset (n,a)
-    | M.Maddasset (n,a) when M.Utils.is_record a ->
+    | M.Maddasset (n,a) when M.Utils.is_asset a ->
       if M.Utils.has_partition m n
       then
-        let shallow_args = map_shallow_record m ctx a in
+        let shallow_args = map_shallow_asset m ctx a in
         M.Maddshallow (n, shallow_args)
       else
         M.Maddasset (n,a)
@@ -175,17 +175,17 @@ let rec map_shallow (ctx : (I.ident * (M.lident * M.type_) list) list) m (t : M.
         let shallow_args = get_shallow_vars id ctx in
         M.Mapp (dumloc ("add_shallow_"^n^"_"^f),[a] @ shallow_args)
       else M.Maddfield (n,f,a,v)
-    | M.Maddfield (n,f,a,v) when M.Utils.is_record v ->
+    | M.Maddfield (n,f,a,v) when M.Utils.is_asset v ->
       let vt = M.Utils.get_asset_type v in
       if M.Utils.has_partition m (unloc vt) then
-        let shallow_args = map_shallow_record m ctx v in
+        let shallow_args = map_shallow_asset m ctx v in
         M.Mapp (dumloc ("add_shallow_"^n^"_"^f),[a] @ shallow_args)
       else M.Maddfield (n,f,a,v)
-    | M.Mletin ([id],v,t,b,o) when M.Utils.is_record v ->
+    | M.Mletin ([id],v,t,b,o) when M.Utils.is_asset v ->
       begin
         match v.type_ with
         | Tasset a when M.Utils.has_partition m (unloc a) ->
-          let shallow_args = map_shallow_record m ctx v in
+          let shallow_args = map_shallow_asset m ctx v in
           let new_letins   = mk_new_letins (unloc id) (tl shallow_args) in
           let new_ctx      = mk_ctx ctx (unloc id) (tl shallow_args) in
           M.Mletin ([id],
@@ -328,10 +328,10 @@ let shallow_decls (model : M.model) decls : M.decl_node list =
     | _ as t -> t in
   List.map (fun (decl : M.decl_node) ->
       match decl with
-      | M.Drecord r ->
-        M.Drecord {
+      | M.Dasset r ->
+        M.Dasset {
           r with
-          values = List.map (fun (ri : M.record_item) ->
+          values = List.map (fun (ri : M.asset_item) ->
               { ri with type_ = shallow_storage_type ri.type_ } (* TODO : map default value *)
             ) r.values
         }

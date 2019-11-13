@@ -699,7 +699,7 @@ let pp_model fmt (model : model) =
         in
         pp fmt e
 
-      | Mrecord l ->
+      | Masset l ->
         let asset_name =
           match mtt.type_ with
           | Tasset asset_name -> asset_name
@@ -986,25 +986,25 @@ let pp_model fmt (model : model) =
       (pp_list "@\n" pp_enum_item) enum.values
   in
 
-  let pp_record (fmt : Format.formatter) (record : record) =
-    let pp_record_item (fmt : Format.formatter) (record_item : record_item) =
+  let pp_asset (fmt : Format.formatter) (asset : asset) =
+    let pp_asset_item (fmt : Format.formatter) (asset_item : asset_item) =
       Format.fprintf fmt
         "%a : %a;"
-        pp_id record_item.name
-        pp_type record_item.type_
+        pp_id asset_item.name
+        pp_type asset_item.type_
     in
     Format.fprintf fmt
       "type %a is record [@\n  \
        @[%a@]@\n\
        ]@\n"
-      pp_id record.name
-      (pp_list "@\n" pp_record_item) record.values
+      pp_id asset.name
+      (pp_list "@\n" pp_asset_item) asset.values
   in
 
   let pp_decl (fmt : Format.formatter) (decl : decl_node) =
     match decl with
     | Denum e -> pp_enum fmt e
-    | Drecord r -> pp_record fmt r
+    | Dasset r -> pp_asset fmt r
     | Dcontract _c -> ()
   in
 
@@ -1015,7 +1015,7 @@ let pp_model fmt (model : model) =
   let pp_storage_item (fmt : Format.formatter) (si : storage_item) =
     Format.fprintf fmt
       "%a : %a;"
-      pp_str (Model.Utils.get_storage_id_name si.id)
+      pp_id si.id
       pp_type si.typ
   in
 

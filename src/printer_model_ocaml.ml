@@ -1049,7 +1049,7 @@ let pp_model fmt (model : model) =
         in
         pp fmt e
 
-      | Mrecord l ->
+      | Masset l ->
         let asset_name =
           match mtt.type_ with
           | Tasset asset_name -> asset_name
@@ -1235,7 +1235,7 @@ let pp_model fmt (model : model) =
       (pp_list "@\n" pp_enum_item) enum.values
   in
 
-  let pp_record_item fmt (item : record_item) =
+  let pp_asset_item fmt (item : asset_item) =
     let pp_typ fmt t =
       match t with
       | Tcontainer (Tasset an, _) ->
@@ -1250,21 +1250,21 @@ let pp_model fmt (model : model) =
       (* (pp_option (fun fmt -> Format.fprintf fmt " := %a" pp_mterm)) item.default *)
   in
 
-  let pp_record fmt (record : record) =
+  let pp_asset fmt (asset : asset) =
     Format.fprintf fmt "type %a = {@\n  @[%a@]@\n}@\n"
-      pp_id record.name
-      (pp_list "@\n" pp_record_item) record.values
+      pp_id asset.name
+      (pp_list "@\n" pp_asset_item) asset.values
   in
 
   let pp_decl fmt = function
     | Denum e -> pp_enum fmt e
-    | Drecord r -> pp_record fmt r
+    | Dasset r -> pp_asset fmt r
     | _ -> ()
   in
 
   let pp_storage_item fmt (si : storage_item) =
     Format.fprintf fmt "%a : %a;"
-      pp_str (Model.Utils.get_storage_id_name si.id)
+      pp_id si.id
       pp_type si.typ
   in
 
@@ -1282,7 +1282,7 @@ let pp_model fmt (model : model) =
   let pp_init_function fmt (s : storage) =
     let pp_storage_item fmt (si : storage_item) =
       Format.fprintf fmt "%a = %a;"
-        pp_str (Model.Utils.get_storage_id_name si.id)
+        pp_id si.id
         (pp_cast Rhs si.typ si.default.type_ pp_mterm) si.default
     in
 

@@ -145,22 +145,17 @@ let process_single_field_storage (model : model) : model =
   match model.storage with
   | [i] ->
     begin
-      match i.id with
-      | SIname name ->
-        begin
-          let storage_id = dumloc "_s" in
-          let rec aux (ctx : ctx_model) (mt : mterm) : mterm =
-            match mt.node with
-            | Mvarstorevar a when String.equal (unloc a) (unloc name) ->
-              mk_mterm (Mvarlocal storage_id) mt.type_
-            | Massign (op, a, v) when String.equal (unloc a) (unloc name) ->
-              let vv = map_mterm (aux ctx) v in
-              mk_mterm (Massign (op, storage_id, vv)) mt.type_
-            | _ -> map_mterm (aux ctx) mt
-          in
-          map_mterm_model aux model
-        end
-      | SIstate -> model
+      let storage_id = dumloc "_s" in
+      let rec aux (ctx : ctx_model) (mt : mterm) : mterm =
+        match mt.node with
+        | Mvarstorevar a when String.equal (unloc a) (unloc i.id) ->
+          mk_mterm (Mvarlocal storage_id) mt.type_
+        | Massign (op, a, v) when String.equal (unloc a) (unloc i.id) ->
+          let vv = map_mterm (aux ctx) v in
+          mk_mterm (Massign (op, storage_id, vv)) mt.type_
+        | _ -> map_mterm (aux ctx) mt
+      in
+      map_mterm_model aux model
     end
   | _   -> model
 
@@ -242,7 +237,7 @@ let prune_properties (model : model) : model =
       aux mt
     in
     let prune_decl = function
-      | Drecord r -> Drecord {r with invariants = List.filter (fun (x : label_term) -> remain_id (unloc (Option.get (x.label)))) r.invariants }
+      | Dasset r -> Dasset {r with invariants = List.filter (fun (x : label_term) -> remain_id (unloc (Option.get (x.label)))) r.invariants }
       | Denum e ->
         begin
           let values = List.map (

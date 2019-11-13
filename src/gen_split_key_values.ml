@@ -16,8 +16,9 @@ let lident_asset_assets = to_lident asset_assets
 let split_key_values (model : model) : model =
   let storage =
     List.fold_right (fun x accu ->
-        match x with
-        | {asset = Some an; _} as f ->
+        match x.model_type with
+        | MTasset an ->
+          let an = dumloc an in
           let _k, t = Utils.get_asset_key model an in
           let type_key = Tcontainer (Tbuiltin t, Collection) in
           let init_keys, init_assets =
@@ -25,19 +26,19 @@ let split_key_values (model : model) : model =
             Marray [], Marray []
           in
           let asset_keys =
-            mk_storage_item (SIname (dumloc (asset_keys (unloc an))))
+            mk_storage_item (dumloc (asset_keys (unloc an)))
+              (MTasset (unloc an))
               type_key
               (mk_mterm init_keys type_key)
-              ~asset:an
-              ~loc:f.loc
+              ~loc:x.loc
           in
           let type_asset = Tassoc (t, Tasset an) in
           let asset_assets =
-            mk_storage_item (SIname (dumloc (asset_assets (unloc an))))
+            mk_storage_item (dumloc (asset_assets (unloc an)))
+              (MTasset (unloc an))
               type_asset
               (mk_mterm init_assets type_asset)
-              ~asset:an
-              ~loc:f.loc
+              ~loc:x.loc
           in
           asset_keys::asset_assets::accu
         | _ -> x::accu)

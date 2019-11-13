@@ -814,7 +814,7 @@ let pp_model fmt (model : model) =
         in
         pp fmt e
 
-      | Mrecord l ->
+      | Masset l ->
         let asset_name =
           match mtt.type_ with
           | Tasset asset_name -> asset_name
@@ -1014,15 +1014,15 @@ let pp_model fmt (model : model) =
 
   let pp_init_function fmt (s : storage) =
     let pp_storage_item fmt (si : storage_item) =
-      match si with
-      | { asset = Some an; _} ->
+      match si.model_type with
+      | MTasset an ->
         Format.fprintf fmt "%s_keys = [],@\n\t\t%s_assets = {}"
-          (unloc an)
-          (unloc an)
+          an
+          an
 
       | _ ->
         Format.fprintf fmt "%a = %a"
-          pp_str (Model.Utils.get_storage_id_name si.id)
+          pp_id si.id
           pp_mterm si.default
     in
 

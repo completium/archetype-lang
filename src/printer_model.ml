@@ -576,7 +576,7 @@ let pp_mterm fmt (mt : mterm) =
       in
       pp fmt e
 
-    | Mrecord l ->
+    | Masset l ->
       Format.fprintf fmt "{%a}"
         (pp_list "; " f) l
     | Mletin (ids, a, t, b, o) ->
@@ -875,18 +875,18 @@ let pp_enum fmt (enum : enum) =
     pp_id enum.name
     (pp_list "@\n" pp_enum_item) enum.values
 
-let pp_record_item fmt (item : record_item) =
+let pp_asset_item fmt (item : asset_item) =
   Format.fprintf fmt "%a : %a%a"
     pp_id item.name
     pp_type item.type_
     (pp_option (fun fmt -> Format.fprintf fmt " := %a" pp_mterm)) item.default
 
-let pp_record fmt (record : record) =
-  Format.fprintf fmt "record %a%a {@\n@[<v 2>  %a@]@\n}%a@\n"
-    pp_id record.name
-    (pp_option (fun fmt -> Format.fprintf fmt " identified by %a" pp_id)) record.key
-    (pp_list "@\n" pp_record_item) record.values
-    (pp_do_if (not (List.is_empty record.invariants)) (fun fmt xs -> Format.fprintf fmt " with {%a}" (pp_list "; " pp_label_term) xs)) record.invariants
+let pp_asset fmt (asset : asset) =
+  Format.fprintf fmt "asset %a%a {@\n@[<v 2>  %a@]@\n}%a@\n"
+    pp_id asset.name
+    (pp_option (fun fmt -> Format.fprintf fmt " identified by %a" pp_id)) asset.key
+    (pp_list "@\n" pp_asset_item) asset.values
+    (pp_do_if (not (List.is_empty asset.invariants)) (fun fmt xs -> Format.fprintf fmt " with {%a}" (pp_list "; " pp_label_term) xs)) asset.invariants
 
 
 let pp_contract_signature fmt (cs : contract_signature) =
@@ -902,7 +902,7 @@ let pp_contract fmt (contract : contract) =
 
 let pp_decl fmt = function
   | Denum e -> pp_enum fmt e
-  | Drecord r -> pp_record fmt r
+  | Dasset r -> pp_asset fmt r
   | Dcontract c -> pp_contract fmt c
 
 let pp_label_term fmt (lt : label_term) =
@@ -912,7 +912,7 @@ let pp_label_term fmt (lt : label_term) =
 
 let pp_storage_item fmt (si : storage_item) =
   Format.fprintf fmt "%a : %a%a"
-    pp_str (Model.Utils.get_storage_id_name si.id)
+    pp_id si.id
     pp_type si.typ
     (fun fmt -> Format.fprintf fmt " := %a" pp_mterm) si.default
 
