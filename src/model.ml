@@ -402,7 +402,6 @@ type 'id storage_item_gen = {
   typ         : type_;
   ghost       : bool;
   default     : 'id mterm_gen; (* initial value *)
-  invariants  : lident label_term_gen list;
   loc         : Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]
@@ -447,6 +446,7 @@ type 'id record_gen = {
   name: 'id;
   key: 'id option;
   values: 'id record_item_gen list;
+  invariants  : lident label_term_gen list;
 }
 [@@deriving show {with_path = false}]
 
@@ -745,8 +745,8 @@ let mk_enum ?(values = []) name : 'id enum_gen =
 let mk_enum_item ?(invariants = []) name : 'id enum_item_gen =
   { name; invariants }
 
-let mk_record ?(values = []) ?key name : 'id record_gen =
-  { name; key; values }
+let mk_record ?(values = []) ?(invariants = []) ?key name : 'id record_gen =
+  { name; key; values; invariants }
 
 let mk_record_item ?default name type_ : 'id record_item_gen =
   { name; type_; default }
@@ -757,8 +757,8 @@ let mk_contract_signature ?(args=[]) ?(loc=Location.dummy) name : 'id contract_s
 let mk_contract ?(signatures=[]) ?init ?(loc=Location.dummy) name : 'id contract_gen =
   { name; signatures; init; loc }
 
-let mk_storage_item ?asset ?(ghost = false) ?(invariants = []) ?(loc = Location.dummy) id typ default : 'id storage_item_gen =
-  { id; asset; typ; ghost; default; invariants; loc }
+let mk_storage_item ?asset ?(ghost = false) ?(loc = Location.dummy) id typ default : 'id storage_item_gen =
+  { id; asset; typ; ghost; default; loc }
 
 let mk_function_struct ?(args = []) ?(loc = Location.dummy) ?(src = Exo) name body : function_struct =
   { name; args; src; body; loc }
@@ -2517,25 +2517,39 @@ end = struct
 
   (* returns asset name * invariant name * invariant term *)
   let get_storage_invariants (m : model) (asset : ident option) : (ident * ident * mterm) list =
-    List.fold_left (fun acc (i : storage_item) ->
-        let name = match i.id with
-          | SIname name -> name
-          | SIstate -> dumloc "state" in
-        let n = name |> unloc in
-        let do_fold =
-          match asset with
-          | Some a when compare n a = 0 -> true
-          | Some _ -> false
-          | _ -> true
-        in
-        if do_fold then
-          List.fold_left (fun acc (lt : label_term) ->
-              let inv_name = Tools.Option.fold (fun _ l -> unloc l) "" lt.label in
-              let inv_term = lt.term in
-              acc @ [n, inv_name, inv_term]
-            ) acc i.invariants
-        else acc
-      ) [] m.storage
+    match asset with
+    | None -> []
+    | Some asset ->
+      try
+        let records : lident record_gen list = get_records m in
+        let record : lident record_gen = List.find (fun (x : lident record_gen) -> cmp_ident (unloc x.name) asset ) records in
+        List.fold_left (fun acc (lt : label_term) ->
+            let inv_name = Tools.Option.fold (fun _ l -> unloc l) "" lt.label in
+            let inv_term = lt.term in
+            acc @ [asset, inv_name, inv_term]
+          ) [] record.invariants
+      with
+      | Not_found -> []
+
+  (* List.fold_left (fun acc (i : storage_item) ->
+      let name = match i.id with
+        | SIname name -> name
+        | SIstate -> dumloc "state" in
+      let n = name |> unloc in
+      let do_fold =
+        match asset with
+        | Some a when compare n a = 0 -> true
+        | Some _ -> false
+        | _ -> true
+      in
+      if do_fold then
+        List.fold_left (fun acc (lt : label_term) ->
+            let inv_name = Tools.Option.fold (fun _ l -> unloc l) "" lt.label in
+            let inv_term = lt.term in
+            acc @ [n, inv_name, inv_term]
+          ) acc i.invariants
+      else acc
+     ) [] m.storage *)
 
   let is_field_storage (m : model) (id : ident) : bool =
     let l : ident list =
@@ -2589,10 +2603,10 @@ end = struct
     List.map (fun (name, fs : ident * function_struct) -> name, extract_fun_id [] fs.body) fun_ids
 
   let retrieve_all_properties (m : model) : (ident * property) list =
-    let fold_storage (s : storage_item) : (ident * property) list =
-      List.map (fun (x : label_term) -> ((unloc |@ Option.get) x.label , PstorageInvariant x)) s.invariants
+    let fold_decl = function
+      | Drecord r -> List.map (fun (x : label_term) -> ((unloc |@ Option.get) x.label, PstorageInvariant x)) r.invariants
+      | _ -> []
     in
-
     let fold_specification (fun_id : ident option) (sp : specification): (ident * property) list =
       []
       |> (@) (List.map (fun (pc : postcondition) -> (unloc pc.name, Ppostcondition (pc, fun_id))) sp.postconditions)
@@ -2607,7 +2621,7 @@ end = struct
       |> (@) (Option.map_dfl (fold_specification (Some name)) [] f.spec)
     in
     []
-    |> (@) (List.map fold_storage m.storage)
+    |> (@) (List.map fold_decl m.decls)
     |> (@) (List.map fold_function m.functions) |> List.flatten
     |> (@) (fold_specification None m.specification)
     |> (@) (List.map (fun (x : security_item) -> (unloc x.label, PsecurityPredicate x)) m.security.items)

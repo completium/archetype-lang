@@ -78,12 +78,12 @@ let pp_operator fmt op =
   pp_str fmt (to_str op)
 
 (* let rec pp_qualid fmt (q : qualid) =
-  match q.node with
-  | Qdot (q, i) ->
+   match q.node with
+   | Qdot (q, i) ->
     Format.fprintf fmt "%a.%a"
       pp_qualid q
       pp_id i
-  | Qident i -> pp_id fmt i *)
+   | Qident i -> pp_id fmt i *)
 
 let pp_pattern fmt (p : pattern) =
   match p.node with
@@ -882,10 +882,12 @@ let pp_record_item fmt (item : record_item) =
     (pp_option (fun fmt -> Format.fprintf fmt " := %a" pp_mterm)) item.default
 
 let pp_record fmt (record : record) =
-  Format.fprintf fmt "record %a%a {@\n@[<v 2>  %a@]@\n}@\n"
+  Format.fprintf fmt "record %a%a {@\n@[<v 2>  %a@]@\n}%a@\n"
     pp_id record.name
     (pp_option (fun fmt -> Format.fprintf fmt " identified by %a" pp_id)) record.key
     (pp_list "@\n" pp_record_item) record.values
+    (pp_do_if (not (List.is_empty record.invariants)) (fun fmt xs -> Format.fprintf fmt " with {%a}" (pp_list "; " pp_label_term) xs)) record.invariants
+
 
 let pp_contract_signature fmt (cs : contract_signature) =
   Format.fprintf fmt "%a : %a"
@@ -909,11 +911,10 @@ let pp_label_term fmt (lt : label_term) =
     pp_mterm lt.term
 
 let pp_storage_item fmt (si : storage_item) =
-  Format.fprintf fmt "%a : %a%a%a"
+  Format.fprintf fmt "%a : %a%a"
     pp_str (Model.Utils.get_storage_id_name si.id)
     pp_type si.typ
     (fun fmt -> Format.fprintf fmt " := %a" pp_mterm) si.default
-    (pp_do_if (not (List.is_empty si.invariants)) (fun fmt xs -> Format.fprintf fmt " with {%a}" (pp_list "; " pp_label_term) xs)) si.invariants
 
 let pp_storage fmt (s : storage) =
   Format.fprintf fmt "storage {@\n@[<v 2>  %a@]@\n}@\n"

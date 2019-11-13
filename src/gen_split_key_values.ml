@@ -29,7 +29,6 @@ let split_key_values (model : model) : model =
               type_key
               (mk_mterm init_keys type_key)
               ~asset:an
-              ~invariants:f.invariants
               ~loc:f.loc
           in
           let type_asset = Tassoc (t, Tasset an) in
@@ -38,7 +37,6 @@ let split_key_values (model : model) : model =
               type_asset
               (mk_mterm init_assets type_asset)
               ~asset:an
-              ~invariants:f.invariants
               ~loc:f.loc
           in
           asset_keys::asset_assets::accu

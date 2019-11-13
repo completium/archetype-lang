@@ -492,7 +492,7 @@ let to_model (ast : A.model) : M.model =
           let typ = Option.map ptyp_to_type x.typ in
           let default = Option.map to_mterm x.default in
           M.mk_record_item x.name (Option.get typ) ?default:default) a.fields in
-      let r : M.record = M.mk_record a.name ?key:a.key ~values:values in
+      let r : M.record = M.mk_record a.name ?key:a.key ~values:values ~invariants:(List.map (fun x -> to_label_lterm x) a.specs) in
       M.Drecord r
     in
     list @ List.map (fun x -> process_asset x) ast.assets
@@ -817,7 +817,6 @@ let to_model (ast : A.model) : M.model =
         typ_
         (M.mk_mterm (M.Marray []) typ_)
         ~asset:asset_name
-        ~invariants:(List.map (fun x -> to_label_lterm x) asset.specs)
     in
 
     let cont f x l = l @ (List.map f x) in
