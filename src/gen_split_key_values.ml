@@ -19,7 +19,7 @@ let split_key_values (model : model) : model =
         match x.model_type with
         | MTasset an ->
           let an = dumloc an in
-          let _k, t = Utils.get_asset_key model an in
+          let _k, t = Utils.get_asset_key model (unloc an) in
           let type_key = Tcontainer (Tbuiltin t, Collection) in
           let init_keys, init_assets =
             (* TODO: initialize with f.default value*)
@@ -50,7 +50,7 @@ let split_key_values (model : model) : model =
     | Mselect (an, col, pred) ->
       let col = f ctx col in
       let pred = f ctx pred in
-      let _k, t = Utils.get_asset_key model (dumloc an) in
+      let _k, t = Utils.get_asset_key model an in
       { x with node = Mselect (an, col, pred); type_ = Tcontainer (Tbuiltin t, Collection)}
 
     | Mletin (ids, init, _, body, o) ->
@@ -78,7 +78,7 @@ let split_key_values (model : model) : model =
 
     | Mvarstorecol an ->
       (
-        let _k, t = Utils.get_asset_key model an in
+        let _k, t = Utils.get_asset_key model (unloc an) in
         { x with node = Mvarstorecol (lident_asset_keys an); type_ = Tcontainer (Tbuiltin t, Collection) }
       )
     | Mfor (id, col, body, lbl) ->
@@ -105,7 +105,7 @@ let split_key_values (model : model) : model =
         | Tcontainer (Tasset an, _) -> an
         | _ -> assert false
       in
-      let _k, t = Utils.get_asset_key model an in
+      let _k, t = Utils.get_asset_key model (unloc an) in
 
       let col = f ctx col in
       let body = f ctx body in

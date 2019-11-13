@@ -62,7 +62,7 @@ let gen_shallow_args (m : M.model) (id : M.lident) (t : M.type_) (arg : M.argume
         [] in
     (acc_ctx,shallow_args)
   | M.Tcontainer (Tasset i, Collection) ->
-    let _k,kt = M.Utils.get_asset_key m i in
+    let _k,kt = M.Utils.get_asset_key m (unloc i) in
     let arg = (id,M.Tcontainer (M.Tbuiltin kt,Collection),None) in
     let arg_values = (dumloc ((unloc id)^"_values"),M.Tcontainer (Tasset i, Collection),None) in
     let shallow_args = gen_shallow_args m 1 (unloc id) t [arg;arg_values] in
@@ -116,8 +116,8 @@ let rec map_shallow_asset m ctx (t : M.mterm) : M.mterm list =
       | Tcontainer (Tasset n, _) ->
         (* split array in collection of keys and collection of shallow assets *)
         (* each element of l is an asset : each asset must be transmuted to the key *)
-        let keys = List.map (asset_to_key m n) l in
-        let typ  =  M.Utils.get_asset_key m n |> snd in
+        let keys = List.map (asset_to_key m (unloc n)) l in
+        let typ  =  M.Utils.get_asset_key m (unloc n) |> snd in
         let array = M.mk_mterm (M.Marray keys) (Tcontainer (Tbuiltin typ,Collection)) in
         (*let str = Format.asprintf "%a@." M.pp_mterm array in
             print_endline str;*)
@@ -323,7 +323,7 @@ let get_added_asset_fields (model : M.model) : (I.ident * I.ident) list =
 let shallow_decls (model : M.model) decls : M.decl_node list =
   let shallow_storage_type = function
     | M.Tcontainer (Tasset a,_) ->
-      let keyt =  M.Utils.get_asset_key model a |> snd in
+      let keyt =  M.Utils.get_asset_key model (unloc a) |> snd in
       M.Tcontainer (Tbuiltin keyt,Collection)
     | _ as t -> t in
   List.map (fun (decl : M.decl_node) ->

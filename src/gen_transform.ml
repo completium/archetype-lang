@@ -96,7 +96,7 @@ let extend_removeif (model : model) : model =
       let assetv_str = dumloc (asset ^ "_") in
       let asset_var = mk_mterm (Mvarlocal assetv_str) type_asset in
 
-      let key, key_type = Utils.get_asset_key model lasset in
+      let key, key_type = Utils.get_asset_key model (unloc lasset) in
       let asset_key : mterm = mk_mterm (Mdotasset (asset_var,dumloc key)) (Tbuiltin key_type) in
 
       let assets_var_name = dumloc ("assets_") in
@@ -417,13 +417,14 @@ let remove_wild_pattern (model : model) : model =
         begin
           let values : string list =
             begin
-              let enum_info : info_enum =
+              let enum : enum =
                 match e.type_ with
-                | Tstate   -> Model.Utils.get_info_enum model "state"
-                | Tenum id -> Model.Utils.get_info_enum model (unloc id)
+                | Tstate   -> Model.Utils.get_enum model "state"
+                | Tenum id -> Model.Utils.get_enum model (unloc id)
                 | _ -> assert false
               in
-              enum_info.values
+              enum.values
+              |> List.map (fun (x : enum_item) -> unloc x.name)
             end
           in
           let mterm_default : mterm option =

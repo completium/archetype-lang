@@ -324,7 +324,7 @@ let pp_model fmt (model : model) =
         let cond, str =
           (match i.type_ with
            | Tasset an ->
-             let k, _ = Utils.get_asset_key model an in
+             let k, _ = Utils.get_asset_key model (unloc an) in
              true, "." ^ k
            | _ -> false, ""
           ) in
@@ -342,7 +342,7 @@ let pp_model fmt (model : model) =
         let cond, str =
           (match i.type_ with
            | Tasset an ->
-             let k, _ = Utils.get_asset_key model an in
+             let k, _ = Utils.get_asset_key model (unloc an) in
              true, "." ^ k
            | _ -> false, ""
           ) in
@@ -705,8 +705,8 @@ let pp_model fmt (model : model) =
           | Tasset asset_name -> asset_name
           | _ -> assert false
         in
-        let a = Utils.get_info_asset model asset_name in
-        let ll = List.map (fun (i,_,_) -> dumloc i) a.values in
+        let a = Utils.get_asset model (unloc asset_name) in
+        let ll = List.map (fun (x : asset_item) -> x.name) a.values in
 
         let lll = List.map2 (fun x y -> (x, y)) ll l in
 
@@ -1031,7 +1031,7 @@ let pp_model fmt (model : model) =
 
   let pp_storage_const (_env : env) fmt = function
     | Get an ->
-      let _, t = Utils.get_asset_key model (to_lident an) in
+      let _, t = Utils.get_asset_key model an in
       Format.fprintf fmt
         "function get_%s (const s : storage_type; const key : %a) : %s is@\n  \
          begin@\n    \
@@ -1040,7 +1040,7 @@ let pp_model fmt (model : model) =
         an pp_btyp t an an an
 
     | Set an ->
-      let _, t = Utils.get_asset_key model (to_lident an) in
+      let _, t = Utils.get_asset_key model an in
       Format.fprintf fmt
         "function set_%s (const s : storage_type; const key : %a; const a : %s) : storage_type is@\n  \
          begin@\n    \
@@ -1053,7 +1053,7 @@ let pp_model fmt (model : model) =
         an
 
     | Add an ->
-      let k, t = Utils.get_asset_key model (to_lident an) in
+      let k, t = Utils.get_asset_key model an in
       Format.fprintf fmt
         "function add_%s (const s : storage_type; const a : %s) : storage_type is@\n  \
          begin@\n    \
@@ -1070,7 +1070,7 @@ let pp_model fmt (model : model) =
         an
 
     | Remove an ->
-      let _, t = Utils.get_asset_key model (to_lident an) in
+      let _, t = Utils.get_asset_key model an in
       Format.fprintf fmt
         "function remove_%s (const s : storage_type; const key : %a) : storage_type is@\n  \
          var new_keys : list(%a) := (nil : list(%a));@\n  \
@@ -1097,7 +1097,7 @@ let pp_model fmt (model : model) =
         an
 
     | Clear _an ->
-      (* let k, t = Utils.get_asset_key model (to_lident an) in *)
+      (* let k, t = Utils.get_asset_key model an in *)
       Format.fprintf fmt "// TODO api storage: Clear"
     (* "let[@inline] clear_%s (s : storage) : storage =@\n  \
        let s = s.%s_keys <- [] in@\n  \
@@ -1111,9 +1111,9 @@ let pp_model fmt (model : model) =
        an an an *)
 
     | UpdateAdd (an, fn) ->
-      let k, t = Utils.get_asset_key model (to_lident an) in
+      let k, t = Utils.get_asset_key model an in
       let ft, _c = Utils.get_field_container model an fn in
-      let kk, _ = Utils.get_asset_key model (to_lident ft) in
+      let kk, _ = Utils.get_asset_key model ft in
       Format.fprintf fmt
         "function add_%s_%s (const s : storage_type; const a : %s; const b : %s) : storage_type is@\n  \
          begin@\n    \
@@ -1134,9 +1134,9 @@ let pp_model fmt (model : model) =
         ft
 
     | UpdateRemove (an, fn) ->
-      let k, t = Utils.get_asset_key model (to_lident an) in
+      let k, t = Utils.get_asset_key model an in
       let ft, _c = Utils.get_field_container model an fn in
-      let _kk, tt = Utils.get_asset_key model (to_lident ft) in
+      let _kk, tt = Utils.get_asset_key model ft in
       Format.fprintf fmt
         "function remove_%s_%s (const s : storage_type; const a : %s; const key : %a) : storage_type is@\n  \
          var new_keys : list(%a) := (nil : list(%a));@\n  \
@@ -1169,7 +1169,7 @@ let pp_model fmt (model : model) =
         ft
 
     | UpdateClear (_an, _fn) ->
-      (* let k, t = Utils.get_asset_key model (to_lident an) in *)
+      (* let k, t = Utils.get_asset_key model an in *)
       Format.fprintf fmt "// TODO api storage: UpdateClear"
     (* "let[@inline] clear_%s_%s (s, a : storage * %s) : storage =@\n  \
        let key = a.%s in@\n  \
@@ -1183,7 +1183,7 @@ let pp_model fmt (model : model) =
        an k an *)
 
     | UpdateReverse (_an, _fn) ->
-      (* let k, t = Utils.get_asset_key model (to_lident an) in *)
+      (* let k, t = Utils.get_asset_key model an in *)
       Format.fprintf fmt "// TODO api storage: UpdateReverse"
     (* "let[@inline] reverse_%s_%s (s, a : storage * %s) : storage =@\n  \
        let key = a.%s in@\n  \
@@ -1212,7 +1212,7 @@ let pp_model fmt (model : model) =
 
   let pp_function_const (env : env) fmt = function
     | Select (an, f) ->
-      let k, t = Utils.get_asset_key model (to_lident an) in
+      let k, t = Utils.get_asset_key model an in
       let i = get_preds_index env.select_preds f in
       Format.fprintf fmt
         "function select_%s_%i (const s : storage_type; const l : list(%a)) : list(%a) is@\n  \
@@ -1242,7 +1242,7 @@ let pp_model fmt (model : model) =
        an fn *)
 
     | Contains an ->
-      let _, t = Utils.get_asset_key model (to_lident an) in
+      let _, t = Utils.get_asset_key model an in
       Format.fprintf fmt
         "function contains_%s (const l : list(%a); const key : %a) : bool is@\n  \
          var r : bool := False;@\n  \
@@ -1257,7 +1257,7 @@ let pp_model fmt (model : model) =
         pp_btyp t
 
     | Nth _an ->
-      (* let _, t = Utils.get_asset_key model (to_lident an) in *)
+      (* let _, t = Utils.get_asset_key model an in *)
       Format.fprintf fmt "// TODO api storage: Nth"
     (* "let[@inline] nth_%s (s, l, idx : storage * %a list * int) : %s =@\n  \
        match l with@\n  \
@@ -1280,7 +1280,7 @@ let pp_model fmt (model : model) =
        an *)
 
     | Count _an ->
-      (* let _, t = Utils.get_asset_key model (to_lident an) in *)
+      (* let _, t = Utils.get_asset_key model an in *)
       Format.fprintf fmt "// TODO api storage: Count"
     (* "let[@inline] count_%s (l : %a list) : int =@\n  \
        List.fold (fun (_, accu) ->@\n    \
@@ -1294,8 +1294,8 @@ let pp_model fmt (model : model) =
         | _ -> "0"
       in
 
-      let _, tk = Utils.get_asset_key model (to_lident an) in
-      let _, t, _ = Utils.get_asset_field model (dumloc an, fn) in
+      let _, tk = Utils.get_asset_key model an in
+      let _, t, _ = Utils.get_asset_field model (an, fn) in
       Format.fprintf fmt
         "function sum_%s_%s (const s : storage_type; const l : list(%a)) : %a is@\n  \
          var r : %a := %s;@\n  \
@@ -1314,7 +1314,7 @@ let pp_model fmt (model : model) =
         fn
 
     | Min (_an, _fn) ->
-      (* let _, tk = Utils.get_asset_key model (to_lident an) in
+      (* let _, tk = Utils.get_asset_key model an in
          let _, t, _ = Utils.get_asset_field model (dumloc an, fn) in *)
       Format.fprintf fmt "// TODO api storage: Min"
     (* "let[@inline] min_%s_%s (s, l : storage * %a list) : %a =@\n  \
@@ -1345,7 +1345,7 @@ let pp_model fmt (model : model) =
        fn *)
 
     | Max (_an, _fn) ->
-      (* let _, tk = Utils.get_asset_key model (to_lident an) in
+      (* let _, tk = Utils.get_asset_key model an in
          let _, t, _ = Utils.get_asset_field model (dumloc an, fn) in *)
       Format.fprintf fmt "// TODO api storage: Max"
     (* "let[@inline] max_%s_%s (s, l : storage * %a list) : %a =@\n  \
@@ -1426,7 +1426,8 @@ let pp_model fmt (model : model) =
                Format.fprintf fmt "var %s : %a := %a;"
                  name
                  pp_type type_
-                 (pp_mterm env) (Model.Utils.get_default_value model type_))) vars
+                 (pp_mterm env) (Model.Utils.get_default_value model type_)
+                 )) vars
     in
     let pp_iterfuns fmt (iterfuns : s_interfun list) =
       match iterfuns with

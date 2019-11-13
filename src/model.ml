@@ -336,41 +336,6 @@ and security_action =
   | Sentry of lident list
 [@@deriving show {with_path = false}]
 
-type info_var = {
-  name: ident;
-  type_ : type_;
-  constant: bool;
-  init: mterm option;
-}
-[@@deriving show {with_path = false}]
-
-type info_enum = {
-  name: ident;
-  values: ident list;
-}
-[@@deriving show {with_path = false}]
-
-type info_asset = {
-  name: ident;
-  key: ident;
-  sort: ident list;
-  values: (ident * type_ * (mterm option)) list;
-}
-[@@deriving show {with_path = false}]
-
-type info_contract = {
-  name: ident;
-  signatures: (ident * type_ list) list;
-}
-[@@deriving show {with_path = false}]
-
-type info_item =
-  | Ivar of info_var
-  | Ienum of info_enum
-  | Iasset of info_asset
-  | Icontract of info_contract
-[@@deriving show {with_path = false}]
-
 type 'id label_term_gen = {
   label : 'id option;
   term : 'id mterm_gen;
@@ -450,6 +415,7 @@ type enum = lident enum_gen
 type 'id asset_item_gen = {
   name: 'id;
   type_: type_;
+  original_type: type_;
   default: 'id mterm_gen option;
 }
 [@@deriving show {with_path = false}]
@@ -684,7 +650,6 @@ type 'id model_gen = {
   name          : lident;
   api_items     : api_item list;
   api_verif     : api_verif list;
-  info          : info_item list;
   decls         : 'id decl_node_gen list;
   storage       : 'id storage_gen;
   functions     : 'id function__gen list;
@@ -744,18 +709,6 @@ let mk_security_item ?(loc = Location.dummy) label predicate : security_item =
 let mk_security ?(items = []) ?(loc = Location.dummy) () : security =
   { items; loc }
 
-let mk_info_var ?(constant = false) ?init name type_ : info_var =
-  { name; type_; constant; init}
-
-let mk_info_enum ?(values = []) name : info_enum =
-  { name; values }
-
-let mk_info_asset ?(values = []) ?(sort = []) name key : info_asset =
-  { name; key; sort; values }
-
-let mk_info_contract ?(signatures = []) name : info_contract =
-  { name; signatures }
-
 let mk_var ?(constant=false) ?(invariants=[]) ?default ?(loc = Location.dummy) name type_ : 'id var_gen =
   { name; type_; default; constant; invariants; loc }
 
@@ -768,8 +721,8 @@ let mk_enum_item ?(invariants = []) name : 'id enum_item_gen =
 let mk_asset ?(values = []) ?(sort=[]) ?(invariants = []) name key : 'id asset_gen =
   { name; values; sort; key; invariants }
 
-let mk_asset_item ?default name type_ : 'id asset_item_gen =
-  { name; type_; default }
+let mk_asset_item ?default name type_ original_type : 'id asset_item_gen =
+  { name; type_; original_type; default }
 
 let mk_contract_signature ?(args=[]) ?(loc=Location.dummy) name : 'id contract_signature_gen =
   { name; args; loc }
@@ -792,8 +745,8 @@ let mk_signature ?(args = []) ?ret name : 'id signature_gen =
 let mk_api_item ?(only_formula = false) node_item =
   { node_item; only_formula }
 
-let mk_model ?(api_items = []) ?(api_verif = []) ?(info = []) ?(decls = []) ?(functions = []) ?(storage = []) ?(specification = mk_specification ()) ?(security = mk_security ()) name : model =
-  { name; api_items; api_verif; info; storage; decls; functions; specification; security }
+let mk_model ?(api_items = []) ?(api_verif = []) ?(decls = []) ?(functions = []) ?(storage = []) ?(specification = mk_specification ()) ?(security = mk_security ()) name : model =
+  { name; api_items; api_verif; storage; decls; functions; specification; security }
 
 (* -------------------------------------------------------------------- *)
 
@@ -2046,19 +1999,19 @@ module Utils : sig
   val function_name_from_storage_const   : storage_const   -> string
   val function_name_from_container_const : container_const -> string
   val function_name_from_function_const  : function_const  -> string
-  val function_name_from_builtin_const   : builtin_const  -> string
-  val get_info_assets                    : model -> info_asset list
+  val function_name_from_builtin_const   : builtin_const   -> string
+  val get_vars                           : model -> var list
   val get_enums                          : model -> enum list
   val get_assets                         : model -> asset list
-  val get_variables                      : model -> storage_item list
+  val get_var                            : model -> ident -> var
+  val get_enum                           : model -> ident -> enum
+  val get_asset                          : model -> ident -> asset
   val get_storage                        : model -> storage
-  val get_info_asset                     : model -> lident -> info_asset
-  val get_info_enum                      : model -> ident -> info_enum
-  val get_asset_field                    : model -> (lident * ident) -> (ident * type_ * mterm option)
-  val get_asset_key                      : model -> lident -> (ident * btyp)
+  val get_asset_field                    : model -> (ident * ident) -> (ident * type_ * mterm option)
+  val get_asset_key                      : model -> ident -> (ident * btyp)
   val get_field_container                : model -> ident -> ident -> (ident * container)
   val is_storage_attribute               : model -> lident -> bool
-  val get_named_field_list               : model -> lident -> 'a list -> (ident * 'a) list
+  val get_named_field_list               : model -> ident -> 'a list -> (ident * 'a) list
   val get_partitions                     : model -> (ident * ident * type_) list (* asset id, asset item *)
   val dest_partition                     : type_ -> lident
   val get_partition_asset_key            : model -> lident -> lident -> (ident * ident * btyp)
@@ -2067,20 +2020,20 @@ module Utils : sig
   val get_functions                      : model -> (specification option * function_struct* type_) list
   val has_partition                      : model -> ident -> bool
   val get_asset_partitions               : model -> ident -> (ident * type_ * mterm option) list
-  val get_field_list                     : model -> lident -> ident list
-  val get_field_pos                      : model -> lident -> lident -> int (* m, asset, field *)
-  val get_nth_asset_val                 : int -> mterm -> mterm
+  val get_field_list                     : model -> ident -> ident list
+  val get_field_pos                      : model -> ident -> lident -> int (* m, asset, field *)
+  val get_nth_asset_val                  : int -> mterm -> mterm
   val dest_array                         : mterm -> mterm list
   val get_asset_type                     : mterm -> lident
   val is_local_assigned                  : lident -> mterm -> bool
   val get_function_args                  : function__ -> argument list
   val set_function_args                  : function__ -> argument list -> function__
   val map_function_terms                 : (mterm -> mterm) -> function__ -> function__
-  val is_asset                          : mterm -> bool
+  val is_asset                           : mterm -> bool
   val is_varlocal                        : mterm -> bool
   val dest_varlocal                      : mterm -> lident
   val is_container                       : type_ -> bool
-  val get_key_pos                        : model -> lident -> int
+  val get_key_pos                        : model -> ident -> int
   val get_loop_invariants                : model -> (lident * mterm) list -> ident -> (lident * mterm) list
   val get_formula                        : model -> mterm option -> ident -> mterm option
   val is_post                            : postcondition -> bool
@@ -2107,15 +2060,13 @@ end = struct
   exception Anomaly of string
 
   type error_desc =
-    | AssetNotFound of string
     | AssetFieldNotFound of string * string
     | AssetKeyTypeNotFound of string
-    | NotaPartition
     | PartitionNotFound
     | NotanArray
     | NotaRecord of mterm
     | NotanAssetType
-    | EnumNotFound of string
+    | NotFound
   [@@deriving show {with_path = false}]
 
   let emit_error (desc : error_desc) =
@@ -2176,11 +2127,6 @@ end = struct
     | Function (s,t) -> { node = Function ({ s with args = args },t); spec = f.spec }
     | Entry s        -> { node = Entry { s with args = args }; spec = f.spec }
 
-  let is_asset (i : info_item) : bool =
-    match i with
-    | Iasset _ -> true
-    | _        -> false
-
   let is_entry (f : function__) : bool =
     match f with
     | { node = Entry _; spec = _ } -> true
@@ -2205,10 +2151,6 @@ end = struct
 
   let get_functions m = List.filter is_function m.functions |> List.map get_function
 
-  let dest_asset  = function
-    | Iasset i -> i
-    | _ -> emit_error NotaPartition
-
   let dest_array (t : mterm)  =
     match t.node with
     | Marray l -> l
@@ -2226,8 +2168,6 @@ end = struct
 
   let get_asset_type (t : mterm) : lident = type_to_asset t.type_
 
-  let get_info_assets m = m.info |> List.filter is_asset |> List.map dest_asset
-
   let is_asset (d : decl_node) : bool =
     match d with
     | Dasset _ -> true
@@ -2235,8 +2175,7 @@ end = struct
 
   let dest_asset  = function
     | Dasset r -> r
-    | _ -> emit_error NotaPartition
-
+    | _ -> emit_error NotFound
 
   let is_enum (d : decl_node) : bool =
     match d with
@@ -2245,110 +2184,145 @@ end = struct
 
   let dest_enum  = function
     | Denum e -> e
-    | _ -> emit_error NotaPartition
+    | _ -> emit_error NotFound
 
-  let get_enums m = m.decls |> List.filter is_enum |> List.map dest_enum
+  let is_var (d : decl_node) : bool =
+    match d with
+    | Dvar _ -> true
+    | _      -> false
 
+  let dest_var  = function
+    | Dvar v -> v
+    | _ -> emit_error NotFound
+
+  let get_vars m   = m.decls |> List.filter is_var   |> List.map dest_var
+  let get_enums m  = m.decls |> List.filter is_enum  |> List.map dest_enum
   let get_assets m = m.decls |> List.filter is_asset |> List.map dest_asset
 
-  let is_variable (d : storage_item) : bool =
-    match d.model_type with
-    | MTconst | MTvar -> true
-    | _    -> false
+  let get_var   m id : var   = get_vars m   |> List.find (fun (x : var)   -> cmp_ident id (unloc x.name))
+  let get_enum  m id : enum  = get_enums m  |> List.find (fun (x : enum)  -> cmp_ident id (unloc x.name))
+  let get_asset m id : asset = get_assets m |> List.find (fun (x : asset) -> cmp_ident id (unloc x.name))
 
-  let get_variables m = m.storage |> List.filter is_variable
-
-  let get_info_asset model asset_name : info_asset =
-    let id = unloc asset_name in
-    let res = List.fold_left (fun accu (x : info_item) ->
-        match x with
-        | Iasset r when String.equal (unloc asset_name) r.name -> Some r
-        | _ -> accu
-      ) None model.info in
-    match res with
-    | Some v -> v
-    | _ -> emit_error (AssetNotFound id)
-
-  let get_info_enum (m : model) (id : ident) : info_enum =
-    let res = List.fold_left (fun accu (x : info_item) ->
-        match x with
-        | Ienum r when String.equal id r.name -> Some r
-        | _ -> accu
-      ) None m.info in
-    match res with
-    | Some v -> v
-    | _ -> emit_error (EnumNotFound id)
-
-  (* let get_state_values (m : model) : ident list =
-     [] *)
-
-  let get_partitions m : (ident * ident * type_) list=
-    get_info_assets m |> List.fold_left (fun acc (info : info_asset) ->
+  (* let get_partitions m : (ident * ident * type_) list=
+     get_info_assets m |> List.fold_left (fun acc (info : info_asset) ->
         acc @ (List.fold_left (fun acc (i,t,_) ->
             match t with
             | Tcontainer (Tasset _, Partition) ->
               acc @ [info.name,i,t]
             | _ -> acc
           ) [] info.values)
+      ) [] *)
+
+  let rec pp_type fmt t =
+    match t with
+    | Tasset an ->
+      Format.fprintf fmt "%a" Printer_tools.pp_id an
+    | Tstate ->
+      Format.fprintf fmt "state"
+    | Tenum en ->
+      Format.fprintf fmt "%a" Printer_tools.pp_id en
+    | Tcontract cn ->
+      Format.fprintf fmt "%a" Printer_tools.pp_id cn
+    | Tbuiltin b -> pp_btyp fmt b
+    | Tcontainer (t, c) ->
+      Format.fprintf fmt "%a %a"
+        pp_type t
+        pp_container c
+    | Toption t ->
+      Format.fprintf fmt "%a option"
+        pp_type_ t
+    | Ttuple ts ->
+      Format.fprintf fmt "%a"
+        (Printer_tools.pp_list " * " pp_type) ts
+    | Tassoc (k, v) ->
+      Format.fprintf fmt "(%a, %a) map"
+        pp_btyp k
+        pp_type v
+    | Tunit ->
+      Format.fprintf fmt "unit"
+    | Tstorage ->
+      Format.fprintf fmt "storage"
+    | Toperation ->
+      Format.fprintf fmt "operation"
+    | Tentry ->
+      Format.fprintf fmt "entry"
+    | Tprog _
+    | Tvset _
+    | Ttrace _ -> Format.fprintf fmt "todo"
+
+  let get_partitions m : (ident * ident * type_) list =
+    get_assets m |> List.fold_left (fun acc (asset : asset) ->
+        acc @ (List.fold_left (fun acc (v : asset_item) ->
+            let t : type_ = v.original_type in
+            match t with
+            | Tcontainer (Tasset _, Partition) ->
+              acc @ [unloc asset.name, unloc v.name, t]
+            | _ -> acc
+          ) [] asset.values)
       ) []
 
-  let has_partition m asset : bool =
-    get_info_assets m |> List.fold_left (fun acc (info : info_asset) ->
-        if compare asset info.name = 0 then
-          (List.fold_left (fun acc (_,t,_) ->
-               match t with
-               | Tcontainer (Tasset _, Partition) -> true
-               | _ -> acc
-             ) false info.values)
-        else
-          acc
-      ) false
+  let has_partition (m : model) (asset : ident) : bool =
+    try
+      let asset = get_asset m asset in
+      List.fold_left (fun acc v ->
+          match v.type_ with
+          | Tcontainer (Tasset _, Partition) -> true
+          | _ -> acc
+        ) false asset.values
+    with
+    | Not_found -> false
 
-
-  let get_asset_partitions m asset : (ident * type_ * (lident mterm_gen option)) list =
-    get_info_assets m |> List.fold_left (fun acc (info : info_asset) ->
-        if compare asset info.name = 0 then
-          (List.fold_left (fun acc (i,t,d) ->
-               match t with
-               | Tcontainer (Tasset _, Partition) ->
-                 acc @ [i,t,d]
-               | _ -> acc
-             ) [] info.values)
-        else
-          acc
-      ) []
+  let get_asset_partitions (m : model) (asset : ident) : (ident * type_ * (lident mterm_gen option)) list =
+    try
+      let asset = get_asset m asset in
+      List.fold_left (fun acc v ->
+          match v.type_ with
+          | Tcontainer (Tasset _, Partition) -> acc @ [unloc v.name, v.type_, v.default]
+          | _ -> acc
+        ) [] asset.values
+    with
+    | Not_found -> []
 
   let dest_partition = function
     | Tcontainer (Tasset p,Partition) -> p
     | _ -> assert false
 
-  let get_asset_field model (asset_name, field_name) =
-    let asset = get_info_asset model asset_name in
-    let res = List.fold_left (fun accu (i,t,d : ident * type_ * (lident mterm_gen option)) ->
-        if String.equal field_name i then
-          Some (i,t,d)
-        else accu) None asset.values in
-    match res with
-    | Some v -> v
-    | _ -> emit_error (AssetFieldNotFound (unloc asset_name, field_name))
+  let get_asset_field (m : model) (asset_name, field_name : ident * ident) : ident * type_ * mterm option =
+    try
+      let asset = get_asset m asset_name in
+      List.find (fun (x : asset_item) -> String.equal (unloc x.name) field_name) asset.values
+      |> (fun (x : asset_item) -> unloc x.name, x.type_, x.default)
+    with
+    | Not_found -> emit_error (AssetFieldNotFound (asset_name, field_name))
 
-  let get_asset_key model asset_name : (ident * btyp) =
-    let asset = get_info_asset model asset_name in
-    let key_id = asset.key in
-    let (_,key_typ,_) = get_asset_field model (asset_name, key_id) in
-    match key_typ with
-    | Tbuiltin v -> (key_id, v)
-    | _ -> emit_error (AssetKeyTypeNotFound (unloc asset_name))
+  let get_asset_key (m : model) (asset_name : ident) : (ident * btyp) =
+    try
+      let asset = get_asset m asset_name in
+      let key_id = asset.key in
+      let (_,key_typ,_) = get_asset_field m (asset_name, key_id) in
+      match key_typ with
+      | Tbuiltin v -> (key_id, v)
+      | _ -> raise Not_found
+    with
+    | Not_found -> emit_error (AssetKeyTypeNotFound (asset_name))
 
   let get_field_container model asset_name field_name : ident * container =
-    let (_,typ,_) = get_asset_field model (dumloc asset_name, field_name) in
-    match typ with
+    let seek_original_type () : type_ =
+      try
+        let asset = get_asset model asset_name in
+        List.find (fun (x : asset_item) -> String.equal (unloc x.name) field_name) asset.values
+        |> (fun (x : asset_item) -> x.original_type)
+      with
+      | Not_found -> emit_error (AssetFieldNotFound (asset_name, field_name))
+    in
+    let ot = seek_original_type () in
+    match ot with
     | Tcontainer (Tasset an, c) -> (unloc an, c)
     | _ -> assert false
 
   let get_partition_assets model asset : ident list =
     get_partitions model
-    |> List.filter (fun (a,_,_) -> compare asset a = 0)
+    |> List.filter (fun (a,_,_) -> String.equal asset a)
     |> List.map (fun (_,_,t) -> type_to_asset t)
     |> List.map unloc
 
@@ -2356,10 +2330,10 @@ end = struct
   let get_partition_asset_key model asset field : (ident * ident * btyp) =
     let partitions = get_partitions model in
     let rec rec_get = function
-      | (r,i,t) :: _tl when compare r asset.pldesc = 0 &&
-                            compare i field.pldesc = 0 ->
+      | (r,i,t) :: _tl when String.equal r (unloc asset) &&
+                            String.equal i (unloc field) ->
         let pa  = dest_partition t in
-        let k,t = get_asset_key model pa in
+        let k,t = get_asset_key model (unloc pa) in
         (unloc pa,k,t)
       | _ :: tl -> rec_get tl
       | _ -> emit_error (PartitionNotFound) in
@@ -2375,24 +2349,23 @@ end = struct
          accu || String.equal (Location.unloc id) (Location.unloc x.id)
        ) false items)
 
-  let get_field_list (model : model) (asset_name : lident) : ident list =
-    let asset = get_info_asset model asset_name in
-    List.map (fun (i,_,_) -> i) asset.values
+  let get_field_list (model : model) (asset_name : ident) : ident list =
+    try
+      let asset = get_asset model asset_name in
+      List.map (fun (x : asset_item) -> unloc x.name) asset.values
+    with
+    | Not_found -> []
 
   let get_field_pos model asset field =
     let l = get_field_list model asset in
     let rec rec_get_pos i = function
-      | e :: _tl when compare field.pldesc e = 0 -> i
+      | e :: _tl when String.equal (unloc field) e -> i
       | _ :: tl -> rec_get_pos (succ i) tl
       | [] -> assert false in
     rec_get_pos 0 l
 
   let get_named_field_list ast asset_name list =
     let field_list = get_field_list ast asset_name in
-    (* List.iter (fun x -> Format.eprintf "f1: %s@." (unloc x)) field_list;
-       List.iter (fun x -> Format.eprintf "f2: %a@." pp_pterm x) list;
-       Format.eprintf "lf1: %d@." (List.length field_list);
-       Format.eprintf "lf2: %d@." (List.length list); *)
     List.map2 (fun x y -> x, y) field_list list
 
   exception FoundAssign
@@ -2400,7 +2373,7 @@ end = struct
   let is_local_assigned id (b : mterm) =
     let rec rec_search_assign _ (t : mterm) =
       match t.node with
-      | Massign (_,i,_) when compare (unloc i) (unloc id)  = 0 -> raise FoundAssign
+      | Massign (_,i,_) when String.equal (unloc i) (unloc id) -> raise FoundAssign
       | _ -> fold_term rec_search_assign false t in
     try rec_search_assign false b
     with FoundAssign -> true
@@ -2468,19 +2441,18 @@ end = struct
     | Mvarlocal i -> i
     | _ -> assert false
 
-
   let is_container t =
     match t with
     | Tcontainer ((Tasset _),_) -> true
     | _ -> false
 
 
-  let get_key_pos m n : int =
-    get_info_assets m |> List.fold_left (fun acc (info : info_asset) ->
-        if compare (unloc n) info.name = 0 then
+  let get_key_pos (m : model) (n : ident) : int =
+    get_assets m |> List.fold_left (fun acc (info : asset) ->
+        if String.equal n (unloc info.name) then
           let (k,_) = get_asset_key m n in
-          (List.fold_left (fun acc (i,_,_) ->
-               if compare i k = 0 then
+          (List.fold_left (fun acc (i : asset_item) ->
+               if String.equal (unloc i.name) k then
                  succ acc
                else
                  acc
@@ -2517,7 +2489,7 @@ end = struct
   let get_sum_fields m a =
     List.fold_left (fun acc (ai : api_item) ->
         match ai.node_item with
-        | APIFunction (Sum (asset,field)) when compare a asset = 0 ->
+        | APIFunction (Sum (asset,field)) when String.equal a asset ->
           acc @ [field]
         | _ -> acc
       ) [] m.api_items
@@ -2546,26 +2518,6 @@ end = struct
           ) [] asset.invariants
       with
       | Not_found -> []
-
-  (* List.fold_left (fun acc (i : storage_item) ->
-      let name = match i.id with
-        | SIname name -> name
-        | SIstate -> dumloc "state" in
-      let n = name |> unloc in
-      let do_fold =
-        match asset with
-        | Some a when compare n a = 0 -> true
-        | Some _ -> false
-        | _ -> true
-      in
-      if do_fold then
-        List.fold_left (fun acc (lt : label_term) ->
-            let inv_name = Tools.Option.fold (fun _ l -> unloc l) "" lt.label in
-            let inv_term = lt.term in
-            acc @ [n, inv_name, inv_term]
-          ) acc i.invariants
-      else acc
-     ) [] m.storage *)
 
   let is_field_storage (m : model) (id : ident) : bool =
     let l : ident list = List.map (fun (x : storage_item) -> unloc x.id) m.storage in
@@ -2656,13 +2608,13 @@ end = struct
       | Tbuiltin Bkey        -> Maddress "tz1_default"
       | Tasset asset_name    ->
         begin
-          let a = get_info_asset m asset_name in
+          let a = get_asset m (unloc asset_name) in
           let l : mterm list =
             List.map (
-              fun (_, t, value : 'a * type_ * mterm option) ->
-                match value with
+              fun (v : asset_item) ->
+                match v.default with
                 | Some v -> v
-                | _ -> get_default_value m t
+                | _ -> get_default_value m v.type_
             ) a.values
           in
           Masset l
@@ -2674,7 +2626,7 @@ end = struct
       match t with
       | Tcontainer (Tasset an, c) ->
         begin
-          let _, t = get_asset_key m an in
+          let _, t = get_asset_key m (unloc an) in
           Tcontainer (Tbuiltin t, c)
         end
       | _ -> t

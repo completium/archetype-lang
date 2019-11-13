@@ -96,7 +96,7 @@ let to_ligo_fun (model : model) (f : function__) : ligo_fun =
                 match c.type_ with
                 | Tcontainer (Tasset an, _) when is_get_body nbody (unloc arg_id) (unloc an) ->
                   begin
-                    let _, t = Utils.get_asset_key model an in
+                    let _, t = Utils.get_asset_key model (unloc an) in
                     Tbuiltin t
                   end
                 | Tcontainer (t, _) -> t

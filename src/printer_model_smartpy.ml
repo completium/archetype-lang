@@ -130,7 +130,7 @@ let pp_model fmt (model : model) =
         an an
 
     | Add an ->
-      let k, _t = Utils.get_asset_key model (to_lident an) in
+      let k, _t = Utils.get_asset_key model an in
       Format.fprintf fmt
         "def add_%s (self, asset):@\n\
          \t\tkey = asset.%a@\n\
@@ -158,7 +158,7 @@ let pp_model fmt (model : model) =
         an
 
     | UpdateAdd (an, fn) ->
-      let k, _t = Utils.get_asset_key model (to_lident an) in
+      let k, _t = Utils.get_asset_key model an in
       Format.fprintf fmt
         "def add_%s_%s (s, asset, b):@\n\
          \t\tasset = asset.%s.insert(b)@\n\
@@ -168,7 +168,7 @@ let pp_model fmt (model : model) =
         an pp_str k
 
     | UpdateRemove (an, fn) ->
-      let k, _t = Utils.get_asset_key model (to_lident an) in
+      let k, _t = Utils.get_asset_key model an in
       Format.fprintf fmt
         "def remove_%s_%s (s, asset, key):@\n\
          \t\tasset = asset.%s.pop(key)@\n\
@@ -451,7 +451,7 @@ let pp_model fmt (model : model) =
         let cond, str =
           (match i.type_ with
            | Tasset an ->
-             let k, _ = Utils.get_asset_key model an in
+             let k, _ = Utils.get_asset_key model (unloc an) in
              true, "." ^ k
            | _ -> false, ""
           ) in
@@ -467,7 +467,7 @@ let pp_model fmt (model : model) =
         let cond, str =
           (match i.type_ with
            | Tasset an ->
-             let k, _ = Utils.get_asset_key model an in
+             let k, _ = Utils.get_asset_key model (unloc an) in
              true, "." ^ k
            | _ -> false, ""
           ) in
@@ -820,8 +820,8 @@ let pp_model fmt (model : model) =
           | Tasset asset_name -> asset_name
           | _ -> assert false
         in
-        let a = Utils.get_info_asset model asset_name in
-        let ll = List.map (fun (i,_,_) -> dumloc i) a.values in
+        let a = Utils.get_asset model (unloc asset_name) in
+        let ll = List.map (fun (x : asset_item) -> x.name) a.values in
 
         let lll = List.map2 (fun x y -> (x, y)) ll l in
 
