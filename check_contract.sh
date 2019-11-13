@@ -111,7 +111,7 @@ process() {
     echo -e "process: " $FILE
     process_ligo $FILE
     #    process_smartpy $FILE
-    process_ocaml $FILE
+    #    process_ocaml $FILE
     process_whyml $FILE
 }
 
