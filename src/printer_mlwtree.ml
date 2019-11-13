@@ -579,9 +579,11 @@ let pp_storage fmt (s : storage_struct) =
 (* -------------------------------------------------------------------------- *)
 
 let pp_enum fmt (i,l) =
-  Format.fprintf fmt "type %a =@\n @[| %a@]"
+  Format.fprintf fmt "type %a =%a"
     pp_str i
-    (pp_list "@\n| " pp_str) l
+    (fun fmt x -> match l with
+    | [] -> Format.fprintf fmt " Unit"
+    | _ -> Format.fprintf fmt "@\n @[| %a@]" (pp_list "@\n| " pp_str) x) l
 
 (* -------------------------------------------------------------------------- *)
 

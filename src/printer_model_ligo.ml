@@ -1021,11 +1021,15 @@ let pp_model fmt (model : model) =
   in
 
   let pp_storage (fmt : Format.formatter) _ =
-    Format.fprintf fmt
-      "type storage_type is record [@\n  \
-       @[%a@]@\n\
-       ]@\n"
-      (pp_list "@\n" pp_storage_item) model.storage
+    Format.fprintf fmt "type storage_type is ";
+    match model.storage with
+    | [] ->  Format.fprintf fmt "unit"
+    | _ ->
+      Format.fprintf fmt
+        "record [@\n  \
+         @[%a@]@\n\
+         ]@\n"
+        (pp_list "@\n" pp_storage_item) model.storage
   in
 
 
@@ -1427,7 +1431,7 @@ let pp_model fmt (model : model) =
                  name
                  pp_type type_
                  (pp_mterm env) (Model.Utils.get_default_value model type_)
-                 )) vars
+             )) vars
     in
     let pp_iterfuns fmt (iterfuns : s_interfun list) =
       match iterfuns with
