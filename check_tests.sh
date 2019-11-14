@@ -25,7 +25,7 @@ echo ""
 #process_files "./tests" 0
 process_files "./tests/passed" 0
 process_files "./tests/syntax-errors" 1
-process_files "./tests/type-errors" 2
+process_files "./tests/type-errors" 3
 
 RET=0
 if [ ${NB_ERR} -eq 0 ]; then
