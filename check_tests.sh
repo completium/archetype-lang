@@ -15,17 +15,16 @@ process_file() {
 }
 
 process_files() {
-echo $1
 for i in $1/*.arl; do
     process_file $i $2
 done
 echo ""
 }
 
-#process_files "./tests" 0
 process_files "./tests/passed" 0
 process_files "./tests/syntax-errors" 1
 process_files "./tests/type-errors" 3
+process_files "./tests/model-errors" 5
 
 RET=0
 if [ ${NB_ERR} -eq 0 ]; then

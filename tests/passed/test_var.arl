@@ -1,6 +1,6 @@
 archetype test_var
 
-variable n int
+variable n int = 0
 
 action main (str : string) {
   effect {

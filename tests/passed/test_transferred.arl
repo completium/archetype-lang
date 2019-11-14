@@ -1,11 +1,8 @@
 archetype test_transferred
 
-variable str string
-
 action myaction {
   accept transfer
   effect {
-    if (transferred = 1tz)
-    then fail ("not_found")
+    require (transferred = 1tz)
   }
 }

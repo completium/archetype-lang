@@ -19,16 +19,22 @@ enum my_enums =
 | Completed
 
 asset[%myextension%] [@add @remove @update owner (args)]
-my_asset_all identified by str sorted by id {
+my_asset_all identified by id sorted by i {
   id : role;
-  st : mystates = Init;
   i : int;
+  b : bool;
 }
-with states st
+with states my_enums
 with {
-  a1 : i >= 1;
-  a2 : i <= 10;
+  a2 : i >= 1;
+  a3 : i <= 10;
 } initialized by [
   { @toto; Init; 9 };
   { @tata; InProgress; 8 }
 ]
+
+action myaction (a : my_asset_all) {
+  effect {
+    require(a.b)
+  }
+}

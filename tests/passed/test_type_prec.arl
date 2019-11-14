@@ -1,0 +1,7 @@
+archetype test_type_prec
+
+asset myasset {
+  t1 : int * int * int;
+  t2 : (int * int) * int;
+  t3 : int * (int * int);
+}

@@ -1,4 +1,4 @@
-archetype c
+archetype assign
 
 variable i int = 0
 
@@ -8,7 +8,7 @@ asset myasset identified by id {
   id : int;
   cpt : int;
   str : string;
-  }
+}
 
 action main {
   effect {

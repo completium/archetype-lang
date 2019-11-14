@@ -1,4 +1,4 @@
-archetype bad_at_var_not_in_env
+archetype partial_record
 
 variable v int = 1
 

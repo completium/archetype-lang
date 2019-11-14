@@ -1,0 +1,16 @@
+archetype test_bound_value
+
+variable x int = 1
+
+specification {
+  postcondition s1 {
+    0 < x <= 1
+  }
+}
+
+action doSomething {
+  effect {
+    var a : int = 0;
+    a := x
+  }
+}
