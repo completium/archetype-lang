@@ -74,7 +74,7 @@ let pp_bval fmt (bval : bval) =
     | BVbool v          -> pp_str fmt (if v then "true" else "false")
     | BVenum v          -> pp_str fmt v
     | BVrational (n, d) -> Format.fprintf fmt "(%a div %a)" pp_big_int n pp_big_int d
-    | BVdate v          -> pp_str fmt v
+    | BVdate v          -> Core.pp_date fmt v
     | BVstring s        -> pp_str fmt s
     | BVcurrency (c, v) -> Format.fprintf fmt "%a%a" pp_big_int v pp_currency c
     | BVaddress v       -> Format.fprintf fmt "@@%a" pp_str v

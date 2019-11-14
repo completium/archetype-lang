@@ -1118,9 +1118,7 @@ let pp_model fmt (model : model) =
         Format.fprintf fmt "(%a. /. %a.)"
           pp_big_int n
           pp_big_int d
-      | Mdate v ->
-        Format.fprintf fmt "\"%a\""
-          pp_str v
+      | Mdate v -> Core.pp_date fmt v
       | Mstring v ->
         Format.fprintf fmt "\"%a\""
           pp_str v

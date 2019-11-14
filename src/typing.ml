@@ -1155,7 +1155,7 @@ let for_literal (_env : env) (topv : PT.literal loced) : M.bval =
     mk_sp M.vtduration (M.BVduration (Core.string_to_duration d))
 
   | Ldate d ->
-    mk_sp M.vtdate (M.BVdate d)
+    mk_sp M.vtdate (M.BVdate (Core.string_to_date d))
 
 (* -------------------------------------------------------------------- *)
 type emode_t = [`Expr | `Formula]

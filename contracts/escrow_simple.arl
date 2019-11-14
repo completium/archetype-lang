@@ -11,7 +11,7 @@ constant price tez = 10tz
 constant penalty tez = 2tz
 
 (* action deadline *)
-constant deadline date = 2019-06-01T00:00:00
+constant deadline date = 2019-06-01T00:00:00Z
 
 (* state machine *)
 states =

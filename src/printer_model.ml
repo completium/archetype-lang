@@ -618,7 +618,7 @@ let pp_mterm fmt (mt : mterm) =
       Format.fprintf fmt "(%a div %a)"
         pp_big_int n
         pp_big_int d
-    | Mdate v -> pp_str fmt v
+    | Mdate v -> Core.pp_date fmt v
     | Mstring v ->
       Format.fprintf fmt "\"%a\""
         pp_str v

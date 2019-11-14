@@ -211,7 +211,7 @@ and bval_node =
   | BVbool         of bool
   | BVenum         of string
   | BVrational     of Core.big_int * Core.big_int
-  | BVdate         of string
+  | BVdate         of Core.date
   | BVstring       of string
   | BVcurrency     of currency * Core.big_int
   | BVaddress      of string

@@ -195,7 +195,7 @@ type ('id, 'term) mterm_node  =
   | Mbool         of bool
   | Menum         of string
   | Mrational     of Core.big_int * Core.big_int
-  | Mdate         of string
+  | Mdate         of Core.date
   | Mstring       of string
   | Mcurrency     of Core.big_int * currency
   | Maddress      of string
@@ -917,7 +917,7 @@ let cmp_mterm_node
     | Mbool v1, Mbool v2                                                               -> cmp_bool v1 v2
     | Menum v1, Menum v2                                                               -> cmp_ident v1 v2
     | Mrational (n1, d1), Mrational (n2, d2)                                           -> Big_int.eq_big_int n1 n2 && Big_int.eq_big_int d1 d2
-    | Mdate v1, Mdate v2                                                               -> cmp_ident v1 v2
+    | Mdate v1, Mdate v2                                                               -> Core.cmp_date v1 v2
     | Mstring v1, Mstring v2                                                           -> cmp_ident v1 v2
     | Mcurrency (v1, c1), Mcurrency (v2, c2)                                           -> Big_int.eq_big_int v1 v2 && cmp_currency c1 c2
     | Maddress v1, Maddress v2                                                         -> cmp_ident v1 v2
@@ -2608,7 +2608,7 @@ end = struct
       | Tbuiltin Bbool       -> Mbool false
       | Tbuiltin Bint        -> Mint Big_int.zero_big_int
       | Tbuiltin Brational   -> Mrational (Big_int.zero_big_int, Big_int.zero_big_int)
-      | Tbuiltin Bdate       -> Mdate "0"
+      | Tbuiltin Bdate       -> Mdate (Core.mk_date ())
       | Tbuiltin Bduration   -> Mduration (Core.mk_duration ())
       | Tbuiltin Bstring     -> Mstring ""
       | Tbuiltin Baddress    -> Maddress "tz1_default"
