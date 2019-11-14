@@ -1,0 +1,15 @@
+archetype no_otherwise
+
+asset myasset {
+  id: string;
+}
+
+action anaction {
+  specification {
+    s1 : let ma = myasset.get("myid") in "myid" = ma.id
+  }
+  effect {
+    let a : int = 0 in
+    a := 1
+  }
+}

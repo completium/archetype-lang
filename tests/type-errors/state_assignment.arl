@@ -1,0 +1,10 @@
+archetype state_assignment
+
+states =
+| Created initial
+
+action myaction {
+  effect {
+    state := Created
+  }
+}

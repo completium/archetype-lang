@@ -1,0 +1,19 @@
+archetype get_in_require_failif
+
+asset myasset {
+  id: string;
+  value: int;
+}
+
+action myaction {
+  require {
+    r1: myasset.get("myid") = 0;
+  }
+  failif {
+    f1: myasset.get("myid") <> 0;
+  }
+  effect {
+    let a : int = 0 in
+    a := 1
+  }
+}
