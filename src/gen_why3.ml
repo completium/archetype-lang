@@ -987,6 +987,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
         | _ -> loc_term (Tdoti (gs, "_balance")) |> Mlwtree.deloc
       end
     | M.Maddress v           -> Tint (sha v)
+    | M.Mstring v            -> Tint (sha v)
     | M.Mcurrency (i,M.Tz)   -> Tint (Big_int.mult_int_big_int 1000000 i)
     | M.Mcurrency (i,M.Mtz)  -> Tint (Big_int.mult_int_big_int 1000 i)
     | M.Mcurrency (i,M.Mutz) -> Tint i
