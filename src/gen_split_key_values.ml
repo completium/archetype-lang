@@ -60,7 +60,7 @@ let split_key_values (model : model) : model =
 
     | Mdotasset (e, i) ->
       let asset = Utils.get_asset_type e in
-      let partitions = Utils.get_asset_partitions model (asset |> unloc) in
+      let partitions = Utils.get_asset_partitions model asset in
       if List.exists (fun (pi, _pt, _pd) ->
           compare (i |> unloc) pi = 0) partitions then
         let rec get_partition_type = function
@@ -69,7 +69,7 @@ let split_key_values (model : model) : model =
           | _r::tl -> get_partition_type tl
           | [] -> assert false in
         let ty = get_partition_type partitions in
-        let pa = Utils.dest_partition ty |> unloc in
+        let pa = Utils.dest_partition ty in
         mk_mterm (Mshallow (pa, { x with node = Mdotasset (f ctx e, i) })) ty
       else
         { x with node = Mdotasset (f ctx e, i) }

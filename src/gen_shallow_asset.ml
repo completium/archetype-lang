@@ -146,7 +146,7 @@ let mk_ctx ctx id shallow_vals =
       if M.Utils.is_varlocal v
       then
         let vid = M.Utils.dest_varlocal v in
-        (i, acc @ [vid,v.type_])
+        (i, acc @ [dumloc vid,v.type_])
       else
         (succ i, acc @ [dumloc (id^"_"^(string_of_int (succ i))),v.type_])
     ) (0,[]) shallow_vals
@@ -157,7 +157,7 @@ let rec map_shallow (ctx : (I.ident * (M.lident * M.type_) list) list) m (t : M.
   let t_gen =
     match t.node with
     | M.Maddasset (n,a) when M.Utils.is_varlocal a ->
-      let id = M.Utils.dest_varlocal a in
+      let id = M.Utils.dest_varlocal a |> dumloc in
       if has_shallow_vars id ctx then
         let shallow_args = get_shallow_vars id ctx  in
         M.Maddshallow (n,shallow_args)
@@ -170,14 +170,14 @@ let rec map_shallow (ctx : (I.ident * (M.lident * M.type_) list) list) m (t : M.
       else
         M.Maddasset (n,a)
     | M.Maddfield (n,f,a,v) when M.Utils.is_varlocal v ->
-      let id = M.Utils.dest_varlocal v in
+      let id = M.Utils.dest_varlocal v |> dumloc in
       if has_shallow_vars id ctx then
         let shallow_args = get_shallow_vars id ctx in
         M.Mapp (dumloc ("add_shallow_"^n^"_"^f),[a] @ shallow_args)
       else M.Maddfield (n,f,a,v)
     | M.Maddfield (n,f,a,v) when M.Utils.is_asset v ->
       let vt = M.Utils.get_asset_type v in
-      if M.Utils.has_partition m (unloc vt) then
+      if M.Utils.has_partition m vt then
         let shallow_args = map_shallow_asset m ctx v in
         M.Mapp (dumloc ("add_shallow_"^n^"_"^f),[a] @ shallow_args)
       else M.Maddfield (n,f,a,v)
@@ -197,7 +197,7 @@ let rec map_shallow (ctx : (I.ident * (M.lident * M.type_) list) list) m (t : M.
       end
     | M.Mdotasset (e,i) ->
       let asset = M.Utils.get_asset_type e in
-      let partitions = M.Utils.get_asset_partitions m (asset |> unloc) in
+      let partitions = M.Utils.get_asset_partitions m asset in
       begin
         if List.exists (fun (pi,_pt,_pd) ->
             compare (i |> unloc) pi = 0) partitions then
@@ -207,7 +207,7 @@ let rec map_shallow (ctx : (I.ident * (M.lident * M.type_) list) list) m (t : M.
             | _r::tl -> get_partition_type tl
             | [] -> assert false in
           let ty = get_partition_type partitions in
-          let pa = M.Utils.dest_partition ty |> unloc in
+          let pa = M.Utils.dest_partition ty in
           M.Munshallow (pa,M.mk_mterm (M.Mdotasset (map_shallow ctx m e, i)) t.M.type_)
         else
           M.Mdotasset (map_shallow ctx m e,i)
@@ -268,7 +268,7 @@ let gen_add_shallow_fun (model : M.model) (n : I.ident) : M.function__ =
   }
 
 let gen_add_shallow_field_fun (model : M.model) (n,f : I.ident * I.ident) : M.function__ =
-  let pa,_k,_kt = M.Utils.get_partition_asset_key model (dumloc n) (dumloc f) in
+  let pa,_k,_kt = M.Utils.get_partition_asset_key model n f in
   let arg    = (dumloc "added_asset",M.Tasset (dumloc pa),None) in
   let _,asset_args = gen_shallow_args model (dumloc "added_asset") (Tasset (dumloc pa)) arg in
   let asset_arg = (dumloc "asset",M.Tasset (dumloc n),None) in
@@ -313,7 +313,7 @@ let get_added_asset_fields (model : M.model) : (I.ident * I.ident) list =
         acc
       else
         let vt = M.Utils.get_asset_type v in
-        if M.Utils.has_partition model (unloc vt) then
+        if M.Utils.has_partition model vt then
           acc @ [n,fd]
         else acc
     | _ -> M.fold_term (f ctx) acc t

@@ -165,11 +165,10 @@ let check_partition_access (env : Typing.env) (model : model) : model =
   let partitionned_assets =
     partitions
     |> List.map (fun (_,_,t) -> Utils.type_to_asset t)
-    |> List.map unloc
   in
   let get_partitions a =
     List.fold_left (fun acc (_,f,t) ->
-        if compare a (unloc (Utils.type_to_asset t)) = 0 then
+        if compare a (Utils.type_to_asset t) = 0 then
           acc @ [f]
         else acc
       ) [] partitions in
