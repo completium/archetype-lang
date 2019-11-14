@@ -1997,10 +1997,10 @@ let extract_list (mt : mterm) (e : mterm) =
 
 module Utils : sig
 
-  val function_name_from_storage_const   : storage_const   -> string
-  val function_name_from_container_const : container_const -> string
-  val function_name_from_function_const  : function_const  -> string
-  val function_name_from_builtin_const   : builtin_const   -> string
+  val function_name_from_storage_const   : storage_const   -> ident
+  val function_name_from_container_const : container_const -> ident
+  val function_name_from_function_const  : function_const  -> ident
+  val function_name_from_builtin_const   : builtin_const   -> ident
   val get_vars                           : model -> var list
   val get_enums                          : model -> enum list
   val get_assets                         : model -> asset list
@@ -2011,41 +2011,41 @@ module Utils : sig
   val get_asset_field                    : model -> (ident * ident) -> (ident * type_ * mterm option)
   val get_asset_key                      : model -> ident -> (ident * btyp)
   val get_field_container                : model -> ident -> ident -> (ident * container)
-  val is_storage_attribute               : model -> lident -> bool
+  val is_storage_attribute               : model -> ident -> bool
   val get_named_field_list               : model -> ident -> 'a list -> (ident * 'a) list
   val get_partitions                     : model -> (ident * ident * type_) list (* asset id, asset item *)
-  val dest_partition                     : type_ -> lident
-  val get_partition_asset_key            : model -> lident -> lident -> (ident * ident * btyp)
+  val dest_partition                     : type_ -> ident
+  val get_partition_asset_key            : model -> ident -> ident -> (ident * ident * btyp)
   val get_partition_assets               : model -> ident -> ident list
   val get_entries                        : model -> (specification option * function_struct) list
   val get_functions                      : model -> (specification option * function_struct* type_) list
   val has_partition                      : model -> ident -> bool
   val get_asset_partitions               : model -> ident -> (ident * type_ * mterm option) list
   val get_field_list                     : model -> ident -> ident list
-  val get_field_pos                      : model -> ident -> lident -> int (* m, asset, field *)
+  val get_field_pos                      : model -> ident -> ident -> int (* m, asset, field *)
   val get_nth_asset_val                  : int -> mterm -> mterm
   val dest_array                         : mterm -> mterm list
-  val get_asset_type                     : mterm -> lident
-  val is_local_assigned                  : lident -> mterm -> bool
+  val get_asset_type                     : mterm -> ident
+  val is_local_assigned                  : ident -> mterm -> bool
   val get_function_args                  : function__ -> argument list
   val set_function_args                  : function__ -> argument list -> function__
   val map_function_terms                 : (mterm -> mterm) -> function__ -> function__
   val is_asset                           : mterm -> bool
   val is_varlocal                        : mterm -> bool
-  val dest_varlocal                      : mterm -> lident
+  val dest_varlocal                      : mterm -> ident
   val is_container                       : type_ -> bool
   val get_key_pos                        : model -> ident -> int
-  val get_loop_invariants                : model -> (lident * mterm) list -> ident -> (lident * mterm) list
+  val get_loop_invariants                : model -> (ident * mterm) list -> ident -> (ident * mterm) list
   val get_formula                        : model -> mterm option -> ident -> mterm option
   val is_post                            : postcondition -> bool
   val get_sum_fields                     : model -> ident -> ident list
-  val get_added_removed_sets             : model -> specification option -> ((lident, lident mterm_gen) mterm_node) list
+  val get_added_removed_sets             : model -> specification option -> mterm__node list
   val get_storage_invariants             : model -> ident option -> (ident * ident * mterm) list
   val is_field_storage                   : model -> ident -> bool
   val with_trace                         : model -> bool
   val get_callers                        : model -> ident -> ident list
-  val no_fail                            : model -> ident -> lident option
-  val type_to_asset                      : type_ -> lident
+  val no_fail                            : model -> ident -> ident option
+  val type_to_asset                      : type_ -> ident
   val get_map_function                   : model -> (ident * ident list) list
   val retrieve_all_properties            : model -> (ident * property) list
   val retrieve_property                  : model -> ident -> property
@@ -2163,11 +2163,11 @@ end = struct
     | _ -> emit_error (NotaRecord t)
 
   let type_to_asset = function
-    | Tasset n -> n
-    | Tcontainer (Tasset n, _) -> n
+    | Tasset n -> n |> unloc
+    | Tcontainer (Tasset n, _) -> n |> unloc
     | _ -> emit_error NotanAssetType
 
-  let get_asset_type (t : mterm) : lident = type_to_asset t.type_
+  let get_asset_type (t : mterm) : ident = type_to_asset t.type_
 
   let is_asset (d : decl_node) : bool =
     match d with
@@ -2285,7 +2285,7 @@ end = struct
     | Not_found -> []
 
   let dest_partition = function
-    | Tcontainer (Tasset p,Partition) -> p
+    | Tcontainer (Tasset p,Partition) -> unloc p
     | _ -> assert false
 
   let get_asset_field (m : model) (asset_name, field_name : ident * ident) : ident * type_ * mterm option =
@@ -2325,17 +2325,16 @@ end = struct
     get_partitions model
     |> List.filter (fun (a,_,_) -> String.equal asset a)
     |> List.map (fun (_,_,t) -> type_to_asset t)
-    |> List.map unloc
 
   (* returns : asset name, key name, key type *)
   let get_partition_asset_key model asset field : (ident * ident * btyp) =
     let partitions = get_partitions model in
     let rec rec_get = function
-      | (r,i,t) :: _tl when String.equal r (unloc asset) &&
-                            String.equal i (unloc field) ->
+      | (r,i,t) :: _tl when String.equal r asset &&
+                            String.equal i field ->
         let pa  = dest_partition t in
-        let k,t = get_asset_key model (unloc pa) in
-        (unloc pa,k,t)
+        let k,t = get_asset_key model pa in
+        (pa,k,t)
       | _ :: tl -> rec_get tl
       | _ -> emit_error (PartitionNotFound) in
     rec_get partitions
@@ -2347,7 +2346,7 @@ end = struct
     let s = get_storage model in
     let items = s in
     (List.fold_left (fun accu (x : storage_item) ->
-         accu || String.equal (Location.unloc id) (Location.unloc x.id)
+         accu || String.equal id (Location.unloc x.id)
        ) false items)
 
   let get_field_list (model : model) (asset_name : ident) : ident list =
@@ -2360,7 +2359,7 @@ end = struct
   let get_field_pos model asset field =
     let l = get_field_list model asset in
     let rec rec_get_pos i = function
-      | e :: _tl when String.equal (unloc field) e -> i
+      | e :: _tl when String.equal field e -> i
       | _ :: tl -> rec_get_pos (succ i) tl
       | [] -> assert false in
     rec_get_pos 0 l
@@ -2371,10 +2370,10 @@ end = struct
 
   exception FoundAssign
 
-  let is_local_assigned id (b : mterm) =
+  let is_local_assigned (id : ident) (b : mterm) =
     let rec rec_search_assign _ (t : mterm) =
       match t.node with
-      | Massign (_,i,_) when String.equal (unloc i) (unloc id) -> raise FoundAssign
+      | Massign (_,i,_) when String.equal (unloc i) id -> raise FoundAssign
       | _ -> fold_term rec_search_assign false t in
     try rec_search_assign false b
     with FoundAssign -> true
@@ -2439,7 +2438,7 @@ end = struct
 
   let dest_varlocal (t : mterm) =
     match t.node with
-    | Mvarlocal i -> i
+    | Mvarlocal i -> unloc i
     | _ -> assert false
 
   let is_container t =
@@ -2463,13 +2462,13 @@ end = struct
       ) (-1)
 
   (* i is the loop label *)
-  let get_loop_invariants m acc (i : ident) : (lident * mterm) list =
-    let internal_get (ctx : ctx_model) (acc : (lident * mterm) list) t =
+  let get_loop_invariants m (acc : (ident * mterm) list) (i : ident) : (ident * mterm) list =
+    let internal_get (ctx : ctx_model) (acc : (ident * mterm) list) t =
       match ctx.invariant_id with
       | Some v when cmp_ident i (unloc v) ->
         begin
           match ctx.spec_id with
-          | Some l -> acc @ [l,t]
+          | Some l -> acc @ [unloc l,t]
           | _ -> acc
         end
       | _ -> acc in
@@ -2539,16 +2538,16 @@ end = struct
   let get_callers (_m : model) (_name : ident) : ident list = [] (* TODO *)
 
   (* is there a no_fail predicate on an entry called fn ? *)
-  let no_fail (m : model) (fn : ident) : lident option =
+  let no_fail (m : model) (fn : ident) : ident option =
     List.fold_left (fun acc (p : security_item) ->
         match acc with
         | None ->
           begin
             match p.predicate.s_node with
-            | SnoStorageFail Sany -> Some p.label
+            | SnoStorageFail Sany -> Some (unloc p.label)
             | SnoStorageFail (Sentry l) ->
               if l |> List.map unloc |> List.mem fn then
-                Some p.label
+                Some (unloc p.label)
               else
                 None
             | _ -> None

@@ -430,7 +430,7 @@ let adds_asset m an b =
     match term.M.node with
     | M.Maddasset (a,_) ->  compare a an = 0
     | M.Maddfield (a,f,_,_) ->
-      let (pa,_,_) = M.Utils.get_partition_asset_key m (dumloc a) (dumloc f) in
+      let (pa,_,_) = M.Utils.get_partition_asset_key m a f in
       compare pa an = 0
     | _ -> M.fold_term internal_adds acc term in
   internal_adds false b
@@ -691,7 +691,7 @@ let record_to_clone m (r : M.asset) =
 let mk_partition_axioms (m : M.model) =
   M.Utils.get_partitions m |> List.map (fun (n,i,_) ->
       let kt     = M.Utils.get_asset_key m n |> snd |> map_btype in
-      let pa,_,pkt  = M.Utils.get_partition_asset_key m (dumloc n) (dumloc i) in
+      let pa,_,pkt  = M.Utils.get_partition_asset_key m n i in
       mk_partition_axiom n i kt pa (pkt |> map_btype)
     ) |> loc_decl |> deloc
 
@@ -779,7 +779,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | M.Mshallow (a,e) -> Tapp (loc_term (Tvar ("shallow_"^a)),[map_mterm m ctx e])
     | M.Mcontains (a,_,r) -> Tapp (loc_term (Tvar ("contains_"^a)),[map_mterm m ctx r])
     | M.Maddfield (a,f,c,i) ->
-      let t,_,_ = M.Utils.get_partition_asset_key m (dumloc a) (dumloc f) in
+      let t,_,_ = M.Utils.get_partition_asset_key m a f in
       mk_trace_seq m
         (Tapp (loc_term (Tvar ("add_"^a^"_"^f)),
                [map_mterm m ctx c; map_mterm m ctx i]))
@@ -797,7 +797,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
         [CAdd n]
     | M.Masset l ->
       let asset = M.Utils.get_asset_type mt in
-      let fns = M.Utils.get_field_list m (unloc asset) |> wdl in
+      let fns = M.Utils.get_field_list m asset |> wdl in
       Trecord (None,(List.combine fns (List.map (map_mterm m ctx) l)))
     | M.Mlisttocoll (n,l) -> Tapp (loc_term (Tvar ("listtocoll_"^n)),[map_mterm m ctx l])
     | M.Marray l ->
@@ -807,9 +807,9 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
         | _ -> assert false
       end
     | M.Mletin ([id],v,_,b,None) ->
-      Tletin (M.Utils.is_local_assigned id b,map_lident id,None,map_mterm m ctx v,map_mterm m ctx b)
+      Tletin (M.Utils.is_local_assigned (unloc id) b,map_lident id,None,map_mterm m ctx v,map_mterm m ctx b)
     | M.Mletin ([id], { node = M.Mget (a,k); type_ = _ }, _, b, Some e) -> (* logical *)
-      Tletin (M.Utils.is_local_assigned id b,
+      Tletin (M.Utils.is_local_assigned (unloc id) b,
               map_lident id,
               None,
               Tget (loc_ident a,
@@ -822,7 +822,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
                    Some (map_mterm m ctx e)) |> with_dummy_loc)
     | M.Mletin ([id], { node = M.Mgetbefore (a,k); type_ = _ }, _, b, Some e) -> (* logical *)
       let ctx = { ctx with (*old = true;*) localold = ctx.localold @ [unloc id] } in
-      Tletin (M.Utils.is_local_assigned id b,
+      Tletin (M.Utils.is_local_assigned (unloc id) b,
               map_lident id,
               None,
               Tget (loc_ident a,
@@ -889,7 +889,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
                                        ]))))
         (List.map (fun f -> CUpdate f) l)
     | M.Mremovefield (a,f,k,v) ->
-      let t,_,_ = M.Utils.get_partition_asset_key m (dumloc a) (dumloc f) in
+      let t,_,_ = M.Utils.get_partition_asset_key m a f in
       let asset =
         match v.node with
         | M.Mdotasset (a,_) -> map_mterm m ctx a
@@ -939,12 +939,12 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | M.Msetadded c ->  map_mterm m { ctx with lmod = Added } c |> Mlwtree.deloc
     | M.Msetremoved c -> map_mterm m { ctx with lmod = Removed } c |> Mlwtree.deloc
     | M.Mforall (i,t,None,b) ->
-      let asset = M.Utils.get_asset_type (M.mk_mterm (M.Mbool false) t) |> unloc in
+      let asset = M.Utils.get_asset_type (M.mk_mterm (M.Mbool false) t) in
       Tforall (
         [[i |> map_lident],loc_type (Tyasset asset)],
         map_mterm m ctx b)
     | M.Mforall (i,t,Some coll,b) ->
-      let asset = M.Utils.get_asset_type (M.mk_mterm (M.Mbool false) t) |> unloc in
+      let asset = M.Utils.get_asset_type (M.mk_mterm (M.Mbool false) t) in
       Tforall (
         [[i |> map_lident],loc_type (Tyasset asset)],
         with_dummy_loc (Timpl (with_dummy_loc (Tmem (with_dummy_loc asset,
@@ -963,7 +963,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | M.Misempty (l,r) -> Tempty (with_dummy_loc l,map_mterm m ctx r)
     | M.Msubsetof (n,l,r) -> Tsubset (with_dummy_loc n,map_mterm m ctx l,map_mterm m ctx r)
     | M.Msettoiterate c ->
-      let n = M.Utils.get_asset_type mt |> map_lident in
+      let n = M.Utils.get_asset_type mt |> with_dummy_loc in
       Ttoiter (n,with_dummy_loc "i",map_mterm m ctx c) (* TODO : should retrieve actual idx value *)
     | M.Mbool false -> Tfalse
     | M.Mbool true -> Ttrue
@@ -1001,11 +1001,11 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
 and mk_invariants (m : M.model) ctx (lbl : ident option) lbody =
   let loop_invariants =
     Option.fold (M.Utils.get_loop_invariants m) [] lbl |>
-    List.map (fun ((ilbl : M.lident),(i : M.mterm)) ->
+    List.map (fun ((ilbl : ident),(i : M.mterm)) ->
         let iid =
           match lbl,ilbl with
-          | Some a, b -> (unloc b) ^ "_" ^ a
-          | None, b -> (unloc b) in
+          | Some a, b -> b ^ "_" ^ a
+          | None, b -> b in
         { id =  with_dummy_loc iid; form = map_mterm m ctx i }
       ) in
   let storage_loop_invariants = (* in storage invariants are strong :
@@ -1592,14 +1592,14 @@ let mk_storage_api (m : M.model) records =
         acc @ [mk_set_asset m k record]
       | M.APIStorage (UpdateAdd (a,pf)) ->
         let k            = M.Utils.get_asset_key m a |> fst in
-        let (pa,addak,_) = M.Utils.get_partition_asset_key m (dumloc a) (dumloc pf) in
+        let (pa,addak,_) = M.Utils.get_partition_asset_key m a pf in
         acc @ [
           (*mk_add_asset           pa.pldesc addak.pldesc;*)
           mk_add_partition_field m a k pf pa addak
         ]
       | M.APIStorage (UpdateRemove (n,f)) ->
         let t         = M.Utils.get_asset_key m n |> fst in
-        let (pa,pk,_) = M.Utils.get_partition_asset_key m (dumloc n) (dumloc f) in
+        let (pa,pk,_) = M.Utils.get_partition_asset_key m n f in
         acc @ [
           (*mk_rm_asset           pa.pldesc (pt |> map_btype);*)
           mk_rm_partition_field m n t f pa pk
@@ -1668,10 +1668,10 @@ let mk_requires m n v =
   |> List.map (fun t ->
       match t with
       | M.Msetadded e ->
-        let a = M.Utils.get_asset_type e |> unloc in
+        let a = M.Utils.get_asset_type e in
         loc_term (Tempty (a,mk_ac_added a))
       | M.Msetremoved e ->
-        let a = M.Utils.get_asset_type e |> unloc in
+        let a = M.Utils.get_asset_type e in
         loc_term (Tempty (a,mk_ac_rmed a))
       | _ -> assert false
     )
@@ -1836,8 +1836,8 @@ let process_no_fail m (d : (loc_term, loc_typ, loc_ident) abstract_decl) =
         Dfun { f with
                raises = rm_fail_exn f.raises;
                body   = loc_term (Ttry (unloc_term f.body,
-                                        [Enotfound,Tassert (Some ("security_"^(unloc id)),Tfalse);
-                                         Ekeyexist,Tassert (Some ("security_"^(unloc id)),Tfalse)]));
+                                        [Enotfound,Tassert (Some ("security_"^id),Tfalse);
+                                         Ekeyexist,Tassert (Some ("security_"^id),Tfalse)]));
              }
       | _ -> d
     end
