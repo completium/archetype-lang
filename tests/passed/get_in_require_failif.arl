@@ -7,10 +7,10 @@ asset myasset {
 
 action myaction {
   require {
-    r1: myasset.get("myid") = 0;
+    r1: myasset.get("myid").value = 0;
   }
   failif {
-    f1: myasset.get("myid") <> 0;
+    f1: myasset.get("myid").value <> 0;
   }
   effect {
     let a : int = 0 in

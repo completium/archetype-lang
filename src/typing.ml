@@ -1959,7 +1959,7 @@ and for_assign_expr mode env orloc (op, fty) e =
 
 (* -------------------------------------------------------------------- *)
 and for_formula (env : env) (topf : PT.expr) : M.pterm =
-  let e = for_xexpr `Formula env topf in
+  let e = for_xexpr `Formula ~ety:(M.Tbuiltin M.VTbool) env topf in
   Option.iter (fun ety ->
       if ety <> M.vtbool then
         Env.emit_error env (loc topf, FormulaExpected))
@@ -2043,16 +2043,22 @@ let for_expr (env : env) ?(ety : M.type_ option) (tope : PT.expr) : M.pterm =
   for_xexpr `Expr env ?ety tope
 
 (* -------------------------------------------------------------------- *)
-let for_lbl_expr (env : env) (topf : PT.label_expr) : env * (M.lident option * M.pterm) =
+let for_lbl_expr (env : env) ?ety (topf : PT.label_expr) : env * (M.lident option * M.pterm) =
   if check_and_emit_name_free env (fst (unloc topf)) then
     let env = Env.Label.push env (fst (unloc topf), `Plain) in
-    env, (Some (fst (unloc topf)), for_expr env (snd (unloc topf)))
+    env, (Some (fst (unloc topf)), for_expr ?ety env (snd (unloc topf)))
   else
-    env, (None, for_expr env (snd (unloc topf)))
+    env, (None, for_expr env ?ety (snd (unloc topf)))
 
 (* -------------------------------------------------------------------- *)
-let for_lbls_expr (env : env) (topf : PT.label_exprs) : env * (M.lident option * M.pterm) list =
-  List.fold_left_map for_lbl_expr env topf
+let for_lbls_expr (env : env) ?ety (topf : PT.label_exprs) : env * (M.lident option * M.pterm) list =
+  List.fold_left_map (for_lbl_expr ?ety) env topf
+
+(* -------------------------------------------------------------------- *)
+let for_lbl_bexpr = for_lbl_expr ~ety:(M.Tbuiltin M.VTbool)
+
+(* -------------------------------------------------------------------- *)
+let for_lbls_bexpr = for_lbls_expr ~ety:(M.Tbuiltin M.VTbool)
 
 (* -------------------------------------------------------------------- *)
 let for_lbl_formula (env : env) (topf : PT.label_expr) : env * (M.lident option * M.pterm) =
@@ -2624,8 +2630,8 @@ let rec for_callby (env : env) (cb : PT.expr) =
 (* -------------------------------------------------------------------- *)
 let for_action_properties (env, poenv : env * env) (act : PT.action_properties) =
   let calledby  = Option.map (fun (x, _) -> for_callby env x) act.calledby in
-  let env, req  = Option.foldmap for_lbls_formula env (Option.fst act.require) in
-  let env, fai  = Option.foldmap for_lbls_formula env (Option.fst act.failif) in
+  let env, req  = Option.foldmap for_lbls_bexpr env (Option.fst act.require) in
+  let env, fai  = Option.foldmap for_lbls_bexpr env (Option.fst act.failif) in
   let env, spec = Option.foldmap
                     (fun env x -> for_specification (env, poenv) x) env act.spec in
   let env, funs = List.fold_left_map for_function env act.functions in
