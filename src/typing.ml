@@ -538,7 +538,8 @@ type 'env tactiondecl = {
 
 (* -------------------------------------------------------------------- *)
 type statedecl = {
-  sd_name  : M.lident option;
+  sd_name  : M.lident;
+  sd_state : bool;
   sd_ctors : ctordecl list;
   sd_init  : ident;
 }
@@ -756,7 +757,7 @@ end = struct
       match entry with
       | `Type  x       -> Some x
       | `Asset decl    -> Some (M.Tasset decl.as_name)
-      | `State decl    -> Some (M.Tenum (Option.get decl.sd_name))
+      | `State decl    -> Some (M.Tenum decl.sd_name)
       | `Contract decl -> Some (M.Tcontract decl.ct_name)
       | _              -> None
 
@@ -799,9 +800,7 @@ end = struct
           (fun env (name, _) ->
              (push env ~loc:(loc name) (unloc name) (`StateByCtor (decl, name))))
           env decl.sd_ctors in
-      Option.fold
-        (fun env name -> push env name (`State decl))
-        env (Option.map unloc decl.sd_name)
+      push env (unloc decl.sd_name) (`State decl)
   end
 
   module Local = struct
@@ -833,9 +832,9 @@ end = struct
                vr_tgt  = (None, None);
                vr_def  = None; }
 
-      | `StateByCtor (enum, ctor) when Option.is_some enum.sd_name ->
+      | `StateByCtor (enum, ctor) ->
         Some { vr_name = ctor;
-               vr_type = M.Tenum (Option.get enum.sd_name);
+               vr_type = M.Tenum enum.sd_name;
                vr_kind = `Enum;
                vr_core = None;
                vr_tgt  = (None, None);
@@ -1234,11 +1233,11 @@ let rec for_xexpr (mode : emode_t) (env : env) ?(ety : M.ptyp option) (tope : PT
           let typ = M.Tcontainer ((M.Tasset decl.as_name), M.Collection) in
           mk_sp (Some typ) (M.Pvar (vt, x))
 
-        | Some (`StateByCtor (decl, _)) when Option.is_some decl.sd_name ->
+        | Some (`StateByCtor (decl, _)) ->
           if before then
             Env.emit_error env (loc tope, BeforeIrrelevant (`State));
 
-          let typ = M.Tenum (Option.get decl.sd_name) in
+          let typ = M.Tenum decl.sd_name in
           mk_sp (Some typ) (M.Pvar (VTnone, x))
 
         | _ ->
@@ -2582,10 +2581,10 @@ let for_named_state ?enum (env : env) (x : PT.lident) =
     mkloc (loc x) "<error>"
 
   | Some state ->
-    let sname = Option.map unloc state.sd_name in
+    let sname = unloc state.sd_name in
 
-    if enum <> sname then begin
-      Env.emit_error env (loc x, ForeignState (enum, sname));
+    if Option.get_dfl ("$" ^ statename) enum <> sname then begin
+      Env.emit_error env (loc x, ForeignState (enum, Some sname));
       mkloc (loc x) "<error>"
     end else
       x
@@ -2730,7 +2729,7 @@ let for_enum_decl (env : env) (decl : (PT.lident * PT.enum_decl) loced) =
   let env, ctors = for_core_enum_decl env (mkloc (loc decl) ctors) in
   let env, decl =
     Option.foldbind (fun env (sd_init, sd_ctors) ->
-        let enum = { sd_name = Some name; sd_ctors; sd_init; } in
+        let enum = { sd_name = name; sd_ctors; sd_init; sd_state = false; } in
         if   check_and_emit_name_free env name
         then Env.State.push env enum, None
         else env, Some enum) env ctors in
@@ -3151,7 +3150,8 @@ let for_grouped_declarations (env : env) (toploc, g) =
 
     match List.pmap for1 g.gr_states with
     | (env, loc, (init, ctors)) :: _ ->
-      let decl = { sd_name  = Some (mkloc loc ("$" ^ statename));
+      let decl = { sd_name  = mkloc loc ("$" ^ statename);
+                   sd_state = true;
                    sd_ctors = ctors;
                    sd_init  = init; } in
       let vdecl = { vr_name = (mkloc loc statename);
@@ -3194,9 +3194,7 @@ let enums_of_statedecl (enums : statedecl list) : M.enum list =
 
     let items = List.map for_ctor1 tg.sd_ctors in
     let kind  =
-      Option.get_dfl
-        M.EKstate
-        (Option.map (fun x -> M.EKenum x) tg.sd_name) in
+      if tg.sd_state then M.EKstate else M.EKenum tg.sd_name in
 
     M.{ kind; items; loc = Location.dummy; }
 
