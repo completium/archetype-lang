@@ -424,6 +424,8 @@ let globals = [
   ("caller",      M.Ccaller,  M.vtaddress);
 ]
 
+let statename = "state"
+
 type method_ = {
   mth_name     : M.const;
   mth_purity   : [`Pure | `Effect];
@@ -3132,13 +3134,23 @@ let for_grouped_declarations (env : env) (toploc, g) =
   let state, env =
     let for1 { plloc = loc; pldesc = state } =
       match for_core_enum_decl env (mkloc loc (fst state)) with
-      | env, Some state -> Some (env, state)
+      | env, Some state -> Some (env, loc, state)
       | _  , None       -> None in
 
     match List.pmap for1 g.gr_states with
-    | (env, (init, ctors)) :: _ ->
-      let decl = { sd_name = None; sd_ctors = ctors; sd_init = init; } in
-      (Some decl, Env.State.push env decl)
+    | (env, loc, (init, ctors)) :: _ ->
+      let decl = { sd_name  = Some (mkloc loc ("$" ^ statename));
+                   sd_ctors = ctors;
+                   sd_init  = init; } in
+      let vdecl = { vr_name = (mkloc loc statename);
+                    vr_type = M.Tenum (mkloc loc ("$" ^ statename));
+                    vr_kind = `Constant;
+                    vr_def  = None;
+                    vr_tgt  = (None, None);
+                    vr_core = Some Cstate; } in
+      let env = Env.State.push env decl in
+      let env = Env.Var.push env vdecl in
+      (Some decl, env)
     | _ ->
       (None, env) in
 
