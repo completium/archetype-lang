@@ -586,6 +586,7 @@ module Env : sig
     | `Function    of t fundecl
     | `Field       of ident
     | `Contract    of contractdecl
+    | `Context     of assetdecl * ident option
   ]
 
   type ecallback = error -> unit
@@ -662,6 +663,11 @@ module Env : sig
     val exists  : t -> ident -> bool
     val push    : t -> contractdecl -> t
   end
+
+  module Context : sig
+    val the  : ident
+    val push : t -> ident -> t
+  end
 end = struct
   type ecallback = error -> unit
 
@@ -679,18 +685,23 @@ end = struct
     | `Function    of t fundecl
     | `Field       of ident
     | `Contract    of contractdecl
+    | `Context     of assetdecl * ident option
   ]
 
   and t = {
     env_error    : ecallback;
     env_bindings : (Location.t option * entry) Mid.t;
+    env_context  : assetdecl list;
     env_locals   : Sid.t;
     env_scopes   : Sid.t list;
   }
 
+  let ctxtname = "the"
+
   let create ecallback : t =
     { env_error    = ecallback;
       env_bindings = Mid.empty;
+      env_context  = [];
       env_locals   = Sid.empty;
       env_scopes   = []; }
 
@@ -698,11 +709,15 @@ end = struct
     env.env_error e
 
   let name_free (env : t) (x : ident) =
+    if x = ctxtname then `Clash None else
+
     Option.map fst (Mid.find_opt x env.env_bindings)
     |> Option.map_dfl (fun x -> `Clash x) `Free
 
   let lookup_entry (env : t) (name : ident) : entry option =
-    Option.map snd (Mid.find_opt name env.env_bindings)
+    if   name = ctxtname
+    then Option.map (fun x -> `Context (x, None)) (List.ohead env.env_context)
+    else Option.map snd (Mid.find_opt name env.env_bindings)
 
   let lookup_gen (proj : entry -> 'a option) (env : t) (name : ident) : 'a option =
     Option.bind proj (lookup_entry env name)
@@ -930,6 +945,18 @@ end = struct
 
     let push (env : t) (ctt : contractdecl) =
       push env ~loc:(loc ctt.ct_name) (unloc ctt.ct_name) (`Contract ctt)
+  end
+
+  module Context = struct
+    let the : ident = ctxtname
+
+    let push (env : t) (asset : ident) =
+      let asset = Asset.get env asset in
+      { env with
+          env_context  = asset :: env.env_context;
+          env_bindings = List.fold_left (fun bds (x, _) ->
+            Mid.add (unloc x) (None, `Context (asset, Some (unloc x))) bds
+          ) env.env_bindings asset.as_fields; }
   end
 end
 
@@ -1218,7 +1245,7 @@ let rec for_xexpr (mode : emode_t) (env : env) ?(ety : M.ptyp option) (tope : PT
         match Env.lookup_entry subenv (unloc x) with
         | Some (`Local xty) ->
           if before then
-            Env.emit_error env (loc tope, BeforeIrrelevant (`Local));
+            Env.emit_error env (loc tope, BeforeIrrelevant `Local);
           mk_sp (Some xty) (M.Pvar (VTnone, x))
 
         | Some (`Global decl) -> begin
@@ -1235,10 +1262,26 @@ let rec for_xexpr (mode : emode_t) (env : env) ?(ety : M.ptyp option) (tope : PT
 
         | Some (`StateByCtor (decl, _)) ->
           if before then
-            Env.emit_error env (loc tope, BeforeIrrelevant (`State));
+            Env.emit_error env (loc tope, BeforeIrrelevant `State);
 
           let typ = M.Tenum decl.sd_name in
           mk_sp (Some typ) (M.Pvar (VTnone, x))
+
+        | Some (`Context (asset, ofield)) -> begin
+          let atype = M.Tasset asset.as_name in
+          let var   = mkloc (loc tope) Env.Context.the in
+          let the   = mk_sp (Some atype) (M.Pvar (VTnone, var)) in
+
+          if before then
+            Env.emit_error env (loc tope, BeforeIrrelevant `Local);
+          match ofield with
+          | None ->
+              the
+          | Some fname ->
+              let fty = List.Exn.assoc_map unloc fname asset.as_fields in
+              let fty, _ = Option.get fty in
+              mk_sp (Some fty) (M.Pdot (the, mkloc (loc tope) fname))
+          end
 
         | _ ->
           Env.emit_error env (loc x, UnknownLocalOrVariable (unloc x));
@@ -1841,18 +1884,16 @@ and for_gen_method_call mode env theloc (the, m, args) =
         M.AExpr (for_xexpr mode env ~ety:(Tasset asset.as_name) arg)
 
       | `Pred ->
-        let theid = mkloc (loc arg) "the" in
+        let env   = Env.Context.push env (unloc asset.as_name) in
+        let theid = mkloc (loc arg) Env.Context.the in
         let thety = M.Tasset asset.as_name in
-        let _ : bool = check_and_emit_name_free env theid in
-        let env = Env.Local.push env (theid, thety) in
         M.AFun (theid, thety, for_xexpr mode env ~ety:M.vtbool arg)
 
       | `RExpr ->
-        let theid = mkloc (loc arg) "the" in
+        let env   = Env.Context.push env (unloc asset.as_name) in
+        let theid = mkloc (loc arg) Env.Context.the in
         let thety = M.Tasset asset.as_name in
-        let _ : bool = check_and_emit_name_free env theid in
-        let env = Env.Local.push env (theid, thety) in
-        let e = for_xexpr mode env arg in
+        let e     = for_xexpr mode env arg in
 
         e.M.type_ |> Option.iter (fun ty ->
             if not (Type.is_numeric ty) then
