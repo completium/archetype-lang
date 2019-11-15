@@ -355,11 +355,6 @@ let cmpsigs : (PT.operator * (M.vtyp list * M.vtyp)) list =
   List.mappdt (fun op sig_ -> (`Cmp op, sig_)) ops sigs
 
 let opsigs =
-  let eqsigs : (PT.operator * (M.vtyp list * M.vtyp)) list =
-    let ops  = [PT.Equal; PT.Nequal] in
-    let sigs = List.map (fun ty -> ([ty; ty], M.VTbool)) eqtypes in
-    List.mappdt (fun op sig_ -> (`Cmp op, sig_)) ops sigs in
-
   let grptypes : (PT.operator * (M.vtyp list * M.vtyp)) list =
     let ops  =
       (List.map (fun x -> `Arith x) [PT.Plus ; PT.Minus])
@@ -389,7 +384,7 @@ let opsigs =
       `Arith PT.Plus, ([M.VTint     ; M.VTduration      ], M.VTduration)         ;
       `Arith PT.Mult, ([M.VTrational; M.VTcurrency      ], M.VTcurrency       )  ] in
 
-  eqsigs @ cmpsigs @ grptypes @ rgtypes @ ariths @ bools @ others
+  cmpsigs @ grptypes @ rgtypes @ ariths @ bools @ others
 
 let opsigs =
   let doit (args, ret) =
@@ -985,41 +980,55 @@ let check_and_emit_name_free (env : env) (x : M.lident) =
 
 (* --------------------------------------------------------------------- *)
 let select_operator env loc (op, tys) =
-  let filter (sig_ : opsig) =
-    Type.sig_compatible ~from_:tys ~to_:sig_.osl_sig in
+  match op with
+  | `Cmp (PT.Equal | PT.Nequal) -> begin
+      match tys with
+      | [t1; t2] when Type.equal t1 t2 ->
+        Some ({ osl_sig = [t1; t2]; osl_ret = M.Tbuiltin M.VTbool; })
 
-  match List.filter filter (List.assoc_all op opsigs) with
-  | [] ->
-    Env.emit_error env
-      (loc, NoMatchingOperator (op, tys));
-    None
-
-  | _::_::_ as sigs -> begin
-      let module E = struct exception Bailout end in
-
-      try
-        let sig_ =
-          match
-            List.filter
-              (fun sig_ -> Type.sig_equal sig_.osl_sig tys)
-              sigs
-          with [sig_] -> sig_ | _ -> raise E.Bailout in
-
-        List.iter (fun sig2 ->
-            if not (Type.sig_compatible ~from_:sig_.osl_sig ~to_:sig2.osl_sig) then
-              raise E.Bailout
-          ) sigs;
-
-        Some sig_
-
-      with E.Bailout ->
+      | _ ->
         Env.emit_error env
-          (loc, MultipleMatchingOperator (op, tys, sigs));
+          (loc, NoMatchingOperator (op, tys));
         None
     end
 
-  | [sig_] ->
-    Some sig_
+  | _ -> begin
+    let filter (sig_ : opsig) =
+      Type.sig_compatible ~from_:tys ~to_:sig_.osl_sig in
+  
+    match List.filter filter (List.assoc_all op opsigs) with
+    | [] ->
+      Env.emit_error env
+        (loc, NoMatchingOperator (op, tys));
+      None
+  
+    | _::_::_ as sigs -> begin
+        let module E = struct exception Bailout end in
+  
+        try
+          let sig_ =
+            match
+              List.filter
+                (fun sig_ -> Type.sig_equal sig_.osl_sig tys)
+                sigs
+            with [sig_] -> sig_ | _ -> raise E.Bailout in
+  
+          List.iter (fun sig2 ->
+              if not (Type.sig_compatible ~from_:sig_.osl_sig ~to_:sig2.osl_sig) then
+                raise E.Bailout
+            ) sigs;
+  
+          Some sig_
+  
+        with E.Bailout ->
+          Env.emit_error env
+            (loc, MultipleMatchingOperator (op, tys, sigs));
+          None
+      end
+  
+    | [sig_] ->
+      Some sig_
+  end
 
 (* -------------------------------------------------------------------- *)
 let for_container (_ : env) = function
