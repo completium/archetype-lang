@@ -482,7 +482,7 @@ let methods = Mid.of_list methods
 (* -------------------------------------------------------------------- *)
 type assetdecl = {
   as_name   : M.lident;
-  as_fields : (M.lident * M.ptyp) list;
+  as_fields : (M.lident * (M.ptyp * M.pterm option)) list;
   as_pk     : M.lident;
   as_sortk  : M.lident list;
   as_invs   : (M.lident option * M.pterm) list;
@@ -647,7 +647,7 @@ module Env : sig
     val lookup  : t -> ident -> assetdecl option
     val get     : t -> ident -> assetdecl
     val exists  : t -> ident -> bool
-    val byfield : t -> ident -> (assetdecl * M.ptyp) option
+    val byfield : t -> ident -> (assetdecl * (M.ptyp * M.pterm option)) option
     val push    : t -> assetdecl -> t
   end
 
@@ -1092,7 +1092,7 @@ let rec for_type_exn (env : env) (ty : PT.type_t) : M.ptyp =
       | M.Tasset x ->
         let decl = Env.Asset.get env (unloc x) in
         let ctor = Env.Asset.byfield env (unloc decl.as_pk) in
-        snd (Option.get ctor)
+        fst (snd (Option.get ctor))
 
       | _ ->
         Env.emit_error env (loc ty, NotAnAssetType);
@@ -1313,7 +1313,7 @@ let rec for_xexpr (mode : emode_t) (env : env) ?(ety : M.ptyp option) (tope : PT
             end;
 
             let fields =
-              List.map2 (fun (_, fe) (_, fty) ->
+              List.map2 (fun (_, fe) (_, (fty, _)) ->
                   for_xexpr env ~ety:fty fe
                 ) fields asset.as_fields;
             in mk_sp ety (M.Precord fields)
@@ -1351,7 +1351,7 @@ let rec for_xexpr (mode : emode_t) (env : env) ?(ety : M.ptyp option) (tope : PT
 
           let fields =
             Mid.map (fun (asset, es) ->
-                let aty = Option.map snd asset in
+                let aty = Option.map (snd %> fst) asset in
                 List.map (fun e -> for_xexpr env ?ety:aty e) es
               ) fmap in
 
@@ -1368,14 +1368,18 @@ let rec for_xexpr (mode : emode_t) (env : env) ?(ety : M.ptyp option) (tope : PT
 
             | [asset] ->
               let fields =
-                List.map (fun ({ pldesc = fname }, ftype) ->
+                List.map (fun ({ pldesc = fname }, (ftype, dfl)) ->
+                  match dfl with
+                  | None -> begin
                     match Mid.find_opt fname fields with
                     | None ->
                       let err = MissingFieldInRecordLiteral fname in
                       Env.emit_error env (loc tope, err); dummy (Some ftype)
                     | Some thisf ->
-                      List.hd (List.rev thisf))
-                  asset.as_fields
+                      List.hd (List.rev thisf)
+                    end
+                  | Some dfl -> dfl
+                ) asset.as_fields
               in mk_sp (Some (M.Tasset asset.as_name)) (M.Precord fields)
 
           in record
@@ -1419,7 +1423,7 @@ let rec for_xexpr (mode : emode_t) (env : env) ?(ety : M.ptyp option) (tope : PT
                 let err = UnknownField (unloc asset.as_name, unloc x) in
                 Env.emit_error env (loc x, err); bailout ()
 
-              | Some fty ->
+              | Some (fty, _) ->
                 mk_sp (Some fty) (M.Pdot (e, x))
             end
       end
@@ -1816,7 +1820,7 @@ and for_gen_method_call mode env theloc (the, m, args) =
     let doarg arg (aty : mthtyp) =
       match aty with
       | `Pk ->
-        let _, pk = List.find
+        let _, (pk, _) = List.find
             (fun (x, _) -> unloc x = unloc asset.as_pk)
             asset.as_fields in
         M.AExpr (for_xexpr mode env ~ety:pk arg)
@@ -1908,7 +1912,7 @@ and for_arg_effect mode (env : env) (asset : assetdecl) (tope : PT.expr) =
 
       | Some (op, x) -> begin
           match List.Exn.assoc_map unloc (unloc x) asset.as_fields with
-          | Some fty ->
+          | Some (fty, _) ->
             let op  = for_assignment_operator op in
             let e   = for_assign_expr mode env (loc x) (op, fty) e in
 
@@ -2129,7 +2133,7 @@ let for_lvalue (env : env) (e : PT.expr) : (M.lvalue * M.ptyp) option =
             let err = UnknownField (unloc asset.as_name, unloc x) in
             Env.emit_error env (loc x, err); None
 
-          | Some fty ->
+          | Some (fty, _) ->
             Some (`Field (nm, x), fty)
         end
     end
@@ -2897,7 +2901,7 @@ let for_asset_decl ?(force = false) (env : env) (decl : PT.asset_decl loced) =
         if   Option.is_some ty
         then ty
         else Option.bind (fun e -> e.M.type_) e
-      in (mkloc loc x, Option.get_fdfl (fun () -> raise E.Bailout) ty)
+      in (mkloc loc x, (Option.get_fdfl (fun () -> raise E.Bailout) ty, e))
     in
 
     try
@@ -3002,7 +3006,7 @@ let for_acttx_decl (env : env) (decl : acttx loced) =
                       if check_and_emit_name_free env vtg then
                         let field = Env.Asset.byfield env (unloc asset.as_pk) in
                         let field = Option.get field in
-                        Env.Local.push env (vtg, snd field)
+                        Env.Local.push env (vtg, fst (snd field))
                       else env in
                     (env, Option.map unloc asset.as_state))
                   env (for_asset_keyof_type env ttg))
@@ -3175,8 +3179,8 @@ let enums_of_statedecl (enums : statedecl list) : M.enum list =
 (* -------------------------------------------------------------------- *)
 let assets_of_adecls adecls =
   let for1 (decl : assetdecl) =
-    let for_field (f, fty) =
-      M.{ name = f; typ = Some fty; default = None; loc = loc f; } in
+    let for_field (f, (fty, dfl)) =
+      M.{ name = f; typ = Some fty; default = dfl; loc = loc f; } in
 
     let spec (l, f) =
       M.{ label = l; term = f; loc = f.loc } in

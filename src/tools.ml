@@ -21,6 +21,8 @@ let swap = fun (x, y) -> (y, x)
 
 let pair x y = (x, y)
 
+let (%>) f g = fun x -> g (f x)
+
 (* -------------------------------------------------------------------- *)
 module String : sig
   include module type of String
