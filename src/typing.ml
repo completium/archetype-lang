@@ -86,7 +86,7 @@ type opsig = {
 (* -------------------------------------------------------------------- *)
 type error_desc =
   | AlienPattern
-  | AssetExpected
+  | AssetExpected                      of M.ptyp
   | AssetWithoutFields
   | BeforeOrLabelInExpr
   | BeforeIrrelevant                   of [`Local | `State]
@@ -208,7 +208,7 @@ let pp_error_desc fmt e =
 
   match e with
   | AlienPattern                       -> pp "This pattern does not belong to the enumeration"
-  | AssetExpected                      -> pp "Asset expected"
+  | AssetExpected ty                   -> pp "Asset expected (found a %a)" Printer_ast.pp_ptyp ty
   | AssetWithoutFields                 -> pp "Asset without fields"
   | BeforeIrrelevant `Local            -> pp "The `before' modifier cannot be used on local variables"
   | BeforeIrrelevant `State            -> pp "The `before' modifier cannot be used on state constructors"
@@ -1412,7 +1412,7 @@ let rec for_xexpr (mode : emode_t) (env : env) ?(ety : M.ptyp option) (tope : PT
             bailout ()
 
           | Some None ->
-            Env.emit_error env (loc pe, AssetExpected);
+            Env.emit_error env (loc pe, AssetExpected (Option.get e.M.type_));
             bailout ()
 
           | Some (Some asset) -> begin
@@ -1668,8 +1668,10 @@ let rec for_xexpr (mode : emode_t) (env : env) ?(ety : M.ptyp option) (tope : PT
         if not (Type.compatible ~from_ ~to_) then
           Env.emit_error env (loc tope, IncompatibleTypes (from_, to_));
 
+(*
       | _, Some _ ->
         Env.emit_error env (loc tope, ExpressionExpected)
+*)
 
       | _, _ ->
         ()
@@ -2122,7 +2124,7 @@ let for_lvalue (env : env) (e : PT.expr) : (M.lvalue * M.ptyp) option =
         None
 
       | Some None ->
-        Env.emit_error env (loc pnm, AssetExpected);
+        Env.emit_error env (loc pnm, AssetExpected (Option.get nm.M.type_));
         None
 
       | Some (Some asset) -> begin
