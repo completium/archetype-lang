@@ -2819,9 +2819,12 @@ let for_asset_decl ?(force = false) (env : env) (decl : PT.asset_decl loced) =
     let PT.Ffield (f, fty, init, _) = unloc field in
     let fty  = for_type env fty in
     let init = Option.map (for_expr env ?ety:fty) init in
-    mkloc (loc f) (unloc f, fty, init) in
 
-  let fields = List.map for_field fields in
+    if   check_and_emit_name_free env f
+    then Some (mkloc (loc f) (unloc f, fty, init))
+    else None in
+
+  let fields = List.pmap for_field fields in
 
   Option.iter
     (fun (_, { plloc = lc; pldesc = (name, _, _) }) ->
@@ -2904,20 +2907,20 @@ let for_asset_decl ?(force = false) (env : env) (decl : PT.asset_decl loced) =
   end else
     let module E = struct exception Bailout end in
 
-    if List.is_empty fields then begin
-      Env.emit_error env (loc decl, AssetWithoutFields);
-      raise E.Bailout
-    end;
-
-    let get_field_type { plloc = loc; pldesc = (x, ty, e) } =
-      let ty =
-        if   Option.is_some ty
-        then ty
-        else Option.bind (fun e -> e.M.type_) e
-      in (mkloc loc x, (Option.get_fdfl (fun () -> raise E.Bailout) ty, e))
-    in
-
     try
+      if List.is_empty fields then begin
+        Env.emit_error env (loc decl, AssetWithoutFields);
+        raise E.Bailout
+      end;
+  
+      let get_field_type { plloc = loc; pldesc = (x, ty, e) } =
+        let ty =
+          if   Option.is_some ty
+          then ty
+          else Option.bind (fun e -> e.M.type_) e
+        in (mkloc loc x, (Option.get_fdfl (fun () -> raise E.Bailout) ty, e))
+      in
+
       let decl = {
         as_name   = x;
         as_fields = List.map get_field_type fields;
