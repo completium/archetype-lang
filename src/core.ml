@@ -117,50 +117,44 @@ let pp_duration_for_printer fmt (d : duration) =
 
 let duration_to_seconds (d : duration) : big_int =
   Big_int.zero_big_int
-  |> Big_int.add_big_int (Big_int.mult_int_big_int 7  d.weeks)
-  |> Big_int.add_big_int (Big_int.mult_int_big_int 24 d.days)
-  |> Big_int.add_big_int (Big_int.mult_int_big_int 60 d.hours)
-  |> Big_int.add_big_int (Big_int.mult_int_big_int 60 d.minutes)
-  |> Big_int.add_big_int                              d.seconds
+  |> fun x -> Big_int.mult_int_big_int 7  (Big_int.add_big_int x d.weeks)
+  |> fun x -> Big_int.mult_int_big_int 24 (Big_int.add_big_int x d.days)
+  |> fun x -> Big_int.mult_int_big_int 60 (Big_int.add_big_int x d.hours)
+  |> fun x -> Big_int.mult_int_big_int 60 (Big_int.add_big_int x d.minutes)
+  |> fun x -> Big_int.mult_int_big_int 1  (Big_int.add_big_int x d.seconds)
 
 let pp_duration_in_seconds fmt (d : duration) =
   let s = duration_to_seconds d in
   Format.fprintf fmt "%a" pp_big_int s
 
-let date_str_to_big_int _ = Big_int.zero_big_int
-
 (* -------------------------------------------------------------------- *)
 
-type timezone_sign =
-  | TZplus
-  | TZminus
+type timezone =
+  | TZnone
   | TZZ
-  | TZNone
+  | TZplus of int * int
+  | TZminus of int * int
 [@@deriving show {with_path = false}]
 
 type date = {
-  year:          int;
-  month:         int;
-  day:           int;
-  hour:          int;
-  minute:        int;
-  second:        int;
-  timezone_sign: timezone_sign;
-  timezone_hour: int;
-  timezone_min:  int;
+  year:     int;
+  month:    int;
+  day:      int;
+  hour:     int;
+  minute:   int;
+  second:   int;
+  timezone: timezone;
 }
 [@@deriving show {with_path = false}]
 
-let mk_date ?(year=1970) ?(month=1) ?(day=1) ?(hour=0) ?(minute=0) ?(second=0) ?(timezone_sign=TZNone) ?(timezone_hour=0) ?(timezone_min=0) () = {
-  year          = year;
-  month         = month;
-  day           = day;
-  hour          = hour;
-  minute        = minute;
-  second        = second;
-  timezone_sign = timezone_sign;
-  timezone_hour = timezone_hour;
-  timezone_min  = timezone_min;
+let mk_date ?(year=1970) ?(month=1) ?(day=1) ?(hour=0) ?(minute=0) ?(second=0) ?(timezone=TZnone) () = {
+  year     = year;
+  month    = month;
+  day      = day;
+  hour     = hour;
+  minute   = minute;
+  second   = second;
+  timezone = timezone;
 }
 
 let pp_date fmt (date : date) =
@@ -173,25 +167,32 @@ let pp_date fmt (date : date) =
     pp_int2 date.hour
     pp_int2 date.minute
     pp_int2 date.second
-    (fun fmt (s, h, m) ->
-       match s with
-       | TZNone -> ()
-       | TZZ -> Format.fprintf fmt "Z"
-       | _ -> Format.fprintf fmt "%s%a:%a" (match s with TZplus -> "+" | TZminus -> "-" | _ -> assert false) pp_int2 h pp_int2 m
-    ) (date.timezone_sign, date.timezone_hour, date.timezone_min)
+    (fun fmt t ->
+       match t with
+       | TZnone         -> ()
+       | TZZ            -> Format.fprintf fmt "Z"
+       | TZplus (h, m)  -> Format.fprintf fmt "+%a:%a" pp_int2 h pp_int2 m
+       | TZminus (h, m) -> Format.fprintf fmt "-%a:%a" pp_int2 h pp_int2 m
+    ) (date.timezone)
+
+let cmp_timezone (t1 : timezone) (t2 : timezone) : bool =
+  match t1, t2 with
+  | TZnone, TZnone -> true
+  | TZZ, TZZ -> true
+  | TZplus(h1, m1), TZplus(h2, m2)
+  | TZminus(h1, m1), TZminus(h2, m2) -> h1 = h2 && m1 = m2
+  | _ -> false
 
 let cmp_date (d1 : date) (d2 : date) : bool =
   let cmp_aux d1 d2 = d1 = d2 in
 
-  cmp_aux d1.year          d2.year
+  cmp_aux d1.year             d2.year
   && cmp_aux d1.month         d2.month
   && cmp_aux d1.day           d2.day
   && cmp_aux d1.hour          d2.hour
   && cmp_aux d1.minute        d2.minute
   && cmp_aux d1.second        d2.second
-  && cmp_aux d1.timezone_sign d2.timezone_sign
-  && cmp_aux d1.timezone_hour d2.timezone_hour
-  && cmp_aux d1.timezone_min  d2.timezone_min
+  && cmp_timezone d1.timezone d2.timezone
 
 exception MalformedDate of string
 
@@ -232,29 +233,48 @@ let string_to_date (str : string) : date =
       let second, input = eat 2 input |> c_int in
       match get_next_char input with
       | None ->  mk_date () ~year:year ~month:month ~day:day ~hour:hour ~minute:minute ~second:second
-      | Some "Z" -> mk_date () ~year:year ~month:month ~day:day ~hour:hour ~minute:minute ~second:second ~timezone_sign:TZZ
+      | Some "Z" -> mk_date () ~year:year ~month:month ~day:day ~hour:hour ~minute:minute ~second:second ~timezone:TZZ
       | Some c ->
         begin
-          let input, timezone_sign =
+          let input, t =
             match c with
-            | "+" -> eat_and_check "+" 1 input, TZplus
-            | "-" -> eat_and_check "-" 1 input, TZminus
+            | "+" -> eat_and_check "+" 1 input, (fun (h, m) -> TZplus(h, m) )
+            | "-" -> eat_and_check "-" 1 input, (fun (h, m) -> TZminus(h, m) )
             | _ -> raise (MalformedDate str)
           in
           let timezone_hour, input = eat 2 input |> c_int in
           let input = eat_and_check ":" 1 input in
           let timezone_min, _ = eat 2 input |> c_int in
-          mk_date () ~year:year ~month:month ~day:day ~hour:hour ~minute:minute ~second:second ~timezone_sign:timezone_sign ~timezone_hour:timezone_hour ~timezone_min:timezone_min
+          let timezone = t(timezone_hour, timezone_min) in
+          mk_date () ~year:year ~month:month ~day:day ~hour:hour ~minute:minute ~second:second ~timezone:timezone
         end
     end
 
 
-let date_to_timestamp (date : date) : big_int = (* TODO: it's fake *)
+let date_to_big_int (date : date) : big_int =
   Big_int.zero_big_int
-  |> Big_int.add_big_int (Big_int.mult_int_big_int 12 (Big_int.big_int_of_int date.year))
-  |> Big_int.add_big_int (Big_int.mult_int_big_int 30 (Big_int.big_int_of_int date.month))
-  |> Big_int.add_big_int (Big_int.mult_int_big_int 24 (Big_int.big_int_of_int date.day))
-  |> Big_int.add_big_int (Big_int.mult_int_big_int 60 (Big_int.big_int_of_int date.hour))
-  |> Big_int.add_big_int (Big_int.mult_int_big_int 60 (Big_int.big_int_of_int date.minute))
-  |> Big_int.add_big_int                              (Big_int.big_int_of_int date.second)
-  |> Big_int.add_big_int                              (Big_int.big_int_of_int date.second)
+  |> fun x -> Big_int.mult_int_big_int 12 (Big_int.add_big_int x (Big_int.big_int_of_int date.year))
+  |> fun x -> Big_int.mult_int_big_int 31 (Big_int.add_big_int x (Big_int.big_int_of_int date.month))
+  |> fun x -> Big_int.mult_int_big_int 24 (Big_int.add_big_int x (Big_int.big_int_of_int date.day))
+  |> fun x -> Big_int.mult_int_big_int 60 (Big_int.add_big_int x (Big_int.big_int_of_int date.hour))
+  |> fun x -> Big_int.mult_int_big_int 60 (Big_int.add_big_int x (Big_int.big_int_of_int date.minute))
+  |> fun x -> Big_int.mult_int_big_int 1  (Big_int.add_big_int x (Big_int.big_int_of_int date.second))
+  |> fun x ->
+  begin
+    let f (h, m) =
+      Big_int.zero_big_int
+      |> Big_int.add_big_int (Big_int.mult_int_big_int (60 * 60) (Big_int.big_int_of_int h))
+      |> Big_int.add_big_int (Big_int.mult_int_big_int 60 (Big_int.big_int_of_int m))
+    in
+    let c =
+      match date.timezone with
+      | TZnone
+      | TZZ -> Big_int.zero_big_int
+      | TZplus (h, m) ->
+        f (h, m)
+        |> Big_int.minus_big_int
+      | TZminus (h, m) ->
+        f (h, m)
+    in
+    Big_int.add_big_int x c
+  end
