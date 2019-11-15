@@ -231,9 +231,10 @@ let string_to_date (str : string) : date =
       let minute, input = eat 2 input |> c_int in
       let input = eat_and_check ":" 1 input in
       let second, input = eat 2 input |> c_int in
+      let tz =
       match get_next_char input with
-      | None ->  mk_date () ~year:year ~month:month ~day:day ~hour:hour ~minute:minute ~second:second
-      | Some "Z" -> mk_date () ~year:year ~month:month ~day:day ~hour:hour ~minute:minute ~second:second ~timezone:TZZ
+      | None ->  TZnone
+      | Some "Z" -> TZZ
       | Some c ->
         begin
           let input, t =
@@ -245,9 +246,9 @@ let string_to_date (str : string) : date =
           let timezone_hour, input = eat 2 input |> c_int in
           let input = eat_and_check ":" 1 input in
           let timezone_min, _ = eat 2 input |> c_int in
-          let timezone = t(timezone_hour, timezone_min) in
-          mk_date () ~year:year ~month:month ~day:day ~hour:hour ~minute:minute ~second:second ~timezone:timezone
+          t(timezone_hour, timezone_min)
         end
+        in mk_date () ~year:year ~month:month ~day:day ~hour:hour ~minute:minute ~second:second ~timezone:tz
     end
 
 
