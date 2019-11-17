@@ -40,6 +40,14 @@ let output (model : Model.model) =
     let printer =
       match !Options.target with
       | None         -> Printer_model.pp_model
+      | Liquidity    -> Printer_model_liquidity.pp_model
+      | LiquidityUrl ->
+        fun fmt model ->
+          let str = Printer_model_liquidity.show_model model in
+          let encoded_src = Uri.pct_encode str in
+          let encoded_src = Str.global_replace (Str.regexp "\\+") "%2B" encoded_src in
+          let url = "http://www.liquidity-lang.org/edit/?source=" ^ encoded_src in
+          Format.fprintf fmt "%s@\n" url
       | Ligo         -> Printer_model_ligo.pp_model
       | SmartPy      -> Printer_model_smartpy.pp_model
       | Ocaml        -> Printer_model_ocaml.pp_model
@@ -107,6 +115,18 @@ let generate_target model =
     |> cont !Options.opt_sa  shallow_asset
     |> cont !Options.opt_skv split_key_values
     |> cont !Options.opt_nse remove_side_effect
+    |> generate_api_storage
+    |> output
+
+  | Liquidity
+  | LiquidityUrl ->
+    model
+    |> replace_declvar_by_letin
+    |> exec_process
+    |> post_process_fun_language
+    |> shallow_asset
+    |> split_key_values
+    |> remove_side_effect
     |> generate_api_storage
     |> output
 
@@ -183,6 +203,8 @@ let print_version () =
 let main () =
   set_margin 300;
   let f = function
+    | "liquidity"     -> Options.target := Liquidity
+    | "liquidity_url" -> Options.target := LiquidityUrl
     | "ligo"          -> Options.target := Ligo
     | "smartpy"       -> Options.target := SmartPy
     | "ocaml"         -> Options.target := Ocaml
@@ -196,7 +218,7 @@ let main () =
   let arg_list = Arg.align [
       "-t", Arg.String f, "<lang> Transcode to <lang> language";
       "--target", Arg.String f, " Same as -t";
-      "--list-target", Arg.Unit (fun _ -> Format.printf "target available:@\n  ligo@\n  smartpy@\n  ocaml@\n  whyml@\n  markdown@\n"; exit 0), " List available target languages";
+      "--list-target", Arg.Unit (fun _ -> Format.printf "target available:@\n  liquidity@\n  ligo@\n  smartpy@\n  ocaml@\n  whyml@\n  markdown@\n"; exit 0), " List available target languages";
       (* "--storage-policy", Arg.String (fun s -> match s with
           | "flat" -> Options.storage_policy := Flat
           | "record" -> Options.storage_policy := Record
