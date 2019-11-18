@@ -7,8 +7,8 @@ asset my_asset_simple identified by str {
    a1 : i >= 1;
 }
 
-asset my_asset identified by i {
-  i : int;
+asset my_asset identified by j {
+  j : int;
   mycollection : my_asset_simple collection;
 } initialized by [ { 0; [] } ]
 
@@ -19,15 +19,15 @@ enum my_enums =
 | Completed
 
 asset[%myextension%] [@add @remove @update owner (args)]
-my_asset_all identified by id sorted by i {
+my_asset_all identified by id sorted by k {
   id : role;
-  i : int;
+  k : int;
   b : bool;
 }
 with states my_enums
 with {
-  a2 : i >= 1;
-  a3 : i <= 10;
+  a2 : k >= 1;
+  a3 : k <= 10;
 } initialized by [
   { @toto; Init; 9 };
   { @tata; InProgress; 8 }

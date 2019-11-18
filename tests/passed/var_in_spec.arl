@@ -1,0 +1,16 @@
+archetype test_specification
+
+action myaction {
+ specification {
+
+    variable myvar int = 0
+
+    effect {
+      myvar := 3
+    }
+  }
+
+  effect {
+    require(true)
+  }
+}

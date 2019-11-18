@@ -268,11 +268,11 @@ let to_model (ast : A.model) : M.model =
       let asset_name = extract_asset_name fp in
       M.Mselect (asset_name, fp, fq)
 
-    | A.Pcall (Some p, A.Cconst (A.Csort), [AFun (qi, qt, q)]) ->
+    | A.Pcall (Some p, A.Cconst (A.Csort), [ASorting (asc, field_name)]) ->
       let fp = f p in
       let asset_name = extract_asset_name fp in
-      let field_name = extract_field_name (qi, qt, q) in
-      M.Msort (asset_name, fp, unloc field_name, SKasc)
+      let sort_kind = match asc with | true -> M.SKasc | false -> M.SKasc in
+      M.Msort (asset_name, fp, unloc field_name, sort_kind)
 
     | A.Pcall (Some p, A.Cconst (A.Ccontains), [AExpr q]) ->
       let fp = f p in

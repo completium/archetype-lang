@@ -31,7 +31,7 @@ transition confirm from Created {
    to InProgress when { now > startdate }
 }
 
-action submit (competitor : role(*key of competitor*)) (score[%signedby oracle%] : int) {
+action submit (competitor : pkey of competitor) (score[%signedby oracle%] : int) {
   require {
     c1 : state = InProgress;
   }

@@ -21,10 +21,10 @@ done
 echo ""
 }
 
-process_files "./tests/passed" 0
 process_files "./tests/syntax-errors" 1
 process_files "./tests/type-errors" 3
 process_files "./tests/model-errors" 5
+process_files "./tests/passed" 0
 
 RET=0
 if [ ${NB_ERR} -eq 0 ]; then

@@ -8,6 +8,9 @@ action a1 {
     c2 : true;
     c3 : 1 + 3 = 4;
   }
+  effect {
+    require(true)
+  }
 }
 
 action a2 {
