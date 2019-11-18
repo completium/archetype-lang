@@ -1,4 +1,4 @@
-archetype test_specification
+archetype var_in_spec
 
 action myaction {
  specification {
