@@ -2422,7 +2422,8 @@ let for_effect (env : env) (effect : PT.expr) =
 
 (* -------------------------------------------------------------------- *)
 let for_specification_item
-  (env, poenv : env * env) (v : PT.specification_item) : env * env ispecification
+    (env, poenv : env * env) (v : PT.specification_item)
+  : (env * env) * env ispecification
 =
   match unloc v with
   | PT.Vpredicate (x, args, f) ->
@@ -2432,7 +2433,7 @@ let for_specification_item
           let args = List.pmap id args in
           let f = for_formula env f in
           (env, (args, f)))
-    in env, `Predicate (x, args, f)
+    in (env, poenv), `Predicate (x, args, f)
 
   | PT.Vdefinition (x, ty, y, f) ->
     let env, (arg, f) =
@@ -2440,20 +2441,24 @@ let for_specification_item
           let env, arg = for_arg_decl env (y, ty, None) in
           let f = for_formula env f in
           (env, (arg, f)))
-    in env, `Definition (x, arg, f)
+    in ((env, poenv), `Definition (x, arg, f))
 
   | PT.Vlemma (x, f) ->
     let f = for_formula env f in
-    (env, `Lemma (x, f))
+    ((env, poenv), `Lemma (x, f))
 
   | PT.Vtheorem (x, f) ->
     let f = for_formula env f in
-    (env, `Theorem (x, f))
+    ((env, poenv), `Theorem (x, f))
 
   | PT.Vvariable (x, ty, e) ->
     let ty = for_type env ty in
     let e  = Option.map (for_expr env ?ety:ty) e in
-    (env, `Variable (x, e))
+    let poenv =
+      if not (check_and_emit_name_free env x) then poenv else
+        Option.fold (fun poenv ty -> Env.Local.push poenv (x, ty)) poenv ty
+        
+    in ((env, poenv), `Variable (x, e))
 
   | PT.Vassert (x, f, invs, uses) -> begin
       let env0 =
@@ -2471,11 +2476,13 @@ let for_specification_item
       let f    = for_formula env0 f in
       let invs = List.map for_inv invs in
 
-      (env, `Assert (x, f, invs, uses))
+      ((env, poenv), `Assert (x, f, invs, uses))
     end
 
   | PT.Veffect i ->
-    let env, i = for_effect env i in (env, `Effect i)
+    (* FIXME: we are not properly tracking labels here *)
+    let _, ((poenv, _) as i) = for_effect poenv i in
+    ((env, poenv), `Effect i)
 
   | PT.Vpostcondition (x, f, invs, uses) ->
     let for_inv (lbl, linvs) =
@@ -2494,12 +2501,13 @@ let for_specification_item
       in (lbl, List.map (for_formula env0) linvs) in
     let f    = for_formula poenv f in
     let invs = List.map for_inv invs in
-    (env, `Postcondition (x, f, invs, uses))
+    ((env, poenv), `Postcondition (x, f, invs, uses))
 
 (* -------------------------------------------------------------------- *)
 let for_specification ((env, poenv) : env * env) (v : PT.specification) =
-  List.fold_left_map (fun env x ->
-    for_specification_item (env, poenv) x) env (fst (unloc v))
+  let (env, _), items =
+    List.fold_left_map for_specification_item (env, poenv) (fst (unloc v))
+  in (env, items)
 
 (* -------------------------------------------------------------------- *)
 module SecurityPred = struct
@@ -3356,6 +3364,20 @@ let specifications_of_ispecifications =
             invariants = List.map for_inv invs;
             uses       = uses; }
       in { env with M.asserts = env.asserts @ [asst] }
+
+    | `Variable (x, e) ->
+      let var =
+        M.mk_variable ~loc:(loc x)
+          (M.mk_decl
+             ~loc:(loc x) ?default:e
+             ?typ:(Option.bind (fun e -> e.M.type_) e)
+             x)
+      in { env with M.variables = env.variables @ [var] }
+
+    | `Effect (_, i) ->
+      (* FIXME *)
+      assert (Option.is_none env.M.effect);
+      { env with M.effect = None; }
 
     | _ ->
       assert false
