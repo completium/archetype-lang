@@ -492,6 +492,7 @@ type vardecl = {
   vr_name   : M.lident;
   vr_type   : M.ptyp;
   vr_kind   : [`Constant | `Variable | `Ghost | `Enum];
+  vr_invs   : M.lident M.label_term list;
   vr_def    : (M.pterm * [`Inline | `Std]) option;
   vr_tgt    : M.lident option * M.lident option;
   vr_core   : M.const option;
@@ -844,6 +845,7 @@ end = struct
         Some { vr_name = a.as_name;
                vr_type = M.Tcontainer (M.Tasset a.as_name, M.Collection);
                vr_kind = `Constant;
+               vr_invs = [];
                vr_core = None;
                vr_tgt  = (None, None);
                vr_def  = None; }
@@ -852,6 +854,7 @@ end = struct
         Some { vr_name = ctor;
                vr_type = M.Tenum enum.sd_name;
                vr_kind = `Enum;
+               vr_invs = [];
                vr_core = None;
                vr_tgt  = (None, None);
                vr_def  = None; }
@@ -984,8 +987,11 @@ let empty : env =
       let def = M.Pconst vr_core in
       let def = M.mk_sp ~type_:vr_type  def in
 
-      { vr_name; vr_type; vr_core = Some vr_core; vr_tgt = (None, None);
-        vr_def = Some (def, `Inline); vr_kind = `Constant
+      { vr_name; vr_type; vr_core = Some vr_core;
+        vr_tgt  = (None, None);
+        vr_def  = Some (def, `Inline);
+        vr_kind = `Constant;
+        vr_invs = [];
       } in
 
     List.fold_left
@@ -2784,7 +2790,7 @@ let for_enums_decl (env : env) (decls : (PT.lident * PT.enum_decl) loced list) =
 
 (* -------------------------------------------------------------------- *)
 let for_var_decl (env : env) (decl : PT.variable_decl loced) =
-  let (x, ty, pe, tgt, ctt, _invs, _) = unloc decl in
+  let (x, ty, pe, tgt, ctt, invs, _) = unloc decl in
 
   let ty   = for_type env ty in
   let e    = Option.map (for_expr env ?ety:ty) pe in
@@ -2829,10 +2835,25 @@ let for_var_decl (env : env) (decl : PT.variable_decl loced) =
     let vtgt_tt = match tt with [Some tt] -> Some tt | _ -> None in
 
     let decl = {
-      vr_name = x  ; vr_type = dty;
-      vr_kind = ctt; vr_core = None;
+      vr_name = x;
+      vr_type = dty;
+      vr_kind = ctt;
+      vr_core = None;
+      vr_invs = [];
       vr_tgt  = (vtgt_tf, vtgt_tt);
       vr_def  = Option.map (fun e -> (e, `Std)) e; } in
+
+    (* FIXME: check in which env. checking invariants *)
+    let env, invs =
+      Env.inscope env (fun env ->
+        let env = Env.Local.push env (x, dty) in
+        for_lbls_formula env invs
+      ) in
+    let invs =
+      let for1 (label, term) =
+        M.{ label; term; loc = term.M.loc }
+      in List.map for1 invs in
+    let decl = { decl with vr_invs = invs; } in
 
     if   (check_and_emit_name_free env x)
     then (Env.Var.push env decl, Some decl)
@@ -3199,6 +3220,7 @@ let for_grouped_declarations (env : env) (toploc, g) =
       let vdecl = { vr_name = (mkloc loc statename);
                     vr_type = M.Tenum (mkloc loc ("$" ^ statename));
                     vr_kind = `Constant;
+                    vr_invs = [];
                     vr_def  = None;
                     vr_tgt  = (None, None);
                     vr_core = Some Cstate; } in
@@ -3278,7 +3300,7 @@ let variables_of_vdecls fdecls =
         constant = decl.vr_kind = `Constant;
         from     = Option.map mktgt (fst decl.vr_tgt);
         to_      = Option.map mktgt (snd decl.vr_tgt);
-        invs     = []; (* TODO *)
+        invs     = decl.vr_invs;
         loc      = loc decl.vr_name; }
 
   in List.map for1 (List.pmap (fun x -> x) fdecls)
