@@ -380,9 +380,10 @@ let opsigs =
     @ List.map (fun op -> (op, ([M.VTbool; M.VTbool], M.VTbool))) bins in
 
   let others : (PT.operator * (M.vtyp list * M.vtyp)) list =
-    [ `Arith PT.Plus, ([M.VTdate    ; M.VTduration      ], M.VTdate)             ;
-      `Arith PT.Plus, ([M.VTint     ; M.VTduration      ], M.VTduration)         ;
-      `Arith PT.Mult, ([M.VTrational; M.VTcurrency      ], M.VTcurrency       )  ] in
+    [ `Arith PT.Plus, ([M.VTdate    ; M.VTduration      ], M.VTdate)     ;
+      `Arith PT.Plus, ([M.VTint     ; M.VTduration      ], M.VTduration) ;
+      `Arith PT.Mult, ([M.VTrational; M.VTcurrency      ], M.VTcurrency) ;
+      `Arith PT.Mult, ([M.VTcurrency; M.VTrational      ], M.VTcurrency) ] in
 
   cmpsigs @ grptypes @ rgtypes @ ariths @ bools @ others
 
