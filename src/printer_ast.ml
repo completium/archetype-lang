@@ -615,7 +615,7 @@ let pp_specification fmt (v : lident specification) =
                     pp_id id
                     pp_label_term lt
                 )) l)) v.invariants
-      (pp_option (fun fmt -> Format.fprintf fmt "effect {@\n  @[%a@]}@\n" pp_pterm)) v.effect
+      (pp_option (fun fmt -> Format.fprintf fmt "effect {@\n  @[%a@]}@\n" pp_instruction)) v.effect
       (pp_no_empty_list2 pp_assert) v.asserts
       (pp_no_empty_list2 pp_postcondition) v.specs
 

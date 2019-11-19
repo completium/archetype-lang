@@ -419,7 +419,7 @@ type 'id specification = {
   theorems    : 'id label_term list;
   variables   : 'id variable list;
   invariants  : ('id * 'id label_term list) list;
-  effect      : 'id term_gen option;
+  effect      : 'id instruction_gen option;
   specs       : 'id postcondition list;
   asserts     : 'id assert_ list;
   loc         : Location.t [@opaque];

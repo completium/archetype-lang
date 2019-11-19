@@ -639,7 +639,7 @@ let to_model (ast : A.model) : M.model =
     let theorems       = List.map to_label_lterm v.theorems    in
     let variables      = List.map (fun x -> to_variable x) v.variables in
     let invariants     = List.map (fun (a, l) -> (a, List.map (fun x -> to_label_lterm x) l)) v.invariants in
-    let effects        = Option.map_dfl (fun x -> [to_mterm x]) [] v.effect in
+    let effects        = Option.map_dfl (fun x -> [to_instruction x]) [] v.effect in
     let postconditions = List.map to_postcondition v.specs @ List.map to_assert v.asserts in
     M.mk_specification
       ~predicates:predicates
