@@ -3375,9 +3375,8 @@ let specifications_of_ispecifications =
       in { env with M.variables = env.variables @ [var] }
 
     | `Effect (_, i) ->
-      (* FIXME *)
       assert (Option.is_none env.M.effect);
-      { env with M.effect = None; }
+      { env with M.effect = Some i; }
 
     | _ ->
       assert false
