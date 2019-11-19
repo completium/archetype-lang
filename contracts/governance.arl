@@ -8,8 +8,8 @@ variable[%mutable chairperson (instate (Created))%] startDate date = 2019-11-12T
 (* vote deadline *)
 variable[%mutable chairperson (instate (Created))%] deadline date = 2020-11-12T00:00:00
 
-asset voter identified by address {
-  address : role;
+asset voter identified by addr {
+  addr : role;
   hasVoted : bool
 }
 
@@ -34,7 +34,7 @@ action register (v : role) {
     c1 : state = Created;
   }
   effect {
-    voter.add({ address = v; hasVoted = false })
+    voter.add({ addr = v; hasVoted = false })
   }
 }
 
@@ -42,7 +42,7 @@ transition start from Created {
    to Voting when { now > startDate }
 }
 
-action vote (val : string (* key of voter *)) {
+action vote (val : pkey of ballot) {
    require {
      c2 : voter.contains(caller);
      c3 : state = Voting;
@@ -53,7 +53,7 @@ action vote (val : string (* key of voter *)) {
      voter.update (caller, { hasVoted = true });
      if ballot.contains(val) then
       ballot.update(val,{ nbvotes += 1})
-     else 
+     else
       ballot.add({ value = val; nbvotes = 1})
    }
 }

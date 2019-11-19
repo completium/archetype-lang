@@ -1,0 +1,14 @@
+archetype var_in_state_inv
+
+constant price tez = 1tz
+
+states =
+ | Init initial
+ | Completed with { i1 : balance = price; }
+
+
+action main {
+  effect {
+    require(true)
+  }
+}
