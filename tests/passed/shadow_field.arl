@@ -2,7 +2,7 @@ archetype shadow_field
 
 asset myasset {
   id: string;
-(* } shadow { *)
+} shadow {
   s: int = 0;
 } with {
   a1: s >= 0

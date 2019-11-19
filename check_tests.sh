@@ -32,7 +32,8 @@ process_file() {
                     NB_ERR=$((${NB_ERR} + 1))
                 fi
             else
-                echo -ne "  \033[31m KO \033[0m"
+                echo -ne "\033[31m KO \033[0m"
+                echo -ne "\033[31m KO \033[0m"
                 NB_ERR=$((${NB_ERR} + 1))
             fi
         else

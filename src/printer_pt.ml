@@ -855,11 +855,11 @@ let pp_action_properties fmt (props : action_properties) =
         pp_extensions exts
         (pp_expr e_default PNone) e) props.calledby;
   map_option (fun (cs, exts) ->
-      Format.fprintf fmt "require%a{@\n  @[%a@]@\n}@\n"
+      Format.fprintf fmt "require%a {@\n  @[%a@]@\n}@\n"
         pp_extensions exts
         pp_label_exprs cs) props.require;
   map_option (fun (cs, exts) ->
-      Format.fprintf fmt "failif%a{@\n  @[%a@]@\n}@\n"
+      Format.fprintf fmt "failif%a {@\n  @[%a@]@\n}@\n"
         pp_extensions exts
         pp_label_exprs cs) props.failif;
   (pp_list "@\n" pp_function) fmt (List.map unloc props.functions)
@@ -919,7 +919,7 @@ let rec pp_declaration fmt { pldesc = e; _ } =
       pp_id id
       (pp_prefix " " (pp_list " @," pp_asset_option)) opts
       (pp_do_if (List.length fields > 0) ((fun fmt -> Format.fprintf fmt " {@\n  @[%a@]@\n}@\n" (pp_list ";@\n" pp_field)))) fields
-      (pp_do_if (List.length shadow_fields > 0) ((fun fmt -> Format.fprintf fmt "} shadow {@\n  @[%a@]@\n}@\n" (pp_list ";@\n" pp_field)))) fields
+      (pp_do_if (List.length shadow_fields > 0) ((fun fmt -> Format.fprintf fmt "shadow {@\n  @[%a@]@\n}@\n" (pp_list ";@\n" pp_field)))) shadow_fields
       (pp_list "@\n" pp_asset_post_option) apo
 
   | Daction (id, args, props, code, exts) ->
