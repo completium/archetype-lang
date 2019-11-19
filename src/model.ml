@@ -418,6 +418,7 @@ type 'id asset_item_gen = {
   type_: type_;
   original_type: type_;
   default: 'id mterm_gen option;
+  shadow: bool;
 }
 [@@deriving show {with_path = false}]
 
@@ -722,8 +723,8 @@ let mk_enum_item ?(invariants = []) name : 'id enum_item_gen =
 let mk_asset ?(values = []) ?(sort=[]) ?(invariants = []) name key : 'id asset_gen =
   { name; values; sort; key; invariants }
 
-let mk_asset_item ?default name type_ original_type : 'id asset_item_gen =
-  { name; type_; original_type; default }
+let mk_asset_item ?default ?(shadow=false) name type_ original_type : 'id asset_item_gen =
+  { name; type_; original_type; default; shadow }
 
 let mk_contract_signature ?(args=[]) ?(loc=Location.dummy) name : 'id contract_signature_gen =
   { name; args; loc }

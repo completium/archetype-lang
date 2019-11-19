@@ -912,13 +912,14 @@ let rec pp_declaration fmt { pldesc = e; _ } =
                     (pp_list "@\n" (pp_prefix "| " pp_ident_state)) l
          )) ids
 
-  | Dasset (id, fields, opts, apo, ops, exts) ->
-    Format.fprintf fmt "asset%a%a %a%a%a%a"
+  | Dasset (id, fields, shadow_fields, opts, apo, ops, exts) ->
+    Format.fprintf fmt "asset%a%a %a%a%a%a%a"
       pp_extensions exts
       (pp_option pp_asset_operation) ops
       pp_id id
       (pp_prefix " " (pp_list " @," pp_asset_option)) opts
       (pp_do_if (List.length fields > 0) ((fun fmt -> Format.fprintf fmt " {@\n  @[%a@]@\n}@\n" (pp_list ";@\n" pp_field)))) fields
+      (pp_do_if (List.length shadow_fields > 0) ((fun fmt -> Format.fprintf fmt "} shadow {@\n  @[%a@]@\n}@\n" (pp_list ";@\n" pp_field)))) fields
       (pp_list "@\n" pp_asset_post_option) apo
 
   | Daction (id, args, props, code, exts) ->

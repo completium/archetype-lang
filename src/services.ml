@@ -112,7 +112,7 @@ let extract_properties (pt : archetype) : property list =
   in
 
   let ep_decl = function
-    | Dasset (_, _, _, a, _, _) ->
+    | Dasset (_, _, _, _, a, _, _) ->
       begin
         a
         |> List.fold_left (fun accu x ->

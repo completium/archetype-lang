@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
  - Invariants on constants and variables
  - Date and duration support
+ - Shadow fields in asset
 
 ### Changed
  - Improve loop generation in ligo output (issue #107)

@@ -1028,16 +1028,16 @@ let select_operator env loc (op, tys) =
   | _ -> begin
     let filter (sig_ : opsig) =
       Type.sig_compatible ~from_:tys ~to_:sig_.osl_sig in
-  
+
     match List.filter filter (List.assoc_all op opsigs) with
     | [] ->
       Env.emit_error env
         (loc, NoMatchingOperator (op, tys));
       None
-  
+
     | _::_::_ as sigs -> begin
         let module E = struct exception Bailout end in
-  
+
         try
           let sig_ =
             match
@@ -1045,20 +1045,20 @@ let select_operator env loc (op, tys) =
                 (fun sig_ -> Type.sig_equal sig_.osl_sig tys)
                 sigs
             with [sig_] -> sig_ | _ -> raise E.Bailout in
-  
+
           List.iter (fun sig2 ->
               if not (Type.sig_compatible ~from_:sig_.osl_sig ~to_:sig2.osl_sig) then
                 raise E.Bailout
             ) sigs;
-  
+
           Some sig_
-  
+
         with E.Bailout ->
           Env.emit_error env
             (loc, MultipleMatchingOperator (op, tys, sigs));
           None
       end
-  
+
     | [sig_] ->
       Some sig_
   end
@@ -2457,7 +2457,7 @@ let for_specification_item
     let poenv =
       if not (check_and_emit_name_free env x) then poenv else
         Option.fold (fun poenv ty -> Env.Local.push poenv (x, ty)) poenv ty
-        
+
     in ((env, poenv), `Variable (x, e))
 
   | PT.Vassert (x, f, invs, uses) -> begin
@@ -2883,7 +2883,7 @@ let for_funs_decl (env : env) (decls : PT.s_function loced list) =
 
 (* -------------------------------------------------------------------- *)
 let for_asset_decl ?(force = false) (env : env) (decl : PT.asset_decl loced) =
-  let (x, fields, opts, postopts, _ (* FIXME *), _) = unloc decl in
+  let (x, fields, shadow_fields, opts, postopts, _ (* FIXME *), _) = unloc decl in
 
   let for_field field =
     let PT.Ffield (f, fty, init, _) = unloc field in
@@ -2894,7 +2894,7 @@ let for_asset_decl ?(force = false) (env : env) (decl : PT.asset_decl loced) =
     then Some (mkloc (loc f) (unloc f, fty, init))
     else None in
 
-  let fields = List.pmap for_field fields in
+  let fields = List.pmap for_field (fields @ shadow_fields) in
 
   Option.iter
     (fun (_, { plloc = lc; pldesc = (name, _, _) }) ->
@@ -2982,7 +2982,7 @@ let for_asset_decl ?(force = false) (env : env) (decl : PT.asset_decl loced) =
         Env.emit_error env (loc decl, AssetWithoutFields);
         raise E.Bailout
       end;
-  
+
       let get_field_type { plloc = loc; pldesc = (x, ty, e) } =
         let ty =
           if   Option.is_some ty
@@ -3006,7 +3006,7 @@ let for_asset_decl ?(force = false) (env : env) (decl : PT.asset_decl loced) =
 (* -------------------------------------------------------------------- *)
 let for_assets_decl (env as env0 : env) (decls : PT.asset_decl loced list) =
   let b, env = List.fold_left (fun (b, env) decl ->
-      let (name, _, _, _, _, _) = unloc decl in
+      let (name, _, _, _, _, _, _) = unloc decl in
       let b = b && check_and_emit_name_free env name in
       let d = { as_name   = name;
                 as_fields = [];
@@ -3276,7 +3276,7 @@ let enums_of_statedecl (enums : statedecl list) : M.enum list =
 let assets_of_adecls adecls =
   let for1 (decl : assetdecl) =
     let for_field (f, (fty, dfl)) =
-      M.{ name = f; typ = Some fty; default = dfl; loc = loc f; } in
+      M.{ name = f; typ = Some fty; default = dfl; shadow  = false; loc = loc f; } in
 
     let spec (l, f) =
       M.{ label = l; term = f; loc = f.loc } in
@@ -3304,6 +3304,7 @@ let variables_of_vdecls fdecls =
           M.{ name    = decl.vr_name;
               typ     = Some decl.vr_type;
               default = Option.fst decl.vr_def;
+              shadow  = false;
               loc     = loc decl.vr_name; };
         constant = decl.vr_kind = `Constant;
         from     = Option.map mktgt (fst decl.vr_tgt);
@@ -3387,7 +3388,7 @@ let specifications_of_ispecifications =
 let functions_of_fdecls fdecls =
   let for1 (decl : env fundecl) =
     let args = List.map (fun (x, ty) -> M.{
-        name = x; typ = Some ty; default = None; loc = loc x;
+        name = x; typ = Some ty; default = None; shadow  = false; loc = loc x;
       }) decl.fs_args in
 
     let specs = Option.map specifications_of_ispecifications decl.fs_spec in
@@ -3439,7 +3440,7 @@ let transactions_of_tdecls tdecls =
     M.{ name = tdecl.ad_name;
         args =
           List.map (fun (x, xty) ->
-              M.{ name = x; typ = Some xty; default = None; loc = loc x; })
+              M.{ name = x; typ = Some xty; default = None; shadow  = false; loc = loc x; })
             tdecl.ad_args;
         calledby        = for_calledby tdecl.ad_callby;
         accept_transfer = tdecl.ad_actfs;

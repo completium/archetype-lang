@@ -349,6 +349,7 @@ type 'id decl_gen = {
   name    : 'id;
   typ     : ptyp option;
   default : 'id term_gen option;
+  shadow  : bool;
   loc     : Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]
@@ -632,8 +633,8 @@ let mk_enum_item ?(initial = false) ?(invariants = []) ?(loc = Location.dummy) n
 let mk_enum ?(items = []) ?(loc = Location.dummy) kind =
   { kind; items; loc }
 
-let mk_decl ?typ ?default ?(loc = Location.dummy) name =
-  { name; typ; default; loc }
+let mk_decl ?typ ?default ?(shadow=false) ?(loc = Location.dummy) name =
+  { name; typ; default; shadow; loc }
 
 let mk_asset ?(fields = []) ?key ?(sort = []) ?state ?init ?(specs = []) ?(loc = Location.dummy) name   =
   { name; fields; key; sort; state; init; specs; loc }

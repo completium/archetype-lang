@@ -76,6 +76,7 @@
       "require"             , REQUIRE        ;
       "return"              , RETURN         ;
       "security"            , SECURITY       ;
+      "shadow"              , SHADOW         ;
       "sorted"              , SORTED         ;
       "specification"       , SPECIFICATION  ;
       "states"              , STATES         ;

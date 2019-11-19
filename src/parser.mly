@@ -125,6 +125,7 @@
 %token RPAREN
 %token SECURITY
 %token SEMI_COLON
+%token SHADOW
 %token SOME
 %token SORTED
 %token SPECIFICATION
@@ -472,14 +473,19 @@ type_s_unloc:
 | COLLECTION { Collection }
 | PARTITION  { Partition }
 
+%inline shadow_asset_fields:
+| /* empty */ { [] }
+| SHADOW x=asset_fields { x }
+
 asset:
 | ASSET exts=extensions? ops=bracket(asset_operation)? x=ident opts=asset_options?
         fields=asset_fields?
+        sfields=shadow_asset_fields
                  apo=asset_post_options
                        {
                          let fs = match fields with | None -> [] | Some x -> x in
                          let os = match opts with | None -> [] | Some x -> x in
-                         Dasset (x, fs, os, apo, ops, exts) }
+                         Dasset (x, fs, sfields, os, apo, ops, exts) }
 
 asset_post_option:
 | WITH STATES x=ident           { APOstates x }

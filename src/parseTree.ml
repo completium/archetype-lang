@@ -310,6 +310,7 @@ and enum_decl =
 and asset_decl =
   lident
   * field list
+  * field list (* shadow fields *)
   * asset_option list
   * asset_post_option list
   * asset_operation option
