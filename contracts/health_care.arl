@@ -64,7 +64,7 @@ action pay_doctor (docid : address) {
   accept transfer
   called by insurer
   require {
-    r3 : state = Running;
+    r4 : state = Running;
   }
   effect {
     var ldebt = doctor.get(docid).debt;
@@ -84,7 +84,7 @@ action pay_fee {
   accept transfer
   called by patient
   require {
-    r4 : state = Running;
+    r5 : state = Running;
   }
   effect {
     let nb_periods : int = (now - last_fee) / period in  (* div is euclidean *)
@@ -92,7 +92,7 @@ action pay_fee {
     let decrease : tez = min (transferred, due) in
     transfer decrease to insurer;
     transfer (transferred - decrease) to patient;
-    last_fee = last_fee + period * nb_periods     (* last_fee <> now because div is euclidean *)
+    last_fee += period * nb_periods     (* last_fee <> now because div is euclidean *)
   }
 }
 
@@ -103,7 +103,7 @@ action pay_consulation {
   accept transfer
   called by patient
   require {
-    r5 : state = Running;
+    r6 : state = Running;
   }
   effect {
     let decrease : tez = min (transferred, consultation_debt) in
