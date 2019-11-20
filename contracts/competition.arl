@@ -10,14 +10,12 @@ variable[%mutable organiser (instate (Created))%] deadline date = 2020-11-12T00:
 
 variable[%traceable%] prize tez = 3500tz
 
-variable competitor role = @tz1competitor
-
 variable oracle role = @tz1oracle
 
 asset submission {
   competitor : role;
   score      : int;
-  date       : date;
+  timestamp  : date;
 }
 
 (* state machine *)
@@ -31,15 +29,15 @@ transition confirm from Created {
    to InProgress when { now > startdate }
 }
 
-action submit (competitor : pkey of competitor) (score[%signedby oracle%] : int) {
+action submit (ckey : pkey of submission) (pscore[%signedby oracle%] : int) {
   require {
     c1 : state = InProgress;
   }
 
   effect {
-    submission.add ({ competitor = competitor;
-                      score = score;
-                      date = now })
+    submission.add ({ competitor = ckey;
+                      score = pscore;
+                      timestamp = now })
   }
 }
 
@@ -50,7 +48,7 @@ transition decide from InProgress {
   }
   to Done
   with effect {
-    let submissions = submission.sort(asc(date)).sort(desc(score)) in
+    let submissions = submission.sort(timestamp).sort(desc(score)) in
       if submissions.count() >= 3
       then (
         let first = submissions.nth(0).competitor in

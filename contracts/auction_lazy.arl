@@ -31,7 +31,6 @@ action reclaim (witness : address) {
 
 specification {
   postcondition s1 {
-    forall a in address,
-      bid.contains(a) -> balance > bid.get(a).val
+    forall b in bid, balance > b.val
   }
 }

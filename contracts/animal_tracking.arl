@@ -20,8 +20,8 @@ asset field_a identified by name {
   business : business_a;
 }
 
-asset animal_a identified by id {
- id       : string;
+asset animal_a identified by ida {
+ ida      : string;
  typ      : animal_e;
  location : field_a;
 } with states movement_e

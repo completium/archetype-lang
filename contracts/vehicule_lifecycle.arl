@@ -1,9 +1,9 @@
 archetype vehicle_lifecycle
 
 asset owner {
-  id : role;
-  fn : string;
-  ln : string;
+  ido : role;
+  fn  : string;
+  ln  : string;
 }
 
 enum order_state =
@@ -14,7 +14,7 @@ enum order_state =
   | Delivered
 
 asset vehicledetail {
-  id : string
+  idv : string
 }
 
 asset order {

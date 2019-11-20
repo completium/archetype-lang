@@ -22,7 +22,7 @@ specification {
     not (pending_return.contains(highest_bidder))
   }
   postcondition highest_is_highest {
-    forall pr in prending_return,
+    forall pr in pending_return,
       pr.val <= highest_bid and pr.incumbent <> highest_bidder
   }
 }

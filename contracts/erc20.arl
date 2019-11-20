@@ -20,7 +20,7 @@ asset tokenHolder identified by holder {
     allowances : allowance collection;
 } with {
     i1: tokens >= 0;
-    i2: allowances.sum(the.amount) <= tokens;
+    i3: allowances.sum(the.amount) <= tokens;
 } initialized by [
   { holder = caller; tokens = total; allowances = [] }
 ]
@@ -29,16 +29,23 @@ action dotransfer (dest : pkey of tokenHolder) (value : int) {
 
   specification {
     p1 : before.tokenHolder.sum(tokens) = tokenHolder.sum(tokens);
-    p2 : let th = tokenHolder.get(th) in
-         th.tokens = before.th.tokens + value
+    p2 : let th = tokenHolder.get(dest) in
+         let bth = before.tokenHolder.get(dest) in
+         th.tokens = bth.tokens + value
+         otherwise true
          otherwise true;
     p3 : let thc = tokenHolder.get(caller) in
-         thc.tokens = before.thc.tokens - value
+         let bthc = before.tokenHolder.get(caller) in
+         thc.tokens = bthc.tokens - value
+         otherwise true
          otherwise true;
-    p4 : forall t in tokenHolder,
-         if t <> th then
-         if t <> caller then
-         t.tokens = before.t.tokens
+    p4 : let th = tokenHolder.get(dest) in
+         forall t in tokenHolder,
+         forall bt in before.tokenHolder,
+         t.holder <> th.holder ->
+         t.holder <> caller ->
+         t.tokens = bt.tokens
+         otherwise true;
   }
 
   failif {
