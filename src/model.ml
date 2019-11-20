@@ -662,7 +662,7 @@ type 'id model_gen = {
 
 type property =
   | Ppostcondition of postcondition * ident option
-  | PstorageInvariant of label_term
+  | PstorageInvariant of label_term * ident (* must be called asset invariant *)
   | PsecurityPredicate of security_item
 [@@deriving show {with_path = false}]
 
@@ -2577,7 +2577,7 @@ end = struct
 
   let retrieve_all_properties (m : model) : (ident * property) list =
     let fold_decl = function
-      | Dasset r -> List.map (fun (x : label_term) -> (unloc x.label, PstorageInvariant x)) r.invariants
+      | Dasset r -> List.map (fun (x : label_term) -> (unloc x.label, PstorageInvariant (x, unloc r.name))) r.invariants
       | _ -> []
     in
     let fold_specification (fun_id : ident option) (sp : specification): (ident * property) list =
