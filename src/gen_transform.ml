@@ -224,7 +224,7 @@ let prune_properties (model : model) : model =
       let props = Model.Utils.retrieve_all_properties model in
       List.fold_left (fun accu (label, prop) ->
           match prop with
-          | PstorageInvariant {term = formula; _} -> StorageInvariant (label, label, formula)::accu
+          | PstorageInvariant {term = formula; _} -> StorageInvariant (label, "mile", formula)::accu
           | _ -> accu
         ) [] props
     in
