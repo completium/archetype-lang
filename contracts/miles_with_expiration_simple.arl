@@ -32,8 +32,8 @@ action consume (ow : address) (qty : int) {
     specification {
         postcondition p0 {
             let before_o = before.owner.get(ow) in
-                let o = owner.get(ow) in
-                o.miles.sum(the.quantity) = before_o.miles.sum(the.quantity) - qty
+                let after_o = owner.get(ow) in
+                after_o.miles.sum(the.quantity) = before_o.miles.sum(the.quantity) - qty
                 otherwise true
             otherwise true
             invariant for loop {

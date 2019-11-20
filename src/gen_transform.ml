@@ -194,11 +194,11 @@ let prune_properties (model : model) : model =
   match !Options.opt_property_focused with
   | "" -> model
   | fp_id ->
-    let p_ids =
-      fp_id::
+    let _is_inv, uses =
       (match Model.Utils.retrieve_property model fp_id with
-       | Ppostcondition (p, _f_id) -> List.map unloc p.uses
-       | _ -> [])
+       | PstorageInvariant _ -> true, []
+       | Ppostcondition (p, _f_id) -> false, List.map unloc p.uses
+       | _ -> false, [])
     in
 
     let p_funs =
@@ -215,11 +215,21 @@ let prune_properties (model : model) : model =
             | Ppostcondition _     -> all_funs
             | PstorageInvariant _  -> all_funs
             | PsecurityPredicate _ -> all_funs
-          ) [] p_ids
+          ) [] (fp_id::uses)
       end
     in
 
-    let remain_id id = List.exists (String.equal id) p_ids in
+    let api_verifs : api_verif list =
+      (* let is_api_verif id = List.exists (String.equal id) uses in *)
+      let props = Model.Utils.retrieve_all_properties model in
+      List.fold_left (fun accu (label, prop) ->
+          match prop with
+          | PstorageInvariant {term = formula; _} -> StorageInvariant (label, label, formula)::accu
+          | _ -> accu
+        ) [] props
+    in
+
+    let remain_id id = String.equal id fp_id in
     let remain_function id = List.exists (String.equal id) p_funs in
     let prune_mterm (mt : mterm) : mterm =
       let rec aux (mt : mterm) : mterm =
@@ -271,6 +281,7 @@ let prune_properties (model : model) : model =
     let f1 = (fun (fs : function_struct) -> remain_function (unloc fs.name)) in
     let f2 = (fun (x : function__) -> match x.node with | Entry fs -> fs | Function (fs, _) -> fs) in
     { model with
+      api_verif = api_verifs;
       decls = List.map prune_decl model.decls;
       functions = List.map prune_function__ (List.filter (f1 |@ f2) model.functions);
       specification = prune_specs model.specification;
