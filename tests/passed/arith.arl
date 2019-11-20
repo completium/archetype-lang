@@ -67,6 +67,8 @@ action main {
 
     var duration_date_plus   : date = du1 + da2;
 
+    var string_string_plus : string = str1 + str2; (* concat *)
+
     var tez_tez_plus   : tez = t1 + t2;
     var tez_tez_minus  : tez = t1 - t2;
 
