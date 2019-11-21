@@ -33,16 +33,16 @@ let emit_error (desc : error_desc) =
 let rec gen_shallow_args (m : M.model) d (id : I.ident) (t : M.type_) (acc : M.argument list)
   : M.argument list =
   match t with
-  | M.Tasset i                 when M.Utils.has_partition m (unloc i) ->
+  | M.Tasset i                 when M.Utils.has_container m (unloc i) ->
     extract_asset_collection m d id (unloc i) acc
-  | M.Tcontainer ((Tasset i), _) when M.Utils.has_partition m (unloc i) ->
+  | M.Tcontainer ((Tasset i), _) when M.Utils.has_container m (unloc i) ->
     extract_asset_collection m d id (unloc i) acc
   | _ ->
     (*let str = Format.asprintf "%a@." M.pp_type_ t in
         print_endline str;*)
     acc
 and extract_asset_collection m d id i acc =
-  let colls = M.Utils.get_asset_partitions m i in
+  let colls = M.Utils.get_asset_containers m i in
   List.fold_left (fun acc (i,t,dv) ->
       let id  = id ^ "_" ^ i in
       let arg = dumloc id, (*mk_type d*) t, dv in
@@ -163,7 +163,7 @@ let rec map_shallow (ctx : (I.ident * (M.lident * M.type_) list) list) m (t : M.
         M.Maddshallow (n,shallow_args)
       else  M.Maddasset (n,a)
     | M.Maddasset (n,a) when M.Utils.is_asset a ->
-      if M.Utils.has_partition m n
+      if M.Utils.has_container m n
       then
         let shallow_args = map_shallow_asset m ctx a in
         M.Maddshallow (n, shallow_args)
@@ -177,14 +177,14 @@ let rec map_shallow (ctx : (I.ident * (M.lident * M.type_) list) list) m (t : M.
       else M.Maddfield (n,f,a,v)
     | M.Maddfield (n,f,a,v) when M.Utils.is_asset v ->
       let vt = M.Utils.get_asset_type v in
-      if M.Utils.has_partition m vt then
+      if M.Utils.has_container m vt then
         let shallow_args = map_shallow_asset m ctx v in
         M.Mapp (dumloc ("add_shallow_"^n^"_"^f),[a] @ shallow_args)
       else M.Maddfield (n,f,a,v)
     | M.Mletin ([id],v,t,b,o) when M.Utils.is_asset v ->
       begin
         match v.type_ with
-        | Tasset a when M.Utils.has_partition m (unloc a) ->
+        | Tasset a when M.Utils.has_container m (unloc a) ->
           let shallow_args = map_shallow_asset m ctx v in
           let new_letins   = mk_new_letins (unloc id) (tl shallow_args) in
           let new_ctx      = mk_ctx ctx (unloc id) (tl shallow_args) in
@@ -197,17 +197,17 @@ let rec map_shallow (ctx : (I.ident * (M.lident * M.type_) list) list) m (t : M.
       end
     | M.Mdotasset (e,i) ->
       let asset = M.Utils.get_asset_type e in
-      let partitions = M.Utils.get_asset_partitions m asset in
+      let containers = M.Utils.get_asset_containers m asset in
       begin
         if List.exists (fun (pi,_pt,_pd) ->
-            compare (i |> unloc) pi = 0) partitions then
-          let rec get_partition_type = function
+            compare (i |> unloc) pi = 0) containers then
+          let rec get_container_type = function
             | (pi,pt,_pd)::_tl
               when compare (i |> unloc) pi = 0 -> pt
-            | _r::tl -> get_partition_type tl
+            | _r::tl -> get_container_type tl
             | [] -> assert false in
-          let ty = get_partition_type partitions in
-          let pa = M.Utils.dest_partition ty in
+          let ty = get_container_type containers in
+          let pa = M.Utils.dest_container ty in
           M.Munshallow (pa,M.mk_mterm (M.Mdotasset (map_shallow ctx m e, i)) t.M.type_)
         else
           M.Mdotasset (map_shallow ctx m e,i)
@@ -268,7 +268,7 @@ let gen_add_shallow_fun (model : M.model) (n : I.ident) : M.function__ =
   }
 
 let gen_add_shallow_field_fun (model : M.model) (n,f : I.ident * I.ident) : M.function__ =
-  let pa,_k,_kt = M.Utils.get_partition_asset_key model n f in
+  let pa,_k,_kt = M.Utils.get_container_asset_key model n f in
   let arg    = (dumloc "added_asset",M.Tasset (dumloc pa),None) in
   let _,asset_args = gen_shallow_args model (dumloc "added_asset") (Tasset (dumloc pa)) arg in
   let asset_arg = (dumloc "asset",M.Tasset (dumloc n),None) in
@@ -298,7 +298,7 @@ let get_added_assets (model : M.model) : I.ident list =
     | M.Maddasset (n,_) ->
       if List.mem n acc then
         acc
-      else if M.Utils.has_partition model n then
+      else if M.Utils.has_container model n then
         acc @ [n]
       else acc
     | _ -> M.fold_term (f ctx) acc t
@@ -313,7 +313,7 @@ let get_added_asset_fields (model : M.model) : (I.ident * I.ident) list =
         acc
       else
         let vt = M.Utils.get_asset_type v in
-        if M.Utils.has_partition model vt then
+        if M.Utils.has_container model vt then
           acc @ [n,fd]
         else acc
     | _ -> M.fold_term (f ctx) acc t

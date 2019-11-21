@@ -2014,14 +2014,15 @@ module Utils : sig
   val get_field_container                : model -> ident -> ident -> (ident * container)
   val is_storage_attribute               : model -> ident -> bool
   val get_named_field_list               : model -> ident -> 'a list -> (ident * 'a) list
+  val get_containers                     : model -> (ident * ident * type_) list (* asset id, asset item *)
   val get_partitions                     : model -> (ident * ident * type_) list (* asset id, asset item *)
-  val dest_partition                     : type_ -> ident
-  val get_partition_asset_key            : model -> ident -> ident -> (ident * ident * btyp)
-  val get_partition_assets               : model -> ident -> ident list
+  val dest_container                     : type_ -> ident
+  val get_container_asset_key            : model -> ident -> ident -> (ident * ident * btyp)
+  val get_container_assets               : model -> ident -> ident list
   val get_entries                        : model -> (specification option * function_struct) list
   val get_functions                      : model -> (specification option * function_struct* type_) list
-  val has_partition                      : model -> ident -> bool
-  val get_asset_partitions               : model -> ident -> (ident * type_ * mterm option) list
+  val has_container                      : model -> ident -> bool
+  val get_asset_containers               : model -> ident -> (ident * type_ * mterm option) list
   val get_field_list                     : model -> ident -> ident list
   val get_field_pos                      : model -> ident -> ident -> int (* m, asset, field *)
   val get_nth_asset_val                  : int -> mterm -> mterm
@@ -2064,7 +2065,7 @@ end = struct
   type error_desc =
     | AssetFieldNotFound of string * string
     | AssetKeyTypeNotFound of string
-    | PartitionNotFound
+    | ContainerNotFound
     | NotanArray
     | NotaRecord of mterm
     | NotanAssetType
@@ -2252,41 +2253,47 @@ end = struct
     | Tvset _
     | Ttrace _ -> Format.fprintf fmt "todo"
 
-  let get_partitions m : (ident * ident * type_) list =
+  let get_containers_internal f m : (ident * ident * type_) list =
     get_assets m |> List.fold_left (fun acc (asset : asset) ->
         acc @ (List.fold_left (fun acc (v : asset_item) ->
             let t : type_ = v.original_type in
             match t with
-            | Tcontainer (Tasset _, Partition) ->
+            | _ when f t ->
               acc @ [unloc asset.name, unloc v.name, t]
             | _ -> acc
           ) [] asset.values)
       ) []
 
-  let has_partition (m : model) (asset : ident) : bool =
+  let get_containers m : (ident * ident * type_) list =
+    get_containers_internal (function | Tcontainer (Tasset _, (Partition | Collection)) -> true | _ -> false ) m
+
+  let get_partitions m : (ident * ident * type_) list =
+    get_containers_internal (function | Tcontainer (Tasset _, Partition) -> true | _ -> false ) m
+
+  let has_container (m : model) (asset : ident) : bool =
     try
       let asset = get_asset m asset in
       List.fold_left (fun acc v ->
           match v.type_ with
-          | Tcontainer (Tasset _, Partition) -> true
+          | Tcontainer (Tasset _, (Partition | Collection)) -> true
           | _ -> acc
         ) false asset.values
     with
     | Not_found -> false
 
-  let get_asset_partitions (m : model) (asset : ident) : (ident * type_ * (lident mterm_gen option)) list =
+  let get_asset_containers (m : model) (asset : ident) : (ident * type_ * (lident mterm_gen option)) list =
     try
       let asset = get_asset m asset in
       List.fold_left (fun acc v ->
           match v.type_ with
-          | Tcontainer (Tasset _, Partition) -> acc @ [unloc v.name, v.type_, v.default]
+          | Tcontainer (Tasset _, (Partition | Collection)) -> acc @ [unloc v.name, v.type_, v.default]
           | _ -> acc
         ) [] asset.values
     with
     | Not_found -> []
 
-  let dest_partition = function
-    | Tcontainer (Tasset p,Partition) -> unloc p
+  let dest_container = function
+    | Tcontainer (Tasset p,(Partition | Collection)) -> unloc p
     | _ -> assert false
 
   let get_asset_field (m : model) (asset_name, field_name : ident * ident) : ident * type_ * mterm option =
@@ -2322,23 +2329,23 @@ end = struct
     | Tcontainer (Tasset an, c) -> (unloc an, c)
     | _ -> assert false
 
-  let get_partition_assets model asset : ident list =
-    get_partitions model
+  let get_container_assets model asset : ident list =
+    get_containers model
     |> List.filter (fun (a,_,_) -> String.equal asset a)
     |> List.map (fun (_,_,t) -> type_to_asset t)
 
   (* returns : asset name, key name, key type *)
-  let get_partition_asset_key model asset field : (ident * ident * btyp) =
-    let partitions = get_partitions model in
+  let get_container_asset_key model asset field : (ident * ident * btyp) =
+    let containers = get_containers model in
     let rec rec_get = function
       | (r,i,t) :: _tl when String.equal r asset &&
                             String.equal i field ->
-        let pa  = dest_partition t in
+        let pa  = dest_container t in
         let k,t = get_asset_key model pa in
         (pa,k,t)
       | _ :: tl -> rec_get tl
-      | _ -> emit_error (PartitionNotFound) in
-    rec_get partitions
+      | _ -> emit_error (ContainerNotFound) in
+    rec_get containers
 
   let get_storage model =
     model.storage

@@ -60,16 +60,16 @@ let split_key_values (model : model) : model =
 
     | Mdotasset (e, i) ->
       let asset = Utils.get_asset_type e in
-      let partitions = Utils.get_asset_partitions model asset in
+      let containers = Utils.get_asset_containers model asset in
       if List.exists (fun (pi, _pt, _pd) ->
-          compare (i |> unloc) pi = 0) partitions then
-        let rec get_partition_type = function
+          compare (i |> unloc) pi = 0) containers then
+        let rec get_container_type = function
           | (pi,pt,_pd)::_tl
             when compare (i |> unloc) pi = 0 -> pt
-          | _r::tl -> get_partition_type tl
+          | _r::tl -> get_container_type tl
           | [] -> assert false in
-        let ty = get_partition_type partitions in
-        let pa = Utils.dest_partition ty in
+        let ty = get_container_type containers in
+        let pa = Utils.dest_container ty in
         mk_mterm (Mshallow (pa, { x with node = Mdotasset (f ctx e, i) })) ty
       else
         { x with node = Mdotasset (f ctx e, i) }

@@ -430,7 +430,7 @@ let adds_asset m an b =
     match term.M.node with
     | M.Maddasset (a,_) ->  compare a an = 0
     | M.Maddfield (a,f,_,_) ->
-      let (pa,_,_) = M.Utils.get_partition_asset_key m a f in
+      let (pa,_,_) = M.Utils.get_container_asset_key m a f in
       compare pa an = 0
     | _ -> M.fold_term internal_adds acc term in
   internal_adds false b
@@ -689,9 +689,9 @@ let record_to_clone m (r : M.asset) =
            Cval  ("eqf" |> with_dummy_loc, "eq_"^(unloc r.name) |> with_dummy_loc)])
 
 let mk_partition_axioms (m : M.model) =
-  M.Utils.get_partitions m |> List.map (fun (n,i,_) ->
+  M.Utils.get_containers m |> List.map (fun (n,i,_) ->
       let kt     = M.Utils.get_asset_key m n |> snd |> map_btype in
-      let pa,_,pkt  = M.Utils.get_partition_asset_key m n i in
+      let pa,_,pkt  = M.Utils.get_container_asset_key m n i in
       mk_partition_axiom n i kt pa (pkt |> map_btype)
     ) |> loc_decl |> deloc
 
@@ -779,14 +779,14 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | M.Mshallow (a,e) -> Tapp (loc_term (Tvar ("shallow_"^a)),[map_mterm m ctx e])
     | M.Mcontains (a,_,r) -> Tapp (loc_term (Tvar ("contains_"^a)),[map_mterm m ctx r])
     | M.Maddfield (a,f,c,i) ->
-      let t,_,_ = M.Utils.get_partition_asset_key m a f in
+      let t,_,_ = M.Utils.get_container_asset_key m a f in
       mk_trace_seq m
         (Tapp (loc_term (Tvar ("add_"^a^"_"^f)),
                [map_mterm m ctx c; map_mterm m ctx i]))
         [CUpdate f; CAdd t]
     | M.Mget (n,k) -> Tapp (loc_term (Tvar ("get_"^n)),[map_mterm m ctx k])
     | M.Maddshallow (n,l) ->
-      let pa = M.Utils.get_partition_assets m n |> List.map (fun a ->
+      let pa = M.Utils.get_container_assets m n |> List.map (fun a ->
           CAdd (String.capitalize_ascii a)) in
       mk_trace_seq m
         (Tapp (loc_term (Tvar ("add_shallow_"^n)),List.map (map_mterm m ctx) l))
@@ -889,7 +889,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
                                        ]))))
         (List.map (fun f -> CUpdate f) l)
     | M.Mremovefield (a,f,k,v) ->
-      let t,_,_ = M.Utils.get_partition_asset_key m a f in
+      let t,_,_ = M.Utils.get_container_asset_key m a f in
       let asset =
         match v.node with
         | M.Mdotasset (a,_) -> map_mterm m ctx a
@@ -1592,14 +1592,14 @@ let mk_storage_api (m : M.model) records =
         acc @ [mk_set_asset m k record]
       | M.APIStorage (UpdateAdd (a,pf)) ->
         let k            = M.Utils.get_asset_key m a |> fst in
-        let (pa,addak,_) = M.Utils.get_partition_asset_key m a pf in
+        let (pa,addak,_) = M.Utils.get_container_asset_key m a pf in
         acc @ [
           (*mk_add_asset           pa.pldesc addak.pldesc;*)
           mk_add_partition_field m a k pf pa addak
         ]
       | M.APIStorage (UpdateRemove (n,f)) ->
         let t         = M.Utils.get_asset_key m n |> fst in
-        let (pa,pk,_) = M.Utils.get_partition_asset_key m n f in
+        let (pa,pk,_) = M.Utils.get_container_asset_key m n f in
         acc @ [
           (*mk_rm_asset           pa.pldesc (pt |> map_btype);*)
           mk_rm_partition_field m n t f pa pk

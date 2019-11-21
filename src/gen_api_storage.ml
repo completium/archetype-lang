@@ -34,12 +34,12 @@ let process_api_storage (model : model) : model =
       | Maddasset (asset_name, _) ->
         [APIStorage (Add asset_name)]
       | Maddfield (asset_name, field_name, _, _) ->
-        let (pa,_,_) = Utils.get_partition_asset_key model asset_name field_name in
+        let (pa,_,_) = Utils.get_container_asset_key model asset_name field_name in
         [APIStorage (Add pa); APIStorage (UpdateAdd (asset_name, field_name))]
       | Mremoveasset (asset_name, _) ->
         [APIStorage (Remove asset_name)]
       | Mremovefield (asset_name, field_name, _, _) ->
-        let (pa,_,_) = Utils.get_partition_asset_key model asset_name field_name in
+        let (pa,_,_) = Utils.get_container_asset_key model asset_name field_name in
         [APIStorage (Remove pa);APIStorage (UpdateRemove (asset_name, field_name))]
       | Mclearasset (asset_name) ->
         [APIStorage (Clear asset_name)]
