@@ -21,7 +21,7 @@ process_ligo() {
     fi
 
     if [ -x "$(command -v ligo)" ]; then
-        ligo compile-contract $OUT main >$TZ
+        ligo compile-contract $OUT main >$TZ 2> /dev/null
         RET=$(echo $?)
         if [ ${RET} -eq 0 ]; then
             echo -ne "\033[32m OK \033[0m"
