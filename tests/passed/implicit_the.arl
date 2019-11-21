@@ -1,0 +1,13 @@
+archetype implicit_the
+
+asset myasset {
+  id: string;
+  value: int;
+}
+
+action myaction {
+
+  effect {
+    var l = myasset.select(value = 0)
+  }
+}

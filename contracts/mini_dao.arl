@@ -8,11 +8,14 @@ asset shares identified by addr {
 action withdraw {
   specification {
     postcondition p1 {
-      balance = before.balance - shares.get(caller).value
+      let s = shares.get(caller) in
+      balance = before.balance - s.value
+      otherwise true
     }
   }
   require {
-    r1 : shares.get(caller).value > 0mtz;
+    r0 : shares.contains(caller);
+    r1 : shares.get(caller).value > 0tz;
     r2 : balance >= shares.get(caller).value;
   }
   effect {

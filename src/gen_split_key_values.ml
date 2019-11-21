@@ -16,30 +16,29 @@ let lident_asset_assets = to_lident asset_assets
 let split_key_values (model : model) : model =
   let storage =
     List.fold_right (fun x accu ->
-        match x with
-        | {asset = Some an; _} as f ->
-          let _k, t = Utils.get_asset_key model an in
+        match x.model_type with
+        | MTasset an ->
+          let an = dumloc an in
+          let _k, t = Utils.get_asset_key model (unloc an) in
           let type_key = Tcontainer (Tbuiltin t, Collection) in
           let init_keys, init_assets =
             (* TODO: initialize with f.default value*)
             Marray [], Marray []
           in
           let asset_keys =
-            mk_storage_item (SIname (dumloc (asset_keys (unloc an))))
+            mk_storage_item (dumloc (asset_keys (unloc an)))
+              (MTasset (unloc an))
               type_key
               (mk_mterm init_keys type_key)
-              ~asset:an
-              ~invariants:f.invariants
-              ~loc:f.loc
+              ~loc:x.loc
           in
           let type_asset = Tassoc (t, Tasset an) in
           let asset_assets =
-            mk_storage_item (SIname (dumloc (asset_assets (unloc an))))
+            mk_storage_item (dumloc (asset_assets (unloc an)))
+              (MTasset (unloc an))
               type_asset
               (mk_mterm init_assets type_asset)
-              ~asset:an
-              ~invariants:f.invariants
-              ~loc:f.loc
+              ~loc:x.loc
           in
           asset_keys::asset_assets::accu
         | _ -> x::accu)
@@ -51,7 +50,7 @@ let split_key_values (model : model) : model =
     | Mselect (an, col, pred) ->
       let col = f ctx col in
       let pred = f ctx pred in
-      let _k, t = Utils.get_asset_key model (dumloc an) in
+      let _k, t = Utils.get_asset_key model an in
       { x with node = Mselect (an, col, pred); type_ = Tcontainer (Tbuiltin t, Collection)}
 
     | Mletin (ids, init, _, body, o) ->
@@ -61,16 +60,16 @@ let split_key_values (model : model) : model =
 
     | Mdotasset (e, i) ->
       let asset = Utils.get_asset_type e in
-      let partitions = Utils.get_asset_partitions model (asset |> unloc) in
+      let containers = Utils.get_asset_containers model asset in
       if List.exists (fun (pi, _pt, _pd) ->
-          compare (i |> unloc) pi = 0) partitions then
-        let rec get_partition_type = function
+          compare (i |> unloc) pi = 0) containers then
+        let rec get_container_type = function
           | (pi,pt,_pd)::_tl
             when compare (i |> unloc) pi = 0 -> pt
-          | _r::tl -> get_partition_type tl
+          | _r::tl -> get_container_type tl
           | [] -> assert false in
-        let ty = get_partition_type partitions in
-        let pa = Utils.dest_partition ty |> unloc in
+        let ty = get_container_type containers in
+        let pa = Utils.dest_container ty in
         mk_mterm (Mshallow (pa, { x with node = Mdotasset (f ctx e, i) })) ty
       else
         { x with node = Mdotasset (f ctx e, i) }
@@ -79,7 +78,7 @@ let split_key_values (model : model) : model =
 
     | Mvarstorecol an ->
       (
-        let _k, t = Utils.get_asset_key model an in
+        let _k, t = Utils.get_asset_key model (unloc an) in
         { x with node = Mvarstorecol (lident_asset_keys an); type_ = Tcontainer (Tbuiltin t, Collection) }
       )
     | Mfor (id, col, body, lbl) ->
@@ -106,7 +105,7 @@ let split_key_values (model : model) : model =
         | Tcontainer (Tasset an, _) -> an
         | _ -> assert false
       in
-      let _k, t = Utils.get_asset_key model an in
+      let _k, t = Utils.get_asset_key model (unloc an) in
 
       let col = f ctx col in
       let body = f ctx body in

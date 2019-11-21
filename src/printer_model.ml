@@ -77,13 +77,13 @@ let pp_operator fmt op =
   in
   pp_str fmt (to_str op)
 
-let rec pp_qualid fmt (q : qualid) =
-  match q.node with
-  | Qdot (q, i) ->
+(* let rec pp_qualid fmt (q : qualid) =
+   match q.node with
+   | Qdot (q, i) ->
     Format.fprintf fmt "%a.%a"
       pp_qualid q
       pp_id i
-  | Qident i -> pp_id fmt i
+   | Qident i -> pp_id fmt i *)
 
 let pp_pattern fmt (p : pattern) =
   match p.node with
@@ -112,7 +112,7 @@ let pp_mterm fmt (mt : mterm) =
 
     | Mmatchwith (e, l) ->
       let pp fmt (e, l) =
-        Format.fprintf fmt "match %a with@\n@[<v 2>%a@]"
+        Format.fprintf fmt "match %a with@\n  @[%a@]"
           f e
           (pp_list "@\n" (fun fmt (p, x) ->
                Format.fprintf fmt "| %a -> %a"
@@ -153,6 +153,23 @@ let pp_mterm fmt (mt : mterm) =
           f k
       in
       pp fmt (c, k)
+
+    | Mgetbefore (c, k) ->
+      let pp fmt (c, k) =
+        Format.fprintf fmt "get_%a_before (%a)"
+          pp_str c
+          f k
+      in
+      pp fmt (c, k)
+
+    | Mgetat (c, d, k) ->
+      let pp fmt (c, d, k) =
+        Format.fprintf fmt "get_%a_at_%a (%a)"
+          pp_str c
+          pp_str d
+          f k
+      in
+      pp fmt (c, d, k)
 
     | Mset (c, l, k, v) ->
       let pp fmt (c, _l, k, v) =
@@ -559,7 +576,7 @@ let pp_mterm fmt (mt : mterm) =
       in
       pp fmt e
 
-    | Mrecord l ->
+    | Masset l ->
       Format.fprintf fmt "{%a}"
         (pp_list "; " f) l
     | Mletin (ids, a, t, b, o) ->
@@ -601,7 +618,7 @@ let pp_mterm fmt (mt : mterm) =
       Format.fprintf fmt "(%a div %a)"
         pp_big_int n
         pp_big_int d
-    | Mdate v -> pp_str fmt v
+    | Mdate v -> Core.pp_date fmt v
     | Mstring v ->
       Format.fprintf fmt "\"%a\""
         pp_str v
@@ -660,11 +677,10 @@ let pp_mterm fmt (mt : mterm) =
     | Massignstate x ->
       Format.fprintf fmt "state = %a"
         f x
-    | Mtransfer (x, b, q) ->
-      Format.fprintf fmt "transfer%s %a%a"
-        (if b then " back" else "")
-        f x
-        (pp_option (fun fmt -> Format.fprintf fmt " to %a" pp_qualid)) q
+    | Mtransfer (v, d) ->
+      Format.fprintf fmt "transfer %a to %a"
+        f v
+        f d
     | Mbreak -> pp_str fmt "break"
     | Massert x ->
       Format.fprintf fmt "assert %a"
@@ -718,6 +734,11 @@ let pp_mterm fmt (mt : mterm) =
       Format.fprintf fmt "before %a"
         f e
 
+    | Msetat (lbl, e) ->
+      Format.fprintf fmt "at(%a) %a"
+        pp_str lbl
+        f e
+
     | Msetunmoved e ->
       Format.fprintf fmt "unmoved %a"
         f e
@@ -739,6 +760,11 @@ let pp_mterm fmt (mt : mterm) =
         f e
   in
   f fmt mt
+
+let pp_label_term fmt (lt : label_term) =
+  Format.fprintf fmt "%a : %a"
+    pp_id lt.label
+    pp_mterm lt.term
 
 let pp_storage_const fmt = function
   | Get an -> pp_str fmt ("get\t " ^ an)
@@ -800,50 +826,11 @@ let pp_api_items fmt l =
     Format.fprintf fmt "api items:@\n%a@\n--@\n"
       (pp_list "@\n" pp_api_item) l
 
-let pp_info_var fmt (iv : info_var) =
-  Format.fprintf fmt "%s %a %a%a@\n"
-    (if iv.constant then "constant" else "variable")
-    pp_ident iv.name
-    pp_type iv.type_
-    (pp_option (pp_prefix " := " pp_mterm)) iv.init
-
-let pp_info_enum fmt (ie : info_enum) =
-  Format.fprintf fmt "enum %a:@\n  @[%a@]@\n"
-    pp_ident ie.name
-    (pp_list "@\n" pp_ident) ie.values
-
-let pp_info_asset fmt (ia : info_asset) =
-  Format.fprintf fmt "asset %a = {@\n  @[%a@]@\n}@\n"
-    pp_ident ia.name
-    (pp_list "@\n" (fun fmt (i, t, init) ->
-         Format.fprintf fmt "%a : %a%a%a"
-           pp_ident i
-           pp_type t
-           (pp_option (pp_prefix " := " pp_mterm)) init
-           (pp_do_if (String.equal ia.key i) pp_str) " [key]"
-       )) ia.values
-
-let pp_info_contract fmt (ic : info_contract) =
-  Format.fprintf fmt "contract %a:@\n  @[%a@]@\n"
-    pp_ident ic.name
-    (pp_list "@\n" (fun fmt (i, ts) ->
-         Format.fprintf fmt "%a : %a;"
-           pp_ident i
-           (pp_list ", " pp_type_) ts
-       )) ic.signatures
-
-let pp_info_item fmt = function
-  | Ivar iv -> pp_info_var fmt iv
-  | Ienum ie -> pp_info_enum fmt ie
-  | Iasset ia -> pp_info_asset fmt ia
-  | Icontract ic -> pp_info_contract fmt ic
-
-let pp_infos fmt l =
-  if List.is_empty l
-  then pp_str fmt "no infos"
-  else
-    Format.fprintf fmt "info items:@\n@\n%a@\n--@\n"
-      (pp_list "@\n" pp_info_item) l
+let pp_var fmt (var : var) =
+  Format.fprintf fmt "%a %a%a"
+    pp_id var.name
+    pp_type var.type_
+    (pp_do_if (not (List.is_empty var.invariants)) (fun fmt xs -> Format.fprintf fmt "@\nwith {@\n  @[%a@]@\n}@\n" (pp_list ";@\n" pp_label_term) xs)) var.invariants
 
 let pp_enum_item fmt (enum_item : enum_item) =
   Format.fprintf fmt "%a"
@@ -854,17 +841,20 @@ let pp_enum fmt (enum : enum) =
     pp_id enum.name
     (pp_list "@\n" pp_enum_item) enum.values
 
-let pp_record_item fmt (item : record_item) =
+let pp_asset_item fmt (item : asset_item) =
   Format.fprintf fmt "%a : %a%a"
     pp_id item.name
     pp_type item.type_
     (pp_option (fun fmt -> Format.fprintf fmt " := %a" pp_mterm)) item.default
 
-let pp_record fmt (record : record) =
-  Format.fprintf fmt "record %a%a {@\n@[<v 2>  %a@]@\n}@\n"
-    pp_id record.name
-    (pp_option (fun fmt -> Format.fprintf fmt " identified by %a" pp_id)) record.key
-    (pp_list "@\n" pp_record_item) record.values
+let pp_asset fmt (asset : asset) =
+  Format.fprintf fmt "asset %a identified by %a%a {@\n  @[%a@]@\n}%a@\n"
+    pp_id asset.name
+    pp_str asset.key
+    (pp_do_if (not (List.is_empty asset.sort)) (fun fmt xs -> Format.fprintf fmt " sorted by %a" (pp_list ";@\n" pp_str) xs)) asset.sort
+    (pp_list "@\n" pp_asset_item) asset.values
+    (pp_do_if (not (List.is_empty asset.invariants)) (fun fmt xs -> Format.fprintf fmt "@\nwith {@\n  @[%a@]@\n}@\n" (pp_list ";@\n" pp_label_term) xs)) asset.invariants
+
 
 let pp_contract_signature fmt (cs : contract_signature) =
   Format.fprintf fmt "%a : %a"
@@ -878,21 +868,16 @@ let pp_contract fmt (contract : contract) =
     (pp_option pp_mterm) contract.init
 
 let pp_decl fmt = function
+  | Dvar v -> pp_var fmt v
   | Denum e -> pp_enum fmt e
-  | Drecord r -> pp_record fmt r
+  | Dasset r -> pp_asset fmt r
   | Dcontract c -> pp_contract fmt c
 
-let pp_label_term fmt (lt : label_term) =
-  Format.fprintf fmt "%a : %a"
-    (pp_option pp_id) lt.label
-    pp_mterm lt.term
-
 let pp_storage_item fmt (si : storage_item) =
-  Format.fprintf fmt "%a : %a%a%a"
-    pp_str (Model.Utils.get_storage_id_name si.id)
+  Format.fprintf fmt "%a : %a%a"
+    pp_id si.id
     pp_type si.typ
     (fun fmt -> Format.fprintf fmt " := %a" pp_mterm) si.default
-    (pp_do_if (not (List.is_empty si.invariants)) (fun fmt xs -> Format.fprintf fmt " with {%a}" (pp_list "; " pp_label_term) xs)) si.invariants
 
 let pp_storage fmt (s : storage) =
   Format.fprintf fmt "storage {@\n@[<v 2>  %a@]@\n}@\n"
@@ -1037,12 +1022,10 @@ let pp_model fmt (model : model) =
                       @\n@\n%a\
                       @\n@\n%a\
                       @\n@\n%a\
-                      @\n@\n%a\
                       @."
     pp_id model.name
     pp_api_items model.api_items
     (pp_list "@\n" pp_api_verif) model.api_verif
-    pp_infos model.info
     (pp_list "@\n" pp_decl) model.decls
     pp_storage model.storage
     (pp_list "@\n" pp_function) model.functions

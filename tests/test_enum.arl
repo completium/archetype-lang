@@ -1,3 +1,0 @@
-states = | s1 initial | s2
-enum color = | blue | white | red
-enum acolor = | red | green | blue

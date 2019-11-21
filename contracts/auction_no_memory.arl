@@ -1,7 +1,7 @@
 archetype auction_no_memory
 
 variable bid tez = 0tz
-variable incumbent address
+variable incumbent address = @fake_address
 
 variable deadline date = 2019-01-01T00:00:00
 

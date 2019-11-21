@@ -26,20 +26,18 @@ action place_bid {
 (* Users need to exhibit proof they are not the winner to reclaim their bid *)
 action reclaim {
 
- require {
-   c1 : now < deadline;
-   c2 : (let bc = bid.get(caller) in
-         bc < max_bid)
- }
+  require {
+    c2 : now < deadline;
+    c3 : bid.get(caller).value < max_bid;
+  }
 
- effect {
-   transfer bid.get(caller).value to caller
- }
+  effect {
+    transfer bid.get(caller).value to caller
+  }
 }
 
 specification {
   postcondition s1 {
-    forall a in address,
-      bid.contains (a) -> balance > bid.get(a).value
+    forall b in bid, balance > b.value
   }
 }

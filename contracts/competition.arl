@@ -1,45 +1,43 @@
 archetype competition
 
-variable[%transferable%] organiser role
+variable[%transferable%] organizer role = @tz1organizer
 
 (* start date *)
-variable[%mutable organiser (instate (Created))%] startdate date
+variable[%mutable organiser (instate (Created))%] startdate date = 2019-11-12T00:00:00
 
 (* deadline *)
-variable[%mutable organiser (instate (Created))%] deadline date
+variable[%mutable organiser (instate (Created))%] deadline date = 2020-11-12T00:00:00
 
-variable[%traceable%] prize tez from organizer = 3500tz
+variable[%traceable%] prize tez = 3500tz
 
-variable competitor role
-
-variable oracle role
+variable oracle role = @tz1oracle
 
 asset submission {
   competitor : role;
   score      : int;
-  date       : date;
+  timestamp  : date;
 }
 
 (* state machine *)
 states =
  | Created     initial
  | InProgress
- | Done        with { s1 : balance = 0mtz; }
+ | Done        with { s1 : balance = 0tz; }
  | Closed
 
 transition confirm from Created {
    to InProgress when { now > startdate }
 }
 
-action submit (competitor : competitor) (score[%signedby oracle%] : int) {
+action submit (ckey : pkey of submission) (pscore[%signedby oracle%] : int) {
   require {
     c1 : state = InProgress;
   }
 
   effect {
-    submission.add ({ competitor = competitor;
-                      score = score;
-                      date = now })
+    submission.add ({ competitor = ckey;
+                      score = pscore;
+                      timestamp = now })
   }
 }
 
@@ -50,7 +48,7 @@ transition decide from InProgress {
   }
   to Done
   with effect {
-    let submissions = submission.sort(asc(date)).sort(desc(score)) in
+    let submissions = submission.sort(timestamp).sort(desc(score)) in
       if submissions.count() >= 3
       then (
         let first = submissions.nth(0).competitor in
@@ -76,6 +74,6 @@ transition decide from InProgress {
                then (
                  let first = submissions.nth(0).competitor in
                  transfer prize to first)
-               else transfer back prize
+               else transfer prize to organizer
   }
 }

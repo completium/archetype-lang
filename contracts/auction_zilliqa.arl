@@ -1,13 +1,13 @@
 archetype auction_zilliqa
 
-variable highest_bid mtez = 0mtz
+variable highest_bid tez = 0tz
 variable highest_bidder address = @0
 
 variable beneficiary address = @tz1KmuhR6P52hw6xs5P69BXJYAURaznhvN1k
 
 asset pending_return identified by incumbent {
   incumbent   : address;
-  val         : tz;
+  val         : tez;
 }
 
 states =
@@ -22,7 +22,7 @@ specification {
     not (pending_return.contains(highest_bidder))
   }
   postcondition highest_is_highest {
-    forall pr in prending_return,
+    forall pr in pending_return,
       pr.val <= highest_bid and pr.incumbent <> highest_bidder
   }
 }

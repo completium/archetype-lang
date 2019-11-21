@@ -1,0 +1,13 @@
+archetype arith_tez
+
+constant a tez = 1tz
+
+action main (r : role) {
+  accept transfer
+  effect {
+    let c : int = 0 in
+    let b : tez = a * c in
+
+    transfer b to r
+  }
+}

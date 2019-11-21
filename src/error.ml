@@ -13,7 +13,7 @@ exception Error of Position.t list * string
 exception ParseError of (Position.t list * string) list
 
 let print_error positions msg =
-  Printf.sprintf "%s%s\n"
+  Printf.sprintf "%s%s"
     (String.concat "\n"
        (List.map (fun p -> Position.string_of_pos p ^": ") positions))
     msg

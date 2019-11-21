@@ -130,7 +130,7 @@ let pp_model fmt (model : model) =
         an an
 
     | Add an ->
-      let k, _t = Utils.get_asset_key model (to_lident an) in
+      let k, _t = Utils.get_asset_key model an in
       Format.fprintf fmt
         "def add_%s (self, asset):@\n\
          \t\tkey = asset.%a@\n\
@@ -158,7 +158,7 @@ let pp_model fmt (model : model) =
         an
 
     | UpdateAdd (an, fn) ->
-      let k, _t = Utils.get_asset_key model (to_lident an) in
+      let k, _t = Utils.get_asset_key model an in
       Format.fprintf fmt
         "def add_%s_%s (s, asset, b):@\n\
          \t\tasset = asset.%s.insert(b)@\n\
@@ -168,7 +168,7 @@ let pp_model fmt (model : model) =
         an pp_str k
 
     | UpdateRemove (an, fn) ->
-      let k, _t = Utils.get_asset_key model (to_lident an) in
+      let k, _t = Utils.get_asset_key model an in
       Format.fprintf fmt
         "def remove_%s_%s (s, asset, key):@\n\
          \t\tasset = asset.%s.pop(key)@\n\
@@ -335,14 +335,14 @@ let pp_model fmt (model : model) =
     pp_str fmt (to_str op)
   in
 
-  let rec pp_qualid fmt (q : qualid) =
+  (* let rec pp_qualid fmt (q : qualid) =
     match q.node with
     | Qdot (q, i) ->
       Format.fprintf fmt "%a.%a"
         pp_qualid q
         pp_id i
     | Qident i -> pp_id fmt i
-  in
+  in *)
 
   let pp_pattern fmt (p : pattern) =
     match p.node with
@@ -451,7 +451,7 @@ let pp_model fmt (model : model) =
         let cond, str =
           (match i.type_ with
            | Tasset an ->
-             let k, _ = Utils.get_asset_key model an in
+             let k, _ = Utils.get_asset_key model (unloc an) in
              true, "." ^ k
            | _ -> false, ""
           ) in
@@ -467,7 +467,7 @@ let pp_model fmt (model : model) =
         let cond, str =
           (match i.type_ with
            | Tasset an ->
-             let k, _ = Utils.get_asset_key model an in
+             let k, _ = Utils.get_asset_key model (unloc an) in
              true, "." ^ k
            | _ -> false, ""
           ) in
@@ -814,14 +814,14 @@ let pp_model fmt (model : model) =
         in
         pp fmt e
 
-      | Mrecord l ->
+      | Masset l ->
         let asset_name =
           match mtt.type_ with
           | Tasset asset_name -> asset_name
           | _ -> assert false
         in
-        let a = Utils.get_info_asset model asset_name in
-        let ll = List.map (fun (i,_,_) -> dumloc i) a.values in
+        let a = Utils.get_asset model (unloc asset_name) in
+        let ll = List.map (fun (x : asset_item) -> x.name) a.values in
 
         let lll = List.map2 (fun x y -> (x, y)) ll l in
 
@@ -874,7 +874,7 @@ let pp_model fmt (model : model) =
         Format.fprintf fmt "(%a div %a)"
           pp_big_int n
           pp_big_int d
-      | Mdate v -> pp_str fmt v
+      | Mdate v -> Core.pp_date fmt v
       | Mstring v ->
         Format.fprintf fmt "\"%a\""
           pp_str v
@@ -944,11 +944,10 @@ let pp_model fmt (model : model) =
           pp_id field
           pp_operator op
           f r
-      | Mtransfer (x, b, q) ->
-        Format.fprintf fmt "transfer%s %a%a"
-          (if b then " back" else "")
-          f x
-          (pp_option (fun fmt -> Format.fprintf fmt " to %a" pp_qualid)) q
+      | Mtransfer (v, d) ->
+        Format.fprintf fmt "transfer %a to %a"
+          f v
+          f d
       | Mbreak -> emit_error UnsupportedBreak
       | Massert x ->
         Format.fprintf fmt "assert %a"
@@ -973,12 +972,15 @@ let pp_model fmt (model : model) =
       | Mforall _                        -> emit_error (UnsupportedTerm ("forall"))
       | Mexists _                        -> emit_error (UnsupportedTerm ("exists"))
       | Msetbefore _                     -> emit_error (UnsupportedTerm ("setbefore"))
+      | Msetat _                         -> emit_error (UnsupportedTerm ("setat"))
       | Msetunmoved _                    -> emit_error (UnsupportedTerm ("setunmoved"))
       | Msetadded _                      -> emit_error (UnsupportedTerm ("setadded"))
       | Msetremoved _                    -> emit_error (UnsupportedTerm ("setremoved"))
       | Msetiterated _                   -> emit_error (UnsupportedTerm ("setiterated"))
       | Msettoiterate _                  -> emit_error (UnsupportedTerm ("settoiterate"))
       | Mremoveif _                      -> emit_error (UnsupportedTerm ("removeif"))
+      | Mgetat _                         -> emit_error (UnsupportedTerm ("getat"))
+      | Mgetbefore _                     -> emit_error (UnsupportedTerm ("getbefore"))
     in
     f fmt mt
   in
@@ -1012,15 +1014,15 @@ let pp_model fmt (model : model) =
 
   let pp_init_function fmt (s : storage) =
     let pp_storage_item fmt (si : storage_item) =
-      match si with
-      | { asset = Some an; _} ->
+      match si.model_type with
+      | MTasset an ->
         Format.fprintf fmt "%s_keys = [],@\n\t\t%s_assets = {}"
-          (unloc an)
-          (unloc an)
+          an
+          an
 
       | _ ->
         Format.fprintf fmt "%a = %a"
-          pp_str (Model.Utils.get_storage_id_name si.id)
+          pp_id si.id
           pp_mterm si.default
     in
 

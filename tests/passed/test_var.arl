@@ -1,0 +1,13 @@
+archetype test_var
+
+variable n int = 0
+with {
+  inv_n: n >= 0;
+}
+
+action main {
+  effect {
+    var i = 0;
+    n := i
+  }
+}

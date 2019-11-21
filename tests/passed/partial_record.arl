@@ -1,0 +1,14 @@
+archetype partial_record
+
+variable v int = 1
+
+asset asset1 {
+  id: string;
+  val: int = 0;
+}
+
+action anaction {
+  effect {
+    var a = { id = "myid" }
+  }
+}

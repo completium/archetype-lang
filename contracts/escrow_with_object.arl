@@ -10,10 +10,10 @@ variable[%transferable%] creditor role = seller
 
 variable oracle role
 
-variable[%traceable%] price tez from buyer to creditor
+variable[%traceable%] price tez
 
 variable[%traceable%] [%mutable_signed ([buyer, debitor], instate (Created))%]
-     penalty tez from seller to debitor = 0.1 * price
+     penalty tez = 0.1 * price
 
 (* action deadline *)
 variable[%mutable (buyer or seller, instate (Created))%] deadline date
@@ -30,9 +30,9 @@ states =
  | Created initial
  | Aborted
  | Confirmed
- | Canceled    with { s1 : balance = 0mtz; }
+ | Canceled    with { s1 : balance = 0tz; }
  | Transferred with { s2 : transferred_to (price, buyer);
-                      s3 : balance = 0mtz;
+                      s3 : balance = 0tz;
                     }
 
 transition abort from Created {
@@ -49,14 +49,14 @@ transition finalize (task : taskStatus) from any {
   to Transferred
   when { task.date <= deadline and task.status }
   with effect {
-    transfer price;
-    transfer back penalty
+    transfer price to creditor;
+    transfer penalty to seller
   }
 
   to Canceled
   with effect {
-    transfer penalty;
-    transfer back price
+    transfer penalty to debitor;
+    transfer price to buyer
   }
 }
 

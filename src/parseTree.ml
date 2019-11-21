@@ -80,11 +80,6 @@ type operator = [
 ]
 [@@deriving yojson, show {with_path = false}]
 
-type qualid =
-  | Qident of lident
-  | Qdot of qualid * lident
-[@@deriving yojson, show {with_path = false}]
-
 type pattern_unloc =
   | Pwild
   | Pref of lident
@@ -109,7 +104,7 @@ type expr_unloc =
   | Emulticomp    of expr * (comparison_operator loced * expr) list
   | Eapp          of function_ * expr list
   | Emethod       of expr * lident * expr list
-  | Etransfer     of expr * bool * lident option
+  | Etransfer     of expr * expr
   | Erequire      of expr
   | Efailif       of expr
   | Eassign       of assignment_operator * expr * expr
@@ -306,6 +301,7 @@ and variable_decl =
   * expr option
   * value_option list option
   * variable_kind
+  * label_exprs
   * exts
 
 and enum_decl =
@@ -314,6 +310,7 @@ and enum_decl =
 and asset_decl =
   lident
   * field list
+  * field list (* shadow fields *)
   * asset_option list
   * asset_post_option list
   * asset_operation option

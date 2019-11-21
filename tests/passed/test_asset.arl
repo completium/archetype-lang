@@ -1,0 +1,40 @@
+archetype test_asset
+
+asset my_asset_simple identified by str {
+  str : string;
+  i : int;
+} with {
+   a1 : i >= 1;
+}
+
+asset my_asset identified by j {
+  j : int;
+  mycollection : my_asset_simple collection;
+} initialized by [ { 0; [] } ]
+
+
+enum my_enums =
+| Init initial
+| InProgress
+| Completed
+
+asset[%myextension%] [@add @remove @update owner (args)]
+my_asset_all identified by id sorted by k {
+  id : role;
+  k : int;
+  b : bool;
+}
+with states my_enums
+with {
+  a2 : k >= 1;
+  a3 : k <= 10;
+} initialized by [
+  { @toto; Init; 9 };
+  { @tata; InProgress; 8 }
+]
+
+action myaction (a : my_asset_all) {
+  effect {
+    require(a.b)
+  }
+}

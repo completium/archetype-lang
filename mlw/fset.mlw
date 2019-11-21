@@ -70,7 +70,7 @@ use Undup
 type t
 
 (* ------------------------------------------------------------------------ *)
-val function eqt : t -> t -> bool
+val function eqt t t : bool
 
 (* ------------------------------------------------------------------------ *)
 axiom eqP : forall x y. eqt x y <-> x = y
@@ -89,14 +89,14 @@ axiom normI : forall xs ys. permut (undup xs) (undup ys) -> norm xs = norm ys
 
 (* ------------------------------------------------------------------------ *)
 type fset = {
-  contents : list t;
+  content : list t;
 } invariant {
-  normed contents
-} by { contents = Nil }
+  normed content
+} by { content = Nil }
 
 (* ------------------------------------------------------------------------ *)
 predicate fmem (x : t) (s : fset) =
-  mem x s.contents
+  mem x s.content
 
 (* ------------------------------------------------------------------------ *)
 predicate (==) (s1 s2 : fset) =
@@ -104,31 +104,31 @@ predicate (==) (s1 s2 : fset) =
 
 (* ------------------------------------------------------------------------ *)
 let function mk (xs : list t) : fset =
-  { contents = norm xs; }
+  { content = norm xs; }
 
 (* ------------------------------------------------------------------------ *)
 lemma mem_mk :
   forall xs x. fmem x (mk xs) <-> mem x xs
 
 (* ------------------------------------------------------------------------ *)
-function fset0 : fset =
+let function fset0 : fset =
   mk Nil
 
 (* ------------------------------------------------------------------------ *)
 function fsetU (s1 s2 : fset) : fset =
-  mk (s1.contents ++ s2.contents)
+  mk (s1.content ++ s2.content)
 
 (* ------------------------------------------------------------------------ *)
 function fsetI (s1 s2 : fset) : fset =
-  mk (filter (fun x -> Quant.mem eqt x s2.contents) s1.contents)
+  mk (filter (fun x -> Quant.mem eqt x s2.content) s1.content)
 
 (* ------------------------------------------------------------------------ *)
 function fsetD (s1 s2 : fset) : fset =
-  mk (filter (fun x -> not (Quant.mem eqt x s2.contents)) s1.contents)
+  mk (filter (fun x -> not (Quant.mem eqt x s2.content)) s1.content)
 
 (* ------------------------------------------------------------------------ *)
-function fcard (s : fset) : int =
-  length s.contents
+let function fcard (s : fset) : int =
+  length s.content
 
 (* ------------------------------------------------------------------------ *)
 predicate fsubset (s1 s2 : fset) =
@@ -192,6 +192,10 @@ lemma fsubsetIr : forall s1 s2. fsubset (fsetI s1 s2) s2
 
 (* ------------------------------------------------------------------------ *)
 lemma fsubsetD : forall s1 s2. fsubset (fsetD s1 s2) s1
+
+(* ------------------------------------------------------------------------ *)
+lemma fsubset_trans : forall s1 s2 s3. 
+  fsubset s1 s2 -> fsubset s2 s3 -> fsubset s1 s3
 
 (* ------------------------------------------------------------------------ *)
 lemma fsetU_id : forall s1 s2. fsubset s1 s2 -> fsetU s1 s2 == s2

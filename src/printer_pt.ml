@@ -199,13 +199,6 @@ let pp_assignment_operator_record fmt op =
 let pp_assignment_operator_expr fmt op =
   Format.fprintf fmt "%s" (assignment_operator_expr_to_str op)
 
-let rec pp_qualid fmt (q : ParseTree.qualid) =
-  match q with
-  | Qident i -> Format.fprintf fmt "%a" pp_id i
-  | Qdot (q, i) -> Format.fprintf fmt "%a.%a"
-                     pp_qualid q
-                     pp_id i
-
 let quantifier_to_str op =
   match op with
   | Forall -> "forall"
@@ -237,7 +230,7 @@ let rec pp_expr outer pos fmt a =
         Format.fprintf fmt "before.%a" pp x
       in
       let pp_label fmt lbl pp x =
-        Format.fprintf fmt "(%a at %a)" pp x pp_str lbl
+        Format.fprintf fmt "at(%a).%a"  pp_str lbl pp x
       in
 
       match st.before, st.label with
@@ -361,15 +354,14 @@ let rec pp_expr outer pos fmt a =
     in
     (maybe_paren outer e_app pos pp) fmt (e, id, args)
 
-  | Etransfer (x, back, to_value) ->
+  | Etransfer (x, y) ->
 
-    let pp fmt (x, back, to_value) =
-      Format.fprintf fmt "transfer%s %a%a"
-        (if back then " back" else "")
+    let pp fmt (x, y) =
+      Format.fprintf fmt "transfer %a to %a"
         pp_simple_expr x
-        (pp_option (pp_prefix " to " pp_id)) to_value
+        pp_simple_expr y
     in
-    (maybe_paren outer e_default pos pp) fmt (x, back, to_value)
+    (maybe_paren outer e_default pos pp) fmt (x, y)
 
   | Erequire x ->
 
@@ -863,11 +855,11 @@ let pp_action_properties fmt (props : action_properties) =
         pp_extensions exts
         (pp_expr e_default PNone) e) props.calledby;
   map_option (fun (cs, exts) ->
-      Format.fprintf fmt "require%a{@\n  @[%a@]@\n}@\n"
+      Format.fprintf fmt "require%a {@\n  @[%a@]@\n}@\n"
         pp_extensions exts
         pp_label_exprs cs) props.require;
   map_option (fun (cs, exts) ->
-      Format.fprintf fmt "failif%a{@\n  @[%a@]@\n}@\n"
+      Format.fprintf fmt "failif%a {@\n  @[%a@]@\n}@\n"
         pp_extensions exts
         pp_label_exprs cs) props.failif;
   (pp_list "@\n" pp_function) fmt (List.map unloc props.functions)
@@ -896,14 +888,15 @@ let rec pp_declaration fmt { pldesc = e; _ } =
       pp_extensions exts
       pp_id id
 
-  | Dvariable (id, typ, dv, opts, kind, exts) ->
-    Format.fprintf fmt "%a%a %a %a%a%a"
+  | Dvariable (id, typ, dv, opts, kind, invs, exts) ->
+    Format.fprintf fmt "%a%a %a %a%a%a%a"
       pp_str (match kind with | VKvariable -> "variable" | VKconstant -> "constant")
       pp_extensions exts
       pp_id id
       pp_type typ
       (pp_option (pp_prefix " " (pp_list " " pp_value_option))) opts
       (pp_option (pp_prefix " = " (pp_expr e_equal PRight))) dv
+      (pp_do_if (List.length invs > 0) (fun fmt x -> Format.fprintf fmt "@\nwith {@\n  @[%a@]@\n}" pp_label_exprs x)) invs
 
   | Denum (id, (ids, exts)) ->
     Format.fprintf fmt "%a%a"
@@ -919,13 +912,14 @@ let rec pp_declaration fmt { pldesc = e; _ } =
                     (pp_list "@\n" (pp_prefix "| " pp_ident_state)) l
          )) ids
 
-  | Dasset (id, fields, opts, apo, ops, exts) ->
-    Format.fprintf fmt "asset%a%a %a%a%a%a"
+  | Dasset (id, fields, shadow_fields, opts, apo, ops, exts) ->
+    Format.fprintf fmt "asset%a%a %a%a%a%a%a"
       pp_extensions exts
       (pp_option pp_asset_operation) ops
       pp_id id
       (pp_prefix " " (pp_list " @," pp_asset_option)) opts
       (pp_do_if (List.length fields > 0) ((fun fmt -> Format.fprintf fmt " {@\n  @[%a@]@\n}@\n" (pp_list ";@\n" pp_field)))) fields
+      (pp_do_if (List.length shadow_fields > 0) ((fun fmt -> Format.fprintf fmt "shadow {@\n  @[%a@]@\n}@\n" (pp_list ";@\n" pp_field)))) shadow_fields
       (pp_list "@\n" pp_asset_post_option) apo
 
   | Daction (id, args, props, code, exts) ->

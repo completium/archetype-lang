@@ -1,6 +1,6 @@
 archetype hello
 
-variable name string
+variable name string = ""
 
 action main (str : string) {
   effect {

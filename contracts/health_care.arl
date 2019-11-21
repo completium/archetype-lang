@@ -7,7 +7,7 @@ constant fee tez = 100tz
 constant deductible tez = 500tz
 constant period duration = 30d
 
-variable last_fee date
+variable last_fee date = 2019-11-12
 
 variable consultation_debt tez = 0tz
 
@@ -45,9 +45,9 @@ action[%signedbyall [patient; insurer]%] register_doctor (docid : address) {
 }
 
 action declare_consultation (v : tez) {
-  called by doctor  (* <-> require { doctor.contains caller } *)
   require {
      r2 : state = Running;
+     r3 : doctor.contains(caller);
   }
   effect {
     doctor.update(caller, { debt += v });
@@ -64,11 +64,11 @@ action pay_doctor (docid : address) {
   accept transfer
   called by insurer
   require {
-    r3 : state = Running;
+    r4 : state = Running;
   }
   effect {
-    let debt = doctor.get(docid).debt in
-    let decrease = min (transferred, debt) in
+    var ldebt = doctor.get(docid).debt;
+    var decrease : tez = min (transferred, ldebt);
     transfer decrease to docid;
     transfer (transferred - decrease) to insurer;
     doctor.update (docid, { debt -= decrease })
@@ -84,15 +84,15 @@ action pay_fee {
   accept transfer
   called by patient
   require {
-    r4 : state = Running;
+    r5 : state = Running;
   }
   effect {
-    let nb_periods = (now - last_fee) / period in  (* div is euclidean *)
+    let nb_periods : int = (now - last_fee) / period in  (* div is euclidean *)
     let due = nb_periods * fee in
-    let decrease = min (transferred, due) in
-    transfer decrease to insrurer;
+    let decrease : tez = min (transferred, due) in
+    transfer decrease to insurer;
     transfer (transferred - decrease) to patient;
-    last_fee := last_fee + period * nb_periods     (* last_fee <> now because div is euclidean *)
+    last_fee += period * nb_periods     (* last_fee <> now because div is euclidean *)
   }
 }
 
@@ -103,10 +103,10 @@ action pay_consulation {
   accept transfer
   called by patient
   require {
-    r5 : state = Running;
+    r6 : state = Running;
   }
   effect {
-    let decrease = min (transferred, consultation_debt) in
+    let decrease : tez = min (transferred, consultation_debt) in
     transfer decrease to insurer;
     transfer (transferred - decrease) to patient;
     consultation_debt -= decrease

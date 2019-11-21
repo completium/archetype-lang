@@ -46,7 +46,7 @@ let pp_archetype fmt pt =
     in
 
     let pp_roles fmt _ =
-      let pp_variable_decl fmt (id, _type_, dv, _vos, variable_kind, exts : variable_decl) =
+      let pp_variable_decl fmt (id, _type_, dv, _vos, variable_kind, _invs, exts : variable_decl) =
         Format.fprintf fmt
           "### %a@\n@\n\
            | Attribute              | Value  |@\n\
@@ -70,7 +70,7 @@ let pp_archetype fmt pt =
           ) exts
       in
       let roles : variable_decl list =
-        List.fold_right (fun x accu -> x |> unloc |> function | Dvariable ((_, {pldesc = Tref {pldesc = "role"}; _}, _ , _, _ ,_) as a) -> a::accu | _ -> accu) es []
+        List.fold_right (fun x accu -> x |> unloc |> function | Dvariable ((_, {pldesc = Tref {pldesc = "role"}; _}, _, _, _, _, _) as a) -> a::accu | _ -> accu) es []
       in
       match roles with
       | [] -> ()
@@ -80,10 +80,10 @@ let pp_archetype fmt pt =
     in
 
     let pp_assets fmt _ =
-      let pp_asset_decl fmt ((name, fields, aopts, _ , _, _) : asset_decl) =
+      let pp_asset_decl fmt ((name, fields, shadow_fields, aopts, _ , _, _) : asset_decl) =
         let key : lident option = List.fold_left (fun accu x -> match x with AOidentifiedby k -> Some (k) | _ -> accu) None aopts in
         let orders : lident list = List.fold_left (fun accu x -> match x with AOsortedby s -> s::accu | _ -> accu) [] aopts in
-        let fields = fields |> List.map unloc in
+        let fields = fields @ shadow_fields |> List.map unloc in
         let pp_asset_field fmt (f : field_unloc) =
           match f with
           | Ffield (id, type_, _dv, _exts) ->

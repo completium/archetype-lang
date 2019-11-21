@@ -1,0 +1,14 @@
+archetype state_var
+
+states =
+| Created initial
+
+action myaction {
+  require {
+    r1: state = Created;
+  }
+  effect {
+    let a : int = 0 in
+    a := 1
+  }
+}

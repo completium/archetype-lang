@@ -148,7 +148,7 @@ let pp_model fmt (model : model) =
 
   let pp_storage_const fmt = function
     | Get an ->
-      let _, t = Utils.get_asset_key model (to_lident an) in
+      let _, t = Utils.get_asset_key model an in
       Format.fprintf fmt
         "let get_%s (s, key : storage * %a) : %s =@\n  \
          match List.assoc_opt key s.%s_assets with@\n  \
@@ -157,7 +157,7 @@ let pp_model fmt (model : model) =
         an pp_btyp t an an
 
     | Set an ->
-      let _, t = Utils.get_asset_key model (to_lident an) in
+      let _, t = Utils.get_asset_key model an in
       Format.fprintf fmt
         "let set_%s (s, key, asset : storage * %a * %s) : storage =@\n  \
          { s with@\n    \
@@ -166,7 +166,7 @@ let pp_model fmt (model : model) =
         an an
 
     | Add an ->
-      let k, _t = Utils.get_asset_key model (to_lident an) in
+      let k, _t = Utils.get_asset_key model an in
       Format.fprintf fmt
         "let add_%s (s, asset : storage * %s) : storage =@\n  \
          let key = asset.%s in@\n  \
@@ -179,7 +179,7 @@ let pp_model fmt (model : model) =
         an an
 
     | Remove an ->
-      let _, t = Utils.get_asset_key model (to_lident an) in
+      let _, t = Utils.get_asset_key model an in
       Format.fprintf fmt
         "let remove_%s (s, key : storage * %a) : storage =@\n  \
          { s with@\n    \
@@ -210,9 +210,9 @@ let pp_model fmt (model : model) =
         an an
 
     | UpdateAdd (an, fn) ->
-      let k, _t = Utils.get_asset_key model (to_lident an) in
+      let k, _t = Utils.get_asset_key model an in
       let ft, _c = Utils.get_field_container model an fn in
-      let kk, _ = Utils.get_asset_key model (to_lident ft) in
+      let kk, _ = Utils.get_asset_key model ft in
       Format.fprintf fmt
         "let add_%s_%s (s, a, b : storage * %s * %s) : storage =@\n  \
          let asset = { a with %s = add_list b.%a a.%s; } in@\n  \
@@ -222,9 +222,9 @@ let pp_model fmt (model : model) =
         an pp_str k an
 
     | UpdateRemove (an, fn) ->
-      let k, _t = Utils.get_asset_key model (to_lident an) in
+      let k, _t = Utils.get_asset_key model an in
       let ft, _c = Utils.get_field_container model an fn in
-      let _kk, tt = Utils.get_asset_key model (to_lident ft) in
+      let _kk, tt = Utils.get_asset_key model ft in
       Format.fprintf fmt
         "let remove_%s_%s (s, a, key : storage * %s * %a) : storage =@\n  \
          let asset = { a with %s = remove_list key a.%s } in@\n  \
@@ -234,7 +234,7 @@ let pp_model fmt (model : model) =
         an pp_str k an
 
     | UpdateClear (an, fn) ->
-      let k, _t = Utils.get_asset_key model (to_lident an) in
+      let k, _t = Utils.get_asset_key model an in
       Format.fprintf fmt
         "let clear_%s_%s (s, a : storage * %s) : storage =@\n  \
          let key = a.%s in@\n  \
@@ -248,7 +248,7 @@ let pp_model fmt (model : model) =
         an k an
 
     | UpdateReverse (an, fn) ->
-      let k, _t = Utils.get_asset_key model (to_lident an) in
+      let k, _t = Utils.get_asset_key model an in
       Format.fprintf fmt
         "let reverse_%s_%s (s, a : storage * %s) : storage =@\n  \
          let key = a.%s in@\n  \
@@ -281,7 +281,7 @@ let pp_model fmt (model : model) =
 
   let pp_function_const fmt = function
     | Select (an, _) ->
-      let k, t = Utils.get_asset_key model (to_lident an) in
+      let k, t = Utils.get_asset_key model an in
       Format.fprintf fmt
         "let select_%s (s, l, p : storage * %a list * (%s -> bool)) : %a list =@\n  \
          List.fold_left (fun accu x ->@\n      \
@@ -301,7 +301,7 @@ let pp_model fmt (model : model) =
         an fn
 
     | Contains an ->
-      let _, t = Utils.get_asset_key model (to_lident an) in
+      let _, t = Utils.get_asset_key model an in
       Format.fprintf fmt
         "let contains_%s (l, key : %a list * %a) : bool =@\n  \
          List.fold_right (fun x accu ->@\n      \
@@ -312,7 +312,7 @@ let pp_model fmt (model : model) =
         pp_btyp t
 
     | Nth an ->
-      let _, t = Utils.get_asset_key model (to_lident an) in
+      let _, t = Utils.get_asset_key model an in
       Format.fprintf fmt
         "let[@inline] nth_%s (s, l, idx : storage * %a list * int) : %s =@\n  \
          match l with@\n  \
@@ -335,7 +335,7 @@ let pp_model fmt (model : model) =
         an
 
     | Count an ->
-      let _, t = Utils.get_asset_key model (to_lident an) in
+      let _, t = Utils.get_asset_key model an in
       Format.fprintf fmt
         "let count_%s (l : %a list) : int =@\n  \
          List.length l@\n"
@@ -343,8 +343,8 @@ let pp_model fmt (model : model) =
         pp_btyp t
 
     | Sum (an, fn) ->
-      let _, tk = Utils.get_asset_key model (to_lident an) in
-      let _, t, _ = Utils.get_asset_field model (dumloc an, fn) in
+      let _, tk = Utils.get_asset_key model an in
+      let _, t, _ = Utils.get_asset_field model (an, fn) in
       Format.fprintf fmt
         "let sum_%s_%s (s, l : storage * %a list) : %a =@\n  \
          List.fold_right (fun k accu ->@\n      \
@@ -361,8 +361,8 @@ let pp_model fmt (model : model) =
         (show_zero t)
 
     | Min (an, fn) ->
-      let _, tk = Utils.get_asset_key model (to_lident an) in
-      let _, t, _ = Utils.get_asset_field model (dumloc an, fn) in
+      let _, tk = Utils.get_asset_key model an in
+      let _, t, _ = Utils.get_asset_field model (an, fn) in
       Format.fprintf fmt
         "let min_%s_%s (s, l : storage * %a list) : %a =@\n  \
          match l with@\n  \
@@ -392,8 +392,8 @@ let pp_model fmt (model : model) =
         fn
 
     | Max (an, fn) ->
-      let _, tk = Utils.get_asset_key model (to_lident an) in
-      let _, t, _ = Utils.get_asset_field model (dumloc an, fn) in
+      let _, tk = Utils.get_asset_key model an in
+      let _, t, _ = Utils.get_asset_field model (an, fn) in
       Format.fprintf fmt
         "let max_%s_%s (s, l : storage * %a list) : %a =@\n  \
          match l with@\n  \
@@ -427,7 +427,7 @@ let pp_model fmt (model : model) =
     | Listtocoll _ -> ()
 
     | Head an ->
-      let _, t = Utils.get_asset_key model (to_lident an) in
+      let _, t = Utils.get_asset_key model an in
       Format.fprintf fmt
         "let head_%s (l : %a list) : %a list =@\n  \
          List.fold (fun (_, accu) ->@\n    \
@@ -438,7 +438,7 @@ let pp_model fmt (model : model) =
         pp_btyp t
 
     | Tail an ->
-      let _, t = Utils.get_asset_key model (to_lident an) in
+      let _, t = Utils.get_asset_key model an in
       Format.fprintf fmt
         "let tail_%s (l : %a list)  : %a list =@\n  \
          List.fold (fun (_, accu) ->@\n    \
@@ -574,14 +574,14 @@ let pp_model fmt (model : model) =
     pp_str fmt (to_str op)
   in
 
-  let rec pp_qualid fmt (q : qualid) =
+  (* let rec pp_qualid fmt (q : qualid) =
     match q.node with
     | Qdot (q, i) ->
       Format.fprintf fmt "%a.%a"
         pp_qualid q
         pp_id i
     | Qident i -> pp_id fmt i
-  in
+  in *)
 
   let pp_pattern fmt (p : pattern) =
     match p.node with
@@ -686,7 +686,7 @@ let pp_model fmt (model : model) =
         let cond, str =
           (match i.type_ with
            | Tasset an ->
-             let k, _ = Utils.get_asset_key model an in
+             let k, _ = Utils.get_asset_key model (unloc an) in
              true, "." ^ k
            | _ -> false, ""
           ) in
@@ -702,7 +702,7 @@ let pp_model fmt (model : model) =
         let cond, str =
           (match i.type_ with
            | Tasset an ->
-             let k, _ = Utils.get_asset_key model an in
+             let k, _ = Utils.get_asset_key model (unloc an) in
              true, "." ^ k
            | _ -> false, ""
           ) in
@@ -1049,14 +1049,14 @@ let pp_model fmt (model : model) =
         in
         pp fmt e
 
-      | Mrecord l ->
+      | Masset l ->
         let asset_name =
           match mtt.type_ with
           | Tasset asset_name -> asset_name
           | _ -> assert false
         in
-        let a = Utils.get_info_asset model asset_name in
-        let ll = List.map (fun (i,_,_) -> dumloc i) a.values in
+        let a = Utils.get_asset model (unloc asset_name) in
+        let ll = List.map (fun (x : asset_item) -> x.name) a.values in
 
         let lll = List.map2 (fun x y -> (x, y)) ll l in
 
@@ -1118,9 +1118,7 @@ let pp_model fmt (model : model) =
         Format.fprintf fmt "(%a. /. %a.)"
           pp_big_int n
           pp_big_int d
-      | Mdate v ->
-        Format.fprintf fmt "\"%a\""
-          pp_str v
+      | Mdate v -> Core.pp_date fmt v
       | Mstring v ->
         Format.fprintf fmt "\"%a\""
           pp_str v
@@ -1183,11 +1181,10 @@ let pp_model fmt (model : model) =
       | Massignstate x ->
         Format.fprintf fmt "state_ = %a"
           f x
-      | Mtransfer (x, b, q) ->
-        Format.fprintf fmt "transfer%s %a%a"
-          (if b then " back" else "")
-          f x
-          (pp_option (fun fmt -> Format.fprintf fmt " to %a" pp_qualid)) q
+      | Mtransfer (v, d) ->
+        Format.fprintf fmt "transfer %a to %a"
+          f v
+          f d
       | Mbreak -> emit_error UnsupportedBreak
       | Massert x ->
         Format.fprintf fmt "assert %a"
@@ -1212,12 +1209,15 @@ let pp_model fmt (model : model) =
       | Mforall _                        -> emit_error (UnsupportedTerm ("forall"))
       | Mexists _                        -> emit_error (UnsupportedTerm ("exists"))
       | Msetbefore _                     -> emit_error (UnsupportedTerm ("setbefore"))
+      | Msetat _                         -> emit_error (UnsupportedTerm ("setat"))
       | Msetunmoved _                    -> emit_error (UnsupportedTerm ("setunmoved"))
       | Msetadded _                      -> emit_error (UnsupportedTerm ("setadded"))
       | Msetremoved _                    -> emit_error (UnsupportedTerm ("setremoved"))
       | Msetiterated _                   -> emit_error (UnsupportedTerm ("setiterated"))
       | Msettoiterate _                  -> emit_error (UnsupportedTerm ("settoiterate"))
       | Mremoveif _                      -> emit_error (UnsupportedTerm ("removeif"))
+      | Mgetat _                         -> emit_error (UnsupportedTerm ("getat"))
+      | Mgetbefore _                     -> emit_error (UnsupportedTerm ("getbefore"))
     in
     f fmt mt
   in
@@ -1233,11 +1233,11 @@ let pp_model fmt (model : model) =
       (pp_list "@\n" pp_enum_item) enum.values
   in
 
-  let pp_record_item fmt (item : record_item) =
+  let pp_asset_item fmt (item : asset_item) =
     let pp_typ fmt t =
       match t with
       | Tcontainer (Tasset an, _) ->
-        let _, t = Utils.get_asset_key model an in
+        let _, t = Utils.get_asset_key model (unloc an) in
         Format.fprintf fmt "%a list"
           pp_btyp t
       | _ -> pp_type fmt t
@@ -1248,21 +1248,21 @@ let pp_model fmt (model : model) =
       (* (pp_option (fun fmt -> Format.fprintf fmt " := %a" pp_mterm)) item.default *)
   in
 
-  let pp_record fmt (record : record) =
+  let pp_asset fmt (asset : asset) =
     Format.fprintf fmt "type %a = {@\n  @[%a@]@\n}@\n"
-      pp_id record.name
-      (pp_list "@\n" pp_record_item) record.values
+      pp_id asset.name
+      (pp_list "@\n" pp_asset_item) asset.values
   in
 
   let pp_decl fmt = function
     | Denum e -> pp_enum fmt e
-    | Drecord r -> pp_record fmt r
+    | Dasset r -> pp_asset fmt r
     | _ -> ()
   in
 
   let pp_storage_item fmt (si : storage_item) =
     Format.fprintf fmt "%a : %a;"
-      pp_str (Model.Utils.get_storage_id_name si.id)
+      pp_id si.id
       pp_type si.typ
   in
 
@@ -1280,7 +1280,7 @@ let pp_model fmt (model : model) =
   let pp_init_function fmt (s : storage) =
     let pp_storage_item fmt (si : storage_item) =
       Format.fprintf fmt "%a = %a;"
-        pp_str (Model.Utils.get_storage_id_name si.id)
+        pp_id si.id
         (pp_cast Rhs si.typ si.default.type_ pp_mterm) si.default
     in
 

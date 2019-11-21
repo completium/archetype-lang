@@ -168,10 +168,11 @@ let to_model (ast : A.model) : M.model =
 
 
   let to_mterm_node (n : A.lident A.term_node) (f : A.lident A.term_gen -> M.mterm) (ftyp : 't -> M.type_) (pterm : A.pterm) : (M.lident, M.mterm) M.mterm_node =
-    let process_before b e =
-      if b
-      then (M.Msetbefore (M.mk_mterm e (ftyp (Option.get pterm.type_)) ~loc:pterm.loc))
-      else e
+    let process_before vt e =
+      match vt with
+      | A.VTbefore -> M.Msetbefore (M.mk_mterm e (ftyp (Option.get pterm.type_)) ~loc:pterm.loc)
+      | A.VTat lbl -> M.Msetat (lbl, M.mk_mterm e (ftyp (Option.get pterm.type_)) ~loc:pterm.loc)
+      | A.VTnone -> e
     in
     match n with
     | A.Pif (c, t, e)                   -> M.Mif        (f c, f t, Some (f e))
@@ -195,7 +196,7 @@ let to_model (ast : A.model) : M.model =
     | A.Parith (A.Modulo, l, r)         -> M.Mmodulo    (f l, f r)
     | A.Puarith (A.Uplus, e)            -> M.Muplus     (f e)
     | A.Puarith (A.Uminus, e)           -> M.Muminus    (f e)
-    | A.Precord l                       -> M.Mrecord    (List.map f l)| A.Pcall (Some p, A.Cconst A.Cbefore,    []) -> M.Msetbefore    (f p)
+    | A.Precord l                       -> M.Masset     (List.map f l)| A.Pcall (Some p, A.Cconst A.Cbefore,    []) -> M.Msetbefore    (f p)
     | A.Pletin (id, init, typ, body, o) -> M.Mletin     ([id], f init, Option.map ftyp typ, f body, Option.map f o)
     | A.Pdeclvar (i, t, v)              -> M.Mdeclvar   ([i], Option.map ftyp t, f v)
     | A.Pvar (b, id) when A.Utils.is_variable ast id   -> let e = M.Mvarstorevar id in process_before b e
@@ -254,7 +255,12 @@ let to_model (ast : A.model) : M.model =
       let fp = f p in
       let fq = f q in
       let asset_name = extract_asset_name fp in
-      M.Mget (asset_name, fq)
+      begin
+        match p.node with
+        | Pvar (VTbefore, _) -> M.Mgetbefore (asset_name, fq)
+        | Pvar (VTat lbl, _) -> M.Mgetat (asset_name, lbl, fq)
+        | _ -> M.Mget (asset_name, fq)
+      end
 
     | A.Pcall (Some p, A.Cconst (A.Cselect), [AFun (_qi, _qt, q)]) ->
       let fp = f p in
@@ -262,11 +268,11 @@ let to_model (ast : A.model) : M.model =
       let asset_name = extract_asset_name fp in
       M.Mselect (asset_name, fp, fq)
 
-    | A.Pcall (Some p, A.Cconst (A.Csort), [AFun (qi, qt, q)]) ->
+    | A.Pcall (Some p, A.Cconst (A.Csort), [ASorting (asc, field_name)]) ->
       let fp = f p in
       let asset_name = extract_asset_name fp in
-      let field_name = extract_field_name (qi, qt, q) in
-      M.Msort (asset_name, fp, unloc field_name, SKasc)
+      let sort_kind = match asc with | true -> M.SKasc | false -> M.SKasc in
+      M.Msort (asset_name, fp, unloc field_name, sort_kind)
 
     | A.Pcall (Some p, A.Cconst (A.Ccontains), [AExpr q]) ->
       let fp = f p in
@@ -345,7 +351,7 @@ let to_model (ast : A.model) : M.model =
   in
 
   let to_label_lterm (x : A.lident A.label_term) : M.label_term =
-    M.mk_label_term (to_mterm x.term) ?label:x.label ~loc:x.loc
+    M.mk_label_term (to_mterm x.term) (Option.get x.label) ~loc:x.loc
   in
 
 
@@ -394,7 +400,7 @@ let to_model (ast : A.model) : M.model =
     let set_mterm : M.mterm = M.mk_mterm (M.Mset (asset_name, List.map (fun (id, _, _) -> unloc id) e, key_mterm, var_mterm)) Tunit in
 
     let lref : (Ident.ident * (A.operator * M.mterm)) list = List.map (fun (x, y, z) -> (unloc x, (y, z))) e in
-    let lrecorditems =
+    let lassetitems =
       List.fold_left (fun accu (x : A.lident A.decl_gen) ->
           let v = List.assoc_opt (unloc x.name) lref in
           let type_ = ptyp_to_type (Option.get x.typ) in
@@ -414,10 +420,10 @@ let to_model (ast : A.model) : M.model =
             ]
           | _ -> accu @ [var]
         ) [] asset.fields in
-    let record : M.mterm = M.mk_mterm (M.Mrecord lrecorditems) type_asset in
+    let asset : M.mterm = M.mk_mterm (M.Masset lassetitems) type_asset in
 
     let letinasset : M.mterm = M.mk_mterm (M.Mletin ([var_name],
-                                                     record,
+                                                     asset,
                                                      Some (type_asset),
                                                      set_mterm,
                                                      None
@@ -459,80 +465,41 @@ let to_model (ast : A.model) : M.model =
 
   in
 
-  let process_enums list =
-    let process_enum (e : A.enum) : M.decl_node =
-      let values = List.map (fun (x : A.lident A.enum_item_struct) ->
-          let id : M.lident = x.name in
-          M.mk_enum_item id ~invariants:(List.map (fun x -> to_label_lterm x) x.invariants)
-        ) e.items in
-      let enum = M.mk_enum (A.Utils.get_enum_name e) ~values:values in
-      M.Denum enum
-    in
-    list @ List.map (fun x -> process_enum x) ast.enums in
 
-  let process_info_enums list =
-    let process_enum (e : A.enum) : M.info_item =
-      let name = unloc (A.Utils.get_enum_name e) in
-      let values = List.map (fun (x : A.lident A.enum_item_struct) ->
-          unloc x.name) e.items in
-      let enum = M.mk_info_enum name ~values:values in
-      M.Ienum enum
-    in
-    list @ List.map (fun x -> process_enum x) ast.enums in
-
-  let process_records list =
-    let process_asset (a : A.asset) : M.decl_node =
-      let values = List.map (fun (x : A.lident A.decl_gen) ->
-          let typ = Option.map ptyp_to_type x.typ in
-          let default = Option.map to_mterm x.default in
-          M.mk_record_item x.name (Option.get typ) ?default:default) a.fields in
-      let r : M.record = M.mk_record a.name ?key:a.key ~values:values in
-      M.Drecord r
-    in
-    list @ List.map (fun x -> process_asset x) ast.assets
+  let process_var (v : A.lident A.variable) : M.decl_node =
+    let t : M.type_ = ptyp_to_type (Option.get v.decl.typ) in
+    let invariants = List.map (fun x -> to_label_lterm x) v.invs in
+    let var : M.var = M.mk_var v.decl.name t t ~constant:v.constant ?default:(Option.map to_mterm v.decl.default) ~invariants:invariants ~loc:v.loc in
+    M.Dvar var
   in
 
-  let process_info_records list =
-    let process_asset (a : A.asset) : M.info_item =
-      let values : (ident * M.type_ * M.mterm option) list = List.map (fun (x : A.lident A.decl_gen) ->
-          let typ = Option.map ptyp_to_type x.typ in
-          unloc x.name, (Option.get typ), None) a.fields in (* TODO : set actual default value *)
-      let a : M.info_asset = M.mk_info_asset (unloc a.name) (unloc (Option.get a.key)) ~values:values ~sort:(List.map unloc (a.sort)) in
-      M.Iasset a
-    in
-    list @ List.map (fun x -> process_asset x) ast.assets
+  let process_enum (e : A.enum) : M.decl_node =
+    let values = List.map (fun (x : A.lident A.enum_item_struct) ->
+        let id : M.lident = x.name in
+        M.mk_enum_item id ~invariants:(List.map (fun x -> to_label_lterm x) x.invariants)
+      ) e.items in
+    let enum = M.mk_enum (A.Utils.get_enum_name e) ~values:values in
+    M.Denum enum
   in
 
-  let process_contracts list =
-    let to_contract_signature (s : A.lident A.signature) : M.contract_signature =
-      let name = s.name in
-      M.mk_contract_signature name ~args:(List.map (fun arg -> ptyp_to_type arg) s.args) ~loc:s.loc
-    in
-    let to_contract (c : A.contract) : M.contract =
-      M.mk_contract c.name
-        ~signatures:(List.map to_contract_signature c.signatures)
-        ?init:(Option.map to_mterm c.init)
-        ~loc:c.loc
-    in
-    list @ List.map (fun (x : A.contract) -> M.Dcontract (to_contract x)) ast.contracts
+  let process_asset (a : A.asset) : M.decl_node =
+    let values = List.map (fun (x : A.lident A.decl_gen) ->
+        let typ = Option.get (Option.map ptyp_to_type x.typ) in
+        let default = Option.map to_mterm x.default in
+        M.mk_asset_item x.name typ typ ?default:default ~shadow:x.shadow) a.fields in
+    let r : M.asset = M.mk_asset a.name (unloc (Option.get a.key)) ~values:values ~sort:(List.map unloc (a.sort)) ~invariants:(List.map (fun x -> to_label_lterm x) a.specs) in
+    M.Dasset r
   in
 
-  let process_info_contracts list =
-    let to_contract (c : A.contract) : M.info_contract =
-      let signatures : (ident * M.type_ list) list =
-        List.map (fun (s : A.lident A.signature) ->
-            unloc s.name, List.map ptyp_to_type s.args) c.signatures
-      in
-      M.mk_info_contract (unloc c.name) ~signatures:signatures
-    in
-    list @ List.map (fun (x : A.contract) -> M.Icontract (to_contract x)) ast.contracts
+  let to_contract_signature (s : A.lident A.signature) : M.contract_signature =
+    let name = s.name in
+    M.mk_contract_signature name ~args:(List.map (fun arg -> ptyp_to_type arg) s.args) ~loc:s.loc
   in
-
-  let info =
-    []
-    |> process_info_enums
-    |> process_info_records
-    |> process_info_contracts
+  let to_contract (c : A.contract) : M.contract =
+    M.mk_contract c.name
+      ~signatures:(List.map to_contract_signature c.signatures)
+      ?init:(Option.map to_mterm c.init)
+      ~loc:c.loc
   in
 
   let to_instruction_node (n : A.lident A.instruction_node) lbl g f : ('id, 'instr) M.mterm_node =
@@ -561,7 +528,7 @@ let to_model (ast : A.model) : M.model =
       in
       M.Mif (cond, fail (InvalidCondition None), None)
 
-    | A.Itransfer (i, b, q)     -> M.Mtransfer (f i, b, Option.map to_qualid_gen q)
+    | A.Itransfer (d, v)        -> M.Mtransfer (f d, f v)
     | A.Ibreak                  -> M.Mbreak
     | A.Iassert e               -> M.Massert (f e)
     | A.Ireturn e               -> M.Mreturn (f e)
@@ -672,7 +639,7 @@ let to_model (ast : A.model) : M.model =
     let theorems       = List.map to_label_lterm v.theorems    in
     let variables      = List.map (fun x -> to_variable x) v.variables in
     let invariants     = List.map (fun (a, l) -> (a, List.map (fun x -> to_label_lterm x) l)) v.invariants in
-    let effects        = Option.map_dfl (fun x -> [to_mterm x]) [] v.effect in
+    let effects        = Option.map_dfl (fun x -> [to_instruction x]) [] v.effect in
     let postconditions = List.map to_postcondition v.specs @ List.map to_assert v.asserts in
     M.mk_specification
       ~predicates:predicates
@@ -751,7 +718,7 @@ let to_model (ast : A.model) : M.model =
             ) None e.items in
           let iv = Option.get init_val in
           let dv = M.mk_mterm (M.Mvarlocal iv) (M.Tstate) in
-          let field = M.mk_storage_item M.SIstate Tstate dv in
+          let field = M.mk_storage_item (dumloc "state") M.MTstate Tstate dv in
           field::l
         end
       | _ -> assert false
@@ -793,6 +760,7 @@ let to_model (ast : A.model) : M.model =
       in
 
       let arg = var.decl in
+      let mt = if var.constant then M.MTconst else M.MTvar in
       let type_ : A.type_ = Option.get arg.typ in
       let typ = ptyp_to_type type_ in
       let dv =
@@ -800,18 +768,17 @@ let to_model (ast : A.model) : M.model =
         | Some v -> to_mterm v
         | None   -> init_default_value typ
       in
-      M.mk_storage_item (M.SIname arg.name) typ dv
+      M.mk_storage_item arg.name mt typ dv
     in
 
     let asset_to_storage_items (asset : A.asset) : M.storage_item =
       let asset_name = asset.name in
       let typ_ = M.Tcontainer (Tasset asset_name, Collection) in
       M.mk_storage_item
-        (M.SIname asset_name)
+        asset_name
+        (M.MTasset (unloc asset_name))
         typ_
         (M.mk_mterm (M.Marray []) typ_)
-        ~asset:asset_name
-        ~invariants:(List.map (fun x -> to_label_lterm x) asset.specs)
     in
 
     let cont f x l = l @ (List.map f x) in
@@ -939,7 +906,7 @@ let to_model (ast : A.model) : M.model =
       then
         let type_currency = M.Tbuiltin Bcurrency in
         let lhs : M.mterm = M.mk_mterm (M.Mtransferred) type_currency in
-        let rhs : M.mterm = M.mk_mterm (M.Mcurrency (Big_int.zero_big_int, Mtz)) type_currency in
+        let rhs : M.mterm = M.mk_mterm (M.Mcurrency (Big_int.zero_big_int, Tz)) type_currency in
         let eq : M.mterm = M.mk_mterm (M.Mequal (lhs, rhs)) (M.Tbuiltin Bbool) in
         let cond : M.mterm = M.mk_mterm (M.Mnot eq) (M.Tbuiltin Bbool) in
         let cond_if : M.mterm = M.mk_mterm (M.Mif (cond, fail (NoTransfer), None)) M.Tunit in
@@ -1040,9 +1007,10 @@ let to_model (ast : A.model) : M.model =
 
   let decls =
     []
-    |> process_enums
-    |> process_records
-    |> process_contracts
+    |> (@) (List.map (fun x -> process_var x) ast.variables)
+    |> (@) (List.map (fun x -> process_enum x) ast.enums)
+    |> (@) (List.map (fun x -> process_asset x) ast.assets)
+    |> (@) (List.map (fun x -> M.Dcontract (to_contract x)) ast.contracts)
   in
 
   let storage_items = process_storage () in
@@ -1064,4 +1032,4 @@ let to_model (ast : A.model) : M.model =
     |> (fun sec -> List.fold_left (fun accu x -> cont_security x accu) sec ast.securities)
   in
 
-  M.mk_model ~info:info ~decls:decls ~functions:functions ~specification:specification ~security:security ~storage:storage name
+  M.mk_model ~decls:decls ~functions:functions ~specification:specification ~security:security ~storage:storage name

@@ -211,7 +211,7 @@ and bval_node =
   | BVbool         of bool
   | BVenum         of string
   | BVrational     of Core.big_int * Core.big_int
-  | BVdate         of string
+  | BVdate         of Core.date
   | BVstring       of string
   | BVcurrency     of currency * Core.big_int
   | BVaddress      of string
@@ -258,6 +258,12 @@ type 'id call_kind =
   | Cconst of const
 [@@deriving show {with_path = false}]
 
+type var_temporality =
+  | VTbefore
+  | VTat of ident
+  | VTnone
+[@@deriving show {with_path = false}]
+
 type 'id term_node  =
   | Pquantifer of quantifier * 'id * ('id term_gen option * type_) * 'id term_gen
   | Pif of ('id term_gen * 'id term_gen * 'id term_gen)
@@ -272,7 +278,7 @@ type 'id term_node  =
   | Precord of 'id term_gen list
   | Pletin of 'id * 'id term_gen * ptyp option * 'id term_gen * 'id term_gen option (* ident * init * type * body * otherwise *)
   | Pdeclvar of 'id * ptyp option * 'id term_gen
-  | Pvar of bool * 'id
+  | Pvar of var_temporality * 'id
   | Parray of 'id term_gen list
   | Plit of bval
   | Pdot of 'id term_gen * 'id
@@ -320,7 +326,7 @@ and 'id instruction_node =
   | Imatchwith of 'id term_gen * ('id pattern_gen * 'id instruction_gen) list (* match term with ('pattern * 'id instruction_gen) list *)
   | Iassign of (assignment_operator * 'id lvalue_gen * 'id term_gen)          (* $2 assignment_operator $3 *)
   | Irequire of (bool * 'id term_gen)                                         (* $1 ? require : failif *)
-  | Itransfer of ('id term_gen * bool * 'id qualid_gen option)                (* value * back * dest *)
+  | Itransfer of ('id term_gen * 'id term_gen)                                (* value * dest *)
   | Ibreak
   | Iassert of 'id term_gen
   | Icall of ('id term_gen option * 'id call_kind * ('id term_arg) list)
@@ -343,6 +349,7 @@ type 'id decl_gen = {
   name    : 'id;
   typ     : ptyp option;
   default : 'id term_gen option;
+  shadow  : bool;
   loc     : Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]
@@ -361,6 +368,7 @@ type 'id variable = {
   constant     : bool;
   from         : 'id qualid_gen option;
   to_          : 'id qualid_gen option;
+  invs         : 'id label_term list;
   loc          : Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]
@@ -412,7 +420,7 @@ type 'id specification = {
   theorems    : 'id label_term list;
   variables   : 'id variable list;
   invariants  : ('id * 'id label_term list) list;
-  effect      : 'id term_gen option;
+  effect      : 'id instruction_gen option;
   specs       : 'id postcondition list;
   asserts     : 'id assert_ list;
   loc         : Location.t [@opaque];
@@ -589,8 +597,8 @@ let mk_instr ?label ?(loc = Location.dummy) node =
 let mk_label_term ?label ?(loc = Location.dummy) term =
   { label; term; loc }
 
-let mk_variable ?(constant = false) ?from ?to_ ?(loc = Location.dummy) decl =
-  { decl; constant; from; to_; loc }
+let mk_variable ?(constant = false) ?from ?to_ ?(invs = []) ?(loc = Location.dummy) decl =
+  { decl; constant; from; to_; invs; loc }
 
 let mk_predicate ?(args = []) ?(loc = Location.dummy) name body =
   { name; args; body; loc }
@@ -625,8 +633,8 @@ let mk_enum_item ?(initial = false) ?(invariants = []) ?(loc = Location.dummy) n
 let mk_enum ?(items = []) ?(loc = Location.dummy) kind =
   { kind; items; loc }
 
-let mk_decl ?typ ?default ?(loc = Location.dummy) name =
-  { name; typ; default; loc }
+let mk_decl ?typ ?default ?(shadow=false) ?(loc = Location.dummy) name =
+  { name; typ; default; shadow; loc }
 
 let mk_asset ?(fields = []) ?key ?(sort = []) ?state ?init ?(specs = []) ?(loc = Location.dummy) name   =
   { name; fields; key; sort; state; init; specs; loc }
@@ -760,7 +768,7 @@ let fold_instr_expr fi fe accu instr =
   | Imatchwith (a, ps)  -> List.fold_left (fun accu (_, i) -> fi accu i) (fe accu a) ps
   | Iassign (_, _, e)   -> fe accu e
   | Irequire (_, x)     -> fe accu x
-  | Itransfer (x, _, _) -> fe accu x
+  | Itransfer (v, d)    -> fe (fe accu v) d
   | Ibreak              -> accu
   | Iassert x           -> fe accu x
   | Icall (x, _, args)  -> let accu = Option.map_dfl (fe accu) accu x in List.fold_left (fold_term_arg fe) accu args
@@ -941,9 +949,10 @@ let fold_map_instr_term gi _ge fi fe (accu : 'a) instr : 'id instruction_gen * '
     let xe, xa = fe accu x in
     gi (Irequire (b, xe)), xa
 
-  | Itransfer (x, b, q) ->
-    let xe, xa = fe accu x in
-    gi (Itransfer (xe, b, q)), xa
+  | Itransfer (v, d) ->
+    let ve, va = fe accu v in
+    let de, da = fe va d in
+    gi (Itransfer (ve, de)), da
 
   | Ibreak ->
     gi (Ibreak), accu

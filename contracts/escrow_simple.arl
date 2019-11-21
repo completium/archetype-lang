@@ -6,21 +6,21 @@ constant seller role = @tz1XJYAURaznhvN1khR6P52hw6xs5P691Kmu
 
 constant oracle role = @tz15P69BXJYAURaznhvN1k1KmuhR6P52hw6x
 
-constant price tez from buyer to seller = 10tz
+constant price tez = 10tz
 
-constant penalty tez from seller to buyer = 2tz
+constant penalty tez = 2tz
 
 (* action deadline *)
-constant deadline date = 2019-06-01T00:00:00
+constant deadline date = 2019-06-01T00:00:00Z
 
 (* state machine *)
 states =
  | Created initial
- | Aborted   with { s0 : balance = 0mtz }
+ | Aborted   with { s0 : balance = 0tz }
  | Confirmed with { s1 : balance = price + penalty }
- | Canceled  with { s2 : balance = 0mtz }
- | Completed with { s3 : balance = 0mtz;
-                    (* s4 : transferred_to(seller) = price + penalty; *) 
+ | Canceled  with { s2 : balance = 0tz }
+ | Completed with { s3 : balance = 0tz;
+                    (* s4 : transferred_to(seller) = price + penalty; *)
                   }
 
 transition abort from Created {
@@ -38,8 +38,8 @@ transition complete from Confirmed {
 
   to Completed when { now < deadline }
   with effect {
-    transfer price;
-    transfer back penalty
+    transfer price to seller;
+    transfer penalty to seller
   }
 }
 
@@ -48,7 +48,7 @@ transition cancel from Confirmed {
 
   to Canceled
   with effect {
-    transfer penalty;
-    transfer back price
+    transfer penalty to buyer;
+    transfer price to buyer
   }
 }

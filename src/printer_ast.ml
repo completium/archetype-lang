@@ -74,7 +74,7 @@ let pp_bval fmt (bval : bval) =
     | BVbool v          -> pp_str fmt (if v then "true" else "false")
     | BVenum v          -> pp_str fmt v
     | BVrational (n, d) -> Format.fprintf fmt "(%a div %a)" pp_big_int n pp_big_int d
-    | BVdate v          -> pp_str fmt v
+    | BVdate v          -> Core.pp_date fmt v
     | BVstring s        -> pp_str fmt s
     | BVcurrency (c, v) -> Format.fprintf fmt "%a%a" pp_big_int v pp_currency c
     | BVaddress v       -> Format.fprintf fmt "@@%a" pp_str v
@@ -319,13 +319,14 @@ let rec pp_pterm fmt (pterm : pterm) =
       in
       (pp_with_paren pp) fmt (i, t, v)
 
-    | Pvar (b, id) ->
-      let pp fmt (b, id) =
-        if   b
-        then Format.fprintf fmt "before.%a" pp_id id
-        else pp_id fmt id
+    | Pvar (vt, id) ->
+      let pp fmt (vt, id) =
+        match vt with
+        | VTbefore -> Format.fprintf fmt "before.%a" pp_id id
+        | VTat lbl -> Format.fprintf fmt "at(%s).%a" lbl pp_id id
+        | VTnone   -> pp_id fmt id
       in
-      (pp_no_paren pp) fmt (b, id)
+      (pp_no_paren pp) fmt (vt, id)
 
     | Parray l ->
       let pp fmt l =
@@ -492,14 +493,13 @@ let rec pp_instruction fmt (i : instruction) =
       in
       (pp_with_paren pp) fmt (k, pt)
 
-    | Itransfer (value, back, dest) ->
-      let pp fmt (value, back, dest) =
-        Format.fprintf fmt "transfer %a %a%a"
-          (pp_do_if back pp_str) "back"
+    | Itransfer (value, dest) ->
+      let pp fmt (value, dest) =
+        Format.fprintf fmt "transfer %a to %a"
           pp_pterm value
-          (pp_option (fun fmt -> Format.fprintf fmt " to %a" pp_qualid)) dest
+          pp_pterm dest
       in
-      (pp_with_paren pp) fmt (value, back, dest)
+      (pp_with_paren pp) fmt (value, dest)
 
     | Ibreak ->
       let pp fmt () =
@@ -615,7 +615,7 @@ let pp_specification fmt (v : lident specification) =
                     pp_id id
                     pp_label_term lt
                 )) l)) v.invariants
-      (pp_option (fun fmt -> Format.fprintf fmt "effect {@\n  @[%a@]}@\n" pp_pterm)) v.effect
+      (pp_option (fun fmt -> Format.fprintf fmt "effect {@\n  @[%a@]}@\n" pp_instruction)) v.effect
       (pp_no_empty_list2 pp_assert) v.asserts
       (pp_no_empty_list2 pp_postcondition) v.specs
 

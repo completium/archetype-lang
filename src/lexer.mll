@@ -26,7 +26,6 @@
       "assert"              , ASSERT         ;
       "asset"               , ASSET          ;
       "at"                  , AT             ;
-      "back"                , BACK           ;
       "before"              , BEFORE         ;
       "break"               , BREAK          ;
       "but"                 , BUT            ;
@@ -77,6 +76,7 @@
       "require"             , REQUIRE        ;
       "return"              , RETURN         ;
       "security"            , SECURITY       ;
+      "shadow"              , SHADOW         ;
       "sorted"              , SORTED         ;
       "specification"       , SPECIFICATION  ;
       "states"              , STATES         ;
@@ -121,7 +121,7 @@ let address = '@'['a'-'z' 'A'-'Z' '0'-'9' '_' ]+
 let duration = (digit+ 'w')? (digit+ 'd')? (digit+ 'h')? (digit+ 'm')? (digit+ 's')?
 let day      = digit digit digit digit '-' digit digit '-' digit digit
 let hour     = digit digit ':' digit digit ( ':' digit digit )?
-let timezone = ('+' digit digit ':' digit digit | 'Z')
+let timezone = (('+' | '-') digit digit ':' digit digit | 'Z')
 let date     = day ('T' hour ( timezone )?)?
 let accept_transfer = "accept" blank+ "transfer"
 let refuse_transfer = "refuse" blank+ "transfer"

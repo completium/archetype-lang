@@ -10,27 +10,30 @@ let remove_label (model : model) : model =
   in
   map_mterm_model aux model
 
+let rec flat_sequence_mterm (mt : mterm) =
+  match mt.node with
+  | Mseq l ->
+    begin
+      match l with
+      | [] -> mt
+      | [e] -> e
+      | l ->
+        let l = List.fold_right (fun (x : mterm) accu ->
+            match x.node with
+            | Mseq [] -> accu
+            | _ -> x::accu) l [] in
+        begin
+          match l with
+          | [] -> mk_mterm (Mseq []) Tunit
+          | [e] -> e
+          | _ -> mk_mterm (Mseq l) (List.last l).type_
+        end
+    end
+  | _ -> map_mterm flat_sequence_mterm mt
+
 let flat_sequence (model : model) : model =
-  let rec aux (ctx : ctx_model) (mt : mterm) : mterm =
-    match mt.node with
-    | Mseq l ->
-      begin
-        match l with
-        | [] -> mt
-        | [e] -> e
-        | l ->
-          let l = List.fold_right (fun (x : mterm) accu ->
-              match x.node with
-              | Mseq [] -> accu
-              | _ -> x::accu) l [] in
-          begin
-            match l with
-            | [] -> mk_mterm (Mseq []) Tunit
-            | [e] -> e
-            | _ -> mk_mterm (Mseq l) (List.last l).type_
-          end
-      end
-    | _ -> map_mterm (aux ctx) mt
+  let aux (_ctx : ctx_model) (mt : mterm) : mterm =
+    flat_sequence_mterm mt
   in
   map_mterm_model aux model
 
@@ -93,7 +96,7 @@ let extend_removeif (model : model) : model =
       let assetv_str = dumloc (asset ^ "_") in
       let asset_var = mk_mterm (Mvarlocal assetv_str) type_asset in
 
-      let key, key_type = Utils.get_asset_key model lasset in
+      let key, key_type = Utils.get_asset_key model (unloc lasset) in
       let asset_key : mterm = mk_mterm (Mdotasset (asset_var,dumloc key)) (Tbuiltin key_type) in
 
       let assets_var_name = dumloc ("assets_") in
@@ -142,22 +145,17 @@ let process_single_field_storage (model : model) : model =
   match model.storage with
   | [i] ->
     begin
-      match i.id with
-      | SIname name ->
-        begin
-          let storage_id = dumloc "_s" in
-          let rec aux (ctx : ctx_model) (mt : mterm) : mterm =
-            match mt.node with
-            | Mvarstorevar a when String.equal (unloc a) (unloc name) ->
-              mk_mterm (Mvarlocal storage_id) mt.type_
-            | Massign (op, a, v) when String.equal (unloc a) (unloc name) ->
-              let vv = map_mterm (aux ctx) v in
-              mk_mterm (Massign (op, storage_id, vv)) mt.type_
-            | _ -> map_mterm (aux ctx) mt
-          in
-          map_mterm_model aux model
-        end
-      | SIstate -> model
+      let storage_id = dumloc "_s" in
+      let rec aux (ctx : ctx_model) (mt : mterm) : mterm =
+        match mt.node with
+        | Mvarstorevar a when String.equal (unloc a) (unloc i.id) ->
+          mk_mterm (Mvarlocal storage_id) mt.type_
+        | Massign (op, a, v) when String.equal (unloc a) (unloc i.id) ->
+          let vv = map_mterm (aux ctx) v in
+          mk_mterm (Massign (op, storage_id, vv)) mt.type_
+        | _ -> map_mterm (aux ctx) mt
+      in
+      map_mterm_model aux model
     end
   | _   -> model
 
@@ -167,11 +165,10 @@ let check_partition_access (env : Typing.env) (model : model) : model =
   let partitionned_assets =
     partitions
     |> List.map (fun (_,_,t) -> Utils.type_to_asset t)
-    |> List.map unloc
   in
   let get_partitions a =
     List.fold_left (fun acc (_,f,t) ->
-        if compare a (unloc (Utils.type_to_asset t)) = 0 then
+        if compare a (Utils.type_to_asset t) = 0 then
           acc @ [f]
         else acc
       ) [] partitions in
@@ -197,11 +194,11 @@ let prune_properties (model : model) : model =
   match !Options.opt_property_focused with
   | "" -> model
   | fp_id ->
-    let p_ids =
-      fp_id::
+    let _is_inv, uses =
       (match Model.Utils.retrieve_property model fp_id with
-       | Ppostcondition (p, _f_id) -> List.map unloc p.uses
-       | _ -> [])
+       | PstorageInvariant _ -> true, []
+       | Ppostcondition (p, _f_id) -> false, List.map unloc p.uses
+       | _ -> false, [])
     in
 
     let p_funs =
@@ -218,11 +215,21 @@ let prune_properties (model : model) : model =
             | Ppostcondition _     -> all_funs
             | PstorageInvariant _  -> all_funs
             | PsecurityPredicate _ -> all_funs
-          ) [] p_ids
+          ) [] (fp_id::uses)
       end
     in
 
-    let remain_id id = List.exists (String.equal id) p_ids in
+    let api_verifs : api_verif list =
+      (* let is_api_verif id = List.exists (String.equal id) uses in *)
+      let props = Model.Utils.retrieve_all_properties model in
+      List.fold_left (fun accu (label, prop) ->
+          match prop with
+          | PstorageInvariant ({term = formula; _}, an) -> StorageInvariant (label, an, formula)::accu
+          | _ -> accu
+        ) [] props
+    in
+
+    let remain_id id = String.equal id fp_id in
     let remain_function id = List.exists (String.equal id) p_funs in
     let prune_mterm (mt : mterm) : mterm =
       let rec aux (mt : mterm) : mterm =
@@ -237,6 +244,18 @@ let prune_properties (model : model) : model =
         | _ -> map_mterm aux mt
       in
       aux mt
+    in
+    let prune_decl = function
+      | Dasset r -> Dasset {r with invariants = List.filter (fun (x : label_term) -> remain_id (unloc (x.label))) r.invariants }
+      | Denum e ->
+        begin
+          let values = List.map (
+              fun (x : enum_item) ->
+                {x with invariants = List.filter (fun (x : label_term) -> remain_id (unloc (x.label))) x.invariants }
+            ) e.values in
+          Denum { e with values = values; }
+        end
+      | _ as x -> x
     in
     let prune_specs (spec : specification) : specification =
       { spec with
@@ -259,37 +278,11 @@ let prune_properties (model : model) : model =
       { sec with
         items = List.filter (fun (x : security_item) -> remain_id (unloc x.label)) sec.items
       } in
-    let process_asset model : model =
-      let prune_storage_item (model, s : model * storage_item) : model * storage_item =
-        match s.asset with
-        | Some an ->
-          let model, invs =
-            List.fold_left (fun (model, accu: model * lident label_term_gen list) (x : lident label_term_gen) ->
-                if Option.is_some x.label && remain_id (unloc (Option.get x.label)) then
-                  (model, accu @ [x])
-                else
-                  ({model with api_verif = model.api_verif @ [StorageInvariant ((unloc (Option.get x.label)), unloc an, x.term) ] }, accu)
-              ) (model,[]) s.invariants in
-          model, { s with invariants = invs}
-        | _ -> (model, s)
-      in
-      let (model, storage) : model * storage_item list =
-        List.fold_left_map
-          (fun (state : model) (x : storage_item) ->
-             prune_storage_item (state, x)
-          ) model model.storage in
-      {
-        model with
-        storage = storage;
-      }
-    in
-    let model =
-      model
-      |> process_asset
-    in
     let f1 = (fun (fs : function_struct) -> remain_function (unloc fs.name)) in
     let f2 = (fun (x : function__) -> match x.node with | Entry fs -> fs | Function (fs, _) -> fs) in
     { model with
+      api_verif = api_verifs;
+      decls = List.map prune_decl model.decls;
       functions = List.map prune_function__ (List.filter (f1 |@ f2) model.functions);
       specification = prune_specs model.specification;
       security = prune_secs model.security
@@ -358,6 +351,116 @@ let remove_get_dot (model : model) : model =
              mk_mterm (Mletin ([id], v, Some v.type_, accu, None)) accu.type_
           ) l (mk_mterm (Mletin (ids, new_init, t, body, o)) mt.type_)
       end
+    | _ -> map_mterm (aux c) mt
+  in
+  Model.map_mterm_model aux model
+
+let assign_loop_label (model : model) : model =
+  let loop_labels = ref
+      begin
+        let rec aux ctx accu (mt : mterm) : Ident.ident list =
+          match mt.node with
+          | Mfor (_, col, body, Some label) ->
+            begin
+              let accu = fold_term (aux ctx) accu col in
+              let accu = fold_term (aux ctx) accu body in
+              label::accu
+            end
+          | Miter (_, min, max, body, Some label) ->
+            begin
+              let accu = fold_term (aux ctx) accu min in
+              let accu = fold_term (aux ctx) accu max in
+              let accu = fold_term (aux ctx) accu body in
+              label::accu
+            end
+          | _ -> fold_term (aux ctx) accu mt
+        in
+        fold_model aux model []
+      end
+  in
+
+  let get_loop_label ctx : Ident.ident =
+    let prefix =
+      "loop_" ^
+      (match ctx.fs, ctx.spec_id, ctx.label, ctx.invariant_id with
+       | Some fs, _, _, _ -> unloc fs.name
+       | _, Some a, _, _
+       | _, _, Some a, _
+       | _, _, _, Some a  -> unloc a
+       | _ -> assert false)
+      ^ "_"
+    in
+    let n = ref 0 in
+    begin
+      while List.mem (prefix ^ (string_of_int !n)) !loop_labels do
+        n := !n + 1
+      done;
+      let res = prefix ^ (string_of_int !n) in
+      loop_labels := res::!loop_labels;
+      res
+    end
+  in
+
+
+  let rec aux ctx (mt : mterm) : mterm =
+    match mt.node with
+    | Mfor (a, col, body, None) ->
+      begin
+        let ncol  = map_mterm (aux ctx) col in
+        let nbody = map_mterm (aux ctx) body in
+        let label = get_loop_label ctx in
+        { mt with node = Mfor (a, ncol, nbody, Some label)}
+      end
+    | _ -> map_mterm (aux ctx) mt
+  in
+  map_mterm_model aux model
+
+
+let remove_wild_pattern (model : model) : model =
+  let rec aux c (mt : mterm) : mterm =
+    match mt.node with
+    | Mmatchwith (e, l) ->
+      let e = aux c e in
+      let l = List.map (fun (x, y) -> x, aux c y) l in
+
+      let pl : (string * mterm) list =
+        begin
+          let values : string list =
+            begin
+              let enum : enum =
+                match e.type_ with
+                | Tstate   -> Model.Utils.get_enum model "state"
+                | Tenum id -> Model.Utils.get_enum model (unloc id)
+                | _ -> assert false
+              in
+              enum.values
+              |> List.map (fun (x : enum_item) -> unloc x.name)
+            end
+          in
+          let mterm_default : mterm option =
+            List.fold_left (
+              fun accu (p, e : pattern * mterm) ->
+                match p.node with
+                | Pwild -> Some e
+                | _ -> accu
+            ) None l in
+          let seek_mterm x =
+            List.fold_left (
+              fun accu (p, e : pattern * mterm) ->
+                match p.node with
+                | Pconst id when String.equal (Location.unloc id) x -> Some e
+                | _ -> accu
+            ) None l in
+          List.map (fun x ->
+              let e = seek_mterm x in
+              match e with
+              | Some e -> (x, e)
+              | None -> x, Option.get mterm_default
+            ) values
+        end
+      in
+      let l = List.map (fun (id, e) -> mk_pattern (Pconst (dumloc id)), e) pl in
+      mk_mterm (Mmatchwith (e, l)) mt.type_
     | _ -> map_mterm (aux c) mt
   in
   Model.map_mterm_model aux model

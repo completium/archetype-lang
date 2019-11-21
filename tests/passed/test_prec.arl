@@ -1,0 +1,31 @@
+archetype test_prec
+
+constant a int = 0
+constant b int = 0
+constant c int = 0
+
+constant i bool = true
+constant j bool = true
+constant k bool = true
+
+variable x0 int = a + b + c
+variable y0 int = a + (b + c)
+variable z0 int = (a + b) + c
+
+variable x1 int = a + b * c
+variable y1 int = (a + b) * c
+variable z1 int = a + (b * c)
+
+variable x2 int = a * b + c
+variable y2 int = (a * b) + c
+variable z2 int = a * (b + c)
+
+specification {
+  postcondition s1 {
+    i -> j -> k
+  }
+
+  postcondition s2 {
+    (i -> j) -> k
+  }
+}

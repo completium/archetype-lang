@@ -5,44 +5,46 @@ BIN_WHY3=why3
 LIB_ARCHETYPE=./mlw
 GRET=0
 
-process_ligo () {
+process_ligo() {
     echo -ne "ligo:      "
     FILE=$1
     OUT=$FILE.ligo
     TZ=out.tz
     rm -fr $OUT
-    $BIN -t ligo $FILE > $OUT
-    RET=`echo $?`
+    $BIN -t ligo $FILE >$OUT
+    RET=$(echo $?)
     if [ ${RET} -eq 0 ]; then
-	    echo -ne "\033[32m OK \033[0m"
+        echo -ne "\033[32m OK \033[0m"
     else
-	    echo -ne "\033[31m KO \033[0m"
-      GRET=1
+        echo -ne "\033[31m KO \033[0m"
+        GRET=1
     fi
 
-#    ligo compile-contract $OUT main > $TZ
-#    T=`head -c 1 out.tz`
-#    if [ $T = "{" ]; then
-#	      echo -ne "\033[32m OK \033[0m"
-#    else
-#	      echo -ne "\033[31m KO \033[0m"
-#        GRET=1
-#    fi
+    if [ -x "$(command -v ligo)" ]; then
+        ligo compile-contract $OUT main >$TZ
+        RET=$(echo $?)
+        if [ ${RET} -eq 0 ]; then
+            echo -ne "\033[32m OK \033[0m"
+        else
+            echo -ne "\033[31m KO \033[0m"
+            GRET=1
+        fi
+    fi
     echo ""
     rm -fr $OUT *.pp.ligo $TZ
 }
 
-process_smartpy () {
+process_smartpy() {
     echo -ne "smartpy:   "
     FILE=$1
     OUT=$FILE.py
     rm -fr $OUT
-    $BIN -t smartpy $FILE > $OUT
-    RET=`echo $?`
+    $BIN -t smartpy $FILE >$OUT
+    RET=$(echo $?)
     if [ ${RET} -eq 0 ]; then
-	      echo -ne "\033[32m OK \033[0m"
+        echo -ne "\033[32m OK \033[0m"
     else
-	      echo -ne "\033[31m KO \033[0m"
+        echo -ne "\033[31m KO \033[0m"
         GRET=1
     fi
 
@@ -52,71 +54,71 @@ process_smartpy () {
     rm -fr $OUT
 }
 
-process_ocaml () {
+process_ocaml() {
     echo -ne "ocaml:     "
     FILE=$1
     OUT=$FILE.ml
     rm -fr $OUT
-    $BIN -t ocaml $FILE > $OUT
-    RET=`echo $?`
+    $BIN -t ocaml $FILE >$OUT
+    RET=$(echo $?)
     if [ ${RET} -eq 0 ]; then
-	      echo -ne "\033[32m OK \033[0m"
+        echo -ne "\033[32m OK \033[0m"
     else
-	      echo -ne "\033[31m KO \033[0m"
+        echo -ne "\033[31m KO \033[0m"
         GRET=1
     fi
 
-    ocamlc $OUT > /dev/null 2> /dev/null
-    RET=`echo $?`
+    ocamlc $OUT >/dev/null 2>/dev/null
+    RET=$(echo $?)
     if [ ${RET} -eq 0 ]; then
-	      echo -ne "\033[32m OK \033[0m"
+        echo -ne "\033[32m OK \033[0m"
     else
-	      echo -ne "\033[31m KO \033[0m"
+        echo -ne "\033[31m KO \033[0m"
         GRET=1
     fi
     echo ""
     rm -fr $OUT $FILE.cm* a.out
 }
 
-process_whyml () {
+process_whyml() {
     echo -ne "whyml:     "
     FILE=$1
     OUT=$FILE.mlw
     rm -fr $OUT
-    $BIN -t whyml $FILE > $OUT
-    RET=`echo $?`
+    $BIN -t whyml $FILE >$OUT
+    RET=$(echo $?)
     if [ ${RET} -eq 0 ]; then
-	      echo -ne "\033[32m OK \033[0m"
+        echo -ne "\033[32m OK \033[0m"
     else
-	      echo -ne "\033[31m KO \033[0m"
+        echo -ne "\033[31m KO \033[0m"
         GRET=1
     fi
 
-    $BIN_WHY3 -L ${LIB_ARCHETYPE} prove $OUT > /dev/null 2> /dev/null
-    RET=`echo $?`
+    $BIN_WHY3 -L ${LIB_ARCHETYPE} prove $OUT >/dev/null 2>/dev/null
+    RET=$(echo $?)
     if [ ${RET} -eq 0 ]; then
-	      echo -ne "\033[32m OK \033[0m"
+        echo -ne "\033[32m OK \033[0m"
     else
-	      echo -ne "\033[31m KO \033[0m"
+        echo -ne "\033[31m KO \033[0m"
         GRET=1
     fi
     echo ""
     rm -fr $OUT
 }
 
-process () {
+process() {
     FILE=$1
     echo -e "process: " $FILE
     process_ligo $FILE
-#    process_smartpy $FILE
-    process_ocaml $FILE
+    #    process_smartpy $FILE
+    #    process_ocaml $FILE
     process_whyml $FILE
 }
 
 CONTRACT=contracts/miles_with_expiration.arl
 
 if [ $# -gt 0 ]; then
-   CONTRACT=$1
+    CONTRACT=$1
 fi
 
 process $CONTRACT

@@ -40,7 +40,6 @@
 %token AT_ADD
 %token AT_REMOVE
 %token AT_UPDATE
-%token BACK
 %token BEFORE
 %token BREAK
 %token BUT
@@ -126,6 +125,7 @@
 %token RPAREN
 %token SECURITY
 %token SEMI_COLON
+%token SHADOW
 %token SOME
 %token SORTED
 %token SPECIFICATION
@@ -158,9 +158,7 @@
 %token <string> DURATION
 %token <string> DATE
 
-%nonassoc prec_transfer
-
-%nonassoc TO IN
+%nonassoc IN
 
 %left COMMA SEMI_COLON
 
@@ -262,33 +260,24 @@ declaration_r:
 archetype:
 | ARCHETYPE exts=option(extensions) x=ident { Darchetype (x, exts) }
 
+%inline invariants:
+| /* empty */                 { [] }
+| WITH xs=braced(label_exprs) { xs }
+
 vc_decl(X):
-| X exts=extensions? x=ident t=type_t z=option(value_options) dv=default_value?
-    { (x, t, z, dv, exts) }
+| X exts=extensions? x=ident t=type_t dv=default_value? invs=invariants
+    { (x, t, None, dv, invs, exts) }
 
 constant:
-  | x=vc_decl(CONSTANT) { let x, t, z, dv, exts = x in
-                          Dvariable (x, t, dv, z, VKconstant, exts) }
+  | x=vc_decl(CONSTANT) { let x, t, z, dv, invs, exts = x in
+                          Dvariable (x, t, dv, z, VKconstant, invs, exts) }
 
 variable:
-  | x=vc_decl(VARIABLE) { let x, t, z, dv, exts = x in
-                          Dvariable (x, t, dv, z, VKvariable, exts) }
-
-%inline value_options:
-| xs=value_option+ { xs }
-
-value_option:
-| x=from_value { VOfrom x }
-| x=to_value   { VOto x }
+  | x=vc_decl(VARIABLE) { let x, t, z, dv, invs, exts = x in
+                          Dvariable (x, t, dv, z, VKvariable, invs, exts) }
 
 %inline default_value:
 | EQUAL x=expr { x }
-
-%inline from_value:
-| FROM x=ident { x }
-
-%inline to_value:
-| TO x=ident { x }
 
 dextension:
 | PERCENT x=ident arg=option(simple_expr) { Dextension (x, arg) }
@@ -484,14 +473,19 @@ type_s_unloc:
 | COLLECTION { Collection }
 | PARTITION  { Partition }
 
+%inline shadow_asset_fields:
+| /* empty */ { [] }
+| SHADOW x=asset_fields { x }
+
 asset:
 | ASSET exts=extensions? ops=bracket(asset_operation)? x=ident opts=asset_options?
         fields=asset_fields?
+        sfields=shadow_asset_fields
                  apo=asset_post_options
                        {
                          let fs = match fields with | None -> [] | Some x -> x in
                          let os = match opts with | None -> [] | Some x -> x in
-                         Dasset (x, fs, os, apo, ops, exts) }
+                         Dasset (x, fs, sfields, os, apo, ops, exts) }
 
 asset_post_option:
 | WITH STATES x=ident           { APOstates x }
@@ -701,8 +695,8 @@ expr_r:
  | x=expr op=assignment_operator_expr y=expr
      { Eassign (op, x, y) }
 
- | TRANSFER back=boption(BACK) x=simple_expr y=ioption(to_value) %prec prec_transfer
-     { Etransfer (x, back, y) }
+ | TRANSFER x=simple_expr TO y=simple_expr
+     { Etransfer (x, y) }
 
  | REQUIRE x=simple_expr
      { Erequire x }
@@ -776,11 +770,8 @@ simple_expr_r:
  | x=literal
      { Eliteral x }
 
- | b=before_dot x=ident
-     { let st = { before = b; label = None; } in Eterm (st, x) }
-
- | LPAREN x=ident AT l=ident RPAREN
-     { let st = { before = false; label = Some l; } in Eterm (st, x) }
+ | vt=vt_dot x=ident
+     { let st = { before = fst vt; label = snd vt; } in Eterm (st, x) }
 
  | INVALID_EXPR
      { Einvalid }
@@ -788,9 +779,10 @@ simple_expr_r:
  | x=paren(expr_r)
      { x }
 
-%inline before_dot:
- |            { false }
- | BEFORE DOT { true }
+%inline vt_dot:
+ |            { false, None }
+ | BEFORE DOT { true, None }
+ | AT LPAREN l=ident RPAREN DOT { false, Some l }
 
 %inline label_exprs:
 | /* empty */   { [] }

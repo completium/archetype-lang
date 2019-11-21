@@ -23,8 +23,8 @@ action add_contract (contract_ : insured_contract) {
 
 action pay (recipient : address) (amount : tez) {
   require {
-    c1 : insured_contract.contains(caller);
-    c2 : amount <= insured_contract.get(caller).max_transfer;
+    c2 : insured_contract.contains(caller);
+    c3 : amount <= insured_contract.get(caller).max_transfer;
   }
 
   effect {

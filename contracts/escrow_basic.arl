@@ -6,7 +6,7 @@ variable seller role = @tz1XJYAURaznhvN1khR6P52hw6xs5P691Kmu
 
 variable oracle role = @tz15P69BXJYAURaznhvN1k1KmuhR6P52hw6x
 
-variable price tez from buyer to seller = 10tz
+variable price tez = 10tz
 
 (* action deadline *)
 variable deadline date = 2019-06-01T00:00:00
@@ -14,10 +14,10 @@ variable deadline date = 2019-06-01T00:00:00
 (* state machine *)
 states =
  | Created initial
- | Aborted   with { i1 : balance = 0mtz; }
+ | Aborted   with { i1 : balance = 0tz; }
  | Confirmed with { i2 : balance = price; }
- | Canceled  with { i3 : balance = 0mtz; }
- | Completed with { i4 : balance = 0mtz; }
+ | Canceled  with { i3 : balance = 0tz; }
+ | Completed with { i4 : balance = 0tz; }
 
 transition abort from Created {
   called by buyer or seller
@@ -34,7 +34,7 @@ transition[%onlyonce%] complete from Confirmed {
 
   to Completed when { now < deadline }
   with effect {
-    transfer price
+    transfer price to seller
   }
 }
 
@@ -43,7 +43,7 @@ transition[%onlyonce%] cancel from Confirmed {
 
   to Canceled
   with effect {
-    transfer back price
+    transfer price to buyer
   }
 }
 
