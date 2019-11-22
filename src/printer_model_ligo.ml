@@ -1068,15 +1068,15 @@ let pp_model fmt (model : model) =
       let _, t = Utils.get_asset_key model an in
       Format.fprintf fmt
         "function remove_%s (const s : storage_type; const key : %a) : storage_type is@\n  \
-         begin@\n  \
-         var new_keys : list(%a) := (nil : list(%a));@\n  \
-         function aux (const i : %a) : unit is@\n  \
          begin@\n    \
-         if (key =/= i) then@\n      \
-         new_keys := cons(i, new_keys);@\n    \
-         else@\n      \
-         skip;@\n  \
-         end with unit;@\n  \
+         var new_keys : list(%a) := (nil : list(%a));@\n    \
+         function aux (const i : %a) : unit is@\n      \
+         begin@\n        \
+         if (key =/= i) then@\n          \
+         new_keys := cons(i, new_keys);@\n        \
+         else@\n          \
+         skip;@\n      \
+         end with unit;@\n    \
          list_iter(aux, s.%s_keys);@\n    \
          s.%s_keys := new_keys;@\n    \
          const map_local : map(%a, %s) = s.%s_assets;@\n    \
@@ -1134,15 +1134,15 @@ let pp_model fmt (model : model) =
       let _kk, tt = Utils.get_asset_key model ft in
       Format.fprintf fmt
         "function remove_%s_%s (const s : storage_type; const a : %s; const key : %a) : storage_type is@\n  \
-         begin@\n  \
-         var new_keys : list(%a) := (nil : list(%a));@\n  \
-         function aux (const i : %a) : unit is@\n  \
          begin@\n    \
-         if (key =/= i) then@\n      \
-         new_keys := cons(i, new_keys);@\n    \
-         else@\n      \
-         skip;@\n  \
-         end with unit;@\n  \
+         var new_keys : list(%a) := (nil : list(%a));@\n    \
+         function aux (const i : %a) : unit is@\n      \
+         begin@\n        \
+         if (key =/= i) then@\n          \
+         new_keys := cons(i, new_keys);@\n        \
+         else@\n          \
+         skip;@\n        \
+         end with unit;@\n    \
          const asset_key : %a = a.%s;@\n    \
          const asset_val : %s = get_%s(s, asset_key);@\n    \
          list_iter(aux, asset_val.%s);@\n    \
@@ -1211,16 +1211,16 @@ let pp_model fmt (model : model) =
       let i = get_preds_index env.select_preds f in
       Format.fprintf fmt
         "function select_%s_%i (const s : storage_type; const l : list(%a)) : list(%a) is@\n  \
-         begin@\n  \
-         var res : list(%a) := (nil : list(%a));@\n  \
-         function aggregate (const i : %a) : unit is@\n  \
          begin@\n    \
-         const the : %s = get_force(i, s.%s_assets);@\n    \
-         if (%a) then@\n      \
-         res := cons(the.%s, res);@\n    \
-         else@\n      \
-         skip;@\n  \
-         end with unit;@\n  \
+         var res : list(%a) := (nil : list(%a));@\n    \
+         function aggregate (const i : %a) : unit is@\n      \
+         begin@\n        \
+         const the : %s = get_force(i, s.%s_assets);@\n        \
+         if (%a) then@\n          \
+         res := cons(the.%s, res);@\n        \
+         else@\n          \
+         skip;@\n      \
+         end with unit;@\n    \
          list_iter(aggregate, l)@\n  \
          end with res@\n"
         an i pp_btyp t pp_btyp t
@@ -1240,12 +1240,12 @@ let pp_model fmt (model : model) =
       let _, t = Utils.get_asset_key model an in
       Format.fprintf fmt
         "function contains_%s (const l : list(%a); const key : %a) : bool is@\n  \
-         begin@\n  \
-         var r : bool := False;@\n  \
-         function aggregate (const i : %a) : unit is@\n  \
          begin@\n    \
-         r := r or i = key;@\n  \
-         end with unit;@\n  \
+         var r : bool := False;@\n    \
+         function aggregate (const i : %a) : unit is@\n      \
+         begin@\n        \
+         r := r or i = key;@\n      \
+         end with unit;@\n    \
          list_iter(aggregate, l)@\n  \
          end with r@\n"
         an pp_btyp t pp_btyp t
@@ -1293,13 +1293,13 @@ let pp_model fmt (model : model) =
       let _, t, _ = Utils.get_asset_field model (an, fn) in
       Format.fprintf fmt
         "function sum_%s_%s (const s : storage_type; const l : list(%a)) : %a is@\n  \
-         begin@\n  \
-         var r : %a := %s;@\n  \
-         function aggregate (const i : %a) : unit is@\n  \
          begin@\n    \
-         const a : %s = get_force(i, s.%s_assets);@\n    \
-         r := r + a.%s;@\n  \
-         end with unit;@\n  \
+         var r : %a := %s;@\n    \
+         function aggregate (const i : %a) : unit is@\n      \
+         begin@\n        \
+         const a : %s = get_force(i, s.%s_assets);@\n        \
+         r := r + a.%s;@\n      \
+         end with unit;@\n    \
          list_iter(aggregate, l)@\n  \
          end with r@\n"
         an fn pp_btyp tk pp_type t
@@ -1448,9 +1448,7 @@ let pp_model fmt (model : model) =
       Format.fprintf fmt
         "function %s(const action : action_%s; const %s : storage_type) : (list(operation) * storage_type) is@\n  \
          begin@\n  \
-         %a\
-         %a\
-         %a\
+         @[%a%a%a@]  \
          @[%a@]@\n  \
          end with (%s, %s)@\n"
         name name const_storage
