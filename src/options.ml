@@ -1,4 +1,5 @@
 type target_lang =
+  | Solidity
   | Liquidity
   | LiquidityUrl
   | Ligo

@@ -40,6 +40,7 @@ let output (model : Model.model) =
     let printer =
       match !Options.target with
       | None         -> Printer_model.pp_model
+      | Solidity     -> Printer_model_solidity.pp_model
       | Liquidity    -> Printer_model_liquidity.pp_model
       | LiquidityUrl ->
         fun fmt model ->
@@ -116,6 +117,13 @@ let generate_target model =
     |> cont !Options.opt_sa  shallow_asset
     |> cont !Options.opt_skv split_key_values
     |> cont !Options.opt_nse remove_side_effect
+    |> generate_api_storage
+    |> output
+
+  | Solidity ->
+    model
+    |> replace_declvar_by_letin
+    |> exec_process
     |> generate_api_storage
     |> output
 
@@ -206,6 +214,7 @@ let print_version () =
 let main () =
   set_margin 300;
   let f = function
+    | "solidity"      -> Options.target := Solidity
     | "liquidity"     -> Options.target := Liquidity
     | "liquidity_url" -> Options.target := LiquidityUrl
     | "ligo"          -> Options.target := Ligo
@@ -221,7 +230,7 @@ let main () =
   let arg_list = Arg.align [
       "-t", Arg.String f, "<lang> Transcode to <lang> language";
       "--target", Arg.String f, " Same as -t";
-      "--list-target", Arg.Unit (fun _ -> Format.printf "target available:@\n  liquidity@\n  ligo@\n  smartpy@\n  ocaml@\n  whyml@\n  markdown@\n"; exit 0), " List available target languages";
+      "--list-target", Arg.Unit (fun _ -> Format.printf "target available:@\n  solidity@\n  liquidity@\n  ligo@\n  smartpy@\n  ocaml@\n  whyml@\n  markdown@\n"; exit 0), " List available target languages";
       (* "--storage-policy", Arg.String (fun s -> match s with
           | "flat" -> Options.storage_policy := Flat
           | "record" -> Options.storage_policy := Record
