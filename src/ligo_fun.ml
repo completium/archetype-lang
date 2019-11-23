@@ -90,7 +90,7 @@ let to_ligo_fun (model : model) (f : function__) : ligo_fun =
             let app_id = dumloc "list_iter" in
             let fun_name = label in
             let n = mk_mterm (Mvarlocal (dumloc fun_name)) Tunit in
-            let mtt : mterm = mk_mterm (Mapp (app_id, [c; n])) Tunit in
+            let mtt : mterm = mk_mterm (Mapp (app_id, [n; c])) Tunit in
             let typ =
               begin
                 match c.type_ with

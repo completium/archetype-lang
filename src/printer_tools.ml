@@ -98,3 +98,8 @@ let maybe_paren outer inner pos pp =
     | _ -> false
   in pp_maybe_paren c pp
 
+(* -------------------------------------------------------------------------- *)
+
+let pp_version fmt _ = pp_str fmt Options.version
+
+let pp_bin fmt _ = Format.fprintf fmt "archetype %a" pp_version ()

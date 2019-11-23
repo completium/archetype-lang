@@ -92,6 +92,7 @@ let generate_target_pt (pt : ParseTree.archetype) : ParseTree.archetype =
   | _ -> pt
 
 let generate_model            = Gen_model.to_model
+let generate_storage          = Gen_storage.generate_storage
 let shallow_asset             = Gen_shallow_asset.shallow_asset
 let extend_iter               = Gen_transform.extend_loop_iter
 let split_key_values          = Gen_split_key_values.split_key_values
@@ -113,7 +114,9 @@ let generate_target model =
   match !Options.target with
   | None ->
     model
+    |> cont !Options.opt_ws  generate_storage
     |> raise_if_error post_model_error prune_properties
+    |> replace_declvar_by_letin
     |> cont !Options.opt_sa  shallow_asset
     |> cont !Options.opt_skv split_key_values
     |> cont !Options.opt_nse remove_side_effect
@@ -141,6 +144,7 @@ let generate_target model =
 
   | Ligo ->
     model
+    |> generate_storage
     |> replace_declvar_by_letin
     |> remove_wild_pattern
     |> remove_get_dot
@@ -153,6 +157,7 @@ let generate_target model =
 
   | SmartPy ->
     model
+    |> generate_storage
     |> exec_process
     |> shallow_asset
     |> generate_api_storage
@@ -160,6 +165,7 @@ let generate_target model =
 
   | Ocaml ->
     model
+    |> generate_storage
     |> replace_declvar_by_letin
     |> exec_process
     |> post_process_fun_language
@@ -171,6 +177,7 @@ let generate_target model =
 
   | Whyml ->
     model
+    |> generate_storage
     |> replace_declvar_by_letin
     |> prune_properties
     |> extend_iter
@@ -248,6 +255,8 @@ let main () =
       "--typed", Arg.Set Options.opt_typed, " Display type in ast output";
       "-ap", Arg.Set Options.opt_all_parenthesis, " Display all parenthesis in printer";
       "--typed", Arg.Set Options.opt_all_parenthesis, " Same as -ap";
+      "-ws", Arg.Set Options.opt_ws, " With storage";
+      "--with-storage", Arg.Set Options.opt_ws, " Same as -ws";
       "-sa", Arg.Set Options.opt_sa, " Transform to shallow asset";
       "--shallow-asset", Arg.Set Options.opt_sa, " Same as -sa";
       "-skv", Arg.Set Options.opt_skv, " Split key value of collection of asset";
@@ -281,7 +290,7 @@ let main () =
       "--version", Arg.Unit (fun () -> print_version ()), " Same as -v";
     ] in
   let arg_usage = String.concat "\n" [
-      "usage : archetype [-t <lang> | -pt | -ext | -tast | [-sa] [-skv] [-nse] | -lsp <request>] [-r | -json] <file>";
+      "usage : archetype [-t <lang> | -pt | -ext | -tast | [-ws] [-sa] [-skv] [-nse] | -lsp <request>] [-r | -json] <file>";
       "";
       "Available options:";
     ]  in
