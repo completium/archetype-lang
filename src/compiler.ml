@@ -105,6 +105,7 @@ let generate_target model =
   | None ->
     model
     |> raise_if_error post_model_error prune_properties
+    |> replace_declvar_by_letin
     |> cont !Options.opt_sa  shallow_asset
     |> cont !Options.opt_skv split_key_values
     |> cont !Options.opt_nse remove_side_effect
