@@ -407,6 +407,7 @@ type var = lident var_gen
 type 'id enum_gen = {
   name: 'id;
   values: 'id enum_item_gen list;
+  initial: 'id;
 }
 [@@deriving show {with_path = false}]
 
@@ -714,8 +715,8 @@ let mk_security ?(items = []) ?(loc = Location.dummy) () : security =
 let mk_var ?(constant=false) ?(invariants=[]) ?default ?(loc = Location.dummy) name type_ original_type : 'id var_gen =
   { name; type_; default; constant; invariants; original_type; loc }
 
-let mk_enum ?(values = []) name : 'id enum_gen =
-  { name; values }
+let mk_enum ?(values = []) name initial : 'id enum_gen =
+  { name; values; initial }
 
 let mk_enum_item ?(invariants = []) name : 'id enum_item_gen =
   { name; invariants }

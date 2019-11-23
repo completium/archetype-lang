@@ -15,6 +15,7 @@ type error_desc =
   | CannotExtractAssetName
   | AnyNotAuthorizedInTransitionTo of Location.t
   | NoInitExprFor of string
+  | NoInitialValueFor of string
   | TODO
 [@@deriving show {with_path = false}]
 
@@ -478,7 +479,9 @@ let to_model (ast : A.model) : M.model =
         let id : M.lident = x.name in
         M.mk_enum_item id ~invariants:(List.map (fun x -> to_label_lterm x) x.invariants)
       ) e.items in
-    let enum = M.mk_enum (A.Utils.get_enum_name e) ~values:values in
+    let initial : A.lident option = List.fold_left (fun accu (x : A.lident A.enum_item_struct) -> match x.initial with | true -> Some x.name | _ -> accu) None e.items in
+    (* let initial = (match initial with | Some x -> x | _ -> emit_error (NoInitialValueFor (unloc e.name))) in *)
+    let enum = M.mk_enum (A.Utils.get_enum_name e) (Option.get initial) ~values:values in
     M.Denum enum
   in
 
@@ -702,90 +705,6 @@ let to_model (ast : A.model) : M.model =
         ()
     in
     { sec with items = sec.items @ new_s.items; loc = new_s.loc; }
-  in
-
-  let process_storage _ =
-    let state_to_storage_items (es : A.enum list) l : M.storage_item list =
-      let es = List.filter (fun (x : A.enum) -> match x.kind with | EKstate -> true | _ -> false ) es in
-      match es with
-      | [] -> l
-      | [e] ->
-        begin
-          let init_val = List.fold_left (fun accu (x : A.lident A.enum_item_struct) ->
-              match x.initial with
-              | true -> Some x.name
-              | _ -> accu
-            ) None e.items in
-          let iv = Option.get init_val in
-          let dv = M.mk_mterm (M.Mvarlocal iv) (M.Tstate) in
-          let field = M.mk_storage_item (dumloc "state") M.MTstate Tstate dv in
-          field::l
-        end
-      | _ -> assert false
-    in
-
-    let variable_to_storage_items (var : A.lident A.variable) : M.storage_item =
-
-      let init_ b =
-        match b with
-        | M.Bbool       -> M.mk_mterm (M.Mbool false) (M.Tbuiltin b)
-        | M.Bint        -> M.mk_mterm (M.Mint (Big_int.zero_big_int)) (M.Tbuiltin b)
-        | M.Brational   -> M.mk_mterm (M.Mrational (Big_int.zero_big_int, Big_int.unit_big_int)) (M.Tbuiltin b)
-        | M.Bdate       -> emit_error (NoInitExprFor "date")
-        | M.Bduration   -> M.mk_mterm (M.Mduration (Core.mk_duration ())) (M.Tbuiltin b)
-        | M.Bstring     -> M.mk_mterm (M.Mstring "") (M.Tbuiltin b)
-        | M.Baddress    -> emit_error (NoInitExprFor "address")
-        | M.Brole       -> emit_error (NoInitExprFor "role")
-        | M.Bcurrency   -> M.mk_mterm (M.Mcurrency (Big_int.zero_big_int, M.Tz)) (M.Tbuiltin b)
-        | M.Bkey        -> emit_error (NoInitExprFor "key")
-      in
-
-      let init_default_value = function
-        | M.Tbuiltin b        -> init_ b
-        | M.Tcontainer (t, _) -> M.mk_mterm (M.Marray []) (M.Tcontainer(t, Collection))
-        | M.Toption t         -> M.mk_mterm (M.Mnone) (M.Toption t)
-        | M.Tasset v
-        | M.Tenum v
-        | M.Tcontract v       -> emit_error (NoInitExprFor (unloc v))
-        | M.Ttuple _          -> emit_error (NoInitExprFor "tuple")
-        | M.Tassoc _          -> emit_error (NoInitExprFor "tassoc")
-        | M.Tunit             -> emit_error (NoInitExprFor "unit")
-        | M.Tstorage          -> emit_error (NoInitExprFor "storage")
-        | M.Toperation        -> emit_error (NoInitExprFor "operation")
-        | M.Tentry            -> emit_error (NoInitExprFor "entry")
-        | M.Tprog _           -> emit_error (NoInitExprFor "prog")
-        | M.Tvset _           -> emit_error (NoInitExprFor "vset")
-        | M.Ttrace _          -> emit_error (NoInitExprFor "trace")
-        | M.Tstate            -> emit_error (NoInitExprFor "state")
-      in
-
-      let arg = var.decl in
-      let mt = if var.constant then M.MTconst else M.MTvar in
-      let type_ : A.type_ = Option.get arg.typ in
-      let typ = ptyp_to_type type_ in
-      let dv =
-        match arg.default with
-        | Some v -> to_mterm v
-        | None   -> init_default_value typ
-      in
-      M.mk_storage_item arg.name mt typ dv
-    in
-
-    let asset_to_storage_items (asset : A.asset) : M.storage_item =
-      let asset_name = asset.name in
-      let typ_ = M.Tcontainer (Tasset asset_name, Collection) in
-      M.mk_storage_item
-        asset_name
-        (M.MTasset (unloc asset_name))
-        typ_
-        (M.mk_mterm (M.Marray []) typ_)
-    in
-
-    let cont f x l = l @ (List.map f x) in
-    []
-    |> state_to_storage_items (ast.enums)
-    |> cont variable_to_storage_items ast.variables
-    |> cont asset_to_storage_items ast.assets
   in
 
   let cont f x l = List.fold_left (fun accu x -> f x accu) l x in
@@ -1013,9 +932,6 @@ let to_model (ast : A.model) : M.model =
     |> (@) (List.map (fun x -> M.Dcontract (to_contract x)) ast.contracts)
   in
 
-  let storage_items = process_storage () in
-  let storage = storage_items in
-
   let functions =
     []
     |> cont process_function ast.functions
@@ -1032,4 +948,4 @@ let to_model (ast : A.model) : M.model =
     |> (fun sec -> List.fold_left (fun accu x -> cont_security x accu) sec ast.securities)
   in
 
-  M.mk_model ~decls:decls ~functions:functions ~specification:specification ~security:security ~storage:storage name
+  M.mk_model ~decls:decls ~functions:functions ~specification:specification ~security:security name

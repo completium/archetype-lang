@@ -77,14 +77,6 @@ let pp_operator fmt op =
   in
   pp_str fmt (to_str op)
 
-(* let rec pp_qualid fmt (q : qualid) =
-   match q.node with
-   | Qdot (q, i) ->
-    Format.fprintf fmt "%a.%a"
-      pp_qualid q
-      pp_id i
-   | Qident i -> pp_id fmt i *)
-
 let pp_pattern fmt (p : pattern) =
   match p.node with
   | Pconst i -> pp_id fmt i
@@ -880,8 +872,11 @@ let pp_storage_item fmt (si : storage_item) =
     (fun fmt -> Format.fprintf fmt " := %a" pp_mterm) si.default
 
 let pp_storage fmt (s : storage) =
-  Format.fprintf fmt "storage {@\n@[<v 2>  %a@]@\n}@\n"
-    (pp_list "@\n" pp_storage_item) s
+  match s with
+  | [] -> ()
+  | _ ->
+    Format.fprintf fmt "storage {@\n@[<v 2>  %a@]@\n}@\n"
+      (pp_list "@\n" pp_storage_item) s
 
 let pp_invariant fmt (inv : invariant) =
   Format.fprintf fmt "invariant %a {@\n\
