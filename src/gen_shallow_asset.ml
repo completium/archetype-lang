@@ -166,7 +166,7 @@ let rec map_shallow (ctx : (I.ident * (M.lident * M.type_) list) list) m (t : M.
       if M.Utils.has_container m n
       then
         let shallow_args = map_shallow_asset m ctx a in
-        M.Maddshallow (n, [a]@shallow_args)
+        M.Maddshallow (n, shallow_args)
       else
         M.Maddasset (n,a)
     | M.Maddfield (n,f,a,v) when M.Utils.is_varlocal v ->
