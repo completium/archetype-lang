@@ -160,13 +160,13 @@ let rec map_shallow (ctx : (I.ident * (M.lident * M.type_) list) list) m (t : M.
       let id = M.Utils.dest_varlocal a |> dumloc in
       if has_shallow_vars id ctx then
         let shallow_args = get_shallow_vars id ctx  in
-        M.Maddshallow (n,shallow_args)
+        M.Maddshallow (n, [a]@shallow_args)
       else  M.Maddasset (n,a)
     | M.Maddasset (n,a) when M.Utils.is_asset a ->
       if M.Utils.has_container m n
       then
         let shallow_args = map_shallow_asset m ctx a in
-        M.Maddshallow (n, shallow_args)
+        M.Maddshallow (n, [a]@shallow_args)
       else
         M.Maddasset (n,a)
     | M.Maddfield (n,f,a,v) when M.Utils.is_varlocal v ->
