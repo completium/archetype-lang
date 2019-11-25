@@ -5,6 +5,8 @@ open Printer_tools
 
 exception Anomaly of string
 
+let const_storage = "_s"
+
 type error_desc =
   | UnsupportedBreak
   | UnsupportedTerm of string
@@ -1005,6 +1007,14 @@ let pp_model fmt (model : model) =
                  pp_id a
                  f b)) lll
       | Mdeclvar (_, _, _) -> assert false
+      | Mletin ([id], ({node = Massignfield (ValueAssign, j, i, v)}), t, b, _) ->
+        Format.fprintf fmt "let %a%a = %a.%a <- %a in@\n@[%a@]"
+          pp_id id
+          (pp_option (fun fmt -> Format.fprintf fmt  " : %a" pp_type)) t
+          f j
+          pp_id i
+          f v
+          f b
       | Mletin (ids, ({node = Mseq _l} as a), t, b, _) ->
         Format.fprintf fmt "let %a%a =@\n%ain@\n@[%a@]"
           (pp_if (List.length ids > 1) (pp_paren (pp_list ", " pp_id)) (pp_list ", " pp_id)) ids

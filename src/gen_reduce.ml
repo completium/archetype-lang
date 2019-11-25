@@ -81,7 +81,7 @@ let compute_side_effect_for_list (ctx : ctx_red) (l : mterm list) : (ident * typ
     ) [] l
 
 
-let rec process_non_empty_list_term (ctx : ctx_red) (s : s_red) (mts : mterm list) : mterm * s_red =
+let rec process_non_empty_list_term (model : model) (ctx : ctx_red) (s : s_red) (mts : mterm list) : mterm * s_red =
   let split_last_list l : 'a * 'a list =
     let rec split_last_list_rec accu l =
       match l with
@@ -93,10 +93,10 @@ let rec process_non_empty_list_term (ctx : ctx_red) (s : s_red) (mts : mterm lis
   in
   let last, list = split_last_list mts in
 
-  let last, s = process_mtern ctx s last in
+  let last, s = process_mtern model ctx s last in
 
   List.fold_right (fun x (accu, s) ->
-      let x, s = process_mtern ctx s x in
+      let x, s = process_mtern model ctx s x in
       match x with
       | { node = Massign (op, id, value); _} ->
         let type_ = value.type_ in
@@ -112,7 +112,18 @@ let rec process_non_empty_list_term (ctx : ctx_red) (s : s_red) (mts : mterm lis
           | OrAssign    -> mk_mterm (Mor (var, value)) type_
         in
 
-        mk_mterm (Mletin ([id], value, Some value.type_, accu, None)) accu.type_, s
+        let i, v, t =
+          if Utils.is_field_storage model (unloc id)
+          then
+            begin
+              (* let _s = _s.owner <- new_owner in *)
+              let n : mterm__node = Massignfield(ValueAssign, storage_var, id, value) in
+              let af : mterm = mk_mterm n Tunit in
+              storage_lident, af, Tstorage
+            end
+          else id, value, value.type_
+        in
+        mk_mterm (Mletin ([i], v, Some t, accu, None)) accu.type_, s
       | {type_ = Ttuple (Tcontainer(Toperation, Collection)::Tstorage::l); _} ->
         mk_mterm (Mletin ([storage_lident; operations_lident] @ (List.fold_left (fun accu _x -> (dumloc "_")::accu) [] l), x, Some x.type_, accu, None)) accu.type_, s
       | {type_ = Ttuple (Tstorage::l); _} ->
@@ -132,8 +143,8 @@ let rec process_non_empty_list_term (ctx : ctx_red) (s : s_red) (mts : mterm lis
         merge_seq x accu, s
     ) list (last, s)
 
-and process_mtern (ctx : ctx_red) (s : s_red) (mt : mterm) : mterm * s_red =
-  (* let fold_list x y : mterm list * s_red = fold_map_term_list (process_mtern ctx) x y in *)
+and process_mtern (model : model) (ctx : ctx_red) (s : s_red) (mt : mterm) : mterm * s_red =
+  (* let fold_list x y : mterm list * s_red = fold_map_term_list (process_mtern model ctx) x y in *)
 
   let get_type (ctx : ctx_red) (id : ident) : type_ =
     List.assoc id ctx.local_fun_types
@@ -142,35 +153,35 @@ and process_mtern (ctx : ctx_red) (s : s_red) (mt : mterm) : mterm * s_red =
   match mt.node with
   (* api storage *)
   | Mset (an, l, col, value) ->
-    let col, s = process_mtern ctx s col in
-    let value, s = process_mtern ctx s value in
+    let col, s = process_mtern model ctx s col in
+    let value, s = process_mtern model ctx s value in
     mk_mterm (Mset (an, l, col, value)) Tstorage, s
   | Maddasset (an, arg) ->
-    let arg, s = process_mtern ctx s arg in
+    let arg, s = process_mtern model ctx s arg in
     mk_mterm (Maddasset (an, arg)) Tstorage, s
   | Maddfield (an, fn, col, arg) ->
-    let col, s = process_mtern ctx s col in
-    let arg, s = process_mtern ctx s arg in
+    let col, s = process_mtern model ctx s col in
+    let arg, s = process_mtern model ctx s arg in
     mk_mterm (Maddfield (an, fn, col, arg)) Tstorage, s
   (* | Maddlocal     of 'term * 'term *)
   | Mremoveasset (an, arg) ->
-    let arg, s = process_mtern ctx s arg in
+    let arg, s = process_mtern model ctx s arg in
     mk_mterm (Mremoveasset (an, arg)) Tstorage, s
   | Mremovefield (an, fn, col, arg) ->
-    let col, s = process_mtern ctx s col in
-    let arg, s = process_mtern ctx s arg in
+    let col, s = process_mtern model ctx s col in
+    let arg, s = process_mtern model ctx s arg in
     mk_mterm (Mremovefield (an, fn, col, arg)) Tstorage, s
   (* | Mremovelocal  of 'term * 'term *)
   | Mclearasset an ->
     mk_mterm (Mclearasset an) Tstorage, s
   | Mclearfield (an, fn, col) ->
-    let col, s = process_mtern ctx s col in
+    let col, s = process_mtern model ctx s col in
     mk_mterm (Mclearfield (an, fn, col)) Tstorage, s
   (* | Mclearlocal   of 'term *)
   | Mreverseasset an ->
     mk_mterm (Mreverseasset an) Tstorage, s
   | Mreversefield (an, fn, col) ->
-    let col, s = process_mtern ctx s col in
+    let col, s = process_mtern model ctx s col in
     mk_mterm (Mreversefield (an, fn, col)) Tstorage, s
   (* | Mreverselocal of 'term *)
 
@@ -215,16 +226,16 @@ and process_mtern (ctx : ctx_red) (s : s_red) (mt : mterm) : mterm * s_red =
       ctx with
       vars = ctx.vars @ extract_vars ids t;
     } in
-    let init, s = process_mtern ctx s init in
-    let body, s = process_mtern ctx s body in
+    let init, s = process_mtern model ctx s init in
+    let body, s = process_mtern model ctx s body in
     mk_mterm (Mletin (ids, init, t, body, o)) body.type_, s
 
   (* controls *)
   | Mif (c, t, e) when is_fail t e ->
-    let c, s = process_mtern ctx s c in
+    let c, s = process_mtern model ctx s c in
     mk_mterm (Mif (c, t, None)) Tunit, s
   | Mif (c, t, e) ->
-    let c, s = process_mtern ctx s c in
+    let c, s = process_mtern model ctx s c in
     let target, subs =
       (match ctx.target with
        | Some {node = (Mtuple _l); _} ->
@@ -233,12 +244,12 @@ and process_mtern (ctx : ctx_red) (s : s_red) (mt : mterm) : mterm * s_red =
            (Ttuple (Tstorage::(List.map (fun (_x, y : ident * type_) -> y) subs))), subs
        | _ -> storage_var, [])
     in
-    (* let t, s = process_mtern ctx s t in *)
-    let t, s = process_non_empty_list_term ctx s [t; target] in
+    (* let t, s = process_mtern model ctx s t in *)
+    let t, s = process_non_empty_list_term model ctx s [t; target] in
     let e, s =
       begin
         match e with
-        | Some v -> process_non_empty_list_term ctx s [v; target]
+        | Some v -> process_non_empty_list_term model ctx s [v; target]
                     |> (fun (x, y) -> Some x, y)
         | None -> Some target, s(*{s with subs = subs}*)
       end
@@ -255,7 +266,7 @@ and process_mtern (ctx : ctx_red) (s : s_red) (mt : mterm) : mterm * s_red =
       match l with
       | [] -> mt, s
       | i::[] ->
-        process_mtern ctx s i
+        process_mtern model ctx s i
       | _ ->
         let subs : (ident * type_) list = compute_side_effect_for_list ctx l in
         let l = (
@@ -267,11 +278,11 @@ and process_mtern (ctx : ctx_red) (s : s_red) (mt : mterm) : mterm * s_red =
             l @ [target]
         ) in
         let s = {s with subs = subs} in
-        process_non_empty_list_term ctx s l
+        process_non_empty_list_term model ctx s l
     end
 
   | Mfor (a, col, body, _) ->
-    let col, s = process_mtern ctx s col in
+    let col, s = process_mtern model ctx s col in
     let subs : (ident * type_) list = compute_side_effect ctx body in
     let is = [storage_lident] @ (List.map (fun (x, _y) -> dumloc x) subs) in
     let type_tuple = Ttuple ([Tstorage] @ List.map snd subs) in
@@ -280,7 +291,7 @@ and process_mtern (ctx : ctx_red) (s : s_red) (mt : mterm) : mterm * s_red =
       ctx with
       target = Some tuple;
     } in
-    let body, s = process_non_empty_list_term ctx s [body; tuple] in
+    let body, s = process_non_empty_list_term model ctx s [body; tuple] in
     mk_mterm (Mfold (a, is, col, body)) tuple.type_, s
 
 
@@ -293,17 +304,17 @@ and process_mtern (ctx : ctx_red) (s : s_red) (mt : mterm) : mterm * s_red =
 
   | _ ->
     let g (x : mterm__node) : mterm = { mt with node = x; } in
-    fold_map_term g (process_mtern ctx) s mt
+    fold_map_term g (process_mtern model ctx) s mt
 
 
-let process_body (ctx : ctx_red) (mt : mterm) : mterm =
+let process_body (model : model) (ctx : ctx_red) (mt : mterm) : mterm =
   let s : s_red = {
     with_ops = false;
     subs = [];
   } in
   let target = Option.get ctx.target in
   let bb = extract_list mt target in
-  let mt, _s = process_non_empty_list_term ctx s bb in
+  let mt, _s = process_non_empty_list_term model ctx s bb in
   simplify mt
 
 let analyse_type (_mt : mterm) : type_ = Tstorage
@@ -340,7 +351,7 @@ let process_functions (model : model) : model =
                 ctx with
                 target = Some target;
               } in
-              let body = process_body ctx fs.body in
+              let body = process_body model ctx fs.body in
               let fs = {
                 fs with
                 args = args;
@@ -360,7 +371,7 @@ let process_functions (model : model) : model =
             ctx with
             target = Some operations_storage_var;
           } in
-          let body = process_body ctx fs.body in
+          let body = process_body model ctx fs.body in
           let body = mk_mterm (Mletin ([operations_lident], operations_init, Some operations_type, body, None)) operations_storage_type in
           let fs = {
             fs with

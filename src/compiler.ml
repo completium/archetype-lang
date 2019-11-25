@@ -133,6 +133,7 @@ let generate_target model =
   | Liquidity
   | LiquidityUrl ->
     model
+    |> generate_storage
     |> replace_declvar_by_letin
     |> exec_process
     |> post_process_fun_language
