@@ -6,8 +6,6 @@ open SCaml
 type storage = string
 
 let main (str : string) (_s : storage) =
-  (* if not (Global.get_amount() = Tz 0.0)
-  then failwith "no transfer"
-  else *)
+  if not (Global.get_amount() = Tz 0.0) then failwith "no transfer";
   let _s : string = str in
   ([], _s)
