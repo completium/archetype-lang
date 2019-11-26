@@ -8,13 +8,13 @@ asset admins {
 
 variable hash string = "initialvalue"
 
-action register (newadmin : int) (oldhash : string) (newhash : string) {
+action register (newadmins : admins collection option) (oldhash : string) (newhash : string) {
     specification {
         postcondition p1 {
             oldhash = before.hash and hash = newhash
         }
         postcondition p2 {
-            admins.contains(caller)
+            before.admins.contains(caller)
         }
     }
     require {
@@ -27,6 +27,10 @@ action register (newadmin : int) (oldhash : string) (newhash : string) {
             test := true
         done;
         require (test = true);
-        hash := newhash
+        hash := newhash(* ;
+        match newadmins with
+        | Some c -> admins := c
+        | None -> ()
+        end *)
     }
 }
