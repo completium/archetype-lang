@@ -11,9 +11,12 @@ variable hash string = "initialvalue"
 action register (newadmins : admins collection option) (oldhash : string) (newhash : string) {
     specification {
         postcondition p1 {
-            oldhash = before.hash and hash = newhash
+            before.hash = oldhash 
         }
         postcondition p2 {
+            hash = newhash
+        }
+        postcondition p3 {
             before.admins.contains(caller)
         }
     }
