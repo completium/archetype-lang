@@ -152,7 +152,7 @@ let pp_model fmt (model : model) =
         pp_container c
         pp_type t
     | Toption t ->
-      Format.fprintf fmt "%a option"
+      Format.fprintf fmt "option(%a)"
         pp_type t
     | Ttuple ts ->
       Format.fprintf fmt "%a"
