@@ -106,6 +106,7 @@ let prune_properties          = Gen_transform.prune_properties
 let replace_declvar_by_letin  = Gen_transform.replace_declvar_by_letin
 let remove_get_dot            = Gen_transform.remove_get_dot
 let remove_wild_pattern       = Gen_transform.remove_wild_pattern
+let remove_cmp_bool           = Gen_transform.remove_cmp_bool
 
 let generate_target model =
 
@@ -152,6 +153,7 @@ let generate_target model =
     |> exec_process
     |> shallow_asset
     |> split_key_values
+    |> remove_cmp_bool
     |> Gen_transform.assign_loop_label
     |> generate_api_storage
     |> output

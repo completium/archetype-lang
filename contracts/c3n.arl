@@ -1,0 +1,39 @@
+archetype c3n
+
+/* michelson source : https://better-call.dev/main/KT1Gbu1Gm2U47Pmq9VP7ZMy3ZLKecodquAh4/script */
+
+asset admins {
+    addr: address;
+}
+
+variable hash string = "initialvalue"
+
+action register (newadmins : admins collection option) (oldhash : string) (newhash : string) {
+    specification {
+        postcondition p1 {
+            before.hash = oldhash 
+        }
+        postcondition p2 {
+            hash = newhash
+        }
+        postcondition p3 {
+            before.admins.contains(caller)
+        }
+    }
+    require {
+        r1: oldhash = hash;
+    }
+    effect {
+        var test = false;
+        for admin in admins do
+            if admin.addr = caller then
+            test := true
+        done;
+        require (test = true);
+        hash := newhash(* ;
+        match newadmins with
+        | Some c -> admins := c
+        | None -> ()
+        end *)
+    }
+}

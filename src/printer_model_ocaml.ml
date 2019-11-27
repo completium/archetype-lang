@@ -575,13 +575,13 @@ let pp_model fmt (model : model) =
   in
 
   (* let rec pp_qualid fmt (q : qualid) =
-    match q.node with
-    | Qdot (q, i) ->
+     match q.node with
+     | Qdot (q, i) ->
       Format.fprintf fmt "%a.%a"
         pp_qualid q
         pp_id i
-    | Qident i -> pp_id fmt i
-  in *)
+     | Qident i -> pp_id fmt i
+     in *)
 
   let pp_pattern fmt (p : pattern) =
     match p.node with
@@ -1169,6 +1169,11 @@ let pp_model fmt (model : model) =
 
       | Massign (op, l, r) ->
         Format.fprintf fmt "%a %a %a"
+          pp_id l
+          pp_operator op
+          f r
+      | Massignvarstore (op, l, r) ->
+        Format.fprintf fmt "s.%a %a %a"
           pp_id l
           pp_operator op
           f r

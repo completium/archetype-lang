@@ -464,3 +464,20 @@ let remove_wild_pattern (model : model) : model =
     | _ -> map_mterm (aux c) mt
   in
   Model.map_mterm_model aux model
+
+let remove_cmp_bool (model : model) : model =
+  let rec aux c (mt : mterm) : mterm =
+      match mt.node with
+      | Mequal (lhs, {node = Mbool true; _})  -> lhs
+      | Mequal (lhs, {node = Mbool false; _}) -> mk_mterm (Mnot lhs) (Tbuiltin Bbool)
+      | Mequal ({node = Mbool true; _}, rhs)  -> rhs
+      | Mequal ({node = Mbool false; _}, rhs) -> mk_mterm (Mnot rhs) (Tbuiltin Bbool)
+
+      | Mnequal (lhs, {node = Mbool true; _})  -> mk_mterm (Mnot lhs) (Tbuiltin Bbool)
+      | Mnequal (lhs, {node = Mbool false; _}) -> lhs
+      | Mnequal ({node = Mbool true; _}, rhs)  -> mk_mterm (Mnot rhs) (Tbuiltin Bbool)
+      | Mnequal ({node = Mbool false; _}, rhs) -> rhs
+
+      | _ -> map_mterm (aux c) mt
+  in
+  Model.map_mterm_model aux model
