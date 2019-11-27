@@ -89,7 +89,11 @@ let extend_iter               = Gen_transform.extend_loop_iter
 let split_key_values          = Gen_split_key_values.split_key_values
 let remove_side_effect        = Gen_reduce.reduce
 let generate_api_storage      = Gen_api_storage.generate_api_storage
-let exec_process model        = model |> Gen_transform.replace_lit_address_by_role |> Gen_transform.remove_label |> Gen_transform.flat_sequence
+let exec_process model        = model 
+  |> Gen_transform.replace_lit_address_by_role 
+  |> Gen_transform.remove_label 
+  |> Gen_transform.flat_sequence
+  |> Gen_transform.remove_cmp_bool
 let check_partition_access    = Gen_transform.check_partition_access Typing.empty
 let extend_removeif           = Gen_transform.extend_removeif
 let post_process_fun_language = Gen_transform.process_single_field_storage
@@ -124,7 +128,6 @@ let generate_target model =
     |> exec_process
     |> shallow_asset
     |> split_key_values
-    |> remove_cmp_bool
     |> Gen_transform.assign_loop_label
     |> generate_api_storage
     |> output
@@ -156,6 +159,7 @@ let generate_target model =
     |> prune_properties
     |> extend_iter
     |> shallow_asset
+    |> remove_cmp_bool
     |> generate_api_storage
     |> output
 
