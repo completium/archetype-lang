@@ -1115,6 +1115,22 @@ let pp_model fmt (model : model) =
           pp_id l
           pp_operator op
           f r
+      | Massignvarstore (op, lhs, r) ->
+        Format.fprintf fmt "%a = %a.%a <- %a"
+          pp_str const_storage
+          pp_str const_storage
+          pp_id lhs
+          (
+            fun fmt r ->
+              match op with
+              | ValueAssign -> f fmt r
+              | PlusAssign  -> Format.fprintf fmt "%a.%a + %a"   pp_str const_storage pp_id lhs f r
+              | MinusAssign -> Format.fprintf fmt "%a.%a - %a"   pp_str const_storage pp_id lhs f r
+              | MultAssign  -> Format.fprintf fmt "%a.%a * %a"   pp_str const_storage pp_id lhs f r
+              | DivAssign   -> Format.fprintf fmt "%a.%a / %a"   pp_str const_storage pp_id lhs f r
+              | AndAssign   -> Format.fprintf fmt "%a.%a and %a" pp_str const_storage pp_id lhs f r
+              | OrAssign    -> Format.fprintf fmt "%a.%a or %a"  pp_str const_storage pp_id lhs f r
+          ) r
       | Massignfield (op, a, field, r) ->
         Format.fprintf fmt "%a.%a %a %a"
           pp_mterm a
