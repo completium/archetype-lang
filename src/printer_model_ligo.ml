@@ -858,15 +858,23 @@ let pp_model fmt (model : model) =
 
       | Massign (op, lhs, r) ->
         Format.fprintf fmt "%a := %a"
+          pp_id lhs
           (
-            fun fmt x ->
-              if Utils.is_field_storage model (unloc x)
-              then
-                Format.fprintf fmt "%s.%s"
-                  const_storage
-                  (unloc x)
-              else pp_id fmt x
-          ) lhs
+            fun fmt r ->
+              match op with
+              | ValueAssign -> f fmt r
+              | PlusAssign  -> Format.fprintf fmt "%a + %a" pp_id lhs f r
+              | MinusAssign -> Format.fprintf fmt "%a - %a" pp_id lhs f r
+              | MultAssign  -> Format.fprintf fmt "%a * %a" pp_id lhs f r
+              | DivAssign   -> Format.fprintf fmt "%a / %a" pp_id lhs f r
+              | AndAssign   -> Format.fprintf fmt "%a and %a" pp_id lhs f r
+              | OrAssign    -> Format.fprintf fmt "%a or %a" pp_id lhs f r
+          ) r
+
+      | Massignvarstore (op, lhs, r) ->
+        Format.fprintf fmt "%s.%a := %a"
+          const_storage
+          pp_id lhs
           (
             fun fmt r ->
               match op with

@@ -660,6 +660,11 @@ let pp_mterm fmt (mt : mterm) =
         pp_id l
         pp_operator op
         f r
+    | Massignvarstore (op, l, r) ->
+      Format.fprintf fmt "s.%a %a %a"
+        pp_id l
+        pp_operator op
+        f r
     | Massignfield (op, a, field , r) ->
       Format.fprintf fmt "%a.%a %a %a"
         f a

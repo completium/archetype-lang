@@ -88,7 +88,21 @@ let generate_storage (model : model) : model =
 
   let storage = List.map process_storage_item model.decls |> List.flatten in
 
-  {
+  let process_mterm (model : model) : model =
+    let rec aux c (mt : mterm) : mterm =
+      match mt.node with
+      | Massign (op, id, v) when Model.Utils.is_field_storage model (unloc id) ->
+        begin
+          let vv = aux c v in
+          mk_mterm (Massignvarstore (op, id, vv)) Tunit
+        end
+      | _ -> map_mterm (aux c) mt
+    in
+    Model.map_mterm_model aux model
+  in
+
+  let model = {
     model with
     storage = storage;
-  }
+  } in
+  process_mterm model
