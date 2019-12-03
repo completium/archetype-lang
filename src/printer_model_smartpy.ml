@@ -56,7 +56,7 @@ let pp_model fmt (model : model) =
   let pp_currency fmt = function
     | Tz   -> Format.fprintf fmt "tz"
     | Mtz  -> Format.fprintf fmt "mtz"
-    | Mutz -> Format.fprintf fmt "mutz"
+    | Utz  -> Format.fprintf fmt "utz"
   in
 
   let pp_btyp fmt = function

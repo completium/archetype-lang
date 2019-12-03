@@ -16,7 +16,7 @@ type container =
 type currency =
   | Tz
   | Mtz
-  | Mutz
+  | Utz
 [@@deriving show {with_path = false}]
 
 type vtyp =

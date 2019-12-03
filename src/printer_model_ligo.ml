@@ -784,9 +784,9 @@ let pp_model fmt (model : model) =
         begin
           let v =
             match c with
-            | Tz -> v
+            | Tz  -> v
             | Mtz -> Big_int.mult_int_big_int 1000 v
-            | Mutz -> assert false
+            | Utz -> assert false
           in
           Format.fprintf fmt "%atz"
             pp_big_int v
