@@ -15,7 +15,7 @@ let pp_literal fmt (l : literal) =
                           (Big_int.string_of_big_int n)
   | Ltz       n -> Format.fprintf fmt "%stz"   (Big_int.string_of_big_int n)
   | Lmtz      n -> Format.fprintf fmt "%smtz"  (Big_int.string_of_big_int n)
-  | Lmutz     n -> Format.fprintf fmt "%smutz" (Big_int.string_of_big_int n)
+  | Lutz      n -> Format.fprintf fmt "%sutz"  (Big_int.string_of_big_int n)
   | Laddress  a -> Format.fprintf fmt "%s" a
   | Lstring   s -> Format.fprintf fmt "\"%s\"" s
   | Lbool     b -> Format.fprintf fmt "%s" (if b then "true" else "false")

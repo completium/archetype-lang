@@ -1128,7 +1128,7 @@ let pp_model fmt (model : model) =
             match c with
             | Tz   -> Big_int.mult_int_big_int 1000000 v
             | Mtz  -> Big_int.mult_int_big_int 1000 v
-            | Mutz -> v
+            | Utz  -> v
           end
         in
         Format.fprintf fmt "%a"

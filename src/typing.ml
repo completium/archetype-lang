@@ -1201,8 +1201,8 @@ let for_literal (_env : env) (topv : PT.literal loced) : M.bval =
   | Lmtz tz ->
     mk_sp (M.vtcurrency) (M.BVcurrency (M.Mtz, tz))
 
-  | Lmutz tz ->
-    mk_sp (M.vtcurrency) (M.BVcurrency (M.Mutz, tz))
+  | Lutz tz ->
+    mk_sp (M.vtcurrency) (M.BVcurrency (M.Utz, tz))
 
   | Laddress a ->
     mk_sp M.vtaddress (M.BVaddress a)

@@ -7,7 +7,7 @@ type lident = ident Location.loced
 type currency =
   | Tz
   | Mtz
-  | Mutz
+  | Utz
 [@@deriving show {with_path = false}]
 
 type container =
