@@ -1072,10 +1072,17 @@ let pp_model fmt (model : model) =
       | Mstring v ->
         Format.fprintf fmt "\"%a\""
           pp_str v
-      | Mcurrency (v, _c) ->
-        let b : Big_int.big_int = Big_int.mult_int_big_int 1000000 v in
-        Format.fprintf fmt "%atz"
-          pp_big_int b
+      | Mcurrency (v, c) ->
+        begin
+          let v =
+            match c with
+            | Tz  -> v
+            | Mtz -> Big_int.mult_int_big_int 1000 v
+            | Utz -> Big_int.mult_int_big_int 1000000 v
+          in
+          Format.fprintf fmt "%atz"
+            pp_big_int v
+        end
       | Maddress v ->
         Format.fprintf fmt "(%a : address)"
           pp_str v
