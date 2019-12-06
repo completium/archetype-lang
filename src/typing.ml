@@ -178,24 +178,24 @@ type error = L.t * error_desc
 let pp_operator fmt (op : PT.operator) : unit =
   let pp = Printer_tools.pp_str fmt in
   match op with
-  | `Logical And   -> pp "and"
-  | `Logical Or    -> pp "or"
-  | `Logical Imply -> pp "->"
-  | `Logical Equiv -> pp "<->"
-  | `Cmp Equal     -> pp "="
-  | `Cmp Nequal    -> pp "<>"
-  | `Cmp Gt        -> pp ">"
-  | `Cmp Ge        -> pp ">="
-  | `Cmp Lt        -> pp "<"
-  | `Cmp Le        -> pp "<="
-  | `Arith Plus    -> pp "+"
-  | `Arith Minus   -> pp "-"
-  | `Arith Mult    -> pp "*"
-  | `Arith Div     -> pp "/"
-  | `Arith Modulo  -> pp "%"
-  | `Unary Uplus   -> pp "unary +"
-  | `Unary Uminus  -> pp "unary -"
-  | `Unary Not     -> pp "not"
+  | Logical And   -> pp "and"
+  | Logical Or    -> pp "or"
+  | Logical Imply -> pp "->"
+  | Logical Equiv -> pp "<->"
+  | Cmp Equal     -> pp "="
+  | Cmp Nequal    -> pp "<>"
+  | Cmp Gt        -> pp ">"
+  | Cmp Ge        -> pp ">="
+  | Cmp Lt        -> pp "<"
+  | Cmp Le        -> pp "<="
+  | Arith Plus    -> pp "+"
+  | Arith Minus   -> pp "-"
+  | Arith Mult    -> pp "*"
+  | Arith Div     -> pp "/"
+  | Arith Modulo  -> pp "%"
+  | Unary Uplus   -> pp "unary +"
+  | Unary Uminus  -> pp "unary -"
+  | Unary Not     -> pp "not"
 
 
 (* -------------------------------------------------------------------- *)
@@ -342,42 +342,42 @@ let rgtypes =
 let cmpsigs : (PT.operator * (M.vtyp list * M.vtyp)) list =
   let ops  = [PT.Gt; PT.Ge; PT.Lt; PT.Le] in
   let sigs = List.map (fun ty -> ([ty; ty], M.VTbool)) cmptypes in
-  List.mappdt (fun op sig_ -> (`Cmp op, sig_)) ops sigs
+  List.mappdt (fun op sig_ -> (PT.Cmp op, sig_)) ops sigs
 
 let opsigs =
   let eqsigs : (PT.operator * (M.vtyp list * M.vtyp)) list =
     let ops  = [PT.Equal; PT.Nequal] in
     let sigs = List.map (fun ty -> ([ty; ty], M.VTbool)) eqtypes in
-    List.mappdt (fun op sig_ -> (`Cmp op, sig_)) ops sigs in
+    List.mappdt (fun op sig_ -> (PT.Cmp op, sig_)) ops sigs in
 
   let grptypes : (PT.operator * (M.vtyp list * M.vtyp)) list =
     let ops  =
-      (List.map (fun x -> `Arith x) [PT.Plus ; PT.Minus])
-      @ (List.map (fun x -> `Unary x) [PT.Uplus; PT.Uminus]) in
+      (List.map (fun x -> PT.Arith x) [PT.Plus ; PT.Minus])
+      @ (List.map (fun x -> PT.Unary x) [PT.Uplus; PT.Uminus]) in
     let sigs = List.map (fun ty -> ([ty; ty], ty)) grptypes in
     List.mappdt (fun op sig_ -> (op, sig_)) ops sigs in
 
   let rgtypes : (PT.operator * (M.vtyp list * M.vtyp)) list =
     let ops  =
-      (List.map (fun x -> `Arith x) [PT.Plus; PT.Minus; PT.Mult; PT.Div])
-      @ (List.map (fun x -> `Unary x) [PT.Uplus; PT.Uminus]) in
+      (List.map (fun x -> PT.Arith x) [PT.Plus; PT.Minus; PT.Mult; PT.Div])
+      @ (List.map (fun x -> PT.Unary x) [PT.Uplus; PT.Uminus]) in
     let sigs = List.map (fun ty -> ([ty; ty], ty)) rgtypes in
     List.mappdt (fun op sig_ -> (op, sig_)) ops sigs in
 
   let ariths : (PT.operator * (M.vtyp list * M.vtyp)) list =
-    [`Arith PT.Modulo, ([M.VTint; M.VTint], M.VTint)] in
+    [ PT.Arith PT.Modulo, ([M.VTint; M.VTint], M.VTint)] in
 
   let bools : (PT.operator * (M.vtyp list * M.vtyp)) list =
-    let unas = List.map (fun x -> `Unary   x) [PT.Not] in
-    let bins = List.map (fun x -> `Logical x) [PT.And; PT.Or; PT.Imply; PT.Equiv] in
+    let unas = List.map (fun x -> PT.Unary   x) [PT.Not] in
+    let bins = List.map (fun x -> PT.Logical x) [PT.And; PT.Or; PT.Imply; PT.Equiv] in
 
     List.map (fun op -> (op, ([M.VTbool], M.VTbool))) unas
     @ List.map (fun op -> (op, ([M.VTbool; M.VTbool], M.VTbool))) bins in
 
   let others : (PT.operator * (M.vtyp list * M.vtyp)) list =
-    [ `Arith PT.Plus, ([M.VTdate    ; M.VTduration      ], M.VTdate)             ;
-      `Arith PT.Plus, ([M.VTint     ; M.VTduration      ], M.VTduration)         ;
-      `Arith PT.Mult, ([M.VTrational; M.VTcurrency      ], M.VTcurrency       )  ] in
+    [ PT.Arith PT.Plus, ([M.VTdate    ; M.VTduration      ], M.VTdate)             ;
+      PT.Arith PT.Plus, ([M.VTint     ; M.VTduration      ], M.VTduration)         ;
+      PT.Arith PT.Mult, ([M.VTrational; M.VTcurrency      ], M.VTcurrency       )  ] in
 
   eqsigs @ cmpsigs @ grptypes @ rgtypes @ ariths @ bools @ others
 
@@ -1390,7 +1390,7 @@ let rec for_xexpr (mode : emode_t) (env : env) ?(ety : M.ptyp option) (tope : PT
                 Option.map (fun sig_ ->
                   let term = M.Pcomp (tt_cmp_operator op, e, e') in
                   mk_sp (Some sig_.osl_ret) term
-                ) (select_operator env (loc tope) (`Cmp op, [ty; ty']))
+                ) (select_operator env (loc tope) (PT.Cmp op, [ty; ty']))
               in (e', aout)
             end
 
@@ -1423,11 +1423,11 @@ let rec for_xexpr (mode : emode_t) (env : env) ?(ety : M.ptyp option) (tope : PT
 
         let aout =
           match op with
-          | `Logical op ->
+          | Logical op ->
             let a1, a2 = Option.get (List.as_seq2 args) in
             M.Plogical (tt_logical_operator op, a1, a2)
 
-          | `Unary op -> begin
+          | Unary op -> begin
               let a1 = Option.get (List.as_seq1 args) in
 
               match
@@ -1443,11 +1443,11 @@ let rec for_xexpr (mode : emode_t) (env : env) ?(ety : M.ptyp option) (tope : PT
                 M.Puarith (op, a1)
             end
 
-          | `Arith op ->
+          | Arith op ->
             let a1, a2 = Option.get (List.as_seq2 args) in
             M.Parith (tt_arith_operator op, a1, a2)
 
-          | `Cmp op ->
+          | Cmp op ->
             let a1, a2 = Option.get (List.as_seq2 args) in
             M.Pcomp (tt_cmp_operator op, a1, a2)
 
@@ -2559,7 +2559,7 @@ let rec for_callby (env : env) (cb : PT.expr) =
   | Eterm ({ before = false; label = None; }, name) ->
     Option.get_as_list (for_role env name)
 
-  | Eapp (Foperator { pldesc = `Logical Or }, [e1; e2]) ->
+  | Eapp (Foperator { pldesc = Logical Or }, [e1; e2]) ->
     (for_callby env e1) @ (for_callby env e2)
 
   | _ ->
