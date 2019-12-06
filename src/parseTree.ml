@@ -7,6 +7,7 @@ open Location
 let pp_lident fmt i = Format.fprintf fmt "%s" (unloc i)
 
 type lident = ident loced
+[@@deriving yojson, show {with_path = false}]
 
 (* -------------------------------------------------------------------- *)
 and container =

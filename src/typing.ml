@@ -355,7 +355,7 @@ let cmpsigs : (PT.operator * (M.vtyp list * M.vtyp)) list =
   List.mappdt (fun op sig_ -> (PT.Cmp op, sig_)) ops sigs
 
 let opsigs =
-  let eqsigs : (PT.operator * (M.vtyp list * M.vtyp)) list =
+  let _eqsigs : (PT.operator * (M.vtyp list * M.vtyp)) list =
     let ops  = [PT.Equal; PT.Nequal] in
     let sigs = List.map (fun ty -> ([ty; ty], M.VTbool)) eqtypes in
     List.mappdt (fun op sig_ -> (PT.Cmp op, sig_)) ops sigs in
@@ -1032,7 +1032,7 @@ let check_and_emit_name_free (env : env) (x : M.lident) =
 (* --------------------------------------------------------------------- *)
 let select_operator env loc (op, tys) =
   match op with
-  | `Cmp (PT.Equal | PT.Nequal) -> begin
+  | PT.Cmp (PT.Equal | PT.Nequal) -> begin
       match tys with
       | [t1; t2] when Type.equal t1 t2 ->
         Some ({ osl_sig = [t1; t2]; osl_ret = M.Tbuiltin M.VTbool; })
