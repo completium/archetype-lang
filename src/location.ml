@@ -10,7 +10,16 @@ type t = {
   loc_bchar : int;
   loc_echar : int;
 }
-[@@deriving yojson, show {with_path = false}]
+and 'a loced = {
+  plloc : t;
+  pldesc : 'a;
+}
+[@@deriving yojson, show {with_path = false},
+ visitors { variety = "map"; name = "location_map"; polymorphic = true },
+ visitors { variety = "iter"; name = "location_iter"; polymorphic = true },
+ visitors { variety = "reduce"; name = "location_reduce"; polymorphic = true },
+ visitors { variety = "reduce2"; name = "location_reduce2"; polymorphic = true }
+]
 
 let dummy : t = {
   loc_fname = "";
@@ -73,12 +82,6 @@ let tostring (p : t) =
     spos
 
 (* -------------------------------------------------------------------- *)
-type 'a loced = {
-  plloc : t;
-  pldesc : 'a;
-}
-[@@deriving yojson]
-
 let pp_loced pp fmt (x : 'a loced) = Format.fprintf fmt "%a" pp x.pldesc
 
 let loc    x = x.plloc
