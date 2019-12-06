@@ -27,10 +27,11 @@ on the Tezos blockchain, with a specific focus on contract security
    (dune  (>= 1.10.0))
     menhir
     digestif
-    num 
+    num
     yojson
     ppx_deriving
     ppx_deriving_yojson
+    visitors
   )
   (conflicts
     (digestif (=  0.7.4))
