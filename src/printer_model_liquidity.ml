@@ -225,6 +225,12 @@ let pp_model fmt (model : model) =
         "let[@inline] to_keys_%s (s : storage) : storage =@\n  \
          s (*TODO*)@\n"
         an
+
+    | ColToKeys an ->
+      Format.fprintf fmt
+        "let[@inline] col_to_keys_%s (s : storage) : storage =@\n  \
+         s (*TODO*)@\n"
+        an
   in
 
   let pp_container_const fmt = function
@@ -453,6 +459,7 @@ let pp_model fmt (model : model) =
         | APIStorage   (UpdateClear   _) -> (ga, gr)
         | APIStorage   (UpdateReverse _) -> (ga, gr)
         | APIStorage   (ToKeys        _) -> (ga, gr)
+        | APIStorage   (ColToKeys     _) -> (ga, gr)
         | APIFunction  (Select        _) -> (ga, gr)
         | APIFunction  (Sort          _) -> (ga, gr)
         | APIFunction  (Contains      _) -> (ga, gr)
@@ -1169,6 +1176,10 @@ let pp_model fmt (model : model) =
         Format.fprintf fmt "%s.to_keys (%a)"
           an
           f x
+      | Mcoltokeys an ->
+        Format.fprintf fmt "col_to_keys_%s (%s)"
+          an
+          const_storage
       | Mlisttocoll (_, x) -> f fmt x
       | Mforall _                        -> emit_error (UnsupportedTerm ("forall"))
       | Mexists _                        -> emit_error (UnsupportedTerm ("exists"))
