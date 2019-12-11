@@ -924,6 +924,11 @@ let pp_model fmt (model : model) =
         Format.fprintf fmt "%s.to_keys (%a)"
           an
           f x
+      | Mcoltokeys (an) ->
+        Format.fprintf fmt "col_to_keys_%s (%s)"
+          an
+          const_storage
+
       | Mlisttocoll (_, x) -> f fmt x
       | Mforall _                        -> emit_error (UnsupportedTerm ("forall"))
       | Mexists _                        -> emit_error (UnsupportedTerm ("exists"))
@@ -1061,14 +1066,12 @@ let pp_model fmt (model : model) =
         "function add_%s (const s : storage_type; const a : %s) : storage_type is@\n  \
          begin@\n    \
          const key : %a = a.%s;@\n    \
-         s.%s_keys := cons(key, s.%s_keys);@\n    \
          const map_local : map(%a, %s) = s.%s_assets;@\n    \
          map_local[key] := a;@\n    \
          s.%s_assets := map_local;@\n  \
          end with (s)@\n"
         an an
         pp_btyp t k
-        an an
         pp_btyp t an an
         an
 
@@ -1077,25 +1080,11 @@ let pp_model fmt (model : model) =
       Format.fprintf fmt
         "function remove_%s (const s : storage_type; const key : %a) : storage_type is@\n  \
          begin@\n    \
-         var new_keys : list(%a) := (nil : list(%a));@\n    \
-         function aux (const i : %a) : unit is@\n      \
-         begin@\n        \
-         if (key =/= i) then@\n          \
-         new_keys := cons(i, new_keys);@\n        \
-         else@\n          \
-         skip;@\n      \
-         end with unit;@\n    \
-         list_iter(aux, s.%s_keys);@\n    \
-         s.%s_keys := new_keys;@\n    \
          const map_local : map(%a, %s) = s.%s_assets;@\n    \
          remove key from map map_local;@\n    \
          s.%s_assets := map_local;@\n  \
          end with (s)@\n"
         an pp_btyp t
-        pp_btyp t pp_btyp t
-        pp_btyp t
-        an
-        an
         pp_btyp t an an
         an
 
@@ -1201,9 +1190,27 @@ let pp_model fmt (model : model) =
 
     | ToKeys _an ->
       Format.fprintf fmt "// TODO api storage: ToKeys"
-      (* "let[@inline] to_keys_%s (s : storage) : storage =@\n  \
-         s (*TODO*)@\n"
-         an *)
+    (* "let[@inline] to_keys_%s (s : storage) : storage =@\n  \
+       s (*TODO*)@\n"
+       an *)
+
+    | ColToKeys an ->
+      let _k, t = Utils.get_asset_key model an in
+      Format.fprintf fmt
+        "function col_to_keys_%s (const s : storage_type) : list(%a) is@\n \
+         begin@\n \
+         function to_keys (const accu : list(%a); const v : (%a * %s)) : list(%a) is block { skip } with cons(v.0, accu);@\n \
+         function rev     (const accu : list(%a); const v : %a) : list(%a) is block { skip } with cons(v, accu);@\n \
+         var res : list(%a) := (nil : list(%a));@\n \
+         res := map_fold(to_keys, s.%s_assets, res);@\n \
+         res := list_fold(rev, res, (nil : list(%a)));@\n \
+         end with res@\n"
+        an pp_btyp t
+        pp_btyp t pp_btyp t an pp_btyp t
+        pp_btyp t pp_btyp t pp_btyp t
+        pp_btyp t pp_btyp t
+        an
+        pp_btyp t
   in
 
   let pp_container_const (_env : env) fmt = function

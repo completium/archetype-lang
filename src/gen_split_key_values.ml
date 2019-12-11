@@ -3,14 +3,14 @@ open Location
 (* open Ident *)
 open Model
 
-let asset_keys an = an ^ "_keys"
+(* let asset_keys an = an ^ "_keys" *)
 let asset_assets an = an ^ "_assets"
 
 let to_lident f lident =
   let l, v = deloc lident in
   mkloc l (f v)
 
-let lident_asset_keys = to_lident asset_keys
+(* let lident_asset_keys = to_lident asset_keys *)
 let lident_asset_assets = to_lident asset_assets
 
 let split_key_values (model : model) : model =
@@ -20,27 +20,27 @@ let split_key_values (model : model) : model =
         | MTasset an ->
           let an = dumloc an in
           let _k, t = Utils.get_asset_key model (unloc an) in
-          let type_key = Tcontainer (Tbuiltin t, Collection) in
-          let init_keys, init_assets =
+          (* let type_key = Tcontainer (Tbuiltin t, Collection) in *)
+          (* let init_keys, init_assets = *)
             (* TODO: initialize with f.default value*)
-            Marray [], Marray []
-          in
-          let asset_keys =
+            (*Marray [], Marray [] *)
+          (* in *)
+          (* let asset_keys =
             mk_storage_item (dumloc (asset_keys (unloc an)))
               (MTasset (unloc an))
               type_key
               (mk_mterm init_keys type_key)
               ~loc:x.loc
-          in
+          in *)
           let type_asset = Tassoc (t, Tasset an) in
           let asset_assets =
             mk_storage_item (dumloc (asset_assets (unloc an)))
               (MTasset (unloc an))
               type_asset
-              (mk_mterm init_assets type_asset)
+              (mk_mterm (Marray []) type_asset)
               ~loc:x.loc
           in
-          asset_keys::asset_assets::accu
+          asset_assets::accu
         | _ -> x::accu)
       model.storage []
   in
@@ -79,7 +79,7 @@ let split_key_values (model : model) : model =
     | Mvarstorecol an ->
       (
         let _k, t = Utils.get_asset_key model (unloc an) in
-        { x with node = Mvarstorecol (lident_asset_keys an); type_ = Tcontainer (Tbuiltin t, Collection) }
+        { x with node = Mcoltokeys (unloc an); type_ = Tcontainer (Tbuiltin t, Collection) }
       )
     | Mfor (id, col, body, lbl) ->
 

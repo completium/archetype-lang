@@ -194,6 +194,12 @@ let pp_model fmt (model : model) =
         "def to_keys_%s (self):@\n\
          \t\t#TODO@\n"
         an
+
+    | ColToKeys an ->
+      Format.fprintf fmt
+        "def col_to_keys_%s (self):@\n\
+         \t\t#TODO@\n"
+        an
   in
 
   let pp_container_const fmt = function
@@ -973,6 +979,9 @@ let pp_model fmt (model : model) =
         Format.fprintf fmt "%s.to_keys (%a)"
           an
           f x
+      | Mcoltokeys an ->
+        Format.fprintf fmt "col_to_keys_%s ()"
+          an
       | Mlisttocoll (_, x) -> f fmt x
       | Mforall _                        -> emit_error (UnsupportedTerm ("forall"))
       | Mexists _                        -> emit_error (UnsupportedTerm ("exists"))
