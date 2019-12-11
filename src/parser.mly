@@ -733,8 +733,10 @@ order_operations:
   | ops=loc(order_operations) op=loc(ordering_operator) e=expr
     {
       match unloc ops with
-      | Eapp (Foperator ({pldesc = `Cmp opa; plloc = lo}), [lhs; rhs]) -> Emulticomp (lhs, [mkloc lo opa, rhs; op, e])
-      | Emulticomp (a, l) -> Emulticomp (a, l @ [op, e])
+      | Eapp (Foperator ({pldesc = Cmp opa; plloc = lo}), [lhs; rhs]) ->
+	 Emulticomp (lhs, [mkloc lo opa, rhs; op, e])
+      | Emulticomp (a, l) ->
+	 Emulticomp (a, l @ [op, e])
       | _ -> assert false
     }
 
@@ -855,15 +857,15 @@ record_item:
  | NOT     { Not }
 
 %inline bin_operator:
-| op=logical_operator    { `Logical op }
-| op=comparison_operator { `Cmp op }
-| op=arithmetic_operator { `Arith op }
+| op=logical_operator    { Logical op }
+| op=comparison_operator { Cmp op }
+| op=arithmetic_operator { Arith op }
 
 %inline un_operator:
-| op=unary_operator      { `Unary op }
+| op=unary_operator      { Unary op }
 
 %inline ord_operator:
-| op=ordering_operator   { `Cmp op }
+| op=ordering_operator   { Cmp op }
 
 %inline asset_operation_enum:
 | AT_ADD    { AOadd }

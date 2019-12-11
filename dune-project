@@ -32,6 +32,7 @@ on the Tezos blockchain, with a specific focus on contract security
     ppx_deriving
     ppx_deriving_yojson
     uri
+    visitors
   )
   (conflicts
     (digestif (=  0.7.4))

@@ -223,6 +223,7 @@ type ('id, 'term) mterm_node  =
   | Mlisttocoll     of ident * 'term
   (* *)
   | Mtokeys         of ident * 'term
+  | Mcoltokeys      of ident
   (* quantifiers *)
   | Mforall         of 'id * type_ * 'term option * 'term
   | Mexists         of 'id * type_ * 'term option * 'term
@@ -272,6 +273,7 @@ and storage_const =
   | UpdateClear      of ident * ident
   | UpdateReverse    of ident * ident
   | ToKeys           of ident
+  | ColToKeys        of ident
 [@@deriving show {with_path = false}]
 
 and container_const =
@@ -952,6 +954,8 @@ let cmp_mterm_node
     | Mshallow (i1, x1), Mshallow (i2, x2)                                             -> cmp x1 x2 && cmp_ident i1 i2
     | Mlisttocoll (i1, x1), Mlisttocoll (i2, x2)                                       -> cmp x1 x2 && cmp_ident i1 i2
     | Munshallow (i1, x1), Munshallow (i2, x2)                                         -> cmp x1 x2 && cmp_ident i1 i2
+    | Mtokeys (a1, x1), Mtokeys (a2, x2)                                               -> cmp_ident a1 a2 && cmp x1 x2
+    | Mcoltokeys (a1), Mcoltokeys (a2)                                                 -> cmp_ident a1 a2
 
     | _ -> false
   with
@@ -1134,6 +1138,7 @@ let map_term_node (f : 'id mterm_gen -> 'id mterm_gen) = function
   | Mlisttocoll (i, x)            -> Mlisttocoll (i, f x)
   | Munshallow (i, x)             -> Munshallow (i, f x)
   | Mtokeys (an, x)               -> Mtokeys (an, f x)
+  | Mcoltokeys an                 -> Mcoltokeys an
   | Mforall (i, t, Some s, e)     -> Mforall (i, t, Some (f s), f e)
   | Mforall (i, t, None, e)       -> Mforall (i, t, None, f e)
   | Mexists (i, t, Some s, e)     -> Mexists (i, t, Some (f s), f e)
@@ -1395,6 +1400,7 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mlisttocoll (_, x)                    -> f accu x
   | Munshallow (_, x)                     -> f accu x
   | Mtokeys (_, x)                        -> f accu x
+  | Mcoltokeys (_)                        -> accu
   | Mforall (_, _, Some s, e)             -> f (f accu s) e
   | Mforall (_, _, None, e)               -> f accu e
   | Mexists (_, _, Some s, e)             -> f (f accu s) e
@@ -1906,6 +1912,9 @@ let fold_map_term
     let xe, xa = f accu x in
     g (Mtokeys (an, xe)), xa
 
+  | Mcoltokeys (an) ->
+    g (Mcoltokeys (an)), accu
+
   | Mforall (id, t, Some s, e) ->
     let ee, ea = f accu e in
     let se, sa = f ea s in
@@ -2103,6 +2112,7 @@ end = struct
     | UpdateClear   (aid, fid) -> "update_clear_"   ^ aid ^ "_" ^ fid
     | UpdateReverse (aid, fid) -> "update_reverse_" ^ aid ^ "_" ^ fid
     | ToKeys         aid       -> "to_keys_" ^ aid
+    | ColToKeys      aid       -> "col_to_keys_" ^ aid
 
   let function_name_from_container_const = function
     | AddItem            _ -> "add"

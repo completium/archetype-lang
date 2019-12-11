@@ -3,61 +3,55 @@ open Ident
 open Location
 
 (* -------------------------------------------------------------------- *)
-type lident = ident loced
-[@@deriving yojson]
 
 let pp_lident fmt i = Format.fprintf fmt "%s" (unloc i)
 
-(* -------------------------------------------------------------------- *)
-type container =
-  | Collection
-  | Partition
+type lident = ident loced
 [@@deriving yojson, show {with_path = false}]
 
-type type_r =
+(* -------------------------------------------------------------------- *)
+and container =
+  | Collection
+  | Partition
+
+and type_r =
   | Tref of lident
   | Tasset of lident
   | Tcontainer of type_t * container
   | Ttuple of type_t list
   | Toption of type_t
   | Tkeyof of type_t
-[@@deriving yojson, show {with_path = false}]
 
 and type_t = type_r loced
-[@@deriving yojson, show {with_path = false}]
 
 (* -------------------------------------------------------------------- *)
-type logical_operator =
+and logical_operator =
   | And
   | Or
   | Imply
   | Equiv
-[@@deriving yojson, show {with_path = false}]
 
-type comparison_operator =
+and comparison_operator =
   | Equal
   | Nequal
   | Gt
   | Ge
   | Lt
   | Le
-[@@deriving yojson, show {with_path = false}]
 
-type arithmetic_operator =
+and arithmetic_operator =
   | Plus
   | Minus
   | Mult
   | Div
   | Modulo
-[@@deriving yojson, show {with_path = false}]
 
-type unary_operator =
+and unary_operator =
   | Uplus
   | Uminus
   | Not
-[@@deriving yojson, show {with_path = false}]
 
-type assignment_operator =
+and assignment_operator =
   | ValueAssign
   | PlusAssign
   | MinusAssign
@@ -65,36 +59,29 @@ type assignment_operator =
   | DivAssign
   | AndAssign
   | OrAssign
-[@@deriving yojson, show {with_path = false}]
 
-type quantifier =
+and quantifier =
   | Forall
   | Exists
-[@@deriving yojson, show {with_path = false}]
 
-type operator = [
-  | `Logical of logical_operator
-  | `Cmp     of comparison_operator
-  | `Arith   of arithmetic_operator
-  | `Unary   of unary_operator
-]
-[@@deriving yojson, show {with_path = false}]
+and operator =
+  | Logical of logical_operator
+  | Cmp     of comparison_operator
+  | Arith   of arithmetic_operator
+  | Unary   of unary_operator
 
 type pattern_unloc =
   | Pwild
   | Pref of lident
-[@@deriving yojson, show {with_path = false}]
 
-type pattern = pattern_unloc loced
-[@@deriving yojson, show {with_path = false}]
+and pattern = pattern_unloc loced
 
-type s_term = {
+and s_term = {
   before: bool;
   label: lident option;
 }
-[@@deriving yojson, show {with_path = false}]
 
-type expr_unloc =
+and expr_unloc =
   | Eterm         of s_term * lident
   | Eliteral      of literal
   | Earray        of expr list
@@ -122,34 +109,28 @@ type expr_unloc =
   | Ereturn       of expr
   | Eoption       of option_
   | Einvalid
-[@@deriving yojson, show {with_path = false}]
 
 and branch = (pattern list * expr)
 
-and scope = [
-  | `Added
-  | `After
-  | `Before
-  | `Fixed
-  | `Removed
-  | `Stable
-]
-[@@derive yojson, show {with_path = false}]
+and scope =
+  | Added
+  | After
+  | Before
+  | Fixed
+  | Removed
+  | Stable
 
 and quantifier_kind =
   | Qcollection of expr
   | Qtype of type_t
-[@@deriving yojson, show {with_path = false}]
 
 and option_ =
   | OSome of expr
   | ONone
-[@@deriving yojson, show {with_path = false}]
 
 and function_ =
   | Fident of lident
   | Foperator of operator loced
-[@@deriving yojson, show {with_path = false}]
 
 and literal =
   | Lnumber   of Core.big_int
@@ -162,15 +143,12 @@ and literal =
   | Lbool     of bool
   | Lduration of string
   | Ldate     of string
-[@@deriving yojson, show {with_path = false}]
 
 and record_item = (assignment_operator * lident) option * expr
 
 and expr = expr_unloc loced
-[@@deriving yojson, show {with_path = false}]
 
 and lident_typ = lident * type_t * extension list option
-[@@deriving yojson, show {with_path = false}]
 
 and label_expr = (lident * expr) loced
 
@@ -179,29 +157,22 @@ and label_exprs = label_expr list
 (* -------------------------------------------------------------------- *)
 and extension_unloc =
   | Eextension of lident * expr option (** extension *)
-[@@deriving yojson, show {with_path = false}]
 
 and extension = extension_unloc loced
-[@@deriving yojson, show {with_path = false}]
 
 and exts = extension list option
-[@@deriving yojson, show {with_path = false}]
 
 (* -------------------------------------------------------------------- *)
-type field_unloc =
+and field_unloc =
   | Ffield of lident * type_t * expr option * exts   (** field *)
-[@@deriving yojson, show {with_path = false}]
 
 and field = field_unloc loced
-[@@deriving yojson, show {with_path = false}]
 
-type args = lident_typ list
-[@@deriving yojson, show {with_path = false}]
+and args = lident_typ list
 
-type invariants = (lident * expr list) list
-[@@deriving yojson, show {with_path = false}]
+and invariants = (lident * expr list) list
 
-type specification_item_unloc =
+and specification_item_unloc =
   | Vpredicate of lident * args * expr
   | Vdefinition of lident * type_t * lident * expr
   | Vlemma of lident * expr
@@ -210,51 +181,40 @@ type specification_item_unloc =
   | Veffect of expr
   | Vassert of (lident * expr * invariants * lident list)
   | Vpostcondition of (lident * expr * invariants * lident list)
-[@@deriving yojson, show {with_path = false}]
 
-type specification_item = specification_item_unloc loced
-[@@deriving yojson, show {with_path = false}]
+and specification_item = specification_item_unloc loced
 
-type specification_unloc = specification_item list * exts
-[@@deriving yojson, show {with_path = false}]
+and specification_unloc = specification_item list * exts
 
-type specification = specification_unloc loced
-[@@deriving yojson, show {with_path = false}]
+and specification = specification_unloc loced
 
-type security_arg_unloc =
+and security_arg_unloc =
   | Sident of lident
   | Sdot   of lident * lident
   | Slist of security_arg list
   | Sapp of lident * security_arg list
   | Sbut of lident * security_arg
   | Sto of lident * security_arg
-[@@deriving yojson, show {with_path = false}]
 
 and security_arg = security_arg_unloc loced
-[@@deriving yojson, show {with_path = false}]
 
-type security_item_unloc = lident * lident * security_arg list
-[@@deriving yojson, show {with_path = false}]
+and security_item_unloc = lident * lident * security_arg list
 
-type security_item = security_item_unloc loced
-[@@deriving yojson, show {with_path = false}]
+and security_item = security_item_unloc loced
 
-type security_unloc = security_item list * exts
-[@@deriving yojson, show {with_path = false}]
+and security_unloc = security_item list * exts
 
 and security = security_unloc loced
-[@@deriving yojson, show {with_path = false}]
 
-type s_function = {
+and s_function = {
   name  : lident;
   args  : args;
   ret_t : type_t option;
   spec : specification option;
   body  : expr;
 }
-[@@deriving yojson, show {with_path = false}]
 
-type action_properties = {
+and action_properties = {
   accept_transfer : bool;
   calledby        : (expr * exts) option;
   require         : (label_exprs * exts) option;
@@ -262,24 +222,20 @@ type action_properties = {
   spec            : specification option;
   functions       : (s_function loced) list;
 }
-[@@deriving yojson, show {with_path = false}]
 
-type transition = (lident * (expr * exts) option * (expr * exts) option) list
-[@@deriving yojson, show {with_path = false}]
+and transition = (lident * (expr * exts) option * (expr * exts) option) list
 
 (* -------------------------------------------------------------------- *)
-type variable_kind =
+and variable_kind =
   | VKvariable
   | VKconstant
-[@@deriving yojson, show {with_path = false}]
 
-type enum_kind =
+and enum_kind =
   | EKenum of lident
   | EKstate
-[@@deriving yojson, show {with_path = false}]
 
 (* -------------------------------------------------------------------- *)
-type declaration_unloc =
+and declaration_unloc =
   | Darchetype     of lident * exts
   | Dvariable      of variable_decl
   | Denum          of enum_kind * enum_decl
@@ -293,7 +249,6 @@ type declaration_unloc =
   | Dspecification of specification
   | Dsecurity      of security
   | Dinvalid
-[@@deriving yojson, show {with_path = false}]
 
 and variable_decl =
   lident
@@ -344,49 +299,46 @@ and namespace_decl =
 and value_option =
   | VOfrom of lident
   | VOto of lident
-[@@deriving yojson, show {with_path = false}]
 
 and asset_option =
   | AOidentifiedby of lident
   | AOsortedby of lident
-[@@deriving yojson, show {with_path = false}]
 
 and asset_post_option =
   | APOstates of lident
   | APOconstraints of label_exprs
   | APOinit of expr
-[@@deriving yojson, show {with_path = false}]
 
 and enum_option =
   | EOinitial
   | EOspecification of label_exprs
-[@@deriving yojson, show {with_path = false}]
 
 and signature =
   | Ssignature of lident * type_t list
-[@@deriving yojson, show {with_path = false}]
 
 and declaration = declaration_unloc loced
-[@@deriving yojson, show {with_path = false}]
 
 and asset_operation_enum =
   | AOadd
   | AOremove
   | AOupdate
-[@@deriving yojson, show {with_path = false}]
 
 and asset_operation =
   | AssetOperation of asset_operation_enum list * expr option
-[@@deriving yojson, show {with_path = false}]
 
 (* -------------------------------------------------------------------- *)
-type archetype_unloc =
+and archetype_unloc =
   | Marchetype of declaration list
   | Mextension of lident * declaration list * declaration list
-[@@deriving yojson, show {with_path = false}]
 
 and archetype = archetype_unloc loced
-[@@deriving yojson, show {with_path = false}]
+[@@deriving yojson, show {with_path = false},
+ visitors { variety = "map"; ancestors = ["location_map"; "ident_map"] },
+ visitors { variety = "iter"; ancestors = ["location_iter"; "ident_iter"] },
+ visitors { variety = "reduce"; ancestors = ["location_reduce"; "ident_reduce"] },
+ visitors { variety = "reduce2"; ancestors = ["location_reduce2"; "ident_reduce2"] }
+]
+
 
 let mk_archetype ?(decls=[]) ?(loc=dummy) () =
   mkloc loc (Marchetype decls)
