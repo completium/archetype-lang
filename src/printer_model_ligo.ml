@@ -3,7 +3,6 @@ open Tools
 open Model
 open Printer_tools
 open Ident
-open Ligo_fun
 
 exception Anomaly of string
 
@@ -807,7 +806,35 @@ let pp_model fmt (model : model) =
         Format.fprintf fmt "(%a : %a)"
           f k
           f v
-      | Mfor _ -> assert false
+      | Mfor (_, _, _, None) -> assert false
+      | Mfor (id, col, body, Some label) ->
+        let typ =
+          begin
+            let is_get_body (mt : mterm) (id : ident) (asset_name : ident) =
+              match mt.node with
+              | Mletin ([{pldesc = i; _}], {node = Mget (an, _)}, _, _, _) -> String.equal i id && String.equal asset_name an
+              | _ -> false
+            in
+            match col.type_ with
+            | Tcontainer (Tasset an, _) when is_get_body body (unloc id) (unloc an) ->
+              begin
+                let _, t = Utils.get_asset_key model (unloc an) in
+                Tbuiltin t
+              end
+            | Tcontainer (t, _) -> t
+            | _ -> assert false
+          end
+        in
+
+        Format.fprintf fmt
+          "function %s (const %a : %a) : unit is@\n  \
+           begin@\n  \
+           @[%a@]@\n\
+           end with Unit;@\n\
+           list_iter (%s, %a)"
+          label pp_id id pp_type typ
+          f body
+          label f col
       (* let t, dv, sep =
          match c with
          | {type_ = Tcontainer (Tbuiltin Bstring, _)} -> "string", "\"\"", false
@@ -1427,71 +1454,37 @@ let pp_model fmt (model : model) =
 
   let pp_function (env : env) (fmt : Format.formatter) (f : function__) =
     let env = {env with f = Some f} in
-    let pp_variables fmt vars =
-      match vars with
-      | [] -> ()
-      | _ ->
-        Format.fprintf fmt "@[%a@]@\n  "
-          (pp_list "@\n" (fun fmt (name, type_) ->
-               Format.fprintf fmt "var %s : %a := %a;"
-                 name
-                 pp_type type_
-                 (pp_mterm env) (Model.Utils.get_default_value model type_)
-             )) vars
-    in
-    let pp_iterfuns fmt (iterfuns : s_interfun list) =
-      match iterfuns with
-      | [] -> ()
-      | _ ->
-        Format.fprintf fmt "@[%a@]@\n  "
-          (pp_list "@\n" (fun fmt (interfun : s_interfun) ->
-               Format.fprintf fmt
-                 "function %s (const %s : %a) : unit is@\n  \
-                  begin@\n  \
-                  @[%a@]@\n  \
-                  end with unit;"
-                 interfun.loop_id
-                 interfun.arg_id
-                 pp_type interfun.arg_type
-                 (pp_mterm env) interfun.body
-             )) iterfuns
-    in
-    let ligo_fun = to_ligo_fun model f in
-    let name = ligo_fun.name in
-    match ligo_fun.ret with
-    | None ->
+    match f.node with
+    | Entry fs ->
+      let with_transfer = Utils.with_transfer_for_mterm fs.body in
       Format.fprintf fmt
-        "function %s(const action : action_%s; const %s : storage_type) : (list(operation) * storage_type) is@\n  \
+        "function %a(const action : action_%a; const %s : storage_type) : (list(operation) * storage_type) is@\n  \
          begin@\n  \
-         @[%a%a%a@]  \
+         %a\
          @[%a@]@\n  \
          end with (%s, %s)@\n"
-        name name const_storage
-        (pp_do_if ligo_fun.transfer pp_variables) [const_operations, Tcontainer (Toperation, List)]
-        pp_variables ligo_fun.vars
-        pp_iterfuns ligo_fun.iterfuns
-        (pp_mterm env) ligo_fun.body
-        (if ligo_fun.transfer then const_operations else "(nil : list(operation))") const_storage
+        pp_id fs.name pp_id fs.name const_storage
+        (pp_do_if with_transfer (fun fmt x ->
+             Format.fprintf fmt "var %s : list(operation) := (nil : list(operation));@\n  " x
+           )) const_operations
+        (pp_mterm env) fs.body
+        (if with_transfer then const_operations else "(nil : list(operation))") const_storage
 
-    | Some _ret ->
+    | Function (fs, _ret) ->
       Format.fprintf fmt
-        "function %s(const %s : storage_type%a) : storage_type is@\n  \
+        "function %a(const %s : storage_type%a) : storage_type is@\n  \
          begin@\n  \
-         %a\
-         %a\
          @[%a@]@\n  \
          end with (%s)@\n"
-        name
+        pp_id fs.name
         const_storage
-        (pp_list "" (fun fmt (id, type_ : ident * type_) ->
+        (pp_list "" (fun fmt (id, type_, _ : lident * type_ * 'a) ->
              Format.fprintf fmt
-               "; const %s : %a"
-               id
+               "; const %a : %a"
+               pp_id id
                pp_type type_
-           )) ligo_fun.args
-        pp_variables ligo_fun.vars
-        pp_iterfuns ligo_fun.iterfuns
-        (pp_mterm env) ligo_fun.body
+           )) fs.args
+        (pp_mterm env) fs.body
         const_storage
   in
 
