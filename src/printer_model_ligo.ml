@@ -1524,7 +1524,7 @@ let pp_model fmt (model : model) =
 
     Format.fprintf fmt
       "// To generate origination storage string please execute the following command:@\n\
-       // ligo compile-storage %a.ligo main '%a'"
+       // ligo compile-storage %a.ligo main '%a'@\n"
       pp_id model.name
       pp_storage_term ()
   in
