@@ -182,24 +182,24 @@ type error = L.t * error_desc
 let pp_operator fmt (op : PT.operator) : unit =
   let pp = Printer_tools.pp_str fmt in
   match op with
-  | `Logical And   -> pp "and"
-  | `Logical Or    -> pp "or"
-  | `Logical Imply -> pp "->"
-  | `Logical Equiv -> pp "<->"
-  | `Cmp Equal     -> pp "="
-  | `Cmp Nequal    -> pp "<>"
-  | `Cmp Gt        -> pp ">"
-  | `Cmp Ge        -> pp ">="
-  | `Cmp Lt        -> pp "<"
-  | `Cmp Le        -> pp "<="
-  | `Arith Plus    -> pp "+"
-  | `Arith Minus   -> pp "-"
-  | `Arith Mult    -> pp "*"
-  | `Arith Div     -> pp "/"
-  | `Arith Modulo  -> pp "%"
-  | `Unary Uplus   -> pp "unary +"
-  | `Unary Uminus  -> pp "unary -"
-  | `Unary Not     -> pp "not"
+  | Logical And   -> pp "and"
+  | Logical Or    -> pp "or"
+  | Logical Imply -> pp "->"
+  | Logical Equiv -> pp "<->"
+  | Cmp Equal     -> pp "="
+  | Cmp Nequal    -> pp "<>"
+  | Cmp Gt        -> pp ">"
+  | Cmp Ge        -> pp ">="
+  | Cmp Lt        -> pp "<"
+  | Cmp Le        -> pp "<="
+  | Arith Plus    -> pp "+"
+  | Arith Minus   -> pp "-"
+  | Arith Mult    -> pp "*"
+  | Arith Div     -> pp "/"
+  | Arith Modulo  -> pp "%"
+  | Unary Uplus   -> pp "unary +"
+  | Unary Uminus  -> pp "unary -"
+  | Unary Not     -> pp "not"
 
 
 (* -------------------------------------------------------------------- *)
@@ -352,38 +352,44 @@ let rgtypes =
 let cmpsigs : (PT.operator * (M.vtyp list * M.vtyp)) list =
   let ops  = [PT.Gt; PT.Ge; PT.Lt; PT.Le] in
   let sigs = List.map (fun ty -> ([ty; ty], M.VTbool)) cmptypes in
-  List.mappdt (fun op sig_ -> (`Cmp op, sig_)) ops sigs
+  List.mappdt (fun op sig_ -> (PT.Cmp op, sig_)) ops sigs
 
 let opsigs =
+  let _eqsigs : (PT.operator * (M.vtyp list * M.vtyp)) list =
+    let ops  = [PT.Equal; PT.Nequal] in
+    let sigs = List.map (fun ty -> ([ty; ty], M.VTbool)) eqtypes in
+    List.mappdt (fun op sig_ -> (PT.Cmp op, sig_)) ops sigs in
+
   let grptypes : (PT.operator * (M.vtyp list * M.vtyp)) list =
     let ops  =
-      (List.map (fun x -> `Arith x) [PT.Plus ; PT.Minus])
-      @ (List.map (fun x -> `Unary x) [PT.Uplus; PT.Uminus]) in
+      (List.map (fun x -> PT.Arith x) [PT.Plus ; PT.Minus])
+      @ (List.map (fun x -> PT.Unary x) [PT.Uplus; PT.Uminus]) in
     let sigs = List.map (fun ty -> ([ty; ty], ty)) grptypes in
     List.mappdt (fun op sig_ -> (op, sig_)) ops sigs in
 
   let rgtypes : (PT.operator * (M.vtyp list * M.vtyp)) list =
     let ops  =
-      (List.map (fun x -> `Arith x) [PT.Plus; PT.Minus; PT.Mult; PT.Div])
-      @ (List.map (fun x -> `Unary x) [PT.Uplus; PT.Uminus]) in
+      (List.map (fun x -> PT.Arith x) [PT.Plus; PT.Minus; PT.Mult; PT.Div])
+      @ (List.map (fun x -> PT.Unary x) [PT.Uplus; PT.Uminus]) in
     let sigs = List.map (fun ty -> ([ty; ty], ty)) rgtypes in
     List.mappdt (fun op sig_ -> (op, sig_)) ops sigs in
 
   let ariths : (PT.operator * (M.vtyp list * M.vtyp)) list =
-    [`Arith PT.Modulo, ([M.VTint; M.VTint], M.VTint)] in
+    [ PT.Arith PT.Modulo, ([M.VTint; M.VTint], M.VTint)] in
 
   let bools : (PT.operator * (M.vtyp list * M.vtyp)) list =
-    let unas = List.map (fun x -> `Unary   x) [PT.Not] in
-    let bins = List.map (fun x -> `Logical x) [PT.And; PT.Or; PT.Imply; PT.Equiv] in
+    let unas = List.map (fun x -> PT.Unary   x) [PT.Not] in
+    let bins = List.map (fun x -> PT.Logical x) [PT.And; PT.Or; PT.Imply; PT.Equiv] in
 
     List.map (fun op -> (op, ([M.VTbool], M.VTbool))) unas
     @ List.map (fun op -> (op, ([M.VTbool; M.VTbool], M.VTbool))) bins in
 
   let others : (PT.operator * (M.vtyp list * M.vtyp)) list =
-    [ `Arith PT.Plus, ([M.VTdate    ; M.VTduration      ], M.VTdate)     ;
-      `Arith PT.Plus, ([M.VTint     ; M.VTduration      ], M.VTduration) ;
-      `Arith PT.Mult, ([M.VTrational; M.VTcurrency      ], M.VTcurrency) ;
-      `Arith PT.Mult, ([M.VTcurrency; M.VTrational      ], M.VTcurrency) ] in
+    [ PT.Arith PT.Plus, ([M.VTdate    ; M.VTduration      ], M.VTdate)      ;
+      PT.Arith PT.Plus, ([M.VTint     ; M.VTduration      ], M.VTduration)  ;
+      PT.Arith PT.Mult, ([M.VTrational; M.VTcurrency      ], M.VTcurrency)  ;
+      PT.Arith PT.Mult, ([M.VTcurrency; M.VTrational      ], M.VTcurrency)
+        ] in
 
   cmpsigs @ grptypes @ rgtypes @ ariths @ bools @ others
 
@@ -480,12 +486,22 @@ let methods = Mid.of_list methods
 (* -------------------------------------------------------------------- *)
 type assetdecl = {
   as_name   : M.lident;
-  as_fields : (M.lident * (M.ptyp * M.pterm option)) list;
+  as_fields : fielddecl list;
   as_pk     : M.lident;
   as_sortk  : M.lident list;
   as_invs   : (M.lident option * M.pterm) list;
   as_state  : M.lident option;
 }
+
+and fielddecl = {
+  fd_name  : M.lident;
+  fd_type  : M.ptyp;
+  fd_dfl   : M.pterm option;
+  fd_ghost : bool;
+}
+
+let get_field (x : ident) (decl : assetdecl) =
+  List.Exn.find (fun fd -> x = L.unloc fd.fd_name) decl.as_fields
 
 (* -------------------------------------------------------------------- *)
 type vardecl = {
@@ -648,7 +664,7 @@ module Env : sig
     val lookup  : t -> ident -> assetdecl option
     val get     : t -> ident -> assetdecl
     val exists  : t -> ident -> bool
-    val byfield : t -> ident -> (assetdecl * (M.ptyp * M.pterm option)) option
+    val byfield : t -> ident -> (assetdecl * fielddecl) option
     val push    : t -> assetdecl -> t
   end
 
@@ -907,7 +923,7 @@ end = struct
         (function
           | `Field nm ->
             let decl  = get env nm in
-            let field = List.Exn.assoc_map unloc fname decl.as_fields in
+            let field = get_field fname decl in
             Some (decl, Option.get field)
           | _ -> None)
         (lookup_entry env fname)
@@ -915,7 +931,8 @@ end = struct
     let push (env : t) ({ as_name = nm } as decl : assetdecl) : t =
       let env = push env ~loc:(loc nm) (unloc nm) (`Asset decl) in
       List.fold_left
-        (fun env (x, _) -> push env ~loc:(loc x) (unloc x) (`Field (unloc nm)))
+        (fun env fd -> push env ~loc:(loc fd.fd_name)
+                         (unloc fd.fd_name) (`Field (unloc nm)))
         env decl.as_fields
   end
 
@@ -958,8 +975,9 @@ end = struct
       let asset = Asset.get env asset in
       { env with
           env_context  = asset :: env.env_context;
-          env_bindings = List.fold_left (fun bds (x, _) ->
-            Mid.add (unloc x) (None, `Context (asset, Some (unloc x))) bds
+          env_bindings = List.fold_left (fun bds fd ->
+            Mid.add (unloc fd.fd_name)
+              (None, `Context (asset, Some (unloc fd.fd_name))) bds
           ) env.env_bindings asset.as_fields; }
   end
 end
@@ -1014,7 +1032,7 @@ let check_and_emit_name_free (env : env) (x : M.lident) =
 (* --------------------------------------------------------------------- *)
 let select_operator env loc (op, tys) =
   match op with
-  | `Cmp (PT.Equal | PT.Nequal) -> begin
+  | PT.Cmp (PT.Equal | PT.Nequal) -> begin
       match tys with
       | [t1; t2] when Type.equal t1 t2 ->
         Some ({ osl_sig = [t1; t2]; osl_ret = M.Tbuiltin M.VTbool; })
@@ -1136,7 +1154,7 @@ let rec for_type_exn (env : env) (ty : PT.type_t) : M.ptyp =
       | M.Tasset x ->
         let decl = Env.Asset.get env (unloc x) in
         let ctor = Env.Asset.byfield env (unloc decl.as_pk) in
-        fst (snd (Option.get ctor))
+        (snd (Option.get ctor)).fd_type
 
       | _ ->
         Env.emit_error env (loc ty, NotAnAssetType);
@@ -1189,8 +1207,8 @@ let for_literal (_env : env) (topv : PT.literal loced) : M.bval =
   | Lmtz tz ->
     mk_sp (M.vtcurrency) (M.BVcurrency (M.Mtz, tz))
 
-  | Lmutz tz ->
-    mk_sp (M.vtcurrency) (M.BVcurrency (M.Mutz, tz))
+  | Lutz tz ->
+    mk_sp (M.vtcurrency) (M.BVcurrency (M.Utz, tz))
 
   | Laddress a ->
     mk_sp M.vtaddress (M.BVaddress a)
@@ -1285,8 +1303,7 @@ let rec for_xexpr (mode : emode_t) (env : env) ?(ety : M.ptyp option) (tope : PT
           | None ->
               the
           | Some fname ->
-              let fty = List.Exn.assoc_map unloc fname asset.as_fields in
-              let fty, _ = Option.get fty in
+              let fty = (Option.get (get_field fname asset)).fd_type in
               mk_sp (Some fty) (M.Pdot (the, mkloc (loc tope) fname))
           end
 
@@ -1373,8 +1390,8 @@ let rec for_xexpr (mode : emode_t) (env : env) ?(ety : M.ptyp option) (tope : PT
             end;
 
             let fields =
-              List.map2 (fun (_, fe) (_, (fty, _)) ->
-                  for_xexpr env ~ety:fty fe
+              List.map2 (fun (_, fe) fd ->
+                  for_xexpr env ~ety:fd.fd_type fe
                 ) fields asset.as_fields;
             in mk_sp ety (M.Precord fields)
 
@@ -1411,7 +1428,7 @@ let rec for_xexpr (mode : emode_t) (env : env) ?(ety : M.ptyp option) (tope : PT
 
           let fields =
             Mid.map (fun (asset, es) ->
-                let aty = Option.map (snd %> fst) asset in
+                let aty = Option.map (fun (_, fd) -> fd.fd_type) asset in
                 List.map (fun e -> for_xexpr env ?ety:aty e) es
               ) fmap in
 
@@ -1428,13 +1445,13 @@ let rec for_xexpr (mode : emode_t) (env : env) ?(ety : M.ptyp option) (tope : PT
 
             | [asset] ->
               let fields =
-                List.map (fun ({ pldesc = fname }, (ftype, dfl)) ->
-                  match dfl with
+                List.map (fun ({ fd_name = { pldesc = fname } } as fd) ->
+                  match fd.fd_dfl with
                   | None -> begin
                     match Mid.find_opt fname fields with
                     | None ->
                       let err = MissingFieldInRecordLiteral fname in
-                      Env.emit_error env (loc tope, err); dummy (Some ftype)
+                      Env.emit_error env (loc tope, err); dummy (Some fd.fd_type)
                     | Some thisf ->
                       List.hd (List.rev thisf)
                     end
@@ -1478,12 +1495,12 @@ let rec for_xexpr (mode : emode_t) (env : env) ?(ety : M.ptyp option) (tope : PT
           | Some (Some asset) -> begin
               let asset = Env.Asset.get env (unloc asset) in
 
-              match List.Exn.assoc_map unloc (unloc x) asset.as_fields with
+              match get_field (unloc x) asset with
               | None ->
                 let err = UnknownField (unloc asset.as_name, unloc x) in
                 Env.emit_error env (loc x, err); bailout ()
 
-              | Some (fty, _) ->
+              | Some { fd_type = fty } ->
                 mk_sp (Some fty) (M.Pdot (e, x))
             end
       end
@@ -1496,13 +1513,13 @@ let rec for_xexpr (mode : emode_t) (env : env) ?(ety : M.ptyp option) (tope : PT
         List.fold_left_map (fun e ({ pldesc = op }, e') ->
             match e.M.type_, e'.M.type_ with
             | Some ty, Some ty' -> begin
-                let aout =
-                  Option.map (fun sig_ ->
-                      let term = M.Pcomp (tt_cmp_operator op, e, e') in
-                      mk_sp (Some sig_.osl_ret) term
-                    ) (select_operator env (loc tope) (`Cmp op, [ty; ty']))
-                in (e', aout)
-              end
+              let aout =
+                Option.map (fun sig_ ->
+                  let term = M.Pcomp (tt_cmp_operator op, e, e') in
+                  mk_sp (Some sig_.osl_ret) term
+                ) (select_operator env (loc tope) (PT.Cmp op, [ty; ty']))
+              in (e', aout)
+            end
 
             | _, _ ->
               e', None)
@@ -1533,11 +1550,11 @@ let rec for_xexpr (mode : emode_t) (env : env) ?(ety : M.ptyp option) (tope : PT
 
         let aout =
           match op with
-          | `Logical op ->
+          | Logical op ->
             let a1, a2 = Option.get (List.as_seq2 args) in
             M.Plogical (tt_logical_operator op, a1, a2)
 
-          | `Unary op -> begin
+          | Unary op -> begin
               let a1 = Option.get (List.as_seq1 args) in
 
               match
@@ -1553,11 +1570,11 @@ let rec for_xexpr (mode : emode_t) (env : env) ?(ety : M.ptyp option) (tope : PT
                 M.Puarith (op, a1)
             end
 
-          | `Arith op ->
+          | Arith op ->
             let a1, a2 = Option.get (List.as_seq2 args) in
             M.Parith (tt_arith_operator op, a1, a2)
 
-          | `Cmp op ->
+          | Cmp op ->
             let a1, a2 = Option.get (List.as_seq2 args) in
             M.Pcomp (tt_cmp_operator op, a1, a2)
 
@@ -1882,10 +1899,8 @@ and for_gen_method_call mode env theloc (the, m, args) =
     let doarg arg (aty : mthtyp) =
       match aty with
       | `Pk ->
-        let _, (pk, _) = List.find
-            (fun (x, _) -> unloc x = unloc asset.as_pk)
-            asset.as_fields in
-        M.AExpr (for_xexpr mode env ~ety:pk arg)
+        let pk = Option.get (get_field (unloc asset.as_pk) asset) in
+        M.AExpr (for_xexpr mode env ~ety:pk.fd_type arg)
 
       | `The ->
         M.AExpr (for_xexpr mode env ~ety:(Tasset asset.as_name) arg)
@@ -1930,7 +1945,7 @@ and for_gen_method_call mode env theloc (the, m, args) =
               (true, None) in
 
           let field = Option.bind (fun f ->
-              match List.Exn.assoc_map unloc (unloc f) asset.as_fields with
+              match get_field (unloc f) asset with
               | None ->
                 Env.emit_error env (loc f, UnknownFieldName (unloc f));
                 None
@@ -1971,8 +1986,8 @@ and for_arg_effect mode (env : env) (asset : assetdecl) (tope : PT.expr) =
         map
 
       | Some (op, x) -> begin
-          match List.Exn.assoc_map unloc (unloc x) asset.as_fields with
-          | Some (fty, _) ->
+          match get_field (unloc x) asset with
+          | Some { fd_type = fty } ->
             let op  = for_assignment_operator op in
             let e   = for_assign_expr mode env (loc x) (op, fty) e in
 
@@ -2188,12 +2203,12 @@ let for_lvalue (env : env) (e : PT.expr) : (M.lvalue * M.ptyp) option =
       | Some (Some asset) -> begin
           let asset = Env.Asset.get env (unloc asset) in
 
-          match List.Exn.assoc_map unloc (unloc x) asset.as_fields with
+          match get_field (unloc x) asset with
           | None ->
             let err = UnknownField (unloc asset.as_name, unloc x) in
             Env.emit_error env (loc x, err); None
 
-          | Some (fty, _) ->
+          | Some { fd_type = fty } ->
             Some (`Field (nm, x), fty)
         end
     end
@@ -2692,7 +2707,7 @@ let rec for_callby (env : env) (cb : PT.expr) =
   | Eterm ({ before = false; label = None; }, name) ->
     Option.get_as_list (for_role env name)
 
-  | Eapp (Foperator { pldesc = `Logical Or }, [e1; e2]) ->
+  | Eapp (Foperator { pldesc = Logical Or }, [e1; e2]) ->
     (for_callby env e1) @ (for_callby env e2)
 
   | _ ->
@@ -2988,7 +3003,8 @@ let for_asset_decl ?(force = false) (env : env) (decl : PT.asset_decl loced) =
           if   Option.is_some ty
           then ty
           else Option.bind (fun e -> e.M.type_) e
-        in (mkloc loc x, (Option.get_fdfl (fun () -> raise E.Bailout) ty, e))
+        in { fd_name = mkloc loc x; fd_type = Option.get ty;
+             fd_dfl = e; fd_ghost = false; }
       in
 
       let decl = {
@@ -3092,7 +3108,7 @@ let for_acttx_decl (env : env) (decl : acttx loced) =
                       if check_and_emit_name_free env vtg then
                         let field = Env.Asset.byfield env (unloc asset.as_pk) in
                         let field = Option.get field in
-                        Env.Local.push env (vtg, fst (snd field))
+                        Env.Local.push env (vtg, (snd field).fd_type)
                       else env in
                     (env, Option.map unloc asset.as_state))
                   env (for_asset_keyof_type env ttg))
@@ -3275,8 +3291,12 @@ let enums_of_statedecl (enums : statedecl list) : M.enum list =
 (* -------------------------------------------------------------------- *)
 let assets_of_adecls adecls =
   let for1 (decl : assetdecl) =
-    let for_field (f, (fty, dfl)) =
-      M.{ name = f; typ = Some fty; default = dfl; shadow  = false; loc = loc f; } in
+    let for_field fd =
+      M.{ name    = fd.fd_name;
+          typ     = Some fd.fd_type;
+          default = fd.fd_dfl;
+          shadow  = fd.fd_ghost;
+          loc     = loc fd.fd_name; } in
 
     let spec (l, f) =
       M.{ label = l; term = f; loc = f.loc } in

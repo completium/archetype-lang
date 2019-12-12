@@ -15,6 +15,10 @@ let emit_error (desc : error_desc) =
   let str = Format.asprintf "%a@." pp_error_desc desc in
   raise (Anomaly str)
 
+let const_storage = "s_"
+let const_state = "state"
+let const_operations = "ops_"
+
 type operator =
   | Equal
   | Nequal
@@ -266,6 +270,12 @@ let pp_model fmt (model : model) =
         "let to_keys_%s (s : storage) : storage =@\n  \
          s (*TODO*)@\n"
         an
+
+    | ColToKeys an ->
+      Format.fprintf fmt
+        "let col_to_keys_%s (s : storage) : storage =@\n  \
+         s (*TODO*)@\n"
+        an
   in
 
   let pp_container_const fmt = function
@@ -502,6 +512,7 @@ let pp_model fmt (model : model) =
         | APIStorage   (UpdateClear   _) -> (ga, gr)
         | APIStorage   (UpdateReverse _) -> (ga, gr)
         | APIStorage   (ToKeys        _) -> (ga, gr)
+        | APIStorage   (ColToKeys     _) -> (ga, gr)
         | APIFunction  (Select        _) -> (ga, gr)
         | APIFunction  (Sort          _) -> (ga, gr)
         | APIFunction  (Contains      _) -> (ga, gr)
@@ -1128,7 +1139,7 @@ let pp_model fmt (model : model) =
             match c with
             | Tz   -> Big_int.mult_int_big_int 1000000 v
             | Mtz  -> Big_int.mult_int_big_int 1000 v
-            | Mutz -> v
+            | Utz  -> v
           end
         in
         Format.fprintf fmt "%a"
@@ -1223,6 +1234,10 @@ let pp_model fmt (model : model) =
       | Mremoveif _                      -> emit_error (UnsupportedTerm ("removeif"))
       | Mgetat _                         -> emit_error (UnsupportedTerm ("getat"))
       | Mgetbefore _                     -> emit_error (UnsupportedTerm ("getbefore"))
+      | Mcoltokeys (an) ->
+        Format.fprintf fmt "col_to_keys_%s (%s)"
+          an
+          const_storage
     in
     f fmt mt
   in

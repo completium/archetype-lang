@@ -53,24 +53,24 @@ let e_simple        =  (150, NonAssoc) (* ?  *)
 
 let get_prec_from_operator (op : operator) =
   match op with
-  | `Logical And     -> e_and
-  | `Logical Or      -> e_or
-  | `Logical Imply   -> e_imply
-  | `Logical Equiv   -> e_equiv
-  | `Cmp Equal       -> e_equal
-  | `Cmp Nequal      -> e_nequal
-  | `Cmp Gt          -> e_gt
-  | `Cmp Ge          -> e_ge
-  | `Cmp Lt          -> e_lt
-  | `Cmp Le          -> e_le
-  | `Arith Plus      -> e_plus
-  | `Arith Minus     -> e_minus
-  | `Arith Mult      -> e_mult
-  | `Arith Div       -> e_div
-  | `Arith Modulo    -> e_modulo
-  | `Unary Uplus     -> e_plus
-  | `Unary Uminus    -> e_minus
-  | `Unary Not       -> e_not
+  | Logical And     -> e_and
+  | Logical Or      -> e_or
+  | Logical Imply   -> e_imply
+  | Logical Equiv   -> e_equiv
+  | Cmp Equal       -> e_equal
+  | Cmp Nequal      -> e_nequal
+  | Cmp Gt          -> e_gt
+  | Cmp Ge          -> e_ge
+  | Cmp Lt          -> e_lt
+  | Cmp Le          -> e_le
+  | Arith Plus      -> e_plus
+  | Arith Minus     -> e_minus
+  | Arith Mult      -> e_mult
+  | Arith Div       -> e_div
+  | Arith Modulo    -> e_modulo
+  | Unary Uplus     -> e_plus
+  | Unary Uminus    -> e_minus
+  | Unary Not       -> e_not
 
 let get_prec_from_assignment_operator (op : assignment_operator) =
   match op with
@@ -166,10 +166,10 @@ let unary_operator_to_str op =
 
 let operator_to_str op =
   match op with
-  | `Logical o -> logical_operator_to_str o
-  | `Cmp o     -> comparison_operator_to_str o
-  | `Arith o   -> arithmetic_operator_to_str o
-  | `Unary o   -> unary_operator_to_str o
+  | Logical o -> logical_operator_to_str o
+  | Cmp o     -> comparison_operator_to_str o
+  | Arith o   -> arithmetic_operator_to_str o
+  | Unary o   -> unary_operator_to_str o
 
 let pp_operator fmt op =
   Format.fprintf fmt "%s" (operator_to_str op)
@@ -214,12 +214,12 @@ let pp_pattern fmt p =
 
 let string_of_scope (s : scope) =
   match s with
-  | `Added   -> "added"
-  | `After   -> "after"
-  | `Before  -> "before"
-  | `Fixed   -> "fixed"
-  | `Removed -> "removed"
-  | `Stable  -> "stable"
+  | Added   -> "added"
+  | After   -> "after"
+  | Before  -> "before"
+  | Fixed   -> "fixed"
+  | Removed -> "removed"
+  | Stable  -> "stable"
 
 let rec pp_expr outer pos fmt a =
   let e = unloc a in
@@ -550,7 +550,7 @@ and pp_literal fmt lit =
                           (Big_int.string_of_big_int n)
   | Ltz       n -> Format.fprintf fmt "%stz" (Big_int.string_of_big_int n)
   | Lmtz      n -> Format.fprintf fmt "%smtz" (Big_int.string_of_big_int n)
-  | Lmutz     n -> Format.fprintf fmt "%smutz" (Big_int.string_of_big_int n)
+  | Lutz      n -> Format.fprintf fmt "%sutz" (Big_int.string_of_big_int n)
   | Laddress  a -> Format.fprintf fmt "@%s" a
   | Lstring   s -> Format.fprintf fmt "\"%s\"" s
   | Lbool     b -> Format.fprintf fmt "%s" (if b then "true" else "false")

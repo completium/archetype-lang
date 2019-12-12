@@ -7,17 +7,20 @@
   (name archetype)
   (public_name archetype)
   (preprocess
-    (pps ppx_deriving.std ppx_deriving_yojson)
+    (pps ppx_deriving.std ppx_deriving_yojson visitors.ppx)
   )
   (library_flags (-linkall))
   (modules tools core ident options location parseTree parser lexer symbol
   error position pureLexer parseError io printer_tools printer_pt
   printer_pt_markdown ast typing printer_ast model gen_transform gen_model
   printer_model gen_storage gen_shallow_asset gen_split_key_values gen_api_storage
-  gen_reduce ligo_fun printer_model_ligo printer_model_smartpy
+  gen_reduce printer_model_ligo printer_model_smartpy
   printer_model_ocaml gen_why3 mlwtree printer_mlwtree
   )
   (libraries menhirLib digestif num str ppx_deriving yojson ppx_deriving_yojson.runtime)
+ (flags :standard -w -30  ; Allow sharing of record labels between distinct types.
+                  -w -7   ; Allow overridden methods between visitors-generated classes.
+                  -w -17) ; Allow visit_big_int not to be declared.
 )
 
 (executable

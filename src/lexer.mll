@@ -114,7 +114,7 @@ let dec     = digit+ '.' digit+
 let div     = digit+ blank+ "div" blank+ digit+
 let tz      = digit+ "tz"
 let mtz     = digit+ "mtz"
-let mutz    = digit+ "mutz"
+let utz     = digit+ "utz"
 let var     = "<%" ['a'-'z' 'A'-'Z'] ['a'-'z' 'A'-'Z' '0'-'9' '_' ]* '>'
 let ident   = (['a'-'z' 'A'-'Z'] | var)  (['a'-'z' 'A'-'Z' '0'-'9' '_' ] | var)*
 let address = '@'['a'-'z' 'A'-'Z' '0'-'9' '_' ]+
@@ -139,7 +139,7 @@ rule token = parse
   | ident as id           { try  Hashtbl.find keywords id with Not_found -> IDENT id }
   | tz as t               { TZ   (Big_int.big_int_of_string (String.sub t 0 ((String.length t) - 2))) }
   | mtz as t              { MTZ  (Big_int.big_int_of_string (String.sub t 0 ((String.length t) - 3))) }
-  | mutz as t             { MUTZ (Big_int.big_int_of_string (String.sub t 0 ((String.length t) - 4))) }
+  | utz as t              { UTZ  (Big_int.big_int_of_string (String.sub t 0 ((String.length t) - 3))) }
   | dec as input          {
       let l = Str.split (Str.regexp "\\.") input in
       let n = Big_int.big_int_of_string ((List.nth l 0) ^ (List.nth l 1)) in

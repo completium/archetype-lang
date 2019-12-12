@@ -153,7 +153,7 @@
 %token <Big_int.big_int * Big_int.big_int> RATIONAL
 %token <Big_int.big_int> TZ
 %token <Big_int.big_int> MTZ
-%token <Big_int.big_int> MUTZ
+%token <Big_int.big_int> UTZ
 %token <string> ADDRESS
 %token <string> DURATION
 %token <string> DATE
@@ -733,8 +733,10 @@ order_operations:
   | ops=loc(order_operations) op=loc(ordering_operator) e=expr
     {
       match unloc ops with
-      | Eapp (Foperator ({pldesc = `Cmp opa; plloc = lo}), [lhs; rhs]) -> Emulticomp (lhs, [mkloc lo opa, rhs; op, e])
-      | Emulticomp (a, l) -> Emulticomp (a, l @ [op, e])
+      | Eapp (Foperator ({pldesc = Cmp opa; plloc = lo}), [lhs; rhs]) ->
+	 Emulticomp (lhs, [mkloc lo opa, rhs; op, e])
+      | Emulticomp (a, l) ->
+	 Emulticomp (a, l @ [op, e])
       | _ -> assert false
     }
 
@@ -806,7 +808,7 @@ literal:
  | x=RATIONAL   { let n, d = x in Lrational (n, d) }
  | x=TZ         { Ltz       x }
  | x=MTZ        { Lmtz      x }
- | x=MUTZ       { Lmutz     x }
+ | x=UTZ        { Lutz      x }
  | x=STRING     { Lstring   x }
  | x=ADDRESS    { Laddress  x }
  | x=bool_value { Lbool     x }
@@ -855,15 +857,15 @@ record_item:
  | NOT     { Not }
 
 %inline bin_operator:
-| op=logical_operator    { `Logical op }
-| op=comparison_operator { `Cmp op }
-| op=arithmetic_operator { `Arith op }
+| op=logical_operator    { Logical op }
+| op=comparison_operator { Cmp op }
+| op=arithmetic_operator { Arith op }
 
 %inline un_operator:
-| op=unary_operator      { `Unary op }
+| op=unary_operator      { Unary op }
 
 %inline ord_operator:
-| op=ordering_operator   { `Cmp op }
+| op=ordering_operator   { Cmp op }
 
 %inline asset_operation_enum:
 | AT_ADD    { AOadd }

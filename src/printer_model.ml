@@ -7,9 +7,9 @@ let pp_str fmt str =
   Format.fprintf fmt "%s" str
 
 let pp_currency fmt = function
-  | Tz   -> Format.fprintf fmt "tz"
-  | Mtz  -> Format.fprintf fmt "mtz"
-  | Mutz -> Format.fprintf fmt "mutz"
+  | Tz  -> Format.fprintf fmt "tz"
+  | Mtz -> Format.fprintf fmt "mtz"
+  | Utz -> Format.fprintf fmt "utz"
 
 let pp_btyp fmt = function
   | Bbool       -> Format.fprintf fmt "bool"
@@ -755,6 +755,9 @@ let pp_mterm fmt (mt : mterm) =
     | Msettoiterate e ->
       Format.fprintf fmt "to_iterate %a"
         f e
+
+    | Mcoltokeys an ->
+      Format.fprintf fmt "col_to_keys %s" an
   in
   f fmt mt
 
@@ -775,6 +778,7 @@ let pp_storage_const fmt = function
   | UpdateClear (an, fn) -> pp_str fmt ("clear\t " ^ an ^ " " ^ fn)
   | UpdateReverse (an, fn) -> pp_str fmt ("reverse " ^ an ^ " " ^ fn)
   | ToKeys an -> pp_str fmt ("to_keys\t " ^ an)
+  | ColToKeys an -> pp_str fmt ("col_to_keys\t " ^ an)
 
 let pp_container_const fmt = function
   | AddItem t-> Format.fprintf fmt "add item\t %a" pp_type t

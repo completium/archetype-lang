@@ -1,4 +1,3 @@
-
 open Parser
 open Parser.MenhirInterpreter
 
@@ -24,6 +23,8 @@ end = struct
   let more = ref (fun () -> assert false)
 
   let initialize lexbuf =
+    buffer := [];
+    size := 0;
     more := lexer_lexbuf_to_supplier Lexer.token lexbuf
 
   type t = int

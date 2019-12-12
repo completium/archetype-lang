@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Added
+ - Next feature
+
+## [0.1.11] - 2019-12-12
+### Added
  - Invariants on constants and variables
  - Date and duration support
  - Shadow fields in asset
@@ -14,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Improve loop generation in ligo output (issue #107)
  - Refactoring storage in model module
  - Enchance ligo output printer
+ - Remove keys list of assets in order to decrease storage size
 
 
 ## [0.1.10] - 2019-11-02

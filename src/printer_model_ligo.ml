@@ -3,7 +3,6 @@ open Tools
 open Model
 open Printer_tools
 open Ident
-open Ligo_fun
 
 exception Anomaly of string
 
@@ -748,25 +747,12 @@ let pp_model fmt (model : model) =
           f v
       | Marray l ->
         begin
-          match l with
-          | [] -> Format.fprintf fmt "(nil : %a)" pp_type mtt.type_
-          | _ ->
-            begin
-              match mtt.type_ with
-              | Tassoc (k , v) ->
-                begin
-                  match l with
-                  | [] -> Format.fprintf fmt "(Map : (%a, %a) map)"
-                            pp_btyp k
-                            pp_type v
-                  | _ ->
-                    Format.fprintf fmt "[%a]"
-                      (pp_list "; " f) l
-                end
-              | _ ->
-                Format.fprintf fmt "list@\n  @[%a@]@\nend"
+          match l, mtt.type_ with
+          | [], Tassoc (k , v) -> Format.fprintf fmt "(map end : map(%a, %a))" pp_btyp k pp_type v
+          | _, Tassoc (k , v) -> Format.fprintf fmt "(map %a end : map(%a, %a))" (pp_list "; " f) l pp_btyp k pp_type v
+          | [], _ -> Format.fprintf fmt "(nil : %a)" pp_type mtt.type_
+          | _, _ -> Format.fprintf fmt "list@\n  @[%a@]@\nend"
                   (pp_list "@\n" (fun fmt -> Format.fprintf fmt "%a;" f)) l
-            end
         end
       | Mint v -> pp_big_int fmt v
       | Muint v -> pp_big_int fmt v
@@ -784,9 +770,9 @@ let pp_model fmt (model : model) =
         begin
           let v =
             match c with
-            | Tz -> v
+            | Tz  -> v
             | Mtz -> Big_int.mult_int_big_int 1000 v
-            | Mutz -> assert false
+            | Utz -> assert false
           in
           Format.fprintf fmt "%atz"
             pp_big_int v
@@ -807,7 +793,35 @@ let pp_model fmt (model : model) =
         Format.fprintf fmt "(%a : %a)"
           f k
           f v
-      | Mfor _ -> assert false
+      | Mfor (_, _, _, None) -> assert false
+      | Mfor (id, col, body, Some label) ->
+        let typ =
+          begin
+            let is_get_body (mt : mterm) (id : ident) (asset_name : ident) =
+              match mt.node with
+              | Mletin ([{pldesc = i; _}], {node = Mget (an, _)}, _, _, _) -> String.equal i id && String.equal asset_name an
+              | _ -> false
+            in
+            match col.type_ with
+            | Tcontainer (Tasset an, _) when is_get_body body (unloc id) (unloc an) ->
+              begin
+                let _, t = Utils.get_asset_key model (unloc an) in
+                Tbuiltin t
+              end
+            | Tcontainer (t, _) -> t
+            | _ -> assert false
+          end
+        in
+
+        Format.fprintf fmt
+          "function %s (const %a : %a) : unit is@\n  \
+           begin@\n  \
+           @[%a@]@\n\
+           end with unit;@\n\
+           list_iter (%s, %a)"
+          label pp_id id pp_type typ
+          f body
+          label f col
       (* let t, dv, sep =
          match c with
          | {type_ = Tcontainer (Tbuiltin Bstring, _)} -> "string", "\"\"", false
@@ -924,6 +938,11 @@ let pp_model fmt (model : model) =
         Format.fprintf fmt "%s.to_keys (%a)"
           an
           f x
+      | Mcoltokeys (an) ->
+        Format.fprintf fmt "col_to_keys_%s (%s)"
+          an
+          const_storage
+
       | Mlisttocoll (_, x) -> f fmt x
       | Mforall _                        -> emit_error (UnsupportedTerm ("forall"))
       | Mexists _                        -> emit_error (UnsupportedTerm ("exists"))
@@ -1061,14 +1080,12 @@ let pp_model fmt (model : model) =
         "function add_%s (const s : storage_type; const a : %s) : storage_type is@\n  \
          begin@\n    \
          const key : %a = a.%s;@\n    \
-         s.%s_keys := cons(key, s.%s_keys);@\n    \
          const map_local : map(%a, %s) = s.%s_assets;@\n    \
          map_local[key] := a;@\n    \
          s.%s_assets := map_local;@\n  \
          end with (s)@\n"
         an an
         pp_btyp t k
-        an an
         pp_btyp t an an
         an
 
@@ -1077,25 +1094,11 @@ let pp_model fmt (model : model) =
       Format.fprintf fmt
         "function remove_%s (const s : storage_type; const key : %a) : storage_type is@\n  \
          begin@\n    \
-         var new_keys : list(%a) := (nil : list(%a));@\n    \
-         function aux (const i : %a) : unit is@\n      \
-         begin@\n        \
-         if (key =/= i) then@\n          \
-         new_keys := cons(i, new_keys);@\n        \
-         else@\n          \
-         skip;@\n      \
-         end with unit;@\n    \
-         list_iter(aux, s.%s_keys);@\n    \
-         s.%s_keys := new_keys;@\n    \
          const map_local : map(%a, %s) = s.%s_assets;@\n    \
          remove key from map map_local;@\n    \
          s.%s_assets := map_local;@\n  \
          end with (s)@\n"
         an pp_btyp t
-        pp_btyp t pp_btyp t
-        pp_btyp t
-        an
-        an
         pp_btyp t an an
         an
 
@@ -1201,9 +1204,27 @@ let pp_model fmt (model : model) =
 
     | ToKeys _an ->
       Format.fprintf fmt "// TODO api storage: ToKeys"
-      (* "let[@inline] to_keys_%s (s : storage) : storage =@\n  \
-         s (*TODO*)@\n"
-         an *)
+    (* "let[@inline] to_keys_%s (s : storage) : storage =@\n  \
+       s (*TODO*)@\n"
+       an *)
+
+    | ColToKeys an ->
+      let _k, t = Utils.get_asset_key model an in
+      Format.fprintf fmt
+        "function col_to_keys_%s (const s : storage_type) : list(%a) is@\n \
+         begin@\n \
+         function to_keys (const accu : list(%a); const v : (%a * %s)) : list(%a) is block { skip } with cons(v.0, accu);@\n \
+         function rev     (const accu : list(%a); const v : %a) : list(%a) is block { skip } with cons(v, accu);@\n \
+         var res : list(%a) := (nil : list(%a));@\n \
+         res := map_fold(to_keys, s.%s_assets, res);@\n \
+         res := list_fold(rev, res, (nil : list(%a)));@\n \
+         end with res@\n"
+        an pp_btyp t
+        pp_btyp t pp_btyp t an pp_btyp t
+        pp_btyp t pp_btyp t pp_btyp t
+        pp_btyp t pp_btyp t
+        an
+        pp_btyp t
   in
 
   let pp_container_const (_env : env) fmt = function
@@ -1420,71 +1441,37 @@ let pp_model fmt (model : model) =
 
   let pp_function (env : env) (fmt : Format.formatter) (f : function__) =
     let env = {env with f = Some f} in
-    let pp_variables fmt vars =
-      match vars with
-      | [] -> ()
-      | _ ->
-        Format.fprintf fmt "@[%a@]@\n  "
-          (pp_list "@\n" (fun fmt (name, type_) ->
-               Format.fprintf fmt "var %s : %a := %a;"
-                 name
-                 pp_type type_
-                 (pp_mterm env) (Model.Utils.get_default_value model type_)
-             )) vars
-    in
-    let pp_iterfuns fmt (iterfuns : s_interfun list) =
-      match iterfuns with
-      | [] -> ()
-      | _ ->
-        Format.fprintf fmt "@[%a@]@\n  "
-          (pp_list "@\n" (fun fmt (interfun : s_interfun) ->
-               Format.fprintf fmt
-                 "function %s (const %s : %a) : unit is@\n  \
-                  begin@\n  \
-                  @[%a@]@\n  \
-                  end with unit;"
-                 interfun.loop_id
-                 interfun.arg_id
-                 pp_type interfun.arg_type
-                 (pp_mterm env) interfun.body
-             )) iterfuns
-    in
-    let ligo_fun = to_ligo_fun model f in
-    let name = ligo_fun.name in
-    match ligo_fun.ret with
-    | None ->
+    match f.node with
+    | Entry fs ->
+      let with_transfer = Utils.with_transfer_for_mterm fs.body in
       Format.fprintf fmt
-        "function %s(const action : action_%s; const %s : storage_type) : (list(operation) * storage_type) is@\n  \
+        "function %a(const action : action_%a; const %s : storage_type) : (list(operation) * storage_type) is@\n  \
          begin@\n  \
-         @[%a%a%a@]  \
+         %a\
          @[%a@]@\n  \
          end with (%s, %s)@\n"
-        name name const_storage
-        (pp_do_if ligo_fun.transfer pp_variables) [const_operations, Tcontainer (Toperation, List)]
-        pp_variables ligo_fun.vars
-        pp_iterfuns ligo_fun.iterfuns
-        (pp_mterm env) ligo_fun.body
-        (if ligo_fun.transfer then const_operations else "(nil : list(operation))") const_storage
+        pp_id fs.name pp_id fs.name const_storage
+        (pp_do_if with_transfer (fun fmt x ->
+             Format.fprintf fmt "var %s : list(operation) := (nil : list(operation));@\n  " x
+           )) const_operations
+        (pp_mterm env) fs.body
+        (if with_transfer then const_operations else "(nil : list(operation))") const_storage
 
-    | Some _ret ->
+    | Function (fs, _ret) ->
       Format.fprintf fmt
-        "function %s(const %s : storage_type%a) : storage_type is@\n  \
+        "function %a(const %s : storage_type%a) : storage_type is@\n  \
          begin@\n  \
-         %a\
-         %a\
          @[%a@]@\n  \
          end with (%s)@\n"
-        name
+        pp_id fs.name
         const_storage
-        (pp_list "" (fun fmt (id, type_ : ident * type_) ->
+        (pp_list "" (fun fmt (id, type_, _ : lident * type_ * 'a) ->
              Format.fprintf fmt
-               "; const %s : %a"
-               id
+               "; const %a : %a"
+               pp_id id
                pp_type type_
-           )) ligo_fun.args
-        pp_variables ligo_fun.vars
-        pp_iterfuns ligo_fun.iterfuns
-        (pp_mterm env) ligo_fun.body
+           )) fs.args
+        (pp_mterm env) fs.body
         const_storage
   in
 
@@ -1523,8 +1510,28 @@ let pp_model fmt (model : model) =
     mk_env ~select_preds:select_preds ()
   in
 
+  let pp_ligo_disclaimer fmt _ =
+    let env = mk_env () in
+
+    let pp_storage_term fmt _ =
+      match model.storage with
+      | []  -> pp_str fmt "Unit"
+      | [s] -> pp_mterm env fmt s.default
+      | l   ->
+        Format.fprintf fmt "record %a end"
+          (pp_list "; " (fun fmt si -> Format.fprintf fmt "%a = %a" pp_id si.id (pp_mterm env) si.default )) l
+    in
+
+    Format.fprintf fmt
+      "// To generate origination storage string please execute the following command:@\n\
+       // ligo compile-storage %a.ligo main '%a'@\n"
+      pp_id model.name
+      pp_storage_term ()
+  in
+
   let env = compute_env () in
   Format.fprintf fmt "// LIGO output generated by %a@\n@\n\
+                      %a@\n\
                       %a@\n\
                       %a@\n\
                       %a@\n\
@@ -1535,6 +1542,7 @@ let pp_model fmt (model : model) =
                       @."
     pp_bin ()
     pp_model_name ()
+    pp_ligo_disclaimer ()
     pp_decls ()
     pp_storage ()
     pp_action_type ()

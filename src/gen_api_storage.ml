@@ -75,6 +75,8 @@ let process_api_storage (model : model) : model =
         [APIFunction (Head asset_name)]
       | Mtail (asset_name, _, _) ->
         [APIFunction (Tail asset_name)]
+      | Mcoltokeys asset_name ->
+        [APIStorage (ColToKeys asset_name)]
       | _ -> []
     in
     List.fold_left (fun accu v -> add ctx accu (Model.mk_api_item v)) accu api_items
@@ -96,6 +98,7 @@ let process_api_storage (model : model) : model =
                    | APIStorage (UpdateClear     (an, _)) -> an
                    | APIStorage (UpdateReverse   (an, _)) -> an
                    | APIStorage (ToKeys           an)     -> an
+                   | APIStorage (ColToKeys        an)     -> an
                    | APIFunction (Select         (an, _)) -> an
                    | APIFunction (Sort           (an, _)) -> an
                    | APIFunction (Contains        an)     -> an
@@ -155,6 +158,7 @@ let process_api_storage (model : model) : model =
                    | APIFunction  (Listtocoll    _) -> 28
                    | APIFunction  (Head          _) -> 29
                    | APIFunction  (Tail          _) -> 30
+                   | APIStorage   (ColToKeys     _) -> 31
                  in
                  let idx1 = get_kind i1.node_item in
                  let idx2 = get_kind i2.node_item in

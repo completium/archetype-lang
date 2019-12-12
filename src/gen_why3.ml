@@ -990,7 +990,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | M.Mstring v            -> Tint (sha v)
     | M.Mcurrency (i,M.Tz)   -> Tint (Big_int.mult_int_big_int 1000000 i)
     | M.Mcurrency (i,M.Mtz)  -> Tint (Big_int.mult_int_big_int 1000 i)
-    | M.Mcurrency (i,M.Mutz) -> Tint i
+    | M.Mcurrency (i,M.Utz)  -> Tint i
     | M.Mdate s              -> Tint (Core.date_to_big_int s)
     | M.Massignvarstore (ValueAssign,id,v) -> Tassign (with_dummy_loc (Tdoti (with_dummy_loc gs,map_lident id)),map_mterm m ctx v)
     | M.Massignvarstore (MinusAssign,id,v) -> Tassign (with_dummy_loc (Tdoti (with_dummy_loc gs,map_lident id)),

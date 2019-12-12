@@ -56,7 +56,7 @@ let pp_model fmt (model : model) =
   let pp_currency fmt = function
     | Tz   -> Format.fprintf fmt "tz"
     | Mtz  -> Format.fprintf fmt "mtz"
-    | Mutz -> Format.fprintf fmt "mutz"
+    | Utz  -> Format.fprintf fmt "utz"
   in
 
   let pp_btyp fmt = function
@@ -192,6 +192,12 @@ let pp_model fmt (model : model) =
     | ToKeys an ->
       Format.fprintf fmt
         "def to_keys_%s (self):@\n\
+         \t\t#TODO@\n"
+        an
+
+    | ColToKeys an ->
+      Format.fprintf fmt
+        "def col_to_keys_%s (self):@\n\
          \t\t#TODO@\n"
         an
   in
@@ -973,6 +979,9 @@ let pp_model fmt (model : model) =
         Format.fprintf fmt "%s.to_keys (%a)"
           an
           f x
+      | Mcoltokeys an ->
+        Format.fprintf fmt "col_to_keys_%s ()"
+          an
       | Mlisttocoll (_, x) -> f fmt x
       | Mforall _                        -> emit_error (UnsupportedTerm ("forall"))
       | Mexists _                        -> emit_error (UnsupportedTerm ("exists"))
