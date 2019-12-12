@@ -1,0 +1,85 @@
+archetype coase
+
+asset card_pattern identified by card_pattern_id {
+  card_pattern_id: int;
+  coefficient: tez;
+  quantity: int;
+} shadow {
+  sellcount: int = 0;
+} with {
+  cp1: card_pattern_id >= 0;
+  cp2: quantity >= 0;
+}
+
+asset card identified by card_id {
+  card_id: int;
+  card_owner: address;
+  card_pattern_card: pkey of card_pattern;
+} with {
+  c1: card_id >= 0;
+}
+
+variable next_id int = 0
+with {
+  n1: next_id >= 0;
+  n2: forall c in card, next_id <> c.card_id
+}
+
+action transfer_single (card_to_transfer : pkey of card) (destination : address) {
+  require {
+    ts1: caller = card.get(card_to_transfer).card_owner;
+  }
+  effect {
+    card.update(card_to_transfer, {card_owner = destination})
+  }
+}
+
+action sell_single (card_to_sell : pkey of card) {
+  specification {
+    effect {
+      var c = card.get(card_to_sell);
+      card_pattern.update(c.card_pattern_card, {sellcount += 1})
+    }
+  }
+  require {
+    ss1: caller = card.get(card_to_sell).card_owner;
+  }
+  effect {
+    var card_ : card = card.get(card_to_sell);
+    card_pattern.update(card_.card_pattern_card, {quantity -= 1});
+    var card_pattern_ = card_pattern.get(card_.card_pattern_card);
+    card.remove(card_to_sell);
+    var price : tez = card_pattern_.coefficient * card_pattern_.quantity;
+    var receiver = caller;
+    transfer price to receiver
+  }
+}
+
+action buy_single (card_to_buy : pkey of card_pattern) {
+  specification {
+    postcondition bs1 {
+      card.count() = before.card.count() + 1
+    }
+    postcondition bs2 {
+      let cp = card_pattern.get(card_to_buy) in
+      balance = before.balance + cp.coefficient * cp.quantity
+      otherwise true
+    }
+    postcondition bs3 {
+      card.select(card_owner = caller).count() >= 1
+    }
+  }
+  accept transfer
+  effect {
+    var card_pattern_ : card_pattern = card_pattern.get(card_to_buy);
+    var price : tez = card_pattern_.coefficient * (card_pattern_.quantity + 1);
+    failif (price > transferred);
+    card_pattern.update(card_to_buy, {quantity += 1});
+    card.add({card_id = next_id; card_owner = caller; card_pattern_card = card_to_buy});
+    next_id += 1
+  }
+}
+
+specification {
+  g1: balance = card_pattern.sum(coefficient * ((quantity * (quantity + 1)) / 2 + sellcount))
+}
