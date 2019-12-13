@@ -13,8 +13,9 @@ action register (newadmins : admins collection option)
   }
   effect {
     hash := newhash;
-    let newa = newadmins in
+    let some newa = newadmins in
       admins := newa
-    otherwise hash := newhash
+    otherwise
+      ()
   }
 }
