@@ -31,13 +31,13 @@ action add (ow : address) (newmile : mile) {
 action consume (ow : address) (qty : int) {
     specification {
         postcondition p0 {
-            let before_o = before.owner.get(ow) in
-                let after_o = owner.get(ow) in
+            let some before_o = before.owner.get(ow) in
+                let some after_o = owner.get(ow) in
                 after_o.miles.sum(the.quantity) = before_o.miles.sum(the.quantity) - qty
                 otherwise true
             otherwise true
             invariant for loop {
-                let before_o = before.owner.get(ow) in
+                let some before_o = before.owner.get(ow) in
                     o.miles.sum(the.quantity) =
                         before_o.miles.sum(the.quantity) - qty + remainder
                 otherwise true;

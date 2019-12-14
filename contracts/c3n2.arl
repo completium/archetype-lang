@@ -12,10 +12,10 @@ action register (newadmins : admins collection option)
     r2 : admins.contains(caller);
   }
   effect {
-    hash := newhash(*;
+    hash := newhash;
     let some newa = newadmins in
       admins := newa
     otherwise
-      ()*)
+      ()
   }
 }

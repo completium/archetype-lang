@@ -640,13 +640,15 @@ ident_typ_q:
 |                { None }
 | COLON i=ident  { Some i }
 
-%inline otherwise:
-|                  { None }
-| OTHERWISE o=expr { Some o }
-
 %inline from_expr:
 |                { None }
 | FROM e=expr    { Some e }
+
+%inline nil:
+ | e=loc(nil_unloc) { e }
+
+%inline nil_unloc:
+| LPAREN RPAREN { Enil }
 
 expr_r:
  | q=quantifier id=ident t=quant_kind COMMA y=expr
@@ -659,8 +661,14 @@ expr_r:
            mkloc l (Equantifier (q, i, t, acc))) xs y) |> unloc
     }
 
- | LET i=ident t=colon_type_opt EQUAL e=expr IN y=expr o=otherwise
-     { Eletin (i, t, e, y, o) }
+ | LET SOME i=ident t=colon_type_opt EQUAL e=expr IN y=expr OTHERWISE o=expr
+     { Eletin (i, t, e, y, Some o) }
+
+ | LET SOME i=ident t=colon_type_opt EQUAL e=expr IN y=expr OTHERWISE o=nil
+     { Eletin (i, t, e, y, Some o) }
+
+ | LET i=ident t=colon_type_opt EQUAL e=expr IN y=expr
+     { Eletin (i, t, e, y, None) }
 
  | VAR i=ident t=colon_type_opt EQUAL e=expr
      { Evar (i, t, e) }
@@ -707,7 +715,7 @@ expr_r:
  | RETURN x=simple_expr
      { Ereturn x }
 
- | SOME x=simple_expr
+ | SOME x=paren(simple_expr)
      { Eoption (OSome x) }
 
  | NONE

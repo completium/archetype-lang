@@ -20,8 +20,8 @@ action add (ow : role) (value : int) {
 action consume (ow : role) (value : int) {
   specification {
     postcondition s1 {
-      let ba = before.account.get(ow) in
-      let a = account.get(ow) in
+      let some ba = before.account.get(ow) in
+      let some a = account.get(ow) in
       ba.amount = a.amount + value
       otherwise true
       otherwise true

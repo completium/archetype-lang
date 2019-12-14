@@ -61,7 +61,7 @@ action buy_single (card_to_buy : pkey of card_pattern) {
       card.count() = before.card.count() + 1
     }
     postcondition bs2 {
-      let cp = card_pattern.get(card_to_buy) in
+      let some cp = card_pattern.get(card_to_buy) in
       balance = before.balance + cp.coefficient * cp.quantity
       otherwise true
     }

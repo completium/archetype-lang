@@ -126,9 +126,9 @@ let rec pp_type outer pos fmt e =
       pp_type_default x
 
   | Tkeyof t ->
-      Format.fprintf fmt
-        "pkey of %a"
-        pp_type_default t
+    Format.fprintf fmt
+      "pkey of %a"
+      pp_type_default t
 
 let pp_type fmt e = pp_type e_default PNone fmt e
 
@@ -392,8 +392,8 @@ let rec pp_expr outer pos fmt a =
     let pp fmt x =
       let pp_option_ fmt x =
         match x with
-        | OSome x -> Format.fprintf fmt "Some %a" pp_simple_expr x
-        | ONone -> Format.fprintf fmt "None"
+        | OSome x -> Format.fprintf fmt "some(%a)" pp_simple_expr x
+        | ONone -> Format.fprintf fmt "none"
       in
       Format.fprintf fmt "%a"
         pp_option_ x
@@ -479,7 +479,8 @@ let rec pp_expr outer pos fmt a =
   | Eletin (id, t, e, body, other) ->
 
     let pp fmt (id, t, e, body, other) =
-      Format.fprintf fmt "@[@[<hv 0>let %a%a =@;<1 2>%a@;<1 0>in@]@ %a%a@]" (*"let %a = %a in %a"*)
+      Format.fprintf fmt "@[@[<hv 0>let%a %a%a =@;<1 2>%a@;<1 0>in@]@ %a%a@]" (*"let %a = %a in %a"*)
+        (pp_option (fun fmt _ -> Format.fprintf fmt " some")) other
         pp_id id
         (pp_option (pp_prefix " : " pp_type)) t
         (pp_expr e_in PLeft) e
@@ -533,6 +534,8 @@ let rec pp_expr outer pos fmt a =
         pp_id i
     in
     (maybe_paren outer e_colon pos pp) fmt i
+
+  | Enil -> Format.fprintf fmt "()"
 
   | Einvalid -> Format.fprintf fmt "(* invalid expr *)"
 

@@ -8,7 +8,7 @@ asset shares identified by addr {
 action withdraw {
   specification {
     postcondition p1 {
-      let s = shares.get(caller) in
+      let some s = shares.get(caller) in
       balance = before.balance - s.value
       otherwise true
     }

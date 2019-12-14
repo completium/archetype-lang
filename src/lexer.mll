@@ -18,8 +18,6 @@
 
   let keywords_ =
     [
-      "None"                , NONE           ;
-      "Some"                , SOME           ;
       "action"              , ACTION         ;
       "and"                 , AND            ;
       "archetype"           , ARCHETYPE      ;
@@ -62,6 +60,7 @@
       "let"                 , LET            ;
       "match"               , MATCH          ;
       "namespace"           , NAMESPACE      ;
+      "none"                , NONE           ;
       "not"                 , NOT            ;
       "of"                  , OF             ;
       "on"                  , ON             ;
@@ -78,6 +77,7 @@
       "security"            , SECURITY       ;
       "shadow"              , SHADOW         ;
       "sorted"              , SORTED         ;
+      "some"                , SOME           ;
       "specification"       , SPECIFICATION  ;
       "states"              , STATES         ;
       "then"                , THEN           ;
