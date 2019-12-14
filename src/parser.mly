@@ -346,7 +346,7 @@ function_decl:
 | THEOREM id=ident x=braced(expr) { Vtheorem (id, x) }
 
 %inline spec_variable:
-| VARIABLE id=ident t=type_t dv=default_value? { Vvariable (id, t, dv) }
+| VARIABLE id=ident COLON t=type_t dv=default_value? { Vvariable (id, t, dv) }
 
 %inline spec_effect:
 | EFFECT e=braced(expr) { Veffect e }

@@ -32,7 +32,7 @@ action myaction {
       forall x in col1, forall y in col2, x.id1 = y.id2
     }
 
-    variable myvar int = 0
+    variable myvar : int = 0
 
     effect {
       myvar := 3

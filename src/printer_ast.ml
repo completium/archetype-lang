@@ -571,7 +571,7 @@ let pp_specification fmt (v : lident specification) =
     let decl = v.decl in
     Format.fprintf fmt "variable %a%a%a"
       pp_id decl.name
-      (pp_option (pp_prefix " " pp_ptyp)) decl.typ
+      (pp_option (pp_prefix " : " pp_ptyp)) decl.typ
       (pp_option (pp_prefix " := " pp_pterm)) decl.default
   in
   let pp_invariant fmt (i : lident invariant) =

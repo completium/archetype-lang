@@ -626,7 +626,7 @@ let pp_to fmt ((to_, when_, effect) : (lident * expr option * expr option)) =
 let pp_specification_variable fmt (sv : (lident * type_t * expr option) loced) =
   match sv with
   | {pldesc = (id, typ, dv); _} ->
-    Format.fprintf fmt "variable %a %a%a"
+    Format.fprintf fmt "variable %a : %a%a"
       pp_id id
       pp_type typ
       (pp_option (pp_prefix " = " (pp_expr e_equal PRight))) dv
@@ -754,7 +754,7 @@ let pp_specification_item fmt = function
       (pp_expr e_default PNone) body
 
   | Vvariable (id, typ, dv) ->
-    Format.fprintf fmt "variable %a %a%a"
+    Format.fprintf fmt "variable %a : %a%a"
       pp_id id
       pp_type typ
       (pp_option (fun fmt x -> Format.fprintf fmt " = %a" (pp_expr e_equal PRight) x)) dv
