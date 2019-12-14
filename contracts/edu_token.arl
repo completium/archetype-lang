@@ -59,18 +59,18 @@ action add_learner {
   }
 }
 
-action register_learner (learnerids : learner collection) (do_add : bool) {
+action register_learner (learners : learner collection) (do_add : bool) {
   require {
     r0: institution.contains(caller);
   }
    effect {
     if (not (institution_learners.contains (caller))) then
       institution_learners.add({ilid = caller});
-    for var_lid in learnerids do
+    for l in learners do
 	    if do_add then
-        institution_learners.get(caller).illearners.add(var_lid)
+        institution_learners.get(caller).illearners.add(l)
 	    else
-        institution_learners.get(caller).illearners.remove(var_lid.lid)
+        institution_learners.get(caller).illearners.remove(l.lid)
     done
   }
 }
