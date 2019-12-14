@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
  - Next feature
 
+### Changed
+ - Syntax : add ':' in declaration
+
 ## [0.1.11] - 2019-12-12
 ### Added
  - Invariants on constants and variables

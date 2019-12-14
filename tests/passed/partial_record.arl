@@ -1,6 +1,6 @@
 archetype partial_record
 
-variable v int = 1
+variable v : int = 1
 
 asset asset1 {
   id: string;

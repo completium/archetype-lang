@@ -1,25 +1,25 @@
 archetype autocallable
 
-constant issuer role = @tz1KksC8RvjUWAbXYJuNrUbontHGor25Cztk
-constant owner  role = @tz1uNrUbontHGor25CztkKksC8RvjUWAbXYJ
-constant oracle role = @tz1r25CztkKksC8RvjuNrUWAbXYJUbontHGo (* exchange *)
+constant issuer : role = @tz1KksC8RvjUWAbXYJuNrUbontHGor25Cztk
+constant owner  : role = @tz1uNrUbontHGor25CztkKksC8RvjUWAbXYJ
+constant oracle : role = @tz1r25CztkKksC8RvjuNrUWAbXYJUbontHGo (* exchange *)
 
-constant nominal tez = 1000tz
+constant nominal : tez = 1000tz
 
-constant trade      date = 2017-03-14T00:00:00
-constant init       date = 2017-03-14T00:00:00
-constant issue      date = 2017-03-28T00:00:00
-constant final      date = 2020-03-16T00:00:00
-constant redemption date = 2020-03-30T00:00:00
+constant trade      : date = 2017-03-14T00:00:00
+constant init       : date = 2017-03-14T00:00:00
+constant issue      : date = 2017-03-28T00:00:00
+constant final      : date = 2020-03-16T00:00:00
+constant redemption : date = 2020-03-30T00:00:00
 
 (* UNDERLYINGS *)
-constant bac_initial rational = 25.32
-constant sg_initial  rational = 46.945
-constant ubs_initial rational = 15.98
+constant bac_initial : rational = 25.32
+constant sg_initial  : rational = 46.945
+constant ubs_initial : rational = 15.98
 
-constant bac_strike rational = 12.66   (* ~ 0.5 * bac_initial *)
-constant sg_strike  rational = 23.4725 (* ~ 0.5 * sg_initial  *)
-constant ubs_strike rational = 15.98   (* ~ 0.5 * ubs_initial *)
+constant bac_strike : rational = 12.66   (* ~ 0.5 * bac_initial *)
+constant sg_strike  : rational = 23.4725 (* ~ 0.5 * sg_initial  *)
+constant ubs_strike : rational = 15.98   (* ~ 0.5 * ubs_initial *)
 
 (* CONTRACT DATA *)
 asset early identified by observation {
@@ -191,7 +191,7 @@ function compute_expected (d : date) : tez {
 }
 
 (* PAYMENT action *)
-variable actual_payment tez = 0tz
+variable actual_payment : tez = 0tz
 
 action pay_note {
    called by issuer

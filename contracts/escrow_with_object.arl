@@ -1,29 +1,29 @@
 archetype escrow_with_object
 
-variable buyer role
+variable buyer : role
 
-variable[%transferable%] debitor role = buyer
+variable[%transferable%] debitor : role = buyer
 
-variable seller role
+variable seller : role
 
-variable[%transferable%] creditor role = seller
+variable[%transferable%] creditor : role = seller
 
-variable oracle role
+variable oracle : role
 
-variable[%traceable%] price tez
+variable[%traceable%] price : tez
 
 variable[%traceable%] [%mutable_signed ([buyer, debitor], instate (Created))%]
-     penalty tez = 0.1 * price
+     penalty : tez = 0.1 * price
 
 (* action deadline *)
-variable[%mutable (buyer or seller, instate (Created))%] deadline date
+variable[%mutable (buyer or seller, instate (Created))%] deadline : date
 
 (* type taskStatus {
      date : date;
      status : string of [ "OK" | "KO" ]
    }
 *)
-variable[%signedby oracle%] taskStatus object = "https://oracle.io/tskstat.schema.json"
+variable[%signedby oracle%] taskStatus : object = "https://oracle.io/tskstat.schema.json"
 
 (* state machine *)
 states =

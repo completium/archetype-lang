@@ -1,9 +1,9 @@
 archetype auction_no_memory
 
-variable bid tez = 0tz
-variable incumbent address = @fake_address
+variable bid : tez = 0tz
+variable incumbent : address = @fake_address
 
-variable deadline date = 2019-01-01T00:00:00
+variable deadline : date = 2019-01-01T00:00:00
 
 action place_bid (id : address) (b : tez) {
    require {

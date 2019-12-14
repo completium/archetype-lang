@@ -4,7 +4,7 @@ archetype extension signedby (
 
 ) {
 
-  variable key_<%arole> key = arole
+  variable key_<%arole> : key = arole
 
   action aTransaction (signed_<%anarg> : signature) {
     require {

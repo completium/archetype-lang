@@ -1,17 +1,17 @@
 archetype escrow_simple
 
-constant buyer role  = @tz1KmuhR6P52hw6xs5P69BXJYAURaznhvN1k
+constant buyer : role  = @tz1KmuhR6P52hw6xs5P69BXJYAURaznhvN1k
 
-constant seller role = @tz1XJYAURaznhvN1khR6P52hw6xs5P691Kmu
+constant seller : role = @tz1XJYAURaznhvN1khR6P52hw6xs5P691Kmu
 
-constant oracle role = @tz15P69BXJYAURaznhvN1k1KmuhR6P52hw6x
+constant oracle : role = @tz15P69BXJYAURaznhvN1k1KmuhR6P52hw6x
 
-constant price tez = 10tz
+constant price : tez = 10tz
 
-constant penalty tez = 2tz
+constant penalty : tez = 2tz
 
 (* action deadline *)
-constant deadline date = 2019-06-01T00:00:00
+constant deadline : date = 2019-06-01T00:00:00
 
 (* state machine *)
 states =

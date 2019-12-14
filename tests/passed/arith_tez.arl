@@ -1,6 +1,6 @@
 archetype arith_tez
 
-constant a tez = 1tz
+constant a : tez = 1tz
 
 action main (r : role) {
   accept transfer

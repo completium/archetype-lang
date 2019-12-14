@@ -1,22 +1,22 @@
 archetype escrow
 
-variable buyer role = @tz1buyer
+variable buyer : role = @tz1buyer
 
-variable[%transferable%] debitor role = buyer
+variable[%transferable%] debitor : role = buyer
 
-variable seller role = @tz1seller
+variable seller : role = @tz1seller
 
-variable[%transferable%] creditor role = seller
+variable[%transferable%] creditor : role = seller
 
-variable oracle role = @tz1oracle
+variable oracle : role = @tz1oracle
 
-variable[%traceable%] price tez = 10tz
+variable[%traceable%] price : tez = 10tz
 
 variable[%traceable%] [%mutable_signed ([{buyer}; {debitor}], (state = Created))%]
-     penalty tez = 0.1 * price
+     penalty : tez = 0.1 * price
 
 (* action deadline *)
-variable[%mutable ((buyer or seller), (instate (Created)))%] deadline date = 2020-06-28T00:00:00
+variable[%mutable ((buyer or seller), (instate (Created)))%] deadline : date = 2020-06-28T00:00:00
 
 (* state machine *)
 states =

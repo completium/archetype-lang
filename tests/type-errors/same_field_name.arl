@@ -1,6 +1,6 @@
 archetype bad_at_var_not_in_env
 
-variable v int = 1
+variable v : int = 1
 
 asset asset1 {
   id: string;

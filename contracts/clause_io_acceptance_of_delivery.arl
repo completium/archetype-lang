@@ -1,19 +1,19 @@
 archetype clause_io_acceptance_of_delivery
 
-variable shipper role
+variable shipper : role
 
-variable receiver role
+variable receiver : role
 
-variable payment tez
+variable payment : tez
 
-variable deliveryDate date
+variable deliveryDate : date
 
-variable businessDays day
+variable businessDays : int
 
 (* extra blockchain incentives *)
-variable incentiveR tez = payment
+variable incentiveR : tez = payment
 
-variable incentiveS tez = 0.2 * payment
+variable incentiveS : tez = 0.2 * payment
 
 %traceable (payment + incentiveR, receiver)
 %traceable (incentiveS, shipper)

@@ -1,16 +1,16 @@
 archetype zero_coupon_bond
 
-variable issuer role  = @tz1KksC8RvjUWAbXYJuNrUbontHGor25Cztk (* seller 'Alice' *)
+variable issuer : role  = @tz1KksC8RvjUWAbXYJuNrUbontHGor25Cztk (* seller 'Alice' *)
 
-variable owner role = @tz1KmuhR6P52hw6xs5P69BXJYAURaznhvN1k
+variable owner : role = @tz1KmuhR6P52hw6xs5P69BXJYAURaznhvN1k
 (* buyer 'Bob'; receives 11 tez in one-year *)
 
 
-variable price tez = 10tz
+variable price : tez = 10tz
 
-variable payment tez = 11tz * price
+variable payment : tez = 11tz * price
 
-variable maturity date
+variable maturity : date
 
 states =
   | Created initial

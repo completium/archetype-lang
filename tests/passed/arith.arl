@@ -1,31 +1,31 @@
 archetype arith
 
-constant b1 bool = true
-constant b2 bool = true
+constant b1 : bool = true
+constant b2 : bool = true
 
-constant i1 int = 0
-constant i2 int = 1
+constant i1 : int = 0
+constant i2 : int = 1
 
-constant ra1 rational = 0.1
-constant ra2 rational = 1 div 2
+constant ra1 : rational = 0.1
+constant ra2 : rational = 1 div 2
 
-constant da1 date = 2019-11-01
-constant da2 date = 2018-11-01
+constant da1 : date = 2019-11-01
+constant da2 : date = 2018-11-01
 
-constant du1 duration = 1d
-constant du2 duration = 1h
+constant du1 : duration = 1d
+constant du2 : duration = 1h
 
-constant s1 string = "str1"
-constant s2 string = "str2"
+constant s1 : string = "str1"
+constant s2 : string = "str2"
 
-constant a1 address = @addr1
-constant a2 address = @addr2
+constant a1 : address = @addr1
+constant a2 : address = @addr2
 
-constant ro1 role = @addr1
-constant ro2 role = @addr2
+constant ro1 : role = @addr1
+constant ro2 : role = @addr2
 
-constant t1 tez = 1tz
-constant t2 tez = 2tz
+constant t1 : tez = 1tz
+constant t2 : tez = 2tz
 
 action main {
   effect {

@@ -1,6 +1,6 @@
 archetype fizzy
 
-variable creator role
+variable creator : role = @tz1fake
 
 enum status =
 | Created

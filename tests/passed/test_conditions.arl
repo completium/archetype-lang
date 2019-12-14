@@ -1,6 +1,6 @@
 archetype tests_conditions
 
-variable i int = 0
+variable i : int = 0
 
 action a1 {
   require {

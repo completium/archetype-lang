@@ -6,12 +6,12 @@ asset admins {
     addr: address;
 }
 
-variable hash string = "initialvalue"
+variable hash : string = "initialvalue"
 
 action register (newadmins : admins collection option) (oldhash : string) (newhash : string) {
     specification {
         postcondition p1 {
-            before.hash = oldhash 
+            before.hash = oldhash
         }
         postcondition p2 {
             hash = newhash

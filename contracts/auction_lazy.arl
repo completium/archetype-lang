@@ -5,7 +5,7 @@ asset bid identified by incumbent {
   val : tez;
 }
 
-variable deadline date = 2019-01-01T00:00:00
+variable deadline : date = 2019-01-01T00:00:00
 
 action place_bid {
   require {

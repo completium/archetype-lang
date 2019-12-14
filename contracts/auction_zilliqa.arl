@@ -1,9 +1,9 @@
 archetype auction_zilliqa
 
-variable highest_bid tez = 0tz
-variable highest_bidder address = @0
+variable highest_bid : tez = 0tz
+variable highest_bidder : address = @0
 
-variable beneficiary address = @tz1KmuhR6P52hw6xs5P69BXJYAURaznhvN1k
+variable beneficiary : address = @tz1KmuhR6P52hw6xs5P69BXJYAURaznhvN1k
 
 asset pending_return identified by incumbent {
   incumbent   : address;
@@ -14,8 +14,8 @@ states =
 | Open initial
 | Closed
 
-variable auction_start date = 2019-01-01T00:00:00
-variable auction_end   date = 2019-02-01T00:00:00
+variable auction_start : date = 2019-01-01T00:00:00
+variable auction_end   : date = 2019-02-01T00:00:00
 
 specification {
   postcondition highest_is_not_pending {

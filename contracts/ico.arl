@@ -1,36 +1,36 @@
 archetype[%erc20%] ico
 
-constant symbol string = "BCDT"
+constant symbol : string = "BCDT"
 
-constant decimals int  = 18
+constant decimals : int  = 18
 
 (* contribution thresholds *)
-variable[%mutable owner (state = Init)%] min_contribution tez = 1tz
-variable[%mutable owner (state = Init)%] max_contribution_silver tez = 10tz
+variable[%mutable owner (state = Init)%] min_contribution : tez = 1tz
+variable[%mutable owner (state = Init)%] max_contribution_silver : tez = 10tz
 
 (* bcd token data *)
-variable[%mutable owner (state = Init)%] max_bcd_to_sell int = 100000000
-variable[%mutable owner (state = Init)%] exchange_rate_bcd_tez int = 13000
+variable[%mutable owner (state = Init)%] max_bcd_to_sell : int = 100000000
+variable[%mutable owner (state = Init)%] exchange_rate_bcd_tez : int = 13000
 
 (* round caps *)
-variable[%mutable owner (state = Init)%] soft_cap tez = 1800tz
-variable[%mutable owner (state = Init)%] presales_cap tez = 1800tz
-variable[%mutable owner (state = Init)%] round1_cap tez = 3600tz
+variable[%mutable owner (state = Init)%] soft_cap : tez = 1800tz
+variable[%mutable owner (state = Init)%] presales_cap : tez = 1800tz
+variable[%mutable owner (state = Init)%] round1_cap : tez = 3600tz
 (* presales_cap + 1600 *)
 
 (* Number tokens sent, eth raised, ... *)
-variable nb_bcd_sold int = 0
-variable nb_tez_raised int = 0
+variable nb_bcd_sold : int = 0
+variable nb_tez_raised : int = 0
 
 (* Roles *)
 
-variable[%transferable%] owner role
+variable[%transferable%] owner : role
 
-variable whitelister role
+variable whitelister : role
 
-variable reserve role
+variable reserve : role
 
-variable community role
+variable community : role
 
 (* contributor *)
 

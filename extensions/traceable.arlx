@@ -1,6 +1,6 @@
 archetype extension traceable (
 
-  variable[%traceable%] anamount tez /*from fromP to toP*/
+  variable[%traceable%] anamount : tez /*from fromP to toP*/
 
 ) {
 

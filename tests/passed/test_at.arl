@@ -1,6 +1,6 @@
 archetype test_at
 
-variable v int = 1
+variable v : int = 1
 
 action anaction {
   specification {

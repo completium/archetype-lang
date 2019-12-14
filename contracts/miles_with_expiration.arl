@@ -1,6 +1,6 @@
 archetype miles_with_expiration
 
-variable[%transferable%] admin role = @tz1aazS5ms5cbGkb6FN1wvWmN7yrMTTcr6wB
+variable[%transferable%] admin : role = @tz1aazS5ms5cbGkb6FN1wvWmN7yrMTTcr6wB
 
 (* id is a string because it is generated off-chain *)
 asset mile identified by id sorted by expiration {

@@ -19,7 +19,7 @@ asset card identified by card_id {
   c1: card_id >= 0;
 }
 
-variable next_id int = 0
+variable next_id : int = 0
 with {
   n1: next_id >= 0;
   n2: forall c in card, next_id <> c.card_id

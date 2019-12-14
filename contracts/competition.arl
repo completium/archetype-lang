@@ -1,16 +1,16 @@
 archetype competition
 
-variable[%transferable%] organizer role = @tz1organizer
+variable[%transferable%] organizer : role = @tz1organizer
 
 (* start date *)
-variable[%mutable organiser (instate (Created))%] startdate date = 2019-11-12T00:00:00
+variable[%mutable organiser (instate (Created))%] startdate : date = 2019-11-12T00:00:00
 
 (* deadline *)
-variable[%mutable organiser (instate (Created))%] deadline date = 2020-11-12T00:00:00
+variable[%mutable organiser (instate (Created))%] deadline : date = 2020-11-12T00:00:00
 
-variable[%traceable%] prize tez = 3500tz
+variable[%traceable%] prize : tez = 3500tz
 
-variable oracle role = @tz1oracle
+variable oracle : role = @tz1oracle
 
 asset submission {
   competitor : role;

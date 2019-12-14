@@ -265,7 +265,7 @@ archetype:
 | WITH xs=braced(label_exprs) { xs }
 
 vc_decl(X):
-| X exts=extensions? x=ident t=type_t dv=default_value? invs=invariants
+| X exts=extensions? x=ident COLON t=type_t dv=default_value? invs=invariants
     { (x, t, None, dv, invs, exts) }
 
 constant:

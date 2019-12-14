@@ -1,6 +1,6 @@
 archetype test_action
 
-constant admin role = @tz1fakeadress
+constant admin : role = @tz1fakeadress
 
 action myaction {
   specification {

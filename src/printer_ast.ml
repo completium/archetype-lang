@@ -695,7 +695,7 @@ let pp_security fmt (s : security) =
       (pp_no_empty_list pp_security_item) s.items
 
 let pp_variable fmt (v : lident variable) =
-  Format.fprintf fmt "%s %a %a%a%a%a@\n"
+  Format.fprintf fmt "%s %a : %a%a%a%a@\n"
     (if v.constant then "constant" else "variable")
     pp_id v.decl.name
     pp_ptyp (Option.get v.decl.typ)

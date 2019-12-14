@@ -1,8 +1,8 @@
 archetype erc20
 
-constant name string = "mytoken"
+constant name : string = "mytoken"
 
-constant total int = 1000
+constant total : int = 1000
 with {
   i0: total > 0
 }

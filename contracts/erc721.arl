@@ -1,10 +1,10 @@
 archetype erc721
 
-constant name string
+constant name : string
 
-constant total int
+constant total : int
 
-constant symbol string
+constant symbol : string
 
 asset token {
   owner[%delegable%] : role;

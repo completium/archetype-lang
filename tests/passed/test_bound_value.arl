@@ -1,6 +1,6 @@
 archetype test_bound_value
 
-variable x int = 1
+variable x : int = 1
 
 specification {
   postcondition s1 {
