@@ -760,7 +760,7 @@ let pp_specification_item fmt = function
       (pp_option (fun fmt x -> Format.fprintf fmt " = %a" (pp_expr e_equal PRight) x)) dv
 
   | Veffect e ->
-    Format.fprintf fmt "effect {@\n  @[%a@]@\n}"
+    Format.fprintf fmt "shadow effect {@\n  @[%a@]@\n}"
       (pp_expr e_default PNone) e
 
   | Vassert (id, f, is, u) -> pp_assert fmt (id, f, is, u)

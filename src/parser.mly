@@ -349,7 +349,7 @@ function_decl:
 | VARIABLE id=ident COLON t=type_t dv=default_value? { Vvariable (id, t, dv) }
 
 %inline spec_effect:
-| EFFECT e=braced(expr) { Veffect e }
+| SHADOW EFFECT e=braced(expr) { Veffect e }
 
 %inline invars:
 | INVARIANT FOR id=ident xs=braced(expr) { (id, split_seq xs) }

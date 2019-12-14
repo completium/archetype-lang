@@ -36,7 +36,7 @@ action transfer_single (card_to_transfer : pkey of card) (destination : address)
 
 action sell_single (card_to_sell : pkey of card) {
   specification {
-    effect {
+    shadow effect {
       var c = card.get(card_to_sell);
       card_pattern.update(c.card_pattern_card, {sellcount += 1})
     }

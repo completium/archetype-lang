@@ -7,7 +7,7 @@ archetype extension onlyonce (
   action tr {
     specification {
       variable call_count : int = 0
-      effect {
+      shadow effect {
         label step;
         call_count += 1
       }

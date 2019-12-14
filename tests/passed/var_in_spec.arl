@@ -5,7 +5,7 @@ action myaction {
 
     variable myvar : int = 0
 
-    effect {
+    shadow effect {
       myvar := 3
     }
   }

@@ -10,7 +10,7 @@ asset myasset {
 
 action main (k : pkey of myasset) {
   specification {
-    effect {
+    shadow effect {
       myasset.update(k, {s += 1});
       m.s += 1
     }
