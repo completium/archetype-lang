@@ -12,6 +12,7 @@
   (c3n.arl as contracts/c3n.arl)
   (c3n_without_loop.arl as contracts/c3n_without_loop.arl)
   (clause_io_acceptance_of_delivery.arl as contracts/clause_io_acceptance_of_delivery.arl)
+  (coase.arl as contracts/coase.arl)
   (competition.arl as contracts/competition.arl)
   (empty.arl as contracts/empty.arl)
   (erc20.arl as contracts/erc20.arl)
