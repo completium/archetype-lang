@@ -1,22 +1,22 @@
 archetype clause_io_acceptance_of_delivery
 
-variable shipper : role
+variable shipper : role = @tz1_shipper
 
-variable receiver : role
+variable receiver : role = @tz1_receiver
 
-variable payment : tez
+variable payment : tez = 10tz
 
-variable deliveryDate : date
+variable deliveryDate : date = 2020-12-31
 
-variable businessDays : int
+variable businessDays : duration = 14d
 
 (* extra blockchain incentives *)
 variable incentiveR : tez = payment
 
 variable incentiveS : tez = 0.2 * payment
 
-%traceable (payment + incentiveR, receiver)
-%traceable (incentiveS, shipper)
+(* %traceable (payment + incentiveR, receiver) *)
+(* %traceable (incentiveS, shipper) *)
 
 states =
  | Created initial
@@ -69,12 +69,12 @@ transition success from Delivered {
   called by shipper
 
   to Success
-  when { now > (deliverydate + businessDays) }
+  when { now > (deliveryDate + businessDays) }
 }
 
 transition fail from Delivered {
   called by receiver
 
   to Fail
-  when { now <= deliverydate + businessDays }
+  when { now <= deliveryDate + businessDays }
 }
