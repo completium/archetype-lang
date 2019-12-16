@@ -1,6 +1,6 @@
 archetype guarantee_fund
 
-variable admin : role
+variable admin : role = @tz1_admin
 
 asset insured_contract identified by addr {
   addr : address;
@@ -10,14 +10,15 @@ asset insured_contract identified by addr {
 action credit {
   called by admin
   require {
-    c1 : transferred > 0;
+    c1 : transferred > 0tz;
   }
 }
 
 action add_contract (contract_ : insured_contract) {
   called by admin
   effect {
-    insured_contract.addifnotexist(contract_)
+    if (not insured_contract.contains(contract_.addr)) then
+    insured_contract.add(contract_)
   }
 }
 
