@@ -1,0 +1,11 @@
+archetype bad_at_unknown_label
+
+asset myasset {
+  id : string;
+}
+
+action anaction (k : string) {
+  effect {
+    myasset.get(k).id := "mykey"
+  }
+}
