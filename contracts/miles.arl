@@ -1,6 +1,6 @@
 archetype miles
 
-variable[%transferable%] validator : role = @fake_role
+variable[%transferable%] validator : role = @fake_validator
 
 asset account identified by owner {
   owner  : role;
