@@ -17,12 +17,16 @@ asset vehicledetail {
   idv : string
 }
 
-asset order {
-   status       : order_sate;
-   manufacturer : manufacturer;
-   orderer      : owner;
-   details      : vehicledetail
+asset manufacturer {
+  mid : string;
 }
+
+asset order {
+  oid           : string;
+  amanufacturer : pkey of manufacturer;
+  orderer       : pkey of owner;
+  details       : pkey of vehicledetail;
+} with states order_state
 
 enum vehicle_state =
   | Off_the_road               initial
@@ -31,8 +35,8 @@ enum vehicle_state =
 
 asset vehicle identified by vin {
    vin          : string;
-   owner        : owner;
-   detail       : vehicledetail;
+   aowner       : pkey of owner;
+   detail       : pkey of vehicledetail;
    color        : string
 } with states vehicle_state
 
