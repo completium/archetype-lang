@@ -22,13 +22,13 @@ asset paymentFrequency {
 
 asset bond {
   bid              : string;
-  couponType       : pkey of couponType;
+  couponType       : couponType;
   paymentFrequency : pkey of paymentFrequency;
   issuer           : pkey of issuer;
 }
 
 action publish (bond : bond) {
-  called by issuer.get(bond.issuer)
+  called by bond.issuer
   effect {
     bond.add(bond)
   }
