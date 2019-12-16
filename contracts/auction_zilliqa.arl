@@ -62,8 +62,8 @@ action place_bid {
         (* update highest *)
         highest_bid := transferred;
         highest_bidder := caller)
-      else fail (* no need to add bidder since there will
-                           be nothing to withdraw *)
+      else fail ("no update") (* no need to add bidder since there will
+                                 be nothing to withdraw *)
   }
 }
 
