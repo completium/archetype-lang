@@ -14,7 +14,8 @@ enum order_state =
   | Delivered
 
 asset vehicledetail {
-  idv : string
+  idv : string;
+  dcolor : string;
 }
 
 asset manufacturer {
@@ -37,6 +38,7 @@ asset vehicle identified by vin {
    vin          : string;
    aowner       : pkey of owner;
    detail       : pkey of vehicledetail;
+   color        : string;
 } with states vehicle_state
 
 action placeOrder (neworder : order) {
@@ -51,37 +53,37 @@ transition assign_vin (avin : string) (adetail : pkey of vehicledetail) on (ok :
 
   to Vin_assigned
   with effect {
-     vehicle.add ({ vin = avin; aowner = order.get(ok).orderer; detail = adetail })
+     vehicle.add ({ vin = avin; aowner = order.get(ok).orderer; detail = adetail; color = vehicledetail.get(adetail).dcolor })
   }
 }
 
 transition assign_owner on (ok : pkey of order) from any {
   to Owner_assigned
   with effect {
-    (* set vehicule state *)
-    vehicle.get(order.get(ok)).state := Active;
-    (* set vehicule owner *)
-    order.get(ok).vehicle.owner := order.orderer
+    (* set vehicle state *)
+    vehicle.get(order.get(ok)).set_state(Active);
+    (* set vehicle owner *)
+    vehicle.get().aowner := order.get(ok).orderer
   }
 }
 
-action vehiculeTransfer (buyer : owner) (vehicule : vehicule) {
-  called by [%delegable%] vehicule.owner
+action vehicleTransfer (buyer : pkey of owner) (vk : pkey of vehicle) {
+  called by [%delegable%] vehicle.get(vk).aowner
   effect {
-    vehicule.owner := buyer
+    vehicle.get(vk).aowner := buyer
   }
 }
 
-transition scrapVehicle on (vk : vehicule) from (Off_the_road or Active) {
-  called by vehicle.owner
+transition scrapVehicle on (vk : pkey of vehicle) from (Off_the_road or Active) {
+  called by vehicle.get(vk).aowner
 
   to Scrapped
 }
 
-action scrapVehiclebyColor (color : string) {
+action scrapVehiclebyColor (acolor : string) {
   effect {
-    for v in vehicule.select(vehicule.color = color) do
-      v.state := Scrapped
+    for v in vehicle.select(color = acolor) do
+      v.set_state(Scrapped)
     done
   }
 }
