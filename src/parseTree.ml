@@ -176,8 +176,6 @@ and invariants = (lident * expr list) list
 and specification_item_unloc =
   | Vpredicate of lident * args * expr
   | Vdefinition of lident * type_t * lident * expr
-  | Vlemma of lident * expr
-  | Vtheorem of lident * expr
   | Vvariable of lident * type_t * expr option
   | Veffect of expr
   | Vassert of (lident * expr * invariants * lident list)

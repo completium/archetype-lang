@@ -2459,14 +2459,6 @@ let for_specification_item
           (env, (arg, f)))
     in ((env, poenv), `Definition (x, arg, f))
 
-  | PT.Vlemma (x, f) ->
-    let f = for_formula env f in
-    ((env, poenv), `Lemma (x, f))
-
-  | PT.Vtheorem (x, f) ->
-    let f = for_formula env f in
-    ((env, poenv), `Theorem (x, f))
-
   | PT.Vvariable (x, ty, e) ->
     let ty = for_type env ty in
     let e  = Option.map (for_expr env ?ety:ty) e in

@@ -746,16 +746,6 @@ let pp_specification_item fmt = function
       pp_type typ
       (pp_expr e_default PNone) body
 
-  | Vlemma (id, body) ->
-    Format.fprintf fmt "lemma %a {@\n  @[%a@]@\n}"
-      pp_id id
-      (pp_expr e_default PNone) body
-
-  | Vtheorem (id, body) ->
-    Format.fprintf fmt "theorem %a {@\n  @[%a@]@\n}"
-      pp_id id
-      (pp_expr e_default PNone) body
-
   | Vvariable (id, typ, dv) ->
     Format.fprintf fmt "variable %a : %a%a"
       pp_id id
