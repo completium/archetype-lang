@@ -1,0 +1,7 @@
+archetype fail_instruction
+
+action main {
+  effect {
+    fail ("message")
+  }
+}

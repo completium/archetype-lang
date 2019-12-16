@@ -9,6 +9,8 @@
   (autocallable.arl as contracts/autocallable.arl)
   (bond.arl as contracts/bond.arl)
   (certificate_generator.arl as contracts/certificate_generator.arl)
+  (c3n.arl as contracts/c3n.arl)
+  (c3n_without_loop.arl as contracts/c3n_without_loop.arl)
   (clause_io_acceptance_of_delivery.arl as contracts/clause_io_acceptance_of_delivery.arl)
   (competition.arl as contracts/competition.arl)
   (empty.arl as contracts/empty.arl)

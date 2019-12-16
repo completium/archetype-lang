@@ -1,4 +1,4 @@
-archetype c3n
+archetype c3n_without_loop
 
 asset admins {
   addr : address;
