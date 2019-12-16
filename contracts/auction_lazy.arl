@@ -34,3 +34,11 @@ specification {
     forall b in bid, balance > b.val
   }
 }
+
+(*
+specification {
+  contract invariant s1 {
+    forall b in bid, balance > b.val
+  }
+}
+*)
