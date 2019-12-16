@@ -96,7 +96,7 @@ function compute_expected (d : date) : tez {
       forall f in fixing,
         (* retrieving the first element of etrigger *)
         let some efirst = etrigger.nth(0) in
-          if i.iobservation = f.fobservation and i.iobservation <= efirst.obs
+          if i.iobservation = f.fobservation and i.iobservation <= efirst.eobservation
           then (* barrier condition *)
                     f.bac >= bac_strike
                 and f.sg  >= sg_strike
@@ -135,9 +135,9 @@ function compute_expected (d : date) : tez {
             if    v.bac >= lbarrier.barrier * bac_initial
               and v.sg  >= lbarrier.barrier * sg_initial
               and v.ubs >= lbarrier.barrier * ubs_initial
-            then i.rate * nominal
+            then lbarrier.rate * nominal
             else 0tz
-          otherwise 0
+          otherwise 0tz
         in
          compute_expected(d) = expected + interests
     }
