@@ -1,0 +1,12 @@
+archetype no_contract_invariant_in_fun_spec
+
+action main {
+  specification {
+    contract invariant i1 {
+      true
+    }
+  }
+  effect {
+    require(true)
+  }
+}

@@ -1,4 +1,4 @@
-archetype bad_at_unknown_label
+archetype no_update_asset_key
 
 asset myasset {
   id : string;

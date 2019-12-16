@@ -1,0 +1,13 @@
+archetype no_postcondition_in_global_spec
+
+action main {
+  effect {
+    require(true)
+  }
+}
+
+specification {
+  postcondition p1 {
+    true
+  }
+}
