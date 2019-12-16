@@ -47,7 +47,8 @@ action updatestatus (fi : string) (arrival : date) {
         | Created ->
            if arrival > i.limit
            then i.stat := After
-        | _ -> ()
+        (* | _ -> () *)
+        | _ -> require(true) (* FIXME: delete this line*)
         end
       done
     }
