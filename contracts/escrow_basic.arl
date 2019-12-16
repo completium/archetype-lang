@@ -47,6 +47,6 @@ transition[%onlyonce%] cancel from Confirmed {
   }
 }
 
-security {
+(* security {
   s1 : only_by_role (transfers, oracle)
-}
+} *)

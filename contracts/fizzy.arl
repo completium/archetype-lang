@@ -24,13 +24,13 @@ asset[@add creator (none)] flight identified by id {
   insurances : insurance partition;
 }
 
-action addflightinsurance (fi : string) (* flight id *)
-                               (i : insurance) {
+action addflightinsurance (fi : string) (i : insurance) {
     called by creator
 
     effect {
-      flight.addifnotexist({ id = fi });
-      let f = flight.get(id) in
+      if (not flight.contains (fi)) then
+      flight.add({ id = fi; insurances = [] });
+      let f = flight.get(fi) in
       f.insurances.add(i)
     }
 }
@@ -41,13 +41,13 @@ action updatestatus (fi : string) (arrival : date) {
     called by creator
 
     effect {
-      let f = flight.get(id) in
+      let f = flight.get(fi) in
       for i in f.insurances do
-        match i.status with
+        match i.stat with
         | Created ->
            if arrival > i.limit
-           then i.status := After
-        | _ -> none
+           then i.stat := After
+        | _ -> ()
         end
       done
     }
