@@ -1,0 +1,18 @@
+archetype assign_field
+
+variable i : int = 0
+
+variable j : int = 0
+
+asset myasset identified by id {
+  id : int;
+  cpt : int;
+  str : string;
+}
+
+action main {
+  effect {
+    i := 1;
+    myasset.get(1).cpt := 1
+  }
+}

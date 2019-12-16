@@ -1,18 +1,20 @@
 archetype assign
 
-variable i : int = 0
-
-variable j : int = 0
-
-asset myasset identified by id {
-  id : int;
-  cpt : int;
-  str : string;
-}
+variable var_int : int = 0
+variable var_rat : rational = 0.0
+variable var_tez : tez = 0tz
+variable var_dat : date = 2020-12-31
+variable var_dur : duration = 0s
+variable var_str : string = ""
 
 action main {
   effect {
-    i := 1;
-    myasset.get(1).cpt := 1
+    var_int += 1;
+    var_rat += 1.0;
+    var_rat += 1;
+    var_tez += 1tz;
+    var_dur += 1d;
+    var_dat += var_dur;
+    var_str += "_postfix"
   }
 }
