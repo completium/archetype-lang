@@ -19,7 +19,7 @@
       require         = None;
       failif          = None;
       functions       = [];
-      spec            = None;
+      spec_fun        = None;
     }
 
   let rec split_seq e =
@@ -542,7 +542,7 @@ action_properties:
   sp=specification_fun? at=accept_transfer cb=calledby? cs=require? fi=failif? fs=function_item*
   {
     {
-      spec            = sp;
+      spec_fun        = sp;
       accept_transfer = at;
       calledby        = cb;
       require         = cs;

@@ -840,7 +840,7 @@ let pp_action_properties fmt (props : action_properties) =
     fun v ->
       let items, exts = v |> unloc in
       pp_spec fmt (items, exts)
-  ) props.spec;
+  ) props.spec_fun;
   if (props.accept_transfer)
   then Format.fprintf fmt "accept transfer@\n";
   map_option (fun (e, exts) ->
@@ -872,7 +872,7 @@ let pp_transition fmt (to_, conditions, effect) =
 
 let rec pp_declaration fmt { pldesc = e; _ } =
   let is_empty_action_properties_opt (ap : action_properties) (a : 'a option) =
-    match ap.calledby, ap.require, ap.functions, ap.spec, a with
+    match ap.calledby, ap.require, ap.functions, ap.spec_fun, a with
     | None, None, [], None, None -> true
     | _ -> false in
   match e with

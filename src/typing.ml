@@ -2713,7 +2713,7 @@ let for_action_properties (env, poenv : env * env) (act : PT.action_properties) 
   let env, req  = Option.foldmap for_lbls_bexpr env (Option.fst act.require) in
   let env, fai  = Option.foldmap for_lbls_bexpr env (Option.fst act.failif) in
   let env, spec = Option.foldmap
-                    (fun env x -> for_specification (env, poenv) x) env act.spec in
+                    (fun env x -> for_specification (env, poenv) x) env act.spec_fun in
   let env, funs = List.fold_left_map for_function env act.functions in
 
   (env, (calledby, req, fai, spec, funs))

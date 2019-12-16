@@ -151,7 +151,7 @@ let pp_archetype fmt pt =
               (pp_list "@\n" pp_formula) l
         in
         let formulas : (ident * expr) list =
-          action_properties.spec
+          action_properties.spec_fun
           |> Option.get_as_list
           |> List.map unloc
           |> List.map fst

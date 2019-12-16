@@ -218,7 +218,7 @@ and action_properties = {
   calledby        : (expr * exts) option;
   require         : (label_exprs * exts) option;
   failif          : (label_exprs * exts) option;
-  spec            : specification option;
+  spec_fun        : specification option;
   functions       : (s_function loced) list;
 }
 
