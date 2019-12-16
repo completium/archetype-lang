@@ -83,7 +83,7 @@ action certify(certified : certification collection) {
   effect {
     for c in certified do
        if (institution_learners.get(c.ciid).illearners.contains(c.ccer)) then
-        failif (true); /* TODO : replace by fail */
+        fail ("learner is not in institution");
 
        certification.add(c);
 
