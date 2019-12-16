@@ -1717,7 +1717,7 @@ let rec for_xexpr (mode : emode_t) (env : env) ?(ety : M.ptyp option) (tope : PT
             mk_sp (Some M.vtbool) (M.Pquantifer (qt, x, (ast, xty), body))
       end
 
-    | Enil
+    | Enothing
     | Eapp      _
     | Eassert   _
     | Elabel    _

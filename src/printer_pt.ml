@@ -535,7 +535,7 @@ let rec pp_expr outer pos fmt a =
     in
     (maybe_paren outer e_colon pos pp) fmt i
 
-  | Enil -> Format.fprintf fmt "()"
+  | Enothing -> Format.fprintf fmt "()"
 
   | Einvalid -> Format.fprintf fmt "(* invalid expr *)"
 
