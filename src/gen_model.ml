@@ -536,6 +536,7 @@ let to_model (ast : A.model) : M.model =
     | A.Iassert e               -> M.Massert (f e)
     | A.Ireturn e               -> M.Mreturn (f e)
     | A.Ilabel i                -> M.Mlabel i
+    | A.Ifail m                 -> M.Mfail (Invalid (f m))
     | A.Icall (i, Cid id, args) -> M.Mapp (id, Option.map_dfl (fun v -> [to_mterm v]) [] i @ List.map (term_arg_to_expr f) args)
 
     | A.Icall (_, A.Cconst (A.Cfail), [AExpr p]) ->

@@ -536,6 +536,13 @@ let rec pp_instruction fmt (i : instruction) =
           pp_id id
       in
       (pp_with_paren pp) fmt id
+
+    | Ifail pt ->
+      let pp fmt pt =
+        Format.fprintf fmt "fail (%a)"
+          pp_pterm pt
+      in
+      (pp_with_paren pp) fmt pt
   in
   pp_instruction_poly pp_node fmt i
 

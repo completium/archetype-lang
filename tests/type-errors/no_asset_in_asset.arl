@@ -1,0 +1,16 @@
+archetype no_asset_in_asset
+
+asset asset1 {
+  aid: string;
+}
+
+asset asset2 {
+  bid: string;
+  a : asset1; (* pkey of asset1 instead *)
+}
+
+action anaction {
+  effect {
+    require (true)
+  }
+}

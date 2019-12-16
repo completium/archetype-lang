@@ -332,6 +332,7 @@ and 'id instruction_node =
   | Icall of ('id term_gen option * 'id call_kind * ('id term_arg) list)
   | Ireturn of 'id term_gen
   | Ilabel of 'id
+  | Ifail of 'id term_gen
 [@@deriving show {with_path = false}]
 
 and 'id instruction_gen = 'id instruction_poly
@@ -694,6 +695,7 @@ let map_instr_node f = function
   | Icall (x, id, args) -> Icall (x, id, args)
   | Ireturn x           -> Ireturn x
   | Ilabel x            -> Ilabel x
+  | Ifail m             -> Ifail m
 
 let map_gen_poly g f (i : 'id struct_poly) : 'id struct_poly =
   {
@@ -756,6 +758,7 @@ let fold_instr f accu instr =
   | Icall _            -> accu
   | Ireturn _          -> accu
   | Ilabel _           -> accu
+  | Ifail _            -> accu
 
 let fold_instr_expr fi fe accu instr =
   match instr.node with
@@ -774,6 +777,7 @@ let fold_instr_expr fi fe accu instr =
   | Icall (x, _, args)  -> let accu = Option.map_dfl (fe accu) accu x in List.fold_left (fold_term_arg fe) accu args
   | Ireturn x           -> fe accu x
   | Ilabel x            -> fi accu x
+  | Ifail m             -> fe accu m
 
 let fold_map_term g f (accu : 'a) (term : 'id term_gen) : 'term * 'a =
   match term.node with
@@ -987,6 +991,9 @@ let fold_map_instr_term gi _ge fi fe (accu : 'a) instr : 'id instruction_gen * '
   | Ilabel x ->
     gi (Ilabel x), accu
 
+  | Ifail m ->
+    let me, ma = fe accu m in
+    gi (Ilabel me), ma
 (* -------------------------------------------------------------------- *)
 
 module Utils : sig

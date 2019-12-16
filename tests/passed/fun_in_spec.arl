@@ -1,0 +1,19 @@
+archetype fun_in_spec
+
+function f (i : int) : int {
+  specification {
+    postcondition c1 {
+      forall n : int, f(n) = n
+    }
+  }
+  effect {
+    return i
+  }
+}
+
+action main {
+  effect {
+    let res : int = f(0) in
+    ()
+  }
+}

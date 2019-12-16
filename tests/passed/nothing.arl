@@ -1,6 +1,6 @@
 archetype nothing
 
-action main (r : role) {
+action main {
   effect {
     ()
   }
