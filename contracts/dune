@@ -20,7 +20,6 @@
   (escrow.arl as contracts/escrow.arl)
   (escrow_basic.arl as contracts/escrow_basic.arl)
   (escrow_simple.arl as contracts/escrow_simple.arl)
-  (escrow_with_object.arl as contracts/escrow_with_object.arl)
   (fizzy.arl as contracts/fizzy.arl)
   (governance.arl as contracts/governance.arl)
   (guarantee_fund.arl as contracts/guarantee_fund.arl)
