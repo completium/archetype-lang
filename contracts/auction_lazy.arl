@@ -30,15 +30,7 @@ action reclaim (witness : address) {
 }
 
 specification {
-  postcondition s1 {
-    forall b in bid, balance > b.val
-  }
-}
-
-(*
-specification {
   contract invariant s1 {
     forall b in bid, balance > b.val
   }
 }
-*)

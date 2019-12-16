@@ -361,6 +361,10 @@ function_decl:
 | POSTCONDITION id=ident sp=braced(spec_body)
     { let e, xs, u = sp in Vpostcondition (id, e, xs, u) }
 
+%inline spec_contract_invariant:
+| CONTRACT INVARIANT id=ident sp=braced(spec_body)
+    { let e, xs, u = sp in Vcontractinvariant (id, e, xs, u) }
+
 spec_items:
 | ds=loc(spec_definition)*
   ps=loc(spec_predicate)*
@@ -368,7 +372,8 @@ spec_items:
   es=loc(spec_effect)*
   bs=loc(spec_assert)*
   ss=loc(spec_postcondition)*
-   { ds @ ps @ vs @ es @ bs @ ss }
+  cs=loc(spec_contract_invariant)*
+   { ds @ ps @ vs @ es @ bs @ ss @ cs }
 
 %inline specification:
 | SPECIFICATION exts=option(extensions) LBRACE

@@ -267,6 +267,7 @@ let string_of_symbol = function
   | X (N N_list_loc_spec_predicate__ ) -> "a list of specification predicate item"
   | X (N N_list_loc_spec_effect__) -> "a list of specification effect item"
   | X (N N_list_loc_spec_definition__) -> "a list of specification definition item"
+  | X (N N_list_loc_spec_contract_invariant__) -> "a list of specification contract invariant item"
   | X (N N_list_loc_spec_assert__) -> "a list of specification assert item"
   | X (N N_transition_to_item) -> "a transition to item"
   | X (N N_transition) -> "a transition"

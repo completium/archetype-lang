@@ -180,6 +180,7 @@ and specification_item_unloc =
   | Veffect of expr
   | Vassert of (lident * expr * invariants * lident list)
   | Vpostcondition of (lident * expr * invariants * lident list)
+  | Vcontractinvariant of (lident * expr * invariants * lident list)
 
 and specification_item = specification_item_unloc loced
 

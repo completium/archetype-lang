@@ -2492,7 +2492,8 @@ let for_specification_item
     let _, ((poenv, _) as i) = for_effect poenv i in
     ((env, poenv), `Effect i)
 
-  | PT.Vpostcondition (x, f, invs, uses) ->
+  | PT.Vpostcondition (x, f, invs, uses)
+  | PT.Vcontractinvariant (x, f, invs, uses) ->
     let for_inv (lbl, linvs) =
       let env0 =
         match Env.Label.lookup env (unloc lbl) with
