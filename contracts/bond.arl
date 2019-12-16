@@ -16,18 +16,19 @@ asset issuer identified by id {
 }
 
 asset paymentFrequency {
-  periodMultiplier : unit;
+  periodMultiplier : int;
   period           : period;
 }
 
 asset bond {
-  couponType       : couponType;
-  paymentFrequency : paymentFrequency;
-  issuer           : issuer;
+  bid              : string;
+  couponType       : pkey of couponType;
+  paymentFrequency : pkey of paymentFrequency;
+  issuer           : pkey of issuer;
 }
 
 action publish (bond : bond) {
-  called by bond.issuer  (* see acl file *)
+  called by issuer.get(bond.issuer)
   effect {
     bond.add(bond)
   }
