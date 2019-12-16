@@ -20,6 +20,10 @@ asset importer identified by iid {
   iid : role;
 }
 
+asset shipper identified by sid {
+  sid : role;
+}
+
 asset p_contract {
   id              : string;
   grower          : pkey of grower;
@@ -35,6 +39,6 @@ asset shipment {
   p_c      : p_contract
 } with states shipmentStatus
 
-transition payOut (arrival : date) on (sk : shipment) from In_transit {
+transition payOut (arrival : date) on (sk : pkey of shipment) from In_transit {
   to Arrived
 }
