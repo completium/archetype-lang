@@ -1,0 +1,12 @@
+archetype fun
+
+function f (i : int) : int {
+  return i
+}
+
+action main {
+  effect {
+    let res : int = f(0) in
+    ()
+  }
+}
