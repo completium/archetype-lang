@@ -37,7 +37,6 @@ asset vehicle identified by vin {
    vin          : string;
    aowner       : pkey of owner;
    detail       : pkey of vehicledetail;
-   color        : string
 } with states vehicle_state
 
 action placeOrder (neworder : order) {
@@ -47,22 +46,22 @@ action placeOrder (neworder : order) {
   }
 }
 
-transition assign_vin (vin : string) (detail : vehicledetail) on (ok : order) from Placed {
-  called by order.orderer
+transition assign_vin (avin : string) (adetail : pkey of vehicledetail) on (ok : pkey of order) from Placed {
+  called by order.get(ok).orderer
 
   to Vin_assigned
   with effect {
-     vehicule.add ({ vin = vin; detail = detail })
+     vehicle.add ({ vin = avin; aowner = order.get(ok).orderer; detail = adetail })
   }
 }
 
-transition assign_owner on (ok : order) from any {
+transition assign_owner on (ok : pkey of order) from any {
   to Owner_assigned
   with effect {
     (* set vehicule state *)
-    order.get(ok).vehicule.state := Active;
+    vehicle.get(order.get(ok)).state := Active;
     (* set vehicule owner *)
-    order.get(ok).vehicule.owner := order.orderer
+    order.get(ok).vehicle.owner := order.orderer
   }
 }
 
