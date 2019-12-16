@@ -24,14 +24,6 @@ action myaction {
       forall x in col1, forall y in col2, x.id1 = y.id2
     }
 
-    lemma myaxiom {
-      forall x in col1, forall y in col2, x.id1 = y.id2
-    }
-
-    theorem mytheorem {
-      forall x in col1, forall y in col2, x.id1 = y.id2
-    }
-
     variable myvar : int = 0
 
     shadow effect {

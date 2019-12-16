@@ -86,7 +86,6 @@
 %token LBRACE
 %token LBRACKET
 %token LBRACKETPERCENT
-%token LEMMA
 %token LESS
 %token LESSEQUAL
 %token LET
@@ -131,7 +130,6 @@
 %token SPECIFICATION
 %token STATES
 %token THEN
-%token THEOREM
 %token TO
 %token TRANSFER
 %token TRANSITION
@@ -339,12 +337,6 @@ function_decl:
 %inline spec_definition:
 | DEFINITION id=ident LBRACE a=ident COLON t=type_t PIPE e=expr RBRACE { Vdefinition (id, t, a, e) }
 
-%inline spec_lemma:
-| LEMMA id=ident x=braced(expr) { Vlemma (id, x) }
-
-%inline spec_theorem:
-| THEOREM id=ident x=braced(expr) { Vtheorem (id, x) }
-
 %inline spec_variable:
 | VARIABLE id=ident COLON t=type_t dv=default_value? { Vvariable (id, t, dv) }
 
@@ -372,13 +364,11 @@ function_decl:
 spec_items:
 | ds=loc(spec_definition)*
   ps=loc(spec_predicate)*
-  xs=loc(spec_lemma)*
-  ts=loc(spec_theorem)*
   vs=loc(spec_variable)*
   es=loc(spec_effect)*
   bs=loc(spec_assert)*
   ss=loc(spec_postcondition)*
-   { ds @ ps @ xs @ ts @ vs @ es @ bs @ ss }
+   { ds @ ps @ vs @ es @ bs @ ss }
 
 %inline specification:
 | SPECIFICATION exts=option(extensions) LBRACE

@@ -56,7 +56,6 @@
       "iter"                , ITER           ;
       "pkey"                , PKEY           ;
       "label"               , LABEL          ;
-      "lemma"               , LEMMA          ;
       "let"                 , LET            ;
       "match"               , MATCH          ;
       "namespace"           , NAMESPACE      ;
@@ -81,7 +80,6 @@
       "specification"       , SPECIFICATION  ;
       "states"              , STATES         ;
       "then"                , THEN           ;
-      "theorem"             , THEOREM        ;
       "to"                  , TO             ;
       "transfer"            , TRANSFER       ;
       "transition"          , TRANSITION     ;
