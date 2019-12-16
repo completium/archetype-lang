@@ -42,12 +42,10 @@ asset[@add @remove @update owner (state = Init)]
      contributor identified by id {
    id           : address;
    list         : whitelist;
-   contrib      : int = 0;
-} with {
-  i1 : contrib >= 0;
+   contrib      : tez = 0tz;
 }
 
-states[%incr_mutable_st owner%] =
+enum gstate =
 | Init initial     (* ICO isn't started yet, initial state *)
 | PresaleRunning   (* Presale has started *)
 | PresaleFinished  (* Presale has ended   *)
@@ -56,18 +54,20 @@ states[%incr_mutable_st owner%] =
 | Round2Running    (* Round 2 has started *)
 | Round2Finished   (* Round 2 has ended   *)
 
+variable vstate : gstate = Init
+
 function is_running : bool {
   return
-    match state with
+    match vstate with
     | PresaleRunning | Round1Running | Round2Running -> true
     | _ -> false
     end
 }
 
 function get_rate : rational {
-  let coeff =
-    match state with
-    | PresalesRunning -> 1.2
+  let coeff : rational =
+    match vstate with
+    | PresaleRunning  -> 1.2
     | Round1Running   -> 1.1
     | _               -> 1
     end
@@ -77,7 +77,7 @@ function get_rate : rational {
 
 function get_remaining_tez_to_raise : tez {
   return
-    match state with
+    match vstate with
     | PresaleRunning | PresaleFinished -> presales_cap - nb_tez_raised
     | Round1Running   | Round1Finished   -> round1_cap - nb_tez_raised
     | _ -> (
@@ -86,13 +86,14 @@ function get_remaining_tez_to_raise : tez {
     end
 }
 
-function transition_to_finished {
-  match state with
-  | PresaleRunning  -> PresaleFinished
-  | Round1Running   -> Round1Finished
-  | Round1Finished  -> Round2Running
-  | _               -> Round2Finished
-  end
+function transition_to_finished : gstate {
+  return
+    match vstate with
+    | PresaleRunning  -> PresaleFinished
+    | Round1Running   -> Round1Finished
+    | Round1Finished  -> Round2Running
+    | _               -> Round2Finished
+    end
 }
 
 action contribute {
@@ -112,34 +113,35 @@ action contribute {
      c2 : is_running ();
      c3 : transferred >= min_contribution;
      c4 : (let c = contributor.get(caller) in
-           not (c.list = Silver and transferred >= max_contrib_silver));
+           not (c.list = Silver and transferred >= max_contribution_silver));
   }
 
   effect {
+    let c = contributor.get(caller) in
     (* cap contribution to max_contrib if necessary *)
-    let contrib = transferred in
+    let lcontrib = transferred in
     if    c.list = Silver
-      and c.contrib + contrib >= max_contrib_silver
-    then contrib := max_contrib_silver - c.contrib;
+      and c.contrib + lcontrib >= max_contribution_silver
+    then lcontrib := max_contribution_silver - c.contrib;
     (* cap contribution to round cap if necessary *)
-    let remaining_tez = get_remaining_tez_to_raise () in
-    if remaining_tez <= contrib
+    let remaining_tez : tez = get_remaining_tez_to_raise () in
+    if remaining_tez <= lcontrib
     then (
-      contrib := remaining_tez;
-      state := transition_to_finished ()
+      lcontrib := remaining_tez;
+      vstate := transition_to_finished ()
     );
     (* convert contribution to nb of bcd tokens *)
     let rate = get_rate () in
-    let nb_tokens  = contrib * rate in
+    let nb_tokens : tez = lcontrib * rate in
     (* update ico stats *)
     nb_bcd_sold   += nb_tokens;
-    nb_tez_raised += contrib;
+    nb_tez_raised += lcontrib;
     (* update caller's contribution *)
-    c.contrib     += contrib;
+    c.contrib     += lcontrib;
     (* syntaxic sugar for
        contributor.update caller { contrib += contrib } *)
-    if contrib <= transferred
-    then transfer (transferred - contrib) to caller
+    if lcontrib <= transferred
+    then transfer (transferred - lcontrib) to caller
   }
 }
 
@@ -148,15 +150,15 @@ action contribute {
 
 action[%onlyonce%] withdraw {
   require {
-    c5 : state = Round2Finished;
+    c5 : vstate = Round2Finished;
     c6 : nb_tez_raised <= soft_cap;
-    c7 : contributor.get(caller).contribution > 0;
+    c7 : contributor.get(caller).contrib > 0tz;
   }
 
   effect {
     let c = contributor.get(caller) in
-    transfer c.contribution to caller;
+    transfer c.contrib to caller;
     (* do not forget this *)
-    c.contribution := 0
+    c.contrib := 0tz
   }
 }
