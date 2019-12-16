@@ -9,7 +9,7 @@ variable[%mutable owner (state = Init)%] min_contribution : tez = 1tz
 variable[%mutable owner (state = Init)%] max_contribution_silver : tez = 10tz
 
 (* bcd token data *)
-variable[%mutable owner (state = Init)%] max_bcd_to_sell : int = 100000000
+variable[%mutable owner (state = Init)%] max_bcd_to_sell : tez = 100000000tz
 variable[%mutable owner (state = Init)%] exchange_rate_bcd_tez : int = 13000
 
 (* round caps *)
@@ -19,18 +19,18 @@ variable[%mutable owner (state = Init)%] round1_cap : tez = 3600tz
 (* presales_cap + 1600 *)
 
 (* Number tokens sent, eth raised, ... *)
-variable nb_bcd_sold : int = 0
-variable nb_tez_raised : int = 0
+variable nb_bcd_sold : tez = 0tz
+variable nb_tez_raised : tez = 0tz
 
 (* Roles *)
 
-variable[%transferable%] owner : role
+variable[%transferable%] owner : role = @tz1_owner
 
-variable whitelister : role
+variable whitelister : role = @tz1_whitelister
 
-variable reserve : role
+variable reserve : role = @tz1_reserve
 
-variable community : role
+variable community : role = @tz1_community
 
 (* contributor *)
 
@@ -44,7 +44,7 @@ asset[@add @remove @update owner (state = Init)]
    list         : whitelist;
    contrib      : int = 0;
 } with {
-  c1 : contrib >= 0;
+  i1 : contrib >= 0;
 }
 
 states[%incr_mutable_st owner%] =
@@ -56,34 +56,39 @@ states[%incr_mutable_st owner%] =
 | Round2Running    (* Round 2 has started *)
 | Round2Finished   (* Round 2 has ended   *)
 
-function is_running {
-  match state with
-  | PresalesRunning | Round1Running | Round2Running -> true
-  | _ -> false
-  end
+function is_running : bool {
+  return
+    match state with
+    | PresaleRunning | Round1Running | Round2Running -> true
+    | _ -> false
+    end
 }
 
-function get_rate {
-  let coeff = (match state with
-  | PresalesRunning -> 1.2
-  | Round1Running   -> 1.1
-  | _               -> 1
-  end) in
-  coeff * exchange_rate_tez_bcd
+function get_rate : rational {
+  let coeff =
+    match state with
+    | PresalesRunning -> 1.2
+    | Round1Running   -> 1.1
+    | _               -> 1
+    end
+  in
+  return coeff * exchange_rate_bcd_tez
 }
 
-function get_remaining_tez_to_raise {
-  match state with
-  | PresalesRunning | PresalesFinished -> presales_cap - nb_tez_raised
-  | Round1Running   | Round1Finished   -> round1_cap - nb_tez_raised
-  | _ -> (let remaining_bcd = max_bcd_to_sell - nb_bcd_sold in
-          remaining_bcd / exchange_rate_bcd_tez)
-  end
+function get_remaining_tez_to_raise : tez {
+  return
+    match state with
+    | PresaleRunning | PresaleFinished -> presales_cap - nb_tez_raised
+    | Round1Running   | Round1Finished   -> round1_cap - nb_tez_raised
+    | _ -> (
+      let remaining_bcd : tez = max_bcd_to_sell - nb_bcd_sold in
+      remaining_bcd / exchange_rate_bcd_tez)
+    end
 }
 
 function transition_to_finished {
   match state with
-  | PresalesRunning -> PresalesFinished
+  | PresaleRunning  -> PresaleFinished
   | Round1Running   -> Round1Finished
   | Round1Finished  -> Round2Running
   | _               -> Round2Finished
@@ -92,12 +97,15 @@ function transition_to_finished {
 
 action contribute {
 
-  specification {
+  (* specification {
     postcondition p1 {
-        let c = contributor.get(caller) in
-        transferred = transferred_to(caller) + c.contrib - (old (c.contrib))
+        let some c = contributor.get(caller) in
+        let some c_old = before.contributor.get(caller) in
+        transferred = transferred_to(caller) + c.contrib - c_old.contrib
+        otherwise true
+        otherwise true
     }
-  }
+  } *)
 
   require {
      c1 : contributor.contains(caller);
@@ -126,7 +134,7 @@ action contribute {
     (* update ico stats *)
     nb_bcd_sold   += nb_tokens;
     nb_tez_raised += contrib;
-    (* update caller’s contribution *)
+    (* update caller's contribution *)
     c.contrib     += contrib;
     (* syntaxic sugar for
        contributor.update caller { contrib += contrib } *)

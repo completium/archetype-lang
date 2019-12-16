@@ -71,6 +71,7 @@ action main {
 
     var tez_tez_plus   : tez = t1 + t2;
     var tez_tez_minus  : tez = t1 - t2;
+    var tez_tez_div    : rational = t1 / t2;
 
     var int_tez_mult   : tez = i1 * t2;
     var rat_tez_mult   : tez = ra1 * t2;
