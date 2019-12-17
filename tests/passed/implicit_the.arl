@@ -8,6 +8,7 @@ asset myasset {
 action myaction {
 
   effect {
-    var l = myasset.select(value = 0)
+    var l = myasset.select(value = 0);
+    require (true)
   }
 }
