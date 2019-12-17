@@ -139,7 +139,7 @@ function compute_expected (d : date) : tez {
             else 0tz
           otherwise 0tz
         in
-         compute_expected(d) = expected + interests
+         result = expected + interests
     }
   }
 
