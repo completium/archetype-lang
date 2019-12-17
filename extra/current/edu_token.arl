@@ -1,0 +1,127 @@
+archetype edu_token
+
+asset institution {
+  iid : address;
+  itokens : int;
+  ipubk : string;
+}
+
+asset learner {
+  lid : role;
+}
+
+asset institution_learners {
+  ilid : pkey of institution;
+  illearners : learner collection = [];
+}
+
+asset institution_tokens {
+  itid : pkey of institution;
+  ittokens : int = 0;
+}
+
+asset learner_tokens {
+  ltid : pkey of learner;
+  ltokens : int = 0;
+}
+
+asset certifier {
+  ccid : address;
+}
+
+asset diploma {
+  did : string;
+  dtkl : int; /* learner */
+  dtki : int; /* institution */
+}
+
+asset certification {
+  cid : string;
+  cdate : date;
+  cdip : pkey of diploma;
+  ccer : pkey of learner;
+  ciid : pkey of institution;
+}
+
+asset other_token_holder {
+  othid : address;
+  oth_learner_tokens : int;
+  oth_institution_tokens : int;
+}
+
+
+action add_learner {
+  failif {
+    f1: learner.contains(caller);
+  }
+  effect {
+    learner.add({lid= caller})
+  }
+}
+
+action register_learner (learners : learner collection) (do_add : bool) {
+  require {
+    r0: institution.contains(caller);
+  }
+   effect {
+    if (not (institution_learners.contains (caller))) then
+      institution_learners.add({ilid = caller});
+    for l in learners do
+	    if do_add then
+        institution_learners.get(caller).illearners.add(l)
+	    else
+        institution_learners.get(caller).illearners.remove(l.lid)
+    done
+  }
+}
+
+
+action certify(certified : certification collection) {
+  require {
+    r1: certifier.contains(caller);
+  }
+  effect {
+    for c in certified do
+       if (institution_learners.get(c.ciid).illearners.contains(c.ccer)) then
+       require (false);
+        (* fail ("learner is not in institution"); *)
+
+       certification.add(c);
+
+
+       if (not (learner_tokens.contains(c.ccer))) then
+          learner_tokens.add({ltid = c.ccer});
+       learner_tokens.update (c.ccer, {ltokens += diploma.get(c.cdip).dtkl});
+
+       if (not (institution_tokens.contains(c.ciid))) then
+          institution_tokens.add({itid = c.ciid});
+       institution_tokens.update (c.ciid, {ittokens += diploma.get(c.cdip).dtki})
+
+    done
+  }
+}
+
+action transfer_learner_token (nb_tokens : int) (dest : address) {
+  require {
+    r2: learner_tokens.contains(caller);
+    r3: learner_tokens.get(caller).ltokens >= nb_tokens;
+    r4: other_token_holder.contains(dest);
+  }
+  effect {
+    learner_tokens.update(caller, {ltokens -= nb_tokens});
+    other_token_holder.update(dest, {oth_learner_tokens += nb_tokens})
+  }
+}
+
+action transfer_institution_token (nb_tokens : int) (dest : address) {
+  require {
+    r5: institution_tokens.contains(caller);
+    r6: institution_tokens.get(caller).ittokens >= nb_tokens;
+    r7: other_token_holder.contains(dest);
+  }
+  effect {
+    institution_tokens.update(caller, {ittokens -= nb_tokens});
+    other_token_holder.update(dest, {oth_institution_tokens += nb_tokens})
+  }
+}
+
