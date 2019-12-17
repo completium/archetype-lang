@@ -15,6 +15,26 @@ action main {
     var_tez += 1tz;
     var_dur += 1d;
     var_dat += var_dur;
-    var_str += "_postfix"
+    var_str += "_postfix";
+
+    var_int -= 1;
+    var_rat -= 1.0;
+    var_rat -= 1;
+    var_tez -= 1tz;
+    var_dur -= 1d;
+    var_dat -= var_dur;
+
+    var_int *= 1;
+    var_rat *= 1.0;
+    var_rat *= 1;
+    var_tez *= 1;
+    var_dur *= 1;
+
+    var_int /= 1;
+    var_rat /= 1.0;
+    var_rat /= 1;
+    var_tez /= 1;
+    var_dur /= 1
+
   }
 }
