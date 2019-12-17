@@ -157,6 +157,7 @@ let to_const = function
   | Cnone         -> "none"
   | Cany          -> "any"
   | Canyaction    -> "anyaction"
+  | Cresult       -> "result"
   | Cisempty      -> "isempty"
   | Cget          -> "get"
   | Cadd          -> "add"

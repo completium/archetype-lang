@@ -116,6 +116,7 @@ type const =
   | Cnone
   | Cany
   | Canyaction
+  | Cresult
   (* function *)
   | Cisempty
   | Cget

@@ -1,9 +1,9 @@
-archetype fun_in_spec
+archetype test_result
 
 function f (i : int) : int {
   specification {
     postcondition c1 {
-      forall n : int, f(n) = n
+      forall n : int, result = n
     }
   }
   effect {
