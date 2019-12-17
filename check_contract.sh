@@ -6,7 +6,6 @@ LIB_ARCHETYPE=./mlw
 GRET=0
 
 process_ligo() {
-    echo -ne "ligo:      "
     FILE=$1
     OUT=$FILE.ligo
     TZ=out.tz
@@ -30,7 +29,6 @@ process_ligo() {
             GRET=1
         fi
     fi
-    echo ""
     rm -fr $OUT *.pp.ligo $TZ
 }
 
@@ -81,7 +79,6 @@ process_ocaml() {
 }
 
 process_whyml() {
-    echo -ne "whyml:     "
     FILE=$1
     OUT=$FILE.mlw
     rm -fr $OUT
@@ -102,17 +99,17 @@ process_whyml() {
         echo -ne "\033[31m KO \033[0m"
         GRET=1
     fi
-    echo ""
     rm -fr $OUT
 }
 
 process() {
     FILE=$1
-    echo -e "process: " $FILE
+    printf '%-60s' $FILE
     process_ligo $FILE
     #    process_smartpy $FILE
     #    process_ocaml $FILE
     process_whyml $FILE
+    echo ""
 }
 
 CONTRACT=contracts/miles_with_expiration.arl

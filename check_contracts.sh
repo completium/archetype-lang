@@ -10,7 +10,7 @@ escrow_without_spec.arl \
 "
 
 RET=0
-
+echo "                                                             GL  CL  GW  CW"
 for i in $CONTRACTS; do
     ./check_contract.sh ./contracts/$i
     if [ $? -ne 0 ]; then
