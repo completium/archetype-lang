@@ -10,7 +10,7 @@ NB_LIQ="0"
 NB_EXT="0"
 
 process () {
-    printf '%-50s' $1
+    printf '%-60s' $1
     REF=$i.ref
     $BIN -pt -r $i > $REF 2> /dev/null
     RET=`echo $?`
@@ -46,7 +46,7 @@ process () {
     rm -f $OUT $REF
 }
 
-printf '%-48s%s\n' '' '  PARSE   REPARSE   SAME'
+printf '%-58s%s\n' '' '  PARSE   REPARSE   SAME'
 
 for i in contracts/*.arl; do
   process $i
