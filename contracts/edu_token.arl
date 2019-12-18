@@ -49,8 +49,7 @@ asset other_token_holder {
   oth_institution_tokens : int;
 }
 
-
-action add_learner {
+action register_learner {
   failif {
     f1: learner.contains(caller);
   }
@@ -59,7 +58,16 @@ action add_learner {
   }
 }
 
-action register_learner (learners : learner collection) (do_add : bool) {
+action unregister_learner {
+  require {
+    r1: learner.contains(caller);
+  }
+  effect {
+    learner.remove(caller)
+  }
+}
+
+action register_learners (learners : learner collection) (do_add : bool) {
   require {
     r0: institution.contains(caller);
   }
@@ -93,14 +101,24 @@ action register_certificate (c : certificate) (do_add : bool) {
  }
 }
 
+action register_certifier(c : certifier) (do_add : bool) {
+ effect {
+   if (do_add) then
+     certifier.add(c)
+   else
+     certifier.remove(c.ccid)
+ }
+}
+
 action certify(certified : certification collection) {
   require {
-    r1: certifier.contains(caller);
+    r2: certifier.contains(caller);
   }
   effect {
     for c in certified do
        if (institution_learners.get(c.ciid).illearners.contains(c.ccer)) then
-        fail ("learner is not in institution");
+        (* fail ("learner is not in institution"); *)
+        require(true); (* TODO *)
 
        certification.add(c);
 
@@ -119,9 +137,9 @@ action certify(certified : certification collection) {
 
 action transfer_learner_token (nb_tokens : int) (dest : address) {
   require {
-    r2: learner_tokens.contains(caller);
-    r3: learner_tokens.get(caller).ltokens >= nb_tokens;
-    r4: other_token_holder.contains(dest);
+    r3: learner_tokens.contains(caller);
+    r4: learner_tokens.get(caller).ltokens >= nb_tokens;
+    r5: other_token_holder.contains(dest);
   }
   effect {
     learner_tokens.update(caller, {ltokens -= nb_tokens});
@@ -131,9 +149,9 @@ action transfer_learner_token (nb_tokens : int) (dest : address) {
 
 action transfer_institution_token (nb_tokens : int) (dest : address) {
   require {
-    r5: institution_tokens.contains(caller);
-    r6: institution_tokens.get(caller).ittokens >= nb_tokens;
-    r7: other_token_holder.contains(dest);
+    r6: institution_tokens.contains(caller);
+    r7: institution_tokens.get(caller).ittokens >= nb_tokens;
+    r8: other_token_holder.contains(dest);
   }
   effect {
     institution_tokens.update(caller, {ittokens -= nb_tokens});
