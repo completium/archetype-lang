@@ -1,0 +1,14 @@
+archetype col_iter
+
+asset myasset {
+  id : int;
+  v : string;
+}
+
+action main (col : myasset collection) {
+  effect {
+    for c in col do
+      myasset.add(c)
+    done
+  }
+}
