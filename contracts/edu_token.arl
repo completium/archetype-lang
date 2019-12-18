@@ -118,7 +118,7 @@ action certify(certified : certification collection) {
     for c in certified do
        if (institution_learners.get(c.ciid).illearners.contains(c.ccer)) then
         (* fail ("learner is not in institution"); *)
-        require(true); (* TODO *)
+        require(false); (* TODO *)
 
        certification.add(c);
 
