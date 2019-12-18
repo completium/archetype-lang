@@ -2,6 +2,7 @@ archetype edu_token
 
 asset institution {
   iid : address;
+  itokens : int;
   ipubk : string;
 }
 
@@ -28,7 +29,7 @@ asset certifier {
   ccid : address;
 }
 
-asset diploma {
+asset certificate {
   did : string;
   dtkl : int; /* learner */
   dtki : int; /* institution */
@@ -37,7 +38,7 @@ asset diploma {
 asset certification {
   cid : string;
   cdate : date;
-  cdip : pkey of diploma;
+  cdip : pkey of certificate;
   ccer : pkey of learner;
   ciid : pkey of institution;
 }
@@ -74,31 +75,48 @@ action register_learner (learners : learner collection) (do_add : bool) {
   }
 }
 
+action register_institution (i : institution) (do_add : bool) {
+ effect {
+   if (do_add) then
+     institution.add(i)
+   else
+     institution.remove(i.iid)
+ }
+}
 
-(* action certify(certified : certification collection) {
+action register_certificate (c : certificate) (do_add : bool) {
+ effect {
+   if (do_add) then
+     certificate.add(c)
+   else
+     certificate.remove(c.did)
+ }
+}
+
+action certify(certified : certification collection) {
   require {
     r1: certifier.contains(caller);
   }
   effect {
     for c in certified do
        if (institution_learners.get(c.ciid).illearners.contains(c.ccer)) then
-       require (false);
-        (* fail ("learner is not in institution"); *)
+       (* fail ("learner is not in institution"); *)
+       require(true);
 
        certification.add(c);
 
 
        if (not (learner_tokens.contains(c.ccer))) then
           learner_tokens.add({ltid = c.ccer});
-       learner_tokens.update (c.ccer, {ltokens += diploma.get(c.cdip).dtkl});
+       learner_tokens.update (c.ccer, {ltokens += certificate.get(c.cdip).dtkl});
 
        if (not (institution_tokens.contains(c.ciid))) then
           institution_tokens.add({itid = c.ciid});
-       institution_tokens.update (c.ciid, {ittokens += diploma.get(c.cdip).dtki})
+       institution_tokens.update (c.ciid, {ittokens += certificate.get(c.cdip).dtki})
 
     done
   }
-} *)
+}
 
 action transfer_learner_token (nb_tokens : int) (dest : address) {
   require {

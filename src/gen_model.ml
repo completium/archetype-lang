@@ -362,6 +362,12 @@ let to_model (ast : A.model) : M.model =
     | _ -> assert false
   in
 
+  let is_asset_name (pterm : M.mterm) an : bool =
+    match pterm with
+    | {type_ = Tasset asset_name} -> String.equal an (unloc asset_name)
+    | _ -> false
+  in
+
   (* myasset.update k {f1 = v1; f2 = v2}
 
      let _k = k in
@@ -371,15 +377,15 @@ let to_model (ast : A.model) : M.model =
 
   let extract_letin (c : M.mterm) (k : M.mterm) (e : (A.lident * A.operator * M.mterm) list) : M.mterm__node =
 
-    let asset_aaa =
-      match k.node with
-      | M.Mdotasset (a, _) -> Some a
-      | _ -> None
-    in
-
     let asset_name = extract_asset_name c in
     let asset_loced = dumloc asset_name in
     let asset = A.Utils.get_asset ast asset_loced in
+
+    let asset_aaa =
+      match k.node with
+      | M.Mdotasset (a, _) when is_asset_name a asset_name -> Some a
+      | _ -> None
+    in
 
     let type_asset = M.Tasset asset_loced in
     let type_container_asset = M.Tcontainer (type_asset, Collection) in
