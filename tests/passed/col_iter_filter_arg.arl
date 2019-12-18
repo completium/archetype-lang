@@ -1,4 +1,4 @@
-archetype col_iter
+archetype col_iter_filter_arg
 
 asset myasset {
   id : int;
