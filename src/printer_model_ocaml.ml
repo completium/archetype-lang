@@ -658,6 +658,15 @@ let pp_model fmt (model : model) =
         in
         pp fmt (c, k)
 
+      | Mgetfrommap (an, k, c) ->
+        let pp fmt (an, k, c) =
+          Format.fprintf fmt "getfrommap_%a (%a, %a)"
+            pp_str an
+            f k
+            f c
+        in
+        pp fmt (an, k, c)
+
       | Mset (c, _l, k, v) ->
         let pp fmt (c, k, v) =
           Format.fprintf fmt "set_%a (_s, %a, %a)"

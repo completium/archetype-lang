@@ -123,6 +123,7 @@ type ('id, 'term) mterm_node  =
   | Mget            of ident * 'term
   | Mgetbefore      of ident * 'term
   | Mgetat          of ident * ident * 'term (* asset_name * label * value *)
+  | Mgetfrommap     of ident * 'term * 'term
   | Mset            of ident * ident list * 'term * 'term (*asset_name * field_name modified * ... *)
   | Maddasset       of ident * 'term
   | Maddfield       of ident * ident * 'term * 'term (* asset_name * field_name * asset instance * item * shalow values*)
@@ -852,6 +853,7 @@ let cmp_mterm_node
     | Mget (c1, k1), Mget (c2, k2)                                                     -> cmp_ident c1 c2 && cmp k1 k2
     | Mgetbefore (c1, k1), Mgetbefore (c2, k2)                                         -> cmp_ident c1 c2 && cmp k1 k2
     | Mgetat (c1, d1, k1), Mgetat (c2, d2, k2)                                         -> cmp_ident c1 c2 && cmp_ident d1 d2 && cmp k1 k2
+    | Mgetfrommap (an1, k1, c1), Mgetfrommap (an2, k2, c2)                             -> cmp_ident an1 an2 && cmp k1 k2 && cmp c1 c2
     | Mset (c1, l1, k1, v1), Mset (c2, l2, k2, v2)                                     -> cmp_ident c1 c2 && List.for_all2 cmp_ident l1 l2 && cmp k1 k2 && cmp v1 v2
     | Maddasset (an1, i1), Maddasset (an2, i2)                                         -> cmp_ident an1 an2 && cmp i1 i2
     | Maddfield (an1, fn1, c1, i1), Maddfield (an2, fn2, c2, i2)                       -> cmp_ident an1 an2 && cmp_ident fn1 fn2 && cmp c1 c2 && cmp i1 i2
@@ -1040,6 +1042,7 @@ let map_term_node (f : 'id mterm_gen -> 'id mterm_gen) = function
   | Mget (c, k)                   -> Mget (c, f k)
   | Mgetbefore (c, k)             -> Mgetbefore (c, f k)
   | Mgetat (c, d, k)              -> Mgetat (c, d, f k)
+  | Mgetfrommap (an, k, c)        -> Mgetfrommap (an, f k, f c)
   | Mset (c, l, k, v)             -> Mset (c, l, f k, f v)
   | Maddasset (an, i)             -> Maddasset (an, f i)
   | Maddfield (an, fn, c, i)      -> Maddfield (an, fn, f c, f i)
@@ -1302,6 +1305,7 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mget (_, k)                           -> f accu k
   | Mgetbefore (_, k)                     -> f accu k
   | Mgetat (_, _, k)                      -> f accu k
+  | Mgetfrommap (_, k, c)                 -> f (f accu k) c
   | Mset (_, _, k, v)                     -> f (f accu v) k
   | Maddasset (_, i)                      -> f accu i
   | Maddfield (_, _, c, i)                -> f (f accu c) i
@@ -1508,6 +1512,11 @@ let fold_map_term
   | Mgetat (c, d, k) ->
     let ke, ka = f accu k in
     g (Mgetat (c, d, ke)), ka
+
+  | Mgetfrommap (an, k, c) ->
+    let ke, ka = f accu k in
+    let ce, ca = f ka c in
+    g (Mgetfrommap (an, ke, ce)), ca
 
   | Mset (c, l, k, v) ->
     let ke, ka = f accu k in
@@ -2072,6 +2081,7 @@ module Utils : sig
   val get_default_value                  : model -> type_ -> mterm
   val with_transfer_for_mterm            : mterm -> bool
   val with_transfer                      : model -> bool
+  val get_source_for                     : model -> ctx_model -> mterm -> mterm option
 
 end = struct
 
@@ -2668,4 +2678,15 @@ end = struct
       | _ -> t
     in
     mk_mterm (aux t) tt
+
+  let get_source_for (_m : model) (_ctx : ctx_model) (c : mterm) : mterm option =
+    match c.node with
+    | Mvarparam an ->
+      begin
+        let l, an = deloc an in
+        let idparam = mkloc l (an ^ "_values") in
+        Some (mk_mterm (Mvarparam idparam) (Tassoc(Bint, Tasset (dumloc "myasset"))))
+      end
+    | _ -> None
+
 end

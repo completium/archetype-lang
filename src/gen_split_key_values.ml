@@ -22,16 +22,16 @@ let split_key_values (model : model) : model =
           let _k, t = Utils.get_asset_key model (unloc an) in
           (* let type_key = Tcontainer (Tbuiltin t, Collection) in *)
           (* let init_keys, init_assets = *)
-            (* TODO: initialize with f.default value*)
-            (*Marray [], Marray [] *)
+          (* TODO: initialize with f.default value*)
+          (*Marray [], Marray [] *)
           (* in *)
           (* let asset_keys =
-            mk_storage_item (dumloc (asset_keys (unloc an)))
+             mk_storage_item (dumloc (asset_keys (unloc an)))
               (MTasset (unloc an))
               type_key
               (mk_mterm init_keys type_key)
               ~loc:x.loc
-          in *)
+             in *)
           let type_asset = Tassoc (t, Tasset an) in
           let asset_assets =
             mk_storage_item (dumloc (asset_assets (unloc an)))
@@ -91,7 +91,7 @@ let split_key_values (model : model) : model =
         in
 
         match id, ctx.fs with
-        | Some an, Some ({args = args }) ->
+        | Some an, Some ({args = args; src = Endo }) ->
           List.fold_left (fun accu (name, type_, _) ->
               match type_ with
               | Tcontainer (Tasset _, _) when String.equal (unloc an) (unloc name) -> true
@@ -115,7 +115,12 @@ let split_key_values (model : model) : model =
           body
         else
           let key = mk_mterm (Mvarlocal id) (Tbuiltin t) in
-          let get = mk_mterm (Mget (unloc an, key)) (Tasset an) in
+          let get_node =
+            match Utils.get_source_for model ctx col with
+            | Some c -> Mgetfrommap (unloc an, key, c)
+            | _ -> Mget (unloc an, key)
+          in
+          let get = mk_mterm get_node (Tasset an) in
           let body = mk_mterm (Mletin ([id], get, Some (Tasset an), body, None)) (body.type_) in
           body
       in

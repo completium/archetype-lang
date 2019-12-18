@@ -269,6 +269,14 @@ let pp_model fmt (model : model) =
         in
         pp fmt (c, k)
 
+      | Mgetfrommap (an, k, m) ->
+        let pp fmt (_an, k, m) =
+          Format.fprintf fmt "get_force(%a, %a)"
+            f k
+            f m
+        in
+        pp fmt (an, k, m)
+
       | Mset (c, l, k, v) ->
         let pp fmt (c, _l, k, v) =
           Format.fprintf fmt "%s := set_%a (%s, %a, %a)"
@@ -752,7 +760,7 @@ let pp_model fmt (model : model) =
           | _, Tassoc (k , v) -> Format.fprintf fmt "(map %a end : map(%a, %a))" (pp_list "; " f) l pp_btyp k pp_type v
           | [], _ -> Format.fprintf fmt "(nil : %a)" pp_type mtt.type_
           | _, _ -> Format.fprintf fmt "list@\n  @[%a@]@\nend"
-                  (pp_list "@\n" (fun fmt -> Format.fprintf fmt "%a;" f)) l
+                      (pp_list "@\n" (fun fmt -> Format.fprintf fmt "%a;" f)) l
         end
       | Mint v -> pp_big_int fmt v
       | Muint v -> pp_big_int fmt v
@@ -799,7 +807,7 @@ let pp_model fmt (model : model) =
           begin
             let is_get_body (mt : mterm) (id : ident) (asset_name : ident) =
               match mt.node with
-              | Mletin ([{pldesc = i; _}], {node = Mget (an, _)}, _, _, _) -> String.equal i id && String.equal asset_name an
+              | Mletin ([{pldesc = i; _}], {node = (Mget (an, _) | Mgetfrommap (an, _, _))}, _, _, _) -> String.equal i id && String.equal asset_name an
               | _ -> false
             in
             match col.type_ with

@@ -163,6 +163,15 @@ let pp_mterm fmt (mt : mterm) =
       in
       pp fmt (c, d, k)
 
+    | Mgetfrommap (an, k, c) ->
+      let pp fmt (an, k, c) =
+        Format.fprintf fmt "getfrommap_%a (%a, %a)"
+          pp_str an
+          f k
+          f c
+      in
+      pp fmt (an, k, c)
+
     | Mset (c, l, k, v) ->
       let pp fmt (c, _l, k, v) =
         Format.fprintf fmt "set_%a (%a, %a)"
