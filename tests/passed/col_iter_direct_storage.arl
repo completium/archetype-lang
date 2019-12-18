@@ -1,0 +1,14 @@
+archetype col_iter
+
+asset myasset {
+  id : int;
+  v : string;
+}
+
+action main {
+  effect {
+    for c in myasset do
+      myasset.update(c.id, {v = "val"})
+    done
+  }
+}

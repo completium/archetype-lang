@@ -1,0 +1,15 @@
+archetype col_iter
+
+asset myasset {
+  id : int;
+  v : string;
+}
+
+action main (col : myasset collection) {
+  effect {
+    let col2 = col.select(id % 2 = 0) in
+    for c in col2 do
+      myasset.add(c)
+    done
+  }
+}
