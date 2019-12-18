@@ -89,9 +89,9 @@ let extend_iter               = Gen_transform.extend_loop_iter
 let split_key_values          = Gen_split_key_values.split_key_values
 let remove_side_effect        = Gen_reduce.reduce
 let generate_api_storage      = Gen_api_storage.generate_api_storage
-let exec_process model        = model 
-  |> Gen_transform.replace_lit_address_by_role 
-  |> Gen_transform.remove_label 
+let exec_process model        = model
+  |> Gen_transform.replace_lit_address_by_role
+  |> Gen_transform.remove_label
   |> Gen_transform.flat_sequence
   |> Gen_transform.remove_cmp_bool
 let check_partition_access    = Gen_transform.check_partition_access Typing.empty
@@ -129,6 +129,7 @@ let generate_target model =
     |> shallow_asset
     |> split_key_values
     |> Gen_transform.assign_loop_label
+    |> Gen_transform.ligo_move_get_in_condition
     |> generate_api_storage
     |> output
 

@@ -467,17 +467,60 @@ let remove_wild_pattern (model : model) : model =
 
 let remove_cmp_bool (model : model) : model =
   let rec aux c (mt : mterm) : mterm =
+    match mt.node with
+    | Mequal (lhs, {node = Mbool true; _})  -> lhs
+    | Mequal (lhs, {node = Mbool false; _}) -> mk_mterm (Mnot lhs) (Tbuiltin Bbool)
+    | Mequal ({node = Mbool true; _}, rhs)  -> rhs
+    | Mequal ({node = Mbool false; _}, rhs) -> mk_mterm (Mnot rhs) (Tbuiltin Bbool)
+
+    | Mnequal (lhs, {node = Mbool true; _})  -> mk_mterm (Mnot lhs) (Tbuiltin Bbool)
+    | Mnequal (lhs, {node = Mbool false; _}) -> lhs
+    | Mnequal ({node = Mbool true; _}, rhs)  -> mk_mterm (Mnot rhs) (Tbuiltin Bbool)
+    | Mnequal ({node = Mbool false; _}, rhs) -> rhs
+
+    | _ -> map_mterm (aux c) mt
+  in
+  Model.map_mterm_model aux model
+
+let ligo_move_get_in_condition (model : model) : model =
+  let contains_getter (mt : mterm) : bool =
+    let rec aux accu (mt : mterm) : bool =
       match mt.node with
-      | Mequal (lhs, {node = Mbool true; _})  -> lhs
-      | Mequal (lhs, {node = Mbool false; _}) -> mk_mterm (Mnot lhs) (Tbuiltin Bbool)
-      | Mequal ({node = Mbool true; _}, rhs)  -> rhs
-      | Mequal ({node = Mbool false; _}, rhs) -> mk_mterm (Mnot rhs) (Tbuiltin Bbool)
-
-      | Mnequal (lhs, {node = Mbool true; _})  -> mk_mterm (Mnot lhs) (Tbuiltin Bbool)
-      | Mnequal (lhs, {node = Mbool false; _}) -> lhs
-      | Mnequal ({node = Mbool true; _}, rhs)  -> mk_mterm (Mnot rhs) (Tbuiltin Bbool)
-      | Mnequal ({node = Mbool false; _}, rhs) -> rhs
-
-      | _ -> map_mterm (aux c) mt
+      | Mget _ -> true
+      | _ -> Model.fold_term aux accu mt
+    in
+    aux false mt
+  in
+  let extract_getter (mt : mterm) : (mterm * (lident * mterm) list) =
+    let cpt : int ref = ref 0 in
+    let rec aux (accu : (lident * mterm) list) (mt : mterm) : mterm * (lident * mterm) list =
+      match mt.node with
+      | Mget _ ->
+        begin
+          let var_id = "tmp_" ^ string_of_int (!cpt) in
+          cpt := !cpt + 1;
+          let var = mk_mterm (Mvarlocal (dumloc var_id)) mt.type_ in
+          var, (dumloc var_id, mt)::accu
+        end
+      | _ ->
+        let g (x : mterm__node) : mterm = { mt with node = x; } in
+        Model.fold_map_term g aux accu mt
+    in
+    aux [] mt
+  in
+  let rec aux c (mt : mterm) : mterm =
+    match mt.node with
+    | Mif (cond, e, t) when contains_getter cond ->
+      begin
+        let (cond, ll) = extract_getter cond in
+        let res : mterm = mk_mterm (Mif (cond, e, t)) Tunit in
+        let res : mterm = List.fold_right
+            (fun (id, x : lident * mterm) accu ->
+               let node : mterm__node = Mletin ([id], x, Some (x.type_), accu, None) in
+               mk_mterm node Tunit)
+            ll res in
+        res
+      end
+    | _ -> map_mterm (aux c) mt
   in
   Model.map_mterm_model aux model

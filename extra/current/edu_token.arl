@@ -2,7 +2,6 @@ archetype edu_token
 
 asset institution {
   iid : address;
-  itokens : int;
   ipubk : string;
 }
 
@@ -76,7 +75,7 @@ action register_learner (learners : learner collection) (do_add : bool) {
 }
 
 
-action certify(certified : certification collection) {
+(* action certify(certified : certification collection) {
   require {
     r1: certifier.contains(caller);
   }
@@ -99,7 +98,7 @@ action certify(certified : certification collection) {
 
     done
   }
-}
+} *)
 
 action transfer_learner_token (nb_tokens : int) (dest : address) {
   require {
