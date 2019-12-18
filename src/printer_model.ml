@@ -999,9 +999,9 @@ let pp_security fmt (s : security) =
       (pp_no_empty_list pp_security_item) s.items
 
 let pp_argument fmt ((id, t, dv) : argument) =
-  Format.fprintf fmt "%a %a%a"
-    pp_type t
+  Format.fprintf fmt "%a : %a%a"
     pp_id id
+    pp_type t
     (pp_option (fun fmt -> Format.fprintf fmt " := %a" pp_mterm)) dv
 
 let pp_function fmt f =
