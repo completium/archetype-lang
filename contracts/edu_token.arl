@@ -1,20 +1,16 @@
 archetype edu_token
 
-asset institution {
-  iid : address;
-  itokens : int;
-  ipubk : string;
-  ittokens : int = 0;
-}
-
 asset learner {
   lid : role;
   ltokens : int = 0;
 }
 
-asset institution_learners {
-  ilid : pkey of institution;
+asset institution {
+  iid : address;
+  itokens : int;
+  ipubk : string;
   illearners : learner collection = [];
+  ittokens : int = 0;
 }
 
 asset certifier {
@@ -41,39 +37,34 @@ asset other_token_holder {
   oth_institution_tokens : int;
 }
 
-action register_learner {
-  failif {
-    f1: learner.contains(caller);
-  }
-  effect {
-    learner.add({lid= caller})
-  }
-}
 
-action unregister_learner {
-  require {
-    r1: learner.contains(caller);
-  }
+action register_learner (do_add : bool) {
   effect {
+   if (do_add) then
+   (if (not learner.contains(caller)) then
+     learner.add({lid= caller})
+   else
+     require (false))
+   else
+   (if (learner.contains(caller)) then
     learner.remove(caller)
+   else
+     require (false))
   }
 }
 
 action register_learners (learners : learner collection) (do_add : bool) {
-  require {
-    r0: institution.contains(caller);
-  }
-   effect {
-    if (not (institution_learners.contains (caller))) then
-      institution_learners.add({ilid = caller});
+  effect {
+    var i = institution.get(caller);
     for l in learners do
 	    if do_add then
-        institution_learners.get(caller).illearners.add(l)
+        i.illearners.add(l)
 	    else
-        institution_learners.get(caller).illearners.remove(l.lid)
+        i.illearners.remove(l.lid)
     done
   }
 }
+
 
 action register_institution (i : institution) (do_add : bool) {
  effect {
@@ -108,7 +99,8 @@ action certify(certified : certification collection) {
   }
   effect {
     for c in certified do
-       if (institution_learners.get(c.ciid).illearners.contains(c.ccer)) then
+
+       if (institution.get(c.ciid).illearners.contains(c.ccer)) then
         (* fail ("learner is not in institution"); *)
         require(false); (* TODO *)
 
