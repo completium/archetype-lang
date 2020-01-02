@@ -91,7 +91,7 @@ action certify(certified : certification collection) {
   effect {
     for c in certified do
 
-       if (institution.get(c.cins).illearners.contains(c.clea)) then
+       if (not institution.get(c.cins).illearners.contains(c.clea)) then
         (* fail ("learner is not in institution"); *)
         require(false); (* TODO *)
 
