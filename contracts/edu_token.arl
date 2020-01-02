@@ -7,8 +7,7 @@ asset learner {
 
 asset institution {
   iid : address;
-  itokens : int;
-  ipubk : string;
+  itokens : int = 0;
   illearners : learner collection = [];
   ittokens : int = 0;
 }
@@ -17,19 +16,16 @@ asset certifier {
   ccid : address;
 }
 
-asset certificate {
-  did : string;
-  dtkl : int; /* learner */
-  dtki : int; /* institution */
-}
-
 asset certification {
   cid : string;
   cdate : date;
-  cdip : pkey of certificate;
-  ccer : pkey of learner;
-  ciid : pkey of institution;
+  ccer : string;
+  clea : pkey of learner;
+  cins : pkey of institution;
 }
+
+constant dtkl : int = 1
+constant dtki : int = 1
 
 action register_learner (do_add : bool) {
   effect {
@@ -58,32 +54,34 @@ action register_learners (learners : learner collection) (do_add : bool) {
   }
 }
 
-
-action register_institution (i : institution) (do_add : bool) {
- effect {
+action register_institution (do_add : bool) {
+  effect {
    if (do_add) then
-     institution.add(i)
+   (if (not institution.contains(caller)) then
+     institution.add({iid= caller})
    else
-     institution.remove(i.iid)
- }
+     require (false))
+   else
+   (if (institution.contains(caller)) then
+    institution.remove(caller)
+   else
+     require (false))
+  }
 }
 
-action register_certificate (c : certificate) (do_add : bool) {
- effect {
+action register_certifier (do_add : bool) {
+  effect {
    if (do_add) then
-     certificate.add(c)
+   (if (not certifier.contains(caller)) then
+     certifier.add({ccid= caller})
    else
-     certificate.remove(c.did)
- }
-}
-
-action register_certifier(c : certifier) (do_add : bool) {
- effect {
-   if (do_add) then
-     certifier.add(c)
+     require (false))
    else
-     certifier.remove(c.ccid)
- }
+   (if (certifier.contains(caller)) then
+    certifier.remove(caller)
+   else
+     require (false))
+  }
 }
 
 action certify(certified : certification collection) {
@@ -93,14 +91,14 @@ action certify(certified : certification collection) {
   effect {
     for c in certified do
 
-       if (institution.get(c.ciid).illearners.contains(c.ccer)) then
+       if (institution.get(c.cins).illearners.contains(c.clea)) then
         (* fail ("learner is not in institution"); *)
         require(false); (* TODO *)
 
        certification.add(c);
 
-       learner.update (c.ccer, {ltokens += certificate.get(c.cdip).dtkl});
-       institution.update (c.ciid, {ittokens += certificate.get(c.cdip).dtki})
+       learner.update (c.clea, {ltokens += dtkl});
+       institution.update (c.cins, {ittokens += dtki})
 
     done
   }
