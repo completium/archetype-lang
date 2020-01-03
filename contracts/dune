@@ -14,7 +14,7 @@
   (clause_io_acceptance_of_delivery.arl as contracts/clause_io_acceptance_of_delivery.arl)
   (coase.arl as contracts/coase.arl)
   (competition.arl as contracts/competition.arl)
-  (edu_token.arl as contracts/edu_token.arl)
+  (certification_token.arl as contracts/certification_token.arl)
   (empty.arl as contracts/empty.arl)
   (erc20.arl as contracts/erc20.arl)
   (erc721.arl as contracts/erc721.arl)
