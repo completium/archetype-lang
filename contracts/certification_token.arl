@@ -1,4 +1,4 @@
-archetype edu_token
+archetype certification_token
 
 asset learner {
   lid : role;
@@ -8,8 +8,7 @@ asset learner {
 asset institution {
   iid : address;
   itokens : int = 0;
-  illearners : learner collection = [];
-  ittokens : int = 0;
+  ilearners : learner collection = [];
 }
 
 asset certifier {
@@ -47,9 +46,9 @@ action register_learners (learners : learner collection) (do_add : bool) {
     var i = institution.get(caller);
     for l in learners do
 	    if do_add then
-        i.illearners.add(l)
+        i.ilearners.add(l)
 	    else
-        i.illearners.remove(l.lid)
+        i.ilearners.remove(l.lid)
     done
   }
 }
@@ -91,14 +90,14 @@ action certify(certified : certification collection) {
   effect {
     for c in certified do
 
-       if (not institution.get(c.cins).illearners.contains(c.clea)) then
+       if (not institution.get(c.cins).ilearners.contains(c.clea)) then
         (* fail ("learner is not in institution"); *)
         require(false); (* TODO *)
 
        certification.add(c);
 
        learner.update (c.clea, {ltokens += dtkl});
-       institution.update (c.cins, {ittokens += dtki})
+       institution.update (c.cins, {itokens += dtki})
 
     done
   }
@@ -117,10 +116,10 @@ action transfer_learner_token (nb_tokens : int) (dest : address) {
 action transfer_institution_token (nb_tokens : int) (dest : address) {
   require {
     r4: institution.contains(caller);
-    r5: institution.get(caller).ittokens >= nb_tokens;
+    r5: institution.get(caller).itokens >= nb_tokens;
   }
   effect {
-    institution.update(caller, {ittokens -= nb_tokens})
+    institution.update(caller, {itokens -= nb_tokens})
   }
 }
 
