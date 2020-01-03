@@ -1137,7 +1137,7 @@ let pp_model fmt (model : model) =
          const map_local : map(%a, %s) = s.%s_assets;@\n    \
          map_local[asset_key] := asset_val;@\n    \
          s.%s_assets := map_local;@\n    \
-         s := add_%s(s, b);@\n  \
+         %a  \
          end with (s)@\n"
         an fn an ft
         pp_btyp t k
@@ -1145,7 +1145,7 @@ let pp_model fmt (model : model) =
         fn kk fn
         pp_btyp t an an
         an
-        ft
+        (pp_do_if (match _c with | Partition -> true | _ -> false) (fun fmt -> Format.fprintf fmt "s := add_%s(s, b);@\n")) ft
 
     | UpdateRemove (an, fn) ->
       let k, t = Utils.get_asset_key model an in
@@ -1169,7 +1169,7 @@ let pp_model fmt (model : model) =
          const map_local : map(%a, %s) = s.%s_assets;@\n    \
          map_local[asset_key] := asset_val;@\n    \
          s.%s_assets := map_local;@\n    \
-         s := remove_%s(s, key);@\n  \
+         %a  \
          end with (s)@\n"
         an fn an pp_btyp tt
         pp_btyp tt pp_btyp tt
@@ -1180,7 +1180,7 @@ let pp_model fmt (model : model) =
         fn
         pp_btyp t an an
         an
-        ft
+        (pp_do_if (match _c with | Partition -> true | _ -> false) (fun fmt -> Format.fprintf fmt "s := remove_%s(s, key);@\n")) ft
 
     | UpdateClear (_an, _fn) ->
       (* let k, t = Utils.get_asset_key model an in *)
