@@ -21,6 +21,7 @@ asset certification {
   ccer : string;
   clea : pkey of learner;
   cins : pkey of institution;
+  ccertifier: pkey of certifier;
 }
 
 constant dtkl : int = 1
@@ -92,6 +93,10 @@ action certify(certified : certification collection) {
 
        if (not institution.get(c.cins).ilearners.contains(c.clea)) then
         (* fail ("learner is not in institution"); *)
+        require(false); (* TODO *)
+
+       if (c.ccertifier <> caller) then
+       (* fail ("ccertifier must be caller value"); *)
         require(false); (* TODO *)
 
        certification.add(c);
