@@ -14,12 +14,12 @@
     Error.error_alert pos str (fun _ -> ())
 
   let dummy_action_properties = {
+      accept_transfer = true;
       calledby        = None;
-      accept_transfer = false;
       require         = None;
       failif          = None;
-      functions       = [];
       spec_fun        = None;
+      functions       = [];
     }
 
   let rec split_seq e =
@@ -539,7 +539,7 @@ transition:
 | LBRACE xs=action_properties e=effect? RBRACE { (xs, e) }
 
 %inline accept_transfer:
-| /* empty */     { false }
+| /* empty */     { true }
 | REFUSE_TRANSFER { false }
 | ACCEPT_TRANSFER { true }
 
@@ -547,12 +547,12 @@ action_properties:
   sp=specification_fun? at=accept_transfer cb=calledby? cs=require? fi=failif? fs=function_item*
   {
     {
-      spec_fun        = sp;
       accept_transfer = at;
       calledby        = cb;
       require         = cs;
       failif          = fi;
       functions       = fs;
+      spec_fun        = sp;
     }
   }
 
