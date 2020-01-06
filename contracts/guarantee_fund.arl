@@ -7,7 +7,7 @@ asset insured_contract identified by addr {
   max_transfer : tez;
 }
 
-action credit {
+action credit () {
   called by admin
   require {
     c1 : transferred > 0tz;
@@ -22,7 +22,7 @@ action add_contract (contract_ : insured_contract) {
   }
 }
 
-action pay (recipient : address) (amount : tez) {
+action pay (recipient : address, amount : tez) {
   require {
     c2 : insured_contract.contains(caller);
     c3 : amount <= insured_contract.get(caller).max_transfer;

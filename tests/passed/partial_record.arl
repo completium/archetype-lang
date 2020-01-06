@@ -7,7 +7,7 @@ asset asset1 {
   val: int = 0;
 }
 
-action anaction {
+action anaction () {
   effect {
     var a = { id = "myid" }
   }

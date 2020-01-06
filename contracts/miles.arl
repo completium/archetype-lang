@@ -7,7 +7,7 @@ asset account identified by owner {
   amount : int;
 }
 
-action add (ow : role) (value : int) {
+action add (ow : role, value : int) {
   called by validator
   effect {
     if account.contains(ow) then
@@ -17,7 +17,7 @@ action add (ow : role) (value : int) {
   }
 }
 
-action consume (ow : role) (value : int) {
+action consume (ow : role, value : int) {
   specification {
     postcondition s1 {
       let some ba = before.account.get(ow) in

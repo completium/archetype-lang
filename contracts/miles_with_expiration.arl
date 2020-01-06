@@ -17,7 +17,7 @@ asset owner identified by addr {
   miles : mile partition (* injective (owner x mile) *)
 }
 
-action add (ow : address) (newmile : mile) {
+action add (ow : address, newmile : mile) {
    called by admin
 
    require {
@@ -36,7 +36,7 @@ action add (ow : address) (newmile : mile) {
    }
 }
 
-action consume (a : address) (quantity : int) {
+action consume (a : address, quantity : int) {
 
   specification {
 
@@ -100,7 +100,7 @@ action consume (a : address) (quantity : int) {
   }
 }
 
-action clear_expired {
+action clear_expired () {
   specification {
     postcondition s3 {
       forall m in mile.removed, m.expiration < now

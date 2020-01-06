@@ -8,7 +8,7 @@ asset admins {
 
 variable hash : string = "initialvalue"
 
-action register (newadmins : admins collection option) (oldhash : string) (newhash : string) {
+action register (newadmins : admins collection option, oldhash : string, newhash : string) {
     specification {
         postcondition p1 {
             before.hash = oldhash

@@ -10,7 +10,7 @@ asset my_asset identified by id {
   mycollection : my_asset_simple collection;
 } initialized by [ { "my_id"; 0; [] } ]
 
-action main {
+action main () {
   effect {
     my_asset.remove ("my_id")
   }

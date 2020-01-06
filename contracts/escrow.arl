@@ -26,17 +26,17 @@ states =
  | Canceled
  | Transferred with { i1 : balance = 0tz; }
 
-transition abort from Created {
+transition abort () from Created {
   called by buyer or seller
 
   to Aborted
 }
 
-transition[%signedbyall [buyer; seller]%] confirm from Created {
+transition[%signedbyall [buyer; seller]%] confirm () from Created {
   to Confirmed when { balance = price + penalty }
 }
 
-transition transfer_ from Confirmed {
+transition transfer_ () from Confirmed {
   called by oracle
 
   to Transferred when { now < deadline }
@@ -46,7 +46,7 @@ transition transfer_ from Confirmed {
   }
 }
 
-transition cancel from Confirmed {
+transition cancel () from Confirmed {
   called by oracle
 
   to Canceled

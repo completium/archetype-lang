@@ -1,6 +1,6 @@
 archetype simple_error
 
-action funerror {
+action funerror () {
   effect {
     f(); transition; g()
   }

@@ -10,7 +10,7 @@ asset myasset2 {
   k : int;
 }
 
-action main {
+action main () {
   effect {
     let a2 : myasset2 = myasset2.get(1) in
 

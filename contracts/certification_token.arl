@@ -42,7 +42,7 @@ action register_learner (do_add : bool) {
   }
 }
 
-action register_learners (learners : learner collection) (do_add : bool) {
+action register_learners (learners : learner collection, do_add : bool) {
   effect {
     var i = institution.get(caller);
     for l in learners do
@@ -108,7 +108,7 @@ action certify(certified : certification collection) {
   }
 }
 
-action transfer_learner_token (nb_tokens : int) (dest : address) {
+action transfer_learner_token (nb_tokens : int, dest : address) {
   require {
     r2: learner.contains(caller);
     r3: learner.get(caller).ltokens >= nb_tokens;
@@ -118,7 +118,7 @@ action transfer_learner_token (nb_tokens : int) (dest : address) {
   }
 }
 
-action transfer_institution_token (nb_tokens : int) (dest : address) {
+action transfer_institution_token (nb_tokens : int, dest : address) {
   require {
     r4: institution.contains(caller);
     r5: institution.get(caller).itokens >= nb_tokens;

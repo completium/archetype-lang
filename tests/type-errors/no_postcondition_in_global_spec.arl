@@ -1,6 +1,6 @@
 archetype no_postcondition_in_global_spec
 
-action main {
+action main () {
   effect {
     require(true)
   }

@@ -11,7 +11,7 @@ function f (i : int) : int {
   }
 }
 
-action main {
+action main () {
   effect {
     let res : int = f(0) in
     ()

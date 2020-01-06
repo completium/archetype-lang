@@ -7,7 +7,7 @@ states =
  | Completed with { i1 : balance = price; }
 
 
-action main {
+action main () {
   effect {
     require(true)
   }

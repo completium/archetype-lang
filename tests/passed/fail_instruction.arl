@@ -1,6 +1,6 @@
 archetype fail_instruction
 
-action main {
+action main () {
   effect {
     fail ("message")
   }

@@ -7,7 +7,7 @@ asset myasset {
   id : string;
 }
 
-action main {
+action main () {
   effect {
     i := 1
   }

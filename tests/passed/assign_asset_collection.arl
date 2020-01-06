@@ -4,7 +4,7 @@ asset myasset {
   id : string;
 }
 
-action main {
+action main () {
   effect {
     myasset := []
   }

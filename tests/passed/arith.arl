@@ -27,7 +27,7 @@ constant ro2 : role = @addr2
 constant t1 : tez = 1tz
 constant t2 : tez = 2tz
 
-action main {
+action main () {
   effect {
     var bool_bool_and : bool = b1 and b2;
     var bool_bool_or  : bool = b1 or b2;

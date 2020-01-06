@@ -11,7 +11,7 @@ asset other_asset identified by id_other {
   mypartition : my_asset partition;
 }
 
-action main {
+action main () {
   effect {
     my_asset.add ({ id = "id"; value = 0 }) (* fail *)
   }

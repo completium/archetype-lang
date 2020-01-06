@@ -1,6 +1,6 @@
 archetype cast
 
-action main {
+action main () {
   effect {
     var r1 : rational = 1;
 

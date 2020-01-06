@@ -26,12 +26,12 @@ states =
  | Success
  | Fail
 
-transition[%signedbyall [shipper, receiver]%] sign from Created {
+transition[%signedbyall [shipper, receiver]%] sign () from Created {
   to Signed
   when { balance = payment + incentiveR + incentiveS }
 }
 
-transition unilateral_abort from Created {
+transition unilateral_abort () from Created {
   called by shipper or receiver
 
   to Aborted
@@ -42,7 +42,7 @@ transition unilateral_abort from Created {
   }
 }
 
-transition[%signedbyall [shipper, receiver]%] abort from Signed {
+transition[%signedbyall [shipper, receiver]%] abort () from Signed {
   called by shipper or receiver
 
   to Aborted
@@ -53,7 +53,7 @@ transition[%signedbyall [shipper, receiver]%] abort from Signed {
   }
 }
 
-transition confirm from Signed {
+transition confirm () from Signed {
   called by receiver
 
   to Delivered
@@ -65,14 +65,14 @@ transition confirm from Signed {
   }
 }
 
-transition success from Delivered {
+transition success () from Delivered {
   called by shipper
 
   to Success
   when { now > (deliveryDate + businessDays) }
 }
 
-transition fail from Delivered {
+transition fail () from Delivered {
   called by receiver
 
   to Fail

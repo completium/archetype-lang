@@ -22,17 +22,17 @@ states =
  | Completed
 
 
-transition abort from Created {
+transition abort () from Created {
   called by buyer or seller
 
   to Aborted
 }
 
-transition confirm from Created {
+transition confirm () from Created {
   to Confirmed when { balance = price + penalty }
 }
 
-transition complete from Confirmed {
+transition complete () from Confirmed {
   called by oracle
 
   to Completed when { now < deadline }
@@ -42,7 +42,7 @@ transition complete from Confirmed {
   }
 }
 
-transition cancel from Confirmed {
+transition cancel () from Confirmed {
   called by oracle
 
   to Canceled

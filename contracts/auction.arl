@@ -10,7 +10,7 @@ asset bid identified by incumbent {
 variable deadline : date = 2019-01-01T00:00:00
 
 
-action place_bid {
+action place_bid () {
 
   require {
     c1 : now < deadline
@@ -24,7 +24,7 @@ action place_bid {
 
 
 (* Users need to exhibit proof they are not the winner to reclaim their bid *)
-action reclaim {
+action reclaim () {
 
   require {
     c2 : now < deadline;

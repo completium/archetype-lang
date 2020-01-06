@@ -13,7 +13,7 @@ archetype extension transferable (
     }
   }
 
-  action confirm_<%aRole> {
+  action confirm_<%aRole> () {
     called by <%aRole>_tmp
     effect {
       aRole := <%aRole>tmp

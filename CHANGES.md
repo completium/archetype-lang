@@ -10,6 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
  - Syntax : add ':' in declaration
+ - Syntax : function arguments are now declared like this `(id1 : type1, id2 : type2)` (instead of `(id1 : type1) (id2 : type2)`)
+ - Accept transfer is enable by default (use `refuse transfer` to disable it)
 
 ## [0.1.11] - 2019-12-12
 ### Added

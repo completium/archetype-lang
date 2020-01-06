@@ -21,7 +21,7 @@ states =
 | Running
 | Canceled
 
-transition[%signedbyall [patient; insurer]%] confirm from Created {
+transition[%signedbyall [patient; insurer]%] confirm () from Created {
   (*signed by [insrurer; patient]*)
   to Running
   with effect {
@@ -29,7 +29,7 @@ transition[%signedbyall [patient; insurer]%] confirm from Created {
   }
 }
 
-transition cancel from Created {
+transition cancel () from Created {
   called by insurer or patient
   to Canceled
 }
@@ -75,7 +75,7 @@ action pay_doctor (docid : address) {
   }
 }
 
-action pay_fee {
+action pay_fee () {
   specification {
     postcondition idem_balance_pay_fee {
       balance = before.balance
@@ -96,7 +96,7 @@ action pay_fee {
   }
 }
 
-action pay_consulation {
+action pay_consulation () {
   specification {
     idem_balance_pay_consultation : balance = before.balance;
   }

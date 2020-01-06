@@ -4,7 +4,7 @@ function f (i : int) : int {
   return i
 }
 
-action main {
+action main () {
   effect {
     let res : int = f(0) in
     ()

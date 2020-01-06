@@ -586,15 +586,14 @@ and pp_ident_quant fmt a =
 and pp_fun_ident_typ fmt (arg : lident_typ) =
   match arg with
   | (x, y, exts) ->
-    Format.fprintf fmt "(%a%a : %a)"
+    Format.fprintf fmt "%a%a : %a"
       pp_id x
       pp_extensions exts
       pp_type y
 
 and pp_fun_args fmt args =
-  match args with
-  | [] -> Format.fprintf fmt ""
-  | _ -> Format.fprintf fmt " %a" (pp_list " " pp_fun_ident_typ) args
+  Format.fprintf fmt " (%a)"
+    (pp_list ", " pp_fun_ident_typ) args
 
 (* -------------------------------------------------------------------------- *)
 and pp_field fmt { pldesc = f; _ } =

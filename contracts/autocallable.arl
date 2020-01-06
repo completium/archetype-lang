@@ -195,7 +195,7 @@ function compute_expected (d : date) : tez {
 (* PAYMENT action *)
 variable actual_payment : tez = 0tz
 
-action pay_note {
+action pay_note () {
    called by issuer
    effect {
       actual_payment += transferred
@@ -217,22 +217,22 @@ states =
  | Terminated
 
 (** Used by owner to confirm transaction. It transfers the price of contract (nominal) *)
-transition confirm from Created {
+transition confirm () from Created {
    called by owner
    to Confirmed when { transferred = nominal }
 }
 
-transition cancel from Created {
+transition cancel () from Created {
    called by owner or issuer
    to Canceled
 }
 
-transition check from Confirmed {
+transition check () from Confirmed {
   called by owner
   to Defaulted when { actual_payment < compute_expected(now) }
 }
 
-transition terminate from Confirmed {
+transition terminate () from Confirmed {
   called by issuer
   to Terminated when { actual_payment >= compute_expected(now) }
 }

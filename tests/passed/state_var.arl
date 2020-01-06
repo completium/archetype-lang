@@ -3,7 +3,7 @@ archetype state_var
 states =
 | Created initial
 
-action myaction {
+action myaction () {
   require {
     r1: state = Created;
   }

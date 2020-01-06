@@ -5,7 +5,7 @@ asset myasset {
   value: int;
 }
 
-action myaction {
+action myaction () {
   require {
     r1: myasset.get("myid").value = 0;
   }

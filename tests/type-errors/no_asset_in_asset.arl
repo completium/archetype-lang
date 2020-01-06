@@ -9,7 +9,7 @@ asset asset2 {
   a : asset1; (* pkey of asset1 instead *)
 }
 
-action anaction {
+action anaction () {
   effect {
     require (true)
   }

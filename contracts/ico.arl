@@ -56,7 +56,7 @@ enum gstate =
 
 variable vstate : gstate = Init
 
-function is_running : bool {
+function is_running () : bool {
   return
     match vstate with
     | PresaleRunning | Round1Running | Round2Running -> true
@@ -64,7 +64,7 @@ function is_running : bool {
     end
 }
 
-function get_rate : rational {
+function get_rate () : rational {
   let coeff : rational =
     match vstate with
     | PresaleRunning  -> 1.2
@@ -75,7 +75,7 @@ function get_rate : rational {
   return coeff * exchange_rate_bcd_tez
 }
 
-function get_remaining_tez_to_raise : tez {
+function get_remaining_tez_to_raise () : tez {
   return
     match vstate with
     | PresaleRunning | PresaleFinished -> presales_cap - nb_tez_raised
@@ -86,7 +86,7 @@ function get_remaining_tez_to_raise : tez {
     end
 }
 
-function transition_to_finished : gstate {
+function transition_to_finished () : gstate {
   return
     match vstate with
     | PresaleRunning  -> PresaleFinished
@@ -96,7 +96,7 @@ function transition_to_finished : gstate {
     end
 }
 
-action contribute {
+action contribute () {
 
   (* specification {
     postcondition p1 {
@@ -148,7 +148,7 @@ action contribute {
 (* the onlyonce extension specifies that withdraw action can be
   executed only once, that is a contributor can withdraw only once. *)
 
-action[%onlyonce%] withdraw {
+action[%onlyonce%] withdraw () {
   require {
     c5 : vstate = Round2Finished;
     c6 : nb_tez_raised <= soft_cap;

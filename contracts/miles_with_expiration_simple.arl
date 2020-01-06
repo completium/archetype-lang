@@ -15,7 +15,7 @@ asset owner identified by addr {
     miles : mile partition;
 }
 
-action add (ow : address) (newmile : mile) {
+action add (ow : address, newmile : mile) {
     called by admin
 	failif {
 	    f1: mile.contains(newmile.id)
@@ -28,7 +28,7 @@ action add (ow : address) (newmile : mile) {
 	}
 }
 
-action consume (ow : address) (qty : int) {
+action consume (ow : address, qty : int) {
     specification {
         postcondition p0 {
             let some before_o = before.owner.get(ow) in

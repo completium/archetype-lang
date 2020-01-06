@@ -581,13 +581,11 @@ effect:
  | COLON ty=type_t { ty }
 
 %inline function_args:
- |                   { [] }
- | xs=function_arg+  { xs }
+ | LPAREN xs=sl(COMMA, function_arg) RPAREN { xs }
 
 %inline function_arg:
- | LPAREN id=ident exts=option(extensions)
-     COLON ty=type_t RPAREN
-       { (id, ty, exts) }
+ | id=ident exts=option(extensions) COLON ty=type_t
+     { (id, ty, exts) }
 
 %inline assignment_operator_record:
  | EQUAL                    { ValueAssign }

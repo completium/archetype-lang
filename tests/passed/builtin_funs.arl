@@ -27,7 +27,7 @@ constant ro2 : role = @role2
 constant t1 : tez = 1tz
 constant t2 : tez = 2tz
 
-action main {
+action main () {
   effect {
     var int_min : int = min(i1, i2);
     var int_max : int = max(i1, i2);

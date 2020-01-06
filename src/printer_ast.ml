@@ -784,26 +784,27 @@ let rec pp_sexpr fmt (s : sexpr) =
   in
   pp_struct_poly pp_node fmt s
 
+let pp_fun_ident_typ fmt (arg : lident decl_gen) =
+  Format.fprintf fmt "%a : %a"
+    pp_id arg.name
+    pp_ptyp (Option.get arg.typ)
+
+let pp_fun_args fmt args =
+  Format.fprintf fmt " (%a)"
+    (pp_list " " pp_fun_ident_typ) args
+
 let pp_function fmt (f : function_) =
-  Format.fprintf fmt "function %a (%a) : %a =@\n  @[%a%a@]@\n"
+  Format.fprintf fmt "function %a%a : %a =@\n  @[%a%a@]@\n"
     pp_id f.name
-    (pp_list ", " (fun fmt (x : lident decl_gen) ->
-         Format.fprintf fmt "%a : %a"
-           pp_id x.name
-           pp_ptyp (Option.get x.typ)
-       )) f.args
+    pp_fun_args f.args
     pp_ptyp f.return
     (pp_option pp_specification) f.specification
     pp_instruction f.body
 
 let pp_transaction_action fmt (t : transaction) =
-  Format.fprintf fmt "action %a %a {@\n  @[%a%a%a%a%a%a%a@]@\n}@\n"
+  Format.fprintf fmt "action %a%a {@\n  @[%a%a%a%a%a%a%a@]@\n}@\n"
     pp_id t.name
-    (pp_list " " (fun fmt (x : lident decl_gen) ->
-         Format.fprintf fmt "(%a : %a)"
-           pp_id x.name
-           pp_ptyp (Option.get x.typ)
-       )) t.args
+    pp_fun_args t.args
     (pp_option pp_specification) t.specification
     (pp_do_if (not t.accept_transfer) (fun fmt _ -> Format.fprintf fmt "refuse transfer@\n")) ()
     (pp_option (fun fmt -> Format.fprintf fmt "called by %a@\n" pp_rexpr)) t.calledby
@@ -819,13 +820,9 @@ let rec pp_sexpr fmt (sexpr : sexpr) =
   | Sany -> pp_str fmt "any"
 
 let pp_transaction_transition fmt (t : transaction) (tr : lident transition) =
-  Format.fprintf fmt "transition %a %a from %a%a {@\n  @[%a%a%a%a%a%a@]@\n}@\n"
+  Format.fprintf fmt "transition %a%a from %a%a {@\n  @[%a%a%a%a%a%a@]@\n}@\n"
     pp_id t.name
-    (pp_list " " (fun fmt (x : lident decl_gen) ->
-         Format.fprintf fmt "(%a : %a)"
-           pp_id x.name
-           pp_ptyp (Option.get x.typ)
-       )) t.args
+    pp_fun_args t.args
     pp_sexpr tr.from
     (pp_option (pp_prefix " on " (fun fmt (x, y) -> Format.fprintf fmt "%a.%a" pp_id x pp_id y))) tr.on
     (pp_option pp_specification) t.specification

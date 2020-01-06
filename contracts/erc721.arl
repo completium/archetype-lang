@@ -9,7 +9,7 @@ asset token {
   owner[%delegable%] : role;
 }
 
-action transfer_ (k : role) (tk : token) {
+action transfer_ (k : role, tk : token) {
   called by tk.owner
   effect {
     tk.owner := k
