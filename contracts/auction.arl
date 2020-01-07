@@ -37,7 +37,7 @@ action reclaim () {
 }
 
 specification {
-  postcondition s1 {
+  contract invariant s1 {
     forall b in bid, balance > b.value
   }
 }

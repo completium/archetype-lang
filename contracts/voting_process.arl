@@ -1,4 +1,4 @@
-archetype governance
+archetype voting_process
 
 variable[%transferable%] chairperson : role = @tz1chairperson
 
@@ -73,13 +73,13 @@ transition bury () from Voting {
 }
 
 specification {
-  postcondition s3 {
+  contract invariant s3 {
     startDate < deadline
   }
-  postcondition s4 {
+  contract invariant s4 {
     (voter.select(the.hasVoted = true)).count() = ballot.sum(the.nbvotes)
   }
-  postcondition s5 {
+  contract invariant s5 {
     forall w in winner,
            forall b in ballot,
              let some wb = ballot.get(w.winvalue) in
