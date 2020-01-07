@@ -6,11 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Added
- - Next feature
+ - Add Scaml output
 
 ### Changed
- - Syntax : add ':' in declaration
- - Syntax : function arguments are now declared like this `(id1 : type1, id2 : type2)` (instead of `(id1 : type1) (id2 : type2)`)
+ - Syntax : add ':' between identifier and type in declaration `id : type` (instead of `id1 type1`)
+ - Syntax : add ',' between arguments in funciton `(id1 : type1, id2 : type2)` (instead of `(id1 : type1) (id2 : type2)`)
  - Accept transfer is enable by default (use `refuse transfer` to disable it)
 
 ## [0.1.11] - 2019-12-12

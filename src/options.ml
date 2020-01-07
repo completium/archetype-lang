@@ -3,6 +3,7 @@ type target_lang =
   | SmartPy
   | Whyml
   | Markdown
+  | Scaml
   | Ocaml
   | None
 [@@deriving show {with_path = false}]

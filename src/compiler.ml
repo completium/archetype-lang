@@ -42,6 +42,7 @@ let output (model : Model.model) =
       | None         -> Printer_model.pp_model
       | Ligo         -> Printer_model_ligo.pp_model
       | SmartPy      -> Printer_model_smartpy.pp_model
+      | Scaml        -> Printer_model_scaml.pp_model
       | Ocaml        -> Printer_model_ocaml.pp_model
       | Whyml        ->
         fun fmt model ->
@@ -141,6 +142,7 @@ let generate_target model =
     |> generate_api_storage
     |> output
 
+  | Scaml
   | Ocaml ->
     model
     |> generate_storage
@@ -202,6 +204,7 @@ let main () =
   let f = function
     | "ligo"          -> Options.target := Ligo
     | "smartpy"       -> Options.target := SmartPy
+    | "scaml"         -> Options.target := Scaml
     | "ocaml"         -> Options.target := Ocaml
     | "whyml"         -> Options.target := Whyml
     | "markdown"      -> Options.target := Markdown
@@ -213,7 +216,7 @@ let main () =
   let arg_list = Arg.align [
       "-t", Arg.String f, "<lang> Transcode to <lang> language";
       "--target", Arg.String f, " Same as -t";
-      "--list-target", Arg.Unit (fun _ -> Format.printf "target available:@\n  ligo@\n  smartpy@\n  ocaml@\n  whyml@\n  markdown@\n"; exit 0), " List available target languages";
+      "--list-target", Arg.Unit (fun _ -> Format.printf "target available:@\n  ligo@\n  scaml@\n  whyml@\n  markdown@\n"; exit 0), " List available target languages";
       (* "--storage-policy", Arg.String (fun s -> match s with
           | "flat" -> Options.storage_policy := Flat
           | "record" -> Options.storage_policy := Record
