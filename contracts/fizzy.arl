@@ -70,7 +70,7 @@ action manual (fi : string, pr : string, newst : status) {
 
 specification {
   (* this contract does not transfer any tez *)
-  postcondition s2 {
+  contract invariant s2 {
     transfers_by_tx(anytx) = 0
   }
 }
