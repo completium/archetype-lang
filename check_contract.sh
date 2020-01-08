@@ -32,6 +32,34 @@ process_ligo() {
     rm -fr $OUT *.pp.ligo $TZ
 }
 
+process_scaml() {
+    FILE=$1
+    OUT=$FILE.ml
+    TZ=out.tz
+    rm -fr $OUT
+    $BIN -t scaml $FILE >$OUT
+    RET=$(echo $?)
+    if [ ${RET} -eq 0 ]; then
+        echo -ne "\033[32m OK \033[0m"
+    else
+        echo -ne "\033[31m KO \033[0m"
+        GRET=1
+    fi
+
+    if [ -x "$(command -v scamlc)" ]; then
+        scamlc $OUT >$TZ 2> /dev/null
+        RET=$(echo $?)
+        if [ ${RET} -eq 0 ]; then
+            echo -ne "\033[32m OK \033[0m"
+        else
+            echo -ne "\033[31m KO \033[0m"
+            GRET=1
+        fi
+    fi
+    rm -fr $OUT $TZ
+}
+
+
 process_smartpy() {
     echo -ne "smartpy:   "
     FILE=$1
@@ -106,6 +134,7 @@ process() {
     FILE=$1
     printf '%-60s' $FILE
     process_ligo $FILE
+    process_scaml $FILE
     #    process_smartpy $FILE
     #    process_ocaml $FILE
     process_whyml $FILE

@@ -69,27 +69,7 @@ let pp_model fmt (model : model) =
 
   let pp_prelude fmt _ =
     Format.fprintf fmt
-      "type operation = unit@\n\
-       @\n\
-       type address = string@\n\
-       type timestamp = int@\n\
-       type tez = int@\n\
-       type rational = float@\n\
-       type duration = int@\n\
-       @\n\
-       exception Exception of string@\n\
-       @\n\
-       module Current : sig@\n  \
-       val sender   : unit -> address@\n  \
-       val amount   : unit -> tez@\n  \
-       val time     : unit -> timestamp@\n  \
-       val failwith : string -> unit@\n\
-       end = struct@\n  \
-       let sender _ = \"\"@\n  \
-       let amount _ = 0@\n  \
-       let time _ = 0@\n  \
-       let failwith s = failwith s@\n\
-       end@\n"
+      "open SCaml@\n"
   in
 
   let pp_btyp fmt = function
@@ -133,7 +113,7 @@ let pp_model fmt (model : model) =
       Format.fprintf fmt "%a"
         (pp_list " * " pp_type) ts
     | Tassoc (k, v) ->
-      Format.fprintf fmt "(%a * %a) list"
+      Format.fprintf fmt "(%a, %a) map"
         pp_btyp k
         pp_type v
     | Tunit ->
@@ -175,11 +155,9 @@ let pp_model fmt (model : model) =
         "let add_%s (s, asset : storage * %s) : storage =@\n  \
          let key = asset.%s in@\n  \
          { s with@\n    \
-         %s_keys = add_list key s.%s_keys;@\n    \
-         %s_assets = put_map key asset s.%s_assets; }@\n"
+         %s_assets = Map.update key (Some asset) s.%s_assets; }@\n"
         an an
         k
-        an an
         an an
 
     | Remove an ->
@@ -470,76 +448,6 @@ let pp_model fmt (model : model) =
     | APIContainer v -> pp_container_const fmt v
     | APIFunction  v -> pp_function_const fmt v
     | APIBuiltin   v -> pp_builtin_const fmt v
-  in
-
-
-  let pp_utils fmt l =
-    let pp_util_add fmt _ =
-      Format.fprintf fmt
-        "@\nlet add_list elt l = List.rev (elt::(List.rev l))@\n"
-    in
-
-    let pp_util_remove fmt _ =
-      Format.fprintf fmt
-        "@\nlet remove_list elt l =@\n  \
-         List.fold_right (fun x accu ->@\n      \
-         if x = elt@\n      \
-         then accu@\n      \
-         else elt::accu@\n    \
-         ) l []@\n"
-    in
-
-    let pp_util_put_map fmt _ =
-      Format.fprintf fmt
-        "@\nlet put_map (k : 'a) (v : 'b) (map  : ('a * 'b) list) : ('a * 'b) list = (k, v)::map@\n"
-    in
-
-    let pp_util_remove_map fmt _ =
-      Format.fprintf fmt
-        "@\nlet remove_map (k : 'a) (map : ('a * 'b) list) : ('a * 'b) list = map@\n"
-    in
-
-    let ga, gr = List.fold_left (fun (ga, gr) (x : api_item) ->
-        match x.node_item with
-        | APIStorage   (Get           _) -> (ga, gr)
-        | APIStorage   (Set           _) -> (ga, gr)
-        | APIStorage   (Add           _) -> (true, gr)
-        | APIStorage   (Remove        _) -> (true, true)
-        | APIStorage   (Clear         _) -> (ga, gr)
-        | APIStorage   (Reverse       _) -> (ga, gr)
-        | APIStorage   (UpdateAdd     _) -> (true, gr)
-        | APIStorage   (UpdateRemove  _) -> (true, true)
-        | APIStorage   (UpdateClear   _) -> (ga, gr)
-        | APIStorage   (UpdateReverse _) -> (ga, gr)
-        | APIStorage   (ToKeys        _) -> (ga, gr)
-        | APIStorage   (ColToKeys     _) -> (ga, gr)
-        | APIFunction  (Select        _) -> (ga, gr)
-        | APIFunction  (Sort          _) -> (ga, gr)
-        | APIFunction  (Contains      _) -> (ga, gr)
-        | APIFunction  (Nth           _) -> (ga, gr)
-        | APIFunction  (Count         _) -> (ga, gr)
-        | APIFunction  (Sum           _) -> (ga, gr)
-        | APIFunction  (Min           _) -> (ga, gr)
-        | APIFunction  (Max           _) -> (ga, gr)
-        | APIContainer (AddItem       _) -> (ga, gr)
-        | APIContainer (RemoveItem    _) -> (ga, gr)
-        | APIContainer (ClearItem     _) -> (ga, gr)
-        | APIContainer (ReverseItem   _) -> (ga, gr)
-        | APIBuiltin   (MinBuiltin    _) -> (ga, gr)
-        | APIBuiltin   (MaxBuiltin    _) -> (ga, gr)
-        | APIFunction  (Shallow       _) -> (ga, gr)
-        | APIFunction  (Unshallow     _) -> (ga, gr)
-        | APIFunction  (Listtocoll    _) -> (ga, gr)
-        | APIFunction  (Head          _) -> (ga, gr)
-        | APIFunction  (Tail          _) -> (ga, gr)
-      )   (false, false) l in
-    if   ga || gr
-    then
-      Format.fprintf fmt "(* Utils *)@\n%a%a%a%a@\n"
-        pp_util_add ()
-        (pp_do_if gr pp_util_remove) ()
-        pp_util_put_map ()
-        pp_util_remove_map ()
   in
 
   let pp_api_item fmt (api_item : api_item) =
@@ -1107,10 +1015,10 @@ let pp_model fmt (model : model) =
       | Mvarparam v    -> pp_id fmt v
       | Mvarthe        -> pp_str fmt "the"
       | Mvarstate      -> pp_str fmt "state_"
-      | Mnow           -> pp_str fmt "Current.time()"
-      | Mtransferred   -> pp_str fmt "Current.amount()"
-      | Mcaller        -> pp_str fmt "Current.sender()"
-      | Mbalance       -> pp_str fmt "Current.balance()"
+      | Mnow           -> pp_str fmt "Global.get_now ()"
+      | Mtransferred   -> pp_str fmt "Global.get_amount ()"
+      | Mcaller        -> pp_str fmt "Global.get_sender ()"
+      | Mbalance       -> pp_str fmt "Global.get_balance ()"
       | Mnone          -> pp_str fmt "None"
       | Msome v        ->
         Format.fprintf fmt "Some (%a)"
@@ -1297,29 +1205,12 @@ let pp_model fmt (model : model) =
 
   let pp_storage fmt (s : storage) =
     match s with
-    | [] -> pp_str fmt "type storage = unit@\n"
+    | [] -> Format.fprintf fmt "type storage = unit@\n"
     | [i] ->
       Format.fprintf fmt "type storage = %a@\n"
         pp_type i.typ
     | _ ->
       Format.fprintf fmt "type storage = {@\n  @[%a@]@\n}@\n"
-        (pp_list "@\n" pp_storage_item) s
-  in
-
-  let pp_init_function fmt (s : storage) =
-    let pp_storage_item fmt (si : storage_item) =
-      Format.fprintf fmt "%a = %a;"
-        pp_id si.id
-        (pp_cast Rhs si.typ si.default.type_ pp_mterm) si.default
-    in
-
-    match s with
-    | [] -> pp_str fmt "let initialize _ = ()@\n"
-    | [i] ->
-      Format.fprintf fmt "let initialize _ = %a@\n"
-        (pp_cast Rhs i.typ i.default.type_ pp_mterm) i.default
-    | _ ->
-      Format.fprintf fmt "let initialize _ = {@\n  @[%a@]@\n}@\n"
         (pp_list "@\n" pp_storage_item) s
   in
 
@@ -1357,16 +1248,12 @@ let pp_model fmt (model : model) =
                       @\n%a\
                       @\n%a\
                       @\n%a\
-                      @\n%a\
-                      @\n%a\
                       @."
     pp_bin ()
     pp_model_name ()
     pp_prelude ()
     (pp_list "@\n" pp_decl) model.decls
     pp_storage model.storage
-    pp_init_function model.storage
-    pp_utils model.api_items
     pp_api_items model.api_items
     (pp_list "@\n" pp_function) model.functions
 

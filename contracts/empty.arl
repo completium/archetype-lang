@@ -10,7 +10,6 @@ action myaction () {
   failif {
   }
   effect {
-    let a : int = 0 in
-    a := 1
+    ()
   }
 }
