@@ -43,7 +43,6 @@ let output (model : Model.model) =
       | Ligo         -> Printer_model_ligo.pp_model
       | SmartPy      -> Printer_model_smartpy.pp_model
       | Scaml        -> Printer_model_scaml.pp_model
-      | Ocaml        -> Printer_model_ocaml.pp_model
       | Whyml        ->
         fun fmt model ->
           let mlw = raise_if_error gen_output_error Gen_why3.to_whyml model in
@@ -142,8 +141,7 @@ let generate_target model =
     |> generate_api_storage
     |> output
 
-  | Scaml
-  | Ocaml ->
+  | Scaml ->
     model
     |> generate_storage
     |> replace_declvar_by_letin
@@ -205,7 +203,6 @@ let main () =
     | "ligo"          -> Options.target := Ligo
     | "smartpy"       -> Options.target := SmartPy
     | "scaml"         -> Options.target := Scaml
-    | "ocaml"         -> Options.target := Ocaml
     | "whyml"         -> Options.target := Whyml
     | "markdown"      -> Options.target := Markdown
     |  s ->

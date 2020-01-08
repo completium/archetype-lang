@@ -4,7 +4,6 @@ type target_lang =
   | Whyml
   | Markdown
   | Scaml
-  | Ocaml
   | None
 [@@deriving show {with_path = false}]
 
