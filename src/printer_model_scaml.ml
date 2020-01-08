@@ -15,7 +15,7 @@ let emit_error (desc : error_desc) =
   let str = Format.asprintf "%a@." pp_error_desc desc in
   raise (Anomaly str)
 
-let const_storage = "s_"
+let const_storage = "_s"
 let const_state = "state"
 let const_operations = "ops_"
 
@@ -135,7 +135,7 @@ let pp_model fmt (model : model) =
       let _, t = Utils.get_asset_key model an in
       Format.fprintf fmt
         "let get_%s (s, key : storage * %a) : %s =@\n  \
-         match List.assoc_opt key s.%s_assets with@\n  \
+         match Map.get key s.%s_assets with@\n  \
          | Some v -> v@\n  \
          | _ -> failwith \"not_found\"@\n"
         an pp_btyp t an an
@@ -145,7 +145,7 @@ let pp_model fmt (model : model) =
       Format.fprintf fmt
         "let set_%s (s, key, asset : storage * %a * %s) : storage =@\n  \
          { s with@\n    \
-         %s_assets = put_map key asset s.%s_assets; }@\n"
+         %s_assets = Map.update key (Some asset) s.%s_assets; }@\n"
         an pp_btyp t an
         an an
 
@@ -165,30 +165,25 @@ let pp_model fmt (model : model) =
       Format.fprintf fmt
         "let remove_%s (s, key : storage * %a) : storage =@\n  \
          { s with@\n    \
-         %s_keys = remove_list key s.%s_keys;@\n    \
-         %s_assets = remove_map key s.%s_assets; }@\n"
+         %s_assets = Map.update key None s.%s_assets; }@\n"
         an pp_btyp t
-        an an
         an an
 
     | Clear an ->
+      let _, t = Utils.get_asset_key model an in
       Format.fprintf fmt
         "let clear_%s (s : storage) : storage =@\n  \
          { s with@\n    \
-         %s_keys = [];@\n    \
-         %s_assets = []; }@\n"
+         %s_assets = (Map.empty : (%a, %s) map); }@\n"
         an
-        an
-        an
+        an pp_btyp t an
 
     | Reverse an ->
       Format.fprintf fmt
         "let reverse_%s (s : storage) : storage =@\n  \
          { s with@\n    \
-         %s_keys = List.rev s.%s_keys;@\n    \
          %s_assets = List.rev s.%s_assets; }@\n"
         an
-        an an
         an an
 
     | UpdateAdd (an, fn) ->
@@ -197,8 +192,8 @@ let pp_model fmt (model : model) =
       let kk, _ = Utils.get_asset_key model ft in
       Format.fprintf fmt
         "let add_%s_%s (s, a, b : storage * %s * %s) : storage =@\n  \
-         let asset = { a with %s = add_list b.%a a.%s; } in@\n  \
-         { s with %s_assets = put_map a.%a asset s.%s_assets }@\n"
+         let asset = { a with %s = (b.%a)::(a.%s); } in@\n  \
+         { s with %s_assets = Map.update a.%a (Some asset) s.%s_assets }@\n"
         an fn an ft
         fn pp_str kk fn
         an pp_str k an
@@ -250,9 +245,12 @@ let pp_model fmt (model : model) =
         an
 
     | ColToKeys an ->
+      let _k, t = Utils.get_asset_key model an in
       Format.fprintf fmt
-        "let col_to_keys_%s (s : storage) : storage =@\n  \
-         s (*TODO*)@\n"
+        "let col_to_keys_%s (s : storage) : %a list =@\n  \
+         let res = Map.fold (fun k v accu -> k::accu) s.%s_assets [] in@\n  \
+         List.rev res@\n"
+        an pp_btyp t
         an
   in
 
@@ -292,9 +290,9 @@ let pp_model fmt (model : model) =
       let _, t = Utils.get_asset_key model an in
       Format.fprintf fmt
         "let contains_%s (l, key : %a list * %a) : bool =@\n  \
-         List.fold_right (fun x accu ->@\n      \
+         List.fold_left (fun accu x ->@\n      \
          accu || x = key@\n    \
-         ) l false@\n"
+         ) false l@\n"
         an
         pp_btyp t
         pp_btyp t
@@ -335,14 +333,14 @@ let pp_model fmt (model : model) =
       let _, t, _ = Utils.get_asset_field model (an, fn) in
       Format.fprintf fmt
         "let sum_%s_%s (s, l : storage * %a list) : %a =@\n  \
-         List.fold_right (fun k accu ->@\n      \
+         List.fold_left (fun accu k ->@\n      \
          let x =@\n        \
          match List.assoc_opt k s.%s_assets with@\n        \
          | Some v -> v@\n        \
          | _ -> failwith \"not_found\"@\n      \
          in@\n      \
          accu + x.%s@\n    \
-         ) l %s@\n"
+         ) %s l@\n"
         an fn pp_btyp tk pp_type t
         an
         fn
@@ -362,7 +360,7 @@ let pp_model fmt (model : model) =
          | _ -> failwith \"not_found\" @\n    \
          in@\n    \
          let init = x.%s in@\n    \
-         List.fold_right (fun k accu ->@\n        \
+         List.fold_right (fun accu k ->@\n        \
          let x = @\n          \
          match List.assoc_opt k s.%s_assets with@\n          \
          | Some v -> v@\n          \
@@ -371,7 +369,7 @@ let pp_model fmt (model : model) =
          if accu > x.%s@\n        \
          then x.%s@\n        \
          else accu@\n      \
-         ) t init@\n"
+         ) init t@\n"
         an fn pp_btyp tk pp_type t
         an
         fn
@@ -393,7 +391,7 @@ let pp_model fmt (model : model) =
          | _ -> failwith \"not_found\" @\n    \
          in@\n    \
          let init = x.%s in@\n    \
-         List.fold_right (fun k accu ->@\n        \
+         List.fold_right (fun accu k ->@\n        \
          let x = @\n          \
          match List.assoc_opt k s.%s_assets with@\n          \
          | Some v -> v@\n          \
@@ -402,7 +400,7 @@ let pp_model fmt (model : model) =
          if accu < x.%s@\n        \
          then x.%s@\n        \
          else accu@\n      \
-         ) t init@\n"
+         ) init t@\n"
         an fn pp_btyp tk pp_type t
         an
         fn
@@ -560,8 +558,9 @@ let pp_model fmt (model : model) =
 
       | Mget (c, k) ->
         let pp fmt (c, k) =
-          Format.fprintf fmt "get_%a (_s, %a)"
+          Format.fprintf fmt "get_%a (%s, %a)"
             pp_str c
+            const_storage
             f k
         in
         pp fmt (c, k)
@@ -577,8 +576,9 @@ let pp_model fmt (model : model) =
 
       | Mset (c, _l, k, v) ->
         let pp fmt (c, k, v) =
-          Format.fprintf fmt "set_%a (_s, %a, %a)"
+          Format.fprintf fmt "set_%a (%s, %a, %a)"
             pp_str c
+            const_storage
             f k
             f v
         in
@@ -586,17 +586,19 @@ let pp_model fmt (model : model) =
 
       | Maddasset (an, i) ->
         let pp fmt (an, i) =
-          Format.fprintf fmt "add_%a (_s, %a)"
+          Format.fprintf fmt "add_%a (%s, %a)"
             pp_str an
+            const_storage
             f i
         in
         pp fmt (an, i)
 
       | Maddfield (an, fn, c, i) ->
         let pp fmt (an, fn, c, i) =
-          Format.fprintf fmt "add_%a_%a (_s, %a, %a)"
+          Format.fprintf fmt "add_%a_%a (%s, %a, %a)"
             pp_str an
             pp_str fn
+            const_storage
             f c
             f i
         in
@@ -619,8 +621,9 @@ let pp_model fmt (model : model) =
            | _ -> false, ""
           ) in
         let pp fmt (an, i) =
-          Format.fprintf fmt "remove_%a (_s, %a%a)"
+          Format.fprintf fmt "remove_%a (%s, %a%a)"
             pp_str an
+            const_storage
             f i
             (pp_do_if cond pp_str) str
         in
@@ -635,9 +638,10 @@ let pp_model fmt (model : model) =
            | _ -> false, ""
           ) in
         let pp fmt (an, fn, c, i) =
-          Format.fprintf fmt "remove_%a_%a (_s, %a, %a%a)"
+          Format.fprintf fmt "remove_%a_%a (%s, %a, %a%a)"
             pp_str an
             pp_str fn
+            const_storage
             f c
             f i
             (pp_do_if cond pp_str) str
@@ -654,16 +658,18 @@ let pp_model fmt (model : model) =
 
       | Mclearasset (an) ->
         let pp fmt (an) =
-          Format.fprintf fmt "clear_%a (_s)"
+          Format.fprintf fmt "clear_%a (%s)"
             pp_str an
+            const_storage
         in
         pp fmt (an)
 
       | Mclearfield (an, fn, i) ->
         let pp fmt (an, fn, i) =
-          Format.fprintf fmt "clear_%a_%a (_s, %a)"
+          Format.fprintf fmt "clear_%a_%a (%s, %a)"
             pp_str an
             pp_str fn
+            const_storage
             f i
         in
         pp fmt (an, fn, i)
@@ -677,16 +683,18 @@ let pp_model fmt (model : model) =
 
       | Mreverseasset (an) ->
         let pp fmt (an) =
-          Format.fprintf fmt "reverse_%a (_s)"
+          Format.fprintf fmt "reverse_%a (%s)"
             pp_str an
+            const_storage
         in
         pp fmt (an)
 
       | Mreversefield (an, fn, i) ->
         let pp fmt (an, fn, i) =
-          Format.fprintf fmt "reverse_%a_%a (_s, %a)"
+          Format.fprintf fmt "reverse_%a_%a (%s, %a)"
             pp_str an
             pp_str fn
+            const_storage
             f i
         in
         pp fmt (an, fn, i)
@@ -700,8 +708,9 @@ let pp_model fmt (model : model) =
 
       | Mselect (an, c, p) ->
         let pp fmt (an, c, p) =
-          Format.fprintf fmt "select_%a (_s, %a, fun the -> %a)"
+          Format.fprintf fmt "select_%a (%s, %a, fun the -> %a)"
             pp_str an
+            const_storage
             f c
             f p
         in
@@ -763,27 +772,30 @@ let pp_model fmt (model : model) =
 
       | Msum (an, fd, c) ->
         let pp fmt (an, fd, c) =
-          Format.fprintf fmt "sum_%a_%a (_s, %a)"
+          Format.fprintf fmt "sum_%a_%a (%s, %a)"
             pp_str an
             pp_id fd
+            const_storage
             f c
         in
         pp fmt (an, fd, c)
 
       | Mmin (an, fd, c) ->
         let pp fmt (an, fd, c) =
-          Format.fprintf fmt "min_%a_%a (_s, %a)"
+          Format.fprintf fmt "min_%a_%a (%s, %a)"
             pp_str an
             pp_id fd
+            const_storage
             f c
         in
         pp fmt (an, fd, c)
 
       | Mmax (an, fd, c) ->
         let pp fmt (an, fd, c) =
-          Format.fprintf fmt "max_%a_%a (_s, %a)"
+          Format.fprintf fmt "max_%a_%a (%s, %a)"
             pp_str an
             pp_id fd
+            const_storage
             f c
         in
         pp fmt (an, fd, c)
@@ -1230,7 +1242,9 @@ let pp_model fmt (model : model) =
 
   let pp_function fmt f =
     let k, fs, ret, extra_arg = match f.node with
-      | Entry f -> "let", f, Some (Ttuple [Tcontainer (Toperation, Collection); Tstorage]), " (_s : storage)"
+      | Entry f ->
+        let str : string = Format.asprintf "let [@entry name=\"%a\"]" pp_id f.name in
+        str, f, Some (Ttuple [Tcontainer (Toperation, Collection); Tstorage]), " (_s : storage)"
       | Function (f, a) -> "let", f, Some a, ""
     in
     Format.fprintf fmt "%a %a %a%s%a =@\n@[<v 2>  %a@]@\n"
