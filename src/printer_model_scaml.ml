@@ -188,26 +188,30 @@ let pp_model fmt (model : model) =
 
     | UpdateAdd (an, fn) ->
       let k, _t = Utils.get_asset_key model an in
-      let ft, _c = Utils.get_field_container model an fn in
+      let ft, c = Utils.get_field_container model an fn in
       let kk, _ = Utils.get_asset_key model ft in
       Format.fprintf fmt
         "let add_%s_%s (s, a, b : storage * %s * %s) : storage =@\n  \
          let asset = { a with %s = (b.%a)::(a.%s); } in@\n  \
+         %a
          { s with %s_assets = Map.update a.%a (Some asset) s.%s_assets }@\n"
         an fn an ft
         fn pp_str kk fn
+        (pp_do_if (match c with | Partition -> true | _ -> false) (fun fmt -> Format.fprintf fmt "let s = add_%s(s, b) in@\n")) ft
         an pp_str k an
 
     | UpdateRemove (an, fn) ->
       let k, _t = Utils.get_asset_key model an in
-      let ft, _c = Utils.get_field_container model an fn in
+      let ft, c = Utils.get_field_container model an fn in
       let _kk, tt = Utils.get_asset_key model ft in
       Format.fprintf fmt
         "let remove_%s_%s (s, a, key : storage * %s * %a) : storage =@\n  \
          let asset = { a with %s = List.rev (List.fold_left (fun accu k -> if k = key then accu else k::accu) [] a.%s) } in@\n  \
+         %a
          { s with %s_assets = Map.update a.%a (Some asset) s.%s_assets }@\n"
         an fn an pp_btyp tt
         fn fn
+        (pp_do_if (match c with | Partition -> true | _ -> false) (fun fmt -> Format.fprintf fmt "let s = remove_%s(s, key) in@\n")) ft
         an pp_str k an
 
     | UpdateClear (an, fn) ->
@@ -567,10 +571,10 @@ let pp_model fmt (model : model) =
 
       | Mgetfrommap (an, k, c) ->
         let pp fmt (an, k, c) =
-          Format.fprintf fmt "getfrommap_%a (%a, %a)"
-            pp_str an
+          Format.fprintf fmt "(match Map.get (%a) (%a) with | Some x -> x | None -> failwith \"%s not_found\")"
             f k
             f c
+            an
         in
         pp fmt (an, k, c)
 
@@ -1019,8 +1023,8 @@ let pp_model fmt (model : model) =
           f b
       | Mdeclvar (_ids, _t, _v) ->
         emit_error UnsupportedDeclVar
-      | Mvarstorevar v -> Format.fprintf fmt "_s.%a" pp_id v
-      | Mvarstorecol v -> Format.fprintf fmt "_s.%a" pp_id v
+      | Mvarstorevar v -> Format.fprintf fmt "%s.%a" const_storage pp_id v
+      | Mvarstorecol v -> Format.fprintf fmt "%s.%a" const_storage pp_id v
       | Mvarenumval v  -> pp_id fmt v
       | Mvarfield v    -> pp_id fmt v
       | Mvarlocal v    -> pp_id fmt v
@@ -1079,7 +1083,7 @@ let pp_model fmt (model : model) =
       | Mduration v -> Core.pp_duration_in_seconds fmt v
       | Mdotasset (e, i)
       | Mdotcontract (e, i) ->
-        Format.fprintf fmt "%a.%a"
+        Format.fprintf fmt "(%a).%a"
           f e
           pp_id i
       | Mtuple l ->

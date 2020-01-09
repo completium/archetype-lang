@@ -8,6 +8,7 @@ mwe_medium.arl \
 "
 
 # escrow_without_spec.arl \
+#certification_token.arl \
 
 
 RET=0

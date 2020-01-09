@@ -1126,7 +1126,7 @@ let pp_model fmt (model : model) =
 
     | UpdateAdd (an, fn) ->
       let k, t = Utils.get_asset_key model an in
-      let ft, _c = Utils.get_field_container model an fn in
+      let ft, c = Utils.get_field_container model an fn in
       let kk, _ = Utils.get_asset_key model ft in
       Format.fprintf fmt
         "function add_%s_%s (const s : storage_type; const a : %s; const b : %s) : storage_type is@\n  \
@@ -1145,11 +1145,11 @@ let pp_model fmt (model : model) =
         fn kk fn
         pp_btyp t an an
         an
-        (pp_do_if (match _c with | Partition -> true | _ -> false) (fun fmt -> Format.fprintf fmt "s := add_%s(s, b);@\n")) ft
+        (pp_do_if (match c with | Partition -> true | _ -> false) (fun fmt -> Format.fprintf fmt "s := add_%s(s, b);@\n")) ft
 
     | UpdateRemove (an, fn) ->
       let k, t = Utils.get_asset_key model an in
-      let ft, _c = Utils.get_field_container model an fn in
+      let ft, c = Utils.get_field_container model an fn in
       let _kk, tt = Utils.get_asset_key model ft in
       Format.fprintf fmt
         "function remove_%s_%s (const s : storage_type; const a : %s; const key : %a) : storage_type is@\n  \
@@ -1180,7 +1180,7 @@ let pp_model fmt (model : model) =
         fn
         pp_btyp t an an
         an
-        (pp_do_if (match _c with | Partition -> true | _ -> false) (fun fmt -> Format.fprintf fmt "s := remove_%s(s, key);@\n")) ft
+        (pp_do_if (match c with | Partition -> true | _ -> false) (fun fmt -> Format.fprintf fmt "s := remove_%s(s, key);@\n")) ft
 
     | UpdateClear (_an, _fn) ->
       (* let k, t = Utils.get_asset_key model an in *)

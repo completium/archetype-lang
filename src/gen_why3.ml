@@ -412,7 +412,8 @@ let rec map_mtype (t : M.type_) : loc_typ =
       | M.Ttuple l                            -> Tytuple (l |> List.map map_mtype |> deloc)
       | M.Tunit                               -> Tyunit
       | M.Tstate                              -> Tystate
-      | _ -> assert false)
+      | M.Tassoc (_, _)                       -> Tyunit (* TODO: replace by the right type *)
+      | _ -> (Format.eprintf "type: %a@\n" Model.pp_type_ t; assert false))
 
 let is_local_invariant _m an t =
   let rec internal_is_local acc (term : M.mterm) =
