@@ -3,7 +3,7 @@ archetype sig_challenge
 asset challenge {
   id : string;
   addr : address;
-  val : bool = false;
+  solved : bool = false;
 }
 
 action emit (c_id : string, addr_ : address) {
@@ -17,6 +17,6 @@ action resolve (c_id : string) {
     r1: challenge.get(c_id).addr = caller;
   }
   effect {
-    challenge.update(c_id, {val = true})
+    challenge.update(c_id, {solved = true})
   }
 }
