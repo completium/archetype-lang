@@ -1084,17 +1084,21 @@ let pp_model fmt (model : model) =
 
     | Add an ->
       let k, t = Utils.get_asset_key model an in
+      (* let ft, c = Utils.get_field_container model an fn in *)
       Format.fprintf fmt
         "function add_%s (const s : storage_type; const a : %s) : storage_type is@\n  \
          begin@\n    \
          const key : %a = a.%s;@\n    \
          const map_local : map(%a, %s) = s.%s_assets;@\n    \
+         if map_mem(key, map_local) then failwith (\"key already exists\") else skip;@\n    \
          map_local[key] := a;@\n    \
          s.%s_assets := map_local;@\n  \
          end with (s)@\n"
         an an
         pp_btyp t k
         pp_btyp t an an
+        (* (pp_do_if (match c with | Partition -> true | _ -> false)
+           (fun fmt -> Format.fprintf fmt "")) ft *)
         an
 
     | Remove an ->
@@ -1133,8 +1137,9 @@ let pp_model fmt (model : model) =
          begin@\n    \
          const asset_key : %a = a.%s;@\n    \
          const asset_val : %s = get_%s(s, asset_key);@\n    \
-         asset_val.%s := cons(b.%s, asset_val.%s);@\n    \
          const map_local : map(%a, %s) = s.%s_assets;@\n    \
+         %a\
+         asset_val.%s := cons(b.%s, asset_val.%s);@\n    \
          map_local[asset_key] := asset_val;@\n    \
          s.%s_assets := map_local;@\n    \
          %a  \
@@ -1142,8 +1147,10 @@ let pp_model fmt (model : model) =
         an fn an ft
         pp_btyp t k
         an an
-        fn kk fn
         pp_btyp t an an
+        (pp_do_if (match c with | Collection -> true | _ -> false)
+          (fun fmt _ -> Format.fprintf fmt "if not map_mem(b.%s, s.%s_assets) then failwith (\"key of b does not exist\") else skip;@\n    " kk ft)) ()
+        fn kk fn
         an
         (pp_do_if (match c with | Partition -> true | _ -> false) (fun fmt -> Format.fprintf fmt "s := add_%s(s, b);@\n")) ft
 

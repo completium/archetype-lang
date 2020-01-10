@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
  - New feature
 
+### Changed
+ - Add guard condition in `Add` and `UpdateAdd` api storage
+
 ## [0.1.12] - 2020-01-09
 ### Added
  - Add Scaml output
