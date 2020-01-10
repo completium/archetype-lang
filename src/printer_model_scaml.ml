@@ -154,10 +154,12 @@ let pp_model fmt (model : model) =
       Format.fprintf fmt
         "let add_%s (s, asset : storage * %s) : storage =@\n  \
          let key = asset.%s in@\n  \
+         if Map.mem key s.%s_assets then failwith \"key already exists\";@\n  \
          { s with@\n    \
          %s_assets = Map.update key (Some asset) s.%s_assets; }@\n"
         an an
         k
+        an
         an an
 
     | Remove an ->
@@ -193,11 +195,14 @@ let pp_model fmt (model : model) =
       Format.fprintf fmt
         "let add_%s_%s (s, a, b : storage * %s * %s) : storage =@\n  \
          let asset = { a with %s = (b.%a)::(a.%s); } in@\n  \
-         %a
+         %a\
+         %a\
          { s with %s_assets = Map.update a.%a (Some asset) s.%s_assets }@\n"
         an fn an ft
         fn pp_str kk fn
-        (pp_do_if (match c with | Partition -> true | _ -> false) (fun fmt -> Format.fprintf fmt "let s = add_%s(s, b) in@\n")) ft
+        (pp_do_if (match c with | Partition -> true | _ -> false) (fun fmt -> Format.fprintf fmt "let s = add_%s(s, b) in@\n  ")) ft
+        (pp_do_if (match c with | Collection -> true | _ -> false)
+         (fun fmt _ -> Format.fprintf fmt "if not (Map.mem b.%s s.%s_assets) then failwith \"key of b does not exist\";@\n  " kk ft)) ()
         an pp_str k an
 
     | UpdateRemove (an, fn) ->
