@@ -314,7 +314,7 @@ and enum_option =
   | EOspecification of label_exprs
 
 and signature =
-  | Ssignature of lident * type_t list
+  | Ssignature of lident * (lident * type_t) list
 
 and declaration = declaration_unloc loced
 

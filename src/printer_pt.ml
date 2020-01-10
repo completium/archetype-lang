@@ -647,9 +647,9 @@ let pp_asset_option fmt opt =
 let pp_signature fmt s =
   match s with
   | Ssignature (id, xs) ->
-    Format.fprintf fmt "action %a%a"
+    Format.fprintf fmt "action %a (%a)"
       pp_id id
-      (pp_do_if (List.length xs > 0) (pp_prefix " : " (pp_list ", " pp_type))) xs
+      (pp_list ", " (fun fmt (id, type_) -> Format.fprintf fmt "%a : %a" pp_id id pp_type type_)) xs
 
 let operation_enum_to_str e =
   match e with

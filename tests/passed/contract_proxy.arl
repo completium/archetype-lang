@@ -1,8 +1,8 @@
 archetype contract_remote
 
 contract contract_remote_sig {
-   action set_value : int
-   action add_value : int, int
+   action set_value (n : int)
+   action add_value (a : int, b : int)
 }
 variable remote : contract_remote_sig = @KT1RNB9PXsnp7KMkiMrWNMRzPjuefSWojBAm
 

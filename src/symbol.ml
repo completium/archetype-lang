@@ -259,7 +259,6 @@ let string_of_symbol = function
   | X (N N_vc_decl_VARIABLE_) -> "a variable declaration"
   | X (N N_vc_decl_CONSTANT_) -> "a constant declaration"
   | X (N N_variable) -> "a variable"
-  | X (N N_types) -> "types"
   | X (N N_type_s_unloc) -> "types"
   | X (N N_type_r) -> "a type"
   | X (N N_list_loc_spec_variable__) -> "a list of specification variable item"
@@ -280,9 +279,7 @@ let string_of_symbol = function
   | X (N N_security_decl_unloc) -> "a security declaration"
   | X (N N_security_decl) -> "a security declaration"
   | X (N N_simple_expr_r) -> "a simple expression"
-  | X (N N_signature) -> "a signature"
   | X (N N_separated_nonempty_list_SEMI_COLON_record_item_) -> "a non empty list of record item by ;"
-  | X (N N_separated_nonempty_list_COMMA_type_t_) -> "a non empty list of type separated by ,"
   | X (N N_separated_nonempty_list_COMMA_security_arg_) -> "a non empty list of security arg"
   | X (N N_require) -> "a require"
   | X (N N_record_item) -> "a record item"
@@ -361,6 +358,8 @@ let string_of_symbol = function
   | X (N N_label_expr_unloc) -> "a label expr"
   | X (N N_snl_COMMA_security_arg_) -> "a non empty list of security argument"
   | X (N N_sl_COMMA_security_arg_) -> "a list of security argument"
+  | X (N N_snl_COMMA_sig_arg_) -> "a non empty list of signature argument"
+  | X (N N_sl_COMMA_sig_arg_) -> "a list of signature argument"
 
 let string_of_item (p, i) =
   string_of_symbol (lhs p) ^ " -> "

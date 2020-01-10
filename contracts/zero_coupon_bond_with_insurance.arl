@@ -5,8 +5,10 @@ variable issuer : role = @tz1KksC8RvjUWAbXYJuNrUbontHGor25Cztk (* seller 'Alice'
 variable owner : role  = @tz1KmuhR6P52hw6xs5P69BXJYAURaznhvN1k
 (* buyer 'Bob'; receives 11 tez in one-year *)
 
-contract insurance {
-   action pay : address, tez
+contract insurance { (* see guarantee_fund.arl *)
+  action credit ()
+  action add_contract (ic_addr : address, ic_max_transfer : tez)
+  action pay (recipient : address, amount : tez)
 }
 
 variable zero_insur : insurance = @KT1GabhR5P52hw6xs5P69BXJYAURaznhvN1k

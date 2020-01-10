@@ -6,10 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Added
- - New feature
+ - Contract calls
 
 ### Changed
  - Add guard condition in `Add` and `UpdateAdd` api storage
+ - Syntax : add identifier on signature of contract argument
 
 ## [0.1.12] - 2020-01-09
 ### Added

@@ -3035,7 +3035,7 @@ let for_contract_decl (env : env) (decl : PT.contract_decl loced) =
   let name, sigs, _ = unloc decl in
   let entries =
     List.pmap (fun (PT.Ssignature (ename, psig)) ->
-        let for1 pty =
+        let for1 (_id, pty) =
           let ty = for_type env pty in
           Option.bind (fun ty ->
               if not (Type.is_primitive ty) then begin

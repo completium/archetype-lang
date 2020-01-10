@@ -14,11 +14,10 @@ action credit () {
   }
 }
 
-action add_contract (contract_ : insured_contract) {
+action add_contract (ic_addr : address, ic_max_transfer : tez) {
   called by admin
   effect {
-    if (not insured_contract.contains(contract_.addr)) then
-    insured_contract.add(contract_)
+    insured_contract.add({addr = ic_addr; max_transfer = ic_max_transfer})
   }
 }
 

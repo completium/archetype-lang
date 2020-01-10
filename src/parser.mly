@@ -300,9 +300,15 @@ contract:
 %inline signatures:
 | xs=signature+ { xs }
 
-signature:
-| ACTION x=ident                { Ssignature (x, []) }
-| ACTION x=ident COLON xs=types { Ssignature (x, xs) }
+%inline sig_arg:
+ | id=ident COLON ty=type_t
+     { (id, ty) }
+
+%inline sig_args:
+| LPAREN xs=sl(COMMA, sig_arg) RPAREN { xs }
+
+%inline signature:
+| ACTION x=ident xs=sig_args { Ssignature (x, xs) }
 
 %inline fun_body:
 | e=expr { (None, e) }
@@ -436,9 +442,6 @@ enum_values:
 enum_option:
 | INITIAL                     { EOinitial }
 | WITH xs=braced(label_exprs) { EOspecification (xs) }
-
-types:
-| xs=separated_nonempty_list(COMMA, type_t) { xs }
 
 %inline type_t:
 | e=loc(type_r) { e }
