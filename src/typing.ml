@@ -567,7 +567,7 @@ and ctordecl = M.lident * (M.lident option * M.pterm) list
 (* -------------------------------------------------------------------- *)
 type contractdecl = {
   ct_name    : M.lident;
-  ct_entries : (M.lident * M.ptyp list) list;
+  ct_entries : (M.lident * (M.lident * M.ptyp) list) list;
 }
 
 (* -------------------------------------------------------------------- *)
@@ -2260,7 +2260,7 @@ let rec for_instruction (env : env) (i : PT.expr) : env * M.instruction =
 
               let args =
                 List.map2
-                  (fun arg ety -> for_xexpr `Expr env ~ety arg)
+                  (fun arg (_arg_id, ety) -> for_xexpr `Expr env ~ety arg)
                   args entry in
 
               let args = List.map (fun x -> M.AExpr x) args in
@@ -3035,13 +3035,13 @@ let for_contract_decl (env : env) (decl : PT.contract_decl loced) =
   let name, sigs, _ = unloc decl in
   let entries =
     List.pmap (fun (PT.Ssignature (ename, psig)) ->
-        let for1 (_id, pty) =
+        let for1 (arg_id, pty) =
           let ty = for_type env pty in
           Option.bind (fun ty ->
               if not (Type.is_primitive ty) then begin
                 Env.emit_error env (loc pty, NotAPrimitiveType);
                 None
-              end else Some ty) ty in
+              end else Some (arg_id, ty)) ty in
 
         let sig_ = List.map for1 psig in
 
@@ -3331,7 +3331,7 @@ let variables_of_vdecls fdecls =
 (* -------------------------------------------------------------------- *)
 let contracts_of_cdecls (decls : contractdecl option list) =
   let for1 (decl : contractdecl) =
-    let for_sig ((name, args) : M.lident * M.ptyp list) =
+    let for_sig ((name, args) : M.lident * (M.lident * M.ptyp) list) =
       M.{ name; args; loc = loc name; } in
 
     M.{ name       = decl.ct_name;

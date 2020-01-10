@@ -227,7 +227,7 @@ type bval = bval_gen
 
 type 'id signature = {
   name : 'id;
-  args: ptyp list;
+  args: (lident * ptyp) list;
   loc: Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]

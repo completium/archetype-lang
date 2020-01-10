@@ -867,9 +867,9 @@ let pp_asset fmt (asset : asset) =
 
 
 let pp_contract_signature fmt (cs : contract_signature) =
-  Format.fprintf fmt "%a : %a"
+  Format.fprintf fmt "%a (%a)"
     pp_id cs.name
-    (pp_list " -> " pp_type) cs.args
+    (pp_list ", " (fun fmt (id, type_) -> Format.fprintf fmt "%a : %a" pp_id id pp_type type_)) cs.args
 
 let pp_contract fmt (contract : contract) =
   Format.fprintf fmt "contract %a {@\n@[<v 2>  %a@]@\n}%a@\n"

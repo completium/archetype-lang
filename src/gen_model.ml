@@ -502,7 +502,7 @@ let to_model (ast : A.model) : M.model =
 
   let to_contract_signature (s : A.lident A.signature) : M.contract_signature =
     let name = s.name in
-    M.mk_contract_signature name ~args:(List.map (fun arg -> ptyp_to_type arg) s.args) ~loc:s.loc
+    M.mk_contract_signature name ~args:(List.map (fun (id, typ) -> (id, ptyp_to_type typ)) s.args) ~loc:s.loc
   in
   let to_contract (c : A.contract) : M.contract =
     M.mk_contract c.name

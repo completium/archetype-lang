@@ -444,7 +444,7 @@ type asset = lident asset_gen
 
 type 'id contract_signature_gen = {
   name : 'id;
-  args: type_ list;
+  args: (lident * type_) list;
   loc: Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]

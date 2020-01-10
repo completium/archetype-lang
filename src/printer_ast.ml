@@ -749,12 +749,9 @@ let pp_enum fmt (e : lident enum_struct) =
     (pp_list "@\n" pp_enum_item) e.items
 
 let pp_signature fmt (s : lident signature) =
-  Format.fprintf fmt "%a: %a"
+  Format.fprintf fmt "action %a (%a)"
     pp_id s.name
-    (fun fmt x ->
-       if List.is_empty x
-       then pp_str fmt "()"
-       else (pp_list ", " pp_ptyp) fmt x) s.args
+    (pp_list ", " (fun fmt (id, type_) -> Format.fprintf fmt "%a : %a" pp_id id pp_ptyp type_)) s.args
 
 let pp_contract fmt (c : contract) =
   Format.fprintf fmt "contract %a =@\n  @[%a@]@\n"
