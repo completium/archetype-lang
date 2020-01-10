@@ -1,0 +1,20 @@
+archetype contract_remote
+
+contract contract_remote_sig {
+   action set_value : int
+   action add_value : int, int
+}
+variable remote : contract_remote_sig = @KT1RNB9PXsnp7KMkiMrWNMRzPjuefSWojBAm
+
+
+action update_value(n : int) {
+  effect {
+    remote.set_value(n)
+  }
+}
+
+action add_one(n : int) {
+  effect {
+    remote.add_value(n, 2)
+  }
+}
