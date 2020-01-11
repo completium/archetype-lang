@@ -511,6 +511,18 @@ let to_model (ast : A.model) : M.model =
       ~loc:c.loc
   in
 
+  let mk_contract_call (c : A.lident A.term_poly) =
+    match c.type_ with
+    | Some (Tcontract v) -> Some (unloc v)
+    | _ -> None
+  in
+
+  let is_contract_call c =
+    match mk_contract_call c with
+    | Some _ -> true
+    | _ -> false
+  in
+
   let to_instruction_node (n : A.lident A.instruction_node) lbl g f : ('id, 'instr) M.mterm_node =
     let is_empty_seq (instr : A.instruction) =
       match instr.node with
@@ -543,6 +555,14 @@ let to_model (ast : A.model) : M.model =
     | A.Ireturn e               -> M.Mreturn (f e)
     | A.Ilabel i                -> M.Mlabel i
     | A.Ifail m                 -> M.Mfail (Invalid (f m))
+    | A.Icall (Some c, Cid id, args) when (is_contract_call c) ->
+      let contract_id = Option.get (mk_contract_call c) in
+      let c = f c in
+      let ids = A.Utils.get_contract_sig_ids ast contract_id (unloc id) in
+      let vs = List.map (term_arg_to_expr f) args in
+      let args = List.map2 (fun x y -> (x, y)) ids vs in
+      M.Mexternal (contract_id, id, c, args)
+
     | A.Icall (i, Cid id, args) -> M.Mapp (id, Option.map_dfl (fun v -> [to_mterm v]) [] i @ List.map (term_arg_to_expr f) args)
 
     | A.Icall (_, A.Cconst (A.Cfail), [AExpr p]) ->

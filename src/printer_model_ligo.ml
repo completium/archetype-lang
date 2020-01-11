@@ -74,11 +74,22 @@ type action = {
 module LigoUtils : sig
   val get_actions : model -> action list
   val is_param : action -> ident -> bool
+  val get_contract_actions : model -> (ident * action list) list
 end = struct
-  let mk_action (fs : function_struct) =
+  let mk_action_fs (fs : function_struct) =
     let fun_name = fs.name |> unloc in
     let id = fs.name |> unloc |> String.up_firstcase in
     let args = List.map (fun (id, t, _) -> (unloc id, t)) fs.args in
+    {
+      name = id;
+      fun_name = fun_name;
+      args = args;
+    }
+
+  let mk_action_contract_signature (cs : contract_signature) : action =
+    let fun_name = cs.name |> unloc in
+    let id = cs.name |> unloc |> String.up_firstcase in
+    let args = List.map (fun (id, t) -> (unloc id, t)) cs.args in
     {
       name = id;
       fun_name = fun_name;
@@ -89,13 +100,21 @@ end = struct
     List.fold_right (fun (f : function__) accu ->
         match f.node with
         | Entry fs ->
-          (mk_action fs)::accu
+          (mk_action_fs fs)::accu
         | _ -> accu)
       model.functions []
 
   let is_param (action : action) (arg_id : ident) : bool =
     List.fold_left (fun accu (id, _) ->
         accu || String.equal id arg_id) false action.args
+
+  let get_contract_actions (model : model) : (ident * action list) list =
+    List.fold_right
+      (fun x accu ->
+         match x with
+         | Dcontract x -> (unloc x.name, List.map mk_action_contract_signature x.signatures)::accu
+         | _ -> accu
+      ) model.decls []
 end
 
 let pp_model fmt (model : model) =
@@ -143,8 +162,7 @@ let pp_model fmt (model : model) =
       Format.fprintf fmt "state"
     | Tenum en ->
       Format.fprintf fmt "%a" pp_id en
-    | Tcontract cn ->
-      Format.fprintf fmt "%a" pp_id cn
+    | Tcontract _ -> pp_type fmt (Tbuiltin Baddress)
     | Tbuiltin b -> pp_btyp fmt b
     | Tcontainer (t, c) ->
       Format.fprintf fmt "%a(%a)"
@@ -252,13 +270,19 @@ let pp_model fmt (model : model) =
         in
         pp fmt (e, args)
 
-      | Mexternal (_, _, c, args) ->
-        let pp fmt (c, args) =
-          Format.fprintf fmt "%a (%a)"
-            f c
-            (pp_list ", " f) args
+      | Mexternal (t, fid, c, args) ->
+        let pp fmt (t, fid, c, args) =
+          let fid = fid |> unloc |> String.up_firstcase in
+          Format.fprintf fmt
+            "const c_ : contract(action_%s) = get_contract(%a);@\n\
+             const param_ : action_%s = %s (record %a end);@\n\
+             const op_: operation = transaction(param_, 0mutez, c_);@\n\
+             %s := cons(op_, %s)"
+            t f c
+            t fid (pp_list "; " (fun fmt (id, v) -> Format.fprintf fmt "%a = %a" pp_id id f v)) args
+            const_operations const_operations
         in
-        pp fmt (c, args)
+        pp fmt (t, fid, c, args)
 
       | Mget (c, k) ->
         let pp fmt (c, k) =
@@ -985,19 +1009,27 @@ let pp_model fmt (model : model) =
                pp_type t)) action.args
   in
 
-  let pp_action_type (fmt : Format.formatter) _ =
-    let actions = LigoUtils.get_actions model in
+  let pp_actions (fmt : Format.formatter) postfix actions =
     Format.fprintf fmt
       "%a@\n\
-       type action is@\n  \
+       type action%s is@\n  \
        @[%a@]@\n"
       (pp_list "@\n" pp_action_action) actions
+      postfix
       (pp_list "@\n" (fun fmt action ->
            Format.fprintf fmt "| %s of action_%s"
              action.name
              action.fun_name)) actions
   in
 
+  let pp_action_type (fmt : Format.formatter) _ =
+    List.iter
+      (fun (name, actions) ->
+         pp_actions fmt ("_" ^ name) actions;
+         Format.fprintf fmt "@\n";)
+      (LigoUtils.get_contract_actions model);
+    pp_actions fmt "" (LigoUtils.get_actions model)
+  in
 
   let pp_enum (fmt : Format.formatter) (enum : enum) =
     let pp_enum_item (fmt : Format.formatter) (enum_item : enum_item) =
@@ -1149,7 +1181,7 @@ let pp_model fmt (model : model) =
         an an
         pp_btyp t an an
         (pp_do_if (match c with | Collection -> true | _ -> false)
-          (fun fmt _ -> Format.fprintf fmt "if not map_mem(b.%s, s.%s_assets) then failwith (\"key of b does not exist\") else skip;@\n    " kk ft)) ()
+             (fun fmt _ -> Format.fprintf fmt "if not map_mem(b.%s, s.%s_assets) then failwith (\"key of b does not exist\") else skip;@\n    " kk ft)) ()
         fn kk fn
         an
         (pp_do_if (match c with | Partition -> true | _ -> false) (fun fmt -> Format.fprintf fmt "s := add_%s(s, b);@\n")) ft
@@ -1458,7 +1490,7 @@ let pp_model fmt (model : model) =
     let env = {env with f = Some f} in
     match f.node with
     | Entry fs ->
-      let with_transfer = Utils.with_transfer_for_mterm fs.body in
+      let with_operations = Utils.with_operations_for_mterm fs.body in
       Format.fprintf fmt
         "function %a(const action : action_%a; const %s : storage_type) : (list(operation) * storage_type) is@\n  \
          begin@\n  \
@@ -1466,11 +1498,11 @@ let pp_model fmt (model : model) =
          @[%a@]@\n  \
          end with (%s, %s)@\n"
         pp_id fs.name pp_id fs.name const_storage
-        (pp_do_if with_transfer (fun fmt x ->
+        (pp_do_if with_operations (fun fmt x ->
              Format.fprintf fmt "var %s : list(operation) := (nil : list(operation));@\n  " x
            )) const_operations
         (pp_mterm env) fs.body
-        (if with_transfer then const_operations else "(nil : list(operation))") const_storage
+        (if with_operations then const_operations else "(nil : list(operation))") const_storage
 
     | Function (fs, _ret) ->
       Format.fprintf fmt

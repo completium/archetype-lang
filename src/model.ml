@@ -119,7 +119,7 @@ type ('id, 'term) mterm_node  =
   | Mmatchwith      of 'term * ('id pattern_gen * 'term) list
   | Mapp            of 'id * 'term list
   | Maddshallow     of ident * 'term list
-  | Mexternal       of 'id * 'id * 'term * ('term) list
+  | Mexternal       of ident * 'id * 'term * ('id * 'term) list (* contract_id * id * field_address_id_val * args *)
   | Mget            of ident * 'term
   | Mgetbefore      of ident * 'term
   | Mgetat          of ident * ident * 'term (* asset_name * label * value *)
@@ -849,7 +849,7 @@ let cmp_mterm_node
     | Mmatchwith (e1, l1), Mmatchwith (e2, l2)                                         -> cmp e1 e2 && List.for_all2 (fun (p1, t1) (p2, t2) -> cmp_pattern p1 p2 && cmp t1 t2) l1 l2
     | Mapp (e1, args1), Mapp (e2, args2)                                               -> cmpi e1 e2 && List.for_all2 cmp args1 args2
     | Maddshallow (e1, args1), Maddshallow (e2, args2)                                 -> cmp_ident e1 e2 && List.for_all2 cmp args1 args2
-    | Mexternal (t1, func1, c1, args1), Mexternal (t2, func2, c2, args2)               -> cmpi t1 t2 && cmpi func1 func2 && cmp c1 c2 && List.for_all2 cmp args1 args2
+    | Mexternal (t1, func1, c1, args1), Mexternal (t2, func2, c2, args2)               -> cmp_ident t1 t2 && cmpi func1 func2 && cmp c1 c2 && List.for_all2 (fun (id1, t1) (id2, t2) -> cmpi id1 id2 && cmp t1 t2) args1 args2
     | Mget (c1, k1), Mget (c2, k2)                                                     -> cmp_ident c1 c2 && cmp k1 k2
     | Mgetbefore (c1, k1), Mgetbefore (c2, k2)                                         -> cmp_ident c1 c2 && cmp k1 k2
     | Mgetat (c1, d1, k1), Mgetat (c2, d2, k2)                                         -> cmp_ident c1 c2 && cmp_ident d1 d2 && cmp k1 k2
@@ -1038,7 +1038,7 @@ let map_term_node (f : 'id mterm_gen -> 'id mterm_gen) = function
   | Msetremoved   e               -> Msetremoved   (f e)
   | Msetiterated  e               -> Msetiterated  (f e)
   | Msettoiterate e               -> Msettoiterate (f e)
-  | Mexternal (t, func, c, args)  -> Mexternal (t, func, f c, List.map f args)
+  | Mexternal (t, func, c, args)  -> Mexternal (t, func, f c, List.map (fun (id, t) -> (id, f t)) args)
   | Mget (c, k)                   -> Mget (c, f k)
   | Mgetbefore (c, k)             -> Mgetbefore (c, f k)
   | Mgetat (c, d, k)              -> Mgetat (c, d, f k)
@@ -1301,7 +1301,7 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Msetremoved   e                       -> f accu e
   | Msetiterated  e                       -> f accu e
   | Msettoiterate e                       -> f accu e
-  | Mexternal (_, _, c, args)             -> List.fold_left f (f accu c) args
+  | Mexternal (_, _, c, args)             -> List.fold_left (fun accu (_, t) -> f accu t) (f accu c) args
   | Mget (_, k)                           -> f accu k
   | Mgetbefore (_, k)                     -> f accu k
   | Mgetat (_, _, k)                      -> f accu k
@@ -1496,9 +1496,9 @@ let fold_map_term
   | Mexternal (t, func, c, args) ->
     let ce, ca = f accu c in
     let (lp, la) = List.fold_left
-        (fun (pterms, accu) x ->
+        (fun (pterms, accu) (id, x) ->
            let p, accu = f accu x in
-           pterms @ [p], accu) ([], ca) args in
+           pterms @ [id, p], accu) ([], ca) args in
     g (Mexternal (t, func, ce, lp)), la
 
   | Mget (c, k) ->
@@ -2079,8 +2079,8 @@ module Utils : sig
   val retrieve_all_properties            : model -> (ident * property) list
   val retrieve_property                  : model -> ident -> property
   val get_default_value                  : model -> type_ -> mterm
-  val with_transfer_for_mterm            : mterm -> bool
-  val with_transfer                      : model -> bool
+  val with_operations_for_mterm          : mterm -> bool
+  val with_operations                    : model -> bool
   val get_source_for                     : model -> ctx_model -> mterm -> mterm option
 
 end = struct
@@ -2416,22 +2416,23 @@ end = struct
     with FoundAssign -> true
 
 
-  exception FoundTransfer
+  exception FoundOperations
 
-  let with_transfer_for_mterm_intern _ctx accu (mt : mterm) : bool =
+  let with_operations_for_mterm_intern _ctx accu (mt : mterm) : bool =
     let rec aux accu (t : mterm) =
       match t.node with
-      | Mtransfer _ -> raise FoundTransfer
+      | Mtransfer _ -> raise FoundOperations
+      | Mexternal _ -> raise FoundOperations
       | _ -> fold_term aux accu t in
     aux accu mt
 
-  let with_transfer_for_mterm (mt : mterm) : bool =
-    try with_transfer_for_mterm_intern () false mt
-    with FoundTransfer -> true
+  let with_operations_for_mterm (mt : mterm) : bool =
+    try with_operations_for_mterm_intern () false mt
+    with FoundOperations -> true
 
-  let with_transfer (model : model) : bool =
-    try fold_model with_transfer_for_mterm_intern model false
-    with FoundTransfer -> true
+  let with_operations (model : model) : bool =
+    try fold_model with_operations_for_mterm_intern model false
+    with FoundOperations -> true
 
   let map_invariant_terms (m : mterm -> mterm) (i : invariant) : invariant = {
     i with

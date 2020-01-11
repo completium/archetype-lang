@@ -130,13 +130,14 @@ let pp_mterm fmt (mt : mterm) =
       in
       pp fmt (e, args)
 
-    | Mexternal (_, _, c, args) ->
-      let pp fmt (c, args) =
-        Format.fprintf fmt "%a (%a)"
+    | Mexternal (_, fid, c, args) ->
+      let pp fmt (c, fid, args) =
+        Format.fprintf fmt "%a.%a (%a)"
           f c
-          (pp_list ", " f) args
+          pp_id fid
+          (pp_list ", " (fun fmt (_, x) -> f fmt x)) args
       in
-      pp fmt (c, args)
+      pp fmt (c, fid, args)
 
     | Mget (c, k) ->
       let pp fmt (c, k) =

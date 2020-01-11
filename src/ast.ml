@@ -1011,6 +1011,7 @@ module Utils : sig
   val is_enum_value             : model -> lident -> bool
   val get_var_type              : model -> lident -> type_
   val get_enum_name             : lident enum_struct -> lident
+  val get_contract_sig_ids      : model -> ident -> ident -> lident list
 
 end = struct
   open Tools
@@ -1140,4 +1141,18 @@ end = struct
     match var with
     | Some v -> v
     | None -> emit_error VariableNotFound
+
+  let get_contract_sig_ids (ast : model) (contract_id : ident) (fun_id : ident) : lident list =
+    let get_signature signatures ident : ((lident * ptyp) list) option =
+      List.fold_left (fun accu (x : 'id signature) ->
+          if (Location.unloc x.name) = ident
+          then Some (x.args)
+          else accu
+        ) None signatures
+    in
+    let contract = get_contract_opt ast (dumloc contract_id) in
+    let contract = if (Option.is_none contract) then raise Not_found else Option.get contract in
+    let signatures = get_signature contract.signatures fun_id in
+    let signatures = if (Option.is_none signatures) then raise Not_found else Option.get signatures in
+    List.map fst signatures
 end
