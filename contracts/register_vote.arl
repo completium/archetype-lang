@@ -54,10 +54,6 @@ action do_vote (id : string, decision : bool) { // cannot name this 'vote'
     var v = vote.get(id);
     v.voters.add({ vaddr = caller });
     if decision then v.vcount += 1
-    /*vote.update (vid,{
-      count = if decision then count + 1 else count;
-      voters = voters.add({ addr = caller })
-    }); */
   }
 }
 
