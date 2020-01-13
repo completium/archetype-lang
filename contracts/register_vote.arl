@@ -8,6 +8,7 @@ variable threshold : rational = 0.5
 
 contract contract_sig {
   // generate signature here
+  action set_contact(cc : address)
   action register_candidate (candidate : address)
 }
 
