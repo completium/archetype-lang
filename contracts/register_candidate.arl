@@ -1,0 +1,19 @@
+// this is a simple test contract to register an address
+archetype register_candidate
+
+variable candidate : address = @tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg
+
+variable caller_contract : address = @KT1RvAwhE9kpxxGuNcdtUZBM8kLaioEF6Mfv
+
+action set_contact(cc : address) {
+  effect {
+    caller_contract := cc
+  }
+}
+
+action register_candidate (addr : address) {
+    called by caller_contract
+    effect {
+        candidate := addr
+    }
+}

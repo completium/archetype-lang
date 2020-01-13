@@ -1,10 +1,10 @@
 archetype register_vote
 
 // set contract caller address here
-constant admin : role = @tz1
+constant admin : role = @tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg
 
-variable quorum : rational = 2 / 10
-variable threshold : rational = 5 / 10
+variable quorum : rational = 0.2
+variable threshold : rational = 0.5
 
 contract contract_sig {
   // generate signature here
@@ -12,7 +12,7 @@ contract contract_sig {
 }
 
 // set called contract address here
-variable contract_instance : contract_sig = @KT1
+variable contract_instance : contract_sig = @KT1QwpAGX68z6XtnXBWQVdJ56AQtzPGrAKKv
 
 asset voter {
   vaddr : address;
