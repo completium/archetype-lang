@@ -536,24 +536,49 @@ let remove_rational (model : model) : model =
     in
     aux t
   in
-  let process_mterm (mt : mterm) : mterm =
+  let process_mterm_with_ctx (_ctx : ctx_model) (mt : mterm) : mterm =
     match mt.node with
     | Mrational (a, b) ->
       let make_int (x : Core.big_int) = mk_mterm (Mint x) type_int in
       mk_mterm (Mtuple [make_int a; make_int b]) type_rational
     | _ -> mt
   in
+  let process_mterm =
+    let ectx = mk_ctx_model () in
+    process_mterm_with_ctx ectx
+  in
   let process_decls = List.map (function
       | Dvar v ->
         Dvar
           {v with
            type_   = process_type v.type_;
-           default = Option.map process_mterm v.default;
+           default = v.default |> Option.map process_mterm;
           }
-      | Dasset a -> Dasset a
-      | Dcontract c -> Dcontract c
+      | Dasset a ->
+        Dasset
+          {a with
+           values = a.values |> List.map
+                      (fun (ai : asset_item) ->
+                         {ai with
+                          type_   = ai.type_   |> process_type;
+                          default = ai.default |> Option.map process_mterm;
+                         })
+          }
+      | Dcontract c ->
+        Dcontract
+          {c with
+           signatures = c.signatures |> List.map
+                          (fun (cs : contract_signature) ->
+                             {
+                               cs with
+                               args = cs.args |> List.map (fun (a, b) -> (a, process_type b))
+                             }
+                          );
+           init = c.init |> Option.map process_mterm
+          }
       | _ as x -> x)
   in
   { model with
     decls = process_decls (model.decls);
   }
+  |> map_mterm_model process_mterm_with_ctx
