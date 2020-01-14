@@ -1,4 +1,4 @@
-archetype rational_cmp_gt
+archetype rational_cmp_rat_rat_gt
 
 action a () {
   effect {
