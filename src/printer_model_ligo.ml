@@ -172,7 +172,7 @@ let pp_model fmt (model : model) =
       Format.fprintf fmt "option(%a)"
         pp_type t
     | Ttuple ts ->
-      Format.fprintf fmt "%a"
+      Format.fprintf fmt "(%a)"
         (pp_list " * " pp_type) ts
     | Tassoc (k, v) ->
       Format.fprintf fmt "map(%a, %a)"

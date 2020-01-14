@@ -1025,6 +1025,25 @@ let cmp_api_verif (v1 : api_verif) (v2 : api_verif) : bool =
 (* | _ -> false *)
 
 (* -------------------------------------------------------------------- *)
+let map_type (f : type_ -> type_) = function
+  | Tasset id         -> Tasset id
+  | Tenum id          -> Tenum id
+  | Tstate            -> Tstate
+  | Tcontract id      -> Tcontract id
+  | Tbuiltin b        -> Tbuiltin b
+  | Tcontainer (t, c) -> Tcontainer (f t, c)
+  | Toption t         -> Toption (f t)
+  | Ttuple l          -> Ttuple (List.map f l)
+  | Tassoc (a, t)     -> Tassoc (a, f t)
+  | Tunit             -> Tunit
+  | Tstorage          -> Tstorage
+  | Toperation        -> Toperation
+  | Tentry            -> Tentry
+  | Tprog t           -> Tprog (f t)
+  | Tvset (v, t)      -> Tvset (v, t)
+  | Ttrace t          -> Ttrace t
+
+(* -------------------------------------------------------------------- *)
 
 let map_term_node (f : 'id mterm_gen -> 'id mterm_gen) = function
   | Mif (c, t, e)                 -> Mif (f c, f t, Option.map f e)

@@ -529,9 +529,12 @@ let remove_rational (model : model) : model =
   let type_int = Tbuiltin Bint in
   let type_rational = Ttuple [type_int; type_int] in
   let process_type t : type_ =
-    match t with
-    | Tbuiltin Brational -> type_rational
-    | _ -> t
+    let rec aux t =
+      match t with
+      | Tbuiltin Brational -> type_rational
+      | _ -> map_type aux t
+    in
+    aux t
   in
   let process_mterm (mt : mterm) : mterm =
     match mt.node with
