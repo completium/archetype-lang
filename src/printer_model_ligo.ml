@@ -721,6 +721,47 @@ let pp_model fmt (model : model) =
         in
         pp fmt e
 
+      | Mratcmp (op, l, r) ->
+        let pp fmt (op, l, r) =
+          let to_str = function
+            | Req -> "OpCmpEq(unit)"
+            | Rne -> "OpCmpNe(unit)"
+            | Rlt -> "OpCmpLt(unit)"
+            | Rle -> "OpCmpLe(unit)"
+            | Rgt -> "OpCmpGt(unit)"
+            | Rge -> "OpCmpGe(unit)"
+          in
+          let str_op = to_str op in
+          Format.fprintf fmt "rat_cmp (%s, %a, %a)"
+            str_op
+            f l
+            f r
+        in
+        pp fmt (op, l, r)
+
+      | Mratarith (op, l, r) ->
+        let pp fmt (op, l, r) =
+          let to_str = function
+            | Rplus  -> "OpArithPlus(unit)"
+            | Rminus -> "OpArithMinus(unit)"
+            | Rmult  -> "OpArithMult(unit)"
+            | Rdiv   -> "OpArithDiv(unit)"
+          in
+          let str_op = to_str op in
+          Format.fprintf fmt "rat_arith (%s, %a, %a)"
+            str_op
+            f l
+            f r
+        in
+        pp fmt (op, l, r)
+
+      | Mrattez e ->
+        let pp fmt e =
+          Format.fprintf fmt "rat_to_tez (%a)"
+            f e
+        in
+        pp fmt e
+
       | Masset l ->
         let asset_name =
           match mtt.type_ with
@@ -1455,8 +1496,49 @@ let pp_model fmt (model : model) =
   in
 
   let pp_builtin_const (_env : env) fmt = function
-    | MinBuiltin t-> Format.fprintf fmt "min on %a" pp_type t
-    | MaxBuiltin t-> Format.fprintf fmt "max on %a" pp_type t
+    | MinBuiltin t -> Format.fprintf fmt "min on %a" pp_type t
+    | MaxBuiltin t -> Format.fprintf fmt "max on %a" pp_type t
+    | RatCmp       ->
+      Format.fprintf fmt
+        "type op_cmp is@\n\
+         | OpCmpEq of unit@\n\
+         | OpCmpNe of unit@\n\
+         | OpCmpLt of unit@\n\
+         | OpCmpLe of unit@\n\
+         | OpCmpGt of unit@\n\
+         | OpCmpGe of unit@\n\
+         @\n\
+         function rat_cmp (const op : op_cmp; const lhs : (int * int); const rhs : (int * int)) : bool is@\n  \
+         begin@\n   \
+         const r : bool =@\n   \
+         case op of@\n   \
+         | OpCmpEq(unit) -> lhs.0 * rhs.1 = rhs.0 * lhs.1@\n   \
+         | OpCmpNe(unit) -> lhs.0 * rhs.1 =/= rhs.0 * lhs.1@\n   \
+         | OpCmpLt(unit) -> True@\n   \
+         | OpCmpLe(unit) -> True@\n   \
+         | OpCmpGt(unit) -> True@\n   \
+         | OpCmpGe(unit) -> True@\n   \
+         end@\n  \
+         end with r@\n"
+    | RatArith     ->
+      Format.fprintf fmt
+        "type op_arith is@\n\
+         | OpArithPlus  of unit@\n\
+         | OpArithMinus of unit@\n\
+         | OpArithMult  of unit@\n\
+         | OpArithDiv   of unit@\n\
+         @\n\
+         function rat_arith (const op : op_arith; const lhs : (int * int); const rhs : (int * int)) : (int * int) is@\n  \
+         begin@\n    \
+         const r : (int * int) =@\n    \
+         case op of@\n    \
+         | OpArithPlus(unit)  -> (lhs.0 * rhs.1 + rhs.0 * lhs.1, lhs.1 * rhs.1)@\n    \
+         | OpArithMinus(unit) -> (lhs.0 * rhs.1 - rhs.0 * lhs.1, lhs.1 * rhs.1)@\n    \
+         | OpArithMult(unit)  -> (lhs.0 * rhs.0, lhs.1 * rhs.1)@\n    \
+         | OpArithDiv(unit)   -> (lhs.0 * rhs.1, lhs.1 * rhs.0)@\n    \
+         end@\n  \
+         end with r@\n"
+    | RatTez       -> Format.fprintf fmt "rat_to_tez"
   in
 
   let pp_api_item_node (env : env) fmt = function

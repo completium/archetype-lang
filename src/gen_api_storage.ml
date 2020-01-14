@@ -77,6 +77,12 @@ let process_api_storage (model : model) : model =
         [APIFunction (Tail asset_name)]
       | Mcoltokeys asset_name ->
         [APIStorage (ColToKeys asset_name)]
+      | Mratcmp _ ->
+        [APIBuiltin (RatCmp)]
+      | Mratarith _ ->
+        [APIBuiltin (RatArith)]
+      | Mrattez _ ->
+        [APIBuiltin (RatTez)]
       | _ -> []
     in
     List.fold_left (fun accu v -> add ctx accu (Model.mk_api_item v)) accu api_items
@@ -159,6 +165,9 @@ let process_api_storage (model : model) : model =
                    | APIFunction  (Head          _) -> 29
                    | APIFunction  (Tail          _) -> 30
                    | APIStorage   (ColToKeys     _) -> 31
+                   | APIBuiltin   (RatCmp         ) -> 32
+                   | APIBuiltin   (RatArith       ) -> 33
+                   | APIBuiltin   (RatTez         ) -> 34
                  in
                  let idx1 = get_kind i1.node_item in
                  let idx2 = get_kind i2.node_item in

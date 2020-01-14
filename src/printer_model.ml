@@ -578,6 +578,47 @@ let pp_mterm fmt (mt : mterm) =
       in
       pp fmt e
 
+    | Mratcmp (op, l, r) ->
+      let pp fmt (op, l, r) =
+        let to_str = function
+          | Req -> "eq"
+          | Rne -> "ne"
+          | Rlt -> "lt"
+          | Rle -> "le"
+          | Rgt -> "gt"
+          | Rge -> "ge"
+        in
+        let str_op = to_str op in
+        Format.fprintf fmt "rat_cmp (%s, %a, %a)"
+          str_op
+          f l
+          f r
+      in
+      pp fmt (op, l, r)
+
+    | Mratarith (op, l, r) ->
+      let pp fmt (op, l, r) =
+        let to_str = function
+          | Rplus  -> "plus"
+          | Rminus -> "minus"
+          | Rmult  -> "mult"
+          | Rdiv   -> "div"
+        in
+        let str_op = to_str op in
+        Format.fprintf fmt "rat_arith (%s, %a, %a)"
+          str_op
+          f l
+          f r
+      in
+      pp fmt (op, l, r)
+
+    | Mrattez e ->
+      let pp fmt e =
+        Format.fprintf fmt "rat_to_tez (%a)"
+          f e
+      in
+      pp fmt e
+
     | Masset l ->
       Format.fprintf fmt "{%a}"
         (pp_list "; " f) l
@@ -813,8 +854,11 @@ let pp_function_const fmt = function
   | Tail an -> pp_str fmt ("tail\t " ^ an)
 
 let pp_builtin_const fmt = function
-  | MinBuiltin t-> Format.fprintf fmt "min on %a" pp_type t
-  | MaxBuiltin t-> Format.fprintf fmt "max on %a" pp_type t
+  | MinBuiltin t -> Format.fprintf fmt "min on %a" pp_type t
+  | MaxBuiltin t -> Format.fprintf fmt "max on %a" pp_type t
+  | RatCmp       -> Format.fprintf fmt "rat_cmp"
+  | RatArith     -> Format.fprintf fmt "rat_arith"
+  | RatTez       -> Format.fprintf fmt "rat_to_tez"
 
 let pp_api_item_node fmt = function
   | APIStorage      v -> pp_storage_const fmt v

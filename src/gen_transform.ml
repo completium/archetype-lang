@@ -528,6 +528,7 @@ let ligo_move_get_in_condition (model : model) : model =
 let remove_rational (model : model) : model =
   let type_int = Tbuiltin Bint in
   let type_rational = Ttuple [type_int; type_int] in
+  let one = mk_mterm (Mint (Big_int.unit_big_int)) type_int in
   let process_type t : type_ =
     let rec aux t =
       match t with
@@ -537,11 +538,60 @@ let remove_rational (model : model) : model =
     aux t
   in
   let process_mterm mt =
+    let to_rat (x : mterm) =
+      match x.type_ with
+      | Tbuiltin Bint -> mk_mterm (Mtuple [x; one]) type_rational
+      | Ttuple [Tbuiltin Bint; Tbuiltin Bint] -> x
+      | _ -> assert false
+    in
     let rec aux (mt : mterm) : mterm =
-      match mt.node with
-      | Mrational (a, b) ->
-        let make_int (x : Core.big_int) = mk_mterm (Mint x) type_int in
-        mk_mterm (Mtuple [make_int a; make_int b]) type_rational
+      let is_rat (x : mterm) = match x.type_ with | Tbuiltin Brational -> true | _ -> false in
+      let is_rats (a, b) = is_rat a || is_rat b in
+      let process_cmp op (a, b) =
+        let lhs = (to_rat |@ aux) a in
+        let rhs = (to_rat |@ aux) b in
+        mk_mterm (Mratcmp (op, lhs, rhs)) type_rational
+      in
+      match mt.node, mt.type_ with
+      | _ as node, Tbuiltin Brational ->
+        begin
+          let process_arith op (a, b) =
+            let lhs = (to_rat |@ aux) a in
+            let rhs = (to_rat |@ aux) b in
+            mk_mterm (Mratarith (op, lhs, rhs)) type_rational
+          in
+          match node with
+          | Mrational (a, b) ->
+            let make_int (x : Core.big_int) = mk_mterm (Mint x) type_int in
+            mk_mterm (Mtuple [make_int a; make_int b]) type_rational
+          | Mplus  (a, b) -> process_arith Rplus  (a, b)
+          | Mminus (a, b) -> process_arith Rminus (a, b)
+          | Mmult  (a, b) -> process_arith Rmult  (a, b)
+          | Mdiv   (a, b) -> process_arith Rdiv   (a, b)
+          | _ -> { mt with type_ = type_rational }
+        end
+      | Mequal  (a, b), _ when is_rats (a, b) -> process_cmp Req (a, b)
+      | Mnequal (a, b), _ when is_rats (a, b) -> process_cmp Rne (a, b)
+      | Mlt     (a, b), _ when is_rats (a, b) -> process_cmp Rlt (a, b)
+      | Mle     (a, b), _ when is_rats (a, b) -> process_cmp Rle (a, b)
+      | Mgt     (a, b), _ when is_rats (a, b) -> process_cmp Rgt (a, b)
+      | Mge     (a, b), _ when is_rats (a, b) -> process_cmp Rge (a, b)
+      | Mletin (ids, init, t, body, o), _ ->
+        { mt with
+          node = Mletin (ids, aux init, Option.map process_type t, aux body, Option.map aux o)
+        }
+      | Mdeclvar (ids, t, v), _ ->
+        { mt with
+          node = Mdeclvar (ids, Option.map process_type t, aux v)
+        }
+      | Mforall (id, t, a, b), _ ->
+        { mt with
+          node = Mforall (id, process_type t, Option.map aux a, aux b)
+        }
+      | Mexists (id, t, a, b), _ ->
+        { mt with
+          node = Mexists (id, process_type t, Option.map aux a, aux b)
+        }
       | _ -> map_mterm aux mt
     in
     aux mt
@@ -549,18 +599,18 @@ let remove_rational (model : model) : model =
   let process_decls = List.map (function
       | Dvar v ->
         Dvar
-          {v with
-           type_   = process_type v.type_;
-           default = v.default |> Option.map process_mterm;
+          { v with
+            type_   = v.type_   |> process_type;
+            default = v.default |> Option.map process_mterm;
           }
       | Dasset a ->
         Dasset
           {a with
            values = a.values |> List.map
                       (fun (ai : asset_item) ->
-                         {ai with
-                          type_   = ai.type_   |> process_type;
-                          default = ai.default |> Option.map process_mterm;
+                         { ai with
+                           type_   = ai.type_   |> process_type;
+                           default = ai.default |> Option.map process_mterm;
                          })
           }
       | Dcontract c ->
