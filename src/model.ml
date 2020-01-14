@@ -53,7 +53,6 @@ type type_ =
   | Tcontainer of type_ * container
   | Toption of type_
   | Ttuple of type_ list
-  | Tpair of type_ * type_
   | Tassoc of btyp * type_
   | Tunit
   | Tstorage
@@ -2267,10 +2266,6 @@ end = struct
     | Ttuple ts ->
       Format.fprintf fmt "%a"
         (Printer_tools.pp_list " * " pp_type) ts
-    | Tpair (l, r) ->
-      Format.fprintf fmt "(%a, %a) pair"
-        pp_type l
-        pp_type r
     | Tassoc (k, v) ->
       Format.fprintf fmt "(%a, %a) map"
         pp_btyp k

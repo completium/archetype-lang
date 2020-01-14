@@ -49,10 +49,6 @@ let rec pp_type fmt t =
   | Ttuple ts ->
     Format.fprintf fmt "%a"
       (pp_list " * " pp_type) ts
-  | Tpair (l, r) ->
-    Format.fprintf fmt "(%a, %a) pair"
-      pp_type l
-      pp_type r
   | Tassoc (k, v) ->
     Format.fprintf fmt "(%a, %a) map"
       pp_btyp k
@@ -842,9 +838,10 @@ let pp_api_items fmt l =
       (pp_list "@\n" pp_api_item) l
 
 let pp_var fmt (var : var) =
-  Format.fprintf fmt "%a %a%a"
+  Format.fprintf fmt "%a : %a%a%a"
     pp_id var.name
     pp_type var.type_
+    (fun fmt x -> pp_do_if (not (is_none x)) (fun fmt x -> Format.fprintf fmt " = %a" pp_mterm x) fmt (Option.get x)) var.default
     (pp_do_if (not (List.is_empty var.invariants)) (fun fmt xs -> Format.fprintf fmt "@\nwith {@\n  @[%a@]@\n}@\n" (pp_list ";@\n" pp_label_term) xs)) var.invariants
 
 let pp_enum_item fmt (enum_item : enum_item) =

@@ -111,18 +111,19 @@ let generate_target model =
   match !Options.target with
   | None ->
     model
+    |> cont !Options.opt_nr  remove_rational
     |> cont !Options.opt_ws  generate_storage
     |> raise_if_error post_model_error prune_properties
     |> replace_declvar_by_letin
     |> cont !Options.opt_sa  shallow_asset
     |> cont !Options.opt_skv split_key_values
     |> cont !Options.opt_nse remove_side_effect
-    |> cont !Options.opt_nr  remove_rational
     |> generate_api_storage
     |> output
 
   | Ligo ->
     model
+    |> remove_rational
     |> generate_storage
     |> replace_declvar_by_letin
     |> remove_wild_pattern
@@ -130,7 +131,6 @@ let generate_target model =
     |> exec_process
     |> shallow_asset
     |> split_key_values
-    |> remove_rational
     |> Gen_transform.assign_loop_label
     |> Gen_transform.ligo_move_get_in_condition
     |> generate_api_storage

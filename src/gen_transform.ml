@@ -526,4 +526,31 @@ let ligo_move_get_in_condition (model : model) : model =
   Model.map_mterm_model aux model
 
 let remove_rational (model : model) : model =
-  model
+  let type_int = Tbuiltin Bint in
+  let type_rational = Ttuple [type_int; type_int] in
+  let process_type t : type_ =
+    match t with
+    | Tbuiltin Brational -> type_rational
+    | _ -> t
+  in
+  let process_mterm (mt : mterm) : mterm =
+    match mt.node with
+    | Mrational (a, b) ->
+      let make_int (x : Core.big_int) = mk_mterm (Mint x) type_int in
+      mk_mterm (Mtuple [make_int a; make_int b]) type_rational
+    | _ -> mt
+  in
+  let process_decls = List.map (function
+      | Dvar v ->
+        Dvar
+          {v with
+           type_   = process_type v.type_;
+           default = Option.map process_mterm v.default;
+          }
+      | Dasset a -> Dasset a
+      | Dcontract c -> Dcontract c
+      | _ as x -> x)
+  in
+  { model with
+    decls = process_decls (model.decls);
+  }

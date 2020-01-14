@@ -174,10 +174,6 @@ let pp_model fmt (model : model) =
     | Ttuple ts ->
       Format.fprintf fmt "%a"
         (pp_list " * " pp_type) ts
-    | Tpair (l, r) ->
-      Format.fprintf fmt "%a * %a"
-        pp_type l
-        pp_type r
     | Tassoc (k, v) ->
       Format.fprintf fmt "map(%a, %a)"
         pp_btyp k
@@ -1532,6 +1528,7 @@ let pp_model fmt (model : model) =
 
   let pp_main_function (fmt : Format.formatter) _ =
     let actions = LigoUtils.get_actions model in
+    let arg = "a_" in
     Format.fprintf fmt
       "function main(const action : action ; const %s : storage_type) : (list(operation) * storage_type) is@\n  \
        block {skip} with@\n  \
@@ -1540,9 +1537,11 @@ let pp_model fmt (model : model) =
        end@\n"
       const_storage
       (pp_list "@\n"
-         (fun fmt action -> Format.fprintf fmt "| %s (a) -> %s(a, %s)"
+         (fun fmt action -> Format.fprintf fmt "| %s (%s) -> %s(%s, %s)"
              action.name
+             arg
              action.fun_name
+             arg
              const_storage
          )) actions
   in
