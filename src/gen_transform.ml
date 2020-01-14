@@ -536,16 +536,15 @@ let remove_rational (model : model) : model =
     in
     aux t
   in
-  let process_mterm_with_ctx (_ctx : ctx_model) (mt : mterm) : mterm =
-    match mt.node with
-    | Mrational (a, b) ->
-      let make_int (x : Core.big_int) = mk_mterm (Mint x) type_int in
-      mk_mterm (Mtuple [make_int a; make_int b]) type_rational
-    | _ -> mt
-  in
-  let process_mterm =
-    let ectx = mk_ctx_model () in
-    process_mterm_with_ctx ectx
+  let process_mterm mt =
+    let rec aux (mt : mterm) : mterm =
+      match mt.node with
+      | Mrational (a, b) ->
+        let make_int (x : Core.big_int) = mk_mterm (Mint x) type_int in
+        mk_mterm (Mtuple [make_int a; make_int b]) type_rational
+      | _ -> map_mterm aux mt
+    in
+    aux mt
   in
   let process_decls = List.map (function
       | Dvar v ->
@@ -579,6 +578,19 @@ let remove_rational (model : model) : model =
       | _ as x -> x)
   in
   { model with
-    decls = process_decls (model.decls);
+    decls     = model.decls     |> process_decls;
+    functions = model.functions |> List.map (fun f ->
+        {f with
+         node = (
+           let process_fs (fs : function_struct) =
+             {fs with
+              args = fs.args |> List.map (fun (id, t, dv) -> (id, process_type t, Option.map process_mterm dv));
+              body = fs.body |> process_mterm;
+             }
+           in
+           match f.node with
+           | Function (fs, ret) -> Function (process_fs fs, process_type ret)
+           | Entry fs           -> Entry (process_fs fs)
+         );
+        })
   }
-  |> map_mterm_model process_mterm_with_ctx

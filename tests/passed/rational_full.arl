@@ -1,0 +1,25 @@
+archetype r
+
+constant r1 : rational = 1 div 2
+
+asset anasset {
+  id : address;
+  r2 : rational;
+}
+
+contract mc {
+  action b(c : rational)
+}
+
+(* function f (r : rational) : rational {
+  return r
+} *)
+
+action a (r3 : rational, a : anasset) {
+  effect {
+    var r4 = 1 div 4;
+    require (r1 + (1 div 3) (* * f(r4)*) > r3 - a.r2 - r4);
+    var m = 0.3 * 1tz;
+    transfer m to a.id
+  }
+}

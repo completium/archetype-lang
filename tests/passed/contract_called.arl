@@ -1,4 +1,4 @@
-archetype contract_remote
+archetype contract_called
 
 variable v : int = 0
 
