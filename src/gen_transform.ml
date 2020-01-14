@@ -524,3 +524,6 @@ let ligo_move_get_in_condition (model : model) : model =
     | _ -> map_mterm (aux c) mt
   in
   Model.map_mterm_model aux model
+
+let remove_rational (model : model) : model =
+  model

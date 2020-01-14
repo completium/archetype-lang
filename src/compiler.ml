@@ -88,12 +88,13 @@ let shallow_asset             = Gen_shallow_asset.shallow_asset
 let extend_iter               = Gen_transform.extend_loop_iter
 let split_key_values          = Gen_split_key_values.split_key_values
 let remove_side_effect        = Gen_reduce.reduce
+let remove_rational           = Gen_transform.remove_rational
 let generate_api_storage      = Gen_api_storage.generate_api_storage
 let exec_process model        = model
-  |> Gen_transform.replace_lit_address_by_role
-  |> Gen_transform.remove_label
-  |> Gen_transform.flat_sequence
-  |> Gen_transform.remove_cmp_bool
+                                |> Gen_transform.replace_lit_address_by_role
+                                |> Gen_transform.remove_label
+                                |> Gen_transform.flat_sequence
+                                |> Gen_transform.remove_cmp_bool
 let check_partition_access    = Gen_transform.check_partition_access Typing.empty
 let extend_removeif           = Gen_transform.extend_removeif
 let post_process_fun_language = Gen_transform.process_single_field_storage
@@ -116,6 +117,7 @@ let generate_target model =
     |> cont !Options.opt_sa  shallow_asset
     |> cont !Options.opt_skv split_key_values
     |> cont !Options.opt_nse remove_side_effect
+    |> cont !Options.opt_nr  remove_rational
     |> generate_api_storage
     |> output
 
@@ -128,6 +130,7 @@ let generate_target model =
     |> exec_process
     |> shallow_asset
     |> split_key_values
+    |> remove_rational
     |> Gen_transform.assign_loop_label
     |> Gen_transform.ligo_move_get_in_condition
     |> generate_api_storage
@@ -239,6 +242,8 @@ let main () =
       "--split-key-values", Arg.Set Options.opt_skv, " Same as -skv";
       "-nse", Arg.Set Options.opt_nse, " Transform to no side effect";
       "--no-side-effect", Arg.Set Options.opt_nse, " Same as -nse";
+      "-nr", Arg.Set Options.opt_nr, " Remove rational";
+      "--no-rational", Arg.Set Options.opt_nse, " Same as -nr";
       "-fp", Arg.String (fun s -> Options.opt_property_focused := s), " Focus property (with whyml target only)";
       "--focus-property", Arg.String (fun s -> Options.opt_property_focused := s), " Same as -fp";
       "-lsp", Arg.String (fun s -> match s with

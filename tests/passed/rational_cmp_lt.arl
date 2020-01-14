@@ -1,0 +1,7 @@
+archetype rational_cmp_lt
+
+action a () {
+  effect {
+    require (1 div 2 < 1 div 3)
+  }
+}

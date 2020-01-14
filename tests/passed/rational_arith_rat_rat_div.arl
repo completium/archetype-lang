@@ -1,0 +1,8 @@
+archetype rational_arith_rat_rat_div
+
+action a () {
+  effect {
+    var res = 1 div 2 / 1 div 3;
+    require (true)
+  }
+}

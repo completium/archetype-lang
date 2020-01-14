@@ -1,0 +1,8 @@
+archetype rational_arith_rat_int_minus
+
+action a () {
+  effect {
+    var res = 1 div 2 - 2;
+    require (true)
+  }
+}
