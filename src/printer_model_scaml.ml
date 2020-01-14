@@ -112,6 +112,10 @@ let pp_model fmt (model : model) =
     | Ttuple ts ->
       Format.fprintf fmt "%a"
         (pp_list " * " pp_type) ts
+    | Tpair (l, r) ->
+      Format.fprintf fmt "%a * %a"
+        pp_type l
+        pp_type r
     | Tassoc (k, v) ->
       Format.fprintf fmt "(%a, %a) map"
         pp_btyp k
@@ -202,7 +206,7 @@ let pp_model fmt (model : model) =
         fn pp_str kk fn
         (pp_do_if (match c with | Partition -> true | _ -> false) (fun fmt -> Format.fprintf fmt "let s = add_%s(s, b) in@\n  ")) ft
         (pp_do_if (match c with | Collection -> true | _ -> false)
-         (fun fmt _ -> Format.fprintf fmt "if not (Map.mem b.%s s.%s_assets) then failwith \"key of b does not exist\";@\n  " kk ft)) ()
+             (fun fmt _ -> Format.fprintf fmt "if not (Map.mem b.%s s.%s_assets) then failwith \"key of b does not exist\";@\n  " kk ft)) ()
         an pp_str k an
 
     | UpdateRemove (an, fn) ->
@@ -557,14 +561,14 @@ let pp_model fmt (model : model) =
         in
         pp fmt (e, args)
 
-    | Mexternal (_, fid, c, args) ->
-      let pp fmt (c, fid, args) =
-        Format.fprintf fmt "%a.%a (%a)"
-          f c
-          pp_id fid
-          (pp_list ", " (fun fmt (_, x) -> f fmt x)) args
-      in
-      pp fmt (c, fid, args)
+      | Mexternal (_, fid, c, args) ->
+        let pp fmt (c, fid, args) =
+          Format.fprintf fmt "%a.%a (%a)"
+            f c
+            pp_id fid
+            (pp_list ", " (fun fmt (_, x) -> f fmt x)) args
+        in
+        pp fmt (c, fid, args)
 
       | Mget (c, k) ->
         let pp fmt (c, k) =

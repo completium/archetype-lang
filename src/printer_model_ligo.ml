@@ -174,6 +174,10 @@ let pp_model fmt (model : model) =
     | Ttuple ts ->
       Format.fprintf fmt "%a"
         (pp_list " * " pp_type) ts
+    | Tpair (l, r) ->
+      Format.fprintf fmt "%a * %a"
+        pp_type l
+        pp_type r
     | Tassoc (k, v) ->
       Format.fprintf fmt "map(%a, %a)"
         pp_btyp k

@@ -57,6 +57,7 @@ let generate_storage (model : model) : model =
       | Tenum v
       | Tcontract v       -> emit_error (NoInitExprFor (unloc v))
       | Ttuple _          -> emit_error (NoInitExprFor "tuple")
+      | Tpair _          -> emit_error (NoInitExprFor "pair")
       | Tassoc _          -> emit_error (NoInitExprFor "tassoc")
       | Tunit             -> emit_error (NoInitExprFor "unit")
       | Tstorage          -> emit_error (NoInitExprFor "storage")

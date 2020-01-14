@@ -99,6 +99,10 @@ let pp_model fmt (model : model) =
     | Ttuple ts ->
       Format.fprintf fmt "%a"
         (pp_list " * " pp_type) ts
+    | Tpair (l, r) ->
+      Format.fprintf fmt "%a * %a"
+        pp_type l
+        pp_type r
     | Tassoc (k, v) ->
       Format.fprintf fmt "(%a, %a) map"
         pp_btyp k
@@ -402,14 +406,14 @@ let pp_model fmt (model : model) =
         in
         pp fmt (e, args)
 
-    | Mexternal (_, fid, c, args) ->
-      let pp fmt (c, fid, args) =
-        Format.fprintf fmt "%a.%a (%a)"
-          f c
-          pp_id fid
-          (pp_list ", " (fun fmt (_, x) -> f fmt x)) args
-      in
-      pp fmt (c, fid, args)
+      | Mexternal (_, fid, c, args) ->
+        let pp fmt (c, fid, args) =
+          Format.fprintf fmt "%a.%a (%a)"
+            f c
+            pp_id fid
+            (pp_list ", " (fun fmt (_, x) -> f fmt x)) args
+        in
+        pp fmt (c, fid, args)
 
       | Mget (c, k) ->
         let pp fmt (c, k) =

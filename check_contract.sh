@@ -134,7 +134,7 @@ process() {
     FILE=$1
     printf '%-60s' $FILE
     process_ligo $FILE
-    process_scaml $FILE
+    #    process_scaml $FILE
     #    process_smartpy $FILE
     #    process_ocaml $FILE
     process_whyml $FILE
