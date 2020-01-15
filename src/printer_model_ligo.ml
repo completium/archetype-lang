@@ -755,12 +755,13 @@ let pp_model fmt (model : model) =
         in
         pp fmt (op, l, r)
 
-      | Mrattez e ->
-        let pp fmt e =
-          Format.fprintf fmt "rat_to_tez (%a)"
-            f e
+      | Mrattez (c, t) ->
+        let pp fmt (c, t) =
+          Format.fprintf fmt "rat_tez (%a, %a)"
+            f c
+            f t
         in
-        pp fmt e
+        pp fmt (c, t)
 
       | Masset l ->
         let asset_name =
@@ -843,11 +844,11 @@ let pp_model fmt (model : model) =
         begin
           let v =
             match c with
-            | Tz  -> v
-            | Mtz -> Big_int.mult_int_big_int 1000 v
-            | Utz -> assert false
+            | Tz  -> assert false
+            | Mtz -> assert false
+            | Utz -> v
           in
-          Format.fprintf fmt "%atz"
+          Format.fprintf fmt "%amutez"
             pp_big_int v
         end
       | Maddress v ->
@@ -1538,7 +1539,13 @@ let pp_model fmt (model : model) =
          | OpArithDiv(unit)   -> (lhs.0 * rhs.1, lhs.1 * rhs.0)@\n    \
          end@\n  \
          end with r@\n"
-    | RatTez       -> Format.fprintf fmt "rat_to_tez"
+    | RatTez ->
+      Format.fprintf fmt
+        "function rat_tez (const c : (int * int); const t : tez) : tez is@\n\
+         begin@\n  \
+         if (c.0 / c.1 < 0) then failwith(\"c must be positive\") else skip;@\n  \
+         const r : tez = abs(c.0) * t / abs(c.1);@\n  \
+         end with r@\n"
   in
 
   let pp_api_item_node (env : env) fmt = function

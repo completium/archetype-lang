@@ -527,8 +527,10 @@ let ligo_move_get_in_condition (model : model) : model =
 
 let remove_rational (model : model) : model =
   let type_int = Tbuiltin Bint in
+  let type_cur = Tbuiltin Bcurrency in
   let type_rational = Ttuple [type_int; type_int] in
   let one = mk_mterm (Mint (Big_int.unit_big_int)) type_int in
+  let mk_rat n d = mk_mterm (Mtuple [n ; d]) type_rational in
   let process_type t : type_ =
     let rec aux t =
       match t with
@@ -540,26 +542,40 @@ let remove_rational (model : model) : model =
   let process_mterm mt =
     let to_rat (x : mterm) =
       match x.type_ with
-      | Tbuiltin Bint -> mk_mterm (Mtuple [x; one]) type_rational
+      | Tbuiltin Bint -> mk_rat x one
       | Ttuple [Tbuiltin Bint; Tbuiltin Bint] -> x
       | _ -> assert false
     in
     let rec aux (mt : mterm) : mterm =
       let is_rat (x : mterm) = match x.type_ with | Tbuiltin Brational -> true | _ -> false in
+      let is_int (x : mterm) = match x.type_ with | Tbuiltin Bint      -> true | _ -> false in
+      let is_cur (x : mterm) = match x.type_ with | Tbuiltin Bcurrency -> true | _ -> false in
+      let is_num (x : mterm) = is_rat x || is_int x in
       let is_rats (a, b) = is_rat a || is_rat b in
+      let inv (x : mterm) : mterm =
+        match x.node, x.type_ with
+        | Mtuple [x; y], Ttuple [Tbuiltin Bint; Tbuiltin Bint] -> {x with node = Mtuple [y; x] }
+        | _ -> assert false
+      in
       let process_cmp op (a, b) =
         let lhs = (to_rat |@ aux) a in
         let rhs = (to_rat |@ aux) b in
         mk_mterm (Mratcmp (op, lhs, rhs)) type_rational
       in
+      let process_arith op (a, b) =
+        let lhs = (to_rat |@ aux) a in
+        let rhs = (to_rat |@ aux) b in
+        mk_mterm (Mratarith (op, lhs, rhs)) type_rational
+      in
+      let process_rattez  ?(i = false) (n : mterm) (t : mterm) : mterm =
+        let coef = (to_rat |@ aux) n in
+        let coef = if i then coef else inv coef in
+        let t = aux t in
+        mk_mterm (Mrattez (coef, t)) type_cur
+      in
       match mt.node, mt.type_ with
       | _ as node, Tbuiltin Brational ->
         begin
-          let process_arith op (a, b) =
-            let lhs = (to_rat |@ aux) a in
-            let rhs = (to_rat |@ aux) b in
-            mk_mterm (Mratarith (op, lhs, rhs)) type_rational
-          in
           match node with
           | Mrational (a, b) ->
             let make_int (x : Core.big_int) = mk_mterm (Mint x) type_int in
@@ -569,6 +585,16 @@ let remove_rational (model : model) : model =
           | Mmult  (a, b) -> process_arith Rmult  (a, b)
           | Mdiv   (a, b) -> process_arith Rdiv   (a, b)
           | _ -> { mt with type_ = type_rational }
+        end
+      | _ as node, Tbuiltin Bcurrency ->
+        begin
+          match node with
+          | Mcurrency (v, Tz)  -> { mt with node = Mcurrency  (Big_int.mult_int_big_int 1000000 v, Utz) }
+          | Mcurrency (v, Mtz) -> { mt with node = Mcurrency  (Big_int.mult_int_big_int    1000 v, Utz) }
+          | Mmult  (a, b) when is_num a && is_cur b -> process_rattez a b
+          | Mmult  (a, b) when is_cur a && is_num b -> process_rattez b a
+          | Mdiv   (a, b) when is_cur a && is_num b -> process_rattez b a ~i:true
+          | _ -> map_mterm aux mt
         end
       | Mequal  (a, b), _ when is_rats (a, b) -> process_cmp Req (a, b)
       | Mnequal (a, b), _ when is_rats (a, b) -> process_cmp Rne (a, b)

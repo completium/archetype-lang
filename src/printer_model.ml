@@ -612,12 +612,13 @@ let pp_mterm fmt (mt : mterm) =
       in
       pp fmt (op, l, r)
 
-    | Mrattez e ->
-      let pp fmt e =
-        Format.fprintf fmt "rat_to_tez (%a)"
-          f e
+    | Mrattez (c, t) ->
+      let pp fmt (c, t) =
+        Format.fprintf fmt "rat_tez (%a, %a)"
+          f c
+          f t
       in
-      pp fmt e
+      pp fmt (c, t)
 
     | Masset l ->
       Format.fprintf fmt "{%a}"

@@ -191,7 +191,7 @@ type ('id, 'term) mterm_node  =
   | Muminus         of 'term
   | Mratcmp         of rat_cmp_op * 'term * 'term
   | Mratarith       of rat_arith_op * 'term * 'term
-  | Mrattez         of 'term
+  | Mrattez         of 'term * 'term
   | Masset          of 'term list
   | Mletin          of 'id list * 'term * type_ option * 'term * 'term option
   | Mdeclvar        of 'id list * type_ option * 'term
@@ -929,7 +929,7 @@ let cmp_mterm_node
     | Muminus e1, Muminus e2                                                           -> cmp e1 e2
     | Mratcmp (op1, l1, r1), Mratcmp (op2, l2, r2)                                     -> cmp_rat_cmp_op op1 op2 && cmp l1 l2 && cmp r1 r2
     | Mratarith (op1, l1, r1), Mratarith (op2, l2, r2)                                 -> cmp_rat_arith_op op1 op2 && cmp l1 l2 && cmp r1 r2
-    | Mrattez e1, Mrattez e2                                                           -> cmp e1 e2
+    | Mrattez (c1, t1), Mrattez (c2, t2)                                               -> cmp c1 c2 && cmp t1 t2
     | Masset l1, Masset l2                                                             -> List.for_all2 cmp l1 l2
     | Mletin (i1, a1, t1, b1, o1), Mletin (i2, a2, t2, b2, o2)                         -> List.for_all2 cmpi i1 i2 && cmp a1 a2 && Option.cmp cmp_type t1 t2 && cmp b1 b2 && Option.cmp cmp o1 o2
     | Mdeclvar (i1, t1, v1), Mdeclvar (i2, t2, v2)                                     -> List.for_all2 cmpi i1 i2 && Option.cmp cmp_type t1 t2 && cmp v1 v2
@@ -1140,7 +1140,7 @@ let map_term_node (f : 'id mterm_gen -> 'id mterm_gen) = function
   | Muminus e                     -> Muminus (f e)
   | Mratarith (op, l, r)          -> Mratarith (op, f l, f r)
   | Mratcmp (op, l, r)            -> Mratcmp (op, f l, f r)
-  | Mrattez e                     -> Mrattez (f e)
+  | Mrattez (c, t)                -> Mrattez (f c, f t)
   | Masset l                      -> Masset (List.map f l)
   | Mletin (i, a, t, b, o)        -> Mletin (i, f a, t, f b, Option.map f o)
   | Mdeclvar (i, t, v)            -> Mdeclvar (i, t, f v)
@@ -1406,7 +1406,7 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Muminus e                             -> f accu e
   | Mratarith (_, l, r)                   -> f (f accu l) r
   | Mratcmp (_, l, r)                     -> f (f accu l) r
-  | Mrattez e                             -> f accu e
+  | Mrattez (c, t)                        -> f (f accu c) t
   | Masset l                              -> List.fold_left f accu l
   | Mletin (_, a, _, b, o)                -> let tmp = f (f accu a) b in Option.map_dfl (f tmp) tmp o
   | Mdeclvar (_, _, v)                    -> f accu v
@@ -1817,9 +1817,10 @@ let fold_map_term
     let re, ra = f la r in
     g (Mratarith (op, le, re)), ra
 
-  | Mrattez e ->
-    let ee, ea = f accu e in
-    g (Mrattez ee), ea
+  | Mrattez (c, t) ->
+    let ce, ca = f accu c in
+    let te, ta = f ca t in
+    g (Mrattez (ce, te)), ta
 
   | Masset l ->
     let le, la = fold_map_term_list f accu l in
