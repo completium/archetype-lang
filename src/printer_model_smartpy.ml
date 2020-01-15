@@ -289,6 +289,7 @@ let pp_model fmt (model : model) =
   let pp_builtin_const fmt = function
     | MinBuiltin t-> Format.fprintf fmt "min on %a" pp_type t
     | MaxBuiltin t-> Format.fprintf fmt "max on %a" pp_type t
+    | RatEq        -> Format.fprintf fmt "rat_eq"
     | RatCmp       -> Format.fprintf fmt "rat_cmp"
     | RatArith     -> Format.fprintf fmt "rat_arith"
     | RatTez       -> Format.fprintf fmt "rat_to_tez"
@@ -833,15 +834,22 @@ let pp_model fmt (model : model) =
         in
         pp fmt e
 
+      | Mrateq (l, r) ->
+        let pp fmt (l, r) =
+          Format.fprintf fmt "rat_eq (%a, %a)"
+            f l
+            f r
+        in
+        pp fmt (l, r)
+
       | Mratcmp (op, l, r) ->
         let pp fmt (op, l, r) =
-          let to_str = function
-            | Req -> "eq"
-            | Rne -> "ne"
-            | Rlt -> "lt"
-            | Rle -> "le"
-            | Rgt -> "gt"
-            | Rge -> "ge"
+          let to_str (c : comparison_operator) =
+            match c with
+            | Lt -> "lt"
+            | Le -> "le"
+            | Gt -> "gt"
+            | Ge -> "ge"
           in
           let str_op = to_str op in
           Format.fprintf fmt "rat_cmp (%s, %a, %a)"

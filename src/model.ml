@@ -84,15 +84,6 @@ type comparison_operator =
   | Le
 [@@deriving show {with_path = false}]
 
-type rat_cmp_op =
-  | Req
-  | Rne
-  | Rlt
-  | Rle
-  | Rgt
-  | Rge
-[@@deriving show {with_path = false}]
-
 type rat_arith_op =
   | Rplus
   | Rminus
@@ -189,7 +180,8 @@ type ('id, 'term) mterm_node  =
   | Mmodulo         of 'term * 'term
   | Muplus          of 'term
   | Muminus         of 'term
-  | Mratcmp         of rat_cmp_op * 'term * 'term
+  | Mrateq          of 'term * 'term
+  | Mratcmp         of comparison_operator * 'term * 'term
   | Mratarith       of rat_arith_op * 'term * 'term
   | Mrattez         of 'term * 'term
   | Masset          of 'term list
@@ -322,6 +314,7 @@ and function_const =
 and builtin_const =
   | MinBuiltin of type_
   | MaxBuiltin of type_
+  | RatEq
   | RatCmp
   | RatArith
   | RatTez
@@ -789,7 +782,6 @@ let cmp_btyp (b1 : btyp) (b2 : btyp) : bool = b1 = b2
 let cmp_vset (v1 : vset) (v2 : vset) : bool = v1 = v2
 let cmp_trtyp (t1 : trtyp) (t2 : trtyp) : bool = t1 = t2
 let cmp_comparison_operator (op1 : comparison_operator) (op2 : comparison_operator) : bool = op1 = op2
-let cmp_rat_cmp_op (op1 : rat_cmp_op) (op2 : rat_cmp_op) : bool = op1 = op2
 let cmp_rat_arith_op (op1 : rat_arith_op) (op2 : rat_arith_op) : bool = op1 = op2
 let cmp_action_description (ad1 : action_description) (ad2 : action_description) : bool = ad1 = ad2
 let cmp_security_role = cmp_lident
@@ -927,7 +919,7 @@ let cmp_mterm_node
     | Mmodulo (l1, r1), Mmodulo (l2, r2)                                               -> cmp l1 l2 && cmp r1 r2
     | Muplus e1, Muplus e2                                                             -> cmp e1 e2
     | Muminus e1, Muminus e2                                                           -> cmp e1 e2
-    | Mratcmp (op1, l1, r1), Mratcmp (op2, l2, r2)                                     -> cmp_rat_cmp_op op1 op2 && cmp l1 l2 && cmp r1 r2
+    | Mratcmp (op1, l1, r1), Mratcmp (op2, l2, r2)                                     -> cmp_comparison_operator op1 op2 && cmp l1 l2 && cmp r1 r2
     | Mratarith (op1, l1, r1), Mratarith (op2, l2, r2)                                 -> cmp_rat_arith_op op1 op2 && cmp l1 l2 && cmp r1 r2
     | Mrattez (c1, t1), Mrattez (c2, t2)                                               -> cmp c1 c2 && cmp t1 t2
     | Masset l1, Masset l2                                                             -> List.for_all2 cmp l1 l2
@@ -1139,6 +1131,7 @@ let map_term_node (f : 'id mterm_gen -> 'id mterm_gen) = function
   | Muplus e                      -> Muplus (f e)
   | Muminus e                     -> Muminus (f e)
   | Mratarith (op, l, r)          -> Mratarith (op, f l, f r)
+  | Mrateq (l, r)                 -> Mrateq (f l, f r)
   | Mratcmp (op, l, r)            -> Mratcmp (op, f l, f r)
   | Mrattez (c, t)                -> Mrattez (f c, f t)
   | Masset l                      -> Masset (List.map f l)
@@ -1405,6 +1398,7 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Muplus e                              -> f accu e
   | Muminus e                             -> f accu e
   | Mratarith (_, l, r)                   -> f (f accu l) r
+  | Mrateq (l, r)                         -> f (f accu l) r
   | Mratcmp (_, l, r)                     -> f (f accu l) r
   | Mrattez (c, t)                        -> f (f accu c) t
   | Masset l                              -> List.fold_left f accu l
@@ -1806,6 +1800,11 @@ let fold_map_term
   | Muminus e ->
     let ee, ea = f accu e in
     g (Muminus ee), ea
+
+  | Mrateq (l, r) ->
+    let le, la = f accu l in
+    let re, ra = f la r in
+    g (Mrateq (le, re)), ra
 
   | Mratcmp (op, l, r) ->
     let le, la = f accu l in
@@ -2215,6 +2214,7 @@ end = struct
   let function_name_from_builtin_const = function
     | MinBuiltin         _ -> "min"
     | MaxBuiltin         _ -> "max"
+    | RatEq                -> "rat_eq"
     | RatCmp               -> "rat_cmp"
     | RatArith             -> "rat_arith"
     | RatTez               -> "rat_to_tez"

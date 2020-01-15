@@ -1,8 +1,8 @@
-archetype rational_cmp
+archetype rational_to_tez
 
 action a (dest : address) {
   effect {
-    var m = 0.3 * 1tz;
+    var m = 1tz * 1;
     transfer m to dest
   }
 }

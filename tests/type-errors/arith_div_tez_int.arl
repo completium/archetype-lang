@@ -1,0 +1,7 @@
+archetype arith_div_tez_int
+
+action main () {
+  effect {
+    var v = 1tz / 1
+  }
+}

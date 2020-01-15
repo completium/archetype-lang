@@ -76,13 +76,6 @@ action main () {
     var int_tez_mult   : tez = i1 * t2;
     var rat_tez_mult   : tez = ra1 * t2;
 
-    var tez_int_mult   : tez = t1 * i2;
-    var tez_int_div    : tez = t1 / i2;
-
-    var tez_rat_mult   : tez = t1 * ra2;
-    var tez_rat_div    : tez = t1 / ra2;
-
-
     require (true)
   }
 }

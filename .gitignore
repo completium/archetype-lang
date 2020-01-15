@@ -31,7 +31,3 @@ contracts/*.cm*
 contracts/*.tz
 contracts/*.md
 attic/
-*.tz
-*.ligo
-*.ml
-*.arl

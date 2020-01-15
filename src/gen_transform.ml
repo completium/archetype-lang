@@ -527,6 +527,7 @@ let ligo_move_get_in_condition (model : model) : model =
 
 let remove_rational (model : model) : model =
   let type_int = Tbuiltin Bint in
+  let type_bool= Tbuiltin Bbool in
   let type_cur = Tbuiltin Bcurrency in
   let type_rational = Ttuple [type_int; type_int] in
   let one = mk_mterm (Mint (Big_int.unit_big_int)) type_int in
@@ -557,10 +558,18 @@ let remove_rational (model : model) : model =
         | Mtuple [x; y], Ttuple [Tbuiltin Bint; Tbuiltin Bint] -> {x with node = Mtuple [y; x] }
         | _ -> assert false
       in
+      let process_eq neg (a, b) =
+        let lhs = (to_rat |@ aux) a in
+        let rhs = (to_rat |@ aux) b in
+        let res = mk_mterm (Mrateq (lhs, rhs)) type_bool in
+        if neg
+        then mk_mterm (Mnot res) type_bool
+        else res
+      in
       let process_cmp op (a, b) =
         let lhs = (to_rat |@ aux) a in
         let rhs = (to_rat |@ aux) b in
-        mk_mterm (Mratcmp (op, lhs, rhs)) type_rational
+        mk_mterm (Mratcmp (op, lhs, rhs)) type_bool
       in
       let process_arith op (a, b) =
         let lhs = (to_rat |@ aux) a in
@@ -596,12 +605,12 @@ let remove_rational (model : model) : model =
           | Mdiv   (a, b) when is_cur a && is_num b -> process_rattez b a ~i:true
           | _ -> map_mterm aux mt
         end
-      | Mequal  (a, b), _ when is_rats (a, b) -> process_cmp Req (a, b)
-      | Mnequal (a, b), _ when is_rats (a, b) -> process_cmp Rne (a, b)
-      | Mlt     (a, b), _ when is_rats (a, b) -> process_cmp Rlt (a, b)
-      | Mle     (a, b), _ when is_rats (a, b) -> process_cmp Rle (a, b)
-      | Mgt     (a, b), _ when is_rats (a, b) -> process_cmp Rgt (a, b)
-      | Mge     (a, b), _ when is_rats (a, b) -> process_cmp Rge (a, b)
+      | Mequal  (a, b), _ when is_rats (a, b) -> process_eq  false (a, b)
+      | Mnequal (a, b), _ when is_rats (a, b) -> process_eq  true  (a, b)
+      | Mlt     (a, b), _ when is_rats (a, b) -> process_cmp Lt    (a, b)
+      | Mle     (a, b), _ when is_rats (a, b) -> process_cmp Le    (a, b)
+      | Mgt     (a, b), _ when is_rats (a, b) -> process_cmp Gt    (a, b)
+      | Mge     (a, b), _ when is_rats (a, b) -> process_cmp Ge    (a, b)
       | Mletin (ids, init, t, body, o), _ ->
         { mt with
           node = Mletin (ids, aux init, Option.map process_type t, aux body, Option.map aux o)

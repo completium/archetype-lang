@@ -721,15 +721,22 @@ let pp_model fmt (model : model) =
         in
         pp fmt e
 
+      | Mrateq (l, r) ->
+        let pp fmt (l, r) =
+          Format.fprintf fmt "rat_eq (%a, %a)"
+            f l
+            f r
+        in
+        pp fmt (l, r)
+
       | Mratcmp (op, l, r) ->
         let pp fmt (op, l, r) =
-          let to_str = function
-            | Req -> "OpCmpEq(unit)"
-            | Rne -> "OpCmpNe(unit)"
-            | Rlt -> "OpCmpLt(unit)"
-            | Rle -> "OpCmpLe(unit)"
-            | Rgt -> "OpCmpGt(unit)"
-            | Rge -> "OpCmpGe(unit)"
+          let to_str (c : comparison_operator) =
+            match c with
+            | Lt -> "OpCmpLt(unit)"
+            | Le -> "OpCmpLe(unit)"
+            | Gt -> "OpCmpGt(unit)"
+            | Ge -> "OpCmpGe(unit)"
           in
           let str_op = to_str op in
           Format.fprintf fmt "rat_cmp (%s, %a, %a)"
@@ -1499,26 +1506,30 @@ let pp_model fmt (model : model) =
   let pp_builtin_const (_env : env) fmt = function
     | MinBuiltin t -> Format.fprintf fmt "min on %a" pp_type t
     | MaxBuiltin t -> Format.fprintf fmt "max on %a" pp_type t
+    | RatEq        ->
+      Format.fprintf fmt
+        "function rat_eq (const lhs : (int * int); const rhs : (int * int)) : bool is@\n  \
+         block {skip} with@\n  \
+         lhs.0 * rhs.1 = rhs.0 * lhs.1 @\n"
     | RatCmp       ->
       Format.fprintf fmt
         "type op_cmp is@\n\
-         | OpCmpEq of unit@\n\
-         | OpCmpNe of unit@\n\
          | OpCmpLt of unit@\n\
          | OpCmpLe of unit@\n\
          | OpCmpGt of unit@\n\
          | OpCmpGe of unit@\n\
          @\n\
          function rat_cmp (const op : op_cmp; const lhs : (int * int); const rhs : (int * int)) : bool is@\n  \
-         begin@\n   \
-         const r : bool =@\n   \
-         case op of@\n   \
-         | OpCmpEq(unit) -> lhs.0 * rhs.1 = rhs.0 * lhs.1@\n   \
-         | OpCmpNe(unit) -> lhs.0 * rhs.1 =/= rhs.0 * lhs.1@\n   \
-         | OpCmpLt(unit) -> True@\n   \
-         | OpCmpLe(unit) -> True@\n   \
-         | OpCmpGt(unit) -> True@\n   \
-         | OpCmpGe(unit) -> True@\n   \
+         begin@\n    \
+         const a : int = lhs.0 * rhs.1;@\n    \
+         const b : int = lhs.1 * rhs.0;@\n    \
+         const pos : bool = lhs.1 * rhs.1 > 0;@\n    \
+         var r : bool := False;@\n    \
+         case op of@\n    \
+         | OpCmpLt(unit) -> if pos then r := a <  b else r := a >  b@\n    \
+         | OpCmpLe(unit) -> if pos then r := a <= b else r := a >= b@\n    \
+         | OpCmpGt(unit) -> if pos then r := a >  b else r := a <  b@\n    \
+         | OpCmpGe(unit) -> if pos then r := a >= b else r := a <= b@\n    \
          end@\n  \
          end with r@\n"
     | RatArith     ->
@@ -1543,7 +1554,7 @@ let pp_model fmt (model : model) =
       Format.fprintf fmt
         "function rat_tez (const c : (int * int); const t : tez) : tez is@\n\
          begin@\n  \
-         if (c.0 / c.1 < 0) then failwith(\"c must be positive\") else skip;@\n  \
+         if (c.0 * c.1 < 0) then failwith(\"c must be positive\") else skip;@\n  \
          const r : tez = abs(c.0) * t / abs(c.1);@\n  \
          end with r@\n"
   in
