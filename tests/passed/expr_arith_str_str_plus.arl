@@ -1,0 +1,9 @@
+archetype expr_arith_str_str_plus
+
+variable res : string = ""
+
+action exec () {
+  effect {
+    res := "a" + "b"
+  }
+}

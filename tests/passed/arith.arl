@@ -54,27 +54,26 @@ action main () {
     var rat_int_mult   : rational = ra1 * i2;
     var rat_int_div    : rational = ra1 / i2;
 
-    var date_date_minus  : duration = da1 - da2; (* absolute value *)
+    var date_date_minus : duration = da1 - da2; (* absolute value *)
 
-    var duration_duration_plus  : duration = du1 + du2;
-    var duration_duration_minus : duration = du1 - du2; (* absolute value *)
+    var dur_dur_plus   : duration = du1 + du2;
+    var dur_dur_minus  : duration = du1 - du2; (* absolute value *)
 
-    var duration_int_mult : duration = du1 * i2;
-    var duration_int_div  : duration = du1 / i2;
+    var int_dur_mult   : duration = i1 * du2;
+    var dur_int_div    : duration = du1 / i2;
 
-    var date_duration_plus   : date = da1 + du2;
-    var date_duration_minus  : date = da1 - du2;
+    var date_dur_plus  : date     = da1 + du2;
+    var date_dur_minus : date     = da1 - du2;
 
-    var duration_date_plus   : date = du1 + da2;
+    var dur_date_plus  : date     = du1 + da2;
 
-    var string_string_plus : string = str1 + str2; (* concat *)
+    var str_str_plus   : string   = str1 + str2; (* concat *)
 
-    var tez_tez_plus   : tez = t1 + t2;
-    var tez_tez_minus  : tez = t1 - t2;
-    var tez_tez_div    : rational = t1 / t2;
+    var tez_tez_plus   : tez      = t1 + t2;
+    var tez_tez_minus  : tez      = t1 - t2;
 
-    var int_tez_mult   : tez = i1 * t2;
-    var rat_tez_mult   : tez = ra1 * t2;
+    var int_tez_mult   : tez      = i1 * t2;
+    var rat_tez_mult   : tez      = ra1 * t2;
 
     require (true)
   }

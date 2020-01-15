@@ -1,0 +1,9 @@
+archetype expr_arith_dur_dur_plus
+
+variable res : duration = 0s
+
+action exec () {
+  effect {
+    res := 1d + 4h
+  }
+}
