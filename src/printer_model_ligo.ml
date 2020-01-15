@@ -701,7 +701,7 @@ let pp_model fmt (model : model) =
 
       | Mmodulo (l, r) ->
         let pp fmt (l, r : mterm * mterm) =
-          Format.fprintf fmt "%a %% %a"
+          Format.fprintf fmt "int(%a mod %a)"
             (pp_cast Lhs l.type_ r.type_ f) l
             (pp_cast Rhs l.type_ r.type_ f) r
         in
