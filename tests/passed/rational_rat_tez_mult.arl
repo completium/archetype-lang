@@ -1,6 +1,6 @@
 archetype rational_to_tez
 
-action a (dest : address) {
+action exec (dest : address) {
   effect {
     var m = 0.3 * 1tz;
     transfer m to dest

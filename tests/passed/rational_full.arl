@@ -15,7 +15,7 @@ contract mc {
   return r
 } *)
 
-action a (r3 : rational, a : anasset) {
+action exec (r3 : rational, a : anasset) {
   effect {
     var r4 = 1 div 4;
     require (r1 + (1 div 3) (* * f(r4)*) > r3 - a.r2 - r4);

@@ -7,7 +7,7 @@ variable var_dat : date = 2020-12-31
 variable var_dur : duration = 0s
 variable var_str : string = ""
 
-action main () {
+action exec () {
   effect {
     var_int += 1;
     var_rat += 1.0;

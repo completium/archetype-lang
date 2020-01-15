@@ -1,0 +1,9 @@
+archetype expr_cmp_bool_bool_ne
+
+variable res : bool = false
+
+action exec () {
+  effect {
+    res := true <> false
+  }
+}

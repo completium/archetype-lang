@@ -5,7 +5,7 @@ asset myasset {
   v : string;
 }
 
-action main () {
+action exec () {
   effect {
     let col = myasset.select(id % 2 = 0) in
     for c in col do

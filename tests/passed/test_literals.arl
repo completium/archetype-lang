@@ -19,7 +19,7 @@ variable mytuple : int * int = 1, 2
 variable op1 : int option = none
 variable op2 : int option = some(0)
 
-action main () {
+action exec () {
   effect {
     require(true)
   }

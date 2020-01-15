@@ -1,0 +1,9 @@
+archetype expr_cmp_date_date_gt
+
+variable res : bool = false
+
+action exec () {
+  effect {
+    res := 2020-01-02 > 2020-01-01
+  }
+}

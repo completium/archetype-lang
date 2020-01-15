@@ -33,7 +33,7 @@ with {
   { @tata; InProgress; 8 }
 ]
 
-action myaction (a : my_asset_all) {
+action exec (a : my_asset_all) {
   effect {
     require(a.b)
   }

@@ -1,0 +1,58 @@
+archetype arith
+
+variable res : bool = false
+
+action exec () {
+  effect {
+    res := 1 =  2;
+    res := 1 <> 2;
+    res := 1 <  2;
+    res := 1 <= 2;
+    res := 1 >  2;
+    res := 1 >= 2;
+
+    res := (1 div 2) =  2;
+    res := (1 div 2) <> 2;
+    res := (1 div 2) <  2;
+    res := (1 div 2) <= 2;
+    res := (1 div 2) >  2;
+    res := (1 div 2) >= 2;
+
+    res := 1 =  (2 div 3);
+    res := 1 <> (2 div 3);
+    res := 1 <  (2 div 3);
+    res := 1 <= (2 div 3);
+    res := 1 >  (2 div 3);
+    res := 1 >= (2 div 3);
+
+    res := 1tz =  2tz;
+    res := 1tz <> 2tz;
+    res := 1tz <  2tz;
+    res := 1tz <= 2tz;
+    res := 1tz >  2tz;
+    res := 1tz >= 2tz;
+
+    res := 1h =  2h;
+    res := 1h <> 2h;
+    res := 1h <  2h;
+    res := 1h <= 2h;
+    res := 1h >  2h;
+    res := 1h >= 2h;
+
+    res := 2020-01-01 =  2020-12-31;
+    res := 2020-01-01 <> 2020-12-31;
+    res := 2020-01-01 <  2020-12-31;
+    res := 2020-01-01 <= 2020-12-31;
+    res := 2020-01-01 >  2020-12-31;
+    res := 2020-01-01 >= 2020-12-31;
+
+    res := true =  false;
+    res := true <> false;
+
+    res := @addr1 =  @addr2;
+    res := @addr1 <> @addr2;
+
+    res := "a" =  "b";
+    res := "a" <> "b";
+  }
+}

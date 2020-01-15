@@ -1,6 +1,6 @@
 archetype test_failif
 
-action tr () {
+action exec () {
   effect {
     failif (false)
   }

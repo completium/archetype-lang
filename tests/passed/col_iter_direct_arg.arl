@@ -5,7 +5,7 @@ asset myasset {
   v : string;
 }
 
-action main (col : myasset collection) {
+action exec (col : myasset collection) {
   effect {
     for c in col do
       myasset.add(c)

@@ -7,7 +7,7 @@ enum t =
   | C4
   | C5
 
-action myaction (x : t) {
+action exec (x : t) {
   effect {
   let v = 0 in
 

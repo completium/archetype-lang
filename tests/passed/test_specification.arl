@@ -13,7 +13,7 @@ asset col2 {
   id2 : string;
 }
 
-action myaction () {
+action exec () {
  specification {
 
     definition mydef {

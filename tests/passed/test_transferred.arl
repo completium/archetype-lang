@@ -1,6 +1,6 @@
 archetype test_transferred
 
-action myaction () {
+action exec () {
   accept transfer
   effect {
     require (transferred = 1tz)

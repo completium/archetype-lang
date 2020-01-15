@@ -8,7 +8,7 @@ specification {
   }
 }
 
-action doSomething () {
+action exec () {
   effect {
     var a : int = 0;
     a := x

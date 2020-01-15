@@ -11,7 +11,7 @@ asset my_asset identified by id {
   col : asset_0 partition;
 }
 
-action main () {
+action exec () {
   effect {
     let asset0_id = "id0" in
     let asset0_var : asset_0 = { id0 = asset0_id; value0 = 0 } in

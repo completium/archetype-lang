@@ -7,7 +7,7 @@ asset myasset {
   id : string;
 }
 
-action main () {
+action exec () {
   effect {
     i := 1
   }
@@ -15,7 +15,7 @@ action main () {
 
 security {
   g1 : only_by_role (anyaction, admin);
-  g2 : only_in_action (remove (myasset), [main or main]);
-  g3 : not_in_action (add (myasset), main);
-  g4 : no_storage_fail (main);
+  g2 : only_in_action (remove (myasset), [exec or exec]);
+  g3 : not_in_action (add (myasset), exec);
+  g4 : no_storage_fail (exec);
 }

@@ -8,7 +8,7 @@ contract mycontract {
 
 variable contract_i : mycontract = @KT1GabhR5P52hw6xs5P69BXJYAURaznhvN1k
 
-action doCall (a : address) {
+action exec (a : address) {
   effect {
     contract_i.myaction1(a, 1tz);
     contract_i.myaction2("string");

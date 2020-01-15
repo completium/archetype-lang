@@ -10,7 +10,7 @@ asset myasset identified by id {
   str : string;
 }
 
-action main () {
+action exec () {
   effect {
     i := 1;
     myasset.get(1).cpt := 1

@@ -1,6 +1,6 @@
 archetype nothing
 
-action main () {
+action exec () {
   effect {
     ()
   }
