@@ -360,6 +360,7 @@ let string_of_symbol = function
   | X (N N_sl_COMMA_security_arg_) -> "a list of security argument"
   | X (N N_snl_COMMA_sig_arg_) -> "a non empty list of signature argument"
   | X (N N_sl_COMMA_sig_arg_) -> "a list of signature argument"
+  | X (N N_option_SEMI_COLON_) -> ""
 
 let string_of_item (p, i) =
   string_of_symbol (lhs p) ^ " -> "

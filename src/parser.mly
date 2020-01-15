@@ -347,7 +347,7 @@ function_decl:
 | VARIABLE id=ident COLON t=type_t dv=default_value? { Vvariable (id, t, dv) }
 
 %inline spec_effect:
-| SHADOW EFFECT e=braced(expr) { Veffect e }
+| SHADOW EFFECT e=braced(block) { Veffect e }
 
 %inline invars:
 | INVARIANT FOR id=ident xs=braced(expr) { (id, split_seq xs) }
@@ -577,8 +577,8 @@ failif:
 | WITH e=effect { e }
 
 effect:
- | EFFECT exts=option(extensions) e=braced(expr) { (e, exts) }
- | INVALID_EFFECT                                { (mkloc Location.dummy Einvalid, None) }
+ | EFFECT exts=option(extensions) e=braced(block) { (e, exts) }
+ | INVALID_EFFECT                                 { (mkloc Location.dummy Einvalid, None) }
 
 %inline function_return:
  | COLON ty=type_t { ty }
@@ -675,10 +675,10 @@ expr_r:
  | BREAK
      { Ebreak }
 
- | FOR lbl=colon_ident x=ident IN y=expr DO body=expr DONE
+ | FOR lbl=colon_ident x=ident IN y=expr DO body=block DONE
      { Efor (lbl, x, y, body) }
 
- | ITER lbl=colon_ident x=ident a=from_expr TO b=expr DO body=expr DONE
+ | ITER lbl=colon_ident x=ident a=from_expr TO b=expr DO body=block DONE
      { Eiter (lbl, x, a, b, body) }
 
  | IF c=expr THEN t=expr
@@ -721,6 +721,9 @@ expr_r:
 
  | x=simple_expr_r
      { x }
+
+%inline block:
+| e=expr SEMI_COLON? { e }
 
 order_operation:
  | e1=expr op=loc(ord_operator) e2=expr
