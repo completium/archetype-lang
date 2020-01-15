@@ -770,6 +770,13 @@ let pp_model fmt (model : model) =
         in
         pp fmt (c, t)
 
+      | Minttorat e ->
+        let pp fmt e =
+          Format.fprintf fmt "((%a), 1)"
+            f e
+        in
+        pp fmt e
+
       | Masset l ->
         let asset_name =
           match mtt.type_ with
@@ -951,7 +958,7 @@ let pp_model fmt (model : model) =
         Format.fprintf fmt "@[%a@]"
           (pp_list ";@\n" f) is
 
-      | Massign (op, lhs, r) ->
+      | Massign (op, _, lhs, r) ->
         Format.fprintf fmt "%a := %a"
           pp_id lhs
           (
@@ -966,7 +973,7 @@ let pp_model fmt (model : model) =
               | OrAssign    -> Format.fprintf fmt "%a or %a" pp_id lhs f r
           ) r
 
-      | Massignvarstore (op, lhs, r) ->
+      | Massignvarstore (op, _, lhs, r) ->
         Format.fprintf fmt "%s.%a := %a"
           const_storage
           pp_id lhs
@@ -982,7 +989,7 @@ let pp_model fmt (model : model) =
               | OrAssign    -> Format.fprintf fmt "%a or %a" pp_id lhs f r
           ) r
 
-      | Massignfield (op, a, field , r) ->
+      | Massignfield (op, _, a, field , r) ->
         Format.fprintf fmt "%a.%a %a %a"
           f a
           pp_id field

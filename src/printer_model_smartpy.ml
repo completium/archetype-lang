@@ -883,6 +883,13 @@ let pp_model fmt (model : model) =
         in
         pp fmt (c, t)
 
+      | Minttorat e ->
+        let pp fmt e =
+          Format.fprintf fmt "int_to_rat (%a)"
+            f e
+        in
+        pp fmt e
+
       | Masset l ->
         let asset_name =
           match mtt.type_ with
@@ -999,25 +1006,25 @@ let pp_model fmt (model : model) =
       | Mseq is ->
         Format.fprintf fmt "@[<v 4>%a@]"
           (pp_list "@\n\t" f) is
-      | Massign (op, l, r) ->
+      | Massign (op, _, l, r) ->
         Format.fprintf fmt "%a %a %a"
           pp_id l
           pp_operator op
           f r
-      | Massignvarstore (op, l, r) ->
+      | Massignvarstore (op, _, l, r) ->
         Format.fprintf fmt "s.%a %a %a"
           pp_id l
           pp_operator op
           f r
-      | Massignstate x ->
-        Format.fprintf fmt "state = %a"
-          f x
-      | Massignfield (op, a, field , r) ->
+      | Massignfield (op, _, a, field , r) ->
         Format.fprintf fmt "%a.%a %a %a"
           f a
           pp_id field
           pp_operator op
           f r
+      | Massignstate x ->
+        Format.fprintf fmt "state = %a"
+          f x
       | Mtransfer (v, d) ->
         Format.fprintf fmt "transfer %a to %a"
           f v

@@ -325,7 +325,7 @@ and 'id instruction_node =
   | Ideclvar of 'id * 'id term_gen                                            (* id * init *)
   | Iseq of 'id instruction_gen list                                          (* lhs ; rhs *)
   | Imatchwith of 'id term_gen * ('id pattern_gen * 'id instruction_gen) list (* match term with ('pattern * 'id instruction_gen) list *)
-  | Iassign of (assignment_operator * 'id lvalue_gen * 'id term_gen)          (* $2 assignment_operator $3 *)
+  | Iassign of (ptyp * assignment_operator * 'id lvalue_gen * 'id term_gen)   (* $2 assignment_operator $3 *)
   | Irequire of (bool * 'id term_gen)                                         (* $1 ? require : failif *)
   | Itransfer of ('id term_gen * 'id term_gen)                                (* value * dest *)
   | Ibreak
@@ -688,7 +688,7 @@ let map_instr_node f = function
   | Ideclvar (i, v)     -> Ideclvar (i, v)
   | Iseq is             -> Iseq (List.map f is)
   | Imatchwith (a, ps)  -> Imatchwith (a, ps)
-  | Iassign (op, l, r)  -> Iassign (op, l, r)
+  | Iassign (t, op, l, r)-> Iassign (t, op, l, r)
   | Irequire (b, x)     -> Irequire (b, x)
   | Itransfer x         -> Itransfer x
   | Ibreak              -> Ibreak
@@ -770,7 +770,7 @@ let fold_instr_expr fi fe accu instr =
   | Ideclvar (_, v)     -> fe accu v
   | Iseq is             -> List.fold_left fi accu is
   | Imatchwith (a, ps)  -> List.fold_left (fun accu (_, i) -> fi accu i) (fe accu a) ps
-  | Iassign (_, _, e)   -> fe accu e
+  | Iassign (_, _, _, e)-> fe accu e
   | Irequire (_, x)     -> fe accu x
   | Itransfer (v, d)    -> fe (fe accu v) d
   | Ibreak              -> accu
@@ -946,9 +946,9 @@ let fold_map_instr_term gi _ge fi fe (accu : 'a) instr : 'id instruction_gen * '
 
     gi (Imatchwith (ae, pse)), psa
 
-  | Iassign (op, id, x) ->
+  | Iassign (t, op, id, x) ->
     let xe, xa = fe accu x in
-    gi (Iassign (op, id, xe)), xa
+    gi (Iassign (t, op, id, xe)), xa
 
   | Irequire (b, x) ->
     let xe, xa = fe accu x in

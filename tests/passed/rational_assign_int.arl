@@ -1,9 +1,0 @@
-archetype rational_arith_int_rat_div
-
-variable res : rational = 0
-
-action a () {
-  effect {
-    res := 1
-  }
-}

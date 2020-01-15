@@ -627,6 +627,13 @@ let pp_mterm fmt (mt : mterm) =
       in
       pp fmt (c, t)
 
+    | Minttorat e ->
+      let pp fmt e =
+        Format.fprintf fmt "int_to_rat (%a)"
+          f e
+      in
+      pp fmt e
+
     | Masset l ->
       Format.fprintf fmt "{%a}"
         (pp_list "; " f) l
@@ -714,17 +721,17 @@ let pp_mterm fmt (mt : mterm) =
       Format.fprintf fmt "%a"
         (pp_list ";@\n" f) is
 
-    | Massign (op, l, r) ->
+    | Massign (op, _, l, r) ->
       Format.fprintf fmt "%a %a %a"
         pp_id l
         pp_operator op
         f r
-    | Massignvarstore (op, l, r) ->
+    | Massignvarstore (op, _, l, r) ->
       Format.fprintf fmt "s.%a %a %a"
         pp_id l
         pp_operator op
         f r
-    | Massignfield (op, a, field , r) ->
+    | Massignfield (op, _, a, field , r) ->
       Format.fprintf fmt "%a.%a %a %a"
         f a
         pp_id field

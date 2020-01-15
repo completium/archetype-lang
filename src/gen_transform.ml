@@ -150,9 +150,9 @@ let process_single_field_storage (model : model) : model =
         match mt.node with
         | Mvarstorevar a when String.equal (unloc a) (unloc i.id) ->
           mk_mterm (Mvarlocal storage_id) mt.type_
-        | Massign (op, a, v) when String.equal (unloc a) (unloc i.id) ->
+        | Massign (op, t, a, v) when String.equal (unloc a) (unloc i.id) ->
           let vv = map_mterm (aux ctx) v in
-          mk_mterm (Massign (op, storage_id, vv)) mt.type_
+          mk_mterm (Massign (op, t, storage_id, vv)) mt.type_
         | _ -> map_mterm (aux ctx) mt
       in
       map_mterm_model aux model
@@ -532,6 +532,7 @@ let remove_rational (model : model) : model =
   let type_rational = Ttuple [type_int; type_int] in
   let one = mk_mterm (Mint (Big_int.unit_big_int)) type_int in
   let mk_rat n d = mk_mterm (Mtuple [n ; d]) type_rational in
+  let int_to_rat e = mk_mterm (Minttorat e) type_rational in
   let process_type t : type_ =
     let rec aux t =
       match t with
@@ -540,24 +541,20 @@ let remove_rational (model : model) : model =
     in
     aux t
   in
+  let to_rat (x : mterm) =
+    match x.type_ with
+    | Tbuiltin Bint -> mk_rat x one
+    | Ttuple [Tbuiltin Bint; Tbuiltin Bint] -> x
+    | _ -> assert false
+  in
   let process_mterm mt =
-    let to_rat (x : mterm) =
-      match x.type_ with
-      | Tbuiltin Bint -> mk_rat x one
-      | Ttuple [Tbuiltin Bint; Tbuiltin Bint] -> x
-      | _ -> assert false
-    in
     let rec aux (mt : mterm) : mterm =
-      let is_rat (x : mterm) = match x.type_ with | Tbuiltin Brational -> true | _ -> false in
+      let is_t_rat (x : type_) = match x with     | Tbuiltin Brational -> true | _ -> false in
       let is_int (x : mterm) = match x.type_ with | Tbuiltin Bint      -> true | _ -> false in
+      let is_rat (x : mterm) = match x.type_ with | Tbuiltin Brational -> true | _ -> false in
       let is_cur (x : mterm) = match x.type_ with | Tbuiltin Bcurrency -> true | _ -> false in
       let is_num (x : mterm) = is_rat x || is_int x in
       let is_rats (a, b) = is_rat a || is_rat b in
-      let inv (x : mterm) : mterm =
-        match x.node, x.type_ with
-        | Mtuple [x; y], Ttuple [Tbuiltin Bint; Tbuiltin Bint] -> {x with node = Mtuple [y; x] }
-        | _ -> assert false
-      in
       let process_eq neg (a, b) =
         let lhs = (to_rat |@ aux) a in
         let rhs = (to_rat |@ aux) b in
@@ -576,9 +573,8 @@ let remove_rational (model : model) : model =
         let rhs = (to_rat |@ aux) b in
         mk_mterm (Mratarith (op, lhs, rhs)) type_rational
       in
-      let process_rattez  ?(i = false) (n : mterm) (t : mterm) : mterm =
+      let process_rattez (n : mterm) (t : mterm) : mterm =
         let coef = (to_rat |@ aux) n in
-        let coef = if i then coef else inv coef in
         let t = aux t in
         mk_mterm (Mrattez (coef, t)) type_cur
       in
@@ -601,8 +597,6 @@ let remove_rational (model : model) : model =
           | Mcurrency (v, Tz)  -> { mt with node = Mcurrency  (Big_int.mult_int_big_int 1000000 v, Utz) }
           | Mcurrency (v, Mtz) -> { mt with node = Mcurrency  (Big_int.mult_int_big_int    1000 v, Utz) }
           | Mmult  (a, b) when is_num a && is_cur b -> process_rattez a b
-          | Mmult  (a, b) when is_cur a && is_num b -> process_rattez b a
-          | Mdiv   (a, b) when is_cur a && is_num b -> process_rattez b a ~i:true
           | _ -> map_mterm aux mt
         end
       | Mequal  (a, b), _ when is_rats (a, b) -> process_eq  false (a, b)
@@ -611,13 +605,33 @@ let remove_rational (model : model) : model =
       | Mle     (a, b), _ when is_rats (a, b) -> process_cmp Le    (a, b)
       | Mgt     (a, b), _ when is_rats (a, b) -> process_cmp Gt    (a, b)
       | Mge     (a, b), _ when is_rats (a, b) -> process_cmp Ge    (a, b)
-      | Mletin (ids, init, t, body, o), _ ->
+      | Mletin (ids, v, t, body, o), _ when is_int v && Option.map_dfl is_t_rat false t ->
         { mt with
-          node = Mletin (ids, aux init, Option.map process_type t, aux body, Option.map aux o)
+          node = Mletin (ids, (int_to_rat |@ aux) v, Option.map process_type t, aux body, Option.map aux o)
+        }
+      | Mletin (ids, v, t, body, o), _ ->
+        { mt with
+          node = Mletin (ids, aux v, Option.map process_type t, aux body, Option.map aux o)
+        }
+      | Mdeclvar (ids, t, v), _ when is_int v && Option.map_dfl is_t_rat false t ->
+        { mt with
+          node = Mdeclvar (ids, Option.map process_type t, (int_to_rat |@ aux) v)
         }
       | Mdeclvar (ids, t, v), _ ->
         { mt with
           node = Mdeclvar (ids, Option.map process_type t, aux v)
+        }
+      | Massign (op, t, i, v), _ when is_int v && is_t_rat t ->
+        { mt with
+          node = Massign (op, t, i, (int_to_rat |@ aux) v)
+        }
+      | Massignvarstore (op, t, i, v), _  when is_int v && is_t_rat t ->
+        { mt with
+          node = Massignvarstore (op, t, i, (int_to_rat |@ aux) v)
+        }
+      | Massignfield (op, t, a, fn, v), _ when is_int v && is_t_rat t ->
+        { mt with
+          node = Massignfield (op, t, a, fn, (int_to_rat |@ aux) v)
         }
       | Mforall (id, t, a, b), _ ->
         { mt with
@@ -631,12 +645,21 @@ let remove_rational (model : model) : model =
     in
     aux mt
   in
+  let process_arg (type_ : type_) (default_value : mterm option) : (type_ * mterm option) =
+    let t = process_type type_ in
+    t, Option.map ((fun dv ->
+        match t with
+        | Ttuple [Tbuiltin Bint; Tbuiltin Bint] -> to_rat dv
+        | _ -> dv
+      ) |@ process_mterm) default_value
+  in
   let process_decls = List.map (function
       | Dvar v ->
+        let t, dv = process_arg v.type_ v.default in
         Dvar
           { v with
-            type_   = v.type_   |> process_type;
-            default = v.default |> Option.map process_mterm;
+            type_   = t;
+            default = dv;
           }
       | Dasset a ->
         Dasset

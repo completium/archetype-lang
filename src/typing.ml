@@ -2295,7 +2295,8 @@ let rec for_instruction (env : env) (i : PT.expr) : env * M.instruction =
             for_assign_expr `Expr env (loc plv) (op, fty) pe
         in
 
-        env, mki (M.Iassign (op, x, e))
+        let type_assigned = M.Tbuiltin (VTint) in (* TODO: replace by the var/field assigned type *)
+        env, mki (M.Iassign (type_assigned, op, x, e))
       end
 
     | Etransfer (e, d) ->

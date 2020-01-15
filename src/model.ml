@@ -184,6 +184,7 @@ type ('id, 'term) mterm_node  =
   | Mratcmp         of comparison_operator * 'term * 'term
   | Mratarith       of rat_arith_op * 'term * 'term
   | Mrattez         of 'term * 'term
+  | Minttorat       of 'term
   | Masset          of 'term list
   | Mletin          of 'id list * 'term * type_ option * 'term * 'term option
   | Mdeclvar        of 'id list * type_ option * 'term
@@ -220,9 +221,9 @@ type ('id, 'term) mterm_node  =
   | Miter           of ('id * 'term * 'term * 'term * ident option)
   | Mfold           of ('id * 'id list * 'term * 'term) (* ident list * collection * body *)
   | Mseq            of 'term list
-  | Massign         of (assignment_operator * 'id * 'term)
-  | Massignvarstore of (assignment_operator * 'id * 'term)
-  | Massignfield    of (assignment_operator * 'term * 'id * 'term)
+  | Massign         of (assignment_operator * type_ * 'id * 'term)
+  | Massignvarstore of (assignment_operator * type_ * 'id * 'term)
+  | Massignfield    of (assignment_operator * type_ * 'term * 'id * 'term)
   | Massignstate    of 'term
   | Mtransfer       of ('term * 'term) (* value * dest *)
   | Mbreak
@@ -919,9 +920,11 @@ let cmp_mterm_node
     | Mmodulo (l1, r1), Mmodulo (l2, r2)                                               -> cmp l1 l2 && cmp r1 r2
     | Muplus e1, Muplus e2                                                             -> cmp e1 e2
     | Muminus e1, Muminus e2                                                           -> cmp e1 e2
+    | Mrateq (l1, r1), Mrateq (l2, r2)                                                 -> cmp l1 l2 && cmp r1 r2
     | Mratcmp (op1, l1, r1), Mratcmp (op2, l2, r2)                                     -> cmp_comparison_operator op1 op2 && cmp l1 l2 && cmp r1 r2
     | Mratarith (op1, l1, r1), Mratarith (op2, l2, r2)                                 -> cmp_rat_arith_op op1 op2 && cmp l1 l2 && cmp r1 r2
     | Mrattez (c1, t1), Mrattez (c2, t2)                                               -> cmp c1 c2 && cmp t1 t2
+    | Minttorat e1, Minttorat e2                                                       -> cmp e1 e2
     | Masset l1, Masset l2                                                             -> List.for_all2 cmp l1 l2
     | Mletin (i1, a1, t1, b1, o1), Mletin (i2, a2, t2, b2, o2)                         -> List.for_all2 cmpi i1 i2 && cmp a1 a2 && Option.cmp cmp_type t1 t2 && cmp b1 b2 && Option.cmp cmp o1 o2
     | Mdeclvar (i1, t1, v1), Mdeclvar (i2, t2, v2)                                     -> List.for_all2 cmpi i1 i2 && Option.cmp cmp_type t1 t2 && cmp v1 v2
@@ -955,9 +958,9 @@ let cmp_mterm_node
     | Miter (i1, a1, b1, c1, lbl1), Miter (i2, a2, b2, c2, lbl2)                       -> cmpi i1 i2 && cmp a1 a2 && cmp b1 b2 && cmp c1 c2 && Option.cmp cmp_ident lbl1 lbl2
     | Mfold (i1, is1, c1, b1), Mfold (i2, is2, c2, b2)                                 -> cmpi i1 i2 && List.for_all2 cmpi is1 is2 && cmp c1 c2 && cmp b1 b2
     | Mseq is1, Mseq is2                                                               -> List.for_all2 cmp is1 is2
-    | Massign (op1, l1, r1), Massign (op2, l2, r2)                                     -> cmp_assign_op op1 op2 && cmpi l1 l2 && cmp r1 r2
-    | Massignvarstore (op1, l1, r1), Massignvarstore (op2, l2, r2)                     -> cmp_assign_op op1 op2 && cmpi l1 l2 && cmp r1 r2
-    | Massignfield (op1, a1, fi1, r1), Massignfield (op2, a2, fi2, r2)                 -> cmp_assign_op op1 op2 && cmp a1 a2 && cmpi fi1 fi2 && cmp r1 r2
+    | Massign (op1, t1, l1, r1), Massign (op2, t2, l2, r2)                             -> cmp_assign_op op1 op2 && cmp_type t1 t2 && cmpi l1 l2 && cmp r1 r2
+    | Massignvarstore (op1, t1, l1, r1), Massignvarstore (op2, t2, l2, r2)             -> cmp_assign_op op1 op2 && cmp_type t1 t2 && cmpi l1 l2 && cmp r1 r2
+    | Massignfield (op1, t1, a1, fi1, r1), Massignfield (op2, t2, a2, fi2, r2)         -> cmp_assign_op op1 op2 && cmp_type t1 t2 && cmp a1 a2 && cmpi fi1 fi2 && cmp r1 r2
     | Massignstate x1, Massignstate x2                                                 -> cmp x1 x2
     | Mtransfer (v1, d1), Mtransfer (v2, d2)                                           -> cmp v1 v2 && cmp d1 d2
     | Mbreak, Mbreak                                                                   -> true
@@ -1065,129 +1068,130 @@ let map_type (f : type_ -> type_) = function
 (* -------------------------------------------------------------------- *)
 
 let map_term_node (f : 'id mterm_gen -> 'id mterm_gen) = function
-  | Mif (c, t, e)                 -> Mif (f c, f t, Option.map f e)
-  | Mmatchwith (e, l)             -> Mmatchwith (e, List.map (fun (p, e) -> (p, f e)) l)
-  | Mapp (e, args)                -> Mapp (e, List.map f args)
-  | Maddshallow (e, args)         -> Maddshallow (e, List.map f args)
-  | Msetbefore    e               -> Msetbefore    (f e)
-  | Msetat (lbl, e)               -> Msetat        (lbl, f e)
-  | Msetunmoved   e               -> Msetunmoved   (f e)
-  | Msetadded     e               -> Msetadded     (f e)
-  | Msetremoved   e               -> Msetremoved   (f e)
-  | Msetiterated  e               -> Msetiterated  (f e)
-  | Msettoiterate e               -> Msettoiterate (f e)
-  | Mexternal (t, func, c, args)  -> Mexternal (t, func, f c, List.map (fun (id, t) -> (id, f t)) args)
-  | Mget (c, k)                   -> Mget (c, f k)
-  | Mgetbefore (c, k)             -> Mgetbefore (c, f k)
-  | Mgetat (c, d, k)              -> Mgetat (c, d, f k)
-  | Mgetfrommap (an, k, c)        -> Mgetfrommap (an, f k, f c)
-  | Mset (c, l, k, v)             -> Mset (c, l, f k, f v)
-  | Maddasset (an, i)             -> Maddasset (an, f i)
-  | Maddfield (an, fn, c, i)      -> Maddfield (an, fn, f c, f i)
-  | Maddlocal (c, i)              -> Maddlocal (f c, f i)
-  | Mremoveasset (an, i)          -> Mremoveasset (an, f i)
-  | Mremovefield (an, fn, c, i)   -> Mremovefield (an, fn, f c, f i)
-  | Mremovelocal (c, i)           -> Mremovelocal (f c, f i)
-  | Mclearasset (an)              -> Mclearasset (an)
-  | Mclearfield (an, fn, i)       -> Mclearfield (an, fn, f i)
-  | Mremoveif (an, fn, i)         -> Mremoveif (an, f fn, f i)
-  | Mclearlocal (i)               -> Mclearlocal (f i)
-  | Mreverseasset (an)            -> Mreverseasset (an)
-  | Mreversefield (an, fn, i)     -> Mreversefield (an, fn, f i)
-  | Mreverselocal (i)             -> Mreverselocal (f i)
-  | Mselect (an, c, p)            -> Mselect (an, f c, f p)
-  | Msort (an, c, fn, k)          -> Msort (an, f c, fn, k)
-  | Mcontains (an, c, i)          -> Mcontains (an, f c, f i)
-  | Mmem (an, c, i)               -> Mmem (an, f c, f i)
-  | Msubsetof (an, c, i)          -> Msubsetof (an, f c, f i)
-  | Mnth (an, c, i)               -> Mnth (an, f c, f i)
-  | Mcount (an, c)                -> Mcount (an, f c)
-  | Msum (an, fd, c)              -> Msum (an, fd, f c)
-  | Mmin (an, fd, c)              -> Mmin (an, fd, f c)
-  | Mmax (an, fd, c)              -> Mmax (an, fd, f c)
-  | Mfail (ft)                    -> Mfail (ft)
-  | Mmathmin (l, r)               -> Mmathmin (f l, f r)
-  | Mmathmax (l, r)               -> Mmathmax (f l, f r)
-  | Mhead (an, c, i)              -> Mhead (an, f c, f i)
-  | Mtail (an, c, i)              -> Mtail (an, f c, f i)
-  | Mand (l, r)                   -> Mand (f l, f r)
-  | Mor (l, r)                    -> Mor (f l, f r)
-  | Mimply (l, r)                 -> Mimply (f l, f r)
-  | Mequiv  (l, r)                -> Mequiv (f l, f r)
-  | Misempty (l, r)               -> Misempty (l, f r)
-  | Mnot e                        -> Mnot (f e)
-  | Mmulticomp (e, l)             -> Mmulticomp (f e, List.map (fun (op, e) -> (op, f e)) l)
-  | Mequal (l, r)                 -> Mequal (f l, f r)
-  | Mnequal (l, r)                -> Mnequal (f l, f r)
-  | Mgt (l, r)                    -> Mgt (f l, f r)
-  | Mge (l, r)                    -> Mge (f l, f r)
-  | Mlt (l, r)                    -> Mlt (f l, f r)
-  | Mle (l, r)                    -> Mle (f l, f r)
-  | Mplus (l, r)                  -> Mplus (f l, f r)
-  | Mminus (l, r)                 -> Mminus (f l, f r)
-  | Mmult (l, r)                  -> Mmult (f l, f r)
-  | Mdiv (l, r)                   -> Mdiv (f l, f r)
-  | Mmodulo (l, r)                -> Mmodulo (f l, f r)
-  | Muplus e                      -> Muplus (f e)
-  | Muminus e                     -> Muminus (f e)
-  | Mratarith (op, l, r)          -> Mratarith (op, f l, f r)
-  | Mrateq (l, r)                 -> Mrateq (f l, f r)
-  | Mratcmp (op, l, r)            -> Mratcmp (op, f l, f r)
-  | Mrattez (c, t)                -> Mrattez (f c, f t)
-  | Masset l                      -> Masset (List.map f l)
-  | Mletin (i, a, t, b, o)        -> Mletin (i, f a, t, f b, Option.map f o)
-  | Mdeclvar (i, t, v)            -> Mdeclvar (i, t, f v)
-  | Mvarstorevar v                -> Mvarstorevar v
-  | Mvarstorecol v                -> Mvarstorecol v
-  | Mvarenumval v                 -> Mvarenumval  v
-  | Mvarfield v                   -> Mvarfield    v
-  | Mvarlocal v                   -> Mvarlocal    v
-  | Mvarparam v                   -> Mvarparam    v
-  | Mvarthe                       -> Mvarthe
-  | Mvarstate                     -> Mvarstate
-  | Mnow                          -> Mnow
-  | Mtransferred                  -> Mtransferred
-  | Mcaller                       -> Mcaller
-  | Mbalance                      -> Mbalance
-  | Mnone                         -> Mnone
-  | Msome v                       -> Msome (f v)
-  | Marray l                      -> Marray (List.map f l)
-  | Mint v                        -> Mint v
-  | Muint v                       -> Muint v
-  | Mbool v                       -> Mbool v
-  | Menum v                       -> Menum v
-  | Mrational (n, d)              -> Mrational (n, d)
-  | Mdate v                       -> Mdate v
-  | Mstring v                     -> Mstring v
-  | Mcurrency (v, c)              -> Mcurrency (v, c)
-  | Maddress v                    -> Maddress v
-  | Mduration v                   -> Mduration v
-  | Mdotasset (e, i)              -> Mdotasset (f e, i)
-  | Mdotcontract (e, i)           -> Mdotcontract (f e, i)
-  | Mtuple l                      -> Mtuple (List.map f l)
-  | Massoc (k, v)                 -> Massoc (f k, f v)
-  | Mfor (i, c, b, lbl)           -> Mfor (i, f c, f b, lbl)
-  | Miter (i, a, b, c, lbl)       -> Miter (i, f a, f b, f c, lbl)
-  | Mfold (i, is, c, b)           -> Mfold (i, is, f c, f b)
-  | Mseq is                       -> Mseq (List.map f is)
-  | Massign (op, l, r)            -> Massign (op, l, f r)
-  | Massignvarstore (op, l, r)    -> Massignvarstore (op, l, f r)
-  | Massignfield (op, a, fi, r)   -> Massignfield (op, a, fi, f r)
-  | Massignstate x                -> Massignstate (f x)
-  | Mtransfer (v, d)              -> Mtransfer (f v, f d)
-  | Mbreak                        -> Mbreak
-  | Massert x                     -> Massert (f x)
-  | Mreturn x                     -> Mreturn (f x)
-  | Mlabel i                      -> Mlabel i
-  | Mshallow (i, x)               -> Mshallow (i, f x)
-  | Mlisttocoll (i, x)            -> Mlisttocoll (i, f x)
-  | Munshallow (i, x)             -> Munshallow (i, f x)
-  | Mtokeys (an, x)               -> Mtokeys (an, f x)
-  | Mcoltokeys an                 -> Mcoltokeys an
-  | Mforall (i, t, Some s, e)     -> Mforall (i, t, Some (f s), f e)
-  | Mforall (i, t, None, e)       -> Mforall (i, t, None, f e)
-  | Mexists (i, t, Some s, e)     -> Mexists (i, t, Some (f s), f e)
-  | Mexists (i, t, None, e)       -> Mexists (i, t, None, f e)
+  | Mif (c, t, e)                  -> Mif (f c, f t, Option.map f e)
+  | Mmatchwith (e, l)              -> Mmatchwith (e, List.map (fun (p, e) -> (p, f e)) l)
+  | Mapp (e, args)                 -> Mapp (e, List.map f args)
+  | Maddshallow (e, args)          -> Maddshallow (e, List.map f args)
+  | Msetbefore    e                -> Msetbefore    (f e)
+  | Msetat (lbl, e)                -> Msetat        (lbl, f e)
+  | Msetunmoved   e                -> Msetunmoved   (f e)
+  | Msetadded     e                -> Msetadded     (f e)
+  | Msetremoved   e                -> Msetremoved   (f e)
+  | Msetiterated  e                -> Msetiterated  (f e)
+  | Msettoiterate e                -> Msettoiterate (f e)
+  | Mexternal (t, func, c, args)   -> Mexternal (t, func, f c, List.map (fun (id, t) -> (id, f t)) args)
+  | Mget (c, k)                    -> Mget (c, f k)
+  | Mgetbefore (c, k)              -> Mgetbefore (c, f k)
+  | Mgetat (c, d, k)               -> Mgetat (c, d, f k)
+  | Mgetfrommap (an, k, c)         -> Mgetfrommap (an, f k, f c)
+  | Mset (c, l, k, v)              -> Mset (c, l, f k, f v)
+  | Maddasset (an, i)              -> Maddasset (an, f i)
+  | Maddfield (an, fn, c, i)       -> Maddfield (an, fn, f c, f i)
+  | Maddlocal (c, i)               -> Maddlocal (f c, f i)
+  | Mremoveasset (an, i)           -> Mremoveasset (an, f i)
+  | Mremovefield (an, fn, c, i)    -> Mremovefield (an, fn, f c, f i)
+  | Mremovelocal (c, i)            -> Mremovelocal (f c, f i)
+  | Mclearasset (an)               -> Mclearasset (an)
+  | Mclearfield (an, fn, i)        -> Mclearfield (an, fn, f i)
+  | Mremoveif (an, fn, i)          -> Mremoveif (an, f fn, f i)
+  | Mclearlocal (i)                -> Mclearlocal (f i)
+  | Mreverseasset (an)             -> Mreverseasset (an)
+  | Mreversefield (an, fn, i)      -> Mreversefield (an, fn, f i)
+  | Mreverselocal (i)              -> Mreverselocal (f i)
+  | Mselect (an, c, p)             -> Mselect (an, f c, f p)
+  | Msort (an, c, fn, k)           -> Msort (an, f c, fn, k)
+  | Mcontains (an, c, i)           -> Mcontains (an, f c, f i)
+  | Mmem (an, c, i)                -> Mmem (an, f c, f i)
+  | Msubsetof (an, c, i)           -> Msubsetof (an, f c, f i)
+  | Mnth (an, c, i)                -> Mnth (an, f c, f i)
+  | Mcount (an, c)                 -> Mcount (an, f c)
+  | Msum (an, fd, c)               -> Msum (an, fd, f c)
+  | Mmin (an, fd, c)               -> Mmin (an, fd, f c)
+  | Mmax (an, fd, c)               -> Mmax (an, fd, f c)
+  | Mfail (ft)                     -> Mfail (ft)
+  | Mmathmin (l, r)                -> Mmathmin (f l, f r)
+  | Mmathmax (l, r)                -> Mmathmax (f l, f r)
+  | Mhead (an, c, i)               -> Mhead (an, f c, f i)
+  | Mtail (an, c, i)               -> Mtail (an, f c, f i)
+  | Mand (l, r)                    -> Mand (f l, f r)
+  | Mor (l, r)                     -> Mor (f l, f r)
+  | Mimply (l, r)                  -> Mimply (f l, f r)
+  | Mequiv  (l, r)                 -> Mequiv (f l, f r)
+  | Misempty (l, r)                -> Misempty (l, f r)
+  | Mnot e                         -> Mnot (f e)
+  | Mmulticomp (e, l)              -> Mmulticomp (f e, List.map (fun (op, e) -> (op, f e)) l)
+  | Mequal (l, r)                  -> Mequal (f l, f r)
+  | Mnequal (l, r)                 -> Mnequal (f l, f r)
+  | Mgt (l, r)                     -> Mgt (f l, f r)
+  | Mge (l, r)                     -> Mge (f l, f r)
+  | Mlt (l, r)                     -> Mlt (f l, f r)
+  | Mle (l, r)                     -> Mle (f l, f r)
+  | Mplus (l, r)                   -> Mplus (f l, f r)
+  | Mminus (l, r)                  -> Mminus (f l, f r)
+  | Mmult (l, r)                   -> Mmult (f l, f r)
+  | Mdiv (l, r)                    -> Mdiv (f l, f r)
+  | Mmodulo (l, r)                 -> Mmodulo (f l, f r)
+  | Muplus e                       -> Muplus (f e)
+  | Muminus e                      -> Muminus (f e)
+  | Mratarith (op, l, r)           -> Mratarith (op, f l, f r)
+  | Mrateq (l, r)                  -> Mrateq (f l, f r)
+  | Mratcmp (op, l, r)             -> Mratcmp (op, f l, f r)
+  | Mrattez (c, t)                 -> Mrattez (f c, f t)
+  | Minttorat e                    -> Minttorat (f e)
+  | Masset l                       -> Masset (List.map f l)
+  | Mletin (i, a, t, b, o)         -> Mletin (i, f a, t, f b, Option.map f o)
+  | Mdeclvar (i, t, v)             -> Mdeclvar (i, t, f v)
+  | Mvarstorevar v                 -> Mvarstorevar v
+  | Mvarstorecol v                 -> Mvarstorecol v
+  | Mvarenumval v                  -> Mvarenumval  v
+  | Mvarfield v                    -> Mvarfield    v
+  | Mvarlocal v                    -> Mvarlocal    v
+  | Mvarparam v                    -> Mvarparam    v
+  | Mvarthe                        -> Mvarthe
+  | Mvarstate                      -> Mvarstate
+  | Mnow                           -> Mnow
+  | Mtransferred                   -> Mtransferred
+  | Mcaller                        -> Mcaller
+  | Mbalance                       -> Mbalance
+  | Mnone                          -> Mnone
+  | Msome v                        -> Msome (f v)
+  | Marray l                       -> Marray (List.map f l)
+  | Mint v                         -> Mint v
+  | Muint v                        -> Muint v
+  | Mbool v                        -> Mbool v
+  | Menum v                        -> Menum v
+  | Mrational (n, d)               -> Mrational (n, d)
+  | Mdate v                        -> Mdate v
+  | Mstring v                      -> Mstring v
+  | Mcurrency (v, c)               -> Mcurrency (v, c)
+  | Maddress v                     -> Maddress v
+  | Mduration v                    -> Mduration v
+  | Mdotasset (e, i)               -> Mdotasset (f e, i)
+  | Mdotcontract (e, i)            -> Mdotcontract (f e, i)
+  | Mtuple l                       -> Mtuple (List.map f l)
+  | Massoc (k, v)                  -> Massoc (f k, f v)
+  | Mfor (i, c, b, lbl)            -> Mfor (i, f c, f b, lbl)
+  | Miter (i, a, b, c, lbl)        -> Miter (i, f a, f b, f c, lbl)
+  | Mfold (i, is, c, b)            -> Mfold (i, is, f c, f b)
+  | Mseq is                        -> Mseq (List.map f is)
+  | Massign (op, t, l, r)          -> Massign (op, t, l, f r)
+  | Massignvarstore (op, t, l, r)  -> Massignvarstore (op, t, l, f r)
+  | Massignfield (op, t, a, fi, r) -> Massignfield (op, t, a, fi, f r)
+  | Massignstate x                 -> Massignstate (f x)
+  | Mtransfer (v, d)               -> Mtransfer (f v, f d)
+  | Mbreak                         -> Mbreak
+  | Massert x                      -> Massert (f x)
+  | Mreturn x                      -> Mreturn (f x)
+  | Mlabel i                       -> Mlabel i
+  | Mshallow (i, x)                -> Mshallow (i, f x)
+  | Mlisttocoll (i, x)             -> Mlisttocoll (i, f x)
+  | Munshallow (i, x)              -> Munshallow (i, f x)
+  | Mtokeys (an, x)                -> Mtokeys (an, f x)
+  | Mcoltokeys an                  -> Mcoltokeys an
+  | Mforall (i, t, Some s, e)      -> Mforall (i, t, Some (f s), f e)
+  | Mforall (i, t, None, e)        -> Mforall (i, t, None, f e)
+  | Mexists (i, t, Some s, e)      -> Mexists (i, t, Some (f s), f e)
+  | Mexists (i, t, None, e)        -> Mexists (i, t, None, f e)
 
 let map_gen_mterm g f (i : 'id mterm_gen) : 'id mterm_gen =
   {
@@ -1401,6 +1405,7 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mrateq (l, r)                         -> f (f accu l) r
   | Mratcmp (_, l, r)                     -> f (f accu l) r
   | Mrattez (c, t)                        -> f (f accu c) t
+  | Minttorat e                           -> f accu e
   | Masset l                              -> List.fold_left f accu l
   | Mletin (_, a, _, b, o)                -> let tmp = f (f accu a) b in Option.map_dfl (f tmp) tmp o
   | Mdeclvar (_, _, v)                    -> f accu v
@@ -1437,9 +1442,9 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Miter (_, a, b, c, _)                 -> f (f (f accu a) b) c
   | Mfold (_, _, c, b)                    -> f (f accu c) b
   | Mseq is                               -> List.fold_left f accu is
-  | Massign (_, _, e)                     -> f accu e
-  | Massignvarstore (_, _, e)             -> f accu e
-  | Massignfield (_, _, _, e)             -> f accu e
+  | Massign (_, _, _, e)                  -> f accu e
+  | Massignvarstore (_, _, _, e)          -> f accu e
+  | Massignfield (_, _, _, _, e)          -> f accu e
   | Massignstate x                        -> f accu x
   | Mtransfer (v, d)                      -> f (f accu v) d
   | Mbreak                                -> accu
@@ -1821,6 +1826,10 @@ let fold_map_term
     let te, ta = f ca t in
     g (Mrattez (ce, te)), ta
 
+  | Minttorat e ->
+    let ee, ea = f accu e in
+    g (Minttorat ee), ea
+
   | Masset l ->
     let le, la = fold_map_term_list f accu l in
     g (Masset le), la
@@ -1936,17 +1945,17 @@ let fold_map_term
            pterms @ [p], accu) ([], accu) is in
     g (Mseq isi), isa
 
-  | Massign (op, id, x) ->
+  | Massign (op, t, id, x) ->
     let xe, xa = f accu x in
-    g (Massign (op, id, xe)), xa
+    g (Massign (op, t, id, xe)), xa
 
-  | Massignvarstore (op, id, x) ->
+  | Massignvarstore (op, t, id, x) ->
     let xe, xa = f accu x in
-    g (Massignvarstore (op, id, xe)), xa
+    g (Massignvarstore (op, t, id, xe)), xa
 
-  | Massignfield (op, a, fi, x) ->
+  | Massignfield (op, t, a, fi, x) ->
     let xe, xa = f accu x in
-    g (Massignfield (op, a, fi, xe)), xa
+    g (Massignfield (op, t, a, fi, xe)), xa
 
   | Massignstate x ->
     let xe, xa = f accu x in
@@ -2480,7 +2489,7 @@ end = struct
   let is_local_assigned (id : ident) (b : mterm) =
     let rec rec_search_assign _ (t : mterm) =
       match t.node with
-      | Massign (_,i,_) when String.equal (unloc i) id -> raise FoundAssign
+      | Massign (_, _, i,_) when String.equal (unloc i) id -> raise FoundAssign
       | _ -> fold_term rec_search_assign false t in
     try rec_search_assign false b
     with FoundAssign -> true

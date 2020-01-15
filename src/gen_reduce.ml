@@ -61,7 +61,7 @@ type ctx_red = {
 
 let rec compute_side_effect_aux (ctx : ctx_red)(accu : (ident * type_) list) (mt : mterm) : (ident * type_) list =
   match mt.node with
-  | Massign (_, a, _b) ->
+  | Massign (_, _, a, _b) ->
     let id : ident = unloc a in
     let type_ = List.assoc_opt id ctx.vars in
     (match type_ with
@@ -98,7 +98,7 @@ let rec process_non_empty_list_term (model : model) (ctx : ctx_red) (s : s_red) 
   List.fold_right (fun x (accu, s) ->
       let x, s = process_mtern model ctx s x in
       match x with
-      | { node = Massign (op, id, value); _} ->
+      | { node = Massign (op, _, id, value); _} ->
         let type_ = value.type_ in
         let value =
           let var = mk_mterm (Mvarlocal id) type_ in
@@ -117,7 +117,7 @@ let rec process_non_empty_list_term (model : model) (ctx : ctx_red) (s : s_red) 
           then
             begin
               (* let _s = _s.owner <- new_owner in *)
-              let n : mterm__node = Massignfield(ValueAssign, storage_var, id, value) in
+              let n : mterm__node = Massignfield(ValueAssign, Tstorage, storage_var, id, value) in
               let af : mterm = mk_mterm n Tunit in
               storage_lident, af, Tstorage
             end

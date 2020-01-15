@@ -91,10 +91,10 @@ let generate_storage (model : model) : model =
   let process_mterm (model : model) : model =
     let rec aux c (mt : mterm) : mterm =
       match mt.node with
-      | Massign (op, id, v) when Model.Utils.is_field_storage model (unloc id) ->
+      | Massign (op, t, id, v) when Model.Utils.is_field_storage model (unloc id) ->
         begin
           let vv = aux c v in
-          mk_mterm (Massignvarstore (op, id, vv)) Tunit
+          mk_mterm (Massignvarstore (op, t, id, vv)) Tunit
         end
       | _ -> map_mterm (aux c) mt
     in
