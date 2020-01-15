@@ -1,0 +1,10 @@
+archetype assign_var_rat_int
+
+variable res : rational = 0
+
+action exec () {
+  effect {
+    var r : rational = 1;
+    res := r
+  }
+}

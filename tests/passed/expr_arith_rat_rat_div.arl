@@ -1,8 +1,8 @@
-archetype rational_arith_rat_rat_div
+archetype expr_arith_rat_rat_div
 
 variable res : rational = 0 div 1
 
-action a () {
+action exec () {
   effect {
     res := 1 div 2 / 1 div 3
   }

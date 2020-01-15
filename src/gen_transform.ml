@@ -623,15 +623,15 @@ let remove_rational (model : model) : model =
         }
       | Massign (op, t, i, v), _ when is_int v && is_t_rat t ->
         { mt with
-          node = Massign (op, t, i, (int_to_rat |@ aux) v)
+          node = Massign (op, process_type t, i, (int_to_rat |@ aux) v)
         }
       | Massignvarstore (op, t, i, v), _  when is_int v && is_t_rat t ->
         { mt with
-          node = Massignvarstore (op, t, i, (int_to_rat |@ aux) v)
+          node = Massignvarstore (op, process_type t, i, (int_to_rat |@ aux) v)
         }
       | Massignfield (op, t, a, fn, v), _ when is_int v && is_t_rat t ->
         { mt with
-          node = Massignfield (op, t, a, fn, (int_to_rat |@ aux) v)
+          node = Massignfield (op, process_type t, a, fn, (int_to_rat |@ aux) v)
         }
       | Mforall (id, t, a, b), _ ->
         { mt with

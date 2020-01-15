@@ -1,7 +1,0 @@
-archetype rational_cmp_int_rat_ge
-
-action a () {
-  effect {
-    require (2 >= 1 div 3)
-  }
-}

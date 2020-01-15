@@ -1,7 +1,0 @@
-archetype rational_cmp_rat_int_eq
-
-action a () {
-  effect {
-    require (1 div 2 = 3)
-  }
-}
