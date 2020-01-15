@@ -1,8 +1,9 @@
 archetype rational_arith_int_rat_mult
 
+variable res : rational = 0 div 1
+
 action a () {
   effect {
-    var res = 3 * 1 div 2;
-    require (true)
+    res := 3 * 1 div 2
   }
 }
