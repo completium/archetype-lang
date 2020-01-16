@@ -223,6 +223,7 @@ let to_model (ast : A.model) : M.model =
     | A.Pconst Ctransferred                  -> M.Mtransferred
     | A.Pconst Ccaller                       -> M.Mcaller
     | A.Pconst Cbalance                      -> M.Mbalance
+    | A.Pconst Csource                       -> M.Msource
     | A.Pconst c                             ->
       Format.eprintf "expr const unkown: %a@." A.pp_const c;
       assert false

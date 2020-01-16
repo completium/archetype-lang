@@ -1101,6 +1101,7 @@ let pp_model fmt (model : model) =
       | Mtransferred   -> pp_str fmt "Global.get_amount ()"
       | Mcaller        -> pp_str fmt "Global.get_sender ()"
       | Mbalance       -> pp_str fmt "Global.get_balance ()"
+      | Msource        -> pp_str fmt "Global.get_source ()"
       | Mnone          -> pp_str fmt "None"
       | Msome v        ->
         Format.fprintf fmt "Some (%a)"

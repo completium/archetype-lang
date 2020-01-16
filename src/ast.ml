@@ -111,6 +111,7 @@ type const =
   | Ccaller
   | Cfail
   | Cbalance
+  | Csource
   | Cconditions
   | Cactions
   | Cnone

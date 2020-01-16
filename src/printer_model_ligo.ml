@@ -829,6 +829,7 @@ let pp_model fmt (model : model) =
       | Mtransferred   -> pp_str fmt "amount"
       | Mcaller        -> pp_str fmt "sender"
       | Mbalance       -> pp_str fmt "balance"
+      | Msource        -> pp_str fmt "source"
       | Mnone          -> pp_str fmt "None"
       | Msome v        ->
         Format.fprintf fmt "Some (%a)"

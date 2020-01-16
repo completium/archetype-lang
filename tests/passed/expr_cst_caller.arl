@@ -1,0 +1,10 @@
+archetype expr_cst_caller
+
+variable res : address = @addr0
+
+action exec () {
+  accept transfer
+  effect {
+    res := caller
+  }
+}

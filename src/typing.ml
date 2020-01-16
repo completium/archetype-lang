@@ -420,10 +420,11 @@ type groups = {
 
 (* -------------------------------------------------------------------- *)
 let globals = [
-  ("now"    ,     M.Cnow    , M.vtdate);
-  ("balance",     M.Cbalance, M.vtcurrency);
-  ("transferred", M.Ctransferred, M.vtcurrency);
-  ("caller",      M.Ccaller,  M.vtaddress);
+  ("balance"     , M.Cbalance     , M.vtcurrency);
+  ("caller"      , M.Ccaller      , M.vtaddress);
+  ("now"         , M.Cnow         , M.vtdate);
+  ("source"      , M.Csource      , M.vtaddress);
+  ("transferred" , M.Ctransferred , M.vtcurrency);
 ]
 
 let statename = "state"

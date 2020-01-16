@@ -152,6 +152,7 @@ let to_const = function
   | Ccaller       -> "caller"
   | Cfail         -> "fail"
   | Cbalance      -> "balance"
+  | Csource       -> "source"
   | Cconditions   -> "conditions"
   | Cactions      -> "actions"
   | Cnone         -> "none"

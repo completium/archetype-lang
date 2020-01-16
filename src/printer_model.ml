@@ -661,6 +661,7 @@ let pp_mterm fmt (mt : mterm) =
     | Mtransferred   -> pp_str fmt "transferred"
     | Mcaller        -> pp_str fmt "caller"
     | Mbalance       -> pp_str fmt "balance"
+    | Msource        -> pp_str fmt "source"
     | Mnone          -> pp_str fmt "None"
     | Msome v        ->
       Format.fprintf fmt "Some (%a)"
