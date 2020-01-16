@@ -723,7 +723,10 @@ expr_r:
      { x }
 
 %inline block:
-| e=expr SEMI_COLON? { e }
+ | x=loc(block_r) { x }
+
+%inline block_r:
+| e=expr_r SEMI_COLON? { e }
 
 order_operation:
  | e1=expr op=loc(ord_operator) e2=expr
@@ -779,7 +782,7 @@ simple_expr_r:
  | INVALID_EXPR
      { Einvalid }
 
- | x=paren(expr_r)
+ | x=paren(block_r)
      { x }
 
 %inline vt_dot:
