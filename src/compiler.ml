@@ -41,6 +41,7 @@ let output (model : Model.model) =
       match !Options.target with
       | None         -> Printer_model.pp_model
       | Ligo         -> Printer_model_ligo.pp_model
+      | LigoStorage  -> Printer_model_ligo.pp_storage
       | SmartPy      -> Printer_model_smartpy.pp_model
       | Scaml        -> Printer_model_scaml.pp_model
       | Whyml        ->
@@ -121,7 +122,8 @@ let generate_target model =
     |> generate_api_storage
     |> output
 
-  | Ligo ->
+  | Ligo
+  | LigoStorage ->
     model
     |> remove_rational
     |> generate_storage
@@ -204,6 +206,7 @@ let main () =
   set_margin 300;
   let f = function
     | "ligo"          -> Options.target := Ligo
+    | "ligo-storage"  -> Options.target := LigoStorage
     | "smartpy"       -> Options.target := SmartPy
     | "scaml"         -> Options.target := Scaml
     | "whyml"         -> Options.target := Whyml

@@ -1,5 +1,6 @@
 type target_lang =
   | Ligo
+  | LigoStorage
   | SmartPy
   | Whyml
   | Markdown
