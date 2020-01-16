@@ -1,0 +1,9 @@
+archetype expr_lit_addr
+
+variable res : address = @addr1
+
+action exec () {
+  effect {
+    res := @addr2
+  }
+}

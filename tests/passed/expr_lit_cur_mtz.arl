@@ -1,0 +1,9 @@
+archetype expr_lit_cur_mtz
+
+variable res : tez = 0tz
+
+action exec () {
+  effect {
+    res := 1mtz
+  }
+}

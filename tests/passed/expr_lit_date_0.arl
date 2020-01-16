@@ -1,0 +1,9 @@
+archetype expr_lit_date_0
+
+variable res : date = 1970-01-01
+
+action exec () {
+  effect {
+    res := 2019-01-01
+  }
+}

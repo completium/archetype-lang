@@ -1,0 +1,9 @@
+archetype expr_lit_tuple
+
+variable res : int * int = 0, 0
+
+action exec () {
+  effect {
+    res := 1, 2
+  }
+}
