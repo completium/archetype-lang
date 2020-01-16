@@ -1,0 +1,9 @@
+archetype expr_fun_min_tez
+
+variable res : tez = 0tz
+
+action exec () {
+  effect {
+    res := min(1tz, 2tz)
+  }
+}

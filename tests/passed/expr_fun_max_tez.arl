@@ -1,0 +1,9 @@
+archetype expr_fun_max_tez
+
+variable res : tez = 0tz
+
+action exec () {
+  effect {
+    res := max(1tz, 2tz)
+  }
+}

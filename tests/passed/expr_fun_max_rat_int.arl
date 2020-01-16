@@ -1,0 +1,9 @@
+archetype expr_fun_max_rat_int
+
+variable res : rational = 0 div 1
+
+action exec () {
+  effect {
+    res := max(1 div 2, 1)
+  }
+}

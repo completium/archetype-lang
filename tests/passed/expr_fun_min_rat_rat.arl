@@ -1,0 +1,9 @@
+archetype expr_fun_min_rat_rat
+
+variable res : rational = 0 div 1
+
+action exec () {
+  effect {
+    res := min(1 div 2, 1 div 3)
+  }
+}

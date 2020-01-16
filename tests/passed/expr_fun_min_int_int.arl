@@ -1,0 +1,9 @@
+archetype expr_fun_min_int_int
+
+variable res : int = 0
+
+action exec () {
+  effect {
+    res := min(1, 2)
+  }
+}
