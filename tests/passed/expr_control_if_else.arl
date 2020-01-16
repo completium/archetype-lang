@@ -1,0 +1,12 @@
+archetype expr_control_if_else
+
+variable res : int = 0
+
+action exec () {
+  effect {
+    if false then
+    res := 2
+    else
+    res := 1
+  }
+}

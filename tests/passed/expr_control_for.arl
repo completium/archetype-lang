@@ -1,0 +1,20 @@
+archetype expr_control_for
+
+asset myasset identified by str {
+  str : string;
+  v   : int;
+} initialized by {
+  {"id0"; 1};
+  {"id1"; 2};
+  {"id2"; 3}
+}
+
+variable res : int = 0
+
+action exec () {
+  effect {
+    for i in myasset do
+      res += i.v;
+    done;
+  }
+}

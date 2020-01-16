@@ -1,0 +1,10 @@
+archetype expr_control_if
+
+variable res : int = 0
+
+action exec () {
+  effect {
+    if true then
+    res := 1
+  }
+}
