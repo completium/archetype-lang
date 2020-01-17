@@ -1,6 +1,6 @@
 archetype expr_cst_caller
 
-variable res : address = @addr0
+variable res : address = @tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg
 
 action exec () {
   accept transfer

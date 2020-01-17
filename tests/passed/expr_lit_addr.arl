@@ -1,6 +1,6 @@
 archetype expr_lit_addr
 
-variable res : address = @addr1
+variable res : address = @tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg
 
 action exec () {
   effect {

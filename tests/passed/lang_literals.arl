@@ -1,13 +1,16 @@
 archetype test_literals
 
 variable i : int = 1
+variable j : int = -1
 variable f : rational = 1.1
+variable g : rational = -1.1
 variable r : rational = 2 div 6
+variable t : rational = -2 div 6
 variable s : string = "str"
 variable ctz  : tez = 1tz
 variable cmtz : tez = 1mtz
 variable cutz : tez = 1utz
-variable a : address = @tz1KmuhR6P52hw6xs5P69BXJYAURaznhvN1k
+variable a : address = @tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg
 variable d : duration = 3w8d4h34m18s (* 3 weeks 8 days 4 hours 34 minutes 18 seconds *)
 variable date0 : date = 2019-01-01                (* iso 8601 *)
 variable date1 : date = 2019-01-01T01:02:03       (* iso 8601 *)
