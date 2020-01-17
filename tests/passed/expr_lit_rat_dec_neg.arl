@@ -1,4 +1,4 @@
-archetype expr_lit_rat_dec
+archetype expr_lit_rat_dec_neg
 
 variable res : rational = 0.0
 

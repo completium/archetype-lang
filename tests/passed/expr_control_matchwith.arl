@@ -12,11 +12,10 @@ variable res : int = 0
 action exec () {
   effect {
     var x : t = C3;
-    res :=
-      match x with
-      | C1 | C2 -> 0
-      | C3 -> 1
-      | _ -> 2
-      end
+    match x with
+    | C1 | C2 -> res := 0
+    | C3 -> res := 1
+    | _ -> res := 2
+    end
   }
 }

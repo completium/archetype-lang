@@ -1,4 +1,4 @@
-archetype test_specification
+archetype contract_with_full_specification
 
 asset myasset {
   id: string;

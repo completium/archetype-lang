@@ -1,4 +1,4 @@
-archetype expr_lit_rat_div
+archetype expr_lit_rat_div_neg
 
 variable res : rational = 0 div 1
 

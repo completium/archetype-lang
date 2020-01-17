@@ -1,4 +1,4 @@
-archetype expr_lit_int
+archetype expr_lit_int_neg
 
 variable res : int = 0
 
