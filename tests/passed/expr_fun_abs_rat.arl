@@ -1,4 +1,4 @@
-archetype expr_fun_min_tez
+archetype expr_fun_abs_rat
 
 variable res : int = 0
 

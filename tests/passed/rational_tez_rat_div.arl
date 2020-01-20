@@ -1,4 +1,4 @@
-archetype rational_to_tez
+archetype rational_tez_rat_div
 
 action exec (dest : address) {
   effect {

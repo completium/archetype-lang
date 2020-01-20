@@ -1,4 +1,4 @@
-archetype test_literals
+archetype lang_literals
 
 variable i : int = 1
 variable j : int = -1

@@ -1,4 +1,4 @@
-archetype arith
+archetype lang_cmp
 
 variable res : bool = false
 

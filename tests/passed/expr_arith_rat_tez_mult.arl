@@ -1,4 +1,4 @@
-archetype expr_arith_rat_rat_mult
+archetype expr_arith_rat_tez_mult
 
 variable res : tez = 0tz
 

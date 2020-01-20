@@ -1,4 +1,4 @@
-archetype tests_conditions
+archetype test_conditions
 
 variable i : int = 0
 

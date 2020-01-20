@@ -1,4 +1,4 @@
-archetype arith
+archetype lang_arith
 
 constant b1 : bool = true
 constant b2 : bool = true

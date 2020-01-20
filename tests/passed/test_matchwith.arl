@@ -1,4 +1,4 @@
-archetype MatchWithInExpr
+archetype test_matchwith
 
 enum t =
   | C1

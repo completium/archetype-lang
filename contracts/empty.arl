@@ -1,4 +1,4 @@
-archetype test_action_empty
+archetype empty
 
 action myaction () {
   specification {

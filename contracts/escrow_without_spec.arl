@@ -1,4 +1,4 @@
-archetype escrow_simple
+archetype escrow_without_spec
 
 constant buyer : role  = @tz1KmuhR6P52hw6xs5P69BXJYAURaznhvN1k
 

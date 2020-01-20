@@ -1,4 +1,4 @@
-archetype MatchWithInInstr
+archetype test_matchwith_instr
 
 enum t =
   | C1

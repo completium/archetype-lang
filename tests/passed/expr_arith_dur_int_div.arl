@@ -1,4 +1,4 @@
-archetype expr_arith_int_dur_mult
+archetype expr_arith_dur_int_div
 
 variable res : duration = 0s
 

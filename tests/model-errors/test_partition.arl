@@ -1,4 +1,4 @@
-archetype test_asset
+archetype test_partition
 
 asset my_asset identified by id {
   id : string;

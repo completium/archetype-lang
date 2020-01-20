@@ -1,4 +1,4 @@
-archetype test_quantifier
+archetype test_quantifiers
 
 asset asset1 {
   id1 : string;

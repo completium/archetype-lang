@@ -30,7 +30,7 @@
   (miles_with_expiration.arl as contracts/miles_with_expiration.arl)
   (mini_dao.arl as contracts/mini_dao.arl)
   (perishable.arl as contracts/perishable.arl)
-  (vehicule_lifecycle.arl as contracts/vehicule_lifecycle.arl)
+  (vehicle_lifecycle.arl as contracts/vehicle_lifecycle.arl)
   (voting_process.arl as contracts/governance.arl)
   (zero_coupon_bond.arl as contracts/zero_coupon_bond.arl)
   (zero_coupon_bond_with_insurance.arl as contracts/zero_coupon_bond_with_insurance.arl)

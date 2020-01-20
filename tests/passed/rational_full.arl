@@ -1,4 +1,4 @@
-archetype r
+archetype rational_full
 
 constant r1 : rational = 1 div 2
 
