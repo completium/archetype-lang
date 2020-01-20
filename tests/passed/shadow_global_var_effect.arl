@@ -1,0 +1,16 @@
+archetype shadow_global_var_effect
+
+action exec () {
+  specification {
+    shadow effect {
+      myvar += 2
+    }
+  }
+  effect {
+    require (true)
+  }
+}
+
+specification {
+  variable myvar : int = 1
+}
