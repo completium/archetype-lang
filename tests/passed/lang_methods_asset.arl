@@ -1,4 +1,4 @@
-archetype lang_methods
+archetype lang_methods_asset
 
 asset asset_0 identified by id0 {
   id0 : string;

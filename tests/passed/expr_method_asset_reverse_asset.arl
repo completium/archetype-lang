@@ -1,4 +1,4 @@
-archetype expr_method_add_asset
+archetype expr_method_asset_reverse_asset
 
 asset my_asset identified by id {
   id : string;
@@ -13,6 +13,6 @@ variable res : int = 0
 
 action exec () {
   effect {
-    my_asset.add({id = "id3"; value = 3})
+    my_asset.reverse()
   }
 }

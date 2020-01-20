@@ -1,7 +1,11 @@
-archetype expr_method_reverse_collection
+archetype expr_method_asset_clear_collection
 
 asset o_asset identified by oid {
   oid : string;
+} initialized by {
+  {"oid0"};
+  {"oid1"};
+  {"oid2"}
 }
 
 asset my_asset identified by id {
@@ -18,6 +22,6 @@ variable res : int = 0
 
 action exec () {
   effect {
-    my_asset.get("id0").col.reverse()
+    my_asset.get("id0").col.clear()
   }
 }

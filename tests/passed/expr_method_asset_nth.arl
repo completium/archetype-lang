@@ -1,4 +1,4 @@
-archetype expr_method_sum
+archetype expr_method_asset_nth
 
 asset my_asset identified by id {
   id : string;
@@ -13,6 +13,6 @@ variable res : int = 0
 
 action exec () {
   effect {
-    res := my_asset.sum(value)
+    res := my_asset.nth(1).value
   }
 }

@@ -1,4 +1,4 @@
-archetype expr_method_reverse_partition
+archetype expr_method_asset_reverse_collection
 
 asset o_asset identified by oid {
   oid : string;
@@ -7,7 +7,7 @@ asset o_asset identified by oid {
 asset my_asset identified by id {
   id     : string;
   value  : int;
-  col    : o_asset partition;
+  col    : o_asset collection;
 } initialized by {
   {"id0"; 0; [{"oid0"}; {"oid1"}; {"oid2"}]};
   {"id1"; 1; []};

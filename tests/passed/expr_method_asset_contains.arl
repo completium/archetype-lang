@@ -1,4 +1,4 @@
-archetype expr_method_reverse_asset
+archetype expr_method_asset_contains
 
 asset my_asset identified by id {
   id : string;
@@ -9,10 +9,10 @@ asset my_asset identified by id {
   {"id2"; 2}
 }
 
-variable res : int = 0
+variable res : bool = false
 
 action exec () {
   effect {
-    my_asset.reverse()
+    res := my_asset.contains("id0")
   }
 }

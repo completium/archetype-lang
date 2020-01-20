@@ -1,4 +1,4 @@
-archetype expr_method_contains
+archetype expr_method_asset_count
 
 asset my_asset identified by id {
   id : string;
@@ -9,10 +9,10 @@ asset my_asset identified by id {
   {"id2"; 2}
 }
 
-variable res : bool = false
+variable res : int = 0
 
 action exec () {
   effect {
-    res := my_asset.contains("id0")
+    res := my_asset.count()
   }
 }

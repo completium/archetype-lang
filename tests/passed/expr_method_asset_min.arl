@@ -1,4 +1,4 @@
-archetype expr_method_min
+archetype expr_method_asset_min
 
 asset my_asset identified by id {
   id : string;

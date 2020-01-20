@@ -1,4 +1,4 @@
-archetype expr_method_head
+archetype expr_method_asset_get
 
 asset my_asset identified by id {
   id : string;
@@ -13,6 +13,6 @@ variable res : int = 0
 
 action exec () {
   effect {
-    res := my_asset.head(2).nth(0).value
+    res := my_asset.get("id0").value
   }
 }
