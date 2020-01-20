@@ -157,6 +157,7 @@ type ('id, 'term) mterm_node  =
   | Mmax            of ident * 'id * 'term
   | Mmathmax        of 'term * 'term
   | Mmathmin        of 'term * 'term
+  | Mabs            of 'term
   | Mhead           of ident * 'term * 'term
   | Mtail           of ident * 'term * 'term
   | Mfail           of 'id fail_type_gen
@@ -900,6 +901,7 @@ let cmp_mterm_node
     | Mfail ft1, Mfail ft2                                                             -> cmp_fail_type cmp ft1 ft2
     | Mmathmin (l1, r1), Mmathmin (l2, r2)                                             -> cmp l1 l2 && cmp r1 r2
     | Mmathmax (l1, r1), Mmathmax (l2, r2)                                             -> cmp l1 l2 && cmp r1 r2
+    | Mabs a1, Mabs a2                                                                 -> cmp a1 a2
     | Mhead (an1, c1, i1), Mhead (an2, c2, i2)                                         -> cmp_ident an1 an2 && cmp c1 c2 && cmp i1 i2
     | Mtail (an1, c1, i1), Mtail (an2, c2, i2)                                         -> cmp_ident an1 an2 && cmp c1 c2 && cmp i1 i2
     | Mand (l1, r1), Mand (l2, r2)                                                     -> cmp l1 l2 && cmp r1 r2
@@ -1115,6 +1117,7 @@ let map_term_node (f : 'id mterm_gen -> 'id mterm_gen) = function
   | Mfail (ft)                     -> Mfail (ft)
   | Mmathmin (l, r)                -> Mmathmin (f l, f r)
   | Mmathmax (l, r)                -> Mmathmax (f l, f r)
+  | Mabs a                         -> Mabs (f a)
   | Mhead (an, c, i)               -> Mhead (an, f c, f i)
   | Mtail (an, c, i)               -> Mtail (an, f c, f i)
   | Mand (l, r)                    -> Mand (f l, f r)
@@ -1384,6 +1387,7 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mmax (_, _, c)                        -> f accu c
   | Mfail _                               -> accu
   | Mmathmax (l, r)                       -> f (f accu l) r
+  | Mabs a                                -> f accu a
   | Mmathmin (l, r)                       -> f (f accu l) r
   | Mhead (_, c, i)                       -> f (f accu c) i
   | Mtail (_, c, i)                       -> f (f accu c) i
@@ -1701,6 +1705,10 @@ let fold_map_term
     let le, la = f accu l in
     let re, ra = f la r in
     g (Mmathmax (le, re)), ra
+
+  | Mabs a ->
+    let ae, aa = f accu a in
+    g (Mabs ae), aa
 
   | Mhead (an, c, i) ->
     let ce, ca = f accu c in

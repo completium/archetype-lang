@@ -182,6 +182,7 @@ let to_const = function
   | Csubsetof     -> "subsetof"
   | Chead         -> "head"
   | Ctail         -> "tail"
+  | Cabs          -> "abs"
   | Cbefore       -> "before"
   | Cunmoved      -> "unmoved"
   | Cadded        -> "added"

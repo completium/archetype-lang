@@ -28,5 +28,8 @@ action exec () {
 
     t := min(1tz, 2tz);
     t := max(1tz, 2tz);
+
+    i := abs(-1);
+    i := abs(-1 div 2);
   }
 }

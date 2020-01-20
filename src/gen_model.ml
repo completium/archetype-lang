@@ -240,6 +240,20 @@ let to_model (ast : A.model) : M.model =
     | A.Pcall (Some p, A.Cconst A.Citerated,  []) -> M.Msetiterated  (f p)
     | A.Pcall (Some p, A.Cconst A.Ctoiterate, []) -> M.Msettoiterate (f p)
 
+    | A.Pcall (None, A.Cconst A.Cmin, [AExpr a; AExpr b]) ->
+      let fa = f a in
+      let fb = f b in
+      M.Mmathmin (fa, fb)
+
+    | A.Pcall (None, A.Cconst A.Cmax, [AExpr a; AExpr b]) ->
+      let fa = f a in
+      let fb = f b in
+      M.Mmathmax (fa, fb)
+
+    | A.Pcall (None, A.Cconst A.Cabs, [AExpr a]) ->
+      let fa = f a in
+      M.Mabs (fa)
+
     | A.Pcall (_, A.Cid id, args) ->
       M.Mapp (id, List.map (fun x -> term_arg_to_expr f x) args)
 

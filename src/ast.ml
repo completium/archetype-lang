@@ -142,6 +142,7 @@ type const =
   | Csubsetof
   | Chead
   | Ctail
+  | Cabs
   (* vset *)
   | Cbefore
   | Cunmoved

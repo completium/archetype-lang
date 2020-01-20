@@ -404,6 +404,10 @@ let pp_mterm fmt (mt : mterm) =
         f l
         f r
 
+    | Mabs a ->
+      Format.fprintf fmt "abs (%a)"
+        f a
+
     | Mhead (an, c, i) ->
       Format.fprintf fmt "head_%a (%a, %a)"
         pp_str an
