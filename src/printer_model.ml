@@ -556,6 +556,14 @@ let pp_mterm fmt (mt : mterm) =
       in
       pp fmt (l, r)
 
+    | Mdivrat (l, r) ->
+      let pp fmt (l, r) =
+        Format.fprintf fmt "%a div %a"
+          f l
+          f r
+      in
+      pp fmt (l, r)
+
     | Mmodulo (l, r) ->
       let pp fmt (l, r) =
         Format.fprintf fmt "%a %% %a"

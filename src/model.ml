@@ -177,6 +177,7 @@ type ('id, 'term) mterm_node  =
   | Mminus          of 'term * 'term
   | Mmult           of 'term * 'term
   | Mdiv            of 'term * 'term
+  | Mdivrat         of 'term * 'term
   | Mmodulo         of 'term * 'term
   | Muplus          of 'term
   | Muminus         of 'term
@@ -918,6 +919,7 @@ let cmp_mterm_node
     | Mminus (l1, r1), Mminus (l2, r2)                                                 -> cmp l1 l2 && cmp r1 r2
     | Mmult (l1, r1), Mmult (l2, r2)                                                   -> cmp l1 l2 && cmp r1 r2
     | Mdiv (l1, r1), Mdiv (l2, r2)                                                     -> cmp l1 l2 && cmp r1 r2
+    | Mdivrat (l1, r1), Mdivrat (l2, r2)                                               -> cmp l1 l2 && cmp r1 r2
     | Mmodulo (l1, r1), Mmodulo (l2, r2)                                               -> cmp l1 l2 && cmp r1 r2
     | Muplus e1, Muplus e2                                                             -> cmp e1 e2
     | Muminus e1, Muminus e2                                                           -> cmp e1 e2
@@ -1132,6 +1134,7 @@ let map_term_node (f : 'id mterm_gen -> 'id mterm_gen) = function
   | Mminus (l, r)                  -> Mminus (f l, f r)
   | Mmult (l, r)                   -> Mmult (f l, f r)
   | Mdiv (l, r)                    -> Mdiv (f l, f r)
+  | Mdivrat (l, r)                 -> Mdivrat (f l, f r)
   | Mmodulo (l, r)                 -> Mmodulo (f l, f r)
   | Muplus e                       -> Muplus (f e)
   | Muminus e                      -> Muminus (f e)
@@ -1401,6 +1404,7 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mminus (l, r)                         -> f (f accu l) r
   | Mmult (l, r)                          -> f (f accu l) r
   | Mdiv (l, r)                           -> f (f accu l) r
+  | Mdivrat (l, r)                        -> f (f accu l) r
   | Mmodulo (l, r)                        -> f (f accu l) r
   | Muplus e                              -> f accu e
   | Muminus e                             -> f accu e
@@ -1796,6 +1800,11 @@ let fold_map_term
     let le, la = f accu l in
     let re, ra = f la r in
     g (Mdiv (le, re)), ra
+
+  | Mdivrat (l, r) ->
+    let le, la = f accu l in
+    let re, ra = f la r in
+    g (Mdivrat (le, re)), ra
 
   | Mmodulo (l, r) ->
     let le, la = f accu l in

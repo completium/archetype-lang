@@ -86,6 +86,7 @@ type arithmetic_operator =
   | Minus
   | Mult
   | Div
+  | DivRat
   | Modulo
 [@@deriving show {with_path = false}]
 

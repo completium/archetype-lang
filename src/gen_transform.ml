@@ -585,10 +585,11 @@ let remove_rational (model : model) : model =
           | Mrational (a, b) ->
             let make_int (x : Core.big_int) = mk_mterm (Mint x) type_int in
             mk_mterm (Mtuple [make_int a; make_int b]) type_rational
-          | Mplus  (a, b) -> process_arith Rplus  (a, b)
-          | Mminus (a, b) -> process_arith Rminus (a, b)
-          | Mmult  (a, b) -> process_arith Rmult  (a, b)
-          | Mdiv   (a, b) -> process_arith Rdiv   (a, b)
+          | Mplus   (a, b) -> process_arith Rplus  (a, b)
+          | Mminus  (a, b) -> process_arith Rminus (a, b)
+          | Mmult   (a, b) -> process_arith Rmult  (a, b)
+          | Mdiv    (a, b) -> process_arith Rdiv   (a, b)
+          | Mdivrat (a, b) -> mk_rat a b
           | _ -> { mt with type_ = type_rational }
         end
       | _ as node, Tbuiltin Bcurrency ->

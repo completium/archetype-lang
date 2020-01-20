@@ -44,6 +44,7 @@ and arithmetic_operator =
   | Minus
   | Mult
   | Div
+  | DivRat
   | Modulo
 
 and unary_operator =
@@ -135,7 +136,7 @@ and function_ =
 
 and literal =
   | Lnumber   of Core.big_int
-  | Lrational of Core.big_int * Core.big_int
+  | Ldecimal  of string
   | Ltz       of Core.big_int
   | Lmtz      of Core.big_int
   | Lutz      of Core.big_int

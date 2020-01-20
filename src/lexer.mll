@@ -33,6 +33,7 @@
       "constant"            , CONSTANT       ;
       "contract"            , CONTRACT       ;
       "definition"          , DEFINITION     ;
+      "div"                 , DIV            ;
       "do"                  , DO             ;
       "done"                , DONE           ;
       "effect"              , EFFECT         ;
@@ -94,14 +95,6 @@
   let () =
     List.iter (fun (k, v) -> Hashtbl.add keywords k v) keywords_
 
-  let compute_irr_fract (n, d) =
-    let rec gcd a b =
-      if Big_int.eq_big_int b Big_int.zero_big_int
-      then a
-      else gcd b (Big_int.mod_big_int a b) in
-    let g = gcd n d in
-    (Big_int.div_big_int n g), (Big_int.div_big_int d g)
-
 }
 
 (* -------------------------------------------------------------------- *)
@@ -109,7 +102,6 @@ let blank   = [' ' '\t' '\r']
 let newline = '\n'
 let digit   = ['0'-'9']
 let dec     = digit+ '.' digit+
-let div     = digit+ blank+ "div" blank+ digit+
 let tz      = digit+ "tz"
 let mtz     = digit+ "mtz"
 let utz     = digit+ "utz"
@@ -138,17 +130,7 @@ rule token = parse
   | tz as t               { TZ   (Big_int.big_int_of_string (String.sub t 0 ((String.length t) - 2))) }
   | mtz as t              { MTZ  (Big_int.big_int_of_string (String.sub t 0 ((String.length t) - 3))) }
   | utz as t              { UTZ  (Big_int.big_int_of_string (String.sub t 0 ((String.length t) - 3))) }
-  | dec as input          {
-      let l = Str.split (Str.regexp "\\.") input in
-      let n = Big_int.big_int_of_string ((List.nth l 0) ^ (List.nth l 1)) in
-      let d = Big_int.big_int_of_string ("1" ^ (String.make (String.length (List.nth l 1)) '0')) in
-      let n, d = compute_irr_fract (n, d) in
-      RATIONAL (n, d) }
-  | div as input          {
-      let l = Str.split (Str.regexp "[ \t\r]+div[ \t\r]+") input in
-      let n, d = (Big_int.big_int_of_string (List.nth l 0), Big_int.big_int_of_string (List.nth l 1)) in
-      let n, d = compute_irr_fract (n, d) in
-      RATIONAL (n, d) }
+  | dec as input          { DECIMAL (input) }
   | digit+ as n           { NUMBER (Big_int.big_int_of_string n) }
   | address as a          { ADDRESS (String.sub a 1 ((String.length a) - 1)) }
   | duration as d         { DURATION (d) }
@@ -191,7 +173,7 @@ rule token = parse
   | "+"                   { PLUS }
   | "-"                   { MINUS }
   | "*"                   { MULT }
-  | "/"                   { DIV }
+  | "/"                   { SLASH }
   | "_"                   { UNDERSCORE }
   | eof                   { EOF }
   | _ as c                {

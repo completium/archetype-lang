@@ -39,6 +39,7 @@ let e_minus         =  (100, Left)     (* -   *)
 let e_mult          =  (110, Left)     (* *   *)
 let e_div           =  (110, Left)     (* /   *)
 let e_modulo        =  (110, Left)     (* %   *)
+let e_divrat        =  (115, Left)     (* div *)
 let e_not           =  (115, Right)    (* not *)
 let e_dot           =  (120, Right)    (* .   *)
 let e_coloncolon    =  (130, NonAssoc) (* ::  *)
@@ -67,6 +68,7 @@ let get_prec_from_operator (op : operator) =
   | Arith Minus     -> e_minus
   | Arith Mult      -> e_mult
   | Arith Div       -> e_div
+  | Arith DivRat    -> e_divrat
   | Arith Modulo    -> e_modulo
   | Unary Uplus     -> e_plus
   | Unary Uminus    -> e_minus
@@ -156,6 +158,7 @@ let arithmetic_operator_to_str op =
   | Minus  -> "-"
   | Mult   -> "*"
   | Div    -> "/"
+  | DivRat -> "div"
   | Modulo -> "%"
 
 let unary_operator_to_str op =
@@ -548,9 +551,10 @@ and pp_else fmt (e : expr option) =
 and pp_literal fmt lit =
   match lit with
   | Lnumber   n -> Format.fprintf fmt "%s" (Big_int.string_of_big_int n)
-  | Lrational (d, n) -> Format.fprintf fmt "%s div %s"
+  | Ldecimal  n -> Format.fprintf fmt "%s" n
+  (* | Lrational (d, n) -> Format.fprintf fmt "%s div %s"
                           (Big_int.string_of_big_int d)
-                          (Big_int.string_of_big_int n)
+                          (Big_int.string_of_big_int n) *)
   | Ltz       n -> Format.fprintf fmt "%stz" (Big_int.string_of_big_int n)
   | Lmtz      n -> Format.fprintf fmt "%smtz" (Big_int.string_of_big_int n)
   | Lutz      n -> Format.fprintf fmt "%sutz" (Big_int.string_of_big_int n)

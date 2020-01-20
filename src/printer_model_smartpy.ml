@@ -1054,6 +1054,8 @@ let pp_model fmt (model : model) =
         Format.fprintf fmt "col_to_keys_%s ()"
           an
       | Mlisttocoll (_, x) -> f fmt x
+
+      | Mdivrat _                        -> emit_error (UnsupportedTerm ("div"))
       | Mforall _                        -> emit_error (UnsupportedTerm ("forall"))
       | Mexists _                        -> emit_error (UnsupportedTerm ("exists"))
       | Msetbefore _                     -> emit_error (UnsupportedTerm ("setbefore"))

@@ -1033,6 +1033,8 @@ let pp_model_internal fmt (model : model) b =
           const_storage
 
       | Mlisttocoll (_, x) -> f fmt x
+
+      | Mdivrat _                        -> emit_error (UnsupportedTerm ("div"))
       | Mforall _                        -> emit_error (UnsupportedTerm ("forall"))
       | Mexists _                        -> emit_error (UnsupportedTerm ("exists"))
       | Msetbefore _                     -> emit_error (UnsupportedTerm ("setbefore"))

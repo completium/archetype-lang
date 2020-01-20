@@ -101,6 +101,7 @@ let pp_arithmetic_operator fmt = function
   | Minus  -> pp_str fmt "-"
   | Mult   -> pp_str fmt "*"
   | Div    -> pp_str fmt "/"
+  | DivRat -> pp_str fmt "div"
   | Modulo -> pp_str fmt "%"
 
 let pp_unary_arithmetic_operator fmt = function

@@ -197,6 +197,7 @@ let pp_operator fmt (op : PT.operator) : unit =
   | Arith Mult    -> pp "*"
   | Arith Div     -> pp "/"
   | Arith Modulo  -> pp "%"
+  | Arith DivRat  -> pp "div"
   | Unary Uplus   -> pp "unary +"
   | Unary Uminus  -> pp "unary -"
   | Unary Not     -> pp "not"
@@ -1112,6 +1113,7 @@ let tt_arith_operator (op : PT.arithmetic_operator) =
   | Minus  -> M.Minus
   | Mult   -> M.Mult
   | Div    -> M.Div
+  | DivRat -> M.DivRat
   | Modulo -> M.Modulo
 
 (* -------------------------------------------------------------------- *)
@@ -1196,8 +1198,11 @@ let for_literal (_env : env) (topv : PT.literal loced) : M.bval =
   | Lnumber i ->
     mk_sp M.vtint (M.BVint i)
 
-  | Lrational (n, d) ->
-    mk_sp M.vtrational (M.BVrational (n, d))
+  | Ldecimal str ->
+    begin
+     let n, d = Core.decimal_string_to_rational str in
+     mk_sp M.vtrational (M.BVrational (n, d))
+    end
 
   | Lstring s ->
     mk_sp M.vtstring (M.BVstring s)

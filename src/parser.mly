@@ -125,6 +125,7 @@
 %token SECURITY
 %token SEMI_COLON
 %token SHADOW
+%token SLASH
 %token SOME
 %token SORTED
 %token SPECIFICATION
@@ -148,7 +149,7 @@
 %token <string> IDENT
 %token <string> STRING
 %token <Big_int.big_int> NUMBER
-%token <Big_int.big_int * Big_int.big_int> RATIONAL
+%token <string> DECIMAL
 %token <Big_int.big_int> TZ
 %token <Big_int.big_int> MTZ
 %token <Big_int.big_int> UTZ
@@ -177,7 +178,8 @@
 %left GREATER GREATEREQUAL LESS LESSEQUAL
 
 %left PLUS MINUS
-%left MULT DIV PERCENT
+%left MULT SLASH PERCENT
+%left DIV
 
 %right NOT
 
@@ -809,7 +811,7 @@ label_expr_unloc:
 
 literal:
  | x=NUMBER     { Lnumber   x }
- | x=RATIONAL   { let n, d = x in Lrational (n, d) }
+ | x=DECIMAL    { Ldecimal  x }
  | x=TZ         { Ltz       x }
  | x=MTZ        { Lmtz      x }
  | x=UTZ        { Lutz      x }
@@ -852,7 +854,8 @@ record_item:
  | PLUS    { Plus }
  | MINUS   { Minus }
  | MULT    { Mult }
- | DIV     { Div }
+ | SLASH   { Div }
+ | DIV     { DivRat }
  | PERCENT { Modulo }
 
 %inline unary_operator:

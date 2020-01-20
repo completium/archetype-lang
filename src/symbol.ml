@@ -19,6 +19,7 @@ let string_of_token = function
   | SPECIFICATION   -> "SPECIFICATION"
   | SORTED          -> "SORTED"
   | SOME            -> "SOME"
+  | SLASH           -> "SLASH"
   | SHADOW          -> "SHADOW"
   | SEMI_COLON      -> "SEMI_COLON"
   | SECURITY        -> "SECURITY"
@@ -30,7 +31,6 @@ let string_of_token = function
   | RECORD          -> "RECORD"
   | RBRACKET        -> "RBRACKET"
   | RBRACE          -> "RBRACE"
-  | RATIONAL (d, n) -> Printf.sprintf "RATIONAL(%s, %s)" (Big_int.string_of_big_int d) (Big_int.string_of_big_int n)
   | POSTCONDITION   -> "POSTCONDITION"
   | PREDICATE       -> "PREDICATE"
   | PLUSEQUAL       -> "PLUSEQUAL"
@@ -102,6 +102,7 @@ let string_of_token = function
   | DIVEQUAL        -> "DIVEQUAL"
   | DIV             -> "DIV"
   | DEFINITION      -> "DEFINITION"
+  | DECIMAL s       -> Printf.sprintf "DECIMAL(%s)" s
   | DATE s          -> Printf.sprintf "DATE(%s)" s
   | CONTRACT        -> "CONTRACT"
   | CONSTANT        -> "CONSTANT"
@@ -146,6 +147,7 @@ let string_of_symbol = function
   | X (T T_SPECIFICATION) -> "postcondition"
   | X (T T_SORTED) -> "sorted"
   | X (T T_SOME) -> "some"
+  | X (T T_SLASH) -> "slash"
   | X (T T_SHADOW) -> "shadow"
   | X (T T_SEMI_COLON) -> ";"
   | X (T T_SECURITY) -> "security"
@@ -157,7 +159,6 @@ let string_of_symbol = function
   | X (T T_RECORD) -> "record"
   | X (T T_RBRACKET) -> "]"
   | X (T T_RBRACE) -> "}"
-  | X (T T_RATIONAL) -> "rational"
   | X (T T_PREDICATE) -> "predicate"
   | X (T T_POSTCONDITION) -> "postcondition"
   | X (T T_PLUSEQUAL) -> "+="
@@ -229,6 +230,7 @@ let string_of_symbol = function
   | X (T T_DIVEQUAL) -> "/="
   | X (T T_DIV) -> "/"
   | X (T T_DEFINITION) -> "definition"
+  | X (T T_DECIMAL) -> "decimal"
   | X (T T_DATE) -> "a date"
   | X (T T_CONTRACT) -> "contract"
   | X (T T_CONSTANT) -> "constant"

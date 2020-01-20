@@ -194,6 +194,7 @@ let to_model (ast : A.model) : M.model =
     | A.Parith (A.Minus, l, r)          -> M.Mminus     (f l, f r)
     | A.Parith (A.Mult, l, r)           -> M.Mmult      (f l, f r)
     | A.Parith (A.Div, l, r)            -> M.Mdiv       (f l, f r)
+    | A.Parith (A.DivRat, l, r)         -> M.Mdivrat    (f l, f r)
     | A.Parith (A.Modulo, l, r)         -> M.Mmodulo    (f l, f r)
     | A.Puarith (A.Uplus, e)            -> M.Muplus     (f e)
     | A.Puarith (A.Uminus, e)           -> M.Muminus    (f e)

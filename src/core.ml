@@ -32,6 +32,22 @@ let big_int_to_yojson (n : big_int) : Yojson.Safe.t = Yojson.Safe.from_string (B
 
 (* -------------------------------------------------------------------- *)
 
+let compute_irr_fract (n, d) =
+  let rec gcd a b =
+    if Big_int.eq_big_int b Big_int.zero_big_int
+    then a
+    else gcd b (Big_int.mod_big_int a b) in
+  let g = gcd n d in
+  (Big_int.div_big_int n g), (Big_int.div_big_int d g)
+
+let decimal_string_to_rational (input : string) : big_int * big_int =
+  let l = Str.split (Str.regexp "\\.") input in
+  let n = Big_int.big_int_of_string ((List.nth l 0) ^ (List.nth l 1)) in
+  let d = Big_int.big_int_of_string ("1" ^ (String.make (String.length (List.nth l 1)) '0')) in
+  compute_irr_fract (n, d)
+
+(* -------------------------------------------------------------------- *)
+
 type duration = {
   weeks   : big_int;
   days    : big_int;
@@ -118,10 +134,10 @@ let pp_duration_for_printer fmt (d : duration) =
 let duration_to_seconds (d : duration) : big_int =
   Big_int.zero_big_int
   |> fun x -> Big_int.mult_int_big_int 7  (Big_int.add_big_int x d.weeks)
-  |> fun x -> Big_int.mult_int_big_int 24 (Big_int.add_big_int x d.days)
-  |> fun x -> Big_int.mult_int_big_int 60 (Big_int.add_big_int x d.hours)
-  |> fun x -> Big_int.mult_int_big_int 60 (Big_int.add_big_int x d.minutes)
-  |> fun x -> Big_int.mult_int_big_int 1  (Big_int.add_big_int x d.seconds)
+              |> fun x -> Big_int.mult_int_big_int 24 (Big_int.add_big_int x d.days)
+                          |> fun x -> Big_int.mult_int_big_int 60 (Big_int.add_big_int x d.hours)
+                                      |> fun x -> Big_int.mult_int_big_int 60 (Big_int.add_big_int x d.minutes)
+                                                  |> fun x -> Big_int.mult_int_big_int 1  (Big_int.add_big_int x d.seconds)
 
 let pp_duration_in_seconds fmt (d : duration) =
   let s = duration_to_seconds d in
@@ -232,50 +248,50 @@ let string_to_date (str : string) : date =
       let input = eat_and_check ":" 1 input in
       let second, input = eat 2 input |> c_int in
       let tz =
-      match get_next_char input with
-      | None ->  TZnone
-      | Some "Z" -> TZZ
-      | Some c ->
-        begin
-          let input, t =
-            match c with
-            | "+" -> eat_and_check "+" 1 input, (fun (h, m) -> TZplus(h, m) )
-            | "-" -> eat_and_check "-" 1 input, (fun (h, m) -> TZminus(h, m) )
-            | _ -> raise (MalformedDate str)
-          in
-          let timezone_hour, input = eat 2 input |> c_int in
-          let input = eat_and_check ":" 1 input in
-          let timezone_min, _ = eat 2 input |> c_int in
-          t(timezone_hour, timezone_min)
-        end
-        in mk_date () ~year:year ~month:month ~day:day ~hour:hour ~minute:minute ~second:second ~timezone:tz
+        match get_next_char input with
+        | None ->  TZnone
+        | Some "Z" -> TZZ
+        | Some c ->
+          begin
+            let input, t =
+              match c with
+              | "+" -> eat_and_check "+" 1 input, (fun (h, m) -> TZplus(h, m) )
+              | "-" -> eat_and_check "-" 1 input, (fun (h, m) -> TZminus(h, m) )
+              | _ -> raise (MalformedDate str)
+            in
+            let timezone_hour, input = eat 2 input |> c_int in
+            let input = eat_and_check ":" 1 input in
+            let timezone_min, _ = eat 2 input |> c_int in
+            t(timezone_hour, timezone_min)
+          end
+      in mk_date () ~year:year ~month:month ~day:day ~hour:hour ~minute:minute ~second:second ~timezone:tz
     end
 
 
 let date_to_big_int (date : date) : big_int =
   Big_int.zero_big_int
   |> fun x -> Big_int.mult_int_big_int 12 (Big_int.add_big_int x (Big_int.big_int_of_int date.year))
-  |> fun x -> Big_int.mult_int_big_int 31 (Big_int.add_big_int x (Big_int.big_int_of_int date.month))
-  |> fun x -> Big_int.mult_int_big_int 24 (Big_int.add_big_int x (Big_int.big_int_of_int date.day))
-  |> fun x -> Big_int.mult_int_big_int 60 (Big_int.add_big_int x (Big_int.big_int_of_int date.hour))
-  |> fun x -> Big_int.mult_int_big_int 60 (Big_int.add_big_int x (Big_int.big_int_of_int date.minute))
-  |> fun x -> Big_int.mult_int_big_int 1  (Big_int.add_big_int x (Big_int.big_int_of_int date.second))
-  |> fun x ->
-  begin
-    let f (h, m) =
-      Big_int.zero_big_int
-      |> Big_int.add_big_int (Big_int.mult_int_big_int (60 * 60) (Big_int.big_int_of_int h))
-      |> Big_int.add_big_int (Big_int.mult_int_big_int 60 (Big_int.big_int_of_int m))
-    in
-    let c =
-      match date.timezone with
-      | TZnone
-      | TZZ -> Big_int.zero_big_int
-      | TZplus (h, m) ->
-        f (h, m)
-        |> Big_int.minus_big_int
-      | TZminus (h, m) ->
-        f (h, m)
-    in
-    Big_int.add_big_int x c
-  end
+              |> fun x -> Big_int.mult_int_big_int 31 (Big_int.add_big_int x (Big_int.big_int_of_int date.month))
+                          |> fun x -> Big_int.mult_int_big_int 24 (Big_int.add_big_int x (Big_int.big_int_of_int date.day))
+                                      |> fun x -> Big_int.mult_int_big_int 60 (Big_int.add_big_int x (Big_int.big_int_of_int date.hour))
+                                                  |> fun x -> Big_int.mult_int_big_int 60 (Big_int.add_big_int x (Big_int.big_int_of_int date.minute))
+                                                              |> fun x -> Big_int.mult_int_big_int 1  (Big_int.add_big_int x (Big_int.big_int_of_int date.second))
+                                                                          |> fun x ->
+                                                                          begin
+                                                                            let f (h, m) =
+                                                                              Big_int.zero_big_int
+                                                                              |> Big_int.add_big_int (Big_int.mult_int_big_int (60 * 60) (Big_int.big_int_of_int h))
+                                                                              |> Big_int.add_big_int (Big_int.mult_int_big_int 60 (Big_int.big_int_of_int m))
+                                                                            in
+                                                                            let c =
+                                                                              match date.timezone with
+                                                                              | TZnone
+                                                                              | TZZ -> Big_int.zero_big_int
+                                                                              | TZplus (h, m) ->
+                                                                                f (h, m)
+                                                                                |> Big_int.minus_big_int
+                                                                              | TZminus (h, m) ->
+                                                                                f (h, m)
+                                                                            in
+                                                                            Big_int.add_big_int x c
+                                                                          end
