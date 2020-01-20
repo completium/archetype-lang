@@ -131,7 +131,7 @@ let pp_duration_for_printer fmt (d : duration) =
       (pp_aux "m") d.minutes
       (pp_aux "s") d.seconds
 
-let duration_to_seconds (d : duration) : big_int =
+let duration_to_timestamp (d : duration) : big_int =
   Big_int.zero_big_int
   |> fun x -> Big_int.mult_int_big_int 7  (Big_int.add_big_int x d.weeks)
               |> fun x -> Big_int.mult_int_big_int 24 (Big_int.add_big_int x d.days)
@@ -140,7 +140,7 @@ let duration_to_seconds (d : duration) : big_int =
                                                   |> fun x -> Big_int.mult_int_big_int 1  (Big_int.add_big_int x d.seconds)
 
 let pp_duration_in_seconds fmt (d : duration) =
-  let s = duration_to_seconds d in
+  let s = duration_to_timestamp d in
   Format.fprintf fmt "%a" pp_big_int s
 
 (* -------------------------------------------------------------------- *)
@@ -268,30 +268,92 @@ let string_to_date (str : string) : date =
     end
 
 
-let date_to_big_int (date : date) : big_int =
-  Big_int.zero_big_int
-  |> fun x -> Big_int.mult_int_big_int 12 (Big_int.add_big_int x (Big_int.big_int_of_int date.year))
-              |> fun x -> Big_int.mult_int_big_int 31 (Big_int.add_big_int x (Big_int.big_int_of_int date.month))
-                          |> fun x -> Big_int.mult_int_big_int 24 (Big_int.add_big_int x (Big_int.big_int_of_int date.day))
-                                      |> fun x -> Big_int.mult_int_big_int 60 (Big_int.add_big_int x (Big_int.big_int_of_int date.hour))
-                                                  |> fun x -> Big_int.mult_int_big_int 60 (Big_int.add_big_int x (Big_int.big_int_of_int date.minute))
-                                                              |> fun x -> Big_int.mult_int_big_int 1  (Big_int.add_big_int x (Big_int.big_int_of_int date.second))
-                                                                          |> fun x ->
-                                                                          begin
-                                                                            let f (h, m) =
-                                                                              Big_int.zero_big_int
-                                                                              |> Big_int.add_big_int (Big_int.mult_int_big_int (60 * 60) (Big_int.big_int_of_int h))
-                                                                              |> Big_int.add_big_int (Big_int.mult_int_big_int 60 (Big_int.big_int_of_int m))
-                                                                            in
-                                                                            let c =
-                                                                              match date.timezone with
-                                                                              | TZnone
-                                                                              | TZZ -> Big_int.zero_big_int
-                                                                              | TZplus (h, m) ->
-                                                                                f (h, m)
-                                                                                |> Big_int.minus_big_int
-                                                                              | TZminus (h, m) ->
-                                                                                f (h, m)
-                                                                            in
-                                                                            Big_int.add_big_int x c
-                                                                          end
+(* let date_to_big_int (date : date) : big_int =
+   Big_int.zero_big_int
+   |> fun x -> Big_int.mult_int_big_int 12 (Big_int.add_big_int x (Big_int.big_int_of_int date.year))
+   |> fun x -> Big_int.mult_int_big_int 31 (Big_int.add_big_int x (Big_int.big_int_of_int date.month))
+   |> fun x -> Big_int.mult_int_big_int 24 (Big_int.add_big_int x (Big_int.big_int_of_int date.day))
+   |> fun x -> Big_int.mult_int_big_int 60 (Big_int.add_big_int x (Big_int.big_int_of_int date.hour))
+   |> fun x -> Big_int.mult_int_big_int 60 (Big_int.add_big_int x (Big_int.big_int_of_int date.minute))
+   |> fun x -> Big_int.mult_int_big_int 1  (Big_int.add_big_int x (Big_int.big_int_of_int date.second))
+   |> fun x ->
+   begin
+    let f (h, m) =
+      Big_int.zero_big_int
+      |> Big_int.add_big_int (Big_int.mult_int_big_int (60 * 60) (Big_int.big_int_of_int h))
+      |> Big_int.add_big_int (Big_int.mult_int_big_int 60 (Big_int.big_int_of_int m))
+    in
+    let c =
+      match date.timezone with
+      | TZnone
+      | TZZ -> Big_int.zero_big_int
+      | TZplus (h, m) ->
+        f (h, m)
+        |> Big_int.minus_big_int
+      | TZminus (h, m) ->
+        f (h, m)
+    in
+    Big_int.add_big_int x c
+   end *)
+
+
+(** inspired from
+ https://discuss.ocaml.org/t/how-to-expose-date-time-types-in-a-library-nicely/1653/6 *)
+
+(** [is_leapyear] is true, if and only if a year is a leap year *)
+let is_leapyear year =
+  year mod 4    = 0
+  &&  year mod 400 != 100
+  &&  year mod 400 != 200
+  &&  year mod 400 != 300
+
+let ( ** ) x y    = Big_int.mult_int_big_int (x) y
+let sec           = Big_int.unit_big_int
+let sec_per_min   = 60 ** sec
+let sec_per_hour  = 60 ** sec_per_min
+let sec_per_day   = 24 ** sec_per_hour
+
+(* The following calculations are based on the following book: Nachum
+   Dershowitz, Edward M. Reingold: Calendrical calculations (3. ed.).
+   Cambridge University Press 2008, ISBN 978-0-521-88540-9, pp. I-XXIX,
+   1-479, Chapter 2, The Gregorian Calendar *)
+
+let days_since_epoch yy mm dd =
+  let epoch       = 1       in
+  let y'          = yy - 1  in
+  let correction  =
+    if mm <= 2                          then 0
+    else if mm > 2 && is_leapyear yy    then -1
+    else -2
+  in
+  epoch - 1 + 365*y' + y'/4 - y'/100 + y'/400 +
+  (367 * mm - 362)/12 + correction + dd
+
+let seconds_since_epoch d =
+  let ( ++ )        = Big_int.add_big_int in
+  (days_since_epoch d.year d.month d.day ** sec_per_day)
+  ++ (d.hour ** sec_per_hour)
+  ++ (d.minute  ** sec_per_min)
+  ++ (d.second  ** sec)
+
+let epoch = seconds_since_epoch (mk_date ())
+
+let date_to_timestamp (date : date) : big_int =
+  let res = seconds_since_epoch date in
+  let res = Big_int.sub_big_int res epoch in
+  let correction =
+    let f (h, m) =
+      Big_int.zero_big_int
+      |> Big_int.add_big_int (Big_int.mult_int_big_int (60 * 60) (Big_int.big_int_of_int h))
+      |> Big_int.add_big_int (Big_int.mult_int_big_int 60 (Big_int.big_int_of_int m))
+    in
+    match date.timezone with
+    | TZnone
+    | TZZ -> Big_int.zero_big_int
+    | TZplus (h, m) ->
+      f (h, m)
+      |> Big_int.minus_big_int
+    | TZminus (h, m) ->
+      f (h, m)
+  in
+  Big_int.add_big_int res correction

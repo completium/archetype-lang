@@ -703,3 +703,106 @@ let remove_rational (model : model) : model =
          );
         })
   }
+
+
+let replace_date_duration_by_timestamp (model : model) : model =
+  let type_timestamp = Tbuiltin Btimestamp in
+  let process_type t : type_ =
+    let rec aux t =
+      match t with
+      | Tbuiltin Bdate
+      | Tbuiltin Bduration -> type_timestamp
+      | _ -> map_type aux t
+    in
+    aux t
+  in
+  let to_timestamp (x : mterm) =
+    match x.node with
+    | Mdate d     -> mk_mterm (Mtimestamp (Core.date_to_timestamp d)) type_timestamp
+    | Mduration d -> mk_mterm (Mtimestamp (Core.duration_to_timestamp d)) type_timestamp
+    | Mtimestamp _ -> x
+    | _ -> assert false
+  in
+  let process_mterm mt =
+    let rec aux (mt : mterm) : mterm =
+      match mt.node, mt.type_ with
+      | Mdate d,_      -> mk_mterm (Mtimestamp (Core.date_to_timestamp d)) type_timestamp
+      | Mduration d, _ -> mk_mterm (Mtimestamp (Core.duration_to_timestamp d)) type_timestamp
+      | Mletin (ids, v, t, body, o), _ ->
+        { mt with
+          node = Mletin (ids, aux v, Option.map process_type t, aux body, Option.map aux o)
+        }
+      | Mdeclvar (ids, t, v), _ ->
+        { mt with
+          node = Mdeclvar (ids, Option.map process_type t, aux v)
+        }
+      | Mforall (id, t, a, b), _ ->
+        { mt with
+          node = Mforall (id, process_type t, Option.map aux a, aux b)
+        }
+      | Mexists (id, t, a, b), _ ->
+        { mt with
+          node = Mexists (id, process_type t, Option.map aux a, aux b)
+        }
+      | _ -> map_mterm aux mt
+    in
+    aux mt
+  in
+  let process_decls =
+    let process_arg (type_ : type_) (default_value : mterm option) : (type_ * mterm option) =
+      let t = process_type type_ in
+      t, Option.map ((fun dv ->
+          match t with
+          | Tbuiltin Btimestamp -> to_timestamp dv
+          | _ -> dv
+        ) |@ process_mterm) default_value
+    in
+    List.map (function
+        | Dvar v ->
+          let t, dv = process_arg v.type_ v.default in
+          Dvar
+            { v with
+              type_   = t;
+              default = dv;
+            }
+        | Dasset a ->
+          Dasset
+            {a with
+             values = a.values |> List.map
+                        (fun (ai : asset_item) ->
+                           { ai with
+                             type_   = ai.type_   |> process_type;
+                             default = ai.default |> Option.map process_mterm;
+                           })
+            }
+        | Dcontract c ->
+          Dcontract
+            {c with
+             signatures = c.signatures |> List.map
+                            (fun (cs : contract_signature) ->
+                               {
+                                 cs with
+                                 args = cs.args |> List.map (fun (a, b) -> (a, process_type b))
+                               }
+                            );
+             init = c.init |> Option.map process_mterm
+            }
+        | _ as x -> x)
+  in
+  { model with
+    decls     = model.decls     |> process_decls;
+    functions = model.functions |> List.map (fun f ->
+        {f with
+         node = (
+           let process_fs (fs : function_struct) =
+             {fs with
+              args = fs.args |> List.map (fun (id, t, dv) -> (id, process_type t, Option.map process_mterm dv));
+              body = fs.body |> process_mterm;
+             }
+           in
+           match f.node with
+           | Function (fs, ret) -> Function (process_fs fs, process_type ret)
+           | Entry fs           -> Entry (process_fs fs)
+         );
+        })
+  }

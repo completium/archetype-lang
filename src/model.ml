@@ -21,7 +21,9 @@ type btyp =
   | Bint
   | Brational
   | Bdate
-  | Bduration  | Bstring
+  | Bduration
+  | Btimestamp
+  | Bstring
   | Baddress
   | Brole
   | Bcurrency
@@ -211,11 +213,12 @@ type ('id, 'term) mterm_node  =
   | Mbool           of bool
   | Menum           of string
   | Mrational       of Core.big_int * Core.big_int
-  | Mdate           of Core.date
   | Mstring         of string
   | Mcurrency       of Core.big_int * currency
   | Maddress        of string
+  | Mdate           of Core.date
   | Mduration       of Core.duration
+  | Mtimestamp      of Core.big_int
   | Mdotasset       of 'term * 'id
   | Mdotcontract    of 'term * 'id
   | Mtuple          of 'term list
@@ -952,11 +955,12 @@ let cmp_mterm_node
     | Mbool v1, Mbool v2                                                               -> cmp_bool v1 v2
     | Menum v1, Menum v2                                                               -> cmp_ident v1 v2
     | Mrational (n1, d1), Mrational (n2, d2)                                           -> Big_int.eq_big_int n1 n2 && Big_int.eq_big_int d1 d2
-    | Mdate v1, Mdate v2                                                               -> Core.cmp_date v1 v2
     | Mstring v1, Mstring v2                                                           -> cmp_ident v1 v2
     | Mcurrency (v1, c1), Mcurrency (v2, c2)                                           -> Big_int.eq_big_int v1 v2 && cmp_currency c1 c2
     | Maddress v1, Maddress v2                                                         -> cmp_ident v1 v2
+    | Mdate v1, Mdate v2                                                               -> Core.cmp_date v1 v2
     | Mduration v1, Mduration v2                                                       -> Core.cmp_duration v1 v2
+    | Mtimestamp v1, Mtimestamp v2                                                     -> Big_int.eq_big_int v1 v2
     | Mdotasset (e1, i1), Mdotasset (e2, i2)                                           -> cmp e1 e2 && cmpi i1 i2
     | Mdotcontract (e1, i1), Mdotcontract (e2, i2)                                     -> cmp e1 e2 && cmpi i1 i2
     | Mtuple l1, Mtuple l2                                                             -> List.for_all2 cmp l1 l2
@@ -1170,11 +1174,12 @@ let map_term_node (f : 'id mterm_gen -> 'id mterm_gen) = function
   | Mbool v                        -> Mbool v
   | Menum v                        -> Menum v
   | Mrational (n, d)               -> Mrational (n, d)
-  | Mdate v                        -> Mdate v
   | Mstring v                      -> Mstring v
   | Mcurrency (v, c)               -> Mcurrency (v, c)
   | Maddress v                     -> Maddress v
+  | Mdate v                        -> Mdate v
   | Mduration v                    -> Mduration v
+  | Mtimestamp v                   -> Mtimestamp v
   | Mdotasset (e, i)               -> Mdotasset (f e, i)
   | Mdotcontract (e, i)            -> Mdotcontract (f e, i)
   | Mtuple l                       -> Mtuple (List.map f l)
@@ -1433,11 +1438,12 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mbool _                               -> accu
   | Menum _                               -> accu
   | Mrational _                           -> accu
-  | Mdate _                               -> accu
   | Mstring _                             -> accu
   | Mcurrency _                           -> accu
   | Maddress _                            -> accu
+  | Mdate _                               -> accu
   | Mduration _                           -> accu
+  | Mtimestamp _                          -> accu
   | Mdotasset (e, _)                      -> f accu e
   | Mdotcontract (e, _)                   -> f accu e
   | Mvarstate                             -> accu
@@ -1898,11 +1904,12 @@ let fold_map_term
   | Mbool v                  -> g (Mbool v), accu
   | Menum v                  -> g (Menum v), accu
   | Mrational (n, d)         -> g (Mrational (n, d)), accu
-  | Mdate v                  -> g (Mdate v), accu
   | Mstring v                -> g (Mstring v), accu
   | Mcurrency (v, c)         -> g (Mcurrency (v, c)), accu
   | Maddress v               -> g (Maddress v), accu
+  | Mdate v                  -> g (Mdate v), accu
   | Mduration v              -> g (Mduration v), accu
+  | Mtimestamp v             -> g (Mtimestamp v), accu
 
   | Mdotasset (e, i) ->
     let ee, ea = f accu e in
@@ -2751,6 +2758,7 @@ end = struct
       | Tbuiltin Brational   -> Mrational (Big_int.zero_big_int, Big_int.zero_big_int)
       | Tbuiltin Bdate       -> Mdate (Core.mk_date ())
       | Tbuiltin Bduration   -> Mduration (Core.mk_duration ())
+      | Tbuiltin Btimestamp  -> Mtimestamp (Big_int.zero_big_int)
       | Tbuiltin Bstring     -> Mstring ""
       | Tbuiltin Baddress    -> Maddress "tz1_default"
       | Tbuiltin Brole       -> Maddress "tz1_default"

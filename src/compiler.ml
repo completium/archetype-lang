@@ -90,6 +90,7 @@ let extend_iter               = Gen_transform.extend_loop_iter
 let split_key_values          = Gen_split_key_values.split_key_values
 let remove_side_effect        = Gen_reduce.reduce
 let remove_rational           = Gen_transform.remove_rational
+let replace_date_duration_by_timestamp = Gen_transform.replace_date_duration_by_timestamp
 let generate_api_storage      = Gen_api_storage.generate_api_storage
 let exec_process model        = model
                                 |> Gen_transform.replace_lit_address_by_role
@@ -113,6 +114,7 @@ let generate_target model =
   | None ->
     model
     |> cont !Options.opt_nr  remove_rational
+    |> cont !Options.opt_ndd replace_date_duration_by_timestamp
     |> cont !Options.opt_ws  generate_storage
     |> raise_if_error post_model_error prune_properties
     |> replace_declvar_by_letin
@@ -126,6 +128,7 @@ let generate_target model =
   | LigoStorage ->
     model
     |> remove_rational
+    |> replace_date_duration_by_timestamp
     |> generate_storage
     |> replace_declvar_by_letin
     |> remove_wild_pattern
@@ -247,6 +250,8 @@ let main () =
       "--no-side-effect", Arg.Set Options.opt_nse, " Same as -nse";
       "-nr", Arg.Set Options.opt_nr, " Remove rational";
       "--no-rational", Arg.Set Options.opt_nse, " Same as -nr";
+      "-ndd", Arg.Set Options.opt_ndd, " Remove date and duration";
+      "--no-date-duration", Arg.Set Options.opt_nse, " Same as -ndd";
       "-fp", Arg.String (fun s -> Options.opt_property_focused := s), " Focus property (with whyml target only)";
       "--focus-property", Arg.String (fun s -> Options.opt_property_focused := s), " Same as -fp";
       "-lsp", Arg.String (fun s -> match s with

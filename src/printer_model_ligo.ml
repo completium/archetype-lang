@@ -139,8 +139,9 @@ let pp_model_internal fmt (model : model) b =
     | Bbool       -> Format.fprintf fmt "bool"
     | Bint        -> Format.fprintf fmt "int"
     | Brational   -> Format.fprintf fmt "rational"
-    | Bdate       -> Format.fprintf fmt "timestamp"
+    | Bdate       -> Format.fprintf fmt "date"
     | Bduration   -> Format.fprintf fmt "duration"
+    | Btimestamp  -> Format.fprintf fmt "timestamp"
     | Bstring     -> Format.fprintf fmt "string"
     | Baddress    -> Format.fprintf fmt "address"
     | Brole       -> Format.fprintf fmt "address"
@@ -855,7 +856,6 @@ let pp_model_internal fmt (model : model) b =
         Format.fprintf fmt "(%a div %a)"
           pp_big_int n
           pp_big_int d
-      | Mdate v -> Core.pp_date fmt v
       | Mstring v ->
         Format.fprintf fmt "\"%a\""
           pp_str v
@@ -873,7 +873,13 @@ let pp_model_internal fmt (model : model) b =
       | Maddress v ->
         Format.fprintf fmt "(\"%a\" : address)"
           pp_str v
+      | Mdate v ->
+        Format.fprintf fmt "(\"%a\" : timestamp)"
+          Core.pp_date v
       | Mduration v -> Core.pp_duration_in_seconds fmt v
+      | Mtimestamp v ->
+        Format.fprintf fmt "(%a : timestamp)"
+          pp_big_int v
       | Mdotasset (e, i)
       | Mdotcontract (e, i) ->
         Format.fprintf fmt "%a.%a"

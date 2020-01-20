@@ -42,6 +42,7 @@ let generate_storage (model : model) : model =
       | Brational   -> mk_mterm (Mrational (Big_int.zero_big_int, Big_int.unit_big_int)) (Tbuiltin b)
       | Bdate       -> emit_error (NoInitExprFor "date")
       | Bduration   -> mk_mterm (Mduration (Core.mk_duration ())) (Tbuiltin b)
+      | Btimestamp  -> emit_error (NoInitExprFor "timestamp")
       | Bstring     -> mk_mterm (Mstring "") (Tbuiltin b)
       | Baddress    -> emit_error (NoInitExprFor "address")
       | Brole       -> emit_error (NoInitExprFor "role")
