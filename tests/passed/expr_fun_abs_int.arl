@@ -1,0 +1,9 @@
+archetype expr_fun_min_tez
+
+variable res : int = 0
+
+action exec () {
+  effect {
+    res := abs(-1)
+  }
+}
