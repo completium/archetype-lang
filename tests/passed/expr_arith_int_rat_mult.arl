@@ -1,9 +1,0 @@
-archetype expr_arith_int_rat_mult
-
-variable res : rational = 0 div 1
-
-action exec () {
-  effect {
-    res := 3 * 1 div 2
-  }
-}

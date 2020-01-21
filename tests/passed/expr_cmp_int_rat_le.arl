@@ -1,9 +1,0 @@
-archetype expr_cmp_int_rat_le
-
-variable res : bool = false
-
-action exec () {
-  effect {
-    res := 2 <= 1 div 3
-  }
-}

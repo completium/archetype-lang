@@ -1,9 +1,0 @@
-archetype expr_cmp_int_int_ne
-
-variable res : bool = false
-
-action exec () {
-  effect {
-    res := 1 <> 2
-  }
-}

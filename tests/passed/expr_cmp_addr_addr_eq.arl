@@ -1,9 +1,0 @@
-archetype expr_cmp_addr_addr_eq
-
-variable res : bool = false
-
-action exec () {
-  effect {
-    res := @addr1 = @addr1
-  }
-}

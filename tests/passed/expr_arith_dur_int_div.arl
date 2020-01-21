@@ -1,9 +1,0 @@
-archetype expr_arith_dur_int_div
-
-variable res : duration = 0s
-
-action exec () {
-  effect {
-    res := 4h / 2
-  }
-}

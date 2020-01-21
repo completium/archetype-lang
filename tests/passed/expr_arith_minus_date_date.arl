@@ -1,0 +1,9 @@
+archetype expr_arith_minus_date_date
+
+variable res : duration = 0
+
+action exec () {
+  effect {
+    res := 2020-12-31 - 2020-01-01
+  }
+}

@@ -1,0 +1,9 @@
+archetype expr_cmp_gt_dur_dur
+
+variable res : bool = false
+
+action exec () {
+  effect {
+    res := 2h > 1h
+  }
+}

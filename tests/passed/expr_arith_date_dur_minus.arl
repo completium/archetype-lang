@@ -1,9 +1,0 @@
-archetype expr_arith_date_dur_minus
-
-variable res : date = 2020-01-01
-
-action exec () {
-  effect {
-    res := 2020-01-01T00:00 - 4h
-  }
-}

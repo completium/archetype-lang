@@ -1,0 +1,9 @@
+archetype expr_cmp_eq_str_str
+
+variable res : bool = false
+
+action exec () {
+  effect {
+    res := "a" = "a"
+  }
+}

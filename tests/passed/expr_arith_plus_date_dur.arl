@@ -1,0 +1,9 @@
+archetype expr_arith_plus_date_dur
+
+variable res : date = 2020-01-01
+
+action exec () {
+  effect {
+    res := 2020-01-01T00:00 + 4h
+  }
+}

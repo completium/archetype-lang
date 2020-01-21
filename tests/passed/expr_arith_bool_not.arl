@@ -1,9 +1,0 @@
-archetype expr_arith_bool_not
-
-variable res : bool = false
-
-action exec () {
-  effect {
-    res := not false
-  }
-}
