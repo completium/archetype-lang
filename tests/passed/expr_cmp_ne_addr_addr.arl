@@ -4,6 +4,6 @@ variable res : bool = false
 
 action exec () {
   effect {
-    res := @addr1 <> @addr2
+    res := @tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg <> @tz1aazS5ms5cbGkb6FN1wvWmN7yrMTTcr6wB
   }
 }

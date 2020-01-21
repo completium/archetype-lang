@@ -49,8 +49,8 @@ action exec () {
     res := true =  false;
     res := true <> false;
 
-    res := @addr1 =  @addr2;
-    res := @addr1 <> @addr2;
+    res := @tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg =  @tz1bfVgcJC4ukaQSHUe1EbrUd5SekXeP9CWk;
+    res := @tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg <> @tz1bfVgcJC4ukaQSHUe1EbrUd5SekXeP9CWk;
 
     res := "a" =  "b";
     res := "a" <> "b";

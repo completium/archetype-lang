@@ -1,0 +1,13 @@
+archetype decl_asset_option
+
+asset my_asset {
+  id : string;
+}
+
+variable a : my_asset option = none
+
+action exec() {
+  effect {
+    require (true)
+  }
+}

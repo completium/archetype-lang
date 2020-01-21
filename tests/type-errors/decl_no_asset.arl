@@ -1,0 +1,13 @@
+archetype decl_asset
+
+asset my_asset {
+  id : string;
+}
+
+variable a : my_asset = {id = "id"}
+
+action exec() {
+  effect {
+    require (true)
+  }
+}
