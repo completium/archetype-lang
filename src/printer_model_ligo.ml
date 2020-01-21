@@ -782,6 +782,7 @@ let pp_model_internal fmt (model : model) b =
           pp_id v
       | Mvarthe        -> pp_str fmt "the"
       | Mvarstate      -> Format.fprintf fmt "%s.%s" const_storage const_state
+      | Mvalstate v    -> pp_id fmt v
       | Mnow           -> pp_str fmt "now"
       | Mtransferred   -> pp_str fmt "amount"
       | Mcaller        -> pp_str fmt "sender"

@@ -1005,6 +1005,7 @@ let pp_model fmt (model : model) =
       | Mvarparam v    -> pp_id fmt v
       | Mvarthe        -> pp_str fmt "the"
       | Mvarstate      -> Format.fprintf fmt "%s.%s" const_storage const_state
+      | Mvalstate v    -> pp_id fmt v
       | Mnow           -> pp_str fmt "Global.get_now ()"
       | Mtransferred   -> pp_str fmt "Global.get_amount ()"
       | Mcaller        -> pp_str fmt "Global.get_sender ()"

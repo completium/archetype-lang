@@ -626,6 +626,7 @@ let pp_mterm fmt (mt : mterm) =
     | Mvarparam v    -> pp_id fmt v
     | Mvarthe        -> pp_str fmt "the"
     | Mvarstate      -> pp_str fmt "state"
+    | Mvalstate v    -> pp_id fmt v
     | Mnow           -> pp_str fmt "now"
     | Mtransferred   -> pp_str fmt "transferred"
     | Mcaller        -> pp_str fmt "caller"
