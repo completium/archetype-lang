@@ -136,10 +136,8 @@ type ('id, 'term) mterm_node  =
   | Mset            of ident * ident list * 'term * 'term (*asset_name * field_name modified * ... *)
   | Maddasset       of ident * 'term
   | Maddfield       of ident * ident * 'term * 'term (* asset_name * field_name * asset instance * item * shalow values*)
-  | Maddlocal       of 'term * 'term
   | Mremoveasset    of ident * 'term
   | Mremovefield    of ident * ident * 'term * 'term
-  | Mremovelocal    of 'term * 'term
   | Mremoveif       of ident * 'term * 'term
   | Mselect         of ident * 'term * 'term
   | Msort           of ident * 'term * ident * sort_kind
@@ -151,11 +149,15 @@ type ('id, 'term) mterm_node  =
   | Msum            of ident * 'id * 'term
   | Mmin            of ident * 'id * 'term
   | Mmax            of ident * 'id * 'term
-  | Mmathmax        of 'term * 'term
-  | Mmathmin        of 'term * 'term
-  | Mabs            of 'term
+  | Mfunmax         of 'term * 'term
+  | Mfunmin         of 'term * 'term
+  | Mfunabs         of 'term
   | Mhead           of ident * 'term * 'term
   | Mtail           of ident * 'term * 'term
+  | Mlistprepend    of 'term * 'term
+  | Mlistcontains   of 'term * 'term
+  | Mlistcount      of 'term
+  | Mlistnth        of 'term * 'term
   | Mfail           of 'id fail_type_gen
   | Mand            of 'term * 'term
   | Mor             of 'term * 'term
@@ -870,10 +872,8 @@ let cmp_mterm_node
     | Mset (c1, l1, k1, v1), Mset (c2, l2, k2, v2)                                     -> cmp_ident c1 c2 && List.for_all2 cmp_ident l1 l2 && cmp k1 k2 && cmp v1 v2
     | Maddasset (an1, i1), Maddasset (an2, i2)                                         -> cmp_ident an1 an2 && cmp i1 i2
     | Maddfield (an1, fn1, c1, i1), Maddfield (an2, fn2, c2, i2)                       -> cmp_ident an1 an2 && cmp_ident fn1 fn2 && cmp c1 c2 && cmp i1 i2
-    | Maddlocal (c1, i1), Maddlocal (c2, i2)                                           -> cmp c1 c2 && cmp i1 i2
     | Mremoveasset (an1, i1), Mremoveasset (an2, i2)                                   -> cmp_ident an1 an2 && cmp i1 i2
     | Mremovefield (an1, fn1, c1, i1), Mremovefield (an2, fn2, c2, i2)                 -> cmp_ident an1 an2 && cmp_ident fn1 fn2 && cmp c1 c2 && cmp i1 i2
-    | Mremovelocal (c1, i1), Mremovelocal (c2, i2)                                     -> cmp c1 c2 && cmp i1 i2
     | Mremoveif (an1, fn1, i1), Mremoveif (an2, fn2, i2)                               -> cmp_ident an1 an2 && cmp fn1 fn2 && cmp i1 i2
     | Mselect (an1, c1, p1), Mselect (an2, c2, p2)                                     -> cmp_ident an1 an2 && cmp c1 c2 && cmp p1 p2
     | Msort (an1, c1, fn1, k1), Msort (an2, c2, fn2, k2)                               -> cmp_ident an1 an2 && cmp c1 c2 && cmp_ident fn1 fn2 && k1 = k2
@@ -886,11 +886,15 @@ let cmp_mterm_node
     | Mmin (an1, fd1, c1), Mmin (an2, fd2, c2)                                         -> cmp_ident an1 an2 && cmpi fd1 fd2 && cmp c1 c2
     | Mmax (an1, fd1, c1), Mmax (an2, fd2, c2)                                         -> cmp_ident an1 an2 && cmpi fd1 fd2 && cmp c1 c2
     | Mfail ft1, Mfail ft2                                                             -> cmp_fail_type cmp ft1 ft2
-    | Mmathmin (l1, r1), Mmathmin (l2, r2)                                             -> cmp l1 l2 && cmp r1 r2
-    | Mmathmax (l1, r1), Mmathmax (l2, r2)                                             -> cmp l1 l2 && cmp r1 r2
-    | Mabs a1, Mabs a2                                                                 -> cmp a1 a2
+    | Mfunmin (l1, r1), Mfunmin (l2, r2)                                               -> cmp l1 l2 && cmp r1 r2
+    | Mfunmax (l1, r1), Mfunmax (l2, r2)                                               -> cmp l1 l2 && cmp r1 r2
+    | Mfunabs a1, Mfunabs a2                                                           -> cmp a1 a2
     | Mhead (an1, c1, i1), Mhead (an2, c2, i2)                                         -> cmp_ident an1 an2 && cmp c1 c2 && cmp i1 i2
     | Mtail (an1, c1, i1), Mtail (an2, c2, i2)                                         -> cmp_ident an1 an2 && cmp c1 c2 && cmp i1 i2
+    | Mlistprepend (c1, a1), Mlistprepend (c2, a2)                                     -> cmp c1 c2 && cmp a1 a2
+    | Mlistcontains (c1, a1), Mlistcontains (c2, a2)                                   -> cmp c1 c2 && cmp a1 a2
+    | Mlistcount c1, Mlistcount c2                                                     -> cmp c1 c2
+    | Mlistnth (c1, a1), Mlistnth (c2, a2)                                             -> cmp c1 c2 && cmp a1 a2
     | Mand (l1, r1), Mand (l2, r2)                                                     -> cmp l1 l2 && cmp r1 r2
     | Mor (l1, r1), Mor (l2, r2)                                                       -> cmp l1 l2 && cmp r1 r2
     | Mimply (l1, r1), Mimply (l2, r2)                                                 -> cmp l1 l2 && cmp r1 r2
@@ -1077,10 +1081,8 @@ let map_term_node (f : 'id mterm_gen -> 'id mterm_gen) = function
   | Mset (c, l, k, v)              -> Mset (c, l, f k, f v)
   | Maddasset (an, i)              -> Maddasset (an, f i)
   | Maddfield (an, fn, c, i)       -> Maddfield (an, fn, f c, f i)
-  | Maddlocal (c, i)               -> Maddlocal (f c, f i)
   | Mremoveasset (an, i)           -> Mremoveasset (an, f i)
   | Mremovefield (an, fn, c, i)    -> Mremovefield (an, fn, f c, f i)
-  | Mremovelocal (c, i)            -> Mremovelocal (f c, f i)
   | Mremoveif (an, fn, i)          -> Mremoveif (an, f fn, f i)
   | Mselect (an, c, p)             -> Mselect (an, f c, f p)
   | Msort (an, c, fn, k)           -> Msort (an, f c, fn, k)
@@ -1093,11 +1095,15 @@ let map_term_node (f : 'id mterm_gen -> 'id mterm_gen) = function
   | Mmin (an, fd, c)               -> Mmin (an, fd, f c)
   | Mmax (an, fd, c)               -> Mmax (an, fd, f c)
   | Mfail (ft)                     -> Mfail (ft)
-  | Mmathmin (l, r)                -> Mmathmin (f l, f r)
-  | Mmathmax (l, r)                -> Mmathmax (f l, f r)
-  | Mabs a                         -> Mabs (f a)
+  | Mfunmin (l, r)                 -> Mfunmin (f l, f r)
+  | Mfunmax (l, r)                 -> Mfunmax (f l, f r)
+  | Mfunabs a                      -> Mfunabs (f a)
   | Mhead (an, c, i)               -> Mhead (an, f c, f i)
   | Mtail (an, c, i)               -> Mtail (an, f c, f i)
+  | Mlistprepend (c, a)            -> Mlistprepend (f c, f a)
+  | Mlistcontains (c, a)           -> Mlistcontains (f c, f a)
+  | Mlistcount c                   -> Mlistcount (f c)
+  | Mlistnth (c, a)                -> Mlistnth (f c, f a)
   | Mand (l, r)                    -> Mand (f l, f r)
   | Mor (l, r)                     -> Mor (f l, f r)
   | Mimply (l, r)                  -> Mimply (f l, f r)
@@ -1343,10 +1349,8 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mset (_, _, k, v)                     -> f (f accu v) k
   | Maddasset (_, i)                      -> f accu i
   | Maddfield (_, _, c, i)                -> f (f accu c) i
-  | Maddlocal (c, i)                      -> f (f accu c) i
   | Mremoveasset (_, i)                   -> f accu i
   | Mremovefield (_, _, c, i)             -> f (f accu c) i
-  | Mremovelocal (c, i)                   -> f (f accu c) i
   | Mremoveif (_, fn, c)                  -> f (f accu fn) c
   | Mselect (_, c, p)                     -> f (f accu c) p
   | Msort (_, c, _, _)                    -> f accu c
@@ -1359,11 +1363,15 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mmin (_, _, c)                        -> f accu c
   | Mmax (_, _, c)                        -> f accu c
   | Mfail _                               -> accu
-  | Mmathmax (l, r)                       -> f (f accu l) r
-  | Mabs a                                -> f accu a
-  | Mmathmin (l, r)                       -> f (f accu l) r
+  | Mfunmax (l, r)                        -> f (f accu l) r
+  | Mfunabs a                             -> f accu a
+  | Mfunmin (l, r)                        -> f (f accu l) r
   | Mhead (_, c, i)                       -> f (f accu c) i
   | Mtail (_, c, i)                       -> f (f accu c) i
+  | Mlistprepend (c, a)                   -> f (f accu c) a
+  | Mlistcontains (c, a)                  -> f (f accu c) a
+  | Mlistcount c                          -> f accu c
+  | Mlistnth (c, a)                       -> f (f accu c) a
   | Mand (l, r)                           -> f (f accu l) r
   | Mor (l, r)                            -> f (f accu l) r
   | Mimply (l, r)                         -> f (f accu l) r
@@ -1569,11 +1577,6 @@ let fold_map_term
     let ie, ia = f ca i in
     g (Maddfield (an, fn, ce, ie)), ia
 
-  | Maddlocal (c, i) ->
-    let ce, ca = f accu c in
-    let ie, ia = f ca i in
-    g (Maddlocal (ce, ie)), ia
-
   | Mremoveasset (an, i) ->
     let ie, ia = f accu i in
     g (Mremoveasset (an, ie)), ia
@@ -1582,11 +1585,6 @@ let fold_map_term
     let ce, ca = f accu c in
     let ie, ia = f ca i in
     g (Mremovefield (an, fn, ce, ie)), ia
-
-  | Mremovelocal (c, i) ->
-    let ce, ca = f accu c in
-    let ie, ia = f ca i in
-    g (Mremovelocal (ce, ie)), ia
 
   | Mremoveif (an, fn, i) ->
     let ie, ia = f accu i in
@@ -1648,19 +1646,19 @@ let fold_map_term
     in
     g (Mfail fte), fta
 
-  | Mmathmin (l, r) ->
+  | Mfunmin (l, r) ->
     let le, la = f accu l in
     let re, ra = f la r in
-    g (Mmathmin (le, re)), ra
+    g (Mfunmin (le, re)), ra
 
-  | Mmathmax (l, r) ->
+  | Mfunmax (l, r) ->
     let le, la = f accu l in
     let re, ra = f la r in
-    g (Mmathmax (le, re)), ra
+    g (Mfunmax (le, re)), ra
 
-  | Mabs a ->
+  | Mfunabs a ->
     let ae, aa = f accu a in
-    g (Mabs ae), aa
+    g (Mfunabs ae), aa
 
   | Mhead (an, c, i) ->
     let ce, ca = f accu c in
@@ -1671,6 +1669,25 @@ let fold_map_term
     let ce, ca = f accu c in
     let ie, ia = f ca i in
     g (Mtail (an, ce, ie)), ia
+
+  | Mlistprepend (c, a) ->
+    let ce, ca = f accu c in
+    let ae, aa = f ca a in
+    g (Mlistprepend (ce, ae)), aa
+
+  | Mlistcontains (c, a) ->
+    let ce, ca = f accu c in
+    let ae, aa = f ca a in
+    g (Mlistcontains (ce, ae)), aa
+
+  | Mlistcount c ->
+    let ce, ca = f accu c in
+    g (Mlistcount ce), ca
+
+  | Mlistnth (c, a) ->
+    let ce, ca = f accu c in
+    let ae, aa = f ca a in
+    g (Mlistnth (ce, ae)), aa
 
   | Mand (l, r) ->
     let le, la = f accu l in

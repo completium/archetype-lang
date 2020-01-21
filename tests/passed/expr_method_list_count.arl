@@ -1,4 +1,4 @@
-archetype expr_method_builtin_collection_count
+archetype expr_method_list_count
 
 variable res : int = 0
 

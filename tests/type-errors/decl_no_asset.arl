@@ -1,4 +1,4 @@
-archetype decl_asset
+archetype decl_no_asset
 
 asset my_asset {
   id : string;

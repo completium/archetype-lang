@@ -244,16 +244,16 @@ let to_model (ast : A.model) : M.model =
     | A.Pcall (None, A.Cconst A.Cmin, [AExpr a; AExpr b]) ->
       let fa = f a in
       let fb = f b in
-      M.Mmathmin (fa, fb)
+      M.Mfunmin (fa, fb)
 
     | A.Pcall (None, A.Cconst A.Cmax, [AExpr a; AExpr b]) ->
       let fa = f a in
       let fb = f b in
-      M.Mmathmax (fa, fb)
+      M.Mfunmax (fa, fb)
 
     | A.Pcall (None, A.Cconst A.Cabs, [AExpr a]) ->
       let fa = f a in
-      M.Mabs (fa)
+      M.Mfunabs (fa)
 
     | A.Pcall (_, A.Cid id, args) ->
       M.Mapp (id, List.map (fun x -> term_arg_to_expr f x) args)
@@ -591,7 +591,7 @@ let to_model (ast : A.model) : M.model =
         match fp with
         | {node = M.Mvarstorecol asset_name; _} -> M.Maddasset (unloc asset_name, fq)
         | {node = M.Mdotasset ({type_ = M.Tasset asset_name ; _} as arg, f); _} -> M.Maddfield (unloc asset_name, unloc f, arg, fq)
-        | _ -> M.Maddlocal (fp, fq)
+        | _ -> assert false
       )
 
     | A.Icall (Some p, A.Cconst (A.Cremove), [AExpr q]) -> (
@@ -600,7 +600,7 @@ let to_model (ast : A.model) : M.model =
         match fp with
         | {node = M.Mvarstorecol asset_name; _} -> M.Mremoveasset (unloc asset_name, fq)
         | {node = M.Mdotasset ({type_ = M.Tasset asset_name ; _} as arg, f); _} -> M.Mremovefield (unloc asset_name, unloc f, arg, fq)
-        | _ -> M.Mremovelocal (fp, fq)
+        | _ -> assert false
       )
 
     | A.Icall (Some p, A.Cconst (A.Cupdate), [AExpr k; AEffect e]) ->

@@ -201,14 +201,6 @@ let pp_mterm fmt (mt : mterm) =
       in
       pp fmt (an, fn, c, i)
 
-    | Maddlocal (c, i) ->
-      let pp fmt (c, i) =
-        Format.fprintf fmt "add (%a, %a)"
-          f c
-          f i
-      in
-      pp fmt (c, i)
-
     | Mremoveasset (an, i) ->
       let pp fmt (an, i) =
         Format.fprintf fmt "remove_%a (%a)"
@@ -226,14 +218,6 @@ let pp_mterm fmt (mt : mterm) =
           f i
       in
       pp fmt (an, fn, c, i)
-
-    | Mremovelocal (c, i) ->
-      let pp fmt (c, i) =
-        Format.fprintf fmt "remove (%a, %a)"
-          f c
-          f i
-      in
-      pp fmt (c, i)
 
     | Mremoveif (an, fn, i) ->
       let pp fmt (an, fn, i) =
@@ -349,17 +333,17 @@ let pp_mterm fmt (mt : mterm) =
       Format.fprintf fmt "Current.failwith \"%a\""
         pp_fail_type ft
 
-    | Mmathmin (l, r) ->
+    | Mfunmin (l, r) ->
       Format.fprintf fmt "min (%a, %a)"
         f l
         f r
 
-    | Mmathmax (l, r) ->
+    | Mfunmax (l, r) ->
       Format.fprintf fmt "max (%a, %a)"
         f l
         f r
 
-    | Mabs a ->
+    | Mfunabs a ->
       Format.fprintf fmt "abs (%a)"
         f a
 
@@ -374,6 +358,24 @@ let pp_mterm fmt (mt : mterm) =
         pp_str an
         f c
         f i
+
+    | Mlistprepend (c, a) ->
+      Format.fprintf fmt "list_prepend (%a, %a)"
+        f c
+        f a
+    | Mlistcontains (c, a) ->
+      Format.fprintf fmt "list_contains (%a, %a)"
+        f c
+        f a
+
+    | Mlistcount c ->
+      Format.fprintf fmt "list_count (%a)"
+        f c
+
+    | Mlistnth (c, a) ->
+      Format.fprintf fmt "list_nth (%a, %a)"
+        f c
+        f a
 
     | Mand (l, r) ->
       let pp fmt (l, r) =

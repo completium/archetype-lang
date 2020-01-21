@@ -1,4 +1,4 @@
-archetype expr_method_builtin_collection_nth
+archetype expr_method_list_nth
 
 variable res : string = ""
 
