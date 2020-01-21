@@ -139,6 +139,7 @@ type const =
   | Chead
   | Ctail
   | Cabs
+  | Cprepend
   (* vset *)
   | Cbefore
   | Cunmoved

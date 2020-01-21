@@ -179,6 +179,7 @@ let to_const = function
   | Chead         -> "head"
   | Ctail         -> "tail"
   | Cabs          -> "abs"
+  | Cprepend      -> "prepend"
   | Cbefore       -> "before"
   | Cunmoved      -> "unmoved"
   | Cadded        -> "added"

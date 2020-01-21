@@ -103,7 +103,7 @@ let process_api_storage (model : model) : model =
                    | APIFunction (Sum            (an, _)) -> an
                    | APIFunction (Min            (an, _)) -> an
                    | APIFunction (Max            (an, _)) -> an
-                   | APIContainer _                       -> default
+                   | APIList _                            -> default
                    | APIBuiltin _                         -> default
                    | APIFunction (Shallow         an)     -> an
                    | APIFunction (Unshallow       an)     -> an
@@ -139,20 +139,22 @@ let process_api_storage (model : model) : model =
                    | APIFunction  (Select        _) -> 13
                    | APIFunction  (Sort          _) -> 14
                    | APIFunction  (Contains      _) -> 15
-                   | APIContainer (AddItem       _) -> 16
-                   | APIContainer (RemoveItem    _) -> 17
-                   | APIBuiltin   (MinBuiltin    _) -> 18
-                   | APIBuiltin   (MaxBuiltin    _) -> 19
-                   | APIFunction  (Shallow       _) -> 20
-                   | APIFunction  (Unshallow     _) -> 21
-                   | APIFunction  (Listtocoll    _) -> 22
-                   | APIFunction  (Head          _) -> 23
-                   | APIFunction  (Tail          _) -> 24
-                   | APIStorage   (ColToKeys     _) -> 25
-                   | APIBuiltin   (RatEq          ) -> 26
-                   | APIBuiltin   (RatCmp         ) -> 27
-                   | APIBuiltin   (RatArith       ) -> 28
-                   | APIBuiltin   (RatTez         ) -> 29
+                   | APIList      (Lprepend      _) -> 16
+                   | APIList      (Lcontains     _) -> 17
+                   | APIList      (Lcount        _) -> 18
+                   | APIList      (Lnth          _) -> 19
+                   | APIBuiltin   (MinBuiltin    _) -> 20
+                   | APIBuiltin   (MaxBuiltin    _) -> 21
+                   | APIFunction  (Shallow       _) -> 22
+                   | APIFunction  (Unshallow     _) -> 23
+                   | APIFunction  (Listtocoll    _) -> 24
+                   | APIFunction  (Head          _) -> 25
+                   | APIFunction  (Tail          _) -> 26
+                   | APIStorage   (ColToKeys     _) -> 27
+                   | APIBuiltin   (RatEq          ) -> 28
+                   | APIBuiltin   (RatCmp         ) -> 29
+                   | APIBuiltin   (RatArith       ) -> 30
+                   | APIBuiltin   (RatTez         ) -> 31
                  in
                  let idx1 = get_kind i1.node_item in
                  let idx2 = get_kind i2.node_item in

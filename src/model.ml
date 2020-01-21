@@ -285,11 +285,6 @@ and storage_const =
   | ColToKeys        of ident
 [@@deriving show {with_path = false}]
 
-and container_const =
-  | AddItem          of type_
-  | RemoveItem       of type_
-[@@deriving show {with_path = false}]
-
 and function_const =
   | Select           of ident * mterm
   | Sort             of ident * ident
@@ -306,6 +301,13 @@ and function_const =
   | Tail             of ident
 [@@deriving show {with_path = false}]
 
+and list_const =
+  | Lprepend         of type_
+  | Lcontains        of type_
+  | Lcount           of type_
+  | Lnth             of type_
+[@@deriving show {with_path = false}]
+
 and builtin_const =
   | MinBuiltin of type_
   | MaxBuiltin of type_
@@ -317,8 +319,8 @@ and builtin_const =
 
 and api_item_node =
   | APIStorage      of storage_const
-  | APIContainer    of container_const
   | APIFunction     of function_const
+  | APIList         of list_const
   | APIBuiltin      of builtin_const
 [@@deriving show {with_path = false}]
 
@@ -992,10 +994,12 @@ let cmp_api_item_node (a1 : api_item_node) (a2 : api_item_node) : bool =
     | ToKeys an1, ToKeys an2 -> cmp_ident an1 an2
     | _ -> false
   in
-  let cmp_container_const (c1 : container_const) (c2 : container_const) : bool =
+  let cmp_list_const (c1 : list_const) (c2 : list_const) : bool =
     match c1, c2 with
-    | AddItem t1, AddItem t2         -> cmp_type t1 t2
-    | RemoveItem t1, RemoveItem t2   -> cmp_type t1 t2
+    | Lprepend t1, Lprepend t2
+    | Lcontains t1, Lcontains t2
+    | Lcount t1, Lcount t2
+    | Lnth t1, Lnth t2 -> cmp_type t1 t2
     | _ -> false
   in
   let cmp_function_const (f1 : function_const) (f2 : function_const) : bool =
@@ -1019,10 +1023,10 @@ let cmp_api_item_node (a1 : api_item_node) (a2 : api_item_node) : bool =
     | _ -> false
   in
   match a1, a2 with
-  | APIStorage s1, APIStorage s2           -> cmp_storage_const s1 s2
-  | APIContainer c1, APIContainer c2       -> cmp_container_const c1 c2
-  | APIFunction f1, APIFunction f2         -> cmp_function_const f1 f2
-  | APIBuiltin b1, APIBuiltin b2           -> cmp_builtin_const b1 b2
+  | APIStorage s1, APIStorage s2    -> cmp_storage_const s1 s2
+  | APIList c1, APIList c2          -> cmp_list_const c1 c2
+  | APIFunction f1, APIFunction f2  -> cmp_function_const f1 f2
+  | APIBuiltin b1, APIBuiltin b2    -> cmp_builtin_const b1 b2
   | _ -> false
 
 (* -------------------------------------------------------------------- *)
@@ -2073,10 +2077,10 @@ let extract_list (mt : mterm) (e : mterm) =
 
 module Utils : sig
 
-  val function_name_from_storage_const   : storage_const   -> ident
-  val function_name_from_container_const : container_const -> ident
-  val function_name_from_function_const  : function_const  -> ident
-  val function_name_from_builtin_const   : builtin_const   -> ident
+  val function_name_from_storage_const   : storage_const  -> ident
+  val function_name_from_list_const      : list_const     -> ident
+  val function_name_from_function_const  : function_const -> ident
+  val function_name_from_builtin_const   : builtin_const  -> ident
   val get_vars                           : model -> var list
   val get_enums                          : model -> enum list
   val get_assets                         : model -> asset list
@@ -2168,9 +2172,11 @@ end = struct
     | ToKeys         aid       -> "to_keys_" ^ aid
     | ColToKeys      aid       -> "col_to_keys_" ^ aid
 
-  let function_name_from_container_const = function
-    | AddItem            _ -> "add"
-    | RemoveItem         _ -> "remove"
+  let function_name_from_list_const = function
+    | Lprepend  _ -> "prepend"
+    | Lcontains _ -> "contains"
+    | Lcount    _ -> "count"
+    | Lnth      _ -> "nth"
 
   let function_name_from_function_const = function
     | Select    (aid, _)   -> "select_"     ^ aid

@@ -811,9 +811,11 @@ let pp_storage_const fmt = function
   | ToKeys an -> pp_str fmt ("to_keys\t " ^ an)
   | ColToKeys an -> pp_str fmt ("col_to_keys\t " ^ an)
 
-let pp_container_const fmt = function
-  | AddItem t-> Format.fprintf fmt "add item\t %a" pp_type t
-  | RemoveItem t -> Format.fprintf fmt "remove item\t %a" pp_type t
+let pp_list_const fmt = function
+  | Lprepend t  -> Format.fprintf fmt "list_prepend\t %a" pp_type t
+  | Lcontains t -> Format.fprintf fmt "list_contains\t %a" pp_type t
+  | Lcount t    -> Format.fprintf fmt "list_count\t %a" pp_type t
+  | Lnth t      -> Format.fprintf fmt "list_nth\t %a" pp_type t
 
 let pp_function_const fmt = function
   | Select (an, p) ->
@@ -841,8 +843,8 @@ let pp_builtin_const fmt = function
 
 let pp_api_item_node fmt = function
   | APIStorage      v -> pp_storage_const fmt v
-  | APIContainer    v -> pp_container_const fmt v
   | APIFunction     v -> pp_function_const fmt v
+  | APIList         v -> pp_list_const fmt v
   | APIBuiltin      v -> pp_builtin_const fmt v
 
 let pp_api_verif fmt = function

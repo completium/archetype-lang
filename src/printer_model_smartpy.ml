@@ -179,11 +179,6 @@ let pp_model fmt (model : model) =
         an
   in
 
-  let pp_container_const fmt = function
-    | AddItem t-> Format.fprintf fmt "add\t %a" pp_type t
-    | RemoveItem t -> Format.fprintf fmt "remove\t %a" pp_type t
-  in
-
   let pp_function_const fmt = function
     | Select (an, _) ->
       Format.fprintf fmt
@@ -261,6 +256,13 @@ let pp_model fmt (model : model) =
         an
   in
 
+  let pp_list_const fmt = function
+    | Lprepend t  -> Format.fprintf fmt "list_prepend\t %a" pp_type t
+    | Lcontains t -> Format.fprintf fmt "list_contains\t %a" pp_type t
+    | Lcount t    -> Format.fprintf fmt "list_count\t %a" pp_type t
+    | Lnth t      -> Format.fprintf fmt "list_nth\t %a" pp_type t
+  in
+
   let pp_builtin_const fmt = function
     | MinBuiltin t-> Format.fprintf fmt "min on %a" pp_type t
     | MaxBuiltin t-> Format.fprintf fmt "max on %a" pp_type t
@@ -272,8 +274,8 @@ let pp_model fmt (model : model) =
 
   let pp_api_item_node fmt = function
     | APIStorage   v -> pp_storage_const fmt v
-    | APIContainer v -> pp_container_const fmt v
     | APIFunction  v -> pp_function_const fmt v
+    | APIList      v -> pp_list_const fmt v
     | APIBuiltin   v -> pp_builtin_const fmt v
   in
 

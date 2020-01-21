@@ -1251,11 +1251,6 @@ let pp_model_internal fmt (model : model) b =
         pp_btyp t
   in
 
-  let pp_container_const (_env : env) fmt = function
-    | AddItem t-> Format.fprintf fmt "add\t %a" pp_type t
-    | RemoveItem t -> Format.fprintf fmt "remove\t %a" pp_type t
-  in
-
   let pp_function_const (env : env) fmt = function
     | Select (an, f) ->
       let k, t = Utils.get_asset_key model an in
@@ -1429,6 +1424,13 @@ let pp_model_internal fmt (model : model) b =
 
   in
 
+  let pp_list_const (_env : env) fmt = function
+    | Lprepend t  -> Format.fprintf fmt "list_prepend\t %a" pp_type t
+    | Lcontains t -> Format.fprintf fmt "list_contains\t %a" pp_type t
+    | Lcount t    -> Format.fprintf fmt "list_count\t %a" pp_type t
+    | Lnth t      -> Format.fprintf fmt "list_nth\t %a" pp_type t
+  in
+
   let pp_builtin_const (_env : env) fmt = function
     | MinBuiltin t -> Format.fprintf fmt "min on %a" pp_type t
     | MaxBuiltin t -> Format.fprintf fmt "max on %a" pp_type t
@@ -1487,8 +1489,8 @@ let pp_model_internal fmt (model : model) b =
 
   let pp_api_item_node (env : env) fmt = function
     | APIStorage   v -> pp_storage_const env fmt v
-    | APIContainer v -> pp_container_const env fmt v
     | APIFunction  v -> pp_function_const env fmt v
+    | APIList      v -> pp_list_const env fmt v
     | APIBuiltin   v -> pp_builtin_const env fmt v
   in
 
