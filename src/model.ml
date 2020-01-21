@@ -276,7 +276,7 @@ and 'id fail_type_gen =
 and fail_type = lident fail_type_gen
 [@@deriving show {with_path = false}]
 
-and storage_const =
+and api_asset =
   | Get              of ident
   | Set              of ident
   | Add              of ident
@@ -285,9 +285,6 @@ and storage_const =
   | UpdateRemove     of ident * ident
   | ToKeys           of ident
   | ColToKeys        of ident
-[@@deriving show {with_path = false}]
-
-and function_const =
   | Select           of ident * mterm
   | Sort             of ident * ident
   | Contains         of ident
@@ -303,14 +300,14 @@ and function_const =
   | Tail             of ident
 [@@deriving show {with_path = false}]
 
-and list_const =
+and api_list =
   | Lprepend         of type_
   | Lcontains        of type_
   | Lcount           of type_
   | Lnth             of type_
 [@@deriving show {with_path = false}]
 
-and builtin_const =
+and api_builtin =
   | MinBuiltin of type_
   | MaxBuiltin of type_
   | RatEq
@@ -319,15 +316,14 @@ and builtin_const =
   | RatTez
 [@@deriving show {with_path = false}]
 
-and api_item_node =
-  | APIStorage      of storage_const
-  | APIFunction     of function_const
-  | APIList         of list_const
-  | APIBuiltin      of builtin_const
+and api_storage_node =
+  | APIAsset      of api_asset
+  | APIList         of api_list
+  | APIBuiltin      of api_builtin
 [@@deriving show {with_path = false}]
 
-and api_item = {
-  node_item: api_item_node;
+and api_storage = {
+  node_item: api_storage_node;
   only_formula: bool;
 }
 [@@deriving show {with_path = false}]
@@ -669,7 +665,7 @@ type decl_node = lident decl_node_gen
 
 type 'id model_gen = {
   name          : lident;
-  api_items     : api_item list;
+  api_items     : api_storage list;
   api_verif     : api_verif list;
   decls         : 'id decl_node_gen list;
   storage       : 'id storage_gen;
@@ -986,8 +982,8 @@ let cmp_mterm_node
 let rec cmp_mterm (term1 : mterm) (term2 : mterm) : bool =
   cmp_mterm_node cmp_mterm cmp_lident term1.node term2.node
 
-let cmp_api_item_node (a1 : api_item_node) (a2 : api_item_node) : bool =
-  let cmp_storage_const (s1 : storage_const) (s2 : storage_const) : bool =
+let cmp_api_item_node (a1 : api_storage_node) (a2 : api_storage_node) : bool =
+  let cmp_api_asset (s1 : api_asset) (s2 : api_asset) : bool =
     match s1, s2 with
     | Get an1, Get an2  -> cmp_ident an1 an2
     | Set an1 , Set an2 -> cmp_ident an1 an2
@@ -996,18 +992,6 @@ let cmp_api_item_node (a1 : api_item_node) (a2 : api_item_node) : bool =
     | UpdateAdd (an1, fn1), UpdateAdd (an2, fn2) -> cmp_ident an1 an2 && cmp_ident fn1 fn2
     | UpdateRemove (an1, fn1), UpdateRemove (an2, fn2) -> cmp_ident an1 an2 && cmp_ident fn1 fn2
     | ToKeys an1, ToKeys an2 -> cmp_ident an1 an2
-    | _ -> false
-  in
-  let cmp_list_const (c1 : list_const) (c2 : list_const) : bool =
-    match c1, c2 with
-    | Lprepend t1, Lprepend t2
-    | Lcontains t1, Lcontains t2
-    | Lcount t1, Lcount t2
-    | Lnth t1, Lnth t2 -> cmp_type t1 t2
-    | _ -> false
-  in
-  let cmp_function_const (f1 : function_const) (f2 : function_const) : bool =
-    match f1, f2 with
     | Select (an1, p1), Select (an2, p2) -> cmp_ident an1 an2 && cmp_mterm p1 p2
     | Sort (an1 , fn1), Sort (an2 , fn2) -> cmp_ident an1 an2 && cmp_ident fn1 fn2
     | Contains an1, Contains an2         -> cmp_ident an1 an2
@@ -1020,17 +1004,24 @@ let cmp_api_item_node (a1 : api_item_node) (a2 : api_item_node) : bool =
     | Unshallow an1, Unshallow an2       -> cmp_ident an1 an2
     | _ -> false
   in
-  let cmp_builtin_const (b1 : builtin_const) (b2 : builtin_const) : bool =
+  let cmp_api_list (c1 : api_list) (c2 : api_list) : bool =
+    match c1, c2 with
+    | Lprepend t1, Lprepend t2
+    | Lcontains t1, Lcontains t2
+    | Lcount t1, Lcount t2
+    | Lnth t1, Lnth t2 -> cmp_type t1 t2
+    | _ -> false
+  in
+  let cmp_api_builtin (b1 : api_builtin) (b2 : api_builtin) : bool =
     match b1, b2 with
     | MinBuiltin t1, MinBuiltin t2 -> cmp_type t1 t2
     | MaxBuiltin t1, MaxBuiltin t2 -> cmp_type t1 t2
     | _ -> false
   in
   match a1, a2 with
-  | APIStorage s1, APIStorage s2    -> cmp_storage_const s1 s2
-  | APIList c1, APIList c2          -> cmp_list_const c1 c2
-  | APIFunction f1, APIFunction f2  -> cmp_function_const f1 f2
-  | APIBuiltin b1, APIBuiltin b2    -> cmp_builtin_const b1 b2
+  | APIAsset s1, APIAsset s2       -> cmp_api_asset s1 s2
+  | APIList c1, APIList c2         -> cmp_api_list c1 c2
+  | APIBuiltin f1, APIBuiltin f2   -> cmp_api_builtin f1 f2
   | _ -> false
 
 (* -------------------------------------------------------------------- *)
@@ -2094,10 +2085,9 @@ let extract_list (mt : mterm) (e : mterm) =
 
 module Utils : sig
 
-  val function_name_from_storage_const   : storage_const  -> ident
-  val function_name_from_list_const      : list_const     -> ident
-  val function_name_from_function_const  : function_const -> ident
-  val function_name_from_builtin_const   : builtin_const  -> ident
+  val function_name_from_api_asset       : api_asset   -> ident
+  val function_name_from_api_list        : api_list    -> ident
+  val function_name_from_api_builtin     : api_builtin -> ident
   val get_vars                           : model -> var list
   val get_enums                          : model -> enum list
   val get_assets                         : model -> asset list
@@ -2179,38 +2169,36 @@ end = struct
     | Function (fs, _)    -> lident_to_string fs.name
     | Entry     fs        -> lident_to_string fs.name
 
-  let function_name_from_storage_const = function
+  let function_name_from_api_asset = function
     | Get            aid       -> "get_"            ^ aid
     | Set            aid       -> "set_"            ^ aid
     | Add            aid       -> "add_"            ^ aid
     | Remove         aid       -> "remove_"         ^ aid
     | UpdateAdd     (aid, fid) -> "update_add_"     ^ aid ^ "_" ^ fid
     | UpdateRemove  (aid, fid) -> "update_remove_"  ^ aid ^ "_" ^ fid
-    | ToKeys         aid       -> "to_keys_" ^ aid
-    | ColToKeys      aid       -> "col_to_keys_" ^ aid
+    | ToKeys         aid       -> "to_keys_"        ^ aid
+    | ColToKeys      aid       -> "col_to_keys_"    ^ aid
+    | Select        (aid, _)   -> "select_"         ^ aid
+    | Sort          (aid, fid) -> "sort_"           ^ aid ^ "_" ^ fid
+    | Contains       aid       -> "contains_"       ^ aid
+    | Nth            aid       -> "nth_"            ^ aid
+    | Count          aid       -> "count_"          ^ aid
+    | Sum           (aid, fid) -> "sum_"            ^ aid ^ "_" ^ fid
+    | Min           (aid, fid) -> "min_"            ^ aid ^ "_" ^ fid
+    | Max           (aid, fid) -> "max_"            ^ aid ^ "_" ^ fid
+    | Shallow        aid       -> "shallow_"        ^ aid
+    | Unshallow      aid       -> "unshallow"       ^ aid
+    | Listtocoll     aid       -> "listtocoll_"     ^ aid
+    | Head           aid       -> "head_"           ^ aid
+    | Tail           aid       -> "tail_"           ^ aid
 
-  let function_name_from_list_const = function
+  let function_name_from_api_list = function
     | Lprepend  _ -> "prepend"
     | Lcontains _ -> "contains"
     | Lcount    _ -> "count"
     | Lnth      _ -> "nth"
 
-  let function_name_from_function_const = function
-    | Select    (aid, _)   -> "select_"     ^ aid
-    | Sort      (aid, fid) -> "sort_"       ^ aid ^ "_" ^ fid
-    | Contains   aid       -> "contains_"   ^ aid
-    | Nth        aid       -> "nth_"        ^ aid
-    | Count      aid       -> "count_"      ^ aid
-    | Sum       (aid, fid) -> "sum_"        ^ aid ^ "_" ^ fid
-    | Min       (aid, fid) -> "min_"        ^ aid ^ "_" ^ fid
-    | Max       (aid, fid) -> "max_"        ^ aid ^ "_" ^ fid
-    | Shallow    aid       -> "shallow_"    ^ aid
-    | Unshallow  aid       -> "unshallow"   ^ aid
-    | Listtocoll aid       -> "listtocoll_" ^ aid
-    | Head       aid       -> "head_"       ^ aid
-    | Tail       aid       -> "tail_"       ^ aid
-
-  let function_name_from_builtin_const = function
+  let function_name_from_api_builtin = function
     | MinBuiltin         _ -> "min"
     | MaxBuiltin         _ -> "max"
     | RatEq                -> "rat_eq"
@@ -2594,9 +2582,9 @@ end = struct
     | _ -> false
 
   let get_sum_fields m a =
-    List.fold_left (fun acc (ai : api_item) ->
+    List.fold_left (fun acc (ai : api_storage) ->
         match ai.node_item with
-        | APIFunction (Sum (asset,field)) when String.equal a asset ->
+        | APIAsset (Sum (asset,field)) when String.equal a asset ->
           acc @ [field]
         | _ -> acc
       ) [] m.api_items

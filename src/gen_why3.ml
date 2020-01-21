@@ -309,10 +309,10 @@ let extract_args test =
 
 let get_select_id (m : M.model) asset test =
   let rec internal_get_select_id acc = function
-    | (sc : M.api_item) :: tl ->
+    | (sc : M.api_storage) :: tl ->
       begin
         match sc.node_item with
-        | M.APIFunction (Select (a,t)) ->
+        | M.APIAsset (Select (a,t)) ->
           if compare a asset = 0 then
             if M.cmp_mterm t test then
               acc + 1
@@ -1583,49 +1583,49 @@ let mk_rm_partition_field m asset keyf f rmed_asset rmkey : decl = Dfun {
   }
 
 let mk_storage_api (m : M.model) records =
-  m.api_items |> List.fold_left (fun acc (sc : M.api_item) ->
+  m.api_items |> List.fold_left (fun acc (sc : M.api_storage) ->
       match sc.node_item with
-      | M.APIStorage (Get n) ->
+      | M.APIAsset (Get n) ->
         let k,kt = M.Utils.get_asset_key m n in
         acc @ [mk_get_asset n k (kt |> map_btype)]
-      | M.APIStorage (Add n) ->
+      | M.APIAsset (Add n) ->
         let k = M.Utils.get_asset_key m n |> fst in
         acc @ [mk_add_asset m n k]
-      | M.APIStorage (Remove n) ->
+      | M.APIAsset (Remove n) ->
         let kt = M.Utils.get_asset_key m n |> fst in
         acc @ [mk_rm_asset m n kt]
-      | M.APIStorage (Set n) ->
+      | M.APIAsset (Set n) ->
         let record = get_record n (records |> unloc_decl) in
         let k      = M.Utils.get_asset_key m (get_record_name record) |> fst in
         acc @ [mk_set_asset m k record]
-      | M.APIStorage (UpdateAdd (a,pf)) ->
+      | M.APIAsset (UpdateAdd (a,pf)) ->
         let k            = M.Utils.get_asset_key m a |> fst in
         let (pa,addak,_) = M.Utils.get_container_asset_key m a pf in
         acc @ [
           (*mk_add_asset           pa.pldesc addak.pldesc;*)
           mk_add_partition_field m a k pf pa addak
         ]
-      | M.APIStorage (UpdateRemove (n,f)) ->
+      | M.APIAsset (UpdateRemove (n,f)) ->
         let t         = M.Utils.get_asset_key m n |> fst in
         let (pa,pk,_) = M.Utils.get_container_asset_key m n f in
         acc @ [
           (*mk_rm_asset           pa.pldesc (pt |> map_btype);*)
           mk_rm_partition_field m n t f pa pk
         ]
-      | M.APIFunction (Contains n) ->
+      | M.APIAsset (Contains n) ->
         let t         =  M.Utils.get_asset_key m n |> snd |> map_btype in
         acc @ [ mk_contains n t ]
-      | M.APIFunction (Select (asset,test)) ->
+      | M.APIAsset (Select (asset,test)) ->
         let mlw_test = map_mterm m init_ctx test in
         acc @ [ mk_select m asset test (mlw_test |> unloc_term) sc.only_formula ]
-      | M.APIFunction (Sum (asset,field)) when compare asset "todo" <> 0 ->
+      | M.APIAsset (Sum (asset,field)) when compare asset "todo" <> 0 ->
         let key      = M.Utils.get_asset_key m asset |> fst in
         acc @ [ mk_get_field_from_pos asset field;
                 mk_sum_clone m asset key field ]
-      | M.APIFunction (Unshallow n) ->
+      | M.APIAsset (Unshallow n) ->
         let t         =  M.Utils.get_asset_key m n |> snd |> map_btype in
         acc @ [ mk_unshallow n t ]
-      | M.APIFunction (Listtocoll n) ->
+      | M.APIAsset (Listtocoll n) ->
         acc @ [ mk_listtocoll m n ]
       | _ -> acc
     ) [] |> loc_decl |> deloc

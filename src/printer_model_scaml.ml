@@ -130,8 +130,11 @@ let pp_model fmt (model : model) =
     | Ttrace _ -> Format.fprintf fmt "todo"
   in
 
+  let show_zero = function
+    | _ -> "(Int 0)"
+  in
 
-  let pp_storage_const fmt = function
+  let pp_api_asset fmt = function
     | Get an ->
       let _, t = Utils.get_asset_key model an in
       Format.fprintf fmt
@@ -217,13 +220,7 @@ let pp_model fmt (model : model) =
          List.rev res@\n"
         an pp_btyp t
         an
-  in
 
-  let show_zero = function
-    | _ -> "(Int 0)"
-  in
-
-  let pp_function_const fmt = function
     | Select (an, _) ->
       let k, t = Utils.get_asset_key model an in
       Format.fprintf fmt
@@ -394,14 +391,14 @@ let pp_model fmt (model : model) =
 
   in
 
-  let pp_list_const fmt = function
+  let pp_api_list fmt = function
     | Lprepend t  -> Format.fprintf fmt "list_prepend\t %a" pp_type t
     | Lcontains t -> Format.fprintf fmt "list_contains\t %a" pp_type t
     | Lcount t    -> Format.fprintf fmt "list_count\t %a" pp_type t
     | Lnth t      -> Format.fprintf fmt "list_nth\t %a" pp_type t
   in
 
-  let pp_builtin_const fmt = function
+  let pp_api_builtin fmt = function
     | MinBuiltin t-> Format.fprintf fmt "min on %a" pp_type t
     | MaxBuiltin t-> Format.fprintf fmt "max on %a" pp_type t
     | RatEq        -> Format.fprintf fmt "rat_eq"
@@ -411,35 +408,34 @@ let pp_model fmt (model : model) =
   in
 
   let pp_api_item_node fmt = function
-    | APIStorage   v -> pp_storage_const fmt v
-    | APIFunction  v -> pp_function_const fmt v
-    | APIList      v -> pp_list_const fmt v
-    | APIBuiltin   v -> pp_builtin_const fmt v
+    | APIAsset      v -> pp_api_asset   fmt v
+    | APIList       v -> pp_api_list    fmt v
+    | APIBuiltin    v -> pp_api_builtin fmt v
   in
 
-  let pp_api_item fmt (api_item : api_item) =
-    pp_api_item_node fmt api_item.node_item
+  let pp_api_item fmt (api_storage : api_storage) =
+    pp_api_item_node fmt api_storage.node_item
   in
 
   let pp_api_items fmt l =
-    let filter_api_items l : api_item list =
+    let filter_api_items l : api_storage list =
       let contains_select_asset_name a_name l : bool =
         List.fold_left (fun accu x ->
             match x.node_item with
-            | APIFunction  (Select (an, _)) -> accu || String.equal an a_name
+            | APIAsset  (Select (an, _)) -> accu || String.equal an a_name
             | _ -> accu
           ) false l
       in
-      List.fold_right (fun (x : api_item) accu ->
+      List.fold_right (fun (x : api_storage) accu ->
           if x.only_formula
           then accu
           else
             match x.node_item with
-            | APIFunction  (Select (an, _p)) when contains_select_asset_name an accu -> accu
+            | APIAsset  (Select (an, _p)) when contains_select_asset_name an accu -> accu
             | _ -> x::accu
         ) l []
     in
-    let l : api_item list = filter_api_items l in
+    let l : api_storage list = filter_api_items l in
     if List.is_empty l
     then pp_nothing fmt
     else

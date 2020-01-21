@@ -1112,7 +1112,7 @@ let pp_model_internal fmt (model : model) b =
   in
 
 
-  let pp_storage_const (_env : env) fmt = function
+  let pp_api_asset (env : env) fmt = function
     | Get an ->
       let _, t = Utils.get_asset_key model an in
       Format.fprintf fmt
@@ -1251,9 +1251,7 @@ let pp_model_internal fmt (model : model) b =
         pp_btyp t pp_btyp t
         an
         pp_btyp t
-  in
 
-  let pp_function_const (env : env) fmt = function
     | Select (an, f) ->
       let k, t = Utils.get_asset_key model an in
       let i = get_preds_index env.select_preds f in
@@ -1426,14 +1424,14 @@ let pp_model_internal fmt (model : model) b =
 
   in
 
-  let pp_list_const (_env : env) fmt = function
+  let pp_api_list (_env : env) fmt = function
     | Lprepend t  -> Format.fprintf fmt "list_prepend\t %a" pp_type t
     | Lcontains t -> Format.fprintf fmt "list_contains\t %a" pp_type t
     | Lcount t    -> Format.fprintf fmt "list_count\t %a" pp_type t
     | Lnth t      -> Format.fprintf fmt "list_nth\t %a" pp_type t
   in
 
-  let pp_builtin_const (_env : env) fmt = function
+  let pp_api_builtin (_env : env) fmt = function
     | MinBuiltin t -> Format.fprintf fmt "min on %a" pp_type t
     | MaxBuiltin t -> Format.fprintf fmt "max on %a" pp_type t
     | RatEq        ->
@@ -1490,25 +1488,24 @@ let pp_model_internal fmt (model : model) b =
   in
 
   let pp_api_item_node (env : env) fmt = function
-    | APIStorage   v -> pp_storage_const env fmt v
-    | APIFunction  v -> pp_function_const env fmt v
-    | APIList      v -> pp_list_const env fmt v
-    | APIBuiltin   v -> pp_builtin_const env fmt v
+    | APIAsset      v -> pp_api_asset   env fmt v
+    | APIList       v -> pp_api_list    env fmt v
+    | APIBuiltin    v -> pp_api_builtin env fmt v
   in
 
-  let pp_api_item (env : env) fmt (api_item : api_item) =
-    pp_api_item_node env fmt api_item.node_item
+  let pp_api_item (env : env) fmt (api_storage : api_storage) =
+    pp_api_item_node env fmt api_storage.node_item
   in
 
   let pp_api_items (env : env) fmt _ =
-    let filter_api_items l : api_item list =
-      List.fold_right (fun (x : api_item) accu ->
+    let filter_api_items l : api_storage list =
+      List.fold_right (fun (x : api_storage) accu ->
           if x.only_formula
           then accu
           else x::accu
         ) l []
     in
-    let l : api_item list = filter_api_items model.api_items in
+    let l : api_storage list = filter_api_items model.api_items in
     if List.is_empty l
     then pp_nothing fmt
     else
@@ -1580,7 +1577,7 @@ let pp_model_internal fmt (model : model) b =
     let select_preds =
       List.fold_right (fun x accu ->
           match x.only_formula, x.node_item with
-          | false, APIFunction (Select (_, pred)) ->
+          | false, APIAsset (Select (_, pred)) ->
             if not (List.exists (Model.cmp_mterm pred) accu)
             then pred::accu
             else accu

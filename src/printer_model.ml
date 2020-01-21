@@ -803,7 +803,7 @@ let pp_label_term fmt (lt : label_term) =
     pp_id lt.label
     pp_mterm lt.term
 
-let pp_storage_const fmt = function
+let pp_api_builtin fmt = function
   | Get an -> pp_str fmt ("get\t " ^ an)
   | Set an -> pp_str fmt ("set\t " ^ an)
   | Add an -> pp_str fmt ("add\t " ^ an)
@@ -812,14 +812,6 @@ let pp_storage_const fmt = function
   | UpdateRemove (an, fn) -> pp_str fmt ("remove\t " ^ an ^ " " ^ fn)
   | ToKeys an -> pp_str fmt ("to_keys\t " ^ an)
   | ColToKeys an -> pp_str fmt ("col_to_keys\t " ^ an)
-
-let pp_list_const fmt = function
-  | Lprepend t  -> Format.fprintf fmt "list_prepend\t %a" pp_type t
-  | Lcontains t -> Format.fprintf fmt "list_contains\t %a" pp_type t
-  | Lcount t    -> Format.fprintf fmt "list_count\t %a" pp_type t
-  | Lnth t      -> Format.fprintf fmt "list_nth\t %a" pp_type t
-
-let pp_function_const fmt = function
   | Select (an, p) ->
     Format.fprintf fmt "select\t %s %a" an pp_mterm p
   | Sort (an, fn) -> pp_str fmt ("sort\t " ^ an ^ " " ^ fn)
@@ -835,7 +827,13 @@ let pp_function_const fmt = function
   | Head an -> pp_str fmt ("head\t " ^ an)
   | Tail an -> pp_str fmt ("tail\t " ^ an)
 
-let pp_builtin_const fmt = function
+let pp_api_list fmt = function
+  | Lprepend t  -> Format.fprintf fmt "list_prepend\t %a" pp_type t
+  | Lcontains t -> Format.fprintf fmt "list_contains\t %a" pp_type t
+  | Lcount t    -> Format.fprintf fmt "list_count\t %a" pp_type t
+  | Lnth t      -> Format.fprintf fmt "list_nth\t %a" pp_type t
+
+let pp_api_builtin fmt = function
   | MinBuiltin t -> Format.fprintf fmt "min on %a" pp_type t
   | MaxBuiltin t -> Format.fprintf fmt "max on %a" pp_type t
   | RatEq        -> Format.fprintf fmt "rat_eq"
@@ -844,25 +842,24 @@ let pp_builtin_const fmt = function
   | RatTez       -> Format.fprintf fmt "rat_to_tez"
 
 let pp_api_item_node fmt = function
-  | APIStorage      v -> pp_storage_const fmt v
-  | APIFunction     v -> pp_function_const fmt v
-  | APIList         v -> pp_list_const fmt v
-  | APIBuiltin      v -> pp_builtin_const fmt v
+  | APIAsset      v -> pp_api_asset   fmt v
+  | APIList       v -> pp_api_list    fmt v
+  | APIBuiltin    v -> pp_api_builtin fmt v
 
 let pp_api_verif fmt = function
   | StorageInvariant (l, an, mt) -> Format.fprintf fmt "storage_invariant on %a %a %a" pp_ident l pp_ident an pp_mterm mt
 
-let pp_api_item fmt (api_item : api_item) =
+let pp_api_storage fmt (api_storage : api_storage) =
   Format.fprintf fmt "%a%a"
-    pp_api_item_node api_item.node_item
-    (fun fmt x -> if x then pp_str fmt "\t[only_formula]" else pp_str fmt "") api_item.only_formula
+    pp_api_item_node api_storage.node_item
+    (fun fmt x -> if x then pp_str fmt "\t[only_formula]" else pp_str fmt "") api_storage.only_formula
 
 let pp_api_items fmt l =
   if List.is_empty l
   then pp_str fmt "no api items"
   else
     Format.fprintf fmt "api items:@\n%a@\n--@\n"
-      (pp_list "@\n" pp_api_item) l
+      (pp_list "@\n" pp_api_storage) l
 
 let pp_var fmt (var : var) =
   Format.fprintf fmt "%a : %a%a%a"
