@@ -457,16 +457,11 @@ let methods : (string * method_) list =
     ("isempty"     , mk M.Cisempty      `Pure   `Total   ([             ], Some (`T M.vtbool)));
     ("get"         , mk M.Cget          `Pure   `Partial ([`Pk          ], Some `The));
     ("add"         , mk M.Cadd          `Effect `Total   ([`The         ], None));
-    ("addnofail"   , mk M.Caddnofail    `Effect `Total   ([`The         ], None));
     ("remove"      , mk M.Cremove       `Effect `Total   ([`Pk          ], None));
-    ("removeorfail", mk M.Cremovenofail `Effect `Total   ([`Pk          ], None));
     ("removeif"    , mk M.Cremoveif     `Effect `Total   ([`Pred        ], None));
     ("update"      , mk M.Cupdate       `Effect `Total   ([`Pk; `Effect ], None));
-    ("updatenofail", mk M.Cupdatenofail `Effect `Total   ([`Pk; `Effect ], None));
-    ("clear"       , mk M.Cclear        `Effect `Total   ([             ], None));
     ("contains"    , mk M.Ccontains     `Pure   `Total   ([`Pk          ], Some (`T M.vtbool)));
     ("nth"         , mk M.Cnth          `Pure   `Partial ([`T M.vtint   ], Some (`Asset)));
-    ("reverse"     , mk M.Creverse      `Effect `Total   ([             ], None));
     ("select"      , mk M.Cselect       `Pure   `Total   ([`Pred        ], Some (`SubColl)));
     ("sort"        , mk M.Csort         `Pure   `Total   ([`Cmp         ], Some (`SubColl)));
     ("count"       , mk M.Ccount        `Pure   `Total   ([             ], Some (`T M.vtint)));
@@ -1145,6 +1140,9 @@ let rec for_type_exn (env : env) (ty : PT.type_t) : M.ptyp =
 
   | Tcontainer (ty, ctn) ->
     M.Tcontainer (for_type_exn env ty, for_container env ctn)
+
+  | Tlist ty ->
+    M.Tcontainer (for_type_exn env ty, M.List)
 
   | Ttuple tys ->
     M.Ttuple (List.map (for_type_exn env) tys)

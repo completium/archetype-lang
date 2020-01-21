@@ -146,18 +146,6 @@ let pp_model fmt (model : model) =
          \t\tdel self.data.%s_assets[key]@\n"
         an an an
 
-    | Clear an ->
-      Format.fprintf fmt
-        "def clear_%s (self):@\n\
-         \t\t#TODO@\n"
-        an
-
-    | Reverse an ->
-      Format.fprintf fmt
-        "def reverse_%s (self):@\n\
-         \t\t#TODO@\n"
-        an
-
     | UpdateAdd (an, fn) ->
       let k, _t = Utils.get_asset_key model an in
       Format.fprintf fmt
@@ -178,18 +166,6 @@ let pp_model fmt (model : model) =
         fn
         an pp_str k
 
-    | UpdateClear (an, fn) ->
-      Format.fprintf fmt
-        "def clear_%s_%s (self):@\n\
-         \t\t#TODO@\n"
-        an fn
-
-    | UpdateReverse (an, fn) ->
-      Format.fprintf fmt
-        "def reverse_%s_%s (self):@\n\
-         \t\t#TODO@\n"
-        an fn
-
     | ToKeys an ->
       Format.fprintf fmt
         "def to_keys_%s (self):@\n\
@@ -206,8 +182,6 @@ let pp_model fmt (model : model) =
   let pp_container_const fmt = function
     | AddItem t-> Format.fprintf fmt "add\t %a" pp_type t
     | RemoveItem t -> Format.fprintf fmt "remove\t %a" pp_type t
-    | ClearItem t -> Format.fprintf fmt "clear\t %a" pp_type t
-    | ReverseItem t -> Format.fprintf fmt "reverse %a" pp_type t
   in
 
   let pp_function_const fmt = function
@@ -509,52 +483,6 @@ let pp_model fmt (model : model) =
             f i
         in
         pp fmt (c, i)
-
-      | Mclearasset (an) ->
-        let pp fmt (an) =
-          Format.fprintf fmt "clear_%a (self)"
-            pp_str an
-        in
-        pp fmt (an)
-
-      | Mclearfield (an, fn, i) ->
-        let pp fmt (an, fn, i) =
-          Format.fprintf fmt "clear_%a_%a (self, %a)"
-            pp_str an
-            pp_str fn
-            f i
-        in
-        pp fmt (an, fn, i)
-
-      | Mclearlocal (i) ->
-        let pp fmt (i) =
-          Format.fprintf fmt "clear (%a)"
-            f i
-        in
-        pp fmt (i)
-
-      | Mreverseasset (an) ->
-        let pp fmt (an) =
-          Format.fprintf fmt "reverse_%a (self)"
-            pp_str an
-        in
-        pp fmt (an)
-
-      | Mreversefield (an, fn, i) ->
-        let pp fmt (an, fn, i) =
-          Format.fprintf fmt "reverse_%a_%a (self, %a)"
-            pp_str an
-            pp_str fn
-            f i
-        in
-        pp fmt (an, fn, i)
-
-      | Mreverselocal (i) ->
-        let pp fmt (i) =
-          Format.fprintf fmt "reverse (%a)"
-            f i
-        in
-        pp fmt (i)
 
       | Mselect (an, c, p) ->
         let pp fmt (an, c, p) =

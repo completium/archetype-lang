@@ -89,6 +89,7 @@
 %token LESS
 %token LESSEQUAL
 %token LET
+%token LIST
 %token LPAREN
 %token MATCH
 %token MINUS
@@ -461,6 +462,7 @@ type_s_unloc:
 | x=ident RECORD          { Tasset x }
 | x=type_s c=container    { Tcontainer (x, c) }
 | x=type_s OPTION         { Toption x }
+| x=type_s LIST           { Tlist x }
 | x=paren(type_r)         { x }
 
 %inline type_tuples:

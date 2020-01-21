@@ -141,12 +141,6 @@ type ('id, 'term) mterm_node  =
   | Mremovefield    of ident * ident * 'term * 'term
   | Mremovelocal    of 'term * 'term
   | Mremoveif       of ident * 'term * 'term
-  | Mclearasset     of ident
-  | Mclearfield     of ident * ident * 'term
-  | Mclearlocal     of 'term
-  | Mreverseasset   of ident
-  | Mreversefield   of ident * ident * 'term
-  | Mreverselocal   of 'term
   | Mselect         of ident * 'term * 'term
   | Msort           of ident * 'term * ident * sort_kind
   | Mcontains       of ident * 'term * 'term
@@ -285,12 +279,8 @@ and storage_const =
   | Set              of ident
   | Add              of ident
   | Remove           of ident
-  | Clear            of ident
-  | Reverse          of ident
   | UpdateAdd        of ident * ident
   | UpdateRemove     of ident * ident
-  | UpdateClear      of ident * ident
-  | UpdateReverse    of ident * ident
   | ToKeys           of ident
   | ColToKeys        of ident
 [@@deriving show {with_path = false}]
@@ -298,8 +288,6 @@ and storage_const =
 and container_const =
   | AddItem          of type_
   | RemoveItem       of type_
-  | ClearItem        of type_
-  | ReverseItem      of type_
 [@@deriving show {with_path = false}]
 
 and function_const =
@@ -884,13 +872,7 @@ let cmp_mterm_node
     | Mremoveasset (an1, i1), Mremoveasset (an2, i2)                                   -> cmp_ident an1 an2 && cmp i1 i2
     | Mremovefield (an1, fn1, c1, i1), Mremovefield (an2, fn2, c2, i2)                 -> cmp_ident an1 an2 && cmp_ident fn1 fn2 && cmp c1 c2 && cmp i1 i2
     | Mremovelocal (c1, i1), Mremovelocal (c2, i2)                                     -> cmp c1 c2 && cmp i1 i2
-    | Mclearasset (an1), Mclearasset (an2)                                             -> cmp_ident an1 an2
-    | Mclearfield (an1, fn1, i1), Mclearfield (an2, fn2, i2)                           -> cmp_ident an1 an2 && cmp_ident fn1 fn2 && cmp i1 i2
     | Mremoveif (an1, fn1, i1), Mremoveif (an2, fn2, i2)                               -> cmp_ident an1 an2 && cmp fn1 fn2 && cmp i1 i2
-    | Mclearlocal (i1), Mclearlocal (i2)                                               -> cmp i1 i2
-    | Mreverseasset (an1), Mreverseasset (an2)                                         -> cmp_ident an1 an2
-    | Mreversefield (an1, fn1, i1), Mreversefield (an2, fn2, i2)                       -> cmp_ident an1 an2 && cmp_ident fn1 fn2 && cmp i1 i2
-    | Mreverselocal (i1), Mreverselocal (i2)                                           -> cmp i1 i2
     | Mselect (an1, c1, p1), Mselect (an2, c2, p2)                                     -> cmp_ident an1 an2 && cmp c1 c2 && cmp p1 p2
     | Msort (an1, c1, fn1, k1), Msort (an2, c2, fn2, k2)                               -> cmp_ident an1 an2 && cmp c1 c2 && cmp_ident fn1 fn2 && k1 = k2
     | Mcontains (an1, c1, i1), Mcontains (an2, c2, i2)                                 -> cmp_ident an1 an2 && cmp c1 c2 && cmp i1 i2
@@ -1005,12 +987,8 @@ let cmp_api_item_node (a1 : api_item_node) (a2 : api_item_node) : bool =
     | Set an1 , Set an2 -> cmp_ident an1 an2
     | Add an1 , Add an2 -> cmp_ident an1 an2
     | Remove an1, Remove an2 -> cmp_ident an1 an2
-    | Clear an1, Clear an2 -> cmp_ident an1 an2
-    | Reverse an1, Reverse an2 -> cmp_ident an1 an2
     | UpdateAdd (an1, fn1), UpdateAdd (an2, fn2) -> cmp_ident an1 an2 && cmp_ident fn1 fn2
     | UpdateRemove (an1, fn1), UpdateRemove (an2, fn2) -> cmp_ident an1 an2 && cmp_ident fn1 fn2
-    | UpdateClear (an1, fn1), UpdateClear (an2, fn2) -> cmp_ident an1 an2 && cmp_ident fn1 fn2
-    | UpdateReverse (an1, fn1), UpdateReverse (an2, fn2) -> cmp_ident an1 an2 && cmp_ident fn1 fn2
     | ToKeys an1, ToKeys an2 -> cmp_ident an1 an2
     | _ -> false
   in
@@ -1018,8 +996,6 @@ let cmp_api_item_node (a1 : api_item_node) (a2 : api_item_node) : bool =
     match c1, c2 with
     | AddItem t1, AddItem t2         -> cmp_type t1 t2
     | RemoveItem t1, RemoveItem t2   -> cmp_type t1 t2
-    | ClearItem t1, ClearItem t2     -> cmp_type t1 t2
-    | ReverseItem t1, ReverseItem t2 -> cmp_type t1 t2
     | _ -> false
   in
   let cmp_function_const (f1 : function_const) (f2 : function_const) : bool =
@@ -1101,13 +1077,7 @@ let map_term_node (f : 'id mterm_gen -> 'id mterm_gen) = function
   | Mremoveasset (an, i)           -> Mremoveasset (an, f i)
   | Mremovefield (an, fn, c, i)    -> Mremovefield (an, fn, f c, f i)
   | Mremovelocal (c, i)            -> Mremovelocal (f c, f i)
-  | Mclearasset (an)               -> Mclearasset (an)
-  | Mclearfield (an, fn, i)        -> Mclearfield (an, fn, f i)
   | Mremoveif (an, fn, i)          -> Mremoveif (an, f fn, f i)
-  | Mclearlocal (i)                -> Mclearlocal (f i)
-  | Mreverseasset (an)             -> Mreverseasset (an)
-  | Mreversefield (an, fn, i)      -> Mreversefield (an, fn, f i)
-  | Mreverselocal (i)              -> Mreverselocal (f i)
   | Mselect (an, c, p)             -> Mselect (an, f c, f p)
   | Msort (an, c, fn, k)           -> Msort (an, f c, fn, k)
   | Mcontains (an, c, i)           -> Mcontains (an, f c, f i)
@@ -1373,13 +1343,7 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mremoveasset (_, i)                   -> f accu i
   | Mremovefield (_, _, c, i)             -> f (f accu c) i
   | Mremovelocal (c, i)                   -> f (f accu c) i
-  | Mclearasset _                         -> accu
-  | Mclearfield (_, _, c)                 -> f accu c
   | Mremoveif (_, fn, c)                  -> f (f accu fn) c
-  | Mclearlocal (c)                       -> f accu c
-  | Mreverseasset _                       -> accu
-  | Mreversefield (_, _, c)               -> f accu c
-  | Mreverselocal (c)                     -> f accu c
   | Mselect (_, c, p)                     -> f (f accu c) p
   | Msort (_, c, _, _)                    -> f accu c
   | Mcontains (_, c, i)                   -> f (f accu c) i
@@ -1620,32 +1584,10 @@ let fold_map_term
     let ie, ia = f ca i in
     g (Mremovelocal (ce, ie)), ia
 
-  | Mclearasset (an) ->
-    g (Mclearasset (an)), accu
-
-  | Mclearfield (an, fn, i) ->
-    let ie, ia = f accu i in
-    g (Mclearfield (an, fn, ie)), ia
-
   | Mremoveif (an, fn, i) ->
     let ie, ia = f accu i in
     let fe, fa = f ia fn in
     g (Mremoveif (an, fe, ie)), fa
-
-  | Mclearlocal i ->
-    let ie, ia = f accu i in
-    g (Mclearlocal (ie)), ia
-
-  | Mreverseasset (an) ->
-    g (Mreverseasset (an)), accu
-
-  | Mreversefield (an, fn, i) ->
-    let ie, ia = f accu i in
-    g (Mreversefield (an, fn, ie)), ia
-
-  | Mreverselocal i ->
-    let ie, ia = f accu i in
-    g (Mreverselocal (ie)), ia
 
   | Mselect (an, c, p) ->
     let ce, ca = f accu c in
@@ -2221,20 +2163,14 @@ end = struct
     | Set            aid       -> "set_"            ^ aid
     | Add            aid       -> "add_"            ^ aid
     | Remove         aid       -> "remove_"         ^ aid
-    | Clear          aid       -> "clear_"          ^ aid
-    | Reverse        aid       -> "reverse_"        ^ aid
     | UpdateAdd     (aid, fid) -> "update_add_"     ^ aid ^ "_" ^ fid
     | UpdateRemove  (aid, fid) -> "update_remove_"  ^ aid ^ "_" ^ fid
-    | UpdateClear   (aid, fid) -> "update_clear_"   ^ aid ^ "_" ^ fid
-    | UpdateReverse (aid, fid) -> "update_reverse_" ^ aid ^ "_" ^ fid
     | ToKeys         aid       -> "to_keys_" ^ aid
     | ColToKeys      aid       -> "col_to_keys_" ^ aid
 
   let function_name_from_container_const = function
     | AddItem            _ -> "add"
     | RemoveItem         _ -> "remove"
-    | ClearItem          _ -> "clear"
-    | ReverseItem        _ -> "reverse"
 
   let function_name_from_function_const = function
     | Select    (aid, _)   -> "select_"     ^ aid

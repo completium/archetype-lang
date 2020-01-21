@@ -58,6 +58,7 @@
       "pkey"                , PKEY           ;
       "label"               , LABEL          ;
       "let"                 , LET            ;
+      "list"                , LIST           ;
       "match"               , MATCH          ;
       "namespace"           , NAMESPACE      ;
       "none"                , NONE           ;

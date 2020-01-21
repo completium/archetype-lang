@@ -33,6 +33,7 @@ let pp_container fmt = function
   | Collection -> Format.fprintf fmt "collection"
   | Partition  -> Format.fprintf fmt "partition"
   | Subset     -> Format.fprintf fmt "subset"
+  | List       -> Format.fprintf fmt "list"
 
 let rec pp_ptyp fmt (t : ptyp) =
   match t with
@@ -163,16 +164,11 @@ let to_const = function
   | Cisempty      -> "isempty"
   | Cget          -> "get"
   | Cadd          -> "add"
-  | Caddnofail    -> "addnofail"
   | Cremove       -> "remove"
-  | Cremovenofail -> "removenofail"
   | Cremoveif     -> "removeif"
   | Cupdate       -> "update"
-  | Cupdatenofail -> "updatenofail"
-  | Cclear        -> "clear"
   | Ccontains     -> "contains"
   | Cnth          -> "nth"
-  | Creverse      -> "reverse"
   | Cselect       -> "select"
   | Csort         -> "sort"
   | Ccount        -> "count"

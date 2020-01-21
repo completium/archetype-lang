@@ -172,23 +172,6 @@ let pp_model fmt (model : model) =
         an pp_btyp t
         an an
 
-    | Clear an ->
-      let _, t = Utils.get_asset_key model an in
-      Format.fprintf fmt
-        "let clear_%s (s : storage) : storage =@\n  \
-         { s with@\n    \
-         %s_assets = (Map.empty : (%a, %s) map); }@\n"
-        an
-        an pp_btyp t an
-
-    | Reverse an ->
-      Format.fprintf fmt
-        "let reverse_%s (s : storage) : storage =@\n  \
-         { s with@\n    \
-         %s_assets = List.rev s.%s_assets; }@\n"
-        an
-        an an
-
     | UpdateAdd (an, fn) ->
       let k, _t = Utils.get_asset_key model an in
       let ft, c = Utils.get_field_container model an fn in
@@ -220,34 +203,6 @@ let pp_model fmt (model : model) =
         (pp_do_if (match c with | Partition -> true | _ -> false) (fun fmt -> Format.fprintf fmt "let s = remove_%s(s, key) in@\n")) ft
         an pp_str k an
 
-    | UpdateClear (an, fn) ->
-      let k, _t = Utils.get_asset_key model an in
-      Format.fprintf fmt
-        "let clear_%s_%s (s, a : storage * %s) : storage =@\n  \
-         let key = a.%s in@\n  \
-         let asset = get_%s (s, key) in@\n  \
-         let asset = { asset with %s = [] } in@\n  \
-         { s with %s_assets = Map.update a.%s (Some asset) s.%s_assets }@\n"
-        an fn an
-        k
-        an
-        fn
-        an k an
-
-    | UpdateReverse (an, fn) ->
-      let k, _t = Utils.get_asset_key model an in
-      Format.fprintf fmt
-        "let reverse_%s_%s (s, a : storage * %s) : storage =@\n  \
-         let key = a.%s in@\n  \
-         let asset = get_%s (s, key) in@\n  \
-         let asset = { asset with %s = List.rev asset.%s } in@\n  \
-         { s with %s_assets = Map.update a.%s (Some asset) s.%s_assets }@\n"
-        an fn an
-        k
-        an
-        fn fn
-        an k an
-
     | ToKeys an ->
       Format.fprintf fmt
         "let to_keys_%s (s : storage) : storage =@\n  \
@@ -267,8 +222,6 @@ let pp_model fmt (model : model) =
   let pp_container_const fmt = function
     | AddItem t-> Format.fprintf fmt "add\t %a" pp_type t
     | RemoveItem t -> Format.fprintf fmt "remove\t %a" pp_type t
-    | ClearItem t -> Format.fprintf fmt "clear\t %a" pp_type t
-    | ReverseItem t -> Format.fprintf fmt "reverse %a" pp_type t
   in
 
   let show_zero = function
@@ -670,56 +623,6 @@ let pp_model fmt (model : model) =
             f i
         in
         pp fmt (c, i)
-
-      | Mclearasset (an) ->
-        let pp fmt (an) =
-          Format.fprintf fmt "clear_%a (%s)"
-            pp_str an
-            const_storage
-        in
-        pp fmt (an)
-
-      | Mclearfield (an, fn, i) ->
-        let pp fmt (an, fn, i) =
-          Format.fprintf fmt "clear_%a_%a (%s, %a)"
-            pp_str an
-            pp_str fn
-            const_storage
-            f i
-        in
-        pp fmt (an, fn, i)
-
-      | Mclearlocal (i) ->
-        let pp fmt (i) =
-          Format.fprintf fmt "clear (%a)"
-            f i
-        in
-        pp fmt (i)
-
-      | Mreverseasset (an) ->
-        let pp fmt (an) =
-          Format.fprintf fmt "reverse_%a (%s)"
-            pp_str an
-            const_storage
-        in
-        pp fmt (an)
-
-      | Mreversefield (an, fn, i) ->
-        let pp fmt (an, fn, i) =
-          Format.fprintf fmt "reverse_%a_%a (%s, %a)"
-            pp_str an
-            pp_str fn
-            const_storage
-            f i
-        in
-        pp fmt (an, fn, i)
-
-      | Mreverselocal (i) ->
-        let pp fmt (i) =
-          Format.fprintf fmt "reverse (%a)"
-            f i
-        in
-        pp fmt (i)
 
       | Mselect (an, c, p) ->
         let pp fmt (an, c, p) =

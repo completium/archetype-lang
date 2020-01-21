@@ -41,14 +41,6 @@ let process_api_storage (model : model) : model =
       | Mremovefield (asset_name, field_name, _, _) ->
         let (pa,_,_) = Utils.get_container_asset_key model asset_name field_name in
         [APIStorage (Remove pa);APIStorage (UpdateRemove (asset_name, field_name))]
-      | Mclearasset (asset_name) ->
-        [APIStorage (Clear asset_name)]
-      | Mclearfield (asset_name, field_name, _) ->
-        [APIStorage (UpdateClear (asset_name, field_name))]
-      | Mreverseasset (asset_name) ->
-        [APIStorage (Reverse asset_name)]
-      | Mreversefield (asset_name, field_name, _) ->
-        [APIStorage (UpdateReverse (asset_name, field_name))]
       | Mselect (asset_name, _, p) ->
         [APIStorage (Get asset_name); APIFunction (Select (asset_name, p))]
       | Msort (asset_name, _, field_name, _) ->
@@ -99,12 +91,8 @@ let process_api_storage (model : model) : model =
                    | APIStorage (Set              an)     -> an
                    | APIStorage (Add              an)     -> an
                    | APIStorage (Remove           an)     -> an
-                   | APIStorage (Clear            an)     -> an
-                   | APIStorage (Reverse          an)     -> an
                    | APIStorage (UpdateAdd       (an, _)) -> an
                    | APIStorage (UpdateRemove    (an, _)) -> an
-                   | APIStorage (UpdateClear     (an, _)) -> an
-                   | APIStorage (UpdateReverse   (an, _)) -> an
                    | APIStorage (ToKeys           an)     -> an
                    | APIStorage (ColToKeys        an)     -> an
                    | APIFunction (Select         (an, _)) -> an
@@ -145,32 +133,26 @@ let process_api_storage (model : model) : model =
                    | APIStorage   (Set           _) ->  7
                    | APIStorage   (Add           _) ->  8
                    | APIStorage   (Remove        _) ->  9
-                   | APIStorage   (Clear         _) -> 10
-                   | APIStorage   (Reverse       _) -> 11
-                   | APIStorage   (UpdateAdd     _) -> 12
-                   | APIStorage   (UpdateRemove  _) -> 13
-                   | APIStorage   (UpdateClear   _) -> 14
-                   | APIStorage   (UpdateReverse _) -> 15
-                   | APIStorage   (ToKeys        _) -> 16
-                   | APIFunction  (Select        _) -> 17
-                   | APIFunction  (Sort          _) -> 18
-                   | APIFunction  (Contains      _) -> 19
-                   | APIContainer (AddItem       _) -> 20
-                   | APIContainer (RemoveItem    _) -> 21
-                   | APIContainer (ClearItem     _) -> 22
-                   | APIContainer (ReverseItem   _) -> 23
-                   | APIBuiltin   (MinBuiltin    _) -> 24
-                   | APIBuiltin   (MaxBuiltin    _) -> 25
-                   | APIFunction  (Shallow       _) -> 26
-                   | APIFunction  (Unshallow     _) -> 27
-                   | APIFunction  (Listtocoll    _) -> 28
-                   | APIFunction  (Head          _) -> 29
-                   | APIFunction  (Tail          _) -> 30
-                   | APIStorage   (ColToKeys     _) -> 31
-                   | APIBuiltin   (RatEq          ) -> 32
-                   | APIBuiltin   (RatCmp         ) -> 33
-                   | APIBuiltin   (RatArith       ) -> 34
-                   | APIBuiltin   (RatTez         ) -> 35
+                   | APIStorage   (UpdateAdd     _) -> 10
+                   | APIStorage   (UpdateRemove  _) -> 11
+                   | APIStorage   (ToKeys        _) -> 12
+                   | APIFunction  (Select        _) -> 13
+                   | APIFunction  (Sort          _) -> 14
+                   | APIFunction  (Contains      _) -> 15
+                   | APIContainer (AddItem       _) -> 16
+                   | APIContainer (RemoveItem    _) -> 17
+                   | APIBuiltin   (MinBuiltin    _) -> 18
+                   | APIBuiltin   (MaxBuiltin    _) -> 19
+                   | APIFunction  (Shallow       _) -> 20
+                   | APIFunction  (Unshallow     _) -> 21
+                   | APIFunction  (Listtocoll    _) -> 22
+                   | APIFunction  (Head          _) -> 23
+                   | APIFunction  (Tail          _) -> 24
+                   | APIStorage   (ColToKeys     _) -> 25
+                   | APIBuiltin   (RatEq          ) -> 26
+                   | APIBuiltin   (RatCmp         ) -> 27
+                   | APIBuiltin   (RatArith       ) -> 28
+                   | APIBuiltin   (RatTez         ) -> 29
                  in
                  let idx1 = get_kind i1.node_item in
                  let idx2 = get_kind i2.node_item in

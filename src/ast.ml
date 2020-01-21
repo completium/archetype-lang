@@ -11,6 +11,7 @@ type container =
   | Collection
   | Subset
   | Partition
+  | List
 [@@deriving show {with_path = false}]
 
 type currency =
@@ -123,16 +124,11 @@ type const =
   | Cisempty
   | Cget
   | Cadd
-  | Caddnofail
   | Cremove
-  | Cremovenofail
   | Cremoveif
   | Cupdate
-  | Cupdatenofail (* if key exists -> update *)
-  | Cclear
   | Ccontains
   | Cnth
-  | Creverse
   | Cselect
   | Csort
   | Ccount

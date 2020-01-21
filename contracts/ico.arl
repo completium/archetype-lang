@@ -41,7 +41,7 @@ enum whitelist =
 asset[@add @remove @update owner (state = Init)]
      contributor identified by id {
    id           : address;
-   list         : whitelist;
+   wlist        : whitelist;
    contrib      : tez = 0tz;
 }
 
@@ -113,14 +113,14 @@ action contribute () {
      c2 : is_running ();
      c3 : transferred >= min_contribution;
      c4 : (let c = contributor.get(caller) in
-           not (c.list = Silver and transferred >= max_contribution_silver));
+           not (c.wlist = Silver and transferred >= max_contribution_silver));
   }
 
   effect {
     let c = contributor.get(caller) in
     (* cap contribution to max_contrib if necessary *)
     let lcontrib = transferred in
-    if    c.list = Silver
+    if    c.wlist = Silver
       and c.contrib + lcontrib >= max_contribution_silver
     then lcontrib := max_contribution_silver - c.contrib;
     (* cap contribution to round cap if necessary *)

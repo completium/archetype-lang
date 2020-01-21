@@ -172,17 +172,6 @@ and process_mtern (model : model) (ctx : ctx_red) (s : s_red) (mt : mterm) : mte
     let arg, s = process_mtern model ctx s arg in
     mk_mterm (Mremovefield (an, fn, col, arg)) Tstorage, s
   (* | Mremovelocal  of 'term * 'term *)
-  | Mclearasset an ->
-    mk_mterm (Mclearasset an) Tstorage, s
-  | Mclearfield (an, fn, col) ->
-    let col, s = process_mtern model ctx s col in
-    mk_mterm (Mclearfield (an, fn, col)) Tstorage, s
-  (* | Mclearlocal   of 'term *)
-  | Mreverseasset an ->
-    mk_mterm (Mreverseasset an) Tstorage, s
-  | Mreversefield (an, fn, col) ->
-    let col, s = process_mtern model ctx s col in
-    mk_mterm (Mreversefield (an, fn, col)) Tstorage, s
   (* | Mreverselocal of 'term *)
 
   | Maddshallow (an, args) ->

@@ -4,7 +4,7 @@ variable res : bool = false
 
 action exec () {
   effect {
-    var l : int collection = [1; 2; 3];
-    res := l.contains(2)
+    var l : string list = ["1"; "2"; "3"];
+    res := l.contains("2")
   }
 }

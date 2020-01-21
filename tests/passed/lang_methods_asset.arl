@@ -20,8 +20,6 @@ action exec () {
     let my_asset_var : my_asset = { id = my_asset_id; value = 0; col = [] } in
     my_asset.add(my_asset_var);
     my_asset.remove(my_asset_id);
-    my_asset.clear();
-    my_asset.reverse();
     my_asset_var.col.add(asset0_var);
     my_asset_var.col.remove(asset0_id);
     my_asset_var.col.clear ();
@@ -37,7 +35,6 @@ action exec () {
     let v9 = my_asset.max(the.value) in
     let v10 = my_asset.head(2) in
     let v11 = my_asset.tail(2) in
-    let v12 = my_asset.last(0) in
     require (true)
   }
 }

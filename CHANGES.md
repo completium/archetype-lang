@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
  - Contract calls
  - Handle rational type
+ - Handle date and duration type
+ - Add list container
 
 ### Changed
  - Add guard condition in `Add` and `UpdateAdd` api storage

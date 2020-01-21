@@ -235,22 +235,6 @@ let pp_mterm fmt (mt : mterm) =
       in
       pp fmt (c, i)
 
-    | Mclearasset (an) ->
-      let pp fmt (an) =
-        Format.fprintf fmt "clear_%a ()"
-          pp_str an
-      in
-      pp fmt (an)
-
-    | Mclearfield (an, fn, i) ->
-      let pp fmt (an, fn, i) =
-        Format.fprintf fmt "clear_%a_%a (%a)"
-          pp_str an
-          pp_str fn
-          f i
-      in
-      pp fmt (an, fn, i)
-
     | Mremoveif (an, fn, i) ->
       let pp fmt (an, fn, i) =
         Format.fprintf fmt "removeif_%a (%a) (%a)"
@@ -259,36 +243,6 @@ let pp_mterm fmt (mt : mterm) =
           f i
       in
       pp fmt (an, fn, i)
-
-    | Mclearlocal (i) ->
-      let pp fmt (i) =
-        Format.fprintf fmt "clear (%a)"
-          f i
-      in
-      pp fmt (i)
-
-    | Mreverseasset (an) ->
-      let pp fmt (an) =
-        Format.fprintf fmt "reverse_%a ()"
-          pp_str an
-      in
-      pp fmt (an)
-
-    | Mreversefield (an, fn, i) ->
-      let pp fmt (an, fn, i) =
-        Format.fprintf fmt "reverse_%a_%a (%a)"
-          pp_str an
-          pp_str fn
-          f i
-      in
-      pp fmt (an, fn, i)
-
-    | Mreverselocal (i) ->
-      let pp fmt (i) =
-        Format.fprintf fmt "reverse (%a)"
-          f i
-      in
-      pp fmt (i)
 
     | Mselect (an, c, p) ->
       let pp fmt (an, c, p) =
@@ -852,20 +806,14 @@ let pp_storage_const fmt = function
   | Set an -> pp_str fmt ("set\t " ^ an)
   | Add an -> pp_str fmt ("add\t " ^ an)
   | Remove an -> pp_str fmt ("remove\t " ^ an)
-  | Clear an -> pp_str fmt ("clear\t " ^ an)
-  | Reverse an -> pp_str fmt ("reverse " ^ an)
   | UpdateAdd (an, fn) -> pp_str fmt ("add\t " ^ an ^ " " ^ fn)
   | UpdateRemove (an, fn) -> pp_str fmt ("remove\t " ^ an ^ " " ^ fn)
-  | UpdateClear (an, fn) -> pp_str fmt ("clear\t " ^ an ^ " " ^ fn)
-  | UpdateReverse (an, fn) -> pp_str fmt ("reverse " ^ an ^ " " ^ fn)
   | ToKeys an -> pp_str fmt ("to_keys\t " ^ an)
   | ColToKeys an -> pp_str fmt ("col_to_keys\t " ^ an)
 
 let pp_container_const fmt = function
   | AddItem t-> Format.fprintf fmt "add item\t %a" pp_type t
   | RemoveItem t -> Format.fprintf fmt "remove item\t %a" pp_type t
-  | ClearItem t -> Format.fprintf fmt "clear item\t %a" pp_type t
-  | ReverseItem t -> Format.fprintf fmt "reverse item %a" pp_type t
 
 let pp_function_const fmt = function
   | Select (an, p) ->

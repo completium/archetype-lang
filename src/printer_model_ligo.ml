@@ -389,56 +389,6 @@ let pp_model_internal fmt (model : model) b =
         in
         pp fmt (c, i)
 
-      | Mclearasset (an) ->
-        let pp fmt (an) =
-          Format.fprintf fmt "clear_%a (%s)"
-            pp_str an
-            const_storage
-        in
-        pp fmt (an)
-
-      | Mclearfield (an, fn, i) ->
-        let pp fmt (an, fn, i) =
-          Format.fprintf fmt "clear_%a_%a (%s, %a)"
-            pp_str an
-            pp_str fn
-            const_storage
-            f i
-        in
-        pp fmt (an, fn, i)
-
-      | Mclearlocal (i) ->
-        let pp fmt (i) =
-          Format.fprintf fmt "clear (%a)"
-            f i
-        in
-        pp fmt (i)
-
-      | Mreverseasset (an) ->
-        let pp fmt (an) =
-          Format.fprintf fmt "reverse_%a (%s)"
-            pp_str an
-            const_storage
-        in
-        pp fmt (an)
-
-      | Mreversefield (an, fn, i) ->
-        let pp fmt (an, fn, i) =
-          Format.fprintf fmt "reverse_%a_%a (%s, %a)"
-            pp_str an
-            pp_str fn
-            const_storage
-            f i
-        in
-        pp fmt (an, fn, i)
-
-      | Mreverselocal (i) ->
-        let pp fmt (i) =
-          Format.fprintf fmt "reverse (%a)"
-            f i
-        in
-        pp fmt (i)
-
       | Mselect (an, c, p) ->
         let index : int = get_preds_index env.select_preds p in
         let pp fmt (an, c, _p) =
@@ -1215,20 +1165,6 @@ let pp_model_internal fmt (model : model) b =
         pp_btyp t an an
         an
 
-    | Clear _an ->
-      (* let k, t = Utils.get_asset_key model an in *)
-      Format.fprintf fmt "// TODO api storage: Clear"
-    (* "let[@inline] clear_%s (s : storage) : storage =@\n  \
-       let s = s.%s_keys <- [] in@\n  \
-       s.%s_assets <- (Map : (%a, %s) map)@\n"
-       an an an pp_btyp t an *)
-
-    | Reverse _an ->
-      Format.fprintf fmt "// TODO api storage: Reverse"
-    (* "let[@inline] reverse_%s (s : storage) : storage =@\n  \
-       s.%s_keys <- List.rev s.%s_keys@\n"
-       an an an *)
-
     | UpdateAdd (an, fn) ->
       let k, t = Utils.get_asset_key model an in
       let ft, c = Utils.get_field_container model an fn in
@@ -1290,34 +1226,6 @@ let pp_model_internal fmt (model : model) b =
         an
         (pp_do_if (match c with | Partition -> true | _ -> false) (fun fmt -> Format.fprintf fmt "s := remove_%s(s, key);@\n")) ft
 
-    | UpdateClear (_an, _fn) ->
-      (* let k, t = Utils.get_asset_key model an in *)
-      Format.fprintf fmt "// TODO api storage: UpdateClear"
-    (* "let[@inline] clear_%s_%s (s, a : storage * %s) : storage =@\n  \
-       let key = a.%s in@\n  \
-       let asset = get_%s (s, key) in@\n  \
-       let asset = asset.%s <- [] in@\n  \
-       s.%s_assets <- Map.update a.%s (Some asset) s.%s_assets@\n"
-       an fn an
-       k
-       an
-       fn
-       an k an *)
-
-    | UpdateReverse (_an, _fn) ->
-      (* let k, t = Utils.get_asset_key model an in *)
-      Format.fprintf fmt "// TODO api storage: UpdateReverse"
-    (* "let[@inline] reverse_%s_%s (s, a : storage * %s) : storage =@\n  \
-       let key = a.%s in@\n  \
-       let asset = get_%s (s, key) in@\n  \
-       let asset = asset.%s <- List.rev asset.%s in@\n  \
-       s.%s_assets <- Map.update a.%s (Some asset) s.%s_assets@\n"
-       an fn an
-       k
-       an
-       fn fn
-       an k an *)
-
     | ToKeys _an ->
       Format.fprintf fmt "// TODO api storage: ToKeys"
     (* "let[@inline] to_keys_%s (s : storage) : storage =@\n  \
@@ -1346,8 +1254,6 @@ let pp_model_internal fmt (model : model) b =
   let pp_container_const (_env : env) fmt = function
     | AddItem t-> Format.fprintf fmt "add\t %a" pp_type t
     | RemoveItem t -> Format.fprintf fmt "remove\t %a" pp_type t
-    | ClearItem t -> Format.fprintf fmt "clear\t %a" pp_type t
-    | ReverseItem t -> Format.fprintf fmt "reverse %a" pp_type t
   in
 
   let pp_function_const (env : env) fmt = function
