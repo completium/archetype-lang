@@ -1,0 +1,10 @@
+archetype expr_method_builtin_collection_count
+
+variable res : int = 0
+
+action exec () {
+  effect {
+    var l : int collection = [1; 2; 3];
+    l.count()
+  }
+}
