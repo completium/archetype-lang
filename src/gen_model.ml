@@ -910,7 +910,7 @@ let to_model (ast : A.model) : M.model =
                      match t.on with
                      | Some (_id, _id_asset) -> assert false
                      | _ ->
-                       let a : M.mterm = M.mk_mterm (M.Mvarlocal id) (M.Tstate) ~loc:(Location.loc id) in
+                       let a : M.mterm = M.mk_mterm (M.Mvalstate id) (M.Tstate) ~loc:(Location.loc id) in
                        M.mk_mterm (M.Massignstate a) Tunit
                    in
                    match effect with

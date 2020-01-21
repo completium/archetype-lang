@@ -5,9 +5,9 @@ certificate_generator.arl \
 miles_with_expiration_simple.arl \
 miles_with_expiration.arl \
 mwe_medium.arl \
-escrow_without_spec.arl \
 "
 
+#escrow_without_spec.arl \
 #certification_token.arl \
 
 

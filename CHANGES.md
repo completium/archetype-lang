@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
  - Add guard condition in `Add` and `UpdateAdd` api storage
  - Syntax : add identifier on signature of contract argument
+ - Refactor transition
 
 ## [0.1.12] - 2020-01-09
 ### Added
