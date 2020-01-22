@@ -1,0 +1,14 @@
+archetype no_assignment_of_prog_var_in_shadow_effect
+
+variable myvar : int = 1
+
+action exec () {
+  specification {
+    shadow effect {
+      myvar += 2
+    }
+  }
+  effect {
+    require (true)
+  }
+}

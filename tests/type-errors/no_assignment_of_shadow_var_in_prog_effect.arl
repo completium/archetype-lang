@@ -1,0 +1,11 @@
+archetype no_assignment_of_shadow_var_in_prog_effect
+
+action exec () {
+  effect {
+    myvar += 2
+  }
+}
+
+specification {
+  variable myvar : int = 1
+}
