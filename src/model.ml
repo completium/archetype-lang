@@ -311,6 +311,9 @@ and api_list =
 and api_builtin =
   | MinBuiltin of type_
   | MaxBuiltin of type_
+[@@deriving show {with_path = false}]
+
+and api_internal =
   | RatEq
   | RatCmp
   | RatArith
@@ -319,8 +322,9 @@ and api_builtin =
 
 and api_storage_node =
   | APIAsset      of api_asset
-  | APIList         of api_list
-  | APIBuiltin      of api_builtin
+  | APIList       of api_list
+  | APIBuiltin    of api_builtin
+  | APIInternal   of api_internal
 [@@deriving show {with_path = false}]
 
 and api_storage = {
@@ -2092,9 +2096,10 @@ let extract_list (mt : mterm) (e : mterm) =
 
 module Utils : sig
 
-  val function_name_from_api_asset       : api_asset   -> ident
-  val function_name_from_api_list        : api_list    -> ident
-  val function_name_from_api_builtin     : api_builtin -> ident
+  val function_name_from_api_asset       : api_asset    -> ident
+  val function_name_from_api_list        : api_list     -> ident
+  val function_name_from_api_builtin     : api_builtin  -> ident
+  val function_name_from_api_internal    : api_internal -> ident
   val get_vars                           : model -> var list
   val get_enums                          : model -> enum list
   val get_assets                         : model -> asset list
@@ -2208,6 +2213,8 @@ end = struct
   let function_name_from_api_builtin = function
     | MinBuiltin         _ -> "min"
     | MaxBuiltin         _ -> "max"
+
+  let function_name_from_api_internal = function
     | RatEq                -> "rat_eq"
     | RatCmp               -> "rat_cmp"
     | RatArith             -> "rat_arith"

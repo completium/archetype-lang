@@ -902,7 +902,7 @@ let to_model (ast : A.model) : M.model =
             (List.fold_right (fun ((id, cond, effect) : (A.lident * A.pterm option * A.instruction option)) (acc : M.mterm) : M.mterm ->
                  let cond =
                    match cond with
-                   | Some c -> M.mk_mterm (M.Mand (to_mterm c, cond_from)) (M.Tbuiltin M.Bbool)
+                   | Some c -> M.mk_mterm (M.Mand (cond_from, to_mterm c)) (M.Tbuiltin M.Bbool)
                    | None -> cond_from
                  in
                  let then_ : M.mterm =

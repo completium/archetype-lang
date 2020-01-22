@@ -1448,6 +1448,9 @@ let pp_model_internal fmt (model : model) b =
   let pp_api_builtin (_env : env) fmt = function
     | MinBuiltin t -> Format.fprintf fmt "min on %a" pp_type t
     | MaxBuiltin t -> Format.fprintf fmt "max on %a" pp_type t
+  in
+
+  let pp_api_internal (_env : env) fmt = function
     | RatEq        ->
       Format.fprintf fmt
         "function rat_eq (const lhs : (int * int); const rhs : (int * int)) : bool is@\n  \
@@ -1502,9 +1505,10 @@ let pp_model_internal fmt (model : model) b =
   in
 
   let pp_api_item_node (env : env) fmt = function
-    | APIAsset      v -> pp_api_asset   env fmt v
-    | APIList       v -> pp_api_list    env fmt v
-    | APIBuiltin    v -> pp_api_builtin env fmt v
+    | APIAsset      v -> pp_api_asset    env fmt v
+    | APIList       v -> pp_api_list     env fmt v
+    | APIBuiltin    v -> pp_api_builtin  env fmt v
+    | APIInternal   v -> pp_api_internal env fmt v
   in
 
   let pp_api_item (env : env) fmt (api_storage : api_storage) =

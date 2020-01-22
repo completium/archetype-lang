@@ -401,6 +401,9 @@ let pp_model fmt (model : model) =
   let pp_api_builtin fmt = function
     | MinBuiltin t-> Format.fprintf fmt "min on %a" pp_type t
     | MaxBuiltin t-> Format.fprintf fmt "max on %a" pp_type t
+  in
+
+  let pp_api_internal fmt = function
     | RatEq        -> Format.fprintf fmt "rat_eq"
     | RatCmp       -> Format.fprintf fmt "rat_cmp"
     | RatArith     -> Format.fprintf fmt "rat_arith"
@@ -408,9 +411,10 @@ let pp_model fmt (model : model) =
   in
 
   let pp_api_item_node fmt = function
-    | APIAsset      v -> pp_api_asset   fmt v
-    | APIList       v -> pp_api_list    fmt v
-    | APIBuiltin    v -> pp_api_builtin fmt v
+    | APIAsset      v -> pp_api_asset    fmt v
+    | APIList       v -> pp_api_list     fmt v
+    | APIBuiltin    v -> pp_api_builtin  fmt v
+    | APIInternal   v -> pp_api_internal fmt v
   in
 
   let pp_api_item fmt (api_storage : api_storage) =

@@ -78,13 +78,13 @@ let process_api_storage (model : model) : model =
       | Mlistnth ({type_=t; _}, _) ->
         [APIList (Lnth t)]
       | Mrateq _ ->
-        [APIBuiltin (RatEq)]
+        [APIInternal (RatEq)]
       | Mratcmp _ ->
-        [APIBuiltin (RatCmp)]
+        [APIInternal (RatCmp)]
       | Mratarith _ ->
-        [APIBuiltin (RatArith)]
+        [APIInternal (RatArith)]
       | Mrattez _ ->
-        [APIBuiltin (RatTez)]
+        [APIInternal (RatTez)]
       | _ -> []
     in
     List.fold_left (fun accu v -> add ctx accu (Model.mk_api_item v)) accu api_items
@@ -113,6 +113,7 @@ let process_api_storage (model : model) : model =
                    | APIAsset (Max             (an, _)) -> an
                    | APIList _                          -> default
                    | APIBuiltin _                       -> default
+                   | APIInternal _                      -> default
                    | APIAsset (Shallow          an)     -> an
                    | APIAsset (Unshallow        an)     -> an
                    | APIAsset (Listtocoll       an)     -> an
@@ -159,10 +160,10 @@ let process_api_storage (model : model) : model =
                    | APIAsset   (Head          _) -> 25
                    | APIAsset   (Tail          _) -> 26
                    | APIAsset   (ColToKeys     _) -> 27
-                   | APIBuiltin (RatEq          ) -> 28
-                   | APIBuiltin (RatCmp         ) -> 29
-                   | APIBuiltin (RatArith       ) -> 30
-                   | APIBuiltin (RatTez         ) -> 31
+                   | APIInternal (RatEq         ) -> 28
+                   | APIInternal (RatCmp        ) -> 29
+                   | APIInternal (RatArith      ) -> 30
+                   | APIInternal (RatTez        ) -> 31
                  in
                  let idx1 = get_kind i1.node_item in
                  let idx2 = get_kind i2.node_item in

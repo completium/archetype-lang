@@ -837,15 +837,18 @@ let pp_api_list fmt = function
 let pp_api_builtin fmt = function
   | MinBuiltin t -> Format.fprintf fmt "min on %a" pp_type t
   | MaxBuiltin t -> Format.fprintf fmt "max on %a" pp_type t
+
+let pp_api_internal fmt = function
   | RatEq        -> Format.fprintf fmt "rat_eq"
   | RatCmp       -> Format.fprintf fmt "rat_cmp"
   | RatArith     -> Format.fprintf fmt "rat_arith"
   | RatTez       -> Format.fprintf fmt "rat_to_tez"
 
 let pp_api_item_node fmt = function
-  | APIAsset      v -> pp_api_asset   fmt v
-  | APIList       v -> pp_api_list    fmt v
-  | APIBuiltin    v -> pp_api_builtin fmt v
+  | APIAsset      v -> pp_api_asset    fmt v
+  | APIList       v -> pp_api_list     fmt v
+  | APIBuiltin    v -> pp_api_builtin  fmt v
+  | APIInternal   v -> pp_api_internal fmt v
 
 let pp_api_verif fmt = function
   | StorageInvariant (l, an, mt) -> Format.fprintf fmt "storage_invariant on %a %a %a" pp_ident l pp_ident an pp_mterm mt
