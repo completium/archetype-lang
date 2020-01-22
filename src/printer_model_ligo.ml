@@ -40,20 +40,31 @@ type position =
 type env = {
   f: function__ option;
   select_preds: mterm list;
-  consts: ident list;
+  consts: (ident * mterm) list;
+  vars: (ident * mterm) list;
 }
 
-let mk_env ?f ?(select_preds=[]) ?(consts=[]) () : env =
-  { f; select_preds; consts }
+let mk_env ?f ?(select_preds=[]) ?(consts=[]) ?(vars=[]) () : env =
+  { f; select_preds; consts; vars }
 
 exception Found
 
-let is_const (env : env) (id : lident) : bool =
+let is_internal l (id : lident) : bool =
   try
-    List.iter (fun (x : ident) -> if (String.equal (unloc id) x) then raise Found) env.consts;
+    List.iter (fun (x : ident * mterm) -> if (String.equal (unloc id) (fst x)) then raise Found) l ;
     false
   with
   | Found -> true
+
+let is_const (env : env) (id : lident) : bool = is_internal env.consts id
+let is_var_with_init (env : env) (id : lident) : bool = is_internal env.vars id
+
+
+let get_const_dv (env : env) (id : lident) : mterm =
+  List.assoc (unloc id) env.consts
+
+let get_var_dv (env : env) (id : lident) : mterm =
+  List.assoc (unloc id) env.vars
 
 let get_preds_index l e : int =
   match List.index_of (fun x -> Model.cmp_mterm x e) l with
@@ -1614,18 +1625,36 @@ let pp_model_internal fmt (model : model) b =
         ) model.api_items []
     in
     let consts =
-      List.fold_right (fun (x : storage_item) accu -> if (x.const) then (unloc x.id)::accu else accu) model.storage [] in
-    mk_env ~select_preds:select_preds ~consts:consts ()
+      List.fold_right (fun (x : decl_node) accu ->
+          match x with
+          | Dvar v when v.constant -> (unloc v.name, Option.get v.default)::accu
+          | _ -> accu
+        ) model.decls [] in
+    let vars =
+      List.fold_right (fun (x : decl_node) accu ->
+          match x with
+          | Dvar v when Option.is_some v.default -> (unloc v.name, Option.get v.default)::accu
+          | _ -> accu
+        ) model.decls [] in
+    mk_env ~select_preds:select_preds ~consts:consts ~vars:vars ()
   in
 
   let pp_storage_term env fmt _ =
     match model.storage with
     | []  -> pp_str fmt "Unit"
-    | [s] -> pp_mterm env fmt s.default
     | l   ->
-      let l = List.filter (fun x -> not x.const) l in
+      let l = List.filter (fun (x : storage_item) -> not x.const) l in
       Format.fprintf fmt "record %a end"
-        (pp_list "; " (fun fmt si -> Format.fprintf fmt "%a = %a" pp_id si.id (pp_mterm env) si.default )) l
+        (pp_list "; " (fun fmt (si : storage_item) ->
+             let dmt : mterm =
+               begin
+                 match si.default.node with
+                 | Mvarlocal v when is_const env v -> get_const_dv env v
+                 | Mvarstorevar v when is_var_with_init env v -> get_var_dv env v
+                 | _ -> si.default
+               end
+             in
+             Format.fprintf fmt "%a = %a" pp_id si.id (pp_mterm env) dmt )) l
   in
 
   let pp_ligo_disclaimer env fmt _ =

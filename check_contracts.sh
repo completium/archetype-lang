@@ -13,8 +13,12 @@ auction_no_memory.arl \
 c3n.arl \
 certificate_generator.arl \
 certification_token.arl \
+escrow_penalty.arl \
+escrow_without_spec.arl \
+hello.arl \
 miles_with_expiration.arl \
 miles_with_expiration_simple.arl \
+mini_dao.arl \
 mwe_medium.arl \
 register_candidate.arl \
 "
@@ -34,16 +38,12 @@ empty.arl \
 erc20.arl \
 erc721.arl \
 escrow_basic.arl \
-escrow_penalty.arl \
 escrow_simple.arl \
-escrow_without_spec.arl \
 fizzy.arl \
 guarantee_fund.arl \
 health_care.arl \
-hello.arl \
 ico.arl \
 miles.arl \
-mini_dao.arl \
 perishable.arl \
 register_vote.arl \
 sig_challenge.arl \
