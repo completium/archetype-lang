@@ -415,6 +415,85 @@ let assign_loop_label (model : model) : model =
   in
   map_mterm_model aux model
 
+let remove_enum_matchwith (model : model) : model =
+  let type_int = Tbuiltin Bint in
+  let type_bool = Tbuiltin Bbool in
+  let mk_enum_ident a b = String.lowercase_ascii (a ^ "_" ^ b) in
+  let process_decls decls =
+    let process_enum (enum : enum) =
+      let mk_const id i =
+        let id_loc, id_v = deloc id in
+        let ty_v = unloc enum.name in
+        let name = mk_enum_ident ty_v id_v in
+        Dvar (
+          mk_var
+            (dumloc name)
+            type_int
+            type_int
+            ~constant:true
+            ~generated:true
+            ~default:(mk_mterm (Mint (Big_int.big_int_of_int i)) type_int)
+            ~loc:id_loc
+        ) in
+      List.mapi (fun i (x : enum_item) ->
+          mk_const x.name i
+        ) enum.values
+    in
+    List.fold_left (fun accu x ->
+        accu @
+        (
+          match x with
+          | Denum v -> process_enum v
+          | _ -> [x]
+        )
+      ) [] decls
+  in
+  let rec process_mterm ctx (mt : mterm) : mterm =
+    let mk_id (prefix : string) (id : lident) : lident =
+      mkloc (loc id) (mk_enum_ident prefix (unloc id)) in
+    match mt.node, mt.type_ with
+    | Mvarlocal id, Tstate -> mk_mterm (Mvarlocal (mk_id "state" id)) type_int
+    | Mvarlocal id, Tenum e -> mk_mterm (Mvarlocal (mk_id (unloc e) id)) type_int
+    | Mmatchwith (v, ps), _ ->
+      let v = process_mterm ctx v in
+      let type_v = v.type_ in
+      let val_v =
+        match type_v with
+        | Tstate -> "state"
+        | Tenum v -> unloc v
+        | _ -> assert false
+      in
+      begin
+        let default_ = mk_mterm (Mseq []) Tunit in
+        let else_ = List.fold_left (fun accu (x : (pattern * mterm)) ->
+            match x with
+            | {node = Pwild; _}, e -> process_mterm ctx e
+            | _ -> accu) default_ ps in
+        List.fold_right (fun (x : (pattern * mterm)) accu ->
+            let mk_cond id =
+              begin
+                let val_enum id = mk_mterm (Mvarlocal (mk_id val_v id)) type_v in
+                mk_mterm (Mequal (v, val_enum id)) type_bool
+              end
+            in
+            let mk_if cond then_ else_ = mk_mterm (Mif (cond, then_, Some else_)) Tunit in
+            match x with
+            | {node = Pconst id; _}, e ->
+              begin
+                let e = process_mterm ctx e in
+                let cond = mk_cond id in
+                mk_if cond e accu
+              end
+            | _ -> accu
+          ) ps else_
+      end
+    | _ -> map_mterm (process_mterm ctx) mt
+  in
+  { model with
+    decls = process_decls model.decls
+  }
+  |> map_mterm_model process_mterm
+
 let remove_wild_pattern (model : model) : model =
   let rec aux c (mt : mterm) : mterm =
     match mt.node with

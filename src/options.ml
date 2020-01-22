@@ -47,6 +47,7 @@ let opt_ws    = ref false
 let opt_nse   = ref false
 let opt_nr    = ref false
 let opt_ndd   = ref false
+let opt_ne    = ref false
 let opt_sa    = ref false
 let opt_skv   = ref false
 let opt_raw   = ref false

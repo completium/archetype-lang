@@ -1051,6 +1051,18 @@ let pp_model_internal fmt (model : model) b =
     pp_actions fmt "" (LigoUtils.get_actions model)
   in
 
+  let pp_var env (fmt : Format.formatter) (var : var) =
+    if (var.generated) then
+      begin
+        if Option.is_none var.default
+        then assert false;
+        Format.fprintf fmt "const %a : %a = %a@\n"
+          pp_id var.name
+          pp_type var.type_
+          (pp_mterm env) (Option.get var.default)
+      end
+  in
+
   let pp_enum (fmt : Format.formatter) (enum : enum) =
     let pp_enum_item (fmt : Format.formatter) (enum_item : enum_item) =
       Format.fprintf fmt
@@ -1079,16 +1091,16 @@ let pp_model_internal fmt (model : model) b =
       (pp_list "@\n" pp_asset_item) asset.values
   in
 
-  let pp_decl (fmt : Format.formatter) (decl : decl_node) =
+  let pp_decl env (fmt : Format.formatter) (decl : decl_node) =
     match decl with
-    | Dvar _ -> ()
+    | Dvar v -> pp_var env fmt v
     | Denum e -> pp_enum fmt e
     | Dasset r -> pp_asset fmt r
     | Dcontract _c -> ()
   in
 
-  let pp_decls (fmt : Format.formatter) _ =
-    (pp_list "@\n" pp_decl) fmt model.decls
+  let pp_decls env (fmt : Format.formatter) _ =
+    (pp_list "@\n" (pp_decl env)) fmt model.decls
   in
 
   let pp_storage_item (fmt : Format.formatter) (si : storage_item) =
@@ -1623,7 +1635,7 @@ let pp_model_internal fmt (model : model) b =
       pp_bin ()
       pp_model_name ()
       (pp_ligo_disclaimer env) ()
-      pp_decls ()
+      (pp_decls env) ()
       pp_storage ()
       pp_action_type ()
       (pp_api_items env) ()
