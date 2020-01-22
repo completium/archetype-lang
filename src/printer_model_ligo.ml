@@ -781,7 +781,6 @@ let pp_model_internal fmt (model : model) b =
           pp_id v
       | Mvarthe        -> pp_str fmt "the"
       | Mvarstate      -> Format.fprintf fmt "%s.%s" const_storage const_state
-      | Mvalstate v    -> Format.fprintf fmt "%s"  ((String.lowercase_ascii |@ unloc) v)
       | Mnow           -> pp_str fmt "now"
       | Mtransferred   -> pp_str fmt "amount"
       | Mcaller        -> pp_str fmt "sender"
@@ -1052,31 +1051,17 @@ let pp_model_internal fmt (model : model) b =
     pp_actions fmt "" (LigoUtils.get_actions model)
   in
 
-  let pp_state_enum (fmt : Format.formatter) (enum : enum) =
-    List.iteri (fun i (x : enum_item) ->
-        let name = unloc x.name |> String.lowercase_ascii in
-        Format.fprintf fmt "const %s : int = %i@\n"
-          name
-          i
-      ) enum.values
-  in
-
   let pp_enum (fmt : Format.formatter) (enum : enum) =
-    match unloc enum.name with
-    | "state" -> pp_state_enum fmt enum
-    | _ ->
-      begin
-        let pp_enum_item (fmt : Format.formatter) (enum_item : enum_item) =
-          Format.fprintf fmt
-            "| %a of unit "
-            pp_id enum_item.name
-        in
-        Format.fprintf fmt
-          "type %a is@\n  \
-           @[%a@]@\n"
-          pp_id enum.name
-          (pp_list "@\n" pp_enum_item) enum.values
-      end
+    let pp_enum_item (fmt : Format.formatter) (enum_item : enum_item) =
+      Format.fprintf fmt
+        "| %a of unit "
+        pp_id enum_item.name
+    in
+    Format.fprintf fmt
+      "type %a is@\n  \
+       @[%a@]@\n"
+      pp_id enum.name
+      (pp_list "@\n" pp_enum_item) enum.values
   in
 
   let pp_asset (fmt : Format.formatter) (asset : asset) =

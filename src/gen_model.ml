@@ -874,52 +874,47 @@ let to_model (ast : A.model) : M.model =
           | Some (id, id2) -> args @ [(id, M.Tasset id2, None)]
           | None -> args
         in
-        let state = M.mk_mterm (M.Mvarstate) Tstate in
+        let build_code (body : M.mterm) : M.mterm =
+          (List.fold_right (fun ((id, cond, effect) : (A.lident * A.pterm option * A.instruction option)) (acc : M.mterm) : M.mterm ->
+               let tre : M.mterm =
+                 match t.on with
+                 | Some (_id, _id_asset) -> assert false
+                 | _ ->
+                   let a : M.mterm = M.mk_mterm (M.Mvarlocal id) (M.Tstate) ~loc:(Location.loc id) in
+                   M.mk_mterm (M.Massignstate a) Tunit in
+               let code : M.mterm =
+                 match effect with
+                 | Some e -> M.mk_mterm (M.Mseq [to_instruction e; tre]) Tunit
+                 | None -> tre
+               in
 
-        let body =
-          begin
-            let cond_from =
-              let mk_valstate x = M.mk_mterm (M.Mvalstate x) (M.Tstate) in
-              let mk_cond id = M.mk_mterm (M.Mequal (state, mk_valstate id)) (M.Tbuiltin M.Bbool) in
-              let do_or x y = M.mk_mterm (M.Mor (x, mk_cond y)) (M.Tbuiltin M.Bbool) in
-              let from_ids : M.lident list =
-                begin
-                  let rec aux (x : A.sexpr) : A.lident list =
-                    match x.node with
-                    | A.Sany       -> []
-                    | A.Sref t     -> [t]
-                    | A.Sor (a, b) -> (aux a) @ (aux b)
-                  in
-                  aux t.from
-                end
+               match cond with
+               | Some c -> M.mk_mterm (M.Mif (to_mterm c, code, Some acc)) Tunit
+               | None -> code
+             ) t.trs body)
+        in
+        let code : M.mterm = M.mk_mterm (M.Mseq []) Tunit in
+        let body : M.mterm = build_code code in
+
+        let body = match t.from.node with
+          | Sany -> body
+          | _ ->
+            begin
+              let rec compute_patterns (a : A.sexpr) : M.pattern list =
+                match a.node with
+                | Sref id -> [M.mk_pattern (M.Pconst id)]
+                | Sor (a, b) -> [a; b] |> List.map (fun x -> compute_patterns x) |> List.flatten
+                | Sany -> emit_error (AnyNotAuthorizedInTransitionTo a.loc)
               in
-              match from_ids with
-              | [] -> assert false
-              | [e] -> mk_cond e
-              | e::l -> List.fold_left (fun accu (x : M.lident) -> do_or accu x) (mk_cond e) l
-            in
-            let neutral : M.mterm = M.mk_mterm (M.Mseq []) Tunit in
-            (List.fold_right (fun ((id, cond, effect) : (A.lident * A.pterm option * A.instruction option)) (acc : M.mterm) : M.mterm ->
-                 let cond =
-                   match cond with
-                   | Some c -> M.mk_mterm (M.Mand (cond_from, to_mterm c)) (M.Tbuiltin M.Bbool)
-                   | None -> cond_from
-                 in
-                 let then_ : M.mterm =
-                   let tre : M.mterm =
-                     match t.on with
-                     | Some (_id, _id_asset) -> assert false
-                     | _ ->
-                       let a : M.mterm = M.mk_mterm (M.Mvalstate id) (M.Tstate) ~loc:(Location.loc id) in
-                       M.mk_mterm (M.Massignstate a) Tunit
-                   in
-                   match effect with
-                   | Some e -> M.mk_mterm (M.Mseq [to_instruction e; tre]) Tunit
-                   | None -> tre
-                 in
-                 M.mk_mterm (M.Mif (cond, then_, Some acc)) Tunit
-               ) t.trs neutral)
-          end
+              let list_patterns : M.pattern list =
+                compute_patterns t.from in
+
+              let pattern : M.pattern = M.mk_pattern M.Pwild in
+              let fail_instr : M.mterm = fail InvalidState in
+
+              let w = M.mk_mterm (M.Mvarstate) Tstate in
+              M.mk_mterm (M.Mmatchwith (w, List.map (fun x -> (x, body)) list_patterns @ [pattern, fail_instr])) Tunit
+            end
         in
         args, body
 

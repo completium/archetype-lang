@@ -415,7 +415,6 @@ let assign_loop_label (model : model) : model =
   in
   map_mterm_model aux model
 
-
 let remove_wild_pattern (model : model) : model =
   let rec aux c (mt : mterm) : mterm =
     match mt.node with

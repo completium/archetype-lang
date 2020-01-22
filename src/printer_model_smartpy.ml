@@ -869,7 +869,6 @@ let pp_model fmt (model : model) =
       | Mvarparam v    -> pp_id fmt v
       | Mvarthe        -> pp_str fmt "the"
       | Mvarstate      -> pp_str fmt "state_"
-      | Mvalstate v    -> pp_id fmt v
       | Mnow           -> pp_str fmt "sp.currentTime"
       | Mtransferred   -> pp_str fmt "sp.amount"
       | Mcaller        -> pp_str fmt "sp.sender"

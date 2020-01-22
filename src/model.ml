@@ -196,7 +196,6 @@ type ('id, 'term) mterm_node  =
   | Mvarfield       of 'id
   | Mvarthe
   | Mvarstate
-  | Mvalstate       of 'id
   | Mnow
   | Mtransferred
   | Mcaller
@@ -933,7 +932,6 @@ let cmp_mterm_node
     | Mvarparam v1, Mvarparam v2                                                       -> cmpi v1 v2
     | Mvarthe, Mvarthe                                                                 -> true
     | Mvarstate, Mvarstate                                                             -> true
-    | Mvalstate v1, Mvalstate v2                                                       -> cmpi v1 v2
     | Mnow, Mnow                                                                       -> true
     | Mtransferred, Mtransferred                                                       -> true
     | Mcaller, Mcaller                                                                 -> true
@@ -1138,7 +1136,6 @@ let map_term_node (f : 'id mterm_gen -> 'id mterm_gen) = function
   | Mvarparam v                    -> Mvarparam    v
   | Mvarthe                        -> Mvarthe
   | Mvarstate                      -> Mvarstate
-  | Mvalstate v                    -> Mvalstate v
   | Mnow                           -> Mnow
   | Mtransferred                   -> Mtransferred
   | Mcaller                        -> Mcaller
@@ -1421,7 +1418,6 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mdotasset (e, _)                      -> f accu e
   | Mdotcontract (e, _)                   -> f accu e
   | Mvarstate                             -> accu
-  | Mvalstate _                           -> accu
   | Mnow                                  -> accu
   | Mtransferred                          -> accu
   | Mcaller                               -> accu
@@ -1883,9 +1879,6 @@ let fold_map_term
 
   | Mvarstate ->
     g Mvarstate, accu
-
-  | Mvalstate i->
-    g (Mvalstate i), accu
 
   | Mnow ->
     g Mnow, accu
