@@ -26,11 +26,11 @@ variable nb_tez_raised : tez = 0tz
 
 variable[%transferable%] owner : role = @tz1_owner
 
-variable whitelister : role = @tz1_whitelister
+variable whitelister : role = @tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg
 
-variable reserve : role = @tz1_reserve
+variable reserve : role = @tz1bfVgcJC4ukaQSHUe1EbrUd5SekXeP9CWk
 
-variable community : role = @tz1_community
+variable community : role = @tz1iawHeddgggn6P5r5jtq2wDRqcJVksGVSa
 
 (* contributor *)
 

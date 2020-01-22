@@ -9,6 +9,7 @@ escrow_without_spec.arl \
 "
 
 EXEC_CONTRACTS="\
+auction_no_memory.arl \
 c3n.arl \
 certificate_generator.arl \
 certification_token.arl \
@@ -22,7 +23,6 @@ REMAINED_CONTRACTS="\
 animal_tracking.arl \
 auction.arl \
 auction_lazy.arl \
-auction_no_memory.arl \
 auction_zilliqa.arl \
 autocallable.arl \
 bond.arl \
