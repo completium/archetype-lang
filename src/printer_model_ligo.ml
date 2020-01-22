@@ -40,10 +40,20 @@ type position =
 type env = {
   f: function__ option;
   select_preds: mterm list;
+  consts: ident list;
 }
 
-let mk_env ?f ?(select_preds=[]) () : env =
-  { f; select_preds }
+let mk_env ?f ?(select_preds=[]) ?(consts=[]) () : env =
+  { f; select_preds; consts }
+
+exception Found
+
+let is_const (env : env) (id : lident) : bool =
+  try
+    List.iter (fun (x : ident) -> if (String.equal (unloc id) x) then raise Found) env.consts;
+    false
+  with
+  | Found -> true
 
 let get_preds_index l e : int =
   match List.index_of (fun x -> Model.cmp_mterm x e) l with
@@ -761,7 +771,10 @@ let pp_model_internal fmt (model : model) b =
           (pp_if (List.length ids > 1) (pp_paren (pp_list ", " pp_id)) (pp_list ", " pp_id)) ids
           (pp_option (fun fmt -> Format.fprintf fmt  " : %a" pp_type)) t
           f v
-      | Mvarstorevar v -> Format.fprintf fmt "%s.%a" const_storage pp_id v
+      | Mvarstorevar v ->
+        if (is_const env v)
+        then pp_id fmt v
+        else Format.fprintf fmt "%s.%a" const_storage pp_id v
       | Mvarstorecol v -> Format.fprintf fmt "%s.%a" const_storage pp_id v
       | Mvarenumval v  -> pp_id fmt v
       | Mvarfield v    -> pp_id fmt v
@@ -1052,7 +1065,7 @@ let pp_model_internal fmt (model : model) b =
   in
 
   let pp_var env (fmt : Format.formatter) (var : var) =
-    if (var.generated) then
+    if (var.constant) then
       begin
         if Option.is_none var.default
         then assert false;
@@ -1115,11 +1128,12 @@ let pp_model_internal fmt (model : model) b =
     match model.storage with
     | [] ->  Format.fprintf fmt "unit"
     | _ ->
+      let l = List.filter (fun x -> not x.const) model.storage in
       Format.fprintf fmt
         "record [@\n  \
          @[%a@]@\n\
          ]@\n"
-        (pp_list "@\n" pp_storage_item) model.storage
+        (pp_list "@\n" pp_storage_item) l
   in
 
 
@@ -1599,7 +1613,9 @@ let pp_model_internal fmt (model : model) b =
           | _ -> accu
         ) model.api_items []
     in
-    mk_env ~select_preds:select_preds ()
+    let consts =
+      List.fold_right (fun (x : storage_item) accu -> if (x.const) then (unloc x.id)::accu else accu) model.storage [] in
+    mk_env ~select_preds:select_preds ~consts:consts ()
   in
 
   let pp_storage_term env fmt _ =
@@ -1607,6 +1623,7 @@ let pp_model_internal fmt (model : model) b =
     | []  -> pp_str fmt "Unit"
     | [s] -> pp_mterm env fmt s.default
     | l   ->
+      let l = List.filter (fun x -> not x.const) l in
       Format.fprintf fmt "record %a end"
         (pp_list "; " (fun fmt si -> Format.fprintf fmt "%a = %a" pp_id si.id (pp_mterm env) si.default )) l
   in

@@ -76,7 +76,7 @@ let generate_storage (model : model) : model =
       | Some v -> v
       | None   -> init_default_value type_
     in
-    mk_storage_item name mt type_ dv
+    mk_storage_item name mt type_ dv ~const:var.constant
   in
 
   let process_storage_item d : storage_item list =

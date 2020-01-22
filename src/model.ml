@@ -386,6 +386,7 @@ type 'id storage_item_gen = {
   id          : 'id;
   model_type  : model_type;
   typ         : type_;
+  const       : bool;
   ghost       : bool;
   default     : 'id mterm_gen; (* initial value *)
   loc         : Location.t [@opaque];
@@ -414,7 +415,6 @@ type 'id var_gen = {
   type_: type_;
   original_type: type_;
   constant: bool;
-  generated: bool;
   default: 'id mterm_gen option;
   invariants: 'id label_term_gen list;
   loc: Location.t;
@@ -731,8 +731,8 @@ let mk_security_item ?(loc = Location.dummy) label predicate : security_item =
 let mk_security ?(items = []) ?(loc = Location.dummy) () : security =
   { items; loc }
 
-let mk_var ?(constant=false) ?(generated=false) ?(invariants=[]) ?default ?(loc = Location.dummy) name type_ original_type : 'id var_gen =
-  { name; type_; default; constant; generated; invariants; original_type; loc }
+let mk_var ?(constant=false) ?(invariants=[]) ?default ?(loc = Location.dummy) name type_ original_type : 'id var_gen =
+  { name; type_; default; constant; invariants; original_type; loc }
 
 let mk_enum ?(values = []) name initial : 'id enum_gen =
   { name; values; initial }
@@ -752,8 +752,8 @@ let mk_contract_signature ?(args=[]) ?(loc=Location.dummy) name : 'id contract_s
 let mk_contract ?(signatures=[]) ?init ?(loc=Location.dummy) name : 'id contract_gen =
   { name; signatures; init; loc }
 
-let mk_storage_item ?(ghost = false) ?(loc = Location.dummy) id model_type typ default : 'id storage_item_gen =
-  { id; model_type; typ; ghost; default; loc }
+let mk_storage_item ?(const=false) ?(ghost = false) ?(loc = Location.dummy) id model_type typ default : 'id storage_item_gen =
+  { id; model_type; typ; const; ghost; default; loc }
 
 let mk_function_struct ?(args = []) ?(loc = Location.dummy) ?(src = Exo) name body : function_struct =
   { name; args; src; body; loc }

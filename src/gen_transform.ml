@@ -431,7 +431,6 @@ let remove_enum_matchwith (model : model) : model =
             type_int
             type_int
             ~constant:true
-            ~generated:true
             ~default:(mk_mterm (Mint (Big_int.big_int_of_int i)) type_int)
             ~loc:id_loc
         ) in
