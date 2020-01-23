@@ -1,26 +1,19 @@
 #! /bin/bash
 
 BIN=./archetype.exe
+NB_OK=0
 NB_ERR=0
 
 process_file() {
-    printf '%-60s' $1
-    $BIN $i >/dev/null 2>/dev/null
-    RET=$?
-    if [ $RET -eq $2 ]; then
+    printf '%-70s' $1
+    RET=$2
+    $BIN -ast $i >/dev/null 2>/dev/null
+    if [ $? -eq $RET ]; then
         echo -ne "\033[32m OK \033[0m"
+        NB_OK=$((${NB_OK} + 1))
     else
         echo -ne "\033[31m KO \033[0m"
         NB_ERR=$((${NB_ERR} + 1))
-    fi
-    if [ $2 -eq 0 ] || [ $2 -gt 3 ]; then
-        $BIN -ast $i >/dev/null 2>/dev/null
-        if [ $? -eq 0 ] || [ $? -gt 3 ]; then
-            echo -ne "\033[32m OK \033[0m"
-        else
-            echo -ne "\033[31m KO \033[0m"
-            NB_ERR=$((${NB_ERR} + 1))
-        fi
     fi
     echo ""
 }
@@ -35,10 +28,10 @@ process_files() {
     echo ""
 }
 
-printf '%-60s%s\n' '' ' RET AST'
+printf '%-70s%s\n' '' ' AST'
 
 process_files "./tests/type-errors" 3
-process_files "./tests/model-errors" 5
+process_files "./tests/model-errors" 0
 process_files "./tests/passed" 0
 process_files "./contracts" 0
 
@@ -46,7 +39,7 @@ RET=0
 if [ ${NB_ERR} -eq 0 ]; then
     echo "passed."
 else
-    echo -e "\033[31merrors: ${NB_ERR} \033[0m"
+    echo -e "${NB_OK} / $((${NB_OK} + ${NB_ERR}))"
     RET=1
 fi
 
