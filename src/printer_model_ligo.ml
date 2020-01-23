@@ -296,10 +296,12 @@ let pp_model_internal fmt (model : model) b =
         let pp fmt (t, fid, c, args) =
           let fid = fid |> unloc |> String.up_firstcase in
           Format.fprintf fmt
-            "const c_ : contract(action_%s) = get_contract(%a);@\n\
-             const param_ : action_%s = %s (record %a end);@\n\
-             const op_: operation = transaction(param_, 0mutez, c_);@\n\
-             %s := cons(op_, %s)"
+            "begin@\n  \
+             const c_ : contract(action_%s) = get_contract(%a);@\n  \
+             const param_ : action_%s = %s (record %a end);@\n  \
+             const op_: operation = transaction(param_, 0mutez, c_);@\n  \
+             %s := cons(op_, %s);@\n\
+             end"
             t f c
             t fid (pp_list "; " (fun fmt (id, v) -> Format.fprintf fmt "%a = %a" pp_id id f v)) args
             const_operations const_operations

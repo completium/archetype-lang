@@ -798,8 +798,13 @@ let replace_date_duration_by_timestamp (model : model) : model =
     match x.node with
     | Mdate d     -> mk_mterm (Mtimestamp (Core.date_to_timestamp d)) type_timestamp
     (* | Mduration d -> mk_mterm (Mint (Core.duration_to_timestamp d)) type_int *)
+    | Mnow
     | Mtimestamp _ -> x
-    | _ -> assert false
+    | _ ->
+      begin
+        Format.eprintf "cannot transform to timestamp: %a" Printer_model.pp_mterm x;
+        assert false
+      end
   in
   let process_mterm mt =
     let rec aux (mt : mterm) : mterm =

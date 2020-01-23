@@ -13,14 +13,18 @@ auction_no_memory.arl \
 c3n.arl \
 certificate_generator.arl \
 certification_token.arl \
+clause_io_acceptance_of_delivery.arl \
 escrow_penalty.arl \
 escrow_without_spec.arl \
+guarantee_fund.arl \
 hello.arl \
 miles_with_expiration.arl \
 miles_with_expiration_simple.arl \
 mini_dao.arl \
 mwe_medium.arl \
 register_candidate.arl \
+zero_coupon_bond.arl \
+zero_coupon_bond_with_insurance.arl \
 "
 
 REMAINED_CONTRACTS="\
@@ -31,7 +35,6 @@ auction_zilliqa.arl \
 autocallable.arl \
 bond.arl \
 c3n_without_loop.arl \
-clause_io_acceptance_of_delivery.arl \
 coase.arl \
 competition.arl \
 empty.arl \
@@ -40,7 +43,6 @@ erc721.arl \
 escrow_basic.arl \
 escrow_simple.arl \
 fizzy.arl \
-guarantee_fund.arl \
 health_care.arl \
 ico.arl \
 miles.arl \
@@ -49,8 +51,6 @@ register_vote.arl \
 sig_challenge.arl \
 vehicle_lifecycle.arl \
 voting_process.arl \
-zero_coupon_bond.arl \
-zero_coupon_bond_with_insurance.arl \
 "
 
 RET=0

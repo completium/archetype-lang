@@ -11,7 +11,7 @@ contract insurance { (* see guarantee_fund.arl *)
   action pay (recipient : address, amount : tez)
 }
 
-variable zero_insur : insurance = @KT1GabhR5P52hw6xs5P69BXJYAURaznhvN1k
+variable zero_insur : insurance = @KT1TJrR7uovV5tFpsLBCKmx3x95pY6hMy775
 
 variable price : tez = 10tz
 

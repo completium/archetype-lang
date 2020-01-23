@@ -11,9 +11,9 @@ variable deliveryDate : date = 2020-12-31
 variable businessDays : duration = 14d
 
 (* extra blockchain incentives *)
-variable incentiveR : tez = payment
+variable incentiveR : tez = 10tz
 
-variable incentiveS : tez = 0.2 * payment
+variable incentiveS : tez = 2tz
 
 (* %traceable (payment + incentiveR, receiver) *)
 (* %traceable (incentiveS, shipper) *)

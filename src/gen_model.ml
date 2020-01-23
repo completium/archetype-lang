@@ -864,7 +864,11 @@ let to_model (ast : A.model) : M.model =
 
     let process_body_args () : M.argument list * M.mterm =
       let args  = List.map (fun (x : A.lident A.decl_gen) -> (x.name, (ptyp_to_type |@ Option.get) x.typ, None)) transaction.args in
+      let empty : M.mterm = M.mk_mterm (M.Mseq []) Tunit in
       match transaction.transition, transaction.effect with
+      | None, None ->
+        let body = empty in
+        args, body
       | None, Some e ->
         let body = to_instruction e in
         args, body
@@ -893,9 +897,7 @@ let to_model (ast : A.model) : M.model =
                | None -> code
              ) t.trs body)
         in
-        let code : M.mterm = M.mk_mterm (M.Mseq []) Tunit in
-        let body : M.mterm = build_code code in
-
+        let body : M.mterm = build_code empty in
         let body = match t.from.node with
           | Sany -> body
           | _ ->
