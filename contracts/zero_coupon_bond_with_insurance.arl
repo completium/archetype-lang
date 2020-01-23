@@ -1,8 +1,8 @@
 archetype zero_coupon_bond_with_insurance
 
-variable issuer : role = @tz1KksC8RvjUWAbXYJuNrUbontHGor25Cztk (* seller 'Alice' *)
+variable issuer : role = @tz1bfVgcJC4ukaQSHUe1EbrUd5SekXeP9CWk (* seller 'Alice' *)
 
-variable owner : role  = @tz1KmuhR6P52hw6xs5P69BXJYAURaznhvN1k
+variable owner : role  = @tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg
 (* buyer 'Bob'; receives 11 tez in one-year *)
 
 contract insurance { (* see guarantee_fund.arl *)
@@ -15,7 +15,7 @@ variable zero_insur : insurance = @KT1GabhR5P52hw6xs5P69BXJYAURaznhvN1k
 
 variable price : tez = 10tz
 
-variable payment : tez = 11 * price
+variable payment : tez = 11tz
 
 variable maturity : date = now
 

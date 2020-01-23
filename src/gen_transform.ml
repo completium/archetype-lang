@@ -784,11 +784,12 @@ let remove_rational (model : model) : model =
 
 let replace_date_duration_by_timestamp (model : model) : model =
   let type_timestamp = Tbuiltin Btimestamp in
+  let type_int = Tbuiltin Bint in
   let process_type t : type_ =
     let rec aux t =
       match t with
-      | Tbuiltin Bdate
-      | Tbuiltin Bduration -> type_timestamp
+      | Tbuiltin Bdate     -> type_timestamp
+      | Tbuiltin Bduration -> type_int
       | _ -> map_type aux t
     in
     aux t
@@ -796,7 +797,7 @@ let replace_date_duration_by_timestamp (model : model) : model =
   let to_timestamp (x : mterm) =
     match x.node with
     | Mdate d     -> mk_mterm (Mtimestamp (Core.date_to_timestamp d)) type_timestamp
-    | Mduration d -> mk_mterm (Mtimestamp (Core.duration_to_timestamp d)) type_timestamp
+    (* | Mduration d -> mk_mterm (Mint (Core.duration_to_timestamp d)) type_int *)
     | Mtimestamp _ -> x
     | _ -> assert false
   in
@@ -804,7 +805,7 @@ let replace_date_duration_by_timestamp (model : model) : model =
     let rec aux (mt : mterm) : mterm =
       match mt.node, mt.type_ with
       | Mdate d,_      -> mk_mterm (Mtimestamp (Core.date_to_timestamp d)) type_timestamp
-      | Mduration d, _ -> mk_mterm (Mtimestamp (Core.duration_to_timestamp d)) type_timestamp
+      | Mduration d, _ -> mk_mterm (Mint (Core.duration_to_timestamp d)) type_int
       | Mletin (ids, v, t, body, o), _ ->
         { mt with
           node = Mletin (ids, aux v, Option.map process_type t, aux body, Option.map aux o)
