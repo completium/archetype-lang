@@ -65,7 +65,7 @@ process_whyml() {
 }
 
 process_file() {
-    printf '%-60s' $1
+    printf '%-70s' $1
     $BIN $i >/dev/null 2>/dev/null
     RET=$?
     if [ $RET -eq $2 ]; then
@@ -137,7 +137,7 @@ process_files() {
     echo ""
 }
 
-printf '%-60s%s\n' '' ' RET PT RPT  EQ AST MOD  GL  PL  GW  PW'
+printf '%-70s%s\n' '' ' RET PT RPT  EQ AST MOD  GL  PL  GW  PW'
 
 process_files "./tests/syntax-errors" 1
 process_files "./tests/type-errors" 3
