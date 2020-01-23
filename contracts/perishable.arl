@@ -33,7 +33,8 @@ asset p_contract {
   unitPrice       : rational;
 }
 
-asset shipment {
+asset shipment identified by ship_id {
+  ship_id  : string;
   type     : productType;
   count    : int;
   p_c      : p_contract
