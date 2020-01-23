@@ -17,19 +17,19 @@ asset issuer identified by id {
 
 asset paymentFrequency {
   periodMultiplier : int;
-  period           : period;
+  period_v         : period;
 }
 
 asset bond {
-  bid              : string;
-  couponType       : couponType;
-  paymentFrequency : pkey of paymentFrequency;
-  issuer           : pkey of issuer;
+  bid                : string;
+  couponType_v       : couponType;
+  paymentFrequency_v : pkey of paymentFrequency;
+  issuer_v           : pkey of issuer;
 }
 
-action publish (bond : bond) {
-  called by bond.issuer
+action publish (bond_ : bond) {
+  called by bond_.issuer_v
   effect {
-    bond.add(bond)
+    bond.add(bond_)
   }
 }
