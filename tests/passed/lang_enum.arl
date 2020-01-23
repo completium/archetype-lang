@@ -1,0 +1,17 @@
+archetype lang_enum
+
+enum my_enum =
+| One
+| Two
+| Three
+
+action exec () {
+  effect {
+    var e : my_enum = One;
+    failif(e = Two and e <> One);
+    match e with
+    | One -> e := Two
+    | _ -> require (false)
+    end
+  }
+}
