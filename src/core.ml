@@ -14,6 +14,9 @@
   module Lexing  = BatLexing*)
 
 (* -------------------------------------------------------------------- *)
+exception Error_Stop of int
+
+(* -------------------------------------------------------------------- *)
 module Format = struct
   include Format
 

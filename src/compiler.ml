@@ -13,6 +13,7 @@ let type_error       = 3
 let model_error      = 4
 let post_model_error = 5
 let gen_output_error = 6
+let other_error      = 7
 
 let raise_if_error code f x =
   let res = f x in
@@ -76,6 +77,10 @@ let type_ (pt : ParseTree.archetype) : Ast.model =
   Typing.typing Typing.empty pt
 
 let generate_target_pt (pt : ParseTree.archetype) : ParseTree.archetype =
+  if (!Options.opt_ptc) then (
+    Format.printf "%a@." Printer_pt_type_contract.pp_archetype pt;
+    raise Stop
+  );
   match !Options.target with
   | Markdown  -> (
       Format.printf "%a@." Printer_pt_markdown.pp_archetype pt;
@@ -258,6 +263,8 @@ let main () =
       "--no-enum", Arg.Set Options.opt_ne, " Same as -ne";
       "-fp", Arg.String (fun s -> Options.opt_property_focused := s), " Focus property (with whyml target only)";
       "--focus-property", Arg.String (fun s -> Options.opt_property_focused := s), " Same as -fp";
+      "-ptc", Arg.Set Options.opt_ptc, " Print type contract in archetype syntax";
+      "--print-type-contract", Arg.Set Options.opt_ptc, " Same as -ptc";
       "-lsp", Arg.String (fun s -> match s with
           | "errors" -> Options.opt_lsp := true; Lsp.kind := Errors
           | "outline" -> Options.opt_lsp := true; Lsp.kind := Outline
@@ -351,6 +358,7 @@ let main () =
     (* List.map (fun (_ps, _s) -> ()) l; *)
     (* Format.eprintf "%s.\n" s *)
     exit 1
+  | Core.Error_Stop i
   | Stop_error i ->
     close dispose channel;
     exit i

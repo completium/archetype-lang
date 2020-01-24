@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Handle rational type
  - Handle date and duration type
  - Add list container
+ - Add print-type-contract command (-ptc)
 
 ### Changed
  - Add guard condition in `Add` and `UpdateAdd` api storage
