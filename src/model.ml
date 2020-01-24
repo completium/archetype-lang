@@ -2771,8 +2771,73 @@ end = struct
       aux mt
     in
     let eval_expr mt : mterm =
+      let extract_int (i : mterm) : Big_int.big_int =
+        match i.node with
+        | Mint v -> v
+        | _ -> assert false
+      in
+
+      let extract_rat (rat : mterm) : Big_int.big_int * Big_int.big_int =
+        match rat.node with
+        | Mrational (num, denom)
+        | Mtuple [{node = Mint num; _}; {node = Mint denom; _}] -> (num, denom)
+        | _ -> assert false
+      in
+
+      let extract_bool (b : mterm) : bool =
+        match b.node with
+        | Mbool v -> v
+        | _ -> assert false
+      in
+
+      let arith op (a, b) : mterm =
+        let a = extract_int a in
+        let b = extract_int b in
+
+        let res =
+          match op with
+          | `Plus -> Big_int.add_big_int a b
+          | `Minus -> Big_int.sub_big_int a b
+          | `Mult -> Big_int.mult_big_int a b
+          | `Div -> Big_int.div_big_int a b
+          | `Modulo -> Big_int.mod_big_int a b
+          | _ -> assert false
+        in
+        mk_mterm (Mint res) (Tbuiltin Bint)
+      in
+
       let rec aux (mt : mterm) : mterm =
         match mt.node with
+        | Mplus   (a, b) -> arith `Plus  (a, b)
+        | Mminus  (a, b) -> arith `Minus (a, b)
+        | Mmult   (a, b) -> arith `Mult  (a, b)
+        | Mdiv    (a, b) -> arith `Div   (a, b)
+        | Mmodulo (a, b) -> arith `Modulo   (a, b)
+        | Mnot     a     -> mk_mterm (Mbool (not (extract_bool a))) (Tbuiltin Bbool)
+        | Mand    (a, b) -> mk_mterm (Mbool ((extract_bool a) && (extract_bool b))) (Tbuiltin Bbool)
+        | Mor     (a, b) -> mk_mterm (Mbool ((extract_bool a) || (extract_bool b))) (Tbuiltin Bbool)
+        | Mrateq  (a, b) ->
+          begin
+            let num1, denom1 = extract_rat a in
+            let num2, denom2 = extract_rat b in
+            let res = Big_int.eq_big_int (Big_int.mult_big_int num1 denom2) (Big_int.mult_big_int num2 denom1) in
+            mk_mterm (Mbool res) (Tbuiltin Bbool)
+          end
+        (* | Mratcmp (op, _a, _b) ->
+          begin
+            (* let num1, denom1 = extract_rat a in
+               let num2, denom2 = extract_rat b in *)
+            let res =
+              begin
+                match op with
+                | Gt
+                | Ge
+                | Lt
+                | Le -> false (* TODO *)
+              end
+            in
+            mk_mterm (Mbool res) (Tbuiltin Bbool)
+          end *)
         | Mrattez (coef, c) ->
           begin
             let coef = aux coef in
