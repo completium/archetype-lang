@@ -28,8 +28,8 @@ let pp_archetype fmt (decls : declaration list) =
     let to_arg ((a, b, _) : lident_typ) = (unloc a, b) in
     List.fold_right (fun x accu ->
         match unloc x with
-        | Daction (id, args, _, _, _) -> (unloc id, List.map to_arg args)::accu
-        | Dtransition _ -> accu
+        | Daction (id, args, _, _, _)
+        | Dtransition (id, args, _, _, _, _, _) -> (unloc id, List.map to_arg args)::accu
         | _ -> accu) decls []
   in
   let id   = get_id () in
