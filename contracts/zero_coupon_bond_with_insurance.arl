@@ -15,7 +15,7 @@ variable zero_insur : insurance = @KT1TJrR7uovV5tFpsLBCKmx3x95pY6hMy775
 
 variable price : tez = 10tz
 
-variable payment : tez = 11tz
+variable payment : tez = 1.1 * price
 
 variable maturity : date = now
 

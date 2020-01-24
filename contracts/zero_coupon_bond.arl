@@ -8,7 +8,7 @@ variable owner : role = @tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg
 
 variable price : tez = 10tz
 
-variable payment : tez = 11tz
+variable payment : tez = 1.1 * price
 
 variable maturity : date = 2020-12-31
 

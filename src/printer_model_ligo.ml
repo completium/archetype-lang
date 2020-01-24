@@ -1648,15 +1648,11 @@ let pp_model_internal fmt (model : model) b =
       let l = List.filter (fun (x : storage_item) -> not x.const) l in
       Format.fprintf fmt "record %a end"
         (pp_list "; " (fun fmt (si : storage_item) ->
-             let dmt : mterm =
-               begin
-                 match si.default.node with
-                 | Mvarlocal v when is_const env v -> get_const_dv env v
-                 | Mvarstorevar v when is_var_with_init env v -> get_var_dv env v
-                 | _ -> si.default
-               end
-             in
-             Format.fprintf fmt "%a = %a" pp_id si.id (pp_mterm env) dmt )) l
+             let map_const_value : (ident * mterm) list = env.consts @ env.vars in
+             let default : mterm = si.default in
+             let dmt : mterm = Model.Utils.eval default map_const_value in
+             Format.fprintf fmt "%a = %a" pp_id si.id (pp_mterm env) dmt )
+        ) l
   in
 
   let pp_ligo_disclaimer env fmt _ =

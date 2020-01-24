@@ -2147,7 +2147,7 @@ module Utils : sig
   val with_operations_for_mterm          : mterm -> bool
   val with_operations                    : model -> bool
   val get_source_for                     : model -> ctx_model -> mterm -> mterm option
-
+  val eval                               : mterm -> (ident * mterm) list -> mterm
 end = struct
 
   open Tools
@@ -2755,5 +2755,45 @@ end = struct
         Some (mk_mterm (Mvarparam idparam) (Tassoc(Bint, Tasset (dumloc "myasset"))))
       end
     | _ -> None
+
+  let eval (mt : mterm) (map_const_value : (ident * mterm) list) : mterm =
+    let get_value (id : ident) : mterm = List.assoc id map_const_value in
+    let is_const (id : ident) : bool = List.assoc_opt id map_const_value |> Option.is_some in
+    let remove_const (mt : mterm) : mterm =
+      let rec aux (mt : mterm) : mterm =
+        match mt.node with
+        | Mvarstorevar v
+        | Mvarlocal v when is_const (unloc v) ->
+          let dv = get_value (unloc v) in
+          aux dv
+        | _ -> map_mterm aux mt
+      in
+      aux mt
+    in
+    let eval_expr mt : mterm =
+      let rec aux (mt : mterm) : mterm =
+        match mt.node with
+        | Mrattez (coef, c) ->
+          begin
+            let coef = aux coef in
+            let c    = aux c    in
+            match coef.node, c.node with
+            | Mrational (num, denom), Mcurrency (v, cur)
+            | Mtuple [{node = Mint num; _}; {node = Mint denom; _}], Mcurrency (v, cur) ->
+              begin
+                let res = Big_int.div_big_int (Big_int.mult_big_int num v) denom in
+                mk_mterm (Mcurrency (res, cur)) (Tbuiltin Bcurrency)
+              end
+            | _ -> assert false
+          end
+        | _ -> map_mterm aux mt
+      in
+      aux mt
+    in
+
+    mt
+    |> remove_const
+    |> eval_expr
+
 
 end
