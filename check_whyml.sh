@@ -2,7 +2,7 @@
 
 BIN=./archetype.exe
 BIN_WHY3=why3
-LIB_ARCHETYPE=./models/mlw
+LIB_ARCHETYPE=./mlw
 NB_ERR="0"
 NB_OUT="0"
 

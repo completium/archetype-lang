@@ -1,0 +1,35 @@
+archetype lang_funs
+
+variable i : int      = 0
+variable r : rational = 0 div 1
+variable d : date     = 2020-01-01
+variable e : duration = 0s
+variable t : tez      = 0tz
+
+action exec () {
+  effect {
+    i := min(1, 2);
+    i := max(1, 2);
+
+    r := min(1 div 2, 1);
+    r := max(1 div 2, 1);
+
+    r := min(2, 1 div 3);
+    r := max(2, 1 div 3);
+
+    r := min(1 div 2, 1 div 3);
+    r := max(1 div 2, 1 div 3);
+
+    d := min(2020-01-01, 2020-12-31);
+    d := max(2020-01-01, 2020-12-31);
+
+    e := min(1h, 1s);
+    e := max(1h, 1s);
+
+    t := min(1tz, 2tz);
+    t := max(1tz, 2tz);
+
+    i := abs(-1);
+    i := abs(-1 div 2);
+  }
+}

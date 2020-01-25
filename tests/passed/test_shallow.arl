@@ -22,20 +22,20 @@ action add1 (ow : owner) {
   }
 }
 
-action add2 (a : address) (l1 : mile partition) (l2 : othermile partition) {
+action add2 (a : address, l1 : mile partition, l2 : othermile partition) {
   effect {
      owner.add({ addr = a; miles1 = l1; miles2 = l2 })
   }
 }
 
-action add3 (a : address) (l1 : mile partition) (l2 : othermile partition) {
+action add3 (a : address, l1 : mile partition, l2 : othermile partition) {
   effect {
      let o = { addr = a; miles1 = l1; miles2 = l2 } in
      owner.add(o)
   }
 }
 
-action add4 (a : address) (o1 : int) (o2 : int) (o3 : int) (o4 : int) {
+action add4 (a : address, o1 : int, o2 : int, o3 : int, o4 : int) {
   effect {
      let o = {
          addr = a;
@@ -48,7 +48,7 @@ action add4 (a : address) (o1 : int) (o2 : int) (o3 : int) (o4 : int) {
   }
 }
 
-action add5 (a : address) (o1 : int) (o2 : int) (o3 : int) (o4 : int) {
+action add5 (a : address, o1 : int, o2 : int, o3 : int, o4 : int) {
   effect {
      owner.add ({
          addr = a;
@@ -60,13 +60,13 @@ action add5 (a : address) (o1 : int) (o2 : int) (o3 : int) (o4 : int) {
   }
 }
 
-action add6 (a : address) (m : mile) {
+action add6 (a : address, m : mile) {
   effect {
      owner.get(a).miles1.add(m)
   }
 }
 
-action add7 (a : address) (o1 : int) (o2 : int) (o3 : int) {
+action add7 (a : address, o1 : int, o2 : int, o3 : int) {
   effect {
      owner.get(a).miles1.add ({
         id = o1;

@@ -6,7 +6,7 @@ NB_ERR="0"
 NB_OUT="0"
 
 process () {
-    printf '%-50s' $1
+    printf '%-60s' $1
     OUT_LIGO=$i.ligo
     OUT_TZ=$i.tz
     $BIN -t ligo $i > ${OUT_LIGO} 2> /dev/null

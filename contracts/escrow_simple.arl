@@ -1,17 +1,17 @@
 archetype escrow_simple
 
-constant buyer role  = @tz1KmuhR6P52hw6xs5P69BXJYAURaznhvN1k
+constant buyer : role  = @tz1bfVgcJC4ukaQSHUe1EbrUd5SekXeP9CWk
 
-constant seller role = @tz1XJYAURaznhvN1khR6P52hw6xs5P691Kmu
+constant seller : role = @tz1iawHeddgggn6P5r5jtq2wDRqcJVksGVSa
 
-constant oracle role = @tz15P69BXJYAURaznhvN1k1KmuhR6P52hw6x
+constant oracle : role = @tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg
 
-constant price tez = 10tz
+constant price : tez = 10tz
 
-constant penalty tez = 2tz
+constant penalty : tez = 2tz
 
 (* action deadline *)
-constant deadline date = 2019-06-01T00:00:00Z
+constant deadline : date = 2019-06-01T00:00:00Z
 
 (* state machine *)
 states =
@@ -23,17 +23,17 @@ states =
                     (* s4 : transferred_to(seller) = price + penalty; *)
                   }
 
-transition abort from Created {
+transition abort () from Created {
   called by buyer or seller
 
   to Aborted
 }
 
-transition confirm from Created {
+transition confirm () from Created {
   to Confirmed when { balance = price + penalty }
 }
 
-transition complete from Confirmed {
+transition complete () from Confirmed {
   called by oracle
 
   to Completed when { now < deadline }
@@ -43,7 +43,7 @@ transition complete from Confirmed {
   }
 }
 
-transition cancel from Confirmed {
+transition cancel () from Confirmed {
   called by oracle
 
   to Canceled

@@ -1,0 +1,11 @@
+archetype no_update_asset_key
+
+asset myasset {
+  id : string;
+}
+
+action anaction (k : string) {
+  effect {
+    myasset.get(k).id := "mykey"
+  }
+}

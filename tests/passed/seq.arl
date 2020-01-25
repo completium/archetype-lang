@@ -1,0 +1,11 @@
+archetype seq
+
+variable i : int = 0
+
+action exec () {
+  effect {
+    i := 1;
+    i := 2;
+    i := 3;
+  }
+}

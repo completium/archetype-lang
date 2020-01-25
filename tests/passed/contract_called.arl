@@ -1,0 +1,15 @@
+archetype contract_called
+
+variable v : int = 0
+
+action set_value(n : int) {
+  effect {
+    v := n
+  }
+}
+
+action add_value(a : int, b : int) {
+  effect {
+    v := a + b
+  }
+}

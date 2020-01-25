@@ -15,12 +15,13 @@ and container =
   | Partition
 
 and type_r =
-  | Tref of lident
-  | Tasset of lident
+  | Tref       of lident
+  | Tasset     of lident
   | Tcontainer of type_t * container
-  | Ttuple of type_t list
-  | Toption of type_t
-  | Tkeyof of type_t
+  | Ttuple     of type_t list
+  | Toption    of type_t
+  | Tlist      of type_t
+  | Tkeyof     of type_t
 
 and type_t = type_r loced
 
@@ -44,6 +45,7 @@ and arithmetic_operator =
   | Minus
   | Mult
   | Div
+  | DivRat
   | Modulo
 
 and unary_operator =
@@ -108,6 +110,7 @@ and expr_unloc =
   | Elabel        of lident
   | Ereturn       of expr
   | Eoption       of option_
+  | Enothing
   | Einvalid
 
 and branch = (pattern list * expr)
@@ -134,7 +137,7 @@ and function_ =
 
 and literal =
   | Lnumber   of Core.big_int
-  | Lrational of Core.big_int * Core.big_int
+  | Ldecimal  of string
   | Ltz       of Core.big_int
   | Lmtz      of Core.big_int
   | Lutz      of Core.big_int
@@ -175,12 +178,11 @@ and invariants = (lident * expr list) list
 and specification_item_unloc =
   | Vpredicate of lident * args * expr
   | Vdefinition of lident * type_t * lident * expr
-  | Vlemma of lident * expr
-  | Vtheorem of lident * expr
   | Vvariable of lident * type_t * expr option
   | Veffect of expr
   | Vassert of (lident * expr * invariants * lident list)
   | Vpostcondition of (lident * expr * invariants * lident list)
+  | Vcontractinvariant of (lident * expr * invariants * lident list)
 
 and specification_item = specification_item_unloc loced
 
@@ -219,7 +221,7 @@ and action_properties = {
   calledby        : (expr * exts) option;
   require         : (label_exprs * exts) option;
   failif          : (label_exprs * exts) option;
-  spec            : specification option;
+  spec_fun        : specification option;
   functions       : (s_function loced) list;
 }
 
@@ -314,7 +316,7 @@ and enum_option =
   | EOspecification of label_exprs
 
 and signature =
-  | Ssignature of lident * type_t list
+  | Ssignature of lident * (lident * type_t) list
 
 and declaration = declaration_unloc loced
 

@@ -1,12 +1,12 @@
 archetype test_iter
 
-variable mystring string = "mystring"
+variable mystring : string = "mystring"
 
 asset myasset identified by str {
   str : string;
 }
 
-action tr {
+action exec () {
   effect {
     for i in myasset do
       mystring := "newvalue"

@@ -1,11 +1,11 @@
 archetype var_in_spec
 
-action myaction {
+action exec () {
  specification {
 
-    variable myvar int = 0
+    variable myvar : int = 0
 
-    effect {
+    shadow effect {
       myvar := 3
     }
   }

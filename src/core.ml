@@ -14,6 +14,9 @@
   module Lexing  = BatLexing*)
 
 (* -------------------------------------------------------------------- *)
+exception Error_Stop of int
+
+(* -------------------------------------------------------------------- *)
 module Format = struct
   include Format
 
@@ -29,6 +32,22 @@ let big_int_of_yojson (s : Yojson.Safe.t) : (big_int, string) Result.result =
   with _ -> Error "big_int_of_yojson"
 
 let big_int_to_yojson (n : big_int) : Yojson.Safe.t = Yojson.Safe.from_string (Big_int.string_of_big_int n)
+
+(* -------------------------------------------------------------------- *)
+
+let compute_irr_fract (n, d) =
+  let rec gcd a b =
+    if Big_int.eq_big_int b Big_int.zero_big_int
+    then a
+    else gcd b (Big_int.mod_big_int a b) in
+  let g = gcd n d in
+  (Big_int.div_big_int n g), (Big_int.div_big_int d g)
+
+let decimal_string_to_rational (input : string) : big_int * big_int =
+  let l = Str.split (Str.regexp "\\.") input in
+  let n = Big_int.big_int_of_string ((List.nth l 0) ^ (List.nth l 1)) in
+  let d = Big_int.big_int_of_string ("1" ^ (String.make (String.length (List.nth l 1)) '0')) in
+  compute_irr_fract (n, d)
 
 (* -------------------------------------------------------------------- *)
 
@@ -115,16 +134,16 @@ let pp_duration_for_printer fmt (d : duration) =
       (pp_aux "m") d.minutes
       (pp_aux "s") d.seconds
 
-let duration_to_seconds (d : duration) : big_int =
+let duration_to_timestamp (d : duration) : big_int =
   Big_int.zero_big_int
   |> fun x -> Big_int.mult_int_big_int 7  (Big_int.add_big_int x d.weeks)
-  |> fun x -> Big_int.mult_int_big_int 24 (Big_int.add_big_int x d.days)
-  |> fun x -> Big_int.mult_int_big_int 60 (Big_int.add_big_int x d.hours)
-  |> fun x -> Big_int.mult_int_big_int 60 (Big_int.add_big_int x d.minutes)
-  |> fun x -> Big_int.mult_int_big_int 1  (Big_int.add_big_int x d.seconds)
+              |> fun x -> Big_int.mult_int_big_int 24 (Big_int.add_big_int x d.days)
+                          |> fun x -> Big_int.mult_int_big_int 60 (Big_int.add_big_int x d.hours)
+                                      |> fun x -> Big_int.mult_int_big_int 60 (Big_int.add_big_int x d.minutes)
+                                                  |> fun x -> Big_int.mult_int_big_int 1  (Big_int.add_big_int x d.seconds)
 
 let pp_duration_in_seconds fmt (d : duration) =
-  let s = duration_to_seconds d in
+  let s = duration_to_timestamp d in
   Format.fprintf fmt "%a" pp_big_int s
 
 (* -------------------------------------------------------------------- *)
@@ -232,36 +251,36 @@ let string_to_date (str : string) : date =
       let input = eat_and_check ":" 1 input in
       let second, input = eat 2 input |> c_int in
       let tz =
-      match get_next_char input with
-      | None ->  TZnone
-      | Some "Z" -> TZZ
-      | Some c ->
-        begin
-          let input, t =
-            match c with
-            | "+" -> eat_and_check "+" 1 input, (fun (h, m) -> TZplus(h, m) )
-            | "-" -> eat_and_check "-" 1 input, (fun (h, m) -> TZminus(h, m) )
-            | _ -> raise (MalformedDate str)
-          in
-          let timezone_hour, input = eat 2 input |> c_int in
-          let input = eat_and_check ":" 1 input in
-          let timezone_min, _ = eat 2 input |> c_int in
-          t(timezone_hour, timezone_min)
-        end
-        in mk_date () ~year:year ~month:month ~day:day ~hour:hour ~minute:minute ~second:second ~timezone:tz
+        match get_next_char input with
+        | None ->  TZnone
+        | Some "Z" -> TZZ
+        | Some c ->
+          begin
+            let input, t =
+              match c with
+              | "+" -> eat_and_check "+" 1 input, (fun (h, m) -> TZplus(h, m) )
+              | "-" -> eat_and_check "-" 1 input, (fun (h, m) -> TZminus(h, m) )
+              | _ -> raise (MalformedDate str)
+            in
+            let timezone_hour, input = eat 2 input |> c_int in
+            let input = eat_and_check ":" 1 input in
+            let timezone_min, _ = eat 2 input |> c_int in
+            t(timezone_hour, timezone_min)
+          end
+      in mk_date () ~year:year ~month:month ~day:day ~hour:hour ~minute:minute ~second:second ~timezone:tz
     end
 
 
-let date_to_big_int (date : date) : big_int =
-  Big_int.zero_big_int
-  |> fun x -> Big_int.mult_int_big_int 12 (Big_int.add_big_int x (Big_int.big_int_of_int date.year))
-  |> fun x -> Big_int.mult_int_big_int 31 (Big_int.add_big_int x (Big_int.big_int_of_int date.month))
-  |> fun x -> Big_int.mult_int_big_int 24 (Big_int.add_big_int x (Big_int.big_int_of_int date.day))
-  |> fun x -> Big_int.mult_int_big_int 60 (Big_int.add_big_int x (Big_int.big_int_of_int date.hour))
-  |> fun x -> Big_int.mult_int_big_int 60 (Big_int.add_big_int x (Big_int.big_int_of_int date.minute))
-  |> fun x -> Big_int.mult_int_big_int 1  (Big_int.add_big_int x (Big_int.big_int_of_int date.second))
-  |> fun x ->
-  begin
+(* let date_to_big_int (date : date) : big_int =
+   Big_int.zero_big_int
+   |> fun x -> Big_int.mult_int_big_int 12 (Big_int.add_big_int x (Big_int.big_int_of_int date.year))
+   |> fun x -> Big_int.mult_int_big_int 31 (Big_int.add_big_int x (Big_int.big_int_of_int date.month))
+   |> fun x -> Big_int.mult_int_big_int 24 (Big_int.add_big_int x (Big_int.big_int_of_int date.day))
+   |> fun x -> Big_int.mult_int_big_int 60 (Big_int.add_big_int x (Big_int.big_int_of_int date.hour))
+   |> fun x -> Big_int.mult_int_big_int 60 (Big_int.add_big_int x (Big_int.big_int_of_int date.minute))
+   |> fun x -> Big_int.mult_int_big_int 1  (Big_int.add_big_int x (Big_int.big_int_of_int date.second))
+   |> fun x ->
+   begin
     let f (h, m) =
       Big_int.zero_big_int
       |> Big_int.add_big_int (Big_int.mult_int_big_int (60 * 60) (Big_int.big_int_of_int h))
@@ -278,4 +297,66 @@ let date_to_big_int (date : date) : big_int =
         f (h, m)
     in
     Big_int.add_big_int x c
-  end
+   end *)
+
+
+(** inspired from
+ https://discuss.ocaml.org/t/how-to-expose-date-time-types-in-a-library-nicely/1653/6 *)
+
+(** [is_leapyear] is true, if and only if a year is a leap year *)
+let is_leapyear year =
+  year mod 4    = 0
+  &&  year mod 400 != 100
+  &&  year mod 400 != 200
+  &&  year mod 400 != 300
+
+let ( ** ) x y    = Big_int.mult_int_big_int (x) y
+let sec           = Big_int.unit_big_int
+let sec_per_min   = 60 ** sec
+let sec_per_hour  = 60 ** sec_per_min
+let sec_per_day   = 24 ** sec_per_hour
+
+(* The following calculations are based on the following book: Nachum
+   Dershowitz, Edward M. Reingold: Calendrical calculations (3. ed.).
+   Cambridge University Press 2008, ISBN 978-0-521-88540-9, pp. I-XXIX,
+   1-479, Chapter 2, The Gregorian Calendar *)
+
+let days_since_epoch yy mm dd =
+  let epoch       = 1       in
+  let y'          = yy - 1  in
+  let correction  =
+    if mm <= 2                          then 0
+    else if mm > 2 && is_leapyear yy    then -1
+    else -2
+  in
+  epoch - 1 + 365*y' + y'/4 - y'/100 + y'/400 +
+  (367 * mm - 362)/12 + correction + dd
+
+let seconds_since_epoch d =
+  let ( ++ )        = Big_int.add_big_int in
+  (days_since_epoch d.year d.month d.day ** sec_per_day)
+  ++ (d.hour ** sec_per_hour)
+  ++ (d.minute  ** sec_per_min)
+  ++ (d.second  ** sec)
+
+let epoch = seconds_since_epoch (mk_date ())
+
+let date_to_timestamp (date : date) : big_int =
+  let res = seconds_since_epoch date in
+  let res = Big_int.sub_big_int res epoch in
+  let correction =
+    let f (h, m) =
+      Big_int.zero_big_int
+      |> Big_int.add_big_int (Big_int.mult_int_big_int (60 * 60) (Big_int.big_int_of_int h))
+      |> Big_int.add_big_int (Big_int.mult_int_big_int 60 (Big_int.big_int_of_int m))
+    in
+    match date.timezone with
+    | TZnone
+    | TZZ -> Big_int.zero_big_int
+    | TZplus (h, m) ->
+      f (h, m)
+      |> Big_int.minus_big_int
+    | TZminus (h, m) ->
+      f (h, m)
+  in
+  Big_int.add_big_int res correction

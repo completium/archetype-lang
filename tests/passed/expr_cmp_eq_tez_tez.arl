@@ -1,0 +1,9 @@
+archetype expr_cmp_eq_tez_tez
+
+variable res : bool = false
+
+action exec () {
+  effect {
+    res := 1tz = 1tz
+  }
+}

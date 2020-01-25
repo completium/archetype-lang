@@ -1,0 +1,9 @@
+archetype expr_arith_or_bool_bool
+
+variable res : bool = false
+
+action exec () {
+  effect {
+    res := true or true
+  }
+}

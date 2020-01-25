@@ -13,6 +13,7 @@ let type_error       = 3
 let model_error      = 4
 let post_model_error = 5
 let gen_output_error = 6
+let other_error      = 7
 
 let raise_if_error code f x =
   let res = f x in
@@ -50,8 +51,9 @@ let output (model : Model.model) =
           let url = "http://www.liquidity-lang.org/edit/?source=" ^ encoded_src in
           Format.fprintf fmt "%s@\n" url
       | Ligo         -> Printer_model_ligo.pp_model
+      | LigoStorage  -> Printer_model_ligo.pp_storage
       | SmartPy      -> Printer_model_smartpy.pp_model
-      | Ocaml        -> Printer_model_ocaml.pp_model
+      | Scaml        -> Printer_model_scaml.pp_model
       | Whyml        ->
         fun fmt model ->
           let mlw = raise_if_error gen_output_error Gen_why3.to_whyml model in
@@ -84,6 +86,10 @@ let type_ (pt : ParseTree.archetype) : Ast.model =
   Typing.typing Typing.empty pt
 
 let generate_target_pt (pt : ParseTree.archetype) : ParseTree.archetype =
+  if (!Options.opt_ptc) then (
+    Format.printf "%a@." Printer_pt_type_contract.pp_archetype pt;
+    raise Stop
+  );
   match !Options.target with
   | Markdown  -> (
       Format.printf "%a@." Printer_pt_markdown.pp_archetype pt;
@@ -97,12 +103,15 @@ let shallow_asset             = Gen_shallow_asset.shallow_asset
 let extend_iter               = Gen_transform.extend_loop_iter
 let split_key_values          = Gen_split_key_values.split_key_values
 let remove_side_effect        = Gen_reduce.reduce
+let remove_rational           = Gen_transform.remove_rational
+let replace_date_duration_by_timestamp = Gen_transform.replace_date_duration_by_timestamp
+let remove_enum_matchwith     = Gen_transform.remove_enum_matchwith
 let generate_api_storage      = Gen_api_storage.generate_api_storage
-let exec_process model        = model 
-  |> Gen_transform.replace_lit_address_by_role 
-  |> Gen_transform.remove_label 
-  |> Gen_transform.flat_sequence
-  |> Gen_transform.remove_cmp_bool
+let exec_process model        = model
+                                |> Gen_transform.replace_lit_address_by_role
+                                |> Gen_transform.remove_label
+                                |> Gen_transform.flat_sequence
+                                |> Gen_transform.remove_cmp_bool
 let check_partition_access    = Gen_transform.check_partition_access Typing.empty
 let extend_removeif           = Gen_transform.extend_removeif
 let post_process_fun_language = Gen_transform.process_single_field_storage
@@ -119,6 +128,9 @@ let generate_target model =
   match !Options.target with
   | None ->
     model
+    |> cont !Options.opt_nr  remove_rational
+    |> cont !Options.opt_ndd replace_date_duration_by_timestamp
+    |> cont !Options.opt_ne  remove_enum_matchwith
     |> cont !Options.opt_ws  generate_storage
     |> raise_if_error post_model_error prune_properties
     |> replace_declvar_by_letin
@@ -148,16 +160,20 @@ let generate_target model =
     |> generate_api_storage
     |> output
 
-  | Ligo ->
+  | Ligo
+  | LigoStorage ->
     model
+    |> remove_rational
+    |> replace_date_duration_by_timestamp
     |> generate_storage
     |> replace_declvar_by_letin
-    |> remove_wild_pattern
+    |> remove_enum_matchwith
     |> remove_get_dot
     |> exec_process
     |> shallow_asset
     |> split_key_values
     |> Gen_transform.assign_loop_label
+    |> Gen_transform.ligo_move_get_in_condition
     |> generate_api_storage
     |> output
 
@@ -169,7 +185,7 @@ let generate_target model =
     |> generate_api_storage
     |> output
 
-  | Ocaml ->
+  | Scaml ->
     model
     |> generate_storage
     |> replace_declvar_by_letin
@@ -232,8 +248,9 @@ let main () =
     | "liquidity"     -> Options.target := Liquidity
     | "liquidity_url" -> Options.target := LiquidityUrl
     | "ligo"          -> Options.target := Ligo
+    | "ligo-storage"  -> Options.target := LigoStorage
     | "smartpy"       -> Options.target := SmartPy
-    | "ocaml"         -> Options.target := Ocaml
+    | "scaml"         -> Options.target := Scaml
     | "whyml"         -> Options.target := Whyml
     | "markdown"      -> Options.target := Markdown
     |  s ->
@@ -244,7 +261,7 @@ let main () =
   let arg_list = Arg.align [
       "-t", Arg.String f, "<lang> Transcode to <lang> language";
       "--target", Arg.String f, " Same as -t";
-      "--list-target", Arg.Unit (fun _ -> Format.printf "target available:@\n  solidity@\n  liquidity@\n  ligo@\n  smartpy@\n  ocaml@\n  whyml@\n  markdown@\n"; exit 0), " List available target languages";
+      "--list-target", Arg.Unit (fun _ -> Format.printf "target available:@\n  solidity@\n  liquidity@\n  ligo@\n  scaml@\n  whyml@\n  markdown@\n"; exit 0), " List available target languages";
       (* "--storage-policy", Arg.String (fun s -> match s with
           | "flat" -> Options.storage_policy := Flat
           | "record" -> Options.storage_policy := Record
@@ -270,8 +287,16 @@ let main () =
       "--split-key-values", Arg.Set Options.opt_skv, " Same as -skv";
       "-nse", Arg.Set Options.opt_nse, " Transform to no side effect";
       "--no-side-effect", Arg.Set Options.opt_nse, " Same as -nse";
+      "-nr", Arg.Set Options.opt_nr, " Remove rational";
+      "--no-rational", Arg.Set Options.opt_nse, " Same as -nr";
+      "-ndd", Arg.Set Options.opt_ndd, " Remove date and duration";
+      "--no-date-duration", Arg.Set Options.opt_nse, " Same as -ndd";
+      "-ne", Arg.Set Options.opt_ne, " Remove enum and match with";
+      "--no-enum", Arg.Set Options.opt_ne, " Same as -ne";
       "-fp", Arg.String (fun s -> Options.opt_property_focused := s), " Focus property (with whyml target only)";
       "--focus-property", Arg.String (fun s -> Options.opt_property_focused := s), " Same as -fp";
+      "-ptc", Arg.Set Options.opt_ptc, " Print type contract in archetype syntax";
+      "--print-type-contract", Arg.Set Options.opt_ptc, " Same as -ptc";
       "-lsp", Arg.String (fun s -> match s with
           | "errors" -> Options.opt_lsp := true; Lsp.kind := Errors
           | "outline" -> Options.opt_lsp := true; Lsp.kind := Outline
@@ -365,6 +390,7 @@ let main () =
     (* List.map (fun (_ps, _s) -> ()) l; *)
     (* Format.eprintf "%s.\n" s *)
     exit 1
+  | Core.Error_Stop i
   | Stop_error i ->
     close dispose channel;
     exit i

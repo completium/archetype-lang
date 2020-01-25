@@ -1,16 +1,16 @@
 archetype auction
 
-variable max_bid tez = 0tz
+variable max_bid : tez = 0tz
 
 asset bid identified by incumbent {
   incumbent : address;
   value : tez;
 }
 
-variable deadline date = 2019-01-01T00:00:00
+variable deadline : date = 2019-01-01T00:00:00
 
 
-action place_bid {
+action place_bid () {
 
   require {
     c1 : now < deadline
@@ -24,7 +24,7 @@ action place_bid {
 
 
 (* Users need to exhibit proof they are not the winner to reclaim their bid *)
-action reclaim {
+action reclaim () {
 
   require {
     c2 : now < deadline;
@@ -37,7 +37,7 @@ action reclaim {
 }
 
 specification {
-  postcondition s1 {
+  contract invariant s1 {
     forall b in bid, balance > b.value
   }
 }

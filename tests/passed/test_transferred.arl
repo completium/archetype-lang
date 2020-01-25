@@ -1,8 +1,0 @@
-archetype test_transferred
-
-action myaction {
-  accept transfer
-  effect {
-    require (transferred = 1tz)
-  }
-}

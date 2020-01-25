@@ -5,9 +5,9 @@ asset bid identified by incumbent {
   val : tez;
 }
 
-variable deadline date = 2019-01-01T00:00:00
+variable deadline : date = 2019-01-01T00:00:00
 
-action place_bid {
+action place_bid () {
   require {
     c1 : now < deadline;
   }
@@ -30,7 +30,7 @@ action reclaim (witness : address) {
 }
 
 specification {
-  postcondition s1 {
+  contract invariant s1 {
     forall b in bid, balance > b.val
   }
 }

@@ -1,0 +1,12 @@
+archetype no_result_in_prog
+
+function f (i : int) : int {
+  return result
+}
+
+action main () {
+  effect {
+    let v = result in
+    ()
+  }
+}

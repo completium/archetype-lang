@@ -1,0 +1,10 @@
+archetype expr_method_list_nth
+
+variable res : string = ""
+
+action exec () {
+  effect {
+    var l : string list = ["1"; "2"; "3"];
+    res := l.nth(1)
+  }
+}

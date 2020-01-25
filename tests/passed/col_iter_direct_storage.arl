@@ -1,0 +1,14 @@
+archetype col_iter_direct_storage
+
+asset myasset {
+  id : int;
+  v : string;
+}
+
+action exec () {
+  effect {
+    for c in myasset do
+      myasset.update(c.id, {v = "val"})
+    done
+  }
+}

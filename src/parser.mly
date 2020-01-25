@@ -14,12 +14,12 @@
     Error.error_alert pos str (fun _ -> ())
 
   let dummy_action_properties = {
+      accept_transfer = true;
       calledby        = None;
-      accept_transfer = false;
       require         = None;
       failif          = None;
+      spec_fun        = None;
       functions       = [];
-      spec            = None;
     }
 
   let rec split_seq e =
@@ -86,10 +86,10 @@
 %token LBRACE
 %token LBRACKET
 %token LBRACKETPERCENT
-%token LEMMA
 %token LESS
 %token LESSEQUAL
 %token LET
+%token LIST
 %token LPAREN
 %token MATCH
 %token MINUS
@@ -126,12 +126,12 @@
 %token SECURITY
 %token SEMI_COLON
 %token SHADOW
+%token SLASH
 %token SOME
 %token SORTED
 %token SPECIFICATION
 %token STATES
 %token THEN
-%token THEOREM
 %token TO
 %token TRANSFER
 %token TRANSITION
@@ -150,7 +150,7 @@
 %token <string> IDENT
 %token <string> STRING
 %token <Big_int.big_int> NUMBER
-%token <Big_int.big_int * Big_int.big_int> RATIONAL
+%token <string> DECIMAL
 %token <Big_int.big_int> TZ
 %token <Big_int.big_int> MTZ
 %token <Big_int.big_int> UTZ
@@ -179,7 +179,8 @@
 %left GREATER GREATEREQUAL LESS LESSEQUAL
 
 %left PLUS MINUS
-%left MULT DIV PERCENT
+%left MULT SLASH PERCENT
+%left DIV
 
 %right NOT
 
@@ -265,7 +266,7 @@ archetype:
 | WITH xs=braced(label_exprs) { xs }
 
 vc_decl(X):
-| X exts=extensions? x=ident t=type_t dv=default_value? invs=invariants
+| X exts=extensions? x=ident COLON t=type_t dv=default_value? invs=invariants
     { (x, t, None, dv, invs, exts) }
 
 constant:
@@ -302,9 +303,15 @@ contract:
 %inline signatures:
 | xs=signature+ { xs }
 
-signature:
-| ACTION x=ident                { Ssignature (x, []) }
-| ACTION x=ident COLON xs=types { Ssignature (x, xs) }
+%inline sig_arg:
+ | id=ident COLON ty=type_t
+     { (id, ty) }
+
+%inline sig_args:
+| LPAREN xs=sl(COMMA, sig_arg) RPAREN { xs }
+
+%inline signature:
+| ACTION x=ident xs=sig_args { Ssignature (x, xs) }
 
 %inline fun_body:
 | e=expr { (None, e) }
@@ -339,17 +346,11 @@ function_decl:
 %inline spec_definition:
 | DEFINITION id=ident LBRACE a=ident COLON t=type_t PIPE e=expr RBRACE { Vdefinition (id, t, a, e) }
 
-%inline spec_lemma:
-| LEMMA id=ident x=braced(expr) { Vlemma (id, x) }
-
-%inline spec_theorem:
-| THEOREM id=ident x=braced(expr) { Vtheorem (id, x) }
-
 %inline spec_variable:
-| VARIABLE id=ident t=type_t dv=default_value? { Vvariable (id, t, dv) }
+| VARIABLE id=ident COLON t=type_t dv=default_value? { Vvariable (id, t, dv) }
 
 %inline spec_effect:
-| EFFECT e=braced(expr) { Veffect e }
+| SHADOW EFFECT e=braced(block) { Veffect e }
 
 %inline invars:
 | INVARIANT FOR id=ident xs=braced(expr) { (id, split_seq xs) }
@@ -369,16 +370,19 @@ function_decl:
 | POSTCONDITION id=ident sp=braced(spec_body)
     { let e, xs, u = sp in Vpostcondition (id, e, xs, u) }
 
+%inline spec_contract_invariant:
+| CONTRACT INVARIANT id=ident sp=braced(spec_body)
+    { let e, xs, u = sp in Vcontractinvariant (id, e, xs, u) }
+
 spec_items:
 | ds=loc(spec_definition)*
   ps=loc(spec_predicate)*
-  xs=loc(spec_lemma)*
-  ts=loc(spec_theorem)*
   vs=loc(spec_variable)*
   es=loc(spec_effect)*
   bs=loc(spec_assert)*
   ss=loc(spec_postcondition)*
-   { ds @ ps @ xs @ ts @ vs @ es @ bs @ ss }
+  cs=loc(spec_contract_invariant)*
+   { ds @ ps @ vs @ es @ bs @ ss @ cs }
 
 %inline specification:
 | SPECIFICATION exts=option(extensions) LBRACE
@@ -442,9 +446,6 @@ enum_option:
 | INITIAL                     { EOinitial }
 | WITH xs=braced(label_exprs) { EOspecification (xs) }
 
-types:
-| xs=separated_nonempty_list(COMMA, type_t) { xs }
-
 %inline type_t:
 | e=loc(type_r) { e }
 
@@ -461,6 +462,7 @@ type_s_unloc:
 | x=ident RECORD          { Tasset x }
 | x=type_s c=container    { Tcontainer (x, c) }
 | x=type_s OPTION         { Toption x }
+| x=type_s LIST           { Tlist x }
 | x=paren(type_r)         { x }
 
 %inline type_tuples:
@@ -544,7 +546,7 @@ transition:
 | LBRACE xs=action_properties e=effect? RBRACE { (xs, e) }
 
 %inline accept_transfer:
-| /* empty */     { false }
+| /* empty */     { true }
 | REFUSE_TRANSFER { false }
 | ACCEPT_TRANSFER { true }
 
@@ -552,12 +554,12 @@ action_properties:
   sp=specification_fun? at=accept_transfer cb=calledby? cs=require? fi=failif? fs=function_item*
   {
     {
-      spec            = sp;
       accept_transfer = at;
       calledby        = cb;
       require         = cs;
       failif          = fi;
       functions       = fs;
+      spec_fun        = sp;
     }
   }
 
@@ -579,20 +581,18 @@ failif:
 | WITH e=effect { e }
 
 effect:
- | EFFECT exts=option(extensions) e=braced(expr) { (e, exts) }
- | INVALID_EFFECT                                { (mkloc Location.dummy Einvalid, None) }
+ | EFFECT exts=option(extensions) e=braced(block) { (e, exts) }
+ | INVALID_EFFECT                                 { (mkloc Location.dummy Einvalid, None) }
 
 %inline function_return:
  | COLON ty=type_t { ty }
 
 %inline function_args:
- |                   { [] }
- | xs=function_arg+  { xs }
+ | LPAREN xs=sl(COMMA, function_arg) RPAREN { xs }
 
 %inline function_arg:
- | LPAREN id=ident exts=option(extensions)
-     COLON ty=type_t RPAREN
-       { (id, ty, exts) }
+ | id=ident exts=option(extensions) COLON ty=type_t
+     { (id, ty, exts) }
 
 %inline assignment_operator_record:
  | EQUAL                    { ValueAssign }
@@ -640,15 +640,14 @@ ident_typ_q:
 |                { None }
 | COLON i=ident  { Some i }
 
-%inline otherwise:
-|                  { None }
-| OTHERWISE o=expr { Some o }
-
 %inline from_expr:
 |                { None }
 | FROM e=expr    { Some e }
 
 expr_r:
+ | LPAREN RPAREN
+     { Enothing }
+
  | q=quantifier id=ident t=quant_kind COMMA y=expr
      { Equantifier (q, id, t, y) }
 
@@ -659,8 +658,11 @@ expr_r:
            mkloc l (Equantifier (q, i, t, acc))) xs y) |> unloc
     }
 
- | LET i=ident t=colon_type_opt EQUAL e=expr IN y=expr o=otherwise
-     { Eletin (i, t, e, y, o) }
+ | LET SOME i=ident t=colon_type_opt EQUAL e=expr IN y=expr OTHERWISE o=expr
+     { Eletin (i, t, e, y, Some o) }
+
+ | LET i=ident t=colon_type_opt EQUAL e=expr IN y=expr
+     { Eletin (i, t, e, y, None) }
 
  | VAR i=ident t=colon_type_opt EQUAL e=expr
      { Evar (i, t, e) }
@@ -677,10 +679,10 @@ expr_r:
  | BREAK
      { Ebreak }
 
- | FOR lbl=colon_ident x=ident IN y=expr DO body=expr DONE
+ | FOR lbl=colon_ident x=ident IN y=expr DO body=block DONE
      { Efor (lbl, x, y, body) }
 
- | ITER lbl=colon_ident x=ident a=from_expr TO b=expr DO body=expr DONE
+ | ITER lbl=colon_ident x=ident a=from_expr TO b=expr DO body=block DONE
      { Eiter (lbl, x, a, b, body) }
 
  | IF c=expr THEN t=expr
@@ -707,7 +709,7 @@ expr_r:
  | RETURN x=simple_expr
      { Ereturn x }
 
- | SOME x=simple_expr
+ | SOME x=paren(simple_expr)
      { Eoption (OSome x) }
 
  | NONE
@@ -723,6 +725,12 @@ expr_r:
 
  | x=simple_expr_r
      { x }
+
+%inline block:
+ | x=loc(block_r) { x }
+
+%inline block_r:
+| e=expr_r SEMI_COLON? { e }
 
 order_operation:
  | e1=expr op=loc(ord_operator) e2=expr
@@ -778,7 +786,7 @@ simple_expr_r:
  | INVALID_EXPR
      { Einvalid }
 
- | x=paren(expr_r)
+ | x=paren(block_r)
      { x }
 
 %inline vt_dot:
@@ -805,7 +813,7 @@ label_expr_unloc:
 
 literal:
  | x=NUMBER     { Lnumber   x }
- | x=RATIONAL   { let n, d = x in Lrational (n, d) }
+ | x=DECIMAL    { Ldecimal  x }
  | x=TZ         { Ltz       x }
  | x=MTZ        { Lmtz      x }
  | x=UTZ        { Lutz      x }
@@ -848,7 +856,8 @@ record_item:
  | PLUS    { Plus }
  | MINUS   { Minus }
  | MULT    { Mult }
- | DIV     { Div }
+ | SLASH   { Div }
+ | DIV     { DivRat }
  | PERCENT { Modulo }
 
 %inline unary_operator:

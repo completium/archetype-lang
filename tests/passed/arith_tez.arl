@@ -1,8 +1,8 @@
 archetype arith_tez
 
-constant a tez = 1tz
+constant a : tez = 1tz
 
-action main (r : role) {
+action exec (r : role) {
   accept transfer
   effect {
     let c : int = 0 in

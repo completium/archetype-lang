@@ -1,0 +1,9 @@
+archetype expr_lit_rat_dec_neg
+
+variable res : rational = 0.0
+
+action exec () {
+  effect {
+    res := -0.5
+  }
+}

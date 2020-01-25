@@ -1,6 +1,6 @@
-archetype bad_at_var_not_in_env
+archetype same_field_name
 
-variable v int = 1
+variable v : int = 1
 
 asset asset1 {
   id: string;
@@ -10,7 +10,7 @@ asset asset2 {
   id: string;
 }
 
-action anaction {
+action anaction () {
   effect {
     let a : int = 0 in
     a := 1

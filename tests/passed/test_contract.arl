@@ -1,14 +1,14 @@
 archetype test_contract
 
 contract mycontract {
-  action myaction1 : address, tez
-  action myaction2 : string
-  action pay
+  action myaction1 (a : address, b : tez)
+  action myaction2 (str : string)
+  action pay ()
 }
 
-variable contract_i mycontract = @KT1GabhR5P52hw6xs5P69BXJYAURaznhvN1k
+variable contract_i : mycontract = @KT1GabhR5P52hw6xs5P69BXJYAURaznhvN1k
 
-action doCall (a : address) {
+action exec (a : address) {
   effect {
     contract_i.myaction1(a, 1tz);
     contract_i.myaction2("string");

@@ -33,6 +33,7 @@ let pp_container fmt = function
   | Collection -> Format.fprintf fmt "collection"
   | Partition  -> Format.fprintf fmt "partition"
   | Subset     -> Format.fprintf fmt "subset"
+  | List       -> Format.fprintf fmt "list"
 
 let rec pp_ptyp fmt (t : ptyp) =
   match t with
@@ -101,6 +102,7 @@ let pp_arithmetic_operator fmt = function
   | Minus  -> pp_str fmt "-"
   | Mult   -> pp_str fmt "*"
   | Div    -> pp_str fmt "/"
+  | DivRat -> pp_str fmt "div"
   | Modulo -> pp_str fmt "%"
 
 let pp_unary_arithmetic_operator fmt = function
@@ -152,24 +154,21 @@ let to_const = function
   | Ccaller       -> "caller"
   | Cfail         -> "fail"
   | Cbalance      -> "balance"
+  | Csource       -> "source"
   | Cconditions   -> "conditions"
   | Cactions      -> "actions"
   | Cnone         -> "none"
   | Cany          -> "any"
   | Canyaction    -> "anyaction"
+  | Cresult       -> "result"
   | Cisempty      -> "isempty"
   | Cget          -> "get"
   | Cadd          -> "add"
-  | Caddnofail    -> "addnofail"
   | Cremove       -> "remove"
-  | Cremovenofail -> "removenofail"
   | Cremoveif     -> "removeif"
   | Cupdate       -> "update"
-  | Cupdatenofail -> "updatenofail"
-  | Cclear        -> "clear"
   | Ccontains     -> "contains"
   | Cnth          -> "nth"
-  | Creverse      -> "reverse"
   | Cselect       -> "select"
   | Csort         -> "sort"
   | Ccount        -> "count"
@@ -179,6 +178,8 @@ let to_const = function
   | Csubsetof     -> "subsetof"
   | Chead         -> "head"
   | Ctail         -> "tail"
+  | Cabs          -> "abs"
+  | Cprepend      -> "prepend"
   | Cbefore       -> "before"
   | Cunmoved      -> "unmoved"
   | Cadded        -> "added"
@@ -467,7 +468,7 @@ let rec pp_instruction fmt (i : instruction) =
       in
       (pp_with_paren pp) fmt (m, ps)
 
-    | Iassign (op, `Var id, value) ->
+    | Iassign (_, op, `Var id, value) ->
       let pp fmt (op, id, value) =
         Format.fprintf fmt "%a %a %a"
           pp_id id
@@ -476,7 +477,7 @@ let rec pp_instruction fmt (i : instruction) =
       in
       (pp_with_paren pp) fmt (op, id, value)
 
-    | Iassign (op, `Field (nm, id), value) ->
+    | Iassign (_, op, `Field (nm, id), value) ->
       let pp fmt (op, id, value) =
         Format.fprintf fmt "%a.%a %a %a"
           pp_pterm nm pp_id id
@@ -536,6 +537,13 @@ let rec pp_instruction fmt (i : instruction) =
           pp_id id
       in
       (pp_with_paren pp) fmt id
+
+    | Ifail pt ->
+      let pp fmt pt =
+        Format.fprintf fmt "fail (%a)"
+          pp_pterm pt
+      in
+      (pp_with_paren pp) fmt pt
   in
   pp_instruction_poly pp_node fmt i
 
@@ -571,7 +579,7 @@ let pp_specification fmt (v : lident specification) =
     let decl = v.decl in
     Format.fprintf fmt "variable %a%a%a"
       pp_id decl.name
-      (pp_option (pp_prefix " " pp_ptyp)) decl.typ
+      (pp_option (pp_prefix " : " pp_ptyp)) decl.typ
       (pp_option (pp_prefix " := " pp_pterm)) decl.default
   in
   let pp_invariant fmt (i : lident invariant) =
@@ -615,7 +623,7 @@ let pp_specification fmt (v : lident specification) =
                     pp_id id
                     pp_label_term lt
                 )) l)) v.invariants
-      (pp_option (fun fmt -> Format.fprintf fmt "effect {@\n  @[%a@]}@\n" pp_instruction)) v.effect
+      (pp_option (fun fmt -> Format.fprintf fmt "shadow effect {@\n  @[%a@]}@\n" pp_instruction)) v.effect
       (pp_no_empty_list2 pp_assert) v.asserts
       (pp_no_empty_list2 pp_postcondition) v.specs
 
@@ -695,7 +703,7 @@ let pp_security fmt (s : security) =
       (pp_no_empty_list pp_security_item) s.items
 
 let pp_variable fmt (v : lident variable) =
-  Format.fprintf fmt "%s %a %a%a%a%a@\n"
+  Format.fprintf fmt "%s %a : %a%a%a%a@\n"
     (if v.constant then "constant" else "variable")
     pp_id v.decl.name
     pp_ptyp (Option.get v.decl.typ)
@@ -741,12 +749,9 @@ let pp_enum fmt (e : lident enum_struct) =
     (pp_list "@\n" pp_enum_item) e.items
 
 let pp_signature fmt (s : lident signature) =
-  Format.fprintf fmt "%a: %a"
+  Format.fprintf fmt "action %a (%a)"
     pp_id s.name
-    (fun fmt x ->
-       if List.is_empty x
-       then pp_str fmt "()"
-       else (pp_list ", " pp_ptyp) fmt x) s.args
+    (pp_list ", " (fun fmt (id, type_) -> Format.fprintf fmt "%a : %a" pp_id id pp_ptyp type_)) s.args
 
 let pp_contract fmt (c : contract) =
   Format.fprintf fmt "contract %a =@\n  @[%a@]@\n"
@@ -776,28 +781,29 @@ let rec pp_sexpr fmt (s : sexpr) =
   in
   pp_struct_poly pp_node fmt s
 
+let pp_fun_ident_typ fmt (arg : lident decl_gen) =
+  Format.fprintf fmt "%a : %a"
+    pp_id arg.name
+    pp_ptyp (Option.get arg.typ)
+
+let pp_fun_args fmt args =
+  Format.fprintf fmt " (%a)"
+    (pp_list " " pp_fun_ident_typ) args
+
 let pp_function fmt (f : function_) =
-  Format.fprintf fmt "function %a (%a) : %a =@\n  @[%a%a@]@\n"
+  Format.fprintf fmt "function %a%a : %a =@\n  @[%a%a@]@\n"
     pp_id f.name
-    (pp_list ", " (fun fmt (x : lident decl_gen) ->
-         Format.fprintf fmt "%a : %a"
-           pp_id x.name
-           pp_ptyp (Option.get x.typ)
-       )) f.args
+    pp_fun_args f.args
     pp_ptyp f.return
     (pp_option pp_specification) f.specification
     pp_instruction f.body
 
 let pp_transaction_action fmt (t : transaction) =
-  Format.fprintf fmt "action %a %a {@\n  @[%a%a%a%a%a%a%a@]@\n}@\n"
+  Format.fprintf fmt "action %a%a {@\n  @[%a%a%a%a%a%a%a@]@\n}@\n"
     pp_id t.name
-    (pp_list " " (fun fmt (x : lident decl_gen) ->
-         Format.fprintf fmt "(%a : %a)"
-           pp_id x.name
-           pp_ptyp (Option.get x.typ)
-       )) t.args
+    pp_fun_args t.args
     (pp_option pp_specification) t.specification
-    (pp_do_if t.accept_transfer (fun fmt _ -> Format.fprintf fmt "accept transfer@\n")) ()
+    (pp_do_if (not t.accept_transfer) (fun fmt _ -> Format.fprintf fmt "refuse transfer@\n")) ()
     (pp_option (fun fmt -> Format.fprintf fmt "called by %a@\n" pp_rexpr)) t.calledby
     (pp_option (pp_list "@\n " (fun fmt -> Format.fprintf fmt "require {@\n  @[%a@]@\n}@\n" pp_label_term))) t.require
     (pp_option (pp_list "@\n " (fun fmt -> Format.fprintf fmt "failif {@\n  @[%a@]@\n}@\n" pp_label_term))) t.failif
@@ -811,13 +817,9 @@ let rec pp_sexpr fmt (sexpr : sexpr) =
   | Sany -> pp_str fmt "any"
 
 let pp_transaction_transition fmt (t : transaction) (tr : lident transition) =
-  Format.fprintf fmt "transition %a %a from %a%a {@\n  @[%a%a%a%a%a%a@]@\n}@\n"
+  Format.fprintf fmt "transition %a%a from %a%a {@\n  @[%a%a%a%a%a%a@]@\n}@\n"
     pp_id t.name
-    (pp_list " " (fun fmt (x : lident decl_gen) ->
-         Format.fprintf fmt "(%a : %a)"
-           pp_id x.name
-           pp_ptyp (Option.get x.typ)
-       )) t.args
+    pp_fun_args t.args
     pp_sexpr tr.from
     (pp_option (pp_prefix " on " (fun fmt (x, y) -> Format.fprintf fmt "%a.%a" pp_id x pp_id y))) tr.on
     (pp_option pp_specification) t.specification

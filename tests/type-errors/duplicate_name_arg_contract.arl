@@ -1,0 +1,11 @@
+archetype duplicate_name_arg_contract
+
+contract my_contract {
+  action f (i : int, i : int)
+}
+
+action exec () {
+  effect {
+    require (true)
+  }
+}

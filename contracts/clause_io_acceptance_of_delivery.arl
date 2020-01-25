@@ -1,22 +1,22 @@
 archetype clause_io_acceptance_of_delivery
 
-variable shipper role
+variable shipper : role = @tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg
 
-variable receiver role
+variable receiver : role = @tz1bfVgcJC4ukaQSHUe1EbrUd5SekXeP9CWk
 
-variable payment tez
+variable payment : tez = 10tz
 
-variable deliveryDate date
+variable deliveryDate : date = 2020-12-31
 
-variable businessDays day
+variable businessDays : duration = 14d
 
 (* extra blockchain incentives *)
-variable incentiveR tez = payment
+variable incentiveR : tez = payment
 
-variable incentiveS tez = 0.2 * payment
+variable incentiveS : tez = 0.2 * payment
 
-%traceable (payment + incentiveR, receiver)
-%traceable (incentiveS, shipper)
+(* %traceable (payment + incentiveR, receiver) *)
+(* %traceable (incentiveS, shipper) *)
 
 states =
  | Created initial
@@ -26,12 +26,12 @@ states =
  | Success
  | Fail
 
-transition[%signedbyall [shipper, receiver]%] sign from Created {
+transition[%signedbyall [shipper, receiver]%] sign () from Created {
   to Signed
   when { balance = payment + incentiveR + incentiveS }
 }
 
-transition unilateral_abort from Created {
+transition unilateral_abort () from Created {
   called by shipper or receiver
 
   to Aborted
@@ -42,7 +42,7 @@ transition unilateral_abort from Created {
   }
 }
 
-transition[%signedbyall [shipper, receiver]%] abort from Signed {
+transition[%signedbyall [shipper, receiver]%] abort () from Signed {
   called by shipper or receiver
 
   to Aborted
@@ -53,7 +53,7 @@ transition[%signedbyall [shipper, receiver]%] abort from Signed {
   }
 }
 
-transition confirm from Signed {
+transition confirm () from Signed {
   called by receiver
 
   to Delivered
@@ -65,16 +65,16 @@ transition confirm from Signed {
   }
 }
 
-transition success from Delivered {
+transition success () from Delivered {
   called by shipper
 
   to Success
-  when { now > (deliverydate + businessDays) }
+  when { now > (deliveryDate + businessDays) }
 }
 
-transition fail from Delivered {
+transition fail () from Delivered {
   called by receiver
 
   to Fail
-  when { now <= deliverydate + businessDays }
+  when { now <= deliveryDate + businessDays }
 }

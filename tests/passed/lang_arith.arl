@@ -1,0 +1,53 @@
+archetype lang_arith
+
+action exec () {
+  effect {
+    var bool_bool_and : bool = true and false;
+    var bool_bool_or  : bool = true or false;
+    var bool_bool_not : bool = not true;
+
+    var int_int_plus   : int = 1 + 2;
+    var int_int_minus  : int = 1 - 2;
+    var int_int_mult   : int = 1 * 2;
+    var int_int_div    : int = 1 / 2;
+    var int_int_modulo : int = 1 % 2;
+
+    var rat_rat_plus   : rational = 1.1 + 1.2;
+    var rat_rat_minus  : rational = 1.1 - 1.2;
+    var rat_rat_mult   : rational = 1.1 * 1.2;
+    var rat_rat_div    : rational = 1.1 / 1.2;
+
+    var int_rat_plus   : rational = 1 + 1.2;
+    var int_rat_minus  : rational = 1 - 1.2;
+    var int_rat_mult   : rational = 1 * 1.2;
+    var int_rat_div    : rational = 1 / 1.2;
+
+    var rat_int_plus   : rational = 1.1 + 2;
+    var rat_int_minus  : rational = 1.1 - 2;
+    var rat_int_mult   : rational = 1.1 * 2;
+    var rat_int_div    : rational = 1.1 / 2;
+
+    var date_date_minus : duration = 2020-01-01 - 2019-12-31; (* absolute value *)
+
+    var dur_dur_plus   : duration = 1h + 2s;
+    var dur_dur_minus  : duration = 1h - 2s; (* absolute value *)
+
+    var int_dur_mult   : duration = 2 * 1h;
+    var dur_int_div    : duration = 1h / 2;
+
+    var date_dur_plus  : date     = 2020-01-01 + 1d;
+    var date_dur_minus : date     = 2020-01-01 - 1d;
+
+    var dur_date_plus  : date     = 1d + 2020-01-01;
+
+    var str_str_plus   : string   = "str1" + "str2"; (* concat *)
+
+    var tez_tez_plus   : tez      = 2tz + 1tz;
+    var tez_tez_minus  : tez      = 2tz - 1tz;
+
+    var int_tez_mult   : tez      = 1 * 1tz;
+    var rat_tez_mult   : tez      = 1.1 * 1tz;
+
+    require (true)
+  }
+}

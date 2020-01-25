@@ -6,7 +6,7 @@ archetype extension action_delegation (
 
 ) {
 
-  action aTransaction {
+  action aTransaction () {
     effect {
       effects;
       Operator.remove

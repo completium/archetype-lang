@@ -1,48 +1,22 @@
 archetype builtin_funs
 
-constant b1 bool = true
-constant b2 bool = true
 
-constant i1 int = 0
-constant i2 int = 1
-
-constant ra1 rational = 0.1
-constant ra2 rational = 1 div 2
-
-constant da1 date = 2019-11-01
-constant da2 date = 2018-11-01
-
-constant du1 duration = 1d
-constant du2 duration = 1h
-
-constant s1 string = "str1"
-constant s2 string = "str2"
-
-constant a1 address = @addr1
-constant a2 address = @addr2
-
-constant ro1 role = @role1
-constant ro2 role = @role2
-
-constant t1 tez = 1tz
-constant t2 tez = 2tz
-
-action main {
+action exec () {
   effect {
-    var int_min : int = min(i1, i2);
-    var int_max : int = max(i1, i2);
+    var int_min : int = min(1, 2);
+    var int_max : int = max(1, 2);
 
-    var rat_min : rational = min(ra1, ra2);
-    var rat_max : rational = max(ra1, ra2);
+    var rat_min : rational = min(1 div 2, 1 div 3);
+    var rat_max : rational = max(1 div 2, 1 div 3);
 
-    var date_min : date = min(da1, da2);
-    var date_max : date = max(da1, da2);
+    var date_min : date = min(2019-01-01, 2020-01-01);
+    var date_max : date = max(2019-01-01, 2020-01-01);
 
-    var duration_min : duration = min(du1, du2);
-    var duration_max : duration = max(du1, du2);
+    var duration_min : duration = min(1h, 2s);
+    var duration_max : duration = max(1h, 2s);
 
-    var tez_min : tez = min(t1, t2);
-    var tez_max : tez = max(t1, t2);
+    var tez_min : tez = min(1tz, 2tz);
+    var tez_max : tez = max(1tz, 2tz);
 
     require(true)
   }

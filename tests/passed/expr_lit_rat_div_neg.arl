@@ -1,0 +1,9 @@
+archetype expr_lit_rat_div_neg
+
+variable res : rational = 0 div 1
+
+action exec () {
+  effect {
+    res := -1 div 2
+  }
+}

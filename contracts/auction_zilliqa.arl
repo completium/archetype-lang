@@ -1,9 +1,9 @@
 archetype auction_zilliqa
 
-variable highest_bid tez = 0tz
-variable highest_bidder address = @0
+variable highest_bid : tez = 0tz
+variable highest_bidder : address = @0
 
-variable beneficiary address = @tz1KmuhR6P52hw6xs5P69BXJYAURaznhvN1k
+variable beneficiary : address = @tz1KmuhR6P52hw6xs5P69BXJYAURaznhvN1k
 
 asset pending_return identified by incumbent {
   incumbent   : address;
@@ -14,8 +14,8 @@ states =
 | Open initial
 | Closed
 
-variable auction_start date = 2019-01-01T00:00:00
-variable auction_end   date = 2019-02-01T00:00:00
+variable auction_start : date = 2019-01-01T00:00:00
+variable auction_end   : date = 2019-02-01T00:00:00
 
 specification {
   postcondition highest_is_not_pending {
@@ -27,7 +27,7 @@ specification {
   }
 }
 
-action place_bid {
+action place_bid () {
 
   require {
     c1 : auction_start <= now <= auction_end;
@@ -62,13 +62,13 @@ action place_bid {
         (* update highest *)
         highest_bid := transferred;
         highest_bidder := caller)
-      else fail (* no need to add bidder since there will
-                           be nothing to withdraw *)
+      else fail ("no update") (* no need to add bidder since there will
+                                 be nothing to withdraw *)
   }
 }
 
 (* onlyonce extension specifies that one cannot withdraw more than once *)
-action[%onlyonce%] withdraw {
+action[%onlyonce%] withdraw () {
   require {
     c2 : pending_return.contains(caller);
   }
@@ -78,7 +78,7 @@ action[%onlyonce%] withdraw {
   }
 }
 
-transition endAuction from Open {
+transition endAuction () from Open {
   to Closed
   when { now > auction_end }
   with effect {

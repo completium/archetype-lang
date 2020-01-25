@@ -1,0 +1,13 @@
+archetype duplicated_action
+
+action main () {
+  effect {
+    require (true)
+  }
+}
+
+action main () {
+  effect {
+    require (true)
+  }
+}

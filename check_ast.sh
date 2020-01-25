@@ -1,60 +1,45 @@
 #! /bin/bash
 
 BIN=./archetype.exe
-NB_ERR="0"
-NB_OUT="0"
+NB_OK=0
+NB_ERR=0
 
-process () {
-    printf '%-50s' $1
-    REF=$i.ref
-    $BIN -ast -r $i > $REF 2> /dev/null
-    RET=`echo $?`
-    if [ ${RET} -eq 0 ]; then
-	      echo -ne "\033[32m OK \033[0m"
-
-        OUT=$i.out
-        $BIN -ast $i 2> /dev/null | $BIN -ast -r > $OUT 2> /dev/null
-        RET=`echo $?`
-        if [ ${RET} -eq 0 ]; then
-    	      echo -ne "   \033[32m OK \033[0m"
-
-            cmp $REF $OUT > /dev/null 2> /dev/null
-            RET=`echo $?`
-            if [ ${RET} -eq 0 ]; then
-    	          echo -ne "   \033[32m OK \033[0m"
-            else
-	              echo -ne "   \033[31m KO \033[0m"
-                NB_OUT=$((${NB_OUT} + 1))
-            fi
-        else
-	          echo -ne "   \033[31m KO \033[0m"
-	      echo -ne  "   \033[31m KO \033[0m"
-            NB_OUT=$((${NB_OUT} + 1))
-        fi
-        echo ""
+process_file() {
+    printf '%-70s' $1
+    RET=$2
+    $BIN -ast $i >/dev/null 2>/dev/null
+    if [ $? -eq $RET ]; then
+        echo -ne "\033[32m OK \033[0m"
+        NB_OK=$((${NB_OK} + 1))
     else
-	      echo -ne "\033[31m KO \033[0m"
-	      echo -ne "   \033[31m KO \033[0m"
-	      echo -e  "   \033[31m KO \033[0m"
+        echo -ne "\033[31m KO \033[0m"
         NB_ERR=$((${NB_ERR} + 1))
-        NB_OUT=$((${NB_OUT} + 1))
     fi
-    rm -f $OUT $REF
+    echo ""
 }
 
-printf '%-48s%s\n' '' '   REF    AST    CMP'
+process_files() {
+    for i in $1/*.arl; do
+        FIRST_CHAR=$(basename $i | cut -c 1)
+        if [ ${FIRST_CHAR} != "_" ]; then
+            process_file $i $2
+        fi
+    done
+    echo ""
+}
 
-for i in contracts/*.arl; do
-  process $i
-done
+printf '%-70s%s\n' '' ' AST'
 
-echo ""
+process_files "./tests/type-errors" 3
+process_files "./tests/model-errors" 0
+process_files "./tests/passed" 0
+process_files "./contracts" 0
 
 RET=0
-if [ ${NB_ERR} -eq 0 -a ${NB_OUT} -eq 0 ]; then
-    echo "."
+if [ ${NB_ERR} -eq 0 ]; then
+    echo "passed."
 else
-    echo -e "\033[31mErrors (parse / ast): ${NB_ERR} / ${NB_OUT} \033[0m"
+    echo -e "${NB_OK} / $((${NB_OK} + ${NB_ERR}))"
     RET=1
 fi
 

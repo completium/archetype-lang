@@ -1,6 +1,6 @@
 archetype bad_at_unknown_label
 
-action anaction {
+action anaction () {
   specification {
     postcondition p1 {
       at(l2).a = 0

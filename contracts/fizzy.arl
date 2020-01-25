@@ -1,6 +1,6 @@
 archetype fizzy
 
-variable creator role
+variable creator : role = @tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg
 
 enum status =
 | Created
@@ -16,6 +16,7 @@ asset insurance {
   limit     : date;
   premium   : tez;
   indemnity : tez;
+  product   : string;
   stat      : status = Created;
 }
 
@@ -24,45 +25,45 @@ asset[@add creator (none)] flight identified by id {
   insurances : insurance partition;
 }
 
-action addflightinsurance (fi : string) (* flight id *)
-                               (i : insurance) {
+action addflightinsurance (fi : string, i : insurance) {
     called by creator
 
     effect {
-      flight.addifnotexist({ id = fi });
-      let f = flight.get(id) in
+      if (not flight.contains (fi)) then
+      flight.add({ id = fi; insurances = [] });
+      let f = flight.get(fi) in
       f.insurances.add(i)
     }
 }
 
 (* data should be signed by oracle ... *)
-action updatestatus (fi : string) (arrival : date) {
+action updatestatus (fi : string, arrival : date) {
 
     called by creator
 
     effect {
-      let f = flight.get(id) in
+      let f = flight.get(fi) in
       for i in f.insurances do
-        match i.status with
+        match i.stat with
         | Created ->
            if arrival > i.limit
-           then i.status := After
-        | _ -> none
+           then i.stat := After
+        | _ -> ()
         end
       done
     }
 }
 
-action manual (fi : string) (pr : string) (newst : status) {
+action manual (fi : string, pr : string, newst : status) {
 
     called by creator
 
     effect {
       let f = flight.get(fi) in
       for i in f.insurances.select(product = pr) do
-        match i.status with
-         | Created -> i.status := newst
-         | _ -> none
+        match i.stat with
+         | Created -> i.stat := newst
+         | _ -> ()
         end
       done
     }
@@ -70,7 +71,7 @@ action manual (fi : string) (pr : string) (newst : status) {
 
 specification {
   (* this contract does not transfer any tez *)
-  postcondition s2 {
+  contract invariant s2 {
     transfers_by_tx(anytx) = 0
   }
 }

@@ -10,9 +10,7 @@ let cmp_lident i1 i2 : bool = String.equal (unloc i1) (unloc i2)
 let pp_literal fmt (l : literal) =
   match l with
   | Lnumber   n -> Format.fprintf fmt "%s" (Big_int.string_of_big_int n)
-  | Lrational (d, n) -> Format.fprintf fmt "%s / %s"
-                          (Big_int.string_of_big_int d)
-                          (Big_int.string_of_big_int n)
+  | Ldecimal  n -> Format.fprintf fmt "%s" n
   | Ltz       n -> Format.fprintf fmt "%stz"   (Big_int.string_of_big_int n)
   | Lmtz      n -> Format.fprintf fmt "%smtz"  (Big_int.string_of_big_int n)
   | Lutz      n -> Format.fprintf fmt "%sutz"  (Big_int.string_of_big_int n)
@@ -151,7 +149,7 @@ let pp_archetype fmt pt =
               (pp_list "@\n" pp_formula) l
         in
         let formulas : (ident * expr) list =
-          action_properties.spec
+          action_properties.spec_fun
           |> Option.get_as_list
           |> List.map unloc
           |> List.map fst

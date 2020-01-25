@@ -1,0 +1,9 @@
+archetype rational_cmp
+
+constant r : rational = 1 div 2
+
+action exec () {
+  effect {
+    require (r > 1 div 3)
+  }
+}

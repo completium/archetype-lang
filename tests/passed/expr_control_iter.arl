@@ -1,0 +1,11 @@
+archetype expr_control_iter
+
+variable res : int = 0
+
+action exec () {
+  effect {
+    iter i to 3 do
+      res += i
+    done
+  }
+}

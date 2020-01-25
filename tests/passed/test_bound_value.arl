@@ -1,6 +1,6 @@
 archetype test_bound_value
 
-variable x int = 1
+variable x : int = 1
 
 specification {
   postcondition s1 {
@@ -8,7 +8,7 @@ specification {
   }
 }
 
-action doSomething {
+action exec () {
   effect {
     var a : int = 0;
     a := x

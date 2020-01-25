@@ -1,12 +1,12 @@
 archetype extension signedby_at_object_level (
 
-  variable[%signedby_at_object_level arole%] anObject object
+  variable[%signedby_at_object_level arole%] anObject : object
 
   action anAction (obj : anObject)
 
 ) {
 
-  variable key_<%arole> key = oracle
+  variable key_<%arole> : key = oracle
 
   action anAction (signed_<%obj>: signature) {
     require {

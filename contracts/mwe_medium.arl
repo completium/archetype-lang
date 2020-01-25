@@ -1,6 +1,6 @@
 archetype mwe_medium
 
-constant admin role = @tz1aazS5ms5cbGkb6FN1wvWmN7yrMTTcr6wB
+constant admin : role = @tz1aazS5ms5cbGkb6FN1wvWmN7yrMTTcr6wB
 
 asset mile identified by id {
     id : string;
@@ -15,7 +15,7 @@ asset owner identified by addr {
     miles : mile partition;
 }
 
-action add (ow : address) (newmile : mile) {
+action add (ow : address, newmile : mile) {
     called by admin
 	failif {
 	    f1: mile.contains(newmile.id)
@@ -28,7 +28,7 @@ action add (ow : address) (newmile : mile) {
 	}
 }
 
-action consume (ow : address) (qty : int) {
+action consume (ow : address, qty : int) {
     specification {
         postcondition p0 {
              mile.sum(the.quantity) = before.mile.sum(the.quantity) - qty

@@ -42,6 +42,7 @@ let generate_storage (model : model) : model =
       | Brational   -> mk_mterm (Mrational (Big_int.zero_big_int, Big_int.unit_big_int)) (Tbuiltin b)
       | Bdate       -> emit_error (NoInitExprFor "date")
       | Bduration   -> mk_mterm (Mduration (Core.mk_duration ())) (Tbuiltin b)
+      | Btimestamp  -> emit_error (NoInitExprFor "timestamp")
       | Bstring     -> mk_mterm (Mstring "") (Tbuiltin b)
       | Baddress    -> emit_error (NoInitExprFor "address")
       | Brole       -> emit_error (NoInitExprFor "role")
@@ -75,7 +76,7 @@ let generate_storage (model : model) : model =
       | Some v -> v
       | None   -> init_default_value type_
     in
-    mk_storage_item name mt type_ dv
+    mk_storage_item name mt type_ dv ~const:var.constant
   in
 
   let process_storage_item d : storage_item list =
@@ -91,10 +92,10 @@ let generate_storage (model : model) : model =
   let process_mterm (model : model) : model =
     let rec aux c (mt : mterm) : mterm =
       match mt.node with
-      | Massign (op, id, v) when Model.Utils.is_field_storage model (unloc id) ->
+      | Massign (op, t, id, v) when Model.Utils.is_field_storage model (unloc id) ->
         begin
           let vv = aux c v in
-          mk_mterm (Massignvarstore (op, id, vv)) Tunit
+          mk_mterm (Massignvarstore (op, t, id, vv)) Tunit
         end
       | _ -> map_mterm (aux c) mt
     in

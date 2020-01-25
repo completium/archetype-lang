@@ -1,0 +1,9 @@
+archetype expr_cmp_eq_addr_addr
+
+variable res : bool = false
+
+action exec () {
+  effect {
+    res := @tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg = @tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg
+  }
+}

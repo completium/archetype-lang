@@ -39,6 +39,7 @@ let e_minus         =  (100, Left)     (* -   *)
 let e_mult          =  (110, Left)     (* *   *)
 let e_div           =  (110, Left)     (* /   *)
 let e_modulo        =  (110, Left)     (* %   *)
+let e_divrat        =  (115, Left)     (* div *)
 let e_not           =  (115, Right)    (* not *)
 let e_dot           =  (120, Right)    (* .   *)
 let e_coloncolon    =  (130, NonAssoc) (* ::  *)
@@ -67,6 +68,7 @@ let get_prec_from_operator (op : operator) =
   | Arith Minus     -> e_minus
   | Arith Mult      -> e_mult
   | Arith Div       -> e_div
+  | Arith DivRat    -> e_divrat
   | Arith Modulo    -> e_modulo
   | Unary Uplus     -> e_plus
   | Unary Uminus    -> e_minus
@@ -125,10 +127,15 @@ let rec pp_type outer pos fmt e =
       "%a option"
       pp_type_default x
 
+  | Tlist x ->
+    Format.fprintf fmt
+      "%a list"
+      pp_type_default x
+
   | Tkeyof t ->
-      Format.fprintf fmt
-        "pkey of %a"
-        pp_type_default t
+    Format.fprintf fmt
+      "pkey of %a"
+      pp_type_default t
 
 let pp_type fmt e = pp_type e_default PNone fmt e
 
@@ -156,6 +163,7 @@ let arithmetic_operator_to_str op =
   | Minus  -> "-"
   | Mult   -> "*"
   | Div    -> "/"
+  | DivRat -> "div"
   | Modulo -> "%"
 
 let unary_operator_to_str op =
@@ -392,8 +400,8 @@ let rec pp_expr outer pos fmt a =
     let pp fmt x =
       let pp_option_ fmt x =
         match x with
-        | OSome x -> Format.fprintf fmt "Some %a" pp_simple_expr x
-        | ONone -> Format.fprintf fmt "None"
+        | OSome x -> Format.fprintf fmt "some(%a)" pp_simple_expr x
+        | ONone -> Format.fprintf fmt "none"
       in
       Format.fprintf fmt "%a"
         pp_option_ x
@@ -479,7 +487,8 @@ let rec pp_expr outer pos fmt a =
   | Eletin (id, t, e, body, other) ->
 
     let pp fmt (id, t, e, body, other) =
-      Format.fprintf fmt "@[@[<hv 0>let %a%a =@;<1 2>%a@;<1 0>in@]@ %a%a@]" (*"let %a = %a in %a"*)
+      Format.fprintf fmt "@[@[<hv 0>let%a %a%a =@;<1 2>%a@;<1 0>in@]@ %a%a@]" (*"let %a = %a in %a"*)
+        (pp_option (fun fmt _ -> Format.fprintf fmt " some")) other
         pp_id id
         (pp_option (pp_prefix " : " pp_type)) t
         (pp_expr e_in PLeft) e
@@ -534,6 +543,8 @@ let rec pp_expr outer pos fmt a =
     in
     (maybe_paren outer e_colon pos pp) fmt i
 
+  | Enothing -> Format.fprintf fmt "()"
+
   | Einvalid -> Format.fprintf fmt "(* invalid expr *)"
 
 
@@ -545,9 +556,10 @@ and pp_else fmt (e : expr option) =
 and pp_literal fmt lit =
   match lit with
   | Lnumber   n -> Format.fprintf fmt "%s" (Big_int.string_of_big_int n)
-  | Lrational (d, n) -> Format.fprintf fmt "%s div %s"
+  | Ldecimal  n -> Format.fprintf fmt "%s" n
+  (* | Lrational (d, n) -> Format.fprintf fmt "%s div %s"
                           (Big_int.string_of_big_int d)
-                          (Big_int.string_of_big_int n)
+                          (Big_int.string_of_big_int n) *)
   | Ltz       n -> Format.fprintf fmt "%stz" (Big_int.string_of_big_int n)
   | Lmtz      n -> Format.fprintf fmt "%smtz" (Big_int.string_of_big_int n)
   | Lutz      n -> Format.fprintf fmt "%sutz" (Big_int.string_of_big_int n)
@@ -583,15 +595,14 @@ and pp_ident_quant fmt a =
 and pp_fun_ident_typ fmt (arg : lident_typ) =
   match arg with
   | (x, y, exts) ->
-    Format.fprintf fmt "(%a%a : %a)"
+    Format.fprintf fmt "%a%a : %a"
       pp_id x
       pp_extensions exts
       pp_type y
 
 and pp_fun_args fmt args =
-  match args with
-  | [] -> Format.fprintf fmt ""
-  | _ -> Format.fprintf fmt " %a" (pp_list " " pp_fun_ident_typ) args
+  Format.fprintf fmt " (%a)"
+    (pp_list ", " pp_fun_ident_typ) args
 
 (* -------------------------------------------------------------------------- *)
 and pp_field fmt { pldesc = f; _ } =
@@ -626,7 +637,7 @@ let pp_to fmt ((to_, when_, effect) : (lident * expr option * expr option)) =
 let pp_specification_variable fmt (sv : (lident * type_t * expr option) loced) =
   match sv with
   | {pldesc = (id, typ, dv); _} ->
-    Format.fprintf fmt "variable %a %a%a"
+    Format.fprintf fmt "variable %a : %a%a"
       pp_id id
       pp_type typ
       (pp_option (pp_prefix " = " (pp_expr e_equal PRight))) dv
@@ -645,9 +656,9 @@ let pp_asset_option fmt opt =
 let pp_signature fmt s =
   match s with
   | Ssignature (id, xs) ->
-    Format.fprintf fmt "action %a%a"
+    Format.fprintf fmt "action %a (%a)"
       pp_id id
-      (pp_do_if (List.length xs > 0) (pp_prefix " : " (pp_list ", " pp_type))) xs
+      (pp_list ", " (fun fmt (id, type_) -> Format.fprintf fmt "%a : %a" pp_id id pp_type type_)) xs
 
 let operation_enum_to_str e =
   match e with
@@ -715,12 +726,19 @@ let pp_invariants fmt is =
 let pp_use fmt u =
   (pp_do_if (match u with | [] -> false | _ -> true) (fun fmt -> Format.fprintf fmt "@\n  @[use: %a;@]" (pp_list "@ " pp_id))) fmt u
 
-let pp_postcondition fmt (id, f, is, u) =
-  Format.fprintf fmt "postcondition %a {@\n  @[%a@]%a%a@\n}"
+let pp_pc_ci fmt (s, id, f, is, u) =
+  Format.fprintf fmt "%a %a {@\n  @[%a@]%a%a@\n}"
+    pp_str s
     pp_id id
     (pp_expr e_default PNone) f
     pp_invariants is
     pp_use u
+
+let pp_postcondition fmt (id, f, is, u) =
+  pp_pc_ci fmt ("postcondition", id, f, is, u)
+
+let pp_contractinvariant fmt (id, f, is, u) =
+  pp_pc_ci fmt ("contract invariant", id, f, is, u)
 
 let pp_assert fmt (id, f, is, u) =
   Format.fprintf fmt "assert %a {@\n  @[%a@]%a%a@\n}"
@@ -743,29 +761,21 @@ let pp_specification_item fmt = function
       pp_type typ
       (pp_expr e_default PNone) body
 
-  | Vlemma (id, body) ->
-    Format.fprintf fmt "lemma %a {@\n  @[%a@]@\n}"
-      pp_id id
-      (pp_expr e_default PNone) body
-
-  | Vtheorem (id, body) ->
-    Format.fprintf fmt "theorem %a {@\n  @[%a@]@\n}"
-      pp_id id
-      (pp_expr e_default PNone) body
-
   | Vvariable (id, typ, dv) ->
-    Format.fprintf fmt "variable %a %a%a"
+    Format.fprintf fmt "variable %a : %a%a"
       pp_id id
       pp_type typ
       (pp_option (fun fmt x -> Format.fprintf fmt " = %a" (pp_expr e_equal PRight) x)) dv
 
   | Veffect e ->
-    Format.fprintf fmt "effect {@\n  @[%a@]@\n}"
+    Format.fprintf fmt "shadow effect {@\n  @[%a@]@\n}"
       (pp_expr e_default PNone) e
 
   | Vassert (id, f, is, u) -> pp_assert fmt (id, f, is, u)
 
   | Vpostcondition (id, f, xs, u) -> pp_postcondition fmt (id, f, xs, u)
+
+  | Vcontractinvariant (id, f, xs, u) -> pp_contractinvariant fmt (id, f, xs, u)
 
 let pp_specification_items = pp_list "@\n@\n" pp_specification_item
 
@@ -847,9 +857,9 @@ let pp_action_properties fmt (props : action_properties) =
     fun v ->
       let items, exts = v |> unloc in
       pp_spec fmt (items, exts)
-  ) props.spec;
-  if (props.accept_transfer)
-  then Format.fprintf fmt "accept transfer@\n";
+  ) props.spec_fun;
+  if (not props.accept_transfer)
+  then Format.fprintf fmt "refuse transfer@\n";
   map_option (fun (e, exts) ->
       Format.fprintf fmt "called by%a %a@\n"
         pp_extensions exts
@@ -879,7 +889,7 @@ let pp_transition fmt (to_, conditions, effect) =
 
 let rec pp_declaration fmt { pldesc = e; _ } =
   let is_empty_action_properties_opt (ap : action_properties) (a : 'a option) =
-    match ap.calledby, ap.require, ap.functions, ap.spec, a with
+    match ap.calledby, ap.require, ap.functions, ap.spec_fun, a with
     | None, None, [], None, None -> true
     | _ -> false in
   match e with
@@ -889,7 +899,7 @@ let rec pp_declaration fmt { pldesc = e; _ } =
       pp_id id
 
   | Dvariable (id, typ, dv, opts, kind, invs, exts) ->
-    Format.fprintf fmt "%a%a %a %a%a%a%a"
+    Format.fprintf fmt "%a%a %a : %a%a%a%a"
       pp_str (match kind with | VKvariable -> "variable" | VKconstant -> "constant")
       pp_extensions exts
       pp_id id

@@ -30,6 +30,7 @@ let to_model (ast : A.model) : M.model =
     | A.Collection -> M.Collection
     | A.Partition  -> M.Partition
     | A.Subset     -> M.Collection
+    | A.List       -> M.List
     (* | _            -> emit_error (NotSupportedContainer (Format.asprintf "%a@." A.pp_container c)) *)
   in
 
@@ -194,6 +195,7 @@ let to_model (ast : A.model) : M.model =
     | A.Parith (A.Minus, l, r)          -> M.Mminus     (f l, f r)
     | A.Parith (A.Mult, l, r)           -> M.Mmult      (f l, f r)
     | A.Parith (A.Div, l, r)            -> M.Mdiv       (f l, f r)
+    | A.Parith (A.DivRat, l, r)         -> M.Mdivrat    (f l, f r)
     | A.Parith (A.Modulo, l, r)         -> M.Mmodulo    (f l, f r)
     | A.Puarith (A.Uplus, e)            -> M.Muplus     (f e)
     | A.Puarith (A.Uminus, e)           -> M.Muminus    (f e)
@@ -223,6 +225,7 @@ let to_model (ast : A.model) : M.model =
     | A.Pconst Ctransferred                  -> M.Mtransferred
     | A.Pconst Ccaller                       -> M.Mcaller
     | A.Pconst Cbalance                      -> M.Mbalance
+    | A.Pconst Csource                       -> M.Msource
     | A.Pconst c                             ->
       Format.eprintf "expr const unkown: %a@." A.pp_const c;
       assert false
@@ -237,6 +240,20 @@ let to_model (ast : A.model) : M.model =
     | A.Pcall (Some p, A.Cconst A.Cremoved,   []) -> M.Msetremoved   (f p)
     | A.Pcall (Some p, A.Cconst A.Citerated,  []) -> M.Msetiterated  (f p)
     | A.Pcall (Some p, A.Cconst A.Ctoiterate, []) -> M.Msettoiterate (f p)
+
+    | A.Pcall (None, A.Cconst A.Cmin, [AExpr a; AExpr b]) ->
+      let fa = f a in
+      let fb = f b in
+      M.Mfunmin (fa, fb)
+
+    | A.Pcall (None, A.Cconst A.Cmax, [AExpr a; AExpr b]) ->
+      let fa = f a in
+      let fb = f b in
+      M.Mfunmax (fa, fb)
+
+    | A.Pcall (None, A.Cconst A.Cabs, [AExpr a]) ->
+      let fa = f a in
+      M.Mfunabs (fa)
 
     | A.Pcall (_, A.Cid id, args) ->
       M.Mapp (id, List.map (fun x -> term_arg_to_expr f x) args)
@@ -362,6 +379,12 @@ let to_model (ast : A.model) : M.model =
     | _ -> assert false
   in
 
+  let is_asset_name (pterm : M.mterm) an : bool =
+    match pterm with
+    | {type_ = Tasset asset_name} -> String.equal an (unloc asset_name)
+    | _ -> false
+  in
+
   (* myasset.update k {f1 = v1; f2 = v2}
 
      let _k = k in
@@ -371,15 +394,15 @@ let to_model (ast : A.model) : M.model =
 
   let extract_letin (c : M.mterm) (k : M.mterm) (e : (A.lident * A.operator * M.mterm) list) : M.mterm__node =
 
-    let asset_aaa =
-      match k.node with
-      | M.Mdotasset (a, _) -> Some a
-      | _ -> None
-    in
-
     let asset_name = extract_asset_name c in
     let asset_loced = dumloc asset_name in
     let asset = A.Utils.get_asset ast asset_loced in
+
+    let asset_aaa =
+      match k.node with
+      | M.Mdotasset (a, _) when is_asset_name a asset_name -> Some a
+      | _ -> None
+    in
 
     let type_asset = M.Tasset asset_loced in
     let type_container_asset = M.Tcontainer (type_asset, Collection) in
@@ -496,13 +519,25 @@ let to_model (ast : A.model) : M.model =
 
   let to_contract_signature (s : A.lident A.signature) : M.contract_signature =
     let name = s.name in
-    M.mk_contract_signature name ~args:(List.map (fun arg -> ptyp_to_type arg) s.args) ~loc:s.loc
+    M.mk_contract_signature name ~args:(List.map (fun (id, typ) -> (id, ptyp_to_type typ)) s.args) ~loc:s.loc
   in
   let to_contract (c : A.contract) : M.contract =
     M.mk_contract c.name
       ~signatures:(List.map to_contract_signature c.signatures)
       ?init:(Option.map to_mterm c.init)
       ~loc:c.loc
+  in
+
+  let mk_contract_call (c : A.lident A.term_poly) =
+    match c.type_ with
+    | Some (Tcontract v) -> Some (unloc v)
+    | _ -> None
+  in
+
+  let is_contract_call c =
+    match mk_contract_call c with
+    | Some _ -> true
+    | _ -> false
   in
 
   let to_instruction_node (n : A.lident A.instruction_node) lbl g f : ('id, 'instr) M.mterm_node =
@@ -521,8 +556,8 @@ let to_model (ast : A.model) : M.model =
     | A.Ideclvar (i, v)         -> M.Mdeclvar ([i], Option.map ptyp_to_type v.type_, f v) (* TODO *)
     | A.Iseq l                  -> M.Mseq (List.map g l)
     | A.Imatchwith (m, l)       -> M.Mmatchwith (f m, List.map (fun (p, i) -> (to_pattern p, g i)) l)
-    | A.Iassign (op, `Var x, e) -> M.Massign (to_assignment_operator op, x, to_mterm e)
-    | A.Iassign (op, `Field (nm, x), e) -> M.Massignfield (to_assignment_operator op, to_mterm nm, x, to_mterm e)
+    | A.Iassign (t, op, `Var x, e) -> M.Massign (to_assignment_operator op, ptyp_to_type t, x, to_mterm e)
+    | A.Iassign (t, op, `Field (nm, x), e) -> M.Massignfield (to_assignment_operator op, ptyp_to_type t, to_mterm nm, x, to_mterm e)
     | A.Irequire (b, t)         ->
       let cond : M.mterm =
         if b
@@ -536,6 +571,15 @@ let to_model (ast : A.model) : M.model =
     | A.Iassert e               -> M.Massert (f e)
     | A.Ireturn e               -> M.Mreturn (f e)
     | A.Ilabel i                -> M.Mlabel i
+    | A.Ifail m                 -> M.Mfail (Invalid (f m))
+    | A.Icall (Some c, Cid id, args) when (is_contract_call c) ->
+      let contract_id = Option.get (mk_contract_call c) in
+      let c = f c in
+      let ids = A.Utils.get_contract_sig_ids ast contract_id (unloc id) in
+      let vs = List.map (term_arg_to_expr f) args in
+      let args = List.map2 (fun x y -> (x, y)) ids vs in
+      M.Mexternal (contract_id, id, c, args)
+
     | A.Icall (i, Cid id, args) -> M.Mapp (id, Option.map_dfl (fun v -> [to_mterm v]) [] i @ List.map (term_arg_to_expr f) args)
 
     | A.Icall (_, A.Cconst (A.Cfail), [AExpr p]) ->
@@ -547,7 +591,7 @@ let to_model (ast : A.model) : M.model =
         match fp with
         | {node = M.Mvarstorecol asset_name; _} -> M.Maddasset (unloc asset_name, fq)
         | {node = M.Mdotasset ({type_ = M.Tasset asset_name ; _} as arg, f); _} -> M.Maddfield (unloc asset_name, unloc f, arg, fq)
-        | _ -> M.Maddlocal (fp, fq)
+        | _ -> assert false
       )
 
     | A.Icall (Some p, A.Cconst (A.Cremove), [AExpr q]) -> (
@@ -556,23 +600,7 @@ let to_model (ast : A.model) : M.model =
         match fp with
         | {node = M.Mvarstorecol asset_name; _} -> M.Mremoveasset (unloc asset_name, fq)
         | {node = M.Mdotasset ({type_ = M.Tasset asset_name ; _} as arg, f); _} -> M.Mremovefield (unloc asset_name, unloc f, arg, fq)
-        | _ -> M.Mremovelocal (fp, fq)
-      )
-
-    | A.Icall (Some p, A.Cconst (A.Cclear), []) -> (
-        let fp = f p in
-        match fp with
-        | {node = M.Mvarstorecol asset_name; _} -> M.Mclearasset (unloc asset_name)
-        | {node = M.Mdotasset ({type_ = M.Tasset asset_name ; _} as arg, f); _} -> M.Mclearfield (unloc asset_name, unloc f, arg)
-        | _ -> M.Mclearlocal (fp)
-      )
-
-    | A.Icall (Some p, A.Cconst (A.Creverse), []) -> (
-        let fp = f p in
-        match fp with
-        | {node = M.Mvarstorecol asset_name; _} -> M.Mreverseasset (unloc asset_name)
-        | {node = M.Mdotasset ({type_ = M.Tasset asset_name ; _} as arg, f); _} -> M.Mreversefield (unloc asset_name, unloc f, arg)
-        | _ -> M.Mreverselocal (fp)
+        | _ -> assert false
       )
 
     | A.Icall (Some p, A.Cconst (A.Cupdate), [AExpr k; AEffect e]) ->
@@ -836,7 +864,11 @@ let to_model (ast : A.model) : M.model =
 
     let process_body_args () : M.argument list * M.mterm =
       let args  = List.map (fun (x : A.lident A.decl_gen) -> (x.name, (ptyp_to_type |@ Option.get) x.typ, None)) transaction.args in
+      let empty : M.mterm = M.mk_mterm (M.Mseq []) Tunit in
       match transaction.transition, transaction.effect with
+      | None, None ->
+        let body = empty in
+        args, body
       | None, Some e ->
         let body = to_instruction e in
         args, body
@@ -850,20 +882,7 @@ let to_model (ast : A.model) : M.model =
           (List.fold_right (fun ((id, cond, effect) : (A.lident * A.pterm option * A.instruction option)) (acc : M.mterm) : M.mterm ->
                let tre : M.mterm =
                  match t.on with
-                 | Some (_id, _id_asset) ->
-                   (
-                     (* let asset : M.mterm = M.mk_mterm (M.Mvarstorecol id_asset) (M.Tasset id_asset) in *)
-
-                     (* let q : qualid = mk_sp (Qident state) in
-                        let aid : pterm = mk_sp (Pvar id) in *)
-
-                     (* let arg : pterm = mk_sp (Precord [q; aid]) in *)
-                     (* let args : ('id, 'typ, 'term) term_arg list = [] in *)
-
-                     (* M.mk_mterm (M.Mcall Icall (Some asset, Cconst Cupdate, args)) Tunit *)
-
-                     assert false
-                   )
+                 | Some (_id, _id_asset) -> assert false
                  | _ ->
                    let a : M.mterm = M.mk_mterm (M.Mvarlocal id) (M.Tstate) ~loc:(Location.loc id) in
                    M.mk_mterm (M.Massignstate a) Tunit in
@@ -878,9 +897,7 @@ let to_model (ast : A.model) : M.model =
                | None -> code
              ) t.trs body)
         in
-        let code : M.mterm = M.mk_mterm (M.Mseq []) Tunit in
-        let body : M.mterm = build_code code in
-
+        let body : M.mterm = build_code empty in
         let body = match t.from.node with
           | Sany -> body
           | _ ->

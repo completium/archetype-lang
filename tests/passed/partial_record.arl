@@ -1,13 +1,13 @@
 archetype partial_record
 
-variable v int = 1
+variable v : int = 1
 
 asset asset1 {
   id: string;
   val: int = 0;
 }
 
-action anaction {
+action exec () {
   effect {
     var a = { id = "myid" }
   }

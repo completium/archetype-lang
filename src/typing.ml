@@ -197,6 +197,7 @@ let pp_operator fmt (op : PT.operator) : unit =
   | Arith Mult    -> pp "*"
   | Arith Div     -> pp "/"
   | Arith Modulo  -> pp "%"
+  | Arith DivRat  -> pp "div"
   | Unary Uplus   -> pp "unary +"
   | Unary Uminus  -> pp "unary -"
   | Unary Not     -> pp "not"
@@ -420,10 +421,11 @@ type groups = {
 
 (* -------------------------------------------------------------------- *)
 let globals = [
-  ("now"    ,     M.Cnow    , M.vtdate);
-  ("balance",     M.Cbalance, M.vtcurrency);
-  ("transferred", M.Ctransferred, M.vtcurrency);
-  ("caller",      M.Ccaller,  M.vtaddress);
+  ("balance"     , M.Cbalance     , M.vtcurrency);
+  ("caller"      , M.Ccaller      , M.vtaddress);
+  ("now"         , M.Cnow         , M.vtdate);
+  ("source"      , M.Csource      , M.vtaddress);
+  ("transferred" , M.Ctransferred , M.vtcurrency);
 ]
 
 let statename = "state"
@@ -455,16 +457,11 @@ let methods : (string * method_) list =
     ("isempty"     , mk M.Cisempty      `Pure   `Total   ([             ], Some (`T M.vtbool)));
     ("get"         , mk M.Cget          `Pure   `Partial ([`Pk          ], Some `The));
     ("add"         , mk M.Cadd          `Effect `Total   ([`The         ], None));
-    ("addnofail"   , mk M.Caddnofail    `Effect `Total   ([`The         ], None));
     ("remove"      , mk M.Cremove       `Effect `Total   ([`Pk          ], None));
-    ("removeorfail", mk M.Cremovenofail `Effect `Total   ([`Pk          ], None));
     ("removeif"    , mk M.Cremoveif     `Effect `Total   ([`Pred        ], None));
     ("update"      , mk M.Cupdate       `Effect `Total   ([`Pk; `Effect ], None));
-    ("updatenofail", mk M.Cupdatenofail `Effect `Total   ([`Pk; `Effect ], None));
-    ("clear"       , mk M.Cclear        `Effect `Total   ([             ], None));
     ("contains"    , mk M.Ccontains     `Pure   `Total   ([`Pk          ], Some (`T M.vtbool)));
     ("nth"         , mk M.Cnth          `Pure   `Partial ([`T M.vtint   ], Some (`Asset)));
-    ("reverse"     , mk M.Creverse      `Effect `Total   ([             ], None));
     ("select"      , mk M.Cselect       `Pure   `Total   ([`Pred        ], Some (`SubColl)));
     ("sort"        , mk M.Csort         `Pure   `Total   ([`Cmp         ], Some (`SubColl)));
     ("count"       , mk M.Ccount        `Pure   `Total   ([             ], Some (`T M.vtint)));
@@ -567,7 +564,7 @@ and ctordecl = M.lident * (M.lident option * M.pterm) list
 (* -------------------------------------------------------------------- *)
 type contractdecl = {
   ct_name    : M.lident;
-  ct_entries : (M.lident * M.ptyp list) list;
+  ct_entries : (M.lident * (M.lident * M.ptyp) list) list;
 }
 
 (* -------------------------------------------------------------------- *)
@@ -1111,6 +1108,7 @@ let tt_arith_operator (op : PT.arithmetic_operator) =
   | Minus  -> M.Minus
   | Mult   -> M.Mult
   | Div    -> M.Div
+  | DivRat -> M.DivRat
   | Modulo -> M.Modulo
 
 (* -------------------------------------------------------------------- *)
@@ -1142,6 +1140,9 @@ let rec for_type_exn (env : env) (ty : PT.type_t) : M.ptyp =
 
   | Tcontainer (ty, ctn) ->
     M.Tcontainer (for_type_exn env ty, for_container env ctn)
+
+  | Tlist ty ->
+    M.Tcontainer (for_type_exn env ty, M.List)
 
   | Ttuple tys ->
     M.Ttuple (List.map (for_type_exn env) tys)
@@ -1195,8 +1196,11 @@ let for_literal (_env : env) (topv : PT.literal loced) : M.bval =
   | Lnumber i ->
     mk_sp M.vtint (M.BVint i)
 
-  | Lrational (n, d) ->
-    mk_sp M.vtrational (M.BVrational (n, d))
+  | Ldecimal str ->
+    begin
+     let n, d = Core.decimal_string_to_rational str in
+     mk_sp M.vtrational (M.BVrational (n, d))
+    end
 
   | Lstring s ->
     mk_sp M.vtstring (M.BVstring s)
@@ -1717,6 +1721,7 @@ let rec for_xexpr (mode : emode_t) (env : env) ?(ety : M.ptyp option) (tope : PT
             mk_sp (Some M.vtbool) (M.Pquantifer (qt, x, (ast, xty), body))
       end
 
+    | Enothing
     | Eapp      _
     | Eassert   _
     | Elabel    _
@@ -2259,7 +2264,7 @@ let rec for_instruction (env : env) (i : PT.expr) : env * M.instruction =
 
               let args =
                 List.map2
-                  (fun arg ety -> for_xexpr `Expr env ~ety arg)
+                  (fun arg (_arg_id, ety) -> for_xexpr `Expr env ~ety arg)
                   args entry in
 
               let args = List.map (fun x -> M.AExpr x) args in
@@ -2294,7 +2299,8 @@ let rec for_instruction (env : env) (i : PT.expr) : env * M.instruction =
             for_assign_expr `Expr env (loc plv) (op, fty) pe
         in
 
-        env, mki (M.Iassign (op, x, e))
+        let type_assigned = M.Tbuiltin (VTint) in (* TODO: replace by the var/field assigned type *)
+        env, mki (M.Iassign (type_assigned, op, x, e))
       end
 
     | Etransfer (e, d) ->
@@ -2458,14 +2464,6 @@ let for_specification_item
           (env, (arg, f)))
     in ((env, poenv), `Definition (x, arg, f))
 
-  | PT.Vlemma (x, f) ->
-    let f = for_formula env f in
-    ((env, poenv), `Lemma (x, f))
-
-  | PT.Vtheorem (x, f) ->
-    let f = for_formula env f in
-    ((env, poenv), `Theorem (x, f))
-
   | PT.Vvariable (x, ty, e) ->
     let ty = for_type env ty in
     let e  = Option.map (for_expr env ?ety:ty) e in
@@ -2499,7 +2497,8 @@ let for_specification_item
     let _, ((poenv, _) as i) = for_effect poenv i in
     ((env, poenv), `Effect i)
 
-  | PT.Vpostcondition (x, f, invs, uses) ->
+  | PT.Vpostcondition (x, f, invs, uses)
+  | PT.Vcontractinvariant (x, f, invs, uses) ->
     let for_inv (lbl, linvs) =
       let env0 =
         match Env.Label.lookup env (unloc lbl) with
@@ -2720,7 +2719,7 @@ let for_action_properties (env, poenv : env * env) (act : PT.action_properties) 
   let env, req  = Option.foldmap for_lbls_bexpr env (Option.fst act.require) in
   let env, fai  = Option.foldmap for_lbls_bexpr env (Option.fst act.failif) in
   let env, spec = Option.foldmap
-                    (fun env x -> for_specification (env, poenv) x) env act.spec in
+                    (fun env x -> for_specification (env, poenv) x) env act.spec_fun in
   let env, funs = List.fold_left_map for_function env act.functions in
 
   (env, (calledby, req, fai, spec, funs))
@@ -3041,13 +3040,13 @@ let for_contract_decl (env : env) (decl : PT.contract_decl loced) =
   let name, sigs, _ = unloc decl in
   let entries =
     List.pmap (fun (PT.Ssignature (ename, psig)) ->
-        let for1 pty =
+        let for1 (arg_id, pty) =
           let ty = for_type env pty in
           Option.bind (fun ty ->
               if not (Type.is_primitive ty) then begin
                 Env.emit_error env (loc pty, NotAPrimitiveType);
                 None
-              end else Some ty) ty in
+              end else Some (arg_id, ty)) ty in
 
         let sig_ = List.map for1 psig in
 
@@ -3337,7 +3336,7 @@ let variables_of_vdecls fdecls =
 (* -------------------------------------------------------------------- *)
 let contracts_of_cdecls (decls : contractdecl option list) =
   let for1 (decl : contractdecl) =
-    let for_sig ((name, args) : M.lident * M.ptyp list) =
+    let for_sig ((name, args) : M.lident * (M.lident * M.ptyp) list) =
       M.{ name; args; loc = loc name; } in
 
     M.{ name       = decl.ct_name;

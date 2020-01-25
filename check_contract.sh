@@ -6,7 +6,6 @@ LIB_ARCHETYPE=./mlw
 GRET=0
 
 process_ligo() {
-    echo -ne "ligo:      "
     FILE=$1
     OUT=$FILE.ligo
     TZ=out.tz
@@ -30,9 +29,36 @@ process_ligo() {
             GRET=1
         fi
     fi
-    echo ""
     rm -fr $OUT *.pp.ligo $TZ
 }
+
+process_scaml() {
+    FILE=$1
+    OUT=$FILE.ml
+    TZ=out.tz
+    rm -fr $OUT
+    $BIN -t scaml $FILE >$OUT
+    RET=$(echo $?)
+    if [ ${RET} -eq 0 ]; then
+        echo -ne "\033[32m OK \033[0m"
+    else
+        echo -ne "\033[31m KO \033[0m"
+        GRET=1
+    fi
+
+    if [ -x "$(command -v scamlc)" ]; then
+        scamlc $OUT >$TZ 2> /dev/null
+        RET=$(echo $?)
+        if [ ${RET} -eq 0 ]; then
+            echo -ne "\033[32m OK \033[0m"
+        else
+            echo -ne "\033[31m KO \033[0m"
+            GRET=1
+        fi
+    fi
+    rm -fr $OUT $TZ
+}
+
 
 process_smartpy() {
     echo -ne "smartpy:   "
@@ -81,7 +107,6 @@ process_ocaml() {
 }
 
 process_whyml() {
-    echo -ne "whyml:     "
     FILE=$1
     OUT=$FILE.mlw
     rm -fr $OUT
@@ -102,17 +127,18 @@ process_whyml() {
         echo -ne "\033[31m KO \033[0m"
         GRET=1
     fi
-    echo ""
     rm -fr $OUT
 }
 
 process() {
     FILE=$1
-    echo -e "process: " $FILE
+    printf '%-60s' $FILE
     process_ligo $FILE
+    #    process_scaml $FILE
     #    process_smartpy $FILE
     #    process_ocaml $FILE
     process_whyml $FILE
+    echo ""
 }
 
 CONTRACT=contracts/miles_with_expiration.arl

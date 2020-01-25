@@ -1,0 +1,9 @@
+archetype rational_simple
+
+constant r : rational = 1 div 2
+
+action exec () {
+  effect {
+    require (true)
+  }
+}

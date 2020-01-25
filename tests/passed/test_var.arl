@@ -1,11 +1,11 @@
 archetype test_var
 
-variable n int = 0
+variable n : int = 0
 with {
   inv_n: n >= 0;
 }
 
-action main {
+action exec () {
   effect {
     var i = 0;
     n := i

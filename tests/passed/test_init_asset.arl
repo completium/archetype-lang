@@ -1,4 +1,4 @@
-archetype test_asset
+archetype test_init_asset
 
 asset my_asset_simple identified by str {
   str : string
@@ -10,7 +10,7 @@ asset my_asset identified by id {
   mycollection : my_asset_simple collection;
 } initialized by [ { "my_id"; 0; [] } ]
 
-action main {
+action exec () {
   effect {
     my_asset.remove ("my_id")
   }

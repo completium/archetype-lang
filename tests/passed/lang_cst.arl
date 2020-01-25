@@ -1,0 +1,12 @@
+archetype lang_cst
+
+action exec () {
+  effect {
+    var a : tez     = balance;      (* BALANCE *)
+    var b : address = caller;       (* SENDER *)
+    var c : date    = now;          (* NOW *)
+    var d : address = source;       (* SOURCE *)
+    var e : tez     = transferred;  (* AMOUNT *)
+    require(true)
+  }
+}

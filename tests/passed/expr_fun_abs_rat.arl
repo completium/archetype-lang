@@ -1,0 +1,9 @@
+archetype expr_fun_abs_rat
+
+variable res : int = 0
+
+action exec () {
+  effect {
+    res := abs(-1 div 2)
+  }
+}

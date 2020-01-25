@@ -63,8 +63,9 @@ let pp_model fmt (model : model) =
     | Bbool       -> Format.fprintf fmt "bool"
     | Bint        -> Format.fprintf fmt "int"
     | Brational   -> Format.fprintf fmt "rational"
-    | Bdate       -> Format.fprintf fmt "timestamp"
+    | Bdate       -> Format.fprintf fmt "date"
     | Bduration   -> Format.fprintf fmt "duration"
+    | Btimestamp  -> Format.fprintf fmt "timestamp"
     | Bstring     -> Format.fprintf fmt "string"
     | Baddress    -> Format.fprintf fmt "address"
     | Brole       -> Format.fprintf fmt "key_hash"
@@ -117,7 +118,7 @@ let pp_model fmt (model : model) =
   in
 
 
-  let pp_storage_const fmt = function
+  let pp_api_asset fmt = function
     | Get an ->
       Format.fprintf fmt
         "def get_%s (self, key):@\n\
@@ -145,18 +146,6 @@ let pp_model fmt (model : model) =
          \t\tdel self.data.%s_assets[key]@\n"
         an an an
 
-    | Clear an ->
-      Format.fprintf fmt
-        "def clear_%s (self):@\n\
-         \t\t#TODO@\n"
-        an
-
-    | Reverse an ->
-      Format.fprintf fmt
-        "def reverse_%s (self):@\n\
-         \t\t#TODO@\n"
-        an
-
     | UpdateAdd (an, fn) ->
       let k, _t = Utils.get_asset_key model an in
       Format.fprintf fmt
@@ -177,18 +166,6 @@ let pp_model fmt (model : model) =
         fn
         an pp_str k
 
-    | UpdateClear (an, fn) ->
-      Format.fprintf fmt
-        "def clear_%s_%s (self):@\n\
-         \t\t#TODO@\n"
-        an fn
-
-    | UpdateReverse (an, fn) ->
-      Format.fprintf fmt
-        "def reverse_%s_%s (self):@\n\
-         \t\t#TODO@\n"
-        an fn
-
     | ToKeys an ->
       Format.fprintf fmt
         "def to_keys_%s (self):@\n\
@@ -200,16 +177,7 @@ let pp_model fmt (model : model) =
         "def col_to_keys_%s (self):@\n\
          \t\t#TODO@\n"
         an
-  in
 
-  let pp_container_const fmt = function
-    | AddItem t-> Format.fprintf fmt "add\t %a" pp_type t
-    | RemoveItem t -> Format.fprintf fmt "remove\t %a" pp_type t
-    | ClearItem t -> Format.fprintf fmt "clear\t %a" pp_type t
-    | ReverseItem t -> Format.fprintf fmt "reverse %a" pp_type t
-  in
-
-  let pp_function_const fmt = function
     | Select (an, _) ->
       Format.fprintf fmt
         "def select_%s (self, c, p):@\n\
@@ -286,40 +254,54 @@ let pp_model fmt (model : model) =
         an
   in
 
-  let pp_builtin_const fmt = function
-    | MinBuiltin t-> Format.fprintf fmt "min on %a" pp_type t
-    | MaxBuiltin t-> Format.fprintf fmt "max on %a" pp_type t
+  let pp_api_list fmt = function
+    | Lprepend t  -> Format.fprintf fmt "list_prepend\t %a" pp_type t
+    | Lcontains t -> Format.fprintf fmt "list_contains\t %a" pp_type t
+    | Lcount t    -> Format.fprintf fmt "list_count\t %a" pp_type t
+    | Lnth t      -> Format.fprintf fmt "list_nth\t %a" pp_type t
+  in
+
+  let pp_api_builtin fmt = function
+    | MinBuiltin t -> Format.fprintf fmt "min on %a" pp_type t
+    | MaxBuiltin t -> Format.fprintf fmt "max on %a" pp_type t
+  in
+
+  let pp_api_internal fmt = function
+    | RatEq        -> Format.fprintf fmt "rat_eq"
+    | RatCmp       -> Format.fprintf fmt "rat_cmp"
+    | RatArith     -> Format.fprintf fmt "rat_arith"
+    | RatTez       -> Format.fprintf fmt "rat_to_tez"
   in
 
   let pp_api_item_node fmt = function
-    | APIStorage   v -> pp_storage_const fmt v
-    | APIContainer v -> pp_container_const fmt v
-    | APIFunction  v -> pp_function_const fmt v
-    | APIBuiltin   v -> pp_builtin_const fmt v
+    | APIAsset      v -> pp_api_asset    fmt v
+    | APIList       v -> pp_api_list     fmt v
+    | APIBuiltin    v -> pp_api_builtin  fmt v
+    | APIInternal   v -> pp_api_internal fmt v
   in
 
-  let pp_api_item fmt (api_item : api_item) =
-    if api_item.only_formula
+  let pp_api_item fmt (api_storage : api_storage) =
+    if api_storage.only_formula
     then ()
-    else pp_api_item_node fmt api_item.node_item
+    else pp_api_item_node fmt api_storage.node_item
   in
 
   let pp_api_items fmt l =
-    let filter_api_items l : api_item list =
+    let filter_api_items l : api_storage list =
       let contains_select_asset_name a_name l : bool =
         List.fold_left (fun accu x ->
             match x.node_item with
-            | APIFunction  (Select (an, _)) -> accu || String.equal an a_name
+            | APIAsset  (Select (an, _)) -> accu || String.equal an a_name
             | _ -> accu
           ) false l
       in
-      List.fold_right (fun (x : api_item) accu ->
+      List.fold_right (fun (x : api_storage) accu ->
           match x.node_item with
-          | APIFunction  (Select (an, _p)) when contains_select_asset_name an accu -> accu
+          | APIAsset  (Select (an, _p)) when contains_select_asset_name an accu -> accu
           | _ -> x::accu
         ) l []
     in
-    let l : api_item list = filter_api_items l in
+    let l : api_storage list = filter_api_items l in
     if List.is_empty l
     then pp_nothing fmt
     else
@@ -402,13 +384,14 @@ let pp_model fmt (model : model) =
         in
         pp fmt (e, args)
 
-      | Mexternal (_, _, c, args) ->
-        let pp fmt (c, args) =
-          Format.fprintf fmt "%a (%a)"
+      | Mexternal (_, fid, c, args) ->
+        let pp fmt (c, fid, args) =
+          Format.fprintf fmt "%a.%a (%a)"
             f c
-            (pp_list ", " f) args
+            pp_id fid
+            (pp_list ", " (fun fmt (_, x) -> f fmt x)) args
         in
-        pp fmt (c, args)
+        pp fmt (c, fid, args)
 
       | Mget (c, k) ->
         let pp fmt (c, k) =
@@ -417,6 +400,15 @@ let pp_model fmt (model : model) =
             f k
         in
         pp fmt (c, k)
+
+      | Mgetfrommap (an, k, c) ->
+        let pp fmt (an, k, c) =
+          Format.fprintf fmt "Mgetfrommap_%a (%a, %a)"
+            pp_str an
+            f k
+            f c
+        in
+        pp fmt (an, k, c)
 
       | Mset (c, l, k, v) ->
         let pp fmt (c, _l, k, v) =
@@ -444,14 +436,6 @@ let pp_model fmt (model : model) =
             f i
         in
         pp fmt (an, fn, c, i)
-
-      | Maddlocal (c, i) ->
-        let pp fmt (c, i) =
-          Format.fprintf fmt "add (%a, %a)"
-            f c
-            f i
-        in
-        pp fmt (c, i)
 
       | Mremoveasset (an, i) ->
         let cond, str =
@@ -486,60 +470,6 @@ let pp_model fmt (model : model) =
             (pp_do_if cond pp_str) str
         in
         pp fmt (an, fn, c, i)
-
-      | Mremovelocal (c, i) ->
-        let pp fmt (c, i) =
-          Format.fprintf fmt "remove (%a, %a)"
-            f c
-            f i
-        in
-        pp fmt (c, i)
-
-      | Mclearasset (an) ->
-        let pp fmt (an) =
-          Format.fprintf fmt "clear_%a (self)"
-            pp_str an
-        in
-        pp fmt (an)
-
-      | Mclearfield (an, fn, i) ->
-        let pp fmt (an, fn, i) =
-          Format.fprintf fmt "clear_%a_%a (self, %a)"
-            pp_str an
-            pp_str fn
-            f i
-        in
-        pp fmt (an, fn, i)
-
-      | Mclearlocal (i) ->
-        let pp fmt (i) =
-          Format.fprintf fmt "clear (%a)"
-            f i
-        in
-        pp fmt (i)
-
-      | Mreverseasset (an) ->
-        let pp fmt (an) =
-          Format.fprintf fmt "reverse_%a (self)"
-            pp_str an
-        in
-        pp fmt (an)
-
-      | Mreversefield (an, fn, i) ->
-        let pp fmt (an, fn, i) =
-          Format.fprintf fmt "reverse_%a_%a (self, %a)"
-            pp_str an
-            pp_str fn
-            f i
-        in
-        pp fmt (an, fn, i)
-
-      | Mreverselocal (i) ->
-        let pp fmt (i) =
-          Format.fprintf fmt "reverse (%a)"
-            f i
-        in
-        pp fmt (i)
 
       | Mselect (an, c, p) ->
         let pp fmt (an, c, p) =
@@ -646,15 +576,19 @@ let pp_model fmt (model : model) =
         Format.fprintf fmt "Current.failwith \"%a\""
           pp_fail_type ft
 
-      | Mmathmin (l, r) ->
+      | Mfunmin (l, r) ->
         Format.fprintf fmt "min (%a, %a)"
           f l
           f r
 
-      | Mmathmax (l, r) ->
+      | Mfunmax (l, r) ->
         Format.fprintf fmt "max (%a, %a)"
           f l
           f r
+
+      | Mfunabs a ->
+        Format.fprintf fmt "abs (%a)"
+          f a
 
       | Mhead (an, c, i) ->
         Format.fprintf fmt "head_%a (%a, %a)"
@@ -667,6 +601,24 @@ let pp_model fmt (model : model) =
           pp_str an
           f c
           f i
+
+      | Mlistprepend (c, a) ->
+        Format.fprintf fmt "list_prepend (%a, %a)"
+          f c
+          f a
+      | Mlistcontains (c, a) ->
+        Format.fprintf fmt "list_contains (%a, %a)"
+          f c
+          f a
+
+      | Mlistcount c ->
+        Format.fprintf fmt "list_count (%a)"
+          f c
+
+      | Mlistnth (c, a) ->
+        Format.fprintf fmt "list_nth (%a, %a)"
+          f c
+          f a
 
       | Mand (l, r) ->
         let pp fmt (l, r) =
@@ -820,6 +772,62 @@ let pp_model fmt (model : model) =
         in
         pp fmt e
 
+      | Mrateq (l, r) ->
+        let pp fmt (l, r) =
+          Format.fprintf fmt "rat_eq (%a, %a)"
+            f l
+            f r
+        in
+        pp fmt (l, r)
+
+      | Mratcmp (op, l, r) ->
+        let pp fmt (op, l, r) =
+          let to_str (c : comparison_operator) =
+            match c with
+            | Lt -> "lt"
+            | Le -> "le"
+            | Gt -> "gt"
+            | Ge -> "ge"
+          in
+          let str_op = to_str op in
+          Format.fprintf fmt "rat_cmp (%s, %a, %a)"
+            str_op
+            f l
+            f r
+        in
+        pp fmt (op, l, r)
+
+      | Mratarith (op, l, r) ->
+        let pp fmt (op, l, r) =
+          let to_str = function
+            | Rplus  -> "plus"
+            | Rminus -> "minus"
+            | Rmult  -> "mult"
+            | Rdiv   -> "div"
+          in
+          let str_op = to_str op in
+          Format.fprintf fmt "rat_arith (%s, %a, %a)"
+            str_op
+            f l
+            f r
+        in
+        pp fmt (op, l, r)
+
+      | Mrattez (c, t) ->
+        let pp fmt (c, t) =
+          Format.fprintf fmt "rat_tez (%a, %a)"
+            f c
+            f t
+        in
+        pp fmt (c, t)
+
+      | Minttorat e ->
+        let pp fmt e =
+          Format.fprintf fmt "int_to_rat (%a)"
+            f e
+        in
+        pp fmt e
+
       | Masset l ->
         let asset_name =
           match mtt.type_ with
@@ -865,6 +873,7 @@ let pp_model fmt (model : model) =
       | Mtransferred   -> pp_str fmt "sp.amount"
       | Mcaller        -> pp_str fmt "sp.sender"
       | Mbalance       -> pp_str fmt "sp.balance"
+      | Msource        -> pp_str fmt "sp.source"
       | Mnone          -> pp_str fmt "None"
       | Msome v        ->
         Format.fprintf fmt "Some (%a)"
@@ -880,7 +889,6 @@ let pp_model fmt (model : model) =
         Format.fprintf fmt "(%a div %a)"
           pp_big_int n
           pp_big_int d
-      | Mdate v -> Core.pp_date fmt v
       | Mstring v ->
         Format.fprintf fmt "\"%a\""
           pp_str v
@@ -891,7 +899,9 @@ let pp_model fmt (model : model) =
       | Maddress v ->
         Format.fprintf fmt "sp.address(\"%a\")"
           pp_str v
+      | Mdate v -> Core.pp_date fmt v
       | Mduration v -> Core.pp_duration_in_seconds fmt v
+      | Mtimestamp v -> pp_big_int fmt v
       | Mdotasset (e, i)
       | Mdotcontract (e, i) ->
         Format.fprintf fmt "%a.%a"
@@ -936,25 +946,25 @@ let pp_model fmt (model : model) =
       | Mseq is ->
         Format.fprintf fmt "@[<v 4>%a@]"
           (pp_list "@\n\t" f) is
-      | Massign (op, l, r) ->
+      | Massign (op, _, l, r) ->
         Format.fprintf fmt "%a %a %a"
           pp_id l
           pp_operator op
           f r
-      | Massignvarstore (op, l, r) ->
+      | Massignvarstore (op, _, l, r) ->
         Format.fprintf fmt "s.%a %a %a"
           pp_id l
           pp_operator op
           f r
-      | Massignstate x ->
-        Format.fprintf fmt "state = %a"
-          f x
-      | Massignfield (op, a, field , r) ->
+      | Massignfield (op, _, a, field , r) ->
         Format.fprintf fmt "%a.%a %a %a"
           f a
           pp_id field
           pp_operator op
           f r
+      | Massignstate x ->
+        Format.fprintf fmt "state = %a"
+          f x
       | Mtransfer (v, d) ->
         Format.fprintf fmt "transfer %a to %a"
           f v
@@ -983,6 +993,8 @@ let pp_model fmt (model : model) =
         Format.fprintf fmt "col_to_keys_%s ()"
           an
       | Mlisttocoll (_, x) -> f fmt x
+
+      | Mdivrat _                        -> emit_error (UnsupportedTerm ("div"))
       | Mforall _                        -> emit_error (UnsupportedTerm ("forall"))
       | Mexists _                        -> emit_error (UnsupportedTerm ("exists"))
       | Msetbefore _                     -> emit_error (UnsupportedTerm ("setbefore"))

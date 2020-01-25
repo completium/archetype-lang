@@ -11,6 +11,7 @@ type container =
   | Collection
   | Subset
   | Partition
+  | List
 [@@deriving show {with_path = false}]
 
 type currency =
@@ -86,6 +87,7 @@ type arithmetic_operator =
   | Minus
   | Mult
   | Div
+  | DivRat
   | Modulo
 [@@deriving show {with_path = false}]
 
@@ -111,25 +113,22 @@ type const =
   | Ccaller
   | Cfail
   | Cbalance
+  | Csource
   | Cconditions
   | Cactions
   | Cnone
   | Cany
   | Canyaction
+  | Cresult
   (* function *)
   | Cisempty
   | Cget
   | Cadd
-  | Caddnofail
   | Cremove
-  | Cremovenofail
   | Cremoveif
   | Cupdate
-  | Cupdatenofail (* if key exists -> update *)
-  | Cclear
   | Ccontains
   | Cnth
-  | Creverse
   | Cselect
   | Csort
   | Ccount
@@ -139,6 +138,8 @@ type const =
   | Csubsetof
   | Chead
   | Ctail
+  | Cabs
+  | Cprepend
   (* vset *)
   | Cbefore
   | Cunmoved
@@ -226,7 +227,7 @@ type bval = bval_gen
 
 type 'id signature = {
   name : 'id;
-  args: ptyp list;
+  args: (lident * ptyp) list;
   loc: Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]
@@ -324,7 +325,7 @@ and 'id instruction_node =
   | Ideclvar of 'id * 'id term_gen                                            (* id * init *)
   | Iseq of 'id instruction_gen list                                          (* lhs ; rhs *)
   | Imatchwith of 'id term_gen * ('id pattern_gen * 'id instruction_gen) list (* match term with ('pattern * 'id instruction_gen) list *)
-  | Iassign of (assignment_operator * 'id lvalue_gen * 'id term_gen)          (* $2 assignment_operator $3 *)
+  | Iassign of (ptyp * assignment_operator * 'id lvalue_gen * 'id term_gen)   (* $2 assignment_operator $3 *)
   | Irequire of (bool * 'id term_gen)                                         (* $1 ? require : failif *)
   | Itransfer of ('id term_gen * 'id term_gen)                                (* value * dest *)
   | Ibreak
@@ -332,6 +333,7 @@ and 'id instruction_node =
   | Icall of ('id term_gen option * 'id call_kind * ('id term_arg) list)
   | Ireturn of 'id term_gen
   | Ilabel of 'id
+  | Ifail of 'id term_gen
 [@@deriving show {with_path = false}]
 
 and 'id instruction_gen = 'id instruction_poly
@@ -686,7 +688,7 @@ let map_instr_node f = function
   | Ideclvar (i, v)     -> Ideclvar (i, v)
   | Iseq is             -> Iseq (List.map f is)
   | Imatchwith (a, ps)  -> Imatchwith (a, ps)
-  | Iassign (op, l, r)  -> Iassign (op, l, r)
+  | Iassign (t, op, l, r)-> Iassign (t, op, l, r)
   | Irequire (b, x)     -> Irequire (b, x)
   | Itransfer x         -> Itransfer x
   | Ibreak              -> Ibreak
@@ -694,6 +696,7 @@ let map_instr_node f = function
   | Icall (x, id, args) -> Icall (x, id, args)
   | Ireturn x           -> Ireturn x
   | Ilabel x            -> Ilabel x
+  | Ifail m             -> Ifail m
 
 let map_gen_poly g f (i : 'id struct_poly) : 'id struct_poly =
   {
@@ -756,6 +759,7 @@ let fold_instr f accu instr =
   | Icall _            -> accu
   | Ireturn _          -> accu
   | Ilabel _           -> accu
+  | Ifail _            -> accu
 
 let fold_instr_expr fi fe accu instr =
   match instr.node with
@@ -766,7 +770,7 @@ let fold_instr_expr fi fe accu instr =
   | Ideclvar (_, v)     -> fe accu v
   | Iseq is             -> List.fold_left fi accu is
   | Imatchwith (a, ps)  -> List.fold_left (fun accu (_, i) -> fi accu i) (fe accu a) ps
-  | Iassign (_, _, e)   -> fe accu e
+  | Iassign (_, _, _, e)-> fe accu e
   | Irequire (_, x)     -> fe accu x
   | Itransfer (v, d)    -> fe (fe accu v) d
   | Ibreak              -> accu
@@ -774,6 +778,7 @@ let fold_instr_expr fi fe accu instr =
   | Icall (x, _, args)  -> let accu = Option.map_dfl (fe accu) accu x in List.fold_left (fold_term_arg fe) accu args
   | Ireturn x           -> fe accu x
   | Ilabel x            -> fi accu x
+  | Ifail m             -> fe accu m
 
 let fold_map_term g f (accu : 'a) (term : 'id term_gen) : 'term * 'a =
   match term.node with
@@ -941,9 +946,9 @@ let fold_map_instr_term gi _ge fi fe (accu : 'a) instr : 'id instruction_gen * '
 
     gi (Imatchwith (ae, pse)), psa
 
-  | Iassign (op, id, x) ->
+  | Iassign (t, op, id, x) ->
     let xe, xa = fe accu x in
-    gi (Iassign (op, id, xe)), xa
+    gi (Iassign (t, op, id, xe)), xa
 
   | Irequire (b, x) ->
     let xe, xa = fe accu x in
@@ -987,6 +992,9 @@ let fold_map_instr_term gi _ge fi fe (accu : 'a) instr : 'id instruction_gen * '
   | Ilabel x ->
     gi (Ilabel x), accu
 
+  | Ifail m ->
+    let me, ma = fe accu m in
+    gi (Ilabel me), ma
 (* -------------------------------------------------------------------- *)
 
 module Utils : sig
@@ -1003,6 +1011,7 @@ module Utils : sig
   val is_enum_value             : model -> lident -> bool
   val get_var_type              : model -> lident -> type_
   val get_enum_name             : lident enum_struct -> lident
+  val get_contract_sig_ids      : model -> ident -> ident -> lident list
 
 end = struct
   open Tools
@@ -1132,4 +1141,18 @@ end = struct
     match var with
     | Some v -> v
     | None -> emit_error VariableNotFound
+
+  let get_contract_sig_ids (ast : model) (contract_id : ident) (fun_id : ident) : lident list =
+    let get_signature signatures ident : ((lident * ptyp) list) option =
+      List.fold_left (fun accu (x : 'id signature) ->
+          if (Location.unloc x.name) = ident
+          then Some (x.args)
+          else accu
+        ) None signatures
+    in
+    let contract = get_contract_opt ast (dumloc contract_id) in
+    let contract = if (Option.is_none contract) then raise Not_found else Option.get contract in
+    let signatures = get_signature contract.signatures fun_id in
+    let signatures = if (Option.is_none signatures) then raise Not_found else Option.get signatures in
+    List.map fst signatures
 end

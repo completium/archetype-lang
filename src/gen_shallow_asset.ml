@@ -62,9 +62,9 @@ let gen_shallow_args (m : M.model) (id : M.lident) (t : M.type_) (arg : M.argume
         [] in
     (acc_ctx,shallow_args)
   | M.Tcontainer (Tasset i, Collection) ->
-    let _k,kt = M.Utils.get_asset_key m (unloc i) in
+    let _k, kt = M.Utils.get_asset_key m (unloc i) in
     let arg = (id,M.Tcontainer (M.Tbuiltin kt,Collection),None) in
-    let arg_values = (dumloc ((unloc id)^"_values"),M.Tcontainer (Tasset i, Collection),None) in
+    let arg_values = (dumloc ((unloc id)^"_values"),  M.Tassoc (kt, Tasset i), None) in
     let shallow_args = gen_shallow_args m 1 (unloc id) t [arg;arg_values] in
     let acc_ctx =
       if List.length shallow_args > 1 then

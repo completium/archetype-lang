@@ -1,0 +1,9 @@
+archetype expr_arith_mod_int_int
+
+variable res : int = 0
+
+action exec () {
+  effect {
+    res := 4 % 3
+  }
+}

@@ -3,10 +3,26 @@ archetype test_transition
 states =
 | First
 | Second
+| Third
 
-transition mytr from First {
+
+transition mytr () from First {
   to Second
   when { true }
+  with effect {
+    failif (false)
+  }
+}
+
+transition mytr_a () from any {
+  to Third
+  with effect {
+    failif (false)
+  }
+}
+
+transition mytr_b () from (First or Second) {
+  to Third
   with effect {
     failif (false)
   }

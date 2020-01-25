@@ -1,0 +1,9 @@
+archetype expr_arith_mult_int_dur
+
+variable res : duration = 0s
+
+action exec () {
+  effect {
+    res := 4 * 4h
+  }
+}

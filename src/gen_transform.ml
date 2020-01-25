@@ -150,9 +150,9 @@ let process_single_field_storage (model : model) : model =
         match mt.node with
         | Mvarstorevar a when String.equal (unloc a) (unloc i.id) ->
           mk_mterm (Mvarlocal storage_id) mt.type_
-        | Massign (op, a, v) when String.equal (unloc a) (unloc i.id) ->
+        | Massign (op, t, a, v) when String.equal (unloc a) (unloc i.id) ->
           let vv = map_mterm (aux ctx) v in
-          mk_mterm (Massign (op, storage_id, vv)) mt.type_
+          mk_mterm (Massign (op, t, storage_id, vv)) mt.type_
         | _ -> map_mterm (aux ctx) mt
       in
       map_mterm_model aux model
@@ -415,6 +415,83 @@ let assign_loop_label (model : model) : model =
   in
   map_mterm_model aux model
 
+let remove_enum_matchwith (model : model) : model =
+  let type_int = Tbuiltin Bint in
+  let type_bool = Tbuiltin Bbool in
+  let mk_enum_ident a b = String.lowercase_ascii (a ^ "_" ^ b) in
+  let process_decls decls =
+    let process_enum (enum : enum) =
+      let mk_const id i =
+        let id_loc, id_v = deloc id in
+        let ty_v = unloc enum.name in
+        let name = mk_enum_ident ty_v id_v in
+        Dvar (
+          mk_var
+            (dumloc name)
+            type_int
+            type_int
+            ~constant:true
+            ~default:(mk_mterm (Mint (Big_int.big_int_of_int i)) type_int)
+            ~loc:id_loc
+        ) in
+      List.mapi (fun i (x : enum_item) ->
+          mk_const x.name i
+        ) enum.values
+    in
+    List.fold_left (fun accu x ->
+        accu @
+        (
+          match x with
+          | Denum v -> process_enum v
+          | _ -> [x]
+        )
+      ) [] decls
+  in
+  let rec process_mterm ctx (mt : mterm) : mterm =
+    let mk_id (prefix : string) (id : lident) : lident =
+      mkloc (loc id) (mk_enum_ident prefix (unloc id)) in
+    match mt.node, mt.type_ with
+    | Mvarlocal id, Tstate -> mk_mterm (Mvarlocal (mk_id "state" id)) type_int
+    | Mvarlocal id, Tenum e -> mk_mterm (Mvarlocal (mk_id (unloc e) id)) type_int
+    | Mmatchwith (v, ps), _ ->
+      let v = process_mterm ctx v in
+      let type_v = v.type_ in
+      let val_v =
+        match type_v with
+        | Tstate -> "state"
+        | Tenum v -> unloc v
+        | _ -> assert false
+      in
+      begin
+        let default_ = mk_mterm (Mseq []) Tunit in
+        let else_ = List.fold_left (fun accu (x : (pattern * mterm)) ->
+            match x with
+            | {node = Pwild; _}, e -> process_mterm ctx e
+            | _ -> accu) default_ ps in
+        List.fold_right (fun (x : (pattern * mterm)) accu ->
+            let mk_cond id =
+              begin
+                let val_enum id = mk_mterm (Mvarlocal (mk_id val_v id)) type_v in
+                mk_mterm (Mequal (v, val_enum id)) type_bool
+              end
+            in
+            let mk_if cond then_ else_ = mk_mterm (Mif (cond, then_, Some else_)) Tunit in
+            match x with
+            | {node = Pconst id; _}, e ->
+              begin
+                let e = process_mterm ctx e in
+                let cond = mk_cond id in
+                mk_if cond e accu
+              end
+            | _ -> accu
+          ) ps else_
+      end
+    | _ -> map_mterm (process_mterm ctx) mt
+  in
+  { model with
+    decls = process_decls model.decls
+  }
+  |> map_mterm_model process_mterm
 
 let remove_wild_pattern (model : model) : model =
   let rec aux c (mt : mterm) : mterm =
@@ -467,17 +544,348 @@ let remove_wild_pattern (model : model) : model =
 
 let remove_cmp_bool (model : model) : model =
   let rec aux c (mt : mterm) : mterm =
-      match mt.node with
-      | Mequal (lhs, {node = Mbool true; _})  -> lhs
-      | Mequal (lhs, {node = Mbool false; _}) -> mk_mterm (Mnot lhs) (Tbuiltin Bbool)
-      | Mequal ({node = Mbool true; _}, rhs)  -> rhs
-      | Mequal ({node = Mbool false; _}, rhs) -> mk_mterm (Mnot rhs) (Tbuiltin Bbool)
+    match mt.node with
+    | Mequal (lhs, {node = Mbool true; _})  -> lhs
+    | Mequal (lhs, {node = Mbool false; _}) -> mk_mterm (Mnot lhs) (Tbuiltin Bbool)
+    | Mequal ({node = Mbool true; _}, rhs)  -> rhs
+    | Mequal ({node = Mbool false; _}, rhs) -> mk_mterm (Mnot rhs) (Tbuiltin Bbool)
 
-      | Mnequal (lhs, {node = Mbool true; _})  -> mk_mterm (Mnot lhs) (Tbuiltin Bbool)
-      | Mnequal (lhs, {node = Mbool false; _}) -> lhs
-      | Mnequal ({node = Mbool true; _}, rhs)  -> mk_mterm (Mnot rhs) (Tbuiltin Bbool)
-      | Mnequal ({node = Mbool false; _}, rhs) -> rhs
+    | Mnequal (lhs, {node = Mbool true; _})  -> mk_mterm (Mnot lhs) (Tbuiltin Bbool)
+    | Mnequal (lhs, {node = Mbool false; _}) -> lhs
+    | Mnequal ({node = Mbool true; _}, rhs)  -> mk_mterm (Mnot rhs) (Tbuiltin Bbool)
+    | Mnequal ({node = Mbool false; _}, rhs) -> rhs
 
-      | _ -> map_mterm (aux c) mt
+    | _ -> map_mterm (aux c) mt
   in
   Model.map_mterm_model aux model
+
+let ligo_move_get_in_condition (model : model) : model =
+  let contains_getter (mt : mterm) : bool =
+    let rec aux accu (mt : mterm) : bool =
+      match mt.node with
+      | Mget _ -> true
+      | _ -> Model.fold_term aux accu mt
+    in
+    aux false mt
+  in
+  let extract_getter (mt : mterm) : (mterm * (lident * mterm) list) =
+    let cpt : int ref = ref 0 in
+    let rec aux (accu : (lident * mterm) list) (mt : mterm) : mterm * (lident * mterm) list =
+      match mt.node with
+      | Mget _ ->
+        begin
+          let var_id = "tmp_" ^ string_of_int (!cpt) in
+          cpt := !cpt + 1;
+          let var = mk_mterm (Mvarlocal (dumloc var_id)) mt.type_ in
+          var, (dumloc var_id, mt)::accu
+        end
+      | _ ->
+        let g (x : mterm__node) : mterm = { mt with node = x; } in
+        Model.fold_map_term g aux accu mt
+    in
+    aux [] mt
+  in
+  let rec aux c (mt : mterm) : mterm =
+    match mt.node with
+    | Mif (cond, e, t) when contains_getter cond ->
+      begin
+        let (cond, ll) = extract_getter cond in
+        let res : mterm = mk_mterm (Mif (cond, e, t)) Tunit in
+        let res : mterm = List.fold_right
+            (fun (id, x : lident * mterm) accu ->
+               let node : mterm__node = Mletin ([id], x, Some (x.type_), accu, None) in
+               mk_mterm node Tunit)
+            ll res in
+        res
+      end
+    | _ -> map_mterm (aux c) mt
+  in
+  Model.map_mterm_model aux model
+
+let remove_rational (model : model) : model =
+  let type_int = Tbuiltin Bint in
+  let type_bool= Tbuiltin Bbool in
+  let type_cur = Tbuiltin Bcurrency in
+  let type_rational = Ttuple [type_int; type_int] in
+  let one = mk_mterm (Mint (Big_int.unit_big_int)) type_int in
+  let mk_rat n d = mk_mterm (Mtuple [n ; d]) type_rational in
+  let int_to_rat e = mk_mterm (Minttorat e) type_rational in
+  let process_type t : type_ =
+    let rec aux t =
+      match t with
+      | Tbuiltin Brational -> type_rational
+      | _ -> map_type aux t
+    in
+    aux t
+  in
+  let to_rat (x : mterm) =
+    match x.type_ with
+    | Tbuiltin Bint -> mk_rat x one
+    | Ttuple [Tbuiltin Bint; Tbuiltin Bint] -> x
+    | _ -> assert false
+  in
+  let process_mterm mt =
+    let rec aux (mt : mterm) : mterm =
+      let is_t_rat (x : type_) = match x with     | Tbuiltin Brational -> true | _ -> false in
+      let is_int (x : mterm) = match x.type_ with | Tbuiltin Bint      -> true | _ -> false in
+      let is_rat (x : mterm) = match x.type_ with | Tbuiltin Brational -> true | _ -> false in
+      let is_cur (x : mterm) = match x.type_ with | Tbuiltin Bcurrency -> true | _ -> false in
+      let is_num (x : mterm) = is_rat x || is_int x in
+      let is_rats (a, b) = is_rat a || is_rat b in
+      let process_eq neg (a, b) =
+        let lhs = (to_rat |@ aux) a in
+        let rhs = (to_rat |@ aux) b in
+        let res = mk_mterm (Mrateq (lhs, rhs)) type_bool in
+        if neg
+        then mk_mterm (Mnot res) type_bool
+        else res
+      in
+      let process_cmp op (a, b) =
+        let lhs = (to_rat |@ aux) a in
+        let rhs = (to_rat |@ aux) b in
+        mk_mterm (Mratcmp (op, lhs, rhs)) type_bool
+      in
+      let process_arith op (a, b) =
+        let lhs = (to_rat |@ aux) a in
+        let rhs = (to_rat |@ aux) b in
+        mk_mterm (Mratarith (op, lhs, rhs)) type_rational
+      in
+      let process_rattez (n : mterm) (t : mterm) : mterm =
+        let coef = (to_rat |@ aux) n in
+        let t = aux t in
+        mk_mterm (Mrattez (coef, t)) type_cur
+      in
+      match mt.node, mt.type_ with
+      | _ as node, Tbuiltin Brational ->
+        begin
+          match node with
+          | Mrational (a, b) ->
+            let make_int (x : Core.big_int) = mk_mterm (Mint x) type_int in
+            mk_mterm (Mtuple [make_int a; make_int b]) type_rational
+          | Mplus   (a, b) -> process_arith Rplus  (a, b)
+          | Mminus  (a, b) -> process_arith Rminus (a, b)
+          | Mmult   (a, b) -> process_arith Rmult  (a, b)
+          | Mdiv    (a, b) -> process_arith Rdiv   (a, b)
+          | Mdivrat (a, b) -> mk_rat a b
+          | _ -> { mt with type_ = type_rational }
+        end
+      | _ as node, Tbuiltin Bcurrency ->
+        begin
+          match node with
+          | Mcurrency (v, Tz)  -> { mt with node = Mcurrency  (Big_int.mult_int_big_int 1000000 v, Utz) }
+          | Mcurrency (v, Mtz) -> { mt with node = Mcurrency  (Big_int.mult_int_big_int    1000 v, Utz) }
+          | Mmult  (a, b) when is_num a && is_cur b -> process_rattez a b
+          | _ -> map_mterm aux mt
+        end
+      | Mequal  (a, b), _ when is_rats (a, b) -> process_eq  false (a, b)
+      | Mnequal (a, b), _ when is_rats (a, b) -> process_eq  true  (a, b)
+      | Mlt     (a, b), _ when is_rats (a, b) -> process_cmp Lt    (a, b)
+      | Mle     (a, b), _ when is_rats (a, b) -> process_cmp Le    (a, b)
+      | Mgt     (a, b), _ when is_rats (a, b) -> process_cmp Gt    (a, b)
+      | Mge     (a, b), _ when is_rats (a, b) -> process_cmp Ge    (a, b)
+      | Mletin (ids, v, t, body, o), _ when is_int v && Option.map_dfl is_t_rat false t ->
+        { mt with
+          node = Mletin (ids, (int_to_rat |@ aux) v, Option.map process_type t, aux body, Option.map aux o)
+        }
+      | Mletin (ids, v, t, body, o), _ ->
+        { mt with
+          node = Mletin (ids, aux v, Option.map process_type t, aux body, Option.map aux o)
+        }
+      | Mdeclvar (ids, t, v), _ when is_int v && Option.map_dfl is_t_rat false t ->
+        { mt with
+          node = Mdeclvar (ids, Option.map process_type t, (int_to_rat |@ aux) v)
+        }
+      | Mdeclvar (ids, t, v), _ ->
+        { mt with
+          node = Mdeclvar (ids, Option.map process_type t, aux v)
+        }
+      | Massign (op, t, i, v), _ when is_int v && is_t_rat t ->
+        { mt with
+          node = Massign (op, process_type t, i, (int_to_rat |@ aux) v)
+        }
+      | Massignvarstore (op, t, i, v), _  when is_int v && is_t_rat t ->
+        { mt with
+          node = Massignvarstore (op, process_type t, i, (int_to_rat |@ aux) v)
+        }
+      | Massignfield (op, t, a, fn, v), _ when is_int v && is_t_rat t ->
+        { mt with
+          node = Massignfield (op, process_type t, a, fn, (int_to_rat |@ aux) v)
+        }
+      | Mforall (id, t, a, b), _ ->
+        { mt with
+          node = Mforall (id, process_type t, Option.map aux a, aux b)
+        }
+      | Mexists (id, t, a, b), _ ->
+        { mt with
+          node = Mexists (id, process_type t, Option.map aux a, aux b)
+        }
+      | _ -> map_mterm aux mt
+    in
+    aux mt
+  in
+  let process_arg (type_ : type_) (default_value : mterm option) : (type_ * mterm option) =
+    let t = process_type type_ in
+    t, Option.map ((fun dv ->
+        match t with
+        | Ttuple [Tbuiltin Bint; Tbuiltin Bint] -> to_rat dv
+        | _ -> dv
+      ) |@ process_mterm) default_value
+  in
+  let process_decls = List.map (function
+      | Dvar v ->
+        let t, dv = process_arg v.type_ v.default in
+        Dvar
+          { v with
+            type_   = t;
+            default = dv;
+          }
+      | Dasset a ->
+        Dasset
+          {a with
+           values = a.values |> List.map
+                      (fun (ai : asset_item) ->
+                         { ai with
+                           type_   = ai.type_   |> process_type;
+                           default = ai.default |> Option.map process_mterm;
+                         })
+          }
+      | Dcontract c ->
+        Dcontract
+          {c with
+           signatures = c.signatures |> List.map
+                          (fun (cs : contract_signature) ->
+                             {
+                               cs with
+                               args = cs.args |> List.map (fun (a, b) -> (a, process_type b))
+                             }
+                          );
+           init = c.init |> Option.map process_mterm
+          }
+      | _ as x -> x)
+  in
+  { model with
+    decls     = model.decls     |> process_decls;
+    functions = model.functions |> List.map (fun f ->
+        {f with
+         node = (
+           let process_fs (fs : function_struct) =
+             {fs with
+              args = fs.args |> List.map (fun (id, t, dv) -> (id, process_type t, Option.map process_mterm dv));
+              body = fs.body |> process_mterm;
+             }
+           in
+           match f.node with
+           | Function (fs, ret) -> Function (process_fs fs, process_type ret)
+           | Entry fs           -> Entry (process_fs fs)
+         );
+        })
+  }
+
+
+let replace_date_duration_by_timestamp (model : model) : model =
+  let type_timestamp = Tbuiltin Btimestamp in
+  let type_int = Tbuiltin Bint in
+  let process_type t : type_ =
+    let rec aux t =
+      match t with
+      | Tbuiltin Bdate     -> type_timestamp
+      | Tbuiltin Bduration -> type_int
+      | _ -> map_type aux t
+    in
+    aux t
+  in
+  let to_timestamp (x : mterm) =
+    match x.node with
+    | Mdate d     -> mk_mterm (Mtimestamp (Core.date_to_timestamp d)) type_timestamp
+    (* | Mduration d -> mk_mterm (Mint (Core.duration_to_timestamp d)) type_int *)
+    | Mnow
+    | Mtimestamp _ -> x
+    | _ ->
+      begin
+        Format.eprintf "cannot transform to timestamp: %a" Printer_model.pp_mterm x;
+        assert false
+      end
+  in
+  let process_mterm mt =
+    let rec aux (mt : mterm) : mterm =
+      match mt.node, mt.type_ with
+      | Mdate d,_      -> mk_mterm (Mtimestamp (Core.date_to_timestamp d)) type_timestamp
+      | Mduration d, _ -> mk_mterm (Mint (Core.duration_to_timestamp d)) type_int
+      | Mletin (ids, v, t, body, o), _ ->
+        { mt with
+          node = Mletin (ids, aux v, Option.map process_type t, aux body, Option.map aux o)
+        }
+      | Mdeclvar (ids, t, v), _ ->
+        { mt with
+          node = Mdeclvar (ids, Option.map process_type t, aux v)
+        }
+      | Mforall (id, t, a, b), _ ->
+        { mt with
+          node = Mforall (id, process_type t, Option.map aux a, aux b)
+        }
+      | Mexists (id, t, a, b), _ ->
+        { mt with
+          node = Mexists (id, process_type t, Option.map aux a, aux b)
+        }
+      | _ -> map_mterm aux mt
+    in
+    aux mt
+  in
+  let process_decls =
+    let process_arg (type_ : type_) (default_value : mterm option) : (type_ * mterm option) =
+      let t = process_type type_ in
+      t, Option.map ((fun dv ->
+          match t with
+          | Tbuiltin Btimestamp -> to_timestamp dv
+          | _ -> dv
+        ) |@ process_mterm) default_value
+    in
+    List.map (function
+        | Dvar v ->
+          let t, dv = process_arg v.type_ v.default in
+          Dvar
+            { v with
+              type_   = t;
+              default = dv;
+            }
+        | Dasset a ->
+          Dasset
+            {a with
+             values = a.values |> List.map
+                        (fun (ai : asset_item) ->
+                           { ai with
+                             type_   = ai.type_   |> process_type;
+                             default = ai.default |> Option.map process_mterm;
+                           })
+            }
+        | Dcontract c ->
+          Dcontract
+            {c with
+             signatures = c.signatures |> List.map
+                            (fun (cs : contract_signature) ->
+                               {
+                                 cs with
+                                 args = cs.args |> List.map (fun (a, b) -> (a, process_type b))
+                               }
+                            );
+             init = c.init |> Option.map process_mterm
+            }
+        | _ as x -> x)
+  in
+  { model with
+    decls     = model.decls     |> process_decls;
+    functions = model.functions |> List.map (fun f ->
+        {f with
+         node = (
+           let process_fs (fs : function_struct) =
+             {fs with
+              args = fs.args |> List.map (fun (id, t, dv) -> (id, process_type t, Option.map process_mterm dv));
+              body = fs.body |> process_mterm;
+             }
+           in
+           match f.node with
+           | Function (fs, ret) -> Function (process_fs fs, process_type ret)
+           | Entry fs           -> Entry (process_fs fs)
+         );
+        })
+  }

@@ -1,0 +1,22 @@
+archetype sig_challenge
+
+asset challenge {
+  id : string;
+  addr : address;
+  solved : bool = false;
+}
+
+action emit (c_id : string, addr_ : address) {
+  effect {
+    challenge.add({id = c_id; addr = addr_})
+  }
+}
+
+action resolve (c_id : string) {
+  require {
+    r1: challenge.get(c_id).addr = caller;
+  }
+  effect {
+    challenge.update(c_id, {solved = true})
+  }
+}

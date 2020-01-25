@@ -1,0 +1,10 @@
+archetype expr_cst_transferred
+
+variable res : tez = 0tz
+
+action exec () {
+  accept transfer
+  effect {
+    res := transferred
+  }
+}

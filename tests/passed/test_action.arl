@@ -1,8 +1,8 @@
 archetype test_action
 
-constant admin role = @tz1fakeadress
+constant admin : role = @tz1fakeadress
 
-action myaction {
+action exec () {
   specification {
     postcondition c1 {
       true -> true

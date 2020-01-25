@@ -1,0 +1,19 @@
+archetype test_result
+
+function f (i : int) : int {
+  specification {
+    postcondition c1 {
+      forall n : int, result = n
+    }
+  }
+  effect {
+    return i
+  }
+}
+
+action exec () {
+  effect {
+    let res : int = f(0) in
+    ()
+  }
+}

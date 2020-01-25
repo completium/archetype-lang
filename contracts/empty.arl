@@ -1,16 +1,15 @@
-archetype test_action_empty
+archetype empty
 
-action myaction {
+action myaction () {
   specification {
   }
-  refuse transfer
+  accept transfer
   called by any
   require {
   }
   failif {
   }
   effect {
-    let a : int = 0 in
-    a := 1
+    ()
   }
 }

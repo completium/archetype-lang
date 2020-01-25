@@ -1,8 +1,8 @@
 archetype erc20
 
-constant name string = "mytoken"
+constant name : string = "mytoken"
 
-constant total int = 1000
+constant total : int = 1000
 with {
   i0: total > 0
 }
@@ -25,21 +25,21 @@ asset tokenHolder identified by holder {
   { holder = caller; tokens = total; allowances = [] }
 ]
 
-action dotransfer (dest : pkey of tokenHolder) (value : int) {
+action dotransfer (dest : pkey of tokenHolder, value : int) {
 
   specification {
     p1 : before.tokenHolder.sum(tokens) = tokenHolder.sum(tokens);
-    p2 : let th = tokenHolder.get(dest) in
-         let bth = before.tokenHolder.get(dest) in
+    p2 : let some th = tokenHolder.get(dest) in
+         let some bth = before.tokenHolder.get(dest) in
          th.tokens = bth.tokens + value
          otherwise true
          otherwise true;
-    p3 : let thc = tokenHolder.get(caller) in
-         let bthc = before.tokenHolder.get(caller) in
+    p3 : let some thc = tokenHolder.get(caller) in
+         let some bthc = before.tokenHolder.get(caller) in
          thc.tokens = bthc.tokens - value
          otherwise true
          otherwise true;
-    p4 : let th = tokenHolder.get(dest) in
+    p4 : let some th = tokenHolder.get(dest) in
          forall t in tokenHolder,
          forall bt in before.tokenHolder,
          t.holder <> th.holder ->

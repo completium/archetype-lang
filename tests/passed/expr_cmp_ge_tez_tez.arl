@@ -1,0 +1,9 @@
+archetype expr_cmp_ge_tez_tez
+
+variable res : bool = false
+
+action exec () {
+  effect {
+    res := 2tz >= 1tz
+  }
+}

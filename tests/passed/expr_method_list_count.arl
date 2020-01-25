@@ -1,0 +1,10 @@
+archetype expr_method_list_count
+
+variable res : int = 0
+
+action exec () {
+  effect {
+    var l : string list = ["1"; "2"; "3"];
+    res := l.count()
+  }
+}

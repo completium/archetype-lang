@@ -3,10 +3,11 @@ type target_lang =
   | Liquidity
   | LiquidityUrl
   | Ligo
+  | LigoStorage
   | SmartPy
   | Whyml
   | Markdown
-  | Ocaml
+  | Scaml
   | None
 [@@deriving show {with_path = false}]
 
@@ -27,7 +28,7 @@ type sorting_policy =
   | None
 [@@deriving show {with_path = false}]
 
-let version = "0.1.11"
+let version = "0.1.13"
 let url = "https://archetype-lang.org/"
 
 let target = ref (None : target_lang)
@@ -47,8 +48,12 @@ let opt_typed   = ref false
 let opt_all_parenthesis = ref false
 let opt_ws    = ref false
 let opt_nse   = ref false
+let opt_nr    = ref false
+let opt_ndd   = ref false
+let opt_ne    = ref false
 let opt_sa    = ref false
 let opt_skv   = ref false
+let opt_ptc   = ref false
 let opt_raw   = ref false
 let opt_raw_whytree = ref false
 

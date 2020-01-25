@@ -1,0 +1,19 @@
+archetype test_update
+
+asset myasset {
+  id : int;
+  v : string;
+}
+
+asset myasset2 {
+  i : int;
+  k : int;
+}
+
+action exec () {
+  effect {
+    let a2 : myasset2 = myasset2.get(1) in
+
+    myasset.update(a2.k, { v = "value" })
+  }
+}

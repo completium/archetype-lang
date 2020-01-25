@@ -1,0 +1,18 @@
+archetype expr_method_asset_remove_asset
+
+asset my_asset identified by id {
+  id : string;
+  value : int;
+} initialized by {
+  {"id0"; 0};
+  {"id1"; 1};
+  {"id2"; 2}
+}
+
+variable res : int = 0
+
+action exec () {
+  effect {
+    my_asset.remove("id0")
+  }
+}

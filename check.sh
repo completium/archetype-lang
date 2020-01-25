@@ -108,7 +108,7 @@ for i in contracts/*.arl; do
 done
 
 echo ""
-for i in tests/*.arl; do
+for i in tests/passed/*.arl; do
   process $i
 done
 
