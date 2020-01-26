@@ -94,8 +94,39 @@ let pp_model fmt (model : model) =
 
   let pp_decls fmt x = (pp_list "@\n" pp_decl_node) fmt x in
 
+  let pp_arg fmt (a, t, _) =
+    Format.fprintf fmt "%a %a"
+    pp_type t
+    pp_id a
+  in
+
+  let pp_args fmt l = (pp_list ", " pp_arg) fmt l in
+
+  let pp_entry fmt (fs : function_struct) =
+    Format.fprintf fmt
+      "function %a(%a) public {@\n  @[%a@]@\n}@\n"
+      pp_id fs.name
+      pp_args fs.args
+      (* pp_mterm fs.body *)
+      (fun _fmt _ -> ()) ()
+  in
+
+  let pp_function_node fmt = function
+    | Entry fs -> pp_entry fmt fs
+    | Function (_fs, _ret) -> ()
+  in
+
+  let pp_function fmt f =
+    pp_function_node fmt f.node
+  in
+
+  let pp_functions fmt x = (pp_list "@\n" pp_function) fmt x in
+
   let pp_contract_content _fmt _ =
-    pp_decls fmt model.decls
+    pp_decls fmt model.decls;
+    pp_newline fmt ();
+    pp_newline fmt ();
+    pp_functions fmt model.functions
   in
 
   let pp_contract fmt _ =
