@@ -1,3 +1,4 @@
+open Location
 open Model
 open Printer_tools
 
@@ -62,20 +63,178 @@ let pp_model fmt (model : model) =
     | Ttrace _ -> pp_str fmt "todo"
   in
 
-  (* {
-     name: 'id;
-     type_: type_;
-     original_type: type_;
-     constant: bool;
-     default: 'id mterm_gen option;
-     invariants: 'id label_term_gen list;
-     loc: Location.t;
-     } *)
-
   let pp_mterm fmt (mt : mterm) =
-    match mt.node with
-    | Mstring str -> Format.fprintf fmt "\"%s\"" str
-    | _ -> assert false
+    let rec f fmt (mtt : mterm) =
+      match mtt.node with
+      | Mif (c, t, None) ->
+        Format.fprintf fmt "@[if (%a) {@\n  @[%a@]@\n}@]"
+          f c
+          f t
+      | Mif (c, t, Some e) ->
+        Format.fprintf fmt "@[if (%a) {@\n  @[%a@]@\n} else {@\n  @[%a@]@\n}@]"
+          f c
+          f t
+          f e
+      | Mmatchwith _  -> pp_str fmt "todo_Mmatchwith"
+      | Mapp _        -> pp_str fmt "todo_Mapp"
+      | Maddshallow _ -> pp_str fmt "todo_Maddshallow"
+      | Mexternal _   -> pp_str fmt "todo_Mexternal"
+      | Mget _        -> pp_str fmt "todo_Mget"
+      | Mgetbefore _  -> pp_str fmt "todo_Mgetbefore"
+      | Mgetat _      -> pp_str fmt "todo_Mgetat"
+      | Mgetfrommap _ -> pp_str fmt "todo_Mgetfrommap"
+      | Mset _        -> pp_str fmt "todo_Mset"
+      | Maddasset (an, i) ->
+        Format.fprintf fmt "add_%a (%a)"
+          pp_str an
+          f i
+      | Maddfield _    -> pp_str fmt "todo_Maddfield"
+      | Mremoveasset _ -> pp_str fmt "todo_Mremoveasset"
+      | Mremovefield _ -> pp_str fmt "todo_Mremovefield"
+      | Mremoveif _    -> pp_str fmt "todo_Mremoveif"
+      | Mselect _      -> pp_str fmt "todo_Mselect"
+      | Msort _        -> pp_str fmt "todo_Msort"
+      | Mcontains (an, c, i) ->
+        Format.fprintf fmt "contains_%a (%a, %a)"
+          pp_str an
+          f c
+          f i
+      | Mmem _          -> pp_str fmt "todo_Mmem"
+      | Msubsetof _     -> pp_str fmt "todo_Msubsetof"
+      | Mnth _          -> pp_str fmt "todo_Mnth"
+      | Mcount _        -> pp_str fmt "todo_Mcount"
+      | Msum _          -> pp_str fmt "todo_Msum"
+      | Mmin _          -> pp_str fmt "todo_Mmin"
+      | Mmax _          -> pp_str fmt "todo_Mmax"
+      | Mfunmax _       -> pp_str fmt "todo_Mfunmax"
+      | Mfunmin _       -> pp_str fmt "todo_Mfunmin"
+      | Mfunabs _       -> pp_str fmt "todo_Mfunabs"
+      | Mhead _         -> pp_str fmt "todo_Mhead"
+      | Mtail _         -> pp_str fmt "todo_Mtail"
+      | Mlistprepend _  -> pp_str fmt "todo_Mlistprepend"
+      | Mlistcontains _ -> pp_str fmt "todo_Mlistcontains"
+      | Mlistcount _    -> pp_str fmt "todo_Mlistcount"
+      | Mlistnth _      -> pp_str fmt "todo_Mlistnth"
+      | Mfail ft ->
+
+        let pp_fail_type fmt = function
+          | Invalid e -> f fmt e
+          | InvalidCaller -> Format.fprintf fmt "invalid caller"
+          | InvalidCondition c ->
+            Format.fprintf fmt "require %afailed"
+              (pp_option (pp_postfix " " pp_str)) c
+          | NoTransfer -> Format.fprintf fmt "no transfer"
+          | InvalidState -> Format.fprintf fmt "invalid state"
+        in
+
+        Format.fprintf fmt "revert (\"%a\")"
+          pp_fail_type ft
+
+      | Mand        _ -> pp_str fmt "todo_Mand"
+      | Mor         _ -> pp_str fmt "todo_Mor"
+      | Mimply      _ -> pp_str fmt "todo_Mimply"
+      | Mequiv      _ -> pp_str fmt "todo_Mequiv"
+      | Misempty    _ -> pp_str fmt "todo_Misempty"
+      | Mnot c -> Format.fprintf fmt "!(%a)" f c
+      | Mmulticomp  _ -> pp_str fmt "todo_Mmulticomp"
+      | Mequal (lhs, rhs) -> Format.fprintf fmt "%a == %a" f lhs f rhs
+      | Mnequal (lhs, rhs) -> Format.fprintf fmt "%a != %a" f lhs f rhs
+      | Mgt (lhs, rhs) -> Format.fprintf fmt "%a > %a" f lhs f rhs
+      | Mge (lhs, rhs) -> Format.fprintf fmt "%a >= %a" f lhs f rhs
+      | Mlt (lhs, rhs) -> Format.fprintf fmt "%a < %a" f lhs f rhs
+      | Mle (lhs, rhs) -> Format.fprintf fmt "%a <= %a" f lhs f rhs
+      | Mplus (lhs, rhs) -> Format.fprintf fmt "%a + %a" f lhs f rhs
+      | Mminus (lhs, rhs) -> Format.fprintf fmt "%a - %a" f lhs f rhs
+      | Mmult (lhs, rhs) -> Format.fprintf fmt "%a * %a" f lhs f rhs
+      | Mdiv (lhs, rhs) -> Format.fprintf fmt "%a / %a" f lhs f rhs
+      | Mdivrat     _ -> pp_str fmt "todo_Mdivrat"
+      | Mmodulo (lhs, rhs) -> Format.fprintf fmt "%a %% %a" f lhs f rhs
+      | Muplus v -> Format.fprintf fmt "+(%a)" f v
+      | Muminus v -> Format.fprintf fmt "-(%a)" f v
+      | Mrateq      _ -> pp_str fmt "todo_Mrateq"
+      | Mratcmp     _ -> pp_str fmt "todo_Mratcmp"
+      | Mratarith   _ -> pp_str fmt "todo_Mratarith"
+      | Mrattez     _ -> pp_str fmt "todo_Mrattez"
+      | Minttorat   _ -> pp_str fmt "todo_Minttorat"
+      | Masset l ->
+        let asset_name =
+          match mtt.type_ with
+          | Tasset asset_name -> asset_name
+          | _ -> assert false
+        in
+        let a = Utils.get_asset model (unloc asset_name) in
+        let ll = List.map (fun (x : asset_item) -> x.name) a.values in
+
+        let lll = List.map2 (fun x y -> (x, y)) ll l in
+
+        Format.fprintf fmt "{%a}"
+          (pp_list ", " (fun fmt (a, b)->
+               Format.fprintf fmt "%a = %a"
+                 pp_id a
+                 f b)) lll
+      | Mletin          _ -> pp_str fmt "todo_Mletin"
+      | Mdeclvar        _ -> pp_str fmt "todo_Mdeclvar"
+      | Mvarstorevar v
+      | Mvarstorecol v
+      | Mvarenumval v
+      | Mvarlocal v
+      | Mvarparam v
+      | Mvarfield v -> pp_id fmt v
+      | Mvarthe           -> pp_str fmt "todo_Mvarthe"
+      | Mvarstate         -> pp_str fmt "state"
+      | Mnow              -> pp_str fmt "todo_Mnow"
+      | Mtransferred      -> pp_str fmt "todo_Mtransferred"
+      | Mcaller           -> pp_str fmt "todo_Mcaller"
+      | Mbalance          -> pp_str fmt "todo_Mbalance"
+      | Msource           -> pp_str fmt "todo_Msource"
+      | Mnone             -> pp_str fmt "todo_Mnone"
+      | Msome           _ -> pp_str fmt "todo_Msome"
+      | Marray          _ -> pp_str fmt "todo_Marray"
+      | Mint i  -> pp_big_int fmt i
+      | Muint i -> pp_big_int fmt i
+      | Mbool           v -> pp_str fmt (if v then "true" else "false")
+      | Menum           _ -> pp_str fmt "todo_Menum"
+      | Mrational       _ -> pp_str fmt "todo_Mrational"
+      | Mstring str -> Format.fprintf fmt "\"%s\"" str
+      | Mcurrency       _ -> pp_str fmt "todo_Mcurrency"
+      | Maddress        _ -> pp_str fmt "todo_Maddress"
+      | Mdate           _ -> pp_str fmt "todo_Mdate"
+      | Mduration       _ -> pp_str fmt "todo_Mduration"
+      | Mtimestamp      _ -> pp_str fmt "todo_Mtimestamp"
+      | Mdotasset (_, _)  -> pp_str fmt "todo_Mdotasset"
+      | Mdotcontract    _ -> pp_str fmt "todo_Mdotcontract"
+      | Mtuple          _ -> pp_str fmt "todo_Mtuple"
+      | Massoc          _ -> pp_str fmt "todo_Massoc"
+      | Mfor            _ -> pp_str fmt "todo_Mfor"
+      | Miter           _ -> pp_str fmt "todo_Miter"
+      | Mfold           _ -> pp_str fmt "todo_Mfold"
+      | Mseq l -> (pp_list "@\n" f) fmt l
+      | Massign         _ -> pp_str fmt "todo_Massign"
+      | Massignvarstore _ -> pp_str fmt "todo_Massignvarstore"
+      | Massignfield    _ -> pp_str fmt "todo_Massignfield"
+      | Massignstate    _ -> pp_str fmt "todo_Massignstate"
+      | Mtransfer       _ -> pp_str fmt "todo_Mtransfer"
+      | Mbreak            -> pp_str fmt "break"
+      | Massert         _ -> pp_str fmt "todo_Massert"
+      | Mreturn         _ -> pp_str fmt "todo_Mreturn"
+      | Mlabel          _ -> pp_str fmt "todo_Mlabel"
+      | Mshallow        _ -> pp_str fmt "todo_Mshallow"
+      | Munshallow      _ -> pp_str fmt "todo_Munshallow"
+      | Mlisttocoll     _ -> pp_str fmt "todo_Mlisttocoll"
+      | Mtokeys         _ -> pp_str fmt "todo_Mtokeys"
+      | Mcoltokeys      _ -> pp_str fmt "todo_Mcoltokeys"
+      | Mforall         _ -> pp_str fmt "todo_Mforall"
+      | Mexists         _ -> pp_str fmt "todo_Mexists"
+      | Msetbefore      _ -> pp_str fmt "todo_Msetbefore"
+      | Msetat          _ -> pp_str fmt "todo_Msetat"
+      | Msetunmoved     _ -> pp_str fmt "todo_Msetunmoved"
+      | Msetadded       _ -> pp_str fmt "todo_Msetadded"
+      | Msetremoved     _ -> pp_str fmt "todo_Msetremoved"
+      | Msetiterated    _ -> pp_str fmt "todo_Msetiterated"
+      | Msettoiterate   _ -> pp_str fmt "todo_Msettoiterate"
+
+    in
+    f fmt mt
   in
 
   let pp_var fmt (var : var) =
@@ -86,18 +245,18 @@ let pp_model fmt (model : model) =
   in
 
   let pp_decl_node fmt = function
-    | Dvar v -> pp_var fmt v
-    | Denum _ -> ()
-    | Dasset _ -> ()
-    | Dcontract _ -> ()
+    | Dvar v      -> pp_var fmt v
+    | Denum _     -> pp_str fmt "todo_enum"
+    | Dasset _    -> pp_str fmt "todo_asset"
+    | Dcontract _ -> pp_str fmt "todo_contract"
   in
 
   let pp_decls fmt x = (pp_list "@\n" pp_decl_node) fmt x in
 
   let pp_arg fmt (a, t, _) =
     Format.fprintf fmt "%a %a"
-    pp_type t
-    pp_id a
+      pp_type t
+      pp_id a
   in
 
   let pp_args fmt l = (pp_list ", " pp_arg) fmt l in
@@ -107,13 +266,12 @@ let pp_model fmt (model : model) =
       "function %a(%a) public {@\n  @[%a@]@\n}@\n"
       pp_id fs.name
       pp_args fs.args
-      (* pp_mterm fs.body *)
-      (fun _fmt _ -> ()) ()
+      pp_mterm fs.body
   in
 
   let pp_function_node fmt = function
     | Entry fs -> pp_entry fmt fs
-    | Function (_fs, _ret) -> ()
+    | Function (_fs, _ret) -> pp_str fmt "todo_"
   in
 
   let pp_function fmt f =
