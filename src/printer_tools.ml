@@ -13,6 +13,8 @@ let pp_str fmt str =
 let pp_big_int fmt bi =
   Format.fprintf fmt "%s" (Big_int.string_of_big_int bi)
 
+let pp_newline fmt _ = Format.fprintf fmt "@\n"
+
 let pp_nl pp fmt x = Format.fprintf fmt "%a@\n" pp x
 
 (* -------------------------------------------------------------------------- *)
