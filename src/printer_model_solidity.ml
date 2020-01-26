@@ -85,11 +85,14 @@ let pp_model fmt (model : model) =
       | Mgetfrommap _ -> pp_str fmt "todo_Mgetfrommap"
       | Mset _        -> pp_str fmt "todo_Mset"
       | Maddasset (an, i) ->
-        Format.fprintf fmt "add_%a (%a)"
+        Format.fprintf fmt "add_%a (%a);"
           pp_str an
           f i
       | Maddfield _    -> pp_str fmt "todo_Maddfield"
-      | Mremoveasset _ -> pp_str fmt "todo_Mremoveasset"
+      | Mremoveasset (an, i) ->
+        Format.fprintf fmt "remove_%a (%a);"
+          pp_str an
+          f i
       | Mremovefield _ -> pp_str fmt "todo_Mremovefield"
       | Mremoveif _    -> pp_str fmt "todo_Mremoveif"
       | Mselect _      -> pp_str fmt "todo_Mselect"
@@ -127,7 +130,7 @@ let pp_model fmt (model : model) =
           | InvalidState -> Format.fprintf fmt "invalid state"
         in
 
-        Format.fprintf fmt "revert (\"%a\")"
+        Format.fprintf fmt "revert (\"%a\");"
           pp_fail_type ft
 
       | Mand        _ -> pp_str fmt "todo_Mand"
@@ -137,16 +140,16 @@ let pp_model fmt (model : model) =
       | Misempty    _ -> pp_str fmt "todo_Misempty"
       | Mnot c -> Format.fprintf fmt "!(%a)" f c
       | Mmulticomp  _ -> pp_str fmt "todo_Mmulticomp"
-      | Mequal (lhs, rhs) -> Format.fprintf fmt "%a == %a" f lhs f rhs
+      | Mequal  (lhs, rhs) -> Format.fprintf fmt "%a == %a" f lhs f rhs
       | Mnequal (lhs, rhs) -> Format.fprintf fmt "%a != %a" f lhs f rhs
-      | Mgt (lhs, rhs) -> Format.fprintf fmt "%a > %a" f lhs f rhs
-      | Mge (lhs, rhs) -> Format.fprintf fmt "%a >= %a" f lhs f rhs
-      | Mlt (lhs, rhs) -> Format.fprintf fmt "%a < %a" f lhs f rhs
-      | Mle (lhs, rhs) -> Format.fprintf fmt "%a <= %a" f lhs f rhs
-      | Mplus (lhs, rhs) -> Format.fprintf fmt "%a + %a" f lhs f rhs
-      | Mminus (lhs, rhs) -> Format.fprintf fmt "%a - %a" f lhs f rhs
-      | Mmult (lhs, rhs) -> Format.fprintf fmt "%a * %a" f lhs f rhs
-      | Mdiv (lhs, rhs) -> Format.fprintf fmt "%a / %a" f lhs f rhs
+      | Mgt     (lhs, rhs) -> Format.fprintf fmt "%a > %a" f lhs f rhs
+      | Mge     (lhs, rhs) -> Format.fprintf fmt "%a >= %a" f lhs f rhs
+      | Mlt     (lhs, rhs) -> Format.fprintf fmt "%a < %a" f lhs f rhs
+      | Mle     (lhs, rhs) -> Format.fprintf fmt "%a <= %a" f lhs f rhs
+      | Mplus   (lhs, rhs) -> Format.fprintf fmt "%a + %a" f lhs f rhs
+      | Mminus  (lhs, rhs) -> Format.fprintf fmt "%a - %a" f lhs f rhs
+      | Mmult   (lhs, rhs) -> Format.fprintf fmt "%a * %a" f lhs f rhs
+      | Mdiv    (lhs, rhs) -> Format.fprintf fmt "%a / %a" f lhs f rhs
       | Mdivrat     _ -> pp_str fmt "todo_Mdivrat"
       | Mmodulo (lhs, rhs) -> Format.fprintf fmt "%a %% %a" f lhs f rhs
       | Muplus v -> Format.fprintf fmt "+(%a)" f v
@@ -244,10 +247,19 @@ let pp_model fmt (model : model) =
       (pp_option (fun fmt x -> Format.fprintf fmt " = %a" pp_mterm x)) var.default
   in
 
+  let pp_asset fmt (asset : asset) =
+    let an = unloc asset.name in
+    let _k, t = Utils.get_asset_key model an in
+    Format.fprintf fmt "mapping(%a => %s) public %s;"
+    pp_btyp t
+    an
+    an
+  in
+
   let pp_decl_node fmt = function
     | Dvar v      -> pp_var fmt v
     | Denum _     -> pp_str fmt "todo_enum"
-    | Dasset _    -> pp_str fmt "todo_asset"
+    | Dasset a    -> pp_asset fmt a
     | Dcontract _ -> pp_str fmt "todo_contract"
   in
 
@@ -343,7 +355,7 @@ let pp_model fmt (model : model) =
 
   let pp_function_node fmt = function
     | Entry fs -> pp_entry fmt fs
-    | Function (_fs, _ret) -> pp_str fmt "todo_"
+    | Function (_fs, _ret) -> pp_str fmt "todo_function_node_function"
   in
 
   let pp_function fmt f =
