@@ -170,9 +170,10 @@ let pp_model fmt (model : model) =
 
         let lll = List.map2 (fun x y -> (x, y)) ll l in
 
-        Format.fprintf fmt "{%a}"
+        Format.fprintf fmt "%a({%a})"
+          pp_id asset_name
           (pp_list ", " (fun fmt (a, b)->
-               Format.fprintf fmt "%a = %a"
+               Format.fprintf fmt "%a: %a"
                  pp_id a
                  f b)) lll
       | Mletin          _ -> pp_str fmt "todo_Mletin"
@@ -247,13 +248,31 @@ let pp_model fmt (model : model) =
       (pp_option (fun fmt x -> Format.fprintf fmt " = %a" pp_mterm x)) var.default
   in
 
-  let pp_asset fmt (asset : asset) =
+  let pp_decl_asset fmt (asset : asset) =
     let an = unloc asset.name in
     let _k, t = Utils.get_asset_key model an in
     Format.fprintf fmt "mapping(%a => %s) public %s;"
-    pp_btyp t
-    an
-    an
+      pp_btyp t
+      an
+      an
+  in
+
+  let pp_struct_asset fmt (asset : asset) =
+    let pp_asset_item (fmt : Format.formatter) (asset_item : asset_item) =
+      Format.fprintf fmt
+        "%a %a;"
+        pp_type asset_item.type_
+        pp_id asset_item.name
+    in
+    Format.fprintf fmt
+      "struct %a {@\n  @[%a@]@\n}@\n"
+      pp_id asset.name
+      (pp_list "@\n" pp_asset_item) asset.values;
+  in
+
+  let pp_asset fmt (asset : asset) =
+    pp_struct_asset fmt asset;
+    pp_decl_asset fmt asset
   in
 
   let pp_decl_node fmt = function
