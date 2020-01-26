@@ -253,6 +253,78 @@ let pp_model fmt (model : model) =
 
   let pp_decls fmt x = (pp_list "@\n" pp_decl_node) fmt x in
 
+  let pp_api_asset fmt = function
+    | Get           _an         -> pp_str fmt "todo_Get"
+    | Set           _an         -> pp_str fmt "todo_Set"
+    | Add           _an         -> pp_str fmt "todo_Add"
+    | Remove        _an         -> pp_str fmt "todo_Remove"
+    | UpdateAdd    (_an, _fn)   -> pp_str fmt "todo_UpdateAdd"
+    | UpdateRemove (_an, _fn)   -> pp_str fmt "todo_UpdateRemove"
+    | ToKeys        _an         -> pp_str fmt "todo_ToKeys"
+    | ColToKeys     _an         -> pp_str fmt "todo_ColToKeys"
+    | Select       (_an, _pred) -> pp_str fmt "todo_Select"
+    | Sort         (_an, _v)    -> pp_str fmt "todo_Sort"
+    | Contains      _an         -> pp_str fmt "todo_Contains"
+    | Nth           _an         -> pp_str fmt "todo_Nth"
+    | Count         _an         -> pp_str fmt "todo_Count"
+    | Sum          (_an, _fn)   -> pp_str fmt "todo_Sum"
+    | Min          (_an, _fn)   -> pp_str fmt "todo_Min"
+    | Max          (_an, _fn)   -> pp_str fmt "todo_Max"
+    | Shallow       _an         -> pp_str fmt "todo_Shallow"
+    | Unshallow     _an         -> pp_str fmt "todo_Unshallow"
+    | Listtocoll    _an         -> pp_str fmt "todo_Listtocoll"
+    | Head          _an         -> pp_str fmt "todo_Head"
+    | Tail          _an         -> pp_str fmt "todo_Tail"
+  in
+
+  let pp_api_list fmt = function
+    | Lprepend  _t -> pp_str fmt "todo_Lprepend"
+    | Lcontains _t -> pp_str fmt "todo_Lcontains"
+    | Lcount    _t -> pp_str fmt "todo_Lcount"
+    | Lnth      _t -> pp_str fmt "todo_Lnth"
+  in
+
+  let pp_api_builtin fmt = function
+    | MinBuiltin _t -> pp_str fmt "todo_MinBuiltin"
+    | MaxBuiltin _t -> pp_str fmt "todo_MaxBuiltin"
+  in
+
+  let pp_api_internal fmt = function
+    | RatEq      -> pp_str fmt "todo_RatEq"
+    | RatCmp     -> pp_str fmt "todo_RatCmp"
+    | RatArith   -> pp_str fmt "todo_RatArith"
+    | RatTez     -> pp_str fmt "todo_RatTez"
+  in
+
+  let pp_api_item_node fmt = function
+    | APIAsset      v -> pp_api_asset    fmt v
+    | APIList       v -> pp_api_list     fmt v
+    | APIBuiltin    v -> pp_api_builtin  fmt v
+    | APIInternal   v -> pp_api_internal fmt v
+  in
+
+  let pp_api_item fmt (api_storage : api_storage) =
+    pp_api_item_node fmt api_storage.node_item
+  in
+
+  let pp_api_items fmt _ =
+    let filter_api_items l : api_storage list =
+      List.fold_right (fun (x : api_storage) accu ->
+          if x.only_formula
+          then accu
+          else x::accu
+        ) l []
+    in
+    let l : api_storage list = filter_api_items model.api_items in
+    match l with
+    | [] -> ()
+    | _ ->
+      begin
+        Format.fprintf fmt "/* API functions */@\n";
+        (pp_list "@\n" pp_api_item) fmt l
+      end
+  in
+
   let pp_arg fmt (a, t, _) =
     Format.fprintf fmt "%a %a"
       pp_type t
@@ -282,6 +354,9 @@ let pp_model fmt (model : model) =
 
   let pp_contract_content _fmt _ =
     pp_decls fmt model.decls;
+    pp_newline fmt ();
+    pp_newline fmt ();
+    pp_api_items fmt model.api_items;
     pp_newline fmt ();
     pp_newline fmt ();
     pp_functions fmt model.functions
