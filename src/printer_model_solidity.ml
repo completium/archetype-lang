@@ -106,6 +106,7 @@ let pp_model fmt (model : model) =
           f i
       | Mremovefield _ -> pp_str fmt "todo_Mremovefield"
       | Mremoveif _    -> pp_str fmt "todo_Mremoveif"
+      | Mupdate _      -> pp_str fmt "todo_Mupdate"
       | Mselect _      -> pp_str fmt "todo_Mselect"
       | Msort _        -> pp_str fmt "todo_Msort"
       | Mcontains (an, c, i) ->
@@ -234,7 +235,20 @@ let pp_model fmt (model : model) =
       | Mseq l -> (pp_list "@\n" f) fmt l
       | Massign         _ -> pp_str fmt "todo_Massign"
       | Massignvarstore _ -> pp_str fmt "todo_Massignvarstore"
-      | Massignfield    _ -> pp_str fmt "todo_Massignfield"
+      | Massignfield (op, _, lhs, fn, v) ->
+        Format.fprintf fmt "%a.%a %s %a;"
+          f lhs
+          pp_id fn
+          ( match op with
+            | ValueAssign -> "="
+            | PlusAssign  -> "+="
+            | MinusAssign -> "-="
+            | MultAssign  -> "*="
+            | DivAssign   -> "/="
+            | AndAssign   -> "&="
+            | OrAssign    -> "|="
+          )
+          f v
       | Massignstate    _ -> pp_str fmt "todo_Massignstate"
       | Mtransfer       _ -> pp_str fmt "todo_Mtransfer"
       | Mbreak            -> pp_str fmt "break"

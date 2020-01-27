@@ -2,6 +2,7 @@
 open Archetype
 open Core
 open Gen_transform
+open Trans_solidity
 
 exception Compiler_error
 exception E_arg
@@ -126,6 +127,7 @@ let generate_target model =
 
   | Solidity ->
     model
+    |> replace_update_by_assignment
     |> replace_declvar_by_letin
     |> exec_process
     |> generate_api_storage
@@ -134,10 +136,11 @@ let generate_target model =
   | Liquidity
   | LiquidityUrl ->
     model
+    |> replace_update_by_set
     |> generate_storage
     |> replace_declvar_by_letin
     |> exec_process
-    |> post_process_fun_language
+    |> process_single_field_storage
     |> shallow_asset
     |> split_key_values
     |> remove_side_effect
