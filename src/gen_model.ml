@@ -411,6 +411,8 @@ let to_model (ast : A.model) : M.model =
     let var_mterm : M.mterm = M.mk_mterm (M.Mvarlocal var_name) type_asset in
 
     (* let asset_mterm : M.mterm = M.mk_mterm (M.Mvarstorecol (dumloc (asset_name))) type_container_asset in *)
+    let _, t = Ast.Utils.get_asset_key ast asset_loced in
+    let t = vtyp_to_btyp t in
 
     let key_name = "k_" in
     let key_loced : M.lident = dumloc (key_name) in
@@ -481,7 +483,7 @@ let to_model (ast : A.model) : M.model =
       | _ ->
         M.Mletin ([key_loced],
                   k,
-                  None,
+                  Some (Tbuiltin t),
                   letinasset,
                   None
                  ) in
