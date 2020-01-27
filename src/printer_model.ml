@@ -230,10 +230,10 @@ let pp_mterm fmt (mt : mterm) =
 
     | Mupdate (an, k, l) ->
       let pp fmt (an, k, l) =
-        Format.fprintf fmt "update_%a (%a, %a)"
+        Format.fprintf fmt "update_%a (%a, {%a})"
           pp_str an
           f k
-          (pp_list "" (fun fmt (id, op, v) -> Format.fprintf fmt "%a %a %a" pp_id id pp_assignment_operator op f v)) l
+          (pp_list "; " (fun fmt (id, op, v) -> Format.fprintf fmt "%a %a %a" pp_id id pp_operator op f v)) l
       in
       pp fmt (an, k, l)
 

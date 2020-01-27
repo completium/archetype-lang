@@ -1,6 +1,7 @@
 (* -------------------------------------------------------------------- *)
 open Archetype
 open Core
+open Gen_transform
 
 exception Compiler_error
 exception E_arg
@@ -91,26 +92,9 @@ let generate_target_pt (pt : ParseTree.archetype) : ParseTree.archetype =
 let generate_model            = Gen_model.to_model
 let generate_storage          = Gen_storage.generate_storage
 let shallow_asset             = Gen_shallow_asset.shallow_asset
-let extend_iter               = Gen_transform.extend_loop_iter
 let split_key_values          = Gen_split_key_values.split_key_values
 let remove_side_effect        = Gen_reduce.reduce
-let remove_rational           = Gen_transform.remove_rational
-let replace_date_duration_by_timestamp = Gen_transform.replace_date_duration_by_timestamp
-let remove_enum_matchwith     = Gen_transform.remove_enum_matchwith
 let generate_api_storage      = Gen_api_storage.generate_api_storage
-let exec_process model        = model
-                                |> Gen_transform.replace_lit_address_by_role
-                                |> Gen_transform.remove_label
-                                |> Gen_transform.flat_sequence
-                                |> Gen_transform.remove_cmp_bool
-let check_partition_access    = Gen_transform.check_partition_access Typing.empty
-let extend_removeif           = Gen_transform.extend_removeif
-let post_process_fun_language = Gen_transform.process_single_field_storage
-let prune_properties          = Gen_transform.prune_properties
-let replace_declvar_by_letin  = Gen_transform.replace_declvar_by_letin
-let remove_get_dot            = Gen_transform.remove_get_dot
-let remove_wild_pattern       = Gen_transform.remove_wild_pattern
-let remove_cmp_bool           = Gen_transform.remove_cmp_bool
 
 let generate_target model =
 
@@ -134,6 +118,7 @@ let generate_target model =
   | Ligo
   | LigoStorage ->
     model
+    |> replace_update_by_set
     |> remove_rational
     |> replace_date_duration_by_timestamp
     |> generate_storage
@@ -158,10 +143,11 @@ let generate_target model =
 
   | Scaml ->
     model
+    |> replace_update_by_set
     |> generate_storage
     |> replace_declvar_by_letin
     |> exec_process
-    |> post_process_fun_language
+    |> process_single_field_storage
     |> shallow_asset
     |> split_key_values
     |> remove_side_effect
@@ -170,10 +156,11 @@ let generate_target model =
 
   | Whyml ->
     model
+    |> replace_update_by_set
     |> generate_storage
     |> replace_declvar_by_letin
     |> prune_properties
-    |> extend_iter
+    |> extend_loop_iter
     |> shallow_asset
     |> remove_cmp_bool
     |> generate_api_storage
@@ -195,7 +182,7 @@ let compile (filename, channel) =
   |> raise_if_error type_error type_
   |> cont !Options.opt_ast output_tast
   |> raise_if_error model_error generate_model
-  |> raise_if_error post_model_error check_partition_access
+  |> raise_if_error post_model_error (check_partition_access Typing.empty)
   |> raise_if_error post_model_error extend_removeif
   |> generate_target
 
