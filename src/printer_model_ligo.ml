@@ -396,6 +396,8 @@ let pp_model_internal fmt (model : model) b =
         in
         pp fmt (an, fn, c, i)
 
+      | Mupdate _ -> emit_error (UnsupportedTerm ("update"))
+
       | Mselect (an, c, p) ->
         let index : int = get_preds_index env.select_preds p in
         let pp fmt (an, c, _p) =
