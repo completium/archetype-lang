@@ -471,6 +471,8 @@ let pp_model fmt (model : model) =
         in
         pp fmt (an, fn, c, i)
 
+      | Mupdate _ -> emit_error (UnsupportedTerm ("update"))
+
       | Mselect (an, c, p) ->
         let pp fmt (an, c, p) =
           Format.fprintf fmt "select_%a (self, %a, fun the -> %a)"

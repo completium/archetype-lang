@@ -2,6 +2,121 @@ open Location
 open Model
 open Tools
 
+
+  (* let to_assign_operator = function
+    | `Assign op -> to_assignment_operator op
+    | _ -> emit_error CannotConvertToAssignOperator
+  in *)
+  (* myasset.update k {f1 = v1; f2 = v2}
+
+     let _k = k in
+     let _myasset = myasset.get _k in
+     let _myasset = {id = _myasset.id; f1 = v1; f2 = v2} in
+     set_myasset s _k _myasset *)
+
+  (* let remove_update_fun_version (c : mterm) (k : mterm) (e : (lident * A.operator * mterm) list) : mterm__node =
+    let is_asset_name (pterm : M.mterm) an : bool =
+      match pterm with
+      | {type_ = Tasset asset_name} -> String.equal an (unloc asset_name)
+      | _ -> false
+    in
+
+    let asset_name = extract_asset_name c in
+    let asset_loced = dumloc asset_name in
+    let asset = A.Utils.get_asset ast asset_loced in
+
+    let asset_aaa =
+      match k.node with
+      | M.Mdotasset (a, _) when is_asset_name a asset_name -> Some a
+      | _ -> None
+    in
+
+    let type_asset = M.Tasset asset_loced in
+    let type_container_asset = M.Tcontainer (type_asset, Collection) in
+
+    let var_name = dumloc (asset_name ^ "_") in
+    let var_mterm : M.mterm = M.mk_mterm (M.Mvarlocal var_name) type_asset in
+
+    (* let asset_mterm : M.mterm = M.mk_mterm (M.Mvarstorecol (dumloc (asset_name))) type_container_asset in *)
+    let _, t = Ast.Utils.get_asset_key ast asset_loced in
+    let t = vtyp_to_btyp t in
+
+    let key_name = "k_" in
+    let key_loced : M.lident = dumloc (key_name) in
+    let key_mterm : M.mterm =
+      match asset_aaa with
+      | Some _ -> k
+      | _ ->
+        M.mk_mterm (M.Mvarlocal key_loced) type_container_asset
+    in
+
+    let set_mterm : M.mterm = M.mk_mterm (M.Mset (asset_name, List.map (fun (id, _, _) -> unloc id) e, key_mterm, var_mterm)) Tunit in
+
+    let lref : (Ident.ident * (A.operator * M.mterm)) list = List.map (fun (x, y, z) -> (unloc x, (y, z))) e in
+    let lassetitems =
+      List.fold_left (fun accu (x : A.lident A.decl_gen) ->
+          let v = List.assoc_opt (unloc x.name) lref in
+          let type_ = ptyp_to_type (Option.get x.typ) in
+          let var = M.mk_mterm (Mdotasset (var_mterm, x.name)) type_ in
+          match v with
+          | Some y ->
+            accu @ [
+              let value = snd y in
+              match y |> fst |> to_assign_operator with
+              | M.ValueAssign -> value
+              | M.PlusAssign  -> M.mk_mterm (Mplus (var, value)) type_
+              | M.MinusAssign -> M.mk_mterm (Mminus (var, value)) type_
+              | M.MultAssign  -> M.mk_mterm (Mmult (var, value)) type_
+              | M.DivAssign   -> M.mk_mterm (Mdiv (var, value)) type_
+              | M.AndAssign   -> M.mk_mterm (Mand (var, value)) type_
+              | M.OrAssign    -> M.mk_mterm (Mor (var, value)) type_
+            ]
+          | _ -> accu @ [var]
+        ) [] asset.fields in
+    let asset : M.mterm = M.mk_mterm (M.Masset lassetitems) type_asset in
+
+    let letinasset : M.mterm = M.mk_mterm (M.Mletin ([var_name],
+                                                     asset,
+                                                     Some (type_asset),
+                                                     set_mterm,
+                                                     None
+                                                    )) Tunit in
+
+    (* let seq : M.mterm list = (List.map (fun ((id, op, term) : ('a * A.operator * 'c)) -> M.mk_mterm
+                                           (M.Massignfield (to_assign_operator op, var_name, id, term))
+                                           Tunit
+                                       ) e) @ [set_mterm] in *)
+
+    (* let body : M.mterm = M.mk_mterm (M.Mseq seq) Tunit in *)
+
+    let get_mterm : M.mterm =
+      match asset_aaa with
+      | Some a -> a
+      | _ ->
+        M.mk_mterm (M.Mget (asset_name, key_mterm)) type_asset
+    in
+
+    let letinasset : M.mterm = M.mk_mterm (M.Mletin ([var_name],
+                                                     get_mterm,
+                                                     Some (type_asset),
+                                                     letinasset,
+                                                     None
+                                                    ))
+        Tunit in
+
+    let res : M.mterm__node =
+      match asset_aaa with
+      | Some _ -> letinasset.node
+      | _ ->
+        M.Mletin ([key_loced],
+                  k,
+                  Some (Tbuiltin t),
+                  letinasset,
+                  None
+                 ) in
+    res *)
+
+
 let remove_label (model : model) : model =
   let rec aux (ctx : ctx_model) (mt : mterm) : mterm =
     match mt.node with
