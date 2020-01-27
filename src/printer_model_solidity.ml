@@ -79,11 +79,22 @@ let pp_model fmt (model : model) =
       | Mapp _        -> pp_str fmt "todo_Mapp"
       | Maddshallow _ -> pp_str fmt "todo_Maddshallow"
       | Mexternal _   -> pp_str fmt "todo_Mexternal"
-      | Mget _        -> pp_str fmt "todo_Mget"
+      | Mget (c, k) ->
+        let pp fmt (c, k) =
+          Format.fprintf fmt "get_%a (%a)"
+            pp_str c
+            f k
+        in
+        pp fmt (c, k)
+
       | Mgetbefore _  -> pp_str fmt "todo_Mgetbefore"
       | Mgetat _      -> pp_str fmt "todo_Mgetat"
       | Mgetfrommap _ -> pp_str fmt "todo_Mgetfrommap"
-      | Mset _        -> pp_str fmt "todo_Mset"
+      | Mset (c, _l, k, v) ->
+        Format.fprintf fmt "set_%a (%a, %a);"
+          pp_str c
+          f k
+          f v
       | Maddasset (an, i) ->
         Format.fprintf fmt "add_%a (%a);"
           pp_str an
@@ -176,7 +187,12 @@ let pp_model fmt (model : model) =
                Format.fprintf fmt "%a: %a"
                  pp_id a
                  f b)) lll
-      | Mletin          _ -> pp_str fmt "todo_Mletin"
+      | Mletin (ids, a, t, b, _) ->
+        Format.fprintf fmt "%a %a = %a;@\n@[%a@]"
+          (pp_option pp_type) t
+          (pp_if (List.length ids > 1) (pp_paren (pp_list ", " pp_id)) (pp_list ", " pp_id)) ids
+          f a
+          f b
       | Mdeclvar        _ -> pp_str fmt "todo_Mdeclvar"
       | Mvarstorevar v
       | Mvarstorecol v
@@ -188,25 +204,28 @@ let pp_model fmt (model : model) =
       | Mvarstate         -> pp_str fmt "state"
       | Mnow              -> pp_str fmt "todo_Mnow"
       | Mtransferred      -> pp_str fmt "todo_Mtransferred"
-      | Mcaller           -> pp_str fmt "todo_Mcaller"
+      | Mcaller           -> pp_str fmt "msg.sender"
       | Mbalance          -> pp_str fmt "todo_Mbalance"
       | Msource           -> pp_str fmt "todo_Msource"
       | Mnone             -> pp_str fmt "todo_Mnone"
       | Msome           _ -> pp_str fmt "todo_Msome"
       | Marray          _ -> pp_str fmt "todo_Marray"
-      | Mint i  -> pp_big_int fmt i
-      | Muint i -> pp_big_int fmt i
+      | Mint            i -> pp_big_int fmt i
+      | Muint           i -> pp_big_int fmt i
       | Mbool           v -> pp_str fmt (if v then "true" else "false")
       | Menum           _ -> pp_str fmt "todo_Menum"
       | Mrational       _ -> pp_str fmt "todo_Mrational"
-      | Mstring str -> Format.fprintf fmt "\"%s\"" str
+      | Mstring       str -> Format.fprintf fmt "\"%s\"" str
       | Mcurrency       _ -> pp_str fmt "todo_Mcurrency"
       | Maddress        _ -> pp_str fmt "todo_Maddress"
       | Mdate           _ -> pp_str fmt "todo_Mdate"
       | Mduration       _ -> pp_str fmt "todo_Mduration"
       | Mtimestamp      _ -> pp_str fmt "todo_Mtimestamp"
-      | Mdotasset (_, _)  -> pp_str fmt "todo_Mdotasset"
-      | Mdotcontract    _ -> pp_str fmt "todo_Mdotcontract"
+      | Mdotasset (e, i)
+      | Mdotcontract (e, i) ->
+        Format.fprintf fmt "%a.%a"
+          f e
+          pp_id i
       | Mtuple          _ -> pp_str fmt "todo_Mtuple"
       | Massoc          _ -> pp_str fmt "todo_Massoc"
       | Mfor            _ -> pp_str fmt "todo_Mfor"
@@ -285,9 +304,36 @@ let pp_model fmt (model : model) =
   let pp_decls fmt x = (pp_list "@\n" pp_decl_node) fmt x in
 
   let pp_api_asset fmt = function
-    | Get           _an         -> pp_str fmt "todo_Get"
-    | Set           _an         -> pp_str fmt "todo_Set"
-    | Add           _an         -> pp_str fmt "todo_Add"
+    | Get an ->
+      let _, t = Utils.get_asset_key model an in
+      Format.fprintf fmt
+        "function get_%a(%a k) view returns(%a %a) {@\n  \
+         return %a[k];@\n\
+         }@\n"
+        pp_str an pp_btyp t pp_btyp t pp_str an
+        pp_str an
+    | Set an ->
+      let _, t = Utils.get_asset_key model an in
+      Format.fprintf fmt
+        "function set_%a(%a k, %a asset) {@\n  \
+         %a[k] = asset;@\n\
+         }@\n"
+        pp_str an pp_btyp t pp_str an
+        pp_str an
+    | Add an ->
+      let k, t = Utils.get_asset_key model an in
+      Format.fprintf fmt
+        "function add_%a(%a asset) {@\n  \
+         %a key = asset.%a;@\n  \
+         if (%a[key].isValue) {@\n    \
+         revert(\"key already exists\");@\n  \
+         }@\n  \
+         %a[key] = asset;@\n\
+         }@\n"
+        pp_str an pp_str an
+        pp_btyp t pp_str k
+        pp_str an
+        pp_str an
     | Remove        _an         -> pp_str fmt "todo_Remove"
     | UpdateAdd    (_an, _fn)   -> pp_str fmt "todo_UpdateAdd"
     | UpdateRemove (_an, _fn)   -> pp_str fmt "todo_UpdateRemove"
@@ -295,7 +341,14 @@ let pp_model fmt (model : model) =
     | ColToKeys     _an         -> pp_str fmt "todo_ColToKeys"
     | Select       (_an, _pred) -> pp_str fmt "todo_Select"
     | Sort         (_an, _v)    -> pp_str fmt "todo_Sort"
-    | Contains      _an         -> pp_str fmt "todo_Contains"
+    | Contains an ->
+      let _, t = Utils.get_asset_key model an in
+      Format.fprintf fmt
+        "function contains_%a(%a key) returns(bool res) {@\n  \
+         return (%a[key].isValue);@\n\
+         }@\n"
+        pp_str an pp_btyp t
+        pp_str an
     | Nth           _an         -> pp_str fmt "todo_Nth"
     | Count         _an         -> pp_str fmt "todo_Count"
     | Sum          (_an, _fn)   -> pp_str fmt "todo_Sum"
