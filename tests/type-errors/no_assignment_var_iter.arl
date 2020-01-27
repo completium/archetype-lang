@@ -1,0 +1,9 @@
+archetype no_assignment_var_iter
+
+action exec () {
+  effect {
+    iter i to 10 do
+      i := 1
+    done
+  }
+}
