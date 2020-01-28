@@ -133,6 +133,7 @@ let pp_model fmt (model : model) =
           f i
       | Mremovefield _ -> pp_str fmt "todo_Mremovefield"
       | Mremoveif _    -> pp_str fmt "todo_Mremoveif"
+      | Maddupdate _      -> pp_str fmt "todo_Maddupdate"
       | Mupdate _      -> pp_str fmt "todo_Mupdate"
       | Mselect _      -> pp_str fmt "todo_Mselect"
       | Msort _        -> pp_str fmt "todo_Msort"
