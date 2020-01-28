@@ -122,10 +122,10 @@ let pp_model fmt (model : model) =
       | Mupdate _      -> pp_str fmt "todo_Mupdate"
       | Mselect _      -> pp_str fmt "todo_Mselect"
       | Msort _        -> pp_str fmt "todo_Msort"
-      | Mcontains (an, c, i) ->
-        Format.fprintf fmt "contains_%a (%a, %a)"
+      | Mcontains (an, _c, i) ->
+        Format.fprintf fmt "contains_%a (%a)"
           pp_str an
-          f c
+          (* f c *)
           f i
       | Mmem _          -> pp_str fmt "todo_Mmem"
       | Msubsetof _     -> pp_str fmt "todo_Msubsetof"
@@ -196,7 +196,7 @@ let pp_model fmt (model : model) =
         let lll = List.map2 (fun x y -> (x, y)) ll l in
 
         Format.fprintf fmt "%a({%a})"
-          pp_id asset_name
+          pp_type (Tasset asset_name)
           (pp_list ", " (fun fmt (a, b)->
                Format.fprintf fmt "%a: %a"
                  pp_id a
@@ -335,10 +335,10 @@ let pp_model fmt (model : model) =
     | Get an ->
       let _, t = Utils.get_asset_key model an in
       Format.fprintf fmt
-        "function get_%a(%a k) view returns(%a %a) {@\n  \
+        "function get_%a(%a k) private view returns(asset_%a storage) {@\n  \
          return %a[k];@\n\
          }@\n"
-        pp_str an pp_btyp t pp_btyp t pp_str an
+        pp_str an pp_btyp t pp_str an
         pp_str an
     | Set an ->
       let _, t = Utils.get_asset_key model an in
@@ -351,16 +351,16 @@ let pp_model fmt (model : model) =
     | Add an ->
       let k, t = Utils.get_asset_key model an in
       Format.fprintf fmt
-        "function add_%a(%a asset) {@\n  \
+        "function add_%a(asset_%a memory asset) private {@\n  \
          %a key = asset.%a;@\n  \
-         if (%a[key].isValue) {@\n    \
+         if (%a[key].%a) {@\n    \
          revert(\"key already exists\");@\n  \
          }@\n  \
          %a[key] = asset;@\n\
          }@\n"
         pp_str an pp_str an
         pp_btyp t pp_str k
-        pp_str an
+        pp_str an pp_str (Trans_solidity.field_bool_id)
         pp_str an
     | Remove        _an         -> pp_str fmt "todo_Remove"
     | UpdateAdd    (_an, _fn)   -> pp_str fmt "todo_UpdateAdd"
@@ -372,11 +372,12 @@ let pp_model fmt (model : model) =
     | Contains an ->
       let _, t = Utils.get_asset_key model an in
       Format.fprintf fmt
-        "function contains_%a(%a key) returns(bool res) {@\n  \
-         return (%a[key].isValue);@\n\
+        "function contains_%a(%a key) private view returns(bool) {@\n  \
+         return %a[key].%a;@\n\
          }@\n"
         pp_str an pp_btyp t
-        pp_str an
+        pp_str an pp_str (Trans_solidity.field_bool_id)
+
     | Nth           _an         -> pp_str fmt "todo_Nth"
     | Count         _an         -> pp_str fmt "todo_Count"
     | Sum          (_an, _fn)   -> pp_str fmt "todo_Sum"

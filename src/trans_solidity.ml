@@ -2,7 +2,25 @@ open Location
 open Model
 open Tools
 
+let field_bool_id = "_isValue"
+
 let replace_update_by_assignment (model : model) : model =
+  let n_key = ref 0 in
+  let get_fresh_id_key () =
+    begin
+      let res = "_k_" ^ string_of_int !n_key in
+      n_key := !n_key + 1;
+      res
+    end
+  in
+  let n_asset = ref 0 in
+  let get_fresh_id_asset () =
+    begin
+      let res = "_asset_" ^ string_of_int !n_asset in
+      n_asset := !n_asset + 1;
+      res
+    end
+  in
   let rec aux (ctx : ctx_model) (mt : mterm) : mterm =
     match mt.node with
     | Mupdate (an, k, l) ->
@@ -19,7 +37,7 @@ let replace_update_by_assignment (model : model) : model =
         let type_asset = Tasset (dumloc an) in
         let type_container_asset = Tcontainer (type_asset, Collection) in
 
-        let var_name = dumloc (an ^ "_") in
+        let var_name = dumloc (get_fresh_id_asset ()) in
         let var_mterm : mterm = mk_mterm (Mvarlocal var_name) type_asset in
 
         (* let asset_mterm : mterm = mk_mterm (Mvarstorecol (dumloc (asset_name))) type_container_asset in *)
@@ -30,7 +48,7 @@ let replace_update_by_assignment (model : model) : model =
           | _ -> None
         in
 
-        let key_name = "k_" in
+        let key_name = get_fresh_id_key () in
         let key_loced : lident = dumloc (key_name) in
         let key_mterm : mterm =
           match asset_aaa with
@@ -106,6 +124,52 @@ let replace_update_by_assignment (model : model) : model =
                    ) in
 
         mk_mterm res Tunit
+      end
+    | _ -> map_mterm (aux ctx) mt
+  in
+  map_mterm_model aux model
+
+let add_bool_asset (model : model) : model =
+  let field_type = Tbuiltin Bbool in
+  let field_value = mk_mterm (Mbool true) field_type in
+  let rec aux (ctx : ctx_model) (mt : mterm) : mterm =
+    match mt.node with
+    | Masset l ->
+      begin
+        { mt with node = Masset (l @ [field_value]) }
+      end
+    | _ -> map_mterm (aux ctx) mt
+  in
+  { model with
+    decls = List.map (fun d ->
+        match d with
+        | Dasset a -> Dasset {a with values = a.values @ [mk_asset_item (dumloc field_bool_id) field_type field_type]}
+        | _ -> d
+      ) model.decls
+  }
+  |> map_mterm_model aux
+
+let make_asset_var (model : model) : model =
+  let n = ref 0 in
+  let get_fresh_id () =
+    begin
+      let res = "_asset_var_" ^ string_of_int !n in
+      n := !n + 1;
+      res
+    end
+  in
+  let is_masset (x : mterm) = match x.node with | Masset _ -> true | _ -> false in
+  let rec aux (ctx : ctx_model) (mt : mterm) : mterm =
+    match mt.node with
+    | Maddasset (an, v) when is_masset v ->
+      begin
+        let asset_type = Tasset (dumloc an) in
+        let var_id = get_fresh_id () in
+        let var_lident = dumloc var_id in
+        let var = mk_mterm (Mvarlocal var_lident) asset_type in
+        let body = mk_mterm (Maddasset (an, var)) Tunit in
+        let letin = Mletin ([var_lident], v, Some asset_type, body, None) in
+        mk_mterm letin Tunit
       end
     | _ -> map_mterm (aux ctx) mt
   in

@@ -131,6 +131,8 @@ let generate_target model =
     |> replace_declvar_by_letin
     |> exec_process
     |> generate_api_storage
+    |> add_bool_asset
+    |> make_asset_var
     |> output
 
   | Liquidity

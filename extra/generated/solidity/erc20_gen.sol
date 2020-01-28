@@ -28,8 +28,8 @@ contract erc_20_gen {
     balances[key] = asset;
   }
 
-  function contains_balances(address key) private pure returns(bool) {
-    return key == key;
+  function contains_balances(address key) private view returns(bool) {
+    return balances[key].isValue;
   }
 
 
