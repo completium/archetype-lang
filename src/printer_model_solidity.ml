@@ -331,6 +331,22 @@ let pp_model fmt (model : model) =
 
   let pp_decls fmt x = (pp_list "@\n" pp_decl_node) fmt x in
 
+  let pp_constructor_item _fmt decl =
+    match decl with
+    | Dvar _      -> ()
+    | Denum _     -> ()
+    | Dasset _    -> ()
+    | Dcontract _ -> ()
+  in
+
+  let pp_constructor_items fmt x = List.iter (pp_constructor_item fmt) x in
+
+  let pp_constructor fmt decls =
+    Format.fprintf fmt
+      "constructor() public {@\n  @[%a@]@\n}"
+      pp_constructor_items decls
+  in
+
   let pp_api_asset fmt = function
     | Get an ->
       let _, t = Utils.get_asset_key model an in
@@ -469,7 +485,9 @@ let pp_model fmt (model : model) =
     pp_decls fmt model.decls;
     pp_newline fmt ();
     pp_newline fmt ();
-    pp_api_items fmt model.api_items;
+    pp_constructor fmt model.decls;
+    pp_newline fmt ();
+    pp_newline fmt ();    pp_api_items fmt model.api_items;
     pp_newline fmt ();
     pp_newline fmt ();
     pp_functions fmt model.functions
