@@ -76,6 +76,20 @@ let pp_model fmt (model : model) =
     Format.fprintf fmt " %s" storage_location
   in
 
+  let pp_assign_operator fmt op =
+    let str =
+      match op with
+      | ValueAssign -> "="
+      | PlusAssign  -> "+="
+      | MinusAssign -> "-="
+      | MultAssign  -> "*="
+      | DivAssign   -> "/="
+      | AndAssign   -> "&="
+      | OrAssign    -> "|="
+    in
+    pp_str fmt str
+  in
+
   let pp_mterm fmt (mt : mterm) =
     let rec f fmt (mtt : mterm) =
       match mtt.node with
@@ -232,7 +246,7 @@ let pp_model fmt (model : model) =
       | Mrational       _ -> pp_str fmt "todo_Mrational"
       | Mstring       str -> Format.fprintf fmt "\"%s\"" str
       | Mcurrency       _ -> pp_str fmt "todo_Mcurrency"
-      | Maddress        _ -> pp_str fmt "todo_Maddress"
+      | Maddress        _ -> pp_str fmt "0xA7b0536fB02C593b0dfD82bd65aaCBDd19Ae4777"
       | Mdate           _ -> pp_str fmt "todo_Mdate"
       | Mduration       _ -> pp_str fmt "todo_Mduration"
       | Mtimestamp      _ -> pp_str fmt "todo_Mtimestamp"
@@ -247,21 +261,18 @@ let pp_model fmt (model : model) =
       | Miter           _ -> pp_str fmt "todo_Miter"
       | Mfold           _ -> pp_str fmt "todo_Mfold"
       | Mseq l -> (pp_list "@\n" f) fmt l
-      | Massign         _ -> pp_str fmt "todo_Massign"
+      | Massign (op, _, l, r) ->
+        Format.fprintf fmt "%a %a %a;"
+          pp_id l
+          pp_assign_operator op
+          f r
+
       | Massignvarstore _ -> pp_str fmt "todo_Massignvarstore"
       | Massignfield (op, _, lhs, fn, v) ->
-        Format.fprintf fmt "%a.%a %s %a;"
+        Format.fprintf fmt "%a.%a %a %a;"
           f lhs
           pp_id fn
-          ( match op with
-            | ValueAssign -> "="
-            | PlusAssign  -> "+="
-            | MinusAssign -> "-="
-            | MultAssign  -> "*="
-            | DivAssign   -> "/="
-            | AndAssign   -> "&="
-            | OrAssign    -> "|="
-          )
+          pp_assign_operator op
           f v
       | Massignstate    _ -> pp_str fmt "todo_Massignstate"
       | Mtransfer       _ -> pp_str fmt "todo_Mtransfer"
