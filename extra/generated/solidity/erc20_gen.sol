@@ -71,7 +71,7 @@ contract erc_20_gen {
     balances_.value -= amount;
     if (contains_balances (to_)) {
       address k1_ = to_;
-      asset_balances memory balances3_ = get_balances (k1_);
+      asset_balances storage balances3_ = get_balances (k1_);
       balances3_.value += amount;
     } else {
       asset_balances memory b = asset_balances({addr: to_, value: amount, isValue : true});

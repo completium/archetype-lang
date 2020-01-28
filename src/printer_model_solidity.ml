@@ -1,4 +1,5 @@
 open Location
+open Tools
 open Model
 open Printer_tools
 
@@ -35,7 +36,7 @@ let pp_model fmt (model : model) =
 
   let rec pp_type fmt t =
     match t with
-    | Tasset an    -> pp_id fmt an
+    | Tasset an    -> Format.fprintf fmt "asset_%a" pp_id an
     | Tenum en     -> pp_id fmt en
     | Tcontract cn -> pp_id fmt cn
     | Tbuiltin b   -> pp_btyp fmt b
@@ -61,6 +62,18 @@ let pp_model fmt (model : model) =
     | Tprog _
     | Tvset _
     | Ttrace _ -> pp_str fmt "todo"
+  in
+
+  let pp_storage_location fmt (t, v: type_ * mterm)  =
+    let storage = "storage " in
+    let memory = "memory " in
+    let storage_location =
+      match t, v.node with
+      | Tasset _, Mget _   -> storage
+      | Tasset _, Masset _ -> memory
+      | _ -> ""
+    in
+    Format.fprintf fmt " %s" storage_location
   in
 
   let pp_mterm fmt (mt : mterm) =
@@ -189,8 +202,9 @@ let pp_model fmt (model : model) =
                  pp_id a
                  f b)) lll
       | Mletin (ids, a, t, b, _) ->
-        Format.fprintf fmt "%a %a = %a;@\n@[%a@]"
+        Format.fprintf fmt "%a%a%a = %a;@\n@[%a@]"
           (pp_option pp_type) t
+          pp_storage_location (Option.get t, a)
           (pp_if (List.length ids > 1) (pp_paren (pp_list ", " pp_id)) (pp_list ", " pp_id)) ids
           f a
           f b
@@ -281,15 +295,6 @@ let pp_model fmt (model : model) =
       (pp_option (fun fmt x -> Format.fprintf fmt " = %a" pp_mterm x)) var.default
   in
 
-  let pp_decl_asset fmt (asset : asset) =
-    let an = unloc asset.name in
-    let _k, t = Utils.get_asset_key model an in
-    Format.fprintf fmt "mapping(%a => %s) public %s;"
-      pp_btyp t
-      an
-      an
-  in
-
   let pp_struct_asset fmt (asset : asset) =
     let pp_asset_item (fmt : Format.formatter) (asset_item : asset_item) =
       Format.fprintf fmt
@@ -299,8 +304,17 @@ let pp_model fmt (model : model) =
     in
     Format.fprintf fmt
       "struct %a {@\n  @[%a@]@\n}@\n"
-      pp_id asset.name
+      pp_type (Tasset asset.name)
       (pp_list "@\n" pp_asset_item) asset.values;
+  in
+
+  let pp_decl_asset fmt (asset : asset) =
+    let an = unloc asset.name in
+    let _k, t = Utils.get_asset_key model an in
+    Format.fprintf fmt "mapping(%a => %a) public %s;"
+      pp_btyp t
+      pp_type (Tasset asset.name)
+      an
   in
 
   let pp_asset fmt (asset : asset) =
