@@ -3,6 +3,58 @@ open Model
 open Tools
 
 
+let remove_add_update (model : model) : model =
+  let rec aux (ctx : ctx_model) (mt : mterm) : mterm =
+    match mt.node with
+    | Maddupdate (an, k, l) ->
+      begin
+        let type_asset = Tasset (dumloc an) in
+        let mk_asset (an, k, l) =
+          let asset = Utils.get_asset model an in
+          let lref : (Ident.ident * (assignment_operator * mterm)) list = List.map (fun (x, y, z) -> (unloc x, (y, z))) l in
+          let l = List.map (
+              fun (f : asset_item) ->
+                let f_name = (unloc f.name) in
+                if String.equal asset.key f_name
+                then k
+                else
+                  begin
+                    let op, v = List.assoc f_name lref in
+                    match op with
+                    | ValueAssign -> v
+                    | _ ->
+                      begin
+                        let dv =
+                          match f.default with
+                          | Some v -> v
+                          | _ -> assert false
+                        in
+                        let type_ = dv.type_ in
+                        match op with
+                        | PlusAssign  -> mk_mterm (Mplus (dv, v)) type_
+                        | MinusAssign -> mk_mterm (Mminus (dv, v)) type_
+                        | MultAssign  -> mk_mterm (Mmult (dv, v)) type_
+                        | DivAssign   -> mk_mterm (Mdiv (dv, v)) type_
+                        | AndAssign   -> mk_mterm (Mand (dv, v)) type_
+                        | OrAssign    -> mk_mterm (Mor (dv, v)) type_
+                        | _ -> assert false
+                      end
+                  end
+            ) asset.values in
+          mk_mterm (Masset l) type_asset
+        in
+        let col    = mk_mterm (Mvarstorecol (dumloc an)) (Tcontainer (type_asset, Collection)) in
+        let cond   = mk_mterm (Mcontains (an, col, k)) Tunit in
+        let asset  = mk_asset (an, k, l) in
+        let add    = mk_mterm (Maddasset (an, asset)) Tunit in
+        let update = mk_mterm (Mupdate (an, k, l)) Tunit in
+        let if_node = Mif (cond, update, Some add) in
+        mk_mterm if_node Tunit
+      end
+    | _ -> map_mterm (aux ctx) mt
+  in
+  map_mterm_model aux model
+
 (* myasset.update k {f1 = v1; f2 = v2}
 
    let _k = k in

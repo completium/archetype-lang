@@ -103,6 +103,8 @@ let generate_target model =
   match !Options.target with
   | None ->
     model
+    |> cont !Options.opt_rau remove_add_update
+    |> cont !Options.opt_ru  replace_update_by_set
     |> cont !Options.opt_nr  remove_rational
     |> cont !Options.opt_ndd replace_date_duration_by_timestamp
     |> cont !Options.opt_ne  remove_enum_matchwith
@@ -246,6 +248,10 @@ let main () =
       "--no-rational", Arg.Set Options.opt_nse, " Same as -nr";
       "-ndd", Arg.Set Options.opt_ndd, " Remove date and duration";
       "--no-date-duration", Arg.Set Options.opt_nse, " Same as -ndd";
+      "-rau", Arg.Set Options.opt_rau, " Remove add_update method";
+      "--remove-add-update", Arg.Set Options.opt_rau, " Same as -rau";
+      "-ru", Arg.Set Options.opt_ru, " Remove update method";
+      "--remove-update", Arg.Set Options.opt_ru, " Same as -ru";
       "-ne", Arg.Set Options.opt_ne, " Remove enum and match with";
       "--no-enum", Arg.Set Options.opt_ne, " Same as -ne";
       "-fp", Arg.String (fun s -> Options.opt_property_focused := s), " Focus property (with whyml target only)";
