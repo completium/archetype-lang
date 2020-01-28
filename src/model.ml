@@ -139,6 +139,7 @@ type ('id, 'term) mterm_node  =
   | Mremoveasset    of ident * 'term
   | Mremovefield    of ident * ident * 'term * 'term
   | Mremoveif       of ident * 'term * 'term
+  | Maddupdate      of ident * 'term * ('id * assignment_operator * 'term) list
   | Mupdate         of ident * 'term * ('id * assignment_operator * 'term) list
   | Mselect         of ident * 'term * 'term
   | Msort           of ident * 'term * ident * sort_kind
@@ -876,7 +877,7 @@ let cmp_mterm_node
     | Maddfield (an1, fn1, c1, i1), Maddfield (an2, fn2, c2, i2)                       -> cmp_ident an1 an2 && cmp_ident fn1 fn2 && cmp c1 c2 && cmp i1 i2
     | Mremoveasset (an1, i1), Mremoveasset (an2, i2)                                   -> cmp_ident an1 an2 && cmp i1 i2
     | Mremovefield (an1, fn1, c1, i1), Mremovefield (an2, fn2, c2, i2)                 -> cmp_ident an1 an2 && cmp_ident fn1 fn2 && cmp c1 c2 && cmp i1 i2
-    | Mremoveif (an1, fn1, i1), Mremoveif (an2, fn2, i2)                               -> cmp_ident an1 an2 && cmp fn1 fn2 && cmp i1 i2
+    | Maddupdate (an1, k1, l1), Maddupdate (an2, k2, l2)                               -> cmp_ident an1 an2 && cmp k1 k2 && List.for_all2 (fun (id1, op1, v1) (id2, op2, v2) -> cmpi id1 id2 && cmp_assign_op op1 op2 && cmp v1 v2) l1 l2| Mremoveif (an1, fn1, i1), Mremoveif (an2, fn2, i2)                               -> cmp_ident an1 an2 && cmp fn1 fn2 && cmp i1 i2
     | Mupdate (an1, k1, l1), Mupdate (an2, k2, l2)                                     -> cmp_ident an1 an2 && cmp k1 k2 && List.for_all2 (fun (id1, op1, v1) (id2, op2, v2) -> cmpi id1 id2 && cmp_assign_op op1 op2 && cmp v1 v2) l1 l2
     | Mselect (an1, c1, p1), Mselect (an2, c2, p2)                                     -> cmp_ident an1 an2 && cmp c1 c2 && cmp p1 p2
     | Msort (an1, c1, fn1, k1), Msort (an2, c2, fn2, k2)                               -> cmp_ident an1 an2 && cmp c1 c2 && cmp_ident fn1 fn2 && k1 = k2
@@ -1082,6 +1083,7 @@ let map_term_node (f : 'id mterm_gen -> 'id mterm_gen) = function
   | Mremoveasset (an, i)           -> Mremoveasset (an, f i)
   | Mremovefield (an, fn, c, i)    -> Mremovefield (an, fn, f c, f i)
   | Mremoveif (an, fn, i)          -> Mremoveif (an, f fn, f i)
+  | Maddupdate (an, k, l)          -> Maddupdate (an, f k, List.map (fun (id, op, v) -> (id, op, f v)) l)
   | Mupdate (an, k, l)             -> Mupdate (an, f k, List.map (fun (id, op, v) -> (id, op, f v)) l)
   | Mselect (an, c, p)             -> Mselect (an, f c, f p)
   | Msort (an, c, fn, k)           -> Msort (an, f c, fn, k)
@@ -1351,6 +1353,7 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mremoveasset (_, i)                   -> f accu i
   | Mremovefield (_, _, c, i)             -> f (f accu c) i
   | Mremoveif (_, fn, c)                  -> f (f accu fn) c
+  | Maddupdate (_, k, l)                  -> List.fold_left (fun accu (_, _, v) -> f accu v) (f accu k) l
   | Mupdate (_, k, l)                     -> List.fold_left (fun accu (_, _, v) -> f accu v) (f accu k) l
   | Mselect (_, c, p)                     -> f (f accu c) p
   | Msort (_, c, _, _)                    -> f accu c
@@ -1590,6 +1593,17 @@ let fold_map_term
     let ie, ia = f accu i in
     let fe, fa = f ia fn in
     g (Mremoveif (an, fe, ie)), fa
+
+  | Maddupdate (an, k, l) ->
+    let ke, ka = f accu k in
+    let le, la =
+      List.fold_left
+        (fun (ps, accu) (id, op, v) ->
+           let va, accu = f accu v in
+           (id, op, va)::ps, accu) ([], ka) l
+      |> (fun (x, y) -> (List.rev x, y))
+    in
+    g (Mupdate (an, ke, le)), la
 
   | Mupdate (an, k, l) ->
     let ke, ka = f accu k in

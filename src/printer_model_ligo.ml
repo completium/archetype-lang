@@ -396,6 +396,7 @@ let pp_model_internal fmt (model : model) b =
         in
         pp fmt (an, fn, c, i)
 
+      | Maddupdate _ -> emit_error (UnsupportedTerm ("add_update"))
       | Mupdate _ -> emit_error (UnsupportedTerm ("update"))
 
       | Mselect (an, c, p) ->

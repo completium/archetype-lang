@@ -228,6 +228,15 @@ let pp_mterm fmt (mt : mterm) =
       in
       pp fmt (an, fn, i)
 
+    | Maddupdate (an, k, l) ->
+      let pp fmt (an, k, l) =
+        Format.fprintf fmt "add_update_%a (%a, {%a})"
+          pp_str an
+          f k
+          (pp_list "; " (fun fmt (id, op, v) -> Format.fprintf fmt "%a %a %a" pp_id id pp_operator op f v)) l
+      in
+      pp fmt (an, k, l)
+
     | Mupdate (an, k, l) ->
       let pp fmt (an, k, l) =
         Format.fprintf fmt "update_%a (%a, {%a})"

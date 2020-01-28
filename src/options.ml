@@ -55,6 +55,8 @@ let opt_sa    = ref false
 let opt_skv   = ref false
 let opt_ptc   = ref false
 let opt_raw   = ref false
+let opt_rau   = ref false
+let opt_ru    = ref false
 let opt_raw_whytree = ref false
 
 let opt_property_focused = ref ""
