@@ -79,6 +79,11 @@ let pp_model fmt (model : model) =
     Format.fprintf fmt "%s" str
   in
 
+  let get_data_location = function
+    | Tbuiltin Bstring -> Memory
+    | _ -> None
+  in
+
   let pp_storage_location fmt (t, v: type_ * mterm)  =
     let storage = "storage " in
     let memory = "memory " in
@@ -405,7 +410,14 @@ let pp_model fmt (model : model) =
         pp_btyp t pp_str k
         pp_str an pp_str (Trans_solidity.field_bool_id)
         pp_str an
-    | Remove        _an         -> pp_str fmt "todo_Remove"
+    | Remove an ->
+      let _, t = Utils.get_asset_key model an in
+      Format.fprintf fmt
+        "function remove_%a(%a %ak) private {@\n  \
+         delete %a[k];@\n\
+         }@\n"
+        pp_str an  pp_btyp t pp_data_location (get_data_location (Tbuiltin t))
+        pp_str an
     | UpdateAdd    (_an, _fn)   -> pp_str fmt "todo_UpdateAdd"
     | UpdateRemove (_an, _fn)   -> pp_str fmt "todo_UpdateRemove"
     | ToKeys        _an         -> pp_str fmt "todo_ToKeys"
@@ -483,10 +495,6 @@ let pp_model fmt (model : model) =
 
 
   let pp_arg fmt (a, t, _) =
-    let get_data_location = function
-      | Tbuiltin Bstring -> Memory
-      | _ -> None
-    in
     let dl = get_data_location t in
     Format.fprintf fmt "%a %a%a"
       pp_type t
