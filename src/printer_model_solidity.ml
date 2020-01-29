@@ -5,6 +5,11 @@ open Printer_tools
 
 let pragma = ">=0.5.0 <0.7.0"
 
+type data_location =
+  | Storage
+  | Memory
+  | None
+
 (* -------------------------------------------------------------------------- *)
 let pp_model fmt (model : model) =
 
@@ -62,6 +67,16 @@ let pp_model fmt (model : model) =
     | Tprog _
     | Tvset _
     | Ttrace _ -> pp_str fmt "todo"
+  in
+
+  let pp_data_location fmt x =
+    let str =
+      match x with
+      | Storage -> "storage "
+      | Memory -> "memory "
+      | None -> ""
+    in
+    Format.fprintf fmt "%s" str
   in
 
   let pp_storage_location fmt (t, v: type_ * mterm)  =
@@ -277,7 +292,7 @@ let pp_model fmt (model : model) =
           f v
       | Massignstate    _ -> pp_str fmt "todo_Massignstate"
       | Mtransfer       _ -> pp_str fmt "todo_Mtransfer"
-      | Mbreak            -> pp_str fmt "break"
+      | Mbreak            -> pp_str fmt "break;"
       | Massert         _ -> pp_str fmt "todo_Massert"
       | Mreturn         _ -> pp_str fmt "todo_Mreturn"
       | Mlabel          _ -> pp_str fmt "todo_Mlabel"
@@ -466,9 +481,16 @@ let pp_model fmt (model : model) =
       end
   in
 
+
   let pp_arg fmt (a, t, _) =
-    Format.fprintf fmt "%a %a"
+    let get_data_location = function
+      | Tbuiltin Bstring -> Memory
+      | _ -> None
+    in
+    let dl = get_data_location t in
+    Format.fprintf fmt "%a %a%a"
       pp_type t
+      pp_data_location dl
       pp_id a
   in
 
@@ -499,7 +521,8 @@ let pp_model fmt (model : model) =
     pp_newline fmt ();
     pp_constructor fmt model.decls;
     pp_newline fmt ();
-    pp_newline fmt ();    pp_api_items fmt model.api_items;
+    pp_newline fmt ();
+    pp_api_items fmt model.api_items;
     pp_newline fmt ();
     pp_newline fmt ();
     pp_functions fmt model.functions
