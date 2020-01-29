@@ -264,7 +264,8 @@ let process (filename, channel) =
         then
           let _ = ast
                   |> Gen_model.to_model
-                  |> Gen_transform.check_partition_access Typing.empty in
+                  |> Gen_transform.check_partition_access
+                  |> Gen_transform.remove_add_update in
           ();
           process_errors ()
         else

@@ -1,8 +1,9 @@
-archetype expr_method_asset_add_update_asset
+archetype expr_method_asset_add_update_missing_field
 
 asset my_asset identified by id {
   id : string;
   value : int = 0;
+  toto : int;
 } initialized by {
   {"id0"; 0;4};
   {"id1"; 1;4};
