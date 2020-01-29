@@ -8,7 +8,7 @@ let emit_error msg =
   let str : string = Format.asprintf "%s@." msg in
   let pos : Position.t list = [] in
   Error.error_alert pos str (fun _ -> ());
-  raise (Core.Error_Stop 7)
+  raise (Error.Stop 7)
 
 let pp_archetype fmt (decls : declaration list) =
   let pp_action fmt (id, args) =

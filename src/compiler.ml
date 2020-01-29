@@ -218,7 +218,7 @@ let compile (filename, channel) =
   |> raise_if_error type_error type_
   |> cont !Options.opt_ast output_tast
   |> raise_if_error model_error generate_model
-  |> raise_if_error post_model_error (check_partition_access Typing.empty)
+  |> raise_if_error post_model_error check_partition_access
   |> raise_if_error post_model_error extend_removeif
   |> generate_target
 
@@ -388,7 +388,7 @@ let main () =
     (* List.map (fun (_ps, _s) -> ()) l; *)
     (* Format.eprintf "%s.\n" s *)
     exit 1
-  | Core.Error_Stop i
+  | Error.Stop i
   | Stop_error i ->
     close dispose channel;
     exit i

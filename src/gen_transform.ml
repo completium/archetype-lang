@@ -2,16 +2,38 @@ open Location
 open Model
 open Tools
 
+type error_desc =
+  | AssetPartitionnedby of string * string list
+  | CannotBuildAsset of string * string
+
+let pp_error_desc fmt = function
+  | AssetPartitionnedby (i, l)         ->
+    Format.fprintf fmt
+      "Cannot access asset collection: asset %s is partitionned by field(s) (%a)"
+      i (Printer_tools.pp_list ", " Printer_tools.pp_str) l
+
+  | CannotBuildAsset (an, fn) ->
+    Format.fprintf fmt "Cannot build an asset %s, default value of field '%s' is missing" an fn
+
+type error = Location.t * error_desc
+
+let emit_error (lc, error) =
+  let str : string = Format.asprintf "%a@." pp_error_desc error in
+  let pos : Position.t list = [location_to_position lc] in
+  Error.error_alert pos str (fun _ -> ())
 
 let remove_add_update (model : model) : model =
+  let error = ref false in
+  let f_error (l : Location.t) (an : string) (fn : string) = emit_error(l, CannotBuildAsset (an, fn)); error := true in
   let rec aux (ctx : ctx_model) (mt : mterm) : mterm =
     match mt.node with
     | Maddupdate (an, k, l) ->
       begin
         let type_asset = Tasset (dumloc an) in
         let mk_asset (an, k, l) =
+        let dummy_mterm = mk_mterm (Mseq []) Tunit in
           let asset = Utils.get_asset model an in
-          let lref : (Ident.ident * (assignment_operator * mterm)) list = List.map (fun (x, y, z) -> (unloc x, (y, z))) l in
+          let lref : (Ident.ident * (assignment_operator * mterm * Location.t)) list = List.map (fun (x, y, z) -> (unloc x, (y, z, loc x))) l in
           let l = List.map (
               fun (f : asset_item) ->
                 let f_name = (unloc f.name) in
@@ -19,7 +41,16 @@ let remove_add_update (model : model) : model =
                 then k
                 else
                   begin
-                    let op, v = List.assoc f_name lref in
+                    let op, v, lo =
+                      match List.assoc_opt f_name lref with
+                      | Some v -> v
+                      | None ->
+                        begin
+                          match f.default with
+                          | Some v -> (ValueAssign, v, Location.dummy)
+                          | _ -> f_error mt.loc an f_name; (ValueAssign, dummy_mterm, Location.dummy)
+                        end
+                    in
                     match op with
                     | ValueAssign -> v
                     | _ ->
@@ -27,7 +58,7 @@ let remove_add_update (model : model) : model =
                         let dv =
                           match f.default with
                           | Some v -> v
-                          | _ -> assert false
+                          | _ -> f_error lo an f_name; mk_mterm (Mseq []) Tunit
                         in
                         let type_ = dv.type_ in
                         match op with
@@ -37,7 +68,7 @@ let remove_add_update (model : model) : model =
                         | DivAssign   -> mk_mterm (Mdiv (dv, v)) type_
                         | AndAssign   -> mk_mterm (Mand (dv, v)) type_
                         | OrAssign    -> mk_mterm (Mor (dv, v)) type_
-                        | _ -> assert false
+                        | _ -> f_error lo an f_name; dummy_mterm
                       end
                   end
             ) asset.values in
@@ -53,7 +84,10 @@ let remove_add_update (model : model) : model =
       end
     | _ -> map_mterm (aux ctx) mt
   in
-  map_mterm_model aux model
+  let res = map_mterm_model aux model in
+  if !error
+  then raise (Error.Stop 5)
+  else res
 
 (* myasset.update k {f1 = v1; f2 = v2}
 
@@ -328,7 +362,7 @@ let process_single_field_storage (model : model) : model =
   | _   -> model
 
 (* raises errors if direct update/add/remove to partitioned asset *)
-let check_partition_access (env : Typing.env) (model : model) : model =
+let check_partition_access (model : model) : model =
   let partitions = Utils.get_partitions model in
   let partitionned_assets =
     partitions
@@ -341,9 +375,9 @@ let check_partition_access (env : Typing.env) (model : model) : model =
         else acc
       ) [] partitions in
   let emit_error loc a =
-    Typing.Env.emit_error env (
+    emit_error (
       loc,
-      Typing.AssetPartitionnedby (a, get_partitions a));
+      AssetPartitionnedby (a, get_partitions a));
     true in
   (* woud need a model iterator here *)
   let raise_access_error () =
@@ -354,7 +388,10 @@ let check_partition_access (env : Typing.env) (model : model) : model =
       | Mremoveif(a, { node = (Mvarstorecol _); loc = _}, _) when List.mem a partitionned_assets -> emit_error t.loc a
       | _ -> fold_term (internal_raise ctx) acc t
     in
-    fold_model internal_raise model false in
+    let with_error = fold_model internal_raise model false in
+    if with_error
+    then raise (Error.Stop 5)
+  in
   let _ = raise_access_error () in
   model
 

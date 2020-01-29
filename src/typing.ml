@@ -173,7 +173,6 @@ type error_desc =
   | UnpureInFormula
   | UselessPattern
   | VoidMethodInExpr
-  | AssetPartitionnedby                of ident * ident list
 [@@deriving show {with_path = false}]
 
 type error = L.t * error_desc
@@ -296,11 +295,6 @@ let pp_error_desc fmt e =
   | UnpureInFormula                    -> pp "Cannot use expression with side effect"
   | UselessPattern                     -> pp "Useless match branch"
   | VoidMethodInExpr                   -> pp "Expecting arguments"
-
-  | AssetPartitionnedby (i, l)         ->
-    pp
-      "Cannot access asset collection: asset %a is partitionned by field(s) (%a)"
-      pp_ident i (Printer_tools.pp_list ", " pp_ident) l
 
   | NoMatchingOperator (op, sig_) ->
     pp "No matches for operator %a(%a)"
