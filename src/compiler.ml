@@ -156,6 +156,7 @@ let generate_target model =
   | Ligo
   | LigoStorage ->
     model
+    |> remove_add_update
     |> replace_update_by_set
     |> remove_rational
     |> replace_date_duration_by_timestamp
@@ -181,6 +182,7 @@ let generate_target model =
 
   | Scaml ->
     model
+    |> remove_add_update
     |> replace_update_by_set
     |> generate_storage
     |> replace_declvar_by_letin
@@ -194,6 +196,7 @@ let generate_target model =
 
   | Whyml ->
     model
+    |> remove_add_update
     |> replace_update_by_set
     |> generate_storage
     |> replace_declvar_by_letin
