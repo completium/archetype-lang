@@ -2,8 +2,23 @@ open Location
 open Model
 open Tools
 
+type error_desc =
+  | CannotBuildAsset of string * string
+
+let pp_error_desc fmt = function
+  | CannotBuildAsset (an, fn) ->
+    Format.fprintf fmt "Cannot build an asset %s, default value of field '%s' is missing" an fn
+
+type error = Location.t * error_desc
+
+let emit_error (lc, error) =
+  let str : string = Format.asprintf "%a@." pp_error_desc error in
+  let pos : Position.t list = [location_to_position lc] in
+  Error.error_alert pos str (fun _ -> ())
 
 let remove_add_update (model : model) : model =
+  let error = ref false in
+  let f_error l an fn = emit_error(l, CannotBuildAsset (an, fn)); error := true in
   let rec aux (ctx : ctx_model) (mt : mterm) : mterm =
     match mt.node with
     | Maddupdate (an, k, l) ->
@@ -27,7 +42,7 @@ let remove_add_update (model : model) : model =
                         let dv =
                           match f.default with
                           | Some v -> v
-                          | _ -> assert false
+                          | _ -> f_error (loc f.name) an f_name; mk_mterm (Mseq []) Tunit
                         in
                         let type_ = dv.type_ in
                         match op with
@@ -37,7 +52,7 @@ let remove_add_update (model : model) : model =
                         | DivAssign   -> mk_mterm (Mdiv (dv, v)) type_
                         | AndAssign   -> mk_mterm (Mand (dv, v)) type_
                         | OrAssign    -> mk_mterm (Mor (dv, v)) type_
-                        | _ -> assert false
+                        | _ -> f_error (loc f.name) an f_name; mk_mterm (Mseq []) Tunit
                       end
                   end
             ) asset.values in
@@ -53,7 +68,10 @@ let remove_add_update (model : model) : model =
       end
     | _ -> map_mterm (aux ctx) mt
   in
-  map_mterm_model aux model
+  let res = map_mterm_model aux model in
+  if !error
+  then raise (Error.Stop 5)
+  else res
 
 (* myasset.update k {f1 = v1; f2 = v2}
 

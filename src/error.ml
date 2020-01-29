@@ -12,6 +12,8 @@ exception Error of Position.t list * string
 
 exception ParseError of (Position.t list * string) list
 
+exception Stop of int
+
 let print_error positions msg =
   Printf.sprintf "%s%s"
     (String.concat "\n"

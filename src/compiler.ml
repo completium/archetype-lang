@@ -351,7 +351,7 @@ let main () =
     (* List.map (fun (_ps, _s) -> ()) l; *)
     (* Format.eprintf "%s.\n" s *)
     exit 1
-  | Core.Error_Stop i
+  | Error.Stop i
   | Stop_error i ->
     close dispose channel;
     exit i
