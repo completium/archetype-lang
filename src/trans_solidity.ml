@@ -4,6 +4,44 @@ open Tools
 
 let field_bool_id = "_isValue"
 
+let replace_add_update_by_update (model : model) : model =
+  let is_checked (an, l : string * (lident * assignment_operator * mterm) list) =
+    let is_default_solidity_value (mt : mterm) =
+      match mt.node, mt.type_ with
+      | Mint v, Tbuiltin Bint when Big_int.eq_big_int Big_int.zero_big_int v -> true
+      | Mbool false, Tbuiltin Bbool -> true
+      | _ -> false
+    in
+    let asset : asset = Utils.get_asset model an in
+    let lref : (Ident.ident * (assignment_operator * mterm)) list = List.map (fun (x, y, z) -> (unloc x, (y, z))) l in
+    try
+      List.iter (
+        fun (f : asset_item) ->
+          let f_name = (unloc f.name) in
+          if not (String.equal asset.key f_name)
+          then
+            begin
+              match List.assoc_opt f_name lref with
+              | Some (ValueAssign, _) -> ()
+              | _ ->
+                begin
+                  match f.default with
+                  | Some v when is_default_solidity_value v -> ()
+                  | _ -> raise Not_found
+                end
+            end
+      ) asset.values;
+      true
+    with
+    | Not_found -> false
+  in
+  let rec aux (ctx : ctx_model) (mt : mterm) : mterm =
+    match mt.node with
+    | Maddupdate (an, k, l) when is_checked (an, l)-> {mt with node = Mupdate (an, k, l)}
+    | _ -> map_mterm (aux ctx) mt
+  in
+  map_mterm_model aux model
+
 let replace_update_by_assignment (model : model) : model =
   let n_key = ref 0 in
   let get_fresh_id_key () =

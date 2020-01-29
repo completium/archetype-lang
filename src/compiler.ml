@@ -129,6 +129,8 @@ let generate_target model =
 
   | Solidity ->
     model
+    |> replace_add_update_by_update
+    |> remove_add_update
     |> replace_update_by_assignment
     |> replace_declvar_by_letin
     |> exec_process
