@@ -993,31 +993,36 @@ let rec cmp_mterm (term1 : mterm) (term2 : mterm) : bool =
 let cmp_api_item_node (a1 : api_storage_node) (a2 : api_storage_node) : bool =
   let cmp_api_asset (s1 : api_asset) (s2 : api_asset) : bool =
     match s1, s2 with
-    | Get an1, Get an2  -> cmp_ident an1 an2
-    | Set an1 , Set an2 -> cmp_ident an1 an2
-    | Add an1 , Add an2 -> cmp_ident an1 an2
-    | Remove an1, Remove an2 -> cmp_ident an1 an2
-    | UpdateAdd (an1, fn1), UpdateAdd (an2, fn2) -> cmp_ident an1 an2 && cmp_ident fn1 fn2
+    | Get an1, Get an2                                 -> cmp_ident an1 an2
+    | Set an1 , Set an2                                -> cmp_ident an1 an2
+    | Add an1 , Add an2                                -> cmp_ident an1 an2
+    | Remove an1, Remove an2                           -> cmp_ident an1 an2
+    | UpdateAdd (an1, fn1), UpdateAdd (an2, fn2)       -> cmp_ident an1 an2 && cmp_ident fn1 fn2
     | UpdateRemove (an1, fn1), UpdateRemove (an2, fn2) -> cmp_ident an1 an2 && cmp_ident fn1 fn2
-    | ToKeys an1, ToKeys an2 -> cmp_ident an1 an2
-    | Select (an1, p1), Select (an2, p2) -> cmp_ident an1 an2 && cmp_mterm p1 p2
-    | Sort (an1 , fn1), Sort (an2 , fn2) -> cmp_ident an1 an2 && cmp_ident fn1 fn2
-    | Contains an1, Contains an2         -> cmp_ident an1 an2
-    | Nth an1, Nth an2                   -> cmp_ident an1 an2
-    | Count an1, Count an2               -> cmp_ident an1 an2
-    | Sum (an1, fn1), Sum (an2, fn2)     -> cmp_ident an1 an2 && cmp_ident fn1 fn2
-    | Min (an1, fn1), Min (an2, fn2)     -> cmp_ident an1 an2 && cmp_ident fn1 fn2
-    | Max (an1, fn1), Max (an2, fn2)     -> cmp_ident an1 an2 && cmp_ident fn1 fn2
-    | Shallow an1, Shallow an2           -> cmp_ident an1 an2
-    | Unshallow an1, Unshallow an2       -> cmp_ident an1 an2
+    | ToKeys an1, ToKeys an2                           -> cmp_ident an1 an2
+    | ColToKeys an1, ColToKeys an2                     -> cmp_ident an1 an2
+    | Select (an1, p1), Select (an2, p2)               -> cmp_ident an1 an2 && cmp_mterm p1 p2
+    | Sort (an1 , fn1), Sort (an2 , fn2)               -> cmp_ident an1 an2 && cmp_ident fn1 fn2
+    | Contains an1, Contains an2                       -> cmp_ident an1 an2
+    | Nth an1, Nth an2                                 -> cmp_ident an1 an2
+    | Count an1, Count an2                             -> cmp_ident an1 an2
+    | Sum (an1, fn1), Sum (an2, fn2)                   -> cmp_ident an1 an2 && cmp_ident fn1 fn2
+    | Min (an1, fn1), Min (an2, fn2)                   -> cmp_ident an1 an2 && cmp_ident fn1 fn2
+    | Max (an1, fn1), Max (an2, fn2)                   -> cmp_ident an1 an2 && cmp_ident fn1 fn2
+    | Shallow an1, Shallow an2                         -> cmp_ident an1 an2
+    | Unshallow an1, Unshallow an2                     -> cmp_ident an1 an2
+    | Listtocoll an1, Listtocoll an2                   -> cmp_ident an1 an2
+    | Head an1, Head an2                               -> cmp_ident an1 an2
+    | Tail an1, Tail an2                               -> cmp_ident an1 an2
     | _ -> false
   in
+
   let cmp_api_list (c1 : api_list) (c2 : api_list) : bool =
     match c1, c2 with
-    | Lprepend t1, Lprepend t2
-    | Lcontains t1, Lcontains t2
-    | Lcount t1, Lcount t2
-    | Lnth t1, Lnth t2 -> cmp_type t1 t2
+    | Lprepend t1,  Lprepend t2  -> cmp_type t1 t2
+    | Lcontains t1, Lcontains t2 -> cmp_type t1 t2
+    | Lcount t1,    Lcount t2    -> cmp_type t1 t2
+    | Lnth t1,      Lnth t2      -> cmp_type t1 t2
     | _ -> false
   in
   let cmp_api_builtin (b1 : api_builtin) (b2 : api_builtin) : bool =
@@ -1026,10 +1031,19 @@ let cmp_api_item_node (a1 : api_storage_node) (a2 : api_storage_node) : bool =
     | MaxBuiltin t1, MaxBuiltin t2 -> cmp_type t1 t2
     | _ -> false
   in
+  let cmp_api_internal (i1 : api_internal) (i2 : api_internal) : bool =
+    match i1, i2 with
+    | RatEq,    RatEq    -> true
+    | RatCmp,   RatCmp   -> true
+    | RatArith, RatArith -> true
+    | RatTez,   RatTez   -> true
+    | _ -> false
+  in
   match a1, a2 with
-  | APIAsset s1, APIAsset s2       -> cmp_api_asset s1 s2
-  | APIList c1, APIList c2         -> cmp_api_list c1 c2
-  | APIBuiltin f1, APIBuiltin f2   -> cmp_api_builtin f1 f2
+  | APIAsset s1,    APIAsset s2    -> cmp_api_asset s1 s2
+  | APIList c1,     APIList c2     -> cmp_api_list c1 c2
+  | APIBuiltin f1,  APIBuiltin f2  -> cmp_api_builtin f1 f2
+  | APIInternal i1, APIInternal i2 -> cmp_api_internal i1 i2
   | _ -> false
 
 (* -------------------------------------------------------------------- *)
