@@ -2090,7 +2090,7 @@ let fold_model (f : ('id, 't) ctx_model_gen -> 'a -> 'id mterm_gen -> 'a) (m : '
     let accu : 'a = (
       match a.node with
       | Function (fs, _)
-      | Entry fs -> fold_term (f {ctx with fs = Some fs}) (f ctx accu fs.body) fs.body
+      | Entry fs -> f {ctx with fs = Some fs} accu fs.body
     ) in
     Option.map_dfl (fun (x : 'id specification_gen) -> fold_specification ctx f x accu) accu a.spec
   ) in
