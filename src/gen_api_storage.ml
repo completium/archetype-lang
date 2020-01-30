@@ -24,7 +24,6 @@ let process_api_storage (model : model) : model =
   in
 
   let rec f (ctx : ctx_model) (accu : api_storage list) (term : mterm) : api_storage list =
-    let accu = fold_term (f ctx) accu term in
     let api_items : api_storage_node list =
       match term.node with
       | Mget (asset_name, _) ->
@@ -40,7 +39,7 @@ let process_api_storage (model : model) : model =
         [APIAsset (Remove asset_name)]
       | Mremovefield (asset_name, field_name, _, _) ->
         let (pa,_,_) = Utils.get_container_asset_key model asset_name field_name in
-        [APIAsset (Remove pa);APIAsset (UpdateRemove (asset_name, field_name))]
+        [APIAsset (Remove pa); APIAsset (UpdateRemove (asset_name, field_name))]
       | Mselect (asset_name, _, p) ->
         [APIAsset (Get asset_name); APIAsset (Select (asset_name, p))]
       | Msort (asset_name, _, field_name, _) ->
@@ -87,7 +86,8 @@ let process_api_storage (model : model) : model =
         [APIInternal (RatTez)]
       | _ -> []
     in
-    List.fold_left (fun accu v -> add ctx accu (Model.mk_api_item v)) accu api_items
+    let accu = List.fold_left (fun accu v -> add ctx accu (Model.mk_api_item v)) accu api_items in
+    fold_term (f ctx) accu term
   in
   let l = fold_model f model []
           |> List.sort
