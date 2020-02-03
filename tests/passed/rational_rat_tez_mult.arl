@@ -2,7 +2,7 @@ archetype rational_rat_tez_mult
 
 action exec (dest : address) {
   effect {
-    var m = 0.3 * 1tz;
+    var m = 0.2 * 1tz;
     transfer m to dest
   }
 }
