@@ -4,6 +4,22 @@ module M = Model
 open Tools
 open Mlwtree
 
+(* ------------------------------------------------------------------- *)
+type error_desc =
+  | TODONotTranslated of string
+
+let pp_error_desc fmt = function
+  | TODONotTranslated s ->
+    Format.fprintf fmt
+      "Not translated: %s" s
+
+type error = Location.t * error_desc
+
+let emit_error (lc, error) =
+  let str : string = Format.asprintf "%a@." pp_error_desc error in
+  let pos : Position.t list = [location_to_position lc] in
+  Error.error_alert pos str (fun _ -> ())
+
 (* Constants -------------------------------------------------------------------*)
 
 let gArchetypeDir   = "archetype"
@@ -746,72 +762,73 @@ let map_mpattern (p : M.lident M.pattern_node) =
   | M.Pwild -> Twild
   | M.Pconst i -> Tconst (map_lident i)
 
-let rec map_mterm m ctx (mt : M.mterm) : loc_term =
+let rec map_mterm _m _ctx (mt : M.mterm) : loc_term =
+  let error_not_translated (msg : string) = emit_error (mt.loc, TODONotTranslated msg); Tnottranslated in
   let t =
     match mt.node with
-    | M.Mif (c,t,Some { node=M.Mseq []; type_=_})  ->
-      Tif (map_mterm m ctx c, map_mterm m ctx t, None)
-    | M.Mif (c,t,e)  -> Tif (map_mterm m ctx c, map_mterm m ctx t, Option.map (map_mterm m ctx) e)
-    | M.Mnot c       -> Tnot (map_mterm m ctx c)
-    | M.Mfail InvalidCaller -> Traise Einvalidcaller
-    | M.Mfail NoTransfer -> Traise Enotransfer
-    | M.Mfail (InvalidCondition _) -> Traise Einvalidcondition
-    | M.Mfail InvalidState -> Traise Einvalidstate
-    | M.Mequal (l,r) -> Teq (with_dummy_loc Tyint,map_mterm m ctx l,map_mterm m ctx r)
-    | M.Mcaller      -> Tcaller (with_dummy_loc gs)
-    | M.Mtransferred -> Ttransferred (with_dummy_loc gs)
-    | M.Mvarstorevar v  -> Tdoti (with_dummy_loc gs, map_lident v)
-    | M.Mgt (l, r)      -> Tgt (with_dummy_loc Tyint, map_mterm m ctx l, map_mterm m ctx r)
-    | M.Mge (l, r)      -> Tge (with_dummy_loc Tyint, map_mterm m ctx l, map_mterm m ctx r)
-    | M.Mlt (l, r)      -> Tlt (with_dummy_loc Tyint, map_mterm m ctx l, map_mterm m ctx r)
-    | M.Mle (l, r)      -> Tle (with_dummy_loc Tyint, map_mterm m ctx l, map_mterm m ctx r)
-    | M.Mvarlocal v     -> Tvar (map_lident v)
-    | M.Mvarparam v     -> Tvar (map_lident v)
-    | M.Mint v          -> Tint v
-    | M.Mdotasset (e,i) -> Tdot (map_mterm m ctx e, mk_loc (loc i) (Tvar (map_lident i)))
-    | M.Munshallow (a,e) ->
-      let ctx =
+    (* | M.Mif (c,t,Some { node=M.Mseq []; type_=_})  ->
+       Tif (map_mterm m ctx c, map_mterm m ctx t, None)
+       | M.Mif (c,t,e)  -> Tif (map_mterm m ctx c, map_mterm m ctx t, Option.map (map_mterm m ctx) e)
+       | M.Mnot c       -> Tnot (map_mterm m ctx c)
+       | M.Mfail InvalidCaller -> Traise Einvalidcaller
+       | M.Mfail NoTransfer -> Traise Enotransfer
+       | M.Mfail (InvalidCondition _) -> Traise Einvalidcondition
+       | M.Mfail InvalidState -> Traise Einvalidstate
+       | M.Mequal (l,r) -> Teq (with_dummy_loc Tyint,map_mterm m ctx l,map_mterm m ctx r)
+       | M.Mcaller      -> Tcaller (with_dummy_loc gs)
+       | M.Mtransferred -> Ttransferred (with_dummy_loc gs)
+       | M.Mvarstorevar v  -> Tdoti (with_dummy_loc gs, map_lident v)
+       | M.Mgt (l, r)      -> Tgt (with_dummy_loc Tyint, map_mterm m ctx l, map_mterm m ctx r)
+       | M.Mge (l, r)      -> Tge (with_dummy_loc Tyint, map_mterm m ctx l, map_mterm m ctx r)
+       | M.Mlt (l, r)      -> Tlt (with_dummy_loc Tyint, map_mterm m ctx l, map_mterm m ctx r)
+       | M.Mle (l, r)      -> Tle (with_dummy_loc Tyint, map_mterm m ctx l, map_mterm m ctx r)
+       | M.Mvarlocal v     -> Tvar (map_lident v)
+       | M.Mvarparam v     -> Tvar (map_lident v)
+       | M.Mint v          -> Tint v
+       | M.Mdotasset (e,i) -> Tdot (map_mterm m ctx e, mk_loc (loc i) (Tvar (map_lident i)))
+       | M.Munshallow (a,e) ->
+       let ctx =
         if is_old ctx e then
           { ctx with old = true }
         else ctx in
-      Tapp (loc_term (Tvar ("unshallow_"^a)),
+       Tapp (loc_term (Tvar ("unshallow_"^a)),
             [map_mterm m ctx (M.mk_mterm (M.Mvarstorecol (dumloc a))
                                 (M.Tcontainer (Tasset (dumloc a),Collection)));
              map_mterm m ctx e])
-    | M.Mshallow (a,e) -> Tapp (loc_term (Tvar ("shallow_"^a)),[map_mterm m ctx e])
-    | M.Mcontains (a,_,r) -> Tapp (loc_term (Tvar ("contains_"^a)),[map_mterm m ctx r])
-    | M.Maddfield (a,f,c,i) ->
-      let t,_,_ = M.Utils.get_container_asset_key m a f in
-      mk_trace_seq m
+       | M.Mshallow (a,e) -> Tapp (loc_term (Tvar ("shallow_"^a)),[map_mterm m ctx e])
+       | M.Mcontains (a,_,r) -> Tapp (loc_term (Tvar ("contains_"^a)),[map_mterm m ctx r])
+       | M.Maddfield (a,f,c,i) ->
+       let t,_,_ = M.Utils.get_container_asset_key m a f in
+       mk_trace_seq m
         (Tapp (loc_term (Tvar ("add_"^a^"_"^f)),
                [map_mterm m ctx c; map_mterm m ctx i]))
         [CUpdate f; CAdd t]
-    | M.Mget (n,k) -> Tapp (loc_term (Tvar ("get_"^n)),[map_mterm m ctx k])
-    | M.Maddshallow (n,l) ->
-      let pa = M.Utils.get_container_assets m n |> List.map (fun a ->
+       | M.Mget (n,k) -> Tapp (loc_term (Tvar ("get_"^n)),[map_mterm m ctx k])
+       | M.Maddshallow (n,l) ->
+       let pa = M.Utils.get_container_assets m n |> List.map (fun a ->
           CAdd (String.capitalize_ascii a)) in
-      mk_trace_seq m
+       mk_trace_seq m
         (Tapp (loc_term (Tvar ("add_shallow_"^n)),List.map (map_mterm m ctx) l))
         ([CAdd n] @ pa)
-    | M.Maddasset (n,i) ->
-      mk_trace_seq m
+       | M.Maddasset (n,i) ->
+       mk_trace_seq m
         (Tapp (loc_term (Tvar ("add_"^n)),[map_mterm m ctx i ]))
         [CAdd n]
-    | M.Masset l ->
-      let asset = M.Utils.get_asset_type mt in
-      let fns = M.Utils.get_field_list m asset |> wdl in
-      Trecord (None,(List.combine fns (List.map (map_mterm m ctx) l)))
-    | M.Mlisttocoll (n,l) -> Tapp (loc_term (Tvar ("listtocoll_"^n)),[map_mterm m ctx l])
-    | M.Marray l ->
-      begin
+       | M.Masset l ->
+       let asset = M.Utils.get_asset_type mt in
+       let fns = M.Utils.get_field_list m asset |> wdl in
+       Trecord (None,(List.combine fns (List.map (map_mterm m ctx) l)))
+       | M.Mlisttocoll (n,l) -> Tapp (loc_term (Tvar ("listtocoll_"^n)),[map_mterm m ctx l])
+       | M.Marray l ->
+       begin
         match mt.type_ with
         | Tcontainer (_,_) -> Tlist (l |> List.map (map_mterm m ctx))
         | _ -> assert false
-      end
-    | M.Mletin ([id],v,_,b,None) ->
-      Tletin (M.Utils.is_local_assigned (unloc id) b,map_lident id,None,map_mterm m ctx v,map_mterm m ctx b)
-    | M.Mletin ([id], { node = M.Mget (a,k); type_ = _ }, _, b, Some e) -> (* logical *)
-      Tletin (M.Utils.is_local_assigned (unloc id) b,
+       end
+       | M.Mletin ([id],v,_,b,None) ->
+       Tletin (M.Utils.is_local_assigned (unloc id) b,map_lident id,None,map_mterm m ctx v,map_mterm m ctx b)
+       | M.Mletin ([id], { node = M.Mget (a,k); type_ = _ }, _, b, Some e) -> (* logical *)
+       Tletin (M.Utils.is_local_assigned (unloc id) b,
               map_lident id,
               None,
               Tget (loc_ident a,
@@ -822,9 +839,9 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
                               Twitness a)) |> loc_term,
                    map_mterm m ctx b,
                    Some (map_mterm m ctx e)) |> with_dummy_loc)
-    | M.Mletin ([id], { node = M.Mgetbefore (a,k); type_ = _ }, _, b, Some e) -> (* logical *)
-      let ctx = { ctx with (*old = true;*) localold = ctx.localold @ [unloc id] } in
-      Tletin (M.Utils.is_local_assigned (unloc id) b,
+       | M.Mletin ([id], { node = M.Mgetbefore (a,k); type_ = _ }, _, b, Some e) -> (* logical *)
+       let ctx = { ctx with (*old = true;*) localold = ctx.localold @ [unloc id] } in
+       Tletin (M.Utils.is_local_assigned (unloc id) b,
               map_lident id,
               None,
               Tget (loc_ident a,
@@ -835,16 +852,16 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
                               Twitness a)) |> loc_term,
                    map_mterm m ctx b,
                    Some (map_mterm m ctx e)) |> with_dummy_loc)
-    | M.Mselect (a,l,r) ->
-      let args = extract_args r in
-      let id = mk_select_name m a r in
-      let argids = args |> List.map (fun (e,_,_) -> e) |> List.map (map_mterm m ctx) in
-      Tapp (loc_term (Tvar id),argids @ [map_mterm m ctx l])
-    | M.Mnow -> Tnow (with_dummy_loc gs)
-    | M.Mseq l -> Tseq (List.map (map_mterm m ctx) l)
-    | M.Mfor (id,c,b,lbl) ->
-      let (nth,card) = get_for_fun c.type_ in
-      Tfor (with_dummy_loc "i",
+       | M.Mselect (a,l,r) ->
+       let args = extract_args r in
+       let id = mk_select_name m a r in
+       let argids = args |> List.map (fun (e,_,_) -> e) |> List.map (map_mterm m ctx) in
+       Tapp (loc_term (Tvar id),argids @ [map_mterm m ctx l])
+       | M.Mnow -> Tnow (with_dummy_loc gs)
+       | M.Mseq l -> Tseq (List.map (map_mterm m ctx) l)
+       | M.Mfor (id,c,b,lbl) ->
+       let (nth,card) = get_for_fun c.type_ in
+       Tfor (with_dummy_loc "i",
             with_dummy_loc (
               Tminus (with_dummy_loc Tyunit,card (map_mterm m ctx c |> unloc_term),
                       (loc_term (Tint Big_int.unit_big_int)))
@@ -856,30 +873,30 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
                       None,
                       nth (Tvar "i",map_mterm m ctx c |> unloc_term),
                       map_mterm m ctx b)))
-    | M.Massign (ValueAssign,_, id,v) -> Tassign (with_dummy_loc (Tvar (map_lident id)),map_mterm m ctx v)
-    | M.Massign (MinusAssign,_, id,v) -> Tassign (with_dummy_loc (Tvar (map_lident id)),
+       | M.Massign (ValueAssign,_, id,v) -> Tassign (with_dummy_loc (Tvar (map_lident id)),map_mterm m ctx v)
+       | M.Massign (MinusAssign,_, id,v) -> Tassign (with_dummy_loc (Tvar (map_lident id)),
                                                with_dummy_loc (
                                                  Tminus (with_dummy_loc Tyint,
                                                          with_dummy_loc (Tvar (map_lident id)),
                                                          map_mterm m ctx v)))
-    | M.Massignfield (ValueAssign,_, {node = M.Mvarstorecol id1},id2,v) ->
-      let id = with_dummy_loc (Tdoti (map_lident id1,map_lident id2)) in
-      Tassign (id,map_mterm m ctx v)
-    | M.Massignfield (MinusAssign,_, {node = M.Mvarstorecol id1},id2,v) ->
-      let id = with_dummy_loc (Tdoti (map_lident id1,map_lident id2)) in
-      Tassign (id,
+       | M.Massignfield (ValueAssign,_, {node = M.Mvarstorecol id1},id2,v) ->
+       let id = with_dummy_loc (Tdoti (map_lident id1,map_lident id2)) in
+       Tassign (id,map_mterm m ctx v)
+       | M.Massignfield (MinusAssign,_, {node = M.Mvarstorecol id1},id2,v) ->
+       let id = with_dummy_loc (Tdoti (map_lident id1,map_lident id2)) in
+       Tassign (id,
                with_dummy_loc (
                  Tminus (with_dummy_loc Tyint,
                          id,
                          map_mterm m ctx v)))
-    | M.Mset (a,l,k,v) ->
-      let asset =
+       | M.Mset (a,l,k,v) ->
+       let asset =
         match k.node with
         | M.Mdotasset (a,_) -> map_mterm m ctx a
         | _ -> with_dummy_loc (Tapp (loc_term (Tvar ("get_"^a)),
                                      [map_mterm m ctx v]))
-      in
-      mk_trace_seq m
+       in
+       mk_trace_seq m
         (Tletin (false,
                  with_dummy_loc ("_old"^a),
                  None,
@@ -890,15 +907,15 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
                                          map_mterm m ctx v
                                        ]))))
         (List.map (fun f -> CUpdate f) l)
-    | M.Mremovefield (a,f,k,v) ->
-      let t,_,_ = M.Utils.get_container_asset_key m a f in
-      let asset =
+       | M.Mremovefield (a,f,k,v) ->
+       let t,_,_ = M.Utils.get_container_asset_key m a f in
+       let asset =
         match v.node with
         | M.Mdotasset (a,_) -> map_mterm m ctx a
         | _ -> with_dummy_loc (Tapp (loc_term (Tvar ("get_"^t)),
                                      [map_mterm m ctx v]))
-      in
-      mk_trace_seq m
+       in
+       mk_trace_seq m
         (Tletin (false,
                  with_dummy_loc ("_rm"^t),
                  None,
@@ -910,8 +927,8 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
                                        ]
                                       ))))
         [CUpdate f; CRm t]
-    | M.Mremoveasset (n,a) ->
-      mk_trace_seq m
+       | M.Mremoveasset (n,a) ->
+       mk_trace_seq m
         (Tletin (false,
                  with_dummy_loc ("_rm"^n),
                  None,
@@ -920,14 +937,14 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
                  with_dummy_loc (Tapp (loc_term (Tvar ("remove_"^n)),
                                        [loc_term (Tvar ("_rm"^n))]))))
         [CRm n]
-    | M.Msum (a,f,l) ->
-      Tapp (loc_term (Tvar ((mk_sum_clone_id a (f |> unloc))^".sum")),[map_mterm m ctx l])
-    | M.Mapp (f,args) ->
-      Tapp (mk_loc (map_lident f).loc (Tvar (map_lident f)),List.map (map_mterm m ctx) args)
-    | M.Mminus (l,r) -> Tminus (with_dummy_loc Tyint, map_mterm m ctx l, map_mterm m ctx r)
-    | M.Mplus (l,r)  -> Tplus  (with_dummy_loc Tyint, map_mterm m ctx l, map_mterm m ctx r)
-    | M.Mvarstorecol n ->
-      let coll =
+       | M.Msum (a,f,l) ->
+       Tapp (loc_term (Tvar ((mk_sum_clone_id a (f |> unloc))^".sum")),[map_mterm m ctx l])
+       | M.Mapp (f,args) ->
+       Tapp (mk_loc (map_lident f).loc (Tvar (map_lident f)),List.map (map_mterm m ctx) args)
+       | M.Mminus (l,r) -> Tminus (with_dummy_loc Tyint, map_mterm m ctx l, map_mterm m ctx r)
+       | M.Mplus (l,r)  -> Tplus  (with_dummy_loc Tyint, map_mterm m ctx l, map_mterm m ctx r)
+       | M.Mvarstorecol n ->
+       let coll =
         match ctx.old, ctx.lmod with
         | false, Nomod   -> mk_ac (n |> unloc)
         | false, Added   -> mk_ac_added (n |> unloc)
@@ -935,75 +952,196 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
         | true, Nomod    -> mk_ac_old (n |> unloc)
         | true, Added    -> mk_ac_old_added (n |> unloc)
         | true, Removed  -> mk_ac_old_rmed (n |> unloc)
-      in
-      loc_term coll |> Mlwtree.deloc
-    | M.Msetbefore c -> map_mterm m { ctx with old = true } c |> Mlwtree.deloc
-    | M.Msetadded c ->  map_mterm m { ctx with lmod = Added } c |> Mlwtree.deloc
-    | M.Msetremoved c -> map_mterm m { ctx with lmod = Removed } c |> Mlwtree.deloc
-    | M.Mforall (i,t,None,b) ->
-      let asset = M.Utils.get_asset_type (M.mk_mterm (M.Mbool false) t) in
-      Tforall (
+       in
+       loc_term coll |> Mlwtree.deloc
+       | M.Msetbefore c -> map_mterm m { ctx with old = true } c |> Mlwtree.deloc
+       | M.Msetadded c ->  map_mterm m { ctx with lmod = Added } c |> Mlwtree.deloc
+       | M.Msetremoved c -> map_mterm m { ctx with lmod = Removed } c |> Mlwtree.deloc
+       | M.Mforall (i,t,None,b) ->
+       let asset = M.Utils.get_asset_type (M.mk_mterm (M.Mbool false) t) in
+       Tforall (
         [[i |> map_lident],loc_type (Tyasset asset)],
         map_mterm m ctx b)
-    | M.Mforall (i,t,Some coll,b) ->
-      let asset = M.Utils.get_asset_type (M.mk_mterm (M.Mbool false) t) in
-      Tforall (
+       | M.Mforall (i,t,Some coll,b) ->
+       let asset = M.Utils.get_asset_type (M.mk_mterm (M.Mbool false) t) in
+       Tforall (
         [[i |> map_lident],loc_type (Tyasset asset)],
         with_dummy_loc (Timpl (with_dummy_loc (Tmem (with_dummy_loc asset,
                                                      loc_term (Tvar (unloc i)),
                                                      map_mterm m ctx coll)),
                                map_mterm m ctx b)))
-    | M.Mmem (a,e,c) -> Tmem (with_dummy_loc a, map_mterm m ctx e, map_mterm m ctx c)
-    | M.Mimply (a,b) -> Timpl (map_mterm m ctx a, map_mterm m ctx b)
-    | M.Mlabel lbl ->
-      begin
+       | M.Mmem (a,e,c) -> Tmem (with_dummy_loc a, map_mterm m ctx e, map_mterm m ctx c)
+       | M.Mimply (a,b) -> Timpl (map_mterm m ctx a, map_mterm m ctx b)
+       | M.Mlabel lbl ->
+       begin
         match M.Utils.get_formula m None (unloc lbl) with
         | Some formula -> Tassert (Some (map_lident lbl),map_mterm m ctx formula)
         | _ -> assert false
-      end
-    | M.Mand (l,r)-> Tand (map_mterm m ctx l,map_mterm m ctx r)
-    | M.Misempty (l,r) -> Tempty (with_dummy_loc l,map_mterm m ctx r)
-    | M.Msubsetof (n,l,r) -> Tsubset (with_dummy_loc n,map_mterm m ctx l,map_mterm m ctx r)
-    | M.Msettoiterate c ->
-      let n = M.Utils.get_asset_type mt |> with_dummy_loc in
-      Ttoiter (n,with_dummy_loc "i",map_mterm m ctx c) (* TODO : should retrieve actual idx value *)
-    | M.Mbool false -> Tfalse
-    | M.Mbool true -> Ttrue
-    | M.Mmatchwith (t,l) ->
-      Tmatch (map_mterm m ctx t, List.map (fun ((p : M.lident M.pattern_gen),e) ->
+       end
+       | M.Mand (l,r)-> Tand (map_mterm m ctx l,map_mterm m ctx r)
+       | M.Misempty (l,r) -> Tempty (with_dummy_loc l,map_mterm m ctx r)
+       | M.Msubsetof (n,l,r) -> Tsubset (with_dummy_loc n,map_mterm m ctx l,map_mterm m ctx r)
+       | M.Msettoiterate c ->
+       let n = M.Utils.get_asset_type mt |> with_dummy_loc in
+       Ttoiter (n,with_dummy_loc "i",map_mterm m ctx c) (* TODO : should retrieve actual idx value *)
+       | M.Mbool false -> Tfalse
+       | M.Mbool true -> Ttrue
+       | M.Mmatchwith (t,l) ->
+       Tmatch (map_mterm m ctx t, List.map (fun ((p : M.lident M.pattern_gen),e) ->
           (map_mpattern p.node,map_mterm m ctx e)
         ) l)
-    | M.Mvarstate ->
-      begin
+       | M.Mvarstate ->
+       begin
         match ctx.lctx with
         | Inv -> loc_term (Tvar "state") |> Mlwtree.deloc
         | _ -> loc_term (Tdoti (gs, "state")) |> Mlwtree.deloc
-      end
-    | M.Massignstate v -> Tassign (loc_term (Tdoti(gs, "state")), map_mterm m ctx v)
-    | M.Mor (a,b) -> Tor (map_mterm m ctx a, map_mterm m ctx b)
-    | M.Mtransfer (a,t) -> Tapp(loc_term (Tvar "transfer"),[map_mterm m ctx a;map_mterm m ctx t])
-    | M.Mbalance ->
-      begin
+       end
+       | M.Massignstate v -> Tassign (loc_term (Tdoti(gs, "state")), map_mterm m ctx v)
+       | M.Mor (a,b) -> Tor (map_mterm m ctx a, map_mterm m ctx b)
+       | M.Mtransfer (a,t) -> Tapp(loc_term (Tvar "transfer"),[map_mterm m ctx a;map_mterm m ctx t])
+       | M.Mbalance ->
+       begin
         match ctx.lctx with
         | Inv -> loc_term (Tvar "_balance") |> Mlwtree.deloc
         | _ -> loc_term (Tdoti (gs, "_balance")) |> Mlwtree.deloc
-      end
-    | M.Maddress v           -> Tint (sha v)
-    | M.Mstring v            -> Tint (sha v)
-    | M.Mcurrency (i,M.Tz)   -> Tint (Big_int.mult_int_big_int 1000000 i)
-    | M.Mcurrency (i,M.Mtz)  -> Tint (Big_int.mult_int_big_int 1000 i)
-    | M.Mcurrency (i,M.Utz)  -> Tint i
-    | M.Mdate s              -> Tint (Core.date_to_timestamp s)
-    | M.Massignvarstore (ValueAssign,_,id,v) -> Tassign (with_dummy_loc (Tdoti (with_dummy_loc gs,map_lident id)),map_mterm m ctx v)
-    | M.Massignvarstore (MinusAssign,_,id,v) -> Tassign (with_dummy_loc (Tdoti (with_dummy_loc gs,map_lident id)),
+       end
+       | M.Maddress v           -> Tint (sha v)
+       | M.Mstring v            -> Tint (sha v)
+       | M.Mcurrency (i,M.Tz)   -> Tint (Big_int.mult_int_big_int 1000000 i)
+       | M.Mcurrency (i,M.Mtz)  -> Tint (Big_int.mult_int_big_int 1000 i)
+       | M.Mcurrency (i,M.Utz)  -> Tint i
+       | M.Mdate s              -> Tint (Core.date_to_timestamp s)
+       | M.Massignvarstore (ValueAssign,_,id,v) -> Tassign (with_dummy_loc (Tdoti (with_dummy_loc gs,map_lident id)),map_mterm m ctx v)
+       | M.Massignvarstore (MinusAssign,_,id,v) -> Tassign (with_dummy_loc (Tdoti (with_dummy_loc gs,map_lident id)),
                                                with_dummy_loc (
                                                  Tminus (with_dummy_loc Tyint,
                                                          with_dummy_loc (Tvar (map_lident id)),
-                                                         map_mterm m ctx v)))
-    | _ ->
-      let str = Format.asprintf "Not translated : %a@." M.pp_mterm mt in
-      print_endline str;
-      Tnottranslated
+                                                         map_mterm m ctx v))) *)
+
+    | Mif                 _ -> error_not_translated "Mif"
+    | Mmatchwith          _ -> error_not_translated "Mmatchwith"
+    | Mapp                _ -> error_not_translated "Mapp"
+    | Maddshallow         _ -> error_not_translated "Maddshallow"
+    | Mexternal           _ -> error_not_translated "Mexternal"
+    | Mget                _ -> error_not_translated "Mget"
+    | Mgetbefore          _ -> error_not_translated "Mgetbefore"
+    | Mgetat              _ -> error_not_translated "Mgetat"
+    | Mgetfrommap         _ -> error_not_translated "Mgetfrommap"
+    | Mset                _ -> error_not_translated "Mset"
+    | Maddasset           _ -> error_not_translated "Maddasset"
+    | Maddfield           _ -> error_not_translated "Maddfield"
+    | Mremoveasset        _ -> error_not_translated "Mremoveasset"
+    | Mremovefield        _ -> error_not_translated "Mremovefield"
+    | Mremoveif           _ -> error_not_translated "Mremoveif"
+    | Maddupdate          _ -> error_not_translated "Maddupdate"
+    | Mupdate             _ -> error_not_translated "Mupdate"
+    | Mselect             _ -> error_not_translated "Mselect"
+    | Msort               _ -> error_not_translated "Msort"
+    | Mcontains           _ -> error_not_translated "Mcontains"
+    | Mmem                _ -> error_not_translated "Mmem"
+    | Msubsetof           _ -> error_not_translated "Msubsetof"
+    | Mnth                _ -> error_not_translated "Mnth"
+    | Mcount              _ -> error_not_translated "Mcount"
+    | Msum                _ -> error_not_translated "Msum"
+    | Mmin                _ -> error_not_translated "Mmin"
+    | Mmax                _ -> error_not_translated "Mmax"
+    | Mfunmax             _ -> error_not_translated "Mfunmax"
+    | Mfunmin             _ -> error_not_translated "Mfunmin"
+    | Mfunabs             _ -> error_not_translated "Mfunabs"
+    | Mhead               _ -> error_not_translated "Mhead"
+    | Mtail               _ -> error_not_translated "Mtail"
+    | Mlistprepend        _ -> error_not_translated "Mlistprepend"
+    | Mlistcontains       _ -> error_not_translated "Mlistcontains"
+    | Mlistcount          _ -> error_not_translated "Mlistcount"
+    | Mlistnth            _ -> error_not_translated "Mlistnth"
+    | Mfail               _ -> error_not_translated "Mfail"
+    | Mand                _ -> error_not_translated "Mand"
+    | Mor                 _ -> error_not_translated "Mor"
+    | Mimply              _ -> error_not_translated "Mimply"
+    | Mequiv              _ -> error_not_translated "Mequiv"
+    | Misempty            _ -> error_not_translated "Misempty"
+    | Mnot                _ -> error_not_translated "Mnot"
+    | Mmulticomp          _ -> error_not_translated "Mmulticomp"
+    | Mequal              _ -> error_not_translated "Mequal"
+    | Mnequal             _ -> error_not_translated "Mnequal"
+    | Mgt                 _ -> error_not_translated "Mgt"
+    | Mge                 _ -> error_not_translated "Mge"
+    | Mlt                 _ -> error_not_translated "Mlt"
+    | Mle                 _ -> error_not_translated "Mle"
+    | Mplus               _ -> error_not_translated "Mplus"
+    | Mminus              _ -> error_not_translated "Mminus"
+    | Mmult               _ -> error_not_translated "Mmult"
+    | Mdiv                _ -> error_not_translated "Mdiv"
+    | Mdivrat             _ -> error_not_translated "Mdivrat"
+    | Mmodulo             _ -> error_not_translated "Mmodulo"
+    | Muplus              _ -> error_not_translated "Muplus"
+    | Muminus             _ -> error_not_translated "Muminus"
+    | Mrateq              _ -> error_not_translated "Mrateq"
+    | Mratcmp             _ -> error_not_translated "Mratcmp"
+    | Mratarith           _ -> error_not_translated "Mratarith"
+    | Mrattez             _ -> error_not_translated "Mrattez"
+    | Minttorat           _ -> error_not_translated "Minttorat"
+    | Masset              _ -> error_not_translated "Masset"
+    | Mletin              _ -> error_not_translated "Mletin"
+    | Mdeclvar            _ -> error_not_translated "Mdeclvar"
+    | Mvarstorevar        _ -> error_not_translated "Mvarstorevar"
+    | Mvarstorecol        _ -> error_not_translated "Mvarstorecol"
+    | Mvarenumval         _ -> error_not_translated "Mvarenumval"
+    | Mvarlocal           _ -> error_not_translated "Mvarlocal"
+    | Mvarparam           _ -> error_not_translated "Mvarparam"
+    | Mvarfield           _ -> error_not_translated "Mvarfield"
+    | Mvarthe               -> error_not_translated "Mvarthe"
+    | Mvarstate             -> error_not_translated "Mvarstate"
+    | Mnow                  -> error_not_translated "Mnow"
+    | Mtransferred          -> error_not_translated "Mtransferred"
+    | Mcaller               -> error_not_translated "Mcaller"
+    | Mbalance              -> error_not_translated "Mbalance"
+    | Msource               -> error_not_translated "Msource"
+    | Mnone                 -> error_not_translated "Mnone"
+    | Msome               _ -> error_not_translated "Msome"
+    | Marray              _ -> error_not_translated "Marray"
+    | Mint                _ -> error_not_translated "Mint"
+    | Muint               _ -> error_not_translated "Muint"
+    | Mbool               _ -> error_not_translated "Mbool"
+    | Menum               _ -> error_not_translated "Menum"
+    | Mrational           _ -> error_not_translated "Mrational"
+    | Mstring             _ -> error_not_translated "Mstring"
+    | Mcurrency           _ -> error_not_translated "Mcurrency"
+    | Maddress            _ -> error_not_translated "Maddress"
+    | Mdate               _ -> error_not_translated "Mdate"
+    | Mduration           _ -> error_not_translated "Mduration"
+    | Mtimestamp          _ -> error_not_translated "Mtimestamp"
+    | Mdotasset           _ -> error_not_translated "Mdotasset"
+    | Mdotcontract        _ -> error_not_translated "Mdotcontract"
+    | Mtuple              _ -> error_not_translated "Mtuple"
+    | Massoc              _ -> error_not_translated "Massoc"
+    | Mfor                _ -> error_not_translated "Mfor"
+    | Miter               _ -> error_not_translated "Miter"
+    | Mfold               _ -> error_not_translated "Mfold"
+    | Mseq _                -> error_not_translated "Mseq"
+    | Massign             _ -> error_not_translated "Massign"
+    | Massignvarstore     _ -> error_not_translated "Massignvarstore"
+    | Massignfield        _ -> error_not_translated "Massignfield"
+    | Massignstate        _ -> error_not_translated "Massignstate"
+    | Mtransfer           _ -> error_not_translated "Mtransfer"
+    | Mbreak                -> error_not_translated "break;"
+    | Massert             _ -> error_not_translated "Massert"
+    | Mreturn             _ -> error_not_translated "Mreturn"
+    | Mlabel              _ -> error_not_translated "Mlabel"
+    | Mshallow            _ -> error_not_translated "Mshallow"
+    | Munshallow          _ -> error_not_translated "Munshallow"
+    | Mlisttocoll         _ -> error_not_translated "Mlisttocoll"
+    | Mtokeys             _ -> error_not_translated "Mtokeys"
+    | Mcoltokeys          _ -> error_not_translated "Mcoltokeys"
+    | Mforall             _ -> error_not_translated "Mforall"
+    | Mexists             _ -> error_not_translated "Mexists"
+    | Msetbefore          _ -> error_not_translated "Msetbefore"
+    | Msetat              _ -> error_not_translated "Msetat"
+    | Msetunmoved         _ -> error_not_translated "Msetunmoved"
+    | Msetadded           _ -> error_not_translated "Msetadded"
+    | Msetremoved         _ -> error_not_translated "Msetremoved"
+    | Msetiterated        _ -> error_not_translated "Msetiterated"
+    | Msettoiterate       _ -> error_not_translated "Msettoiterate"
   in
   mk_loc mt.loc t
 and mk_invariants (m : M.model) ctx (lbl : ident option) lbody =
