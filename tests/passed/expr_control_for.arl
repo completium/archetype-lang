@@ -12,6 +12,9 @@ asset myasset identified by str {
 variable res : int = 0
 
 action exec () {
+  specification {
+    s0: res = 6;
+  }
   effect {
     for i in myasset do
       res += i.v;

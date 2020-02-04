@@ -3,6 +3,9 @@ archetype expr_arith_plus_int_rat
 variable res : rational = 0 div 1
 
 action exec () {
+  specification {
+    s0: res = 7 div 2;
+  }
   effect {
     res := 3 + 1 div 2
   }

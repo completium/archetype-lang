@@ -3,6 +3,9 @@ archetype expr_arith_minus_dur_dur
 variable res : duration = 0s
 
 action exec () {
+  specification {
+    s0: res = 20h;
+  }
   effect {
     res := 1d - 4h
   }

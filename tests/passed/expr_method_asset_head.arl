@@ -4,15 +4,18 @@ asset my_asset identified by id {
   id : string;
   value : int;
 } initialized by {
-  {"id0"; 0};
-  {"id1"; 1};
+  {"id0"; 4};
+  {"id1"; 3};
   {"id2"; 2}
 }
 
 variable res : int = 0
 
 action exec () {
+  specification {
+    s0: res = 3;
+  }
   effect {
-    res := my_asset.head(2).nth(0).value
+    res := my_asset.head(2).nth(1).value
   }
 }

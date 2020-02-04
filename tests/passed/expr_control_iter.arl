@@ -3,7 +3,11 @@ archetype expr_control_iter
 variable res : int = 0
 
 action exec () {
+  specification {
+    s0: res = 6;
+  }
   effect {
+    res := 0;
     iter i to 3 do
       res += i
     done

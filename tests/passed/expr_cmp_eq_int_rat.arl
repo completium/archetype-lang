@@ -3,7 +3,10 @@ archetype expr_cmp_eq_int_rat
 variable res : bool = false
 
 action exec () {
+  specification {
+    s0: res = true;
+  }
   effect {
-    res := 2 = 1 div 3
+    res := 2 = 2 div 4
   }
 }

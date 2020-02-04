@@ -3,6 +3,9 @@ archetype expr_cmp_ne_addr_addr
 variable res : bool = false
 
 action exec () {
+  specification {
+    s0: res = true;
+  }
   effect {
     res := @tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg <> @tz1aazS5ms5cbGkb6FN1wvWmN7yrMTTcr6wB
   }

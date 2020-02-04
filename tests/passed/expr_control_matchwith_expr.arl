@@ -10,6 +10,9 @@ enum t =
 variable res : int = 0
 
 action exec () {
+  specification {
+    s0: res = 1;
+  }
   effect {
     var x : t = C3;
     res :=

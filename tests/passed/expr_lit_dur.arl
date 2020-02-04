@@ -3,6 +3,9 @@ archetype expr_lit_dur
 variable res : duration = 0s
 
 action exec () {
+  specification {
+    s0: res = 3w8d4h34m18s;
+  }
   effect {
     res := 3w8d4h34m18s
   }

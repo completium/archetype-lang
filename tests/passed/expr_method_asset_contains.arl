@@ -12,6 +12,9 @@ asset my_asset identified by id {
 variable res : bool = false
 
 action exec () {
+  specification {
+    s0: res = true;
+  }
   effect {
     res := my_asset.contains("id0")
   }
