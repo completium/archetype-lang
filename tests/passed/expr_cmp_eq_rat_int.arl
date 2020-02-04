@@ -7,6 +7,6 @@ action exec () {
     s0: res = true;
   }
   effect {
-    res := 2 div 4 = 2
+    res := 4 div 2 = 2
   }
 }
