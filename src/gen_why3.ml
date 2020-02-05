@@ -6,12 +6,16 @@ open Mlwtree
 
 (* ------------------------------------------------------------------- *)
 type error_desc =
+  | NotSupported of string
   | TODONotTranslated of string
 
 let pp_error_desc fmt = function
-  | TODONotTranslated s ->
+  | NotSupported msg ->
     Format.fprintf fmt
-      "Not translated: %s" s
+      "Not supported: %s" msg
+  | TODONotTranslated msg ->
+    Format.fprintf fmt
+      "Not translated: %s" msg
 
 type error = Location.t * error_desc
 
@@ -763,7 +767,9 @@ let map_mpattern (p : M.lident M.pattern_node) =
   | M.Pconst i -> Tconst (map_lident i)
 
 let rec map_mterm m ctx (mt : M.mterm) : loc_term =
-  let error_not_translated (msg : string) = emit_error (mt.loc, TODONotTranslated msg); Tnottranslated in
+  let error_internal desc = emit_error (mt.loc, desc); Tnottranslated in
+  let error_not_translated (msg : string) = error_internal (TODONotTranslated msg) in
+  let error_not_supported (msg : string) = error_internal (NotSupported msg) in
   let t =
     match mt.node with
     | Mif (c, t, Some { node=M.Mseq []; type_=_}) ->
@@ -979,10 +985,10 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
         | _ -> assert false
       end
     | Mint v -> Tint v
-    | Muint               _ -> error_not_translated "Muint"
+    | Muint v -> Tint v
     | Mbool false -> Tfalse
     | Mbool true -> Ttrue
-    | Menum               _ -> error_not_translated "Menum"
+    | Menum               _ -> error_not_supported "Menum"
     | Mrational           _ -> error_not_translated "Mrational"
     | Mstring v -> Tint (sha v)
     | Mcurrency (i, Tz)   -> Tint (Big_int.mult_int_big_int 1000000 i)
@@ -990,8 +996,8 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Mcurrency (i, Utz)  -> Tint i
     | Maddress v -> Tint (sha v)
     | Mdate s -> Tint (Core.date_to_timestamp s)
-    | Mduration           _ -> error_not_translated "Mduration"
-    | Mtimestamp          _ -> error_not_translated "Mtimestamp"
+    | Mduration v -> Tint (Core.duration_to_timestamp v)
+    | Mtimestamp v -> Tint v
     | Mdotasset (e, i) -> Tdot (map_mterm m ctx e, mk_loc (loc i) (Tvar (map_lident i)))
     | Mdotcontract        _ -> error_not_translated "Mdotcontract"
     | Mtuple              _ -> error_not_translated "Mtuple"
