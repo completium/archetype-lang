@@ -1,29 +1,36 @@
 archetype lang_literals
 
-variable i : int = 1
-variable j : int = -1
-variable f : rational = 1.1
-variable g : rational = -1.1
-variable r : rational = 2 div 6
-variable t : rational = -2 div 6
-variable s : string = "str"
-variable ctz  : tez = 1tz
-variable cmtz : tez = 1mtz
-variable cutz : tez = 1utz
-variable a : address = @tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg
-variable d : duration = 3w8d4h34m18s (* 3 weeks 8 days 4 hours 34 minutes 18 seconds *)
-variable date0 : date = 2019-01-01                (* iso 8601 *)
-variable date1 : date = 2019-01-01T01:02:03       (* iso 8601 *)
-variable date2 : date = 2019-01-01T01:02:03Z      (* iso 8601 *)
-variable date3 : date = 2019-01-01T00:00:00+01:00 (* iso 8601 *)
-variable date4 : date = 2019-01-01T00:00:00-05:30 (* iso 8601 *)
-variable mycollection : int collection = [1; 2; 3]
-variable mytuple : int * int = 1, 2
-variable op1 : int option = none
-variable op2 : int option = some(0)
+asset my_asset {
+  id : string;
+  value : int;
+}
 
 action exec () {
   effect {
+    var x : bool = true;
+    var y : bool = false;
+    var i : int = 1;
+    var j : int = -1;
+    var f : rational = 1.1;
+    var g : rational = -1.1;
+    var r : rational = 2 div 6;
+    var t : rational = -2 div 6;
+    var s : string = "str";
+    var ctz  : tez = 1tz;
+    var cmtz : tez = 1mtz;
+    var cutz : tez = 1utz;
+    var a : address = @tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg;
+    var d : duration = 3w8d4h34m18s; (* 3 weeks 8 days 4 hours 34 minutes 18 seconds *)
+    var date0 : date = 2019-01-01;                (* iso 8601 *)
+    var date1 : date = 2019-01-01T01:02:03;       (* iso 8601 *)
+    var date2 : date = 2019-01-01T01:02:03Z;      (* iso 8601 *)
+    var date3 : date = 2019-01-01T00:00:00+01:00; (* iso 8601 *)
+    var date4 : date = 2019-01-01T00:00:00-05:30; (* iso 8601 *)
+    var mycollection : int list = [1; 2; 3];
+    var mytuple : (int * int) = 1, 2;
+    var op1 : int option = none;
+    var op2 : int option = some(0);
+    var ma : my_asset = {id = "key"; value = 2};
     require(true)
   }
 }
