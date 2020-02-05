@@ -485,12 +485,16 @@ let rec pp_expr outer pos fmt a =
     (maybe_paren outer e_semi_colon pos pp) fmt (x, y)
 
   | Eletin (id, t, e, body, other) ->
-
+    let f =
+      match t with
+      | Some ({pldesc= Ttuple _; _}) -> pp_paren
+      | _ -> pp_neutral
+    in
     let pp fmt (id, t, e, body, other) =
       Format.fprintf fmt "@[@[<hv 0>let%a %a%a =@;<1 2>%a@;<1 0>in@]@ %a%a@]" (*"let %a = %a in %a"*)
         (pp_option (fun fmt _ -> Format.fprintf fmt " some")) other
         pp_id id
-        (pp_option (pp_prefix " : " pp_type)) t
+        (pp_option (pp_prefix " : " (f pp_type))) t
         (pp_expr e_in PLeft) e
         (pp_expr e_in PRight) body
         (pp_option (fun fmt e ->
@@ -502,9 +506,14 @@ let rec pp_expr outer pos fmt a =
   | Evar (id, t, e) ->
 
     let pp fmt (id, t, e) =
+      let f =
+        match t with
+        | Some ({pldesc= Ttuple _; _}) -> pp_paren
+        | _ -> pp_neutral
+      in
       Format.fprintf fmt "var %a%a = %a"
         pp_id id
-        (pp_option (pp_prefix " : " pp_type)) t
+        (pp_option (pp_prefix " : " (f pp_type))) t
         (pp_expr e_in PLeft) e
     in
     (maybe_paren outer e_default pos pp) fmt (id, t, e)
