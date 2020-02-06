@@ -269,6 +269,8 @@ let rec pp_term outer pos fmt = function
       (pp_with_paren (pp_term outer pos)) e2
   | Teq (_, e1, e2) ->
     Format.fprintf fmt "%a = %a" (pp_term outer pos) e1 (pp_term outer pos) e2
+  | Tneq (_, e1, e2) ->
+    Format.fprintf fmt "%a <> %a" (pp_term outer pos) e1 (pp_term outer pos) e2
   | Tunion (i, e1, e2) ->
     Format.fprintf fmt "%a.union %a %a"
       pp_str (String.capitalize_ascii i)
@@ -420,12 +422,24 @@ let rec pp_term outer pos fmt = function
       pp_str (String.capitalize_ascii i)
       (pp_with_paren (pp_term outer pos)) e1
       (pp_with_paren (pp_term outer pos)) e2
+  | Tplus (_,e1,e2) ->
+    Format.fprintf fmt "%a + %a"
+      (pp_with_paren (pp_term outer pos)) e1
+      (pp_with_paren (pp_term outer pos)) e2
   | Tminus (_,e1,e2) ->
     Format.fprintf fmt "%a - %a"
       (pp_with_paren (pp_term outer pos)) e1
       (pp_with_paren (pp_term outer pos)) e2
-  | Tplus (_,e1,e2) ->
-    Format.fprintf fmt "%a + %a"
+  | Tmult (_,e1,e2) ->
+    Format.fprintf fmt "%a * %a"
+      (pp_with_paren (pp_term outer pos)) e1
+      (pp_with_paren (pp_term outer pos)) e2
+  | Tdiv (_,e1,e2) ->
+    Format.fprintf fmt "%a / %a"
+      (pp_with_paren (pp_term outer pos)) e1
+      (pp_with_paren (pp_term outer pos)) e2
+  | Tmod (_,e1,e2) ->
+    Format.fprintf fmt "%a %% %a"
       (pp_with_paren (pp_term outer pos)) e1
       (pp_with_paren (pp_term outer pos)) e2
   | Tnth (i,e1,e2) ->
@@ -479,7 +493,21 @@ let rec pp_term outer pos fmt = function
       (pp_with_paren (pp_term outer pos)) e2
   | Texn e -> Format.fprintf fmt "%a" pp_exn e
   | Tnottranslated -> pp_str fmt "NOT TRANSLATED"
-  | _ -> pp_str fmt "NOT IMPLEMENTED"
+  | Tename -> pp_str fmt "TODO_Tename"
+  | Ttobereplaced -> pp_str fmt "TODO_Ttobereplaced"
+  | Tadded _ -> pp_str fmt "TODO_Tadded"
+  | Trmed _ -> pp_str fmt "TODO_Trmed"
+  | Tconcat (_, _) -> pp_str fmt "TODO_Tconcat"
+  | Tmktr (_, _) -> pp_str fmt "TODO_Tmktr"
+  | Ttradd _ -> pp_str fmt "TODO_Ttradd"
+  | Ttrrm _ -> pp_str fmt "TODO_Ttrrm"
+  | Tuminus (_, _) -> pp_str fmt "TODO_Tuminus"
+  | Tdlt (_, _, _, _) -> pp_str fmt "TODO_Tdlt"
+  | Tdlet (_, _, _, _) -> pp_str fmt "TODO_Tdlet"
+  | Tdlte (_, _, _, _) -> pp_str fmt "TODO_Tdlte"
+  | Taddr _ -> pp_str fmt "TODO_d"
+  | Tat _ -> pp_str fmt "TODO_Tat"
+  | Thead (_, _) -> pp_str fmt "TODO_Thead"
 and pp_recfield fmt (n,t) =
   Format.fprintf fmt "%a = %a"
     pp_str n

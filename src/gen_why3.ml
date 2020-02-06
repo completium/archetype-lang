@@ -892,19 +892,19 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Mnot c -> Tnot (map_mterm m ctx c)
     | Mmulticomp          _ -> error_not_translated "Mmulticomp"
     | Mequal (l, r) -> Teq (with_dummy_loc Tyint,map_mterm m ctx l,map_mterm m ctx r)
-    | Mnequal             _ -> error_not_translated "Mnequal"
+    | Mnequal (l, r) -> Tneq (with_dummy_loc Tyint,map_mterm m ctx l,map_mterm m ctx r)
     | Mgt (l, r) -> Tgt (with_dummy_loc Tyint, map_mterm m ctx l, map_mterm m ctx r)
     | Mge (l, r) -> Tge (with_dummy_loc Tyint, map_mterm m ctx l, map_mterm m ctx r)
     | Mlt (l, r) -> Tlt (with_dummy_loc Tyint, map_mterm m ctx l, map_mterm m ctx r)
     | Mle (l, r) -> Tle (with_dummy_loc Tyint, map_mterm m ctx l, map_mterm m ctx r)
     | Mplus (l, r)  -> Tplus  (with_dummy_loc Tyint, map_mterm m ctx l, map_mterm m ctx r)
     | Mminus (l, r) -> Tminus (with_dummy_loc Tyint, map_mterm m ctx l, map_mterm m ctx r)
-    | Mmult               _ -> error_not_translated "Mmult"
-    | Mdiv                _ -> error_not_translated "Mdiv"
+    | Mmult (l, r) -> Tmult (with_dummy_loc Tyint, map_mterm m ctx l, map_mterm m ctx r)
+    | Mdiv (l, r) -> Tdiv (with_dummy_loc Tyint, map_mterm m ctx l, map_mterm m ctx r)
     | Mdivrat             _ -> error_not_translated "Mdivrat"
-    | Mmodulo             _ -> error_not_translated "Mmodulo"
-    | Muplus              _ -> error_not_translated "Muplus"
-    | Muminus             _ -> error_not_translated "Muminus"
+    | Mmodulo (l, r) -> Tmod (with_dummy_loc Tyint, map_mterm m ctx l, map_mterm m ctx r)
+    | Muplus _ -> error_not_translated "Muplus"
+    | Muminus v -> Tuminus (with_dummy_loc Tyint, map_mterm m ctx v)
     | Mrateq              _ -> error_not_translated "Mrateq"
     | Mratcmp             _ -> error_not_translated "Mratcmp"
     | Mratarith           _ -> error_not_translated "Mratarith"

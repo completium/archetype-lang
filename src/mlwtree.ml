@@ -109,12 +109,14 @@ type ('e,'t,'i) abstract_term =
   | Tplus   of 't * 'e * 'e
   | Tminus  of 't * 'e * 'e
   | Tuminus of 't * 'e
+  | Tmult   of 't * 'e * 'e
   | Tdiv    of 't * 'e * 'e
   | Tmod    of 't * 'e * 'e
   | Tnot    of 'e
   | Tpand   of 'e * 'e
   (* comp *)
   | Teq     of 't * 'e * 'e
+  | Tneq    of 't * 'e * 'e
   | Tlt     of 't * 'e * 'e
   | Tle     of 't * 'e * 'e
   | Tgt     of 't * 'e * 'e
@@ -351,11 +353,13 @@ and map_abstract_term
   | Tplus (t,l,r)      -> Tplus (map_t t, map_e l, map_e r)
   | Tminus (t,l,r)     -> Tminus (map_t t, map_e l, map_e r)
   | Tuminus (t,e)      -> Tuminus (map_t t, map_e e)
+  | Tmult (t,l,r)      -> Tmult (map_t t, map_e l, map_e r)
   | Tdiv (t,l,r)       -> Tdiv (map_t t, map_e l, map_e r)
   | Tmod (t,l,r)       -> Tmod (map_t t, map_e l, map_e r)
   | Tnot e             -> Tnot (map_e e)
   | Tpand (e1,e2)      -> Tpand (map_e e1,map_e e2)
   | Teq (t,l,r)        -> Teq (map_t t, map_e l, map_e r)
+  | Tneq (t,l,r)       -> Tneq (map_t t, map_e l, map_e r)
   | Tlt (t,l,r)        -> Tlt (map_t t, map_e l, map_e r)
   | Tle (t,l,r)        -> Tle (map_t t, map_e l, map_e r)
   | Tgt (t,l,r)        -> Tgt (map_t t, map_e l, map_e r)
@@ -714,6 +718,7 @@ let compare_abstract_term
   | Tplus (t1,l1,r1), Tplus (t2,l2,r2) -> cmpt t1 t2 && cmpe l1 l2 && cmpe r1 r2
   | Tminus (t1,l1,r1), Tminus (t2,l2,r2) -> cmpt t1 t2 && cmpe l1 l2 && cmpe r1 r2
   | Tuminus (t1,e1), Tuminus (t2,e2) -> cmpt t1 t2 && cmpe e1 e2
+  | Tmult (t1,l1,r1), Tmult (t2,l2,r2) -> cmpt t1 t2 && cmpe l1 l2 && cmpe r1 r2
   | Tdiv (t1,l1,r1), Tdiv (t2,l2,r2) -> cmpt t1 t2 && cmpe l1 l2 && cmpe r1 r2
   | Tmod (t1,l1,r1), Tmod (t2,l2,r2) -> cmpt t1 t2 && cmpe l1 l2 && cmpe r1 r2
   | Tnot e1, Tnot e2 -> cmpe e1 e2
