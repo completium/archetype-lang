@@ -1,0 +1,18 @@
+archetype security_pred_transferred_to
+
+constant admin : role = @tz1aazS5ms5cbGkb6FN1wvWmN7yrMTTcr6wB
+
+asset my_asset identified by id {
+  id : string;
+  value : int;
+}
+
+action exec () {
+  effect {
+    require true
+  }
+}
+
+security {
+  s0 : transferred_to (anyaction);
+}
