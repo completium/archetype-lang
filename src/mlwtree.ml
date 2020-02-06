@@ -724,6 +724,7 @@ let compare_abstract_term
   | Tnot e1, Tnot e2 -> cmpe e1 e2
   | Tpand (e1,e2), Tpand (e3,e4) -> cmpe e1 e3 && cmpe e2 e4
   | Teq (t1,l1,r1), Teq (t2,l2,r2) -> cmpt t1 t2 && cmpe l1 l2 && cmpe r1 r2
+  | Tneq (t1,l1,r1), Tneq (t2,l2,r2) -> cmpt t1 t2 && cmpe l1 l2 && cmpe r1 r2
   | Tlt (t1,l1,r1), Tlt (t2,l2,r2) -> cmpt t1 t2 && cmpe l1 l2 && cmpe r1 r2
   | Tle (t1,l1,r1), Tle (t2,l2,r2) -> cmpt t1 t2 && cmpe l1 l2 && cmpe r1 r2
   | Tgt (t1,l1,r1), Tgt (t2,l2,r2) -> cmpt t1 t2 && cmpe l1 l2 && cmpe r1 r2
