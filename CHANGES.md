@@ -12,11 +12,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Add list container
  - Add print-type-contract command (-ptc)
  - Add `add_update` method for asset
+ - Add `bytes` type
 
 ### Changed
  - Add guard condition in `Add` and `UpdateAdd` api storage
  - Syntax : add identifier on signature of contract argument
- - Refactor transition
+ - Refactor and update syntax for transition
 
 ## [0.1.12] - 2020-01-09
 ### Added

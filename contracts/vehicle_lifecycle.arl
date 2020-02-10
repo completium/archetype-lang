@@ -48,7 +48,8 @@ action placeOrder (neworder : order) {
   }
 }
 
-transition assign_vin (avin : string, adetail : pkey of vehicledetail) on (ok : pkey of order) from Placed {
+transition assign_vin (avin : string, adetail : pkey of vehicledetail) on (ok : pkey of order) {
+  from Placed
   called by order.get(ok).orderer
 
   to Vin_assigned
@@ -57,7 +58,8 @@ transition assign_vin (avin : string, adetail : pkey of vehicledetail) on (ok : 
   }
 }
 
-transition assign_owner () on (ok : pkey of order) from any {
+transition assign_owner () on (ok : pkey of order) {
+  from any
   to Owner_assigned
   with effect {
     (* set vehicle state *)
@@ -72,7 +74,8 @@ action vehicleTransfer (buyer : pkey of owner, vk : pkey of vehicle) {
   }
 }
 
-transition scrapVehicle () on (vk : pkey of vehicle) from (Off_the_road or Active) {
+transition scrapVehicle () on (vk : pkey of vehicle) {
+  from (Off_the_road or Active)
   called by vehicle.get(vk).aowner
 
   to Scrapped

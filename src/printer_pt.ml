@@ -960,7 +960,7 @@ let rec pp_declaration fmt { pldesc = e; _ } =
                  )) cod)) (props, code)
 
   | Dtransition (id, args, on, from, props, trs, exts) ->
-    Format.fprintf fmt "transition%a %a%a%a from %a%a"
+    Format.fprintf fmt "transition%a %a%a%a%a"
       pp_extensions exts
       pp_id id
       pp_fun_args args
@@ -969,9 +969,9 @@ let rec pp_declaration fmt { pldesc = e; _ } =
              pp_id a
              pp_type b
          )) on
-      pp_simple_expr from
       (fun fmt (pr, ts) ->
-         Format.fprintf fmt " {@\n  @[%a%a@]@\n}"
+         Format.fprintf fmt " {@\n  @[%a%a%a@]@\n}"
+           (fun fmt from -> Format.fprintf fmt "from %a@\n" pp_simple_expr from) from
            (pp_do_if (not (is_empty_action_properties_opt props None)) pp_action_properties) pr
            (pp_list "@\n" pp_transition) ts) (props, trs)
 

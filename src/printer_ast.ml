@@ -820,11 +820,13 @@ let rec pp_sexpr fmt (sexpr : sexpr) =
   | Sany -> pp_str fmt "any"
 
 let pp_transaction_transition fmt (t : transaction) (tr : lident transition) =
-  Format.fprintf fmt "transition %a%a from %a%a {@\n  @[%a%a%a%a%a%a@]@\n}@\n"
+  Format.fprintf fmt "transition %a%a%a {@\n  @[%a%a%a%a%a%a%a@]@\n}@\n"
     pp_id t.name
     pp_fun_args t.args
-    pp_sexpr tr.from
     (pp_option (pp_prefix " on " (fun fmt (x, y) -> Format.fprintf fmt "%a.%a" pp_id x pp_id y))) tr.on
+    (fun fmt from -> Format.fprintf fmt " from %a@\n"
+        pp_sexpr from
+    ) tr.from
     (pp_option pp_specification) t.specification
     (pp_option (fun fmt -> Format.fprintf fmt "called by %a@\n" pp_rexpr)) t.calledby
     (pp_do_if t.accept_transfer (fun fmt _ -> Format.fprintf fmt "accept transfer@\n")) ()

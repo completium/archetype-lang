@@ -78,7 +78,8 @@ action[%onlyonce%] withdraw () {
   }
 }
 
-transition endAuction () from Open {
+transition endAuction () {
+  from Open
   to Closed
   when { now > auction_end }
   with effect {

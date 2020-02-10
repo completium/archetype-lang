@@ -540,7 +540,7 @@ on_value:
 
 transition:
   TRANSITION exts=option(extensions) x=ident
-    args=function_args on=on_value? FROM f=expr LBRACE xs=action_properties trs=transitions RBRACE
+    args=function_args on=on_value? LBRACE FROM f=expr xs=action_properties trs=transitions RBRACE
       { Dtransition (x, args, on, f, xs, trs, exts) }
 
 %inline transitems_eq:

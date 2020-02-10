@@ -25,8 +25,9 @@ states =
  | Done        with { s1 : balance = 0tz; }
  | Closed
 
-transition confirm () from Created {
-   to InProgress when { now > startdate }
+transition confirm () {
+  from Created
+  to InProgress when { now > startdate }
 }
 
 action submit (ckey : pkey of submission, pscore[%signedby oracle%] : int) {
@@ -41,8 +42,8 @@ action submit (ckey : pkey of submission, pscore[%signedby oracle%] : int) {
   }
 }
 
-transition decide () from InProgress {
-
+transition decide () {
+  from InProgress
   require {
     c2 : now > deadline;
   }

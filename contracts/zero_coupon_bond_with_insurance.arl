@@ -26,13 +26,15 @@ states =
  | Repaid    (* issuer has transferred payment to contract *)
  | Collected (* owner has collected payment *)
 
-transition insured () from Created {
+transition insured () {
+  from Created
   called by zero_insur
 
   to Insured
 }
 
-transition confirm () from Insured {
+transition confirm () {
+  from Insured
   specification {
     s1 : balance = 0tz
   }
@@ -45,7 +47,8 @@ transition confirm () from Insured {
   }
 }
 
-transition repay () from Confirmed {
+transition repay () {
+  from Confirmed
   called by issuer
 
   to Repaid
@@ -54,7 +57,8 @@ transition repay () from Confirmed {
   }
 }
 
-transition collect () from Repaid {
+transition collect () {
+  from Repaid
   called by owner
 
   to Collected
