@@ -397,6 +397,21 @@ let pp_model_internal fmt (model : model) b =
         in
         pp fmt (an, fn, c, i)
 
+      | Mclearasset (an) ->
+        let pp fmt (an) =
+          Format.fprintf fmt "clear_%a (self)"
+            pp_str an
+        in
+        pp fmt (an)
+
+      | Mclearfield (an, fn) ->
+        let pp fmt (an, fn) =
+          Format.fprintf fmt "clear_%a_%a (self)"
+            pp_str an
+            pp_str fn
+        in
+        pp fmt (an, fn)
+
       | Maddupdate _ -> emit_error (UnsupportedTerm ("add_update"))
       | Mupdate _ -> emit_error (UnsupportedTerm ("update"))
 

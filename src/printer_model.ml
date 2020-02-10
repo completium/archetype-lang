@@ -220,6 +220,21 @@ let pp_mterm fmt (mt : mterm) =
       in
       pp fmt (an, fn, c, i)
 
+    | Mclearasset an ->
+      let pp fmt an =
+        Format.fprintf fmt "clear_%a ()"
+          pp_str an
+      in
+      pp fmt an
+
+    | Mclearfield (an, fn) ->
+      let pp fmt (an, fn) =
+        Format.fprintf fmt "clear_%a_%a ()"
+          pp_str an
+          pp_str fn
+      in
+      pp fmt (an, fn)
+
     | Mremoveif (an, fn, i) ->
       let pp fmt (an, fn, i) =
         Format.fprintf fmt "removeif_%a (%a) (%a)"

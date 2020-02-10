@@ -168,6 +168,7 @@ let to_const = function
   | Cadd          -> "add"
   | Cremove       -> "remove"
   | Cremoveif     -> "removeif"
+  | Cclear        -> "clear"
   | Cupdate       -> "update"
   | Cadd_update   -> "add_update"
   | Ccontains     -> "contains"

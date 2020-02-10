@@ -489,6 +489,14 @@ let to_model (ast : A.model) : M.model =
         | _ -> assert false
       )
 
+    | A.Icall (Some p, A.Cconst (A.Cclear), []) -> (
+        let fp = f p in
+        match fp with
+        | {node = M.Mvarstorecol asset_name; _} -> M.Mclearasset (unloc asset_name)
+        | {node = M.Mdotasset ({type_ = M.Tasset asset_name ; _} as arg, f); _} -> M.Mclearfield (unloc asset_name, unloc f)
+        | _ -> assert false
+      )
+
     | A.Icall (Some p, A.Cconst (A.Cadd_update), [AExpr k; AEffect e]) ->
       let to_op = function
         | `Assign op -> to_assignment_operator op

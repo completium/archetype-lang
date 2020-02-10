@@ -455,6 +455,7 @@ let methods : (string * method_) list =
     ("add"         , mk M.Cadd          `Effect `Total   ([`The         ], None));
     ("remove"      , mk M.Cremove       `Effect `Total   ([`Pk          ], None));
     ("removeif"    , mk M.Cremoveif     `Effect `Total   ([`Pred        ], None));
+    ("clear"       , mk M.Cclear        `Effect `Total   ([             ], None));
     ("update"      , mk M.Cupdate       `Effect `Total   ([`Pk; `Effect ], None));
     ("add_update"  , mk M.Cadd_update   `Effect `Total   ([`Pk; `Effect ], None));
     ("contains"    , mk M.Ccontains     `Pure   `Total   ([`Pk          ], Some (`T M.vtbool)));

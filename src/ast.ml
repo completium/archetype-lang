@@ -127,6 +127,7 @@ type const =
   | Cadd
   | Cremove
   | Cremoveif
+  | Cclear
   | Cupdate
   | Cadd_update
   | Ccontains

@@ -1,0 +1,23 @@
+archetype expr_method_asset_clear_partition
+
+asset o_asset identified by oid {
+  oid : string;
+}
+
+asset my_asset identified by id {
+  id     : string;
+  value  : int;
+  col    : o_asset partition;
+} initialized by {
+  {"id0"; 0; [{"oid"}]};
+  {"id1"; 1; []};
+  {"id2"; 2; []}
+}
+
+variable res : int = 0
+
+action exec () {
+  effect {
+    my_asset.get("id0").col.clear()
+  }
+}

@@ -852,7 +852,8 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
                                        ]
                                       ))))
         [CUpdate f; CRm t]
-
+    | Mclearasset         _ -> error_not_translated "Mclearasset"
+    | Mclearfield         _ -> error_not_translated "Mclearfield"
     | Mremoveif           _ -> error_not_translated "Mremoveif"
     | Maddupdate          _ -> error_not_translated "Maddupdate"
     | Mupdate             _ -> error_not_translated "Mupdate"
