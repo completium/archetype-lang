@@ -49,9 +49,9 @@ action placeOrder (neworder : order) {
 }
 
 transition assign_vin (avin : string, adetail : pkey of vehicledetail) on (ok : pkey of order) {
-  from Placed
   called by order.get(ok).orderer
 
+  from Placed
   to Vin_assigned
   with effect {
      vehicle.add ({ vin = avin; aowner = order.get(ok).orderer; detail = adetail; color = vehicledetail.get(adetail).dcolor })
@@ -75,9 +75,9 @@ action vehicleTransfer (buyer : pkey of owner, vk : pkey of vehicle) {
 }
 
 transition scrapVehicle () on (vk : pkey of vehicle) {
-  from (Off_the_road or Active)
   called by vehicle.get(vk).aowner
 
+  from (Off_the_road or Active)
   to Scrapped
 }
 

@@ -218,25 +218,25 @@ states =
 
 (** Used by owner to confirm transaction. It transfers the price of contract (nominal) *)
 transition confirm () {
-  from Created
   called by owner
+  from Created
   to Confirmed when { transferred = nominal }
 }
 
 transition cancel () {
-  from Created
   called by owner or issuer
+  from Created
   to Canceled
 }
 
 transition check () {
-  from Confirmed
   called by owner
+  from Confirmed
   to Defaulted when { actual_payment < compute_expected(now) }
 }
 
 transition terminate () {
-  from Confirmed
   called by issuer
+  from Confirmed
   to Terminated when { actual_payment >= compute_expected(now) }
 }

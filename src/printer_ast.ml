@@ -825,14 +825,14 @@ let pp_transaction_transition fmt (t : transaction) (tr : lident transition) =
     pp_id t.name
     pp_fun_args t.args
     (pp_option (pp_prefix " on " (fun fmt (x, y) -> Format.fprintf fmt "%a.%a" pp_id x pp_id y))) tr.on
-    (fun fmt from -> Format.fprintf fmt " from %a@\n"
-        pp_sexpr from
-    ) tr.from
     (pp_option pp_specification) t.specification
     (pp_option (fun fmt -> Format.fprintf fmt "called by %a@\n" pp_rexpr)) t.calledby
     (pp_do_if t.accept_transfer (fun fmt _ -> Format.fprintf fmt "accept transfer@\n")) ()
     (pp_option (pp_list "@\n " (fun fmt -> Format.fprintf fmt "require {@\n  @[%a@]@\n}@\n" pp_label_term))) t.require
     (pp_list "@\n" pp_function) t.functions
+    (fun fmt from -> Format.fprintf fmt " from %a@\n"
+        pp_sexpr from
+    ) tr.from
     (pp_list "@\n" (fun fmt (to_, cond, action) ->
          Format.fprintf fmt "to %a%a@\n%a@\n"
            pp_id to_

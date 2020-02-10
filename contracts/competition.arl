@@ -43,10 +43,10 @@ action submit (ckey : pkey of submission, pscore[%signedby oracle%] : int) {
 }
 
 transition decide () {
-  from InProgress
   require {
     c2 : now > deadline;
   }
+  from InProgress
   to Done
   with effect {
     let submissions = submission.sort(timestamp).sort(desc(score)) in

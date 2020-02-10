@@ -27,9 +27,9 @@ states =
  | Transferred with { i1 : balance = 0tz; }
 
 transition abort () {
-  from Created
   called by buyer or seller
 
+  from Created
   to Aborted
 }
 
@@ -39,9 +39,9 @@ transition[%signedbyall [buyer; seller]%] confirm () {
 }
 
 transition transfer_ () {
-  from Confirmed
   called by oracle
 
+  from Confirmed
   to Transferred when { now < deadline }
   with effect {
     transfer price to creditor;
@@ -50,9 +50,9 @@ transition transfer_ () {
 }
 
 transition cancel () {
-  from Confirmed
   called by oracle
 
+  from Confirmed
   to Canceled
   with effect {
     transfer penalty to debitor;

@@ -60,10 +60,10 @@ action vote (val : pkey of ballot) {
 }
 
 transition bury () {
-  from Voting
   require {
     c5 : now > deadline;
   }
+  from Voting
   to Buried
   with effect {
     let nbvotesMax = ballot.max(the.nbvotes) in

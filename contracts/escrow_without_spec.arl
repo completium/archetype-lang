@@ -23,9 +23,9 @@ states =
 
 
 transition abort () {
-  from Created
   called by buyer or seller
 
+  from Created
   to Aborted
 }
 
@@ -35,9 +35,9 @@ transition confirm () {
 }
 
 transition complete () {
-  from Confirmed
   called by oracle
 
+  from Confirmed
   to Completed when { now < deadline }
   with effect {
     transfer price to seller;
@@ -46,9 +46,9 @@ transition complete () {
 }
 
 transition cancel () {
-  from Confirmed
   called by oracle
 
+  from Confirmed
   to Canceled
   with effect {
     transfer penalty to buyer;

@@ -31,8 +31,8 @@ transition[%signedbyall [patient; insurer]%] confirm () {
 }
 
 transition cancel () {
-  from Created
   called by insurer or patient
+  from Created
   to Canceled
 }
 

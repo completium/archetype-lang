@@ -971,8 +971,8 @@ let rec pp_declaration fmt { pldesc = e; _ } =
          )) on
       (fun fmt (pr, ts) ->
          Format.fprintf fmt " {@\n  @[%a%a%a@]@\n}"
-           (fun fmt from -> Format.fprintf fmt "from %a@\n" pp_simple_expr from) from
            (pp_do_if (not (is_empty_action_properties_opt props None)) pp_action_properties) pr
+           (fun fmt from -> Format.fprintf fmt "from %a@\n" pp_simple_expr from) from
            (pp_list "@\n" pp_transition) ts) (props, trs)
 
   | Dextension (id, args) ->

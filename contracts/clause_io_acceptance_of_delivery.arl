@@ -33,9 +33,9 @@ transition[%signedbyall [shipper, receiver]%] sign () {
 }
 
 transition unilateral_abort () {
-  from Created
   called by shipper or receiver
 
+  from Created
   to Aborted
   with effect {
     transfer incentiveR to receiver;
@@ -45,9 +45,9 @@ transition unilateral_abort () {
 }
 
 transition[%signedbyall [shipper, receiver]%] abort () {
-  from Signed
   called by shipper or receiver
 
+  from Signed
   to Aborted
   with effect {
     transfer incentiveR to receiver;
@@ -57,9 +57,9 @@ transition[%signedbyall [shipper, receiver]%] abort () {
 }
 
 transition confirm () {
-  from Signed
   called by receiver
 
+  from Signed
   to Delivered
   with effect {
      deliveryDate := now;
@@ -70,17 +70,17 @@ transition confirm () {
 }
 
 transition success () {
-  from Delivered
   called by shipper
 
+  from Delivered
   to Success
   when { now > (deliveryDate + businessDays) }
 }
 
 transition fail () {
-  from Delivered
   called by receiver
 
+  from Delivered
   to Fail
   when { now <= deliveryDate + businessDays }
 }
