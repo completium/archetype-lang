@@ -28,6 +28,7 @@ type btyp =
   | Brole
   | Bcurrency
   | Bkey
+  | Bbytes
 [@@deriving show {with_path = false}]
 
 type vset =
@@ -217,6 +218,7 @@ type ('id, 'term) mterm_node  =
   | Mdate           of Core.date
   | Mduration       of Core.duration
   | Mtimestamp      of Core.big_int
+  | Mbytes          of string
   | Mdotasset       of 'term * 'id
   | Mdotcontract    of 'term * 'id
   | Mtuple          of 'term list
@@ -953,6 +955,7 @@ let cmp_mterm_node
     | Mdate v1, Mdate v2                                                               -> Core.cmp_date v1 v2
     | Mduration v1, Mduration v2                                                       -> Core.cmp_duration v1 v2
     | Mtimestamp v1, Mtimestamp v2                                                     -> Big_int.eq_big_int v1 v2
+    | Mbytes v1, Mbytes v2                                                             -> cmp_ident v1 v2
     | Mdotasset (e1, i1), Mdotasset (e2, i2)                                           -> cmp e1 e2 && cmpi i1 i2
     | Mdotcontract (e1, i1), Mdotcontract (e2, i2)                                     -> cmp e1 e2 && cmpi i1 i2
     | Mtuple l1, Mtuple l2                                                             -> List.for_all2 cmp l1 l2
@@ -1175,6 +1178,7 @@ let map_term_node (f : 'id mterm_gen -> 'id mterm_gen) = function
   | Mdate v                        -> Mdate v
   | Mduration v                    -> Mduration v
   | Mtimestamp v                   -> Mtimestamp v
+  | Mbytes v                       -> Mbytes v
   | Mdotasset (e, i)               -> Mdotasset (f e, i)
   | Mdotcontract (e, i)            -> Mdotcontract (f e, i)
   | Mtuple l                       -> Mtuple (List.map f l)
@@ -1437,6 +1441,7 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mdate _                               -> accu
   | Mduration _                           -> accu
   | Mtimestamp _                          -> accu
+  | Mbytes _                              -> accu
   | Mdotasset (e, _)                      -> f accu e
   | Mdotcontract (e, _)                   -> f accu e
   | Mvarstate                             -> accu
@@ -1912,6 +1917,7 @@ let fold_map_term
   | Mdate v                  -> g (Mdate v), accu
   | Mduration v              -> g (Mduration v), accu
   | Mtimestamp v             -> g (Mtimestamp v), accu
+  | Mbytes v                 -> g (Mbytes v), accu
 
   | Mdotasset (e, i) ->
     let ee, ea = f accu e in
@@ -2762,6 +2768,7 @@ end = struct
       | Tbuiltin Brole       -> Maddress "tz1_default"
       | Tbuiltin Bcurrency   -> Mcurrency (Big_int.zero_big_int, Tz)
       | Tbuiltin Bkey        -> Maddress "tz1_default"
+      | Tbuiltin Bbytes      -> Mbytes "0x0"
       | Tasset asset_name    ->
         begin
           let a = get_asset m (unloc asset_name) in

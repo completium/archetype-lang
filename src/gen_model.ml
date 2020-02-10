@@ -51,6 +51,7 @@ let to_model (ast : A.model) : M.model =
     | A.VTrole       -> M.Brole
     | A.VTcurrency   -> M.Bcurrency
     | A.VTkey        -> M.Bkey
+    | A.VTbytes      -> M.Bbytes
   in
 
   let to_trtyp = function
@@ -212,6 +213,7 @@ let to_model (ast : A.model) : M.model =
     | A.Plit ({node = BVcurrency (c, i); _}) -> M.Mcurrency (i, to_currency c)
     | A.Plit ({node = BVaddress s; _})       -> M.Maddress s
     | A.Plit ({node = BVduration d; _})      -> M.Mduration d
+    | A.Plit ({node = BVbytes v; _})         -> M.Mbytes v
     | A.Pdot (d, i) ->
       (* handle dot contract too *)
       M.Mdotasset (f d, i)

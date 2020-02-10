@@ -158,6 +158,7 @@
 %token <string> ADDRESS
 %token <string> DURATION
 %token <string> DATE
+%token <string> BYTES
 
 %nonassoc IN
 
@@ -827,6 +828,7 @@ literal:
  | x=bool_value { Lbool     x }
  | x=DURATION   { Lduration x }
  | x=DATE       { Ldate     x }
+ | x=BYTES      { Lbytes    x }
 
 %inline bool_value:
  | TRUE  { true }

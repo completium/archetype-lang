@@ -578,6 +578,7 @@ and pp_literal fmt lit =
   | Lbool     b -> Format.fprintf fmt "%s" (if b then "true" else "false")
   | Lduration d -> Format.fprintf fmt "%s" d
   | Ldate     d -> Format.fprintf fmt "%s" d
+  | Lbytes    s -> Format.fprintf fmt "0x%s" s
 
 and pp_ident_ident fmt a =
   match a with

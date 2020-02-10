@@ -146,6 +146,7 @@ and literal =
   | Lbool     of bool
   | Lduration of string
   | Ldate     of string
+  | Lbytes    of string
 
 and record_item = (assignment_operator * lident) option * expr
 

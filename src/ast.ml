@@ -31,6 +31,7 @@ type vtyp =
   | VTrole
   | VTcurrency
   | VTkey
+  | VTbytes
 [@@deriving show {with_path = false}]
 
 type trtyp =
@@ -218,6 +219,7 @@ and bval_node =
   | BVcurrency     of currency * Core.big_int
   | BVaddress      of string
   | BVduration     of Core.duration
+  | BVbytes        of string
 [@@deriving show {with_path = false}]
 
 type bval = bval_gen
@@ -587,6 +589,7 @@ let vtaddress    = Tbuiltin (VTaddress   )
 let vtrole       = Tbuiltin (VTrole      )
 let vtcurrency   = Tbuiltin (VTcurrency  )
 let vtkey        = Tbuiltin (VTkey       )
+let vtbytes      = Tbuiltin (VTbytes     )
 
 (* mk functions *)
 

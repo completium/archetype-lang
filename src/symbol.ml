@@ -113,6 +113,7 @@ let string_of_token = function
   | COLLECTION      -> "COLLECTION"
   | CALLED          -> "CALLED"
   | CALL            -> "CALL"
+  | BYTES s         -> Printf.sprintf "BYTES(%s)" s
   | BY              -> "BY"
   | BUT             -> "BUT"
   | BREAK           -> "BREAK"
@@ -243,6 +244,7 @@ let string_of_symbol = function
   | X (T T_COLLECTION) -> "collection"
   | X (T T_CALLED) -> "called"
   | X (T T_CALL) -> "call"
+  | X (T T_BYTES) -> "bytes"
   | X (T T_BY) -> "by"
   | X (T T_BUT) -> "but"
   | X (T T_BREAK) -> "break"

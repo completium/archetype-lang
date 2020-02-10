@@ -420,6 +420,7 @@ let map_btype = function
   | M.Brole          -> Tyrole
   | M.Bcurrency      -> Tytez
   | M.Bkey           -> Tykey
+  | M.Bbytes         -> Tybytes
 
 let rec map_mtype (t : M.type_) : loc_typ =
   with_dummy_loc (match t with
@@ -998,6 +999,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Mdate s -> Tint (Core.date_to_timestamp s)
     | Mduration v -> Tint (Core.duration_to_timestamp v)
     | Mtimestamp v -> Tint v
+    | Mbytes v -> Tbytes v
     | Mdotasset (e, i) -> Tdot (map_mterm m ctx e, mk_loc (loc i) (Tvar (map_lident i)))
     | Mdotcontract        _ -> error_not_translated "Mdotcontract"
     | Mtuple              _ -> error_not_translated "Mtuple"

@@ -324,7 +324,8 @@ let eqtypes =
     M.VTaddress        ;
     M.VTrole           ;
     M.VTcurrency       ;
-    M.VTkey            ]
+    M.VTkey            ;
+    M.VTbytes          ]
 
 let cmptypes =
   [ M.VTint            ;
@@ -332,7 +333,8 @@ let cmptypes =
     M.VTdate           ;
     M.VTduration       ;
     M.VTstring         ;
-    M.VTcurrency       ]
+    M.VTcurrency       ;
+    M.VTbytes          ]
 
 let grptypes =
   [ M.VTdate           ;
@@ -576,6 +578,7 @@ let core_types = [
   ("date"     , M.vtdate           );
   ("tez"      , M.vtcurrency       );
   ("duration" , M.vtduration       );
+  ("bytes"    , M.vtbytes          );
 ]
 
 (* -------------------------------------------------------------------- *)
@@ -1217,6 +1220,9 @@ let for_literal (_env : env) (topv : PT.literal loced) : M.bval =
 
   | Ldate d ->
     mk_sp M.vtdate (M.BVdate (Core.string_to_date d))
+
+  | Lbytes s ->
+    mk_sp M.vtbytes (M.BVbytes (s))
 
 (* -------------------------------------------------------------------- *)
 type emode_t = [`Expr | `Formula]

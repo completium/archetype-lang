@@ -28,6 +28,7 @@ let pp_vtyp fmt = function
   | VTrole       -> Format.fprintf fmt "role"
   | VTcurrency   -> Format.fprintf fmt "tez"
   | VTkey        -> Format.fprintf fmt "key"
+  | VTbytes      -> Format.fprintf fmt "bytes"
 
 let pp_container fmt = function
   | Collection -> Format.fprintf fmt "collection"
@@ -80,6 +81,7 @@ let pp_bval fmt (bval : bval) =
     | BVcurrency (c, v) -> Format.fprintf fmt "%a%a" pp_big_int v pp_currency c
     | BVaddress v       -> Format.fprintf fmt "@@%a" pp_str v
     | BVduration v      -> Core.pp_duration_for_printer fmt v
+    | BVbytes s         -> Format.fprintf fmt "0x%a" pp_str s
   in
   pp_struct_poly pp_node fmt bval
 

@@ -19,6 +19,7 @@ let pp_literal fmt (l : literal) =
   | Lbool     b -> Format.fprintf fmt "%s" (if b then "true" else "false")
   | Lduration d -> Format.fprintf fmt "%s" d
   | Ldate     d -> Format.fprintf fmt "%s" d
+  | Lbytes    s -> Format.fprintf fmt "0x%s" s
 
 let pp_expr fmt e =
   match unloc e with
