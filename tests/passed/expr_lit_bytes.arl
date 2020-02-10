@@ -1,4 +1,4 @@
-archetype expr_lit_str
+archetype expr_lit_bytes
 
 variable res : bytes = 0x0
 
