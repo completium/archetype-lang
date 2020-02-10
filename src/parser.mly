@@ -32,7 +32,6 @@
 %token ACCEPT_TRANSFER
 %token ACTION
 %token AND
-%token ANDEQUAL
 %token ARCHETYPE
 %token ASSERT
 %token ASSET
@@ -105,7 +104,6 @@
 %token ON
 %token OPTION
 %token OR
-%token OREQUAL
 %token OTHERWISE
 %token PARTITION
 %token PERCENT
@@ -167,7 +165,7 @@
 %right OTHERWISE
 %right THEN ELSE
 
-%nonassoc COLONEQUAL PLUSEQUAL MINUSEQUAL MULTEQUAL DIVEQUAL ANDEQUAL OREQUAL
+%nonassoc COLONEQUAL PLUSEQUAL MINUSEQUAL MULTEQUAL DIVEQUAL
 
 %right IMPLY
 %nonassoc EQUIV
@@ -609,8 +607,6 @@ effect:
  | MINUSEQUAL  { MinusAssign }
  | MULTEQUAL   { MultAssign }
  | DIVEQUAL    { DivAssign }
- | ANDEQUAL    { AndAssign }
- | OREQUAL     { OrAssign }
 
 %inline branchs:
  | xs=branch+ { xs }

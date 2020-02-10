@@ -1,0 +1,35 @@
+archetype lang_assign
+
+variable i  : int = 0
+variable ra : rational = 0.0
+variable da : date = 2020-01-01
+variable du : duration = 0s
+variable tz : tez = 0tz
+
+action exec () {
+  effect {
+    i += 1;
+    i -= 1;
+    i *= 1;
+    i /= 1;
+
+    ra += 1.0;
+    ra -= 1.0;
+    ra *= 1.0;
+    ra /= 1.0;
+
+    ra += 1;
+    ra -= 1;
+    ra *= 1;
+    ra /= 1;
+
+    du += 1s;
+    du -= 1s;
+
+    da += 1s;
+    da -= 1s;
+
+    tz += 1tz;
+    tz -= 1tz;
+  }
+}

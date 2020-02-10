@@ -493,7 +493,7 @@ let to_model (ast : A.model) : M.model =
         let fp = f p in
         match fp with
         | {node = M.Mvarstorecol asset_name; _} -> M.Mclearasset (unloc asset_name)
-        | {node = M.Mdotasset ({type_ = M.Tasset asset_name ; _} as arg, f); _} -> M.Mclearfield (unloc asset_name, unloc f)
+        | {node = M.Mdotasset ({type_ = M.Tasset asset_name ; _}, f); _} -> M.Mclearfield (unloc asset_name, unloc f)
         | _ -> assert false
       )
 

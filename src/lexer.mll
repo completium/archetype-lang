@@ -164,8 +164,6 @@ rule token = parse
   | "-="                  { MINUSEQUAL }
   | "*="                  { MULTEQUAL }
   | "/="                  { DIVEQUAL }
-  | "&="                  { ANDEQUAL }
-  | "|="                  { OREQUAL }
   | "->"                  { IMPLY }
   | "<->"                 { EQUIV }
   | "="                   { EQUAL }
