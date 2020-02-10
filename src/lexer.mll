@@ -28,6 +28,7 @@
       "break"               , BREAK          ;
       "but"                 , BUT            ;
       "by"                  , BY             ;
+      "call"                , CALL           ;
       "called"              , CALLED         ;
       "collection"          , COLLECTION     ;
       "constant"            , CONSTANT       ;

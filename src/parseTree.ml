@@ -93,7 +93,7 @@ and expr_unloc =
   | Emulticomp    of expr * (comparison_operator loced * expr) list
   | Eapp          of function_ * expr list
   | Emethod       of expr * lident * expr list
-  | Etransfer     of expr * expr
+  | Etransfer     of expr * expr * (lident * expr list) option
   | Erequire      of expr
   | Efailif       of expr
   | Eassign       of assignment_operator * expr * expr

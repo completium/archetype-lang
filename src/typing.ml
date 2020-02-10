@@ -2298,7 +2298,7 @@ let rec for_instruction (env : env) (i : PT.expr) : env * M.instruction =
         env, mki (M.Iassign (type_assigned, op, x, e))
       end
 
-    | Etransfer (e, d) ->
+    | Etransfer (e, d, _c) ->
       let e   = for_expr env ~ety:M.vtcurrency e in
       let to_ = for_expr env ~ety:M.vtrole d in
 

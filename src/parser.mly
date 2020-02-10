@@ -44,6 +44,7 @@
 %token BREAK
 %token BUT
 %token BY
+%token CALL
 %token CALLED
 %token COLLECTION
 %token COLON
@@ -697,8 +698,8 @@ expr_r:
  | x=expr op=assignment_operator_expr y=expr
      { Eassign (op, x, y) }
 
- | TRANSFER x=simple_expr TO y=simple_expr
-     { Etransfer (x, y) }
+ | TRANSFER x=simple_expr TO y=simple_expr c=with_call_r
+     { Etransfer (x, y, c) }
 
  | REQUIRE x=simple_expr
      { Erequire x }
@@ -735,6 +736,10 @@ expr_r:
 order_operation:
  | e1=expr op=loc(ord_operator) e2=expr
      { Eapp ( Foperator op, [e1; e2]) }
+
+%inline with_call_r:
+| { None }
+| CALL id=ident xs=paren(sl(COMMA, simple_expr)) { Some (id, xs) }
 
 order_operations:
   | e=order_operation { e }

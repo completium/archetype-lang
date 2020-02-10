@@ -362,14 +362,15 @@ let rec pp_expr outer pos fmt a =
     in
     (maybe_paren outer e_app pos pp) fmt (e, id, args)
 
-  | Etransfer (x, y) ->
+  | Etransfer (x, y, c) ->
 
-    let pp fmt (x, y) =
-      Format.fprintf fmt "transfer %a to %a"
+    let pp fmt (x, y, c) =
+      Format.fprintf fmt "transfer %a to %a%a"
         pp_simple_expr x
         pp_simple_expr y
+        (pp_option (fun fmt (id, args) -> Format.fprintf fmt " call %a(%a)" pp_id id (pp_list "," pp_simple_expr) args)) c
     in
-    (maybe_paren outer e_default pos pp) fmt (x, y)
+    (maybe_paren outer e_default pos pp) fmt (x, y, c)
 
   | Erequire x ->
 

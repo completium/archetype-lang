@@ -112,6 +112,7 @@ let string_of_token = function
   | COLON           -> "COLON"
   | COLLECTION      -> "COLLECTION"
   | CALLED          -> "CALLED"
+  | CALL            -> "CALL"
   | BY              -> "BY"
   | BUT             -> "BUT"
   | BREAK           -> "BREAK"
@@ -241,6 +242,7 @@ let string_of_symbol = function
   | X (T T_COLON) -> ":"
   | X (T T_COLLECTION) -> "collection"
   | X (T T_CALLED) -> "called"
+  | X (T T_CALL) -> "call"
   | X (T T_BY) -> "by"
   | X (T T_BUT) -> "but"
   | X (T T_BREAK) -> "break"
@@ -365,6 +367,8 @@ let string_of_symbol = function
   | X (N N_snl_COMMA_sig_arg_) -> "a non empty list of signature argument"
   | X (N N_sl_COMMA_sig_arg_) -> "a list of signature argument"
   | X (N N_option_SEMI_COLON_) -> ""
+  | X (N N_snl_COMMA_simple_expr_) -> ""
+  | X (N N_sl_COMMA_simple_expr_) -> ""
 
 let string_of_item (p, i) =
   string_of_symbol (lhs p) ^ " -> "
