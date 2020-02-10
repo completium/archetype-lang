@@ -1,0 +1,12 @@
+archetype expr_lit_str
+
+variable res : bytes = 0x0
+
+action exec () {
+  specification {
+    s0: res = 0x1f;
+  }
+  effect {
+    res := 0x1f
+  }
+}
