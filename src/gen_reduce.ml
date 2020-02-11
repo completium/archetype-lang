@@ -246,11 +246,6 @@ and process_mtern (model : model) (ctx : ctx_red) (s : s_red) (mt : mterm) : mte
     mk_mterm (Mif (c, t, e)) target.type_, {s with subs = subs}
 
   | Mseq l ->
-    let l : mterm list = List.filter (fun (x : mterm) ->
-        match x.node with
-        | Massert _ -> false
-        | _ -> true) l in
-
     begin
       match l with
       | [] -> mt, s

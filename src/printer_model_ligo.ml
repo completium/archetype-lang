@@ -1015,9 +1015,6 @@ let pp_model_internal fmt (model : model) b =
           f d
           const_operations
       | Mbreak -> emit_error UnsupportedBreak
-      | Massert x ->
-        Format.fprintf fmt "assert %a"
-          f x
       | Mreturn x ->
         Format.fprintf fmt "return %a"
           f x

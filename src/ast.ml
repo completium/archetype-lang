@@ -333,7 +333,6 @@ and 'id instruction_node =
   | Irequire of (bool * 'id term_gen)                                         (* $1 ? require : failif *)
   | Itransfer of ('id term_gen * 'id term_gen)                                (* value * dest *)
   | Ibreak
-  | Iassert of 'id term_gen
   | Icall of ('id term_gen option * 'id call_kind * ('id term_arg) list)
   | Ireturn of 'id term_gen
   | Ilabel of 'id
@@ -697,7 +696,6 @@ let map_instr_node f = function
   | Irequire (b, x)     -> Irequire (b, x)
   | Itransfer x         -> Itransfer x
   | Ibreak              -> Ibreak
-  | Iassert x           -> Iassert x
   | Icall (x, id, args) -> Icall (x, id, args)
   | Ireturn x           -> Ireturn x
   | Ilabel x            -> Ilabel x
@@ -760,7 +758,6 @@ let fold_instr f accu instr =
   | Irequire _         -> accu
   | Itransfer _        -> accu
   | Ibreak             -> accu
-  | Iassert _          -> accu
   | Icall _            -> accu
   | Ireturn _          -> accu
   | Ilabel _           -> accu
@@ -779,7 +776,6 @@ let fold_instr_expr fi fe accu instr =
   | Irequire (_, x)     -> fe accu x
   | Itransfer (v, d)    -> fe (fe accu v) d
   | Ibreak              -> accu
-  | Iassert x           -> fe accu x
   | Icall (x, _, args)  -> let accu = Option.map_dfl (fe accu) accu x in List.fold_left (fold_term_arg fe) accu args
   | Ireturn x           -> fe accu x
   | Ilabel x            -> fi accu x
@@ -966,10 +962,6 @@ let fold_map_instr_term gi _ge fi fe (accu : 'a) instr : 'id instruction_gen * '
 
   | Ibreak ->
     gi (Ibreak), accu
-
-  | Iassert x ->
-    let xe, xa = fe accu x in
-    gi (Iassert xe), xa
 
   | Icall (x, id, args) ->
     let xe, xa =

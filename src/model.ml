@@ -146,8 +146,6 @@ type ('id, 'term) mterm_node  =
   | Mfail           of 'id fail_type_gen
   | Mtransfer       of ('term * 'term) (* value * dest *)
   | Mexternal       of ident * 'id * 'term * ('id * 'term) list (* contract_id * id * field_address_id_val * args *)
-  | Mbreak
-  | Massert         of 'term
 (* literals *)
   | Mint            of Core.big_int
   | Muint           of Core.big_int
@@ -247,6 +245,8 @@ type ('id, 'term) mterm_node  =
   | Minttorat       of 'term
 (* functional *)
   | Mfold           of ('id * 'id list * 'term * 'term) (* ident list * collection * body *)
+(* imperative *)
+  | Mbreak
 (* shallowing *)
   | Mshallow        of ident * 'term
   | Munshallow      of ident * 'term
@@ -268,7 +268,7 @@ type ('id, 'term) mterm_node  =
   | Mmem            of ident * 'term * 'term
   | Msubsetof       of ident * 'term * 'term
   | Misempty        of ident * 'term
-(* security predicates *)
+(* set api *)
   | Msetbefore      of 'term
   | Msetat          of ident * 'term
   | Msetunmoved     of 'term
@@ -993,7 +993,6 @@ let cmp_mterm_node
     | Massignstate x1, Massignstate x2                                                 -> cmp x1 x2
     | Mtransfer (v1, d1), Mtransfer (v2, d2)                                           -> cmp v1 v2 && cmp d1 d2
     | Mbreak, Mbreak                                                                   -> true
-    | Massert x1, Massert x2                                                           -> cmp x1 x2
     | Mreturn x1, Mreturn x2                                                           -> cmp x1 x2
     | Mforall (i1, t1, t2, e1), Mforall (i2, t3, t4, e2)                               -> cmpi i1 i2 && cmp_type t1 t3 && Option.cmp cmp t2 t4 && cmp e1 e2
     | Mexists (i1, t1, t2, e1), Mforall (i2, t3, t4, e2)                               -> cmpi i1 i2 && cmp_type t1 t3 && Option.cmp cmp t2 t4 && cmp e1 e2
@@ -1219,7 +1218,6 @@ let map_term_node (f : 'id mterm_gen -> 'id mterm_gen) = function
   | Massignstate x                 -> Massignstate (f x)
   | Mtransfer (v, d)               -> Mtransfer (f v, f d)
   | Mbreak                         -> Mbreak
-  | Massert x                      -> Massert (f x)
   | Mreturn x                      -> Mreturn (f x)
   | Mlabel i                       -> Mlabel i
   | Mshallow (i, x)                -> Mshallow (i, f x)
@@ -1492,7 +1490,6 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Massignstate x                        -> f accu x
   | Mtransfer (v, d)                      -> f (f accu v) d
   | Mbreak                                -> accu
-  | Massert x                             -> f accu x
   | Mreturn x                             -> f accu x
   | Mlabel _                              -> accu
   | Mshallow (_, x)                       -> f accu x
@@ -2041,10 +2038,6 @@ let fold_map_term
 
   | Mbreak ->
     g (Mbreak), accu
-
-  | Massert x ->
-    let xe, xa = f accu x in
-    g (Massert xe), xa
 
   | Mreturn x ->
     let xe, xa = f accu x in

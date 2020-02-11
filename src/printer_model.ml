@@ -751,9 +751,6 @@ let pp_mterm fmt (mt : mterm) =
         f v
         f d
     | Mbreak -> pp_str fmt "break"
-    | Massert x ->
-      Format.fprintf fmt "assert %a"
-        f x
     | Mreturn x ->
       Format.fprintf fmt "return %a"
         f x

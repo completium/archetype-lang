@@ -990,9 +990,6 @@ let pp_model fmt (model : model) =
           f v
           f d
       | Mbreak -> emit_error UnsupportedBreak
-      | Massert x ->
-        Format.fprintf fmt "assert %a"
-          f x
       | Mreturn x ->
         Format.fprintf fmt "return %a"
           f x

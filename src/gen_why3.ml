@@ -1055,7 +1055,6 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Massignstate v -> Tassign (loc_term (Tdoti (gs, "state")), map_mterm m ctx v)
     | Mtransfer (a, t) -> Tapp (loc_term (Tvar "transfer"), [map_mterm m ctx a; map_mterm m ctx t])
     | Mbreak                -> error_not_translated "break;"
-    | Massert             _ -> error_not_translated "Massert"
     | Mreturn             _ -> error_not_translated "Mreturn"
     | Mlabel lbl ->
       begin

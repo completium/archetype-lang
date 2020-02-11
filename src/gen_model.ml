@@ -454,7 +454,6 @@ let to_model (ast : A.model) : M.model =
 
     | A.Itransfer (d, v)        -> M.Mtransfer (f d, f v)
     | A.Ibreak                  -> M.Mbreak
-    | A.Iassert e               -> M.Massert (f e)
     | A.Ireturn e               -> M.Mreturn (f e)
     | A.Ilabel i                -> M.Mlabel i
     | A.Ifail m                 -> M.Mfail (Invalid (f m))

@@ -512,13 +512,6 @@ let rec pp_instruction fmt (i : instruction) =
       in
       (pp_with_paren pp) fmt ()
 
-    | Iassert pt ->
-      let pp fmt pt =
-        Format.fprintf fmt "assert %a"
-          pp_pterm pt
-      in
-      (pp_with_paren pp) fmt pt
-
     | Icall (meth, kind, args) ->
       let pp fmt (meth, kind, args) =
         Format.fprintf fmt "%a%a(%a)"
