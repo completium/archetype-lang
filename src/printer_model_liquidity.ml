@@ -77,6 +77,7 @@ let pp_model fmt (model : model) =
     | Brole       -> Format.fprintf fmt "address"
     | Bcurrency   -> Format.fprintf fmt "tez"
     | Bkey        -> Format.fprintf fmt "key"
+    | Bbytes      -> Format.fprintf fmt "bytes"
   in
 
   let pp_container fmt = function
@@ -1162,6 +1163,9 @@ let pp_model fmt (model : model) =
       | Mrattez (_, _)
       | Minttorat _
       | Mtimestamp _ -> emit_error (Todo)
+      | Mbytes     _ -> emit_error (Todo)
+      | Mclearasset _ -> emit_error (Todo)
+      | Mclearfield _ -> emit_error (Todo)
     in
     f fmt mt
   in

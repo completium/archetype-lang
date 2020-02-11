@@ -31,6 +31,7 @@ let pp_model fmt (model : model) =
     | Brole       -> pp "address"
     | Bcurrency   -> pp "tez"
     | Bkey        -> pp "key"
+    | Bbytes      -> pp "bytes"
   in
 
   let pp_container fmt = function
@@ -152,6 +153,8 @@ let pp_model fmt (model : model) =
           pp_str an
           f i
       | Mremovefield _ -> pp_str fmt "todo_Mremovefield"
+      | Mclearasset _ -> pp_str fmt "Mclearasset"
+      | Mclearfield _ -> pp_str fmt "Mclearfield"
       | Mremoveif _    -> pp_str fmt "todo_Mremoveif"
       | Maddupdate _   -> pp_str fmt "todo_Maddupdate"
       | Mupdate _      -> pp_str fmt "todo_Mupdate"
@@ -271,6 +274,7 @@ let pp_model fmt (model : model) =
       | Mdate           _ -> pp_str fmt "todo_Mdate"
       | Mduration       _ -> pp_str fmt "todo_Mduration"
       | Mtimestamp      _ -> pp_str fmt "todo_Mtimestamp"
+      | Mbytes          _ -> pp_str fmt "todo_Mbytes"
       | Mdotasset (e, i)
       | Mdotcontract (e, i) ->
         Format.fprintf fmt "%a.%a"
