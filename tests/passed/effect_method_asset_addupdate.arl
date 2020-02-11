@@ -1,8 +1,8 @@
-archetype expr_method_asset_remove_asset
+archetype effect_method_asset_addupdate
 
 asset my_asset identified by id {
   id : string;
-  value : int;
+  value : int = 0;
 } initialized by {
   {"id0"; 0};
   {"id1"; 1};
@@ -13,6 +13,6 @@ variable res : int = 0
 
 action exec () {
   effect {
-    my_asset.remove("id0")
+    my_asset.addupdate("id2", {value += 3})
   }
 }

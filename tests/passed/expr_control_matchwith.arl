@@ -10,12 +10,16 @@ enum t =
 variable res : int = 0
 
 action exec () {
+  specification {
+    s0: res = 1;
+  }
   effect {
     var x : t = C3;
-    match x with
-    | C1 | C2 -> res := 0
-    | C3 -> res := 1
-    | _ -> res := 2
-    end
+    res :=
+      match x with
+      | C1 | C2 -> 0
+      | C3 -> 1
+      | _ -> 2
+      end
   }
 }

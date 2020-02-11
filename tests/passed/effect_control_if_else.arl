@@ -1,0 +1,15 @@
+archetype effect_control_if_else
+
+variable res : int = 0
+
+action exec () {
+  specification {
+    s0: res = 1;
+  }
+  effect {
+    if false then
+    res := 2
+    else
+    res := 1
+  }
+}

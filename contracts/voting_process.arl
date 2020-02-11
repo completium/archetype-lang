@@ -38,8 +38,9 @@ action register (v : role) {
   }
 }
 
-transition start () from Created {
-   to Voting when { now > startDate }
+transition start () {
+  from Created
+  to Voting when { now > startDate }
 }
 
 action vote (val : pkey of ballot) {
@@ -58,10 +59,11 @@ action vote (val : pkey of ballot) {
    }
 }
 
-transition bury () from Voting {
+transition bury () {
   require {
     c5 : now > deadline;
   }
+  from Voting
   to Buried
   with effect {
     let nbvotesMax = ballot.max(the.nbvotes) in

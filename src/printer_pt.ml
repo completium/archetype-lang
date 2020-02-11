@@ -362,14 +362,15 @@ let rec pp_expr outer pos fmt a =
     in
     (maybe_paren outer e_app pos pp) fmt (e, id, args)
 
-  | Etransfer (x, y) ->
+  | Etransfer (x, y, c) ->
 
-    let pp fmt (x, y) =
-      Format.fprintf fmt "transfer %a to %a"
+    let pp fmt (x, y, c) =
+      Format.fprintf fmt "transfer %a to %a%a"
         pp_simple_expr x
         pp_simple_expr y
+        (pp_option (fun fmt (id, args) -> Format.fprintf fmt " call %a(%a)" pp_id id (pp_list "," pp_simple_expr) args)) c
     in
-    (maybe_paren outer e_default pos pp) fmt (x, y)
+    (maybe_paren outer e_default pos pp) fmt (x, y, c)
 
   | Erequire x ->
 
@@ -485,12 +486,16 @@ let rec pp_expr outer pos fmt a =
     (maybe_paren outer e_semi_colon pos pp) fmt (x, y)
 
   | Eletin (id, t, e, body, other) ->
-
+    let f =
+      match t with
+      | Some ({pldesc= Ttuple _; _}) -> pp_paren
+      | _ -> pp_neutral
+    in
     let pp fmt (id, t, e, body, other) =
       Format.fprintf fmt "@[@[<hv 0>let%a %a%a =@;<1 2>%a@;<1 0>in@]@ %a%a@]" (*"let %a = %a in %a"*)
         (pp_option (fun fmt _ -> Format.fprintf fmt " some")) other
         pp_id id
-        (pp_option (pp_prefix " : " pp_type)) t
+        (pp_option (pp_prefix " : " (f pp_type))) t
         (pp_expr e_in PLeft) e
         (pp_expr e_in PRight) body
         (pp_option (fun fmt e ->
@@ -502,9 +507,14 @@ let rec pp_expr outer pos fmt a =
   | Evar (id, t, e) ->
 
     let pp fmt (id, t, e) =
+      let f =
+        match t with
+        | Some ({pldesc= Ttuple _; _}) -> pp_paren
+        | _ -> pp_neutral
+      in
       Format.fprintf fmt "var %a%a = %a"
         pp_id id
-        (pp_option (pp_prefix " : " pp_type)) t
+        (pp_option (pp_prefix " : " (f pp_type))) t
         (pp_expr e_in PLeft) e
     in
     (maybe_paren outer e_default pos pp) fmt (id, t, e)
@@ -568,6 +578,7 @@ and pp_literal fmt lit =
   | Lbool     b -> Format.fprintf fmt "%s" (if b then "true" else "false")
   | Lduration d -> Format.fprintf fmt "%s" d
   | Ldate     d -> Format.fprintf fmt "%s" d
+  | Lbytes    s -> Format.fprintf fmt "0x%s" s
 
 and pp_ident_ident fmt a =
   match a with
@@ -949,7 +960,7 @@ let rec pp_declaration fmt { pldesc = e; _ } =
                  )) cod)) (props, code)
 
   | Dtransition (id, args, on, from, props, trs, exts) ->
-    Format.fprintf fmt "transition%a %a%a%a from %a%a"
+    Format.fprintf fmt "transition%a %a%a%a%a"
       pp_extensions exts
       pp_id id
       pp_fun_args args
@@ -958,10 +969,10 @@ let rec pp_declaration fmt { pldesc = e; _ } =
              pp_id a
              pp_type b
          )) on
-      pp_simple_expr from
       (fun fmt (pr, ts) ->
-         Format.fprintf fmt " {@\n  @[%a%a@]@\n}"
+         Format.fprintf fmt " {@\n  @[%a%a%a@]@\n}"
            (pp_do_if (not (is_empty_action_properties_opt props None)) pp_action_properties) pr
+           (fun fmt from -> Format.fprintf fmt "from %a@\n" pp_simple_expr from) from
            (pp_list "@\n" pp_transition) ts) (props, trs)
 
   | Dextension (id, args) ->

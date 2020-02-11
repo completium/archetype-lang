@@ -19,28 +19,32 @@ states =
  | Canceled  with { i3 : balance = 0tz; }
  | Completed with { i4 : balance = 0tz; }
 
-transition abort () from Created {
+transition abort () {
   called by buyer or seller
 
+  from Created
   to Aborted
 }
 
-transition confirm () from Created {
+transition confirm () {
+  from Created
   to Confirmed when { balance = price }
 }
 
-transition[%onlyonce%] complete () from Confirmed {
+transition[%onlyonce%] complete () {
   called by oracle
 
+  from Confirmed
   to Completed when { now < deadline }
   with effect {
     transfer price to seller
   }
 }
 
-transition[%onlyonce%] cancel () from Confirmed {
+transition[%onlyonce%] cancel () {
   called by oracle
 
+  from Confirmed
   to Canceled
   with effect {
     transfer price to buyer

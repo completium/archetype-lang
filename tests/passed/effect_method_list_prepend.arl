@@ -1,11 +1,14 @@
-archetype expr_method_list_prepend
+archetype effect_method_list_prepend
 
 variable res : string list = []
 
 action exec () {
+  specification {
+    s0: res = ["0"; "1"; "2"; "3"];
+  }
   effect {
     var l : string list = ["1"; "2"; "3"];
-    l.prepend("4");
+    l.prepend("0");
     res := l;
   }
 }

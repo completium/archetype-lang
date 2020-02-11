@@ -28,6 +28,7 @@ let pp_vtyp fmt = function
   | VTrole       -> Format.fprintf fmt "role"
   | VTcurrency   -> Format.fprintf fmt "tez"
   | VTkey        -> Format.fprintf fmt "key"
+  | VTbytes      -> Format.fprintf fmt "bytes"
 
 let pp_container fmt = function
   | Collection -> Format.fprintf fmt "collection"
@@ -80,6 +81,7 @@ let pp_bval fmt (bval : bval) =
     | BVcurrency (c, v) -> Format.fprintf fmt "%a%a" pp_big_int v pp_currency c
     | BVaddress v       -> Format.fprintf fmt "@@%a" pp_str v
     | BVduration v      -> Core.pp_duration_for_printer fmt v
+    | BVbytes s         -> Format.fprintf fmt "0x%a" pp_str s
   in
   pp_struct_poly pp_node fmt bval
 
@@ -166,8 +168,9 @@ let to_const = function
   | Cadd          -> "add"
   | Cremove       -> "remove"
   | Cremoveif     -> "removeif"
+  | Cclear        -> "clear"
   | Cupdate       -> "update"
-  | Cadd_update   -> "add_update"
+  | Caddupdate    -> "addupdate"
   | Ccontains     -> "contains"
   | Cnth          -> "nth"
   | Cselect       -> "select"
@@ -818,16 +821,18 @@ let rec pp_sexpr fmt (sexpr : sexpr) =
   | Sany -> pp_str fmt "any"
 
 let pp_transaction_transition fmt (t : transaction) (tr : lident transition) =
-  Format.fprintf fmt "transition %a%a from %a%a {@\n  @[%a%a%a%a%a%a@]@\n}@\n"
+  Format.fprintf fmt "transition %a%a%a {@\n  @[%a%a%a%a%a%a%a@]@\n}@\n"
     pp_id t.name
     pp_fun_args t.args
-    pp_sexpr tr.from
     (pp_option (pp_prefix " on " (fun fmt (x, y) -> Format.fprintf fmt "%a.%a" pp_id x pp_id y))) tr.on
     (pp_option pp_specification) t.specification
     (pp_option (fun fmt -> Format.fprintf fmt "called by %a@\n" pp_rexpr)) t.calledby
     (pp_do_if t.accept_transfer (fun fmt _ -> Format.fprintf fmt "accept transfer@\n")) ()
     (pp_option (pp_list "@\n " (fun fmt -> Format.fprintf fmt "require {@\n  @[%a@]@\n}@\n" pp_label_term))) t.require
     (pp_list "@\n" pp_function) t.functions
+    (fun fmt from -> Format.fprintf fmt " from %a@\n"
+        pp_sexpr from
+    ) tr.from
     (pp_list "@\n" (fun fmt (to_, cond, action) ->
          Format.fprintf fmt "to %a%a@\n%a@\n"
            pp_id to_

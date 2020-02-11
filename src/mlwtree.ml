@@ -33,6 +33,7 @@ type 'i abstract_type =
   | Tydate
   | Tyduration
   | Tytez
+  | Tybytes
   | Tystorage
   | Tytransfers
   | Tyunit
@@ -109,12 +110,14 @@ type ('e,'t,'i) abstract_term =
   | Tplus   of 't * 'e * 'e
   | Tminus  of 't * 'e * 'e
   | Tuminus of 't * 'e
+  | Tmult   of 't * 'e * 'e
   | Tdiv    of 't * 'e * 'e
   | Tmod    of 't * 'e * 'e
   | Tnot    of 'e
   | Tpand   of 'e * 'e
   (* comp *)
   | Teq     of 't * 'e * 'e
+  | Tneq    of 't * 'e * 'e
   | Tlt     of 't * 'e * 'e
   | Tle     of 't * 'e * 'e
   | Tgt     of 't * 'e * 'e
@@ -127,6 +130,7 @@ type ('e,'t,'i) abstract_term =
   (* literals *)
   | Tint    of Core.big_int
   | Taddr   of string
+  | Tbytes  of string
   (* spec *)
   | Tforall of (('t,'i) abstract_univ_decl list) * 'e
   | Texists of (('t,'i) abstract_univ_decl list) * 'e
@@ -245,6 +249,7 @@ let rec map_abstract_type (map_i : 'i1 -> 'i2) = function
   | Tyrole        -> Tyrole
   | Tydate        -> Tydate
   | Tytez         -> Tytez
+  | Tybytes       -> Tybytes
   | Tystorage     -> Tystorage
   | Tyunit        -> Tyunit
   | Tytransfers   -> Tytransfers
@@ -351,11 +356,13 @@ and map_abstract_term
   | Tplus (t,l,r)      -> Tplus (map_t t, map_e l, map_e r)
   | Tminus (t,l,r)     -> Tminus (map_t t, map_e l, map_e r)
   | Tuminus (t,e)      -> Tuminus (map_t t, map_e e)
+  | Tmult (t,l,r)      -> Tmult (map_t t, map_e l, map_e r)
   | Tdiv (t,l,r)       -> Tdiv (map_t t, map_e l, map_e r)
   | Tmod (t,l,r)       -> Tmod (map_t t, map_e l, map_e r)
   | Tnot e             -> Tnot (map_e e)
   | Tpand (e1,e2)      -> Tpand (map_e e1,map_e e2)
   | Teq (t,l,r)        -> Teq (map_t t, map_e l, map_e r)
+  | Tneq (t,l,r)       -> Tneq (map_t t, map_e l, map_e r)
   | Tlt (t,l,r)        -> Tlt (map_t t, map_e l, map_e r)
   | Tle (t,l,r)        -> Tle (map_t t, map_e l, map_e r)
   | Tgt (t,l,r)        -> Tgt (map_t t, map_e l, map_e r)
@@ -366,6 +373,7 @@ and map_abstract_term
   | Tdlte (t,e1,e2,e3) -> Tdlte (map_t t,map_e e1,map_e e2,map_e e3)
   | Tint i             -> Tint i
   | Taddr s            -> Taddr s
+  | Tbytes s           -> Tbytes s
   | Tforall (l,e)      -> Tforall (List.map (map_abstract_univ_decl map_t map_i) l, map_e e)
   | Texists (l,e)      -> Texists (List.map (map_abstract_univ_decl map_t map_i) l, map_e e)
   | Timpl (e1,e2)      -> Timpl (map_e e1, map_e e2)
@@ -598,6 +606,7 @@ let rec compare_abstract_type
   | Tydate, Tydate -> true
   | Tyduration, Tyduration -> true
   | Tytez, Tytez -> true
+  | Tybytes, Tybytes -> true
   | Tystorage, Tystorage -> true
   | Tytransfers, Tytransfers -> true
   | Tyunit, Tyunit -> true
@@ -714,11 +723,13 @@ let compare_abstract_term
   | Tplus (t1,l1,r1), Tplus (t2,l2,r2) -> cmpt t1 t2 && cmpe l1 l2 && cmpe r1 r2
   | Tminus (t1,l1,r1), Tminus (t2,l2,r2) -> cmpt t1 t2 && cmpe l1 l2 && cmpe r1 r2
   | Tuminus (t1,e1), Tuminus (t2,e2) -> cmpt t1 t2 && cmpe e1 e2
+  | Tmult (t1,l1,r1), Tmult (t2,l2,r2) -> cmpt t1 t2 && cmpe l1 l2 && cmpe r1 r2
   | Tdiv (t1,l1,r1), Tdiv (t2,l2,r2) -> cmpt t1 t2 && cmpe l1 l2 && cmpe r1 r2
   | Tmod (t1,l1,r1), Tmod (t2,l2,r2) -> cmpt t1 t2 && cmpe l1 l2 && cmpe r1 r2
   | Tnot e1, Tnot e2 -> cmpe e1 e2
   | Tpand (e1,e2), Tpand (e3,e4) -> cmpe e1 e3 && cmpe e2 e4
   | Teq (t1,l1,r1), Teq (t2,l2,r2) -> cmpt t1 t2 && cmpe l1 l2 && cmpe r1 r2
+  | Tneq (t1,l1,r1), Tneq (t2,l2,r2) -> cmpt t1 t2 && cmpe l1 l2 && cmpe r1 r2
   | Tlt (t1,l1,r1), Tlt (t2,l2,r2) -> cmpt t1 t2 && cmpe l1 l2 && cmpe r1 r2
   | Tle (t1,l1,r1), Tle (t2,l2,r2) -> cmpt t1 t2 && cmpe l1 l2 && cmpe r1 r2
   | Tgt (t1,l1,r1), Tgt (t2,l2,r2) -> cmpt t1 t2 && cmpe l1 l2 && cmpe r1 r2
@@ -729,6 +740,7 @@ let compare_abstract_term
   | Tdlte (t1,e1,e2,e3), Tdlte (t2,f1,f2,f3) -> cmpt t1 t2 && cmpe e1 f1 && cmpe e2 f2 && cmpe e3 f3
   | Tint i1, Tint i2 -> compare i1 i2 = 0
   | Taddr s1, Taddr s2 -> compare s1 s2 = 0
+  | Tbytes s1, Tbytes s2 -> compare s1 s2 = 0
   | Tforall (l1,e1), Tforall (l2,e2) -> List.for_all2 (fun (i1,t1) (i2,t2) ->
       List.for_all2 cmpi i1 i2 && cmpt t1 t2
     ) l1 l2 && cmpe e1 e2

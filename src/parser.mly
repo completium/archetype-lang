@@ -32,7 +32,6 @@
 %token ACCEPT_TRANSFER
 %token ACTION
 %token AND
-%token ANDEQUAL
 %token ARCHETYPE
 %token ASSERT
 %token ASSET
@@ -44,6 +43,7 @@
 %token BREAK
 %token BUT
 %token BY
+%token CALL
 %token CALLED
 %token COLLECTION
 %token COLON
@@ -104,7 +104,6 @@
 %token ON
 %token OPTION
 %token OR
-%token OREQUAL
 %token OTHERWISE
 %token PARTITION
 %token PERCENT
@@ -157,6 +156,7 @@
 %token <string> ADDRESS
 %token <string> DURATION
 %token <string> DATE
+%token <string> BYTES
 
 %nonassoc IN
 
@@ -165,7 +165,7 @@
 %right OTHERWISE
 %right THEN ELSE
 
-%nonassoc COLONEQUAL PLUSEQUAL MINUSEQUAL MULTEQUAL DIVEQUAL ANDEQUAL OREQUAL
+%nonassoc COLONEQUAL PLUSEQUAL MINUSEQUAL MULTEQUAL DIVEQUAL
 
 %right IMPLY
 %nonassoc EQUIV
@@ -538,7 +538,7 @@ on_value:
 
 transition:
   TRANSITION exts=option(extensions) x=ident
-    args=function_args on=on_value? FROM f=expr LBRACE xs=action_properties trs=transitions RBRACE
+    args=function_args on=on_value? LBRACE xs=action_properties FROM f=expr trs=transitions RBRACE
       { Dtransition (x, args, on, f, xs, trs, exts) }
 
 %inline transitems_eq:
@@ -607,8 +607,6 @@ effect:
  | MINUSEQUAL  { MinusAssign }
  | MULTEQUAL   { MultAssign }
  | DIVEQUAL    { DivAssign }
- | ANDEQUAL    { AndAssign }
- | OREQUAL     { OrAssign }
 
 %inline branchs:
  | xs=branch+ { xs }
@@ -697,8 +695,8 @@ expr_r:
  | x=expr op=assignment_operator_expr y=expr
      { Eassign (op, x, y) }
 
- | TRANSFER x=simple_expr TO y=simple_expr
-     { Etransfer (x, y) }
+ | TRANSFER x=simple_expr TO y=simple_expr c=with_call_r
+     { Etransfer (x, y, c) }
 
  | REQUIRE x=simple_expr
      { Erequire x }
@@ -735,6 +733,10 @@ expr_r:
 order_operation:
  | e1=expr op=loc(ord_operator) e2=expr
      { Eapp ( Foperator op, [e1; e2]) }
+
+%inline with_call_r:
+| { None }
+| CALL id=ident xs=paren(sl(COMMA, simple_expr)) { Some (id, xs) }
 
 order_operations:
   | e=order_operation { e }
@@ -822,6 +824,7 @@ literal:
  | x=bool_value { Lbool     x }
  | x=DURATION   { Lduration x }
  | x=DATE       { Ldate     x }
+ | x=BYTES      { Lbytes    x }
 
 %inline bool_value:
  | TRUE  { true }

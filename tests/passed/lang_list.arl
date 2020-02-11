@@ -4,8 +4,10 @@ action exec () {
   effect {
     var l : string list = ["1"; "2"; "3"];
 
+    (* effect *)
     l.prepend("2");
 
+    (* expr *)
     var c : bool   = l.contains("2");
     var l : int    = l.count();
     var n : string = l.nth(0);

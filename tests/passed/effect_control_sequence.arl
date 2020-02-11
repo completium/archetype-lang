@@ -1,0 +1,14 @@
+archetype effect_control_sequence
+
+variable res : int = 0
+
+action exec () {
+  specification {
+    s0: res = 3;
+  }
+  effect {
+    res := 1;
+    res := 2;
+    res := 3;
+  }
+}

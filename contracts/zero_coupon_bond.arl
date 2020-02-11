@@ -18,13 +18,14 @@ states =
   | Repaid    (* issuer has transferred payment to contract *)
   | Collected (* owner has collected payment *)
 
-transition confirm () from Created {
+transition confirm () {
   specification {
     postcondition s1 {
       balance = 0tz
     }
   }
 
+  from Created
   to Confirmed
   when { transferred = price }
   with effect {
@@ -33,15 +34,17 @@ transition confirm () from Created {
   }
 }
 
-transition repay () from Confirmed {
+transition repay () {
   called by issuer
 
+  from Confirmed
   to Repaid when { transferred = payment }
 }
 
-transition collect () from Repaid {
+transition collect () {
   called by owner
 
+  from Repaid
   to Collected
   when { now >= maturity }
   with effect {

@@ -1,0 +1,24 @@
+archetype effect_control_matchwith
+
+enum t =
+  | C1
+  | C2
+  | C3
+  | C4
+  | C5
+
+variable res : int = 0
+
+action exec () {
+  specification {
+    s0: res = 1;
+  }
+  effect {
+    var x : t = C3;
+    match x with
+    | C1 | C2 -> res := 0
+    | C3 -> res := 1
+    | _ -> res := 2
+    end
+  }
+}

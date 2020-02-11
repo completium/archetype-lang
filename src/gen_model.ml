@@ -51,6 +51,7 @@ let to_model (ast : A.model) : M.model =
     | A.VTrole       -> M.Brole
     | A.VTcurrency   -> M.Bcurrency
     | A.VTkey        -> M.Bkey
+    | A.VTbytes      -> M.Bbytes
   in
 
   let to_trtyp = function
@@ -212,6 +213,7 @@ let to_model (ast : A.model) : M.model =
     | A.Plit ({node = BVcurrency (c, i); _}) -> M.Mcurrency (i, to_currency c)
     | A.Plit ({node = BVaddress s; _})       -> M.Maddress s
     | A.Plit ({node = BVduration d; _})      -> M.Mduration d
+    | A.Plit ({node = BVbytes v; _})         -> M.Mbytes v
     | A.Pdot (d, i) ->
       (* handle dot contract too *)
       M.Mdotasset (f d, i)
@@ -487,7 +489,15 @@ let to_model (ast : A.model) : M.model =
         | _ -> assert false
       )
 
-    | A.Icall (Some p, A.Cconst (A.Cadd_update), [AExpr k; AEffect e]) ->
+    | A.Icall (Some p, A.Cconst (A.Cclear), []) -> (
+        let fp = f p in
+        match fp with
+        | {node = M.Mvarstorecol asset_name; _} -> M.Mclearasset (unloc asset_name)
+        | {node = M.Mdotasset ({type_ = M.Tasset asset_name ; _}, f); _} -> M.Mclearfield (unloc asset_name, unloc f)
+        | _ -> assert false
+      )
+
+    | A.Icall (Some p, A.Cconst (A.Caddupdate), [AExpr k; AEffect e]) ->
       let to_op = function
         | `Assign op -> to_assignment_operator op
         | _ -> emit_error CannotConvertToAssignOperator

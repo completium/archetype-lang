@@ -198,11 +198,19 @@ let generate_target model =
     model
     |> remove_add_update
     |> replace_update_by_set
+    |> remove_rational
+    |> replace_date_duration_by_timestamp
     |> generate_storage
     |> replace_declvar_by_letin
+    (* |> remove_enum_matchwith *)
+    |> remove_get_dot
+    |> exec_process
     |> prune_properties
     |> extend_loop_iter
     |> shallow_asset
+    (* |> split_key_values *)
+    |> Gen_transform.assign_loop_label
+    |> Gen_transform.ligo_move_get_in_condition
     |> remove_cmp_bool
     |> generate_api_storage
     |> output

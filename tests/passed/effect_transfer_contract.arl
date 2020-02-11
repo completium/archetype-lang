@@ -1,0 +1,13 @@
+archetype effect_transfer_contract
+
+contract contract_called_sig {
+   action set_value (n : int)
+   action add_value (a : int, b : int)
+}
+variable c : contract_called_sig = @KT1RNB9PXsnp7KMkiMrWNMRzPjuefSWojBAm
+
+action exec() {
+  effect {
+    transfer 1tz to c call set_value(1)
+  }
+}

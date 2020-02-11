@@ -1,4 +1,4 @@
-archetype expr_method_asset_remove_partition
+archetype effect_method_asset_clear_partition
 
 asset o_asset identified by oid {
   oid : string;
@@ -18,6 +18,6 @@ variable res : int = 0
 
 action exec () {
   effect {
-    my_asset.get("id0").col.remove("oid")
+    my_asset.get("id0").col.clear()
   }
 }

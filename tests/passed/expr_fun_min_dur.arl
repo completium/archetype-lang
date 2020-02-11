@@ -3,6 +3,9 @@ archetype expr_fun_min_dur
 variable res : duration = 0s
 
 action exec () {
+  specification {
+    s0: res = 1s;
+  }
   effect {
     res := min(1h, 1s)
   }

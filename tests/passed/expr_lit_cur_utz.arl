@@ -3,6 +3,9 @@ archetype expr_lit_cur_utz
 variable res : tez = 0tz
 
 action exec () {
+  specification {
+    s0: res = 1utz;
+  }
   effect {
     res := 1utz
   }

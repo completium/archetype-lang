@@ -1,4 +1,4 @@
-archetype test_action
+archetype lang_action
 
 constant admin : role = @tz1fakeadress
 

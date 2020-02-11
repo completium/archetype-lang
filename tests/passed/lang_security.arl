@@ -1,0 +1,26 @@
+archetype lang_security
+
+constant admin : role = @tz1aazS5ms5cbGkb6FN1wvWmN7yrMTTcr6wB
+
+asset my_asset identified by id {
+  id : string;
+  value : int;
+}
+
+action exec () {
+  effect {
+    require true
+  }
+}
+
+security {
+  s00 : only_by_role (anyaction, admin);
+  s01 : only_in_action (anyaction, exec);
+  s02 : only_by_role_in_action (anyaction, admin, exec);
+  s03 : not_by_role (anyaction, admin);
+  s04 : not_in_action (anyaction, exec);
+  s05 : not_by_role_in_action (anyaction, admin, exec);
+  s06 : transferred_by (anyaction);
+  s07 : transferred_to (anyaction);
+  s08 : no_storage_fail (anyaction);
+}

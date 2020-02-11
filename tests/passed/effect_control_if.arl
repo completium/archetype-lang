@@ -1,8 +1,11 @@
-archetype expr_control_if
+archetype effect_control_if
 
 variable res : int = 0
 
 action exec () {
+  specification {
+    s0: res = 1;
+  }
   effect {
     if true then
     res := 1

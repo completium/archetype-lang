@@ -1,4 +1,4 @@
-archetype expr_method_asset_update
+archetype effect_method_asset_remove_asset
 
 asset my_asset identified by id {
   id : string;
@@ -13,6 +13,6 @@ variable res : int = 0
 
 action exec () {
   effect {
-    my_asset.update("id1", {value = 3})
+    my_asset.remove("id0")
   }
 }

@@ -23,6 +23,7 @@ let pp_btyp fmt = function
   | Brole       -> Format.fprintf fmt "role"
   | Bcurrency   -> Format.fprintf fmt "tez"
   | Bkey        -> Format.fprintf fmt "key"
+  | Bbytes      -> Format.fprintf fmt "bytes"
 
 let pp_container fmt = function
   | Collection -> Format.fprintf fmt "collection"
@@ -218,6 +219,21 @@ let pp_mterm fmt (mt : mterm) =
           f i
       in
       pp fmt (an, fn, c, i)
+
+    | Mclearasset an ->
+      let pp fmt an =
+        Format.fprintf fmt "clear_%a ()"
+          pp_str an
+      in
+      pp fmt an
+
+    | Mclearfield (an, fn) ->
+      let pp fmt (an, fn) =
+        Format.fprintf fmt "clear_%a_%a ()"
+          pp_str an
+          pp_str fn
+      in
+      pp fmt (an, fn)
 
     | Mremoveif (an, fn, i) ->
       let pp fmt (an, fn, i) =
@@ -675,6 +691,7 @@ let pp_mterm fmt (mt : mterm) =
     | Mdate v -> Core.pp_date fmt v
     | Mduration v -> Core.pp_duration_for_printer fmt v
     | Mtimestamp v -> pp_big_int fmt v
+    | Mbytes v -> Format.fprintf fmt "0x%s" v
     | Mdotasset (e, i)
     | Mdotcontract (e, i) ->
       Format.fprintf fmt "%a (%a)"

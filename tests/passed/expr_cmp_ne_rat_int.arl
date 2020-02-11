@@ -3,6 +3,9 @@ archetype expr_cmp_ne_rat_int
 variable res : bool = false
 
 action exec () {
+  specification {
+    s0: res = true;
+  }
   effect {
     res := 1 div 2 <> 3
   }

@@ -1,0 +1,23 @@
+archetype effect_method_asset_add_partition
+
+asset o_asset identified by oid {
+  oid : string;
+}
+
+asset my_asset identified by id {
+  id     : string;
+  value  : int;
+  col    : o_asset partition;
+} initialized by {
+  {"id0"; 0; []};
+  {"id1"; 1; []};
+  {"id2"; 2; []}
+}
+
+variable res : int = 0
+
+action exec () {
+  effect {
+    my_asset.get("id0").col.add(o_asset.get("oid"))
+  }
+}

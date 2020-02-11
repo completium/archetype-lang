@@ -168,6 +168,7 @@ let pp_model_internal fmt (model : model) b =
     | Brole       -> Format.fprintf fmt "address"
     | Bcurrency   -> Format.fprintf fmt "tez"
     | Bkey        -> Format.fprintf fmt "key"
+    | Bbytes      -> Format.fprintf fmt "bytes"
   in
 
   let pp_container fmt = function
@@ -395,6 +396,21 @@ let pp_model_internal fmt (model : model) b =
             (pp_do_if cond pp_str) str
         in
         pp fmt (an, fn, c, i)
+
+      | Mclearasset (an) ->
+        let pp fmt (an) =
+          Format.fprintf fmt "clear_%a (self)"
+            pp_str an
+        in
+        pp fmt (an)
+
+      | Mclearfield (an, fn) ->
+        let pp fmt (an, fn) =
+          Format.fprintf fmt "clear_%a_%a (self)"
+            pp_str an
+            pp_str fn
+        in
+        pp fmt (an, fn)
 
       | Maddupdate _ -> emit_error (UnsupportedTerm ("add_update"))
       | Mupdate _ -> emit_error (UnsupportedTerm ("update"))
@@ -860,6 +876,7 @@ let pp_model_internal fmt (model : model) b =
       | Mtimestamp v ->
         Format.fprintf fmt "(%a : timestamp)"
           pp_big_int v
+      | Mbytes v -> Format.fprintf fmt "0x%s" v
       | Mdotasset (e, i)
       | Mdotcontract (e, i) ->
         Format.fprintf fmt "%a.%a"

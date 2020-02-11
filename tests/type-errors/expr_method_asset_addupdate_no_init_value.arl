@@ -1,8 +1,8 @@
-archetype expr_method_asset_add_update_asset
+archetype expr_method_asset_addupdate_no_init_value
 
 asset my_asset identified by id {
   id : string;
-  value : int = 0;
+  value : int;
 } initialized by {
   {"id0"; 0};
   {"id1"; 1};
@@ -13,6 +13,6 @@ variable res : int = 0
 
 action exec () {
   effect {
-    my_asset.add_update("id2", {value += 3})
+    my_asset.addupdate("id2", {value += 3})
   }
 }

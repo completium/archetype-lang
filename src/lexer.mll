@@ -28,6 +28,7 @@
       "break"               , BREAK          ;
       "but"                 , BUT            ;
       "by"                  , BY             ;
+      "call"                , CALL           ;
       "called"              , CALLED         ;
       "collection"          , COLLECTION     ;
       "constant"            , CONSTANT       ;
@@ -99,16 +100,16 @@
 }
 
 (* -------------------------------------------------------------------- *)
-let blank   = [' ' '\t' '\r']
-let newline = '\n'
-let digit   = ['0'-'9']
-let dec     = digit+ '.' digit+
-let tz      = digit+ "tz"
-let mtz     = digit+ "mtz"
-let utz     = digit+ "utz"
-let var     = "<%" ['a'-'z' 'A'-'Z'] ['a'-'z' 'A'-'Z' '0'-'9' '_' ]* '>'
-let ident   = (['a'-'z' 'A'-'Z'] | var)  (['a'-'z' 'A'-'Z' '0'-'9' '_' ] | var)*
-let address = '@'['a'-'z' 'A'-'Z' '0'-'9' '_' ]+
+let blank    = [' ' '\t' '\r']
+let newline  = '\n'
+let digit    = ['0'-'9']
+let dec      = digit+ '.' digit+
+let tz       = digit+ "tz"
+let mtz      = digit+ "mtz"
+let utz      = digit+ "utz"
+let var      = "<%" ['a'-'z' 'A'-'Z'] ['a'-'z' 'A'-'Z' '0'-'9' '_' ]* '>'
+let ident    = (['a'-'z' 'A'-'Z'] | var)  (['a'-'z' 'A'-'Z' '0'-'9' '_' ] | var)*
+let address  = '@'['a'-'z' 'A'-'Z' '0'-'9' '_' ]+
 let duration = (digit+ 'w')? (digit+ 'd')? (digit+ 'h')? (digit+ 'm')? (digit+ 's')?
 let day      = digit digit digit digit '-' digit digit '-' digit digit
 let hour     = digit digit ':' digit digit ( ':' digit digit )?
@@ -116,6 +117,7 @@ let timezone = (('+' | '-') digit digit ':' digit digit | 'Z')
 let date     = day ('T' hour ( timezone )?)?
 let accept_transfer = "accept" blank+ "transfer"
 let refuse_transfer = "refuse" blank+ "transfer"
+let bytes    = "0x" ['0'-'9' 'a'-'f' 'A'-'F']+
 
 (* -------------------------------------------------------------------- *)
 rule token = parse
@@ -136,6 +138,7 @@ rule token = parse
   | address as a          { ADDRESS (String.sub a 1 ((String.length a) - 1)) }
   | duration as d         { DURATION (d) }
   | date as d             { DATE (d) }
+  | bytes as v            { BYTES (String.sub v 2 ((String.length v) - 2)) }
 
 
   | "//"                  { comment_line lexbuf; token lexbuf }
@@ -161,8 +164,6 @@ rule token = parse
   | "-="                  { MINUSEQUAL }
   | "*="                  { MULTEQUAL }
   | "/="                  { DIVEQUAL }
-  | "&="                  { ANDEQUAL }
-  | "|="                  { OREQUAL }
   | "->"                  { IMPLY }
   | "<->"                 { EQUIV }
   | "="                   { EQUAL }

@@ -23,19 +23,22 @@ states =
                     (* s4 : transferred_to(seller) = price + penalty; *)
                   }
 
-transition abort () from Created {
+transition abort () {
   called by buyer or seller
 
+  from Created
   to Aborted
 }
 
-transition confirm () from Created {
+transition confirm () {
+  from Created
   to Confirmed when { balance = price + penalty }
 }
 
-transition complete () from Confirmed {
+transition complete () {
   called by oracle
 
+  from Confirmed
   to Completed when { now < deadline }
   with effect {
     transfer price to seller;
@@ -43,9 +46,10 @@ transition complete () from Confirmed {
   }
 }
 
-transition cancel () from Confirmed {
+transition cancel () {
   called by oracle
 
+  from Confirmed
   to Canceled
   with effect {
     transfer penalty to buyer;

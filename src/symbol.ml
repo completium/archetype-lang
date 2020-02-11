@@ -41,7 +41,6 @@ let string_of_token = function
   | PERCENT         -> "PERCENT"
   | PARTITION       -> "PARTITION"
   | OTHERWISE       -> "OTHERWISE"
-  | OREQUAL         -> "OREQUAL"
   | OR              -> "OR"
   | OPTION          -> "OPTION"
   | ON              -> "ON"
@@ -112,6 +111,8 @@ let string_of_token = function
   | COLON           -> "COLON"
   | COLLECTION      -> "COLLECTION"
   | CALLED          -> "CALLED"
+  | CALL            -> "CALL"
+  | BYTES s         -> Printf.sprintf "BYTES(%s)" s
   | BY              -> "BY"
   | BUT             -> "BUT"
   | BREAK           -> "BREAK"
@@ -123,7 +124,6 @@ let string_of_token = function
   | ASSET           -> "ASSET"
   | ASSERT          -> "ASSERT"
   | ARCHETYPE       -> "ARCHETYPE"
-  | ANDEQUAL        -> "ANDEQUAL"
   | AND             -> "AND"
   | ADDRESS s       -> Printf.sprintf "DURATION(%s)" s
   | ACTION          -> "ACTION"
@@ -170,7 +170,6 @@ let string_of_symbol = function
   | X (T T_PERCENT) -> "%"
   | X (T T_PARTITION) -> "partition"
   | X (T T_OTHERWISE) -> "otherwise"
-  | X (T T_OREQUAL) -> "|="
   | X (T T_OR) -> "or"
   | X (T T_OPTION) -> "option"
   | X (T T_ON) -> "on"
@@ -241,6 +240,8 @@ let string_of_symbol = function
   | X (T T_COLON) -> ":"
   | X (T T_COLLECTION) -> "collection"
   | X (T T_CALLED) -> "called"
+  | X (T T_CALL) -> "call"
+  | X (T T_BYTES) -> "bytes"
   | X (T T_BY) -> "by"
   | X (T T_BUT) -> "but"
   | X (T T_BREAK) -> "break"
@@ -252,7 +253,6 @@ let string_of_symbol = function
   | X (T T_ASSET) -> "asset"
   | X (T T_ASSERT) -> "assert"
   | X (T T_ARCHETYPE) -> "archetype"
-  | X (T T_ANDEQUAL) -> "&="
   | X (T T_AND) -> "and"
   | X (T T_ADDRESS) -> "an address"
   | X (T T_ACTION) -> "action"
@@ -365,6 +365,8 @@ let string_of_symbol = function
   | X (N N_snl_COMMA_sig_arg_) -> "a non empty list of signature argument"
   | X (N N_sl_COMMA_sig_arg_) -> "a list of signature argument"
   | X (N N_option_SEMI_COLON_) -> ""
+  | X (N N_snl_COMMA_simple_expr_) -> ""
+  | X (N N_sl_COMMA_simple_expr_) -> ""
 
 let string_of_item (p, i) =
   string_of_symbol (lhs p) ^ " -> "

@@ -324,7 +324,8 @@ let eqtypes =
     M.VTaddress        ;
     M.VTrole           ;
     M.VTcurrency       ;
-    M.VTkey            ]
+    M.VTkey            ;
+    M.VTbytes          ]
 
 let cmptypes =
   [ M.VTint            ;
@@ -332,7 +333,8 @@ let cmptypes =
     M.VTdate           ;
     M.VTduration       ;
     M.VTstring         ;
-    M.VTcurrency       ]
+    M.VTcurrency       ;
+    M.VTbytes          ]
 
 let grptypes =
   [ M.VTdate           ;
@@ -453,8 +455,9 @@ let methods : (string * method_) list =
     ("add"         , mk M.Cadd          `Effect `Total   ([`The         ], None));
     ("remove"      , mk M.Cremove       `Effect `Total   ([`Pk          ], None));
     ("removeif"    , mk M.Cremoveif     `Effect `Total   ([`Pred        ], None));
+    ("clear"       , mk M.Cclear        `Effect `Total   ([             ], None));
     ("update"      , mk M.Cupdate       `Effect `Total   ([`Pk; `Effect ], None));
-    ("add_update"  , mk M.Cadd_update   `Effect `Total   ([`Pk; `Effect ], None));
+    ("addupdate"   , mk M.Caddupdate    `Effect `Total   ([`Pk; `Effect ], None));
     ("contains"    , mk M.Ccontains     `Pure   `Total   ([`Pk          ], Some (`T M.vtbool)));
     ("nth"         , mk M.Cnth          `Pure   `Partial ([`T M.vtint   ], Some (`Asset)));
     ("select"      , mk M.Cselect       `Pure   `Total   ([`Pred        ], Some (`SubColl)));
@@ -576,6 +579,7 @@ let core_types = [
   ("date"     , M.vtdate           );
   ("tez"      , M.vtcurrency       );
   ("duration" , M.vtduration       );
+  ("bytes"    , M.vtbytes          );
 ]
 
 (* -------------------------------------------------------------------- *)
@@ -1217,6 +1221,9 @@ let for_literal (_env : env) (topv : PT.literal loced) : M.bval =
 
   | Ldate d ->
     mk_sp M.vtdate (M.BVdate (Core.string_to_date d))
+
+  | Lbytes s ->
+    mk_sp M.vtbytes (M.BVbytes (s))
 
 (* -------------------------------------------------------------------- *)
 type emode_t = [`Expr | `Formula]
@@ -2298,7 +2305,7 @@ let rec for_instruction (env : env) (i : PT.expr) : env * M.instruction =
         env, mki (M.Iassign (type_assigned, op, x, e))
       end
 
-    | Etransfer (e, d) ->
+    | Etransfer (e, d, _c) ->
       let e   = for_expr env ~ety:M.vtcurrency e in
       let to_ = for_expr env ~ety:M.vtrole d in
 

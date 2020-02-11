@@ -7,6 +7,9 @@ exception Anomaly of string
 
 type lident = ident loced
 
+let pp_neutral pp fmt x =
+  pp fmt x
+
 let pp_str fmt str =
   Format.fprintf fmt "%s" str
 

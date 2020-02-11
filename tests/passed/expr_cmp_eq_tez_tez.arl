@@ -3,6 +3,9 @@ archetype expr_cmp_eq_tez_tez
 variable res : bool = false
 
 action exec () {
+  specification {
+    s0: res = true;
+  }
   effect {
     res := 1tz = 1tz
   }
