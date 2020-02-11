@@ -1094,7 +1094,15 @@ let pp_model_internal fmt (model : model) b =
 
       | Mgetbefore  _ -> emit_error (UnsupportedTerm ("getbefore"))
       | Mgetat      _ -> emit_error (UnsupportedTerm ("getat"))
-      | Mgetfrommap _ -> emit_error (UnsupportedTerm ("getfrommap"))
+
+      | Mgetfrommap (an, k, m) ->
+        let pp fmt (_an, k, m) =
+          Format.fprintf fmt "get_force(%a, %a)"
+            f k
+            f m
+        in
+        pp fmt (an, k, m)
+
       | Mmem        _ -> emit_error (UnsupportedTerm ("mem"))
       | Msubsetof   _ -> emit_error (UnsupportedTerm ("subsetof"))
       | Misempty    _ -> emit_error (UnsupportedTerm ("isempty"))
