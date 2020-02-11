@@ -125,90 +125,30 @@ type sort_kind =
 [@@deriving show {with_path = false}]
 
 type ('id, 'term) mterm_node  =
-  | Mif             of ('term * 'term * 'term option)
-  | Mmatchwith      of 'term * ('id pattern_gen * 'term) list
-  | Mapp            of 'id * 'term list
-  | Maddshallow     of ident * 'term list
-  | Mexternal       of ident * 'id * 'term * ('id * 'term) list (* contract_id * id * field_address_id_val * args *)
-  | Mget            of ident * 'term
-  | Mgetbefore      of ident * 'term
-  | Mgetat          of ident * ident * 'term (* asset_name * label * value *)
-  | Mgetfrommap     of ident * 'term * 'term
-  | Mset            of ident * ident list * 'term * 'term (*asset_name * field_name modified * ... *)
-  | Maddasset       of ident * 'term
-  | Maddfield       of ident * ident * 'term * 'term (* asset_name * field_name * asset instance * item * shalow values*)
-  | Mremoveasset    of ident * 'term
-  | Mremovefield    of ident * ident * 'term * 'term
-  | Mclearasset     of ident
-  | Mclearfield     of ident * ident
-  | Mremoveif       of ident * 'term * 'term
-  | Maddupdate      of ident * 'term * ('id * assignment_operator * 'term) list
-  | Mupdate         of ident * 'term * ('id * assignment_operator * 'term) list
-  | Mselect         of ident * 'term * 'term
-  | Msort           of ident * 'term * ident * sort_kind
-  | Mcontains       of ident * 'term * 'term
-  | Mmem            of ident * 'term * 'term
-  | Msubsetof       of ident * 'term * 'term
-  | Mnth            of ident * 'term * 'term
-  | Mcount          of ident * 'term
-  | Msum            of ident * 'id * 'term
-  | Mmin            of ident * 'id * 'term
-  | Mmax            of ident * 'id * 'term
-  | Mfunmax         of 'term * 'term
-  | Mfunmin         of 'term * 'term
-  | Mfunabs         of 'term
-  | Mhead           of ident * 'term * 'term
-  | Mtail           of ident * 'term * 'term
-  | Mlistprepend    of 'term * 'term
-  | Mlistcontains   of 'term * 'term
-  | Mlistcount      of 'term
-  | Mlistnth        of 'term * 'term
-  | Mfail           of 'id fail_type_gen
-  | Mand            of 'term * 'term
-  | Mor             of 'term * 'term
-  | Mimply          of 'term * 'term
-  | Mequiv          of 'term * 'term
-  | Misempty        of ident * 'term
-  | Mnot            of 'term
-  | Mmulticomp      of 'term * (comparison_operator * 'term) list
-  | Mequal          of 'term * 'term
-  | Mnequal         of 'term * 'term
-  | Mgt             of 'term * 'term
-  | Mge             of 'term * 'term
-  | Mlt             of 'term * 'term
-  | Mle             of 'term * 'term
-  | Mplus           of 'term * 'term
-  | Mminus          of 'term * 'term
-  | Mmult           of 'term * 'term
-  | Mdiv            of 'term * 'term
-  | Mdivrat         of 'term * 'term
-  | Mmodulo         of 'term * 'term
-  | Muplus          of 'term
-  | Muminus         of 'term
-  | Mrateq          of 'term * 'term
-  | Mratcmp         of comparison_operator * 'term * 'term
-  | Mratarith       of rat_arith_op * 'term * 'term
-  | Mrattez         of 'term * 'term
-  | Minttorat       of 'term
-  | Masset          of 'term list
+(* lambda *)
   | Mletin          of 'id list * 'term * type_ option * 'term * 'term option
   | Mdeclvar        of 'id list * type_ option * 'term
-  | Mvarstorevar    of 'id
-  | Mvarstorecol    of 'id
-  | Mvarenumval     of 'id
-  | Mvarlocal       of 'id
-  | Mvarparam       of 'id
-  | Mvarfield       of 'id
-  | Mvarthe
-  | Mvarstate
-  | Mnow
-  | Mtransferred
-  | Mcaller
-  | Mbalance
-  | Msource
-  | Mnone
-  | Msome           of 'term
-  | Marray          of 'term list
+  | Mapp            of 'id * 'term list
+(* assign *)
+  | Massign         of (assignment_operator * type_ * 'id * 'term)
+  | Massignvarstore of (assignment_operator * type_ * 'id * 'term)
+  | Massignfield    of (assignment_operator * type_ * 'term * 'id * 'term)
+  | Massignstate    of 'term
+(* control *)
+  | Mif             of ('term * 'term * 'term option)
+  | Mmatchwith      of 'term * ('id pattern_gen * 'term) list
+  | Mfor            of ('id * 'term * 'term * ident option)
+  | Miter           of ('id * 'term * 'term * 'term * ident option)
+  | Mseq            of 'term list
+  | Mreturn         of 'term
+  | Mlabel          of 'id
+(* effect *)
+  | Mfail           of 'id fail_type_gen
+  | Mtransfer       of ('term * 'term) (* value * dest *)
+  | Mexternal       of ident * 'id * 'term * ('id * 'term) list (* contract_id * id * field_address_id_val * args *)
+  | Mbreak
+  | Massert         of 'term
+(* literals *)
   | Mint            of Core.big_int
   | Muint           of Core.big_int
   | Mbool           of bool
@@ -221,34 +161,114 @@ type ('id, 'term) mterm_node  =
   | Mduration       of Core.duration
   | Mtimestamp      of Core.big_int
   | Mbytes          of string
+(* composite type constructors *)
+  | Mnone
+  | Msome           of 'term
+  | Marray          of 'term list
+  | Mtuple          of 'term list
+  | Masset          of 'term list
+  | Massoc          of 'term * 'term
+(* dot *)
   | Mdotasset       of 'term * 'id
   | Mdotcontract    of 'term * 'id
-  | Mtuple          of 'term list
-  | Massoc          of 'term * 'term
-  | Mfor            of ('id * 'term * 'term * ident option)
-  | Miter           of ('id * 'term * 'term * 'term * ident option)
+(* comparison operators *)
+  | Mequal          of 'term * 'term
+  | Mnequal         of 'term * 'term
+  | Mgt             of 'term * 'term
+  | Mge             of 'term * 'term
+  | Mlt             of 'term * 'term
+  | Mle             of 'term * 'term
+  | Mmulticomp      of 'term * (comparison_operator * 'term) list
+(* arithmetic operators *)
+  | Mand            of 'term * 'term
+  | Mor             of 'term * 'term
+  | Mnot            of 'term
+  | Mplus           of 'term * 'term
+  | Mminus          of 'term * 'term
+  | Mmult           of 'term * 'term
+  | Mdiv            of 'term * 'term
+  | Mmodulo         of 'term * 'term
+  | Muplus          of 'term
+  | Muminus         of 'term
+(* asset api effect *)
+  | Maddasset       of ident * 'term
+  | Maddfield       of ident * ident * 'term * 'term (* asset_name * field_name * asset instance * item * shalow values*)
+  | Mremoveasset    of ident * 'term
+  | Mremovefield    of ident * ident * 'term * 'term
+  | Mclearasset     of ident
+  | Mclearfield     of ident * ident
+  | Mset            of ident * ident list * 'term * 'term (*asset_name * field_name modified * ... *)
+  | Mupdate         of ident * 'term * ('id * assignment_operator * 'term) list
+  | Mremoveif       of ident * 'term * 'term
+  | Maddupdate      of ident * 'term * ('id * assignment_operator * 'term) list
+(* asset api expression *)
+  | Mget            of ident * 'term
+  | Mselect         of ident * 'term * 'term
+  | Msort           of ident * 'term * ident * sort_kind
+  | Mcontains       of ident * 'term * 'term
+  | Mnth            of ident * 'term * 'term
+  | Mcount          of ident * 'term
+  | Msum            of ident * 'id * 'term
+  | Mmin            of ident * 'id * 'term
+  | Mmax            of ident * 'id * 'term
+  | Mhead           of ident * 'term * 'term
+  | Mtail           of ident * 'term * 'term
+(* list api effect *)
+  | Mlistprepend    of 'term * 'term
+(* list api expression *)
+  | Mlistcontains   of 'term * 'term
+  | Mlistcount      of 'term
+  | Mlistnth        of 'term * 'term
+(* builtin functions *)
+  | Mfunmax         of 'term * 'term
+  | Mfunmin         of 'term * 'term
+  | Mfunabs         of 'term
+(* constants *)
+  | Mvarstate
+  | Mnow
+  | Mtransferred
+  | Mcaller
+  | Mbalance
+  | Msource
+(* variables *)
+  | Mvarstorevar    of 'id
+  | Mvarstorecol    of 'id
+  | Mvarenumval     of 'id
+  | Mvarlocal       of 'id
+  | Mvarparam       of 'id
+  | Mvarfield       of 'id
+  | Mvarthe
+(* rational *)
+  | Mdivrat         of 'term * 'term
+  | Mrateq          of 'term * 'term
+  | Mratcmp         of comparison_operator * 'term * 'term
+  | Mratarith       of rat_arith_op * 'term * 'term
+  | Mrattez         of 'term * 'term
+  | Minttorat       of 'term
+(* functional *)
   | Mfold           of ('id * 'id list * 'term * 'term) (* ident list * collection * body *)
-  | Mseq            of 'term list
-  | Massign         of (assignment_operator * type_ * 'id * 'term)
-  | Massignvarstore of (assignment_operator * type_ * 'id * 'term)
-  | Massignfield    of (assignment_operator * type_ * 'term * 'id * 'term)
-  | Massignstate    of 'term
-  | Mtransfer       of ('term * 'term) (* value * dest *)
-  | Mbreak
-  | Massert         of 'term
-  | Mreturn         of 'term
-  | Mlabel          of 'id
-  (* shallowing *)
+(* shallowing *)
   | Mshallow        of ident * 'term
   | Munshallow      of ident * 'term
   | Mlisttocoll     of ident * 'term
-  (* *)
+  | Maddshallow     of ident * 'term list
+(* collection keys *)
   | Mtokeys         of ident * 'term
   | Mcoltokeys      of ident
-  (* quantifiers *)
+(* quantifiers *)
   | Mforall         of 'id * type_ * 'term option * 'term
   | Mexists         of 'id * type_ * 'term option * 'term
-  (* security predicates *)
+(* formula operators *)
+  | Mimply          of 'term * 'term
+  | Mequiv          of 'term * 'term
+(* formula expression*)
+  | Mgetbefore      of ident * 'term
+  | Mgetat          of ident * ident * 'term (* asset_name * label * value *)
+  | Mgetfrommap     of ident * 'term * 'term
+  | Mmem            of ident * 'term * 'term
+  | Msubsetof       of ident * 'term * 'term
+  | Misempty        of ident * 'term
+(* security predicates *)
   | Msetbefore      of 'term
   | Msetat          of ident * 'term
   | Msetunmoved     of 'term
