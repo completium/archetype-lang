@@ -1,4 +1,4 @@
-archetype expr_control_if_else_expr
+archetype effect_control_if_else
 
 variable res : int = 0
 
@@ -7,6 +7,9 @@ action exec () {
     s0: res = 1;
   }
   effect {
-    res := (if true then 1 else 2)
+    if false then
+    res := 2
+    else
+    res := 1
   }
 }

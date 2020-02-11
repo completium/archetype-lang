@@ -1,4 +1,4 @@
-archetype expr_control_for
+archetype effect_control_for
 
 asset myasset identified by str {
   str : string;

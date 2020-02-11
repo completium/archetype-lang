@@ -1,4 +1,4 @@
-archetype fail_instruction
+archetype effect_fail
 
 action exec () {
   effect {

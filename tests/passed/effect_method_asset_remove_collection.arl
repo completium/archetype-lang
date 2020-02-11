@@ -1,4 +1,4 @@
-archetype expr_method_asset_remove_collection
+archetype effect_method_asset_remove_collection
 
 asset o_asset identified by oid {
   oid : string;

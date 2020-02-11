@@ -1,4 +1,4 @@
-archetype expr_control_if
+archetype effect_control_if
 
 variable res : int = 0
 

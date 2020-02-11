@@ -1,4 +1,4 @@
-archetype expr_transfer_simple
+archetype effect_transfer_simple
 
 action exec() {
   effect {

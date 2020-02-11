@@ -1,4 +1,4 @@
-archetype expr_control_iter
+archetype effect_control_iter
 
 variable res : int = 0
 

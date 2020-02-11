@@ -1,4 +1,4 @@
-archetype expr_transfer_contract
+archetype effect_transfer_contract
 
 contract contract_called_sig {
    action set_value (n : int)

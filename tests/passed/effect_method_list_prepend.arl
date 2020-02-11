@@ -1,4 +1,4 @@
-archetype expr_method_list_prepend
+archetype effect_method_list_prepend
 
 variable res : string list = []
 

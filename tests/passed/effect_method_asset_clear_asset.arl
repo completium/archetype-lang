@@ -1,4 +1,4 @@
-archetype expr_method_asset_remove_asset
+archetype effect_method_asset_clear_asset
 
 asset my_asset identified by id {
   id : string;
@@ -13,6 +13,6 @@ variable res : int = 0
 
 action exec () {
   effect {
-    my_asset.remove("id0")
+    my_asset.clear()
   }
 }
