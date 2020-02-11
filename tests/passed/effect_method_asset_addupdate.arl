@@ -1,4 +1,4 @@
-archetype effect_method_asset_add_update
+archetype effect_method_asset_addupdate
 
 asset my_asset identified by id {
   id : string;
@@ -13,6 +13,6 @@ variable res : int = 0
 
 action exec () {
   effect {
-    my_asset.add_update("id2", {value += 3})
+    my_asset.addupdate("id2", {value += 3})
   }
 }

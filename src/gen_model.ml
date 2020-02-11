@@ -497,7 +497,7 @@ let to_model (ast : A.model) : M.model =
         | _ -> assert false
       )
 
-    | A.Icall (Some p, A.Cconst (A.Cadd_update), [AExpr k; AEffect e]) ->
+    | A.Icall (Some p, A.Cconst (A.Caddupdate), [AExpr k; AEffect e]) ->
       let to_op = function
         | `Assign op -> to_assignment_operator op
         | _ -> emit_error CannotConvertToAssignOperator
