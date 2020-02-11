@@ -1421,7 +1421,7 @@ let map_mterm_model (f : ('id, 't) ctx_model_gen -> mterm -> mterm) (model : mod
 let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_gen) : 'a =
   let opt f accu x = match x with | Some v -> f accu v | None -> accu in
   match term.node with
-    (* lambda *)
+  (* lambda *)
   | Mletin (_, a, _, b, o)                -> let tmp = f (f accu a) b in Option.map_dfl (f tmp) tmp o
   | Mdeclvar (_, _, v)                    -> f accu v
   | Mapp (_, args)                        -> List.fold_left f accu args
@@ -1587,6 +1587,52 @@ let fold_map_term
     (term : 'id mterm_gen) : 'id mterm_gen * 'a =
 
   match term.node with
+  (* lambda *)
+
+  | Mletin (idd, i, t, b, o) ->
+    let ie, ia = f accu i in
+    let be, ba = f ia b in
+    let oe, oa =
+      match o with
+      | Some o -> f ba o |> (fun (x, y) -> (Some x, y))
+      | None -> (None, ba) in
+    g (Mletin (idd, ie, t, be, oe)), oa
+
+  | Mdeclvar (ids, t, v) ->
+    let ve, va = f accu v in
+    g (Mdeclvar (ids, t, ve)), va
+
+  | Mapp (id, args) ->
+    let ((argss, argsa) : 'c list * 'a) =
+      List.fold_left
+        (fun (pterms, accu) x ->
+           let p, accu = f accu x in
+           pterms @ [p], accu) ([], accu) args
+    in
+    g (Mapp (id, argss)), argsa
+
+
+  (* assign *)
+
+  | Massign (op, t, id, x) ->
+    let xe, xa = f accu x in
+    g (Massign (op, t, id, xe)), xa
+
+  | Massignvarstore (op, t, id, x) ->
+    let xe, xa = f accu x in
+    g (Massignvarstore (op, t, id, xe)), xa
+
+  | Massignfield (op, t, a, fi, x) ->
+    let xe, xa = f accu x in
+    g (Massignfield (op, t, a, fi, xe)), xa
+
+  | Massignstate x ->
+    let xe, xa = f accu x in
+    g (Massignstate xe), xa
+
+
+  (* control *)
+
   | Mif (c, t, e) ->
     let ce, ca = f accu c in
     let ti, ta = f ca t in
@@ -1608,180 +1654,35 @@ let fold_map_term
            (p, ia)::ps, accu) ([], ea) l
       |> (fun (x, y) -> (List.rev x, y))
     in
-
     g (Mmatchwith (ee, pse)), psa
 
-  | Mapp (id, args) ->
-    let ((argss, argsa) : 'c list * 'a) =
-      List.fold_left
+  | Mfor (i, c, b, lbl) ->
+    let ce, ca = f accu c in
+    let bi, ba = f ca b in
+    g (Mfor (i, ce, bi, lbl)), ba
+
+  | Miter (i, a, b, c, lbl) ->
+    let ae, aa = f accu a in
+    let be, ba = f aa b in
+    let ce, ca = f ba c in
+    g (Miter (i, ae, be, ce, lbl)), ca
+
+  | Mseq is ->
+    let (isi, isa) = List.fold_left
         (fun (pterms, accu) x ->
            let p, accu = f accu x in
-           pterms @ [p], accu) ([], accu) args
-    in
-    g (Mapp (id, argss)), argsa
+           pterms @ [p], accu) ([], accu) is in
+    g (Mseq isi), isa
 
-  | Maddshallow (id, args) ->
-    let ((argss, argsa) : 'c list * 'a) =
-      List.fold_left
-        (fun (pterms, accu) x ->
-           let p, accu = f accu x in
-           pterms @ [p], accu) ([], accu) args
-    in
-    g (Maddshallow (id, argss)), argsa
+  | Mreturn x ->
+    let xe, xa = f accu x in
+    g (Mreturn xe), xa
 
-  | Msetbefore e ->
-    let ee, ea = f accu e in
-    g (Msetbefore ee), ea
+  | Mlabel i ->
+    g (Mlabel i), accu
 
-  | Msetat (lbl, e) ->
-    let ee, ea = f accu e in
-    g (Msetat (lbl, ee)), ea
 
-  | Msetunmoved e ->
-    let ee, ea = f accu e in
-    g (Msetunmoved ee), ea
-
-  | Msetadded e ->
-    let ee, ea = f accu e in
-    g (Msetadded ee), ea
-
-  | Msetremoved e ->
-    let ee, ea = f accu e in
-    g (Msetremoved ee), ea
-
-  | Msetiterated e ->
-    let ee, ea = f accu e in
-    g (Msetiterated ee), ea
-
-  | Msettoiterate e ->
-    let ee, ea = f accu e in
-    g (Msettoiterate ee), ea
-
-  | Mexternal (t, func, c, args) ->
-    let ce, ca = f accu c in
-    let (lp, la) = List.fold_left
-        (fun (pterms, accu) (id, x) ->
-           let p, accu = f accu x in
-           pterms @ [id, p], accu) ([], ca) args in
-    g (Mexternal (t, func, ce, lp)), la
-
-  | Mget (c, k) ->
-    let ke, ka = f accu k in
-    g (Mget (c, ke)), ka
-
-  | Mgetbefore (c, k) ->
-    let ke, ka = f accu k in
-    g (Mgetbefore (c, ke)), ka
-
-  | Mgetat (c, d, k) ->
-    let ke, ka = f accu k in
-    g (Mgetat (c, d, ke)), ka
-
-  | Mgetfrommap (an, k, c) ->
-    let ke, ka = f accu k in
-    let ce, ca = f ka c in
-    g (Mgetfrommap (an, ke, ce)), ca
-
-  | Mset (c, l, k, v) ->
-    let ke, ka = f accu k in
-    let ve, va = f ka v in
-    g (Mset (c, l, ke, ve)), va
-
-  | Maddasset (an, i) ->
-    let ie, ia = f accu i in
-    g (Maddasset (an, ie)), ia
-
-  | Maddfield (an, fn, c, i) ->
-    let ce, ca = f accu c in
-    let ie, ia = f ca i in
-    g (Maddfield (an, fn, ce, ie)), ia
-
-  | Mremoveasset (an, i) ->
-    let ie, ia = f accu i in
-    g (Mremoveasset (an, ie)), ia
-
-  | Mremovefield (an, fn, c, i) ->
-    let ce, ca = f accu c in
-    let ie, ia = f ca i in
-    g (Mremovefield (an, fn, ce, ie)), ia
-
-  | Mclearasset an ->
-    g (Mclearasset an), accu
-
-  | Mclearfield (an, fn) ->
-    g (Mclearfield (an, fn)), accu
-
-  | Mremoveif (an, fn, i) ->
-    let ie, ia = f accu i in
-    let fe, fa = f ia fn in
-    g (Mremoveif (an, fe, ie)), fa
-
-  | Maddupdate (an, k, l) ->
-    let ke, ka = f accu k in
-    let le, la =
-      List.fold_left
-        (fun (ps, accu) (id, op, v) ->
-           let va, accu = f accu v in
-           (id, op, va)::ps, accu) ([], ka) l
-      |> (fun (x, y) -> (List.rev x, y))
-    in
-    g (Mupdate (an, ke, le)), la
-
-  | Mupdate (an, k, l) ->
-    let ke, ka = f accu k in
-    let le, la =
-      List.fold_left
-        (fun (ps, accu) (id, op, v) ->
-           let va, accu = f accu v in
-           (id, op, va)::ps, accu) ([], ka) l
-      |> (fun (x, y) -> (List.rev x, y))
-    in
-    g (Mupdate (an, ke, le)), la
-
-  | Mselect (an, c, p) ->
-    let ce, ca = f accu c in
-    let pe, pa = f ca p in
-    g (Mselect (an, ce, pe)), pa
-
-  | Msort (an, c, fi, k) ->
-    let ce, ca = f accu c in
-    g (Msort (an, ce, fi, k)), ca
-
-  | Mcontains (an, c, i) ->
-    let ce, ca = f accu c in
-    let ie, ia = f ca i in
-    g (Mcontains (an, ce, ie)), ia
-
-  | Mmem (an, c, i) ->
-    let ce, ca = f accu c in
-    let ie, ia = f ca i in
-    g (Mmem (an, ce, ie)), ia
-
-  | Msubsetof (an, c, i) ->
-    let ce, ca = f accu c in
-    let ie, ia = f ca i in
-    g (Msubsetof (an, ce, ie)), ia
-
-  | Mnth (an, c, i) ->
-    let ce, ca = f accu c in
-    let ie, ia = f ca i in
-    g (Mnth (an, ce, ie)), ia
-
-  | Mcount (an, c) ->
-    let ce, ca = f accu c in
-    g (Mcount (an, ce)), ca
-
-  | Msum (an, fd, c) ->
-    let ce, ca = f accu c in
-    g (Msum (an, fd, ce)), ca
-
-  | Mmin (an, fd, c) ->
-    let ce, ca = f accu c in
-    g (Mmin (an, fd, ce)), ca
-
-  | Mmax (an, fd, c) ->
-    let ce, ca = f accu c in
-    g (Mmax (an, fd, ce)), ca
+  (* effect *)
 
   | Mfail ft ->
     let fte, fta =
@@ -1793,87 +1694,98 @@ let fold_map_term
     in
     g (Mfail fte), fta
 
-  | Mfunmin (l, r) ->
-    let le, la = f accu l in
-    let re, ra = f la r in
-    g (Mfunmin (le, re)), ra
+  | Mtransfer (v, d) ->
+    let ve, va = f accu v in
+    let de, da = f va d in
+    g (Mtransfer (ve, de)), da
 
-  | Mfunmax (l, r) ->
-    let le, la = f accu l in
-    let re, ra = f la r in
-    g (Mfunmax (le, re)), ra
-
-  | Mfunabs a ->
-    let ae, aa = f accu a in
-    g (Mfunabs ae), aa
-
-  | Mhead (an, c, i) ->
+  | Mexternal (t, func, c, args) ->
     let ce, ca = f accu c in
-    let ie, ia = f ca i in
-    g (Mhead (an, ce, ie)), ia
+    let (lp, la) = List.fold_left
+        (fun (pterms, accu) (id, x) ->
+           let p, accu = f accu x in
+           pterms @ [id, p], accu) ([], ca) args in
+    g (Mexternal (t, func, ce, lp)), la
 
-  | Mtail (an, c, i) ->
-    let ce, ca = f accu c in
-    let ie, ia = f ca i in
-    g (Mtail (an, ce, ie)), ia
 
-  | Mlistprepend (c, a) ->
-    let ce, ca = f accu c in
-    let ae, aa = f ca a in
-    g (Mlistprepend (ce, ae)), aa
+  (* literals *)
 
-  | Mlistcontains (c, a) ->
-    let ce, ca = f accu c in
-    let ae, aa = f ca a in
-    g (Mlistcontains (ce, ae)), aa
+  | Mint v ->
+    g (Mint v), accu
 
-  | Mlistcount c ->
-    let ce, ca = f accu c in
-    g (Mlistcount ce), ca
+  | Muint v ->
+    g (Muint v), accu
 
-  | Mlistnth (c, a) ->
-    let ce, ca = f accu c in
-    let ae, aa = f ca a in
-    g (Mlistnth (ce, ae)), aa
+  | Mbool v ->
+    g (Mbool v), accu
 
-  | Mand (l, r) ->
-    let le, la = f accu l in
-    let re, ra = f la r in
-    g (Mand (le, re)), ra
+  | Menum v ->
+    g (Menum v), accu
 
-  | Mor (l, r) ->
-    let le, la = f accu l in
-    let re, ra = f la r in
-    g (Mor (le, re)), ra
+  | Mrational (n, d) ->
+    g (Mrational (n, d)), accu
 
-  | Mimply (l, r) ->
-    let le, la = f accu l in
-    let re, ra = f la r in
-    g (Mimply (le, re)), ra
+  | Mstring v ->
+    g (Mstring v), accu
 
-  | Mequiv  (l, r) ->
-    let le, la = f accu l in
-    let re, ra = f la r in
-    g (Mequiv (le, re)), ra
+  | Mcurrency (v, c) ->
+    g (Mcurrency (v, c)), accu
 
-  | Misempty  (l, r) ->
-    let re, ra = f accu r in
-    g (Misempty (l, re)), ra
+  | Maddress v ->
+    g (Maddress v), accu
 
-  | Mmulticomp (e, l) ->
+  | Mdate v ->
+    g (Mdate v), accu
+
+  | Mduration v ->
+    g (Mduration v), accu
+
+  | Mtimestamp v ->
+    g (Mtimestamp v), accu
+
+  | Mbytes v ->
+    g (Mbytes v), accu
+
+
+  (* composite type constructors *)
+
+  | Mnone ->
+    g Mnone, accu
+
+  | Msome v ->
+    let ve, va = f accu v in
+    g (Msome ve), va
+
+  | Marray l ->
+    let le, la = fold_map_term_list f accu l in
+    g (Marray le), la
+
+  | Mtuple l ->
+    let le, la = fold_map_term_list f accu l in
+    g (Mtuple le), la
+
+  | Masset l ->
+    let le, la = fold_map_term_list f accu l in
+    g (Masset le), la
+
+  | Massoc (k, v) ->
+    let ke, ka = f accu k in
+    let ve, va = f ka v in
+    g (Massoc (ke, ve)), va
+
+
+  (* dot *)
+
+  | Mdotasset (e, i) ->
     let ee, ea = f accu e in
-    let (le, la) =
-      List.fold_left
-        (fun (ps, accu) (p, i) ->
-           let ia, accu = f accu i in
-           [(p, ia)] @ ps, accu) ([], ea) l
-    in
+    g (Mdotasset (ee, i)), ea
 
-    g (Mmulticomp (ee, le)), la
-
-  | Mnot e ->
+  | Mdotcontract (e, i) ->
     let ee, ea = f accu e in
-    g (Mnot ee), ea
+    g (Mdotcontract (ee, i)), ea
+
+
+  (* comparison operators *)
 
   | Mequal (l, r) ->
     let le, la = f accu l in
@@ -1905,6 +1817,33 @@ let fold_map_term
     let re, ra = f la r in
     g (Mle (le, re)), ra
 
+  | Mmulticomp (e, l) ->
+    let ee, ea = f accu e in
+    let (le, la) =
+      List.fold_left
+        (fun (ps, accu) (p, i) ->
+           let ia, accu = f accu i in
+           [(p, ia)] @ ps, accu) ([], ea) l
+    in
+    g (Mmulticomp (ee, le)), la
+
+
+  (* arithmetic operators *)
+
+  | Mand (l, r) ->
+    let le, la = f accu l in
+    let re, ra = f la r in
+    g (Mand (le, re)), ra
+
+  | Mor (l, r) ->
+    let le, la = f accu l in
+    let re, ra = f la r in
+    g (Mor (le, re)), ra
+
+  | Mnot e ->
+    let ee, ea = f accu e in
+    g (Mnot ee), ea
+
   | Mplus (l, r) ->
     let le, la = f accu l in
     let re, ra = f la r in
@@ -1925,11 +1864,6 @@ let fold_map_term
     let re, ra = f la r in
     g (Mdiv (le, re)), ra
 
-  | Mdivrat (l, r) ->
-    let le, la = f accu l in
-    let re, ra = f la r in
-    g (Mdivrat (le, re)), ra
-
   | Mmodulo (l, r) ->
     let le, la = f accu l in
     let re, ra = f la r in
@@ -1942,6 +1876,212 @@ let fold_map_term
   | Muminus e ->
     let ee, ea = f accu e in
     g (Muminus ee), ea
+
+
+  (* asset api effect *)
+
+  | Maddasset (an, i) ->
+    let ie, ia = f accu i in
+    g (Maddasset (an, ie)), ia
+
+  | Maddfield (an, fn, c, i) ->
+    let ce, ca = f accu c in
+    let ie, ia = f ca i in
+    g (Maddfield (an, fn, ce, ie)), ia
+
+  | Mremoveasset (an, i) ->
+    let ie, ia = f accu i in
+    g (Mremoveasset (an, ie)), ia
+
+  | Mremovefield (an, fn, c, i) ->
+    let ce, ca = f accu c in
+    let ie, ia = f ca i in
+    g (Mremovefield (an, fn, ce, ie)), ia
+
+  | Mclearasset an ->
+    g (Mclearasset an), accu
+
+  | Mclearfield (an, fn) ->
+    g (Mclearfield (an, fn)), accu
+
+  | Mset (c, l, k, v) ->
+    let ke, ka = f accu k in
+    let ve, va = f ka v in
+    g (Mset (c, l, ke, ve)), va
+
+  | Mupdate (an, k, l) ->
+    let ke, ka = f accu k in
+    let le, la =
+      List.fold_left
+        (fun (ps, accu) (id, op, v) ->
+           let va, accu = f accu v in
+           (id, op, va)::ps, accu) ([], ka) l
+      |> (fun (x, y) -> (List.rev x, y))
+    in
+    g (Mupdate (an, ke, le)), la
+
+  | Mremoveif (an, fn, i) ->
+    let ie, ia = f accu i in
+    let fe, fa = f ia fn in
+    g (Mremoveif (an, fe, ie)), fa
+
+  | Maddupdate (an, k, l) ->
+    let ke, ka = f accu k in
+    let le, la =
+      List.fold_left
+        (fun (ps, accu) (id, op, v) ->
+           let va, accu = f accu v in
+           (id, op, va)::ps, accu) ([], ka) l
+      |> (fun (x, y) -> (List.rev x, y))
+    in
+    g (Mupdate (an, ke, le)), la
+
+
+  (* asset api expression *)
+
+  | Mget (c, k) ->
+    let ke, ka = f accu k in
+    g (Mget (c, ke)), ka
+
+  | Mselect (an, c, p) ->
+    let ce, ca = f accu c in
+    let pe, pa = f ca p in
+    g (Mselect (an, ce, pe)), pa
+
+  | Msort (an, c, fi, k) ->
+    let ce, ca = f accu c in
+    g (Msort (an, ce, fi, k)), ca
+
+  | Mcontains (an, c, i) ->
+    let ce, ca = f accu c in
+    let ie, ia = f ca i in
+    g (Mcontains (an, ce, ie)), ia
+
+  | Mnth (an, c, i) ->
+    let ce, ca = f accu c in
+    let ie, ia = f ca i in
+    g (Mnth (an, ce, ie)), ia
+
+  | Mcount (an, c) ->
+    let ce, ca = f accu c in
+    g (Mcount (an, ce)), ca
+
+  | Msum (an, fd, c) ->
+    let ce, ca = f accu c in
+    g (Msum (an, fd, ce)), ca
+
+  | Mmin (an, fd, c) ->
+    let ce, ca = f accu c in
+    g (Mmin (an, fd, ce)), ca
+
+  | Mmax (an, fd, c) ->
+    let ce, ca = f accu c in
+    g (Mmax (an, fd, ce)), ca
+
+  | Mhead (an, c, i) ->
+    let ce, ca = f accu c in
+    let ie, ia = f ca i in
+    g (Mhead (an, ce, ie)), ia
+
+  | Mtail (an, c, i) ->
+    let ce, ca = f accu c in
+    let ie, ia = f ca i in
+    g (Mtail (an, ce, ie)), ia
+
+
+  (* list api effect *)
+
+  | Mlistprepend (c, a) ->
+    let ce, ca = f accu c in
+    let ae, aa = f ca a in
+    g (Mlistprepend (ce, ae)), aa
+
+
+  (* list api expression *)
+
+  | Mlistcontains (c, a) ->
+    let ce, ca = f accu c in
+    let ae, aa = f ca a in
+    g (Mlistcontains (ce, ae)), aa
+
+  | Mlistcount c ->
+    let ce, ca = f accu c in
+    g (Mlistcount ce), ca
+
+  | Mlistnth (c, a) ->
+    let ce, ca = f accu c in
+    let ae, aa = f ca a in
+    g (Mlistnth (ce, ae)), aa
+
+
+  (* builtin functions *)
+
+  | Mfunmin (l, r) ->
+    let le, la = f accu l in
+    let re, ra = f la r in
+    g (Mfunmin (le, re)), ra
+
+  | Mfunmax (l, r) ->
+    let le, la = f accu l in
+    let re, ra = f la r in
+    g (Mfunmax (le, re)), ra
+
+  | Mfunabs a ->
+    let ae, aa = f accu a in
+    g (Mfunabs ae), aa
+
+
+  (* constants *)
+
+  | Mvarstate ->
+    g Mvarstate, accu
+
+  | Mnow ->
+    g Mnow, accu
+
+  | Mtransferred ->
+    g Mtransferred, accu
+
+  | Mcaller ->
+    g Mcaller, accu
+
+  | Mbalance ->
+    g Mbalance, accu
+
+  | Msource ->
+    g Msource, accu
+
+
+  (* variables *)
+
+  | Mvarstorevar v ->
+    g (Mvarstorevar v), accu
+
+  | Mvarstorecol v ->
+    g (Mvarstorecol v), accu
+
+  | Mvarenumval v ->
+    g (Mvarenumval v), accu
+
+  | Mvarfield v ->
+    g (Mvarfield v), accu
+
+  | Mvarlocal v ->
+    g (Mvarlocal v), accu
+
+  | Mvarparam v ->
+    g (Mvarparam v), accu
+
+  | Mvarthe ->
+    g Mvarthe, accu
+
+
+  (* rational *)
+
+  | Mdivrat (l, r) ->
+    let le, la = f accu l in
+    let re, ra = f la r in
+    g (Mdivrat (le, re)), ra
 
   | Mrateq (l, r) ->
     let le, la = f accu l in
@@ -1967,168 +2107,46 @@ let fold_map_term
     let ee, ea = f accu e in
     g (Minttorat ee), ea
 
-  | Masset l ->
-    let le, la = fold_map_term_list f accu l in
-    g (Masset le), la
 
-  | Mletin (idd, i, t, b, o) ->
-    let ie, ia = f accu i in
-    let be, ba = f ia b in
-    let oe, oa =
-      match o with
-      | Some o -> f ba o |> (fun (x, y) -> (Some x, y))
-      | None -> (None, ba) in
-    g (Mletin (idd, ie, t, be, oe)), oa
-
-  | Mdeclvar (ids, t, v) ->
-    let ve, va = f accu v in
-    g (Mdeclvar (ids, t, ve)), va
-
-  | Mvarstorevar v ->
-    g (Mvarstorevar v), accu
-
-  | Mvarstorecol v ->
-    g (Mvarstorecol v), accu
-
-  | Mvarenumval v ->
-    g (Mvarenumval v), accu
-
-  | Mvarfield v ->
-    g (Mvarfield v), accu
-
-  | Mvarlocal v ->
-    g (Mvarlocal v), accu
-
-  | Mvarparam v ->
-    g (Mvarparam v), accu
-
-  | Mvarthe ->
-    g Mvarthe, accu
-
-  | Marray l ->
-    let le, la = fold_map_term_list f accu l in
-    g (Marray le), la
-
-  | Mint v                   -> g (Mint v), accu
-  | Muint v                  -> g (Muint v), accu
-  | Mbool v                  -> g (Mbool v), accu
-  | Menum v                  -> g (Menum v), accu
-  | Mrational (n, d)         -> g (Mrational (n, d)), accu
-  | Mstring v                -> g (Mstring v), accu
-  | Mcurrency (v, c)         -> g (Mcurrency (v, c)), accu
-  | Maddress v               -> g (Maddress v), accu
-  | Mdate v                  -> g (Mdate v), accu
-  | Mduration v              -> g (Mduration v), accu
-  | Mtimestamp v             -> g (Mtimestamp v), accu
-  | Mbytes v                 -> g (Mbytes v), accu
-
-  | Mdotasset (e, i) ->
-    let ee, ea = f accu e in
-    g (Mdotasset (ee, i)), ea
-
-  | Mdotcontract (e, i) ->
-    let ee, ea = f accu e in
-    g (Mdotcontract (ee, i)), ea
-
-  | Mvarstate ->
-    g Mvarstate, accu
-
-  | Mnow ->
-    g Mnow, accu
-
-  | Mtransferred ->
-    g Mtransferred, accu
-
-  | Mcaller ->
-    g Mcaller, accu
-
-  | Mbalance ->
-    g Mbalance, accu
-
-  | Msource ->
-    g Msource, accu
-
-  | Mnone ->
-    g Mnone, accu
-
-  | Msome v ->
-    let ve, va = f accu v in
-    g (Msome ve), va
-
-  | Mtuple l ->
-    let le, la = fold_map_term_list f accu l in
-    g (Mtuple le), la
-
-  | Massoc (k, v) ->
-    let ke, ka = f accu k in
-    let ve, va = f ka v in
-    g (Massoc (ke, ve)), va
-
-  | Mfor (i, c, b, lbl) ->
-    let ce, ca = f accu c in
-    let bi, ba = f ca b in
-    g (Mfor (i, ce, bi, lbl)), ba
-
-  | Miter (i, a, b, c, lbl) ->
-    let ae, aa = f accu a in
-    let be, ba = f aa b in
-    let ce, ca = f ba c in
-    g (Miter (i, ae, be, ce, lbl)), ca
+  (* functional *)
 
   | Mfold (i, is, c, b) ->
     let ce, ca = f accu c in
     let bi, ba = f ca b in
     g (Mfold (i, is, ce, bi)), ba
 
-  | Mseq is ->
-    let (isi, isa) = List.fold_left
-        (fun (pterms, accu) x ->
-           let p, accu = f accu x in
-           pterms @ [p], accu) ([], accu) is in
-    g (Mseq isi), isa
 
-  | Massign (op, t, id, x) ->
-    let xe, xa = f accu x in
-    g (Massign (op, t, id, xe)), xa
-
-  | Massignvarstore (op, t, id, x) ->
-    let xe, xa = f accu x in
-    g (Massignvarstore (op, t, id, xe)), xa
-
-  | Massignfield (op, t, a, fi, x) ->
-    let xe, xa = f accu x in
-    g (Massignfield (op, t, a, fi, xe)), xa
-
-  | Massignstate x ->
-    let xe, xa = f accu x in
-    g (Massignstate xe), xa
-
-  | Mtransfer (v, d) ->
-    let ve, va = f accu v in
-    let de, da = f va d in
-    g (Mtransfer (ve, de)), da
+  (* imperative *)
 
   | Mbreak ->
     g (Mbreak), accu
 
-  | Mreturn x ->
-    let xe, xa = f accu x in
-    g (Mreturn xe), xa
 
-  | Mlabel i ->
-    g (Mlabel i), accu
+  (* shallowing *)
 
   | Mshallow (i, x) ->
     let xe, xa = f accu x in
     g (Mshallow (i,xe)), xa
 
+  | Munshallow (i, x) ->
+    let xe, xa = f accu x in
+    g (Munshallow (i, xe)), xa
+
   | Mlisttocoll (i, x) ->
     let xe, xa = f accu x in
     g (Mlisttocoll (i,xe)), xa
 
-  | Munshallow (i, x) ->
-    let xe, xa = f accu x in
-    g (Munshallow (i, xe)), xa
+  | Maddshallow (id, args) ->
+    let ((argss, argsa) : 'c list * 'a) =
+      List.fold_left
+        (fun (pterms, accu) x ->
+           let p, accu = f accu x in
+           pterms @ [p], accu) ([], accu) args
+    in
+    g (Maddshallow (id, argss)), argsa
+
+
+  (* collection keys *)
 
   | Mtokeys (an, x) ->
     let xe, xa = f accu x in
@@ -2136,6 +2154,9 @@ let fold_map_term
 
   | Mcoltokeys (an) ->
     g (Mcoltokeys (an)), accu
+
+
+  (* quantifiers *)
 
   | Mforall (id, t, Some s, e) ->
     let ee, ea = f accu e in
@@ -2154,6 +2175,81 @@ let fold_map_term
   | Mexists (id, t, None, e) ->
     let ee, ea = f accu e in
     g (Mexists (id, t, None, ee)), ea
+
+
+  (* formula operators *)
+
+  | Mimply (l, r) ->
+    let le, la = f accu l in
+    let re, ra = f la r in
+    g (Mimply (le, re)), ra
+
+  | Mequiv  (l, r) ->
+    let le, la = f accu l in
+    let re, ra = f la r in
+    g (Mequiv (le, re)), ra
+
+
+  (* formula expression*)
+
+  | Mgetbefore (c, k) ->
+    let ke, ka = f accu k in
+    g (Mgetbefore (c, ke)), ka
+
+  | Mgetat (c, d, k) ->
+    let ke, ka = f accu k in
+    g (Mgetat (c, d, ke)), ka
+
+  | Mgetfrommap (an, k, c) ->
+    let ke, ka = f accu k in
+    let ce, ca = f ka c in
+    g (Mgetfrommap (an, ke, ce)), ca
+
+  | Mmem (an, c, i) ->
+    let ce, ca = f accu c in
+    let ie, ia = f ca i in
+    g (Mmem (an, ce, ie)), ia
+
+  | Msubsetof (an, c, i) ->
+    let ce, ca = f accu c in
+    let ie, ia = f ca i in
+    g (Msubsetof (an, ce, ie)), ia
+
+  | Misempty  (l, r) ->
+    let re, ra = f accu r in
+    g (Misempty (l, re)), ra
+
+
+  (* set api *)
+
+  | Msetbefore e ->
+    let ee, ea = f accu e in
+    g (Msetbefore ee), ea
+
+  | Msetat (lbl, e) ->
+    let ee, ea = f accu e in
+    g (Msetat (lbl, ee)), ea
+
+  | Msetunmoved e ->
+    let ee, ea = f accu e in
+    g (Msetunmoved ee), ea
+
+  | Msetadded e ->
+    let ee, ea = f accu e in
+    g (Msetadded ee), ea
+
+  | Msetremoved e ->
+    let ee, ea = f accu e in
+    g (Msetremoved ee), ea
+
+  | Msetiterated e ->
+    let ee, ea = f accu e in
+    g (Msetiterated ee), ea
+
+  | Msettoiterate e ->
+    let ee, ea = f accu e in
+    g (Msettoiterate ee), ea
+
 
 let fold_left g l accu = List.fold_left (fun accu x -> g x accu) accu l
 
