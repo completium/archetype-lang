@@ -1148,7 +1148,7 @@ let map_term_node (f : 'id mterm_gen -> 'id mterm_gen) = function
   | Mreturn x                      -> Mreturn (f x)
   | Mlabel i                       -> Mlabel i
   (* effect *)
-  | Mfail (ft)                     -> Mfail (ft)
+  | Mfail v                        -> Mfail (match v with | Invalid v -> Invalid (f v) | _ -> v)
   | Mtransfer (v, d)               -> Mtransfer (f v, f d)
   | Mexternal (t, func, c, args)   -> Mexternal (t, func, f c, List.map (fun (id, t) -> (id, f t)) args)
   (* literals *)
@@ -1419,96 +1419,30 @@ let map_mterm_model (f : ('id, 't) ctx_model_gen -> mterm -> mterm) (model : mod
   map_mterm_model_gen () f model
 
 let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_gen) : 'a =
+  let opt f accu x = match x with | Some v -> f accu v | None -> accu in
   match term.node with
-  | Mif (c, t, e)                         ->
-    begin
-      let accu = f (f accu c) t in
-      match e with
-      | Some v -> f accu v
-      | None -> accu
-    end
-  | Mmatchwith (e, l)                     -> List.fold_left (fun accu (_, a) -> f accu a) (f accu e) l
-  | Mapp (_, args)                        -> List.fold_left f accu args
-  | Maddshallow (_, args)                 -> List.fold_left f accu args
-  | Msetbefore    e                       -> f accu e
-  | Msetat   (_, e)                       -> f accu e
-  | Msetunmoved   e                       -> f accu e
-  | Msetadded     e                       -> f accu e
-  | Msetremoved   e                       -> f accu e
-  | Msetiterated  e                       -> f accu e
-  | Msettoiterate e                       -> f accu e
-  | Mexternal (_, _, c, args)             -> List.fold_left (fun accu (_, t) -> f accu t) (f accu c) args
-  | Mget (_, k)                           -> f accu k
-  | Mgetbefore (_, k)                     -> f accu k
-  | Mgetat (_, _, k)                      -> f accu k
-  | Mgetfrommap (_, k, c)                 -> f (f accu k) c
-  | Mset (_, _, k, v)                     -> f (f accu v) k
-  | Maddasset (_, i)                      -> f accu i
-  | Maddfield (_, _, c, i)                -> f (f accu c) i
-  | Mremoveasset (_, i)                   -> f accu i
-  | Mremovefield (_, _, c, i)             -> f (f accu c) i
-  | Mclearasset _                         -> accu
-  | Mclearfield _                         -> accu
-  | Mremoveif (_, fn, c)                  -> f (f accu fn) c
-  | Maddupdate (_, k, l)                  -> List.fold_left (fun accu (_, _, v) -> f accu v) (f accu k) l
-  | Mupdate (_, k, l)                     -> List.fold_left (fun accu (_, _, v) -> f accu v) (f accu k) l
-  | Mselect (_, c, p)                     -> f (f accu c) p
-  | Msort (_, c, _, _)                    -> f accu c
-  | Mcontains (_, c, i)                   -> f (f accu c) i
-  | Mmem (_, c, i)                        -> f (f accu c) i
-  | Msubsetof (_, c, i)                   -> f (f accu c) i
-  | Mnth (_, c, i)                        -> f (f accu c) i
-  | Mcount (_, c)                         -> f accu c
-  | Msum (_, _, c)                        -> f accu c
-  | Mmin (_, _, c)                        -> f accu c
-  | Mmax (_, _, c)                        -> f accu c
-  | Mfail _                               -> accu
-  | Mfunmax (l, r)                        -> f (f accu l) r
-  | Mfunabs a                             -> f accu a
-  | Mfunmin (l, r)                        -> f (f accu l) r
-  | Mhead (_, c, i)                       -> f (f accu c) i
-  | Mtail (_, c, i)                       -> f (f accu c) i
-  | Mlistprepend (c, a)                   -> f (f accu c) a
-  | Mlistcontains (c, a)                  -> f (f accu c) a
-  | Mlistcount c                          -> f accu c
-  | Mlistnth (c, a)                       -> f (f accu c) a
-  | Mand (l, r)                           -> f (f accu l) r
-  | Mor (l, r)                            -> f (f accu l) r
-  | Mimply (l, r)                         -> f (f accu l) r
-  | Mequiv  (l, r)                        -> f (f accu l) r
-  | Misempty  (_, r)                      -> f accu r
-  | Mnot e                                -> f accu e
-  | Mmulticomp (e, l)                     -> List.fold_left (fun accu (_, a) -> f accu a) (f accu e) l
-  | Mequal (l, r)                         -> f (f accu l) r
-  | Mnequal (l, r)                        -> f (f accu l) r
-  | Mgt (l, r)                            -> f (f accu l) r
-  | Mge (l, r)                            -> f (f accu l) r
-  | Mlt (l, r)                            -> f (f accu l) r
-  | Mle (l, r)                            -> f (f accu l) r
-  | Mplus (l, r)                          -> f (f accu l) r
-  | Mminus (l, r)                         -> f (f accu l) r
-  | Mmult (l, r)                          -> f (f accu l) r
-  | Mdiv (l, r)                           -> f (f accu l) r
-  | Mdivrat (l, r)                        -> f (f accu l) r
-  | Mmodulo (l, r)                        -> f (f accu l) r
-  | Muplus e                              -> f accu e
-  | Muminus e                             -> f accu e
-  | Mratarith (_, l, r)                   -> f (f accu l) r
-  | Mrateq (l, r)                         -> f (f accu l) r
-  | Mratcmp (_, l, r)                     -> f (f accu l) r
-  | Mrattez (c, t)                        -> f (f accu c) t
-  | Minttorat e                           -> f accu e
-  | Masset l                              -> List.fold_left f accu l
+    (* lambda *)
   | Mletin (_, a, _, b, o)                -> let tmp = f (f accu a) b in Option.map_dfl (f tmp) tmp o
   | Mdeclvar (_, _, v)                    -> f accu v
-  | Mvarstorevar _                        -> accu
-  | Mvarstorecol _                        -> accu
-  | Mvarenumval _                         -> accu
-  | Mvarfield _                           -> accu
-  | Mvarlocal _                           -> accu
-  | Mvarparam _                           -> accu
-  | Mvarthe                               -> accu
-  | Marray l                              -> List.fold_left f accu l
+  | Mapp (_, args)                        -> List.fold_left f accu args
+  (* assign *)
+  | Massign (_, _, _, e)                  -> f accu e
+  | Massignvarstore (_, _, _, e)          -> f accu e
+  | Massignfield (_, _, _, _, e)          -> f accu e
+  | Massignstate x                        -> f accu x
+  (* control *)
+  | Mif (c, t, e)                         -> opt f (f (f accu c) t) e
+  | Mmatchwith (e, l)                     -> List.fold_left (fun accu (_, a) -> f accu a) (f accu e) l
+  | Mfor (_, c, b, _)                     -> f (f accu c) b
+  | Miter (_, a, b, c, _)                 -> f (f (f accu a) b) c
+  | Mseq is                               -> List.fold_left f accu is
+  | Mreturn x                             -> f accu x
+  | Mlabel _                              -> accu
+  (* effect *)
+  | Mfail v                               -> (match v with | Invalid v -> f accu v | _ -> accu)
+  | Mtransfer (v, d)                      -> f (f accu v) d
+  | Mexternal (_, _, c, args)             -> List.fold_left (fun accu (_, t) -> f accu t) (f accu c) args
+  (* literals *)
   | Mint _                                -> accu
   | Muint _                               -> accu
   | Mbool _                               -> accu
@@ -1521,39 +1455,124 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mduration _                           -> accu
   | Mtimestamp _                          -> accu
   | Mbytes _                              -> accu
+  (* composite type constructors *)
+  | Mnone                                 -> accu
+  | Msome v                               -> f accu v
+  | Marray l                              -> List.fold_left f accu l
+  | Mtuple l                              -> List.fold_left f accu l
+  | Masset l                              -> List.fold_left f accu l
+  | Massoc (k, v)                         -> f (f accu k) v
+  (* dot *)
   | Mdotasset (e, _)                      -> f accu e
   | Mdotcontract (e, _)                   -> f accu e
+  (* comparison operators *)
+  | Mequal (l, r)                         -> f (f accu l) r
+  | Mnequal (l, r)                        -> f (f accu l) r
+  | Mgt (l, r)                            -> f (f accu l) r
+  | Mge (l, r)                            -> f (f accu l) r
+  | Mlt (l, r)                            -> f (f accu l) r
+  | Mle (l, r)                            -> f (f accu l) r
+  | Mmulticomp (e, l)                     -> List.fold_left (fun accu (_, a) -> f accu a) (f accu e) l
+  (* arithmetic operators *)
+  | Mand (l, r)                           -> f (f accu l) r
+  | Mor (l, r)                            -> f (f accu l) r
+  | Mnot e                                -> f accu e
+  | Mplus (l, r)                          -> f (f accu l) r
+  | Mminus (l, r)                         -> f (f accu l) r
+  | Mmult (l, r)                          -> f (f accu l) r
+  | Mdiv (l, r)                           -> f (f accu l) r
+  | Mmodulo (l, r)                        -> f (f accu l) r
+  | Muplus e                              -> f accu e
+  | Muminus e                             -> f accu e
+  (* asset api effect *)
+  | Maddasset (_, i)                      -> f accu i
+  | Maddfield (_, _, c, i)                -> f (f accu c) i
+  | Mremoveasset (_, i)                   -> f accu i
+  | Mremovefield (_, _, c, i)             -> f (f accu c) i
+  | Mclearasset _                         -> accu
+  | Mclearfield _                         -> accu
+  | Mset (_, _, k, v)                     -> f (f accu v) k
+  | Mupdate (_, k, l)                     -> List.fold_left (fun accu (_, _, v) -> f accu v) (f accu k) l
+  | Mremoveif (_, fn, c)                  -> f (f accu fn) c
+  | Maddupdate (_, k, l)                  -> List.fold_left (fun accu (_, _, v) -> f accu v) (f accu k) l
+  (* asset api expression *)
+  | Mget (_, k)                           -> f accu k
+  | Mselect (_, c, p)                     -> f (f accu c) p
+  | Msort (_, c, _, _)                    -> f accu c
+  | Mcontains (_, c, i)                   -> f (f accu c) i
+  | Mnth (_, c, i)                        -> f (f accu c) i
+  | Mcount (_, c)                         -> f accu c
+  | Msum (_, _, c)                        -> f accu c
+  | Mmin (_, _, c)                        -> f accu c
+  | Mmax (_, _, c)                        -> f accu c
+  | Mhead (_, c, i)                       -> f (f accu c) i
+  | Mtail (_, c, i)                       -> f (f accu c) i
+  (* list api effect *)
+  | Mlistprepend (c, a)                   -> f (f accu c) a
+  (* list api expression *)
+  | Mlistcontains (c, a)                  -> f (f accu c) a
+  | Mlistcount c                          -> f accu c
+  | Mlistnth (c, a)                       -> f (f accu c) a
+  (* builtin functions *)
+  | Mfunmax (l, r)                        -> f (f accu l) r
+  | Mfunmin (l, r)                        -> f (f accu l) r
+  | Mfunabs a                             -> f accu a
+  (* constants *)
   | Mvarstate                             -> accu
   | Mnow                                  -> accu
   | Mtransferred                          -> accu
   | Mcaller                               -> accu
   | Mbalance                              -> accu
   | Msource                               -> accu
-  | Mnone                                 -> accu
-  | Msome v                               -> f accu v
-  | Mtuple l                              -> List.fold_left f accu l
-  | Massoc (k, v)                         -> f (f accu k) v
-  | Mfor (_, c, b, _)                     -> f (f accu c) b
-  | Miter (_, a, b, c, _)                 -> f (f (f accu a) b) c
+  (* variables *)
+  | Mvarstorevar _                        -> accu
+  | Mvarstorecol _                        -> accu
+  | Mvarenumval _                         -> accu
+  | Mvarlocal _                           -> accu
+  | Mvarparam _                           -> accu
+  | Mvarfield _                           -> accu
+  | Mvarthe                               -> accu
+  (* rational *)
+  | Mdivrat (l, r)                        -> f (f accu l) r
+  | Mrateq (l, r)                         -> f (f accu l) r
+  | Mratcmp (_, l, r)                     -> f (f accu l) r
+  | Mratarith (_, l, r)                   -> f (f accu l) r
+  | Mrattez (c, t)                        -> f (f accu c) t
+  | Minttorat e                           -> f accu e
+  (* functional *)
   | Mfold (_, _, c, b)                    -> f (f accu c) b
-  | Mseq is                               -> List.fold_left f accu is
-  | Massign (_, _, _, e)                  -> f accu e
-  | Massignvarstore (_, _, _, e)          -> f accu e
-  | Massignfield (_, _, _, _, e)          -> f accu e
-  | Massignstate x                        -> f accu x
-  | Mtransfer (v, d)                      -> f (f accu v) d
+  (* imperative *)
   | Mbreak                                -> accu
-  | Mreturn x                             -> f accu x
-  | Mlabel _                              -> accu
+  (* shallowing *)
   | Mshallow (_, x)                       -> f accu x
-  | Mlisttocoll (_, x)                    -> f accu x
   | Munshallow (_, x)                     -> f accu x
+  | Mlisttocoll (_, x)                    -> f accu x
+  | Maddshallow (_, args)                 -> List.fold_left f accu args
+  (* collection keys *)
   | Mtokeys (_, x)                        -> f accu x
   | Mcoltokeys (_)                        -> accu
-  | Mforall (_, _, Some s, e)             -> f (f accu s) e
-  | Mforall (_, _, None, e)               -> f accu e
-  | Mexists (_, _, Some s, e)             -> f (f accu s) e
-  | Mexists (_, _, None, e)               -> f accu e
+  (* quantifiers *)
+  | Mforall (_, _, s, e)                  -> f (opt f accu s) e
+  | Mexists (_, _, s, e)                  -> f (opt f accu s) e
+  (* formula operators *)
+  | Mimply (l, r)                         -> f (f accu l) r
+  | Mequiv  (l, r)                        -> f (f accu l) r
+  (* formula expression*)
+  | Mgetbefore (_, k)                     -> f accu k
+  | Mgetat (_, _, k)                      -> f accu k
+  | Mgetfrommap (_, k, c)                 -> f (f accu k) c
+  | Mmem (_, c, i)                        -> f (f accu c) i
+  | Msubsetof (_, c, i)                   -> f (f accu c) i
+  | Misempty  (_, r)                      -> f accu r
+  (* set api *)
+  | Msetbefore    e                       -> f accu e
+  | Msetat   (_, e)                       -> f accu e
+  | Msetunmoved   e                       -> f accu e
+  | Msetadded     e                       -> f accu e
+  | Msetremoved   e                       -> f accu e
+  | Msetiterated  e                       -> f accu e
+  | Msettoiterate e                       -> f accu e
+
 
 let fold_map_term_list f acc l : 'term list * 'a =
   List.fold_left
