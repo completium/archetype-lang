@@ -1,0 +1,72 @@
+archetype lang_formula_asset_api
+
+asset my_asset identified by id {
+  id : string;
+  value : int;
+} initialized by {
+  {"id0"; 0};
+  {"id1"; 1};
+  {"id2"; 2}
+}
+
+action exec () {
+
+  specification {
+    (* quantifiers *)
+    q1: forall x : int, x = x;
+    q2: forall x in my_asset, x.value = x.value;
+    q3: exists x : int, x = x;
+    q4: exists x in my_asset, x.value = x.value;
+
+    (* formula operators *)
+    o1: true -> true;  (* Mimply *)
+    o2: true <-> true; (* Mequiv *)
+
+    (* formula expression*)
+    f1: let some a = before.my_asset.get("id0")  in true otherwise false; (* Mgetbefore *)
+    f2: let some a = at(lbl).my_asset.get("id0") in true otherwise false; (* Mgetat *)
+
+    (*f3: my_asset.mem("id0");*)     (* Mmem *)
+    f4: my_asset.subsetof(my_asset); (* Msubsetof *)
+    f5: my_asset.isempty();          (* Misempty *)
+
+    (* set api *)
+    s1: before.my_asset.isempty();       (* Msetbefore *)
+    s2: at(lbl).my_asset.isempty();      (* Msetat *)
+    s3: my_asset.unmoved.isempty();      (* Msetunmoved *)
+    s4: my_asset.added.isempty();        (* Msetadded *)
+    s5: my_asset.removed.isempty();      (* Msetremoved *)
+  }
+
+  effect {
+    my_asset.add({"id3"; 3});
+    label lbl;
+    my_asset.add({"id4"; 3});
+  }
+}
+
+
+action exec2 () {
+  specification {
+    postcondition p1 {
+      true
+      invariant for loop {
+         iterated.isempty() (* Msetiterated *)
+      }
+    }
+
+    postcondition p1 {
+      true
+      invariant for loop {
+         toiterate.isempty() (* Msettoiterate *)
+      }
+    }
+  }
+
+  effect {
+    var res : int = 0;
+    for:loop i in my_asset do
+      res += 1;
+    done
+  }
+}
