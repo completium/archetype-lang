@@ -275,20 +275,19 @@ type ('id, 'term) mterm_node  =
   | Msetiterated    of 'term
   | Msettoiterate   of 'term
   (* formula asset collection methods *)
-  (* | Mapifget *)
   | Mapifget        of ident * 'term * 'term (* asset_name * asset collection * value *)
   | Mapifsubsetof   of ident * 'term * 'term
   | Mapifisempty    of ident * 'term
-  (* | Mapifselect
-  | Mapifsort
-  | Mapifcontains
-  | Mapifnth
-  | Mapifcount
-  | Mapifsum
-  | Mapifmax
-  | Mapifmin
-  | Mapifhead
-  | Mapiftail      *)
+  | Mapifselect     of ident * 'term * 'term
+  | Mapifsort       of ident * 'term * ident * sort_kind
+  | Mapifcontains   of ident * 'term * 'term
+  | Mapifnth        of ident * 'term * 'term
+  | Mapifcount      of ident * 'term
+  | Mapifsum        of ident * 'id * 'term
+  | Mapifmax        of ident * 'id * 'term
+  | Mapifmin        of ident * 'id * 'term
+  | Mapifhead       of ident * 'term * 'term
+  | Mapiftail       of ident * 'term * 'term
 [@@deriving show {with_path = false}]
 
 and 'id mterm_gen = {
@@ -1052,6 +1051,16 @@ let cmp_mterm_node
     | Mapifget (a1, c1, k1), Mapifget (a2, c2, k2)                                     -> cmp_ident a1 a2 && cmp c1 c2 && cmp k1 k2
     | Mapifsubsetof (an1, c1, i1), Mapifsubsetof (an2, c2, i2)                         -> cmp_ident an1 an2 && cmp c1 c2 && cmp i1 i2
     | Mapifisempty (l1, r1), Mapifisempty (l2, r2)                                     -> cmp_ident l1 l2 && cmp r1 r2
+    | Mapifselect (an1, c1, p1), Mapifselect (an2, c2, p2)                             -> cmp_ident an1 an2 && cmp c1 c2 && cmp p1 p2
+    | Mapifsort (an1, c1, fn1, k1), Mapifsort (an2, c2, fn2, k2)                       -> cmp_ident an1 an2 && cmp c1 c2 && cmp_ident fn1 fn2 && k1 = k2
+    | Mapifcontains (an1, c1, i1), Mapifcontains (an2, c2, i2)                         -> cmp_ident an1 an2 && cmp c1 c2 && cmp i1 i2
+    | Mapifnth (an1, c1, i1), Mapifnth (an2, c2, i2)                                   -> cmp_ident an1 an2 && cmp c1 c2 && cmp i1 i2
+    | Mapifcount (an1, c1), Mapifcount (an2, c2)                                       -> cmp_ident an1 an2 && cmp c1 c2
+    | Mapifsum (an1, fd1, c1), Mapifsum (an2, fd2, c2)                                 -> cmp_ident an1 an2 && cmpi fd1 fd2 && cmp c1 c2
+    | Mapifmin (an1, fd1, c1), Mapifmin (an2, fd2, c2)                                 -> cmp_ident an1 an2 && cmpi fd1 fd2 && cmp c1 c2
+    | Mapifmax (an1, fd1, c1), Mapifmax (an2, fd2, c2)                                 -> cmp_ident an1 an2 && cmpi fd1 fd2 && cmp c1 c2
+    | Mapifhead (an1, c1, i1), Mapifhead (an2, c2, i2)                                 -> cmp_ident an1 an2 && cmp c1 c2 && cmp i1 i2
+    | Mapiftail (an1, c1, i1), Mapiftail (an2, c2, i2)                                 -> cmp_ident an1 an2 && cmp c1 c2 && cmp i1 i2
     (* *)
     | _ -> false
   with
@@ -1298,7 +1307,16 @@ let map_term_node (f : 'id mterm_gen -> 'id mterm_gen) = function
   | Mapifget (a, c, k)             -> Mapifget (a, f c, f k)
   | Mapifsubsetof (an, c, i)       -> Mapifsubsetof (an, f c, f i)
   | Mapifisempty (l, r)            -> Mapifisempty (l, f r)
-
+  | Mapifselect (an, c, p)         -> Mapifselect (an, f c, f p)
+  | Mapifsort (an, c, fn, k)       -> Mapifsort (an, f c, fn, k)
+  | Mapifcontains (an, c, i)       -> Mapifcontains (an, f c, f i)
+  | Mapifnth (an, c, i)            -> Mapifnth (an, f c, f i)
+  | Mapifcount (an, c)             -> Mapifcount (an, f c)
+  | Mapifsum (an, fd, c)           -> Mapifsum (an, fd, f c)
+  | Mapifmin (an, fd, c)           -> Mapifmin (an, fd, f c)
+  | Mapifmax (an, fd, c)           -> Mapifmax (an, fd, f c)
+  | Mapifhead (an, c, i)           -> Mapifhead (an, f c, f i)
+  | Mapiftail (an, c, i)           -> Mapiftail (an, f c, f i)
 
 let map_gen_mterm g f (i : 'id mterm_gen) : 'id mterm_gen =
   {
@@ -1591,7 +1609,16 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mapifget (_, c, k)                    -> f (f accu c) k
   | Mapifsubsetof (_, c, i)               -> f (f accu c) i
   | Mapifisempty  (_, r)                  -> f accu r
-
+  | Mapifselect (_, c, p)                 -> f (f accu c) p
+  | Mapifsort (_, c, _, _)                -> f accu c
+  | Mapifcontains (_, c, i)               -> f (f accu c) i
+  | Mapifnth (_, c, i)                    -> f (f accu c) i
+  | Mapifcount (_, c)                     -> f accu c
+  | Mapifsum (_, _, c)                    -> f accu c
+  | Mapifmin (_, _, c)                    -> f accu c
+  | Mapifmax (_, _, c)                    -> f accu c
+  | Mapifhead (_, c, i)                   -> f (f accu c) i
+  | Mapiftail (_, c, i)                   -> f (f accu c) i
 
 let fold_map_term_list f acc l : 'term list * 'a =
   List.fold_left
@@ -2284,6 +2311,50 @@ let fold_map_term
     let re, ra = f accu r in
     g (Mapifisempty (l, re)), ra
 
+  | Mapifselect (an, c, p) ->
+    let ce, ca = f accu c in
+    let pe, pa = f ca p in
+    g (Mapifselect (an, ce, pe)), pa
+
+  | Mapifsort (an, c, fi, k) ->
+    let ce, ca = f accu c in
+    g (Mapifsort (an, ce, fi, k)), ca
+
+  | Mapifcontains (an, c, i) ->
+    let ce, ca = f accu c in
+    let ie, ia = f ca i in
+    g (Mapifcontains (an, ce, ie)), ia
+
+  | Mapifnth (an, c, i) ->
+    let ce, ca = f accu c in
+    let ie, ia = f ca i in
+    g (Mapifnth (an, ce, ie)), ia
+
+  | Mapifcount (an, c) ->
+    let ce, ca = f accu c in
+    g (Mapifcount (an, ce)), ca
+
+  | Mapifsum (an, fd, c) ->
+    let ce, ca = f accu c in
+    g (Mapifsum (an, fd, ce)), ca
+
+  | Mapifmin (an, fd, c) ->
+    let ce, ca = f accu c in
+    g (Mapifmin (an, fd, ce)), ca
+
+  | Mapifmax (an, fd, c) ->
+    let ce, ca = f accu c in
+    g (Mapifmax (an, fd, ce)), ca
+
+  | Mapifhead (an, c, i) ->
+    let ce, ca = f accu c in
+    let ie, ia = f ca i in
+    g (Mapifhead (an, ce, ie)), ia
+
+  | Mapiftail (an, c, i) ->
+    let ce, ca = f accu c in
+    let ie, ia = f ca i in
+    g (Mapiftail (an, ce, ie)), ia
 
 
 let fold_left g l accu = List.fold_left (fun accu x -> g x accu) accu l

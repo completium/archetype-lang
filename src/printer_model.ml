@@ -913,7 +913,7 @@ let pp_mterm fmt (mt : mterm) =
 
     | Mapifget (a, c, k) ->
       let pp fmt (a, c, k) =
-        Format.fprintf fmt "get_%a (%a, %a)"
+        Format.fprintf fmt "apifget_%a (%a, %a)"
           pp_str a
           f c
           f k
@@ -922,7 +922,7 @@ let pp_mterm fmt (mt : mterm) =
 
     | Mapifsubsetof (an, c, i) ->
       let pp fmt (an, c, i) =
-        Format.fprintf fmt "subset_%a (%a, %a)"
+        Format.fprintf fmt "apifsubset_%a (%a, %a)"
           pp_str an
           f c
           f i
@@ -931,12 +931,95 @@ let pp_mterm fmt (mt : mterm) =
 
     | Mapifisempty  (l, r) ->
       let pp fmt (l, r) =
-        Format.fprintf fmt "%a.isempty %a"
+        Format.fprintf fmt "apifisempty (%a, %a)"
           pp_str l
           f r
       in
       pp fmt (l, r)
 
+    | Mapifselect (an, c, p) ->
+      let pp fmt (an, c, p) =
+        Format.fprintf fmt "apifselect_%a (%a, %a)"
+          pp_str an
+          f c
+          f p
+      in
+      pp fmt (an, c, p)
+
+    | Mapifsort (an, c, fn, k) ->
+      let pp fmt (an, c, fn, k) =
+        Format.fprintf fmt "apifsort_%a_%a (%a %a)"
+          pp_str an
+          pp_str fn
+          f c
+          pp_sort_kind k
+      in
+      pp fmt (an, c, fn, k)
+
+    | Mapifcontains (an, c, i) ->
+      let pp fmt (an, c, i) =
+        Format.fprintf fmt "apifcontains_%a (%a, %a)"
+          pp_str an
+          f c
+          f i
+      in
+      pp fmt (an, c, i)
+
+    | Mapifnth (an, c, i) ->
+      let pp fmt (an, c, i) =
+        Format.fprintf fmt "apifnth_%a (%a, %a)"
+          pp_str an
+          f c
+          f i
+      in
+      pp fmt (an, c, i)
+
+    | Mapifcount (an, c) ->
+      let pp fmt (an, c) =
+        Format.fprintf fmt "apifcount_%a (%a)"
+          pp_str an
+          f c
+      in
+      pp fmt (an, c)
+
+    | Mapifsum (an, fd, c) ->
+      let pp fmt (an, fd, c) =
+        Format.fprintf fmt "apifsum_%a_%a (%a)"
+          pp_str an
+          pp_id fd
+          f c
+      in
+      pp fmt (an, fd, c)
+
+    | Mapifmin (an, fd, c) ->
+      let pp fmt (an, fd, c) =
+        Format.fprintf fmt "apifmin_%a_%a (%a)"
+          pp_str an
+          pp_id fd
+          f c
+      in
+      pp fmt (an, fd, c)
+
+    | Mapifmax (an, fd, c) ->
+      let pp fmt (an, fd, c) =
+        Format.fprintf fmt "apifmax_%a_%a (%a)"
+          pp_str an
+          pp_id fd
+          f c
+      in
+      pp fmt (an, fd, c)
+
+    | Mapifhead (an, c, i) ->
+      Format.fprintf fmt "apifhead_%a (%a, %a)"
+        pp_str an
+        f c
+        f i
+
+    | Mapiftail (an, c, i) ->
+      Format.fprintf fmt "apiftail_%a (%a, %a)"
+        pp_str an
+        f c
+        f i
 
 
   in

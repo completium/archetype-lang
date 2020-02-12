@@ -165,7 +165,7 @@ let to_model (ast : A.model) : M.model =
   in
 
 
-  let to_mterm_node (n : A.lident A.term_node) (f : A.lident A.term_gen -> M.mterm) (ftyp : 't -> M.type_) (pterm : A.pterm) : (M.lident, M.mterm) M.mterm_node =
+  let to_mterm_node (n : A.lident A.term_node) (f : A.lident A.term_gen -> M.mterm) (ftyp : 't -> M.type_) (pterm : A.pterm) (formula : bool) : (M.lident, M.mterm) M.mterm_node =
     let process_before vt e =
       match vt with
       | A.VTbefore -> M.Msetbefore (M.mk_mterm e (ftyp (Option.get pterm.type_)) ~loc:pterm.loc)
@@ -261,17 +261,35 @@ let to_model (ast : A.model) : M.model =
       let asset_name = extract_asset_name fp in
       M.Mget (asset_name, fq)
 
+    | A.Pcall (Some p, A.Cconst (A.Cselect), [AFun (_qi, _qt, q)]) when formula ->
+      let fp = f p in
+      let fq = f q in
+      let asset_name = extract_asset_name fp in
+      M.Mapifselect (asset_name, fp, fq)
+
     | A.Pcall (Some p, A.Cconst (A.Cselect), [AFun (_qi, _qt, q)]) ->
       let fp = f p in
       let fq = f q in
       let asset_name = extract_asset_name fp in
       M.Mselect (asset_name, fp, fq)
 
+    | A.Pcall (Some p, A.Cconst (A.Csort), [ASorting (asc, field_name)]) when formula ->
+      let fp = f p in
+      let asset_name = extract_asset_name fp in
+      let sort_kind = match asc with | true -> M.SKasc | false -> M.SKasc in
+      M.Mapifsort (asset_name, fp, unloc field_name, sort_kind)
+
     | A.Pcall (Some p, A.Cconst (A.Csort), [ASorting (asc, field_name)]) ->
       let fp = f p in
       let asset_name = extract_asset_name fp in
       let sort_kind = match asc with | true -> M.SKasc | false -> M.SKasc in
       M.Msort (asset_name, fp, unloc field_name, sort_kind)
+
+    | A.Pcall (Some p, A.Cconst (A.Ccontains), [AExpr q]) when formula ->
+      let fp = f p in
+      let fq = f q in
+      let asset_name = extract_asset_name fp in
+      M.Mapifcontains (asset_name, fp, fq)
 
     | A.Pcall (Some p, A.Cconst (A.Ccontains), [AExpr q]) ->
       let fp = f p in
@@ -285,10 +303,21 @@ let to_model (ast : A.model) : M.model =
       let asset_name = extract_asset_name fp in
       M.Mnth (asset_name, fp, fq)
 
+    | A.Pcall (Some p, A.Cconst (A.Ccount), []) when formula ->
+      let fp = f p in
+      let asset_name = extract_asset_name fp in
+      M.Mapifcount (asset_name, fp)
+
     | A.Pcall (Some p, A.Cconst (A.Ccount), []) ->
       let fp = f p in
       let asset_name = extract_asset_name fp in
       M.Mcount (asset_name, fp)
+
+    | A.Pcall (Some p, A.Cconst (A.Csum), [AFun (qi, qt, q)]) when formula ->
+      let fp = f p in
+      let asset_name = extract_asset_name fp in
+      let field_name = extract_field_name (qi, qt, q) in
+      M.Mapifsum (asset_name, field_name, fp)
 
     | A.Pcall (Some p, A.Cconst (A.Csum), [AFun (qi, qt, q)]) ->
       let fp = f p in
@@ -337,6 +366,36 @@ let to_model (ast : A.model) : M.model =
       let asset_name = extract_asset_name fp in
       M.Mapifisempty (asset_name, fp)
 
+    | A.Pcall (Some p, A.Cconst (A.Coptnth), [AExpr q]) ->
+      let fp = f p in
+      let fq = f q in
+      let asset_name = extract_asset_name fp in
+      M.Mapifnth (asset_name, fp, fq)
+
+    | A.Pcall (Some p, A.Cconst (A.Coptmax), [AFun (qi, qt, q)]) ->
+      let fp = f p in
+      let asset_name = extract_asset_name fp in
+      let field_name = extract_field_name (qi, qt, q) in
+      M.Mapifmax (asset_name, field_name, fp)
+
+    | A.Pcall (Some p, A.Cconst (A.Coptmin), [AFun (qi, qt, q)]) ->
+      let fp = f p in
+      let asset_name = extract_asset_name fp in
+      let field_name = extract_field_name (qi, qt, q) in
+      M.Mapifmin (asset_name, field_name, fp)
+
+    | A.Pcall (Some p, A.Cconst (A.Copthead), [AExpr e]) ->
+      let fp = f p in
+      let fe = f e in
+      let asset_name = extract_asset_name fp in
+      M.Mapifhead (asset_name, fp, fe)
+
+    | A.Pcall (Some p, A.Cconst (A.Copttail), [AExpr e]) ->
+      let fp = f p in
+      let fe = f e in
+      let asset_name = extract_asset_name fp in
+      M.Mapiftail (asset_name, fp, fe)
+
     (* | A.Pcall (None, A.Cconst (A.Cmaybeperformedonlybyrole), [AExpr l; AExpr r]) ->
        M.MsecMayBePerformedOnlyByRole (f l, f r)
 
@@ -360,14 +419,14 @@ let to_model (ast : A.model) : M.model =
       assert false
   in
 
-  let rec to_mterm (pterm : A.pterm) : M.mterm =
-    let node = to_mterm_node pterm.node to_mterm ptyp_to_type pterm in
+  let rec to_mterm ?(formula=false) (pterm : A.pterm) : M.mterm =
+    let node = to_mterm_node pterm.node (to_mterm ~formula:formula) ptyp_to_type pterm formula in
     let type_ = ptyp_to_type (Option.get pterm.type_) in
     M.mk_mterm node type_ ~loc:pterm.loc
   in
 
   let to_label_lterm (x : A.lident A.label_term) : M.label_term =
-    M.mk_label_term (to_mterm x.term) (Option.get x.label) ~loc:x.loc
+    M.mk_label_term (to_mterm x.term ~formula:true) (Option.get x.label) ~loc:x.loc
   in
 
 
@@ -542,11 +601,11 @@ let to_model (ast : A.model) : M.model =
   in
 
   let to_predicate (p : A.lident A.predicate) : M.predicate =
-    M.mk_predicate p.name (to_mterm p.body) ~args:(List.map (fun (id, type_) -> (id, ptyp_to_type type_)) p.args) ~loc:p.loc
+    M.mk_predicate p.name (to_mterm p.body ~formula:true) ~args:(List.map (fun (id, type_) -> (id, ptyp_to_type type_)) p.args) ~loc:p.loc
   in
 
   let to_definition (d : A.lident A.definition ): M.definition =
-    M.mk_definition d.name (ptyp_to_type d.typ) d.var (to_mterm d.body) ~loc:d.loc
+    M.mk_definition d.name (ptyp_to_type d.typ) d.var (to_mterm d.body ~formula:true) ~loc:d.loc
   in
 
   let to_variable (v : A.lident A.variable) : M.variable =
@@ -560,11 +619,11 @@ let to_model (ast : A.model) : M.model =
   in
 
   let to_invariant (i : A.lident A.invariant) :M.invariant  =
-    M.mk_invariant i.label ~formulas:(List.map to_mterm i.formulas)
+    M.mk_invariant i.label ~formulas:(List.map (to_mterm ~formula:true) i.formulas)
   in
 
   let to_postcondition (s : A.lident A.postcondition) : M.postcondition  =
-    M.mk_postcondition s.name Post (to_mterm s.formula)
+    M.mk_postcondition s.name Post (to_mterm ~formula:true s.formula)
       ~invariants:(List.map to_invariant s.invariants) ~uses:s.uses
   in
 

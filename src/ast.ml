@@ -150,8 +150,13 @@ type const =
   | Cremoved
   | Citerated
   | Ctoiterate
-  (* *)
+  (* formula api asset *)
   | Coptget
+  | Coptnth
+  | Coptmax
+  | Coptmin
+  | Copttail
+  | Copthead
 [@@deriving show {with_path = false}]
 
 type ('node) struct_poly = {

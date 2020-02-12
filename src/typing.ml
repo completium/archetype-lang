@@ -467,14 +467,19 @@ let methods : (string * method_) list =
     ("max"         , mk M.Cmax          `Pure   `Partial ([`RExpr       ], Some (`Ref 0)));
     ("min"         , mk M.Cmin          `Pure   `Partial ([`RExpr       ], Some (`Ref 0)));
     ("subsetof"    , mk M.Csubsetof     `Pure   `Total   ([`SubColl     ], Some (`T M.vtbool)));
-    ("head"        , mk M.Chead         `Pure   `Total   ([`T M.vtint   ], Some (`SubColl)));
-    ("tail"        , mk M.Ctail         `Pure   `Total   ([`T M.vtint   ], Some (`SubColl)));
+    ("head"        , mk M.Chead         `Pure   `Partial ([`T M.vtint   ], Some (`SubColl)));
+    ("tail"        , mk M.Ctail         `Pure   `Partial ([`T M.vtint   ], Some (`SubColl)));
     ("unmoved"     , mk M.Cunmoved      `Pure   `Total   ([             ], Some (`SubColl)));
     ("added"       , mk M.Cadded        `Pure   `Total   ([             ], Some (`SubColl)));
     ("removed"     , mk M.Cremoved      `Pure   `Total   ([             ], Some (`SubColl)));
     ("iterated"    , mk M.Citerated     `Pure   `Total   ([             ], Some (`SubColl)));
     ("toiterate"   , mk M.Ctoiterate    `Pure   `Total   ([             ], Some (`SubColl)));
     ("optget"      , mk M.Coptget       `Pure   `Partial ([`Pk          ], Some `The));
+    ("optnth"      , mk M.Coptnth       `Pure   `Partial ([`T M.vtint   ], Some (`Asset)));
+    ("optmax"      , mk M.Coptmax       `Pure   `Partial ([`RExpr       ], Some (`Ref 0)));
+    ("optmin"      , mk M.Coptmin       `Pure   `Partial ([`RExpr       ], Some (`Ref 0)));
+    ("opthead"     , mk M.Copthead      `Pure   `Partial ([`T M.vtint   ], Some (`SubColl)));
+    ("opttail"     , mk M.Copttail      `Pure   `Partial ([`T M.vtint   ], Some (`SubColl)));
   ]
 
 let methods = Mid.of_list methods
@@ -2511,7 +2516,9 @@ let for_specification_item
         | Some (env, `Loop aname) ->
           let ty = M.Tasset (mkloc (loc lbl) aname) in
           let ty = M.Tcontainer (ty, M.Subset) in
-          Env.Local.push env (mkloc coreloc "toiterate", ty)
+          let env = Env.Local.push env (mkloc coreloc "toiterate", ty) in
+          let env = Env.Local.push env (mkloc coreloc "iterated", ty) in
+          env
         | Some (_, _) ->
           Env.emit_error env (loc lbl, NonLoopLabel (unloc lbl));
           env
