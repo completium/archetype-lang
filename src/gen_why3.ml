@@ -791,7 +791,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
                    map_mterm m ctx b,
                    Some (map_mterm m ctx e)) |> with_dummy_loc)
 
-    | Mletin ([id], { node = M.Mgetbefore (a, k); type_ = _ }, _, b, Some e) -> (* logical *)
+    | Mletin ([id], { node = M.Mapifget (a, {node = M.Msetbefore _; _}, k); type_ = _ }, _, b, Some e) -> (* logical *)
       let ctx = { ctx with (*old = true;*) localold = ctx.localold @ [unloc id] } in
       Tletin (M.Utils.is_local_assigned (unloc id) b,
               map_lident id,
@@ -1251,8 +1251,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
 
     (* formula asset collection methods *)
 
-    | Mgetbefore          _ -> error_not_translated "Mgetbefore"
-    | Mgetat              _ -> error_not_translated "Mgetat"
+    | Mapifget (a, _c, k) -> Tapp (loc_term (Tvar ("get_" ^ a)),[map_mterm m ctx k])
     | Mapifsubsetof (n, l, r) -> Tsubset (with_dummy_loc n, map_mterm m ctx l, map_mterm m ctx r)
     | Mapifisempty (l, r) -> Tempty (with_dummy_loc l, map_mterm m ctx r)
 

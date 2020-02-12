@@ -276,8 +276,7 @@ type ('id, 'term) mterm_node  =
   | Msettoiterate   of 'term
   (* formula asset collection methods *)
   (* | Mapifget *)
-  | Mgetbefore      of ident * 'term
-  | Mgetat          of ident * ident * 'term (* asset_name * label * value *)
+  | Mapifget        of ident * 'term * 'term (* asset_name * asset collection * value *)
   | Mapifsubsetof   of ident * 'term * 'term
   | Mapifisempty    of ident * 'term
   (* | Mapifselect
@@ -1050,8 +1049,7 @@ let cmp_mterm_node
     | Msetiterated e1, Msetiterated  e2                                                -> cmp e1 e2
     | Msettoiterate e1, Msettoiterate e2                                               -> cmp e1 e2
     (* formula asset collection methods *)
-    | Mgetbefore (c1, k1), Mgetbefore (c2, k2)                                         -> cmp_ident c1 c2 && cmp k1 k2
-    | Mgetat (c1, d1, k1), Mgetat (c2, d2, k2)                                         -> cmp_ident c1 c2 && cmp_ident d1 d2 && cmp k1 k2
+    | Mapifget (a1, c1, k1), Mapifget (a2, c2, k2)                                     -> cmp_ident a1 a2 && cmp c1 c2 && cmp k1 k2
     | Mapifsubsetof (an1, c1, i1), Mapifsubsetof (an2, c2, i2)                         -> cmp_ident an1 an2 && cmp c1 c2 && cmp i1 i2
     | Mapifisempty (l1, r1), Mapifisempty (l2, r2)                                     -> cmp_ident l1 l2 && cmp r1 r2
     (* *)
@@ -1297,8 +1295,7 @@ let map_term_node (f : 'id mterm_gen -> 'id mterm_gen) = function
   | Msetiterated  e                -> Msetiterated  (f e)
   | Msettoiterate e                -> Msettoiterate (f e)
   (* formula asset collection methods *)
-  | Mgetbefore (c, k)              -> Mgetbefore (c, f k)
-  | Mgetat (c, d, k)               -> Mgetat (c, d, f k)
+  | Mapifget (a, c, k)             -> Mapifget (a, f c, f k)
   | Mapifsubsetof (an, c, i)       -> Mapifsubsetof (an, f c, f i)
   | Mapifisempty (l, r)            -> Mapifisempty (l, f r)
 
@@ -1591,8 +1588,7 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Msetiterated  e                       -> f accu e
   | Msettoiterate e                       -> f accu e
   (* formula asset collection methods *)
-  | Mgetbefore (_, k)                     -> f accu k
-  | Mgetat (_, _, k)                      -> f accu k
+  | Mapifget (_, c, k)                    -> f (f accu c) k
   | Mapifsubsetof (_, c, i)               -> f (f accu c) i
   | Mapifisempty  (_, r)                  -> f accu r
 
@@ -2274,13 +2270,10 @@ let fold_map_term
 
   (* formula asset collection methods *)
 
-  | Mgetbefore (c, k) ->
-    let ke, ka = f accu k in
-    g (Mgetbefore (c, ke)), ka
-
-  | Mgetat (c, d, k) ->
-    let ke, ka = f accu k in
-    g (Mgetat (c, d, ke)), ka
+  | Mapifget (a, c, k) ->
+    let ce, ca = f accu c in
+    let ke, ka = f ca k in
+    g (Mapifget (a, ce, ke)), ka
 
   | Mapifsubsetof (an, c, i) ->
     let ce, ca = f accu c in

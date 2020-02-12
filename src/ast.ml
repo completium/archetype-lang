@@ -150,6 +150,8 @@ type const =
   | Cremoved
   | Citerated
   | Ctoiterate
+  (* *)
+  | Coptget
 [@@deriving show {with_path = false}]
 
 type ('node) struct_poly = {

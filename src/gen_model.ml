@@ -255,27 +255,11 @@ let to_model (ast : A.model) : M.model =
     | A.Pcall (_, A.Cid id, args) ->
       M.Mapp (id, List.map (fun x -> term_arg_to_expr f x) args)
 
-    | A.Pcall (Some p, A.Cconst (A.Csubsetof), [AExpr q]) ->
-      let fp = f p in
-      let fq = f q in
-      let asset_name = extract_asset_name fp in
-      M.Mapifsubsetof (asset_name, fp, fq)
-
-    | A.Pcall (Some p, A.Cconst (A.Cisempty), []) ->
-      let fp = f p in
-      let asset_name = extract_asset_name fp in
-      M.Mapifisempty (asset_name, fp)
-
     | A.Pcall (Some p, A.Cconst (A.Cget), [AExpr q]) ->
       let fp = f p in
       let fq = f q in
       let asset_name = extract_asset_name fp in
-      begin
-        match p.node with
-        | Pvar (VTbefore, _) -> M.Mgetbefore (asset_name, fq)
-        | Pvar (VTat lbl, _) -> M.Mgetat (asset_name, lbl, fq)
-        | _ -> M.Mget (asset_name, fq)
-      end
+      M.Mget (asset_name, fq)
 
     | A.Pcall (Some p, A.Cconst (A.Cselect), [AFun (_qi, _qt, q)]) ->
       let fp = f p in
@@ -335,6 +319,23 @@ let to_model (ast : A.model) : M.model =
       let fe = f e in
       let asset_name = extract_asset_name fp in
       M.Mtail (asset_name, fp, fe)
+
+    | A.Pcall (Some p, A.Cconst (A.Coptget), [AExpr q]) ->
+      let fp = f p in
+      let fq = f q in
+      let asset_name = extract_asset_name fp in
+      M.Mapifget (asset_name, fp, fq)
+
+    | A.Pcall (Some p, A.Cconst (A.Csubsetof), [AExpr q]) ->
+      let fp = f p in
+      let fq = f q in
+      let asset_name = extract_asset_name fp in
+      M.Mapifsubsetof (asset_name, fp, fq)
+
+    | A.Pcall (Some p, A.Cconst (A.Cisempty), []) ->
+      let fp = f p in
+      let asset_name = extract_asset_name fp in
+      M.Mapifisempty (asset_name, fp)
 
     (* | A.Pcall (None, A.Cconst (A.Cmaybeperformedonlybyrole), [AExpr l; AExpr r]) ->
        M.MsecMayBePerformedOnlyByRole (f l, f r)

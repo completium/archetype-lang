@@ -474,6 +474,7 @@ let methods : (string * method_) list =
     ("removed"     , mk M.Cremoved      `Pure   `Total   ([             ], Some (`SubColl)));
     ("iterated"    , mk M.Citerated     `Pure   `Total   ([             ], Some (`SubColl)));
     ("toiterate"   , mk M.Ctoiterate    `Pure   `Total   ([             ], Some (`SubColl)));
+    ("optget"      , mk M.Coptget       `Pure   `Partial ([`Pk          ], Some `The));
   ]
 
 let methods = Mid.of_list methods

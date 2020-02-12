@@ -1106,8 +1106,7 @@ let pp_model fmt (model : model) =
 
       (* formula asset collection methods *)
 
-      | Mgetbefore     _ -> emit_error (UnsupportedTerm ("getbefore"))
-      | Mgetat         _ -> emit_error (UnsupportedTerm ("getat"))
+      | Mapifget       _ -> emit_error (UnsupportedTerm ("apifget"))
       | Mapifsubsetof  _ -> emit_error (UnsupportedTerm ("subsetof"))
       | Mapifisempty   _ -> emit_error (UnsupportedTerm ("isempty"))
 

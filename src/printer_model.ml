@@ -911,22 +911,14 @@ let pp_mterm fmt (mt : mterm) =
 
     (* formula asset collection methods *)
 
-    | Mgetbefore (c, k) ->
-      let pp fmt (c, k) =
-        Format.fprintf fmt "get_%a_before (%a)"
-          pp_str c
+    | Mapifget (a, c, k) ->
+      let pp fmt (a, c, k) =
+        Format.fprintf fmt "get_%a (%a, %a)"
+          pp_str a
+          f c
           f k
       in
-      pp fmt (c, k)
-
-    | Mgetat (c, d, k) ->
-      let pp fmt (c, d, k) =
-        Format.fprintf fmt "get_%a_at_%a (%a)"
-          pp_str c
-          pp_str d
-          f k
-      in
-      pp fmt (c, d, k)
+      pp fmt (a, c, k)
 
     | Mapifsubsetof (an, c, i) ->
       let pp fmt (an, c, i) =

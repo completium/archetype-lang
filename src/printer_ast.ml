@@ -190,6 +190,7 @@ let to_const = function
   | Cremoved      -> "removed"
   | Citerated     -> "iterated"
   | Ctoiterate    -> "toiterate"
+  | Coptget       -> "optget"
 
 let pp_call_kind fmt = function
   | Cid id -> pp_id fmt id
