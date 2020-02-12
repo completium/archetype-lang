@@ -26,9 +26,22 @@ action exec () {
     f1: let some a = before.my_asset.get("id0")  in true otherwise false; (* Mgetbefore *)
     f2: let some a = at(lbl).my_asset.get("id0") in true otherwise false; (* Mgetat *)
 
-    (*f3: my_asset.mem("id0");*)     (* Mmem *)
-    f4: my_asset.subsetof(my_asset); (* Msubsetof *)
-    f5: my_asset.isempty();          (* Misempty *)
+    f3: my_asset.subsetof(my_asset); (* Msubsetof *)
+    f4: my_asset.isempty();          (* Misempty *)
+
+    f0: my_asset.select(the.value > 0).isempty();         (* Mlogicalselect*)
+    f0: before.my_asset.select(the.value > 0).isempty();  (* Mlogicalselectbefore*)
+    f0: at(lbl).my_asset.select(the.value > 0).isempty(); (* Mlogicalselectat*)
+    f0: my_asset.sort(the.value).isempty();
+    f0: my_asset.contains(my_asset_id);
+    f0: let some a = my_asset.optnth(0) in a.value = 0 otherwise false;
+    f0: my_asset.count() = 0;
+    f0: my_asset.sum(the.value) = 0;
+    f0: let some a = my_asset.optmax(the.value) in a = 0 otherwise false;
+    f0: let some a = my_asset.optmin(the.value) in a = 0 otherwise false;
+    f0: let some a = my_asset.opthead(2) in true otherwise false;
+    f0: let some a = my_asset.opttail(2) in true otherwise false;
+
 
     (* set api *)
     s1: before.my_asset.isempty();       (* Msetbefore *)
