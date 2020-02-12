@@ -49,7 +49,7 @@ action exec () {
   effect {
     my_asset.add({"id3"; 3});
     label lbl;
-    my_asset.add({"id4"; 3});
+    my_asset.add({"id4"; 4});
   }
 }
 

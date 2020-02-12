@@ -269,7 +269,6 @@ type ('id, 'term) mterm_node  =
   (* formula expression*)
   | Mgetbefore      of ident * 'term
   | Mgetat          of ident * ident * 'term (* asset_name * label * value *)
-  | Mmem            of ident * 'term * 'term
   | Msubsetof       of ident * 'term * 'term
   | Misempty        of ident * 'term
   (* set api *)
@@ -1034,7 +1033,6 @@ let cmp_mterm_node
     (* formula expression*)
     | Mgetbefore (c1, k1), Mgetbefore (c2, k2)                                         -> cmp_ident c1 c2 && cmp k1 k2
     | Mgetat (c1, d1, k1), Mgetat (c2, d2, k2)                                         -> cmp_ident c1 c2 && cmp_ident d1 d2 && cmp k1 k2
-    | Mmem (an1, c1, i1), Mmem (an2, c2, i2)                                           -> cmp_ident an1 an2 && cmp c1 c2 && cmp i1 i2
     | Msubsetof (an1, c1, i1), Msubsetof (an2, c2, i2)                                 -> cmp_ident an1 an2 && cmp c1 c2 && cmp i1 i2
     | Misempty (l1, r1), Misempty (l2, r2)                                             -> cmp_ident l1 l2 && cmp r1 r2
     (* set api *)
@@ -1282,7 +1280,6 @@ let map_term_node (f : 'id mterm_gen -> 'id mterm_gen) = function
   (* formula expression*)
   | Mgetbefore (c, k)              -> Mgetbefore (c, f k)
   | Mgetat (c, d, k)               -> Mgetat (c, d, f k)
-  | Mmem (an, c, i)                -> Mmem (an, f c, f i)
   | Msubsetof (an, c, i)           -> Msubsetof (an, f c, f i)
   | Misempty (l, r)                -> Misempty (l, f r)
   (* set api *)
@@ -1577,7 +1574,6 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   (* formula expression*)
   | Mgetbefore (_, k)                     -> f accu k
   | Mgetat (_, _, k)                      -> f accu k
-  | Mmem (_, c, i)                        -> f (f accu c) i
   | Msubsetof (_, c, i)                   -> f (f accu c) i
   | Misempty  (_, r)                      -> f accu r
   (* set api *)
@@ -2243,11 +2239,6 @@ let fold_map_term
   | Mgetat (c, d, k) ->
     let ke, ka = f accu k in
     g (Mgetat (c, d, ke)), ka
-
-  | Mmem (an, c, i) ->
-    let ce, ca = f accu c in
-    let ie, ia = f ca i in
-    g (Mmem (an, ce, ie)), ia
 
   | Msubsetof (an, c, i) ->
     let ce, ca = f accu c in

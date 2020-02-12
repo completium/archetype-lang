@@ -1240,7 +1240,6 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
 
     | Mgetbefore          _ -> error_not_translated "Mgetbefore"
     | Mgetat              _ -> error_not_translated "Mgetat"
-    | Mmem (a, e, c) -> Tmem (with_dummy_loc a, map_mterm m ctx e, map_mterm m ctx c)
     | Msubsetof (n, l, r) -> Tsubset (with_dummy_loc n, map_mterm m ctx l, map_mterm m ctx r)
     | Misempty (l, r) -> Tempty (with_dummy_loc l, map_mterm m ctx r)
 

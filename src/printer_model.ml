@@ -896,15 +896,6 @@ let pp_mterm fmt (mt : mterm) =
       in
       pp fmt (c, d, k)
 
-    | Mmem (an, c, i) ->
-      let pp fmt (an, c, i) =
-        Format.fprintf fmt "mem_%a (%a, %a)"
-          pp_str an
-          f c
-          f i
-      in
-      pp fmt (an, c, i)
-
     | Msubsetof (an, c, i) ->
       let pp fmt (an, c, i) =
         Format.fprintf fmt "subset_%a (%a, %a)"
