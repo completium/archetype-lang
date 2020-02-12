@@ -23,15 +23,10 @@ action exec () {
     o2: true <-> true; (* Mequiv *)
 
     (* formula expression*)
-    f1: let some a = before.my_asset.get("id0")  in true otherwise false; (* Mgetbefore *)
-    f2: let some a = at(lbl).my_asset.get("id0") in true otherwise false; (* Mgetat *)
-
-    f3: my_asset.subsetof(my_asset); (* Msubsetof *)
-    f4: my_asset.isempty();          (* Misempty *)
-
-    f0: my_asset.select(the.value > 0).isempty();         (* Mlogicalselect*)
-    f0: before.my_asset.select(the.value > 0).isempty();  (* Mlogicalselectbefore*)
-    f0: at(lbl).my_asset.select(the.value > 0).isempty(); (* Mlogicalselectat*)
+    f0: let some a = my_asset.optget("id0") in true otherwise false; (* Mlogicalget *)
+    f3: my_asset.subsetof(my_asset);                                 (* Mlogicalsubsetof *)
+    f4: my_asset.isempty();                                          (* Mlogicalisempty *)
+    f0: my_asset.select(the.value > 0).isempty();                    (* Mlogicalselect*)
     f0: my_asset.sort(the.value).isempty();
     f0: my_asset.contains(my_asset_id);
     f0: let some a = my_asset.optnth(0) in a.value = 0 otherwise false;
