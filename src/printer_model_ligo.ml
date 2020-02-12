@@ -1133,12 +1133,12 @@ let pp_model_internal fmt (model : model) b =
       | Msettoiterate _ -> emit_error (UnsupportedTerm ("settoiterate"))
 
 
-      (* formula expression*)
+      (* formula asset collection methods *)
 
-      | Mgetbefore _ -> emit_error (UnsupportedTerm ("getbefore"))
-      | Mgetat     _ -> emit_error (UnsupportedTerm ("getat"))
-      | Msubsetof  _ -> emit_error (UnsupportedTerm ("subsetof"))
-      | Misempty   _ -> emit_error (UnsupportedTerm ("isempty"))
+      | Mgetbefore     _ -> emit_error (UnsupportedTerm ("getbefore"))
+      | Mgetat         _ -> emit_error (UnsupportedTerm ("getat"))
+      | Mapifsubsetof  _ -> emit_error (UnsupportedTerm ("subsetof"))
+      | Mapifisempty   _ -> emit_error (UnsupportedTerm ("isempty"))
 
     in
     f fmt mt

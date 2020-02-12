@@ -909,7 +909,7 @@ let pp_mterm fmt (mt : mterm) =
         f e
 
 
-    (* formula expression*)
+    (* formula asset collection methods *)
 
     | Mgetbefore (c, k) ->
       let pp fmt (c, k) =
@@ -928,7 +928,7 @@ let pp_mterm fmt (mt : mterm) =
       in
       pp fmt (c, d, k)
 
-    | Msubsetof (an, c, i) ->
+    | Mapifsubsetof (an, c, i) ->
       let pp fmt (an, c, i) =
         Format.fprintf fmt "subset_%a (%a, %a)"
           pp_str an
@@ -937,7 +937,7 @@ let pp_mterm fmt (mt : mterm) =
       in
       pp fmt (an, c, i)
 
-    | Misempty  (l, r) ->
+    | Mapifisempty  (l, r) ->
       let pp fmt (l, r) =
         Format.fprintf fmt "%a.isempty %a"
           pp_str l

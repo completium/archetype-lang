@@ -1249,12 +1249,12 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
       Ttoiter (n, with_dummy_loc "i", map_mterm m ctx c) (* TODO : should retrieve actual idx value *)
 
 
-    (* formula expression*)
+    (* formula asset collection methods *)
 
     | Mgetbefore          _ -> error_not_translated "Mgetbefore"
     | Mgetat              _ -> error_not_translated "Mgetat"
-    | Msubsetof (n, l, r) -> Tsubset (with_dummy_loc n, map_mterm m ctx l, map_mterm m ctx r)
-    | Misempty (l, r) -> Tempty (with_dummy_loc l, map_mterm m ctx r)
+    | Mapifsubsetof (n, l, r) -> Tsubset (with_dummy_loc n, map_mterm m ctx l, map_mterm m ctx r)
+    | Mapifisempty (l, r) -> Tempty (with_dummy_loc l, map_mterm m ctx r)
 
 
 

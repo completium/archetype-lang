@@ -259,12 +259,12 @@ let to_model (ast : A.model) : M.model =
       let fp = f p in
       let fq = f q in
       let asset_name = extract_asset_name fp in
-      M.Msubsetof (asset_name, fp, fq)
+      M.Mapifsubsetof (asset_name, fp, fq)
 
     | A.Pcall (Some p, A.Cconst (A.Cisempty), []) ->
       let fp = f p in
       let asset_name = extract_asset_name fp in
-      M.Misempty (asset_name, fp)
+      M.Mapifisempty (asset_name, fp)
 
     | A.Pcall (Some p, A.Cconst (A.Cget), [AExpr q]) ->
       let fp = f p in
