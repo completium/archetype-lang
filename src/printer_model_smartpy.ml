@@ -860,6 +860,18 @@ let pp_model fmt (model : model) =
           f i
 
 
+      (* utils *)
+
+      | Mgetfrommap (an, k, c) ->
+        let pp fmt (an, k, c) =
+          Format.fprintf fmt "Mgetfrommap_%a (%a, %a)"
+            pp_str an
+            f k
+            f c
+        in
+        pp fmt (an, k, c)
+
+
       (* list api effect *)
 
       | Mlistprepend (c, a) ->
@@ -1057,62 +1069,17 @@ let pp_model fmt (model : model) =
 
       (* formula operators *)
 
-      | Mimply (l, r) ->
-        let pp fmt (l, r) =
-          Format.fprintf fmt "%a -> %a"
-            f l
-            f r
-        in
-        pp fmt (l, r)
-
-      | Mequiv  (l, r) ->
-        let pp fmt (l, r) =
-          Format.fprintf fmt "%a <-> %a"
-            f l
-            f r
-        in
-        pp fmt (l, r)
+      | Mimply _ -> emit_error (UnsupportedTerm ("imply"))
+      | Mequiv _ -> emit_error (UnsupportedTerm ("equiv"))
 
 
       (* formula expression*)
 
-      | Mgetat     _ -> emit_error (UnsupportedTerm ("getat"))
       | Mgetbefore _ -> emit_error (UnsupportedTerm ("getbefore"))
-
-      | Mgetfrommap (an, k, c) ->
-        let pp fmt (an, k, c) =
-          Format.fprintf fmt "Mgetfrommap_%a (%a, %a)"
-            pp_str an
-            f k
-            f c
-        in
-        pp fmt (an, k, c)
-
-      | Mmem (an, c, i) ->
-        let pp fmt (an, c, i) =
-          Format.fprintf fmt "mem_%a (%a, %a)"
-            pp_str an
-            f c
-            f i
-        in
-        pp fmt (an, c, i)
-
-      | Msubsetof (an, c, i) ->
-        let pp fmt (an, c, i) =
-          Format.fprintf fmt "subset_%a (%a, %a)"
-            pp_str an
-            f c
-            f i
-        in
-        pp fmt (an, c, i)
-
-      | Misempty  (l, r) ->
-        let pp fmt (l, r) =
-          Format.fprintf fmt "is_empty_%a %a"
-            pp_str l
-            f r
-        in
-        pp fmt (l, r)
+      | Mgetat     _ -> emit_error (UnsupportedTerm ("getat"))
+      | Mmem       _ -> emit_error (UnsupportedTerm ("mem"))
+      | Msubsetof  _ -> emit_error (UnsupportedTerm ("subsetof"))
+      | Misempty   _ -> emit_error (UnsupportedTerm ("isempty"))
 
 
       (* set api *)

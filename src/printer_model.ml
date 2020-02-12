@@ -615,6 +615,18 @@ let pp_mterm fmt (mt : mterm) =
         f i
 
 
+    (* utils *)
+
+    | Mgetfrommap (an, k, c) ->
+      let pp fmt (an, k, c) =
+        Format.fprintf fmt "getfrommap_%a (%a, %a)"
+          pp_str an
+          f k
+          f c
+      in
+      pp fmt (an, k, c)
+
+
     (* list api effect *)
 
     | Mlistprepend (c, a) ->
@@ -862,15 +874,6 @@ let pp_mterm fmt (mt : mterm) =
           f k
       in
       pp fmt (c, d, k)
-
-    | Mgetfrommap (an, k, c) ->
-      let pp fmt (an, k, c) =
-        Format.fprintf fmt "getfrommap_%a (%a, %a)"
-          pp_str an
-          f k
-          f c
-      in
-      pp fmt (an, k, c)
 
     | Mmem (an, c, i) ->
       let pp fmt (an, c, i) =

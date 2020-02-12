@@ -211,6 +211,8 @@ type ('id, 'term) mterm_node  =
   | Mmax            of ident * 'id * 'term
   | Mhead           of ident * 'term * 'term
   | Mtail           of ident * 'term * 'term
+  (* utils *)
+  | Mgetfrommap     of ident * 'term * 'term
   (* list api effect *)
   | Mlistprepend    of 'term * 'term
   (* list api expression *)
@@ -264,7 +266,6 @@ type ('id, 'term) mterm_node  =
   (* formula expression*)
   | Mgetbefore      of ident * 'term
   | Mgetat          of ident * ident * 'term (* asset_name * label * value *)
-  | Mgetfrommap     of ident * 'term * 'term
   | Mmem            of ident * 'term * 'term
   | Msubsetof       of ident * 'term * 'term
   | Misempty        of ident * 'term
@@ -972,6 +973,8 @@ let cmp_mterm_node
     | Mmax (an1, fd1, c1), Mmax (an2, fd2, c2)                                         -> cmp_ident an1 an2 && cmpi fd1 fd2 && cmp c1 c2
     | Mhead (an1, c1, i1), Mhead (an2, c2, i2)                                         -> cmp_ident an1 an2 && cmp c1 c2 && cmp i1 i2
     | Mtail (an1, c1, i1), Mtail (an2, c2, i2)                                         -> cmp_ident an1 an2 && cmp c1 c2 && cmp i1 i2
+    (* utils *)
+    | Mgetfrommap (an1, k1, c1), Mgetfrommap (an2, k2, c2)                             -> cmp_ident an1 an2 && cmp k1 k2 && cmp c1 c2
     (* list api effect *)
     | Mlistprepend (c1, a1), Mlistprepend (c2, a2)                                     -> cmp c1 c2 && cmp a1 a2
     (* list api expression *)
@@ -1025,7 +1028,6 @@ let cmp_mterm_node
     (* formula expression*)
     | Mgetbefore (c1, k1), Mgetbefore (c2, k2)                                         -> cmp_ident c1 c2 && cmp k1 k2
     | Mgetat (c1, d1, k1), Mgetat (c2, d2, k2)                                         -> cmp_ident c1 c2 && cmp_ident d1 d2 && cmp k1 k2
-    | Mgetfrommap (an1, k1, c1), Mgetfrommap (an2, k2, c2)                             -> cmp_ident an1 an2 && cmp k1 k2 && cmp c1 c2
     | Mmem (an1, c1, i1), Mmem (an2, c2, i2)                                           -> cmp_ident an1 an2 && cmp c1 c2 && cmp i1 i2
     | Msubsetof (an1, c1, i1), Msubsetof (an2, c2, i2)                                 -> cmp_ident an1 an2 && cmp c1 c2 && cmp i1 i2
     | Misempty (l1, r1), Misempty (l2, r2)                                             -> cmp_ident l1 l2 && cmp r1 r2
@@ -1216,6 +1218,8 @@ let map_term_node (f : 'id mterm_gen -> 'id mterm_gen) = function
   | Mmax (an, fd, c)               -> Mmax (an, fd, f c)
   | Mhead (an, c, i)               -> Mhead (an, f c, f i)
   | Mtail (an, c, i)               -> Mtail (an, f c, f i)
+  (* utils *)
+  | Mgetfrommap (an, k, c)         -> Mgetfrommap (an, f k, f c)
   (* list api effect *)
   | Mlistprepend (c, a)            -> Mlistprepend (f c, f a)
   (* list api expression *)
@@ -1269,7 +1273,6 @@ let map_term_node (f : 'id mterm_gen -> 'id mterm_gen) = function
   (* formula expression*)
   | Mgetbefore (c, k)              -> Mgetbefore (c, f k)
   | Mgetat (c, d, k)               -> Mgetat (c, d, f k)
-  | Mgetfrommap (an, k, c)         -> Mgetfrommap (an, f k, f c)
   | Mmem (an, c, i)                -> Mmem (an, f c, f i)
   | Msubsetof (an, c, i)           -> Msubsetof (an, f c, f i)
   | Misempty (l, r)                -> Misempty (l, f r)
@@ -1507,6 +1510,8 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mmax (_, _, c)                        -> f accu c
   | Mhead (_, c, i)                       -> f (f accu c) i
   | Mtail (_, c, i)                       -> f (f accu c) i
+  (* utils *)
+  | Mgetfrommap (_, k, c)                 -> f (f accu k) c
   (* list api effect *)
   | Mlistprepend (c, a)                   -> f (f accu c) a
   (* list api expression *)
@@ -1560,7 +1565,6 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   (* formula expression*)
   | Mgetbefore (_, k)                     -> f accu k
   | Mgetat (_, _, k)                      -> f accu k
-  | Mgetfrommap (_, k, c)                 -> f (f accu k) c
   | Mmem (_, c, i)                        -> f (f accu c) i
   | Msubsetof (_, c, i)                   -> f (f accu c) i
   | Misempty  (_, r)                      -> f accu r
@@ -1989,6 +1993,14 @@ let fold_map_term
     g (Mtail (an, ce, ie)), ia
 
 
+  (* utils *)
+
+  | Mgetfrommap (an, k, c) ->
+    let ke, ka = f accu k in
+    let ce, ca = f ka c in
+    g (Mgetfrommap (an, ke, ce)), ca
+
+
   (* list api effect *)
 
   | Mlistprepend (c, a) ->
@@ -2199,11 +2211,6 @@ let fold_map_term
   | Mgetat (c, d, k) ->
     let ke, ka = f accu k in
     g (Mgetat (c, d, ke)), ka
-
-  | Mgetfrommap (an, k, c) ->
-    let ke, ka = f accu k in
-    let ce, ca = f ka c in
-    g (Mgetfrommap (an, ke, ce)), ca
 
   | Mmem (an, c, i) ->
     let ce, ca = f accu c in

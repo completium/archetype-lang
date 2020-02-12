@@ -879,6 +879,17 @@ let pp_model_internal fmt (model : model) b =
           f i
 
 
+      (* utils *)
+
+      | Mgetfrommap (an, k, m) ->
+        let pp fmt (_an, k, m) =
+          Format.fprintf fmt "get_force(%a, %a)"
+            f k
+            f m
+        in
+        pp fmt (an, k, m)
+
+
       (* list api effect *)
 
       | Mlistprepend (c, a) ->
@@ -1086,37 +1097,28 @@ let pp_model_internal fmt (model : model) b =
 
       (* formula operators *)
 
-      | Mimply  _ -> emit_error (UnsupportedTerm ("imply"))
-      | Mequiv  _ -> emit_error (UnsupportedTerm ("equiv"))
+      | Mimply _ -> emit_error (UnsupportedTerm ("imply"))
+      | Mequiv _ -> emit_error (UnsupportedTerm ("equiv"))
 
 
       (* formula expression*)
 
-      | Mgetbefore  _ -> emit_error (UnsupportedTerm ("getbefore"))
-      | Mgetat      _ -> emit_error (UnsupportedTerm ("getat"))
-
-      | Mgetfrommap (an, k, m) ->
-        let pp fmt (_an, k, m) =
-          Format.fprintf fmt "get_force(%a, %a)"
-            f k
-            f m
-        in
-        pp fmt (an, k, m)
-
-      | Mmem        _ -> emit_error (UnsupportedTerm ("mem"))
-      | Msubsetof   _ -> emit_error (UnsupportedTerm ("subsetof"))
-      | Misempty    _ -> emit_error (UnsupportedTerm ("isempty"))
+      | Mgetbefore _ -> emit_error (UnsupportedTerm ("getbefore"))
+      | Mgetat     _ -> emit_error (UnsupportedTerm ("getat"))
+      | Mmem       _ -> emit_error (UnsupportedTerm ("mem"))
+      | Msubsetof  _ -> emit_error (UnsupportedTerm ("subsetof"))
+      | Misempty   _ -> emit_error (UnsupportedTerm ("isempty"))
 
 
       (* set api *)
 
-      | Msetbefore _                     -> emit_error (UnsupportedTerm ("setbefore"))
-      | Msetat     _                     -> emit_error (UnsupportedTerm ("setat"))
-      | Msetunmoved _                    -> emit_error (UnsupportedTerm ("setunmoved"))
-      | Msetadded _                      -> emit_error (UnsupportedTerm ("setadded"))
-      | Msetremoved _                    -> emit_error (UnsupportedTerm ("setremoved"))
-      | Msetiterated _                   -> emit_error (UnsupportedTerm ("setiterated"))
-      | Msettoiterate _                  -> emit_error (UnsupportedTerm ("settoiterate"))
+      | Msetbefore    _ -> emit_error (UnsupportedTerm ("setbefore"))
+      | Msetat        _ -> emit_error (UnsupportedTerm ("setat"))
+      | Msetunmoved   _ -> emit_error (UnsupportedTerm ("setunmoved"))
+      | Msetadded     _ -> emit_error (UnsupportedTerm ("setadded"))
+      | Msetremoved   _ -> emit_error (UnsupportedTerm ("setremoved"))
+      | Msetiterated  _ -> emit_error (UnsupportedTerm ("setiterated"))
+      | Msettoiterate _ -> emit_error (UnsupportedTerm ("settoiterate"))
 
     in
     f fmt mt
