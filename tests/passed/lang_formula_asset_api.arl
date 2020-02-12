@@ -22,28 +22,28 @@ action exec () {
     o1: true -> true;  (* Mimply *)
     o2: true <-> true; (* Mequiv *)
 
-    (* formula expression*)
-    f0: let some a = my_asset.optget("id0") in true otherwise false; (* Mlogicalget *)
-    f3: my_asset.subsetof(my_asset);                                 (* Mlogicalsubsetof *)
-    f4: my_asset.isempty();                                          (* Mlogicalisempty *)
-    f0: my_asset.select(the.value > 0).isempty();                    (* Mlogicalselect*)
-    f0: my_asset.sort(the.value).isempty();
-    f0: my_asset.contains(my_asset_id);
-    f0: let some a = my_asset.optnth(0) in a.value = 0 otherwise false;
-    f0: my_asset.count() = 0;
-    f0: my_asset.sum(the.value) = 0;
-    f0: let some a = my_asset.optmax(the.value) in a = 0 otherwise false;
-    f0: let some a = my_asset.optmin(the.value) in a = 0 otherwise false;
-    f0: let some a = my_asset.opthead(2) in true otherwise false;
-    f0: let some a = my_asset.opttail(2) in true otherwise false;
-
-
-    (* set api *)
+    (* formula asset collection *)
     s1: before.my_asset.isempty();       (* Msetbefore *)
     s2: at(lbl).my_asset.isempty();      (* Msetat *)
     s3: my_asset.unmoved.isempty();      (* Msetunmoved *)
     s4: my_asset.added.isempty();        (* Msetadded *)
     s5: my_asset.removed.isempty();      (* Msetremoved *)
+
+    (* formula asset collection methods *)
+    f01: let some a = my_asset.optget("id0") in true otherwise false;      (* Mapifget      *)
+    f02: my_asset.subsetof(my_asset);                                      (* Mapifsubsetof *)
+    f03: my_asset.isempty();                                               (* Mapifisempty  *)
+    f04: my_asset.select(the.value > 0).isempty();                         (* Mapifselect   *)
+    f05: my_asset.sort(the.value).isempty();                               (* Mapifsort     *)
+    f06: my_asset.contains(my_asset_id);                                   (* Mapifcontains *)
+    f07: let some a = my_asset.optnth(0) in a.value = 0 otherwise false;   (* Mapifnth      *)
+    f08: my_asset.count() = 0;                                             (* Mapifcount    *)
+    f09: my_asset.sum(the.value) = 0;                                      (* Mapifsum      *)
+    f10: let some a = my_asset.optmax(the.value) in a = 0 otherwise false; (* Mapifmax      *)
+    f11: let some a = my_asset.optmin(the.value) in a = 0 otherwise false; (* Mapifmin      *)
+    f12: let some a = my_asset.opthead(2) in true otherwise false;         (* Mapifhead     *)
+    f13: let some a = my_asset.opttail(2) in true otherwise false;         (* Mapiftail     *)
+
   }
 
   effect {
