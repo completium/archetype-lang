@@ -500,6 +500,27 @@ let pp_model_internal fmt (model : model) b =
       | Mbytes v -> Format.fprintf fmt "0x%s" v
 
 
+      (* control expression *)
+
+      | Mexprif (c, t, e) ->
+        Format.fprintf fmt "@[if %a then%a@\nelse%a@]"
+          f c
+          pp_mterm_block t
+          pp_mterm_block e
+
+      | Mexprmatchwith (e, l) ->
+        let pp fmt (e, l) =
+          Format.fprintf fmt "case %a of@\n  @[%a@]@\nend"
+            f e
+            (pp_list "@\n" (fun fmt (p, x) ->
+                 Format.fprintf fmt "| %a -> block {@\n  @[%a@]@\n}"
+                   pp_pattern p
+                   f x
+               )) l
+        in
+        pp fmt (e, l)
+
+
       (* composite type constructors *)
 
       | Mnone -> pp_str fmt "None"

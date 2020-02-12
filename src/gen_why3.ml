@@ -927,6 +927,17 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Mbytes v -> Tbytes v
 
 
+    (* control expression *)
+
+    | Mexprif (c, t, e) ->
+      Tif (map_mterm m ctx c, map_mterm m ctx t, Some (map_mterm m ctx e))
+
+    | Mexprmatchwith (t, l) ->
+      Tmatch (map_mterm m ctx t, List.map (fun ((p : M.lident M.pattern_gen), e) ->
+          (map_mpattern p.node, map_mterm m ctx e)
+        ) l)
+
+
     (* composite type constructors *)
 
     | Mnone                 -> error_not_translated "Mnone"

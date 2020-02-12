@@ -6,7 +6,6 @@ open Printer_tools
 exception Anomaly of string
 
 type error_desc =
-  | UnsupportedBreak
   | UnsupportedTerm of string
 [@@deriving show {with_path = false}]
 
@@ -502,10 +501,31 @@ let pp_model fmt (model : model) =
       | Mbytes v -> Format.fprintf fmt "0x%s" v
 
 
+      (* control expression *)
+
+      | Mexprif (c, t, e) ->
+        Format.fprintf fmt "@[sp.if (%a):@\n\t@[<v 4>%a@]@\nsp.else:@\n\t@[<v 4>%a@]@]"
+          f c
+          f t
+          f e
+
+      | Mexprmatchwith (e, l) ->
+        let pp fmt (e, l) =
+          Format.fprintf fmt "match %a with@\n@[<v 2>%a@]"
+            f e
+            (pp_list "@\n" (fun fmt (p, x) ->
+                 Format.fprintf fmt "| %a -> %a"
+                   pp_pattern p
+                   f x
+               )) l
+        in
+        pp fmt (e, l)
+
+
       (* composite type constructors *)
 
       | Mnone ->
-       pp_str fmt "None"
+        pp_str fmt "None"
 
       | Msome v ->
         Format.fprintf fmt "Some (%a)"

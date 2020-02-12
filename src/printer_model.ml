@@ -251,6 +251,27 @@ let pp_mterm fmt (mt : mterm) =
     | Mbytes v -> Format.fprintf fmt "0x%s" v
 
 
+    (* control expression *)
+
+    | Mexprif (c, t, e) ->
+      Format.fprintf fmt "if %a@\nthen @[<v 2>%a@]@\nelse @[<v 2>%a@]"
+        f c
+        f t
+        f e
+
+    | Mexprmatchwith (e, l) ->
+      let pp fmt (e, l) =
+        Format.fprintf fmt "match %a with@\n  @[%a@]"
+          f e
+          (pp_list "@\n" (fun fmt (p, x) ->
+               Format.fprintf fmt "| %a -> %a"
+                 pp_pattern p
+                 f x
+             )) l
+      in
+      pp fmt (e, l)
+
+
     (* composite type constructors *)
 
     | Mnone          -> pp_str fmt "None"

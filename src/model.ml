@@ -159,6 +159,9 @@ type ('id, 'term) mterm_node  =
   | Mduration       of Core.duration
   | Mtimestamp      of Core.big_int
   | Mbytes          of string
+  (* control expression *)
+  | Mexprif         of 'term * 'term * 'term
+  | Mexprmatchwith  of 'term * ('id pattern_gen * 'term) list
   (* composite type constructors *)
   | Mnone
   | Msome           of 'term
@@ -922,6 +925,9 @@ let cmp_mterm_node
     | Mduration v1, Mduration v2                                                       -> Core.cmp_duration v1 v2
     | Mtimestamp v1, Mtimestamp v2                                                     -> Big_int.eq_big_int v1 v2
     | Mbytes v1, Mbytes v2                                                             -> cmp_ident v1 v2
+    (* control expression *)
+    | Mexprif (c1, t1, e1), Mexprif (c2, t2, e2)                                       -> cmp c1 c2 && cmp t1 t2 && cmp e1 e2
+    | Mexprmatchwith (e1, l1), Mexprmatchwith (e2, l2)                                 -> cmp e1 e2 && List.for_all2 (fun (p1, t1) (p2, t2) -> cmp_pattern p1 p2 && cmp t1 t2) l1 l2
     (* composite type constructors *)
     | Mnone, Mnone                                                                     -> true
     | Msome v1, Msome v2                                                               -> cmp v1 v2
@@ -1166,6 +1172,9 @@ let map_term_node (f : 'id mterm_gen -> 'id mterm_gen) = function
   | Mduration v                    -> Mduration v
   | Mtimestamp v                   -> Mtimestamp v
   | Mbytes v                       -> Mbytes v
+  (* control expression *)
+  | Mexprif (c, t, e)              -> Mexprif (f c, f t, f e)
+  | Mexprmatchwith (e, l)          -> Mexprmatchwith (e, List.map (fun (p, e) -> (p, f e)) l)
   (* composite type constructors *)
   | Mnone                          -> Mnone
   | Msome v                        -> Msome (f v)
@@ -1458,6 +1467,9 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mduration _                           -> accu
   | Mtimestamp _                          -> accu
   | Mbytes _                              -> accu
+  (* control expression *)
+  | Mexprif (c, t, e)                     -> f (f (f accu c) t) e
+  | Mexprmatchwith (e, l)                 -> List.fold_left (fun accu (_, a) -> f accu a) (f accu e) l
   (* composite type constructors *)
   | Mnone                                 -> accu
   | Msome v                               -> f accu v
@@ -1749,6 +1761,26 @@ let fold_map_term
 
   | Mbytes v ->
     g (Mbytes v), accu
+
+
+  (* control expression *)
+
+  | Mexprif (c, t, e) ->
+    let ce, ca = f accu c in
+    let ti, ta = f ca t in
+    let ei, ea = f ta e in
+    g (Mexprif (ce, ti, ei)), ea
+
+  | Mexprmatchwith (e, l) ->
+    let ee, ea = f accu e in
+    let (pse, psa) =
+      List.fold_left
+        (fun (ps, accu) (p, i) ->
+           let ia, accu = f accu i in
+           (p, ia)::ps, accu) ([], ea) l
+      |> (fun (x, y) -> (List.rev x, y))
+    in
+    g (Mexprmatchwith (ee, pse)), psa
 
 
   (* composite type constructors *)
