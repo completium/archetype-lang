@@ -877,6 +877,38 @@ let pp_mterm fmt (mt : mterm) =
       pp fmt (l, r)
 
 
+    (* formula asset collection *)
+
+    | Msetbefore e ->
+      Format.fprintf fmt "before %a"
+        f e
+
+    | Msetat (lbl, e) ->
+      Format.fprintf fmt "at(%a) %a"
+        pp_str lbl
+        f e
+
+    | Msetunmoved e ->
+      Format.fprintf fmt "unmoved %a"
+        f e
+
+    | Msetadded e ->
+      Format.fprintf fmt "added %a"
+        f e
+
+    | Msetremoved e ->
+      Format.fprintf fmt "removed %a"
+        f e
+
+    | Msetiterated e ->
+      Format.fprintf fmt "iterated %a"
+        f e
+
+    | Msettoiterate e ->
+      Format.fprintf fmt "to_iterate %a"
+        f e
+
+
     (* formula expression*)
 
     | Mgetbefore (c, k) ->
@@ -914,36 +946,6 @@ let pp_mterm fmt (mt : mterm) =
       pp fmt (l, r)
 
 
-    (* set api *)
-
-    | Msetbefore e ->
-      Format.fprintf fmt "before %a"
-        f e
-
-    | Msetat (lbl, e) ->
-      Format.fprintf fmt "at(%a) %a"
-        pp_str lbl
-        f e
-
-    | Msetunmoved e ->
-      Format.fprintf fmt "unmoved %a"
-        f e
-
-    | Msetadded e ->
-      Format.fprintf fmt "added %a"
-        f e
-
-    | Msetremoved e ->
-      Format.fprintf fmt "removed %a"
-        f e
-
-    | Msetiterated e ->
-      Format.fprintf fmt "iterated %a"
-        f e
-
-    | Msettoiterate e ->
-      Format.fprintf fmt "to_iterate %a"
-        f e
 
   in
   f fmt mt

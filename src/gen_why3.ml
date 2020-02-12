@@ -1236,15 +1236,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Mequiv              _ -> error_not_translated "Mequiv"
 
 
-    (* formula expression*)
-
-    | Mgetbefore          _ -> error_not_translated "Mgetbefore"
-    | Mgetat              _ -> error_not_translated "Mgetat"
-    | Msubsetof (n, l, r) -> Tsubset (with_dummy_loc n, map_mterm m ctx l, map_mterm m ctx r)
-    | Misempty (l, r) -> Tempty (with_dummy_loc l, map_mterm m ctx r)
-
-
-    (* set api *)
+    (* formula asset collection *)
 
     | Msetbefore c -> map_mterm m { ctx with old = true } c |> Mlwtree.deloc
     | Msetat              _ -> error_not_translated "Msetat"
@@ -1255,6 +1247,16 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Msettoiterate c ->
       let n = M.Utils.get_asset_type mt |> with_dummy_loc in
       Ttoiter (n, with_dummy_loc "i", map_mterm m ctx c) (* TODO : should retrieve actual idx value *)
+
+
+    (* formula expression*)
+
+    | Mgetbefore          _ -> error_not_translated "Mgetbefore"
+    | Mgetat              _ -> error_not_translated "Mgetat"
+    | Msubsetof (n, l, r) -> Tsubset (with_dummy_loc n, map_mterm m ctx l, map_mterm m ctx r)
+    | Misempty (l, r) -> Tempty (with_dummy_loc l, map_mterm m ctx r)
+
+
 
   in
   mk_loc mt.loc t

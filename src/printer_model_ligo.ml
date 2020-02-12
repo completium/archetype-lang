@@ -1122,15 +1122,7 @@ let pp_model_internal fmt (model : model) b =
       | Mequiv _ -> emit_error (UnsupportedTerm ("equiv"))
 
 
-      (* formula expression*)
-
-      | Mgetbefore _ -> emit_error (UnsupportedTerm ("getbefore"))
-      | Mgetat     _ -> emit_error (UnsupportedTerm ("getat"))
-      | Msubsetof  _ -> emit_error (UnsupportedTerm ("subsetof"))
-      | Misempty   _ -> emit_error (UnsupportedTerm ("isempty"))
-
-
-      (* set api *)
+      (* formula asset collection *)
 
       | Msetbefore    _ -> emit_error (UnsupportedTerm ("setbefore"))
       | Msetat        _ -> emit_error (UnsupportedTerm ("setat"))
@@ -1139,6 +1131,14 @@ let pp_model_internal fmt (model : model) b =
       | Msetremoved   _ -> emit_error (UnsupportedTerm ("setremoved"))
       | Msetiterated  _ -> emit_error (UnsupportedTerm ("setiterated"))
       | Msettoiterate _ -> emit_error (UnsupportedTerm ("settoiterate"))
+
+
+      (* formula expression*)
+
+      | Mgetbefore _ -> emit_error (UnsupportedTerm ("getbefore"))
+      | Mgetat     _ -> emit_error (UnsupportedTerm ("getat"))
+      | Msubsetof  _ -> emit_error (UnsupportedTerm ("subsetof"))
+      | Misempty   _ -> emit_error (UnsupportedTerm ("isempty"))
 
     in
     f fmt mt

@@ -266,12 +266,7 @@ type ('id, 'term) mterm_node  =
   (* formula operators *)
   | Mimply          of 'term * 'term
   | Mequiv          of 'term * 'term
-  (* formula expression*)
-  | Mgetbefore      of ident * 'term
-  | Mgetat          of ident * ident * 'term (* asset_name * label * value *)
-  | Msubsetof       of ident * 'term * 'term
-  | Misempty        of ident * 'term
-  (* set api *)
+  (* formula asset collection *)
   | Msetbefore      of 'term
   | Msetat          of ident * 'term
   | Msetunmoved     of 'term
@@ -279,6 +274,11 @@ type ('id, 'term) mterm_node  =
   | Msetremoved     of 'term
   | Msetiterated    of 'term
   | Msettoiterate   of 'term
+  (* formula expression*)
+  | Mgetbefore      of ident * 'term
+  | Mgetat          of ident * ident * 'term (* asset_name * label * value *)
+  | Msubsetof       of ident * 'term * 'term
+  | Misempty        of ident * 'term
 [@@deriving show {with_path = false}]
 
 and 'id mterm_gen = {
@@ -1030,12 +1030,7 @@ let cmp_mterm_node
     (* formula operators *)
     | Mimply (l1, r1), Mimply (l2, r2)                                                 -> cmp l1 l2 && cmp r1 r2
     | Mequiv (l1, r1), Mequiv (l2, r2)                                                 -> cmp l1 l2 && cmp r1 r2
-    (* formula expression*)
-    | Mgetbefore (c1, k1), Mgetbefore (c2, k2)                                         -> cmp_ident c1 c2 && cmp k1 k2
-    | Mgetat (c1, d1, k1), Mgetat (c2, d2, k2)                                         -> cmp_ident c1 c2 && cmp_ident d1 d2 && cmp k1 k2
-    | Msubsetof (an1, c1, i1), Msubsetof (an2, c2, i2)                                 -> cmp_ident an1 an2 && cmp c1 c2 && cmp i1 i2
-    | Misempty (l1, r1), Misempty (l2, r2)                                             -> cmp_ident l1 l2 && cmp r1 r2
-    (* set api *)
+    (* formula asset collection *)
     | Msetbefore e1, Msetbefore e2                                                     -> cmp e1 e2
     | Msetat (lbl1, e1), Msetat (lbl2, e2)                                             -> cmp_ident lbl1 lbl2 && cmp e1 e2
     | Msetunmoved e1, Msetunmoved e2                                                   -> cmp e1 e2
@@ -1043,6 +1038,11 @@ let cmp_mterm_node
     | Msetremoved e1, Msetremoved   e2                                                 -> cmp e1 e2
     | Msetiterated e1, Msetiterated  e2                                                -> cmp e1 e2
     | Msettoiterate e1, Msettoiterate e2                                               -> cmp e1 e2
+    (* formula expression*)
+    | Mgetbefore (c1, k1), Mgetbefore (c2, k2)                                         -> cmp_ident c1 c2 && cmp k1 k2
+    | Mgetat (c1, d1, k1), Mgetat (c2, d2, k2)                                         -> cmp_ident c1 c2 && cmp_ident d1 d2 && cmp k1 k2
+    | Msubsetof (an1, c1, i1), Msubsetof (an2, c2, i2)                                 -> cmp_ident an1 an2 && cmp c1 c2 && cmp i1 i2
+    | Misempty (l1, r1), Misempty (l2, r2)                                             -> cmp_ident l1 l2 && cmp r1 r2
     (* *)
     | _ -> false
   with
@@ -1277,12 +1277,7 @@ let map_term_node (f : 'id mterm_gen -> 'id mterm_gen) = function
   (* formula operators *)
   | Mimply (l, r)                  -> Mimply (f l, f r)
   | Mequiv  (l, r)                 -> Mequiv (f l, f r)
-  (* formula expression*)
-  | Mgetbefore (c, k)              -> Mgetbefore (c, f k)
-  | Mgetat (c, d, k)               -> Mgetat (c, d, f k)
-  | Msubsetof (an, c, i)           -> Msubsetof (an, f c, f i)
-  | Misempty (l, r)                -> Misempty (l, f r)
-  (* set api *)
+  (* formula asset collection *)
   | Msetbefore    e                -> Msetbefore    (f e)
   | Msetat (lbl, e)                -> Msetat        (lbl, f e)
   | Msetunmoved   e                -> Msetunmoved   (f e)
@@ -1290,6 +1285,11 @@ let map_term_node (f : 'id mterm_gen -> 'id mterm_gen) = function
   | Msetremoved   e                -> Msetremoved   (f e)
   | Msetiterated  e                -> Msetiterated  (f e)
   | Msettoiterate e                -> Msettoiterate (f e)
+  (* formula expression*)
+  | Mgetbefore (c, k)              -> Mgetbefore (c, f k)
+  | Mgetat (c, d, k)               -> Mgetat (c, d, f k)
+  | Msubsetof (an, c, i)           -> Msubsetof (an, f c, f i)
+  | Misempty (l, r)                -> Misempty (l, f r)
 
 
 let map_gen_mterm g f (i : 'id mterm_gen) : 'id mterm_gen =
@@ -1571,12 +1571,7 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   (* formula operators *)
   | Mimply (l, r)                         -> f (f accu l) r
   | Mequiv  (l, r)                        -> f (f accu l) r
-  (* formula expression*)
-  | Mgetbefore (_, k)                     -> f accu k
-  | Mgetat (_, _, k)                      -> f accu k
-  | Msubsetof (_, c, i)                   -> f (f accu c) i
-  | Misempty  (_, r)                      -> f accu r
-  (* set api *)
+  (* formula asset collection *)
   | Msetbefore    e                       -> f accu e
   | Msetat   (_, e)                       -> f accu e
   | Msetunmoved   e                       -> f accu e
@@ -1584,6 +1579,11 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Msetremoved   e                       -> f accu e
   | Msetiterated  e                       -> f accu e
   | Msettoiterate e                       -> f accu e
+  (* formula expression*)
+  | Mgetbefore (_, k)                     -> f accu k
+  | Mgetat (_, _, k)                      -> f accu k
+  | Msubsetof (_, c, i)                   -> f (f accu c) i
+  | Misempty  (_, r)                      -> f accu r
 
 
 let fold_map_term_list f acc l : 'term list * 'a =
@@ -2230,27 +2230,7 @@ let fold_map_term
     g (Mequiv (le, re)), ra
 
 
-  (* formula expression*)
-
-  | Mgetbefore (c, k) ->
-    let ke, ka = f accu k in
-    g (Mgetbefore (c, ke)), ka
-
-  | Mgetat (c, d, k) ->
-    let ke, ka = f accu k in
-    g (Mgetat (c, d, ke)), ka
-
-  | Msubsetof (an, c, i) ->
-    let ce, ca = f accu c in
-    let ie, ia = f ca i in
-    g (Msubsetof (an, ce, ie)), ia
-
-  | Misempty  (l, r) ->
-    let re, ra = f accu r in
-    g (Misempty (l, re)), ra
-
-
-  (* set api *)
+  (* formula asset collection *)
 
   | Msetbefore e ->
     let ee, ea = f accu e in
@@ -2279,6 +2259,27 @@ let fold_map_term
   | Msettoiterate e ->
     let ee, ea = f accu e in
     g (Msettoiterate ee), ea
+
+
+  (* formula expression*)
+
+  | Mgetbefore (c, k) ->
+    let ke, ka = f accu k in
+    g (Mgetbefore (c, ke)), ka
+
+  | Mgetat (c, d, k) ->
+    let ke, ka = f accu k in
+    g (Mgetat (c, d, ke)), ka
+
+  | Msubsetof (an, c, i) ->
+    let ce, ca = f accu c in
+    let ie, ia = f ca i in
+    g (Msubsetof (an, ce, ie)), ia
+
+  | Misempty  (l, r) ->
+    let re, ra = f accu r in
+    g (Misempty (l, re)), ra
+
 
 
 let fold_left g l accu = List.fold_left (fun accu x -> g x accu) accu l
