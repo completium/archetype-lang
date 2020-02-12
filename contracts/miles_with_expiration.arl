@@ -60,9 +60,9 @@ action consume (a : address, quantity : int) {
     }
 
     postcondition p4 {
-      mile.added.isempty
+      mile.added.isempty()
       invariant for loop {
-        mile.added.isempty
+        mile.added.isempty()
       }
     }
   }
