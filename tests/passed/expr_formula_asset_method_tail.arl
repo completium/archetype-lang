@@ -12,7 +12,7 @@ asset my_asset identified by id {
 action exec () {
 
   specification {
-    s: let some a = my_asset.opttail(2) in true otherwise false;
+    s: let some a = my_asset.tail(2) in true otherwise false;
   }
 
   effect {

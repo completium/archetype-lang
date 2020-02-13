@@ -474,12 +474,6 @@ let methods : (string * method_) list =
     ("removed"     , mk M.Cremoved      `Pure   `Total   ([             ], Some (`SubColl)));
     ("iterated"    , mk M.Citerated     `Pure   `Total   ([             ], Some (`SubColl)));
     ("toiterate"   , mk M.Ctoiterate    `Pure   `Total   ([             ], Some (`SubColl)));
-    ("optget"      , mk M.Coptget       `Pure   `Partial ([`Pk          ], Some `The));
-    ("optnth"      , mk M.Coptnth       `Pure   `Partial ([`T M.vtint   ], Some (`Asset)));
-    ("optmax"      , mk M.Coptmax       `Pure   `Partial ([`RExpr       ], Some (`Ref 0)));
-    ("optmin"      , mk M.Coptmin       `Pure   `Partial ([`RExpr       ], Some (`Ref 0)));
-    ("opthead"     , mk M.Copthead      `Pure   `Partial ([`T M.vtint   ], Some (`SubColl)));
-    ("opttail"     , mk M.Copttail      `Pure   `Partial ([`T M.vtint   ], Some (`SubColl)));
   ]
 
 let methods = Mid.of_list methods

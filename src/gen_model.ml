@@ -255,19 +255,6 @@ let to_model (ast : A.model) : M.model =
     | A.Pcall (_, A.Cid id, args) ->
       M.Mapp (id, List.map (fun x -> term_arg_to_expr f x) args)
 
-    (*
-    | Mapifselect     of ident * 'term * 'term
-       | Mapifsort       of ident * 'term * ident * sort_kind
-       | Mapifcontains   of ident * 'term * 'term
-       | Mapifnth        of ident * 'term * 'term
-       | Mapifcount      of ident * 'term
-       | Mapifsum        of ident * 'id * 'term
-       | Mapifmax        of ident * 'id * 'term
-       | Mapifmin        of ident * 'id * 'term
-       | Mapifhead       of ident * 'term * 'term
-       | Mapiftail       of ident * 'term * 'term
-        *)
-
     | A.Pcall (Some p, A.Cconst (A.Csubsetof), [AExpr q]) ->
       let fp = f p in
       let fq = f q in
@@ -287,93 +274,84 @@ let to_model (ast : A.model) : M.model =
       then M.Mapifget (asset_name, fp, fq)
       else M.Mget (asset_name, fq)
 
-    | A.Pcall (Some p, A.Cconst (A.Cselect), [AFun (_qi, _qt, q)]) when formula ->
-      let fp = f p in
-      let fq = f q in
-      let asset_name = extract_asset_name fp in
-      M.Mapifselect (asset_name, fp, fq)
-
     | A.Pcall (Some p, A.Cconst (A.Cselect), [AFun (_qi, _qt, q)]) ->
       let fp = f p in
       let fq = f q in
       let asset_name = extract_asset_name fp in
-      M.Mselect (asset_name, fp, fq)
-
-    | A.Pcall (Some p, A.Cconst (A.Csort), [ASorting (asc, field_name)]) when formula ->
-      let fp = f p in
-      let asset_name = extract_asset_name fp in
-      let sort_kind = match asc with | true -> M.SKasc | false -> M.SKasc in
-      M.Mapifsort (asset_name, fp, unloc field_name, sort_kind)
+      if formula
+      then M.Mapifselect (asset_name, fp, fq)
+      else M.Mselect (asset_name, fp, fq)
 
     | A.Pcall (Some p, A.Cconst (A.Csort), [ASorting (asc, field_name)]) ->
       let fp = f p in
       let asset_name = extract_asset_name fp in
       let sort_kind = match asc with | true -> M.SKasc | false -> M.SKasc in
-      M.Msort (asset_name, fp, unloc field_name, sort_kind)
-
-    | A.Pcall (Some p, A.Cconst (A.Ccontains), [AExpr q]) when formula ->
-      let fp = f p in
-      let fq = f q in
-      let asset_name = extract_asset_name fp in
-      M.Mapifcontains (asset_name, fp, fq)
+      if formula
+      then M.Mapifsort (asset_name, fp, unloc field_name, sort_kind)
+      else M.Msort (asset_name, fp, unloc field_name, sort_kind)
 
     | A.Pcall (Some p, A.Cconst (A.Ccontains), [AExpr q]) ->
       let fp = f p in
       let fq = f q in
       let asset_name = extract_asset_name fp in
-      M.Mcontains (asset_name, fp, fq)
+      if formula
+      then M.Mapifcontains (asset_name, fp, fq)
+      else M.Mcontains (asset_name, fp, fq)
 
     | A.Pcall (Some p, A.Cconst (A.Cnth), [AExpr q]) ->
       let fp = f p in
       let fq = f q in
       let asset_name = extract_asset_name fp in
-      M.Mnth (asset_name, fp, fq)
-
-    | A.Pcall (Some p, A.Cconst (A.Ccount), []) when formula ->
-      let fp = f p in
-      let asset_name = extract_asset_name fp in
-      M.Mapifcount (asset_name, fp)
+      if formula
+      then M.Mapifnth (asset_name, fp, fq)
+      else M.Mnth (asset_name, fp, fq)
 
     | A.Pcall (Some p, A.Cconst (A.Ccount), []) ->
       let fp = f p in
       let asset_name = extract_asset_name fp in
-      M.Mcount (asset_name, fp)
-
-    | A.Pcall (Some p, A.Cconst (A.Csum), [AFun (qi, qt, q)]) when formula ->
-      let fp = f p in
-      let asset_name = extract_asset_name fp in
-      let field_name = extract_field_name (qi, qt, q) in
-      M.Mapifsum (asset_name, field_name, fp)
+      if formula
+      then M.Mapifcount (asset_name, fp)
+      else M.Mcount (asset_name, fp)
 
     | A.Pcall (Some p, A.Cconst (A.Csum), [AFun (qi, qt, q)]) ->
       let fp = f p in
       let asset_name = extract_asset_name fp in
       let field_name = extract_field_name (qi, qt, q) in
-      M.Msum (asset_name, field_name, fp)
+      if formula
+      then M.Mapifsum (asset_name, field_name, fp)
+      else M.Msum (asset_name, field_name, fp)
 
     | A.Pcall (Some p, A.Cconst (A.Cmin), [AFun (qi, qt, q)]) ->
       let fp = f p in
       let asset_name = extract_asset_name fp in
       let field_name = extract_field_name (qi, qt, q) in
-      M.Mmin (asset_name, field_name, fp)
+      if formula
+      then M.Mapifmin (asset_name, field_name, fp)
+      else M.Mmin (asset_name, field_name, fp)
 
     | A.Pcall (Some p, A.Cconst (A.Cmax), [AFun (qi, qt, q)]) ->
       let fp = f p in
       let asset_name = extract_asset_name fp in
       let field_name = extract_field_name (qi, qt, q) in
-      M.Mmax (asset_name, field_name, fp)
+      if formula
+      then M.Mapifmax (asset_name, field_name, fp)
+      else M.Mmax (asset_name, field_name, fp)
 
     | A.Pcall (Some p, A.Cconst (A.Chead), [AExpr e]) ->
       let fp = f p in
       let fe = f e in
       let asset_name = extract_asset_name fp in
-      M.Mhead (asset_name, fp, fe)
+      if formula
+      then M.Mapifhead (asset_name, fp, fe)
+      else M.Mhead (asset_name, fp, fe)
 
     | A.Pcall (Some p, A.Cconst (A.Ctail), [AExpr e]) ->
       let fp = f p in
       let fe = f e in
       let asset_name = extract_asset_name fp in
-      M.Mtail (asset_name, fp, fe)
+      if formula
+      then M.Mapiftail (asset_name, fp, fe)
+      else M.Mtail (asset_name, fp, fe)
 
     (* | A.Pcall (None, A.Cconst (A.Cmaybeperformedonlybyrole), [AExpr l; AExpr r]) ->
        M.MsecMayBePerformedOnlyByRole (f l, f r)

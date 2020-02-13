@@ -449,6 +449,7 @@ let rec pp_term outer pos fmt = function
       pp_str (String.capitalize_ascii i)
       (pp_with_paren (pp_term outer pos)) e1
       (pp_with_paren (pp_term outer pos)) e2
+  | Tlnth _ -> pp_str fmt "TODO_Tlnth"
   | Twitness i ->
     Format.fprintf fmt "%a.witness"
       pp_str (String.capitalize_ascii i)
@@ -467,6 +468,7 @@ let rec pp_term outer pos fmt = function
     Format.fprintf fmt "tail %a %a"
       (pp_with_paren (pp_term outer pos)) e1
       (pp_with_paren (pp_term outer pos)) e2
+  | Tltail _ -> pp_str fmt "TODO_Tltail"
   | Tnow i -> Format.fprintf fmt "%a._now" pp_str i
   | Tmlist (e1,i1,i2,i3,e2) ->
     Format.fprintf fmt "@[match %a with@\n| Nil -> %a@\n| Cons %a %a -> @\n  @[%a@]@\nend@]"
@@ -511,6 +513,7 @@ let rec pp_term outer pos fmt = function
   | Tbytes _ -> pp_str fmt "TODO_Tbytes"
   | Tat _ -> pp_str fmt "TODO_Tat"
   | Thead (_, _) -> pp_str fmt "TODO_Thead"
+  | Tlhead (_, _) -> pp_str fmt "TODO_Tlhead"
 and pp_recfield fmt (n,t) =
   Format.fprintf fmt "%a = %a"
     pp_str n

@@ -12,7 +12,7 @@ asset my_asset identified by id {
 action exec () {
 
   specification {
-    s: let some a = my_asset.optget("id0") in true otherwise false;
+    s: let some a = my_asset.get("id0") in true otherwise false;
   }
 
   effect {

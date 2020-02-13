@@ -12,7 +12,7 @@ asset my_asset identified by id {
 action exec () {
 
   specification {
-    s: let some a = my_asset.optmin(the.value) in a = 0 otherwise false;
+    s: let some a = my_asset.min(the.value) in a = 0 otherwise false;
   }
 
   effect {
