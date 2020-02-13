@@ -155,8 +155,11 @@ type ('e,'t,'i) abstract_term =
   | Tempty  of 'i * 'e
   | Tsingl  of 'i * 'e
   | Thead   of 'e * 'e
+  | Tlhead   of 'e * 'e
   | Ttail   of 'e * 'e
+  | Tltail   of 'e * 'e
   | Tnth    of 'i * 'e * 'e
+  | Tlnth   of 'i * 'e * 'e
   | Twitness of 'i
   (* option *)
   | Tnone
@@ -392,8 +395,11 @@ and map_abstract_term
   | Tempty (i,e)       -> Tempty (map_i i, map_e e)
   | Tsingl (i,e)       -> Tsingl (map_i i, map_e e)
   | Thead (e1,e2)      -> Thead (map_e e1, map_e e2)
+  | Tlhead (e1,e2)     -> Tlhead (map_e e1, map_e e2)
   | Ttail (e1,e2)      -> Ttail (map_e e1, map_e e2)
+  | Tltail (e1,e2)     -> Tltail (map_e e1, map_e e2)
   | Tnth (i,e1,e2)     -> Tnth (map_i i, map_e e1, map_e e2)
+  | Tlnth (i,e1,e2)    -> Tlnth (map_i i, map_e e1, map_e e2)
   | Twitness i         -> Twitness (map_i i)
   | Tnone              -> Tnone
   | Tsome e            -> Tsome (map_e e)

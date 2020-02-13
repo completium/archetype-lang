@@ -255,11 +255,37 @@ let to_model (ast : A.model) : M.model =
     | A.Pcall (_, A.Cid id, args) ->
       M.Mapp (id, List.map (fun x -> term_arg_to_expr f x) args)
 
+    (*
+    | Mapifselect     of ident * 'term * 'term
+       | Mapifsort       of ident * 'term * ident * sort_kind
+       | Mapifcontains   of ident * 'term * 'term
+       | Mapifnth        of ident * 'term * 'term
+       | Mapifcount      of ident * 'term
+       | Mapifsum        of ident * 'id * 'term
+       | Mapifmax        of ident * 'id * 'term
+       | Mapifmin        of ident * 'id * 'term
+       | Mapifhead       of ident * 'term * 'term
+       | Mapiftail       of ident * 'term * 'term
+        *)
+
+    | A.Pcall (Some p, A.Cconst (A.Csubsetof), [AExpr q]) ->
+      let fp = f p in
+      let fq = f q in
+      let asset_name = extract_asset_name fp in
+      M.Mapifsubsetof (asset_name, fp, fq)
+
+    | A.Pcall (Some p, A.Cconst (A.Cisempty), []) ->
+      let fp = f p in
+      let asset_name = extract_asset_name fp in
+      M.Mapifisempty (asset_name, fp)
+
     | A.Pcall (Some p, A.Cconst (A.Cget), [AExpr q]) ->
       let fp = f p in
       let fq = f q in
       let asset_name = extract_asset_name fp in
-      M.Mget (asset_name, fq)
+      if formula
+      then M.Mapifget (asset_name, fp, fq)
+      else M.Mget (asset_name, fq)
 
     | A.Pcall (Some p, A.Cconst (A.Cselect), [AFun (_qi, _qt, q)]) when formula ->
       let fp = f p in
@@ -348,53 +374,6 @@ let to_model (ast : A.model) : M.model =
       let fe = f e in
       let asset_name = extract_asset_name fp in
       M.Mtail (asset_name, fp, fe)
-
-    | A.Pcall (Some p, A.Cconst (A.Coptget), [AExpr q]) ->
-      let fp = f p in
-      let fq = f q in
-      let asset_name = extract_asset_name fp in
-      M.Mapifget (asset_name, fp, fq)
-
-    | A.Pcall (Some p, A.Cconst (A.Csubsetof), [AExpr q]) ->
-      let fp = f p in
-      let fq = f q in
-      let asset_name = extract_asset_name fp in
-      M.Mapifsubsetof (asset_name, fp, fq)
-
-    | A.Pcall (Some p, A.Cconst (A.Cisempty), []) ->
-      let fp = f p in
-      let asset_name = extract_asset_name fp in
-      M.Mapifisempty (asset_name, fp)
-
-    | A.Pcall (Some p, A.Cconst (A.Coptnth), [AExpr q]) ->
-      let fp = f p in
-      let fq = f q in
-      let asset_name = extract_asset_name fp in
-      M.Mapifnth (asset_name, fp, fq)
-
-    | A.Pcall (Some p, A.Cconst (A.Coptmax), [AFun (qi, qt, q)]) ->
-      let fp = f p in
-      let asset_name = extract_asset_name fp in
-      let field_name = extract_field_name (qi, qt, q) in
-      M.Mapifmax (asset_name, field_name, fp)
-
-    | A.Pcall (Some p, A.Cconst (A.Coptmin), [AFun (qi, qt, q)]) ->
-      let fp = f p in
-      let asset_name = extract_asset_name fp in
-      let field_name = extract_field_name (qi, qt, q) in
-      M.Mapifmin (asset_name, field_name, fp)
-
-    | A.Pcall (Some p, A.Cconst (A.Copthead), [AExpr e]) ->
-      let fp = f p in
-      let fe = f e in
-      let asset_name = extract_asset_name fp in
-      M.Mapifhead (asset_name, fp, fe)
-
-    | A.Pcall (Some p, A.Cconst (A.Copttail), [AExpr e]) ->
-      let fp = f p in
-      let fe = f e in
-      let asset_name = extract_asset_name fp in
-      M.Mapiftail (asset_name, fp, fe)
 
     (* | A.Pcall (None, A.Cconst (A.Cmaybeperformedonlybyrole), [AExpr l; AExpr r]) ->
        M.MsecMayBePerformedOnlyByRole (f l, f r)

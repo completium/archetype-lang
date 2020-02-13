@@ -190,12 +190,6 @@ let to_const = function
   | Cremoved      -> "removed"
   | Citerated     -> "iterated"
   | Ctoiterate    -> "toiterate"
-  | Coptget       -> "optget"
-  | Coptnth       -> "optnth"
-  | Coptmax       -> "optmax"
-  | Coptmin       -> "optmin"
-  | Copttail      -> "opttail"
-  | Copthead      -> "opthead"
 let pp_call_kind fmt = function
   | Cid id -> pp_id fmt id
   | Cconst c -> pp_str fmt (to_const c)
