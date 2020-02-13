@@ -778,19 +778,6 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Mletin ([id], v, _, b, None) ->
       Tletin (M.Utils.is_local_assigned (unloc id) b, map_lident id, None, map_mterm m ctx v, map_mterm m ctx b)
 
-    | Mletin ([id], { node = M.Mget (a,k); type_ = _ }, _, b, Some e) -> (* logical *)
-      Tletin (M.Utils.is_local_assigned (unloc id) b,
-              map_lident id,
-              None,
-              Tget (loc_ident a,
-                    loc_term (mk_ac a),
-                    map_mterm m ctx k) |> with_dummy_loc,
-              Tif (Tnot (Teq (Tyint,
-                              Tvar (unloc id),
-                              Twitness a)) |> loc_term,
-                   map_mterm m ctx b,
-                   Some (map_mterm m ctx e)) |> with_dummy_loc)
-
     | Mletin ([id], { node = M.Mapifget (a, {node = M.Msetbefore _; _}, k); type_ = _ }, _, b, Some e) -> (* logical *)
       let ctx = { ctx with (*old = true;*) localold = ctx.localold @ [unloc id] } in
       Tletin (M.Utils.is_local_assigned (unloc id) b,
@@ -798,6 +785,19 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
               None,
               Tget (loc_ident a,
                     loc_term (mk_ac_old a),
+                    map_mterm m ctx k) |> with_dummy_loc,
+              Tif (Tnot (Teq (Tyint,
+                              Tvar (unloc id),
+                              Twitness a)) |> loc_term,
+                   map_mterm m ctx b,
+                   Some (map_mterm m ctx e)) |> with_dummy_loc)
+
+    | Mletin ([id], { node = M.Mapifget (a,_, k); type_ = _ }, _, b, Some e) -> (* logical *)
+      Tletin (M.Utils.is_local_assigned (unloc id) b,
+              map_lident id,
+              None,
+              Tget (loc_ident a,
+                    loc_term (mk_ac a),
                     map_mterm m ctx k) |> with_dummy_loc,
               Tif (Tnot (Teq (Tyint,
                               Tvar (unloc id),
