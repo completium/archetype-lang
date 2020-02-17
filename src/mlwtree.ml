@@ -102,6 +102,7 @@ type ('e,'t,'i) abstract_term =
   | Traise  of exn
   | Texn    of exn
   | Tconcat of 'e * 'e
+  | Ttransfer of 'e * 'e
   (* trace *)
   | Tmktr   of 'e * 'e
   | Ttradd  of 'i
@@ -165,6 +166,7 @@ type ('e,'t,'i) abstract_term =
   | Tnone
   | Tsome   of 'e
   | Tenum   of 'i
+  (* escape node *)
   | Ttobereplaced
   | Tnottranslated
   (* ... *)
@@ -353,6 +355,7 @@ and map_abstract_term
   | Traise e           -> Traise e
   | Texn e             -> Texn e
   | Tconcat (e1,e2)    -> Tconcat (map_e e1, map_e e2)
+  | Ttransfer (e1,e2)  -> Ttransfer (map_e e1, map_e e2)
   | Tmktr (e1,e2)      -> Tmktr (map_e e1, map_e e2)
   | Ttradd i           -> Ttradd (map_i i)
   | Ttrrm  i           -> Ttrrm (map_i i)

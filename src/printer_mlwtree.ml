@@ -502,6 +502,10 @@ let rec pp_term outer pos fmt = function
   | Tadded _ -> pp_str fmt "TODO_Tadded"
   | Trmed _ -> pp_str fmt "TODO_Trmed"
   | Tconcat (_, _) -> pp_str fmt "TODO_Tconcat"
+  | Ttransfer (e1,e2) ->
+    Format.fprintf fmt "mk_transfer %a %a"
+      (pp_with_paren (pp_term outer pos)) e1
+      (pp_with_paren (pp_term outer pos)) e2
   | Tmktr (_, _) -> pp_str fmt "TODO_Tmktr"
   | Ttradd _ -> pp_str fmt "TODO_Ttradd"
   | Ttrrm _ -> pp_str fmt "TODO_Ttrrm"

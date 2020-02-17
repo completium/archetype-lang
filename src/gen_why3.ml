@@ -273,7 +273,7 @@ let mk_transfer () =
           Tassign (
             Tdoti(gs,"_ops"),
             Tcons (
-              Tapp(Tvar "mk_transfer",[Tvar "t";Tvar "a"]),
+              Ttransfer(Tvar "t",Tvar "a"),
               Tdoti(gs,"_ops")
             ));
           Tassign (
@@ -295,6 +295,7 @@ let rec mk_select_test = function
   | Tnow _ -> Tvar (mk_id "now")
   | _ as t -> map_abstract_term mk_select_test id id t
 
+(* internal select is a local defintion *)
 let mk_select_body asset mlw_test : term =
   let capa = String.capitalize_ascii asset in
   Tletfun (
@@ -904,7 +905,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Mfail (InvalidCondition _) -> Traise Einvalidcondition
     | Mfail InvalidState         -> Traise Einvalidstate
     | Mfail               _ -> error_not_translated "Mfail"
-    | Mtransfer (a, t) -> Tapp (loc_term (Tvar "transfer"), [map_mterm m ctx a; map_mterm m ctx t])
+    | Mtransfer (a, t) -> Ttransfer(map_mterm m ctx a, map_mterm m ctx t)
     | Mexternal           _ -> error_not_translated "Mexternal"
 
 
