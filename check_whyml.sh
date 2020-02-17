@@ -9,10 +9,14 @@ NB_OUT="0"
 process () {
     printf '%-50s' $1
     OUT_MLW=$i.mlw
+    $BIN $i > /dev/null 2> /dev/null
+    RET=`echo $?`
+    if [ ${RET} -eq 0 ]; then
+    echo -ne "\033[32m OK \033[0m"
     $BIN -t whyml $i > ${OUT_MLW} 2> /dev/null
     RET=`echo $?`
     if [ ${RET} -eq 0 ]; then
-        echo -ne "\033[32m OK \033[0m"
+        echo -ne "   \033[32m OK \033[0m"
         $BIN_WHY3 -L ${LIB_ARCHETYPE} prove ${OUT_MLW} > /dev/null 2> /dev/null
         RET=`echo $?`
         if [ ${RET} -eq 0 ]; then
@@ -22,15 +26,20 @@ process () {
             NB_OUT=$((${NB_OUT} + 1))
         fi
     else
-	      echo -ne "\033[31m KO \033[0m"
+	      echo -ne "   \033[31m KO \033[0m"
 	      echo -e  "   \033[31m KO \033[0m"
         NB_ERR=$((${NB_ERR} + 1))
         NB_OUT=$((${NB_OUT} + 1))
     fi
+    else
+	      echo -ne "\033[31m KO \033[0m"
+	      echo -ne "   \033[31m KO \033[0m"
+	      echo -e  "   \033[31m KO \033[0m"
+    fi
     rm -f $OUT_MLW
 }
 
-printf '%-48s%s\n' '' '   OUT    PROVE'
+printf '%-48s%s\n' '' '   RET    OUT    PROVE'
 
 for i in contracts/*.arl; do
   process $i
