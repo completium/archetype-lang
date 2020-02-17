@@ -209,7 +209,7 @@ type ('id, 'term) mterm_node  =
   | Mcontains       of ident * 'term * 'term
   | Mnth            of ident * 'term * 'term
   | Mcount          of ident * 'term
-  | Msum            of ident * 'id * 'term
+  | Msum            of ident * 'term * 'term
   | Mmin            of ident * 'id * 'term
   | Mmax            of ident * 'id * 'term
   | Mhead           of ident * 'term * 'term
@@ -283,7 +283,7 @@ type ('id, 'term) mterm_node  =
   | Mapifcontains   of ident * 'term * 'term
   | Mapifnth        of ident * 'term * 'term
   | Mapifcount      of ident * 'term
-  | Mapifsum        of ident * 'id * 'term
+  | Mapifsum        of ident * 'term * 'term
   | Mapifmax        of ident * 'id * 'term
   | Mapifmin        of ident * 'id * 'term
   | Mapifhead       of ident * 'term * 'term
@@ -328,7 +328,7 @@ and api_asset =
   | Contains         of ident
   | Nth              of ident
   | Count            of ident
-  | Sum              of ident * ident
+  | Sum              of ident * type_ * mterm
   | Min              of ident * ident
   | Max              of ident * ident
   | Shallow          of ident
@@ -982,7 +982,7 @@ let cmp_mterm_node
     | Mcontains (an1, c1, i1), Mcontains (an2, c2, i2)                                 -> cmp_ident an1 an2 && cmp c1 c2 && cmp i1 i2
     | Mnth (an1, c1, i1), Mnth (an2, c2, i2)                                           -> cmp_ident an1 an2 && cmp c1 c2 && cmp i1 i2
     | Mcount (an1, c1), Mcount (an2, c2)                                               -> cmp_ident an1 an2 && cmp c1 c2
-    | Msum (an1, fd1, c1), Msum (an2, fd2, c2)                                         -> cmp_ident an1 an2 && cmpi fd1 fd2 && cmp c1 c2
+    | Msum (an1, c1, p1), Msum (an2, c2, p2)                                           -> cmp_ident an1 an2 && cmp c1 c2 && cmp p1 p2
     | Mmin (an1, fd1, c1), Mmin (an2, fd2, c2)                                         -> cmp_ident an1 an2 && cmpi fd1 fd2 && cmp c1 c2
     | Mmax (an1, fd1, c1), Mmax (an2, fd2, c2)                                         -> cmp_ident an1 an2 && cmpi fd1 fd2 && cmp c1 c2
     | Mhead (an1, c1, i1), Mhead (an2, c2, i2)                                         -> cmp_ident an1 an2 && cmp c1 c2 && cmp i1 i2
@@ -1056,7 +1056,7 @@ let cmp_mterm_node
     | Mapifcontains (an1, c1, i1), Mapifcontains (an2, c2, i2)                         -> cmp_ident an1 an2 && cmp c1 c2 && cmp i1 i2
     | Mapifnth (an1, c1, i1), Mapifnth (an2, c2, i2)                                   -> cmp_ident an1 an2 && cmp c1 c2 && cmp i1 i2
     | Mapifcount (an1, c1), Mapifcount (an2, c2)                                       -> cmp_ident an1 an2 && cmp c1 c2
-    | Mapifsum (an1, fd1, c1), Mapifsum (an2, fd2, c2)                                 -> cmp_ident an1 an2 && cmpi fd1 fd2 && cmp c1 c2
+    | Mapifsum (an1, c1, p1), Mapifsum (an2, c2, p2)                                   -> cmp_ident an1 an2 && cmp c1 c2 && cmp p1 p2
     | Mapifmin (an1, fd1, c1), Mapifmin (an2, fd2, c2)                                 -> cmp_ident an1 an2 && cmpi fd1 fd2 && cmp c1 c2
     | Mapifmax (an1, fd1, c1), Mapifmax (an2, fd2, c2)                                 -> cmp_ident an1 an2 && cmpi fd1 fd2 && cmp c1 c2
     | Mapifhead (an1, c1, i1), Mapifhead (an2, c2, i2)                                 -> cmp_ident an1 an2 && cmp c1 c2 && cmp i1 i2
@@ -1085,7 +1085,7 @@ let cmp_api_item_node (a1 : api_storage_node) (a2 : api_storage_node) : bool =
     | Contains an1, Contains an2                       -> cmp_ident an1 an2
     | Nth an1, Nth an2                                 -> cmp_ident an1 an2
     | Count an1, Count an2                             -> cmp_ident an1 an2
-    | Sum (an1, fn1), Sum (an2, fn2)                   -> cmp_ident an1 an2 && cmp_ident fn1 fn2
+    | Sum (an1, t1, p1), Sum (an2, t2, p2)             -> cmp_ident an1 an2 && cmp_type t1 t2 && cmp_mterm p1 p2
     | Min (an1, fn1), Min (an2, fn2)                   -> cmp_ident an1 an2 && cmp_ident fn1 fn2
     | Max (an1, fn1), Max (an2, fn2)                   -> cmp_ident an1 an2 && cmp_ident fn1 fn2
     | Shallow an1, Shallow an2                         -> cmp_ident an1 an2
@@ -1238,7 +1238,7 @@ let map_term_node (f : 'id mterm_gen -> 'id mterm_gen) = function
   | Mcontains (an, c, i)           -> Mcontains (an, f c, f i)
   | Mnth (an, c, i)                -> Mnth (an, f c, f i)
   | Mcount (an, c)                 -> Mcount (an, f c)
-  | Msum (an, fd, c)               -> Msum (an, fd, f c)
+  | Msum (an, c, p)                -> Msum (an, f c, f p)
   | Mmin (an, fd, c)               -> Mmin (an, fd, f c)
   | Mmax (an, fd, c)               -> Mmax (an, fd, f c)
   | Mhead (an, c, i)               -> Mhead (an, f c, f i)
@@ -1312,7 +1312,7 @@ let map_term_node (f : 'id mterm_gen -> 'id mterm_gen) = function
   | Mapifcontains (an, c, i)       -> Mapifcontains (an, f c, f i)
   | Mapifnth (an, c, i)            -> Mapifnth (an, f c, f i)
   | Mapifcount (an, c)             -> Mapifcount (an, f c)
-  | Mapifsum (an, fd, c)           -> Mapifsum (an, fd, f c)
+  | Mapifsum (an, c, p)            -> Mapifsum (an, f c, f p)
   | Mapifmin (an, fd, c)           -> Mapifmin (an, fd, f c)
   | Mapifmax (an, fd, c)           -> Mapifmax (an, fd, f c)
   | Mapifhead (an, c, i)           -> Mapifhead (an, f c, f i)
@@ -1540,7 +1540,7 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mcontains (_, c, i)                   -> f (f accu c) i
   | Mnth (_, c, i)                        -> f (f accu c) i
   | Mcount (_, c)                         -> f accu c
-  | Msum (_, _, c)                        -> f accu c
+  | Msum (_, c, p)                        -> f (f accu c) p
   | Mmin (_, _, c)                        -> f accu c
   | Mmax (_, _, c)                        -> f accu c
   | Mhead (_, c, i)                       -> f (f accu c) i
@@ -1614,7 +1614,7 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mapifcontains (_, c, i)               -> f (f accu c) i
   | Mapifnth (_, c, i)                    -> f (f accu c) i
   | Mapifcount (_, c)                     -> f accu c
-  | Mapifsum (_, _, c)                    -> f accu c
+  | Mapifsum (_, c, p)                    -> f (f accu c) p
   | Mapifmin (_, _, c)                    -> f accu c
   | Mapifmax (_, _, c)                    -> f accu c
   | Mapifhead (_, c, i)                   -> f (f accu c) i
@@ -2032,9 +2032,10 @@ let fold_map_term
     let ce, ca = f accu c in
     g (Mcount (an, ce)), ca
 
-  | Msum (an, fd, c) ->
+  | Msum (an, c, p) ->
     let ce, ca = f accu c in
-    g (Msum (an, fd, ce)), ca
+    let pe, pa = f ca p in
+    g (Msum (an, ce, pe)), pa
 
   | Mmin (an, fd, c) ->
     let ce, ca = f accu c in
@@ -2334,9 +2335,10 @@ let fold_map_term
     let ce, ca = f accu c in
     g (Mapifcount (an, ce)), ca
 
-  | Mapifsum (an, fd, c) ->
+  | Mapifsum (an, c, p) ->
     let ce, ca = f accu c in
-    g (Mapifsum (an, fd, ce)), ca
+    let pe, pa = f ca p in
+    g (Mapifsum (an, ce, pe)), pa
 
   | Mapifmin (an, fd, c) ->
     let ce, ca = f accu c in
@@ -2526,27 +2528,27 @@ end = struct
     | Entry     fs        -> lident_to_string fs.name
 
   let function_name_from_api_asset = function
-    | Get            aid       -> "get_"            ^ aid
-    | Set            aid       -> "set_"            ^ aid
-    | Add            aid       -> "add_"            ^ aid
-    | Remove         aid       -> "remove_"         ^ aid
-    | UpdateAdd     (aid, fid) -> "update_add_"     ^ aid ^ "_" ^ fid
-    | UpdateRemove  (aid, fid) -> "update_remove_"  ^ aid ^ "_" ^ fid
-    | ToKeys         aid       -> "to_keys_"        ^ aid
-    | ColToKeys      aid       -> "col_to_keys_"    ^ aid
-    | Select        (aid, _)   -> "select_"         ^ aid
-    | Sort          (aid, fid) -> "sort_"           ^ aid ^ "_" ^ fid
-    | Contains       aid       -> "contains_"       ^ aid
-    | Nth            aid       -> "nth_"            ^ aid
-    | Count          aid       -> "count_"          ^ aid
-    | Sum           (aid, fid) -> "sum_"            ^ aid ^ "_" ^ fid
-    | Min           (aid, fid) -> "min_"            ^ aid ^ "_" ^ fid
-    | Max           (aid, fid) -> "max_"            ^ aid ^ "_" ^ fid
-    | Shallow        aid       -> "shallow_"        ^ aid
-    | Unshallow      aid       -> "unshallow"       ^ aid
-    | Listtocoll     aid       -> "listtocoll_"     ^ aid
-    | Head           aid       -> "head_"           ^ aid
-    | Tail           aid       -> "tail_"           ^ aid
+    | Get            aid        -> "get_"            ^ aid
+    | Set            aid        -> "set_"            ^ aid
+    | Add            aid        -> "add_"            ^ aid
+    | Remove         aid        -> "remove_"         ^ aid
+    | UpdateAdd     (aid, fid)  -> "update_add_"     ^ aid ^ "_" ^ fid
+    | UpdateRemove  (aid, fid)  -> "update_remove_"  ^ aid ^ "_" ^ fid
+    | ToKeys         aid        -> "to_keys_"        ^ aid
+    | ColToKeys      aid        -> "col_to_keys_"    ^ aid
+    | Select        (aid, _)    -> "select_"         ^ aid
+    | Sort          (aid, fid)  -> "sort_"           ^ aid ^ "_" ^ fid
+    | Contains       aid        -> "contains_"       ^ aid
+    | Nth            aid        -> "nth_"            ^ aid
+    | Count          aid        -> "count_"          ^ aid
+    | Sum           (aid, _, _) -> "sum_"            ^ aid
+    | Min           (aid, fid)  -> "min_"            ^ aid ^ "_" ^ fid
+    | Max           (aid, fid)  -> "max_"            ^ aid ^ "_" ^ fid
+    | Shallow        aid        -> "shallow_"        ^ aid
+    | Unshallow      aid        -> "unshallow"       ^ aid
+    | Listtocoll     aid        -> "listtocoll_"     ^ aid
+    | Head           aid        -> "head_"           ^ aid
+    | Tail           aid        -> "tail_"           ^ aid
 
   let function_name_from_api_list = function
     | Lprepend  _ -> "prepend"
@@ -2939,11 +2941,11 @@ end = struct
     | Post -> true
     | _ -> false
 
-  let get_sum_fields m a =
+  let get_sum_fields m a = (* TODO *)
     List.fold_left (fun acc (ai : api_storage) ->
         match ai.node_item with
-        | APIAsset (Sum (asset,field)) when String.equal a asset ->
-          acc @ [field]
+        | APIAsset (Sum (asset, _type, _field)) when String.equal a asset ->
+          acc @ []
         | _ -> acc
       ) [] m.api_items
 

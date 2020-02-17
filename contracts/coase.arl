@@ -20,10 +20,10 @@ asset card identified by card_id {
 }
 
 variable next_id : int = 0
-with {
+(* with {
   n1: next_id >= 0;
   n2: forall c in card, next_id <> c.card_id
-}
+} *)
 
 action transfer_single (card_to_transfer : pkey of card, destination : address) {
   require {
@@ -81,5 +81,5 @@ action buy_single (card_to_buy : pkey of card_pattern) {
 }
 
 specification {
-  g1: balance = card_pattern.sum(coefficient * ((quantity * (quantity + 1)) / 2 + sellcount))
+  g1: balance = card_pattern.sum(coefficient)
 }

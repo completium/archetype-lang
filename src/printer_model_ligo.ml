@@ -39,12 +39,13 @@ type position =
 type env = {
   f: function__ option;
   select_preds: mterm list;
+  sum_preds: mterm list;
   consts: (ident * mterm) list;
   vars: (ident * mterm) list;
 }
 
-let mk_env ?f ?(select_preds=[]) ?(consts=[]) ?(vars=[]) () : env =
-  { f; select_preds; consts; vars }
+let mk_env ?f ?(select_preds=[]) ?(sum_preds=[]) ?(consts=[]) ?(vars=[]) () : env =
+  { f; select_preds; sum_preds; consts; vars }
 
 exception Found
 
@@ -857,15 +858,15 @@ let pp_model_internal fmt (model : model) b =
         in
         pp fmt (an, c)
 
-      | Msum (an, fd, c) ->
-        let pp fmt (an, fd, c) =
-          Format.fprintf fmt "sum_%a_%a (%s, %a)"
-            pp_str an
-            pp_id fd
+      | Msum (an, c, p) ->
+        let index : int = get_preds_index env.sum_preds p in
+        let pp fmt (an, c, _p) =
+          Format.fprintf fmt "sum_%a_%i (%s, %a)"
+            pp_str an index
             const_storage
             f c
         in
-        pp fmt (an, fd, c)
+        pp fmt (an, c, p)
 
       | Mmin (an, fd, c) ->
         let pp fmt (an, fd, c) =
@@ -1482,29 +1483,29 @@ let pp_model_internal fmt (model : model) b =
        an
        pp_btyp t *)
 
-    | Sum (an, fn) ->
+    | Sum (an, t, p) ->
       let get_zero = function
         | _ -> "0"
       in
-
       let _, tk = Utils.get_asset_key model an in
-      let _, t, _ = Utils.get_asset_field model (an, fn) in
+      let expr = p in
+      let i = get_preds_index env.sum_preds p in
       Format.fprintf fmt
-        "function sum_%s_%s (const s : storage_type; const l : list(%a)) : %a is@\n  \
+        "function sum_%s_%i (const s : storage_type; const l : list(%a)) : %a is@\n  \
          begin@\n    \
          var r : %a := %s;@\n    \
          function aggregate (const i : %a) : unit is@\n      \
          begin@\n        \
          const a : %s = get_force(i, s.%s_assets);@\n        \
-         r := r + a.%s;@\n      \
+         r := r + %a;@\n      \
          end with unit;@\n    \
          list_iter(aggregate, l)@\n  \
          end with r@\n"
-        an fn pp_btyp tk pp_type t
+        an i pp_btyp tk pp_type t
         pp_type t (get_zero t)
         pp_btyp tk
         an an
-        fn
+        (pp_mterm (mk_env ())) expr
 
     | Min (_an, _fn) ->
       (* let _, tk = Utils.get_asset_key model an in
@@ -1740,6 +1741,16 @@ let pp_model_internal fmt (model : model) b =
           | _ -> accu
         ) model.api_items []
     in
+    let sum_preds =
+      List.fold_right (fun x accu ->
+          match x.only_formula, x.node_item with
+          | false, APIAsset (Sum (_, _, pred)) ->
+            if not (List.exists (Model.cmp_mterm pred) accu)
+            then pred::accu
+            else accu
+          | _ -> accu
+        ) model.api_items []
+    in
     let consts =
       List.fold_right (fun (x : decl_node) accu ->
           match x with
@@ -1752,7 +1763,7 @@ let pp_model_internal fmt (model : model) b =
           | Dvar v when Option.is_some v.default -> (unloc v.name, Option.get v.default)::accu
           | _ -> accu
         ) model.decls [] in
-    mk_env ~select_preds:select_preds ~consts:consts ~vars:vars ()
+    mk_env ~select_preds:select_preds ~sum_preds:sum_preds ~consts:consts ~vars:vars ()
   in
 
   let pp_storage_term env fmt _ =

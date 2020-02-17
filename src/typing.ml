@@ -151,6 +151,7 @@ type error_desc =
   | NotAPrimitiveType
   | NotARole                           of ident
   | NumericExpressionExpected
+  | NumericOrCurrencyExpressionExpected
   | OpInRecordLiteral
   | OrphanedLabel                      of ident
   | PartialMatch                       of ident list
@@ -273,6 +274,7 @@ let pp_error_desc fmt e =
   | NotAPrimitiveType                  -> pp "Primitive type expected"
   | NotARole i                         -> pp "Not a role: %a" pp_ident i
   | NumericExpressionExpected          -> pp "Expecting numerical expression"
+  | NumericOrCurrencyExpressionExpected-> pp "Expecting numerical or currency expression"
   | OpInRecordLiteral                  -> pp "Operation in record literal"
   | OrphanedLabel i                    -> pp "Label not used: %a" pp_ident i
   | PartialMatch ps                    -> pp "Partial match (%a)" (Printer_tools.pp_list ", " pp_ident) ps
@@ -1925,7 +1927,7 @@ and for_gen_method_call mode env theloc (the, m, args) =
         let e     = for_xexpr mode env arg in
 
         e.M.type_ |> Option.iter (fun ty ->
-            if not (Type.is_numeric ty) then
+            if not (Type.is_numeric ty || Type.is_currency ty) then
               Env.emit_error env (loc arg, NumericExpressionExpected));
         M.AFun (theid, thety, e)
 
