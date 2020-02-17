@@ -35,7 +35,6 @@ type position =
   | Lhs
   | Rhs
 
-
 type env = {
   f: function__ option;
   select_preds: mterm list;
@@ -279,29 +278,28 @@ let pp_model_internal fmt (model : model) b =
           fun fmt r ->
             match op with
             | ValueAssign -> f fmt r
-            | PlusAssign  -> Format.fprintf fmt "%a + %a" pp_id lhs f r
-            | MinusAssign -> Format.fprintf fmt "%a - %a" pp_id lhs f r
-            | MultAssign  -> Format.fprintf fmt "%a * %a" pp_id lhs f r
-            | DivAssign   -> Format.fprintf fmt "%a / %a" pp_id lhs f r
-            | AndAssign   -> Format.fprintf fmt "%a and %a" pp_id lhs f r
-            | OrAssign    -> Format.fprintf fmt "%a or %a" pp_id lhs f r
+            | PlusAssign  -> Format.fprintf fmt "%a + (%a)" pp_id lhs f r
+            | MinusAssign -> Format.fprintf fmt "%a - (%a)" pp_id lhs f r
+            | MultAssign  -> Format.fprintf fmt "%a * (%a)" pp_id lhs f r
+            | DivAssign   -> Format.fprintf fmt "%a / (%a)" pp_id lhs f r
+            | AndAssign   -> Format.fprintf fmt "%a and (%a)" pp_id lhs f r
+            | OrAssign    -> Format.fprintf fmt "%a or (%a)" pp_id lhs f r
         ) r
 
     | Massignvarstore (op, _, lhs, r) ->
-      Format.fprintf fmt "%s.%a := %s.%a"
+      Format.fprintf fmt "%s.%a := %a"
         const_storage
         pp_id lhs
-        const_storage
         (
           fun fmt r ->
             match op with
             | ValueAssign -> f fmt r
-            | PlusAssign  -> Format.fprintf fmt "%a + %a" pp_id lhs f r
-            | MinusAssign -> Format.fprintf fmt "%a - %a" pp_id lhs f r
-            | MultAssign  -> Format.fprintf fmt "%a * %a" pp_id lhs f r
-            | DivAssign   -> Format.fprintf fmt "%a / %a" pp_id lhs f r
-            | AndAssign   -> Format.fprintf fmt "%a and %a" pp_id lhs f r
-            | OrAssign    -> Format.fprintf fmt "%a or %a" pp_id lhs f r
+            | PlusAssign  -> Format.fprintf fmt "%s.%a + (%a)"   const_storage pp_id lhs f r
+            | MinusAssign -> Format.fprintf fmt "%s.%a - (%a)"   const_storage pp_id lhs f r
+            | MultAssign  -> Format.fprintf fmt "%s.%a * (%a)"   const_storage pp_id lhs f r
+            | DivAssign   -> Format.fprintf fmt "%s.%a / (%a)"   const_storage pp_id lhs f r
+            | AndAssign   -> Format.fprintf fmt "%s.%a and (%a)" const_storage pp_id lhs f r
+            | OrAssign    -> Format.fprintf fmt "%s.%a or (%a)"  const_storage pp_id lhs f r
         ) r
 
     | Massignfield (op, _, a, field , r) ->
@@ -632,7 +630,7 @@ let pp_model_internal fmt (model : model) b =
 
     | Mand (l, r) ->
       let pp fmt (l, r) =
-        Format.fprintf fmt "%a and %a"
+        Format.fprintf fmt "(%a) and (%a)"
           f l
           f r
       in
@@ -640,7 +638,7 @@ let pp_model_internal fmt (model : model) b =
 
     | Mor (l, r) ->
       let pp fmt (l, r) =
-        Format.fprintf fmt "%a or %a"
+        Format.fprintf fmt "(%a) or (%a)"
           f l
           f r
       in
@@ -655,7 +653,7 @@ let pp_model_internal fmt (model : model) b =
 
     | Mplus (l, r) ->
       let pp fmt (l, r : mterm * mterm) =
-        Format.fprintf fmt "%a + %a"
+        Format.fprintf fmt "(%a) + (%a)"
           (pp_cast Lhs l.type_ r.type_ f) l
           (pp_cast Rhs l.type_ r.type_ f) r
       in
@@ -663,7 +661,7 @@ let pp_model_internal fmt (model : model) b =
 
     | Mminus (l, r) ->
       let pp fmt (l, r : mterm * mterm) =
-        Format.fprintf fmt "%a - %a"
+        Format.fprintf fmt "(%a) - (%a)"
           (pp_cast Lhs l.type_ r.type_ f) l
           (pp_cast Rhs l.type_ r.type_ f) r
       in
@@ -671,7 +669,7 @@ let pp_model_internal fmt (model : model) b =
 
     | Mmult (l, r) ->
       let pp fmt (l, r : mterm * mterm) =
-        Format.fprintf fmt "%a * %a"
+        Format.fprintf fmt "(%a) * (%a)"
           (pp_cast Lhs l.type_ r.type_ f) l
           (pp_cast Rhs l.type_ r.type_ f) r
       in
@@ -679,7 +677,7 @@ let pp_model_internal fmt (model : model) b =
 
     | Mdiv (l, r) ->
       let pp fmt (l, r : mterm * mterm) =
-        Format.fprintf fmt "%a / %a"
+        Format.fprintf fmt "(%a) / (%a)"
           (pp_cast Lhs l.type_ r.type_ f) l
           (pp_cast Rhs l.type_ r.type_ f) r
       in
@@ -687,7 +685,7 @@ let pp_model_internal fmt (model : model) b =
 
     | Mmodulo (l, r) ->
       let pp fmt (l, r : mterm * mterm) =
-        Format.fprintf fmt "int(%a mod %a)"
+        Format.fprintf fmt "int((%a) mod (%a))"
           (pp_cast Lhs l.type_ r.type_ f) l
           (pp_cast Rhs l.type_ r.type_ f) r
       in
@@ -695,14 +693,14 @@ let pp_model_internal fmt (model : model) b =
 
     | Muplus e ->
       let pp fmt e =
-        Format.fprintf fmt "+%a"
+        Format.fprintf fmt "+(%a)"
           f e
       in
       pp fmt e
 
     | Muminus e ->
       let pp fmt e =
-        Format.fprintf fmt "-%a"
+        Format.fprintf fmt "-(%a)"
           f e
       in
       pp fmt e
