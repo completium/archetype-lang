@@ -179,6 +179,8 @@ let mk_sum_clone_id m a f = (String.capitalize_ascii a) ^"Sum" ^ (string_of_int 
 let mk_sum_name m asset formula =  (mk_sum_clone_id m asset formula)^".sum"
 let mk_sum_clone_from_id asset id = (String.capitalize_ascii asset) ^"Sum" ^ (string_of_int id)
 let mk_sum_name_from_id asset id = (mk_sum_clone_from_id asset id)^".sum"
+let mk_get_sum_value_id asset id = "get_" ^ asset ^ "_sum" ^ (string_of_int id)
+let mk_get_sum_value_from_pos_id asset id = (mk_get_sum_value_id asset id)^"_from_pos"
 
 let mk_sum_clone m asset key formula =
   let cap_asset = String.capitalize_ascii asset in
@@ -190,9 +192,9 @@ let mk_sum_clone m asset key formula =
            Ctype ("t",
                   asset);
            Cval ("f",
-                 "get_value_sum" ^ (string_of_int id) ^ "_from_pos");
+                 mk_get_sum_value_from_pos_id asset id);
            Cval ("field",
-                 "get_value_sum" ^ (string_of_int id));
+                 mk_get_sum_value_id asset id);
            Cval ("card",
                  cap_asset ^ ".card");
            Cfun ("union",
@@ -1069,10 +1071,8 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Mcount              _ -> error_not_translated "Mcount"
 
     | Msum          (a,_,f) ->
-      let args = extract_args f in
       let id = mk_sum_name m a f in
-      let argids = args |> List.map (fun (e, _, _) -> e) |> List.map (map_mterm m ctx) in
-      Tapp (loc_term (Tvar id), argids @ [map_mterm m ctx f])
+      Tapp (loc_term (Tvar id), [loc_term (mk_ac a)])
     | Mmin                _ -> error_not_translated "Mmin"
     | Mmax                _ -> error_not_translated "Mmax"
     | Mhead               _ -> error_not_translated "Mhead"
@@ -1249,11 +1249,8 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Mapifnth       _ -> error_not_translated "Mapifnth"
     | Mapifcount     _ -> error_not_translated "Mapifcount"
     | Mapifsum       (a,_,f) ->
-      let args = extract_args f in
       let id = mk_sum_name m a f in
-      let argids = args |> List.map (fun (e, _, _) -> e) |> List.map (map_mterm m ctx) in
-      Tapp (loc_term (Tvar id), argids @ [map_mterm m ctx f])
-    (* | Mapifsum (a, f, l) -> Tapp (loc_term (Tvar ((mk_sum_clone_id a (f |> unloc)) ^ ".sum")), [map_mterm m ctx l]) *)
+      Tapp (loc_term (Tvar id), [loc_term (mk_ac a)])
     | Mapifmin       _ -> error_not_translated "Mapifmin"
     | Mapifmax       _ -> error_not_translated "Mapifmax"
     | Mapifhead      _ -> error_not_translated "Mapifhead"
@@ -1417,9 +1414,6 @@ let mk_key_found_cond old asset var =
 let mk_not_found_cond old asset var = Tnot (mk_key_found_cond old asset var)
 
 (* formula is in mlw tree *)
-let mk_get_sum_value_id asset id = "get_" ^ asset ^ "_sum" ^ (string_of_int id)
-let mk_get_sum_value_from_pos_id asset id = (mk_get_sum_value_id asset id)^"_from_pos"
-
 let mk_get_sum_value_from_pos asset id formula =
   Dfun {
     name = mk_get_sum_value_from_pos_id asset id;
