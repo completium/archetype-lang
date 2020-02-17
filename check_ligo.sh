@@ -5,35 +5,43 @@ BIN_LIGO=ligo
 NB_ERR="0"
 NB_OUT="0"
 
-process () {
+process() {
     printf '%-60s' $1
     OUT_LIGO=$i.ligo
     OUT_TZ=$i.tz
-    $BIN -t ligo $i > ${OUT_LIGO} 2> /dev/null
-    RET=`echo $?`
+    $BIN -t ligo $i >${OUT_LIGO} 2>/dev/null
+    RET=$(echo $?)
     if [ ${RET} -eq 0 ]; then
         echo -ne "\033[32m OK \033[0m"
-        $BIN_LIGO compile-contract ${OUT_LIGO} main > ${OUT_TZ} 2> /dev/null
-        RET=`echo $?`
+        $BIN -t ligo $i >${OUT_LIGO} 2>/dev/null
+        RET=$(echo $?)
         if [ ${RET} -eq 0 ]; then
-            echo -e "   \033[32m OK \033[0m"
+            echo -ne " \033[32m OK \033[0m"
+            $BIN_LIGO compile-contract ${OUT_LIGO} main >${OUT_TZ} 2>/dev/null
+            RET=$(echo $?)
+            if [ ${RET} -eq 0 ]; then
+                echo -e " \033[32m OK \033[0m"
+            else
+                echo -e " \033[31m KO \033[0m"
+                NB_OUT=$((${NB_OUT} + 1))
+            fi
         else
-            echo -e "   \033[31m KO \033[0m"
+            echo -e "\033[31m KO \033[0m"
+            NB_ERR=$((${NB_ERR} + 1))
             NB_OUT=$((${NB_OUT} + 1))
         fi
     else
-	      echo -ne "\033[31m KO \033[0m"
-	      echo -e  "   \033[31m KO \033[0m"
+        echo -e "\033[31m KO \033[0m"
         NB_ERR=$((${NB_ERR} + 1))
         NB_OUT=$((${NB_OUT} + 1))
     fi
     rm -f $OUT_LIGO $OUT_TZ
 }
 
-printf '%-48s%s\n' '' '   OUT    COMPILE'
+printf '%-60s%s\n' '' ' RET  OUT  COMPILE'
 
 for i in contracts/*.arl; do
-  process $i
+    process $i
 done
 
 echo ""
