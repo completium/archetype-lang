@@ -31,7 +31,7 @@ let remove_add_update (model : model) : model =
       begin
         let type_asset = Tasset (dumloc an) in
         let mk_asset (an, k, l) =
-        let dummy_mterm = mk_mterm (Mseq []) Tunit in
+          let dummy_mterm = mk_mterm (Mseq []) Tunit in
           let asset = Utils.get_asset model an in
           let lref : (Ident.ident * (assignment_operator * mterm * Location.t)) list = List.map (fun (x, y, z) -> (unloc x, (y, z, loc x))) l in
           let l = List.map (
@@ -1094,6 +1094,24 @@ let replace_date_duration_by_timestamp (model : model) : model =
          );
         })
   }
+
+let abs_tez model : model =
+  let is_int (mt : mterm) =
+    match mt.type_, mt.node with
+    | _, Mfunabs _ -> false
+    | Tbuiltin Bint, _ -> true
+    | _ -> false
+   in
+  let abs mt = mk_mterm (Mfunabs mt) mt.type_ in
+  let rec aux c (mt : mterm) : mterm =
+    match mt.node with
+    | Mmult (lhs, rhs) when is_int lhs ->
+      mk_mterm (Mmult (abs(lhs), rhs)) mt.type_
+    | Mmult (lhs, rhs) when is_int rhs ->
+      mk_mterm (Mmult (lhs, abs(rhs))) mt.type_
+    | _ -> map_mterm (aux c) mt
+  in
+  Model.map_mterm_model aux model
 
 let exec_process model =
   model

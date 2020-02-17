@@ -123,6 +123,7 @@ let generate_target model =
     |> remove_add_update
     |> replace_update_by_set
     |> remove_rational
+    |> abs_tez
     |> replace_date_duration_by_timestamp
     |> generate_storage
     |> replace_declvar_by_letin

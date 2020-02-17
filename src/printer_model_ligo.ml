@@ -288,9 +288,10 @@ let pp_model_internal fmt (model : model) b =
         ) r
 
     | Massignvarstore (op, _, lhs, r) ->
-      Format.fprintf fmt "%s.%a := %a"
+      Format.fprintf fmt "%s.%a := %s.%a"
         const_storage
         pp_id lhs
+        const_storage
         (
           fun fmt r ->
             match op with
