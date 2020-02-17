@@ -175,20 +175,24 @@ let mk_const_fields m = [
     ]
   else []
 
-let mk_sum_clone_id a f = (String.capitalize_ascii a) ^ (String.capitalize_ascii f)
+let mk_sum_clone_id m a f = (String.capitalize_ascii a) ^"Sum" ^ (string_of_int (M.Utils.get_sum_idx m a f))
+let mk_sum_name m asset formula =  (mk_sum_clone_id m asset formula)^".sum"
+let mk_sum_clone_from_id asset id = (String.capitalize_ascii asset) ^"Sum" ^ (string_of_int id)
+let mk_sum_name_from_id asset id = (mk_sum_clone_from_id asset id)^".sum"
 
-let mk_sum_clone _m asset key field =
+let mk_sum_clone m asset key formula =
   let cap_asset = String.capitalize_ascii asset in
+  let id = M.Utils.get_sum_idx m asset formula in
   Dclone ([gArchetypeDir;gArchetypeSum],
-          mk_sum_clone_id asset field,
+          mk_sum_clone_from_id asset id,
           [Ctype ("container",
                   cap_asset ^ ".collection");
            Ctype ("t",
                   asset);
            Cval ("f",
-                 "get_" ^ field);
+                 "get_value_sum" ^ (string_of_int id) ^ "_from_pos");
            Cval ("field",
-                 field);
+                 "get_value_sum" ^ (string_of_int id));
            Cval ("card",
                  cap_asset ^ ".card");
            Cfun ("union",
@@ -328,25 +332,7 @@ let extract_args test =
     | _ -> M.fold_term internal_extract_args acc term in
   internal_extract_args [] test
 
-let get_select_id (m : M.model) asset test =
-  let rec internal_get_select_id acc = function
-    | (sc : M.api_storage) :: tl ->
-      begin
-        match sc.node_item with
-        | M.APIAsset (Select (a,t)) ->
-          if compare a asset = 0 then
-            if M.cmp_mterm t test then
-              acc + 1
-            else
-              internal_get_select_id (acc + 1) tl
-          else
-            internal_get_select_id acc tl
-        | _ -> internal_get_select_id acc tl
-      end
-    | [] -> acc in
-  internal_get_select_id 0 m.api_items
-
-let mk_select_name m asset test = "select_" ^ asset ^ "_" ^ (string_of_int (get_select_id m asset test))
+let mk_select_name m asset test = "select_" ^ asset ^ "_" ^ (string_of_int (M.Utils.get_select_idx m asset test))
 
 let mk_select m asset test mlw_test only_formula =
   let id =  mk_select_name m asset test in
@@ -1082,10 +1068,11 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Mnth                _ -> error_not_translated "Mnth"
     | Mcount              _ -> error_not_translated "Mcount"
 
-    | Msum                _ -> error_not_translated "Msum"
-    (* | Msum (a, c, p) ->
-      Tapp (loc_term (Tvar ((mk_sum_clone_id a (f |> unloc)) ^ ".sum")), [map_mterm m ctx l]) *)
-
+    | Msum          (a,_,f) ->
+      let args = extract_args f in
+      let id = mk_sum_name m a f in
+      let argids = args |> List.map (fun (e, _, _) -> e) |> List.map (map_mterm m ctx) in
+      Tapp (loc_term (Tvar id), argids @ [map_mterm m ctx f])
     | Mmin                _ -> error_not_translated "Mmin"
     | Mmax                _ -> error_not_translated "Mmax"
     | Mhead               _ -> error_not_translated "Mhead"
@@ -1261,7 +1248,11 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Mapifcontains  (a, _, r) -> Tapp (loc_term (Tvar ("contains_" ^ a)), [map_mterm m ctx r])
     | Mapifnth       _ -> error_not_translated "Mapifnth"
     | Mapifcount     _ -> error_not_translated "Mapifcount"
-    | Mapifsum       _ -> error_not_translated "Mapifsum"
+    | Mapifsum       (a,_,f) ->
+      let args = extract_args f in
+      let id = mk_sum_name m a f in
+      let argids = args |> List.map (fun (e, _, _) -> e) |> List.map (map_mterm m ctx) in
+      Tapp (loc_term (Tvar id), argids @ [map_mterm m ctx f])
     (* | Mapifsum (a, f, l) -> Tapp (loc_term (Tvar ((mk_sum_clone_id a (f |> unloc)) ^ ".sum")), [map_mterm m ctx l]) *)
     | Mapifmin       _ -> error_not_translated "Mapifmin"
     | Mapifmax       _ -> error_not_translated "Mapifmax"
@@ -1425,8 +1416,13 @@ let mk_key_found_cond old asset var =
 
 let mk_not_found_cond old asset var = Tnot (mk_key_found_cond old asset var)
 
-let mk_get_field_from_pos asset field = Dfun {
-    name = "get_" ^ field;
+(* formula is in mlw tree *)
+let mk_get_sum_value_id asset id = "get_" ^ asset ^ "_sum" ^ (string_of_int id)
+let mk_get_sum_value_from_pos_id asset id = (mk_get_sum_value_id asset id)^"_from_pos"
+
+let mk_get_sum_value_from_pos asset id formula =
+  Dfun {
+    name = mk_get_sum_value_from_pos_id asset id;
     logic = Logic;
     args = ["c",Tycoll asset; "i",Tyint];
     returns = Tyint;
@@ -1434,13 +1430,37 @@ let mk_get_field_from_pos asset field = Dfun {
     variants = [];
     requires = [];
     ensures = [];
-    body = Tapp (Tvar field,
-                 [
-                   Tnth (asset,
-                         Tvar "i",
-                         Tvar "c")
+    body =
+    let rec mk_body = function
+    | Tdot (Tvar v,f) when compare v "the" = 0 ->
+      Tapp (f,
+            [
+              Tnth (asset,
+                    Tvar "i",
+                    Tvar "c")
                  ])
+    | _ as t -> map_abstract_term mk_body Tools.id Tools.id t in
+    mk_body formula
   }
+
+let mk_get_sum_value asset id formula =
+  Dfun {
+    name = mk_get_sum_value_id asset id;
+    logic = Logic;
+    args = ["a",Tyasset asset];
+    returns = Tyint;
+    raises = [];
+    variants = [];
+    requires = [];
+    ensures = [];
+    body =
+    let rec mk_body = function
+    | Tdot (Tvar v,f) when compare v "the" = 0 ->
+      Tdot (Tvar "a",f)
+    | _ as t -> map_abstract_term mk_body Tools.id Tools.id t in
+    mk_body formula
+  }
+
 
 let mk_get_asset asset key ktyp = Dfun {
     name = "get_" ^ asset;
@@ -1472,21 +1492,22 @@ let mk_get_asset asset key ktyp = Dfun {
   }
 
 let mk_set_sum_ensures m a =
-  List.fold_left (fun acc f ->
+  List.fold_left (fun acc idx ->
       acc @ [{
           id = "set_" ^ a ^ "_sum_post";
           form = Teq (Tyint,
-                      Tapp (Tvar ((mk_sum_clone_id a f) ^ ".sum"),
+                      Tapp (Tvar (mk_sum_name_from_id a idx),
                             [mk_ac_old a]),
                       Tplus (Tyint,
                              Tminus (Tyint,
-                                     Tapp (Tvar ((mk_sum_clone_id a f) ^ ".sum"),
+                                     Tapp (Tvar (mk_sum_name_from_id a idx),
                                            [mk_ac a]),
-                                     Tdoti("new_asset",f)),
-                             Tdot(
-                               Tvar "old_asset",
-                               Tvar f)))
-        }]) [] (M.Utils.get_sum_fields m a)
+                                     Tapp(Tvar (mk_get_sum_value_id a idx),
+                                          [Tvar "new_asset"])),
+                             Tapp(
+                               Tvar (mk_get_sum_value_id a idx),
+                               [Tvar "old_asset"])))
+        }]) [] (M.Utils.get_sum_idxs m a)
 
 let mk_set_ensures m n key fields =
   snd (List.fold_left (fun (i,acc) (f:field) ->
@@ -1611,18 +1632,19 @@ let gen_field_getters = function
   | _ -> assert false
 
 let mk_add_sum_ensures m a e =
-  List.fold_left (fun acc f ->
+  List.fold_left (fun acc idx ->
       acc @ [{
           id = "add_" ^ a ^ "_sum_post";
           form = Teq (Tyint,
-                      Tapp (Tvar ((mk_sum_clone_id a f) ^ ".sum"),
+                      Tapp (Tvar (mk_sum_name_from_id a idx),
                             [mk_ac a]),
                       Tplus (Tyint,
-                             Tapp (Tvar ((mk_sum_clone_id a f) ^ ".sum"),
+                             Tapp (Tvar (mk_sum_name_from_id a idx),
                                    [mk_ac_old a]),
-                             Tdoti(e,
-                                   f)))
-        }]) [] (M.Utils.get_sum_fields m a)
+                             Tapp(
+                               Tvar (mk_get_sum_value_id a idx),
+                               [Tvar e])))
+        }]) [] (M.Utils.get_sum_idxs m a)
 
 let mk_add_ensures m p a e =
   [
@@ -1685,18 +1707,19 @@ let mk_add_asset m asset key : decl = Dfun {
   }
 
 let mk_rm_sum_ensures m a e =
-  List.fold_left (fun acc f ->
+  List.fold_left (fun acc idx ->
       acc @ [{
           id = "remove_" ^ a ^ "_sum_post";
           form = Teq (Tyint,
-                      Tapp (Tvar ((mk_sum_clone_id a f) ^ ".sum"),
+                      Tapp (Tvar (mk_sum_name_from_id a idx),
                             [mk_ac a]),
                       Tminus (Tyint,
-                              Tapp (Tvar ((mk_sum_clone_id a f) ^ ".sum"),
+                              Tapp (Tvar (mk_sum_name_from_id a idx),
                                     [mk_ac_old a]),
-                              Tdoti(e,
-                                    f)))
-        }]) [] (M.Utils.get_sum_fields m a)
+                              Tapp(
+                               Tvar (mk_get_sum_value_id a idx),
+                               [Tvar e])))
+        }]) [] (M.Utils.get_sum_idxs m a)
 
 let mk_rm_ensures m p a e =
   [
@@ -1884,10 +1907,13 @@ let mk_storage_api (m : M.model) records =
         let mlw_test = map_mterm m init_ctx test in
         acc @ [ mk_select m asset test (mlw_test |> unloc_term) sc.only_formula ]
         (* TODO *)
-      (* | M.APIAsset (Sum (asset,field)) when compare asset "todo" <> 0 ->
+      | M.APIAsset (Sum (asset,_,formula)) when compare asset "todo" <> 0 ->
         let key      = M.Utils.get_asset_key m asset |> fst in
-        acc @ [ mk_get_field_from_pos asset field;
-                mk_sum_clone m asset key field ] *)
+        let mlw_formula = map_mterm m init_ctx formula |> unloc_term in
+        let id = M.Utils.get_sum_idx m asset formula in
+        acc @ [ mk_get_sum_value_from_pos asset id mlw_formula;
+                mk_get_sum_value asset id mlw_formula;
+                mk_sum_clone m asset key formula ]
       | M.APIAsset (Unshallow n) ->
         let t         =  M.Utils.get_asset_key m n |> snd |> map_btype in
         acc @ [ mk_unshallow n t ]

@@ -2484,7 +2484,7 @@ module Utils : sig
   val get_loop_invariants                : model -> (ident * mterm) list -> ident -> (ident * mterm) list
   val get_formula                        : model -> mterm option -> ident -> mterm option
   val is_post                            : postcondition -> bool
-  val get_sum_fields                     : model -> ident -> ident list
+  val get_sum_idxs                       : model -> ident -> int list
   val get_added_removed_sets             : model -> specification option -> mterm__node list
   val get_storage_invariants             : model -> ident option -> (ident * ident * mterm) list
   val is_field_storage                   : model -> ident -> bool
@@ -2500,6 +2500,8 @@ module Utils : sig
   val with_operations                    : model -> bool
   val get_source_for                     : model -> ctx_model -> mterm -> mterm option
   val eval                               : mterm -> (ident * mterm) list -> mterm
+  val get_select_idx                     : model -> ident -> mterm -> int
+  val get_sum_idx                        : model -> ident -> mterm -> int
 end = struct
 
   open Tools
@@ -2941,14 +2943,6 @@ end = struct
     | Post -> true
     | _ -> false
 
-  let get_sum_fields m a = (* TODO *)
-    List.fold_left (fun acc (ai : api_storage) ->
-        match ai.node_item with
-        | APIAsset (Sum (asset, _type, _field)) when String.equal a asset ->
-          acc @ []
-        | _ -> acc
-      ) [] m.api_items
-
   let get_added_removed_sets (_m : model) v : ((lident,(lident mterm_gen)) mterm_node) list =
     let rec internal_fold_add_remove ctx acc (term : mterm) =
       match term.node with
@@ -3213,5 +3207,41 @@ end = struct
     |> remove_const
     |> eval_expr
 
+  type searchfun =
+  | SearchSelect
+  | SearchSum
+
+  let get_fun_idx typ (m : model) asset expr =
+    let rec internal_get_fun_idx acc = function
+    | (sc : api_storage) :: tl ->
+      begin
+        match typ, sc.node_item with
+        | SearchSelect, APIAsset (Select (a,t)) -> continue_internal_get_fun_idx tl acc a t
+        | SearchSum, APIAsset (Sum (a,_,t)) -> continue_internal_get_fun_idx tl acc a t
+        | _ -> internal_get_fun_idx acc tl
+      end
+    | [] -> acc
+    and continue_internal_get_fun_idx tl acc a t =
+    if compare a asset = 0 then
+      if cmp_mterm t expr then
+        acc + 1
+      else
+        internal_get_fun_idx (acc + 1) tl
+      else
+        internal_get_fun_idx acc tl
+  in
+  internal_get_fun_idx 0 m.api_items
+
+  let get_select_idx = get_fun_idx SearchSelect
+
+  let get_sum_idx = get_fun_idx SearchSum
+
+  let get_sum_idxs m a = (* TODO *)
+    List.fold_left (fun acc (ai : api_storage) ->
+        match ai.node_item with
+        | APIAsset (Sum (asset, _type, formula)) when String.equal a asset ->
+          acc @ [get_sum_idx m a formula]
+        | _ -> acc
+      ) [] m.api_items
 
 end
