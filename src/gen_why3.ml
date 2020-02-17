@@ -279,7 +279,7 @@ let mk_transfer () =
           Tassign (
             Tdoti(gs,"_ops"),
             Tcons (
-              Ttransfer(Tvar "t",Tvar "a"),
+              Tapp(Tvar "mk_transfer",[Tvar "t";Tvar "a"]),
               Tdoti(gs,"_ops")
             ));
           Tassign (
