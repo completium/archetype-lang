@@ -50,8 +50,8 @@ let process_api_storage (model : model) : model =
         [APIAsset (Get asset_name); APIAsset (Nth asset_name)]
       | Mcount (asset_name, _) ->
         [APIAsset (Count asset_name)]
-      | Msum (asset_name, field_name, _) ->
-        [APIAsset (Sum (asset_name, unloc field_name))]
+      | Msum (asset_name, _, p) ->
+        [APIAsset (Sum (asset_name, p.type_, p))]
       | Mmin (asset_name, field_name, _) ->
         [APIAsset (Min (asset_name, unloc field_name))]
       | Mmax (asset_name, field_name, _) ->
@@ -95,30 +95,30 @@ let process_api_storage (model : model) : model =
                let criteria_asset_name () : int =
                  let default = "_" in
                  let get_asset_name = function
-                   | APIAsset (Get              an)     -> an
-                   | APIAsset (Set              an)     -> an
-                   | APIAsset (Add              an)     -> an
-                   | APIAsset (Remove           an)     -> an
-                   | APIAsset (UpdateAdd       (an, _)) -> an
-                   | APIAsset (UpdateRemove    (an, _)) -> an
-                   | APIAsset (ToKeys           an)     -> an
-                   | APIAsset (ColToKeys        an)     -> an
-                   | APIAsset (Select          (an, _)) -> an
-                   | APIAsset (Sort            (an, _)) -> an
-                   | APIAsset (Contains         an)     -> an
-                   | APIAsset (Nth              an)     -> an
-                   | APIAsset (Count            an)     -> an
-                   | APIAsset (Sum             (an, _)) -> an
-                   | APIAsset (Min             (an, _)) -> an
-                   | APIAsset (Max             (an, _)) -> an
+                   | APIAsset (Get           an)        -> an
+                   | APIAsset (Set           an)        -> an
+                   | APIAsset (Add           an)        -> an
+                   | APIAsset (Remove        an)        -> an
+                   | APIAsset (UpdateAdd    (an, _))    -> an
+                   | APIAsset (UpdateRemove (an, _))    -> an
+                   | APIAsset (ToKeys        an)        -> an
+                   | APIAsset (ColToKeys     an)        -> an
+                   | APIAsset (Select       (an, _))    -> an
+                   | APIAsset (Sort         (an, _))    -> an
+                   | APIAsset (Contains      an)        -> an
+                   | APIAsset (Nth           an)        -> an
+                   | APIAsset (Count         an)        -> an
+                   | APIAsset (Sum          (an, _, _)) -> an
+                   | APIAsset (Min          (an, _))    -> an
+                   | APIAsset (Max          (an, _))    -> an
                    | APIList _                          -> default
                    | APIBuiltin _                       -> default
                    | APIInternal _                      -> default
-                   | APIAsset (Shallow          an)     -> an
-                   | APIAsset (Unshallow        an)     -> an
-                   | APIAsset (Listtocoll       an)     -> an
-                   | APIAsset (Head             an)     -> an
-                   | APIAsset (Tail             an)     -> an
+                   | APIAsset (Shallow       an)        -> an
+                   | APIAsset (Unshallow     an)        -> an
+                   | APIAsset (Listtocoll    an)        -> an
+                   | APIAsset (Head          an)        -> an
+                   | APIAsset (Tail          an)        -> an
                  in
                  let asset_list : ident list = List.fold_left (fun accu (x : decl_node) ->
                      match x with

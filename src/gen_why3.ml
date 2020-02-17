@@ -1081,8 +1081,9 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Mnth                _ -> error_not_translated "Mnth"
     | Mcount              _ -> error_not_translated "Mcount"
 
-    | Msum (a, f, l) ->
-      Tapp (loc_term (Tvar ((mk_sum_clone_id a (f |> unloc)) ^ ".sum")), [map_mterm m ctx l])
+    | Msum                _ -> error_not_translated "Msum"
+    (* | Msum (a, c, p) ->
+      Tapp (loc_term (Tvar ((mk_sum_clone_id a (f |> unloc)) ^ ".sum")), [map_mterm m ctx l]) *)
 
     | Mmin                _ -> error_not_translated "Mmin"
     | Mmax                _ -> error_not_translated "Mmax"
@@ -1259,7 +1260,8 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Mapifcontains  (a, _, r) -> Tapp (loc_term (Tvar ("contains_" ^ a)), [map_mterm m ctx r])
     | Mapifnth       _ -> error_not_translated "Mapifnth"
     | Mapifcount     _ -> error_not_translated "Mapifcount"
-    | Mapifsum (a, f, l) -> Tapp (loc_term (Tvar ((mk_sum_clone_id a (f |> unloc)) ^ ".sum")), [map_mterm m ctx l])
+    | Mapifsum       _ -> error_not_translated "Mapifsum"
+    (* | Mapifsum (a, f, l) -> Tapp (loc_term (Tvar ((mk_sum_clone_id a (f |> unloc)) ^ ".sum")), [map_mterm m ctx l]) *)
     | Mapifmin       _ -> error_not_translated "Mapifmin"
     | Mapifmax       _ -> error_not_translated "Mapifmax"
     | Mapifhead      _ -> error_not_translated "Mapifhead"
@@ -1880,10 +1882,11 @@ let mk_storage_api (m : M.model) records =
       | M.APIAsset (Select (asset,test)) ->
         let mlw_test = map_mterm m init_ctx test in
         acc @ [ mk_select m asset test (mlw_test |> unloc_term) sc.only_formula ]
-      | M.APIAsset (Sum (asset,field)) when compare asset "todo" <> 0 ->
+        (* TODO *)
+      (* | M.APIAsset (Sum (asset,field)) when compare asset "todo" <> 0 ->
         let key      = M.Utils.get_asset_key m asset |> fst in
         acc @ [ mk_get_field_from_pos asset field;
-                mk_sum_clone m asset key field ]
+                mk_sum_clone m asset key field ] *)
       | M.APIAsset (Unshallow n) ->
         let t         =  M.Utils.get_asset_key m n |> snd |> map_btype in
         acc @ [ mk_unshallow n t ]

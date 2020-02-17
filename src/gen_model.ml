@@ -313,13 +313,13 @@ let to_model (ast : A.model) : M.model =
       then M.Mapifcount (asset_name, fp)
       else M.Mcount (asset_name, fp)
 
-    | A.Pcall (Some p, A.Cconst (A.Csum), [AFun (qi, qt, q)]) ->
+    | A.Pcall (Some p, A.Cconst (A.Csum), [AFun (_qi, _qt, q)]) ->
       let fp = f p in
+      let fq = f q in
       let asset_name = extract_asset_name fp in
-      let field_name = extract_field_name (qi, qt, q) in
       if formula
-      then M.Mapifsum (asset_name, field_name, fp)
-      else M.Msum (asset_name, field_name, fp)
+      then M.Mapifsum (asset_name, fp, fq)
+      else M.Msum (asset_name, fp, fq)
 
     | A.Pcall (Some p, A.Cconst (A.Cmin), [AFun (qi, qt, q)]) ->
       let fp = f p in

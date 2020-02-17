@@ -596,14 +596,14 @@ let pp_mterm fmt (mt : mterm) =
       in
       pp fmt (an, c)
 
-    | Msum (an, fd, c) ->
-      let pp fmt (an, fd, c) =
-        Format.fprintf fmt "sum_%a_%a (%a)"
+    | Msum (an, c, p) ->
+      let pp fmt (an, c, p) =
+        Format.fprintf fmt "sum_%a (%a, %a)"
           pp_str an
-          pp_id fd
           f c
+          f p
       in
-      pp fmt (an, fd, c)
+      pp fmt (an, c, p)
 
     | Mmin (an, fd, c) ->
       let pp fmt (an, fd, c) =
@@ -982,14 +982,14 @@ let pp_mterm fmt (mt : mterm) =
       in
       pp fmt (an, c)
 
-    | Mapifsum (an, fd, c) ->
-      let pp fmt (an, fd, c) =
-        Format.fprintf fmt "apifsum_%a_%a (%a)"
+    | Mapifsum (an, c, p) ->
+      let pp fmt (an, c, p) =
+        Format.fprintf fmt "apifsum_%a (%a, %a)"
           pp_str an
-          pp_id fd
           f c
+          f p
       in
-      pp fmt (an, fd, c)
+      pp fmt (an, c, p)
 
     | Mapifmin (an, fd, c) ->
       let pp fmt (an, fd, c) =
@@ -1045,7 +1045,8 @@ let pp_api_builtin fmt = function
   | Contains an -> pp_str fmt ("contains " ^ an)
   | Nth an -> pp_str fmt ("nth\t " ^ an)
   | Count an -> pp_str fmt ("count\t " ^ an)
-  | Sum (an, fn) -> pp_str fmt ("sum\t " ^ an ^ " " ^ fn)
+  | Sum (an, t, p) ->
+    Format.fprintf fmt "sum\t (:%a) %s %a" pp_type t an pp_mterm p
   | Min (an, fn) -> pp_str fmt ("min\t " ^ an ^ " " ^ fn)
   | Max (an, fn) -> pp_str fmt ("max\t " ^ an ^ " " ^ fn)
   | Shallow an -> pp_str fmt ("shallow\t " ^ an)

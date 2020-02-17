@@ -218,14 +218,14 @@ let pp_model fmt (model : model) =
          \t\t#TODO@\n"
         an
 
-    | Sum (an, fn) ->
+    | Sum (an, _, _) -> (* TODO *)
       Format.fprintf fmt
-        "def sum_%s_%s (self):@\n\
+        "def sum_%s (self):@\n\
          \t\treduce(@\n\
-         \t\t(lambda x, key: self.data.%s_assets[key].%s + x),@\n\
+         \t\t(lambda x, key: self.data.%s_assets[key] + x),@\n\
          \t\tself.data.%s_keys,@\n\
          \t\t0)@\n"
-        an fn an fn an
+        an an an
 
     | Min (an, fn) ->
       Format.fprintf fmt
@@ -840,14 +840,14 @@ let pp_model fmt (model : model) =
         in
         pp fmt (an, c)
 
-      | Msum (an, fd, c) ->
-        let pp fmt (an, fd, _c) =
-          Format.fprintf fmt "sum_%a_%a (self)"
+      | Msum (an, c, p) ->
+        let pp fmt (an, c, p) =
+          Format.fprintf fmt "sum_%a (self, %a, %a)"
             pp_str an
-            pp_id fd
-            (* f c *)
+            f c
+            f p
         in
-        pp fmt (an, fd, c)
+        pp fmt (an, c, p)
 
       | Mmin (an, fd, c) ->
         let pp fmt (an, fd, c) =

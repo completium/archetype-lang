@@ -283,22 +283,20 @@ let pp_model fmt (model : model) =
         an
         pp_btyp t
 
-    | Sum (an, fn) ->
+    | Sum (an, t, _p) -> (* TODO *)
       let _, tk = Utils.get_asset_key model an in
-      let _, t, _ = Utils.get_asset_field model (an, fn) in
       Format.fprintf fmt
-        "let sum_%s_%s (s, l : storage * %a list) : %a =@\n  \
+        "let sum_%s (s, l : storage * %a list) : %a =@\n  \
          List.fold_left (fun accu k ->@\n      \
          let x =@\n        \
          match Map.get k s.%s_assets with@\n        \
          | Some v -> v@\n        \
          | _ -> failwith \"not_found\"@\n      \
          in@\n      \
-         accu + x.%s@\n    \
+         accu + x@\n    \
          ) %s l@\n"
-        an fn pp_btyp tk pp_type t
+        an pp_btyp tk pp_type t
         an
-        fn
         (show_zero t)
 
     | Min (an, fn) ->
@@ -999,15 +997,14 @@ let pp_model fmt (model : model) =
         in
         pp fmt (an, c)
 
-      | Msum (an, fd, c) ->
-        let pp fmt (an, fd, c) =
-          Format.fprintf fmt "sum_%a_%a (%s, %a)"
+      | Msum (an, _, c) -> (* TODO *)
+        let pp fmt (an, c) =
+          Format.fprintf fmt "sum_%a (%s, %a)"
             pp_str an
-            pp_id fd
             const_storage
             f c
         in
-        pp fmt (an, fd, c)
+        pp fmt (an, c)
 
       | Mmin (an, fd, c) ->
         let pp fmt (an, fd, c) =
