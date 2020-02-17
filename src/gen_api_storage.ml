@@ -26,6 +26,7 @@ let process_api_storage (model : model) : model =
   let rec f (ctx : ctx_model) (accu : api_storage list) (term : mterm) : api_storage list =
     let api_items : api_storage_node list =
       match term.node with
+      | Mapifget (asset_name, _, _)
       | Mget (asset_name, _) ->
         [APIAsset (Get asset_name)]
       | Mset (asset_name, _, _, _) ->
@@ -40,20 +41,28 @@ let process_api_storage (model : model) : model =
       | Mremovefield (asset_name, field_name, _, _) ->
         let (pa,_,_) = Utils.get_container_asset_key model asset_name field_name in
         [APIAsset (Remove pa); APIAsset (UpdateRemove (asset_name, field_name))]
+      | Mapifselect (asset_name, _, p)
       | Mselect (asset_name, _, p) ->
         [APIAsset (Get asset_name); APIAsset (Select (asset_name, p))]
+      | Mapifsort (asset_name, _, field_name, _)
       | Msort (asset_name, _, field_name, _) ->
         [APIAsset (Sort (asset_name, field_name))]
+      | Mapifcontains (asset_name, _, _)
       | Mcontains (asset_name, _, _) ->
         [APIAsset (Contains asset_name)]
+      | Mapifnth (asset_name, _, _)
       | Mnth (asset_name, _, _) ->
         [APIAsset (Get asset_name); APIAsset (Nth asset_name)]
+      | Mapifcount (asset_name, _)
       | Mcount (asset_name, _) ->
         [APIAsset (Count asset_name)]
+      | Mapifsum (asset_name, _, p)
       | Msum (asset_name, _, p) ->
         [APIAsset (Sum (asset_name, p.type_, p))]
+      | Mapifmin (asset_name, field_name, _)
       | Mmin (asset_name, field_name, _) ->
         [APIAsset (Min (asset_name, unloc field_name))]
+      | Mapifmax (asset_name, field_name, _)
       | Mmax (asset_name, field_name, _) ->
         [APIAsset (Max (asset_name, unloc field_name))]
       | Mshallow (asset_name, _) ->
@@ -62,8 +71,10 @@ let process_api_storage (model : model) : model =
         [APIAsset (Unshallow asset_name)]
       | Mlisttocoll (asset_name, _) ->
         [APIAsset (Listtocoll asset_name)]
+      | Mapifhead (asset_name, _, _)
       | Mhead (asset_name, _, _) ->
         [APIAsset (Head asset_name)]
+      | Mapiftail (asset_name, _, _)
       | Mtail (asset_name, _, _) ->
         [APIAsset (Tail asset_name)]
       | Mcoltokeys asset_name ->
