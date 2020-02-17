@@ -1,0 +1,9 @@
+archetype simple_arith
+
+variable res : int = 0
+
+action exec() {
+  effect {
+    res := (1 + 2) * 3
+  }
+}
