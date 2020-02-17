@@ -1483,30 +1483,29 @@ let pp_model_internal fmt (model : model) b =
        an
        pp_btyp t *)
 
-    | Sum (_an, _t, _p) ->
-      ()
-    (* let get_zero = function
-       | _ -> "0"
-       in *)
-
-    (* let _, tk = Utils.get_asset_key model an in
-       let i = get_preds_index env.sum_preds p in *)
-    (* Format.fprintf fmt
-       "function sum_%s_%s (const s : storage_type; const l : list(%a)) : %a is@\n  \
-       begin@\n    \
-       var r : %a := %s;@\n    \
-       function aggregate (const i : %a) : unit is@\n      \
-       begin@\n        \
-       const a : %s = get_force(i, s.%s_assets);@\n        \
-       r := r + %a;@\n      \
-       end with unit;@\n    \
-       list_iter(aggregate, l)@\n  \
-       end with r@\n"
-       an fn pp_btyp tk pp_type t
-       pp_type t (get_zero t)
-       pp_btyp tk
-       an an
-       fn *)
+    | Sum (an, t, p) ->
+      let get_zero = function
+        | _ -> "0"
+      in
+      let _, tk = Utils.get_asset_key model an in
+      let expr = p in
+      let i = get_preds_index env.sum_preds p in
+      Format.fprintf fmt
+        "function sum_%s_%i (const s : storage_type; const l : list(%a)) : %a is@\n  \
+         begin@\n    \
+         var r : %a := %s;@\n    \
+         function aggregate (const i : %a) : unit is@\n      \
+         begin@\n        \
+         const a : %s = get_force(i, s.%s_assets);@\n        \
+         r := r + %a;@\n      \
+         end with unit;@\n    \
+         list_iter(aggregate, l)@\n  \
+         end with r@\n"
+        an i pp_btyp tk pp_type t
+        pp_type t (get_zero t)
+        pp_btyp tk
+        an an
+        (pp_mterm (mk_env ())) expr
 
     | Min (_an, _fn) ->
       (* let _, tk = Utils.get_asset_key model an in
