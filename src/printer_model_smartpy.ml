@@ -220,9 +220,9 @@ let pp_model fmt (model : model) =
 
     | Sum (an, _, _) -> (* TODO *)
       Format.fprintf fmt
-        "def sum_%s (self):@\n\
+        "def sum_%s (self, p):@\n\
          \t\treduce(@\n\
-         \t\t(lambda x, key: self.data.%s_assets[key] + x),@\n\
+         \t\t(lambda x, key: p(self.data.%s_assets[key]) + x),@\n\
          \t\tself.data.%s_keys,@\n\
          \t\t0)@\n"
         an an an
@@ -842,7 +842,7 @@ let pp_model fmt (model : model) =
 
       | Msum (an, c, p) ->
         let pp fmt (an, c, p) =
-          Format.fprintf fmt "sum_%a (self, %a, %a)"
+          Format.fprintf fmt "sum_%a (self, %a, fun the -> %a)"
             pp_str an
             f c
             f p
