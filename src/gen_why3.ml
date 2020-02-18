@@ -1164,7 +1164,12 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
 
     (* variables *)
 
-    | Mvarstorevar v -> Tdoti (with_dummy_loc gs, map_lident v)
+    | Mvarstorevar v ->
+      begin
+        match ctx.lctx with
+        | Inv -> Tvar (map_lident v)
+        | _ -> Tdoti (with_dummy_loc gs, map_lident v)
+      end
 
     | Mvarstorecol n ->
       let coll =
@@ -1375,8 +1380,10 @@ let map_storage_items m = List.fold_left (fun acc (item : M.storage_item) ->
 let map_storage m (l : M.storage) =
   let ctx = { init_ctx with lctx = Inv } in
   Dstorage {
-    fields     = (map_storage_items m l)@ (mk_const_fields m |> loc_field |> deloc);
-    invariants = List.concat (List.map (fun (item : M.storage_item) ->
+    fields     = (map_storage_items m l) @ (mk_const_fields m |> loc_field |> deloc);
+    invariants = (** collect all invariants : *)
+      (* -- asset invariants -- *)
+      List.concat (List.map (fun (item : M.storage_item) ->
         let storage_id = item.id in
         let invs : M.label_term list =
           match item.model_type with
@@ -1390,9 +1397,8 @@ let map_storage m (l : M.storage) =
               | Not_found -> assert false
             end
           | _ -> [] in
-
-        (* Model.Utils.get_storage_invariants m (Some (unloc storage_id)) in *)
         List.map (fun (inv : M.label_term) -> mk_storage_invariant m storage_id inv.label (map_mterm m ctx inv.term)) invs) l) @
+      (* -- security predicates -- *)
       (List.fold_left (fun acc sec ->
         acc @ (mk_spec_invariant `Storage sec)) [] m.security.items) @
               (List.fold_left (fun acc decl ->
@@ -1405,12 +1411,22 @@ let map_storage m (l : M.storage) =
                           ) acc e.values
                       | _ -> acc
                     ) [] m.decls) @
+      (* -- contract invariants -- *)
       (List.fold_left (fun acc (post : M.postcondition) ->
         acc @ [{
           id = map_lident post.name;
           form = map_mterm m ctx post.formula;
         }]
-      ) [] m.specification.postconditions)
+      ) [] m.specification.postconditions) @
+      (* -- variable invariants -- *)
+      (List.fold_left (fun acc decl ->
+        match decl with
+        | M.Dvar var ->
+          acc @ (List.map (fun (inv : M.label_term) ->
+            { id = map_lident inv.label; form = map_mterm m ctx inv.term}
+          ) var.invariants)
+        | _ -> acc
+      ) [] m.decls)
   }
 
 (* Verfication API -----------------------------------------------------------*)
