@@ -36,26 +36,28 @@ let output_tast (ast : Ast.model) =
   else Format.printf "%a@." Printer_ast.pp_ast ast
 
 let output (model : Model.model) =
-  if !Options.opt_raw
-  then Format.printf "%a@." Model.pp_model model
-  else
-    let printer =
-      match !Options.target with
-      | None         -> Printer_model.pp_model
-      | Ligo         -> Printer_model_ligo.pp_model
-      | LigoStorage  -> Printer_model_ligo.pp_storage
-      | SmartPy      -> Printer_model_smartpy.pp_model
-      | Scaml        -> Printer_model_scaml.pp_model
-      | Whyml        ->
-        fun fmt model ->
-          let mlw = raise_if_error gen_output_error Gen_why3.to_whyml model in
-          if !Options.opt_raw_whytree
-          then Format.fprintf fmt "%a@." Mlwtree.pp_mlw_tree mlw
-          else Format.fprintf fmt "%a@." Printer_mlwtree.pp_mlw_tree mlw
-      | _            -> fun _fmt _ -> ()
-    in
-    Format.printf "%a@." printer model
-
+  match !Options.opt_raw, !Options.opt_m with
+  | true, _ -> Format.printf "%a@." Model.pp_model model
+  | _, true -> Format.printf "%a@." Printer_model.pp_model model
+  | _ ->
+    begin
+      let printer =
+        match !Options.target with
+        | None         -> Printer_model.pp_model
+        | Ligo         -> Printer_model_ligo.pp_model
+        | LigoStorage  -> Printer_model_ligo.pp_storage
+        | SmartPy      -> Printer_model_smartpy.pp_model
+        | Scaml        -> Printer_model_scaml.pp_model
+        | Whyml        ->
+          fun fmt model ->
+            let mlw = raise_if_error gen_output_error Gen_why3.to_whyml model in
+            if !Options.opt_raw_whytree
+            then Format.fprintf fmt "%a@." Mlwtree.pp_mlw_tree mlw
+            else Format.fprintf fmt "%a@." Printer_mlwtree.pp_mlw_tree mlw
+        | _            -> fun _fmt _ -> ()
+      in
+      Format.printf "%a@." printer model
+    end
 
 let parse (filename, channel) =
   Io.parse_archetype ~name:filename channel
@@ -285,6 +287,8 @@ let main () =
               "Unknown service %s (--list-services to view all services)@." s;
             exit 2), "<service> Generate service response to <service>";
       "--list-services", Arg.Unit (fun _ -> Format.printf "services available:@\n  get_properties@\n"; exit 0), " List available services";
+      "-m", Arg.Set Options.opt_m, " Pretty print model tree";
+      "--model", Arg.Set Options.opt_m, " Same as -m";
       "-r", Arg.Set Options.opt_raw, " Print raw model tree";
       "--raw", Arg.Set Options.opt_raw, " Same as -r";
       "-ry", Arg.Set Options.opt_raw_whytree, " Print raw model tree";
