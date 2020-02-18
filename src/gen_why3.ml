@@ -56,7 +56,11 @@ let mk_ac_sv s a      = Tdoti (s, mk_ac_id a)
 
 let mk_use = Duse [gArchetypeDir;gArchetypeLib] |> loc_decl |> deloc
 let mk_use_list = Duse ["list";"List"] |> loc_decl |> deloc
-let mk_use_module m = Duse [deloc m]  |> loc_decl |> deloc
+let mk_use_module m = Duse [deloc m] |> loc_decl |> deloc
+let mk_use_euclidean_div m =
+  if M.Utils.with_division m then
+    [Duse ["int";"EuclideanDivision"]  |> loc_decl |> deloc]
+  else []
 
 (* Trace -------------------------------------------------------------------------*)
 
@@ -299,6 +303,7 @@ let mk_transfer () =
 let rec mk_select_test = function
   | Tdot (Tvar v,f) when compare v "the" = 0 -> Tdot (Tvar "a",f)
   | Tnow _ -> Tvar (mk_id "now")
+  | Tcaller _ -> Tvar (mk_id "caller")
   | _ as t -> map_abstract_term mk_select_test id id t
 
 (* internal select is a local defintion *)
@@ -326,11 +331,13 @@ let mk_select_body asset mlw_test : term =
                               Tvar "c")]))
   )
 
-(* argument extraction is done on model's term because it is typed *)
+(* TODO : complete mapping
+  argument extraction is done on model's term because it is typed *)
 let extract_args test =
   let rec internal_extract_args acc (term : M.mterm) =
     match term.M.node with
     | M.Mnow -> acc @ [term,mk_id "now", Tydate]
+    | M.Mcaller -> acc @ [term,mk_id "caller", Tyaddr]
     | _ -> M.fold_term internal_extract_args acc term in
   internal_extract_args [] test
 
@@ -763,7 +770,7 @@ let mk_ac_ctx a ctx =
 
 let rec map_mterm m ctx (mt : M.mterm) : loc_term =
   let error_internal desc = emit_error (mt.loc, desc); Tnottranslated in
-  let error_not_translated (msg : string) = (*Tnottranslated in*) error_internal (TODONotTranslated msg) in
+  let error_not_translated (msg : string) = Tnottranslated in (*error_internal (TODONotTranslated msg) in*)
   let error_not_supported (msg : string) = error_internal (NotSupported msg) in
   let t =
     match mt.node with
@@ -1516,6 +1523,8 @@ let mk_set_sum_ensures m a =
                                [Tvar "old_asset"])))
         }]) [] (M.Utils.get_sum_idxs m a)
 
+let mk_set_count_ensures _m _a = []
+
 let mk_set_ensures m n key fields =
   snd (List.fold_left (fun (i,acc) (f:field) ->
       if compare f.name key = 0 then
@@ -1532,7 +1541,7 @@ let mk_set_ensures m n key fields =
                          Tapp (Tvar f.name,
                                [Tvar ("new_asset")]))
            }])
-    ) (1,[]) fields) @ (mk_set_sum_ensures m n)
+    ) (1,[]) fields) @ (mk_set_sum_ensures m n) @ (mk_set_count_ensures m n)
 
 let mk_set_asset_precond m apid a id = mk_api_precond m apid a (`Preasset id)
 
@@ -2162,6 +2171,7 @@ let to_whyml (m : M.model) : mlw_tree  =
   let storage_module   = with_dummy_loc (String.capitalize_ascii (m.name.pldesc ^ "_storage")) in
   let uselib           = mk_use in
   let uselist          = mk_use_list in
+  let useEuclDiv       = mk_use_euclidean_div m in
   let traceutils       = mk_trace_utils m |> deloc in
   let enums            = M.Utils.get_enums m |> List.map (map_enum m) in
   let records          = M.Utils.get_assets m |> List.map (map_record m) |> wdl in
@@ -2184,6 +2194,7 @@ let to_whyml (m : M.model) : mlw_tree  =
   let loct : loc_mlw_tree = [{
       name  = storage_module;
       decls = [uselib]               @
+              useEuclDiv             @
               traceutils             @
               enums                  @
               records                @

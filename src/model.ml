@@ -2502,6 +2502,7 @@ module Utils : sig
   val eval                               : mterm -> (ident * mterm) list -> mterm
   val get_select_idx                     : model -> ident -> mterm -> int
   val get_sum_idx                        : model -> ident -> mterm -> int
+  val with_division                       : model -> bool
 end = struct
 
   open Tools
@@ -3243,5 +3244,18 @@ end = struct
           acc @ [get_sum_idx m a formula]
         | _ -> acc
       ) [] m.api_items
+
+  exception FoundDiv
+
+  let with_div_for_mterm_intern _ctx accu (mt : mterm) : bool =
+    let rec aux accu (t : mterm) =
+      match t.node with
+      | Mdiv (_,_) -> raise FoundDiv
+      | _ -> fold_term aux accu t in
+    aux accu mt
+
+  let with_division (model : model) : bool =
+    try fold_model with_div_for_mterm_intern model false
+    with FoundDiv -> true
 
 end
