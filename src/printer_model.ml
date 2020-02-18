@@ -707,6 +707,7 @@ let pp_mterm fmt (mt : mterm) =
 
     (* variables *)
 
+    | Mvarassetstate (an, k) -> Format.fprintf fmt "state_%a(%a)" pp_str an f k
     | Mvarstorevar v -> pp_id fmt v
     | Mvarstorecol v -> pp_id fmt v
     | Mvarenumval v  -> pp_id fmt v

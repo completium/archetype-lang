@@ -964,6 +964,11 @@ let pp_model_internal fmt (model : model) b =
 
     (* variables *)
 
+    | Mvarassetstate (an, k) ->
+      Format.fprintf fmt "state_%a(%a)"
+        pp_str an
+        f k
+
     | Mvarstorevar v ->
       if (is_const env v)
       then pp_id fmt v

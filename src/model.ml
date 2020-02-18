@@ -235,6 +235,7 @@ type ('id, 'term) mterm_node  =
   | Mbalance
   | Msource
   (* variables *)
+  | Mvarassetstate    of ident * 'term
   | Mvarstorevar      of 'id
   | Mvarstorecol      of 'id
   | Mvarenumval       of 'id
@@ -1009,6 +1010,7 @@ let cmp_mterm_node
     | Mbalance, Mbalance                                                               -> true
     | Msource, Msource                                                                 -> true
     (* variables *)
+    | Mvarassetstate (an1, k1), Mvarassetstate (an2, k2)                               -> cmp_ident an1 an2 && cmp k1 k2
     | Mvarstorevar v1, Mvarstorevar v2                                                 -> cmpi v1 v2
     | Mvarstorecol v1, Mvarstorecol v2                                                 -> cmpi v1 v2
     | Mvarenumval v1, Mvarenumval v2                                                   -> cmpi v1 v2
@@ -1266,6 +1268,7 @@ let map_term_node (f : 'id mterm_gen -> 'id mterm_gen) = function
   | Mbalance                       -> Mbalance
   | Msource                        -> Msource
   (* variables *)
+  | Mvarassetstate (an, k)         -> Mvarassetstate (an, f k)
   | Mvarstorevar v                 -> Mvarstorevar v
   | Mvarstorecol v                 -> Mvarstorecol v
   | Mvarenumval v                  -> Mvarenumval  v
@@ -1569,6 +1572,7 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mbalance                              -> accu
   | Msource                               -> accu
   (* variables *)
+  | Mvarassetstate (_, k)                 -> f accu k
   | Mvarstorevar _                        -> accu
   | Mvarstorecol _                        -> accu
   | Mvarenumval _                         -> accu
@@ -2137,6 +2141,10 @@ let fold_map_term
 
 
   (* variables *)
+
+ | Mvarassetstate (an, k) ->
+    let ke, ka = f accu k in
+    g (Mvarassetstate (an, ke)), ka
 
   | Mvarstorevar v ->
     g (Mvarstorevar v), accu
