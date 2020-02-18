@@ -20,10 +20,10 @@ asset card identified by card_id {
 }
 
 variable next_id : int = 0
-(* with {
+with {
   n1: next_id >= 0;
-  n2: forall c in card, next_id <> c.card_id
-} *)
+  (* n2: forall c in card, next_id <> c.card_id *)
+}
 
 action transfer_single (card_to_transfer : pkey of card, destination : address) {
   require {
