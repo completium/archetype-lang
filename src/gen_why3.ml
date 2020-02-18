@@ -770,7 +770,7 @@ let mk_ac_ctx a ctx =
 
 let rec map_mterm m ctx (mt : M.mterm) : loc_term =
   let error_internal desc = emit_error (mt.loc, desc); Tnottranslated in
-  let error_not_translated (msg : string) = Tnottranslated in (*error_internal (TODONotTranslated msg) in*)
+  let error_not_translated (msg : string) = error_internal (TODONotTranslated msg) in
   let error_not_supported (msg : string) = error_internal (NotSupported msg) in
   let t =
     match mt.node with
@@ -827,18 +827,42 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
 
     | Massign             _ -> error_not_translated "Massign"
 
-    | Massignvarstore (ValueAssign, _, id, v) ->
-      Tassign (with_dummy_loc (Tdoti (with_dummy_loc gs,map_lident id)),map_mterm m ctx v)
-
-    | Massignvarstore (MinusAssign, _, id, v) ->
-      Tassign (with_dummy_loc (Tdoti (with_dummy_loc gs,map_lident id)),
-               with_dummy_loc (
+    | Massignvarstore (assignop, _, id, v) ->
+      let var = with_dummy_loc (Tdoti (with_dummy_loc gs,map_lident id)) in
+      let value =
+      begin
+        match assignop with
+        | ValueAssign -> map_mterm m ctx v
+        | MinusAssign ->
+          with_dummy_loc (
                  Tminus (with_dummy_loc Tyint,
-                         with_dummy_loc (Tvar (map_lident id)),
-                         map_mterm m ctx v)))
-
-    | Massignvarstore     _ -> error_not_translated "Massignvarstore"
-
+                         var,
+                         map_mterm m ctx v))
+        | PlusAssign ->
+          with_dummy_loc (
+                 Tplus (with_dummy_loc Tyint,
+                         var,
+                         map_mterm m ctx v))
+        | MultAssign ->
+          with_dummy_loc (
+                 Tmult (with_dummy_loc Tyint,
+                         var,
+                         map_mterm m ctx v))
+        | DivAssign ->
+          with_dummy_loc (
+                 Tdiv (with_dummy_loc Tyint,
+                         var,
+                         map_mterm m ctx v))
+        | AndAssign ->
+          with_dummy_loc (
+                 Tand (var,
+                       map_mterm m ctx v))
+        | OrAssign ->
+          with_dummy_loc (
+                 Tor (var,
+                       map_mterm m ctx v))
+      end in
+      Tassign (var,value)
     | Massignfield (ValueAssign, _, {node = M.Mvarstorecol id1}, id2, v) ->
       let id = with_dummy_loc (Tdoti (map_lident id1, map_lident id2)) in
       Tassign (id, map_mterm m ctx v)
@@ -1046,7 +1070,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
         match k.node with
         | M.Mdotasset (a, _) -> map_mterm m ctx a
         | _ -> with_dummy_loc (Tapp (loc_term (Tvar ("get_" ^ a)),
-                                     [map_mterm m ctx v]))
+                                     [map_mterm m ctx k]))
       in
       mk_trace_seq m
         (Tletin (false,
