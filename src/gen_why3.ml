@@ -898,6 +898,9 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
 
     | Massignstate v -> Tassign (loc_term (Tdoti (gs, "state")), map_mterm m ctx v)
 
+    | Massignassetstate _ -> error_not_translated "Massignassetstate"
+
+
     (* control *)
 
     | Mif (c, t, Some { node=M.Mseq []; type_=_}) ->

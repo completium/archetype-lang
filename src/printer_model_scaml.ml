@@ -528,6 +528,12 @@ let pp_model fmt (model : model) =
         Format.fprintf fmt "state_ = %a"
           f x
 
+      | Massignassetstate (an, k, v) ->
+        Format.fprintf fmt "state_%a(%a) = %a"
+          pp_ident an
+          f k
+          f v
+
 
       (* control *)
 
