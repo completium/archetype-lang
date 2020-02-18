@@ -756,9 +756,14 @@ let map_mpattern (p : M.lident M.pattern_node) =
   | M.Pwild -> Twild
   | M.Pconst i -> Tconst (map_lident i)
 
+let mk_ac_ctx a ctx =
+  match ctx.lctx with
+  | Inv -> loc_term (Tvar (mk_ac_id a))
+  | _ ->  loc_term (mk_ac a)
+
 let rec map_mterm m ctx (mt : M.mterm) : loc_term =
   let error_internal desc = emit_error (mt.loc, desc); Tnottranslated in
-  let error_not_translated (msg : string) = error_internal (TODONotTranslated msg) in
+  let error_not_translated (msg : string) = (*Tnottranslated in*) error_internal (TODONotTranslated msg) in
   let error_not_supported (msg : string) = error_internal (NotSupported msg) in
   let t =
     match mt.node with
@@ -1068,11 +1073,11 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Mcontains (a, _, r) -> Tapp (loc_term (Tvar ("contains_" ^ a)), [map_mterm m ctx r])
 
     | Mnth                _ -> error_not_translated "Mnth"
-    | Mcount              _ -> error_not_translated "Mcount"
+    | Mcount              (a,t) -> Tcard (with_dummy_loc a, map_mterm m ctx t)
 
     | Msum          (a,_,f) ->
       let id = mk_sum_name m a f in
-      Tapp (loc_term (Tvar id), [loc_term (mk_ac a)])
+      Tapp (loc_term (Tvar id), [mk_ac_ctx a ctx])
     | Mmin                _ -> error_not_translated "Mmin"
     | Mmax                _ -> error_not_translated "Mmax"
     | Mhead               _ -> error_not_translated "Mhead"
@@ -1243,14 +1248,17 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Mapifget (a, _c, k) -> Tapp (loc_term (Tvar ("get_" ^ a)),[map_mterm m ctx k])
     | Mapifsubsetof (n, l, r) -> Tsubset (with_dummy_loc n, map_mterm m ctx l, map_mterm m ctx r)
     | Mapifisempty (l, r) -> Tempty (with_dummy_loc l, map_mterm m ctx r)
-    | Mapifselect    _ -> error_not_translated "Mapifselect"
+    | Mapifselect (a, l, r) ->  let args = extract_args r in
+      let id = mk_select_name m a r in
+      let argids = args |> List.map (fun (e, _, _) -> e) |> List.map (map_mterm m ctx) in
+      Tapp (loc_term (Tvar id), argids @ [map_mterm m ctx l])
     | Mapifsort      _ -> error_not_translated "Mapifsort"
     | Mapifcontains  (a, _, r) -> Tapp (loc_term (Tvar ("contains_" ^ a)), [map_mterm m ctx r])
     | Mapifnth       _ -> error_not_translated "Mapifnth"
-    | Mapifcount     _ -> error_not_translated "Mapifcount"
+    | Mapifcount     (a,t) ->  Tcard (with_dummy_loc a, map_mterm m ctx t)
     | Mapifsum       (a,_,f) ->
       let id = mk_sum_name m a f in
-      Tapp (loc_term (Tvar id), [loc_term (mk_ac a)])
+      Tapp (loc_term (Tvar id), [mk_ac_ctx a ctx])
     | Mapifmin       _ -> error_not_translated "Mapifmin"
     | Mapifmax       _ -> error_not_translated "Mapifmax"
     | Mapifhead      _ -> error_not_translated "Mapifhead"
@@ -1333,7 +1341,6 @@ let map_storage_items m = List.fold_left (fun acc (item : M.storage_item) ->
       }]
   ) []
 
-
 let map_storage m (l : M.storage) =
   let ctx = { init_ctx with lctx = Inv } in
   Dstorage {
@@ -1355,9 +1362,9 @@ let map_storage m (l : M.storage) =
 
         (* Model.Utils.get_storage_invariants m (Some (unloc storage_id)) in *)
         List.map (fun (inv : M.label_term) -> mk_storage_invariant m storage_id inv.label (map_mterm m ctx inv.term)) invs) l) @
-                 (List.fold_left (fun acc sec ->
-                      acc @ (mk_spec_invariant `Storage sec)) [] m.security.items) @
-                 (List.fold_left (fun acc decl ->
+      (List.fold_left (fun acc sec ->
+        acc @ (mk_spec_invariant `Storage sec)) [] m.security.items) @
+              (List.fold_left (fun acc decl ->
                       match decl with
                       | M.Denum e ->
                         List.fold_left (fun acc (value : M.enum_item) ->
@@ -1366,7 +1373,13 @@ let map_storage m (l : M.storage) =
                               ) value.invariants
                           ) acc e.values
                       | _ -> acc
-                    ) [] m.decls)
+                    ) [] m.decls) @
+      (List.fold_left (fun acc (post : M.postcondition) ->
+        acc @ [{
+          id = map_lident post.name;
+          form = map_mterm m ctx post.formula;
+        }]
+      ) [] m.specification.postconditions)
   }
 
 (* Verfication API -----------------------------------------------------------*)
@@ -1864,6 +1877,19 @@ let mk_rm_partition_field m asset keyf f rmed_asset rmkey : decl = Dfun {
                                     )))));
   }
 
+let mk_storage_api_before_storage (m : M.model) _records =
+  m.api_items |> List.fold_left (fun acc (sc : M.api_storage) ->
+      match sc.node_item with
+      | M.APIAsset (Sum (asset,_,formula)) when compare asset "todo" <> 0 ->
+        let key      = M.Utils.get_asset_key m asset |> fst in
+        let mlw_formula = map_mterm m init_ctx formula |> unloc_term in
+        let id = M.Utils.get_sum_idx m asset formula in
+        acc @ [ mk_get_sum_value_from_pos asset id mlw_formula;
+                mk_get_sum_value asset id mlw_formula;
+                mk_sum_clone m asset key formula ]
+      | _ -> acc
+    ) [] |> loc_decl |> deloc
+
 let mk_storage_api (m : M.model) records =
   m.api_items |> List.fold_left (fun acc (sc : M.api_storage) ->
       match sc.node_item with
@@ -1901,13 +1927,6 @@ let mk_storage_api (m : M.model) records =
         let mlw_test = map_mterm m init_ctx test in
         acc @ [ mk_select m asset test (mlw_test |> unloc_term) sc.only_formula ]
         (* TODO *)
-      | M.APIAsset (Sum (asset,_,formula)) when compare asset "todo" <> 0 ->
-        let key      = M.Utils.get_asset_key m asset |> fst in
-        let mlw_formula = map_mterm m init_ctx formula |> unloc_term in
-        let id = M.Utils.get_sum_idx m asset formula in
-        acc @ [ mk_get_sum_value_from_pos asset id mlw_formula;
-                mk_get_sum_value asset id mlw_formula;
-                mk_sum_clone m asset key formula ]
       | M.APIAsset (Unshallow n) ->
         let t         =  M.Utils.get_asset_key m n |> snd |> map_btype in
         acc @ [ mk_unshallow n t ]
@@ -2151,6 +2170,7 @@ let to_whyml (m : M.model) : mlw_tree  =
   let clones           = M.Utils.get_assets m  |> List.map (record_to_clone m) |> wdl in
   let init_records     = records |> unloc_decl |> List.map mk_default_init |> loc_decl in
   let records          = zip records eq_assets init_records clones |> deloc in
+  let storage_api_bs   = mk_storage_api_before_storage m (records |> wdl) in
   let storage          = M.Utils.get_storage m |> map_storage m in
   let storageval       = Dval (with_dummy_loc gs, with_dummy_loc Tystorage) in
   let axioms           = mk_axioms m in
@@ -2168,6 +2188,7 @@ let to_whyml (m : M.model) : mlw_tree  =
               enums                  @
               records                @
               eq_exten               @
+              storage_api_bs         @
               [storage;storageval]   @
               axioms                 @
               (*partition_axioms       @*)
