@@ -1124,3 +1124,27 @@ let exec_process model =
   |> remove_label
   |> flat_sequence
   |> remove_cmp_bool
+
+
+let replace_assignfield_by_update (model : model) : model =
+  let rec aux (ctx : ctx_model) (mt : mterm) : mterm =
+    match mt.node with
+    | Massignfield (op, _, {node = Mget(an, key); _ }, fn, v) ->
+      let l = [(fn, op, v)] in
+      mk_mterm (Mupdate (an, key, l)) Tunit
+    | Massignfield (op, _, a, fn, v) ->
+      let an =
+        begin
+          match a.type_ with
+          | Tasset an -> unloc an
+          | _ -> assert false
+        end
+      in
+      let k, t = Utils.get_asset_key model an in
+      let key : mterm = mk_mterm (Mdotasset (a, dumloc k)) (Tbuiltin t) in
+      let l = [(fn, op, v)] in
+      mk_mterm (Mupdate (an, key, l)) Tunit
+
+    | _ -> map_mterm (aux ctx) mt
+  in
+  map_mterm_model aux model

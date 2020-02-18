@@ -105,6 +105,7 @@ let generate_target model =
   match !Options.target with
   | None ->
     model
+    |> cont !Options.opt_raf replace_assignfield_by_update
     |> cont !Options.opt_rau remove_add_update
     |> cont !Options.opt_ru  replace_update_by_set
     |> cont !Options.opt_nr  remove_rational
@@ -122,6 +123,7 @@ let generate_target model =
   | Ligo
   | LigoStorage ->
     model
+    |> replace_assignfield_by_update
     |> remove_add_update
     |> replace_update_by_set
     |> remove_rational
@@ -163,6 +165,7 @@ let generate_target model =
 
   | Whyml ->
     model
+    |> replace_assignfield_by_update
     |> remove_add_update
     |> replace_update_by_set
     |> remove_rational
@@ -262,6 +265,8 @@ let main () =
       "--no-rational", Arg.Set Options.opt_nse, " Same as -nr";
       "-ndd", Arg.Set Options.opt_ndd, " Remove date and duration";
       "--no-date-duration", Arg.Set Options.opt_nse, " Same as -ndd";
+      "-raf", Arg.Set Options.opt_raf, " Replace field by update";
+      "--remove-assignfield", Arg.Set Options.opt_raf, " Same as -raf";
       "-rau", Arg.Set Options.opt_rau, " Remove add_update method";
       "--remove-add-update", Arg.Set Options.opt_rau, " Same as -rau";
       "-ru", Arg.Set Options.opt_ru, " Remove update method";
