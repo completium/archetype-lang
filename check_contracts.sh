@@ -100,6 +100,7 @@ for i in $EXEC_CONTRACTS; do
     fi
 done
 
+echo ""
 echo "                                                             RET OUT PROVE"
 for i in $VERIF_CONTRACTS; do
     ./check_verif.sh ./contracts/$i

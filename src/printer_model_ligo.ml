@@ -40,11 +40,10 @@ type env = {
   select_preds: mterm list;
   sum_preds: mterm list;
   consts: (ident * mterm) list;
-  vars: (ident * mterm) list;
 }
 
-let mk_env ?f ?(select_preds=[]) ?(sum_preds=[]) ?(consts=[]) ?(vars=[]) () : env =
-  { f; select_preds; sum_preds; consts; vars }
+let mk_env ?f ?(select_preds=[]) ?(sum_preds=[]) ?(consts=[]) () : env =
+  { f; select_preds; sum_preds; consts }
 
 exception Found
 
@@ -56,14 +55,9 @@ let is_internal l (id : lident) : bool =
   | Found -> true
 
 let is_const (env : env) (id : lident) : bool = is_internal env.consts id
-let is_var_with_init (env : env) (id : lident) : bool = is_internal env.vars id
-
 
 let get_const_dv (env : env) (id : lident) : mterm =
   List.assoc (unloc id) env.consts
-
-let get_var_dv (env : env) (id : lident) : mterm =
-  List.assoc (unloc id) env.vars
 
 let get_preds_index l e : int =
   match List.index_of (fun x -> Model.cmp_mterm x e) l with
@@ -1762,13 +1756,7 @@ let pp_model_internal fmt (model : model) b =
           | Dvar v when v.constant -> (unloc v.name, Option.get v.default)::accu
           | _ -> accu
         ) model.decls [] in
-    let vars =
-      List.fold_right (fun (x : decl_node) accu ->
-          match x with
-          | Dvar v when Option.is_some v.default -> (unloc v.name, Option.get v.default)::accu
-          | _ -> accu
-        ) model.decls [] in
-    mk_env ~select_preds:select_preds ~sum_preds:sum_preds ~consts:consts ~vars:vars ()
+    mk_env ~select_preds:select_preds ~sum_preds:sum_preds ~consts:consts ()
   in
 
   let pp_storage_term env fmt _ =
@@ -1778,10 +1766,7 @@ let pp_model_internal fmt (model : model) b =
       let l = List.filter (fun (x : storage_item) -> not x.const) l in
       Format.fprintf fmt "record %a end"
         (pp_list "; " (fun fmt (si : storage_item) ->
-             let map_const_value : (ident * mterm) list = env.consts @ env.vars in
-             let default : mterm = si.default in
-             let dmt : mterm = Model.Utils.eval default map_const_value in
-             Format.fprintf fmt "%a = %a" pp_id si.id (pp_mterm env) dmt )
+             Format.fprintf fmt "%a = %a" pp_id si.id (pp_mterm env) si.default )
         ) l
   in
 

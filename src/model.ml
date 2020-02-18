@@ -2499,7 +2499,7 @@ module Utils : sig
   val with_operations_for_mterm          : mterm -> bool
   val with_operations                    : model -> bool
   val get_source_for                     : model -> ctx_model -> mterm -> mterm option
-  val eval                               : mterm -> (ident * mterm) list -> mterm
+  val eval                               : (ident * mterm) list -> mterm -> mterm
   val get_select_idx                     : model -> ident -> mterm -> int
   val get_sum_idx                        : model -> ident -> mterm -> int
   val with_division                      : model -> bool
@@ -3105,7 +3105,7 @@ end = struct
       end
     | _ -> None
 
-  let eval (mt : mterm) (map_const_value : (ident * mterm) list) : mterm =
+  let eval (map_const_value : (ident * mterm) list) (mt : mterm) : mterm =
     let get_value (id : ident) : mterm = List.assoc id map_const_value in
     let is_const (id : ident) : bool = List.assoc_opt id map_const_value |> Option.is_some in
     let remove_const (mt : mterm) : mterm =

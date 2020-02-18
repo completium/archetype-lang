@@ -1,3 +1,4 @@
+open Ident
 open Location
 open Model
 open Tools
@@ -1148,3 +1149,18 @@ let replace_assignfield_by_update (model : model) : model =
     | _ -> map_mterm (aux ctx) mt
   in
   map_mterm_model aux model
+
+let eval_variable_initial_value (model : model) : model =
+  let map_value : (ident * mterm) list =
+    List.fold_left (fun accu x ->
+        match x with
+        | Dvar v when Option.is_some v.default -> (unloc v.name, Option.get v.default)::accu
+        | _ -> accu
+      ) [] model.decls in
+  { model with
+    decls = List.map (
+        fun x ->
+          match x with
+          | Dvar v -> Dvar { v with default = Option.map (Model.Utils.eval map_value) v.default }
+          | _ -> x) model.decls;
+  }

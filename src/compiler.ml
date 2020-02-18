@@ -117,6 +117,7 @@ let generate_target model =
     |> cont !Options.opt_sa  shallow_asset
     |> cont !Options.opt_skv split_key_values
     |> cont !Options.opt_nse remove_side_effect
+    |> cont !Options.opt_evi eval_variable_initial_value
     |> generate_api_storage
     |> output
 
@@ -129,6 +130,7 @@ let generate_target model =
     |> remove_rational
     |> abs_tez
     |> replace_date_duration_by_timestamp
+    |> eval_variable_initial_value
     |> generate_storage
     |> replace_declvar_by_letin
     |> remove_enum_matchwith
@@ -170,6 +172,7 @@ let generate_target model =
     |> replace_update_by_set
     |> remove_rational
     |> replace_date_duration_by_timestamp
+    |> eval_variable_initial_value
     |> generate_storage
     |> replace_declvar_by_letin
     (* |> remove_enum_matchwith *)
@@ -273,6 +276,8 @@ let main () =
       "--remove-update", Arg.Set Options.opt_ru, " Same as -ru";
       "-ne", Arg.Set Options.opt_ne, " Remove enum and match with";
       "--no-enum", Arg.Set Options.opt_ne, " Same as -ne";
+      "-evi", Arg.Set Options.opt_evi, " Evaluate initial value";
+      "--eval-initial-value", Arg.Set Options.opt_evi, " Same as -evi";
       "-fp", Arg.String (fun s -> Options.opt_property_focused := s), " Focus property (with whyml target only)";
       "--focus-property", Arg.String (fun s -> Options.opt_property_focused := s), " Same as -fp";
       "-ptc", Arg.Set Options.opt_ptc, " Print type contract in archetype syntax";
