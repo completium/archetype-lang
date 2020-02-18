@@ -2502,7 +2502,8 @@ module Utils : sig
   val eval                               : mterm -> (ident * mterm) list -> mterm
   val get_select_idx                     : model -> ident -> mterm -> int
   val get_sum_idx                        : model -> ident -> mterm -> int
-  val with_division                       : model -> bool
+  val with_division                      : model -> bool
+  val with_count                         : model -> ident -> bool
 end = struct
 
   open Tools
@@ -3257,5 +3258,13 @@ end = struct
   let with_division (model : model) : bool =
     try fold_model with_div_for_mterm_intern model false
     with FoundDiv -> true
+
+let with_count m a =
+  List.fold_left (fun acc (ai : api_storage) ->
+    match ai.node_item with
+      | APIAsset (Count asset) when String.equal a asset ->
+        acc || true
+      | _ -> acc
+  ) false m.api_items
 
 end

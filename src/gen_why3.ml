@@ -1563,7 +1563,15 @@ let mk_set_sum_ensures m a =
                                [Tvar "old_asset"])))
         }]) [] (M.Utils.get_sum_idxs m a)
 
-let mk_set_count_ensures _m _a = []
+let mk_set_count_ensures m a =
+  if M.Utils.with_count m a then [{
+    id = "set_" ^ a ^ "_count";
+    form = Teq (Tyint,
+      Tcard (a,mk_ac a),
+      Tcard (a,mk_ac_old a)
+    );
+  }]
+  else []
 
 let mk_set_ensures m n key fields =
   snd (List.fold_left (fun (i,acc) (f:field) ->
@@ -1702,6 +1710,19 @@ let mk_add_sum_ensures m a e =
                                [Tvar e])))
         }]) [] (M.Utils.get_sum_idxs m a)
 
+let mk_add_count_ensures m a =
+  if M.Utils.with_count m a then [{
+    id = "add_" ^ a ^ "_count";
+    form = Teq (Tyint,
+      Tcard (a, mk_ac a),
+      Tplus (Tyint,
+        Tcard (a, mk_ac_old a),
+        Tint (Big_int.big_int_of_int 1)
+      )
+    )
+  }]
+  else []
+
 let mk_add_ensures m p a e =
   [
     { id   = p ^ "_post_1";
@@ -1733,7 +1754,7 @@ let mk_add_ensures m p a e =
                                      Tvar e)
                             ));
     };
-  ] @ (mk_add_sum_ensures m a e)
+  ] @ (mk_add_sum_ensures m a e) @ (mk_add_count_ensures m a)
 
 let mk_add_asset m asset key : decl = Dfun {
     name     = "add_" ^ asset;
@@ -1777,6 +1798,19 @@ let mk_rm_sum_ensures m a e =
                                [Tvar e])))
         }]) [] (M.Utils.get_sum_idxs m a)
 
+let mk_rm_count_ensures m a =
+  if M.Utils.with_count m a then [{
+    id = "rm_" ^ a ^ "_count";
+    form = Teq (Tyint,
+      Tcard (a, mk_ac a),
+      Tminus (Tyint,
+        Tcard (a, mk_ac_old a),
+        Tint (Big_int.big_int_of_int 1)
+      )
+    )
+  }]
+  else []
+
 let mk_rm_ensures m p a e =
   [
     { id   = p ^ "_post1";
@@ -1800,7 +1834,7 @@ let mk_rm_ensures m p a e =
                           Tsingl (a,
                                   Tvar e)))
     }
-  ] @ (mk_rm_sum_ensures m a e)
+  ] @ (mk_rm_sum_ensures m a e) @ (mk_rm_count_ensures m a)
 
 let mk_rm_asset m asset key : decl =
   Dfun {
