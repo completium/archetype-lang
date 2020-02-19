@@ -282,13 +282,21 @@ let to_model (ast : A.model) : M.model =
       then M.Mapifselect (asset_name, fp, fq)
       else M.Mselect (asset_name, fp, fq)
 
-    | A.Pcall (Some p, A.Cconst (A.Csort), [ASorting (asc, field_name)]) ->
+    | A.Pcall (Some p, A.Cconst (A.Csort), args) ->
       let fp = f p in
       let asset_name = extract_asset_name fp in
-      let sort_kind = match asc with | true -> M.SKasc | false -> M.SKasc in
+      let args =
+        List.map (fun x -> match x with
+            | A.ASorting (asc, field_name) ->
+              begin
+                let sort_kind = match asc with | true -> M.SKasc | false -> M.SKasc in
+                unloc field_name, sort_kind
+              end
+            | _ -> assert false) args
+      in
       if formula
-      then M.Mapifsort (asset_name, fp, [unloc field_name, sort_kind])
-      else M.Msort (asset_name, fp, [unloc field_name, sort_kind])
+      then M.Mapifsort (asset_name, fp, args)
+      else M.Msort (asset_name, fp, args)
 
     | A.Pcall (Some p, A.Cconst (A.Ccontains), [AExpr q]) ->
       let fp = f p in
