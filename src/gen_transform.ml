@@ -1213,9 +1213,6 @@ let add_explicit_sort (model : model) : model =
       let body = aux env ctx body in
       { mt with node = Mletin ([id], v, Some (Tcontainer (Tasset an, c)), body, o)}
 
-    | Mselect (an, c, p) when is_implicit_sort env c ->
-      { mt with node = Mselect (an, create_sort an c, p) }
-
     | Mnth (an, c, idx) when is_implicit_sort env c ->
       { mt with node = Mnth (an, create_sort an c, idx) }
 
