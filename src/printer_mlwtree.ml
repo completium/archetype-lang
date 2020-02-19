@@ -173,6 +173,7 @@ let pp_exn fmt e =
     | Einvalidstate     -> "InvalidState"
     | Enotransfer       -> "NoTransfer"
     | Ebreak            -> "Break"
+    | ENotAPair         -> "NotAPair"
   in
   pp_str fmt e_str
 
@@ -239,6 +240,8 @@ let rec pp_term outer pos fmt = function
     Format.fprintf fmt "mem_key %a %a"
       (pp_with_paren (pp_term outer pos)) e1
       (pp_with_paren (pp_term outer pos)) e2
+  | Ttuple l ->
+    Format.fprintf fmt "(%a)" (pp_list " , " (pp_term outer pos)) l
   | Tvar i -> pp_str fmt i
   | Tdoti (i1,i2) -> Format.fprintf fmt "%a.%a" pp_str i1 pp_str i2
   | Tdot (e1,e2) ->
@@ -369,6 +372,9 @@ let rec pp_term outer pos fmt = function
   | Temptycoll i -> Format.fprintf fmt "%a.empty" pp_str (String.capitalize_ascii i)
   | Tcaller i -> Format.fprintf fmt "%a._caller" pp_str i
   | Ttransferred i -> Format.fprintf fmt "%a._transferred" pp_str i
+  | Tfst e -> Format.fprintf fmt "fst %a" (pp_with_paren (pp_term outer pos)) e
+  | Tsnd e -> Format.fprintf fmt "snd %a" (pp_with_paren (pp_term outer pos)) e
+  | Tabs e -> Format.fprintf fmt "abs %a" (pp_with_paren (pp_term outer pos)) e
   | Tletin (r,i,t,b,e) ->
     Format.fprintf fmt "let%a %a%a = %a in@\n%a"
       pp_ref r

@@ -20,6 +20,34 @@ theory Types
 
 end
 
+module Utils
+  use int.Int
+
+  exception NotAPair
+
+  let fst (a: (int, int)) : int
+  raises { NotAPair }
+  =
+  match a with
+  | (l,_) -> l
+  | _ -> raise NotAPair
+  end
+
+  let snd (a: (int, int)) : int
+  raises { NotAPair }
+  =
+  match a with
+  | (_,r) -> r
+  | _ -> raise NotAPair
+  end
+
+  let function abs (a : int) : int
+  ensures { result >= 0 }
+  =
+  if a >= 0 then a else -a
+
+end
+
 module Trace
 
   use Types
@@ -532,6 +560,7 @@ theory Lib
   use export int.Int
   use export list.List
   use export option.Option
+  use export Utils
   use export Types
   use export Contract
   use export AssetCollection

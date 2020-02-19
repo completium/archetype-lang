@@ -8,6 +8,7 @@ type exn =
   | Einvalidstate
   | Enotransfer
   | Ebreak
+  | ENotAPair
 [@@deriving show {with_path = false}]
 
 type fmod =
@@ -69,6 +70,7 @@ type ('e,'t,'i) abstract_term =
   | Tfor    of 'i * 'e * ('e,'i) abstract_formula list * 'e
   | Ttry    of 'e * (exn * 'e) list
   | Tvar    of 'i
+  | Ttuple  of 'e list
   (* record *)
   | Trecord of 'e option * ('i * 'e) list (* { 'e with 'i = 'e; } *)
   | Tdot    of 'e * 'e
@@ -103,6 +105,9 @@ type ('e,'t,'i) abstract_term =
   | Texn    of exn
   | Tconcat of 'e * 'e
   | Ttransfer of 'e * 'e
+  | Tfst of 'e
+  | Tsnd of 'e
+  | Tabs of 'e
   (* trace *)
   | Tmktr   of 'e * 'e
   | Ttradd  of 'i
@@ -321,10 +326,11 @@ and map_abstract_term
                                 map_e s,
                                 List.map (map_abstract_formula map_e map_i) l,
                                 map_e b)
-  | Ttry (b,l)       -> Ttry (map_e b, List.map (fun (exn,e) -> (exn,map_e e)) l)
+  | Ttry (b,l)         -> Ttry (map_e b, List.map (fun (exn,e) -> (exn,map_e e)) l)
   | Tassert (l,e)      -> Tassert (Option.map map_i l,map_e e)
   | Ttoiter (a,i,e)    -> Ttoiter (map_i a, map_i i, map_e e)
   | Tvar i             -> Tvar (map_i i)
+  | Ttuple l           -> Ttuple (List.map map_e l)
   | Trecord (e,l)      -> Trecord (Option.map map_e e, List.map (fun (i,v) ->
       (map_i i,map_e v)) l)
   | Tdot (e1,e2)       -> Tdot (map_e e1, map_e e2)
@@ -332,6 +338,9 @@ and map_abstract_term
   | Tename             -> Tename
   | Tcaller i          -> Tcaller (map_i i)
   | Ttransferred i     -> Ttransferred (map_i i)
+  | Tfst e             -> Tfst (map_e e)
+  | Tsnd e             -> Tsnd (map_e e)
+  | Tabs e             -> Tabs (map_e e)
   | Tnow i             -> Tnow (map_i i)
   | Tadded a           -> Tadded (map_i a)
   | Trmed  a           -> Trmed (map_i a)
@@ -588,8 +597,9 @@ let compare_exn e1 e2 =
   | Ekeyexist, Ekeyexist -> true
   | Einvalidcaller, Einvalidcaller -> true
   | Einvalidcondition, Einvalidcondition -> true
-   | Einvalidstate, Einvalidstate -> true
+  | Einvalidstate, Einvalidstate -> true
   | Ebreak, Ebreak -> true
+  | ENotAPair, ENotAPair -> true
   | _ -> false
 
 let compare_fmod m1 m2 =
@@ -691,6 +701,7 @@ let compare_abstract_term
   | Tassert (Some l1,e1), Tassert (Some l2,e2) -> cmpi l1 l2 && cmpe e1 e2
   | Ttoiter (a1,i1,e1), Ttoiter (a2,i2,e2) -> cmpi a1 a2 && cmpi i1 i2 && cmpe e1 e2
   | Tvar i1, Tvar i2 -> cmpi i1 i2
+  | Ttuple l1, Ttuple l2 -> List.for_all2 cmpe l1 l2
   | Trecord (None,l1), Trecord (None,l2) ->
     List.for_all2 (fun (i1,j1) (i2,j2) ->
         cmpi i1 i2 && cmpe j1 j2) l1 l2
@@ -702,6 +713,10 @@ let compare_abstract_term
   | Tename,Tename -> true
   | Tcaller i1, Tcaller i2 -> cmpi i1 i2
   | Ttransferred i1, Ttransferred i2 -> cmpi i1 i2
+  | Ttransfer (f1,t1), Ttransfer (f2,t2) -> cmpe f1 f2 && cmpe t1 t2
+  | Tfst e1, Tfst e2 -> cmpe e1 e2
+  | Tsnd e1, Tsnd e2 -> cmpe e1 e2
+  | Tabs e1, Tabs e2 -> cmpe e1 e2
   | Tnow i1, Tnow i2 -> cmpi i1 i2
   | Tadded a1, Tadded a2 -> cmpi a1 a2
   | Trmed  a1, Trmed a2 -> cmpi a1 a2

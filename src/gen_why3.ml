@@ -993,7 +993,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
         | _ -> assert false
       end
 
-    | Mtuple              _ -> error_not_translated "Mtuple"
+    | Mtuple              l -> Ttuple (List.map (map_mterm m ctx) l)
 
     | Masset l ->
       let asset = M.Utils.get_asset_type mt in
@@ -1121,7 +1121,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
 
     | Mcontains (a, _, r) -> Tapp (loc_term (Tvar ("contains_" ^ a)), [map_mterm m ctx r])
 
-    | Mnth                _ -> error_not_translated "Mnth"
+    | Mnth                (n,c,k) -> Tapp (loc_term (Tvar ("nth_" ^ n)),[map_mterm m ctx c; map_mterm m ctx k])
     | Mcount              (a,t) -> Tcard (with_dummy_loc a, map_mterm m ctx t)
 
     | Msum          (a,_,f) ->
@@ -1214,7 +1214,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Mrateq              _ -> error_not_translated "Mrateq"
     | Mratcmp             _ -> error_not_translated "Mratcmp"
     | Mratarith           _ -> error_not_translated "Mratarith"
-    | Mrattez             _ -> error_not_translated "Mrattez"
+    | Mrattez             (r,t) -> Tapp (loc_term (Tvar "rat_tez"),[map_mterm m ctx r; map_mterm m ctx t])
     | Minttorat           _ -> error_not_translated "Minttorat"
 
 
@@ -1561,6 +1561,35 @@ let mk_get_asset asset key ktyp = Dfun {
                 Some (Tget (asset,
                             mk_ac asset,
                             Tvar "k")))
+  }
+
+let mk_nth_asset asset key ktyp = Dfun {
+    name = "nth_" ^ asset;
+    logic = NoMod;
+    args = ["c",Tycoll asset;"k",ktyp];
+    returns = Tyasset asset;
+    raises = [ Timpl (Texn Enotfound,
+                      mk_not_found_cond `Old asset (Tvar "k"))];
+    variants = [];
+    requires = [];
+    ensures = [
+      { id   = "nth_" ^ asset ^ "_post_1";
+        form = Tmem (asset,
+                     Tresult,
+                     mk_ac asset);
+      };
+      { id   = "nth_" ^ asset ^ "_post_2";
+        form = Teq(Tyint,
+                   Tdot (Tresult,
+                         Tvar key),
+                   Tvar "k")
+      }
+    ];
+    body = Tif (mk_not_found_cond `Curr asset (Tvar "k"),
+                Traise Enotfound,
+                Some (Tnth (asset,
+                            Tvar "k",
+                            Tvar "c")))
   }
 
 let mk_set_sum_ensures m a =
@@ -1991,12 +2020,43 @@ let mk_storage_api_before_storage (m : M.model) _records =
       | _ -> acc
     ) [] |> loc_decl |> deloc
 
+let mk_rat_tez _m = Dfun {
+    name     = "rat_tez";
+    logic    = NoMod;
+    args     = ["c", Tytuple [Tyint;Tyint]; "t", Tytez];
+    returns  = Tytez;
+    raises   = [Texn ENotAPair];
+    variants = [];
+    requires = [];
+    ensures  = [];
+    body = Tif (Tlt (Tyint,
+                  Tmult(Tyint,
+                        Tfst (Tvar "c"),
+                        Tsnd (Tvar "c")),
+                  Tint (Big_int.zero_big_int)
+                ),
+                Traise ENotAPair,
+                Some (
+                  Tdiv (Tyint,
+                    Tmult (Tyint,
+                      Tabs(Tfst (Tvar "c")),
+                      Tvar "t"
+                    ),
+                    Tabs (Tsnd (Tvar "c"))
+                  )
+                ));
+  }
+
+
 let mk_storage_api (m : M.model) records =
   m.api_items |> List.fold_left (fun acc (sc : M.api_storage) ->
       match sc.node_item with
       | M.APIAsset (Get n) ->
         let k,kt = M.Utils.get_asset_key m n in
         acc @ [mk_get_asset n k (kt |> map_btype)]
+       | M.APIAsset (Nth n) ->
+        let k,kt = M.Utils.get_asset_key m n in
+        acc @ [mk_nth_asset n k (kt |> map_btype)]
       | M.APIAsset (Add n) ->
         let k = M.Utils.get_asset_key m n |> fst in
         acc @ [mk_add_asset m n k]
@@ -2033,6 +2093,8 @@ let mk_storage_api (m : M.model) records =
         acc @ [ mk_unshallow n t ]
       | M.APIAsset (Listtocoll n) ->
         acc @ [ mk_listtocoll m n ]
+      | M.APIInternal (RatTez) ->
+        acc @ [mk_rat_tez m]
       | _ -> acc
     ) [] |> loc_decl |> deloc
 

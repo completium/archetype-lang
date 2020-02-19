@@ -3256,11 +3256,18 @@ end = struct
     aux accu mt
 
   let with_division (model : model) : bool =
-    try fold_model with_div_for_mterm_intern model false
-    with FoundDiv -> true
+    (try fold_model with_div_for_mterm_intern model false
+    with FoundDiv -> true) || (
+      List.fold_left (fun acc (ai : api_storage) ->
+      match ai.node_item with
+      | APIInternal RatTez ->
+        acc || true
+      | _ -> acc
+      ) false model.api_items
+    )
 
-let with_count m a =
-  List.fold_left (fun acc (ai : api_storage) ->
+  let with_count m a =
+    List.fold_left (fun acc (ai : api_storage) ->
     match ai.node_item with
       | APIAsset (Count asset) when String.equal a asset ->
         acc || true
