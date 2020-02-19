@@ -396,6 +396,12 @@ let pp_model fmt (model : model) =
         Format.fprintf fmt "state = %a"
           f x
 
+      | Massignassetstate (an, k, v) ->
+        Format.fprintf fmt "state_%a(%a) = %a"
+          pp_ident an
+          f k
+          f v
+
 
       (* control *)
 
@@ -946,6 +952,7 @@ let pp_model fmt (model : model) =
 
       (* variables *)
 
+      | Mvarassetstate (an, k) -> Format.fprintf fmt "state_%a(%a)" pp_str an f k
       | Mvarstorevar v -> Format.fprintf fmt "self.data.%a" pp_id v
       | Mvarstorecol v -> Format.fprintf fmt "self.data.%a_keys" pp_id v
       | Mvarenumval v  -> pp_id fmt v

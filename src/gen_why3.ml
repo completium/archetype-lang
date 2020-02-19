@@ -332,7 +332,7 @@ let mk_select_body asset mlw_test : term =
   )
 
 (* TODO : complete mapping
-  argument extraction is done on model's term because it is typed *)
+   argument extraction is done on model's term because it is typed *)
 let extract_args test =
   let rec internal_extract_args acc (term : M.mterm) =
     match term.M.node with
@@ -830,73 +830,76 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Massignvarstore (assignop, _, id, v) ->
       let var = with_dummy_loc (Tdoti (with_dummy_loc gs,map_lident id)) in
       let value =
-      begin
-        match assignop with
-        | ValueAssign -> map_mterm m ctx v
-        | MinusAssign ->
-          with_dummy_loc (
-                 Tminus (with_dummy_loc Tyint,
-                         var,
-                         map_mterm m ctx v))
-        | PlusAssign ->
-          with_dummy_loc (
-                 Tplus (with_dummy_loc Tyint,
-                         var,
-                         map_mterm m ctx v))
-        | MultAssign ->
-          with_dummy_loc (
-                 Tmult (with_dummy_loc Tyint,
-                         var,
-                         map_mterm m ctx v))
-        | DivAssign ->
-          with_dummy_loc (
-                 Tdiv (with_dummy_loc Tyint,
-                         var,
-                         map_mterm m ctx v))
-        | AndAssign ->
-          with_dummy_loc (
-                 Tand (var,
-                       map_mterm m ctx v))
-        | OrAssign ->
-          with_dummy_loc (
-                 Tor (var,
-                       map_mterm m ctx v))
-      end in
+        begin
+          match assignop with
+          | ValueAssign -> map_mterm m ctx v
+          | MinusAssign ->
+            with_dummy_loc (
+              Tminus (with_dummy_loc Tyint,
+                      var,
+                      map_mterm m ctx v))
+          | PlusAssign ->
+            with_dummy_loc (
+              Tplus (with_dummy_loc Tyint,
+                     var,
+                     map_mterm m ctx v))
+          | MultAssign ->
+            with_dummy_loc (
+              Tmult (with_dummy_loc Tyint,
+                     var,
+                     map_mterm m ctx v))
+          | DivAssign ->
+            with_dummy_loc (
+              Tdiv (with_dummy_loc Tyint,
+                    var,
+                    map_mterm m ctx v))
+          | AndAssign ->
+            with_dummy_loc (
+              Tand (var,
+                    map_mterm m ctx v))
+          | OrAssign ->
+            with_dummy_loc (
+              Tor (var,
+                   map_mterm m ctx v))
+        end in
       Tassign (var,value)
     | Massignfield (assignop, _, id1, id2, v) ->
 
       let id = with_dummy_loc (Tdot (map_mterm m ctx id1,
-                                    with_dummy_loc (Tvar (map_lident id2)))) in
+                                     with_dummy_loc (Tvar (map_lident id2)))) in
       let value =
-      begin
-        match assignop with
-        | ValueAssign -> map_mterm m ctx v
-        | MinusAssign -> with_dummy_loc (
-            Tminus (with_dummy_loc Tyint,
+        begin
+          match assignop with
+          | ValueAssign -> map_mterm m ctx v
+          | MinusAssign -> with_dummy_loc (
+              Tminus (with_dummy_loc Tyint,
+                      id,
+                      map_mterm m ctx v))
+          | PlusAssign -> with_dummy_loc (
+              Tplus (with_dummy_loc Tyint,
+                     id,
+                     map_mterm m ctx v))
+          | MultAssign -> with_dummy_loc (
+              Tmult (with_dummy_loc Tyint,
+                     id,
+                     map_mterm m ctx v))
+          | DivAssign -> with_dummy_loc (
+              Tdiv (with_dummy_loc Tyint,
                     id,
                     map_mterm m ctx v))
-        | PlusAssign -> with_dummy_loc (
-            Tplus (with_dummy_loc Tyint,
-                    id,
-                    map_mterm m ctx v))
-        | MultAssign -> with_dummy_loc (
-            Tmult (with_dummy_loc Tyint,
-                    id,
-                    map_mterm m ctx v))
-        | DivAssign -> with_dummy_loc (
-            Tdiv (with_dummy_loc Tyint,
-                    id,
-                    map_mterm m ctx v))
-        | AndAssign -> with_dummy_loc (
-            Tand (  id,
-                    map_mterm m ctx v))
-        | OrAssign -> with_dummy_loc (
-            Tor (  id,
-                    map_mterm m ctx v))
-      end in
+          | AndAssign -> with_dummy_loc (
+              Tand (  id,
+                      map_mterm m ctx v))
+          | OrAssign -> with_dummy_loc (
+              Tor (  id,
+                     map_mterm m ctx v))
+        end in
       Tassign (id,value)
 
     | Massignstate v -> Tassign (loc_term (Tdoti (gs, "state")), map_mterm m ctx v)
+
+    | Massignassetstate _ -> error_not_translated "Massignassetstate"
+
 
     (* control *)
 
@@ -1182,6 +1185,8 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
 
     (* variables *)
 
+    | Mvarassetstate _ -> error_not_translated "Mvarassetstate"
+
     | Mvarstorevar v ->
       begin
         match ctx.lctx with
@@ -1402,49 +1407,49 @@ let map_storage m (l : M.storage) =
     invariants = (** collect all invariants : *)
       (* -- asset invariants -- *)
       List.concat (List.map (fun (item : M.storage_item) ->
-        let storage_id = item.id in
-        let invs : M.label_term list =
-          match item.model_type with
-          | MTasset asset_name ->
-            begin
-              try
-                let assets = M.Utils.get_assets m in
-                let asset = List.find (fun (x : M.asset) -> cmp_ident (unloc x.name) asset_name) assets in
-                asset.invariants
-              with
-              | Not_found -> assert false
-            end
-          | _ -> [] in
-        List.map (fun (inv : M.label_term) -> mk_storage_invariant m storage_id inv.label (map_mterm m ctx inv.term)) invs) l) @
+          let storage_id = item.id in
+          let invs : M.label_term list =
+            match item.model_type with
+            | MTasset asset_name ->
+              begin
+                try
+                  let assets = M.Utils.get_assets m in
+                  let asset = List.find (fun (x : M.asset) -> cmp_ident (unloc x.name) asset_name) assets in
+                  asset.invariants
+                with
+                | Not_found -> assert false
+              end
+            | _ -> [] in
+          List.map (fun (inv : M.label_term) -> mk_storage_invariant m storage_id inv.label (map_mterm m ctx inv.term)) invs) l) @
       (* -- security predicates -- *)
       (List.fold_left (fun acc sec ->
-        acc @ (mk_spec_invariant `Storage sec)) [] m.security.items) @
-              (List.fold_left (fun acc decl ->
-                      match decl with
-                      | M.Denum e ->
-                        List.fold_left (fun acc (value : M.enum_item) ->
-                            acc @ List.map (fun (inv : M.label_term) ->
-                                mk_state_invariant m value.name inv.label (map_mterm m ctx inv.term)
-                              ) value.invariants
-                          ) acc e.values
-                      | _ -> acc
-                    ) [] m.decls) @
+           acc @ (mk_spec_invariant `Storage sec)) [] m.security.items) @
+      (List.fold_left (fun acc decl ->
+           match decl with
+           | M.Denum e ->
+             List.fold_left (fun acc (value : M.enum_item) ->
+                 acc @ List.map (fun (inv : M.label_term) ->
+                     mk_state_invariant m value.name inv.label (map_mterm m ctx inv.term)
+                   ) value.invariants
+               ) acc e.values
+           | _ -> acc
+         ) [] m.decls) @
       (* -- contract invariants -- *)
       (List.fold_left (fun acc (post : M.postcondition) ->
-        acc @ [{
-          id = map_lident post.name;
-          form = map_mterm m ctx post.formula;
-        }]
-      ) [] m.specification.postconditions) @
+           acc @ [{
+               id = map_lident post.name;
+               form = map_mterm m ctx post.formula;
+             }]
+         ) [] m.specification.postconditions) @
       (* -- variable invariants -- *)
       (List.fold_left (fun acc decl ->
-        match decl with
-        | M.Dvar var ->
-          acc @ (List.map (fun (inv : M.label_term) ->
-            { id = map_lident inv.label; form = map_mterm m ctx inv.term}
-          ) var.invariants)
-        | _ -> acc
-      ) [] m.decls)
+           match decl with
+           | M.Dvar var ->
+             acc @ (List.map (fun (inv : M.label_term) ->
+                 { id = map_lident inv.label; form = map_mterm m ctx inv.term}
+               ) var.invariants)
+           | _ -> acc
+         ) [] m.decls)
   }
 
 (* Verfication API -----------------------------------------------------------*)
@@ -1503,16 +1508,16 @@ let mk_get_sum_value_from_pos asset id formula =
     requires = [];
     ensures = [];
     body =
-    let rec mk_body = function
-    | Tdot (Tvar v,f) when compare v "the" = 0 ->
-      Tapp (f,
-            [
-              Tnth (asset,
-                    Tvar "i",
-                    Tvar "c")
-                 ])
-    | _ as t -> map_abstract_term mk_body Tools.id Tools.id t in
-    mk_body formula
+      let rec mk_body = function
+        | Tdot (Tvar v,f) when compare v "the" = 0 ->
+          Tapp (f,
+                [
+                  Tnth (asset,
+                        Tvar "i",
+                        Tvar "c")
+                ])
+        | _ as t -> map_abstract_term mk_body Tools.id Tools.id t in
+      mk_body formula
   }
 
 let mk_get_sum_value asset id formula =
@@ -1526,11 +1531,11 @@ let mk_get_sum_value asset id formula =
     requires = [];
     ensures = [];
     body =
-    let rec mk_body = function
-    | Tdot (Tvar v,f) when compare v "the" = 0 ->
-      Tdot (Tvar "a",f)
-    | _ as t -> map_abstract_term mk_body Tools.id Tools.id t in
-    mk_body formula
+      let rec mk_body = function
+        | Tdot (Tvar v,f) when compare v "the" = 0 ->
+          Tdot (Tvar "a",f)
+        | _ as t -> map_abstract_term mk_body Tools.id Tools.id t in
+      mk_body formula
   }
 
 
@@ -1612,12 +1617,12 @@ let mk_set_sum_ensures m a =
 
 let mk_set_count_ensures m a =
   if M.Utils.with_count m a then [{
-    id = "set_" ^ a ^ "_count";
-    form = Teq (Tyint,
-      Tcard (a,mk_ac a),
-      Tcard (a,mk_ac_old a)
-    );
-  }]
+      id = "set_" ^ a ^ "_count";
+      form = Teq (Tyint,
+                  Tcard (a,mk_ac a),
+                  Tcard (a,mk_ac_old a)
+                 );
+    }]
   else []
 
 let mk_set_ensures m n key fields =
@@ -1759,15 +1764,15 @@ let mk_add_sum_ensures m a e =
 
 let mk_add_count_ensures m a =
   if M.Utils.with_count m a then [{
-    id = "add_" ^ a ^ "_count";
-    form = Teq (Tyint,
-      Tcard (a, mk_ac a),
-      Tplus (Tyint,
-        Tcard (a, mk_ac_old a),
-        Tint (Big_int.big_int_of_int 1)
-      )
-    )
-  }]
+      id = "add_" ^ a ^ "_count";
+      form = Teq (Tyint,
+                  Tcard (a, mk_ac a),
+                  Tplus (Tyint,
+                         Tcard (a, mk_ac_old a),
+                         Tint (Big_int.big_int_of_int 1)
+                        )
+                 )
+    }]
   else []
 
 let mk_add_ensures m p a e =
@@ -1841,21 +1846,21 @@ let mk_rm_sum_ensures m a e =
                               Tapp (Tvar (mk_sum_name_from_id a idx),
                                     [mk_ac_old a]),
                               Tapp(
-                               Tvar (mk_get_sum_value_id a idx),
-                               [Tvar e])))
+                                Tvar (mk_get_sum_value_id a idx),
+                                [Tvar e])))
         }]) [] (M.Utils.get_sum_idxs m a)
 
 let mk_rm_count_ensures m a =
   if M.Utils.with_count m a then [{
-    id = "rm_" ^ a ^ "_count";
-    form = Teq (Tyint,
-      Tcard (a, mk_ac a),
-      Tminus (Tyint,
-        Tcard (a, mk_ac_old a),
-        Tint (Big_int.big_int_of_int 1)
-      )
-    )
-  }]
+      id = "rm_" ^ a ^ "_count";
+      form = Teq (Tyint,
+                  Tcard (a, mk_ac a),
+                  Tminus (Tyint,
+                          Tcard (a, mk_ac_old a),
+                          Tint (Big_int.big_int_of_int 1)
+                         )
+                 )
+    }]
   else []
 
 let mk_rm_ensures m p a e =
@@ -2087,7 +2092,7 @@ let mk_storage_api (m : M.model) records =
       | M.APIAsset (Select (asset,test)) ->
         let mlw_test = map_mterm m init_ctx test in
         acc @ [ mk_select m asset test (mlw_test |> unloc_term) sc.only_formula ]
-        (* TODO *)
+      (* TODO *)
       | M.APIAsset (Unshallow n) ->
         let t         =  M.Utils.get_asset_key m n |> snd |> map_btype in
         acc @ [ mk_unshallow n t ]
