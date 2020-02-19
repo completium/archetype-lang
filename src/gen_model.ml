@@ -287,8 +287,8 @@ let to_model (ast : A.model) : M.model =
       let asset_name = extract_asset_name fp in
       let sort_kind = match asc with | true -> M.SKasc | false -> M.SKasc in
       if formula
-      then M.Mapifsort (asset_name, fp, unloc field_name, sort_kind)
-      else M.Msort (asset_name, fp, unloc field_name, sort_kind)
+      then M.Mapifsort (asset_name, fp, [unloc field_name, sort_kind])
+      else M.Msort (asset_name, fp, [unloc field_name, sort_kind])
 
     | A.Pcall (Some p, A.Cconst (A.Ccontains), [AExpr q]) ->
       let fp = f p in

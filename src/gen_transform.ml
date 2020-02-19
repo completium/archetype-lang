@@ -1190,13 +1190,13 @@ let add_explicit_sort (model : model) : model =
 
       | _ -> false
     in
-    let get_crit an : ident * sort_kind =
+    let get_crit an : (ident * sort_kind) list =
       let k, _ = Model.Utils.get_asset_key model an in
-      (k, SKasc)
+      [(k, SKasc)]
     in
     let create_sort an c =
-      let id_crit, k_crit = get_crit an in
-      mk_mterm (Msort (an, c, id_crit, k_crit)) c.type_
+      let crit = get_crit an in
+      mk_mterm (Msort (an, c, crit)) c.type_
     in
     let extract_asset_name (c : mterm) =
       match c.type_ with

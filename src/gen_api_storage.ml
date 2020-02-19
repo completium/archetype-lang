@@ -44,9 +44,9 @@ let process_api_storage (model : model) : model =
       | Mapifselect (asset_name, _, p)
       | Mselect (asset_name, _, p) ->
         [APIAsset (Get asset_name); APIAsset (Select (asset_name, p))]
-      | Mapifsort (asset_name, _, field_name, _)
-      | Msort (asset_name, _, field_name, _) ->
-        [APIAsset (Sort (asset_name, field_name))]
+      | Mapifsort (asset_name, _, l)
+      | Msort (asset_name, _, l) ->
+        [APIAsset (Sort (asset_name, l))]
       | Mapifcontains (asset_name, _, _)
       | Mcontains (asset_name, _, _) ->
         [APIAsset (Contains asset_name)]

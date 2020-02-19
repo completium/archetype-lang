@@ -194,11 +194,11 @@ let pp_model fmt (model : model) =
          \t\t[])@\n"
         an an an
 
-    | Sort (an, fn) ->
+    | Sort (an, _l) ->
       Format.fprintf fmt
-        "def sort_%s_%s (s : storage) : unit =@\n  \
+        "def sort_%s (s : storage) : unit =@\n  \
          \t\t#TODO@\n"
-        an fn
+        an
 
     | Contains an ->
       Format.fprintf fmt
@@ -810,15 +810,14 @@ let pp_model fmt (model : model) =
         in
         pp fmt (an, c, p)
 
-      | Msort (an, c, fn, k) ->
-        let pp fmt (an, c, fn, _k) =
-          Format.fprintf fmt "sort_%a_%a (%a)"
+      | Msort (an, c, l) ->
+        let pp fmt (an, c, l) =
+          Format.fprintf fmt "sort_%a (%a, %a)"
             pp_str an
-            pp_str fn
             f c
-            (* pp_sort_kind k *) (* TODO: asc / desc *)
+            (pp_list ", " (fun fmt (a, b) -> Format.fprintf fmt "%a %a" pp_ident a pp_sort_kind b)) l
         in
-        pp fmt (an, c, fn, k)
+        pp fmt (an, c, l)
 
       | Mcontains (an, c, i) ->
         let pp fmt (an, c, i) =
