@@ -799,19 +799,29 @@ let to_model (ast : A.model) : M.model =
         let body = to_instruction e in
         args, body
       | Some t, None ->
-        let args =
+        let p_on =
           match t.on with
-          | Some (id, id2) -> args @ [(id, M.Tasset id2, None)]
+          | Some (key_ident, key_type, {pldesc = asset_name}, enum_type) ->
+            Some (key_ident, ptyp_to_type key_type, asset_name, ptyp_to_type enum_type)
+          | None -> None
+        in
+        let args =
+          match p_on with
+          | Some (ki, kt, _an, _) -> args @ [(ki, kt, None)]
           | None -> args
         in
         let build_code (body : M.mterm) : M.mterm =
           (List.fold_right (fun ((id, cond, effect) : (A.lident * A.pterm option * A.instruction option)) (acc : M.mterm) : M.mterm ->
                let tre : M.mterm =
-                 match t.on with
-                 | Some (_id, _id_asset) -> assert false
+                 match p_on with
+                 | Some (key_ident, key_type, an, enum_type) ->
+                   let k : M.mterm = M.mk_mterm (M.Mvarlocal key_ident) key_type ~loc:(Location.loc key_ident) in
+                   let v : M.mterm = M.mk_mterm (M.Mvarenumval id) enum_type ~loc:(Location.loc id) in
+                   M.mk_mterm (M.Massignassetstate (an, k, v)) Tunit
                  | _ ->
-                   let a : M.mterm = M.mk_mterm (M.Mvarlocal id) (M.Tstate) ~loc:(Location.loc id) in
-                   M.mk_mterm (M.Massignstate a) Tunit in
+                   let v : M.mterm = M.mk_mterm (M.Mvarlocal id) (M.Tstate) ~loc:(Location.loc id) in
+                   M.mk_mterm (M.Massignstate v) Tunit
+               in
                let code : M.mterm =
                  match effect with
                  | Some e -> M.mk_mterm (M.Mseq [to_instruction e; tre]) Tunit
@@ -840,7 +850,13 @@ let to_model (ast : A.model) : M.model =
               let pattern : M.pattern = M.mk_pattern M.Pwild in
               let fail_instr : M.mterm = fail InvalidState in
 
-              let w = M.mk_mterm (M.Mvarstate) Tstate in
+              let w =
+                match p_on with
+                | Some (ki, kt, an, et) ->
+                  let k : M.mterm = M.mk_mterm (M.Mvarlocal ki) kt ~loc:(Location.loc ki) in
+                  M.mk_mterm (M.Mvarassetstate (an, k)) et
+                | _ -> M.mk_mterm (M.Mvarstate) Tstate
+              in
               M.mk_mterm (M.Mmatchwith (w, List.map (fun x -> (x, body)) list_patterns @ [pattern, fail_instr])) Tunit
             end
         in

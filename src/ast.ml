@@ -491,7 +491,7 @@ type function_ = lident function_struct
 
 type 'id transition = {
   from : 'id sexpr_gen;
-  on   : ('id * 'id) option;
+  on   : ('id * ptyp * 'id * ptyp) option; (* key ident * key type * asset name * asset state type *)
   trs  : ('id * 'id term_gen option * 'id instruction_gen option) list; (* to * condition * action*)
 }
 [@@deriving show {with_path = false}]
