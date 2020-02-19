@@ -114,6 +114,7 @@ let generate_target model =
     |> cont !Options.opt_ws  generate_storage
     |> raise_if_error post_model_error prune_properties
     |> replace_declvar_by_letin
+    |> cont !Options.opt_aes add_explicit_sort
     |> cont !Options.opt_sa  shallow_asset
     |> cont !Options.opt_skv split_key_values
     |> cont !Options.opt_nse remove_side_effect
@@ -175,6 +176,7 @@ let generate_target model =
     |> eval_variable_initial_value
     |> generate_storage
     |> replace_declvar_by_letin
+    |> add_explicit_sort
     (* |> remove_enum_matchwith *)
     |> remove_get_dot
     |> exec_process
@@ -278,6 +280,8 @@ let main () =
       "--no-enum", Arg.Set Options.opt_ne, " Same as -ne";
       "-evi", Arg.Set Options.opt_evi, " Evaluate initial value";
       "--eval-initial-value", Arg.Set Options.opt_evi, " Same as -evi";
+      "-aes", Arg.Set Options.opt_aes, " Add explicit sort";
+      "--add-explicit-sort", Arg.Set Options.opt_aes, " Same as -aes";
       "-fp", Arg.String (fun s -> Options.opt_property_focused := s), " Focus property (with whyml target only)";
       "--focus-property", Arg.String (fun s -> Options.opt_property_focused := s), " Same as -fp";
       "-ptc", Arg.Set Options.opt_ptc, " Print type contract in archetype syntax";

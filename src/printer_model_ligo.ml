@@ -820,15 +820,14 @@ let pp_model_internal fmt (model : model) b =
       in
       pp fmt (an, c, p)
 
-    | Msort (an, c, fn, k) ->
-      let pp fmt (an, c, fn, _k) =
-        Format.fprintf fmt "sort_%a_%a (%a)"
+    | Msort (an, c, _p, k) ->
+      let pp fmt (an, c, _p, _k) =
+        Format.fprintf fmt "sort_%a (%a)"
           pp_str an
-          pp_str fn
           f c
           (* pp_sort_kind k *) (* TODO: asc / desc *)
       in
-      pp fmt (an, c, fn, k)
+      pp fmt (an, c, _p, k)
 
     | Mcontains (an, c, i) ->
       let pp fmt (an, c, i) =
@@ -1432,11 +1431,14 @@ let pp_model_internal fmt (model : model) b =
         (pp_mterm (mk_env ())) f
         k
 
-    | Sort (_an, _fn) ->
-      Format.fprintf fmt "// TODO api storage: Sort"
-    (* "let[@inline] sort_%s_%s (s : storage) : unit =@\n  \
-       () (*TODO*)@\n"
-       an fn *)
+    | Sort (an, _c) ->
+      let _, t = Utils.get_asset_key model an in
+      Format.fprintf fmt
+        "function sort_%s (const l : list(%a)) : list(%a) is@\n  \
+         begin@\n    \
+         skip;@\n  \
+         end with l@\n"
+        an pp_btyp t pp_btyp t
 
     | Contains an ->
       let _, t = Utils.get_asset_key model an in

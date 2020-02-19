@@ -1164,3 +1164,72 @@ let eval_variable_initial_value (model : model) : model =
           | Dvar v -> Dvar { v with default = Option.map (Model.Utils.eval map_value) v.default }
           | _ -> x) model.decls;
   }
+
+
+let add_explicit_sort (model : model) : model =
+
+  let rec aux (env : ident list) (ctx : ctx_model) (mt : mterm) : mterm =
+    let is_sorted x : bool =
+      let rec aux accu x : bool =
+        match mt.node with
+        | Msort _ -> true
+        | _ -> fold_term aux accu x
+      in
+      aux false x
+    in
+    let rec is_implicit_sort env (mt : mterm) : bool =
+      match mt.node with
+      | Mvarstorecol _ -> true
+
+      | Mvarlocal id -> not (List.exists (fun a -> String.equal a (unloc id)) env)
+
+      (* asset api *)
+      | Mselect (_, c, _) -> is_implicit_sort env c
+      | Mhead   (_, c, _) -> is_implicit_sort env c
+      | Mtail   (_, c, _) -> is_implicit_sort env c
+
+      | _ -> false
+    in
+    let get_crit an : ident * sort_kind =
+      let k, _ = Model.Utils.get_asset_key model an in
+      (k, SKasc)
+    in
+    let create_sort an c =
+      let id_crit, k_crit = get_crit an in
+      mk_mterm (Msort (an, c, id_crit, k_crit)) c.type_
+    in
+    let extract_asset_name (c : mterm) =
+      match c.type_ with
+      | Tcontainer (Tasset an, _) -> unloc an
+      | _ -> assert false
+    in
+    match mt.node with
+    | Mletin ([id], v, Some (Tcontainer (Tasset an, c)), body, o) ->
+      let env =
+        match is_sorted body with
+        | true -> (unloc id)::env
+        | _ -> env
+      in
+      let body = aux env ctx body in
+      { mt with node = Mletin ([id], v, Some (Tcontainer (Tasset an, c)), body, o)}
+
+    | Mselect (an, c, p) when is_implicit_sort env c ->
+      { mt with node = Mselect (an, create_sort an c, p) }
+
+    | Mnth (an, c, idx) when is_implicit_sort env c ->
+      { mt with node = Mnth (an, create_sort an c, idx) }
+
+    | Mhead (an, c, idx) when is_implicit_sort env c ->
+      { mt with node = Mhead (an, create_sort an c, idx) }
+
+    | Mtail (an, c, idx) when is_implicit_sort env c ->
+      { mt with node = Mtail (an, create_sort an c, idx) }
+
+    | Mfor (a, c, body, lbl) when is_implicit_sort env c ->
+      let body = aux env ctx body in
+      let an = extract_asset_name c in
+      mk_mterm (Mfor (a, create_sort an c, body, lbl)) Tunit
+
+    | _ -> map_mterm (aux env ctx) mt
+  in
+  map_mterm_model (aux []) model
