@@ -45,11 +45,11 @@ function filter (p : 'a -> bool) (xs : list 'a) : list 'a =
   | Cons y ys ->
       if p y then Cons y (filter p ys) else filter p ys
   end
-  
+
 lemma length_filter :
   forall p. forall xs [@induction] : list 'a.
     length (filter p xs) <= length xs
-    
+
 lemma mem_filter :
   forall p. forall xs [@induction] : list 'a. forall x.
     mem x (filter p xs) <-> (mem x xs /\ p x)
@@ -194,7 +194,7 @@ lemma fsubsetIr : forall s1 s2. fsubset (fsetI s1 s2) s2
 lemma fsubsetD : forall s1 s2. fsubset (fsetD s1 s2) s1
 
 (* ------------------------------------------------------------------------ *)
-lemma fsubset_trans : forall s1 s2 s3. 
+lemma fsubset_trans : forall s1 s2 s3.
   fsubset s1 s2 -> fsubset s2 s3 -> fsubset s1 s3
 
 (* ------------------------------------------------------------------------ *)

@@ -148,6 +148,16 @@ module ListUtils
   | _ -> false
   end
 
+  let rec function undup (xs : list t) : list t
+  variant { xs }
+  =
+  match xs with
+  | Nil ->
+      Nil
+  | Cons x xs ->
+      if mem x xs then undup xs else Cons x (undup xs)
+  end
+
 end
 
 module KeyListUtils
@@ -166,45 +176,6 @@ module KeyListUtils
 
 end
 
-module ListInsertSort
-
-  use list.List
-  use int.Int
-  use KeyListUtils
-
-  type t = abstract {}
-
-  val function sortf t : int  (* asset sort function *)
-
-  predicate lt (a b : t) = sortf a <= sortf b
-
-  clone list.Sorted as S with type t       = t,
-                              predicate le = lt,
-                              goal Transitive.Trans
-
-  let rec function insert (a : t) (l : list t) : list t
-  variant { l }
-  =
-  match l with
-  | Cons e tl ->
-    if sortf a <= sortf e then
-      Cons a l
-    else
-      Cons e (insert a tl)
-  | Nil -> Cons a Nil
-  end
-
-  let rec function sort (l : list t) : list t
-  variant { l }
-  ensures { S.sorted result }
-  =
-  match l with
-  | Cons e tl -> insert e (sort tl)
-  | Nil -> Nil
-  end
-
-end
-
 module AssetCollection
 
   use Types
@@ -215,19 +186,19 @@ module AssetCollection
   use KeyListUtils
 
   type t = abstract {}        (* asset type           *)
-  val function sortf t : int  (* asset sort function  *)
+  (* val function sortf t : int *)  (* asset sort function  *)
   val function keyf  t : int  (* asset key function   *)
   val function eqf t t : bool (* asset equality *)
 
-  clone ListInsertSort as S with type t     = t,
-                                 val  sortf = sortf
-
-  clone fset.FSet      as F with type t     = t,
-                                 val  eqt   = eqf,
-                                 val  norm  = S.sort
+  (* clone ListInsertSort as S with type t     = t,
+                                 val  sortf = sortf *)
 
   clone ListUtils   as AU   with type t   = t,
                                  val  eqt = eqf
+
+  clone fset.FSet      as F with type t     = t,
+                                 val  eqt   = eqf,
+                                 val  norm  = AU.undup
 
   val function witness : t
 
@@ -242,7 +213,7 @@ module AssetCollection
 
   let function elts (c : collection) : list t = F.content c.content
 
-  let mk (l : list t) : collection = {
+  let function mk (l : list t) : collection = {
       content = F.mk l
   }
 
@@ -309,7 +280,7 @@ module AssetCollection
   requires { a <> witness }
   ensures { mem a result }
   ensures { result = union (singleton a) c }
-  = mk (S.insert a (elts c))
+  = mk (Cons a (elts c))
 
   let set (c : collection) (k : key) (a : t) : collection
   requires { a <> witness }
@@ -501,6 +472,55 @@ module AssetCollection
   = mk l
 
   goal sanity_check : false
+
+end
+
+module Sort
+  use list.List
+  use int.Int
+  (* use KeyListUtils *)
+
+  type container
+
+  type t = abstract {}
+
+  val function sortf t : int  (* asset sort function  *)
+
+  val function elts container : list t
+
+  val function mk (list t) : container
+
+  predicate lt (a b : t) = sortf a <= sortf b
+
+  clone list.Sorted as S with type t       = t,
+                              predicate le = lt,
+                              goal Transitive.Trans
+
+  let rec function insert (a : t) (l : list t) : list t
+  variant { l }
+  =
+  match l with
+  | Cons e tl ->
+    if sortf a <= sortf e then
+      Cons a l
+    else
+      Cons e (insert a tl)
+  | Nil -> Cons a Nil
+  end
+
+  let rec function lsort (l : list t) : list t
+  variant { l }
+  ensures { S.sorted result }
+  =
+  match l with
+  | Cons e tl -> insert e (lsort tl)
+  | Nil -> Nil
+  end
+
+  let sort (c : container) : container
+  ensures { S.sorted (elts result)}
+  =
+  mk (lsort (elts c))
 
 end
 

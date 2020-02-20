@@ -30,6 +30,7 @@ let gArchetypeDir   = "archetype"
 let gArchetypeLib   = "Lib"
 let gArchetypeColl  = "AssetCollection"
 let gArchetypeSum   = "Sum"
+let gArchetypeSort  = "Sort"
 let gArchetypeList  = "KeyListUtils"
 let gArchetypeTrace = "Trace"
 
@@ -296,6 +297,42 @@ let mk_transfer () =
         ]
     } in
   loc_decl decl |> deloc
+
+(* Sort ----------------------------------------------------------------------*)
+
+let mk_sort_function_id asset field = "sort_" ^ asset ^ "_" ^ field
+
+let mk_sort_function _m asset field =
+  let decl : (term, typ, ident) abstract_decl = Dfun {
+      name     = mk_sort_function_id asset field;
+      logic    = Logic;
+      args     = ["a", Tyasset asset];
+      returns  = Tyint;
+      raises   = [];
+      variants = [];
+      requires = [];
+      ensures  = [];
+      body     = Tapp (Tvar field, [Tvar "a"])
+    } in
+  decl
+
+let mk_sort_clone_id asset field = (String.capitalize_ascii asset) ^ "Sort" ^ (String.capitalize_ascii field)
+
+let mk_sort_clone _m asset field =
+  let cap_asset = String.capitalize_ascii asset in
+  Dclone ([gArchetypeDir;gArchetypeSort],
+          mk_sort_clone_id asset field,
+          [Ctype ("container",
+                  cap_asset ^ ".collection");
+           Ctype ("t",
+                  asset);
+           Cval ("sortf",
+                 mk_sort_function_id asset field);
+           Cval ("elts",
+                 cap_asset ^ ".elts");
+           Cval ("mk",
+                 cap_asset ^ ".mk")
+          ])
 
 (* Select --------------------------------------------------------------------*)
 
@@ -649,6 +686,7 @@ let mk_pre_asset m n arg inv : loc_term = mk_invariant m (dumloc n) (`Preasset a
 let mk_loop_invariant m n inv : loc_term = mk_invariant m (dumloc n) `Loop inv
 
 let mk_axiom_invariant m n inv : loc_term = mk_invariant m (dumloc n) `Axiom inv
+
 let mk_axiom2_invariant m n inv : loc_term = mk_invariant m (dumloc n) `Axiom2 inv
 
 let mk_state_invariant _m _v (lbl : M.lident) (t : loc_term) = {
@@ -704,7 +742,7 @@ let record_to_clone m (r : M.asset) =
           String.capitalize_ascii (unloc r.name) |> with_dummy_loc,
           [Ctype ("t" |> with_dummy_loc, (unloc r.name) |> with_dummy_loc);
            Cval  ("keyf" |> with_dummy_loc, key |> with_dummy_loc);
-           Cval  ("sortf" |> with_dummy_loc, sort |> with_dummy_loc);
+           (* Cval  ("sortf" |> with_dummy_loc, sort |> with_dummy_loc); *)
            Cval  ("eqf" |> with_dummy_loc, "eq_" ^ (unloc r.name) |> with_dummy_loc)])
 
 let mk_partition_axioms (m : M.model) =
@@ -1120,7 +1158,9 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
       let argids = args |> List.map (fun (e, _, _) -> e) |> List.map (map_mterm m ctx) in
       Tapp (loc_term (Tvar id), argids @ [map_mterm m ctx l])
 
-    | Msort               _ -> error_not_translated "Msort"
+    | Msort               (a,c,f,_) ->
+      let id = (mk_sort_clone_id a f) ^ ".sort" in
+      Tapp (loc_term (Tvar id),[map_mterm m ctx c])
 
     | Mcontains (a, _, r) -> Tapp (loc_term (Tvar ("contains_" ^ a)), [map_mterm m ctx r])
 
@@ -1206,7 +1246,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
       in
       loc_term coll |> Mlwtree.deloc
 
-    | Mvarenumval         _ -> error_not_translated "Mvarenumval"
+    | Mvarenumval v -> Tvar (map_lident v)
     | Mvarlocal v -> Tvar (map_lident v)
     | Mvarparam v -> Tvar (map_lident v)
     | Mvarfield           _ -> error_not_translated "Mvarfield"
@@ -2092,6 +2132,8 @@ let mk_storage_api (m : M.model) records =
       | M.APIAsset (Select (asset,test)) ->
         let mlw_test = map_mterm m init_ctx test in
         acc @ [ mk_select m asset test (mlw_test |> unloc_term) sc.only_formula ]
+      | M.APIAsset (Sort (asset,field)) ->
+        acc @ [ mk_sort_function m asset field; mk_sort_clone m asset field]
       (* TODO *)
       | M.APIAsset (Unshallow n) ->
         let t         =  M.Utils.get_asset_key m n |> snd |> map_btype in
@@ -2109,6 +2151,7 @@ let fold_exns body : term list =
   let rec internal_fold_exn acc (term : M.mterm) =
     match term.M.node with
     | M.Mget _ -> acc @ [Texn Enotfound]
+    | M.Mnth _ -> acc @ [Texn Enotfound]
     | M.Maddasset _ -> acc @ [Texn Ekeyexist]
     | M.Maddfield _ -> acc @ [Texn Enotfound; Texn Ekeyexist]
     | M.Mfail InvalidCaller -> acc @ [Texn Einvalidcaller]
@@ -2116,6 +2159,7 @@ let fold_exns body : term list =
     | M.Mfail (InvalidCondition _) -> acc @ [Texn Einvalidcondition]
     | M.Mfail InvalidState -> acc @ [Texn Einvalidstate]
     | M.Mremoveasset _ -> acc @ [Texn Enotfound]
+    | M.Mrattez _ -> acc @ [Texn ENotAPair]
     | _ -> M.fold_term internal_fold_exn acc term in
   Tools.List.dedup (internal_fold_exn [] body)
 
