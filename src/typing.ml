@@ -92,6 +92,7 @@ type error_desc =
   | BeforeIrrelevant                   of [`Local | `State]
   | BeforeWithLabel
   | BindingInExpr
+  | CannotAssignLoopIndex              of ident
   | CannotInferAnonRecord
   | CannotInferCollectionType
   | CollectionExpected
@@ -216,6 +217,7 @@ let pp_error_desc fmt e =
   | BeforeOrLabelInExpr                -> pp "The `before' or label modifiers can only be used in formulas"
   | BeforeWithLabel                    -> pp "Cannot use `before' labels at the same time"
   | BindingInExpr                      -> pp "Binding in expression"
+  | CannotAssignLoopIndex x            -> pp "Cannot assign loop index `%s'" x
   | CannotInferAnonRecord              -> pp "Cannot infer a non record"
   | CannotInferCollectionType          -> pp "Cannot infer collection type"
   | CollectionExpected                 -> pp "Collection expected"
@@ -595,7 +597,7 @@ module Env : sig
     | `State       of statedecl
     | `StateByCtor of statedecl * M.lident
     | `Type        of M.ptyp
-    | `Local       of M.ptyp
+    | `Local       of M.ptyp * locvarkind
     | `Global      of vardecl
     | `Asset       of assetdecl
     | `Action      of t tactiondecl
@@ -604,6 +606,8 @@ module Env : sig
     | `Contract    of contractdecl
     | `Context     of assetdecl * ident option
   ]
+
+  and locvarkind = [`Standard | `LoopIndex]
 
   type ecallback = error -> unit
 
@@ -630,10 +634,10 @@ module Env : sig
   end
 
   module Local : sig
-    val lookup : t -> ident -> (ident * M.ptyp) option
-    val get    : t -> ident -> (ident * M.ptyp)
+    val lookup : t -> ident -> (ident * (M.ptyp * locvarkind)) option
+    val get    : t -> ident -> (ident * (M.ptyp * locvarkind))
     val exists : t -> ident -> bool
-    val push   : t -> M.lident * M.ptyp -> t
+    val push   : t -> ?kind:locvarkind -> M.lident * M.ptyp -> t
   end
 
   module Var : sig
@@ -694,7 +698,7 @@ end = struct
     | `State       of statedecl
     | `StateByCtor of statedecl * M.lident
     | `Type        of M.ptyp
-    | `Local       of M.ptyp
+    | `Local       of M.ptyp * locvarkind
     | `Global      of vardecl
     | `Asset       of assetdecl
     | `Action      of t tactiondecl
@@ -703,6 +707,8 @@ end = struct
     | `Contract    of contractdecl
     | `Context     of assetdecl * ident option
   ]
+
+  and locvarkind = [`Standard | `LoopIndex]
 
   and t = {
     env_error    : ecallback;
@@ -846,8 +852,8 @@ end = struct
     let get (env : t) (name : ident) =
       Option.get (lookup env name)
 
-    let push (env : t) ((x, ty) : M.lident * M.ptyp) =
-      push env ~loc:(loc x) (unloc x) (`Local ty)
+    let push (env : t) ?(kind = `Standard) ((x, ty) : M.lident * M.ptyp) =
+      push env ~loc:(loc x) (unloc x) (`Local (ty, kind))
   end
 
   module Var = struct
@@ -1276,7 +1282,7 @@ let rec for_xexpr (mode : emode_t) (env : env) ?(ety : M.ptyp option) (tope : PT
           end else vt in
 
         match Env.lookup_entry subenv (unloc x) with
-        | Some (`Local xty) ->
+        | Some (`Local (xty, _)) ->
           if before then
             Env.emit_error env (loc tope, BeforeIrrelevant `Local);
           mk_sp (Some xty) (M.Pvar (VTnone, x))
@@ -2185,8 +2191,14 @@ let for_lvalue (env : env) (e : PT.expr) : (M.lvalue * M.ptyp) option =
   match unloc e with
   | Eterm ({ before = false; label = None; }, x) -> begin
       match Env.lookup_entry env (unloc x) with
-      | Some (`Local xty) ->
-        Some (`Var x, xty)
+      | Some (`Local (xty, kind)) -> begin
+          match kind with
+          | `LoopIndex -> 
+              Env.emit_error env (loc e, CannotAssignLoopIndex (unloc x));
+              None
+          | `Standard ->
+              Some (`Var x, xty)
+        end
 
       | Some (`Global vd) ->
         if vd.vr_kind <> `Variable then
@@ -2358,7 +2370,7 @@ let rec for_instruction (env : env) (i : PT.expr) : env * M.instruction =
             if Option.is_some asset then
               let nm = (Option.get asset).as_name in
               let ty = M.Tasset nm in
-              Env.Local.push env (x, ty), Some (unloc nm)
+              Env.Local.push env ~kind:`LoopIndex (x, ty), Some (unloc nm)
             else env, None in
 
           let env =
@@ -2381,7 +2393,7 @@ let rec for_instruction (env : env) (i : PT.expr) : env * M.instruction =
       let b = for_expr env ~ety:M.vtint b in
       let env, i = Env.inscope env (fun env ->
           let _ : bool = check_and_emit_name_free env x in
-          let env = Env.Local.push env (x, M.vtint) in
+          let env = Env.Local.push env ~kind:`LoopIndex (x, M.vtint) in
           for_instruction env i) in
       env, mki (M.Iiter (x, a, b, i)) ?label:(Option.map unloc lbl)
 
