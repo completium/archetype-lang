@@ -169,11 +169,11 @@ let generate_target model =
 
   | Whyml ->
     model
-    |> replace_key_by_asset
     |> replace_whyml_ident
     |> replace_assignfield_by_update
     |> remove_add_update
     |> replace_update_by_set
+    |> replace_key_by_asset
     |> remove_rational
     |> replace_date_duration_by_timestamp
     |> eval_variable_initial_value

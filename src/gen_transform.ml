@@ -1293,11 +1293,31 @@ let replace_key_by_asset (model : model) : model =
     let mk n = mk_mterm n Tunit in
     let get an k = mk_mterm (Mget (an, k)) (Tasset (dumloc an)) in
     match mt.node with
-    | Mremoveasset (an, k) -> mk (Mremoveasset (an, get an k))
+    | Mremoveasset (an, k) ->
+      let k_c, _ =  Utils.get_asset_key model an in
+      let nk =
+        match k.node with
+        | Mdotasset (({type_ = Tasset tan; _} as a), b) when String.equal (unloc tan) an && String.equal k_c (unloc b) -> a
+        | _ -> get an k
+      in
+      mk (Mremoveasset (an, nk))
     | Mremovefield (an, fn, a, k) ->
       let can, _ = Utils.get_field_container model an fn in
-      mk (Mremovefield (an, fn, a, get can k))
-    | Mset (an, fns, k, a) -> mk (Mset (an, fns, get an k, a))
+      let k_c, _ =  Utils.get_asset_key model can in
+      let nk =
+        match k.node with
+        | Mdotasset (({type_ = Tasset tan; _} as a), b) when String.equal (unloc tan) can && String.equal k_c (unloc b) -> a
+        | _ -> get can k
+      in
+      mk (Mremovefield (an, fn, a, nk))
+    | Mset (an, fns, k, a) ->
+      let k_c, _ =  Utils.get_asset_key model an in
+      let nk =
+        match k.node with
+        | Mdotasset (({type_ = Tasset tan; _} as a), b) when String.equal (unloc tan) an && String.equal k_c (unloc b) -> a
+        | _ -> get an k
+      in
+      mk (Mset (an, fns, nk, a))
     | _ -> map_mterm (aux c) mt
   in
   Model.map_mterm_model aux model
