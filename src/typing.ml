@@ -2819,8 +2819,8 @@ let for_enum_decl (env : env) (decl : (PT.lident * PT.enum_decl) loced) =
     Option.foldbind (fun env (sd_init, sd_ctors) ->
         let enum = { sd_name = name; sd_ctors; sd_init; sd_state = false; } in
         if   check_and_emit_name_free env name
-        then Env.State.push env enum, None
-        else env, Some enum) env ctors in
+        then Env.State.push env enum, Some enum
+        else env, None) env ctors in
 
   env, decl
 
