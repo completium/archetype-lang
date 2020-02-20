@@ -384,7 +384,7 @@ let opsigs =
   let ariths : (PT.operator * (M.vtyp list * M.vtyp)) list =
     [ PT.Arith PT.Modulo, ([M.VTint; M.VTint], M.VTint) ;
       PT.Arith PT.DivRat, ([M.VTint; M.VTint], M.VTrational) ] in
-    
+
 
   let bools : (PT.operator * (M.vtyp list * M.vtyp)) list =
     let unas = List.map (fun x -> PT.Unary   x) [PT.Not] in
@@ -1769,6 +1769,7 @@ let rec for_xexpr (mode : emode_t) (env : env) ?(ety : M.ptyp option) (tope : PT
     | Ereturn   _
     | Eseq      _
     | Etransfer _
+    | Eany
     | Einvalid ->
       Env.emit_error env (loc tope, InvalidExpression);
       bailout ()
@@ -2216,7 +2217,7 @@ let for_lvalue (env : env) (e : PT.expr) : (M.lvalue * M.ptyp) option =
       match Env.lookup_entry env (unloc x) with
       | Some (`Local (xty, kind)) -> begin
           match kind with
-          | `LoopIndex -> 
+          | `LoopIndex ->
               Env.emit_error env (loc e, CannotAssignLoopIndex (unloc x));
               None
           | `Standard ->
