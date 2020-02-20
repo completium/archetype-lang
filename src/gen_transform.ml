@@ -1260,7 +1260,7 @@ let remove_cmp_enum (model : model) : model =
 
 
 let replace_whyml_ident (model : model) : model =
-  let f id =
+  let f _env id =
   match id with
   | "val" -> "_val"
   | _ -> id

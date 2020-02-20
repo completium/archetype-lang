@@ -74,20 +74,29 @@ type change =
   | CIterate of ident
   | CCall of ident
 
+type trace_id_type =
+  | Asset
+  | Entry
+  | Field
+
+let trace_value_type_to_string = function Asset -> "A" | Entry -> "E" | Field -> "F"
+
+let mk_trace_id trtyp s = (trace_value_type_to_string trtyp) ^ (String.capitalize_ascii s)
+
 let mk_change_term tr =
   match tr with
   | CAdd id -> Tapp (Tdoti("Tr",
                            "TrAdd_"),
-                     [Tvar (String.capitalize_ascii id)])
+                     [Tvar (mk_trace_id Asset id)])
   | CRm id -> Tapp (Tdoti("Tr",
                           "TrRm_"),
-                    [Tvar (String.capitalize_ascii id)])
+                    [Tvar (mk_trace_id Asset id)])
   | CUpdate id -> Tapp (Tdoti("Tr",
                               "TrUpdate_"),
-                        [Tvar (String.capitalize_ascii id)])
+                        [Tvar (mk_trace_id Asset id)])
   | CGet id -> Tapp (Tdoti("Tr",
                            "TrGet_"),
-                     [Tvar (String.capitalize_ascii id)])
+                     [Tvar (mk_trace_id Asset id)])
   | _ -> assert false
 
 let mk_trace tr =
@@ -98,14 +107,6 @@ let mk_trace tr =
                   gstr)
           ) |> loc_term
 
-type trace_id_type =
-| Asset
-| Entry
-| Field
-
-let trace_value_type_to_string = function Asset -> "A" | Entry -> "E" | Field -> "F"
-
-let mk_trace_id trtyp s = (trace_value_type_to_string trtyp) ^ (String.capitalize_ascii s)
 
 let mk_trace_asset m =
   let assets = M.Utils.get_assets m in
