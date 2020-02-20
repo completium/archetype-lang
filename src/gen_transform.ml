@@ -1230,3 +1230,30 @@ let add_explicit_sort (model : model) : model =
     | _ -> map_mterm (aux env ctx) mt
   in
   map_mterm_model (aux []) model
+
+
+let remove_cmp_enum (model : model) : model =
+  let mk_exprmatchwith dir v id =
+    let tbool = Tbuiltin Bbool in
+    let t = mk_mterm (Mbool true) tbool in
+    let f = mk_mterm (Mbool false)tbool in
+    let cv, wv =
+      match dir with
+      | `Pos -> t, f
+      | `Neg -> f, t
+    in
+    let pattern_const = mk_pattern (Pconst id), cv in
+    let pattern_wild = mk_pattern Pwild, wv in
+
+    let l = [pattern_const; pattern_wild] in
+    mk_mterm (Mexprmatchwith (v, l)) tbool
+  in
+  let rec aux (ctx : ctx_model) (mt : mterm) : mterm =
+    match mt.node with
+    | Mequal ({type_ = (Tstate | Tenum _)} as v, {node = Mvarenumval id})    -> mk_exprmatchwith `Pos v id
+    | Mequal ({node = Mvarenumval id}, ({type_ = (Tstate | Tenum _)} as v))  -> mk_exprmatchwith `Pos v id
+    | Mnequal ({type_ = (Tstate | Tenum _)} as v, {node = Mvarenumval id})   -> mk_exprmatchwith `Neg v id
+    | Mnequal ({node = Mvarenumval id}, ({type_ = (Tstate | Tenum _)} as v)) -> mk_exprmatchwith `Neg v id
+    | _ -> map_mterm (aux ctx) mt
+  in
+  map_mterm_model aux model
