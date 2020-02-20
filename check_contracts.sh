@@ -47,6 +47,9 @@ voting_process.arl \
 
 VERIF_CONTRACTS="\
 escrow_without_spec.arl \
+"
+
+TMP_VERIF_CONTRACTS="\
 miles_with_expiration.arl \
 miles_with_expiration_simple.arl \
 mwe_medium.arl \
