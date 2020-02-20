@@ -1267,3 +1267,20 @@ let replace_whyml_ident (model : model) : model =
   in
   replace_ident_model f model
 
+let replace_ident_model_val (model : model) : model =
+  let f _env id =
+    match id with
+    | "val" -> "val_"
+    | _ -> id
+
+  (* match env with
+     | KIaction ->
+     begin
+      match id with
+      | "val" -> "val_"
+      | _ -> id
+     end
+     | _ -> id *)
+  in
+  replace_ident_model f model
+
