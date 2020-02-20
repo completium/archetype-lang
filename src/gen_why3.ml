@@ -93,7 +93,7 @@ let mk_change_term tr =
                     [Tvar (mk_trace_id Asset id)])
   | CUpdate id -> Tapp (Tdoti("Tr",
                               "TrUpdate_"),
-                        [Tvar (mk_trace_id Asset id)])
+                        [Tvar (mk_trace_id Field id)])
   | CGet id -> Tapp (Tdoti("Tr",
                            "TrGet_"),
                      [Tvar (mk_trace_id Asset id)])
