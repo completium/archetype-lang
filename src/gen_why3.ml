@@ -1137,56 +1137,30 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
 
     | Mremoveasset (n, a) ->
       mk_trace_seq m
-        (Tletin (false,
-                 with_dummy_loc ("_rm" ^ n),
-                 None,
-                 with_dummy_loc (Tapp (loc_term (Tvar ("get_" ^ n)),
-                                       [map_mterm m ctx a])),
-                 with_dummy_loc (Tapp (loc_term (Tvar ("remove_" ^ n)),
-                                       [loc_term (Tvar ("_rm" ^ n))]))))
+        (Tapp (loc_term (Tvar ("remove_" ^ n)), [map_mterm m ctx a]))
         [CRm n]
 
     | Mremovefield (a, f, k, v) ->
       let t,_,_ = M.Utils.get_container_asset_key m a f in
-      let asset =
-        match v.node with
-        | M.Mdotasset (a,_) -> map_mterm m ctx a
-        | _ -> with_dummy_loc (Tapp (loc_term (Tvar ("get_" ^ t)),
-                                     [map_mterm m ctx v]))
-      in
       mk_trace_seq m
-        (Tletin (false,
-                 with_dummy_loc ("_rm" ^ t),
-                 None,
-                 asset,
-                 with_dummy_loc (Tapp (loc_term (Tvar ("remove_" ^ a ^ "_" ^ f)),
+        (Tapp (loc_term (Tvar ("remove_" ^ a ^ "_" ^ f)),
                                        [
                                          map_mterm m ctx k;
-                                         loc_term (Tvar ("_rm" ^ t))
+                                         map_mterm m ctx v
                                        ]
-                                      ))))
+                                      ))
         [CUpdate f; CRm t]
 
     | Mclearasset         _ -> error_not_translated "Mclearasset"
     | Mclearfield         _ -> error_not_translated "Mclearfield"
 
     | Mset (a, l, k, v) ->
-      let asset =
-        match k.node with
-        | M.Mdotasset (a, _) -> map_mterm m ctx a
-        | _ -> with_dummy_loc (Tapp (loc_term (Tvar ("get_" ^ a)),
-                                     [map_mterm m ctx k]))
-      in
       mk_trace_seq m
-        (Tletin (false,
-                 with_dummy_loc ("_old" ^ a),
-                 None,
-                 asset,
-                 with_dummy_loc (Tapp (loc_term (Tvar ("set_" ^ a)),
+        (Tapp (loc_term (Tvar ("set_" ^ a)),
                                        [
-                                         loc_term (Tvar ("_old" ^ a));
+                                         map_mterm m ctx k;
                                          map_mterm m ctx v
-                                       ]))))
+                                       ]))
         (List.map (fun f -> CUpdate f) l)
 
     | Mupdate             _ -> error_not_translated "Mupdate"
