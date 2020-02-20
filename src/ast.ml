@@ -289,6 +289,8 @@ type 'id term_node  =
   | Pdot of 'id term_gen * 'id
   | Pconst of const
   | Ptuple of 'id term_gen list
+  | Pnone
+  | Psome of 'id term_gen
 [@@deriving show {with_path = false}]
 
 and 'id term_arg =
@@ -683,6 +685,8 @@ let map_term_node (f : 'id term_gen -> 'id term_gen) = function
   | Pdot (e, i)             -> Pdot (f e, i)
   | Pconst c                -> Pconst c
   | Ptuple l                -> Ptuple (List.map f l)
+  | Pnone                   -> Pnone
+  | Psome a                 -> Psome (f a)
 
 let map_instr_node f = function
   | Iif (c, t, e)       -> Iif (c, f t, f e)
@@ -744,6 +748,8 @@ let fold_term (f: 'a -> 't -> 'a) (accu : 'a) (term : 'id term_gen) =
   | Pdot (e, _)             -> f accu e
   | Pconst _                -> accu
   | Ptuple l                -> List.fold_left f accu l
+  | Pnone                   -> accu
+  | Psome a                 -> f accu a
 
 let fold_instr f accu instr =
   match instr.node with
@@ -897,6 +903,12 @@ let fold_map_term g f (accu : 'a) (term : 'id term_gen) : 'term * 'a =
            let p, accu = f accu x in
            pterms @ [p], accu) ([], accu) l in
     g (Ptuple lp), la
+
+  | Pnone ->
+    g Pnone, accu
+
+  | Psome a ->
+    g (Psome a), accu
 
 let fold_map_instr_term gi _ge fi fe (accu : 'a) instr : 'id instruction_gen * 'a =
   match instr.node with

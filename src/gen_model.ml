@@ -228,6 +228,8 @@ let to_model (ast : A.model) : M.model =
       assert false
 
     | A.Ptuple l                             -> M.Mtuple (List.map f l)
+    | A.Pnone                                -> M.Mnone
+    | A.Psome a                              -> M.Msome (f a)
     | A.Pquantifer (Forall, i, (coll, typ), term)    -> M.Mforall (i, ptyp_to_type typ, Option.map f coll, f term)
     | A.Pquantifer (Exists, i, (coll, typ), term)    -> M.Mexists (i, ptyp_to_type typ, Option.map f coll, f term)
 
