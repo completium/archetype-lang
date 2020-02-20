@@ -1259,10 +1259,10 @@ let remove_cmp_enum (model : model) : model =
   map_mterm_model aux model
 
 
-let replace_ident_model_val (model : model) : model =
+let replace_whyml_ident (model : model) : model =
   let f id =
   match id with
-  | "val" -> "val_"
+  | "val" -> "_val"
   | _ -> id
   in
   replace_ident_model f model

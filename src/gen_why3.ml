@@ -98,28 +98,38 @@ let mk_trace tr =
                   gstr)
           ) |> loc_term
 
+type trace_id_type =
+| Asset
+| Entry
+| Field
+
+let trace_value_type_to_string = function Asset -> "A" | Entry -> "E" | Field -> "F"
+
+let mk_trace_id trtyp s = (trace_value_type_to_string trtyp) ^ (String.capitalize_ascii s)
+
 let mk_trace_asset m =
   let assets = M.Utils.get_assets m in
   if List.length assets > 0 then
     [ Denum ("_asset",
              assets
-             |> List.map (fun (a : M.asset) -> String.capitalize_ascii (unloc a.name)))
+             |> List.map (fun (a : M.asset) -> mk_trace_id Asset (unloc a.name)))
       |> loc_decl]
   else []
 
 let mk_trace_entry m =
   Denum ("_entry",
          M.Utils.get_entries m
-         |> List.map (fun (_, (f : M.function_struct)) -> String.capitalize_ascii (unloc f.name)))
+         |> List.map (fun (_, (f : M.function_struct)) -> mk_trace_id Entry (unloc f.name)))
   |> loc_decl
+
 
 let mk_trace_field m =
   Denum ("_field",
          (M.Utils.get_vars m
-          |> List.map (fun (v : M.var) -> String.capitalize_ascii (unloc v.name))) @
+          |> List.map (fun (v : M.var) -> mk_trace_id Field (unloc v.name))) @
          (M.Utils.get_assets m
           |> List.map (fun (a : M.asset) ->
-              List.map (fun (x : M.asset_item) -> String.capitalize_ascii (unloc x.name)) a.values
+              List.map (fun (x : M.asset_item) -> mk_trace_id Field (unloc x.name)) a.values
             )
           |> List.flatten))
   |> loc_decl
@@ -606,22 +616,22 @@ let map_security_pred loc (t : M.security_predicate) =
   | M.SonlyByRole (ADany,roles)     ->
     mk_performed_by caller (roles |> List.map unloc) false
   | M.SonlyInAction (ADany,Sentry entries) ->
-    mk_performed_by entry (entries |> List.map unloc |> List.map String.capitalize_ascii) true
+    mk_performed_by entry (entries |> List.map unloc |> List.map (mk_trace_id Entry)) true
   | M.SonlyByRole (a,roles)         ->
     mk_changes_performed_by caller a (roles |> List.map unloc) false
   | M.SonlyInAction (a,Sentry entries)     ->
     mk_changes_performed_by entry
       a
-      (entries |> List.map unloc |> List.map String.capitalize_ascii)
+      (entries |> List.map unloc |> List.map (mk_trace_id Entry))
       true
   | M.SonlyByRoleInAction (ADany,roles,Sentry entries) ->
     mk_performed_by_2 caller entry
       (roles |> List.map unloc)
-      (entries |> List.map unloc |> List.map String.capitalize_ascii)
+      (entries |> List.map unloc |> List.map (mk_trace_id Entry))
   | M.SonlyByRoleInAction (a,roles,Sentry entries) ->
     mk_changes_performed_by_2 caller entry a
       (roles |> List.map unloc)
-      (entries |> List.map unloc |> List.map String.capitalize_ascii)
+      (entries |> List.map unloc |> List.map (mk_trace_id Entry))
   | _ -> Tnottranslated
 
 let mk_spec_invariant loc (sec : M.security_item) =
@@ -2292,7 +2302,7 @@ let mk_entry_require m idents =
   if M.Utils.with_trace m && List.length idents > 0 then
     let mk_entry_eq id = Teq (Tyint,
                               Tdoti (gs,mk_id "entry"),
-                              Tsome (Tvar (String.capitalize_ascii id))) in
+                              Tsome (Tvar (mk_trace_id Entry id))) in
     [
       {
         id = with_dummy_loc "entry_require";
