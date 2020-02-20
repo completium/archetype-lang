@@ -1257,3 +1257,13 @@ let remove_cmp_enum (model : model) : model =
     | _ -> map_mterm (aux ctx) mt
   in
   map_mterm_model aux model
+
+
+let replace_ident_model_val (model : model) : model =
+  let f id =
+  match id with
+  | "val" -> "val_"
+  | _ -> id
+  in
+  replace_ident_model f model
+

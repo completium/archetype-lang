@@ -1196,7 +1196,7 @@ let map_term_node (f : 'id mterm_gen -> 'id mterm_gen) = function
   | Mbytes v                       -> Mbytes v
   (* control expression *)
   | Mexprif (c, t, e)              -> Mexprif (f c, f t, f e)
-  | Mexprmatchwith (e, l)          -> Mexprmatchwith (e, List.map (fun (p, e) -> (p, f e)) l)
+  | Mexprmatchwith (e, l)          -> Mexprmatchwith (f e, List.map (fun (p, e) -> (p, f e)) l)
   (* composite type constructors *)
   | Mnone                          -> Mnone
   | Msome v                        -> Msome (f v)
@@ -2143,7 +2143,7 @@ let fold_map_term
 
   (* variables *)
 
- | Mvarassetstate (an, k) ->
+  | Mvarassetstate (an, k) ->
     let ke, ka = f accu k in
     g (Mvarassetstate (an, ke)), ka
 
@@ -2441,6 +2441,502 @@ let fold_model (f : ('id, 't) ctx_model_gen -> 'a -> 'id mterm_gen -> 'a) (m : '
   accu
   |> fold_left (fold_action ctx f) m.functions
   |> fold_specification ctx f m.specification
+
+let replace_ident_model (f : ident -> ident) (model : model) : model =
+  let g (id : lident) = {id with pldesc=(f id.pldesc)} in
+  let rec for_type (t : type_) : type_ =
+    match t with
+    | Tasset id         -> Tasset (g id)
+    | Tenum id          -> Tenum (g id)
+    | Tstate            -> t
+    | Tcontract id      -> Tcontract (g id)
+    | Tbuiltin _        -> t
+    | Tcontainer (a, c) -> Tcontainer (for_type a, c)
+    | Toption a         -> Toption (for_type a)
+    | Ttuple l          -> Ttuple (List.map for_type l)
+    | Tassoc (k, v)     -> Tassoc (k, for_type v)
+    | Tunit             -> t
+    | Tstorage          -> t
+    | Toperation        -> t
+    | Tentry            -> t
+    | Tprog a           -> Tprog (for_type a)
+    | Tvset (v, a)      -> Tvset (v, for_type a)
+    | Ttrace _          -> t
+  in
+  let rec for_mterm (mt : mterm) : mterm =
+    let fi = f in
+    let f = for_mterm in
+    let node =
+      match mt.node with
+      (* lambda *)
+      | Mletin (i, a, t, b, o)         -> Mletin (List.map g i, f a, Option.map for_type t, f b, Option.map f o)
+      | Mdeclvar (i, t, v)             -> Mdeclvar (List.map g i, Option.map for_type t, f v)
+      | Mapp (e, args)                 -> Mapp (g e, List.map f args)
+      (* assign *)
+      | Massign (op, t, l, r)          -> Massign (op, for_type t, g l, f r)
+      | Massignvarstore (op, t, l, r)  -> Massignvarstore (op, for_type t, g l, f r)
+      | Massignfield (op, t, a, fi, r) -> Massignfield (op, for_type t, f a, g fi, f r)
+      | Massignstate x                 -> Massignstate (f x)
+      | Massignassetstate (an, k, v)   -> Massignassetstate (fi an, f k, f v)
+      (* control *)
+      | Mif (c, t, e)                  -> Mif (f c, f t, Option.map f e)
+      | Mmatchwith (e, l)              -> Mmatchwith (f e, List.map (fun (p, e) -> (p, f e)) l)
+      | Mfor (i, c, b, lbl)            -> Mfor (g i, f c, f b, lbl)
+      | Miter (i, a, b, c, lbl)        -> Miter (g i, f a, f b, f c, lbl)
+      | Mseq is                        -> Mseq (List.map f is)
+      | Mreturn x                      -> Mreturn (f x)
+      | Mlabel i                       -> Mlabel (g i)
+      (* effect *)
+      | Mfail v                        -> Mfail (match v with | Invalid v -> Invalid (f v) | _ -> v)
+      | Mtransfer (v, d)               -> Mtransfer (f v, f d)
+      | Mexternal (t, func, c, args)   -> Mexternal (fi t, func, f c, List.map (fun (id, t) -> (g id, f t)) args)
+      (* literals *)
+      | Mint v                         -> Mint v
+      | Muint v                        -> Muint v
+      | Mbool v                        -> Mbool v
+      | Menum v                        -> Menum (fi v)
+      | Mrational (n, d)               -> Mrational (n, d)
+      | Mstring v                      -> Mstring v
+      | Mcurrency (v, c)               -> Mcurrency (v, c)
+      | Maddress v                     -> Maddress v
+      | Mdate v                        -> Mdate v
+      | Mduration v                    -> Mduration v
+      | Mtimestamp v                   -> Mtimestamp v
+      | Mbytes v                       -> Mbytes v
+      (* control expression *)
+      | Mexprif (c, t, e)              -> Mexprif (f c, f t, f e)
+      | Mexprmatchwith (e, l)          -> Mexprmatchwith (f e, List.map (fun (p, e) -> (p, f e)) l)
+      (* composite type constructors *)
+      | Mnone                          -> Mnone
+      | Msome v                        -> Msome (f v)
+      | Marray l                       -> Marray (List.map f l)
+      | Mtuple l                       -> Mtuple (List.map f l)
+      | Masset l                       -> Masset (List.map f l)
+      | Massoc (k, v)                  -> Massoc (f k, f v)
+      (* dot *)
+      | Mdotasset (e, i)               -> Mdotasset (f e, i)
+      | Mdotcontract (e, i)            -> Mdotcontract (f e, i)
+      (* comparison operators *)
+      | Mequal (l, r)                  -> Mequal (f l, f r)
+      | Mnequal (l, r)                 -> Mnequal (f l, f r)
+      | Mgt (l, r)                     -> Mgt (f l, f r)
+      | Mge (l, r)                     -> Mge (f l, f r)
+      | Mlt (l, r)                     -> Mlt (f l, f r)
+      | Mle (l, r)                     -> Mle (f l, f r)
+      | Mmulticomp (e, l)              -> Mmulticomp (f e, List.map (fun (op, e) -> (op, f e)) l)
+      (* arithmetic operators *)
+      | Mand (l, r)                    -> Mand (f l, f r)
+      | Mor (l, r)                     -> Mor (f l, f r)
+      | Mnot e                         -> Mnot (f e)
+      | Mplus (l, r)                   -> Mplus (f l, f r)
+      | Mminus (l, r)                  -> Mminus (f l, f r)
+      | Mmult (l, r)                   -> Mmult (f l, f r)
+      | Mdiv (l, r)                    -> Mdiv (f l, f r)
+      | Mmodulo (l, r)                 -> Mmodulo (f l, f r)
+      | Muplus e                       -> Muplus (f e)
+      | Muminus e                      -> Muminus (f e)
+      (* asset api effect *)
+      | Maddasset (an, i)              -> Maddasset (fi an, f i)
+      | Maddfield (an, fn, c, i)       -> Maddfield (fi an, fi fn, f c, f i)
+      | Mremoveasset (an, i)           -> Mremoveasset (fi an, f i)
+      | Mremovefield (an, fn, c, i)    -> Mremovefield (fi an, fi fn, f c, f i)
+      | Mclearasset (an)               -> Mclearasset (fi an)
+      | Mclearfield (an, fn)           -> Mclearfield (fi an, fi fn)
+      | Mset (an, l, k, v)             -> Mset (fi an, List.map fi l, f k, f v)
+      | Mupdate (an, k, l)             -> Mupdate (fi an, f k, List.map (fun (id, op, v) -> (g id, op, f v)) l)
+      | Mremoveif (an, fn, i)          -> Mremoveif (fi an, f fn, f i)
+      | Maddupdate (an, k, l)          -> Maddupdate (fi an, f k, List.map (fun (id, op, v) -> (g id, op, f v)) l)
+      (* asset api expression *)
+      | Mget (an, k)                   -> Mget (fi an, f k)
+      | Mselect (an, c, p)             -> Mselect (fi an, f c, f p)
+      | Msort (an, c, l)               -> Msort (fi an, f c, l)
+      | Mcontains (an, c, i)           -> Mcontains (fi an, f c, f i)
+      | Mnth (an, c, i)                -> Mnth (fi an, f c, f i)
+      | Mcount (an, c)                 -> Mcount (fi an, f c)
+      | Msum (an, c, p)                -> Msum (fi an, f c, f p)
+      | Mmin (an, fd, c)               -> Mmin (fi an, fd, f c)
+      | Mmax (an, fd, c)               -> Mmax (fi an, fd, f c)
+      | Mhead (an, c, i)               -> Mhead (fi an, f c, f i)
+      | Mtail (an, c, i)               -> Mtail (fi an, f c, f i)
+      (* utils *)
+      | Mgetfrommap (an, k, c)         -> Mgetfrommap (fi an, f k, f c)
+      (* list api effect *)
+      | Mlistprepend (c, a)            -> Mlistprepend (f c, f a)
+      (* list api expression *)
+      | Mlistcontains (c, a)           -> Mlistcontains (f c, f a)
+      | Mlistcount c                   -> Mlistcount (f c)
+      | Mlistnth (c, a)                -> Mlistnth (f c, f a)
+      (* builtin functions *)
+      | Mfunmin (l, r)                 -> Mfunmin (f l, f r)
+      | Mfunmax (l, r)                 -> Mfunmax (f l, f r)
+      | Mfunabs a                      -> Mfunabs (f a)
+      (* constants *)
+      | Mvarstate                      -> Mvarstate
+      | Mnow                           -> Mnow
+      | Mtransferred                   -> Mtransferred
+      | Mcaller                        -> Mcaller
+      | Mbalance                       -> Mbalance
+      | Msource                        -> Msource
+      (* variables *)
+      | Mvarassetstate (an, k)         -> Mvarassetstate (fi an, f k)
+      | Mvarstorevar v                 -> Mvarstorevar (g v)
+      | Mvarstorecol v                 -> Mvarstorecol (g v)
+      | Mvarenumval v                  -> Mvarenumval  (g v)
+      | Mvarlocal v                    -> Mvarlocal    (g v)
+      | Mvarparam v                    -> Mvarparam    (g v)
+      | Mvarfield v                    -> Mvarfield    (g v)
+      | Mvarthe                        -> Mvarthe
+      (* rational *)
+      | Mdivrat (l, r)                 -> Mdivrat (f l, f r)
+      | Mrateq (l, r)                  -> Mrateq (f l, f r)
+      | Mratcmp (op, l, r)             -> Mratcmp (op, f l, f r)
+      | Mratarith (op, l, r)           -> Mratarith (op, f l, f r)
+      | Mrattez (c, t)                 -> Mrattez (f c, f t)
+      | Minttorat e                    -> Minttorat (f e)
+      (* functional *)
+      | Mfold (i, is, c, b)            -> Mfold (g i, List.map g is, f c, f b)
+      (* imperative *)
+      | Mbreak                         -> Mbreak
+      (* shallowing *)
+      | Mshallow (i, x)                -> Mshallow (fi i, f x)
+      | Munshallow (i, x)              -> Munshallow (fi i, f x)
+      | Mlisttocoll (i, x)             -> Mlisttocoll (fi i, f x)
+      | Maddshallow (e, args)          -> Maddshallow (fi e, List.map f args)
+      (* collection keys *)
+      | Mtokeys (an, x)                -> Mtokeys (fi an, f x)
+      | Mcoltokeys an                  -> Mcoltokeys (fi an)
+      (* quantifiers *)
+      | Mforall (i, t, s, e)           -> Mforall (i, t, Option.map f s, f e)
+      | Mexists (i, t, s, e)           -> Mexists (i, t, Option.map f s, f e)
+      (* formula operators *)
+      | Mimply (l, r)                  -> Mimply (f l, f r)
+      | Mequiv  (l, r)                 -> Mequiv (f l, f r)
+      (* formula asset collection *)
+      | Msetbefore    e                -> Msetbefore    (f e)
+      | Msetat (lbl, e)                -> Msetat        (fi lbl, f e)
+      | Msetunmoved   e                -> Msetunmoved   (f e)
+      | Msetadded     e                -> Msetadded     (f e)
+      | Msetremoved   e                -> Msetremoved   (f e)
+      | Msetiterated  e                -> Msetiterated  (f e)
+      | Msettoiterate e                -> Msettoiterate (f e)
+      (* formula asset collection methods *)
+      | Mapifget (an, c, k)            -> Mapifget      (fi an, f c, f k)
+      | Mapifsubsetof (an, c, i)       -> Mapifsubsetof (fi an, f c, f i)
+      | Mapifisempty (an, r)           -> Mapifisempty  (fi an, f r)
+      | Mapifselect (an, c, p)         -> Mapifselect   (fi an, f c, f p)
+      | Mapifsort (an, c, l)           -> Mapifsort     (fi an, f c, l)
+      | Mapifcontains (an, c, i)       -> Mapifcontains (fi an, f c, f i)
+      | Mapifnth (an, c, i)            -> Mapifnth      (fi an, f c, f i)
+      | Mapifcount (an, c)             -> Mapifcount    (fi an, f c)
+      | Mapifsum (an, c, p)            -> Mapifsum      (fi an, f c, f p)
+      | Mapifmin (an, fd, c)           -> Mapifmin      (fi an, g fd, f c)
+      | Mapifmax (an, fd, c)           -> Mapifmax      (fi an, g fd, f c)
+      | Mapifhead (an, c, i)           -> Mapifhead     (fi an, f c, f i)
+      | Mapiftail (an, c, i)           -> Mapiftail     (fi an, f c, f i)
+    in
+    mk_mterm node (for_type mt.type_)
+  in
+  let for_api_item (ai : api_storage) : api_storage =
+    let for_node_item (asn : api_storage_node) : api_storage_node =
+      let for_api_asset (aasset : api_asset) : api_asset =
+        match aasset with
+        | Get an                -> Get (f an)
+        | Set an                -> Set (f an)
+        | Add an                -> Add (f an)
+        | Remove an             -> Remove (f an)
+        | UpdateAdd (an, id)    -> UpdateAdd (f an, f id)
+        | UpdateRemove (an, id) -> UpdateRemove (f an, f id)
+        | ToKeys an             -> ToKeys (f an)
+        | ColToKeys an          -> ColToKeys (f an)
+        | Select (an, p)        -> Select (f an, for_mterm p)
+        | Sort (an, l)          -> Sort (an, List.map (fun (id, k) -> f id, k) l)
+        | Contains an           -> Contains (f an)
+        | Nth an                -> Nth (f an)
+        | Count an              -> Count (f an)
+        | Sum (an, t, e)        -> Sum (f an, for_type t, for_mterm e)
+        | Min (an, id)          -> Min (f an, f id)
+        | Max (an, id)          -> Max (f an, f id)
+        | Shallow an            -> Shallow (f an)
+        | Unshallow an          -> Unshallow (f an)
+        | Listtocoll an         -> Listtocoll (f an)
+        | Head an               -> Head (f an)
+        | Tail an               -> Tail (f an)
+      in
+      let for_api_list (alist : api_list) : api_list =
+        match alist with
+        | Lprepend  t -> Lprepend  (for_type t)
+        | Lcontains t -> Lcontains (for_type t)
+        | Lcount    t -> Lcount    (for_type t)
+        | Lnth      t -> Lnth      (for_type t)
+      in
+      let for_api_builtin (abuiltin : api_builtin) : api_builtin =
+        match abuiltin with
+        | MinBuiltin t -> MinBuiltin (for_type t)
+        | MaxBuiltin t -> MaxBuiltin (for_type t)
+      in
+      let for_api_internal (ainternal : api_internal) : api_internal =
+        match ainternal with
+        | RatEq    -> RatEq
+        | RatCmp   -> RatCmp
+        | RatArith -> RatArith
+        | RatTez   -> RatTez
+      in
+      match asn with
+      | APIAsset    aasset    -> APIAsset    (for_api_asset aasset)
+      | APIList     alist     -> APIList     (for_api_list alist)
+      | APIBuiltin  abuiltin  -> APIBuiltin  (for_api_builtin abuiltin)
+      | APIInternal ainternal -> APIInternal (for_api_internal ainternal)
+    in
+    {
+      node_item    = for_node_item ai.node_item;
+      only_formula = ai.only_formula;
+    }
+  in
+  let for_api_verif (apiv : api_verif) : api_verif =
+    match apiv with
+    | StorageInvariant (a, b, c) -> StorageInvariant (f a, f b, for_mterm c)
+  in
+  let for_label_term (lt : label_term) : label_term =
+    {
+      label = g lt.label;
+      term  = for_mterm lt.term;
+      loc   = lt.loc;
+    }
+  in
+  let for_decl_node (d : decl_node) : decl_node =
+    let for_var (v : var) : var =
+      {
+        name          = g v.name;
+        type_         = for_type v.type_;
+        original_type = for_type v.original_type;
+        constant      = v.constant;
+        default       = Option.map for_mterm v.default;
+        invariants    = List.map for_label_term v.invariants;
+        loc           = v.loc;
+      }
+    in
+    let for_enum (e : enum) : enum =
+      let for_enum_item (ei : enum_item) : enum_item =
+        {
+          name        = g ei.name;
+          invariants  = List.map for_label_term ei.invariants;
+        }
+      in
+      {
+        name          = g e.name;
+        values        = List.map for_enum_item e.values;
+        initial       = g e.initial;
+      }
+    in
+    let for_asset (a : asset) : asset =
+      let for_asset_item (ai : asset_item) : asset_item =
+        {
+          name          = g ai.name;
+          type_         = for_type ai.type_;
+          original_type = for_type ai.original_type;
+          default       = Option.map for_mterm ai.default;
+          shadow        = ai.shadow;
+        }
+      in
+      {
+        name          = g a.name;
+        values        = List.map for_asset_item a.values;
+        key           = f a.key;
+        sort          = List.map f a.sort;
+        invariants    = List.map for_label_term a.invariants;
+      }
+    in
+    let for_contract (c : contract) : contract =
+      let for_contract_signature (cs : contract_signature) : contract_signature = {
+        name          = g cs.name;
+        args          = List.map (fun (x, y) -> g x, for_type y) cs.args;
+        loc           = cs.loc;
+      }
+      in
+      {
+        name          = g c.name;
+        signatures    = List.map for_contract_signature c.signatures;
+        init          = Option.map for_mterm c.init;
+        loc           = c.loc;
+      }
+    in
+    match d with
+    | Dvar v      -> Dvar      (for_var v)
+    | Denum e     -> Denum     (for_enum e)
+    | Dasset a    -> Dasset    (for_asset a)
+    | Dcontract c -> Dcontract (for_contract c)
+  in
+  let for_storage_item (si : storage_item) : storage_item =
+    let for_model_type (mt : model_type) : model_type =
+      match mt with
+      | MTvar      -> MTvar
+      | MTconst    -> MTconst
+      | MTasset id -> MTasset id
+      | MTstate    -> MTstate
+      | MTenum id  -> MTenum id
+    in
+    {
+      id          = g si.id;
+      model_type  = for_model_type si.model_type;
+      typ         = for_type si.typ;
+      const       = si.const;
+      ghost       = si.ghost;
+      default     = for_mterm si.default;
+      loc         = si.loc;
+    }
+  in
+  let for_specification (spec : specification) : specification =
+    let for_predicate (p : predicate) : predicate =
+      {
+        name = g p.name;
+        args = List.map (fun (x, y) -> g x, for_type y) p.args;
+        body = for_mterm p.body;
+        loc  = p.loc;
+      }
+    in
+    let for_definition (d : definition) : definition =
+      {
+        name = g d.name;
+        typ  = for_type d.typ;
+        var  = g d.var;
+        body = for_mterm d.body;
+        loc  = d.loc;
+      }
+    in
+    let for_variable (v : variable) : variable =
+      let for_argument (arg : argument) : argument =
+        let a, b, c = arg in
+        g a, for_type b, Option.map for_mterm c
+      in
+      let rec for_qualid (q : qualid) : qualid =
+        let for_qualid_node (qn : (lident, qualid) qualid_node) : (lident, qualid) qualid_node =
+          match qn with
+          | Qident id    -> Qident (g id)
+          | Qdot (q, id) -> Qdot (for_qualid q, g id)
+        in
+        {
+          node  = for_qualid_node q.node;
+          type_ = for_type q.type_;
+          loc   = q.loc;
+        }
+      in
+      {
+        decl         = for_argument v.decl;
+        constant     = v.constant;
+        from         = Option.map for_qualid v.from;
+        to_          = Option.map for_qualid v.to_;
+        loc          = v.loc;
+      }
+    in
+    let for_invariant (i : invariant) : invariant =
+      {
+        label    = g i.label;
+        formulas = List.map for_mterm i.formulas;
+      }
+    in
+    let for_postcondition (p : postcondition) : postcondition =
+      {
+        name       = g p.name;
+        mode       = p.mode;
+        formula    = for_mterm p.formula;
+        invariants = List.map for_invariant p.invariants;
+        uses       = List.map g p.uses;
+      }
+    in
+    {
+      predicates     = List.map for_predicate     spec.predicates;
+      definitions    = List.map for_definition    spec.definitions;
+      lemmas         = List.map for_label_term    spec.lemmas;
+      theorems       = List.map for_label_term    spec.theorems;
+      variables      = List.map for_variable      spec.variables;
+      invariants     = List.map (fun (x, y) -> g x, List.map for_label_term y) spec.invariants;
+      effects        = List.map for_mterm         spec.effects;
+      postconditions = List.map for_postcondition spec.postconditions;
+      loc            = spec.loc;
+    }
+  in
+  let for_function__ (f__ : function__) : function__ =
+    let for_function_node (fn : function_node) : function_node =
+      let for_function_struct (fs : function_struct) : function_struct =
+        let for_argument (arg : argument) : argument =
+          let a, b, c = arg in
+          g a, for_type b, Option.map for_mterm c
+        in
+        {
+          name = g fs.name;
+          args = List.map for_argument fs.args;
+          body = for_mterm fs.body;
+          src  = fs.src;
+          loc  = fs.loc;
+        }
+      in
+      match fn with
+      | Function (fs, t) -> Function (for_function_struct fs, for_type t)
+      | Entry fs         -> Entry (for_function_struct fs)
+    in
+    {
+      node = for_function_node f__.node;
+      spec = Option.map for_specification f__.spec;
+    }
+  in
+  let for_security (s : security) : security =
+    let for_security_item (si : security_item) : security_item =
+      let for_security_predicate (sp : security_predicate) : security_predicate =
+        let for_security_node (sn : security_node) : security_node =
+          let for_action_description (ad : action_description) =
+            match ad with
+            | ADany         -> ADany
+            | ADadd      id -> ADadd      (f id)
+            | ADremove   id -> ADremove   (f id)
+            | ADupdate   id -> ADupdate   (f id)
+            | ADtransfer id -> ADtransfer (f id)
+            | ADget      id -> ADget      (f id)
+            | ADiterate  id -> ADiterate  (f id)
+            | ADcall     id -> ADcall     (f id)
+          in
+          let for_security_role (sr : security_role) : security_role = g sr in
+          let for_security_action (sa : security_action) =
+            match sa with
+            | Sany     -> Sany
+            | Sentry l -> Sentry (List.map g l)
+          in
+          match sn with
+          | SonlyByRole         (ad, srl)     -> SonlyByRole         (for_action_description ad, List.map for_security_role srl)
+          | SonlyInAction       (ad, sa)      -> SonlyInAction       (for_action_description ad, for_security_action sa)
+          | SonlyByRoleInAction (ad, srl, sa) -> SonlyByRoleInAction (for_action_description ad, List.map for_security_role srl, for_security_action sa)
+          | SnotByRole          (ad, srl)     -> SnotByRole          (for_action_description ad, List.map for_security_role srl)
+          | SnotInAction        (ad, sa)      -> SnotInAction        (for_action_description ad, for_security_action sa)
+          | SnotByRoleInAction  (ad, srl, sa) -> SnotByRoleInAction  (for_action_description ad, List.map for_security_role srl, for_security_action sa)
+          | StransferredBy      (ad)          -> StransferredBy      (for_action_description ad)
+          | StransferredTo      (ad)          -> StransferredTo      (for_action_description ad)
+          | SnoStorageFail      sa            -> SnoStorageFail      (for_security_action sa)
+        in
+        {
+          s_node = for_security_node sp.s_node;
+          loc    = sp.loc;
+        }
+      in
+      {
+        label     = g si.label;
+        predicate = for_security_predicate si.predicate;
+        loc       = si.loc;
+      }
+    in
+    {
+      items = List.map for_security_item s.items;
+      loc   = s.loc;
+    }
+  in
+  {
+    name          = g model.name;
+    api_items     = List.map for_api_item  model.api_items;
+    api_verif     = List.map for_api_verif model.api_verif;
+    decls         = List.map for_decl_node model.decls;
+    storage       = List.map for_storage_item model.storage;
+    functions     = List.map for_function__ model.functions;
+    specification = for_specification model.specification;
+    security      = for_security model.security;
+  }
 
 (* -------------------------------------------------------------------- *)
 
@@ -3228,29 +3724,29 @@ end = struct
     |> eval_expr
 
   type searchfun =
-  | SearchSelect
-  | SearchSum
+    | SearchSelect
+    | SearchSum
 
   let get_fun_idx typ (m : model) asset expr =
     let rec internal_get_fun_idx acc = function
-    | (sc : api_storage) :: tl ->
-      begin
-        match typ, sc.node_item with
-        | SearchSelect, APIAsset (Select (a,t)) -> continue_internal_get_fun_idx tl acc a t
-        | SearchSum, APIAsset (Sum (a,_,t)) -> continue_internal_get_fun_idx tl acc a t
-        | _ -> internal_get_fun_idx acc tl
-      end
-    | [] -> acc
+      | (sc : api_storage) :: tl ->
+        begin
+          match typ, sc.node_item with
+          | SearchSelect, APIAsset (Select (a,t)) -> continue_internal_get_fun_idx tl acc a t
+          | SearchSum, APIAsset (Sum (a,_,t)) -> continue_internal_get_fun_idx tl acc a t
+          | _ -> internal_get_fun_idx acc tl
+        end
+      | [] -> acc
     and continue_internal_get_fun_idx tl acc a t =
-    if compare a asset = 0 then
-      if cmp_mterm t expr then
-        acc + 1
-      else
-        internal_get_fun_idx (acc + 1) tl
+      if compare a asset = 0 then
+        if cmp_mterm t expr then
+          acc + 1
+        else
+          internal_get_fun_idx (acc + 1) tl
       else
         internal_get_fun_idx acc tl
-  in
-  internal_get_fun_idx 0 m.api_items
+    in
+    internal_get_fun_idx 0 m.api_items
 
   let get_select_idx = get_fun_idx SearchSelect
 
@@ -3275,21 +3771,21 @@ end = struct
 
   let with_division (model : model) : bool =
     (try fold_model with_div_for_mterm_intern model false
-    with FoundDiv -> true) || (
+     with FoundDiv -> true) || (
       List.fold_left (fun acc (ai : api_storage) ->
-      match ai.node_item with
-      | APIInternal RatTez ->
-        acc || true
-      | _ -> acc
-      ) false model.api_items
+          match ai.node_item with
+          | APIInternal RatTez ->
+            acc || true
+          | _ -> acc
+        ) false model.api_items
     )
 
   let with_count m a =
     List.fold_left (fun acc (ai : api_storage) ->
-    match ai.node_item with
-      | APIAsset (Count asset) when String.equal a asset ->
-        acc || true
-      | _ -> acc
-  ) false m.api_items
+        match ai.node_item with
+        | APIAsset (Count asset) when String.equal a asset ->
+          acc || true
+        | _ -> acc
+      ) false m.api_items
 
 end
