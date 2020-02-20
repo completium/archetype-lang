@@ -1388,7 +1388,17 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
       let argids = args |> List.map (fun (e, _, _) -> e) |> List.map (map_mterm m ctx) in
       Tapp (loc_term (Tvar id), argids @ [map_mterm m ctx l])
     | Mapifsort      _ -> error_not_translated "Mapifsort"
-    | Mapifcontains  (a, _, r) -> Tapp (loc_term (Tvar ("contains_" ^ a)), [map_mterm m ctx r])
+    | Mapifcontains  (a, _, r) ->
+      begin match ctx.lctx with
+      | Inv ->
+        Tcontains (with_dummy_loc a,
+                 map_mterm m ctx r,
+                 loc_term (Tvar (mk_ac_id a)))
+      | _ ->
+        Tcontains (with_dummy_loc a,
+                 map_mterm m ctx r,
+                 loc_term (mk_ac a))
+      end
     | Mapifnth       _ -> error_not_translated "Mapifnth"
     | Mapifcount     (a,t) ->  Tcard (with_dummy_loc a, map_mterm m ctx t)
     | Mapifsum       (a,_,f) ->
