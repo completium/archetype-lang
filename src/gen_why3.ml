@@ -1271,13 +1271,14 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
 
     | Mvarstorecol n ->
       let coll =
-        match ctx.old, ctx.lmod with
-        | false, Nomod   -> mk_ac (n |> unloc)
-        | false, Added   -> mk_ac_added (n |> unloc)
-        | false, Removed -> mk_ac_rmed (n |> unloc)
-        | true, Nomod    -> mk_ac_old (n |> unloc)
-        | true, Added    -> mk_ac_old_added (n |> unloc)
-        | true, Removed  -> mk_ac_old_rmed (n |> unloc)
+        match ctx.lctx, ctx.old, ctx.lmod with
+        | Inv, _, _ -> Tvar (mk_ac_id (n |> unloc))
+        | _, false, Nomod   -> mk_ac (n |> unloc)
+        | _, false, Added   -> mk_ac_added (n |> unloc)
+        | _, false, Removed -> mk_ac_rmed (n |> unloc)
+        | _, true, Nomod    -> mk_ac_old (n |> unloc)
+        | _, true, Added    -> mk_ac_old_added (n |> unloc)
+        | _, true, Removed  -> mk_ac_old_rmed (n |> unloc)
       in
       loc_term coll |> Mlwtree.deloc
 
