@@ -362,21 +362,25 @@ let opsigs =
     List.mappdt (fun op sig_ -> (PT.Cmp op, sig_)) ops sigs in
 
   let grptypes : (PT.operator * (M.vtyp list * M.vtyp)) list =
-    let ops  =
-      (List.map (fun x -> PT.Arith x) [PT.Plus ; PT.Minus])
-      @ (List.map (fun x -> PT.Unary x) [PT.Uplus; PT.Uminus]) in
-    let sigs = List.map (fun ty -> ([ty; ty], ty)) grptypes in
-    List.mappdt (fun op sig_ -> (op, sig_)) ops sigs in
+    let bops = List.map (fun x -> PT.Arith x) [PT.Plus ; PT.Minus] in
+    let uops = List.map (fun x -> PT.Unary x) [PT.Uplus; PT.Uminus] in
+    let bsig = List.map (fun ty -> ([ty; ty], ty)) grptypes in
+    let usig = List.map (fun ty -> ([ty], ty)) grptypes in
+         (List.mappdt (fun op sig_ -> (op, sig_)) bops bsig)
+       @ (List.mappdt (fun op sig_ -> (op, sig_)) uops usig) in
 
   let rgtypes : (PT.operator * (M.vtyp list * M.vtyp)) list =
-    let ops  =
-      (List.map (fun x -> PT.Arith x) [PT.Plus; PT.Minus; PT.Mult; PT.Div])
-      @ (List.map (fun x -> PT.Unary x) [PT.Uplus; PT.Uminus]) in
-    let sigs = List.map (fun ty -> ([ty; ty], ty)) rgtypes in
-    List.mappdt (fun op sig_ -> (op, sig_)) ops sigs in
+    let bops = (List.map (fun x -> PT.Arith x) [PT.Plus; PT.Minus; PT.Mult; PT.Div]) in
+    let uops = (List.map (fun x -> PT.Unary x) [PT.Uplus; PT.Uminus]) in
+    let bsig = List.map (fun ty -> ([ty; ty], ty)) rgtypes in
+    let usig = List.map (fun ty -> ([ty], ty)) rgtypes in
+         (List.mappdt (fun op sig_ -> (op, sig_)) bops bsig)
+       @ (List.mappdt (fun op sig_ -> (op, sig_)) uops usig) in
 
   let ariths : (PT.operator * (M.vtyp list * M.vtyp)) list =
-    [ PT.Arith PT.Modulo, ([M.VTint; M.VTint], M.VTint)] in
+    [ PT.Arith PT.Modulo, ([M.VTint; M.VTint], M.VTint) ;
+      PT.Arith PT.DivRat, ([M.VTint; M.VTint], M.VTrational) ] in
+    
 
   let bools : (PT.operator * (M.vtyp list * M.vtyp)) list =
     let unas = List.map (fun x -> PT.Unary   x) [PT.Not] in
