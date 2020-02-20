@@ -989,7 +989,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
 
     | Mfor (id, c, b, lbl) ->
       let (nth, card) = get_for_fun c.type_ in
-      Tfor (with_dummy_loc "i",
+      Tfor (with_dummy_loc "_i",
             with_dummy_loc (
               Tminus (with_dummy_loc Tyunit,card (map_mterm m ctx c |> unloc_term),
                       (loc_term (Tint Big_int.unit_big_int)))
@@ -999,7 +999,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
               Tletin (false,
                       map_lident id,
                       None,
-                      nth (Tvar "i", map_mterm m ctx c |> unloc_term),
+                      nth (Tvar "_i", map_mterm m ctx c |> unloc_term),
                       map_mterm m ctx b)))
 
     | Miter               _ -> error_not_translated "Miter"
@@ -2199,6 +2199,7 @@ let fold_exns body : term list =
     | M.Mget _ -> acc @ [Texn Enotfound]
     | M.Mnth _ -> acc @ [Texn Enotfound]
     | M.Maddasset _ -> acc @ [Texn Ekeyexist]
+    | M.Maddshallow _ -> acc @ [Texn Ekeyexist]
     | M.Maddfield _ -> acc @ [Texn Enotfound; Texn Ekeyexist]
     | M.Mfail InvalidCaller -> acc @ [Texn Einvalidcaller]
     | M.Mfail NoTransfer -> acc @ [Texn Enotransfer]

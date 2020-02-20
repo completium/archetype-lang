@@ -93,7 +93,8 @@ let generate_target_pt (pt : ParseTree.archetype) : ParseTree.archetype =
 
 let generate_model            = Gen_model.to_model
 let generate_storage          = Gen_storage.generate_storage
-let shallow_asset             = Gen_shallow_asset.shallow_asset
+let shallow_asset        = Gen_shallow_asset.shallow_asset Gen_shallow_asset.Exec
+let shallow_asset_verif        = Gen_shallow_asset.shallow_asset Gen_shallow_asset.Verif
 let split_key_values          = Gen_split_key_values.split_key_values
 let remove_side_effect        = Gen_reduce.reduce
 let generate_api_storage      = Gen_api_storage.generate_api_storage
@@ -182,7 +183,7 @@ let generate_target model =
     |> exec_process
     |> prune_properties
     |> extend_loop_iter
-    |> shallow_asset
+    |> shallow_asset_verif
     (* |> split_key_values *)
     |> Gen_transform.assign_loop_label
     |> Gen_transform.ligo_move_get_in_condition

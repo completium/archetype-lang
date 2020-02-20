@@ -7,6 +7,10 @@ open Location
 module M = Model
 module I = Ident
 
+type gen_shallow_target =
+| Exec
+| Verif
+
 exception Anomaly of string
 type error_desc =
   | UnsupportedContainer of string
@@ -50,10 +54,10 @@ and extract_asset_collection m d id i acc =
     ) acc colls
 
 (* same as gen_shallow_args but returns context *)
-let gen_shallow_args (m : M.model) (id : M.lident) (t : M.type_) (arg : M.argument)
+let gen_shallow_args (m : M.model) (target : gen_shallow_target) (id : M.lident) (t : M.type_) (arg : M.argument)
   : ((I.ident * (M.lident * M.type_) list) list) * M.argument list =
-  match t with
-  | M.Tasset _ ->
+  match target,t with
+  | _,M.Tasset _ ->
     let shallow_args = gen_shallow_args m 0 (unloc id) t [arg] in
     let acc_ctx =
       if List.length shallow_args > 1 then
@@ -61,7 +65,7 @@ let gen_shallow_args (m : M.model) (id : M.lident) (t : M.type_) (arg : M.argume
       else
         [] in
     (acc_ctx,shallow_args)
-  | M.Tcontainer (Tasset i, Collection) ->
+  | Exec,M.Tcontainer (Tasset i, Collection) ->
     let _k, kt = M.Utils.get_asset_key m (unloc i) in
     let arg = (id,M.Tcontainer (M.Tbuiltin kt,Collection),None) in
     let arg_values = (dumloc ((unloc id)^"_values"),  M.Tassoc (kt, Tasset i), None) in
@@ -219,12 +223,12 @@ and map_letin_shallow m ctx b = function
   | (id,v)::tl -> M.mk_mterm (M.Mletin ([id],v,None,map_letin_shallow m ctx b tl,None)) v.type_
   | [] -> map_shallow ctx m b
 
-let process_shallow_function m f =
+let process_shallow_function m target f =
   let args = M.Utils.get_function_args f in
   (* mk initial context and shallowed arguments *)
   let (ctx,args) = List.fold_left (fun (ctx,acc) arg ->
       let (id,t,_e) = arg in
-      let (acc_ctx,shallow_args) = gen_shallow_args m id t arg in
+      let (acc_ctx,shallow_args) = gen_shallow_args m target id t arg in
       (ctx @ acc_ctx, acc @ shallow_args)
     ) ([],[]) args in
   let f = M.Utils.set_function_args f args in
@@ -249,9 +253,9 @@ let rec gen_add_shallow_asset (arg : M.argument) : M.mterm =
       M.Mbreak in
   M.mk_mterm tnode Tunit
 
-let gen_add_shallow_fun (model : M.model) (n : I.ident) : M.function__ =
+let gen_add_shallow_fun (model : M.model) (target : gen_shallow_target) (n : I.ident) : M.function__ =
   let arg    = (dumloc n,M.Tasset (dumloc n),None) in
-  let _,args = gen_shallow_args model (dumloc n) (Tasset (dumloc n)) arg in
+  let _,args = gen_shallow_args model target (dumloc n) (Tasset (dumloc n)) arg in
   let body   =
     if List.length args > 1
     then M.mk_mterm (M.Mseq (List.map gen_add_shallow_asset args)) Tunit
@@ -267,10 +271,10 @@ let gen_add_shallow_fun (model : M.model) (n : I.ident) : M.function__ =
     spec = None;
   }
 
-let gen_add_shallow_field_fun (model : M.model) (n,f : I.ident * I.ident) : M.function__ =
+let gen_add_shallow_field_fun (model : M.model) (target : gen_shallow_target) (n,f : I.ident * I.ident) : M.function__ =
   let pa,_k,_kt = M.Utils.get_container_asset_key model n f in
   let arg    = (dumloc "added_asset",M.Tasset (dumloc pa),None) in
-  let _,asset_args = gen_shallow_args model (dumloc "added_asset") (Tasset (dumloc pa)) arg in
+  let _,asset_args = gen_shallow_args model target (dumloc "added_asset") (Tasset (dumloc pa)) arg in
   let asset_arg = (dumloc "asset",M.Tasset (dumloc n),None) in
   let args = asset_arg::asset_args in
   let body   =
@@ -338,16 +342,16 @@ let shallow_decls (model : M.model) decls : M.decl_node list =
       | _ as d -> d
     ) decls
 
-let shallow_asset (model : M.model) : M.model =
+let shallow_asset (target : gen_shallow_target) (model : M.model) : M.model =
   let added_assets = get_added_assets model in
   let added_asset_fields = get_added_asset_fields model in
-  let add_asset_functions = List.map (gen_add_shallow_fun model) added_assets in
-  let add_asset_field_functions = List.map (gen_add_shallow_field_fun model) added_asset_fields in
+  let add_asset_functions = List.map (gen_add_shallow_fun model Exec) added_assets in
+  let add_asset_field_functions = List.map (gen_add_shallow_field_fun model Exec) added_asset_fields in
   let shallowed_decls = shallow_decls model model.M.decls in
   {
     model with
     decls     = shallowed_decls;
     functions = add_asset_functions @
                 add_asset_field_functions @
-                (List.map (process_shallow_function model) model.functions)
+                (List.map (process_shallow_function model target) model.functions)
   } |> Gen_api_storage.process_api_storage
