@@ -365,6 +365,16 @@ let rec pp_pterm fmt (pterm : pterm) =
           (pp_list ", " pp_pterm) l
       in
       (pp_no_paren pp) fmt l
+
+    | Pnone -> pp_str fmt "none"
+
+    | Psome a ->
+      let pp fmt a =
+        Format.fprintf fmt "some(%a)"
+          pp_pterm a
+      in
+      (pp_no_paren pp) fmt a
+
   in
   pp_struct_poly pp_node fmt pterm
 

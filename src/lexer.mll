@@ -20,6 +20,7 @@
     [
       "action"              , ACTION         ;
       "and"                 , AND            ;
+      "any"                 , ANY            ;
       "archetype"           , ARCHETYPE      ;
       "assert"              , ASSERT         ;
       "asset"               , ASSET          ;

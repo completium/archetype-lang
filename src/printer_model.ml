@@ -566,15 +566,14 @@ let pp_mterm fmt (mt : mterm) =
       in
       pp fmt (an, c, p)
 
-    | Msort (an, c, fn, k) ->
-      let pp fmt (an, c, fn, k) =
-        Format.fprintf fmt "sort_%a_%a (%a %a)"
+    | Msort (an, c, l) ->
+      let pp fmt (an, c, l) =
+        Format.fprintf fmt "sort_%a (%a, %a)"
           pp_str an
-          pp_str fn
           f c
-          pp_sort_kind k
+          (pp_list ", " (fun fmt (a, b) -> Format.fprintf fmt "%a %a" pp_ident a pp_sort_kind b)) l
       in
-      pp fmt (an, c, fn, k)
+      pp fmt (an, c, l)
 
     | Mcontains (an, c, i) ->
       let pp fmt (an, c, i) =
@@ -953,15 +952,14 @@ let pp_mterm fmt (mt : mterm) =
       in
       pp fmt (an, c, p)
 
-    | Mapifsort (an, c, fn, k) ->
-      let pp fmt (an, c, fn, k) =
-        Format.fprintf fmt "apifsort_%a_%a (%a %a)"
+    | Mapifsort (an, c, l) ->
+      let pp fmt (an, c, l) =
+        Format.fprintf fmt "apifsort_%a (%a, %a)"
           pp_str an
-          pp_str fn
           f c
-          pp_sort_kind k
+          (pp_list ", " (fun fmt (a, b) -> Format.fprintf fmt "%a %a" pp_ident a pp_sort_kind b)) l
       in
-      pp fmt (an, c, fn, k)
+      pp fmt (an, c, l)
 
     | Mapifcontains (an, c, i) ->
       let pp fmt (an, c, i) =
@@ -1048,7 +1046,7 @@ let pp_api_builtin fmt = function
   | ColToKeys an -> pp_str fmt ("col_to_keys\t " ^ an)
   | Select (an, p) ->
     Format.fprintf fmt "select\t %s %a" an pp_mterm p
-  | Sort (an, fn) -> pp_str fmt ("sort\t " ^ an ^ " " ^ fn)
+  | Sort (an, l) -> Format.fprintf fmt "sort\t%a on %a" pp_str an (pp_list ", " (fun fmt (a, b) -> Format.fprintf fmt "%a %a" pp_ident a pp_sort_kind b)) l
   | Contains an -> pp_str fmt ("contains " ^ an)
   | Nth an -> pp_str fmt ("nth\t " ^ an)
   | Count an -> pp_str fmt ("count\t " ^ an)

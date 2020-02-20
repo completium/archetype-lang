@@ -32,6 +32,7 @@
 %token ACCEPT_TRANSFER
 %token ACTION
 %token AND
+%token ANY
 %token ARCHETYPE
 %token ASSERT
 %token ASSET
@@ -784,6 +785,9 @@ simple_expr_r:
 
  | vt=vt_dot x=ident
      { let st = { before = fst vt; label = snd vt; } in Eterm (st, x) }
+
+ | ANY
+     { Eany }
 
  | INVALID_EXPR
      { Einvalid }

@@ -228,6 +228,13 @@ let pp_model_internal fmt (model : model) b =
     | Pwild -> pp_str fmt "_"
   in
 
+  let pp_sort_kind fmt = function
+    | SKasc -> pp_str fmt "asc"
+    | SKdesc -> pp_str fmt "desc"
+  in
+
+  let pp_postfix_sort = (pp_list "_" (fun fmt (a, b) -> Format.fprintf fmt "%s_%a" a pp_sort_kind b)) in
+
   let pp_mterm_gen (env : env) f fmt (mtt : mterm) =
     let pp_mterm_block fmt (x : mterm) =
       match x with
@@ -820,15 +827,14 @@ let pp_model_internal fmt (model : model) b =
       in
       pp fmt (an, c, p)
 
-    | Msort (an, c, fn, k) ->
-      let pp fmt (an, c, fn, _k) =
+    | Msort (an, c, l) -> (* TODO *)
+      let pp fmt (an, c, l) =
         Format.fprintf fmt "sort_%a_%a (%a)"
           pp_str an
-          pp_str fn
+          pp_postfix_sort l
           f c
-          (* pp_sort_kind k *) (* TODO: asc / desc *)
       in
-      pp fmt (an, c, fn, k)
+      pp fmt (an, c, l)
 
     | Mcontains (an, c, i) ->
       let pp fmt (an, c, i) =
@@ -1432,11 +1438,14 @@ let pp_model_internal fmt (model : model) b =
         (pp_mterm (mk_env ())) f
         k
 
-    | Sort (_an, _fn) ->
-      Format.fprintf fmt "// TODO api storage: Sort"
-    (* "let[@inline] sort_%s_%s (s : storage) : unit =@\n  \
-       () (*TODO*)@\n"
-       an fn *)
+    | Sort (an, l) ->
+      let _, t = Utils.get_asset_key model an in
+      Format.fprintf fmt
+        "function sort_%s_%a (const l : list(%a)) : list(%a) is@\n  \
+         begin@\n    \
+         skip;@\n  \
+         end with l@\n"
+        an pp_postfix_sort l pp_btyp t pp_btyp t
 
     | Contains an ->
       let _, t = Utils.get_asset_key model an in

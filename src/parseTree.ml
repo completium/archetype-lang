@@ -110,6 +110,7 @@ and expr_unloc =
   | Elabel        of lident
   | Ereturn       of expr
   | Eoption       of option_
+  | Eany
   | Enothing
   | Einvalid
 

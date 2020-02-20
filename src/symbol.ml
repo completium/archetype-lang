@@ -124,6 +124,7 @@ let string_of_token = function
   | ASSET           -> "ASSET"
   | ASSERT          -> "ASSERT"
   | ARCHETYPE       -> "ARCHETYPE"
+  | ANY             -> "ANY"
   | AND             -> "AND"
   | ADDRESS s       -> Printf.sprintf "DURATION(%s)" s
   | ACTION          -> "ACTION"
@@ -253,6 +254,7 @@ let string_of_symbol = function
   | X (T T_ASSET) -> "asset"
   | X (T T_ASSERT) -> "assert"
   | X (T T_ARCHETYPE) -> "archetype"
+  | X (T T_ANY) -> "any"
   | X (T T_AND) -> "and"
   | X (T T_ADDRESS) -> "an address"
   | X (T T_ACTION) -> "action"
