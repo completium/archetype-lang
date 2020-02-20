@@ -198,6 +198,7 @@ let to_model (ast : A.model) : M.model =
     | A.Precord l                       -> M.Masset         (List.map f l)| A.Pcall (Some p, A.Cconst A.Cbefore,    []) -> M.Msetbefore    (f p)
     | A.Pletin (id, init, typ, body, o) -> M.Mletin         ([id], f init, Option.map ftyp typ, f body, Option.map f o)
     | A.Pdeclvar (i, t, v)              -> M.Mdeclvar       ([i], Option.map ftyp t, f v)
+    | A.Pvar (b, {pldesc = "state"; _})                -> let e = M.Mvarstate in process_before b e
     | A.Pvar (b, id) when A.Utils.is_variable ast id   -> let e = M.Mvarstorevar id in process_before b e
     | A.Pvar (b, id) when A.Utils.is_asset ast id      -> let e = M.Mvarstorecol id in process_before b e
     | A.Pvar (b, id) when A.Utils.is_enum_value ast id -> let e = M.Mvarenumval  id in process_before b e

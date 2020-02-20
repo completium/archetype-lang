@@ -186,6 +186,7 @@ let generate_target model =
     (* |> split_key_values *)
     |> Gen_transform.assign_loop_label
     |> Gen_transform.ligo_move_get_in_condition
+    |> remove_cmp_enum
     |> remove_cmp_bool
     |> generate_api_storage
     |> output
