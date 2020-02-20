@@ -1261,9 +1261,9 @@ let remove_cmp_enum (model : model) : model =
 
 let replace_whyml_ident (model : model) : model =
   let f _env id =
-  match id with
-  | "val" -> "_val"
-  | _ -> id
+    match id with
+    | "val" -> "_val"
+    | _ -> id
   in
   replace_ident_model f model
 
@@ -1294,7 +1294,9 @@ let replace_key_by_asset (model : model) : model =
     let get an k = mk_mterm (Mget (an, k)) (Tasset (dumloc an)) in
     match mt.node with
     | Mremoveasset (an, k) -> mk (Mremoveasset (an, get an k))
-    | Mremovefield (an, fn, a, k) -> mk (Mremovefield (an, fn, a, get an k))
+    | Mremovefield (an, fn, a, k) ->
+      let can, _ = Utils.get_field_container model an fn in
+      mk (Mremovefield (an, fn, a, get can k))
     | Mset (an, fns, k, a) -> mk (Mset (an, fns, get an k, a))
     | _ -> map_mterm (aux c) mt
   in
