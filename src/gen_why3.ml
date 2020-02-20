@@ -300,34 +300,69 @@ let mk_transfer () =
 
 (* Sort ----------------------------------------------------------------------*)
 
-let mk_sort_function_id asset field = "sort_" ^ asset ^ "_" ^ field
+let sort_kind_to_string = function
+| M.SKasc -> "asc"
+| M.SKdesc -> "desc"
 
-let mk_sort_function _m asset field =
+let mk_cmp_function_id asset fields = "cmp_" ^ asset ^ "_" ^
+  (String.concat "_" (List.map (fun (f,k) ->
+    f ^ "_" ^ (sort_kind_to_string k)) fields))
+
+let rec mk_cmp_function_body fields =
+  match fields with
+  | [field,kind] ->
+    let a, b =
+    begin match kind with
+    | M.SKasc -> Tdoti("a", field),Tdoti("b", field)
+    | M.SKdesc -> Tdoti("b", field),Tdoti("a", field)
+    end in
+    Tle (Tyint, a, b)
+  | (field,kind)::tl ->
+    let a, b =
+    begin match kind with
+    | M.SKasc -> Tdoti("a", field),Tdoti("b", field)
+    | M.SKdesc -> Tdoti("b", field),Tdoti("a", field)
+    end in
+    Tif (
+      Tlt (Tyint,a,b),
+      Ttrue,
+      Some (Tif (
+        Teq (Tyint,a,b),
+        mk_cmp_function_body tl,
+        Some (Tfalse)
+      ))
+    )
+  | [] -> Ttrue
+
+let mk_cmp_function _m asset fields =
   let decl : (term, typ, ident) abstract_decl = Dfun {
-      name     = mk_sort_function_id asset field;
+      name     = mk_cmp_function_id asset fields;
       logic    = Logic;
-      args     = ["a", Tyasset asset];
-      returns  = Tyint;
+      args     = ["a", Tyasset asset; "b", Tyasset asset];
+      returns  = Tybool;
       raises   = [];
       variants = [];
       requires = [];
       ensures  = [];
-      body     = Tapp (Tvar field, [Tvar "a"])
+      body     = mk_cmp_function_body fields
     } in
   decl
 
-let mk_sort_clone_id asset field = (String.capitalize_ascii asset) ^ "Sort" ^ (String.capitalize_ascii field)
+let mk_sort_clone_id asset fields =
+  (String.capitalize_ascii asset) ^ "Sort" ^
+  (String.concat "" (List.map (fun (f,k) ->
+    (String.capitalize_ascii f) ^ (String.capitalize_ascii (sort_kind_to_string k))) fields))
 
-let mk_sort_clone _m asset field =
+let mk_sort_clone _m asset fields =
   let cap_asset = String.capitalize_ascii asset in
   Dclone ([gArchetypeDir;gArchetypeSort],
-          mk_sort_clone_id asset field,
+          mk_sort_clone_id asset fields,
           [Ctype ("container",
                   cap_asset ^ ".collection");
            Ctype ("t",
                   asset);
-           Cval ("sortf",
-                 mk_sort_function_id asset field);
+           Cval ("cmp",
+                 mk_cmp_function_id asset fields);
            Cval ("elts",
                  cap_asset ^ ".elts");
            Cval ("mk",
@@ -734,10 +769,10 @@ let map_enum _m (e : M.enum) : (loc_term,loc_typ,loc_ident) abstract_decl =
 
 let record_to_clone m (r : M.asset) =
   let (key,_) = M.Utils.get_asset_key m (unloc r.name) in
-  let sort =
+  (* let sort =
     if List.length r.sort > 0 then
       List.hd r.sort
-    else key in (* asset are sorted on key be default *)
+    else key in *) (* asset are sorted on key be default *)
   Dclone ([gArchetypeDir;gArchetypeColl] |> wdl,
           String.capitalize_ascii (unloc r.name) |> with_dummy_loc,
           [Ctype ("t" |> with_dummy_loc, (unloc r.name) |> with_dummy_loc);
@@ -1158,8 +1193,8 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
       let argids = args |> List.map (fun (e, _, _) -> e) |> List.map (map_mterm m ctx) in
       Tapp (loc_term (Tvar id), argids @ [map_mterm m ctx l])
 
-    | Msort               (a,c,f,_) ->
-      let id = (mk_sort_clone_id a f) ^ ".sort" in
+    | Msort               (a,c,l) ->
+      let id = (mk_sort_clone_id a l) ^ ".sort" in
       Tapp (loc_term (Tvar id),[map_mterm m ctx c])
 
     | Mcontains (a, _, r) -> Tapp (loc_term (Tvar ("contains_" ^ a)), [map_mterm m ctx r])
@@ -2133,7 +2168,7 @@ let mk_storage_api (m : M.model) records =
         let mlw_test = map_mterm m init_ctx test in
         acc @ [ mk_select m asset test (mlw_test |> unloc_term) sc.only_formula ]
       | M.APIAsset (Sort (asset,field)) ->
-        acc @ [ mk_sort_function m asset field; mk_sort_clone m asset field]
+        acc @ [ mk_cmp_function m asset field; mk_sort_clone m asset field]
       (* TODO *)
       | M.APIAsset (Unshallow n) ->
         let t         =  M.Utils.get_asset_key m n |> snd |> map_btype in

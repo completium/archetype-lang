@@ -484,13 +484,13 @@ module Sort
 
   type t = abstract {}
 
-  val function sortf t : int  (* asset sort function  *)
-
   val function elts container : list t
 
   val function mk (list t) : container
 
-  predicate lt (a b : t) = sortf a <= sortf b
+  val function cmp (a b : t) : bool
+
+  predicate lt (a b : t) = cmp a b
 
   clone list.Sorted as S with type t       = t,
                               predicate le = lt,
@@ -501,7 +501,7 @@ module Sort
   =
   match l with
   | Cons e tl ->
-    if sortf a <= sortf e then
+    if cmp a e then
       Cons a l
     else
       Cons e (insert a tl)
