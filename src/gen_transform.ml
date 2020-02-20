@@ -1284,3 +1284,20 @@ let replace_ident_model_val (model : model) : model =
   in
   replace_ident_model f model
 
+
+(* set remove update *)
+
+
+let replace_key_by_asset (model : model) : model =
+  let rec aux c (mt : mterm) : mterm =
+    let mk n = mk_mterm n Tunit in
+    let get an k = mk_mterm (Mget (an, k)) (Tasset (dumloc an)) in
+    match mt.node with
+    | Mremoveasset (an, k) -> mk (Mremoveasset (an, get an k))
+    | Mremovefield (an, fn, c, k) -> mk (Mremovefield (an, fn, c, get an k))
+    | Mset (an, fns, k, a) -> mk (Mset (an, fns, get an k, a))
+    | Mupdate (an, k, e) -> mk (Mupdate (an, get an k, e))
+    | Maddupdate (an, k, e) -> mk (Maddupdate (an, get an k, e))
+    | _ -> map_mterm (aux c) mt
+  in
+  Model.map_mterm_model aux model

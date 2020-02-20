@@ -169,7 +169,8 @@ let generate_target model =
 
   | Whyml ->
     model
-    |> Gen_transform.replace_whyml_ident
+    |> replace_key_by_asset
+    |> replace_whyml_ident
     |> replace_assignfield_by_update
     |> remove_add_update
     |> replace_update_by_set
