@@ -1205,8 +1205,8 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Masset l                       -> Masset (List.map f l)
   | Massoc (k, v)                  -> Massoc (f k, f v)
   (* dot *)
-  | Mdotasset (e, i)               -> Mdotasset (f e, i)
-  | Mdotcontract (e, i)            -> Mdotcontract (f e, i)
+  | Mdotasset (e, i)               -> Mdotasset (f e, g i)
+  | Mdotcontract (e, i)            -> Mdotcontract (f e, g i)
   (* comparison operators *)
   | Mequal (l, r)                  -> Mequal (f l, f r)
   | Mnequal (l, r)                 -> Mnequal (f l, f r)
@@ -1297,8 +1297,8 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Mtokeys (an, x)                -> Mtokeys (fi an, f x)
   | Mcoltokeys an                  -> Mcoltokeys (fi an)
   (* quantifiers *)
-  | Mforall (i, t, s, e)           -> Mforall (i, t, Option.map f s, f e)
-  | Mexists (i, t, s, e)           -> Mexists (i, t, Option.map f s, f e)
+  | Mforall (i, t, s, e)           -> Mforall (g i, ft t, Option.map f s, f e)
+  | Mexists (i, t, s, e)           -> Mexists (g i, ft t, Option.map f s, f e)
   (* formula operators *)
   | Mimply (l, r)                  -> Mimply (f l, f r)
   | Mequiv  (l, r)                 -> Mequiv (f l, f r)
@@ -2446,14 +2446,40 @@ let fold_model (f : ('id, 't) ctx_model_gen -> 'a -> 'id mterm_gen -> 'a) (m : '
   |> fold_left (fold_action ctx f) m.functions
   |> fold_specification ctx f m.specification
 
-let replace_ident_model (f : ident -> ident) (model : model) : model =
-  let g (id : lident) = {id with pldesc=(f id.pldesc)} in
+type kind_ident =
+  | KIarchetype
+  | KIdeclvarname
+  | KIassetname
+  | KIassetfield
+  | KIenumname
+  | KIenumvalue
+  | KIcontractname
+  | KIcontractentry
+  | KIstoragefield
+  | KIaction
+  | KIfunction
+  | KIargument
+  | KIlocalvar
+  | KIlabel
+  | KIpredicate
+  | KIdefinition
+  | KIdefinitionvar
+  | KIinvariant
+  | KIpostcondition
+  | KIpostconditionuse
+  | KIsecurityad
+  | KIsecurityrole
+  | KIsecurityaction
+  | KImterm (* mterm *)
+
+let replace_ident_model (f : kind_ident -> ident -> ident) (model : model) : model =
+  let g k (id : lident) = {id with pldesc=(f k id.pldesc)} in
   let rec for_type (t : type_) : type_ =
     match t with
-    | Tasset id         -> Tasset (g id)
-    | Tenum id          -> Tenum (g id)
+    | Tasset id         -> Tasset (g KIassetname id)
+    | Tenum id          -> Tenum (g KIenumname id)
     | Tstate            -> t
-    | Tcontract id      -> Tcontract (g id)
+    | Tcontract id      -> Tcontract (g KIcontractname id)
     | Tbuiltin _        -> t
     | Tcontainer (a, c) -> Tcontainer (for_type a, c)
     | Toption a         -> Toption (for_type a)
@@ -2468,34 +2494,34 @@ let replace_ident_model (f : ident -> ident) (model : model) : model =
     | Ttrace _          -> t
   in
   let rec for_mterm (mt : mterm) : mterm =
-    let node : mterm__node = map_term_node_internal f g for_type for_mterm mt.node in
+    let node : mterm__node = map_term_node_internal (f KImterm) (g KImterm) for_type for_mterm mt.node in
     mk_mterm node (for_type mt.type_)
   in
   let for_api_item (ai : api_storage) : api_storage =
     let for_node_item (asn : api_storage_node) : api_storage_node =
       let for_api_asset (aasset : api_asset) : api_asset =
         match aasset with
-        | Get an                -> Get (f an)
-        | Set an                -> Set (f an)
-        | Add an                -> Add (f an)
-        | Remove an             -> Remove (f an)
-        | UpdateAdd (an, id)    -> UpdateAdd (f an, f id)
-        | UpdateRemove (an, id) -> UpdateRemove (f an, f id)
-        | ToKeys an             -> ToKeys (f an)
-        | ColToKeys an          -> ColToKeys (f an)
-        | Select (an, p)        -> Select (f an, for_mterm p)
-        | Sort (an, l)          -> Sort (an, List.map (fun (id, k) -> f id, k) l)
-        | Contains an           -> Contains (f an)
-        | Nth an                -> Nth (f an)
-        | Count an              -> Count (f an)
-        | Sum (an, t, e)        -> Sum (f an, for_type t, for_mterm e)
-        | Min (an, id)          -> Min (f an, f id)
-        | Max (an, id)          -> Max (f an, f id)
-        | Shallow an            -> Shallow (f an)
-        | Unshallow an          -> Unshallow (f an)
-        | Listtocoll an         -> Listtocoll (f an)
-        | Head an               -> Head (f an)
-        | Tail an               -> Tail (f an)
+        | Get an                -> Get (f KIassetname an)
+        | Set an                -> Set (f KIassetname an)
+        | Add an                -> Add (f KIassetname an)
+        | Remove an             -> Remove (f KIassetname an)
+        | UpdateAdd (an, id)    -> UpdateAdd (f KIassetname an, f KIassetfield id)
+        | UpdateRemove (an, id) -> UpdateRemove (f KIassetname an, f KIassetfield id)
+        | ToKeys an             -> ToKeys (f KIassetname an)
+        | ColToKeys an          -> ColToKeys (f KIassetname an)
+        | Select (an, p)        -> Select (f KIassetname an, for_mterm p)
+        | Sort (an, l)          -> Sort (an, List.map (fun (id, k) -> f KIassetfield id, k) l)
+        | Contains an           -> Contains (f KIassetname an)
+        | Nth an                -> Nth (f KIassetname an)
+        | Count an              -> Count (f KIassetname an)
+        | Sum (an, t, e)        -> Sum (f KIassetname an, for_type t, for_mterm e)
+        | Min (an, id)          -> Min (f KIassetname an, f KIassetfield id)
+        | Max (an, id)          -> Max (f KIassetname an, f KIassetfield id)
+        | Shallow an            -> Shallow (f KIassetname an)
+        | Unshallow an          -> Unshallow (f KIassetname an)
+        | Listtocoll an         -> Listtocoll (f KIassetname an)
+        | Head an               -> Head (f KIassetname an)
+        | Tail an               -> Tail (f KIassetname an)
       in
       let for_api_list (alist : api_list) : api_list =
         match alist with
@@ -2529,11 +2555,11 @@ let replace_ident_model (f : ident -> ident) (model : model) : model =
   in
   let for_api_verif (apiv : api_verif) : api_verif =
     match apiv with
-    | StorageInvariant (a, b, c) -> StorageInvariant (f a, f b, for_mterm c)
+    | StorageInvariant (a, b, c) -> StorageInvariant (f KIassetname a, f KIassetfield b, for_mterm c)
   in
   let for_label_term (lt : label_term) : label_term =
     {
-      label = g lt.label;
+      label = g KIlabel lt.label;
       term  = for_mterm lt.term;
       loc   = lt.loc;
     }
@@ -2541,7 +2567,7 @@ let replace_ident_model (f : ident -> ident) (model : model) : model =
   let for_decl_node (d : decl_node) : decl_node =
     let for_var (v : var) : var =
       {
-        name          = g v.name;
+        name          = g KIdeclvarname v.name;
         type_         = for_type v.type_;
         original_type = for_type v.original_type;
         constant      = v.constant;
@@ -2553,20 +2579,20 @@ let replace_ident_model (f : ident -> ident) (model : model) : model =
     let for_enum (e : enum) : enum =
       let for_enum_item (ei : enum_item) : enum_item =
         {
-          name        = g ei.name;
+          name        = g KIenumvalue ei.name;
           invariants  = List.map for_label_term ei.invariants;
         }
       in
       {
-        name          = g e.name;
+        name          = g KIenumname e.name;
         values        = List.map for_enum_item e.values;
-        initial       = g e.initial;
+        initial       = g KIenumname e.initial;
       }
     in
     let for_asset (a : asset) : asset =
       let for_asset_item (ai : asset_item) : asset_item =
         {
-          name          = g ai.name;
+          name          = g KIassetfield ai.name;
           type_         = for_type ai.type_;
           original_type = for_type ai.original_type;
           default       = Option.map for_mterm ai.default;
@@ -2574,22 +2600,22 @@ let replace_ident_model (f : ident -> ident) (model : model) : model =
         }
       in
       {
-        name          = g a.name;
+        name          = g KIassetname a.name;
         values        = List.map for_asset_item a.values;
-        key           = f a.key;
-        sort          = List.map f a.sort;
+        key           = f KIassetfield a.key;
+        sort          = List.map (f KIassetfield) a.sort;
         invariants    = List.map for_label_term a.invariants;
       }
     in
     let for_contract (c : contract) : contract =
       let for_contract_signature (cs : contract_signature) : contract_signature = {
-        name          = g cs.name;
-        args          = List.map (fun (x, y) -> g x, for_type y) cs.args;
+        name          = g KIcontractentry cs.name;
+        args          = List.map (fun (x, y) -> g KIargument x, for_type y) cs.args;
         loc           = cs.loc;
       }
       in
       {
-        name          = g c.name;
+        name          = g KIcontractname c.name;
         signatures    = List.map for_contract_signature c.signatures;
         init          = Option.map for_mterm c.init;
         loc           = c.loc;
@@ -2611,7 +2637,7 @@ let replace_ident_model (f : ident -> ident) (model : model) : model =
       | MTenum id  -> MTenum id
     in
     {
-      id          = g si.id;
+      id          = g KIstoragefield si.id;
       model_type  = for_model_type si.model_type;
       typ         = for_type si.typ;
       const       = si.const;
@@ -2623,17 +2649,17 @@ let replace_ident_model (f : ident -> ident) (model : model) : model =
   let for_specification (spec : specification) : specification =
     let for_predicate (p : predicate) : predicate =
       {
-        name = g p.name;
-        args = List.map (fun (x, y) -> g x, for_type y) p.args;
+        name = g KIpredicate p.name;
+        args = List.map (fun (x, y) -> g KIargument x, for_type y) p.args;
         body = for_mterm p.body;
         loc  = p.loc;
       }
     in
     let for_definition (d : definition) : definition =
       {
-        name = g d.name;
+        name = g KIdefinition d.name;
         typ  = for_type d.typ;
-        var  = g d.var;
+        var  = g KIdefinitionvar d.var;
         body = for_mterm d.body;
         loc  = d.loc;
       }
@@ -2641,13 +2667,13 @@ let replace_ident_model (f : ident -> ident) (model : model) : model =
     let for_variable (v : variable) : variable =
       let for_argument (arg : argument) : argument =
         let a, b, c = arg in
-        g a, for_type b, Option.map for_mterm c
+        g KIargument a, for_type b, Option.map for_mterm c
       in
       let rec for_qualid (q : qualid) : qualid =
         let for_qualid_node (qn : (lident, qualid) qualid_node) : (lident, qualid) qualid_node =
           match qn with
-          | Qident id    -> Qident (g id)
-          | Qdot (q, id) -> Qdot (for_qualid q, g id)
+          | Qident id    -> Qident (g KImterm id)
+          | Qdot (q, id) -> Qdot (for_qualid q, g KImterm id)
         in
         {
           node  = for_qualid_node q.node;
@@ -2665,17 +2691,17 @@ let replace_ident_model (f : ident -> ident) (model : model) : model =
     in
     let for_invariant (i : invariant) : invariant =
       {
-        label    = g i.label;
+        label    = g KIlabel i.label;
         formulas = List.map for_mterm i.formulas;
       }
     in
     let for_postcondition (p : postcondition) : postcondition =
       {
-        name       = g p.name;
+        name       = g KIpostcondition p.name;
         mode       = p.mode;
         formula    = for_mterm p.formula;
         invariants = List.map for_invariant p.invariants;
-        uses       = List.map g p.uses;
+        uses       = List.map (g KIpostconditionuse) p.uses;
       }
     in
     {
@@ -2684,7 +2710,7 @@ let replace_ident_model (f : ident -> ident) (model : model) : model =
       lemmas         = List.map for_label_term    spec.lemmas;
       theorems       = List.map for_label_term    spec.theorems;
       variables      = List.map for_variable      spec.variables;
-      invariants     = List.map (fun (x, y) -> g x, List.map for_label_term y) spec.invariants;
+      invariants     = List.map (fun (x, y) -> g KIinvariant x, List.map for_label_term y) spec.invariants;
       effects        = List.map for_mterm         spec.effects;
       postconditions = List.map for_postcondition spec.postconditions;
       loc            = spec.loc;
@@ -2695,10 +2721,10 @@ let replace_ident_model (f : ident -> ident) (model : model) : model =
       let for_function_struct (fs : function_struct) : function_struct =
         let for_argument (arg : argument) : argument =
           let a, b, c = arg in
-          g a, for_type b, Option.map for_mterm c
+          g KIargument a, for_type b, Option.map for_mterm c
         in
         {
-          name = g fs.name;
+          name = g (match fn with | Function _ -> KIfunction | Entry _ -> KIaction) fs.name;
           args = List.map for_argument fs.args;
           body = for_mterm fs.body;
           src  = fs.src;
@@ -2721,19 +2747,19 @@ let replace_ident_model (f : ident -> ident) (model : model) : model =
           let for_action_description (ad : action_description) =
             match ad with
             | ADany         -> ADany
-            | ADadd      id -> ADadd      (f id)
-            | ADremove   id -> ADremove   (f id)
-            | ADupdate   id -> ADupdate   (f id)
-            | ADtransfer id -> ADtransfer (f id)
-            | ADget      id -> ADget      (f id)
-            | ADiterate  id -> ADiterate  (f id)
-            | ADcall     id -> ADcall     (f id)
+            | ADadd      id -> ADadd      (f KIsecurityad id)
+            | ADremove   id -> ADremove   (f KIsecurityad id)
+            | ADupdate   id -> ADupdate   (f KIsecurityad id)
+            | ADtransfer id -> ADtransfer (f KIsecurityad id)
+            | ADget      id -> ADget      (f KIsecurityad id)
+            | ADiterate  id -> ADiterate  (f KIsecurityad id)
+            | ADcall     id -> ADcall     (f KIsecurityad id)
           in
-          let for_security_role (sr : security_role) : security_role = g sr in
+          let for_security_role (sr : security_role) : security_role = g KIsecurityrole sr in
           let for_security_action (sa : security_action) =
             match sa with
             | Sany     -> Sany
-            | Sentry l -> Sentry (List.map g l)
+            | Sentry l -> Sentry (List.map (g KIsecurityaction) l)
           in
           match sn with
           | SonlyByRole         (ad, srl)     -> SonlyByRole         (for_action_description ad, List.map for_security_role srl)
@@ -2752,7 +2778,7 @@ let replace_ident_model (f : ident -> ident) (model : model) : model =
         }
       in
       {
-        label     = g si.label;
+        label     = g KIlabel si.label;
         predicate = for_security_predicate si.predicate;
         loc       = si.loc;
       }
@@ -2763,7 +2789,7 @@ let replace_ident_model (f : ident -> ident) (model : model) : model =
     }
   in
   {
-    name          = g model.name;
+    name          = g KIarchetype model.name;
     api_items     = List.map for_api_item  model.api_items;
     api_verif     = List.map for_api_verif model.api_verif;
     decls         = List.map for_decl_node model.decls;

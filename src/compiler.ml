@@ -169,6 +169,7 @@ let generate_target model =
 
   | Whyml ->
     model
+    |> replace_ident_model_val
     |> replace_assignfield_by_update
     |> remove_add_update
     |> replace_update_by_set
