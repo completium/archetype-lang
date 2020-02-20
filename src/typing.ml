@@ -13,6 +13,7 @@ module Type : sig
   val as_asset            : M.ptyp -> M.lident option
   val as_asset_collection : M.ptyp -> (M.lident * M.container) option
   val as_tuple            : M.ptyp -> (M.ptyp list) option
+  val as_option           : M.ptyp -> M.ptyp option
 
   val is_numeric   : M.ptyp -> bool
   val is_currency  : M.ptyp -> bool
@@ -28,6 +29,7 @@ end = struct
   let as_container = function M.Tcontainer (ty, c) -> Some (ty, c) | _ -> None
   let as_asset     = function M.Tasset     x       -> Some x       | _ -> None
   let as_tuple     = function M.Ttuple     ts      -> Some ts      | _ -> None
+  let as_option    = function M.Toption    t       -> Some t       | _ -> None
 
   let as_asset_collection = function
     | M.Tcontainer (M.Tasset asset, c) -> Some (asset, c)
@@ -95,6 +97,7 @@ type error_desc =
   | CannotAssignLoopIndex              of ident
   | CannotInferAnonRecord
   | CannotInferCollectionType
+  | CannotInfer
   | CollectionExpected
   | DivergentExpr
   | DuplicatedContractEntryName        of ident
@@ -220,6 +223,7 @@ let pp_error_desc fmt e =
   | CannotAssignLoopIndex x            -> pp "Cannot assign loop index `%s'" x
   | CannotInferAnonRecord              -> pp "Cannot infer a non record"
   | CannotInferCollectionType          -> pp "Cannot infer collection type"
+  | CannotInfer                        -> pp "Cannot infer type"
   | CollectionExpected                 -> pp "Collection expected"
   | DivergentExpr                      -> pp "Divergent expression"
   | DuplicatedContractEntryName i      -> pp "Duplicated contract entry name: %a" pp_ident i
@@ -1668,6 +1672,22 @@ let rec for_xexpr (mode : emode_t) (env : env) ?(ety : M.ptyp option) (tope : PT
     | Evar (_lv, _t, _e1) ->
       assert false
 
+    | Eoption oe -> begin
+        match oe with
+        | ONone ->
+            let ty = Option.bind Type.as_option ety in
+
+            if Option.is_none ty then
+              Env.emit_error env (loc tope, CannotInfer);
+            mk_sp (Option.map (fun ty -> M.Toption ty) ty) M.Pnone
+
+        | OSome oe ->
+            let oe = for_xexpr env oe in
+            mk_sp
+              (Option.map (fun ty -> M.Toption ty) oe.M.type_)
+              (M.Psome oe)
+      end
+
     | Ematchwith (e, bs) -> begin
         match for_gen_matchwith mode env (loc tope) e bs with
         | None -> bailout () | Some (decl, me, (wd, bsm), es) ->
@@ -1747,7 +1767,6 @@ let rec for_xexpr (mode : emode_t) (env : env) ?(ety : M.ptyp option) (tope : PT
     | Eif       _
     | Erequire  _
     | Ereturn   _
-    | Eoption   _
     | Eseq      _
     | Etransfer _
     | Einvalid ->
