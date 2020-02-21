@@ -95,6 +95,7 @@ type error_desc =
   | BeforeWithLabel
   | BindingInExpr
   | CannotAssignLoopIndex              of ident
+  | CannotCaptureLocal
   | CannotInferAnonRecord
   | CannotInferCollectionType
   | CannotInfer
@@ -221,6 +222,7 @@ let pp_error_desc fmt e =
   | BeforeWithLabel                    -> pp "Cannot use `before' labels at the same time"
   | BindingInExpr                      -> pp "Binding in expression"
   | CannotAssignLoopIndex x            -> pp "Cannot assign loop index `%s'" x
+  | CannotCaptureLocal                 -> pp "Cannot capture local variables in this context"
   | CannotInferAnonRecord              -> pp "Cannot infer a non record"
   | CannotInferCollectionType          -> pp "Cannot infer collection type"
   | CannotInfer                        -> pp "Cannot infer type"
@@ -1248,8 +1250,10 @@ let for_literal (_env : env) (topv : PT.literal loced) : M.bval =
 (* -------------------------------------------------------------------- *)
 type emode_t = [`Expr | `Formula]
 
-let rec for_xexpr (mode : emode_t) (env : env) ?(ety : M.ptyp option) (tope : PT.expr) =
-  let for_xexpr = for_xexpr mode in
+let rec for_xexpr
+  (mode : emode_t) ?(capture = true) (env : env) ?(ety : M.ptyp option) (tope : PT.expr)
+=
+  let for_xexpr = for_xexpr mode ~capture in
 
   let module E = struct exception Bailout end in
 
@@ -1297,6 +1301,8 @@ let rec for_xexpr (mode : emode_t) (env : env) ?(ety : M.ptyp option) (tope : PT
         | Some (`Local (xty, _)) ->
           if before then
             Env.emit_error env (loc tope, BeforeIrrelevant `Local);
+          if not (capture) then
+            Env.emit_error env (loc tope, CannotCaptureLocal);
           mk_sp (Some xty) (M.Pvar (VTnone, x))
 
         | Some (`Global decl) -> begin
@@ -1955,13 +1961,13 @@ and for_gen_method_call mode env theloc (the, m, args) =
         let env   = Env.Context.push env (unloc asset.as_name) in
         let theid = mkloc (loc arg) Env.Context.the in
         let thety = M.Tasset asset.as_name in
-        M.AFun (theid, thety, for_xexpr mode env ~ety:M.vtbool arg)
+        M.AFun (theid, thety, for_xexpr mode ~capture:false env ~ety:M.vtbool arg)
 
       | `RExpr ->
         let env   = Env.Context.push env (unloc asset.as_name) in
         let theid = mkloc (loc arg) Env.Context.the in
         let thety = M.Tasset asset.as_name in
-        let e     = for_xexpr mode env arg in
+        let e     = for_xexpr mode ~capture:false env arg in
 
         e.M.type_ |> Option.iter (fun ty ->
             if not (Type.is_numeric ty || Type.is_currency ty) then
