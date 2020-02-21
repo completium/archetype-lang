@@ -2469,6 +2469,9 @@ let rec for_instruction (env : env) (i : PT.expr) : env * M.instruction =
           else env
         in env, mki (Iseq [])
 
+    | Enothing ->
+        env, mki (Iseq [])
+
     | _ ->
       Env.emit_error env (loc i, InvalidInstruction);
       bailout ()
