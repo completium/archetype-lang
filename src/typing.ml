@@ -1511,30 +1511,27 @@ let rec for_xexpr
       end
 
     | Edot (pe, x) -> begin
-        if Mid.mem (unloc x) methods then
-          for_xexpr env ?ety (mkloc (loc tope) (PT.Emethod (pe, x, [])))
-        else
-          let e = for_xexpr env pe in
+        let e = for_xexpr env pe in
 
-          match Option.map Type.as_asset e.M.type_ with
-          | None ->
-            bailout ()
+        match Option.map Type.as_asset e.M.type_ with
+        | None ->
+          bailout ()
 
-          | Some None ->
-            Env.emit_error env (loc pe, AssetExpected (Option.get e.M.type_));
-            bailout ()
+        | Some None ->
+          Env.emit_error env (loc pe, AssetExpected (Option.get e.M.type_));
+          bailout ()
 
-          | Some (Some asset) -> begin
-              let asset = Env.Asset.get env (unloc asset) in
+        | Some (Some asset) -> begin
+            let asset = Env.Asset.get env (unloc asset) in
 
-              match get_field (unloc x) asset with
-              | None ->
-                let err = UnknownField (unloc asset.as_name, unloc x) in
-                Env.emit_error env (loc x, err); bailout ()
+            match get_field (unloc x) asset with
+            | None ->
+              let err = UnknownField (unloc asset.as_name, unloc x) in
+              Env.emit_error env (loc x, err); bailout ()
 
-              | Some { fd_type = fty } ->
-                mk_sp (Some fty) (M.Pdot (e, x))
-            end
+            | Some { fd_type = fty } ->
+              mk_sp (Some fty) (M.Pdot (e, x))
+          end
       end
 
     | Emulticomp (e, l) ->
