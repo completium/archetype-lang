@@ -672,13 +672,11 @@ let to_model (ast : A.model) : M.model =
     { sec with items = sec.items @ new_s.items; loc = new_s.loc; }
   in
 
-  let cont f x l = List.fold_left (fun accu x -> f x accu) l x in
-
-  let process_fun_gen name args (body : M.mterm) loc spec f (list : M.function__ list) : M.function__ list =
+  let process_fun_gen name args (body : M.mterm) loc spec f : M.function__ =
     let node = f (M.mk_function_struct name body
                     ~args:args
                     ~loc:loc) in
-    list @ [M.mk_function ?spec:spec node]
+    M.mk_function ?spec:spec node
   in
 
 
@@ -693,16 +691,14 @@ let to_model (ast : A.model) : M.model =
     aux mt
   in
 
-  let process_function
-      (function_ : A.function_)
-      (list : M.function__ list) : M.function__ list =
+  let process_function (function_ : A.function_) : M.function__ =
     let name  = function_.name in
     let args  = List.map (fun (x : A.lident A.decl_gen) -> (x.name, (ptyp_to_type |@ Option.get) x.typ, None)) function_.args in
     let body  = to_instruction function_.body |> replace_var_by_param args in
     let loc   = function_.loc in
     let ret   = ptyp_to_type function_.return in
     let spec : M.specification option = Option.map to_specification function_.specification in
-    process_fun_gen name args body loc spec (fun x -> M.Function (x, ret)) list
+    process_fun_gen name args body loc spec (fun x -> M.Function (x, ret))
   in
 
   let add_seq (s1 : M.mterm) (s2 : M.mterm) =
@@ -718,7 +714,7 @@ let to_model (ast : A.model) : M.model =
     M.mk_mterm (M.Mseq (l1 @ l2)) M.Tunit
   in
 
-  let process_transaction (transaction : A.transaction) (list : M.function__ list) : M.function__ list =
+  let process_transaction (transaction : A.transaction) : M.function__ =
     let process_calledby (body : M.mterm) : M.mterm =
       let process_cb (cb : A.rexpr) (body : M.mterm) : M.mterm =
         let rec process_rexpr (rq : A.rexpr) : M.mterm option =
@@ -876,7 +872,7 @@ let to_model (ast : A.model) : M.model =
       | _ -> emit_error CannotExtractBody
     in
 
-    let list  = list |> cont process_function ast.functions in
+    (* let list  = list |> cont process_function ast.functions in *)
     let name  = transaction.name in
     let args, body = process_body_args () in
     let body =
@@ -889,24 +885,25 @@ let to_model (ast : A.model) : M.model =
     let loc   = transaction.loc in
     let spec : M.specification option = Option.map to_specification transaction.specification in
 
-    process_fun_gen name args body loc spec (fun x -> M.Entry x) list
+    process_fun_gen name args body loc spec (fun x -> M.Entry x)
+  in
+
+  let process_decl_ = function
+    | A.Dvariable v -> process_var v
+    | A.Dasset    a -> process_asset a
+    | A.Denum     e -> process_enum e
+    | A.Dcontract c -> M.Dcontract (to_contract c)
+  in
+
+  let process_fun_ = function
+    | A.Ffunction f -> process_function f
+    | A.Ftransaction t -> process_transaction t
   in
 
   let name = ast.name in
 
-  let decls =
-    []
-    |> (@) (List.map (fun x -> process_var x) ast.variables)
-    |> (@) (List.map (fun x -> process_enum x) ast.enums)
-    |> (@) (List.map (fun x -> process_asset x) ast.assets)
-    |> (@) (List.map (fun x -> M.Dcontract (to_contract x)) ast.contracts)
-  in
-
-  let functions =
-    []
-    |> cont process_function ast.functions
-    |> cont process_transaction ast.transactions
-  in
+  let decls = List.map process_decl_ ast.decls in
+  let functions = List.map process_fun_ ast.funs in
 
   let specification =
     M.mk_specification ()

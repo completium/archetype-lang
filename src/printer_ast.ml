@@ -847,18 +847,23 @@ let pp_transaction fmt (t : transaction) =
   | Some tr -> pp_transaction_transition fmt t tr
   | None -> pp_transaction_action fmt t
 
+let pp_decl_ fmt = function
+  | Dvariable v -> pp_variable fmt v
+  | Dasset    a -> pp_asset fmt a
+  | Denum     e -> pp_enum fmt e
+  | Dcontract c -> pp_contract fmt c
+
+let pp_fun_ fmt = function
+  | Ffunction f    -> pp_function fmt f
+  | Ftransaction t -> pp_transaction fmt t
+
 let pp_ast fmt (ast : model) =
-  Format.fprintf fmt "archetype %a@\n@\n\
-                      %a%a%a%a%a%a%a%a@."
-    pp_id ast.name
-    (pp_no_empty_list2 pp_variable) ast.variables
-    (pp_no_empty_list2 pp_asset) ast.assets
-    (pp_no_empty_list2 pp_enum) ast.enums
-    (pp_no_empty_list2 pp_contract) ast.contracts
-    (pp_no_empty_list2 pp_function) ast.functions
-    (pp_no_empty_list2 pp_transaction) ast.transactions
-    (pp_no_empty_list2 pp_specification) ast.specifications
-    (pp_no_empty_list2 pp_security) ast.securities
+  Format.fprintf fmt "archetype %a@\n@\na@." pp_id ast.name;
+  (pp_no_empty_list2 pp_decl_) fmt ast.decls;
+  (pp_no_empty_list2 pp_fun_) fmt ast.funs;
+  (pp_no_empty_list2 pp_specification) fmt ast.specifications;
+  (pp_no_empty_list2 pp_security) fmt ast.securities;
+  Format.fprintf fmt "@."
 
 (* -------------------------------------------------------------------------- *)
 let string_of__of_pp pp x =

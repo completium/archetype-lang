@@ -564,17 +564,25 @@ type 'id contract_struct = {
 
 and contract = lident contract_struct
 
+type 'id decl_ =
+| Dvariable of 'id variable
+| Dasset    of 'id asset_struct
+| Denum     of 'id enum_struct
+| Dcontract of 'id contract_struct
+[@@deriving show {with_path = false}]
+
+type 'id fun_ =
+| Ffunction    of 'id function_struct
+| Ftransaction of 'id transaction_struct
+[@@deriving show {with_path = false}]
+
 type 'id model_struct = {
-  name          : 'id;
-  variables     : 'id variable list;
-  assets        : 'id asset_struct list;
-  functions     : 'id function_struct list;
-  transactions  : 'id transaction_struct list;
-  enums         : 'id enum_struct list;
-  contracts     : 'id contract_struct list;
+  name           : 'id;
+  decls          : 'id decl_ list;
+  funs           : 'id fun_ list;
   specifications : 'id specification list;
-  securities    : security list;
-  loc           : Location.t [@opaque];
+  securities     : security list;
+  loc            : Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]
 
@@ -650,8 +658,8 @@ let mk_asset ?(fields = []) ?key ?(sort = []) ?state ?init ?(specs = []) ?(loc =
 let mk_contract ?(signatures = []) ?init ?(loc = Location.dummy) name =
   { name; signatures; init; loc }
 
-let mk_model ?(variables = []) ?(assets = []) ?(functions = []) ?(transactions = []) ?(enums = []) ?(contracts = []) ?(specifications = []) ?(securities = []) ?(loc = Location.dummy) name =
-  { name; variables; assets; functions; transactions; enums; contracts; specifications; securities; loc }
+let mk_model ?(decls = []) ?(funs = []) ?(specifications = []) ?(securities = []) ?(loc = Location.dummy) name =
+  { name; decls; funs; specifications; securities; loc }
 
 let mk_id type_ id : qualid =
   { type_ = Some type_;
@@ -1039,9 +1047,14 @@ end = struct
     let str = Format.asprintf "%a@." pp_error_desc desc in
     raise (Anomaly str)
 
+  let get_variables ast = List.fold_right (fun (x : 'id decl_) accu -> match x with Dvariable x ->  x::accu | _ -> accu ) ast.decls []
+  let get_assets ast    = List.fold_right (fun (x : 'id decl_) accu -> match x with Dasset x    ->  x::accu | _ -> accu ) ast.decls []
+  let get_enums ast     = List.fold_right (fun (x : 'id decl_) accu -> match x with Denum x     ->  x::accu | _ -> accu ) ast.decls []
+  let get_contracts ast = List.fold_right (fun (x : 'id decl_) accu -> match x with Dcontract x ->  x::accu | _ -> accu ) ast.decls []
+
   let get_asset_opt ast asset_name : asset option =
     let id = unloc asset_name in
-    List.fold_left (fun accu (x : asset) -> if String.equal id (unloc x.name) then Some x else accu ) None ast.assets
+    List.fold_left (fun accu (x : asset) -> if String.equal id (unloc x.name) then Some x else accu ) None (get_assets ast)
 
   let get_asset ast asset_name : asset =
     let res = get_asset_opt ast asset_name in
@@ -1049,7 +1062,7 @@ end = struct
     | Some v -> v
     | _ -> emit_error (AssetNotFound (unloc asset_name))
 
-  let get_asset_field ast (asset_name, field_name) : 'id decl_gen=
+  let get_asset_field ast (asset_name, field_name) : 'id decl_gen =
     let asset = get_asset ast asset_name in
     let res = List.fold_left (fun accu (x : 'id decl_gen) -> if String.equal (unloc field_name) (unloc x.name) then Some x else accu) None asset.fields in
     match res with
@@ -1092,21 +1105,21 @@ end = struct
         if (Location.unloc (get_enum_name x)) = (Location.unloc ident)
         then Some x
         else accu
-      ) None ast.enums
+      ) None (get_enums ast)
 
   let get_asset_opt ast ident =
     List.fold_left (fun accu (x : 'id asset_struct) ->
         if (Location.unloc x.name) = (Location.unloc ident)
         then Some x
         else accu
-      ) None ast.assets
+      ) None (get_assets ast)
 
   let get_contract_opt ast ident =
     List.fold_left (fun accu (x : 'id contract_struct) ->
         if (Location.unloc x.name) = (Location.unloc ident)
         then Some x
         else accu
-      ) None ast.contracts
+      ) None (get_contracts ast)
 
   let get_enum_values ast ident =
     List.fold_left (
@@ -1114,7 +1127,7 @@ end = struct
         if List.fold_left (fun accu (x : 'id enum_item_struct) -> accu || (Location.unloc x.name) = (Location.unloc ident)) false x.items
         then (Some (get_enum_name x))
         else accu
-    ) None ast.enums
+    ) None (get_enums ast)
 
   let get_variable_opt ast ident : 'id variable option =
     List.fold_left (
@@ -1122,9 +1135,9 @@ end = struct
         if (String.equal (Location.unloc x.decl.name) (Location.unloc ident))
         then Some x
         else accu
-    ) None ast.variables
+    ) None (get_variables ast)
 
-  let is_variable ast ident =
+  let is_variable ast ident : bool =
     match get_variable_opt ast ident with
     | Some _ -> true
     | None   -> false
@@ -1146,7 +1159,7 @@ end = struct
           if (String.equal (Location.unloc x.decl.name) (Location.unloc ident))
           then x.decl.typ
           else accu
-      ) None ast.variables in
+      ) None (get_variables ast) in
     match var with
     | Some v -> v
     | None -> emit_error VariableNotFound

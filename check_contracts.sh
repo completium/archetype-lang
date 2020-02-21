@@ -9,7 +9,6 @@ escrow_penalty.arl \
 escrow_without_spec.arl \
 guarantee_fund.arl \
 hello.arl \
-miles_with_expiration.arl \
 miles_with_expiration_simple.arl \
 mini_dao.arl \
 mwe_medium.arl \
@@ -38,6 +37,7 @@ fizzy.arl \
 health_care.arl \
 ico.arl \
 miles.arl \
+miles_with_expiration.arl \
 perishable.arl \
 register_vote.arl \
 sig_challenge.arl \

@@ -2270,7 +2270,7 @@ let for_lvalue (env : env) (e : PT.expr) : (M.lvalue * M.ptyp) option =
             | None ->
               let err = UnknownField (unloc asset.as_name, unloc x) in
               Env.emit_error env (loc x, err); None
-  
+
             | Some { fd_type = fty } ->
               Some (`Field (nm, x), fty)
           end
@@ -3566,14 +3566,18 @@ let for_declarations (env : env) (decls : (PT.declaration list) loced) : M.model
     let _env, decls = for_grouped_declarations env (toploc, groups) in
 
     M.mk_model
-      ~enums:(enums_of_statedecl (List.pmap id (decls.state :: decls.enums)))
-      ~assets:(assets_of_adecls decls.assets)
-      ~variables:(variables_of_vdecls decls.variables)
-      ~transactions:(transactions_of_tdecls decls.acttxs)
-      ~functions:(functions_of_fdecls decls.functions)
+      ~decls:(
+        List.map (fun x -> M.Dvariable x) (variables_of_vdecls decls.variables)                            @
+        List.map (fun x -> M.Denum x)     (enums_of_statedecl (List.pmap id (decls.state :: decls.enums))) @
+        List.map (fun x -> M.Dasset x)    (assets_of_adecls decls.assets)                                  @
+        List.map (fun x -> M.Dcontract x) (contracts_of_cdecls decls.contracts)
+      )
+      ~funs:(
+        List.map (fun x -> M.Ffunction x)    (functions_of_fdecls decls.functions) @
+        List.map (fun x -> M.Ftransaction x) (transactions_of_tdecls decls.acttxs)
+      )
       ~specifications:(List.map specifications_of_ispecifications decls.specs)
       ~securities:(decls.secspecs)
-      ~contracts:(contracts_of_cdecls decls.contracts)
       x
 
   | _ ->
