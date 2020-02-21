@@ -1321,3 +1321,11 @@ let replace_key_by_asset (model : model) : model =
     | _ -> map_mterm (aux c) mt
   in
   Model.map_mterm_model aux model
+
+let replace_assignassetstate_by_update (model : model) : model =
+  let rec aux ctx (mt : mterm) : mterm =
+    match mt.node with
+    | Massignassetstate (an, k, v) -> mk_mterm (Mupdate (an, k, [(dumloc "state", ValueAssign, v) ])) Tunit
+    | _ -> map_mterm (aux ctx) mt
+  in
+  Model.map_mterm_model aux model

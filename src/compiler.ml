@@ -126,6 +126,7 @@ let generate_target model =
   | Ligo
   | LigoStorage ->
     model
+    |> replace_assignassetstate_by_update
     |> replace_assignfield_by_update
     |> remove_add_update
     |> replace_update_by_set
@@ -170,6 +171,7 @@ let generate_target model =
   | Whyml ->
     model
     |> replace_whyml_ident
+    |> replace_assignassetstate_by_update
     |> replace_assignfield_by_update
     |> remove_add_update
     |> replace_update_by_set
