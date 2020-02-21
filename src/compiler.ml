@@ -106,13 +106,14 @@ let generate_target model =
   match !Options.target with
   | None ->
     model
-    |> cont !Options.opt_raf replace_assignfield_by_update
-    |> cont !Options.opt_rau remove_add_update
-    |> cont !Options.opt_ru  replace_update_by_set
-    |> cont !Options.opt_nr  remove_rational
-    |> cont !Options.opt_ndd replace_date_duration_by_timestamp
-    |> cont !Options.opt_ne  remove_enum_matchwith
-    |> cont !Options.opt_ws  generate_storage
+    |> cont !Options.opt_rasf replace_assignassetstate_by_update
+    |> cont !Options.opt_raf  replace_assignfield_by_update
+    |> cont !Options.opt_rau  remove_add_update
+    |> cont !Options.opt_ru   replace_update_by_set
+    |> cont !Options.opt_nr   remove_rational
+    |> cont !Options.opt_ndd  replace_date_duration_by_timestamp
+    |> cont !Options.opt_ne   remove_enum_matchwith
+    |> cont !Options.opt_ws   generate_storage
     |> raise_if_error post_model_error prune_properties
     |> replace_declvar_by_letin
     |> cont !Options.opt_aes add_explicit_sort
@@ -276,6 +277,8 @@ let main () =
       "--no-rational", Arg.Set Options.opt_nse, " Same as -nr";
       "-ndd", Arg.Set Options.opt_ndd, " Remove date and duration";
       "--no-date-duration", Arg.Set Options.opt_nse, " Same as -ndd";
+      "-rasf", Arg.Set Options.opt_rasf, " Replace field by update";
+      "--remove-assignassetstate", Arg.Set Options.opt_rasf, " Same as -rasf";
       "-raf", Arg.Set Options.opt_raf, " Replace field by update";
       "--remove-assignfield", Arg.Set Options.opt_raf, " Same as -raf";
       "-rau", Arg.Set Options.opt_rau, " Remove add_update method";
