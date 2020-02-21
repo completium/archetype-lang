@@ -49,7 +49,7 @@ transition decide () {
   from InProgress
   to Done
   with effect {
-    let submissions = submission.sort(timestamp).sort(desc(score)) in
+    let submissions = submission.sort(desc(score), timestamp) in
       if submissions.count() >= 3
       then (
         let first = submissions.nth(0).competitor in
