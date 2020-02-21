@@ -109,6 +109,7 @@ let generate_target model =
     |> cont !Options.opt_rasf replace_assignassetstate_by_update
     |> cont !Options.opt_raf  replace_assignfield_by_update
     |> cont !Options.opt_rau  remove_add_update
+    |> cont !Options.opt_mu   merge_update
     |> cont !Options.opt_ru   replace_update_by_set
     |> cont !Options.opt_nr   remove_rational
     |> cont !Options.opt_ndd  replace_date_duration_by_timestamp
@@ -130,6 +131,7 @@ let generate_target model =
     |> replace_assignassetstate_by_update
     |> replace_assignfield_by_update
     |> remove_add_update
+    |> merge_update
     |> replace_update_by_set
     |> remove_rational
     |> abs_tez
@@ -175,6 +177,7 @@ let generate_target model =
     |> replace_assignassetstate_by_update
     |> replace_assignfield_by_update
     |> remove_add_update
+    |> merge_update
     |> replace_update_by_set
     |> replace_key_by_asset
     |> remove_rational
@@ -285,6 +288,8 @@ let main () =
       "--remove-add-update", Arg.Set Options.opt_rau, " Same as -rau";
       "-ru", Arg.Set Options.opt_ru, " Remove update method";
       "--remove-update", Arg.Set Options.opt_ru, " Same as -ru";
+      "-mu", Arg.Set Options.opt_mu, " Merge update";
+      "--merge-update", Arg.Set Options.opt_mu, " Same as -mu";
       "-ne", Arg.Set Options.opt_ne, " Remove enum and match with";
       "--no-enum", Arg.Set Options.opt_ne, " Same as -ne";
       "-evi", Arg.Set Options.opt_evi, " Evaluate initial value";
