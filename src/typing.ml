@@ -553,13 +553,15 @@ type 'env tactiondecl = {
   ad_name   : M.lident;
   ad_args   : (M.lident * M.ptyp) list;
   ad_callby : (ident option) loced list;
-  ad_effect : [`Raw of M.instruction | `Tx of M.sexpr * txeffect list] option;
+  ad_effect : [`Raw of M.instruction | `Tx of transition] option;
   ad_funs   : 'env fundecl option list;
   ad_reqs   : (M.lident option * M.pterm) list;
   ad_fais   : (M.lident option * M.pterm) list;
   ad_spec   : 'env ispecification list;
   ad_actfs  : bool;
 }
+
+and transition = M.sexpr * (M.lident * assetdecl) option * txeffect list
 
 (* -------------------------------------------------------------------- *)
 type statedecl = {
@@ -3153,19 +3155,22 @@ let for_acttx_decl (env : env) (decl : acttx loced) =
     let env, decl =
       Env.inscope env (fun env ->
           let env, args = for_args_decl env args in
-          let env, enum =
-            Option.foldbind (fun env (vtg, ttg) ->
-                Option.foldbind (fun env aname ->
-                    let asset = Env.Asset.get env (unloc aname) in
-                    let env =
-                      if check_and_emit_name_free env vtg then
-                        let field = Env.Asset.byfield env (unloc asset.as_pk) in
-                        let field = Option.get field in
-                        Env.Local.push env (vtg, (snd field).fd_type)
-                      else env in
-                    (env, Option.map unloc asset.as_state))
-                  env (for_asset_keyof_type env ttg))
-              env tgt in
+          let env, enum, tgt =
+            let env, aout =
+              Option.foldbind (fun env (vtg, ttg) ->
+                  Option.foldbind (fun env aname ->
+                      let asset = Env.Asset.get env (unloc aname) in
+                      let env =
+                        if check_and_emit_name_free env vtg then
+                          let field = Env.Asset.byfield env (unloc asset.as_pk) in
+                          let field = Option.get field in
+                          Env.Local.push env (vtg, (snd field).fd_type)
+                        else env in
+                      let tgt = (vtg, asset) in
+                      (env, Option.map (fun x -> (unloc x, tgt)) asset.as_state))
+                    env (for_asset_keyof_type env ttg))
+                env tgt in
+              env, Option.map fst aout, Option.map snd aout in
 
           let from_ = for_state_formula ?enum env from_ in
           let env, (callby, reqs, fais, spec, funs) =
@@ -3177,7 +3182,7 @@ let for_acttx_decl (env : env) (decl : acttx loced) =
             { ad_name   = x;
               ad_args   = List.pmap (fun x -> x) args;
               ad_callby = Option.get_dfl [] callby;
-              ad_effect = Some (`Tx (from_, tx));
+              ad_effect = Some (`Tx (from_, tgt, tx));
               ad_funs   = funs;
               ad_reqs   = Option.get_dfl [] reqs;
               ad_fais   = Option.get_dfl [] fais;
@@ -3500,9 +3505,16 @@ let transactions_of_tdecls tdecls =
 
     let transition =
       match tdecl.ad_effect with
-      | Some (`Tx (from_, x)) ->
+      | Some (`Tx (from_, tgt, x)) ->
+        let on =
+          Option.map (fun (on, asset) ->
+              let pkty = Option.get (get_field (unloc asset.as_pk) asset) in
+              let pkty = pkty.fd_type in
+              let stty = M.Tenum (Option.get asset.as_state) in
+              (on, pkty, asset.as_name, stty)
+            ) tgt in
         let trs = List.map (fun tx -> (tx.tx_state, tx.tx_when, tx.tx_effect)) x in
-        Some (M.{ from = from_; on = None; trs })
+        Some (M.{ from = from_; on; trs })
 
       | _ -> None in
 
