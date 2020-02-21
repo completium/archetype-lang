@@ -99,6 +99,7 @@ type error_desc =
   | CannotInferAnonRecord
   | CannotInferCollectionType
   | CannotInfer
+  | CannotUpdatePKey
   | CollectionExpected
   | DivergentExpr
   | DuplicatedContractEntryName        of ident
@@ -226,6 +227,7 @@ let pp_error_desc fmt e =
   | CannotInferAnonRecord              -> pp "Cannot infer a non record"
   | CannotInferCollectionType          -> pp "Cannot infer collection type"
   | CannotInfer                        -> pp "Cannot infer type"
+  | CannotUpdatePKey                   -> pp "Cannot modify the primary key of asset"
   | CollectionExpected                 -> pp "Collection expected"
   | DivergentExpr                      -> pp "Divergent expression"
   | DuplicatedContractEntryName i      -> pp "Duplicated contract entry name: %a" pp_ident i
@@ -2260,14 +2262,18 @@ let for_lvalue (env : env) (e : PT.expr) : (M.lvalue * M.ptyp) option =
 
       | Some (Some asset) -> begin
           let asset = Env.Asset.get env (unloc asset) in
-
-          match get_field (unloc x) asset with
-          | None ->
-            let err = UnknownField (unloc asset.as_name, unloc x) in
-            Env.emit_error env (loc x, err); None
-
-          | Some { fd_type = fty } ->
-            Some (`Field (nm, x), fty)
+          if unloc x = unloc asset.as_pk then begin
+            Env.emit_error env (loc x, CannotUpdatePKey);
+            None
+          end else begin
+            match get_field (unloc x) asset with
+            | None ->
+              let err = UnknownField (unloc asset.as_name, unloc x) in
+              Env.emit_error env (loc x, err); None
+  
+            | Some { fd_type = fty } ->
+              Some (`Field (nm, x), fty)
+          end
         end
     end
 
