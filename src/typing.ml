@@ -552,7 +552,7 @@ type txeffect = {
 type 'env tactiondecl = {
   ad_name   : M.lident;
   ad_args   : (M.lident * M.ptyp) list;
-  ad_callby : M.lident list;
+  ad_callby : (ident option) loced list;
   ad_effect : [`Raw of M.instruction | `Tx of M.lident * txeffect list] option;
   ad_funs   : 'env fundecl option list;
   ad_reqs   : (M.lident option * M.pterm) list;
@@ -2741,12 +2741,11 @@ let for_function (env : env) (fdecl : PT.s_function loced) =
 (* -------------------------------------------------------------------- *)
 let rec for_callby (env : env) (cb : PT.expr) =
   match unloc cb with
-  | Eterm ({ before = false; label = None; }, name)
-    when String.equal (unloc name) "any"
-    -> [name]
+  | Eany -> [mkloc (loc cb) None]
 
   | Eterm ({ before = false; label = None; }, name) ->
-    Option.get_as_list (for_role env name)
+    let cb = Option.get_as_list (for_role env name) in
+    List.map (fun x -> mkloc (loc x) (Some (unloc x))) cb
 
   | Eapp (Foperator { pldesc = Logical Or }, [e1; e2]) ->
     (for_callby env e1) @ (for_callby env e2)
@@ -3468,16 +3467,19 @@ let transactions_of_tdecls tdecls =
   let for_calledby cb : M.rexpr option =
     match cb with [] -> None | c :: cb ->
 
-      let for1 = fun x ->
+      let for1 = fun (x : ident option loced) ->
         let node =
           match unloc x with
-          | "any" -> M.Rany
-          | _ -> M.Rqualid (M.mk_sp ~loc:(loc x) (M.Qident x))
+          | None ->
+              M.Rany
+          | Some id ->
+              M.Rqualid (M.mk_sp ~loc:(loc x) (M.Qident (mkloc (loc x) id)))
         in M.mk_sp ~loc:(loc x) node in
 
-      Some (List.fold_left (fun acc c' ->
-          M.mk_sp (M.Ror (acc, for1 c')))
-          (for1 c) cb)
+      let aout = List.fold_left
+                   (fun acc c' ->  M.mk_sp (M.Ror (acc, for1 c')))
+                   (for1 c) cb
+      in Some aout
   in
 
   let for1 tdecl =
@@ -3487,10 +3489,8 @@ let transactions_of_tdecls tdecls =
       match tdecl.ad_effect with
       | Some (`Tx (from_, x)) ->
         let from_ = M.mk_sp ~loc:(loc from_) (M.Sref from_) in
-
-        Some (M.{ from = from_; on = None; trs =
-                                             List.map
-                                               (fun tx ->(tx.tx_state, tx.tx_when, tx.tx_effect)) x })
+        let trs = List.map (fun tx ->(tx.tx_state, tx.tx_when, tx.tx_effect)) x in
+        Some (M.{ from = from_; on = None; trs })
 
       | _ -> None in
 
