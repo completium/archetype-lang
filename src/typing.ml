@@ -442,7 +442,7 @@ type method_ = {
   mth_name     : M.const;
   mth_purity   : [`Pure | `Effect];
   mth_totality : [`Total | `Partial];
-  mth_sig      : mthtyp list * mthtyp option;
+  mth_sig      : mthatyp * mthtyp option;
 }
 
 and mthtyp = [
@@ -458,34 +458,36 @@ and mthtyp = [
   | `Ref      of int
 ]
 
+and mthatyp = [ `Fixed of mthtyp list | `Multi of mthtyp ]
+
 let methods : (string * method_) list =
   let mk mth_name mth_purity mth_totality mth_sig =
     { mth_name; mth_purity; mth_totality; mth_sig; }
   in [
-    ("isempty"     , mk M.Cisempty      `Pure   `Total   ([             ], Some (`T M.vtbool)));
-    ("get"         , mk M.Cget          `Pure   `Partial ([`Pk          ], Some `The));
-    ("add"         , mk M.Cadd          `Effect `Total   ([`The         ], None));
-    ("remove"      , mk M.Cremove       `Effect `Total   ([`Pk          ], None));
-    ("removeif"    , mk M.Cremoveif     `Effect `Total   ([`Pred        ], None));
-    ("clear"       , mk M.Cclear        `Effect `Total   ([             ], None));
-    ("update"      , mk M.Cupdate       `Effect `Total   ([`Pk; `Effect ], None));
-    ("addupdate"   , mk M.Caddupdate    `Effect `Total   ([`Pk; `Effect ], None));
-    ("contains"    , mk M.Ccontains     `Pure   `Total   ([`Pk          ], Some (`T M.vtbool)));
-    ("nth"         , mk M.Cnth          `Pure   `Partial ([`T M.vtint   ], Some (`Asset)));
-    ("select"      , mk M.Cselect       `Pure   `Total   ([`Pred        ], Some (`SubColl)));
-    ("sort"        , mk M.Csort         `Pure   `Total   ([`Cmp         ], Some (`SubColl)));
-    ("count"       , mk M.Ccount        `Pure   `Total   ([             ], Some (`T M.vtint)));
-    ("sum"         , mk M.Csum          `Pure   `Total   ([`RExpr       ], Some (`Ref 0)));
-    ("max"         , mk M.Cmax          `Pure   `Partial ([`RExpr       ], Some (`Ref 0)));
-    ("min"         , mk M.Cmin          `Pure   `Partial ([`RExpr       ], Some (`Ref 0)));
-    ("subsetof"    , mk M.Csubsetof     `Pure   `Total   ([`SubColl     ], Some (`T M.vtbool)));
-    ("head"        , mk M.Chead         `Pure   `Partial ([`T M.vtint   ], Some (`SubColl)));
-    ("tail"        , mk M.Ctail         `Pure   `Partial ([`T M.vtint   ], Some (`SubColl)));
-    ("unmoved"     , mk M.Cunmoved      `Pure   `Total   ([             ], Some (`SubColl)));
-    ("added"       , mk M.Cadded        `Pure   `Total   ([             ], Some (`SubColl)));
-    ("removed"     , mk M.Cremoved      `Pure   `Total   ([             ], Some (`SubColl)));
-    ("iterated"    , mk M.Citerated     `Pure   `Total   ([             ], Some (`SubColl)));
-    ("toiterate"   , mk M.Ctoiterate    `Pure   `Total   ([             ], Some (`SubColl)));
+    ("isempty"     , mk M.Cisempty      `Pure   `Total   (`Fixed [             ], Some (`T M.vtbool)));
+    ("get"         , mk M.Cget          `Pure   `Partial (`Fixed [`Pk          ], Some `The));
+    ("add"         , mk M.Cadd          `Effect `Total   (`Fixed [`The         ], None));
+    ("remove"      , mk M.Cremove       `Effect `Total   (`Fixed [`Pk          ], None));
+    ("removeif"    , mk M.Cremoveif     `Effect `Total   (`Fixed [`Pred        ], None));
+    ("clear"       , mk M.Cclear        `Effect `Total   (`Fixed [             ], None));
+    ("update"      , mk M.Cupdate       `Effect `Total   (`Fixed [`Pk; `Effect ], None));
+    ("addupdate"   , mk M.Caddupdate    `Effect `Total   (`Fixed [`Pk; `Effect ], None));
+    ("contains"    , mk M.Ccontains     `Pure   `Total   (`Fixed [`Pk          ], Some (`T M.vtbool)));
+    ("nth"         , mk M.Cnth          `Pure   `Partial (`Fixed [`T M.vtint   ], Some (`Asset)));
+    ("select"      , mk M.Cselect       `Pure   `Total   (`Fixed [`Pred        ], Some (`SubColl)));
+    ("sort"        , mk M.Csort         `Pure   `Total   (`Multi (`Cmp         ), Some (`SubColl)));
+    ("count"       , mk M.Ccount        `Pure   `Total   (`Fixed [             ], Some (`T M.vtint)));
+    ("sum"         , mk M.Csum          `Pure   `Total   (`Fixed [`RExpr       ], Some (`Ref 0)));
+    ("max"         , mk M.Cmax          `Pure   `Partial (`Fixed [`RExpr       ], Some (`Ref 0)));
+    ("min"         , mk M.Cmin          `Pure   `Partial (`Fixed [`RExpr       ], Some (`Ref 0)));
+    ("subsetof"    , mk M.Csubsetof     `Pure   `Total   (`Fixed [`SubColl     ], Some (`T M.vtbool)));
+    ("head"        , mk M.Chead         `Pure   `Partial (`Fixed [`T M.vtint   ], Some (`SubColl)));
+    ("tail"        , mk M.Ctail         `Pure   `Partial (`Fixed [`T M.vtint   ], Some (`SubColl)));
+    ("unmoved"     , mk M.Cunmoved      `Pure   `Total   (`Fixed [             ], Some (`SubColl)));
+    ("added"       , mk M.Cadded        `Pure   `Total   (`Fixed [             ], Some (`SubColl)));
+    ("removed"     , mk M.Cremoved      `Pure   `Total   (`Fixed [             ], Some (`SubColl)));
+    ("iterated"    , mk M.Citerated     `Pure   `Total   (`Fixed [             ], Some (`SubColl)));
+    ("toiterate"   , mk M.Ctoiterate    `Pure   `Total   (`Fixed [             ], Some (`SubColl)));
   ]
 
 let methods = Mid.of_list methods
@@ -1925,11 +1927,14 @@ and for_gen_method_call mode env theloc (the, m, args) =
 
     let args =
       match args with
-      | [ {pldesc = Etuple l; _} ] -> l
+      | [ { pldesc = Etuple l; _ } ] -> l
       | _ -> args
     in
 
-    let ne = List.length (fst method_.mth_sig) in
+    let ne =
+      match fst method_.mth_sig with
+      | `Fixed sig_ -> List.length sig_
+      | `Multi _    -> List.length args in
     let ng = List.length args in
 
     if ne <> ng then begin
@@ -2001,7 +2006,10 @@ and for_gen_method_call mode env theloc (the, m, args) =
 
     in
 
-    let args = List.map2 doarg args (fst method_.mth_sig) in
+    let atyps =
+      match fst method_.mth_sig with
+      | `Fixed x -> x | `Multi x -> List.make (fun _ -> x) ne in
+    let args = List.map2 doarg args atyps in
     let amap =
       let aout = ref Mint.empty in
       List.iteri (fun i arg ->
