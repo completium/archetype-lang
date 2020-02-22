@@ -381,8 +381,7 @@ let cmptypes =
     M.VTbytes          ]
 
 let grptypes =
-  [ M.VTdate           ;
-    M.VTduration       ;
+  [ M.VTduration       ;
     M.VTcurrency       ]
 
 let rgtypes =
@@ -425,14 +424,25 @@ let opsigs =
     let unas = List.map (fun x -> PT.Unary   x) [PT.Not] in
     let bins = List.map (fun x -> PT.Logical x) [PT.And; PT.Or; PT.Imply; PT.Equiv] in
 
-    List.map (fun op -> (op, ([M.VTbool], M.VTbool))) unas
+      List.map (fun op -> (op, ([M.VTbool], M.VTbool))) unas
     @ List.map (fun op -> (op, ([M.VTbool; M.VTbool], M.VTbool))) bins in
 
   let others : (PT.operator * (M.vtyp list * M.vtyp)) list =
-    [ PT.Arith PT.Plus, ([M.VTdate    ; M.VTduration      ], M.VTdate)      ;
-      PT.Arith PT.Plus, ([M.VTint     ; M.VTduration      ], M.VTduration)  ;
-      PT.Arith PT.Mult, ([M.VTrational; M.VTcurrency      ], M.VTcurrency)  ;
-      PT.Arith PT.Mult, ([M.VTcurrency; M.VTrational      ], M.VTcurrency)  ] in
+    [ PT.Arith PT.Plus , ([M.VTdate    ; M.VTduration      ], M.VTdate    )  ;
+      PT.Arith PT.Plus , ([M.VTduration; M.VTdate          ], M.VTdate    )  ;
+      PT.Arith PT.Plus , ([M.VTint     ; M.VTduration      ], M.VTduration)  ;
+      PT.Arith PT.Plus , ([M.VTduration; M.VTint           ], M.VTduration)  ;
+      PT.Arith PT.Minus, ([M.VTint     ; M.VTduration      ], M.VTduration)  ;
+      PT.Arith PT.Minus, ([M.VTduration; M.VTint           ], M.VTduration)  ;
+      PT.Arith PT.Minus, ([M.VTdate    ; M.VTduration      ], M.VTdate    )  ;
+      PT.Arith PT.Minus, ([M.VTdate    ; M.VTdate          ], M.VTduration)  ;
+      PT.Arith PT.Mult , ([M.VTrational; M.VTcurrency      ], M.VTcurrency)  ;
+      PT.Arith PT.Mult , ([M.VTcurrency; M.VTrational      ], M.VTcurrency)  ;
+      PT.Arith PT.Mult , ([M.VTrational; M.VTduration      ], M.VTduration)  ;
+      PT.Arith PT.Mult , ([M.VTduration; M.VTrational      ], M.VTduration)  ;
+      PT.Arith PT.Div  , ([M.VTduration; M.VTrational      ], M.VTduration)  ;
+      PT.Arith PT.Plus , ([M.VTstring  ; M.VTstring        ], M.VTstring  )  ;
+    ] in
 
   cmpsigs @ grptypes @ rgtypes @ ariths @ bools @ others
 
