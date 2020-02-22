@@ -520,8 +520,6 @@ let methods : (string * method_) list =
     ("unmoved"     , mk M.Cunmoved      `Pure   `Total   (`Fixed [             ], Some (`SubColl)));
     ("added"       , mk M.Cadded        `Pure   `Total   (`Fixed [             ], Some (`SubColl)));
     ("removed"     , mk M.Cremoved      `Pure   `Total   (`Fixed [             ], Some (`SubColl)));
-    ("iterated"    , mk M.Citerated     `Pure   `Total   (`Fixed [             ], Some (`SubColl)));
-    ("toiterate"   , mk M.Ctoiterate    `Pure   `Total   (`Fixed [             ], Some (`SubColl)));
   ]
 
 let methods = Mid.of_list methods
