@@ -358,19 +358,6 @@ let pp_error_desc fmt e =
 type argtype = [`Type of M.type_ | `Effect of ident]
 
 (* -------------------------------------------------------------------- *)
-let eqtypes =
-  [ M.VTbool           ;
-    M.VTint            ;
-    M.VTrational       ;
-    M.VTdate           ;
-    M.VTduration       ;
-    M.VTstring         ;
-    M.VTaddress        ;
-    M.VTrole           ;
-    M.VTcurrency       ;
-    M.VTkey            ;
-    M.VTbytes          ]
-
 let cmptypes =
   [ M.VTint            ;
     M.VTrational       ;
@@ -395,11 +382,6 @@ let cmpsigs : (PT.operator * (M.vtyp list * M.vtyp)) list =
   List.mappdt (fun op sig_ -> (PT.Cmp op, sig_)) ops sigs
 
 let opsigs =
-  let _eqsigs : (PT.operator * (M.vtyp list * M.vtyp)) list =
-    let ops  = [PT.Equal; PT.Nequal] in
-    let sigs = List.map (fun ty -> ([ty; ty], M.VTbool)) eqtypes in
-    List.mappdt (fun op sig_ -> (PT.Cmp op, sig_)) ops sigs in
-
   let grptypes : (PT.operator * (M.vtyp list * M.vtyp)) list =
     let bops = List.map (fun x -> PT.Arith x) [PT.Plus ; PT.Minus] in
     let uops = List.map (fun x -> PT.Unary x) [PT.Uplus; PT.Uminus] in
@@ -1100,14 +1082,25 @@ let check_and_emit_name_free (env : env) (x : M.lident) =
 let select_operator env loc (op, tys) =
   match op with
   | PT.Cmp (PT.Equal | PT.Nequal) -> begin
-      match tys with
-      | [t1; t2] when Type.equal t1 t2 ->
-        Some ({ osl_sig = [t1; t2]; osl_ret = M.Tbuiltin M.VTbool; })
+      let module E = struct exception NoEq end in
 
-      | _ ->
-        Env.emit_error env
-          (loc, NoMatchingOperator (op, tys));
-        None
+      try
+        match tys with
+        | [t1; t2] ->
+          if not (Type.is_primitive t1) || not (Type.is_primitive t2) then
+            raise E.NoEq;
+
+          if not (Type.compatible ~from_:t1 ~to_:t2) &&
+             not (Type.compatible ~from_:t2 ~to_:t2) then
+            raise E.NoEq;
+
+          Some ({ osl_sig = [t1; t2]; osl_ret = M.Tbuiltin M.VTbool; })
+  
+        | _ ->
+            raise E.NoEq
+
+      with E.NoEq -> 
+        Env.emit_error env (loc, NoMatchingOperator (op, tys)); None
     end
 
   | _ -> begin
