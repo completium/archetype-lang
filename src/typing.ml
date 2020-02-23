@@ -24,7 +24,9 @@ module Type : sig
   val sig_equal : M.ptyp list -> M.ptyp list -> bool
 
   val compatible     : from_:M.ptyp -> to_:M.ptyp -> bool
+  val distance       : from_:M.ptyp -> to_:M.ptyp -> int option
   val sig_compatible : from_:M.ptyp list -> to_:M.ptyp list -> bool
+  val sig_distance   : from_:M.ptyp list -> to_:M.ptyp list -> int option
 end = struct
   let as_container = function M.Tcontainer (ty, c) -> Some (ty, c) | _ -> None
   let as_asset     = function M.Tasset     x       -> Some x       | _ -> None
@@ -70,9 +72,25 @@ end = struct
     | _, _ ->
       false
 
+  let distance ~(from_ : M.ptyp) ~(to_ : M.ptyp) =
+    if   equal from_ to_
+    then Some 0
+    else (if compatible ~from_ ~to_ then Some 1 else None)
+
   let sig_compatible ~(from_ : M.ptyp list) ~(to_ : M.ptyp list) =
     List.length from_ = List.length to_
     && List.for_all2 (fun from_ to_ -> compatible ~from_ ~to_) from_ to_
+
+  let sig_distance ~(from_ : M.ptyp list) ~(to_ : M.ptyp list) =
+    if List.length from_ <> List.length to_ then None else
+
+    let module E = struct exception Reject end in
+
+    try
+      Some (List.fold_left2 (fun d from_ to_ ->
+        d + Option.get_exn E.Reject (distance ~from_ ~to_)
+      ) 0 from_ to_)
+    with E.Reject -> None
 
   let sig_equal tys1 tys2 =
     List.length tys1 = List.length tys2
@@ -143,10 +161,12 @@ type error_desc =
   | MultipleAssetStateDeclaration
   | MultipleInitialMarker
   | MultipleMatchingOperator           of PT.operator * M.ptyp list * opsig list
+  | MultipleMatchingFunction           of ident * M.ptyp list * (M.ptyp list * M.ptyp) list
   | MultipleFromToInVarDecl
   | MultipleStateDeclaration
   | NameIsAlreadyBound                 of ident * Location.t option
   | NoMatchingOperator                 of PT.operator * M.ptyp list
+  | NoMatchingFunction                 of ident * M.ptyp list
   | NoSuchMethod                       of ident
   | NoSuchSecurityPredicate            of ident
   | NonCodeLabel                       of ident
@@ -322,23 +342,22 @@ let pp_error_desc fmt e =
              (Printer_tools.pp_list " * " Printer_ast.pp_ptyp) sig_.osl_sig
              Printer_ast.pp_ptyp sig_.osl_ret)) sigs
 
+  | NoMatchingFunction (f, sig_) ->
+    pp "No matches for function %s(%a)" f
+      (Printer_tools.pp_list ", " Printer_ast.pp_ptyp) sig_
+
+  | MultipleMatchingFunction (f, sig_, sigs) ->
+    pp "Multiple matches for operator %s(%a): %a" f
+      (Printer_tools.pp_list ", " Printer_ast.pp_ptyp) sig_
+      (Printer_tools.pp_list ", " (fun fmt sig_ ->
+           Format.fprintf fmt "(%a) -> %a"
+             (Printer_tools.pp_list " * " Printer_ast.pp_ptyp) (fst sig_)
+             Printer_ast.pp_ptyp (snd sig_))) sigs
+
 (* -------------------------------------------------------------------- *)
 type argtype = [`Type of M.type_ | `Effect of ident]
 
 (* -------------------------------------------------------------------- *)
-let eqtypes =
-  [ M.VTbool           ;
-    M.VTint            ;
-    M.VTrational       ;
-    M.VTdate           ;
-    M.VTduration       ;
-    M.VTstring         ;
-    M.VTaddress        ;
-    M.VTrole           ;
-    M.VTcurrency       ;
-    M.VTkey            ;
-    M.VTbytes          ]
-
 let cmptypes =
   [ M.VTint            ;
     M.VTrational       ;
@@ -349,8 +368,7 @@ let cmptypes =
     M.VTbytes          ]
 
 let grptypes =
-  [ M.VTdate           ;
-    M.VTduration       ;
+  [ M.VTduration       ;
     M.VTcurrency       ]
 
 let rgtypes =
@@ -364,11 +382,6 @@ let cmpsigs : (PT.operator * (M.vtyp list * M.vtyp)) list =
   List.mappdt (fun op sig_ -> (PT.Cmp op, sig_)) ops sigs
 
 let opsigs =
-  let _eqsigs : (PT.operator * (M.vtyp list * M.vtyp)) list =
-    let ops  = [PT.Equal; PT.Nequal] in
-    let sigs = List.map (fun ty -> ([ty; ty], M.VTbool)) eqtypes in
-    List.mappdt (fun op sig_ -> (PT.Cmp op, sig_)) ops sigs in
-
   let grptypes : (PT.operator * (M.vtyp list * M.vtyp)) list =
     let bops = List.map (fun x -> PT.Arith x) [PT.Plus ; PT.Minus] in
     let uops = List.map (fun x -> PT.Unary x) [PT.Uplus; PT.Uminus] in
@@ -389,20 +402,29 @@ let opsigs =
     [ PT.Arith PT.Modulo, ([M.VTint; M.VTint], M.VTint) ;
       PT.Arith PT.DivRat, ([M.VTint; M.VTint], M.VTrational) ] in
 
-
   let bools : (PT.operator * (M.vtyp list * M.vtyp)) list =
     let unas = List.map (fun x -> PT.Unary   x) [PT.Not] in
     let bins = List.map (fun x -> PT.Logical x) [PT.And; PT.Or; PT.Imply; PT.Equiv] in
 
-    List.map (fun op -> (op, ([M.VTbool], M.VTbool))) unas
+      List.map (fun op -> (op, ([M.VTbool], M.VTbool))) unas
     @ List.map (fun op -> (op, ([M.VTbool; M.VTbool], M.VTbool))) bins in
 
   let others : (PT.operator * (M.vtyp list * M.vtyp)) list =
-    [ PT.Arith PT.Plus, ([M.VTdate    ; M.VTduration      ], M.VTdate)      ;
-      PT.Arith PT.Plus, ([M.VTint     ; M.VTduration      ], M.VTduration)  ;
-      PT.Arith PT.Mult, ([M.VTrational; M.VTcurrency      ], M.VTcurrency)  ;
-      PT.Arith PT.Mult, ([M.VTcurrency; M.VTrational      ], M.VTcurrency)
-        ] in
+    [ PT.Arith PT.Plus , ([M.VTdate    ; M.VTduration      ], M.VTdate    )  ;
+      PT.Arith PT.Plus , ([M.VTduration; M.VTdate          ], M.VTdate    )  ;
+      PT.Arith PT.Plus , ([M.VTint     ; M.VTduration      ], M.VTduration)  ;
+      PT.Arith PT.Plus , ([M.VTduration; M.VTint           ], M.VTduration)  ;
+      PT.Arith PT.Minus, ([M.VTint     ; M.VTduration      ], M.VTduration)  ;
+      PT.Arith PT.Minus, ([M.VTduration; M.VTint           ], M.VTduration)  ;
+      PT.Arith PT.Minus, ([M.VTdate    ; M.VTduration      ], M.VTdate    )  ;
+      PT.Arith PT.Minus, ([M.VTdate    ; M.VTdate          ], M.VTduration)  ;
+      PT.Arith PT.Mult , ([M.VTrational; M.VTcurrency      ], M.VTcurrency)  ;
+      PT.Arith PT.Mult , ([M.VTcurrency; M.VTrational      ], M.VTcurrency)  ;
+      PT.Arith PT.Mult , ([M.VTrational; M.VTduration      ], M.VTduration)  ;
+      PT.Arith PT.Mult , ([M.VTduration; M.VTrational      ], M.VTduration)  ;
+      PT.Arith PT.Div  , ([M.VTduration; M.VTrational      ], M.VTduration)  ;
+      PT.Arith PT.Plus , ([M.VTstring  ; M.VTstring        ], M.VTstring  )  ;
+    ] in
 
   cmpsigs @ grptypes @ rgtypes @ ariths @ bools @ others
 
@@ -490,11 +512,18 @@ let methods : (string * method_) list =
     ("unmoved"     , mk M.Cunmoved      `Pure   `Total   (`Fixed [             ], Some (`SubColl)));
     ("added"       , mk M.Cadded        `Pure   `Total   (`Fixed [             ], Some (`SubColl)));
     ("removed"     , mk M.Cremoved      `Pure   `Total   (`Fixed [             ], Some (`SubColl)));
-    ("iterated"    , mk M.Citerated     `Pure   `Total   (`Fixed [             ], Some (`SubColl)));
-    ("toiterate"   , mk M.Ctoiterate    `Pure   `Total   (`Fixed [             ], Some (`SubColl)));
   ]
 
 let methods = Mid.of_list methods
+
+(* -------------------------------------------------------------------- *)
+let corefuns =
+    (List.map (fun x -> ("abs", M.Cabs, [x], x)) [M.vtint; M.vtrational])
+  @ (List.flatten (List.map (fun (name, cname) -> (
+       List.map
+         (fun x -> (name, cname, [x; x], x))
+         [M.vtint; M.vtrational; M.vtdate; M.vtduration; M.vtcurrency]))
+       [("min", M.Cmin); ("max", M.Cmax)]))
 
 (* -------------------------------------------------------------------- *)
 type assetdecl = {
@@ -1053,14 +1082,25 @@ let check_and_emit_name_free (env : env) (x : M.lident) =
 let select_operator env loc (op, tys) =
   match op with
   | PT.Cmp (PT.Equal | PT.Nequal) -> begin
-      match tys with
-      | [t1; t2] when Type.equal t1 t2 ->
-        Some ({ osl_sig = [t1; t2]; osl_ret = M.Tbuiltin M.VTbool; })
+      let module E = struct exception NoEq end in
 
-      | _ ->
-        Env.emit_error env
-          (loc, NoMatchingOperator (op, tys));
-        None
+      try
+        match tys with
+        | [t1; t2] ->
+          if not (Type.is_primitive t1) || not (Type.is_primitive t2) then
+            raise E.NoEq;
+
+          if not (Type.compatible ~from_:t1 ~to_:t2) &&
+             not (Type.compatible ~from_:t2 ~to_:t2) then
+            raise E.NoEq;
+
+          Some ({ osl_sig = [t1; t2]; osl_ret = M.Tbuiltin M.VTbool; })
+  
+        | _ ->
+            raise E.NoEq
+
+      with E.NoEq -> 
+        Env.emit_error env (loc, NoMatchingOperator (op, tys)); None
     end
 
   | _ -> begin
@@ -1612,6 +1652,45 @@ let rec for_xexpr
         in mk_sp (Some (sig_.osl_ret)) aout
       end
 
+    | Eapp (Fident f, args) -> begin
+        let args = match args with [{ pldesc = Etuple args }] -> args | _ -> args in
+        let args = List.map (for_xexpr env) args in
+
+        if List.exists (fun arg -> Option.is_none arg.M.type_) args then
+          bailout ();
+
+        let aty = List.map (fun a -> Option.get a.M.type_) args in
+
+        let select (name, cname, ety, rty) =
+          let module E = struct exception Reject end in
+
+          try
+            if unloc f <> name then raise E.Reject;
+            let d = Type.sig_distance ~from_:aty ~to_:ety in
+            Some (Option.get_exn E.Reject d, (cname, (ety, rty)))
+
+          with E.Reject -> None in
+
+        let cd = List.pmap select corefuns in
+        let cd = List.sort (fun (i, _) (j, _) -> compare i j) cd in
+        let cd =
+          let i0 = Option.get_dfl (-1) (Option.map fst (List.ohead cd)) in
+          List.map snd (List.filter (fun (i, _) -> i = i0) cd) in
+
+        match cd with
+        | [] ->
+            Env.emit_error env (loc tope, NoMatchingFunction (unloc f, aty));
+            bailout ()
+        | _::_::_ ->
+            Env.emit_error env
+              (loc tope, MultipleMatchingFunction (unloc f, aty, List.map snd cd));
+            bailout ()
+        | [cname, (_, rty)] ->
+            let args = List.map (fun x -> M.AExpr x) args in
+            mk_sp (Some rty) (M.Pcall (None, M.Cconst cname, args))
+
+      end
+
     | Emethod (the, m, args) -> begin
         let infos = for_gen_method_call mode env (loc tope) (`Parsed the, m, args) in
         let the, asset, method_, args, amap = Option.get_fdfl bailout infos in
@@ -1765,7 +1844,6 @@ let rec for_xexpr
       end
 
     | Enothing
-    | Eapp      _
     | Eassert   _
     | Elabel    _
     | Eassign   _

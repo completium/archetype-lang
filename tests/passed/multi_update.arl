@@ -1,0 +1,21 @@
+archetype multi_update
+
+asset my_asset identified by id {
+  id : string;
+  v1 : int;
+  v2 : int;
+  v3 : int;
+} initialized by {
+  {"key"; 0; 0; 0}
+}
+
+variable res : int = 0
+
+action exec () {
+  effect {
+    var k = "key";
+    my_asset.update(k, {v1 = 1; v2 = 1});
+    my_asset.update(k, {v2 = 2});
+    my_asset.update(k, {v3 = 3});
+  }
+}

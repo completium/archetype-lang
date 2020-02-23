@@ -30,6 +30,6 @@ action exec () {
     t := max(1tz, 2tz);
 
     i := abs(-1);
-    i := abs(-1 div 2);
+    r := abs(-1 div 2);
   }
 }

@@ -1321,3 +1321,51 @@ let replace_key_by_asset (model : model) : model =
     | _ -> map_mterm (aux c) mt
   in
   Model.map_mterm_model aux model
+
+let replace_assignassetstate_by_update (model : model) : model =
+  let rec aux ctx (mt : mterm) : mterm =
+    match mt.node with
+    | Massignassetstate (an, k, v) -> mk_mterm (Mupdate (an, k, [(dumloc "state", ValueAssign, v) ])) Tunit
+    | _ -> map_mterm (aux ctx) mt
+  in
+  Model.map_mterm_model aux model
+
+let merge_update (model : model) : model =
+  let contains l (ref, _, _) = List.fold_left (fun accu (id, _, _) -> accu || (String.equal (unloc ref) (unloc id))) false l in
+  let replace l (ref_id, ref_op, ref_v) =
+    List.fold_right (fun (id, op, v) accu ->
+        if (String.equal (unloc ref_id) (unloc id))
+        then (id, ref_op, ref_v)::accu
+        else (id, op, v)::accu
+      ) l [] in
+  let compute_nl l1 l2 = List.fold_left
+      (fun accu x ->
+         if contains accu x
+         then replace accu x
+         else accu @ [ x ]) l1 l2  in
+  let rec aux ctx (mt : mterm) : mterm =
+    match mt.node with
+    | Mseq l ->
+      begin
+        let l : mterm list = List.map (aux ctx) l in
+        let rec f (accu : mterm list) (y : mterm list) =
+          match y with
+          | ({ node = Mupdate(an1, k1, l1); _ })::({ node = Mupdate(an2, k2, l2); _ })::t
+            when String.equal an1 an2 && Model.cmp_mterm k1 k2
+                 && List.fold_left (fun accu (_, op, _) -> accu && (match op with | ValueAssign -> accu | _ -> false)) true l2
+            ->
+            begin
+              let nl = compute_nl l1 l2 in
+              let node = Mupdate(an1, k1, nl) in
+              let mt = mk_mterm node Tunit in
+              f accu (mt::t)
+            end
+          | a::t -> a::(f accu t)
+          | [] -> []
+        in
+        let ll = f [] l in
+        mk_mterm (Mseq ll) mt.type_
+      end
+    | _ -> map_mterm (aux ctx) mt
+  in
+  Model.map_mterm_model aux model
