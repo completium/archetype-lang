@@ -1143,7 +1143,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
 
     (* arithmetic operators *)
 
-    | Mand (l, r) -> Tand (map_mterm m ctx l, map_mterm m ctx r)
+    | Mand (l, r) -> Tpand (map_mterm m ctx l, map_mterm m ctx r)
     | Mor (a, b) -> Tor (map_mterm m ctx a, map_mterm m ctx b)
     | Mnot c -> Tnot (map_mterm m ctx c)
     | Mplus (l, r)  -> Tplus  (with_dummy_loc Tyint, map_mterm m ctx l, map_mterm m ctx r)
@@ -2166,13 +2166,13 @@ function rat_cmp (const op : op_cmp; const lhs : (int * int); const rhs : (int *
     end
   end with r
 *)
-let mk_op_cmp _m = Denum ("op_cmp",["OpCmpLt";"OpCmpLt";"OpCmpLe";"OpCmpGt";"OpCmpGe"])
+let mk_op_cmp _m = Denum ("op_cmp",["OpCmpLt";"OpCmpLe";"OpCmpGt";"OpCmpGe"])
 let mk_rat_cmp _m = Dfun {
     name     = "rat_cmp";
     logic    = NoMod;
     args     = ["op", Tyenum "op_cmp";"lhs", Tytuple [Tyint;Tyint]; "rhs", Tytuple [Tyint;Tyint]];
     returns  = Tybool;
-    raises   = [];
+    raises   = [Texn ENotAPair];
     variants = [];
     requires = [];
     ensures  = [];
@@ -2214,7 +2214,7 @@ let mk_rat_arith _m = Dfun {
     logic    = NoMod;
     args     = ["op", Tyenum "op_arith"; "lhs", Tytuple [Tyint;Tyint]; "rhs", Tytuple [Tyint;Tyint]];
     returns  = Tytuple [Tyint;Tyint];
-    raises   = [];
+    raises   = [Texn ENotAPair];
     variants = [];
     requires = [];
     ensures  = [];
@@ -2242,7 +2242,7 @@ let mk_rat_eq _m = Dfun {
     logic    = NoMod;
     args     = ["lhs", Tytuple [Tyint;Tyint]; "rhs", Tytuple [Tyint;Tyint]];
     returns  = Tybool;
-    raises   = [];
+    raises   = [Texn ENotAPair];
     variants = [];
     requires = [];
     ensures  = [];
@@ -2357,6 +2357,9 @@ let fold_exns body : term list =
     | M.Mfail InvalidState -> acc @ [Texn Einvalidstate]
     | M.Mremoveasset _ -> acc @ [Texn Enotfound]
     | M.Mrattez _ -> acc @ [Texn ENotAPair]
+    | M.Mratcmp _ -> acc @ [Texn ENotAPair]
+    | M.Mratarith _ -> acc @ [Texn ENotAPair]
+    | M.Mrateq _ -> acc @ [Texn ENotAPair]
     | _ -> M.fold_term internal_fold_exn acc term in
   Tools.List.dedup (internal_fold_exn [] body)
 
