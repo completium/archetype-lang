@@ -514,7 +514,13 @@ let rec map_mtype (t : M.type_) : loc_typ =
       | M.Tunit                               -> Tyunit
       | M.Tstate                              -> Tystate
       | M.Tassoc (_, _)                       -> Tyunit (* TODO: replace by the right type *)
-      | _ -> (Format.eprintf "type: %a@\n" Model.pp_type_ t; assert false))
+      | M.Tstorage                            -> Tystorage
+      | M.Toperation                          -> Tyunit (* TODO: replace by the right type *)
+      | M.Tentry                              -> Tyunit (* TODO: replace by the right type *)
+      | M.Tprog _                             -> Tyunit (* TODO: replace by the right type *)
+      | M.Tvset _                             -> Tyunit (* TODO: replace by the right type *)
+      | M.Ttrace _                            -> Tyunit (* TODO: replace by the right type *)
+      | _ -> assert false)
 
 let is_local_invariant _m an t =
   let rec internal_is_local acc (term : M.mterm) =
@@ -1277,12 +1283,23 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     (* rational *)
 
     | Mdivrat             _ -> error_not_translated "Mdivrat"
-    | Mrateq              _ -> error_not_translated "Mrateq"
-    | Mratcmp             _ -> error_not_translated "Mratcmp"
-    | Mratarith           _ -> error_not_translated "Mratarith"
-    | Mrattez             (r,t) -> Tapp (loc_term (Tvar "rat_tez"),[map_mterm m ctx r; map_mterm m ctx t])
-    | Minttorat           _ -> error_not_translated "Minttorat"
-
+    | Mrateq (r,t) -> Tapp (loc_term (Tvar "rat_eq"),[map_mterm m ctx r; map_mterm m ctx t])
+    | Mratcmp (cop,r,t) ->
+      let cop_to_mterm = function
+      | M.Ge -> Tvar "OpCmpGe"
+      | M.Le -> Tvar "OpCmpLe"
+      | M.Gt -> Tvar "OpCmpGt"
+      | M.Lt -> Tvar "OpCmpLt" in
+      Tapp (loc_term (Tvar "rat_cmp"),[loc_term (cop_to_mterm cop); map_mterm m ctx r; map_mterm m ctx t])
+    | Mratarith (aop,r,t) ->
+      let aop_to_mterm = function
+      | M.Rplus -> Tvar "OpArithPlus"
+      | M.Rminus -> Tvar "OpArithMinus"
+      | M.Rmult -> Tvar "OpArithMult"
+      | M.Rdiv -> Tvar "OpArithDiv" in
+      Tapp (loc_term (Tvar "rat_arith"),[loc_term (aop_to_mterm aop); map_mterm m ctx r; map_mterm m ctx t])
+    | Mrattez (r,t) -> Tapp (loc_term (Tvar "rat_tez"),[map_mterm m ctx r; map_mterm m ctx t])
+    | Minttorat v -> Ttuple ([map_mterm m ctx v; loc_term (Tint (Big_int.big_int_of_int 1))])
 
     (* functional *)
 
@@ -2096,6 +2113,115 @@ let mk_storage_api_before_storage (m : M.model) _records =
       | _ -> acc
     ) [] |> loc_decl |> deloc
 
+(*
+type op_cmp is
+| OpCmpLt of unit
+| OpCmpLe of unit
+| OpCmpGt of unit
+| OpCmpGe of unit
+function rat_cmp (const op : op_cmp; const lhs : (int * int); const rhs : (int * int)) : bool is
+  begin
+    const a : int = lhs.0 * rhs.1;
+    const b : int = lhs.1 * rhs.0;
+    const pos : bool = lhs.1 * rhs.1 > 0;
+    var r : bool := False;
+    case op of
+    | OpCmpLt(unit) -> if pos then r := a <  b else r := a >  b
+    | OpCmpLe(unit) -> if pos then r := a <= b else r := a >= b
+    | OpCmpGt(unit) -> if pos then r := a >  b else r := a <  b
+    | OpCmpGe(unit) -> if pos then r := a >= b else r := a <= b
+    end
+  end with r
+*)
+let mk_op_cmp _m = Denum ("op_cmp",["OpCmpLt";"OpCmpLt";"OpCmpLe";"OpCmpGt";"OpCmpGe"])
+let mk_rat_cmp _m = Dfun {
+    name     = "rat_cmp";
+    logic    = NoMod;
+    args     = ["op", Tyenum "op_cmp";"lhs", Tytuple [Tyint;Tyint]; "rhs", Tytuple [Tyint;Tyint]];
+    returns  = Tybool;
+    raises   = [];
+    variants = [];
+    requires = [];
+    ensures  = [];
+    body =
+    let a = Tvar "a" in
+    let b = Tvar "b" in
+    let pos = Tvar "pos" in
+    Tletin (false, "a", None, Tmult (Tyint, Tfst (Tvar "lhs"), Tsnd (Tvar "rhs")),
+    Tletin (false, "b", None, Tmult (Tyint, Tsnd (Tvar "lhs"), Tfst (Tvar "rhs")),
+    Tletin (false, "pos",None, Tgt (Tyint, Tmult(Tyint,Tfst (Tvar "lhs"), Tfst (Tvar "rhs")),Tint Big_int.zero_big_int),
+    Tmatch (Tvar "op",[
+      Tconst "OpCmpLt", Tif (pos,Tlt (Tyint,a,b),Some (Tgt (Tyint,a,b)));
+      Tconst "OpCmpLe", Tif (pos,Tle (Tyint,a,b),Some (Tge (Tyint,a,b)));
+      Tconst "OpCmpGt", Tif (pos,Tgt (Tyint,a,b),Some (Tlt (Tyint,a,b)));
+      Tconst "OpCmpGe", Tif (pos,Tge (Tyint,a,b),Some (Tle (Tyint,a,b)));
+    ])
+    )))
+}
+
+(* type op_arith is
+| OpArithPlus  of unit
+| OpArithMinus of unit
+| OpArithMult  of unit
+| OpArithDiv   of unit
+function rat_arith (const op : op_arith; const lhs : (int * int); const rhs : (int * int)) : (int * int) is
+  begin
+    const r : (int * int) =
+    case op of
+    | OpArithPlus(unit)  -> (lhs.0 * rhs.1 + rhs.0 * lhs.1, lhs.1 * rhs.1)
+    | OpArithMinus(unit) -> (lhs.0 * rhs.1 - rhs.0 * lhs.1, lhs.1 * rhs.1)
+    | OpArithMult(unit)  -> (lhs.0 * rhs.0, lhs.1 * rhs.1)
+    | OpArithDiv(unit)   -> (lhs.0 * rhs.1, lhs.1 * rhs.0)
+    end
+  end with r
+  *)
+let mk_op_arith _m = Denum ("op_arith",["OpArithPlus";"OpArithMinus";"OpArithMult";"OpArithDiv"])
+let mk_rat_arith _m = Dfun {
+    name     = "rat_arith";
+    logic    = NoMod;
+    args     = ["op", Tyenum "op_arith"; "lhs", Tytuple [Tyint;Tyint]; "rhs", Tytuple [Tyint;Tyint]];
+    returns  = Tytuple [Tyint;Tyint];
+    raises   = [];
+    variants = [];
+    requires = [];
+    ensures  = [];
+    body =
+    let lhs0 = Tfst (Tvar "lhs") in
+    let lhs1 = Tsnd (Tvar "lhs") in
+    let rhs0 = Tfst (Tvar "rhs") in
+    let rhs1 = Tsnd (Tvar "rhs") in
+    let mult a b = Tmult(Tyint,a,b) in
+    let plus a b = Tplus(Tyint,a,b) in
+    let minus a b = Tminus(Tyint,a,b) in
+    Tmatch (Tvar "op",[
+      Tconst "OpArithPlus", Ttuple ([plus (mult lhs0 rhs1) (mult rhs1 lhs1);mult lhs1 rhs1]);
+      Tconst "OpArithMinus", Ttuple ([minus (mult lhs0 rhs1) (mult rhs1 lhs1);mult lhs1 rhs1]);
+      Tconst "OpArithMult", Ttuple ([mult lhs0 rhs0; mult lhs1 rhs1]);
+      Tconst "OpArithDiv", Ttuple ([mult lhs0 rhs1; mult lhs1 rhs0]);
+    ])
+}
+
+(* function rat_eq (const lhs : (int * int); const rhs : (int * int)) : bool is
+  block {skip} with
+  lhs.0 * rhs.1 = rhs.0 * lhs.1 *)
+let mk_rat_eq _m = Dfun {
+    name     = "rat_eq";
+    logic    = NoMod;
+    args     = ["lhs", Tytuple [Tyint;Tyint]; "rhs", Tytuple [Tyint;Tyint]];
+    returns  = Tybool;
+    raises   = [];
+    variants = [];
+    requires = [];
+    ensures  = [];
+    body =
+    let lhs0 = Tfst (Tvar "lhs") in
+    let lhs1 = Tsnd (Tvar "lhs") in
+    let rhs0 = Tfst (Tvar "rhs") in
+    let rhs1 = Tsnd (Tvar "rhs") in
+    let mult a b = Tmult(Tyint,a,b) in
+    Teq (Tyint, mult lhs0 rhs1, mult rhs0 lhs1)
+}
+
 let mk_rat_tez _m = Dfun {
     name     = "rat_tez";
     logic    = NoMod;
@@ -2173,6 +2299,12 @@ let mk_storage_api (m : M.model) records =
         acc @ [ mk_listtocoll m n ]
       | M.APIInternal (RatTez) ->
         acc @ [mk_rat_tez m]
+      | M.APIInternal (RatCmp) ->
+        acc @ [mk_op_cmp m;mk_rat_cmp m]
+      | M.APIInternal (RatArith) ->
+        acc @ [mk_op_arith m;mk_rat_arith m]
+      | M.APIInternal (RatEq) ->
+        acc @ [mk_rat_eq m]
       | _ -> acc
     ) [] |> loc_decl |> deloc
 
