@@ -275,7 +275,7 @@ let mk_partition_axiom asset f _kt pa kpt : decl =
                                               Tvar "k",
                                               mk_ac_sv "s" pa)))))
 
-(* Transfer ------------------------------------------------------------------*)
+(* Transfer & contract call -------------------------------------------------*)
 
 let mk_transfer () =
   let decl : (term, typ, ident) abstract_decl = Dfun {
@@ -310,6 +310,26 @@ let mk_transfer () =
                    )
           )
         ]
+    } in
+  loc_decl decl |> deloc
+
+let mk_call () =
+  let decl : (term, typ, ident) abstract_decl = Dfun {
+      name     = "call";
+      logic    = NoMod;
+      args     = ["t", Tyaddr];
+      returns  = Tyunit;
+      raises   = [];
+      variants = [];
+      requires = [];
+      ensures  = [];
+      body     =
+          Tassign (
+            Tdoti(gs,"_ops"),
+            Tcons (
+              Tapp(Tvar "mk_call",[Tvar "t"]),
+              Tdoti(gs,"_ops")
+            ))
     } in
   loc_decl decl |> deloc
 
@@ -524,6 +544,7 @@ let rec map_mtype (t : M.type_) : loc_typ =
       | M.Tprog _                             -> Tyunit (* TODO: replace by the right type *)
       | M.Tvset _                             -> Tyunit (* TODO: replace by the right type *)
       | M.Ttrace _                            -> Tyunit (* TODO: replace by the right type *)
+      | M.Tcontract _                         -> Tyint
       | _ -> assert false)
 
 let is_local_invariant _m an t =
@@ -1048,7 +1069,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Mfail InvalidState         -> Traise Einvalidstate
     | Mfail               _ -> error_not_translated "Mfail"
     | Mtransfer (a, t) -> Ttransfer(map_mterm m ctx a, map_mterm m ctx t)
-    | Mexternal           _ -> error_not_translated "Mexternal"
+    | Mexternal (_,_,d,_) -> Tcall (map_mterm m ctx d)
 
 
     (* literals *)
@@ -1475,6 +1496,11 @@ let map_record_values m (values : M.asset_item list) =
 let map_record m (r : M.asset) =
   Drecord (map_lident r.name, map_record_values m r.values)
 
+let map_init_mterm m ctx (t : M.mterm) =
+match t.node with
+| M.Mnow -> loc_term (Tint Big_int.zero_big_int)
+| _ -> map_mterm m ctx t
+
 let map_storage_items m = List.fold_left (fun acc (item : M.storage_item) ->
     acc @
     match item.typ with
@@ -1490,7 +1516,7 @@ let map_storage_items m = List.fold_left (fun acc (item : M.storage_item) ->
       [{
         name     = unloc item.id |> with_dummy_loc;
         typ      = typ_;
-        init     = map_mterm m init_ctx item.default;
+        init     = map_init_mterm m init_ctx item.default;
         mutable_ = true;
       }]
   ) []
@@ -2560,7 +2586,7 @@ let to_whyml (m : M.model) : mlw_tree  =
   let storageval       = Dval (with_dummy_loc gs, with_dummy_loc Tystorage) in
   let axioms           = mk_axioms m in
   (*let partition_axioms = mk_partition_axioms m in*)
-  let transfer         = if M.Utils.with_operations m then [mk_transfer ()] else [] in
+  let transfer         = if M.Utils.with_operations m then [mk_transfer ();mk_call()] else [] in
   let storage_api      = mk_storage_api m (records |> wdl) in
   let endo             = mk_endo_functions m in
   let functions        = mk_exo_functions m in

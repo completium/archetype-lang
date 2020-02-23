@@ -104,6 +104,11 @@ theory Contract
 
   let no_transfer : transfers = Nil
 
+  let mk_call (c : address) : transfer = {
+    destination_ = c;
+    amount_ = 0;
+  }
+
 end
 
 module ListUtils

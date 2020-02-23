@@ -105,6 +105,7 @@ type ('e,'t,'i) abstract_term =
   | Texn    of exn
   | Tconcat of 'e * 'e
   | Ttransfer of 'e * 'e
+  | Tcall of 'e
   | Tfst of 'e
   | Tsnd of 'e
   | Tabs of 'e
@@ -366,6 +367,7 @@ and map_abstract_term
   | Texn e             -> Texn e
   | Tconcat (e1,e2)    -> Tconcat (map_e e1, map_e e2)
   | Ttransfer (e1,e2)  -> Ttransfer (map_e e1, map_e e2)
+  | Tcall e            -> Tcall (map_e e)
   | Tmktr (e1,e2)      -> Tmktr (map_e e1, map_e e2)
   | Ttradd i           -> Ttradd (map_i i)
   | Ttrrm  i           -> Ttrrm (map_i i)
@@ -716,6 +718,7 @@ let compare_abstract_term
   | Tcaller i1, Tcaller i2 -> cmpi i1 i2
   | Ttransferred i1, Ttransferred i2 -> cmpi i1 i2
   | Ttransfer (f1,t1), Ttransfer (f2,t2) -> cmpe f1 f2 && cmpe t1 t2
+  | Tcall e1, Tcall e2 -> cmpe e1 e2
   | Tfst e1, Tfst e2 -> cmpe e1 e2
   | Tsnd e1, Tsnd e2 -> cmpe e1 e2
   | Tabs e1, Tabs e2 -> cmpe e1 e2
