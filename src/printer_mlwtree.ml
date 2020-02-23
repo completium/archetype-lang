@@ -362,6 +362,7 @@ let rec pp_term outer pos fmt = function
       (pp_list ";@\n" pp_recfield) l
   | Tnone -> pp_str fmt "None"
   | Tenum i -> pp_str fmt i
+  | Tunit -> pp_str fmt "()"
   | Tsome e -> Format.fprintf fmt "Some %a" (pp_with_paren (pp_term e_default PRight)) e
   | Tnot e -> Format.fprintf fmt "not %a" (pp_with_paren (pp_term outer pos)) e
   | Tpand (e1,e2) -> Format.fprintf fmt "(%a && %a)"
@@ -671,7 +672,8 @@ let pp_val fmt (i,t) =
 (* -------------------------------------------------------------------------- *)
 
 let pp_decl fmt = function
-  | Duse l           -> Format.fprintf fmt "use %a" pp_qualid l
+  | Duse (true, l)    -> Format.fprintf fmt "use export %a" pp_qualid l
+  | Duse (false, l)    -> Format.fprintf fmt "use %a" pp_qualid l
   | Dval (i,t)       -> pp_val fmt (i,t)
   | Dclone (i,j,l)   -> pp_clone fmt (i,j,l)
   | Denum (i,l)      -> pp_enum fmt (i,l)

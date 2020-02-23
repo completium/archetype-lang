@@ -2878,6 +2878,7 @@ module Utils : sig
   val get_select_idx                     : model -> ident -> mterm -> int
   val get_sum_idx                        : model -> ident -> mterm -> int
   val with_division                      : model -> bool
+  val with_min_max                       : model -> bool
   val with_count                         : model -> ident -> bool
 end = struct
 
@@ -3640,6 +3641,20 @@ end = struct
           | _ -> acc
         ) false model.api_items
     )
+
+  exception FoundMinMax
+
+  let with_minmax_for_mterm_intern _ctx accu (mt : mterm) : bool =
+    let rec aux accu (t : mterm) =
+      match t.node with
+      | Mfunmax (_,_) -> raise FoundMinMax
+      | Mfunmin (_,_) -> raise FoundMinMax
+      | _ -> fold_term aux accu t in
+    aux accu mt
+
+  let with_min_max (model : model) : bool =
+    (try fold_model with_minmax_for_mterm_intern model false
+     with FoundMinMax -> true)
 
   let with_count m a =
     List.fold_left (fun acc (ai : api_storage) ->

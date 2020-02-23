@@ -55,12 +55,16 @@ let mk_ac_sv s a      = Tdoti (s, mk_ac_id a)
 
 (* Use ---------------------------------------------------------------------------*)
 
-let mk_use = Duse [gArchetypeDir;gArchetypeLib] |> loc_decl |> deloc
-let mk_use_list = Duse ["list";"List"] |> loc_decl |> deloc
-let mk_use_module m = Duse [deloc m] |> loc_decl |> deloc
+let mk_use = Duse (false,[gArchetypeDir;gArchetypeLib]) |> loc_decl |> deloc
+let mk_use_list = Duse (false,["list";"List"]) |> loc_decl |> deloc
+let mk_use_module m = Duse (false,[deloc m]) |> loc_decl |> deloc
 let mk_use_euclidean_div m =
   if M.Utils.with_division m then
-    [Duse ["int";"EuclideanDivision"]  |> loc_decl |> deloc]
+    [Duse (true,["int";"EuclideanDivision"])  |> loc_decl |> deloc]
+  else []
+let mk_use_min_max m =
+  if M.Utils.with_min_max m then
+    [Duse (true,["int";"MinMax"]) |> loc_decl |> deloc]
   else []
 
 (* Trace -------------------------------------------------------------------------*)
@@ -1021,6 +1025,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
 
     | Miter               _ -> error_not_translated "Miter"
 
+    | Mseq [] -> Tunit
     | Mseq l -> Tseq (List.map (map_mterm m ctx) l)
 
     | Mreturn             _ -> error_not_translated "Mreturn"
@@ -1221,8 +1226,8 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
 
     (* builtin functions *)
 
-    | Mfunmax             _ -> error_not_translated "Mfunmax"
-    | Mfunmin             _ -> error_not_translated "Mfunmin"
+    | Mfunmax (l,r) -> Tapp (loc_term (Tvar "max"),[map_mterm m ctx l; map_mterm m ctx r])
+    | Mfunmin (l,r) -> Tapp (loc_term (Tvar "min"),[map_mterm m ctx l; map_mterm m ctx r])
     | Mfunabs             _ -> error_not_translated "Mfunabs"
 
 
@@ -2539,6 +2544,7 @@ let to_whyml (m : M.model) : mlw_tree  =
   let uselib           = mk_use in
   let uselist          = mk_use_list in
   let useEuclDiv       = mk_use_euclidean_div m in
+  let useMinMax        = mk_use_min_max m in
   let traceutils       = mk_trace_utils m |> deloc in
   let enums            = M.Utils.get_enums m |> List.map (map_enum m) in
   let records          = M.Utils.get_assets m |> List.map (map_record m) |> wdl in
@@ -2562,6 +2568,7 @@ let to_whyml (m : M.model) : mlw_tree  =
       name  = storage_module;
       decls = [uselib]               @
               useEuclDiv             @
+              useMinMax              @
               traceutils             @
               enums                  @
               records                @

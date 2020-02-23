@@ -171,6 +171,7 @@ type ('e,'t,'i) abstract_term =
   | Tnone
   | Tsome   of 'e
   | Tenum   of 'i
+  | Tunit
   (* escape node *)
   | Ttobereplaced
   | Tnottranslated
@@ -223,7 +224,7 @@ type theotyp =
 [@@deriving show {with_path = false}]
 
 type ('e,'t,'i) abstract_decl =
-  | Duse     of 'i abstract_qualid
+  | Duse     of bool * 'i abstract_qualid
   | Dval     of 'i * 't
   | Dclone   of 'i abstract_qualid * 'i * ('i abstract_clone_subst) list
   | Denum    of 'i * 'i list
@@ -416,6 +417,7 @@ and map_abstract_term
   | Tnone              -> Tnone
   | Tsome e            -> Tsome (map_e e)
   | Tenum i            -> Tenum (map_i i)
+  | Tunit              -> Tunit
   | Ttobereplaced      -> Ttobereplaced
   | Tnottranslated     -> Tnottranslated
   | Ttrue              -> Ttrue
@@ -451,7 +453,7 @@ let map_abstract_decl
     (map_e : 'e1 -> 'e2)
     (map_t : 't1 -> 't2)
     (map_i : 'i1 -> 'i2) = function
-  | Duse i          -> Duse (map_abstract_qualid map_i i)
+  | Duse (b,i)          -> Duse (b,map_abstract_qualid map_i i)
   | Dval (i,t)      -> Dval (map_i i, map_t t)
   | Dclone (q,i,l)  -> Dclone (map_abstract_qualid map_i q,
                                map_i i,
@@ -795,6 +797,7 @@ let compare_abstract_term
   | Tnone, Tnone -> true
   | Tsome e1, Tsome e2 -> cmpe e1 e2
   | Tenum i1, Tenum i2 -> cmpi i1 i2
+  | Tunit, Tunit -> true
   | Tnottranslated, Tnottranslated -> true
   | Ttobereplaced, Ttobereplaced -> true
   | _ -> false (* TODO : compare exception ? *)
