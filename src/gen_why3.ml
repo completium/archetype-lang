@@ -758,6 +758,8 @@ let mk_eq_asset _m (r : M.asset) =
       let f2 = Tdoti("a2",unloc item.name) in
       match item.type_ with
       | Tcontainer _ -> Tapp (Tvar "eq_keyl",[f1;f2])
+      | Tbuiltin Bbool -> (* a = b is (a && b) || (not a && not b) *)
+        Tor (Tpand (f1,f2),Tpand(Tnot f1, Tnot f2))
       | _ ->            Teq (Tyint,f1,f2)
     ) r.values in
   Dfun  {
