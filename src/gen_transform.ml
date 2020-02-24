@@ -1322,14 +1322,6 @@ let replace_key_by_asset (model : model) : model =
   in
   Model.map_mterm_model aux model
 
-let replace_assignassetstate_by_update (model : model) : model =
-  let rec aux ctx (mt : mterm) : mterm =
-    match mt.node with
-    | Massignassetstate (an, k, v) -> mk_mterm (Mupdate (an, k, [(dumloc "state", ValueAssign, v) ])) Tunit
-    | _ -> map_mterm (aux ctx) mt
-  in
-  Model.map_mterm_model aux model
-
 let merge_update (model : model) : model =
   let contains l (ref, _, _) = List.fold_left (fun accu (id, _, _) -> accu || (String.equal (unloc ref) (unloc id))) false l in
   let replace l (ref_id, ref_op, ref_v) =
@@ -1369,3 +1361,78 @@ let merge_update (model : model) : model =
     | _ -> map_mterm (aux ctx) mt
   in
   Model.map_mterm_model aux model
+
+
+let process_asset_state (model : model) : model =
+  let get_state_lident an = dumloc ("state_" ^ an) in
+  (* let values =
+     match a.state with
+     | Some id ->
+      begin
+        let get_enum (ast : A.model) (id : A.lident) : A.lident A.enum_struct =
+          match (List.fold_left (fun accu x ->
+              match x with
+              | A.Denum e when String.equal (match e.kind with | EKenum e -> unloc e | EKstate -> "state") (unloc id) -> Some e
+              | _ -> accu
+            ) None ast.decls) with
+          | Some v -> v
+          | _ -> assert false
+        in
+
+        let get_initial_value e_id =
+          let enum = get_enum ast e_id in
+          let ll = List.filter (fun (x : A.lident A.enum_item_struct) -> x.initial) enum.items in
+          let e_val : A.lident =
+            match ll with
+            | [] -> enum.items |> fun x -> List.nth x 0 |> fun x -> x.name
+            | q::_ -> q.name
+          in
+          M.mk_mterm (M.Mvarenumval e_val) (M.Tenum e_id)
+        in
+
+        let name = dumloc "state" in
+        let typ = M.Tenum id in
+        let default : M.mterm = get_initial_value id in
+        let item = M.mk_asset_item name typ typ ~default:default in
+        values @ [item]
+      end
+     | None -> values
+     in *)
+
+  let for_decl (d : decl_node) : decl_node =
+    let for_asset (a : asset) =
+      match a.state with
+      | Some id ->
+        begin
+          let enum    = Utils.get_enum model (unloc id) in
+          let name    = get_state_lident (unloc a.name) in
+          let typ     = Tenum id in
+          let e_val   = enum.initial in
+          let default = mk_mterm (Mvarenumval e_val) typ in
+
+          let item = mk_asset_item name typ typ ~default:default in
+          { a with values = a.values @ [item] }
+        end
+      | None -> a
+    in
+    match d with
+    | Dasset a -> Dasset (for_asset a)
+    | _ -> d
+  in
+
+  let model = { model with decls = List.map for_decl model.decls} in
+
+  let rec aux ctx (mt : mterm) : mterm =
+    match mt.node with
+    | Mvarassetstate (an, k) ->
+      begin
+        let i = get_state_lident an in
+        let get_mt = mk_mterm (Mget (an, k)) (Tasset (dumloc an)) in
+        mk_mterm (Mdotasset (get_mt, i)) mt.type_
+      end
+    | Massignassetstate (an, k, v) ->
+      let i = get_state_lident an in
+      mk_mterm (Mupdate (an, k, [(i, ValueAssign, v) ])) Tunit
+    | _ -> map_mterm (aux ctx) mt
+  in
+  map_mterm_model aux model

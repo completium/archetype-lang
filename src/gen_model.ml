@@ -426,41 +426,9 @@ let to_model (ast : A.model) : M.model =
     let values = List.map (fun (x : A.lident A.decl_gen) ->
         let typ = Option.get (Option.map ptyp_to_type x.typ) in
         let default = Option.map to_mterm x.default in
-        M.mk_asset_item x.name typ typ ?default:default ~shadow:x.shadow) a.fields in
-    let values =
-      match a.state with
-      | Some id ->
-        begin
-          let get_enum (ast : A.model) (id : A.lident) : A.lident A.enum_struct =
-            match (List.fold_left (fun accu x ->
-                match x with
-                | A.Denum e when String.equal (match e.kind with | EKenum e -> unloc e | EKstate -> "state") (unloc id) -> Some e
-                | _ -> accu
-              ) None ast.decls) with
-            | Some v -> v
-            | _ -> assert false
-          in
-
-          let get_initial_value e_id =
-            let enum = get_enum ast e_id in
-            let ll = List.filter (fun (x : A.lident A.enum_item_struct) -> x.initial) enum.items in
-            let e_val : A.lident =
-              match ll with
-              | [] -> enum.items |> fun x -> List.nth x 0 |> fun x -> x.name
-              | q::_ -> q.name
-            in
-            M.mk_mterm (M.Mvarenumval e_val) (M.Tenum e_id)
-          in
-
-          let name = dumloc "state" in
-          let typ = M.Tenum id in
-          let default : M.mterm = get_initial_value id in
-          let item = M.mk_asset_item name typ typ ~default:default in
-          values @ [item]
-        end
-      | None -> values
+        M.mk_asset_item x.name typ typ ?default:default ~shadow:x.shadow) a.fields
     in
-    let r : M.asset = M.mk_asset a.name (unloc (Option.get a.key)) ~values:values ~sort:(List.map unloc (a.sort)) ~invariants:(List.map (fun x -> to_label_lterm x) a.specs) in
+    let r : M.asset = M.mk_asset a.name (unloc (Option.get a.key)) ~values:values ~sort:(List.map unloc (a.sort)) ?state:a.state ~invariants:(List.map (fun x -> to_label_lterm x) a.specs) in
     M.Dasset r
   in
 
