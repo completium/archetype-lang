@@ -1627,10 +1627,10 @@ let pp_model_internal fmt (model : model) b =
   let pp_api_list (_env : env) fmt = function
     | Lprepend t  ->
       Format.fprintf fmt
-        "function list_%a_prepend (const l : list(%a)) : list(%a) is@\n  \
-         begin@\n  \
-         end with l@\n"
-        pp_type t pp_type t pp_type t
+        "function list_%a_prepend (const l : list(%a); const i : %a) : list(%a) is@\n  \
+         block { skip }@\n  \
+         with i # l@\n"
+        pp_type t pp_type t pp_type t pp_type t
 
     | Lcontains t ->
       Format.fprintf fmt
