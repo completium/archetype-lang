@@ -22,6 +22,8 @@ module Type : sig
   val is_option    : M.ptyp -> bool
   val is_list      : M.ptyp -> bool
 
+  val support_eq : M.ptyp -> bool
+
   val equal     : M.ptyp -> M.ptyp -> bool
   val sig_equal : M.ptyp list -> M.ptyp list -> bool
 
@@ -54,6 +56,14 @@ end = struct
 
   let is_list = function
     | M.Tcontainer (_, M.List) -> true | _ -> false
+
+  let rec support_eq = function
+    | M.Tbuiltin _ -> true
+    | M.Tcontainer (ty, M.List) -> support_eq ty
+    | M.Toption ty -> support_eq ty
+    | M.Tenum _ -> true
+    | M.Ttuple tys -> List.for_all support_eq tys
+    | _ -> false
 
   let equal = ((=) : M.ptyp -> M.ptyp -> bool)
 
@@ -1120,7 +1130,7 @@ let select_operator env loc (op, tys) =
       try
         match tys with
         | [t1; t2] ->
-          if not (Type.is_primitive t1) || not (Type.is_primitive t2) then
+          if not (Type.support_eq t1) || not (Type.support_eq t2) then
             raise E.NoEq;
 
           if not (Type.compatible ~from_:t1 ~to_:t2) &&
@@ -1439,9 +1449,15 @@ let rec for_xexpr
         let elty = if Option.is_some e.M.type_ then e.M.type_ else elty in
         let es   = List.map (fun e -> for_xexpr env ?ety:elty e) es in
 
-        match ety with
-        | Some (M.Tcontainer (_, _)) ->
-          mk_sp ety (M.Parray (e :: es))
+        match ety, elty with
+        | Some (M.Tcontainer (_, k)), Some ty ->
+          mk_sp (Some (M.Tcontainer (ty, k))) (M.Parray (e :: es))
+
+        | None, Some ((M.Tasset _) as ty) ->
+          mk_sp (Some (M.Tcontainer (ty, M.Collection))) (M.Parray (e :: es))
+
+        | None, Some ty ->
+          mk_sp (Some (M.Tcontainer (ty, M.List))) (M.Parray (e :: es))
 
         | _ ->
           Env.emit_error env (loc tope, CannotInferCollectionType);
