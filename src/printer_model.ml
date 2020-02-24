@@ -1035,7 +1035,7 @@ let pp_label_term fmt (lt : label_term) =
     pp_id lt.label
     pp_mterm lt.term
 
-let pp_api_builtin fmt = function
+let pp_api_asset fmt = function
   | Get an -> pp_str fmt ("get\t " ^ an)
   | Set an -> pp_str fmt ("set\t " ^ an)
   | Add an -> pp_str fmt ("add\t " ^ an)

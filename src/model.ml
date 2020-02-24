@@ -2383,11 +2383,11 @@ let fold_map_term
 
 let fold_left g l accu = List.fold_left (fun accu x -> g x accu) accu l
 
+let fold_label_term (ctx : ('id, 't) ctx_model_gen) (f : ('id, 't) ctx_model_gen -> 'a -> 'id mterm_gen -> 'a) (lt : 'id label_term_gen) (accu : 'a) : 'a =
+  let ctx = { ctx with label = Some lt.label } in
+  f ctx accu lt.term
+
 let fold_specification (ctx : ('id, 't) ctx_model_gen) (f : ('id, 't) ctx_model_gen -> 'a -> 'id mterm_gen -> 'a) (v : 'id specification_gen) (accu : 'a) : 'a =
-  let fold_label_term (ctx : ('id, 't) ctx_model_gen) (f : ('id, 't) ctx_model_gen -> 'a -> 'id mterm_gen -> 'a) (lt : 'id label_term_gen) (accu : 'a) : 'a =
-    let ctx = { ctx with label = Some lt.label } in
-    f ctx accu lt.term
-  in
 
   let fold_predicate (ctx : ('id, 't) ctx_model_gen) (f : ('id, 't) ctx_model_gen -> 'a -> 'id mterm_gen -> 'a) (p : 'id predicate_gen) (accu : 'a) : 'a =
     accu
@@ -2429,7 +2429,22 @@ let fold_specification (ctx : ('id, 't) ctx_model_gen) (f : ('id, 't) ctx_model_
   |> fold_left (fold_postcondition ctx f) v.postconditions
 
 let fold_model (f : ('id, 't) ctx_model_gen -> 'a -> 'id mterm_gen -> 'a) (m : 'id model_gen) (accu : 'a) : 'a =
-
+  let fold_mterm_option f x accu = match x with | Some v -> f accu v | _ -> accu in
+  let fold_decl (ctx : ('id, 't) ctx_model_gen) (f : ('id, 't) ctx_model_gen -> 'a -> 'id mterm_gen -> 'a) (d : 'id decl_node_gen) (accu : 'a) : 'a = (
+    match d with
+    | Dvar s ->
+      accu
+      |> fold_mterm_option (f ctx) s.default
+      |> fold_left (fold_label_term { ctx with formula = true } f) s.invariants
+    | Denum e ->
+      accu
+      |> (fun accu -> List.fold_left (fun accu (x : enum_item) -> fold_left (fold_label_term { ctx with formula = true } f) x.invariants accu) accu e.values)
+    | Dasset a ->
+      accu
+      |> (fun accu -> List.fold_left (fun accu (x : asset_item) -> (fold_mterm_option (f ctx) x.default accu)) accu a.values)
+      |> fold_left (fold_label_term { ctx with formula = true } f) a.invariants
+    | _ -> accu
+  ) in
 
   let fold_action (ctx : ('id, 't) ctx_model_gen) (f : ('id, 't) ctx_model_gen -> 'a -> 'id mterm_gen -> 'a) (a : 'id function__gen) (accu : 'a) : 'a = (
     let accu : 'a = (
@@ -2443,6 +2458,7 @@ let fold_model (f : ('id, 't) ctx_model_gen -> 'a -> 'id mterm_gen -> 'a) (m : '
   let ctx : ctx_model = mk_ctx_model () in
 
   accu
+  |> fold_left (fold_decl ctx f) m.decls
   |> fold_left (fold_action ctx f) m.functions
   |> fold_specification ctx f m.specification
 
