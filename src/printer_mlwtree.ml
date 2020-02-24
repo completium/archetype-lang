@@ -173,7 +173,6 @@ let pp_exn fmt e =
     | Einvalidstate     -> "InvalidState"
     | Enotransfer       -> "NoTransfer"
     | Ebreak            -> "Break"
-    | ENotAPair         -> "NotAPair"
   in
   pp_str fmt e_str
 

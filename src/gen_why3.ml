@@ -2172,7 +2172,7 @@ let mk_rat_cmp _m = Dfun {
     logic    = NoMod;
     args     = ["op", Tyenum "op_cmp";"lhs", Tytuple [Tyint;Tyint]; "rhs", Tytuple [Tyint;Tyint]];
     returns  = Tybool;
-    raises   = [Texn ENotAPair];
+    raises   = [];
     variants = [];
     requires = [];
     ensures  = [];
@@ -2214,7 +2214,7 @@ let mk_rat_arith _m = Dfun {
     logic    = NoMod;
     args     = ["op", Tyenum "op_arith"; "lhs", Tytuple [Tyint;Tyint]; "rhs", Tytuple [Tyint;Tyint]];
     returns  = Tytuple [Tyint;Tyint];
-    raises   = [Texn ENotAPair];
+    raises   = [];
     variants = [];
     requires = [];
     ensures  = [];
@@ -2242,7 +2242,7 @@ let mk_rat_eq _m = Dfun {
     logic    = NoMod;
     args     = ["lhs", Tytuple [Tyint;Tyint]; "rhs", Tytuple [Tyint;Tyint]];
     returns  = Tybool;
-    raises   = [Texn ENotAPair];
+    raises   = [];
     variants = [];
     requires = [];
     ensures  = [];
@@ -2260,18 +2260,18 @@ let mk_rat_tez _m = Dfun {
     logic    = NoMod;
     args     = ["c", Tytuple [Tyint;Tyint]; "t", Tytez];
     returns  = Tytez;
-    raises   = [Texn ENotAPair];
+    raises   = [];
     variants = [];
     requires = [];
     ensures  = [];
-    body = Tif (Tlt (Tyint,
+    body = (* Tif (Tlt (Tyint,
                   Tmult(Tyint,
                         Tfst (Tvar "c"),
                         Tsnd (Tvar "c")),
                   Tint (Big_int.zero_big_int)
                 ),
                 Traise ENotAPair,
-                Some (
+                Some ( *)
                   Tdiv (Tyint,
                     Tmult (Tyint,
                       Tabs(Tfst (Tvar "c")),
@@ -2279,7 +2279,7 @@ let mk_rat_tez _m = Dfun {
                     ),
                     Tabs (Tsnd (Tvar "c"))
                   )
-                ));
+                (* )) *);
   }
 
 
@@ -2356,10 +2356,6 @@ let fold_exns body : term list =
     | M.Mfail (InvalidCondition _) -> acc @ [Texn Einvalidcondition]
     | M.Mfail InvalidState -> acc @ [Texn Einvalidstate]
     | M.Mremoveasset _ -> acc @ [Texn Enotfound]
-    | M.Mrattez _ -> acc @ [Texn ENotAPair]
-    | M.Mratcmp _ -> acc @ [Texn ENotAPair]
-    | M.Mratarith _ -> acc @ [Texn ENotAPair]
-    | M.Mrateq _ -> acc @ [Texn ENotAPair]
     | _ -> M.fold_term internal_fold_exn acc term in
   Tools.List.dedup (internal_fold_exn [] body)
 

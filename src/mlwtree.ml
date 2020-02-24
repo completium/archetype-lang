@@ -8,7 +8,6 @@ type exn =
   | Einvalidstate
   | Enotransfer
   | Ebreak
-  | ENotAPair
 [@@deriving show {with_path = false}]
 
 type fmod =
@@ -603,7 +602,6 @@ let compare_exn e1 e2 =
   | Einvalidcondition, Einvalidcondition -> true
   | Einvalidstate, Einvalidstate -> true
   | Ebreak, Ebreak -> true
-  | ENotAPair, ENotAPair -> true
   | _ -> false
 
 let compare_fmod m1 m2 =

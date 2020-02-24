@@ -23,22 +23,16 @@ end
 module Utils
   use int.Int
 
-  exception NotAPair
-
-  let fst (a: (int, int)) : int
-  raises { NotAPair }
+  let function fst (a : (int, int)) : int
   =
   match a with
   | (l,_) -> l
-  | _ -> raise NotAPair
   end
 
-  let snd (a: (int, int)) : int
-  raises { NotAPair }
+  let function snd (a: (int, int)) : int
   =
   match a with
   | (_,r) -> r
-  | _ -> raise NotAPair
   end
 
   let function abs (a : int) : int
