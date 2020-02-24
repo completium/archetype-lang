@@ -9,7 +9,7 @@ action exec () {
 
     (* expr *)
     var c : bool   = l.contains("2");
-    var l : int    = l.count();
+    var k : int    = l.count();
     var n : string = l.nth(0);
 
   }

@@ -14,11 +14,13 @@ module Type : sig
   val as_asset_collection : M.ptyp -> (M.lident * M.container) option
   val as_tuple            : M.ptyp -> (M.ptyp list) option
   val as_option           : M.ptyp -> M.ptyp option
+  val as_list             : M.ptyp -> M.ptyp option
 
   val is_numeric   : M.ptyp -> bool
   val is_currency  : M.ptyp -> bool
   val is_primitive : M.ptyp -> bool
   val is_option    : M.ptyp -> bool
+  val is_list      : M.ptyp -> bool
 
   val equal     : M.ptyp -> M.ptyp -> bool
   val sig_equal : M.ptyp list -> M.ptyp list -> bool
@@ -32,6 +34,7 @@ end = struct
   let as_asset     = function M.Tasset     x       -> Some x       | _ -> None
   let as_tuple     = function M.Ttuple     ts      -> Some ts      | _ -> None
   let as_option    = function M.Toption    t       -> Some t       | _ -> None
+  let as_list      = function M.Tcontainer (t, M.List) -> Some t   | _ -> None
 
   let as_asset_collection = function
     | M.Tcontainer (M.Tasset asset, c) -> Some (asset, c)
@@ -48,6 +51,9 @@ end = struct
 
   let is_option = function
     | M.Toption _ -> true | _ -> false
+
+  let is_list = function
+    | M.Tcontainer (_, M.List) -> true | _ -> false
 
   let equal = ((=) : M.ptyp -> M.ptyp -> bool)
 
@@ -119,6 +125,7 @@ type error_desc =
   | CannotInfer
   | CannotUpdatePKey
   | CollectionExpected
+  | DoesNotSupportMethodCall
   | DivergentExpr
   | DuplicatedContractEntryName        of ident
   | DuplicatedCtorName                 of ident
@@ -249,6 +256,7 @@ let pp_error_desc fmt e =
   | CannotInfer                        -> pp "Cannot infer type"
   | CannotUpdatePKey                   -> pp "Cannot modify the primary key of asset"
   | CollectionExpected                 -> pp "Collection expected"
+  | DoesNotSupportMethodCall           -> pp "Cannot use method calls on this kind of objects"
   | DivergentExpr                      -> pp "Divergent expression"
   | DuplicatedContractEntryName i      -> pp "Duplicated contract entry name: %a" pp_ident i
   | DuplicatedCtorName i               -> pp "Duplicated constructor name: %a" pp_ident i
@@ -464,15 +472,20 @@ let globals = [
 
 let statename = "state"
 
-type method_ = {
+
+type ('args, 'rty) gmethod_ = {
   mth_name     : M.const;
   mth_purity   : [`Pure | `Effect];
   mth_totality : [`Total | `Partial];
-  mth_sig      : mthatyp * mthtyp option;
+  mth_sig      : 'args * 'rty option;
 }
 
-and mthtyp = [
-  | `T        of M.ptyp
+type mthstyp = [
+  | `T of M.ptyp
+]
+
+type mthtyp = [
+  | mthstyp
   | `The
   | `Pk
   | `Effect
@@ -485,6 +498,9 @@ and mthtyp = [
 ]
 
 and mthatyp = [ `Fixed of mthtyp list | `Multi of mthtyp ]
+
+type smethod_ = (mthstyp list, mthstyp) gmethod_
+type method_  = (mthatyp     , mthtyp ) gmethod_
 
 let methods : (string * method_) list =
   let mk mth_name mth_purity mth_totality mth_sig =
@@ -515,6 +531,23 @@ let methods : (string * method_) list =
   ]
 
 let methods = Mid.of_list methods
+
+(* -------------------------------------------------------------------- *)
+module ListAPI : sig
+  val methods : M.ptyp -> smethod_ Mid.t
+end = struct
+  let methods (ty : M.ptyp) : (string * smethod_) list =
+    let mk mth_name mth_purity mth_totality mth_sig =
+      { mth_name; mth_purity; mth_totality; mth_sig; }
+    in [
+      ("contains", mk M.Ccontains `Pure   `Total   ([`T ty      ], Some (`T M.vtbool)));
+      ("prepend" , mk M.Cprepend  `Effect `Total   ([`T ty      ], None));
+      ("count"   , mk M.Ccount    `Pure   `Total   ([           ], Some (`T M.vtint )));
+      ("nth"     , mk M.Cnth      `Pure   `Partial ([`T M.vtint ], Some (`T ty)));
+    ]
+  
+  let methods ty = Mid.of_list (methods ty)
+end
 
 (* -------------------------------------------------------------------- *)
 let corefuns =
@@ -1143,8 +1176,8 @@ let select_operator env loc (op, tys) =
 
 (* -------------------------------------------------------------------- *)
 let for_container (_ : env) = function
-  | PT.Collection-> M.Collection
-  | PT.Partition -> M.Partition
+  | PT.Collection -> M.Collection
+  | PT.Partition  -> M.Partition
 
 (* -------------------------------------------------------------------- *)
 let for_assignment_operator = function
@@ -1692,37 +1725,58 @@ let rec for_xexpr
       end
 
     | Emethod (the, m, args) -> begin
-        let infos = for_gen_method_call mode env (loc tope) (`Parsed the, m, args) in
-        let the, asset, method_, args, amap = Option.get_fdfl bailout infos in
-
-        let type_of_mthtype = function
+        let type_of_mthtype asset amap = function
           | `T typ   -> Some typ
           | `The     -> Some (M.Tasset asset.as_name)
           | `Asset   -> Some (M.Tasset asset.as_name)
           | `SubColl -> Some (M.Tcontainer (M.Tasset asset.as_name, M.Collection))
           | `Ref i   -> Some (Mint.find i amap)
-          | _        -> assert false
+          | _        -> assert false in
+
+        let the = for_xexpr env the in
+
+        let the, mname, (purity, totality), args, rty =
+          match the.M.type_ with
+          | None ->
+              bailout ()
+  
+          | Some ty -> begin
+              match Type.as_asset_collection ty with
+              | Some _ ->
+                  let infos = for_gen_method_call mode env (loc tope) (`Typed the, m, args) in
+                  let the, asset, method_, args, amap = Option.get_fdfl bailout infos in
+                  let rty = Option.bind (type_of_mthtype asset amap) (snd method_.mth_sig) in
+
+                  (the, method_.mth_name, (method_.mth_purity, method_.mth_totality), args, rty)
+
+              | None ->
+                  let infos = for_api_call mode env (loc tope) (`Typed the, m, args) in
+                  let the, method_, args = Option.get_fdfl bailout infos in
+                  let rty =
+                    Option.map (fun ty -> let `T ty = ty in ty) (snd (method_.mth_sig)) in
+                  (the, method_.mth_name, (method_.mth_purity, method_.mth_totality), args, rty)
+            end
         in
 
-        if Option.is_none (snd method_.mth_sig) then begin
+        if Option.is_none rty then begin
           Env.emit_error env (loc tope, VoidMethodInExpr)
         end;
 
-        begin match method_.mth_purity, mode with
+        begin match purity, mode with
           | `Effect, `Formula ->
             Env.emit_error env (loc tope, UnpureInFormula)
           | _, _ ->
-            () end;
+            ()
+        end;
 
-        let rty = Option.bind type_of_mthtype (snd method_.mth_sig) in
         let rty =
-          match method_.mth_totality, mode with
+          match totality, mode with
           | `Partial, `Formula ->
             Option.map (fun x -> M.Toption x) rty
           | _, _ ->
             rty in
 
-        mk_sp rty (M.Pcall (Some the, M.Cconst method_.mth_name, args))
+        mk_sp rty (M.Pcall (Some the, M.Cconst mname, args))
       end
 
     | Eif (c, et, Some ef) ->
@@ -1994,11 +2048,72 @@ and for_asset_collection_expr mode (env : env) tope =
   in (ast, typ)
 
 (* -------------------------------------------------------------------- *)
-and for_gen_method_call mode env theloc (the, m, args) =
+and for_api_call mode env theloc (the, m, args)
+  : (M.pterm * smethod_ * M.pterm_arg list) option
+=
+  let module E = struct exception Bailout end in
+
+  try
+    let the =
+      match the with
+      | `Typed  ast -> ast
+      | `Parsed the -> for_xexpr mode env the in
+
+    let methods =
+      match the.M.type_ with
+      | None ->
+          raise E.Bailout
+
+      | Some (M.Tcontainer (ty, M.List)) ->
+          ListAPI.methods ty
+
+      | Some _ ->
+          Env.emit_error env (theloc, DoesNotSupportMethodCall);
+          raise E.Bailout in
+          
+    let method_ =
+      match Mid.find_opt (unloc m) methods with
+      | None ->
+        Env.emit_error env (loc m, NoSuchMethod (unloc m));
+        raise E.Bailout
+      | Some method_ -> method_
+    in
+
+    let args =
+      match args with
+      | [ { pldesc = PT.Etuple l; _ } ] -> l
+      | _ -> args
+    in
+
+    let ne = List.length (fst method_.mth_sig) in
+    let ng = List.length args in
+
+    if ne <> ng then begin
+      Env.emit_error env (theloc, InvalidNumberOfArguments (ne, ng));
+      raise E.Bailout
+    end;
+
+    let doarg arg (aty : mthstyp) =
+      match aty with
+      | `T ty ->
+        M.AExpr (for_xexpr mode env ~ety:ty arg)
+    in
+
+    let args = List.map2 doarg args (fst method_.mth_sig) in
+
+    Some (the, method_, args)
+
+  with E.Bailout -> None
+
+(* -------------------------------------------------------------------- *)
+and for_gen_method_call mode env theloc (the, m, args)
+  : (M.pterm * assetdecl * method_ * M.pterm_arg list * M.type_ Mint.t) option
+=
   let module E = struct exception Bailout end in
 
   try
     let the, asset = for_asset_collection_expr mode env the in
+
     let asset, _ = Option.get_fdfl (fun () -> raise E.Bailout) asset in
     let method_ =
       match Mid.find_opt (unloc m) methods with
@@ -2409,10 +2524,20 @@ let rec for_instruction (env : env) (i : PT.expr) : env * M.instruction =
               env, mki (M.Icall (Some the, M.Cid m, args))
           end
 
-        | _ ->
-          let infos = for_gen_method_call `Expr env (loc i) (`Typed the, m, args) in
-          let the, _asset, method_, args, _ = Option.get_fdfl bailout infos in
-          env, mki (M.Icall (Some the, M.Cconst method_.mth_name, args))
+        | Some ty -> begin
+          match Type.as_asset_collection ty with
+          | Some _ ->
+              let infos = for_gen_method_call `Expr env (loc i) (`Typed the, m, args) in
+              let the, _asset, method_, args, _ = Option.get_fdfl bailout infos in
+              env, mki (M.Icall (Some the, M.Cconst method_.mth_name, args))
+
+          | _ ->
+              let infos = for_api_call `Expr env (loc i) (`Typed the, m, args) in
+              let the, method_, args = Option.get_fdfl bailout infos in
+              env, mki (M.Icall (Some the, M.Cconst method_.mth_name, args))
+          end
+
+        | None -> bailout ()
       end
 
     | Eseq (i1, i2) ->
