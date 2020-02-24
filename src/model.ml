@@ -2846,6 +2846,7 @@ module Utils : sig
   val get_assets                         : model -> asset list
   val get_var                            : model -> ident -> var
   val get_enum                           : model -> ident -> enum
+  val get_enum_values                    : model -> ident -> ident list
   val get_asset                          : model -> ident -> asset
   val get_storage                        : model -> storage
   val get_asset_field                    : model -> (ident * ident) -> (ident * type_ * mterm option)
@@ -3050,6 +3051,10 @@ end = struct
 
   let get_var   m id : var   = get_vars m   |> List.find (fun (x : var)   -> cmp_ident id (unloc x.name))
   let get_enum  m id : enum  = get_enums m  |> List.find (fun (x : enum)  -> cmp_ident id (unloc x.name))
+  let get_enum_values m id : ident list  = get_enums m
+  |> List.find (fun (x : enum)  -> cmp_ident id (unloc x.name))
+  |> fun e -> e.values
+  |> List.map (fun (v : enum_item) -> unloc (v.name))
   let get_asset m id : asset = get_assets m |> List.find (fun (x : asset) -> cmp_ident id (unloc x.name))
 
   (* let get_partitions m : (ident * ident * type_) list=

@@ -1263,6 +1263,7 @@ let replace_whyml_ident (model : model) : model =
   let f _env id =
     match id with
     | "val" -> "_val"
+    | "type" -> "_type"
     | _ -> id
   in
   replace_ident_model f model

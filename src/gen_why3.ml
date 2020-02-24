@@ -503,12 +503,15 @@ let map_lident (i : M.lident) : loc_ident = {
 
 let map_lidents = List.map map_lident
 
-let type_to_init (typ : loc_typ) : loc_term =
+let rec type_to_init m (typ : loc_typ) : loc_term =
   mk_loc typ.loc (match typ.obj with
+      | Tyasset i     -> Tapp (loc_term (Tvar ("mk_default_"^i.obj)),[])
       | Typartition i -> Temptycoll i
       | Tycoll i      -> Temptycoll i
       | Tylist _      -> Tnil
       | Tymap i       -> Tvar (mk_loc typ.loc ("const (mk_default_" ^ i.obj ^ " ())"))
+      | Tyenum i      -> Tvar (mk_loc typ.loc (List.hd (M.Utils.get_enum_values m (i.obj))))
+      | Tytuple l    -> Ttuple (List.map (type_to_init m) (List.map with_dummy_loc l))
       | _             -> Tint Big_int.zero_big_int)
 
 let map_btype = function
@@ -773,15 +776,48 @@ let mk_state_invariant _m _v (lbl : M.lident) (t : loc_term) = {
       t) |> with_dummy_loc
 }
 
+let mk_cmp_enums m (r : M.asset) =
+  List.fold_left (fun acc (item : M.asset_item) ->
+    match item.type_ with
+    | Tenum lid ->
+      let id = unloc lid in
+      if List.mem id acc then acc else acc @ [id]
+    | _ -> acc
+  ) [] r.values |>
+  List.map (fun id ->
+    Dfun  {
+      name = "cmp_" ^ id |> with_dummy_loc;
+      logic = Logic;
+      args = ["e1" |> with_dummy_loc, loc_type (Tyenum id);
+              "e2" |> with_dummy_loc, loc_type (Tyenum id)];
+      returns = Tybool |> with_dummy_loc;
+      raises = [];
+      variants = [];
+      requires = [];
+      ensures = [];
+      body = loc_term (Tmatch (
+        Ttuple [Tvar "e1"; Tvar "e2"],
+        List.fold_left (fun acc eval ->
+        [ Tpatt_tuple [Tconst eval; Tconst eval], Ttrue ] @ acc
+        ) [ Tpatt_tuple [Twild;Twild], Tfalse ] (M.Utils.get_enum_values m id)
+      ));
+  })
+
 let mk_eq_asset _m (r : M.asset) =
   let cmps = List.map (fun (item : M.asset_item) ->
       let f1 = Tdoti("a1",unloc item.name) in
       let f2 = Tdoti("a2",unloc item.name) in
       match item.type_ with
+      | Tasset a -> Tapp (Tvar ("eq_"^(unloc a)),[f1;f2])
       | Tcontainer _ -> Tapp (Tvar "eq_keyl",[f1;f2])
       | Tbuiltin Bbool -> (* a = b is (a && b) || (not a && not b) *)
         Tor (Tpand (f1,f2),Tpand(Tnot f1, Tnot f2))
-      | _ ->            Teq (Tyint,f1,f2)
+      | Tbuiltin Brational ->
+        Tpand (Teq (Tyint,Tfst f1,Tfst f2), Teq(Tyint,Tsnd f1, Tsnd f2))
+      | Ttuple [Tbuiltin Bint;Tbuiltin Bint] ->
+        Tpand (Teq (Tyint,Tfst f1,Tfst f2), Teq(Tyint,Tsnd f1, Tsnd f2))
+      | Tenum lid -> Tapp (Tvar ("cmp_"^(unloc lid)),[f1;f2])
+      | _ -> Teq (Tyint,f1,f2)
     ) r.values in
   Dfun  {
     name = "eq_" ^ (unloc r.name) |> with_dummy_loc;
@@ -1485,7 +1521,7 @@ and mk_invariants (m : M.model) ctx (lbl : ident option) lbody =
 let map_record_values m (values : M.asset_item list) =
   List.map (fun (value : M.asset_item) ->
       let typ_ = map_mtype value.type_ in
-      let init_value = type_to_init typ_ in {
+      let init_value = type_to_init m typ_ in {
         name     = map_lident value.name;
         typ      = typ_;
         init     = Option.fold (fun _ -> map_mterm m init_ctx) init_value value.default;
@@ -2575,6 +2611,7 @@ let to_whyml (m : M.model) : mlw_tree  =
   let traceutils       = mk_trace_utils m |> deloc in
   let enums            = M.Utils.get_enums m |> List.map (map_enum m) in
   let records          = M.Utils.get_assets m |> List.map (map_record m) |> wdl in
+  let cmp_enums        = M.Utils.get_assets m |> List.map (mk_cmp_enums m) |> List.flatten in
   let eq_assets        = M.Utils.get_assets m |> List.map (mk_eq_asset m) |> wdl in
   let eq_exten         = M.Utils.get_assets m |> List.map (mk_eq_extensionality m) |> deloc in
   let clones           = M.Utils.get_assets m  |> List.map (record_to_clone m) |> wdl in
@@ -2598,6 +2635,7 @@ let to_whyml (m : M.model) : mlw_tree  =
               useMinMax              @
               traceutils             @
               enums                  @
+              cmp_enums              @
               records                @
               eq_exten               @
               storage_api_bs         @

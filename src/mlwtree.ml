@@ -57,6 +57,7 @@ type ('t,'i) abstract_univ_decl = 'i list * 't
 type 'i pattern_node =
   | Twild
   | Tconst of 'i
+  | Tpatt_tuple of 'i pattern_node list
 [@@deriving show {with_path = false}]
 
 type ('e,'t,'i) abstract_term =
@@ -287,9 +288,10 @@ let map_abstract_univ_decl
     (ids,t : ('t1,'i1) abstract_univ_decl) : ('t2,'i2) abstract_univ_decl =
   (List.map map_i ids, map_t t)
 
-let map_pattern map = function
+let rec map_pattern map = function
   | Twild -> Twild
   | Tconst i -> Tconst (map i)
+  | Tpatt_tuple l -> Tpatt_tuple (List.map (map_pattern map) l)
 
 let rec map_abstract_formula
     (map_e : 'e1 -> 'e2)
@@ -669,10 +671,11 @@ let compare_abstract_fun_struct
   List.for_all2 (compare_abstract_formula cmpe cmpi) s1.ensures s2.ensures &&
   cmpe s1.body s2.body
 
-let compare_pattern cmp p1 p2 =
+let rec compare_pattern cmp p1 p2 =
   match p1,p2 with
   | Twild, Twild -> true
   | Tconst i1, Tconst i2 -> cmp i1 i2
+  | Tpatt_tuple l1, Tpatt_tuple l2 -> List.for_all2 (compare_pattern cmp) l1 l2
   | _,_ -> false
 
 let compare_abstract_term
