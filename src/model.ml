@@ -1,5 +1,6 @@
 open Ident
 open Tools
+open Location
 
 type lident = ident Location.loced
 [@@deriving show {with_path = false}]
@@ -490,6 +491,7 @@ type 'id asset_gen = {
   values: 'id asset_item_gen list;
   key: ident;
   sort: ident list;
+  state: lident option;
   invariants  : lident label_term_gen list;
 }
 [@@deriving show {with_path = false}]
@@ -780,8 +782,8 @@ let mk_enum ?(values = []) name initial : 'id enum_gen =
 let mk_enum_item ?(invariants = []) name : 'id enum_item_gen =
   { name; invariants }
 
-let mk_asset ?(values = []) ?(sort=[]) ?(invariants = []) name key : 'id asset_gen =
-  { name; values; sort; key; invariants }
+let mk_asset ?(values = []) ?(sort=[]) ?state ?(invariants = []) name key : 'id asset_gen =
+  { name; values; sort; state; key; invariants }
 
 let mk_asset_item ?default ?(shadow=false) name type_ original_type : 'id asset_item_gen =
   { name; type_; original_type; default; shadow }
@@ -2467,6 +2469,7 @@ type kind_ident =
   | KIdeclvarname
   | KIassetname
   | KIassetfield
+  | KIassetstate
   | KIenumname
   | KIenumvalue
   | KIcontractname
@@ -2620,6 +2623,7 @@ let replace_ident_model (f : kind_ident -> ident -> ident) (model : model) : mod
         values        = List.map for_asset_item a.values;
         key           = f KIassetfield a.key;
         sort          = List.map (f KIassetfield) a.sort;
+        state         = Option.map (g KIassetstate) a.state;
         invariants    = List.map for_label_term a.invariants;
       }
     in

@@ -106,7 +106,7 @@ let generate_target model =
   match !Options.target with
   | None ->
     model
-    |> cont !Options.opt_rasf replace_assignassetstate_by_update
+    |> cont !Options.opt_pas  process_asset_state
     |> cont !Options.opt_raf  replace_assignfield_by_update
     |> cont !Options.opt_rau  remove_add_update
     |> cont !Options.opt_mu   merge_update
@@ -128,7 +128,7 @@ let generate_target model =
   | Ligo
   | LigoStorage ->
     model
-    |> replace_assignassetstate_by_update
+    |> process_asset_state
     |> replace_assignfield_by_update
     |> remove_add_update
     |> merge_update
@@ -174,7 +174,7 @@ let generate_target model =
   | Whyml ->
     model
     |> replace_whyml_ident
-    |> replace_assignassetstate_by_update
+    |> process_asset_state
     |> replace_assignfield_by_update
     |> remove_add_update
     |> merge_update
@@ -280,8 +280,8 @@ let main () =
       "--no-rational", Arg.Set Options.opt_nse, " Same as -nr";
       "-ndd", Arg.Set Options.opt_ndd, " Remove date and duration";
       "--no-date-duration", Arg.Set Options.opt_nse, " Same as -ndd";
-      "-rasf", Arg.Set Options.opt_rasf, " Replace field by update";
-      "--remove-assignassetstate", Arg.Set Options.opt_rasf, " Same as -rasf";
+      "-pas", Arg.Set Options.opt_pas, " Process asset state";
+      "--process-asset-state", Arg.Set Options.opt_pas, " Same as -pas";
       "-raf", Arg.Set Options.opt_raf, " Replace field by update";
       "--remove-assignfield", Arg.Set Options.opt_raf, " Same as -raf";
       "-rau", Arg.Set Options.opt_rau, " Remove add_update method";

@@ -1120,12 +1120,13 @@ let pp_asset_item fmt (item : asset_item) =
     (pp_option (fun fmt -> Format.fprintf fmt " := %a" pp_mterm)) item.default
 
 let pp_asset fmt (asset : asset) =
-  Format.fprintf fmt "asset %a identified by %a%a {@\n  @[%a@]@\n}%a@\n"
+  Format.fprintf fmt "asset %a identified by %a%a {@\n  @[%a@]@\n}%a%a@\n"
     pp_id asset.name
     pp_str asset.key
     (pp_do_if (not (List.is_empty asset.sort)) (fun fmt xs -> Format.fprintf fmt " sorted by %a" (pp_list ";@\n" pp_str) xs)) asset.sort
     (pp_list "@\n" pp_asset_item) asset.values
     (pp_do_if (not (List.is_empty asset.invariants)) (fun fmt xs -> Format.fprintf fmt "@\nwith {@\n  @[%a@]@\n}@\n" (pp_list ";@\n" pp_label_term) xs)) asset.invariants
+    (pp_option (fun fmt id -> Format.fprintf fmt "@\nwith states %a@\n" pp_id id)) asset.state
 
 
 let pp_contract_signature fmt (cs : contract_signature) =
