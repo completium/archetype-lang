@@ -1657,7 +1657,6 @@ let pp_model_internal fmt (model : model) b =
       Format.fprintf fmt
         "function rat_tez (const c : (int * int); const t : tez) : tez is@\n\
          begin@\n  \
-         if (c.0 * c.1 < 0) then failwith(\"c must be positive\") else skip;@\n  \
          const r : tez = abs(c.0) * t / abs(c.1);@\n  \
          end with r@\n"
   in
