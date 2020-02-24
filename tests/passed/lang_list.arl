@@ -5,7 +5,7 @@ action exec () {
     var l : string list = ["1"; "2"; "3"];
 
     (* expr *)
-    var a : list(string) = l.prepend("2");
+    var a : string list  = l.prepend("2");
     var c : bool         = l.contains("2");
     var k : int          = l.count();
     var n : string       = l.nth(0);
