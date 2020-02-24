@@ -10,6 +10,12 @@ enum movement_e =
 | In_field initial
 | In_transit
 
+asset animal_a identified by ida {
+  ida      : string;
+  typ      : animal_e;
+  location : pkey of field_a;
+} with states movement_e
+
 asset business_a identified by id {
   id        : string;
   incomings : animal_a collection;
@@ -19,12 +25,6 @@ asset field_a identified by name {
   name     : string;
   business : pkey of business_a;
 }
-
-asset animal_a identified by ida {
-  ida      : string;
-  typ      : animal_e;
-  location : pkey of field_a;
-} with states movement_e
 
 transition transit (fk : string) on (ak : pkey of animal_a) {
   from In_field
