@@ -918,7 +918,7 @@ let pp_model_internal fmt (model : model) b =
 
     (* list api effect *)
 
-    | Mlistprepend (c, a) ->
+    | Mlistprepend (_, c, a) ->
       Format.fprintf fmt "list_prepend (%a, %a)"
         f c
         f a
@@ -926,16 +926,16 @@ let pp_model_internal fmt (model : model) b =
 
     (* list api expression *)
 
-    | Mlistcontains (c, a) ->
+    | Mlistcontains (_, c, a) ->
       Format.fprintf fmt "list_contains (%a, %a)"
         f c
         f a
 
-    | Mlistcount c ->
+    | Mlistcount (_, c) ->
       Format.fprintf fmt "list_count (%a)"
         f c
 
-    | Mlistnth (c, a) ->
+    | Mlistnth (_, c, a) ->
       Format.fprintf fmt "list_nth (%a, %a)"
         f c
         f a
@@ -1391,7 +1391,7 @@ let pp_model_internal fmt (model : model) b =
         (pp_do_if (match c with | Partition -> true | _ -> false) (fun fmt -> Format.fprintf fmt "s := remove_%s(s, key);@\n")) ft
 
     | ToKeys _an ->
-      Format.fprintf fmt "// TODO api storage: ToKeys"
+      Format.fprintf fmt "// TODO api asset: ToKeys"
     (* "let[@inline] to_keys_%s (s : storage) : storage =@\n  \
        s (*TODO*)@\n"
        an *)
@@ -1464,7 +1464,7 @@ let pp_model_internal fmt (model : model) b =
 
     | Nth _an ->
       (* let _, t = Utils.get_asset_key model an in *)
-      Format.fprintf fmt "// TODO api storage: Nth"
+      Format.fprintf fmt "// TODO api asset: Nth"
     (* "let[@inline] nth_%s (s, l, idx : storage * %a list * int) : %s =@\n  \
        match l with@\n  \
        | [] -> failwith \"empty list\"@\n  \
@@ -1487,7 +1487,7 @@ let pp_model_internal fmt (model : model) b =
 
     | Count _an ->
       (* let _, t = Utils.get_asset_key model an in *)
-      Format.fprintf fmt "// TODO api storage: Count"
+      Format.fprintf fmt "// TODO api asset: Count"
     (* "let[@inline] count_%s (l : %a list) : int =@\n  \
        List.fold (fun (_, accu) ->@\n    \
        accu + 1@\n  \
@@ -1529,7 +1529,7 @@ let pp_model_internal fmt (model : model) b =
     | Min (_an, _fn) ->
       (* let _, tk = Utils.get_asset_key model an in
          let _, t, _ = Utils.get_asset_field model (dumloc an, fn) in *)
-      Format.fprintf fmt "// TODO api storage: Min"
+      Format.fprintf fmt "// TODO api asset: Min"
     (* "let[@inline] min_%s_%s (s, l : storage * %a list) : %a =@\n  \
        match l with@\n  \
        | [] -> failwith \"empty list\"@\n  \
@@ -1560,7 +1560,7 @@ let pp_model_internal fmt (model : model) b =
     | Max (_an, _fn) ->
       (* let _, tk = Utils.get_asset_key model an in
          let _, t, _ = Utils.get_asset_field model (dumloc an, fn) in *)
-      Format.fprintf fmt "// TODO api storage: Max"
+      Format.fprintf fmt "// TODO api asset: Max"
     (* "let[@inline] max_%s_%s (s, l : storage * %a list) : %a =@\n  \
        match l with@\n  \
        | [] -> failwith \"empty list\"@\n  \
@@ -1597,15 +1597,15 @@ let pp_model_internal fmt (model : model) b =
   in
 
   let pp_api_list (_env : env) fmt = function
-    | Lprepend t  -> Format.fprintf fmt "list_prepend\t %a" pp_type t
-    | Lcontains t -> Format.fprintf fmt "list_contains\t %a" pp_type t
-    | Lcount t    -> Format.fprintf fmt "list_count\t %a" pp_type t
-    | Lnth t      -> Format.fprintf fmt "list_nth\t %a" pp_type t
+    | Lprepend t  -> Format.fprintf fmt "// TODO api list Lprepend %a" pp_type t
+    | Lcontains t -> Format.fprintf fmt "// TODO api list Lcontains %a" pp_type t
+    | Lcount t    -> Format.fprintf fmt "// TODO api list Lcount %a" pp_type t
+    | Lnth t      -> Format.fprintf fmt "// TODO api list Lnth %a" pp_type t
   in
 
   let pp_api_builtin (_env : env) fmt = function
-    | MinBuiltin t -> Format.fprintf fmt "min on %a" pp_type t
-    | MaxBuiltin t -> Format.fprintf fmt "max on %a" pp_type t
+    | MinBuiltin t -> Format.fprintf fmt "// TODO api builtin MinBuiltin %a" pp_type t
+    | MaxBuiltin t -> Format.fprintf fmt "// TODO api builtin MaxBuiltin %a" pp_type t
   in
 
   let pp_api_internal (_env : env) fmt = function

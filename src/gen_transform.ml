@@ -1365,39 +1365,6 @@ let merge_update (model : model) : model =
 
 let process_asset_state (model : model) : model =
   let get_state_lident an = dumloc ("state_" ^ an) in
-  (* let values =
-     match a.state with
-     | Some id ->
-      begin
-        let get_enum (ast : A.model) (id : A.lident) : A.lident A.enum_struct =
-          match (List.fold_left (fun accu x ->
-              match x with
-              | A.Denum e when String.equal (match e.kind with | EKenum e -> unloc e | EKstate -> "state") (unloc id) -> Some e
-              | _ -> accu
-            ) None ast.decls) with
-          | Some v -> v
-          | _ -> assert false
-        in
-
-        let get_initial_value e_id =
-          let enum = get_enum ast e_id in
-          let ll = List.filter (fun (x : A.lident A.enum_item_struct) -> x.initial) enum.items in
-          let e_val : A.lident =
-            match ll with
-            | [] -> enum.items |> fun x -> List.nth x 0 |> fun x -> x.name
-            | q::_ -> q.name
-          in
-          M.mk_mterm (M.Mvarenumval e_val) (M.Tenum e_id)
-        in
-
-        let name = dumloc "state" in
-        let typ = M.Tenum id in
-        let default : M.mterm = get_initial_value id in
-        let item = M.mk_asset_item name typ typ ~default:default in
-        values @ [item]
-      end
-     | None -> values
-     in *)
 
   let for_decl (d : decl_node) : decl_node =
     let for_asset (a : asset) =
@@ -1411,7 +1378,7 @@ let process_asset_state (model : model) : model =
           let default = mk_mterm (Mvarenumval e_val) typ in
 
           let item = mk_asset_item name typ typ ~default:default in
-          { a with values = a.values @ [item] }
+          { a with values = a.values @ [item]; state = None }
         end
       | None -> a
     in

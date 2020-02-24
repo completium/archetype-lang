@@ -133,14 +133,30 @@ let to_model (ast : A.model) : M.model =
   in
 
   (* let unit : M.mterm = M.mk_mterm (M.Mseq []) M.Tunit in *)
+  (* let is_list (mt : mterm) =
+     match mt with
+     | {type_ = Tcontainer (a, _); _} -> unloc asset_name
+     | _ ->
+      Format.printf "extract_asset_name error: %a@\n" M.pp_type_ mterm.type_;
+      assert false
+     in *)
 
+  let is_asset_container (v : A.pterm) : bool =
+    match v with
+    | {type_ = Some (Tcontainer (Tasset _, _)); _} -> true
+    | _ -> false
+  in
+
+  let is_list (v : A.pterm) : bool =
+    match v with
+    | {type_ = Some (Tcontainer (_, List)); _} -> true
+    | _ -> false
+  in
 
   let extract_asset_name (mterm : M.mterm) : ident =
     match mterm with
     | {type_ = Tcontainer (Tasset asset_name, _); _} -> unloc asset_name
-    | _ ->
-      Format.printf "extract_asset_name error: %a@\n" M.pp_type_ mterm.type_;
-      assert false
+    | _ -> assert false
   in
 
   let extract_field_name (_id, _type_, body : A.lident * A.ptyp * A.pterm) : M.lident =
@@ -149,6 +165,12 @@ let to_model (ast : A.model) : M.model =
     | _ ->
       Format.printf "extract_field_name error: %a@\n" A.pp_pterm body;
       assert false
+  in
+
+  let extract_builtin_type_list (v : M.mterm) : M.type_ =
+    match v with
+    | {type_ = Tcontainer (t, List); _} -> t
+    | _ -> assert false
   in
 
   let to_action_description (ad : A.action_description) : M.action_description=
@@ -258,18 +280,20 @@ let to_model (ast : A.model) : M.model =
     | A.Pcall (_, A.Cid id, args) ->
       M.Mapp (id, List.map (fun x -> term_arg_to_expr f x) args)
 
-    | A.Pcall (Some p, A.Cconst (A.Csubsetof), [AExpr q]) ->
+    (* Asset *)
+
+    | A.Pcall (Some p, A.Cconst (A.Csubsetof), [AExpr q]) when is_asset_container p ->
       let fp = f p in
       let fq = f q in
       let asset_name = extract_asset_name fp in
       M.Mapifsubsetof (asset_name, fp, fq)
 
-    | A.Pcall (Some p, A.Cconst (A.Cisempty), []) ->
+    | A.Pcall (Some p, A.Cconst (A.Cisempty), []) when is_asset_container p ->
       let fp = f p in
       let asset_name = extract_asset_name fp in
       M.Mapifisempty (asset_name, fp)
 
-    | A.Pcall (Some p, A.Cconst (A.Cget), [AExpr q]) ->
+    | A.Pcall (Some p, A.Cconst (A.Cget), [AExpr q]) when is_asset_container p ->
       let fp = f p in
       let fq = f q in
       let asset_name = extract_asset_name fp in
@@ -277,7 +301,7 @@ let to_model (ast : A.model) : M.model =
       then M.Mapifget (asset_name, fp, fq)
       else M.Mget (asset_name, fq)
 
-    | A.Pcall (Some p, A.Cconst (A.Cselect), [AFun (_qi, _qt, q)]) ->
+    | A.Pcall (Some p, A.Cconst (A.Cselect), [AFun (_qi, _qt, q)]) when is_asset_container p ->
       let fp = f p in
       let fq = f q in
       let asset_name = extract_asset_name fp in
@@ -285,7 +309,7 @@ let to_model (ast : A.model) : M.model =
       then M.Mapifselect (asset_name, fp, fq)
       else M.Mselect (asset_name, fp, fq)
 
-    | A.Pcall (Some p, A.Cconst (A.Csort), args) ->
+    | A.Pcall (Some p, A.Cconst (A.Csort), args) when is_asset_container p ->
       let fp = f p in
       let asset_name = extract_asset_name fp in
       let args =
@@ -301,7 +325,7 @@ let to_model (ast : A.model) : M.model =
       then M.Mapifsort (asset_name, fp, args)
       else M.Msort (asset_name, fp, args)
 
-    | A.Pcall (Some p, A.Cconst (A.Ccontains), [AExpr q]) ->
+    | A.Pcall (Some p, A.Cconst (A.Ccontains), [AExpr q]) when is_asset_container p ->
       let fp = f p in
       let fq = f q in
       let asset_name = extract_asset_name fp in
@@ -309,7 +333,7 @@ let to_model (ast : A.model) : M.model =
       then M.Mapifcontains (asset_name, fp, fq)
       else M.Mcontains (asset_name, fp, fq)
 
-    | A.Pcall (Some p, A.Cconst (A.Cnth), [AExpr q]) ->
+    | A.Pcall (Some p, A.Cconst (A.Cnth), [AExpr q]) when is_asset_container p ->
       let fp = f p in
       let fq = f q in
       let asset_name = extract_asset_name fp in
@@ -317,14 +341,14 @@ let to_model (ast : A.model) : M.model =
       then M.Mapifnth (asset_name, fp, fq)
       else M.Mnth (asset_name, fp, fq)
 
-    | A.Pcall (Some p, A.Cconst (A.Ccount), []) ->
+    | A.Pcall (Some p, A.Cconst (A.Ccount), []) when is_asset_container p ->
       let fp = f p in
       let asset_name = extract_asset_name fp in
       if formula
       then M.Mapifcount (asset_name, fp)
       else M.Mcount (asset_name, fp)
 
-    | A.Pcall (Some p, A.Cconst (A.Csum), [AFun (_qi, _qt, q)]) ->
+    | A.Pcall (Some p, A.Cconst (A.Csum), [AFun (_qi, _qt, q)]) when is_asset_container p ->
       let fp = f p in
       let fq = f q in
       let asset_name = extract_asset_name fp in
@@ -332,7 +356,7 @@ let to_model (ast : A.model) : M.model =
       then M.Mapifsum (asset_name, fp, fq)
       else M.Msum (asset_name, fp, fq)
 
-    | A.Pcall (Some p, A.Cconst (A.Cmin), [AFun (qi, qt, q)]) ->
+    | A.Pcall (Some p, A.Cconst (A.Cmin), [AFun (qi, qt, q)]) when is_asset_container p ->
       let fp = f p in
       let asset_name = extract_asset_name fp in
       let field_name = extract_field_name (qi, qt, q) in
@@ -340,7 +364,7 @@ let to_model (ast : A.model) : M.model =
       then M.Mapifmin (asset_name, field_name, fp)
       else M.Mmin (asset_name, field_name, fp)
 
-    | A.Pcall (Some p, A.Cconst (A.Cmax), [AFun (qi, qt, q)]) ->
+    | A.Pcall (Some p, A.Cconst (A.Cmax), [AFun (qi, qt, q)]) when is_asset_container p ->
       let fp = f p in
       let asset_name = extract_asset_name fp in
       let field_name = extract_field_name (qi, qt, q) in
@@ -348,7 +372,7 @@ let to_model (ast : A.model) : M.model =
       then M.Mapifmax (asset_name, field_name, fp)
       else M.Mmax (asset_name, field_name, fp)
 
-    | A.Pcall (Some p, A.Cconst (A.Chead), [AExpr e]) ->
+    | A.Pcall (Some p, A.Cconst (A.Chead), [AExpr e]) when is_asset_container p ->
       let fp = f p in
       let fe = f e in
       let asset_name = extract_asset_name fp in
@@ -356,13 +380,33 @@ let to_model (ast : A.model) : M.model =
       then M.Mapifhead (asset_name, fp, fe)
       else M.Mhead (asset_name, fp, fe)
 
-    | A.Pcall (Some p, A.Cconst (A.Ctail), [AExpr e]) ->
+    | A.Pcall (Some p, A.Cconst (A.Ctail), [AExpr e]) when is_asset_container p ->
       let fp = f p in
       let fe = f e in
       let asset_name = extract_asset_name fp in
       if formula
       then M.Mapiftail (asset_name, fp, fe)
       else M.Mtail (asset_name, fp, fe)
+
+    (* List*)
+
+    | A.Pcall (Some p, A.Cconst (A.Ccontains), [AExpr q]) when is_list p ->
+      let fp = f p in
+      let fq = f q in
+      let t = extract_builtin_type_list fp in
+      M.Mlistcontains (t, fp, fq)
+
+    | A.Pcall (Some p, A.Cconst (A.Ccount), []) when is_list p ->
+      let fp = f p in
+      let t = extract_builtin_type_list fp in
+      M.Mlistcount (t, fp)
+
+    | A.Pcall (Some p, A.Cconst (A.Cnth), [AExpr q]) when is_list p ->
+      let fp = f p in
+      let fq = f q in
+      let t = extract_builtin_type_list fp in
+      M.Mlistnth (t, fp, fq)
+
 
     (* | A.Pcall (None, A.Cconst (A.Cmaybeperformedonlybyrole), [AExpr l; AExpr r]) ->
        M.MsecMayBePerformedOnlyByRole (f l, f r)
@@ -499,7 +543,7 @@ let to_model (ast : A.model) : M.model =
     | A.Icall (_, A.Cconst (A.Cfail), [AExpr p]) ->
       M.Mfail (Invalid (f p))
 
-    | A.Icall (Some p, A.Cconst (A.Cadd), [AExpr q]) -> (
+    | A.Icall (Some p, A.Cconst (A.Cadd), [AExpr q]) when is_asset_container p -> (
         let fp = f p in
         let fq = f q in
         match fp with
@@ -508,7 +552,7 @@ let to_model (ast : A.model) : M.model =
         | _ -> assert false
       )
 
-    | A.Icall (Some p, A.Cconst (A.Cremove), [AExpr q]) -> (
+    | A.Icall (Some p, A.Cconst (A.Cremove), [AExpr q]) when is_asset_container p -> (
         let fp = f p in
         let fq = f q in
         match fp with
@@ -517,7 +561,7 @@ let to_model (ast : A.model) : M.model =
         | _ -> assert false
       )
 
-    | A.Icall (Some p, A.Cconst (A.Cclear), []) -> (
+    | A.Icall (Some p, A.Cconst (A.Cclear), []) when is_asset_container p -> (
         let fp = f p in
         match fp with
         | {node = M.Mvarstorecol asset_name; _} -> M.Mclearasset (unloc asset_name)
@@ -525,7 +569,7 @@ let to_model (ast : A.model) : M.model =
         | _ -> assert false
       )
 
-    | A.Icall (Some p, A.Cconst (A.Caddupdate), [AExpr k; AEffect e]) ->
+    | A.Icall (Some p, A.Cconst (A.Caddupdate), [AExpr k; AEffect e]) when is_asset_container p ->
       let to_op = function
         | `Assign op -> to_assignment_operator op
         | _ -> emit_error CannotConvertToAssignOperator
@@ -536,7 +580,7 @@ let to_model (ast : A.model) : M.model =
       let asset_name = extract_asset_name fp in
       M.Maddupdate (asset_name, fk, fe)
 
-    | A.Icall (Some p, A.Cconst (A.Cupdate), [AExpr k; AEffect e]) ->
+    | A.Icall (Some p, A.Cconst (A.Cupdate), [AExpr k; AEffect e]) when is_asset_container p ->
       let to_op = function
         | `Assign op -> to_assignment_operator op
         | _ -> emit_error CannotConvertToAssignOperator
@@ -547,11 +591,18 @@ let to_model (ast : A.model) : M.model =
       let asset_name = extract_asset_name fp in
       M.Mupdate (asset_name, fk, fe)
 
-    | A.Icall (Some p, A.Cconst (A.Cremoveif), [AFun (_qi, _qtt, q)]) ->
+    | A.Icall (Some p, A.Cconst (A.Cremoveif), [AFun (_qi, _qtt, q)]) when is_asset_container p ->
       let fp = f p in
       let fq = f q in
       let asset_name = extract_asset_name fp in
       M.Mremoveif (asset_name, fp, fq)
+
+    | A.Icall (Some p, A.Cconst (A.Cprepend), [AExpr q]) when is_list p -> (
+        let fp = f p in
+        let fq = f q in
+        let t = extract_builtin_type_list fp in
+        M.Mlistprepend (t, fp, fq)
+      )
 
     | A.Icall (aux, A.Cconst c, args) ->
       Format.eprintf "instr const unkown: %a with nb args: %d [%a] %s@."

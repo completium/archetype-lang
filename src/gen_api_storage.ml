@@ -79,13 +79,13 @@ let process_api_storage (model : model) : model =
         [APIAsset (Tail asset_name)]
       | Mcoltokeys asset_name ->
         [APIAsset (ColToKeys asset_name)]
-      | Mlistprepend ({type_=t; _}, _) ->
+      | Mlistprepend (t, _, _) ->
         [APIList (Lprepend t)]
-      | Mlistcontains ({type_=t; _}, _) ->
+      | Mlistcontains (t, _, _) ->
         [APIList (Lcontains t)]
-      | Mlistcount ({type_=t; _}) ->
+      | Mlistcount (t, _) ->
         [APIList (Lcount t)]
-      | Mlistnth ({type_=t; _}, _) ->
+      | Mlistnth (t, _, _) ->
         [APIList (Lnth t)]
       | Mrateq _ ->
         [APIInternal (RatEq)]

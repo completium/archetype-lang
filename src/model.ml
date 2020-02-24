@@ -219,11 +219,11 @@ type ('id, 'term) mterm_node  =
   (* utils *)
   | Mgetfrommap       of ident * 'term * 'term
   (* list api effect *)
-  | Mlistprepend      of 'term * 'term
+  | Mlistprepend      of type_ * 'term * 'term
   (* list api expression *)
-  | Mlistcontains     of 'term * 'term
-  | Mlistcount        of 'term
-  | Mlistnth          of 'term * 'term
+  | Mlistcontains     of type_ * 'term * 'term
+  | Mlistcount        of type_ * 'term
+  | Mlistnth          of type_ * 'term * 'term
   (* builtin functions *)
   | Mfunmax           of 'term * 'term
   | Mfunmin           of 'term * 'term
@@ -996,11 +996,11 @@ let cmp_mterm_node
     (* utils *)
     | Mgetfrommap (an1, k1, c1), Mgetfrommap (an2, k2, c2)                             -> cmp_ident an1 an2 && cmp k1 k2 && cmp c1 c2
     (* list api effect *)
-    | Mlistprepend (c1, a1), Mlistprepend (c2, a2)                                     -> cmp c1 c2 && cmp a1 a2
+    | Mlistprepend (t1, c1, a1), Mlistprepend (t2, c2, a2)                             -> cmp_type t1 t2 && cmp c1 c2 && cmp a1 a2
     (* list api expression *)
-    | Mlistcontains (c1, a1), Mlistcontains (c2, a2)                                   -> cmp c1 c2 && cmp a1 a2
-    | Mlistcount c1, Mlistcount c2                                                     -> cmp c1 c2
-    | Mlistnth (c1, a1), Mlistnth (c2, a2)                                             -> cmp c1 c2 && cmp a1 a2
+    | Mlistcontains (t1, c1, a1), Mlistcontains (t2, c2, a2)                           -> cmp_type t1 t2 && cmp c1 c2 && cmp a1 a2
+    | Mlistcount (t1, c1), Mlistcount (t2, c2)                                         -> cmp_type t1 t2 && cmp c1 c2
+    | Mlistnth (t1, c1, a1), Mlistnth (t2, c2, a2)                                     -> cmp_type t1 t2 && cmp c1 c2 && cmp a1 a2
     (* builtin functions *)
     | Mfunmin (l1, r1), Mfunmin (l2, r2)                                               -> cmp l1 l2 && cmp r1 r2
     | Mfunmax (l1, r1), Mfunmax (l2, r2)                                               -> cmp l1 l2 && cmp r1 r2
@@ -1254,11 +1254,11 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   (* utils *)
   | Mgetfrommap (an, k, c)         -> Mgetfrommap (fi an, f k, f c)
   (* list api effect *)
-  | Mlistprepend (c, a)            -> Mlistprepend (f c, f a)
+  | Mlistprepend (t, c, a)         -> Mlistprepend (ft t, f c, f a)
   (* list api expression *)
-  | Mlistcontains (c, a)           -> Mlistcontains (f c, f a)
-  | Mlistcount c                   -> Mlistcount (f c)
-  | Mlistnth (c, a)                -> Mlistnth (f c, f a)
+  | Mlistcontains (t, c, a)        -> Mlistcontains (t, f c, f a)
+  | Mlistcount (t, c)              -> Mlistcount (t, f c)
+  | Mlistnth (t, c, a)             -> Mlistnth (t, f c, f a)
   (* builtin functions *)
   | Mfunmin (l, r)                 -> Mfunmin (f l, f r)
   | Mfunmax (l, r)                 -> Mfunmax (f l, f r)
@@ -1562,11 +1562,11 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   (* utils *)
   | Mgetfrommap (_, k, c)                 -> f (f accu k) c
   (* list api effect *)
-  | Mlistprepend (c, a)                   -> f (f accu c) a
+  | Mlistprepend (_, c, a)                -> f (f accu c) a
   (* list api expression *)
-  | Mlistcontains (c, a)                  -> f (f accu c) a
-  | Mlistcount c                          -> f accu c
-  | Mlistnth (c, a)                       -> f (f accu c) a
+  | Mlistcontains (_, c, a)               -> f (f accu c) a
+  | Mlistcount (_, c)                     -> f accu c
+  | Mlistnth (_, c, a)                    -> f (f accu c) a
   (* builtin functions *)
   | Mfunmax (l, r)                        -> f (f accu l) r
   | Mfunmin (l, r)                        -> f (f accu l) r
@@ -2086,27 +2086,27 @@ let fold_map_term
 
   (* list api effect *)
 
-  | Mlistprepend (c, a) ->
+  | Mlistprepend (t, c, a) ->
     let ce, ca = f accu c in
     let ae, aa = f ca a in
-    g (Mlistprepend (ce, ae)), aa
+    g (Mlistprepend (t, ce, ae)), aa
 
 
   (* list api expression *)
 
-  | Mlistcontains (c, a) ->
+  | Mlistcontains (t, c, a) ->
     let ce, ca = f accu c in
     let ae, aa = f ca a in
-    g (Mlistcontains (ce, ae)), aa
+    g (Mlistcontains (t, ce, ae)), aa
 
-  | Mlistcount c ->
+  | Mlistcount (t, c) ->
     let ce, ca = f accu c in
-    g (Mlistcount ce), ca
+    g (Mlistcount (t, ce)), ca
 
-  | Mlistnth (c, a) ->
+  | Mlistnth (t, c, a) ->
     let ce, ca = f accu c in
     let ae, aa = f ca a in
-    g (Mlistnth (ce, ae)), aa
+    g (Mlistnth (t, ce, ae)), aa
 
 
   (* builtin functions *)

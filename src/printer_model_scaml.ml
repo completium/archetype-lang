@@ -1058,7 +1058,7 @@ let pp_model fmt (model : model) =
 
       (* list api effect *)
 
-      | Mlistprepend (c, a) ->
+      | Mlistprepend (_, c, a) ->
         Format.fprintf fmt "list_prepend (%a, %a)"
           f c
           f a
@@ -1066,16 +1066,16 @@ let pp_model fmt (model : model) =
 
       (* list api expression *)
 
-      | Mlistcontains (c, a) ->
+      | Mlistcontains (_, c, a) ->
         Format.fprintf fmt "list_contains (%a, %a)"
           f c
           f a
 
-      | Mlistcount c ->
+      | Mlistcount (_, c) ->
         Format.fprintf fmt "list_count (%a)"
           f c
 
-      | Mlistnth (c, a) ->
+      | Mlistnth (_, c, a) ->
         Format.fprintf fmt "list_nth (%a, %a)"
           f c
           f a
