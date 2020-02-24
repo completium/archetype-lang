@@ -918,25 +918,29 @@ let pp_model_internal fmt (model : model) b =
 
     (* list api effect *)
 
-    | Mlistprepend (_, c, a) ->
-      Format.fprintf fmt "list_prepend (%a, %a)"
+    | Mlistprepend (t, c, a) ->
+      Format.fprintf fmt "list_%a_prepend (%a, %a)"
+        pp_type t
         f c
         f a
 
 
     (* list api expression *)
 
-    | Mlistcontains (_, c, a) ->
-      Format.fprintf fmt "list_contains (%a, %a)"
+    | Mlistcontains (t, c, a) ->
+      Format.fprintf fmt "list_%a_contains (%a, %a)"
+        pp_type t
         f c
         f a
 
-    | Mlistcount (_, c) ->
-      Format.fprintf fmt "list_count (%a)"
+    | Mlistcount (t, c) ->
+      Format.fprintf fmt "list_%a_count (%a)"
+        pp_type t
         f c
 
-    | Mlistnth (_, c, a) ->
-      Format.fprintf fmt "list_nth (%a, %a)"
+    | Mlistnth (t, c, a) ->
+      Format.fprintf fmt "list_%a_nth (%a, %a)"
+        pp_type t
         f c
         f a
 
@@ -1273,6 +1277,21 @@ let pp_model_internal fmt (model : model) b =
         (pp_list "@\n" pp_storage_item) l
   in
 
+  let pp_default fmt = function
+    | Tbuiltin Bbool       -> Format.fprintf fmt "False"
+    | Tbuiltin Bint        -> Format.fprintf fmt "0"
+    | Tbuiltin Brational   -> Format.fprintf fmt "0"
+    | Tbuiltin Bdate       -> Format.fprintf fmt "0"
+    | Tbuiltin Bduration   -> Format.fprintf fmt "0"
+    | Tbuiltin Btimestamp  -> Format.fprintf fmt "(0 : timestamp)"
+    | Tbuiltin Bstring     -> Format.fprintf fmt "\"\""
+    | Tbuiltin Baddress    -> Format.fprintf fmt "0"
+    | Tbuiltin Brole       -> Format.fprintf fmt "0"
+    | Tbuiltin Bcurrency   -> Format.fprintf fmt "0tz"
+    | Tbuiltin Bkey        -> Format.fprintf fmt "0x00"
+    | Tbuiltin Bbytes      -> Format.fprintf fmt "0x00"
+    | _ -> assert false
+  in
 
   let pp_api_asset (env : env) fmt = function
     | Get an ->
@@ -1596,11 +1615,63 @@ let pp_model_internal fmt (model : model) b =
 
   in
 
+  (* var r : %a := %s;@\n    \
+           function aggregate (const i : %a) : unit is@\n      \
+           begin@\n        \
+           const a : %s = get_force(i, s.%s_assets);@\n        \
+           r := r + (%a);@\n      \
+           end with unit;@\n    \
+           list_iter(aggregate, l)@\n  \
+  *)
+
   let pp_api_list (_env : env) fmt = function
-    | Lprepend t  -> Format.fprintf fmt "// TODO api list Lprepend %a" pp_type t
-    | Lcontains t -> Format.fprintf fmt "// TODO api list Lcontains %a" pp_type t
-    | Lcount t    -> Format.fprintf fmt "// TODO api list Lcount %a" pp_type t
-    | Lnth t      -> Format.fprintf fmt "// TODO api list Lnth %a" pp_type t
+    | Lprepend t  ->
+      Format.fprintf fmt
+        "function list_%a_prepend (const l : list(%a)) : list(%a) is@\n  \
+         begin@\n  \
+         end with l@\n"
+        pp_type t pp_type t pp_type t
+
+    | Lcontains t ->
+      Format.fprintf fmt
+        "function list_%a_contains (const l : list(%a); const item : %a) : bool is@\n  \
+         block {@\n  \
+         function aggregate (const accu: bool; const x: %a) : bool is (%a) or accu @\n  \
+         } with list_fold (aggregate, l, False)@\n"
+        pp_type t pp_type t pp_type t
+        pp_type t
+        (fun fmt t ->
+           match t with
+           | _ -> Format.fprintf fmt "item = x") t
+
+    | Lcount t ->
+      Format.fprintf fmt
+        "function list_%a_count (const l : list(%a)) : int is@\n  \
+         block { skip }@\n  \
+         with int(size(l))@\n"
+        pp_type t pp_type t
+
+    | Lnth t ->
+      Format.fprintf fmt
+        "function list_%a_nth (const l : list(%a); const index : int) : %a is@\n  \
+         block {@\n\
+         function aggregate (const accu: int * option(%a); const x: %a) : int * option(%a) is@\n\
+         if accu.0 = index@\n\
+         then (accu.0 + 1, Some(x));@\n\
+         else (accu.0 + 1, accu.1);@\n\
+         const init : int * option(%a) = (0, (None : option(%a)));@\n\
+         const res_opt : int * option(%a) = list_fold (aggregate, l, init);@\n\
+         var res : %a := %a;@\n\
+         case res_opt.1 of@\n\
+         | Some(v) -> res := v@\n\
+         | None -> failwith(\"list_string_nth failed\")@\n\
+         end@\n\
+         } with res@\n"
+        pp_type t pp_type t pp_type t
+        pp_type t pp_type t pp_type t
+        pp_type t pp_type t
+        pp_type t
+        pp_type t pp_default t
   in
 
   let pp_api_builtin (_env : env) fmt = function
