@@ -855,8 +855,9 @@ let pp_model_internal fmt (model : model) b =
 
     | Mnth (an, c, i) ->
       let pp fmt (an, c, i) =
-        Format.fprintf fmt "nth_%a (%a, %a)"
+        Format.fprintf fmt "nth_%a (%s, %a, %a)"
           pp_str an
+          const_storage
           f c
           f i
       in
@@ -1545,38 +1546,39 @@ let pp_model_internal fmt (model : model) b =
         an pp_btyp t pp_btyp t
         pp_btyp t
 
-    | Nth _an ->
-      (* let _, t = Utils.get_asset_key model an in *)
-      Format.fprintf fmt "// TODO api asset: Nth"
-    (* "let[@inline] nth_%s (s, l, idx : storage * %a list * int) : %s =@\n  \
-       match l with@\n  \
-       | [] -> failwith \"empty list\"@\n  \
-       | _ ->@\n  \
-       begin@\n  \
-       let cpt = idx in@\n  \
-       let _, res =@\n  \
-       List.fold (fun (x, accu) ->@\n  \
-       let cpt, res = accu in@\n  \
-       if cpt = 0@\n  \
-       then (cpt - 1, Some x)@\n  \
-       else (cpt - 1, res)@\n  \
-       ) l (cpt, None) in@\n  \
-       match res with@\n  \
-       | None -> failwith \"index out of bounds\"@\n  \
-       | Some k -> get_%s (s, k)@\n  \
-       end@\n"
-       an pp_btyp t an
-       an *)
+    | Nth an ->
+      let _, t = Utils.get_asset_key model an in
+      Format.fprintf fmt
+        "function nth_%s (const s : storage_type; const l : list(%a); const index : int) : %s is@\n  \
+         block {@\n    \
+         function aggregate (const accu: int * option(%a); const x: %a) : int * option(%a) is@\n    \
+         if accu.0 = index@\n    \
+         then (accu.0 + 1, Some(x));@\n    \
+         else (accu.0 + 1, accu.1);@\n    \
+         const init : int * option(%a) = (0, (None : option(%a)));@\n    \
+         const res_opt : int * option(%a) = list_fold (aggregate, l, init);@\n    \
+         var key : %a := %a;@\n    \
+         case res_opt.1 of@\n    \
+         | Some(v) -> key := v@\n    \
+         | None -> failwith(\"nth_%s failed\")@\n    \
+         end;@\n    \
+         const res : %s = get_force(key, s.%s_assets);@\n  \
+         } with res@\n"
+        an pp_btyp t an
+        pp_btyp t pp_btyp t pp_btyp t
+        pp_btyp t pp_btyp t
+        pp_btyp t
+        pp_btyp t pp_default (Tbuiltin t)
+        an
+        an an
 
-    | Count _an ->
-      (* let _, t = Utils.get_asset_key model an in *)
-      Format.fprintf fmt "// TODO api asset: Count"
-    (* "let[@inline] count_%s (l : %a list) : int =@\n  \
-       List.fold (fun (_, accu) ->@\n    \
-       accu + 1@\n  \
-       ) l 0@\n"
-       an
-       pp_btyp t *)
+    | Count an ->
+      let _, t = Utils.get_asset_key model an in
+      Format.fprintf fmt
+        "function count_%s (const l : list(%a)) : int is@\n  \
+         block { skip }@\n  \
+         with int(size(l))@\n"
+        an pp_btyp t
 
     | Sum (an, t, p) ->
       let rec pp_expr fmt (mt : mterm) =
