@@ -1227,7 +1227,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
                                       ))
         [CUpdate f; CRm t]
 
-    | Mclearasset         _ -> error_not_translated "Mclearasset"
+    | Mclearasset n -> Tapp (loc_term (Tvar ("clear_"^(n))),[])
     | Mclearfield         _ -> error_not_translated "Mclearfield"
 
     | Mset (a, l, k, v) ->
@@ -2013,6 +2013,16 @@ let mk_rm_sum_ensures m a e =
                                 [Tvar e])))
         }]) [] (M.Utils.get_sum_idxs m a)
 
+let mk_clear_sum_ensures m a =
+  List.fold_left (fun acc idx ->
+      acc @ [{
+          id = "clear_" ^ a ^ "_sum_post";
+          form = Teq (Tyint,
+                      Tapp (Tvar (mk_sum_name_from_id a idx),
+                            [mk_ac a]),
+                      Tint (Big_int.zero_big_int))
+        }]) [] (M.Utils.get_sum_idxs m a)
+
 let mk_rm_count_ensures m a =
   if M.Utils.with_count m a then [{
       id = "rm_" ^ a ^ "_count";
@@ -2022,6 +2032,16 @@ let mk_rm_count_ensures m a =
                           Tcard (a, mk_ac_old a),
                           Tint (Big_int.big_int_of_int 1)
                          )
+                 )
+    }]
+  else []
+
+let mk_clear_count_ensures m a =
+  if M.Utils.with_count m a then [{
+      id = "clear_" ^ a ^ "_count";
+      form = Teq (Tyint,
+                  Tcard (a, mk_ac a),
+                  Tint (Big_int.zero_big_int)
                  )
     }]
   else []
@@ -2050,6 +2070,13 @@ let mk_rm_ensures m p a e =
                                   Tvar e)))
     }
   ] @ (mk_rm_sum_ensures m a e) @ (mk_rm_count_ensures m a)
+
+let mk_clear_ensures m p a =
+  [
+    { id   = p ^ "_post1";
+      form = Tempty (a, mk_ac a)
+    };
+  ] @ (mk_clear_sum_ensures m a) @ (mk_clear_count_ensures m a)
 
 let mk_rm_asset m asset key : decl =
   Dfun {
@@ -2081,6 +2108,18 @@ let mk_rm_asset m asset key : decl =
 
                   ]));
   }
+
+let mk_clear_coll m asset : decl = Dfun {
+    name     = "clear_" ^ asset;
+    logic    = NoMod;
+    args     = [];
+    returns  = Tyunit;
+    raises   = [];
+    variants = [];
+    requires = [];
+    ensures  = mk_clear_ensures m ("clear_" ^ asset) asset;
+    body = Tassign (mk_ac asset, Tdoti (String.capitalize_ascii asset,"empty"));
+}
 
 (* a      : asset name
    ak     : asset key field name
@@ -2331,7 +2370,7 @@ let mk_storage_api (m : M.model) records =
       | M.APIAsset (Get n) ->
         let k,kt = M.Utils.get_asset_key m n in
         acc @ [mk_get_asset n k (kt |> map_btype)]
-       | M.APIAsset (Nth n) ->
+      | M.APIAsset (Nth n) ->
         let k,kt = M.Utils.get_asset_key m n in
         acc @ [mk_nth_asset n k (kt |> map_btype)]
       | M.APIAsset (Add n) ->
@@ -2380,6 +2419,8 @@ let mk_storage_api (m : M.model) records =
         acc @ [mk_op_arith m;mk_rat_arith m]
       | M.APIInternal (RatEq) ->
         acc @ [mk_rat_eq m]
+      | M.APIAsset (Clear n) ->
+        acc @ [mk_clear_coll m n]
       | _ -> acc
     ) [] |> loc_decl |> deloc
 
