@@ -1070,6 +1070,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Mfor (id, c, b, lbl) ->
       let (nth, card) = get_for_fun c.type_ in
       Tfor (with_dummy_loc "_i",
+            with_dummy_loc (Tint Big_int.zero_big_int),
             with_dummy_loc (
               Tminus (with_dummy_loc Tyunit,card (map_mterm m ctx c |> unloc_term),
                       (loc_term (Tint Big_int.unit_big_int)))
@@ -1082,12 +1083,17 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
                       nth (Tvar "_i", map_mterm m ctx c |> unloc_term),
                       map_mterm m ctx b)))
 
-    | Miter               _ -> error_not_translated "Miter"
-
+    | Miter (id, from, to_, body, lbl) -> (* ('id * 'term * 'term * 'term * ident option) *)
+      Tfor (map_lident id,
+            map_mterm m ctx from,
+            map_mterm m ctx to_,
+            mk_invariants m ctx lbl body,
+            map_mterm m ctx body
+      )
     | Mseq [] -> Tunit
     | Mseq l -> Tseq (List.map (map_mterm m ctx) l)
 
-    | Mreturn             _ -> error_not_translated "Mreturn"
+    | Mreturn             v -> map_mterm m ctx v |> Mlwtree.deloc
 
     | Mlabel lbl ->
       begin
@@ -2384,6 +2390,7 @@ let fold_exns body : term list =
     match term.M.node with
     | M.Mget _ -> acc @ [Texn Enotfound]
     | M.Mnth _ -> acc @ [Texn Enotfound]
+    | M.Mset _ -> acc @ [Texn Enotfound]
     | M.Maddasset _ -> acc @ [Texn Ekeyexist]
     | M.Maddshallow _ -> acc @ [Texn Ekeyexist]
     | M.Maddfield _ -> acc @ [Texn Enotfound; Texn Ekeyexist]

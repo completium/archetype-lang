@@ -3653,6 +3653,7 @@ end = struct
     let rec aux accu (t : mterm) =
       match t.node with
       | Mdiv (_,_) -> raise FoundDiv
+      | Mmodulo _ -> raise FoundDiv
       | _ -> fold_term aux accu t in
     aux accu mt
 

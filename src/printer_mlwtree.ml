@@ -387,9 +387,10 @@ let rec pp_term outer pos fmt = function
     Format.fprintf fmt "@[%a@] in@\n%a"
       pp_fun s
       (pp_term outer pos) e
-  | Tfor (i,s,l,b) ->
-    Format.fprintf fmt "for %a = 0 to %a do@\n@[%a@]@\n  @[%a@]@\ndone"
+  | Tfor (i,f,s,l,b) ->
+    Format.fprintf fmt "for %a = %a to %a do@\n@[%a@]@\n  @[%a@]@\ndone"
       pp_str i
+      (pp_term outer pos) f
       (pp_term outer pos) s
       (pp_invariants false) l
       (pp_term outer pos) b
@@ -448,7 +449,7 @@ let rec pp_term outer pos fmt = function
       (pp_with_paren (pp_term outer pos)) e1
       (pp_with_paren (pp_term outer pos)) e2
   | Tmod (_,e1,e2) ->
-    Format.fprintf fmt "%a %% %a"
+    Format.fprintf fmt "mod %a %a"
       (pp_with_paren (pp_term outer pos)) e1
       (pp_with_paren (pp_term outer pos)) e2
   | Tnth (i,e1,e2) ->
