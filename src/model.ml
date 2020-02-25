@@ -322,8 +322,10 @@ and api_asset =
   | Set              of ident
   | Add              of ident
   | Remove           of ident
+  | Clear            of ident
   | UpdateAdd        of ident * ident
   | UpdateRemove     of ident * ident
+  | UpdateClear      of ident * ident
   | ToKeys           of ident
   | ColToKeys        of ident
   | Select           of ident * mterm
@@ -2524,8 +2526,10 @@ let replace_ident_model (f : kind_ident -> ident -> ident) (model : model) : mod
         | Set an                -> Set (f KIassetname an)
         | Add an                -> Add (f KIassetname an)
         | Remove an             -> Remove (f KIassetname an)
+        | Clear an              -> Clear (f KIassetname an)
         | UpdateAdd (an, id)    -> UpdateAdd (f KIassetname an, f KIassetfield id)
         | UpdateRemove (an, id) -> UpdateRemove (f KIassetname an, f KIassetfield id)
+        | UpdateClear (an, id)  -> UpdateClear (f KIassetname an, f KIassetfield id)
         | ToKeys an             -> ToKeys (f KIassetname an)
         | ColToKeys an          -> ColToKeys (f KIassetname an)
         | Select (an, p)        -> Select (f KIassetname an, for_mterm p)
@@ -2933,8 +2937,10 @@ end = struct
     | Set            aid        -> "set_"            ^ aid
     | Add            aid        -> "add_"            ^ aid
     | Remove         aid        -> "remove_"         ^ aid
+    | Clear          aid        -> "clear_"          ^ aid
     | UpdateAdd     (aid, fid)  -> "update_add_"     ^ aid ^ "_" ^ fid
     | UpdateRemove  (aid, fid)  -> "update_remove_"  ^ aid ^ "_" ^ fid
+    | UpdateClear   (aid, fid)  -> "update_clear_"   ^ aid ^ "_" ^ fid
     | ToKeys         aid        -> "to_keys_"        ^ aid
     | ColToKeys      aid        -> "col_to_keys_"    ^ aid
     | Select        (aid, _)    -> "select_"         ^ aid

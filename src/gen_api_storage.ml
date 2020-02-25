@@ -41,6 +41,10 @@ let process_api_storage (model : model) : model =
       | Mremovefield (asset_name, field_name, _, _) ->
         let (pa,_,_) = Utils.get_container_asset_key model asset_name field_name in
         [APIAsset (Remove pa); APIAsset (UpdateRemove (asset_name, field_name))]
+      | Mclearasset an ->
+        [APIAsset (Clear an)]
+      | Mclearfield (an, fn) ->
+        [APIAsset (UpdateClear (an, fn))]
       | Mapifselect (asset_name, _, p)
       | Mselect (asset_name, _, p) ->
         [APIAsset (Get asset_name); APIAsset (Select (asset_name, p))]
@@ -110,8 +114,10 @@ let process_api_storage (model : model) : model =
                    | APIAsset (Set           an)        -> an
                    | APIAsset (Add           an)        -> an
                    | APIAsset (Remove        an)        -> an
+                   | APIAsset (Clear         an)        -> an
                    | APIAsset (UpdateAdd    (an, _))    -> an
                    | APIAsset (UpdateRemove (an, _))    -> an
+                   | APIAsset (UpdateClear  (an, _))    -> an
                    | APIAsset (ToKeys        an)        -> an
                    | APIAsset (ColToKeys     an)        -> an
                    | APIAsset (Select       (an, _))    -> an
@@ -153,28 +159,30 @@ let process_api_storage (model : model) : model =
                    | APIAsset   (Set           _) ->  7
                    | APIAsset   (Add           _) ->  8
                    | APIAsset   (Remove        _) ->  9
-                   | APIAsset   (UpdateAdd     _) -> 10
-                   | APIAsset   (UpdateRemove  _) -> 11
-                   | APIAsset   (ToKeys        _) -> 12
-                   | APIAsset   (Select        _) -> 13
-                   | APIAsset   (Sort          _) -> 14
-                   | APIAsset   (Contains      _) -> 15
-                   | APIList    (Lprepend      _) -> 16
-                   | APIList    (Lcontains     _) -> 17
-                   | APIList    (Lcount        _) -> 18
-                   | APIList    (Lnth          _) -> 19
-                   | APIBuiltin (MinBuiltin    _) -> 20
-                   | APIBuiltin (MaxBuiltin    _) -> 21
-                   | APIAsset   (Shallow       _) -> 22
-                   | APIAsset   (Unshallow     _) -> 23
-                   | APIAsset   (Listtocoll    _) -> 24
-                   | APIAsset   (Head          _) -> 25
-                   | APIAsset   (Tail          _) -> 26
-                   | APIAsset   (ColToKeys     _) -> 27
-                   | APIInternal (RatEq         ) -> 28
-                   | APIInternal (RatCmp        ) -> 29
-                   | APIInternal (RatArith      ) -> 30
-                   | APIInternal (RatTez        ) -> 31
+                   | APIAsset   (Clear         _) -> 10
+                   | APIAsset   (UpdateAdd     _) -> 11
+                   | APIAsset   (UpdateRemove  _) -> 12
+                   | APIAsset   (UpdateClear   _) -> 13
+                   | APIAsset   (ToKeys        _) -> 14
+                   | APIAsset   (Select        _) -> 15
+                   | APIAsset   (Sort          _) -> 16
+                   | APIAsset   (Contains      _) -> 17
+                   | APIList    (Lprepend      _) -> 18
+                   | APIList    (Lcontains     _) -> 19
+                   | APIList    (Lcount        _) -> 20
+                   | APIList    (Lnth          _) -> 21
+                   | APIBuiltin (MinBuiltin    _) -> 22
+                   | APIBuiltin (MaxBuiltin    _) -> 23
+                   | APIAsset   (Shallow       _) -> 24
+                   | APIAsset   (Unshallow     _) -> 25
+                   | APIAsset   (Listtocoll    _) -> 26
+                   | APIAsset   (Head          _) -> 27
+                   | APIAsset   (Tail          _) -> 28
+                   | APIAsset   (ColToKeys     _) -> 29
+                   | APIInternal (RatEq         ) -> 30
+                   | APIInternal (RatCmp        ) -> 31
+                   | APIInternal (RatArith      ) -> 32
+                   | APIInternal (RatTez        ) -> 33
                  in
                  let idx1 = get_kind i1.node_item in
                  let idx2 = get_kind i2.node_item in

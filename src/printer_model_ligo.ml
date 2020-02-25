@@ -1348,6 +1348,8 @@ let pp_model_internal fmt (model : model) b =
         pp_btyp t an an
         an
 
+    | Clear _ -> Format.fprintf fmt "// TODO api storage: clear"
+
     | UpdateAdd (an, fn) ->
       let k, t = Utils.get_asset_key model an in
       let ft, c = Utils.get_field_container model an fn in
@@ -1408,6 +1410,8 @@ let pp_model_internal fmt (model : model) b =
         pp_btyp t an an
         an
         (pp_do_if (match c with | Partition -> true | _ -> false) (fun fmt -> Format.fprintf fmt "s := remove_%s(s, key);@\n")) ft
+
+    | UpdateClear _ -> Format.fprintf fmt "// TODO api storage: UpdateClear"
 
     | ToKeys _an ->
       Format.fprintf fmt "// TODO api asset: ToKeys"

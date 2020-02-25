@@ -146,6 +146,8 @@ let pp_model fmt (model : model) =
          \t\tdel self.data.%s_assets[key]@\n"
         an an an
 
+    | Clear _ -> Format.fprintf fmt "// TODO api storage: clear"
+
     | UpdateAdd (an, fn) ->
       let k, _t = Utils.get_asset_key model an in
       Format.fprintf fmt
@@ -165,6 +167,8 @@ let pp_model fmt (model : model) =
         an fn
         fn
         an pp_str k
+
+    | UpdateClear _ -> Format.fprintf fmt "// TODO api storage: UpdateClear"
 
     | ToKeys an ->
       Format.fprintf fmt
