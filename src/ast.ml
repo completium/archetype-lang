@@ -291,6 +291,7 @@ type 'id term_node  =
   | Ptuple of 'id term_gen list
   | Pnone
   | Psome of 'id term_gen
+  | Pcast of ptyp * ptyp * 'id term_gen
 [@@deriving show {with_path = false}]
 
 and 'id term_arg =
@@ -565,15 +566,15 @@ type 'id contract_struct = {
 and contract = lident contract_struct
 
 type 'id decl_ =
-| Dvariable of 'id variable
-| Dasset    of 'id asset_struct
-| Denum     of 'id enum_struct
-| Dcontract of 'id contract_struct
+  | Dvariable of 'id variable
+  | Dasset    of 'id asset_struct
+  | Denum     of 'id enum_struct
+  | Dcontract of 'id contract_struct
 [@@deriving show {with_path = false}]
 
 type 'id fun_ =
-| Ffunction    of 'id function_struct
-| Ftransaction of 'id transaction_struct
+  | Ffunction    of 'id function_struct
+  | Ftransaction of 'id transaction_struct
 [@@deriving show {with_path = false}]
 
 type 'id model_struct = {
@@ -695,6 +696,7 @@ let map_term_node (f : 'id term_gen -> 'id term_gen) = function
   | Ptuple l                -> Ptuple (List.map f l)
   | Pnone                   -> Pnone
   | Psome a                 -> Psome (f a)
+  | Pcast (src, dst, v)     -> Pcast (src, dst, f v)
 
 let map_instr_node f = function
   | Iif (c, t, e)       -> Iif (c, f t, f e)
@@ -758,6 +760,7 @@ let fold_term (f: 'a -> 't -> 'a) (accu : 'a) (term : 'id term_gen) =
   | Ptuple l                -> List.fold_left f accu l
   | Pnone                   -> accu
   | Psome a                 -> f accu a
+  | Pcast (_, _, v)         -> f accu v
 
 let fold_instr f accu instr =
   match instr.node with
@@ -917,6 +920,11 @@ let fold_map_term g f (accu : 'a) (term : 'id term_gen) : 'term * 'a =
 
   | Psome a ->
     g (Psome a), accu
+
+  | Pcast (src, dst, v) ->
+    let ve, va = f accu v in
+    g (Pcast (src, dst, ve)), va
+
 
 let fold_map_instr_term gi _ge fi fe (accu : 'a) instr : 'id instruction_gen * 'a =
   match instr.node with

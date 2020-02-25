@@ -253,6 +253,7 @@ let to_model (ast : A.model) : M.model =
     | A.Ptuple l                             -> M.Mtuple (List.map f l)
     | A.Pnone                                -> M.Mnone
     | A.Psome a                              -> M.Msome (f a)
+    | A.Pcast (src, dst, v)                  -> M.Mcast (ptyp_to_type src, ptyp_to_type dst, f v)
     | A.Pquantifer (Forall, i, (coll, typ), term)    -> M.Mforall (i, ptyp_to_type typ, Option.map f coll, f term)
     | A.Pquantifer (Exists, i, (coll, typ), term)    -> M.Mexists (i, ptyp_to_type typ, Option.map f coll, f term)
 

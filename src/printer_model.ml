@@ -643,6 +643,15 @@ let pp_mterm fmt (mt : mterm) =
 
     (* utils *)
 
+    | Mcast (src, dst, v) ->
+      let pp fmt (src, dst, v) =
+        Format.fprintf fmt "cast_%a_%a(%a)"
+          pp_type src
+          pp_type dst
+          f v
+      in
+      pp fmt (src, dst, v)
+
     | Mgetfrommap (an, k, c) ->
       let pp fmt (an, k, c) =
         Format.fprintf fmt "getfrommap_%a (%a, %a)"

@@ -907,6 +907,14 @@ let pp_model_internal fmt (model : model) b =
 
     (* utils *)
 
+    | Mcast (src, dst, v) ->
+      let pp fmt (_src, dst, v) =
+        Format.fprintf fmt "(%a : %a)"
+          f v
+          pp_type dst
+      in
+      pp fmt (src, dst, v)
+
     | Mgetfrommap (an, k, m) ->
       let pp fmt (_an, k, m) =
         Format.fprintf fmt "get_force(%a, %a)"

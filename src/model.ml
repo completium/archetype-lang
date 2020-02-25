@@ -217,6 +217,7 @@ type ('id, 'term) mterm_node  =
   | Mhead             of ident * 'term * 'term
   | Mtail             of ident * 'term * 'term
   (* utils *)
+  | Mcast             of type_ * type_ * 'term
   | Mgetfrommap       of ident * 'term * 'term
   (* list api effect *)
   | Mlistprepend      of type_ * 'term * 'term
@@ -996,6 +997,7 @@ let cmp_mterm_node
     | Mhead (an1, c1, i1), Mhead (an2, c2, i2)                                         -> cmp_ident an1 an2 && cmp c1 c2 && cmp i1 i2
     | Mtail (an1, c1, i1), Mtail (an2, c2, i2)                                         -> cmp_ident an1 an2 && cmp c1 c2 && cmp i1 i2
     (* utils *)
+    | Mcast (src1, dst1, v1), Mcast (src2, dst2, v2)                                   -> cmp_type src1 src2 && cmp_type dst1 dst2 && cmp v1 v2
     | Mgetfrommap (an1, k1, c1), Mgetfrommap (an2, k2, c2)                             -> cmp_ident an1 an2 && cmp k1 k2 && cmp c1 c2
     (* list api effect *)
     | Mlistprepend (t1, c1, a1), Mlistprepend (t2, c2, a2)                             -> cmp_type t1 t2 && cmp c1 c2 && cmp a1 a2
@@ -1254,6 +1256,7 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Mhead (an, c, i)               -> Mhead (fi an, f c, f i)
   | Mtail (an, c, i)               -> Mtail (fi an, f c, f i)
   (* utils *)
+  | Mcast (src, dst, v)            -> Mcast (ft src, ft dst, f v)
   | Mgetfrommap (an, k, c)         -> Mgetfrommap (fi an, f k, f c)
   (* list api effect *)
   | Mlistprepend (t, c, a)         -> Mlistprepend (ft t, f c, f a)
@@ -1562,6 +1565,7 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mhead (_, c, i)                       -> f (f accu c) i
   | Mtail (_, c, i)                       -> f (f accu c) i
   (* utils *)
+  | Mcast (_ , _, v)                      -> f accu v
   | Mgetfrommap (_, k, c)                 -> f (f accu k) c
   (* list api effect *)
   | Mlistprepend (_, c, a)                -> f (f accu c) a
@@ -2079,6 +2083,10 @@ let fold_map_term
 
 
   (* utils *)
+
+  | Mcast (src, dst, v) ->
+    let ve, va = f accu v in
+    g (Mcast (src, dst, ve)), va
 
   | Mgetfrommap (an, k, c) ->
     let ke, ka = f accu k in
@@ -3058,9 +3066,9 @@ end = struct
   let get_var   m id : var   = get_vars m   |> List.find (fun (x : var)   -> cmp_ident id (unloc x.name))
   let get_enum  m id : enum  = get_enums m  |> List.find (fun (x : enum)  -> cmp_ident id (unloc x.name))
   let get_enum_values m id : ident list  = get_enums m
-  |> List.find (fun (x : enum)  -> cmp_ident id (unloc x.name))
-  |> fun e -> e.values
-  |> List.map (fun (v : enum_item) -> unloc (v.name))
+                                           |> List.find (fun (x : enum)  -> cmp_ident id (unloc x.name))
+                                           |> fun e -> e.values
+                                                       |> List.map (fun (v : enum_item) -> unloc (v.name))
   let get_asset m id : asset = get_assets m |> List.find (fun (x : asset) -> cmp_ident id (unloc x.name))
 
   (* let get_partitions m : (ident * ident * type_) list=
