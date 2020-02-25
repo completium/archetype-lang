@@ -1680,19 +1680,55 @@ let pp_model_internal fmt (model : model) b =
     | Shallow _ -> ()
     | Unshallow _ -> ()
     | Listtocoll _ -> ()
-    | Head _an -> Format.fprintf fmt "// TODO api storage: head"
-    | Tail _an -> Format.fprintf fmt "// TODO api storage: tail"
+    | Head an ->
+      let _, t = Utils.get_asset_key model an in
+      Format.fprintf fmt
+        "function head_%s (const l : list(%a); const i : int) : list(%a) is@\n  \
+         block {@\n    \
+         const length : int = int(size(l));@\n    \
+         if (i >= length or i < 0) then failwith(\"head_%s: index out of bound\") else skip;@\n    \
+         function rev (const accu: list(%a); const x: %a) : list(%a) is x # accu;@\n    \
+         function aggregate (const accu: int * list(%a); const x: %a) : int * list(%a) is@\n    \
+         if accu.0 < i@\n    \
+         then (accu.0 + 1, x # accu.1 );@\n    \
+         else (accu.0 + 1, accu.1 );@\n    \
+         const init : int * list(%a) = (0, ((list [] : list(%a))));@\n    \
+         const ltmp : int * list(%a) = list_fold (aggregate, l, init);@\n    \
+         const res  : list(%a) = list_fold (rev, ltmp.1, ((list [] : list(%a))));@\n  \
+         } with res@\n"
+        an pp_btyp t pp_btyp t
+        an
+        pp_btyp t pp_btyp t pp_btyp t
+        pp_btyp t pp_btyp t pp_btyp t
+        pp_btyp t pp_btyp t
+        pp_btyp t
+        pp_btyp t pp_btyp t
 
+    | Tail an ->
+      let _, t = Utils.get_asset_key model an in
+      Format.fprintf fmt
+        "function tail_%s (const l : list(%a); const i : int) : list(%a) is@\n  \
+         block {@\n    \
+         const length : int = int(size(l));@\n    \
+         if (i >= length or i < 0) then failwith(\"tail_%s: index out of bound\") else skip;@\n    \
+         const p : int = length - i;@\n    \
+         function rev (const accu: list(%a); const x: %a) : list(%a) is x # accu;@\n    \
+         function aggregate (const accu: int * list(%a); const x: %a) : int * list(%a) is@\n    \
+         if accu.0 >= p@\n    \
+         then (accu.0 + 1, x # accu.1 );@\n    \
+         else (accu.0 + 1, accu.1 );@\n    \
+         const init : int * list(%a) = (0, ((list [] : list(%a))));@\n    \
+         const ltmp : int * list(%a) = list_fold (aggregate, l, init);@\n    \
+         const res  : list(%a) = list_fold (rev, ltmp.1, ((list [] : list(%a))));@\n  \
+         } with res@\n"
+        an pp_btyp t pp_btyp t
+        an
+        pp_btyp t pp_btyp t pp_btyp t
+        pp_btyp t pp_btyp t pp_btyp t
+        pp_btyp t pp_btyp t
+        pp_btyp t
+        pp_btyp t pp_btyp t
   in
-
-  (* var r : %a := %s;@\n    \
-           function aggregate (const i : %a) : unit is@\n      \
-           begin@\n        \
-           const a : %s = get_force(i, s.%s_assets);@\n        \
-           r := r + (%a);@\n      \
-           end with unit;@\n    \
-           list_iter(aggregate, l)@\n  \
-  *)
 
   let pp_api_list (_env : env) fmt = function
     | Lprepend t  ->

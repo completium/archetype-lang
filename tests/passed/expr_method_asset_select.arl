@@ -16,6 +16,8 @@ action exec () {
     s0: res = 2;
   }
   effect {
-    res := my_asset.select(the.id = "id2").nth(0).value
+    var l = my_asset.select(the.id = "id2");
+    var a = l.nth(0);
+    res := a.value
   }
 }

@@ -53,6 +53,18 @@ let split_key_values (model : model) : model =
       let _k, t = Utils.get_asset_key model an in
       { x with node = Mselect (an, col, pred); type_ = Tcontainer (Tbuiltin t, Collection)}
 
+    | Mhead (an, col, idx) ->
+      let col = f ctx col in
+      let idx = f ctx idx in
+      let _k, t = Utils.get_asset_key model an in
+      { x with node = Mhead (an, col, idx); type_ = Tcontainer (Tbuiltin t, Collection)}
+
+    | Mtail (an, col, idx) ->
+      let col = f ctx col in
+      let idx = f ctx idx in
+      let _k, t = Utils.get_asset_key model an in
+      { x with node = Mtail (an, col, idx); type_ = Tcontainer (Tbuiltin t, Collection)}
+
     | Mletin (ids, init, _, body, o) ->
       let init = f ctx init in
       let body = f ctx body in
