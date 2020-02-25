@@ -1611,67 +1611,71 @@ let pp_model_internal fmt (model : model) b =
         an an
         pp_expr expr
 
-    | Min (_an, _fn) ->
-      (* let _, tk = Utils.get_asset_key model an in
-         let _, t, _ = Utils.get_asset_field model (dumloc an, fn) in *)
-      Format.fprintf fmt "// TODO api asset: Min"
-    (* "let[@inline] min_%s_%s (s, l : storage * %a list) : %a =@\n  \
-       match l with@\n  \
-       | [] -> failwith \"empty list\"@\n  \
-       | e::t ->@\n  \
-       let x = @\n   \
-       match Map.find e s.%s_assets with@\n  \
-       | Some v -> v@\n  \
-       | _ -> failwith \"not_found\" @\n    \
-       in@\n    \
-       let init = x.%s in@\n    \
-       List.fold (fun (k, accu) ->@\n    \
-       let x = @\n   \
-       match Map.find k s.%s_assets with@\n  \
-       | Some v -> v@\n  \
-       | _ -> failwith \"not_found\" @\n    \
-       in@\n    \
-       if accu > x.%s@\n  \
-       then x.%s@\n  \
-       else accu@\n  \
-       ) t init@\n"
-       an fn pp_btyp tk pp_type t
-       an
-       fn
-       an
-       fn
-       fn *)
+    | Min (an, fn) ->
+      let _, t = Utils.get_asset_key model an in
+      let _, ct, _ = Utils.get_asset_field model (an, fn) in
+      Format.fprintf fmt
+        "function min_%s_%s (const s : storage_type; const l : list(%a)) : %a is@\n  \
+         block {@\n    \
+         function aggregate (const accu: option(%a); const x: %a) : option(%a) is@\n    \
+         block {@\n      \
+         const a : %s = get_force(x, s.%s_assets);@\n      \
+         const r : option(%a) = Some(a.%s);@\n      \
+         case accu of@\n      \
+         | Some(v) -> r := if v < a.%s then Some (v) else accu@\n      \
+         | None -> skip@\n      \
+         end;@\n    \
+         } with r;@\n    \
+         var init : option(%a) := (None : option(%a));@\n    \
+         const res_opt : option(%a) = list_fold (aggregate, l, init);@\n    \
+         var res : %a := %a;@\n    \
+         case res_opt of@\n    \
+         | Some(v) -> res := v@\n    \
+         | None -> failwith(\"min_%s_%s failed\")@\n    \
+         end;@\n  \
+         } with res@\n"
+        an fn pp_btyp t pp_type ct
+        pp_type ct pp_btyp t pp_type ct
+        an an
+        pp_type ct fn
+        fn
+        pp_type ct pp_type ct
+        pp_type ct
+        pp_type ct pp_default ct
+        an fn
 
-    | Max (_an, _fn) ->
-      (* let _, tk = Utils.get_asset_key model an in
-         let _, t, _ = Utils.get_asset_field model (dumloc an, fn) in *)
-      Format.fprintf fmt "// TODO api asset: Max"
-    (* "let[@inline] max_%s_%s (s, l : storage * %a list) : %a =@\n  \
-       match l with@\n  \
-       | [] -> failwith \"empty list\"@\n  \
-       | e::t ->@\n  \
-       let x = @\n   \
-       match Map.find e s.%s_assets with@\n  \
-       | Some v -> v@\n  \
-       | _ -> failwith \"not_found\" @\n    \
-       in@\n    \
-       let init = x.%s in@\n    \
-       List.fold (fun (k, accu) ->@\n    \
-       let x = @\n   \
-       match Map.find k s.%s_assets with@\n  \
-       | Some v -> v@\n  \
-       | _ -> failwith \"not_found\" @\n    \
-       in@\n    \
-       if accu < x.%s@\n  \
-       then x.%s@\n  \
-       else accu@\n  \
-       ) t init@\n"
-       an fn pp_btyp tk pp_type t
-       an
-       fn
-       an
-       fn
-       fn *)
+    | Max (an, fn) ->
+      let _, t = Utils.get_asset_key model an in
+      let _, ct, _ = Utils.get_asset_field model (an, fn) in
+      Format.fprintf fmt
+        "function max_%s_%s (const s : storage_type; const l : list(%a)) : %a is@\n  \
+         block {@\n    \
+         function aggregate (const accu: option(%a); const x: %a) : option(%a) is@\n    \
+         block {@\n      \
+         const a : %s = get_force(x, s.%s_assets);@\n      \
+         const r : option(%a) = Some(a.%s);@\n      \
+         case accu of@\n      \
+         | Some(v) -> r := if v > a.%s then Some (v) else accu@\n      \
+         | None -> skip@\n      \
+         end;@\n    \
+         } with r;@\n    \
+         var init : option(%a) := (None : option(%a));@\n    \
+         const res_opt : option(%a) = list_fold (aggregate, l, init);@\n    \
+         var res : %a := %a;@\n    \
+         case res_opt of@\n    \
+         | Some(v) -> res := v@\n    \
+         | None -> failwith(\"max_%s_%s failed\")@\n    \
+         end;@\n  \
+         } with res@\n"
+        an fn pp_btyp t pp_type ct
+        pp_type ct pp_btyp t pp_type ct
+        an an
+        pp_type ct fn
+        fn
+        pp_type ct pp_type ct
+        pp_type ct
+        pp_type ct pp_default ct
+        an fn
 
     | Shallow _ -> ()
     | Unshallow _ -> ()
@@ -1730,7 +1734,7 @@ let pp_model_internal fmt (model : model) b =
          var res : %a := %a;@\n\
          case res_opt.1 of@\n\
          | Some(v) -> res := v@\n\
-         | None -> failwith(\"list_string_nth failed\")@\n\
+         | None -> failwith(\"list_%a_nth failed\")@\n\
          end@\n\
          } with res@\n"
         pp_type t pp_type t pp_type t
@@ -1738,6 +1742,7 @@ let pp_model_internal fmt (model : model) b =
         pp_type t pp_type t
         pp_type t
         pp_type t pp_default t
+        pp_type t
   in
 
   let pp_api_builtin (_env : env) fmt = function
