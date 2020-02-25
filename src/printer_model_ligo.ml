@@ -241,6 +241,9 @@ let pp_model_internal fmt (model : model) b =
       | { node = Mseq l; _} when List.length l >= 2 ->
         Format.fprintf fmt " block {@\n  @[%a@] }"
           (pp_list ";@\n" f) l
+      | { node = Mletin _; _} as a ->
+        Format.fprintf fmt " block {@\n   @[%a@]@\n}"
+          f a
       | _ ->
         Format.fprintf fmt " @\n  @[%a@]"
           f x
@@ -777,18 +780,23 @@ let pp_model_internal fmt (model : model) b =
 
     | Mclearasset (an) ->
       let pp fmt (an) =
-        Format.fprintf fmt "clear_%a (self)"
+        Format.fprintf fmt "%s := clear_%a (%s)"
+          const_storage
           pp_str an
+          const_storage
       in
       pp fmt (an)
 
-    | Mclearfield (an, fn) ->
-      let pp fmt (an, fn) =
-        Format.fprintf fmt "clear_%a_%a (self)"
+    | Mclearfield (an, fn, a) ->
+      let pp fmt (an, fn, a) =
+        Format.fprintf fmt "%s := clear_%a_%a (%s, %a)"
+          const_storage
           pp_str an
           pp_str fn
+          const_storage
+          f a
       in
-      pp fmt (an, fn)
+      pp fmt (an, fn, a)
 
     | Mset (c, l, k, v) ->
       let pp fmt (c, _l, k, v) =
@@ -1356,7 +1364,15 @@ let pp_model_internal fmt (model : model) b =
         pp_btyp t an an
         an
 
-    | Clear _ -> Format.fprintf fmt "// TODO api storage: clear"
+    | Clear an ->
+      let _, t = Utils.get_asset_key model an in
+      Format.fprintf fmt
+        "function clear_%s (const s : storage_type) : storage_type is@\n  \
+         begin@\n    \
+         s.%s_assets := (map [] : map(%a, %s));@\n  \
+         end with (s)@\n"
+        an
+        an pp_btyp t an
 
     | UpdateAdd (an, fn) ->
       let k, t = Utils.get_asset_key model an in
@@ -1419,7 +1435,43 @@ let pp_model_internal fmt (model : model) b =
         an
         (pp_do_if (match c with | Partition -> true | _ -> false) (fun fmt -> Format.fprintf fmt "s := remove_%s(s, key);@\n")) ft
 
-    | UpdateClear _ -> Format.fprintf fmt "// TODO api storage: UpdateClear"
+    | UpdateClear (an, fn) ->
+      let k, t = Utils.get_asset_key model an in
+      Format.fprintf fmt
+        "function clear_%s_%s (const s : storage_type; const a : %s) : storage_type is@\n  \
+         begin@\n    \
+         const asset_key : %a = a.%s;@\n    \
+         const asset_val : %s = get_%s(s, asset_key);@\n    \
+         %a\
+         asset_val.%s := (list [] : list(%a));@\n    \
+         const map_local : map(%a, %s) = s.my_asset_assets;@\n    \
+         map_local[asset_key] := asset_val;@\n    \
+         s.%s_assets := map_local;@\n    \
+         end with (s)@\n"
+        an fn an
+        pp_btyp t k
+        an an
+        (fun fmt _ ->
+           let anc, c = Utils.get_field_container model an fn in
+           let _, kt = Utils.get_asset_key model anc in
+           match c with
+           | Partition ->
+             Format.fprintf fmt
+               "// partition@\n    \
+                const ar : list(%a) = asset_val.%s;@\n    \
+                const map_local_%s : map(%a, %s) = s.%s_assets;@\n    \
+                function aux (const key : %a) : unit is block {remove key from map map_local_%s } with unit;@\n    \
+                list_iter (aux, ar);@\n    \
+                s.%s_assets := map_local_%s;@\n    \
+                // end partition@\n    "
+               pp_btyp t fn
+               anc pp_btyp kt anc anc
+               pp_btyp kt anc
+               anc anc
+           | _ -> ()) ()
+        fn pp_btyp t
+        pp_btyp t an
+        an
 
     | ToKeys _an ->
       Format.fprintf fmt "// TODO api asset: ToKeys"

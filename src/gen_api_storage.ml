@@ -43,7 +43,7 @@ let process_api_storage (model : model) : model =
         [APIAsset (Remove pa); APIAsset (UpdateRemove (asset_name, field_name))]
       | Mclearasset an ->
         [APIAsset (Clear an)]
-      | Mclearfield (an, fn) ->
+      | Mclearfield (an, fn, _) ->
         [APIAsset (UpdateClear (an, fn))]
       | Mapifselect (asset_name, _, p)
       | Mselect (asset_name, _, p) ->

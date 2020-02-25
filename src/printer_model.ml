@@ -502,13 +502,14 @@ let pp_mterm fmt (mt : mterm) =
       in
       pp fmt an
 
-    | Mclearfield (an, fn) ->
-      let pp fmt (an, fn) =
-        Format.fprintf fmt "clear_%a_%a ()"
+    | Mclearfield (an, fn, a) ->
+      let pp fmt (an, fn, a) =
+        Format.fprintf fmt "clear_%a_%a (%a)"
           pp_str an
           pp_str fn
+          f a
       in
-      pp fmt (an, fn)
+      pp fmt (an, fn, a)
 
     | Mset (c, l, k, v) ->
       let pp fmt (c, _l, k, v) =
