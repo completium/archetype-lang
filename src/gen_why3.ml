@@ -2085,29 +2085,25 @@ let mk_rm_asset m asset key : decl =
     logic    = NoMod;
     args     = ["a", Tyasset asset];
     returns  = Tyunit;
-    raises   = [Timpl (Texn Enotfound,
-                       mk_not_found_cond `Old asset (Tdoti ("a",key)))];
+    raises   = [];
     variants = [];
     requires = [];
     ensures  = mk_rm_ensures m ("remove_" ^ asset) asset "a";
-    body = Tif (mk_not_found_cond `Curr asset (Tdoti ("a",key)),
-                Traise Enotfound,
-                Some (
-                  Tseq [
-                    Tassign (mk_ac_rmed asset,
-                             Tadd (asset,
-                                   mk_ac_rmed asset,
-                                   Tget(asset,
-                                        mk_ac asset,
-                                        Tdoti ("a",
-                                               key))));
-                    Tassign (mk_ac asset,
-                             Tremove (asset,
-                                      mk_ac asset,
-                                      Tdoti ("a",
-                                             key)))
-
-                  ]));
+    body =
+      Tseq [
+        Tassign (mk_ac_rmed asset,
+                 Tadd (asset,
+                       mk_ac_rmed asset,
+                       Tget(asset,
+                            mk_ac asset,
+                            Tdoti ("a",
+                                   key))));
+        Tassign (mk_ac asset,
+                 Tremove (asset,
+                          mk_ac asset,
+                          Tdoti ("a",
+                                 key)))
+      ];
   }
 
 let mk_clear_coll m asset : decl = Dfun {
@@ -2165,54 +2161,94 @@ let mk_add_partition_field m a ak pf adda addak : decl =
                                       )))]));
   }
 
-(* n      : asset name
+let mk_rm_field_ensures m part field prefix asset elem =
+let collfield = Tapp (Tvar field, [Tvar ("asset")]) in
+let assetcollfield = Tunshallow (asset,mk_ac asset,collfield) in
+let rm_field_ensures = [
+  { id   = prefix ^ "_field_post1";
+      form = Tnot (Tmem (asset,
+                         Tvar (elem),
+                         assetcollfield))
+    };
+] @
+List.fold_left (fun acc idx ->
+  acc @ [{
+      id = "remove_" ^ asset ^ "_field_sum_post";
+      form = Teq (Tyint,
+                  Tapp (Tvar (mk_sum_name_from_id asset idx),
+                        [assetcollfield]),
+                  Tminus (Tyint,
+                          Tapp (Tvar (mk_sum_name_from_id asset idx),
+                                [Told assetcollfield]),
+                          Tapp(
+                            Tvar (mk_get_sum_value_id asset idx),
+                            [Tvar elem])))
+    }]) [] (M.Utils.get_sum_idxs m asset) @
+(if M.Utils.with_count m asset then [{
+      id = "rm_" ^ asset ^ "_field_count";
+      form = Teq (Tyint,
+                  Tcard (asset, assetcollfield),
+                  Tminus (Tyint,
+                          Tcard (asset, Told assetcollfield),
+                          Tint (Big_int.big_int_of_int 1)
+                         )
+                 )
+    }]
+  else [])
+in
+if part then
+  (mk_rm_ensures m prefix asset elem)@rm_field_ensures
+else
+  rm_field_ensures
+
+(* part   : is rmed field a partititon ?
+   asset  : asset name
    ktyp   : asset key type
-   f      : partition field name
+   field  : field name
    rmn    : removed asset name
    rmktyp : removed asset key type
 *)
-let mk_rm_partition_field m asset keyf f rmed_asset rmkey : decl = Dfun {
-    name     = "remove_" ^ asset ^ "_" ^ f;
+let mk_rm_field m part asset keyf field rmed_asset rmkey : decl = Dfun {
+    name     = "remove_" ^ asset ^ "_" ^ field;
     logic    = NoMod;
     args     = ["asset",Tyasset asset; "rm_asset",Tyasset rmed_asset];
     returns  = Tyunit;
-    raises   = [Timpl (Texn Enotfound,
-                       mk_not_found_cond `Old asset (Tdoti ("asset",keyf))) ];
+    raises   = [];
     variants = [];
     requires = [];
-    ensures  = mk_rm_ensures m ("remove_" ^ asset ^ "_" ^ f) rmed_asset "rm_asset";
+    ensures  = mk_rm_field_ensures m part field ("remove_" ^ asset ^ "_" ^ field) rmed_asset "rm_asset";
     body     =
-      Tif (mk_not_found_cond `Curr asset (Tdoti ("asset",keyf)),
-           Traise Enotfound,
-           Some (
+     Tletin (false,
+             asset ^ "_" ^ field,
+             None,
+             Tapp (Tvar field,
+                   [Tvar ("asset")]),
              Tletin (false,
-                     asset ^ "_" ^ f,
+                     "new_" ^ asset ^ "_" ^ field,
                      None,
-                     Tapp (Tvar f,
-                           [Tvar ("asset")]),
+                     Tlistremove (gArchetypeList,
+                                  Tdoti ("rm_asset",
+                                         rmkey),
+                                  Tvar (asset ^ "_" ^ field)),
                      Tletin (false,
-                             "new_" ^ asset ^ "_" ^ f,
+                             "new_" ^ asset ^ "_asset",
                              None,
-                             Tlistremove (gArchetypeList,
-                                          Tdoti ("rm_asset",
-                                                 rmkey),
-                                          Tvar (asset ^ "_" ^ f)),
-                             Tletin (false,
-                                     "new_" ^ asset ^ "_asset",
-                                     None,
-                                     Trecord (Some (Tvar ("asset")),
-                                              [f,Tvar ("new_" ^ asset ^ "_" ^ f)]),
-                                     Tseq [
-                                       Tassign (mk_ac asset,
-                                                Tset (asset,
-                                                      mk_ac asset,
-                                                      Tdoti ("asset",
-                                                             keyf),
-                                                      Tvar ("new_" ^ asset ^ "_asset")));
-                                       Tapp (Tvar ("remove_" ^ rmed_asset),
-                                             [Tvar ("rm_asset")])
-                                     ]
-                                    )))));
+                             Trecord (Some (Tvar ("asset")),
+                                      [field,Tvar ("new_" ^ asset ^ "_" ^ field)]),
+                             let assign =
+                              Tassign (mk_ac asset,
+                                       Tset (asset,
+                                             mk_ac asset,
+                                             Tdoti ("asset",
+                                                     keyf),
+                                             Tvar ("new_" ^ asset ^ "_asset"))) in
+                             if part then
+                             Tseq [
+                               assign;
+                               Tapp (Tvar ("remove_" ^ rmed_asset),
+                                     [Tvar ("rm_asset")])
+                             ] else assign
+                            )));
   }
 
 let mk_storage_api_before_storage (m : M.model) _records =
@@ -2364,6 +2400,10 @@ let mk_rat_tez _m = Dfun {
                 (* )) *);
   }
 
+let is_partition m n f =
+  match M.Utils.get_field_container m n f with
+  | _,Partition -> true
+  | _ -> false
 
 let mk_storage_api (m : M.model) records =
   m.api_items |> List.fold_left (fun acc (sc : M.api_storage) ->
@@ -2396,7 +2436,7 @@ let mk_storage_api (m : M.model) records =
         let (pa,pk,_) = M.Utils.get_container_asset_key m n f in
         acc @ [
           (*mk_rm_asset           pa.pldesc (pt |> map_btype);*)
-          mk_rm_partition_field m n t f pa pk
+          mk_rm_field m (is_partition m n f) n t f pa pk
         ]
       | M.APIAsset (Contains n) ->
         let t         =  M.Utils.get_asset_key m n |> snd |> map_btype in
@@ -2440,7 +2480,6 @@ let fold_exns body : term list =
     | M.Mfail NoTransfer -> acc @ [Texn Enotransfer]
     | M.Mfail (InvalidCondition _) -> acc @ [Texn Einvalidcondition]
     | M.Mfail InvalidState -> acc @ [Texn Einvalidstate]
-    | M.Mremoveasset _ -> acc @ [Texn Enotfound]
     | _ -> M.fold_term internal_fold_exn acc term in
   Tools.List.dedup (internal_fold_exn [] body)
 
