@@ -1274,6 +1274,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
 
     (* utils *)
 
+    | Mcast               _ -> error_not_translated "Mcast"
     | Mgetfrommap         _ -> error_not_translated "Mgetfrommap"
 
 

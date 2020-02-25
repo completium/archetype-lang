@@ -375,6 +375,15 @@ let rec pp_pterm fmt (pterm : pterm) =
       in
       (pp_no_paren pp) fmt a
 
+    | Pcast (src, dst, a) ->
+      let pp fmt (src, dst, a) =
+        Format.fprintf fmt "cast_%a_%a(%a)"
+          pp_ptyp src
+          pp_ptyp dst
+          pp_pterm a
+      in
+      (pp_no_paren pp) fmt (src, dst, a)
+
   in
   pp_struct_poly pp_node fmt pterm
 
