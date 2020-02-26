@@ -779,6 +779,13 @@ let pp_mterm fmt (mt : mterm) =
       in
       pp fmt (op, l, r)
 
+    | Mratuminus v ->
+      let pp fmt v =
+        Format.fprintf fmt "rat_uminus (%a)"
+          f v
+      in
+      pp fmt v
+
     | Mrattez (c, t) ->
       let pp fmt (c, t) =
         Format.fprintf fmt "rat_tez (%a, %a)"
@@ -1088,6 +1095,7 @@ let pp_api_internal fmt = function
   | RatEq        -> Format.fprintf fmt "rat_eq"
   | RatCmp       -> Format.fprintf fmt "rat_cmp"
   | RatArith     -> Format.fprintf fmt "rat_arith"
+  | RatUminus    -> Format.fprintf fmt "rat_uminus"
   | RatTez       -> Format.fprintf fmt "rat_to_tez"
 
 let pp_api_item_node fmt = function

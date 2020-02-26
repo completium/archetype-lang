@@ -97,6 +97,8 @@ let process_api_storage (model : model) : model =
         [APIInternal (RatCmp)]
       | Mratarith _ ->
         [APIInternal (RatArith)]
+      | Mratuminus _ ->
+        [APIInternal (RatUminus)]
       | Mrattez _ ->
         [APIInternal (RatTez)]
       | _ -> []
@@ -182,7 +184,8 @@ let process_api_storage (model : model) : model =
                    | APIInternal (RatEq         ) -> 30
                    | APIInternal (RatCmp        ) -> 31
                    | APIInternal (RatArith      ) -> 32
-                   | APIInternal (RatTez        ) -> 33
+                   | APIInternal (RatUminus     ) -> 33
+                   | APIInternal (RatTez        ) -> 34
                  in
                  let idx1 = get_kind i1.node_item in
                  let idx2 = get_kind i2.node_item in

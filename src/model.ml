@@ -250,6 +250,7 @@ type ('id, 'term) mterm_node  =
   | Mrateq            of 'term * 'term
   | Mratcmp           of comparison_operator * 'term * 'term
   | Mratarith         of rat_arith_op * 'term * 'term
+  | Mratuminus        of 'term
   | Mrattez           of 'term * 'term
   | Minttorat         of 'term
   (* functional *)
@@ -360,6 +361,7 @@ and api_internal =
   | RatEq
   | RatCmp
   | RatArith
+  | RatUminus
   | RatTez
 [@@deriving show {with_path = false}]
 
@@ -1031,6 +1033,7 @@ let cmp_mterm_node
     | Mrateq (l1, r1), Mrateq (l2, r2)                                                 -> cmp l1 l2 && cmp r1 r2
     | Mratcmp (op1, l1, r1), Mratcmp (op2, l2, r2)                                     -> cmp_comparison_operator op1 op2 && cmp l1 l2 && cmp r1 r2
     | Mratarith (op1, l1, r1), Mratarith (op2, l2, r2)                                 -> cmp_rat_arith_op op1 op2 && cmp l1 l2 && cmp r1 r2
+    | Mratuminus v1, Mratuminus v2                                                     -> cmp v1 v2
     | Mrattez (c1, t1), Mrattez (c2, t2)                                               -> cmp c1 c2 && cmp t1 t2
     | Minttorat e1, Minttorat e2                                                       -> cmp e1 e2
     (* functional *)
@@ -1291,6 +1294,7 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Mrateq (l, r)                  -> Mrateq (f l, f r)
   | Mratcmp (op, l, r)             -> Mratcmp (op, f l, f r)
   | Mratarith (op, l, r)           -> Mratarith (op, f l, f r)
+  | Mratuminus v                   -> Mratuminus (f v)
   | Mrattez (c, t)                 -> Mrattez (f c, f t)
   | Minttorat e                    -> Minttorat (f e)
   (* functional *)
@@ -1600,6 +1604,7 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mrateq (l, r)                         -> f (f accu l) r
   | Mratcmp (_, l, r)                     -> f (f accu l) r
   | Mratarith (_, l, r)                   -> f (f accu l) r
+  | Mratuminus v                          -> f accu v
   | Mrattez (c, t)                        -> f (f accu c) t
   | Minttorat e                           -> f accu e
   (* functional *)
@@ -2210,6 +2215,10 @@ let fold_map_term
     let re, ra = f la r in
     g (Mratarith (op, le, re)), ra
 
+  | Mratuminus v ->
+    let ve, va = f accu v in
+    g (Mratuminus ve), va
+
   | Mrattez (c, t) ->
     let ce, ca = f accu c in
     let te, ta = f ca t in
@@ -2572,10 +2581,11 @@ let replace_ident_model (f : kind_ident -> ident -> ident) (model : model) : mod
       in
       let for_api_internal (ainternal : api_internal) : api_internal =
         match ainternal with
-        | RatEq    -> RatEq
-        | RatCmp   -> RatCmp
-        | RatArith -> RatArith
-        | RatTez   -> RatTez
+        | RatEq     -> RatEq
+        | RatCmp    -> RatCmp
+        | RatArith  -> RatArith
+        | RatUminus -> RatUminus
+        | RatTez    -> RatTez
       in
       match asn with
       | APIAsset    aasset    -> APIAsset    (for_api_asset aasset)
@@ -2853,10 +2863,6 @@ let extract_list (mt : mterm) (e : mterm) =
 
 module Utils : sig
 
-  val function_name_from_api_asset       : api_asset    -> ident
-  val function_name_from_api_list        : api_list     -> ident
-  val function_name_from_api_builtin     : api_builtin  -> ident
-  val function_name_from_api_internal    : api_internal -> ident
   val get_vars                           : model -> var list
   val get_enums                          : model -> enum list
   val get_assets                         : model -> asset list
@@ -2939,51 +2945,6 @@ end = struct
     raise (Anomaly str)
 
   let lident_to_string lident = Location.unloc lident
-
-  let function_name_from_function_node = function
-    | Function (fs, _)    -> lident_to_string fs.name
-    | Entry     fs        -> lident_to_string fs.name
-
-  let function_name_from_api_asset = function
-    | Get            aid        -> "get_"            ^ aid
-    | Set            aid        -> "set_"            ^ aid
-    | Add            aid        -> "add_"            ^ aid
-    | Remove         aid        -> "remove_"         ^ aid
-    | Clear          aid        -> "clear_"          ^ aid
-    | UpdateAdd     (aid, fid)  -> "update_add_"     ^ aid ^ "_" ^ fid
-    | UpdateRemove  (aid, fid)  -> "update_remove_"  ^ aid ^ "_" ^ fid
-    | UpdateClear   (aid, fid)  -> "update_clear_"   ^ aid ^ "_" ^ fid
-    | ToKeys         aid        -> "to_keys_"        ^ aid
-    | ColToKeys      aid        -> "col_to_keys_"    ^ aid
-    | Select        (aid, _)    -> "select_"         ^ aid
-    | Sort          (aid, _)    -> "sort_"           ^ aid ^ "_"
-    | Contains       aid        -> "contains_"       ^ aid
-    | Nth            aid        -> "nth_"            ^ aid
-    | Count          aid        -> "count_"          ^ aid
-    | Sum           (aid, _, _) -> "sum_"            ^ aid
-    | Min           (aid, fid)  -> "min_"            ^ aid ^ "_" ^ fid
-    | Max           (aid, fid)  -> "max_"            ^ aid ^ "_" ^ fid
-    | Shallow        aid        -> "shallow_"        ^ aid
-    | Unshallow      aid        -> "unshallow"       ^ aid
-    | Listtocoll     aid        -> "listtocoll_"     ^ aid
-    | Head           aid        -> "head_"           ^ aid
-    | Tail           aid        -> "tail_"           ^ aid
-
-  let function_name_from_api_list = function
-    | Lprepend  _ -> "prepend"
-    | Lcontains _ -> "contains"
-    | Lcount    _ -> "count"
-    | Lnth      _ -> "nth"
-
-  let function_name_from_api_builtin = function
-    | MinBuiltin         _ -> "min"
-    | MaxBuiltin         _ -> "max"
-
-  let function_name_from_api_internal = function
-    | RatEq                -> "rat_eq"
-    | RatCmp               -> "rat_cmp"
-    | RatArith             -> "rat_arith"
-    | RatTez               -> "rat_to_tez"
 
   let get_function_args (f : function__) : argument list =
     match f.node with

@@ -1073,6 +1073,13 @@ let pp_model_internal fmt (model : model) b =
       in
       pp fmt (op, l, r)
 
+    | Mratuminus v ->
+      let pp fmt v =
+        Format.fprintf fmt "rat_uminus (%a)"
+          f v
+      in
+      pp fmt v
+
     | Mrattez (c, t) ->
       let pp fmt (c, t) =
         Format.fprintf fmt "rat_tez (%a, %a)"
@@ -1833,6 +1840,11 @@ let pp_model_internal fmt (model : model) b =
          | OpArithDiv(unit)   -> (lhs.0 * rhs.1, lhs.1 * rhs.0)@\n    \
          end@\n  \
          end with r@\n"
+    | RatUminus ->
+      Format.fprintf fmt
+        "function rat_uminus (const x : (int * int)) : (int * int) is@\n\
+         block { skip }@\n\
+         with (- x.0, x.1)@\n"
     | RatTez ->
       Format.fprintf fmt
         "function rat_tez (const c : (int * int); const t : tez) : tez is@\n\

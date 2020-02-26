@@ -411,6 +411,7 @@ let pp_model fmt (model : model) =
     | RatEq        -> Format.fprintf fmt "rat_eq"
     | RatCmp       -> Format.fprintf fmt "rat_cmp"
     | RatArith     -> Format.fprintf fmt "rat_arith"
+    | RatUminus    -> Format.fprintf fmt "rat_uminus"
     | RatTez       -> Format.fprintf fmt "rat_to_tez"
   in
 
@@ -1179,6 +1180,13 @@ let pp_model fmt (model : model) =
             f r
         in
         pp fmt (op, l, r)
+
+      | Mratuminus v ->
+        let pp fmt v =
+          Format.fprintf fmt "rat_uminus (%a)"
+            f v
+        in
+        pp fmt v
 
       | Mrattez (c, t) ->
         let pp fmt (c, t) =

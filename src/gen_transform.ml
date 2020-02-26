@@ -856,6 +856,10 @@ let remove_rational (model : model) : model =
         let rhs = (to_rat |@ aux) b in
         mk_mterm (Mratarith (op, lhs, rhs)) type_rational
       in
+      let process_uminus v =
+        let v = (to_rat |@ aux) v in
+        mk_mterm (Mratuminus v) type_rational
+      in
       let process_rattez (n : mterm) (t : mterm) : mterm =
         let coef = (to_rat |@ aux) n in
         let t = aux t in
@@ -872,6 +876,7 @@ let remove_rational (model : model) : model =
           | Mminus  (a, b) -> process_arith Rminus (a, b)
           | Mmult   (a, b) -> process_arith Rmult  (a, b)
           | Mdiv    (a, b) -> process_arith Rdiv   (a, b)
+          | Muminus v      -> process_uminus v
           | Mdivrat (a, b) -> mk_rat a b
           | _ ->
             let mt = map_mterm aux mt in
