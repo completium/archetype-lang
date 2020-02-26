@@ -2593,7 +2593,7 @@ let mk_storage_api (m : M.model) records =
         acc @ [ mk_contains n t ]
       | M.APIAsset (Select (asset,test)) ->
         let mlw_test = map_mterm m init_ctx test in
-        acc @ [ mk_select m asset test (mlw_test |> unloc_term) (match sc.api_loc with | OnlyFormula | ExecFormula -> true | OnlyExec -> false) ]
+        acc @ [ mk_select m asset test (mlw_test |> unloc_term) (match sc.api_loc with | OnlyFormula -> true | ExecFormula | OnlyExec -> false) ]
       | M.APIAsset (Sort (asset,field)) ->
         acc @ [ mk_cmp_function m asset field; mk_sort_clone m asset field]
       (* TODO *)
