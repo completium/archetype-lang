@@ -16,6 +16,8 @@ action exec () {
     s0: res = 1;
   }
   effect {
-    res := my_asset.sort(value).nth(0).value
+    var l = my_asset.sort(value);
+    var a = l.nth(0);
+    res := a.value
   }
 }

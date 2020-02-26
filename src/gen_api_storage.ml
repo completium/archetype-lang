@@ -11,16 +11,23 @@ type error_desc =
 
 let process_api_storage (model : model) : model =
 
-  let add (ctx : ctx_model) (l : api_storage list) (i :  api_storage) =
-    let item = { i with only_formula = ctx.formula } in
+  let add (_ctx : ctx_model) (l : api_storage list) (i :  api_storage) =
     let res, l = List.fold_left (fun (res, accu) (x : api_storage) ->
         if cmp_api_item_node x.node_item i.node_item
-        then (true, { item with only_formula = x.only_formula && ctx.formula }::accu)
+        then (true,
+              { i with api_loc =
+                         match x.api_loc, i.api_loc with
+                         | _, ExecFormula
+                         | ExecFormula, _
+                         | OnlyExec, OnlyFormula
+                         | OnlyFormula, OnlyExec -> ExecFormula
+                         | _ -> i.api_loc
+              }::accu)
         else (res, x::accu)) (false, []) l in
     if res then
       l
     else
-      item::l
+      i::l
   in
 
   let rec f (ctx : ctx_model) (accu : api_storage list) (term : mterm) : api_storage list =
@@ -103,7 +110,7 @@ let process_api_storage (model : model) : model =
         [APIInternal (RatTez)]
       | _ -> []
     in
-    let accu = List.fold_left (fun accu v -> add ctx accu (Model.mk_api_item v)) accu api_items in
+    let accu = List.fold_left (fun accu v -> add ctx accu (Model.mk_api_item v  (match ctx.formula with | true -> OnlyFormula | false -> OnlyExec))) accu api_items in
     fold_term (f ctx) accu term
   in
   let l = fold_model f model []

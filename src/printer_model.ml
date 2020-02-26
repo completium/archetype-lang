@@ -1108,9 +1108,9 @@ let pp_api_verif fmt = function
   | StorageInvariant (l, an, mt) -> Format.fprintf fmt "storage_invariant on %a %a %a" pp_ident l pp_ident an pp_mterm mt
 
 let pp_api_storage fmt (api_storage : api_storage) =
-  Format.fprintf fmt "%a%a"
+  Format.fprintf fmt "%a %a"
     pp_api_item_node api_storage.node_item
-    (fun fmt x -> if x then pp_str fmt "\t[only_formula]" else pp_str fmt "") api_storage.only_formula
+    pp_api_loc api_storage.api_loc
 
 let pp_api_items fmt l =
   if List.is_empty l

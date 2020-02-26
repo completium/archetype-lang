@@ -288,7 +288,7 @@ let pp_model fmt (model : model) =
   in
 
   let pp_api_item fmt (api_storage : api_storage) =
-    if api_storage.only_formula
+    if (match api_storage.api_loc with | OnlyExec | ExecFormula -> true | OnlyFormula -> false)
     then ()
     else pp_api_item_node fmt api_storage.node_item
   in

@@ -372,9 +372,14 @@ and api_storage_node =
   | APIInternal   of api_internal
 [@@deriving show {with_path = false}]
 
+and api_loc =
+| OnlyFormula
+| OnlyExec
+| ExecFormula
+
 and api_storage = {
   node_item: api_storage_node;
-  only_formula: bool;
+  api_loc: api_loc;
 }
 [@@deriving show {with_path = false}]
 
@@ -811,8 +816,8 @@ let mk_function ?spec node : 'id function__gen =
 let mk_signature ?(args = []) ?ret name : 'id signature_gen =
   { name; args; ret }
 
-let mk_api_item ?(only_formula = false) node_item =
-  { node_item; only_formula }
+let mk_api_item node_item api_loc =
+  { node_item; api_loc }
 
 let mk_model ?(api_items = []) ?(api_verif = []) ?(decls = []) ?(functions = []) ?(storage = []) ?(specification = mk_specification ()) ?(security = mk_security ()) name : model =
   { name; api_items; api_verif; storage; decls; functions; specification; security }
@@ -2595,7 +2600,7 @@ let replace_ident_model (f : kind_ident -> ident -> ident) (model : model) : mod
     in
     {
       node_item    = for_node_item ai.node_item;
-      only_formula = ai.only_formula;
+      api_loc      = ai.api_loc;
     }
   in
   let for_api_verif (apiv : api_verif) : api_verif =

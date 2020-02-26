@@ -839,9 +839,10 @@ let pp_model_internal fmt (model : model) b =
 
     | Msort (an, c, l) -> (* TODO *)
       let pp fmt (an, c, l) =
-        Format.fprintf fmt "sort_%a_%a (%a)"
+        Format.fprintf fmt "sort_%a_%a (%s, %a)"
           pp_str an
           pp_postfix_sort l
+          const_storage
           f c
       in
       pp fmt (an, c, l)
@@ -1534,7 +1535,7 @@ let pp_model_internal fmt (model : model) b =
     | Sort (an, l) ->
       let _, t = Utils.get_asset_key model an in
       Format.fprintf fmt
-        "function sort_%s_%a (const l : list(%a)) : list(%a) is@\n  \
+        "function sort_%s_%a (const s : storage_type; const l : list(%a)) : list(%a) is@\n  \
          begin@\n    \
          skip;@\n  \
          end with l@\n"
@@ -1867,7 +1868,7 @@ let pp_model_internal fmt (model : model) b =
   let pp_api_items (env : env) fmt _ =
     let filter_api_items l : api_storage list =
       List.fold_right (fun (x : api_storage) accu ->
-          if x.only_formula
+          if (match x.api_loc with | OnlyExec | ExecFormula -> true | OnlyFormula -> false)
           then accu
           else x::accu
         ) l []
@@ -1943,7 +1944,7 @@ let pp_model_internal fmt (model : model) b =
   let compute_env _ =
     let select_preds =
       List.fold_right (fun x accu ->
-          match x.only_formula, x.node_item with
+          match (match x.api_loc with | OnlyExec | ExecFormula -> true | OnlyFormula -> false), x.node_item with
           | false, APIAsset (Select (_, pred)) ->
             if not (List.exists (Model.cmp_mterm pred) accu)
             then pred::accu
@@ -1953,7 +1954,7 @@ let pp_model_internal fmt (model : model) b =
     in
     let sum_preds =
       List.fold_right (fun x accu ->
-          match x.only_formula, x.node_item with
+          match (match x.api_loc with | OnlyExec | ExecFormula -> true | OnlyFormula -> false), x.node_item with
           | false, APIAsset (Sum (_, _, pred)) ->
             if not (List.exists (Model.cmp_mterm pred) accu)
             then pred::accu
