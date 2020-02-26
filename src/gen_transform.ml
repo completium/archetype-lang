@@ -873,7 +873,9 @@ let remove_rational (model : model) : model =
           | Mmult   (a, b) -> process_arith Rmult  (a, b)
           | Mdiv    (a, b) -> process_arith Rdiv   (a, b)
           | Mdivrat (a, b) -> mk_rat a b
-          | _ -> { mt with type_ = type_rational }
+          | _ ->
+            let mt = map_mterm aux mt in
+            { mt with type_ = type_rational }
         end
       | _ as node, Tbuiltin Bcurrency ->
         begin
