@@ -2,6 +2,7 @@ archetype effect_method_asset_clear_collection
 
 asset o_asset identified by oid {
   oid : string;
+  val : int = 0;
 } initialized by {
   {"oid"}
 }
@@ -22,4 +23,9 @@ action exec () {
   effect {
     my_asset.get("id0").col.clear()
   }
+}
+
+specification {
+  s0: o_asset.count() = 0;
+  s1: o_asset.sum(val) = 0;
 }

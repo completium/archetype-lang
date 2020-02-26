@@ -2118,14 +2118,73 @@ let mk_clear_coll m asset : decl = Dfun {
     body = Tassign (mk_ac asset, Tdoti (String.capitalize_ascii asset,"empty"));
 }
 
-let mk_clear_field_ensures _m _part p _asset field _key =
-[
+let mk_clear_field_ensures m part p asset field _key =
+let collfield = Tapp (Tvar field, [Tvar ("a")]) in
+let assetcollfield = Tunshallow (asset,mk_ac asset,collfield) in
+let oldassetcollfield = Tunshallow (asset,mk_ac_old asset,collfield) in
+let clear_field_ensures = [
     { id   = p ^ "_post1";
       form = Teq (Tyint, Tapp (Tvar field,[Tvar "a"]), Tnil)
     };
-]
+    { id   = p ^ "_post2";
+      form = Tempty (asset, assetcollfield)
+    };
+] @ List.fold_left (fun acc idx ->
+      acc @ [{
+          id = p ^ "_sum_post";
+          form = Teq (Tyint,
+                      Tapp (Tvar (mk_sum_name_from_id asset idx),
+                            [assetcollfield]),
+                      Tint (Big_int.zero_big_int))
+        }]) [] (M.Utils.get_sum_idxs m asset) @
+(if M.Utils.with_count m asset then [{
+      id = p ^ "_count";
+      form = Teq (Tyint,
+                  Tcard (asset, assetcollfield),
+                  Tint (Big_int.zero_big_int)
+                 )
+    }]
+else [])
+in
+(* declare effect on base asset collections when partition *)
+let clear_field_part_ensures = [
+  { id   = p ^ "_part_post1";
+      form = Teq (Tyasset asset,
+                  mk_ac asset,
+                  Tdiff (asset ,
+                         mk_ac_old asset,
+                         oldassetcollfield))
+    };
+] @ List.fold_left (fun acc idx ->
+      acc @ [{
+          id = p ^ "_sum_post";
+          form = Teq (Tyint,
+                      Tapp (Tvar (mk_sum_name_from_id asset idx),
+                            [mk_ac asset]),
+                      Tminus (Tyint,
+                              Tapp (Tvar (mk_sum_name_from_id asset idx),
+                              [mk_ac_old asset]),
+                              Tapp (Tvar (mk_sum_name_from_id asset idx),
+                              [oldassetcollfield])))
+        }]) [] (M.Utils.get_sum_idxs m asset) @
+(if M.Utils.with_count m asset then [{
+      id = p ^ "_count";
+      form = Teq (Tyint,
+                  Tcard (asset, mk_ac asset),
+                  Tminus (Tyint,
+                    Tcard (asset, mk_ac_old asset),
+                    Tcard (asset, oldassetcollfield)
+                  )
+                 )
+    }]
+else [])
+in
+if part then
+clear_field_ensures @ clear_field_part_ensures
+else
+clear_field_ensures
 
-let mk_clear_field_coll _m _part asset field key = Dfun {
+let mk_clear_field_coll _m _part asset field key clearedasset = Dfun {
     name     = "clear_" ^ asset ^ "_" ^ field;
     logic    = NoMod;
     args     = ["a", Tyasset asset];
@@ -2133,7 +2192,7 @@ let mk_clear_field_coll _m _part asset field key = Dfun {
     raises   = [];
     variants = [];
     requires = [];
-    ensures  = mk_clear_field_ensures _m _part ("clear_"^asset^"_"^field) asset field key;
+    ensures  = mk_clear_field_ensures _m _part ("clear_"^asset^"_"^field) clearedasset field key;
     body =
       Tletin (
         false,
@@ -2553,7 +2612,8 @@ let mk_storage_api (m : M.model) records =
         acc @ [mk_clear_coll m n]
       | M.APIAsset (UpdateClear (n,f)) ->
         let (key,_) = M.Utils.get_asset_key m n in
-        acc @ [mk_clear_field_coll m (is_partition m n f) n f key]
+        let (clearedasset,_,_) = M.Utils.get_container_asset_key m n f in
+        acc @ [mk_clear_field_coll m (is_partition m n f) n f key clearedasset]
       | _ -> acc
     ) [] |> loc_decl |> deloc
 
