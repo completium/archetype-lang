@@ -1868,9 +1868,9 @@ let pp_model_internal fmt (model : model) b =
   let pp_api_items (env : env) fmt _ =
     let filter_api_items l : api_storage list =
       List.fold_right (fun (x : api_storage) accu ->
-          if (match x.api_loc with | OnlyExec | ExecFormula -> true | OnlyFormula -> false)
-          then accu
-          else x::accu
+          match x.api_loc with
+          | OnlyExec | ExecFormula -> x::accu
+          | OnlyFormula -> accu
         ) l []
     in
     let l : api_storage list = filter_api_items model.api_items in
@@ -1944,8 +1944,8 @@ let pp_model_internal fmt (model : model) b =
   let compute_env _ =
     let select_preds =
       List.fold_right (fun x accu ->
-          match (match x.api_loc with | OnlyExec | ExecFormula -> true | OnlyFormula -> false), x.node_item with
-          | false, APIAsset (Select (_, pred)) ->
+          match x.api_loc, x.node_item with
+          | (OnlyExec | ExecFormula), APIAsset (Select (_, pred)) ->
             if not (List.exists (Model.cmp_mterm pred) accu)
             then pred::accu
             else accu
@@ -1954,8 +1954,8 @@ let pp_model_internal fmt (model : model) b =
     in
     let sum_preds =
       List.fold_right (fun x accu ->
-          match (match x.api_loc with | OnlyExec | ExecFormula -> true | OnlyFormula -> false), x.node_item with
-          | false, APIAsset (Sum (_, _, pred)) ->
+          match x.api_loc, x.node_item with
+          | (OnlyExec | ExecFormula), APIAsset (Sum (_, _, pred)) ->
             if not (List.exists (Model.cmp_mterm pred) accu)
             then pred::accu
             else accu
