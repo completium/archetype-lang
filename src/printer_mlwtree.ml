@@ -372,6 +372,7 @@ let rec pp_term outer pos fmt = function
   | Tnil -> pp_str fmt "Nil"
   | Temptycoll i -> Format.fprintf fmt "%a.empty" pp_str (String.capitalize_ascii i)
   | Tcaller i -> Format.fprintf fmt "%a._caller" pp_str i
+  | Tsender i -> Format.fprintf fmt "%a._source" pp_str i
   | Ttransferred i -> Format.fprintf fmt "%a._transferred" pp_str i
   | Tfst e -> Format.fprintf fmt "fst %a" (pp_with_paren (pp_term outer pos)) e
   | Tsnd e -> Format.fprintf fmt "snd %a" (pp_with_paren (pp_term outer pos)) e
@@ -520,7 +521,7 @@ let rec pp_term outer pos fmt = function
   | Tmktr (_, _) -> pp_str fmt "TODO_Tmktr"
   | Ttradd _ -> pp_str fmt "TODO_Ttradd"
   | Ttrrm _ -> pp_str fmt "TODO_Ttrrm"
-  | Tuminus (_, _) -> pp_str fmt "TODO_Tuminus"
+  | Tuminus (_, v) -> Format.fprintf fmt "- %a" (pp_with_paren (pp_term outer pos)) v
   | Tdlt (_, _, _, _) -> pp_str fmt "TODO_Tdlt"
   | Tdlet (_, _, _, _) -> pp_str fmt "TODO_Tdlet"
   | Tdlte (_, _, _, _) -> pp_str fmt "TODO_Tdlte"

@@ -186,6 +186,7 @@ let mk_const_fields m = [
   { name = mk_id "balance" ;     typ = Tytez; init = Tint Big_int.zero_big_int; mutable_ = true; };
   { name = mk_id "transferred" ; typ = Tytez; init = Tint Big_int.zero_big_int; mutable_ = false; };
   { name = mk_id "caller"    ; typ = Tyaddr;  init = Tint Big_int.zero_big_int; mutable_ = false; };
+  { name = mk_id "source"    ; typ = Tyaddr;  init = Tint Big_int.zero_big_int; mutable_ = false; };
   { name = mk_id "now"       ; typ = Tydate;  init = Tint Big_int.zero_big_int; mutable_ = false; }
 ] @
   if M.Utils.with_trace m then
@@ -411,6 +412,7 @@ let rec mk_select_test = function
   | Tdot (Tvar v,f) when compare v "the" = 0 -> Tdot (Tvar "a",f)
   | Tnow _ -> Tvar (mk_id "now")
   | Tcaller _ -> Tvar (mk_id "caller")
+  | Tsender _ -> Tvar (mk_id "source")
   | _ as t -> map_abstract_term mk_select_test id id t
 
 (* internal select is a local defintion *)
@@ -445,6 +447,7 @@ let extract_args test =
     match term.M.node with
     | M.Mnow -> acc @ [term,mk_id "now", Tydate]
     | M.Mcaller -> acc @ [term,mk_id "caller", Tyaddr]
+    | M.Msource -> acc @ [term,mk_id "source", Tyaddr]
     | _ -> M.fold_term internal_extract_args acc term in
   internal_extract_args [] test
 
@@ -1317,7 +1320,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
         | _ -> loc_term (Tdoti (gs, "_balance")) |> Mlwtree.deloc
       end
 
-    | Msource               -> error_not_translated "Msource"
+    | Msource               -> Tsender (with_dummy_loc gs)
 
 
     (* variables *)
@@ -2503,7 +2506,7 @@ let mk_rat_arith _m = Dfun {
   lhs.0 * rhs.1 = rhs.0 * lhs.1 *)
 let mk_rat_eq _m = Dfun {
     name     = "rat_eq";
-    logic    = NoMod;
+    logic    = Logic;
     args     = ["lhs", Tytuple [Tyint;Tyint]; "rhs", Tytuple [Tyint;Tyint]];
     returns  = Tybool;
     raises   = [];
