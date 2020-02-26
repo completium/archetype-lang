@@ -128,6 +128,7 @@ let generate_target model =
   | Ligo
   | LigoStorage ->
     model
+    |> replace_ligo_ident
     |> process_asset_state
     |> replace_assignfield_by_update
     |> remove_add_update

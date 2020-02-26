@@ -648,11 +648,27 @@ let remove_enum_matchwith (model : model) : model =
           mk_const x.name i
         ) enum.values
     in
+    let process_asset_struct (a : asset) =
+      {
+        a with
+        values = List.map
+            (fun (ai : asset_item)
+              ->
+                {
+                  ai with
+                  type_ =
+                    match ai.type_ with
+                    | Tenum _ -> type_int
+                    | v -> v
+                }) a.values;
+      }
+    in
     List.fold_left (fun accu x ->
         accu @
         (
           match x with
           | Denum v -> process_enum v
+          | Dasset a -> [Dasset (process_asset_struct a)]
           | _ -> [x]
         )
       ) [] decls
@@ -663,6 +679,7 @@ let remove_enum_matchwith (model : model) : model =
     match mt.node, mt.type_ with
     | Mvarlocal id, Tstate -> mk_mterm (Mvarlocal (mk_id "state" id)) type_int
     | Mvarlocal id, Tenum e -> mk_mterm (Mvarlocal (mk_id (unloc e) id)) type_int
+    | Mvarenumval id, Tenum e -> mk_mterm (Mvarlocal (mk_id (unloc e) id)) type_int
     | Mmatchwith (v, ps), _ ->
       let v = process_mterm ctx v in
       let type_v = v.type_ in
@@ -1342,6 +1359,14 @@ let replace_whyml_ident (model : model) : model =
     match id with
     | "val" -> "_val"
     | "type" -> "_type"
+    | _ -> id
+  in
+  replace_ident_model f model
+
+let replace_ligo_ident (model : model) : model =
+  let f _env id =
+    match id with
+    | "type" -> "type_"
     | _ -> id
   in
   replace_ident_model f model

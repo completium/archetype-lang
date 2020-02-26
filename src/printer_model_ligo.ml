@@ -425,8 +425,13 @@ let pp_model_internal fmt (model : model) b =
     | Miter (_i, _a, _b, _c, _) -> Format.fprintf fmt "TODO: iter@\n"
 
     | Mseq is ->
-      Format.fprintf fmt "@[%a@]"
-        (pp_list ";@\n" f) is
+      begin
+        match is with
+        | [] -> Format.fprintf fmt "skip"
+        | _ ->
+          Format.fprintf fmt "@[%a@]"
+            (pp_list ";@\n" f) is
+      end
 
     | Mreturn x ->
       Format.fprintf fmt "return %a"
@@ -1008,12 +1013,7 @@ let pp_model_internal fmt (model : model) b =
 
     | Mvarenumval v  -> pp_id fmt v
 
-    | Mvarlocal v    ->
-      begin
-        match mtt.type_ with
-        | Tenum _ -> Format.fprintf fmt "%a (unit)" pp_id v
-        | _ -> pp_id fmt v
-      end
+    | Mvarlocal v    -> pp_id fmt v
 
     | Mvarparam v    ->
       Format.fprintf fmt "%a%a"
