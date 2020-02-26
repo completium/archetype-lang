@@ -1121,7 +1121,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Mbool false -> Tfalse
     | Mbool true -> Ttrue
     | Menum               _ -> error_not_supported "Menum"
-    | Mrational           _ -> error_not_translated "Mrational"
+    | Mrational (l,r) -> Ttuple([ loc_term (Tint l); loc_term (Tint r)])
     | Mstring v -> Tint (sha v)
     | Mcurrency (i, Tz)   -> Tint (Big_int.mult_int_big_int 1000000 i)
     | Mcurrency (i, Mtz)  -> Tint (Big_int.mult_int_big_int 1000 i)
@@ -2261,7 +2261,6 @@ else
    addktyp : removed asset key type
 *)
 let mk_add_field m part a ak field adda addak : decl =
-  let addak_cond = mk_key_found_cond `Old adda (Tdoti ("new_asset", addak)) in
   let akey  = Tapp (Tvar ak,[Tvar "asset"]) in
   let addak = Tapp (Tvar addak,[Tvar "new_asset"]) in
   let test,exn =
@@ -2277,8 +2276,7 @@ let mk_add_field m part a ak field adda addak : decl =
     returns  = Tyunit;
     raises   = [Timpl (Texn exn,
                        test `Old);
-                Timpl (Texn Ekeyexist,
-                       addak_cond)];
+               ];
     variants = [];
     requires = mk_add_asset_precond m ("add_" ^ a ^ "_" ^ field) adda "new_asset";
     ensures  = mk_add_field_ensures m part field ("add_" ^ a ^ "_" ^ field) adda "new_asset";
@@ -2622,14 +2620,15 @@ let mk_storage_api (m : M.model) records =
 let fold_exns m body : term list =
   let rec internal_fold_exn acc (term : M.mterm) =
     match term.M.node with
-    | M.Mget _ -> acc @ [Texn Enotfound]
-    | M.Mnth _ -> acc @ [Texn Enotfound]
-    | M.Mset _ -> acc @ [Texn Enotfound]
-    | M.Maddasset _ -> acc @ [Texn Ekeyexist]
+    | M.Mget (_,k) -> internal_fold_exn (acc @ [Texn Enotfound]) k
+    | M.Mnth (_,c,k) -> internal_fold_exn (internal_fold_exn (acc @ [Texn Enotfound]) c) k
+    | M.Mset (_,_,k,v) -> internal_fold_exn (internal_fold_exn (acc @ [Texn Enotfound]) k) v
+    | M.Maddasset (_,i) -> internal_fold_exn (acc @ [Texn Ekeyexist]) i
     | M.Maddshallow _ -> acc @ [Texn Ekeyexist]
-    | M.Maddfield (a,f,_,_) -> acc @
-      if (is_partition m a f) then [Texn Ekeyexist]
-      else [Texn Enotfound; Texn Ekeyexist]
+    | M.Maddfield (a,f,c,i) ->
+      internal_fold_exn
+        (internal_fold_exn (acc @ if (is_partition m a f) then [Texn Ekeyexist]
+                            else [Texn Enotfound ]) c) i
     | M.Mfail InvalidCaller -> acc @ [Texn Einvalidcaller]
     | M.Mfail NoTransfer -> acc @ [Texn Enotransfer]
     | M.Mfail (InvalidCondition _) -> acc @ [Texn Einvalidcondition]
