@@ -1,4 +1,4 @@
-archetype test_complex_sum
+archetype no_var_sum
 
 asset my_asset identified by id {
   id : string;

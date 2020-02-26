@@ -436,7 +436,7 @@ let pp_model fmt (model : model) =
           ) false l
       in
       List.fold_right (fun (x : api_storage) accu ->
-          if x.only_formula
+          if (match x.api_loc with | OnlyExec | ExecFormula -> true | OnlyFormula -> false)
           then accu
           else
             match x.node_item with

@@ -372,9 +372,14 @@ and api_storage_node =
   | APIInternal   of api_internal
 [@@deriving show {with_path = false}]
 
+and api_loc =
+| OnlyFormula
+| OnlyExec
+| ExecFormula
+
 and api_storage = {
   node_item: api_storage_node;
-  only_formula: bool;
+  api_loc: api_loc;
 }
 [@@deriving show {with_path = false}]
 
@@ -811,8 +816,8 @@ let mk_function ?spec node : 'id function__gen =
 let mk_signature ?(args = []) ?ret name : 'id signature_gen =
   { name; args; ret }
 
-let mk_api_item ?(only_formula = false) node_item =
-  { node_item; only_formula }
+let mk_api_item node_item api_loc =
+  { node_item; api_loc }
 
 let mk_model ?(api_items = []) ?(api_verif = []) ?(decls = []) ?(functions = []) ?(storage = []) ?(specification = mk_specification ()) ?(security = mk_security ()) name : model =
   { name; api_items; api_verif; storage; decls; functions; specification; security }
@@ -1093,6 +1098,7 @@ let cmp_api_item_node (a1 : api_storage_node) (a2 : api_storage_node) : bool =
     | Remove an1, Remove an2                           -> cmp_ident an1 an2
     | UpdateAdd (an1, fn1), UpdateAdd (an2, fn2)       -> cmp_ident an1 an2 && cmp_ident fn1 fn2
     | UpdateRemove (an1, fn1), UpdateRemove (an2, fn2) -> cmp_ident an1 an2 && cmp_ident fn1 fn2
+    | UpdateClear (an1, fn1), UpdateClear (an2, fn2)   -> cmp_ident an1 an2 && cmp_ident fn1 fn2
     | ToKeys an1, ToKeys an2                           -> cmp_ident an1 an2
     | ColToKeys an1, ColToKeys an2                     -> cmp_ident an1 an2
     | Select (an1, p1), Select (an2, p2)               -> cmp_ident an1 an2 && cmp_mterm p1 p2
@@ -1127,10 +1133,11 @@ let cmp_api_item_node (a1 : api_storage_node) (a2 : api_storage_node) : bool =
   in
   let cmp_api_internal (i1 : api_internal) (i2 : api_internal) : bool =
     match i1, i2 with
-    | RatEq,    RatEq    -> true
-    | RatCmp,   RatCmp   -> true
-    | RatArith, RatArith -> true
-    | RatTez,   RatTez   -> true
+    | RatEq,     RatEq     -> true
+    | RatCmp,    RatCmp    -> true
+    | RatArith,  RatArith  -> true
+    | RatUminus, RatUminus -> true
+    | RatTez,    RatTez    -> true
     | _ -> false
   in
   match a1, a2 with
@@ -2595,7 +2602,7 @@ let replace_ident_model (f : kind_ident -> ident -> ident) (model : model) : mod
     in
     {
       node_item    = for_node_item ai.node_item;
-      only_formula = ai.only_formula;
+      api_loc      = ai.api_loc;
     }
   in
   let for_api_verif (apiv : api_verif) : api_verif =
