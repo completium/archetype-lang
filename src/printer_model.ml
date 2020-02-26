@@ -86,6 +86,10 @@ let pp_pattern fmt (p : pattern) =
   | Pconst i -> pp_id fmt i
   | Pwild -> pp_str fmt "_"
 
+let pp_sort_kind fmt = function
+  | SKasc -> pp_str fmt "asc"
+  | SKdesc -> pp_str fmt "desc"
+
 let pp_action_description fmt ad =
   match ad with
   | ADany         -> pp_str fmt "anyaction"
@@ -574,7 +578,7 @@ let pp_mterm fmt (mt : mterm) =
         Format.fprintf fmt "sort_%a (%a, %a)"
           pp_str an
           f c
-          (pp_list ", " (fun fmt (a, b) -> Format.fprintf fmt "%a %a" pp_ident a pp_sort_kind b)) l
+          (pp_list ", " (fun fmt (a, b) -> Format.fprintf fmt "%a(%a)" pp_sort_kind b pp_ident a)) l
       in
       pp fmt (an, c, l)
 
@@ -1067,7 +1071,7 @@ let pp_api_asset fmt = function
   | ColToKeys an -> pp_str fmt ("col_to_keys\t " ^ an)
   | Select (an, p) ->
     Format.fprintf fmt "select\t %s %a" an pp_mterm p
-  | Sort (an, l) -> Format.fprintf fmt "sort\t%a on %a" pp_str an (pp_list ", " (fun fmt (a, b) -> Format.fprintf fmt "%a %a" pp_ident a pp_sort_kind b)) l
+  | Sort (an, l) -> Format.fprintf fmt "sort\t%a on %a" pp_str an (pp_list ", " (fun fmt (a, b) -> Format.fprintf fmt "%a(%a)" pp_sort_kind b pp_ident a)) l
   | Contains an -> pp_str fmt ("contains " ^ an)
   | Nth an -> pp_str fmt ("nth\t " ^ an)
   | Count an -> pp_str fmt ("count\t " ^ an)

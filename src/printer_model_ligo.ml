@@ -1534,12 +1534,91 @@ let pp_model_internal fmt (model : model) b =
 
     | Sort (an, l) ->
       let _, t = Utils.get_asset_key model an in
+      let pp_criteria fmt (fn, c) =
+        let op1, op2, d =
+          match c with
+          | SKasc -> ">", "<", "asc"
+          | SKdesc -> "<", ">", "desc"
+        in
+        Format.fprintf fmt
+          "// %s %s@\n    \
+           if (a1.%s %s a2.%s)@\n    \
+           then res := 1@\n    \
+           else if (a1.%s %s a2.%s)@\n    \
+           then res := -1"
+          fn d
+          fn op1 fn
+          fn op2 fn
+      in
+
+      let pp_fun_cmp fmt _ =
+        Format.fprintf fmt
+          "function cmp (const k1 : %a; const k2: %a) : int is@\n  \
+           block {@\n    \
+           var res : int := 0;@\n    \
+           const a1 : %s = get_force(k1, s.%s_assets);@\n    \
+           const a2 : %s = get_force(k2, s.%s_assets);@\n    \
+           %a@\n    \
+           else skip@\n  \
+           } with res;@\n"
+          pp_btyp t pp_btyp t
+          an an
+          an an
+          (pp_list "@\n    else " pp_criteria) l
+      in
+
+      let pp_fun_insert fmt _ =
+        Format.fprintf fmt
+          "function insert(const accu: option(%a) * list(%a); const x : %a) : option(%a) * list(%a) is@\n  \
+           block {@\n    \
+           const res : option(%a) * list(%a) =@\n    \
+           case accu.0 of@\n    \
+           | Some(v) ->@\n    \
+           if (cmp(x, v) < 0)@\n    \
+           then ((None : option(%a)), cons(x, cons(v, accu.1)))@\n    \
+           else (Some(v), cons(x, accu.1))@\n    \
+           | None -> ((None : option(%a)), cons(x, accu.1))@\n    \
+           end;@\n  \
+           } with res;@\n"
+          pp_btyp t pp_btyp t pp_btyp t pp_btyp t pp_btyp t
+          pp_btyp t pp_btyp t
+          pp_btyp t
+          pp_btyp t
+      in
+
+      let pp_fun_sort fmt _ =
+        Format.fprintf fmt
+          "function sort (const accu: list(%a); const x: %a) : list(%a) is@\n  \
+           block {@\n    \
+           const init : option(%a) * list(%a) = (Some(x), (list [] : list(%a)));@\n    \
+           const res_opt : option(%a) * list(%a) = list_fold(insert, accu, init);@\n    \
+           const res : list(%a) =@\n    \
+           case res_opt.0 of@\n    \
+           | Some(v) -> cons(v, res_opt.1)@\n    \
+           | None -> res_opt.1@\n    \
+           end;@\n  \
+           } with res;@\n"
+          pp_btyp t pp_btyp t pp_btyp t
+          pp_btyp t pp_btyp t pp_btyp t
+          pp_btyp t pp_btyp t
+          pp_btyp t
+      in
+
       Format.fprintf fmt
-        "function sort_%s_%a (const s : storage_type; const l : list(%a)) : list(%a) is@\n  \
+        "function sort_%s_%a (const s : storage_type; const l : list(%a)) : list(%a) is@\n  @\n  \
          begin@\n    \
-         skip;@\n  \
-         end with l@\n"
+         @[%a@]@\n    \
+         @[%a@]@\n    \
+         @[%a@]@\n    \
+         const init : list(%a) = list [];@\n    \
+         const res : list(%a) = list_fold (sort, l, init);@\n  \
+         end with res@\n"
         an pp_postfix_sort l pp_btyp t pp_btyp t
+        pp_fun_cmp ()
+        pp_fun_insert ()
+        pp_fun_sort ()
+        pp_btyp t
+        pp_btyp t
 
     | Contains an ->
       let _, t = Utils.get_asset_key model an in

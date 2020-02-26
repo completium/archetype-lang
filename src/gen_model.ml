@@ -317,7 +317,7 @@ let to_model (ast : A.model) : M.model =
         List.map (fun x -> match x with
             | A.ASorting (asc, field_name) ->
               begin
-                let sort_kind = match asc with | true -> M.SKasc | false -> M.SKasc in
+                let sort_kind = match asc with | true -> M.SKasc | false -> M.SKdesc in
                 unloc field_name, sort_kind
               end
             | _ -> assert false) args

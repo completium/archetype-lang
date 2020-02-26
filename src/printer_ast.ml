@@ -409,8 +409,11 @@ and pp_term_arg fmt = function
              pp_operator op
              pp_pterm pt)) l
 
-  | ASorting (_b, f) ->
-    pp_id fmt f
+  | ASorting (b, f) ->
+    let k = if b then "asc" else "desc" in
+    Format.fprintf fmt "%s(%a)"
+      k
+      pp_id f
 
 let pp_instruction_poly pp fmt i =
   pp fmt i.node

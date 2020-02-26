@@ -495,23 +495,27 @@ let prune_properties (model : model) : model =
     }
 
 let replace_declvar_by_letin (model : model) : model =
+  let empty : mterm = mk_mterm (Mseq []) Tunit in
+  let process_declvar (ids, t, v) f accu =
+    begin
+      let init = f v in
+      let body =
+        match accu with
+        | [] -> empty
+        | [i] -> i
+        | lll -> mk_mterm (Mseq accu) (List.last lll).type_
+      in
+      mk_mterm (Mletin(ids, init, t, body, None)) body.type_
+    end
+  in
   let rec aux c (mt : mterm) : mterm =
     match mt.node with
     | Mseq l ->
       let ll = List.fold_right (fun (x : mterm) accu ->
           match x.node with
           | Mdeclvar (ids, t, v) ->
-            begin
-              let init = aux c v in
-              let body =
-                match accu with
-                | [] -> assert false
-                | [i] -> i
-                | lll -> mk_mterm (Mseq accu) (List.last lll).type_
-              in
-              let res = mk_mterm (Mletin(ids, init, t, body, None)) body.type_ in
-              [ res ]
-            end
+            let res =  process_declvar (ids, t, v) (aux c) accu in
+            [ res ]
           | _ ->
             begin
               let t = aux c x in
@@ -519,7 +523,7 @@ let replace_declvar_by_letin (model : model) : model =
             end
         ) l [] in
       { mt with node = Mseq ll }
-    | Mdeclvar _ -> assert false
+    | Mdeclvar (ids, t, v) -> process_declvar (ids, t, v) (aux c) []
     | _ -> map_mterm (aux c) mt
   in
   Model.map_mterm_model aux model
