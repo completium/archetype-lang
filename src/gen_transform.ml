@@ -937,6 +937,71 @@ let remove_rational (model : model) : model =
         | _ -> dv
       ) |@ process_mterm) default_value
   in
+  let process_specification (spec : specification) : specification =
+    let for_label_term (lt : label_term) : label_term =
+      {
+        lt with
+        term  = process_mterm lt.term;
+      }
+    in
+    let for_predicate (p : predicate) : predicate =
+      {
+        p with
+        args = List.map (fun (x, y) -> x, process_type y) p.args;
+        body = process_mterm p.body;
+      }
+    in
+    let for_definition (d : definition) : definition =
+      {
+        d with
+        typ  = process_type d.typ;
+        body = process_mterm d.body;
+      }
+    in
+    let for_variable (v : variable) : variable =
+      let for_argument (arg : argument) : argument =
+        let a, b, c = arg in
+        a, process_type b, Option.map process_mterm c
+      in
+      let for_qualid (q : qualid) : qualid =
+        {
+          q with
+          type_ = process_type q.type_;
+        }
+      in
+      {
+        decl         = for_argument v.decl;
+        constant     = v.constant;
+        from         = Option.map for_qualid v.from;
+        to_          = Option.map for_qualid v.to_;
+        loc          = v.loc;
+      }
+    in
+    let for_invariant (i : invariant) : invariant =
+      {
+        i with
+        formulas = List.map process_mterm i.formulas;
+      }
+    in
+    let for_postcondition (p : postcondition) : postcondition =
+      {
+        p with
+        formula    = process_mterm p.formula;
+        invariants = List.map for_invariant p.invariants;
+      }
+    in
+    {
+      predicates     = List.map for_predicate     spec.predicates;
+      definitions    = List.map for_definition    spec.definitions;
+      lemmas         = List.map for_label_term    spec.lemmas;
+      theorems       = List.map for_label_term    spec.theorems;
+      variables      = List.map for_variable      spec.variables;
+      invariants     = List.map (fun (x, y) -> x, List.map for_label_term y) spec.invariants;
+      effects        = List.map process_mterm     spec.effects;
+      postconditions = List.map for_postcondition spec.postconditions;
+      loc            = spec.loc;
+    }
+  in
   let process_decls = List.map (function
       | Dvar v ->
         let t, dv = process_arg v.type_ v.default in
@@ -984,7 +1049,9 @@ let remove_rational (model : model) : model =
            | Function (fs, ret) -> Function (process_fs fs, process_type ret)
            | Entry fs           -> Entry (process_fs fs)
          );
-        })
+         spec = Option.map process_specification f.spec;
+        });
+    specification = process_specification model.specification;
   }
 
 
