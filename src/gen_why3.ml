@@ -1228,7 +1228,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
         [CUpdate f; CRm t]
 
     | Mclearasset n -> Tapp (loc_term (Tvar ("clear_"^(n))),[])
-    | Mclearfield         _ -> error_not_translated "Mclearfield"
+    | Mclearfield (a,f,c) -> Tapp (loc_term (Tvar ("clear_"^a^"_"^f)),[map_mterm m ctx c])
 
     | Mset (a, l, k, v) ->
       mk_trace_seq m
@@ -2118,6 +2118,41 @@ let mk_clear_coll m asset : decl = Dfun {
     body = Tassign (mk_ac asset, Tdoti (String.capitalize_ascii asset,"empty"));
 }
 
+let mk_clear_field_ensures _m _part p _asset field _key =
+[
+    { id   = p ^ "_post1";
+      form = Teq (Tyint, Tapp (Tvar field,[Tvar "a"]), Tnil)
+    };
+]
+
+let mk_clear_field_coll _m _part asset field key = Dfun {
+    name     = "clear_" ^ asset ^ "_" ^ field;
+    logic    = NoMod;
+    args     = ["a", Tyasset asset];
+    returns  = Tyunit;
+    raises   = [];
+    variants = [];
+    requires = [];
+    ensures  = mk_clear_field_ensures _m _part ("clear_"^asset^"_"^field) asset field key;
+    body =
+      Tletin (
+        false,
+        "new_asset",
+        None,
+        Trecord (
+          Some (Tvar ("a")),
+          [field,Tnil]),
+        Tassign (
+          mk_ac asset,
+          Tset (
+            asset,
+            mk_ac asset,
+            Tdoti ("a",key),
+            Tvar ("new_asset"))
+        )
+      );
+}
+
 let mk_add_field_ensures m part field prefix adda elem =
 let collfield = Tapp (Tvar field, [Tvar ("asset")]) in
 let assetcollfield = Tunshallow (adda,mk_ac adda,collfield) in
@@ -2516,6 +2551,9 @@ let mk_storage_api (m : M.model) records =
         acc @ [mk_rat_eq m]
       | M.APIAsset (Clear n) ->
         acc @ [mk_clear_coll m n]
+      | M.APIAsset (UpdateClear (n,f)) ->
+        let (key,_) = M.Utils.get_asset_key m n in
+        acc @ [mk_clear_field_coll m (is_partition m n f) n f key]
       | _ -> acc
     ) [] |> loc_decl |> deloc
 
