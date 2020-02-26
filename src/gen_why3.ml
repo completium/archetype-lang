@@ -1372,7 +1372,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
       | M.Rmult -> Tvar "OpArithMult"
       | M.Rdiv -> Tvar "OpArithDiv" in
       Tapp (loc_term (Tvar "rat_arith"),[loc_term (aop_to_mterm aop); map_mterm m ctx r; map_mterm m ctx t])
-    | Mratuminus         _ -> error_not_translated "Mratuminus"
+    | Mratuminus v -> Tapp (loc_term (Tvar "rat_uminus"),[map_mterm m ctx v])
     | Mrattez (r,t) -> Tapp (loc_term (Tvar "rat_tez"),[map_mterm m ctx r; map_mterm m ctx t])
     | Minttorat v -> Ttuple ([map_mterm m ctx v; loc_term (Tint (Big_int.big_int_of_int 1))])
 
@@ -2523,6 +2523,21 @@ let mk_rat_eq _m = Dfun {
     Teq (Tyint, mult lhs0 rhs1, mult rhs0 lhs1)
 }
 
+let mk_rat_uminus _m = Dfun {
+    name     = "rat_uminus";
+    logic    = Logic;
+    args     = ["r", Tytuple [Tyint;Tyint]];
+    returns  = Tytuple [Tyint;Tyint];
+    raises   = [];
+    variants = [];
+    requires = [];
+    ensures  = [];
+    body =
+    let r0 = Tfst (Tvar "r") in
+    let r1 = Tsnd (Tvar "r") in
+    Ttuple [Tuminus(Tyint,r0);r1]
+}
+
 let mk_rat_tez _m = Dfun {
     name     = "rat_tez";
     logic    = NoMod;
@@ -2610,6 +2625,8 @@ let mk_storage_api (m : M.model) records =
         acc @ [mk_op_arith m;mk_rat_arith m]
       | M.APIInternal (RatEq) ->
         acc @ [mk_rat_eq m]
+      | M.APIInternal (RatUminus) ->
+        acc @ [mk_rat_uminus m]
       | M.APIAsset (Clear n) ->
         acc @ [mk_clear_coll m n]
       | M.APIAsset (UpdateClear (n,f)) ->
