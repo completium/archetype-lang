@@ -167,7 +167,6 @@ let pp_model_internal fmt (model : model) b =
   let pp_container fmt = function
     | Collection -> Format.fprintf fmt "list"
     | Partition  -> Format.fprintf fmt "list"
-    | List       -> Format.fprintf fmt "list"
   in
 
   let rec pp_type fmt t =
@@ -183,6 +182,9 @@ let pp_model_internal fmt (model : model) b =
     | Tcontainer (t, c) ->
       Format.fprintf fmt "%a(%a)"
         pp_container c
+        pp_type t
+    | Tlist t ->
+      Format.fprintf fmt "list(%a)"
         pp_type t
     | Toption t ->
       Format.fprintf fmt "option(%a)"

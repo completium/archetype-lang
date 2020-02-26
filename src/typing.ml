@@ -36,7 +36,7 @@ end = struct
   let as_asset     = function M.Tasset     x       -> Some x       | _ -> None
   let as_tuple     = function M.Ttuple     ts      -> Some ts      | _ -> None
   let as_option    = function M.Toption    t       -> Some t       | _ -> None
-  let as_list      = function M.Tcontainer (t, M.List) -> Some t   | _ -> None
+  let as_list      = function M.Tlist      t       -> Some t       | _ -> None
 
   let as_asset_collection = function
     | M.Tcontainer (M.Tasset asset, c) -> Some (asset, c)
@@ -55,11 +55,11 @@ end = struct
     | M.Toption _ -> true | _ -> false
 
   let is_list = function
-    | M.Tcontainer (_, M.List) -> true | _ -> false
+    | M.Tlist _ -> true | _ -> false
 
   let rec support_eq = function
     | M.Tbuiltin _ -> true
-    | M.Tcontainer (ty, M.List) -> support_eq ty
+    | M.Tlist ty -> support_eq ty
     | M.Toption ty -> support_eq ty
     | M.Tenum _ -> true
     | M.Ttuple tys -> List.for_all support_eq tys
@@ -555,7 +555,7 @@ end = struct
       ("count"   , mk M.Ccount    `Pure   `Total   ([           ], Some (`T M.vtint )));
       ("nth"     , mk M.Cnth      `Pure   `Partial ([`T M.vtint ], Some (`T ty)));
     ]
-  
+
   let methods ty = Mid.of_list (methods ty)
 end
 
@@ -1138,11 +1138,11 @@ let select_operator env loc (op, tys) =
             raise E.NoEq;
 
           Some ({ osl_sig = [t1; t2]; osl_ret = M.Tbuiltin M.VTbool; })
-  
+
         | _ ->
             raise E.NoEq
 
-      with E.NoEq -> 
+      with E.NoEq ->
         Env.emit_error env (loc, NoMatchingOperator (op, tys)); None
     end
 
@@ -1248,7 +1248,7 @@ let rec for_type_exn (env : env) (ty : PT.type_t) : M.ptyp =
     M.Tcontainer (for_type_exn env ty, for_container env ctn)
 
   | Tlist ty ->
-    M.Tcontainer (for_type_exn env ty, M.List)
+    M.Tlist (for_type_exn env ty)
 
   | Ttuple tys ->
     M.Ttuple (List.map (for_type_exn env) tys)
@@ -1457,7 +1457,7 @@ let rec for_xexpr
           mk_sp (Some (M.Tcontainer (ty, M.Collection))) (M.Parray (e :: es))
 
         | None, Some ty ->
-          mk_sp (Some (M.Tcontainer (ty, M.List))) (M.Parray (e :: es))
+          mk_sp (Some (M.Tlist ty)) (M.Parray (e :: es))
 
         | _ ->
           Env.emit_error env (loc tope, CannotInferCollectionType);
@@ -1755,7 +1755,7 @@ let rec for_xexpr
           match the.M.type_ with
           | None ->
               bailout ()
-  
+
           | Some ty -> begin
               match Type.as_asset_collection ty with
               | Some _ ->
@@ -2080,13 +2080,13 @@ and for_api_call mode env theloc (the, m, args)
       | None ->
           raise E.Bailout
 
-      | Some (M.Tcontainer (ty, M.List)) ->
-          ListAPI.methods ty
+      (* | Some (M.Tcontainer (ty, M.List)) ->
+          ListAPI.methods ty *)
 
       | Some _ ->
           Env.emit_error env (theloc, DoesNotSupportMethodCall);
           raise E.Bailout in
-          
+
     let method_ =
       match Mid.find_opt (unloc m) methods with
       | None ->

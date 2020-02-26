@@ -1,4 +1,4 @@
-archetype expr_method_list_prepend
+archetype expr_list_prepend
 
 variable res : string list = []
 
@@ -8,6 +8,6 @@ action exec () {
   }
   effect {
     var l : string list = ["1"; "2"; "3"];
-    res := l.prepend("0");
+    res := prepend(l, "0");
   }
 }

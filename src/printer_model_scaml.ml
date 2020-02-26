@@ -89,7 +89,6 @@ let pp_model fmt (model : model) =
   let pp_container fmt = function
     | Collection -> Format.fprintf fmt "list"
     | Partition  -> Format.fprintf fmt "list"
-    | List       -> Format.fprintf fmt "list"
   in
 
   let rec pp_type fmt t =
@@ -107,6 +106,9 @@ let pp_model fmt (model : model) =
       Format.fprintf fmt "%a %a"
         pp_type t
         pp_container c
+    | Tlist t ->
+      Format.fprintf fmt "%a list"
+        pp_type t
     | Toption t ->
       Format.fprintf fmt "%a option"
         pp_type t

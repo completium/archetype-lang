@@ -14,7 +14,6 @@ type currency =
 type container =
   | Collection
   | Partition
-  | List
 [@@deriving show {with_path = false}]
 
 type btyp =
@@ -55,6 +54,7 @@ type type_ =
   | Tcontract of lident
   | Tbuiltin of btyp
   | Tcontainer of type_ * container
+  | Tlist of type_
   | Toption of type_
   | Ttuple of type_ list
   | Tassoc of btyp * type_
@@ -856,6 +856,7 @@ let rec cmp_type
   | Tcontract i1, Tcontract i2               -> cmp_lident i1 i2
   | Tbuiltin b1, Tbuiltin b2                 -> cmp_btyp b1 b2
   | Tcontainer (t1, c1), Tcontainer (t2, c2) -> cmp_type t1 t2 && cmp_container c1 c2
+  | Tlist t1, Tlist t2                       -> cmp_type t1 t2
   | Toption t1, Toption t2                   -> cmp_type t1 t2
   | Ttuple l1, Ttuple l2                     -> List.for_all2 cmp_type l1 l2
   | Tunit, Tunit                             -> true
@@ -1151,6 +1152,7 @@ let map_type (f : type_ -> type_) = function
   | Tcontract id      -> Tcontract id
   | Tbuiltin b        -> Tbuiltin b
   | Tcontainer (t, c) -> Tcontainer (f t, c)
+  | Tlist t           -> Tlist (f t)
   | Toption t         -> Toption (f t)
   | Ttuple l          -> Ttuple (List.map f l)
   | Tassoc (a, t)     -> Tassoc (a, f t)
@@ -2512,6 +2514,7 @@ let replace_ident_model (f : kind_ident -> ident -> ident) (model : model) : mod
     | Tcontract id      -> Tcontract (g KIcontractname id)
     | Tbuiltin _        -> t
     | Tcontainer (a, c) -> Tcontainer (for_type a, c)
+    | Tlist a           -> Tlist (for_type a)
     | Toption a         -> Toption (for_type a)
     | Ttuple l          -> Ttuple (List.map for_type l)
     | Tassoc (k, v)     -> Tassoc (k, for_type v)
@@ -3082,7 +3085,7 @@ end = struct
           ) [] info.values)
       ) [] *)
 
-  let rec pp_type fmt t =
+  (* let rec pp_type fmt t =
     match t with
     | Tasset an ->
       Format.fprintf fmt "%a" Printer_tools.pp_id an
@@ -3097,9 +3100,12 @@ end = struct
       Format.fprintf fmt "%a %a"
         pp_type t
         pp_container c
+    | Tlist t ->
+      Format.fprintf fmt "%a list"
+        pp_type t
     | Toption t ->
       Format.fprintf fmt "%a option"
-        pp_type_ t
+        pp_type t
     | Ttuple ts ->
       Format.fprintf fmt "%a"
         (Printer_tools.pp_list " * " pp_type) ts
@@ -3117,7 +3123,7 @@ end = struct
       Format.fprintf fmt "entry"
     | Tprog _
     | Tvset _
-    | Ttrace _ -> Format.fprintf fmt "todo"
+    | Ttrace _ -> Format.fprintf fmt "todo" *)
 
   let get_containers_internal f m : (ident * ident * type_) list =
     get_assets m |> List.fold_left (fun acc (asset : asset) ->

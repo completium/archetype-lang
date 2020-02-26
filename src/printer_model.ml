@@ -28,7 +28,6 @@ let pp_btyp fmt = function
 let pp_container fmt = function
   | Collection -> Format.fprintf fmt "collection"
   | Partition  -> Format.fprintf fmt "partition"
-  | List       -> Format.fprintf fmt "list"
 
 let rec pp_type fmt t =
   match t with
@@ -45,6 +44,9 @@ let rec pp_type fmt t =
     Format.fprintf fmt "%a %a"
       pp_type t
       pp_container c
+  | Tlist t ->
+    Format.fprintf fmt "%a list"
+      pp_type_ t
   | Toption t ->
     Format.fprintf fmt "%a option"
       pp_type_ t

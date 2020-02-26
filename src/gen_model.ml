@@ -30,7 +30,6 @@ let to_model (ast : A.model) : M.model =
     | A.Collection -> M.Collection
     | A.Partition  -> M.Partition
     | A.Subset     -> M.Collection
-    | A.List       -> M.List
     (* | _            -> emit_error (NotSupportedContainer (Format.asprintf "%a@." A.pp_container c)) *)
   in
 
@@ -68,6 +67,7 @@ let to_model (ast : A.model) : M.model =
     | A.Tcontract id       -> M.Tcontract id
     | A.Tbuiltin b         -> M.Tbuiltin (vtyp_to_btyp b)
     | A.Tcontainer (t, c)  -> M.Tcontainer (ptyp_to_type t, to_container c)
+    | A.Tlist t            -> M.Tlist (ptyp_to_type t)
     | A.Ttuple l           -> M.Ttuple (List.map ptyp_to_type l)
     | A.Tentry             -> M.Tentry
     | A.Toption t          -> M.Toption (ptyp_to_type t)
@@ -149,7 +149,7 @@ let to_model (ast : A.model) : M.model =
 
   let is_list (v : A.pterm) : bool =
     match v with
-    | {type_ = Some (Tcontainer (_, List)); _} -> true
+    | {type_ = Some (Tlist _); _} -> true
     | _ -> false
   in
 
@@ -169,7 +169,7 @@ let to_model (ast : A.model) : M.model =
 
   let extract_builtin_type_list (v : M.mterm) : M.type_ =
     match v with
-    | {type_ = Tcontainer (t, List); _} -> t
+    | {type_ = Tlist t; _} -> t
     | _ -> assert false
   in
 

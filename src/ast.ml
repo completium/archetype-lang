@@ -11,7 +11,6 @@ type container =
   | Collection
   | Subset
   | Partition
-  | List
 [@@deriving show {with_path = false}]
 
 type currency =
@@ -47,6 +46,7 @@ type ptyp =
   | Tcontract of lident
   | Tbuiltin of vtyp
   | Tcontainer of ptyp * container
+  | Tlist of ptyp
   | Ttuple of ptyp list
   | Toption of ptyp
   | Tentry (* entry of external contract *)

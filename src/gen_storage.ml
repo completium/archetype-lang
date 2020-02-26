@@ -54,6 +54,7 @@ let generate_storage (model : model) : model =
     let init_default_value = function
       | Tbuiltin b        -> init_ b
       | Tcontainer (t, _) -> mk_mterm (Marray []) (Tcontainer(t, Collection))
+      | Tlist t           -> mk_mterm (Marray []) (Tlist t)
       | Toption t         -> mk_mterm (Mnone) (Toption t)
       | Tasset v
       | Tenum v

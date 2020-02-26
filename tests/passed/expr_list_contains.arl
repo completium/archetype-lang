@@ -1,4 +1,4 @@
-archetype expr_method_list_contains
+archetype expr_list_contains
 
 variable res : bool = false
 
@@ -8,6 +8,6 @@ action exec () {
   }
   effect {
     var l : string list = ["1"; "2"; "3"];
-    res := l.contains("2")
+    res := contains(l, "2")
   }
 }
