@@ -7,6 +7,7 @@ certificate_generator.arl \
 clause_io_acceptance_of_delivery.arl \
 coase.arl \
 empty.arl \
+erc20.arl \
 escrow_penalty.arl \
 escrow_without_spec.arl \
 guarantee_fund.arl \
@@ -32,7 +33,6 @@ bond.arl \
 c3n_without_loop.arl \
 certification_token.arl \
 competition.arl \
-erc20.arl \
 erc721.arl \
 escrow_basic.arl \
 escrow_simple.arl \

@@ -114,6 +114,7 @@ let generate_target model =
     |> cont !Options.opt_nr   remove_rational
     |> cont !Options.opt_ndd  replace_date_duration_by_timestamp
     |> cont !Options.opt_ne   remove_enum_matchwith
+    |> cont !Options.opt_rfd  remove_fun_dotasset
     |> cont !Options.opt_ws   generate_storage
     |> raise_if_error post_model_error prune_properties
     |> replace_declvar_by_letin
@@ -141,12 +142,11 @@ let generate_target model =
     |> generate_storage
     |> replace_declvar_by_letin
     |> remove_enum_matchwith
-    |> remove_get_dot
+    |> remove_fun_dotasset
     |> exec_process
     |> shallow_asset
     |> split_key_values
     |> Gen_transform.assign_loop_label
-    |> Gen_transform.ligo_move_get_in_condition
     |> generate_api_storage
     |> output
 
@@ -188,14 +188,13 @@ let generate_target model =
     |> replace_declvar_by_letin
     |> add_explicit_sort
     (* |> remove_enum_matchwith *)
-    |> remove_get_dot
+    (* |> remove_fun_dotasset *)
     |> exec_process
     |> prune_properties
     |> extend_loop_iter
     |> shallow_asset_verif
     (* |> split_key_values *)
     |> Gen_transform.assign_loop_label
-    |> Gen_transform.ligo_move_get_in_condition
     |> remove_cmp_enum
     |> remove_cmp_bool
     |> generate_api_storage
@@ -293,6 +292,8 @@ let main () =
       "--merge-update", Arg.Set Options.opt_mu, " Same as -mu";
       "-ne", Arg.Set Options.opt_ne, " Remove enum and match with";
       "--no-enum", Arg.Set Options.opt_ne, " Same as -ne";
+      "-rfd", Arg.Set Options.opt_rfd, " Remove function of left value from dot access field asset";
+      "--remove-fun-dotasset", Arg.Set Options.opt_rfd, " Same as -rfd";
       "-evi", Arg.Set Options.opt_evi, " Evaluate initial value";
       "--eval-initial-value", Arg.Set Options.opt_evi, " Same as -evi";
       "-aes", Arg.Set Options.opt_aes, " Add explicit sort";
