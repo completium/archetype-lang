@@ -1312,8 +1312,8 @@ let pp_model_internal fmt (model : model) b =
     | Tbuiltin Bduration   -> Format.fprintf fmt "0"
     | Tbuiltin Btimestamp  -> Format.fprintf fmt "(0 : timestamp)"
     | Tbuiltin Bstring     -> Format.fprintf fmt "\"\""
-    | Tbuiltin Baddress    -> Format.fprintf fmt "0"
-    | Tbuiltin Brole       -> Format.fprintf fmt "0"
+    | Tbuiltin Baddress    -> Format.fprintf fmt "(\"tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg\" : address) /* fake tmp address */"
+    | Tbuiltin Brole       -> Format.fprintf fmt "(\"tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg\" : address) /* fake tmp address */"
     | Tbuiltin Bcurrency   -> Format.fprintf fmt "0tz"
     | Tbuiltin Bkey        -> Format.fprintf fmt "0x00"
     | Tbuiltin Bbytes      -> Format.fprintf fmt "0x00"
@@ -1896,10 +1896,10 @@ let pp_model_internal fmt (model : model) b =
          const pos : bool = lhs.1 * rhs.1 > 0;@\n    \
          var r : bool := False;@\n    \
          case op of@\n    \
-         | OpCmpLt(unit) -> if pos then r := a <  b else r := a >  b@\n    \
-         | OpCmpLe(unit) -> if pos then r := a <= b else r := a >= b@\n    \
-         | OpCmpGt(unit) -> if pos then r := a >  b else r := a <  b@\n    \
-         | OpCmpGe(unit) -> if pos then r := a >= b else r := a <= b@\n    \
+         | OpCmpLt -> if pos then r := a <  b else r := a >  b@\n    \
+         | OpCmpLe -> if pos then r := a <= b else r := a >= b@\n    \
+         | OpCmpGt -> if pos then r := a >  b else r := a <  b@\n    \
+         | OpCmpGe -> if pos then r := a >= b else r := a <= b@\n    \
          end@\n  \
          end with r@\n"
     | RatArith     ->
@@ -1914,10 +1914,10 @@ let pp_model_internal fmt (model : model) b =
          begin@\n    \
          const r : (int * int) =@\n    \
          case op of@\n    \
-         | OpArithPlus(unit)  -> (lhs.0 * rhs.1 + rhs.0 * lhs.1, lhs.1 * rhs.1)@\n    \
-         | OpArithMinus(unit) -> (lhs.0 * rhs.1 - rhs.0 * lhs.1, lhs.1 * rhs.1)@\n    \
-         | OpArithMult(unit)  -> (lhs.0 * rhs.0, lhs.1 * rhs.1)@\n    \
-         | OpArithDiv(unit)   -> (lhs.0 * rhs.1, lhs.1 * rhs.0)@\n    \
+         | OpArithPlus  -> (lhs.0 * rhs.1 + rhs.0 * lhs.1, lhs.1 * rhs.1)@\n    \
+         | OpArithMinus -> (lhs.0 * rhs.1 - rhs.0 * lhs.1, lhs.1 * rhs.1)@\n    \
+         | OpArithMult  -> (lhs.0 * rhs.0, lhs.1 * rhs.1)@\n    \
+         | OpArithDiv   -> (lhs.0 * rhs.1, lhs.1 * rhs.0)@\n    \
          end@\n  \
          end with r@\n"
     | RatUminus ->

@@ -591,7 +591,14 @@ let assign_loop_label (model : model) : model =
 let remove_enum_matchwith (model : model) : model =
   let type_int = Tbuiltin Bint in
   let type_bool = Tbuiltin Bbool in
-  let mk_enum_ident a b = String.lowercase_ascii (a ^ "_" ^ b) in
+  let mk_enum_ident a b =
+    let a =
+      match a with
+      | "$state" -> "state"
+      | _ -> a
+    in
+    String.lowercase_ascii (a ^ "_" ^ b)
+  in
   let process_decls decls =
     let process_enum (enum : enum) =
       let mk_const id i =
