@@ -226,8 +226,8 @@ type ('id, 'term) mterm_node  =
   | Mlistcount        of type_ * 'term
   | Mlistnth          of type_ * 'term * 'term
   (* builtin functions *)
-  | Mfunmax           of 'term * 'term
   | Mfunmin           of 'term * 'term
+  | Mfunmax           of 'term * 'term
   | Mfunabs           of 'term
   (* constants *)
   | Mvarstate

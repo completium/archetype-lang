@@ -1435,9 +1435,7 @@ let process_asset_state (model : model) : model =
   in
   map_mterm_model aux model
 
-let remove_fun_dotasset (model : model) : model =
-  let cpt : int ref = ref 0 in
-  let prefix = "tmp_" in
+let extract_term_from_instruction f (model : model) : model =
   let rec aux ctx (mt : mterm) : mterm =
     let process (mt : mterm) l : mterm =
       List.fold_right
@@ -1445,92 +1443,71 @@ let remove_fun_dotasset (model : model) : model =
            mk_mterm (Mletin ([id], v, Some v.type_, accu, None)) accu.type_
         ) l mt
     in
-    let extract_fun_dotasset (mt: mterm) : mterm * (lident * mterm) list =
-      let is_fun (mt : mterm) : bool =
-        match mt.node with
-        | Mget _ | Mnth _-> true
-        | _ -> false
-      in
-      let rec efd_aux (accu : (lident * mterm) list) (mt : mterm) : mterm * (lident * mterm) list =
-        match mt.node with
-        | Mdotasset (l, r) when is_fun l ->
-          begin
-            let var_id = prefix ^ string_of_int (!cpt) in
-            cpt := !cpt + 1;
-            let var = mk_mterm (Mvarlocal (dumloc var_id)) l.type_ in
-            let nmt = mk_mterm (Mdotasset (var, r)) mt.type_ in
-            nmt, (dumloc var_id, l)::accu
-          end
-        | _ ->
-          let g (x : mterm__node) : mterm = { mt with node = x; } in
-          Model.fold_map_term g efd_aux accu mt
-      in
-      efd_aux [] mt
-    in
+
     match mt.node with
     (* lambda *)
 
     | Mletin (i, a, t, b, o) ->
-      let ae, aa = extract_fun_dotasset a in
+      let ae, aa = f a in
       let be = aux ctx b in
       let oe = Option.map (aux ctx) o in
       process (mk_mterm (Mletin (i, ae, t, be, oe)) mt.type_) aa
 
     | Mdeclvar (i, t, v) ->
-      let ve, va = extract_fun_dotasset v in
+      let ve, va = f v in
       process (mk_mterm (Mdeclvar (i, t, ve)) mt.type_) va
 
 
     (* assign *)
 
     | Massign (op, t, l, r) ->
-      let re, ra = extract_fun_dotasset r in
+      let re, ra = f r in
       process (mk_mterm (Massign (op, t, l, re)) mt.type_) ra
 
     | Massignvarstore (op, t, l, r)  ->
-      let re, ra = extract_fun_dotasset r in
+      let re, ra = f r in
       process (mk_mterm (Massignvarstore (op, t, l, re)) mt.type_) ra
 
     | Massignfield (op, t, a, fi, r) ->
-      let re, ra = extract_fun_dotasset r in
+      let re, ra = f r in
       process (mk_mterm (Massignfield (op, t, a, fi, re)) mt.type_) ra
 
     | Massignstate x ->
-      let xe, xa = extract_fun_dotasset x in
+      let xe, xa = f x in
       process (mk_mterm (Massignstate xe) mt.type_) xa
 
     | Massignassetstate (an, k, v) ->
-      let ke, ka = extract_fun_dotasset k in
-      let ve, va = extract_fun_dotasset v in
+      let ke, ka = f k in
+      let ve, va = f v in
       process (mk_mterm (Massignassetstate (an, ke, ve)) mt.type_) (ka @ va)
 
 
     (* control *)
 
     | Mif (c, t, e) ->
-      let ce, ca = extract_fun_dotasset c in
+      let ce, ca = f c in
       let te = aux ctx t in
       let ee = Option.map (aux ctx) e in
       process (mk_mterm (Mif (ce, te, ee)) mt.type_) ca
 
     | Mmatchwith (e, l) ->
-      let ee, ea = extract_fun_dotasset e in
+      let ee, ea = f e in
       let ll = List.map (fun (p, e) -> (p, aux ctx e)) l in
       process (mk_mterm (Mmatchwith (ee, ll)) mt.type_) ea
 
     | Mfor (i, c, b, lbl) ->
-      let ce, ca = extract_fun_dotasset c in
+      let ce, ca = f c in
       let be = aux ctx b in
       process (mk_mterm (Mfor (i, ce, be, lbl)) mt.type_) ca
 
     | Miter (i, a, b, c, lbl) ->
-      let ae, aa = extract_fun_dotasset a in
-      let be, ba = extract_fun_dotasset b in
+      let ae, aa = f a in
+      let be, ba = f b in
       let ce = aux ctx c in
       process (mk_mterm (Miter (i, ae, be, ce, lbl)) mt.type_) (aa @ ba)
 
     | Mreturn x ->
-      let xe, xa = extract_fun_dotasset x in
+      let xe, xa = f x in
       process (mk_mterm (Mreturn (xe)) mt.type_) xa
 
 
@@ -1539,21 +1516,21 @@ let remove_fun_dotasset (model : model) : model =
     | Mfail v ->
       let ve, va = match v with
         | Invalid x ->
-          let xe, xa = extract_fun_dotasset x in
+          let xe, xa = f x in
           Invalid (xe), xa
         | _ -> v, []
       in
       process (mk_mterm (Mfail (ve)) mt.type_) va
 
     | Mtransfer (v, d) ->
-      let ve, va = extract_fun_dotasset v in
-      let de, da = extract_fun_dotasset d in
+      let ve, va = f v in
+      let de, da = f d in
       process (mk_mterm (Mtransfer (ve, de)) mt.type_) (va @ da)
 
     | Mexternal (t, func, c, args) ->
-      let ce, ca = extract_fun_dotasset c in
+      let ce, ca = f c in
       let ae, aa = List.fold_right (fun (t, i) (xe, xa) ->
-          let ie, ia = extract_fun_dotasset i in
+          let ie, ia = f i in
           ((t, ie)::xe, ia @ xa)) args ([], []) in
       process (mk_mterm (Mexternal (t, func, ce, ae)) mt.type_) (ca @ aa)
 
@@ -1561,47 +1538,47 @@ let remove_fun_dotasset (model : model) : model =
     (* asset api effect *)
 
     | Maddasset (an, i) ->
-      let ie, ia = extract_fun_dotasset i in
+      let ie, ia = f i in
       process (mk_mterm (Maddasset (an, ie)) mt.type_) ia
 
     | Maddfield (an, fn, c, i) ->
-      let ce, ca = extract_fun_dotasset c in
-      let ie, ia = extract_fun_dotasset i in
+      let ce, ca = f c in
+      let ie, ia = f i in
       process (mk_mterm (Maddfield (an, fn, ce, ie)) mt.type_) (ca @ ia)
 
     | Mremoveasset (an, i) ->
-      let ie, ia = extract_fun_dotasset i in
+      let ie, ia = f i in
       process (mk_mterm (Mremoveasset (an, ie)) mt.type_) ia
 
     | Mremovefield (an, fn, c, i) ->
-      let ce, ca = extract_fun_dotasset c in
-      let ie, ia = extract_fun_dotasset i in
+      let ce, ca = f c in
+      let ie, ia = f i in
       process (mk_mterm (Mremovefield (an, fn, ce, ie)) mt.type_) (ca @ ia)
 
     | Mclearfield (an, fn, a) ->
-      let ae, aa = extract_fun_dotasset a in
+      let ae, aa = f a in
       process (mk_mterm (Mclearfield (an, fn, ae)) mt.type_) aa
 
     | Mset (an, l, k, v) ->
-      let ke, ka = extract_fun_dotasset k in
-      let ve, va = extract_fun_dotasset v in
+      let ke, ka = f k in
+      let ve, va = f v in
       process (mk_mterm (Mset (an, l, ke, ve)) mt.type_) (ka @ va)
 
     | Mupdate (an, k, l) ->
-      let ke, ka = extract_fun_dotasset k in
+      let ke, ka = f k in
       let le, la = List.fold_right (fun (id, op, v) (xe, xa) ->
-          let ve, va = extract_fun_dotasset v in
+          let ve, va = f v in
           ((id, op, ve)::xe, va @ xa)) l ([], []) in
       process (mk_mterm (Mupdate (an, ke, le)) mt.type_) (ka @ la)
 
     | Mremoveif (an, fn, i) ->
-      let ie, ia = extract_fun_dotasset i in
+      let ie, ia = f i in
       process (mk_mterm (Mremoveif (an, fn, ie)) mt.type_) ia
 
     | Maddupdate (an, k, l) ->
-      let ke, ka = extract_fun_dotasset k in
+      let ke, ka = f k in
       let le, la = List.fold_right (fun (id, op, v) (xe, xa) ->
-          let ve, va = extract_fun_dotasset v in
+          let ve, va = f v in
           ((id, op, ve)::xe, va @ xa)) l ([], []) in
       process (mk_mterm (Maddupdate (an, ke, le)) mt.type_) (ka @ la)
 
@@ -1609,3 +1586,45 @@ let remove_fun_dotasset (model : model) : model =
   in
   Model.map_mterm_model aux model
 
+let remove_fun_dotasset (model : model) : model =
+  let extract_fun_dotasset (mt: mterm) : mterm * (lident * mterm) list =
+    let cpt : int ref = ref 0 in
+    let prefix = "tmp_" in
+
+    let rec efd_aux (accu : (lident * mterm) list) (mt : mterm) : mterm * (lident * mterm) list =
+      let is_fun (mt : mterm) : bool =
+        match mt.node with
+        | Mget _ | Mnth _-> true
+        | _ -> false
+      in
+      match mt.node with
+      | Mdotasset (l, r) when is_fun l ->
+        begin
+          let var_id = prefix ^ string_of_int (!cpt) in
+          cpt := !cpt + 1;
+          let var = mk_mterm (Mvarlocal (dumloc var_id)) l.type_ in
+          let nmt = mk_mterm (Mdotasset (var, r)) mt.type_ in
+          nmt, (dumloc var_id, l)::accu
+        end
+      | _ ->
+        let g (x : mterm__node) : mterm = { mt with node = x; } in
+        Model.fold_map_term g efd_aux accu mt
+    in
+    efd_aux [] mt
+  in
+  extract_term_from_instruction extract_fun_dotasset model
+
+let remove_letin_from_expr (model : model) : model =
+  let aux (mt: mterm) : mterm * (lident * mterm) list =
+    let rec f (accu : (lident * mterm) list) (mt : mterm) : mterm * (lident * mterm) list =
+      match mt.node with
+      | Mletin ([i], a, _, b, None) ->
+        let b, accu = f accu b in
+        b, (i, a)::accu
+      | _ ->
+        let g (x : mterm__node) : mterm = { mt with node = x; } in
+        Model.fold_map_term g f accu mt
+    in
+    f [] mt
+  in
+  extract_term_from_instruction aux model

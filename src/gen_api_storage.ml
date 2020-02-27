@@ -32,6 +32,7 @@ let process_api_storage (model : model) : model =
 
   let rec f (ctx : ctx_model) (accu : api_storage list) (term : mterm) : api_storage list =
     let api_items : api_storage_node list =
+      let mt_type = term.type_ in
       match term.node with
       | Mapifget (asset_name, _, _)
       | Mget (asset_name, _) ->
@@ -98,6 +99,10 @@ let process_api_storage (model : model) : model =
         [APIList (Lcount t)]
       | Mlistnth (t, _, _) ->
         [APIList (Lnth t)]
+      | Mfunmax _ ->
+        [APIBuiltin (MaxBuiltin mt_type)]
+      | Mfunmin _ ->
+        [APIBuiltin (MinBuiltin mt_type)]
       | Mrateq _ ->
         [APIInternal (RatEq)]
       | Mratcmp _ ->

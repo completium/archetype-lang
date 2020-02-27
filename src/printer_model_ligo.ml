@@ -973,12 +973,14 @@ let pp_model_internal fmt (model : model) b =
     (* builtin functions *)
 
     | Mfunmax (l, r) ->
-      Format.fprintf fmt "max (%a, %a)"
+      Format.fprintf fmt "max_%a (%a, %a)"
+        pp_type mtt.type_
         f l
         f r
 
     | Mfunmin (l, r) ->
-      Format.fprintf fmt "min (%a, %a)"
+      Format.fprintf fmt "min_%a (%a, %a)"
+        pp_type mtt.type_
         f l
         f r
 
@@ -1871,8 +1873,16 @@ let pp_model_internal fmt (model : model) b =
   in
 
   let pp_api_builtin (_env : env) fmt = function
-    | MinBuiltin t -> Format.fprintf fmt "// TODO api builtin MinBuiltin %a" pp_type t
-    | MaxBuiltin t -> Format.fprintf fmt "// TODO api builtin MaxBuiltin %a" pp_type t
+    | MinBuiltin t ->
+      Format.fprintf fmt
+        "function min_%a (const a : %a; const b : %a) : %a is if a < b then a else b@\n"
+        pp_type t pp_type t pp_type t pp_type t
+
+    | MaxBuiltin t ->
+      Format.fprintf fmt
+        "function max_%a (const a : %a; const b : %a) : %a is if a > b then a else b@\n"
+        pp_type t pp_type t pp_type t pp_type t
+
   in
 
   let pp_api_internal (_env : env) fmt = function

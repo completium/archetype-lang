@@ -1,6 +1,8 @@
 #! /bin/bash
 
 EXEC_CONTRACTS="\
+auction.arl \
+auction_lazy.arl \
 auction_no_memory.arl \
 c3n.arl \
 certificate_generator.arl \
@@ -26,8 +28,6 @@ zero_coupon_bond_with_insurance.arl \
 "
 
 REMAINED_EXEC_CONTRACTS="\
-auction.arl \
-auction_lazy.arl \
 certification_token.arl \
 \
 animal_tracking.arl \

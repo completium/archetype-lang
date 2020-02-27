@@ -142,6 +142,7 @@ let generate_target model =
     |> generate_storage
     |> replace_declvar_by_letin
     |> remove_enum_matchwith
+    |> remove_letin_from_expr
     |> remove_fun_dotasset
     |> exec_process
     |> shallow_asset
