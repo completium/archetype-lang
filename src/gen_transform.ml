@@ -1628,3 +1628,15 @@ let remove_letin_from_expr (model : model) : model =
     f [] mt
   in
   extract_term_from_instruction aux model
+
+
+let process_internal_string (model : model) : model =
+  let rec aux ctx (mt : mterm) : mterm =
+    match mt.node, mt.type_ with
+    | Mplus (l, r), Tbuiltin Bstring ->
+      let l = aux ctx l in
+      let r = aux ctx r in
+      mk_mterm (Mstrconcat (l, r)) (Tbuiltin Bstring)
+    | _ -> map_mterm (aux ctx) mt
+  in
+  Model.map_mterm_model aux model

@@ -1000,6 +1000,13 @@ let pp_model_internal fmt (model : model) b =
         pp_tmp mtt.type_
         f a
 
+    (* internal functions *)
+
+    | Mstrconcat (l, r)->
+      Format.fprintf fmt "str_concat (%a, %a)"
+        f l
+        f r
+
 
     (* constants *)
 
@@ -1968,6 +1975,8 @@ let pp_model_internal fmt (model : model) b =
          begin@\n  \
          const r : tez = abs(c.0) * t / abs(c.1);@\n  \
          end with r@\n"
+    | StrConcat ->
+      Format.fprintf fmt "function str_concat (const a : string; const b : string) : string is a ^ b@\n"
   in
 
   let pp_api_item_node (env : env) fmt = function

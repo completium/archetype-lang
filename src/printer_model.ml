@@ -711,6 +711,14 @@ let pp_mterm fmt (mt : mterm) =
         f a
 
 
+    (* internal functions *)
+
+    | Mstrconcat (l, r)->
+      Format.fprintf fmt "str_concat (%a, %a)"
+        f l
+        f r
+
+
     (* constants *)
 
     | Mvarstate      -> pp_str fmt "state"
@@ -1103,6 +1111,7 @@ let pp_api_internal fmt = function
   | RatArith     -> Format.fprintf fmt "rat_arith"
   | RatUminus    -> Format.fprintf fmt "rat_uminus"
   | RatTez       -> Format.fprintf fmt "rat_to_tez"
+  | StrConcat    -> Format.fprintf fmt "str_concat"
 
 let pp_api_item_node fmt = function
   | APIAsset      v -> pp_api_asset    fmt v

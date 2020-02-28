@@ -115,6 +115,8 @@ let process_api_storage (model : model) : model =
         [APIInternal (RatUminus)]
       | Mrattez _ ->
         [APIInternal (RatTez)]
+      | Mstrconcat _ ->
+        [APIInternal (StrConcat)]
       | _ -> []
     in
     let accu = List.fold_left (fun accu v -> add ctx accu (Model.mk_api_item v  (match ctx.formula with | true -> OnlyFormula | false -> OnlyExec))) accu api_items in
@@ -201,6 +203,7 @@ let process_api_storage (model : model) : model =
                    | APIInternal (RatArith      ) -> 33
                    | APIInternal (RatUminus     ) -> 34
                    | APIInternal (RatTez        ) -> 35
+                   | APIInternal (StrConcat     ) -> 36
                  in
                  let idx1 = get_kind i1.node_item in
                  let idx2 = get_kind i2.node_item in

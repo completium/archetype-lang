@@ -1301,6 +1301,11 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Mfunabs             _ -> error_not_translated "Mfunabs"
 
 
+    (* internal functions *)
+
+    | Mstrconcat          _ -> error_not_translated "Mstrconcat"
+
+
     (* constants *)
 
     | Mvarstate ->

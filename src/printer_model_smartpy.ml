@@ -280,6 +280,7 @@ let pp_model fmt (model : model) =
     | RatArith     -> Format.fprintf fmt "rat_arith"
     | RatUminus    -> Format.fprintf fmt "rat_uminus"
     | RatTez       -> Format.fprintf fmt "rat_to_tez"
+    | StrConcat    -> Format.fprintf fmt "str_concat"
   in
 
   let pp_api_item_node fmt = function
@@ -957,6 +958,13 @@ let pp_model fmt (model : model) =
         Format.fprintf fmt "abs (%a)"
           f a
 
+
+      (* internal functions *)
+
+      | Mstrconcat (l, r)->
+        Format.fprintf fmt "str_concat (%a, %a)"
+          f l
+          f r
 
       (* constants *)
 

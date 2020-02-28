@@ -135,6 +135,7 @@ let generate_target model =
     |> remove_add_update
     |> merge_update
     |> replace_update_by_set
+    |> process_internal_string
     |> remove_rational
     |> abs_tez
     |> replace_date_duration_by_timestamp
@@ -182,6 +183,7 @@ let generate_target model =
     |> merge_update
     |> replace_update_by_set
     |> replace_key_by_asset
+    |> process_internal_string
     |> remove_rational
     |> replace_date_duration_by_timestamp
     |> eval_variable_initial_value

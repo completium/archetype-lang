@@ -230,6 +230,8 @@ type ('id, 'term) mterm_node  =
   | Mfunmin           of 'term * 'term
   | Mfunmax           of 'term * 'term
   | Mfunabs           of 'term
+  (* internal functions *)
+  | Mstrconcat        of 'term * 'term
   (* constants *)
   | Mvarstate
   | Mnow
@@ -365,6 +367,7 @@ and api_internal =
   | RatArith
   | RatUminus
   | RatTez
+  | StrConcat
 [@@deriving show {with_path = false}]
 
 and api_storage_node =
@@ -375,9 +378,9 @@ and api_storage_node =
 [@@deriving show {with_path = false}]
 
 and api_loc =
-| OnlyFormula
-| OnlyExec
-| ExecFormula
+  | OnlyFormula
+  | OnlyExec
+  | ExecFormula
 
 and api_storage = {
   node_item: api_storage_node;
@@ -1019,6 +1022,8 @@ let cmp_mterm_node
     | Mfunmin (l1, r1), Mfunmin (l2, r2)                                               -> cmp l1 l2 && cmp r1 r2
     | Mfunmax (l1, r1), Mfunmax (l2, r2)                                               -> cmp l1 l2 && cmp r1 r2
     | Mfunabs a1, Mfunabs a2                                                           -> cmp a1 a2
+    (* internal functions *)
+    | Mstrconcat (l1, r1), Mstrconcat (l2, r2)                                         -> cmp l1 l2 && cmp r1 r2
     (* constants *)
     | Mvarstate, Mvarstate                                                             -> true
     | Mnow, Mnow                                                                       -> true
@@ -1141,6 +1146,7 @@ let cmp_api_item_node (a1 : api_storage_node) (a2 : api_storage_node) : bool =
     | RatArith,  RatArith  -> true
     | RatUminus, RatUminus -> true
     | RatTez,    RatTez    -> true
+    | StrConcat, StrConcat -> true
     | _ -> false
   in
   match a1, a2 with
@@ -1283,6 +1289,8 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Mfunmin (l, r)                 -> Mfunmin (f l, f r)
   | Mfunmax (l, r)                 -> Mfunmax (f l, f r)
   | Mfunabs a                      -> Mfunabs (f a)
+  (* internal functions *)
+  | Mstrconcat (l, r)              -> Mstrconcat (f l, f r)
   (* constants *)
   | Mvarstate                      -> Mvarstate
   | Mnow                           -> Mnow
@@ -1593,6 +1601,8 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mfunmax (l, r)                        -> f (f accu l) r
   | Mfunmin (l, r)                        -> f (f accu l) r
   | Mfunabs a                             -> f accu a
+  (* internal functions *)
+  | Mstrconcat (l, r)                     -> f (f accu l) r
   (* constants *)
   | Mvarstate                             -> accu
   | Mnow                                  -> accu
@@ -2154,6 +2164,14 @@ let fold_map_term
     g (Mfunabs ae), aa
 
 
+  (* internal functions *)
+
+  | Mstrconcat (l, r)->
+    let le, la = f accu l in
+    let re, ra = f la r in
+    g (Mstrconcat (le, re)), ra
+
+
   (* constants *)
 
   | Mvarstate ->
@@ -2597,6 +2615,7 @@ let replace_ident_model (f : kind_ident -> ident -> ident) (model : model) : mod
         | RatArith  -> RatArith
         | RatUminus -> RatUminus
         | RatTez    -> RatTez
+        | StrConcat -> StrConcat
       in
       match asn with
       | APIAsset    aasset    -> APIAsset    (for_api_asset aasset)
@@ -3058,44 +3077,44 @@ end = struct
       ) [] *)
 
   (* let rec pp_type fmt t =
-    match t with
-    | Tasset an ->
+     match t with
+     | Tasset an ->
       Format.fprintf fmt "%a" Printer_tools.pp_id an
-    | Tstate ->
+     | Tstate ->
       Format.fprintf fmt "state"
-    | Tenum en ->
+     | Tenum en ->
       Format.fprintf fmt "%a" Printer_tools.pp_id en
-    | Tcontract cn ->
+     | Tcontract cn ->
       Format.fprintf fmt "%a" Printer_tools.pp_id cn
-    | Tbuiltin b -> pp_btyp fmt b
-    | Tcontainer (t, c) ->
+     | Tbuiltin b -> pp_btyp fmt b
+     | Tcontainer (t, c) ->
       Format.fprintf fmt "%a %a"
         pp_type t
         pp_container c
-    | Tlist t ->
+     | Tlist t ->
       Format.fprintf fmt "%a list"
         pp_type t
-    | Toption t ->
+     | Toption t ->
       Format.fprintf fmt "%a option"
         pp_type t
-    | Ttuple ts ->
+     | Ttuple ts ->
       Format.fprintf fmt "%a"
         (Printer_tools.pp_list " * " pp_type) ts
-    | Tassoc (k, v) ->
+     | Tassoc (k, v) ->
       Format.fprintf fmt "(%a, %a) map"
         pp_btyp k
         pp_type v
-    | Tunit ->
+     | Tunit ->
       Format.fprintf fmt "unit"
-    | Tstorage ->
+     | Tstorage ->
       Format.fprintf fmt "storage"
-    | Toperation ->
+     | Toperation ->
       Format.fprintf fmt "operation"
-    | Tentry ->
+     | Tentry ->
       Format.fprintf fmt "entry"
-    | Tprog _
-    | Tvset _
-    | Ttrace _ -> Format.fprintf fmt "todo" *)
+     | Tprog _
+     | Tvset _
+     | Ttrace _ -> Format.fprintf fmt "todo" *)
 
   let get_containers_internal f m : (ident * ident * type_) list =
     get_assets m |> List.fold_left (fun acc (asset : asset) ->
