@@ -545,7 +545,7 @@ let pp_model_internal fmt (model : model) b =
 
     (* composite type constructors *)
 
-    | Mnone -> pp_str fmt "None"
+    | Mnone -> Format.fprintf fmt "(None : %a)" pp_type mtt.type_
 
     | Msome v ->
       Format.fprintf fmt "Some (%a)"

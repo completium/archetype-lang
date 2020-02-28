@@ -1039,6 +1039,7 @@ let replace_date_duration_by_timestamp (model : model) : model =
       match mt.node, mt.type_ with
       | Mdate d,_      -> mk_mterm (Mtimestamp (Core.date_to_timestamp d)) type_timestamp
       | Mduration d, _ -> mk_mterm (Mint (Core.duration_to_timestamp d)) type_int
+      | Mnow, _        -> mk_mterm (Mnow) type_timestamp
       | Mletin (ids, v, t, body, o), _ ->
         { mt with
           node = Mletin (ids, aux v, Option.map process_type t, aux body, Option.map aux o)
