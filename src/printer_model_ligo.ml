@@ -162,6 +162,7 @@ let pp_model_internal fmt (model : model) b =
     | Bcurrency   -> Format.fprintf fmt "tez"
     | Bkey        -> Format.fprintf fmt "key"
     | Bbytes      -> Format.fprintf fmt "bytes"
+    | Bnat        -> Format.fprintf fmt "nat"
   in
 
   let pp_container fmt = function
@@ -990,8 +991,14 @@ let pp_model_internal fmt (model : model) b =
         f r
 
     | Mfunabs a ->
-      Format.fprintf fmt "abs_%a (%a)"
-        pp_abs_type mtt.type_ f a
+      let pp_tmp fmt t =
+        match t with
+        | Tbuiltin Bnat -> ()
+        | _ -> Format.fprintf fmt "_%a" pp_abs_type t
+      in
+      Format.fprintf fmt "abs%a (%a)"
+        pp_tmp mtt.type_
+        f a
 
 
     (* constants *)
@@ -1889,16 +1896,22 @@ let pp_model_internal fmt (model : model) b =
         pp_type t pp_type t pp_type t pp_type t
 
     | AbsBuiltin t ->
-      let pp_body fmt _ =
+      begin
         match t with
-        | Tbuiltin Bint -> Format.fprintf fmt "int(abs(a))"
-        | Ttuple [Tbuiltin Bint; Tbuiltin Bint] -> Format.fprintf fmt "(int(abs(a.0)),int(abs(a.1)))"
-        | _ -> assert false
-      in
-      Format.fprintf fmt
-        "function abs_%a (const a : %a) : %a is %a@\n"
-        pp_abs_type t pp_type t pp_type t pp_body ()
-
+        | Tbuiltin Bnat -> ()
+        | _ ->
+          begin
+            let pp_body fmt _ =
+              match t with
+              | Tbuiltin Bint -> Format.fprintf fmt "int(abs(a))"
+              | Ttuple [Tbuiltin Bint; Tbuiltin Bint] -> Format.fprintf fmt "(int(abs(a.0)),int(abs(a.1)))"
+              | _ -> assert false
+            in
+            Format.fprintf fmt
+              "function abs_%a (const a : %a) : %a is %a@\n"
+              pp_abs_type t pp_type t pp_type t pp_body ()
+          end
+      end
   in
 
   let pp_api_internal (_env : env) fmt = function

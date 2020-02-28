@@ -29,6 +29,7 @@ type btyp =
   | Bcurrency
   | Bkey
   | Bbytes
+  | Bnat
 [@@deriving show {with_path = false}]
 
 type vset =

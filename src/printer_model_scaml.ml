@@ -84,6 +84,7 @@ let pp_model fmt (model : model) =
     | Bcurrency   -> Format.fprintf fmt "tz"
     | Bkey        -> Format.fprintf fmt "key"
     | Bbytes      -> Format.fprintf fmt "bytes"
+    | Bnat        -> Format.fprintf fmt "nat"
   in
 
   let pp_container fmt = function

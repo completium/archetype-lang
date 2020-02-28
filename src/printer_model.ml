@@ -24,6 +24,7 @@ let pp_btyp fmt = function
   | Bcurrency   -> Format.fprintf fmt "tez"
   | Bkey        -> Format.fprintf fmt "key"
   | Bbytes      -> Format.fprintf fmt "bytes"
+  | Bnat        -> Format.fprintf fmt "nat"
 
 let pp_container fmt = function
   | Collection -> Format.fprintf fmt "collection"
