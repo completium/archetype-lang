@@ -393,40 +393,6 @@ let pp_model_internal fmt (model : model) b =
         label pp_id id pp_type typ
         f body
         label f col
-    (* let t, dv, sep =
-       match c with
-       | {type_ = Tcontainer (Tbuiltin Bstring, _)} -> "string", "\"\"", false
-       | {type_ = Tcontainer (Tbuiltin (Baddress | Brole), _)} -> "address", "(\"\" : address)", false
-       | {type_ = Tcontainer (Tasset an, _); node = Mvarparam _ } -> unloc an, "nth_" ^ unloc an ^ "(s_, loop_index_)", true
-       | {type_ = Tcontainer (Tasset an, _)} ->
-        begin
-          let _, t = Utils.get_asset_key model an in
-          match t with
-          | Bstring -> "string", "nth_list_string (loop_col_, loop_index_)", false
-          | Baddress | Brole -> "address", "(\"\" : address)", false
-          | _ -> "", "", false
-        end
-       | _ ->
-        "FIXME", "FIXME", false
-
-       in
-       Format.fprintf fmt
-       "const loop_col_ : list(%s) = %a;@\n\
-       var loop_index_ : nat := 0n;@\n\
-       while (loop_index_ < size(loop_col_)) block {@\n  \
-       %a\
-       loop_index_ := loop_index_ + 1n;@\n\
-       }"
-       t f c
-       (fun fmt _ ->
-         if sep
-         then ()
-         else
-           Format.fprintf fmt "const %a : %s = %s;@\n  \
-                               @[%a@];@\n  \ "
-             pp_id i t dv
-             f b
-       ) () *)
 
     | Miter (_i, _a, _b, _c, _) -> Format.fprintf fmt "TODO: iter@\n"
 
@@ -1796,10 +1762,11 @@ let pp_model_internal fmt (model : model) b =
         "function head_%s (const l : list(%a); const i : int) : list(%a) is@\n  \
          block {@\n    \
          const length : int = int(size(l));@\n    \
-         if (i >= length or i < 0) then failwith(\"head_%s: index out of bound\") else skip;@\n    \
+         const bound : int = if i < length then i else length;@\n    \
+         if (i < 0) then failwith(\"head_%s: index out of bound\") else skip;@\n    \
          function rev (const accu: list(%a); const x: %a) : list(%a) is x # accu;@\n    \
          function aggregate (const accu: int * list(%a); const x: %a) : int * list(%a) is@\n    \
-         if accu.0 < i@\n    \
+         if accu.0 < bound@\n    \
          then (accu.0 + 1, x # accu.1 );@\n    \
          else (accu.0 + 1, accu.1 );@\n    \
          const init : int * list(%a) = (0, ((list [] : list(%a))));@\n    \
@@ -1820,8 +1787,9 @@ let pp_model_internal fmt (model : model) b =
         "function tail_%s (const l : list(%a); const i : int) : list(%a) is@\n  \
          block {@\n    \
          const length : int = int(size(l));@\n    \
-         if (i >= length or i < 0) then failwith(\"tail_%s: index out of bound\") else skip;@\n    \
-         const p : int = length - i;@\n    \
+         const bound : int = if i < length then i else length;@\n    \
+         if (i < 0) then failwith(\"tail_%s: index out of bound\") else skip;@\n    \
+         const p : int = bound - i;@\n    \
          function rev (const accu: list(%a); const x: %a) : list(%a) is x # accu;@\n    \
          function aggregate (const accu: int * list(%a); const x: %a) : int * list(%a) is@\n    \
          if accu.0 >= p@\n    \

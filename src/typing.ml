@@ -533,8 +533,8 @@ let methods : (string * method_) list =
     ("max"         , mk M.Cmax          `Pure   `Partial (`Fixed [`RExpr       ], Some (`Ref 0)));
     ("min"         , mk M.Cmin          `Pure   `Partial (`Fixed [`RExpr       ], Some (`Ref 0)));
     ("subsetof"    , mk M.Csubsetof     `Pure   `Total   (`Fixed [`SubColl     ], Some (`T M.vtbool)));
-    ("head"        , mk M.Chead         `Pure   `Partial (`Fixed [`T M.vtint   ], Some (`SubColl)));
-    ("tail"        , mk M.Ctail         `Pure   `Partial (`Fixed [`T M.vtint   ], Some (`SubColl)));
+    ("head"        , mk M.Chead         `Pure   `Total   (`Fixed [`T M.vtint   ], Some (`SubColl)));
+    ("tail"        , mk M.Ctail         `Pure   `Total   (`Fixed [`T M.vtint   ], Some (`SubColl)));
     ("unmoved"     , mk M.Cunmoved      `Pure   `Total   (`Fixed [             ], Some (`SubColl)));
     ("added"       , mk M.Cadded        `Pure   `Total   (`Fixed [             ], Some (`SubColl)));
     ("removed"     , mk M.Cremoved      `Pure   `Total   (`Fixed [             ], Some (`SubColl)));
