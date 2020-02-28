@@ -103,6 +103,8 @@ let process_api_storage (model : model) : model =
         [APIBuiltin (MaxBuiltin mt_type)]
       | Mfunmin _ ->
         [APIBuiltin (MinBuiltin mt_type)]
+      | Mfunabs _ ->
+        [APIBuiltin (AbsBuiltin mt_type)]
       | Mrateq _ ->
         [APIInternal (RatEq)]
       | Mratcmp _ ->
@@ -187,17 +189,18 @@ let process_api_storage (model : model) : model =
                    | APIList    (Lnth          _) -> 21
                    | APIBuiltin (MinBuiltin    _) -> 22
                    | APIBuiltin (MaxBuiltin    _) -> 23
-                   | APIAsset   (Shallow       _) -> 24
-                   | APIAsset   (Unshallow     _) -> 25
-                   | APIAsset   (Listtocoll    _) -> 26
-                   | APIAsset   (Head          _) -> 27
-                   | APIAsset   (Tail          _) -> 28
-                   | APIAsset   (ColToKeys     _) -> 29
-                   | APIInternal (RatEq         ) -> 30
-                   | APIInternal (RatCmp        ) -> 31
-                   | APIInternal (RatArith      ) -> 32
-                   | APIInternal (RatUminus     ) -> 33
-                   | APIInternal (RatTez        ) -> 34
+                   | APIBuiltin (AbsBuiltin    _) -> 24
+                   | APIAsset   (Shallow       _) -> 25
+                   | APIAsset   (Unshallow     _) -> 26
+                   | APIAsset   (Listtocoll    _) -> 27
+                   | APIAsset   (Head          _) -> 28
+                   | APIAsset   (Tail          _) -> 29
+                   | APIAsset   (ColToKeys     _) -> 30
+                   | APIInternal (RatEq         ) -> 31
+                   | APIInternal (RatCmp        ) -> 32
+                   | APIInternal (RatArith      ) -> 33
+                   | APIInternal (RatUminus     ) -> 34
+                   | APIInternal (RatTez        ) -> 35
                  in
                  let idx1 = get_kind i1.node_item in
                  let idx2 = get_kind i2.node_item in

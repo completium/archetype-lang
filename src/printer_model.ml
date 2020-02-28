@@ -1094,6 +1094,7 @@ let pp_api_list fmt = function
 let pp_api_builtin fmt = function
   | MinBuiltin t -> Format.fprintf fmt "min on %a" pp_type t
   | MaxBuiltin t -> Format.fprintf fmt "max on %a" pp_type t
+  | AbsBuiltin t -> Format.fprintf fmt "abs on %a" pp_type t
 
 let pp_api_internal fmt = function
   | RatEq        -> Format.fprintf fmt "rat_eq"

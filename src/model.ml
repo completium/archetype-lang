@@ -355,6 +355,7 @@ and api_list =
 and api_builtin =
   | MinBuiltin of type_
   | MaxBuiltin of type_
+  | AbsBuiltin of type_
 [@@deriving show {with_path = false}]
 
 and api_internal =
@@ -1129,6 +1130,7 @@ let cmp_api_item_node (a1 : api_storage_node) (a2 : api_storage_node) : bool =
     match b1, b2 with
     | MinBuiltin t1, MinBuiltin t2 -> cmp_type t1 t2
     | MaxBuiltin t1, MaxBuiltin t2 -> cmp_type t1 t2
+    | AbsBuiltin t1, AbsBuiltin t2 -> cmp_type t1 t2
     | _ -> false
   in
   let cmp_api_internal (i1 : api_internal) (i2 : api_internal) : bool =
@@ -2585,6 +2587,7 @@ let replace_ident_model (f : kind_ident -> ident -> ident) (model : model) : mod
         match abuiltin with
         | MinBuiltin t -> MinBuiltin (for_type t)
         | MaxBuiltin t -> MaxBuiltin (for_type t)
+        | AbsBuiltin t -> AbsBuiltin (for_type t)
       in
       let for_api_internal (ainternal : api_internal) : api_internal =
         match ainternal with

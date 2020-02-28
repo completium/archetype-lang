@@ -237,6 +237,11 @@ let pp_model_internal fmt (model : model) b =
 
   let pp_postfix_sort = (pp_list "_" (fun fmt (a, b) -> Format.fprintf fmt "%s_%a" a pp_sort_kind b)) in
 
+  let pp_abs_type fmt = function
+    | Ttuple [Tbuiltin Bint; Tbuiltin Bint] -> pp_type fmt (Tbuiltin Brational)
+    | t -> pp_type fmt t
+  in
+
   let pp_mterm_gen (env : env) f fmt (mtt : mterm) =
     let pp_mterm_block fmt (x : mterm) =
       match x with
@@ -985,8 +990,8 @@ let pp_model_internal fmt (model : model) b =
         f r
 
     | Mfunabs a ->
-      Format.fprintf fmt "abs (%a)"
-        f a
+      Format.fprintf fmt "abs_%a (%a)"
+        pp_abs_type mtt.type_ f a
 
 
     (* constants *)
@@ -1883,6 +1888,17 @@ let pp_model_internal fmt (model : model) b =
         "function max_%a (const a : %a; const b : %a) : %a is if a > b then a else b@\n"
         pp_type t pp_type t pp_type t pp_type t
 
+    | AbsBuiltin t ->
+      let pp_body fmt _ =
+        match t with
+        | Tbuiltin Bint -> Format.fprintf fmt "int(abs(a))"
+        | Ttuple [Tbuiltin Bint; Tbuiltin Bint] -> Format.fprintf fmt "(int(abs(a.0)),int(abs(a.1)))"
+        | _ -> assert false
+      in
+      Format.fprintf fmt
+        "function abs_%a (const a : %a) : %a is %a@\n"
+        pp_abs_type t pp_type t pp_type t pp_body ()
+
   in
 
   let pp_api_internal (_env : env) fmt = function
@@ -1932,9 +1948,7 @@ let pp_model_internal fmt (model : model) b =
          end with r@\n"
     | RatUminus ->
       Format.fprintf fmt
-        "function rat_uminus (const x : (int * int)) : (int * int) is@\n\
-         block { skip }@\n\
-         with (- x.0, x.1)@\n"
+        "function rat_uminus (const x : (int * int)) : (int * int) is (- x.0, x.1)@\n"
     | RatTez ->
       Format.fprintf fmt
         "function rat_tez (const c : (int * int); const t : tez) : tez is@\n\

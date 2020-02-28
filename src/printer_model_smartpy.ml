@@ -270,6 +270,7 @@ let pp_model fmt (model : model) =
   let pp_api_builtin fmt = function
     | MinBuiltin t -> Format.fprintf fmt "min on %a" pp_type t
     | MaxBuiltin t -> Format.fprintf fmt "max on %a" pp_type t
+    | AbsBuiltin t -> Format.fprintf fmt "abs on %a" pp_type t
   in
 
   let pp_api_internal fmt = function
