@@ -49,6 +49,7 @@ let generate_storage (model : model) : model =
       | Bcurrency   -> mk_mterm (Mcurrency (Big_int.zero_big_int, Tz)) (Tbuiltin b)
       | Bkey        -> emit_error (NoInitExprFor "key")
       | Bbytes      -> mk_mterm (Mbytes ("0x0")) (Tbuiltin b)
+      | Bnat        -> mk_mterm (Mint (Big_int.zero_big_int)) (Tbuiltin b)
     in
 
     let init_default_value = function
