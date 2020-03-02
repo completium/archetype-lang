@@ -3795,6 +3795,7 @@ let for_declarations (env : env) (decls : (PT.declaration list) loced) : M.model
       )
       ~specifications:(List.map specifications_of_ispecifications decls.specs)
       ~securities:(decls.secspecs)
+      ~loc:toploc
       x
 
   | _ ->

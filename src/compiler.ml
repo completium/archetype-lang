@@ -219,6 +219,7 @@ let compile (filename, channel) =
   |> raise_if_error type_error type_
   |> cont !Options.opt_ast output_tast
   |> raise_if_error model_error generate_model
+  |> raise_if_error post_model_error check_number_entrypoint
   |> raise_if_error post_model_error check_partition_access
   |> raise_if_error post_model_error extend_removeif
   |> generate_target

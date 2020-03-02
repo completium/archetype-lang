@@ -952,4 +952,4 @@ let to_model (ast : A.model) : M.model =
     |> (fun sec -> List.fold_left (fun accu x -> cont_security x accu) sec ast.securities)
   in
 
-  M.mk_model ~decls:decls ~functions:functions ~specification:specification ~security:security name
+  M.mk_model ~decls:decls ~functions:functions ~specification:specification ~security:security ~loc:ast.loc name

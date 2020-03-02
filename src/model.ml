@@ -730,6 +730,7 @@ type 'id model_gen = {
   functions     : 'id function__gen list;
   specification : 'id specification_gen;
   security      : security;
+  loc           : Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]
 
@@ -820,8 +821,8 @@ let mk_signature ?(args = []) ?ret name : 'id signature_gen =
 let mk_api_item node_item api_loc =
   { node_item; api_loc }
 
-let mk_model ?(api_items = []) ?(api_verif = []) ?(decls = []) ?(functions = []) ?(storage = []) ?(specification = mk_specification ()) ?(security = mk_security ()) name : model =
-  { name; api_items; api_verif; storage; decls; functions; specification; security }
+let mk_model ?(api_items = []) ?(api_verif = []) ?(decls = []) ?(functions = []) ?(storage = []) ?(specification = mk_specification ()) ?(security = mk_security ()) ?(loc = Location.dummy) name : model =
+  { name; api_items; api_verif; storage; decls; functions; specification; security; loc }
 
 (* -------------------------------------------------------------------- *)
 
@@ -2841,6 +2842,7 @@ let replace_ident_model (f : kind_ident -> ident -> ident) (model : model) : mod
     functions     = List.map for_function__ model.functions;
     specification = for_specification model.specification;
     security      = for_security model.security;
+    loc           = model.loc;
   }
 
 (* -------------------------------------------------------------------- *)

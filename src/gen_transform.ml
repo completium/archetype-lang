@@ -6,6 +6,7 @@ open Tools
 type error_desc =
   | AssetPartitionnedby of string * string list
   | CannotBuildAsset of string * string
+  | NoEntrypoint
 
 let pp_error_desc fmt = function
   | AssetPartitionnedby (i, l)         ->
@@ -15,6 +16,8 @@ let pp_error_desc fmt = function
 
   | CannotBuildAsset (an, fn) ->
     Format.fprintf fmt "Cannot build an asset %s, default value of field '%s' is missing" an fn
+
+  | NoEntrypoint -> Format.fprintf fmt "No entrypoint found (action or transtion)"
 
 type error = Location.t * error_desc
 
@@ -394,6 +397,11 @@ let check_partition_access (model : model) : model =
     then raise (Error.Stop 5)
   in
   let _ = raise_access_error () in
+  model
+
+let check_number_entrypoint (model : model) : model =
+  let nb_entrypoints = model.functions |> List.filter (fun (f : function__) -> match f.node with | Entry _ -> true | _ -> false) |> List.length in
+  if nb_entrypoints = 0 then (emit_error (model.loc, NoEntrypoint); raise (Error.Stop 5));
   model
 
 let prune_properties (model : model) : model =
