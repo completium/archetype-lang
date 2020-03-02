@@ -1022,26 +1022,6 @@ let pp_model fmt (model : model) =
         in
         pp fmt (an, c)
 
-      | Mmin (an, fd, c) ->
-        let pp fmt (an, fd, c) =
-          Format.fprintf fmt "min_%a_%a (%s, %a)"
-            pp_str an
-            pp_id fd
-            const_storage
-            f c
-        in
-        pp fmt (an, fd, c)
-
-      | Mmax (an, fd, c) ->
-        let pp fmt (an, fd, c) =
-          Format.fprintf fmt "max_%a_%a (%s, %a)"
-            pp_str an
-            pp_id fd
-            const_storage
-            f c
-        in
-        pp fmt (an, fd, c)
-
       | Mhead (an, c, i) ->
         Format.fprintf fmt "head_%a (%a, %a)"
           pp_str an
@@ -1300,8 +1280,6 @@ let pp_model fmt (model : model) =
       | Mapifnth       _ -> emit_error (UnsupportedTerm ("apifnth"))
       | Mapifcount     _ -> emit_error (UnsupportedTerm ("apifcount"))
       | Mapifsum       _ -> emit_error (UnsupportedTerm ("apifsum"))
-      | Mapifmin       _ -> emit_error (UnsupportedTerm ("apifmin"))
-      | Mapifmax       _ -> emit_error (UnsupportedTerm ("apifmax"))
       | Mapifhead      _ -> emit_error (UnsupportedTerm ("apifhead"))
       | Mapiftail      _ -> emit_error (UnsupportedTerm ("apiftail"))
 

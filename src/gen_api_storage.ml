@@ -71,12 +71,6 @@ let process_api_storage (model : model) : model =
       | Mapifsum (asset_name, _, p)
       | Msum (asset_name, _, p) ->
         [APIAsset (Sum (asset_name, p.type_, p))]
-      | Mapifmin (asset_name, field_name, _)
-      | Mmin (asset_name, field_name, _) ->
-        [APIAsset (Min (asset_name, unloc field_name))]
-      | Mapifmax (asset_name, field_name, _)
-      | Mmax (asset_name, field_name, _) ->
-        [APIAsset (Max (asset_name, unloc field_name))]
       | Mshallow (asset_name, _) ->
         [APIAsset (Shallow asset_name)]
       | Munshallow (asset_name, _) ->

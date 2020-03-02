@@ -530,8 +530,6 @@ let methods : (string * method_) list =
     ("sort"        , mk M.Csort         `Pure   `Total   (`Multi (`Cmp         ), Some (`SubColl)));
     ("count"       , mk M.Ccount        `Pure   `Total   (`Fixed [             ], Some (`T M.vtint)));
     ("sum"         , mk M.Csum          `Pure   `Total   (`Fixed [`RExpr       ], Some (`Ref 0)));
-    ("max"         , mk M.Cmax          `Pure   `Partial (`Fixed [`RExpr       ], Some (`Ref 0)));
-    ("min"         , mk M.Cmin          `Pure   `Partial (`Fixed [`RExpr       ], Some (`Ref 0)));
     ("subsetof"    , mk M.Csubsetof     `Pure   `Total   (`Fixed [`SubColl     ], Some (`T M.vtbool)));
     ("head"        , mk M.Chead         `Pure   `Total   (`Fixed [`T M.vtint   ], Some (`SubColl)));
     ("tail"        , mk M.Ctail         `Pure   `Total   (`Fixed [`T M.vtint   ], Some (`SubColl)));

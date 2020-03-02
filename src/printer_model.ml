@@ -618,24 +618,6 @@ let pp_mterm fmt (mt : mterm) =
       in
       pp fmt (an, c, p)
 
-    | Mmin (an, fd, c) ->
-      let pp fmt (an, fd, c) =
-        Format.fprintf fmt "min_%a_%a (%a)"
-          pp_str an
-          pp_id fd
-          f c
-      in
-      pp fmt (an, fd, c)
-
-    | Mmax (an, fd, c) ->
-      let pp fmt (an, fd, c) =
-        Format.fprintf fmt "max_%a_%a (%a)"
-          pp_str an
-          pp_id fd
-          f c
-      in
-      pp fmt (an, fd, c)
-
     | Mhead (an, c, i) ->
       Format.fprintf fmt "head_%a (%a, %a)"
         pp_str an
@@ -1027,24 +1009,6 @@ let pp_mterm fmt (mt : mterm) =
           f p
       in
       pp fmt (an, c, p)
-
-    | Mapifmin (an, fd, c) ->
-      let pp fmt (an, fd, c) =
-        Format.fprintf fmt "apifmin_%a_%a (%a)"
-          pp_str an
-          pp_id fd
-          f c
-      in
-      pp fmt (an, fd, c)
-
-    | Mapifmax (an, fd, c) ->
-      let pp fmt (an, fd, c) =
-        Format.fprintf fmt "apifmax_%a_%a (%a)"
-          pp_str an
-          pp_id fd
-          f c
-      in
-      pp fmt (an, fd, c)
 
     | Mapifhead (an, c, i) ->
       Format.fprintf fmt "apifhead_%a (%a, %a)"

@@ -213,8 +213,6 @@ type ('id, 'term) mterm_node  =
   | Mnth              of ident * 'term * 'term
   | Mcount            of ident * 'term
   | Msum              of ident * 'term * 'term
-  | Mmin              of ident * 'id * 'term
-  | Mmax              of ident * 'id * 'term
   | Mhead             of ident * 'term * 'term
   | Mtail             of ident * 'term * 'term
   (* utils *)
@@ -292,8 +290,6 @@ type ('id, 'term) mterm_node  =
   | Mapifnth          of ident * 'term * 'term
   | Mapifcount        of ident * 'term
   | Mapifsum          of ident * 'term * 'term
-  | Mapifmax          of ident * 'id * 'term
-  | Mapifmin          of ident * 'id * 'term
   | Mapifhead         of ident * 'term * 'term
   | Mapiftail         of ident * 'term * 'term
 [@@deriving show {with_path = false}]
@@ -1005,8 +1001,6 @@ let cmp_mterm_node
     | Mnth (an1, c1, i1), Mnth (an2, c2, i2)                                           -> cmp_ident an1 an2 && cmp c1 c2 && cmp i1 i2
     | Mcount (an1, c1), Mcount (an2, c2)                                               -> cmp_ident an1 an2 && cmp c1 c2
     | Msum (an1, c1, p1), Msum (an2, c2, p2)                                           -> cmp_ident an1 an2 && cmp c1 c2 && cmp p1 p2
-    | Mmin (an1, fd1, c1), Mmin (an2, fd2, c2)                                         -> cmp_ident an1 an2 && cmpi fd1 fd2 && cmp c1 c2
-    | Mmax (an1, fd1, c1), Mmax (an2, fd2, c2)                                         -> cmp_ident an1 an2 && cmpi fd1 fd2 && cmp c1 c2
     | Mhead (an1, c1, i1), Mhead (an2, c2, i2)                                         -> cmp_ident an1 an2 && cmp c1 c2 && cmp i1 i2
     | Mtail (an1, c1, i1), Mtail (an2, c2, i2)                                         -> cmp_ident an1 an2 && cmp c1 c2 && cmp i1 i2
     (* utils *)
@@ -1084,8 +1078,6 @@ let cmp_mterm_node
     | Mapifnth (an1, c1, i1), Mapifnth (an2, c2, i2)                                   -> cmp_ident an1 an2 && cmp c1 c2 && cmp i1 i2
     | Mapifcount (an1, c1), Mapifcount (an2, c2)                                       -> cmp_ident an1 an2 && cmp c1 c2
     | Mapifsum (an1, c1, p1), Mapifsum (an2, c2, p2)                                   -> cmp_ident an1 an2 && cmp c1 c2 && cmp p1 p2
-    | Mapifmin (an1, fd1, c1), Mapifmin (an2, fd2, c2)                                 -> cmp_ident an1 an2 && cmpi fd1 fd2 && cmp c1 c2
-    | Mapifmax (an1, fd1, c1), Mapifmax (an2, fd2, c2)                                 -> cmp_ident an1 an2 && cmpi fd1 fd2 && cmp c1 c2
     | Mapifhead (an1, c1, i1), Mapifhead (an2, c2, i2)                                 -> cmp_ident an1 an2 && cmp c1 c2 && cmp i1 i2
     | Mapiftail (an1, c1, i1), Mapiftail (an2, c2, i2)                                 -> cmp_ident an1 an2 && cmp c1 c2 && cmp i1 i2
     (* *)
@@ -1272,8 +1264,6 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Mnth (an, c, i)                -> Mnth (fi an, f c, f i)
   | Mcount (an, c)                 -> Mcount (fi an, f c)
   | Msum (an, c, p)                -> Msum (fi an, f c, f p)
-  | Mmin (an, fd, c)               -> Mmin (fi an, fd, f c)
-  | Mmax (an, fd, c)               -> Mmax (fi an, fd, f c)
   | Mhead (an, c, i)               -> Mhead (fi an, f c, f i)
   | Mtail (an, c, i)               -> Mtail (fi an, f c, f i)
   (* utils *)
@@ -1351,8 +1341,6 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Mapifnth (an, c, i)            -> Mapifnth      (fi an, f c, f i)
   | Mapifcount (an, c)             -> Mapifcount    (fi an, f c)
   | Mapifsum (an, c, p)            -> Mapifsum      (fi an, f c, f p)
-  | Mapifmin (an, fd, c)           -> Mapifmin      (fi an, g fd, f c)
-  | Mapifmax (an, fd, c)           -> Mapifmax      (fi an, g fd, f c)
   | Mapifhead (an, c, i)           -> Mapifhead     (fi an, f c, f i)
   | Mapiftail (an, c, i)           -> Mapiftail     (fi an, f c, f i)
 
@@ -1584,8 +1572,6 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mnth (_, c, i)                        -> f (f accu c) i
   | Mcount (_, c)                         -> f accu c
   | Msum (_, c, p)                        -> f (f accu c) p
-  | Mmin (_, _, c)                        -> f accu c
-  | Mmax (_, _, c)                        -> f accu c
   | Mhead (_, c, i)                       -> f (f accu c) i
   | Mtail (_, c, i)                       -> f (f accu c) i
   (* utils *)
@@ -1663,8 +1649,6 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mapifnth (_, c, i)                    -> f (f accu c) i
   | Mapifcount (_, c)                     -> f accu c
   | Mapifsum (_, c, p)                    -> f (f accu c) p
-  | Mapifmin (_, _, c)                    -> f accu c
-  | Mapifmax (_, _, c)                    -> f accu c
   | Mapifhead (_, c, i)                   -> f (f accu c) i
   | Mapiftail (_, c, i)                   -> f (f accu c) i
 
@@ -2091,14 +2075,6 @@ let fold_map_term
     let pe, pa = f ca p in
     g (Msum (an, ce, pe)), pa
 
-  | Mmin (an, fd, c) ->
-    let ce, ca = f accu c in
-    g (Mmin (an, fd, ce)), ca
-
-  | Mmax (an, fd, c) ->
-    let ce, ca = f accu c in
-    g (Mmax (an, fd, ce)), ca
-
   | Mhead (an, c, i) ->
     let ce, ca = f accu c in
     let ie, ia = f ca i in
@@ -2413,14 +2389,6 @@ let fold_map_term
     let ce, ca = f accu c in
     let pe, pa = f ca p in
     g (Mapifsum (an, ce, pe)), pa
-
-  | Mapifmin (an, fd, c) ->
-    let ce, ca = f accu c in
-    g (Mapifmin (an, fd, ce)), ca
-
-  | Mapifmax (an, fd, c) ->
-    let ce, ca = f accu c in
-    g (Mapifmax (an, fd, ce)), ca
 
   | Mapifhead (an, c, i) ->
     let ce, ca = f accu c in

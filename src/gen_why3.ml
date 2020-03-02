@@ -559,8 +559,6 @@ let is_local_invariant _m an t =
     match term.M.node with
     | M.Mforall (_i,M.Tasset a,_,_b) -> not (compare (a |> unloc) an = 0)
     | M.Msum (a,_,_) -> not (compare a an = 0)
-    | M.Mmax (a,_,_) -> not (compare a an = 0)
-    | M.Mmin (a,_,_) -> not (compare a an = 0)
     | M.Mselect (a,_,_) -> not (compare a an = 0)
     | _ -> M.fold_term internal_is_local acc term in
   internal_is_local true t
@@ -1281,8 +1279,6 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Msum          (a,_,f) ->
       let id = mk_sum_name m a f in
       Tapp (loc_term (Tvar id), [mk_ac_ctx a ctx])
-    | Mmin                _ -> error_not_translated "Mmin"
-    | Mmax                _ -> error_not_translated "Mmax"
     | Mhead (n,c,v) -> Tapp(loc_term (Tdoti(String.capitalize_ascii n,"head")),
                             [map_mterm m ctx v; map_mterm m ctx c])
     | Mtail  (n,c,v) -> Tapp(loc_term (Tdoti(String.capitalize_ascii n,"tail")),
@@ -1506,8 +1502,6 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Mapifsum       (a,_,f) ->
       let id = mk_sum_name m a f in
       Tapp (loc_term (Tvar id), [mk_ac_ctx a ctx])
-    | Mapifmin       _ -> error_not_translated "Mapifmin"
-    | Mapifmax       _ -> error_not_translated "Mapifmax"
     | Mapifhead (n,c,v) -> Tapp(loc_term (Tdoti(String.capitalize_ascii n,"head")),
                                 [map_mterm m ctx v; map_mterm m ctx c])
     | Mapiftail (n,c,v) -> Tapp(loc_term (Tdoti(String.capitalize_ascii n,"tail")),
