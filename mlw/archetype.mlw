@@ -9,6 +9,7 @@ theory Types
   type tez     = int
   type date    = int
   type string  = int
+  type bytes   = int
 
   exception Break
   exception NotFound
@@ -40,6 +41,12 @@ module Utils
   ensures { result >= 0 }
   =
   if a >= 0 then a else -a
+
+  let function abs_rat (a : (int, int)) : (int, int)
+  =
+  match a with
+  | (l,r) -> (abs l, abs r)
+  end
 
   let function str_concat (s1 : string) (s2 : string) : string = s1 + s2
 

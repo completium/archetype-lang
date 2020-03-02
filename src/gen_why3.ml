@@ -1145,7 +1145,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Mdate s -> Tint (Core.date_to_timestamp s)
     | Mduration v -> Tint (Core.duration_to_timestamp v)
     | Mtimestamp v -> Tint v
-    | Mbytes v -> Tbytes v
+    | Mbytes v -> Tint (sha v)
 
 
     (* control expression *)
@@ -1161,8 +1161,8 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
 
     (* composite type constructors *)
 
-    | Mnone                 -> error_not_translated "Mnone"
-    | Msome               _ -> error_not_translated "Msome"
+    | Mnone -> Tnone
+    | Msome v -> Tsome (map_mterm m ctx v)
 
     | Marray l ->
       begin
@@ -1311,9 +1311,13 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
 
     | Mfunmax (l,r) -> Tapp (loc_term (Tvar "max"),[map_mterm m ctx l; map_mterm m ctx r])
     | Mfunmin (l,r) -> Tapp (loc_term (Tvar "min"),[map_mterm m ctx l; map_mterm m ctx r])
-    | Mfunabs v -> Tapp (loc_term (Tvar "abs"),[map_mterm m ctx v])
-
-
+    | Mfunabs v ->
+      begin match v.type_ with
+      | M.Tbuiltin (M.Bint) -> Tapp (loc_term (Tvar "abs"),[map_mterm m ctx v])
+      | M.Ttuple [M.Tbuiltin (M.Bint); M.Tbuiltin M.Bint] ->
+        Tapp (loc_term (Tvar "abs_rat"),[map_mterm m ctx v])
+      | _ -> error_not_translated "Mfunabs"
+      end
     (* internal functions *)
 
     | Mstrconcat (s1,s2) -> Tapp (loc_term (Tvar "str_concat"),[map_mterm m ctx s1; map_mterm m ctx s2])
