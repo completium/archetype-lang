@@ -1,4 +1,4 @@
-archetype shadow_field
+archetype no_effect_local_var_in_formula
 
 asset myasset {
   id: string;

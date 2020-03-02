@@ -4,9 +4,11 @@ variable res : rational = 0 div 1
 
 action exec () {
   specification {
-    s0: res = 1;
+    s0: res = 1 div 3;
   }
   effect {
-    res := min(1, 4 div 3)
+    var a : int = 1;
+    var b : rational = 1 div 3;
+    res := min(a, b)
   }
 }

@@ -7,6 +7,8 @@ action exec () {
     s0: res = 1;
   }
   effect {
-    res := max(1, 1 div 2)
+    var a : rational = 1;
+    var b : rational = 1 div 3;
+    res := max(a, b)
   }
 }

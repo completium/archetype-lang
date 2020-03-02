@@ -211,6 +211,11 @@ let pp_model_internal fmt (model : model) b =
   in
   (* const operations : list(operation) = nil ; *)
 
+  let pp_pretty_type fmt t =
+    match t with
+    | Ttuple[Tbuiltin Bint; Tbuiltin Bint] -> pp_type fmt (Tbuiltin Brational)
+    | _ -> pp_type fmt t
+  in
 
   let pp_operator fmt op =
     let to_str = function
@@ -237,11 +242,6 @@ let pp_model_internal fmt (model : model) b =
   in
 
   let pp_postfix_sort = (pp_list "_" (fun fmt (a, b) -> Format.fprintf fmt "%s_%a" a pp_sort_kind b)) in
-
-  let pp_abs_type fmt = function
-    | Ttuple [Tbuiltin Bint; Tbuiltin Bint] -> pp_type fmt (Tbuiltin Brational)
-    | t -> pp_type fmt t
-  in
 
   let pp_mterm_gen (env : env) f fmt (mtt : mterm) =
     let pp_mterm_block fmt (x : mterm) =
@@ -926,13 +926,13 @@ let pp_model_internal fmt (model : model) b =
 
     | Mmax (l, r) ->
       Format.fprintf fmt "max_%a (%a, %a)"
-        pp_type mtt.type_
+        pp_pretty_type mtt.type_
         f l
         f r
 
     | Mmin (l, r) ->
       Format.fprintf fmt "min_%a (%a, %a)"
-        pp_type mtt.type_
+        pp_pretty_type mtt.type_
         f l
         f r
 
@@ -940,7 +940,7 @@ let pp_model_internal fmt (model : model) b =
       let pp_tmp fmt t =
         match t with
         | Tbuiltin Bnat -> ()
-        | _ -> Format.fprintf fmt "_%a" pp_abs_type t
+        | _ -> Format.fprintf fmt "_%a" pp_pretty_type t
       in
       Format.fprintf fmt "abs%a (%a)"
         pp_tmp mtt.type_
@@ -1839,14 +1839,24 @@ let pp_model_internal fmt (model : model) b =
 
   let pp_api_builtin (_env : env) fmt = function
     | MinBuiltin t ->
+      let cond =
+        match t with
+        | Tbuiltin Brational | Ttuple [Tbuiltin Bint; Tbuiltin Bint] -> "rat_cmp(OpCmpLt(unit), a, b)"
+        | _ -> "a < b"
+      in
       Format.fprintf fmt
-        "function min_%a (const a : %a; const b : %a) : %a is if a < b then a else b@\n"
-        pp_type t pp_type t pp_type t pp_type t
+        "function min_%a (const a : %a; const b : %a) : %a is if %s then a else b@\n"
+        pp_pretty_type t pp_type t pp_type t pp_type t cond
 
     | MaxBuiltin t ->
+      let cond =
+        match t with
+        | Tbuiltin Brational | Ttuple [Tbuiltin Bint; Tbuiltin Bint] -> "rat_cmp(OpCmpGt(unit), a, b)"
+        | _ -> "a > b"
+      in
       Format.fprintf fmt
-        "function max_%a (const a : %a; const b : %a) : %a is if a > b then a else b@\n"
-        pp_type t pp_type t pp_type t pp_type t
+        "function max_%a (const a : %a; const b : %a) : %a is if %s then a else b@\n"
+        pp_pretty_type t pp_type t pp_type t pp_type t cond
 
     | AbsBuiltin t ->
       begin
@@ -1862,7 +1872,7 @@ let pp_model_internal fmt (model : model) b =
             in
             Format.fprintf fmt
               "function abs_%a (const a : %a) : %a is %a@\n"
-              pp_abs_type t pp_type t pp_type t pp_body ()
+              pp_pretty_type t pp_type t pp_type t pp_body ()
           end
       end
   in

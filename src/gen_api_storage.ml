@@ -33,6 +33,7 @@ let process_api_storage (model : model) : model =
   let rec f (ctx : ctx_model) (accu : api_storage list) (term : mterm) : api_storage list =
     let api_items : api_storage_node list =
       let mt_type = term.type_ in
+      let is_rat = match mt_type with | Tbuiltin Brational | Ttuple [Tbuiltin Bint; Tbuiltin Bint] -> true | _ -> false in
       match term.node with
       | Mapifget (asset_name, _, _)
       | Mget (asset_name, _) ->
@@ -93,8 +94,12 @@ let process_api_storage (model : model) : model =
         [APIList (Lcount t)]
       | Mlistnth (t, _, _) ->
         [APIList (Lnth t)]
+      | Mmax _ when is_rat ->
+        [APIInternal (RatCmp) ; APIBuiltin (MaxBuiltin mt_type)]
       | Mmax _ ->
         [APIBuiltin (MaxBuiltin mt_type)]
+      | Mmin _ when is_rat ->
+        [APIInternal (RatCmp) ; APIBuiltin (MinBuiltin mt_type)]
       | Mmin _ ->
         [APIBuiltin (MinBuiltin mt_type)]
       | Mabs _ ->
@@ -162,42 +167,42 @@ let process_api_storage (model : model) : model =
 
                let criteria_kind () : int =
                  let get_kind = function
-                   | APIAsset   (Nth           _) ->  1
-                   | APIAsset   (Count         _) ->  2
-                   | APIAsset   (Sum           _) ->  3
-                   | APIAsset   (Min           _) ->  4
-                   | APIAsset   (Max           _) ->  5
-                   | APIAsset   (Get           _) ->  6
-                   | APIAsset   (Set           _) ->  7
-                   | APIAsset   (Add           _) ->  8
-                   | APIAsset   (Remove        _) ->  9
-                   | APIAsset   (Clear         _) -> 10
-                   | APIAsset   (UpdateAdd     _) -> 11
-                   | APIAsset   (UpdateRemove  _) -> 12
-                   | APIAsset   (UpdateClear   _) -> 13
-                   | APIAsset   (ToKeys        _) -> 14
-                   | APIAsset   (Select        _) -> 15
-                   | APIAsset   (Sort          _) -> 16
-                   | APIAsset   (Contains      _) -> 17
-                   | APIList    (Lprepend      _) -> 18
-                   | APIList    (Lcontains     _) -> 19
-                   | APIList    (Lcount        _) -> 20
-                   | APIList    (Lnth          _) -> 21
-                   | APIBuiltin (MinBuiltin    _) -> 22
-                   | APIBuiltin (MaxBuiltin    _) -> 23
-                   | APIBuiltin (AbsBuiltin    _) -> 24
-                   | APIAsset   (Shallow       _) -> 25
-                   | APIAsset   (Unshallow     _) -> 26
-                   | APIAsset   (Listtocoll    _) -> 27
-                   | APIAsset   (Head          _) -> 28
-                   | APIAsset   (Tail          _) -> 29
-                   | APIAsset   (ColToKeys     _) -> 30
-                   | APIInternal (RatEq         ) -> 31
-                   | APIInternal (RatCmp        ) -> 32
-                   | APIInternal (RatArith      ) -> 33
-                   | APIInternal (RatUminus     ) -> 34
-                   | APIInternal (RatTez        ) -> 35
-                   | APIInternal (StrConcat     ) -> 36
+                   | APIInternal (RatEq         ) ->  1
+                   | APIInternal (RatCmp        ) ->  2
+                   | APIInternal (RatArith      ) ->  3
+                   | APIInternal (RatUminus     ) ->  4
+                   | APIInternal (RatTez        ) ->  5
+                   | APIInternal (StrConcat     ) ->  6
+                   | APIAsset   (Nth           _) ->  7
+                   | APIAsset   (Count         _) ->  8
+                   | APIAsset   (Sum           _) ->  9
+                   | APIAsset   (Min           _) -> 10
+                   | APIAsset   (Max           _) -> 11
+                   | APIAsset   (Get           _) -> 12
+                   | APIAsset   (Set           _) -> 13
+                   | APIAsset   (Add           _) -> 14
+                   | APIAsset   (Remove        _) -> 15
+                   | APIAsset   (Clear         _) -> 16
+                   | APIAsset   (UpdateAdd     _) -> 17
+                   | APIAsset   (UpdateRemove  _) -> 18
+                   | APIAsset   (UpdateClear   _) -> 19
+                   | APIAsset   (ToKeys        _) -> 20
+                   | APIAsset   (Select        _) -> 21
+                   | APIAsset   (Sort          _) -> 22
+                   | APIAsset   (Contains      _) -> 23
+                   | APIList    (Lprepend      _) -> 24
+                   | APIList    (Lcontains     _) -> 25
+                   | APIList    (Lcount        _) -> 26
+                   | APIList    (Lnth          _) -> 27
+                   | APIBuiltin (MinBuiltin    _) -> 28
+                   | APIBuiltin (MaxBuiltin    _) -> 29
+                   | APIBuiltin (AbsBuiltin    _) -> 30
+                   | APIAsset   (Shallow       _) -> 31
+                   | APIAsset   (Unshallow     _) -> 32
+                   | APIAsset   (Listtocoll    _) -> 33
+                   | APIAsset   (Head          _) -> 34
+                   | APIAsset   (Tail          _) -> 35
+                   | APIAsset   (ColToKeys     _) -> 36
                  in
                  let idx1 = get_kind i1.node_item in
                  let idx2 = get_kind i2.node_item in

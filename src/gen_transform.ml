@@ -826,6 +826,8 @@ let remove_rational (model : model) : model =
           | Mdiv    (a, b) -> process_arith Rdiv   (a, b)
           | Muminus v      -> process_uminus v
           | Mdivrat (a, b) -> mk_rat a b
+          | Mmax    (a, b) when is_rats (a, b) -> let lhs, rhs = pair_sigle_map (to_rat |@ aux) (a, b) in mk_mterm (Mmax (lhs, rhs)) type_rational
+          | Mmin    (a, b) when is_rats (a, b) -> let lhs, rhs = pair_sigle_map (to_rat |@ aux) (a, b) in mk_mterm (Mmin (lhs, rhs)) type_rational
           | _ ->
             let mt = map_mterm aux mt in
             { mt with type_ = type_rational }
@@ -1013,6 +1015,8 @@ let remove_rational (model : model) : model =
 let replace_date_duration_by_timestamp (model : model) : model =
   let type_timestamp = Tbuiltin Btimestamp in
   let type_int = Tbuiltin Bint in
+  let is_date     = function | Tbuiltin Bdate -> true     | _ -> false in
+  let is_duration = function | Tbuiltin Bduration -> true | _ -> false in
   let process_type t : type_ =
     let rec aux t =
       match t with
@@ -1040,6 +1044,14 @@ let replace_date_duration_by_timestamp (model : model) : model =
       | Mdate d,_      -> mk_mterm (Mtimestamp (Core.date_to_timestamp d)) type_timestamp
       | Mduration d, _ -> mk_mterm (Mint (Core.duration_to_timestamp d)) type_int
       | Mnow, _        -> mk_mterm (Mnow) type_timestamp
+      | Mmax (a, b), t when is_duration t || is_date t ->
+        let a = aux a in
+        let b = aux b in
+        mk_mterm (Mmax(a, b)) (process_type t)
+      | Mmin (a, b), t when is_duration t || is_date t ->
+        let a = aux a in
+        let b = aux b in
+        mk_mterm (Mmin(a, b)) (process_type t)
       | Mletin (ids, v, t, body, o), _ ->
         { mt with
           node = Mletin (ids, aux v, Option.map process_type t, aux body, Option.map aux o)

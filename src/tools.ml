@@ -17,6 +17,8 @@ let snd_map f (x, y) = (x, f y)
 
 let pair_map f g (x, y) = (f x, g y)
 
+let pair_sigle_map f (x, y) = pair_map f f (x, y)
+
 let swap = fun (x, y) -> (y, x)
 
 let pair x y = (x, y)

@@ -1,4 +1,4 @@
-archetype expr_fun_min_rat_int
+archetype literal_in_argument
 
 variable res : rational = 0 div 1
 
@@ -7,8 +7,6 @@ action exec () {
     s0: res = 1 div 2;
   }
   effect {
-    var a : rational = 1 div 2;
-    var b : int = 1;
-    res := max(a, b)
+    res := max(1 div 2, 1 div 3)
   }
 }
