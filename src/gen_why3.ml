@@ -514,7 +514,8 @@ let rec type_to_init m (typ : loc_typ) : loc_term =
       | Tylist _      -> Tnil
       | Tymap i       -> Tvar (mk_loc typ.loc ("const (mk_default_" ^ i.obj ^ " ())"))
       | Tyenum i      -> Tvar (mk_loc typ.loc (unloc (M.Utils.get_enum m i.obj).initial))
-      | Tytuple l    -> Ttuple (List.map (type_to_init m) (List.map with_dummy_loc l))
+      | Tytuple l     -> Ttuple (List.map (type_to_init m) (List.map with_dummy_loc l))
+      | Tybool        -> Ttrue
       | _             -> Tint Big_int.zero_big_int)
 
 let map_btype = function
