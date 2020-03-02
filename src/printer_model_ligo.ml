@@ -501,7 +501,7 @@ let pp_model_internal fmt (model : model) b =
         Format.fprintf fmt "case %a of@\n  @[%a@]@\nend"
           f e
           (pp_list "@\n" (fun fmt (p, x) ->
-               Format.fprintf fmt "| %a -> block {@\n  @[%a@]@\n}"
+               Format.fprintf fmt "| %a -> (@\n  @[%a@]@\n)"
                  pp_pattern p
                  f x
              )) l

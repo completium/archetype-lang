@@ -648,17 +648,17 @@ let remove_enum_matchwith (model : model) : model =
       mkloc (loc id) (mk_enum_ident prefix (unloc id)) in
     match mt.node, mt.type_ with
     | Mvarlocal id, Tstate -> mk_mterm (Mvarlocal (mk_id "state" id)) type_int
-    | Mvarlocal id, Tenum e -> mk_mterm (Mvarlocal (mk_id (unloc e) id)) type_int
     | Mvarenumval id, Tenum e -> mk_mterm (Mvarlocal (mk_id (unloc e) id)) type_int
+    | Mexprmatchwith (v, ps), _
     | Mmatchwith (v, ps), _ ->
-      let v = process_mterm ctx v in
-      let type_v = v.type_ in
       let val_v =
-        match type_v with
+        match v.type_ with
         | Tstate -> "state"
         | Tenum v -> unloc v
-        | _ -> assert false
+        | t -> (Format.printf "%a@." pp_type_ t ; assert false)
       in
+      let v = process_mterm ctx v in
+      let type_v = v.type_ in
       begin
         let default_ = mk_mterm (Mseq []) Tunit in
         let else_ = List.fold_left (fun accu (x : (pattern * mterm)) ->
@@ -689,55 +689,6 @@ let remove_enum_matchwith (model : model) : model =
     decls = process_decls model.decls
   }
   |> map_mterm_model process_mterm
-
-let remove_wild_pattern (model : model) : model =
-  let rec aux c (mt : mterm) : mterm =
-    match mt.node with
-    | Mmatchwith (e, l) ->
-      let e = aux c e in
-      let l = List.map (fun (x, y) -> x, aux c y) l in
-
-      let pl : (string * mterm) list =
-        begin
-          let values : string list =
-            begin
-              let enum : enum =
-                match e.type_ with
-                | Tstate   -> Model.Utils.get_enum model "state"
-                | Tenum id -> Model.Utils.get_enum model (unloc id)
-                | _ -> assert false
-              in
-              enum.values
-              |> List.map (fun (x : enum_item) -> unloc x.name)
-            end
-          in
-          let mterm_default : mterm option =
-            List.fold_left (
-              fun accu (p, e : pattern * mterm) ->
-                match p.node with
-                | Pwild -> Some e
-                | _ -> accu
-            ) None l in
-          let seek_mterm x =
-            List.fold_left (
-              fun accu (p, e : pattern * mterm) ->
-                match p.node with
-                | Pconst id when String.equal (Location.unloc id) x -> Some e
-                | _ -> accu
-            ) None l in
-          List.map (fun x ->
-              let e = seek_mterm x in
-              match e with
-              | Some e -> (x, e)
-              | None -> x, Option.get mterm_default
-            ) values
-        end
-      in
-      let l = List.map (fun (id, e) -> mk_pattern (Pconst (dumloc id)), e) pl in
-      mk_mterm (Mmatchwith (e, l)) mt.type_
-    | _ -> map_mterm (aux c) mt
-  in
-  Model.map_mterm_model aux model
 
 let remove_cmp_bool (model : model) : model =
   let rec aux c (mt : mterm) : mterm =

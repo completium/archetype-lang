@@ -1797,7 +1797,7 @@ let rec for_xexpr
       let c    = for_xexpr env ~ety:M.vtbool c in
       let et   = for_xexpr env et in
       let ef   = for_xexpr env ?ety:et.type_ ef in
-      let aout = mk_sp (Some M.vtbool) (M.Pif (c, et, ef)) in
+      let aout = mk_sp et.type_ (M.Pif (c, et, ef)) in
 
       aout
 
