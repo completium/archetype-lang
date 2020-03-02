@@ -637,7 +637,7 @@ let map_security_pred loc (t : M.security_predicate) =
                ) (mk_eq t1 (List.hd l1) false) (List.tl l2),
              List.fold_left (fun acc r ->
                  Tor (acc,mk_eq t2 r true)
-               ) (mk_eq t2 (List.hd l1) true) (List.tl l2))])
+               ) (mk_eq t2 (List.hd l2) true) (List.tl l2))])
   in
   let mk_changes_performed_by_2 t1 t2 a l1 l2 =
     Tapp (Tvar "Tr.performed_by",
