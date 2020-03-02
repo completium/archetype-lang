@@ -962,7 +962,18 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
                               Twitness a)) |> loc_term,
                    map_mterm m ctx b,
                    Some (map_mterm m ctx e)) |> with_dummy_loc)
-
+    | Mletin ([id], { node = M.Mapifnth (n,c,k); type_ = _ }, _, b, Some e) ->
+      Tletin (M.Utils.is_local_assigned (unloc id) b,
+              map_lident id,
+              None,
+              Tnth (loc_ident n,
+                    map_mterm m ctx k,
+                    map_mterm m ctx c) |> with_dummy_loc,
+              Tif (Tnot (Teq (Tyint,
+                              Tvar (unloc id),
+                              Twitness n)) |> loc_term,
+                   map_mterm m ctx b,
+                   Some (map_mterm m ctx e)) |> with_dummy_loc)
     | Mletin              _ -> error_not_translated "Mletin"
     | Mdeclvar            _ -> error_not_translated "Mdeclvar"
 
@@ -1272,8 +1283,10 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
       Tapp (loc_term (Tvar id), [mk_ac_ctx a ctx])
     | Mmin                _ -> error_not_translated "Mmin"
     | Mmax                _ -> error_not_translated "Mmax"
-    | Mhead               _ -> error_not_translated "Mhead"
-    | Mtail               _ -> error_not_translated "Mtail"
+    | Mhead (n,c,v) -> Tapp(loc_term (Tdoti(String.capitalize_ascii n,"head")),
+                            [map_mterm m ctx v; map_mterm m ctx c])
+    | Mtail  (n,c,v) -> Tapp(loc_term (Tdoti(String.capitalize_ascii n,"tail")),
+                            [map_mterm m ctx v; map_mterm m ctx c])
 
 
     (* utils *)
@@ -1298,12 +1311,12 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
 
     | Mfunmax (l,r) -> Tapp (loc_term (Tvar "max"),[map_mterm m ctx l; map_mterm m ctx r])
     | Mfunmin (l,r) -> Tapp (loc_term (Tvar "min"),[map_mterm m ctx l; map_mterm m ctx r])
-    | Mfunabs             _ -> error_not_translated "Mfunabs"
+    | Mfunabs v -> Tapp (loc_term (Tvar "abs"),[map_mterm m ctx v])
 
 
     (* internal functions *)
 
-    | Mstrconcat          _ -> error_not_translated "Mstrconcat"
+    | Mstrconcat (s1,s2) -> Tapp (loc_term (Tvar "str_concat"),[map_mterm m ctx s1; map_mterm m ctx s2])
 
 
     (* constants *)
@@ -1470,7 +1483,9 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
       let id = mk_select_name m a r in
       let argids = args |> List.map (fun (e, _, _) -> e) |> List.map (map_mterm m ctx) in
       Tapp (loc_term (Tvar id), argids @ [map_mterm m ctx l])
-    | Mapifsort      _ -> error_not_translated "Mapifsort"
+    | Mapifsort (a,c,l) ->
+      let id = (mk_sort_clone_id a l) ^ ".sort" in
+      Tapp (loc_term (Tvar id),[map_mterm m ctx c])
     | Mapifcontains  (a, _, r) ->
       begin match ctx.lctx with
         | Inv ->
@@ -1489,8 +1504,10 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
       Tapp (loc_term (Tvar id), [mk_ac_ctx a ctx])
     | Mapifmin       _ -> error_not_translated "Mapifmin"
     | Mapifmax       _ -> error_not_translated "Mapifmax"
-    | Mapifhead      _ -> error_not_translated "Mapifhead"
-    | Mapiftail      _ -> error_not_translated "Mapiftail"
+    | Mapifhead (n,c,v) -> Tapp(loc_term (Tdoti(String.capitalize_ascii n,"head")),
+                                [map_mterm m ctx v; map_mterm m ctx c])
+    | Mapiftail (n,c,v) -> Tapp(loc_term (Tdoti(String.capitalize_ascii n,"tail")),
+                                [map_mterm m ctx v; map_mterm m ctx c])
 
 
   in
@@ -2639,6 +2656,8 @@ let mk_storage_api (m : M.model) records =
         let (key,_) = M.Utils.get_asset_key m n in
         let (clearedasset,_,_) = M.Utils.get_container_asset_key m n f in
         acc @ [mk_clear_field_coll m (is_partition m n f) n f key clearedasset]
+      | M.APIBuiltin(AbsBuiltin (M.Tbuiltin M.Bint)) ->
+        acc @ [Duse (true,["int";"Abs"])]
       | _ -> acc
     ) [] |> loc_decl |> deloc
 

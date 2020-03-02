@@ -22,6 +22,7 @@ end
 
 module Utils
   use int.Int
+  use Types
 
   let function fst (a : (int, int)) : int
   =
@@ -39,6 +40,8 @@ module Utils
   ensures { result >= 0 }
   =
   if a >= 0 then a else -a
+
+  let function str_concat (s1 : string) (s2 : string) : string = s1 + s2
 
 end
 
@@ -404,10 +407,9 @@ module AssetCollection
   end in
   internal_proj (elts c) projf
 
-  (*use int.MinMax
+  (*use int.MinMax*)
 
   let function head (i : int) (c : collection) : collection
-  ensures { card result = min i (card c) }
   ensures { subset result c }
   ensures { i >= card c - 1 -> result  = c }
   ensures { i < 0 -> result = empty }
@@ -422,7 +424,7 @@ module AssetCollection
       Nil
   | Nil -> Nil
   end in
-  { content = internal_head c.content 0 }
+  mk (internal_head (elts c) 0)
 
   lemma head_add: forall c : collection, i : int.
   0 <= i < card c - 1 ->
@@ -430,7 +432,7 @@ module AssetCollection
 
   lemma head_nth: forall c : collection, i j : int.
   0 <= i < j < card c ->
-  nth i (head j c) = nth i c*)
+  nth i (head j c) = nth i c
 
   let function tail (i : int) (c : collection) : collection
   ensures { subset result c }
@@ -516,7 +518,7 @@ module Sort
   | Nil -> Nil
   end
 
-  let sort (c : container) : container
+  let function sort (c : container) : container
   ensures { S.sorted (elts result)}
   =
   mk (lsort (elts c))

@@ -53,16 +53,16 @@ action consume (a : address, quantity : int) {
     }
 
     postcondition p3 {
-      forall m in mile.removed, m.expiration >= now
+      forall m in mile.removed(), m.expiration >= now
       invariant for loop {
-        mile.removed.subsetof(by_expiration)
+        mile.removed().subsetof(by_expiration)
       }
     }
 
     postcondition p4 {
-      mile.added.isempty()
+      mile.added().isempty()
       invariant for loop {
-        mile.added.isempty()
+        mile.added().isempty()
       }
     }
   }
@@ -103,9 +103,9 @@ action consume (a : address, quantity : int) {
 action clear_expired () {
   specification {
     postcondition s3 {
-      forall m in mile.removed, m.expiration < now
+      forall m in mile.removed(), m.expiration < now
       invariant for loop2 {
-        forall m in mile.removed, m.expiration < now
+        forall m in mile.removed(), m.expiration < now
       }
     }
   }
