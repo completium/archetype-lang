@@ -10,6 +10,12 @@ asset asset2 {
   val2: bool;
 }
 
+action exec() {
+  effect {
+    require(true)
+  }
+}
+
 specification {
   postcondition s1 {
     forall x in asset1, x.val1

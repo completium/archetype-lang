@@ -1,7 +1,13 @@
-archetype test_type_prec
+archetype asset_key_is_not_comparable
 
 asset myasset {
   t1 : int * int * int;
   t2 : (int * int) * int;
   t3 : int * (int * int);
+}
+
+action exec() {
+  effect {
+    require(true)
+  }
 }

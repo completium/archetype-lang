@@ -3538,18 +3538,18 @@ end = struct
 
       let rec aux (mt : mterm) : mterm =
         match mt.node with
-        | Mplus   (a, b) -> arith `Plus  (a, b)
-        | Mminus  (a, b) -> arith `Minus (a, b)
-        | Mmult   (a, b) -> arith `Mult  (a, b)
-        | Mdiv    (a, b) -> arith `Div   (a, b)
-        | Mmodulo (a, b) -> arith `Modulo   (a, b)
-        | Mnot     a     -> mk_mterm (Mbool (not (extract_bool a))) (Tbuiltin Bbool)
-        | Mand    (a, b) -> mk_mterm (Mbool ((extract_bool a) && (extract_bool b))) (Tbuiltin Bbool)
-        | Mor     (a, b) -> mk_mterm (Mbool ((extract_bool a) || (extract_bool b))) (Tbuiltin Bbool)
+        | Mplus   (a, b) -> arith `Plus  (aux a, aux b)
+        | Mminus  (a, b) -> arith `Minus (aux a, aux b)
+        | Mmult   (a, b) -> arith `Mult  (aux a, aux b)
+        | Mdiv    (a, b) -> arith `Div   (aux a, aux b)
+        | Mmodulo (a, b) -> arith `Modulo   (aux a, aux b)
+        | Mnot     a     -> mk_mterm (Mbool (not (extract_bool (aux a)))) (Tbuiltin Bbool)
+        | Mand    (a, b) -> mk_mterm (Mbool ((extract_bool (aux a)) && (extract_bool (aux b)))) (Tbuiltin Bbool)
+        | Mor     (a, b) -> mk_mterm (Mbool ((extract_bool (aux a)) || (extract_bool (aux b)))) (Tbuiltin Bbool)
         | Mrateq  (a, b) ->
           begin
-            let num1, denom1 = extract_rat a in
-            let num2, denom2 = extract_rat b in
+            let num1, denom1 = extract_rat (aux a) in
+            let num2, denom2 = extract_rat (aux b) in
             let res = Big_int.eq_big_int (Big_int.mult_big_int num1 denom2) (Big_int.mult_big_int num2 denom1) in
             mk_mterm (Mbool res) (Tbuiltin Bbool)
           end

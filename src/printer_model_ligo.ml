@@ -440,13 +440,17 @@ let pp_model_internal fmt (model : model) b =
     | Mexternal (t, fid, c, args) ->
       let pp fmt (t, fid, c, args) =
         let fid = fid |> unloc |> String.up_firstcase in
+
         Format.fprintf fmt
           "const c_ : contract(action_%s) = get_contract(%a);@\n  \
-           const param_ : action_%s = %s (record %a end);@\n  \
+           const param_ : action_%s = %s (%a);@\n  \
            const op_: operation = transaction(param_, 0mutez, c_);@\n  \
-           %s := cons(op_, %s);@\n"
+           %s := cons(op_, %s)@\n"
           t f c
-          t fid (pp_list "; " (fun fmt (id, v) -> Format.fprintf fmt "%a = %a" pp_id id f v)) args
+          t fid (fun fmt l ->
+              match l with
+              | [] -> pp_str fmt "unit"
+              | _  -> Format.fprintf fmt "record %a end" (pp_list "; " (fun fmt (id, v) -> Format.fprintf fmt "%a = %a" pp_id id f v)) l) args
           const_operations const_operations
       in
       pp fmt (t, fid, c, args)
@@ -1258,10 +1262,16 @@ let pp_model_internal fmt (model : model) b =
   in
 
   let pp_storage (fmt : Format.formatter) _ =
+    let is_emtpy l =
+      let l = List.filter (fun (x : storage_item) -> not x.const) l in
+      match l with
+      | [] -> true
+      | _ -> false
+    in
     Format.fprintf fmt "type storage_type is ";
-    match model.storage with
-    | [] ->  Format.fprintf fmt "unit"
-    | _ ->
+    match is_emtpy model.storage with
+    | true ->  Format.fprintf fmt "unit"
+    | false ->
       let l = List.filter (fun x -> not x.const) model.storage in
       Format.fprintf fmt
         "record [@\n  \

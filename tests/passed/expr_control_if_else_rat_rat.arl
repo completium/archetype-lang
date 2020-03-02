@@ -1,0 +1,12 @@
+archetype expr_control_if_else_rat_rat
+
+variable res : int = 0
+
+action exec () {
+  specification {
+    s0: res = 1 div 2;
+  }
+  effect {
+    res := (if true then 1 div 2 else 1 div 3)
+  }
+}

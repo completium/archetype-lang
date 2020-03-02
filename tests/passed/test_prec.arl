@@ -20,6 +20,12 @@ variable x2 : int = a * b + c
 variable y2 : int = (a * b) + c
 variable z2 : int = a * (b + c)
 
+action exec() {
+  effect {
+    require(true)
+  }
+}
+
 specification {
   postcondition s1 {
     i -> j -> k

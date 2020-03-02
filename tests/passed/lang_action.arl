@@ -1,6 +1,6 @@
 archetype lang_action
 
-constant admin : role = @tz1fakeadress
+constant admin : role = @tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg
 
 action exec () {
   specification {
