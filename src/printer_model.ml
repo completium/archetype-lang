@@ -679,16 +679,16 @@ let pp_mterm fmt (mt : mterm) =
 
     (* builtin functions *)
 
-    | Mfunmax (l, r) ->
+    | Mmax (l, r) ->
       Format.fprintf fmt "max (%a, %a)"
         f l
         f r
-    | Mfunmin (l, r) ->
+    | Mmin (l, r) ->
       Format.fprintf fmt "min (%a, %a)"
         f l
         f r
 
-    | Mfunabs a ->
+    | Mabs a ->
       Format.fprintf fmt "abs (%a)"
         f a
 

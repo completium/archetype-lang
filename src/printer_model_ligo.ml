@@ -924,19 +924,19 @@ let pp_model_internal fmt (model : model) b =
 
     (* builtin functions *)
 
-    | Mfunmax (l, r) ->
+    | Mmax (l, r) ->
       Format.fprintf fmt "max_%a (%a, %a)"
         pp_type mtt.type_
         f l
         f r
 
-    | Mfunmin (l, r) ->
+    | Mmin (l, r) ->
       Format.fprintf fmt "min_%a (%a, %a)"
         pp_type mtt.type_
         f l
         f r
 
-    | Mfunabs a ->
+    | Mabs a ->
       let pp_tmp fmt t =
         match t with
         | Tbuiltin Bnat -> ()

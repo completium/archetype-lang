@@ -93,11 +93,11 @@ let process_api_storage (model : model) : model =
         [APIList (Lcount t)]
       | Mlistnth (t, _, _) ->
         [APIList (Lnth t)]
-      | Mfunmax _ ->
+      | Mmax _ ->
         [APIBuiltin (MaxBuiltin mt_type)]
-      | Mfunmin _ ->
+      | Mmin _ ->
         [APIBuiltin (MinBuiltin mt_type)]
-      | Mfunabs _ ->
+      | Mabs _ ->
         [APIBuiltin (AbsBuiltin mt_type)]
       | Mrateq _ ->
         [APIInternal (RatEq)]

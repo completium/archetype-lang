@@ -267,16 +267,16 @@ let to_model (ast : A.model) : M.model =
     | A.Pcall (None, A.Cconst A.Cmin, [AExpr a; AExpr b]) ->
       let fa = f a in
       let fb = f b in
-      M.Mfunmin (fa, fb)
+      M.Mmin (fa, fb)
 
     | A.Pcall (None, A.Cconst A.Cmax, [AExpr a; AExpr b]) ->
       let fa = f a in
       let fb = f b in
-      M.Mfunmax (fa, fb)
+      M.Mmax (fa, fb)
 
     | A.Pcall (None, A.Cconst A.Cabs, [AExpr a]) ->
       let fa = f a in
-      M.Mfunabs (fa)
+      M.Mabs (fa)
 
     | A.Pcall (_, A.Cid id, args) ->
       M.Mapp (id, List.map (fun x -> term_arg_to_expr f x) args)

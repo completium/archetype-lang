@@ -225,9 +225,9 @@ type ('id, 'term) mterm_node  =
   | Mlistcount        of type_ * 'term
   | Mlistnth          of type_ * 'term * 'term
   (* builtin functions *)
-  | Mfunmin           of 'term * 'term
-  | Mfunmax           of 'term * 'term
-  | Mfunabs           of 'term
+  | Mmin              of 'term * 'term
+  | Mmax              of 'term * 'term
+  | Mabs              of 'term
   (* internal functions *)
   | Mstrconcat        of 'term * 'term
   (* constants *)
@@ -1013,9 +1013,9 @@ let cmp_mterm_node
     | Mlistcount (t1, c1), Mlistcount (t2, c2)                                         -> cmp_type t1 t2 && cmp c1 c2
     | Mlistnth (t1, c1, a1), Mlistnth (t2, c2, a2)                                     -> cmp_type t1 t2 && cmp c1 c2 && cmp a1 a2
     (* builtin functions *)
-    | Mfunmin (l1, r1), Mfunmin (l2, r2)                                               -> cmp l1 l2 && cmp r1 r2
-    | Mfunmax (l1, r1), Mfunmax (l2, r2)                                               -> cmp l1 l2 && cmp r1 r2
-    | Mfunabs a1, Mfunabs a2                                                           -> cmp a1 a2
+    | Mmin (l1, r1), Mmin (l2, r2)                                                     -> cmp l1 l2 && cmp r1 r2
+    | Mmax (l1, r1), Mmax (l2, r2)                                                     -> cmp l1 l2 && cmp r1 r2
+    | Mabs a1, Mabs a2                                                                 -> cmp a1 a2
     (* internal functions *)
     | Mstrconcat (l1, r1), Mstrconcat (l2, r2)                                         -> cmp l1 l2 && cmp r1 r2
     (* constants *)
@@ -1276,9 +1276,9 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Mlistcount (t, c)              -> Mlistcount (t, f c)
   | Mlistnth (t, c, a)             -> Mlistnth (t, f c, f a)
   (* builtin functions *)
-  | Mfunmin (l, r)                 -> Mfunmin (f l, f r)
-  | Mfunmax (l, r)                 -> Mfunmax (f l, f r)
-  | Mfunabs a                      -> Mfunabs (f a)
+  | Mmin (l, r)                    -> Mmin (f l, f r)
+  | Mmax (l, r)                    -> Mmax (f l, f r)
+  | Mabs a                         -> Mabs (f a)
   (* internal functions *)
   | Mstrconcat (l, r)              -> Mstrconcat (f l, f r)
   (* constants *)
@@ -1584,9 +1584,9 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mlistcount (_, c)                     -> f accu c
   | Mlistnth (_, c, a)                    -> f (f accu c) a
   (* builtin functions *)
-  | Mfunmax (l, r)                        -> f (f accu l) r
-  | Mfunmin (l, r)                        -> f (f accu l) r
-  | Mfunabs a                             -> f accu a
+  | Mmax (l, r)                           -> f (f accu l) r
+  | Mmin (l, r)                           -> f (f accu l) r
+  | Mabs a                                -> f accu a
   (* internal functions *)
   | Mstrconcat (l, r)                     -> f (f accu l) r
   (* constants *)
@@ -2125,19 +2125,19 @@ let fold_map_term
 
   (* builtin functions *)
 
-  | Mfunmin (l, r) ->
+  | Mmin (l, r) ->
     let le, la = f accu l in
     let re, ra = f la r in
-    g (Mfunmin (le, re)), ra
+    g (Mmin (le, re)), ra
 
-  | Mfunmax (l, r) ->
+  | Mmax (l, r) ->
     let le, la = f accu l in
     let re, ra = f la r in
-    g (Mfunmax (le, re)), ra
+    g (Mmax (le, re)), ra
 
-  | Mfunabs a ->
+  | Mabs a ->
     let ae, aa = f accu a in
-    g (Mfunabs ae), aa
+    g (Mabs ae), aa
 
 
   (* internal functions *)
@@ -3653,8 +3653,8 @@ end = struct
   let with_minmax_for_mterm_intern _ctx accu (mt : mterm) : bool =
     let rec aux accu (t : mterm) =
       match t.node with
-      | Mfunmax (_,_) -> raise FoundMinMax
-      | Mfunmin (_,_) -> raise FoundMinMax
+      | Mmax (_,_) -> raise FoundMinMax
+      | Mmin (_,_) -> raise FoundMinMax
       | _ -> fold_term aux accu t in
     aux accu mt
 

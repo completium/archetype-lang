@@ -1127,11 +1127,11 @@ let abs_tez model : model =
   in
   let is_int (mt : mterm) =
     match mt.type_, mt.node with
-    | _, Mfunabs _ -> false
+    | _, Mabs _ -> false
     | Tbuiltin Bint, _ -> true
     | _ -> false
   in
-  let abs mt = mk_mterm (Mfunabs mt) (Tbuiltin Bnat) in
+  let abs mt = mk_mterm (Mabs mt) (Tbuiltin Bnat) in
   let rec aux c (mt : mterm) : mterm =
     match mt.node with
     | Mmult (lhs, rhs) when is_int lhs && is_cur rhs ->

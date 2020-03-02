@@ -1305,9 +1305,9 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
 
     (* builtin functions *)
 
-    | Mfunmax (l,r) -> Tapp (loc_term (Tvar "max"),[map_mterm m ctx l; map_mterm m ctx r])
-    | Mfunmin (l,r) -> Tapp (loc_term (Tvar "min"),[map_mterm m ctx l; map_mterm m ctx r])
-    | Mfunabs v ->
+    | Mmax (l,r) -> Tapp (loc_term (Tvar "max"),[map_mterm m ctx l; map_mterm m ctx r])
+    | Mmin (l,r) -> Tapp (loc_term (Tvar "min"),[map_mterm m ctx l; map_mterm m ctx r])
+    | Mabs v ->
       begin match v.type_ with
       | M.Tbuiltin (M.Bint) -> Tapp (loc_term (Tvar "abs"),[map_mterm m ctx v])
       | M.Ttuple [M.Tbuiltin (M.Bint); M.Tbuiltin M.Bint] ->
