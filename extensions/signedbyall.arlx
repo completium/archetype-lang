@@ -1,6 +1,6 @@
 archetype extension signedbyall (
 
-  action[%signedbyall roles%] aTransaction ()
+  action[%signedbyall (roles)%] aTransaction ()
 
 ) {
 

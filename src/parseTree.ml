@@ -161,7 +161,7 @@ and label_exprs = label_expr list
 
 (* -------------------------------------------------------------------- *)
 and extension_unloc =
-  | Eextension of lident * expr option (** extension *)
+  | Eextension of lident * expr list (** extension *)
 
 and extension = extension_unloc loced
 
@@ -295,7 +295,7 @@ and contract_decl =
   lident * signature list * exts
 
 and extension_decl =
-  lident * expr option
+  lident * expr list
 
 and namespace_decl =
   lident * declaration list

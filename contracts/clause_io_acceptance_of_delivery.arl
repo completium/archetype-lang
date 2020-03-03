@@ -26,7 +26,7 @@ states =
  | Success
  | Fail
 
-transition[%signedbyall [shipper, receiver]%] sign () {
+transition[%signedbyall ([shipper; receiver])%] sign () {
   from Created
   to Signed
   when { balance = payment + incentiveR + incentiveS }
@@ -44,7 +44,7 @@ transition unilateral_abort () {
   }
 }
 
-transition[%signedbyall [shipper, receiver]%] abort () {
+transition[%signedbyall ([shipper; receiver])%] abort () {
   called by shipper or receiver
 
   from Signed

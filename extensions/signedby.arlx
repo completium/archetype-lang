@@ -1,6 +1,6 @@
 archetype extension signedby (
 
-  action aTransaction (anarg[%signedby arole%] : type)
+  action aTransaction (anarg[%signedby (arole)%] : type)
 
 ) {
 

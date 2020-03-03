@@ -5,17 +5,17 @@ constant symbol : string = "BCDT"
 constant decimals : int  = 18
 
 (* contribution thresholds *)
-variable[%mutable owner (state = Init)%] min_contribution : tez = 1tz
-variable[%mutable owner (state = Init)%] max_contribution_silver : tez = 10tz
+variable[%mutable (owner, (state = Init))%] min_contribution : tez = 1tz
+variable[%mutable (owner, (state = Init))%] max_contribution_silver : tez = 10tz
 
 (* bcd token data *)
-variable[%mutable owner (state = Init)%] max_bcd_to_sell : tez = 100000000tz
-variable[%mutable owner (state = Init)%] exchange_rate_bcd_tez : int = 13000
+variable[%mutable (owner, (state = Init))%] max_bcd_to_sell : tez = 100000000tz
+variable[%mutable (owner, (state = Init))%] exchange_rate_bcd_tez : int = 13000
 
 (* round caps *)
-variable[%mutable owner (state = Init)%] soft_cap : tez = 1800tz
-variable[%mutable owner (state = Init)%] presales_cap : tez = 1800tz
-variable[%mutable owner (state = Init)%] round1_cap : tez = 3600tz
+variable[%mutable (owner, (state = Init))%] soft_cap : tez = 1800tz
+variable[%mutable (owner, (state = Init))%] presales_cap : tez = 1800tz
+variable[%mutable (owner, (state = Init))%] round1_cap : tez = 3600tz
 (* presales_cap + 1600 *)
 
 (* Number tokens sent, eth raised, ... *)

@@ -3,10 +3,10 @@ archetype voting_process
 variable[%transferable%] chairperson : role = @tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg
 
 (* vote start *)
-variable[%mutable chairperson (instate (Created))%] startDate : date = 2019-11-12T00:00:00
+variable[%mutable (chairperson, (instate (Created)))%] startDate : date = 2019-11-12T00:00:00
 
 (* vote deadline *)
-variable[%mutable chairperson (instate (Created))%] deadline : date = 2020-11-12T00:00:00
+variable[%mutable (chairperson, (instate (Created)))%] deadline : date = 2020-11-12T00:00:00
 
 asset voter identified by addr {
   addr : role;

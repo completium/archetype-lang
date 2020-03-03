@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Syntax : add identifier on signature of contract argument
  - Refactor and update syntax for transition
  - Verification api for asset
+ - Syntax : extension arguments are enclosed by parentheses
 
 ## [0.1.12] - 2020-01-09
 ### Added

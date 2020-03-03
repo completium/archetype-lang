@@ -1,6 +1,6 @@
 archetype extension mutable_enum (
 
-  enum[%mutable_enum arole%] anenum
+  enum[%mutable_enum (arole)%] anenum
 
 ) {
 

@@ -3,10 +3,10 @@ archetype competition
 variable[%transferable%] organizer : role = @tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg
 
 (* start date *)
-variable[%mutable organiser (instate (Created))%] startdate : date = 2019-11-12T00:00:00
+variable[%mutable (organiser, (instate (Created)))%] startdate : date = 2019-11-12T00:00:00
 
 (* deadline *)
-variable[%mutable organiser (instate (Created))%] deadline : date = 2020-11-12T00:00:00
+variable[%mutable (organiser, (instate (Created)))%] deadline : date = 2020-11-12T00:00:00
 
 variable[%traceable%] prize : tez = 3500tz
 
@@ -30,7 +30,7 @@ transition confirm () {
   to InProgress when { now > startdate }
 }
 
-action submit (ckey : pkey of submission, pscore[%signedby oracle%] : int) {
+action submit (ckey : pkey of submission, pscore[%signedby (oracle)%] : int) {
   require {
     c1 : state = InProgress;
   }

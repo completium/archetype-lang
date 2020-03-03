@@ -281,8 +281,12 @@ variable:
 %inline default_value:
 | EQUAL x=expr { x }
 
+%inline ext_args:
+ |                                           { [] }
+ | LPAREN xs=snl(COMMA, simple_expr) RPAREN  { xs }
+
 dextension:
-| PERCENT x=ident arg=option(simple_expr) { Dextension (x, arg) }
+| PERCENT x=ident args=ext_args { Dextension (x, args) }
 
 %inline extensions:
 | xs=extension+ { xs }
@@ -291,7 +295,7 @@ dextension:
 | e=loc(extension_r) { e }
 
 extension_r:
-| LBRACKETPERCENT x=ident arg=option(simple_expr) PERCENTRBRACKET { Eextension (x, arg) }
+| LBRACKETPERCENT x=ident args=ext_args PERCENTRBRACKET { Eextension (x, args) }
 
 namespace:
 | NAMESPACE x=ident xs=braced(declarations) { Dnamespace (x, xs) }
@@ -690,7 +694,7 @@ expr_r:
  | IF c=expr THEN t=expr ELSE e=expr
      { Eif (c, t, Some e) }
 
- | xs=snl2(COMMA, simple_expr)
+ | xs=paren(snl2(COMMA, simple_expr))
      { Etuple xs }
 
  | x=expr op=assignment_operator_expr y=expr
@@ -753,7 +757,7 @@ order_operations:
 
 %inline app_args:
  | LPAREN RPAREN         { [] }
- | LPAREN x=expr RPAREN  { [x] }
+ | LPAREN xs=snl(COMMA, expr) RPAREN  { xs }
 
 %inline simple_expr:
  | x=loc(simple_expr_r) { x }

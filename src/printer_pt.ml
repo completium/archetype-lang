@@ -308,7 +308,7 @@ let rec pp_expr outer pos fmt a =
   | Etuple l ->
 
     let pp fmt l =
-      Format.fprintf fmt "%a"
+      Format.fprintf fmt "(%a)"
         (pp_list ",@ " pp_simple_expr) l
     in
     (maybe_paren outer e_comma pos pp) fmt l
@@ -345,7 +345,7 @@ let rec pp_expr outer pos fmt a =
         (fun fmt args ->
            match args with
            | [] -> Format.fprintf fmt "()"
-           | _ -> Format.fprintf fmt " (%a)" (pp_list " " pp_simple_expr) args) args
+           | _ -> Format.fprintf fmt " (%a)" (pp_list ", " pp_simple_expr) args) args
     in
     (maybe_paren outer e_app pos pp) fmt (id, args)
 
@@ -358,7 +358,7 @@ let rec pp_expr outer pos fmt a =
         (fun fmt args ->
            match args with
            | [] -> Format.fprintf fmt "()"
-           | _ -> Format.fprintf fmt "(%a)" (pp_list " " pp_simple_expr) args) args
+           | _ -> Format.fprintf fmt " (%a)" (pp_list ", " pp_simple_expr) args) args
     in
     (maybe_paren outer e_app pos pp) fmt (e, id, args)
 
@@ -633,12 +633,16 @@ and pp_extension fmt { pldesc = e; _ } =
   | Eextension (id, args) ->
     Format.fprintf fmt "[%%%a%a%%]"
       pp_id id
-      (pp_option (pp_prefix " " pp_simple_expr)) args
+      pp_ext_args args
 
 and pp_extensions x = (pp_option (pp_list " " pp_extension)) x
 
 and pp_simple_expr fmt e = (pp_expr e_simple PNone) fmt e
 
+and pp_ext_args fmt l =
+  match l with
+  | [] -> ()
+  | _ -> Format.fprintf fmt "(%a)" (pp_list ", " pp_simple_expr) l
 
 (* -------------------------------------------------------------------------- *)
 let pp_to fmt ((to_, when_, effect) : (lident * expr option * expr option)) =
@@ -980,7 +984,7 @@ let rec pp_declaration fmt { pldesc = e; _ } =
   | Dextension (id, args) ->
     Format.fprintf fmt "%%%a%a"
       pp_id id
-      (pp_option (pp_prefix " " pp_simple_expr)) args
+      pp_ext_args args
 
   | Dnamespace (id, ds) ->
     Format.fprintf fmt "namespace %a {@\n  @[%a@]@\n}"
