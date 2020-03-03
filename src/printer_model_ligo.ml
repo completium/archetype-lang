@@ -397,7 +397,13 @@ let pp_model_internal fmt (model : model) b =
         f body
         label f col
 
-    | Miter (_i, _a, _b, _c, _) -> Format.fprintf fmt "TODO: iter@\n"
+    | Miter (i, a, b, c, _) ->
+      Format.fprintf fmt
+        "for %a := %a to (%a) block {@\n  @[%a@] }@\n"
+        pp_id i
+        f a
+        f b
+        f c
 
     | Mseq is ->
       begin
