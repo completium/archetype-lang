@@ -367,9 +367,16 @@ let pp_model_internal fmt (model : model) b =
       in
       pp fmt (e, l)
 
-    | Mfor (_, _, _, None) -> assert false
-    | Mfor (id, col, body, Some label) ->
-      let typ =
+    | Mfor (id, col, body, _) ->
+        Format.fprintf fmt
+        "for %a in list (%a) block {@\n  @[%a@] }@\n"
+        pp_id id
+        f col
+        f body
+
+    (* | Mfor (_, _, _, None) -> assert false
+    | Mfor (id, col, body, Some label) -> *)
+      (* let typ =
         begin
           let is_get_body (mt : mterm) (id : ident) (asset_name : ident) =
             match mt.node with
@@ -395,7 +402,7 @@ let pp_model_internal fmt (model : model) b =
          list_iter (%s, %a)"
         label pp_id id pp_type typ
         f body
-        label f col
+        label f col *)
 
     | Miter (i, a, b, c, _) ->
       Format.fprintf fmt
