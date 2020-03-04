@@ -2579,11 +2579,12 @@ let rec for_instruction (env : env) (i : PT.expr) : env * M.instruction =
         env, mki (M.Iassign (type_assigned, op, x, e))
       end
 
-    | Etransfer (e, d, _c) ->
+    | Etransfer (e, d, c) ->
       let e   = for_expr env ~ety:M.vtcurrency e in
       let to_ = for_expr env ~ety:M.vtrole d in
+      let c   = Option.map (fun (id, args) -> (id, List.map (for_expr env) args)) c in (* TODO: check if id and args are right *)
 
-      env, mki (Itransfer (e, to_))
+      env, mki (Itransfer (e, to_, c))
 
     | Eif (c, bit, bif) ->
       let c        = for_expr env ~ety:M.vtbool c in

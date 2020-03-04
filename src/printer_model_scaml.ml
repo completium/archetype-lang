@@ -609,14 +609,15 @@ let pp_model fmt (model : model) =
           f v
           f d
 
-      | Mexternal (_, fid, c, args) ->
-        let pp fmt (c, fid, args) =
-          Format.fprintf fmt "%a.%a (%a)"
-            f c
+      | Mentrycall (v, d, _, fid, args) ->
+        let pp fmt (v, d, fid, args) =
+          Format.fprintf fmt "transfer %a to %a call %a (%a)"
+            f v
+            f d
             pp_id fid
             (pp_list ", " (fun fmt (_, x) -> f fmt x)) args
         in
-        pp fmt (c, fid, args)
+        pp fmt (v, d, fid, args)
 
 
       (* literals *)

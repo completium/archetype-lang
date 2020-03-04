@@ -1,0 +1,13 @@
+archetype bad_contract_calling
+
+contract mycontract {
+  action pay ()
+}
+
+variable contract_i : mycontract = @KT1GabhR5P52hw6xs5P69BXJYAURaznhvN1k
+
+action exec (a : address) {
+  effect {
+    contract_i.pay()
+  }
+}

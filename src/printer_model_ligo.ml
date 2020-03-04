@@ -252,7 +252,7 @@ let pp_model_internal fmt (model : model) b =
       | { node = Mletin _; _} as a ->
         Format.fprintf fmt " block {@\n   @[%a@]@\n}"
           f a
-      | { node = Mexternal _; _} as a ->
+      | { node = Mentrycall _; _} as a ->
         Format.fprintf fmt " block {@\n   @[%a@]@\n}"
           f a
       | _ ->
@@ -368,41 +368,41 @@ let pp_model_internal fmt (model : model) b =
       pp fmt (e, l)
 
     | Mfor (id, col, body, _) ->
-        Format.fprintf fmt
+      Format.fprintf fmt
         "for %a in list (%a) block {@\n  @[%a@] }@\n"
         pp_id id
         f col
         f body
 
     (* | Mfor (_, _, _, None) -> assert false
-    | Mfor (id, col, body, Some label) -> *)
-      (* let typ =
-        begin
-          let is_get_body (mt : mterm) (id : ident) (asset_name : ident) =
-            match mt.node with
-            | Mletin ([{pldesc = i; _}], {node = (Mget (an, _) | Mgetfrommap (an, _, _))}, _, _, _) -> String.equal i id && String.equal asset_name an
-            | _ -> false
-          in
-          match col.type_ with
-          | Tcontainer (Tasset an, _) when is_get_body body (unloc id) (unloc an) ->
-            begin
-              let _, t = Utils.get_asset_key model (unloc an) in
-              Tbuiltin t
-            end
-          | Tcontainer (t, _) -> t
-          | _ -> assert false
-        end
-      in
+       | Mfor (id, col, body, Some label) -> *)
+    (* let typ =
+       begin
+        let is_get_body (mt : mterm) (id : ident) (asset_name : ident) =
+          match mt.node with
+          | Mletin ([{pldesc = i; _}], {node = (Mget (an, _) | Mgetfrommap (an, _, _))}, _, _, _) -> String.equal i id && String.equal asset_name an
+          | _ -> false
+        in
+        match col.type_ with
+        | Tcontainer (Tasset an, _) when is_get_body body (unloc id) (unloc an) ->
+          begin
+            let _, t = Utils.get_asset_key model (unloc an) in
+            Tbuiltin t
+          end
+        | Tcontainer (t, _) -> t
+        | _ -> assert false
+       end
+       in
 
-      Format.fprintf fmt
-        "function %s (const %a : %a) : unit is@\n  \
-         begin@\n  \
-         @[%a@]@\n\
-         end with unit;@\n\
-         list_iter (%s, %a)"
-        label pp_id id pp_type typ
-        f body
-        label f col *)
+       Format.fprintf fmt
+       "function %s (const %a : %a) : unit is@\n  \
+       begin@\n  \
+       @[%a@]@\n\
+       end with unit;@\n\
+       list_iter (%s, %a)"
+       label pp_id id pp_type typ
+       f body
+       label f col *)
 
     | Miter (i, a, b, c, _) ->
       Format.fprintf fmt
@@ -450,23 +450,24 @@ let pp_model_internal fmt (model : model) b =
         f d
         const_operations
 
-    | Mexternal (t, fid, c, args) ->
-      let pp fmt (t, fid, c, args) =
+    | Mentrycall (v, d, t, fid, args) ->
+      let pp fmt (v, d, t, fid, args) =
         let fid = fid |> unloc |> String.up_firstcase in
 
         Format.fprintf fmt
           "const c_ : contract(action_%s) = get_contract(%a);@\n  \
            const param_ : action_%s = %s (%a);@\n  \
-           const op_: operation = transaction(param_, 0mutez, c_);@\n  \
+           const op_: operation = transaction(param_, %a, c_);@\n  \
            %s := cons(op_, %s)@\n"
-          t f c
+          t f d
           t fid (fun fmt l ->
               match l with
               | [] -> pp_str fmt "unit"
               | _  -> Format.fprintf fmt "record %a end" (pp_list "; " (fun fmt (id, v) -> Format.fprintf fmt "%a = %a" pp_id id f v)) l) args
+          f v
           const_operations const_operations
       in
-      pp fmt (t, fid, c, args)
+      pp fmt (v, d, t, fid, args)
 
 
     (* literals *)

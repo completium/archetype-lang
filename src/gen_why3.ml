@@ -1125,7 +1125,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Mfail InvalidState         -> Traise Einvalidstate
     | Mfail               _ -> error_not_translated "Mfail"
     | Mtransfer (a, t) -> Ttransfer(map_mterm m ctx a, map_mterm m ctx t)
-    | Mexternal (_,_,d,_) -> Tcall (map_mterm m ctx d)
+    | Mentrycall (_, d, _, _, _) -> Tcall (map_mterm m ctx d)
 
 
     (* literals *)

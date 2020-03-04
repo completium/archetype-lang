@@ -148,7 +148,7 @@ type ('id, 'term) mterm_node  =
   (* effect *)
   | Mfail             of 'id fail_type_gen
   | Mtransfer         of ('term * 'term) (* value * dest *)
-  | Mexternal         of ident * 'id * 'term * ('id * 'term) list (* contract_id * id * field_address_id_val * args *)
+  | Mentrycall        of 'term  * 'term * ident * 'id * ('id * 'term) list (* value * dest  * contract_id * id * args *)
   (* literals *)
   | Mint              of Core.big_int
   | Muint             of Core.big_int
@@ -937,7 +937,7 @@ let cmp_mterm_node
     (* effect *)
     | Mfail ft1, Mfail ft2                                                             -> cmp_fail_type cmp ft1 ft2
     | Mtransfer (v1, d1), Mtransfer (v2, d2)                                           -> cmp v1 v2 && cmp d1 d2
-    | Mexternal (t1, func1, c1, args1), Mexternal (t2, func2, c2, args2)               -> cmp_ident t1 t2 && cmpi func1 func2 && cmp c1 c2 && List.for_all2 (fun (id1, t1) (id2, t2) -> cmpi id1 id2 && cmp t1 t2) args1 args2
+    | Mentrycall(v1, d1, t1, func1, args1), Mentrycall(v2, d2, t2, func2, args2)       -> cmp v1 v2 && cmp d1 d2 && cmp_ident t1 t2 && cmpi func1 func2 && List.for_all2 (fun (id1, t1) (id2, t2) -> cmpi id1 id2 && cmp t1 t2) args1 args2
     (* literals *)
     | Mint v1, Mint v2                                                                 -> Big_int.eq_big_int v1 v2
     | Muint v1, Muint v2                                                               -> Big_int.eq_big_int v1 v2
@@ -1200,7 +1200,7 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   (* effect *)
   | Mfail v                        -> Mfail (match v with | Invalid v -> Invalid (f v) | _ -> v)
   | Mtransfer (v, d)               -> Mtransfer (f v, f d)
-  | Mexternal (t, func, c, args)   -> Mexternal (fi t, func, f c, List.map (fun (id, t) -> (g id, f t)) args)
+  | Mentrycall(v, d, t, func, args)-> Mentrycall(f v, f d, fi t, func, List.map (fun (id, t) -> (g id, f t)) args)
   (* literals *)
   | Mint v                         -> Mint v
   | Muint v                        -> Muint v
@@ -1508,7 +1508,7 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   (* effect *)
   | Mfail v                               -> (match v with | Invalid v -> f accu v | _ -> accu)
   | Mtransfer (v, d)                      -> f (f accu v) d
-  | Mexternal (_, _, c, args)             -> List.fold_left (fun accu (_, t) -> f accu t) (f accu c) args
+  | Mentrycall(v, d, _, _, args)          -> List.fold_left (fun accu (_, t) -> f accu t) (f (f accu v) d) args
   (* literals *)
   | Mint _                                -> accu
   | Muint _                               -> accu
@@ -1783,13 +1783,14 @@ let fold_map_term
     let de, da = f va d in
     g (Mtransfer (ve, de)), da
 
-  | Mexternal (t, func, c, args) ->
-    let ce, ca = f accu c in
+  | Mentrycall(v, d, t, func, args) ->
+    let ve, va = f accu v in
+    let de, da = f va d in
     let (lp, la) = List.fold_left
         (fun (pterms, accu) (id, x) ->
            let p, accu = f accu x in
-           pterms @ [id, p], accu) ([], ca) args in
-    g (Mexternal (t, func, ce, lp)), la
+           pterms @ [id, p], accu) ([], da) args in
+    g (Mentrycall(ve, de, t, func, lp)), la
 
 
   (* literals *)
@@ -3225,8 +3226,8 @@ end = struct
   let with_operations_for_mterm_intern _ctx accu (mt : mterm) : bool =
     let rec aux accu (t : mterm) =
       match t.node with
-      | Mtransfer _ -> raise FoundOperations
-      | Mexternal _ -> raise FoundOperations
+      | Mtransfer  _ -> raise FoundOperations
+      | Mentrycall _ -> raise FoundOperations
       | _ -> fold_term aux accu t in
     aux accu mt
 

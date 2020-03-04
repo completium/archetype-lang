@@ -10,8 +10,8 @@ variable contract_i : mycontract = @KT1GabhR5P52hw6xs5P69BXJYAURaznhvN1k
 
 action exec (a : address) {
   effect {
-    contract_i.myaction1(a, 1tz);
-    contract_i.myaction2("string");
-    contract_i.pay()
+    transfer 0tz to contract_i call myaction1(a, 1tz);
+    transfer 0tz to contract_i call myaction2("string");
+    transfer 1tz to contract_i call pay()
   }
 }

@@ -1499,12 +1499,13 @@ let extract_term_from_instruction f (model : model) : model =
       let de, da = f d in
       process (mk_mterm (Mtransfer (ve, de)) mt.type_) (va @ da)
 
-    | Mexternal (t, func, c, args) ->
-      let ce, ca = f c in
+    | Mentrycall (v, d, t, func, args) ->
+      let ve, va = f v in
+      let de, da = f d in
       let ae, aa = List.fold_right (fun (t, i) (xe, xa) ->
           let ie, ia = f i in
           ((t, ie)::xe, ia @ xa)) args ([], []) in
-      process (mk_mterm (Mexternal (t, func, ce, ae)) mt.type_) (ca @ aa)
+      process (mk_mterm (Mentrycall (ve, de, t, func, ae)) mt.type_) (va @ da @ aa)
 
 
     (* asset api effect *)

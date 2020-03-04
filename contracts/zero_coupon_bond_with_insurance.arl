@@ -66,6 +66,6 @@ transition collect () {
   with effect {
     if balance >= payment
     then transfer balance to owner
-    else zero_insur.pay (owner, payment)
+    else transfer 0tz to zero_insur call pay(owner, payment)
   }
 }

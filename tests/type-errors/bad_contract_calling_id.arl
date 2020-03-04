@@ -1,4 +1,4 @@
-archetype contract_caller
+archetype bad_contract_calling_id
 
 contract contract_called_sig {
    action set_value (n : int)
@@ -15,6 +15,6 @@ action update_value(n : int) {
 
 action add_one(n : int) {
   effect {
-    transfer 0tz to c call add_value(n, 2)
+    transfer 0tz to c call fake_call(0)
   }
 }

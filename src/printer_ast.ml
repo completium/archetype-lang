@@ -521,11 +521,12 @@ let rec pp_instruction fmt (i : instruction) =
       in
       (pp_with_paren pp) fmt (k, pt)
 
-    | Itransfer (value, dest) ->
+    | Itransfer (value, dest, call) ->
       let pp fmt (value, dest) =
-        Format.fprintf fmt "transfer %a to %a"
+        Format.fprintf fmt "transfer %a to %a%a"
           pp_pterm value
           pp_pterm dest
+          (pp_option (fun fmt (id, args) -> Format.fprintf fmt " call %a(%a)" pp_id id (pp_list ", " pp_pterm) args)) call
       in
       (pp_with_paren pp) fmt (value, dest)
 
