@@ -1,0 +1,24 @@
+archetype implementation
+
+states =
+ | Created initial
+ | Confirmed
+ | Completed
+ | Aborted
+ | Canceled
+
+constant oracle : role = @tz1KksC8RvjUWAbXYJuNrUbontHGor25Cztk
+
+constant price : tez = 1tz
+
+constant seller : role = @tz1KksC8RvjUWAbXYJuNrUbontHGor25Cztk
+
+transition complete (deadline : date)  {
+  called by oracle
+
+  from Confirmed
+  to Completed when { now < deadline }
+  with effect {
+    transfer price to seller
+  }
+}

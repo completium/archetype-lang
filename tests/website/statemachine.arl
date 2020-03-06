@@ -1,0 +1,39 @@
+archetype statemachine
+
+states =
+ | Created initial
+ | Confirmed
+ | Completed
+ | Aborted
+ | Canceled
+
+action exec () {
+  effect {
+    match state with
+    | Created -> require(true) (* fail ("cannot do that in Created state") *)
+    | _ -> require (true)
+    end
+  }
+}
+
+transition confirm () {
+  from Created
+  to Confirmed
+  with effect {
+    require (true)          (* after this, state is set to Created *)
+  }
+}
+
+transition mayconfirm () {
+  from Created
+
+  to Confirmed when { true }
+  with effect {
+     require (true)       (* after this, state is set to Created *)
+  }
+
+  to Canceled  (* execute this when <COND> is false *)
+  with effect {
+     require (true)       (* after this, state is set to Canceled *)
+  }
+}
