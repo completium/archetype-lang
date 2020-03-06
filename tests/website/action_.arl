@@ -1,0 +1,87 @@
+archetype action_
+
+constant owner : role = @tz1KksC8RvjUWAbXYJuNrUbontHGor25Cztk
+
+variable threshold : tez = 100tz
+
+asset mile {
+  quantity : int
+} with {
+  quant_strictly_pos : quantity > 0
+}
+
+asset car identified by vin {
+  vin : string;
+  model : string;
+  year : int;
+}
+
+
+
+action complete (value : string, amount : int) {
+  effect {
+    require(true)
+  }
+}
+
+action complete2 (value : string, amount : int) {
+  called by owner
+
+  require {
+    r : transferred > threshold
+  }
+
+  effect {
+    require(true)
+  }
+}
+
+action sample () {
+  require {
+    enough_transfer : transferred > threshold
+  }
+  failif {
+    not_enough_transfer : transferred <= threshold
+  }
+  effect {
+    var amount = transferred;
+
+    var p = amount + 10tz;
+    p := amount;
+    transfer 10tz to owner;
+
+    if transferred > threshold then
+      transfer p to owner
+    else
+      require (true);
+      (* fail ("not enough"); *)
+
+    require (transferred > threshold);
+
+    failif (transferred <= threshold);
+
+  }
+}
+
+action exec (vid : string, i : int) {
+  effect {
+    var v = car.get (vid);
+    car.add ({ vin = "1GNEK13ZX3R298984"; model = "Bugatti Chiron"; year = 2018 });
+    car.remove (vid);
+    car.update ("1GNEK13ZX3R298984", {year = 2019});
+    var v2 = car.nth (i);
+
+    var co = car.count ();
+    var su = car.sum (year);
+    var se = car.select (year >= 2019);
+    var so = car.sort (year);
+
+    for c in car do
+      require (true)
+    done
+  }
+}
+
+security {
+  s1 : only_by_role(anyaction, owner)
+}

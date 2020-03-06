@@ -25,6 +25,13 @@ action exec () {
     res := 1 >  (2 div 3);
     res := 1 >= (2 div 3);
 
+    res := (1 div 2) =  (2 div 3);
+    res := (1 div 2) <> (2 div 3);
+    res := (1 div 2) <  (2 div 3);
+    res := (1 div 2) <= (2 div 3);
+    res := (1 div 2) >  (2 div 3);
+    res := (1 div 2) >= (2 div 3);
+
     res := 1tz =  2tz;
     res := 1tz <> 2tz;
     res := 1tz <  2tz;

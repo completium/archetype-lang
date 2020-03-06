@@ -2,8 +2,8 @@ archetype lang_arith
 
 action exec () {
   effect {
-    var bool_bool_and : bool = true and false;
-    var bool_bool_or  : bool = true or false;
+    var bool_bool_and : bool = (true and false);
+    var bool_bool_or  : bool = (true or false);
     var bool_bool_not : bool = not true;
 
     var int_int_plus   : int = 1 + 2;
