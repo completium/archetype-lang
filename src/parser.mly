@@ -166,6 +166,7 @@
 %right OTHERWISE
 %right THEN ELSE
 
+%nonassoc prec_var
 %nonassoc COLONEQUAL PLUSEQUAL MINUSEQUAL MULTEQUAL DIVEQUAL
 
 %right IMPLY
@@ -667,7 +668,7 @@ expr_r:
  | LET i=ident t=colon_type_opt EQUAL e=expr IN y=expr
      { Eletin (i, t, e, y, None) }
 
- | VAR i=ident t=colon_type_opt EQUAL e=expr
+ | VAR i=ident t=colon_type_opt EQUAL e=expr %prec prec_var
      { Evar (i, t, e) }
 
  | e1=expr SEMI_COLON e2=expr
