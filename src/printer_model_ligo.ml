@@ -92,7 +92,7 @@ module LigoUtils : sig
 end = struct
   let mk_action_fs (fs : function_struct) =
     let fun_name = fs.name |> unloc in
-    let id = fs.name |> unloc |> String.up_firstcase in
+    let id = fs.name |> unloc |> String.up_firstcase_lower in
     let args = List.map (fun (id, t, _) -> (unloc id, t)) fs.args in
     {
       name = id;
@@ -102,7 +102,7 @@ end = struct
 
   let mk_action_contract_signature (cs : contract_signature) : action =
     let fun_name = cs.name |> unloc in
-    let id = cs.name |> unloc |> String.up_firstcase in
+    let id = cs.name |> unloc |> String.up_firstcase_lower in
     let args = List.map (fun (id, t) -> (unloc id, t)) cs.args in
     {
       name = id;
@@ -452,7 +452,7 @@ let pp_model_internal fmt (model : model) b =
 
     | Mentrycall (v, d, t, fid, args) ->
       let pp fmt (v, d, t, fid, args) =
-        let fid = fid |> unloc |> String.up_firstcase in
+        let fid = fid |> unloc |> String.up_firstcase_lower in
 
         Format.fprintf fmt
           "const c_ : contract(action_%s) = get_contract(%a);@\n  \

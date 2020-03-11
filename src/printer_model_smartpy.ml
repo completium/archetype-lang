@@ -30,6 +30,8 @@ type position =
   | Lhs
   | Rhs
 
+let const_params = "params"
+
 let pp_cast (pos : position) (ltype : type_) (rtype : type_) (pp : 'a -> mterm -> unit) (fmt : Format.formatter) =
   match pos, ltype, rtype with
   | Lhs, Tbuiltin Brole, Tbuiltin Baddress ->
@@ -46,6 +48,8 @@ let to_lident = dumloc
 let pp_nothing (_fmt : Format.formatter) = ()
 
 let pp_model fmt (model : model) =
+
+  let contract_name = Tools.String.up_firstcase_only (unloc model.name) in
 
   let pp_model_name (fmt : Format.formatter) _ =
     Format.fprintf fmt "# contract: %a@\n"
@@ -390,7 +394,7 @@ let pp_model fmt (model : model) =
           f r
 
       | Massignvarstore (op, _, l, r) ->
-        Format.fprintf fmt "s.%a %a %a"
+        Format.fprintf fmt "self.%a %a %a"
           pp_id l
           pp_operator op
           f r
@@ -965,7 +969,7 @@ let pp_model fmt (model : model) =
       | Mvarstorecol v -> Format.fprintf fmt "self.data.%a_keys" pp_id v
       | Mvarenumval v  -> pp_id fmt v
       | Mvarlocal v    -> pp_id fmt v
-      | Mvarparam v    -> pp_id fmt v
+      | Mvarparam v    -> Format.fprintf fmt "%s.%a" const_params pp_id v
       | Mvarfield v    -> pp_id fmt v
       | Mvarthe        -> pp_str fmt "the"
 
@@ -1191,43 +1195,54 @@ let pp_model fmt (model : model) =
           pp_storage_item) s
   in
 
-  let _pp_test fmt name =
-    Format.fprintf fmt "# Tests@\n\
-                        @addTest(name = \"test\")@\n\
-                        def test():@\n\
-                        \t# define a contract@\n\
-                        \tc1 = %s()@\n\
-                        \t# show its representation@\n\
-                        \thtml = c1.fullHtml()@\n\
-                        \tsetOutput(html)@\n\
-                        \t@\n"
-      name
+  let pp_contract_init fmt _ =
+    Format.fprintf fmt
+      "def __init__(self):@\n    \
+       self.init(@[%a@])@\n\
+       @\n"
+      (pp_list ",@\n" (fun fmt (si : storage_item) ->
+           Format.fprintf fmt "%a = %a" pp_id si.id (pp_mterm) si.default)
+      ) model.storage
   in
 
-  let pp_tmp_params fmt _ =
+  let pp_contract_entry fmt (fs : function_struct) =
     Format.fprintf fmt
-      "myParameter1 = myParameter1,@\n\
-       myParameter2 = myParameter2"
+      "@sp.entry_point@\n  \
+       def %a(self, %s):@\n    \
+       @[%a@]@\n"
+      pp_id fs.name
+      const_params
+      pp_mterm fs.body
+  in
+
+  let pp_contract_fun fmt (fn : function_node) =
+    match fn with
+    | Entry fs -> pp_contract_entry fmt fs
+    | Function _ -> ()
+  in
+
+  let pp_contract_funs fmt _ =
+    (pp_list "@\n" (fun fmt (f_ : function__) ->
+         pp_contract_fun fmt f_.node)
+    ) fmt model.functions
   in
 
   let pp_contract fmt _ =
     Format.fprintf fmt
-      "class MyContract(sp.Contract):@\n\
+      "class %s(sp.Contract):@\n\
        @\n  \
-       def __init__(self, myParameter1, myParameter2):@\n    \
-       self.init(@[%a@])@\n\
-       @\n  \
-       @sp.entry_point@\n  \
-       def myEntryPoint(self, params):@\n    \
-       sp.verify(self.data.myParameter1 <= 123)@\n    \
-       self.data.myParameter1 += params@\n"
-      pp_tmp_params ()
+       %a  \
+       %a"
+      contract_name
+      pp_contract_init ()
+      pp_contract_funs ()
   in
 
   let pp_contract_parameter fmt _ =
     Format.fprintf fmt
       "# We evaluate a contract with parameters.@\n\
-       contract = MyContract(12, 13)@\n"
+       contract = %s()@\n"
+      contract_name
   in
 
   let pp_outro fmt _ =

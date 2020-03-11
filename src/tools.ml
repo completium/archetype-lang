@@ -31,7 +31,8 @@ module String : sig
 
   val starts : pattern:string -> string -> bool
   val ends   : pattern:string -> string -> bool
-  val up_firstcase : string -> string
+  val up_firstcase_lower : string -> string
+  val up_firstcase_only : string -> string
 end = struct
   include String
 
@@ -69,9 +70,16 @@ end = struct
 
     with E.No -> false
 
-  let up_firstcase str =
+  let up_firstcase_lower str =
     match str with
     | "" -> ""
+    | _ when String.length str = 1 -> Stdlib.String.uppercase_ascii str
+    | _ -> (Stdlib.String.uppercase_ascii (String.sub str 0 1)) ^ String.sub str 1 (String.length str - 1)
+
+  let up_firstcase_only str =
+    match str with
+    | "" -> ""
+    | _ when String.length str = 1 -> Stdlib.String.uppercase_ascii str
     | _ -> (Stdlib.String.uppercase_ascii (String.sub str 0 1)) ^ String.sub str 1 (String.length str - 1)
 end
 

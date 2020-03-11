@@ -26,7 +26,7 @@ process_ligo() {
             echo -ne "\033[30m -- \033[0m"
         fi
     else
-        echo -e "\033[31m KO \033[0m"
+        echo -ne "\033[31m KO \033[0m"
         GRET=1
     fi
 
