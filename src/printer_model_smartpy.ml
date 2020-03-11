@@ -1207,8 +1207,8 @@ let pp_model fmt (model : model) =
 
   let pp_contract_entry fmt (fs : function_struct) =
     Format.fprintf fmt
-      "@sp.entry_point@\n  \
-       def %a(self, %s):@\n    \
+      "@sp.entry_point@\n\
+       def %a(self, %s):@\n  \
        @[%a@]@\n"
       pp_id fs.name
       const_params
@@ -1230,9 +1230,7 @@ let pp_model fmt (model : model) =
   let pp_contract fmt _ =
     Format.fprintf fmt
       "class %s(sp.Contract):@\n\
-       @\n  \
-       %a  \
-       %a"
+       @\n  %a  @[%a@]"
       contract_name
       pp_contract_init ()
       pp_contract_funs ()
