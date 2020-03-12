@@ -51,6 +51,7 @@ auction_lazy.arl \
 auction_no_memory.arl \
 c3n.arl \
 certificate_generator.arl \
+certification_token.arl \
 clause_io_acceptance_of_delivery.arl \
 coase.arl \
 competition.arl \
@@ -73,7 +74,6 @@ zero_coupon_bond_with_insurance.arl \
 "
 
 REMAINED_EXEC_CONTRACTS="\
-certification_token.arl \
 animal_tracking.arl \
 auction_zilliqa.arl \
 autocallable.arl \
