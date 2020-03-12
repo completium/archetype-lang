@@ -34,10 +34,10 @@ let const_params = "params"
 
 let pp_cast (pos : position) (ltype : type_) (rtype : type_) (pp : 'a -> mterm -> unit) (fmt : Format.formatter) =
   match pos, ltype, rtype with
-  | Lhs, Tbuiltin Brole, Tbuiltin Baddress ->
-    Format.fprintf fmt "(%a : address)" pp
-  | Rhs, Tbuiltin Baddress, Tbuiltin Brole ->
-    Format.fprintf fmt "(%a : address)" pp
+  (* | Lhs, Tbuiltin Brole, Tbuiltin Baddress ->
+     Format.fprintf fmt "(%a : address)" pp
+     | Rhs, Tbuiltin Baddress, Tbuiltin Brole ->
+     Format.fprintf fmt "(%a : address)" pp *)
   | _ -> pp fmt
 
 let pp_str fmt str =
@@ -140,11 +140,10 @@ let pp_model fmt (model : model) =
     | Add an ->
       let k, _t = Utils.get_asset_key model an in
       Format.fprintf fmt
-        "def add_%s (self, asset):@\n\
-         \t\tkey = asset.%a@\n\
-         \t\tself.data.%s_keys.append(key)@\n\
-         \t\tself.data.%s_assets[key] = asset@\n"
-        an pp_str k an an
+        "def add_%s (self, asset):@\n  \
+         key = asset.%a@\n  \
+         self.data.%s_assets[key] = asset@\n"
+        an pp_str k an
 
     | Remove an ->
       Format.fprintf fmt
@@ -295,33 +294,23 @@ let pp_model fmt (model : model) =
   in
 
   let pp_api_item fmt (api_storage : api_storage) =
-    if (match api_storage.api_loc with | OnlyExec | ExecFormula -> true | OnlyFormula -> false)
-    then ()
-    else pp_api_item_node fmt api_storage.node_item
+    pp_api_item_node fmt api_storage.node_item
   in
 
-  let _pp_api_items fmt l =
+  let pp_api_items fmt _ =
     let filter_api_items l : api_storage list =
-      let contains_select_asset_name a_name l : bool =
-        List.fold_left (fun accu x ->
-            match x.node_item with
-            | APIAsset  (Select (an, _)) -> accu || String.equal an a_name
-            | _ -> accu
-          ) false l
-      in
       List.fold_right (fun (x : api_storage) accu ->
-          match x.node_item with
-          | APIAsset  (Select (an, _p)) when contains_select_asset_name an accu -> accu
-          | _ -> x::accu
+          match x.api_loc with
+          | OnlyExec | ExecFormula -> x::accu
+          | OnlyFormula -> accu
         ) l []
     in
-    let l : api_storage list = filter_api_items l in
+    let l : api_storage list = filter_api_items model.api_items in
     if List.is_empty l
     then pp_nothing fmt
     else
-      Format.fprintf fmt "# API function@\n@\n\t%a@\n"
-        (* Format.pp_print_tab () *)
-        (pp_list "@\n\t" pp_api_item) l
+      Format.fprintf fmt "# API function@\n@\n  @[%a@]@\n"
+        (pp_list "@\n" (pp_api_item)) l
   in
 
   let pp_operator fmt op =
@@ -455,8 +444,8 @@ let pp_model fmt (model : model) =
       | Miter (_i, _a, _b, _c, _) -> Format.fprintf fmt "TODO: iter@\n"
 
       | Mseq is ->
-        Format.fprintf fmt "@[<v 4>%a@]"
-          (pp_list "@\n\t" f) is
+        Format.fprintf fmt "@[%a@]"
+          (pp_list "@\n" f) is
 
       | Mreturn x ->
         Format.fprintf fmt "return %a"
@@ -552,7 +541,7 @@ let pp_model fmt (model : model) =
           f v
 
       | Marray l ->
-        Format.fprintf fmt "[%a]"
+        Format.fprintf fmt "{%a}"
           (pp_list "; " f) l
 
       | Mtuple l ->
@@ -593,7 +582,7 @@ let pp_model fmt (model : model) =
 
       | Mequal (l, r) ->
         let pp fmt (l, r : mterm * mterm) =
-          Format.fprintf fmt "%a = %a"
+          Format.fprintf fmt "%a == %a"
             (pp_cast Lhs l.type_ r.type_ f) l
             (pp_cast Rhs l.type_ r.type_ f) r
         in
@@ -662,7 +651,7 @@ let pp_model fmt (model : model) =
 
       | Mnot e ->
         let pp fmt e =
-          Format.fprintf fmt "not (%a)"
+          Format.fprintf fmt "~(%a)"
             f e
         in
         pp fmt e
@@ -726,7 +715,7 @@ let pp_model fmt (model : model) =
 
       | Maddasset (an, i) ->
         let pp fmt (an, i) =
-          Format.fprintf fmt "add_%a (self, %a)"
+          Format.fprintf fmt "self.add_%a (%a)"
             pp_str an
             f i
         in
@@ -966,7 +955,7 @@ let pp_model fmt (model : model) =
 
       | Mvarassetstate (an, k) -> Format.fprintf fmt "state_%a(%a)" pp_str an f k
       | Mvarstorevar v -> Format.fprintf fmt "self.data.%a" pp_id v
-      | Mvarstorecol v -> Format.fprintf fmt "self.data.%a_keys" pp_id v
+      | Mvarstorecol v -> Format.fprintf fmt "self.data.%a" pp_id v
       | Mvarenumval v  -> pp_id fmt v
       | Mvarlocal v    -> pp_id fmt v
       | Mvarparam v    -> Format.fprintf fmt "%s.%a" const_params pp_id v
@@ -1229,9 +1218,11 @@ let pp_model fmt (model : model) =
 
   let pp_contract fmt _ =
     Format.fprintf fmt
-      "class %s(sp.Contract):@\n\
+      "class %s(sp.Contract):@\n  \
+       %a@\n\
        @\n  %a  @[%a@]"
       contract_name
+      pp_api_items ()
       pp_contract_init ()
       pp_contract_funs ()
   in
