@@ -2704,7 +2704,7 @@ let rec for_instruction (env : env) (i : PT.expr) : env * M.instruction =
           if   check_and_emit_name_free env lbl
           then Env.Label.push env (lbl, `Code)
           else env
-        in env, mki (Iseq [])
+        in env, mki (Ilabel lbl)
 
     | Enothing ->
         env, mki (Iseq [])
