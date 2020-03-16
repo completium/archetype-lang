@@ -145,7 +145,10 @@ let generate_target model =
     |> remove_enum_matchwith
     |> remove_letin_from_expr
     |> remove_fun_dotasset
-    |> exec_process
+    |> replace_lit_address_by_role
+    |> remove_label
+    |> flat_sequence
+    |> remove_cmp_bool
     |> shallow_asset
     |> split_key_values
     |> Gen_transform.assign_loop_label
@@ -169,7 +172,10 @@ let generate_target model =
     |> remove_enum_matchwith
     |> remove_letin_from_expr
     |> remove_fun_dotasset
-    |> exec_process
+    |> replace_lit_address_by_role
+    |> remove_label
+    |> flat_sequence
+    |> remove_cmp_bool
     |> shallow_asset
     |> split_key_values
     |> Gen_transform.assign_loop_label
@@ -182,7 +188,10 @@ let generate_target model =
     |> replace_update_by_set
     |> generate_storage
     |> replace_declvar_by_letin
-    |> exec_process
+    |> replace_lit_address_by_role
+    |> remove_label
+    |> flat_sequence
+    |> remove_cmp_bool
     |> process_single_field_storage
     |> shallow_asset
     |> split_key_values
@@ -208,7 +217,9 @@ let generate_target model =
     |> add_explicit_sort
     (* |> remove_enum_matchwith *)
     (* |> remove_fun_dotasset *)
-    |> exec_process
+    |> replace_lit_address_by_role
+    |> flat_sequence
+    |> remove_cmp_bool
     |> prune_properties
     |> extend_loop_iter
     |> shallow_asset_verif

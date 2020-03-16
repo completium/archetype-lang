@@ -1113,14 +1113,6 @@ let abs_tez model : model =
   in
   Model.map_mterm_model aux model
 
-let exec_process model =
-  model
-  |> replace_lit_address_by_role
-  |> remove_label
-  |> flat_sequence
-  |> remove_cmp_bool
-
-
 let replace_assignfield_by_update (model : model) : model =
   let rec aux (ctx : ctx_model) (mt : mterm) : mterm =
     match mt.node with
