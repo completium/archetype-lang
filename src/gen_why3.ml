@@ -1116,6 +1116,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
         | _ -> assert false
       end *)
 
+    | Mmark (_lbl, _x) -> error_not_translated "Mmark"
 
     (* effect *)
 

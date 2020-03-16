@@ -536,6 +536,39 @@ let replace_declvar_by_letin (model : model) : model =
   in
   Model.map_mterm_model aux model
 
+let replace_label_by_mark (model : model) : model =
+  let empty : mterm = mk_mterm (Mseq []) Tunit in
+  let process_internal id accu =
+    begin
+      let body =
+        match accu with
+        | [] -> empty
+        | [i] -> i
+        | lll -> mk_mterm (Mseq accu) (List.last lll).type_
+      in
+      mk_mterm (Mmark(id, body)) body.type_
+    end
+  in
+  let rec aux c (mt : mterm) : mterm =
+    match mt.node with
+    | Mseq l ->
+      let ll = List.fold_right (fun (x : mterm) accu ->
+          match x.node with
+          | Mlabel id ->
+            let res =  process_internal id accu in
+            [ res ]
+          | _ ->
+            begin
+              let t = aux c x in
+              t::accu
+            end
+        ) l [] in
+      { mt with node = Mseq ll }
+    | Mlabel id -> process_internal id []
+    | _ -> map_mterm (aux c) mt
+  in
+  Model.map_mterm_model aux model
+
 let assign_loop_label (model : model) : model =
   let loop_labels = ref
       begin

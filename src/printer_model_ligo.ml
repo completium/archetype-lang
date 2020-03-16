@@ -425,7 +425,8 @@ let pp_model_internal fmt (model : model) b =
       Format.fprintf fmt "return %a"
         f x
 
-    | Mlabel _i -> ()
+    | Mlabel _ -> ()
+    | Mmark  _ -> ()
 
 
     (* effect *)

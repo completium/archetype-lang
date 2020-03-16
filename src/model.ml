@@ -145,6 +145,7 @@ type ('id, 'term) mterm_node  =
   | Mseq              of 'term list
   | Mreturn           of 'term
   | Mlabel            of 'id
+  | Mmark             of 'id * 'term
   (* effect *)
   | Mfail             of 'id fail_type_gen
   | Mtransfer         of ('term * 'term) (* value * dest *)
@@ -934,6 +935,7 @@ let cmp_mterm_node
     | Mseq is1, Mseq is2                                                               -> List.for_all2 cmp is1 is2
     | Mreturn x1, Mreturn x2                                                           -> cmp x1 x2
     | Mlabel i1, Mlabel i2                                                             -> cmpi i1 i2
+    | Mmark (i1, x1), Mmark (i2, x2)                                                   -> cmpi i1 i2 && cmp x1 x2
     (* effect *)
     | Mfail ft1, Mfail ft2                                                             -> cmp_fail_type cmp ft1 ft2
     | Mtransfer (v1, d1), Mtransfer (v2, d2)                                           -> cmp v1 v2 && cmp d1 d2
@@ -1197,6 +1199,7 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Mseq is                        -> Mseq (List.map f is)
   | Mreturn x                      -> Mreturn (f x)
   | Mlabel i                       -> Mlabel (g i)
+  | Mmark (i, x)                   -> Mmark (g i, f x)
   (* effect *)
   | Mfail v                        -> Mfail (match v with | Invalid v -> Invalid (f v) | _ -> v)
   | Mtransfer (v, d)               -> Mtransfer (f v, f d)
@@ -1505,6 +1508,7 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mseq is                               -> List.fold_left f accu is
   | Mreturn x                             -> f accu x
   | Mlabel _                              -> accu
+  | Mmark (_, x)                          -> f accu x
   (* effect *)
   | Mfail v                               -> (match v with | Invalid v -> f accu v | _ -> accu)
   | Mtransfer (v, d)                      -> f (f accu v) d
@@ -1764,6 +1768,10 @@ let fold_map_term
 
   | Mlabel i ->
     g (Mlabel i), accu
+
+  | Mmark (i, x) ->
+    let xe, xa = f accu x in
+    g (Mmark (i, xe)), xa
 
 
   (* effect *)
@@ -2960,7 +2968,7 @@ end = struct
   let is_entry (f : function__) : bool =
     match f with
     | { node = Entry _; spec = _ } -> true
-    | _                             -> false
+    | _                            -> false
 
   let is_function (f : function__) : bool =
     match f with

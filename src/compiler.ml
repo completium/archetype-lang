@@ -218,6 +218,7 @@ let generate_target model =
     (* |> remove_enum_matchwith *)
     (* |> remove_fun_dotasset *)
     |> replace_lit_address_by_role
+    |> replace_label_by_mark
     |> flat_sequence
     |> remove_cmp_bool
     |> prune_properties

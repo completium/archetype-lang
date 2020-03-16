@@ -209,6 +209,11 @@ let pp_mterm fmt (mt : mterm) =
       Format.fprintf fmt "label %a"
         pp_id i
 
+    | Mmark (i, x) ->
+      Format.fprintf fmt "label %a in@\n@[%a@]"
+        pp_id i
+        f x
+
 
     (* effect *)
 
