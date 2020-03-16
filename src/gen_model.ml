@@ -278,6 +278,24 @@ let to_model (ast : A.model) : M.model =
       let fa = f a in
       M.Mabs (fa)
 
+    | A.Pcall (None, A.Cconst A.Cblake2b, [AExpr x]) ->
+      let fx = f x in
+      M.Mblake2b (fx)
+
+    | A.Pcall (None, A.Cconst A.Csha256, [AExpr x]) ->
+      let fx = f x in
+      M.Msha256 (fx)
+
+    | A.Pcall (None, A.Cconst A.Csha512, [AExpr x]) ->
+      let fx = f x in
+      M.Msha512 (fx)
+
+    | A.Pcall (None, A.Cconst A.Cchecksignature, [AExpr k; AExpr s; AExpr x]) ->
+      let fk = f k in
+      let fs = f s in
+      let fx = f x in
+      M.Mchecksignature (fk, fs, fx)
+
     | A.Pcall (_, A.Cid id, args) ->
       M.Mapp (id, List.map (fun x -> term_arg_to_expr f x) args)
 

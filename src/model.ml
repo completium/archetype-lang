@@ -229,6 +229,11 @@ type ('id, 'term) mterm_node  =
   | Mmin              of 'term * 'term
   | Mmax              of 'term * 'term
   | Mabs              of 'term
+  (* crypto functions *)
+  | Mblake2b          of 'term
+  | Msha256           of 'term
+  | Msha512           of 'term
+  | Mchecksignature   of 'term * 'term * 'term
   (* internal functions *)
   | Mstrconcat        of 'term * 'term
   (* constants *)
@@ -1019,6 +1024,11 @@ let cmp_mterm_node
     | Mmin (l1, r1), Mmin (l2, r2)                                                     -> cmp l1 l2 && cmp r1 r2
     | Mmax (l1, r1), Mmax (l2, r2)                                                     -> cmp l1 l2 && cmp r1 r2
     | Mabs a1, Mabs a2                                                                 -> cmp a1 a2
+    (* crypto functions *)
+    | Mblake2b x1, Mblake2b x2                                                         -> cmp x1 x2
+    | Msha256  x1, Msha256  x2                                                         -> cmp x1 x2
+    | Msha512  x1, Msha512  x2                                                         -> cmp x1 x2
+    | Mchecksignature (k1, s1, x1), Mchecksignature (k2, s2, x2)                       -> cmp k1 k2 && cmp s1 s2 && cmp x1 x2
     (* internal functions *)
     | Mstrconcat (l1, r1), Mstrconcat (l2, r2)                                         -> cmp l1 l2 && cmp r1 r2
     (* constants *)
@@ -1283,6 +1293,11 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Mmin (l, r)                    -> Mmin (f l, f r)
   | Mmax (l, r)                    -> Mmax (f l, f r)
   | Mabs a                         -> Mabs (f a)
+  (* crypto functions *)
+  | Mblake2b x                     -> Mblake2b (f x)
+  | Msha256 x                      -> Msha256 (f x)
+  | Msha512 x                      -> Msha512 (f x)
+  | Mchecksignature (k, s, x)      -> Mchecksignature (f k, f s, f x)
   (* internal functions *)
   | Mstrconcat (l, r)              -> Mstrconcat (f l, f r)
   (* constants *)
@@ -1592,6 +1607,11 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mmax (l, r)                           -> f (f accu l) r
   | Mmin (l, r)                           -> f (f accu l) r
   | Mabs a                                -> f accu a
+  (* crypto functions *)
+  | Mblake2b x                            -> f accu x
+  | Msha256  x                            -> f accu x
+  | Msha512  x                            -> f accu x
+  | Mchecksignature (k, s, x)             -> f (f (f accu k) s) x
   (* internal functions *)
   | Mstrconcat (l, r)                     -> f (f accu l) r
   (* constants *)
@@ -2148,6 +2168,27 @@ let fold_map_term
   | Mabs a ->
     let ae, aa = f accu a in
     g (Mabs ae), aa
+
+
+  (* crypto functions *)
+
+  | Mblake2b x ->
+    let xe, xa = f accu x in
+    g (Mblake2b xe), xa
+
+  | Msha256 x ->
+    let xe, xa = f accu x in
+    g (Msha256 xe), xa
+
+  | Msha512 x ->
+    let xe, xa = f accu x in
+    g (Msha512 xe), xa
+
+  | Mchecksignature (k, s, x) ->
+    let ke, ka = f accu k in
+    let se, sa = f ka s in
+    let xe, xa = f sa x in
+    g (Mchecksignature (ke, se, xe)), xa
 
 
   (* internal functions *)

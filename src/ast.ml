@@ -139,10 +139,16 @@ type const =
   | Cmax
   | Cmin
   | Csubsetof
+  (* list *)
   | Chead
   | Ctail
   | Cabs
   | Cprepend
+  (* crypto *)
+  | Cblake2b
+  | Csha256
+  | Csha512
+  | Cchecksignature
   (* vset *)
   | Cbefore
   | Cunmoved

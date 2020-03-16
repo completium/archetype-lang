@@ -1110,11 +1110,11 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Mreturn             v -> map_mterm m ctx v |> Mlwtree.deloc
 
     | Mlabel lbl -> Tmark (map_lident lbl)
-     (*  begin
+    (*  begin
         match M.Utils.get_formula m None (unloc lbl) with
         | Some formula -> Tassert (Some (map_lident lbl),map_mterm m ctx formula)
         | _ -> assert false
-      end *)
+        end *)
 
     | Mmark (_lbl, _x) -> error_not_translated "Mmark"
 
@@ -1284,7 +1284,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Mhead (n,c,v) -> Tapp(loc_term (Tdoti(String.capitalize_ascii n,"head")),
                             [map_mterm m ctx v; map_mterm m ctx c])
     | Mtail  (n,c,v) -> Tapp(loc_term (Tdoti(String.capitalize_ascii n,"tail")),
-                            [map_mterm m ctx v; map_mterm m ctx c])
+                             [map_mterm m ctx v; map_mterm m ctx c])
 
 
     (* utils *)
@@ -1308,21 +1308,31 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     (* builtin functions *)
     | Mmax (l,r) ->
       begin match mt.type_ with
-      | Ttuple _ -> Tapp (loc_term (Tvar "rat_max"),[map_mterm m ctx l; map_mterm m ctx r])
-      | _ -> Tapp (loc_term (Tvar "max"),[map_mterm m ctx l; map_mterm m ctx r])
+        | Ttuple _ -> Tapp (loc_term (Tvar "rat_max"),[map_mterm m ctx l; map_mterm m ctx r])
+        | _ -> Tapp (loc_term (Tvar "max"),[map_mterm m ctx l; map_mterm m ctx r])
       end
     | Mmin (l,r) ->
       begin match mt.type_ with
-      | Ttuple _ -> Tapp (loc_term (Tvar "rat_min"),[map_mterm m ctx l; map_mterm m ctx r])
-      | _ -> Tapp (loc_term (Tvar "min"),[map_mterm m ctx l; map_mterm m ctx r])
+        | Ttuple _ -> Tapp (loc_term (Tvar "rat_min"),[map_mterm m ctx l; map_mterm m ctx r])
+        | _ -> Tapp (loc_term (Tvar "min"),[map_mterm m ctx l; map_mterm m ctx r])
       end
     | Mabs v ->
       begin match v.type_ with
-      | M.Tbuiltin (M.Bint) -> Tapp (loc_term (Tvar "abs"),[map_mterm m ctx v])
-      | M.Ttuple [M.Tbuiltin (M.Bint); M.Tbuiltin M.Bint] ->
-        Tapp (loc_term (Tvar "abs_rat"),[map_mterm m ctx v])
-      | _ -> error_not_translated "Mfunabs"
+        | M.Tbuiltin (M.Bint) -> Tapp (loc_term (Tvar "abs"),[map_mterm m ctx v])
+        | M.Ttuple [M.Tbuiltin (M.Bint); M.Tbuiltin M.Bint] ->
+          Tapp (loc_term (Tvar "abs_rat"),[map_mterm m ctx v])
+        | _ -> error_not_translated "Mfunabs"
       end
+
+
+    (* crypto functions *)
+
+    | Mblake2b        _ -> error_not_translated "Mblake2b"
+    | Msha256         _ -> error_not_translated "Msha256"
+    | Msha512         _ -> error_not_translated "Msha512"
+    | Mchecksignature _ -> error_not_translated "Mchecksignature"
+
+
     (* internal functions *)
 
     | Mstrconcat (s1,s2) -> Tapp (loc_term (Tvar "str_concat"),[map_mterm m ctx s1; map_mterm m ctx s2])
@@ -2596,7 +2606,7 @@ let mk_rat_tez _m = Dfun {
   }
 
 let mk_rat_max _m = Dfun {
-  name     = "rat_max";
+    name     = "rat_max";
     logic    = NoMod;
     args     = ["a", Tytuple [Tyint;Tyint]; "b", Tytuple [Tyint;Tyint]];
     returns  = Tytuple [Tyint;Tyint];
@@ -2605,16 +2615,16 @@ let mk_rat_max _m = Dfun {
     requires = [];
     ensures  = [];
     body = Tif (
-      Tapp( Tvar "rat_cmp",
-            [Tenum "OpCmpLe"; Tvar "a"; Tvar "b"]
-      ),
-      Tvar "b",
-      Some (Tvar "a")
-    );
-}
+        Tapp( Tvar "rat_cmp",
+              [Tenum "OpCmpLe"; Tvar "a"; Tvar "b"]
+            ),
+        Tvar "b",
+        Some (Tvar "a")
+      );
+  }
 
 let mk_rat_min _m = Dfun {
-  name     = "rat_min";
+    name     = "rat_min";
     logic    = NoMod;
     args     = ["a", Tytuple [Tyint;Tyint]; "b", Tytuple [Tyint;Tyint]];
     returns  = Tytuple [Tyint;Tyint];
@@ -2623,13 +2633,13 @@ let mk_rat_min _m = Dfun {
     requires = [];
     ensures  = [];
     body = Tif (
-      Tapp( Tvar "rat_cmp",
-            [Tenum "OpCmpLe"; Tvar "a"; Tvar "b"]
-      ),
-      Tvar "a",
-      Some (Tvar "b")
-    );
-}
+        Tapp( Tvar "rat_cmp",
+              [Tenum "OpCmpLe"; Tvar "a"; Tvar "b"]
+            ),
+        Tvar "a",
+        Some (Tvar "b")
+      );
+  }
 
 let is_partition m n f =
   match M.Utils.get_field_container m n f with

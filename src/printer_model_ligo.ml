@@ -966,6 +966,28 @@ let pp_model_internal fmt (model : model) b =
         pp_tmp mtt.type_
         f a
 
+
+    (* crypto functions *)
+
+    | Mblake2b x ->
+      Format.fprintf fmt "blake2b (%a)"
+        f x
+
+    | Msha256 x ->
+      Format.fprintf fmt "sha256 (%a)"
+        f x
+
+    | Msha512 x ->
+      Format.fprintf fmt "sha512 (%a)"
+        f x
+
+    | Mchecksignature (k, s, x) ->
+      Format.fprintf fmt "check_signature (%a, %a, %a)"
+        f k
+        f s
+        f x
+
+
     (* internal functions *)
 
     | Mstrconcat (l, r)->

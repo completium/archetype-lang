@@ -1,0 +1,15 @@
+archetype lang_crypto
+
+action exec () {
+  effect {
+    var b : bytes = 0x123456789abcdef0;
+
+    var h1 : bytes = blake2b(b);
+    var h2 : bytes = sha256(b);
+    var h3 : bytes = sha512(b);
+
+    var k   : key       = 0xff;
+    var sig : signature = 0xabcd;
+    var cs  : bool      = check_signature(k, sig, b);
+  }
+}
