@@ -362,6 +362,10 @@ let rec pp_term outer pos fmt = function
       (pp_list ";@\n" pp_recfield) l
   | Tnone -> pp_str fmt "None"
   | Tenum i -> pp_str fmt i
+  | Tmark i -> Format.fprintf fmt "'%a:" pp_str i
+  | Tat (i,e) -> Format.fprintf fmt "(%a at %a)"
+    (pp_with_paren (pp_term outer pos)) e
+    pp_str i
   | Tunit -> pp_str fmt "()"
   | Tsome e -> Format.fprintf fmt "Some %a" (pp_with_paren (pp_term e_default PRight)) e
   | Tnot e -> Format.fprintf fmt "not %a" (pp_with_paren (pp_term outer pos)) e
@@ -527,7 +531,6 @@ let rec pp_term outer pos fmt = function
   | Tdlte (_, _, _, _) -> pp_str fmt "TODO_Tdlte"
   | Taddr _ -> pp_str fmt "TODO_Taddr"
   | Tbytes _ -> pp_str fmt "TODO_Tbytes"
-  | Tat _ -> pp_str fmt "TODO_Tat"
   | Thead (_, _) -> pp_str fmt "TODO_Thead"
   | Tlhead (_, _) -> pp_str fmt "TODO_Tlhead"
 and pp_recfield fmt (n,t) =

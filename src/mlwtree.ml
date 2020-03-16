@@ -147,7 +147,6 @@ type ('e,'t,'i) abstract_term =
   | Tand    of 'e * 'e
   | Tor    of 'e * 'e
   | Told    of 'e
-  | Tat     of 'e
   | Tfalse
   | Ttrue
   | Tunion  of 'i * 'e * 'e
@@ -173,6 +172,8 @@ type ('e,'t,'i) abstract_term =
   | Tnone
   | Tsome   of 'e
   | Tenum   of 'i
+  | Tmark   of 'i
+  | Tat of 'i * 'e
   | Tunit
   (* escape node *)
   | Ttobereplaced
@@ -402,7 +403,6 @@ and map_abstract_term
   | Tor (e1,e2)        -> Tor (map_e e1, map_e e2)
   | Tand (e1,e2)       -> Tand (map_e e1, map_e e2)
   | Told e             -> Told (map_e e)
-  | Tat e              -> Tat (map_e e)
   | Tunion (i,e1,e2)     -> Tunion (map_i i, map_e e1, map_e e2)
   | Tinter (i,e1,e2)     -> Tinter (map_i i, map_e e1, map_e e2)
   | Tdiff (i,e1,e2)      -> Tdiff (map_i i, map_e e1, map_e e2)
@@ -423,6 +423,8 @@ and map_abstract_term
   | Tnone              -> Tnone
   | Tsome e            -> Tsome (map_e e)
   | Tenum i            -> Tenum (map_i i)
+  | Tmark i            -> Tmark (map_i i)
+  | Tat (i,e)          -> Tat (map_i i, map_e e)
   | Tunit              -> Tunit
   | Ttobereplaced      -> Ttobereplaced
   | Tnottranslated     -> Tnottranslated
@@ -785,7 +787,6 @@ let compare_abstract_term
   | Tor (e1,e2), Tor (f1,f2) -> cmpe e1 f1 && cmpe e2 f2
   | Tand (e1,e2), Tand (f1,f2) -> cmpe e1 f1 && cmpe e2 f2
   | Told e1, Told e2 -> cmpe e1 e2
-  | Tat e1, Tat e2 -> cmpe e1 e2
   | Tfalse, Tfalse -> true
   | Ttrue, Ttrue -> true
   | Tunion (i1,e1,e2), Tunion (i2,f1,f2) -> cmpi i1 i2 && cmpe e1 f1 && cmpe e2 f2
@@ -805,6 +806,8 @@ let compare_abstract_term
   | Tnone, Tnone -> true
   | Tsome e1, Tsome e2 -> cmpe e1 e2
   | Tenum i1, Tenum i2 -> cmpi i1 i2
+  | Tmark i1, Tmark i2 -> cmpi i1 i2
+  | Tat (i1,e1), Tat (i2,e2) -> cmpi i1 i2 && cmpe e1 e2
   | Tunit, Tunit -> true
   | Tnottranslated, Tnottranslated -> true
   | Ttobereplaced, Ttobereplaced -> true

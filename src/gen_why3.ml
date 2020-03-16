@@ -1109,12 +1109,12 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
 
     | Mreturn             v -> map_mterm m ctx v |> Mlwtree.deloc
 
-    | Mlabel lbl ->
-      begin
+    | Mlabel lbl -> Tmark (map_lident lbl)
+     (*  begin
         match M.Utils.get_formula m None (unloc lbl) with
         | Some formula -> Tassert (Some (map_lident lbl),map_mterm m ctx formula)
         | _ -> assert false
-      end
+      end *)
 
 
     (* effect *)
@@ -1305,9 +1305,16 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
 
 
     (* builtin functions *)
-
-    | Mmax (l,r) -> Tapp (loc_term (Tvar "max"),[map_mterm m ctx l; map_mterm m ctx r])
-    | Mmin (l,r) -> Tapp (loc_term (Tvar "min"),[map_mterm m ctx l; map_mterm m ctx r])
+    | Mmax (l,r) ->
+      begin match mt.type_ with
+      | Ttuple _ -> Tapp (loc_term (Tvar "rat_max"),[map_mterm m ctx l; map_mterm m ctx r])
+      | _ -> Tapp (loc_term (Tvar "max"),[map_mterm m ctx l; map_mterm m ctx r])
+      end
+    | Mmin (l,r) ->
+      begin match mt.type_ with
+      | Ttuple _ -> Tapp (loc_term (Tvar "rat_min"),[map_mterm m ctx l; map_mterm m ctx r])
+      | _ -> Tapp (loc_term (Tvar "min"),[map_mterm m ctx l; map_mterm m ctx r])
+      end
     | Mabs v ->
       begin match v.type_ with
       | M.Tbuiltin (M.Bint) -> Tapp (loc_term (Tvar "abs"),[map_mterm m ctx v])
@@ -1465,8 +1472,8 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     (* formula asset collection *)
 
     | Msetbefore c -> map_mterm m { ctx with old = true } c |> Mlwtree.deloc
-    | Msetat              _ -> error_not_translated "Msetat"
-    | Msetunmoved         _ -> error_not_translated "Msetunmoved"
+    | Msetat (label,t) -> Tat (with_dummy_loc label, map_mterm m ctx t)
+    | Msetunmoved _ -> error_not_translated "Msetunmoved"
     | Msetadded c ->  map_mterm m { ctx with lmod = Added } c |> Mlwtree.deloc
     | Msetremoved c -> map_mterm m { ctx with lmod = Removed } c |> Mlwtree.deloc
     | Msetiterated        _ -> error_not_translated "Msetiterated"
@@ -2587,6 +2594,42 @@ let mk_rat_tez _m = Dfun {
     (* )) *);
   }
 
+let mk_rat_max _m = Dfun {
+  name     = "rat_max";
+    logic    = NoMod;
+    args     = ["a", Tytuple [Tyint;Tyint]; "b", Tytuple [Tyint;Tyint]];
+    returns  = Tytuple [Tyint;Tyint];
+    raises   = [];
+    variants = [];
+    requires = [];
+    ensures  = [];
+    body = Tif (
+      Tapp( Tvar "rat_cmp",
+            [Tenum "OpCmpLe"; Tvar "a"; Tvar "b"]
+      ),
+      Tvar "b",
+      Some (Tvar "a")
+    );
+}
+
+let mk_rat_min _m = Dfun {
+  name     = "rat_min";
+    logic    = NoMod;
+    args     = ["a", Tytuple [Tyint;Tyint]; "b", Tytuple [Tyint;Tyint]];
+    returns  = Tytuple [Tyint;Tyint];
+    raises   = [];
+    variants = [];
+    requires = [];
+    ensures  = [];
+    body = Tif (
+      Tapp( Tvar "rat_cmp",
+            [Tenum "OpCmpLe"; Tvar "a"; Tvar "b"]
+      ),
+      Tvar "a",
+      Some (Tvar "b")
+    );
+}
+
 let is_partition m n f =
   match M.Utils.get_field_container m n f with
   | _,Partition -> true
@@ -2657,6 +2700,10 @@ let mk_storage_api (m : M.model) records =
         acc @ [mk_clear_field_coll m (is_partition m n f) n f key clearedasset]
       | M.APIBuiltin(AbsBuiltin (M.Tbuiltin M.Bint)) ->
         acc @ [Duse (true,["int";"Abs"])]
+      | M.APIBuiltin(MaxBuiltin (M.Ttuple [M.Tbuiltin M.Bint;M.Tbuiltin M.Bint])) ->
+        acc @ [mk_rat_max m]
+      | M.APIBuiltin(MinBuiltin (M.Ttuple [M.Tbuiltin M.Bint;M.Tbuiltin M.Bint])) ->
+        acc @ [mk_rat_min m]
       | _ -> acc
     ) [] |> loc_decl |> deloc
 
