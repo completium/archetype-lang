@@ -1,4 +1,4 @@
-archetype test_partition
+archetype no_add_on_partition
 
 asset my_asset identified by id {
   id : string;

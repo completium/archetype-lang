@@ -1,0 +1,21 @@
+archetype no_field_partition_in_partition
+
+asset a {
+  aid : int;
+}
+
+asset b {
+  bid : int;
+  bc : a partition;
+}
+
+asset c {
+  cid : int;
+  cc : b partition;
+}
+
+action exec () {
+  effect {
+    require(true)
+  }
+}

@@ -6,6 +6,7 @@ open Tools
 type error_desc =
   | AssetPartitionnedby of string * string list
   | CannotBuildAsset of string * string
+  | ContainersInAssetContainers of string * string * string
   | NoEntrypoint
 
 let pp_error_desc fmt = function
@@ -17,11 +18,15 @@ let pp_error_desc fmt = function
   | CannotBuildAsset (an, fn) ->
     Format.fprintf fmt "Cannot build an asset %s, default value of field '%s' is missing" an fn
 
+  | ContainersInAssetContainers (an, fn, an2) ->
+    Format.fprintf fmt "Cannot build an asset '%s', '%s' is a container field, which refers to an asset '%s', which contains a container field itself"
+      an fn an2
+
   | NoEntrypoint -> Format.fprintf fmt "No entrypoint found (action or transtion)"
 
 type error = Location.t * error_desc
 
-let emit_error (lc, error) =
+let emit_error (lc, error : Location.t * error_desc) =
   let str : string = Format.asprintf "%a@." pp_error_desc error in
   let pos : Position.t list = [location_to_position lc] in
   Error.error_alert pos str (fun _ -> ())
@@ -402,6 +407,30 @@ let check_partition_access (model : model) : model =
 let check_number_entrypoint (model : model) : model =
   let nb_entrypoints = model.functions |> List.filter (fun (f : function__) -> match f.node with | Entry _ -> true | _ -> false) |> List.length in
   if nb_entrypoints = 0 then (emit_error (model.loc, NoEntrypoint); raise (Error.Stop 5));
+  model
+
+let check_containers_asset (model : model) : model =
+  let assets = Utils.get_assets model in
+  let is_container = function
+    | Tcontainer _ -> true
+    | _ -> false
+  in
+  let is_asset_with_container (an : lident) : bool =
+    let an = unloc an in
+    let a = Utils.get_asset model an in
+    List.exists (fun item -> is_container item.type_) a.values
+  in
+  let l : (string * string * string * Location.t) list =
+    List.fold_left (fun accu (a : asset) ->
+        List.fold_left (fun accu (item : asset_item) ->
+            match item.type_ with
+            | Tcontainer (Tasset an, _) when is_asset_with_container an -> (unloc a.name, unloc item.name, unloc an, item.loc)::accu
+            | _ -> accu
+          ) accu a.values
+      ) [] assets
+  in
+  List.iter (fun (an, fn, a2, l) -> emit_error (l, ContainersInAssetContainers (an, fn, a2))) l;
+  if List.is_not_empty l then raise (Error.Stop 5);
   model
 
 let prune_properties (model : model) : model =

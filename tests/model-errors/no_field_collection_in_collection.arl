@@ -1,0 +1,21 @@
+archetype no_field_collection_in_collection
+
+asset a {
+  aid : int;
+}
+
+asset b {
+  bid : int;
+  bc : a collection;
+}
+
+asset c {
+  cid : int;
+  cc : b collection;
+}
+
+action exec () {
+  effect {
+    require(true)
+  }
+}

@@ -500,6 +500,7 @@ type 'id asset_item_gen = {
   original_type: type_;
   default: 'id mterm_gen option;
   shadow: bool;
+  loc: Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]
 
@@ -513,6 +514,7 @@ type 'id asset_gen = {
   sort: ident list;
   state: lident option;
   invariants  : lident label_term_gen list;
+  loc: Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]
 
@@ -803,11 +805,11 @@ let mk_enum ?(values = []) name initial : 'id enum_gen =
 let mk_enum_item ?(invariants = []) name : 'id enum_item_gen =
   { name; invariants }
 
-let mk_asset ?(values = []) ?(sort=[]) ?state ?(invariants = []) name key : 'id asset_gen =
-  { name; values; sort; state; key; invariants }
+let mk_asset ?(values = []) ?(sort=[]) ?state ?(invariants = []) ?(loc = Location.dummy) name key : 'id asset_gen =
+  { name; values; sort; state; key; invariants; loc }
 
-let mk_asset_item ?default ?(shadow=false) name type_ original_type : 'id asset_item_gen =
-  { name; type_; original_type; default; shadow }
+let mk_asset_item ?default ?(shadow=false) ?(loc = Location.dummy) name type_ original_type : 'id asset_item_gen =
+  { name; type_; original_type; default; shadow; loc }
 
 let mk_contract_signature ?(args=[]) ?(loc=Location.dummy) name : 'id contract_signature_gen =
   { name; args; loc }
@@ -2707,6 +2709,7 @@ let replace_ident_model (f : kind_ident -> ident -> ident) (model : model) : mod
           original_type = for_type ai.original_type;
           default       = Option.map for_mterm ai.default;
           shadow        = ai.shadow;
+          loc           = ai.loc;
         }
       in
       {
@@ -2716,6 +2719,7 @@ let replace_ident_model (f : kind_ident -> ident -> ident) (model : model) : mod
         sort          = List.map (f KIassetfield) a.sort;
         state         = Option.map (g KIassetstate) a.state;
         invariants    = List.map for_label_term a.invariants;
+        loc           = a.loc;
       }
     in
     let for_contract (c : contract) : contract =

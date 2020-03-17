@@ -488,9 +488,9 @@ let to_model (ast : A.model) : M.model =
     let values = List.map (fun (x : A.lident A.decl_gen) ->
         let typ = Option.get (Option.map ptyp_to_type x.typ) in
         let default = Option.map to_mterm x.default in
-        M.mk_asset_item x.name typ typ ?default:default ~shadow:x.shadow) a.fields
+        M.mk_asset_item x.name typ typ ?default:default ~shadow:x.shadow ~loc:x.loc) a.fields
     in
-    let r : M.asset = M.mk_asset a.name (unloc (Option.get a.key)) ~values:values ~sort:(List.map unloc (a.sort)) ?state:a.state ~invariants:(List.map (fun x -> to_label_lterm x) a.specs) in
+    let r : M.asset = M.mk_asset a.name (unloc (Option.get a.key)) ~values:values ~sort:(List.map unloc (a.sort)) ?state:a.state ~invariants:(List.map (fun x -> to_label_lterm x) a.specs) ~loc:a.loc in
     M.Dasset r
   in
 
