@@ -229,13 +229,14 @@ type ('id, 'term) mterm_node  =
   | Mmin              of 'term * 'term
   | Mmax              of 'term * 'term
   | Mabs              of 'term
+  | Mconcat           of 'term * 'term
+  | Mslice            of 'term * 'term * 'term
+  | Mlength           of 'term
   (* crypto functions *)
   | Mblake2b          of 'term
   | Msha256           of 'term
   | Msha512           of 'term
   | Mchecksignature   of 'term * 'term * 'term
-  (* internal functions *)
-  | Mstrconcat        of 'term * 'term
   (* constants *)
   | Mvarstate
   | Mnow
@@ -358,9 +359,12 @@ and api_list =
 [@@deriving show {with_path = false}]
 
 and api_builtin =
-  | MinBuiltin of type_
-  | MaxBuiltin of type_
-  | AbsBuiltin of type_
+  | Bmin    of type_
+  | Bmax    of type_
+  | Babs    of type_
+  | Bconcat of type_
+  | Bslice  of type_
+  | Blength of type_
 [@@deriving show {with_path = false}]
 
 and api_internal =
@@ -369,7 +373,6 @@ and api_internal =
   | RatArith
   | RatUminus
   | RatTez
-  | StrConcat
 [@@deriving show {with_path = false}]
 
 and api_storage_node =
@@ -1024,13 +1027,14 @@ let cmp_mterm_node
     | Mmin (l1, r1), Mmin (l2, r2)                                                     -> cmp l1 l2 && cmp r1 r2
     | Mmax (l1, r1), Mmax (l2, r2)                                                     -> cmp l1 l2 && cmp r1 r2
     | Mabs a1, Mabs a2                                                                 -> cmp a1 a2
+    | Mconcat (x1, y1), Mconcat (x2, y2)                                               -> cmp x1 x2 && cmp y1 y2
+    | Mslice (x1, s1, e1), Mslice (x2, s2, e2)                                         -> cmp x1 x2 && cmp s1 s2 && cmp e1 e2
+    | Mlength x1, Mlength x2                                                           -> cmp x1 x2
     (* crypto functions *)
     | Mblake2b x1, Mblake2b x2                                                         -> cmp x1 x2
     | Msha256  x1, Msha256  x2                                                         -> cmp x1 x2
     | Msha512  x1, Msha512  x2                                                         -> cmp x1 x2
     | Mchecksignature (k1, s1, x1), Mchecksignature (k2, s2, x2)                       -> cmp k1 k2 && cmp s1 s2 && cmp x1 x2
-    (* internal functions *)
-    | Mstrconcat (l1, r1), Mstrconcat (l2, r2)                                         -> cmp l1 l2 && cmp r1 r2
     (* constants *)
     | Mvarstate, Mvarstate                                                             -> true
     | Mnow, Mnow                                                                       -> true
@@ -1131,17 +1135,20 @@ let cmp_api_item_node (a1 : api_storage_node) (a2 : api_storage_node) : bool =
 
   let cmp_api_list (c1 : api_list) (c2 : api_list) : bool =
     match c1, c2 with
-    | Lprepend t1,  Lprepend t2  -> cmp_type t1 t2
+    | Lprepend  t1, Lprepend  t2 -> cmp_type t1 t2
     | Lcontains t1, Lcontains t2 -> cmp_type t1 t2
-    | Lcount t1,    Lcount t2    -> cmp_type t1 t2
-    | Lnth t1,      Lnth t2      -> cmp_type t1 t2
+    | Lcount    t1, Lcount    t2 -> cmp_type t1 t2
+    | Lnth      t1, Lnth      t2 -> cmp_type t1 t2
     | _ -> false
   in
   let cmp_api_builtin (b1 : api_builtin) (b2 : api_builtin) : bool =
     match b1, b2 with
-    | MinBuiltin t1, MinBuiltin t2 -> cmp_type t1 t2
-    | MaxBuiltin t1, MaxBuiltin t2 -> cmp_type t1 t2
-    | AbsBuiltin t1, AbsBuiltin t2 -> cmp_type t1 t2
+    | Bmin    t1, Bmin    t2 -> cmp_type t1 t2
+    | Bmax    t1, Bmax    t2 -> cmp_type t1 t2
+    | Babs    t1, Babs    t2 -> cmp_type t1 t2
+    | Bconcat t1, Bconcat t2 -> cmp_type t1 t2
+    | Bslice  t1, Bslice  t2 -> cmp_type t1 t2
+    | Blength t1, Blength t2 -> cmp_type t1 t2
     | _ -> false
   in
   let cmp_api_internal (i1 : api_internal) (i2 : api_internal) : bool =
@@ -1151,7 +1158,6 @@ let cmp_api_item_node (a1 : api_storage_node) (a2 : api_storage_node) : bool =
     | RatArith,  RatArith  -> true
     | RatUminus, RatUminus -> true
     | RatTez,    RatTez    -> true
-    | StrConcat, StrConcat -> true
     | _ -> false
   in
   match a1, a2 with
@@ -1293,13 +1299,14 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Mmin (l, r)                    -> Mmin (f l, f r)
   | Mmax (l, r)                    -> Mmax (f l, f r)
   | Mabs a                         -> Mabs (f a)
+  | Mconcat (x, y)                 -> Mconcat (f x, f y)
+  | Mslice (x, s, e)               -> Mslice (f x, f s, f e)
+  | Mlength x                      -> Mlength (f x)
   (* crypto functions *)
   | Mblake2b x                     -> Mblake2b (f x)
   | Msha256 x                      -> Msha256 (f x)
   | Msha512 x                      -> Msha512 (f x)
   | Mchecksignature (k, s, x)      -> Mchecksignature (f k, f s, f x)
-  (* internal functions *)
-  | Mstrconcat (l, r)              -> Mstrconcat (f l, f r)
   (* constants *)
   | Mvarstate                      -> Mvarstate
   | Mnow                           -> Mnow
@@ -1607,13 +1614,14 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mmax (l, r)                           -> f (f accu l) r
   | Mmin (l, r)                           -> f (f accu l) r
   | Mabs a                                -> f accu a
+  | Mconcat (x, y)                        -> f (f accu x) y
+  | Mslice (x, s, e)                      -> f (f (f accu x) s) e
+  | Mlength x                             -> f accu x
   (* crypto functions *)
   | Mblake2b x                            -> f accu x
   | Msha256  x                            -> f accu x
   | Msha512  x                            -> f accu x
   | Mchecksignature (k, s, x)             -> f (f (f accu k) s) x
-  (* internal functions *)
-  | Mstrconcat (l, r)                     -> f (f accu l) r
   (* constants *)
   | Mvarstate                             -> accu
   | Mnow                                  -> accu
@@ -2169,6 +2177,20 @@ let fold_map_term
     let ae, aa = f accu a in
     g (Mabs ae), aa
 
+  | Mconcat (x, y) ->
+    let xe, xa = f accu x in
+    let ye, ya = f xa y in
+    g (Mconcat (xe, ye)), ya
+
+  | Mslice (x, s, e) ->
+    let xe, xa = f accu x in
+    let se, sa = f xa s in
+    let ee, ea = f sa e in
+    g (Mslice (xe, se, ee)), ea
+
+  | Mlength x ->
+    let xe, xa = f accu x in
+    g (Mlength xe), xa
 
   (* crypto functions *)
 
@@ -2189,14 +2211,6 @@ let fold_map_term
     let se, sa = f ka s in
     let xe, xa = f sa x in
     g (Mchecksignature (ke, se, xe)), xa
-
-
-  (* internal functions *)
-
-  | Mstrconcat (l, r)->
-    let le, la = f accu l in
-    let re, ra = f la r in
-    g (Mstrconcat (le, re)), ra
 
 
   (* constants *)
@@ -2623,9 +2637,12 @@ let replace_ident_model (f : kind_ident -> ident -> ident) (model : model) : mod
       in
       let for_api_builtin (abuiltin : api_builtin) : api_builtin =
         match abuiltin with
-        | MinBuiltin t -> MinBuiltin (for_type t)
-        | MaxBuiltin t -> MaxBuiltin (for_type t)
-        | AbsBuiltin t -> AbsBuiltin (for_type t)
+        | Bmin t    -> Bmin    (for_type t)
+        | Bmax t    -> Bmax    (for_type t)
+        | Babs t    -> Babs    (for_type t)
+        | Bconcat t -> Bconcat (for_type t)
+        | Bslice  t -> Bslice  (for_type t)
+        | Blength t -> Blength (for_type t)
       in
       let for_api_internal (ainternal : api_internal) : api_internal =
         match ainternal with
@@ -2634,7 +2651,6 @@ let replace_ident_model (f : kind_ident -> ident -> ident) (model : model) : mod
         | RatArith  -> RatArith
         | RatUminus -> RatUminus
         | RatTez    -> RatTez
-        | StrConcat -> StrConcat
       in
       match asn with
       | APIAsset    aasset    -> APIAsset    (for_api_asset aasset)

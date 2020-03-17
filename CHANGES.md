@@ -6,7 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Added
- - New feature
+ - Crypto functions
+ - `slice`, `concat` and `length` functions
 
 ## [0.1.13] - 2020-03-05
 ### Added

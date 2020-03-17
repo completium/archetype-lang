@@ -404,9 +404,12 @@ let pp_model fmt (model : model) =
   in
 
   let pp_api_builtin fmt = function
-    | MinBuiltin t-> Format.fprintf fmt "min on %a" pp_type t
-    | MaxBuiltin t-> Format.fprintf fmt "max on %a" pp_type t
-    | AbsBuiltin t -> Format.fprintf fmt "abs on %a" pp_type t
+    | Bmin    t -> Format.fprintf fmt "min on %a" pp_type t
+    | Bmax    t -> Format.fprintf fmt "max on %a" pp_type t
+    | Babs    t -> Format.fprintf fmt "abs on %a" pp_type t
+    | Bconcat t -> Format.fprintf fmt "concat on %a" pp_type t
+    | Bslice  t -> Format.fprintf fmt "slice on %a"  pp_type t
+    | Blength t -> Format.fprintf fmt "length on %a" pp_type t
   in
 
   let pp_api_internal fmt = function
@@ -415,7 +418,6 @@ let pp_model fmt (model : model) =
     | RatArith     -> Format.fprintf fmt "rat_arith"
     | RatUminus    -> Format.fprintf fmt "rat_uminus"
     | RatTez       -> Format.fprintf fmt "rat_to_tez"
-    | StrConcat    -> Format.fprintf fmt "str_concat"
   in
 
   let pp_api_item_node fmt = function
@@ -1099,6 +1101,21 @@ let pp_model fmt (model : model) =
         Format.fprintf fmt "abs (%a)"
           f a
 
+      | Mconcat (x, y) ->
+        Format.fprintf fmt "concat (%a, %a)"
+          f x
+          f y
+
+      | Mslice (x, s, e) ->
+        Format.fprintf fmt "slice (%a, %a, %a)"
+          f x
+          f s
+          f e
+
+      | Mlength x ->
+        Format.fprintf fmt "length (%a)"
+          f x
+
 
       (* crypto functions *)
 
@@ -1119,14 +1136,6 @@ let pp_model fmt (model : model) =
           f k
           f s
           f x
-
-
-      (* internal functions *)
-
-      | Mstrconcat (l, r)->
-        Format.fprintf fmt "str_concat (%a, %a)"
-          f l
-          f r
 
 
       (* constants *)

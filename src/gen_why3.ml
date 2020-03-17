@@ -1324,6 +1324,15 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
         | _ -> error_not_translated "Mfunabs"
       end
 
+    | Mconcat (x, y) ->
+      begin
+        match mt.type_ with
+        | Tbuiltin Bstring -> Tapp (loc_term (Tvar "str_concat"),[map_mterm m ctx x; map_mterm m ctx y])
+        | _ -> error_not_translated "Mconcat"
+      end
+    | Mslice  _ -> error_not_translated "Mslice"
+    | Mlength _ -> error_not_translated "Mlength"
+
 
     (* crypto functions *)
 
@@ -1331,11 +1340,6 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Msha256         _ -> error_not_translated "Msha256"
     | Msha512         _ -> error_not_translated "Msha512"
     | Mchecksignature _ -> error_not_translated "Mchecksignature"
-
-
-    (* internal functions *)
-
-    | Mstrconcat (s1,s2) -> Tapp (loc_term (Tvar "str_concat"),[map_mterm m ctx s1; map_mterm m ctx s2])
 
 
     (* constants *)
@@ -2709,11 +2713,11 @@ let mk_storage_api (m : M.model) records =
         let (key,_) = M.Utils.get_asset_key m n in
         let (clearedasset,_,_) = M.Utils.get_container_asset_key m n f in
         acc @ [mk_clear_field_coll m (is_partition m n f) n f key clearedasset]
-      | M.APIBuiltin(AbsBuiltin (M.Tbuiltin M.Bint)) ->
+      | M.APIBuiltin(Babs (M.Tbuiltin M.Bint)) ->
         acc @ [Duse (true,["int";"Abs"])]
-      | M.APIBuiltin(MaxBuiltin (M.Ttuple [M.Tbuiltin M.Bint;M.Tbuiltin M.Bint])) ->
+      | M.APIBuiltin(Bmax (M.Ttuple [M.Tbuiltin M.Bint;M.Tbuiltin M.Bint])) ->
         acc @ [mk_rat_max m]
-      | M.APIBuiltin(MinBuiltin (M.Ttuple [M.Tbuiltin M.Bint;M.Tbuiltin M.Bint])) ->
+      | M.APIBuiltin(Bmin (M.Ttuple [M.Tbuiltin M.Bint;M.Tbuiltin M.Bint])) ->
         acc @ [mk_rat_min m]
       | _ -> acc
     ) [] |> loc_decl |> deloc

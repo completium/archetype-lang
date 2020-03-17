@@ -278,6 +278,21 @@ let to_model (ast : A.model) : M.model =
       let fa = f a in
       M.Mabs (fa)
 
+    | A.Pcall (None, A.Cconst A.Cconcat, [AExpr x; AExpr y]) ->
+      let fx = f x in
+      let fy = f y in
+      M.Mconcat (fx, fy)
+
+    | A.Pcall (None, A.Cconst A.Cslice, [AExpr x; AExpr s; AExpr e]) ->
+      let fx = f x in
+      let fs = f s in
+      let fe = f e in
+      M.Mslice (fx, fs, fe)
+
+    | A.Pcall (None, A.Cconst A.Clength, [AExpr x]) ->
+      let fx = f x in
+      M.Mlength (fx)
+
     | A.Pcall (None, A.Cconst A.Cblake2b, [AExpr x]) ->
       let fx = f x in
       M.Mblake2b (fx)

@@ -1634,7 +1634,7 @@ let process_internal_string (model : model) : model =
     | Mplus (l, r), Tbuiltin Bstring ->
       let l = aux ctx l in
       let r = aux ctx r in
-      mk_mterm (Mstrconcat (l, r)) (Tbuiltin Bstring)
+      mk_mterm (Mconcat (l, r)) (Tbuiltin Bstring)
     | _ -> map_mterm (aux ctx) mt
   in
   Model.map_mterm_model aux model

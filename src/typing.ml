@@ -565,6 +565,9 @@ let corefuns =
           (fun x -> (name, cname, [x; x], x))
           [M.vtint; M.vtrational; M.vtdate; M.vtduration; M.vtcurrency]))
       [("min", M.Cmin); ("max", M.Cmax)]))
+  @ (List.map (fun x -> ("concat", M.Cconcat, [x; x], x)) [M.vtbytes; M.vtstring])
+  @ (List.map (fun x -> ("slice", M.Cslice, [x; M.vtint; M.vtint], x)) [M.vtbytes; M.vtstring])
+  @ ["length", M.Clength, [M.vtstring], M.vtint]
 
 (* -------------------------------------------------------------------- *)
 

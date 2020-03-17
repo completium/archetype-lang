@@ -1,0 +1,12 @@
+archetype expr_fun_length_str
+
+variable res : string = ""
+
+action exec () {
+  specification {
+    s0: res = "abcdef";
+  }
+  effect {
+    res := concat("abc", "def")
+  }
+}

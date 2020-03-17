@@ -966,6 +966,24 @@ let pp_model_internal fmt (model : model) b =
         pp_tmp mtt.type_
         f a
 
+    | Mconcat (x, y) ->
+      Format.fprintf fmt "concat_%a (%a, %a)"
+        pp_pretty_type mtt.type_
+        f x
+        f y
+
+    | Mslice (x, s, e) ->
+      Format.fprintf fmt "slice_%a (%a, %a, %a)"
+        pp_pretty_type mtt.type_
+        f x
+        f s
+        f e
+
+    | Mlength x ->
+      Format.fprintf fmt "length_%a (%a)"
+        pp_pretty_type x.type_
+        f x
+
 
     (* crypto functions *)
 
@@ -986,14 +1004,6 @@ let pp_model_internal fmt (model : model) b =
         f k
         f s
         f x
-
-
-    (* internal functions *)
-
-    | Mstrconcat (l, r)->
-      Format.fprintf fmt "str_concat (%a, %a)"
-        f l
-        f r
 
 
     (* constants *)
@@ -1886,7 +1896,7 @@ let pp_model_internal fmt (model : model) b =
   in
 
   let pp_api_builtin (_env : env) fmt = function
-    | MinBuiltin t ->
+    | Bmin t ->
       let cond =
         match t with
         | Tbuiltin Brational | Ttuple [Tbuiltin Bint; Tbuiltin Bint] -> "rat_cmp(OpCmpLt(unit), a, b)"
@@ -1896,7 +1906,7 @@ let pp_model_internal fmt (model : model) b =
         "function min_%a (const a : %a; const b : %a) : %a is if %s then a else b@\n"
         pp_pretty_type t pp_type t pp_type t pp_type t cond
 
-    | MaxBuiltin t ->
+    | Bmax t ->
       let cond =
         match t with
         | Tbuiltin Brational | Ttuple [Tbuiltin Bint; Tbuiltin Bint] -> "rat_cmp(OpCmpGt(unit), a, b)"
@@ -1906,7 +1916,7 @@ let pp_model_internal fmt (model : model) b =
         "function max_%a (const a : %a; const b : %a) : %a is if %s then a else b@\n"
         pp_pretty_type t pp_type t pp_type t pp_type t cond
 
-    | AbsBuiltin t ->
+    | Babs t ->
       begin
         match t with
         | Tbuiltin Bnat -> ()
@@ -1923,6 +1933,39 @@ let pp_model_internal fmt (model : model) b =
               pp_pretty_type t pp_type t pp_type t pp_body ()
           end
       end
+
+    | Bconcat t ->
+      let body =
+        match t with
+        | Tbuiltin Bstring -> "a ^ b"
+        | Tbuiltin Bbytes -> "bytes_concat(a, b)"
+        | _ -> assert false
+      in
+      Format.fprintf fmt "function concat_%a (const a : %a; const b : %a) : %a is %s@\n"
+        pp_pretty_type t
+        pp_type t
+        pp_type t
+        pp_type t
+        body
+
+    | Bslice  t ->
+      let body =
+        match t with
+        | Tbuiltin Bstring -> "string_slice(abs(s), abs(e), a)"
+        | Tbuiltin Bbytes -> "bytes_slice(abs(s), abs(e), a)"
+        | _ -> assert false
+      in
+      Format.fprintf fmt "function slice_%a (const a : %a; const s : int; const e : int) : %a is %s@\n"
+        pp_pretty_type t
+        pp_type t
+        pp_type t
+        body
+
+    | Blength t ->
+      Format.fprintf fmt "function length_%a (const a : %a) : int is int(size(a))@\n"
+        pp_pretty_type t
+        pp_type t
+
   in
 
   let pp_api_internal (_env : env) fmt = function
@@ -1979,8 +2022,6 @@ let pp_model_internal fmt (model : model) b =
          begin@\n  \
          const r : tez = abs(c.0) * t / abs(c.1);@\n  \
          end with r@\n"
-    | StrConcat ->
-      Format.fprintf fmt "function str_concat (const a : string; const b : string) : string is a ^ b@\n"
   in
 
   let pp_api_item_node (env : env) fmt = function

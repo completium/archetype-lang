@@ -95,15 +95,21 @@ let process_api_storage (model : model) : model =
       | Mlistnth (t, _, _) ->
         [APIList (Lnth t)]
       | Mmax _ when is_rat ->
-        [APIInternal (RatCmp) ; APIBuiltin (MaxBuiltin mt_type)]
+        [APIInternal (RatCmp) ; APIBuiltin (Bmax mt_type)]
       | Mmax _ ->
-        [APIBuiltin (MaxBuiltin mt_type)]
+        [APIBuiltin (Bmax mt_type)]
       | Mmin _ when is_rat ->
-        [APIInternal (RatCmp) ; APIBuiltin (MinBuiltin mt_type)]
+        [APIInternal (RatCmp) ; APIBuiltin (Bmin mt_type)]
       | Mmin _ ->
-        [APIBuiltin (MinBuiltin mt_type)]
+        [APIBuiltin (Bmin mt_type)]
       | Mabs _ ->
-        [APIBuiltin (AbsBuiltin mt_type)]
+        [APIBuiltin (Babs mt_type)]
+      | Mconcat _ ->
+        [APIBuiltin (Bconcat mt_type)]
+      | Mslice _ ->
+        [APIBuiltin (Bslice mt_type)]
+      | Mlength x ->
+        [APIBuiltin (Blength x.type_)]
       | Mrateq _ ->
         [APIInternal (RatEq)]
       | Mratcmp _ ->
@@ -114,8 +120,6 @@ let process_api_storage (model : model) : model =
         [APIInternal (RatUminus)]
       | Mrattez _ ->
         [APIInternal (RatTez)]
-      | Mstrconcat _ ->
-        [APIInternal (StrConcat)]
       | _ -> []
     in
     let accu = List.fold_left (fun accu v -> add ctx accu (Model.mk_api_item v  (match ctx.formula with | true -> OnlyFormula | false -> OnlyExec))) accu api_items in
@@ -172,7 +176,6 @@ let process_api_storage (model : model) : model =
                    | APIInternal (RatArith      ) ->  3
                    | APIInternal (RatUminus     ) ->  4
                    | APIInternal (RatTez        ) ->  5
-                   | APIInternal (StrConcat     ) ->  6
                    | APIAsset   (Nth           _) ->  7
                    | APIAsset   (Count         _) ->  8
                    | APIAsset   (Sum           _) ->  9
@@ -194,15 +197,18 @@ let process_api_storage (model : model) : model =
                    | APIList    (Lcontains     _) -> 25
                    | APIList    (Lcount        _) -> 26
                    | APIList    (Lnth          _) -> 27
-                   | APIBuiltin (MinBuiltin    _) -> 28
-                   | APIBuiltin (MaxBuiltin    _) -> 29
-                   | APIBuiltin (AbsBuiltin    _) -> 30
-                   | APIAsset   (Shallow       _) -> 31
-                   | APIAsset   (Unshallow     _) -> 32
-                   | APIAsset   (Listtocoll    _) -> 33
-                   | APIAsset   (Head          _) -> 34
-                   | APIAsset   (Tail          _) -> 35
-                   | APIAsset   (ColToKeys     _) -> 36
+                   | APIBuiltin (Bmin          _) -> 28
+                   | APIBuiltin (Bmax          _) -> 29
+                   | APIBuiltin (Babs          _) -> 30
+                   | APIBuiltin (Bconcat       _) -> 31
+                   | APIBuiltin (Bslice        _) -> 32
+                   | APIBuiltin (Blength       _) -> 33
+                   | APIAsset   (Shallow       _) -> 34
+                   | APIAsset   (Unshallow     _) -> 35
+                   | APIAsset   (Listtocoll    _) -> 36
+                   | APIAsset   (Head          _) -> 37
+                   | APIAsset   (Tail          _) -> 38
+                   | APIAsset   (ColToKeys     _) -> 39
                  in
                  let idx1 = get_kind i1.node_item in
                  let idx2 = get_kind i2.node_item in

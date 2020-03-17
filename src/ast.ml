@@ -139,6 +139,9 @@ type const =
   | Cmax
   | Cmin
   | Csubsetof
+  | Cslice
+  | Cconcat
+  | Clength
   (* list *)
   | Chead
   | Ctail
