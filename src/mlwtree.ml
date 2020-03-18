@@ -172,7 +172,7 @@ type ('e,'t,'i) abstract_term =
   | Tnone
   | Tsome   of 'e
   | Tenum   of 'i
-  | Tmark   of 'i
+  | Tmark   of 'i * 'e
   | Tat of 'i * 'e
   | Tunit
   (* escape node *)
@@ -423,7 +423,7 @@ and map_abstract_term
   | Tnone              -> Tnone
   | Tsome e            -> Tsome (map_e e)
   | Tenum i            -> Tenum (map_i i)
-  | Tmark i            -> Tmark (map_i i)
+  | Tmark (i,e)        -> Tmark (map_i i, map_e e)
   | Tat (i,e)          -> Tat (map_i i, map_e e)
   | Tunit              -> Tunit
   | Ttobereplaced      -> Ttobereplaced
@@ -806,7 +806,7 @@ let compare_abstract_term
   | Tnone, Tnone -> true
   | Tsome e1, Tsome e2 -> cmpe e1 e2
   | Tenum i1, Tenum i2 -> cmpi i1 i2
-  | Tmark i1, Tmark i2 -> cmpi i1 i2
+  | Tmark (i1,e1), Tmark (i2,e2) -> cmpi i1 i2 && cmpe e1 e2
   | Tat (i1,e1), Tat (i2,e2) -> cmpi i1 i2 && cmpe e1 e2
   | Tunit, Tunit -> true
   | Tnottranslated, Tnottranslated -> true

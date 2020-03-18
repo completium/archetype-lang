@@ -8,7 +8,7 @@ theory Types
   type address = int
   type tez     = int
   type date    = int
-  type string  = int
+  type astring = int
   type bytes   = int
 
   exception Break
@@ -48,7 +48,11 @@ module Utils
   | (l,r) -> (abs l, abs r)
   end
 
-  let function str_concat (s1 : string) (s2 : string) : string = s1 + s2
+  let function str_concat (s1 : astring) (s2 : astring) : astring = s1 + s2
+  let function substring  (s : astring) (i1 : int) (i2 : int) = 0
+  let function str_length (s : astring) : int = 0
+
+  let function byt_concat (b1 : bytes) (b2 : bytes) : bytes = b1 + b2
 
 end
 

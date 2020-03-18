@@ -5,11 +5,8 @@ variable v : int = 1
 action exec () {
   specification {
     postcondition p1 {
-      at(l1).a = 0 and
       at(l1).v = 1 and
-      at(l2).a = 2 and
       at(l2).v = 3 and
-      a = 4 and
       v = 5
     }
   }

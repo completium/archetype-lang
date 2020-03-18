@@ -1109,14 +1109,13 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
 
     | Mreturn             v -> map_mterm m ctx v |> Mlwtree.deloc
 
-    | Mlabel lbl -> Tmark (map_lident lbl)
-    (*  begin
+    | Mlabel lbl ->
+      begin
         match M.Utils.get_formula m None (unloc lbl) with
         | Some formula -> Tassert (Some (map_lident lbl),map_mterm m ctx formula)
         | _ -> assert false
-        end *)
-
-    | Mmark (_lbl, _x) -> error_not_translated "Mmark"
+        end
+    | Mmark (lbl, x) -> Tmark (map_lident lbl, map_mterm m ctx x)
 
     (* effect *)
 
@@ -1328,10 +1327,11 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
       begin
         match mt.type_ with
         | Tbuiltin Bstring -> Tapp (loc_term (Tvar "str_concat"),[map_mterm m ctx x; map_mterm m ctx y])
+        | Tbuiltin Bbytes -> Tapp (loc_term (Tvar "byt_concat"),[map_mterm m ctx x; map_mterm m ctx y])
         | _ -> error_not_translated "Mconcat"
       end
-    | Mslice  _ -> error_not_translated "Mslice"
-    | Mlength _ -> error_not_translated "Mlength"
+    | Mslice  (s,i1,i2) -> Tapp (loc_term (Tvar "substring"),[map_mterm m ctx s; map_mterm m ctx i1; map_mterm m ctx i2])
+    | Mlength s -> Tapp (loc_term (Tvar "str_length"),[map_mterm m ctx s])
 
 
     (* crypto functions *)

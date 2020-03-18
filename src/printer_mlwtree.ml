@@ -129,7 +129,7 @@ let pp_type fmt typ =
     let str =
       match t with
       | Tyint         -> "int"
-      | Tystring      -> "string"
+      | Tystring      -> "astring"
       | Tydate        -> "date"
       | Tyaddr        -> "address"
       | Tyrole        -> "role"
@@ -362,7 +362,9 @@ let rec pp_term outer pos fmt = function
       (pp_list ";@\n" pp_recfield) l
   | Tnone -> pp_str fmt "None"
   | Tenum i -> pp_str fmt i
-  | Tmark i -> Format.fprintf fmt "'%a:" pp_str i
+  | Tmark (i,e) -> Format.fprintf fmt "label %a in %a"
+    pp_str i
+    (pp_with_paren (pp_term outer pos)) e
   | Tat (i,e) -> Format.fprintf fmt "(%a at %a)"
     (pp_with_paren (pp_term outer pos)) e
     pp_str i
