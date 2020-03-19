@@ -128,13 +128,13 @@ let pp_model fmt (model : model) =
   let pp_api_asset fmt = function
     | Get an ->
       Format.fprintf fmt
-        "def get_%s (self, key):@\n\
-         \t\tself.data.%s_assets[key]@\n"
+        "def get_%s (self, key):@\n  \
+         self.%s_assets[key]@\n"
         an an
     | Set an ->
       Format.fprintf fmt
-        "def set_%s (self, key, asset):@\n\
-         \t\tself.data.%s_assets[key] = asset@\n"
+        "def set_%s (self, key, asset):@\n  \
+         self.%s_assets[key] = asset@\n"
         an an
 
     | Add an ->
@@ -142,125 +142,134 @@ let pp_model fmt (model : model) =
       Format.fprintf fmt
         "def add_%s (self, asset):@\n  \
          key = asset.%a@\n  \
-         self.data.%s_assets[key] = asset@\n"
+         self.%s_assets[key] = asset@\n"
         an pp_str k an
 
     | Remove an ->
       Format.fprintf fmt
-        "def remove_%s (self, key):@\n\
-         \t\tself.data.%s_keys.remove(key)@\n\
-         \t\tdel self.data.%s_assets[key]@\n"
-        an an an
+        "def remove_%s (self, key):@\n  \
+         del self.%s_assets[key]@\n"
+        an an
 
-    | Clear _ -> Format.fprintf fmt "// TODO api storage: clear"
+    | Clear an ->
+      Format.fprintf fmt
+        "def clear_%s (self):@\n  \
+         self.%s_assets = {}@\n"
+        an
+        an
 
     | UpdateAdd (an, fn) ->
       let k, _t = Utils.get_asset_key model an in
       Format.fprintf fmt
-        "def add_%s_%s (s, asset, b):@\n\
-         \t\tasset = asset.%s.insert(b)@\n\
-         \t\tself.data.%s_assets[asset.%a] = asset@\n"
+        "def add_%s_%s (self, asset, b):@\n  \
+         self.%s_assets[asset.%a] = asset@\n"
         an fn
-        fn
         an pp_str k
 
     | UpdateRemove (an, fn) ->
       let k, _t = Utils.get_asset_key model an in
       Format.fprintf fmt
-        "def remove_%s_%s (s, asset, key):@\n\
-         \t\tasset = asset.%s.pop(key)@\n\
-         \t\tself.data.%s_assets[asset.%a] = asset@\n"
+        "def remove_%s_%s (self, asset, key):@\n  \
+         asset = asset.%s.pop(key)@\n  \
+         self.%s_assets[asset.%a] = asset@\n"
         an fn
         fn
         an pp_str k
 
-    | UpdateClear _ -> Format.fprintf fmt "// TODO api storage: UpdateClear"
+    | UpdateClear (an, fn) ->
+      Format.fprintf fmt
+        "def clear_%s_%s (self):@\n  \
+         self.%s_assets = {}@\n"
+        an fn
+        an
 
     | ToKeys an ->
       Format.fprintf fmt
-        "def to_keys_%s (self):@\n\
-         \t\t#TODO@\n"
+        "def to_keys_%s (self):@\n  \
+         self.%s_assets.keys()@\n"
+        an
         an
 
     | ColToKeys an ->
       Format.fprintf fmt
-        "def col_to_keys_%s (self):@\n\
-         \t\t#TODO@\n"
+        "def col_to_keys_%s (self):@\n  \
+         self.%s_assets.keys()@\n"
+        an
         an
 
     | Select (an, _) ->
       Format.fprintf fmt
-        "def select_%s (self, c, p):@\n\
-         \t\treduce(@\n\
-         \t\t(lambda x, key:@\n\
-         \t\t\titem = get_%s(self, key)@\n\
-         \t\t\tif (p item):@\n\
-         \t\t\t\tx.insert (key)@\n\
-         \t\t\t\tx@\n\
-         \t\t\telse:@\n\
-         \t\t\t\tx@\n\
-         \t\t\t),@\n\
-         \t\tself.data.%s_keys,@\n\
-         \t\t[])@\n"
+        "def select_%s (self, c, p):@\n  \
+         reduce(@\n  \
+         (lambda x, key:@\n  \
+         item = get_%s(self, key)@\n  \
+         if (p item):@\n  \
+         x.insert (key)@\n  \
+         x@\n  \
+         else:@\n  \
+         x@\n  \
+         ),@\n  \
+         self.%s_keys,@\n  \
+         [])@\n"
         an an an
 
     | Sort (an, _l) ->
       Format.fprintf fmt
         "def sort_%s (s : storage) : unit =@\n  \
-         \t\t#TODO@\n"
+         #TODO@\n"
         an
 
     | Contains an ->
       Format.fprintf fmt
-        "def contains_%s (l, key):@\n\
-         \t\tkey in l@\n"
+        "def contains_%s (l, key):@\n  \
+         key in l@\n"
         an
 
     | Nth an ->
       Format.fprintf fmt
-        "def nth_%s (self):@\n\
-         \t\t#TODO@\n"
+        "def nth_%s (self):@\n  \
+         #TODO@\n"
         an
 
     | Count an ->
       Format.fprintf fmt
-        "def count_%s (self):@\n\
-         \t\t#TODO@\n"
+        "def count_%s (self):@\n  \
+         #TODO@\n"
         an
 
     | Sum (an, _, _) -> (* TODO *)
       Format.fprintf fmt
-        "def sum_%s (self, p):@\n\
-         \t\treduce(@\n\
-         \t\t(lambda x, key: p(self.data.%s_assets[key]) + x),@\n\
-         \t\tself.data.%s_keys,@\n\
-         \t\t0)@\n"
+        "def sum_%s (self, p):@\n  \
+         reduce(@\n  \
+         (lambda x, key: p(self.data.%s_assets[key]) + x),@\n  \
+         self.data.%s_keys,@\n  \
+         0)@\n"
         an an an
 
     | Min (an, fn) ->
       Format.fprintf fmt
-        "def min_%s_%s (self):@\n\
-         \t\t#TODO@\n"
+        "def min_%s_%s (self):@\n  \
+         #TODO@\n"
         an fn
 
     | Max (an, fn) ->
       Format.fprintf fmt
-        "def max_%s_%s (self):@\n\
-         \t\t#TODO@\n"
+        "def max_%s_%s (self):@\n  \
+         #TODO@\n"
         an fn
     | Shallow _ -> ()
     | Unshallow _ -> ()
     | Listtocoll _ -> ()
     | Head an ->
       Format.fprintf fmt
-        "def head_%s (self):@\n\
-         \t\t#TODO@\n"
+        "def head_%s (self):@\n  \
+         #TODO@\n"
         an
 
     | Tail an ->
       Format.fprintf fmt
-        "def tail_%s (self):@\n\
-         \t\t#TODO@\n"
+        "def tail_%s (self):@\n  \
+         #TODO@\n"
         an
   in
 
@@ -410,10 +419,10 @@ let pp_model fmt (model : model) =
 
       (* control *)
 
-      | Mif (c, { node = Mfail _}, None) ->
-        Format.fprintf fmt "@[sp.verify(%a)@]"
+      (* | Mif (c, { node = Mfail _}, None) ->
+         Format.fprintf fmt "@[sp.verify(%a)@]"
           f c
-
+      *)
       | Mif (c, t, None) ->
         Format.fprintf fmt "@[sp.if (%a):@\n @[<v 4>%a@]@]"
           f c
@@ -450,7 +459,7 @@ let pp_model fmt (model : model) =
           (pp_list "@\n" f) is
 
       | Mreturn x ->
-        Format.fprintf fmt "return %a"
+        Format.fprintf fmt "%a"
           f x
 
       | Mlabel _ -> ()
@@ -469,11 +478,11 @@ let pp_model fmt (model : model) =
           | NoTransfer -> Format.fprintf fmt "no transfer"
           | InvalidState -> Format.fprintf fmt "invalid state"
         in
-        Format.fprintf fmt "Current.failwith \"%a\""
+        Format.fprintf fmt "sp.failwith (\"%a\")"
           pp_fail_type ft
 
       | Mtransfer (v, d) ->
-        Format.fprintf fmt "transfer %a to %a"
+        Format.fprintf fmt "sp.send(%a, %a)"
           f v
           f d
 
