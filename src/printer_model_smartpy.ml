@@ -32,14 +32,6 @@ type position =
 
 let const_params = "params"
 
-let pp_cast (pos : position) (ltype : type_) (rtype : type_) (pp : 'a -> mterm -> unit) (fmt : Format.formatter) =
-  match pos, ltype, rtype with
-  (* | Lhs, Tbuiltin Brole, Tbuiltin Baddress ->
-     Format.fprintf fmt "(%a : address)" pp
-     | Rhs, Tbuiltin Baddress, Tbuiltin Brole ->
-     Format.fprintf fmt "(%a : address)" pp *)
-  | _ -> pp fmt
-
 let pp_str fmt str =
   Format.fprintf fmt "%s" str
 
@@ -594,49 +586,49 @@ let pp_model fmt (model : model) =
 
       | Mequal (l, r) ->
         let pp fmt (l, r : mterm * mterm) =
-          Format.fprintf fmt "%a == %a"
-            (pp_cast Lhs l.type_ r.type_ f) l
-            (pp_cast Rhs l.type_ r.type_ f) r
+          Format.fprintf fmt "(%a) == (%a)"
+            f l
+            f r
         in
         pp fmt (l, r)
 
       | Mnequal (l, r) ->
         let pp fmt (l, r : mterm * mterm) =
-          Format.fprintf fmt "%a <> %a"
-            (pp_cast Lhs l.type_ r.type_ f) l
-            (pp_cast Rhs l.type_ r.type_ f) r
+          Format.fprintf fmt "(%a) != (%a)"
+            f l
+            f r
         in
         pp fmt (l, r)
 
       | Mgt (l, r) ->
         let pp fmt (l, r : mterm * mterm) =
-          Format.fprintf fmt "%a > %a"
-            (pp_cast Lhs l.type_ r.type_ f) l
-            (pp_cast Rhs l.type_ r.type_ f) r
+          Format.fprintf fmt "(%a) > (%a)"
+            f l
+            f r
         in
         pp fmt (l, r)
 
       | Mge (l, r) ->
         let pp fmt (l, r : mterm * mterm) =
-          Format.fprintf fmt "%a >= %a"
-            (pp_cast Lhs l.type_ r.type_ f) l
-            (pp_cast Rhs l.type_ r.type_ f) r
+          Format.fprintf fmt "(%a) >= (%a)"
+            f l
+            f r
         in
         pp fmt (l, r)
 
       | Mlt (l, r) ->
         let pp fmt (l, r : mterm * mterm) =
-          Format.fprintf fmt "%a < %a"
-            (pp_cast Lhs l.type_ r.type_ f) l
-            (pp_cast Rhs l.type_ r.type_ f) r
+          Format.fprintf fmt "(%a) < (%a)"
+            f l
+            f r
         in
         pp fmt (l, r)
 
       | Mle (l, r) ->
         let pp fmt (l, r : mterm * mterm) =
-          Format.fprintf fmt "%a <= %a"
-            (pp_cast Lhs l.type_ r.type_ f) l
-            (pp_cast Rhs l.type_ r.type_ f) r
+          Format.fprintf fmt "(%a) <= (%a)"
+            f l
+            f r
         in
         pp fmt (l, r)
 
@@ -647,7 +639,7 @@ let pp_model fmt (model : model) =
 
       | Mand (l, r) ->
         let pp fmt (l, r) =
-          Format.fprintf fmt "%a & %a"
+          Format.fprintf fmt "(%a) & (%a)"
             f l
             f r
         in
@@ -655,7 +647,7 @@ let pp_model fmt (model : model) =
 
       | Mor (l, r) ->
         let pp fmt (l, r) =
-          Format.fprintf fmt "%a or %a"
+          Format.fprintf fmt "(%a) | (%a)"
             f l
             f r
         in
@@ -670,54 +662,54 @@ let pp_model fmt (model : model) =
 
       | Mplus (l, r) ->
         let pp fmt (l, r : mterm * mterm) =
-          Format.fprintf fmt "%a + %a"
-            (pp_cast Lhs l.type_ r.type_ f) l
-            (pp_cast Rhs l.type_ r.type_ f) r
+          Format.fprintf fmt "(%a) + (%a)"
+            f l
+            f r
         in
         pp fmt (l, r)
 
       | Mminus (l, r) ->
         let pp fmt (l, r : mterm * mterm) =
           Format.fprintf fmt "%a - %a"
-            (pp_cast Lhs l.type_ r.type_ f) l
-            (pp_cast Rhs l.type_ r.type_ f) r
+            f l
+            f r
         in
         pp fmt (l, r)
 
       | Mmult (l, r) ->
         let pp fmt (l, r : mterm * mterm) =
           Format.fprintf fmt "%a * %a"
-            (pp_cast Lhs l.type_ r.type_ f) l
-            (pp_cast Rhs l.type_ r.type_ f) r
+            f l
+            f r
         in
         pp fmt (l, r)
 
       | Mdiv (l, r) ->
         let pp fmt (l, r : mterm * mterm) =
           Format.fprintf fmt "%a / %a"
-            (pp_cast Lhs l.type_ r.type_ f) l
-            (pp_cast Rhs l.type_ r.type_ f) r
+            f l
+            f r
         in
         pp fmt (l, r)
 
       | Mmodulo (l, r) ->
         let pp fmt (l, r : mterm * mterm) =
           Format.fprintf fmt "%a %% %a"
-            (pp_cast Lhs l.type_ r.type_ f) l
-            (pp_cast Rhs l.type_ r.type_ f) r
+            f l
+            f r
         in
         pp fmt (l, r)
 
       | Muplus e ->
         let pp fmt e =
-          Format.fprintf fmt "+%a"
+          Format.fprintf fmt "+(%a)"
             f e
         in
         pp fmt e
 
       | Muminus e ->
         let pp fmt e =
-          Format.fprintf fmt "-%a"
+          Format.fprintf fmt "-(%a)"
             f e
         in
         pp fmt e
