@@ -416,19 +416,19 @@ let pp_model fmt (model : model) =
           f c
       *)
       | Mif (c, t, None) ->
-        Format.fprintf fmt "@[sp.if (%a):@\n @[<v 4>%a@]@]"
+        Format.fprintf fmt "sp.if (%a):@\n  @[%a@]"
           f c
           f t
 
       | Mif (c, t, Some e) ->
-        Format.fprintf fmt "@[sp.if (%a):@\n\t@[<v 4>%a@]@\nsp.else:@\n\t@[<v 4>%a@]@]"
+        Format.fprintf fmt "sp.if (%a):@\n  @[%a@]@\nsp.else:@\n  @[%a@]"
           f c
           f t
           f e
 
       | Mmatchwith (e, l) ->
         let pp fmt (e, l) =
-          Format.fprintf fmt "match %a with@\n@[<v 2>%a@]"
+          Format.fprintf fmt "match %a with@\n  @[%a@]"
             f e
             (pp_list "@\n" (fun fmt (p, x) ->
                  Format.fprintf fmt "| %a -> %a"
@@ -439,20 +439,21 @@ let pp_model fmt (model : model) =
         pp fmt (e, l)
 
       | Mfor (i, c, b, _) ->
-        Format.fprintf fmt "sp.for %a in %a:@\n\t@[<v 4>%a@]@\n"
+        Format.fprintf fmt "sp.for %a in %a:@\n  @[%a@]@\n"
           pp_id i
           f c
           f b
 
-      | Miter (_i, _a, _b, _c, _) -> Format.fprintf fmt "TODO: iter@\n"
+      | Miter (i, a, b, c, _) ->
+        Format.fprintf fmt "sp.for %a in range(%a, %a):@\n  @[%a@]@\n"
+          pp_id i
+          f a
+          f b
+          f c
 
-      | Mseq is ->
-        Format.fprintf fmt "@[%a@]"
-          (pp_list "@\n" f) is
+      | Mseq is -> (pp_list "@\n" f) fmt is
 
-      | Mreturn x ->
-        Format.fprintf fmt "%a"
-          f x
+      | Mreturn x -> f fmt x
 
       | Mlabel _ -> ()
       | Mmark  _ -> ()
@@ -480,11 +481,11 @@ let pp_model fmt (model : model) =
 
       | Mentrycall (v, d, _, fid, args) ->
         let pp fmt (v, d, fid, args) =
-          Format.fprintf fmt "transfer %a to %a call %a (%a)"
-            f v
-            f d
+          Format.fprintf fmt "sp.transfer(%a(%a), %a, %a)"
             pp_id fid
             (pp_list ", " (fun fmt (_, x) -> f fmt x)) args
+            f v
+            f d
         in
         pp fmt (v, d, fid, args)
 
@@ -492,12 +493,9 @@ let pp_model fmt (model : model) =
 
       | Mint v -> pp_big_int fmt v
       | Muint v -> pp_big_int fmt v
-      | Mbool b -> pp_str fmt (if b then "true" else "false")
+      | Mbool b -> Format.fprintf fmt "sp.bool(%s)" (if b then "True" else "False")
       | Menum v -> pp_str fmt v
-      | Mrational (n, d) ->
-        Format.fprintf fmt "(%a div %a)"
-          pp_big_int n
-          pp_big_int d
+      | Mrational _ -> assert false
       | Mstring v ->
         Format.fprintf fmt "\"%a\""
           pp_str v
@@ -511,20 +509,20 @@ let pp_model fmt (model : model) =
       | Mdate v -> Core.pp_date fmt v
       | Mduration v -> Core.pp_duration_in_seconds fmt v
       | Mtimestamp v -> pp_big_int fmt v
-      | Mbytes v -> Format.fprintf fmt "0x%s" v
+      | Mbytes v -> Format.fprintf fmt "sp.bytes('0x%s')" v
 
 
       (* control expression *)
 
       | Mexprif (c, t, e) ->
-        Format.fprintf fmt "@[sp.if (%a):@\n\t@[<v 4>%a@]@\nsp.else:@\n\t@[<v 4>%a@]@]"
+        Format.fprintf fmt "sp.if (%a):@\n  @[%a@]@\nsp.else:@\n  @[%a@]"
           f c
           f t
           f e
 
       | Mexprmatchwith (e, l) ->
         let pp fmt (e, l) =
-          Format.fprintf fmt "match %a with@\n@[<v 2>%a@]"
+          Format.fprintf fmt "match %a with@\n  @[%a@]"
             f e
             (pp_list "@\n" (fun fmt (p, x) ->
                  Format.fprintf fmt "| %a -> %a"
@@ -538,10 +536,10 @@ let pp_model fmt (model : model) =
       (* composite type constructors *)
 
       | Mnone ->
-        pp_str fmt "None"
+        pp_str fmt "sp.none"
 
       | Msome v ->
-        Format.fprintf fmt "Some (%a)"
+        Format.fprintf fmt "sp.some(%a)"
           f v
 
       | Marray l ->
@@ -561,7 +559,7 @@ let pp_model fmt (model : model) =
         let a = Utils.get_asset model (unloc asset_name) in
         let ll = List.map (fun (x : asset_item) -> x.name) a.values in
         let lll = List.map2 (fun x y -> (x, y)) ll l in
-        Format.fprintf fmt "sp.Record ( %a )"
+        Format.fprintf fmt "sp.record ( %a )"
           (pp_list ", " (fun fmt (a, b)->
                Format.fprintf fmt "%a = %a"
                  pp_id a
