@@ -121,12 +121,13 @@ let pp_model fmt (model : model) =
     | Get an ->
       Format.fprintf fmt
         "def get_%s (self, key):@\n  \
-         self.%s_assets[key]@\n"
+         self.data.%s_assets[key]@\n"
         an an
+
     | Set an ->
       Format.fprintf fmt
         "def set_%s (self, key, asset):@\n  \
-         self.%s_assets[key] = asset@\n"
+         self.data.%s_assets[key] = asset@\n"
         an an
 
     | Add an ->
@@ -134,19 +135,19 @@ let pp_model fmt (model : model) =
       Format.fprintf fmt
         "def add_%s (self, asset):@\n  \
          key = asset.%a@\n  \
-         self.%s_assets[key] = asset@\n"
+         self.data.%s_assets[key] = asset@\n"
         an pp_str k an
 
     | Remove an ->
       Format.fprintf fmt
         "def remove_%s (self, key):@\n  \
-         del self.%s_assets[key]@\n"
+         del self.data.%s_assets[key]@\n"
         an an
 
     | Clear an ->
       Format.fprintf fmt
         "def clear_%s (self):@\n  \
-         self.%s_assets = {}@\n"
+         self.data.%s_assets = {}@\n"
         an
         an
 
@@ -154,7 +155,7 @@ let pp_model fmt (model : model) =
       let k, _t = Utils.get_asset_key model an in
       Format.fprintf fmt
         "def add_%s_%s (self, asset, b):@\n  \
-         self.%s_assets[asset.%a] = asset@\n"
+         self.data.%s_assets[asset.%a] = asset@\n"
         an fn
         an pp_str k
 
@@ -163,7 +164,7 @@ let pp_model fmt (model : model) =
       Format.fprintf fmt
         "def remove_%s_%s (self, asset, key):@\n  \
          asset = asset.%s.pop(key)@\n  \
-         self.%s_assets[asset.%a] = asset@\n"
+         self.data.%s_assets[asset.%a] = asset@\n"
         an fn
         fn
         an pp_str k
@@ -171,21 +172,21 @@ let pp_model fmt (model : model) =
     | UpdateClear (an, fn) ->
       Format.fprintf fmt
         "def clear_%s_%s (self):@\n  \
-         self.%s_assets = {}@\n"
+         self.data.%s_assets = {}@\n"
         an fn
         an
 
     | ToKeys an ->
       Format.fprintf fmt
         "def to_keys_%s (self):@\n  \
-         self.%s_assets.keys()@\n"
+         self.data.%s_assets.keys()@\n"
         an
         an
 
     | ColToKeys an ->
       Format.fprintf fmt
         "def col_to_keys_%s (self):@\n  \
-         self.%s_assets.keys()@\n"
+         self.data.%s_assets.keys()@\n"
         an
         an
 
@@ -207,13 +208,13 @@ let pp_model fmt (model : model) =
 
     | Sort (an, _l) ->
       Format.fprintf fmt
-        "def sort_%s (s : storage) : unit =@\n  \
+        "def sort_%s (self, s : storage) : unit =@\n  \
          #TODO@\n"
         an
 
     | Contains an ->
       Format.fprintf fmt
-        "def contains_%s (l, key):@\n  \
+        "def contains_%s (self, l, key):@\n  \
          key in l@\n"
         an
 
@@ -319,12 +320,12 @@ let pp_model fmt (model : model) =
   let pp_operator fmt op =
     let to_str = function
       | ValueAssign -> "="
-      | PlusAssign -> "+="
+      | PlusAssign  -> "+="
       | MinusAssign -> "-="
-      | MultAssign -> "*="
-      | DivAssign -> "/="
-      | AndAssign -> "&="
-      | OrAssign -> "|="
+      | MultAssign  -> "*="
+      | DivAssign   -> "/="
+      | AndAssign   -> "&="
+      | OrAssign    -> "|="
     in
     pp_str fmt (to_str op)
   in
@@ -370,7 +371,7 @@ let pp_model fmt (model : model) =
 
       | Mapp (e, args) ->
         let pp fmt (e, args) =
-          Format.fprintf fmt "%a (self, %a)"
+          Format.fprintf fmt "self.%a (%a)"
             pp_id e
             (pp_list ", " f) args
         in
@@ -668,7 +669,7 @@ let pp_model fmt (model : model) =
 
       | Mminus (l, r) ->
         let pp fmt (l, r : mterm * mterm) =
-          Format.fprintf fmt "%a - %a"
+          Format.fprintf fmt "(%a) - (%a)"
             f l
             f r
         in
@@ -676,7 +677,7 @@ let pp_model fmt (model : model) =
 
       | Mmult (l, r) ->
         let pp fmt (l, r : mterm * mterm) =
-          Format.fprintf fmt "%a * %a"
+          Format.fprintf fmt "(%a) * (%a)"
             f l
             f r
         in
@@ -684,7 +685,7 @@ let pp_model fmt (model : model) =
 
       | Mdiv (l, r) ->
         let pp fmt (l, r : mterm * mterm) =
-          Format.fprintf fmt "%a / %a"
+          Format.fprintf fmt "(%a) / (%a)"
             f l
             f r
         in
@@ -692,7 +693,7 @@ let pp_model fmt (model : model) =
 
       | Mmodulo (l, r) ->
         let pp fmt (l, r : mterm * mterm) =
-          Format.fprintf fmt "%a %% %a"
+          Format.fprintf fmt "(%a) %% (%a)"
             f l
             f r
         in
@@ -725,7 +726,7 @@ let pp_model fmt (model : model) =
 
       | Maddfield (an, fn, c, i) ->
         let pp fmt (an, fn, c, i) =
-          Format.fprintf fmt "add_%a_%a (self, %a, %a)"
+          Format.fprintf fmt "self.add_%a_%a (%a, %a)"
             pp_str an
             pp_str fn
             f c
@@ -742,7 +743,7 @@ let pp_model fmt (model : model) =
            | _ -> false, ""
           ) in
         let pp fmt (an, i) =
-          Format.fprintf fmt "remove_%a (self, %a%a)"
+          Format.fprintf fmt "self.remove_%a (%a%a)"
             pp_str an
             f i
             (pp_do_if cond pp_str) str
@@ -758,7 +759,7 @@ let pp_model fmt (model : model) =
            | _ -> false, ""
           ) in
         let pp fmt (an, fn, c, i) =
-          Format.fprintf fmt "remove_%a_%a (self, %a, %a%a)"
+          Format.fprintf fmt "self.remove_%a_%a (self, %a, %a%a)"
             pp_str an
             pp_str fn
             f c
@@ -769,14 +770,14 @@ let pp_model fmt (model : model) =
 
       | Mclearasset (an) ->
         let pp fmt (an) =
-          Format.fprintf fmt "clear_%a (self)"
+          Format.fprintf fmt "self.clear_%a ()"
             pp_str an
         in
         pp fmt (an)
 
       | Mclearfield (an, fn, a) ->
         let pp fmt (an, fn, a) =
-          Format.fprintf fmt "clear_%a_%a (self, %a)"
+          Format.fprintf fmt "self.clear_%a_%a (%a)"
             pp_str an
             pp_str fn
             f a
@@ -785,7 +786,7 @@ let pp_model fmt (model : model) =
 
       | Mset (c, l, k, v) ->
         let pp fmt (c, _l, k, v) =
-          Format.fprintf fmt "set_%a (self, %a, %a)"
+          Format.fprintf fmt "self.set_%a (%a, %a)"
             pp_str c
             f k
             f v
@@ -801,7 +802,7 @@ let pp_model fmt (model : model) =
 
       | Mget (c, k) ->
         let pp fmt (c, k) =
-          Format.fprintf fmt "get_%a (self, %a)"
+          Format.fprintf fmt "self.get_%a (%a)"
             pp_str c
             f k
         in
@@ -809,7 +810,7 @@ let pp_model fmt (model : model) =
 
       | Mselect (an, c, p) ->
         let pp fmt (an, c, p) =
-          Format.fprintf fmt "select_%a (self, %a, fun the -> %a)"
+          Format.fprintf fmt "self.select_%a (%a, fun the -> %a)"
             pp_str an
             f c
             f p
@@ -818,7 +819,7 @@ let pp_model fmt (model : model) =
 
       | Msort (an, c, l) ->
         let pp fmt (an, c, l) =
-          Format.fprintf fmt "sort_%a (%a, %a)"
+          Format.fprintf fmt "self.sort_%a (%a, %a)"
             pp_str an
             f c
             (pp_list ", " (fun fmt (a, b) -> Format.fprintf fmt "%a %a" pp_ident a pp_sort_kind b)) l
@@ -827,7 +828,7 @@ let pp_model fmt (model : model) =
 
       | Mcontains (an, c, i) ->
         let pp fmt (an, c, i) =
-          Format.fprintf fmt "contains_%a (%a, %a)"
+          Format.fprintf fmt "self.contains_%a (%a, %a)"
             pp_str an
             f c
             f i
@@ -836,7 +837,7 @@ let pp_model fmt (model : model) =
 
       | Mnth (an, c, i) ->
         let pp fmt (an, c, i) =
-          Format.fprintf fmt "nth_%a (%a, %a)"
+          Format.fprintf fmt "self.nth_%a (%a, %a)"
             pp_str an
             f c
             f i
@@ -845,7 +846,7 @@ let pp_model fmt (model : model) =
 
       | Mcount (an, c) ->
         let pp fmt (an, c) =
-          Format.fprintf fmt "count_%a (%a)"
+          Format.fprintf fmt "self.count_%a (%a)"
             pp_str an
             f c
         in
@@ -853,7 +854,7 @@ let pp_model fmt (model : model) =
 
       | Msum (an, c, p) ->
         let pp fmt (an, c, p) =
-          Format.fprintf fmt "sum_%a (self, %a, fun the -> %a)"
+          Format.fprintf fmt "self.sum_%a (%a, fun the -> %a)"
             pp_str an
             f c
             f p
@@ -861,13 +862,13 @@ let pp_model fmt (model : model) =
         pp fmt (an, c, p)
 
       | Mhead (an, c, i) ->
-        Format.fprintf fmt "head_%a (%a, %a)"
+        Format.fprintf fmt "self.head_%a (%a, %a)"
           pp_str an
           f c
           f i
 
       | Mtail (an, c, i) ->
-        Format.fprintf fmt "tail_%a (%a, %a)"
+        Format.fprintf fmt "self.tail_%a (%a, %a)"
           pp_str an
           f c
           f i
@@ -954,19 +955,19 @@ let pp_model fmt (model : model) =
       (* crypto functions *)
 
       | Mblake2b x ->
-        Format.fprintf fmt "blake2b (%a)"
+        Format.fprintf fmt "sp.blake2b (%a)"
           f x
 
       | Msha256 x ->
-        Format.fprintf fmt "sha256 (%a)"
+        Format.fprintf fmt "sp.sha256 (%a)"
           f x
 
       | Msha512 x ->
-        Format.fprintf fmt "sha512 (%a)"
+        Format.fprintf fmt "sp.sha512 (%a)"
           f x
 
       | Mchecksignature (k, s, x) ->
-        Format.fprintf fmt "check_signature (%a, %a, %a)"
+        Format.fprintf fmt "sp.check_signature (%a, %a, %a)"
           f k
           f s
           f x
@@ -1123,7 +1124,7 @@ let pp_model fmt (model : model) =
           an
           f x
       | Mcoltokeys an ->
-        Format.fprintf fmt "col_to_keys_%s ()"
+        Format.fprintf fmt "self.col_to_keys_%s ()"
           an
 
 
@@ -1168,33 +1169,6 @@ let pp_model fmt (model : model) =
     f fmt mt
   in
 
-  let pp_function fmt f =
-    let pp_prelude_entrypoint fmt _ =
-      Format.fprintf fmt "@@sp.entryPoint@\n\t"
-    in
-    let pp_args fmt f  =
-      match f.node with
-      | Entry _ -> Format.fprintf fmt "(self, params)"
-      | Function (fs, _) ->
-        Format.fprintf fmt "(self, %a)"
-          (pp_list ", " (fun fmt (x : argument) -> Format.fprintf fmt "%a" pp_id (proj3_1 x))) fs.args
-    in
-    let fs = match f.node with
-      | Entry f -> f
-      | Function (f, _a) -> f
-    in
-    Format.fprintf fmt "%adef %a%a:@\n\t\t%a"
-      (pp_do_if (match f.node with | Entry _ -> true | _ -> false) pp_prelude_entrypoint) ()
-      pp_id fs.name
-      pp_args f
-      pp_mterm fs.body
-  in
-
-  let _pp_functions fmt fs =
-    Format.fprintf fmt "%a"
-      (pp_list "@\n@\n\t" pp_function) fs
-  in
-
   let _pp_init_function fmt (s : storage) =
     let pp_storage_item fmt (si : storage_item) =
       match si.model_type with
@@ -1209,7 +1183,7 @@ let pp_model fmt (model : model) =
           pp_mterm si.default
     in
 
-    Format.fprintf fmt "def __init__(self):@\n\tself.init(%a)@\n"
+    Format.fprintf fmt "def __init__(self):@\n  self.init(%a)@\n"
       ( Format.pp_print_list
           ~pp_sep:(fun fmt () -> Format.fprintf fmt ",@\n\t\t")
           pp_storage_item) s
@@ -1235,10 +1209,24 @@ let pp_model fmt (model : model) =
       pp_mterm fs.body
   in
 
+  let pp_function fmt (fs, _r : function_struct * type_) =
+    Format.fprintf fmt
+      "def %a(self, %a):@\n  \
+       @[%a@]@\n"
+      pp_id fs.name
+      (pp_list ", " (fun fmt (x : argument) -> Format.fprintf fmt "%a" pp_id (proj3_1 x))) fs.args
+      pp_mterm fs.body
+  in
+
+  let _pp_functions fmt fs =
+    Format.fprintf fmt "%a"
+      (pp_list "@\n@\n\t" pp_function) fs
+  in
+
   let pp_contract_fun fmt (fn : function_node) =
     match fn with
     | Entry fs -> pp_contract_entry fmt fs
-    | Function _ -> ()
+    | Function (fs, r) -> pp_function fmt (fs, r)
   in
 
   let pp_contract_funs fmt _ =
