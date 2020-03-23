@@ -2,11 +2,13 @@ open Location
 open Tools
 open Model
 open Printer_tools
+open Printer_model_tools
 
 exception Anomaly of string
 
 type error_desc =
   | UnsupportedTerm of string
+  | UnsupportedValue of string
 [@@deriving show {with_path = false}]
 
 let emit_error (desc : error_desc) =
@@ -49,9 +51,9 @@ let pp_model fmt (model : model) =
   in
 
   let pp_currency fmt = function
-    | Tz   -> Format.fprintf fmt "tz"
-    | Mtz  -> Format.fprintf fmt "mtz"
-    | Utz  -> Format.fprintf fmt "utz"
+    | Tz   -> Format.fprintf fmt "tez"
+    | Mtz  -> emit_error (UnsupportedValue ("Mtz"))
+    | Utz  -> Format.fprintf fmt "mutez"
   in
 
   let pp_btyp fmt = function
@@ -330,22 +332,7 @@ let pp_model fmt (model : model) =
     pp_str fmt (to_str op)
   in
 
-  (* let rec pp_qualid fmt (q : qualid) =
-     match q.node with
-     | Qdot (q, i) ->
-      Format.fprintf fmt "%a.%a"
-        pp_qualid q
-        pp_id i
-     | Qident i -> pp_id fmt i
-     in *)
-
-  let pp_pattern fmt (p : pattern) =
-    match p.node with
-    | Pconst i -> pp_id fmt i
-    | Pwild -> pp_str fmt "_"
-  in
-
-  let pp_mterm fmt (mt : mterm) =
+  let pp_mterm (env : Printer_model_tools.env) fmt (mt : mterm) =
     let rec f fmt (mtt : mterm) =
       match mtt.node with
       (* lambda *)
@@ -400,7 +387,7 @@ let pp_model fmt (model : model) =
           f r
 
       | Massignstate x ->
-        Format.fprintf fmt "state = %a"
+        Format.fprintf fmt "self.data.state = %a"
           f x
 
       | Massignassetstate (an, k, v) ->
@@ -412,10 +399,6 @@ let pp_model fmt (model : model) =
 
       (* control *)
 
-      (* | Mif (c, { node = Mfail _}, None) ->
-         Format.fprintf fmt "@[sp.verify(%a)@]"
-          f c
-      *)
       | Mif (c, t, None) ->
         Format.fprintf fmt "sp.if (%a):@\n  @[%a@]"
           f c
@@ -427,17 +410,7 @@ let pp_model fmt (model : model) =
           f t
           f e
 
-      | Mmatchwith (e, l) ->
-        let pp fmt (e, l) =
-          Format.fprintf fmt "match %a with@\n  @[%a@]"
-            f e
-            (pp_list "@\n" (fun fmt (p, x) ->
-                 Format.fprintf fmt "| %a -> %a"
-                   pp_pattern p
-                   f x
-               )) l
-        in
-        pp fmt (e, l)
+      | Mmatchwith _ -> emit_error (UnsupportedTerm ("Mmatchwith"))
 
       | Mfor (i, c, b, _) ->
         Format.fprintf fmt "sp.for %a in %a:@\n  @[%a@]@\n"
@@ -456,8 +429,8 @@ let pp_model fmt (model : model) =
 
       | Mreturn x -> f fmt x
 
-      | Mlabel _ -> ()
-      | Mmark  _ -> ()
+      | Mlabel _ -> emit_error (UnsupportedTerm ("Mlabel"))
+      | Mmark  _ -> emit_error (UnsupportedTerm ("Mmark"))
 
 
       (* effect *)
@@ -477,8 +450,8 @@ let pp_model fmt (model : model) =
 
       | Mtransfer (v, d) ->
         Format.fprintf fmt "sp.send(%a, %a)"
-          f v
           f d
+          f v
 
       | Mentrycall (v, d, _, fid, args) ->
         let pp fmt (v, d, fid, args) =
@@ -521,17 +494,7 @@ let pp_model fmt (model : model) =
           f t
           f e
 
-      | Mexprmatchwith (e, l) ->
-        let pp fmt (e, l) =
-          Format.fprintf fmt "match %a with@\n  @[%a@]"
-            f e
-            (pp_list "@\n" (fun fmt (p, x) ->
-                 Format.fprintf fmt "| %a -> %a"
-                   pp_pattern p
-                   f x
-               )) l
-        in
-        pp fmt (e, l)
+      | Mexprmatchwith _ -> emit_error (UnsupportedTerm ("Mexprmatchwith"))
 
 
       (* composite type constructors *)
@@ -544,7 +507,7 @@ let pp_model fmt (model : model) =
           f v
 
       | Marray l ->
-        Format.fprintf fmt "{%a}"
+        Format.fprintf fmt "[%a]"
           (pp_list "; " f) l
 
       | Mtuple l ->
@@ -793,9 +756,9 @@ let pp_model fmt (model : model) =
         in
         pp fmt (c, l, k, v)
 
-      | Mupdate _ -> emit_error (UnsupportedTerm ("update"))
-      | Mremoveif _ -> emit_error (UnsupportedTerm ("removeif"))
-      | Maddupdate _ -> emit_error (UnsupportedTerm ("add_update"))
+      | Mupdate    _ -> emit_error (UnsupportedTerm ("Mupdate"))
+      | Mremoveif  _ -> emit_error (UnsupportedTerm ("Mremoveif"))
+      | Maddupdate _ -> emit_error (UnsupportedTerm ("Maddupdate"))
 
 
       (* asset api expression *)
@@ -975,7 +938,7 @@ let pp_model fmt (model : model) =
 
       (* constants *)
 
-      | Mvarstate      -> pp_str fmt "state_"
+      | Mvarstate      -> pp_str fmt "self.data.state"
       | Mnow           -> pp_str fmt "sp.currentTime"
       | Mtransferred   -> pp_str fmt "sp.amount"
       | Mcaller        -> pp_str fmt "sp.sender"
@@ -986,10 +949,16 @@ let pp_model fmt (model : model) =
       (* variables *)
 
       | Mvarassetstate (an, k) -> Format.fprintf fmt "state_%a(%a)" pp_str an f k
-      | Mvarstorevar v -> Format.fprintf fmt "self.data.%a" pp_id v
+      | Mvarstorevar v ->
+        Format.fprintf fmt "self%a.%a"
+          (fun fmt b -> match b with false -> pp_str fmt ".data" | _ -> ()) (is_const env v)
+          pp_id v
       | Mvarstorecol v -> Format.fprintf fmt "self.data.%a" pp_id v
       | Mvarenumval v  -> pp_id fmt v
-      | Mvarlocal v    -> pp_id fmt v
+      | Mvarlocal v    ->
+        Format.fprintf fmt "%a%a"
+          (fun fmt b -> match b with true -> pp_str fmt "self." | _ -> ()) (is_const env v)
+          pp_id v
       | Mvarparam v    -> Format.fprintf fmt "%s.%a" const_params pp_id v
       | Mvarfield v    -> pp_id fmt v
       | Mvarthe        -> pp_str fmt "the"
@@ -997,7 +966,7 @@ let pp_model fmt (model : model) =
 
       (* rational *)
 
-      | Mdivrat    _ -> emit_error (UnsupportedTerm ("div"))
+      | Mdivrat    _ -> emit_error (UnsupportedTerm ("Mdivrat"))
       | Mrateq (l, r) ->
         let pp fmt (l, r) =
           Format.fprintf fmt "rat_eq (%a, %a)"
@@ -1091,7 +1060,7 @@ let pp_model fmt (model : model) =
 
       (* imperative *)
 
-      | Mbreak -> emit_error (UnsupportedTerm ("break"))
+      | Mbreak -> emit_error (UnsupportedTerm ("Mbreak"))
 
 
       (* shallowing *)
@@ -1130,120 +1099,127 @@ let pp_model fmt (model : model) =
 
       (* quantifiers *)
 
-      | Mforall _ -> emit_error (UnsupportedTerm ("forall"))
-      | Mexists _ -> emit_error (UnsupportedTerm ("exists"))
+      | Mforall _ -> emit_error (UnsupportedTerm ("Mforall"))
+      | Mexists _ -> emit_error (UnsupportedTerm ("Mexists"))
 
 
       (* formula operators *)
 
-      | Mimply _ -> emit_error (UnsupportedTerm ("imply"))
-      | Mequiv _ -> emit_error (UnsupportedTerm ("equiv"))
+      | Mimply _ -> emit_error (UnsupportedTerm ("Mimply"))
+      | Mequiv _ -> emit_error (UnsupportedTerm ("Mequiv"))
 
 
       (* formula asset collection *)
 
-      | Msetbefore    _ -> emit_error (UnsupportedTerm ("setbefore"))
-      | Msetat        _ -> emit_error (UnsupportedTerm ("setat"))
-      | Msetunmoved   _ -> emit_error (UnsupportedTerm ("setunmoved"))
-      | Msetadded     _ -> emit_error (UnsupportedTerm ("setadded"))
-      | Msetremoved   _ -> emit_error (UnsupportedTerm ("setremoved"))
-      | Msetiterated  _ -> emit_error (UnsupportedTerm ("setiterated"))
-      | Msettoiterate _ -> emit_error (UnsupportedTerm ("settoiterate"))
+      | Msetbefore    _ -> emit_error (UnsupportedTerm ("Msetbefore"))
+      | Msetat        _ -> emit_error (UnsupportedTerm ("Msetat"))
+      | Msetunmoved   _ -> emit_error (UnsupportedTerm ("Msetunmoved"))
+      | Msetadded     _ -> emit_error (UnsupportedTerm ("Msetadded"))
+      | Msetremoved   _ -> emit_error (UnsupportedTerm ("Msetremoved"))
+      | Msetiterated  _ -> emit_error (UnsupportedTerm ("Msetiterated"))
+      | Msettoiterate _ -> emit_error (UnsupportedTerm ("Msettoiterate"))
 
 
       (* formula asset collection methods *)
 
-      | Mapifget       _ -> emit_error (UnsupportedTerm ("apifget"))
-      | Mapifsubsetof  _ -> emit_error (UnsupportedTerm ("apifsubsetof"))
-      | Mapifisempty   _ -> emit_error (UnsupportedTerm ("apifisempty"))
-      | Mapifselect    _ -> emit_error (UnsupportedTerm ("apifselect"))
-      | Mapifsort      _ -> emit_error (UnsupportedTerm ("apifsort"))
-      | Mapifcontains  _ -> emit_error (UnsupportedTerm ("apifcontains"))
-      | Mapifnth       _ -> emit_error (UnsupportedTerm ("apifnth"))
-      | Mapifcount     _ -> emit_error (UnsupportedTerm ("apifcount"))
-      | Mapifsum       _ -> emit_error (UnsupportedTerm ("apifsum"))
-      | Mapifhead      _ -> emit_error (UnsupportedTerm ("apifhead"))
-      | Mapiftail      _ -> emit_error (UnsupportedTerm ("apiftail"))
+      | Mapifget       _ -> emit_error (UnsupportedTerm ("Mapifget"))
+      | Mapifsubsetof  _ -> emit_error (UnsupportedTerm ("Mapifsubsetof"))
+      | Mapifisempty   _ -> emit_error (UnsupportedTerm ("Mapifisempty"))
+      | Mapifselect    _ -> emit_error (UnsupportedTerm ("Mapifselect"))
+      | Mapifsort      _ -> emit_error (UnsupportedTerm ("Mapifsort"))
+      | Mapifcontains  _ -> emit_error (UnsupportedTerm ("Mapifcontains"))
+      | Mapifnth       _ -> emit_error (UnsupportedTerm ("Mapifnth"))
+      | Mapifcount     _ -> emit_error (UnsupportedTerm ("Mapifcount"))
+      | Mapifsum       _ -> emit_error (UnsupportedTerm ("Mapifsum"))
+      | Mapifhead      _ -> emit_error (UnsupportedTerm ("Mapifhead"))
+      | Mapiftail      _ -> emit_error (UnsupportedTerm ("Mapiftail"))
 
     in
     f fmt mt
   in
 
-  let _pp_init_function fmt (s : storage) =
-    let pp_storage_item fmt (si : storage_item) =
-      match si.model_type with
-      | MTasset an ->
-        Format.fprintf fmt "%s_keys = [],@\n\t\t%s_assets = {}"
-          an
-          an
 
-      | _ ->
-        Format.fprintf fmt "%a = %a"
-          pp_id si.id
-          pp_mterm si.default
-    in
-
-    Format.fprintf fmt "def __init__(self):@\n  self.init(%a)@\n"
-      ( Format.pp_print_list
-          ~pp_sep:(fun fmt () -> Format.fprintf fmt ",@\n\t\t")
-          pp_storage_item) s
+  let pp_var env (fmt : Format.formatter) (var : var) =
+    if (var.constant) then
+      begin
+        if Option.is_none var.default
+        then assert false;
+        Format.fprintf fmt "self.%a = %a"
+          pp_id var.name
+          (pp_mterm env) (Option.get var.default)
+      end
   in
 
-  let pp_contract_init fmt _ =
+  let pp_decl (env : env) (fmt : Format.formatter) (decl : decl_node) =
+    match decl with
+    | Dvar v       -> pp_var env fmt v
+    | Denum _e     -> ()
+    | Dasset _r    -> ()
+    | Dcontract _c -> ()
+  in
+
+  let pp_decls (env : env) (fmt : Format.formatter) _ =
+    match model.decls with
+    | [] -> ()
+    | l -> (pp_list "@\n" (pp_decl env)) fmt l
+  in
+
+  let pp_contract_init_call (env : env) fmt _ =
+    let l = List.filter (fun x -> not x.const) model.storage in
     Format.fprintf fmt
-      "def __init__(self):@\n    \
-       self.init(@[%a@])@\n\
-       @\n"
+      "self.init(@[%a@])"
       (pp_list ",@\n" (fun fmt (si : storage_item) ->
-           Format.fprintf fmt "%a = %a" pp_id si.id (pp_mterm) si.default)
-      ) model.storage
+           Format.fprintf fmt "%a = %a" pp_id si.id (pp_mterm env) si.default)
+      ) l
   in
 
-  let pp_contract_entry fmt (fs : function_struct) =
+  let pp_contract_init (env : env) fmt _ =
+    Format.fprintf fmt
+      "def __init__(self):@\n    @[%a@\n%a@]@\n@\n"
+      (pp_decls env) ()
+      (pp_contract_init_call env) ()
+  in
+
+  let pp_contract_entry (env : env) fmt (fs : function_struct) =
     Format.fprintf fmt
       "@sp.entry_point@\n\
        def %a(self, %s):@\n  \
        @[%a@]@\n"
       pp_id fs.name
       const_params
-      pp_mterm fs.body
+      (pp_mterm env) fs.body
   in
 
-  let pp_function fmt (fs, _r : function_struct * type_) =
+  let pp_function (env : env) fmt (fs, _r : function_struct * type_) =
     Format.fprintf fmt
       "def %a(self, %a):@\n  \
        @[%a@]@\n"
       pp_id fs.name
       (pp_list ", " (fun fmt (x : argument) -> Format.fprintf fmt "%a" pp_id (proj3_1 x))) fs.args
-      pp_mterm fs.body
+      (pp_mterm env) fs.body
   in
 
-  let _pp_functions fmt fs =
-    Format.fprintf fmt "%a"
-      (pp_list "@\n@\n\t" pp_function) fs
-  in
-
-  let pp_contract_fun fmt (fn : function_node) =
+  let pp_contract_fun (env : env) fmt (fn : function_node) =
     match fn with
-    | Entry fs -> pp_contract_entry fmt fs
-    | Function (fs, r) -> pp_function fmt (fs, r)
+    | Entry fs -> (pp_contract_entry env) fmt fs
+    | Function (fs, r) -> (pp_function env) fmt (fs, r)
   in
 
-  let pp_contract_funs fmt _ =
+  let pp_contract_funs (env : env) fmt _ =
     (pp_list "@\n" (fun fmt (f_ : function__) ->
-         pp_contract_fun fmt f_.node)
+         pp_contract_fun env fmt f_.node)
     ) fmt model.functions
   in
 
-  let pp_contract fmt _ =
+  let pp_contract (env : env) fmt _ =
     Format.fprintf fmt
       "class %s(sp.Contract):@\n  \
        %a@\n\
        @\n  %a  @[%a@]"
       contract_name
       pp_api_items ()
-      pp_contract_init ()
-      pp_contract_funs ()
+      (pp_contract_init env) ()
+      (pp_contract_funs env) ()
   in
 
   let pp_contract_parameter fmt _ =
@@ -1265,13 +1241,14 @@ let pp_model fmt (model : model) =
       pp_id model.name
   in
 
+  let env = compute_env model in
   Format.fprintf fmt "# Smartpy output generated by %a@\n" pp_bin ();
   Format.fprintf fmt "@\n";
   pp_model_name fmt ();
   Format.fprintf fmt "@\n";
   Format.fprintf fmt "import smartpy as sp@\n";
   Format.fprintf fmt "@\n";
-  pp_contract fmt ();
+  pp_contract env fmt ();
   Format.fprintf fmt "@\n";
   pp_contract_parameter fmt ();
   Format.fprintf fmt "@\n";

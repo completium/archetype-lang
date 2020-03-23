@@ -1,8 +1,8 @@
 open Location
+open Ident
 open Tools
 open Model
 open Printer_tools
-open Ident
 
 exception Anomaly of string
 
