@@ -4,34 +4,6 @@ open Model
 open Printer_tools
 open Printer_model_tools
 
-exception Anomaly of string
-
-type error_desc =
-  | UnsupportedTerm of string
-  | UnsupportedValue of string
-[@@deriving show {with_path = false}]
-
-let emit_error (desc : error_desc) =
-  let str = Format.asprintf "%a@." pp_error_desc desc in
-  raise (Anomaly str)
-
-type operator =
-  | Equal
-  | Nequal
-  | Lt
-  | Le
-  | Gt
-  | Ge
-  | Plus
-  | Minus
-  | Mult
-  | Div
-  | Modulo
-
-type position =
-  | Lhs
-  | Rhs
-
 let const_params = "params"
 
 let pp_str fmt str =

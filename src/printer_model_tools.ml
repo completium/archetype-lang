@@ -3,6 +3,21 @@ open Ident
 open Tools
 open Model
 
+(* -------------------------------------------------------------------------- *)
+
+exception Anomaly of string
+
+type error_desc =
+  | UnsupportedTerm of string
+  | UnsupportedValue of string
+[@@deriving show {with_path = false}]
+
+let emit_error (desc : error_desc) =
+  let str = Format.asprintf "%a@." pp_error_desc desc in
+  raise (Anomaly str)
+
+(* -------------------------------------------------------------------------- *)
+
 type env = {
   f: function__ option;
   select_preds: mterm list;
@@ -13,17 +28,6 @@ type env = {
 
 let mk_env ?f ?(select_preds=[]) ?(sum_preds=[]) ?(consts=[]) () : env =
   { f; select_preds; sum_preds; consts }
-
-exception Found
-
-let is_internal l (id : lident) : bool =
-  try
-    List.iter (fun (x : ident * mterm) -> if (String.equal (unloc id) (fst x)) then raise Found) l ;
-    false
-  with
-  | Found -> true
-
-let is_const (env : env) (id : lident) : bool = is_internal env.consts id
 
 let compute_env model =
   let select_preds =
@@ -53,3 +57,24 @@ let compute_env model =
         | _ -> accu
       ) model.decls [] in
   mk_env ~select_preds:select_preds ~sum_preds:sum_preds ~consts:consts ()
+
+(* -------------------------------------------------------------------------- *)
+
+exception Found
+
+let is_internal l (id : lident) : bool =
+  try
+    List.iter (fun (x : ident * mterm) -> if (String.equal (unloc id) (fst x)) then raise Found) l ;
+    false
+  with
+  | Found -> true
+
+let is_const (env : env) (id : lident) : bool = is_internal env.consts id
+
+let get_const_dv (env : env) (id : lident) : mterm =
+  List.assoc (unloc id) env.consts
+
+let get_preds_index l e : int =
+  match List.index_of (fun x -> Model.cmp_mterm x e) l with
+  | -1 -> assert false
+  | _ as i -> i
