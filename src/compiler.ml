@@ -171,7 +171,7 @@ let generate_target model =
     |> replace_declvar_by_letin
     |> remove_enum_matchwith
     |> remove_letin_from_expr
-    |> remove_fun_dotasset
+    (* |> remove_fun_dotasset *)
     |> replace_lit_address_by_role
     |> remove_label
     |> flat_sequence

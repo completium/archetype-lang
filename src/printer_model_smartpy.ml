@@ -248,8 +248,8 @@ let pp_model fmt (model : model) =
   in
 
   let pp_api_builtin fmt = function
-    | Bmin    t -> Format.fprintf fmt "min on %a" pp_type t
-    | Bmax    t -> Format.fprintf fmt "max on %a" pp_type t
+    | Bmin _ -> ()
+    | Bmax _ -> ()
     | Babs    t -> Format.fprintf fmt "abs on %a" pp_type t
     | Bconcat t -> Format.fprintf fmt "concat on %a" pp_type t
     | Bslice  t -> Format.fprintf fmt "slice on %a"  pp_type t
@@ -289,6 +289,12 @@ let pp_model fmt (model : model) =
     else
       Format.fprintf fmt "# API function@\n@\n  @[%a@]@\n"
         (pp_list "@\n" (pp_api_item)) l
+  in
+
+  let _pp_pretty_type fmt t =
+    match t with
+    | Ttuple[Tbuiltin Bint; Tbuiltin Bint] -> pp_type fmt (Tbuiltin Brational)
+    | _ -> pp_type fmt t
   in
 
   let pp_operator fmt op =
@@ -861,12 +867,12 @@ let pp_model fmt (model : model) =
       (* builtin functions *)
 
       | Mmax (l, r) ->
-        Format.fprintf fmt "max (%a, %a)"
+        Format.fprintf fmt "sp.max (%a, %a)"
           f l
           f r
 
       | Mmin (l, r) ->
-        Format.fprintf fmt "min (%a, %a)"
+        Format.fprintf fmt "sp.min (%a, %a)"
           f l
           f r
 
@@ -1008,29 +1014,7 @@ let pp_model fmt (model : model) =
 
       (* functional *)
 
-      | Mfold (i, is, c, b) ->
-        let t : lident option =
-          match c with
-          | {node = Mvarstorecol an; _} -> Some an
-          | _ -> None
-        in
-
-        let cond = Option.is_some t in
-
-        Format.fprintf fmt
-          "List.fold (fun (%a, (%a)) ->@\n\
-           %a@[  %a@]) %a (%a)@\n"
-          pp_id i (pp_list ", " pp_id) is
-          (pp_do_if cond (fun fmt _c ->
-               let an = Option.get t in
-               Format.fprintf fmt "let %a : %a = get_%a (_s, %a) in  @\n"
-                 pp_id i
-                 pp_id an
-                 pp_id an
-                 pp_id i)) c
-          f b
-          f c
-          (pp_list ", " pp_id) is
+      | Mfold _ -> emit_error (UnsupportedTerm "Mfold")
 
 
       (* imperative *)
@@ -1119,7 +1103,7 @@ let pp_model fmt (model : model) =
       begin
         if Option.is_none var.default
         then assert false;
-        Format.fprintf fmt "self.%a = %a"
+        Format.fprintf fmt "self.%a = %a@\n"
           pp_id var.name
           (pp_mterm env) (Option.get var.default)
       end
@@ -1136,7 +1120,7 @@ let pp_model fmt (model : model) =
   let pp_decls (env : env) (fmt : Format.formatter) _ =
     match model.decls with
     | [] -> ()
-    | l -> (pp_list "@\n" (pp_decl env)) fmt l
+    | l -> (pp_list "" (pp_decl env)) fmt l
   in
 
   let pp_contract_init_call (env : env) fmt _ =
@@ -1150,7 +1134,7 @@ let pp_model fmt (model : model) =
 
   let pp_contract_init (env : env) fmt _ =
     Format.fprintf fmt
-      "def __init__(self):@\n    @[%a@\n%a@]@\n@\n"
+      "def __init__(self):@\n    @[%a%a@]@\n@\n"
       (pp_decls env) ()
       (pp_contract_init_call env) ()
   in
