@@ -399,7 +399,8 @@ let pp_model fmt (model : model) =
 
       (* control *)
 
-      | Mif (c, t, None) ->
+      | Mif (c, t, None)
+      | Mif (c, t, Some {node = Mseq []; _}) ->
         Format.fprintf fmt "sp.if (%a):@\n  @[%a@]"
           f c
           f t
@@ -482,7 +483,9 @@ let pp_model fmt (model : model) =
           pp_str v
       | Mdate v -> Core.pp_date fmt v
       | Mduration v -> Core.pp_duration_in_seconds fmt v
-      | Mtimestamp v -> pp_big_int fmt v
+      | Mtimestamp v ->
+        Format.fprintf fmt "sp.timestamp(%a)"
+          pp_big_int v
       | Mbytes v -> Format.fprintf fmt "sp.bytes('0x%s')" v
 
 
@@ -939,7 +942,7 @@ let pp_model fmt (model : model) =
       (* constants *)
 
       | Mvarstate      -> pp_str fmt "self.data.state"
-      | Mnow           -> pp_str fmt "sp.currentTime"
+      | Mnow           -> pp_str fmt "sp.now"
       | Mtransferred   -> pp_str fmt "sp.amount"
       | Mcaller        -> pp_str fmt "sp.sender"
       | Mbalance       -> pp_str fmt "sp.balance"
