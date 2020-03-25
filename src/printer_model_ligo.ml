@@ -543,6 +543,19 @@ let pp_model_internal fmt (model : model) b =
         f k
         f v
 
+    | Mlitset l ->
+      Format.fprintf fmt "[%a]"
+        (pp_list "; " f) l
+
+    | Mlitlist l ->
+      Format.fprintf fmt "[%a]"
+        (pp_list "; " f) l
+
+    | Mlitmap l ->
+      Format.fprintf fmt "[%a]"
+        (pp_list "; " (fun fmt (k, v) -> Format.fprintf fmt "%a : %a"
+                          f k
+                          f v)) l
 
     (* dot *)
 

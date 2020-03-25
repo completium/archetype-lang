@@ -173,6 +173,9 @@ type ('id, 'term) mterm_node  =
   | Mtuple            of 'term list
   | Masset            of 'term list
   | Massoc            of 'term * 'term
+  | Mlitset           of 'term list
+  | Mlitlist          of 'term list
+  | Mlitmap           of ('term * 'term) list
   (* dot *)
   | Mdotasset         of 'term * 'id
   | Mdotcontract      of 'term * 'id
@@ -973,6 +976,9 @@ let cmp_mterm_node
     | Mtuple l1, Mtuple l2                                                             -> List.for_all2 cmp l1 l2
     | Masset l1, Masset l2                                                             -> List.for_all2 cmp l1 l2
     | Massoc (k1, v1), Massoc (k2, v2)                                                 -> cmp k1 k2 && cmp v1 v2
+    | Mlitset l1, Mlitset l2                                                           -> List.for_all2 cmp l1 l2
+    | Mlitlist l1, Mlitlist l2                                                         -> List.for_all2 cmp l1 l2
+    | Mlitmap l1, Mlitmap l2                                                           -> List.for_all2 (fun (k1, v1) (k2, v2) -> (cmp k1 k2 && cmp v1 v2)) l1 l2
     (* dot *)
     | Mdotasset (e1, i1), Mdotasset (e2, i2)                                           -> cmp e1 e2 && cmpi i1 i2
     | Mdotcontract (e1, i1), Mdotcontract (e2, i2)                                     -> cmp e1 e2 && cmpi i1 i2
@@ -1245,6 +1251,9 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Mtuple l                       -> Mtuple (List.map f l)
   | Masset l                       -> Masset (List.map f l)
   | Massoc (k, v)                  -> Massoc (f k, f v)
+  | Mlitset l                      -> Mlitset (List.map f l)
+  | Mlitlist l                     -> Mlitlist (List.map f l)
+  | Mlitmap l                      -> Mlitmap (List.map (pair_sigle_map f) l)
   (* dot *)
   | Mdotasset (e, i)               -> Mdotasset (f e, g i)
   | Mdotcontract (e, i)            -> Mdotcontract (f e, g i)
@@ -1560,6 +1569,9 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mtuple l                              -> List.fold_left f accu l
   | Masset l                              -> List.fold_left f accu l
   | Massoc (k, v)                         -> f (f accu k) v
+  | Mlitset l                             -> List.fold_left f accu l
+  | Mlitlist l                            -> List.fold_left f accu l
+  | Mlitmap l                             -> List.fold_left (fun accu (k, v) -> f (f accu k) v) accu l
   (* dot *)
   | Mdotasset (e, _)                      -> f accu e
   | Mdotcontract (e, _)                   -> f accu e
@@ -1916,6 +1928,23 @@ let fold_map_term
     let ve, va = f ka v in
     g (Massoc (ke, ve)), va
 
+  | Mlitset l ->
+    let le, la = fold_map_term_list f accu l in
+    g (Mlitset le), la
+
+  | Mlitlist l ->
+    let le, la = fold_map_term_list f accu l in
+    g (Mlitlist le), la
+
+  | Mlitmap l ->
+    let le, la =
+      List.fold_left
+        (fun (pterms, accu) (k, v) ->
+           let kn, accu = f accu k in
+           let vn, accu = f accu v in
+           pterms @ [kn, vn], accu) ([], accu) l
+    in
+    g (Mlitmap le), la
 
   (* dot *)
 

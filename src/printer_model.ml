@@ -316,6 +316,19 @@ let pp_mterm fmt (mt : mterm) =
         f k
         f v
 
+    | Mlitset l ->
+      Format.fprintf fmt "set(%a)"
+        (pp_list "; " f) l
+
+    | Mlitlist l ->
+      Format.fprintf fmt "list(%a)"
+        (pp_list "; " f) l
+
+    | Mlitmap l ->
+      Format.fprintf fmt "map(%a)"
+        (pp_list "; " (fun fmt (k, v) -> Format.fprintf fmt "%a : %a"
+                          f k
+                          f v)) l
 
     (* dot *)
 

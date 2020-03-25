@@ -1177,7 +1177,10 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
       let fns = M.Utils.get_field_list m asset |> wdl in
       Trecord (None,(List.combine fns (List.map (map_mterm m ctx) l)))
 
-    | Massoc              _ -> error_not_translated "Massoc"
+    | Massoc   _ -> error_not_translated "Massoc"
+    | Mlitset  _ -> error_not_translated "Mlitset"
+    | Mlitlist _ -> error_not_translated "Mlitlist"
+    | Mlitmap  _ -> error_not_translated "Mlitmap"
 
 
     (* dot *)
