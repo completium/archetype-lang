@@ -686,22 +686,6 @@ let pp_model fmt (model : model) =
         Format.fprintf fmt "Some (%a)"
           f v
 
-      | Marray l ->
-        begin
-          match mtt.type_ with
-          | Tassoc (_k , _v) ->
-            begin
-              match l with
-              | [] -> Format.fprintf fmt "[]"
-              | _ ->
-                Format.fprintf fmt "[%a]"
-                  (pp_list "; " f) l
-            end
-          | _ ->
-            Format.fprintf fmt "[%a]"
-              (pp_list "; " f) l
-        end
-
       | Mtuple l ->
         Format.fprintf fmt "(%a)"
           (pp_list ", " f) l
@@ -722,6 +706,22 @@ let pp_model fmt (model : model) =
                Format.fprintf fmt "%a = %a"
                  pp_id a
                  f b)) lll
+
+      | Massets l ->
+        begin
+          match mtt.type_ with
+          | Tassoc (_k , _v) ->
+            begin
+              match l with
+              | [] -> Format.fprintf fmt "[]"
+              | _ ->
+                Format.fprintf fmt "[%a]"
+                  (pp_list "; " f) l
+            end
+          | _ ->
+            Format.fprintf fmt "[%a]"
+              (pp_list "; " f) l
+        end
 
       | Massoc (k, v) ->
         Format.fprintf fmt "(%a : %a)"

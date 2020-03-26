@@ -114,7 +114,7 @@ let rec map_shallow_asset m ctx (t : M.mterm) : M.mterm list =
     (M.mk_mterm (M.Masset fields) t.type_) :: mapped
   | M.Mvarlocal id when M.Utils.is_container t.type_ ->
     t :: (get_shallow_vars id ctx)
-  | M.Marray l ->
+  | M.Massets l ->
     begin
       match t.type_ with
       | Tcontainer (Tasset n, _) ->
@@ -122,7 +122,7 @@ let rec map_shallow_asset m ctx (t : M.mterm) : M.mterm list =
         (* each element of l is an asset : each asset must be transmuted to the key *)
         let keys = List.map (asset_to_key m (unloc n)) l in
         let typ  =  M.Utils.get_asset_key m (unloc n) |> snd in
-        let array = M.mk_mterm (M.Marray keys) (Tcontainer (Tbuiltin typ,Collection)) in
+        let array = M.mk_mterm (M.Massets keys) (Tcontainer (Tbuiltin typ,Collection)) in
         (*let str = Format.asprintf "%a@." M.pp_mterm array in
             print_endline str;*)
         let mapped_vals = List.map (map_shallow_asset m ctx) l in
@@ -130,7 +130,7 @@ let rec map_shallow_asset m ctx (t : M.mterm) : M.mterm list =
         let hds = List.map List.hd mapped_vals in
         let tls = List.flatten (List.map tl mapped_vals) in
         array :: ([M.mk_mterm (M.Mlisttocoll (unloc n,
-                                              M.mk_mterm (M.Marray hds) t.type_)) t.type_] @ tls)
+                                              M.mk_mterm (M.Massets hds) t.type_)) t.type_] @ tls)
       | _ -> [t]
     end
   | _ -> [t]

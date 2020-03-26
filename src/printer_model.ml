@@ -299,16 +299,16 @@ let pp_mterm fmt (mt : mterm) =
       Format.fprintf fmt "Some (%a)"
         f v
 
-    | Marray l ->
-      Format.fprintf fmt "[%a]"
-        (pp_list "; " f) l
-
     | Mtuple l ->
       Format.fprintf fmt "(%a)"
         (pp_list ", " f) l
 
     | Masset l ->
       Format.fprintf fmt "{%a}"
+        (pp_list "; " f) l
+
+    | Massets l ->
+      Format.fprintf fmt "[%a]"
         (pp_list "; " f) l
 
     | Massoc (k, v) ->

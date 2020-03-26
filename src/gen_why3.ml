@@ -1163,19 +1163,19 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Mnone -> Tnone
     | Msome v -> Tsome (map_mterm m ctx v)
 
-    | Marray l ->
-      begin
-        match mt.type_ with
-        | Tcontainer (_,_) -> Tlist (l |> List.map (map_mterm m ctx))
-        | _ -> assert false
-      end
-
     | Mtuple              l -> Ttuple (List.map (map_mterm m ctx) l)
 
     | Masset l ->
       let asset = M.Utils.get_asset_type mt in
       let fns = M.Utils.get_field_list m asset |> wdl in
       Trecord (None,(List.combine fns (List.map (map_mterm m ctx) l)))
+
+    | Massets l ->
+      begin
+        match mt.type_ with
+        | Tcontainer (_,_) -> Tlist (l |> List.map (map_mterm m ctx))
+        | _ -> assert false
+      end
 
     | Massoc   _ -> error_not_translated "Massoc"
     | Mlitset  _ -> error_not_translated "Mlitset"

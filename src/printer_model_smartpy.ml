@@ -487,10 +487,6 @@ let pp_model fmt (model : model) =
         Format.fprintf fmt "sp.some(%a)"
           f v
 
-      | Marray l ->
-        Format.fprintf fmt "[%a]"
-          (pp_list "; " f) l
-
       | Mtuple l ->
         Format.fprintf fmt "(%a)"
           (pp_list ", " f) l
@@ -509,6 +505,10 @@ let pp_model fmt (model : model) =
                Format.fprintf fmt "%a = %a"
                  pp_id a
                  f b)) lll
+
+      | Massets l ->
+        Format.fprintf fmt "[%a]"
+          (pp_list "; " f) l
 
       | Massoc (k, v) ->
         Format.fprintf fmt "(%a : %a)"

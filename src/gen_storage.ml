@@ -19,7 +19,7 @@ let generate_storage (model : model) : model =
       asset_name
       (MTasset (unloc asset_name))
       typ_
-      (mk_mterm (Marray []) typ_)
+      (mk_mterm (Massets []) typ_)
   in
 
   let state_to_storage_items (e : enum) : storage_item list =
@@ -54,8 +54,8 @@ let generate_storage (model : model) : model =
 
     let init_default_value = function
       | Tbuiltin b        -> init_ b
-      | Tcontainer (t, _) -> mk_mterm (Marray []) (Tcontainer(t, Collection))
-      | Tlist t           -> mk_mterm (Marray []) (Tlist t)
+      | Tcontainer (t, _) -> mk_mterm (Massets []) (Tcontainer(t, Collection))
+      | Tlist t           -> mk_mterm (Massets []) (Tlist t)
       | Toption t         -> mk_mterm (Mnone) (Toption t)
       | Tasset v
       | Tenum v

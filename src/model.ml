@@ -169,9 +169,9 @@ type ('id, 'term) mterm_node  =
   (* composite type constructors *)
   | Mnone
   | Msome             of 'term
-  | Marray            of 'term list
   | Mtuple            of 'term list
   | Masset            of 'term list
+  | Massets           of 'term list
   | Massoc            of 'term * 'term
   | Mlitset           of 'term list
   | Mlitlist          of 'term list
@@ -972,9 +972,9 @@ let cmp_mterm_node
     (* composite type constructors *)
     | Mnone, Mnone                                                                     -> true
     | Msome v1, Msome v2                                                               -> cmp v1 v2
-    | Marray l1, Marray l2                                                             -> List.for_all2 cmp l1 l2
     | Mtuple l1, Mtuple l2                                                             -> List.for_all2 cmp l1 l2
     | Masset l1, Masset l2                                                             -> List.for_all2 cmp l1 l2
+    | Massets l1, Massets l2                                                           -> List.for_all2 cmp l1 l2
     | Massoc (k1, v1), Massoc (k2, v2)                                                 -> cmp k1 k2 && cmp v1 v2
     | Mlitset l1, Mlitset l2                                                           -> List.for_all2 cmp l1 l2
     | Mlitlist l1, Mlitlist l2                                                         -> List.for_all2 cmp l1 l2
@@ -1247,9 +1247,9 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   (* composite type constructors *)
   | Mnone                          -> Mnone
   | Msome v                        -> Msome (f v)
-  | Marray l                       -> Marray (List.map f l)
   | Mtuple l                       -> Mtuple (List.map f l)
   | Masset l                       -> Masset (List.map f l)
+  | Massets l                      -> Massets (List.map f l)
   | Massoc (k, v)                  -> Massoc (f k, f v)
   | Mlitset l                      -> Mlitset (List.map f l)
   | Mlitlist l                     -> Mlitlist (List.map f l)
@@ -1565,9 +1565,9 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   (* composite type constructors *)
   | Mnone                                 -> accu
   | Msome v                               -> f accu v
-  | Marray l                              -> List.fold_left f accu l
   | Mtuple l                              -> List.fold_left f accu l
   | Masset l                              -> List.fold_left f accu l
+  | Massets l                             -> List.fold_left f accu l
   | Massoc (k, v)                         -> f (f accu k) v
   | Mlitset l                             -> List.fold_left f accu l
   | Mlitlist l                            -> List.fold_left f accu l
@@ -1911,10 +1911,6 @@ let fold_map_term
     let ve, va = f accu v in
     g (Msome ve), va
 
-  | Marray l ->
-    let le, la = fold_map_term_list f accu l in
-    g (Marray le), la
-
   | Mtuple l ->
     let le, la = fold_map_term_list f accu l in
     g (Mtuple le), la
@@ -1922,6 +1918,10 @@ let fold_map_term
   | Masset l ->
     let le, la = fold_map_term_list f accu l in
     g (Masset le), la
+
+  | Massets l ->
+    let le, la = fold_map_term_list f accu l in
+    g (Massets le), la
 
   | Massoc (k, v) ->
     let ke, ka = f accu k in
@@ -2987,7 +2987,7 @@ module Utils : sig
   val get_field_list                     : model -> ident -> ident list
   val get_field_pos                      : model -> ident -> ident -> int (* m, asset, field *)
   val get_nth_asset_val                  : int -> mterm -> mterm
-  val dest_array                         : mterm -> mterm list
+  val dest_assets                        : mterm -> mterm list
   val get_asset_type                     : mterm -> ident
   val is_local_assigned                  : ident -> mterm -> bool
   val get_function_args                  : function__ -> argument list
@@ -3033,7 +3033,7 @@ end = struct
     | AssetFieldNotFound of string * string
     | AssetKeyTypeNotFound of string
     | ContainerNotFound
-    | NotanArray
+    | NotanAssets
     | NotaRecord of mterm
     | NotanAssetType
     | NotFound
@@ -3079,10 +3079,10 @@ end = struct
 
   let get_functions m = List.filter is_function m.functions |> List.map get_function
 
-  let dest_array (t : mterm)  =
+  let dest_assets (t : mterm)  =
     match t.node with
-    | Marray l -> l
-    | _ -> emit_error NotanArray
+    | Massets l -> l
+    | _ -> emit_error NotanAssets
 
   let get_nth_asset_val pos (t : mterm) =
     match t.node with
@@ -3563,7 +3563,7 @@ end = struct
           in
           Masset l
         end
-      | Tcontainer _ -> Marray []
+      | Tcontainer _ -> Massets []
       | _ -> Mstring "FIXME"
     in
     let tt =

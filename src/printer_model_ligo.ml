@@ -509,16 +509,6 @@ let pp_model_internal fmt (model : model) b =
       Format.fprintf fmt "Some (%a)"
         f v
 
-    | Marray l ->
-      begin
-        match l, mtt.type_ with
-        | [], Tassoc (k , v) -> Format.fprintf fmt "(map end : map(%a, %a))" pp_btyp k pp_type v
-        | _, Tassoc (k , v) -> Format.fprintf fmt "(map %a end : map(%a, %a))" (pp_list "; " f) l pp_btyp k pp_type v
-        | [], _ -> Format.fprintf fmt "(nil : %a)" pp_type mtt.type_
-        | _, _ -> Format.fprintf fmt "list@\n  @[%a@]@\nend"
-                    (pp_list "@\n" (fun fmt -> Format.fprintf fmt "%a;" f)) l
-      end
-
     | Mtuple l ->
       Format.fprintf fmt "(%a)"
         (pp_list ", " f) l
@@ -537,6 +527,16 @@ let pp_model_internal fmt (model : model) b =
              Format.fprintf fmt "%a = %a;"
                pp_id a
                f b)) lll
+
+    | Massets l ->
+      begin
+        match l, mtt.type_ with
+        | [], Tassoc (k , v) -> Format.fprintf fmt "(map end : map(%a, %a))" pp_btyp k pp_type v
+        | _, Tassoc (k , v) -> Format.fprintf fmt "(map %a end : map(%a, %a))" (pp_list "; " f) l pp_btyp k pp_type v
+        | [], _ -> Format.fprintf fmt "(nil : %a)" pp_type mtt.type_
+        | _, _ -> Format.fprintf fmt "list@\n  @[%a@]@\nend"
+                    (pp_list "@\n" (fun fmt -> Format.fprintf fmt "%a;" f)) l
+      end
 
     | Massoc (k, v) ->
       Format.fprintf fmt "(%a : %a)"

@@ -37,7 +37,7 @@ let split_key_values (model : model) : model =
             mk_storage_item (dumloc (asset_assets (unloc an)))
               (MTasset (unloc an))
               type_asset
-              (mk_mterm (Marray []) type_asset)
+              (mk_mterm (Massets []) type_asset)
               ~loc:x.loc
           in
           asset_assets::accu
