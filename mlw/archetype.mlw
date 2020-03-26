@@ -122,21 +122,24 @@ end
 module ListUtils
 
   use list.List
+  use list.Mem as M
 
   type t = abstract {}
 
   val eqt t t : bool
+
+  (* predicate mem (x: t) (l: list t) = match l with
+    | Nil      -> false
+    | Cons e tl -> eqt x e \/ mem x tl
+  end *)
 
   let rec function mem (x: t) (l: list t) : bool
   variant { l }
   =
   match l with
     | Nil      -> false
-    | Cons e tl ->
-    if eqt x e
-    then true
-    else mem x tl
-    end
+    | Cons e tl -> eqt x e || mem x tl
+  end
 
   let rec remove (x : t) (l : list t) : list t
   variant { l }
@@ -194,6 +197,7 @@ module AssetCollection
   use Types
   use int.Int
   use list.List
+  use list.Length as L
   use list.Mem as M
   use option.Option
   use KeyListUtils
@@ -211,7 +215,8 @@ module AssetCollection
 
   clone fset.FSet      as F with type t     = t,
                                  val  eqt   = eqf,
-                                 val  norm  = AU.undup
+                                 val  norm  = AU.undup,
+                                 axiom .
 
   val function witness : t
 
@@ -226,17 +231,22 @@ module AssetCollection
 
   let function elts (c : collection) : list t = F.content c.content
 
-  let function mk (l : list t) : collection = {
-      content = F.mk l
-  }
 
-  let function from_fset (s : F.fset) : collection = { content = s }
+  let function from_fset (s : F.fset) : collection
+  requires { forall a : t. F.fmem a s -> a <> witness }
+  = { content = s }
 
   let function internal_mem (a : t) (l : list t) : bool = AU.mem a l
 
+  predicate containsk (k : key) (l : list t) = match l with
+  | Nil -> false
+  | Cons e tl -> keyf e = k \/ containsk k tl
+  end
+
   let rec function contains_key (k : key) (l : list t) : bool
-  requires { k <> keyf witness }
   variant { l }
+  requires { k <> keyf witness }
+  ensures { result <-> containsk k l }
   =
   match l with
   | Cons e tl ->
@@ -246,9 +256,9 @@ module AssetCollection
   | Nil -> false
   end
 
-  let function contains (k : key) (c : collection) : bool
-  =
-  contains_key k (F.content c.content)
+  let function mk (l : list t) : collection
+  requires { forall a : t. M.mem a l -> a <> witness }
+  = { content = F.mk l }
 
   (* SET THEORY *)
   let function empty : collection = from_fset F.fset0
@@ -256,6 +266,11 @@ module AssetCollection
   predicate is_empty (c : collection) = is_nil (elts c)
 
   predicate mem (a : t) (c : collection) = F.fmem a c.content
+
+  let function contains (k : key) (c : collection) : bool
+  requires { k <> keyf witness }
+  =
+  contains_key k (F.content c.content)
 
   lemma mem_empty : is_empty empty
 
@@ -278,7 +293,9 @@ module AssetCollection
   requires { a <> witness }
   = mk (Cons a Nil)
 
-  lemma mem_singleton: forall k1 k2 : t. mem k1 (singleton k2) -> k1 = k2
+  lemma mem_singleton: forall k1 k2 : t.
+  k2 <> witness ->
+  mem k1 (singleton k2) -> k1 = k2
 
   lemma card_singleton: forall a : t. a <> witness -> card (singleton a) = 1
 
@@ -292,7 +309,7 @@ module AssetCollection
   requires { not (mem a c) }
   requires { a <> witness }
   ensures { mem a result }
-  ensures { result = union (singleton a) c }
+  ensures { result == union (singleton a) c }
   = mk (Cons a (elts c))
 
   let set (c : collection) (k : key) (a : t) : collection
@@ -300,6 +317,9 @@ module AssetCollection
   =
   let rec internal_set (l : list t) (k : key) (a : t) : list t
   variant { l }
+  requires { a <> witness }
+  requires { forall e : t. M.mem e l -> e <> witness }
+  ensures { forall e : t. M.mem e result -> e <> witness }
   =
   match l with
   | Cons e tl ->
@@ -314,6 +334,8 @@ module AssetCollection
   =
   let rec internal_remove (l : list t) (k : key) : list t
   variant { l }
+  requires { forall e : t. M.mem e l -> e <> witness }
+  ensures { forall e : t. M.mem e result -> e <> witness }
   =
   match l with
   | Cons e tl ->
@@ -324,33 +346,21 @@ module AssetCollection
   end in
   mk (internal_remove (elts c) k)
 
-  let function oget (c : collection) (k : key) : option t
-  ensures {
-      match result with
-      | None   -> not (contains k c)
-      | Some a -> mem a c
-      end
-  }
+  let function get (c : collection) (k : key) : t
+  ensures { containsk k (elts c) -> mem result c }
   =
-  let rec function internal_get (l : list t) (k : key) : option t
+  let rec function internal_get (l : list t) (k : key) : t
   variant { l }
+  ensures { containsk k l -> M.mem result l }
   =
   match l with
   | Cons e tl ->
     if keyf e = k
-    then Some e
+    then e
     else internal_get tl k
-  | Nil -> None
+  | Nil -> witness
   end in
   internal_get (elts c) k
-
-  let function get (c : collection) (k : key) : t
-  ensures { mem result c \/ not (contains k c) }
-  =
-  match oget c k with
-  | Some a -> a
-  | None -> witness
-  end
 
  let rec function to_ids (l : list t) : list key
   variant { l }
@@ -362,27 +372,33 @@ module AssetCollection
 
   let function unshallow (c : collection) (keys : list int) : collection
   =
-  let rec function internal_unshallow (l : list t) (keys : list int) : list t
+  let rec function internal_unshallow (l : list t) : list t
   variant { l }
+  requires { forall e. M.mem e l -> e <> witness }
+  ensures { forall e. M.mem e result -> e <> witness }
   =
   match l with
   | Cons e tl ->
     if mem_key (keyf e) keys
-    then Cons e (internal_unshallow tl keys)
-    else internal_unshallow tl keys
+    then Cons e (internal_unshallow tl)
+    else internal_unshallow tl
   | Nil -> Nil
   end in
-  mk (internal_unshallow (elts c) keys)
+  mk (internal_unshallow (elts c))
 
   let rec function internal_nth (i : int) (l : list t) : t
   variant { l }
+  requires { 0 <= i < L.length l }
+  requires { l <> Nil }
+  requires { forall e. M.mem e l -> e <> witness }
+  ensures { M.mem result l /\ result <> witness }
   =
   match l with
   | Cons e tl -> if i = 0 then e else internal_nth (i - 1) tl
   | Nil -> witness
   end
 
-  let function onth (i : int) (c : collection) : option t
+  (* let function onth (i : int) (c : collection) : option t
   ensures {
     0 <= i < card c ->
     match result with
@@ -398,10 +414,12 @@ module AssetCollection
   | Cons e tl -> if i = 0 then Some e else internal_onth (i - 1) tl
   | Nil -> None
   end in
-  internal_onth i (elts c)
+  internal_onth i (elts c) *)
 
   let function nth (i : int) (c : collection) : t
-  ensures { 0 <= i < card c -> mem result c /\ result <> witness}
+  requires { 0 <= i < card c }
+  requires { elts c <> Nil }
+  ensures { mem result c /\ result <> witness}
   =
   internal_nth i (elts c)
 
@@ -421,11 +439,13 @@ module AssetCollection
   (*use int.MinMax*)
 
   let function head (i : int) (c : collection) : collection
+  requires { i >= 0 }
   ensures { subset result c }
-  ensures { i >= card c - 1 -> result  = c }
-  ensures { i < 0 -> result = empty }
   =
   let rec function internal_head (l : list t) (k : int)
+  requires { forall e. M.mem e l -> e <> witness }
+  ensures { forall e. M.mem e result -> e <> witness }
+  ensures { forall e. M.mem e result -> M.mem e l }
   =
   match l with
   | Cons e tl ->
@@ -439,31 +459,31 @@ module AssetCollection
 
   lemma head_add: forall c : collection, i : int.
   0 <= i < card c - 1 ->
-  head (i+1) c = union (head i c) (singleton (nth i c))
+  head (i+1) c == union (head i c) (singleton (nth i c))
 
   lemma head_nth: forall c : collection, i j : int.
   0 <= i < j < card c ->
   nth i (head j c) = nth i c
 
   let function tail (i : int) (c : collection) : collection
+  requires { 0 <= i < card c }
   ensures { subset result c }
-  ensures { 0 <= i < card c -> card result = card c - i }
-  ensures { i >= card c ->  result = empty }
-  ensures {
-    forall j: int. 0<= i <= j < card c ->
-    mem (nth j c) result
-  }
+  (* ensures { card result = card c - i } *)
+  ensures { forall j: int. i <= j < card c -> mem (nth j c) result }
   =
-  let rec function internal_tail (l : list t) (k : int) (i : int)
+  let rec function internal_tail (l : list t) (k : int)
+  variant { l }
+  ensures { forall e. M.mem e result -> M.mem e l }
+  ensures { forall j: int. i <= j < L.length l -> M.mem (internal_nth j l) result }
   =
   match l with
   | Cons e tl ->
     if k < i then
-      internal_tail tl (k+1) i
-    else Cons e (internal_tail tl (k+1) i)
+      internal_tail tl (k+1)
+    else Cons e (internal_tail tl (k+1))
   | Nil -> Nil
   end in
-  mk (internal_tail (elts c) 0 i)
+  mk (internal_tail (elts c) 0)
 
   lemma tail_all: forall c : collection. tail 0 c = c
 
@@ -476,12 +496,13 @@ module AssetCollection
   0 <= i < card c - j ->
   nth i (tail j c) = nth (i+j) c
 
-  let function to_coll (l : list t)
+  let function to_coll (l : list t) : collection
   (*ensures { S.sorted result <-> S.sorted l }*)
+  requires { forall e. M.mem e l -> e <> witness }
   ensures { forall k : key. contains k result <-> contains_key k l }
   ensures { forall a : t. mem a result <-> M.mem a l }
-  ensures { forall i : int. eqf (nth i result) (internal_nth i l) }
-  = mk l
+  ensures { forall i : int. nth i result = internal_nth i l }
+  = { content = F.mk l }
 
   goal sanity_check : false
 
