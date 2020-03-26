@@ -325,7 +325,7 @@ let pp_mterm fmt (mt : mterm) =
                           f k
                           f v)) l
 
-    (* dot *)
+    (* access *)
 
     | Mdotasset (e, i)
     | Mdotcontract (e, i) ->
@@ -333,6 +333,10 @@ let pp_mterm fmt (mt : mterm) =
         pp_id i
         f e
 
+    | Maccestuple (e, i) ->
+      Format.fprintf fmt "%a[%a]"
+        f e
+        f i
 
     (* comparison operators *)
 

@@ -552,13 +552,18 @@ let pp_model_internal fmt (model : model) b =
                           f k
                           f v)) l
 
-    (* dot *)
+    (* access *)
 
     | Mdotasset (e, i)
     | Mdotcontract (e, i) ->
       Format.fprintf fmt "%a.%a"
         f e
         pp_id i
+
+    | Maccestuple (e, i) ->
+      Format.fprintf fmt "%a.%a"
+        f e
+        f i
 
 
     (* comparison operators *)

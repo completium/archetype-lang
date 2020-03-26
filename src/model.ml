@@ -175,9 +175,10 @@ type ('id, 'term) mterm_node  =
   | Mlitset           of 'term list
   | Mlitlist          of 'term list
   | Mlitmap           of ('term * 'term) list
-  (* dot *)
+  (* access *)
   | Mdotasset         of 'term * 'id
   | Mdotcontract      of 'term * 'id
+  | Maccestuple       of 'term * 'term
   (* comparison operators *)
   | Mequal            of 'term * 'term
   | Mnequal           of 'term * 'term
@@ -977,9 +978,10 @@ let cmp_mterm_node
     | Mlitset l1, Mlitset l2                                                           -> List.for_all2 cmp l1 l2
     | Mlitlist l1, Mlitlist l2                                                         -> List.for_all2 cmp l1 l2
     | Mlitmap l1, Mlitmap l2                                                           -> List.for_all2 (fun (k1, v1) (k2, v2) -> (cmp k1 k2 && cmp v1 v2)) l1 l2
-    (* dot *)
+    (* access *)
     | Mdotasset (e1, i1), Mdotasset (e2, i2)                                           -> cmp e1 e2 && cmpi i1 i2
     | Mdotcontract (e1, i1), Mdotcontract (e2, i2)                                     -> cmp e1 e2 && cmpi i1 i2
+    | Maccestuple (e1, i1), Maccestuple (e2, i2)                                       -> cmp e1 e2 && cmp i1 i2
     (* comparison operators *)
     | Mequal (l1, r1), Mequal (l2, r2)                                                 -> cmp l1 l2 && cmp r1 r2
     | Mnequal (l1, r1), Mnequal (l2, r2)                                               -> cmp l1 l2 && cmp r1 r2
@@ -1251,9 +1253,10 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Mlitset l                      -> Mlitset (List.map f l)
   | Mlitlist l                     -> Mlitlist (List.map f l)
   | Mlitmap l                      -> Mlitmap (List.map (pair_sigle_map f) l)
-  (* dot *)
+  (* access *)
   | Mdotasset (e, i)               -> Mdotasset (f e, g i)
   | Mdotcontract (e, i)            -> Mdotcontract (f e, g i)
+  | Maccestuple (e, i)             -> Maccestuple (f e, f i)
   (* comparison operators *)
   | Mequal (l, r)                  -> Mequal (f l, f r)
   | Mnequal (l, r)                 -> Mnequal (f l, f r)
@@ -1568,9 +1571,10 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mlitset l                             -> List.fold_left f accu l
   | Mlitlist l                            -> List.fold_left f accu l
   | Mlitmap l                             -> List.fold_left (fun accu (k, v) -> f (f accu k) v) accu l
-  (* dot *)
+  (* access *)
   | Mdotasset (e, _)                      -> f accu e
   | Mdotcontract (e, _)                   -> f accu e
+  | Maccestuple (e, i)                    -> f (f accu e) i
   (* comparison operators *)
   | Mequal (l, r)                         -> f (f accu l) r
   | Mnequal (l, r)                        -> f (f accu l) r
@@ -1946,6 +1950,11 @@ let fold_map_term
   | Mdotcontract (e, i) ->
     let ee, ea = f accu e in
     g (Mdotcontract (ee, i)), ea
+
+  | Maccestuple (e, i) ->
+    let ee, ea = f accu e in
+    let ie, ia = f ea i in
+    g (Maccestuple (ee, ie)), ia
 
 
   (* comparison operators *)

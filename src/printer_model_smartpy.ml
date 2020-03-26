@@ -524,7 +524,7 @@ let pp_model fmt (model : model) =
                             f k
                             f v)) l
 
-      (* dot *)
+      (* access *)
 
       | Mdotasset (e, i)
       | Mdotcontract (e, i) ->
@@ -532,6 +532,10 @@ let pp_model fmt (model : model) =
           f e
           pp_id i
 
+      | Maccestuple (e, i) ->
+        Format.fprintf fmt "%a[%a]"
+          f e
+          f i
 
       (* comparison operators *)
 

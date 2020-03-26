@@ -1114,7 +1114,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
         match M.Utils.get_formula m None (unloc lbl) with
         | Some formula -> Tassert (Some (map_lident lbl),map_mterm m ctx formula)
         | _ -> assert false
-        end
+      end
     | Mmark (lbl, x) -> Tmark (map_lident lbl, map_mterm m ctx x)
 
     (* effect *)
@@ -1182,11 +1182,11 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Mlitmap  _ -> error_not_translated "Mlitmap"
 
 
-    (* dot *)
+    (* access *)
 
     | Mdotasset (e, i) -> Tdot (map_mterm m ctx e, mk_loc (loc i) (Tvar (map_lident i)))
-    | Mdotcontract        _ -> error_not_translated "Mdotcontract"
-
+    | Mdotcontract       _ -> error_not_translated "Mdotcontract"
+    | Maccestuple        _ -> error_not_translated "Maccestuple"
 
     (* comparison operators *)
 
