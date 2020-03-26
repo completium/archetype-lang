@@ -55,13 +55,13 @@ let generate_storage (model : model) : model =
     let init_default_value = function
       | Tbuiltin b        -> init_ b
       | Tcontainer (t, _) -> mk_mterm (Massets []) (Tcontainer(t, Collection))
-      | Tlist t           -> mk_mterm (Massets []) (Tlist t)
+      | Tlist t           -> mk_mterm (Mlitlist []) (Tlist t)
       | Toption t         -> mk_mterm (Mnone) (Toption t)
       | Tasset v
       | Tenum v
       | Tcontract v       -> emit_error (NoInitExprFor (unloc v))
       | Ttuple _          -> emit_error (NoInitExprFor "tuple")
-      | Tassoc _          -> emit_error (NoInitExprFor "tassoc")
+      | Tmap (k, v)       -> mk_mterm   (Mlitmap []) (Tmap (k, v))
       | Tunit             -> emit_error (NoInitExprFor "unit")
       | Tstorage          -> emit_error (NoInitExprFor "storage")
       | Toperation        -> emit_error (NoInitExprFor "operation")

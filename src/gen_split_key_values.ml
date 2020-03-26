@@ -32,7 +32,7 @@ let split_key_values (model : model) : model =
               (mk_mterm init_keys type_key)
               ~loc:x.loc
              in *)
-          let type_asset = Tassoc (t, Tasset an) in
+          let type_asset = Tmap (t, Tasset an) in
           let asset_assets =
             mk_storage_item (dumloc (asset_assets (unloc an)))
               (MTasset (unloc an))

@@ -545,7 +545,7 @@ let rec map_mtype (t : M.type_) : loc_typ =
       | M.Ttuple l                            -> Tytuple (l |> List.map map_mtype |> deloc)
       | M.Tunit                               -> Tyunit
       | M.Tstate                              -> Tystate
-      | M.Tassoc (_, _)                       -> Tyunit (* TODO: replace by the right type *)
+      | M.Tmap (_, _)                         -> Tyunit (* TODO: replace by the right type *)
       | M.Tstorage                            -> Tystorage
       | M.Toperation                          -> Tyunit (* TODO: replace by the right type *)
       | M.Tentry                              -> Tyunit (* TODO: replace by the right type *)

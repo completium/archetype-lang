@@ -58,7 +58,7 @@ type type_ =
   | Tlist of type_
   | Toption of type_
   | Ttuple of type_ list
-  | Tassoc of btyp * type_
+  | Tmap of btyp * type_
   | Tunit
   | Tstorage
   | Toperation
@@ -1191,7 +1191,7 @@ let map_type (f : type_ -> type_) = function
   | Tlist t           -> Tlist (f t)
   | Toption t         -> Toption (f t)
   | Ttuple l          -> Ttuple (List.map f l)
-  | Tassoc (a, t)     -> Tassoc (a, f t)
+  | Tmap (a, t)       -> Tmap (a, f t)
   | Tunit             -> Tunit
   | Tstorage          -> Tstorage
   | Toperation        -> Toperation
@@ -2609,7 +2609,7 @@ let replace_ident_model (f : kind_ident -> ident -> ident) (model : model) : mod
     | Tlist a           -> Tlist (for_type a)
     | Toption a         -> Toption (for_type a)
     | Ttuple l          -> Ttuple (List.map for_type l)
-    | Tassoc (k, v)     -> Tassoc (k, for_type v)
+    | Tmap (k, v)       -> Tmap (k, for_type v)
     | Tunit             -> t
     | Tstorage          -> t
     | Toperation        -> t
@@ -3567,7 +3567,7 @@ end = struct
       begin
         let l, an = deloc an in
         let idparam = mkloc l (an ^ "_values") in
-        Some (mk_mterm (Mvarparam idparam) (Tassoc(Bint, Tasset (dumloc "myasset"))))
+        Some (mk_mterm (Mvarparam idparam) (Tmap(Bint, Tasset (dumloc "myasset"))))
       end
     | _ -> None
 
