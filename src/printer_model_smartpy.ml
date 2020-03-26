@@ -510,11 +510,6 @@ let pp_model fmt (model : model) =
         Format.fprintf fmt "[%a]"
           (pp_list "; " f) l
 
-      | Massoc (k, v) ->
-        Format.fprintf fmt "(%a : %a)"
-          f k
-          f v
-
       | Mlitset l ->
         Format.fprintf fmt "[%a]"
           (pp_list "; " f) l

@@ -172,7 +172,6 @@ type ('id, 'term) mterm_node  =
   | Mtuple            of 'term list
   | Masset            of 'term list
   | Massets           of 'term list
-  | Massoc            of 'term * 'term
   | Mlitset           of 'term list
   | Mlitlist          of 'term list
   | Mlitmap           of ('term * 'term) list
@@ -975,7 +974,6 @@ let cmp_mterm_node
     | Mtuple l1, Mtuple l2                                                             -> List.for_all2 cmp l1 l2
     | Masset l1, Masset l2                                                             -> List.for_all2 cmp l1 l2
     | Massets l1, Massets l2                                                           -> List.for_all2 cmp l1 l2
-    | Massoc (k1, v1), Massoc (k2, v2)                                                 -> cmp k1 k2 && cmp v1 v2
     | Mlitset l1, Mlitset l2                                                           -> List.for_all2 cmp l1 l2
     | Mlitlist l1, Mlitlist l2                                                         -> List.for_all2 cmp l1 l2
     | Mlitmap l1, Mlitmap l2                                                           -> List.for_all2 (fun (k1, v1) (k2, v2) -> (cmp k1 k2 && cmp v1 v2)) l1 l2
@@ -1250,7 +1248,6 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Mtuple l                       -> Mtuple (List.map f l)
   | Masset l                       -> Masset (List.map f l)
   | Massets l                      -> Massets (List.map f l)
-  | Massoc (k, v)                  -> Massoc (f k, f v)
   | Mlitset l                      -> Mlitset (List.map f l)
   | Mlitlist l                     -> Mlitlist (List.map f l)
   | Mlitmap l                      -> Mlitmap (List.map (pair_sigle_map f) l)
@@ -1568,7 +1565,6 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mtuple l                              -> List.fold_left f accu l
   | Masset l                              -> List.fold_left f accu l
   | Massets l                             -> List.fold_left f accu l
-  | Massoc (k, v)                         -> f (f accu k) v
   | Mlitset l                             -> List.fold_left f accu l
   | Mlitlist l                            -> List.fold_left f accu l
   | Mlitmap l                             -> List.fold_left (fun accu (k, v) -> f (f accu k) v) accu l
@@ -1922,11 +1918,6 @@ let fold_map_term
   | Massets l ->
     let le, la = fold_map_term_list f accu l in
     g (Massets le), la
-
-  | Massoc (k, v) ->
-    let ke, ka = f accu k in
-    let ve, va = f ka v in
-    g (Massoc (ke, ve)), va
 
   | Mlitset l ->
     let le, la = fold_map_term_list f accu l in
@@ -2987,7 +2978,6 @@ module Utils : sig
   val get_field_list                     : model -> ident -> ident list
   val get_field_pos                      : model -> ident -> ident -> int (* m, asset, field *)
   val get_nth_asset_val                  : int -> mterm -> mterm
-  val dest_assets                        : mterm -> mterm list
   val get_asset_type                     : mterm -> ident
   val is_local_assigned                  : ident -> mterm -> bool
   val get_function_args                  : function__ -> argument list
@@ -3033,7 +3023,6 @@ end = struct
     | AssetFieldNotFound of string * string
     | AssetKeyTypeNotFound of string
     | ContainerNotFound
-    | NotanAssets
     | NotaRecord of mterm
     | NotanAssetType
     | NotFound
@@ -3078,11 +3067,6 @@ end = struct
   let get_entries m = List.filter is_entry m.functions |> List.map get_entry
 
   let get_functions m = List.filter is_function m.functions |> List.map get_function
-
-  let dest_assets (t : mterm)  =
-    match t.node with
-    | Massets l -> l
-    | _ -> emit_error NotanAssets
 
   let get_nth_asset_val pos (t : mterm) =
     match t.node with

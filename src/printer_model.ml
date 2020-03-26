@@ -311,11 +311,6 @@ let pp_mterm fmt (mt : mterm) =
       Format.fprintf fmt "[%a]"
         (pp_list "; " f) l
 
-    | Massoc (k, v) ->
-      Format.fprintf fmt "(%a : %a)"
-        f k
-        f v
-
     | Mlitset l ->
       Format.fprintf fmt "set(%a)"
         (pp_list "; " f) l
