@@ -336,7 +336,7 @@ let pp_mterm fmt (mt : mterm) =
     | Maccestuple (e, i) ->
       Format.fprintf fmt "%a[%a]"
         f e
-        f i
+        pp_big_int i
 
     (* comparison operators *)
 

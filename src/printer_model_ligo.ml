@@ -563,7 +563,7 @@ let pp_model_internal fmt (model : model) b =
     | Maccestuple (e, i) ->
       Format.fprintf fmt "%a.%a"
         f e
-        f i
+        pp_big_int i
 
 
     (* comparison operators *)

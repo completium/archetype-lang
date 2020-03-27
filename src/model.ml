@@ -178,7 +178,7 @@ type ('id, 'term) mterm_node  =
   (* access *)
   | Mdotasset         of 'term * 'id
   | Mdotcontract      of 'term * 'id
-  | Maccestuple       of 'term * 'term
+  | Maccestuple       of 'term * Core.big_int
   (* comparison operators *)
   | Mequal            of 'term * 'term
   | Mnequal           of 'term * 'term
@@ -981,7 +981,7 @@ let cmp_mterm_node
     (* access *)
     | Mdotasset (e1, i1), Mdotasset (e2, i2)                                           -> cmp e1 e2 && cmpi i1 i2
     | Mdotcontract (e1, i1), Mdotcontract (e2, i2)                                     -> cmp e1 e2 && cmpi i1 i2
-    | Maccestuple (e1, i1), Maccestuple (e2, i2)                                       -> cmp e1 e2 && cmp i1 i2
+    | Maccestuple (e1, i1), Maccestuple (e2, i2)                                       -> cmp e1 e2 && Big_int.eq_big_int i1 i2
     (* comparison operators *)
     | Mequal (l1, r1), Mequal (l2, r2)                                                 -> cmp l1 l2 && cmp r1 r2
     | Mnequal (l1, r1), Mnequal (l2, r2)                                               -> cmp l1 l2 && cmp r1 r2
@@ -1256,7 +1256,7 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   (* access *)
   | Mdotasset (e, i)               -> Mdotasset (f e, g i)
   | Mdotcontract (e, i)            -> Mdotcontract (f e, g i)
-  | Maccestuple (e, i)             -> Maccestuple (f e, f i)
+  | Maccestuple (e, i)             -> Maccestuple (f e, i)
   (* comparison operators *)
   | Mequal (l, r)                  -> Mequal (f l, f r)
   | Mnequal (l, r)                 -> Mnequal (f l, f r)
@@ -1574,7 +1574,7 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   (* access *)
   | Mdotasset (e, _)                      -> f accu e
   | Mdotcontract (e, _)                   -> f accu e
-  | Maccestuple (e, i)                    -> f (f accu e) i
+  | Maccestuple (e, _)                    -> f accu e
   (* comparison operators *)
   | Mequal (l, r)                         -> f (f accu l) r
   | Mnequal (l, r)                        -> f (f accu l) r
@@ -1953,8 +1953,7 @@ let fold_map_term
 
   | Maccestuple (e, i) ->
     let ee, ea = f accu e in
-    let ie, ia = f ea i in
-    g (Maccestuple (ee, ie)), ia
+    g (Maccestuple (ee, i)), ea
 
 
   (* comparison operators *)
