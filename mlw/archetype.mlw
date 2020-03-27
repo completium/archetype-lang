@@ -398,6 +398,10 @@ module AssetCollection
   | Nil -> witness
   end
 
+  lemma nth_cons_0: forall e, l:list t. internal_nth 0 (Cons e l) = e
+  lemma nth_cons_n: forall e, l:list t, i:int.
+    0 < i <= L.length l -> internal_nth i (Cons e l) = internal_nth (i-1) l
+
   (* let function onth (i : int) (c : collection) : option t
   ensures {
     0 <= i < card c ->
@@ -457,9 +461,13 @@ module AssetCollection
   end in
   mk (internal_head (elts c) 0)
 
+  lemma internal_head_add: forall l : list t, i : int.
+  0 <= i < L.length l - 1 ->
+  forall e. M.mem e internal_head (i+1) l <-> Mem e ((internal_head i l) ++ (Cons (internal_nth (i+1) l) Nil))
+
   lemma head_add: forall c : collection, i : int.
   0 <= i < card c - 1 ->
-  head (i+1) c == union (head i c) (singleton (nth i c))
+  head (i+1) c == union (head i c) (singleton (nth (i+1) c))
 
   lemma head_nth: forall c : collection, i j : int.
   0 <= i < j < card c ->
@@ -499,7 +507,7 @@ module AssetCollection
   let function to_coll (l : list t) : collection
   (*ensures { S.sorted result <-> S.sorted l }*)
   requires { forall e. M.mem e l -> e <> witness }
-  ensures { forall k : key. contains k result <-> contains_key k l }
+  ensures { forall k : key. contains k result <-> containsk k l }
   ensures { forall a : t. mem a result <-> M.mem a l }
   ensures { forall i : int. nth i result = internal_nth i l }
   = { content = F.mk l }
