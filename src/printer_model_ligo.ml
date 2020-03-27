@@ -165,7 +165,7 @@ let pp_model_internal fmt (model : model) b =
     | Ttuple ts ->
       Format.fprintf fmt "(%a)"
         (pp_list " * " pp_type) ts
-    | Tassoc (k, v) ->
+    | Tmap (k, v) ->
       Format.fprintf fmt "map(%a, %a)"
         pp_btyp k
         pp_type v
@@ -509,16 +509,6 @@ let pp_model_internal fmt (model : model) b =
       Format.fprintf fmt "Some (%a)"
         f v
 
-    | Marray l ->
-      begin
-        match l, mtt.type_ with
-        | [], Tassoc (k , v) -> Format.fprintf fmt "(map end : map(%a, %a))" pp_btyp k pp_type v
-        | _, Tassoc (k , v) -> Format.fprintf fmt "(map %a end : map(%a, %a))" (pp_list "; " f) l pp_btyp k pp_type v
-        | [], _ -> Format.fprintf fmt "(nil : %a)" pp_type mtt.type_
-        | _, _ -> Format.fprintf fmt "list@\n  @[%a@]@\nend"
-                    (pp_list "@\n" (fun fmt -> Format.fprintf fmt "%a;" f)) l
-      end
-
     | Mtuple l ->
       Format.fprintf fmt "(%a)"
         (pp_list ", " f) l
@@ -538,10 +528,15 @@ let pp_model_internal fmt (model : model) b =
                pp_id a
                f b)) lll
 
-    | Massoc (k, v) ->
-      Format.fprintf fmt "(%a : %a)"
-        f k
-        f v
+    | Massets l ->
+      begin
+        match l, mtt.type_ with
+        | [], Tmap (k , v) -> Format.fprintf fmt "(map end : map(%a, %a))" pp_btyp k pp_type v
+        | _, Tmap (k , v) -> Format.fprintf fmt "(map %a end : map(%a, %a))" (pp_list "; " f) l pp_btyp k pp_type v
+        | [], _ -> Format.fprintf fmt "(nil : %a)" pp_type mtt.type_
+        | _, _ -> Format.fprintf fmt "list@\n  @[%a@]@\nend"
+                    (pp_list "@\n" (fun fmt -> Format.fprintf fmt "%a;" f)) l
+      end
 
     | Mlitset l ->
       Format.fprintf fmt "[%a]"
@@ -557,13 +552,18 @@ let pp_model_internal fmt (model : model) b =
                           f k
                           f v)) l
 
-    (* dot *)
+    (* access *)
 
     | Mdotasset (e, i)
     | Mdotcontract (e, i) ->
       Format.fprintf fmt "%a.%a"
         f e
         pp_id i
+
+    | Maccestuple (e, i) ->
+      Format.fprintf fmt "%a.%a"
+        f e
+        f i
 
 
     (* comparison operators *)

@@ -58,7 +58,7 @@ type type_ =
   | Tlist of type_
   | Toption of type_
   | Ttuple of type_ list
-  | Tassoc of btyp * type_
+  | Tmap of btyp * type_
   | Tunit
   | Tstorage
   | Toperation
@@ -169,16 +169,16 @@ type ('id, 'term) mterm_node  =
   (* composite type constructors *)
   | Mnone
   | Msome             of 'term
-  | Marray            of 'term list
   | Mtuple            of 'term list
   | Masset            of 'term list
-  | Massoc            of 'term * 'term
+  | Massets           of 'term list
   | Mlitset           of 'term list
   | Mlitlist          of 'term list
   | Mlitmap           of ('term * 'term) list
-  (* dot *)
+  (* access *)
   | Mdotasset         of 'term * 'id
   | Mdotcontract      of 'term * 'id
+  | Maccestuple       of 'term * 'term
   (* comparison operators *)
   | Mequal            of 'term * 'term
   | Mnequal           of 'term * 'term
@@ -972,16 +972,16 @@ let cmp_mterm_node
     (* composite type constructors *)
     | Mnone, Mnone                                                                     -> true
     | Msome v1, Msome v2                                                               -> cmp v1 v2
-    | Marray l1, Marray l2                                                             -> List.for_all2 cmp l1 l2
     | Mtuple l1, Mtuple l2                                                             -> List.for_all2 cmp l1 l2
     | Masset l1, Masset l2                                                             -> List.for_all2 cmp l1 l2
-    | Massoc (k1, v1), Massoc (k2, v2)                                                 -> cmp k1 k2 && cmp v1 v2
+    | Massets l1, Massets l2                                                           -> List.for_all2 cmp l1 l2
     | Mlitset l1, Mlitset l2                                                           -> List.for_all2 cmp l1 l2
     | Mlitlist l1, Mlitlist l2                                                         -> List.for_all2 cmp l1 l2
     | Mlitmap l1, Mlitmap l2                                                           -> List.for_all2 (fun (k1, v1) (k2, v2) -> (cmp k1 k2 && cmp v1 v2)) l1 l2
-    (* dot *)
+    (* access *)
     | Mdotasset (e1, i1), Mdotasset (e2, i2)                                           -> cmp e1 e2 && cmpi i1 i2
     | Mdotcontract (e1, i1), Mdotcontract (e2, i2)                                     -> cmp e1 e2 && cmpi i1 i2
+    | Maccestuple (e1, i1), Maccestuple (e2, i2)                                       -> cmp e1 e2 && cmp i1 i2
     (* comparison operators *)
     | Mequal (l1, r1), Mequal (l2, r2)                                                 -> cmp l1 l2 && cmp r1 r2
     | Mnequal (l1, r1), Mnequal (l2, r2)                                               -> cmp l1 l2 && cmp r1 r2
@@ -1193,7 +1193,7 @@ let map_type (f : type_ -> type_) = function
   | Tlist t           -> Tlist (f t)
   | Toption t         -> Toption (f t)
   | Ttuple l          -> Ttuple (List.map f l)
-  | Tassoc (a, t)     -> Tassoc (a, f t)
+  | Tmap (a, t)       -> Tmap (a, f t)
   | Tunit             -> Tunit
   | Tstorage          -> Tstorage
   | Toperation        -> Toperation
@@ -1247,16 +1247,16 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   (* composite type constructors *)
   | Mnone                          -> Mnone
   | Msome v                        -> Msome (f v)
-  | Marray l                       -> Marray (List.map f l)
   | Mtuple l                       -> Mtuple (List.map f l)
   | Masset l                       -> Masset (List.map f l)
-  | Massoc (k, v)                  -> Massoc (f k, f v)
+  | Massets l                      -> Massets (List.map f l)
   | Mlitset l                      -> Mlitset (List.map f l)
   | Mlitlist l                     -> Mlitlist (List.map f l)
   | Mlitmap l                      -> Mlitmap (List.map (pair_sigle_map f) l)
-  (* dot *)
+  (* access *)
   | Mdotasset (e, i)               -> Mdotasset (f e, g i)
   | Mdotcontract (e, i)            -> Mdotcontract (f e, g i)
+  | Maccestuple (e, i)             -> Maccestuple (f e, f i)
   (* comparison operators *)
   | Mequal (l, r)                  -> Mequal (f l, f r)
   | Mnequal (l, r)                 -> Mnequal (f l, f r)
@@ -1565,16 +1565,16 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   (* composite type constructors *)
   | Mnone                                 -> accu
   | Msome v                               -> f accu v
-  | Marray l                              -> List.fold_left f accu l
   | Mtuple l                              -> List.fold_left f accu l
   | Masset l                              -> List.fold_left f accu l
-  | Massoc (k, v)                         -> f (f accu k) v
+  | Massets l                             -> List.fold_left f accu l
   | Mlitset l                             -> List.fold_left f accu l
   | Mlitlist l                            -> List.fold_left f accu l
   | Mlitmap l                             -> List.fold_left (fun accu (k, v) -> f (f accu k) v) accu l
-  (* dot *)
+  (* access *)
   | Mdotasset (e, _)                      -> f accu e
   | Mdotcontract (e, _)                   -> f accu e
+  | Maccestuple (e, i)                    -> f (f accu e) i
   (* comparison operators *)
   | Mequal (l, r)                         -> f (f accu l) r
   | Mnequal (l, r)                        -> f (f accu l) r
@@ -1911,10 +1911,6 @@ let fold_map_term
     let ve, va = f accu v in
     g (Msome ve), va
 
-  | Marray l ->
-    let le, la = fold_map_term_list f accu l in
-    g (Marray le), la
-
   | Mtuple l ->
     let le, la = fold_map_term_list f accu l in
     g (Mtuple le), la
@@ -1923,10 +1919,9 @@ let fold_map_term
     let le, la = fold_map_term_list f accu l in
     g (Masset le), la
 
-  | Massoc (k, v) ->
-    let ke, ka = f accu k in
-    let ve, va = f ka v in
-    g (Massoc (ke, ve)), va
+  | Massets l ->
+    let le, la = fold_map_term_list f accu l in
+    g (Massets le), la
 
   | Mlitset l ->
     let le, la = fold_map_term_list f accu l in
@@ -1955,6 +1950,11 @@ let fold_map_term
   | Mdotcontract (e, i) ->
     let ee, ea = f accu e in
     g (Mdotcontract (ee, i)), ea
+
+  | Maccestuple (e, i) ->
+    let ee, ea = f accu e in
+    let ie, ia = f ea i in
+    g (Maccestuple (ee, ie)), ia
 
 
   (* comparison operators *)
@@ -2618,7 +2618,7 @@ let replace_ident_model (f : kind_ident -> ident -> ident) (model : model) : mod
     | Tlist a           -> Tlist (for_type a)
     | Toption a         -> Toption (for_type a)
     | Ttuple l          -> Ttuple (List.map for_type l)
-    | Tassoc (k, v)     -> Tassoc (k, for_type v)
+    | Tmap (k, v)       -> Tmap (k, for_type v)
     | Tunit             -> t
     | Tstorage          -> t
     | Toperation        -> t
@@ -2987,7 +2987,6 @@ module Utils : sig
   val get_field_list                     : model -> ident -> ident list
   val get_field_pos                      : model -> ident -> ident -> int (* m, asset, field *)
   val get_nth_asset_val                  : int -> mterm -> mterm
-  val dest_array                         : mterm -> mterm list
   val get_asset_type                     : mterm -> ident
   val is_local_assigned                  : ident -> mterm -> bool
   val get_function_args                  : function__ -> argument list
@@ -3033,7 +3032,6 @@ end = struct
     | AssetFieldNotFound of string * string
     | AssetKeyTypeNotFound of string
     | ContainerNotFound
-    | NotanArray
     | NotaRecord of mterm
     | NotanAssetType
     | NotFound
@@ -3078,11 +3076,6 @@ end = struct
   let get_entries m = List.filter is_entry m.functions |> List.map get_entry
 
   let get_functions m = List.filter is_function m.functions |> List.map get_function
-
-  let dest_array (t : mterm)  =
-    match t.node with
-    | Marray l -> l
-    | _ -> emit_error NotanArray
 
   let get_nth_asset_val pos (t : mterm) =
     match t.node with
@@ -3563,7 +3556,7 @@ end = struct
           in
           Masset l
         end
-      | Tcontainer _ -> Marray []
+      | Tcontainer _ -> Massets []
       | _ -> Mstring "FIXME"
     in
     let tt =
@@ -3583,7 +3576,7 @@ end = struct
       begin
         let l, an = deloc an in
         let idparam = mkloc l (an ^ "_values") in
-        Some (mk_mterm (Mvarparam idparam) (Tassoc(Bint, Tasset (dumloc "myasset"))))
+        Some (mk_mterm (Mvarparam idparam) (Tmap(Bint, Tasset (dumloc "myasset"))))
       end
     | _ -> None
 

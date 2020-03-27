@@ -116,7 +116,7 @@ let pp_model fmt (model : model) =
     | Ttuple ts ->
       Format.fprintf fmt "%a"
         (pp_list " * " pp_type) ts
-    | Tassoc (k, v) ->
+    | Tmap (k, v) ->
       Format.fprintf fmt "(%a, %a) map"
         pp_btyp k
         pp_type v
@@ -686,22 +686,6 @@ let pp_model fmt (model : model) =
         Format.fprintf fmt "Some (%a)"
           f v
 
-      | Marray l ->
-        begin
-          match mtt.type_ with
-          | Tassoc (_k , _v) ->
-            begin
-              match l with
-              | [] -> Format.fprintf fmt "[]"
-              | _ ->
-                Format.fprintf fmt "[%a]"
-                  (pp_list "; " f) l
-            end
-          | _ ->
-            Format.fprintf fmt "[%a]"
-              (pp_list "; " f) l
-        end
-
       | Mtuple l ->
         Format.fprintf fmt "(%a)"
           (pp_list ", " f) l
@@ -723,10 +707,21 @@ let pp_model fmt (model : model) =
                  pp_id a
                  f b)) lll
 
-      | Massoc (k, v) ->
-        Format.fprintf fmt "(%a : %a)"
-          f k
-          f v
+      | Massets l ->
+        begin
+          match mtt.type_ with
+          | Tmap (_k , _v) ->
+            begin
+              match l with
+              | [] -> Format.fprintf fmt "[]"
+              | _ ->
+                Format.fprintf fmt "[%a]"
+                  (pp_list "; " f) l
+            end
+          | _ ->
+            Format.fprintf fmt "[%a]"
+              (pp_list "; " f) l
+        end
 
       | Mlitset l ->
         Format.fprintf fmt "[%a]"
@@ -742,7 +737,7 @@ let pp_model fmt (model : model) =
                             f k
                             f v)) l
 
-      (* dot *)
+      (* access *)
 
       | Mdotasset (e, i)
       | Mdotcontract (e, i) ->
@@ -750,6 +745,10 @@ let pp_model fmt (model : model) =
           f e
           pp_id i
 
+      | Maccestuple (e, i) ->
+        Format.fprintf fmt "%a[%a]"
+          f e
+          f i
 
       (* comparison operators *)
 

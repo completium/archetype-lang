@@ -545,7 +545,7 @@ let rec map_mtype (t : M.type_) : loc_typ =
       | M.Ttuple l                            -> Tytuple (l |> List.map map_mtype |> deloc)
       | M.Tunit                               -> Tyunit
       | M.Tstate                              -> Tystate
-      | M.Tassoc (_, _)                       -> Tyunit (* TODO: replace by the right type *)
+      | M.Tmap (_, _)                         -> Tyunit (* TODO: replace by the right type *)
       | M.Tstorage                            -> Tystorage
       | M.Toperation                          -> Tyunit (* TODO: replace by the right type *)
       | M.Tentry                              -> Tyunit (* TODO: replace by the right type *)
@@ -1114,7 +1114,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
         match M.Utils.get_formula m None (unloc lbl) with
         | Some formula -> Tassert (Some (map_lident lbl),map_mterm m ctx formula)
         | _ -> assert false
-        end
+      end
     | Mmark (lbl, x) -> Tmark (map_lident lbl, map_mterm m ctx x)
 
     (* effect *)
@@ -1163,13 +1163,6 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Mnone -> Tnone
     | Msome v -> Tsome (map_mterm m ctx v)
 
-    | Marray l ->
-      begin
-        match mt.type_ with
-        | Tcontainer (_,_) -> Tlist (l |> List.map (map_mterm m ctx))
-        | _ -> assert false
-      end
-
     | Mtuple              l -> Ttuple (List.map (map_mterm m ctx) l)
 
     | Masset l ->
@@ -1177,17 +1170,23 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
       let fns = M.Utils.get_field_list m asset |> wdl in
       Trecord (None,(List.combine fns (List.map (map_mterm m ctx) l)))
 
-    | Massoc   _ -> error_not_translated "Massoc"
+    | Massets l ->
+      begin
+        match mt.type_ with
+        | Tcontainer (_,_) -> Tlist (l |> List.map (map_mterm m ctx))
+        | _ -> assert false
+      end
+
     | Mlitset  _ -> error_not_translated "Mlitset"
     | Mlitlist _ -> error_not_translated "Mlitlist"
     | Mlitmap  _ -> error_not_translated "Mlitmap"
 
 
-    (* dot *)
+    (* access *)
 
     | Mdotasset (e, i) -> Tdot (map_mterm m ctx e, mk_loc (loc i) (Tvar (map_lident i)))
-    | Mdotcontract        _ -> error_not_translated "Mdotcontract"
-
+    | Mdotcontract       _ -> error_not_translated "Mdotcontract"
+    | Maccestuple        _ -> error_not_translated "Maccestuple"
 
     (* comparison operators *)
 

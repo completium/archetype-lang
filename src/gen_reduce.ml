@@ -21,7 +21,7 @@ let storage_var : mterm = mk_mterm (Mvarlocal storage_lident) Tstorage
 let operations_lident : lident = dumloc "_ops"
 let operations_type : type_ = Tcontainer (Toperation, Collection)
 let operations_var : mterm = mk_mterm (Mvarlocal operations_lident) operations_type
-let operations_init : mterm = mk_mterm (Marray []) operations_type
+let operations_init : mterm = mk_mterm (Massets []) operations_type
 
 let operations_storage_type : type_ = Ttuple [Tcontainer (Toperation, Collection); Tstorage]
 let operations_storage_var : mterm = mk_mterm (Mtuple [operations_var; storage_var]) operations_storage_type

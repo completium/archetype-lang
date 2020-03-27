@@ -54,7 +54,7 @@ let rec pp_type fmt t =
   | Ttuple ts ->
     Format.fprintf fmt "%a"
       (pp_list " * " pp_type) ts
-  | Tassoc (k, v) ->
+  | Tmap (k, v) ->
     Format.fprintf fmt "(%a, %a) map"
       pp_btyp k
       pp_type v
@@ -299,10 +299,6 @@ let pp_mterm fmt (mt : mterm) =
       Format.fprintf fmt "Some (%a)"
         f v
 
-    | Marray l ->
-      Format.fprintf fmt "[%a]"
-        (pp_list "; " f) l
-
     | Mtuple l ->
       Format.fprintf fmt "(%a)"
         (pp_list ", " f) l
@@ -311,10 +307,9 @@ let pp_mterm fmt (mt : mterm) =
       Format.fprintf fmt "{%a}"
         (pp_list "; " f) l
 
-    | Massoc (k, v) ->
-      Format.fprintf fmt "(%a : %a)"
-        f k
-        f v
+    | Massets l ->
+      Format.fprintf fmt "[%a]"
+        (pp_list "; " f) l
 
     | Mlitset l ->
       Format.fprintf fmt "set(%a)"
@@ -330,7 +325,7 @@ let pp_mterm fmt (mt : mterm) =
                           f k
                           f v)) l
 
-    (* dot *)
+    (* access *)
 
     | Mdotasset (e, i)
     | Mdotcontract (e, i) ->
@@ -338,6 +333,10 @@ let pp_mterm fmt (mt : mterm) =
         pp_id i
         f e
 
+    | Maccestuple (e, i) ->
+      Format.fprintf fmt "%a[%a]"
+        f e
+        f i
 
     (* comparison operators *)
 
