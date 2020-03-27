@@ -461,9 +461,9 @@ module AssetCollection
   end in
   mk (internal_head (elts c) 0)
 
-  lemma internal_head_add: forall l : list t, i : int.
+  (* lemma internal_head_add: forall l : list t, i : int.
   0 <= i < L.length l - 1 ->
-  forall e. M.mem e internal_head (i+1) l <-> Mem e ((internal_head i l) ++ (Cons (internal_nth (i+1) l) Nil))
+  forall e. M.mem e internal_head (i+1) l <-> Mem e ((internal_head i l) ++ (Cons (internal_nth (i+1) l) Nil)) *)
 
   lemma head_add: forall c : collection, i : int.
   0 <= i < card c - 1 ->
