@@ -253,7 +253,7 @@ let to_model (ast : A.model) : M.model =
     | A.Ptuple l                             -> M.Mtuple (List.map f l)
     | A.Pnone                                -> M.Mnone
     | A.Psome a                              -> M.Msome (f a)
-    | A.Pcast (_src, _dst, v)                  -> (f v).node (* M.Mcast (ptyp_to_type src, ptyp_to_type dst, f v) *)
+    | A.Pcast (src, dst, v)                  -> M.Mcast (ptyp_to_type src, ptyp_to_type dst, f v)
     | A.Pquantifer (Forall, i, (coll, typ), term)    -> M.Mforall (i, ptyp_to_type typ, Option.map f coll, f term)
     | A.Pquantifer (Exists, i, (coll, typ), term)    -> M.Mexists (i, ptyp_to_type typ, Option.map f coll, f term)
 
@@ -505,9 +505,15 @@ let to_model (ast : A.model) : M.model =
       ~loc:c.loc
   in
 
+
   let extract_contract_type_id (c : A.lident A.term_poly) =
-    match c.type_ with
-    | Some (Tcontract v) -> unloc v
+    let aux (t : A.ptyp) =
+      match t with
+      | A.Tcontract v -> unloc v
+      | _ -> assert false
+    in
+    match c.node with
+    | A.Pcast (d, _, _) -> aux d
     | _ -> assert false
   in
 
@@ -552,14 +558,14 @@ let to_model (ast : A.model) : M.model =
     | A.Ireturn e               -> M.Mreturn (f e)
     | A.Ilabel i                -> M.Mlabel i
     | A.Ifail m                 -> M.Mfail (Invalid (f m))
-    | A.Icall (Some c, Cid id, args) when (match c.type_ with | Some (A.Tcontract _) -> true | _ -> false) -> (* TODO: delete this case *)
-      let contract_id = extract_contract_type_id c in
-      let c = f c in
-      let ids = A.Utils.get_contract_sig_ids ast contract_id (unloc id) in
-      let vs = List.map (term_arg_to_expr f) args in
-      let args = List.map2 (fun x y -> (x, y)) ids vs in
-      let zerotz : M.mterm = M.mk_mterm (Mcurrency (Big_int.zero_big_int, Tz)) (Tbuiltin Bcurrency) in
-      M.Mentrycall (zerotz, c, contract_id, id, args)
+    (* | A.Icall (Some c, Cid id, args) when (match c.type_ with | Some (A.Tcontract _) -> true | _ -> false) -> (* TODO: delete this case *)
+       let contract_id = extract_contract_type_id c in
+       let c = f c in
+       let ids = A.Utils.get_contract_sig_ids ast contract_id (unloc id) in
+       let vs = List.map (term_arg_to_expr f) args in
+       let args = List.map2 (fun x y -> (x, y)) ids vs in
+       let zerotz : M.mterm = M.mk_mterm (Mcurrency (Big_int.zero_big_int, Tz)) (Tbuiltin Bcurrency) in
+       M.Mentrycall (zerotz, c, contract_id, id, args) *)
 
     | A.Icall (i, Cid id, args) -> M.Mapp (id, Option.map_dfl (fun v -> [to_mterm v]) [] i @ List.map (term_arg_to_expr f) args)
 

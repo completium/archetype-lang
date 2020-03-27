@@ -1290,7 +1290,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
 
     (* utils *)
 
-    | Mcast               _ -> error_not_translated "Mcast"
+    | Mcast (_, _, v)       -> map_mterm m ctx v |> Mlwtree.deloc
     | Mgetfrommap         _ -> error_not_translated "Mgetfrommap"
 
 
