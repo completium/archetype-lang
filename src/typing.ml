@@ -1945,22 +1945,19 @@ let rec for_xexpr
 
   try
     let aout = doit () in
-
-    begin match aout, ety with
-      | { type_ = Some from_ }, Some to_ ->
-        if not (Type.compatible ~from_ ~to_) then
-          Env.emit_error env (loc tope, IncompatibleTypes (from_, to_));
-
-(*
-      | _, Some _ ->
-        Env.emit_error env (loc tope, ExpressionExpected)
-*)
-
-      | _, _ ->
-        ()
-    end;
-
-    aout
+    let aout =
+      begin match aout, ety with
+        | { type_ = Some from_ }, Some to_ ->
+          if not (Type.compatible ~from_ ~to_) then
+            Env.emit_error env (loc tope, IncompatibleTypes (from_, to_));
+          if not (Type.equal from_ to_) then
+            mk_sp (Some to_) (M.Pcast (from_, to_, aout))
+          else aout
+  
+        | _, _ ->
+          aout
+      end;
+    in aout
 
   with E.Bailout -> dummy ety
 
