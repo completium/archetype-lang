@@ -29,19 +29,19 @@ let pp_model fmt (model : model) =
   in
 
   let pp_btyp fmt = function
-    | Bbool       -> Format.fprintf fmt "bool"
-    | Bint        -> Format.fprintf fmt "int"
+    | Bbool       -> Format.fprintf fmt "sp.TBool"
+    | Bint        -> Format.fprintf fmt "sp.TInt"
     | Brational   -> Format.fprintf fmt "rational"
     | Bdate       -> Format.fprintf fmt "date"
     | Bduration   -> Format.fprintf fmt "duration"
-    | Btimestamp  -> Format.fprintf fmt "timestamp"
-    | Bstring     -> Format.fprintf fmt "string"
-    | Baddress    -> Format.fprintf fmt "address"
+    | Btimestamp  -> Format.fprintf fmt "sp.TTimestamp"
+    | Bstring     -> Format.fprintf fmt "sp.TString"
+    | Baddress    -> Format.fprintf fmt "sp.TAddress"
     | Brole       -> Format.fprintf fmt "key_hash"
-    | Bcurrency   -> Format.fprintf fmt "tez"
-    | Bkey        -> Format.fprintf fmt "key"
-    | Bbytes      -> Format.fprintf fmt "bytes"
-    | Bnat        -> Format.fprintf fmt "nat"
+    | Bcurrency   -> Format.fprintf fmt "sp.TMutez"
+    | Bkey        -> Format.fprintf fmt "sp.TKey"
+    | Bbytes      -> Format.fprintf fmt "sp.TBytes"
+    | Bnat        -> Format.fprintf fmt "sp.TNat"
   in
 
   let pp_container fmt = function
@@ -52,7 +52,12 @@ let pp_model fmt (model : model) =
   let rec pp_type fmt t =
     match t with
     | Tasset an ->
-      Format.fprintf fmt "%a" pp_id an
+      let fields : (string * type_) list =
+        Utils.get_asset model (unloc an)
+        |> (fun x -> x.values)
+        |> List.map (fun (x : asset_item) -> (unloc x.name, x.type_))
+      in
+      Format.fprintf fmt "sp.TRecord(%a)" (pp_list ", " (fun fmt (i, t) -> Format.fprintf fmt "%a = %a" pp_ident i pp_type t)) fields
     | Tstate ->
       Format.fprintf fmt "state"
     | Tenum en ->
@@ -519,10 +524,20 @@ let pp_model fmt (model : model) =
           (pp_list "; " f) l
 
       | Mlitmap l ->
-        Format.fprintf fmt "[%a]"
-          (pp_list "; " (fun fmt (k, v) -> Format.fprintf fmt "%a : %a"
-                            f k
-                            f v)) l
+        Format.fprintf fmt "%a"
+          (fun fmt _ ->
+             match l with
+             | [] ->
+               begin
+                 let k, v =
+                   match mtt.type_ with
+                   | Tmap (k, v) -> k, v
+                   | _ -> assert false
+                 in
+                 Format.fprintf fmt "sp.map(tkey=%a, tvalue= %a)" pp_btyp k pp_type v
+               end
+             | _  -> emit_error (TODO ("Mlitmap : handle map with data")))
+          ()
 
       (* access *)
 
@@ -758,7 +773,7 @@ let pp_model fmt (model : model) =
 
       | Mget (c, k) ->
         let pp fmt (c, k) =
-          Format.fprintf fmt "self.get_%a (%a)"
+          Format.fprintf fmt "self.data.%a_assets[%a]"
             pp_str c
             f k
         in

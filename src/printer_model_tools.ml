@@ -10,6 +10,7 @@ exception Anomaly of string
 type error_desc =
   | UnsupportedTerm of string
   | UnsupportedValue of string
+  | TODO of string
 [@@deriving show {with_path = false}]
 
 let emit_error (desc : error_desc) =

@@ -179,6 +179,7 @@ let generate_target model =
     |> shallow_asset
     |> split_key_values
     |> Gen_transform.assign_loop_label
+    |> replace_array_asset_by_map
     |> generate_api_storage
     |> output
 

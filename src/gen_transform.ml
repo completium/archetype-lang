@@ -1667,3 +1667,27 @@ let process_internal_string (model : model) : model =
     | _ -> map_mterm (aux ctx) mt
   in
   Model.map_mterm_model aux model
+
+
+let replace_array_asset_by_map (model : model) : model =
+  let change_value (v : mterm) : mterm =
+    match v.node with
+    | Massets _ ->
+      (* let an =
+         match v.type_ with
+         | Tcontainer (Tasset an, _) -> an
+         | Tmap (_, (Tasset an)) -> an
+         | _ -> Format.printf "type_error: %a@." pp_type_ v.type_; assert false
+         in
+         let _, kt = Utils.get_asset_key model (unloc an) in
+         mk_mterm (Mlitmap []) (Tmap (kt, Tasset an)) *)
+      { v with node = Mlitmap [] }
+    | _ -> v
+  in
+
+  { model with
+    storage = List.map (fun (x : storage_item) ->
+        match x.model_type with
+        | MTasset _ -> { x with default = change_value x.default }
+        | _ -> x
+      ) model.storage}
