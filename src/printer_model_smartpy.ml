@@ -97,11 +97,11 @@ let pp_model fmt (model : model) =
 
 
   let pp_api_asset fmt = function
-    | Get an ->
-      Format.fprintf fmt
+    | Get _ -> ()
+      (* Format.fprintf fmt
         "def get_%s (self, key):@\n  \
          self.data.%s_assets[key]@\n"
-        an an
+        an an *)
 
     | Set an ->
       Format.fprintf fmt
@@ -847,14 +847,14 @@ let pp_model fmt (model : model) =
 
       (* utils *)
 
-      | Mcast (src, dst, v) ->
-        let pp fmt (src, dst, v) =
+      | Mcast (_src, _dst, v) -> f fmt v
+        (* let pp fmt (src, dst, v) =
           Format.fprintf fmt "cast_%a_%a(%a)"
             pp_type src
             pp_type dst
             f v
         in
-        pp fmt (src, dst, v)
+        pp fmt (src, dst, v) *)
 
       | Mgetfrommap (an, k, c) ->
         let pp fmt (an, k, c) =
