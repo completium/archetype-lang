@@ -886,7 +886,7 @@ let pp_fun_ fmt = function
   | Ftransaction t -> pp_transaction fmt t
 
 let pp_ast fmt (ast : model) =
-  Format.fprintf fmt "archetype %a@\n@\na@." pp_id ast.name;
+  Format.fprintf fmt "archetype %a@\n@\n@." pp_id ast.name;
   (pp_no_empty_list2 pp_decl_) fmt ast.decls;
   (pp_no_empty_list2 pp_fun_) fmt ast.funs;
   (pp_no_empty_list2 pp_specification) fmt ast.specifications;
