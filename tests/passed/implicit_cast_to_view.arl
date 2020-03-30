@@ -1,0 +1,22 @@
+archetype implicit_cast_to_view
+
+asset my_asset identified by id {
+  id : string;
+  value : int = 0;
+} initialized by {
+  {"id0"; 0};
+  {"id1"; 1};
+  {"id2"; 2}
+}
+
+variable res : int = 0
+
+action exec () {
+  specification {
+    s0: res = 1
+  }
+  effect {
+    var l = my_asset.select(value = 0);
+    res := l.count()
+  }
+}
