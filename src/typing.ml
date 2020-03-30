@@ -1755,7 +1755,7 @@ let rec for_xexpr
           | `T typ   -> Some typ
           | `The     -> Some (M.Tasset asset.as_name)
           | `Asset   -> Some (M.Tasset asset.as_name)
-          | `SubColl -> Some (M.Tcontainer (M.Tasset asset.as_name, M.Collection))
+          | `SubColl -> Some (M.Tcontainer (M.Tasset asset.as_name, M.View))
           | `Ref i   -> Some (Mint.find i amap)
           | _        -> assert false in
 
@@ -1953,7 +1953,6 @@ let rec for_xexpr
           if not (Type.equal from_ to_) then
             mk_sp (Some to_) (M.Pcast (from_, to_, aout))
           else aout
-  
         | _, _ ->
           aout
       end;
@@ -2796,7 +2795,7 @@ let for_specification_item
           env
         | Some (env, `Loop aname) ->
           let ty = M.Tasset (mkloc (loc lbl) aname) in
-          let ty = M.Tcontainer (ty, M.Subset) in
+          let ty = M.Tcontainer (ty, M.View) in
           let env = Env.Local.push env (mkloc coreloc "toiterate", ty) in
           let env = Env.Local.push env (mkloc coreloc "iterated", ty) in
           env

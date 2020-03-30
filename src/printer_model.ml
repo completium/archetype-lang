@@ -29,6 +29,7 @@ let pp_btyp fmt = function
 let pp_container fmt = function
   | Collection -> Format.fprintf fmt "collection"
   | Partition  -> Format.fprintf fmt "partition"
+  | View       -> Format.fprintf fmt "view"
 
 let rec pp_type fmt t =
   match t with

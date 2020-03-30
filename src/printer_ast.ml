@@ -33,7 +33,7 @@ let pp_vtyp fmt = function
 let pp_container fmt = function
   | Collection -> Format.fprintf fmt "collection"
   | Partition  -> Format.fprintf fmt "partition"
-  | Subset     -> Format.fprintf fmt "subset"
+  | View       -> Format.fprintf fmt "view"
 
 let rec pp_ptyp fmt (t : ptyp) =
   match t with

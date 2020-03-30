@@ -29,7 +29,7 @@ let to_model (ast : A.model) : M.model =
     match c with
     | A.Collection -> M.Collection
     | A.Partition  -> M.Partition
-    | A.Subset     -> M.Collection
+    | A.View       -> M.View
     (* | _            -> emit_error (NotSupportedContainer (Format.asprintf "%a@." A.pp_container c)) *)
   in
 
