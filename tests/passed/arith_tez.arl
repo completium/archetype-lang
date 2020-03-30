@@ -6,7 +6,7 @@ action exec (r : role) {
   accept transfer
   effect {
     let c : int = 0 in
-    let b : tez = a * c in
+    let b : tez = c * a in
 
     transfer b to r
   }
