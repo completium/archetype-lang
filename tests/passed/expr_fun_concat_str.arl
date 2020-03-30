@@ -1,4 +1,4 @@
-archetype expr_fun_length_str
+archetype expr_fun_concat_str
 
 variable res : string = ""
 
