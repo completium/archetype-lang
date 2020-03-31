@@ -1,0 +1,117 @@
+archetype evse_wallet
+
+constant evse_manager : role = @tz1YwPJUNoU9qQTtFtsg6mjWUGSkXtf2uDHc
+
+constant evse_id : string = "TOBEFILLEDATORIGINATION"
+
+variable kwh_price : int = 0
+
+variable power : int = 0
+
+variable gps : string = "0, 0"
+
+variable total_delivered : int = 0
+
+(* enum day =
+| monday
+| tuesday
+| wednesday
+| thursday
+| friday
+| saturday
+| sunday *)
+
+
+asset timeslot {
+  id: int;
+(*  tsday : day;*)
+  tsstart_hour : int;
+  tsstart_min  : int;
+  tsend_hour   : int;
+  tsend_min   : int;
+}
+
+action prepayment_request (evse_id : string,
+                           user_key : string,
+                           amount : int,
+                           off_kwh_price : int) {
+  specification {
+    s0 : off_kwh_price = kwh_price;
+    s1 :
+    (let noww = 0 in
+      let zero =  noww - noww % 86400 in
+      exists t in timeslot,
+	     let tsstart = zero + t.tsstart_hour * 3600 + t.tsstart_min * 60 in
+       let tsend = zero + t.tsend_hour * 3600 + t.tsend_min * 60 in
+       tsstart <= noww <= tsend)
+       ;
+  }
+
+  called by evse_manager
+  require {
+    same_price : off_kwh_price = kwh_price;
+  }
+  effect {
+    var check_time = false;
+    for t in timeslot do
+      var noww = 0;
+      var n : int = noww % 86400;
+      var tsstart = t.tsstart_hour * 3600 + t.tsstart_min * 60;
+      var tsend =  t.tsend_hour * 3600 + t.tsend_min * 60;
+      if tsstart <= n <= tsend then
+        check_time := true
+    done;
+    require(not check_time)
+    (* if (not check_time) then
+      fail ("out of range") *)
+  }
+}
+
+action set_kwh_price (new_price : int) {
+  called by evse_manager
+  effect {
+    kwh_price := new_price;
+  }
+}
+
+action set_power (new_power : int) {
+  called by evse_manager
+  effect {
+    power := new_power;
+  }
+}
+
+action set_gps (new_gps : string) {
+  called by evse_manager
+  effect {
+    gps := new_gps;
+  }
+}
+
+action add_timeslot(start_hour : int,
+                    start_min : int,
+                    end_hour : int,
+                    end_min : int) {
+  called by evse_manager
+  require {
+    h1: 0 <= start_hour < 24;
+    m1: 0 <= start_min  < 60;
+    h2: 0 <= end_hour   < 24;
+    m2: 0 <= end_min    < 60;
+  }
+  effect {
+    var timeslot_id = timeslot.count() + 1;
+    timeslot.add({id = timeslot_id;
+                  tsstart_hour = start_hour ;
+                  tsstart_min  = start_min;
+                  tsend_hour   = end_hour;
+                  tsend_min    = end_min})
+  }
+}
+
+action remove_timeslot(tsid : int) {
+  called by evse_manager
+  effect {
+    timeslot.remove(tsid)
+  }
+}
