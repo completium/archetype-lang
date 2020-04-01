@@ -838,6 +838,9 @@ let remove_rational (model : model) : model =
       | _ as node, Tbuiltin Brational ->
         begin
           match node with
+          | Mcast (Tbuiltin Bint, Tbuiltin Brational, v) ->
+            let nv = aux v in
+            int_to_rat nv
           | Mrational (a, b) ->
             let make_int (x : Core.big_int) = mk_mterm (Mint x) type_int in
             mk_mterm (Mtuple [make_int a; make_int b]) type_rational
