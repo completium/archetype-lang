@@ -388,6 +388,14 @@ let rec pp_expr outer pos fmt a =
     in
     (maybe_paren outer e_default pos pp) fmt x
 
+  | Efail x ->
+
+    let pp fmt x =
+      Format.fprintf fmt "fail (%a)"
+        pp_simple_expr x
+    in
+    (maybe_paren outer e_default pos pp) fmt x
+
   | Ereturn x ->
 
     let pp fmt x =

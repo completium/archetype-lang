@@ -1923,6 +1923,7 @@ let rec for_xexpr
             mk_sp (Some M.vtbool) (M.Pquantifer (qt, x, (ast, xty), body))
       end
 
+    | Efail     _
     | Enothing
     | Eassert   _
     | Elabel    _

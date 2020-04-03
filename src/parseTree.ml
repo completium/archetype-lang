@@ -96,6 +96,7 @@ and expr_unloc =
   | Etransfer     of expr * expr * (lident * expr list) option
   | Erequire      of expr
   | Efailif       of expr
+  | Efail         of expr
   | Eassign       of assignment_operator * expr * expr
   | Eif           of expr * expr * expr option
   | Ebreak

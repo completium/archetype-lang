@@ -77,7 +77,7 @@ transition success () {
   when { now > (deliveryDate + businessDays) }
 }
 
-transition fail () {
+transition fail_ () {
   called by receiver
 
   from Delivered

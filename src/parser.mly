@@ -67,6 +67,7 @@
 %token EQUIV
 %token EXISTS
 %token EXTENSION
+%token FAIL
 %token FAILIF
 %token FALSE
 %token FOR
@@ -709,6 +710,9 @@ expr_r:
 
  | FAILIF x=simple_expr
      { Efailif x }
+
+ | FAIL _x=paren(simple_expr)
+     { Ebreak }
 
  | RETURN x=simple_expr
      { Ereturn x }

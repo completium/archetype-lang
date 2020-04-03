@@ -44,6 +44,7 @@
       "enum"                , ENUM           ;
       "exists"              , EXISTS         ;
       "extension"           , EXTENSION      ;
+      "fail"                , FAIL           ;
       "failif"              , FAILIF         ;
       "false"               , FALSE          ;
       "for"                 , FOR            ;
