@@ -163,6 +163,7 @@ module AssetCollection
   use list.Append as A
   use list.Mem as M
   use option.Option
+  use fset.Undup
 
   (* ------------------------------------------------------------------------ *)
   type t = abstract {}        (* asset type           *)
@@ -180,9 +181,28 @@ module AssetCollection
   clone InsertionSort as IS with type elt = t,
                                  val le = le_t
 
+  let rec function memlist (v : t) (xs : list t) : bool =
+    match xs with
+    | Nil ->
+        false
+    | Cons y xs ->
+        eqf v y || memlist v xs
+    end
+
+  let rec function undup (xs : list t) : list t =
+    match xs with
+    | Nil ->
+        Nil
+    | Cons x xs ->
+        if memlist x xs then undup xs else Cons x (undup xs)
+    end
+
+  let function norm (xs : list t) : list t =
+    IS.insertion_sort (undup xs)
+
   clone fset.FSet      as F with type t     = t,
                                  val  eqt   = eqf,
-                                 val  norm  = IS.insertion_sort,
+                                 val  norm  = norm,
                                  axiom .
   type collection = {
     content : F.fset
