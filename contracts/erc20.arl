@@ -8,6 +8,7 @@ with {
 }
 
 asset allowance {
+    a_id    : int;
     allowed : address;
     amount  : int;
 } with {
@@ -56,5 +57,38 @@ action dotransfer (dest : pkey of tokenHolder, value : int) {
   effect {
     tokenHolder.update( tokenHolder.get(dest).holder, { tokens += value });
     tokenHolder.update( caller, { tokens -= value })
+  }
+}
+
+action delegate(delegator : address, value : int) {
+  effect {
+    var allowance_id = 0;
+
+    (* search if allowance exists *)
+    var col = tokenHolder.get(caller).allowances.select(allowed = caller);
+    if (col.count() > 0) then
+      allowance_id := col.nth(0).a_id;
+
+    (* update allowance*)
+    if allowance_id = 0 then (
+      var a_asset : allowance = {a_id = (allowance.count() + 1); allowed = delegator; amount = value };
+      allowance.add(a_asset);
+      tokenHolder.get(caller).allowances.add(a_asset)
+    ) else (
+      allowance.update(allowance_id, {allowed = delegator; amount = value})
+    )
+  }
+}
+
+action doTransfer(from_ : address, dest : address, value : int) {
+  require {
+    d1: tokenHolder.get(from_).allowances.select(allowed = caller).nth(0).amount >= value
+  }
+  effect {
+    var a_key = tokenHolder.get(from_).allowances.select(allowed = caller).nth(0).a_id;
+    allowance.update(a_key, {amount -= value});
+
+    tokenHolder.update( tokenHolder.get(dest).holder, { tokens += value });
+    tokenHolder.update( tokenHolder.get(from_).holder, { tokens -= value });
   }
 }
