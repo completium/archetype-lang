@@ -59,36 +59,3 @@ action dotransfer (dest : pkey of tokenHolder, value : int) {
     tokenHolder.update( caller, { tokens -= value })
   }
 }
-
-action approve(spender : address, value : int) {
-  effect {
-    var allowance_id = 0;
-
-    (* search if allowance exists *)
-    var col = tokenHolder.get(caller).allowances.select(allowed = caller);
-    if (col.count() > 0) then
-      allowance_id := col.nth(0).a_id;
-
-    (* update allowance*)
-    if allowance_id = 0 then (
-      var a_asset : allowance = {a_id = (allowance.count() + 1); allowed = spender; amount = value };
-      allowance.add(a_asset);
-      tokenHolder.get(caller).allowances.add(a_asset)
-    ) else (
-      allowance.update(allowance_id, {allowed = spender; amount = value})
-    )
-  }
-}
-
-action transferFrom(from_ : address, to_ : address, value : int) {
-  require {
-    d1: tokenHolder.get(from_).allowances.select(allowed = caller).nth(0).amount >= value
-  }
-  effect {
-    var a_key = tokenHolder.get(from_).allowances.select(allowed = caller).nth(0).a_id;
-    allowance.update(a_key, {amount -= value});
-
-    tokenHolder.update( tokenHolder.get(to_).holder, { tokens += value });
-    tokenHolder.update( tokenHolder.get(from_).holder, { tokens -= value });
-  }
-}
