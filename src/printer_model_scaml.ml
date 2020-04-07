@@ -411,6 +411,9 @@ let pp_model fmt (model : model) =
     | Bconcat t -> Format.fprintf fmt "concat on %a" pp_type t
     | Bslice  t -> Format.fprintf fmt "slice on %a"  pp_type t
     | Blength t -> Format.fprintf fmt "length on %a" pp_type t
+    | Bisnone t -> Format.fprintf fmt "isnone on %a" pp_type t
+    | Bissome t -> Format.fprintf fmt "issome on %a" pp_type t
+    | Bgetopt t -> Format.fprintf fmt "getopt on %a" pp_type t
   in
 
   let pp_api_internal fmt = function
@@ -1129,6 +1132,17 @@ let pp_model fmt (model : model) =
         Format.fprintf fmt "length (%a)"
           f x
 
+      | Misnone x ->
+        Format.fprintf fmt "isnone (%a)"
+          f x
+
+      | Missome x ->
+        Format.fprintf fmt "issome (%a)"
+          f x
+
+      | Mgetopt x ->
+        Format.fprintf fmt "getopt (%a)"
+          f x
 
       (* crypto functions *)
 

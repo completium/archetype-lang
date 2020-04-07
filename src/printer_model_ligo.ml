@@ -190,6 +190,8 @@ let pp_model_internal fmt (model : model) b =
     | _ -> pp_type fmt t
   in
 
+  let extract_option_type = function | Toption x -> x | _ -> assert false in
+
   let pp_operator fmt op =
     let to_str = function
       | ValueAssign -> ":="
@@ -970,6 +972,20 @@ let pp_model_internal fmt (model : model) b =
         pp_pretty_type x.type_
         f x
 
+    | Misnone x ->
+      Format.fprintf fmt "isnone_%a (%a)"
+        pp_pretty_type (extract_option_type x.type_)
+        f x
+
+    | Missome x ->
+      Format.fprintf fmt "issome_%a (%a)"
+        pp_pretty_type (extract_option_type x.type_)
+        f x
+
+    | Mgetopt x ->
+      Format.fprintf fmt "getopt_%a (%a)"
+        pp_pretty_type (extract_option_type x.type_)
+        f x
 
     (* crypto functions *)
 
@@ -1951,6 +1967,42 @@ let pp_model_internal fmt (model : model) b =
       Format.fprintf fmt "function length_%a (const a : %a) : int is int(size(a))@\n"
         pp_pretty_type t
         pp_type t
+
+    | Bisnone t ->
+      Format.fprintf fmt "function isnone_%a (const a : option(%a)) : bool is @\n  \
+         block {@\n    \
+         var res : bool := False;@\n    \
+         case a of@\n      \
+         None -> res := True@\n    \
+         | Some (s) -> res := False@\n    \
+         end@\n  \
+         } with res@\n"
+        pp_pretty_type t pp_type t
+
+    | Bissome t ->
+      Format.fprintf fmt "function issome_%a (const a : option(%a)) : bool is@\n  \
+         block {@\n    \
+         var res : bool := False;@\n    \
+         case a of@\n      \
+         None -> res := False@\n    \
+         | Some (s) -> res := True@\n    \
+         end@\n  \
+         } with res@\n"
+        pp_pretty_type t pp_type t
+
+    | Bgetopt t ->
+      Format.fprintf fmt
+        "function getopt_%a (const a : option(%a)) : %a is@\n  \
+         block {@\n    \
+         var res : %a := %a;@\n    \
+         case a of@\n      \
+         None -> failwith (\"getopt_%a: argument is none\")@\n      \
+         | Some (s) -> res := s@\n    \
+         end@\n  \
+         } with res@\n"
+        pp_pretty_type t pp_type t pp_type t
+        pp_type t pp_default t
+        pp_pretty_type t
 
   in
 

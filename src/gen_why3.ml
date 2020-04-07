@@ -1334,6 +1334,9 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
       end
     | Mslice  (s,i1,i2) -> Tapp (loc_term (Tvar "substring"),[map_mterm m ctx s; map_mterm m ctx i1; map_mterm m ctx i2])
     | Mlength s -> Tapp (loc_term (Tvar "str_length"),[map_mterm m ctx s])
+    | Misnone _ -> error_not_translated "Misnone"
+    | Missome _ -> error_not_translated "Missome"
+    | Mgetopt _ -> error_not_translated "Mgetopt"
 
 
     (* crypto functions *)

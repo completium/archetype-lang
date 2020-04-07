@@ -236,6 +236,9 @@ type ('id, 'term) mterm_node  =
   | Mconcat           of 'term * 'term
   | Mslice            of 'term * 'term * 'term
   | Mlength           of 'term
+  | Misnone           of 'term
+  | Missome           of 'term
+  | Mgetopt           of 'term
   (* crypto functions *)
   | Mblake2b          of 'term
   | Msha256           of 'term
@@ -369,6 +372,9 @@ and api_builtin =
   | Bconcat of type_
   | Bslice  of type_
   | Blength of type_
+  | Bisnone of type_
+  | Bissome of type_
+  | Bgetopt of type_
 [@@deriving show {with_path = false}]
 
 and api_internal =
@@ -1039,6 +1045,9 @@ let cmp_mterm_node
     | Mconcat (x1, y1), Mconcat (x2, y2)                                               -> cmp x1 x2 && cmp y1 y2
     | Mslice (x1, s1, e1), Mslice (x2, s2, e2)                                         -> cmp x1 x2 && cmp s1 s2 && cmp e1 e2
     | Mlength x1, Mlength x2                                                           -> cmp x1 x2
+    | Misnone x1, Misnone x2                                                           -> cmp x1 x2
+    | Missome x1, Missome x2                                                           -> cmp x1 x2
+    | Mgetopt x1, Mgetopt x2                                                           -> cmp x1 x2
     (* crypto functions *)
     | Mblake2b x1, Mblake2b x2                                                         -> cmp x1 x2
     | Msha256  x1, Msha256  x2                                                         -> cmp x1 x2
@@ -1158,6 +1167,9 @@ let cmp_api_item_node (a1 : api_storage_node) (a2 : api_storage_node) : bool =
     | Bconcat t1, Bconcat t2 -> cmp_type t1 t2
     | Bslice  t1, Bslice  t2 -> cmp_type t1 t2
     | Blength t1, Blength t2 -> cmp_type t1 t2
+    | Bisnone t1, Bisnone t2 -> cmp_type t1 t2
+    | Bissome t1, Bissome t2 -> cmp_type t1 t2
+    | Bgetopt t1, Bgetopt t2 -> cmp_type t1 t2
     | _ -> false
   in
   let cmp_api_internal (i1 : api_internal) (i2 : api_internal) : bool =
@@ -1314,6 +1326,9 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Mconcat (x, y)                 -> Mconcat (f x, f y)
   | Mslice (x, s, e)               -> Mslice (f x, f s, f e)
   | Mlength x                      -> Mlength (f x)
+  | Misnone x                      -> Misnone (f x)
+  | Missome x                      -> Missome (f x)
+  | Mgetopt x                      -> Mgetopt (f x)
   (* crypto functions *)
   | Mblake2b x                     -> Mblake2b (f x)
   | Msha256 x                      -> Msha256 (f x)
@@ -1632,6 +1647,9 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mconcat (x, y)                        -> f (f accu x) y
   | Mslice (x, s, e)                      -> f (f (f accu x) s) e
   | Mlength x                             -> f accu x
+  | Misnone x                             -> f accu x
+  | Missome x                             -> f accu x
+  | Mgetopt x                             -> f accu x
   (* crypto functions *)
   | Mblake2b x                            -> f accu x
   | Msha256  x                            -> f accu x
@@ -2223,6 +2241,18 @@ let fold_map_term
     let xe, xa = f accu x in
     g (Mlength xe), xa
 
+  | Missome x ->
+    let xe, xa = f accu x in
+    g (Missome xe), xa
+
+  | Misnone x ->
+    let xe, xa = f accu x in
+    g (Misnone xe), xa
+
+  | Mgetopt x ->
+    let xe, xa = f accu x in
+    g (Mgetopt xe), xa
+
   (* crypto functions *)
 
   | Mblake2b x ->
@@ -2674,6 +2704,9 @@ let replace_ident_model (f : kind_ident -> ident -> ident) (model : model) : mod
         | Bconcat t -> Bconcat (for_type t)
         | Bslice  t -> Bslice  (for_type t)
         | Blength t -> Blength (for_type t)
+        | Bisnone t -> Bisnone (for_type t)
+        | Bissome t -> Bissome (for_type t)
+        | Bgetopt t -> Bgetopt (for_type t)
       in
       let for_api_internal (ainternal : api_internal) : api_internal =
         match ainternal with

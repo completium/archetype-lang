@@ -293,6 +293,18 @@ let to_model (ast : A.model) : M.model =
       let fx = f x in
       M.Mlength (fx)
 
+    | A.Pcall (None, A.Cconst A.Cisnone, [AExpr x]) ->
+      let fx = f x in
+      M.Misnone (fx)
+
+    | A.Pcall (None, A.Cconst A.Cissome, [AExpr x]) ->
+      let fx = f x in
+      M.Missome (fx)
+
+    | A.Pcall (None, A.Cconst A.Cgetopt, [AExpr x]) ->
+      let fx = f x in
+      M.Mgetopt (fx)
+
     | A.Pcall (None, A.Cconst A.Cblake2b, [AExpr x]) ->
       let fx = f x in
       M.Mblake2b (fx)

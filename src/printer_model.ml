@@ -48,10 +48,10 @@ let rec pp_type fmt t =
       pp_container c
   | Tlist t ->
     Format.fprintf fmt "%a list"
-      pp_type_ t
+      pp_type t
   | Toption t ->
     Format.fprintf fmt "%a option"
-      pp_type_ t
+      pp_type t
   | Ttuple ts ->
     Format.fprintf fmt "%a"
       (pp_list " * " pp_type) ts
@@ -726,6 +726,18 @@ let pp_mterm fmt (mt : mterm) =
       Format.fprintf fmt "length (%a)"
         f x
 
+    | Misnone x ->
+      Format.fprintf fmt "isnone (%a)"
+        f x
+
+    | Missome x ->
+      Format.fprintf fmt "issome (%a)"
+        f x
+
+    | Mgetopt x ->
+      Format.fprintf fmt "getopt (%a)"
+        f x
+
     (* crypto functions *)
 
     | Mblake2b x ->
@@ -1117,6 +1129,9 @@ let pp_api_builtin fmt = function
   | Bconcat t -> Format.fprintf fmt "concat on %a" pp_type t
   | Bslice  t -> Format.fprintf fmt "slice on %a"  pp_type t
   | Blength t -> Format.fprintf fmt "length on %a" pp_type t
+  | Bisnone t -> Format.fprintf fmt "isnone on %a" pp_type t
+  | Bissome t -> Format.fprintf fmt "issome on %a" pp_type t
+  | Bgetopt t -> Format.fprintf fmt "getopt on %a" pp_type t
 
 let pp_api_internal fmt = function
   | RatEq        -> Format.fprintf fmt "rat_eq"

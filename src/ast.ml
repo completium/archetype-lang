@@ -142,6 +142,9 @@ type const =
   | Cslice
   | Cconcat
   | Clength
+  | Cisnone
+  | Cissome
+  | Cgetopt
   (* list *)
   | Chead
   | Ctail

@@ -187,6 +187,9 @@ let to_const = function
   | Cconcat         -> "concat"
   | Cslice          -> "slice"
   | Clength         -> "length"
+  | Cisnone         -> "isnone"
+  | Cissome         -> "issome"
+  | Cgetopt         -> "getopt"
   (* list *)
   | Chead           -> "head"
   | Ctail           -> "tail"

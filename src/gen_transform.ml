@@ -1694,3 +1694,29 @@ let replace_array_asset_by_map (model : model) : model =
         | MTasset _ -> { x with default = change_value x.default }
         | _ -> x
       ) model.storage}
+
+
+(* let replace_get_on_view (model : model) : model =
+  let _is_not_varcol = function
+    | Mvarstorecol _ -> false
+    | _ -> true
+  in
+
+  let rec aux ctx (mt : mterm) : mterm =
+    match mt.node with
+    | Mget (an, (* c, *) k) ->
+      let type_asset = Tasset (dumloc an) in
+      let type_asset_col = Tcontainer(type_asset, Collection) in
+      let varcol = mk_mterm (Mvarstorecol an) type_asset_col in
+      let c = varcol in
+      let get_asset = mk_mterm (Mget (an, k)) type_asset in
+      let ffail = mk_mterm (Mfail (Invalid (mk_mterm (Mstring "") (Tbuiltin Bstring)))) Tunit in
+      let cond = mk_mterm (Mcontains (an, c, k)) (Tbuiltin Bbool) in
+      let if_expr = mk_mterm (Mexprif (cond, get_asset, ffail)) type_asset in
+
+      let l = aux ctx l in
+      let r = aux ctx r in
+      mk_mterm (Mconcat (l, r)) (Tbuiltin Bstring)
+    | _ -> map_mterm (aux ctx) mt
+  in
+  Model.map_mterm_model aux model *)

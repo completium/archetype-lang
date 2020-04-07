@@ -34,6 +34,7 @@ let process_api_storage (model : model) : model =
     let api_items : api_storage_node list =
       let mt_type = term.type_ in
       let is_rat = match mt_type with | Tbuiltin Brational | Ttuple [Tbuiltin Bint; Tbuiltin Bint] -> true | _ -> false in
+      let extract_option_type = function | Toption x -> x | _ -> assert false in
       match term.node with
       | Mapifget (asset_name, _, _)
       | Mget (asset_name, _) ->
@@ -110,6 +111,12 @@ let process_api_storage (model : model) : model =
         [APIBuiltin (Bslice mt_type)]
       | Mlength x ->
         [APIBuiltin (Blength x.type_)]
+      | Misnone x ->
+        [APIBuiltin (Bisnone (extract_option_type x.type_))]
+      | Missome x ->
+        [APIBuiltin (Bissome (extract_option_type x.type_))]
+      | Mgetopt x ->
+        [APIBuiltin (Bgetopt (extract_option_type x.type_))]
       | Mrateq _ ->
         [APIInternal (RatEq)]
       | Mratcmp _ ->
@@ -203,12 +210,15 @@ let process_api_storage (model : model) : model =
                    | APIBuiltin (Bconcat       _) -> 31
                    | APIBuiltin (Bslice        _) -> 32
                    | APIBuiltin (Blength       _) -> 33
-                   | APIAsset   (Shallow       _) -> 34
-                   | APIAsset   (Unshallow     _) -> 35
-                   | APIAsset   (Listtocoll    _) -> 36
-                   | APIAsset   (Head          _) -> 37
-                   | APIAsset   (Tail          _) -> 38
-                   | APIAsset   (ColToKeys     _) -> 39
+                   | APIBuiltin (Bisnone       _) -> 34
+                   | APIBuiltin (Bissome       _) -> 35
+                   | APIBuiltin (Bgetopt       _) -> 36
+                   | APIAsset   (Shallow       _) -> 37
+                   | APIAsset   (Unshallow     _) -> 38
+                   | APIAsset   (Listtocoll    _) -> 39
+                   | APIAsset   (Head          _) -> 40
+                   | APIAsset   (Tail          _) -> 41
+                   | APIAsset   (ColToKeys     _) -> 42
                  in
                  let idx1 = get_kind i1.node_item in
                  let idx2 = get_kind i2.node_item in

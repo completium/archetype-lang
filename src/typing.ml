@@ -558,6 +558,7 @@ end = struct
 end
 
 (* -------------------------------------------------------------------- *)
+let all_builtins_types = [M.vtbool; M.vtint; M.vtrational; M.vtdate; M.vtduration; M.vtstring; M.vtaddress; M.vtrole; M.vtcurrency; M.vtkey; M.vtbytes ]
 let corefuns =
   (List.map (fun x -> ("abs", M.Cabs, [x], x)) [M.vtint; M.vtrational])
   @ (List.flatten (List.map (fun (name, cname) -> (
@@ -568,6 +569,12 @@ let corefuns =
   @ (List.map (fun x -> ("concat", M.Cconcat, [x; x], x)) [M.vtbytes; M.vtstring])
   @ (List.map (fun x -> ("slice", M.Cslice, [x; M.vtint; M.vtint], x)) [M.vtbytes; M.vtstring])
   @ ["length", M.Clength, [M.vtstring], M.vtint]
+  @ (List.flatten (List.map (fun (name, t) -> (
+        List.map
+          (fun x -> (name, t, [M.Toption x], M.vtbool))
+          all_builtins_types))
+      [("isnone", M.Cisnone); ("issome", M.Cissome)]))
+  @ (List.map (fun x -> ("getopt", M.Cgetopt, [M.Toption x], x)) all_builtins_types)
 
 (* -------------------------------------------------------------------- *)
 

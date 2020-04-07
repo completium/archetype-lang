@@ -1,0 +1,13 @@
+archetype expr_fun_opt_isnone
+
+variable res : bool = false
+
+action exec () {
+  specification {
+    s0: res = true;
+  }
+  effect {
+    var i_opt : int option = none;
+    res := isnone(i_opt);
+  }
+}
