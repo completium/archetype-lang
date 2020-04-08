@@ -135,6 +135,7 @@ let replace_update_by_set (model : model) : model =
 
         let key_name = "k_" in
         let key_loced : lident = dumloc (key_name) in
+        let asset_col : mterm = mk_mterm (Mvarstorecol (dumloc an)) type_asset in
         let key_mterm : mterm =
           match asset_aaa with
           | Some _ -> k
@@ -185,7 +186,7 @@ let replace_update_by_set (model : model) : model =
           match asset_aaa with
           | Some a -> a
           | _ ->
-            mk_mterm (Mget (an, key_mterm)) type_asset
+            mk_mterm (Mget (an, asset_col, key_mterm)) type_asset
         in
 
         let letinasset : mterm = mk_mterm (Mletin ([var_name],
@@ -1181,7 +1182,7 @@ let abs_tez model : model =
 let replace_assignfield_by_update (model : model) : model =
   let rec aux (ctx : ctx_model) (mt : mterm) : mterm =
     match mt.node with
-    | Massignfield (op, _, {node = Mget(an, key); _ }, fn, v) ->
+    | Massignfield (op, _, {node = Mget(an, _, key); _ }, fn, v) ->
       let l = [(fn, op, v)] in
       mk_mterm (Mupdate (an, key, l)) Tunit
     | Massignfield (op, _, a, fn, v) ->
@@ -1351,7 +1352,7 @@ let replace_ident_model_val (model : model) : model =
 let replace_key_by_asset (model : model) : model =
   let rec aux c (mt : mterm) : mterm =
     let mk n = mk_mterm n Tunit in
-    let get an k = mk_mterm (Mget (an, k)) (Tasset (dumloc an)) in
+    let get an k = mk_mterm (Mget (an, Utils.get_asset_collection an, k)) (Tasset (dumloc an)) in
     match mt.node with
     | Mremoveasset (an, k) ->
       let k_c, _ =  Utils.get_asset_key model an in
@@ -1454,7 +1455,7 @@ let process_asset_state (model : model) : model =
     | Mvarassetstate (an, k) ->
       begin
         let i = get_state_lident an in
-        let get_mt = mk_mterm (Mget (an, k)) (Tasset (dumloc an)) in
+        let get_mt = mk_mterm (Mget (an, Utils.get_asset_collection an, k)) (Tasset (dumloc an)) in
         mk_mterm (Mdotasset (get_mt, i)) mt.type_
       end
     | Massignassetstate (an, k, v) ->

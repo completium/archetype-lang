@@ -798,19 +798,19 @@ let pp_model_internal fmt (model : model) b =
 
     | Mupdate _ -> emit_error (UnsupportedTerm ("update"))
     | Mremoveif _ -> emit_error (UnsupportedTerm ("removeif"))
-    | Maddupdate _ -> emit_error (UnsupportedTerm ("add_update"))
+    | Maddupdate _ -> emit_error (UnsupportedTerm ("addupdate"))
 
 
     (* asset api expression *)
 
-    | Mget (c, k) ->
-      let pp fmt (c, k) =
+    | Mget (an, c, k) ->
+      let pp fmt (an, _c, k) =
         Format.fprintf fmt "get_%a (%s, %a)"
-          pp_str c
+          pp_str an
           const_storage
           f k
       in
-      pp fmt (c, k)
+      pp fmt (an, c, k)
 
     | Mselect (an, c, p) ->
       let index : int = get_preds_index env.select_preds p in

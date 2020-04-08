@@ -979,14 +979,14 @@ let pp_model fmt (model : model) =
 
       (* asset api expression *)
 
-      | Mget (c, k) ->
-        let pp fmt (c, k) =
+      | Mget (an, c, k) ->
+        let pp fmt (an, _c, k) =
           Format.fprintf fmt "get_%a (%s, %a)"
-            pp_str c
+            pp_str an
             const_storage
             f k
         in
-        pp fmt (c, k)
+        pp fmt (an, c, k)
 
       | Mselect (an, c, p) ->
         let pp fmt (an, c, p) =

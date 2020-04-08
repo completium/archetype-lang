@@ -211,7 +211,7 @@ type ('id, 'term) mterm_node  =
   | Mremoveif         of ident * 'term * 'term
   | Maddupdate        of ident * 'term * ('id * assignment_operator * 'term) list
   (* asset api expression *)
-  | Mget              of ident * 'term
+  | Mget              of ident * 'term * 'term
   | Mselect           of ident * 'term * 'term
   | Msort             of ident * 'term * (ident * sort_kind) list
   | Mcontains         of ident * 'term * 'term
@@ -1020,7 +1020,7 @@ let cmp_mterm_node
     | Maddupdate (an1, k1, l1), Maddupdate (an2, k2, l2)                               -> cmp_ident an1 an2 && cmp k1 k2 && List.for_all2 (fun (id1, op1, v1) (id2, op2, v2) -> cmpi id1 id2 && cmp_assign_op op1 op2 && cmp v1 v2) l1 l2
     | Mremoveif (an1, fn1, i1), Mremoveif (an2, fn2, i2)                               -> cmp_ident an1 an2 && cmp fn1 fn2 && cmp i1 i2
     (* asset api expression *)
-    | Mget (c1, k1), Mget (c2, k2)                                                     -> cmp_ident c1 c2 && cmp k1 k2
+    | Mget (an1, c1, k1), Mget (an2, c2, k2)                                           -> cmp_ident an1 an2 && cmp c1 c2 && cmp k1 k2
     | Mselect (an1, c1, p1), Mselect (an2, c2, p2)                                     -> cmp_ident an1 an2 && cmp c1 c2 && cmp p1 p2
     | Msort (an1, c1, l1), Msort (an2, c2, l2)                                         -> cmp_ident an1 an2 && cmp c1 c2 && List.for_all2 (fun (fn1, k1) (fn2, k2) -> cmp_ident fn1 fn2 && k1 = k2) l1 l2
     | Mcontains (an1, c1, i1), Mcontains (an2, c2, i2)                                 -> cmp_ident an1 an2 && cmp c1 c2 && cmp i1 i2
@@ -1301,7 +1301,7 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Mremoveif (an, fn, i)          -> Mremoveif (fi an, f fn, f i)
   | Maddupdate (an, k, l)          -> Maddupdate (fi an, f k, List.map (fun (id, op, v) -> (g id, op, f v)) l)
   (* asset api expression *)
-  | Mget (an, k)                   -> Mget (fi an, f k)
+  | Mget (an, c, k)                -> Mget (fi an, f c, f k)
   | Mselect (an, c, p)             -> Mselect (fi an, f c, f p)
   | Msort (an, c, l)               -> Msort (fi an, f c, l)
   | Mcontains (an, c, i)           -> Mcontains (fi an, f c, f i)
@@ -1622,7 +1622,7 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mremoveif (_, fn, c)                  -> f (f accu fn) c
   | Maddupdate (_, k, l)                  -> List.fold_left (fun accu (_, _, v) -> f accu v) (f accu k) l
   (* asset api expression *)
-  | Mget (_, k)                           -> f accu k
+  | Mget (_, c, k)                        -> f (f accu c) k
   | Mselect (_, c, p)                     -> f (f accu c) p
   | Msort (_, c,_)                        -> f accu c
   | Mcontains (_, c, i)                   -> f (f accu c) i
@@ -2130,9 +2130,10 @@ let fold_map_term
 
   (* asset api expression *)
 
-  | Mget (c, k) ->
-    let ke, ka = f accu k in
-    g (Mget (c, ke)), ka
+  | Mget (an, c, k) ->
+    let ce, ca = f accu c in
+    let ke, ka = f ca k in
+    g (Mget (an, ce, ke)), ka
 
   | Mselect (an, c, p) ->
     let ce, ca = f accu c in
@@ -3054,6 +3055,7 @@ module Utils : sig
   val with_division                      : model -> bool
   val with_min_max                       : model -> bool
   val with_count                         : model -> ident -> bool
+  val get_asset_collection               : ident -> mterm
 end = struct
 
   open Tools
@@ -3796,5 +3798,8 @@ end = struct
           acc || true
         | _ -> acc
       ) false m.api_items
+
+  let get_asset_collection (an : ident) : mterm =
+    mk_mterm (Mvarstorecol (dumloc an)) (Tcontainer (Tasset (dumloc an), Collection))
 
 end

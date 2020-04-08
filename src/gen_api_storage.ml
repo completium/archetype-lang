@@ -37,7 +37,7 @@ let process_api_storage (model : model) : model =
       let extract_option_type = function | Toption x -> x | _ -> assert false in
       match term.node with
       | Mapifget (asset_name, _, _)
-      | Mget (asset_name, _) ->
+      | Mget (asset_name, _, _) ->
         [APIAsset (Get asset_name)]
       | Mset (asset_name, _, _, _) ->
         [APIAsset (Set asset_name)]

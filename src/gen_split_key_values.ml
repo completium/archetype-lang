@@ -135,7 +135,7 @@ let split_key_values (model : model) : model =
           let get_node =
             match Utils.get_source_for model ctx col with
             | Some c -> Mgetfrommap (unloc an, key, c)
-            | _ -> Mget (unloc an, key)
+            | _ -> Mget (unloc an, Model.Utils.get_asset_collection (unloc an), key)
           in
           let get = mk_mterm get_node (Tasset an) in
           let body = mk_mterm (Mletin ([id], get, Some (Tasset an), body, None)) (body.type_) in
