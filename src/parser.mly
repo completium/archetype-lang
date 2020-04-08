@@ -711,8 +711,8 @@ expr_r:
  | FAILIF x=simple_expr
      { Efailif x }
 
- | FAIL _x=paren(simple_expr)
-     { Ebreak }
+ | FAIL e=paren(simple_expr)
+     { Efail e }
 
  | RETURN x=simple_expr
      { Ereturn x }

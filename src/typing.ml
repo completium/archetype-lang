@@ -2682,6 +2682,10 @@ let rec for_instruction (env : env) (i : PT.expr) : env * M.instruction =
       let e = for_formula env e in
       env, mki (M.Irequire (false, e))
 
+    | Efail e ->
+      let e = for_expr ~ety:M.vtstring env e in
+      env, mki (M.Ifail e)
+
     | Eassert lbl ->
       let env =
         if (check_and_emit_name_free env lbl) then
