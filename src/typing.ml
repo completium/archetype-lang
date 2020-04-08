@@ -215,6 +215,7 @@ type error_desc =
   | UnknownState                       of ident
   | UnknownTypeName                    of ident
   | UnpureInFormula
+  | UnpureOnView
   | UselessPattern
   | VoidMethodInExpr
 [@@deriving show {with_path = false}]
@@ -343,6 +344,7 @@ let pp_error_desc fmt e =
   | UnknownState i                     -> pp "Unknown state: %a" pp_ident i
   | UnknownTypeName i                  -> pp "Unknown type: %a" pp_ident i
   | UnpureInFormula                    -> pp "Cannot use expression with side effect"
+  | UnpureOnView                       -> pp "Cannot call side-effectful methods on views"
   | UselessPattern                     -> pp "Useless match branch"
   | VoidMethodInExpr                   -> pp "Expecting arguments"
 
@@ -1768,7 +1770,7 @@ let rec for_xexpr
 
         let the = for_xexpr env the in
 
-        let the, mname, (purity, totality), args, rty =
+        let the, asset, mname, (purity, totality), args, rty =
           match the.M.type_ with
           | None ->
             bailout ()
@@ -1777,17 +1779,17 @@ let rec for_xexpr
               match Type.as_asset_collection ty with
               | Some _ ->
                 let infos = for_gen_method_call mode env (loc tope) (`Typed the, m, args) in
-                let the, asset, method_, args, amap = Option.get_fdfl bailout infos in
+                let the, (asset, c), method_, args, amap = Option.get_fdfl bailout infos in
                 let rty = Option.bind (type_of_mthtype asset amap) (snd method_.mth_sig) in
 
-                (the, method_.mth_name, (method_.mth_purity, method_.mth_totality), args, rty)
+                (the, Some (asset, c), method_.mth_name, (method_.mth_purity, method_.mth_totality), args, rty)
 
               | None ->
                 let infos = for_api_call mode env (loc tope) (`Typed the, m, args) in
                 let the, method_, args = Option.get_fdfl bailout infos in
                 let rty =
                   Option.map (fun ty -> let `T ty = ty in ty) (snd (method_.mth_sig)) in
-                (the, method_.mth_name, (method_.mth_purity, method_.mth_totality), args, rty)
+                (the, None, method_.mth_name, (method_.mth_purity, method_.mth_totality), args, rty)
             end
         in
 
@@ -1795,11 +1797,13 @@ let rec for_xexpr
           Env.emit_error env (loc tope, VoidMethodInExpr)
         end;
 
-        begin match purity, mode with
-          | `Effect, `Formula ->
-            Env.emit_error env (loc tope, UnpureInFormula)
-          | _, _ ->
-            ()
+        begin match asset, purity, mode with
+          | _, `Effect, `Formula ->
+              Env.emit_error env (loc tope, UnpureInFormula)
+          | Some (_, M.View), `Effect, _ ->
+              Env.emit_error env (loc tope, UnpureOnView)
+          | _, _, _ ->
+              ()
         end;
 
         let rty =
@@ -2137,14 +2141,14 @@ and for_api_call mode env theloc (the, m, args)
 
 (* -------------------------------------------------------------------- *)
 and for_gen_method_call mode env theloc (the, m, args)
-  : (M.pterm * assetdecl * method_ * M.pterm_arg list * M.type_ Mint.t) option
+  : (M.pterm * (assetdecl * M.container) * method_ * M.pterm_arg list * M.type_ Mint.t) option
   =
   let module E = struct exception Bailout end in
 
   try
     let the, asset = for_asset_collection_expr mode env the in
 
-    let asset, _ = Option.get_fdfl (fun () -> raise E.Bailout) asset in
+    let asset, c = Option.get_fdfl (fun () -> raise E.Bailout) asset in
     let method_ =
       match Mid.find_opt (unloc m) methods with
       | None ->
@@ -2248,7 +2252,7 @@ and for_gen_method_call mode env theloc (the, m, args)
             aout := Mint.add i ty !aout
           | _ -> ()) args; !aout in
 
-    Some (the, asset, method_, args, amap)
+    Some (the, (asset, c), method_, args, amap)
 
   with E.Bailout -> None
 
@@ -2558,7 +2562,13 @@ let rec for_instruction (env : env) (i : PT.expr) : env * M.instruction =
             match Type.as_asset_collection ty with
             | Some _ ->
               let infos = for_gen_method_call `Expr env (loc i) (`Typed the, m, args) in
-              let the, _asset, method_, args, _ = Option.get_fdfl bailout infos in
+              let the, asset, method_, args, _ = Option.get_fdfl bailout infos in
+
+              begin match asset, method_.mth_purity with
+              | (_, M.View), `Effect ->
+                  Env.emit_error env (loc i, UnpureOnView)
+              | _, _ ->
+                  () end;
               env, mki (M.Icall (Some the, M.Cconst method_.mth_name, args))
 
             | _ ->
