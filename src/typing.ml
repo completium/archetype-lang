@@ -265,7 +265,7 @@ let pp_error_desc fmt e =
   | BindingInExpr                      -> pp "Binding in expression"
   | CannotAssignLoopIndex x            -> pp "Cannot assign loop index `%s'" x
   | CannotCaptureLocal                 -> pp "Cannot capture local variables in this context"
-  | CannotInferAnonRecord              -> pp "Cannot infer a non record"
+  | CannotInferAnonRecord              -> pp "Cannot infer anonymous record"
   | CannotInferCollectionType          -> pp "Cannot infer collection type"
   | CannotInfer                        -> pp "Cannot infer type"
   | CannotUpdatePKey                   -> pp "Cannot modify the primary key of asset"
@@ -1479,7 +1479,7 @@ let rec for_xexpr
         | None, Some ((M.Tasset _) as ty) ->
           mk_sp (Some (M.Tcontainer (ty, M.Collection))) (M.Parray (e :: es))
 
-        | None, Some ty ->
+        | _, Some ty ->
           mk_sp (Some (M.Tlist ty)) (M.Parray (e :: es))
 
         | _ ->
