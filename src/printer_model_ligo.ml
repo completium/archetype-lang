@@ -409,14 +409,14 @@ let pp_model_internal fmt (model : model) b =
     | Mfail ft ->
       let pp_fail_type fmt = function
         | Invalid e -> f fmt e
-        | InvalidCaller -> Format.fprintf fmt "invalid caller"
+        | InvalidCaller -> Format.fprintf fmt "\"invalid caller\""
         | InvalidCondition c ->
-          Format.fprintf fmt "require %afailed"
+          Format.fprintf fmt "\"require %afailed\""
             (pp_option (pp_postfix " " pp_str)) c
-        | NoTransfer -> Format.fprintf fmt "no transfer"
-        | InvalidState -> Format.fprintf fmt "invalid state"
+        | NoTransfer -> Format.fprintf fmt "\"no transfer\""
+        | InvalidState -> Format.fprintf fmt "\"invalid state\""
       in
-      Format.fprintf fmt "failwith (\"%a\")"
+      Format.fprintf fmt "failwith (%a)"
         pp_fail_type ft
 
     | Mtransfer (v, d) ->
@@ -1649,14 +1649,9 @@ let pp_model_internal fmt (model : model) b =
       let _, t = Utils.get_asset_key model an in
       Format.fprintf fmt
         "function contains_%s (const l : list(%a); const key : %a) : bool is@\n  \
-         begin@\n    \
-         var r : bool := False;@\n    \
-         function aggregate (const i : %a) : unit is@\n      \
-         begin@\n        \
-         r := r or i = key;@\n      \
-         end with unit;@\n    \
-         list_iter(aggregate, l)@\n  \
-         end with r@\n"
+         begin@\n  \
+         function aggregate (const accu : bool; const v : %a) : bool is block { skip } with (accu or v = key);@\n  \
+         end with list_fold(aggregate, l, False)"
         an pp_btyp t pp_btyp t
         pp_btyp t
 
@@ -1970,24 +1965,24 @@ let pp_model_internal fmt (model : model) b =
 
     | Bisnone t ->
       Format.fprintf fmt "function isnone_%a (const a : option(%a)) : bool is @\n  \
-         block {@\n    \
-         var res : bool := False;@\n    \
-         case a of@\n      \
-         None -> res := True@\n    \
-         | Some (s) -> res := False@\n    \
-         end@\n  \
-         } with res@\n"
+                          block {@\n    \
+                          var res : bool := False;@\n    \
+                          case a of@\n      \
+                          None -> res := True@\n    \
+                          | Some (s) -> res := False@\n    \
+                          end@\n  \
+                          } with res@\n"
         pp_pretty_type t pp_type t
 
     | Bissome t ->
       Format.fprintf fmt "function issome_%a (const a : option(%a)) : bool is@\n  \
-         block {@\n    \
-         var res : bool := False;@\n    \
-         case a of@\n      \
-         None -> res := False@\n    \
-         | Some (s) -> res := True@\n    \
-         end@\n  \
-         } with res@\n"
+                          block {@\n    \
+                          var res : bool := False;@\n    \
+                          case a of@\n      \
+                          None -> res := False@\n    \
+                          | Some (s) -> res := True@\n    \
+                          end@\n  \
+                          } with res@\n"
         pp_pretty_type t pp_type t
 
     | Bgetopt t ->
