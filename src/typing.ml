@@ -12,6 +12,7 @@ module Type : sig
   val as_container        : M.ptyp -> (M.ptyp * M.container) option
   val as_asset            : M.ptyp -> M.lident option
   val as_asset_collection : M.ptyp -> (M.lident * M.container) option
+  val as_contract         : M.ptyp -> M.lident option
   val as_tuple            : M.ptyp -> (M.ptyp list) option
   val as_option           : M.ptyp -> M.ptyp option
   val as_list             : M.ptyp -> M.ptyp option
@@ -35,6 +36,7 @@ end = struct
   let as_container = function M.Tcontainer (ty, c) -> Some (ty, c) | _ -> None
   let as_asset     = function M.Tasset     x       -> Some x       | _ -> None
   let as_tuple     = function M.Ttuple     ts      -> Some ts      | _ -> None
+  let as_contract  = function M.Tcontract  x       -> Some x       | _ -> None
   let as_option    = function M.Toption    t       -> Some t       | _ -> None
   let as_list      = function M.Tlist      t       -> Some t       | _ -> None
 
@@ -156,6 +158,7 @@ type error_desc =
   | InvalidAssetCollectionExpr         of M.ptyp
   | InvalidAssetExpression
   | InvalidCallByExpression
+  | InvalidContractExpression
   | InvalidExpressionForEffect
   | InvalidExpression
   | InvalidFieldsCountInRecordLiteral
@@ -205,7 +208,7 @@ type error_desc =
   | UninitializedVar
   | UnknownAction                      of ident
   | UnknownAsset                       of ident
-  | UnknowContractEntryPoint           of ident * ident
+  | UnknownContractEntryPoint          of ident * ident
   | UnknownEnum                        of ident
   | UnknownField                       of ident * ident
   | UnknownFieldName                   of ident
@@ -288,6 +291,7 @@ let pp_error_desc fmt e =
   | InvalidAssetCollectionExpr ty      -> pp "Invalid asset collection expression: %a" M.pp_ptyp ty
   | InvalidAssetExpression             -> pp "Invalid asset expression"
   | InvalidCallByExpression            -> pp "Invalid 'Calledby' expression"
+  | InvalidContractExpression          -> pp "Invalid contract expression"
   | InvalidExpressionForEffect         -> pp "Invalid expression for effect"
   | InvalidExpression                  -> pp "Invalid expression"
   | InvalidFieldsCountInRecordLiteral  -> pp "Invalid fields count in record literal"
@@ -334,7 +338,7 @@ let pp_error_desc fmt e =
   | UninitializedVar                   -> pp "This variable declaration is missing an initializer"
   | UnknownAction i                    -> pp "Unknown action: %a" pp_ident i
   | UnknownAsset i                     -> pp "Unknown asset: %a" pp_ident i
-  | UnknowContractEntryPoint (c, m)    -> pp "Unknown contract entry point: %s.%s" c m
+  | UnknownContractEntryPoint (c, m)   -> pp "Unknown contract entry point: %s.%s" c m
   | UnknownEnum i                      -> pp "Unknown enum: %a" pp_ident i
   | UnknownField (i1, i2)              -> pp "Unknown field: asset %a does not have a field %a" pp_ident i1 pp_ident i2
   | UnknownFieldName i                 -> pp "Unknown field name: %a" pp_ident i
@@ -2082,6 +2086,24 @@ and for_asset_collection_expr mode (env : env) tope =
   in (ast, typ)
 
 (* -------------------------------------------------------------------- *)
+and for_contract_expr mode (env : env) (tope : PT.expr) =
+  let ast = for_xexpr mode env tope in
+  let typ =
+    match Option.map Type.as_contract ast.M.type_ with
+    | None ->
+      None
+
+    | Some None ->
+      Env.emit_error env (loc tope, InvalidContractExpression);
+      None
+
+    | Some (Some ctt) ->
+      Some (Env.Contract.get env (unloc ctt))
+
+  in (ast, typ)
+
+
+(* -------------------------------------------------------------------- *)
 and for_api_call mode env theloc (the, m, args)
   : (M.pterm * smethod_ * M.pterm_arg list) option
   =
@@ -2528,36 +2550,6 @@ let rec for_instruction (env : env) (i : PT.expr) : env * M.instruction =
         let the = for_xexpr `Expr env pthe in
 
         match the.M.type_ with
-        | Some (M.Tcontract ctt) -> begin
-            let ctt = Env.Contract.get env (unloc ctt) in
-            match List.Exn.assoc_map unloc (unloc m) ctt.ct_entries with
-            | None ->
-              let exn = UnknowContractEntryPoint (unloc ctt.ct_name, unloc m) in
-              Env.emit_error env (loc m, exn); bailout ()
-
-            | Some entry ->
-              let args = match args with
-                | [ {pldesc = Etuple l; _} ] -> l
-                | _ -> args
-              in
-
-              let na, ne = List.length args, List.length entry in
-              if na <> ne then begin
-                let loc = Location.mergeall (loc pthe :: List.map loc args) in
-                Env.emit_error env (loc, InvalidNumberOfArguments (na, ne));
-                bailout ()
-              end;
-
-              let args =
-                List.map2
-                  (fun arg (_arg_id, ety) -> for_xexpr `Expr env ~ety arg)
-                  args entry in
-
-              let args = List.map (fun x -> M.AExpr x) args in
-
-              env, mki (M.Icall (Some the, M.Cid m, args))
-          end
-
         | Some ty -> begin
             match Type.as_asset_collection ty with
             | Some _ ->
@@ -2605,10 +2597,31 @@ let rec for_instruction (env : env) (i : PT.expr) : env * M.instruction =
         env, mki (M.Iassign (type_assigned, op, x, e))
       end
 
-    | Etransfer (e, d, c) ->
+    | Etransfer (e, to_, c) ->
       let e   = for_expr env ~ety:M.vtcurrency e in
-      let to_ = for_expr env ~ety:M.vtrole d in
-      let c   = Option.map (fun (id, args) -> (id, List.map (for_expr env) args)) c in (* TODO: check if id and args are right *)
+      let to_, ctt = for_contract_expr `Expr env to_ in
+      let c   =
+        c |> Option.bind (fun (name, args) ->
+          ctt |> Option.bind (fun ctt ->
+            match
+              List.find_opt
+                (fun (x, _) -> unloc name = unloc x)
+                ctt.ct_entries
+            with
+            | None ->
+                let err =
+                  UnknownContractEntryPoint (unloc ctt.ct_name, unloc name)
+                in Env.emit_error env (loc name, err); None
+            | Some (_, targs) ->
+                if List.length targs <> List.length args then
+                  let n = List.length targs in
+                  let c = List.length  args in
+                  Env.emit_error env (loc name, InvalidNumberOfArguments (n, c));
+                  None
+                else
+                  Some (name, List.map2
+                    (fun (_, ety) arg -> for_expr ~ety env arg)
+                    targs args))) in
 
       env, mki (Itransfer (e, to_, c))
 
