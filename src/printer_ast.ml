@@ -761,7 +761,14 @@ let pp_asset fmt (a : lident asset_struct) =
     (pp_do_if (not (List.is_empty a.sort)) (pp_prefix " sorted by " (pp_list ", " pp_id))) a.sort
     (pp_list "@\n" pp_field) a.fields
     (pp_option (pp_prefix " with states " pp_id)) a.state
-    (pp_option (pp_prefix " initialized by " pp_pterm)) a.init
+    (pp_do_if (not (List.is_empty a.init)) (
+        let pp1 fmt init1 =
+          Format.fprintf fmt "  {%a};"
+            (pp_list "; " pp_pterm) init1
+        in
+        fun fmt init ->
+        Format.fprintf fmt " initialized by {@\n%a@\n} "
+          (pp_list "@\n" pp1) init)) a.init
     (pp_do_if (not (List.is_empty a.specs)) (
         fun fmt ->
           Format.fprintf fmt " with {@\n  @[%a@]@\n}"

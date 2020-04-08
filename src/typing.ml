@@ -162,6 +162,7 @@ type error_desc =
   | InvalidExpressionForEffect
   | InvalidExpression
   | InvalidFieldsCountInRecordLiteral
+  | InvalidInitCount
   | InvalidLValue
   | InvalidFormula
   | InvalidInstruction
@@ -295,6 +296,7 @@ let pp_error_desc fmt e =
   | InvalidExpressionForEffect         -> pp "Invalid expression for effect"
   | InvalidExpression                  -> pp "Invalid expression"
   | InvalidFieldsCountInRecordLiteral  -> pp "Invalid fields count in record literal"
+  | InvalidInitCount                   -> pp "Invalid initializer length"
   | InvalidLValue                      -> pp "Invalid left-value"
   | InvalidFormula                     -> pp "Invalid formula"
   | InvalidInstruction                 -> pp "Invalid instruction"
@@ -599,6 +601,7 @@ type assetdecl = {
   as_sortk  : M.lident list;
   as_invs   : (M.lident option * M.pterm) list;
   as_state  : M.lident option;
+  as_init   : (M.pterm list) list;
 }
 
 and fielddecl = {
@@ -3320,6 +3323,35 @@ let for_asset_decl ?(force = false) (env : env) (decl : PT.asset_decl loced) =
       Some st
   in
 
+  let init =
+    let for1 = function
+      | PT.APOinit e -> begin
+          match unloc e with
+          | Erecord init
+              when List.for_all (fun (x, _) -> Option.is_none x) init
+            ->
+              Some (List.pmap (fun (_, init1) ->
+                match unloc init1 with
+                | ParseTree.Erecord init1
+                      when List.for_all (fun (x, _) -> Option.is_none x) init
+                  ->
+                    if List.length init1 <> List.length fields then begin
+                        Env.emit_error env (loc e, InvalidInitCount); None
+                    end else
+                      let init1 =
+                        List.map2
+                          (fun { pldesc = (_, ety, _) } (_, ie) -> for_expr env ?ety ie)
+                          fields init1 in
+                      Some init1
+
+                | _ -> None) init)
+
+          | _ -> None
+        end
+      | _ ->
+          None
+    in List.flatten (List.pmap for1 postopts) in
+
   if not force && not (check_and_emit_name_free env x) then begin
     (env, None)
   end else
@@ -3349,6 +3381,7 @@ let for_asset_decl ?(force = false) (env : env) (decl : PT.asset_decl loced) =
         as_sortk  = sortk;
         as_invs   = List.flatten invs;
         as_state  = state;
+        as_init   = init;
       } in (Env.Asset.push env decl, Some decl)
     with E.Bailout -> (env, None)
 
@@ -3362,7 +3395,8 @@ let for_assets_decl (env as env0 : env) (decls : PT.asset_decl loced list) =
                 as_pk     = mkloc Location.dummy "";
                 as_sortk  = [];
                 as_invs   = [];
-                as_state  = None; } in
+                as_state  = None;
+                as_init   = []; } in
       (b, Env.Asset.push env d)) (true, env) decls in
 
   if b then
@@ -3642,7 +3676,7 @@ let assets_of_adecls adecls =
         key    = Some decl.as_pk;
         sort   = decl.as_sortk;
         state  = decl.as_state;
-        init   = None;           (* FIXME *)
+        init   = decl.as_init;
         specs  = List.map spec decl.as_invs;
         loc    = loc decl.as_name; }
 
