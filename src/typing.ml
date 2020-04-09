@@ -2601,32 +2601,41 @@ let rec for_instruction (env : env) (i : PT.expr) : env * M.instruction =
       end
 
     | Etransfer (e, to_, c) ->
-      let e   = for_expr env ~ety:M.vtcurrency e in
-      let to_, ctt = for_contract_expr `Expr env to_ in
-      let c   =
-        c |> Option.bind (fun (name, args) ->
-          ctt |> Option.bind (fun ctt ->
-            match
-              List.find_opt
-                (fun (x, _) -> unloc name = unloc x)
-                ctt.ct_entries
-            with
-            | None ->
-                let err =
-                  UnknownContractEntryPoint (unloc ctt.ct_name, unloc name)
-                in Env.emit_error env (loc name, err); None
-            | Some (_, targs) ->
-                if List.length targs <> List.length args then
-                  let n = List.length targs in
-                  let c = List.length  args in
-                  Env.emit_error env (loc name, InvalidNumberOfArguments (n, c));
-                  None
-                else
-                  Some (name, List.map2
-                    (fun (_, ety) arg -> for_expr ~ety env arg)
-                    targs args))) in
+      let e      = for_expr env ~ety:M.vtcurrency e in
+      let to_, c =
+        match c with
+        | None ->
+            (for_expr env ~ety:M.vtrole to_, None)
 
-      env, mki (Itransfer (e, to_, c))
+        | Some (name, args) ->
+            let for_ctt ctt =
+              let entry =
+                List.find_opt
+                  (fun (x, _) -> unloc name = unloc x)
+                  ctt.ct_entries
+              in
+  
+              match entry  with
+              | None ->
+                  let err =
+                    UnknownContractEntryPoint (unloc ctt.ct_name, unloc name)
+                  in Env.emit_error env (loc name, err); None
+  
+              | Some (_, targs) ->
+                  if List.length targs <> List.length args then
+                    let n = List.length targs in
+                      let c = List.length  args in
+                        Env.emit_error env (loc name, InvalidNumberOfArguments (n, c));
+                        None
+                  else
+                    Some (name, List.map2
+                                  (fun (_, ety) arg -> for_expr ~ety env arg)
+                                  targs args)
+            in
+            let to_, ctt = for_contract_expr `Expr env to_ in
+            (to_, Option.bind for_ctt ctt)
+
+      in env, mki (Itransfer (e, to_, c))
 
     | Eif (c, bit, bif) ->
       let c        = for_expr env ~ety:M.vtbool c in
