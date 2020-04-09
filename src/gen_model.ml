@@ -527,8 +527,9 @@ let to_model (ast : A.model) : M.model =
       | A.Tcontract v -> unloc v
       | _ -> assert false
     in
-    match c.node with
-    | A.Pcast (d, _, _) -> aux d
+    match c.node, c.type_ with
+    | A.Pcast (d, _, _), _ -> aux d
+    | _, Some t -> aux t
     | _ -> assert false
   in
 
