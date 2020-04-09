@@ -139,6 +139,7 @@ type error_desc =
   | CollectionExpected
   | DoesNotSupportMethodCall
   | DivergentExpr
+  | DuplicatedArgName                  of ident
   | DuplicatedContractEntryName        of ident
   | DuplicatedCtorName                 of ident
   | DuplicatedFieldInAssetDecl         of ident
@@ -273,6 +274,7 @@ let pp_error_desc fmt e =
   | CollectionExpected                 -> pp "Collection expected"
   | DoesNotSupportMethodCall           -> pp "Cannot use method calls on this kind of objects"
   | DivergentExpr                      -> pp "Divergent expression"
+  | DuplicatedArgName x                -> pp "Duplicated argument name: %s" x
   | DuplicatedContractEntryName i      -> pp "Duplicated contract entry name: %a" pp_ident i
   | DuplicatedCtorName i               -> pp "Duplicated constructor name: %a" pp_ident i
   | DuplicatedFieldInAssetDecl i       -> pp "Duplicated field in asset declaration: %a" pp_ident i
@@ -3427,18 +3429,23 @@ let for_contract_decl (env : env) (decl : PT.contract_decl loced) =
   let name, sigs, _ = unloc decl in
   let entries =
     List.pmap (fun (PT.Ssignature (ename, psig)) ->
-        let for1 (arg_id, pty) =
-          let ty = for_type env pty in
-          Option.bind (fun ty ->
-              if not (Type.is_primitive ty) then begin
-                Env.emit_error env (loc pty, NotAPrimitiveType);
-                None
-              end else Some (arg_id, ty)) ty in
+        List.find_dup (fun (id, _) -> unloc id) psig |>
+          Option.iter (fun (_, (x, _)) ->
+            Env.emit_error env (loc x, DuplicatedArgName (unloc x)));
 
-        let sig_ = List.map for1 psig in
+        let for1 (arg_id, pty) =
+          let ty =
+            for_type env pty |>Option.bind (fun ty ->
+                if not (Type.is_primitive ty) then begin
+                  Env.emit_error env (loc pty, NotAPrimitiveType);
+                  None
+                end else Some ty)
+          in ty |> Option.map (fun ty -> (arg_id, ty)) in
+
+        let sig_ = List.pmap for1 psig in
 
         if List.length sig_ = List.length psig then
-          Some (ename, List.pmap id sig_)
+          Some (ename, sig_)
         else None
       ) sigs in
 
