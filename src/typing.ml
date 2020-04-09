@@ -2764,6 +2764,9 @@ let rec for_instruction (env : env) (i : PT.expr) : env * M.instruction =
     | Enothing ->
       env, mki (Iseq [])
 
+    | Ereturn re ->
+      env, mki (Ireturn (for_expr env re)) (* FIXME *)
+
     | _ ->
       Env.emit_error env (loc i, InvalidInstruction);
       bailout ()
@@ -3023,17 +3026,12 @@ let for_function (env : env) (fdecl : PT.s_function loced) =
   Env.inscope env (fun env ->
       let env, args = for_args_decl env fdecl.args in
       let rty       = Option.bind (for_type env) fdecl.ret_t in
-      let body      = for_expr env ?ety:rty fdecl.body in
+      let env, body = for_instruction env fdecl.body in
       let env, spec =
         Option.foldmap (fun env -> for_specification (env, env)) env fdecl.spec in
 
       if Option.is_some rty && not (List.exists Option.is_none args) then
         if check_and_emit_name_free env fdecl.name then
-          let body =
-            M.{ node    = M.Ireturn body;
-                loc     = loc fdecl.body;
-                label   = None; } in
-
           (env, Some {
               fs_name  = fdecl.name;
               fs_args  = List.pmap id args;
