@@ -33,6 +33,9 @@ module Type : sig
   val sig_compatible : from_:M.ptyp list -> to_:M.ptyp list -> bool
   val sig_distance   : from_:M.ptyp list -> to_:M.ptyp list -> int option
   val join           : M.ptyp list -> M.ptyp option
+
+  val unify : ptn:M.ptyp -> tg:M.ptyp -> (M.ptyp Mint.t) option
+  val subst : M.ptyp Mint.t -> M.ptyp -> M.ptyp
 end = struct
   let as_container = function M.Tcontainer (ty, c) -> Some (ty, c) | _ -> None
   let as_asset     = function M.Tasset     x       -> Some x       | _ -> None
@@ -128,6 +131,68 @@ end = struct
   let sig_equal tys1 tys2 =
     List.length tys1 = List.length tys2
     && List.for_all2 equal tys1 tys2
+
+  let unify ~(ptn : M.ptyp) ~(tg : M.ptyp): (M.ptyp Mint.t) option =
+    let module E = struct exception Error end in
+
+    try
+      let map = ref Mint.empty in
+
+      let rec doit (ptn : M.ptyp) (tg : M.ptyp) =
+        match ptn, tg with
+        | M.Tnamed i, _ -> begin
+            map := !map |> Mint.update i (function
+            | None    -> Some tg
+            | Some ty -> if equal tg ty then Some ty else raise E.Error)
+          end
+
+        | Tentry, Tentry ->
+            ()
+
+        | Tasset    x, Tasset    y
+        | Tenum     x, Tenum     y
+        | Tcontract x, Tcontract y ->
+            if unloc x <> unloc y then raise E.Error
+
+        | Ttrace x, Ttrace y ->
+            if x <> y then raise E.Error
+
+        | Tbuiltin x, Tbuiltin y ->
+            if x <> y then raise E.Error
+
+        | Tlist   ptn, Tlist   tg
+        | Toption ptn, Toption tg ->
+            doit ptn tg
+
+        | Tcontainer (ptn, x), Tcontainer (tg, y) when x = y ->
+            doit ptn tg
+
+        | Ttuple ptn, Ttuple tg when List.length ptn = List.length tg ->
+            List.iter2 doit ptn tg
+
+        | _, _ -> raise E.Error
+
+      in doit ptn tg; Some !map
+
+    with E.Error -> None
+
+   let subst (subst : M.ptyp Mint.t) (ty : M.ptyp) : M.ptyp =
+     let rec doit (ty : M.ptyp) =
+       match ty with
+       | Tnamed i -> Option.get (Mint.find_opt i subst)
+       | Tentry
+       | Tasset    _
+       | Tenum     _
+       | Tcontract _
+       | Ttrace    _
+       | Tbuiltin  _ -> ty
+
+       | Tcontainer (ty, c) -> Tcontainer (doit ty, c)
+       | Tlist       ty     -> Tlist (doit ty)
+       | Ttuple      ty     -> Ttuple (List.map doit ty)
+       | Toption     ty     -> Toption (doit ty)
+
+     in doit ty
 end
 
 (* -------------------------------------------------------------------- *)
@@ -582,45 +647,38 @@ end = struct
 end
 
 (* -------------------------------------------------------------------- *)
-let all_builtins_types = [
-    M.vtbool;
-    M.vtint;
-    M.vtrational;
-    M.vtdate;
-    M.vtduration;
-    M.vtstring;
-    M.vtaddress;
-    M.vtrole;
-    M.vtcurrency;
-    M.vtkey;
-    M.vtbytes;
-]
-
 let corefuns =
-  (List.map (fun x -> ("abs", M.Cabs, [x], x)) [M.vtint; M.vtrational])
+    (List.map (fun x -> ("abs", M.Cabs, None, [x], x)) [M.vtint; M.vtrational])
   @ (List.flatten (List.map (fun (name, cname) -> (
         List.map
-          (fun x -> (name, cname, [x; x], x))
+          (fun x -> (name, cname, None, [x; x], x))
           [M.vtint; M.vtrational; M.vtdate; M.vtduration; M.vtcurrency]))
       [("min", M.Cmin); ("max", M.Cmax)]))
-  @ (List.map (fun x -> ("concat", M.Cconcat, [x; x], x)) [M.vtbytes; M.vtstring])
-  @ (List.map (fun x -> ("slice", M.Cslice, [x; M.vtint; M.vtint], x)) [M.vtbytes; M.vtstring])
-  @ ["length", M.Clength, [M.vtstring], M.vtint]
-  @ (List.flatten (List.map (fun (name, t) -> (
-        List.map
-          (fun x -> (name, t, [M.Toption x], M.vtbool))
-          all_builtins_types))
-      [("isnone", M.Cisnone); ("issome", M.Cissome)]))
-  @ (List.map (fun x -> ("getopt", M.Cgetopt, [M.Toption x], x)) all_builtins_types)
+  @ (List.map
+       (fun x -> ("concat", M.Cconcat, None, [x; x], x))
+       [M.vtbytes; M.vtstring])
+  @ (List.map
+       (fun x -> ("slice", M.Cslice, None, [x; M.vtint; M.vtint], x))
+       [M.vtbytes; M.vtstring])
+  @ ["length", M.Clength, None, [M.vtstring], M.vtint]
 
 (* -------------------------------------------------------------------- *)
+let optionfuns = [
+  ("isnone", M.Cisnone, Some (M.Toption (M.Tnamed 0)), [], M.vtbool);
+  ("issome", M.Cissome, Some (M.Toption (M.Tnamed 0)), [], M.vtbool);
+  ("getopt", M.Cgetopt, Some (M.Toption (M.Tnamed 0)), [], M.Tnamed 0);
+]
 
+(* -------------------------------------------------------------------- *)
 let cryptofuns =
-  List.map (fun (x, y) -> x, y, [M.vtbytes], M.vtbytes)
+  List.map (fun (x, y) -> x, y, None, [M.vtbytes], M.vtbytes)
     ["blake2b", M.Cblake2b;
      "sha256", M.Csha256;
      "sha512", M.Csha512]
-  @ ["check_signature", M.Cchecksignature, [M.vtbytes; M.vtbytes; M.vtbytes], M.vtbool] (* TODO: filter 1st arg to key type and 2nd to signature type *)
+  @ ["check_signature", M.Cchecksignature, None, [M.vtbytes; M.vtbytes; M.vtbytes], M.vtbool] (* TODO: filter 1st arg to key type and 2nd to signature type *)
+
+(* -------------------------------------------------------------------- *)
+let allfuns = corefuns @ optionfuns @ cryptofuns
 
 (* -------------------------------------------------------------------- *)
 type assetdecl = {
@@ -1765,17 +1823,36 @@ let rec for_xexpr
 
         let aty = List.map (fun a -> Option.get a.M.type_) args in
 
-        let select (name, cname, ety, rty) =
+        let select (name, cname, thety, ety, rty) =
           let module E = struct exception Reject end in
 
           try
-            if unloc f <> name then raise E.Reject;
-            let d = Type.sig_distance ~from_:aty ~to_:ety in
-            Some (Option.get_exn E.Reject d, (cname, (ety, rty)))
+            let cty =
+              thety |> Option.bind (fun thety ->
+                Option.bind
+                  (fun ty -> Type.unify ~ptn:thety ~tg:ty)
+                  (List.ohead aty)) in
+  
+            if Option.is_some thety && Option.is_none cty then
+              raise E.Reject;
+  
+            let ety =
+              Option.fold
+                (fun ety map -> List.map (Type.subst map) (Option.get thety :: ety))
+                ety cty in
+  
+            let rty =
+              Option.fold
+                (fun rty map -> Type.subst map rty)
+                rty cty in
+  
+              if unloc f <> name then raise E.Reject;
+              let d = Type.sig_distance ~from_:aty ~to_:ety in
+              Some (Option.get_exn E.Reject d, (cname, (ety, rty)))
 
           with E.Reject -> None in
 
-        let cd = List.pmap select (corefuns @ cryptofuns) in
+        let cd = List.pmap select allfuns in
         let cd = List.sort (fun (i, _) (j, _) -> compare i j) cd in
         let cd =
           let i0 = Option.get_dfl (-1) (Option.map fst (List.ohead cd)) in
@@ -2155,9 +2232,6 @@ and for_api_call mode env theloc (the, m, args)
       match the.M.type_ with
       | None ->
         raise E.Bailout
-
-      (* | Some (M.Tcontainer (ty, M.List)) ->
-          ListAPI.methods ty *)
 
       | Some _ ->
         Env.emit_error env (theloc, DoesNotSupportMethodCall);

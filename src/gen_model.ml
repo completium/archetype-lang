@@ -62,6 +62,7 @@ let to_model (ast : A.model) : M.model =
 
   let rec ptyp_to_type (t : A.ptyp) : M.type_ =
     match t with
+    | A.Tnamed _           -> assert false
     | A.Tasset id          -> M.Tasset id
     | A.Tenum id           -> M.Tenum id
     | A.Tcontract id       -> M.Tcontract id

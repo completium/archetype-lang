@@ -41,6 +41,7 @@ type trtyp =
 [@@deriving show {with_path = false}]
 
 type ptyp =
+  | Tnamed of int
   | Tasset of lident
   | Tenum of lident
   | Tcontract of lident

@@ -37,6 +37,8 @@ let pp_container fmt = function
 
 let rec pp_ptyp fmt (t : ptyp) =
   match t with
+  | Tnamed i ->
+    Format.fprintf fmt "#%d" i
   | Tasset an ->
     Format.fprintf fmt "%a" pp_id an
   | Tenum en ->
