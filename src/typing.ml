@@ -32,6 +32,7 @@ module Type : sig
   val distance       : from_:M.ptyp -> to_:M.ptyp -> int option
   val sig_compatible : from_:M.ptyp list -> to_:M.ptyp list -> bool
   val sig_distance   : from_:M.ptyp list -> to_:M.ptyp list -> int option
+  val join           : M.ptyp list -> M.ptyp option
 end = struct
   let as_container = function M.Tcontainer (ty, c) -> Some (ty, c) | _ -> None
   let as_asset     = function M.Tasset     x       -> Some x       | _ -> None
@@ -89,6 +90,20 @@ end = struct
 
     | _, _ ->
       false
+
+  let join (tys : M.ptyp list) =
+    let module E = struct exception Error end in
+
+    let join2 ty1 ty2 =
+      if compatible ~from_:ty1 ~to_:ty2 then ty2 else
+      if compatible ~from_:ty2 ~to_:ty1 then ty1 else raise E.Error in
+
+    try
+      match tys with
+      | [] -> raise E.Error
+      | ty :: tys -> Some (List.fold_left join2 ty tys)
+
+    with E.Error -> None
 
   let distance ~(from_ : M.ptyp) ~(to_ : M.ptyp) =
     if   equal from_ to_
@@ -1838,12 +1853,12 @@ let rec for_xexpr
       end
 
     | Eif (c, et, Some ef) ->
-      let c    = for_xexpr env ~ety:M.vtbool c in
-      let et   = for_xexpr env et in
-      let ef   = for_xexpr env ?ety:et.type_ ef in
-      let aout = mk_sp et.type_ (M.Pif (c, et, ef)) in
-
-      aout
+      let c      = for_xexpr env ~ety:M.vtbool c in
+      let et     = for_xexpr env et in
+      let ef     = for_xexpr env ef in
+      let ty, es = join_expr env ety [et; ef] in
+      let et, ef = Option.get (List.as_seq2 es) in
+      mk_sp ty (M.Pif (c, et, ef))
 
     | Eletin (x, ty, e1, e2, oe) ->
       let ty  = Option.bind (for_type env) ty in
@@ -1892,18 +1907,8 @@ let rec for_xexpr
         match for_gen_matchwith mode env (loc tope) e bs with
         | None -> bailout () | Some (decl, me, (wd, bsm), es) ->
 
-          let es  = List.map (for_xexpr env) es in
-          let bty = List.find_opt (fun e -> Option.is_some e.M.type_) es in
-          let bty = Option.bind (fun e -> e.M.type_) bty in
-
-          Option.iter (fun bty ->
-              List.iter (fun be ->
-                  Option.iter (fun ety ->
-                      if not (Type.equal bty ety) then
-                        Env.emit_error env (loc tope, IncompatibleTypes (ety, bty))
-                    ) be.M.type_)
-                es
-            ) bty;
+          let es = List.map (for_xexpr env) es in
+          let bty, es = join_expr env ety es in
 
           let aout = List.pmap (fun (cname, _) ->
               let ctor = M.mk_sp (M.Mconst cname) in (* FIXME: loc ? *)
@@ -1977,21 +1982,35 @@ let rec for_xexpr
   in
 
   try
-    let aout = doit () in
-    let aout =
-      begin match aout, ety with
-        | { type_ = Some from_ }, Some to_ ->
-          if not (Type.compatible ~from_ ~to_) then
-            Env.emit_error env (loc tope, IncompatibleTypes (from_, to_));
-          if not (Type.equal from_ to_) then
-            mk_sp (Some to_) (M.Pcast (from_, to_, aout))
-          else aout
-        | _, _ ->
-          aout
-      end;
-    in aout
+    cast_expr env ety (doit ())
 
   with E.Bailout -> dummy ety
+
+(* -------------------------------------------------------------------- *)
+and cast_expr (env : env) (to_ : M.ptyp option) (e : M.pterm) =
+  match to_, e with
+  | Some to_, { type_ = Some from_ } ->
+      if not (Type.compatible ~from_ ~to_) then
+        Env.emit_error env (e.loc, IncompatibleTypes (from_, to_));
+      if not (Type.equal from_ to_) then
+        M.mk_sp ~loc:e.loc ~type_:to_ (M.Pcast (from_, to_, e))
+      else e
+  | _, _ ->
+      e
+
+(* -------------------------------------------------------------------- *)
+and join_expr (env : env) (ety : M.ptyp option) (es : M.pterm list) =
+  match ety with
+  | Some _ ->
+      (ety, List.map (cast_expr env ety) es)
+
+  | _ -> begin
+      match Type.join (List.pmap (fun e -> e.M.type_) es) with
+      | None ->
+          (None, es)
+      | Some _ as ty ->
+          (ty, List.map (cast_expr env ty) es)
+  end
 
 (* -------------------------------------------------------------------- *)
 and for_gen_matchwith (mode : emode_t) (env : env) theloc pe bs =
