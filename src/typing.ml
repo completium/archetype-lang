@@ -3814,7 +3814,16 @@ let specifications_of_ispecifications =
       assert (Option.is_none env.M.effect);
       { env with M.effect = Some i; }
 
-    | _ ->
+    | `Predicate _ ->
+      assert false
+
+    | `Theorem _ ->
+      assert false
+
+    | `Definition _ ->
+      assert false
+
+    |`Lemma _ ->
       assert false
 
   in fun ispecs -> List.fold_left do1 env0 ispecs
