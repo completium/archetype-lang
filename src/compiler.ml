@@ -130,6 +130,7 @@ let generate_target model =
   | LigoStorage ->
     model
     |> replace_ligo_ident
+    |> replace_get_on_view
     |> process_asset_state
     |> replace_assignfield_by_update
     |> remove_add_update
