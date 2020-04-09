@@ -630,23 +630,6 @@ let methods : (string * method_) list =
 let methods = Mid.of_list methods
 
 (* -------------------------------------------------------------------- *)
-module ListAPI : sig
-  val methods : M.ptyp -> smethod_ Mid.t
-end = struct
-  let methods (ty : M.ptyp) : (string * smethod_) list =
-    let mk mth_name mth_purity mth_totality mth_sig =
-      { mth_name; mth_purity; mth_totality; mth_sig; }
-    in [
-      ("contains", mk M.Ccontains `Pure   `Total   ([`T ty      ], Some (`T M.vtbool)));
-      ("prepend" , mk M.Cprepend  `Effect `Total   ([`T ty      ], None));
-      ("count"   , mk M.Ccount    `Pure   `Total   ([           ], Some (`T M.vtint )));
-      ("nth"     , mk M.Cnth      `Pure   `Partial ([`T M.vtint ], Some (`T ty)));
-    ]
-
-  let methods ty = Mid.of_list (methods ty)
-end
-
-(* -------------------------------------------------------------------- *)
 let corefuns =
     (List.map (fun x -> ("abs", M.Cabs, None, [x], x)) [M.vtint; M.vtrational])
   @ (List.flatten (List.map (fun (name, cname) -> (
@@ -670,6 +653,16 @@ let optionfuns = [
 ]
 
 (* -------------------------------------------------------------------- *)
+let listfuns =
+  let elemt = M.Tnamed 0 in
+  let lst   = M.Tlist elemt in [
+    ("contains", M.Ccontains, Some lst, [elemt  ], M.vtbool       );
+    ("prepend" , M.Cprepend , Some lst, [elemt  ], lst            );
+    ("count"   , M.Ccount   , Some lst, [       ], M.vtint        );
+    ("nth"     , M.Cnth     , Some lst, [M.vtint], M.Toption elemt);
+  ]
+
+(* -------------------------------------------------------------------- *)
 let cryptofuns =
   List.map (fun (x, y) -> x, y, None, [M.vtbytes], M.vtbytes)
     ["blake2b", M.Cblake2b;
@@ -678,7 +671,7 @@ let cryptofuns =
   @ ["check_signature", M.Cchecksignature, None, [M.vtbytes; M.vtbytes; M.vtbytes], M.vtbool] (* TODO: filter 1st arg to key type and 2nd to signature type *)
 
 (* -------------------------------------------------------------------- *)
-let allfuns = corefuns @ optionfuns @ cryptofuns
+let allfuns = corefuns @ optionfuns @ listfuns @ cryptofuns
 
 (* -------------------------------------------------------------------- *)
 type assetdecl = {
@@ -1548,7 +1541,8 @@ let rec for_xexpr
 
     | Earray [] -> begin
         match ety with
-        | Some (M.Tcontainer (_, _)) ->
+        | Some (M.Tcontainer (_, _))
+        | Some (M.Tlist _) ->
           mk_sp ety (M.Parray [])
 
         | _ ->
