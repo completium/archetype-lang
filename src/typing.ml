@@ -36,6 +36,8 @@ module Type : sig
 
   val unify : ptn:M.ptyp -> tg:M.ptyp -> (M.ptyp Mint.t) option
   val subst : M.ptyp Mint.t -> M.ptyp -> M.ptyp
+
+  val pktype : M.ptyp -> bool
 end = struct
   let as_container = function M.Tcontainer (ty, c) -> Some (ty, c) | _ -> None
   let as_asset     = function M.Tasset     x       -> Some x       | _ -> None
@@ -193,6 +195,25 @@ end = struct
        | Toption     ty     -> Toption (doit ty)
 
      in doit ty
+
+   let rec pktype = function
+     | M.Ttuple tys -> List.for_all pktype_simpl tys
+     | (M.Tbuiltin _) as ty -> pktype_simpl ty
+     | _ -> false
+
+   and pktype_simpl = function
+     | Tbuiltin (
+           VTbool
+         | VTint
+         | VTdate
+         | VTstring
+         | VTaddress
+         | VTrole
+         | VTcurrency
+         | VTbytes
+       ) -> true
+     | _ -> false
+
 end
 
 (* -------------------------------------------------------------------- *)
@@ -253,6 +274,7 @@ type error_desc =
   | InvalidSecurityRole
   | InvalidSortingExpression
   | InvalidStateExpression
+  | InvalidTypeForPk
   | InvalidTypeForVarWithFromTo
   | LetInElseInInstruction
   | LetInElseOnNonOption
@@ -390,6 +412,7 @@ let pp_error_desc fmt e =
   | InvalidSecurityRole                -> pp "Invalid security role"
   | InvalidSortingExpression           -> pp "Invalid sorting expression"
   | InvalidStateExpression             -> pp "Invalid state expression"
+  | InvalidTypeForPk                   -> pp "Invalid type for primary key"
   | InvalidTypeForVarWithFromTo        -> pp "A variable with a from/to declaration must be of type currency"
   | LetInElseInInstruction             -> pp "Let In else in instruction"
   | LetInElseOnNonOption               -> pp "Let in else on non-option type"
@@ -3422,6 +3445,22 @@ let for_asset_decl ?(force = false) (env : env) (decl : PT.asset_decl loced) =
 
     in List.fold_left do1 (None, []) opts in
 
+  begin
+    let pk =
+      match pk with
+      | None ->
+          Option.map (L.lmap proj3_1) (List.ohead fields)
+      | Some _ -> pk in
+
+    Option.iter (fun pk ->
+        match Option.get (get_field (unloc pk)) with
+        | { pldesc = _, Some ty, _; plloc = loc; } ->
+            if not (Type.pktype ty) then
+              Env.emit_error env (loc, InvalidTypeForPk)
+        | _ -> ()
+    ) pk
+  end;
+
   let sortk = List.rev sortk in
 
   let env, invs =
@@ -3518,8 +3557,8 @@ let for_asset_decl ?(force = false) (env : env) (decl : PT.asset_decl loced) =
         as_name   = x;
         as_fields = List.map get_field_type fields;
         as_pk     = Option.get_fdfl
-            (fun () -> L.lmap proj3_1 (List.hd fields))
-            pk;
+                      (fun () -> L.lmap proj3_1 (List.hd fields))
+                      pk;
         as_sortk  = sortk;
         as_invs   = List.flatten invs;
         as_state  = state;

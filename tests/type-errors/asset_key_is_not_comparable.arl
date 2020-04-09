@@ -1,9 +1,9 @@
 archetype asset_key_is_not_comparable
 
 asset myasset {
-  t1 : int * int * int;
-  t2 : (int * int) * int;
-  t3 : int * (int * int);
+  t1 : int * int list;
+  t2 : string;
+  t3 : int;
 }
 
 action exec() {
