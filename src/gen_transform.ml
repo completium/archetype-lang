@@ -1673,8 +1673,143 @@ let process_internal_string (model : model) : model =
   Model.map_mterm_model aux model
 
 
-let replace_array_asset_by_map (model : model) : model =
-  let change_value (v : mterm) : mterm =
+let split_key_values (model : model) : model =
+  let asset_assets an = an ^ "_assets" in
+
+  let storage =
+    List.fold_right (fun x accu ->
+        match x.model_type with
+        | MTasset an ->
+          let an = dumloc an in
+          let _k, t = Utils.get_asset_key model (unloc an) in
+          let type_asset = Tmap (t, Tasset an) in
+          let default =
+            match x.default.node with
+            | Massets l ->
+              mk_mterm (Mlitmap (List.map (fun x ->
+                  let k = Utils.get_asset_key_value model (unloc an) x in
+                  (k, x)
+                ) l)) type_asset
+            | _ -> assert false
+          in
+          let asset_assets =
+            mk_storage_item (dumloc (asset_assets (unloc an)))
+              (MTasset (unloc an))
+              type_asset
+              default
+              ~loc:x.loc
+          in
+          asset_assets::accu
+        | _ -> x::accu)
+      model.storage []
+  in
+
+  let rec f (ctx : ctx_model) (x : mterm) : mterm =
+    match x.node with
+    | Mselect (an, col, pred) ->
+      let col = f ctx col in
+      let pred = f ctx pred in
+      let _k, t = Utils.get_asset_key model an in
+      { x with node = Mselect (an, col, pred); type_ = Tcontainer (Tbuiltin t, Collection)}
+
+    | Msort (an, col, l) ->
+      let col = f ctx col in
+      let _k, t = Utils.get_asset_key model an in
+      { x with node = Msort (an, col, l); type_ = Tcontainer (Tbuiltin t, Collection)}
+
+    | Mhead (an, col, idx) ->
+      let col = f ctx col in
+      let idx = f ctx idx in
+      let _k, t = Utils.get_asset_key model an in
+      { x with node = Mhead (an, col, idx); type_ = Tcontainer (Tbuiltin t, Collection)}
+
+    | Mtail (an, col, idx) ->
+      let col = f ctx col in
+      let idx = f ctx idx in
+      let _k, t = Utils.get_asset_key model an in
+      { x with node = Mtail (an, col, idx); type_ = Tcontainer (Tbuiltin t, Collection)}
+
+    | Mletin (ids, init, _, body, o) ->
+      let init = f ctx init in
+      let body = f ctx body in
+      { x with node = Mletin (ids, init, Some (init.type_), body, o); type_ = body.type_}
+
+    | Mdotasset (e, i) ->
+      let asset = Utils.get_asset_type e in
+      let containers = Utils.get_asset_containers model asset in
+      if List.exists (fun (pi, _pt, _pd) ->
+          compare (i |> unloc) pi = 0) containers then
+        let rec get_container_type = function
+          | (pi,pt,_pd)::_tl
+            when compare (i |> unloc) pi = 0 -> pt
+          | _r::tl -> get_container_type tl
+          | [] -> assert false in
+        let ty = get_container_type containers in
+        let pa = Utils.dest_container ty in
+        mk_mterm (Mshallow (pa, { x with node = Mdotasset (f ctx e, i) })) ty
+      else
+        { x with node = Mdotasset (f ctx e, i) }
+
+    | Mvarstorecol an ->
+      (
+        let _k, t = Utils.get_asset_key model (unloc an) in
+        { x with node = Mcoltokeys (unloc an); type_ = Tcontainer (Tbuiltin t, Collection) }
+      )
+    | Mfor (id, col, body, lbl) ->
+
+      let is_argument_plain_asset_collection (col : mterm) =
+        let id =
+          match col.node with
+          | Mvarparam an -> Some an
+          | _ -> None
+        in
+
+        match id, ctx.fs with
+        | Some an, Some ({args = args; src = Endo }) ->
+          List.fold_left (fun accu (name, type_, _) ->
+              match type_ with
+              | Tcontainer (Tasset _, _) when String.equal (unloc an) (unloc name) -> true
+              | _ -> accu
+            ) false args
+        | _ -> false
+      in
+
+      let an =
+        match col.type_ with
+        | Tcontainer (Tasset an, _) -> an
+        | _ -> assert false
+      in
+      let _k, t = Utils.get_asset_key model (unloc an) in
+
+      let col = f ctx col in
+      let body = f ctx body in
+      let body =
+        if is_argument_plain_asset_collection col
+        then
+          body
+        else
+          let key = mk_mterm (Mvarlocal id) (Tbuiltin t) in
+          let get_node =
+            match Utils.get_source_for model ctx col with
+            | Some c -> Mgetfrommap (unloc an, key, c)
+            | _ -> Mget (unloc an, Model.Utils.get_asset_collection (unloc an), key)
+          in
+          let get = mk_mterm get_node (Tasset an) in
+          let body = mk_mterm (Mletin ([id], get, Some (Tasset an), body, None)) (body.type_) in
+          body
+      in
+      { x with node =  Mfor (id, col, body, lbl) }
+    | _ -> map_mterm (f ctx) x
+  in
+
+  let model = map_mterm_model f model in
+
+  { model with
+    storage = storage
+  }
+
+(* let replace_array_asset_by_map (model : model) : model =
+   let change_value (v : mterm) : mterm =
     match v.node with
     | Massets l ->
       let asset_name =
@@ -1690,14 +1825,14 @@ let replace_array_asset_by_map (model : model) : model =
           (k, asset)
         ) l)) (Tmap (kt, Tasset asset_name))
     | _ -> v
-  in
+   in
 
-  { model with
+   { model with
     storage = List.map (fun (x : storage_item) ->
         match x.model_type with
         | MTasset _ -> { x with default = change_value x.default }
         | _ -> x
-      ) model.storage}
+      ) model.storage} *)
 
 
 let replace_get_on_view (model : model) : model =

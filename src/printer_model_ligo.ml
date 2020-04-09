@@ -525,11 +525,12 @@ let pp_model_internal fmt (model : model) b =
       let a = Utils.get_asset model (unloc asset_name) in
       let ll = List.map (fun (x : asset_item) -> x.name) a.values in
       let lll = List.map2 (fun x y -> (x, y)) ll l in
-      Format.fprintf fmt "record@\n  @[%a@]@\nend"
-        (pp_list "@\n" (fun fmt (a, b)->
+      Format.fprintf fmt "(record %a end : %s)"
+        (pp_list " " (fun fmt (a, b)->
              Format.fprintf fmt "%a = %a;"
                pp_id a
                f b)) lll
+        (unloc asset_name)
 
     | Massets l ->
       begin
@@ -550,10 +551,11 @@ let pp_model_internal fmt (model : model) b =
         (pp_list "; " f) l
 
     | Mlitmap l ->
-      Format.fprintf fmt "[%a]"
-        (pp_list "; " (fun fmt (k, v) -> Format.fprintf fmt "%a : %a"
+      Format.fprintf fmt "(map [%a] : %a)"
+        (pp_list "; " (fun fmt (k, v) -> Format.fprintf fmt "%a -> %a"
                           f k
                           f v)) l
+        pp_type mtt.type_
 
     (* access *)
 
