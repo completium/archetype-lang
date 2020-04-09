@@ -9,7 +9,7 @@ variable c : contract_called_sig = @KT1RNB9PXsnp7KMkiMrWNMRzPjuefSWojBAm
 
 action update_value(n : int) {
   effect {
-    c.set_value(n)
+    transfer 0tz to c call set_value(n)
   }
 }
 
