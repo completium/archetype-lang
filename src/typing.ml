@@ -635,44 +635,48 @@ let methods = Mid.of_list methods
 
 (* -------------------------------------------------------------------- *)
 let corefuns =
-    (List.map (fun x -> ("abs", M.Cabs, None, [x], x)) [M.vtint; M.vtrational])
+    (List.map
+       (fun x -> ("abs", M.Cabs, `Total, None, [x], x))
+       [M.vtint; M.vtrational])
   @ (List.flatten (List.map (fun (name, cname) -> (
         List.map
-          (fun x -> (name, cname, None, [x; x], x))
+          (fun x -> (name, cname, `Total, None, [x; x], x))
           [M.vtint; M.vtrational; M.vtdate; M.vtduration; M.vtcurrency]))
       [("min", M.Cmin); ("max", M.Cmax)]))
   @ (List.map
-       (fun x -> ("concat", M.Cconcat, None, [x; x], x))
+       (fun x -> ("concat", M.Cconcat, `Total, None, [x; x], x))
        [M.vtbytes; M.vtstring])
   @ (List.map
-       (fun x -> ("slice", M.Cslice, None, [x; M.vtint; M.vtint], x))
+       (fun x -> ("slice", M.Cslice, `Total, None, [x; M.vtint; M.vtint], x))
        [M.vtbytes; M.vtstring])
-  @ ["length", M.Clength, None, [M.vtstring], M.vtint]
+  @ ["length", M.Clength, `Total, None, [M.vtstring], M.vtint]
 
 (* -------------------------------------------------------------------- *)
 let optionfuns = [
-  ("isnone", M.Cisnone, Some (M.Toption (M.Tnamed 0)), [], M.vtbool);
-  ("issome", M.Cissome, Some (M.Toption (M.Tnamed 0)), [], M.vtbool);
-  ("getopt", M.Cgetopt, Some (M.Toption (M.Tnamed 0)), [], M.Tnamed 0);
+  ("isnone", M.Cisnone, `Total  , Some (M.Toption (M.Tnamed 0)), [], M.vtbool);
+  ("issome", M.Cissome, `Total  , Some (M.Toption (M.Tnamed 0)), [], M.vtbool);
+  ("getopt", M.Cgetopt, `Partial, Some (M.Toption (M.Tnamed 0)), [], M.Tnamed 0);
 ]
 
 (* -------------------------------------------------------------------- *)
 let listfuns =
   let elemt = M.Tnamed 0 in
   let lst   = M.Tlist elemt in [
-    ("contains", M.Ccontains, Some lst, [elemt  ], M.vtbool       );
-    ("prepend" , M.Cprepend , Some lst, [elemt  ], lst            );
-    ("count"   , M.Ccount   , Some lst, [       ], M.vtint        );
-    ("nth"     , M.Cnth     , Some lst, [M.vtint], M.Toption elemt);
+    ("contains", M.Ccontains, `Total  , Some lst, [elemt  ], M.vtbool);
+    ("prepend" , M.Cprepend , `Total  , Some lst, [elemt  ], lst     );
+    ("count"   , M.Ccount   , `Total  , Some lst, [       ], M.vtint );
+    ("nth"     , M.Cnth     , `Partial, Some lst, [M.vtint], elemt   );
   ]
 
 (* -------------------------------------------------------------------- *)
 let cryptofuns =
-  List.map (fun (x, y) -> x, y, None, [M.vtbytes], M.vtbytes)
+  List.map (fun (x, y) -> x, y, `Total, None, [M.vtbytes], M.vtbytes)
     ["blake2b", M.Cblake2b;
      "sha256", M.Csha256;
      "sha512", M.Csha512]
-  @ ["check_signature", M.Cchecksignature, None, [M.vtbytes; M.vtbytes; M.vtbytes], M.vtbool] (* TODO: filter 1st arg to key type and 2nd to signature type *)
+  @ ["check_signature", M.Cchecksignature,
+     `Total, None, [M.vtbytes; M.vtbytes; M.vtbytes], M.vtbool]
+    (* TODO: filter 1st arg to key type and 2nd to signature type *)
 
 (* -------------------------------------------------------------------- *)
 let allfuns = corefuns @ optionfuns @ listfuns @ cryptofuns
@@ -1821,7 +1825,7 @@ let rec for_xexpr
 
         let aty = List.map (fun a -> Option.get a.M.type_) args in
 
-        let select (name, cname, thety, ety, rty) =
+        let select (name, cname, totality, thety, ety, rty) =
           let module E = struct exception Reject end in
 
           try
@@ -1843,10 +1847,15 @@ let rec for_xexpr
               Option.fold
                 (fun rty map -> Type.subst map rty)
                 rty cty in
+
+              let rty =
+                match totality, mode with
+                | `Partial, `Formula -> M.Toption rty
+                | _, _ -> rty in
   
-              if unloc f <> name then raise E.Reject;
-              let d = Type.sig_distance ~from_:aty ~to_:ety in
-              Some (Option.get_exn E.Reject d, (cname, (ety, rty)))
+            if unloc f <> name then raise E.Reject;
+            let d = Type.sig_distance ~from_:aty ~to_:ety in
+            Some (Option.get_exn E.Reject d, (cname, (ety, rty)))
 
           with E.Reject -> None in
 
