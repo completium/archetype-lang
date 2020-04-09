@@ -301,6 +301,8 @@ type error_desc =
   | UnknownTypeName                    of ident
   | UnpureInFormula
   | UnpureOnView
+  | UpdateEffectWithoutDefault
+  | UpdateEffectOnPkey
   | UselessPattern
   | VoidMethodInExpr
 [@@deriving show {with_path = false}]
@@ -433,6 +435,8 @@ let pp_error_desc fmt e =
   | UnknownTypeName i                  -> pp "Unknown type: %a" pp_ident i
   | UnpureInFormula                    -> pp "Cannot use expression with side effect"
   | UnpureOnView                       -> pp "Cannot call side-effectful methods on views"
+  | UpdateEffectWithoutDefault         -> pp "Update effect without default value for field"
+  | UpdateEffectOnPkey                 -> pp "Cannot set/update the primary key in an effect"
   | UselessPattern                     -> pp "Useless match branch"
   | VoidMethodInExpr                   -> pp "Void method in non-void context"
 
@@ -587,13 +591,13 @@ type mthtyp = [
   | mthstyp
   | `The
   | `Pk
-  | `Effect
   | `Asset
   | `SubColl
   | `Cmp
   | `Pred
   | `RExpr
-  | `Ref      of int
+  | `Ef  of bool
+  | `Ref of int
 ]
 
 and mthatyp = [ `Fixed of mthtyp list | `Multi of mthtyp ]
@@ -605,26 +609,26 @@ let methods : (string * method_) list =
   let mk mth_name mth_purity mth_totality mth_sig =
     { mth_name; mth_purity; mth_totality; mth_sig; }
   in [
-    ("isempty"     , mk M.Cisempty      `Pure   `Total   (`Fixed [             ], Some (`T M.vtbool)));
-    ("get"         , mk M.Cget          `Pure   `Partial (`Fixed [`Pk          ], Some `The));
-    ("add"         , mk M.Cadd          `Effect `Total   (`Fixed [`The         ], None));
-    ("remove"      , mk M.Cremove       `Effect `Total   (`Fixed [`Pk          ], None));
-    ("removeif"    , mk M.Cremoveif     `Effect `Total   (`Fixed [`Pred        ], None));
-    ("clear"       , mk M.Cclear        `Effect `Total   (`Fixed [             ], None));
-    ("update"      , mk M.Cupdate       `Effect `Total   (`Fixed [`Pk; `Effect ], None));
-    ("addupdate"   , mk M.Caddupdate    `Effect `Total   (`Fixed [`Pk; `Effect ], None));
-    ("contains"    , mk M.Ccontains     `Pure   `Total   (`Fixed [`Pk          ], Some (`T M.vtbool)));
-    ("nth"         , mk M.Cnth          `Pure   `Partial (`Fixed [`T M.vtint   ], Some (`Asset)));
-    ("select"      , mk M.Cselect       `Pure   `Total   (`Fixed [`Pred        ], Some (`SubColl)));
-    ("sort"        , mk M.Csort         `Pure   `Total   (`Multi (`Cmp         ), Some (`SubColl)));
-    ("count"       , mk M.Ccount        `Pure   `Total   (`Fixed [             ], Some (`T M.vtint)));
-    ("sum"         , mk M.Csum          `Pure   `Total   (`Fixed [`RExpr       ], Some (`Ref 0)));
-    ("subsetof"    , mk M.Csubsetof     `Pure   `Total   (`Fixed [`SubColl     ], Some (`T M.vtbool)));
-    ("head"        , mk M.Chead         `Pure   `Total   (`Fixed [`T M.vtint   ], Some (`SubColl)));
-    ("tail"        , mk M.Ctail         `Pure   `Total   (`Fixed [`T M.vtint   ], Some (`SubColl)));
-    ("unmoved"     , mk M.Cunmoved      `Pure   `Total   (`Fixed [             ], Some (`SubColl)));
-    ("added"       , mk M.Cadded        `Pure   `Total   (`Fixed [             ], Some (`SubColl)));
-    ("removed"     , mk M.Cremoved      `Pure   `Total   (`Fixed [             ], Some (`SubColl)));
+    ("isempty"     , mk M.Cisempty      `Pure   `Total   (`Fixed [              ], Some (`T M.vtbool)));
+    ("get"         , mk M.Cget          `Pure   `Partial (`Fixed [`Pk           ], Some `The));
+    ("add"         , mk M.Cadd          `Effect `Total   (`Fixed [`The          ], None));
+    ("remove"      , mk M.Cremove       `Effect `Total   (`Fixed [`Pk           ], None));
+    ("removeif"    , mk M.Cremoveif     `Effect `Total   (`Fixed [`Pred         ], None));
+    ("clear"       , mk M.Cclear        `Effect `Total   (`Fixed [              ], None));
+    ("update"      , mk M.Cupdate       `Effect `Total   (`Fixed [`Pk; `Ef true ], None));
+    ("addupdate"   , mk M.Caddupdate    `Effect `Total   (`Fixed [`Pk; `Ef false], None));
+    ("contains"    , mk M.Ccontains     `Pure   `Total   (`Fixed [`Pk           ], Some (`T M.vtbool)));
+    ("nth"         , mk M.Cnth          `Pure   `Partial (`Fixed [`T M.vtint    ], Some (`Asset)));
+    ("select"      , mk M.Cselect       `Pure   `Total   (`Fixed [`Pred         ], Some (`SubColl)));
+    ("sort"        , mk M.Csort         `Pure   `Total   (`Multi (`Cmp          ), Some (`SubColl)));
+    ("count"       , mk M.Ccount        `Pure   `Total   (`Fixed [              ], Some (`T M.vtint)));
+    ("sum"         , mk M.Csum          `Pure   `Total   (`Fixed [`RExpr        ], Some (`Ref 0)));
+    ("subsetof"    , mk M.Csubsetof     `Pure   `Total   (`Fixed [`SubColl      ], Some (`T M.vtbool)));
+    ("head"        , mk M.Chead         `Pure   `Total   (`Fixed [`T M.vtint    ], Some (`SubColl)));
+    ("tail"        , mk M.Ctail         `Pure   `Total   (`Fixed [`T M.vtint    ], Some (`SubColl)));
+    ("unmoved"     , mk M.Cunmoved      `Pure   `Total   (`Fixed [              ], Some (`SubColl)));
+    ("added"       , mk M.Cadded        `Pure   `Total   (`Fixed [              ], Some (`SubColl)));
+    ("removed"     , mk M.Cremoved      `Pure   `Total   (`Fixed [              ], Some (`SubColl)));
   ]
 
 let methods = Mid.of_list methods
@@ -2326,8 +2330,8 @@ and for_gen_method_call mode env theloc (the, m, args)
               Env.emit_error env (loc arg, NumericExpressionExpected));
         M.AFun (theid, thety, e)
 
-      | `Effect ->
-        M.AEffect (Option.get_dfl [] (for_arg_effect mode env asset arg))
+      | `Ef update ->
+        M.AEffect (Option.get_dfl [] (for_arg_effect mode env ~update asset arg))
 
       | `SubColl ->
         let ty = M.Tcontainer (Tasset asset.as_name, M.Collection) in
@@ -2383,7 +2387,9 @@ and for_gen_method_call mode env theloc (the, m, args)
   with E.Bailout -> None
 
 (* -------------------------------------------------------------------- *)
-and for_arg_effect mode (env : env) (asset : assetdecl) (tope : PT.expr) =
+and for_arg_effect
+  mode (env : env) ~(update : bool) (asset : assetdecl) (tope : PT.expr)
+=
   match unloc tope with
   | Erecord fields ->
     let do1 map ((x, e) : PT.record_item) =
@@ -2401,6 +2407,9 @@ and for_arg_effect mode (env : env) (asset : assetdecl) (tope : PT.expr) =
             if Mid.mem (unloc x) map then begin
               Env.emit_error env (loc x, DuplicatedFieldInRecordLiteral (unloc x));
               map
+            end else if (unloc x) = unloc asset.as_pk then begin
+              Env.emit_error env (loc x, UpdateEffectOnPkey);
+              map
             end else
               Mid.add (unloc x) (x, `Assign op, e) map
 
@@ -2411,6 +2420,22 @@ and for_arg_effect mode (env : env) (asset : assetdecl) (tope : PT.expr) =
     in
 
     let effects = List.fold_left do1 Mid.empty fields in
+
+    if not update then begin
+      List.iter (fun field ->
+        if unloc asset.as_pk <> unloc field.fd_name then begin
+          match Mid.find_opt (unloc field.fd_name) effects with
+          | None ->
+              if Option.is_none field.fd_dfl then
+                Env.emit_error env (loc tope,
+                  MissingFieldInRecordLiteral (unloc field.fd_name))
+
+          | Some (x, `Assign op, _) ->
+              if op <> M.ValueAssign && Option.is_none field.fd_dfl then
+                Env.emit_error env (loc x, UpdateEffectWithoutDefault)
+        end
+        ) asset.as_fields
+    end;
 
     Some (List.map snd (Mid.bindings effects))
 
