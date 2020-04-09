@@ -352,7 +352,7 @@ let pp_error_desc fmt e =
   | UnpureInFormula                    -> pp "Cannot use expression with side effect"
   | UnpureOnView                       -> pp "Cannot call side-effectful methods on views"
   | UselessPattern                     -> pp "Useless match branch"
-  | VoidMethodInExpr                   -> pp "Expecting arguments"
+  | VoidMethodInExpr                   -> pp "Void method in non-void context"
 
   | NoMatchingOperator (op, sig_) ->
     pp "No matches for operator %a(%a)"
@@ -445,7 +445,6 @@ let opsigs =
       PT.Arith PT.Minus, ([M.VTdate    ; M.VTduration      ], M.VTdate    )  ;
       PT.Arith PT.Minus, ([M.VTdate    ; M.VTdate          ], M.VTduration)  ;
       PT.Arith PT.Mult , ([M.VTrational; M.VTcurrency      ], M.VTcurrency)  ;
-      PT.Arith PT.Mult , ([M.VTcurrency; M.VTrational      ], M.VTcurrency)  ;
       PT.Arith PT.Mult , ([M.VTrational; M.VTduration      ], M.VTduration)  ;
       PT.Arith PT.Mult , ([M.VTduration; M.VTrational      ], M.VTduration)  ;
       PT.Arith PT.Div  , ([M.VTduration; M.VTrational      ], M.VTduration)  ;
@@ -566,7 +565,20 @@ end = struct
 end
 
 (* -------------------------------------------------------------------- *)
-let all_builtins_types = [M.vtbool; M.vtint; M.vtrational; M.vtdate; M.vtduration; M.vtstring; M.vtaddress; M.vtrole; M.vtcurrency; M.vtkey; M.vtbytes ]
+let all_builtins_types = [
+    M.vtbool;
+    M.vtint;
+    M.vtrational;
+    M.vtdate;
+    M.vtduration;
+    M.vtstring;
+    M.vtaddress;
+    M.vtrole;
+    M.vtcurrency;
+    M.vtkey;
+    M.vtbytes;
+]
+
 let corefuns =
   (List.map (fun x -> ("abs", M.Cabs, [x], x)) [M.vtint; M.vtrational])
   @ (List.flatten (List.map (fun (name, cname) -> (
@@ -1772,7 +1784,7 @@ let rec for_xexpr
           | `The     -> Some (M.Tasset asset.as_name)
           | `Asset   -> Some (M.Tasset asset.as_name)
           | `SubColl -> Some (M.Tcontainer (M.Tasset asset.as_name, M.View))
-          | `Ref i   -> Some (Mint.find i amap)
+          | `Ref i   -> Mint.find_opt i amap
           | _        -> assert false in
 
         let the = for_xexpr env the in
