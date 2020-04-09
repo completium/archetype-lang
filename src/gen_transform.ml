@@ -1676,16 +1676,19 @@ let process_internal_string (model : model) : model =
 let replace_array_asset_by_map (model : model) : model =
   let change_value (v : mterm) : mterm =
     match v.node with
-    | Massets _ ->
-      (* let an =
-         match v.type_ with
-         | Tcontainer (Tasset an, _) -> an
-         | Tmap (_, (Tasset an)) -> an
-         | _ -> Format.printf "type_error: %a@." pp_type_ v.type_; assert false
-         in
-         let _, kt = Utils.get_asset_key model (unloc an) in
-         mk_mterm (Mlitmap []) (Tmap (kt, Tasset an)) *)
-      { v with node = Mlitmap [] }
+    | Massets l ->
+      let asset_name =
+        match v.type_ with
+        | Tcontainer (Tasset an, _) -> an
+        | Tmap (_, (Tasset an)) -> an
+        | _ -> Format.printf "type_error: %a@." pp_type_ v.type_; assert false
+      in
+      let an = unloc asset_name in
+      let _, kt = Utils.get_asset_key model an in
+      mk_mterm (Mlitmap (List.map (fun asset ->
+          let k = Utils.get_asset_key_value model an asset in
+          (k, asset)
+        ) l)) (Tmap (kt, Tasset asset_name))
     | _ -> v
   in
 

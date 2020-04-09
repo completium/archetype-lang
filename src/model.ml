@@ -524,6 +524,7 @@ type 'id asset_gen = {
   sort: ident list;
   state: lident option;
   invariants  : lident label_term_gen list;
+  init: 'id mterm_gen list;
   loc: Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]
@@ -815,8 +816,8 @@ let mk_enum ?(values = []) name initial : 'id enum_gen =
 let mk_enum_item ?(invariants = []) name : 'id enum_item_gen =
   { name; invariants }
 
-let mk_asset ?(values = []) ?(sort=[]) ?state ?(invariants = []) ?(loc = Location.dummy) name key : 'id asset_gen =
-  { name; values; sort; state; key; invariants; loc }
+let mk_asset ?(values = []) ?(sort=[]) ?state ?(invariants = []) ?(init = []) ?(loc = Location.dummy) name key : 'id asset_gen =
+  { name; values; sort; state; key; invariants; init; loc }
 
 let mk_asset_item ?default ?(shadow=false) ?(loc = Location.dummy) name type_ original_type : 'id asset_item_gen =
   { name; type_; original_type; default; shadow; loc }
@@ -2615,6 +2616,7 @@ type kind_ident =
   | KIassetname
   | KIassetfield
   | KIassetstate
+  | KIassetinit
   | KIenumname
   | KIenumvalue
   | KIcontractname
@@ -2782,6 +2784,7 @@ let replace_ident_model (f : kind_ident -> ident -> ident) (model : model) : mod
         sort          = List.map (f KIassetfield) a.sort;
         state         = Option.map (g KIassetstate) a.state;
         invariants    = List.map for_label_term a.invariants;
+        init          = List.map for_mterm a.init;
         loc           = a.loc;
       }
     in
@@ -3006,6 +3009,7 @@ module Utils : sig
   val get_storage                        : model -> storage
   val get_asset_field                    : model -> (ident * ident) -> (ident * type_ * mterm option)
   val get_asset_key                      : model -> ident -> (ident * btyp)
+  val get_asset_key_value                : model -> ident -> mterm -> mterm
   val get_field_container                : model -> ident -> ident -> (ident * container)
   val is_storage_attribute               : model -> ident -> bool
   val get_named_field_list               : model -> ident -> 'a list -> (ident * 'a) list
@@ -3274,6 +3278,12 @@ end = struct
       | _ -> raise Not_found
     with
     | Not_found -> emit_error (AssetKeyTypeNotFound (asset_name))
+
+  let get_asset_key_value  (m : model) (asset_name : ident) (asset_value : mterm) : mterm =
+    let _k, _ = get_asset_key m asset_name in
+    match asset_value.node with
+    | Masset (a::_) -> a (* FIXME *)
+    | _ -> assert false
 
   let get_field_container model asset_name field_name : ident * container =
     let seek_original_type () : type_ =

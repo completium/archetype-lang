@@ -19,7 +19,7 @@ let generate_storage (model : model) : model =
       asset_name
       (MTasset (unloc asset_name))
       typ_
-      (mk_mterm (Massets []) typ_)
+      (mk_mterm (Massets asset.init) typ_)
   in
 
   let state_to_storage_items (e : enum) : storage_item list =
@@ -84,9 +84,9 @@ let generate_storage (model : model) : model =
 
   let process_storage_item d : storage_item list =
     match d with
-    | Dvar v -> [variable_to_storage_items v]
-    | Denum e -> state_to_storage_items e
-    | Dasset a -> [asset_to_storage_items a]
+    | Dvar v      -> [variable_to_storage_items v]
+    | Denum e     -> state_to_storage_items e
+    | Dasset a    -> [asset_to_storage_items a]
     | Dcontract _ -> []
   in
 

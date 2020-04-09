@@ -218,7 +218,8 @@ let to_model (ast : A.model) : M.model =
     | A.Parith (A.Modulo, l, r)         -> M.Mmodulo        (f l, f r)
     | A.Puarith (A.Uplus, e)            -> M.Muplus         (f e)
     | A.Puarith (A.Uminus, e)           -> M.Muminus        (f e)
-    | A.Precord l                       -> M.Masset         (List.map f l)| A.Pcall (Some p, A.Cconst A.Cbefore,    []) -> M.Msetbefore    (f p)
+    | A.Precord l                       -> M.Masset         (List.map f l)
+    | A.Pcall (Some p, A.Cconst A.Cbefore,    []) -> M.Msetbefore    (f p)
     | A.Pletin (id, init, typ, body, o) -> M.Mletin         ([id], f init, Option.map ftyp typ, f body, Option.map f o)
     | A.Pdeclvar (i, t, v)              -> M.Mdeclvar       ([i], Option.map ftyp t, f v)
     | A.Pvar (b, {pldesc = "state"; _})                -> let e = M.Mvarstate in process_before b e
@@ -503,7 +504,8 @@ let to_model (ast : A.model) : M.model =
         let default = Option.map to_mterm x.default in
         M.mk_asset_item x.name typ typ ?default:default ~shadow:x.shadow ~loc:x.loc) a.fields
     in
-    let r : M.asset = M.mk_asset a.name (unloc (Option.get a.key)) ~values:values ~sort:(List.map unloc (a.sort)) ?state:a.state ~invariants:(List.map (fun x -> to_label_lterm x) a.specs) ~loc:a.loc in
+    let mk_asset an l = M.mk_mterm (M.Masset (List.map to_mterm l)) (M.Tasset an) in
+    let r : M.asset = M.mk_asset a.name (unloc (Option.get a.key)) ~values:values ~sort:(List.map unloc (a.sort)) ?state:a.state ~invariants:(List.map (fun x -> to_label_lterm x) a.specs) ~init:(List.map (fun x -> (mk_asset a.name) x) a.init) ~loc:a.loc in
     M.Dasset r
   in
 

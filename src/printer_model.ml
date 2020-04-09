@@ -221,14 +221,14 @@ let pp_mterm fmt (mt : mterm) =
     | Mfail ft ->
       let pp_fail_type fmt = function
         | Invalid e -> f fmt e
-        | InvalidCaller -> Format.fprintf fmt "invalid caller"
+        | InvalidCaller -> Format.fprintf fmt "\"invalid caller\""
         | InvalidCondition c ->
-          Format.fprintf fmt "require %afailed"
+          Format.fprintf fmt "\"require %afailed\""
             (pp_option (pp_postfix " " pp_str)) c
-        | NoTransfer -> Format.fprintf fmt "no transfer"
-        | InvalidState -> Format.fprintf fmt "invalid state"
+        | NoTransfer -> Format.fprintf fmt "\"no transfer\""
+        | InvalidState -> Format.fprintf fmt "\"invalid state\""
       in
-      Format.fprintf fmt "Current.failwith \"%a\""
+      Format.fprintf fmt "fail (%a)"
         pp_fail_type ft
 
     | Mtransfer (v, d) ->
@@ -294,9 +294,9 @@ let pp_mterm fmt (mt : mterm) =
 
     (* composite type constructors *)
 
-    | Mnone          -> pp_str fmt "None"
+    | Mnone -> pp_str fmt "None"
 
-    | Msome v        ->
+    | Msome v ->
       Format.fprintf fmt "Some (%a)"
         f v
 
@@ -1185,14 +1185,14 @@ let pp_asset_item fmt (item : asset_item) =
     (pp_option (fun fmt -> Format.fprintf fmt " := %a" pp_mterm)) item.default
 
 let pp_asset fmt (asset : asset) =
-  Format.fprintf fmt "asset %a identified by %a%a {@\n  @[%a@]@\n}%a%a@\n"
+  Format.fprintf fmt "asset %a identified by %a%a {@\n  @[%a@]@\n}%a%a%a@\n"
     pp_id asset.name
     pp_str asset.key
     (pp_do_if (not (List.is_empty asset.sort)) (fun fmt xs -> Format.fprintf fmt " sorted by %a" (pp_list ";@\n" pp_str) xs)) asset.sort
     (pp_list "@\n" pp_asset_item) asset.values
+    (pp_do_if (not (List.is_empty asset.init)) (fun fmt xs -> Format.fprintf fmt "@\ninitialized by {@\n  @[%a@]@\n}@\n" (pp_list ";@\n" pp_mterm) xs)) asset.init
     (pp_do_if (not (List.is_empty asset.invariants)) (fun fmt xs -> Format.fprintf fmt "@\nwith {@\n  @[%a@]@\n}@\n" (pp_list ";@\n" pp_label_term) xs)) asset.invariants
     (pp_option (fun fmt id -> Format.fprintf fmt "@\nwith states %a@\n" pp_id id)) asset.state
-
 
 let pp_contract_signature fmt (cs : contract_signature) =
   Format.fprintf fmt "%a (%a)"
