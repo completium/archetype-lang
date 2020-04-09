@@ -1,0 +1,11 @@
+archetype no_pkey_assignment_in_addupdate
+
+asset myasset {
+  id : string;
+}
+
+action exec (k : string) {
+  effect {
+    myasset.addupdate(k, {id = "key"})
+  }
+}
