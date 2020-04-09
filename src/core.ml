@@ -212,61 +212,87 @@ let cmp_date (d1 : date) (d2 : date) : bool =
 
 exception MalformedDate of string
 
-let string_to_date (str : string) : date =
-  let eat (nb : int) (buf : string) : string * string =
-    let l = String.length buf in
-    String.sub buf 0 nb, String.sub buf nb (l - nb)
-  in
+let string_to_date =
+  let datere, timere, tzre =
+    let digitre i =
+      let re = String.concat "" (List.init i (fun _ -> "[0-9]")) in
+      "\\(" ^ re ^ "\\)" in
+  
+    let datere = String.concat "-" (List.map digitre [4; 2; 2]) in
+    let timere = String.concat ":" (List.map digitre [2; 2]) in
+    let timere = timere ^ ("\\(:\\([0-9][0-9]\\)\\)?") in
+    let tzre   = String.concat ":" (List.map digitre [2; 2]) in
 
-  let eat_and_check (ref : string) (nb : int) (buf : string) =
-    let str, buf = eat nb buf in
-    if (not (String.equal str ref)) then raise (MalformedDate str);
-    buf
-  in
+    (Str.regexp datere, Str.regexp timere, Str.regexp tzre) in
 
-  let get_next_char (buf : string) =
-    match buf with
-    | "" -> None
-    | _ -> Some (String.sub buf 0 1)
-  in
+  let days = [|
+      [| 31; 28; 31; 30; 31; 30; 31; 31; 30; 31; 30; 31 |];
+      [| 31; 29; 31; 30; 31; 30; 31; 31; 30; 31; 30; 31 |];
+    |] in
 
-  let input = str in
-  let c_int (a, b) = (int_of_string a, b) in
-  let year, input = eat 4 input |> c_int in
-  let input = eat_and_check "-" 1 input in
-  let month, input = eat 2 input |> c_int in
-  let input = eat_and_check "-" 1 input in
-  let day, input = eat 2 input |> c_int in
-  match get_next_char input with
-  | None -> mk_date () ~year:year ~month:month ~day:day
-  | _ ->
-    begin
-      let input = eat_and_check "T" 1 input in
-      let hour, input = eat 2 input |> c_int in
-      let input = eat_and_check ":" 1 input in
-      let minute, input = eat 2 input |> c_int in
-      let input = eat_and_check ":" 1 input in
-      let second, input = eat 2 input |> c_int in
-      let tz =
-        match get_next_char input with
-        | None ->  TZnone
-        | Some "Z" -> TZZ
-        | Some c ->
-          begin
-            let input, t =
-              match c with
-              | "+" -> eat_and_check "+" 1 input, (fun (h, m) -> TZplus(h, m) )
-              | "-" -> eat_and_check "-" 1 input, (fun (h, m) -> TZminus(h, m) )
-              | _ -> raise (MalformedDate str)
-            in
-            let timezone_hour, input = eat 2 input |> c_int in
-            let input = eat_and_check ":" 1 input in
-            let timezone_min, _ = eat 2 input |> c_int in
-            t(timezone_hour, timezone_min)
-          end
-      in mk_date () ~year:year ~month:month ~day:day ~hour:hour ~minute:minute ~second:second ~timezone:tz
-    end
+  let validate_date ~year ~month ~day =
+    if year < 1 || (month < 1 || month > 12) then false else
 
+    let isleap =
+      year mod 4 = 0 && (year mod 100 <> 0 || year mod 400 = 0) in
+
+    1 <= day && day <= days.(if isleap then 1 else 0).(month-1) in
+
+  let validate_time ?(second = 0) ~hour ~minute () =
+       (0 <= hour   && hour   < 24)
+    && (0 <= minute && minute < 60)
+    && (0 <= second && second < 60) in
+
+  fun (s : string) ->
+    let failure () = raise (MalformedDate s) in
+
+    let year, month, day, i =
+      if not (Str.string_match datere s 0) then failure ();
+
+      let year =  int_of_string (Str.matched_group 1 s) in
+      let month = int_of_string (Str.matched_group 2 s) in
+      let day   = int_of_string (Str.matched_group 3 s) in
+
+      if not (validate_date ~year ~month ~day) then
+        failure();
+      (year, month, day, Str.match_end ()) in
+
+    let hour, minute, second, i =
+      if i = String.length s then (None, None, None, i) else begin
+        if s.[i] <> 'T' || not (Str.string_match timere s (i+1)) then
+          failure ();
+        let hour   = int_of_string (Str.matched_group 1 s) in
+        let minute = int_of_string (Str.matched_group 2 s) in
+        let second =
+          try  Some (int_of_string (Str.matched_group 4 s))
+          with Not_found -> None in
+
+        if not (validate_time ?second ~hour ~minute ()) then
+          failure ();
+        (Some hour, Some minute, second, Str.match_end ())
+      end in
+
+    let timezone, i =
+      if i = String.length s then (None, i) else begin
+          if String.sub s i (String.length s - i) = "Z" then
+            (Some TZZ, String.length s)
+          else
+            match s.[i] with
+            | c when c = '+' || c = '-' ->
+                if not (Str.string_match tzre s (i+1)) then
+                  failure ();
+                let tzh = int_of_string (Str.matched_group 1 s) in
+                let tzm = int_of_string (Str.matched_group 2 s) in
+                if not (validate_time ~hour:tzh ~minute:tzm ()) then
+                  failure ();
+                let tz = if c = '+' then TZplus(tzh, tzm) else TZminus (tzh, tzm) in
+                (Some tz, Str.match_end ())
+            | _ -> failure ()
+      end in
+
+    if i <> String.length s then failure ();
+
+    mk_date ~year ~month ~day ?hour ?minute ?second ?timezone ()
 
 (* let date_to_big_int (date : date) : big_int =
    Big_int.zero_big_int
