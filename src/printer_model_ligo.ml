@@ -1443,17 +1443,10 @@ let pp_model_internal fmt (model : model) b =
       Format.fprintf fmt
         "function remove_%s_%s (const s : storage_type; const a : %s; const key : %a) : storage_type is@\n  \
          begin@\n    \
-         var new_keys : list(%a) := (nil : list(%a));@\n    \
-         function aux (const i : %a) : unit is@\n      \
-         begin@\n        \
-         if (key =/= i) then@\n          \
-         new_keys := cons(i, new_keys);@\n        \
-         else@\n          \
-         skip;@\n        \
-         end with unit;@\n    \
+         function aux (const accu : list(%a); const i : %a) : list(%a) is block { skip } with (if (key =/= i) then cons(i, accu) else accu);@\n    \
          const asset_key : %a = a.%s;@\n    \
          const asset_val : %s = get_%s(s, asset_key);@\n    \
-         list_iter(aux, asset_val.%s);@\n    \
+         const new_keys : list(%a) = list_fold(aux, asset_val.%s, (nil : list(%a)));@\n    \
          asset_val.%s := new_keys;@\n    \
          const map_local : map(%a, %s) = s.%s_assets;@\n    \
          map_local[asset_key] := asset_val;@\n    \
@@ -1461,11 +1454,10 @@ let pp_model_internal fmt (model : model) b =
          %a  \
          end with (s)@\n"
         an fn an pp_btyp tt
-        pp_btyp tt pp_btyp tt
-        pp_btyp tt
+        pp_btyp tt  pp_btyp tt pp_btyp tt
         pp_btyp t k
         an an
-        fn
+        pp_btyp tt fn pp_btyp tt
         fn
         pp_btyp t an an
         an
@@ -1539,23 +1531,16 @@ let pp_model_internal fmt (model : model) b =
       Format.fprintf fmt
         "function select_%s_%i (const s : storage_type; const l : list(%a)) : list(%a) is@\n  \
          begin@\n    \
-         var res : list(%a) := (nil : list(%a));@\n    \
-         function aggregate (const i : %a) : unit is@\n      \
+         function aggregate (const accu : list(%a); const i : %a) : list(%a) is@\n      \
          begin@\n        \
          const the : %s = get_force(i, s.%s_assets);@\n        \
-         if (%a) then@\n          \
-         res := cons(the.%s, res);@\n        \
-         else@\n          \
-         skip;@\n      \
-         end with unit;@\n    \
-         list_iter(aggregate, l)@\n  \
-         end with res@\n"
+         end with (if (%a) then cons(the.%s, accu) else accu);@\n    \
+         end with (list_fold(aggregate, l, (nil : list(%a))))@\n"
         an i pp_btyp t pp_btyp t
-        pp_btyp t pp_btyp t
-        pp_btyp t
+        pp_btyp t pp_btyp t pp_btyp t
         an an
-        (pp_mterm (mk_env ())) f
-        k
+        (pp_mterm (mk_env ())) f k
+        pp_btyp t
 
     | Sort (an, l) ->
       let _, t = Utils.get_asset_key model an in
@@ -1651,7 +1636,7 @@ let pp_model_internal fmt (model : model) b =
         "function contains_%s (const l : list(%a); const key : %a) : bool is@\n  \
          begin@\n  \
          function aggregate (const accu : bool; const v : %a) : bool is block { skip } with (accu or v = key);@\n  \
-         end with list_fold(aggregate, l, False)"
+         end with list_fold(aggregate, l, False)@\n"
         an pp_btyp t pp_btyp t
         pp_btyp t
 
@@ -1706,19 +1691,16 @@ let pp_model_internal fmt (model : model) b =
       Format.fprintf fmt
         "function sum_%s_%i (const s : storage_type; const l : list(%a)) : %a is@\n  \
          begin@\n    \
-         var r : %a := %s;@\n    \
-         function aggregate (const i : %a) : unit is@\n      \
-         begin@\n        \
-         const a : %s = get_force(i, s.%s_assets);@\n        \
-         r := r + (%a);@\n      \
-         end with unit;@\n    \
-         list_iter(aggregate, l)@\n  \
-         end with r@\n"
+         function aggregate (const accu : %a; const i : %a) : %a is@\n      \
+         block {@\n        \
+         const a : %s = get_force(i, s.%s_assets);@\n      \
+         } with (accu + (%a));@\n  \
+         end with (list_fold(aggregate, l, %s))@\n"
         an i pp_btyp tk pp_type t
-        pp_type t (get_zero t)
-        pp_btyp tk
+        pp_type t pp_btyp tk pp_type t
         an an
         pp_expr expr
+        (get_zero t)
 
     | Min (an, fn) ->
       let _, t = Utils.get_asset_key model an in

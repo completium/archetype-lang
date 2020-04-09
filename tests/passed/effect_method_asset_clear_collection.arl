@@ -4,7 +4,7 @@ asset o_asset identified by oid {
   oid : string;
   val : int = 0;
 } initialized by {
-  {"oid"}
+  {"oid"; 1}
 }
 
 asset my_asset identified by id {
@@ -12,7 +12,7 @@ asset my_asset identified by id {
   value  : int;
   col    : o_asset collection;
 } initialized by {
-  {"id0"; 0; [{"oid"}]};
+  {"id0"; 0; [{"oid"; 1}]};
   {"id1"; 1; []};
   {"id2"; 2; []}
 }

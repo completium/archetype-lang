@@ -10,7 +10,7 @@ asset my_asset identified by id {
   value  : int;
   col    : o_asset partition;
 } initialized by {
-  {"id0"; 0; [{"oid"}]};
+  {"id0"; 0; [{"oid"; 1}]};
   {"id1"; 1; []};
   {"id2"; 2; []}
 }
