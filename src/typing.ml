@@ -1857,15 +1857,15 @@ let rec for_xexpr
                 Option.bind
                   (fun ty -> Type.unify ~ptn:thety ~tg:ty)
                   (List.ohead aty)) in
-  
+
             if Option.is_some thety && Option.is_none cty then
               raise E.Reject;
-  
+
             let ety =
               Option.fold
                 (fun ety map -> List.map (Type.subst map) (Option.get thety :: ety))
                 ety cty in
-  
+
             let rty =
               Option.fold
                 (fun rty map -> Type.subst map rty)
@@ -1875,7 +1875,7 @@ let rec for_xexpr
                 match totality, mode with
                 | `Partial, `Formula -> M.Toption rty
                 | _, _ -> rty in
-  
+
             if unloc f <> name then raise E.Reject;
             let d = Type.sig_distance ~from_:aty ~to_:ety in
             Some (Option.get_exn E.Reject d, (cname, (ety, rty)))
@@ -2772,13 +2772,13 @@ let rec for_instruction (env : env) (i : PT.expr) : env * M.instruction =
                   (fun (x, _) -> unloc name = unloc x)
                   ctt.ct_entries
               in
-  
+
               match entry  with
               | None ->
                   let err =
                     UnknownContractEntryPoint (unloc ctt.ct_name, unloc name)
                   in Env.emit_error env (loc name, err); None
-  
+
               | Some (_, targs) ->
                   if List.length targs <> List.length args then
                     let n = List.length targs in
@@ -3997,8 +3997,9 @@ let transactions_of_tdecls tdecls =
           match unloc x with
           | None ->
             M.Rany
-          | Some id ->
-            M.Rqualid (M.mk_sp ~loc:(loc x) (M.Qident (mkloc (loc x) id)))
+          | Some _id -> (* FIXME *)
+            M.Rany
+            (* M.Rqualid (M.mk_sp ~loc:(loc x) (M.Qident (mkloc (loc x) id))) *)
         in M.mk_sp ~loc:(loc x) node in
 
       let aout = List.fold_left

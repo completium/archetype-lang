@@ -188,22 +188,6 @@ type qualid = lident qualid_gen
 
 (* -------------------------------------------------------------------- *)
 
-type 'id rexpr_gen = ('id rexpr_node) struct_poly
-[@@deriving show {with_path = false}]
-
-and 'id rexpr_node =
-  | Rany
-  | Rqualid of 'id qualid_gen
-  | Ror of 'id rexpr_gen * 'id rexpr_gen
-  | Raddress of 'id
-[@@deriving show {with_path = false}]
-
-type rexpr = lident rexpr_gen
-[@@deriving show {with_path = false}]
-
-
-(* -------------------------------------------------------------------- *)
-
 type 'id sexpr_gen = ('id sexpr_node) struct_poly
 [@@deriving show {with_path = false}]
 
@@ -504,6 +488,22 @@ type 'id function_struct = {
 
 type function_ = lident function_struct
 [@@deriving show {with_path = false}]
+
+(* -------------------------------------------------------------------- *)
+
+type 'id rexpr_gen = ('id rexpr_node) struct_poly
+[@@deriving show {with_path = false}]
+
+and 'id rexpr_node =
+  | Rany
+  | Rexpr of 'id term_gen
+  | Ror of 'id rexpr_gen * 'id rexpr_gen
+[@@deriving show {with_path = false}]
+
+type rexpr = lident rexpr_gen
+[@@deriving show {with_path = false}]
+
+(* -------------------------------------------------------------------- *)
 
 type 'id transition = {
   from : 'id sexpr_gen;

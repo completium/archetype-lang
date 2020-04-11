@@ -818,28 +818,15 @@ let to_model (ast : A.model) : M.model =
           let caller : M.mterm = M.mk_mterm M.Mcaller (M.Tbuiltin Baddress) in
           match rq.node with
           | Rany -> None
-          | Rqualid q ->
+          | Rexpr e ->
             begin
-              let qualid_to_pterm (q : A.qualid) : M.mterm =
-                match q.node with
-                | Qident i ->
-                  let t : A.ptyp = A.Utils.get_var_type ast i in
-                  let type_ = ptyp_to_type t in
-                  M.mk_mterm (M.Mvarstorevar i) type_ ~loc:q.loc
-                (* | Qdot ({node = Qident a}, i) ->
-                   M.mk_mterm (M.Mvarstorevar i) type_ ~loc:q.loc *)
-                | _ -> emit_error TODO
-              in
-              let addr : M.mterm = qualid_to_pterm q in
-              Some (M.mk_mterm (M.Mequal (caller, addr)) (M.Tbuiltin Bbool) ~loc:rq.loc)
+              let mt = to_mterm e in
+              Some (M.mk_mterm (M.Mequal (caller, mt)) (M.Tbuiltin Bbool) ~loc:rq.loc)
             end
           | Ror (l, r) ->
             let l = Option.get (process_rexpr l) in
             let r = Option.get (process_rexpr r) in
             Some (M.mk_mterm (M.Mor (l, r)) (M.Tbuiltin Bbool) ~loc:rq.loc)
-          | Raddress a ->
-            let addr   : M.mterm = M.mk_mterm (M.Maddress (unloc a)) (M.Tbuiltin Baddress) in
-            Some (M.mk_mterm (M.Mequal (caller, addr)) (M.Tbuiltin Bbool) ~loc:rq.loc)
         in
         match process_rexpr cb with
         | Some a ->

@@ -807,12 +807,11 @@ let pp_contract fmt (c : contract) =
 let rec pp_rexpr fmt (r : rexpr) =
   let pp_node fmt = function
     | Rany -> pp_str fmt "any"
-    | Rqualid q -> pp_qualid fmt q
+    | Rexpr e -> pp_pterm fmt e
     | Ror (lhs, rhs) ->
       Format.fprintf fmt "%a or %a"
         pp_rexpr lhs
         pp_rexpr rhs
-    | Raddress a -> pp_id fmt a
   in
   pp_struct_poly pp_node fmt r
 

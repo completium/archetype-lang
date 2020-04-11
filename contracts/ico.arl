@@ -82,7 +82,7 @@ function get_remaining_tez_to_raise () : tez {
     | Round1Running   | Round1Finished   -> round1_cap - nb_tez_raised
     | _ -> (
       let remaining_bcd : tez = max_bcd_to_sell - nb_bcd_sold in
-      remaining_bcd / exchange_rate_bcd_tez)
+      (1 div exchange_rate_bcd_tez) * remaining_bcd)
     end
 }
 

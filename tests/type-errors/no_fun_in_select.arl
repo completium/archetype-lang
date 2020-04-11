@@ -1,0 +1,14 @@
+archetype no_fun_in_select
+
+asset my_asset identified by id {
+  id : string;
+  value : int;
+}
+
+variable res : int = 0
+
+action exec (str : string) {
+  effect {
+    var l = my_asset.select(the.value = min(the.value, 1));
+  }
+}
