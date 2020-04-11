@@ -3659,7 +3659,11 @@ let for_acttx_decl (env : env) (decl : acttx loced) =
 
             (env, decl))
 
-      in (Env.TAction.push env decl, decl)
+      in
+
+      if check_and_emit_name_free env x then
+        (Env.TAction.push env decl, Some decl)
+      else (env, None)
     end
 
   | `Transition (x, args, tgt, from_, actions, tx, _exts) ->
@@ -3702,7 +3706,11 @@ let for_acttx_decl (env : env) (decl : acttx loced) =
 
           in (env, decl))
 
-    in (Env.TAction.push env decl, decl)
+    in
+
+    if check_and_emit_name_free env x then
+      (Env.TAction.push env decl, Some decl)
+    else (env, None)
 
 (* -------------------------------------------------------------------- *)
 let for_acttxs_decl (env : env) (decls : acttx loced list) =
@@ -3786,7 +3794,7 @@ type decls = {
   enums     : statedecl option list;
   assets    : assetdecl option list;
   functions : env fundecl option list;
-  acttxs    : env tactiondecl list;
+  acttxs    : env tactiondecl option list;
   specs     : env ispecification list list;
   secspecs  : M.security list;
 }
@@ -4058,7 +4066,7 @@ let transactions_of_tdecls tdecls =
         effect          = effect;
         loc             = loc tdecl.ad_name; }
 
-  in List.map for1 tdecls
+  in List.map for1 (List.pmap id tdecls)
 
 (* -------------------------------------------------------------------- *)
 let for_declarations (env : env) (decls : (PT.declaration list) loced) : M.model =
