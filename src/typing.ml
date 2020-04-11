@@ -2868,11 +2868,11 @@ let rec for_instruction (env : env) (i : PT.expr) : env * M.instruction =
       env, mki (M.Iiter (x, a, b, i)) ?label:(Option.map unloc lbl)
 
     | Erequire e ->
-      let e = for_formula env e in
+      let e = for_expr env e in
       env, mki (M.Irequire (true, e))
 
     | Efailif e ->
-      let e = for_formula env e in
+      let e = for_expr env e in
       env, mki (M.Irequire (false, e))
 
     | Efail e ->
