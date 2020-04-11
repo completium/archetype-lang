@@ -619,10 +619,10 @@ type mthtyp = [
   | `Asset
   | `SubColl
   | `Cmp
-  | `Pred
-  | `RExpr
-  | `Ef  of bool
-  | `Ref of int
+  | `Pred  of bool
+  | `RExpr of bool
+  | `Ef    of bool
+  | `Ref   of int
 ]
 
 and mthatyp = [ `Fixed of mthtyp list | `Multi of mthtyp ]
@@ -638,16 +638,16 @@ let methods : (string * method_) list =
     ("get"         , mk M.Cget          `Pure   `Partial (`Fixed [`Pk           ], Some `The));
     ("add"         , mk M.Cadd          `Effect `Total   (`Fixed [`The          ], None));
     ("remove"      , mk M.Cremove       `Effect `Total   (`Fixed [`Pk           ], None));
-    ("removeif"    , mk M.Cremoveif     `Effect `Total   (`Fixed [`Pred         ], None));
+    ("removeif"    , mk M.Cremoveif     `Effect `Total   (`Fixed [`Pred true    ], None));
     ("clear"       , mk M.Cclear        `Effect `Total   (`Fixed [              ], None));
     ("update"      , mk M.Cupdate       `Effect `Total   (`Fixed [`Pk; `Ef true ], None));
     ("addupdate"   , mk M.Caddupdate    `Effect `Total   (`Fixed [`Pk; `Ef false], None));
     ("contains"    , mk M.Ccontains     `Pure   `Total   (`Fixed [`Pk           ], Some (`T M.vtbool)));
     ("nth"         , mk M.Cnth          `Pure   `Partial (`Fixed [`T M.vtint    ], Some (`Asset)));
-    ("select"      , mk M.Cselect       `Pure   `Total   (`Fixed [`Pred         ], Some (`SubColl)));
+    ("select"      , mk M.Cselect       `Pure   `Total   (`Fixed [`Pred true    ], Some (`SubColl)));
     ("sort"        , mk M.Csort         `Pure   `Total   (`Multi (`Cmp          ), Some (`SubColl)));
     ("count"       , mk M.Ccount        `Pure   `Total   (`Fixed [              ], Some (`T M.vtint)));
-    ("sum"         , mk M.Csum          `Pure   `Total   (`Fixed [`RExpr        ], Some (`Ref 0)));
+    ("sum"         , mk M.Csum          `Pure   `Total   (`Fixed [`RExpr false  ], Some (`Ref 0)));
     ("subsetof"    , mk M.Csubsetof     `Pure   `Total   (`Fixed [`SubColl      ], Some (`T M.vtbool)));
     ("head"        , mk M.Chead         `Pure   `Total   (`Fixed [`T M.vtint    ], Some (`SubColl)));
     ("tail"        , mk M.Ctail         `Pure   `Total   (`Fixed [`T M.vtint    ], Some (`SubColl)));
@@ -2356,18 +2356,18 @@ and for_gen_method_call mode env theloc (the, m, args)
       | `The ->
         M.AExpr (for_xexpr mode env ~ety:(Tasset asset.as_name) arg)
 
-      | `Pred ->
+      | `Pred capture ->
         let env   = Env.Context.push env (unloc asset.as_name) in
         let theid = mkloc (loc arg) Env.Context.the in
         let thety = M.Tasset asset.as_name in
         let mode  = { mode with em_pred = true; } in
-        M.AFun (theid, thety, for_xexpr mode ~capture:false env ~ety:M.vtbool arg)
+        M.AFun (theid, thety, for_xexpr ~capture mode env ~ety:M.vtbool arg)
 
-      | `RExpr ->
+      | `RExpr capture ->
         let env   = Env.Context.push env (unloc asset.as_name) in
         let theid = mkloc (loc arg) Env.Context.the in
         let thety = M.Tasset asset.as_name in
-        let e     = for_xexpr mode ~capture:false env arg in
+        let e     = for_xexpr ~capture mode env arg in
 
         e.M.type_ |> Option.iter (fun ty ->
             if not (Type.is_numeric ty || Type.is_currency ty) then
