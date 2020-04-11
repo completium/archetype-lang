@@ -278,6 +278,7 @@ type error_desc =
   | InvalidTypeForVarWithFromTo
   | LetInElseInInstruction
   | LetInElseOnNonOption
+  | MethodCallInPredicate
   | MissingFieldInRecordLiteral        of ident
   | MixedAnonInRecordLiteral
   | MixedFieldNamesInRecordLiteral     of ident list
@@ -416,6 +417,7 @@ let pp_error_desc fmt e =
   | InvalidTypeForVarWithFromTo        -> pp "A variable with a from/to declaration must be of type currency"
   | LetInElseInInstruction             -> pp "Let In else in instruction"
   | LetInElseOnNonOption               -> pp "Let in else on non-option type"
+  | MethodCallInPredicate              -> pp "Cannot call methods in predicates"
   | MissingFieldInRecordLiteral i      -> pp "Missing field in record literal: %a" pp_ident i
   | MixedAnonInRecordLiteral           -> pp "Mixed anonymous in record literal"
   | MixedFieldNamesInRecordLiteral l   -> pp "Mixed field names in record literal: %a" (Printer_tools.pp_list "," pp_ident) l
@@ -1470,7 +1472,13 @@ let for_literal (_env : env) (topv : PT.literal loced) : M.bval =
     mk_sp M.vtbytes (M.BVbytes (s))
 
 (* -------------------------------------------------------------------- *)
-type emode_t = [`Expr | `Formula]
+type emode_t = {
+  em_kind : [`Expr | `Formula];
+  em_pred : bool;
+}
+
+let expr_mode = { em_kind = `Expr   ; em_pred = false; }
+let form_mode = { em_kind = `Formula; em_pred = false; }
 
 let rec for_xexpr
     (mode : emode_t) ?(capture = true) (env : env) ?(ety : M.ptyp option) (tope : PT.expr)
@@ -1515,7 +1523,7 @@ let rec for_xexpr
 
         let vt =
           let hasvt = st.before || Option.is_some st.label in
-          if hasvt && mode <> `Formula then begin
+          if hasvt && mode.em_kind <> `Formula then begin
             Env.emit_error env (loc tope, BeforeOrLabelInExpr); M.VTnone
           end else vt in
 
@@ -1872,7 +1880,7 @@ let rec for_xexpr
                 rty cty in
 
               let rty =
-                match totality, mode with
+                match totality, mode.em_kind with
                 | `Partial, `Formula -> M.Toption rty
                 | _, _ -> rty in
 
@@ -1940,7 +1948,7 @@ let rec for_xexpr
           Env.emit_error env (loc tope, VoidMethodInExpr)
         end;
 
-        begin match asset, purity, mode with
+        begin match asset, purity, mode.em_kind with
           | _, `Effect, `Formula ->
               Env.emit_error env (loc tope, UnpureInFormula)
           | Some (_, M.View), `Effect, _ ->
@@ -1950,7 +1958,7 @@ let rec for_xexpr
         end;
 
         let rty =
-          match totality, mode with
+          match totality, mode.em_kind with
           | `Partial, `Formula ->
             Option.map (fun x -> M.Toption x) rty
           | _, _ ->
@@ -2038,7 +2046,7 @@ let rec for_xexpr
       end
 
     | Equantifier (qt, x, xty, body) -> begin
-        if mode <> `Formula then begin
+        if mode.em_kind <> `Formula then begin
           Env.emit_error env (loc tope, BindingInExpr);
           bailout ()
         end else
@@ -2307,6 +2315,9 @@ and for_gen_method_call mode env theloc (the, m, args)
   =
   let module E = struct exception Bailout end in
 
+  if mode.em_pred then
+    Env.emit_error env (theloc, MethodCallInPredicate);
+
   try
     let the, asset = for_asset_collection_expr mode env the in
 
@@ -2349,6 +2360,7 @@ and for_gen_method_call mode env theloc (the, m, args)
         let env   = Env.Context.push env (unloc asset.as_name) in
         let theid = mkloc (loc arg) Env.Context.the in
         let thety = M.Tasset asset.as_name in
+        let mode  = { mode with em_pred = true; } in
         M.AFun (theid, thety, for_xexpr mode ~capture:false env ~ety:M.vtbool arg)
 
       | `RExpr ->
@@ -2502,7 +2514,7 @@ and for_assign_expr mode env orloc (op, fty) e =
 
 (* -------------------------------------------------------------------- *)
 and for_formula (env : env) (topf : PT.expr) : M.pterm =
-  let e = for_xexpr `Formula ~ety:(M.Tbuiltin M.VTbool) env topf in
+  let e = for_xexpr form_mode ~ety:(M.Tbuiltin M.VTbool) env topf in
   Option.iter (fun ety ->
       if ety <> M.vtbool then
         Env.emit_error env (loc topf, FormulaExpected))
@@ -2516,8 +2528,9 @@ and for_action_description (env : env) (sa : PT.security_arg) : M.action_descrip
 
   | Sapp (act, [{ pldesc = PT.Sident asset }]) -> begin
       let st : PT.s_term = PT.mk_s_term () in
+      let mode  = { em_kind = `Formula; em_pred = false; } in
       let asset = mkloc (loc asset) (PT.Eterm (st, asset)) in
-      let asset = for_asset_collection_expr `Formula env (`Parsed asset) in
+      let asset = for_asset_collection_expr mode env (`Parsed asset) in
 
       match snd asset with
       | None ->
@@ -2583,7 +2596,7 @@ and for_role (env : env) (name : PT.lident) =
 
 (* -------------------------------------------------------------------- *)
 let for_expr (env : env) ?(ety : M.type_ option) (tope : PT.expr) : M.pterm =
-  for_xexpr `Expr env ?ety tope
+  for_xexpr expr_mode env ?ety tope
 
 (* -------------------------------------------------------------------- *)
 let for_lbl_expr (env : env) ?ety (topf : PT.label_expr) : env * (M.lident option * M.pterm) =
@@ -2660,7 +2673,7 @@ let for_lvalue (env : env) (e : PT.expr) : (M.lvalue * M.ptyp) option =
     end
 
   | Edot (pnm, x) -> begin
-      let nm = for_xexpr `Expr env pnm in
+      let nm = for_expr env pnm in
 
       match Option.map Type.as_asset nm.M.type_ with
       | None ->
@@ -2708,13 +2721,13 @@ let rec for_instruction (env : env) (i : PT.expr) : env * M.instruction =
   try
     match unloc i with
     | Emethod (pthe, m, args) -> begin
-        let the = for_xexpr `Expr env pthe in
+        let the = for_expr env pthe in
 
         match the.M.type_ with
         | Some ty -> begin
             match Type.as_asset_collection ty with
             | Some _ ->
-              let infos = for_gen_method_call `Expr env (loc i) (`Typed the, m, args) in
+              let infos = for_gen_method_call expr_mode env (loc i) (`Typed the, m, args) in
               let the, asset, method_, args, _ = Option.get_fdfl bailout infos in
 
               begin match asset, method_.mth_purity with
@@ -2725,7 +2738,7 @@ let rec for_instruction (env : env) (i : PT.expr) : env * M.instruction =
               env, mki (M.Icall (Some the, M.Cconst method_.mth_name, args))
 
             | _ ->
-              let infos = for_api_call `Expr env (loc i) (`Typed the, m, args) in
+              let infos = for_api_call expr_mode env (loc i) (`Typed the, m, args) in
               let the, method_, args = Option.get_fdfl bailout infos in
               env, mki (M.Icall (Some the, M.Cconst method_.mth_name, args))
           end
@@ -2751,7 +2764,7 @@ let rec for_instruction (env : env) (i : PT.expr) : env * M.instruction =
             for_expr env pe
 
           | Some (_, fty) ->
-            for_assign_expr `Expr env (loc plv) (op, fty) pe
+            for_assign_expr expr_mode env (loc plv) (op, fty) pe
         in
 
         let type_assigned = M.Tbuiltin (VTint) in (* TODO: replace by the var/field assigned type *)
@@ -2790,7 +2803,7 @@ let rec for_instruction (env : env) (i : PT.expr) : env * M.instruction =
                                   (fun (_, ety) arg -> for_expr ~ety env arg)
                                   targs args)
             in
-            let to_, ctt = for_contract_expr `Expr env to_ in
+            let to_, ctt = for_contract_expr expr_mode env to_ in
             (to_, Option.bind for_ctt ctt)
 
       in env, mki (Itransfer (e, to_, c))
@@ -2832,7 +2845,7 @@ let rec for_instruction (env : env) (i : PT.expr) : env * M.instruction =
       env, mki (M.Ideclvar (x, v))
 
     | Efor (lbl, x, e, i) ->
-      let e, asset = for_asset_collection_expr `Expr env (`Parsed e) in
+      let e, asset = for_asset_collection_expr expr_mode env (`Parsed e) in
       let asset = Option.map fst asset in
       let env, i = Env.inscope env (fun env ->
           let _ : bool = check_and_emit_name_free env x in
@@ -2887,7 +2900,7 @@ let rec for_instruction (env : env) (i : PT.expr) : env * M.instruction =
       env, mki (Ilabel lbl)
 
     | Ematchwith (e, bs) -> begin
-        match for_gen_matchwith `Expr env (loc i) e bs with
+        match for_gen_matchwith expr_mode env (loc i) e bs with
         | None -> bailout () | Some (decl, me, (wd, bsm), is) ->
 
           let env, is = List.fold_left_map for_instruction env is in
