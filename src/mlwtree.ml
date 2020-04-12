@@ -40,6 +40,7 @@ type 'i abstract_type =
   | Tycontract of 'i
   | Tyrecord of 'i
   | Tycoll  of 'i
+  | Tyview of 'i
   | Tymap of 'i
   | Tyasset of 'i
   | Typartition of 'i
@@ -86,13 +87,13 @@ type ('e,'t,'i) abstract_term =
   | Trmed   of 'i
   (* list *)
   | Tlist   of 'e list
-  | Tnil
+  | Tnil    of 'i
   | Temptycoll of 'i
   | Tcard   of 'i * 'e
   | Tunshallow  of 'i * 'e * 'e
   | Tshallow  of 'i * 'e * 'e
-  | Tmlist  of 'e * 'i * 'i * 'i * 'e (* match list *)
-  | Tcons   of 'e * 'e
+  | Tmlist  of 'i * 'e * 'i * 'i * 'i * 'e (* match list *)
+  | Tcons   of 'i * 'e * 'e
   | Tmkcoll of 'i * 'e
   | Tcontent of 'i * 'e
   (* archetype lib *)
@@ -228,7 +229,7 @@ type theotyp =
 [@@deriving show {with_path = false}]
 
 type ('e,'t,'i) abstract_decl =
-  | Duse     of bool * 'i abstract_qualid
+  | Duse     of bool * 'i abstract_qualid * string option
   | Dval     of 'i * 't
   | Dclone   of 'i abstract_qualid * 'i * ('i abstract_clone_subst) list
   | Denum    of 'i * 'i list
@@ -270,6 +271,7 @@ let rec map_abstract_type (map_i : 'i1 -> 'i2) = function
   | Tytransfers   -> Tytransfers
   | Tyrecord i    -> Tyrecord (map_i i)
   | Tycoll i      -> Tycoll (map_i i)
+  | Tyview i      -> Tyview (map_i i)
   | Tymap i       -> Tymap (map_i i)
   | Tyasset i     -> Tyasset (map_i i)
   | Typartition i -> Typartition (map_i i)
@@ -354,19 +356,19 @@ and map_abstract_term
   | Tadded a           -> Tadded (map_i a)
   | Trmed  a           -> Trmed (map_i a)
   | Tlist l            -> Tlist (List.map map_e l)
-  | Tnil               -> Tnil
+  | Tnil i             -> Tnil (map_i i)
   | Temptycoll i       -> Temptycoll (map_i i)
   | Tcard (i,e)        -> Tcard (map_i i, map_e e)
   | Tmkcoll (i,e)      -> Tmkcoll (map_i i, map_e e)
   | Tcontent (i,e)     -> Tcontent (map_i i, map_e e)
   | Tunshallow (i,e1,e2) -> Tunshallow (map_i i, map_e e1, map_e e2)
   | Tshallow (i,e1,e2) -> Tshallow (map_i i, map_e e1, map_e e2)
-  | Tmlist (e1,i1,i2,i3,e2) -> Tmlist (map_e e1, map_i i1, map_i i2, map_i i3, map_e e2)
-  | Tcons (e1,e2)      -> Tcons (map_e e1, map_e e2)
-  | Tadd (i1,e1,e2)       -> Tadd (map_i i1, map_e e1, map_e e2)
-  | Tremove (i,e1,e2)    -> Tremove (map_i i,map_e e1, map_e e2)
+  | Tmlist (l,e1,i1,i2,i3,e2) -> Tmlist (map_i l,map_e e1, map_i i1, map_i i2, map_i i3, map_e e2)
+  | Tcons (i,e1,e2)    -> Tcons (map_i i, map_e e1, map_e e2)
+  | Tadd (i1,e1,e2)    -> Tadd (map_i i1, map_e e1, map_e e2)
+  | Tremove (i,e1,e2)  -> Tremove (map_i i,map_e e1, map_e e2)
   | Tlistremove (i,e1,e2) -> Tlistremove (map_i i,map_e e1, map_e e2)
-  | Tget (i,e1,e2)       -> Tget (map_i i, map_e e1, map_e e2)
+  | Tget (i,e1,e2)     -> Tget (map_i i, map_e e1, map_e e2)
   | Tset (i, e1,e2,e3)    -> Tset (map_i i, map_e e1, map_e e2, map_e e3)
   | Tcoll (i, e)       -> Tcoll (map_i i, map_e e)
   | Tassign (e1,e2)    -> Tassign (map_e e1, map_e e2)
@@ -463,7 +465,7 @@ let map_abstract_decl
     (map_e : 'e1 -> 'e2)
     (map_t : 't1 -> 't2)
     (map_i : 'i1 -> 'i2) = function
-  | Duse (b,i)          -> Duse (b,map_abstract_qualid map_i i)
+  | Duse (b,i,l)    -> Duse (b,map_abstract_qualid map_i i,l)
   | Dval (i,t)      -> Dval (map_i i, map_t t)
   | Dclone (q,i,l)  -> Dclone (map_abstract_qualid map_i q,
                                map_i i,
@@ -644,6 +646,7 @@ let rec compare_abstract_type
   | Tycontract i1, Tycontract i2 -> cmpi i1 i2
   | Tyrecord i1, Tyrecord i2 -> cmpi i1 i2
   | Tycoll i1, Tycoll i2 -> cmpi i1 i2
+  | Tyview i1, Tyview i2 -> cmpi i1 i2
   | Tymap i1, Tymap i2 -> cmpi i1 i2
   | Tyasset i1, Tyasset i2 -> cmpi i1 i2
   | Typartition i1, Typartition i2 -> cmpi i1 i2
@@ -736,16 +739,16 @@ let compare_abstract_term
   | Tadded a1, Tadded a2 -> cmpi a1 a2
   | Trmed  a1, Trmed a2 -> cmpi a1 a2
   | Tlist l1, Tlist l2 -> List.for_all2 cmpe l1 l2
-  | Tnil, Tnil -> true
+  | Tnil i1, Tnil i2 -> cmpi i1 i2
   | Temptycoll i1, Temptycoll i2 -> cmpi i1 i2
   | Tcard (i1,e1), Tcard (i2,e2) -> cmpi i1 i2 && cmpe e1 e2
   | Tmkcoll (i1,e1), Tmkcoll (i2,e2) -> cmpi i1 i2 && cmpe e1 e2
   | Tcontent (i1,e1), Tcontent (i2,e2) -> cmpi i1 i2 && cmpe e1 e2
   | Tunshallow (i1,e1,f1), Tunshallow (i2,e2,f2) -> cmpi i1 i2 && cmpe e1 e2 && cmpe f1 f2
   | Tshallow (i1,e1,f1), Tshallow (i2,e2,f2) -> cmpi i1 i2 && cmpe e1 e2 && cmpe f1 f2
-  | Tmlist (e11,i11,i21,i31,e21), Tmlist (e12,i12,i22,i32,e22) ->
-    cmpe e11 e12 && cmpi i11 i12 && cmpi i21 i22 && cmpi i31 i32 && cmpe e21 e22
-  | Tcons (e1,e2), Tcons (f1,f2) -> cmpe e1 f1 && cmpe e2 f2
+  | Tmlist (l1,e11,i11,i21,i31,e21), Tmlist (l2,e12,i12,i22,i32,e22) ->
+    cmpi l1 l2 && cmpe e11 e12 && cmpi i11 i12 && cmpi i21 i22 && cmpi i31 i32 && cmpe e21 e22
+  | Tcons (i1,e1,e2), Tcons (i2,f1,f2) -> cmpi i1 i2 && cmpe e1 f1 && cmpe e2 f2
   | Tadd (i1,e1,e2), Tadd (i2,f1,f2) -> cmpi i1 i2 && cmpe e1 f1 && cmpe e2 f2
   | Tremove (i1,e1,e2), Tremove (i2,f1,f2) -> cmpi i1 i2 && cmpe e1 f1 && cmpe e2 f2
   | Tlistremove (i1,e1,e2), Tlistremove (i2,f1,f2) -> cmpi i1 i2 && cmpe e1 f1 && cmpe e2 f2

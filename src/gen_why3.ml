@@ -31,7 +31,7 @@ let gArchetypeLib   = "Lib"
 let gArchetypeColl  = "AssetCollection"
 let gArchetypeSum   = "Sum"
 let gArchetypeSort  = "Sort"
-let gArchetypeList  = "KeyListUtils"
+let gListLib        = "L"
 let gArchetypeTrace = "Trace"
 
 let mk_id i          = "_" ^ i
@@ -55,16 +55,16 @@ let mk_ac_sv s a      = Tdoti (s, mk_ac_id a)
 
 (* Use ---------------------------------------------------------------------------*)
 
-let mk_use = Duse (false,[gArchetypeDir;gArchetypeLib]) |> loc_decl |> deloc
-let mk_use_list = Duse (false,["list";"List"]) |> loc_decl |> deloc
-let mk_use_module m = Duse (false,[deloc m]) |> loc_decl |> deloc
+let mk_use = Duse (false,[gArchetypeDir;gArchetypeLib],None) |> loc_decl |> deloc
+let mk_use_list = Duse (false,["list";"List"],Some "L") |> loc_decl |> deloc
+let mk_use_module m = Duse (false,[deloc m],None) |> loc_decl |> deloc
 let mk_use_euclidean_div m =
   if M.Utils.with_division m then
-    [Duse (true,["int";"EuclideanDivision"])  |> loc_decl |> deloc]
+    [Duse (true,["int";"EuclideanDivision"],None)  |> loc_decl |> deloc]
   else []
 let mk_use_min_max m =
   if M.Utils.with_min_max m then
-    [Duse (true,["int";"MinMax"]) |> loc_decl |> deloc]
+    [Duse (true,["int";"MinMax"],None) |> loc_decl |> deloc]
   else []
 
 (* Trace -------------------------------------------------------------------------*)
@@ -107,7 +107,7 @@ let mk_trace tr =
   let gstr = Tdoti(gs,
                    mk_id "tr") in
   Tassign (gstr,
-           Tcons (mk_change_term tr,
+           Tcons (gListLib, mk_change_term tr,
                   gstr)
           ) |> loc_term
 
@@ -182,7 +182,7 @@ let mk_collection_field asset to_id = {
 }
 
 let mk_const_fields m = [
-  { name = mk_id "ops"   ; typ = Tyrecord "transfers" ; init = Tvar "Nil"; mutable_ = true; };
+  { name = mk_id "ops"   ; typ = Tyrecord "transfers" ; init = Tnil gListLib; mutable_ = true; };
   { name = mk_id "balance" ;     typ = Tytez; init = Tint Big_int.zero_big_int; mutable_ = true; };
   { name = mk_id "transferred" ; typ = Tytez; init = Tint Big_int.zero_big_int; mutable_ = false; };
   { name = mk_id "caller"    ; typ = Tyaddr;  init = Tint Big_int.zero_big_int; mutable_ = false; };
@@ -192,7 +192,7 @@ let mk_const_fields m = [
   if M.Utils.with_trace m then
     [
       { name = mk_id "entry"     ; typ = Tyoption (Tyasset "_entry"); init = Tnone; mutable_ = false; };
-      { name = mk_id "tr"        ; typ = Tyasset ("Tr._traces"); init = Tnil; mutable_ = true; }
+      { name = mk_id "tr"        ; typ = Tyasset ("Tr._traces"); init = Tnil gListLib; mutable_ = true; }
     ]
   else []
 
@@ -268,7 +268,7 @@ let mk_partition_axiom asset f _kt pa kpt : decl =
                      Timpl (Tmem (asset,
                                   Tvar("a"),
                                   mk_ac_sv "s" asset),
-                            Timpl (Tlmem (gArchetypeList,
+                            Timpl (Tlmem (gListLib,
                                           Tvar "k",
                                           Tapp (Tvar f,
                                                 [Tvar "a"])),
@@ -299,7 +299,7 @@ let mk_transfer () =
       body     = Tseq[
           Tassign (
             Tdoti(gs,"_ops"),
-            Tcons (
+            Tcons ( gListLib,
               Tapp(Tvar "mk_transfer",[Tvar "t";Tvar "a"]),
               Tdoti(gs,"_ops")
             ));
@@ -327,7 +327,7 @@ let mk_call () =
       body     =
         Tassign (
           Tdoti(gs,"_ops"),
-          Tcons (
+          Tcons (gListLib,
             Tapp(Tvar "mk_call",[Tvar "t"]),
             Tdoti(gs,"_ops")
           ))
@@ -417,27 +417,33 @@ let rec mk_select_test = function
 
 (* internal select is a local defintion *)
 let mk_select_body asset mlw_test : term =
-  let capa = String.capitalize_ascii asset in
+  (* let capa = String.capitalize_ascii asset in *)
   Tletfun (
     {
       name     = "internal_select";
       logic    = Rec;
-      args     = ["l",Tylist (Tyasset asset)];
-      returns  = Tylist (Tyasset asset);
-      raises   = [];
+      args     = ["l",Tyview asset];
+      returns  = Tyview asset;
+      raises   = [Texn Enotfound];
       variants = [Tvar "l"];
       requires = [];
       ensures  = [];
-      body     = Tmlist (Tnil,"l","a","tl",
-                         Tif(mk_select_test mlw_test,
-                             Tcons (Tvar "a",Tapp (Tvar ("internal_select"),[Tvar "tl"])),
-                             Some (Tapp (Tvar ("internal_select"),[Tvar "tl"])))
-                        );
+      body     =
+      let some =
+        Tmatch (Tget (asset,
+                      mk_ac asset,
+                      Tvar "k"), [
+          Tpsome "a",
+            Tif(mk_select_test mlw_test,
+                             Tcons (gListLib, Tvar "k",Tapp (Tvar ("internal_select"),[Tvar "tl"])),
+                             Some (Tapp (Tvar ("internal_select"),[Tvar "tl"])));
+          Twild, Traise Enotfound(* Tapp (Tvar ("internal_select"),[Tvar "tl"] *)
+        ]) in
+      Tmlist (gListLib,Tnil gListLib,"l","k","tl",some);
     },
-    Tmkcoll (capa,
-             Tapp (Tvar "internal_select",
-                   [Tcontent (capa,
-                              Tvar "c")]))
+
+    Tapp (Tvar "internal_select",
+          [Tvar "v"])
   )
 
 (* TODO : complete mapping
@@ -455,27 +461,39 @@ let mk_select_name m asset test = "select_" ^ asset ^ "_" ^ (string_of_int (M.Ut
 
 let mk_select m asset test mlw_test only_formula =
   let id =  mk_select_name m asset test in
+  let (key,_) = M.Utils.get_asset_key m asset in
   let decl = Dfun {
       name     = id;
       logic    = if only_formula then Logic else NoMod;
-      args     = (extract_args test |> List.map (fun (_,a,b) -> a,b)) @ ["c",Tycoll asset];
-      returns  = Tycoll asset;
-      raises   = [];
+      args     = (extract_args test |> List.map (fun (_,a,b) -> a,b)) @ ["v",Tyview asset];
+      returns  = Tyview asset;
+      raises   = [Texn Enotfound];
       variants = [];
       requires = [];
       ensures  = [
         { id   = id ^ "_post_1";
           form = Tforall (
-              [["a"],Tyasset asset],
-              Timpl (Tmem (asset,Tvar "a",Tresult),
-                     mk_select_test mlw_test
-                    )
+              [["k"],Tykey],
+              Timpl (Tlmem (gListLib,Tvar "k",Tresult),
+                     Texists ([["a"],Tyasset asset],
+                      Tand (
+                        Teq (Tyint, Tdoti("a",key), Tvar "k"),
+                      Tand (
+                        Tmem (asset, Tvar "a",mk_ac asset),
+                        mk_select_test mlw_test
+                      )
+                     )
+                    ))
             );
         };
         { id   = id ^ "_post_2";
-          form = Tsubset (asset,
-                          Tresult,
-                          Tvar "c");
+          form = Tforall(
+            [["k"],Tykey],
+            Timpl (
+              Tlmem(gListLib,Tvar "k",Tresult),
+              Tlmem(gListLib,Tvar "k",Tvar "v")
+            )
+          );
         }
       ];
       body     = mk_select_body asset mlw_test;
@@ -511,7 +529,7 @@ let rec type_to_init m (typ : loc_typ) : loc_term =
       | Tyasset i     -> Tapp (loc_term (Tvar ("mk_default_"^i.obj)),[])
       | Typartition i -> Temptycoll i
       | Tycoll i      -> Temptycoll i
-      | Tylist _      -> Tnil
+      | Tylist _      -> Tnil (with_dummy_loc gListLib)
       | Tymap i       -> Tvar (mk_loc typ.loc ("const (mk_default_" ^ i.obj ^ " ())"))
       | Tyenum i      -> Tvar (mk_loc typ.loc (unloc (M.Utils.get_enum m i.obj).initial))
       | Tytuple l     -> Ttuple (List.map (type_to_init m) (List.map with_dummy_loc l))
@@ -622,7 +640,7 @@ let map_security_pred loc (t : M.security_predicate) =
   let mk_changes_performed_by t a l opt =
     Tapp (Tvar "Tr.changes_performed_by",
           [tr;
-           Tcons (map_action_to_change a |> mk_change_term,Tnil);
+           Tcons (gListLib, map_action_to_change a |> mk_change_term,Tnil gListLib);
            List.fold_left (fun acc r ->
                Tor (acc,mk_eq t r opt)
              ) (mk_eq t (List.hd l) opt) (List.tl l) ])
@@ -641,7 +659,7 @@ let map_security_pred loc (t : M.security_predicate) =
   let mk_changes_performed_by_2 t1 t2 a l1 l2 =
     Tapp (Tvar "Tr.performed_by",
           [tr;
-           Tcons (map_action_to_change a |> mk_change_term,Tnil);
+           Tcons (gListLib, map_action_to_change a |> mk_change_term,Tnil gListLib);
            Tand (
              List.fold_left (fun acc r ->
                  Tor (acc,mk_eq t1 r false)
@@ -2189,7 +2207,7 @@ let mk_clear_field_ensures m part p asset field _key =
   let oldassetcollfield = Tunshallow (asset,mk_ac_old asset,collfield) in
   let clear_field_ensures = [
     { id   = p ^ "_post1";
-      form = Teq (Tyint, Tapp (Tvar field,[Tvar "a"]), Tnil)
+      form = Teq (Tyint, Tapp (Tvar field,[Tvar "a"]), Tnil gListLib)
     };
     { id   = p ^ "_post2";
       form = Tempty (asset, assetcollfield)
@@ -2265,7 +2283,7 @@ let mk_clear_field_coll _m _part asset field key clearedasset = Dfun {
         None,
         Trecord (
           Some (Tvar ("a")),
-          [field,Tnil]),
+          [field,Tnil gListLib]),
         Tassign (
           mk_ac asset,
           Tset (
@@ -2352,7 +2370,7 @@ let mk_add_field m part a ak field adda addak : decl =
              let addfield = Tletin (false, a ^ "_" ^ field,None,
                                     Tapp (Tvar field,[Tvar "asset"]),
                                     Tletin (false,"new_" ^ a ^ "_" ^ field,None,
-                                            Tcons (addak,Tvar (a ^ "_" ^ field)),
+                                            Tcons (gListLib, addak,Tvar (a ^ "_" ^ field)),
                                             Tletin (false,"new_asset",None,
                                                     Trecord (Some (Tvar "asset"),
                                                              [field,Tvar ("new_" ^ a ^ "_" ^ field)]),
@@ -2437,7 +2455,7 @@ let mk_rm_field m part asset keyf field rmed_asset rmkey : decl = Dfun {
               Tletin (false,
                       "new_" ^ asset ^ "_" ^ field,
                       None,
-                      Tlistremove (gArchetypeList,
+                      Tlistremove (gListLib,
                                    Tdoti ("rm_asset",
                                           rmkey),
                                    Tvar (asset ^ "_" ^ field)),
@@ -2731,7 +2749,7 @@ let mk_storage_api (m : M.model) records =
         let (clearedasset,_,_) = M.Utils.get_container_asset_key m n f in
         acc @ [mk_clear_field_coll m (is_partition m n f) n f key clearedasset]
       | M.APIBuiltin(Babs (M.Tbuiltin M.Bint)) ->
-        acc @ [Duse (true,["int";"Abs"])]
+        acc @ [Duse (true,["int";"Abs"],None)]
       | M.APIBuiltin(Bmax (M.Ttuple [M.Tbuiltin M.Bint;M.Tbuiltin M.Bint])) ->
         acc @ [mk_rat_max m]
       | M.APIBuiltin(Bmin (M.Ttuple [M.Tbuiltin M.Bint;M.Tbuiltin M.Bint])) ->
@@ -2856,7 +2874,7 @@ let mk_entry_require m idents =
         id = with_dummy_loc "empty_trace";
         form = Teq (Tyint,
                     Tdoti (gs, mk_id "tr"),
-                    Tnil)
+                    Tnil gListLib)
                |> loc_term
       }
     ]
@@ -2995,7 +3013,7 @@ let to_whyml (m : M.model) : mlw_tree  =
   let usestorage       = mk_use_module storage_module in
   let loct : loc_mlw_tree = [{
       name  = storage_module;
-      decls = [uselib]               @
+      decls = [uselib;uselist]       @
               useEuclDiv             @
               useMinMax              @
               traceutils             @

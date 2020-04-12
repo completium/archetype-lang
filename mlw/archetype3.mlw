@@ -642,7 +642,6 @@ end
 theory Lib
 
   use export int.Int
-  use export list.List
   use export option.Option
   use export Utils
   use export Types
