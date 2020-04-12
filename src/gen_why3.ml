@@ -26,7 +26,7 @@ let emit_error (lc, error) =
 
 (* Constants -------------------------------------------------------------------*)
 
-let gArchetypeDir   = "archetype"
+let gArchetypeDir   = "archetype3"
 let gArchetypeLib   = "Lib"
 let gArchetypeColl  = "AssetCollection"
 let gArchetypeSum   = "Sum"
@@ -859,9 +859,9 @@ let record_to_clone m (r : M.asset) =
   Dclone ([gArchetypeDir;gArchetypeColl] |> wdl,
           String.capitalize_ascii (unloc r.name) |> with_dummy_loc,
           [Ctype ("t" |> with_dummy_loc, (unloc r.name) |> with_dummy_loc);
-           Cval  ("keyf" |> with_dummy_loc, key |> with_dummy_loc);
+           Cval  ("fkey" |> with_dummy_loc, key |> with_dummy_loc);
            (* Cval  ("sortf" |> with_dummy_loc, sort |> with_dummy_loc); *)
-           Cval  ("eqf" |> with_dummy_loc, "eq_" ^ (unloc r.name) |> with_dummy_loc)])
+           Cval  ("feq" |> with_dummy_loc, "eq_" ^ (unloc r.name) |> with_dummy_loc)])
 
 let mk_partition_axioms (m : M.model) =
   M.Utils.get_containers m |> List.map (fun (n,i,_) ->
@@ -1778,11 +1778,17 @@ let mk_get_asset asset key ktyp = Dfun {
                    Tvar "k")
       }
     ];
-    body = Tif (mk_not_found_cond `Curr asset (Tvar "k"),
+    (* body = Tif (mk_not_found_cond `Curr asset (Tvar "k"),
                 Traise Enotfound,
                 Some (Tget (asset,
                             mk_ac asset,
-                            Tvar "k")))
+                            Tvar "k"))); *)
+
+    body = Tmatch (Tget (asset,
+                          mk_ac asset,
+                          Tvar "k"),[
+      Tpsome "e", Tvar "e";
+      Twild, Traise Enotfound])
   }
 
 let mk_nth_asset asset key ktyp = Dfun {
@@ -1849,14 +1855,20 @@ let mk_set_ensures m n key fields =
       else
         (succ i,acc@[{
              id   = "set_" ^ n ^ "_post" ^ (string_of_int i);
-             form = Teq (Tyint,
-                         Tapp (Tvar f.name,
-                               [Tget (n,
-                                      mk_ac n,
-                                      Tdoti ("old_asset",
-                                             key))]),
-                         Tapp (Tvar f.name,
-                               [Tvar ("new_asset")]))
+             form =
+             let eq =
+               Teq (Tyint,
+                    Tapp (Tvar f.name,
+                               [Tvar "e"]),
+                    Tapp (Tvar f.name,
+                          [Tvar ("new_asset")])) in
+             Tmatch (Tget (n,
+                           mk_ac n,
+                           Tdoti ("old_asset",
+                           key)),[
+               Tpsome "e",eq;
+               Twild, Tfalse
+             ])
            }])
     ) (1,[]) fields) @ (mk_set_sum_ensures m n) @ (mk_set_count_ensures m n)
 

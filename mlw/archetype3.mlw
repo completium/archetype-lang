@@ -133,7 +133,7 @@ module InsertionSort
   use list.List
   use list.Permut
 
-  let rec insert (x: elt) (l: list elt) : list elt
+  let rec function insert (x: elt) (l: list elt) : list elt
     requires { sorted l }
     ensures  { sorted result }
     ensures  { permut (Cons x l) result }
@@ -169,48 +169,49 @@ module AssetCollection
   type t = abstract {}        (* asset type           *)
 
   (* ------------------------------------------------------------------------ *)
-  val function keyf  t : key  (* asset key function   *)
+  val function fkey  t : key  (* asset key function   *)
 
   (* ------------------------------------------------------------------------ *)
-  val function eqf t t : bool (* asset equality *)
+  val function feq t t : bool (* asset equality *)
 
   (* ------------------------------------------------------------------------ *)
-  let predicate le_t t1 t2 = keyf t1 <= keyf t2
+  let predicate ple t1 t2 = fkey t1 <= fkey t2
 
   (* ------------------------------------------------------------------------ *)
   clone InsertionSort as IS with type elt = t,
-                                 val le = le_t
+                                 val le = ple
 
-  let rec function memlist (v : t) (xs : list t) : bool =
-    match xs with
-    | Nil ->
-        false
-    | Cons y xs ->
-        eqf v y || memlist v xs
+  let rec function fmem (a : t) (l : list t) : bool =
+    match l with
+    | Nil -> false
+    | Cons e tl -> feq a e || fmem a tl
     end
 
-  let rec function undup (xs : list t) : list t =
-    match xs with
-    | Nil ->
-        Nil
-    | Cons x xs ->
-        if memlist x xs then undup xs else Cons x (undup xs)
+  let rec function undup (l : list t) : list t =
+    match l with
+    | Nil -> Nil
+    | Cons e tl ->
+        if fmem e tl then undup tl else Cons e (undup tl)
     end
 
-  let function norm (xs : list t) : list t =
-    IS.insertion_sort (undup xs)
+  let function norm (l : list t) : list t =
+    IS.insertion_sort (undup l)
 
   clone fset.FSet      as F with type t     = t,
-                                 val  eqt   = eqf,
+                                 val  eqt   = feq,
                                  val  norm  = norm,
                                  axiom .
+
+  (* fkey is injective *)
+  predicate key_injective (f : F.fset) =
+    forall e1 e2.
+    F.fmem e1 f -> F.fmem e2 f ->
+    fkey e1 = fkey e2 -> e1 = e2
+
   type collection = {
     content : F.fset
   } invariant {
-    (* keyf is injective *)
-    forall e1 e2.
-    F.fmem e1 content -> F.fmem e2 content ->
-    keyf e1 = keyf e2 -> e1 = e2
+    key_injective content
   } by {
     content = F.fset0;
   }
@@ -218,16 +219,24 @@ module AssetCollection
   (* ------------------------------------------------------------------------ *)
   type view = list key
 
-  let function mk (f : F.fset) : collection
-  = { content = f }
+  (* ------------------------------------------------------------------------ *)
+  let function mk (s : F.fset) : collection
+  requires { key_injective s }
+  ensures { F.(==) s (content result) }
+  = { content = s }
+
 
   (* ------------------------------------------------------------------------ *)
-  let function elts (c : collection) : list t = F.content c.content
+  let function elts (c : collection) : list t
+  ensures { IS.sorted result }
+  (* ensures { F.sorted result } *)
+  =
+  F.content c.content
 
   (* Set theory ************************************************************* *)
 
   (* ------------------------------------------------------------------------ *)
-  let function empty : collection = { content = F.fset0 }
+  let function empty : collection = mk F.fset0
 
   (* ------------------------------------------------------------------------ *)
   predicate is_empty (c : collection) = is_nil (elts c)
@@ -250,6 +259,18 @@ module AssetCollection
   axiom eqEquality : forall c1 c2. c1 == c2 <-> c1 = c2
 
   (* ------------------------------------------------------------------------ *)
+  lemma mk_content: forall c.
+  (mk (c.content)) == c
+
+  (* ------------------------------------------------------------------------ *)
+  lemma content_mk: forall s.
+  F.(==) (content (mk s)) s
+
+  (* ------------------------------------------------------------------------ *)
+  lemma mk_injective: forall s1 s2.
+  mk s1 == mk s2 -> F.(==) s1 s2
+
+  (* ------------------------------------------------------------------------ *)
   predicate subset (c1 c2 : collection) = F.fsubset c1.content c2.content
 
   (* ------------------------------------------------------------------------ *)
@@ -265,6 +286,9 @@ module AssetCollection
   = mk (F.fsetU c1.content c2.content)
 
   (* Singleton ************************************************************** *)
+
+  (* ------------------------------------------------------------------------ *)
+  lemma one_unary_injective: forall a. key_injective (F.mk (Cons a Nil))
 
   (* ------------------------------------------------------------------------ *)
   let function singleton (a : t) : collection = mk (F.mk (Cons a Nil))
@@ -285,16 +309,16 @@ module AssetCollection
   (* ------------------------------------------------------------------------ *)
   let rec function internal_to_view (l : list t) : view
   variant { l }
-  ensures { forall k. M.mem k result <-> exists e. M.mem e l /\ keyf e = k }
+  ensures { forall k. M.mem k result <-> exists e. M.mem e l /\ fkey e = k }
   ensures { L.length result = L.length l }
   =
   match l with
-  | Cons e tl -> Cons (keyf e) (internal_to_view tl)
+  | Cons e tl -> Cons (fkey e) (internal_to_view tl)
   | Nil -> Nil
   end
 
   let rec function to_view (c : collection) : view
-  ensures { forall k. M.mem k result <-> exists e. mem e c /\ keyf e = k }
+  ensures { forall k. M.mem k result <-> exists e. mem e c /\ fkey e = k }
   ensures { L.length result = card c }
   =
   internal_to_view (elts c)
@@ -310,33 +334,57 @@ module AssetCollection
   end
 
   let function contains (k : key) (c : collection)
-  ensures { result <-> exists e. mem e c /\ keyf e = k }
+  ensures { result <-> exists e. mem e c /\ fkey e = k }
   = vmem k (to_view c)
 
   (* ------------------------------------------------------------------------ *)
   let rec function internal_get (l : list t) (k : key) : option t
   variant { l }
   ensures { vmem k (internal_to_view l) ->
-    exists e. result = Some e  /\ keyf e = k
+    exists e. result = Some e  /\ fkey e = k
   }
   =
   match l with
   | Cons e tl ->
-    if keyf e = k
+    if fkey e = k
     then Some e
     else internal_get tl k
   | Nil -> None
   end
 
   let function get (c : collection) (k : key) : option t
-  ensures { contains k c -> exists e. result = Some e /\ keyf e = k }
+  ensures { contains k c -> exists e. result = Some e /\ fkey e = k }
   = internal_get (elts c) k
 
   (* ------------------------------------------------------------------------ *)
+  (* lemma mem_fset: forall a l.
+    fmem a l <-> F.fmem a (F.mk l)
+ *)
+  (* lemma cons_key_injective: forall a l.
+    (forall e. fmem e l -> fkey e <> fkey a) ->
+    key_injective (F.mk l) ->
+    key_injective (F.mk (Cons a l)) *)
+
+  (* lemma mem_key: forall a l.
+    (forall e. fmem e l -> fkey e <> fkey a) -> (forall e. fmem e l -> e <> a)
+
+  lemma insert_key_injective: forall a l.
+    IS.sorted l ->
+    (* (forall e. fmem e l -> fkey e <> fkey a) -> *)
+    not (fmem a l) ->
+    key_injective (F.mk l) ->
+    key_injective (F.mk (IS.insert a l)) *)
+
+  lemma union_insert: forall a s.
+  F.fmem a (F.fsetU (F.mk (Cons a Nil)) s)
+
+  lemma eq_col_set: forall s1 s2.
+  F.(==) s1 s2 <-> mk s1 == mk s2
+
   let add (c : collection) (a : t)
-  requires { not (mem a c) }
+  requires { not (contains (fkey a) c) }
   ensures { mem a result }
-  ensures { result = union (singleton a) c }
+  ensures { result == union (singleton a) c }
   = mk (F.mk (IS.insert a (elts c)))
 
   (* ------------------------------------------------------------------------ *)
@@ -351,7 +399,7 @@ module AssetCollection
   =
   match l with
   | Cons e tl ->
-    if keyf e = k
+    if fkey e = k
     then Cons a tl
     else Cons e (internal_set tl k a)
   | Nil -> Nil
@@ -362,16 +410,16 @@ module AssetCollection
   let remove (c : collection) (k : key) : collection
   requires { contains k c }
   ensures { card result = card c - 1 }
-  ensures { exists e. result = diff c (singleton e) /\ keyf e = k }
+  ensures { exists e. result = diff c (singleton e) /\ fkey e = k }
   =
   let rec internal_remove (l : list t) (k : key) : list t
   variant { l }
   ensures { L.length result = L.length l - 1 }
-  ensures { exists e. M.mem e l /\ not (M.mem e result) /\ keyf e = k }
+  ensures { exists e. M.mem e l /\ not (M.mem e result) /\ fkey e = k }
   =
   match l with
   | Cons e tl ->
-    if keyf e = k
+    if fkey e = k
     then tl
     else Cons e (internal_remove tl k)
   | Nil -> Nil
@@ -386,7 +434,7 @@ module AssetCollection
   =
   match l with
   | Cons e tl ->
-    if mem_key (keyf e) keys
+    if mem_key (fkey e) keys
     then Cons e (internal_unshallow tl)
     else internal_unshallow tl
   | Nil -> Nil
@@ -557,7 +605,7 @@ module Sum
   predicate is_empty container
   val function singleton t : container
   val function witness : t
-  val function keyf t : int
+  val function fkey t : int
 
   let function sum (c : container) : int =
     let ref res = 0 in
