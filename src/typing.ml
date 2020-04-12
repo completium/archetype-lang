@@ -659,7 +659,7 @@ let methods : (string * method_) list =
 let methods = Mid.of_list methods
 
 (* -------------------------------------------------------------------- *)
-let corefuns =
+let coreops =
     (List.map
        (fun x -> ("abs", M.Cabs, `Total, None, [x], x))
        [M.vtint; M.vtrational])
@@ -677,14 +677,14 @@ let corefuns =
   @ ["length", M.Clength, `Total, None, [M.vtstring], M.vtint]
 
 (* -------------------------------------------------------------------- *)
-let optionfuns = [
+let optionops = [
   ("isnone", M.Cisnone, `Total  , Some (M.Toption (M.Tnamed 0)), [], M.vtbool);
   ("issome", M.Cissome, `Total  , Some (M.Toption (M.Tnamed 0)), [], M.vtbool);
   ("getopt", M.Cgetopt, `Partial, Some (M.Toption (M.Tnamed 0)), [], M.Tnamed 0);
 ]
 
 (* -------------------------------------------------------------------- *)
-let listfuns =
+let listops =
   let elemt = M.Tnamed 0 in
   let lst   = M.Tlist elemt in [
     ("contains", M.Ccontains, `Total  , Some lst, [elemt  ], M.vtbool);
@@ -694,7 +694,7 @@ let listfuns =
   ]
 
 (* -------------------------------------------------------------------- *)
-let cryptofuns =
+let cryptoops =
   List.map (fun (x, y) -> x, y, `Total, None, [M.vtbytes], M.vtbytes)
     ["blake2b", M.Cblake2b;
      "sha256", M.Csha256;
@@ -704,7 +704,7 @@ let cryptofuns =
     (* TODO: filter 1st arg to key type and 2nd to signature type *)
 
 (* -------------------------------------------------------------------- *)
-let allfuns = corefuns @ optionfuns @ listfuns @ cryptofuns
+let allops = coreops @ optionops @ listops @ cryptoops
 
 (* -------------------------------------------------------------------- *)
 type assetdecl = {
@@ -1847,6 +1847,22 @@ let rec for_xexpr
         in mk_sp (Some (sig_.osl_ret)) aout
       end
 
+    | Eapp (Fident f, args) when Env.Function.exists env (unloc f) ->
+        let fun_ = Env.Function.get env (unloc f) in
+        let args = match args with [{ pldesc = Etuple args }] -> args | _ -> args in
+
+        let tyargs =
+          if List.length args <> List.length fun_.fs_args then begin
+            let na = List.length args and ne = List.length fun_.fs_args in
+            Env.emit_error env (loc tope, InvalidNumberOfArguments (na, ne));
+            List.make (fun _ -> None) ne
+          end else List.map (fun (_, ty) -> Some ty) fun_.fs_args in
+
+       let args = List.map2 (fun ety e -> for_xexpr env ?ety e) tyargs args in
+       let args = List.map  (fun x -> M.AExpr x) args in
+
+       mk_sp (Some fun_.fs_retty) (M.Pcall (None, M.Cid f, args))
+
     | Eapp (Fident f, args) -> begin
         let args = match args with [{ pldesc = Etuple args }] -> args | _ -> args in
         let args = List.map (for_xexpr env) args in
@@ -1890,7 +1906,7 @@ let rec for_xexpr
 
           with E.Reject -> None in
 
-        let cd = List.pmap select allfuns in
+        let cd = List.pmap select allops in
         let cd = List.sort (fun (i, _) (j, _) -> compare i j) cd in
         let cd =
           let i0 = Option.get_dfl (-1) (Option.map fst (List.ohead cd)) in
@@ -2489,28 +2505,30 @@ and for_arg_effect
 
 (* -------------------------------------------------------------------- *)
 and for_assign_expr mode env orloc (op, fty) e =
-  let ety =
+  let op =
     match op with
-    | ValueAssign ->
-      Some fty
+    | ValueAssign -> None
+    | PlusAssign  -> Some (PT.Arith   PT.Plus )
+    | MinusAssign -> Some (PT.Arith   PT.Minus)
+    | MultAssign  -> Some (PT.Arith   PT.Mult )
+    | DivAssign   -> Some (PT.Arith   PT.Div  )
+    | AndAssign   -> Some (PT.Logical PT.And  )
+    | OrAssign    -> Some (PT.Logical PT.Or   )
+  in
 
-    | PlusAssign
-    | MinusAssign
-    | MultAssign
-    | DivAssign ->
-      if not (Type.is_numeric fty) then begin
-        Env.emit_error env (orloc, NumericExpressionExpected);
-        None
-      end else
-        Some fty
+  let ety = if Option.is_none op then Some fty else None in
+  let e = for_xexpr mode env ?ety e in
 
-    | AndAssign
-    | OrAssign ->
-      if not (Type.compatible ~from_:fty ~to_:M.vtbool) then
-        Env.emit_error env (orloc, IncompatibleTypes (fty, M.vtbool));
-      Some M.vtbool
-
-  in for_xexpr mode env ?ety e
+  Option.get_dfl e (
+    op      |> Option.bind (fun op  ->
+    e.type_ |> Option.bind (fun ety ->
+      match select_operator env orloc (op, [fty; ety]) with
+      | Some sig_ ->
+          Some (cast_expr env (Some (List.last sig_.osl_sig)) e)
+      | None ->
+          Env.emit_error env (orloc, NoMatchingOperator (op, [fty; ety]));
+          None
+  )))
 
 (* -------------------------------------------------------------------- *)
 and for_formula (env : env) (topf : PT.expr) : M.pterm =
