@@ -659,7 +659,7 @@ let methods : (string * method_) list =
 let methods = Mid.of_list methods
 
 (* -------------------------------------------------------------------- *)
-let corefuns =
+let coreops =
     (List.map
        (fun x -> ("abs", M.Cabs, `Total, None, [x], x))
        [M.vtint; M.vtrational])
@@ -677,14 +677,14 @@ let corefuns =
   @ ["length", M.Clength, `Total, None, [M.vtstring], M.vtint]
 
 (* -------------------------------------------------------------------- *)
-let optionfuns = [
+let optionops = [
   ("isnone", M.Cisnone, `Total  , Some (M.Toption (M.Tnamed 0)), [], M.vtbool);
   ("issome", M.Cissome, `Total  , Some (M.Toption (M.Tnamed 0)), [], M.vtbool);
   ("getopt", M.Cgetopt, `Partial, Some (M.Toption (M.Tnamed 0)), [], M.Tnamed 0);
 ]
 
 (* -------------------------------------------------------------------- *)
-let listfuns =
+let listops =
   let elemt = M.Tnamed 0 in
   let lst   = M.Tlist elemt in [
     ("contains", M.Ccontains, `Total  , Some lst, [elemt  ], M.vtbool);
@@ -694,7 +694,7 @@ let listfuns =
   ]
 
 (* -------------------------------------------------------------------- *)
-let cryptofuns =
+let cryptoops =
   List.map (fun (x, y) -> x, y, `Total, None, [M.vtbytes], M.vtbytes)
     ["blake2b", M.Cblake2b;
      "sha256", M.Csha256;
@@ -704,7 +704,7 @@ let cryptofuns =
     (* TODO: filter 1st arg to key type and 2nd to signature type *)
 
 (* -------------------------------------------------------------------- *)
-let allfuns = corefuns @ optionfuns @ listfuns @ cryptofuns
+let allops = coreops @ optionops @ listops @ cryptoops
 
 (* -------------------------------------------------------------------- *)
 type assetdecl = {
@@ -1890,7 +1890,7 @@ let rec for_xexpr
 
           with E.Reject -> None in
 
-        let cd = List.pmap select allfuns in
+        let cd = List.pmap select allops in
         let cd = List.sort (fun (i, _) (j, _) -> compare i j) cd in
         let cd =
           let i0 = Option.get_dfl (-1) (Option.map fst (List.ohead cd)) in
