@@ -2489,28 +2489,30 @@ and for_arg_effect
 
 (* -------------------------------------------------------------------- *)
 and for_assign_expr mode env orloc (op, fty) e =
-  let ety =
+  let op =
     match op with
-    | ValueAssign ->
-      Some fty
+    | ValueAssign -> None
+    | PlusAssign  -> Some (PT.Arith   PT.Plus )
+    | MinusAssign -> Some (PT.Arith   PT.Minus)
+    | MultAssign  -> Some (PT.Arith   PT.Mult )
+    | DivAssign   -> Some (PT.Arith   PT.Div  )
+    | AndAssign   -> Some (PT.Logical PT.And  )
+    | OrAssign    -> Some (PT.Logical PT.Or   )
+  in
 
-    | PlusAssign
-    | MinusAssign
-    | MultAssign
-    | DivAssign ->
-      if not (Type.is_numeric fty) then begin
-        Env.emit_error env (orloc, NumericExpressionExpected);
-        None
-      end else
-        Some fty
+  let ety = if Option.is_none op then Some fty else None in
+  let e = for_xexpr mode env ?ety e in
 
-    | AndAssign
-    | OrAssign ->
-      if not (Type.compatible ~from_:fty ~to_:M.vtbool) then
-        Env.emit_error env (orloc, IncompatibleTypes (fty, M.vtbool));
-      Some M.vtbool
-
-  in for_xexpr mode env ?ety e
+  Option.get_dfl e (
+    op      |> Option.bind (fun op  ->
+    e.type_ |> Option.bind (fun ety ->
+      match select_operator env orloc (op, [fty; ety]) with
+      | Some sig_ ->
+          Some (cast_expr env (Some (List.last sig_.osl_sig)) e)
+      | None ->
+          Env.emit_error env (orloc, NoMatchingOperator (op, [fty; ety]));
+          None
+  )))
 
 (* -------------------------------------------------------------------- *)
 and for_formula (env : env) (topf : PT.expr) : M.pterm =
