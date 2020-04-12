@@ -1847,6 +1847,22 @@ let rec for_xexpr
         in mk_sp (Some (sig_.osl_ret)) aout
       end
 
+    | Eapp (Fident f, args) when Env.Function.exists env (unloc f) ->
+        let fun_ = Env.Function.get env (unloc f) in
+        let args = match args with [{ pldesc = Etuple args }] -> args | _ -> args in
+
+        let tyargs =
+          if List.length args <> List.length fun_.fs_args then begin
+            let na = List.length args and ne = List.length fun_.fs_args in
+            Env.emit_error env (loc tope, InvalidNumberOfArguments (na, ne));
+            List.make (fun _ -> None) ne
+          end else List.map (fun (_, ty) -> Some ty) fun_.fs_args in
+
+       let args = List.map2 (fun ety e -> for_xexpr env ?ety e) tyargs args in
+       let args = List.map  (fun x -> M.AExpr x) args in
+
+       mk_sp (Some fun_.fs_retty) (M.Pcall (None, M.Cid f, args))
+
     | Eapp (Fident f, args) -> begin
         let args = match args with [{ pldesc = Etuple args }] -> args | _ -> args in
         let args = List.map (for_xexpr env) args in
