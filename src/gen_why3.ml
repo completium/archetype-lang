@@ -900,10 +900,11 @@ let get_record_name = function
 let mk_var (i : ident) = Tvar i
 
 let get_for_fun = function
-  | M.Tcontainer (Tasset a,_) -> (fun (t1,t2) -> loc_term (Tnth  (unloc a,t1,t2))),
-                                 (fun t ->       loc_term (Tcard (unloc a,t)))
+  | M.Tcontainer (Tasset a,_) ->
+    let toview = (fun t -> Ttoview (unloc a, t)) in
+    ((fun (t1,t2) -> loc_term (Tnth  (unloc a,t1, toview t2))),
+    (fun t ->       loc_term (Tcard (unloc a, toview t))))
   | _ -> assert false
-
 
 type logical_mod = Nomod | Added | Removed
 type lctx = Inv | Other
@@ -1307,8 +1308,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
 
 
     (* utils *)
-    | Mcast (Tcontainer (Tasset a,Collection),Tcontainer (Tasset _, View), v) ->
-      Tapp (loc_term (Tdoti (String.capitalize_ascii (unloc a),"to_view")),[map_mterm m ctx v])
+    | Mcast (Tcontainer (Tasset a,Collection),Tcontainer (Tasset _, View), v) -> Ttoview (map_lident a,map_mterm m ctx v)
     | Mcast (_, _, v)       -> map_mterm m ctx v |> Mlwtree.deloc
     | Mgetfrommap         _ -> error_not_translated "Mgetfrommap"
 
