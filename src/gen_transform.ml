@@ -1853,3 +1853,14 @@ let replace_get_on_view (model : model) : model =
     | _ -> map_mterm (aux ctx) mt
   in
   Model.map_mterm_model aux model
+
+
+(* let replace_for_to_iter (model : model) : model =
+  let rec aux ctx (mt : mterm) : mterm =
+    match mt.node with
+    | Mfor (id, col, body, Some lbl) ->
+      let iter = Miter (id, col, body, Some lbl) in
+      mk_mterm iter mt.type_
+    | _ -> map_mterm (aux ctx) mt
+  in
+  Model.map_mterm_model aux model *)

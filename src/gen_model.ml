@@ -222,11 +222,11 @@ let to_model (ast : A.model) : M.model =
     | A.Pcall (Some p, A.Cconst A.Cbefore,    []) -> M.Msetbefore    (f p)
     | A.Pletin (id, init, typ, body, o) -> M.Mletin         ([id], f init, Option.map ftyp typ, f body, Option.map f o)
     | A.Pdeclvar (i, t, v)              -> M.Mdeclvar       ([i], Option.map ftyp t, f v)
-    | A.Pvar (b, {pldesc = "state"; _})                -> let e = M.Mvarstate in process_before b e
-    | A.Pvar (b, id) when A.Utils.is_variable ast id   -> let e = M.Mvarstorevar id in process_before b e
-    | A.Pvar (b, id) when A.Utils.is_asset ast id      -> let e = M.Mvarstorecol id in process_before b e
-    | A.Pvar (b, id) when A.Utils.is_enum_value ast id -> let e = M.Mvarenumval  id in process_before b e
-    | A.Pvar (b, id)                                   -> let e = M.Mvarlocal    id in process_before b e
+    | A.Pvar (b, _vs, {pldesc = "state"; _})                -> let e = M.Mvarstate in process_before b e
+    | A.Pvar (b, _vs, id) when A.Utils.is_variable ast id   -> let e = M.Mvarstorevar id in process_before b e
+    | A.Pvar (b, _vs, id) when A.Utils.is_asset ast id      -> let e = M.Mvarstorecol id in process_before b e
+    | A.Pvar (b, _vs, id) when A.Utils.is_enum_value ast id -> let e = M.Mvarenumval  id in process_before b e
+    | A.Pvar (b, _vs, id)                                   -> let e = M.Mvarlocal    id in process_before b e
     | A.Parray l                             -> M.Massets (List.map f l)
     | A.Plit ({node = BVint i; _})           -> M.Mint i
     | A.Plit ({node = BVuint i; _})          -> M.Muint i
@@ -260,9 +260,9 @@ let to_model (ast : A.model) : M.model =
     | A.Pquantifer (Exists, i, (coll, typ), term)    -> M.Mexists (i, ptyp_to_type typ, Option.map f coll, f term)
 
     (* | A.Pcall (Some p, A.Cconst A.Cbefore,    []) -> M.Msetbefore    (f p) *)
-    | A.Pcall (Some p, A.Cconst A.Cunmoved,   []) -> M.Msetunmoved   (f p)
+    (* | A.Pcall (Some p, A.Cconst A.Cunmoved,   []) -> M.Msetunmoved   (f p)
     | A.Pcall (Some p, A.Cconst A.Cadded,     []) -> M.Msetadded     (f p)
-    | A.Pcall (Some p, A.Cconst A.Cremoved,   []) -> M.Msetremoved   (f p)
+    | A.Pcall (Some p, A.Cconst A.Cremoved,   []) -> M.Msetremoved   (f p) *)
     | A.Pcall (Some p, A.Cconst A.Citerated,  []) -> M.Msetiterated  (f p)
     | A.Pcall (Some p, A.Cconst A.Ctoiterate, []) -> M.Msettoiterate (f p)
 
