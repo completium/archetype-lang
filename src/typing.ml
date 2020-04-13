@@ -93,6 +93,10 @@ end = struct
     | M.Tbuiltin (M.VTaddress | M.VTrole), M.Tcontract _ ->
       true
 
+
+    | M.Tcontainer (ty1, cf), M.Tcontainer (ty2, ct) ->
+        equal ty1 ty2 && (cf = ct || ct = M.View)
+
     | _, _ ->
       false
 
@@ -1949,7 +1953,14 @@ let rec for_xexpr
                 let the, (asset, c), method_, args, amap = Option.get_fdfl bailout infos in
                 let rty = Option.bind (type_of_mthtype asset amap) (snd method_.mth_sig) in
 
-                (the, Some (asset, c), method_.mth_name, (method_.mth_purity, method_.mth_totality), args, rty)
+                let the =
+                  if c <> M.View && method_.mth_purity = `Pure then
+                    cast_expr env (Some (M.Tcontainer (M.Tasset asset.as_name, M.View))) the
+                  else the in
+
+
+                (the, Some (asset, c), method_.mth_name,
+                 (method_.mth_purity, method_.mth_totality), args, rty)
 
               | None ->
                 let infos = for_api_call mode env (loc tope) (`Typed the, m, args) in
@@ -2746,13 +2757,19 @@ let rec for_instruction (env : env) (i : PT.expr) : env * M.instruction =
             match Type.as_asset_collection ty with
             | Some _ ->
               let infos = for_gen_method_call expr_mode env (loc i) (`Typed the, m, args) in
-              let the, asset, method_, args, _ = Option.get_fdfl bailout infos in
+              let the, (asset, c), method_, args, _ = Option.get_fdfl bailout infos in
 
-              begin match asset, method_.mth_purity with
-              | (_, M.View), `Effect ->
+              begin match c, method_.mth_purity with
+              | M.View, `Effect ->
                   Env.emit_error env (loc i, UnpureOnView)
               | _, _ ->
                   () end;
+
+              let the =
+                if c <> M.View && method_.mth_purity = `Pure then
+                  cast_expr env (Some (M.Tcontainer (M.Tasset asset.as_name, M.View))) the
+                else the in
+
               env, mki (M.Icall (Some the, M.Cconst method_.mth_name, args))
 
             | _ ->
