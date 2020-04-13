@@ -606,15 +606,15 @@ let assign_loop_label (model : model) : model =
           match mt.node with
           | Mfor (_, col, body, Some label) ->
             begin
-              let accu = fold_term (aux ctx) accu col in
-              let accu = fold_term (aux ctx) accu body in
+              let accu = aux ctx accu col in
+              let accu = aux ctx accu body in
               label::accu
             end
           | Miter (_, min, max, body, Some label) ->
             begin
-              let accu = fold_term (aux ctx) accu min in
-              let accu = fold_term (aux ctx) accu max in
-              let accu = fold_term (aux ctx) accu body in
+              let accu = aux ctx accu min in
+              let accu = aux ctx accu max in
+              let accu = aux ctx accu body in
               label::accu
             end
           | _ -> fold_term (aux ctx) accu mt
@@ -649,12 +649,18 @@ let assign_loop_label (model : model) : model =
   let rec aux ctx (mt : mterm) : mterm =
     match mt.node with
     | Mfor (a, col, body, None) ->
-      begin
-        let ncol  = map_mterm (aux ctx) col in
-        let nbody = map_mterm (aux ctx) body in
-        let label = get_loop_label ctx in
-        { mt with node = Mfor (a, ncol, nbody, Some label)}
-      end
+      let ncol  = aux ctx col in
+      let nbody = aux ctx body in
+      let label = get_loop_label ctx in
+      { mt with node = Mfor (a, ncol, nbody, Some label)}
+
+    | Miter (a, min, max, body, None) ->
+      let nmin  = aux ctx min in
+      let nmax  = aux ctx max in
+      let nbody = aux ctx body in
+      let label = get_loop_label ctx in
+      { mt with node = Miter (a, nmin, nmax, nbody, Some label)}
+
     | _ -> map_mterm (aux ctx) mt
   in
   map_mterm_model aux model
@@ -1855,12 +1861,21 @@ let replace_get_on_view (model : model) : model =
   Model.map_mterm_model aux model
 
 
-(* let replace_for_to_iter (model : model) : model =
+let replace_for_to_iter (model : model) : model =
   let rec aux ctx (mt : mterm) : mterm =
     match mt.node with
     | Mfor (id, col, body, Some lbl) ->
-      let iter = Miter (id, col, body, Some lbl) in
+      let nbody = aux ctx body in
+      let an = "my_asset" in
+      let type_asset = Tasset (dumloc an) in
+      let idx_id = "_idx_for_" ^ lbl in
+      let idx = mk_mterm (Mvarlocal (dumloc idx_id)) (Tbuiltin Bint) in
+      let nth = mk_mterm (Mnth(an, idx, col)) type_asset in
+      let letin = mk_mterm (Mletin ([id], nth, Some type_asset, nbody, None)) Tunit in
+      let bound_min = mk_mterm (Mint Big_int.zero_big_int) (Tbuiltin Bint) in
+      let bound_max = mk_mterm (Mcount (an, col)) (Tbuiltin Bint) in
+      let iter = Miter (dumloc idx_id, bound_min, bound_max, letin, Some lbl) in
       mk_mterm iter mt.type_
     | _ -> map_mterm (aux ctx) mt
   in
-  Model.map_mterm_model aux model *)
+  Model.map_mterm_model aux model
