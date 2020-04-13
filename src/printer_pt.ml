@@ -232,20 +232,26 @@ let string_of_scope (s : scope) =
 let rec pp_expr outer pos fmt a =
   let e = unloc a in
   match e with
-  | Eterm (st, id) ->
-    begin
-      let pp_before fmt pp x =
-        Format.fprintf fmt "before.%a" pp x
-      in
-      let pp_label fmt lbl pp x =
-        Format.fprintf fmt "at(%a).%a"  pp_str lbl pp x
-      in
+  | Eterm ((vset, lbl), id) ->
+    let pp_label fmt lbl =
+      let s =
+        match lbl with
+        | VLBefore   -> "before"
+        | VLIdent  x -> Format.asprintf "%a" pp_id x
+      in Format.fprintf fmt "%s." s in
 
-      match st.before, st.label with
-      | true, _ -> pp_before fmt pp_id id
-      | _, Some lbl -> pp_label fmt (unloc lbl) pp_id id
-      | _ -> pp_id fmt id
-    end
+    let pp_vset fmt vset =
+      let s =
+        match vset with
+        | VSAdded   -> "added"
+        | VSUnmoved -> "moved"
+        | VSRemoved -> "removed"
+      in Format.fprintf fmt "%s." s in
+
+    Format.fprintf fmt "%a%a%a"
+      (pp_option pp_vset ) vset
+      (pp_option pp_label) lbl
+      pp_id id
 
   | Eliteral x ->
 

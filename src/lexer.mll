@@ -19,6 +19,7 @@
   let keywords_ =
     [
       "action"              , ACTION         ;
+      "added"               , ADDED          ;
       "and"                 , AND            ;
       "any"                 , ANY            ;
       "archetype"           , ARCHETYPE      ;
@@ -76,6 +77,7 @@
       "postcondition"       , POSTCONDITION  ;
       "record"              , RECORD         ;
       "ref"                 , REF            ;
+      "removed"             , REMOVED        ;
       "require"             , REQUIRE        ;
       "return"              , RETURN         ;
       "security"            , SECURITY       ;
@@ -89,6 +91,7 @@
       "transfer"            , TRANSFER       ;
       "transition"          , TRANSITION     ;
       "true"                , TRUE           ;
+      "unmoved"             , UNMOVED        ;
       "use"                 , USE            ;
       "var"                 , VAR            ;
       "variable"            , VARIABLE       ;

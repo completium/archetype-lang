@@ -233,7 +233,6 @@ type error_desc =
   | AssetWithoutFields
   | BeforeOrLabelInExpr
   | BeforeIrrelevant                   of [`Local | `State]
-  | BeforeWithLabel
   | BindingInExpr
   | CannotAssignLoopIndex              of ident
   | CannotCaptureLocal
@@ -372,7 +371,6 @@ let pp_error_desc fmt e =
   | BeforeIrrelevant `Local            -> pp "The `before' modifier cannot be used on local variables"
   | BeforeIrrelevant `State            -> pp "The `before' modifier cannot be used on state constructors"
   | BeforeOrLabelInExpr                -> pp "The `before' or label modifiers can only be used in formulas"
-  | BeforeWithLabel                    -> pp "Cannot use `before' labels at the same time"
   | BindingInExpr                      -> pp "Binding in expression"
   | CannotAssignLoopIndex x            -> pp "Cannot assign loop index `%s'" x
   | CannotCaptureLocal                 -> pp "Cannot capture local variables in this context"
@@ -743,8 +741,6 @@ type vardecl = {
 type 'env ispecification = [
   | `Predicate     of M.lident * (M.lident * M.ptyp) list * M.pterm
   | `Definition    of M.lident * (M.lident * M.ptyp) option * M.pterm
-  | `Lemma         of M.lident * M.pterm
-  | `Theorem       of M.lident * M.pterm
   | `Variable      of M.lident * M.pterm option
   | `Assert        of M.lident * M.pterm * (M.lident * M.pterm list) list * M.lident list
   | `Effect        of 'env * M.instruction
@@ -1495,18 +1491,13 @@ let rec for_xexpr
 
   let doit () =
     match unloc tope with
-    | Eterm (st, x) -> begin
-        let before = st.before in
+    | Eterm ((_, pvt), x) -> begin
         let vt, subenv =
-          match st.before, st.label with
-          | true, Some _ ->
-            Env.emit_error env (loc tope, BeforeWithLabel);
-            M.VTnone, env
-
-          | true , None ->
+          match pvt with
+          | Some VLBefore ->
             M.VTbefore, env
 
-          | false, Some lbl -> begin
+          | Some (VLIdent lbl) -> begin
               match Env.Label.lookup env (unloc lbl) with
               | None ->
                 Env.emit_error env (loc lbl, UnknownLabel (unloc lbl));
@@ -1518,19 +1509,19 @@ let rec for_xexpr
                 M.VTnone, env
             end
 
-          | false, None ->
+          | None ->
             M.VTnone, env
         in
 
         let vt =
-          let hasvt = st.before || Option.is_some st.label in
+          let hasvt = Option.is_some pvt in
           if hasvt && mode.em_kind <> `Formula then begin
             Env.emit_error env (loc tope, BeforeOrLabelInExpr); M.VTnone
           end else vt in
 
         match Env.lookup_entry subenv (unloc x) with
         | Some (`Local (xty, _)) ->
-          if before then
+          if pvt = Some VLBefore then
             Env.emit_error env (loc tope, BeforeIrrelevant `Local);
           if not (capture) then
             Env.emit_error env (loc tope, CannotCaptureLocal);
@@ -1549,7 +1540,7 @@ let rec for_xexpr
           mk_sp (Some typ) (M.Pvar (vt, Vnone, x))
 
         | Some (`StateByCtor (decl, _)) ->
-          if before then
+          if pvt = Some VLBefore then
             Env.emit_error env (loc tope, BeforeIrrelevant `State);
 
           let typ = M.Tenum decl.sd_name in
@@ -1560,7 +1551,7 @@ let rec for_xexpr
             let var   = mkloc (loc tope) Env.Context.the in
             let the   = mk_sp (Some atype) (M.Pvar (VTnone, Vnone, var)) in
 
-            if before then
+            if pvt = Some VLBefore then
               Env.emit_error env (loc tope, BeforeIrrelevant `Local);
             match ofield with
             | None ->
@@ -2411,10 +2402,10 @@ and for_gen_method_call mode env theloc (the, m, args)
       | `Cmp -> begin
           let asc, field =
             match unloc arg with
-            | Eterm ({ before = false; label = None; }, f) ->
+            | Eterm ((None, None), f) ->
               (true, Some f)
             | Eapp (Fident { pldesc = ("asc" | "desc") as order },
-                    [{pldesc = Eterm ({ before = false; label = None; }, f) }]) ->
+                    [{pldesc = Eterm ((None, None), f) }]) ->
               (order = "asc", Some f)
             | _ ->
               Env.emit_error env (loc arg, InvalidSortingExpression);
@@ -2553,9 +2544,8 @@ and for_action_description (env : env) (sa : PT.security_arg) : M.action_descrip
     M.ADAny
 
   | Sapp (act, [{ pldesc = PT.Sident asset }]) -> begin
-      let st : PT.s_term = PT.mk_s_term () in
       let mode  = { em_kind = `Formula; em_pred = false; } in
-      let asset = mkloc (loc asset) (PT.Eterm (st, asset)) in
+      let asset = mkloc (loc asset) (PT.Eterm ((None, None), asset)) in
       let asset = for_asset_collection_expr mode env (`Parsed asset) in
 
       match snd asset with
@@ -2677,7 +2667,7 @@ let for_args_decl (env : env) (xs : PT.args) =
 (* -------------------------------------------------------------------- *)
 let for_lvalue (env : env) (e : PT.expr) : (M.lvalue * M.ptyp) option =
   match unloc e with
-  | Eterm ({ before = false; label = None; }, x) -> begin
+  | Eterm ((None, None), x) -> begin
       match Env.lookup_entry env (unloc x) with
       | Some (`Local (xty, kind)) -> begin
           match kind with
@@ -2988,7 +2978,7 @@ let for_specification_item
   : (env * env) * env ispecification
   =
   match unloc v with
-  | PT.Vpredicate (x, args, f) ->
+  | PT.Vpredicate (x, args, f) -> (* EV *)
     let env, (args, f) =
       Env.inscope env (fun env ->
           let env, args = for_args_decl env args in
@@ -2997,7 +2987,7 @@ let for_specification_item
           (env, (args, f)))
     in (env, poenv), `Predicate (x, args, f)
 
-  | PT.Vdefinition (x, ty, y, f) ->
+  | PT.Vdefinition (x, ty, y, f) -> (* EV *)
     let env, (arg, f) =
       Env.inscope env (fun env ->
           let env, arg = for_arg_decl env (y, ty, None) in
@@ -3005,7 +2995,7 @@ let for_specification_item
           (env, (arg, f)))
     in ((env, poenv), `Definition (x, arg, f))
 
-  | PT.Vvariable (x, ty, e) ->
+  | PT.Vvariable (x, ty, e) ->  (* EV *)
     let ty = for_type env ty in
     let e  = Option.map (for_expr env ?ety:ty) e in
     let poenv =
@@ -3014,7 +3004,7 @@ let for_specification_item
 
     in ((env, poenv), `Variable (x, e))
 
-  | PT.Vassert (x, f, invs, uses) -> begin
+  | PT.Vassert (x, f, invs, uses) -> begin (* ACTION *)
       let env0 =
         match Env.Label.lookup env (unloc x) with
         | None ->
@@ -3033,13 +3023,13 @@ let for_specification_item
       ((env, poenv), `Assert (x, f, invs, uses))
     end
 
-  | PT.Veffect i ->
+  | PT.Veffect i ->             (* SHADOW / ACTION *)
     (* FIXME: we are not properly tracking labels here *)
     let _, ((poenv, _) as i) = for_effect poenv i in
     ((env, poenv), `Effect i)
 
-  | PT.Vpostcondition (x, f, invs, uses)
-  | PT.Vcontractinvariant (x, f, invs, uses) ->
+  | PT.Vpostcondition (x, f, invs, uses) (* ACTION *)
+  | PT.Vcontractinvariant (x, f, invs, uses) -> (* TOP-LEVEL *)
     let for_inv (lbl, linvs) =
       let env0 =
         match Env.Label.lookup env (unloc lbl) with
@@ -3207,7 +3197,7 @@ let rec for_state_formula ?enum (env : env) (st : PT.expr) : M.sexpr =
   let mk_sp = M.mk_sp ~loc:(loc st) in
 
   match unloc st with
-  | Eterm ({ before = false; label = None; }, x) ->
+  | Eterm ((None, None), x) ->
     mk_sp (M.Sref (for_named_state ?enum env x))
 
   | Eapp (Foperator { pldesc = Logical Or }, [e1; e2]) ->
@@ -3260,7 +3250,7 @@ let rec for_callby (env : env) (cb : PT.expr) =
   match unloc cb with
   | Eany -> [mkloc (loc cb) None]
 
-  | Eterm ({ before = false; label = None; }, name) ->
+  | Eterm ((None, None), name) ->
     let cb = Option.get_as_list (for_role env name) in
     List.map (fun x -> mkloc (loc x) (Some (unloc x))) cb
 
@@ -4022,13 +4012,7 @@ let specifications_of_ispecifications =
     | `Predicate _ ->
       assert false
 
-    | `Theorem _ ->
-      assert false
-
     | `Definition _ ->
-      assert false
-
-    |`Lemma _ ->
       assert false
 
   in fun ispecs -> List.fold_left do1 env0 ispecs

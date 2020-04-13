@@ -78,13 +78,12 @@ type pattern_unloc =
 
 and pattern = pattern_unloc loced
 
-and s_term = {
-  before: bool;
-  label: lident option;
-}
+and var_label = VLBefore | VLIdent of lident
+
+and var_vset  = VSAdded | VSUnmoved | VSRemoved
 
 and expr_unloc =
-  | Eterm         of s_term * lident
+  | Eterm         of (var_vset option * var_label option) * lident
   | Eliteral      of literal
   | Earray        of expr list
   | Erecord       of record_item list
@@ -344,9 +343,5 @@ and archetype = archetype_unloc loced
  visitors { variety = "reduce2"; ancestors = ["location_reduce2"; "ident_reduce2"] }
 ]
 
-
 let mk_archetype ?(decls=[]) ?(loc=dummy) () =
   mkloc loc (Marchetype decls)
-
-let mk_s_term ?(before=false) ?label () : s_term =
-  { before = before; label = label }
