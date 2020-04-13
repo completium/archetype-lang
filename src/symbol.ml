@@ -7,6 +7,7 @@ let string_of_token = function
   | VARIABLE        -> "VARIABLE"
   | VAR             -> "VAR"
   | USE             -> "USE"
+  | UNMOVED         -> "UNMOVED"
   | UNDERSCORE      -> "UNDERSCORE"
   | TZ n            -> Printf.sprintf "TZ(%s)" (Big_int.string_of_big_int n)
   | TRUE            -> "TRUE"
@@ -26,6 +27,7 @@ let string_of_token = function
   | RPAREN          -> "RPAREN"
   | RETURN          -> "RETURN"
   | REQUIRE         -> "REQUIRE"
+  | REMOVED         -> "REMOVED"
   | REFUSE_TRANSFER -> "REFUSE_TRANSFER"
   | REF             -> "REF"
   | RECORD          -> "RECORD"
@@ -128,6 +130,7 @@ let string_of_token = function
   | ANY             -> "ANY"
   | AND             -> "AND"
   | ADDRESS s       -> Printf.sprintf "DURATION(%s)" s
+  | ADDED           -> "ADDED"
   | ACTION          -> "ACTION"
   | ACCEPT_TRANSFER -> "ACCEPT_TRANSFER"
 
@@ -138,6 +141,7 @@ let string_of_symbol = function
   | X (T T_VAR) -> "var"
   | X (T T_VARIABLE) -> "variable"
   | X (T T_USE) -> "use"
+  | X (T T_UNMOVED) -> "unmoved"
   | X (T T_UNDERSCORE) -> "_"
   | X (T T_TZ) -> "a tz"
   | X (T T_TRUE) -> "true"
@@ -156,6 +160,7 @@ let string_of_symbol = function
   | X (T T_SECURITY) -> "security"
   | X (T T_RPAREN) -> ")"
   | X (T T_RETURN) -> "return"
+  | X (T T_REMOVED) -> "removed"
   | X (T T_REQUIRE) -> "require"
   | X (T T_REFUSE_TRANSFER) -> "refuse transfer"
   | X (T T_REF) -> "ref"
@@ -259,6 +264,7 @@ let string_of_symbol = function
   | X (T T_ANY) -> "any"
   | X (T T_AND) -> "and"
   | X (T T_ADDRESS) -> "an address"
+  | X (T T_ADDED) -> "added"
   | X (T T_ACTION) -> "action"
   | X (T T_ACCEPT_TRANSFER) -> "accept address"
   | X (N N_specification_fun) -> "a specification function"
