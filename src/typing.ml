@@ -331,6 +331,8 @@ type error_desc =
   | UpdateEffectOnPkey
   | UselessPattern
   | VoidMethodInExpr
+  | VSetInExpr
+  | VSetOnNonAsset
 [@@deriving show {with_path = false}]
 
 type error = L.t * error_desc
@@ -466,6 +468,8 @@ let pp_error_desc fmt e =
   | UpdateEffectOnPkey                 -> pp "Cannot set/update the primary key in an effect"
   | UselessPattern                     -> pp "Useless match branch"
   | VoidMethodInExpr                   -> pp "Void method in non-void context"
+  | VSetInExpr                         -> pp "Virtual set in expression"
+  | VSetOnNonAsset                     -> pp "Virtual set modifier on non-asset"
 
   | NoMatchingOperator (op, sig_) ->
     pp "No matches for operator %a(%a)"
@@ -1491,7 +1495,7 @@ let rec for_xexpr
 
   let doit () =
     match unloc tope with
-    | Eterm ((_, pvt), x) -> begin
+    | Eterm ((vset, pvt), x) -> begin
         let vt, subenv =
           match pvt with
           | Some VLBefore ->
@@ -1519,13 +1523,26 @@ let rec for_xexpr
             Env.emit_error env (loc tope, BeforeOrLabelInExpr); M.VTnone
           end else vt in
 
-        match Env.lookup_entry subenv (unloc x) with
+        let lk = Env.lookup_entry subenv (unloc x) in
+
+        begin match lk, vset with
+        | None, _ | _, None | Some (`Asset _), _ -> ()
+        | Some _, Some _ ->
+            Env.emit_error env (loc tope, VSetOnNonAsset)
+        end;
+
+        if mode.em_kind = `Expr && Option.is_some vset then
+          Env.emit_error env (loc tope, VSetInExpr);
+
+        match lk with
         | Some (`Local (xty, _)) ->
-          if pvt = Some VLBefore then
-            Env.emit_error env (loc tope, BeforeIrrelevant `Local);
+          let vt =
+            if pvt = Some VLBefore then begin
+              Env.emit_error env (loc tope, BeforeIrrelevant `Local); M.VTnone
+            end else vt in
           if not (capture) then
             Env.emit_error env (loc tope, CannotCaptureLocal);
-          mk_sp (Some xty) (M.Pvar (VTnone, Vnone, x))
+          mk_sp (Some xty) (M.Pvar (vt, Vnone, x))
 
         | Some (`Global decl) -> begin
             match decl.vr_def with
@@ -1540,19 +1557,26 @@ let rec for_xexpr
           mk_sp (Some typ) (M.Pvar (vt, Vnone, x))
 
         | Some (`StateByCtor (decl, _)) ->
-          if pvt = Some VLBefore then
-            Env.emit_error env (loc tope, BeforeIrrelevant `State);
+          let vt =
+            if pvt = Some VLBefore then begin
+              Env.emit_error env (loc tope, BeforeIrrelevant `State); M.VTnone
+            end else vt in
 
+          let vset =
+            match vset with
+            | None           -> M.Vnone
+            | Some VSAdded   -> M.Vadded
+            | Some VSRemoved -> M.Vremoved
+            | Some VSUnmoved -> M.Vunmoved
+          in
           let typ = M.Tenum decl.sd_name in
-          mk_sp (Some typ) (M.Pvar (VTnone, Vnone, x))
+          mk_sp (Some typ) (M.Pvar (vt, vset, x))
 
         | Some (`Context (asset, ofield)) -> begin
             let atype = M.Tasset asset.as_name in
             let var   = mkloc (loc tope) Env.Context.the in
-            let the   = mk_sp (Some atype) (M.Pvar (VTnone, Vnone, var)) in
+            let the   = mk_sp (Some atype) (M.Pvar (vt, Vnone, var)) in
 
-            if pvt = Some VLBefore then
-              Env.emit_error env (loc tope, BeforeIrrelevant `Local);
             match ofield with
             | None ->
               the
