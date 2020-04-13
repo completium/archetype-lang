@@ -2772,7 +2772,7 @@ let fold_exns m body : term list =
       internal_fold_exn
         (internal_fold_exn (acc @ if (is_partition m a f) then [Texn Ekeyexist]
                             else [Texn Enotfound ]) c) i
-    | M.Mselect _ -> acc @ [Texn Enotfound]
+    | M.Mselect (_,_,_) -> acc @ [Texn Enotfound]
     | M.Mfail InvalidCaller -> acc @ [Texn Einvalidcaller]
     | M.Mfail NoTransfer -> acc @ [Texn Enotransfer]
     | M.Mfail (InvalidCondition _) -> acc @ [Texn Einvalidcondition]
