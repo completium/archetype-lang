@@ -3227,14 +3227,25 @@ let rec for_state_formula ?enum (env : env) (st : PT.expr) : M.sexpr =
 
 (* -------------------------------------------------------------------- *)
 let for_function (env : env) (fdecl : PT.s_function loced) =
-  let fdecl = unloc fdecl in
+  let { pldesc = fdecl; plloc = loc; } = fdecl in
 
   Env.inscope env (fun env ->
       let env, args = for_args_decl env fdecl.args in
       let rty       = Option.bind (for_type env) fdecl.ret_t in
       let env, body = for_instruction env fdecl.body in
       let env, spec =
-        Option.foldmap (fun env -> for_specification (env, env)) env fdecl.spec in
+        let poenv = rty |> Option.fold (fun poenv rty ->
+          let decl = {
+            vr_name = mkloc loc "result";
+            vr_type = rty;
+            vr_kind = `Ghost;
+            vr_invs = [];
+            vr_def  = None;
+            vr_tgt  = None, None;
+            vr_core = None;
+          } in Env.Var.push poenv decl
+        ) env in
+        Option.foldmap (fun env -> for_specification (env, poenv)) env fdecl.spec in
 
       if Option.is_some rty && not (List.exists Option.is_none args) then
         if check_and_emit_name_free env fdecl.name then
