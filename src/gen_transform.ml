@@ -1862,12 +1862,25 @@ let replace_get_on_view (model : model) : model =
 
 
 let replace_for_to_iter (model : model) : model =
+  let is_asset (col : mterm) : bool =
+    match col.type_ with
+    | Tcontainer (Tasset _, _) -> true
+    | _ -> false
+  in
+
+  let extract_asset (col : mterm) =
+    match col.type_ with
+    | Tcontainer (Tasset an, _) -> an
+    | _ -> assert false
+  in
+
   let rec aux ctx (mt : mterm) : mterm =
     match mt.node with
-    | Mfor (id, col, body, Some lbl) ->
+    | Mfor (id, col, body, Some lbl) when is_asset col ->
       let nbody = aux ctx body in
-      let an = "my_asset" in
-      let type_asset = Tasset (dumloc an) in
+      let asset_name = extract_asset col in
+      let an = unloc asset_name in
+      let type_asset = Tasset asset_name in
       let idx_id = "_idx_for_" ^ lbl in
       let idx = mk_mterm (Mvarlocal (dumloc idx_id)) (Tbuiltin Bint) in
       let nth = mk_mterm (Mnth(an, idx, col)) type_asset in
