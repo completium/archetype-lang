@@ -1307,7 +1307,8 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
 
 
     (* utils *)
-
+    | Mcast (Tcontainer (Tasset a,Collection),Tcontainer (Tasset _, View), v) ->
+      Tapp (loc_term (Tdoti (String.capitalize_ascii (unloc a),"to_view")),[map_mterm m ctx v])
     | Mcast (_, _, v)       -> map_mterm m ctx v |> Mlwtree.deloc
     | Mgetfrommap         _ -> error_not_translated "Mgetfrommap"
 
@@ -2771,6 +2772,7 @@ let fold_exns m body : term list =
       internal_fold_exn
         (internal_fold_exn (acc @ if (is_partition m a f) then [Texn Ekeyexist]
                             else [Texn Enotfound ]) c) i
+    | M.Mselect _ -> acc @ [Texn Enotfound]
     | M.Mfail InvalidCaller -> acc @ [Texn Einvalidcaller]
     | M.Mfail NoTransfer -> acc @ [Texn Enotransfer]
     | M.Mfail (InvalidCondition _) -> acc @ [Texn Einvalidcondition]

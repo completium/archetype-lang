@@ -338,6 +338,9 @@ module AssetCollection
   = vmem k (to_view c)
 
   (* ------------------------------------------------------------------------ *)
+  let function length (v : view) : int = L.length v
+
+  (* ------------------------------------------------------------------------ *)
   let rec function internal_get (l : list t) (k : key) : option t
   variant { l }
   ensures { vmem k (internal_to_view l) ->
