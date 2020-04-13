@@ -606,15 +606,15 @@ let assign_loop_label (model : model) : model =
           match mt.node with
           | Mfor (_, col, body, Some label) ->
             begin
-              let accu = fold_term (aux ctx) accu col in
-              let accu = fold_term (aux ctx) accu body in
+              let accu = aux ctx accu col in
+              let accu = aux ctx accu body in
               label::accu
             end
           | Miter (_, min, max, body, Some label) ->
             begin
-              let accu = fold_term (aux ctx) accu min in
-              let accu = fold_term (aux ctx) accu max in
-              let accu = fold_term (aux ctx) accu body in
+              let accu = aux ctx accu min in
+              let accu = aux ctx accu max in
+              let accu = aux ctx accu body in
               label::accu
             end
           | _ -> fold_term (aux ctx) accu mt
@@ -649,12 +649,18 @@ let assign_loop_label (model : model) : model =
   let rec aux ctx (mt : mterm) : mterm =
     match mt.node with
     | Mfor (a, col, body, None) ->
-      begin
-        let ncol  = map_mterm (aux ctx) col in
-        let nbody = map_mterm (aux ctx) body in
-        let label = get_loop_label ctx in
-        { mt with node = Mfor (a, ncol, nbody, Some label)}
-      end
+      let ncol  = aux ctx col in
+      let nbody = aux ctx body in
+      let label = get_loop_label ctx in
+      { mt with node = Mfor (a, ncol, nbody, Some label)}
+
+    | Miter (a, min, max, body, None) ->
+      let nmin  = aux ctx min in
+      let nmax  = aux ctx max in
+      let nbody = aux ctx body in
+      let label = get_loop_label ctx in
+      { mt with node = Miter (a, nmin, nmax, nbody, Some label)}
+
     | _ -> map_mterm (aux ctx) mt
   in
   map_mterm_model aux model
@@ -1850,6 +1856,39 @@ let replace_get_on_view (model : model) : model =
       let ffail = mk_mterm (Mfail (Invalid (mk_mterm (Mstring "do not contain key") (Tbuiltin Bstring)))) Tunit in
       let cond = mk_mterm (Mcontains (an, c, k)) (Tbuiltin Bbool) in
       mk_mterm (Mexprif (cond, get_asset, ffail)) type_asset
+    | _ -> map_mterm (aux ctx) mt
+  in
+  Model.map_mterm_model aux model
+
+
+let replace_for_to_iter (model : model) : model =
+  let is_asset (col : mterm) : bool =
+    match col.type_ with
+    | Tcontainer (Tasset _, _) -> true
+    | _ -> false
+  in
+
+  let extract_asset (col : mterm) =
+    match col.type_ with
+    | Tcontainer (Tasset an, _) -> an
+    | _ -> assert false
+  in
+
+  let rec aux ctx (mt : mterm) : mterm =
+    match mt.node with
+    | Mfor (id, col, body, Some lbl) when is_asset col ->
+      let nbody = aux ctx body in
+      let asset_name = extract_asset col in
+      let an = unloc asset_name in
+      let type_asset = Tasset asset_name in
+      let idx_id = "_idx_for_" ^ lbl in
+      let idx = mk_mterm (Mvarlocal (dumloc idx_id)) (Tbuiltin Bint) in
+      let nth = mk_mterm (Mnth(an, idx, col)) type_asset in
+      let letin = mk_mterm (Mletin ([id], nth, Some type_asset, nbody, None)) Tunit in
+      let bound_min = mk_mterm (Mint Big_int.zero_big_int) (Tbuiltin Bint) in
+      let bound_max = mk_mterm (Mcount (an, col)) (Tbuiltin Bint) in
+      let iter = Miter (dumloc idx_id, bound_min, bound_max, letin, Some lbl) in
+      mk_mterm iter mt.type_
     | _ -> map_mterm (aux ctx) mt
   in
   Model.map_mterm_model aux model

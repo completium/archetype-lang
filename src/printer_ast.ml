@@ -204,9 +204,6 @@ let to_const = function
   | Cchecksignature -> "check_signature"
   (* vset *)
   | Cbefore         -> "before"
-  | Cunmoved        -> "unmoved"
-  | Cadded          -> "added"
-  | Cremoved        -> "removed"
   | Citerated       -> "iterated"
   | Ctoiterate      -> "toiterate"
 
@@ -343,14 +340,23 @@ let rec pp_pterm fmt (pterm : pterm) =
       in
       (pp_with_paren pp) fmt (i, t, v)
 
-    | Pvar (vt, id) ->
-      let pp fmt (vt, id) =
-        match vt with
-        | VTbefore -> Format.fprintf fmt "before.%a" pp_id id
-        | VTat lbl -> Format.fprintf fmt "at(%s).%a" lbl pp_id id
-        | VTnone   -> pp_id fmt id
+    | Pvar (vt, vs, id) ->
+      let pp fmt (vt, vs, id) =
+        let vs_val = match vs with
+          | Vadded -> "added."
+          | Vremoved -> "removed."
+          | Vunmoved -> "unmoved."
+          | Vnone -> ""
+        in
+        let vt_val =
+          match vt with
+          | VTbefore -> "before."
+          | VTat lbl -> Format.asprintf "at(%s)." lbl
+          | VTnone   -> ""
+        in
+        Format.fprintf fmt "%s%s%a" vs_val vt_val pp_id id
       in
-      (pp_no_paren pp) fmt (vt, id)
+      (pp_no_paren pp) fmt (vt, vs, id)
 
     | Parray l ->
       let pp fmt l =
@@ -769,8 +775,8 @@ let pp_asset fmt (a : lident asset_struct) =
             (pp_list "; " pp_pterm) init1
         in
         fun fmt init ->
-        Format.fprintf fmt " initialized by {@\n%a@\n} "
-          (pp_list "@\n" pp1) init)) a.init
+          Format.fprintf fmt " initialized by {@\n%a@\n} "
+            (pp_list "@\n" pp1) init)) a.init
     (pp_do_if (not (List.is_empty a.specs)) (
         fun fmt ->
           Format.fprintf fmt " with {@\n  @[%a@]@\n}"

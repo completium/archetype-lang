@@ -655,9 +655,6 @@ let methods : (string * method_) list =
     ("subsetof"    , mk M.Csubsetof     `Pure   `Total   (`Fixed [`SubColl      ], Some (`T M.vtbool)));
     ("head"        , mk M.Chead         `Pure   `Total   (`Fixed [`T M.vtint    ], Some (`SubColl)));
     ("tail"        , mk M.Ctail         `Pure   `Total   (`Fixed [`T M.vtint    ], Some (`SubColl)));
-    ("unmoved"     , mk M.Cunmoved      `Pure   `Total   (`Fixed [              ], Some (`SubColl)));
-    ("added"       , mk M.Cadded        `Pure   `Total   (`Fixed [              ], Some (`SubColl)));
-    ("removed"     , mk M.Cremoved      `Pure   `Total   (`Fixed [              ], Some (`SubColl)));
   ]
 
 let methods = Mid.of_list methods
@@ -1494,7 +1491,7 @@ let rec for_xexpr
   let bailout = fun () -> raise E.Bailout in
 
   let mk_sp type_ node = M.mk_sp ~loc:(loc tope) ?type_ node in
-  let dummy type_ : M.pterm = mk_sp type_ (M.Pvar (VTnone, mkloc (loc tope) "<error>")) in
+  let dummy type_ : M.pterm = mk_sp type_ (M.Pvar (VTnone, Vnone, mkloc (loc tope) "<error>")) in
 
   let doit () =
     match unloc tope with
@@ -1537,31 +1534,31 @@ let rec for_xexpr
             Env.emit_error env (loc tope, BeforeIrrelevant `Local);
           if not (capture) then
             Env.emit_error env (loc tope, CannotCaptureLocal);
-          mk_sp (Some xty) (M.Pvar (VTnone, x))
+          mk_sp (Some xty) (M.Pvar (VTnone, Vnone, x))
 
         | Some (`Global decl) -> begin
             match decl.vr_def with
             | Some (body, `Inline) ->
               body
             | _ ->
-              mk_sp (Some decl.vr_type) (M.Pvar (vt, x))
+              mk_sp (Some decl.vr_type) (M.Pvar (vt, Vnone, x))
           end
 
         | Some (`Asset decl) ->
           let typ = M.Tcontainer ((M.Tasset decl.as_name), M.Collection) in
-          mk_sp (Some typ) (M.Pvar (vt, x))
+          mk_sp (Some typ) (M.Pvar (vt, Vnone, x))
 
         | Some (`StateByCtor (decl, _)) ->
           if before then
             Env.emit_error env (loc tope, BeforeIrrelevant `State);
 
           let typ = M.Tenum decl.sd_name in
-          mk_sp (Some typ) (M.Pvar (VTnone, x))
+          mk_sp (Some typ) (M.Pvar (VTnone, Vnone, x))
 
         | Some (`Context (asset, ofield)) -> begin
             let atype = M.Tasset asset.as_name in
             let var   = mkloc (loc tope) Env.Context.the in
-            let the   = mk_sp (Some atype) (M.Pvar (VTnone, var)) in
+            let the   = mk_sp (Some atype) (M.Pvar (VTnone, Vnone, var)) in
 
             if before then
               Env.emit_error env (loc tope, BeforeIrrelevant `Local);
@@ -3227,14 +3224,25 @@ let rec for_state_formula ?enum (env : env) (st : PT.expr) : M.sexpr =
 
 (* -------------------------------------------------------------------- *)
 let for_function (env : env) (fdecl : PT.s_function loced) =
-  let fdecl = unloc fdecl in
+  let { pldesc = fdecl; plloc = loc; } = fdecl in
 
   Env.inscope env (fun env ->
       let env, args = for_args_decl env fdecl.args in
       let rty       = Option.bind (for_type env) fdecl.ret_t in
       let env, body = for_instruction env fdecl.body in
       let env, spec =
-        Option.foldmap (fun env -> for_specification (env, env)) env fdecl.spec in
+        let poenv = rty |> Option.fold (fun poenv rty ->
+          let decl = {
+            vr_name = mkloc loc "result";
+            vr_type = rty;
+            vr_kind = `Ghost;
+            vr_invs = [];
+            vr_def  = None;
+            vr_tgt  = None, None;
+            vr_core = None;
+          } in Env.Var.push poenv decl
+        ) env in
+        Option.foldmap (fun env -> for_specification (env, poenv)) env fdecl.spec in
 
       if Option.is_some rty && not (List.exists Option.is_none args) then
         if check_and_emit_name_free env fdecl.name then

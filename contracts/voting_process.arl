@@ -66,7 +66,10 @@ transition bury () {
   from Voting
   to Buried
   with effect {
-    let nbvotesMax = ballot.max(the.nbvotes) in
+    var nbvotesMax = 0;
+    for b in ballot do
+      nbvotesMax := max(nbvotesMax, b.nbvotes)
+    done;
     for b in ballot do
       if (b.nbvotes = nbvotesMax)
       then winner.add({ winvalue = b.value })

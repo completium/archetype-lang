@@ -41,7 +41,6 @@ fizzy.arl \
 health_care.arl \
 ico.arl \
 miles_with_expiration.arl \
-vehicle_lifecycle.arl \
 voting_process.arl \
 "
 
@@ -86,7 +85,6 @@ fizzy.arl \
 health_care.arl \
 ico.arl \
 miles_with_expiration.arl \
-vehicle_lifecycle.arl \
 voting_process.arl \
 "
 
@@ -131,7 +129,6 @@ fizzy.arl \
 health_care.arl \
 ico.arl \
 miles_with_expiration.arl \
-vehicle_lifecycle.arl \
 voting_process.arl \
 "
 

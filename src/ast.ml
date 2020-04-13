@@ -158,9 +158,6 @@ type const =
   | Cchecksignature
   (* vset *)
   | Cbefore
-  | Cunmoved
-  | Cadded
-  | Cremoved
   | Citerated
   | Ctoiterate
 [@@deriving show {with_path = false}]
@@ -266,6 +263,13 @@ type var_temporality =
   | VTnone
 [@@deriving show {with_path = false}]
 
+type vset =
+  | Vadded
+  | Vremoved
+  | Vunmoved
+  | Vnone
+[@@deriving show {with_path = false}]
+
 type 'id term_node  =
   | Pquantifer of quantifier * 'id * ('id term_gen option * type_) * 'id term_gen
   | Pif of ('id term_gen * 'id term_gen * 'id term_gen)
@@ -280,7 +284,7 @@ type 'id term_node  =
   | Precord of 'id term_gen list
   | Pletin of 'id * 'id term_gen * ptyp option * 'id term_gen * 'id term_gen option (* ident * init * type * body * otherwise *)
   | Pdeclvar of 'id * ptyp option * 'id term_gen
-  | Pvar of var_temporality * 'id
+  | Pvar of var_temporality * vset * 'id
   | Parray of 'id term_gen list
   | Plit of bval
   | Pdot of 'id term_gen * 'id
@@ -701,7 +705,7 @@ let map_term_node (f : 'id term_gen -> 'id term_gen) = function
   | Precord l               -> Precord (List.map f l)
   | Pletin (i, a, t, b, o)     -> Pletin (i, f a, t, f b, Option.map f o)
   | Pdeclvar (i, t, v)      -> Pdeclvar (i, t, f v)
-  | Pvar (b, v)             -> Pvar (b, v)
+  | Pvar (b, vs, v)         -> Pvar (b, vs, v)
   | Parray l                -> Parray (List.map f l)
   | Plit l                  -> Plit l
   | Pdot (e, i)             -> Pdot (f e, i)
@@ -901,8 +905,8 @@ let fold_map_term g f (accu : 'a) (term : 'id term_gen) : 'term * 'a =
     let ve, va = f accu v in
     g (Pdeclvar (i, t, ve)), va
 
-  | Pvar (b, id) ->
-    g (Pvar (b, id)), accu
+  | Pvar (b, vs, v) ->
+    g (Pvar (b, vs, v)), accu
 
   | Parray l ->
     let (lp, la) = List.fold_left

@@ -1,0 +1,16 @@
+archetype nested_for
+
+asset myasset {
+  id : int;
+  v : string;
+}
+
+action exec (col : myasset collection) {
+  effect {
+    for c in col do
+      for d in col do
+        require(c.v = d.v)
+      done
+    done
+  }
+}
