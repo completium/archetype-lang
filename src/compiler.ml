@@ -214,7 +214,7 @@ let generate_target model =
     |> eval_variable_initial_value
     |> generate_storage
     |> replace_declvar_by_letin
-    |> add_explicit_sort
+    (* |> add_explicit_sort *)
     (* |> remove_enum_matchwith *)
     (* |> remove_fun_dotasset *)
     |> replace_lit_address_by_role
