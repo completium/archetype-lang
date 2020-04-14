@@ -30,7 +30,7 @@ asset early identified by eobservation {
 } with {
   i1 : 0 <= trigger <= 1;
   i2 : 0 <= value   <= 1;
-} initialized by [
+} initialized by {
   { 2018-03-14T00:00:00; 2018-03-28T00:00:00; 0.95; 1 };
   { 2018-06-14T00:00:00; 2018-06-28T00:00:00; 0.95; 1 };
   { 2018-09-14T00:00:00; 2018-09-28T00:00:00; 0.95; 1 };
@@ -40,7 +40,7 @@ asset early identified by eobservation {
   { 2019-09-16T00:00:00; 2020-09-30T00:00:00; 0.70; 1 };
   { 2019-12-16T00:00:00; 2020-01-02T00:00:00; 0.70; 1 };
   { 2020-03-16T00:00:00; 2020-03-30T00:00:00; 0.70; 1 }
-]
+}
 
 asset interest identified by iobservation {
   iobservation : date;
@@ -49,7 +49,7 @@ asset interest identified by iobservation {
   rate        : rational;
 } with {
   i3 : 0 <= barrier <= 1;
-} initialized by [
+} initialized by {
   { 2017-06-14T00:00:00; 2017-06-28T00:00:00; 0.5; 2.025  };
   { 2017-09-14T00:00:00; 2017-09-28T00:00:00; 0.5; 4.05   };
   { 2017-12-14T00:00:00; 2018-01-02T00:00:00; 0.5; 6.075  };
@@ -62,7 +62,7 @@ asset interest identified by iobservation {
   { 2019-09-16T00:00:00; 2019-09-30T00:00:00; 0.5; 20.25  };
   { 2019-12-16T00:00:00; 2020-01-02T00:00:00; 0.5; 22.275 };
   { 2020-03-16T00:00:00; 2020-03-30T00:00:00; 0.5; 24.3   }
-]
+}
 
 (* underlyings values *)
 asset fixing identified by fobservation {
