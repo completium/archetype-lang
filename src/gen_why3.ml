@@ -1142,6 +1142,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Mfail NoTransfer           -> Traise Enotransfer
     | Mfail (InvalidCondition _) -> Traise Einvalidcondition
     | Mfail InvalidState         -> Traise Einvalidstate
+    | Mfail (Invalid { node = M.Mstring msg; type_=_ }) -> Traise (Einvalid (Some msg))
     | Mfail               _ -> error_not_translated "Mfail"
     | Mtransfer (a, t) -> Ttransfer(map_mterm m ctx a, map_mterm m ctx t)
     | Mentrycall (_, d, _, _, _) -> Tcall (map_mterm m ctx d)
@@ -2775,6 +2776,7 @@ let fold_exns m body : term list =
     | M.Mfail NoTransfer -> acc @ [Texn Enotransfer]
     | M.Mfail (InvalidCondition _) -> acc @ [Texn Einvalidcondition]
     | M.Mfail InvalidState -> acc @ [Texn Einvalidstate]
+    | Mfail (Invalid _) -> acc @ [Texn (Einvalid None)]
     | _ -> M.fold_term internal_fold_exn acc term in
   Tools.List.dedup (internal_fold_exn [] body)
 

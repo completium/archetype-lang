@@ -8,6 +8,7 @@ type exn =
   | Einvalidstate
   | Enotransfer
   | Ebreak
+  | Einvalid of string option
 [@@deriving show {with_path = false}]
 
 type fmod =

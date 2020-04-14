@@ -167,13 +167,15 @@ let pp_type fmt typ =
 let pp_exn fmt e =
   let e_str =
     match e with
-    | Ekeyexist         -> "KeyExist"
-    | Enotfound         -> "NotFound"
-    | Einvalidcaller    -> "InvalidCaller"
-    | Einvalidcondition -> "InvalidCondition"
-    | Einvalidstate     -> "InvalidState"
-    | Enotransfer       -> "NoTransfer"
-    | Ebreak            -> "Break"
+    | Ekeyexist           -> "KeyExist"
+    | Enotfound           -> "NotFound"
+    | Einvalidcaller      -> "InvalidCaller"
+    | Einvalidcondition   -> "InvalidCondition"
+    | Einvalidstate       -> "InvalidState"
+    | Enotransfer         -> "NoTransfer"
+    | Ebreak              -> "Break"
+    | Einvalid (Some msg) -> "(Invalid \""^msg^"\")"
+    | Einvalid None       -> "Invalid"
   in
   pp_str fmt e_str
 
