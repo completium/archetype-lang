@@ -771,7 +771,7 @@ type txeffect = {
 type 'env tactiondecl = {
   ad_name   : M.lident;
   ad_args   : (M.lident * M.ptyp) list;
-  ad_callby : (ident option) loced list;
+  ad_callby : (M.pterm option) loced list;
   ad_effect : [`Raw of M.instruction | `Tx of transition] option;
   ad_funs   : 'env fundecl option list;
   ad_reqs   : (M.lident option * M.pterm) list;
@@ -3275,16 +3275,11 @@ let rec for_callby (env : env) (cb : PT.expr) =
   match unloc cb with
   | Eany -> [mkloc (loc cb) None]
 
-  | Eterm ((None, None), name) ->
-    let cb = Option.get_as_list (for_role env name) in
-    List.map (fun x -> mkloc (loc x) (Some (unloc x))) cb
-
   | Eapp (Foperator { pldesc = Logical Or }, [e1; e2]) ->
     (for_callby env e1) @ (for_callby env e2)
 
   | _ ->
-    Env.emit_error env (loc cb, InvalidCallByExpression);
-    []
+    [mkloc (loc cb) (Some (for_expr env ~ety:M.vtrole cb))]
 
 (* -------------------------------------------------------------------- *)
 let for_action_properties (env, poenv : env * env) (act : PT.action_properties) =
@@ -4065,14 +4060,9 @@ let transactions_of_tdecls tdecls =
   let for_calledby cb : M.rexpr option =
     match cb with [] -> None | c :: cb ->
 
-      let for1 = fun (x : ident option loced) ->
+      let for1 = fun (x : M.pterm option loced) ->
         let node =
-          match unloc x with
-          | None ->
-            M.Rany
-          | Some _id -> (* FIXME *)
-            M.Rany
-            (* M.Rqualid (M.mk_sp ~loc:(loc x) (M.Qident (mkloc (loc x) id))) *)
+          Option.get_dfl M.Rany (Option.map (fun e -> M.Rexpr e) (unloc x))
         in M.mk_sp ~loc:(loc x) node in
 
       let aout = List.fold_left
