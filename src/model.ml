@@ -212,6 +212,7 @@ type ('id, 'term) mterm_node  =
   | Maddupdate        of ident * 'term * ('id * assignment_operator * 'term) list
   (* asset api expression *)
   | Mget              of ident * 'term * 'term
+  (*| Mselect           of ident * 'term * ((ident * type_) list * 'term) *) (* asset_name, view, lambda *)
   | Mselect           of ident * 'term * 'term
   | Msort             of ident * 'term * (ident * sort_kind) list
   | Mcontains         of ident * 'term * 'term
@@ -343,6 +344,7 @@ and api_asset =
   | UpdateClear      of ident * ident
   | ToKeys           of ident
   | ColToKeys        of ident
+  (* | Select           of ident * ident list * mterm *)
   | Select           of ident * mterm
   | Sort             of ident * (ident * sort_kind) list
   | Contains         of ident

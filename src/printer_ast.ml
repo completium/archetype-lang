@@ -604,8 +604,9 @@ let pp_specification fmt (v : lident specification) =
               && List.is_empty v.theorems
               && List.is_empty v.variables
               && List.is_empty v.invariants
-              && List.is_empty v.asserts
+              && Option.is_none v.effect
               && List.is_empty v.specs
+              && List.is_empty v.asserts
   in
   let pp_predicate fmt (p : lident predicate) =
     Format.fprintf fmt "predicate %a (%a) =@\n  @[%a@]"
@@ -668,7 +669,7 @@ let pp_specification fmt (v : lident specification) =
                     pp_id id
                     pp_label_term lt
                 )) l)) v.invariants
-      (pp_option (fun fmt -> Format.fprintf fmt "shadow effect {@\n  @[%a@]}@\n" pp_instruction)) v.effect
+      (pp_option (fun fmt -> Format.fprintf fmt "shadow effect {@\n  @[%a@]@\n}@\n" pp_instruction)) v.effect
       (pp_no_empty_list2 pp_assert) v.asserts
       (pp_no_empty_list2 pp_postcondition) v.specs
 
