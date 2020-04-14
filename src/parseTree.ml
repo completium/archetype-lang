@@ -183,8 +183,9 @@ and specification_item_unloc =
   | Vvariable of lident * type_t * expr option
   | Veffect of expr
   | Vassert of (lident * expr * invariants * lident list)
-  | Vpostcondition of (lident * expr * invariants * lident list)
-  | Vcontractinvariant of (lident * expr * invariants * lident list)
+  | Vpostcondition of (lident * expr * invariants * lident list * postkind option)
+
+and postkind = PKPost | PKInv
 
 and specification_item = specification_item_unloc loced
 

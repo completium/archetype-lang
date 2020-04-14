@@ -378,11 +378,11 @@ function_decl:
 
 %inline spec_postcondition:
 | POSTCONDITION id=ident sp=braced(spec_body)
-    { let e, xs, u = sp in Vpostcondition (id, e, xs, u) }
+    { let e, xs, u = sp in Vpostcondition (id, e, xs, u, Some PKPost) }
 
 %inline spec_contract_invariant:
 | CONTRACT INVARIANT id=ident sp=braced(spec_body)
-    { let e, xs, u = sp in Vcontractinvariant (id, e, xs, u) }
+    { let e, xs, u = sp in Vpostcondition (id, e, xs, u, Some PKInv) }
 
 spec_items:
 | ds=loc(spec_definition)*
@@ -403,7 +403,7 @@ spec_items:
     xs=label_exprs_non_empty RBRACE
         { let ll = List.map (fun x ->
             let loc, (lbl, e) = Location.deloc x in
-            mkloc loc (Vpostcondition (lbl, e, [], []))) xs in
+            mkloc loc (Vpostcondition (lbl, e, [], [], None))) xs in
             (ll, exts) }
 
 specification_fun:

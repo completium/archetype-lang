@@ -229,6 +229,8 @@ type opsig = {
 (* -------------------------------------------------------------------- *)
 type error_desc =
   | AlienPattern
+  | AnonymousFieldInEffect
+  | AssertInGlobalSpec
   | AssetExpected                      of M.ptyp
   | AssetWithoutFields
   | BeforeOrLabelInExpr
@@ -241,6 +243,7 @@ type error_desc =
   | CannotInfer
   | CannotUpdatePKey
   | CollectionExpected
+  | ContractInvariantInLocalSpec
   | DoesNotSupportMethodCall
   | DivergentExpr
   | DuplicatedArgName                  of ident
@@ -251,7 +254,7 @@ type error_desc =
   | DuplicatedInitMarkForCtor
   | DuplicatedPKey
   | DuplicatedVarDecl                  of ident
-  | AnonymousFieldInEffect
+  | EffectInGlobalSpec
   | EmptyEnumDecl
   | ExpressionExpected
   | ForeignState                       of ident option * ident option
@@ -309,6 +312,7 @@ type error_desc =
   | OpInRecordLiteral
   | OrphanedLabel                      of ident
   | PartialMatch                       of ident list
+  | PostConditionInGlobalSpec
   | ReadOnlyGlobal                     of ident
   | SecurityInExpr
   | SpecOperatorInExpr
@@ -368,6 +372,8 @@ let pp_error_desc fmt e =
 
   match e with
   | AlienPattern                       -> pp "This pattern does not belong to the enumeration"
+  | AnonymousFieldInEffect             -> pp "Anonymous field in effect"
+  | AssertInGlobalSpec                 -> pp "Assertions specification at global level are forbidden"
   | AssetExpected ty                   -> pp "Asset expected (found a %a)" Printer_ast.pp_ptyp ty
   | AssetWithoutFields                 -> pp "Asset without fields"
   | BeforeIrrelevant `Local            -> pp "The `before' modifier cannot be used on local variables"
@@ -381,6 +387,7 @@ let pp_error_desc fmt e =
   | CannotInfer                        -> pp "Cannot infer type"
   | CannotUpdatePKey                   -> pp "Cannot modify the primary key of asset"
   | CollectionExpected                 -> pp "Collection expected"
+  | ContractInvariantInLocalSpec       -> pp "Contract invariants at local levl are forbidden"
   | DoesNotSupportMethodCall           -> pp "Cannot use method calls on this kind of objects"
   | DivergentExpr                      -> pp "Divergent expression"
   | DuplicatedArgName x                -> pp "Duplicated argument name: %s" x
@@ -391,7 +398,7 @@ let pp_error_desc fmt e =
   | DuplicatedInitMarkForCtor          -> pp "Duplicated 'initialized by' section for asset"
   | DuplicatedPKey                     -> pp "Duplicated key"
   | DuplicatedVarDecl i                -> pp "Duplicated variable declaration: %a" pp_ident i
-  | AnonymousFieldInEffect             -> pp "Anonymous field in effect"
+  | EffectInGlobalSpec                 -> pp "(Shadow) effects at global level are forbidden"
   | EmptyEnumDecl                      -> pp "Empty state/enum declaration"
   | ExpressionExpected                 -> pp "Expression expected"
   | ForeignState (i1, i2)              -> pp "Expecting a state of %a, not %a" pp_ident (Option.get_dfl "<global>" i1) pp_ident (Option.get_dfl "<global>" i2)
@@ -446,6 +453,7 @@ let pp_error_desc fmt e =
   | OpInRecordLiteral                  -> pp "Operation in record literal"
   | OrphanedLabel i                    -> pp "Label not used: %a" pp_ident i
   | PartialMatch ps                    -> pp "Partial match (%a)" (Printer_tools.pp_list ", " pp_ident) ps
+  | PostConditionInGlobalSpec          -> pp "Post-conditions at global level are forbidden"
   | ReadOnlyGlobal i                   -> pp "Global is read only: %a" pp_ident i
   | SecurityInExpr                     -> pp "Found securtiy predicate in expression"
   | SpecOperatorInExpr                 -> pp "Specification operator in expression"
@@ -2998,12 +3006,14 @@ let for_effect (env : env) (effect : PT.expr) =
       let env, i = for_instruction env effect in (env, (env, i)))
 
 (* -------------------------------------------------------------------- *)
+type spmode = [`Global | `Local]
+
 let for_specification_item
-    (env, poenv : env * env) (v : PT.specification_item)
+    (mode : spmode) (env, poenv : env * env) (v : PT.specification_item)
   : (env * env) * env ispecification
   =
   match unloc v with
-  | PT.Vpredicate (x, args, f) -> (* EV *)
+  | PT.Vpredicate (x, args, f) ->
     let env, (args, f) =
       Env.inscope env (fun env ->
           let env, args = for_args_decl env args in
@@ -3012,7 +3022,7 @@ let for_specification_item
           (env, (args, f)))
     in (env, poenv), `Predicate (x, args, f)
 
-  | PT.Vdefinition (x, ty, y, f) -> (* EV *)
+  | PT.Vdefinition (x, ty, y, f) ->
     let env, (arg, f) =
       Env.inscope env (fun env ->
           let env, arg = for_arg_decl env (y, ty, None) in
@@ -3020,7 +3030,7 @@ let for_specification_item
           (env, (arg, f)))
     in ((env, poenv), `Definition (x, arg, f))
 
-  | PT.Vvariable (x, ty, e) ->  (* EV *)
+  | PT.Vvariable (x, ty, e) ->
     let ty = for_type env ty in
     let e  = Option.map (for_expr env ?ety:ty) e in
     let poenv =
@@ -3029,7 +3039,9 @@ let for_specification_item
 
     in ((env, poenv), `Variable (x, e))
 
-  | PT.Vassert (x, f, invs, uses) -> begin (* ACTION *)
+  | PT.Vassert (x, f, invs, uses) -> begin
+      if mode = `Global then
+        Env.emit_error env (loc x, AssertInGlobalSpec);
       let env0 =
         match Env.Label.lookup env (unloc x) with
         | None ->
@@ -3048,13 +3060,21 @@ let for_specification_item
       ((env, poenv), `Assert (x, f, invs, uses))
     end
 
-  | PT.Veffect i ->             (* SHADOW / ACTION *)
+  | PT.Veffect i ->
+    if mode = `Global then
+      Env.emit_error env (loc i, EffectInGlobalSpec);
     (* FIXME: we are not properly tracking labels here *)
     let _, ((poenv, _) as i) = for_effect poenv i in
     ((env, poenv), `Effect i)
 
-  | PT.Vpostcondition (x, f, invs, uses) (* ACTION *)
-  | PT.Vcontractinvariant (x, f, invs, uses) -> (* TOP-LEVEL *)
+  | PT.Vpostcondition (x, f, invs, uses, kind) -> begin
+    begin match kind, mode with
+    | Some PKInv, `Local ->
+        Env.emit_error env (loc x, ContractInvariantInLocalSpec)
+    | Some PKPost, `Global ->
+        Env.emit_error env (loc x, PostConditionInGlobalSpec)
+    | _, _ -> () end;
+
     let for_inv (lbl, linvs) =
       let env0 =
         match Env.Label.lookup env (unloc lbl) with
@@ -3074,11 +3094,12 @@ let for_specification_item
     let f    = for_formula poenv f in
     let invs = List.map for_inv invs in
     ((env, poenv), `Postcondition (x, f, invs, uses))
+    end
 
 (* -------------------------------------------------------------------- *)
-let for_specification ((env, poenv) : env * env) (v : PT.specification) =
+let for_specification mode ((env, poenv) : env * env) (v : PT.specification) =
   let (env, _), items =
-    List.fold_left_map for_specification_item (env, poenv) (fst (unloc v))
+    List.fold_left_map (for_specification_item mode) (env, poenv) (fst (unloc v))
   in (env, items)
 
 (* -------------------------------------------------------------------- *)
@@ -3257,7 +3278,7 @@ let for_function (env : env) (fdecl : PT.s_function loced) =
             vr_core = None;
           } in Env.Var.push poenv decl
         ) env in
-        Option.foldmap (fun env -> for_specification (env, poenv)) env fdecl.spec in
+        Option.foldmap (fun env -> for_specification `Local (env, poenv)) env fdecl.spec in
 
       if Option.is_some rty && not (List.exists Option.is_none args) then
         if check_and_emit_name_free env fdecl.name then
@@ -3287,7 +3308,7 @@ let for_action_properties (env, poenv : env * env) (act : PT.action_properties) 
   let env, req  = Option.foldmap for_lbls_bexpr env (Option.fst act.require) in
   let env, fai  = Option.foldmap for_lbls_bexpr env (Option.fst act.failif) in
   let env, spec = Option.foldmap
-      (fun env x -> for_specification (env, poenv) x) env act.spec_fun in
+      (fun env x -> for_specification `Local (env, poenv) x) env act.spec_fun in
   let env, funs = List.fold_left_map for_function env act.functions in
 
   (env, (calledby, req, fai, spec, funs))
@@ -3772,7 +3793,7 @@ let for_acttxs_decl (env : env) (decls : acttx loced list) =
 (* -------------------------------------------------------------------- *)
 let for_specs_decl (env as poenv : env) (decls : PT.specification loced list) =
   List.fold_left_map
-    (fun env { pldesc = x } -> for_specification (env, poenv) x)
+    (fun env { pldesc = x } -> for_specification `Global (env, poenv) x)
     env decls
 
 (* -------------------------------------------------------------------- *)

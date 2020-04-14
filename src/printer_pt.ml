@@ -804,9 +804,14 @@ let pp_specification_item fmt = function
 
   | Vassert (id, f, is, u) -> pp_assert fmt (id, f, is, u)
 
-  | Vpostcondition (id, f, xs, u) -> pp_postcondition fmt (id, f, xs, u)
+  | Vpostcondition (id, f, xs, u, Some PKPost) ->
+       pp_postcondition fmt (id, f, xs, u)
 
-  | Vcontractinvariant (id, f, xs, u) -> pp_contractinvariant fmt (id, f, xs, u)
+  | Vpostcondition (id, f, xs, u, Some PKInv) ->
+      pp_contractinvariant fmt (id, f, xs, u)
+
+  | Vpostcondition (id, f, xs, u, None) ->
+      pp_pc_ci fmt ("", id, f, xs, u)
 
 let pp_specification_items = pp_list "@\n@\n" pp_specification_item
 

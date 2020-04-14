@@ -177,7 +177,7 @@ let mk_outline_from_specification (spec : PT.specification) =
       let l, v = Location.deloc i in
       match v with
       | Vassert (id, _, ivs, _)
-      | Vpostcondition (id, _, ivs, _) ->
+      | Vpostcondition (id, _, ivs, _, Some PKPost) ->
         [(mk_outline (Location.unloc id, symbol_kind_to_int Property, l))]
         @ mk_outline_from_invariants ivs
         @ accu
