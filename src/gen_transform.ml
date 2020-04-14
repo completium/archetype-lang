@@ -1883,13 +1883,17 @@ let replace_for_to_iter (model : model) : model =
       let type_asset = Tasset asset_name in
       let type_col = Tcontainer (type_asset,Collection) in
       let type_view = Tcontainer (type_asset,View) in
-      let col = mk_mterm (Mcast (type_col,type_view,col)) type_view in
+      let view =
+        begin match col.type_ with
+        | Tcontainer (_,Collection) -> mk_mterm (Mcast (type_col,type_view,col)) type_view
+        | _ -> col
+        end in
       let idx_id = "_i_" ^ lbl in
       let idx = mk_mterm (Mvarlocal (dumloc idx_id)) (Tbuiltin Bint) in
-      let nth = mk_mterm (Mnth(an, idx, col)) type_asset in
+      let nth = mk_mterm (Mnth(an, idx, view)) type_asset in
       let letin = mk_mterm (Mletin ([id], nth, Some type_asset, nbody, None)) Tunit in
       let bound_min = mk_mterm (Mint Big_int.zero_big_int) (Tbuiltin Bint) in
-      let bound_max = mk_mterm (Mcount (an, col)) (Tbuiltin Bint) in
+      let bound_max = mk_mterm (Mcount (an, view)) (Tbuiltin Bint) in
       let iter = Miter (dumloc idx_id, bound_min, bound_max, letin, Some lbl) in
       mk_mterm iter mt.type_
     | _ -> map_mterm (aux ctx) mt
