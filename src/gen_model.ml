@@ -354,8 +354,8 @@ let to_model (ast : A.model) : M.model =
       let fq = f q in
       let asset_name = extract_asset_name fp in
       if formula
-      then M.Mapifselect (asset_name, fp, fq)
-      else M.Mselect (asset_name, fp, fq)
+      then M.Mapifselect (asset_name, fp, [], fq, [])
+      else M.Mselect (asset_name, fp, [], fq, [])
 
     | A.Pcall (Some p, A.Cconst (A.Csort), args) when is_asset_container p ->
       let fp = f p in
@@ -640,7 +640,7 @@ let to_model (ast : A.model) : M.model =
       let fp = f p in
       let fq = f q in
       let asset_name = extract_asset_name fp in
-      M.Mremoveif (asset_name, fp, fq)
+      M.Mremoveif (asset_name, fp, [], fq, [])
 
     | A.Icall (Some p, A.Cconst (A.Cprepend), [AExpr q]) when is_list p -> (
         let fp = f p in

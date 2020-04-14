@@ -560,7 +560,7 @@ let is_local_invariant _m an t =
     match term.M.node with
     | M.Mforall (_i,M.Tasset a,_,_b) -> not (compare (a |> unloc) an = 0)
     | M.Msum (a,_,_) -> not (compare a an = 0)
-    | M.Mselect (a,_,_) -> not (compare a an = 0)
+    | M.Mselect (a, _, _, _, _) -> not (compare a an = 0)
     | _ -> M.fold_term internal_is_local acc term in
   internal_is_local true t
 
@@ -1264,9 +1264,9 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
 
     | Mget (an, _c, k) -> Tapp (loc_term (Tvar ("get_" ^ an)),[map_mterm m ctx k])
 
-    | Mselect (a, l, r) ->
-      let args = extract_args r in
-      let id = mk_select_name m a r in
+    | Mselect (a, l, _la, lb, _a) ->
+      let args = extract_args lb in
+      let id = mk_select_name m a lb in
       let argids = args |> List.map (fun (e, _, _) -> e) |> List.map (map_mterm m ctx) in
       Tapp (loc_term (Tvar id), argids @ [map_mterm m ctx l])
 
@@ -1507,7 +1507,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Mapifget (a, _c, k) -> Tapp (loc_term (Tvar ("get_" ^ a)),[map_mterm m ctx k])
     | Mapifsubsetof (n, l, r) -> Tsubset (with_dummy_loc n, map_mterm m ctx l, map_mterm m ctx r)
     | Mapifisempty (l, r) -> Tempty (with_dummy_loc l, map_mterm m ctx r)
-    | Mapifselect (a, l, r) ->  let args = extract_args r in
+    | Mapifselect (a, l, _, r, _) ->  let args = extract_args r in
       let id = mk_select_name m a r in
       let argids = args |> List.map (fun (e, _, _) -> e) |> List.map (map_mterm m ctx) in
       Tapp (loc_term (Tvar id), argids @ [map_mterm m ctx l])
@@ -2691,7 +2691,7 @@ let mk_storage_api (m : M.model) records =
       | M.APIAsset (Contains n) ->
         let t         =  M.Utils.get_asset_key m n |> snd |> map_btype in
         acc @ [ mk_contains n t ]
-      | M.APIAsset (Select (asset,test)) ->
+      | M.APIAsset (Select (asset, _, test)) ->
         let mlw_test = map_mterm m init_ctx test in
         acc @ [ mk_select m asset test (mlw_test |> unloc_term) (match sc.api_loc with | OnlyFormula -> true | ExecFormula | OnlyExec -> false) ]
       | M.APIAsset (Sort (asset,field)) ->

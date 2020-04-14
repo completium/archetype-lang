@@ -555,14 +555,16 @@ let pp_mterm fmt (mt : mterm) =
       in
       pp fmt (an, k, l)
 
-    | Mremoveif (an, fn, i) ->
-      let pp fmt (an, fn, i) =
-        Format.fprintf fmt "removeif_%a (%a) (%a)"
+    | Mremoveif (an, c, la, lb, a) ->
+      let pp fmt (an, c, la, lb, a) =
+        Format.fprintf fmt "remove_if_%a (%a, ((%a) -> %a)(%a))"
           pp_str an
-          f fn
-          f i
+          f c
+          (pp_list ", " (fun fmt (id, t) -> Format.fprintf fmt "%s : %a" id pp_type t)) la
+          f lb
+          (pp_list ", " f) a
       in
-      pp fmt (an, fn, i)
+      pp fmt (an, c, la, lb, a)
 
     | Maddupdate (an, k, l) ->
       let pp fmt (an, k, l) =
@@ -585,14 +587,16 @@ let pp_mterm fmt (mt : mterm) =
       in
       pp fmt (an, c, k)
 
-    | Mselect (an, c, p) ->
-      let pp fmt (an, c, p) =
-        Format.fprintf fmt "select_%a (%a, %a)"
+    | Mselect (an, c, la, lb, a) ->
+      let pp fmt (an, c, la, lb, a) =
+        Format.fprintf fmt "select_%a (%a, ((%a) -> %a)(%a))"
           pp_str an
           f c
-          f p
+          (pp_list ", " (fun fmt (id, t) -> Format.fprintf fmt "%s : %a" id pp_type t)) la
+          f lb
+          (pp_list ", " f) a
       in
-      pp fmt (an, c, p)
+      pp fmt (an, c, la, lb, a)
 
     | Msort (an, c, l) ->
       let pp fmt (an, c, l) =
@@ -1016,14 +1020,16 @@ let pp_mterm fmt (mt : mterm) =
       in
       pp fmt (l, r)
 
-    | Mapifselect (an, c, p) ->
-      let pp fmt (an, c, p) =
-        Format.fprintf fmt "apifselect_%a (%a, %a)"
+    | Mapifselect (an, c, la, lb, a) ->
+      let pp fmt (an, c, la, lb, a) =
+        Format.fprintf fmt "apifselect_%a (%a, ((%a) -> %a)(%a))"
           pp_str an
           f c
-          f p
+          (pp_list ", " (fun fmt (id, t) -> Format.fprintf fmt "%s : %a" id pp_type t)) la
+          f lb
+          (pp_list ", " f) a
       in
-      pp fmt (an, c, p)
+      pp fmt (an, c, la, lb, a)
 
     | Mapifsort (an, c, l) ->
       let pp fmt (an, c, l) =
@@ -1101,7 +1107,7 @@ let pp_api_asset fmt = function
   | UpdateClear (an, fn) -> pp_str fmt ("clear\t " ^ an ^ " " ^ fn)
   | ToKeys an -> pp_str fmt ("to_keys\t " ^ an)
   | ColToKeys an -> pp_str fmt ("col_to_keys\t " ^ an)
-  | Select (an, p) ->
+  | Select (an, _, p) ->
     Format.fprintf fmt "select\t %s %a" an pp_mterm p
   | Sort (an, l) -> Format.fprintf fmt "sort\t%a on %a" pp_str an (pp_list ", " (fun fmt (a, b) -> Format.fprintf fmt "%a(%a)" pp_sort_kind b pp_ident a)) l
   | Contains an -> pp_str fmt ("contains " ^ an)

@@ -208,12 +208,11 @@ type ('id, 'term) mterm_node  =
   | Mclearfield       of ident * ident * 'term
   | Mset              of ident * ident list * 'term * 'term (*asset_name * field_name modified * ... *)
   | Mupdate           of ident * 'term * ('id * assignment_operator * 'term) list
-  | Mremoveif         of ident * 'term * 'term
+  | Mremoveif         of ident * 'term * (ident * type_) list * 'term * 'term list
   | Maddupdate        of ident * 'term * ('id * assignment_operator * 'term) list
   (* asset api expression *)
   | Mget              of ident * 'term * 'term
-  (*| Mselect           of ident * 'term * ((ident * type_) list * 'term) *) (* asset_name, view, lambda *)
-  | Mselect           of ident * 'term * 'term
+  | Mselect           of ident * 'term * (ident * type_) list * 'term * 'term list (* asset_name, view, lambda (args, body, apply_args) *)
   | Msort             of ident * 'term * (ident * sort_kind) list
   | Mcontains         of ident * 'term * 'term
   | Mnth              of ident * 'term * 'term
@@ -299,7 +298,7 @@ type ('id, 'term) mterm_node  =
   | Mapifget          of ident * 'term * 'term (* asset_name * asset collection * value *)
   | Mapifsubsetof     of ident * 'term * 'term
   | Mapifisempty      of ident * 'term
-  | Mapifselect       of ident * 'term * 'term
+  | Mapifselect       of ident * 'term * (ident * type_) list * 'term * 'term list
   | Mapifsort         of ident * 'term * (ident * sort_kind) list
   | Mapifcontains     of ident * 'term * 'term
   | Mapifnth          of ident * 'term * 'term
@@ -344,8 +343,7 @@ and api_asset =
   | UpdateClear      of ident * ident
   | ToKeys           of ident
   | ColToKeys        of ident
-  (* | Select           of ident * ident list * mterm *)
-  | Select           of ident * mterm
+  | Select           of ident * (ident * type_) list * mterm
   | Sort             of ident * (ident * sort_kind) list
   | Contains         of ident
   | Nth              of ident
@@ -1021,10 +1019,10 @@ let cmp_mterm_node
     | Mset (c1, l1, k1, v1), Mset (c2, l2, k2, v2)                                     -> cmp_ident c1 c2 && List.for_all2 cmp_ident l1 l2 && cmp k1 k2 && cmp v1 v2
     | Mupdate (an1, k1, l1), Mupdate (an2, k2, l2)                                     -> cmp_ident an1 an2 && cmp k1 k2 && List.for_all2 (fun (id1, op1, v1) (id2, op2, v2) -> cmpi id1 id2 && cmp_assign_op op1 op2 && cmp v1 v2) l1 l2
     | Maddupdate (an1, k1, l1), Maddupdate (an2, k2, l2)                               -> cmp_ident an1 an2 && cmp k1 k2 && List.for_all2 (fun (id1, op1, v1) (id2, op2, v2) -> cmpi id1 id2 && cmp_assign_op op1 op2 && cmp v1 v2) l1 l2
-    | Mremoveif (an1, fn1, i1), Mremoveif (an2, fn2, i2)                               -> cmp_ident an1 an2 && cmp fn1 fn2 && cmp i1 i2
+    | Mremoveif (an1, c1, la1, lb1, a1), Mremoveif (an2, c2, la2, lb2, a2)             -> cmp_ident an1 an2 && cmp c1 c2 && List.for_all2 (fun (i1, t1) (i2, t2) -> cmp_ident i1 i2 && cmp_type t1 t2) la1 la2 && cmp lb1 lb2 && List.for_all2 cmp a1 a2
     (* asset api expression *)
     | Mget (an1, c1, k1), Mget (an2, c2, k2)                                           -> cmp_ident an1 an2 && cmp c1 c2 && cmp k1 k2
-    | Mselect (an1, c1, p1), Mselect (an2, c2, p2)                                     -> cmp_ident an1 an2 && cmp c1 c2 && cmp p1 p2
+    | Mselect (an1, c1, la1, lb1, a1), Mselect (an2, c2, la2, lb2, a2)                 -> cmp_ident an1 an2 && cmp c1 c2 && List.for_all2 (fun (i1, t1) (i2, t2) -> cmp_ident i1 i2 && cmp_type t1 t2) la1 la2 && cmp lb1 lb2 && List.for_all2 cmp a1 a2
     | Msort (an1, c1, l1), Msort (an2, c2, l2)                                         -> cmp_ident an1 an2 && cmp c1 c2 && List.for_all2 (fun (fn1, k1) (fn2, k2) -> cmp_ident fn1 fn2 && k1 = k2) l1 l2
     | Mcontains (an1, c1, i1), Mcontains (an2, c2, i2)                                 -> cmp_ident an1 an2 && cmp c1 c2 && cmp i1 i2
     | Mnth (an1, c1, i1), Mnth (an2, c2, i2)                                           -> cmp_ident an1 an2 && cmp c1 c2 && cmp i1 i2
@@ -1110,7 +1108,7 @@ let cmp_mterm_node
     | Mapifget (a1, c1, k1), Mapifget (a2, c2, k2)                                     -> cmp_ident a1 a2 && cmp c1 c2 && cmp k1 k2
     | Mapifsubsetof (an1, c1, i1), Mapifsubsetof (an2, c2, i2)                         -> cmp_ident an1 an2 && cmp c1 c2 && cmp i1 i2
     | Mapifisempty (l1, r1), Mapifisempty (l2, r2)                                     -> cmp_ident l1 l2 && cmp r1 r2
-    | Mapifselect (an1, c1, p1), Mapifselect (an2, c2, p2)                             -> cmp_ident an1 an2 && cmp c1 c2 && cmp p1 p2
+    | Mapifselect (an1, c1, la1, lb1, a1), Mapifselect (an2, c2, la2, lb2, a2)         -> cmp_ident an1 an2 && cmp c1 c2 && List.for_all2 (fun (i1, t1) (i2, t2) -> cmp_ident i1 i2 && cmp_type t1 t2) la1 la2 && cmp lb1 lb2 && List.for_all2 cmp a1 a2
     | Mapifsort (an1, c1, l1), Mapifsort (an2, c2, l2)                                 -> cmp_ident an1 an2 && cmp c1 c2 && List.for_all2 (fun (fn1, k1) (fn2, k2) -> cmp_ident fn1 fn2 && k1 = k2) l1 l2
     | Mapifcontains (an1, c1, i1), Mapifcontains (an2, c2, i2)                         -> cmp_ident an1 an2 && cmp c1 c2 && cmp i1 i2
     | Mapifnth (an1, c1, i1), Mapifnth (an2, c2, i2)                                   -> cmp_ident an1 an2 && cmp c1 c2 && cmp i1 i2
@@ -1138,7 +1136,7 @@ let cmp_api_item_node (a1 : api_storage_node) (a2 : api_storage_node) : bool =
     | UpdateClear (an1, fn1), UpdateClear (an2, fn2)   -> cmp_ident an1 an2 && cmp_ident fn1 fn2
     | ToKeys an1, ToKeys an2                           -> cmp_ident an1 an2
     | ColToKeys an1, ColToKeys an2                     -> cmp_ident an1 an2
-    | Select (an1, p1), Select (an2, p2)               -> cmp_ident an1 an2 && cmp_mterm p1 p2
+    | Select (an1, l1, p1), Select (an2, l2, p2)       -> cmp_ident an1 an2 && List.for_all2 (fun (i1, t1) (i2, t2) -> cmp_ident i1 i2 && cmp_type t1 t2) l1 l2 && cmp_mterm p1 p2
     | Sort (an1 , l1), Sort (an2 , l2)                 -> cmp_ident an1 an2 && List.for_all2 (fun (fn1, k1) (fn2, k2) -> cmp_ident fn1 fn2 && k1 = k2) l1 l2
     | Contains an1, Contains an2                       -> cmp_ident an1 an2
     | Nth an1, Nth an2                                 -> cmp_ident an1 an2
@@ -1301,11 +1299,11 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Mclearfield (an, fn, a)        -> Mclearfield (fi an, fi fn, f a)
   | Mset (an, l, k, v)             -> Mset (fi an, List.map fi l, f k, f v)
   | Mupdate (an, k, l)             -> Mupdate (fi an, f k, List.map (fun (id, op, v) -> (g id, op, f v)) l)
-  | Mremoveif (an, fn, i)          -> Mremoveif (fi an, f fn, f i)
+  | Mremoveif (an, c, la, lb, a)   -> Mremoveif (fi an, f c, List.map (fun (i, t) -> (fi i, ft t)) la, f lb, List.map f a)
   | Maddupdate (an, k, l)          -> Maddupdate (fi an, f k, List.map (fun (id, op, v) -> (g id, op, f v)) l)
   (* asset api expression *)
   | Mget (an, c, k)                -> Mget (fi an, f c, f k)
-  | Mselect (an, c, p)             -> Mselect (fi an, f c, f p)
+  | Mselect (an, c, la, lb, a)     -> Mselect (fi an, f c, List.map (fun (i, t) -> (fi i, ft t)) la, f lb, List.map f a)
   | Msort (an, c, l)               -> Msort (fi an, f c, l)
   | Mcontains (an, c, i)           -> Mcontains (fi an, f c, f i)
   | Mnth (an, c, i)                -> Mnth (fi an, f c, f i)
@@ -1391,7 +1389,7 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Mapifget (an, c, k)            -> Mapifget      (fi an, f c, f k)
   | Mapifsubsetof (an, c, i)       -> Mapifsubsetof (fi an, f c, f i)
   | Mapifisempty (an, r)           -> Mapifisempty  (fi an, f r)
-  | Mapifselect (an, c, p)         -> Mapifselect   (fi an, f c, f p)
+  | Mapifselect (an, c, la, lb, a) -> Mapifselect   (fi an, f c, List.map (fun (i, t) -> (fi i, ft t)) la, f lb, List.map f a)
   | Mapifsort (an, c, l)           -> Mapifsort     (fi an, f c, l)
   | Mapifcontains (an, c, i)       -> Mapifcontains (fi an, f c, f i)
   | Mapifnth (an, c, i)            -> Mapifnth      (fi an, f c, f i)
@@ -1622,11 +1620,11 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mclearfield (_, _, a)                 -> f accu a
   | Mset (_, _, k, v)                     -> f (f accu v) k
   | Mupdate (_, k, l)                     -> List.fold_left (fun accu (_, _, v) -> f accu v) (f accu k) l
-  | Mremoveif (_, fn, c)                  -> f (f accu fn) c
+  | Mremoveif (_, c, _, lb, a)            -> List.fold_left (fun accu x -> f accu x) (f (f accu c) lb) a
   | Maddupdate (_, k, l)                  -> List.fold_left (fun accu (_, _, v) -> f accu v) (f accu k) l
   (* asset api expression *)
   | Mget (_, c, k)                        -> f (f accu c) k
-  | Mselect (_, c, p)                     -> f (f accu c) p
+  | Mselect (_, c, _, lb, a)              -> List.fold_left (fun accu x -> f accu x) (f (f accu c) lb) a
   | Msort (_, c,_)                        -> f accu c
   | Mcontains (_, c, i)                   -> f (f accu c) i
   | Mnth (_, c, i)                        -> f (f accu c) i
@@ -1712,7 +1710,7 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mapifget (_, c, k)                    -> f (f accu c) k
   | Mapifsubsetof (_, c, i)               -> f (f accu c) i
   | Mapifisempty  (_, r)                  -> f accu r
-  | Mapifselect (_, c, p)                 -> f (f accu c) p
+  | Mapifselect (_, c, _, lb, a)          -> List.fold_left (fun accu x -> f accu x) (f (f accu c) lb) a
   | Mapifsort (_, c, _)                   -> f accu c
   | Mapifcontains (_, c, i)               -> f (f accu c) i
   | Mapifnth (_, c, i)                    -> f (f accu c) i
@@ -2114,10 +2112,17 @@ let fold_map_term
     in
     g (Mupdate (an, ke, le)), la
 
-  | Mremoveif (an, fn, i) ->
-    let ie, ia = f accu i in
-    let fe, fa = f ia fn in
-    g (Mremoveif (an, fe, ie)), fa
+  | Mremoveif (an, c, la, lb, a) ->
+    let ce, ca = f accu c in
+    let lbe, lba = f ca lb in
+    let ae, aa =
+      List.fold_left
+        (fun (ae, accu) x ->
+           let xa, accu = f accu x in
+           xa::ae, accu) ([], lba) a
+      |> (fun (x, y) -> (List.rev x, y))
+    in
+    g (Mremoveif (an, ce, la, lbe, ae)), aa
 
   | Maddupdate (an, k, l) ->
     let ke, ka = f accu k in
@@ -2138,10 +2143,17 @@ let fold_map_term
     let ke, ka = f ca k in
     g (Mget (an, ce, ke)), ka
 
-  | Mselect (an, c, p) ->
+  | Mselect (an, c, la, lb, a) ->
     let ce, ca = f accu c in
-    let pe, pa = f ca p in
-    g (Mselect (an, ce, pe)), pa
+    let lbe, lba = f ca lb in
+    let ae, aa =
+      List.fold_left
+        (fun (ae, accu) x ->
+           let xa, accu = f accu x in
+           xa::ae, accu) ([], lba) a
+      |> (fun (x, y) -> (List.rev x, y))
+    in
+    g (Mselect (an, ce, la, lbe, ae)), aa
 
   | Msort (an, c, l) ->
     let ce, ca = f accu c in
@@ -2492,10 +2504,17 @@ let fold_map_term
     let re, ra = f accu r in
     g (Mapifisempty (l, re)), ra
 
-  | Mapifselect (an, c, p) ->
+  | Mapifselect (an, c, la, lb, a) ->
     let ce, ca = f accu c in
-    let pe, pa = f ca p in
-    g (Mapifselect (an, ce, pe)), pa
+    let lbe, lba = f ca lb in
+    let ae, aa =
+      List.fold_left
+        (fun (ae, accu) x ->
+           let xa, accu = f accu x in
+           xa::ae, accu) ([], lba) a
+      |> (fun (x, y) -> (List.rev x, y))
+    in
+    g (Mselect (an, ce, la, lbe, ae)), aa
 
   | Mapifsort (an, c, l) ->
     let ce, ca = f accu c in
@@ -2619,6 +2638,7 @@ type kind_ident =
   | KIassetfield
   | KIassetstate
   | KIassetinit
+  | KIparamlambda
   | KIenumname
   | KIenumvalue
   | KIcontractname
@@ -2680,7 +2700,7 @@ let replace_ident_model (f : kind_ident -> ident -> ident) (model : model) : mod
         | UpdateClear (an, id)  -> UpdateClear (f KIassetname an, f KIassetfield id)
         | ToKeys an             -> ToKeys (f KIassetname an)
         | ColToKeys an          -> ColToKeys (f KIassetname an)
-        | Select (an, p)        -> Select (f KIassetname an, for_mterm p)
+        | Select (an, l, p)     -> Select (f KIassetname an, List.map (fun (id, t) -> f KIparamlambda id, t) l, for_mterm p)
         | Sort (an, l)          -> Sort (an, List.map (fun (id, k) -> f KIassetfield id, k) l)
         | Contains an           -> Contains (f KIassetname an)
         | Nth an                -> Nth (f KIassetname an)
@@ -3740,8 +3760,8 @@ end = struct
       | (sc : api_storage) :: tl ->
         begin
           match typ, sc.node_item with
-          | SearchSelect, APIAsset (Select (a,t)) -> continue_internal_get_fun_idx tl acc a t
-          | SearchSum, APIAsset (Sum (a,_,t)) -> continue_internal_get_fun_idx tl acc a t
+          | SearchSelect, APIAsset (Select (a, _, t)) -> continue_internal_get_fun_idx tl acc a t
+          | SearchSum, APIAsset (Sum (a, _, t)) -> continue_internal_get_fun_idx tl acc a t
           | _ -> internal_get_fun_idx acc tl
         end
       | [] -> acc

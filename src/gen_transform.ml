@@ -301,7 +301,7 @@ let extend_removeif (model : model) : model =
                       internal_extend new_ctx c,
                       internal_extend new_ctx b,
                       Some lbl)) t.type_
-    | Mremoveif (asset, p, q) ->
+    | Mremoveif (asset, p, la, lb, a) ->
       let lasset = dumloc asset in
       let type_asset = Tasset lasset in
 
@@ -315,7 +315,7 @@ let extend_removeif (model : model) : model =
       let type_assets = Tcontainer (Tasset lasset, Collection) in
       let assets_var = mk_mterm (Mvarlocal assets_var_name) type_assets in
 
-      let select : mterm =  mk_mterm (Mselect (asset, p, q) ) type_asset in
+      let select : mterm =  mk_mterm (Mselect (asset, p, la, lb, a) ) type_asset in
 
       let remove : mterm = mk_mterm (Mremoveasset (asset, asset_key)) Tunit in
 
@@ -395,7 +395,7 @@ let check_partition_access (model : model) : model =
       match t.node with
       | Maddasset (a, _) when List.mem a partitionned_assets -> emit_error t.loc a
       | Mremoveasset (a, _) when List.mem a partitionned_assets -> emit_error t.loc a
-      | Mremoveif(a, { node = (Mvarstorecol _); loc = _}, _) when List.mem a partitionned_assets -> emit_error t.loc a
+      | Mremoveif(a, { node = (Mvarstorecol _); loc = _}, _, _, _) when List.mem a partitionned_assets -> emit_error t.loc a
       | _ -> fold_term (internal_raise ctx) acc t
     in
     let with_error = fold_model internal_raise model false in
@@ -1242,7 +1242,7 @@ let add_explicit_sort (model : model) : model =
       | Mvarlocal id -> not (List.exists (fun a -> String.equal a (unloc id)) env)
 
       (* asset api *)
-      | Mselect (_, c, _) -> is_implicit_sort env c
+      | Mselect (_, c, _, _, _) -> is_implicit_sort env c
       | Mhead   (_, c, _) -> is_implicit_sort env c
       | Mtail   (_, c, _) -> is_implicit_sort env c
 
@@ -1608,9 +1608,12 @@ let extract_term_from_instruction f (model : model) : model =
           ((id, op, ve)::xe, va @ xa)) l ([], []) in
       process (mk_mterm (Mupdate (an, ke, le)) mt.type_) (ka @ la)
 
-    | Mremoveif (an, fn, i) ->
-      let ie, ia = f i in
-      process (mk_mterm (Mremoveif (an, fn, ie)) mt.type_) ia
+    | Mremoveif (an, c, la, lb, a) ->
+      let lbe, lba = f lb in
+      let ae, aa = List.fold_right (fun v (xe, xa) ->
+          let ve, va = f v in
+          (ve::xe, va @ xa)) a ([], []) in
+      process (mk_mterm (Mremoveif (an, c, la, lbe, ae)) mt.type_) (lba @ aa)
 
     | Maddupdate (an, k, l) ->
       let ke, ka = f k in
@@ -1712,11 +1715,12 @@ let split_key_values (model : model) : model =
 
   let rec f (ctx : ctx_model) (x : mterm) : mterm =
     match x.node with
-    | Mselect (an, col, pred) ->
+    | Mselect (an, col, lambda_args, lambda_body, args) ->
       let col = f ctx col in
-      let pred = f ctx pred in
+      let lambda_body = f ctx lambda_body in
+      let args = List.map (f ctx) args in
       let _k, t = Utils.get_asset_key model an in
-      { x with node = Mselect (an, col, pred); type_ = Tcontainer (Tbuiltin t, Collection)}
+      { x with node = Mselect (an, col, lambda_args, lambda_body, args); type_ = Tcontainer (Tbuiltin t, Collection)}
 
     | Msort (an, col, l) ->
       let col = f ctx col in

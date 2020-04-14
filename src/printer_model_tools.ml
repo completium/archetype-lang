@@ -34,7 +34,7 @@ let compute_env model =
   let select_preds =
     List.fold_right (fun x accu ->
         match x.api_loc, x.node_item with
-        | (OnlyExec | ExecFormula), APIAsset (Select (_, pred)) ->
+        | (OnlyExec | ExecFormula), APIAsset (Select (_, _, pred)) ->
           if not (List.exists (Model.cmp_mterm pred) accu)
           then pred::accu
           else accu
