@@ -903,7 +903,7 @@ let get_for_fun = function
   | M.Tcontainer (Tasset a,_) ->
     let toview = (fun t -> Ttoview (unloc a, t)) in
     ((fun (t1,t2) -> loc_term (Tnth  (unloc a,t1, toview t2))),
-    (fun t ->       loc_term (Tcard (unloc a, toview t))))
+    (fun t ->       loc_term (Tvcard (unloc a, toview t))))
   | _ -> assert false
 
 type logical_mod = Nomod | Added | Removed
@@ -1296,7 +1296,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Mcontains (a, _, r) -> Tapp (loc_term (Tvar ("contains_" ^ a)), [map_mterm m ctx r])
 
     | Mnth                (n,c,k) -> Tapp (loc_term (Tvar ("nth_" ^ n)),[map_mterm m ctx c; map_mterm m ctx k])
-    | Mcount              (a,t) -> Tcard (with_dummy_loc a, map_mterm m ctx t)
+    | Mcount              (a,t) -> Tvcard (with_dummy_loc a, map_mterm m ctx t)
 
     | Msum          (a,_,f) ->
       let id = mk_sum_name m a f in
@@ -1810,33 +1810,32 @@ let mk_get_asset asset key ktyp = Dfun {
       Twild, Traise Enotfound])
   }
 
-let mk_nth_asset asset key ktyp = Dfun {
+let mk_nth_asset asset = Dfun {
     name = "nth_" ^ asset;
     logic = NoMod;
-    args = ["c",Tycoll asset;"k",ktyp];
+    args = ["i",Tyint;"v",Tyview asset];
     returns = Tyasset asset;
-    raises = [ Timpl (Texn Enotfound,
-                      mk_not_found_cond `Old asset (Tvar "k"))];
+    raises = [ Texn Enotfound ];
     variants = [];
     requires = [];
-    ensures = [
-      { id   = "nth_" ^ asset ^ "_post_1";
+    ensures = [{ id   = "nth_" ^ asset ^ "_post_1";
         form = Tmem (asset,
                      Tresult,
                      mk_ac asset);
-      };
-      { id   = "nth_" ^ asset ^ "_post_2";
-        form = Teq(Tyint,
-                   Tdot (Tresult,
-                         Tvar key),
-                   Tvar "k")
-      }
-    ];
-    body = Tif (mk_not_found_cond `Curr asset (Tvar "k"),
-                Traise Enotfound,
-                Some (Tnth (asset,
-                            Tvar "k",
-                            Tvar "c")))
+      }];
+    body =
+      Tmatch (Tnth (asset,
+                    Tvar "i",
+                    Tvar "v"),[
+        Tpsome "k", (
+          Tmatch (Tget (asset,
+                        mk_ac asset,
+                        Tvar "k"),[
+            Tpsome "v", Tvar "v";
+            Twild, Traise Enotfound
+          ]));
+        Twild, Traise Enotfound
+      ])
   }
 
 let mk_set_sum_ensures m a =
@@ -2693,8 +2692,7 @@ let mk_storage_api (m : M.model) records =
         let k,kt = M.Utils.get_asset_key m n in
         acc @ [mk_get_asset n k (kt |> map_btype)]
       | M.APIAsset (Nth n) ->
-        let k,kt = M.Utils.get_asset_key m n in
-        acc @ [mk_nth_asset n k (kt |> map_btype)]
+        acc @ [mk_nth_asset n]
       | M.APIAsset (Add n) ->
         let k = M.Utils.get_asset_key m n |> fst in
         acc @ [mk_add_asset m n k]

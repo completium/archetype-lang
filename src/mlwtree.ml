@@ -90,6 +90,7 @@ type ('e,'t,'i) abstract_term =
   | Tnil    of 'i
   | Temptycoll of 'i
   | Tcard   of 'i * 'e
+  | Tvcard   of 'i * 'e
   | Tunshallow  of 'i * 'e * 'e
   | Ttoview of 'i * 'e
   | Tshallow  of 'i * 'e * 'e
@@ -360,6 +361,7 @@ and map_abstract_term
   | Tnil i             -> Tnil (map_i i)
   | Temptycoll i       -> Temptycoll (map_i i)
   | Tcard (i,e)        -> Tcard (map_i i, map_e e)
+  | Tvcard (i,e)        -> Tvcard (map_i i, map_e e)
   | Tmkcoll (i,e)      -> Tmkcoll (map_i i, map_e e)
   | Tcontent (i,e)     -> Tcontent (map_i i, map_e e)
   | Tunshallow (i,e1,e2) -> Tunshallow (map_i i, map_e e1, map_e e2)
@@ -744,6 +746,7 @@ let compare_abstract_term
   | Tnil i1, Tnil i2 -> cmpi i1 i2
   | Temptycoll i1, Temptycoll i2 -> cmpi i1 i2
   | Tcard (i1,e1), Tcard (i2,e2) -> cmpi i1 i2 && cmpe e1 e2
+  | Tvcard (i1,e1), Tvcard (i2,e2) -> cmpi i1 i2 && cmpe e1 e2
   | Tmkcoll (i1,e1), Tmkcoll (i2,e2) -> cmpi i1 i2 && cmpe e1 e2
   | Tcontent (i1,e1), Tcontent (i2,e2) -> cmpi i1 i2 && cmpe e1 e2
   | Tunshallow (i1,e1,f1), Tunshallow (i2,e2,f2) -> cmpi i1 i2 && cmpe e1 e2 && cmpe f1 f2
