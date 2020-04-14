@@ -565,6 +565,7 @@ let opsigs =
       PT.Arith PT.Mult , ([M.VTrational; M.VTduration      ], M.VTduration)  ;
       PT.Arith PT.Mult , ([M.VTduration; M.VTrational      ], M.VTduration)  ;
       PT.Arith PT.Div  , ([M.VTduration; M.VTrational      ], M.VTduration)  ;
+      PT.Arith PT.Div  , ([M.VTduration; M.VTduration      ], M.VTint     )  ;
       PT.Arith PT.Plus , ([M.VTstring  ; M.VTstring        ], M.VTstring  )  ;
     ] in
 
