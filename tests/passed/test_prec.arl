@@ -27,11 +27,11 @@ action exec() {
 }
 
 specification {
-  postcondition s1 {
+  contract invariant s1 {
     i -> j -> k
   }
 
-  postcondition s2 {
+  contract invariant s2 {
     (i -> j) -> k
   }
 }

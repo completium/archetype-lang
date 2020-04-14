@@ -9,7 +9,7 @@ asset my_asset identified by id {
   {"id2"; 2}
 }
 
-action exec () {
+action exec (x : int) {
 
   specification {
     (* quantifiers *)
@@ -43,13 +43,15 @@ action exec () {
     f11: let some a = my_asset.min(the.value) in a = 0 otherwise false; (* Mapifmin      *)
     f12: my_asset.head(2).isempty();                                    (* Mapifhead     *)
     f13: my_asset.tail(2).isempty();                                    (* Mapiftail     *)
-
+    f14: before.x = 0;
+    f15: at(lbl).x = 0;
   }
 
   effect {
     my_asset.add({"id3"; 3});
     label lbl;
     my_asset.add({"id4"; 4});
+    require(x = 0)
   }
 }
 

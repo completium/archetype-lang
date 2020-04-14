@@ -1,0 +1,12 @@
+archetype expr_formula_before
+
+action exec (x : int) {
+
+  specification {
+    s: before.x = 0;
+  }
+
+  effect {
+    require(x = 0)
+  }
+}

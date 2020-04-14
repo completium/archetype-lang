@@ -1,0 +1,13 @@
+archetype expr_formula_before
+
+action exec (x : int) {
+
+  specification {
+    s: at(lbl).x = 0;
+  }
+
+  effect {
+    label lbl;
+    require(x = 0)
+  }
+}

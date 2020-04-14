@@ -31,6 +31,7 @@
 
 %token ACCEPT_TRANSFER
 %token ACTION
+%token ADDED
 %token AND
 %token ANY
 %token ARCHETYPE
@@ -121,6 +122,7 @@
 %token RECORD
 %token REF
 %token REFUSE_TRANSFER
+%token REMOVED
 %token REQUIRE
 %token RETURN
 %token RPAREN
@@ -139,6 +141,7 @@
 %token TRUE
 %token USE
 %token UNDERSCORE
+%token UNMOVED
 %token VAR
 %token VARIABLE
 %token WHEN
@@ -375,11 +378,11 @@ function_decl:
 
 %inline spec_postcondition:
 | POSTCONDITION id=ident sp=braced(spec_body)
-    { let e, xs, u = sp in Vpostcondition (id, e, xs, u) }
+    { let e, xs, u = sp in Vpostcondition (id, e, xs, u, Some PKPost) }
 
 %inline spec_contract_invariant:
 | CONTRACT INVARIANT id=ident sp=braced(spec_body)
-    { let e, xs, u = sp in Vcontractinvariant (id, e, xs, u) }
+    { let e, xs, u = sp in Vpostcondition (id, e, xs, u, Some PKInv) }
 
 spec_items:
 | ds=loc(spec_definition)*
@@ -400,7 +403,7 @@ spec_items:
     xs=label_exprs_non_empty RBRACE
         { let ll = List.map (fun x ->
             let loc, (lbl, e) = Location.deloc x in
-            mkloc loc (Vpostcondition (lbl, e, [], []))) xs in
+            mkloc loc (Vpostcondition (lbl, e, [], [], None))) xs in
             (ll, exts) }
 
 specification_fun:
@@ -792,8 +795,8 @@ simple_expr_r:
  | x=literal
      { Eliteral x }
 
- | vt=vt_dot x=ident
-     { let st = { before = fst vt; label = snd vt; } in Eterm (st, x) }
+ | vt=vt x=ident
+     { Eterm (vt, x) }
 
  | ANY
      { Eany }
@@ -804,10 +807,22 @@ simple_expr_r:
  | x=paren(block_r)
      { x }
 
-%inline vt_dot:
- |            { false, None }
- | BEFORE DOT { true, None }
- | AT LPAREN l=ident RPAREN DOT { false, Some l }
+%inline vt_vset:
+| ADDED   { (VSAdded   : var_vset) }
+| UNMOVED { (VSUnmoved : var_vset) }
+| REMOVED { (VSRemoved : var_vset) }
+
+%inline vt_lbl:
+| BEFORE
+   { VLBefore }
+
+| AT LPAREN l=ident RPAREN
+   { VLIdent l }
+
+%inline vt:
+| vset=ioption(postfix(vt_vset, DOT))
+   lbl=ioption(postfix(vt_lbl , DOT))
+   { (vset, lbl) }
 
 %inline label_exprs:
 | /* empty */   { [] }

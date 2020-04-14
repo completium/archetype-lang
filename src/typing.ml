@@ -229,11 +229,12 @@ type opsig = {
 (* -------------------------------------------------------------------- *)
 type error_desc =
   | AlienPattern
+  | AnonymousFieldInEffect
+  | AssertInGlobalSpec
   | AssetExpected                      of M.ptyp
   | AssetWithoutFields
   | BeforeOrLabelInExpr
   | BeforeIrrelevant                   of [`Local | `State]
-  | BeforeWithLabel
   | BindingInExpr
   | CannotAssignLoopIndex              of ident
   | CannotCaptureLocal
@@ -242,6 +243,7 @@ type error_desc =
   | CannotInfer
   | CannotUpdatePKey
   | CollectionExpected
+  | ContractInvariantInLocalSpec
   | DoesNotSupportMethodCall
   | DivergentExpr
   | DuplicatedArgName                  of ident
@@ -252,7 +254,7 @@ type error_desc =
   | DuplicatedInitMarkForCtor
   | DuplicatedPKey
   | DuplicatedVarDecl                  of ident
-  | AnonymousFieldInEffect
+  | EffectInGlobalSpec
   | EmptyEnumDecl
   | ExpressionExpected
   | ForeignState                       of ident option * ident option
@@ -310,6 +312,7 @@ type error_desc =
   | OpInRecordLiteral
   | OrphanedLabel                      of ident
   | PartialMatch                       of ident list
+  | PostConditionInGlobalSpec
   | ReadOnlyGlobal                     of ident
   | SecurityInExpr
   | SpecOperatorInExpr
@@ -332,6 +335,8 @@ type error_desc =
   | UpdateEffectOnPkey
   | UselessPattern
   | VoidMethodInExpr
+  | VSetInExpr
+  | VSetOnNonAsset
 [@@deriving show {with_path = false}]
 
 type error = L.t * error_desc
@@ -367,12 +372,13 @@ let pp_error_desc fmt e =
 
   match e with
   | AlienPattern                       -> pp "This pattern does not belong to the enumeration"
+  | AnonymousFieldInEffect             -> pp "Anonymous field in effect"
+  | AssertInGlobalSpec                 -> pp "Assertions specification at global level are forbidden"
   | AssetExpected ty                   -> pp "Asset expected (found a %a)" Printer_ast.pp_ptyp ty
   | AssetWithoutFields                 -> pp "Asset without fields"
   | BeforeIrrelevant `Local            -> pp "The `before' modifier cannot be used on local variables"
   | BeforeIrrelevant `State            -> pp "The `before' modifier cannot be used on state constructors"
   | BeforeOrLabelInExpr                -> pp "The `before' or label modifiers can only be used in formulas"
-  | BeforeWithLabel                    -> pp "Cannot use `before' labels at the same time"
   | BindingInExpr                      -> pp "Binding in expression"
   | CannotAssignLoopIndex x            -> pp "Cannot assign loop index `%s'" x
   | CannotCaptureLocal                 -> pp "Cannot capture local variables in this context"
@@ -381,6 +387,7 @@ let pp_error_desc fmt e =
   | CannotInfer                        -> pp "Cannot infer type"
   | CannotUpdatePKey                   -> pp "Cannot modify the primary key of asset"
   | CollectionExpected                 -> pp "Collection expected"
+  | ContractInvariantInLocalSpec       -> pp "Contract invariants at local levl are forbidden"
   | DoesNotSupportMethodCall           -> pp "Cannot use method calls on this kind of objects"
   | DivergentExpr                      -> pp "Divergent expression"
   | DuplicatedArgName x                -> pp "Duplicated argument name: %s" x
@@ -391,7 +398,7 @@ let pp_error_desc fmt e =
   | DuplicatedInitMarkForCtor          -> pp "Duplicated 'initialized by' section for asset"
   | DuplicatedPKey                     -> pp "Duplicated key"
   | DuplicatedVarDecl i                -> pp "Duplicated variable declaration: %a" pp_ident i
-  | AnonymousFieldInEffect             -> pp "Anonymous field in effect"
+  | EffectInGlobalSpec                 -> pp "(Shadow) effects at global level are forbidden"
   | EmptyEnumDecl                      -> pp "Empty state/enum declaration"
   | ExpressionExpected                 -> pp "Expression expected"
   | ForeignState (i1, i2)              -> pp "Expecting a state of %a, not %a" pp_ident (Option.get_dfl "<global>" i1) pp_ident (Option.get_dfl "<global>" i2)
@@ -446,6 +453,7 @@ let pp_error_desc fmt e =
   | OpInRecordLiteral                  -> pp "Operation in record literal"
   | OrphanedLabel i                    -> pp "Label not used: %a" pp_ident i
   | PartialMatch ps                    -> pp "Partial match (%a)" (Printer_tools.pp_list ", " pp_ident) ps
+  | PostConditionInGlobalSpec          -> pp "Post-conditions at global level are forbidden"
   | ReadOnlyGlobal i                   -> pp "Global is read only: %a" pp_ident i
   | SecurityInExpr                     -> pp "Found securtiy predicate in expression"
   | SpecOperatorInExpr                 -> pp "Specification operator in expression"
@@ -468,6 +476,8 @@ let pp_error_desc fmt e =
   | UpdateEffectOnPkey                 -> pp "Cannot set/update the primary key in an effect"
   | UselessPattern                     -> pp "Useless match branch"
   | VoidMethodInExpr                   -> pp "Void method in non-void context"
+  | VSetInExpr                         -> pp "Virtual set in expression"
+  | VSetOnNonAsset                     -> pp "Virtual set modifier on non-asset"
 
   | NoMatchingOperator (op, sig_) ->
     pp "No matches for operator %a(%a)"
@@ -563,6 +573,7 @@ let opsigs =
       PT.Arith PT.Mult , ([M.VTrational; M.VTduration      ], M.VTduration)  ;
       PT.Arith PT.Mult , ([M.VTduration; M.VTrational      ], M.VTduration)  ;
       PT.Arith PT.Div  , ([M.VTduration; M.VTrational      ], M.VTduration)  ;
+      PT.Arith PT.Div  , ([M.VTduration; M.VTduration      ], M.VTint     )  ;
       PT.Arith PT.Plus , ([M.VTstring  ; M.VTstring        ], M.VTstring  )  ;
     ] in
 
@@ -743,8 +754,6 @@ type vardecl = {
 type 'env ispecification = [
   | `Predicate     of M.lident * (M.lident * M.ptyp) list * M.pterm
   | `Definition    of M.lident * (M.lident * M.ptyp) option * M.pterm
-  | `Lemma         of M.lident * M.pterm
-  | `Theorem       of M.lident * M.pterm
   | `Variable      of M.lident * M.pterm option
   | `Assert        of M.lident * M.pterm * (M.lident * M.pterm list) list * M.lident list
   | `Effect        of 'env * M.instruction
@@ -770,7 +779,7 @@ type txeffect = {
 type 'env tactiondecl = {
   ad_name   : M.lident;
   ad_args   : (M.lident * M.ptyp) list;
-  ad_callby : (ident option) loced list;
+  ad_callby : (M.pterm option) loced list;
   ad_effect : [`Raw of M.instruction | `Tx of transition] option;
   ad_funs   : 'env fundecl option list;
   ad_reqs   : (M.lident option * M.pterm) list;
@@ -1495,18 +1504,13 @@ let rec for_xexpr
 
   let doit () =
     match unloc tope with
-    | Eterm (st, x) -> begin
-        let before = st.before in
+    | Eterm ((vset, pvt), x) -> begin
         let vt, subenv =
-          match st.before, st.label with
-          | true, Some _ ->
-            Env.emit_error env (loc tope, BeforeWithLabel);
-            M.VTnone, env
-
-          | true , None ->
+          match pvt with
+          | Some VLBefore ->
             M.VTbefore, env
 
-          | false, Some lbl -> begin
+          | Some (VLIdent lbl) -> begin
               match Env.Label.lookup env (unloc lbl) with
               | None ->
                 Env.emit_error env (loc lbl, UnknownLabel (unloc lbl));
@@ -1518,23 +1522,36 @@ let rec for_xexpr
                 M.VTnone, env
             end
 
-          | false, None ->
+          | None ->
             M.VTnone, env
         in
 
         let vt =
-          let hasvt = st.before || Option.is_some st.label in
+          let hasvt = Option.is_some pvt in
           if hasvt && mode.em_kind <> `Formula then begin
             Env.emit_error env (loc tope, BeforeOrLabelInExpr); M.VTnone
           end else vt in
 
-        match Env.lookup_entry subenv (unloc x) with
+        let lk = Env.lookup_entry subenv (unloc x) in
+
+        begin match lk, vset with
+        | None, _ | _, None | Some (`Asset _), _ -> ()
+        | Some _, Some _ ->
+            Env.emit_error env (loc tope, VSetOnNonAsset)
+        end;
+
+        if mode.em_kind = `Expr && Option.is_some vset then
+          Env.emit_error env (loc tope, VSetInExpr);
+
+        match lk with
         | Some (`Local (xty, _)) ->
-          if before then
-            Env.emit_error env (loc tope, BeforeIrrelevant `Local);
+          let vt =
+            if pvt = Some VLBefore then begin
+              Env.emit_error env (loc tope, BeforeIrrelevant `Local); M.VTnone
+            end else vt in
           if not (capture) then
             Env.emit_error env (loc tope, CannotCaptureLocal);
-          mk_sp (Some xty) (M.Pvar (VTnone, Vnone, x))
+          mk_sp (Some xty) (M.Pvar (vt, Vnone, x))
 
         | Some (`Global decl) -> begin
             match decl.vr_def with
@@ -1549,19 +1566,26 @@ let rec for_xexpr
           mk_sp (Some typ) (M.Pvar (vt, Vnone, x))
 
         | Some (`StateByCtor (decl, _)) ->
-          if before then
-            Env.emit_error env (loc tope, BeforeIrrelevant `State);
+          let vt =
+            if pvt = Some VLBefore then begin
+              Env.emit_error env (loc tope, BeforeIrrelevant `State); M.VTnone
+            end else vt in
 
+          let vset =
+            match vset with
+            | None           -> M.Vnone
+            | Some VSAdded   -> M.Vadded
+            | Some VSRemoved -> M.Vremoved
+            | Some VSUnmoved -> M.Vunmoved
+          in
           let typ = M.Tenum decl.sd_name in
-          mk_sp (Some typ) (M.Pvar (VTnone, Vnone, x))
+          mk_sp (Some typ) (M.Pvar (vt, vset, x))
 
         | Some (`Context (asset, ofield)) -> begin
             let atype = M.Tasset asset.as_name in
             let var   = mkloc (loc tope) Env.Context.the in
-            let the   = mk_sp (Some atype) (M.Pvar (VTnone, Vnone, var)) in
+            let the   = mk_sp (Some atype) (M.Pvar (vt, Vnone, var)) in
 
-            if before then
-              Env.emit_error env (loc tope, BeforeIrrelevant `Local);
             match ofield with
             | None ->
               the
@@ -2411,10 +2435,10 @@ and for_gen_method_call mode env theloc (the, m, args)
       | `Cmp -> begin
           let asc, field =
             match unloc arg with
-            | Eterm ({ before = false; label = None; }, f) ->
+            | Eterm ((None, None), f) ->
               (true, Some f)
             | Eapp (Fident { pldesc = ("asc" | "desc") as order },
-                    [{pldesc = Eterm ({ before = false; label = None; }, f) }]) ->
+                    [{pldesc = Eterm ((None, None), f) }]) ->
               (order = "asc", Some f)
             | _ ->
               Env.emit_error env (loc arg, InvalidSortingExpression);
@@ -2553,9 +2577,8 @@ and for_action_description (env : env) (sa : PT.security_arg) : M.action_descrip
     M.ADAny
 
   | Sapp (act, [{ pldesc = PT.Sident asset }]) -> begin
-      let st : PT.s_term = PT.mk_s_term () in
       let mode  = { em_kind = `Formula; em_pred = false; } in
-      let asset = mkloc (loc asset) (PT.Eterm (st, asset)) in
+      let asset = mkloc (loc asset) (PT.Eterm ((None, None), asset)) in
       let asset = for_asset_collection_expr mode env (`Parsed asset) in
 
       match snd asset with
@@ -2677,7 +2700,7 @@ let for_args_decl (env : env) (xs : PT.args) =
 (* -------------------------------------------------------------------- *)
 let for_lvalue (env : env) (e : PT.expr) : (M.lvalue * M.ptyp) option =
   match unloc e with
-  | Eterm ({ before = false; label = None; }, x) -> begin
+  | Eterm ((None, None), x) -> begin
       match Env.lookup_entry env (unloc x) with
       | Some (`Local (xty, kind)) -> begin
           match kind with
@@ -2983,8 +3006,10 @@ let for_effect (env : env) (effect : PT.expr) =
       let env, i = for_instruction env effect in (env, (env, i)))
 
 (* -------------------------------------------------------------------- *)
+type spmode = [`Global | `Local]
+
 let for_specification_item
-    (env, poenv : env * env) (v : PT.specification_item)
+    (mode : spmode) (env, poenv : env * env) (v : PT.specification_item)
   : (env * env) * env ispecification
   =
   match unloc v with
@@ -3015,6 +3040,8 @@ let for_specification_item
     in ((env, poenv), `Variable (x, e))
 
   | PT.Vassert (x, f, invs, uses) -> begin
+      if mode = `Global then
+        Env.emit_error env (loc x, AssertInGlobalSpec);
       let env0 =
         match Env.Label.lookup env (unloc x) with
         | None ->
@@ -3034,12 +3061,20 @@ let for_specification_item
     end
 
   | PT.Veffect i ->
+    if mode = `Global then
+      Env.emit_error env (loc i, EffectInGlobalSpec);
     (* FIXME: we are not properly tracking labels here *)
     let _, ((poenv, _) as i) = for_effect poenv i in
     ((env, poenv), `Effect i)
 
-  | PT.Vpostcondition (x, f, invs, uses)
-  | PT.Vcontractinvariant (x, f, invs, uses) ->
+  | PT.Vpostcondition (x, f, invs, uses, kind) -> begin
+    begin match kind, mode with
+    | Some PKInv, `Local ->
+        Env.emit_error env (loc x, ContractInvariantInLocalSpec)
+    | Some PKPost, `Global ->
+        Env.emit_error env (loc x, PostConditionInGlobalSpec)
+    | _, _ -> () end;
+
     let for_inv (lbl, linvs) =
       let env0 =
         match Env.Label.lookup env (unloc lbl) with
@@ -3059,11 +3094,12 @@ let for_specification_item
     let f    = for_formula poenv f in
     let invs = List.map for_inv invs in
     ((env, poenv), `Postcondition (x, f, invs, uses))
+    end
 
 (* -------------------------------------------------------------------- *)
-let for_specification ((env, poenv) : env * env) (v : PT.specification) =
+let for_specification mode ((env, poenv) : env * env) (v : PT.specification) =
   let (env, _), items =
-    List.fold_left_map for_specification_item (env, poenv) (fst (unloc v))
+    List.fold_left_map (for_specification_item mode) (env, poenv) (fst (unloc v))
   in (env, items)
 
 (* -------------------------------------------------------------------- *)
@@ -3207,7 +3243,7 @@ let rec for_state_formula ?enum (env : env) (st : PT.expr) : M.sexpr =
   let mk_sp = M.mk_sp ~loc:(loc st) in
 
   match unloc st with
-  | Eterm ({ before = false; label = None; }, x) ->
+  | Eterm ((None, None), x) ->
     mk_sp (M.Sref (for_named_state ?enum env x))
 
   | Eapp (Foperator { pldesc = Logical Or }, [e1; e2]) ->
@@ -3242,7 +3278,7 @@ let for_function (env : env) (fdecl : PT.s_function loced) =
             vr_core = None;
           } in Env.Var.push poenv decl
         ) env in
-        Option.foldmap (fun env -> for_specification (env, poenv)) env fdecl.spec in
+        Option.foldmap (fun env -> for_specification `Local (env, poenv)) env fdecl.spec in
 
       if Option.is_some rty && not (List.exists Option.is_none args) then
         if check_and_emit_name_free env fdecl.name then
@@ -3260,16 +3296,11 @@ let rec for_callby (env : env) (cb : PT.expr) =
   match unloc cb with
   | Eany -> [mkloc (loc cb) None]
 
-  | Eterm ({ before = false; label = None; }, name) ->
-    let cb = Option.get_as_list (for_role env name) in
-    List.map (fun x -> mkloc (loc x) (Some (unloc x))) cb
-
   | Eapp (Foperator { pldesc = Logical Or }, [e1; e2]) ->
     (for_callby env e1) @ (for_callby env e2)
 
   | _ ->
-    Env.emit_error env (loc cb, InvalidCallByExpression);
-    []
+    [mkloc (loc cb) (Some (for_expr env ~ety:M.vtrole cb))]
 
 (* -------------------------------------------------------------------- *)
 let for_action_properties (env, poenv : env * env) (act : PT.action_properties) =
@@ -3277,7 +3308,7 @@ let for_action_properties (env, poenv : env * env) (act : PT.action_properties) 
   let env, req  = Option.foldmap for_lbls_bexpr env (Option.fst act.require) in
   let env, fai  = Option.foldmap for_lbls_bexpr env (Option.fst act.failif) in
   let env, spec = Option.foldmap
-      (fun env x -> for_specification (env, poenv) x) env act.spec_fun in
+      (fun env x -> for_specification `Local (env, poenv) x) env act.spec_fun in
   let env, funs = List.fold_left_map for_function env act.functions in
 
   (env, (calledby, req, fai, spec, funs))
@@ -3762,7 +3793,7 @@ let for_acttxs_decl (env : env) (decls : acttx loced list) =
 (* -------------------------------------------------------------------- *)
 let for_specs_decl (env as poenv : env) (decls : PT.specification loced list) =
   List.fold_left_map
-    (fun env { pldesc = x } -> for_specification (env, poenv) x)
+    (fun env { pldesc = x } -> for_specification `Global (env, poenv) x)
     env decls
 
 (* -------------------------------------------------------------------- *)
@@ -4022,13 +4053,7 @@ let specifications_of_ispecifications =
     | `Predicate _ ->
       assert false
 
-    | `Theorem _ ->
-      assert false
-
     | `Definition _ ->
-      assert false
-
-    |`Lemma _ ->
       assert false
 
   in fun ispecs -> List.fold_left do1 env0 ispecs
@@ -4056,14 +4081,9 @@ let transactions_of_tdecls tdecls =
   let for_calledby cb : M.rexpr option =
     match cb with [] -> None | c :: cb ->
 
-      let for1 = fun (x : ident option loced) ->
+      let for1 = fun (x : M.pterm option loced) ->
         let node =
-          match unloc x with
-          | None ->
-            M.Rany
-          | Some _id -> (* FIXME *)
-            M.Rany
-            (* M.Rqualid (M.mk_sp ~loc:(loc x) (M.Qident (mkloc (loc x) id))) *)
+          Option.get_dfl M.Rany (Option.map (fun e -> M.Rexpr e) (unloc x))
         in M.mk_sp ~loc:(loc x) node in
 
       let aout = List.fold_left

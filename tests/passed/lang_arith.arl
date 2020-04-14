@@ -30,7 +30,8 @@ action exec () {
     var date_date_minus : duration = 2020-01-01 - 2019-12-31; (* absolute value *)
 
     var dur_dur_plus   : duration = 1h + 2s;
-    var dur_dur_minus  : duration = 1h - 2s; (* absolute value *)
+    var dur_dur_minus  : duration = 1h - 2s;  (* absolute value *)
+    var dur_dur_div    : int      = 4h / 30m; (* absolute value *)
 
     var int_dur_mult   : duration = 2 * 1h;
     var dur_int_div    : duration = 1h / 2;

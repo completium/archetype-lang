@@ -1,0 +1,12 @@
+archetype expr_arith_div_dur_dur
+
+variable res : int = 0
+
+action exec () {
+  specification {
+    s0: res = 8;
+  }
+  effect {
+    res := 4h / 30m
+  }
+}
