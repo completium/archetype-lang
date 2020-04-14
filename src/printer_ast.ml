@@ -763,11 +763,17 @@ let pp_field fmt (f : lident decl_gen) =
     (pp_option (pp_prefix " := " pp_pterm)) f.default
 
 let pp_asset fmt (a : lident asset_struct) =
-  Format.fprintf fmt "asset %a%a%a {@\n  @[%a@]@\n}%a%a%a@\n"
+  let fields = List.filter (fun f -> not f.shadow) a.fields in
+  let shadow_fields = List.filter (fun f -> f.shadow) a.fields in
+  Format.fprintf fmt "asset %a%a%a {@\n  @[%a@]@\n}%a%a%a%a@\n"
     pp_id a.name
     (pp_option (pp_prefix " identified by " pp_id)) a.key
     (pp_do_if (not (List.is_empty a.sort)) (pp_prefix " sorted by " (pp_list ", " pp_id))) a.sort
-    (pp_list "@\n" pp_field) a.fields
+    (pp_list "@\n" pp_field) fields
+    (pp_do_if (not (List.is_empty shadow_fields)) (
+        fun fmt fields ->
+          Format.fprintf fmt " shadow {@\n  @[%a@]@\n} "
+            (pp_list "@\n" pp_field) fields)) shadow_fields
     (pp_option (pp_prefix " with states " pp_id)) a.state
     (pp_do_if (not (List.is_empty a.init)) (
         let pp1 fmt init1 =
