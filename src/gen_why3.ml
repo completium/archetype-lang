@@ -530,6 +530,7 @@ let rec type_to_init m (typ : loc_typ) : loc_term =
       | Typartition i -> Temptycoll i
       | Tycoll i      -> Temptycoll i
       | Tylist _      -> Tnil (with_dummy_loc gListLib)
+      | Tyview _      -> Tnil (with_dummy_loc gListLib)
       | Tymap i       -> Tvar (mk_loc typ.loc ("const (mk_default_" ^ i.obj ^ " ())"))
       | Tyenum i      -> Tvar (mk_loc typ.loc (unloc (M.Utils.get_enum m i.obj).initial))
       | Tytuple l     -> Ttuple (List.map (type_to_init m) (List.map with_dummy_loc l))
@@ -558,6 +559,7 @@ let rec map_mtype (t : M.type_) : loc_typ =
       | M.Tbuiltin v                          -> map_btype v
       | M.Tcontainer (Tasset id,M.Partition)  -> Typartition (map_lident id)
       | M.Tcontainer (Tasset id,M.Collection) -> Tycoll (map_lident id)
+      | M.Tcontainer (Tasset id,M.View)       -> Tyview (map_lident id)
       | M.Tcontainer (t,M.Collection)         -> Tylist (map_mtype t).obj
       | M.Toption t                           -> Tyoption (map_mtype t).obj
       | M.Ttuple l                            -> Tytuple (l |> List.map map_mtype |> deloc)

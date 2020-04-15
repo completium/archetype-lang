@@ -223,7 +223,7 @@ let generate_target model =
     |> remove_cmp_bool
     |> prune_properties
     |> extend_loop_iter
-    |> shallow_asset_verif
+    (* |> shallow_asset_verif *)
     (* |> split_key_values *)
     |> Gen_transform.assign_loop_label
     |> replace_for_to_iter
