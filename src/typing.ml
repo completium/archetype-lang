@@ -2409,7 +2409,7 @@ and for_gen_method_call mode env theloc (the, m, args)
         let theid = mkloc (loc arg) Env.Context.the in
         let thety = M.Tasset asset.as_name in
         let mode  = { mode with em_pred = true; } in
-        M.AFun (theid, thety, for_xexpr ~capture mode env ~ety:M.vtbool arg)
+        M.AFun (theid, thety, [], for_xexpr ~capture mode env ~ety:M.vtbool arg)
 
       | `RExpr capture ->
         let env   = Env.Context.push env (unloc asset.as_name) in
@@ -2420,7 +2420,7 @@ and for_gen_method_call mode env theloc (the, m, args)
         e.M.type_ |> Option.iter (fun ty ->
             if not (Type.is_numeric ty || Type.is_currency ty) then
               Env.emit_error env (loc arg, NumericExpressionExpected));
-        M.AFun (theid, thety, e)
+        M.AFun (theid, thety, [], e)
 
       | `Ef update ->
         M.AEffect (Option.get_dfl [] (for_arg_effect mode env ~update asset arg))
@@ -2470,7 +2470,7 @@ and for_gen_method_call mode env theloc (the, m, args)
           match arg with
           | M.AExpr { M.type_ = Some ty } ->
             aout := Mint.add i ty !aout
-          | M.AFun (_, _, { M.type_ = Some ty }) ->
+          | M.AFun (_, _, _, { M.type_ = Some ty }) ->
             aout := Mint.add i ty !aout
           | _ -> ()) args; !aout in
 

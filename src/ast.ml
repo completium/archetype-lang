@@ -297,7 +297,7 @@ type 'id term_node  =
 
 and 'id term_arg =
   | AExpr    of 'id term_gen
-  | AFun     of 'id * ptyp * 'id term_gen
+  | AFun     of 'id * ptyp * ('id * ptyp * 'id term_gen) list * 'id term_gen
   | AEffect  of ('id * operator * 'id term_gen) list
   | ASorting of bool * 'id
 [@@deriving show {with_path = false}]
@@ -692,7 +692,7 @@ let map_term_node (f : 'id term_gen -> 'id term_gen) = function
   | Pcall (i, e, args)      ->
     Pcall (i, e, List.map (fun (arg : 'id term_arg) -> match arg with
         | AExpr e -> AExpr (f e)
-        | AFun (x, xty, e) -> AFun (x, xty, f e)
+        | AFun (x, xty, l, e) -> AFun (x, xty, List.map (fun (x, y, z) -> (x, y, f z)) l, f e)
         | AEffect l -> AEffect (List.map (fun (id, op, e) -> (id, op, f e)) l)
         | ASorting (b, f) -> ASorting (b, f))
         args)
@@ -750,7 +750,7 @@ let map_instr f i = map_gen map_instr_node f i
 let fold_term_arg (f : 'id term_gen -> 'a -> 'a) (accu : 'a) (arg : 'id term_arg) =
   match arg with
   | AExpr e -> f accu e
-  | AFun (_, _, e) -> f accu e
+  | AFun (_, _, l, e) -> List.fold_left (fun accu (_, _, v) -> f accu v) (f accu e) l
   | AEffect l -> List.fold_left (fun accu (_, _, e) -> f accu e) accu l
   | ASorting _ -> accu
 
