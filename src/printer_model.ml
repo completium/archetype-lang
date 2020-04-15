@@ -1185,10 +1185,10 @@ let pp_enum fmt (enum : enum) =
     (pp_list "@\n" pp_enum_item) enum.values
 
 let pp_asset_item fmt (item : asset_item) =
-  Format.fprintf fmt "%a : %a%a"
+  Format.fprintf fmt "%a : %a%a;"
     pp_id item.name
     pp_type item.type_
-    (pp_option (fun fmt -> Format.fprintf fmt " := %a" pp_mterm)) item.default
+    (pp_option (fun fmt -> Format.fprintf fmt " = %a" pp_mterm)) item.default
 
 let pp_asset fmt (asset : asset) =
   let fields = List.filter (fun f -> not f.shadow) asset.values in

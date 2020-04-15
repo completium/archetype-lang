@@ -3031,7 +3031,6 @@ module Utils : sig
   val get_storage                        : model -> storage
   val get_asset_field                    : model -> (ident * ident) -> (ident * type_ * mterm option)
   val get_asset_key                      : model -> ident -> (ident * btyp)
-  val get_asset_key_value                : model -> ident -> mterm -> mterm
   val get_field_container                : model -> ident -> ident -> (ident * container)
   val is_storage_attribute               : model -> ident -> bool
   val get_named_field_list               : model -> ident -> 'a list -> (ident * 'a) list
@@ -3300,12 +3299,6 @@ end = struct
       | _ -> raise Not_found
     with
     | Not_found -> emit_error (AssetKeyTypeNotFound (asset_name))
-
-  let get_asset_key_value  (m : model) (asset_name : ident) (asset_value : mterm) : mterm =
-    let _k, _ = get_asset_key m asset_name in
-    match asset_value.node with
-    | Masset (a::_) -> a (* FIXME *)
-    | _ -> assert false
 
   let get_field_container model asset_name field_name : ident * container =
     let seek_original_type () : type_ =

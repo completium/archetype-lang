@@ -742,7 +742,6 @@ let pp_asset_post_option fmt (apo : asset_post_option) =
       begin
         match unloc e with
         | Erecord l -> List.map snd l
-        (* | Earray l -> l *)
         | _ -> assert false
       end
     in

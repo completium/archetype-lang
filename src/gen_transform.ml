@@ -1683,35 +1683,6 @@ let process_internal_string (model : model) : model =
 
 
 let split_key_values (model : model) : model =
-  let asset_assets an = an ^ "_assets" in
-
-  let storage =
-    List.fold_right (fun x accu ->
-        match x.model_type with
-        | MTasset an ->
-          let an = dumloc an in
-          let _k, t = Utils.get_asset_key model (unloc an) in
-          let type_asset = Tmap (t, Tasset an) in
-          let default =
-            match x.default.node with
-            | Massets l ->
-              mk_mterm (Mlitmap (List.map (fun x ->
-                  let k = Utils.get_asset_key_value model (unloc an) x in
-                  (k, x)
-                ) l)) type_asset
-            | _ -> assert false
-          in
-          let asset_assets =
-            mk_storage_item (dumloc (asset_assets (unloc an)))
-              (MTasset (unloc an))
-              type_asset
-              default
-              ~loc:x.loc
-          in
-          asset_assets::accu
-        | _ -> x::accu)
-      model.storage []
-  in
 
   let rec f (ctx : ctx_model) (x : mterm) : mterm =
     match x.node with
@@ -1759,6 +1730,8 @@ let split_key_values (model : model) : model =
         mk_mterm (Mshallow (pa, { x with node = Mdotasset (f ctx e, i) })) ty
       else
         { x with node = Mdotasset (f ctx e, i) }
+
+    | Mcast ((Tcontainer ((Tasset _), _)), (Tcontainer ((Tasset _), View)), x) -> f ctx x
 
     | Mvarstorecol an ->
       (
@@ -1812,48 +1785,69 @@ let split_key_values (model : model) : model =
     | _ -> map_mterm (f ctx) x
   in
 
+  let asset_assets an = an ^ "_assets" in
+
+  let get_asset_assoc_key_value (asset_name : ident) (asset_value : mterm) : mterm * mterm=
+    match asset_value.node with
+    | Masset l ->
+      begin
+        let asset : asset = Model.Utils.get_asset model asset_name in
+        let asset_key = asset.key in
+
+        let assoc_fields = List.map2 (fun (ai : asset_item) (x : mterm) -> (unloc ai.name, x)) asset.values l in
+
+        List.find (fun (id, _) -> String.equal asset_key id) assoc_fields |> snd,
+        { asset_value with
+          node = Masset (List.map (fun (x : mterm) ->
+          match x with
+          | { type_ = Tcontainer (Tasset an, c); _} -> { x with type_ = let k = Utils.get_asset_key model (unloc an) |> snd in Tcontainer (Tbuiltin k, c) }
+          | _ -> x) l)
+        }
+      end
+    | _ -> assert false
+  in
+
+  let storage =
+    List.fold_right (fun x accu ->
+        match x.model_type with
+        | MTasset an ->
+          let an = dumloc an in
+          let _k, t = Utils.get_asset_key model (unloc an) in
+          let type_asset = Tmap (t, Tasset an) in
+          let default =
+            match x.default.node with
+            | Massets l -> mk_mterm (Mlitmap (List.map (fun x -> get_asset_assoc_key_value (unloc an) x) l)) type_asset
+            | _ -> assert false
+          in
+          let asset_assets =
+            mk_storage_item (dumloc (asset_assets (unloc an)))
+              (MTasset (unloc an))
+              type_asset
+              default
+              ~loc:x.loc
+          in
+          asset_assets::accu
+        | _ -> x::accu)
+      model.storage []
+  in
+
   let model = map_mterm_model f model in
 
   { model with
     storage = storage
   }
 
-(* let replace_array_asset_by_map (model : model) : model =
-   let change_value (v : mterm) : mterm =
-    match v.node with
-    | Massets l ->
-      let asset_name =
-        match v.type_ with
-        | Tcontainer (Tasset an, _) -> an
-        | Tmap (_, (Tasset an)) -> an
-        | _ -> Format.printf "type_error: %a@." pp_type_ v.type_; assert false
-      in
-      let an = unloc asset_name in
-      let _, kt = Utils.get_asset_key model an in
-      mk_mterm (Mlitmap (List.map (fun asset ->
-          let k = Utils.get_asset_key_value model an asset in
-          (k, asset)
-        ) l)) (Tmap (kt, Tasset asset_name))
-    | _ -> v
-   in
-
-   { model with
-    storage = List.map (fun (x : storage_item) ->
-        match x.model_type with
-        | MTasset _ -> { x with default = change_value x.default }
-        | _ -> x
-      ) model.storage} *)
-
-
 let replace_get_on_view (model : model) : model =
-  let is_not_varcol = function
+  let rec is_not_varcol (a : mterm) =
+    match a.node with
     | Mvarstorecol _ -> false
+    | Mcast (_, _, a) -> is_not_varcol a
     | _ -> true
   in
 
   let rec aux ctx (mt : mterm) : mterm =
     match mt.node with
-    | Mget (an, c, k) when is_not_varcol c.node ->
+    | Mget (an, c, k) when is_not_varcol c ->
       let type_asset = Tasset (dumloc an) in
       let c = Utils.get_asset_collection an in
       let get_asset = mk_mterm (Mget (an, Utils.get_asset_collection an, k)) type_asset in

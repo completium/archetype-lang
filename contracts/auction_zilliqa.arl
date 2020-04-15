@@ -1,9 +1,9 @@
 archetype auction_zilliqa
 
 variable highest_bid : tez = 0tz
-variable highest_bidder : address = @0
+variable highest_bidder : address = @tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg
 
-variable beneficiary : address = @tz1KmuhR6P52hw6xs5P69BXJYAURaznhvN1k
+variable beneficiary : address = @tz1bfVgcJC4ukaQSHUe1EbrUd5SekXeP9CWk
 
 asset pending_return identified by incumbent {
   incumbent   : address;
