@@ -1,7 +1,7 @@
 archetype health_care
 
-constant insurer : role = @tz1KksC8RvjUWAbXYJuNrUbontHGor25Cztk
-constant patient : role = @tz1KksC8RvjUWAbXYJuNrUbontHGor25Cztk
+constant insurer : role = @tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg
+constant patient : role = @tz1bfVgcJC4ukaQSHUe1EbrUd5SekXeP9CWk
 
 constant fee : tez = 100tz
 constant deductible : tez = 500tz

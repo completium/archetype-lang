@@ -36,7 +36,6 @@ zero_coupon_bond_with_insurance.arl \
 REMAINED_RET_CONTRACTS="
 animal_tracking.arl \
 autocallable.arl \
-c3n_without_loop.arl \
 escrow_basic.arl \
 escrow_simple.arl \
 ico.arl \
@@ -45,10 +44,10 @@ voting_process.arl \
 "
 
 EXEC_CONTRACTS="\
-auction.arl \
 auction_lazy.arl \
 auction_no_memory.arl \
 auction_zilliqa.arl \
+auction.arl \
 bond.arl \
 c3n.arl \
 certificate_generator.arl \
@@ -62,27 +61,26 @@ erc721.arl \
 escrow_penalty.arl \
 escrow_without_spec.arl \
 guarantee_fund.arl \
+health_care.arl \
 hello.arl \
-miles.arl \
 miles_with_expiration_simple.arl \
+miles.arl \
 mini_dao.arl \
 mwe_medium.arl \
 perishable.arl \
 register_candidate.arl \
 register_vote.arl \
 sig_challenge.arl \
-zero_coupon_bond.arl \
 zero_coupon_bond_with_insurance.arl \
+zero_coupon_bond.arl \
 "
 
 REMAINED_EXEC_CONTRACTS="\
 animal_tracking.arl \
 autocallable.arl \
-c3n_without_loop.arl \
 escrow_basic.arl \
 escrow_simple.arl \
 fizzy.arl \
-health_care.arl \
 ico.arl \
 miles_with_expiration.arl \
 voting_process.arl \
@@ -111,24 +109,23 @@ zero_coupon_bond_with_insurance.arl \
 "
 
 REMAINED_VERIF_CONTRACTS="\
-c3n.arl \
-certification_token.arl \
-coase.arl \
-miles_with_expiration_simple.arl \
-mwe_medium.arl \
-register_vote.arl \
 animal_tracking.arl \
 auction_zilliqa.arl \
 autocallable.arl \
 bond.arl \
-c3n_without_loop.arl \
+c3n.arl \
+certification_token.arl \
+coase.arl \
 erc721.arl \
 escrow_basic.arl \
 escrow_simple.arl \
 fizzy.arl \
 health_care.arl \
 ico.arl \
+miles_with_expiration_simple.arl \
 miles_with_expiration.arl \
+mwe_medium.arl \
+register_vote.arl \
 voting_process.arl \
 "
 
