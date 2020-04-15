@@ -604,8 +604,9 @@ let pp_specification fmt (v : lident specification) =
               && List.is_empty v.theorems
               && List.is_empty v.variables
               && List.is_empty v.invariants
-              && List.is_empty v.asserts
+              && Option.is_none v.effect
               && List.is_empty v.specs
+              && List.is_empty v.asserts
   in
   let pp_predicate fmt (p : lident predicate) =
     Format.fprintf fmt "predicate %a (%a) =@\n  @[%a@]"
@@ -668,7 +669,7 @@ let pp_specification fmt (v : lident specification) =
                     pp_id id
                     pp_label_term lt
                 )) l)) v.invariants
-      (pp_option (fun fmt -> Format.fprintf fmt "shadow effect {@\n  @[%a@]}@\n" pp_instruction)) v.effect
+      (pp_option (fun fmt -> Format.fprintf fmt "shadow effect {@\n  @[%a@]@\n}@\n" pp_instruction)) v.effect
       (pp_no_empty_list2 pp_assert) v.asserts
       (pp_no_empty_list2 pp_postcondition) v.specs
 
@@ -763,11 +764,17 @@ let pp_field fmt (f : lident decl_gen) =
     (pp_option (pp_prefix " := " pp_pterm)) f.default
 
 let pp_asset fmt (a : lident asset_struct) =
-  Format.fprintf fmt "asset %a%a%a {@\n  @[%a@]@\n}%a%a%a@\n"
+  let fields = List.filter (fun f -> not f.shadow) a.fields in
+  let shadow_fields = List.filter (fun f -> f.shadow) a.fields in
+  Format.fprintf fmt "asset %a%a%a {@\n  @[%a@]@\n}%a%a%a%a@\n"
     pp_id a.name
     (pp_option (pp_prefix " identified by " pp_id)) a.key
     (pp_do_if (not (List.is_empty a.sort)) (pp_prefix " sorted by " (pp_list ", " pp_id))) a.sort
-    (pp_list "@\n" pp_field) a.fields
+    (pp_list "@\n" pp_field) fields
+    (pp_do_if (not (List.is_empty shadow_fields)) (
+        fun fmt fields ->
+          Format.fprintf fmt " shadow {@\n  @[%a@]@\n} "
+            (pp_list "@\n" pp_field) fields)) shadow_fields
     (pp_option (pp_prefix " with states " pp_id)) a.state
     (pp_do_if (not (List.is_empty a.init)) (
         let pp1 fmt init1 =

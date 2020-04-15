@@ -814,15 +814,16 @@ let pp_model_internal fmt (model : model) b =
       in
       pp fmt (an, c, k)
 
-    | Mselect (an, c, p) ->
-      let index : int = get_preds_index env.select_preds p in
-      let pp fmt (an, c, _p) =
-        Format.fprintf fmt "select_%a_%i (%s, %a)"
+    | Mselect (an, c, la, lb, a) ->
+      let index : int = get_preds_index env.select_preds lb in
+      let pp fmt (an, c, _la, _lb, a) =
+        Format.fprintf fmt "select_%a_%i (%s, %a%a)"
           pp_str an index
           const_storage
           f c
+          (pp_list "" (pp_prefix ", " f)) a
       in
-      pp fmt (an, c, p)
+      pp fmt (an, c, la, lb, a)
 
     | Msort (an, c, l) -> (* TODO *)
       let pp fmt (an, c, l) =
@@ -1527,7 +1528,7 @@ let pp_model_internal fmt (model : model) b =
         an
         pp_btyp t
 
-    | Select (an, f) ->
+    | Select (an, _, f) ->
       let k, t = Utils.get_asset_key model an in
       let i = get_preds_index env.select_preds f in
       Format.fprintf fmt

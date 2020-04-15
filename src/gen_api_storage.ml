@@ -55,9 +55,9 @@ let process_api_storage (model : model) : model =
         [APIAsset (Clear an)]
       | Mclearfield (an, fn, _) ->
         [APIAsset (UpdateClear (an, fn))]
-      | Mapifselect (asset_name, _, p)
-      | Mselect (asset_name, _, p) ->
-        [APIAsset (Get asset_name); APIAsset (Select (asset_name, p))]
+      | Mapifselect (asset_name, _, la, lb, _)
+      | Mselect (asset_name, _, la, lb, _) ->
+        [APIAsset (Get asset_name); APIAsset (Select (asset_name, la, lb))]
       | Mapifsort (asset_name, _, l)
       | Msort (asset_name, _, l) ->
         [APIAsset (Sort (asset_name, l))]
@@ -148,7 +148,7 @@ let process_api_storage (model : model) : model =
                    | APIAsset (UpdateClear  (an, _))    -> an
                    | APIAsset (ToKeys        an)        -> an
                    | APIAsset (ColToKeys     an)        -> an
-                   | APIAsset (Select       (an, _))    -> an
+                   | APIAsset (Select       (an, _, _)) -> an
                    | APIAsset (Sort         (an, _))    -> an
                    | APIAsset (Contains      an)        -> an
                    | APIAsset (Nth           an)        -> an

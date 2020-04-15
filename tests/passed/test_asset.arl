@@ -10,8 +10,9 @@ asset my_asset_simple identified by str {
 asset my_asset identified by j {
   j : int;
   mycollection : my_asset_simple collection;
-} initialized by [ { 0; [] } ]
-
+} initialized by {
+  { 0; [] }
+}
 
 enum my_enums =
 | Init initial
@@ -28,10 +29,10 @@ with states my_enums
 with {
   a2 : k >= 1;
   a3 : k <= 10;
-} initialized by [
-  { @toto; Init; 9 };
-  { @tata; InProgress; 8 }
-]
+} initialized by {
+  { @toto; 4; true };
+  { @tata; 8; false }
+}
 
 action exec (a : my_asset_all) {
   effect {

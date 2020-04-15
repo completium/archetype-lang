@@ -502,7 +502,14 @@ asset:
 asset_post_option:
 | WITH STATES x=ident           { APOstates x }
 | WITH xs=braced(label_exprs)   { APOconstraints (xs) }
-| INITIALIZED BY e=simple_expr  { APOinit e }
+| INITIALIZED BY e=record_expr  { APOinit e }
+
+%inline record_expr:
+ | x=loc(record_expr_unloc) { x }
+
+%inline record_expr_unloc:
+ | LBRACE xs=separated_nonempty_list(SEMI_COLON, record_item) RBRACE
+     { Erecord xs }
 
 %inline asset_post_options:
  | xs=asset_post_option* { xs }

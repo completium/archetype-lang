@@ -555,14 +555,16 @@ let pp_mterm fmt (mt : mterm) =
       in
       pp fmt (an, k, l)
 
-    | Mremoveif (an, fn, i) ->
-      let pp fmt (an, fn, i) =
-        Format.fprintf fmt "removeif_%a (%a) (%a)"
+    | Mremoveif (an, c, la, lb, a) ->
+      let pp fmt (an, c, la, lb, a) =
+        Format.fprintf fmt "remove_if_%a (%a, ((%a) -> %a)(%a))"
           pp_str an
-          f fn
-          f i
+          f c
+          (pp_list ", " (fun fmt (id, t) -> Format.fprintf fmt "%s : %a" id pp_type t)) la
+          f lb
+          (pp_list ", " f) a
       in
-      pp fmt (an, fn, i)
+      pp fmt (an, c, la, lb, a)
 
     | Maddupdate (an, k, l) ->
       let pp fmt (an, k, l) =
@@ -585,14 +587,16 @@ let pp_mterm fmt (mt : mterm) =
       in
       pp fmt (an, c, k)
 
-    | Mselect (an, c, p) ->
-      let pp fmt (an, c, p) =
-        Format.fprintf fmt "select_%a (%a, %a)"
+    | Mselect (an, c, la, lb, a) ->
+      let pp fmt (an, c, la, lb, a) =
+        Format.fprintf fmt "select_%a (%a, ((%a) -> %a)(%a))"
           pp_str an
           f c
-          f p
+          (pp_list ", " (fun fmt (id, t) -> Format.fprintf fmt "%s : %a" id pp_type t)) la
+          f lb
+          (pp_list ", " f) a
       in
-      pp fmt (an, c, p)
+      pp fmt (an, c, la, lb, a)
 
     | Msort (an, c, l) ->
       let pp fmt (an, c, l) =
@@ -1016,14 +1020,16 @@ let pp_mterm fmt (mt : mterm) =
       in
       pp fmt (l, r)
 
-    | Mapifselect (an, c, p) ->
-      let pp fmt (an, c, p) =
-        Format.fprintf fmt "apifselect_%a (%a, %a)"
+    | Mapifselect (an, c, la, lb, a) ->
+      let pp fmt (an, c, la, lb, a) =
+        Format.fprintf fmt "apifselect_%a (%a, ((%a) -> %a)(%a))"
           pp_str an
           f c
-          f p
+          (pp_list ", " (fun fmt (id, t) -> Format.fprintf fmt "%s : %a" id pp_type t)) la
+          f lb
+          (pp_list ", " f) a
       in
-      pp fmt (an, c, p)
+      pp fmt (an, c, la, lb, a)
 
     | Mapifsort (an, c, l) ->
       let pp fmt (an, c, l) =
@@ -1101,7 +1107,7 @@ let pp_api_asset fmt = function
   | UpdateClear (an, fn) -> pp_str fmt ("clear\t " ^ an ^ " " ^ fn)
   | ToKeys an -> pp_str fmt ("to_keys\t " ^ an)
   | ColToKeys an -> pp_str fmt ("col_to_keys\t " ^ an)
-  | Select (an, p) ->
+  | Select (an, _, p) ->
     Format.fprintf fmt "select\t %s %a" an pp_mterm p
   | Sort (an, l) -> Format.fprintf fmt "sort\t%a on %a" pp_str an (pp_list ", " (fun fmt (a, b) -> Format.fprintf fmt "%a(%a)" pp_sort_kind b pp_ident a)) l
   | Contains an -> pp_str fmt ("contains " ^ an)
@@ -1179,17 +1185,20 @@ let pp_enum fmt (enum : enum) =
     (pp_list "@\n" pp_enum_item) enum.values
 
 let pp_asset_item fmt (item : asset_item) =
-  Format.fprintf fmt "%a : %a%a"
+  Format.fprintf fmt "%a : %a%a;"
     pp_id item.name
     pp_type item.type_
-    (pp_option (fun fmt -> Format.fprintf fmt " := %a" pp_mterm)) item.default
+    (pp_option (fun fmt -> Format.fprintf fmt " = %a" pp_mterm)) item.default
 
 let pp_asset fmt (asset : asset) =
-  Format.fprintf fmt "asset %a identified by %a%a {@\n  @[%a@]@\n}%a%a%a@\n"
+  let fields = List.filter (fun f -> not f.shadow) asset.values in
+  let shadow_fields = List.filter (fun f -> f.shadow) asset.values in
+  Format.fprintf fmt "asset %a identified by %a%a {@\n  @[%a@]@\n}%a%a%a%a@\n"
     pp_id asset.name
     pp_str asset.key
     (pp_do_if (not (List.is_empty asset.sort)) (fun fmt xs -> Format.fprintf fmt " sorted by %a" (pp_list ";@\n" pp_str) xs)) asset.sort
-    (pp_list "@\n" pp_asset_item) asset.values
+    (pp_list "@\n" pp_asset_item) fields
+    (pp_do_if (not (List.is_empty shadow_fields)) (fun fmt xs -> Format.fprintf fmt "@\nshadow {@\n  @[%a@]@\n}@\n" (pp_list ";@\n" pp_asset_item) xs)) shadow_fields
     (pp_do_if (not (List.is_empty asset.init)) (fun fmt xs -> Format.fprintf fmt "@\ninitialized by {@\n  @[%a@]@\n}@\n" (pp_list ";@\n" pp_mterm) xs)) asset.init
     (pp_do_if (not (List.is_empty asset.invariants)) (fun fmt xs -> Format.fprintf fmt "@\nwith {@\n  @[%a@]@\n}@\n" (pp_list ";@\n" pp_label_term) xs)) asset.invariants
     (pp_option (fun fmt id -> Format.fprintf fmt "@\nwith states %a@\n" pp_id id)) asset.state

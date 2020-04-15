@@ -170,7 +170,7 @@ let pp_model fmt (model : model) =
         an
         an
 
-    | Select (an, _) ->
+    | Select (an, _, _) ->
       Format.fprintf fmt
         "def select_%s (self, c, p):@\n  \
          reduce(@\n  \
@@ -783,14 +783,14 @@ let pp_model fmt (model : model) =
         in
         pp fmt (an, c, k)
 
-      | Mselect (an, c, p) ->
-        let pp fmt (an, c, p) =
+      | Mselect (an, c, la, lb, a) ->
+        let pp fmt (an, c, _la, lb, _a) =
           Format.fprintf fmt "self.select_%a (%a, fun the -> %a)"
             pp_str an
             f c
-            f p
+            f lb
         in
-        pp fmt (an, c, p)
+        pp fmt (an, c, la, lb, a)
 
       | Msort (an, c, l) ->
         let pp fmt (an, c, l) =

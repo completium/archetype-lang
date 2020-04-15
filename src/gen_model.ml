@@ -187,6 +187,10 @@ let to_model (ast : A.model) : M.model =
     | _ -> assert false
   in
 
+  let extract_lambda (mt : M.mterm) : (ident * M.type_) list * M.mterm * M.mterm list =
+  (* TODO *)
+    [], mt, []
+  in
 
   let to_mterm_node (n : A.lident A.term_node) (f : A.lident A.term_gen -> M.mterm) (ftyp : 't -> M.type_) (pterm : A.pterm) (formula : bool) : (M.lident, M.mterm) M.mterm_node =
     let process_before vt e =
@@ -261,8 +265,8 @@ let to_model (ast : A.model) : M.model =
 
     (* | A.Pcall (Some p, A.Cconst A.Cbefore,    []) -> M.Msetbefore    (f p) *)
     (* | A.Pcall (Some p, A.Cconst A.Cunmoved,   []) -> M.Msetunmoved   (f p)
-    | A.Pcall (Some p, A.Cconst A.Cadded,     []) -> M.Msetadded     (f p)
-    | A.Pcall (Some p, A.Cconst A.Cremoved,   []) -> M.Msetremoved   (f p) *)
+       | A.Pcall (Some p, A.Cconst A.Cadded,     []) -> M.Msetadded     (f p)
+       | A.Pcall (Some p, A.Cconst A.Cremoved,   []) -> M.Msetremoved   (f p) *)
     | A.Pcall (Some p, A.Cconst A.Citerated,  []) -> M.Msetiterated  (f p)
     | A.Pcall (Some p, A.Cconst A.Ctoiterate, []) -> M.Msettoiterate (f p)
 
@@ -353,9 +357,10 @@ let to_model (ast : A.model) : M.model =
       let fp = f p in
       let fq = f q in
       let asset_name = extract_asset_name fp in
+      let lambda_args, lambda_body, args = extract_lambda fq in
       if formula
-      then M.Mapifselect (asset_name, fp, fq)
-      else M.Mselect (asset_name, fp, fq)
+      then M.Mapifselect (asset_name, fp, lambda_args, lambda_body, args)
+      else M.Mselect (asset_name, fp, lambda_args, lambda_body, args)
 
     | A.Pcall (Some p, A.Cconst (A.Csort), args) when is_asset_container p ->
       let fp = f p in
@@ -639,8 +644,9 @@ let to_model (ast : A.model) : M.model =
     | A.Icall (Some p, A.Cconst (A.Cremoveif), [AFun (_qi, _qtt, q)]) when is_asset_container p ->
       let fp = f p in
       let fq = f q in
+      let lambda_args, lambda_body, args = extract_lambda fq in
       let asset_name = extract_asset_name fp in
-      M.Mremoveif (asset_name, fp, fq)
+      M.Mremoveif (asset_name, fp, lambda_args, lambda_body, args)
 
     | A.Icall (Some p, A.Cconst (A.Cprepend), [AExpr q]) when is_list p -> (
         let fp = f p in

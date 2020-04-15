@@ -237,14 +237,14 @@ let rec pp_expr outer pos fmt a =
       let s =
         match lbl with
         | VLBefore   -> "before"
-        | VLIdent  x -> Format.asprintf "%a" pp_id x
+        | VLIdent  x -> Format.asprintf "at(%a)" pp_id x
       in Format.fprintf fmt "%s." s in
 
     let pp_vset fmt vset =
       let s =
         match vset with
         | VSAdded   -> "added"
-        | VSUnmoved -> "moved"
+        | VSUnmoved -> "unmoved"
         | VSRemoved -> "removed"
       in Format.fprintf fmt "%s." s in
 
@@ -732,14 +732,20 @@ let pp_ident_state fmt item =
 let pp_asset_post_option fmt (apo : asset_post_option) =
   match apo with
   | APOstates i ->
-    Format.fprintf fmt " with states %a"
+    Format.fprintf fmt " with states %a@\n"
       pp_id i
   | APOconstraints cs ->
     Format.fprintf fmt " with {@\n  @[%a@]@\n}"
       pp_label_exprs cs
   | APOinit e ->
-    Format.fprintf fmt " initialized by %a"
-      pp_simple_expr e
+    let l =
+      begin
+        match unloc e with
+        | Erecord l -> List.map snd l
+        | _ -> assert false
+      end
+    in
+    Format.fprintf fmt " initialized by {@\n  @[%a@]@\n}" (pp_list ";@\n" pp_simple_expr) l
 
 let map_option f x =
   match x with
@@ -805,13 +811,13 @@ let pp_specification_item fmt = function
   | Vassert (id, f, is, u) -> pp_assert fmt (id, f, is, u)
 
   | Vpostcondition (id, f, xs, u, Some PKPost) ->
-       pp_postcondition fmt (id, f, xs, u)
+    pp_postcondition fmt (id, f, xs, u)
 
   | Vpostcondition (id, f, xs, u, Some PKInv) ->
-      pp_contractinvariant fmt (id, f, xs, u)
+    pp_contractinvariant fmt (id, f, xs, u)
 
   | Vpostcondition (id, f, xs, u, None) ->
-      pp_pc_ci fmt ("", id, f, xs, u)
+    pp_pc_ci fmt ("", id, f, xs, u)
 
 let pp_specification_items = pp_list "@\n@\n" pp_specification_item
 
@@ -836,18 +842,43 @@ let pp_function fmt (f : s_function) =
             Format.fprintf fmt "{@\n%a@\n}" (pp_expr e_equal PRight) f.body)) f
 
 let pp_spec fmt (items, exts) =
+  let is_simple_spec items =
+    List.for_all (fun x ->
+        match x with
+        | Vpostcondition (_, _, _, _, None) -> true
+        | _ -> false
+      ) items
+  in
   let items = items |> List.map (fun x -> x |> unloc) in
   match items with
-  (* | l when List.fold_left (fun accu x -> match x with | Vassert _ | Vspecification _ -> accu | _ -> false) true l ->
-     begin
-      Format.fprintf fmt "%a@\n" pp_specification_items items
-     end *)
+  | l when is_simple_spec l ->
+    begin
+      Format.fprintf fmt "specification%a {@\n  @[%a@]@\n}@\n"
+        pp_extensions exts
+        (pp_list "@\n" (
+            fun fmt x ->
+              match x with
+              | Vpostcondition (id, f, _, u, None) ->
+                Format.fprintf fmt "%a: %a%a;@\n"
+                  pp_id id
+                  (pp_expr e_default PNone) f
+                  pp_use u
+              | _ -> assert false
+          )) items
+    end
   | _ ->
     begin
       Format.fprintf fmt "specification%a {@\n  @[%a@]@\n}@\n"
         pp_extensions exts
         pp_specification_items items
     end
+
+
+(* | l when List.fold_left (fun accu x -> match x with | Vassert _ | Vspecification _ -> accu | _ -> false) true l ->
+   begin
+   Format.fprintf fmt "%a@\n" pp_specification_items items
+   end
+       | _ -> *)
 
 let rec pp_security_arg fmt arg =
   let arg = unloc arg in
@@ -959,14 +990,14 @@ let rec pp_declaration fmt { pldesc = e; _ } =
          )) ids
 
   | Dasset (id, fields, shadow_fields, opts, apo, ops, exts) ->
-    Format.fprintf fmt "asset%a%a %a%a%a%a%a"
+    Format.fprintf fmt "asset%a%a %a%a%a%a%a@\n"
       pp_extensions exts
       (pp_option pp_asset_operation) ops
       pp_id id
       (pp_prefix " " (pp_list " @," pp_asset_option)) opts
-      (pp_do_if (List.length fields > 0) ((fun fmt -> Format.fprintf fmt " {@\n  @[%a@]@\n}@\n" (pp_list ";@\n" pp_field)))) fields
-      (pp_do_if (List.length shadow_fields > 0) ((fun fmt -> Format.fprintf fmt "shadow {@\n  @[%a@]@\n}@\n" (pp_list ";@\n" pp_field)))) shadow_fields
-      (pp_list "@\n" pp_asset_post_option) apo
+      (pp_do_if (List.length fields > 0) ((fun fmt -> Format.fprintf fmt " {@\n  @[%a@]@\n}" (pp_list ";@\n" pp_field)))) fields
+      (pp_do_if (List.length shadow_fields > 0) ((fun fmt -> Format.fprintf fmt "shadow {@\n  @[%a@]@\n}" (pp_list ";@\n" pp_field)))) shadow_fields
+      (pp_list " " pp_asset_post_option) apo
 
   | Daction (id, args, props, code, exts) ->
     Format.fprintf fmt "action%a %a%a%a"

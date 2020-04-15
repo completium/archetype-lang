@@ -229,7 +229,7 @@ let pp_model fmt (model : model) =
         an pp_btyp t
         an
 
-    | Select (an, _) ->
+    | Select (an, _, _) ->
       let k, t = Utils.get_asset_key model an in
       Format.fprintf fmt
         "let select_%s (s, l, p : storage * %a list * (%s -> bool)) : %a list =@\n  \
@@ -440,7 +440,7 @@ let pp_model fmt (model : model) =
       let contains_select_asset_name a_name l : bool =
         List.fold_left (fun accu x ->
             match x.node_item with
-            | APIAsset  (Select (an, _)) -> accu || String.equal an a_name
+            | APIAsset  (Select (an, _, _)) -> accu || String.equal an a_name
             | _ -> accu
           ) false l
       in
@@ -449,7 +449,7 @@ let pp_model fmt (model : model) =
           then accu
           else
             match x.node_item with
-            | APIAsset  (Select (an, _p)) when contains_select_asset_name an accu -> accu
+            | APIAsset  (Select (an, _p, _)) when contains_select_asset_name an accu -> accu
             | _ -> x::accu
         ) l []
     in
@@ -988,15 +988,15 @@ let pp_model fmt (model : model) =
         in
         pp fmt (an, c, k)
 
-      | Mselect (an, c, p) ->
-        let pp fmt (an, c, p) =
+      | Mselect (an, c, la, lb, a) ->
+        let pp fmt (an, c, _la, lb, _a) =
           Format.fprintf fmt "select_%a (%s, %a, fun the -> %a)"
             pp_str an
             const_storage
             f c
-            f p
+            f lb
         in
-        pp fmt (an, c, p)
+        pp fmt (an, c, la, lb, a)
 
       | Msort (an, c, l) ->
         let pp fmt (an, c, l) =

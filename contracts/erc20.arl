@@ -22,9 +22,9 @@ asset tokenHolder identified by holder {
 } with {
     i1: tokens >= 0;
     i3: allowances.sum(the.amount) <= tokens;
-} initialized by [
+} initialized by {
   { holder = caller; tokens = total; allowances = [] }
-]
+}
 
 action dotransfer (dest : pkey of tokenHolder, value : int) {
 
