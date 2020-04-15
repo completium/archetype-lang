@@ -132,7 +132,7 @@ action contribute () {
     );
     (* convert contribution to nb of bcd tokens *)
     let rate = get_rate () in
-    let nb_tokens : tez = lcontrib * rate in
+    let nb_tokens : tez = rate * lcontrib in
     (* update ico stats *)
     nb_bcd_sold   += nb_tokens;
     nb_tez_raised += lcontrib;
