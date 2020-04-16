@@ -1548,7 +1548,8 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
                      loc_term (mk_ac a))
       end
     | Mapifnth       _ -> error_not_translated "Mapifnth"
-    | Mapifcount     (a,t) ->  Tcard (with_dummy_loc a, map_mterm m ctx t)
+    | Mapifcount     (a,{ node=Mcast (_,_,c); type_=_ }) -> Tcard (with_dummy_loc a, map_mterm m ctx c)
+    | Mapifcount     (a,t) -> Tvcard (with_dummy_loc a, map_mterm m ctx t)
     | Mapifsum       (a,_,f) ->
       let id = mk_sum_name m a f in
       Tapp (loc_term (Tvar id), [mk_ac_ctx a ctx])
@@ -1623,6 +1624,12 @@ let map_storage_items m = List.fold_left (fun acc (item : M.storage_item) ->
     acc @
     match item.typ with
     | M.Tcontainer (Tasset id, Collection) ->
+      let id = unloc id in [
+        mk_collection_field id mk_ac_id;
+        mk_collection_field id mk_ac_added_id;
+        mk_collection_field id mk_ac_rmed_id
+      ]
+    | M.Tcontainer (Tasset id, View) ->
       let id = unloc id in [
         mk_collection_field id mk_ac_id;
         mk_collection_field id mk_ac_added_id;

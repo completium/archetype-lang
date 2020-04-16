@@ -557,7 +557,7 @@ and pp_recfield fmt (n,t) =
     pp_str n
     (pp_term e_default PRight) t
 and pp_tlist outer pos fmt = function
-  | []    -> pp_str fmt "Nil"
+  | []    -> pp_str fmt "L.Nil"
   | e::tl -> Format.fprintf fmt "Cons %a (%a)"
                (pp_with_paren (pp_term outer pos)) e
                (pp_tlist outer pos) tl
