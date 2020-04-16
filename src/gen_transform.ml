@@ -7,20 +7,26 @@ type error_desc =
   | AssetPartitionnedby of string * string list
   | CannotBuildAsset of string * string
   | ContainersInAssetContainers of string * string * string
+  | NoEmptyContainerForInitAsset of string * string * container
   | NoEntrypoint
 
 let pp_error_desc fmt = function
   | AssetPartitionnedby (i, l)         ->
     Format.fprintf fmt
-      "Cannot access asset collection: asset %s is partitionned by field(s) (%a)"
+      "Cannot access asset collection: asset %s is partitionned by field(s) (%a)."
       i (Printer_tools.pp_list ", " Printer_tools.pp_str) l
 
   | CannotBuildAsset (an, fn) ->
-    Format.fprintf fmt "Cannot build an asset %s, default value of field '%s' is missing" an fn
+    Format.fprintf fmt "Cannot build an asset %s, default value of field '%s' is missing." an fn
 
   | ContainersInAssetContainers (an, fn, an2) ->
-    Format.fprintf fmt "Cannot build an asset '%s', '%s' is a container field, which refers to an asset '%s', which contains a container field itself"
+    Format.fprintf fmt "Cannot build an asset '%s', '%s' is a container field, which refers to an asset '%s', which contains a container field itself."
       an fn an2
+
+  | NoEmptyContainerForInitAsset (an, fn, c) ->
+    Format.fprintf fmt "Field '%s' of '%s' asset is a %a, which must be initialized by an empty collection."
+      fn an
+      Printer_model.pp_container c
 
   | NoEntrypoint -> Format.fprintf fmt "No entrypoint found (action or transtion)"
 
@@ -431,6 +437,25 @@ let check_containers_asset (model : model) : model =
       ) [] assets
   in
   List.iter (fun (an, fn, a2, l) -> emit_error (l, ContainersInAssetContainers (an, fn, a2))) l;
+  if List.is_not_empty l then raise (Error.Stop 5);
+  model
+
+let check_empty_container_on_initializedby (model : model) : model =
+  let l : (string * string * container * Location.t) list =
+    List.fold_right (fun asset accu -> ((List.fold_right (fun (value : mterm) accu ->
+        (fun (asset : asset) (value : mterm) accu ->
+           match value.node with
+           | Masset l ->
+             (List.fold_right2 (fun (field : asset_item) (y : mterm) accu ->
+                  match field.type_, y.node with
+                  | Tcontainer (Tasset _, c), Massets ll when List.is_not_empty ll -> [unloc asset.name, unloc field.name, c, y.loc]
+                  | _ -> accu
+                ) asset.values l [])::accu
+           | _ -> accu
+        )
+          asset value accu) asset.init []) |> List.flatten)::accu) (Utils.get_assets model) [] |> List.flatten
+  in
+  List.iter (fun (an, fn, c, l) -> emit_error (l, (NoEmptyContainerForInitAsset (an, fn, c)))) l;
   if List.is_not_empty l then raise (Error.Stop 5);
   model
 
