@@ -187,11 +187,6 @@ let to_model (ast : A.model) : M.model =
     | _ -> assert false
   in
 
-  let extract_lambda (mt : M.mterm) : (ident * M.type_) list * M.mterm * M.mterm list =
-  (* TODO *)
-    [], mt, []
-  in
-
   let to_mterm_node (n : A.lident A.term_node) (f : A.lident A.term_gen -> M.mterm) (ftyp : 't -> M.type_) (pterm : A.pterm) (formula : bool) : (M.lident, M.mterm) M.mterm_node =
     let process_before vt e =
       match vt with
@@ -353,11 +348,11 @@ let to_model (ast : A.model) : M.model =
       then M.Mapifget (asset_name, fp, fq)
       else M.Mget (asset_name, fp, fq)
 
-    | A.Pcall (Some p, A.Cconst (A.Cselect), [AFun (_qi, _qt, q)]) when is_asset_container p ->
+    | A.Pcall (Some p, A.Cconst (A.Cselect), [AFun (_id, _type, l, q)]) when is_asset_container p ->
       let fp = f p in
-      let fq = f q in
+      let lambda_body = f q in
       let asset_name = extract_asset_name fp in
-      let lambda_args, lambda_body, args = extract_lambda fq in
+      let lambda_args, args = List.fold_right (fun (x, y, z) (l1, l2) -> ((unloc x, ptyp_to_type y)::l1, (f z)::l2)) l ([], []) in
       if formula
       then M.Mapifselect (asset_name, fp, lambda_args, lambda_body, args)
       else M.Mselect (asset_name, fp, lambda_args, lambda_body, args)
@@ -401,7 +396,7 @@ let to_model (ast : A.model) : M.model =
       then M.Mapifcount (asset_name, fp)
       else M.Mcount (asset_name, fp)
 
-    | A.Pcall (Some p, A.Cconst (A.Csum), [AFun (_qi, _qt, q)]) when is_asset_container p ->
+    | A.Pcall (Some p, A.Cconst (A.Csum), [AFun (_qi, _qt, _l, q)]) when is_asset_container p ->
       let fp = f p in
       let fq = f q in
       let asset_name = extract_asset_name fp in
@@ -641,10 +636,10 @@ let to_model (ast : A.model) : M.model =
       let asset_name = extract_asset_name fp in
       M.Mupdate (asset_name, fk, fe)
 
-    | A.Icall (Some p, A.Cconst (A.Cremoveif), [AFun (_qi, _qtt, q)]) when is_asset_container p ->
+    | A.Icall (Some p, A.Cconst (A.Cremoveif), [AFun (_qi, _qtt, l, q)]) when is_asset_container p ->
       let fp = f p in
-      let fq = f q in
-      let lambda_args, lambda_body, args = extract_lambda fq in
+      let lambda_body = f q in
+      let lambda_args, args = List.fold_right (fun (x, y, z) (l1, l2) -> ((unloc x, ptyp_to_type y)::l1, (f z)::l2)) l ([], []) in
       let asset_name = extract_asset_name fp in
       M.Mremoveif (asset_name, fp, lambda_args, lambda_body, args)
 

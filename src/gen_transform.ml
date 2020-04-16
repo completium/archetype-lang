@@ -762,8 +762,27 @@ let remove_enum_matchwith (model : model) : model =
       end
     | _ -> map_mterm (process_mterm ctx) mt
   in
+  let process_type t =
+    match t with
+    | Tenum _ -> Tbuiltin Bint
+    | _ -> t
+  in
+  let process_functions f =
+    let process_fs (fs : function_struct) =
+      fs
+    in
+    let process_node (node : function_node) : function_node =
+      match node with
+      | Function (fs, type_) -> Function (process_fs fs, process_type type_)
+      | Entry fs -> Entry (process_fs fs)
+    in
+    { f with
+      node = process_node f.node;
+    }
+  in
   { model with
-    decls = process_decls model.decls
+    decls = process_decls model.decls;
+    functions = List.map process_functions model.functions;
   }
   |> map_mterm_model process_mterm
 
@@ -1799,9 +1818,9 @@ let split_key_values (model : model) : model =
         List.find (fun (id, _) -> String.equal asset_key id) assoc_fields |> snd,
         { asset_value with
           node = Masset (List.map (fun (x : mterm) ->
-          match x with
-          | { type_ = Tcontainer (Tasset an, c); _} -> { x with type_ = let k = Utils.get_asset_key model (unloc an) |> snd in Tcontainer (Tbuiltin k, c) }
-          | _ -> x) l)
+              match x with
+              | { type_ = Tcontainer (Tasset an, c); _} -> { x with type_ = let k = Utils.get_asset_key model (unloc an) |> snd in Tcontainer (Tbuiltin k, c) }
+              | _ -> x) l)
         }
       end
     | _ -> assert false

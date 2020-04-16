@@ -415,12 +415,13 @@ let rec pp_pterm fmt (pterm : pterm) =
 
 and pp_term_arg fmt = function
   | AExpr pt -> pp_pterm fmt pt
-  | AFun (id, t, pt) ->
+  | AFun (id, t, l, pt) ->
     if !Options.opt_typed
     then
-      Format.fprintf fmt "(%a : %a) -> %a"
+      Format.fprintf fmt "(%a : %a)%a -> %a"
         pp_id id
         pp_ptyp t
+        (pp_list "" (fun fmt (x, y, z) -> Format.fprintf fmt " (%a : %a = %a)" pp_id x pp_ptyp y pp_pterm z)) l
         pp_pterm pt
     else
       pp_pterm fmt pt
