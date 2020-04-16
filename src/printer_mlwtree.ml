@@ -277,6 +277,11 @@ let rec pp_term outer pos fmt = function
       pp_str (String.capitalize_ascii a)
       (pp_with_paren (pp_term outer pos)) e1
       (pp_with_paren (pp_term outer pos)) e2
+   | Teqview (a, e1, e2) ->
+    Format.fprintf fmt "%a.eq_view %a %a"
+      pp_str (String.capitalize_ascii a)
+      (pp_with_paren (pp_term outer pos)) e1
+      (pp_with_paren (pp_term outer pos)) e2
   | Teq (_, e1, e2) ->
     Format.fprintf fmt "%a = %a" (pp_term outer pos) e1 (pp_term outer pos) e2
   | Tneq (_, e1, e2) ->

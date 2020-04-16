@@ -14,7 +14,7 @@ let generate_storage (model : model) : model =
 
   let asset_to_storage_items (asset : asset) : storage_item =
     let asset_name = asset.name in
-    let typ_ = Tcontainer (Tasset asset_name, View) in
+    let typ_ = Tcontainer (Tasset asset_name, Collection) in
     mk_storage_item
       asset_name
       (MTasset (unloc asset_name))

@@ -130,6 +130,7 @@ type ('e,'t,'i) abstract_term =
   | Tpand   of 'e * 'e
   (* comp *)
   | Teq     of 't * 'e * 'e
+  | Teqview of 'i * 'e * 'e
   | Tneq    of 't * 'e * 'e
   | Tlt     of 't * 'e * 'e
   | Tle     of 't * 'e * 'e
@@ -394,6 +395,7 @@ and map_abstract_term
   | Tnot e             -> Tnot (map_e e)
   | Tpand (e1,e2)      -> Tpand (map_e e1,map_e e2)
   | Teq (t,l,r)        -> Teq (map_t t, map_e l, map_e r)
+  | Teqview (i,l,r)    -> Teqview (map_i i, map_e l, map_e r)
   | Tneq (t,l,r)       -> Tneq (map_t t, map_e l, map_e r)
   | Tlt (t,l,r)        -> Tlt (map_t t, map_e l, map_e r)
   | Tle (t,l,r)        -> Tle (map_t t, map_e l, map_e r)
@@ -777,7 +779,8 @@ let compare_abstract_term
   | Tmod (t1,l1,r1), Tmod (t2,l2,r2) -> cmpt t1 t2 && cmpe l1 l2 && cmpe r1 r2
   | Tnot e1, Tnot e2 -> cmpe e1 e2
   | Tpand (e1,e2), Tpand (e3,e4) -> cmpe e1 e3 && cmpe e2 e4
-  | Teq (t1,l1,r1), Teq (t2,l2,r2) -> cmpt t1 t2 && cmpe l1 l2 && cmpe r1 r2
+  | Teq (i1,l1,r1), Teq (i2,l2,r2) -> cmpt i1 i2 && cmpe l1 l2 && cmpe r1 r2
+  | Teqview (i1,l1,r1), Teqview (i2,l2,r2) -> cmpi i1 i2 && cmpe l1 l2 && cmpe r1 r2
   | Tneq (t1,l1,r1), Tneq (t2,l2,r2) -> cmpt t1 t2 && cmpe l1 l2 && cmpe r1 r2
   | Tlt (t1,l1,r1), Tlt (t2,l2,r2) -> cmpt t1 t2 && cmpe l1 l2 && cmpe r1 r2
   | Tle (t1,l1,r1), Tle (t2,l2,r2) -> cmpt t1 t2 && cmpe l1 l2 && cmpe r1 r2

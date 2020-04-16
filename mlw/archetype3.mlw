@@ -220,6 +220,18 @@ module AssetCollection
   type view = list key
 
   (* ------------------------------------------------------------------------ *)
+  let rec function eq_view (v1 v2 : view) : bool
+  variant { v1, v2 }
+  = match v1,v2 with
+  | Cons k1 tl1, Cons k2 tl2 ->
+    if k1 = k2 then
+      eq_view tl1 tl2
+    else false
+  | Nil,Nil -> true
+  | _ -> false
+  end
+
+  (* ------------------------------------------------------------------------ *)
   let function mk (s : F.fset) : collection
   requires { key_injective s }
   ensures { F.(==) s (content result) }

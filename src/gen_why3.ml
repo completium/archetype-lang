@@ -575,6 +575,11 @@ let rec map_mtype (t : M.type_) : loc_typ =
       | M.Tcontract _                         -> Tyint
       | _ -> assert false)
 
+let rec map_record_field_type (t : M.type_) : loc_typ =
+  match t with
+  | M.Tcontainer (Tasset id, _) -> map_mtype (M.Tcontainer (Tasset id,M.View))
+  | _ -> map_mtype t
+
 let is_local_invariant _m an t =
   let rec internal_is_local acc (term : M.mterm) =
     match term.M.node with
@@ -832,7 +837,7 @@ let mk_eq_asset _m (r : M.asset) =
       let f2 = Tdoti("a2",unloc item.name) in
       match item.type_ with
       | Tasset a -> Tapp (Tvar ("eq_"^(unloc a)),[f1;f2])
-      | Tcontainer _ -> Tapp (Tvar "eq_keyl",[f1;f2])
+      | Tcontainer (Tasset a, Collection) -> Teqview(unloc a,f1,f2)
       | Tbuiltin Bbool -> (* a = b is (a && b) || (not a && not b) *)
         Tor (Tpand (f1,f2),Tpand(Tnot f1, Tnot f2))
       | Tbuiltin Brational ->
@@ -1603,7 +1608,7 @@ and mk_invariants (m : M.model) ctx (lbl : ident option) lbody =
 
 let map_record_values m (values : M.asset_item list) =
   List.map (fun (value : M.asset_item) ->
-      let typ_ = map_mtype value.type_ in
+      let typ_ = map_record_field_type value.type_ in
       let init_value = type_to_init m typ_ in {
         name     = map_lident value.name;
         typ      = typ_;
