@@ -1752,7 +1752,7 @@ let mk_get_sum_value_from_pos asset id formula =
   Dfun {
     name = mk_get_sum_value_from_pos_id asset id;
     logic = Logic;
-    args = ["c",Tycoll asset; "i",Tyint];
+    args = ["v",Tyview asset; "c",Tycoll asset; "i",Tyint];
     returns = Tyint;
     raises = [];
     variants = [];
@@ -1761,12 +1761,19 @@ let mk_get_sum_value_from_pos asset id formula =
     body =
       let rec mk_body = function
         | Tdot (Tvar v,f) when compare v "the" = 0 ->
-          Tapp (f,
-                [
-                  Tnth (asset,
-                        Tvar "i",
-                        Tvar "c")
-                ])
+          Tmatch (
+            Tnth (asset,
+                  Tvar "i",
+                  Tvar "v"), [
+              Tpsome "k",(Tmatch (Tget(asset,
+                                        mk_ac asset,
+                                       Tvar "k"),[
+                                         Tpsome "e", Tapp (f,[Tvar "e"]);
+                                         Twild, Tint (Big_int.zero_big_int)
+                                       ]));
+              Twild,Tint (Big_int.zero_big_int)
+            ]
+          )
         | _ as t -> map_abstract_term mk_body Tools.id Tools.id t in
       mk_body formula
   }
