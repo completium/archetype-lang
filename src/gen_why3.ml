@@ -196,27 +196,29 @@ let mk_const_fields m = [
     ]
   else []
 
+
 let mk_sum_clone_id m a f = (String.capitalize_ascii a) ^"Sum" ^ (string_of_int (M.Utils.get_sum_idx m a f))
-let mk_sum_name m asset formula =  (mk_sum_clone_id m asset formula)^".sum"
 let mk_sum_clone_from_id asset id = (String.capitalize_ascii asset) ^"Sum" ^ (string_of_int id)
-let mk_sum_name_from_id asset id = (mk_sum_clone_from_id asset id)^".sum"
 let mk_get_sum_value_id asset id = "get_" ^ asset ^ "_sum" ^ (string_of_int id)
 let mk_get_sum_value_from_pos_id asset id = (mk_get_sum_value_id asset id)^"_from_pos"
 
-let mk_sum_clone m asset key formula =
+let mk_sum a i v c = Tsum (mk_sum_clone_from_id a i, v, c)
+let mk_sum_from_col a i c = mk_sum a i (Ttoview (a,c)) c
+
+let mk_sum_clone m asset _key formula =
   let cap_asset = String.capitalize_ascii asset in
   let id = M.Utils.get_sum_idx m asset formula in
   Dclone ([gArchetypeDir;gArchetypeSum],
           mk_sum_clone_from_id asset id,
-          [Ctype ("container",
+          [Ctype ("collection",
                   cap_asset ^ ".collection");
            Ctype ("t",
                   asset);
-           Cval ("f",
-                 mk_get_sum_value_from_pos_id asset id);
+           (* Cval ("f",
+                 mk_get_sum_value_from_pos_id asset id); *)
            Cval ("field",
                  mk_get_sum_value_id asset id);
-           Cval ("card",
+           (* Cval ("card",
                  cap_asset ^ ".card");
            Cfun ("union",
                  cap_asset ^ ".union");
@@ -233,7 +235,9 @@ let mk_sum_clone m asset key formula =
            Cval ("witness",
                  cap_asset ^ ".witness");
            Cval ("keyf",
-                 key);
+                 key); *)
+           Cval ("get",
+                 cap_asset ^ ".get")
           ])
 
 
@@ -575,7 +579,7 @@ let rec map_mtype (t : M.type_) : loc_typ =
       | M.Tcontract _                         -> Tyint
       | _ -> assert false)
 
-let rec map_record_field_type (t : M.type_) : loc_typ =
+let map_record_field_type (t : M.type_) : loc_typ =
   match t with
   | M.Tcontainer (Tasset id, _) -> map_mtype (M.Tcontainer (Tasset id,M.View))
   | _ -> map_mtype t
@@ -1306,9 +1310,10 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Mnth                (n,c,k) -> Tapp (loc_term (Tvar ("nth_" ^ n)),[map_mterm m ctx c; map_mterm m ctx k])
     | Mcount              (a,t) -> Tvcard (with_dummy_loc a, map_mterm m ctx t)
 
-    | Msum          (a,_,f) ->
-      let id = mk_sum_name m a f in
-      Tapp (loc_term (Tvar id), [mk_ac_ctx a ctx])
+    | Msum          (a,v,f) ->
+      let cloneid = mk_sum_clone_id m a f in
+      let col = mk_ac_ctx a ctx in
+      Tsum(with_dummy_loc cloneid,map_mterm m ctx v,col)
     | Mhead (n,c,v) -> Tapp(loc_term (Tdoti(String.capitalize_ascii n,"head")),
                             [map_mterm m ctx v; map_mterm m ctx c])
     | Mtail  (n,c,v) -> Tapp(loc_term (Tdoti(String.capitalize_ascii n,"tail")),
@@ -1555,9 +1560,9 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Mapifnth       _ -> error_not_translated "Mapifnth"
     | Mapifcount     (a,{ node=Mcast (_,_,c); type_=_ }) -> Tcard (with_dummy_loc a, map_mterm m ctx c)
     | Mapifcount     (a,t) -> Tvcard (with_dummy_loc a, map_mterm m ctx t)
-    | Mapifsum       (a,_,f) ->
-      let id = mk_sum_name m a f in
-      Tapp (loc_term (Tvar id), [mk_ac_ctx a ctx])
+    | Mapifsum       (a,v,f) ->
+      let cloneid = mk_sum_clone_id m a f in
+      Tsum(with_dummy_loc cloneid,map_mterm m ctx v,mk_ac_ctx a ctx)
     | Mapifhead (n,c,v) -> Tapp(loc_term (Tdoti(String.capitalize_ascii n,"head")),
                                 [map_mterm m ctx v; map_mterm m ctx c])
     | Mapiftail (n,c,v) -> Tapp(loc_term (Tdoti(String.capitalize_ascii n,"tail")),
@@ -1766,7 +1771,7 @@ let mk_get_sum_value_from_pos asset id formula =
                   Tvar "i",
                   Tvar "v"), [
               Tpsome "k",(Tmatch (Tget(asset,
-                                        mk_ac asset,
+                                       Tvar "c",
                                        Tvar "k"),[
                                          Tpsome "e", Tapp (f,[Tvar "e"]);
                                          Twild, Tint (Big_int.zero_big_int)
@@ -1865,12 +1870,10 @@ let mk_set_sum_ensures m a =
       acc @ [{
           id = "set_" ^ a ^ "_sum_post";
           form = Teq (Tyint,
-                      Tapp (Tvar (mk_sum_name_from_id a idx),
-                            [mk_ac_old a]),
+                      mk_sum_from_col a idx (mk_ac_old a),
                       Tplus (Tyint,
                              Tminus (Tyint,
-                                     Tapp (Tvar (mk_sum_name_from_id a idx),
-                                           [mk_ac a]),
+                                     mk_sum_from_col a idx (mk_ac a),
                                      Tapp(Tvar (mk_get_sum_value_id a idx),
                                           [Tvar "new_asset"])),
                              Tapp(
@@ -2021,11 +2024,9 @@ let mk_add_sum_ensures m a e =
       acc @ [{
           id = "add_" ^ a ^ "_sum_post";
           form = Teq (Tyint,
-                      Tapp (Tvar (mk_sum_name_from_id a idx),
-                            [mk_ac a]),
+                      mk_sum_from_col a idx (mk_ac a),
                       Tplus (Tyint,
-                             Tapp (Tvar (mk_sum_name_from_id a idx),
-                                   [mk_ac_old a]),
+                             mk_sum_from_col a idx (mk_ac_old a),
                              Tapp(
                                Tvar (mk_get_sum_value_id a idx),
                                [Tvar e])))
@@ -2109,11 +2110,9 @@ let mk_rm_sum_ensures m a e =
       acc @ [{
           id = "remove_" ^ a ^ "_sum_post";
           form = Teq (Tyint,
-                      Tapp (Tvar (mk_sum_name_from_id a idx),
-                            [mk_ac a]),
+                      mk_sum_from_col a idx (mk_ac a),
                       Tminus (Tyint,
-                              Tapp (Tvar (mk_sum_name_from_id a idx),
-                                    [mk_ac_old a]),
+                              mk_sum_from_col a idx (mk_ac_old a),
                               Tapp(
                                 Tvar (mk_get_sum_value_id a idx),
                                 [Tvar e])))
@@ -2124,8 +2123,7 @@ let mk_clear_sum_ensures m a =
       acc @ [{
           id = "clear_" ^ a ^ "_sum_post";
           form = Teq (Tyint,
-                      Tapp (Tvar (mk_sum_name_from_id a idx),
-                            [mk_ac a]),
+                      mk_sum_from_col a idx (mk_ac a),
                       Tint (Big_int.zero_big_int))
         }]) [] (M.Utils.get_sum_idxs m a)
 
@@ -2238,8 +2236,7 @@ let mk_clear_field_ensures m part p asset field _key =
       acc @ [{
           id = p ^ "_sum_post";
           form = Teq (Tyint,
-                      Tapp (Tvar (mk_sum_name_from_id asset idx),
-                            [assetcollfield]),
+                      mk_sum_from_col asset idx (assetcollfield),
                       Tint (Big_int.zero_big_int))
         }]) [] (M.Utils.get_sum_idxs m asset) @
     (if M.Utils.with_count m asset then [{
@@ -2264,13 +2261,10 @@ let mk_clear_field_ensures m part p asset field _key =
       acc @ [{
           id = p ^ "_sum_post";
           form = Teq (Tyint,
-                      Tapp (Tvar (mk_sum_name_from_id asset idx),
-                            [mk_ac asset]),
+                      mk_sum_from_col asset idx (mk_ac asset),
                       Tminus (Tyint,
-                              Tapp (Tvar (mk_sum_name_from_id asset idx),
-                                    [mk_ac_old asset]),
-                              Tapp (Tvar (mk_sum_name_from_id asset idx),
-                                    [oldassetcollfield])))
+                              mk_sum_from_col asset idx (mk_ac_old asset),
+                              mk_sum_from_col asset idx (oldassetcollfield)))
         }]) [] (M.Utils.get_sum_idxs m asset) @
     (if M.Utils.with_count m asset then [{
          id = p ^ "_count";
@@ -2331,11 +2325,9 @@ let mk_add_field_ensures m part field prefix adda elem =
       acc @ [{
           id = "add_" ^ adda ^ "_field_sum_post";
           form = Teq (Tyint,
-                      Tapp (Tvar (mk_sum_name_from_id adda idx),
-                            [assetcollfield]),
+                      mk_sum_from_col adda idx assetcollfield,
                       Tplus (Tyint,
-                             Tapp (Tvar (mk_sum_name_from_id adda idx),
-                                   [oldassetcollfield]),
+                             mk_sum_from_col adda idx oldassetcollfield,
                              Tapp(
                                Tvar (mk_get_sum_value_id adda idx),
                                [Tvar elem])))
@@ -2426,11 +2418,9 @@ let mk_rm_field_ensures m part field prefix asset elem =
         acc @ [{
             id = "remove_" ^ asset ^ "_field_sum_post";
             form = Teq (Tyint,
-                        Tapp (Tvar (mk_sum_name_from_id asset idx),
-                              [assetcollfield]),
+                        mk_sum_from_col asset idx assetcollfield,
                         Tminus (Tyint,
-                                Tapp (Tvar (mk_sum_name_from_id asset idx),
-                                      [oldassetcollfield]),
+                                mk_sum_from_col asset idx oldassetcollfield,
                                 Tapp(
                                   Tvar (mk_get_sum_value_id asset idx),
                                   [Tvar elem])))
@@ -2509,7 +2499,7 @@ let mk_storage_api_before_storage (m : M.model) _records =
         let key      = M.Utils.get_asset_key m asset |> fst in
         let mlw_formula = map_mterm m init_ctx formula |> unloc_term in
         let id = M.Utils.get_sum_idx m asset formula in
-        acc @ [ mk_get_sum_value_from_pos asset id mlw_formula;
+        acc @ [ (*mk_get_sum_value_from_pos asset id mlw_formula;*)
                 mk_get_sum_value asset id mlw_formula;
                 mk_sum_clone m asset key formula ]
       | _ -> acc

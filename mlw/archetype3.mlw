@@ -237,7 +237,6 @@ module AssetCollection
   ensures { F.(==) s (content result) }
   = { content = s }
 
-
   (* ------------------------------------------------------------------------ *)
   let function elts (c : collection) : list t
   ensures { IS.sorted result }
@@ -602,57 +601,56 @@ module Sort
   mk (lsort (elts c))
 
 end
-
+*)
 module Sum
 
   use  int.Int
-  type container
+  use  list.List
+  use  list.Length
+  use  option.Option
+
+  (* ------------------------------------------------------------------------ *)
+  type collection
+
+  (* ------------------------------------------------------------------------ *)
   type t
 
-  val function f container int : int
+  (* ------------------------------------------------------------------------ *)
+  type view = list int
+
+  (* ------------------------------------------------------------------------ *)
   val function field t : int
-  val function nth int container : t
-  val function card container : int
-  function inter container container : container
-  function union container container : container
-  function diff  container container : container
-  predicate subset container container
-  predicate is_empty container
-  val function singleton t : container
-  val function witness : t
-  val function fkey t : int
+  (* ------------------------------------------------------------------------ *)
+  val function get collection int : option t
 
-  let function sum (c : container) : int =
-    let ref res = 0 in
-    for i = 0 to card c - 1 do
-      res <- res + f c i
-    done;
-    res
+  (* ------------------------------------------------------------------------ *)
+  let function sum (v : view) (c : collection) : int
+  =
+  let rec function internal_sum (l : view) (acc : int) : int
+  variant { l }
+  =
+    match l with
+     | Cons k tl ->
+      match get c k with
+      | Some e -> internal_sum tl (acc + field e)
+      | None -> internal_sum tl acc
+      end
+     | Nil -> acc
+    end
+  in
+  internal_sum v 0
 
-  (* sum over empty is zero *)
+  (* ------------------------------------------------------------------------ *)
   lemma sum_empty:
-    forall c : container. card c = 0 -> sum c = 0
+    forall v : view, c : collection. length v = 0 -> sum v c = 0
 
-  lemma sum_ge_zero:
-    forall c : container.
-    not (is_empty c) ->
-    (forall i : int. 0 <= i < card c -> f c i >= 0) ->
-    sum c >= 0
+  (* ------------------------------------------------------------------------ *)
+  lemma sum_singleton: forall k : int, a : t, c : collection.
+  get c k = Some a ->
+  sum (Cons k Nil) c = field a
 
-  lemma sum_singleton: forall a : t.
-  a <> witness ->
-  sum (singleton a) = field a
-
-  lemma sum_union:
-    forall c1 c2 : container.
-    sum (union c1 c2) = sum c1 + sum c2 - sum (inter c1 c2)
-
-  lemma sum_diff:
-    forall c1 c2 : container.
-    subset c2 c1 ->
-    sum (diff c1 c2) = sum c1 - sum c2
 end
- *)
+
 
 theory Lib
 
