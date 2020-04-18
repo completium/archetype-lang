@@ -428,20 +428,20 @@ let mk_select_body asset mlw_test : term =
       logic    = Rec;
       args     = ["l",Tyview asset];
       returns  = Tyview asset;
-      raises   = [Texn Enotfound];
+      raises   = [];
       variants = [Tvar "l"];
       requires = [];
       ensures  = [];
       body     =
       let some =
         Tmatch (Tget (asset,
-                      mk_ac asset,
+                      Tvar "c",
                       Tvar "k"), [
           Tpsome "a",
             Tif(mk_select_test mlw_test,
                              Tcons (gListLib, Tvar "k",Tapp (Tvar ("internal_select"),[Tvar "tl"])),
                              Some (Tapp (Tvar ("internal_select"),[Tvar "tl"])));
-          Twild, Traise Enotfound(* Tapp (Tvar ("internal_select"),[Tvar "tl"] *)
+          Twild, Tapp (Tvar ("internal_select"),[Tvar "tl"])
         ]) in
       Tmlist (gListLib,Tnil gListLib,"l","k","tl",some);
     },
@@ -469,9 +469,9 @@ let mk_select m asset test mlw_test only_formula =
   let decl = Dfun {
       name     = id;
       logic    = if only_formula then Logic else NoMod;
-      args     = (extract_args test |> List.map (fun (_,a,b) -> a,b)) @ ["v",Tyview asset];
+      args     = (extract_args test |> List.map (fun (_,a,b) -> a,b)) @ ["v",Tyview asset; "c", Tycoll asset];
       returns  = Tyview asset;
-      raises   = [Texn Enotfound];
+      raises   = [];
       variants = [];
       requires = [];
       ensures  = [
@@ -483,7 +483,7 @@ let mk_select m asset test mlw_test only_formula =
                       Tand (
                         Teq (Tyint, Tdoti("a",key), Tvar "k"),
                       Tand (
-                        Tmem (asset, Tvar "a",mk_ac asset),
+                        Tmem (asset, Tvar "a",Tvar "c"),
                         mk_select_test mlw_test
                       )
                      )
@@ -981,29 +981,24 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
                    Some (map_mterm m ctx e)) |> with_dummy_loc)
 
     | Mletin ([id], { node = M.Mapifget (a,_, k); type_ = _ }, _, b, Some e) -> (* logical *)
-      Tletin (M.Utils.is_local_assigned (unloc id) b,
-              map_lident id,
-              None,
-              Tget (loc_ident a,
+      Tmatch (Tget (loc_ident a,
                     loc_term (mk_ac a),
-                    map_mterm m ctx k) |> with_dummy_loc,
-              Tif (Tnot (Teq (Tyint,
-                              Tvar (unloc id),
-                              Twitness a)) |> loc_term,
-                   map_mterm m ctx b,
-                   Some (map_mterm m ctx e)) |> with_dummy_loc)
+                    map_mterm m ctx k) |> with_dummy_loc,[
+        Tpsome (map_lident id), map_mterm m ctx b;
+        Twild, map_mterm m ctx e
+      ])
     | Mletin ([id], { node = M.Mapifnth (n,c,k); type_ = _ }, _, b, Some e) ->
-      Tletin (M.Utils.is_local_assigned (unloc id) b,
-              map_lident id,
-              None,
-              Tnth (loc_ident n,
+      Tmatch (Tnth (loc_ident n,
                     map_mterm m ctx k,
-                    map_mterm m ctx c) |> with_dummy_loc,
-              Tif (Tnot (Teq (Tyint,
-                              Tvar (unloc id),
-                              Twitness n)) |> loc_term,
-                   map_mterm m ctx b,
-                   Some (map_mterm m ctx e)) |> with_dummy_loc)
+                    map_mterm m ctx c) |> with_dummy_loc,[
+          Tpsome (with_dummy_loc "k"), Tmatch(Tget (with_dummy_loc n,
+                    loc_term (mk_ac n),
+                    loc_term (Tvar "k")) |> with_dummy_loc, [
+                      Tpsome (map_lident id), map_mterm m ctx b;
+                      Twild, map_mterm m ctx e
+                    ])  |> with_dummy_loc;
+          Twild, map_mterm m ctx e
+      ])
     | Mletin              _ -> error_not_translated "Mletin"
     | Mdeclvar            _ -> error_not_translated "Mdeclvar"
 
@@ -1300,7 +1295,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
       let args = extract_args lb in
       let id = mk_select_name m a lb in
       let argids = args |> List.map (fun (e, _, _) -> e) |> List.map (map_mterm m ctx) in
-      Tapp (loc_term (Tvar id), argids @ [map_mterm m ctx l])
+      Tapp (loc_term (Tvar id), argids @ [map_mterm m ctx l; loc_term (mk_ac a)])
 
     | Msort               (a,c,l) ->
       let id = (mk_sort_clone_id a l) ^ ".sort" in
@@ -1315,11 +1310,8 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
       let cloneid = mk_sum_clone_id m a f in
       let col = mk_ac_ctx a ctx in
       Tsum(with_dummy_loc cloneid,map_mterm m ctx v,col)
-    | Mhead (n,c,v) -> Tapp(loc_term (Tdoti(String.capitalize_ascii n,"head")),
-                            [map_mterm m ctx v; map_mterm m ctx c])
-    | Mtail  (n,c,v) -> Tapp(loc_term (Tdoti(String.capitalize_ascii n,"tail")),
-                             [map_mterm m ctx v; map_mterm m ctx c])
-
+    | Mhead (n,c,v) -> Thead(with_dummy_loc n, map_mterm m ctx v, map_mterm m ctx c)
+    | Mtail  (n,c,v) -> Ttail(with_dummy_loc n, map_mterm m ctx v, map_mterm m ctx c)
 
     (* utils *)
     | Mcast (Tcontainer (Tasset a,Collection),Tcontainer (Tasset _, View), v) -> Ttoview (map_lident a,map_mterm m ctx v)
@@ -1539,11 +1531,15 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
 
     | Mapifget (a, _c, k) -> Tapp (loc_term (Tvar ("get_" ^ a)),[map_mterm m ctx k])
     | Mapifsubsetof (n, l, r) -> Tsubset (with_dummy_loc n, map_mterm m ctx l, map_mterm m ctx r)
-    | Mapifisempty (l, r) -> Tempty (with_dummy_loc l, map_mterm m ctx r)
+    | Mapifisempty (l, r) ->
+      begin match r.type_ with
+      | M.Tcontainer (_,View) -> Tvempty (with_dummy_loc l, map_mterm m ctx r)
+      | _ -> Tempty (with_dummy_loc l, map_mterm m ctx r)
+      end
     | Mapifselect (a, l, _, r, _) ->  let args = extract_args r in
       let id = mk_select_name m a r in
       let argids = args |> List.map (fun (e, _, _) -> e) |> List.map (map_mterm m ctx) in
-      Tapp (loc_term (Tvar id), argids @ [map_mterm m ctx l])
+      Tapp (loc_term (Tvar id), argids @ [map_mterm m ctx l; loc_term (mk_ac a)])
     | Mapifsort (a,c,l) ->
       let id = (mk_sort_clone_id a l) ^ ".sort" in
       Tapp (loc_term (Tvar id),[map_mterm m ctx c])
@@ -1564,12 +1560,8 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Mapifsum       (a,v,f) ->
       let cloneid = mk_sum_clone_id m a f in
       Tsum(with_dummy_loc cloneid,map_mterm m ctx v,mk_ac_ctx a ctx)
-    | Mapifhead (n,c,v) -> Tapp(loc_term (Tdoti(String.capitalize_ascii n,"head")),
-                                [map_mterm m ctx v; map_mterm m ctx c])
-    | Mapiftail (n,c,v) -> Tapp(loc_term (Tdoti(String.capitalize_ascii n,"tail")),
-                                [map_mterm m ctx v; map_mterm m ctx c])
-
-
+    | Mapifhead (n,c,v) -> Thead (with_dummy_loc n, map_mterm m ctx v, map_mterm m ctx c)
+    | Mapiftail (n,c,v) -> Ttail (with_dummy_loc n, map_mterm m ctx v, map_mterm m ctx c)
   in
   mk_loc mt.loc t
 and mk_invariants (m : M.model) ctx (lbl : ident option) lbody =

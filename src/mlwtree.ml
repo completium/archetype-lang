@@ -169,10 +169,8 @@ type ('e,'t,'i) abstract_term =
   | Tempty  of 'i * 'e
   | Tvempty  of 'i * 'e
   | Tsingl  of 'i * 'e
-  | Thead   of 'e * 'e
-  | Tlhead   of 'e * 'e
-  | Ttail   of 'e * 'e
-  | Tltail   of 'e * 'e
+  | Thead   of 'i * 'e * 'e
+  | Ttail   of 'i * 'e * 'e
   | Tnth    of 'i * 'e * 'e
   | Tlnth   of 'i * 'e * 'e
   | Twitness of 'i
@@ -428,10 +426,8 @@ and map_abstract_term
   | Tempty (i,e)       -> Tempty (map_i i, map_e e)
   | Tvempty (i,e)       -> Tvempty (map_i i, map_e e)
   | Tsingl (i,e)       -> Tsingl (map_i i, map_e e)
-  | Thead (e1,e2)      -> Thead (map_e e1, map_e e2)
-  | Tlhead (e1,e2)     -> Tlhead (map_e e1, map_e e2)
-  | Ttail (e1,e2)      -> Ttail (map_e e1, map_e e2)
-  | Tltail (e1,e2)     -> Tltail (map_e e1, map_e e2)
+  | Thead (i,e1,e2)      -> Thead (map_i i,map_e e1, map_e e2)
+  | Ttail (i,e1,e2)      -> Ttail (map_i i,map_e e1, map_e e2)
   | Tnth (i,e1,e2)     -> Tnth (map_i i, map_e e1, map_e e2)
   | Tlnth (i,e1,e2)    -> Tlnth (map_i i, map_e e1, map_e e2)
   | Twitness i         -> Twitness (map_i i)
@@ -821,8 +817,8 @@ let compare_abstract_term
   | Tempty (i1,e1), Tempty (i2,e2) -> cmpi i1 i2 && cmpe e1 e2
   | Tvempty (i1,e1), Tvempty (i2,e2) -> cmpi i1 i2 && cmpe e1 e2
   | Tsingl (i1,e1), Tsingl (i2,e2) -> cmpi i1 i2 && cmpe e1 e2
-  | Thead (e1,e2), Thead (f1,f2) -> cmpe e1 f1 && cmpe e2 f2
-  | Ttail (e1,e2), Ttail (f1,f2) -> cmpe e1 f1 && cmpe e2 f2
+  | Thead (i1,e1,e2), Thead (i2,f1,f2) -> cmpi i1 i2 && cmpe e1 f1 && cmpe e2 f2
+  | Ttail (i1,e1,e2), Ttail (i2,f1,f2) -> cmpi i1 i2 && cmpe e1 f1 && cmpe e2 f2
   | Tnth (i1,e1,e2), Tnth (i2,f1,f2) -> cmpi i1 i2 && cmpe e1 f1 && cmpe e2 f2
   | Twitness i1, Twitness i2 -> cmpi i1 i2
   | Tnone, Tnone -> true
