@@ -317,6 +317,10 @@ let rec pp_term outer pos fmt = function
     Format.fprintf fmt "%a.is_empty %a"
       pp_str (String.capitalize_ascii i)
       (pp_with_paren (pp_term outer pos)) e
+  | Tvempty (i,e) ->
+    Format.fprintf fmt "%a.view_is_empty %a"
+      pp_str (String.capitalize_ascii i)
+      (pp_with_paren (pp_term outer pos)) e
   | Tint i -> pp_str fmt (Big_int.string_of_big_int i)
   | Tforall (ud,b) ->
     Format.fprintf fmt "@[forall %a.@\n%a@]"
@@ -449,8 +453,8 @@ let rec pp_term outer pos fmt = function
     Format.fprintf fmt "%a.elts %a"
       pp_str (String.capitalize_ascii i)
       (pp_with_paren (pp_term outer pos)) e
-  | Tunshallow (i,e1,e2) ->
-    Format.fprintf fmt "%a.unshallow %a %a"
+  | Ttocoll (i,e1,e2) ->
+    Format.fprintf fmt "%a.to_coll %a %a"
       pp_str (String.capitalize_ascii i)
       (pp_with_paren (pp_term outer pos)) e1
       (pp_with_paren (pp_term outer pos)) e2
@@ -532,8 +536,8 @@ let rec pp_term outer pos fmt = function
       pp_str (String.capitalize_ascii i)
       (pp_with_paren (pp_term outer pos)) e1
       (pp_with_paren (pp_term outer pos)) e2
-  | Tlistremove (i,e1,e2) ->
-    Format.fprintf fmt "%a.remove_key %a %a"
+  | Tvremove (i,e1,e2) ->
+    Format.fprintf fmt "%a.vremove %a %a"
       pp_str (String.capitalize_ascii i)
       (pp_with_paren (pp_term outer pos)) e1
       (pp_with_paren (pp_term outer pos)) e2

@@ -371,6 +371,22 @@ module AssetCollection
   = internal_get (elts c) k
 
   (* ------------------------------------------------------------------------ *)
+  let function to_coll (v : view) (c : collection) : collection
+  =
+  let rec function internal_to_coll (v : view) (l : list t) : list t
+  variant { v }
+  =
+  match v with
+  | Cons k tl ->
+    match get c k with
+    | Some e -> internal_to_coll tl (Cons e l)
+    | None -> internal_to_coll tl l
+    end
+  | Nil -> l
+  end in
+  mk (F.mk (internal_to_coll v Nil))
+
+  (* ------------------------------------------------------------------------ *)
   (* lemma mem_fset: forall a l.
     fmem a l <-> F.fmem a (F.mk l)
  *)
@@ -440,22 +456,23 @@ module AssetCollection
   end in
   mk (F.mk (internal_remove (elts c) k))
 
-  (* ------------------------------------------------------------------------ *)
-  (* let function unshallow (c : collection) (keys : list int) : collection
-  =
-  let rec function internal_unshallow (l : list t) : list t
-  variant { l }
-  =
-  match l with
-  | Cons e tl ->
-    if mem_key (fkey e) keys
-    then Cons e (internal_unshallow tl)
-    else internal_unshallow tl
-  | Nil -> Nil
-  end in
-  mk (internal_unshallow (elts c)) *)
-
   (* View API --------------------------------------------------------------- *)
+
+  (* ------------------------------------------------------------------------ *)
+  predicate view_is_empty (v : view) = v = Nil
+
+  (* ------------------------------------------------------------------------ *)
+  let rec function vremove (k : int) (v : view) : view
+  variant { v }
+  =
+  match v with
+  | Cons i tl ->
+    if i = k then
+      vremove k tl
+    else
+      Cons i (vremove k tl)
+  | Nil -> Nil
+  end
 
   (* ------------------------------------------------------------------------ *)
   let rec function nth (i : int) (v : view) : option key

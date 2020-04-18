@@ -842,6 +842,7 @@ let mk_eq_asset _m (r : M.asset) =
       match item.type_ with
       | Tasset a -> Tapp (Tvar ("eq_"^(unloc a)),[f1;f2])
       | Tcontainer (Tasset a, Collection) -> Teqview(unloc a,f1,f2)
+      | Tcontainer (Tasset a, Partition) -> Teqview(unloc a,f1,f2)
       | Tbuiltin Bbool -> (* a = b is (a && b) || (not a && not b) *)
         Tor (Tpand (f1,f2),Tpand(Tnot f1, Tnot f2))
       | Tbuiltin Brational ->
@@ -1959,7 +1960,7 @@ let mk_contains asset keyt = Dfun {
                           mk_ac asset)
   }
 
-let mk_unshallow asset keyt = Dfun {
+(* let mk_unshallow asset keyt = Dfun {
     name     = "unshallow_" ^ asset;
     logic    = Logic;
     args     = ["c", Tycoll asset;"l",Tylist keyt];
@@ -1973,11 +1974,11 @@ let mk_unshallow asset keyt = Dfun {
                         Tresult,
                         Tvar "c")
       }];
-    body     = Tunshallow (asset,
-                           Tvar "c",
-                           Tvar "l")
+    body     = Ttocoll (asset,
+                        Tvar "l",
+                        Tvar "c")
   }
-
+ *)
 let mk_add_asset_precond m apid a id = mk_api_precond m apid a (`Preasset id)
 
 let mk_listtocoll_precond m apid a id = mk_api_precond m apid a (`Prelist id)
@@ -2193,20 +2194,25 @@ let mk_rm_asset m asset key : decl =
     requires = [];
     ensures  = mk_rm_ensures m ("remove_" ^ asset) asset "a";
     body =
-      Tseq [
-        Tassign (mk_ac_rmed asset,
-                 Tadd (asset,
-                       mk_ac_rmed asset,
-                       Tget(asset,
-                            mk_ac asset,
-                            Tdoti ("a",
-                                   key))));
-        Tassign (mk_ac asset,
-                 Tremove (asset,
-                          mk_ac asset,
-                          Tdoti ("a",
-                                 key)))
-      ];
+      let get = Tget(asset,
+                        mk_ac asset,
+                        Tdoti ("a",
+                               key)) in
+      Tmatch (get,[
+        Tpsome "e",
+          Tseq [
+            Tassign (mk_ac_rmed asset,
+                     Tadd (asset,
+                           mk_ac_rmed asset,
+                           Tvar "e"));
+            Tassign (mk_ac asset,
+                     Tremove (asset,
+                              mk_ac asset,
+                              Tdoti ("a",
+                                     key)))
+          ];
+        Twild, Tunit
+      ]);
   }
 
 let mk_clear_coll m asset : decl = Dfun {
@@ -2223,26 +2229,22 @@ let mk_clear_coll m asset : decl = Dfun {
 
 let mk_clear_field_ensures m part p asset field _key =
   let collfield = Tapp (Tvar field, [Tvar ("a")]) in
-  let assetcollfield = Tunshallow (asset,mk_ac asset,collfield) in
-  let oldassetcollfield = Tunshallow (asset,mk_ac_old asset,collfield) in
+  let oldassetcollfield = Ttocoll (asset,collfield,mk_ac_old asset) in
   let clear_field_ensures = [
     { id   = p ^ "_post1";
-      form = Teq (Tyint, Tapp (Tvar field,[Tvar "a"]), Tnil gListLib)
-    };
-    { id   = p ^ "_post2";
-      form = Tempty (asset, assetcollfield)
-    };
+      form = Tvempty (asset, Tapp (Tvar field,[Tvar "a"]))
+    }
   ] @ List.fold_left (fun acc idx ->
       acc @ [{
           id = p ^ "_sum_post";
           form = Teq (Tyint,
-                      mk_sum_from_col asset idx (assetcollfield),
+                      mk_sum asset idx collfield (mk_ac asset),
                       Tint (Big_int.zero_big_int))
         }]) [] (M.Utils.get_sum_idxs m asset) @
     (if M.Utils.with_count m asset then [{
          id = p ^ "_count";
          form = Teq (Tyint,
-                     Tcard (asset, assetcollfield),
+                     Tvcard (asset, collfield),
                      Tint (Big_int.zero_big_int)
                     )
        }]
@@ -2311,15 +2313,16 @@ let mk_clear_field_coll _m _part asset field key clearedasset = Dfun {
       );
   }
 
-let mk_add_field_ensures m part field prefix adda elem =
+let mk_add_field_ensures m partition field prefix adda elem =
   let collfield = Tapp (Tvar field, [Tvar ("asset")]) in
-  let assetcollfield = Tunshallow (adda,mk_ac adda,collfield) in
-  let oldassetcollfield = Tunshallow (adda,mk_ac_old adda,collfield) in
+  let key      = M.Utils.get_asset_key m adda |> fst in
+  let assetcollfield = Ttocoll (adda,collfield,mk_ac adda) in
+  let oldassetcollfield = Ttocoll (adda,collfield,mk_ac_old adda) in
   let add_field_ensures = [
     { id   = prefix ^ "_field_post1";
-      form = Tmem (adda,
-                   Tvar (elem),
-                   assetcollfield)
+      form = Tlmem (gListLib,
+                   Tapp (Tvar key,[Tvar elem]),
+                   collfield)
     };
   ] @ List.fold_left (fun acc idx ->
       acc @ [{
@@ -2344,7 +2347,7 @@ let mk_add_field_ensures m part field prefix adda elem =
        }]
      else [])
   in
-  if part then
+  if partition then
     add_field_ensures @ (mk_add_ensures m prefix adda elem)
   else
     mk_add_ensures m prefix adda elem
@@ -2405,8 +2408,8 @@ let mk_add_field m part a ak field adda addak : decl =
 
 let mk_rm_field_ensures m part field prefix asset elem =
   let collfield = Tapp (Tvar field, [Tvar ("asset")]) in
-  let assetcollfield = Tunshallow (asset,mk_ac asset,collfield) in
-  let oldassetcollfield = Tunshallow (asset,mk_ac_old asset,collfield) in
+  let assetcollfield = Ttocoll (asset,collfield,mk_ac asset) in
+  let oldassetcollfield = Ttocoll (asset,collfield,mk_ac_old asset) in
   let rm_field_ensures = [
     { id   = prefix ^ "_field_post1";
       form = Tnot (Tmem (asset,
@@ -2467,10 +2470,10 @@ let mk_rm_field m part asset keyf field rmed_asset rmkey : decl = Dfun {
               Tletin (false,
                       "new_" ^ asset ^ "_" ^ field,
                       None,
-                      Tlistremove (gListLib,
-                                   Tdoti ("rm_asset",
-                                          rmkey),
-                                   Tvar (asset ^ "_" ^ field)),
+                      Tvremove (asset,
+                                Tdoti ("rm_asset",
+                                        rmkey),
+                                Tvar (asset ^ "_" ^ field)),
                       Tletin (false,
                               "new_" ^ asset ^ "_asset",
                               None,
@@ -2738,9 +2741,9 @@ let mk_storage_api (m : M.model) records =
       | M.APIAsset (Sort (asset,field)) ->
         acc @ [ mk_cmp_function m asset field; mk_sort_clone m asset field]
       (* TODO *)
-      | M.APIAsset (Unshallow n) ->
+     (*  | M.APIAsset (Unshallow n) ->
         let t         =  M.Utils.get_asset_key m n |> snd |> map_btype in
-        acc @ [ mk_unshallow n t ]
+        acc @ [ mk_unshallow n t ] *)
       | M.APIAsset (Listtocoll n) ->
         acc @ [ mk_listtocoll m n ]
       | M.APIInternal (RatTez) ->
