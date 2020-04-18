@@ -321,7 +321,9 @@ let extend_removeif (model : model) : model =
       let type_assets = Tcontainer (Tasset lasset, Collection) in
       let assets_var = mk_mterm (Mvarlocal assets_var_name) type_assets in
 
-      let select : mterm =  mk_mterm (Mselect (asset, p, la, lb, a) ) type_asset in
+      let type_view = Tcontainer (type_asset, View) in
+      let view : mterm = mk_mterm (Mcast (Tcontainer (type_asset, Collection), type_view, p)) type_view in
+      let select : mterm =  mk_mterm (Mselect (asset, view, la, lb, a) ) type_asset in
 
       let remove : mterm = mk_mterm (Mremoveasset (asset, asset_key)) Tunit in
 
