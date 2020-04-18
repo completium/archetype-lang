@@ -318,11 +318,10 @@ let extend_removeif (model : model) : model =
       let asset_key : mterm = mk_mterm (Mdotasset (asset_var,dumloc key)) (Tbuiltin key_type) in
 
       let assets_var_name = dumloc ("assets_") in
-      let type_assets = Tcontainer (Tasset lasset, Collection) in
+      let type_assets = Tcontainer (type_asset, View) in
       let assets_var = mk_mterm (Mvarlocal assets_var_name) type_assets in
 
-      let type_view = Tcontainer (type_asset, View) in
-      let view : mterm = mk_mterm (Mcast (Tcontainer (type_asset, Collection), type_view, p)) type_view in
+      let view : mterm = mk_mterm (Mcast (Tcontainer (type_asset, Collection), type_assets, p)) type_assets in
       let select : mterm =  mk_mterm (Mselect (asset, view, la, lb, a) ) type_asset in
 
       let remove : mterm = mk_mterm (Mremoveasset (asset, asset_key)) Tunit in
