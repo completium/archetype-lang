@@ -108,6 +108,9 @@ let pp_model fmt (model : model) =
       Format.fprintf fmt "%a %a"
         pp_type t
         pp_container c
+    | Tset k ->
+      Format.fprintf fmt "%a set"
+        pp_btyp k
     | Tlist t ->
       Format.fprintf fmt "%a list"
         pp_type t
@@ -121,6 +124,9 @@ let pp_model fmt (model : model) =
       Format.fprintf fmt "(%a, %a) map"
         pp_btyp k
         pp_type v
+    | Trecord l ->
+      Format.fprintf fmt "(%a) record"
+        (pp_list "; " (fun fmt (lbl, x) -> Format.fprintf fmt "(%s, %a)" lbl  pp_type x)) l
     | Tunit ->
       Format.fprintf fmt "unit"
     | Tstorage ->
@@ -739,6 +745,12 @@ let pp_model fmt (model : model) =
         Format.fprintf fmt "[%a]"
           (pp_list "; " (fun fmt (k, v) -> Format.fprintf fmt "%a : %a"
                             f k
+                            f v)) l
+
+      | Mlitrecord l ->
+        Format.fprintf fmt "record(%a)"
+          (pp_list "; " (fun fmt (k, v) -> Format.fprintf fmt "%s = %a"
+                            k
                             f v)) l
 
       (* access *)

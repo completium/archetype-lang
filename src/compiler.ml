@@ -151,6 +151,7 @@ let generate_target model =
     |> remove_cmp_bool
     |> shallow_asset
     |> split_key_values
+    |> remove_duplicate_key
     |> Gen_transform.assign_loop_label
     |> generate_api_storage
     |> output

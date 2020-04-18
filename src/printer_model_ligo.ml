@@ -166,10 +166,16 @@ let pp_model_internal fmt (model : model) b =
     | Ttuple ts ->
       Format.fprintf fmt "(%a)"
         (pp_list " * " pp_type) ts
+    | Tset k ->
+      Format.fprintf fmt "set(%a)"
+        pp_btyp k
     | Tmap (k, v) ->
       Format.fprintf fmt "map(%a, %a)"
         pp_btyp k
         pp_type v
+    | Trecord l ->
+      Format.fprintf fmt "(%a) record"
+        (pp_list "; " (fun fmt (lbl, x) -> Format.fprintf fmt "(%s, %a)" lbl  pp_type x)) l
     | Tunit ->
       Format.fprintf fmt "unit"
     | Tstorage ->
@@ -543,8 +549,9 @@ let pp_model_internal fmt (model : model) b =
       end
 
     | Mlitset l ->
-      Format.fprintf fmt "[%a]"
+      Format.fprintf fmt "(set [%a] : %a)"
         (pp_list "; " f) l
+        pp_type mtt.type_
 
     | Mlitlist l ->
       Format.fprintf fmt "[%a]"
@@ -554,6 +561,13 @@ let pp_model_internal fmt (model : model) b =
       Format.fprintf fmt "(map [%a] : %a)"
         (pp_list "; " (fun fmt (k, v) -> Format.fprintf fmt "%a -> %a"
                           f k
+                          f v)) l
+        pp_type mtt.type_
+
+    | Mlitrecord l ->
+      Format.fprintf fmt "(record[%a] : %a)"
+        (pp_list "; " (fun fmt (k, v) -> Format.fprintf fmt "%s = %a"
+                          k
                           f v)) l
         pp_type mtt.type_
 
@@ -1291,7 +1305,19 @@ let pp_model_internal fmt (model : model) b =
        @[%a@]@\n\
        ]@\n"
       pp_id asset.name
-      (pp_list "@\n" pp_asset_item) asset.values
+      (pp_list "@\n" pp_asset_item) asset.values;
+    let an = unloc asset.name in
+    if (not (Utils.is_asset_single_field model an)) then
+      begin
+        let k, _ = Utils.get_asset_key model an in
+        let ll = List.filter (fun (x : asset_item) -> not (String.equal (unloc x.name) k)) asset.values in
+        Format.fprintf fmt
+          "@\ntype %a_storage is record [@\n  \
+           @[%a@]@\n\
+           ]@\n"
+          pp_id asset.name
+          (pp_list "@\n" pp_asset_item) ll
+      end
   in
 
   let pp_decl env (fmt : Format.formatter) (decl : decl_node) =
@@ -1350,13 +1376,26 @@ let pp_model_internal fmt (model : model) b =
 
   let pp_api_asset (env : env) fmt = function
     | Get an ->
-      let _, t = Utils.get_asset_key model an in
-      Format.fprintf fmt
-        "function get_%s (const s : storage_type; const key : %a) : %s is@\n  \
-         begin@\n    \
-         const res : %s = get_force(key, s.%s_assets);@\n  \
-         end with (res)@\n"
-        an pp_btyp t an an an
+      let k, t = Utils.get_asset_key model an in
+      if (Utils.is_asset_single_field model an) then
+        Format.fprintf fmt
+          "function get_%s (const s : storage_type; const key : %a) : %s is@\n  \
+           begin@\n    \
+           const res : %s = record[%s = key]@\n  \
+           end with (res)@\n"
+          an pp_btyp t an an k
+      else
+        let asset = Utils.get_asset model an in
+        Format.fprintf fmt
+          "function get_%s (const s : storage_type; const key : %a) : %s is@\n  \
+           begin@\n    \
+           const a : %s_storage = get_force(key, s.%s_assets);@\n    \
+           const res : %s = record[%a]@\n  \
+           end with (res)@\n"
+          an pp_btyp t an an an an
+          (pp_list "; " (fun fmt (x : asset_item) ->
+               let fn = unloc x.name in
+               Format.fprintf fmt "%s = %s" fn (if (String.equal k fn) then "key" else ("a." ^ fn)))) asset.values
 
     | Set an ->
       let _, t = Utils.get_asset_key model an in
@@ -1515,7 +1554,7 @@ let pp_model_internal fmt (model : model) b =
       Format.fprintf fmt
         "function col_to_keys_%s (const s : storage_type) : list(%a) is@\n \
          begin@\n \
-         function to_keys (const accu : list(%a); const v : (%a * %s)) : list(%a) is block { skip } with cons(v.0, accu);@\n \
+         function to_keys (const accu : list(%a); const v : (%a * %s_storage)) : list(%a) is block { skip } with cons(v.0, accu);@\n \
          function rev     (const accu : list(%a); const v : %a) : list(%a) is block { skip } with cons(v, accu);@\n \
          var res : list(%a) := (nil : list(%a));@\n \
          res := map_fold(to_keys, s.%s_assets, res);@\n \

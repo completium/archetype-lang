@@ -1,4 +1,10 @@
-archetype test_asset_acces
+archetype test_asset_access
+
+asset one_asset {
+  oid : int;
+} initialized by {
+  {8}
+}
 
 asset my_asset {
   id : int;

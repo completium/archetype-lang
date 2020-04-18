@@ -1177,9 +1177,10 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
         | _ -> assert false
       end
 
-    | Mlitset  _ -> error_not_translated "Mlitset"
-    | Mlitlist _ -> error_not_translated "Mlitlist"
-    | Mlitmap  _ -> error_not_translated "Mlitmap"
+    | Mlitset  _   -> error_not_translated "Mlitset"
+    | Mlitlist _   -> error_not_translated "Mlitlist"
+    | Mlitmap  _   -> error_not_translated "Mlitmap"
+    | Mlitrecord _ -> error_not_translated "Mlitrecord"
 
 
     (* access *)
