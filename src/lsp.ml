@@ -267,6 +267,7 @@ let process (filename, channel) =
                   |> Gen_transform.check_partition_access
                   |> Gen_transform.check_number_entrypoint
                   |> Gen_transform.check_containers_asset
+                  |> Gen_transform.check_empty_container_on_initializedby
                   |> Gen_transform.remove_add_update in
           ();
           process_errors ()
