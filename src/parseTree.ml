@@ -312,7 +312,7 @@ and asset_option =
 and asset_post_option =
   | APOstates of lident
   | APOconstraints of label_exprs
-  | APOinit of expr
+  | APOinit of expr list
 
 and enum_option =
   | EOinitial

@@ -500,9 +500,9 @@ asset:
                          Dasset (x, fs, sfields, os, apo, ops, exts) }
 
 asset_post_option:
-| WITH STATES x=ident           { APOstates x }
-| WITH xs=braced(label_exprs)   { APOconstraints (xs) }
-| INITIALIZED BY e=record_expr  { APOinit e }
+| WITH STATES x=ident                                               { APOstates x }
+| WITH xs=braced(label_exprs)                                       { APOconstraints (xs) }
+| INITIALIZED BY LBRACE l=separated_nonempty_list(SEMI_COLON, record_expr) RBRACE { APOinit l }
 
 %inline record_expr:
  | x=loc(record_expr_unloc) { x }
