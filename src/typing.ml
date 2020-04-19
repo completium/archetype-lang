@@ -95,7 +95,7 @@ end = struct
 
 
     | M.Tcontainer (ty1, cf), M.Tcontainer (ty2, ct) ->
-      equal ty1 ty2 && (cf = ct || ct = M.View)
+        equal ty1 ty2 && (cf = ct || ct = M.View)
 
     | _, _ ->
       false
@@ -148,33 +148,33 @@ end = struct
         match ptn, tg with
         | M.Tnamed i, _ -> begin
             map := !map |> Mint.update i (function
-                | None    -> Some tg
-                | Some ty -> if equal tg ty then Some ty else raise E.Error)
+            | None    -> Some tg
+            | Some ty -> if equal tg ty then Some ty else raise E.Error)
           end
 
         | Tentry, Tentry ->
-          ()
+            ()
 
         | Tasset    x, Tasset    y
         | Tenum     x, Tenum     y
         | Tcontract x, Tcontract y ->
-          if unloc x <> unloc y then raise E.Error
+            if unloc x <> unloc y then raise E.Error
 
         | Ttrace x, Ttrace y ->
-          if x <> y then raise E.Error
+            if x <> y then raise E.Error
 
         | Tbuiltin x, Tbuiltin y ->
-          if x <> y then raise E.Error
+            if x <> y then raise E.Error
 
         | Tlist   ptn, Tlist   tg
         | Toption ptn, Toption tg ->
-          doit ptn tg
+            doit ptn tg
 
         | Tcontainer (ptn, x), Tcontainer (tg, y) when x = y ->
-          doit ptn tg
+            doit ptn tg
 
         | Ttuple ptn, Ttuple tg when List.length ptn = List.length tg ->
-          List.iter2 doit ptn tg
+            List.iter2 doit ptn tg
 
         | _, _ -> raise E.Error
 
@@ -182,41 +182,41 @@ end = struct
 
     with E.Error -> None
 
-  let subst (subst : M.ptyp Mint.t) (ty : M.ptyp) : M.ptyp =
-    let rec doit (ty : M.ptyp) =
-      match ty with
-      | Tnamed i -> Option.get (Mint.find_opt i subst)
-      | Tentry
-      | Tasset    _
-      | Tenum     _
-      | Tcontract _
-      | Ttrace    _
-      | Tbuiltin  _ -> ty
+   let subst (subst : M.ptyp Mint.t) (ty : M.ptyp) : M.ptyp =
+     let rec doit (ty : M.ptyp) =
+       match ty with
+       | Tnamed i -> Option.get (Mint.find_opt i subst)
+       | Tentry
+       | Tasset    _
+       | Tenum     _
+       | Tcontract _
+       | Ttrace    _
+       | Tbuiltin  _ -> ty
 
-      | Tcontainer (ty, c) -> Tcontainer (doit ty, c)
-      | Tlist       ty     -> Tlist (doit ty)
-      | Ttuple      ty     -> Ttuple (List.map doit ty)
-      | Toption     ty     -> Toption (doit ty)
+       | Tcontainer (ty, c) -> Tcontainer (doit ty, c)
+       | Tlist       ty     -> Tlist (doit ty)
+       | Ttuple      ty     -> Ttuple (List.map doit ty)
+       | Toption     ty     -> Toption (doit ty)
 
-    in doit ty
+     in doit ty
 
-  let rec pktype = function
-    | M.Ttuple tys -> List.for_all pktype_simpl tys
-    | (M.Tbuiltin _) as ty -> pktype_simpl ty
-    | _ -> false
+   let rec pktype = function
+     | M.Ttuple tys -> List.for_all pktype_simpl tys
+     | (M.Tbuiltin _) as ty -> pktype_simpl ty
+     | _ -> false
 
-  and pktype_simpl = function
-    | Tbuiltin (
-        VTbool
-      | VTint
-      | VTdate
-      | VTstring
-      | VTaddress
-      | VTrole
-      | VTcurrency
-      | VTbytes
-      ) -> true
-    | _ -> false
+   and pktype_simpl = function
+     | Tbuiltin (
+           VTbool
+         | VTint
+         | VTdate
+         | VTstring
+         | VTaddress
+         | VTrole
+         | VTcurrency
+         | VTbytes
+       ) -> true
+     | _ -> false
 
 end
 
@@ -672,9 +672,9 @@ let methods = Mid.of_list methods
 
 (* -------------------------------------------------------------------- *)
 let coreops =
-  (List.map
-     (fun x -> ("abs", M.Cabs, `Total, None, [x], x))
-     [M.vtint; M.vtrational])
+    (List.map
+       (fun x -> ("abs", M.Cabs, `Total, None, [x], x))
+       [M.vtint; M.vtrational])
   @ (List.flatten (List.map (fun (name, cname) -> (
         List.map
           (fun x -> (name, cname, `Total, None, [x; x], x))
@@ -713,7 +713,7 @@ let cryptoops =
      "sha512", M.Csha512]
   @ ["check_signature", M.Cchecksignature,
      `Total, None, [M.vtbytes; M.vtbytes; M.vtbytes], M.vtbool]
-(* TODO: filter 1st arg to key type and 2nd to signature type *)
+    (* TODO: filter 1st arg to key type and 2nd to signature type *)
 
 (* -------------------------------------------------------------------- *)
 let allops = coreops @ optionops @ listops @ cryptoops
@@ -1535,8 +1535,8 @@ let rec for_xexpr
         let lk = Env.lookup_entry subenv (unloc x) in
 
         begin match lk, vset with
-          | None, _ | _, None | Some (`Asset _), _ -> ()
-          | Some _, Some _ ->
+        | None, _ | _, None | Some (`Asset _), _ -> ()
+        | Some _, Some _ ->
             Env.emit_error env (loc tope, VSetOnNonAsset)
         end;
 
@@ -1873,20 +1873,20 @@ let rec for_xexpr
       end
 
     | Eapp (Fident f, args) when Env.Function.exists env (unloc f) ->
-      let fun_ = Env.Function.get env (unloc f) in
-      let args = match args with [{ pldesc = Etuple args }] -> args | _ -> args in
+        let fun_ = Env.Function.get env (unloc f) in
+        let args = match args with [{ pldesc = Etuple args }] -> args | _ -> args in
 
-      let tyargs =
-        if List.length args <> List.length fun_.fs_args then begin
-          let na = List.length args and ne = List.length fun_.fs_args in
-          Env.emit_error env (loc tope, InvalidNumberOfArguments (na, ne));
-          List.make (fun _ -> None) ne
-        end else List.map (fun (_, ty) -> Some ty) fun_.fs_args in
+        let tyargs =
+          if List.length args <> List.length fun_.fs_args then begin
+            let na = List.length args and ne = List.length fun_.fs_args in
+            Env.emit_error env (loc tope, InvalidNumberOfArguments (na, ne));
+            List.make (fun _ -> None) ne
+          end else List.map (fun (_, ty) -> Some ty) fun_.fs_args in
 
-      let args = List.map2 (fun ety e -> for_xexpr env ?ety e) tyargs args in
-      let args = List.map  (fun x -> M.AExpr x) args in
+       let args = List.map2 (fun ety e -> for_xexpr env ?ety e) tyargs args in
+       let args = List.map  (fun x -> M.AExpr x) args in
 
-      mk_sp (Some fun_.fs_retty) (M.Pcall (None, M.Cid f, args))
+       mk_sp (Some fun_.fs_retty) (M.Pcall (None, M.Cid f, args))
 
     | Eapp (Fident f, args) -> begin
         let args = match args with [{ pldesc = Etuple args }] -> args | _ -> args in
@@ -1903,9 +1903,9 @@ let rec for_xexpr
           try
             let cty =
               thety |> Option.bind (fun thety ->
-                  Option.bind
-                    (fun ty -> Type.unify ~ptn:thety ~tg:ty)
-                    (List.ohead aty)) in
+                Option.bind
+                  (fun ty -> Type.unify ~ptn:thety ~tg:ty)
+                  (List.ohead aty)) in
 
             if Option.is_some thety && Option.is_none cty then
               raise E.Reject;
@@ -1920,10 +1920,10 @@ let rec for_xexpr
                 (fun rty map -> Type.subst map rty)
                 rty cty in
 
-            let rty =
-              match totality, mode.em_kind with
-              | `Partial, `Formula -> M.Toption rty
-              | _, _ -> rty in
+              let rty =
+                match totality, mode.em_kind with
+                | `Partial, `Formula -> M.Toption rty
+                | _, _ -> rty in
 
             if unloc f <> name then raise E.Reject;
             let d = Type.sig_distance ~from_:aty ~to_:ety in
@@ -1998,11 +1998,11 @@ let rec for_xexpr
 
         begin match asset, purity, mode.em_kind with
           | _, `Effect, `Formula ->
-            Env.emit_error env (loc tope, UnpureInFormula)
+              Env.emit_error env (loc tope, UnpureInFormula)
           | Some (_, M.View), `Effect, _ ->
-            Env.emit_error env (loc tope, UnpureOnView)
+              Env.emit_error env (loc tope, UnpureOnView)
           | _, _, _ ->
-            ()
+              ()
         end;
 
         let rty =
@@ -2153,27 +2153,27 @@ let rec for_xexpr
 and cast_expr (env : env) (to_ : M.ptyp option) (e : M.pterm) =
   match to_, e with
   | Some to_, { type_ = Some from_ } ->
-    if not (Type.compatible ~from_ ~to_) then
-      Env.emit_error env (e.loc, IncompatibleTypes (from_, to_));
-    if not (Type.equal from_ to_) then
-      M.mk_sp ~loc:e.loc ~type_:to_ (M.Pcast (from_, to_, e))
-    else e
+      if not (Type.compatible ~from_ ~to_) then
+        Env.emit_error env (e.loc, IncompatibleTypes (from_, to_));
+      if not (Type.equal from_ to_) then
+        M.mk_sp ~loc:e.loc ~type_:to_ (M.Pcast (from_, to_, e))
+      else e
   | _, _ ->
-    e
+      e
 
 (* -------------------------------------------------------------------- *)
 and join_expr (env : env) (ety : M.ptyp option) (es : M.pterm list) =
   match ety with
   | Some _ ->
-    (ety, List.map (cast_expr env ety) es)
+      (ety, List.map (cast_expr env ety) es)
 
   | _ -> begin
       match Type.join (List.pmap (fun e -> e.M.type_) es) with
       | None ->
-        (None, es)
+          (None, es)
       | Some _ as ty ->
-        (ty, List.map (cast_expr env ty) es)
-    end
+          (ty, List.map (cast_expr env ty) es)
+  end
 
 (* -------------------------------------------------------------------- *)
 and for_gen_matchwith (mode : emode_t) (env : env) theloc pe bs =
@@ -2480,8 +2480,8 @@ and for_gen_method_call mode env theloc (the, m, args)
 
 (* -------------------------------------------------------------------- *)
 and for_arg_effect
-    mode (env : env) ~(update : bool) (asset : assetdecl) (tope : PT.expr)
-  =
+  mode (env : env) ~(update : bool) (asset : assetdecl) (tope : PT.expr)
+=
   match unloc tope with
   | Erecord fields ->
     let do1 map ((x, e) : PT.record_item) =
@@ -2515,17 +2515,17 @@ and for_arg_effect
 
     if not update then begin
       List.iter (fun field ->
-          if unloc asset.as_pk <> unloc field.fd_name then begin
-            match Mid.find_opt (unloc field.fd_name) effects with
-            | None ->
+        if unloc asset.as_pk <> unloc field.fd_name then begin
+          match Mid.find_opt (unloc field.fd_name) effects with
+          | None ->
               if Option.is_none field.fd_dfl then
                 Env.emit_error env (loc tope,
-                                    MissingFieldInRecordLiteral (unloc field.fd_name))
+                  MissingFieldInRecordLiteral (unloc field.fd_name))
 
-            | Some (x, `Assign op, _) ->
+          | Some (x, `Assign op, _) ->
               if op <> M.ValueAssign && Option.is_none field.fd_dfl then
                 Env.emit_error env (loc x, UpdateEffectWithoutDefault)
-          end
+        end
         ) asset.as_fields
     end;
 
@@ -2553,14 +2553,14 @@ and for_assign_expr mode env orloc (op, fty) e =
 
   Option.get_dfl e (
     op      |> Option.bind (fun op  ->
-        e.type_ |> Option.bind (fun ety ->
-            match select_operator env orloc (op, [fty; ety]) with
-            | Some sig_ ->
-              Some (cast_expr env (Some (List.last sig_.osl_sig)) e)
-            | None ->
-              Env.emit_error env (orloc, NoMatchingOperator (op, [fty; ety]));
-              None
-          )))
+    e.type_ |> Option.bind (fun ety ->
+      match select_operator env orloc (op, [fty; ety]) with
+      | Some sig_ ->
+          Some (cast_expr env (Some (List.last sig_.osl_sig)) e)
+      | None ->
+          Env.emit_error env (orloc, NoMatchingOperator (op, [fty; ety]));
+          None
+  )))
 
 (* -------------------------------------------------------------------- *)
 and for_formula (env : env) (topf : PT.expr) : M.pterm =
@@ -2780,9 +2780,9 @@ let rec for_instruction (env : env) (i : PT.expr) : env * M.instruction =
               let the, (asset, c), method_, args, _ = Option.get_fdfl bailout infos in
 
               begin match c, method_.mth_purity with
-                | M.View, `Effect ->
+              | M.View, `Effect ->
                   Env.emit_error env (loc i, UnpureOnView)
-                | _, _ ->
+              | _, _ ->
                   () end;
 
               let the =
@@ -2831,35 +2831,35 @@ let rec for_instruction (env : env) (i : PT.expr) : env * M.instruction =
       let to_, c =
         match c with
         | None ->
-          (for_expr env ~ety:M.vtrole to_, None)
+            (for_expr env ~ety:M.vtrole to_, None)
 
         | Some (name, args) ->
-          let for_ctt ctt =
-            let entry =
-              List.find_opt
-                (fun (x, _) -> unloc name = unloc x)
-                ctt.ct_entries
+            let for_ctt ctt =
+              let entry =
+                List.find_opt
+                  (fun (x, _) -> unloc name = unloc x)
+                  ctt.ct_entries
+              in
+
+              match entry  with
+              | None ->
+                  let err =
+                    UnknownContractEntryPoint (unloc ctt.ct_name, unloc name)
+                  in Env.emit_error env (loc name, err); None
+
+              | Some (_, targs) ->
+                  if List.length targs <> List.length args then
+                    let n = List.length targs in
+                      let c = List.length  args in
+                        Env.emit_error env (loc name, InvalidNumberOfArguments (n, c));
+                        None
+                  else
+                    Some (name, List.map2
+                                  (fun (_, ety) arg -> for_expr ~ety env arg)
+                                  targs args)
             in
-
-            match entry  with
-            | None ->
-              let err =
-                UnknownContractEntryPoint (unloc ctt.ct_name, unloc name)
-              in Env.emit_error env (loc name, err); None
-
-            | Some (_, targs) ->
-              if List.length targs <> List.length args then
-                let n = List.length targs in
-                let c = List.length  args in
-                Env.emit_error env (loc name, InvalidNumberOfArguments (n, c));
-                None
-              else
-                Some (name, List.map2
-                        (fun (_, ety) arg -> for_expr ~ety env arg)
-                        targs args)
-          in
-          let to_, ctt = for_contract_expr expr_mode env to_ in
-          (to_, Option.bind for_ctt ctt)
+            let to_, ctt = for_contract_expr expr_mode env to_ in
+            (to_, Option.bind for_ctt ctt)
 
       in env, mki (Itransfer (e, to_, c))
 
@@ -3068,32 +3068,32 @@ let for_specification_item
     ((env, poenv), `Effect i)
 
   | PT.Vpostcondition (x, f, invs, uses, kind) -> begin
-      begin match kind, mode with
-        | Some PKInv, `Local ->
-          Env.emit_error env (loc x, ContractInvariantInLocalSpec)
-        | Some PKPost, `Global ->
-          Env.emit_error env (loc x, PostConditionInGlobalSpec)
-        | _, _ -> () end;
+    begin match kind, mode with
+    | Some PKInv, `Local ->
+        Env.emit_error env (loc x, ContractInvariantInLocalSpec)
+    | Some PKPost, `Global ->
+        Env.emit_error env (loc x, PostConditionInGlobalSpec)
+    | _, _ -> () end;
 
-      let for_inv (lbl, linvs) =
-        let env0 =
-          match Env.Label.lookup env (unloc lbl) with
-          | None ->
-            Env.emit_error env (loc lbl, UnknownLabel (unloc lbl));
-            env
-          | Some (env, `Loop aname) ->
-            let ty = M.Tasset (mkloc (loc lbl) aname) in
-            let ty = M.Tcontainer (ty, M.View) in
-            let env = Env.Local.push env (mkloc coreloc "toiterate", ty) in
-            let env = Env.Local.push env (mkloc coreloc "iterated", ty) in
-            env
-          | Some (_, _) ->
-            Env.emit_error env (loc lbl, NonLoopLabel (unloc lbl));
-            env
-        in (lbl, List.map (for_formula env0) linvs) in
-      let f    = for_formula poenv f in
-      let invs = List.map for_inv invs in
-      ((env, poenv), `Postcondition (x, f, invs, uses))
+    let for_inv (lbl, linvs) =
+      let env0 =
+        match Env.Label.lookup env (unloc lbl) with
+        | None ->
+          Env.emit_error env (loc lbl, UnknownLabel (unloc lbl));
+          env
+        | Some (env, `Loop aname) ->
+          let ty = M.Tasset (mkloc (loc lbl) aname) in
+          let ty = M.Tcontainer (ty, M.View) in
+          let env = Env.Local.push env (mkloc coreloc "toiterate", ty) in
+          let env = Env.Local.push env (mkloc coreloc "iterated", ty) in
+          env
+        | Some (_, _) ->
+          Env.emit_error env (loc lbl, NonLoopLabel (unloc lbl));
+          env
+      in (lbl, List.map (for_formula env0) linvs) in
+    let f    = for_formula poenv f in
+    let invs = List.map for_inv invs in
+    ((env, poenv), `Postcondition (x, f, invs, uses))
     end
 
 (* -------------------------------------------------------------------- *)
@@ -3268,16 +3268,16 @@ let for_function (env : env) (fdecl : PT.s_function loced) =
       let env, body = for_instruction env fdecl.body in
       let env, spec =
         let poenv = rty |> Option.fold (fun poenv rty ->
-            let decl = {
-              vr_name = mkloc loc "result";
-              vr_type = rty;
-              vr_kind = `Ghost;
-              vr_invs = [];
-              vr_def  = None;
-              vr_tgt  = None, None;
-              vr_core = None;
-            } in Env.Var.push poenv decl
-          ) env in
+          let decl = {
+            vr_name = mkloc loc "result";
+            vr_type = rty;
+            vr_kind = `Ghost;
+            vr_invs = [];
+            vr_def  = None;
+            vr_tgt  = None, None;
+            vr_core = None;
+          } in Env.Var.push poenv decl
+        ) env in
         Option.foldmap (fun env -> for_specification `Local (env, poenv)) env fdecl.spec in
 
       if Option.is_some rty && not (List.exists Option.is_none args) then
@@ -3536,16 +3536,16 @@ let for_asset_decl ?(force = false) (env : env) (decl : PT.asset_decl loced) =
     let pk =
       match pk with
       | None ->
-        Option.map (L.lmap proj3_1) (List.ohead fields)
+          Option.map (L.lmap proj3_1) (List.ohead fields)
       | Some _ -> pk in
 
     Option.iter (fun pk ->
         match Option.get (get_field (unloc pk)) with
         | { pldesc = _, Some ty, _; plloc = loc; } ->
-          if not (Type.pktype ty) then
-            Env.emit_error env (loc, InvalidTypeForPk)
+            if not (Type.pktype ty) then
+              Env.emit_error env (loc, InvalidTypeForPk)
         | _ -> ()
-      ) pk
+    ) pk
   end;
 
   let sortk = List.rev sortk in
@@ -3636,8 +3636,8 @@ let for_asset_decl ?(force = false) (env : env) (decl : PT.asset_decl loced) =
         as_name   = x;
         as_fields = List.map get_field_type fields;
         as_pk     = Option.get_fdfl
-            (fun () -> L.lmap proj3_1 (List.hd fields))
-            pk;
+                      (fun () -> L.lmap proj3_1 (List.hd fields))
+                      pk;
         as_sortk  = sortk;
         as_invs   = List.flatten invs;
         as_state  = state;
@@ -3669,7 +3669,7 @@ let for_contract_decl (env : env) (decl : PT.contract_decl loced) =
   let entries =
     List.pmap (fun (PT.Ssignature (ename, psig)) ->
         List.find_dup (fun (id, _) -> unloc id) psig |>
-        Option.iter (fun (_, (x, _)) ->
+          Option.iter (fun (_, (x, _)) ->
             Env.emit_error env (loc x, DuplicatedArgName (unloc x)));
 
         let for1 (arg_id, pty) =
