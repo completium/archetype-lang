@@ -166,10 +166,16 @@ let pp_model_internal fmt (model : model) b =
     | Ttuple ts ->
       Format.fprintf fmt "(%a)"
         (pp_list " * " pp_type) ts
+    | Tset k ->
+      Format.fprintf fmt "set(%a)"
+        pp_btyp k
     | Tmap (k, v) ->
       Format.fprintf fmt "map(%a, %a)"
         pp_btyp k
         pp_type v
+    | Trecord l ->
+      Format.fprintf fmt "(%a) record"
+        (pp_list "; " (fun fmt (lbl, x) -> Format.fprintf fmt "(%s, %a)" lbl  pp_type x)) l
     | Tunit ->
       Format.fprintf fmt "unit"
     | Tstorage ->
@@ -543,8 +549,9 @@ let pp_model_internal fmt (model : model) b =
       end
 
     | Mlitset l ->
-      Format.fprintf fmt "[%a]"
+      Format.fprintf fmt "(set [%a] : %a)"
         (pp_list "; " f) l
+        pp_type mtt.type_
 
     | Mlitlist l ->
       Format.fprintf fmt "[%a]"
@@ -554,6 +561,13 @@ let pp_model_internal fmt (model : model) b =
       Format.fprintf fmt "(map [%a] : %a)"
         (pp_list "; " (fun fmt (k, v) -> Format.fprintf fmt "%a -> %a"
                           f k
+                          f v)) l
+        pp_type mtt.type_
+
+    | Mlitrecord l ->
+      Format.fprintf fmt "(record[%a] : %a)"
+        (pp_list "; " (fun fmt (k, v) -> Format.fprintf fmt "%s = %a"
+                          k
                           f v)) l
         pp_type mtt.type_
 
@@ -1291,7 +1305,19 @@ let pp_model_internal fmt (model : model) b =
        @[%a@]@\n\
        ]@\n"
       pp_id asset.name
-      (pp_list "@\n" pp_asset_item) asset.values
+      (pp_list "@\n" pp_asset_item) asset.values;
+    let an = unloc asset.name in
+    if (not (Utils.is_asset_single_field model an)) then
+      begin
+        let k, _ = Utils.get_asset_key model an in
+        let ll = List.filter (fun (x : asset_item) -> not (String.equal (unloc x.name) k)) asset.values in
+        Format.fprintf fmt
+          "@\ntype %a_storage is record [@\n  \
+           @[%a@]@\n\
+           ]@\n"
+          pp_id asset.name
+          (pp_list "@\n" pp_asset_item) ll
+      end
   in
 
   let pp_decl env (fmt : Format.formatter) (decl : decl_node) =
@@ -1350,58 +1376,99 @@ let pp_model_internal fmt (model : model) b =
 
   let pp_api_asset (env : env) fmt = function
     | Get an ->
-      let _, t = Utils.get_asset_key model an in
-      Format.fprintf fmt
-        "function get_%s (const s : storage_type; const key : %a) : %s is@\n  \
-         begin@\n    \
-         const res : %s = get_force(key, s.%s_assets);@\n  \
-         end with (res)@\n"
-        an pp_btyp t an an an
+      let k, t = Utils.get_asset_key model an in
+      if (Utils.is_asset_single_field model an) then
+        Format.fprintf fmt
+          "function get_%s (const s : storage_type; const key : %a) : %s is@\n  \
+           begin@\n    \
+           const res : %s = record[%s = key]@\n  \
+           end with (res)@\n"
+          an pp_btyp t an an k
+      else
+        let asset = Utils.get_asset model an in
+        Format.fprintf fmt
+          "function get_%s (const s : storage_type; const key : %a) : %s is@\n  \
+           begin@\n    \
+           const a : %s_storage = get_force(key, s.%s_assets);@\n    \
+           const res : %s = record[%a]@\n  \
+           end with (res)@\n"
+          an pp_btyp t an an an an
+          (pp_list "; " (fun fmt (x : asset_item) ->
+               let fn = unloc x.name in
+               Format.fprintf fmt "%s = %s" fn (if (String.equal k fn) then "key" else ("a." ^ fn)))) asset.values
 
     | Set an ->
-      let _, t = Utils.get_asset_key model an in
+      let k, t = Utils.get_asset_key model an in
+      let asset = Utils.get_asset model an in
+      let fns = asset.values |> List.map (fun (ai : asset_item) -> unloc ai.name) |> List.filter (fun x -> not (String.equal k x)) in
       Format.fprintf fmt
         "function set_%s (const s : storage_type; const key : %a; const a : %s) : storage_type is@\n  \
          begin@\n    \
-         const map_local : map(%a, %s) = s.%s_assets;@\n    \
-         map_local[key] := a;@\n    \
+         const map_local : map(%a, %s_storage) = s.%s_assets;@\n    \
+         map_local[key] := record[%a];@\n    \
          s.%s_assets := map_local;@\n  \
          end with (s)@\n"
         an pp_btyp t an
         pp_btyp t an an
+        (pp_list "; " (fun fmt fn -> Format.fprintf fmt "%s = a.%s" fn fn)) fns
         an
 
     | Add an ->
       let k, t = Utils.get_asset_key model an in
+      let asset = Utils.get_asset model an in
+      let fns = asset.values |> List.map (fun (ai : asset_item) -> unloc ai.name) |> List.filter (fun x -> not (String.equal k x)) in
       (* let ft, c = Utils.get_field_container model an fn in *)
-      Format.fprintf fmt
-        "function add_%s (const s : storage_type; const a : %s) : storage_type is@\n  \
-         begin@\n    \
-         const key : %a = a.%s;@\n    \
-         const map_local : map(%a, %s) = s.%s_assets;@\n    \
-         if map_mem(key, map_local) then failwith (\"key already exists\") else skip;@\n    \
-         map_local[key] := a;@\n    \
-         s.%s_assets := map_local;@\n  \
-         end with (s)@\n"
-        an an
-        pp_btyp t k
-        pp_btyp t an an
-        (* (pp_do_if (match c with | Partition -> true | _ -> false)
-           (fun fmt -> Format.fprintf fmt "")) ft *)
-        an
+      if Utils.is_asset_single_field model an
+      then
+        Format.fprintf fmt
+          "function add_%s (const s : storage_type; const a : %s) : storage_type is@\n  \
+           begin@\n    \
+           const key : %a = a.%s;@\n    \
+           if set_mem(key, s.%s_assets) then failwith (\"key already exists\") else skip;@\n    \
+           s.%s_assets := set_add(key, s.%s_assets);@\n  \
+           end with (s)@\n"
+          an an
+          pp_btyp t k
+          an
+          an an
+      else
+        Format.fprintf fmt
+          "function add_%s (const s : storage_type; const a : %s) : storage_type is@\n  \
+           begin@\n    \
+           const key : %a = a.%s;@\n    \
+           const map_local : map(%a, %s_storage) = s.%s_assets;@\n    \
+           if map_mem(key, map_local) then failwith (\"key already exists\") else skip;@\n    \
+           const asset : %s_storage = record[%a];@\n    \
+           map_local[key] := asset;@\n    \
+           s.%s_assets := map_local;@\n  \
+           end with (s)@\n"
+          an an
+          pp_btyp t k
+          pp_btyp t an an
+          an (pp_list "; " (fun fmt fn -> Format.fprintf fmt "%s = a.%s" fn fn)) fns
+          an
 
     | Remove an ->
       let _, t = Utils.get_asset_key model an in
-      Format.fprintf fmt
-        "function remove_%s (const s : storage_type; const key : %a) : storage_type is@\n  \
-         begin@\n    \
-         const map_local : map(%a, %s) = s.%s_assets;@\n    \
-         remove key from map map_local;@\n    \
-         s.%s_assets := map_local;@\n  \
-         end with (s)@\n"
-        an pp_btyp t
-        pp_btyp t an an
-        an
+      if Utils.is_asset_single_field model an then
+        Format.fprintf fmt
+          "function remove_%s (const s : storage_type; const key : %a) : storage_type is@\n  \
+           begin@\n    \
+           s.%s_assets := set_remove(key, s.%s_assets);@\n  \
+           end with (s)@\n"
+          an pp_btyp t
+          an an
+      else
+        Format.fprintf fmt
+          "function remove_%s (const s : storage_type; const key : %a) : storage_type is@\n  \
+           begin@\n    \
+           const map_local : map(%a, %s_storage) = s.%s_assets;@\n    \
+           remove key from map map_local;@\n    \
+           s.%s_assets := map_local;@\n  \
+           end with (s)@\n"
+          an pp_btyp t
+          pp_btyp t an an
+          an
 
     | Clear an ->
       let _, t = Utils.get_asset_key model an in
@@ -1417,15 +1484,18 @@ let pp_model_internal fmt (model : model) b =
       let k, t = Utils.get_asset_key model an in
       let ft, c = Utils.get_field_container model an fn in
       let kk, _ = Utils.get_asset_key model ft in
+      let single = Utils.is_asset_single_field model ft in
+      let asset = Utils.get_asset model an in
+      let fns = asset.values |> List.map (fun (ai : asset_item) -> unloc ai.name) |> List.filter (fun x -> not (String.equal k x)) in
       Format.fprintf fmt
         "function add_%s_%s (const s : storage_type; const a : %s; const b : %s) : storage_type is@\n  \
          begin@\n    \
          const asset_key : %a = a.%s;@\n    \
          const asset_val : %s = get_%s(s, asset_key);@\n    \
-         const map_local : map(%a, %s) = s.%s_assets;@\n    \
+         const map_local : map(%a, %s_storage) = s.%s_assets;@\n    \
          %a\
          asset_val.%s := cons(b.%s, asset_val.%s);@\n    \
-         map_local[asset_key] := asset_val;@\n    \
+         map_local[asset_key] := record[%a];@\n    \
          s.%s_assets := map_local;@\n    \
          %a  \
          end with (s)@\n"
@@ -1434,8 +1504,9 @@ let pp_model_internal fmt (model : model) b =
         an an
         pp_btyp t an an
         (pp_do_if (match c with | Collection -> true | _ -> false)
-             (fun fmt _ -> Format.fprintf fmt "if not map_mem(b.%s, s.%s_assets) then failwith (\"key of b does not exist\") else skip;@\n    " kk ft)) ()
+             (fun fmt _ -> Format.fprintf fmt "if not %s_mem(b.%s, s.%s_assets) then failwith (\"key of b does not exist\") else skip;@\n    " (if single then "set" else "map") kk ft)) ()
         fn kk fn
+        (pp_list "; " (fun fmt fn -> Format.fprintf fmt "%s = a.%s" fn fn)) fns
         an
         (pp_do_if (match c with | Partition -> true | _ -> false) (fun fmt -> Format.fprintf fmt "s := add_%s(s, b);@\n")) ft
 
@@ -1443,6 +1514,8 @@ let pp_model_internal fmt (model : model) b =
       let k, t = Utils.get_asset_key model an in
       let ft, c = Utils.get_field_container model an fn in
       let _kk, tt = Utils.get_asset_key model ft in
+      let asset = Utils.get_asset model an in
+      let fns = asset.values |> List.map (fun (ai : asset_item) -> unloc ai.name) |> List.filter (fun x -> not (String.equal k x)) in
       Format.fprintf fmt
         "function remove_%s_%s (const s : storage_type; const a : %s; const key : %a) : storage_type is@\n  \
          begin@\n    \
@@ -1451,8 +1524,8 @@ let pp_model_internal fmt (model : model) b =
          const asset_val : %s = get_%s(s, asset_key);@\n    \
          const new_keys : list(%a) = list_fold(aux, asset_val.%s, (nil : list(%a)));@\n    \
          asset_val.%s := new_keys;@\n    \
-         const map_local : map(%a, %s) = s.%s_assets;@\n    \
-         map_local[asset_key] := asset_val;@\n    \
+         const map_local : map(%a, %s_storage) = s.%s_assets;@\n    \
+         map_local[asset_key] := record[%a];@\n    \
          s.%s_assets := map_local;@\n    \
          %a  \
          end with (s)@\n"
@@ -1463,6 +1536,7 @@ let pp_model_internal fmt (model : model) b =
         pp_btyp tt fn pp_btyp tt
         fn
         pp_btyp t an an
+        (pp_list "; " (fun fmt fn -> Format.fprintf fmt "%s = a.%s" fn fn)) fns
         an
         (pp_do_if (match c with | Partition -> true | _ -> false) (fun fmt -> Format.fprintf fmt "s := remove_%s(s, key);@\n")) ft
 
@@ -1512,20 +1586,22 @@ let pp_model_internal fmt (model : model) b =
 
     | ColToKeys an ->
       let _k, t = Utils.get_asset_key model an in
+      let single = Utils.is_asset_single_field model an in
+
       Format.fprintf fmt
         "function col_to_keys_%s (const s : storage_type) : list(%a) is@\n \
          begin@\n \
-         function to_keys (const accu : list(%a); const v : (%a * %s)) : list(%a) is block { skip } with cons(v.0, accu);@\n \
+         function to_keys (const accu : list(%a); const v : %a) : list(%a) is block { skip } with cons(%s, accu);@\n \
          function rev     (const accu : list(%a); const v : %a) : list(%a) is block { skip } with cons(v, accu);@\n \
          var res : list(%a) := (nil : list(%a));@\n \
-         res := map_fold(to_keys, s.%s_assets, res);@\n \
+         res := %s_fold(to_keys, s.%s_assets, res);@\n \
          res := list_fold(rev, res, (nil : list(%a)));@\n \
          end with res@\n"
         an pp_btyp t
-        pp_btyp t pp_btyp t an pp_btyp t
+        pp_btyp t (fun fmt _ -> if single then pp_btyp fmt t else Format.fprintf fmt "(%a * %s_storage)" pp_btyp t an) () pp_btyp t (if single then "v" else "v.0")
         pp_btyp t pp_btyp t pp_btyp t
         pp_btyp t pp_btyp t
-        an
+        (if single then "set" else "map") an
         pp_btyp t
 
     | Select (an, _, f) ->
@@ -1536,7 +1612,7 @@ let pp_model_internal fmt (model : model) b =
          begin@\n    \
          function aggregate (const accu : list(%a); const i : %a) : list(%a) is@\n      \
          begin@\n        \
-         const the : %s = get_force(i, s.%s_assets);@\n        \
+         const the : %s = get_%s(s, i);@\n        \
          end with (if (%a) then cons(the.%s, accu) else accu);@\n    \
          end with (list_fold(aggregate, l, (nil : list(%a))))@\n"
         an i pp_btyp t pp_btyp t
@@ -1569,8 +1645,8 @@ let pp_model_internal fmt (model : model) b =
           "function cmp (const k1 : %a; const k2: %a) : int is@\n  \
            block {@\n    \
            var res : int := 0;@\n    \
-           const a1 : %s = get_force(k1, s.%s_assets);@\n    \
-           const a2 : %s = get_force(k2, s.%s_assets);@\n    \
+           const a1 : %s = get_%s(s, k1);@\n    \
+           const a2 : %s = get_%s(s, k2);@\n    \
            %a@\n    \
            else skip@\n  \
            } with res;@\n"
@@ -1659,7 +1735,7 @@ let pp_model_internal fmt (model : model) b =
          | Some(v) -> key := v@\n    \
          | None -> failwith(\"nth_%s failed\")@\n    \
          end;@\n    \
-         const res : %s = get_force(key, s.%s_assets);@\n  \
+         const res : %s = get_%s(s, key);@\n  \
          } with res@\n"
         an pp_btyp t an
         pp_btyp t pp_btyp t pp_btyp t
@@ -1696,7 +1772,7 @@ let pp_model_internal fmt (model : model) b =
          begin@\n    \
          function aggregate (const accu : %a; const i : %a) : %a is@\n      \
          block {@\n        \
-         const a : %s = get_force(i, s.%s_assets);@\n      \
+         const a : %s = get_%s(s, i);@\n      \
          } with (accu + (%a));@\n  \
          end with (list_fold(aggregate, l, %s))@\n"
         an i pp_btyp tk pp_type t
@@ -1713,7 +1789,7 @@ let pp_model_internal fmt (model : model) b =
          block {@\n    \
          function aggregate (const accu: option(%a); const x: %a) : option(%a) is@\n    \
          block {@\n      \
-         const a : %s = get_force(x, s.%s_assets);@\n      \
+         const a : %s = get_%s(s, x);@\n      \
          const r : option(%a) = Some(a.%s);@\n      \
          case accu of@\n      \
          | Some(v) -> r := if v < a.%s then Some (v) else accu@\n      \
@@ -1746,7 +1822,7 @@ let pp_model_internal fmt (model : model) b =
          block {@\n    \
          function aggregate (const accu: option(%a); const x: %a) : option(%a) is@\n    \
          block {@\n      \
-         const a : %s = get_force(x, s.%s_assets);@\n      \
+         const a : %s = get_%s(s, x);@\n      \
          const r : option(%a) = Some(a.%s);@\n      \
          case accu of@\n      \
          | Some(v) -> r := if v > a.%s then Some (v) else accu@\n      \

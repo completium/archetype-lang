@@ -151,6 +151,7 @@ let generate_target model =
     |> remove_cmp_bool
     |> shallow_asset
     |> split_key_values
+    |> remove_duplicate_key
     |> Gen_transform.assign_loop_label
     |> generate_api_storage
     |> output
@@ -229,7 +230,7 @@ let generate_target model =
     |> replace_for_to_iter
     |> remove_cmp_enum
     |> remove_cmp_bool
-    |> generate_api_storage
+    |> generate_api_storage ~verif:true
     |> output
 
   | _ -> ()

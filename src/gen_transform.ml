@@ -1942,3 +1942,60 @@ let replace_for_to_iter (model : model) : model =
     | _ -> map_mterm (aux ctx) mt
   in
   Model.map_mterm_model aux model
+
+let remove_duplicate_key (model : model) : model =
+  let remove_key_value_for_asset_node (mt : mterm) : mterm =
+    match mt.node, mt.type_ with
+    | Masset l, Tasset an ->
+      begin
+        let an = unloc an in
+        let k, _ = Utils.get_asset_key model an in
+        let l =
+          Utils.get_labeled_value_from model an l
+          |> List.filter (fun (lbl, _) -> not (String.equal lbl k))
+        in
+        mk_mterm (Mlitrecord l) (Tasset (dumloc (an ^ "_storage")))
+      end
+    | _ -> mt
+  in
+
+  let storage =
+    List.fold_right (fun x accu ->
+        match x.model_type with
+        | MTasset an ->
+          if Utils.is_asset_single_field model an
+          then
+            begin
+              let _k, t = Utils.get_asset_key model an in
+              let type_asset = Tset t in
+              let default =
+                match x.default.node with
+                | Mlitmap l ->  mk_mterm (Mlitset (List.map fst l)) type_asset
+                | _ -> assert false
+              in
+              let asset_assets =
+                mk_storage_item x.id
+                  (MTasset an)
+                  type_asset
+                  default
+                  ~loc:x.loc
+              in
+              asset_assets::accu
+            end
+          else
+            let default, typ =
+              match x.default.node, x.typ with
+              | Mlitmap l, Tmap (b, Tasset an) ->
+                let t = Tmap (b, Tasset (dumloc ((unloc an) ^ "_storage"))) in
+                let mt = mk_mterm (Mlitmap (List.map (fun (k, v) -> (k, remove_key_value_for_asset_node v)) l)) t in
+                mt, t
+              | _ -> x.default, x.typ
+            in
+            { x with default = default; typ = typ }::accu
+        | _ -> x::accu)
+      model.storage []
+  in
+
+  { model with
+    storage = storage
+  }

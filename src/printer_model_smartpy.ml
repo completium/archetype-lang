@@ -79,10 +79,16 @@ let pp_model fmt (model : model) =
     | Ttuple ts ->
       Format.fprintf fmt "%a"
         (pp_list " * " pp_type) ts
+    | Tset k ->
+      Format.fprintf fmt "%a set"
+        pp_btyp k
     | Tmap (k, v) ->
       Format.fprintf fmt "(%a, %a) map"
         pp_btyp k
         pp_type_ v
+    | Trecord l ->
+      Format.fprintf fmt "(%a) record"
+        (pp_list "; " (fun fmt (lbl, x) -> Format.fprintf fmt "(%s, %a)" lbl  pp_type x)) l
     | Tunit ->
       Format.fprintf fmt "unit"
     | Tstorage ->
@@ -542,6 +548,12 @@ let pp_model fmt (model : model) =
                end
              | _  -> emit_error (TODO ("Mlitmap : handle map with data")))
           ()
+
+      | Mlitrecord l ->
+        Format.fprintf fmt "record(%a)"
+          (pp_list "; " (fun fmt (k, v) -> Format.fprintf fmt "%s = %a"
+                            k
+                            f v)) l
 
       (* access *)
 

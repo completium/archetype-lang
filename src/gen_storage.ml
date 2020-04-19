@@ -61,7 +61,9 @@ let generate_storage (model : model) : model =
       | Tenum v
       | Tcontract v       -> emit_error (NoInitExprFor (unloc v))
       | Ttuple _          -> emit_error (NoInitExprFor "tuple")
+      | Tset k            -> mk_mterm   (Mlitset []) (Tset k)
       | Tmap (k, v)       -> mk_mterm   (Mlitmap []) (Tmap (k, v))
+      | Trecord _         -> emit_error (NoInitExprFor "record")
       | Tunit             -> emit_error (NoInitExprFor "unit")
       | Tstorage          -> emit_error (NoInitExprFor "storage")
       | Toperation        -> emit_error (NoInitExprFor "operation")

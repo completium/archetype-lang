@@ -354,4 +354,4 @@ let shallow_asset (target : gen_shallow_target) (model : M.model) : M.model =
     functions = add_asset_functions @
                 add_asset_field_functions @
                 (List.map (process_shallow_function model target) model.functions)
-  } |> Gen_api_storage.process_api_storage
+  }

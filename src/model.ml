@@ -59,7 +59,9 @@ type type_ =
   | Tlist of type_
   | Toption of type_
   | Ttuple of type_ list
+  | Tset of btyp
   | Tmap of btyp * type_
+  | Trecord of (ident * type_) list
   | Tunit
   | Tstorage
   | Toperation
@@ -176,6 +178,7 @@ type ('id, 'term) mterm_node  =
   | Mlitset           of 'term list
   | Mlitlist          of 'term list
   | Mlitmap           of ('term * 'term) list
+  | Mlitrecord        of (ident * 'term) list
   (* access *)
   | Mdotasset         of 'term * 'id
   | Mdotcontract      of 'term * 'id
@@ -986,6 +989,7 @@ let cmp_mterm_node
     | Mlitset l1, Mlitset l2                                                           -> List.for_all2 cmp l1 l2
     | Mlitlist l1, Mlitlist l2                                                         -> List.for_all2 cmp l1 l2
     | Mlitmap l1, Mlitmap l2                                                           -> List.for_all2 (fun (k1, v1) (k2, v2) -> (cmp k1 k2 && cmp v1 v2)) l1 l2
+    | Mlitrecord l1, Mlitrecord l2                                                     -> List.for_all2 (fun (i1, v1) (i2, v2) -> (cmp_ident i1 i2 && cmp v1 v2)) l1 l2
     (* access *)
     | Mdotasset (e1, i1), Mdotasset (e2, i2)                                           -> cmp e1 e2 && cmpi i1 i2
     | Mdotcontract (e1, i1), Mdotcontract (e2, i2)                                     -> cmp e1 e2 && cmpi i1 i2
@@ -1207,7 +1211,9 @@ let map_type (f : type_ -> type_) = function
   | Tlist t           -> Tlist (f t)
   | Toption t         -> Toption (f t)
   | Ttuple l          -> Ttuple (List.map f l)
-  | Tmap (a, t)       -> Tmap (a, f t)
+  | Tset k            -> Tset k
+  | Tmap (k, v)       -> Tmap (k, f v)
+  | Trecord l         -> Trecord (List.map (fun (lbl, x) -> (lbl, f x)) l)
   | Tunit             -> Tunit
   | Tstorage          -> Tstorage
   | Toperation        -> Toperation
@@ -1267,6 +1273,7 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Mlitset l                      -> Mlitset (List.map f l)
   | Mlitlist l                     -> Mlitlist (List.map f l)
   | Mlitmap l                      -> Mlitmap (List.map (pair_sigle_map f) l)
+  | Mlitrecord l                   -> Mlitrecord (List.map ((fun (x, y) -> (x, f y))) l)
   (* access *)
   | Mdotasset (e, i)               -> Mdotasset (f e, g i)
   | Mdotcontract (e, i)            -> Mdotcontract (f e, g i)
@@ -1588,6 +1595,7 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mlitset l                             -> List.fold_left f accu l
   | Mlitlist l                            -> List.fold_left f accu l
   | Mlitmap l                             -> List.fold_left (fun accu (k, v) -> f (f accu k) v) accu l
+  | Mlitrecord l                          -> List.fold_left (fun accu (_, v) -> f accu v) accu l
   (* access *)
   | Mdotasset (e, _)                      -> f accu e
   | Mdotcontract (e, _)                   -> f accu e
@@ -1960,6 +1968,15 @@ let fold_map_term
            pterms @ [kn, vn], accu) ([], accu) l
     in
     g (Mlitmap le), la
+
+  | Mlitrecord l ->
+    let le, la =
+      List.fold_left
+        (fun (pterms, accu) (i, v) ->
+           let vn, accu = f accu v in
+           pterms @ [i, vn], accu) ([], accu) l
+    in
+    g (Mlitrecord le), la
 
   (* dot *)
 
@@ -2673,7 +2690,9 @@ let replace_ident_model (f : kind_ident -> ident -> ident) (model : model) : mod
     | Tlist a           -> Tlist (for_type a)
     | Toption a         -> Toption (for_type a)
     | Ttuple l          -> Ttuple (List.map for_type l)
+    | Tset k            -> Tset k
     | Tmap (k, v)       -> Tmap (k, for_type v)
+    | Trecord l         -> Trecord (List.map (fun (lbl, x) -> (lbl, for_type x)) l)
     | Tunit             -> t
     | Tstorage          -> t
     | Toperation        -> t
@@ -3081,6 +3100,8 @@ module Utils : sig
   val with_min_max                       : model -> bool
   val with_count                         : model -> ident -> bool
   val get_asset_collection               : ident -> mterm
+  val is_asset_single_field              : model -> ident -> bool
+  val get_labeled_value_from             : model -> ident -> mterm list -> (ident * mterm) list
 end = struct
 
   open Tools
@@ -3827,4 +3848,10 @@ end = struct
   let get_asset_collection (an : ident) : mterm =
     mk_mterm (Mvarstorecol (dumloc an)) (Tcontainer (Tasset (dumloc an), Collection))
 
+  let is_asset_single_field (model : model) (an : ident) : bool =
+    get_asset model an |> fun x -> x.values |> List.filter (fun (x : asset_item) -> not x.shadow) |> List.length = 1
+
+  let get_labeled_value_from (model : model) (an : ident) (values : mterm list) : (ident * mterm) list =
+    let asset = get_asset model an in
+    List.map2 (fun (x : asset_item) (y : mterm) -> unloc x.name, y) asset.values values
 end
