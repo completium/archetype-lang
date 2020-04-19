@@ -1947,9 +1947,7 @@ let remove_duplicate_key (model : model) : model =
           Utils.get_labeled_value_from model an l
           |> List.filter (fun (lbl, _) -> not (String.equal lbl k))
         in
-        { mt with
-          node = Mlitrecord l
-        }
+        mk_mterm (Mlitrecord l) (Tasset (dumloc (an ^ "_storage")))
       end
     | _ -> mt
   in
@@ -1981,9 +1979,9 @@ let remove_duplicate_key (model : model) : model =
             let default, typ =
               match x.default.node, x.typ with
               | Mlitmap l, Tmap (b, Tasset an) ->
-                { x.default with
-                  node = (Mlitmap (List.map (fun (k, v) -> (k, remove_key_value_for_asset_node v)) l))
-                }, Tmap (b, Tasset (dumloc ((unloc an) ^ "_storage")))
+                let t = Tmap (b, Tasset (dumloc ((unloc an) ^ "_storage"))) in
+                let mt = mk_mterm (Mlitmap (List.map (fun (k, v) -> (k, remove_key_value_for_asset_node v)) l)) t in
+                mt, t
               | _ -> x.default, x.typ
             in
             { x with default = default; typ = typ }::accu

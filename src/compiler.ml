@@ -230,7 +230,7 @@ let generate_target model =
     |> replace_for_to_iter
     |> remove_cmp_enum
     |> remove_cmp_bool
-    |> generate_api_storage
+    |> generate_api_storage ~verif:true
     |> output
 
   | _ -> ()

@@ -8,8 +8,7 @@ type error_desc =
   | TODO
 [@@deriving show {with_path = false}]
 
-
-let process_api_storage (model : model) : model =
+let generate_api_storage ?(verif=false) (model : model) : model =
 
   let add (_ctx : ctx_model) (l : api_storage list) (i :  api_storage) =
     let res, l = List.fold_left (fun (res, accu) (x : api_storage) ->
@@ -60,7 +59,7 @@ let process_api_storage (model : model) : model =
         [APIAsset (Get asset_name); APIAsset (Select (asset_name, la, lb))]
       | Mapifsort (asset_name, _, l)
       | Msort (asset_name, _, l) ->
-        [APIAsset (Sort (asset_name, l))]
+        [APIAsset (Get asset_name); APIAsset (Sort (asset_name, l))]
       | Mapifcontains (asset_name, _, _)
       | Mcontains (asset_name, _, _) ->
         [APIAsset (Contains asset_name)]
@@ -72,7 +71,7 @@ let process_api_storage (model : model) : model =
         [APIAsset (Count asset_name)]
       | Mapifsum (asset_name, _, p)
       | Msum (asset_name, _, p) ->
-        [APIAsset (Sum (asset_name, p.type_, p))]
+        [APIAsset (Get asset_name); APIAsset (Sum (asset_name, p.type_, p))]
       | Mshallow (asset_name, _) ->
         [APIAsset (Shallow asset_name)]
       | Munshallow (asset_name, _) ->
@@ -183,12 +182,12 @@ let process_api_storage (model : model) : model =
                    | APIInternal (RatArith      ) ->  3
                    | APIInternal (RatUminus     ) ->  4
                    | APIInternal (RatTez        ) ->  5
-                   | APIAsset   (Nth           _) ->  7
+                   | APIAsset   (Nth           _) -> if verif then 7 else 12
                    | APIAsset   (Count         _) ->  8
                    | APIAsset   (Sum           _) ->  9
                    | APIAsset   (Min           _) -> 10
                    | APIAsset   (Max           _) -> 11
-                   | APIAsset   (Get           _) -> 12
+                   | APIAsset   (Get           _) -> if verif then 12 else 7
                    | APIAsset   (Set           _) -> 13
                    | APIAsset   (Add           _) -> 14
                    | APIAsset   (Remove        _) -> 15
@@ -233,6 +232,3 @@ let process_api_storage (model : model) : model =
   in
   { model with api_items = l }
 
-let generate_api_storage (model : model) : model =
-  model
-  |> process_api_storage
