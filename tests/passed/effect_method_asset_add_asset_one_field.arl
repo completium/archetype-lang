@@ -1,0 +1,21 @@
+archetype effect_method_asset_add_asset_one_field
+
+asset my_asset identified by id {
+  id : string;
+} initialized by {
+  {"id0"};
+  {"id1"};
+  {"id2"}
+}
+
+variable res : int = 0
+
+action exec () {
+  specification {
+    s0: my_asset.count() = before.my_asset.count() + 1;
+    s1: my_asset.contains("id3");
+  }
+  effect {
+    my_asset.add({id = "id3"})
+  }
+}

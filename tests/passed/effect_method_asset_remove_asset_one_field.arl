@@ -1,0 +1,17 @@
+archetype effect_method_asset_remove_asset_one_field
+
+asset my_asset identified by id {
+  id : string;
+} initialized by {
+  {"id0"};
+  {"id1"};
+  {"id2"}
+}
+
+variable res : int = 0
+
+action exec () {
+  effect {
+    my_asset.remove("id0")
+  }
+}
