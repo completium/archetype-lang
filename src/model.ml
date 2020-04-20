@@ -341,6 +341,7 @@ and api_asset =
   | Add              of ident
   | Remove           of ident
   | Clear            of ident
+  | Update           of ident * (ident * assignment_operator * mterm) list
   | UpdateAdd        of ident * ident
   | UpdateRemove     of ident * ident
   | UpdateClear      of ident * ident
@@ -1135,6 +1136,7 @@ let cmp_api_item_node (a1 : api_storage_node) (a2 : api_storage_node) : bool =
     | Set an1 , Set an2                                -> cmp_ident an1 an2
     | Add an1 , Add an2                                -> cmp_ident an1 an2
     | Remove an1, Remove an2                           -> cmp_ident an1 an2
+    | Update (an1, l1), Update (an2, l2)               -> cmp_ident an1 an2 && List.for_all2 (fun (i1, op1, v1) (i2, op2, v2) -> cmp_ident i1 i2 && cmp_assign_op op1 op2 && cmp_mterm v1 v2) l1 l2
     | UpdateAdd (an1, fn1), UpdateAdd (an2, fn2)       -> cmp_ident an1 an2 && cmp_ident fn1 fn2
     | UpdateRemove (an1, fn1), UpdateRemove (an2, fn2) -> cmp_ident an1 an2 && cmp_ident fn1 fn2
     | UpdateClear (an1, fn1), UpdateClear (an2, fn2)   -> cmp_ident an1 an2 && cmp_ident fn1 fn2
@@ -2714,6 +2716,7 @@ let replace_ident_model (f : kind_ident -> ident -> ident) (model : model) : mod
         | Add an                -> Add (f KIassetname an)
         | Remove an             -> Remove (f KIassetname an)
         | Clear an              -> Clear (f KIassetname an)
+        | Update (an, l)        -> Update (f KIassetname an, List.map (fun (id, op, v) -> (f KIparamlambda id, op, for_mterm v)) l)
         | UpdateAdd (an, id)    -> UpdateAdd (f KIassetname an, f KIassetfield id)
         | UpdateRemove (an, id) -> UpdateRemove (f KIassetname an, f KIassetfield id)
         | UpdateClear (an, id)  -> UpdateClear (f KIassetname an, f KIassetfield id)

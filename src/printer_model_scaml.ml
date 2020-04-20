@@ -187,6 +187,8 @@ let pp_model fmt (model : model) =
 
     | Clear _ -> Format.fprintf fmt "// TODO api storage: clear"
 
+    | Update _ -> Format.fprintf fmt "// TODO api storage: update"
+
     | UpdateAdd (an, fn) ->
       let k, _t = Utils.get_asset_key model an in
       let ft, c = Utils.get_field_container model an fn in

@@ -40,6 +40,8 @@ let generate_api_storage ?(verif=false) (model : model) : model =
         [APIAsset (Get asset_name)]
       | Mset (asset_name, _, _, _) ->
         [APIAsset (Set asset_name)]
+      | Mupdate (asset_name, _, l) ->
+        [APIAsset (Update (asset_name, List.map (fun (x, y, z) -> (unloc x, y, z)) l))]
       | Maddasset (asset_name, _) ->
         [APIAsset (Add asset_name)]
       | Maddfield (asset_name, field_name, _, _) ->
@@ -142,6 +144,7 @@ let generate_api_storage ?(verif=false) (model : model) : model =
                    | APIAsset (Add           an)        -> an
                    | APIAsset (Remove        an)        -> an
                    | APIAsset (Clear         an)        -> an
+                   | APIAsset (Update       (an, _))    -> an
                    | APIAsset (UpdateAdd    (an, _))    -> an
                    | APIAsset (UpdateRemove (an, _))    -> an
                    | APIAsset (UpdateClear  (an, _))    -> an
@@ -192,32 +195,33 @@ let generate_api_storage ?(verif=false) (model : model) : model =
                    | APIAsset   (Add           _) -> 14
                    | APIAsset   (Remove        _) -> 15
                    | APIAsset   (Clear         _) -> 16
-                   | APIAsset   (UpdateAdd     _) -> 17
-                   | APIAsset   (UpdateRemove  _) -> 18
-                   | APIAsset   (UpdateClear   _) -> 19
-                   | APIAsset   (ToKeys        _) -> 20
-                   | APIAsset   (Select        _) -> 21
-                   | APIAsset   (Sort          _) -> 22
-                   | APIAsset   (Contains      _) -> 23
-                   | APIList    (Lprepend      _) -> 24
-                   | APIList    (Lcontains     _) -> 25
-                   | APIList    (Lcount        _) -> 26
-                   | APIList    (Lnth          _) -> 27
-                   | APIBuiltin (Bmin          _) -> 28
-                   | APIBuiltin (Bmax          _) -> 29
-                   | APIBuiltin (Babs          _) -> 30
-                   | APIBuiltin (Bconcat       _) -> 31
-                   | APIBuiltin (Bslice        _) -> 32
-                   | APIBuiltin (Blength       _) -> 33
-                   | APIBuiltin (Bisnone       _) -> 34
-                   | APIBuiltin (Bissome       _) -> 35
-                   | APIBuiltin (Bgetopt       _) -> 36
-                   | APIAsset   (Shallow       _) -> 37
-                   | APIAsset   (Unshallow     _) -> 38
-                   | APIAsset   (Listtocoll    _) -> 39
-                   | APIAsset   (Head          _) -> 40
-                   | APIAsset   (Tail          _) -> 41
-                   | APIAsset   (ColToKeys     _) -> 42
+                   | APIAsset   (Update        _) -> 17
+                   | APIAsset   (UpdateAdd     _) -> 18
+                   | APIAsset   (UpdateRemove  _) -> 19
+                   | APIAsset   (UpdateClear   _) -> 20
+                   | APIAsset   (ToKeys        _) -> 21
+                   | APIAsset   (Select        _) -> 22
+                   | APIAsset   (Sort          _) -> 23
+                   | APIAsset   (Contains      _) -> 24
+                   | APIList    (Lprepend      _) -> 25
+                   | APIList    (Lcontains     _) -> 26
+                   | APIList    (Lcount        _) -> 27
+                   | APIList    (Lnth          _) -> 28
+                   | APIBuiltin (Bmin          _) -> 29
+                   | APIBuiltin (Bmax          _) -> 30
+                   | APIBuiltin (Babs          _) -> 31
+                   | APIBuiltin (Bconcat       _) -> 32
+                   | APIBuiltin (Bslice        _) -> 33
+                   | APIBuiltin (Blength       _) -> 34
+                   | APIBuiltin (Bisnone       _) -> 35
+                   | APIBuiltin (Bissome       _) -> 36
+                   | APIBuiltin (Bgetopt       _) -> 37
+                   | APIAsset   (Shallow       _) -> 38
+                   | APIAsset   (Unshallow     _) -> 39
+                   | APIAsset   (Listtocoll    _) -> 40
+                   | APIAsset   (Head          _) -> 41
+                   | APIAsset   (Tail          _) -> 42
+                   | APIAsset   (ColToKeys     _) -> 43
                  in
                  let idx1 = get_kind i1.node_item in
                  let idx2 = get_kind i2.node_item in

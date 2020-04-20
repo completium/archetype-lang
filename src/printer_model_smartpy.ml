@@ -137,6 +137,13 @@ let pp_model fmt (model : model) =
         an
         an
 
+    | Update (an, _l) ->
+      (* let k, _t = Utils.get_asset_key model an in *)
+      Format.fprintf fmt
+        "def update_%s (self, asset, b):@\n  \
+         TODO@\n"
+        an
+
     | UpdateAdd (an, fn) ->
       let k, _t = Utils.get_asset_key model an in
       Format.fprintf fmt
