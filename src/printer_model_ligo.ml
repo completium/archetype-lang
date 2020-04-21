@@ -230,6 +230,9 @@ let pp_model_internal fmt (model : model) b =
       | { node = Mseq l; _} when List.length l >= 2 ->
         Format.fprintf fmt " block {@\n  @[%a@] }"
           (pp_list ";@\n" f) l
+      | { node = Mseq ([{node = Mletin _}] as l); _} ->
+        Format.fprintf fmt " block {@\n  @[%a@] }"
+          (pp_list ";@\n" f) l
       | { node = Mletin _; _} as a ->
         Format.fprintf fmt " block {@\n   @[%a@]@\n}"
           f a
