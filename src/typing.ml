@@ -675,6 +675,9 @@ let coreops =
     (List.map
        (fun x -> ("abs", M.Cabs, `Total, None, [x], x))
        [M.vtint; M.vtrational])
+  @ (List.map
+           (fun (x, y) -> (x, y, `Total, None, [M.vtrational], M.vtint))
+           ["floor", M.Cfloor ; "ceil", M.Cceil])
   @ (List.flatten (List.map (fun (name, cname) -> (
         List.map
           (fun x -> (name, cname, `Total, None, [x; x], x))

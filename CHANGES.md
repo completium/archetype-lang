@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Crypto functions
  - `slice`, `concat` and `length` functions
  - `isnone`, `issome`, `getopt` option functions
+ - `floor` and `ceil` functions
+
+ ### Update
+ - Remove key asset for execution generation
 
 ## [0.1.13] - 2020-03-05
 ### Added

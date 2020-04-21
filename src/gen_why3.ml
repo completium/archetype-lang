@@ -1338,6 +1338,8 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Misnone _ -> error_not_translated "Misnone"
     | Missome _ -> error_not_translated "Missome"
     | Mgetopt _ -> error_not_translated "Mgetopt"
+    | Mfloor  _ -> error_not_translated "Mfloor"
+    | Mceil   _ -> error_not_translated "Mceil"
 
 
     (* crypto functions *)

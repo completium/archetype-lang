@@ -1042,6 +1042,15 @@ let pp_model_internal fmt (model : model) b =
         pp_pretty_type (extract_option_type x.type_)
         f x
 
+    | Mfloor x ->
+      Format.fprintf fmt "floor (%a)"
+        f x
+
+    | Mceil x ->
+      Format.fprintf fmt "ceil (%a)"
+        f x
+
+
     (* crypto functions *)
 
     | Mblake2b x ->
@@ -2124,6 +2133,8 @@ let pp_model_internal fmt (model : model) b =
         pp_type t pp_default t
         pp_pretty_type t
 
+    | Bfloor    -> Format.fprintf fmt "function floor (const r : (int * int)) : int is block {skip} with r.0 / r.1@\n"
+    | Bceil     -> Format.fprintf fmt "function ceil (const r : (int * int)) : int is block {skip} with r.0 / r.1 + (if r.0 mod r.1 = 0n then 0 else 1)@\n"
   in
 
   let pp_api_internal (_env : env) fmt = function

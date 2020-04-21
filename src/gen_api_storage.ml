@@ -118,6 +118,10 @@ let generate_api_storage ?(verif=false) (model : model) : model =
         [APIBuiltin (Bissome (extract_option_type x.type_))]
       | Mgetopt x ->
         [APIBuiltin (Bgetopt (extract_option_type x.type_))]
+      | Mfloor _ ->
+        [APIBuiltin (Bfloor)]
+      | Mceil _ ->
+        [APIBuiltin (Bceil)]
       | Mrateq _ ->
         [APIInternal (RatEq)]
       | Mratcmp _ ->
@@ -216,12 +220,14 @@ let generate_api_storage ?(verif=false) (model : model) : model =
                    | APIBuiltin (Bisnone       _) -> 35
                    | APIBuiltin (Bissome       _) -> 36
                    | APIBuiltin (Bgetopt       _) -> 37
-                   | APIAsset   (Shallow       _) -> 38
-                   | APIAsset   (Unshallow     _) -> 39
-                   | APIAsset   (Listtocoll    _) -> 40
-                   | APIAsset   (Head          _) -> 41
-                   | APIAsset   (Tail          _) -> 42
-                   | APIAsset   (ColToKeys     _) -> 43
+                   | APIBuiltin (Bfloor         ) -> 38
+                   | APIBuiltin (Bceil          ) -> 39
+                   | APIAsset   (Shallow       _) -> 40
+                   | APIAsset   (Unshallow     _) -> 41
+                   | APIAsset   (Listtocoll    _) -> 42
+                   | APIAsset   (Head          _) -> 43
+                   | APIAsset   (Tail          _) -> 44
+                   | APIAsset   (ColToKeys     _) -> 45
                  in
                  let idx1 = get_kind i1.node_item in
                  let idx2 = get_kind i2.node_item in

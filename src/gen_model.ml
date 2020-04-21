@@ -306,6 +306,14 @@ let to_model (ast : A.model) : M.model =
       let fx = f x in
       M.Mgetopt (fx)
 
+    | A.Pcall (None, A.Cconst A.Cfloor, [AExpr x]) ->
+      let fx = f x in
+      M.Mfloor (fx)
+
+    | A.Pcall (None, A.Cconst A.Cceil, [AExpr x]) ->
+      let fx = f x in
+      M.Mceil (fx)
+
     | A.Pcall (None, A.Cconst A.Cblake2b, [AExpr x]) ->
       let fx = f x in
       M.Mblake2b (fx)

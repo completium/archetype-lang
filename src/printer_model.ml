@@ -755,6 +755,14 @@ let pp_mterm fmt (mt : mterm) =
       Format.fprintf fmt "getopt (%a)"
         f x
 
+    | Mfloor x ->
+      Format.fprintf fmt "floor (%a)"
+        f x
+
+    | Mceil x ->
+      Format.fprintf fmt "ceil (%a)"
+        f x
+
     (* crypto functions *)
 
     | Mblake2b x ->
@@ -1152,6 +1160,8 @@ let pp_api_builtin fmt = function
   | Bisnone t -> Format.fprintf fmt "isnone on %a" pp_type t
   | Bissome t -> Format.fprintf fmt "issome on %a" pp_type t
   | Bgetopt t -> Format.fprintf fmt "getopt on %a" pp_type t
+  | Bfloor    -> pp_str fmt "floor"
+  | Bceil     -> pp_str fmt "ceil"
 
 let pp_api_internal fmt = function
   | RatEq        -> Format.fprintf fmt "rat_eq"
