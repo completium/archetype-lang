@@ -397,16 +397,16 @@ let mk_sort_clone _m asset fields =
   let cap_asset = String.capitalize_ascii asset in
   Dclone ([gArchetypeDir;gArchetypeSort],
           mk_sort_clone_id asset fields,
-          [Ctype ("container",
+          [Ctype ("collection",
                   cap_asset ^ ".collection");
            Ctype ("t",
                   asset);
            Cval ("cmp",
                  mk_cmp_function_id asset fields);
-           Cval ("elts",
-                 cap_asset ^ ".elts");
-           Cval ("mk",
-                 cap_asset ^ ".mk")
+           Cval ("view_to_list",
+                 cap_asset ^ ".view_to_list");
+           Cval ("list_to_view",
+                 cap_asset ^ ".list_to_view")
           ])
 
 (* Select --------------------------------------------------------------------*)
@@ -1298,9 +1298,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
       let argids = args |> List.map (fun (e, _, _) -> e) |> List.map (map_mterm m ctx) in
       Tapp (loc_term (Tvar id), argids @ [map_mterm m ctx l; loc_term (mk_ac a)])
 
-    | Msort               (a,c,l) ->
-      let id = (mk_sort_clone_id a l) ^ ".sort" in
-      Tapp (loc_term (Tvar id),[map_mterm m ctx c])
+    | Msort               (a,c,l) -> Tsort (with_dummy_loc (mk_sort_clone_id a l),map_mterm m ctx c,loc_term (mk_ac a))
 
     | Mcontains (a, _, r) -> Tapp (loc_term (Tvar ("contains_" ^ a)), [map_mterm m ctx r])
 
@@ -1543,9 +1541,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
       let id = mk_select_name m a r in
       let argids = args |> List.map (fun (e, _, _) -> e) |> List.map (map_mterm m ctx) in
       Tapp (loc_term (Tvar id), argids @ [map_mterm m ctx l; loc_term (mk_ac a)])
-    | Mapifsort (a,c,l) ->
-      let id = (mk_sort_clone_id a l) ^ ".sort" in
-      Tapp (loc_term (Tvar id),[map_mterm m ctx c])
+    | Mapifsort (a,c,l) -> Tsort (with_dummy_loc (mk_sort_clone_id a l),map_mterm m ctx c,loc_term (mk_ac a))
     | Mapifcontains  (a, _, r) ->
       begin match ctx.lctx with
         | Inv ->

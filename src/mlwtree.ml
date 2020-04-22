@@ -106,6 +106,7 @@ type ('e,'t,'i) abstract_term =
   | Tget    of 'i * 'e * 'e
   | Tset    of 'i * 'e * 'e * 'e
   | Tsum    of 'i * 'e * 'e
+  | Tsort   of 'i * 'e * 'e
   | Tcoll   of 'i * 'e
   | Tassign of 'e * 'e
   | Traise  of exn
@@ -377,6 +378,7 @@ and map_abstract_term
   | Tget (i,e1,e2)     -> Tget (map_i i, map_e e1, map_e e2)
   | Tset (i, e1,e2,e3) -> Tset (map_i i, map_e e1, map_e e2, map_e e3)
   | Tsum (i,e1,e2)     -> Tsum (map_i i, map_e e1, map_e e2)
+  | Tsort (i,e1,e2)    -> Tsort (map_i i, map_e e1, map_e e2)
   | Tcoll (i, e)       -> Tcoll (map_i i, map_e e)
   | Tassign (e1,e2)    -> Tassign (map_e e1, map_e e2)
   | Traise e           -> Traise e
@@ -764,6 +766,7 @@ let compare_abstract_term
   | Tget (i1,e1,e2), Tget (i2,f1,f2) -> cmpi i1 i2 && cmpe e1 f1 && cmpe e2 f2
   | Tset (i1,e1,e2,e3), Tset (i2,f1,f2,f3) -> cmpi i1 i2 && cmpe e1 f1 && cmpe e2 f2 && cmpe e3 f3
   | Tsum (i1,e1,e2), Tsum (i2,f1,f2) -> cmpi i1 i2 && cmpe e1 f1 && cmpe e2 f2
+  | Tsort (i1,e1,e2), Tsort (i2,f1,f2) -> cmpi i1 i2 && cmpe e1 f1 && cmpe e2 f2
   | Tcoll (i1,e1), Tcoll (i2,e2) -> cmpi i1 i2 && cmpe e1 e2
   | Tassign (e1,e2), Tassign (f1,f2) -> cmpe e1 f1 && cmpe e2 f2
   | Traise e1, Traise e2 -> compare_exn e1 e2
