@@ -824,24 +824,32 @@ let pp_model_internal fmt (model : model) b =
         Format.fprintf fmt
           "const %s : %a = %a;@\n\
            const %s : %s_storage = get_force(%s, %s.%s_assets);@\n\
-           %s.%s_assets[%s] := %s with record [%a]"
+           %s.%s_assets[%s] := %s%a"
           asset_key pp_btyp t f k
           asset_val an asset_key const_storage an
           const_storage an asset_key asset_val
-          (pp_list "; " (fun fmt (id, op, v) ->
-               let id = unloc id in
-               Format.fprintf fmt "%s = %a" id
-                 (fun fmt _ ->
-                    match op with
-                    | ValueAssign -> f fmt v
-                    | PlusAssign  -> Format.fprintf fmt "%s.%s + (%a)"   asset_val id f v
-                    | MinusAssign -> Format.fprintf fmt "%s.%s - (%a)"   asset_val id f v
-                    | MultAssign  -> Format.fprintf fmt "%s.%s * (%a)"   asset_val id f v
-                    | DivAssign   -> Format.fprintf fmt "%s.%s / (%a)"   asset_val id f v
-                    | AndAssign   -> Format.fprintf fmt "%s.%s and (%a)" asset_val id f v
-                    | OrAssign    -> Format.fprintf fmt "%s.%s or (%a)"  asset_val id f v
-                 ) ()
-             )) l
+          (fun fmt _ ->
+             match l with
+             | [] -> ()
+             | _ ->
+               Format.fprintf fmt " with record [%a]"
+                 (pp_list "; " (fun fmt (id, op, v) ->
+                      let id = unloc id in
+                        Format.fprintf fmt "%s = %a" id
+                        (fun fmt _ ->
+                           match op with
+                           | ValueAssign -> f fmt v
+                           | PlusAssign  -> Format.fprintf fmt "%s.%s + (%a)"   asset_val id f v
+                           | MinusAssign -> Format.fprintf fmt "%s.%s - (%a)"   asset_val id f v
+                           | MultAssign  -> Format.fprintf fmt "%s.%s * (%a)"   asset_val id f v
+                           | DivAssign   -> Format.fprintf fmt "%s.%s / (%a)"   asset_val id f v
+                           | AndAssign   -> Format.fprintf fmt "%s.%s and (%a)" asset_val id f v
+                           | OrAssign    -> Format.fprintf fmt "%s.%s or (%a)"  asset_val id f v
+                        ) ()
+                    )
+                 ) l
+          ) ()
+
 
       (* Format.fprintf fmt "%s := update_%a_%i (%s, %a)"
          const_storage
