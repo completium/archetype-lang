@@ -318,21 +318,22 @@ module AssetCollection
   (* Collection API ********************************************************* *)
 
   (* ------------------------------------------------------------------------ *)
-  let rec function internal_to_view (l : list t) : view
+  let rec function list_to_view (l : list t) : view
   variant { l }
   ensures { forall k. M.mem k result <-> exists e. M.mem e l /\ fkey e = k }
   ensures { L.length result = L.length l }
   =
   match l with
-  | Cons e tl -> Cons (fkey e) (internal_to_view tl)
+  | Cons e tl -> Cons (fkey e) (list_to_view tl)
   | Nil -> Nil
   end
 
+  (* ------------------------------------------------------------------------ *)
   let rec function to_view (c : collection) : view
   ensures { forall k. M.mem k result <-> exists e. mem e c /\ fkey e = k }
   ensures { L.length result = card c }
   =
-  internal_to_view (elts c)
+  list_to_view (elts c)
 
   (* ------------------------------------------------------------------------ *)
   let rec function vmem (k: key) (v: view) : bool
@@ -354,7 +355,7 @@ module AssetCollection
   (* ------------------------------------------------------------------------ *)
   let rec function internal_get (l : list t) (k : key) : option t
   variant { l }
-  ensures { vmem k (internal_to_view l) ->
+  ensures { vmem k (list_to_view l) ->
     exists e. result = Some e  /\ fkey e = k
   }
   =
@@ -371,20 +372,25 @@ module AssetCollection
   = internal_get (elts c) k
 
   (* ------------------------------------------------------------------------ *)
-  let function to_coll (v : view) (c : collection) : collection
+  let function view_to_list (v : view) (c : collection) : list t
   =
-  let rec function internal_to_coll (v : view) (l : list t) : list t
+  let rec function internal_view_to_list (v : view) (l : list t) : list t
   variant { v }
   =
   match v with
   | Cons k tl ->
     match get c k with
-    | Some e -> internal_to_coll tl (Cons e l)
-    | None -> internal_to_coll tl l
+    | Some e -> internal_view_to_list tl (Cons e l)
+    | None -> internal_view_to_list tl l
     end
   | Nil -> l
   end in
-  mk (F.mk (internal_to_coll v Nil))
+  internal_view_to_list v Nil
+
+  (* ------------------------------------------------------------------------ *)
+  let function to_coll (v : view) (c : collection) : collection
+  =
+  mk (F.mk (view_to_list v c))
 
   (* ------------------------------------------------------------------------ *)
   (* lemma mem_fset: forall a l.
@@ -575,7 +581,7 @@ module Sort
   use int.Int
 
   (* ------------------------------------------------------------------------ *)
-  type container
+  type collection
 
   (* ------------------------------------------------------------------------ *)
   type t
@@ -584,45 +590,24 @@ module Sort
   type view = list int
 
   (* ------------------------------------------------------------------------ *)
-  val function field t : int
-
-  (* ------------------------------------------------------------------------ *)
-  val function get collection int : option t
-
-  (* ------------------------------------------------------------------------ *)
   val function cmp (a b : t) : bool
 
-  predicate lt (a b : t) = cmp a b
+  (* ------------------------------------------------------------------------ *)
+  val function view_to_list (v : view) (c : collection) : list t
 
-  clone list.Sorted as S with type t       = t,
-                              predicate le = lt,
-                              goal Transitive.Trans
+  (* ------------------------------------------------------------------------ *)
+  val function list_to_view (l : list t) : view
 
-  let rec function insert (a : t) (l : list t) : list t
-  variant { l }
+  (* ------------------------------------------------------------------------ *)
+  let predicate ple (a b : t) = cmp a b
+
+  (* ------------------------------------------------------------------------ *)
+  clone InsertionSort as IS with type elt = t,
+                                 val le = ple
+
+  let function sort (v : view) (c : collection)
   =
-  match l with
-  | Cons e tl ->
-    if cmp a e then
-      Cons a l
-    else
-      Cons e (insert a tl)
-  | Nil -> Cons a Nil
-  end
-
-  let rec function lsort (l : list t) : list t
-  variant { l }
-  ensures { S.sorted result }
-  =
-  match l with
-  | Cons e tl -> insert e (lsort tl)
-  | Nil -> Nil
-  end
-
-  let function sort (c : container) : container
-  ensures { S.sorted (elts result)}
-  =
-  mk (lsort (elts c))
+  list_to_view (IS.insertion_sort (view_to_list v c))
 
 end
 
