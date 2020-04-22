@@ -192,6 +192,8 @@ let to_const = function
   | Cisnone         -> "isnone"
   | Cissome         -> "issome"
   | Cgetopt         -> "getopt"
+  | Cfloor          -> "floor"
+  | Cceil           -> "ceil"
   (* list *)
   | Chead           -> "head"
   | Ctail           -> "tail"

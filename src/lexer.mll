@@ -123,6 +123,7 @@ let date     = day ('T' hour ( timezone )?)?
 let accept_transfer = "accept" blank+ "transfer"
 let refuse_transfer = "refuse" blank+ "transfer"
 let bytes    = "0x" ['0'-'9' 'a'-'f' 'A'-'F']+
+let percent  = digit+ "%"
 
 (* -------------------------------------------------------------------- *)
 rule token = parse
@@ -144,6 +145,7 @@ rule token = parse
   | duration as d         { DURATION (d) }
   | date as d             { DATE (d) }
   | bytes as v            { BYTES (String.sub v 2 ((String.length v) - 2)) }
+  | percent as v          { PERCENT_LIT (Big_int.big_int_of_string (String.sub v 0 ((String.length v) - 1))) }
 
 
   | "//"                  { comment_line lexbuf; token lexbuf }

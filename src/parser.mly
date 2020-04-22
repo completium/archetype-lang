@@ -162,6 +162,7 @@
 %token <string> DURATION
 %token <string> DATE
 %token <string> BYTES
+%token <Big_int.big_int> PERCENT_LIT
 
 %nonassoc IN
 
@@ -500,9 +501,9 @@ asset:
                          Dasset (x, fs, sfields, os, apo, ops, exts) }
 
 asset_post_option:
-| WITH STATES x=ident           { APOstates x }
-| WITH xs=braced(label_exprs)   { APOconstraints (xs) }
-| INITIALIZED BY e=record_expr  { APOinit e }
+| WITH STATES x=ident                                               { APOstates x }
+| WITH xs=braced(label_exprs)                                       { APOconstraints (xs) }
+| INITIALIZED BY LBRACE l=separated_nonempty_list(SEMI_COLON, record_expr) RBRACE { APOinit l }
 
 %inline record_expr:
  | x=loc(record_expr_unloc) { x }
@@ -849,17 +850,18 @@ label_expr_unloc:
 | IN    e=simple_expr { Qcollection e }
 
 literal:
- | x=NUMBER     { Lnumber   x }
- | x=DECIMAL    { Ldecimal  x }
- | x=TZ         { Ltz       x }
- | x=MTZ        { Lmtz      x }
- | x=UTZ        { Lutz      x }
- | x=STRING     { Lstring   x }
- | x=ADDRESS    { Laddress  x }
- | x=bool_value { Lbool     x }
- | x=DURATION   { Lduration x }
- | x=DATE       { Ldate     x }
- | x=BYTES      { Lbytes    x }
+ | x=NUMBER      { Lnumber   x }
+ | x=DECIMAL     { Ldecimal  x }
+ | x=TZ          { Ltz       x }
+ | x=MTZ         { Lmtz      x }
+ | x=UTZ         { Lutz      x }
+ | x=STRING      { Lstring   x }
+ | x=ADDRESS     { Laddress  x }
+ | x=bool_value  { Lbool     x }
+ | x=DURATION    { Lduration x }
+ | x=DATE        { Ldate     x }
+ | x=BYTES       { Lbytes    x }
+ | x=PERCENT_LIT { Lpercent  x }
 
 %inline bool_value:
  | TRUE  { true }

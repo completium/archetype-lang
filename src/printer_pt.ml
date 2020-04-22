@@ -261,7 +261,6 @@ let rec pp_expr outer pos fmt a =
     in
     pp fmt x
 
-
   | Earray values ->
 
     let pp fmt values =
@@ -295,19 +294,7 @@ let rec pp_expr outer pos fmt a =
 
   | Erecord l ->
 
-    let pp fmt l =
-      Format.fprintf fmt "{%a}"
-        (pp_list ";@ " (
-            fun fmt (o, e) ->
-              Format.fprintf fmt "%a%a"
-                (pp_option (fun fmt (op, id) ->
-                     Format.fprintf fmt "%a %a "
-                       pp_id id
-                       pp_assignment_operator_record op
-                   )) o
-                pp_simple_expr e
-          )) l
-    in
+    let pp fmt l = pp_record_expr_internal fmt l in
     (maybe_paren outer e_simple pos pp) fmt l
 
 
@@ -595,6 +582,7 @@ and pp_literal fmt lit =
   | Lduration d -> Format.fprintf fmt "%s" d
   | Ldate     d -> Format.fprintf fmt "%s" d
   | Lbytes    s -> Format.fprintf fmt "0x%s" s
+  | Lpercent  n -> Format.fprintf fmt "%s%%" (Big_int.string_of_big_int n)
 
 and pp_ident_ident fmt a =
   match a with
@@ -630,6 +618,19 @@ and pp_fun_ident_typ fmt (arg : lident_typ) =
 and pp_fun_args fmt args =
   Format.fprintf fmt " (%a)"
     (pp_list ", " pp_fun_ident_typ) args
+
+and pp_record_expr_internal fmt l =
+  Format.fprintf fmt "{%a}"
+    (pp_list ";@ " (
+        fun fmt (o, e) ->
+          Format.fprintf fmt "%a%a"
+            (pp_option (fun fmt (op, id) ->
+                 Format.fprintf fmt "%a %a "
+                   pp_id id
+                   pp_assignment_operator_record op
+               )) o
+            pp_simple_expr e
+      )) l
 
 (* -------------------------------------------------------------------------- *)
 and pp_field fmt { pldesc = f; _ } =
@@ -737,15 +738,13 @@ let pp_asset_post_option fmt (apo : asset_post_option) =
   | APOconstraints cs ->
     Format.fprintf fmt " with {@\n  @[%a@]@\n}"
       pp_label_exprs cs
-  | APOinit e ->
-    let l =
-      begin
-        match unloc e with
-        | Erecord l -> List.map snd l
-        | _ -> assert false
-      end
-    in
-    Format.fprintf fmt " initialized by {@\n  @[%a@]@\n}" (pp_list ";@\n" pp_simple_expr) l
+  | APOinit l ->
+    Format.fprintf fmt " initialized by {@\n  @[%a@]@\n}"
+      (pp_list ";@\n"
+         (fun fmt x ->
+            match unloc x with
+              Erecord l -> pp_record_expr_internal fmt l
+            | _ -> assert false)) l
 
 let map_option f x =
   match x with

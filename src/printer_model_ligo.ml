@@ -230,10 +230,13 @@ let pp_model_internal fmt (model : model) b =
       | { node = Mseq l; _} when List.length l >= 2 ->
         Format.fprintf fmt " block {@\n  @[%a@] }"
           (pp_list ";@\n" f) l
+      | { node = Mseq ([{node = Mletin _}] as l); _} ->
+        Format.fprintf fmt " block {@\n  @[%a@] }"
+          (pp_list ";@\n" f) l
       | { node = Mletin _; _} as a ->
         Format.fprintf fmt " block {@\n   @[%a@]@\n}"
           f a
-      | { node = Mentrycall _; _} as a ->
+      | { node = (Mentrycall _ | Mupdate _); _} as a ->
         Format.fprintf fmt " block {@\n   @[%a@]@\n}"
           f a
       | _ ->
@@ -812,7 +815,42 @@ let pp_model_internal fmt (model : model) b =
       in
       pp fmt (c, l, k, v)
 
-    | Mupdate _ -> emit_error (UnsupportedTerm ("update"))
+    | Mupdate (an, k, l)   ->
+      (* let index : int = get_preds_index_gen Printer_model_tools.cmp_update env.update_preds (List.map (fun (x, y, z) -> (unloc x, y, z)) l) in *)
+      let _, t = Utils.get_asset_key model an in
+      let pp fmt (an, k, l) =
+        let asset_key = "key_" ^ an ^ "_" in
+        let asset_val = an ^ "_" in
+        Format.fprintf fmt
+          "const %s : %a = %a;@\n\
+           const %s : %s_storage = get_force(%s, %s.%s_assets);@\n\
+           %s.%s_assets[%s] := %s with record [%a]"
+          asset_key pp_btyp t f k
+          asset_val an asset_key const_storage an
+          const_storage an asset_key asset_val
+          (pp_list "; " (fun fmt (id, op, v) ->
+               let id = unloc id in
+               Format.fprintf fmt "%s = %a" id
+                 (fun fmt _ ->
+                    match op with
+                    | ValueAssign -> f fmt v
+                    | PlusAssign  -> Format.fprintf fmt "%s.%s + (%a)"   asset_val id f v
+                    | MinusAssign -> Format.fprintf fmt "%s.%s - (%a)"   asset_val id f v
+                    | MultAssign  -> Format.fprintf fmt "%s.%s * (%a)"   asset_val id f v
+                    | DivAssign   -> Format.fprintf fmt "%s.%s / (%a)"   asset_val id f v
+                    | AndAssign   -> Format.fprintf fmt "%s.%s and (%a)" asset_val id f v
+                    | OrAssign    -> Format.fprintf fmt "%s.%s or (%a)"  asset_val id f v
+                 ) ()
+             )) l
+
+      (* Format.fprintf fmt "%s := update_%a_%i (%s, %a)"
+         const_storage
+         pp_str an index
+         const_storage
+         f k *)
+      in
+      pp fmt (an, k, l)
+
     | Mremoveif _ -> emit_error (UnsupportedTerm ("removeif"))
     | Maddupdate _ -> emit_error (UnsupportedTerm ("addupdate"))
 
@@ -1003,6 +1041,15 @@ let pp_model_internal fmt (model : model) b =
       Format.fprintf fmt "getopt_%a (%a)"
         pp_pretty_type (extract_option_type x.type_)
         f x
+
+    | Mfloor x ->
+      Format.fprintf fmt "floor (%a)"
+        f x
+
+    | Mceil x ->
+      Format.fprintf fmt "ceil (%a)"
+        f x
+
 
     (* crypto functions *)
 
@@ -1479,6 +1526,32 @@ let pp_model_internal fmt (model : model) b =
          end with (s)@\n"
         an
         an pp_btyp t an
+
+    | Update _ -> ()
+    (* | Update (an, l) ->
+       let index : int = get_preds_index_gen Printer_model_tools.cmp_update env.update_preds l in
+       let _, t = Utils.get_asset_key model an in
+       Format.fprintf fmt
+        "function update_%s_%i (const s : storage_type; const key : %a) : storage_type is@\n  \
+         begin@\n    \
+         const a : %s_storage = get_force(key, s.%s_assets);@\n    \
+         s.%s_assets[key] := a with record [%a];@\n  \
+         end with (s)@\n"
+        an index pp_btyp t
+        an an
+        an (pp_list "; " (fun fmt (id, op, v) ->
+            Format.fprintf fmt "%s = %a" id
+              (fun fmt _ ->
+                 match op with
+                 | ValueAssign -> (pp_mterm (mk_env ())) fmt v
+                 | PlusAssign  -> Format.fprintf fmt "a.%s + (%a)"   id (pp_mterm (mk_env ())) v
+                 | MinusAssign -> Format.fprintf fmt "a.%s - (%a)"   id (pp_mterm (mk_env ())) v
+                 | MultAssign  -> Format.fprintf fmt "a.%s * (%a)"   id (pp_mterm (mk_env ())) v
+                 | DivAssign   -> Format.fprintf fmt "a.%s / (%a)"   id (pp_mterm (mk_env ())) v
+                 | AndAssign   -> Format.fprintf fmt "a.%s and (%a)" id (pp_mterm (mk_env ())) v
+                 | OrAssign    -> Format.fprintf fmt "a.%s or (%a)"  id (pp_mterm (mk_env ())) v
+              ) ()
+          )) l *)
 
     | UpdateAdd (an, fn) ->
       let k, t = Utils.get_asset_key model an in
@@ -2060,6 +2133,8 @@ let pp_model_internal fmt (model : model) b =
         pp_type t pp_default t
         pp_pretty_type t
 
+    | Bfloor    -> Format.fprintf fmt "function floor (const r : (int * int)) : int is block {skip} with r.0 / r.1@\n"
+    | Bceil     -> Format.fprintf fmt "function ceil (const r : (int * int)) : int is block {skip} with r.0 / r.1 + (if r.0 mod r.1 = 0n then 0 else 1)@\n"
   in
 
   let pp_api_internal (_env : env) fmt = function

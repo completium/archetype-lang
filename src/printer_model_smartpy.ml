@@ -137,6 +137,13 @@ let pp_model fmt (model : model) =
         an
         an
 
+    | Update (an, _l) ->
+      (* let k, _t = Utils.get_asset_key model an in *)
+      Format.fprintf fmt
+        "def update_%s (self, asset, b):@\n  \
+         TODO@\n"
+        an
+
     | UpdateAdd (an, fn) ->
       let k, _t = Utils.get_asset_key model an in
       Format.fprintf fmt
@@ -269,6 +276,8 @@ let pp_model fmt (model : model) =
     | Bisnone t -> Format.fprintf fmt "isnone on %a" pp_type t
     | Bissome t -> Format.fprintf fmt "issome on %a" pp_type t
     | Bgetopt t -> Format.fprintf fmt "getopt on %a" pp_type t
+    | Bfloor    -> pp_str fmt "floor"
+    | Bceil     -> pp_str fmt "ceil"
   in
 
   let pp_api_internal fmt = function
@@ -949,6 +958,15 @@ let pp_model fmt (model : model) =
       | Mgetopt x ->
         Format.fprintf fmt "getopt (%a)"
           f x
+
+      | Mfloor x ->
+        Format.fprintf fmt "floor (%a)"
+          f x
+
+      | Mceil x ->
+        Format.fprintf fmt "ceil (%a)"
+          f x
+
 
       (* crypto functions *)
 

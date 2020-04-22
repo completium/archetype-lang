@@ -146,6 +146,8 @@ type const =
   | Cisnone
   | Cissome
   | Cgetopt
+  | Cfloor
+  | Cceil
   (* list *)
   | Chead
   | Ctail

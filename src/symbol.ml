@@ -41,6 +41,7 @@ let string_of_token = function
   | PKEY            -> "PKEY"
   | PERCENTRBRACKET -> "PERCENTRBRACKET"
   | PERCENT         -> "PERCENT"
+  | PERCENT_LIT n   -> Printf.sprintf "PERCENT_LIT(%s)" (Big_int.string_of_big_int n)
   | PARTITION       -> "PARTITION"
   | OTHERWISE       -> "OTHERWISE"
   | OR              -> "OR"
@@ -173,6 +174,7 @@ let string_of_symbol = function
   | X (T T_PLUS) -> "+"
   | X (T T_PIPE) -> "|"
   | X (T T_PKEY) -> "pkey"
+  | X (T T_PERCENT_LIT) -> "a literal percent"
   | X (T T_PERCENTRBRACKET) -> "%]"
   | X (T T_PERCENT) -> "%"
   | X (T T_PARTITION) -> "partition"
@@ -378,6 +380,7 @@ let string_of_symbol = function
   | X (N N_snl_COMMA_simple_expr_) -> ""
   | X (N N_sl_COMMA_simple_expr_) -> ""
   | X (N N_snl_COMMA_expr_) -> ""
+  | X (N N_separated_nonempty_list_SEMI_COLON_record_expr_) -> ""
 
 let string_of_item (p, i) =
   string_of_symbol (lhs p) ^ " -> "

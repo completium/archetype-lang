@@ -134,7 +134,7 @@ let generate_target model =
     |> replace_assignfield_by_update
     |> remove_add_update
     |> merge_update
-    |> replace_update_by_set
+    (* |> replace_update_by_set *)
     |> process_internal_string
     |> remove_rational
     |> abs_tez

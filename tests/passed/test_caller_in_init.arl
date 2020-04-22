@@ -1,0 +1,15 @@
+archetype test_caller_in_init
+
+asset my_asset identified by id {
+  id : address;
+} initialized by {
+  {caller}
+}
+
+variable a : address = caller
+
+action exec () {
+  effect {
+    require(true)
+  }
+}

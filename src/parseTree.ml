@@ -148,6 +148,7 @@ and literal =
   | Lduration of string
   | Ldate     of string
   | Lbytes    of string
+  | Lpercent  of Core.big_int
 
 and record_item = (assignment_operator * lident) option * expr
 
@@ -312,7 +313,7 @@ and asset_option =
 and asset_post_option =
   | APOstates of lident
   | APOconstraints of label_exprs
-  | APOinit of expr
+  | APOinit of expr list
 
 and enum_option =
   | EOinitial

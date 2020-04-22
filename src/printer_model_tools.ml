@@ -21,16 +21,29 @@ let emit_error (desc : error_desc) =
 
 type env = {
   f: function__ option;
+  update_preds: (ident * assignment_operator * mterm) list list;
   select_preds: mterm list;
   sum_preds: mterm list;
   consts: (ident * mterm) list;
 }
 [@@deriving show {with_path = false}]
 
-let mk_env ?f ?(select_preds=[]) ?(sum_preds=[]) ?(consts=[]) () : env =
-  { f; select_preds; sum_preds; consts }
+let mk_env ?f ?(update_preds=[]) ?(select_preds=[]) ?(sum_preds=[]) ?(consts=[]) () : env =
+  { f; update_preds; select_preds; sum_preds; consts }
+
+let cmp_update l1 l2 = List.for_all2 (fun (i1, op1, v1) (i2, op2, v2) -> Model.cmp_ident i1 i2 && Model.cmp_assign_op op1 op2 && Model.cmp_mterm v1 v2) l1 l2
 
 let compute_env model =
+  let update_preds =
+    List.fold_right (fun x accu ->
+        match x.api_loc, x.node_item with
+        | (OnlyExec | ExecFormula), APIAsset (Update (_, l)) ->
+          if not (List.exists (cmp_update l) accu)
+          then l::accu
+          else accu
+        | _ -> accu
+      ) model.api_items []
+  in
   let select_preds =
     List.fold_right (fun x accu ->
         match x.api_loc, x.node_item with
@@ -57,7 +70,7 @@ let compute_env model =
         | Dvar v when v.constant -> (unloc v.name, Option.get v.default)::accu
         | _ -> accu
       ) model.decls [] in
-  mk_env ~select_preds:select_preds ~sum_preds:sum_preds ~consts:consts ()
+  mk_env ~update_preds:update_preds ~select_preds:select_preds ~sum_preds:sum_preds ~consts:consts ()
 
 (* -------------------------------------------------------------------------- *)
 
@@ -77,5 +90,10 @@ let get_const_dv (env : env) (id : lident) : mterm =
 
 let get_preds_index l e : int =
   match List.index_of (fun x -> Model.cmp_mterm x e) l with
+  | -1 -> assert false
+  | _ as i -> i
+
+let get_preds_index_gen cmp l e : int =
+  match List.index_of (fun x -> cmp x e) l with
   | -1 -> assert false
   | _ as i -> i

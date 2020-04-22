@@ -242,6 +242,8 @@ type ('id, 'term) mterm_node  =
   | Misnone           of 'term
   | Missome           of 'term
   | Mgetopt           of 'term
+  | Mfloor            of 'term
+  | Mceil             of 'term
   (* crypto functions *)
   | Mblake2b          of 'term
   | Msha256           of 'term
@@ -341,6 +343,7 @@ and api_asset =
   | Add              of ident
   | Remove           of ident
   | Clear            of ident
+  | Update           of ident * (ident * assignment_operator * mterm) list
   | UpdateAdd        of ident * ident
   | UpdateRemove     of ident * ident
   | UpdateClear      of ident * ident
@@ -378,6 +381,8 @@ and api_builtin =
   | Bisnone of type_
   | Bissome of type_
   | Bgetopt of type_
+  | Bfloor
+  | Bceil
 [@@deriving show {with_path = false}]
 
 and api_internal =
@@ -1053,6 +1058,8 @@ let cmp_mterm_node
     | Misnone x1, Misnone x2                                                           -> cmp x1 x2
     | Missome x1, Missome x2                                                           -> cmp x1 x2
     | Mgetopt x1, Mgetopt x2                                                           -> cmp x1 x2
+    | Mfloor x1, Mfloor x2                                                             -> cmp x1 x2
+    | Mceil x1, Mceil x2                                                               -> cmp x1 x2
     (* crypto functions *)
     | Mblake2b x1, Mblake2b x2                                                         -> cmp x1 x2
     | Msha256  x1, Msha256  x2                                                         -> cmp x1 x2
@@ -1135,6 +1142,7 @@ let cmp_api_item_node (a1 : api_storage_node) (a2 : api_storage_node) : bool =
     | Set an1 , Set an2                                -> cmp_ident an1 an2
     | Add an1 , Add an2                                -> cmp_ident an1 an2
     | Remove an1, Remove an2                           -> cmp_ident an1 an2
+    | Update (an1, l1), Update (an2, l2)               -> cmp_ident an1 an2 && List.for_all2 (fun (i1, op1, v1) (i2, op2, v2) -> cmp_ident i1 i2 && cmp_assign_op op1 op2 && cmp_mterm v1 v2) l1 l2
     | UpdateAdd (an1, fn1), UpdateAdd (an2, fn2)       -> cmp_ident an1 an2 && cmp_ident fn1 fn2
     | UpdateRemove (an1, fn1), UpdateRemove (an2, fn2) -> cmp_ident an1 an2 && cmp_ident fn1 fn2
     | UpdateClear (an1, fn1), UpdateClear (an2, fn2)   -> cmp_ident an1 an2 && cmp_ident fn1 fn2
@@ -1175,6 +1183,8 @@ let cmp_api_item_node (a1 : api_storage_node) (a2 : api_storage_node) : bool =
     | Bisnone t1, Bisnone t2 -> cmp_type t1 t2
     | Bissome t1, Bissome t2 -> cmp_type t1 t2
     | Bgetopt t1, Bgetopt t2 -> cmp_type t1 t2
+    | Bfloor    , Bfloor     -> true
+    | Bceil     , Bceil      -> true
     | _ -> false
   in
   let cmp_api_internal (i1 : api_internal) (i2 : api_internal) : bool =
@@ -1337,6 +1347,8 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Misnone x                      -> Misnone (f x)
   | Missome x                      -> Missome (f x)
   | Mgetopt x                      -> Mgetopt (f x)
+  | Mfloor x                       -> Mfloor (f x)
+  | Mceil x                        -> Mceil (f x)
   (* crypto functions *)
   | Mblake2b x                     -> Mblake2b (f x)
   | Msha256 x                      -> Msha256 (f x)
@@ -1659,6 +1671,8 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Misnone x                             -> f accu x
   | Missome x                             -> f accu x
   | Mgetopt x                             -> f accu x
+  | Mfloor x                              -> f accu x
+  | Mceil x                               -> f accu x
   (* crypto functions *)
   | Mblake2b x                            -> f accu x
   | Msha256  x                            -> f accu x
@@ -2286,6 +2300,14 @@ let fold_map_term
     let xe, xa = f accu x in
     g (Mgetopt xe), xa
 
+  | Mfloor x ->
+    let xe, xa = f accu x in
+    g (Mfloor xe), xa
+
+  | Mceil x ->
+    let xe, xa = f accu x in
+    g (Mceil xe), xa
+
   (* crypto functions *)
 
   | Mblake2b x ->
@@ -2714,6 +2736,7 @@ let replace_ident_model (f : kind_ident -> ident -> ident) (model : model) : mod
         | Add an                -> Add (f KIassetname an)
         | Remove an             -> Remove (f KIassetname an)
         | Clear an              -> Clear (f KIassetname an)
+        | Update (an, l)        -> Update (f KIassetname an, List.map (fun (id, op, v) -> (f KIparamlambda id, op, for_mterm v)) l)
         | UpdateAdd (an, id)    -> UpdateAdd (f KIassetname an, f KIassetfield id)
         | UpdateRemove (an, id) -> UpdateRemove (f KIassetname an, f KIassetfield id)
         | UpdateClear (an, id)  -> UpdateClear (f KIassetname an, f KIassetfield id)
@@ -2751,6 +2774,8 @@ let replace_ident_model (f : kind_ident -> ident -> ident) (model : model) : mod
         | Bisnone t -> Bisnone (for_type t)
         | Bissome t -> Bissome (for_type t)
         | Bgetopt t -> Bgetopt (for_type t)
+        | Bfloor    -> Bfloor
+        | Bceil     -> Bceil
       in
       let for_api_internal (ainternal : api_internal) : api_internal =
         match ainternal with

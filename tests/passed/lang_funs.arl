@@ -31,6 +31,9 @@ action exec () {
     t := min(1tz, 2tz);
     t := max(1tz, 2tz);
 
+    i := floor(5 div 3);
+    i := ceil(5 div 3);
+
     i := abs(-1);
     r := abs(-1 div 2);
 

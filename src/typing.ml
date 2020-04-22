@@ -675,6 +675,9 @@ let coreops =
     (List.map
        (fun x -> ("abs", M.Cabs, `Total, None, [x], x))
        [M.vtint; M.vtrational])
+  @ (List.map
+           (fun (x, y) -> (x, y, `Total, None, [M.vtrational], M.vtint))
+           ["floor", M.Cfloor ; "ceil", M.Cceil])
   @ (List.flatten (List.map (fun (name, cname) -> (
         List.map
           (fun x -> (name, cname, `Total, None, [x; x], x))
@@ -1480,6 +1483,11 @@ let for_literal (_env : env) (topv : PT.literal loced) : M.bval =
 
   | Lbytes s ->
     mk_sp M.vtbytes (M.BVbytes (s))
+
+  | Lpercent n ->
+    begin
+      mk_sp M.vtrational (M.BVrational (n, Big_int.big_int_of_int 100))
+    end
 
 (* -------------------------------------------------------------------- *)
 type emode_t = {
@@ -3593,31 +3601,23 @@ let for_asset_decl ?(force = false) (env : env) (decl : PT.asset_decl loced) =
 
   let init =
     let for1 = function
-      | PT.APOinit e -> begin
-          match unloc e with
-          | Erecord init
-              when List.for_all (fun (x, _) -> Option.is_none x) init
-            ->
-              Some (List.pmap (fun (_, init1) ->
-                match unloc init1 with
-                | ParseTree.Erecord init1
-                      when List.for_all (fun (x, _) -> Option.is_none x) init
-                  ->
-                    if List.length init1 <> List.length fields then begin
-                        Env.emit_error env (loc e, InvalidInitCount); None
-                    end else
-                      let init1 =
-                        List.map2
-                          (fun { pldesc = (_, ety, _) } (_, ie) -> for_expr env ?ety ie)
-                          fields init1 in
-                      Some init1
-
-                | _ -> None) init)
-
-          | _ -> None
-        end
+      | PT.APOinit l ->
+        Some (List.pmap (fun r ->
+            match unloc r with
+            | ParseTree.Erecord init1
+              when List.for_all (fun (x, _) -> Option.is_none x) init1
+              ->
+              if List.length init1 <> List.length fields then begin
+                Env.emit_error env (loc r, InvalidInitCount); None
+              end else
+                let init1 =
+                  List.map2
+                    (fun { pldesc = (_, ety, _) } (_, ie) -> for_expr env ?ety ie)
+                    fields init1 in
+                Some init1
+            | _ -> None) l)
       | _ ->
-          None
+        None
     in List.flatten (List.pmap for1 postopts) in
 
   if not force && not (check_and_emit_name_free env x) then begin
