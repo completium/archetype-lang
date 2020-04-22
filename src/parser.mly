@@ -162,6 +162,7 @@
 %token <string> DURATION
 %token <string> DATE
 %token <string> BYTES
+%token <Big_int.big_int> PERCENT_LIT
 
 %nonassoc IN
 
@@ -849,17 +850,18 @@ label_expr_unloc:
 | IN    e=simple_expr { Qcollection e }
 
 literal:
- | x=NUMBER     { Lnumber   x }
- | x=DECIMAL    { Ldecimal  x }
- | x=TZ         { Ltz       x }
- | x=MTZ        { Lmtz      x }
- | x=UTZ        { Lutz      x }
- | x=STRING     { Lstring   x }
- | x=ADDRESS    { Laddress  x }
- | x=bool_value { Lbool     x }
- | x=DURATION   { Lduration x }
- | x=DATE       { Ldate     x }
- | x=BYTES      { Lbytes    x }
+ | x=NUMBER      { Lnumber   x }
+ | x=DECIMAL     { Ldecimal  x }
+ | x=TZ          { Ltz       x }
+ | x=MTZ         { Lmtz      x }
+ | x=UTZ         { Lutz      x }
+ | x=STRING      { Lstring   x }
+ | x=ADDRESS     { Laddress  x }
+ | x=bool_value  { Lbool     x }
+ | x=DURATION    { Lduration x }
+ | x=DATE        { Ldate     x }
+ | x=BYTES       { Lbytes    x }
+ | x=PERCENT_LIT { Lpercent  x }
 
 %inline bool_value:
  | TRUE  { true }

@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - `slice`, `concat` and `length` functions
  - `isnone`, `issome`, `getopt` option functions
  - `floor` and `ceil` functions
+ - add percent literal
 
  ### Update
  - Remove key asset for execution generation

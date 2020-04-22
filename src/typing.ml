@@ -1484,6 +1484,11 @@ let for_literal (_env : env) (topv : PT.literal loced) : M.bval =
   | Lbytes s ->
     mk_sp M.vtbytes (M.BVbytes (s))
 
+  | Lpercent n ->
+    begin
+      mk_sp M.vtrational (M.BVrational (n, Big_int.big_int_of_int 100))
+    end
+
 (* -------------------------------------------------------------------- *)
 type emode_t = {
   em_kind : [`Expr | `Formula];

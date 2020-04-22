@@ -148,6 +148,7 @@ and literal =
   | Lduration of string
   | Ldate     of string
   | Lbytes    of string
+  | Lpercent  of Core.big_int
 
 and record_item = (assignment_operator * lident) option * expr
 

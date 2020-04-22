@@ -20,6 +20,7 @@ let pp_literal fmt (l : literal) =
   | Lduration d -> Format.fprintf fmt "%s" d
   | Ldate     d -> Format.fprintf fmt "%s" d
   | Lbytes    s -> Format.fprintf fmt "0x%s" s
+  | Lpercent  n -> Format.fprintf fmt "%s%%"  (Big_int.string_of_big_int n)
 
 let pp_expr fmt e =
   match unloc e with

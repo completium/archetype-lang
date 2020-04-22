@@ -582,6 +582,7 @@ and pp_literal fmt lit =
   | Lduration d -> Format.fprintf fmt "%s" d
   | Ldate     d -> Format.fprintf fmt "%s" d
   | Lbytes    s -> Format.fprintf fmt "0x%s" s
+  | Lpercent  n -> Format.fprintf fmt "%s%%" (Big_int.string_of_big_int n)
 
 and pp_ident_ident fmt a =
   match a with
