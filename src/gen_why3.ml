@@ -111,7 +111,6 @@ let mk_trace tr =
                   gstr)
           ) |> loc_term
 
-
 let mk_trace_asset m =
   let assets = M.Utils.get_assets m in
   if List.length assets > 0 then
@@ -1358,11 +1357,11 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
       end
     | Mslice  (s,i1,i2) -> Tapp (loc_term (Tvar "substring"),[map_mterm m ctx s; map_mterm m ctx i1; map_mterm m ctx i2])
     | Mlength s -> Tapp (loc_term (Tvar "str_length"),[map_mterm m ctx s])
-    | Misnone _ -> error_not_translated "Misnone"
-    | Missome _ -> error_not_translated "Missome"
-    | Mgetopt _ -> error_not_translated "Mgetopt"
-    | Mfloor  _ -> error_not_translated "Mfloor"
-    | Mceil   _ -> error_not_translated "Mceil"
+    | Misnone s -> Tapp (loc_term (Tvar "isnone"),[map_mterm m ctx s])
+    | Missome s -> Tapp (loc_term (Tvar "issome"),[map_mterm m ctx s])
+    | Mgetopt s -> Tapp (loc_term (Tvar "getopt"),[map_mterm m ctx s])
+    | Mfloor  s -> Tapp (loc_term (Tvar "floor"),[map_mterm m ctx s])
+    | Mceil   s -> Tapp (loc_term (Tvar "ceil"),[map_mterm m ctx s])
 
 
     (* crypto functions *)
@@ -1531,7 +1530,11 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     (* formula asset collection methods *)
 
     | Mapifget (a, _c, k) -> Tapp (loc_term (Tvar ("get_" ^ a)),[map_mterm m ctx k])
-    | Mapifsubsetof (n, l, r) -> Tsubset (with_dummy_loc n, map_mterm m ctx l, map_mterm m ctx r)
+    | Mapifsubsetof (n, l, r) ->
+      begin match l with
+      | { node = Mcast(_,_,c); type_ = _ } -> Tsubset (with_dummy_loc n, map_mterm m ctx c, map_mterm m ctx r)
+      | _ -> Tsubset (with_dummy_loc n, map_mterm m ctx l, map_mterm m ctx r)
+      end
     | Mapifisempty (l, r) ->
       begin match r.type_ with
       | M.Tcontainer (_,View) -> Tvempty (with_dummy_loc l, map_mterm m ctx r)
@@ -2777,6 +2780,7 @@ let fold_exns m body : term list =
         (internal_fold_exn (acc @ if (is_partition m a f) then [Texn Ekeyexist]
                             else [Texn Enotfound ]) c) i
     | M.Mselect (_,_,_,_,_) -> acc @ [Texn Enotfound]
+    | M.Mgetopt _ -> acc @ [Texn Enotfound]
     | M.Mfail InvalidCaller -> acc @ [Texn Einvalidcaller]
     | M.Mfail NoTransfer -> acc @ [Texn Enotransfer]
     | M.Mfail (InvalidCondition _) -> acc @ [Texn Einvalidcondition]

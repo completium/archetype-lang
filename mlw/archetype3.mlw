@@ -54,6 +54,52 @@ module Utils
 
   let function byt_concat (b1 : bytes) (b2 : bytes) : bytes = b1 + b2
 
+  use option.Option
+
+  let function issome (v : option 'a) : bool
+  =
+  match v with
+  | Some _ -> true
+  | None -> false
+  end
+
+  let function isnone (v : option 'a) : bool
+  =
+  match v with
+  | Some _ -> false
+  | None -> true
+  end
+
+  let getopt (o : option 'a) : 'a
+  raises { NotFound }
+  =
+  match o with
+  | Some v -> v
+  | None -> raise NotFound
+  end
+
+  use int.EuclideanDivision
+
+  let function floor (a : (int,int)) : int
+  =
+  match a with
+  | (n,d) ->
+   if d > 0 then
+     div n d
+   else
+     (div n d) - 1
+  end
+
+  let function ceil (a : (int,int)) : int
+  =
+  match a with
+  | (n,d) ->
+   if d > 0 then
+     (div n d) + 1
+   else
+     div n d
+  end
+
 end
 
 module Trace

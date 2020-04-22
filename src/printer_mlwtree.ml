@@ -387,11 +387,11 @@ let rec pp_term outer pos fmt = function
   | Tnone -> pp_str fmt "None"
   | Tenum i -> pp_str fmt i
   | Tmark (i,e) -> Format.fprintf fmt "label %a in %a"
-    pp_str i
+    pp_str (String.capitalize_ascii i)
     (pp_with_paren (pp_term outer pos)) e
   | Tat (i,e) -> Format.fprintf fmt "(%a at %a)"
     (pp_with_paren (pp_term outer pos)) e
-    pp_str i
+    pp_str (String.capitalize_ascii i)
   | Tunit -> pp_str fmt "()"
   | Tsome e -> Format.fprintf fmt "Some %a" (pp_with_paren (pp_term e_default PRight)) e
   | Tnot e -> Format.fprintf fmt "not %a" (pp_with_paren (pp_term outer pos)) e
