@@ -569,20 +569,27 @@ module AssetCollection
   goal sanity_check : false
 
 end
-(*
+
 module Sort
   use list.List
   use int.Int
-  (* use KeyListUtils *)
 
+  (* ------------------------------------------------------------------------ *)
   type container
 
-  type t = abstract {}
+  (* ------------------------------------------------------------------------ *)
+  type t
 
-  val function elts container : list t
+  (* ------------------------------------------------------------------------ *)
+  type view = list int
 
-  val function mk (list t) : container
+  (* ------------------------------------------------------------------------ *)
+  val function field t : int
 
+  (* ------------------------------------------------------------------------ *)
+  val function get collection int : option t
+
+  (* ------------------------------------------------------------------------ *)
   val function cmp (a b : t) : bool
 
   predicate lt (a b : t) = cmp a b
@@ -618,7 +625,7 @@ module Sort
   mk (lsort (elts c))
 
 end
-*)
+
 module Sum
 
   use  int.Int
