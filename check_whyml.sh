@@ -3,55 +3,68 @@
 BIN=./archetype.exe
 BIN_WHY3=why3
 LIB_ARCHETYPE=./mlw
-NB_ERR="0"
-NB_OUT="0"
+NB_ERR=0
 
-process () {
-    printf '%-50s' $1
-    OUT_MLW=$i.mlw
-    $BIN $i > /dev/null 2> /dev/null
-    RET=`echo $?`
+process_whyml() {
+    FILE=$1
+    OUT_WHYML=$FILE.mlw
+    rm -fr $OUT
+    $BIN -t whyml $FILE >$OUT_WHYML 2>/dev/null
+    RET=$(echo $?)
     if [ ${RET} -eq 0 ]; then
-    echo -ne "\033[32m OK \033[0m"
-    $BIN -t whyml $i > ${OUT_MLW} 2> /dev/null
-    RET=`echo $?`
-    if [ ${RET} -eq 0 ]; then
-        echo -ne "   \033[32m OK \033[0m"
-        $BIN_WHY3 -L ${LIB_ARCHETYPE} prove ${OUT_MLW} > /dev/null 2> /dev/null
-        RET=`echo $?`
+        echo -ne "\033[32m OK \033[0m"
+
+        $BIN_WHY3 -L ${LIB_ARCHETYPE} prove $OUT_WHYML >/dev/null 2>/dev/null
+        RET=$(echo $?)
         if [ ${RET} -eq 0 ]; then
-            echo -e "   \033[32m OK \033[0m"
+            echo -ne "\033[32m OK \033[0m"
         else
-            echo -e "   \033[31m KO \033[0m"
-            NB_OUT=$((${NB_OUT} + 1))
+            echo -ne "\033[31m KO \033[0m"
+            NB_ERR=$((${NB_ERR} + 1))
         fi
+
     else
-	      echo -ne "   \033[31m KO \033[0m"
-	      echo -e  "   \033[31m KO \033[0m"
+        echo -ne "\033[31m KO \033[0m"
         NB_ERR=$((${NB_ERR} + 1))
-        NB_OUT=$((${NB_OUT} + 1))
     fi
-    else
-	      echo -ne "\033[31m KO \033[0m"
-	      echo -ne "   \033[31m KO \033[0m"
-	      echo -e  "   \033[31m KO \033[0m"
-    fi
-    rm -f $OUT_MLW
+
+    rm -fr $OUT_WHYML
 }
 
-printf '%-48s%s\n' '' '   RET    OUT    PROVE'
+process_file() {
+    printf '%-70s' $1
+    $BIN $i >/dev/null 2>/dev/null
+    RET=$?
+    if [ $RET -eq $2 ]; then
+        echo -ne "\033[32m OK \033[0m"
+        process_whyml $i
+    else
+        echo -ne "\033[31m KO \033[0m"
+        NB_ERR=$((${NB_ERR} + 1))
+    fi
+    echo ""
+}
 
-for i in contracts/*.arl; do
-  process $i
-done
+process_files() {
+    for i in $1/*.arl; do
+        FIRST_CHAR=$(basename $i | cut -c 1)
+        if [ ${FIRST_CHAR} != "_" ]; then
+            process_file $i $2
+        fi
+    done
+    echo ""
+}
 
-echo ""
+printf '%-70s%s\n' '' ' RET GW  PW'
+
+process_files "./tests/passed" 0
+process_files "./contracts" 0
 
 RET=0
-if [ ${NB_ERR} -eq 0 -a ${NB_OUT} -eq 0 ]; then
-    echo "."
+if [ ${NB_ERR} -eq 0 ]; then
+    echo "passed."
 else
-    echo -e "\033[31mErrors (print / prove): ${NB_ERR} / ${NB_OUT} \033[0m"
+    echo -e "\033[31merrors: ${NB_ERR} \033[0m"
     RET=1
 fi
 
