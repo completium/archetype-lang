@@ -1533,10 +1533,17 @@ let pp_model_internal fmt (model : model) b =
       Format.fprintf fmt
         "function clear_%s (const s : storage_type) : storage_type is@\n  \
          begin@\n    \
-         s.%s_assets := (map [] : map(%a, %s));@\n  \
+         s.%s_assets := %a;@\n  \
          end with (s)@\n"
         an
-        an pp_btyp t an
+        an
+        (fun fmt _ ->
+           if Utils.is_asset_single_field model an then
+             Format.fprintf fmt "(set [] : set(%a))" pp_btyp t
+           else
+             Format.fprintf fmt "(map [] : map(%a, %s_storage))" pp_btyp t an
+        ) ()
+
 
     | Update _ -> ()
     (* | Update (an, l) ->
