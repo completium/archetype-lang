@@ -207,6 +207,7 @@ module List : sig
   val index_of      : ('a -> bool) -> 'a list -> int
   val dedup         : 'a list -> 'a list
   val last          : 'a list -> 'a
+  val for_all2      : ('a -> 'b -> bool) -> 'a list -> 'b list -> bool
 
   module Exn : sig
     val assoc     : 'a -> ('a * 'b) list -> 'b option
@@ -326,6 +327,17 @@ end = struct
     | [] -> raise Not_found
     | [e] -> e
     | _::t -> last t
+
+  let for_all2 p l1 l2 =
+    let rec aux p l1 l2 =
+      match (l1, l2) with
+        ([], []) -> true
+      | (a1::l1, a2::l2) -> p a1 a2 && aux p l1 l2
+      | (_, _) -> invalid_arg "List.for_all2"
+    in
+    if List.length l1 <> List.length l2
+    then false
+    else aux p l1 l2
 
   module Exn = struct
     let assoc x xs =

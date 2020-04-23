@@ -835,7 +835,7 @@ let pp_model_internal fmt (model : model) b =
                Format.fprintf fmt " with record [%a]"
                  (pp_list "; " (fun fmt (id, op, v) ->
                       let id = unloc id in
-                        Format.fprintf fmt "%s = %a" id
+                      Format.fprintf fmt "%s = %a" id
                         (fun fmt _ ->
                            match op with
                            | ValueAssign -> f fmt v
@@ -1436,6 +1436,7 @@ let pp_model_internal fmt (model : model) b =
         Format.fprintf fmt
           "function get_%s (const s : storage_type; const key : %a) : %s is@\n  \
            begin@\n    \
+           if not set_mem(key, s.o_asset_assets) then failwith (\"key does not exists\") else skip;@\n    \
            const res : %s = record[%s = key]@\n  \
            end with (res)@\n"
           an pp_btyp t an an k
@@ -1573,23 +1574,25 @@ let pp_model_internal fmt (model : model) b =
          begin@\n    \
          const asset_key : %a = a.%s;@\n    \
          const asset_val : %s = get_%s(s, asset_key);@\n    \
-         const map_local : map(%a, %s_storage) = s.%s_assets;@\n    \
          %a\
-         asset_val.%s := cons(b.%s, asset_val.%s);@\n    \
-         map_local[asset_key] := record[%a];@\n    \
-         s.%s_assets := map_local;@\n    \
-         %a  \
+         a.%s := cons(b.%s, asset_val.%s);@\n    \
+         s.%s_assets[asset_key] := record[%a];@\n  \
          end with (s)@\n"
         an fn an ft
         pp_btyp t k
         an an
-        pp_btyp t an an
-        (pp_do_if (match c with | Collection -> true | _ -> false)
-             (fun fmt _ -> Format.fprintf fmt "if not %s_mem(b.%s, s.%s_assets) then failwith (\"key of b does not exist\") else skip;@\n    " (if single then "set" else "map") kk ft)) ()
+        (fun fmt _ ->
+           match c with
+           | Collection ->
+             Format.fprintf fmt
+               "if not %s_mem(b.%s, s.%s_assets) then failwith (\"key does not exist\") else skip;@\n    "
+               (if single then "set" else "map") kk ft
+           | Partition ->
+             Format.fprintf fmt "s := add_%s(s, b);@\n    " ft
+           | _ -> ()
+        ) ()
         fn kk fn
-        (pp_list "; " (fun fmt fn -> Format.fprintf fmt "%s = a.%s" fn fn)) fns
-        an
-        (pp_do_if (match c with | Partition -> true | _ -> false) (fun fmt -> Format.fprintf fmt "s := add_%s(s, b);@\n")) ft
+        an (pp_list "; " (fun fmt fn -> Format.fprintf fmt "%s = a.%s" fn fn)) fns
 
     | UpdateRemove (an, fn) ->
       let k, t = Utils.get_asset_key model an in
