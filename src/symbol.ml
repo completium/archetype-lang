@@ -381,6 +381,7 @@ let string_of_symbol = function
   | X (N N_sl_COMMA_simple_expr_) -> ""
   | X (N N_snl_COMMA_expr_) -> ""
   | X (N N_separated_nonempty_list_SEMI_COLON_record_expr_) -> ""
+  | X (N N_loption_separated_nonempty_list_SEMI_COLON_record_item__) -> ""
 
 let string_of_item (p, i) =
   string_of_symbol (lhs p) ^ " -> "

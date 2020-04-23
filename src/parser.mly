@@ -797,7 +797,7 @@ simple_expr_r:
  | LBRACKET e=expr RBRACKET
      { Earray (split_seq e) }
 
- | LBRACE xs=separated_nonempty_list(SEMI_COLON, record_item) RBRACE
+ | LBRACE xs=separated_list(SEMI_COLON, record_item) RBRACE
      { Erecord xs }
 
  | x=literal
