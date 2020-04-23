@@ -1436,10 +1436,12 @@ let pp_model_internal fmt (model : model) b =
         Format.fprintf fmt
           "function get_%s (const s : storage_type; const key : %a) : %s is@\n  \
            begin@\n    \
-           if not set_mem(key, s.o_asset_assets) then failwith (\"key does not exists\") else skip;@\n    \
+           if not set_mem(key, s.%s_assets) then failwith (\"key does not exists\") else skip;@\n    \
            const res : %s = record[%s = key]@\n  \
            end with (res)@\n"
-          an pp_btyp t an an k
+          an pp_btyp t an
+          an
+          an k
       else
         let asset = Utils.get_asset model an in
         Format.fprintf fmt
