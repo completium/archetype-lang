@@ -134,6 +134,7 @@ let generate_target model =
     |> replace_assignfield_by_update
     |> remove_add_update
     |> merge_update
+    |> remove_assign_operator
     (* |> replace_update_by_set *)
     |> process_internal_string
     |> remove_rational
@@ -207,6 +208,7 @@ let generate_target model =
     |> replace_assignfield_by_update
     |> remove_add_update
     |> merge_update
+    |> remove_assign_operator
     |> replace_update_by_set
     |> replace_key_by_asset
     |> process_internal_string

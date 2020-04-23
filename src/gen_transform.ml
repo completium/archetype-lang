@@ -1992,3 +1992,32 @@ let remove_duplicate_key (model : model) : model =
   { model with
     storage = storage
   }
+
+let remove_assign_operator (model : model) : model =
+  let compute op lhs t (v : mterm) : mterm =
+    match op with
+    | ValueAssign -> v
+    | PlusAssign  -> mk_mterm (Mplus (lhs, v)) t
+    | MinusAssign -> mk_mterm (Mminus (lhs, v)) t
+    | MultAssign  -> mk_mterm (Mmult (lhs, v)) t
+    | DivAssign   -> mk_mterm (Mdiv (lhs, v)) t
+    | AndAssign   -> mk_mterm (Mand (lhs, v)) t
+    | OrAssign    -> mk_mterm (Mor (lhs, v)) t
+  in
+  let rec aux (ctx : ctx_model) (mt : mterm) : mterm =
+    match mt.node with
+    | Massign (op, t, id, v) ->
+      let lhs = mk_mterm (Mvarlocal id) v.type_ in
+      let v = compute op lhs v.type_ v in
+      mk_mterm (Massign (ValueAssign, t, id, v)) mt.type_
+    | Massignvarstore (op, t, id, v) ->
+      let lhs = mk_mterm (Mvarstorevar id) v.type_ in
+      let v = compute op lhs v.type_ v in
+      mk_mterm (Massignvarstore (ValueAssign, t, id, v)) mt.type_
+    | Massignfield    (op, t, mt, id, v) ->
+      let lhs = mk_mterm (Mdotasset (mt, id)) v.type_ in
+      let v = compute op lhs v.type_ v in
+      mk_mterm (Massignfield (ValueAssign, t, mt, id, v)) mt.type_
+    | _ -> map_mterm (aux ctx) mt
+  in
+  map_mterm_model aux model
