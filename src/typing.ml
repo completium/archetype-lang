@@ -1486,7 +1486,8 @@ let for_literal (_env : env) (topv : PT.literal loced) : M.bval =
 
   | Lpercent n ->
     begin
-      mk_sp M.vtrational (M.BVrational (n, Big_int.big_int_of_int 100))
+      let n, d = Core.compute_irr_fract (n, Big_int.big_int_of_int 100) in
+      mk_sp M.vtrational (M.BVrational (n, d))
     end
 
 (* -------------------------------------------------------------------- *)
