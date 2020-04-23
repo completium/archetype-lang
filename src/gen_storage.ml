@@ -102,6 +102,8 @@ let generate_storage (model : model) : model =
           let vv = aux c v in
           mk_mterm (Massignvarstore (op, t, id, vv)) Tunit
         end
+      | Mvarlocal id when Model.Utils.is_field_storage model (unloc id) ->
+        mk_mterm (Mvarstorevar id) mt.type_
       | _ -> map_mterm (aux c) mt
     in
     Model.map_mterm_model aux model
