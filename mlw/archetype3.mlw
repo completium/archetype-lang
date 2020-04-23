@@ -48,6 +48,9 @@ module Utils
   | (l,r) -> (abs l, abs r)
   end
 
+  let int_to_rat (a : int) : (int, int)
+  = (a,1)
+
   let function str_concat (s1 : astring) (s2 : astring) : astring = s1 + s2
   let function substring  (s : astring) (i1 : int) (i2 : int) = 0
   let function str_length (s : astring) : int = 0

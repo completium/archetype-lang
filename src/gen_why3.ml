@@ -1301,7 +1301,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
 
     | Mcontains (a, _, r) -> Tapp (loc_term (Tvar ("contains_" ^ a)), [map_mterm m ctx r])
 
-    | Mnth                (n,c,k) -> Tapp (loc_term (Tvar ("nth_" ^ n)),[map_mterm m ctx c; map_mterm m ctx k])
+    | Mnth                (n,c,k) -> Tapp (loc_term (Tvar ("nth_" ^ n)),[map_mterm m ctx k; map_mterm m ctx c])
     | Mcount              (a,t) -> Tvcard (with_dummy_loc a, map_mterm m ctx t)
 
     | Msum          (a,v,f) ->
@@ -2779,7 +2779,6 @@ let fold_exns m body : term list =
       internal_fold_exn
         (internal_fold_exn (acc @ if (is_partition m a f) then [Texn Ekeyexist]
                             else [Texn Enotfound ]) c) i
-    | M.Mselect (_,_,_,_,_) -> acc @ [Texn Enotfound]
     | M.Mgetopt _ -> acc @ [Texn Enotfound]
     | M.Mfail InvalidCaller -> acc @ [Texn Einvalidcaller]
     | M.Mfail NoTransfer -> acc @ [Texn Enotransfer]

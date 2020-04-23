@@ -3834,6 +3834,8 @@ end = struct
       match t.node with
       | Mdiv (_,_) -> raise FoundDiv
       | Mmodulo _ -> raise FoundDiv
+      | Massign (DivAssign,_,_,_) -> raise FoundDiv
+      | Massignvarstore (DivAssign,_,_,_) -> raise FoundDiv
       | _ -> fold_term aux accu t in
     aux accu mt
 
