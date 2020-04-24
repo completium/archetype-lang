@@ -187,293 +187,298 @@ let to_model (ast : A.model) : M.model =
     | _ -> assert false
   in
 
-  let to_mterm_node (n : A.lident A.term_node) (f : A.lident A.term_gen -> M.mterm) (ftyp : 't -> M.type_) (pterm : A.pterm) (formula : bool) : (M.lident, M.mterm) M.mterm_node =
+  let rec to_mterm ?(formula=false) (pterm : A.pterm) : M.mterm =
     let process_before vt e =
       match vt with
-      | A.VTbefore -> M.Msetbefore (M.mk_mterm e (ftyp (Option.get pterm.type_)) ~loc:pterm.loc)
-      | A.VTat lbl -> M.Msetat (lbl, M.mk_mterm e (ftyp (Option.get pterm.type_)) ~loc:pterm.loc)
+      | A.VTbefore -> M.Msetbefore (M.mk_mterm e (ptyp_to_type (Option.get pterm.type_)) ~loc:pterm.loc)
+      | A.VTat lbl -> M.Msetat (lbl, M.mk_mterm e (ptyp_to_type (Option.get pterm.type_)) ~loc:pterm.loc)
       | A.VTnone -> e
     in
-    match n with
-    | A.Pif (c, t, e)                   -> M.Mexprif        (f c, f t, f e)
-    | A.Pmatchwith (m, l)               -> M.Mexprmatchwith (f m, List.map (fun (p, e) -> (to_pattern p, f e)) l)
-    | A.Plogical (A.And, l, r)          -> M.Mand           (f l, f r)
-    | A.Plogical (A.Or, l, r)           -> M.Mor            (f l, f r)
-    | A.Plogical (A.Imply, l, r)        -> M.Mimply         (f l, f r)
-    | A.Plogical (A.Equiv, l, r)        -> M.Mequiv         (f l, f r)
-    | A.Pnot e                          -> M.Mnot           (f e)
-    | A.Pmulticomp (e, l)               -> M.Mmulticomp     (f e, List.map (fun (op, e) -> (to_comparison op, f e)) l)
-    | A.Pcomp (A.Equal, l, r)           -> M.Mequal         (f l, f r)
-    | A.Pcomp (A.Nequal, l, r)          -> M.Mnequal        (f l, f r)
-    | A.Pcomp (A.Gt, l, r)              -> M.Mgt            (f l, f r)
-    | A.Pcomp (A.Ge, l, r)              -> M.Mge            (f l, f r)
-    | A.Pcomp (A.Lt, l, r)              -> M.Mlt            (f l, f r)
-    | A.Pcomp (A.Le, l, r)              -> M.Mle            (f l, f r)
-    | A.Parith (A.Plus, l, r)           -> M.Mplus          (f l, f r)
-    | A.Parith (A.Minus, l, r)          -> M.Mminus         (f l, f r)
-    | A.Parith (A.Mult, l, r)           -> M.Mmult          (f l, f r)
-    | A.Parith (A.Div, l, r)            -> M.Mdiv           (f l, f r)
-    | A.Parith (A.DivRat, l, r)         -> M.Mdivrat        (f l, f r)
-    | A.Parith (A.Modulo, l, r)         -> M.Mmodulo        (f l, f r)
-    | A.Puarith (A.Uplus, e)            -> M.Muplus         (f e)
-    | A.Puarith (A.Uminus, e)           -> M.Muminus        (f e)
-    | A.Precord l                       -> M.Masset         (List.map f l)
-    | A.Pcall (Some p, A.Cconst A.Cbefore,    []) -> M.Msetbefore    (f p)
-    | A.Pletin (id, init, typ, body, o) -> M.Mletin         ([id], f init, Option.map ftyp typ, f body, Option.map f o)
-    | A.Pdeclvar (i, t, v)              -> M.Mdeclvar       ([i], Option.map ftyp t, f v)
-    | A.Pvar (b, _vs, {pldesc = "state"; _})                -> let e = M.Mvarstate in process_before b e
-    | A.Pvar (b, _vs, id) when A.Utils.is_variable ast id   -> let e = M.Mvarstorevar id in process_before b e
-    | A.Pvar (b, _vs, id) when A.Utils.is_asset ast id      -> let e = M.Mvarstorecol id in process_before b e
-    | A.Pvar (b, _vs, id) when A.Utils.is_enum_value ast id -> let e = M.Mvarenumval  id in process_before b e
-    | A.Pvar (b, _vs, id)                                   -> let e = M.Mvarlocal    id in process_before b e
-    | A.Parray l                             -> M.Massets (List.map f l)
-    | A.Plit ({node = BVint i; _})           -> M.Mint i
-    | A.Plit ({node = BVuint i; _})          -> M.Muint i
-    | A.Plit ({node = BVbool b; _})          -> M.Mbool b
-    | A.Plit ({node = BVenum s; _})          -> M.Menum s
-    | A.Plit ({node = BVrational (d, n); _}) -> M.Mrational (d, n)
-    | A.Plit ({node = BVdate s; _})          -> M.Mdate s
-    | A.Plit ({node = BVstring s; _})        -> M.Mstring s
-    | A.Plit ({node = BVcurrency (c, i); _}) -> M.Mcurrency (i, to_currency c)
-    | A.Plit ({node = BVaddress s; _})       -> M.Maddress s
-    | A.Plit ({node = BVduration d; _})      -> M.Mduration d
-    | A.Plit ({node = BVbytes v; _})         -> M.Mbytes v
-    | A.Pdot (d, i) ->
-      (* handle dot contract too *)
-      M.Mdotasset (f d, i)
-    | A.Pconst Cstate                        -> M.Mvarstate
-    | A.Pconst Cnow                          -> M.Mnow
-    | A.Pconst Ctransferred                  -> M.Mtransferred
-    | A.Pconst Ccaller                       -> M.Mcaller
-    | A.Pconst Cbalance                      -> M.Mbalance
-    | A.Pconst Csource                       -> M.Msource
-    | A.Pconst c                             ->
-      Format.eprintf "expr const unkown: %a@." A.pp_const c;
-      assert false
-
-    | A.Ptuple l                             -> M.Mtuple (List.map f l)
-    | A.Pnone                                -> M.Mnone
-    | A.Psome a                              -> M.Msome (f a)
-    | A.Pcast (src, dst, v)                  -> M.Mcast (ptyp_to_type src, ptyp_to_type dst, f v)
-    | A.Pquantifer (Forall, i, (coll, typ), term)    -> M.Mforall (i, ptyp_to_type typ, Option.map f coll, f term)
-    | A.Pquantifer (Exists, i, (coll, typ), term)    -> M.Mexists (i, ptyp_to_type typ, Option.map f coll, f term)
-
-    (* | A.Pcall (Some p, A.Cconst A.Cbefore,    []) -> M.Msetbefore    (f p) *)
-    (* | A.Pcall (Some p, A.Cconst A.Cunmoved,   []) -> M.Msetunmoved   (f p)
-       | A.Pcall (Some p, A.Cconst A.Cadded,     []) -> M.Msetadded     (f p)
-       | A.Pcall (Some p, A.Cconst A.Cremoved,   []) -> M.Msetremoved   (f p) *)
-    | A.Pcall (Some p, A.Cconst A.Citerated,  []) -> M.Msetiterated  (f p)
-    | A.Pcall (Some p, A.Cconst A.Ctoiterate, []) -> M.Msettoiterate (f p)
-
-    | A.Pcall (None, A.Cconst A.Cmin, [AExpr a; AExpr b]) ->
-      let fa = f a in
-      let fb = f b in
-      M.Mmin (fa, fb)
-
-    | A.Pcall (None, A.Cconst A.Cmax, [AExpr a; AExpr b]) ->
-      let fa = f a in
-      let fb = f b in
-      M.Mmax (fa, fb)
-
-    | A.Pcall (None, A.Cconst A.Cabs, [AExpr a]) ->
-      let fa = f a in
-      M.Mabs (fa)
-
-    | A.Pcall (None, A.Cconst A.Cconcat, [AExpr x; AExpr y]) ->
-      let fx = f x in
-      let fy = f y in
-      M.Mconcat (fx, fy)
-
-    | A.Pcall (None, A.Cconst A.Cslice, [AExpr x; AExpr s; AExpr e]) ->
-      let fx = f x in
-      let fs = f s in
-      let fe = f e in
-      M.Mslice (fx, fs, fe)
-
-    | A.Pcall (None, A.Cconst A.Clength, [AExpr x]) ->
-      let fx = f x in
-      M.Mlength (fx)
-
-    | A.Pcall (None, A.Cconst A.Cisnone, [AExpr x]) ->
-      let fx = f x in
-      M.Misnone (fx)
-
-    | A.Pcall (None, A.Cconst A.Cissome, [AExpr x]) ->
-      let fx = f x in
-      M.Missome (fx)
-
-    | A.Pcall (None, A.Cconst A.Cgetopt, [AExpr x]) ->
-      let fx = f x in
-      M.Mgetopt (fx)
-
-    | A.Pcall (None, A.Cconst A.Cfloor, [AExpr x]) ->
-      let fx = f x in
-      M.Mfloor (fx)
-
-    | A.Pcall (None, A.Cconst A.Cceil, [AExpr x]) ->
-      let fx = f x in
-      M.Mceil (fx)
-
-    | A.Pcall (None, A.Cconst A.Cblake2b, [AExpr x]) ->
-      let fx = f x in
-      M.Mblake2b (fx)
-
-    | A.Pcall (None, A.Cconst A.Csha256, [AExpr x]) ->
-      let fx = f x in
-      M.Msha256 (fx)
-
-    | A.Pcall (None, A.Cconst A.Csha512, [AExpr x]) ->
-      let fx = f x in
-      M.Msha512 (fx)
-
-    | A.Pcall (None, A.Cconst A.Cchecksignature, [AExpr k; AExpr s; AExpr x]) ->
-      let fk = f k in
-      let fs = f s in
-      let fx = f x in
-      M.Mchecksignature (fk, fs, fx)
-
-    | A.Pcall (_, A.Cid id, args) ->
-      M.Mapp (id, List.map (fun x -> term_arg_to_expr f x) args)
-
-    (* Asset *)
-
-    | A.Pcall (Some p, A.Cconst (A.Csubsetof), [AExpr q]) when is_asset_container p ->
-      let fp = f p in
-      let fq = f q in
-      let asset_name = extract_asset_name fp in
-      M.Mapifsubsetof (asset_name, fp, fq)
-
-    | A.Pcall (Some p, A.Cconst (A.Cisempty), []) when is_asset_container p ->
-      let fp = f p in
-      let asset_name = extract_asset_name fp in
-      M.Mapifisempty (asset_name, fp)
-
-    | A.Pcall (Some p, A.Cconst (A.Cget), [AExpr q]) when is_asset_container p ->
-      let fp = f p in
-      let fq = f q in
-      let asset_name = extract_asset_name fp in
-      if formula
-      then M.Mapifget (asset_name, fp, fq)
-      else M.Mget (asset_name, fp, fq)
-
-    | A.Pcall (Some p, A.Cconst (A.Cselect), [AFun (_id, _type, l, q)]) when is_asset_container p ->
-      let fp = f p in
-      let lambda_body = f q in
-      let asset_name = extract_asset_name fp in
-      let lambda_args, args = List.fold_right (fun (x, y, z) (l1, l2) -> ((unloc x, ptyp_to_type y)::l1, (f z)::l2)) l ([], []) in
-      if formula
-      then M.Mapifselect (asset_name, fp, lambda_args, lambda_body, args)
-      else M.Mselect (asset_name, fp, lambda_args, lambda_body, args)
-
-    | A.Pcall (Some p, A.Cconst (A.Csort), args) when is_asset_container p ->
-      let fp = f p in
-      let asset_name = extract_asset_name fp in
-      let args =
-        List.map (fun x -> match x with
-            | A.ASorting (asc, field_name) ->
-              begin
-                let sort_kind = match asc with | true -> M.SKasc | false -> M.SKdesc in
-                unloc field_name, sort_kind
-              end
-            | _ -> assert false) args
-      in
-      if formula
-      then M.Mapifsort (asset_name, fp, args)
-      else M.Msort (asset_name, fp, args)
-
-    | A.Pcall (Some p, A.Cconst (A.Ccontains), [AExpr q]) when is_asset_container p ->
-      let fp = f p in
-      let fq = f q in
-      let asset_name = extract_asset_name fp in
-      if formula
-      then M.Mapifcontains (asset_name, fp, fq)
-      else M.Mcontains (asset_name, fp, fq)
-
-    | A.Pcall (Some p, A.Cconst (A.Cnth), [AExpr q]) when is_asset_container p ->
-      let fp = f p in
-      let fq = f q in
-      let asset_name = extract_asset_name fp in
-      if formula
-      then M.Mapifnth (asset_name, fp, fq)
-      else M.Mnth (asset_name, fp, fq)
-
-    | A.Pcall (Some p, A.Cconst (A.Ccount), []) when is_asset_container p ->
-      let fp = f p in
-      let asset_name = extract_asset_name fp in
-      if formula
-      then M.Mapifcount (asset_name, fp)
-      else M.Mcount (asset_name, fp)
-
-    | A.Pcall (Some p, A.Cconst (A.Csum), [AFun (_qi, _qt, _l, q)]) when is_asset_container p ->
-      let fp = f p in
-      let fq = f q in
-      let asset_name = extract_asset_name fp in
-      if formula
-      then M.Mapifsum (asset_name, fp, fq)
-      else M.Msum (asset_name, fp, fq)
-
-    | A.Pcall (Some p, A.Cconst (A.Chead), [AExpr e]) when is_asset_container p ->
-      let fp = f p in
-      let fe = f e in
-      let asset_name = extract_asset_name fp in
-      if formula
-      then M.Mapifhead (asset_name, fp, fe)
-      else M.Mhead (asset_name, fp, fe)
-
-    | A.Pcall (Some p, A.Cconst (A.Ctail), [AExpr e]) when is_asset_container p ->
-      let fp = f p in
-      let fe = f e in
-      let asset_name = extract_asset_name fp in
-      if formula
-      then M.Mapiftail (asset_name, fp, fe)
-      else M.Mtail (asset_name, fp, fe)
-
-    (* List*)
-
-    | A.Pcall (Some p, A.Cconst (A.Ccontains), [AExpr q]) when is_list p ->
-      let fp = f p in
-      let fq = f q in
-      let t = extract_builtin_type_list fp in
-      M.Mlistcontains (t, fp, fq)
-
-    | A.Pcall (Some p, A.Cconst (A.Ccount), []) when is_list p ->
-      let fp = f p in
-      let t = extract_builtin_type_list fp in
-      M.Mlistcount (t, fp)
-
-    | A.Pcall (Some p, A.Cconst (A.Cnth), [AExpr q]) when is_list p ->
-      let fp = f p in
-      let fq = f q in
-      let t = extract_builtin_type_list fp in
-      M.Mlistnth (t, fp, fq)
-
-
-    (* | A.Pcall (None, A.Cconst (A.Cmaybeperformedonlybyrole), [AExpr l; AExpr r]) ->
-       M.MsecMayBePerformedOnlyByRole (f l, f r)
-
-       | A.Pcall (None, A.Cconst (A.Cmaybeperformedonlybyaction), [AExpr l; AExpr r]) ->
-       M.MsecMayBePerformedOnlyByAction (f l, f r)
-
-       | A.Pcall (None, A.Cconst (A.Cmaybeperformedbyrole), [AExpr l; AExpr r]) ->
-       M.MsecMayBePerformedByRole (f l, f r)
-
-       | A.Pcall (None, A.Cconst (A.Cmaybeperformedbyaction), [AExpr l; AExpr r]) ->
-       M.MsecMayBePerformedByAction (f l, f r) *)
-
-    | A.Pcall (aux, A.Cconst c, args) ->
-      Format.eprintf "expr const unkown: %a with nb args: %d [%a] %s@."
-        A.pp_const c
-        (List.length args)
-        (Printer_tools.pp_list "; " (fun fmt x ->
-             let str = match x with | A.AExpr _ -> "AExpr" | A.AEffect _ -> "AEffect" | A.AFun _ -> "AFun" | A.ASorting _ -> "ASorting" in
-             Printer_tools.pp_str fmt str)) args
-        (match aux with | Some _ -> "with aux" | _ -> "without aux");
-      assert false
-  in
-
-  let rec to_mterm ?(formula=false) (pterm : A.pterm) : M.mterm =
-    let node = to_mterm_node pterm.node (to_mterm ~formula:formula) ptyp_to_type pterm formula in
     let type_ = ptyp_to_type (Option.get pterm.type_) in
+    let f x = to_mterm x ~formula:formula in
+    let node =
+      match pterm.node with
+      | A.Pif (c, t, e)                   -> M.Mexprif        (f c, f t, f e)
+      | A.Pmatchwith (m, l)               -> M.Mexprmatchwith (f m, List.map (fun (p, e) -> (to_pattern p, f e)) l)
+      | A.Plogical (A.And, l, r)          -> M.Mand           (f l, f r)
+      | A.Plogical (A.Or, l, r)           -> M.Mor            (f l, f r)
+      | A.Plogical (A.Imply, l, r)        -> M.Mimply         (f l, f r)
+      | A.Plogical (A.Equiv, l, r)        -> M.Mequiv         (f l, f r)
+      | A.Pnot e                          -> M.Mnot           (f e)
+      | A.Pmulticomp (e, l)               -> M.Mmulticomp     (f e, List.map (fun (op, e) -> (to_comparison op, f e)) l)
+      | A.Pcomp (A.Equal, l, r)           -> M.Mequal         (f l, f r)
+      | A.Pcomp (A.Nequal, l, r)          -> M.Mnequal        (f l, f r)
+      | A.Pcomp (A.Gt, l, r)              -> M.Mgt            (f l, f r)
+      | A.Pcomp (A.Ge, l, r)              -> M.Mge            (f l, f r)
+      | A.Pcomp (A.Lt, l, r)              -> M.Mlt            (f l, f r)
+      | A.Pcomp (A.Le, l, r)              -> M.Mle            (f l, f r)
+      | A.Parith (A.Plus, l, r)           -> M.Mplus          (f l, f r)
+      | A.Parith (A.Minus, l, r)          -> M.Mminus         (f l, f r)
+      | A.Parith (A.Mult, l, r)           -> M.Mmult          (f l, f r)
+      | A.Parith (A.Div, l, r)            -> M.Mdiv           (f l, f r)
+      | A.Parith (A.DivRat, l, r)         -> M.Mdivrat        (f l, f r)
+      | A.Parith (A.Modulo, l, r)         -> M.Mmodulo        (f l, f r)
+      | A.Puarith (A.Uplus, e)            -> M.Muplus         (f e)
+      | A.Puarith (A.Uminus, e)           -> M.Muminus        (f e)
+      | A.Precord l                       -> M.Masset         (List.map f l)
+      | A.Pcall (Some p, A.Cconst A.Cbefore,    []) -> M.Msetbefore    (f p)
+      | A.Pletin (id, init, typ, body, o) -> M.Mletin         ([id], f init, Option.map ptyp_to_type typ, f body, Option.map f o)
+      | A.Pdeclvar (i, t, v)              -> M.Mdeclvar       ([i], Option.map ptyp_to_type t, f v)
+      | A.Pvar (b, _vs, {pldesc = "state"; _})                -> let e = M.Mvarstate in process_before b e
+      | A.Pvar (b, _vs, id) when A.Utils.is_variable ast id   -> let e = M.Mvarstorevar id in process_before b e
+      | A.Pvar (b, _vs, id) when A.Utils.is_asset ast id      -> let e = M.Mvarstorecol id in process_before b e
+      | A.Pvar (b, _vs, id) when A.Utils.is_enum_value ast id -> let e = M.Mvarenumval  id in process_before b e
+      | A.Pvar (b, _vs, id)                                   -> let e = M.Mvarlocal    id in process_before b e
+      | A.Parray l                             ->
+        begin
+          let l = List.map f l in
+          match type_ with
+          | Tcontainer (Tasset _, _)   -> M.Massets l
+          | _ -> M.Mlitlist l
+        end
+      | A.Plit ({node = BVint i; _})           -> M.Mint i
+      | A.Plit ({node = BVuint i; _})          -> M.Muint i
+      | A.Plit ({node = BVbool b; _})          -> M.Mbool b
+      | A.Plit ({node = BVenum s; _})          -> M.Menum s
+      | A.Plit ({node = BVrational (d, n); _}) -> M.Mrational (d, n)
+      | A.Plit ({node = BVdate s; _})          -> M.Mdate s
+      | A.Plit ({node = BVstring s; _})        -> M.Mstring s
+      | A.Plit ({node = BVcurrency (c, i); _}) -> M.Mcurrency (i, to_currency c)
+      | A.Plit ({node = BVaddress s; _})       -> M.Maddress s
+      | A.Plit ({node = BVduration d; _})      -> M.Mduration d
+      | A.Plit ({node = BVbytes v; _})         -> M.Mbytes v
+      | A.Pdot (d, i) ->
+        (* handle dot contract too *)
+        M.Mdotasset (f d, i)
+      | A.Pconst Cstate                        -> M.Mvarstate
+      | A.Pconst Cnow                          -> M.Mnow
+      | A.Pconst Ctransferred                  -> M.Mtransferred
+      | A.Pconst Ccaller                       -> M.Mcaller
+      | A.Pconst Cbalance                      -> M.Mbalance
+      | A.Pconst Csource                       -> M.Msource
+      | A.Pconst c                             ->
+        Format.eprintf "expr const unkown: %a@." A.pp_const c;
+        assert false
+
+      | A.Ptuple l                             -> M.Mtuple (List.map f l)
+      | A.Pnone                                -> M.Mnone
+      | A.Psome a                              -> M.Msome (f a)
+      | A.Pcast (src, dst, v)                  -> M.Mcast (ptyp_to_type src, ptyp_to_type dst, f v)
+      | A.Pquantifer (Forall, i, (coll, typ), term)    -> M.Mforall (i, ptyp_to_type typ, Option.map f coll, f term)
+      | A.Pquantifer (Exists, i, (coll, typ), term)    -> M.Mexists (i, ptyp_to_type typ, Option.map f coll, f term)
+
+      (* | A.Pcall (Some p, A.Cconst A.Cbefore,    []) -> M.Msetbefore    (f p) *)
+      (* | A.Pcall (Some p, A.Cconst A.Cunmoved,   []) -> M.Msetunmoved   (f p)
+         | A.Pcall (Some p, A.Cconst A.Cadded,     []) -> M.Msetadded     (f p)
+         | A.Pcall (Some p, A.Cconst A.Cremoved,   []) -> M.Msetremoved   (f p) *)
+      | A.Pcall (Some p, A.Cconst A.Citerated,  []) -> M.Msetiterated  (f p)
+      | A.Pcall (Some p, A.Cconst A.Ctoiterate, []) -> M.Msettoiterate (f p)
+
+      | A.Pcall (None, A.Cconst A.Cmin, [AExpr a; AExpr b]) ->
+        let fa = f a in
+        let fb = f b in
+        M.Mmin (fa, fb)
+
+      | A.Pcall (None, A.Cconst A.Cmax, [AExpr a; AExpr b]) ->
+        let fa = f a in
+        let fb = f b in
+        M.Mmax (fa, fb)
+
+      | A.Pcall (None, A.Cconst A.Cabs, [AExpr a]) ->
+        let fa = f a in
+        M.Mabs (fa)
+
+      | A.Pcall (None, A.Cconst A.Cconcat, [AExpr x; AExpr y]) ->
+        let fx = f x in
+        let fy = f y in
+        M.Mconcat (fx, fy)
+
+      | A.Pcall (None, A.Cconst A.Cslice, [AExpr x; AExpr s; AExpr e]) ->
+        let fx = f x in
+        let fs = f s in
+        let fe = f e in
+        M.Mslice (fx, fs, fe)
+
+      | A.Pcall (None, A.Cconst A.Clength, [AExpr x]) ->
+        let fx = f x in
+        M.Mlength (fx)
+
+      | A.Pcall (None, A.Cconst A.Cisnone, [AExpr x]) ->
+        let fx = f x in
+        M.Misnone (fx)
+
+      | A.Pcall (None, A.Cconst A.Cissome, [AExpr x]) ->
+        let fx = f x in
+        M.Missome (fx)
+
+      | A.Pcall (None, A.Cconst A.Cgetopt, [AExpr x]) ->
+        let fx = f x in
+        M.Mgetopt (fx)
+
+      | A.Pcall (None, A.Cconst A.Cfloor, [AExpr x]) ->
+        let fx = f x in
+        M.Mfloor (fx)
+
+      | A.Pcall (None, A.Cconst A.Cceil, [AExpr x]) ->
+        let fx = f x in
+        M.Mceil (fx)
+
+      | A.Pcall (None, A.Cconst A.Cblake2b, [AExpr x]) ->
+        let fx = f x in
+        M.Mblake2b (fx)
+
+      | A.Pcall (None, A.Cconst A.Csha256, [AExpr x]) ->
+        let fx = f x in
+        M.Msha256 (fx)
+
+      | A.Pcall (None, A.Cconst A.Csha512, [AExpr x]) ->
+        let fx = f x in
+        M.Msha512 (fx)
+
+      | A.Pcall (None, A.Cconst A.Cchecksignature, [AExpr k; AExpr s; AExpr x]) ->
+        let fk = f k in
+        let fs = f s in
+        let fx = f x in
+        M.Mchecksignature (fk, fs, fx)
+
+      | A.Pcall (_, A.Cid id, args) ->
+        M.Mapp (id, List.map (fun x -> term_arg_to_expr f x) args)
+
+      (* Asset *)
+
+      | A.Pcall (Some p, A.Cconst (A.Csubsetof), [AExpr q]) when is_asset_container p ->
+        let fp = f p in
+        let fq = f q in
+        let asset_name = extract_asset_name fp in
+        M.Mapifsubsetof (asset_name, fp, fq)
+
+      | A.Pcall (Some p, A.Cconst (A.Cisempty), []) when is_asset_container p ->
+        let fp = f p in
+        let asset_name = extract_asset_name fp in
+        M.Mapifisempty (asset_name, fp)
+
+      | A.Pcall (Some p, A.Cconst (A.Cget), [AExpr q]) when is_asset_container p ->
+        let fp = f p in
+        let fq = f q in
+        let asset_name = extract_asset_name fp in
+        if formula
+        then M.Mapifget (asset_name, fp, fq)
+        else M.Mget (asset_name, fp, fq)
+
+      | A.Pcall (Some p, A.Cconst (A.Cselect), [AFun (_id, _type, l, q)]) when is_asset_container p ->
+        let fp = f p in
+        let lambda_body = f q in
+        let asset_name = extract_asset_name fp in
+        let lambda_args, args = List.fold_right (fun (x, y, z) (l1, l2) -> ((unloc x, ptyp_to_type y)::l1, (f z)::l2)) l ([], []) in
+        if formula
+        then M.Mapifselect (asset_name, fp, lambda_args, lambda_body, args)
+        else M.Mselect (asset_name, fp, lambda_args, lambda_body, args)
+
+      | A.Pcall (Some p, A.Cconst (A.Csort), args) when is_asset_container p ->
+        let fp = f p in
+        let asset_name = extract_asset_name fp in
+        let args =
+          List.map (fun x -> match x with
+              | A.ASorting (asc, field_name) ->
+                begin
+                  let sort_kind = match asc with | true -> M.SKasc | false -> M.SKdesc in
+                  unloc field_name, sort_kind
+                end
+              | _ -> assert false) args
+        in
+        if formula
+        then M.Mapifsort (asset_name, fp, args)
+        else M.Msort (asset_name, fp, args)
+
+      | A.Pcall (Some p, A.Cconst (A.Ccontains), [AExpr q]) when is_asset_container p ->
+        let fp = f p in
+        let fq = f q in
+        let asset_name = extract_asset_name fp in
+        if formula
+        then M.Mapifcontains (asset_name, fp, fq)
+        else M.Mcontains (asset_name, fp, fq)
+
+      | A.Pcall (Some p, A.Cconst (A.Cnth), [AExpr q]) when is_asset_container p ->
+        let fp = f p in
+        let fq = f q in
+        let asset_name = extract_asset_name fp in
+        if formula
+        then M.Mapifnth (asset_name, fp, fq)
+        else M.Mnth (asset_name, fp, fq)
+
+      | A.Pcall (Some p, A.Cconst (A.Ccount), []) when is_asset_container p ->
+        let fp = f p in
+        let asset_name = extract_asset_name fp in
+        if formula
+        then M.Mapifcount (asset_name, fp)
+        else M.Mcount (asset_name, fp)
+
+      | A.Pcall (Some p, A.Cconst (A.Csum), [AFun (_qi, _qt, _l, q)]) when is_asset_container p ->
+        let fp = f p in
+        let fq = f q in
+        let asset_name = extract_asset_name fp in
+        if formula
+        then M.Mapifsum (asset_name, fp, fq)
+        else M.Msum (asset_name, fp, fq)
+
+      | A.Pcall (Some p, A.Cconst (A.Chead), [AExpr e]) when is_asset_container p ->
+        let fp = f p in
+        let fe = f e in
+        let asset_name = extract_asset_name fp in
+        if formula
+        then M.Mapifhead (asset_name, fp, fe)
+        else M.Mhead (asset_name, fp, fe)
+
+      | A.Pcall (Some p, A.Cconst (A.Ctail), [AExpr e]) when is_asset_container p ->
+        let fp = f p in
+        let fe = f e in
+        let asset_name = extract_asset_name fp in
+        if formula
+        then M.Mapiftail (asset_name, fp, fe)
+        else M.Mtail (asset_name, fp, fe)
+
+      (* List*)
+
+      | A.Pcall (Some p, A.Cconst (A.Ccontains), [AExpr q]) when is_list p ->
+        let fp = f p in
+        let fq = f q in
+        let t = extract_builtin_type_list fp in
+        M.Mlistcontains (t, fp, fq)
+
+      | A.Pcall (Some p, A.Cconst (A.Ccount), []) when is_list p ->
+        let fp = f p in
+        let t = extract_builtin_type_list fp in
+        M.Mlistcount (t, fp)
+
+      | A.Pcall (Some p, A.Cconst (A.Cnth), [AExpr q]) when is_list p ->
+        let fp = f p in
+        let fq = f q in
+        let t = extract_builtin_type_list fp in
+        M.Mlistnth (t, fp, fq)
+
+
+      (* | A.Pcall (None, A.Cconst (A.Cmaybeperformedonlybyrole), [AExpr l; AExpr r]) ->
+         M.MsecMayBePerformedOnlyByRole (f l, f r)
+
+         | A.Pcall (None, A.Cconst (A.Cmaybeperformedonlybyaction), [AExpr l; AExpr r]) ->
+         M.MsecMayBePerformedOnlyByAction (f l, f r)
+
+         | A.Pcall (None, A.Cconst (A.Cmaybeperformedbyrole), [AExpr l; AExpr r]) ->
+         M.MsecMayBePerformedByRole (f l, f r)
+
+         | A.Pcall (None, A.Cconst (A.Cmaybeperformedbyaction), [AExpr l; AExpr r]) ->
+         M.MsecMayBePerformedByAction (f l, f r) *)
+
+      | A.Pcall (aux, A.Cconst c, args) ->
+        Format.eprintf "expr const unkown: %a with nb args: %d [%a] %s@."
+          A.pp_const c
+          (List.length args)
+          (Printer_tools.pp_list "; " (fun fmt x ->
+               let str = match x with | A.AExpr _ -> "AExpr" | A.AEffect _ -> "AEffect" | A.AFun _ -> "AFun" | A.ASorting _ -> "ASorting" in
+               Printer_tools.pp_str fmt str)) args
+          (match aux with | Some _ -> "with aux" | _ -> "without aux");
+        assert false
+    in
     M.mk_mterm node type_ ~loc:pterm.loc
   in
 
