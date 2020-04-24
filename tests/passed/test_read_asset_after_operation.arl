@@ -1,0 +1,20 @@
+archetype test_read_asset_after_operation
+
+asset my_asset {
+  id : string;
+  f1: int;
+  f2: int;
+} initialized by {
+  {"id"; 1; 2}
+}
+
+action exec (k : int) {
+  specification {
+    i1: local > 0;
+  }
+  effect {
+    var c : my_asset = my_asset.get("id");
+    var local = c.f1 * c.f2;
+    require (local > 0);
+  }
+}
