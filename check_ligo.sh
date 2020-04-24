@@ -5,6 +5,35 @@ BIN_LIGO=ligo
 NB_ERR=0
 NB_ERR_RET=0
 NB_ERR_LIGO=0
+NB_ERR_LIGO_STORAGE=0
+
+process_ligo_storage() {
+    FILE=$1
+    OUT_LIGO=$FILE.ligo
+    OUT_STORAGE_LIGO=$FILE.storage.ligo
+    TZ=out.storage.tz
+    rm -fr $OUT_STORAGE_LIGO
+    $BIN -t ligo-storage $FILE >$OUT_STORAGE_LIGO 2>/dev/null
+    RET=$(echo $?)
+    #STO=$(cat $OUT_STORAGE_LIGO)
+    if [ ${RET} -eq 0 ]; then
+        $BIN_LIGO compile-storage $OUT_LIGO main "$(cat $OUT_STORAGE_LIGO)" 2>/dev/null >$TZ
+        RET=$(echo $?)
+        if [ ${RET} -eq 0 ]; then
+            echo -ne "\033[32m OK \033[0m"
+        else
+            echo -ne "\033[31m KO \033[0m"
+            NB_ERR=$((${NB_ERR} + 1))
+            NB_ERR_LIGO_STORAGE=$((${NB_ERR_LIGO_STORAGE} + 1))
+        fi
+    else
+        echo -ne "\033[31m KO \033[0m"
+        NB_ERR=$((${NB_ERR} + 1))
+        NB_ERR_LIGO_STORAGE=$((${NB_ERR_LIGO_STORAGE} + 1))
+    fi
+
+    rm -fr $OUT_STORAGE_LIGO *.pp.ligo
+}
 
 process_ligo() {
     FILE=$1
@@ -21,6 +50,7 @@ process_ligo() {
             RET=$(echo $?)
             if [ ${RET} -eq 0 ]; then
                 echo -ne "\033[32m OK \033[0m"
+                process_ligo_storage $1
             else
                 echo -ne "\033[31m KO \033[0m"
                 NB_ERR=$((${NB_ERR} + 1))
@@ -63,7 +93,7 @@ process_files() {
     echo ""
 }
 
-printf '%-70s%s\n' '' ' RET GL  PL'
+printf '%-70s%s\n' '' ' RET GL  PL  SL'
 
 process_files "./tests/passed" 0
 process_files "./contracts" 0
