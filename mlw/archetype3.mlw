@@ -25,6 +25,9 @@ module Utils
   use int.Int
   use Types
 
+  (* ------------------------------------------------------------------------ *)
+  (* Tuples *)
+
   let function fst (a : (int, int)) : int
   =
   match a with
@@ -37,10 +40,87 @@ module Utils
   | (_,r) -> r
   end
 
+  (* ------------------------------------------------------------------------ *)
+  (* Math *)
+
   let function abs (a : int) : int
   ensures { result >= 0 }
   =
   if a >= 0 then a else -a
+
+  use int.EuclideanDivision
+
+  let function floor (a : (int,int)) : int
+  =
+  match a with
+  | (n,d) ->
+   if d > 0 then
+     div n d
+   else
+     (div n d) - 1
+  end
+
+  let function ceil (a : (int,int)) : int
+  =
+  match a with
+  | (n,d) ->
+   if d > 0 then
+     (div n d) + 1
+   else
+     div n d
+  end
+
+  (* ------------------------------------------------------------------------ *)
+  (* Rational *)
+
+  type op_cmp =
+   | OpCmpLt
+   | OpCmpLe
+   | OpCmpGt
+   | OpCmpGe
+
+  let function rat_cmp (op : op_cmp) (lhs : (int, int)) (rhs : (int, int)) : bool
+  =  let a = (fst lhs) * (snd rhs) in
+     let b = (snd lhs) * (fst rhs) in
+     let pos = (fst lhs) * (fst rhs) > 0 in
+     match op with
+     | OpCmpLt -> if pos then
+                    a < b
+                  else
+                    a > b
+     |OpCmpLe -> if pos then
+                   a <= b
+                 else
+                   a >= b
+     |OpCmpGt -> if pos then
+                   a > b
+                 else
+                   a < b
+     |OpCmpGe -> if pos then
+                   a >= b
+                 else
+                   a <= b
+     end
+
+  let function rat_eq (lhs : (int, int)) (rhs : (int, int)) : bool
+  = fst lhs * snd rhs = fst rhs * snd lhs
+
+  type op_arith =
+   | OpArithPlus
+   | OpArithMinus
+   | OpArithMult
+   | OpArithDiv
+
+  let function rat_arith (op : op_arith) (lhs : (int, int)) (rhs : (int, int)) : (int, int)
+  =  match op with
+     | OpArithPlus -> (((fst lhs) * (snd rhs)) + ((snd rhs) * (snd lhs)) , (snd lhs) * (snd rhs))
+     | OpArithMinus -> (((fst lhs) * (snd rhs)) - ((snd rhs) * (snd lhs)) , (snd lhs) * (snd rhs))
+     | OpArithMult -> ((fst lhs) * (fst rhs) , (snd lhs) * (snd rhs))
+     | OpArithDiv -> ((fst lhs) * (snd rhs) , (snd lhs) * (fst rhs))
+     end
+
+  let function rat_tez (c : (int, int)) (t : tez) : tez
+  =  div ((abs (fst c)) * t) (abs (snd c))
 
   let function abs_rat (a : (int, int)) : (int, int)
   =
@@ -48,15 +128,34 @@ module Utils
   | (l,r) -> (abs l, abs r)
   end
 
-  let int_to_rat (a : int) : (int, int)
+  let function int_to_rat (a : int) : (int, int)
   = (a,1)
 
+  let function rat_uminus (r : (int, int)) : (int, int)
+  =
+  match r with
+  | (l,r) -> (-l,r)
+  end
+
+  let function rat_min (a : (int, int)) (b : (int, int)) : (int, int)
+  = if rat_cmp OpCmpLe a b then a else b
+
+  let function rat_max (a : (int, int)) (b : (int, int)) : (int, int)
+  = if rat_cmp OpCmpLe a b then b else a
+
+  (* ----------------------------------------------------------------------- *)
+  (* String *)
+
   let function str_concat (s1 : astring) (s2 : astring) : astring = s1 + s2
+
   let function substring  (s : astring) (i1 : int) (i2 : int) = 0
+
   let function str_length (s : astring) : int = 0
 
   let function byt_concat (b1 : bytes) (b2 : bytes) : bytes = b1 + b2
 
+  (* ----------------------------------------------------------------------- *)
+  (* Option *)
   use option.Option
 
   let function issome (v : option 'a) : bool
@@ -79,28 +178,6 @@ module Utils
   match o with
   | Some v -> v
   | None -> raise NotFound
-  end
-
-  use int.EuclideanDivision
-
-  let function floor (a : (int,int)) : int
-  =
-  match a with
-  | (n,d) ->
-   if d > 0 then
-     div n d
-   else
-     (div n d) - 1
-  end
-
-  let function ceil (a : (int,int)) : int
-  =
-  match a with
-  | (n,d) ->
-   if d > 0 then
-     (div n d) + 1
-   else
-     div n d
   end
 
 end

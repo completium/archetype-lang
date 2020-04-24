@@ -1933,7 +1933,7 @@ let replace_for_to_iter (model : model) : model =
         end in
       let idx_id = "_i_" ^ lbl in
       let idx = mk_mterm (Mvarlocal (dumloc idx_id)) (Tbuiltin Bint) in
-      let nth = mk_mterm (Mnth(an, idx, view)) type_asset in
+      let nth = mk_mterm (Mnth(an, view, idx)) type_asset in
       let letin = mk_mterm (Mletin ([id], nth, Some type_asset, nbody, None)) Tunit in
       let bound_min = mk_mterm (Mint Big_int.zero_big_int) (Tbuiltin Bint) in
       let bound_max = mk_mterm (Mcount (an, view)) (Tbuiltin Bint) in

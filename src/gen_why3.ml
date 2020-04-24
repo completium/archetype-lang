@@ -954,6 +954,9 @@ let mk_ac_ctx a ctx =
   | Inv -> loc_term (Tvar (mk_ac_id a))
   | _ ->  loc_term (mk_ac a)
 
+let is_coll_field m f : bool =
+  M.Utils.get_containers m |> List.map (fun (_,v,_) -> v) |> List.mem f
+
 let rec map_mterm m ctx (mt : M.mterm) : loc_term =
   let error_internal desc = emit_error (mt.loc, desc); Tnottranslated in
   let error_not_translated (msg : string) = (* Tnottranslated in *) error_internal (TODONotTranslated msg) in
@@ -1149,6 +1152,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Mfail (InvalidCondition _) -> Traise Einvalidcondition
     | Mfail InvalidState         -> Traise Einvalidstate
     | Mfail (Invalid { node = M.Mstring msg; type_=_ }) -> Traise (Einvalid (Some msg))
+    | Mfail (Invalid { node = M.Mvarlocal n; type_=_ }) -> Traise (Einvalid (Some (unloc n)))
     | Mfail               _ -> error_not_translated "Mfail"
     | Mtransfer (a, t) -> Ttransfer(map_mterm m ctx a, map_mterm m ctx t)
     | Mentrycall (_, d, _, _, _) -> Tcall (map_mterm m ctx d)
@@ -1301,7 +1305,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
 
     | Mcontains (a, _, r) -> Tapp (loc_term (Tvar ("contains_" ^ a)), [map_mterm m ctx r])
 
-    | Mnth                (n,c,k) -> Tapp (loc_term (Tvar ("nth_" ^ n)),[map_mterm m ctx k; map_mterm m ctx c])
+    | Mnth                (n,c,k) -> Tapp (loc_term (Tvar ("nth_" ^ n)),[map_mterm m ctx c; map_mterm m ctx k])
     | Mcount              (a,t) -> Tvcard (with_dummy_loc a, map_mterm m ctx t)
 
     | Msum          (a,v,f) ->
@@ -1312,7 +1316,16 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Mtail  (n,c,v) -> Ttail(with_dummy_loc n, map_mterm m ctx v, map_mterm m ctx c)
 
     (* utils *)
-    | Mcast (Tcontainer (Tasset a,Collection),Tcontainer (Tasset _, View), v) -> Ttoview (map_lident a,map_mterm m ctx v)
+    | Mcast (Tcontainer (Tasset a,Collection),Tcontainer (Tasset _, View), v) ->
+      begin match v.node with
+      | Mapp(f,_)  when is_coll_field m (unloc f) ->
+        map_mterm m ctx v |> Mlwtree.deloc
+      | Mvarlocal f when is_coll_field m (unloc f) ->
+        map_mterm m ctx v |> Mlwtree.deloc
+      | Mdotasset (_,f) when is_coll_field m (unloc f) ->
+        map_mterm m ctx v |> Mlwtree.deloc
+      | _ -> Ttoview (map_lident a,map_mterm m ctx v)
+      end
     | Mcast (_, _, v)       -> map_mterm m ctx v |> Mlwtree.deloc
     | Mgetfrommap         _ -> error_not_translated "Mgetfrommap"
 
@@ -1835,7 +1848,7 @@ let mk_get_asset asset key ktyp = Dfun {
 let mk_nth_asset asset = Dfun {
     name = "nth_" ^ asset;
     logic = NoMod;
-    args = ["i",Tyint;"v",Tyview asset];
+    args = ["v",Tyview asset;"i",Tyint];
     returns = Tyasset asset;
     raises = [ Texn Enotfound ];
     variants = [];
@@ -2502,193 +2515,6 @@ let mk_storage_api_before_storage (m : M.model) _records =
       | _ -> acc
     ) [] |> loc_decl |> deloc
 
-(*
-type op_cmp is
-| OpCmpLt of unit
-| OpCmpLe of unit
-| OpCmpGt of unit
-| OpCmpGe of unit
-function rat_cmp (const op : op_cmp; const lhs : (int * int); const rhs : (int * int)) : bool is
-  begin
-    const a : int = lhs.0 * rhs.1;
-    const b : int = lhs.1 * rhs.0;
-    const pos : bool = lhs.1 * rhs.1 > 0;
-    var r : bool := False;
-    case op of
-    | OpCmpLt(unit) -> if pos then r := a <  b else r := a >  b
-    | OpCmpLe(unit) -> if pos then r := a <= b else r := a >= b
-    | OpCmpGt(unit) -> if pos then r := a >  b else r := a <  b
-    | OpCmpGe(unit) -> if pos then r := a >= b else r := a <= b
-    end
-  end with r
-*)
-let mk_op_cmp _m = Denum ("op_cmp",["OpCmpLt";"OpCmpLe";"OpCmpGt";"OpCmpGe"])
-let mk_rat_cmp _m = Dfun {
-    name     = "rat_cmp";
-    logic    = NoMod;
-    args     = ["op", Tyenum "op_cmp";"lhs", Tytuple [Tyint;Tyint]; "rhs", Tytuple [Tyint;Tyint]];
-    returns  = Tybool;
-    raises   = [];
-    variants = [];
-    requires = [];
-    ensures  = [];
-    body =
-      let a = Tvar "a" in
-      let b = Tvar "b" in
-      let pos = Tvar "pos" in
-      Tletin (false, "a", None, Tmult (Tyint, Tfst (Tvar "lhs"), Tsnd (Tvar "rhs")),
-              Tletin (false, "b", None, Tmult (Tyint, Tsnd (Tvar "lhs"), Tfst (Tvar "rhs")),
-                      Tletin (false, "pos",None, Tgt (Tyint, Tmult(Tyint,Tfst (Tvar "lhs"), Tfst (Tvar "rhs")),Tint Big_int.zero_big_int),
-                              Tmatch (Tvar "op",[
-                                  Tconst "OpCmpLt", Tif (pos,Tlt (Tyint,a,b),Some (Tgt (Tyint,a,b)));
-                                  Tconst "OpCmpLe", Tif (pos,Tle (Tyint,a,b),Some (Tge (Tyint,a,b)));
-                                  Tconst "OpCmpGt", Tif (pos,Tgt (Tyint,a,b),Some (Tlt (Tyint,a,b)));
-                                  Tconst "OpCmpGe", Tif (pos,Tge (Tyint,a,b),Some (Tle (Tyint,a,b)));
-                                ])
-                             )))
-  }
-
-(* type op_arith is
-   | OpArithPlus  of unit
-   | OpArithMinus of unit
-   | OpArithMult  of unit
-   | OpArithDiv   of unit
-   function rat_arith (const op : op_arith; const lhs : (int * int); const rhs : (int * int)) : (int * int) is
-   begin
-    const r : (int * int) =
-    case op of
-    | OpArithPlus(unit)  -> (lhs.0 * rhs.1 + rhs.0 * lhs.1, lhs.1 * rhs.1)
-    | OpArithMinus(unit) -> (lhs.0 * rhs.1 - rhs.0 * lhs.1, lhs.1 * rhs.1)
-    | OpArithMult(unit)  -> (lhs.0 * rhs.0, lhs.1 * rhs.1)
-    | OpArithDiv(unit)   -> (lhs.0 * rhs.1, lhs.1 * rhs.0)
-    end
-   end with r
-*)
-let mk_op_arith _m = Denum ("op_arith",["OpArithPlus";"OpArithMinus";"OpArithMult";"OpArithDiv"])
-let mk_rat_arith _m = Dfun {
-    name     = "rat_arith";
-    logic    = NoMod;
-    args     = ["op", Tyenum "op_arith"; "lhs", Tytuple [Tyint;Tyint]; "rhs", Tytuple [Tyint;Tyint]];
-    returns  = Tytuple [Tyint;Tyint];
-    raises   = [];
-    variants = [];
-    requires = [];
-    ensures  = [];
-    body =
-      let lhs0 = Tfst (Tvar "lhs") in
-      let lhs1 = Tsnd (Tvar "lhs") in
-      let rhs0 = Tfst (Tvar "rhs") in
-      let rhs1 = Tsnd (Tvar "rhs") in
-      let mult a b = Tmult(Tyint,a,b) in
-      let plus a b = Tplus(Tyint,a,b) in
-      let minus a b = Tminus(Tyint,a,b) in
-      Tmatch (Tvar "op",[
-          Tconst "OpArithPlus", Ttuple ([plus (mult lhs0 rhs1) (mult rhs1 lhs1);mult lhs1 rhs1]);
-          Tconst "OpArithMinus", Ttuple ([minus (mult lhs0 rhs1) (mult rhs1 lhs1);mult lhs1 rhs1]);
-          Tconst "OpArithMult", Ttuple ([mult lhs0 rhs0; mult lhs1 rhs1]);
-          Tconst "OpArithDiv", Ttuple ([mult lhs0 rhs1; mult lhs1 rhs0]);
-        ])
-  }
-
-(* function rat_eq (const lhs : (int * int); const rhs : (int * int)) : bool is
-   block {skip} with
-   lhs.0 * rhs.1 = rhs.0 * lhs.1 *)
-let mk_rat_eq _m = Dfun {
-    name     = "rat_eq";
-    logic    = Logic;
-    args     = ["lhs", Tytuple [Tyint;Tyint]; "rhs", Tytuple [Tyint;Tyint]];
-    returns  = Tybool;
-    raises   = [];
-    variants = [];
-    requires = [];
-    ensures  = [];
-    body =
-      let lhs0 = Tfst (Tvar "lhs") in
-      let lhs1 = Tsnd (Tvar "lhs") in
-      let rhs0 = Tfst (Tvar "rhs") in
-      let rhs1 = Tsnd (Tvar "rhs") in
-      let mult a b = Tmult(Tyint,a,b) in
-      Teq (Tyint, mult lhs0 rhs1, mult rhs0 lhs1)
-  }
-
-let mk_rat_uminus _m = Dfun {
-    name     = "rat_uminus";
-    logic    = Logic;
-    args     = ["r", Tytuple [Tyint;Tyint]];
-    returns  = Tytuple [Tyint;Tyint];
-    raises   = [];
-    variants = [];
-    requires = [];
-    ensures  = [];
-    body =
-      let r0 = Tfst (Tvar "r") in
-      let r1 = Tsnd (Tvar "r") in
-      Ttuple [Tuminus(Tyint,r0);r1]
-  }
-
-let mk_rat_tez _m = Dfun {
-    name     = "rat_tez";
-    logic    = NoMod;
-    args     = ["c", Tytuple [Tyint;Tyint]; "t", Tytez];
-    returns  = Tytez;
-    raises   = [];
-    variants = [];
-    requires = [];
-    ensures  = [];
-    body = (* Tif (Tlt (Tyint,
-                  Tmult(Tyint,
-                        Tfst (Tvar "c"),
-                        Tsnd (Tvar "c")),
-                  Tint (Big_int.zero_big_int)
-                ),
-                Traise ENotAPair,
-                Some ( *)
-      Tdiv (Tyint,
-            Tmult (Tyint,
-                   Tabs(Tfst (Tvar "c")),
-                   Tvar "t"
-                  ),
-            Tabs (Tsnd (Tvar "c"))
-           )
-    (* )) *);
-  }
-
-let mk_rat_max _m = Dfun {
-    name     = "rat_max";
-    logic    = NoMod;
-    args     = ["a", Tytuple [Tyint;Tyint]; "b", Tytuple [Tyint;Tyint]];
-    returns  = Tytuple [Tyint;Tyint];
-    raises   = [];
-    variants = [];
-    requires = [];
-    ensures  = [];
-    body = Tif (
-        Tapp( Tvar "rat_cmp",
-              [Tenum "OpCmpLe"; Tvar "a"; Tvar "b"]
-            ),
-        Tvar "b",
-        Some (Tvar "a")
-      );
-  }
-
-let mk_rat_min _m = Dfun {
-    name     = "rat_min";
-    logic    = NoMod;
-    args     = ["a", Tytuple [Tyint;Tyint]; "b", Tytuple [Tyint;Tyint]];
-    returns  = Tytuple [Tyint;Tyint];
-    raises   = [];
-    variants = [];
-    requires = [];
-    ensures  = [];
-    body = Tif (
-        Tapp( Tvar "rat_cmp",
-              [Tenum "OpCmpLe"; Tvar "a"; Tvar "b"]
-            ),
-        Tvar "a",
-        Some (Tvar "b")
-      );
-  }
-
 let is_partition m n f =
   match M.Utils.get_field_container m n f with
   | _,Partition -> true
@@ -2740,16 +2566,6 @@ let mk_storage_api (m : M.model) records =
         acc @ [ mk_unshallow n t ] *)
       | M.APIAsset (Listtocoll n) ->
         acc @ [ mk_listtocoll m n ]
-      | M.APIInternal (RatTez) ->
-        acc @ [mk_rat_tez m]
-      | M.APIInternal (RatCmp) ->
-        acc @ [mk_op_cmp m;mk_rat_cmp m]
-      | M.APIInternal (RatArith) ->
-        acc @ [mk_op_arith m;mk_rat_arith m]
-      | M.APIInternal (RatEq) ->
-        acc @ [mk_rat_eq m]
-      | M.APIInternal (RatUminus) ->
-        acc @ [mk_rat_uminus m]
       | M.APIAsset (Clear n) ->
         acc @ [mk_clear_coll m n]
       | M.APIAsset (UpdateClear (n,f)) ->
@@ -2758,10 +2574,6 @@ let mk_storage_api (m : M.model) records =
         acc @ [mk_clear_field_coll m (is_partition m n f) n f key clearedasset]
       | M.APIBuiltin(Babs (M.Tbuiltin M.Bint)) ->
         acc @ [Duse (true,["int";"Abs"],None)]
-      | M.APIBuiltin(Bmax (M.Ttuple [M.Tbuiltin M.Bint;M.Tbuiltin M.Bint])) ->
-        acc @ [mk_rat_max m]
-      | M.APIBuiltin(Bmin (M.Ttuple [M.Tbuiltin M.Bint;M.Tbuiltin M.Bint])) ->
-        acc @ [mk_rat_min m]
       | _ -> acc
     ) [] |> loc_decl |> deloc
 
@@ -2784,7 +2596,7 @@ let fold_exns m body : term list =
     | M.Mfail NoTransfer -> acc @ [Texn Enotransfer]
     | M.Mfail (InvalidCondition _) -> acc @ [Texn Einvalidcondition]
     | M.Mfail InvalidState -> acc @ [Texn Einvalidstate]
-    | Mfail (Invalid _) -> acc @ [Texn (Einvalid None)]
+    | M.Mfail (Invalid _) -> acc @ [Texn (Einvalid None)]
     | _ -> M.fold_term internal_fold_exn acc term in
   Tools.List.dedup (internal_fold_exn [] body)
 
