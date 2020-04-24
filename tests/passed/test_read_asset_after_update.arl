@@ -1,0 +1,20 @@
+archetype test_read_asset_after_update
+
+asset my_asset {
+  id : string;
+  v: int;
+} initialized by {
+  {"id"; 1}
+}
+
+action exec () {
+  specification {
+    i1: forall a : my_asset, a.v = 0;
+  }
+  effect {
+    for a in my_asset do
+      my_asset.update(a.id, {v = 0});
+      require(a.v = 0)
+    done
+  }
+}
