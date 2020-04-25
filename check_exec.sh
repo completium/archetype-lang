@@ -1,6 +1,6 @@
 #! /bin/bash
 
-BIN=./archetype.exe --set-caller-init="tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg"
+BIN='./archetype.exe --set-caller-init="tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg"'
 BIN_LIGO=ligo
 GRET=0
 
