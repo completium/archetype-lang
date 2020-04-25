@@ -256,6 +256,7 @@ let compile (filename, channel) =
   |> raise_if_error post_model_error check_containers_asset
   |> raise_if_error post_model_error check_empty_container_on_initializedby
   |> raise_if_error post_model_error extend_removeif
+  |> raise_if_error post_model_error check_and_replace_init_caller
   |> generate_target
 
 let close dispose channel =
@@ -338,6 +339,8 @@ let main () =
       "--add-explicit-sort", Arg.Set Options.opt_aes, " Same as -aes";
       "-fp", Arg.String (fun s -> Options.opt_property_focused := s), " Focus property (with whyml target only)";
       "--focus-property", Arg.String (fun s -> Options.opt_property_focused := s), " Same as -fp";
+      "-sci", Arg.String (fun s -> Options.opt_caller := s), " Set caller address for initialization";
+      "--set-caller-init", Arg.String (fun s -> Options.opt_caller := s), " Same as -sci";
       "-ptc", Arg.Set Options.opt_ptc, " Print type contract in archetype syntax";
       "--print-type-contract", Arg.Set Options.opt_ptc, " Same as -ptc";
       "-lsp", Arg.String (fun s -> match s with

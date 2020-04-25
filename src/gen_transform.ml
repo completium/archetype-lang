@@ -8,6 +8,7 @@ type error_desc =
   | CannotBuildAsset of string * string
   | ContainersInAssetContainers of string * string * string
   | NoEmptyContainerForInitAsset of string * string * container
+  | CallerNotSetInInit
   | NoEntrypoint
 
 let pp_error_desc fmt = function
@@ -27,6 +28,9 @@ let pp_error_desc fmt = function
     Format.fprintf fmt "Field '%s' of '%s' asset is a %a, which must be initialized by an empty collection."
       fn an
       Printer_model.pp_container c
+
+  | CallerNotSetInInit ->
+    Format.fprintf fmt "'caller' is used in initialization of contract, please set caller value with '--set-caller-init'"
 
   | NoEntrypoint -> Format.fprintf fmt "No entrypoint found (action or transtion)"
 
@@ -459,6 +463,47 @@ let check_empty_container_on_initializedby (model : model) : model =
   List.iter (fun (an, fn, c, l) -> emit_error (l, (NoEmptyContainerForInitAsset (an, fn, c)))) l;
   if List.is_not_empty l then raise (Error.Stop 5);
   model
+
+let check_and_replace_init_caller  (model : model) : model =
+  let caller = !Options.opt_caller in
+  let for_decl accu (d : decl_node) : decl_node * bool =
+    let for_mterm accu (mt : mterm) : mterm * bool =
+      let rec aux accu (mt : mterm) : mterm * bool =
+        match mt.node with
+        | Mcaller -> mk_mterm (Maddress caller) (Tbuiltin Baddress), true
+        | _ ->
+          let g (x : mterm__node) : mterm = { mt with node = x; } in
+          fold_map_term g aux accu mt
+      in
+      aux accu mt
+    in
+    match d with
+    | Dvar ({default = Some v} as a) ->
+      begin
+        let v, def = for_mterm accu v in
+        (Dvar { a with default = Some v }, def)
+      end
+    | Dasset a ->
+      let def, l =
+        List.fold_right (
+          fun e (accu, decls) ->
+            let d, v = for_mterm accu e in
+            (v, d::decls)) a.init (false, [])
+      in
+      (Dasset { a with init = l }, def)
+    | _ -> d, accu
+  in
+  let b, decls =
+    List.fold_right (fun d (accu, decls) ->
+        let d, b = for_decl accu d in
+        (b || accu, d::decls)) model.decls (false, [])
+  in
+  begin
+    match b, caller with
+    | true, "" -> emit_error (model.loc, CallerNotSetInInit)
+    | _ -> ()
+  end;
+  { model with decls = decls }
 
 let prune_properties (model : model) : model =
   match !Options.opt_property_focused with
@@ -1928,8 +1973,8 @@ let replace_for_to_iter (model : model) : model =
       let type_view = Tcontainer (type_asset,View) in
       let view =
         begin match col.type_ with
-        | Tcontainer (_,Collection) -> mk_mterm (Mcast (type_col,type_view,col)) type_view
-        | _ -> col
+          | Tcontainer (_,Collection) -> mk_mterm (Mcast (type_col,type_view,col)) type_view
+          | _ -> col
         end in
       let idx_id = "_i_" ^ lbl in
       let idx = mk_mterm (Mvarlocal (dumloc idx_id)) (Tbuiltin Bint) in

@@ -1,6 +1,6 @@
 #! /bin/bash
 
-BIN=./archetype.exe
+BIN=./archetype.exe --set-caller-init="tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg"
 BIN_WHY3=why3
 LIB_ARCHETYPE=./mlw
 GRET=0
