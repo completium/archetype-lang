@@ -519,24 +519,6 @@ module AssetCollection
   mk (F.mk (view_to_list v c))
 
   (* ------------------------------------------------------------------------ *)
-  (* lemma mem_fset: forall a l.
-    fmem a l <-> F.fmem a (F.mk l)
- *)
-  (* lemma cons_key_injective: forall a l.
-    (forall e. fmem e l -> fkey e <> fkey a) ->
-    key_injective (F.mk l) ->
-    key_injective (F.mk (Cons a l)) *)
-
-  (* lemma mem_key: forall a l.
-    (forall e. fmem e l -> fkey e <> fkey a) -> (forall e. fmem e l -> e <> a)
-
-  lemma insert_key_injective: forall a l.
-    IS.sorted l ->
-    (* (forall e. fmem e l -> fkey e <> fkey a) -> *)
-    not (fmem a l) ->
-    key_injective (F.mk l) ->
-    key_injective (F.mk (IS.insert a l)) *)
-
   lemma union_insert: forall a s.
   F.fmem a (F.fsetU (F.mk (Cons a Nil)) s)
 
