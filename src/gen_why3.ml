@@ -1472,34 +1472,16 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
 
 
     (* shallowing *)
-
-    | Mshallow (a, e) -> Tapp (loc_term (Tvar ("shallow_" ^ a)), [map_mterm m ctx e])
-
-    | Munshallow (a, e) ->
-      let ctx =
-        if is_old ctx e then
-          { ctx with old = true }
-        else ctx in
-      Tapp (loc_term (Tvar ("unshallow_" ^ a)),
-            [map_mterm m ctx (M.mk_mterm (Mvarstorecol (dumloc a))
-                                (Tcontainer (Tasset (dumloc a),Collection)));
-             map_mterm m ctx e])
-
-    | Mlisttocoll (n, l) -> Tapp (loc_term (Tvar ("listtocoll_" ^ n)), [map_mterm m ctx l])
-
-    | Maddshallow (n, l) ->
-      let pa = M.Utils.get_container_assets m n |> List.map (fun a ->
-          CAdd (String.capitalize_ascii a)) in
-      mk_trace_seq m
-        (Tapp (loc_term (Tvar ("add_shallow_" ^ n)),List.map (map_mterm m ctx) l))
-        ([CAdd n] @ pa)
-
+    (* TODO : remove from model *)
+    | Mshallow (_a, _e) -> error_not_translated "shallow;"
+    | Munshallow (_a, _e) -> error_not_translated "unshallow;"
+    | Mlisttocoll (_n, _l) -> error_not_translated "listtocoll;"
+    | Maddshallow (_n, _l) -> error_not_translated "addshallow;"
 
     (* collection keys *)
 
     | Mtokeys             _ -> error_not_translated "Mtokeys"
     | Mcoltokeys          _ -> error_not_translated "Mcoltokeys"
-
 
     (* quantifiers *)
 
@@ -1967,25 +1949,6 @@ let mk_contains asset keyt = Dfun {
                           mk_ac asset)
   }
 
-(* let mk_unshallow asset keyt = Dfun {
-    name     = "unshallow_" ^ asset;
-    logic    = Logic;
-    args     = ["c", Tycoll asset;"l",Tylist keyt];
-    returns  = Tycoll asset;
-    raises   = [];
-    variants = [];
-    requires = [];
-    ensures  = [
-      { id   = asset ^ "_unshallow_post_1";
-        form = Tsubset (asset,
-                        Tresult,
-                        Tvar "c")
-      }];
-    body     = Ttocoll (asset,
-                        Tvar "l",
-                        Tvar "c")
-  }
- *)
 let mk_add_asset_precond m apid a id = mk_api_precond m apid a (`Preasset id)
 
 let mk_listtocoll_precond m apid a id = mk_api_precond m apid a (`Prelist id)
@@ -1998,12 +1961,7 @@ let mk_listtocoll m asset = Dfun {
     raises   = [];
     variants = [];
     requires = mk_listtocoll_precond m ("listtocoll_" ^ asset) asset "l";
-    ensures  = [
-      (*      { id   = asset ^ "_unshallow_post_1";
-              form = Tsubset (asset,
-                              Tresult,
-                              Tvar "c")
-              }*)];
+    ensures  = [];
     body     = Tcoll (asset,
                       Tvar "l")
   }
@@ -2560,10 +2518,6 @@ let mk_storage_api (m : M.model) records =
         acc @ [ mk_select m asset test (mlw_test |> unloc_term) (match sc.api_loc with | OnlyFormula -> true | ExecFormula | OnlyExec -> false) ]
       | M.APIAsset (Sort (asset,field)) ->
         acc @ [ mk_cmp_function m asset field; mk_sort_clone m asset field]
-      (* TODO *)
-     (*  | M.APIAsset (Unshallow n) ->
-        let t         =  M.Utils.get_asset_key m n |> snd |> map_btype in
-        acc @ [ mk_unshallow n t ] *)
       | M.APIAsset (Listtocoll n) ->
         acc @ [ mk_listtocoll m n ]
       | M.APIAsset (Clear n) ->
@@ -2586,7 +2540,6 @@ let fold_exns m body : term list =
     | M.Mnth (_, c, k) -> internal_fold_exn (internal_fold_exn (acc @ [Texn Enotfound]) c) k
     | M.Mset (_, _, k, v) -> internal_fold_exn (internal_fold_exn (acc @ [Texn Enotfound]) k) v
     | M.Maddasset (_, i) -> internal_fold_exn (acc @ [Texn Ekeyexist]) i
-    | M.Maddshallow _ -> acc @ [Texn Ekeyexist]
     | M.Maddfield (a, f, c, i) ->
       internal_fold_exn
         (internal_fold_exn (acc @ if (is_partition m a f) then [Texn Ekeyexist]
