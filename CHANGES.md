@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Added
+ - Next feature
+
+## [0.1.14] - 2020-04-25
+### Added
  - Crypto functions
  - `slice`, `concat` and `length` functions
  - `isnone`, `issome`, `getopt` option functions
@@ -14,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
  ### Update
  - Remove key asset for execution generation
+ - Mlw support for new view type
 
 ## [0.1.13] - 2020-03-05
 ### Added
