@@ -2073,3 +2073,52 @@ let remove_assign_operator (model : model) : model =
     | _ -> map_mterm (aux ctx) mt
   in
   map_mterm_model aux model
+
+
+let extract_item_collection_from_add_asset (model : model) : model =
+  let extract_item_collection_from_add_asset (an : ident) (l : mterm list) =
+    let asset = Utils.get_asset model an in
+    List.fold_right2
+      (fun (ai : asset_item) (mt : mterm) (add_fields, items) ->
+         match ai.type_, mt.node with
+         | Tcontainer (Tasset ann, _), Massets l when not (List.is_empty l) ->
+           begin
+             let mas = mk_mterm (Massets []) ai.type_ in
+             let assets = [unloc ai.name, unloc ann, l] in
+             (mas::add_fields, assets @ items)
+           end
+         | _ -> (mt::add_fields, items))
+      asset.values l ([], [])
+  in
+  let rec aux (ctx : ctx_model) (mt : mterm) : mterm =
+    begin
+      match mt.node with
+      | Maddasset (an, { node = (Masset l); type_ = Tasset _; _}) ->
+        begin
+          let dan = dumloc an in
+          let add_fields, labeled_assets = extract_item_collection_from_add_asset an l in
+          if List.is_empty labeled_assets
+          then mt
+          else
+            begin
+              let k = List.nth l (Utils.get_key_pos model an) in (* FIXME *)
+              let add = mk_mterm (Maddasset (an, mk_mterm (Masset add_fields) (Tasset dan))) Tunit in
+              let instrs : mterm list =
+                labeled_assets
+                |> List.map
+                  (fun (fn, _ann, assetss) ->
+                     assetss
+                     |> List.map (fun asset ->
+                         let store_asset = mk_mterm (Mvarstorecol dan) (Tcontainer (Tasset dan, Collection)) in
+                         let src = mk_mterm (Mget (an, store_asset, k)) (Tasset dan) in
+                         (mk_mterm (Maddfield (an, fn, src, asset)) Tunit))
+                  )
+                |> List.flatten
+              in
+              mk_mterm (Mseq (add::instrs)) Tunit
+            end
+        end
+      | _ -> map_mterm (aux ctx) mt
+    end
+  in
+  map_mterm_model aux model

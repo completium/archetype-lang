@@ -135,6 +135,7 @@ let generate_target model =
     |> remove_add_update
     |> merge_update
     |> remove_assign_operator
+    |> extract_item_collection_from_add_asset
     (* |> replace_update_by_set *)
     |> process_internal_string
     |> remove_rational
@@ -150,7 +151,7 @@ let generate_target model =
     |> remove_label
     |> flat_sequence
     |> remove_cmp_bool
-    |> shallow_asset
+    (* |> shallow_asset *)
     |> split_key_values
     |> remove_duplicate_key
     |> Gen_transform.assign_loop_label
