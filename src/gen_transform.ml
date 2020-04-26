@@ -1790,6 +1790,7 @@ let replace_asset_by_key (model : model) : model =
       match mt.node, mt.type_ with
       | Maddasset _, _ -> mt
       | Maddfield (an, fn, c, asset), _ -> mk_mterm (Maddfield (an, fn, aux c, asset)) mt.type_
+      | Mcast (Tcontainer (Tasset _, _), Tcontainer (Tasset _, _), v), _ -> aux v
       | Mselect (an, c, a, b, l), _ -> mk_mterm (Mselect (an, aux c, a, b, l)) mt.type_
       | Mletin (ids, a, Some t, b, o), _ ->
         mk_mterm (Mletin (ids, aux a, Some (for_type t), (aux b), Option.map aux o)) (for_type mt.type_)

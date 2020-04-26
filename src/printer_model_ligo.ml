@@ -1571,6 +1571,12 @@ let pp_model_internal fmt (model : model) b =
               ) ()
           )) l *)
 
+(* function add_my_asset_col (const s : storage_type; const asset_key : string; const b : o_asset) : storage_type is
+  begin
+    const asset_val : my_asset_storage = get_force(asset_key, s.my_asset_assets);
+    if not map_mem(b.oid, s.o_asset_assets) then failwith ("key does not exist") else skip;
+    s.my_asset_assets[asset_key] := asset_val with record[col = cons(b.oid, asset_val.col)];
+  end with (s) *)
     | UpdateAdd (an, fn) ->
       let k, t = Utils.get_asset_key model an in
       let ft, c = Utils.get_field_container model an fn in
@@ -1579,16 +1585,14 @@ let pp_model_internal fmt (model : model) b =
       let asset = Utils.get_asset model an in
       let fns = asset.values |> List.map (fun (ai : asset_item) -> unloc ai.name) |> List.filter (fun x -> not (String.equal k x)) in
       Format.fprintf fmt
-        "function add_%s_%s (const s : storage_type; const a : %s; const b : %s) : storage_type is@\n  \
+        "function add_%s_%s (const s : storage_type; const asset_key : %a; const b : %s) : storage_type is@\n  \
          begin@\n    \
-         const asset_key : %a = a.%s;@\n    \
          const asset_val : %s = get_%s(s, asset_key);@\n    \
          %a\
          a.%s := cons(b.%s, asset_val.%s);@\n    \
          s.%s_assets[asset_key] := record[%a];@\n  \
          end with (s)@\n"
-        an fn an ft
-        pp_btyp t k
+        an fn pp_btyp t ft
         an an
         (fun fmt _ ->
            match c with
