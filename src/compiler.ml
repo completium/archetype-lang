@@ -145,16 +145,17 @@ let generate_target model =
     |> generate_storage
     |> replace_declvar_by_letin
     |> remove_enum_matchwith
-    |> remove_letin_from_expr
-    |> remove_fun_dotasset
     |> replace_lit_address_by_role
     |> remove_label
     |> flat_sequence
     |> remove_cmp_bool
     (* |> shallow_asset *)
+    |> replace_asset_by_key
     |> split_key_values
     |> remove_duplicate_key
     |> Gen_transform.assign_loop_label
+    |> remove_letin_from_expr
+    |> remove_fun_dotasset
     |> generate_api_storage
     |> output
 

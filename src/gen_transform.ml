@@ -1771,41 +1771,97 @@ let process_internal_string (model : model) : model =
   in
   Model.map_mterm_model aux model
 
+let replace_asset_by_key (model : model) : model =
+  let rec for_type (t : type_) : type_ =
+    match t with
+    | Tasset an -> (Tbuiltin (Utils.get_asset_key model (unloc an) |> snd))
+    | Tcontainer (Tasset an, _) -> (Tlist (Tbuiltin (Utils.get_asset_key model (unloc an) |> snd)))
+    | Ttuple l -> Ttuple (List.map for_type l)
+    | _ -> t
+  in
+  let for_mterm (mt : mterm) : mterm =
+    let rec aux_1 (mt : mterm) : mterm =
+      match mt.node with
+      | Mget (_, _, k) -> k
+      (* | Mletin (a, b,) *)
+      | _ -> map_mterm aux_1 mt
+    in
+    let rec aux_2 (mt : mterm) : mterm =
+      match mt.node, mt.type_ with
+      | Maddasset _, _ -> mt
+      | Maddfield (an, fn, c, asset), _ -> mk_mterm (Maddfield (an, fn, aux_2 c, asset)) mt.type_
+      | Mletin (ids, a, Some t, b, o), _ ->
+        mk_mterm (Mletin (ids, aux_2 a, Some (for_type t), (aux_2 b), Option.map aux_2 o)) (for_type mt.type_)
+      | Massets l, Tcontainer (Tasset an, _) ->
+        let l = List.map aux_2 l in
+        mk_mterm (Mlitlist l) (Tlist (Tbuiltin (Utils.get_asset_key model (unloc an) |> snd)))
+      | Mvarstorecol an, Tcontainer (Tasset _, _) ->
+        mk_mterm (Mcoltokeys (unloc an)) (Tlist (Tbuiltin (Utils.get_asset_key model (unloc an) |> snd)))
+      | Mdotasset ({type_ = Tasset an} as a, k), _ when String.equal (Utils.get_asset_key model (unloc an) |> fst) (unloc k) -> a
+      | Masset l, Tasset an ->
+        begin
+          let l = List.map aux_2 l in
+          List.nth l (Utils.get_key_pos model (unloc an))
+        end
+      | Mvarlocal _, Tasset an ->
+        begin
+          let dan = an in
+          let an = unloc an in
+          let asset_collection : mterm = mk_mterm (Mvarstorecol dan) (Tcontainer (Tasset dan, Collection)) in
+          mk_mterm (Mget (an, asset_collection, mt)) mt.type_
+        end
+      | _ -> map_mterm aux_2 mt
+    in
+    mt |> aux_1 |> aux_2
+  in
+
+  let for_function (f : function__) =
+    let for_function_node (fn : function_node) =
+      let for_function_struct (fs : function_struct) =
+        {fs with body = for_mterm fs.body }
+      in
+      match fn with
+      | Entry fs -> Entry (for_function_struct fs)
+      | Function (fs, ret) -> Function (for_function_struct fs, ret)
+    in
+    { f with node = for_function_node f.node }
+  in
+  { model with functions = List.map for_function model.functions }
 
 let split_key_values (model : model) : model =
 
-  let rec f (ctx : ctx_model) (x : mterm) : mterm =
-    match x.node with
-    | Mselect (an, col, lambda_args, lambda_body, args) ->
+  (* let rec f (ctx : ctx_model) (x : mterm) : mterm =
+     match x.node with
+     | Mselect (an, col, lambda_args, lambda_body, args) ->
       let col = f ctx col in
       let lambda_body = f ctx lambda_body in
       let args = List.map (f ctx) args in
       let _k, t = Utils.get_asset_key model an in
       { x with node = Mselect (an, col, lambda_args, lambda_body, args); type_ = Tcontainer (Tbuiltin t, Collection)}
 
-    | Msort (an, col, l) ->
+     | Msort (an, col, l) ->
       let col = f ctx col in
       let _k, t = Utils.get_asset_key model an in
       { x with node = Msort (an, col, l); type_ = Tcontainer (Tbuiltin t, Collection)}
 
-    | Mhead (an, col, idx) ->
+     | Mhead (an, col, idx) ->
       let col = f ctx col in
       let idx = f ctx idx in
       let _k, t = Utils.get_asset_key model an in
       { x with node = Mhead (an, col, idx); type_ = Tcontainer (Tbuiltin t, Collection)}
 
-    | Mtail (an, col, idx) ->
+     | Mtail (an, col, idx) ->
       let col = f ctx col in
       let idx = f ctx idx in
       let _k, t = Utils.get_asset_key model an in
       { x with node = Mtail (an, col, idx); type_ = Tcontainer (Tbuiltin t, Collection)}
 
-    | Mletin (ids, init, _, body, o) ->
+     | Mletin (ids, init, _, body, o) ->
       let init = f ctx init in
       let body = f ctx body in
       { x with node = Mletin (ids, init, Some (init.type_), body, o); type_ = body.type_}
 
-    | Mdotasset (e, i) ->
+     | Mdotasset (e, i) ->
       let asset = Utils.get_asset_type e in
       let containers = Utils.get_asset_containers model asset in
       if List.exists (fun (pi, _pt, _pd) ->
@@ -1821,59 +1877,15 @@ let split_key_values (model : model) : model =
       else
         { x with node = Mdotasset (f ctx e, i) }
 
-    | Mcast ((Tcontainer ((Tasset _), _)), (Tcontainer ((Tasset _), View)), x) -> f ctx x
+     | Mcast ((Tcontainer ((Tasset _), _)), (Tcontainer ((Tasset _), View)), x) -> f ctx x
 
-    | Mvarstorecol an ->
+     | Mvarstorecol an ->
       (
         let _k, t = Utils.get_asset_key model (unloc an) in
         { x with node = Mcoltokeys (unloc an); type_ = Tcontainer (Tbuiltin t, Collection) }
       )
-    | Mfor (id, col, body, lbl) ->
-
-      let is_argument_plain_asset_collection (col : mterm) =
-        let id =
-          match col.node with
-          | Mvarparam an -> Some an
-          | _ -> None
-        in
-
-        match id, ctx.fs with
-        | Some an, Some ({args = args; src = Endo }) ->
-          List.fold_left (fun accu (name, type_, _) ->
-              match type_ with
-              | Tcontainer (Tasset _, _) when String.equal (unloc an) (unloc name) -> true
-              | _ -> accu
-            ) false args
-        | _ -> false
-      in
-
-      let an =
-        match col.type_ with
-        | Tcontainer (Tasset an, _) -> an
-        | _ -> assert false
-      in
-      let _k, t = Utils.get_asset_key model (unloc an) in
-
-      let col = f ctx col in
-      let body = f ctx body in
-      let body =
-        if is_argument_plain_asset_collection col
-        then
-          body
-        else
-          let key = mk_mterm (Mvarlocal id) (Tbuiltin t) in
-          let get_node =
-            match Utils.get_source_for model ctx col with
-            | Some c -> Mgetfrommap (unloc an, key, c)
-            | _ -> Mget (unloc an, Model.Utils.get_asset_collection (unloc an), key)
-          in
-          let get = mk_mterm get_node (Tasset an) in
-          let body = mk_mterm (Mletin ([id], get, Some (Tasset an), body, None)) (body.type_) in
-          body
-      in
-      { x with node =  Mfor (id, col, body, lbl) }
-    | _ -> map_mterm (f ctx) x
-  in
+     | _ -> map_mterm (f ctx) x
+     in *)
 
   let asset_assets an = an ^ "_assets" in
 
@@ -1921,7 +1933,7 @@ let split_key_values (model : model) : model =
       model.storage []
   in
 
-  let model = map_mterm_model f model in
+  (* let model = map_mterm_model f model in *)
 
   { model with
     storage = storage
