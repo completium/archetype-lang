@@ -9,9 +9,9 @@ asset token {
   owner[%delegable%] : role;
 }
 
-action transfer_ (k : role, tk : token) {
-  called by tk.owner
+action transfer_ (k : role, tk : pkey of token) {
+  called by token.get(tk).owner
   effect {
-    tk.owner := k
+    token.update(tk, {owner = k} )
   }
 }

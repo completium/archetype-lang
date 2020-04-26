@@ -27,9 +27,9 @@ asset bond {
   issuer_v           : pkey of issuer;
 }
 
-action publish (bond_ : bond) {
-  called by bond_.issuer_v
+action publish (bond_bid : string, bond_couponType_v : couponType, bond_paymentFrequency_v : pkey of paymentFrequency, bond_issuer_v : pkey of issuer) {
+  called by bond_issuer_v
   effect {
-    bond.add(bond_)
+    bond.add({bond_bid; bond_couponType_v; bond_paymentFrequency_v; bond_issuer_v})
   }
 }

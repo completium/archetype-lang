@@ -1780,27 +1780,28 @@ let replace_asset_by_key (model : model) : model =
     | _ -> t
   in
   let for_mterm (mt : mterm) : mterm =
-    let rec aux_1 (mt : mterm) : mterm =
+    let rec replace_get (mt : mterm) : mterm =
       match mt.node with
       | Mget (_, _, k) -> k
       (* | Mletin (a, b,) *)
-      | _ -> map_mterm aux_1 mt
+      | _ -> map_mterm replace_get mt
     in
-    let rec aux_2 (mt : mterm) : mterm =
+    let rec aux (mt : mterm) : mterm =
       match mt.node, mt.type_ with
       | Maddasset _, _ -> mt
-      | Maddfield (an, fn, c, asset), _ -> mk_mterm (Maddfield (an, fn, aux_2 c, asset)) mt.type_
+      | Maddfield (an, fn, c, asset), _ -> mk_mterm (Maddfield (an, fn, aux c, asset)) mt.type_
+      | Mselect (an, c, a, b, l), _ -> mk_mterm (Mselect (an, aux c, a, b, l)) mt.type_
       | Mletin (ids, a, Some t, b, o), _ ->
-        mk_mterm (Mletin (ids, aux_2 a, Some (for_type t), (aux_2 b), Option.map aux_2 o)) (for_type mt.type_)
+        mk_mterm (Mletin (ids, aux a, Some (for_type t), (aux b), Option.map aux o)) (for_type mt.type_)
       | Massets l, Tcontainer (Tasset an, _) ->
-        let l = List.map aux_2 l in
+        let l = List.map aux l in
         mk_mterm (Mlitlist l) (Tlist (Tbuiltin (Utils.get_asset_key model (unloc an) |> snd)))
       | Mvarstorecol an, Tcontainer (Tasset _, _) ->
         mk_mterm (Mcoltokeys (unloc an)) (Tlist (Tbuiltin (Utils.get_asset_key model (unloc an) |> snd)))
       | Mdotasset ({type_ = Tasset an} as a, k), _ when String.equal (Utils.get_asset_key model (unloc an) |> fst) (unloc k) -> a
       | Masset l, Tasset an ->
         begin
-          let l = List.map aux_2 l in
+          let l = List.map aux l in
           List.nth l (Utils.get_key_pos model (unloc an))
         end
       | Mvarlocal _, Tasset an ->
@@ -1810,9 +1811,9 @@ let replace_asset_by_key (model : model) : model =
           let asset_collection : mterm = mk_mterm (Mvarstorecol dan) (Tcontainer (Tasset dan, Collection)) in
           mk_mterm (Mget (an, asset_collection, mt)) mt.type_
         end
-      | _ -> map_mterm aux_2 mt
+      | _ -> map_mterm aux mt
     in
-    mt |> aux_1 |> aux_2
+    mt |> replace_get |> aux
   in
 
   let for_function (f : function__) =
@@ -2134,3 +2135,25 @@ let extract_item_collection_from_add_asset (model : model) : model =
     end
   in
   map_mterm_model aux model
+
+
+let check_if_asset_in_function (model : model) : model =
+  let rec for_type (t : type_) : type_ =
+    match t with
+    | Tasset _ -> exit 8
+    | _ -> map_type for_type t
+  in
+  let for_function (f : function__) =
+    let for_function_node (fn : function_node) =
+      let for_function_struct (fs : function_struct) =
+        let _ = List.iter (fun (_, t, _) -> let _ = for_type t in ()) fs.args in
+        ()
+      in
+      match fn with
+      | Entry fs -> for_function_struct fs
+      | Function (fs, _) -> for_function_struct fs
+    in
+    for_function_node f.node
+  in
+  List.iter for_function model.functions;
+  model

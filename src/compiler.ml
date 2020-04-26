@@ -122,6 +122,7 @@ let generate_target model =
     |> cont !Options.opt_skv split_key_values
     |> cont !Options.opt_nse remove_side_effect
     |> cont !Options.opt_evi eval_variable_initial_value
+    |> cont !Options.opt_d check_if_asset_in_function
     |> generate_api_storage
     |> output
 
@@ -366,6 +367,7 @@ let main () =
       "--raw", Arg.Set Options.opt_raw, " Same as -r";
       "-ry", Arg.Set Options.opt_raw_whytree, " Print raw model tree";
       "--raw-whytree", Arg.Set Options.opt_raw_whytree, " Same as -r";
+      "-d", Arg.Set Options.opt_d, " Nothing";
       "-json", Arg.Set Options.opt_json, " Print JSON format";
       "-V", Arg.String (fun s -> Options.add_vids s), "<id> process specication identifiers";
       "-v", Arg.Unit (fun () -> print_version ()), " Show version number and exit";

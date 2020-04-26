@@ -5,6 +5,8 @@ constant r1 : rational = 1 div 2
 asset anasset {
   id : address;
   r2 : rational;
+} initialized by {
+  {@tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg; 0.5}
 }
 
 contract mc {
@@ -15,8 +17,9 @@ contract mc {
   return r
 } *)
 
-action exec (r3 : rational, a : anasset) {
+action exec (r3 : rational) {
   effect {
+    var a = anasset.get(@tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg);
     var r4 = 1 div 4;
     require (r1 + (1 div 3) (* * f(r4)*) > r3 - a.r2 - r4);
     var m = 0.3 * 1tz;
