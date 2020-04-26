@@ -27,6 +27,7 @@ before_install:
   - sudo apt-get -y install opam ocaml-nox
   # Initialize the switch.
   - opam init -a --disable-sandboxing --compiler="${OCAML_VERSION}"
+  - opam update
   - opam install depext
   - opam pin add -n archetype .
   - opam depext archetype
