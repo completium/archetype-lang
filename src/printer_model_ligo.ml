@@ -65,7 +65,13 @@ end = struct
   let mk_action_fs (fs : function_struct) =
     let fun_name = fs.name |> unloc in
     let id = fs.name |> unloc |> String.up_firstcase_lower in
-    let args = List.map (fun (id, t, _) -> (unloc id, t)) fs.args in
+    let args = List.map
+        (fun (id, t, _) ->
+           (unloc id,
+            match t with
+            | Tenum _ -> Tbuiltin Bint
+            | _ -> t)) fs.args
+    in
     {
       name = id;
       fun_name = fun_name;
@@ -153,6 +159,8 @@ let pp_model_internal fmt (model : model) b =
       Format.fprintf fmt "%a" pp_id en
     | Tcontract _ -> pp_type fmt (Tbuiltin Baddress)
     | Tbuiltin b -> pp_btyp fmt b
+    | Tcontainer (Tasset an, _)
+    | Tlist (Tasset an) -> pp_type fmt (Tlist (Tbuiltin (Utils.get_asset_key model (unloc an) |> snd)))
     | Tcontainer (t, c) ->
       Format.fprintf fmt "%a(%a)"
         pp_container c
@@ -747,40 +755,24 @@ let pp_model_internal fmt (model : model) b =
       pp fmt (an, fn, c, i)
 
     | Mremoveasset (an, i) ->
-      let cond, str =
-        (match i.type_ with
-         | Tasset an ->
-           let k, _ = Utils.get_asset_key model (unloc an) in
-           true, "." ^ k
-         | _ -> false, ""
-        ) in
       let pp fmt (an, i) =
-        Format.fprintf fmt "%s := remove_%a (%s, %a%a)"
+        Format.fprintf fmt "%s := remove_%a (%s, %a)"
           const_storage
           pp_str an
           const_storage
           f i
-          (pp_do_if cond pp_str) str
       in
       pp fmt (an, i)
 
     | Mremovefield (an, fn, c, i) ->
-      let cond, str =
-        (match i.type_ with
-         | Tasset an ->
-           let k, _ = Utils.get_asset_key model (unloc an) in
-           true, "." ^ k
-         | _ -> false, ""
-        ) in
       let pp fmt (an, fn, c, i) =
-        Format.fprintf fmt "%s := remove_%a_%a (%s, %a, %a%a)"
+        Format.fprintf fmt "%s := remove_%a_%a (%s, %a, %a)"
           const_storage
           pp_str an
           pp_str fn
           const_storage
           f c
           f i
-          (pp_do_if cond pp_str) str
       in
       pp fmt (an, fn, c, i)
 
@@ -1356,9 +1348,7 @@ let pp_model_internal fmt (model : model) b =
         pp_type asset_item.type_
     in
     Format.fprintf fmt
-      "type %a is record [@\n  \
-       @[%a@]@\n\
-       ]@\n"
+      "type %a is record [@\n  @[%a@]@\n]@\n"
       pp_id asset.name
       (pp_list "@\n" pp_asset_item) asset.values;
     let an = unloc asset.name in
@@ -1367,9 +1357,7 @@ let pp_model_internal fmt (model : model) b =
         let k, _ = Utils.get_asset_key model an in
         let ll = List.filter (fun (x : asset_item) -> not (String.equal (unloc x.name) k)) asset.values in
         Format.fprintf fmt
-          "@\ntype %a_storage is record [@\n  \
-           @[%a@]@\n\
-           ]@\n"
+          "@\ntype %a_storage is record [@\n  @[%a@]@\n]@\n"
           pp_id asset.name
           (pp_list "@\n" pp_asset_item) ll
       end
@@ -1571,26 +1559,23 @@ let pp_model_internal fmt (model : model) b =
               ) ()
           )) l *)
 
-(* function add_my_asset_col (const s : storage_type; const asset_key : string; const b : o_asset) : storage_type is
-  begin
-    const asset_val : my_asset_storage = get_force(asset_key, s.my_asset_assets);
-    if not map_mem(b.oid, s.o_asset_assets) then failwith ("key does not exist") else skip;
-    s.my_asset_assets[asset_key] := asset_val with record[col = cons(b.oid, asset_val.col)];
-  end with (s) *)
+    (* function add_my_asset_col (const s : storage_type; const asset_key : string; const b : o_asset) : storage_type is
+       begin
+        const asset_val : my_asset_storage = get_force(asset_key, s.my_asset_assets);
+        if not map_mem(b.oid, s.o_asset_assets) then failwith ("key does not exist") else skip;
+        s.my_asset_assets[asset_key] := asset_val with record[col = cons(b.oid, asset_val.col)];
+       end with (s) *)
     | UpdateAdd (an, fn) ->
-      let k, t = Utils.get_asset_key model an in
+      let _, t = Utils.get_asset_key model an in
       let ft, c = Utils.get_field_container model an fn in
       let kk, _ = Utils.get_asset_key model ft in
       let single = Utils.is_asset_single_field model ft in
-      let asset = Utils.get_asset model an in
-      let fns = asset.values |> List.map (fun (ai : asset_item) -> unloc ai.name) |> List.filter (fun x -> not (String.equal k x)) in
       Format.fprintf fmt
         "function add_%s_%s (const s : storage_type; const asset_key : %a; const b : %s) : storage_type is@\n  \
          begin@\n    \
-         const asset_val : %s = get_%s(s, asset_key);@\n    \
+         const asset_val : %s_storage = get_force(asset_key, s.%s_assets);@\n    \
          %a\
-         a.%s := cons(b.%s, asset_val.%s);@\n    \
-         s.%s_assets[asset_key] := record[%a];@\n  \
+         s.%s_assets[asset_key] := asset_val with record[%s = cons(b.%s, asset_val.%s)];@\n  \
          end with (s)@\n"
         an fn pp_btyp t ft
         an an
@@ -1604,38 +1589,27 @@ let pp_model_internal fmt (model : model) b =
              Format.fprintf fmt "s := add_%s(s, b);@\n    " ft
            | _ -> ()
         ) ()
-        fn kk fn
-        an (pp_list "; " (fun fmt fn -> Format.fprintf fmt "%s = a.%s" fn fn)) fns
+        an fn kk fn
 
     | UpdateRemove (an, fn) ->
-      let k, t = Utils.get_asset_key model an in
+      let _k, t = Utils.get_asset_key model an in
       let ft, c = Utils.get_field_container model an fn in
       let _kk, tt = Utils.get_asset_key model ft in
-      let asset = Utils.get_asset model an in
-      let fns = asset.values |> List.map (fun (ai : asset_item) -> unloc ai.name) |> List.filter (fun x -> not (String.equal k x)) in
       Format.fprintf fmt
-        "function remove_%s_%s (const s : storage_type; const a : %s; const key : %a) : storage_type is@\n  \
+        "function remove_%s_%s (const s : storage_type; const asset_key : %a; const removed_key : %a) : storage_type is@\n  \
          begin@\n    \
-         function aux (const accu : list(%a); const i : %a) : list(%a) is block { skip } with (if (key =/= i) then cons(i, accu) else accu);@\n    \
-         const asset_key : %a = a.%s;@\n    \
-         const asset_val : %s = get_%s(s, asset_key);@\n    \
+         const asset_val : %s_storage = get_force(asset_key, s.%s_assets);@\n    \
+         function aux (const accu : list(%a); const i : %a) : list(%a) is block { skip } with (if (removed_key =/= i) then cons(i, accu) else accu);@\n    \
          const new_keys : list(%a) = list_fold(aux, asset_val.%s, (nil : list(%a)));@\n    \
-         asset_val.%s := new_keys;@\n    \
-         const map_local : map(%a, %s_storage) = s.%s_assets;@\n    \
-         map_local[asset_key] := record[%a];@\n    \
-         s.%s_assets := map_local;@\n    \
+         s.%s_assets[asset_key] := asset_val with record[%s = new_keys];@\n    \
          %a  \
          end with (s)@\n"
-        an fn an pp_btyp tt
-        pp_btyp tt  pp_btyp tt pp_btyp tt
-        pp_btyp t k
+        an fn pp_btyp t pp_btyp tt
         an an
+        pp_btyp tt pp_btyp tt pp_btyp tt
         pp_btyp tt fn pp_btyp tt
-        fn
-        pp_btyp t an an
-        (pp_list "; " (fun fmt fn -> Format.fprintf fmt "%s = a.%s" fn fn)) fns
-        an
-        (pp_do_if (match c with | Partition -> true | _ -> false) (fun fmt -> Format.fprintf fmt "s := remove_%s(s, key);@\n")) ft
+        an fn
+        (pp_do_if (match c with | Partition -> true | _ -> false) (fun fmt -> Format.fprintf fmt "s := remove_%s(s, removed_key);@\n")) ft
 
     | UpdateClear (an, fn) ->
       let k, t = Utils.get_asset_key model an in
@@ -1817,9 +1791,9 @@ let pp_model_internal fmt (model : model) b =
         pp_btyp t
 
     | Nth an ->
-      let _, t = Utils.get_asset_key model an in
+      let k, t = Utils.get_asset_key model an in
       Format.fprintf fmt
-        "function nth_%s (const s : storage_type; const l : list(%a); const index : int) : %s is@\n  \
+        "function nth_%s (const s : storage_type; const l : list(%a); const index : int) : %a is@\n  \
          block {@\n    \
          function aggregate (const accu: int * option(%a); const x: %a) : int * option(%a) is@\n    \
          if accu.0 = index@\n    \
@@ -1833,14 +1807,15 @@ let pp_model_internal fmt (model : model) b =
          | None -> failwith(\"nth_%s failed\")@\n    \
          end;@\n    \
          const res : %s = get_%s(s, key);@\n  \
-         } with res@\n"
-        an pp_btyp t an
+         } with res.%s@\n"
+        an pp_btyp t pp_btyp t
         pp_btyp t pp_btyp t pp_btyp t
         pp_btyp t pp_btyp t
         pp_btyp t
         pp_btyp t pp_default (Tbuiltin t)
         an
         an an
+        k
 
     | Count an ->
       let _, t = Utils.get_asset_key model an in

@@ -1779,27 +1779,38 @@ let replace_asset_by_key (model : model) : model =
     | Ttuple l -> Ttuple (List.map for_type l)
     | _ -> t
   in
+  let to_key (mt : mterm) : mterm =
+    match mt.node, mt.type_ with
+    | Mdotasset ({type_ = Tasset an} as a, k), _ when String.equal (Utils.get_asset_key model (unloc an) |> fst) (unloc k) -> a
+    | Mget (_, _, k), _ -> k
+    | _ -> mt
+  in
   let for_mterm (mt : mterm) : mterm =
     let rec replace_get (mt : mterm) : mterm =
       match mt.node with
-      | Mget (_, _, k) -> k
-      (* | Mletin (a, b,) *)
+      (* | Mget (_, _, ({node = (Mvarlocal _ | Mvarparam _); _} as k)) -> k *)
       | _ -> map_mterm replace_get mt
     in
     let rec aux (mt : mterm) : mterm =
       match mt.node, mt.type_ with
       | Maddasset _, _ -> mt
-      | Maddfield (an, fn, c, asset), _ -> mk_mterm (Maddfield (an, fn, aux c, asset)) mt.type_
-      | Mcast (Tcontainer (Tasset _, _), Tcontainer (Tasset _, _), v), _ -> aux v
+      | Maddfield (an, fn, c, asset), _ -> mk_mterm (Maddfield (an, fn, to_key c, asset)) mt.type_
+      | Mremovefield (an, fn, c, asset), _ -> mk_mterm (Mremovefield (an, fn, to_key c, aux asset)) mt.type_
       | Mselect (an, c, a, b, l), _ -> mk_mterm (Mselect (an, aux c, a, b, l)) mt.type_
-      | Mletin (ids, a, Some t, b, o), _ ->
-        mk_mterm (Mletin (ids, aux a, Some (for_type t), (aux b), Option.map aux o)) (for_type mt.type_)
+      | Msum (an, c, a), _ -> mk_mterm (Msum (an, aux c, a)) mt.type_
+      | Mletin (l, {node = Mget (_, _, k)}, Some t, b, o), _ -> mk_mterm (Mletin (l, k, Some (for_type t), aux b, Option.map aux o)) mt.type_
+      (* | Mletin (ids, a, Some t, b, o), _ ->
+        mk_mterm (Mletin (ids, aux a, Some (for_type t), (aux b), Option.map aux o)) mt.type_ *)
       | Massets l, Tcontainer (Tasset an, _) ->
         let l = List.map aux l in
         mk_mterm (Mlitlist l) (Tlist (Tbuiltin (Utils.get_asset_key model (unloc an) |> snd)))
-      | Mvarstorecol an, Tcontainer (Tasset _, _) ->
-        mk_mterm (Mcoltokeys (unloc an)) (Tlist (Tbuiltin (Utils.get_asset_key model (unloc an) |> snd)))
       | Mdotasset ({type_ = Tasset an} as a, k), _ when String.equal (Utils.get_asset_key model (unloc an) |> fst) (unloc k) -> a
+      (* | Mdotasset ({type_ = Tasset _; node = Mget _}, _), _ -> mt
+      | Mdotasset ({type_ = Tasset an} as a, k), _ ->
+        let storevar : mterm = mk_mterm (Mvarstorecol an) (Tcontainer (Tasset an, Collection)) in
+        let cast : mterm = mk_mterm (Mcast (Tcontainer (Tasset an, Collection), Tcontainer (Tasset an, View), storevar)) (Tcontainer (Tasset an, View)) in
+        let get = mk_mterm (Mget (unloc an, cast, a)) (Tasset an) in
+        mk_mterm (Mdotasset(get, k)) mt.type_ *)
       | Masset l, Tasset an ->
         begin
           let l = List.map aux l in
@@ -1935,11 +1946,17 @@ let split_key_values (model : model) : model =
       model.storage []
   in
 
-  (* let model = map_mterm_model f model in *)
+  let rec aux (ctx : ctx_model) (mt : mterm) : mterm =
+    match mt.node with
+    | Mcast (Tcontainer (Tasset _, _), Tcontainer (Tasset _, _), v) -> aux ctx v
+    | Mvarstorecol an ->
+      mk_mterm (Mcoltokeys (unloc an)) (Tlist (Tbuiltin (Utils.get_asset_key model (unloc an) |> snd)))
+    | _ -> map_mterm (aux ctx) mt
+  in
 
   { model with
     storage = storage
-  }
+  } |> map_mterm_model aux
 
 let replace_get_on_view (model : model) : model =
   let rec is_not_varcol (a : mterm) =
