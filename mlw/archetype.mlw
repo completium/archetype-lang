@@ -51,6 +51,7 @@ module Utils
   use int.EuclideanDivision
 
   let function floor (a : (int,int)) : int
+  requires { not (snd a) = 0 }
   =
   match a with
   | (n,d) ->
@@ -61,6 +62,7 @@ module Utils
   end
 
   let function ceil (a : (int,int)) : int
+  requires { not (snd a) = 0 }
   =
   match a with
   | (n,d) ->
@@ -120,6 +122,7 @@ module Utils
      end
 
   let function rat_tez (c : (int, int)) (t : tez) : tez
+  requires { not (snd c) = 0 }
   =  div ((abs (fst c)) * t) (abs (snd c))
 
   let function abs_rat (a : (int, int)) : (int, int)
@@ -358,10 +361,18 @@ module AssetCollection
   end
 
   (* ------------------------------------------------------------------------ *)
+  predicate (==) (c1 c2 : collection) = F.(==) c1.content c2.content
+
+  (* ------------------------------------------------------------------------ *)
   let function mk (s : F.fset) : collection
   requires { key_injective s }
   ensures { F.(==) s (content result) }
+  ensures { content result = s }
   = { content = s }
+
+  (* ------------------------------------------------------------------------ *)
+  lemma mk_content: forall c.
+  (mk (c.content)) == c
 
   (* ------------------------------------------------------------------------ *)
   let function elts (c : collection) : list t
@@ -390,21 +401,13 @@ module AssetCollection
   = F.fcard c.content
 
   (* ------------------------------------------------------------------------ *)
-  predicate (==) (c1 c2 : collection) = F.(==) c1.content c2.content
-
   (* shall this be a lemma ? *)
   axiom eqEquality : forall c1 c2. c1 == c2 <-> c1 = c2
 
-  (* ------------------------------------------------------------------------ *)
-  lemma mk_content: forall c.
-  (mk (c.content)) == c
-
-  (* ------------------------------------------------------------------------ *)
-  lemma content_mk: forall s.
-  F.(==) (content (mk s)) s
 
   (* ------------------------------------------------------------------------ *)
   lemma mk_injective: forall s1 s2.
+  key_injective s1 -> key_injective s2 ->
   mk s1 == mk s2 -> F.(==) s1 s2
 
   (* ------------------------------------------------------------------------ *)
@@ -539,7 +542,7 @@ module AssetCollection
   let rec internal_set (l : list t) (k : key) (a : t) : list t
   variant { l }
   requires { M.mem a (elts c) }
-  ensures { internal_get l k = Some a }
+  ensures { internal_get result k = Some a }
   =
   match l with
   | Cons e tl ->
