@@ -1842,7 +1842,7 @@ let build_get (an : ident) v =
   let type_asset = Tasset dan in
   let type_col = Tcontainer (type_asset,Collection) in
   let type_view = Tcontainer (type_asset,View) in
-  let col : mterm  = mk_mterm (Mvarstorevar dan) type_col in
+  let col : mterm  = mk_mterm (Mvarstorecol dan) type_col in
   let cast : mterm = mk_mterm (Mcast (type_col, type_view, col)) type_view in
   mk_mterm (Mget (an, cast, v)) type_asset
 
