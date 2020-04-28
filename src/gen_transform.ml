@@ -1786,11 +1786,6 @@ let replace_asset_by_key (model : model) : model =
     | _ -> mt
   in
   let for_mterm (mt : mterm) : mterm =
-    let rec replace_get (mt : mterm) : mterm =
-      match mt.node with
-      (* | Mget (_, _, ({node = (Mvarlocal _ | Mvarparam _); _} as k)) -> k *)
-      | _ -> map_mterm replace_get mt
-    in
     let rec aux (mt : mterm) : mterm =
       match mt.node, mt.type_ with
       | Maddasset _, _ -> mt
@@ -1799,18 +1794,11 @@ let replace_asset_by_key (model : model) : model =
       | Mselect (an, c, a, b, l), _ -> mk_mterm (Mselect (an, aux c, a, b, l)) mt.type_
       | Msum (an, c, a), _ -> mk_mterm (Msum (an, aux c, a)) mt.type_
       | Mletin (l, {node = Mget (_, _, k)}, t, b, o), _ -> mk_mterm (Mletin (l, aux k, Option.map for_type t, aux b, Option.map aux o)) mt.type_
-      (* | Mletin (ids, a, Some t, b, o), _ ->
-        mk_mterm (Mletin (ids, aux a, Some (for_type t), (aux b), Option.map aux o)) mt.type_ *)
+      | Mletin (l, i, t, b, o), _ -> mk_mterm (Mletin (l, aux i, Option.map for_type t, aux b, Option.map aux o)) mt.type_
       | Massets l, Tcontainer (Tasset an, _) ->
         let l = List.map aux l in
         mk_mterm (Mlitlist l) (Tlist (Tbuiltin (Utils.get_asset_key model (unloc an) |> snd)))
       | Mdotasset ({type_ = Tasset an} as a, k), _ when String.equal (Utils.get_asset_key model (unloc an) |> fst) (unloc k) -> a
-      (* | Mdotasset ({type_ = Tasset _; node = Mget _}, _), _ -> mt
-      | Mdotasset ({type_ = Tasset an} as a, k), _ ->
-        let storevar : mterm = mk_mterm (Mvarstorecol an) (Tcontainer (Tasset an, Collection)) in
-        let cast : mterm = mk_mterm (Mcast (Tcontainer (Tasset an, Collection), Tcontainer (Tasset an, View), storevar)) (Tcontainer (Tasset an, View)) in
-        let get = mk_mterm (Mget (unloc an, cast, a)) (Tasset an) in
-        mk_mterm (Mdotasset(get, k)) mt.type_ *)
       | Masset l, Tasset an ->
         begin
           let l = List.map aux l in
@@ -1825,7 +1813,7 @@ let replace_asset_by_key (model : model) : model =
         end
       | _ -> map_mterm aux mt
     in
-    mt |> replace_get |> aux
+    mt |> aux
   in
 
   let for_function (f : function__) =
