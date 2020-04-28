@@ -1863,7 +1863,10 @@ let replace_asset_by_key (model : model) : model =
       | Mletin (l, {node = Mget (_, _, k)}, t, b, o), _ -> mk_mterm (Mletin (l, aux k, Option.map for_type t, aux b, Option.map aux o)) mt.type_
       (* | Mletin (_l, {node = Mvarlocal _v; type_ = lt }, Some (Tasset an), b, o), _ -> mk_mterm (Mletin (_l, mk_mterm (Mvarlocal _v) lt, Option.map for_type (Some (Tasset an)), aux b, Option.map aux o)) mt.type_ *)
       | Mletin (l, i, t, b, o), _ -> mk_mterm (Mletin (l, aux i, Option.map for_type t, aux b, Option.map aux o)) mt.type_
-      | Mdotasset ({type_ = Tasset an} as a, k), _ when String.equal (Utils.get_asset_key model (unloc an) |> fst) (unloc k) -> a
+      | Mdotasset ({type_ = Tasset an} as a, k), _ when String.equal (Utils.get_asset_key model (unloc an) |> fst) (unloc k) ->
+        (match a.node with
+         | Mvarlocal _ | Mvarparam _ -> a
+         | _ -> mt)
       | Massets _, _ -> mt
       | Masset l, Tasset an ->
         begin
