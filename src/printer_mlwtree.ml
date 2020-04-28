@@ -145,7 +145,7 @@ let pp_type fmt typ =
       | Tyrecord i    -> i
       | Tyasset i     -> i
       | Tyenum i      -> i
-      | Tyoption tt   -> "option " ^ (typ_str tt)
+      | Tyoption tt   -> "option " ^ (typ_str ~pparen:(true) tt)
       | Tylist tt     -> "L.list " ^ (typ_str ~pparen:(true) tt)
       | Tybool        -> "bool"
       | Tyuint        -> "uint"
@@ -448,7 +448,7 @@ let rec pp_term outer pos fmt = function
       pp_str lbl
       (pp_term outer pos) e
   | Ttoiter (a,i,e) ->
-    Format.fprintf fmt "%a.tail %a %a"
+    Format.fprintf fmt "%a.drop %a %a"
       pp_str (String.capitalize_ascii a)
       pp_str i
       (pp_with_paren (pp_term outer pos)) e

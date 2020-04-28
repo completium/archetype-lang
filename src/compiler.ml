@@ -228,9 +228,9 @@ let generate_target model =
     |> extend_loop_iter
     (* |> shallow_asset_verif *)
     (* |> split_key_values *)
-    |> replace_asset_by_key
     |> Gen_transform.assign_loop_label
     |> replace_for_to_iter
+    |> replace_asset_by_key
     |> remove_cmp_enum
     |> remove_cmp_bool
     |> generate_api_storage ~verif:true

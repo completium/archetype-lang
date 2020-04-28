@@ -668,7 +668,7 @@ module AssetCollection
   internal_nth i v.vcontent
 
   (* ------------------------------------------------------------------------ *)
-  lemma nth_singleton: forall a. nth 0 (vmk (Cons a Nil)) = Some a
+  lemma nth_singleton: forall k. nth 0 (vmk (Cons k Nil)) = Some k
 
   (* ------------------------------------------------------------------------ *)
    (* keep first i elements *)
