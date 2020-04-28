@@ -1863,9 +1863,6 @@ let replace_asset_by_key (model : model) : model =
       | Mletin (l, {node = Mget (_, _, k)}, t, b, o), _ -> mk_mterm (Mletin (l, aux k, Option.map for_type t, aux b, Option.map aux o)) mt.type_
       | Mletin (_l, {node = Mvarlocal _v; type_ = lt }, Some (Tasset an), b, o), _ -> mk_mterm (Mletin (_l, mk_mterm (Mvarlocal _v) lt, Option.map for_type (Some (Tasset an)), aux b, Option.map aux o)) mt.type_
       | Mletin (l, i, t, b, o), _ -> mk_mterm (Mletin (l, aux i, Option.map for_type t, aux b, Option.map aux o)) mt.type_
-      | Massets l, Tcontainer (Tasset an, _) ->
-        let l = List.map aux l in
-        mk_mterm (Mlitlist l) (Tlist (Tbuiltin (Utils.get_asset_key model (unloc an) |> snd)))
       | Mdotasset ({type_ = Tasset an} as a, k), _ when String.equal (Utils.get_asset_key model (unloc an) |> fst) (unloc k) -> a
       | Masset l, Tasset _an ->
         begin
@@ -1947,10 +1944,14 @@ let split_key_values (model : model) : model =
   in
 
   let rec aux (ctx : ctx_model) (mt : mterm) : mterm =
-    match mt.node with
-    | Mcast (Tcontainer (Tasset _, _), Tcontainer (Tasset _, _), v) -> aux ctx v
-    | Mvarstorecol an ->
+    match mt.node, mt.type_ with
+    | Mcast (Tcontainer (Tasset _, _), Tcontainer (Tasset _, _), v), _ -> aux ctx v
+    | Mvarstorecol an, _ ->
       mk_mterm (Mcoltokeys (unloc an)) (Tlist (Tbuiltin (Utils.get_asset_key model (unloc an) |> snd)))
+    | Massets l, Tcontainer (Tasset an, _) ->
+      let l = List.map (aux ctx) l in
+      mk_mterm (Mlitlist l) (Tlist (Tbuiltin (Utils.get_asset_key model (unloc an) |> snd)))
+
     | _ -> map_mterm (aux ctx) mt
   in
 
