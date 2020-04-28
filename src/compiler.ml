@@ -205,7 +205,6 @@ let generate_target model =
     model
     |> replace_whyml_ident
     |> process_asset_state
-    |> replace_assignfield_by_update
     |> remove_add_update
     |> merge_update
     |> remove_assign_operator
@@ -230,6 +229,7 @@ let generate_target model =
     |> Gen_transform.assign_loop_label
     |> replace_for_to_iter
     |> replace_asset_by_key
+    |> replace_assignfield_by_update
     |> replace_update_by_set
     |> remove_cmp_enum
     |> remove_cmp_bool

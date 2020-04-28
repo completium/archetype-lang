@@ -11,7 +11,6 @@ asset asset1 identified by id1 {
 
 action exec (k : pkey of asset1) {
   effect {
-    var a1 : asset1 = { id1 = k; col = []};
-    asset1.add(a1)
+    asset1.add({ id1 = k; col = []})
   }
 }

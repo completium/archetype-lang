@@ -1838,10 +1838,15 @@ let mk_nth_asset asset = Dfun {
   }
 
 let mk_set_sum_ensures m a =
+  let exists_asset body =
+    Texists ([["asset"],Tyasset a],
+             Tand (
+              Teq(Tyint, Tget (a,mk_ac a, Tvar "asset_id"),Tsome (Tvar "asset")),
+              body)) in
   List.fold_left (fun acc idx ->
       acc @ [{
           id = "set_" ^ a ^ "_sum_post";
-          form = Teq (Tyint,
+          form = exists_asset (Teq (Tyint,
                       mk_sum_from_col a idx (mk_ac_old a),
                       Tplus (Tyint,
                              Tminus (Tyint,
@@ -1850,7 +1855,7 @@ let mk_set_sum_ensures m a =
                                           [Tvar "new_asset"])),
                              Tapp(
                                Tvar (mk_get_sum_value_id a idx),
-                               [Tvar "old_asset"])))
+                               [Tvar "asset"]))))
         }]) [] (M.Utils.get_sum_idxs m a)
 
 let mk_set_count_ensures m a =
@@ -1879,8 +1884,7 @@ let mk_set_ensures m n key fields =
                           [Tvar ("new_asset")])) in
              Tmatch (Tget (n,
                            mk_ac n,
-                           Tdoti ("old_asset",
-                           key)),[
+                           Tvar "asset_id"),[
                Tpsome "e",eq;
                Twild, Tfalse
              ])
@@ -1893,20 +1897,20 @@ let mk_set_asset m key = function
   | Drecord (asset, fields) ->  Dfun {
       name = "set_" ^ asset;
       logic = NoMod;
-      args = ["old_asset", Tyasset asset; "new_asset", Tyasset asset];
+      args = ["asset_id", Tykey; "new_asset", Tyasset asset];
       returns = Tyunit;
       raises = [ Timpl (Texn Enotfound,
-                        mk_not_found_cond `Old asset (Tdoti ("old_asset",key)))];
+                        mk_not_found_cond `Old asset (Tvar "asset_id"))];
       variants = [];
       requires = mk_set_asset_precond m ("set_" ^ asset) asset "new_asset";
       ensures = mk_set_ensures m asset key fields;
-      body = Tif (mk_not_found_cond `Curr asset (Tdoti ("old_asset",key)),
+      body = Tif (mk_not_found_cond `Curr asset (Tvar "asset_id"),
                   Traise Enotfound,
                   Some (
                     Tassign (mk_ac asset,
                              Tset (asset,
                                    mk_ac asset,
-                                   Tdoti ("old_asset",key),
+                                   Tvar "asset_id",
                                    Tvar ("new_asset")))
                   ))
     }
@@ -2268,7 +2272,8 @@ let mk_add_field_ensures m partition a ak field prefix adda elem =
   let exists_asset body =
     Texists ([["asset"],Tyasset a],
              Tand (
-             Teq(Tyint, Tvar "asset_id",Tdoti("asset",ak)), body)) in
+              Teq(Tyint, Tget (a,mk_ac a, Tvar "asset_id"),Tsome (Tvar "asset")),
+              body)) in
   let add_field_ensures = [
     { id   = prefix ^ "_field_post1";
       form = exists_asset

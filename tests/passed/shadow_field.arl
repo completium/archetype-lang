@@ -12,7 +12,6 @@ action exec (k : pkey of myasset) {
   specification {
     shadow effect {
       myasset.update(k, {s += 1});
-      m.s += 1
     }
     postcondition s1 {
       forall a in myasset, a.s = 2
@@ -22,8 +21,7 @@ action exec (k : pkey of myasset) {
     f1: not (myasset.contains(k));
   }
   effect {
-    var m : myasset = {id = k};
-    myasset.add(m)
+    myasset.add({id = k})
   }
 }
 
