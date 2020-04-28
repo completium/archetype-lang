@@ -1798,7 +1798,7 @@ let replace_asset_by_key (model : model) : model =
       | Mremovefield (an, fn, c, asset), _ -> mk_mterm (Mremovefield (an, fn, to_key c, aux asset)) mt.type_
       | Mselect (an, c, a, b, l), _ -> mk_mterm (Mselect (an, aux c, a, b, l)) mt.type_
       | Msum (an, c, a), _ -> mk_mterm (Msum (an, aux c, a)) mt.type_
-      | Mletin (l, {node = Mget (_, _, k)}, Some t, b, o), _ -> mk_mterm (Mletin (l, k, Some (for_type t), aux b, Option.map aux o)) mt.type_
+      | Mletin (l, {node = Mget (_, _, k)}, t, b, o), _ -> mk_mterm (Mletin (l, aux k, Option.map for_type t, aux b, Option.map aux o)) mt.type_
       (* | Mletin (ids, a, Some t, b, o), _ ->
         mk_mterm (Mletin (ids, aux a, Some (for_type t), (aux b), Option.map aux o)) mt.type_ *)
       | Massets l, Tcontainer (Tasset an, _) ->
@@ -1842,63 +1842,6 @@ let replace_asset_by_key (model : model) : model =
   { model with functions = List.map for_function model.functions }
 
 let split_key_values (model : model) : model =
-
-  (* let rec f (ctx : ctx_model) (x : mterm) : mterm =
-     match x.node with
-     | Mselect (an, col, lambda_args, lambda_body, args) ->
-      let col = f ctx col in
-      let lambda_body = f ctx lambda_body in
-      let args = List.map (f ctx) args in
-      let _k, t = Utils.get_asset_key model an in
-      { x with node = Mselect (an, col, lambda_args, lambda_body, args); type_ = Tcontainer (Tbuiltin t, Collection)}
-
-     | Msort (an, col, l) ->
-      let col = f ctx col in
-      let _k, t = Utils.get_asset_key model an in
-      { x with node = Msort (an, col, l); type_ = Tcontainer (Tbuiltin t, Collection)}
-
-     | Mhead (an, col, idx) ->
-      let col = f ctx col in
-      let idx = f ctx idx in
-      let _k, t = Utils.get_asset_key model an in
-      { x with node = Mhead (an, col, idx); type_ = Tcontainer (Tbuiltin t, Collection)}
-
-     | Mtail (an, col, idx) ->
-      let col = f ctx col in
-      let idx = f ctx idx in
-      let _k, t = Utils.get_asset_key model an in
-      { x with node = Mtail (an, col, idx); type_ = Tcontainer (Tbuiltin t, Collection)}
-
-     | Mletin (ids, init, _, body, o) ->
-      let init = f ctx init in
-      let body = f ctx body in
-      { x with node = Mletin (ids, init, Some (init.type_), body, o); type_ = body.type_}
-
-     | Mdotasset (e, i) ->
-      let asset = Utils.get_asset_type e in
-      let containers = Utils.get_asset_containers model asset in
-      if List.exists (fun (pi, _pt, _pd) ->
-          compare (i |> unloc) pi = 0) containers then
-        let rec get_container_type = function
-          | (pi,pt,_pd)::_tl
-            when compare (i |> unloc) pi = 0 -> pt
-          | _r::tl -> get_container_type tl
-          | [] -> assert false in
-        let ty = get_container_type containers in
-        let pa = Utils.dest_container ty in
-        mk_mterm (Mshallow (pa, { x with node = Mdotasset (f ctx e, i) })) ty
-      else
-        { x with node = Mdotasset (f ctx e, i) }
-
-     | Mcast ((Tcontainer ((Tasset _), _)), (Tcontainer ((Tasset _), View)), x) -> f ctx x
-
-     | Mvarstorecol an ->
-      (
-        let _k, t = Utils.get_asset_key model (unloc an) in
-        { x with node = Mcoltokeys (unloc an); type_ = Tcontainer (Tbuiltin t, Collection) }
-      )
-     | _ -> map_mterm (f ctx) x
-     in *)
 
   let asset_assets an = an ^ "_assets" in
 

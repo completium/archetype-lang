@@ -809,6 +809,13 @@ let pp_model_internal fmt (model : model) b =
 
     | Mupdate (an, k, l)   ->
       (* let index : int = get_preds_index_gen Printer_model_tools.cmp_update env.update_preds (List.map (fun (x, y, z) -> (unloc x, y, z)) l) in *)
+      let compute_ (k : mterm) : mterm =
+        begin
+          match k.node with
+          | Mget (_, _, k) -> k
+          | _ -> k
+        end
+      in
       let _, t = Utils.get_asset_key model an in
       let pp fmt (an, k, l) =
         let asset_key = "key_" ^ an ^ "_" in
@@ -817,7 +824,7 @@ let pp_model_internal fmt (model : model) b =
           "const %s : %a = %a;@\n\
            const %s : %s_storage = get_force(%s, %s.%s_assets);@\n\
            %s.%s_assets[%s] := %s%a"
-          asset_key pp_btyp t f k
+          asset_key pp_btyp t f (compute_ k)
           asset_val an asset_key const_storage an
           const_storage an asset_key asset_val
           (fun fmt _ ->
@@ -841,13 +848,6 @@ let pp_model_internal fmt (model : model) b =
                     )
                  ) l
           ) ()
-
-
-      (* Format.fprintf fmt "%s := update_%a_%i (%s, %a)"
-         const_storage
-         pp_str an index
-         const_storage
-         f k *)
       in
       pp fmt (an, k, l)
 
