@@ -14,14 +14,12 @@ asset my_asset identified by id {
 action exec () {
   effect {
     let asset0_id = "id0" in
-    let asset0_var : asset_0 = { id0 = asset0_id; value0 = 0 } in
 
     let my_asset_id = "id" in
-    let my_asset_var : my_asset = { id = my_asset_id; value = 0; col = [] } in
-    my_asset.add(my_asset_var);
+    my_asset.add({ id = my_asset_id; value = 0; col = [] });
     my_asset.remove(my_asset_id);
-    my_asset_var.col.add(asset0_var);
-    my_asset_var.col.remove(asset0_id);
+    my_asset.get(my_asset_id).col.add({ id0 = asset0_id; value0 = 0 });
+    my_asset.get(my_asset_id).col.remove(asset0_id);
     my_asset.update("key", {value += 2});
     my_asset.addupdate("key", {value += 3});
     my_asset.removeif(value % 2 = 0);
