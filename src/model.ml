@@ -301,6 +301,7 @@ type ('id, 'term) mterm_node  =
   | Msettoiterate     of 'term
   (* formula asset collection methods *)
   | Mapifget          of ident * 'term * 'term (* asset_name * asset collection * value *)
+  | Mapifgetexists    of ident * 'term * 'term (* asset_name * asset collection * value *)
   | Mapifsubsetof     of ident * 'term * 'term
   | Mapifisempty      of ident * 'term
   | Mapifselect       of ident * 'term * (ident * type_) list * 'term * 'term list
@@ -1117,6 +1118,7 @@ let cmp_mterm_node
     | Msettoiterate e1, Msettoiterate e2                                               -> cmp e1 e2
     (* formula asset collection methods *)
     | Mapifget (a1, c1, k1), Mapifget (a2, c2, k2)                                     -> cmp_ident a1 a2 && cmp c1 c2 && cmp k1 k2
+    | Mapifgetexists (a1, c1, k1), Mapifgetexists (a2, c2, k2)                         -> cmp_ident a1 a2 && cmp c1 c2 && cmp k1 k2
     | Mapifsubsetof (an1, c1, i1), Mapifsubsetof (an2, c2, i2)                         -> cmp_ident an1 an2 && cmp c1 c2 && cmp i1 i2
     | Mapifisempty (l1, r1), Mapifisempty (l2, r2)                                     -> cmp_ident l1 l2 && cmp r1 r2
     | Mapifselect (an1, c1, la1, lb1, a1), Mapifselect (an2, c2, la2, lb2, a2)         -> cmp_ident an1 an2 && cmp c1 c2 && List.for_all2 (fun (i1, t1) (i2, t2) -> cmp_ident i1 i2 && cmp_type t1 t2) la1 la2 && cmp lb1 lb2 && List.for_all2 cmp a1 a2
@@ -1406,6 +1408,7 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Msettoiterate e                -> Msettoiterate (f e)
   (* formula asset collection methods *)
   | Mapifget (an, c, k)            -> Mapifget      (fi an, f c, f k)
+  | Mapifgetexists (an, c, k)      -> Mapifgetexists(fi an, f c, f k)
   | Mapifsubsetof (an, c, i)       -> Mapifsubsetof (fi an, f c, f i)
   | Mapifisempty (an, r)           -> Mapifisempty  (fi an, f r)
   | Mapifselect (an, c, la, lb, a) -> Mapifselect   (fi an, f c, List.map (fun (i, t) -> (fi i, ft t)) la, f lb, List.map f a)
@@ -1730,6 +1733,7 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Msettoiterate e                       -> f accu e
   (* formula asset collection methods *)
   | Mapifget (_, c, k)                    -> f (f accu c) k
+  | Mapifgetexists (_, c, k)              -> f (f accu c) k
   | Mapifsubsetof (_, c, i)               -> f (f accu c) i
   | Mapifisempty  (_, r)                  -> f accu r
   | Mapifselect (_, c, _, lb, a)          -> List.fold_left (fun accu x -> f accu x) (f (f accu c) lb) a
@@ -2533,6 +2537,11 @@ let fold_map_term
     let ce, ca = f accu c in
     let ke, ka = f ca k in
     g (Mapifget (a, ce, ke)), ka
+
+  | Mapifgetexists (a, c, k) ->
+    let ce, ca = f accu c in
+    let ke, ka = f ca k in
+    g (Mapifgetexists (a, ce, ke)), ka
 
   | Mapifsubsetof (an, c, i) ->
     let ce, ca = f accu c in

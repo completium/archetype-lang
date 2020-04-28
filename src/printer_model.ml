@@ -1023,6 +1023,15 @@ let pp_mterm fmt (mt : mterm) =
       in
       pp fmt (a, c, k)
 
+    | Mapifgetexists (a, c, k) ->
+      let pp fmt (a, c, k) =
+        Format.fprintf fmt "apifgetexists_%a (%a, %a)"
+          pp_str a
+          f c
+          f k
+      in
+      pp fmt (a, c, k)
+
     | Mapifsubsetof (an, c, i) ->
       let pp fmt (an, c, i) =
         Format.fprintf fmt "apifsubset_%a (%a, %a)"

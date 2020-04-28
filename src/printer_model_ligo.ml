@@ -1267,6 +1267,7 @@ let pp_model_internal fmt (model : model) b =
     (* formula asset collection methods *)
 
     | Mapifget       _ -> emit_error (UnsupportedTerm ("apifget"))
+    | Mapifgetexists _ -> emit_error (UnsupportedTerm ("apifgetexists"))
     | Mapifsubsetof  _ -> emit_error (UnsupportedTerm ("apifsubsetof"))
     | Mapifisempty   _ -> emit_error (UnsupportedTerm ("apifisempty"))
     | Mapifselect    _ -> emit_error (UnsupportedTerm ("apifselect"))

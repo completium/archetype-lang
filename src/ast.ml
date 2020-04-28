@@ -125,6 +125,7 @@ type const =
   (* function *)
   | Cisempty
   | Cget
+  | Cgetexists
   | Cadd
   | Cremove
   | Cremoveif

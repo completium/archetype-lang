@@ -171,6 +171,7 @@ let to_const = function
   (* function *)
   | Cisempty        -> "isempty"
   | Cget            -> "get"
+  | Cgetexists      -> "getexists"
   | Cadd            -> "add"
   | Cremove         -> "remove"
   | Cremoveif       -> "removeif"

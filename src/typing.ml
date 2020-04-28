@@ -651,6 +651,7 @@ let methods : (string * method_) list =
   in [
     ("isempty"     , mk M.Cisempty      `Pure   `Total   (`Fixed [              ], Some (`T M.vtbool)));
     ("get"         , mk M.Cget          `Pure   `Partial (`Fixed [`Pk           ], Some `The));
+    ("getexists"   , mk M.Cgetexists    `Pure   `Total   (`Fixed [`Pk           ], Some `The));
     ("add"         , mk M.Cadd          `Effect `Total   (`Fixed [`The          ], None));
     ("remove"      , mk M.Cremove       `Effect `Total   (`Fixed [`Pk           ], None));
     ("removeif"    , mk M.Cremoveif     `Effect `Total   (`Fixed [`Pred true    ], None));

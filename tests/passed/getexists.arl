@@ -1,0 +1,21 @@
+archetype getexists
+
+asset owner identified by addr {
+    addr : address;
+    v : int;
+}
+
+action consume (ow : address, qty : int) {
+    specification {
+        postcondition p0 {
+            let after_o = owner.getexists(ow) in
+            after_o.v = after_o.v
+            }
+        }
+    effect {
+    	var o = owner.get(ow);
+      for:loop a in owner do
+        require (true)
+      done
+    }
+}
