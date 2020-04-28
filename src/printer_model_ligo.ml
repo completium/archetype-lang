@@ -565,8 +565,13 @@ let pp_model_internal fmt (model : model) b =
         pp_type mtt.type_
 
     | Mlitlist l ->
-      Format.fprintf fmt "[%a]"
-        (pp_list "; " f) l
+      begin
+        match l with
+        | [] -> Format.fprintf fmt "(nil : %a)" pp_type mtt.type_
+        | _ ->
+          Format.fprintf fmt "[%a]"
+            (pp_list "; " f) l
+      end
 
     | Mlitmap l ->
       Format.fprintf fmt "(map [%a] : %a)"
