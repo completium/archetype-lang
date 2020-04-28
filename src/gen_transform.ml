@@ -1837,6 +1837,24 @@ let process_internal_string (model : model) : model =
   in
   Model.map_mterm_model aux model
 
+let build_get (an : ident) v =
+  let dan = dumloc an in
+  let type_asset = Tasset dan in
+  let type_col = Tcontainer (type_asset,Collection) in
+  let type_view = Tcontainer (type_asset,View) in
+  let col : mterm  = mk_mterm (Mvarstorevar dan) type_col in
+  let cast : mterm = mk_mterm (Mcast (type_col, type_view, col)) type_view in
+  mk_mterm (Mget (an, cast, v)) type_asset
+
+let change_type_of_nth (model : model) : model =
+  let rec aux ctx (mt : mterm) : mterm =
+    match mt.node with
+    | Mnth (an, c, i) ->
+      build_get an (mk_mterm (Mnth (an, aux ctx c, aux ctx i)) (Tbuiltin (Utils.get_asset_key model an |> snd)))
+    | _ -> map_mterm (aux ctx) mt
+  in
+  map_mterm_model aux model
+
 let replace_asset_by_key (model : model) : model =
   let rec for_type (t : type_) : type_ =
     match t with
@@ -1870,12 +1888,7 @@ let replace_asset_by_key (model : model) : model =
               then a
               else
                 begin
-                  let type_asset = Tasset an in
-                  let type_col = Tcontainer (type_asset,Collection) in
-                  let type_view = Tcontainer (type_asset,View) in
-                  let col : mterm  = mk_mterm (Mvarstorevar an) type_col in
-                  let cast : mterm = mk_mterm (Mcast (type_col, type_view, col)) type_view in
-                  let lhs : mterm = mk_mterm (Mget (unloc an, cast, a)) type_asset in
+                  let lhs : mterm = build_get (unloc an) a in
                   {mt with node = Mdotasset (lhs, k)}
                 end
             end
@@ -1911,6 +1924,7 @@ let replace_asset_by_key (model : model) : model =
     in
     { f with node = for_function_node f.node }
   in
+  let model = change_type_of_nth model in
   { model with functions = List.map for_function model.functions }
 
 
