@@ -10,10 +10,10 @@ asset certificate identified by id {
   hash : string;
 }
 
-action add (c : certificate) {
+action add (cid : string, cdescription : string, cformula : string, curl : string, chash : string) {
   called by admin
 
   effect {
-    certificate.add(c)
+    certificate.add({cid; cdescription; cformula; curl; chash})
   }
 }

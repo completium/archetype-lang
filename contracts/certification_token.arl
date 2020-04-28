@@ -42,15 +42,13 @@ action register_learner (do_add : bool) {
   }
 }
 
-action register_learners (learners : learner collection, do_add : bool) {
+action register_learners (llid : role, lltokens : int, do_add : bool) {
   effect {
     var i = institution.get(caller);
-    for l in learners do
-	    if do_add then
-        i.ilearners.add(l)
-	    else
-        i.ilearners.remove(l.lid)
-    done
+    if do_add then
+       i.ilearners.add({llid; lltokens})
+    else
+       i.ilearners.remove(llid)
   }
 }
 
@@ -84,27 +82,24 @@ action register_certifier (do_add : bool) {
   }
 }
 
-action certify(certified : certification collection) {
+action certify (
+  cert_cid : string,
+  cert_cdate : date,
+  cert_ccer : string,
+  cert_clea : pkey of learner,
+  cert_cins : pkey of institution,
+  cert_ccertifier: pkey of certifier) {
   require {
     r1: certifier.contains(caller);
   }
   effect {
-    for c in certified do
-
-       if (not institution.get(c.cins).ilearners.contains(c.clea)) then
-        (* fail ("learner is not in institution"); *)
-        require(false); (* TODO *)
-
-       if (c.ccertifier <> caller) then
-       (* fail ("ccertifier must be caller value"); *)
-        require(false); (* TODO *)
-
-       certification.add(c);
-
-       learner.update (c.clea, {ltokens += dtkl});
-       institution.update (c.cins, {itokens += dtki})
-
-    done
+    if (not institution.get(cert_cins).ilearners.contains(cert_clea)) then
+      fail ("learner is not in institution");
+    if (cert_ccertifier <> caller) then
+      fail ("ccertifier must be caller value");
+    certification.add({cert_cid; cert_cdate; cert_ccer; cert_clea; cert_cins; cert_ccertifier});
+    learner.update (cert_clea, {ltokens += dtkl});
+    institution.update (cert_cins, {itokens += dtki})
   }
 }
 

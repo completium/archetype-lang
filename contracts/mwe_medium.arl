@@ -15,16 +15,16 @@ asset owner identified by addr {
     miles : mile partition;
 }
 
-action add (ow : address, newmile : mile) {
+action add (ow : address, newmile_id : string, newmile_expiration : date, newmile_quantity : int) {
     called by admin
 	failif {
-	    f1: mile.contains(newmile.id)
+	    f1: mile.contains(newmile_id)
 	}
 	effect {
 	    if owner.contains(ow) then
-	        owner.get(ow).miles.add(newmile)
+	        owner.get(ow).miles.add({newmile_id; newmile_expiration; newmile_quantity})
 	    else
-	        owner.add({ addr = ow; miles = [newmile] })
+	        owner.add({ addr = ow; miles = [{newmile_id; newmile_expiration; newmile_quantity}] })
 	}
 }
 

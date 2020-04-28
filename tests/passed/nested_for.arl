@@ -5,10 +5,10 @@ asset myasset {
   v : string;
 }
 
-action exec (col : myasset collection) {
+action exec () {
   effect {
-    for c in col do
-      for d in col do
+    for c in myasset do
+      for d in myasset do
         require(c.v = d.v)
       done
     done

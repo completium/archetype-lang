@@ -28,12 +28,10 @@ asset vote {
   i0 : vcount > 0;
 }
 
-action add_voters (addrs : voter collection) {
+action add_voter (voter_id : pkey of voter) {
   called by admin
   effect {
-    for vter in addrs do
-      voter.add(vter)
-    done
+    voter.add({voter_id})
   }
 }
 

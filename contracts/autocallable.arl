@@ -202,9 +202,10 @@ action pay_note () {
    }
 }
 
-action add_fixing (f[%signedby (oracle)%] : fixing) {
+(* action add_fixing (f[%signedby (oracle)%] : fixing) { *)
+action add_fixing (ffobservation : date, fbac : rational, fsg : rational, fubs : rational) {
   effect {
-    fixing.add(f)
+    fixing.add({ffobservation; fbac; fsg; fubs})
   }
 }
 

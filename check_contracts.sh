@@ -92,7 +92,6 @@ auction_no_memory.arl \
 auction_zilliqa.arl \
 auction.arl \
 bond.arl \
-c3n.arl \
 certificate_generator.arl \
 certification_token.arl \
 clause_io_acceptance_of_delivery.arl \
@@ -119,6 +118,7 @@ zero_coupon_bond.arl \
 REMAINED_VERIF_CONTRACTS="\
 animal_tracking.arl \
 autocallable.arl \
+c3n.arl \
 escrow_basic.arl \
 escrow_simple.arl \
 fizzy.arl \

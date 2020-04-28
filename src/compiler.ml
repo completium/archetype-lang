@@ -93,8 +93,6 @@ let generate_target_pt (pt : ParseTree.archetype) : ParseTree.archetype =
 
 let generate_model            = Gen_model.to_model
 let generate_storage          = Gen_storage.generate_storage
-let shallow_asset             = Gen_shallow_asset.shallow_asset Gen_shallow_asset.Exec
-let shallow_asset_verif       = Gen_shallow_asset.shallow_asset Gen_shallow_asset.Verif
 let remove_side_effect        = Gen_reduce.reduce
 let generate_api_storage      = Gen_api_storage.generate_api_storage
 
@@ -118,10 +116,10 @@ let generate_target model =
     |> raise_if_error post_model_error prune_properties
     |> replace_declvar_by_letin
     |> cont !Options.opt_aes add_explicit_sort
-    |> cont !Options.opt_sa  shallow_asset
     |> cont !Options.opt_skv split_key_values
     |> cont !Options.opt_nse remove_side_effect
     |> cont !Options.opt_evi eval_variable_initial_value
+    |> cont !Options.opt_d check_if_asset_in_function
     |> generate_api_storage
     |> output
 
@@ -135,6 +133,7 @@ let generate_target model =
     |> remove_add_update
     |> merge_update
     |> remove_assign_operator
+    |> extract_item_collection_from_add_asset
     (* |> replace_update_by_set *)
     |> process_internal_string
     |> remove_rational
@@ -144,16 +143,17 @@ let generate_target model =
     |> generate_storage
     |> replace_declvar_by_letin
     |> remove_enum_matchwith
-    |> remove_letin_from_expr
-    |> remove_fun_dotasset
     |> replace_lit_address_by_role
     |> remove_label
     |> flat_sequence
     |> remove_cmp_bool
-    |> shallow_asset
+    (* |> shallow_asset *)
+    |> replace_asset_by_key
     |> split_key_values
     |> remove_duplicate_key
     |> Gen_transform.assign_loop_label
+    |> remove_letin_from_expr
+    |> remove_fun_dotasset
     |> generate_api_storage
     |> output
 
@@ -178,7 +178,7 @@ let generate_target model =
     |> remove_label
     |> flat_sequence
     |> remove_cmp_bool
-    |> shallow_asset
+    |> replace_asset_by_key
     |> split_key_values
     |> Gen_transform.assign_loop_label
     |> generate_api_storage
@@ -195,7 +195,7 @@ let generate_target model =
     |> flat_sequence
     |> remove_cmp_bool
     |> process_single_field_storage
-    |> shallow_asset
+    |> replace_asset_by_key
     |> split_key_values
     |> remove_side_effect
     |> generate_api_storage
@@ -228,6 +228,7 @@ let generate_target model =
     |> extend_loop_iter
     (* |> shallow_asset_verif *)
     (* |> split_key_values *)
+    |> replace_asset_by_key
     |> Gen_transform.assign_loop_label
     |> replace_for_to_iter
     |> remove_cmp_enum
@@ -309,8 +310,6 @@ let main () =
       "--typed", Arg.Set Options.opt_all_parenthesis, " Same as -ap";
       "-ws", Arg.Set Options.opt_ws, " With storage";
       "--with-storage", Arg.Set Options.opt_ws, " Same as -ws";
-      "-sa", Arg.Set Options.opt_sa, " Transform to shallow asset";
-      "--shallow-asset", Arg.Set Options.opt_sa, " Same as -sa";
       "-skv", Arg.Set Options.opt_skv, " Split key value of collection of asset";
       "--split-key-values", Arg.Set Options.opt_skv, " Same as -skv";
       "-nse", Arg.Set Options.opt_nse, " Transform to no side effect";
@@ -364,6 +363,7 @@ let main () =
       "--raw", Arg.Set Options.opt_raw, " Same as -r";
       "-ry", Arg.Set Options.opt_raw_whytree, " Print raw model tree";
       "--raw-whytree", Arg.Set Options.opt_raw_whytree, " Same as -r";
+      "-d", Arg.Set Options.opt_d, " Nothing";
       "-json", Arg.Set Options.opt_json, " Print JSON format";
       "-V", Arg.String (fun s -> Options.add_vids s), "<id> process specication identifiers";
       "-v", Arg.Unit (fun () -> print_version ()), " Show version number and exit";
@@ -375,26 +375,6 @@ let main () =
       "Available options:";
     ]  in
 
-  let check_flags_consistency () =
-    match !Options.target with
-    | None -> ()
-    | _ ->
-      if !Options.opt_nse
-      then Format.printf "Error: side effect removing is not compatible with language: %a.@\n"
-          Options.pp_target_lang !Options.target;
-
-      if !Options.opt_sa
-      then Format.printf "Error: asset shallowing is not compatible with language: %a.@\n"
-          Options.pp_target_lang !Options.target;
-
-      if !Options.opt_skv
-      then Format.printf "Error: key values spliting of asset collection is not compatible with language: %a.@\n"
-          Options.pp_target_lang !Options.target;
-
-      if !Options.opt_nse || !Options.opt_sa || !Options.opt_skv
-      then exit 1
-  in
-
   let ofilename = ref "" in
   let ochannel : in_channel option ref = ref None  in
   Arg.parse arg_list (fun s -> (ofilename := s;
@@ -405,8 +385,6 @@ let main () =
      List.iter (fun x -> Format.printf "%s@\n" x) !Options.opt_vids;
      exit 1
      ); *)
-
-  check_flags_consistency();
 
   let filename, channel, dispose =
     match !ochannel with

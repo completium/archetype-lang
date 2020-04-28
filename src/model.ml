@@ -204,7 +204,7 @@ type ('id, 'term) mterm_node  =
   | Muminus           of 'term
   (* asset api effect *)
   | Maddasset         of ident * 'term
-  | Maddfield         of ident * ident * 'term * 'term (* asset_name * field_name * asset instance * item * shalow values*)
+  | Maddfield         of ident * ident * 'term * 'term (* asset_name * field_name * asset instance * item *)
   | Mremoveasset      of ident * 'term
   | Mremovefield      of ident * ident * 'term * 'term
   | Mclearasset       of ident

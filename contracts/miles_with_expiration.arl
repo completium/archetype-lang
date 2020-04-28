@@ -17,22 +17,22 @@ asset owner identified by addr {
   miles : mile partition (* injective (owner x mile) *)
 }
 
-action add (ow : address, newmile : mile) {
+action add (ow : address, newmile_id : string, newmile_amount : int, newmile_expiration : date) {
    called by admin
 
    require {
-     c1 : newmile.amount > 0;
+     c1 : newmile_amount > 0;
    }
 
    failif {
-     c2 : mile.contains(newmile.id);
+     c2 : mile.contains(newmile_id);
    }
 
    effect {
      if owner.contains(ow) then
-      owner.get(ow).miles.add (newmile)
+      owner.get(ow).miles.add ({newmile_id; newmile_amount; newmile_expiration})
      else
-      owner.add ({ addr = ow; miles = [newmile] })
+      owner.add ({ addr = ow; miles = [{newmile_id; newmile_amount; newmile_expiration}] })
    }
 }
 

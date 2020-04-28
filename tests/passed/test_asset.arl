@@ -34,8 +34,9 @@ with {
   { @tata; 8; false }
 }
 
-action exec (a : my_asset_all) {
+action exec () {
   effect {
+    var a = my_asset_all.get(@toto);
     require(a.b)
   }
 }

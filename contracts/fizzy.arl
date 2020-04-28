@@ -25,14 +25,14 @@ asset[@add creator (none)] flight identified by id {
   insurances : insurance partition;
 }
 
-action addflightinsurance (fi : string, i : insurance) {
+action addflightinsurance (fi : string, iproductid : string, ilimit : date, ipremium : tez, iindemnity : tez, iproduct : string, istat : status) {
     called by creator
 
     effect {
       if (not flight.contains (fi)) then
       flight.add({ id = fi; insurances = [] });
       let f = flight.get(fi) in
-      f.insurances.add(i)
+      f.insurances.add({iproductid; ilimit; ipremium; iindemnity; iproduct; istat})
     }
 }
 

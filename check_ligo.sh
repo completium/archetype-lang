@@ -104,6 +104,7 @@ if [ ${NB_ERR} -eq 0 ]; then
 else
     echo -e "\033[31mret: ${NB_ERR_RET} \033[0m"
     echo -e "\033[31mligo: ${NB_ERR_LIGO} \033[0m"
+    echo -e "\033[31mligo storage: ${NB_ERR_LIGO_STORAGE} \033[0m"
     echo -e "\033[31merrors: ${NB_ERR} \033[0m"
     RET=1
 fi

@@ -49,7 +49,6 @@ let opt_nr    = ref false
 let opt_ndd   = ref false
 let opt_ne    = ref false
 let opt_rfd   = ref false
-let opt_sa    = ref false
 let opt_skv   = ref false
 let opt_ptc   = ref false
 let opt_m     = ref false
@@ -61,6 +60,7 @@ let opt_ru    = ref false
 let opt_mu    = ref false
 let opt_evi   = ref false
 let opt_aes   = ref false
+let opt_d     = ref false
 let opt_raw_whytree = ref false
 let opt_caller = ref ""
 
