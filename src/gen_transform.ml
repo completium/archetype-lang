@@ -851,11 +851,77 @@ let remove_enum_matchwith (model : model) : model =
       node = process_node f.node;
     }
   in
+
+  let remove_enum model =
+    let rec for_type t =
+      match t with
+      | Tenum _ -> Tbuiltin Bint
+      | _ -> map_type for_type t
+    in
+
+    let for_mterm (mt : mterm) : mterm =
+      let rec aux (mt : mterm) : mterm =
+        {
+          mt with
+          node = (map_term_node_internal id id for_type) aux mt.node;
+          type_ = for_type mt.type_;
+        }
+      in
+      aux mt
+    in
+
+    let for_functions f =
+      let for_fs (fs : function_struct) =
+        { fs with
+          args = List.map (fun ((a, b, c) : argument) -> a, for_type b, Option.map for_mterm c ) fs.args;
+          body = for_mterm fs.body;
+        }
+      in
+      let for_fnode (node : function_node) : function_node =
+        match node with
+        | Function (fs, type_) -> Function (for_fs fs, for_type type_)
+        | Entry fs -> Entry (for_fs fs)
+      in
+      { f with
+        node = for_fnode f.node;
+      }
+    in
+
+    let for_storage_item (si : storage_item) : storage_item =
+      { si with
+        typ     = for_type si.typ;
+        default = for_mterm si.default;
+      }
+    in
+
+    let for_decl (d : decl_node) : decl_node =
+      match d with
+      | Dvar v -> Dvar {v with default = Option.map for_mterm v.default;}
+      | Dasset a -> Dasset { a with
+                             values = List.map
+                                 (fun (ai : asset_item) ->
+                                    { ai with
+                                      type_ = for_type ai.type_;
+                                      default = Option.map for_mterm ai.default
+                                    }) a.values;
+                             init = List.map for_mterm a.init}
+      | _ -> d
+    in
+
+    { model with
+      functions = List.map for_functions model.functions;
+      storage = List.map for_storage_item model.storage;
+      decls = List.map for_decl model.decls;
+    }
+  in
+
+
   { model with
     decls = process_decls model.decls;
     functions = List.map process_functions model.functions;
   }
   |> map_mterm_model process_mterm
+  |> remove_enum
 
 let remove_cmp_bool (model : model) : model =
   let rec aux c (mt : mterm) : mterm =
