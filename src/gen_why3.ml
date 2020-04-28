@@ -1837,16 +1837,17 @@ let mk_nth_asset asset = Dfun {
       ])
   }
 
-let mk_set_sum_ensures m a =
-  let exists_asset body =
+let exists_asset a body =
     Texists ([["asset"],Tyasset a],
              Tand (
               Teq(Tyint, Tget (a,mk_ac a, Tvar "asset_id"),Tsome (Tvar "asset")),
-              body)) in
+              body))
+
+let mk_set_sum_ensures m a =
   List.fold_left (fun acc idx ->
       acc @ [{
           id = "set_" ^ a ^ "_sum_post";
-          form = exists_asset (Teq (Tyint,
+          form = exists_asset a (Teq (Tyint,
                       mk_sum_from_col a idx (mk_ac_old a),
                       Tplus (Tyint,
                              Tminus (Tyint,
@@ -2264,19 +2265,14 @@ let mk_clear_field_coll _m _part asset field key clearedasset = Dfun {
       );
   }
 
-let mk_add_field_ensures m partition a ak field prefix adda elem =
+let mk_add_field_ensures m partition a _ak field prefix adda elem =
   let collfield = Tapp (Tvar field, [Tvar ("asset")]) in
   let key      = M.Utils.get_asset_key m adda |> fst in
   let assetcollfield = Ttocoll (adda,collfield,mk_ac adda) in
   let oldassetcollfield = Ttocoll (adda,collfield,mk_ac_old adda) in
-  let exists_asset body =
-    Texists ([["asset"],Tyasset a],
-             Tand (
-              Teq(Tyint, Tget (a,mk_ac a, Tvar "asset_id"),Tsome (Tvar "asset")),
-              body)) in
   let add_field_ensures = [
     { id   = prefix ^ "_field_post1";
-      form = exists_asset
+      form = exists_asset a
                         (Tvmem (adda,
                                 Tapp (Tvar key,[Tvar elem]),
                                 collfield))
@@ -2285,7 +2281,7 @@ let mk_add_field_ensures m partition a ak field prefix adda elem =
   ] @ List.fold_left (fun acc idx ->
       acc @ [{
           id = "add_" ^ adda ^ "_field_sum_post";
-          form = exists_asset (Teq (Tyint,
+          form = exists_asset a (Teq (Tyint,
                       mk_sum_from_col adda idx assetcollfield,
                       Tplus (Tyint,
                              mk_sum_from_col adda idx oldassetcollfield,
@@ -2295,7 +2291,7 @@ let mk_add_field_ensures m partition a ak field prefix adda elem =
         }]) [] (M.Utils.get_sum_idxs m adda) @
     (if M.Utils.with_count m adda then [{
          id = "add_" ^ adda ^ "_field_count";
-         form = exists_asset (Teq (Tyint,
+         form = exists_asset a (Teq (Tyint,
                      Tcard (adda, assetcollfield),
                      Tplus (Tyint,
                             Tcard (adda, oldassetcollfield),
@@ -2369,17 +2365,13 @@ let mk_add_field m part a ak field adda addak : decl =
       ]);
   }
 
-let mk_rm_field_ensures m part a ak field prefix asset elem =
+let mk_rm_field_ensures m part a _ak field prefix asset elem =
   let collfield = Tapp (Tvar field, [Tvar ("asset")]) in
   let assetcollfield = Ttocoll (asset,collfield,mk_ac asset) in
   let oldassetcollfield = Ttocoll (asset,collfield,mk_ac_old asset) in
-  let exists_asset body =
-    Texists ([["asset"],Tyasset a],
-             Tand (
-             Teq(Tyint, Tvar "asset_id",Tdoti("asset",ak)), body)) in
   let rm_field_ensures = [
     { id   = prefix ^ "_field_post1";
-      form = exists_asset (Tnot (Tmem (asset,
+      form = exists_asset a (Tnot (Tmem (asset,
                          Tvar (elem),
                          assetcollfield)))
     };
@@ -2387,7 +2379,7 @@ let mk_rm_field_ensures m part a ak field prefix asset elem =
     List.fold_left (fun acc idx ->
         acc @ [{
             id = "remove_" ^ asset ^ "_field_sum_post";
-            form = exists_asset (Teq (Tyint,
+            form = exists_asset a (Teq (Tyint,
                         mk_sum_from_col asset idx assetcollfield,
                         Tminus (Tyint,
                                 mk_sum_from_col asset idx oldassetcollfield,
@@ -2397,7 +2389,7 @@ let mk_rm_field_ensures m part a ak field prefix asset elem =
           }]) [] (M.Utils.get_sum_idxs m asset) @
     (if M.Utils.with_count m asset then [{
          id = "rm_" ^ asset ^ "_field_count";
-         form = exists_asset (Teq (Tyint,
+         form = exists_asset a (Teq (Tyint,
                      Tcard (asset, assetcollfield),
                      Tminus (Tyint,
                              Tcard (asset, oldassetcollfield),
