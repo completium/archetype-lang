@@ -146,7 +146,7 @@ let pp_type fmt typ =
       | Tyasset i     -> i
       | Tyenum i      -> i
       | Tyoption tt   -> "option " ^ (typ_str tt)
-      | Tylist tt     -> "list " ^ (typ_str ~pparen:(true) tt)
+      | Tylist tt     -> "L.list " ^ (typ_str ~pparen:(true) tt)
       | Tybool        -> "bool"
       | Tyuint        -> "uint"
       | Tycontract i  -> i
@@ -235,6 +235,11 @@ let rec pp_term outer pos fmt = function
       pp_str (String.capitalize_ascii t)
       (pp_with_paren (pp_term outer pos)) e1
       (pp_with_paren (pp_term outer pos)) e2
+  | Tvmem (t,e1,e2) ->
+    Format.fprintf fmt "%a.vmem %a %a"
+      pp_str (String.capitalize_ascii t)
+      (pp_with_paren (pp_term outer pos)) e1
+      (pp_with_paren (pp_term outer pos)) e2
   | Tcontains (t,e1,e2) ->
     Format.fprintf fmt "%a.contains %a %a"
       pp_str (String.capitalize_ascii t)
@@ -259,6 +264,11 @@ let rec pp_term outer pos fmt = function
       (pp_term outer pos) e2
   | Tadd (i,e1,e2) ->
     Format.fprintf fmt "%a.add %a %a"
+      pp_str (String.capitalize_ascii i)
+      (pp_with_paren (pp_term outer pos)) e1
+      (pp_with_paren (pp_term outer pos)) e2
+  | Tvadd (i,e1,e2) ->
+    Format.fprintf fmt "%a.vadd %a %a"
       pp_str (String.capitalize_ascii i)
       (pp_with_paren (pp_term outer pos)) e1
       (pp_with_paren (pp_term outer pos)) e2
@@ -288,7 +298,7 @@ let rec pp_term outer pos fmt = function
       (pp_with_paren (pp_term outer pos)) e1
       (pp_with_paren (pp_term outer pos)) e2
    | Teqview (a, e1, e2) ->
-    Format.fprintf fmt "%a.eq_view %a %a"
+    Format.fprintf fmt "%a.veq %a %a"
       pp_str (String.capitalize_ascii a)
       (pp_with_paren (pp_term outer pos)) e1
       (pp_with_paren (pp_term outer pos)) e2
@@ -401,6 +411,7 @@ let rec pp_term outer pos fmt = function
   | Tlist l -> pp_tlist outer pos fmt l
   | Tnil i -> Format.fprintf fmt "%a.Nil" pp_str i
   | Temptycoll i -> Format.fprintf fmt "%a.empty" pp_str (String.capitalize_ascii i)
+  | Temptyview i -> Format.fprintf fmt "%a.vempty" pp_str (String.capitalize_ascii i)
   | Tcaller i -> Format.fprintf fmt "%a._caller" pp_str i
   | Tsender i -> Format.fprintf fmt "%a._source" pp_str i
   | Ttransferred i -> Format.fprintf fmt "%a._transferred" pp_str i
@@ -446,7 +457,7 @@ let rec pp_term outer pos fmt = function
       pp_str (String.capitalize_ascii i)
       (pp_with_paren (pp_term outer pos)) e
   | Tvcard (i,e) ->
-    Format.fprintf fmt "%a.length %a"
+    Format.fprintf fmt "%a.vcard %a"
       pp_str (String.capitalize_ascii i)
       (pp_with_paren (pp_term outer pos)) e
 
@@ -454,8 +465,16 @@ let rec pp_term outer pos fmt = function
     Format.fprintf fmt "%a.mk %a"
       pp_str (String.capitalize_ascii i)
       (pp_with_paren (pp_term outer pos)) e
+  | Tmkview (i,e) ->
+    Format.fprintf fmt "%a.vmk %a"
+      pp_str (String.capitalize_ascii i)
+      (pp_with_paren (pp_term outer pos)) e
   | Tcontent (i,e) ->
     Format.fprintf fmt "%a.elts %a"
+      pp_str (String.capitalize_ascii i)
+      (pp_with_paren (pp_term outer pos)) e
+  | Tvcontent (i,e) ->
+    Format.fprintf fmt "%a.vcontent %a"
       pp_str (String.capitalize_ascii i)
       (pp_with_paren (pp_term outer pos)) e
   | Ttocoll (i,e1,e2) ->

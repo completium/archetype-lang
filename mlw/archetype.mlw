@@ -290,6 +290,7 @@ module AssetCollection
   use list.List
   use list.Length as L
   use list.Append as A
+  use list.Distinct as D
   use list.Mem as M
   use option.Option
   use fset.Undup
@@ -332,40 +333,82 @@ module AssetCollection
                                  axiom .
 
   (* fkey is injective *)
-  predicate key_injective (f : F.fset) =
-    forall e1 e2.
-    F.fmem e1 f -> F.fmem e2 f ->
-    fkey e1 = fkey e2 -> e1 = e2
+  predicate key_injective (l : list t) =
+    forall a1 a2.
+    mem a1 l -> mem a2 l ->
+    fkey a1 = fkey a2 -> a1 = a2
 
   type collection = {
     content : F.fset
   } invariant {
-    key_injective content
+    key_injective (F.content content)
   } by {
     content = F.fset0;
   }
 
   (* ------------------------------------------------------------------------ *)
-  type view = list key
+  type view = {
+    vcontent : list key
+  } invariant {
+    D.distinct vcontent
+  } by {
+    vcontent = Nil;
+  }
 
   (* ------------------------------------------------------------------------ *)
-  let rec function eq_view (v1 v2 : view) : bool
-  variant { v1, v2 }
-  = match v1,v2 with
+  let function veq (v1 v2 : view) : bool
+  =
+  let rec internal_eq_view (l1 l2 : list key) : bool
+  variant { l1, l2 }
+  = match l1,l2 with
   | Cons k1 tl1, Cons k2 tl2 ->
     if k1 = k2 then
-      eq_view tl1 tl2
+      internal_eq_view tl1 tl2
     else false
   | Nil,Nil -> true
   | _ -> false
-  end
+  end in
+  internal_eq_view v1.vcontent v2.vcontent
+
+  (* ------------------------------------------------------------------------ *)
+  let function vmk (l : list key) : view
+  requires { D.distinct l }
+  = { vcontent = l }
+
+  (* ------------------------------------------------------------------------ *)
+  let function velts (v : view) : list key
+  ensures { D.distinct result }
+  = vcontent v
+
+   (* ------------------------------------------------------------------------ *)
+  let function vempty = { vcontent = Nil }
+
+  (* ------------------------------------------------------------------------ *)
+  let function vcard (v : view) : int
+  ensures { result = L.length v.vcontent }
+  =
+  L.length v.vcontent
+
+  (* ------------------------------------------------------------------------ *)
+  let function vmem (k: key) (v: view) : bool
+  ensures { result <-> M.mem k v.vcontent }
+  =
+  let rec internal_vmem (l : list key) : bool
+  variant { l }
+  ensures { result <-> M.mem k l }
+  =
+  match l with
+    | Nil      -> false
+    | Cons e tl -> k = e || internal_vmem tl
+  end in
+  internal_vmem v.vcontent
 
   (* ------------------------------------------------------------------------ *)
   predicate (==) (c1 c2 : collection) = F.(==) c1.content c2.content
 
   (* ------------------------------------------------------------------------ *)
   let function mk (s : F.fset) : collection
-  requires { key_injective s }
+  requires { key_injective (F.content s) }
   ensures { F.(==) s (content result) }
   ensures { content result = s }
   = { content = s }
@@ -377,6 +420,7 @@ module AssetCollection
   (* ------------------------------------------------------------------------ *)
   let function elts (c : collection) : list t
   ensures { IS.sorted result }
+  ensures { D.distinct result }
   (* ensures { F.sorted result } *)
   =
   F.content c.content
@@ -404,10 +448,9 @@ module AssetCollection
   (* shall this be a lemma ? *)
   axiom eqEquality : forall c1 c2. c1 == c2 <-> c1 = c2
 
-
   (* ------------------------------------------------------------------------ *)
   lemma mk_injective: forall s1 s2.
-  key_injective s1 -> key_injective s2 ->
+  key_injective (F.content s1) -> key_injective (F.content s2) ->
   mk s1 == mk s2 -> F.(==) s1 s2
 
   (* ------------------------------------------------------------------------ *)
@@ -428,7 +471,7 @@ module AssetCollection
   (* Singleton ************************************************************** *)
 
   (* ------------------------------------------------------------------------ *)
-  lemma one_unary_injective: forall a. key_injective (F.mk (Cons a Nil))
+  lemma one_unary_injective: forall a. key_injective (Cons a Nil)
 
   (* ------------------------------------------------------------------------ *)
   let function singleton (a : t) : collection = mk (F.mk (Cons a Nil))
@@ -447,39 +490,35 @@ module AssetCollection
   (* Collection API ********************************************************* *)
 
   (* ------------------------------------------------------------------------ *)
-  let rec function list_to_view (l : list t) : view
+  let function list_to_view (l : list t) : view
+  requires { D.distinct l }
+  ensures { forall k. vmem k result <-> exists e. M.mem e l /\ fkey e = k }
+  ensures { vcard result = L.length l }
+  =
+  let rec internal_list_to_view l : list key
+  requires { D.distinct l }
   variant { l }
+  ensures { D.distinct result }
   ensures { forall k. M.mem k result <-> exists e. M.mem e l /\ fkey e = k }
   ensures { L.length result = L.length l }
   =
   match l with
-  | Cons e tl -> Cons (fkey e) (list_to_view tl)
+  | Cons e tl -> Cons (fkey e) (internal_list_to_view tl)
   | Nil -> Nil
-  end
+  end in
+  vmk (internal_list_to_view l)
 
   (* ------------------------------------------------------------------------ *)
   let rec function to_view (c : collection) : view
-  ensures { forall k. M.mem k result <-> exists e. mem e c /\ fkey e = k }
-  ensures { L.length result = card c }
+  ensures { forall k. vmem k result <-> exists e. mem e c /\ fkey e = k }
+  ensures { vcard result = card c }
   =
   list_to_view (elts c)
 
   (* ------------------------------------------------------------------------ *)
-  let rec function vmem (k: key) (v: view) : bool
-  variant { v }
-  ensures { result <-> M.mem k v }
-  =
-  match v with
-    | Nil      -> false
-    | Cons e tl -> k = e || vmem k tl
-  end
-
   let function contains (k : key) (c : collection)
   ensures { result <-> exists e. mem e c /\ fkey e = k }
   = vmem k (to_view c)
-
-  (* ------------------------------------------------------------------------ *)
-  let function length (v : view) : int = L.length v
 
   (* ------------------------------------------------------------------------ *)
   let rec function internal_get (l : list t) (k : key) : option t
@@ -502,9 +541,15 @@ module AssetCollection
 
   (* ------------------------------------------------------------------------ *)
   let function view_to_list (v : view) (c : collection) : list t
+  ensures { D.distinct result }
+  ensures { key_injective result }
   =
-  let rec function internal_view_to_list (v : view) (l : list t) : list t
+  let rec function internal_view_to_list (v : list key) (l : list t) : list t
   variant { v }
+  requires { D.distinct v }
+  requires { D.distinct l }
+  ensures { D.distinct result }
+  ensures { key_injective result }
   =
   match v with
   | Cons k tl ->
@@ -514,7 +559,7 @@ module AssetCollection
     end
   | Nil -> l
   end in
-  internal_view_to_list v Nil
+  internal_view_to_list v.vcontent Nil
 
   (* ------------------------------------------------------------------------ *)
   let function to_coll (v : view) (c : collection) : collection
@@ -576,93 +621,110 @@ module AssetCollection
   (* View API --------------------------------------------------------------- *)
 
   (* ------------------------------------------------------------------------ *)
-  predicate view_is_empty (v : view) = v = Nil
+  predicate view_is_empty (v : view) = v.vcontent = Nil
 
   (* ------------------------------------------------------------------------ *)
-  let rec function vremove (k : int) (v : view) : view
-  variant { v }
+  let function vadd (k : int) (v : view) : view
+  requires { not (vmem k v) }
   =
-  match v with
+  vmk (Cons k (v.vcontent))
+
+  (* ------------------------------------------------------------------------ *)
+  let function vremove (k : int) (v : view) : view
+  =
+  let rec internal_vremove l : list key
+  requires { D.distinct l }
+  variant { v }
+  ensures { D.distinct result }
+  =
+  match l with
   | Cons i tl ->
     if i = k then
-      vremove k tl
+      internal_vremove tl
     else
-      Cons i (vremove k tl)
+      Cons i (internal_vremove tl)
   | Nil -> Nil
-  end
+  end in
+  vmk (internal_vremove v.vcontent)
 
   (* ------------------------------------------------------------------------ *)
-  let rec function nth (i : int) (v : view) : option key
-  variant { v }
+  let function nth (i : int) (v : view) : option key
   ensures {
-    0 <= i < L.length v ->
-    exists k. result = Some k /\ M.mem k v
+    0 <= i < vcard v ->
+    exists k. result = Some k /\ vmem k v
   }
   =
-  match v with
-  | Cons k tl -> if i = 0 then Some k else nth (i - 1) tl
+  let rec internal_nth (i : int) (l : list key) : option key
+  variant { l }
+  ensures {
+    0 <= i < L.length l ->
+    exists k. result = Some k /\ M.mem k l
+  }
+  =
+  match l with
+  | Cons k tl -> if i = 0 then Some k else internal_nth (i - 1) tl
   | Nil -> None
-  end
+  end in
+  internal_nth i v.vcontent
 
   (* ------------------------------------------------------------------------ *)
-  lemma nth_singleton: forall a. nth 0 (Cons a Nil) = Some a
+  lemma nth_singleton: forall a. nth 0 (vmk (Cons a Nil)) = Some a
 
   (* ------------------------------------------------------------------------ *)
    (* keep first i elements *)
   let function keep (i : int) (v : view) : view
-  ensures { forall k. M.mem k result -> M.mem k v }
+  ensures { forall k. vmem k result -> vmem k v }
   ensures {
-    0 <= i <= L.length v ->
-    L.length result = i
+    0 <= i <= vcard v ->
+    vcard result = i
   }
   =
-  let rec function internal_keep (k : int) (v : view) : view
+  let rec function internal_keep (k : int) (l : list key) : list key
+  requires { D.distinct l }
   variant { v }
-  ensures { forall k. M.mem k result -> M.mem k v }
+  ensures { D.distinct result }
+  ensures { forall k. M.mem k result -> M.mem k l }
   ensures {
-    0 <= i <= L.length v ->
+    0 <= i <= L.length l ->
     L.length result = i
   }
   =
-  match v with
+  match l with
   | Cons e tl ->
     if k < i then
       Cons e (internal_keep (k+1) tl)
     else Nil
   | Nil -> Nil
   end in
-  internal_keep 0 v
+  vmk (internal_keep 0 v.vcontent)
 
   (* ------------------------------------------------------------------------ *)
-  lemma keep_none: forall v. keep 0 v = Nil
-
-  (* ------------------------------------------------------------------------ *)
-  lemma keep_next: forall v : view, i : int.
-  0 <= i < L.length v ->
-  exists e. nth i v = Some e /\ keep (i+1) v = A.(++) (keep i v)  (Cons e Nil)
+  lemma keep_none: forall v. keep 0 v = vempty
 
   (* ------------------------------------------------------------------------ *)
   lemma keep_all: forall v : view, i : int.
-  i >= L.length v -> keep i v = v
+  i >= vcard v -> keep i v = v
 
   (* ------------------------------------------------------------------------ *)
   (* drop first i elements *)
   let function drop (i : int) (v : view) : view
-  ensures { forall k. M.mem k result -> M.mem k v }
+  ensures { forall k. vmem k result -> vmem k v }
   ensures {
-    0 <= i <= L.length v ->
-    L.length result = L.length v - i
+    0 <= i <= vcard v ->
+    vcard result = vcard v - i
   }
   =
-  let rec function internal_drop (k : int) (v : view) : view
+  let rec function internal_drop (k : int) (l : list key) : list key
+  requires { D.distinct l }
   variant { v }
-  ensures { forall k. M.mem k result -> M.mem k v }
+  ensures { D.distinct result }
+  ensures { forall k. M.mem k result -> M.mem k l }
   ensures {
-    0 <= i <= L.length v ->
+    0 <= i <= L.length l ->
     L.length result = i
   }
   =
-  match v with
+  match l with
   | Cons e tl ->
     if k < i then
       internal_drop (k+1) tl
@@ -670,18 +732,18 @@ module AssetCollection
       Cons e (internal_drop (k+1) tl)
   | Nil -> Nil
   end in
-  internal_drop 0 v
+  vmk (internal_drop 0 v.vcontent)
 
   (* ------------------------------------------------------------------------ *)
   lemma drop_none: forall c. drop 0 c = c
 
-  (* ------------------------------------------------------------------------ *)
+  (* (* ------------------------------------------------------------------------ *)
   lemma drop_next: forall v, i : int.
   0 <= i < L.length v ->
-  exists e. drop i v = Cons e (drop (i+1) v)
+  exists e. drop i v = Cons e (drop (i+1) v) *)
 
   (* ------------------------------------------------------------------------ *)
-  lemma drop_all: forall v. drop (L.length v) v = Nil
+  lemma drop_all: forall v. drop (vcard v) v = vempty
 
   goal sanity_check : false
 
@@ -698,7 +760,7 @@ module Sort
   type t
 
   (* ------------------------------------------------------------------------ *)
-  type view = list int
+  type view
 
   (* ------------------------------------------------------------------------ *)
   val function cmp (a b : t) : bool
@@ -726,7 +788,6 @@ module Sum
 
   use  int.Int
   use  list.List
-  use  list.Length
   use  option.Option
 
   (* ------------------------------------------------------------------------ *)
@@ -736,17 +797,22 @@ module Sum
   type t
 
   (* ------------------------------------------------------------------------ *)
-  type view = list int
+  type view
 
   (* ------------------------------------------------------------------------ *)
   val function field t : int
   (* ------------------------------------------------------------------------ *)
   val function get collection int : option t
-
+  (* ------------------------------------------------------------------------ *)
+  val function velts view : list int
+  (* ------------------------------------------------------------------------ *)
+  val function vcard view : int
+  (* ------------------------------------------------------------------------ *)
+  val function vmk (list int) : view
   (* ------------------------------------------------------------------------ *)
   let function sum (v : view) (c : collection) : int
   =
-  let rec function internal_sum (l : view) (acc : int) : int
+  let rec function internal_sum (l : list int) (acc : int) : int
   variant { l }
   =
     match l with
@@ -758,16 +824,16 @@ module Sum
      | Nil -> acc
     end
   in
-  internal_sum v 0
+  internal_sum (velts v) 0
 
   (* ------------------------------------------------------------------------ *)
   lemma sum_empty:
-    forall v : view, c : collection. length v = 0 -> sum v c = 0
+    forall v : view, c : collection. vcard v = 0 -> sum v c = 0
 
   (* ------------------------------------------------------------------------ *)
   lemma sum_singleton: forall k : int, a : t, c : collection.
   get c k = Some a ->
-  sum (Cons k Nil) c = field a
+  sum (vmk (Cons k Nil)) c = field a
 
 end
 

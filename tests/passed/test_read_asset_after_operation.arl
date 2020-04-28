@@ -9,9 +9,6 @@ asset my_asset {
 }
 
 action exec (k : int) {
-  specification {
-    i1: local > 0;
-  }
   effect {
     var c : my_asset = my_asset.get("id");
     var local = c.f1 * c.f2;

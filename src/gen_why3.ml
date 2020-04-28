@@ -213,30 +213,18 @@ let mk_sum_clone m asset _key formula =
                   cap_asset ^ ".collection");
            Ctype ("t",
                   asset);
-           (* Cval ("f",
-                 mk_get_sum_value_from_pos_id asset id); *)
+           Ctype ("view",
+                  cap_asset ^ ".view");
            Cval ("field",
                  mk_get_sum_value_id asset id);
-           (* Cval ("card",
-                 cap_asset ^ ".card");
-           Cfun ("union",
-                 cap_asset ^ ".union");
-           Cfun ("inter",
-                 cap_asset ^ ".inter");
-           Cfun ("diff",
-                 cap_asset ^ ".diff");
-           Cpred("is_empty",
-                 cap_asset ^ ".is_empty");
-           Cpred("subset",
-                 cap_asset ^ ".subset");
-           Cval ("singleton",
-                 cap_asset ^ ".singleton");
-           Cval ("witness",
-                 cap_asset ^ ".witness");
-           Cval ("keyf",
-                 key); *)
            Cval ("get",
-                 cap_asset ^ ".get")
+                 cap_asset ^ ".get");
+           Cval ("velts",
+                 cap_asset ^ ".velts");
+           Cval ("vcard",
+                 cap_asset ^ ".vcard");
+           Cval ("vmk",
+                 cap_asset ^ ".vmk")
           ])
 
 
@@ -400,6 +388,8 @@ let mk_sort_clone _m asset fields =
                   cap_asset ^ ".collection");
            Ctype ("t",
                   asset);
+           Ctype ("view",
+                  cap_asset ^ ".view");
            Cval ("cmp",
                  mk_cmp_function_id asset fields);
            Cval ("view_to_list",
@@ -425,8 +415,8 @@ let mk_select_body asset mlw_test : term =
     {
       name     = "internal_select";
       logic    = Rec;
-      args     = ["l",Tyview asset];
-      returns  = Tyview asset;
+      args     = ["l",Tylist Tyint];
+      returns  = Tylist Tyint;
       raises   = [];
       variants = [Tvar "l"];
       requires = [];
@@ -445,8 +435,8 @@ let mk_select_body asset mlw_test : term =
       Tmlist (gListLib,Tnil gListLib,"l","k","tl",some);
     },
 
-    Tapp (Tvar "internal_select",
-          [Tvar "v"])
+    Tmkview (asset,(Tapp (Tvar "internal_select",
+                          [Tvcontent (asset,Tvar "v")])))
   )
 
 (* TODO : complete mapping
@@ -477,7 +467,7 @@ let mk_select m asset test mlw_test only_formula =
         { id   = id ^ "_post_1";
           form = Tforall (
               [["k"],Tykey],
-              Timpl (Tlmem (gListLib,Tvar "k",Tresult),
+              Timpl (Tvmem (asset,Tvar "k",Tresult),
                      Texists ([["a"],Tyasset asset],
                       Tand (
                         Teq (Tyint, Tdoti("a",key), Tvar "k"),
@@ -493,8 +483,8 @@ let mk_select m asset test mlw_test only_formula =
           form = Tforall(
             [["k"],Tykey],
             Timpl (
-              Tlmem(gListLib,Tvar "k",Tresult),
-              Tlmem(gListLib,Tvar "k",Tvar "v")
+              Tvmem(asset,Tvar "k",Tresult),
+              Tvmem(asset,Tvar "k",Tvar "v")
             )
           );
         }
@@ -530,10 +520,10 @@ let map_lidents = List.map map_lident
 let rec type_to_init m (typ : loc_typ) : loc_term =
   mk_loc typ.loc (match typ.obj with
       | Tyasset i     -> Tapp (loc_term (Tvar ("mk_default_"^i.obj)),[])
-      | Typartition i -> Temptycoll i
+      | Typartition i -> Temptyview i
       | Tycoll i      -> Temptycoll i
       | Tylist _      -> Tnil (with_dummy_loc gListLib)
-      | Tyview _      -> Tnil (with_dummy_loc gListLib)
+      | Tyview i      -> Temptyview i
       | Tymap i       -> Tvar (mk_loc typ.loc ("const (mk_default_" ^ i.obj ^ " ())"))
       | Tyenum i      -> Tvar (mk_loc typ.loc (unloc (M.Utils.get_enum m i.obj).initial))
       | Tytuple l     -> Ttuple (List.map (type_to_init m) (List.map with_dummy_loc l))
@@ -1203,12 +1193,15 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Massets l ->
       begin
         match mt.type_ with
-        | Tcontainer (_,_) -> Tlist (l |> List.map (map_mterm m ctx))
+        | Tcontainer (Tasset a,_) -> (* Tlist (l |> List.map (map_mterm m ctx)) *) Temptyview (map_lident a)
         | _ -> assert false
       end
 
     | Mlitset  _   -> error_not_translated "Mlitset"
-    | Mlitlist _   -> error_not_translated "Mlitlist"
+    | Mlitlist l   ->
+      List.fold_left(fun acc e ->
+        with_dummy_loc (Tcons(with_dummy_loc gListLib, map_mterm m ctx e, acc))
+      ) (loc_term (Tnil gListLib)) l |> Mlwtree.deloc
     | Mlitmap  _   -> error_not_translated "Mlitmap"
     | Mlitrecord _ -> error_not_translated "Mlitrecord"
 
@@ -2285,7 +2278,7 @@ let mk_add_field_ensures m partition field prefix adda elem =
   let oldassetcollfield = Ttocoll (adda,collfield,mk_ac_old adda) in
   let add_field_ensures = [
     { id   = prefix ^ "_field_post1";
-      form = Tlmem (gListLib,
+      form = Tvmem (adda,
                    Tapp (Tvar key,[Tvar elem]),
                    collfield)
     };
@@ -2352,7 +2345,7 @@ let mk_add_field m part a ak field adda addak : decl =
              let addfield = Tletin (false, a ^ "_" ^ field,None,
                                     Tapp (Tvar field,[Tvar "asset"]),
                                     Tletin (false,"new_" ^ a ^ "_" ^ field,None,
-                                            Tcons (gListLib, addak,Tvar (a ^ "_" ^ field)),
+                                            Tvadd (adda, addak,Tvar (a ^ "_" ^ field)),
                                             Tletin (false,"new_asset",None,
                                                     Trecord (Some (Tvar "asset"),
                                                              [field,Tvar ("new_" ^ a ^ "_" ^ field)]),
@@ -2435,7 +2428,7 @@ let mk_rm_field m part asset keyf field rmed_asset rmkey : decl = Dfun {
               Tletin (false,
                       "new_" ^ asset ^ "_" ^ field,
                       None,
-                      Tvremove (asset,
+                      Tvremove (rmed_asset,
                                 Tdoti ("rm_asset",
                                         rmkey),
                                 Tvar (asset ^ "_" ^ field)),

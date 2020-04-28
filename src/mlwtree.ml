@@ -90,6 +90,7 @@ type ('e,'t,'i) abstract_term =
   | Tlist   of 'e list
   | Tnil    of 'i
   | Temptycoll of 'i
+  | Temptyview of 'i
   | Tcard   of 'i * 'e
   | Tvcard   of 'i * 'e
   | Ttocoll  of 'i * 'e * 'e
@@ -98,9 +99,12 @@ type ('e,'t,'i) abstract_term =
   | Tmlist  of 'i * 'e * 'i * 'i * 'i * 'e (* match list *)
   | Tcons   of 'i * 'e * 'e
   | Tmkcoll of 'i * 'e
+  | Tmkview of 'i * 'e
   | Tcontent of 'i * 'e
+  | Tvcontent of 'i * 'e
   (* archetype lib *)
   | Tadd    of 'i * 'e * 'e
+  | Tvadd    of 'i * 'e * 'e
   | Tremove of 'i * 'e * 'e
   | Tvremove of 'i * 'e * 'e
   | Tget    of 'i * 'e * 'e
@@ -165,6 +169,7 @@ type ('e,'t,'i) abstract_term =
   | Ttoiter of 'i * 'i * 'e
   (* set *)
   | Tmem    of 'i * 'e * 'e
+  | Tvmem    of 'i * 'e * 'e
   | Tlmem    of 'i * 'e * 'e
   | Tcontains of 'i * 'e * 'e
   | Tempty  of 'i * 'e
@@ -363,16 +368,20 @@ and map_abstract_term
   | Tlist l            -> Tlist (List.map map_e l)
   | Tnil i             -> Tnil (map_i i)
   | Temptycoll i       -> Temptycoll (map_i i)
+  | Temptyview i       -> Temptyview (map_i i)
   | Tcard (i,e)        -> Tcard (map_i i, map_e e)
   | Tvcard (i,e)        -> Tvcard (map_i i, map_e e)
   | Tmkcoll (i,e)      -> Tmkcoll (map_i i, map_e e)
+  | Tmkview (i,e)      -> Tmkview (map_i i, map_e e)
   | Tcontent (i,e)     -> Tcontent (map_i i, map_e e)
+  | Tvcontent (i,e)    -> Tvcontent (map_i i, map_e e)
   | Ttocoll (i,e1,e2) -> Ttocoll (map_i i, map_e e1, map_e e2)
   | Ttoview (i,e)      -> Ttoview (map_i i, map_e e)
   | Tshallow (i,e1,e2) -> Tshallow (map_i i, map_e e1, map_e e2)
   | Tmlist (l,e1,i1,i2,i3,e2) -> Tmlist (map_i l,map_e e1, map_i i1, map_i i2, map_i i3, map_e e2)
   | Tcons (i,e1,e2)    -> Tcons (map_i i, map_e e1, map_e e2)
   | Tadd (i1,e1,e2)    -> Tadd (map_i i1, map_e e1, map_e e2)
+  | Tvadd (i1,e1,e2)    -> Tvadd (map_i i1, map_e e1, map_e e2)
   | Tremove (i,e1,e2)  -> Tremove (map_i i,map_e e1, map_e e2)
   | Tvremove (i,e1,e2) -> Tvremove (map_i i,map_e e1, map_e e2)
   | Tget (i,e1,e2)     -> Tget (map_i i, map_e e1, map_e e2)
@@ -423,6 +432,7 @@ and map_abstract_term
   | Tsubset (i,e1,e2)    -> Tsubset (map_i i, map_e e1, map_e e2)
   | Tresult            -> Tresult
   | Tmem (t,e1,e2)     -> Tmem (map_i t, map_e e1, map_e e2)
+  | Tvmem (t,e1,e2)     -> Tvmem (map_i t, map_e e1, map_e e2)
   | Tlmem (t,e1,e2)     -> Tlmem (map_i t, map_e e1, map_e e2)
   | Tcontains (t,e1,e2) -> Tcontains (map_i t, map_e e1, map_e e2)
   | Tempty (i,e)       -> Tempty (map_i i, map_e e)
@@ -750,10 +760,13 @@ let compare_abstract_term
   | Tlist l1, Tlist l2 -> List.for_all2 cmpe l1 l2
   | Tnil i1, Tnil i2 -> cmpi i1 i2
   | Temptycoll i1, Temptycoll i2 -> cmpi i1 i2
+  | Temptyview i1, Temptyview i2 -> cmpi i1 i2
   | Tcard (i1,e1), Tcard (i2,e2) -> cmpi i1 i2 && cmpe e1 e2
   | Tvcard (i1,e1), Tvcard (i2,e2) -> cmpi i1 i2 && cmpe e1 e2
   | Tmkcoll (i1,e1), Tmkcoll (i2,e2) -> cmpi i1 i2 && cmpe e1 e2
+  | Tmkview (i1,e1), Tmkview (i2,e2) -> cmpi i1 i2 && cmpe e1 e2
   | Tcontent (i1,e1), Tcontent (i2,e2) -> cmpi i1 i2 && cmpe e1 e2
+  | Tvcontent (i1,e1), Tvcontent (i2,e2) -> cmpi i1 i2 && cmpe e1 e2
   | Ttocoll (i1,e1,f1), Ttocoll (i2,e2,f2) -> cmpi i1 i2 && cmpe e1 e2 && cmpe f1 f2
   | Ttoview (i1,e1), Ttoview (i2,e2) -> cmpi i1 i2 && cmpe e1 e2
   | Tshallow (i1,e1,f1), Tshallow (i2,e2,f2) -> cmpi i1 i2 && cmpe e1 e2 && cmpe f1 f2
@@ -761,6 +774,7 @@ let compare_abstract_term
     cmpi l1 l2 && cmpe e11 e12 && cmpi i11 i12 && cmpi i21 i22 && cmpi i31 i32 && cmpe e21 e22
   | Tcons (i1,e1,e2), Tcons (i2,f1,f2) -> cmpi i1 i2 && cmpe e1 f1 && cmpe e2 f2
   | Tadd (i1,e1,e2), Tadd (i2,f1,f2) -> cmpi i1 i2 && cmpe e1 f1 && cmpe e2 f2
+  | Tvadd (i1,e1,e2), Tvadd (i2,f1,f2) -> cmpi i1 i2 && cmpe e1 f1 && cmpe e2 f2
   | Tremove (i1,e1,e2), Tremove (i2,f1,f2) -> cmpi i1 i2 && cmpe e1 f1 && cmpe e2 f2
   | Tvremove (i1,e1,e2), Tvremove (i2,f1,f2) -> cmpi i1 i2 && cmpe e1 f1 && cmpe e2 f2
   | Tget (i1,e1,e2), Tget (i2,f1,f2) -> cmpi i1 i2 && cmpe e1 f1 && cmpe e2 f2
@@ -815,6 +829,7 @@ let compare_abstract_term
   | Tsubset (i1,e1,e2), Tsubset (i2,f1,f2) -> cmpi i1 i2 && cmpe e1 f1 && cmpe e2 f2
   | Tresult, Tresult -> true
   | Tmem (t1,e1,e2), Tmem (t2,f1,f2) -> cmpi t1 t2 && cmpe e1 f1 && cmpe e2 f2
+  | Tvmem (t1,e1,e2), Tvmem (t2,f1,f2) -> cmpi t1 t2 && cmpe e1 f1 && cmpe e2 f2
   | Tlmem (t1,e1,e2), Tlmem (t2,f1,f2) -> cmpi t1 t2 && cmpe e1 f1 && cmpe e2 f2
   | Tcontains (t1,e1,e2), Tcontains (t2,f1,f2) -> cmpi t1 t2 && cmpe e1 f1 && cmpe e2 f2
   | Tempty (i1,e1), Tempty (i2,e2) -> cmpi i1 i2 && cmpe e1 e2
