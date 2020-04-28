@@ -1861,10 +1861,26 @@ let replace_asset_by_key (model : model) : model =
       | Msum (an, c, a), _ -> mk_mterm (Msum (an, aux c, a)) mt.type_
       | Mletin (l, {node = Mget (_, _, k)}, t, b, o), _ -> mk_mterm (Mletin (l, aux k, Option.map for_type t, aux b, Option.map aux o)) mt.type_
       | Mletin (l, i, t, b, o), _ -> mk_mterm (Mletin (l, aux i, Option.map for_type t, aux b, Option.map aux o)) mt.type_
-      | Mdotasset ({type_ = Tasset an} as a, k), _ when String.equal (Utils.get_asset_key model (unloc an) |> fst) (unloc k) ->
-        (match a.node with
-         | Mvarlocal _ | Mvarparam _ -> a
-         | _ -> aux a)
+      | Mdotasset ({type_ = Tasset an} as a, k), _ ->
+        begin
+          match a.node with
+          | Mvarlocal _ | Mvarparam _  ->
+            begin
+              if String.equal (Utils.get_asset_key model (unloc an) |> fst) (unloc k)
+              then a
+              else
+                begin
+                  let type_asset = Tasset an in
+                  let type_col = Tcontainer (type_asset,Collection) in
+                  let type_view = Tcontainer (type_asset,View) in
+                  let col : mterm  = mk_mterm (Mvarstorevar an) type_col in
+                  let cast : mterm = mk_mterm (Mcast (type_col, type_view, col)) type_view in
+                  let lhs : mterm = mk_mterm (Mget (unloc an, cast, a)) type_asset in
+                  {mt with node = Mdotasset (lhs, k)}
+                end
+            end
+          | _ -> {mt with node = Mdotasset (aux a, k)}
+        end
       | Massets _, _ -> mt
       | Masset l, Tasset an ->
         begin
@@ -2009,7 +2025,7 @@ let replace_for_to_iter (model : model) : model =
       let type_view = Tcontainer (type_asset,View) in
       let view =
         begin match col.type_ with
-          | Tcontainer (_,Collection) -> mk_mterm (Mcast (type_col,type_view,col)) type_view
+          | Tcontainer (_,Collection) -> mk_mterm (Mcast (type_col, type_view, col)) type_view
           | _ -> col
         end in
       let idx_id = "_i_" ^ lbl in
