@@ -1854,19 +1854,17 @@ let replace_asset_by_key (model : model) : model =
   let for_mterm (mt : mterm) : mterm =
     let rec aux (mt : mterm) : mterm =
       match mt.node, mt.type_ with
-      (* | Mset (an, l, k, v), _ -> mk_mterm (Mset (an, l, aux k, v)) mt.type_ *)
       | Maddasset _, _ -> mt
       | Maddfield (an, fn, c, asset), _ -> mk_mterm (Maddfield (an, fn, to_key aux c, asset)) mt.type_
       | Mremovefield (an, fn, c, asset), _ -> mk_mterm (Mremovefield (an, fn, to_key aux c, aux asset)) mt.type_
       | Mselect (an, c, a, b, l), _ -> mk_mterm (Mselect (an, aux c, a, b, l)) mt.type_
       | Msum (an, c, a), _ -> mk_mterm (Msum (an, aux c, a)) mt.type_
       | Mletin (l, {node = Mget (_, _, k)}, t, b, o), _ -> mk_mterm (Mletin (l, aux k, Option.map for_type t, aux b, Option.map aux o)) mt.type_
-      (* | Mletin (_l, {node = Mvarlocal _v; type_ = lt }, Some (Tasset an), b, o), _ -> mk_mterm (Mletin (_l, mk_mterm (Mvarlocal _v) lt, Option.map for_type (Some (Tasset an)), aux b, Option.map aux o)) mt.type_ *)
       | Mletin (l, i, t, b, o), _ -> mk_mterm (Mletin (l, aux i, Option.map for_type t, aux b, Option.map aux o)) mt.type_
       | Mdotasset ({type_ = Tasset an} as a, k), _ when String.equal (Utils.get_asset_key model (unloc an) |> fst) (unloc k) ->
         (match a.node with
          | Mvarlocal _ | Mvarparam _ -> a
-         | _ -> mt)
+         | _ -> aux a)
       | Massets _, _ -> mt
       | Masset l, Tasset an ->
         begin
