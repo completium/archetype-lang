@@ -1356,6 +1356,7 @@ let pp_model fmt (model : model) =
       (* formula asset collection methods *)
 
       | Mapifget       _ -> emit_error (UnsupportedTerm ("apifget"))
+      | Mapifpureget   _ -> emit_error (UnsupportedTerm ("apifpureget"))
       | Mapifsubsetof  _ -> emit_error (UnsupportedTerm ("apifsubsetof"))
       | Mapifisempty   _ -> emit_error (UnsupportedTerm ("apifisempty"))
       | Mapifselect    _ -> emit_error (UnsupportedTerm ("apifselect"))

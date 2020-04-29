@@ -1023,6 +1023,14 @@ let pp_mterm fmt (mt : mterm) =
       in
       pp fmt (a, c, k)
 
+    | Mapifpureget (a, k) ->
+      let pp fmt (a, k) =
+        Format.fprintf fmt "apifoureget_%a (%a)"
+          pp_str a
+          f k
+      in
+      pp fmt (a, k)
+
     | Mapifsubsetof (an, c, i) ->
       let pp fmt (an, c, i) =
         Format.fprintf fmt "apifsubset_%a (%a, %a)"
