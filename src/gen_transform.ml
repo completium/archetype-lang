@@ -1936,7 +1936,7 @@ let replace_asset_by_key (model : model) : model =
         }
       in
       { p with
-        formula = for_mterm_formula p.formula;
+        formula = (match p.mode with | Assert -> for_mterm_formula p.formula | _ -> p.formula);
         invariants = List.map for_invariant p.invariants;
       }
     in
