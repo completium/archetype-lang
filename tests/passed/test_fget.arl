@@ -1,0 +1,44 @@
+archetype test_fget
+
+asset mile identified by id {
+    id : string;
+    expiration : date;
+    quantity : int
+} with {
+    i0: quantity > 0;
+}
+
+asset owner identified by addr {
+    addr : address;
+    miles : mile partition;
+}
+
+
+action exec (ow : address) {
+    specification {
+
+      assert a0 {
+        let some p = before.owner.get(ow) in
+          o.addr = p.addr
+        otherwise true
+      }
+
+      postcondition p0 {
+          true
+          invariant for loop {
+              let some before_o = before.owner.get(ow) in
+                  o.miles.sum(the.quantity) = before_o.miles.sum(the.quantity)
+              otherwise true
+          }
+      }
+    }
+
+    effect {
+      	var o = owner.get(ow);
+        var valid_miles = o.miles.select(the.expiration > now);
+        for:loop m in o.miles do
+            require (m.quantity > 0)
+        done;
+        assert a0
+    }
+}
