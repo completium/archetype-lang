@@ -909,7 +909,7 @@ let get_for_fun = function
   | _ -> assert false
 
 type logical_mod = Nomod | Added | Removed
-type lctx = Inv | Other
+type lctx = Inv | LoopInv of ident list | Other
 
 type logical_context = {
   lctx : lctx;
@@ -926,6 +926,16 @@ let init_ctx = {
   localold = [];
   loop_id = None;
 }
+
+let add_local_id_to_ctx ctx id =
+match ctx.lctx with
+| LoopInv locals -> { ctx with lctx = LoopInv (locals@[id]) }
+| _ -> ctx
+
+let is_external_id ctx id =
+match ctx.lctx with
+| LoopInv locals -> not (List.mem id locals)
+| _ -> false
 
 let mk_trace_seq m t chs =
   if M.Utils.with_trace m then
@@ -962,7 +972,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
       Tletin (M.Utils.is_local_assigned (unloc id) b, map_lident id, None, map_mterm m ctx v, map_mterm m ctx b)
 
     | Mletin ([id], { node = M.Mapifget (a, {node = M.Msetbefore _; _}, k); type_ = _ }, _, b, Some e) -> (* logical *)
-      let ctx = { ctx with (*old = true;*) localold = ctx.localold @ [unloc id] } in
+      let ctx = add_local_id_to_ctx { ctx with (*old = true;*) localold = ctx.localold @ [unloc id] } (unloc id) in
       Tletin (M.Utils.is_local_assigned (unloc id) b,
               map_lident id,
               None,
@@ -976,6 +986,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
                    Some (map_mterm m ctx e)) |> with_dummy_loc)
 
     | Mletin ([id], { node = M.Mapifget (a,_, k); type_ = _ }, _, b, Some e) -> (* logical *)
+      let ctx = add_local_id_to_ctx ctx (unloc id) in
       Tmatch (Tget (loc_ident a,
                     loc_term (mk_ac a),
                     map_mterm m ctx k) |> with_dummy_loc,[
@@ -1414,7 +1425,14 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
       loc_term coll |> Mlwtree.deloc
 
     | Mvarenumval v -> Tvar (map_lident v)
-    | Mvarlocal v -> Tvar (map_lident v)
+    | Mvarlocal v ->
+        if is_external_id ctx (unloc v) then
+          begin match mt.type_ with
+          | M.Tasset a -> Tfget (map_lident a, loc_term (mk_ac (unloc a)),with_dummy_loc (Tvar (map_lident v)))
+          | _ -> Tvar (map_lident v)
+          end
+        else
+          Tvar (map_lident v)
     | Mvarparam v -> Tvar (map_lident v)
     | Mvarfield           _ -> error_not_translated "Mvarfield"
     | Mvarthe               -> error_not_translated "Mvarthe"
@@ -1550,7 +1568,7 @@ and mk_invariants (m : M.model) ctx id (lbl : ident option) lbody =
           match lbl,ilbl with
           | Some a, b -> b ^ "_" ^ a
           | None, b -> b in
-        let ctx = { ctx with loop_id = Some (unloc id) } in
+        let ctx = { ctx with lctx = LoopInv []; loop_id = Some (unloc id) } in
         { id =  with_dummy_loc iid; form = map_mterm m ctx i }
       ) in
   let storage_loop_invariants = (* in storage invariants are strong :

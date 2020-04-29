@@ -540,6 +540,13 @@ module AssetCollection
   = internal_get (elts c) k
 
   (* ------------------------------------------------------------------------ *)
+  function fget collection key : t
+
+  (* ------------------------------------------------------------------------ *)
+  axiom fget_require_ensure: forall c k.
+    contains k c -> mem (fget c k) c
+
+  (* ------------------------------------------------------------------------ *)
   let function view_to_list (v : view) (c : collection) : list t
   ensures { D.distinct result }
   ensures { key_injective result }

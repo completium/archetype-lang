@@ -108,6 +108,7 @@ type ('e,'t,'i) abstract_term =
   | Tremove of 'i * 'e * 'e
   | Tvremove of 'i * 'e * 'e
   | Tget    of 'i * 'e * 'e
+  | Tfget of 'i * 'e * 'e (* logical pure get; no fail *)
   | Tset    of 'i * 'e * 'e * 'e
   | Tsum    of 'i * 'e * 'e
   | Tsort   of 'i * 'e * 'e
@@ -385,6 +386,7 @@ and map_abstract_term
   | Tremove (i,e1,e2)  -> Tremove (map_i i,map_e e1, map_e e2)
   | Tvremove (i,e1,e2) -> Tvremove (map_i i,map_e e1, map_e e2)
   | Tget (i,e1,e2)     -> Tget (map_i i, map_e e1, map_e e2)
+  | Tfget (i,e1,e2)    -> Tfget (map_i i, map_e e1, map_e e2)
   | Tset (i, e1,e2,e3) -> Tset (map_i i, map_e e1, map_e e2, map_e e3)
   | Tsum (i,e1,e2)     -> Tsum (map_i i, map_e e1, map_e e2)
   | Tsort (i,e1,e2)    -> Tsort (map_i i, map_e e1, map_e e2)
@@ -777,7 +779,7 @@ let compare_abstract_term
   | Tvadd (i1,e1,e2), Tvadd (i2,f1,f2) -> cmpi i1 i2 && cmpe e1 f1 && cmpe e2 f2
   | Tremove (i1,e1,e2), Tremove (i2,f1,f2) -> cmpi i1 i2 && cmpe e1 f1 && cmpe e2 f2
   | Tvremove (i1,e1,e2), Tvremove (i2,f1,f2) -> cmpi i1 i2 && cmpe e1 f1 && cmpe e2 f2
-  | Tget (i1,e1,e2), Tget (i2,f1,f2) -> cmpi i1 i2 && cmpe e1 f1 && cmpe e2 f2
+  | Tfget (i1,e1,e2), Tfget (i2,f1,f2) -> cmpi i1 i2 && cmpe e1 f1 && cmpe e2 f2
   | Tset (i1,e1,e2,e3), Tset (i2,f1,f2,f3) -> cmpi i1 i2 && cmpe e1 f1 && cmpe e2 f2 && cmpe e3 f3
   | Tsum (i1,e1,e2), Tsum (i2,f1,f2) -> cmpi i1 i2 && cmpe e1 f1 && cmpe e2 f2
   | Tsort (i1,e1,e2), Tsort (i2,f1,f2) -> cmpi i1 i2 && cmpe e1 f1 && cmpe e2 f2
