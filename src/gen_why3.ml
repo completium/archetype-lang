@@ -1507,7 +1507,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     (* formula asset collection methods *)
 
     | Mapifget (a, _c, k) -> Tapp (loc_term (Tvar ("get_" ^ a)),[map_mterm m ctx k])
-    | Mapifpureget (a, k) -> Tapp (loc_term (Tvar ("get_" ^ a)),[map_mterm m ctx k])
+    | Mapifpureget (a, k) -> Tfget(with_dummy_loc a, loc_term (mk_ac  a),map_mterm m ctx k)
     | Mapifsubsetof (n, l, r) ->
       begin match l with
       | { node = Mcast(_,_,c); type_ = _ } -> Tsubset (with_dummy_loc n, map_mterm m ctx c, map_mterm m ctx r)
