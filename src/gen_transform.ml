@@ -1913,6 +1913,38 @@ let replace_asset_by_key (model : model) : model =
     mt |> aux
   in
 
+  let for_specification spec =
+    let for_mterm_formula mt =
+      let rec aux (env : ident list) (mt : mterm) : mterm =
+        match mt.node, mt.type_ with
+        | Mvarlocal id, Tasset an
+        | Mvarparam id, Tasset an when not (List.mem (unloc id) env) ->
+          let _, kt = Utils.get_asset_key model (unloc an) in
+           mk_mterm (Mapifpureget(unloc an, { mt with type_ = Tbuiltin (kt) })) (Tasset an)
+        | Mletin (ids, a, t, b, o), _ ->
+          let env = env @ (List.map unloc ids) in
+          let f = aux env in
+          { mt with node = Mletin (ids, f a, t, f b, Option.map f o) }
+        | _ -> map_mterm (aux env) mt
+      in
+      aux [] mt
+    in
+    let for_postcondition (p : postcondition) =
+      let for_invariant (i : invariant) =
+        { i with
+          formulas = List.map for_mterm_formula i.formulas;
+        }
+      in
+      { p with
+        formula = for_mterm_formula p.formula;
+        invariants = List.map for_invariant p.invariants;
+      }
+    in
+    { spec with
+      postconditions = List.map for_postcondition spec.postconditions;
+    }
+  in
+
   let for_function (f : function__) =
     let for_function_node (fn : function_node) =
       let for_function_struct (fs : function_struct) =
@@ -1922,7 +1954,10 @@ let replace_asset_by_key (model : model) : model =
       | Entry fs -> Entry (for_function_struct fs)
       | Function (fs, ret) -> Function (for_function_struct fs, ret)
     in
-    { f with node = for_function_node f.node }
+    { f with
+      node = for_function_node f.node;
+      spec = Option.map for_specification f.spec
+    }
   in
   let model = change_type_of_nth model in
   { model with functions = List.map for_function model.functions }

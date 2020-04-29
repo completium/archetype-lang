@@ -1025,7 +1025,7 @@ let pp_mterm fmt (mt : mterm) =
 
     | Mapifpureget (a, k) ->
       let pp fmt (a, k) =
-        Format.fprintf fmt "apifoureget_%a (%a)"
+        Format.fprintf fmt "apifpureget_%a (%a)"
           pp_str a
           f k
       in
