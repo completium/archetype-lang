@@ -1429,6 +1429,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
         if is_external_id ctx (unloc v) then
           begin match mt.type_ with
           | M.Tasset a -> Tfget (map_lident a, loc_term (mk_ac (unloc a)),with_dummy_loc (Tvar (map_lident v)))
+          (* TODO : handle external vars at specific label *)
           | _ -> Tvar (map_lident v)
           end
         else
