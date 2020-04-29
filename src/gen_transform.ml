@@ -1917,6 +1917,8 @@ let replace_asset_by_key (model : model) : model =
     let for_mterm_formula mt =
       let rec aux (env : ident list) (mt : mterm) : mterm =
         match mt.node, mt.type_ with
+        | Mselect (an, c, a, b, l), _ -> mk_mterm (Mselect (an, aux ("the"::env) c, a, b, l)) mt.type_
+        | Msum (an, c, a), _ -> mk_mterm (Msum (an, aux env c, aux ("the"::env) a)) mt.type_
         | Mvarlocal id, Tasset an
         | Mvarparam id, Tasset an when not (List.mem (unloc id) env) ->
           let _, kt = Utils.get_asset_key model (unloc an) in
