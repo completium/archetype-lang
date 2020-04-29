@@ -1797,31 +1797,22 @@ let pp_model_internal fmt (model : model) b =
         pp_btyp t
 
     | Nth an ->
-      let k, t = Utils.get_asset_key model an in
+      let _k, t = Utils.get_asset_key model an in
       Format.fprintf fmt
         "function nth_%s (const s : storage_type; const l : list(%a); const index : int) : %a is@\n  \
-         block {@\n    \
-         function aggregate (const accu: int * option(%a); const x: %a) : int * option(%a) is@\n    \
-         if accu.0 = index@\n    \
-         then (accu.0 + 1, Some(x));@\n    \
-         else (accu.0 + 1, accu.1);@\n    \
-         const init : int * option(%a) = (0, (None : option(%a)));@\n    \
-         const res_opt : int * option(%a) = list_fold (aggregate, l, init);@\n    \
-         var key : %a := %a;@\n    \
-         case res_opt.1 of@\n    \
-         | Some(v) -> key := v@\n    \
-         | None -> failwith(\"nth_%s failed\")@\n    \
-         end;@\n    \
-         const res : %s = get_%s(s, key);@\n  \
-         } with res.%s@\n"
+         block {@\n  \
+         function aggregate (const accu: map(int, %a); const x: %a) : map(int, %a) is@\n  \
+         block {@\n  \
+         const le : int = int(Map.size(accu));@\n  \
+         accu[le] := x;@\n  \
+         } with accu;@\n  \
+         const map_ : map(int, %a) = list_fold(aggregate, l, (map [] : map(int, %a)));@\n  \
+         const res : %a = get_force(index, map_);@\n  \
+         } with res@\n"
         an pp_btyp t pp_btyp t
         pp_btyp t pp_btyp t pp_btyp t
         pp_btyp t pp_btyp t
         pp_btyp t
-        pp_btyp t pp_default (Tbuiltin t)
-        an
-        an an
-        k
 
     | Count an ->
       let _, t = Utils.get_asset_key model an in
