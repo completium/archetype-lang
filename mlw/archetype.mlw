@@ -151,9 +151,9 @@ module Utils
 
   let function str_concat (s1 : astring) (s2 : astring) : astring = s1 + s2
 
-  let function substring  (s : astring) (i1 : int) (i2 : int) = 0
+  let function substring  (_ : astring) (_ : int) (_ : int) = 0
 
-  let function str_length (s : astring) : int = 0
+  let function str_length (_ : astring) : int = 0
 
   let function byt_concat (b1 : bytes) (b2 : bytes) : bytes = b1 + b2
 
