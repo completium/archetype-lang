@@ -1917,7 +1917,7 @@ let add_contain_on_get (model : model) : model =
           | _ -> []
         in
         let te = aux_env env t in
-        let ee = Option.map (aux_env env) e in
+        let ee = Option.map aux e in
         g env accu (mk_mterm (Mif (c, te, ee)) mt.type_)
 
       | Mmatchwith (e, l) ->
