@@ -1855,6 +1855,204 @@ let change_type_of_nth (model : model) : model =
   in
   map_mterm_model aux model
 
+let add_contain_on_get (model : model) : model =
+
+  let for_mterm (mt : mterm) : mterm =
+
+    let rec for_instruction
+        (g : 'b -> 'a -> mterm -> mterm)
+        (f : 'a -> mterm -> 'a)
+        (env : 'b)
+        (accu : 'a)
+        (mt : mterm) : mterm =
+      let aux_env env = for_instruction g f env [] in
+      let aux = for_instruction g f env [] in
+      let gg = g env in
+      match mt.node with
+
+      | Mletin (i, a, t, b, o) ->
+        let accu = f accu a in
+        let be = aux b in
+        let oe = Option.map aux o in
+        gg accu (mk_mterm (Mletin (i, a, t, be, oe)) mt.type_)
+
+      | Mdeclvar (_i, _t, v) ->
+        let accu = f accu v in
+        gg accu mt
+
+      (* assign *)
+
+      | Massign (_op, _t, _l, r) ->
+        let accu = f accu r in
+        gg accu mt
+
+      | Massignvarstore (_op, _t, _l, r)  ->
+        let accu = f accu r in
+        gg accu mt
+
+      | Massignfield (_op, _t, _a, _fi, r) ->
+        let accu = f accu r in
+        gg accu mt
+
+      | Massignstate x ->
+        let accu = f accu x in
+        gg accu mt
+
+      | Massignassetstate (_an, k, v) ->
+        let accu = f accu k in
+        let accu = f accu v in
+        gg accu mt
+
+
+      (* control *)
+
+      | Mif (c, t, e) ->
+        let accu = f accu c in
+        let env =
+          match c.node with
+          | Mcontains(an, c, k) -> [an, c, k]
+          | _ -> []
+        in
+        let te = aux_env env t in
+        let ee = Option.map (aux_env env) e in
+        g env accu (mk_mterm (Mif (c, te, ee)) mt.type_)
+
+      | Mmatchwith (e, l) ->
+        let accu = f accu e in
+        let ll = List.map (fun (p, e) -> (p, aux e)) l in
+        gg accu (mk_mterm (Mmatchwith (e, ll)) mt.type_)
+
+      | Mfor (i, c, b, lbl) ->
+        let accu = f accu c in
+        let be = aux b in
+        gg accu (mk_mterm (Mfor (i, c, be, lbl)) mt.type_)
+
+      | Miter (i, a, b, c, lbl) ->
+        let accu = f accu a in
+        let accu = f accu b in
+        let ce = aux c in
+        gg accu (mk_mterm (Miter (i, a, b, ce, lbl)) mt.type_)
+
+      | Mreturn x ->
+        let accu = f accu x in
+        gg accu (mk_mterm (Mreturn (x)) mt.type_)
+
+
+      (* effect *)
+
+      | Mfail v ->
+        let accu = match v with
+          | Invalid x -> f accu x
+          | _ -> []
+        in
+        gg accu mt
+
+      | Mtransfer (v, d) ->
+        let accu = f accu v in
+        let accu = f accu d in
+        gg accu mt
+
+      | Mentrycall (v, d, _t, _func, args) ->
+        let accu = f accu v in
+        let accu = f accu d in
+        let accu = List.fold_right (fun (_, x) accu -> f accu x) args accu in
+        gg accu mt
+
+
+      (* asset api effect *)
+
+      | Maddasset (_an, i) ->
+        let accu = f accu i in
+        gg accu mt
+
+      | Maddfield (_an, _fn, c, i) ->
+        let accu = f accu c in
+        let accu = f accu i in
+        gg accu mt
+
+      | Mremoveasset (_an, i) ->
+        let accu = f accu i in
+        gg accu mt
+
+      | Mremovefield (_an, _fn, c, i) ->
+        let accu = f accu c in
+        let accu = f accu i in
+        gg accu mt
+
+      | Mclearfield (_an, _fn, a) ->
+        let accu = f accu a in
+        gg accu mt
+
+      | Mset (_an, _l, k, v) ->
+        let accu = f accu k in
+        let accu = f accu v in
+        gg accu mt
+
+      | Mupdate (_an, k, l) ->
+        let accu = f accu k in
+        let accu = List.fold_right (fun (_, _, v) accu -> f accu v) l accu in
+        gg accu mt
+
+      | Mremoveif (_an, _c, _la, lb, a) ->
+        let accu = f accu lb in
+        let accu = List.fold_right (fun v accu -> f accu v) a accu in
+        gg accu mt
+
+      | Maddupdate (_an, k, l) ->
+        let accu = f accu k in
+        let accu = List.fold_right (fun (_, _, v) accu -> f accu v) l accu in
+        gg accu mt
+
+      | _ -> map_mterm (for_instruction g f env accu) mt
+
+    in
+
+    let g (env : (ident * mterm * mterm) list) (accu : (ident * mterm * mterm) list) (mt : mterm) : mterm =
+      match accu with
+      | [] -> mt
+      | _ ->
+        begin
+          let build_contains (an, c, k) : mterm =
+            let contains = mk_mterm (Mcontains(an, c, k)) (Tbuiltin Bbool) in
+            let not_contains = mk_mterm (Mnot contains) (Tbuiltin Bbool) in
+            let str_fail : mterm = mk_mterm (Mstring "get failed") (Tbuiltin Bstring) in
+            let fail = mk_mterm (Mfail (Invalid str_fail)) Tunit in
+            let mif : mterm = mk_mterm (Mif(not_contains, fail, None)) Tunit in
+            mif
+          in
+          let cmp (an1, c1, k1 : ident * mterm * mterm) (an2, c2, k2 : ident * mterm * mterm) : bool =
+            cmp_ident an1 an2 && cmp_mterm c1 c2 && cmp_mterm k1 k2
+          in
+          let ll = List.filter (fun x -> not (List.exists (cmp x) env)) accu in
+          let l = List.map build_contains ll @ [mt] in
+          mk_mterm (Mseq l) mt.type_
+        end
+    in
+    let rec f (accu : (ident * mterm * mterm) list) (mt : mterm) : (ident * mterm * mterm) list =
+      match mt.node with
+      | Mget(an, c, k) ->
+        let accu = f accu c in
+        let accu = f accu k in
+        (an, c, k)::accu
+      | _ -> fold_term f accu mt
+    in
+    for_instruction g f [] [] mt
+  in
+
+  let for_function (f : function__) =
+    let for_function_node (fn : function_node) =
+      let for_function_struct (fs : function_struct) =
+        {fs with body = for_mterm fs.body }
+      in
+      match fn with
+      | Entry fs -> Entry (for_function_struct fs)
+      | Function (fs, ret) -> Function (for_function_struct fs, ret)
+    in
+    { f with node = for_function_node f.node; }
+  in
+  { model with functions = List.map for_function model.functions }
+
+
 let replace_asset_by_key (model : model) : model =
   let rec for_type (t : type_) : type_ =
     match t with
@@ -1964,10 +2162,11 @@ let replace_asset_by_key (model : model) : model =
       spec = Option.map for_specification f.spec
     }
   in
-  let model = change_type_of_nth model in
+  let model =
+    model
+    |> change_type_of_nth
+  in
   { model with functions = List.map for_function model.functions }
-
-
 
 
 let split_key_values (model : model) : model =
@@ -2032,218 +2231,6 @@ let split_key_values (model : model) : model =
   { model with
     storage = storage
   } |> map_mterm_model aux
-
-
-
-
-(* let replace_get_on_view (model : model) : model =
-   let rec is_not_varcol (a : mterm) =
-    match a.node with
-    | Mvarstorecol _ -> false
-    | Mcast (_, _, a) -> is_not_varcol a
-    | _ -> true
-   in
-
-   let rec aux ctx (mt : mterm) : mterm =
-    match mt.node with
-    | Mget (an, c, k) when is_not_varcol c ->
-      let type_asset = Tasset (dumloc an) in
-      let c = Utils.get_asset_collection an in
-      let get_asset = mk_mterm (Mget (an, Utils.get_asset_collection an, k)) type_asset in
-      let ffail = mk_mterm (Mfail (Invalid (mk_mterm (Mstring "do not contain key") (Tbuiltin Bstring)))) Tunit in
-      let cond = mk_mterm (Mcontains (an, c, k)) (Tbuiltin Bbool) in
-      mk_mterm (Mexprif (cond, get_asset, ffail)) type_asset
-    | _ -> map_mterm (aux ctx) mt
-   in
-   Model.map_mterm_model aux model *)
-
-let add_contain_on_get (model : model) : model =
-
-  let for_mterm (mt : mterm) =
-
-    let rec for_instruction
-        (g : 'a -> mterm -> mterm)
-        (f : 'a -> mterm -> 'a)
-        (accu : 'a)
-        (mt : mterm) : mterm =
-      let aux = for_instruction g f [] in
-      match mt.node with
-
-      | Mletin (i, a, t, b, o) ->
-        let accu = f accu a in
-        let be = aux b in
-        let oe = Option.map aux o in
-        g accu (mk_mterm (Mletin (i, a, t, be, oe)) mt.type_)
-
-      | Mdeclvar (_i, _t, v) ->
-        let accu = f accu v in
-        g accu mt
-
-      (* assign *)
-
-      | Massign (_op, _t, _l, r) ->
-        let accu = f accu r in
-        g accu mt
-
-      | Massignvarstore (_op, _t, _l, r)  ->
-        let accu = f accu r in
-        g accu mt
-
-      | Massignfield (_op, _t, _a, _fi, r) ->
-        let accu = f accu r in
-        g accu mt
-
-      | Massignstate x ->
-        let accu = f accu x in
-        g accu mt
-
-      | Massignassetstate (_an, k, v) ->
-        let accu = f accu k in
-        let accu = f accu v in
-        g accu mt
-
-
-      (* control *)
-
-      | Mif (c, t, e) ->
-        let accu = f accu c in
-        let te = aux t in
-        let ee = Option.map aux e in
-        g accu (mk_mterm (Mif (c, te, ee)) mt.type_)
-
-      | Mmatchwith (e, l) ->
-        let accu = f accu e in
-        let ll = List.map (fun (p, e) -> (p, aux e)) l in
-        g accu (mk_mterm (Mmatchwith (e, ll)) mt.type_)
-
-      | Mfor (i, c, b, lbl) ->
-        let accu = f accu c in
-        let be = aux b in
-        g accu (mk_mterm (Mfor (i, c, be, lbl)) mt.type_)
-
-      | Miter (i, a, b, c, lbl) ->
-        let accu = f accu a in
-        let accu = f accu b in
-        let ce = aux c in
-        g accu (mk_mterm (Miter (i, a, b, ce, lbl)) mt.type_)
-
-      | Mreturn x ->
-        let accu = f accu x in
-        g accu (mk_mterm (Mreturn (x)) mt.type_)
-
-
-      (* effect *)
-
-      | Mfail v ->
-        let accu = match v with
-          | Invalid x -> f accu x
-          | _ -> []
-        in
-        g accu mt
-
-      | Mtransfer (v, d) ->
-        let accu = f accu v in
-        let accu = f accu d in
-        g accu mt
-
-      | Mentrycall (v, d, _t, _func, args) ->
-        let accu = f accu v in
-        let accu = f accu d in
-        let accu = List.fold_right (fun (_, x) accu -> f accu x) args accu in
-        g accu mt
-
-
-      (* asset api effect *)
-
-      | Maddasset (_an, i) ->
-        let accu = f accu i in
-        g accu mt
-
-      | Maddfield (_an, _fn, c, i) ->
-        let accu = f accu c in
-        let accu = f accu i in
-        g accu mt
-
-      | Mremoveasset (_an, i) ->
-        let accu = f accu i in
-        g accu mt
-
-      | Mremovefield (_an, _fn, c, i) ->
-        let accu = f accu c in
-        let accu = f accu i in
-        g accu mt
-
-      | Mclearfield (_an, _fn, a) ->
-        let accu = f accu a in
-        g accu mt
-
-      | Mset (_an, _l, k, v) ->
-        let accu = f accu k in
-        let accu = f accu v in
-        g accu mt
-
-      | Mupdate (_an, k, l) ->
-        let accu = f accu k in
-        let accu = List.fold_right (fun (_, _, v) accu -> f accu v) l accu in
-        g accu mt
-
-      | Mremoveif (_an, _c, _la, lb, a) ->
-        let accu = f accu lb in
-        let accu = List.fold_right (fun v accu -> f accu v) a accu in
-        g accu mt
-
-      | Maddupdate (_an, k, l) ->
-        let accu = f accu k in
-        let accu = List.fold_right (fun (_, _, v) accu -> f accu v) l accu in
-        g accu mt
-
-      | _ -> map_mterm (for_instruction g f accu) mt
-
-    in
-
-    let g (accu : (ident * mterm * mterm) list) (mt : mterm) : mterm =
-      match accu with
-      | [] -> mt
-      | _ ->
-        begin
-          let build_contains (an, c, k) : mterm =
-            let contains = mk_mterm (Mcontains(an, c, k)) (Tbuiltin Bbool) in
-            let not_contains = mk_mterm (Mnot contains) (Tbuiltin Bbool) in
-            let str_fail : mterm = mk_mterm (Mstring "get failed") (Tbuiltin Bstring) in
-            let fail = mk_mterm (Mfail (Invalid str_fail)) Tunit in
-            let mif : mterm = mk_mterm (Mif(not_contains, fail, None)) Tunit in
-            mif
-          in
-          let l = List.map build_contains accu @ [mt] in
-          mk_mterm (Mseq l) mt.type_
-        end
-    in
-    let rec f (accu : (ident * mterm * mterm) list) (mt : mterm) : (ident * mterm * mterm) list =
-      match mt.node with
-      | Mget(an, c, k) ->
-        let accu = f accu c in
-        let accu = f accu k in
-        (an, c, k)::accu
-      | _ -> fold_term f accu mt
-    in
-    for_instruction g f [] mt
-  in
-
-  let for_function (f : function__) =
-    let for_function_node (fn : function_node) =
-      let for_function_struct (fs : function_struct) =
-        {fs with body = for_mterm fs.body }
-      in
-      match fn with
-      | Entry fs -> Entry (for_function_struct fs)
-      | Function (fs, ret) -> Function (for_function_struct fs, ret)
-    in
-    { f with
-      node = for_function_node f.node;
-    }
-  in
-  { model with functions = List.map for_function model.functions }
-
 
 let replace_for_to_iter (model : model) : model =
   let is_asset (col : mterm) : bool =

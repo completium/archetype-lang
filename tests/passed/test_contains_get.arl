@@ -1,0 +1,20 @@
+archetype test_contains_get
+
+asset my_asset identified by id {
+  id : string;
+  value : int;
+}
+
+variable res : int = 0
+
+action exec () {
+  effect {
+    if my_asset.contains("id1") then (
+      var a = my_asset.get("id1");
+      res := a.value;
+    ) else (
+      var b = my_asset.get("other_id");
+      res := b.value
+    )
+  }
+}
