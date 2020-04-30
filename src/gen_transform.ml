@@ -2208,9 +2208,10 @@ let add_contain_on_get (model : model) : model =
         begin
           let build_contains (an, c, k) : mterm =
             let contains = mk_mterm (Mcontains(an, c, k)) (Tbuiltin Bbool) in
+            let not_contains = mk_mterm (Mnot contains) (Tbuiltin Bbool) in
             let str_fail : mterm = mk_mterm (Mstring "get failed") (Tbuiltin Bstring) in
             let fail = mk_mterm (Mfail (Invalid str_fail)) Tunit in
-            let mif : mterm = mk_mterm (Mif(contains, fail, None)) Tunit in
+            let mif : mterm = mk_mterm (Mif(not_contains, fail, None)) Tunit in
             mif
           in
           let l = List.map build_contains accu @ [mt] in
