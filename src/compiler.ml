@@ -127,8 +127,6 @@ let generate_target model =
   | LigoStorage ->
     model
     |> replace_ligo_ident
-    |> add_contain_on_get
-    (* |> replace_get_on_view *)
     |> process_asset_state
     |> replace_assignfield_by_update
     |> remove_add_update
@@ -205,7 +203,6 @@ let generate_target model =
   | Whyml ->
     model
     |> replace_whyml_ident
-    |> add_contain_on_get
     |> process_asset_state
     |> remove_add_update
     |> merge_update

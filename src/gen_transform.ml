@@ -232,26 +232,29 @@ let remove_label (model : model) : model =
   in
   map_mterm_model aux model
 
-let rec flat_sequence_mterm (mt : mterm) =
-  match mt.node with
-  | Mseq l ->
-    begin
-      match l with
-      | [] -> mt
-      | [e] -> e
-      | l ->
-        let l = List.fold_right (fun (x : mterm) accu ->
-            match x.node with
-            | Mseq [] -> accu
-            | _ -> x::accu) l [] in
-        begin
-          match l with
-          | [] -> mk_mterm (Mseq []) Tunit
-          | [e] -> e
-          | _ -> mk_mterm (Mseq l) (List.last l).type_
-        end
-    end
-  | _ -> map_mterm flat_sequence_mterm mt
+let flat_sequence_mterm (mt : mterm) =
+  let rec aux (mt : mterm) : mterm =
+    match mt.node with
+    | Mseq l ->
+      begin
+        match l with
+        | [] -> mt
+        | [e] -> aux e
+        | l ->
+          let l = List.fold_right (fun (x : mterm) accu ->
+              match x.node with
+              | Mseq [] -> accu
+              | _ -> (aux x)::accu) l [] in
+          begin
+            match l with
+            | [] -> mk_mterm (Mseq []) Tunit
+            | [e] -> aux e
+            | _ -> mk_mterm (Mseq (List.map aux l)) (List.last l).type_
+          end
+      end
+    | _ -> map_mterm aux mt
+  in
+  aux mt
 
 let flat_sequence (model : model) : model =
   let aux (_ctx : ctx_model) (mt : mterm) : mterm =
@@ -2165,8 +2168,10 @@ let replace_asset_by_key (model : model) : model =
   let model =
     model
     |> change_type_of_nth
+    |> add_contain_on_get
   in
   { model with functions = List.map for_function model.functions }
+  |> flat_sequence
 
 
 let split_key_values (model : model) : model =
