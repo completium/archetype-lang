@@ -490,13 +490,9 @@ module AssetCollection
   (* Collection API ********************************************************* *)
 
   (* ------------------------------------------------------------------------ *)
-  let function list_to_view (l : list t) : view
+  let rec function internal_list_to_view (l : list t) : list key
   requires { D.distinct l }
-  ensures { forall k. vmem k result <-> exists e. M.mem e l /\ fkey e = k }
-  ensures { vcard result = L.length l }
-  =
-  let rec internal_list_to_view l : list key
-  requires { D.distinct l }
+  requires { key_injective l }
   variant { l }
   ensures { D.distinct result }
   ensures { forall k. M.mem k result <-> exists e. M.mem e l /\ fkey e = k }
@@ -505,8 +501,15 @@ module AssetCollection
   match l with
   | Cons e tl -> Cons (fkey e) (internal_list_to_view tl)
   | Nil -> Nil
-  end in
-  vmk (internal_list_to_view l)
+  end
+
+  (* ------------------------------------------------------------------------ *)
+  let function list_to_view (l : list t) : view
+  requires { D.distinct l }
+  requires { key_injective l }
+  ensures { forall k. vmem k result <-> exists e. M.mem e l /\ fkey e = k }
+  ensures { vcard result = L.length l }
+  = vmk (internal_list_to_view l)
 
   (* ------------------------------------------------------------------------ *)
   let rec function to_view (c : collection) : view
@@ -522,6 +525,8 @@ module AssetCollection
 
   (* ------------------------------------------------------------------------ *)
   let rec function internal_get (l : list t) (k : key) : option t
+  requires { D.distinct l }
+  requires { key_injective l }
   variant { l }
   ensures { vmem k (list_to_view l) ->
     exists e. result = Some e  /\ fkey e = k
@@ -547,26 +552,29 @@ module AssetCollection
     contains k c -> mem (fget c k) c
 
   (* ------------------------------------------------------------------------ *)
+  predicate list_subset (l1 : list t) (l2 : list t) = forall e. M.mem e l1 -> M.mem e l2
+
   let function view_to_list (v : view) (c : collection) : list t
   ensures { D.distinct result }
   ensures { key_injective result }
   =
-  let rec function internal_view_to_list (v : list key) (l : list t) : list t
-  variant { v }
-  requires { D.distinct v }
+  let rec function internal_view_to_list (l : list t) : list t
   requires { D.distinct l }
+  requires { key_injective l }
+  variant { l }
+  ensures { list_subset result l }
   ensures { D.distinct result }
   ensures { key_injective result }
   =
-  match v with
-  | Cons k tl ->
-    match get c k with
-    | Some e -> internal_view_to_list tl (Cons e l)
-    | None -> internal_view_to_list tl l
-    end
-  | Nil -> l
+  match l with
+  | Cons e tl ->
+    if vmem (fkey e) v then
+      Cons e (internal_view_to_list tl)
+    else
+      internal_view_to_list tl
+  | Nil -> Nil
   end in
-  internal_view_to_list v.vcontent Nil
+  internal_view_to_list (elts c)
 
   (* ------------------------------------------------------------------------ *)
   let function to_coll (v : view) (c : collection) : collection
@@ -578,13 +586,15 @@ module AssetCollection
   F.fmem a (F.fsetU (F.mk (Cons a Nil)) s)
 
   lemma eq_col_set: forall s1 s2.
+  key_injective (F.content s1) ->
+  key_injective (F.content s2) ->
   F.(==) s1 s2 <-> mk s1 == mk s2
 
   let add (c : collection) (a : t)
   requires { not (contains (fkey a) c) }
   ensures { mem a result }
   ensures { result == union (singleton a) c }
-  = mk (F.mk (IS.insert a (elts c)))
+  = mk (F.mk (Cons a (elts c)))
 
   (* ------------------------------------------------------------------------ *)
   let set (c : collection) (k : key) (a : t) : collection
@@ -592,8 +602,11 @@ module AssetCollection
   ensures { get result k = Some a }
   =
   let rec internal_set (l : list t) (k : key) (a : t) : list t
+  requires { D.distinct l }
+  requires { key_injective l }
   variant { l }
   requires { M.mem a (elts c) }
+  ensures { key_injective result }
   ensures { internal_get result k = Some a }
   =
   match l with
@@ -612,6 +625,8 @@ module AssetCollection
   ensures { exists e. result = diff c (singleton e) /\ fkey e = k }
   =
   let rec internal_remove (l : list t) (k : key) : list t
+  requires { D.distinct l }
+  requires { key_injective l }
   variant { l }
   ensures { L.length result = L.length l - 1 }
   ensures { exists e. M.mem e l /\ not (M.mem e result) /\ fkey e = k }
