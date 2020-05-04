@@ -934,7 +934,7 @@ let mk_trace_seq m t chs =
 
 let is_old (ctx : logical_context) (t : M.mterm) =
   match t.node with
-  | M.Mdotasset ({ node = M.Mvarlocal id;  type_ = _},_) -> List.mem (unloc id) ctx.localold
+  | M.Mdotfieldasset ({ node = M.Mvarlocal id;  type_ = _}, _, _) -> List.mem (unloc id) ctx.localold
   | _ -> false
 
 let map_mpattern (p : M.lident M.pattern_node) =
@@ -1197,7 +1197,8 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
 
     (* access *)
 
-    | Mdotasset (e, i) -> Tdot (map_mterm m ctx e, mk_loc (loc i) (Tvar (map_lident i)))
+    | Mdot _                    -> error_not_translated "Mdot"
+    | Mdotfieldasset (e, _k, i) -> Tdot (map_mterm m ctx e, mk_loc (loc i) (Tvar (map_lident i)))
     | Mdotcontract       _ -> error_not_translated "Mdotcontract"
     | Maccestuple        _ -> error_not_translated "Maccestuple"
 
@@ -1304,7 +1305,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
         map_mterm m ctx v |> Mlwtree.deloc
       | Mvarlocal f when is_coll_field m (unloc f) ->
         map_mterm m ctx v |> Mlwtree.deloc
-      | Mdotasset (_,f) when is_coll_field m (unloc f) ->
+      | Mdotfieldasset (_,_,f) when is_coll_field m (unloc f) ->
         map_mterm m ctx v |> Mlwtree.deloc
       | _ -> Ttoview (map_lident a,map_mterm m ctx v)
       end

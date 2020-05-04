@@ -124,7 +124,6 @@ type const =
   | Cresult
   (* function *)
   | Cisempty
-  | Cget
   | Cadd
   | Cremove
   | Cremoveif
@@ -289,7 +288,7 @@ type 'id term_node  =
   | Pvar of var_temporality * vset * 'id
   | Parray of 'id term_gen list
   | Plit of bval
-  | Pdot of 'id term_gen * 'id
+  | Pdotfield of 'id term_gen * 'id term_gen * 'id
   | Pconst of const
   | Ptuple of 'id term_gen list
   | Pnone
@@ -710,7 +709,7 @@ let map_term_node (f : 'id term_gen -> 'id term_gen) = function
   | Pvar (b, vs, v)         -> Pvar (b, vs, v)
   | Parray l                -> Parray (List.map f l)
   | Plit l                  -> Plit l
-  | Pdot (e, i)             -> Pdot (f e, i)
+  | Pdotfield (e, k, i)     -> Pdotfield (f e, f k, i)
   | Pconst c                -> Pconst c
   | Ptuple l                -> Ptuple (List.map f l)
   | Pnone                   -> Pnone
@@ -774,7 +773,7 @@ let fold_term (f: 'a -> 't -> 'a) (accu : 'a) (term : 'id term_gen) =
   | Pvar _                  -> accu
   | Parray l                -> List.fold_left f accu l
   | Plit _                  -> accu
-  | Pdot (e, _)             -> f accu e
+  | Pdotfield (e, k, _)     -> f (f accu e) k
   | Pconst _                -> accu
   | Ptuple l                -> List.fold_left f accu l
   | Pnone                   -> accu
@@ -920,9 +919,10 @@ let fold_map_term g f (accu : 'a) (term : 'id term_gen) : 'term * 'a =
   | Plit l ->
     g (Plit l), accu
 
-  | Pdot (e, id) ->
+  | Pdotfield (e, k, id) ->
     let ee, ea = f accu e in
-    g (Pdot (ee, id)), ea
+    let ke, ka = f ea k in
+    g (Pdotfield (ee, ke, id)), ka
 
   | Pconst c ->
     g (Pconst c), accu

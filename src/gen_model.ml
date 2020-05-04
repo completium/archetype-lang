@@ -162,7 +162,7 @@ let to_model (ast : A.model) : M.model =
 
   let _extract_field_name (_id, _type_, body : A.lident * A.ptyp * A.pterm) : M.lident =
     match body.node with
-    | A.Pdot (_, fn) -> fn
+    | A.Pdotfield (_, _, fn) -> fn
     | _ ->
       Format.printf "extract_field_name error: %a@\n" A.pp_pterm body;
       assert false
@@ -247,9 +247,7 @@ let to_model (ast : A.model) : M.model =
       | A.Plit ({node = BVaddress s; _})       -> M.Maddress s
       | A.Plit ({node = BVduration d; _})      -> M.Mduration d
       | A.Plit ({node = BVbytes v; _})         -> M.Mbytes v
-      | A.Pdot (d, i) ->
-        (* handle dot contract too *)
-        M.Mdotasset (f d, i)
+      | A.Pdotfield (d, k, i)                  -> M.Mdotfieldasset (f d, f k, i)
       | A.Pconst Cstate                        -> M.Mvarstate
       | A.Pconst Cnow                          -> M.Mnow
       | A.Pconst Ctransferred                  -> M.Mtransferred
@@ -356,14 +354,6 @@ let to_model (ast : A.model) : M.model =
         let fp = f p in
         let asset_name = extract_asset_name fp in
         M.Mapifisempty (asset_name, fp)
-
-      | A.Pcall (Some p, A.Cconst (A.Cget), [AExpr q]) when is_asset_container p ->
-        let fp = f p in
-        let fq = f q in
-        let asset_name = extract_asset_name fp in
-        if formula
-        then M.Mapifget (asset_name, fp, fq)
-        else M.Mget (asset_name, fp, fq)
 
       | A.Pcall (Some p, A.Cconst (A.Cselect), [AFun (_id, _type, l, q)]) when is_asset_container p ->
         let fp = f p in
@@ -606,7 +596,7 @@ let to_model (ast : A.model) : M.model =
         let fq = f q in
         match fp with
         | {node = M.Mvarstorecol asset_name; _} -> M.Maddasset (unloc asset_name, fq)
-        | {node = M.Mdotasset ({type_ = M.Tasset asset_name ; _} as arg, f); _} -> M.Maddfield (unloc asset_name, unloc f, arg, fq)
+        (* | {node = M.Mdotasset ({type_ = M.Tasset asset_name ; _} as arg, f); _} -> M.Maddfield (unloc asset_name, unloc f, arg, fq) *)
         | _ -> assert false
       )
 
@@ -615,7 +605,7 @@ let to_model (ast : A.model) : M.model =
         let fq = f q in
         match fp with
         | {node = M.Mvarstorecol asset_name; _} -> M.Mremoveasset (unloc asset_name, fq)
-        | {node = M.Mdotasset ({type_ = M.Tasset asset_name ; _} as arg, f); _} -> M.Mremovefield (unloc asset_name, unloc f, arg, fq)
+        (* | {node = M.Mdotasset ({type_ = M.Tasset asset_name ; _} as arg, f); _} -> M.Mremovefield (unloc asset_name, unloc f, arg, fq) *)
         | _ -> assert false
       )
 
@@ -623,7 +613,7 @@ let to_model (ast : A.model) : M.model =
         let fp = f p in
         match fp with
         | {node = M.Mvarstorecol asset_name; _} -> M.Mclearasset (unloc asset_name)
-        | {node = M.Mdotasset (({type_ = M.Tasset asset_name ; _}) as a, fn); _} -> M.Mclearfield (unloc asset_name, unloc fn, a)
+        (* | {node = M.Mdotasset (({type_ = M.Tasset asset_name ; _}) as a, fn); _} -> M.Mclearfield (unloc asset_name, unloc fn, a) *)
         | _ -> assert false
       )
 

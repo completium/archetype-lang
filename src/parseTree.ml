@@ -88,7 +88,7 @@ and expr_unloc =
   | Earray        of expr list
   | Erecord       of record_item list
   | Etuple        of expr list
-  | Edot          of expr * lident
+  | Edotfield     of expr * expr * lident
   | Emulticomp    of expr * (comparison_operator loced * expr) list
   | Eapp          of function_ * expr list
   | Emethod       of expr * lident * expr list

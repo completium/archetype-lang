@@ -566,7 +566,13 @@ let pp_model fmt (model : model) =
 
       (* access *)
 
-      | Mdotasset (e, i)
+      | Mdot (e, i) ->
+        Format.fprintf fmt "(%a).%a"
+          f e
+          pp_id i
+
+      | Mdotfieldasset _ -> emit_error (UnsupportedTerm ("Mdotfieldasset"))
+
       | Mdotcontract (e, i) ->
         Format.fprintf fmt "%a.%a"
           f e

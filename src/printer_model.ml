@@ -340,7 +340,17 @@ let pp_mterm fmt (mt : mterm) =
 
     (* access *)
 
-    | Mdotasset (e, i)
+    | Mdot (e, i) ->
+      Format.fprintf fmt "%a.%a"
+        f e
+        pp_id i
+
+    | Mdotfieldasset (e, k, i) ->
+      Format.fprintf fmt "%a.get(%a).%a"
+        f e
+        f k
+        pp_id i
+
     | Mdotcontract (e, i) ->
       Format.fprintf fmt "%a (%a)"
         pp_id i

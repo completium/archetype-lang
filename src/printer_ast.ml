@@ -170,7 +170,6 @@ let to_const = function
   | Cresult         -> "result"
   (* function *)
   | Cisempty        -> "isempty"
-  | Cget            -> "get"
   | Cadd            -> "add"
   | Cremove         -> "remove"
   | Cremoveif       -> "removeif"
@@ -373,13 +372,14 @@ let rec pp_pterm fmt (pterm : pterm) =
       in
       (pp_no_paren pp) fmt v
 
-    | Pdot (e, i) ->
-      let pp fmt (e, i) =
-        Format.fprintf fmt "%a.%a"
+    | Pdotfield (e, k, i) ->
+      let pp fmt (e, k, i) =
+        Format.fprintf fmt "%a.get(%a).%a"
           pp_pterm e
+          pp_pterm k
           pp_id i
       in
-      (pp_with_paren pp) fmt (e, i)
+      (pp_with_paren pp) fmt (e, k, i)
 
     | Pconst c ->
       let pp fmt c =

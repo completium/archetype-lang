@@ -650,7 +650,6 @@ let methods : (string * method_) list =
     { mth_name; mth_purity; mth_totality; mth_sig; }
   in [
     ("isempty"     , mk M.Cisempty      `Pure   `Total   (`Fixed [              ], Some (`T M.vtbool)));
-    ("get"         , mk M.Cget          `Pure   `Partial (`Fixed [`Pk           ], Some `The));
     ("add"         , mk M.Cadd          `Effect `Total   (`Fixed [`The          ], None));
     ("remove"      , mk M.Cremove       `Effect `Total   (`Fixed [`Pk           ], None));
     ("removeif"    , mk M.Cremoveif     `Effect `Total   (`Fixed [`Pred true    ], None));
@@ -1600,7 +1599,7 @@ let rec for_xexpr
               the
             | Some fname ->
               let fty = (Option.get (get_field fname asset)).fd_type in
-              mk_sp (Some fty) (M.Pdot (the, mkloc (loc tope) fname))
+              mk_sp (Some fty) (M.Pdotfield (the, the, mkloc (loc tope) fname)) (* FIXME: handle key *)
           end
 
         | _ ->
@@ -1781,8 +1780,9 @@ let rec for_xexpr
         mk_sp ty (M.Ptuple es)
       end
 
-    | Edot (pe, x) -> begin
+    | Edotfield (pe, pk, x) -> begin
         let e = for_xexpr env pe in
+        let k = for_xexpr env pk in
 
         match Option.map Type.as_asset e.M.type_ with
         | None ->
@@ -1801,7 +1801,7 @@ let rec for_xexpr
               Env.emit_error env (loc x, err); bailout ()
 
             | Some { fd_type = fty } ->
-              mk_sp (Some fty) (M.Pdot (e, x))
+              mk_sp (Some fty) (M.Pdotfield (e, k, x))
           end
       end
 
@@ -2730,7 +2730,7 @@ let for_lvalue (env : env) (e : PT.expr) : (M.lvalue * M.ptyp) option =
         None
     end
 
-  | Edot (pnm, x) -> begin
+  | Edotfield (pnm, _k, x) -> begin
       let nm = for_expr env pnm in
 
       match Option.map Type.as_asset nm.M.type_ with

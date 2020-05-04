@@ -180,7 +180,8 @@ type ('id, 'term) mterm_node  =
   | Mlitmap           of ('term * 'term) list
   | Mlitrecord        of (ident * 'term) list
   (* access *)
-  | Mdotasset         of 'term * 'id
+  | Mdot              of 'term * 'id
+  | Mdotfieldasset    of 'term * 'term * 'id
   | Mdotcontract      of 'term * 'id
   | Maccestuple       of 'term * Core.big_int
   (* comparison operators *)
@@ -997,7 +998,8 @@ let cmp_mterm_node
     | Mlitmap l1, Mlitmap l2                                                           -> List.for_all2 (fun (k1, v1) (k2, v2) -> (cmp k1 k2 && cmp v1 v2)) l1 l2
     | Mlitrecord l1, Mlitrecord l2                                                     -> List.for_all2 (fun (i1, v1) (i2, v2) -> (cmp_ident i1 i2 && cmp v1 v2)) l1 l2
     (* access *)
-    | Mdotasset (e1, i1), Mdotasset (e2, i2)                                           -> cmp e1 e2 && cmpi i1 i2
+    | Mdot (e1, i1), Mdot (e2, i2)                                                     -> cmp e1 e2 && cmpi i1 i2
+    | Mdotfieldasset (e1, k1, i1), Mdotfieldasset (e2, k2, i2)                         -> cmp e1 e2 && cmp k1 k2 && cmpi i1 i2
     | Mdotcontract (e1, i1), Mdotcontract (e2, i2)                                     -> cmp e1 e2 && cmpi i1 i2
     | Maccestuple (e1, i1), Maccestuple (e2, i2)                                       -> cmp e1 e2 && Big_int.eq_big_int i1 i2
     (* comparison operators *)
@@ -1287,7 +1289,8 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Mlitmap l                      -> Mlitmap (List.map (pair_sigle_map f) l)
   | Mlitrecord l                   -> Mlitrecord (List.map ((fun (x, y) -> (x, f y))) l)
   (* access *)
-  | Mdotasset (e, i)               -> Mdotasset (f e, g i)
+  | Mdot (e, i)                    -> Mdot (f e, g i)
+  | Mdotfieldasset (e, k, i)       -> Mdotfieldasset (f e, f k, g i)
   | Mdotcontract (e, i)            -> Mdotcontract (f e, g i)
   | Maccestuple (e, i)             -> Maccestuple (f e, i)
   (* comparison operators *)
@@ -1612,7 +1615,8 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mlitmap l                             -> List.fold_left (fun accu (k, v) -> f (f accu k) v) accu l
   | Mlitrecord l                          -> List.fold_left (fun accu (_, v) -> f accu v) accu l
   (* access *)
-  | Mdotasset (e, _)                      -> f accu e
+  | Mdot (e, _)                           -> f accu e
+  | Mdotfieldasset (e, k, _)              -> f (f accu e) k
   | Mdotcontract (e, _)                   -> f accu e
   | Maccestuple (e, _)                    -> f accu e
   (* comparison operators *)
@@ -1998,9 +2002,14 @@ let fold_map_term
 
   (* dot *)
 
-  | Mdotasset (e, i) ->
+  | Mdot (e, i) ->
     let ee, ea = f accu e in
-    g (Mdotasset (ee, i)), ea
+    g (Mdot (ee, i)), ea
+
+  | Mdotfieldasset (e, k, i) ->
+    let ee, ea = f accu e in
+    let ke, ka = f ea k in
+    g (Mdotfieldasset (ee, ke, i)), ka
 
   | Mdotcontract (e, i) ->
     let ee, ea = f accu e in

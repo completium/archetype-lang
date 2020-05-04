@@ -270,14 +270,15 @@ let rec pp_expr outer pos fmt a =
     (maybe_paren outer e_default pos pp) fmt values
 
 
-  | Edot (lhs, rhs) ->
+  | Edotfield (x, y, z) ->
 
-    let pp fmt (lhs, rhs) =
-      Format.fprintf fmt "%a.%a"
-        pp_simple_expr lhs
-        pp_id rhs
+    let pp fmt (x, y, z) =
+      Format.fprintf fmt "%a.get(%a).%a"
+        pp_simple_expr x
+        pp_simple_expr y
+        pp_id z
     in
-    (maybe_paren outer e_dot pos pp) fmt (lhs, rhs)
+    (maybe_paren outer e_dot pos pp) fmt (x, y, z)
 
   | Emulticomp (e, l) ->
     let pp fmt (e, l) =

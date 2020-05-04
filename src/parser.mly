@@ -75,6 +75,7 @@
 %token FORALL
 %token FROM
 %token FUNCTION
+%token GET
 %token GREATER
 %token GREATEREQUAL
 %token IDENTIFIED
@@ -785,8 +786,8 @@ simple_expr_r:
  | id=ident a=app_args
      { Eapp ( Fident id, a) }
 
- | x=simple_expr DOT y=ident
-     { Edot (x, y) }
+ | x=simple_expr DOT GET y=paren(expr) DOT z=ident
+     { Edotfield (x, y, z) }
 
  | x=simple_expr DOT id=ident a=app_args
      { Emethod (x, id, a) }

@@ -83,6 +83,7 @@ let string_of_token = function
   | IDENT s         -> Printf.sprintf "IDENT(%s)" s
   | GREATEREQUAL    -> "GREATEREQUAL"
   | GREATER         -> "GREATER"
+  | GET             -> "GET"
   | FUNCTION        -> "FUNCTION"
   | FROM            -> "FROM"
   | FORALL          -> "FORALL"
@@ -218,6 +219,7 @@ let string_of_symbol = function
   | X (T T_IDENT) -> "an ident"
   | X (T T_GREATEREQUAL) -> ">="
   | X (T T_GREATER) -> ">"
+  | X (T T_GET) -> "get"
   | X (T T_FUNCTION) -> "function"
   | X (T T_FROM) -> "from"
   | X (T T_FORALL) -> "forall"

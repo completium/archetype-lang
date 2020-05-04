@@ -589,7 +589,13 @@ let pp_model_internal fmt (model : model) b =
 
     (* access *)
 
-    | Mdotasset (e, i)
+    | Mdot (e, i) ->
+      Format.fprintf fmt "%a.%a"
+        f e
+        pp_id i
+
+    | Mdotfieldasset _ -> emit_error (UnsupportedTerm ("Mdotfieldasset"))
+
     | Mdotcontract (e, i) ->
       Format.fprintf fmt "%a.%a"
         f e
@@ -1825,7 +1831,7 @@ let pp_model_internal fmt (model : model) b =
     | Sum (an, t, p) ->
       let rec pp_expr fmt (mt : mterm) =
         match mt.node with
-        | Mdotasset ({node = Mvarlocal ({pldesc = "the"; _}) }, fn) ->
+        | Mdot ({node = Mvarlocal ({pldesc = "the"; _}) }, fn) ->
           Format.fprintf fmt "a.%a"
             pp_id fn
         | _ -> (pp_mterm_gen (mk_env ()) pp_expr) fmt mt
