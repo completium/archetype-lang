@@ -139,7 +139,7 @@ let replace_update_by_set (model : model) : model =
 
         let asset_aaa =
           match k.node with
-          | Mdotasset (a, _) when is_asset_name a an -> Some a
+          | Mdotfieldasset (a, _, _) when is_asset_name a an -> Some a
           | _ -> None
         in
 
@@ -160,7 +160,7 @@ let replace_update_by_set (model : model) : model =
           List.fold_left (fun accu (x : asset_item) ->
               let v = List.assoc_opt (unloc x.name) lref in
               let type_ = x.type_ in
-              let var = mk_mterm (Mdotasset (var_mterm, x.name)) type_ in
+              let var = mk_mterm (Mdotfieldasset (var_mterm, key_mterm, x.name)) type_ in
               match v with
               | Some y ->
                 accu @ [
@@ -322,7 +322,7 @@ let extend_removeif (model : model) : model =
       let asset_var = mk_mterm (Mvarlocal assetv_str) type_asset in
 
       let key, key_type = Utils.get_asset_key model (unloc lasset) in
-      let asset_key : mterm = mk_mterm (Mdotasset (asset_var,dumloc key)) (Tbuiltin key_type) in
+      let asset_key : mterm = mk_mterm (Mdotfieldasset (asset_var, asset_var, dumloc key)) (Tbuiltin key_type) in
 
       let assets_var_name = dumloc ("assets_") in
       let type_assets = Tcontainer (type_asset, View) in
@@ -1344,8 +1344,8 @@ let abs_tez model : model =
   in
   Model.map_mterm_model aux model
 
-let replace_assignfield_by_update (model : model) : model =
-  let rec aux (ctx : ctx_model) (mt : mterm) : mterm =
+(* let replace_assignfield_by_update (model : model) : model =
+   let rec aux (ctx : ctx_model) (mt : mterm) : mterm =
     match mt.node with
     | Massignfield (op, _, {node = Mget(an, _, key); _ }, fn, v) ->
       let l = [(fn, op, v)] in
@@ -1364,8 +1364,8 @@ let replace_assignfield_by_update (model : model) : model =
       mk_mterm (Mupdate (an, key, l)) Tunit
 
     | _ -> map_mterm (aux ctx) mt
-  in
-  map_mterm_model aux model
+   in
+   map_mterm_model aux model *)
 
 let eval_variable_initial_value (model : model) : model =
   let map_value : (ident * mterm) list =
@@ -1514,8 +1514,8 @@ let replace_ident_model_val (model : model) : model =
 (* set remove update *)
 
 
-let replace_key_by_asset (model : model) : model =
-  let rec aux c (mt : mterm) : mterm =
+(* let replace_key_by_asset (model : model) : model =
+   let rec aux c (mt : mterm) : mterm =
     let mk n = mk_mterm n Tunit in
     let get an k = mk_mterm (Mget (an, Utils.get_asset_collection an, k)) (Tasset (dumloc an)) in
     match mt.node with
@@ -1545,8 +1545,8 @@ let replace_key_by_asset (model : model) : model =
       in
       mk (Mset (an, fns, nk, a))
     | _ -> map_mterm (aux c) mt
-  in
-  Model.map_mterm_model aux model
+   in
+   Model.map_mterm_model aux model *)
 
 let merge_update (model : model) : model =
   let contains l (ref, _, _) = List.fold_left (fun accu (id, _, _) -> accu || (String.equal (unloc ref) (unloc id))) false l in
@@ -1620,8 +1620,13 @@ let process_asset_state (model : model) : model =
     | Mvarassetstate (an, k) ->
       begin
         let i = get_state_lident an in
-        let get_mt = mk_mterm (Mget (an, Utils.get_asset_collection an, k)) (Tasset (dumloc an)) in
-        mk_mterm (Mdotasset (get_mt, i)) mt.type_
+        let dan = dumloc an in
+        let type_asset = Tasset dan in
+        let type_col = Tcontainer (type_asset,Collection) in
+        let type_view = Tcontainer (type_asset,View) in
+        let col : mterm  = mk_mterm (Mvarstorecol dan) type_col in
+        let cast : mterm = mk_mterm (Mcast (type_col, type_view, col)) type_view in
+        mk_mterm (Mdotfieldasset (cast, k, i)) mt.type_
       end
     | Massignassetstate (an, k, v) ->
       let i = get_state_lident an in
@@ -1785,6 +1790,20 @@ let extract_term_from_instruction f (model : model) : model =
   in
   Model.map_mterm_model aux model
 
+let replace_dotfieldasset_by_dot (model : model) : model =
+  let rec aux ctx (mt : mterm) : mterm =
+    match mt.node with
+    | Mdotfieldasset (lhs, k, fn) ->
+      begin
+        let an = "FIXME" in
+        let dan = dumloc an in
+        let get = mk_mterm (Mget (an, lhs, k)) (Tasset dan) in
+        mk_mterm (Mdot (get, fn)) mt.type_
+      end
+    | _ -> map_mterm (aux ctx) mt
+  in
+  Model.map_mterm_model aux model
+
 let remove_fun_dotasset (model : model) : model =
   let extract_fun_dotasset (mt: mterm) : mterm * (lident * mterm) list =
     let cpt : int ref = ref 0 in
@@ -1797,12 +1816,12 @@ let remove_fun_dotasset (model : model) : model =
         | _ -> false
       in
       match mt.node with
-      | Mdotasset (l, r) when is_fun l ->
+      | Mdot (l, r) when is_fun l ->
         begin
           let var_id = prefix ^ string_of_int (!cpt) in
           cpt := !cpt + 1;
           let var = mk_mterm (Mvarlocal (dumloc var_id)) l.type_ in
-          let nmt = mk_mterm (Mdotasset (var, r)) mt.type_ in
+          let nmt = mk_mterm (Mdot (var, r)) mt.type_ in
           nmt, (dumloc var_id, l)::accu
         end
       | _ ->
@@ -2056,7 +2075,7 @@ let add_contain_on_get (model : model) : model =
   { model with functions = List.map for_function model.functions }
 
 
-let replace_asset_by_key (model : model) : model =
+(* let replace_asset_by_key (model : model) : model =
   let rec for_type (t : type_) : type_ =
     match t with
     | Tasset an -> (Tbuiltin (Utils.get_asset_key model (unloc an) |> snd))
@@ -2171,7 +2190,7 @@ let replace_asset_by_key (model : model) : model =
     |> add_contain_on_get
   in
   { model with functions = List.map for_function model.functions }
-  |> flat_sequence
+  |> flat_sequence *)
 
 
 let split_key_values (model : model) : model =
@@ -2354,10 +2373,10 @@ let remove_assign_operator (model : model) : model =
       let lhs = mk_mterm (Mvarstorevar id) v.type_ in
       let v = compute op lhs v.type_ v in
       mk_mterm (Massignvarstore (ValueAssign, t, id, v)) mt.type_
-    | Massignfield    (op, t, mt, id, v) ->
+    (* | Massignfield    (op, t, mt, id, v) ->
       let lhs = mk_mterm (Mdotasset (mt, id)) v.type_ in
       let v = compute op lhs v.type_ v in
-      mk_mterm (Massignfield (ValueAssign, t, mt, id, v)) mt.type_
+      mk_mterm (Massignfield (ValueAssign, t, mt, id, v)) mt.type_ *)
     | _ -> map_mterm (aux ctx) mt
   in
   map_mterm_model aux model

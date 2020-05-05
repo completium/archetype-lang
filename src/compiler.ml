@@ -104,7 +104,7 @@ let generate_target model =
   | None ->
     model
     |> cont !Options.opt_pas  process_asset_state
-    |> cont !Options.opt_raf  replace_assignfield_by_update
+    (* |> cont !Options.opt_raf  replace_assignfield_by_update *)
     |> cont !Options.opt_rau  remove_add_update
     |> cont !Options.opt_mu   merge_update
     |> cont !Options.opt_ru   replace_update_by_set
@@ -128,7 +128,7 @@ let generate_target model =
     model
     |> replace_ligo_ident
     |> process_asset_state
-    |> replace_assignfield_by_update
+    (* |> replace_assignfield_by_update *)
     |> remove_add_update
     |> merge_update
     |> remove_assign_operator
@@ -147,11 +147,12 @@ let generate_target model =
     |> flat_sequence
     |> remove_cmp_bool
     (* |> shallow_asset *)
-    |> replace_asset_by_key
+    (* |> replace_asset_by_key *)
     |> split_key_values
     |> remove_duplicate_key
     |> Gen_transform.assign_loop_label
     |> remove_letin_from_expr
+    |> replace_dotfieldasset_by_dot
     |> remove_fun_dotasset
     |> generate_api_storage
     |> output
@@ -159,7 +160,7 @@ let generate_target model =
   | SmartPy ->
     model
     |> process_asset_state
-    |> replace_assignfield_by_update
+    (* |> replace_assignfield_by_update *)
     |> remove_add_update
     |> merge_update
     |> replace_update_by_set
@@ -177,7 +178,7 @@ let generate_target model =
     |> remove_label
     |> flat_sequence
     |> remove_cmp_bool
-    |> replace_asset_by_key
+    (* |> replace_asset_by_key *)
     |> split_key_values
     |> Gen_transform.assign_loop_label
     |> generate_api_storage
@@ -194,7 +195,7 @@ let generate_target model =
     |> flat_sequence
     |> remove_cmp_bool
     |> process_single_field_storage
-    |> replace_asset_by_key
+    (* |> replace_asset_by_key *)
     |> split_key_values
     |> remove_side_effect
     |> generate_api_storage
@@ -207,7 +208,7 @@ let generate_target model =
     |> remove_add_update
     |> merge_update
     |> remove_assign_operator
-    |> replace_key_by_asset
+    (* |> replace_key_by_asset *)
     |> process_internal_string
     |> remove_rational
     |> replace_date_duration_by_timestamp
@@ -227,8 +228,8 @@ let generate_target model =
     (* |> split_key_values *)
     |> Gen_transform.assign_loop_label
     |> replace_for_to_iter
-    |> replace_asset_by_key
-    |> replace_assignfield_by_update
+    (* |> replace_asset_by_key *)
+    (* |> replace_assignfield_by_update *)
     |> replace_update_by_set
     |> remove_cmp_enum
     |> remove_cmp_bool
