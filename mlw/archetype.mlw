@@ -609,7 +609,7 @@ module AssetCollection
   M.mem a (elts (mk (F.mk l))) <-> M.mem a l
 
   (* ------------------------------------------------------------------------ *)
-  let remove (c : collection) (k : key) : collection
+  (* let remove (c : collection) (k : key) : collection
   requires { contains k c }
   ensures { card result = card c - 1 }
   ensures { exists e. get c k = Some e /\ result == diff c (singleton e) }
@@ -625,6 +625,27 @@ module AssetCollection
   = match l with
   | Cons e tl ->
     if fkey e = k then tl
+    else Cons e (internal_remove tl)
+  | Nil -> Nil
+  end in
+  mk (F.mk (internal_remove (F.content (content c)))) *)
+
+let remove (c : collection) (a : t) : collection
+  requires { mem a c }
+  ensures { card result = card c - 1 }
+  ensures { result == diff c (singleton a) }
+  =
+  let rec internal_remove (l : list t) : list t
+  requires { D.distinct l }
+  requires { key_injective l }
+  variant { l }
+  ensures { D.distinct result }
+  ensures { key_injective result }
+  ensures { M.mem a l -> L.length result = L.length l - 1 }
+  ensures { forall a. M.mem a result <-> M.mem a (filter (fun x -> not (feq x a)) l) }
+  = match l with
+  | Cons e tl ->
+    if feq e a then tl
     else Cons e (internal_remove tl)
   | Nil -> Nil
   end in
