@@ -85,7 +85,6 @@ predicate normed (xs : list t) =
 (* ------------------------------------------------------------------------ *)
 lemma normed_is_distinct : forall xs. normed xs -> distinct xs
 
-
 (* ------------------------------------------------------------------------ *)
 axiom normP : forall xs. permut (undup xs) (norm xs)
 axiom normK : forall xs. norm (norm xs) = norm xs
@@ -115,6 +114,10 @@ lemma mem_mk :
   forall xs x. fmem x (mk xs) <-> mem x xs
 
 (* ------------------------------------------------------------------------ *)
+(* lemma mem_mk_2 :
+  forall xs x. fmem x (mk xs) -> mem x xs *)
+
+(* ------------------------------------------------------------------------ *)
 let function fset0 : fset =
   mk Nil
 
@@ -131,8 +134,16 @@ function fsetD (s1 s2 : fset) : fset =
   mk (filter (fun x -> not (Quant.mem eqt x s2.content)) s1.content)
 
 (* ------------------------------------------------------------------------ *)
+lemma fsetD_mem :
+  forall x s1 s2. fmem x (fsetD s1 s2) <-> fmem x s1 /\ not (fmem x s2)
+
+(* ------------------------------------------------------------------------ *)
 let function fcard (s : fset) : int =
   length s.content
+
+(* ------------------------------------------------------------------------ *)
+lemma card_mk :
+  forall xs. distinct xs -> fcard (mk xs) = length xs
 
 (* ------------------------------------------------------------------------ *)
 predicate fsubset (s1 s2 : fset) =

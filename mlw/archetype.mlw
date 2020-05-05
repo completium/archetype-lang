@@ -294,6 +294,7 @@ module AssetCollection
   use list.Mem as M
   use option.Option
   use fset.Undup
+  use fset.ListFilter
 
   (* ------------------------------------------------------------------------ *)
   type t = abstract {}        (* asset type           *)
@@ -336,7 +337,7 @@ module AssetCollection
   predicate key_injective (l : list t) =
     forall a1 a2.
     mem a1 l -> mem a2 l ->
-    fkey a1 = fkey a2 -> a1 = a2
+    fkey a1 = fkey a2 -> feq a1 a2
 
   type collection = {
     content : F.fset
@@ -416,6 +417,11 @@ module AssetCollection
   (* ------------------------------------------------------------------------ *)
   lemma mk_content: forall c.
   (mk (c.content)) == c
+
+  (* ------------------------------------------------------------------------ *)
+  lemma content_mk: forall s.
+  key_injective (F.content s) ->
+  (content (mk s)) = s
 
   (* ------------------------------------------------------------------------ *)
   let function elts (c : collection) : list t
@@ -541,7 +547,8 @@ module AssetCollection
   end
 
   let function get (c : collection) (k : key) : option t
-  ensures { contains k c -> exists e. result = Some e /\ fkey e = k }
+  requires { contains k c }
+  ensures { exists e. result = Some e /\ fkey e = k }
   = internal_get (elts c) k
 
   (* ------------------------------------------------------------------------ *)
@@ -597,48 +604,52 @@ module AssetCollection
   = mk (F.mk (Cons a (elts c)))
 
   (* ------------------------------------------------------------------------ *)
-  let set (c : collection) (k : key) (a : t) : collection
-  requires { mem a c }
-  ensures { get result k = Some a }
+  lemma mem_coll : forall a l.
+  key_injective l ->
+  M.mem a (elts (mk (F.mk l))) <-> M.mem a l
+
+  (* ------------------------------------------------------------------------ *)
+  let remove (c : collection) (k : key) : collection
+  requires { contains k c }
+  ensures { card result = card c - 1 }
+  ensures { exists e. get c k = Some e /\ result == diff c (singleton e) }
   =
-  let rec internal_set (l : list t) (k : key) (a : t) : list t
+  let rec internal_remove (l : list t) : list t
   requires { D.distinct l }
   requires { key_injective l }
   variant { l }
-  requires { M.mem a (elts c) }
+  ensures { D.distinct result }
+  ensures { key_injective result }
+  ensures { (exists e. fkey e  = k /\ M.mem e l) -> L.length result = L.length l - 1 }
+  ensures { forall a. M.mem a result <-> M.mem a (filter (fun x -> fkey x <> k) l) }
+  = match l with
+  | Cons e tl ->
+    if fkey e = k then tl
+    else Cons e (internal_remove tl)
+  | Nil -> Nil
+  end in
+  mk (F.mk (internal_remove (F.content (content c))))
+
+  (* ------------------------------------------------------------------------ *)
+  let set (c : collection) (k : key) (a : t) : collection
+  requires { contains k c }
+  requires { fkey a = k }
+  ensures { get result k = Some a }
+  =
+  let rec internal_set (l : list t) : list t
+  requires { key_injective l }
+  variant { l }
   ensures { key_injective result }
   ensures { internal_get result k = Some a }
   =
   match l with
   | Cons e tl ->
     if fkey e = k
-    then Cons a tl
-    else Cons e (internal_set tl k a)
+    then Cons a (internal_set tl)
+    else Cons e (internal_set tl)
   | Nil -> Nil
   end in
-  mk (F.mk (internal_set (elts c) k a))
-
-  (* ------------------------------------------------------------------------ *)
-  let remove (c : collection) (k : key) : collection
-  requires { contains k c }
-  ensures { card result = card c - 1 }
-  ensures { exists e. result = diff c (singleton e) /\ fkey e = k }
-  =
-  let rec internal_remove (l : list t) (k : key) : list t
-  requires { D.distinct l }
-  requires { key_injective l }
-  variant { l }
-  ensures { L.length result = L.length l - 1 }
-  ensures { exists e. M.mem e l /\ not (M.mem e result) /\ fkey e = k }
-  =
-  match l with
-  | Cons e tl ->
-    if fkey e = k
-    then tl
-    else Cons e (internal_remove tl k)
-  | Nil -> Nil
-  end in
-  mk (F.mk (internal_remove (elts c) k))
+  mk (F.mk (internal_set (elts c)))
 
   (* View API --------------------------------------------------------------- *)
 
