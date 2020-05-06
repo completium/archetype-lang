@@ -110,12 +110,12 @@ let function mk (xs : list t) : fset =
   { content = norm xs; }
 
 (* ------------------------------------------------------------------------ *)
-lemma mem_mk :
-  forall xs x. fmem x (mk xs) <-> mem x xs
+lemma fcontent_mk :
+  forall xs. [@rewrite] content (mk xs) = norm xs
 
 (* ------------------------------------------------------------------------ *)
-(* lemma mem_mk_2 :
-  forall xs x. fmem x (mk xs) -> mem x xs *)
+lemma mem_norm :
+  forall xs x. [@rewrite] mem x (norm xs) <-> mem x xs
 
 (* ------------------------------------------------------------------------ *)
 let function fset0 : fset =
