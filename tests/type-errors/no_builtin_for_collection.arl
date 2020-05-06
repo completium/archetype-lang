@@ -1,4 +1,4 @@
-archetype expr_lit_col
+archetype no_builtin_for_collection
 
 variable res : int collection = []
 

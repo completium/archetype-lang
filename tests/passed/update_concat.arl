@@ -1,0 +1,27 @@
+archetype update_concat
+
+asset my_asset_simple identified by str {
+  str : string
+}
+
+asset my_asset identified by id {
+  id : string;
+  value : int;
+  mycollection : my_asset_simple collection;
+} initialized by {
+  { "my_id"; 0; [] }
+}
+
+action exec () {
+  effect {
+    my_asset.update ("my_id", {value = 3; mycollection += [{str = "str1"}; {str = "str2"}; {str = "str3"}] })
+    (*
+    sugar for
+    my_asset.update ("my_id", {value = 3});
+    my_asset.get("my_id").mycollection.add({str = "str1"});
+    my_asset.get("my_id").mycollection.add({str = "str2"});
+    my_asset.get("my_id").mycollection.add({str = "str3"})
+    *)
+
+  }
+}

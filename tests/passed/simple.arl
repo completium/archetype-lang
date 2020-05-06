@@ -1,0 +1,9 @@
+archetype simple
+
+variable n : int = 0
+
+action exec () {
+  effect {
+    n := 2
+  }
+}
