@@ -642,7 +642,7 @@ let remove (c : collection) (a : t) : collection
   ensures { D.distinct result }
   ensures { key_injective result }
   ensures { M.mem a l -> L.length result = L.length l - 1 }
-  ensures { forall a. M.mem a result <-> M.mem a (filter (fun x -> not (feq x a)) l) }
+  ensures { forall e. M.mem e result <-> M.mem e (filter (fun x -> not (feq x a)) l) }
   = match l with
   | Cons e tl ->
     if feq e a then tl
