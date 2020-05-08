@@ -270,15 +270,15 @@ let rec pp_expr outer pos fmt a =
     (maybe_paren outer e_default pos pp) fmt values
 
 
-  | Edotfield (x, y, z) ->
+  | Eassetfield (an, k, fn) ->
 
-    let pp fmt (x, y, z) =
-      Format.fprintf fmt "%a.get(%a).%a"
-        pp_simple_expr x
-        pp_simple_expr y
-        pp_id z
+    let pp fmt (an, k, fn) =
+      Format.fprintf fmt "%a[%a].%a"
+        pp_id an
+        pp_simple_expr k
+        pp_id fn
     in
-    (maybe_paren outer e_dot pos pp) fmt (x, y, z)
+    (maybe_paren outer e_dot pos pp) fmt (an, k, fn)
 
   | Emulticomp (e, l) ->
     let pp fmt (e, l) =

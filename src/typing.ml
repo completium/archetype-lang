@@ -1599,7 +1599,7 @@ let rec for_xexpr
               the
             | Some fname ->
               let fty = (Option.get (get_field fname asset)).fd_type in
-              mk_sp (Some fty) (M.Pdotfield (the, the, mkloc (loc tope) fname)) (* FIXME: handle key *)
+              mk_sp (Some fty) (M.Psinglefield (asset.as_name, mkloc (loc tope) fname))
           end
 
         | _ ->
@@ -1780,29 +1780,17 @@ let rec for_xexpr
         mk_sp ty (M.Ptuple es)
       end
 
-    | Edotfield (pe, pk, x) -> begin
-        let e = for_xexpr env pe in
+    | Eassetfield (an, pk, x) -> begin
         let k = for_xexpr env pk in
+        let asset = Env.Asset.get env (unloc an) in
 
-        match Option.map Type.as_asset e.M.type_ with
+        match get_field (unloc x) asset with
         | None ->
-          bailout ()
+          let err = UnknownField (unloc asset.as_name, unloc x) in
+          Env.emit_error env (loc x, err); bailout ()
+        | Some { fd_type = fty } ->
+          mk_sp (Some fty) (M.Pdotfield (an, k, x))
 
-        | Some None ->
-          Env.emit_error env (loc pe, AssetExpected (Option.get e.M.type_));
-          bailout ()
-
-        | Some (Some asset) -> begin
-            let asset = Env.Asset.get env (unloc asset) in
-
-            match get_field (unloc x) asset with
-            | None ->
-              let err = UnknownField (unloc asset.as_name, unloc x) in
-              Env.emit_error env (loc x, err); bailout ()
-
-            | Some { fd_type = fty } ->
-              mk_sp (Some fty) (M.Pdotfield (e, k, x))
-          end
       end
 
     | Emulticomp (e, l) ->
@@ -2731,31 +2719,18 @@ let for_lvalue (env : env) (e : PT.expr) : (M.lvalue * M.ptyp) option =
         None
     end
 
-  | Edotfield (pnm, _k, x) -> begin
-      let nm = for_expr env pnm in
-
-      match Option.map Type.as_asset nm.M.type_ with
+  | Eassetfield (an, _k, x) -> begin
+    let asset = Env.Asset.get env (unloc an) in
+    if unloc x = unloc asset.as_pk then begin
+      Env.emit_error env (loc x, CannotUpdatePKey);
+      None
+    end else begin
+      match get_field (unloc x) asset with
       | None ->
-        None
-
-      | Some None ->
-        Env.emit_error env (loc pnm, AssetExpected (Option.get nm.M.type_));
-        None
-
-      | Some (Some asset) -> begin
-          let asset = Env.Asset.get env (unloc asset) in
-          if unloc x = unloc asset.as_pk then begin
-            Env.emit_error env (loc x, CannotUpdatePKey);
-            None
-          end else begin
-            match get_field (unloc x) asset with
-            | None ->
-              let err = UnknownField (unloc asset.as_name, unloc x) in
-              Env.emit_error env (loc x, err); None
-
-            | Some { fd_type = fty } ->
-              Some (`Field (nm, x), fty)
-          end
+        let err = UnknownField (unloc asset.as_name, unloc x) in
+        Env.emit_error env (loc x, err); None
+      | Some { fd_type = fty } ->
+        Some (`Field (an, x), fty)
         end
     end
 

@@ -288,7 +288,8 @@ type 'id term_node  =
   | Pvar of var_temporality * vset * 'id
   | Parray of 'id term_gen list
   | Plit of bval
-  | Pdotfield of 'id term_gen * 'id term_gen * 'id
+  | Psinglefield of 'id * 'id
+  | Pdotfield of 'id * 'id term_gen * 'id
   | Pconst of const
   | Ptuple of 'id term_gen list
   | Pnone
@@ -350,7 +351,7 @@ and instruction = lident instruction_poly
 
 and 'id lvalue_gen = [
   | `Var   of 'id
-  | `Field of 'id term_gen * 'id
+  | `Field of 'id * 'id
 ]
 
 and lvalue = lident lvalue_gen
@@ -709,6 +710,7 @@ let map_term_node (f : 'id term_gen -> 'id term_gen) = function
   | Pvar (b, vs, v)         -> Pvar (b, vs, v)
   | Parray l                -> Parray (List.map f l)
   | Plit l                  -> Plit l
+  | Psinglefield (e, i)     -> Psinglefield (e, i)
   | Pdotfield (e, k, i)     -> Pdotfield (f e, f k, i)
   | Pconst c                -> Pconst c
   | Ptuple l                -> Ptuple (List.map f l)
@@ -773,6 +775,7 @@ let fold_term (f: 'a -> 't -> 'a) (accu : 'a) (term : 'id term_gen) =
   | Pvar _                  -> accu
   | Parray l                -> List.fold_left f accu l
   | Plit _                  -> accu
+  | Psinglefield _          -> accu
   | Pdotfield (e, k, _)     -> f (f accu e) k
   | Pconst _                -> accu
   | Ptuple l                -> List.fold_left f accu l
@@ -918,6 +921,9 @@ let fold_map_term g f (accu : 'a) (term : 'id term_gen) : 'term * 'a =
 
   | Plit l ->
     g (Plit l), accu
+
+  | Psinglefield (an, fn) ->
+    g (Psinglefield (an, fn)), accu
 
   | Pdotfield (e, k, id) ->
     let ee, ea = f accu e in

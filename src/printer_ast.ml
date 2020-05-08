@@ -372,14 +372,22 @@ let rec pp_pterm fmt (pterm : pterm) =
       in
       (pp_no_paren pp) fmt v
 
-    | Pdotfield (e, k, i) ->
-      let pp fmt (e, k, i) =
-        Format.fprintf fmt "%a.get(%a).%a"
-          pp_pterm e
-          pp_pterm k
-          pp_id i
+    | Psinglefield (an, fn) ->
+      let pp fmt (an, fn) =
+        Format.fprintf fmt "%a.%a"
+          pp_id an
+          pp_id fn
       in
-      (pp_with_paren pp) fmt (e, k, i)
+      (pp_with_paren pp) fmt (an, fn)
+
+    | Pdotfield (an, k, fn) ->
+      let pp fmt (an, k, fn) =
+        Format.fprintf fmt "%a[%a].%a"
+          pp_id an
+          pp_pterm k
+          pp_id fn
+      in
+      (pp_with_paren pp) fmt (an, k, fn)
 
     | Pconst c ->
       let pp fmt c =
@@ -531,14 +539,14 @@ let rec pp_instruction fmt (i : instruction) =
       in
       (pp_with_paren pp) fmt (op, id, value)
 
-    | Iassign (_, op, `Field (nm, id), value) ->
-      let pp fmt (op, id, value) =
+    | Iassign (_, op, `Field (an, fn), value) ->
+      let pp fmt (op, (an, fn), value) =
         Format.fprintf fmt "%a.%a %a %a"
-          pp_pterm nm pp_id id
+          pp_id an pp_id fn
           pp_assignment_operator op
           pp_pterm value
       in
-      (pp_with_paren pp) fmt (op, id, value)
+      (pp_with_paren pp) fmt (op, (an, fn), value)
 
     | Irequire (k, pt) ->
       let pp fmt (k, pt) =

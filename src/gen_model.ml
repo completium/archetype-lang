@@ -247,7 +247,8 @@ let to_model (ast : A.model) : M.model =
       | A.Plit ({node = BVaddress s; _})       -> M.Maddress s
       | A.Plit ({node = BVduration d; _})      -> M.Mduration d
       | A.Plit ({node = BVbytes v; _})         -> M.Mbytes v
-      | A.Pdotfield (d, k, i)                  -> M.Mdotfieldasset (f d, f k, i)
+      | A.Psinglefield _                       -> assert false
+      | A.Pdotfield (_an, _k, _fn)             -> assert false (* FIXME M.Mdotfieldasset (an, f k, fn) *)
       | A.Pconst Cstate                        -> M.Mvarstate
       | A.Pconst Cnow                          -> M.Mnow
       | A.Pconst Ctransferred                  -> M.Mtransferred
@@ -553,7 +554,7 @@ let to_model (ast : A.model) : M.model =
     | A.Iseq l                  -> M.Mseq (List.map g l)
     | A.Imatchwith (m, l)       -> M.Mmatchwith (f m, List.map (fun (p, i) -> (to_pattern p, g i)) l)
     | A.Iassign (t, op, `Var x, e) -> M.Massign (to_assignment_operator op, ptyp_to_type t, x, to_mterm e)
-    | A.Iassign (t, op, `Field (nm, x), e) -> M.Massignfield (to_assignment_operator op, ptyp_to_type t, to_mterm nm, x, to_mterm e)
+    | A.Iassign (_t, _op, `Field (_nm, _x), _e) -> assert false (* FIXME : M.Massignfield (to_assignment_operator op, ptyp_to_type t, to_mterm nm, x, to_mterm e) *)
     | A.Irequire (b, t)         ->
       let cond : M.mterm =
         if b
