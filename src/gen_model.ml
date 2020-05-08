@@ -247,8 +247,8 @@ let to_model (ast : A.model) : M.model =
       | A.Plit ({node = BVaddress s; _})       -> M.Maddress s
       | A.Plit ({node = BVduration d; _})      -> M.Mduration d
       | A.Plit ({node = BVbytes v; _})         -> M.Mbytes v
-      | A.Psinglefield _                       -> assert false
-      | A.Pdotfield (_an, _k, _fn)             -> assert false (* FIXME M.Mdotfieldasset (an, f k, fn) *)
+      | A.Psinglefield _                       -> assert false (* FIXME *)
+      | A.Pdotfield (an, k, fn)                -> M.Mdotfieldasset (an, f k, fn)
       | A.Pconst Cstate                        -> M.Mvarstate
       | A.Pconst Cnow                          -> M.Mnow
       | A.Pconst Ctransferred                  -> M.Mtransferred

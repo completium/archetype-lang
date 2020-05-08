@@ -6,7 +6,7 @@ asset an_asset {
 
 action a () {
   effect {
-    var l = an_asset.count;
+    var l = an_asset[""].count;
     require (true)
   }
 }

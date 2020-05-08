@@ -11,7 +11,7 @@ asset myasset {
 action exec (k : pkey of myasset) {
   specification {
     postcondition s1 {
-      m.s = 2
+      myasset[k].s = 2
     }
   }
   effect {

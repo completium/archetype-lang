@@ -4,8 +4,8 @@ archetype extension delegable (
     aRole[%delegable%] : role;
   }
 
-  action aTransaction (anasset : anAsset) {
-     called by anasset.aRole
+  action aTransaction (anasset : pkey of anAsset) {
+     called by anAsset[anasset].aRole
   }
 
 ) {
@@ -18,21 +18,21 @@ archetype extension delegable (
   action setDelegate<%aRole> (arole : role, operator : address) {
      called by arole
      effect {
-       <%aRole>Operators.get(owner).operators.add(operator)
+       <%aRole>Operators[owner].operators.add(operator)
      }
   }
 
   action rmDelegate<%aRole> (afield : arole, operator : address) {
      called by arole
      effect {
-       <%aRole>Operators.get(owner).operators.remove(operator)
+       <%aRole>Operators[owner].operators.remove(operator)
      }
   }
 
   action aTransaction (anasset : anAsset) {
      called by none
      require {
-       c1 : <%aRole>Operators.get(anasset.arole).operators.contains(caller);
+       c1 : <%aRole>Operators[anAsset[anasset].aRole].operators.contains(caller);
      }
   }
 

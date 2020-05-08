@@ -6,6 +6,6 @@ asset myasset {
 
 action anaction (k : string) {
   effect {
-    myasset.get(k).id := "mykey"
+    myasset[k].id := "mykey"
   }
 }

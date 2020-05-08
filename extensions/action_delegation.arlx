@@ -1,7 +1,7 @@
 archetype extension action_delegation (
 
-  action aTransaction (anasset : anAsset) {
-    called by [%delegable%] anAsset.arole
+  action aTransaction (anasset : pkey of anAsset) {
+    called by [%delegable%] anAsset[anAsset].arole
   }
 
 ) {
@@ -19,20 +19,20 @@ archetype extension action_delegation (
     operator : address;
   }
   action setDelegate (Operator : Operator) {
-    called by Operator.anasset.arole
+    called by Operator[anasset].arole
     effect {
       Operator.add(Operator)
     }
   }
   action rmDelegate (Operator : Operator) {
-    called by Operator.anasset.arole
+    called by Operator[anasset].arole
     effect {
       Operator.remove(Operator)
     }
   }
   action from_addr (anasset : anAsset) {
     require {
-      c1 : Operator.get(anasset).operator = caller;
+      c1 : Operator[anasset].operator = caller;
     }
     effect {
       Operator.remove (Operator.get(anasset))

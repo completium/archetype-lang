@@ -6,7 +6,7 @@ asset myasset {
 
 action anaction () {
   specification {
-    s1 : let ma = myasset.get("myid") in "myid" = ma.id
+    s1 : let ma = myasset.nth(0) in "myid" = ma
   }
   effect {
     let a : int = 0 in

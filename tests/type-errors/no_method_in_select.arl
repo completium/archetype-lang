@@ -9,6 +9,6 @@ variable res : int = 0
 
 action exec (str : string) {
   effect {
-    var l = my_asset.select(the.value = my_asset.get("1").id);
+    var l = my_asset.select(the.value = my_asset["1"].id);
   }
 }
