@@ -934,7 +934,7 @@ let mk_trace_seq m t chs =
 
 let is_old (ctx : logical_context) (t : M.mterm) =
   match t.node with
-  | M.Mdotfieldasset ({ node = M.Mvarlocal id;  type_ = _}, _, _) -> List.mem (unloc id) ctx.localold
+  | M.Mdotfieldasset (id, _, _) -> List.mem (unloc id) ctx.localold
   | _ -> false
 
 let map_mpattern (p : M.lident M.pattern_node) =
@@ -1198,7 +1198,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     (* access *)
 
     | Mdot _                    -> error_not_translated "Mdot"
-    | Mdotfieldasset (e, _k, i) -> Tdot (map_mterm m ctx e, mk_loc (loc i) (Tvar (map_lident i)))
+    | Mdotfieldasset (_e, _k, _i) -> error_not_translated "Mdotfieldasset" (* Tdot (map_mterm m ctx e, mk_loc (loc i) (Tvar (map_lident i))) *)
     | Mdotcontract       _ -> error_not_translated "Mdotcontract"
     | Maccestuple        _ -> error_not_translated "Maccestuple"
 

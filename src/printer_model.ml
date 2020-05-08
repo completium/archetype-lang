@@ -346,8 +346,8 @@ let pp_mterm fmt (mt : mterm) =
         pp_id i
 
     | Mdotfieldasset (e, k, i) ->
-      Format.fprintf fmt "%a.get(%a).%a"
-        f e
+      Format.fprintf fmt "%a[%a].%a"
+        pp_id e
         f k
         pp_id i
 

@@ -181,7 +181,7 @@ type ('id, 'term) mterm_node  =
   | Mlitrecord        of (ident * 'term) list
   (* access *)
   | Mdot              of 'term * 'id
-  | Mdotfieldasset    of 'term * 'term * 'id
+  | Mdotfieldasset    of 'id * 'term * 'id
   | Mdotcontract      of 'term * 'id
   | Maccestuple       of 'term * Core.big_int
   (* comparison operators *)
@@ -999,7 +999,7 @@ let cmp_mterm_node
     | Mlitrecord l1, Mlitrecord l2                                                     -> List.for_all2 (fun (i1, v1) (i2, v2) -> (cmp_ident i1 i2 && cmp v1 v2)) l1 l2
     (* access *)
     | Mdot (e1, i1), Mdot (e2, i2)                                                     -> cmp e1 e2 && cmpi i1 i2
-    | Mdotfieldasset (e1, k1, i1), Mdotfieldasset (e2, k2, i2)                         -> cmp e1 e2 && cmp k1 k2 && cmpi i1 i2
+    | Mdotfieldasset (e1, k1, i1), Mdotfieldasset (e2, k2, i2)                         -> cmpi e1 e2 && cmp k1 k2 && cmpi i1 i2
     | Mdotcontract (e1, i1), Mdotcontract (e2, i2)                                     -> cmp e1 e2 && cmpi i1 i2
     | Maccestuple (e1, i1), Maccestuple (e2, i2)                                       -> cmp e1 e2 && Big_int.eq_big_int i1 i2
     (* comparison operators *)
@@ -1290,7 +1290,7 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Mlitrecord l                   -> Mlitrecord (List.map ((fun (x, y) -> (x, f y))) l)
   (* access *)
   | Mdot (e, i)                    -> Mdot (f e, g i)
-  | Mdotfieldasset (e, k, i)       -> Mdotfieldasset (f e, f k, g i)
+  | Mdotfieldasset (e, k, i)       -> Mdotfieldasset (g e, f k, g i)
   | Mdotcontract (e, i)            -> Mdotcontract (f e, g i)
   | Maccestuple (e, i)             -> Maccestuple (f e, i)
   (* comparison operators *)
@@ -1616,7 +1616,7 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mlitrecord l                          -> List.fold_left (fun accu (_, v) -> f accu v) accu l
   (* access *)
   | Mdot (e, _)                           -> f accu e
-  | Mdotfieldasset (e, k, _)              -> f (f accu e) k
+  | Mdotfieldasset (_, k, _)              -> f accu k
   | Mdotcontract (e, _)                   -> f accu e
   | Maccestuple (e, _)                    -> f accu e
   (* comparison operators *)
@@ -2007,9 +2007,8 @@ let fold_map_term
     g (Mdot (ee, i)), ea
 
   | Mdotfieldasset (e, k, i) ->
-    let ee, ea = f accu e in
-    let ke, ka = f ea k in
-    g (Mdotfieldasset (ee, ke, i)), ka
+    let ke, ka = f accu k in
+    g (Mdotfieldasset (e, ke, i)), ka
 
   | Mdotcontract (e, i) ->
     let ee, ea = f accu e in

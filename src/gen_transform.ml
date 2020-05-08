@@ -41,6 +41,18 @@ let emit_error (lc, error : Location.t * error_desc) =
   let pos : Position.t list = [location_to_position lc] in
   Error.error_alert pos str (fun _ -> ())
 
+let build_col_asset (an : ident) =
+  let dan = dumloc an in
+  let type_asset = Tasset dan in
+  let type_col = Tcontainer (type_asset,Collection) in
+  let type_view = Tcontainer (type_asset,View) in
+  let col : mterm  = mk_mterm (Mvarstorecol dan) type_col in
+  mk_mterm (Mcast (type_col, type_view, col)) type_view
+
+let build_get (an : ident) v =
+  let col = build_col_asset an in
+  mk_mterm (Mget (an, col, v)) col.type_
+
 let remove_add_update (model : model) : model =
   let error = ref false in
   let f_error (l : Location.t) (an : string) (fn : string) = emit_error(l, CannotBuildAsset (an, fn)); error := true in
@@ -121,37 +133,18 @@ let replace_update_by_set (model : model) : model =
     | Mupdate (an, k, l) ->
       begin
         let asset = Utils.get_asset model an in
-        let is_asset_name (pterm : mterm) an : bool =
-          match pterm with
-          | {type_ = Tasset asset_name} -> String.equal an (unloc asset_name)
-          | _ -> false
-        in
 
         let _, t = Utils.get_asset_key model an in
 
         let type_asset = Tasset (dumloc an) in
-        let type_container_asset = Tcontainer (type_asset, Collection) in
 
         let var_name = dumloc (an ^ "_") in
         let var_mterm : mterm = mk_mterm (Mvarlocal var_name) type_asset in
 
-        (* let asset_mterm : mterm = mk_mterm (Mvarstorecol (dumloc (asset_name))) type_container_asset in *)
-
-        let asset_aaa =
-          match k.node with
-          | Mdotfieldasset (a, _, _) when is_asset_name a an -> Some a
-          | _ -> None
-        in
-
         let key_name = "k_" in
         let key_loced : lident = dumloc (key_name) in
-        let asset_col : mterm = mk_mterm (Mvarstorecol (dumloc an)) type_asset in
-        let key_mterm : mterm =
-          match asset_aaa with
-          | Some _ -> k
-          | _ ->
-            mk_mterm (Mvarlocal key_loced) type_container_asset
-        in
+        (* let asset_col : mterm = mk_mterm (Mvarstorecol (dumloc an)) type_asset in *)
+        let key_mterm : mterm = k in
 
         let set_mterm : mterm = mk_mterm (Mset (an, List.map (fun (id, _, _) -> unloc id) l, key_mterm, var_mterm)) Tunit in
 
@@ -160,7 +153,7 @@ let replace_update_by_set (model : model) : model =
           List.fold_left (fun accu (x : asset_item) ->
               let v = List.assoc_opt (unloc x.name) lref in
               let type_ = x.type_ in
-              let var = mk_mterm (Mdotfieldasset (var_mterm, key_mterm, x.name)) type_ in
+              let var = mk_mterm (Mdotfieldasset (dumloc an, key_mterm, x.name)) type_ in
               match v with
               | Some y ->
                 accu @ [
@@ -192,12 +185,7 @@ let replace_update_by_set (model : model) : model =
 
         (* let body : mterm = mk_mterm (Mseq seq) Tunit in *)
 
-        let get_mterm : mterm =
-          match asset_aaa with
-          | Some a -> a
-          | _ ->
-            mk_mterm (Mget (an, asset_col, key_mterm)) type_asset
-        in
+        let get_mterm : mterm = build_get an key_mterm in
 
         let letinasset : mterm = mk_mterm (Mletin ([var_name],
                                                    get_mterm,
@@ -208,15 +196,12 @@ let replace_update_by_set (model : model) : model =
             Tunit in
 
         let res : mterm__node =
-          match asset_aaa with
-          | Some _ -> letinasset.node
-          | _ ->
-            Mletin ([key_loced],
-                    k,
-                    Some (Tbuiltin t),
-                    letinasset,
-                    None
-                   ) in
+          Mletin ([key_loced],
+                  k,
+                  Some (Tbuiltin t),
+                  letinasset,
+                  None
+                 ) in
 
         mk_mterm res Tunit
       end
@@ -322,7 +307,7 @@ let extend_removeif (model : model) : model =
       let asset_var = mk_mterm (Mvarlocal assetv_str) type_asset in
 
       let key, key_type = Utils.get_asset_key model (unloc lasset) in
-      let asset_key : mterm = mk_mterm (Mdotfieldasset (asset_var, asset_var, dumloc key)) (Tbuiltin key_type) in
+      let asset_key : mterm = mk_mterm (Mdotfieldasset (lasset, asset_var, dumloc key)) (Tbuiltin key_type) in
 
       let assets_var_name = dumloc ("assets_") in
       let type_assets = Tcontainer (type_asset, View) in
@@ -1588,7 +1573,6 @@ let merge_update (model : model) : model =
   in
   Model.map_mterm_model aux model
 
-
 let process_asset_state (model : model) : model =
   let get_state_lident an = dumloc ("state_" ^ an) in
 
@@ -1620,13 +1604,7 @@ let process_asset_state (model : model) : model =
     | Mvarassetstate (an, k) ->
       begin
         let i = get_state_lident an in
-        let dan = dumloc an in
-        let type_asset = Tasset dan in
-        let type_col = Tcontainer (type_asset,Collection) in
-        let type_view = Tcontainer (type_asset,View) in
-        let col : mterm  = mk_mterm (Mvarstorecol dan) type_col in
-        let cast : mterm = mk_mterm (Mcast (type_col, type_view, col)) type_view in
-        mk_mterm (Mdotfieldasset (cast, k, i)) mt.type_
+        mk_mterm (Mdotfieldasset (dumloc an, k, i)) mt.type_
       end
     | Massignassetstate (an, k, v) ->
       let i = get_state_lident an in
@@ -1793,11 +1771,9 @@ let extract_term_from_instruction f (model : model) : model =
 let replace_dotfieldasset_by_dot (model : model) : model =
   let rec aux ctx (mt : mterm) : mterm =
     match mt.node with
-    | Mdotfieldasset (lhs, k, fn) ->
+    | Mdotfieldasset (an, k, fn) ->
       begin
-        let an = "FIXME" in
-        let dan = dumloc an in
-        let get = mk_mterm (Mget (an, lhs, k)) (Tasset dan) in
+        let get = build_get (unloc an) k in
         mk_mterm (Mdot (get, fn)) mt.type_
       end
     | _ -> map_mterm (aux ctx) mt
@@ -1858,15 +1834,6 @@ let process_internal_string (model : model) : model =
     | _ -> map_mterm (aux ctx) mt
   in
   Model.map_mterm_model aux model
-
-let build_get (an : ident) v =
-  let dan = dumloc an in
-  let type_asset = Tasset dan in
-  let type_col = Tcontainer (type_asset,Collection) in
-  let type_view = Tcontainer (type_asset,View) in
-  let col : mterm  = mk_mterm (Mvarstorecol dan) type_col in
-  let cast : mterm = mk_mterm (Mcast (type_col, type_view, col)) type_view in
-  mk_mterm (Mget (an, cast, v)) type_asset
 
 let change_type_of_nth (model : model) : model =
   let rec aux ctx (mt : mterm) : mterm =
@@ -2076,20 +2043,20 @@ let add_contain_on_get (model : model) : model =
 
 
 (* let replace_asset_by_key (model : model) : model =
-  let rec for_type (t : type_) : type_ =
+   let rec for_type (t : type_) : type_ =
     match t with
     | Tasset an -> (Tbuiltin (Utils.get_asset_key model (unloc an) |> snd))
     | Tcontainer (Tasset an, _) -> (Tlist (Tbuiltin (Utils.get_asset_key model (unloc an) |> snd)))
     | Ttuple l -> Ttuple (List.map for_type l)
     | _ -> t
-  in
-  let to_key aux (mt : mterm) : mterm =
+   in
+   let to_key aux (mt : mterm) : mterm =
     match mt.node, mt.type_ with
     | Mdotasset ({type_ = Tasset an} as a, k), _ when String.equal (Utils.get_asset_key model (unloc an) |> fst) (unloc k) -> aux a
     | Mget (_, _, k), _ -> aux k
     | _ -> mt
-  in
-  let for_mterm (mt : mterm) : mterm =
+   in
+   let for_mterm (mt : mterm) : mterm =
     let rec aux (mt : mterm) : mterm =
       match mt.node, mt.type_ with
       | Maddasset _, _ -> mt
@@ -2131,9 +2098,9 @@ let add_contain_on_get (model : model) : model =
       | _ -> map_mterm aux mt
     in
     mt |> aux
-  in
+   in
 
-  let for_specification spec =
+   let for_specification spec =
     let for_mterm_formula mt =
       let rec aux (env : ident list) (mt : mterm) : mterm =
         match mt.node, mt.type_ with
@@ -2168,9 +2135,9 @@ let add_contain_on_get (model : model) : model =
     { spec with
       postconditions = List.map for_postcondition spec.postconditions;
     }
-  in
+   in
 
-  let for_function (f : function__) =
+   let for_function (f : function__) =
     let for_function_node (fn : function_node) =
       let for_function_struct (fs : function_struct) =
         {fs with body = for_mterm fs.body }
@@ -2183,14 +2150,14 @@ let add_contain_on_get (model : model) : model =
       node = for_function_node f.node;
       spec = Option.map for_specification f.spec
     }
-  in
-  let model =
+   in
+   let model =
     model
     |> change_type_of_nth
     |> add_contain_on_get
-  in
-  { model with functions = List.map for_function model.functions }
-  |> flat_sequence *)
+   in
+   { model with functions = List.map for_function model.functions }
+   |> flat_sequence *)
 
 
 let split_key_values (model : model) : model =
@@ -2374,9 +2341,9 @@ let remove_assign_operator (model : model) : model =
       let v = compute op lhs v.type_ v in
       mk_mterm (Massignvarstore (ValueAssign, t, id, v)) mt.type_
     (* | Massignfield    (op, t, mt, id, v) ->
-      let lhs = mk_mterm (Mdotasset (mt, id)) v.type_ in
-      let v = compute op lhs v.type_ v in
-      mk_mterm (Massignfield (ValueAssign, t, mt, id, v)) mt.type_ *)
+       let lhs = mk_mterm (Mdotasset (mt, id)) v.type_ in
+       let v = compute op lhs v.type_ v in
+       mk_mterm (Massignfield (ValueAssign, t, mt, id, v)) mt.type_ *)
     | _ -> map_mterm (aux ctx) mt
   in
   map_mterm_model aux model
