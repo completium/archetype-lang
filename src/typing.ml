@@ -2132,6 +2132,7 @@ let rec for_xexpr
             mk_sp (Some M.vtbool) (M.Pquantifer (qt, x, (ast, xty), body))
       end
 
+    | Esqapp _ (* TODO *)
     | Efail     _
     | Enothing
     | Eassert   _

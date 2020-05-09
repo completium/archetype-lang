@@ -788,6 +788,9 @@ simple_expr_r:
  | x=simple_expr DOT y=ident
      { Edot (x, y) }
 
+ | i=simple_expr LBRACKET e=expr RBRACKET
+     { Esqapp (i, e) }
+
  | x=simple_expr DOT id=ident a=app_args
      { Emethod (x, id, a) }
 

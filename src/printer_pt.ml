@@ -279,6 +279,15 @@ let rec pp_expr outer pos fmt a =
     in
     (maybe_paren outer e_dot pos pp) fmt (lhs, rhs)
 
+  | Esqapp (i, e) ->
+
+    let pp fmt (i, e) =
+      Format.fprintf fmt "%a[%a]"
+        pp_simple_expr i
+        pp_simple_expr e
+    in
+    (maybe_paren outer e_default pos pp) fmt (i, e)
+
   | Emulticomp (e, l) ->
     let pp fmt (e, l) =
       let pp_item fmt (op, e) =
