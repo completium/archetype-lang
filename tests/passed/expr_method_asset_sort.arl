@@ -18,6 +18,6 @@ action exec () {
   effect {
     var l = my_asset.sort(value);
     var a = l.nth(0);
-    res := a.value
+    res := my_asset[a].value
   }
 }

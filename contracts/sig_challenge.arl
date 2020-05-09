@@ -14,7 +14,7 @@ action emit (c_id : string, addr_ : address) {
 
 action resolve (c_id : string) {
   require {
-    r1: challenge.get(c_id).addr = caller;
+    r1: challenge[c_id].addr = caller;
   }
   effect {
     challenge.update(c_id, {solved = true})

@@ -28,16 +28,16 @@ action reclaim () {
 
   require {
     c2 : now < deadline;
-    c3 : bid.get(caller).value < max_bid;
+    c3 : bid[caller].value < max_bid;
   }
 
   effect {
-    transfer bid.get(caller).value to caller
+    transfer bid[caller].value to caller
   }
 }
 
 specification {
   contract invariant s1 {
-    forall b in bid, balance > b.value
+    forall b in bid, balance > bid[b].value
   }
 }

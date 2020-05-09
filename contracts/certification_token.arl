@@ -44,11 +44,10 @@ action register_learner (do_add : bool) {
 
 action register_learners (llid : role, lltokens : int, do_add : bool) {
   effect {
-    var i = institution.get(caller);
     if do_add then
-       i.ilearners.add({llid; lltokens})
+       institution[caller].ilearners.add({llid; lltokens})
     else
-       i.ilearners.remove(llid)
+       institution[caller].ilearners.remove(llid)
   }
 }
 
@@ -93,7 +92,7 @@ action certify (
     r1: certifier.contains(caller);
   }
   effect {
-    if (not institution.get(cert_cins).ilearners.contains(cert_clea)) then
+    if (not institution[cert_cins].ilearners.contains(cert_clea)) then
       fail ("learner is not in institution");
     if (cert_ccertifier <> caller) then
       fail ("ccertifier must be caller value");
@@ -106,7 +105,7 @@ action certify (
 action transfer_learner_token (nb_tokens : int, dest : address) {
   require {
     r2: learner.contains(caller);
-    r3: learner.get(caller).ltokens >= nb_tokens;
+    r3: learner[caller].ltokens >= nb_tokens;
   }
   effect {
     learner.update(caller, {ltokens -= nb_tokens})
@@ -116,7 +115,7 @@ action transfer_learner_token (nb_tokens : int, dest : address) {
 action transfer_institution_token (nb_tokens : int, dest : address) {
   require {
     r4: institution.contains(caller);
-    r5: institution.get(caller).itokens >= nb_tokens;
+    r5: institution[caller].itokens >= nb_tokens;
   }
   effect {
     institution.update(caller, {itokens -= nb_tokens})

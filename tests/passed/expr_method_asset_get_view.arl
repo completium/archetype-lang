@@ -17,7 +17,6 @@ action exec () {
   }
   effect {
     var c = my_asset.select(value % 2 = 0);
-    var a = c.get("id1");
-    res := a.value
+    res := my_asset["id1"].value
   }
 }

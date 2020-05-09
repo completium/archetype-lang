@@ -27,7 +27,7 @@ with {
 
 action transfer_single (card_to_transfer : pkey of card, destination : address) {
   require {
-    ts1: caller = card.get(card_to_transfer).card_owner;
+    ts1: caller = card[card_to_transfer].card_owner;
   }
   effect {
     card.update(card_to_transfer, {card_owner = destination})
@@ -37,19 +37,18 @@ action transfer_single (card_to_transfer : pkey of card, destination : address) 
 action sell_single (card_to_sell : pkey of card) {
   specification {
     shadow effect {
-      var c = card.get(card_to_sell);
-      card_pattern.update(c.card_pattern_card, {sellcount += 1})
+      var k = card[card_to_sell].card_pattern_card;
+      card_pattern.update(k, {sellcount += 1})
     }
   }
   require {
-    ss1: caller = card.get(card_to_sell).card_owner;
+    ss1: caller = card[card_to_sell].card_owner;
   }
   effect {
-    var card_ : card = card.get(card_to_sell);
-    card_pattern.update(card_.card_pattern_card, {quantity -= 1});
-    var card_pattern_ = card_pattern.get(card_.card_pattern_card);
+    var card_pattern_key : int = card[card_to_sell].card_pattern_card;
+    card_pattern.update(card_pattern_key, {quantity -= 1});
     card.remove(card_to_sell);
-    var price : tez = card_pattern_.quantity * card_pattern_.coefficient;
+    var price : tez = card_pattern[card_pattern_key].quantity * card_pattern[card_pattern_key].coefficient;
     var receiver = caller;
     transfer price to receiver
   }
@@ -61,9 +60,7 @@ action buy_single (card_to_buy : pkey of card_pattern) {
       card.count() = before.card.count() + 1
     }
     postcondition bs2 {
-      let some cp = card_pattern.get(card_to_buy) in
-      balance = before.balance + cp.quantity * cp.coefficient
-      otherwise true
+      balance = before.balance + card_pattern[card_to_buy].quantity * card_pattern[card_to_buy].coefficient
     }
     postcondition bs3 {
       card.select(card_owner = caller).count() >= 1
@@ -71,8 +68,7 @@ action buy_single (card_to_buy : pkey of card_pattern) {
   }
   accept transfer
   effect {
-    var card_pattern_ : card_pattern = card_pattern.get(card_to_buy);
-    var price : tez = (card_pattern_.quantity + 1) * card_pattern_.coefficient;
+    var price : tez = (card_pattern[card_to_buy].quantity + 1) * card_pattern[card_to_buy].coefficient;
     failif (price > transferred);
     card_pattern.update(card_to_buy, {quantity += 1});
     card.add({card_id = next_id; card_owner = caller; card_pattern_card = card_to_buy});

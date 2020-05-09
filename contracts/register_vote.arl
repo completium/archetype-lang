@@ -47,24 +47,22 @@ action do_vote (id : string, decision : bool) { // cannot name this 'vote'
     r1 : voter.contains(caller);
   }
   failif {
-    f1 : vote.get(id).voters.contains(caller);
+    f1 : vote[id].voters.contains(caller);
   }
   effect {
-    var v = vote.get(id);
-    v.voters.add({ vaddr = caller });
-    if decision then v.vcount += 1
+    vote[id].voters.add({ vaddr = caller });
+    if decision then vote[id].vcount += 1
   }
 }
 
 action execute (id : string) {
   called by admin
   effect {
-    var v = vote.get(id);
-    var nbvoters = v.voters.count();
-    var count = v.vcount;
+    var nbvoters = vote[id].voters.count();
+    var count = vote[id].vcount;
     if nbvoters >= quorum * voter.count() and count >= threshold * nbvoters then (
       // call contract action here
-      transfer 0tz to contract_instance call register_candidate(v.vcandidate)
+      transfer 0tz to contract_instance call register_candidate(vote[id].vcandidate)
     )
   }
 }
