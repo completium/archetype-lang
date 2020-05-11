@@ -381,6 +381,15 @@ let rec pp_pterm fmt (pterm : pterm) =
       in
       (pp_with_paren pp) fmt (e, i)
 
+    | Pdotassetfield (an, k, fn) ->
+      let pp fmt (an, k, fn) =
+        Format.fprintf fmt "%a[%a].%a"
+          pp_id an
+          pp_pterm k
+          pp_id fn
+      in
+      (pp_with_paren pp) fmt (an, k, fn)
+
     | Pconst c ->
       let pp fmt c =
         pp_str fmt (to_const c)

@@ -543,12 +543,13 @@ let pp_model fmt (model : model) =
           pp_operator op
           f r
 
-      | Massignfield (op, _, a, field , r) ->
-        Format.fprintf fmt "%a.%a %a %a"
-          f a
-          pp_id field
+      | Massignfield (op, _t, an, fn, k, v) ->
+        Format.fprintf fmt "%a[%a].%a %a %a"
+          pp_id an
+          f k
+          pp_id fn
           pp_operator op
-          f r
+          f v
 
       | Massignstate x ->
         Format.fprintf fmt "state_ = %a"
@@ -759,7 +760,17 @@ let pp_model fmt (model : model) =
 
       (* access *)
 
-      | Mdotasset (e, i)
+      | Mdot (e, i) ->
+        Format.fprintf fmt "%a.%a"
+          f e
+          pp_id i
+
+      | Mdotassetfield (an, k, fn) ->
+        Format.fprintf fmt "%a[%a].%a"
+          pp_id an
+          f k
+          pp_id fn
+
       | Mdotcontract (e, i) ->
         Format.fprintf fmt "(%a).%a"
           f e

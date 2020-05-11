@@ -117,7 +117,8 @@ let rec process_non_empty_list_term (model : model) (ctx : ctx_red) (s : s_red) 
           then
             begin
               (* let _s = _s.owner <- new_owner in *)
-              let n : mterm__node = Massignfield(ValueAssign, Tstorage, storage_var, id, value) in
+              (* let n : mterm__node = Massignfield(ValueAssign, Tstorage, storage_var, id, value) in *)
+              let n : mterm__node = assert false in (* FIXME *)
               let af : mterm = mk_mterm n Tunit in
               storage_lident, af, Tstorage
             end

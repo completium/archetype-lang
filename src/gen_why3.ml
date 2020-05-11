@@ -934,7 +934,8 @@ let mk_trace_seq m t chs =
 
 let is_old (ctx : logical_context) (t : M.mterm) =
   match t.node with
-  | M.Mdotasset ({ node = M.Mvarlocal id;  type_ = _},_) -> List.mem (unloc id) ctx.localold
+  (* | M.Mdotasset ({ node = M.Mvarlocal id;  type_ = _},_) -> List.mem (unloc id) ctx.localold *)
+  | M.Mdotassetfield (an, _, _) -> List.mem (unloc an) ctx.localold
   | _ -> false
 
 let map_mpattern (p : M.lident M.pattern_node) =
@@ -1052,9 +1053,9 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
                    map_mterm m ctx v))
         end in
       Tassign (var,value)
-    | Massignfield (assignop, _, id1, id2, v) ->
+    | Massignfield (assignop, _, _id1, id2, k, v) ->
 
-      let id = with_dummy_loc (Tdot (map_mterm m ctx id1,
+      let id = with_dummy_loc (Tdot (map_mterm m ctx (* id1 *) k, (* FIXME *)
                                      with_dummy_loc (Tvar (map_lident id2)))) in
       let value =
         begin
@@ -1197,7 +1198,8 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
 
     (* access *)
 
-    | Mdotasset (e, i) -> Tdot (map_mterm m ctx e, mk_loc (loc i) (Tvar (map_lident i)))
+    | Mdot (e, i) -> Tdot (map_mterm m ctx e, mk_loc (loc i) (Tvar (map_lident i))) (* FIXME *)
+    | Mdotassetfield (_an, _k, _fn) -> error_not_translated "Mdotassetfield"
     | Mdotcontract       _ -> error_not_translated "Mdotcontract"
     | Maccestuple        _ -> error_not_translated "Maccestuple"
 
@@ -1304,7 +1306,8 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
         map_mterm m ctx v |> Mlwtree.deloc
       | Mvarlocal f when is_coll_field m (unloc f) ->
         map_mterm m ctx v |> Mlwtree.deloc
-      | Mdotasset (_,f) when is_coll_field m (unloc f) ->
+      (* | Mdotasset (_,f) when is_coll_field m (unloc f) -> *)
+      | Mdotassetfield (_, _, f) when is_coll_field m (unloc f) ->
         map_mterm m ctx v |> Mlwtree.deloc
       | _ -> Ttoview (map_lident a,map_mterm m ctx v)
       end

@@ -290,6 +290,7 @@ type 'id term_node  =
   | Parray of 'id term_gen list
   | Plit of bval
   | Pdot of 'id term_gen * 'id
+  | Pdotassetfield of 'id * 'id term_gen * 'id
   | Pconst of const
   | Ptuple of 'id term_gen list
   | Pnone
@@ -711,6 +712,7 @@ let map_term_node (f : 'id term_gen -> 'id term_gen) = function
   | Parray l                -> Parray (List.map f l)
   | Plit l                  -> Plit l
   | Pdot (e, i)             -> Pdot (f e, i)
+  | Pdotassetfield (an, k, fn) -> Pdotassetfield (an, f k, fn)
   | Pconst c                -> Pconst c
   | Ptuple l                -> Ptuple (List.map f l)
   | Pnone                   -> Pnone
@@ -775,6 +777,7 @@ let fold_term (f: 'a -> 't -> 'a) (accu : 'a) (term : 'id term_gen) =
   | Parray l                -> List.fold_left f accu l
   | Plit _                  -> accu
   | Pdot (e, _)             -> f accu e
+  | Pdotassetfield (_, k, _) -> f accu k
   | Pconst _                -> accu
   | Ptuple l                -> List.fold_left f accu l
   | Pnone                   -> accu
@@ -923,6 +926,10 @@ let fold_map_term g f (accu : 'a) (term : 'id term_gen) : 'term * 'a =
   | Pdot (e, id) ->
     let ee, ea = f accu e in
     g (Pdot (ee, id)), ea
+
+  | Pdotassetfield (an, k, fn) ->
+    let ke, ka = f accu k in
+    g (Pdotassetfield (an, ke, fn)), ka
 
   | Pconst c ->
     g (Pconst c), accu

@@ -137,7 +137,7 @@ type ('id, 'term) mterm_node  =
   (* assign *)
   | Massign           of (assignment_operator * type_ * 'id * 'term)
   | Massignvarstore   of (assignment_operator * type_ * 'id * 'term)
-  | Massignfield      of (assignment_operator * type_ * 'term * 'id * 'term)
+  | Massignfield      of (assignment_operator * type_ * 'id * 'id * 'term * 'term) (* assignment _type an fn key value*)
   | Massignstate      of 'term
   | Massignassetstate of ident * 'term * 'term (* asset name * key * value *)
   (* control *)
@@ -180,7 +180,8 @@ type ('id, 'term) mterm_node  =
   | Mlitmap           of ('term * 'term) list
   | Mlitrecord        of (ident * 'term) list
   (* access *)
-  | Mdotasset         of 'term * 'id
+  | Mdot              of 'term * 'id
+  | Mdotassetfield    of 'id * 'term * 'id
   | Mdotcontract      of 'term * 'id
   | Maccestuple       of 'term * Core.big_int
   (* comparison operators *)
@@ -954,7 +955,7 @@ let cmp_mterm_node
     (* assign *)
     | Massign (op1, t1, l1, r1), Massign (op2, t2, l2, r2)                             -> cmp_assign_op op1 op2 && cmp_type t1 t2 && cmpi l1 l2 && cmp r1 r2
     | Massignvarstore (op1, t1, l1, r1), Massignvarstore (op2, t2, l2, r2)             -> cmp_assign_op op1 op2 && cmp_type t1 t2 && cmpi l1 l2 && cmp r1 r2
-    | Massignfield (op1, t1, a1, fi1, r1), Massignfield (op2, t2, a2, fi2, r2)         -> cmp_assign_op op1 op2 && cmp_type t1 t2 && cmp a1 a2 && cmpi fi1 fi2 && cmp r1 r2
+    | Massignfield (op1, t1, an1, fn1, k1, v1), Massignfield (op2, t2, an2, fn2, k2, v2) -> cmp_assign_op op1 op2 && cmp_type t1 t2 && cmpi an1 an2 && cmpi fn1 fn2 && cmp k1 k2 && cmp v1 v2
     | Massignstate x1, Massignstate x2                                                 -> cmp x1 x2
     | Massignassetstate (an1, k1, v1), Massignassetstate (an2, k2, v2)                 -> cmp_ident an1 an2 && cmp k1 k2 && cmp v1 v2
     (* control *)
@@ -997,7 +998,8 @@ let cmp_mterm_node
     | Mlitmap l1, Mlitmap l2                                                           -> List.for_all2 (fun (k1, v1) (k2, v2) -> (cmp k1 k2 && cmp v1 v2)) l1 l2
     | Mlitrecord l1, Mlitrecord l2                                                     -> List.for_all2 (fun (i1, v1) (i2, v2) -> (cmp_ident i1 i2 && cmp v1 v2)) l1 l2
     (* access *)
-    | Mdotasset (e1, i1), Mdotasset (e2, i2)                                           -> cmp e1 e2 && cmpi i1 i2
+    | Mdot (e1, i1), Mdot (e2, i2)                                                     -> cmp e1 e2 && cmpi i1 i2
+    | Mdotassetfield (an1, k1, fn1), Mdotassetfield (an2, k2, fn2)                     -> cmpi an1 an2 && cmp k1 k2 && cmpi fn1 fn2
     | Mdotcontract (e1, i1), Mdotcontract (e2, i2)                                     -> cmp e1 e2 && cmpi i1 i2
     | Maccestuple (e1, i1), Maccestuple (e2, i2)                                       -> cmp e1 e2 && Big_int.eq_big_int i1 i2
     (* comparison operators *)
@@ -1244,7 +1246,7 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   (* assign *)
   | Massign (op, t, l, r)          -> Massign (op, ft t, g l, f r)
   | Massignvarstore (op, t, l, r)  -> Massignvarstore (op, ft t, g l, f r)
-  | Massignfield (op, t, a, fi, r) -> Massignfield (op, ft t, f a, g fi, f r)
+  | Massignfield (op, t, an, fn, k, v) -> Massignfield (op, ft t, g an, g fn, f k, f v)
   | Massignstate x                 -> Massignstate (f x)
   | Massignassetstate (an, k, v)   -> Massignassetstate (fi an, f k, f v)
   (* control *)
@@ -1287,7 +1289,8 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Mlitmap l                      -> Mlitmap (List.map (pair_sigle_map f) l)
   | Mlitrecord l                   -> Mlitrecord (List.map ((fun (x, y) -> (x, f y))) l)
   (* access *)
-  | Mdotasset (e, i)               -> Mdotasset (f e, g i)
+  | Mdot (e, i)                    -> Mdot (f e, g i)
+  | Mdotassetfield (an, k, fn)     -> Mdotassetfield (g an, f k, g fn)
   | Mdotcontract (e, i)            -> Mdotcontract (f e, g i)
   | Maccestuple (e, i)             -> Maccestuple (f e, i)
   (* comparison operators *)
@@ -1569,7 +1572,7 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   (* assign *)
   | Massign (_, _, _, e)                  -> f accu e
   | Massignvarstore (_, _, _, e)          -> f accu e
-  | Massignfield (_, _, _, _, e)          -> f accu e
+  | Massignfield (_, _, _, _, k, v)       -> f (f accu k) v
   | Massignstate x                        -> f accu x
   | Massignassetstate (_, k, v)           -> f (f accu k) v
   (* control *)
@@ -1612,7 +1615,8 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Mlitmap l                             -> List.fold_left (fun accu (k, v) -> f (f accu k) v) accu l
   | Mlitrecord l                          -> List.fold_left (fun accu (_, v) -> f accu v) accu l
   (* access *)
-  | Mdotasset (e, _)                      -> f accu e
+  | Mdot (e, _)                           -> f accu e
+  | Mdotassetfield (_, k, _)              -> f accu k
   | Mdotcontract (e, _)                   -> f accu e
   | Maccestuple (e, _)                    -> f accu e
   (* comparison operators *)
@@ -1793,9 +1797,10 @@ let fold_map_term
     let xe, xa = f accu x in
     g (Massignvarstore (op, t, id, xe)), xa
 
-  | Massignfield (op, t, a, fi, x) ->
-    let xe, xa = f accu x in
-    g (Massignfield (op, t, a, fi, xe)), xa
+  | Massignfield (op, t, an, fn, k, v) ->
+    let ke, ka = f accu k in
+    let ve, va = f ka v in
+    g (Massignfield(op, t, an, fn, ke, ve)), va
 
   | Massignstate x ->
     let xe, xa = f accu x in
@@ -1998,9 +2003,13 @@ let fold_map_term
 
   (* dot *)
 
-  | Mdotasset (e, i) ->
+  | Mdot (e, i) ->
     let ee, ea = f accu e in
-    g (Mdotasset (ee, i)), ea
+    g (Mdot (ee, i)), ea
+
+  | Mdotassetfield (an, k, fn) ->
+    let ke, ka = f accu k in
+    g (Mdotassetfield (an, ke, fn)), ka
 
   | Mdotcontract (e, i) ->
     let ee, ea = f accu e in

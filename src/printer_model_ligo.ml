@@ -309,12 +309,13 @@ let pp_model_internal fmt (model : model) b =
             | OrAssign    -> Format.fprintf fmt "%s.%a or (%a)"  const_storage pp_id lhs f r
         ) r
 
-    | Massignfield (op, _, a, field , r) ->
-      Format.fprintf fmt "%a.%a %a %a"
-        f a
-        pp_id field
+    | Massignfield (op, _t, an, fn, k, v) ->
+      Format.fprintf fmt "%a[%a].%a %a %a"
+        pp_id an
+        f k
+        pp_id fn
         pp_operator op
-        f r
+        f v
 
     | Massignstate x ->
       Format.fprintf fmt "%s.%s := %a"
@@ -589,7 +590,13 @@ let pp_model_internal fmt (model : model) b =
 
     (* access *)
 
-    | Mdotasset (e, i)
+    | Mdot (e, i) ->
+      Format.fprintf fmt "%a.%a"
+        f e
+        pp_id i
+
+    | Mdotassetfield _ -> emit_error (UnsupportedTerm ("dotassetfield"))
+
     | Mdotcontract (e, i) ->
       Format.fprintf fmt "%a.%a"
         f e
@@ -1825,7 +1832,7 @@ let pp_model_internal fmt (model : model) b =
     | Sum (an, t, p) ->
       let rec pp_expr fmt (mt : mterm) =
         match mt.node with
-        | Mdotasset ({node = Mvarlocal ({pldesc = "the"; _}) }, fn) ->
+        | Mdot ({node = Mvarlocal ({pldesc = "the"; _}) }, fn) ->
           Format.fprintf fmt "a.%a"
             pp_id fn
         | _ -> (pp_mterm_gen (mk_env ()) pp_expr) fmt mt
