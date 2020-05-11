@@ -147,7 +147,6 @@ let generate_target model =
     |> flat_sequence
     |> remove_cmp_bool
     (* |> shallow_asset *)
-    |> replace_asset_by_key
     |> split_key_values
     |> remove_duplicate_key
     |> Gen_transform.assign_loop_label
@@ -177,7 +176,6 @@ let generate_target model =
     |> remove_label
     |> flat_sequence
     |> remove_cmp_bool
-    |> replace_asset_by_key
     |> split_key_values
     |> Gen_transform.assign_loop_label
     |> generate_api_storage
@@ -194,7 +192,6 @@ let generate_target model =
     |> flat_sequence
     |> remove_cmp_bool
     |> process_single_field_storage
-    |> replace_asset_by_key
     |> split_key_values
     |> remove_side_effect
     |> generate_api_storage
@@ -207,7 +204,6 @@ let generate_target model =
     |> remove_add_update
     |> merge_update
     |> remove_assign_operator
-    |> replace_key_by_asset
     |> process_internal_string
     |> remove_rational
     |> replace_date_duration_by_timestamp
@@ -227,7 +223,6 @@ let generate_target model =
     (* |> split_key_values *)
     |> Gen_transform.assign_loop_label
     |> replace_for_to_iter
-    |> replace_asset_by_key
     |> replace_assignfield_by_update
     |> replace_update_by_set
     |> remove_cmp_enum

@@ -108,6 +108,20 @@ let remove_add_update (model : model) : model =
   then raise (Error.Stop 5)
   else res
 
+
+let build_col_asset (an : ident) =
+  let dan = dumloc an in
+  let type_asset = Tasset dan in
+  let type_col = Tcontainer (type_asset,Collection) in
+  let type_view = Tcontainer (type_asset,View) in
+  let col : mterm  = mk_mterm (Mvarstorecol dan) type_col in
+  mk_mterm (Mcast (type_col, type_view, col)) type_view
+
+let build_get (an : ident) v =
+  let col = build_col_asset an in
+  mk_mterm (Mget (an, col, v)) col.type_
+
+
 (* myasset.update k {f1 = v1; f2 = v2}
 
    let _k = k in
@@ -121,37 +135,18 @@ let replace_update_by_set (model : model) : model =
     | Mupdate (an, k, l) ->
       begin
         let asset = Utils.get_asset model an in
-        let is_asset_name (pterm : mterm) an : bool =
-          match pterm with
-          | {type_ = Tasset asset_name} -> String.equal an (unloc asset_name)
-          | _ -> false
-        in
 
         let _, t = Utils.get_asset_key model an in
 
         let type_asset = Tasset (dumloc an) in
-        let type_container_asset = Tcontainer (type_asset, Collection) in
 
         let var_name = dumloc (an ^ "_") in
         let var_mterm : mterm = mk_mterm (Mvarlocal var_name) type_asset in
 
-        (* let asset_mterm : mterm = mk_mterm (Mvarstorecol (dumloc (asset_name))) type_container_asset in *)
-
-        let asset_aaa =
-          match k.node with
-          | Mdotassetfield (a, _, _) -> Some a
-          | _ -> None
-        in
-
         let key_name = "k_" in
         let key_loced : lident = dumloc (key_name) in
-        let asset_col : mterm = mk_mterm (Mvarstorecol (dumloc an)) type_asset in
-        let key_mterm : mterm =
-          match asset_aaa with
-          | Some _ -> k
-          | _ ->
-            mk_mterm (Mvarlocal key_loced) type_container_asset
-        in
+        (* let asset_col : mterm = mk_mterm (Mvarstorecol (dumloc an)) type_asset in *)
+        let key_mterm : mterm = k in
 
         let set_mterm : mterm = mk_mterm (Mset (an, List.map (fun (id, _, _) -> unloc id) l, key_mterm, var_mterm)) Tunit in
 
@@ -160,7 +155,7 @@ let replace_update_by_set (model : model) : model =
           List.fold_left (fun accu (x : asset_item) ->
               let v = List.assoc_opt (unloc x.name) lref in
               let type_ = x.type_ in
-              let var = mk_mterm (Mdotassetfield (var_mterm, x.name)) type_ in
+              let var = mk_mterm (Mdotassetfield (dumloc an, key_mterm, x.name)) type_ in
               match v with
               | Some y ->
                 accu @ [
@@ -192,12 +187,7 @@ let replace_update_by_set (model : model) : model =
 
         (* let body : mterm = mk_mterm (Mseq seq) Tunit in *)
 
-        let get_mterm : mterm =
-          match asset_aaa with
-          | Some a -> a
-          | _ ->
-            mk_mterm (Mget (an, asset_col, key_mterm)) type_asset
-        in
+        let get_mterm : mterm = build_get an key_mterm in
 
         let letinasset : mterm = mk_mterm (Mletin ([var_name],
                                                    get_mterm,
@@ -208,15 +198,12 @@ let replace_update_by_set (model : model) : model =
             Tunit in
 
         let res : mterm__node =
-          match asset_aaa with
-          | Some _ -> letinasset.node
-          | _ ->
-            Mletin ([key_loced],
-                    k,
-                    Some (Tbuiltin t),
-                    letinasset,
-                    None
-                   ) in
+          Mletin ([key_loced],
+                  k,
+                  Some (Tbuiltin t),
+                  letinasset,
+                  None
+                 ) in
 
         mk_mterm res Tunit
       end
@@ -322,7 +309,7 @@ let extend_removeif (model : model) : model =
       let asset_var = mk_mterm (Mvarlocal assetv_str) type_asset in
 
       let key, key_type = Utils.get_asset_key model (unloc lasset) in
-      let asset_key : mterm = mk_mterm (Mdotasset (asset_var,dumloc key)) (Tbuiltin key_type) in
+      let asset_key : mterm = mk_mterm (Mdotassetfield (lasset, asset_var, dumloc key)) (Tbuiltin key_type) in
 
       let assets_var_name = dumloc ("assets_") in
       let type_assets = Tcontainer (type_asset, View) in
@@ -1503,7 +1490,7 @@ let replace_ident_model_val (model : model) : model =
 (* set remove update *)
 
 
-let replace_key_by_asset (model : model) : model =
+(* let replace_key_by_asset (model : model) : model =
   let rec aux c (mt : mterm) : mterm =
     let mk n = mk_mterm n Tunit in
     let get an k = mk_mterm (Mget (an, Utils.get_asset_collection an, k)) (Tasset (dumloc an)) in
@@ -1535,7 +1522,7 @@ let replace_key_by_asset (model : model) : model =
       mk (Mset (an, fns, nk, a))
     | _ -> map_mterm (aux c) mt
   in
-  Model.map_mterm_model aux model
+  Model.map_mterm_model aux model *)
 
 let merge_update (model : model) : model =
   let contains l (ref, _, _) = List.fold_left (fun accu (id, _, _) -> accu || (String.equal (unloc ref) (unloc id))) false l in
