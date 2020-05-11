@@ -1,4 +1,4 @@
-archetype update_concat
+archetype effect_method_asset_update_with_add_collection_field
 
 asset my_asset_simple identified by str {
   str : string
