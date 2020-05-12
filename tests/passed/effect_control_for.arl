@@ -17,7 +17,7 @@ action exec () {
   }
   effect {
     for i in myasset do
-      res += i.v;
+      res += myasset[i].v;
     done;
   }
 }

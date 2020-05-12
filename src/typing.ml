@@ -2935,8 +2935,10 @@ let rec for_instruction (env : env) (i : PT.expr) : env * M.instruction =
           let _ : bool = check_and_emit_name_free env x in
           let env, aname =
             if Option.is_some asset then
-              let nm = (Option.get asset).as_name in
-              let ty = M.Tasset nm in
+              let asset = Option.get asset in
+              let nm = asset.as_name in
+              let pk = Option.get (get_field (unloc asset.as_pk) asset) in
+              let ty = pk.fd_type in
               Env.Local.push env ~kind:`LoopIndex (x, ty), Some (unloc nm)
             else env, None in
 
