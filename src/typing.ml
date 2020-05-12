@@ -274,6 +274,8 @@ type error_desc =
   | InvalidLValue
   | InvalidFormula
   | InvalidInstruction
+  | InvalidMethodInExec
+  | InvalidMethodInFormula
   | InvalidNumberOfArguments           of int * int
   | InvalidRoleExpression
   | InvalidSecurityAction
@@ -418,6 +420,8 @@ let pp_error_desc fmt e =
   | InvalidLValue                      -> pp "Invalid left-value"
   | InvalidFormula                     -> pp "Invalid formula"
   | InvalidInstruction                 -> pp "Invalid instruction"
+  | InvalidMethodInExec                -> pp "Invalid method in execution"
+  | InvalidMethodInFormula             -> pp "Invalid method in formula"
   | InvalidNumberOfArguments (n1, n2)  -> pp "Invalid number of arguments: found '%i', but expected '%i'" n1 n2
   | InvalidRoleExpression              -> pp "Invalid role expression"
   | InvalidSecurityAction              -> pp "Invalid security action"
@@ -618,6 +622,7 @@ let statename = "state"
 
 type ('args, 'rty) gmethod_ = {
   mth_name     : M.const;
+  mth_place    : [`Both | `OnlyFormula | `OnlyExec ];
   mth_purity   : [`Pure | `Effect];
   mth_totality : [`Total | `Partial];
   mth_sig      : 'args * 'rty option;
@@ -646,26 +651,26 @@ type smethod_ = (mthstyp list, mthstyp) gmethod_
 type method_  = (mthatyp     , mthtyp ) gmethod_
 
 let methods : (string * method_) list =
-  let mk mth_name mth_purity mth_totality mth_sig =
-    { mth_name; mth_purity; mth_totality; mth_sig; }
+  let mk mth_name mth_place mth_purity mth_totality mth_sig =
+    { mth_name; mth_place; mth_purity; mth_totality; mth_sig; }
   in [
-    ("isempty"     , mk M.Cisempty      `Pure   `Total   (`Fixed [              ], Some (`T M.vtbool)));
-    ("get"         , mk M.Cget          `Pure   `Partial (`Fixed [`Pk           ], Some `The));
-    ("add"         , mk M.Cadd          `Effect `Total   (`Fixed [`The          ], None));
-    ("remove"      , mk M.Cremove       `Effect `Total   (`Fixed [`Pk           ], None));
-    ("removeif"    , mk M.Cremoveif     `Effect `Total   (`Fixed [`Pred true    ], None));
-    ("clear"       , mk M.Cclear        `Effect `Total   (`Fixed [              ], None));
-    ("update"      , mk M.Cupdate       `Effect `Total   (`Fixed [`Pk; `Ef true ], None));
-    ("addupdate"   , mk M.Caddupdate    `Effect `Total   (`Fixed [`Pk; `Ef false], None));
-    ("contains"    , mk M.Ccontains     `Pure   `Total   (`Fixed [`Pk           ], Some (`T M.vtbool)));
-    ("nth"         , mk M.Cnth          `Pure   `Partial (`Fixed [`T M.vtint    ], Some (`Asset)));
-    ("select"      , mk M.Cselect       `Pure   `Total   (`Fixed [`Pred true    ], Some (`SubColl)));
-    ("sort"        , mk M.Csort         `Pure   `Total   (`Multi (`Cmp          ), Some (`SubColl)));
-    ("count"       , mk M.Ccount        `Pure   `Total   (`Fixed [              ], Some (`T M.vtint)));
-    ("sum"         , mk M.Csum          `Pure   `Total   (`Fixed [`RExpr false  ], Some (`Ref 0)));
-    ("subsetof"    , mk M.Csubsetof     `Pure   `Total   (`Fixed [`SubColl      ], Some (`T M.vtbool)));
-    ("head"        , mk M.Chead         `Pure   `Total   (`Fixed [`T M.vtint    ], Some (`SubColl)));
-    ("tail"        , mk M.Ctail         `Pure   `Total   (`Fixed [`T M.vtint    ], Some (`SubColl)));
+    ("isempty"     , mk M.Cisempty      `Both        `Pure   `Total   (`Fixed [              ], Some (`T M.vtbool)));
+    ("get"         , mk M.Cget          `OnlyFormula `Pure   `Partial (`Fixed [`Pk           ], Some `The));
+    ("add"         , mk M.Cadd          `Both        `Effect `Total   (`Fixed [`The          ], None));
+    ("remove"      , mk M.Cremove       `Both        `Effect `Total   (`Fixed [`Pk           ], None));
+    ("removeif"    , mk M.Cremoveif     `Both        `Effect `Total   (`Fixed [`Pred true    ], None));
+    ("clear"       , mk M.Cclear        `Both        `Effect `Total   (`Fixed [              ], None));
+    ("update"      , mk M.Cupdate       `Both        `Effect `Total   (`Fixed [`Pk; `Ef true ], None));
+    ("addupdate"   , mk M.Caddupdate    `Both        `Effect `Total   (`Fixed [`Pk; `Ef false], None));
+    ("contains"    , mk M.Ccontains     `Both        `Pure   `Total   (`Fixed [`Pk           ], Some (`T M.vtbool)));
+    ("nth"         , mk M.Cnth          `Both        `Pure   `Partial (`Fixed [`T M.vtint    ], Some (`Asset)));
+    ("select"      , mk M.Cselect       `Both        `Pure   `Total   (`Fixed [`Pred true    ], Some (`SubColl)));
+    ("sort"        , mk M.Csort         `Both        `Pure   `Total   (`Multi (`Cmp          ), Some (`SubColl)));
+    ("count"       , mk M.Ccount        `Both        `Pure   `Total   (`Fixed [              ], Some (`T M.vtint)));
+    ("sum"         , mk M.Csum          `Both        `Pure   `Total   (`Fixed [`RExpr false  ], Some (`Ref 0)));
+    ("subsetof"    , mk M.Csubsetof     `Both        `Pure   `Total   (`Fixed [`SubColl      ], Some (`T M.vtbool)));
+    ("head"        , mk M.Chead         `Both        `Pure   `Total   (`Fixed [`T M.vtint    ], Some (`SubColl)));
+    ("tail"        , mk M.Ctail         `Both        `Pure   `Total   (`Fixed [`T M.vtint    ], Some (`SubColl)));
   ]
 
 let methods = Mid.of_list methods
@@ -1971,7 +1976,7 @@ let rec for_xexpr
 
         let the = for_xexpr env the in
 
-        let the, asset, mname, (purity, totality), args, rty =
+        let the, asset, mname, (place, purity, totality), args, rty =
           match the.M.type_ with
           | None ->
             bailout ()
@@ -1990,19 +1995,28 @@ let rec for_xexpr
 
 
                 (the, Some (asset, c), method_.mth_name,
-                 (method_.mth_purity, method_.mth_totality), args, rty)
+                 (method_.mth_place, method_.mth_purity, method_.mth_totality), args, rty)
 
               | None ->
                 let infos = for_api_call mode env (loc tope) (`Typed the, m, args) in
                 let the, method_, args = Option.get_fdfl bailout infos in
                 let rty =
                   Option.map (fun ty -> let `T ty = ty in ty) (snd (method_.mth_sig)) in
-                (the, None, method_.mth_name, (method_.mth_purity, method_.mth_totality), args, rty)
+                (the, None, method_.mth_name, (method_.mth_place, method_.mth_purity, method_.mth_totality), args, rty)
             end
         in
 
         if Option.is_none rty then begin
           Env.emit_error env (loc tope, VoidMethodInExpr)
+        end;
+
+        begin match place, mode.em_kind with
+          | `OnlyExec, `Formula ->
+            Env.emit_error env (loc tope, InvalidMethodInFormula)
+          | `OnlyFormula, `Expr ->
+            Env.emit_error env (loc tope, InvalidMethodInExec)
+          | _, _ ->
+            ()
         end;
 
         begin match asset, purity, mode.em_kind with
