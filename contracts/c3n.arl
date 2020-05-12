@@ -26,7 +26,7 @@ action register (newadmins : ((pkey of admins) list) option, oldhash : string, n
     effect {
         var test = false;
         for admin in admins do
-            if admin.addr = caller then
+            if admins[admin].addr = caller then
             test := true
         done;
         require (test = true);

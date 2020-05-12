@@ -30,7 +30,7 @@ action add (ow : address, newmile_id : string, newmile_amount : int, newmile_exp
 
    effect {
      if owner.contains(ow) then
-      owner.get(ow).miles.add ({newmile_id; newmile_amount; newmile_expiration})
+      owner[ow].miles.add ({newmile_id; newmile_amount; newmile_expiration})
      else
       owner.add ({ addr = ow; miles = [{newmile_id; newmile_amount; newmile_expiration}] })
    }
@@ -74,25 +74,24 @@ action consume (a : address, quantity : int) {
   }
 
   effect {
-    let ow = owner.get(a) in
-    let by_expiration = ow.miles.select(the.expiration > now) in
+    let by_expiration = owner[a].miles.select(the.expiration > now) in
     require (by_expiration.sum(the.amount) >= quantity);
     let remainder = quantity in
     for : loop m in by_expiration do
       if remainder > 0
       then (
-        if m.amount > remainder
+        if mile[m].amount > remainder
         then (
-          mile.update(m.id, { amount  -= remainder });
+          mile.update(m, { amount -= remainder });
           remainder := 0
         )
-        else if m.amount = remainder
+        else if mile[m].amount = remainder
         then (
           remainder := 0;
-          ow.miles.remove(m.id)
+          owner[a].miles.remove(m)
         ) else (
-          remainder -= m.amount;
-          ow.miles.remove(m.id)
+          remainder -= mile[m].amount;
+          owner[a].miles.remove(m)
         )
       )
     done;
@@ -114,7 +113,7 @@ action clear_expired () {
 
   effect {
     for : loop2 o in owner do
-      o.miles.removeif (the.expiration < now)
+      owner[o].miles.removeif (the.expiration < now)
     done
   }
 }

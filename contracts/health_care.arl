@@ -69,7 +69,7 @@ action pay_doctor (docid : address) {
     r4 : state = Running;
   }
   effect {
-    var ldebt = doctor.get(docid).debt;
+    var ldebt = doctor[docid].debt;
     var decrease : tez = min (transferred, ldebt);
     transfer decrease to docid;
     transfer (transferred - decrease) to insurer;

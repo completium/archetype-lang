@@ -20,12 +20,12 @@ action place_bid () {
 action reclaim (witness : address) {
   require {
     c2 : now < deadline;
-    c3 : (let bc = bid.get(caller).val in
-          let bw = bid.get(witness).val in
+    c3 : (let bc = bid[caller].val in
+          let bw = bid[witness].val in
           bc < bw);
   }
   effect {
-    transfer bid.get(caller).val to caller
+    transfer bid[caller].val to caller
   }
 }
 

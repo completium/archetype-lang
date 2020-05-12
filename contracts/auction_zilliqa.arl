@@ -36,7 +36,7 @@ action place_bid () {
   effect {
     if pending_return.contains(caller)
     then
-      let bid = pending_return.get(caller).val in
+      let bid = pending_return[caller].val in
       let new_bid = bid + transferred in
       if new_bid > highest_bid
       then (
@@ -73,7 +73,7 @@ action[%onlyonce%] withdraw () {
     c2 : pending_return.contains(caller);
   }
   effect {
-    transfer pending_return.get(caller).val to caller;
+    transfer pending_return[caller].val to caller;
     pending_return.remove(caller)
   }
 }

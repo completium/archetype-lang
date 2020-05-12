@@ -10,7 +10,7 @@ asset token {
 }
 
 action transfer_ (k : role, tk : pkey of token) {
-  called by token.get(tk).owner
+  called by token[tk].owner
   effect {
     token.update(tk, {owner = k} )
   }

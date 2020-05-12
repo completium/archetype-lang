@@ -112,17 +112,15 @@ action contribute () {
      c1 : contributor.contains(caller);
      c2 : is_running ();
      c3 : transferred >= min_contribution;
-     c4 : (let c = contributor.get(caller) in
-           not (c.wlist = Silver and transferred >= max_contribution_silver));
+     c4 : (not (contributor[caller].wlist = Silver and transferred >= max_contribution_silver));
   }
 
   effect {
-    let c = contributor.get(caller) in
     (* cap contribution to max_contrib if necessary *)
     let lcontrib = transferred in
-    if    c.wlist = Silver
-      and c.contrib + lcontrib >= max_contribution_silver
-    then lcontrib := max_contribution_silver - c.contrib;
+    if    contributor[caller].wlist = Silver
+      and contributor[caller].contrib + lcontrib >= max_contribution_silver
+    then lcontrib := max_contribution_silver - contributor[caller].contrib;
     (* cap contribution to round cap if necessary *)
     let remaining_tez : tez = get_remaining_tez_to_raise () in
     if remaining_tez <= lcontrib
@@ -137,7 +135,7 @@ action contribute () {
     nb_bcd_sold   += nb_tokens;
     nb_tez_raised += lcontrib;
     (* update caller's contribution *)
-    c.contrib     += lcontrib;
+    contributor[caller].contrib     += lcontrib;
     (* syntaxic sugar for
        contributor.update caller { contrib += contrib } *)
     if lcontrib <= transferred
@@ -152,13 +150,12 @@ action[%onlyonce%] withdraw () {
   require {
     c5 : vstate = Round2Finished;
     c6 : nb_tez_raised <= soft_cap;
-    c7 : contributor.get(caller).contrib > 0tz;
+    c7 : contributor[caller].contrib > 0tz;
   }
 
   effect {
-    let c = contributor.get(caller) in
-    transfer c.contrib to caller;
+    transfer contributor[caller].contrib to caller;
     (* do not forget this *)
-    c.contrib := 0tz
+    contributor[caller].contrib := 0tz
   }
 }

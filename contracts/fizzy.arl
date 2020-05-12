@@ -31,8 +31,7 @@ action addflightinsurance (fi : string, iproductid : string, ilimit : date, ipre
     effect {
       if (not flight.contains (fi)) then
       flight.add({ id = fi; insurances = [] });
-      let f = flight.get(fi) in
-      f.insurances.add({iproductid; ilimit; ipremium; iindemnity; iproduct; istat})
+      flight[fi].insurances.add({iproductid; ilimit; ipremium; iindemnity; iproduct; istat})
     }
 }
 
@@ -42,12 +41,11 @@ action updatestatus (fi : string, arrival : date) {
     called by creator
 
     effect {
-      let f = flight.get(fi) in
-      for i in f.insurances do
-        match i.stat with
+      for i in flight[fi].insurances do
+        match insurance[i].stat with
         | Created ->
-           if arrival > i.limit
-           then i.stat := After
+           if arrival > insurance[i].limit
+           then insurance[i].stat := After
         | _ -> ()
         end
       done
@@ -59,10 +57,9 @@ action manual (fi : string, pr : string, newst : status) {
     called by creator
 
     effect {
-      let f = flight.get(fi) in
-      for i in f.insurances.select(product = pr) do
-        match i.stat with
-         | Created -> i.stat := newst
+      for i in flight[fi].insurances.select(product = pr) do
+        match insurance[i].stat with
+         | Created -> insurance[i].stat := newst
          | _ -> ()
         end
       done

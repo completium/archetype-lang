@@ -654,7 +654,7 @@ let methods : (string * method_) list =
   let mk mth_name mth_place mth_purity mth_totality mth_sig =
     { mth_name; mth_place; mth_purity; mth_totality; mth_sig; }
   in [
-    ("isempty"     , mk M.Cisempty      `Both        `Pure   `Total   (`Fixed [              ], Some (`T M.vtbool)));
+    ("isempty"     , mk M.Cisempty      `OnlyFormula `Pure   `Total   (`Fixed [              ], Some (`T M.vtbool)));
     ("get"         , mk M.Cget          `OnlyFormula `Pure   `Partial (`Fixed [`Pk           ], Some `The));
     ("add"         , mk M.Cadd          `Both        `Effect `Total   (`Fixed [`The          ], None));
     ("remove"      , mk M.Cremove       `Both        `Effect `Total   (`Fixed [`Pk           ], None));
@@ -668,7 +668,7 @@ let methods : (string * method_) list =
     ("sort"        , mk M.Csort         `Both        `Pure   `Total   (`Multi (`Cmp          ), Some (`SubColl)));
     ("count"       , mk M.Ccount        `Both        `Pure   `Total   (`Fixed [              ], Some (`T M.vtint)));
     ("sum"         , mk M.Csum          `Both        `Pure   `Total   (`Fixed [`RExpr false  ], Some (`Ref 0)));
-    ("subsetof"    , mk M.Csubsetof     `Both        `Pure   `Total   (`Fixed [`SubColl      ], Some (`T M.vtbool)));
+    ("subsetof"    , mk M.Csubsetof     `OnlyFormula `Pure   `Total   (`Fixed [`SubColl      ], Some (`T M.vtbool)));
     ("head"        , mk M.Chead         `Both        `Pure   `Total   (`Fixed [`T M.vtint    ], Some (`SubColl)));
     ("tail"        , mk M.Ctail         `Both        `Pure   `Total   (`Fixed [`T M.vtint    ], Some (`SubColl)));
   ]
@@ -1787,6 +1787,16 @@ let rec for_xexpr
       end
 
     | Edot ({pldesc = Esqapp ({pldesc = Eterm (_, asset); _}, pk); _}, x) -> begin
+        begin
+          match mode.em_kind with
+          | `Formula ->
+            begin
+              Env.emit_error env (loc tope, InvalidFormula);
+              bailout ()
+            end
+          | _ -> ()
+        end;
+
         let asset = Env.Asset.get env (unloc asset) in
 
         match get_field (unloc x) asset with

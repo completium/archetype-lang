@@ -24,7 +24,7 @@ action add_contract (ic_addr : address, ic_max_transfer : tez) {
 action pay (recipient : address, amount : tez) {
   require {
     c2 : insured_contract.contains(caller);
-    c3 : amount <= insured_contract.get(caller).max_transfer;
+    c3 : amount <= insured_contract[caller].max_transfer;
   }
 
   effect {

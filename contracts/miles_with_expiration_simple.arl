@@ -12,7 +12,7 @@ asset mile identified by id {
 
 asset owner identified by addr {
     addr : address;
-    miles : mile partition;
+    miles : mile partition = [];
 }
 
 action add (ow : address, newmile_id : string, newmile_expiration : date, newmile_quantity : int) {
@@ -22,9 +22,12 @@ action add (ow : address, newmile_id : string, newmile_expiration : date, newmil
 	}
 	effect {
 	    if owner.contains(ow) then
-	        owner.get(ow).miles.add({newmile_id; newmile_expiration; newmile_quantity})
+	        owner[ow].miles.add({newmile_id; newmile_expiration; newmile_quantity})
 	    else
 	        owner.add({ addr = ow; miles = [{newmile_id; newmile_expiration; newmile_quantity}] })
+
+        // TODO: replace it by:
+        // owner.addupdate(ow, { miles += [{newmile_id; newmile_expiration; newmile_quantity}] })
 	}
 }
 
@@ -38,8 +41,10 @@ action consume (ow : address, qty : int) {
             otherwise true
             invariant for loop {
                 let some before_o = before.owner.get(ow) in
+                let some o = owner.get(ow) in
                     o.miles.sum(the.quantity) =
                         before_o.miles.sum(the.quantity) - qty + remainder
+                otherwise true
                 otherwise true;
                 0 <= remainder <= toiterate.sum(the.quantity)
             }
@@ -51,17 +56,16 @@ action consume (ow : address, qty : int) {
         r3: owner.contains(ow)
     }
     effect {
-    	var o = owner.get(ow);
-        var valid_miles = o.miles.select(the.expiration > now);
+        var valid_miles = owner[ow].miles.select(the.expiration > now);
         require ( valid_miles.sum(the.quantity) >= qty );
         var remainder = qty;
         for:loop m in valid_miles do
             if remainder > 0 then (
-                if m.quantity <= remainder then (
-                    remainder -= m.quantity;
-                    o.miles.remove(m.id)
+                if mile[m].quantity <= remainder then (
+                    remainder -= mile[m].quantity;
+                    owner[ow].miles.remove(m)
                 ) else (
-                    mile.update(m.id, { quantity -= remainder });
+                    mile.update(m, { quantity -= remainder });
                     remainder := 0
                 )
             )
