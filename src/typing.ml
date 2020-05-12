@@ -663,7 +663,7 @@ let methods : (string * method_) list =
     ("update"      , mk M.Cupdate       `Both        `Effect `Total   (`Fixed [`Pk; `Ef true ], None));
     ("addupdate"   , mk M.Caddupdate    `Both        `Effect `Total   (`Fixed [`Pk; `Ef false], None));
     ("contains"    , mk M.Ccontains     `Both        `Pure   `Total   (`Fixed [`Pk           ], Some (`T M.vtbool)));
-    ("nth"         , mk M.Cnth          `Both        `Pure   `Partial (`Fixed [`T M.vtint    ], Some (`Asset)));
+    ("nth"         , mk M.Cnth          `Both        `Pure   `Partial (`Fixed [`T M.vtint    ], Some (`Pk)));
     ("select"      , mk M.Cselect       `Both        `Pure   `Total   (`Fixed [`Pred true    ], Some (`SubColl)));
     ("sort"        , mk M.Csort         `Both        `Pure   `Total   (`Multi (`Cmp          ), Some (`SubColl)));
     ("count"       , mk M.Ccount        `Both        `Pure   `Total   (`Fixed [              ], Some (`T M.vtint)));
@@ -1986,6 +1986,7 @@ let rec for_xexpr
           | `Asset   -> Some (M.Tasset asset.as_name)
           | `SubColl -> Some (M.Tcontainer (M.Tasset asset.as_name, M.View))
           | `Ref i   -> Mint.find_opt i amap
+          | `Pk      -> Some (Option.get (get_field (unloc asset.as_pk) asset)).fd_type
           | _        -> assert false in
 
         let the = for_xexpr env the in
