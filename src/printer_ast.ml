@@ -540,14 +540,16 @@ let rec pp_instruction fmt (i : instruction) =
       in
       (pp_with_paren pp) fmt (op, id, value)
 
-    | Iassign (_, op, `Field (nm, id), value) ->
-      let pp fmt (op, id, value) =
-        Format.fprintf fmt "%a.%a %a %a"
-          pp_pterm nm pp_id id
+    | Iassign (_, op, `Field (an, k, fn), value) ->
+      let pp fmt (op, an, k, fn, value) =
+        Format.fprintf fmt "%a[%a].%a %a %a"
+          pp_id an
+          pp_pterm k
+          pp_id fn
           pp_assignment_operator op
           pp_pterm value
       in
-      (pp_with_paren pp) fmt (op, id, value)
+      (pp_with_paren pp) fmt (op, an, k, fn, value)
 
     | Irequire (k, pt) ->
       let pp fmt (k, pt) =

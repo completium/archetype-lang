@@ -564,7 +564,7 @@ let to_model (ast : A.model) : M.model =
     | A.Iseq l                  -> M.Mseq (List.map g l)
     | A.Imatchwith (m, l)       -> M.Mmatchwith (f m, List.map (fun (p, i) -> (to_pattern p, g i)) l)
     | A.Iassign (t, op, `Var x, e) -> M.Massign (to_assignment_operator op, ptyp_to_type t, x, to_mterm e)
-    | A.Iassign (t, op, `Field (nm, x), e) -> M.Massignfield (to_assignment_operator op, ptyp_to_type t, x, x, to_mterm nm, to_mterm e) (* TODO *)
+    | A.Iassign (t, op, `Field (an, k, fn), v) -> M.Massignfield (to_assignment_operator op, ptyp_to_type t, an, fn, to_mterm k, to_mterm v)
     | A.Irequire (b, t)         ->
       let cond : M.mterm =
         if b

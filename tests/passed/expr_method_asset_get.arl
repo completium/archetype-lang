@@ -16,7 +16,6 @@ action exec () {
     s0: res = 1;
   }
   effect {
-    var a = my_asset.get("id1");
-    res := a.value
+    res := my_asset["id1"].value;
   }
 }
