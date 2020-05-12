@@ -15,9 +15,8 @@ asset my_asset {
 
 action exec() {
   effect {
-    var a : my_asset = my_asset.get(0);
-    require (a.id = 0);
-    var str = a.v;
+    require (my_asset[0].id = 0);
+    var str = my_asset[0].v;
     fail(str)
   }
 }

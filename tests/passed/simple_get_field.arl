@@ -11,6 +11,6 @@ variable res : string = ""
 
 action exec() {
   effect {
-    res := my_asset.get(0).value
+    res := my_asset[0].value
   }
 }

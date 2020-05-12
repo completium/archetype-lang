@@ -17,7 +17,7 @@ action exec (str : string) {
   }
   effect {
     var l = my_asset.select(the.id = str);
-    var a = l.nth(0);
-    res := a.value
+    var k = l.nth(0);
+    res := my_asset[k].value
   }
 }

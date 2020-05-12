@@ -19,7 +19,7 @@ action exec (ow : address) {
 
       assert a0 {
         let some p = before.owner.get(ow) in
-          o.addr = p.addr
+          owner[ow].addr = p.addr
         otherwise true
       }
 
@@ -27,17 +27,16 @@ action exec (ow : address) {
           true
           invariant for loop {
               let some before_o = before.owner.get(ow) in
-                  o.miles.sum(the.quantity) = before_o.miles.sum(the.quantity)
+                  owner[ow].miles.sum(the.quantity) = before_o.miles.sum(the.quantity)
               otherwise true
           }
       }
     }
 
     effect {
-      	var o = owner.get(ow);
-        var valid_miles = o.miles.select(the.expiration > now);
-        for:loop m in o.miles do
-            require (m.quantity > 0)
+        var valid_miles = owner[ow].miles.select(the.expiration > now);
+        for:loop m in owner[ow].miles do
+            require (mile[m].quantity > 0)
         done;
         assert a0
     }

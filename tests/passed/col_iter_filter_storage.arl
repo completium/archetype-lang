@@ -9,7 +9,7 @@ action exec () {
   effect {
     let col = myasset.select(id % 2 = 0) in
     for c in col do
-      myasset.update(c.id, {v = "val"})
+      myasset.update(c, {v = "val"})
     done
   }
 }

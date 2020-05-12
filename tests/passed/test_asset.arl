@@ -36,7 +36,6 @@ with {
 
 action exec () {
   effect {
-    var a = my_asset_all.get(@toto);
-    require(a.b)
+    require(my_asset_all[@toto].b)
   }
 }

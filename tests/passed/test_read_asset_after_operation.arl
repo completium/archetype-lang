@@ -10,8 +10,7 @@ asset my_asset {
 
 action exec (k : int) {
   effect {
-    var c : my_asset = my_asset.get("id");
-    var local = c.f1 * c.f2;
+    var local = my_asset["id"].f1 * my_asset["id"].f2;
     require (local > 0);
   }
 }

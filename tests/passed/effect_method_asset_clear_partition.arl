@@ -19,7 +19,7 @@ variable res : int = 0
 
 action exec () {
   effect {
-    my_asset.get("id0").col.clear()
+    my_asset["id0"].col.clear()
   }
 }
 

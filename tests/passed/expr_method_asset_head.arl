@@ -17,7 +17,7 @@ action exec () {
   }
   effect {
     var l = my_asset.head(2);
-    var a = l.nth(1);
-    res := a.value
+    var k = l.nth(1);
+    res := my_asset[k].value
   }
 }

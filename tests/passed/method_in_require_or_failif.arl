@@ -13,7 +13,7 @@ variable res : int = 0
 
 action exec (str : string) {
   effect {
-    require(my_asset.get("id0").value = 1);
-    failif(my_asset.get("id0").value = 1);
+    require(my_asset["id0"].value = 1);
+    failif(my_asset["id0"].value = 1);
   }
 }

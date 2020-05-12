@@ -9,7 +9,7 @@ action exec () {
   effect {
     for c in myasset do
       for d in myasset do
-        require(c.v = d.v)
+        require(myasset[c].v = myasset[d].v)
       done
     done
   }

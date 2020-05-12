@@ -13,8 +13,8 @@ action exec () {
   }
   effect {
     for a in my_asset do
-      my_asset.update(a.id, {v = 0});
-      require(a.v = 0)
+      my_asset.update(my_asset[a].id, {v = 0});
+      require(my_asset[a].v = 0)
     done
   }
 }

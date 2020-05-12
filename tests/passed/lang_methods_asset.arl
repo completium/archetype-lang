@@ -18,12 +18,12 @@ action exec () {
     let my_asset_id = "id" in
     my_asset.add({ id = my_asset_id; value = 0; col = [] });
     my_asset.remove(my_asset_id);
-    my_asset.get(my_asset_id).col.add({ id0 = asset0_id; value0 = 0 });
-    my_asset.get(my_asset_id).col.remove(asset0_id);
+    my_asset[my_asset_id].col.add({ id0 = asset0_id; value0 = 0 });
+    my_asset[my_asset_id].col.remove(asset0_id);
     my_asset.update("key", {value += 2});
     my_asset.addupdate("key", {value += 3});
     my_asset.removeif(value % 2 = 0);
-    let v1 = my_asset.get(my_asset_id) in
+    let v1 = my_asset[my_asset_id].value in
     let v2 = my_asset.select(the.value > 0) in
     let v3 = my_asset.sort(value) in
     let v4 = my_asset.contains(my_asset_id) in

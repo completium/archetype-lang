@@ -8,7 +8,7 @@ asset myasset {
 action exec () {
   effect {
     for c in myasset do
-      myasset.update(c.id, {v = "val"})
+      myasset.update(c, {v = "val"})
     done
   }
 }
