@@ -1258,8 +1258,7 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
               ))
         [CUpdate f; CRm t]
 
-    | Mclearasset n -> Tapp (loc_term (Tvar ("clear_"^(n))),[])
-    | Mclearfield (a,f,c) -> Tapp (loc_term (Tvar ("clear_"^a^"_"^f)),[map_mterm m ctx c])
+    | Mclear (n, _v) -> Tapp (loc_term (Tvar ("clear_"^(n))),[])
 
     | Mset (a, l, k, v) ->
       mk_trace_seq m
@@ -2533,10 +2532,10 @@ let mk_storage_api (m : M.model) records =
         acc @ [ mk_listtocoll m n ]
       | M.APIAsset (Clear n) ->
         acc @ [mk_clear_coll m n]
-      | M.APIAsset (UpdateClear (n,f)) ->
+      (* | M.APIAsset (UpdateClear (n,f)) ->
         let (key,_) = M.Utils.get_asset_key m n in
         let (clearedasset,_,_) = M.Utils.get_container_asset_key m n f in
-        acc @ [mk_clear_field_coll m (is_partition m n f) n f key clearedasset]
+        acc @ [mk_clear_field_coll m (is_partition m n f) n f key clearedasset] *)
       | M.APIBuiltin(Babs (M.Tbuiltin M.Bint)) ->
         acc @ [Duse (true,["int";"Abs"],None)]
       | _ -> acc

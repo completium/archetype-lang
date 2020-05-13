@@ -220,8 +220,6 @@ let pp_model fmt (model : model) =
         (pp_do_if (match c with | Partition -> true | _ -> false) (fun fmt -> Format.fprintf fmt "let s = remove_%s(s, key) in@\n")) ft
         an pp_str k an
 
-    | UpdateClear _ -> Format.fprintf fmt "// TODO api storage: UpdateClear"
-
     | ToKeys an ->
       Format.fprintf fmt
         "let to_keys_%s (s : storage) : storage =@\n  \
@@ -973,21 +971,13 @@ let pp_model fmt (model : model) =
         in
         pp fmt (an, fn, c, i)
 
-      | Mclearasset (an) ->
-        let pp fmt (an) =
-          Format.fprintf fmt "clear_%a (self)"
+      | Mclear (an, v) ->
+        let pp fmt (an, v) =
+          Format.fprintf fmt "clear_%a (%a)"
             pp_str an
+            f v
         in
-        pp fmt (an)
-
-      | Mclearfield (an, fn, a) ->
-        let pp fmt (an, fn, a) =
-          Format.fprintf fmt "clear_%a_%a (%a)"
-            pp_str an
-            pp_str fn
-            f a
-        in
-        pp fmt (an, fn, a)
+        pp fmt (an, v)
 
       | Mset (c, _l, k, v) ->
         let pp fmt (c, k, v) =

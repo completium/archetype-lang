@@ -544,21 +544,13 @@ let pp_mterm fmt (mt : mterm) =
       in
       pp fmt (an, fn, c, i)
 
-    | Mclearasset an ->
-      let pp fmt an =
-        Format.fprintf fmt "clear_%a ()"
+    | Mclear (an, v) ->
+      let pp fmt (an, v) =
+        Format.fprintf fmt "clear_%a (%a)"
           pp_str an
+          f v
       in
-      pp fmt an
-
-    | Mclearfield (an, fn, a) ->
-      let pp fmt (an, fn, a) =
-        Format.fprintf fmt "clear_%a_%a (%a)"
-          pp_str an
-          pp_str fn
-          f a
-      in
-      pp fmt (an, fn, a)
+      pp fmt (an, v)
 
     | Mset (c, l, k, v) ->
       let pp fmt (c, _l, k, v) =
@@ -1144,7 +1136,7 @@ let pp_api_asset fmt = function
   | Update (an, l) -> Format.fprintf fmt "update\t%a with %a" pp_str an (pp_list ", " (fun fmt (id, op, v) -> Format.fprintf fmt "%s %a %a)" id pp_assignment_operator op pp_mterm v)) l
   | UpdateAdd (an, fn) -> pp_str fmt ("add\t " ^ an ^ " " ^ fn)
   | UpdateRemove (an, fn) -> pp_str fmt ("remove\t " ^ an ^ " " ^ fn)
-  | UpdateClear (an, fn) -> pp_str fmt ("clear\t " ^ an ^ " " ^ fn)
+  (* | UpdateClear (an, fn) -> pp_str fmt ("clear\t " ^ an ^ " " ^ fn) *)
   | ToKeys an -> pp_str fmt ("to_keys\t " ^ an)
   | ColToKeys an -> pp_str fmt ("col_to_keys\t " ^ an)
   | Select (an, _, p) ->

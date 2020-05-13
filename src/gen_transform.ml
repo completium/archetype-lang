@@ -1727,9 +1727,9 @@ let extract_term_from_instruction f (model : model) : model =
       let ie, ia = f i in
       process (mk_mterm (Mremovefield (an, fn, ce, ie)) mt.type_) (ca @ ia)
 
-    | Mclearfield (an, fn, a) ->
-      let ae, aa = f a in
-      process (mk_mterm (Mclearfield (an, fn, ae)) mt.type_) aa
+    | Mclear (an, v) ->
+      let ve, va = f v in
+      process (mk_mterm (Mclear (an, ve)) mt.type_) va
 
     | Mset (an, l, k, v) ->
       let ke, ka = f k in
@@ -1959,8 +1959,8 @@ let add_contain_on_get (model : model) : model =
         let accu = f accu i in
         gg accu mt
 
-      | Mclearfield (_an, _fn, a) ->
-        let accu = f accu a in
+      | Mclear (_an, v) ->
+        let accu = f accu v in
         gg accu mt
 
       | Mset (_an, _l, k, v) ->

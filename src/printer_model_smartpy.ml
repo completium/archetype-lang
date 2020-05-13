@@ -162,13 +162,6 @@ let pp_model fmt (model : model) =
         fn
         an pp_str k
 
-    | UpdateClear (an, fn) ->
-      Format.fprintf fmt
-        "def clear_%s_%s (self):@\n  \
-         self.data.%s_assets = {}@\n"
-        an fn
-        an
-
     | ToKeys an ->
       Format.fprintf fmt
         "def to_keys_%s (self):@\n  \
@@ -775,21 +768,13 @@ let pp_model fmt (model : model) =
         in
         pp fmt (an, fn, c, i)
 
-      | Mclearasset (an) ->
-        let pp fmt (an) =
-          Format.fprintf fmt "self.clear_%a ()"
+      | Mclear (an, v) ->
+        let pp fmt (an, v) =
+          Format.fprintf fmt "self.clear_%a (%a)"
             pp_str an
+            f v
         in
-        pp fmt (an)
-
-      | Mclearfield (an, fn, a) ->
-        let pp fmt (an, fn, a) =
-          Format.fprintf fmt "self.clear_%a_%a (%a)"
-            pp_str an
-            pp_str fn
-            f a
-        in
-        pp fmt (an, fn, a)
+        pp fmt (an, v)
 
       | Mset (c, l, k, v) ->
         let pp fmt (c, _l, k, v) =

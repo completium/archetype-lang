@@ -547,136 +547,141 @@ let to_model (ast : A.model) : M.model =
     | _ -> assert false
   in
 
-  let to_instruction_node (n : A.lident A.instruction_node) lbl g f : ('id, 'instr) M.mterm_node =
+  let rec to_instruction (instr : A.instruction) : M.mterm =
     let is_empty_seq (instr : A.instruction) =
       match instr.node with
       | A.Iseq [] -> true
       | _ -> false
     in
+    let node =
+      let f = to_mterm in
+      let g = to_instruction in
+      let n : A.lident A.instruction_node = instr.node in
 
-    match n with
-    | A.Iif (c, t, e) when is_empty_seq e -> M.Mif (f c, g t, None)
-    | A.Iif (c, t, e)           -> M.Mif (f c, g t, Some (g e))
-    | A.Ifor (i, col, body)     -> M.Mfor (i, f col, g body, lbl)
-    | A.Iiter (i, a, b, body)   -> M.Miter (i, f a, f b, g body, lbl)
-    | A.Iletin (i, init, cont)  -> M.Mletin ([i], f init, Option.map ptyp_to_type init.type_, g cont, None) (* TODO *)
-    | A.Ideclvar (i, v)         -> M.Mdeclvar ([i], Option.map ptyp_to_type v.type_, f v) (* TODO *)
-    | A.Iseq l                  -> M.Mseq (List.map g l)
-    | A.Imatchwith (m, l)       -> M.Mmatchwith (f m, List.map (fun (p, i) -> (to_pattern p, g i)) l)
-    | A.Iassign (t, op, `Var x, e) -> M.Massign (to_assignment_operator op, ptyp_to_type t, x, to_mterm e)
-    | A.Iassign (t, op, `Field (an, k, fn), v) -> M.Massignfield (to_assignment_operator op, ptyp_to_type t, an, fn, to_mterm k, to_mterm v)
-    | A.Irequire (b, t)         ->
-      let cond : M.mterm =
-        if b
-        then term_not (f t)
-        else (f t)
-      in
-      M.Mif (cond, fail (InvalidCondition None), None)
+      match n with
+      | A.Iif (c, t, e) when is_empty_seq e -> M.Mif (f c, g t, None)
+      | A.Iif (c, t, e)           -> M.Mif (f c, g t, Some (g e))
+      | A.Ifor (i, col, body)     -> M.Mfor (i, f col, g body, instr.label)
+      | A.Iiter (i, a, b, body)   -> M.Miter (i, f a, f b, g body, instr.label)
+      | A.Iletin (i, init, cont)  -> M.Mletin ([i], f init, Option.map ptyp_to_type init.type_, g cont, None) (* TODO *)
+      | A.Ideclvar (i, v)         -> M.Mdeclvar ([i], Option.map ptyp_to_type v.type_, f v) (* TODO *)
+      | A.Iseq l                  -> M.Mseq (List.map g l)
+      | A.Imatchwith (m, l)       -> M.Mmatchwith (f m, List.map (fun (p, i) -> (to_pattern p, g i)) l)
+      | A.Iassign (t, op, `Var x, e) -> M.Massign (to_assignment_operator op, ptyp_to_type t, x, to_mterm e)
+      | A.Iassign (t, op, `Field (an, k, fn), v) -> M.Massignfield (to_assignment_operator op, ptyp_to_type t, an, fn, to_mterm k, to_mterm v)
+      | A.Irequire (b, t)         ->
+        let cond : M.mterm =
+          if b
+          then term_not (f t)
+          else (f t)
+        in
+        M.Mif (cond, fail (InvalidCondition None), None)
 
-    | A.Itransfer (v, d, None) -> M.Mtransfer (f v, f d)
-    | A.Itransfer (v, d, Some (id, args))   ->
-      begin
-        let contract_id = extract_contract_type_id d in
-        let d = f d in
-        let v = f v in
-        let ids = A.Utils.get_contract_sig_ids ast contract_id (unloc id) in
-        let vs = List.map f args in
-        let args = List.map2 (fun x y -> (x, y)) ids vs in
-        M.Mentrycall (v, d, contract_id, id, args)
-      end
-    | A.Ibreak                  -> M.Mbreak
-    | A.Ireturn e               -> M.Mreturn (f e)
-    | A.Ilabel i                -> M.Mlabel i
-    | A.Ifail m                 -> M.Mfail (Invalid (f m))
-    (* | A.Icall (Some c, Cid id, args) when (match c.type_ with | Some (A.Tcontract _) -> true | _ -> false) -> (* TODO: delete this case *)
-       let contract_id = extract_contract_type_id c in
-       let c = f c in
-       let ids = A.Utils.get_contract_sig_ids ast contract_id (unloc id) in
-       let vs = List.map (term_arg_to_expr f) args in
-       let args = List.map2 (fun x y -> (x, y)) ids vs in
-       let zerotz : M.mterm = M.mk_mterm (Mcurrency (Big_int.zero_big_int, Tz)) (Tbuiltin Bcurrency) in
-       M.Mentrycall (zerotz, c, contract_id, id, args) *)
+      | A.Itransfer (v, d, None) -> M.Mtransfer (f v, f d)
+      | A.Itransfer (v, d, Some (id, args))   ->
+        begin
+          let contract_id = extract_contract_type_id d in
+          let d = f d in
+          let v = f v in
+          let ids = A.Utils.get_contract_sig_ids ast contract_id (unloc id) in
+          let vs = List.map f args in
+          let args = List.map2 (fun x y -> (x, y)) ids vs in
+          M.Mentrycall (v, d, contract_id, id, args)
+        end
+      | A.Ibreak                  -> M.Mbreak
+      | A.Ireturn e               -> M.Mreturn (f e)
+      | A.Ilabel i                -> M.Mlabel i
+      | A.Ifail m                 -> M.Mfail (Invalid (f m))
+      (* | A.Icall (Some c, Cid id, args) when (match c.type_ with | Some (A.Tcontract _) -> true | _ -> false) -> (* TODO: delete this case *)
+         let contract_id = extract_contract_type_id c in
+         let c = f c in
+         let ids = A.Utils.get_contract_sig_ids ast contract_id (unloc id) in
+         let vs = List.map (term_arg_to_expr f) args in
+         let args = List.map2 (fun x y -> (x, y)) ids vs in
+         let zerotz : M.mterm = M.mk_mterm (Mcurrency (Big_int.zero_big_int, Tz)) (Tbuiltin Bcurrency) in
+         M.Mentrycall (zerotz, c, contract_id, id, args) *)
 
-    | A.Icall (i, Cid id, args) -> M.Mapp (id, Option.map_dfl (fun v -> [to_mterm v]) [] i @ List.map (term_arg_to_expr f) args)
+      | A.Icall (i, Cid id, args) -> M.Mapp (id, Option.map_dfl (fun v -> [to_mterm v]) [] i @ List.map (term_arg_to_expr f) args)
 
-    | A.Icall (_, A.Cconst (A.Cfail), [AExpr p]) ->
-      M.Mfail (Invalid (f p))
+      | A.Icall (_, A.Cconst (A.Cfail), [AExpr p]) ->
+        M.Mfail (Invalid (f p))
 
-    | A.Icall (Some p, A.Cconst (A.Cadd), [AExpr q]) when is_asset_container p -> (
+      | A.Icall (Some p, A.Cconst (A.Cadd), [AExpr q]) when is_asset_container p -> (
+          let fp = f p in
+          let fq = f q in
+          match fp with
+          | {node = M.Mvarstorecol asset_name; _} -> M.Maddasset (unloc asset_name, fq)
+          (* | {node = M.Mdotassetfield (asset_name , k, fn); _} -> M.Maddfield (unloc asset_name, unloc f, arg, fq) *)
+          | _ -> assert false
+        )
+
+      | A.Icall (Some p, A.Cconst (A.Cremove), [AExpr q]) when is_asset_container p -> (
+          let fp = f p in
+          let fq = f q in
+          match fp with
+          | {node = M.Mvarstorecol asset_name; _} -> M.Mremoveasset (unloc asset_name, fq)
+          (* | {node = M.Mdotassetfield (asset_name , k, fn); _} -> M.Mremovefield (unloc asset_name, unloc f, arg, fq) *)
+          | _ -> assert false
+        )
+
+      | A.Icall (Some p, A.Cconst (A.Cclear), []) -> (
+          let fp = f p in
+          let an =
+            begin
+              match fp.type_ with
+              | Tcontainer (Tasset an, _) -> unloc an
+              | _ -> assert false
+            end
+          in
+          M.Mclear (an, fp)
+        )
+
+      | A.Icall (Some p, A.Cconst (A.Caddupdate), [AExpr k; AEffect e]) when is_asset_container p ->
+        let to_op = function
+          | `Assign op -> to_assignment_operator op
+          | _ -> emit_error CannotConvertToAssignOperator
+        in
         let fp = f p in
-        let fq = f q in
-        match fp with
-        | {node = M.Mvarstorecol asset_name; _} -> M.Maddasset (unloc asset_name, fq)
-        (* | {node = M.Mdotassetfield (asset_name , k, fn); _} -> M.Maddfield (unloc asset_name, unloc f, arg, fq) *)
-        | _ -> assert false
-      )
+        let fk = f k in
+        let fe = List.map (fun (id, op, c) -> (id, to_op op, f c)) e in
+        let asset_name = extract_asset_name fp in
+        M.Maddupdate (asset_name, fk, fe)
 
-    | A.Icall (Some p, A.Cconst (A.Cremove), [AExpr q]) when is_asset_container p -> (
+      | A.Icall (Some p, A.Cconst (A.Cupdate), [AExpr k; AEffect e]) when is_asset_container p ->
+        let to_op = function
+          | `Assign op -> to_assignment_operator op
+          | _ -> emit_error CannotConvertToAssignOperator
+        in
         let fp = f p in
-        let fq = f q in
-        match fp with
-        | {node = M.Mvarstorecol asset_name; _} -> M.Mremoveasset (unloc asset_name, fq)
-        (* | {node = M.Mdotassetfield (asset_name , k, fn); _} -> M.Mremovefield (unloc asset_name, unloc f, arg, fq) *)
-        | _ -> assert false
-      )
+        let fk = f k in
+        let fe = List.map (fun (id, op, c) -> (id, to_op op, f c)) e in
+        let asset_name = extract_asset_name fp in
+        M.Mupdate (asset_name, fk, fe)
 
-    | A.Icall (Some p, A.Cconst (A.Cclear), []) when is_asset_container p -> (
+      | A.Icall (Some p, A.Cconst (A.Cremoveif), [AFun (_qi, _qtt, l, q)]) when is_asset_container p ->
         let fp = f p in
-        match fp with
-        | {node = M.Mvarstorecol asset_name; _} -> M.Mclearasset (unloc asset_name)
-        (* | {node = M.Mdotassetfield (asset_name , k, fn); _} -> M.Mclearfield (unloc asset_name, unloc fn, a) *)
-        | _ -> assert false
-      )
+        let lambda_body = f q in
+        let lambda_args, args = List.fold_right (fun (x, y, z) (l1, l2) -> ((unloc x, ptyp_to_type y)::l1, (f z)::l2)) l ([], []) in
+        let asset_name = extract_asset_name fp in
+        M.Mremoveif (asset_name, fp, lambda_args, lambda_body, args)
 
-    | A.Icall (Some p, A.Cconst (A.Caddupdate), [AExpr k; AEffect e]) when is_asset_container p ->
-      let to_op = function
-        | `Assign op -> to_assignment_operator op
-        | _ -> emit_error CannotConvertToAssignOperator
-      in
-      let fp = f p in
-      let fk = f k in
-      let fe = List.map (fun (id, op, c) -> (id, to_op op, f c)) e in
-      let asset_name = extract_asset_name fp in
-      M.Maddupdate (asset_name, fk, fe)
+      | A.Icall (Some p, A.Cconst (A.Cprepend), [AExpr q]) when is_list p -> (
+          let fp = f p in
+          let fq = f q in
+          let t = extract_builtin_type_list fp in
+          M.Mlistprepend (t, fp, fq)
+        )
 
-    | A.Icall (Some p, A.Cconst (A.Cupdate), [AExpr k; AEffect e]) when is_asset_container p ->
-      let to_op = function
-        | `Assign op -> to_assignment_operator op
-        | _ -> emit_error CannotConvertToAssignOperator
-      in
-      let fp = f p in
-      let fk = f k in
-      let fe = List.map (fun (id, op, c) -> (id, to_op op, f c)) e in
-      let asset_name = extract_asset_name fp in
-      M.Mupdate (asset_name, fk, fe)
-
-    | A.Icall (Some p, A.Cconst (A.Cremoveif), [AFun (_qi, _qtt, l, q)]) when is_asset_container p ->
-      let fp = f p in
-      let lambda_body = f q in
-      let lambda_args, args = List.fold_right (fun (x, y, z) (l1, l2) -> ((unloc x, ptyp_to_type y)::l1, (f z)::l2)) l ([], []) in
-      let asset_name = extract_asset_name fp in
-      M.Mremoveif (asset_name, fp, lambda_args, lambda_body, args)
-
-    | A.Icall (Some p, A.Cconst (A.Cprepend), [AExpr q]) when is_list p -> (
-        let fp = f p in
-        let fq = f q in
-        let t = extract_builtin_type_list fp in
-        M.Mlistprepend (t, fp, fq)
-      )
-
-    | A.Icall (aux, A.Cconst c, args) ->
-      Format.eprintf "instr const unkown: %a with nb args: %d [%a] %s@."
-        A.pp_const c
-        (List.length args)
-        (Printer_tools.pp_list "; " (fun fmt (x : A.pterm_arg) ->
-             let str = match x with | AExpr _ -> "AExpr" | AEffect _ -> "AEffect" | AFun _ -> "AFun" | ASorting _ -> "ASorting" in
-             Printer_tools.pp_str fmt str)) args
-        (match aux with | Some _ -> "with aux" | _ -> "without aux");
-      assert false
-  in
-
-  let rec to_instruction (instr : A.instruction) : M.mterm =
-    let node = to_instruction_node instr.node instr.label to_instruction to_mterm in
+      | A.Icall (aux, A.Cconst c, args) ->
+        Format.eprintf "instr const unkown: %a with nb args: %d [%a] %s@."
+          A.pp_const c
+          (List.length args)
+          (Printer_tools.pp_list "; " (fun fmt (x : A.pterm_arg) ->
+               let str = match x with | AExpr _ -> "AExpr" | AEffect _ -> "AEffect" | AFun _ -> "AFun" | ASorting _ -> "ASorting" in
+               Printer_tools.pp_str fmt str)) args
+          (match aux with | Some _ -> "with aux" | _ -> "without aux");
+        assert false
+    in
     M.mk_mterm node (M.Tunit) ~loc:instr.loc
   in
 

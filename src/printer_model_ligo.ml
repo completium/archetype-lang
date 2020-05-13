@@ -788,25 +788,15 @@ let pp_model_internal fmt (model : model) b =
       in
       pp fmt (an, fn, c, i)
 
-    | Mclearasset (an) ->
-      let pp fmt (an) =
-        Format.fprintf fmt "%s := clear_%a (%s)"
+    | Mclear (an, v) ->
+      let pp fmt (an, v) =
+        Format.fprintf fmt "%s := clear_%a (%s, %a)"
           const_storage
           pp_str an
           const_storage
+          f v
       in
-      pp fmt (an)
-
-    | Mclearfield (an, fn, a) ->
-      let pp fmt (an, fn, a) =
-        Format.fprintf fmt "%s := clear_%a_%a (%s, %a)"
-          const_storage
-          pp_str an
-          pp_str fn
-          const_storage
-          f a
-      in
-      pp fmt (an, fn, a)
+      pp fmt (an, v)
 
     | Mset (c, l, k, v) ->
       let pp fmt (c, _l, k, v) =
@@ -1532,18 +1522,15 @@ let pp_model_internal fmt (model : model) b =
     | Clear an ->
       let _, t = Utils.get_asset_key model an in
       Format.fprintf fmt
-        "function clear_%s (const s : storage_type) : storage_type is@\n  \
-         begin@\n    \
-         s.%s_assets := %a;@\n  \
+        "function clear_%s (const s : storage_type; const l : list(%a)) : storage_type is@\n  \
+         begin@\n  \
+         for i in list (l) block {@\n  \
+         remove i from %s s.%s_assets@\n  \
+         }@\n  \
          end with (s)@\n"
+        an pp_btyp t
+        (if Utils.is_asset_single_field model an then "set" else "map")
         an
-        an
-        (fun fmt _ ->
-           if Utils.is_asset_single_field model an then
-             Format.fprintf fmt "(set [] : set(%a))" pp_btyp t
-           else
-             Format.fprintf fmt "(map [] : map(%a, %s_storage))" pp_btyp t an
-        ) ()
 
 
     | Update _ -> ()
@@ -1624,9 +1611,9 @@ let pp_model_internal fmt (model : model) b =
         an fn
         (pp_do_if (match c with | Partition -> true | _ -> false) (fun fmt -> Format.fprintf fmt "s := remove_%s(s, removed_key);@\n")) ft
 
-    | UpdateClear (an, fn) ->
-      let k, t = Utils.get_asset_key model an in
-      Format.fprintf fmt
+    (* | UpdateClear (an, fn) ->
+       let k, t = Utils.get_asset_key model an in
+       Format.fprintf fmt
         "function clear_%s_%s (const s : storage_type; const a : %s) : storage_type is@\n  \
          begin@\n    \
          const asset_key : %a = a.%s;@\n    \
@@ -1660,7 +1647,7 @@ let pp_model_internal fmt (model : model) b =
            | _ -> ()) ()
         fn pp_btyp t
         pp_btyp t an
-        an
+        an *)
 
     | ToKeys _an ->
       Format.fprintf fmt "// TODO api asset: ToKeys"
