@@ -1,4 +1,4 @@
-archetype letinseq
+archetype no_letin_in_execution
 
 action exec () {
   effect {

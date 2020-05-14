@@ -35,9 +35,9 @@ action place_bid () {
 
   effect {
     if pending_return.contains(caller)
-    then
-      let bid = pending_return[caller].val in
-      let new_bid = bid + transferred in
+    then (
+      var bid = pending_return[caller].val;
+      var new_bid = bid + transferred;
       if new_bid > highest_bid
       then (
         (* update pending_return *)
@@ -49,6 +49,7 @@ action place_bid () {
         highest_bidder := caller)
       else
         pending_return.update (caller, { val = new_bid })
+    )
     else
       if caller = highest_bidder
       then
