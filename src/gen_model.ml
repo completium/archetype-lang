@@ -618,7 +618,7 @@ let to_model (ast : A.model) : M.model =
           let fq = f q in
           match fp with
           | {node = M.Mvarstorecol asset_name; _} -> M.Maddasset (unloc asset_name, fq)
-          (* | {node = M.Mdotassetfield (asset_name , k, fn); _} -> M.Maddfield (unloc asset_name, unloc f, arg, fq) *)
+          | {node = M.Mdotassetfield (asset_name , k, fn); _} -> M.Maddfield (unloc asset_name, unloc fn, k, fq)
           | _ -> assert false
         )
 
@@ -627,7 +627,15 @@ let to_model (ast : A.model) : M.model =
           let fq = f q in
           match fp with
           | {node = M.Mvarstorecol asset_name; _} -> M.Mremoveasset (unloc asset_name, fq)
-          (* | {node = M.Mdotassetfield (asset_name , k, fn); _} -> M.Mremovefield (unloc asset_name, unloc f, arg, fq) *)
+          | {node = M.Mdotassetfield (asset_name , k, fn); _} -> M.Mremovefield (unloc asset_name, unloc fn, k, fq)
+          | _ -> assert false
+        )
+
+      | A.Icall (Some p, A.Cconst (A.Cremoveall), []) when is_asset_container p -> (
+          let fp = f p in
+          match fp with
+          (* | {node = M.Mvarstorecol asset_name; _} -> M.Mremoveasset (unloc asset_name, fq) *)
+          | {node = M.Mdotassetfield (asset_name , k, fn); _} -> M.Mremoveall (unloc asset_name, unloc fn, k)
           | _ -> assert false
         )
 

@@ -208,6 +208,7 @@ type ('id, 'term) mterm_node  =
   | Maddfield         of ident * ident * 'term * 'term (* asset_name * field_name * asset instance * item *)
   | Mremoveasset      of ident * 'term
   | Mremovefield      of ident * ident * 'term * 'term
+  | Mremoveall        of ident * ident * 'term
   | Mclear            of ident * 'term
   | Mset              of ident * ident list * 'term * 'term (*asset_name * field_name modified * ... *)
   | Mupdate           of ident * 'term * ('id * assignment_operator * 'term) list
@@ -346,6 +347,7 @@ and api_asset =
   | Update           of ident * (ident * assignment_operator * mterm) list
   | UpdateAdd        of ident * ident
   | UpdateRemove     of ident * ident
+  | RemoveAll        of ident * ident
   | ToKeys           of ident
   | ColToKeys        of ident
   | Select           of ident * (ident * type_) list * mterm
@@ -1023,6 +1025,7 @@ let cmp_mterm_node
     | Maddfield (an1, fn1, c1, i1), Maddfield (an2, fn2, c2, i2)                       -> cmp_ident an1 an2 && cmp_ident fn1 fn2 && cmp c1 c2 && cmp i1 i2
     | Mremoveasset (an1, i1), Mremoveasset (an2, i2)                                   -> cmp_ident an1 an2 && cmp i1 i2
     | Mremovefield (an1, fn1, c1, i1), Mremovefield (an2, fn2, c2, i2)                 -> cmp_ident an1 an2 && cmp_ident fn1 fn2 && cmp c1 c2 && cmp i1 i2
+    | Mremoveall (an1, fn1, a1), Mremoveall (an2, fn2, a2)                           -> cmp_ident an1 an2 && cmp_ident fn1 fn2 && cmp a1 a2
     | Mclear (an1, v1), Mclear (an2, v2)                                               -> cmp_ident an1 an2 && cmp v1 v2
     | Mset (c1, l1, k1, v1), Mset (c2, l2, k2, v2)                                     -> cmp_ident c1 c2 && List.for_all2 cmp_ident l1 l2 && cmp k1 k2 && cmp v1 v2
     | Mupdate (an1, k1, l1), Mupdate (an2, k2, l2)                                     -> cmp_ident an1 an2 && cmp k1 k2 && List.for_all2 (fun (id1, op1, v1) (id2, op2, v2) -> cmpi id1 id2 && cmp_assign_op op1 op2 && cmp v1 v2) l1 l2
@@ -1144,6 +1147,7 @@ let cmp_api_item_node (a1 : api_storage_node) (a2 : api_storage_node) : bool =
     | Update (an1, l1), Update (an2, l2)               -> cmp_ident an1 an2 && List.for_all2 (fun (i1, op1, v1) (i2, op2, v2) -> cmp_ident i1 i2 && cmp_assign_op op1 op2 && cmp_mterm v1 v2) l1 l2
     | UpdateAdd (an1, fn1), UpdateAdd (an2, fn2)       -> cmp_ident an1 an2 && cmp_ident fn1 fn2
     | UpdateRemove (an1, fn1), UpdateRemove (an2, fn2) -> cmp_ident an1 an2 && cmp_ident fn1 fn2
+    | RemoveAll (an1, fn1), RemoveAll (an2, fn2)       -> cmp_ident an1 an2 && cmp_ident fn1 fn2
     | ToKeys an1, ToKeys an2                           -> cmp_ident an1 an2
     | ColToKeys an1, ColToKeys an2                     -> cmp_ident an1 an2
     | Select (an1, l1, p1), Select (an2, l2, p2)       -> cmp_ident an1 an2 && List.for_all2 (fun (i1, t1) (i2, t2) -> cmp_ident i1 i2 && cmp_type t1 t2) l1 l2 && cmp_mterm p1 p2
@@ -1311,6 +1315,7 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Maddfield (an, fn, c, i)       -> Maddfield (fi an, fi fn, f c, f i)
   | Mremoveasset (an, i)           -> Mremoveasset (fi an, f i)
   | Mremovefield (an, fn, c, i)    -> Mremovefield (fi an, fi fn, f c, f i)
+  | Mremoveall (an, fn, a)         -> Mremoveall (fi an, fi fn, f a)
   | Mclear (an, v)                 -> Mclear (fi an, f v)
   | Mset (an, l, k, v)             -> Mset (fi an, List.map fi l, f k, f v)
   | Mupdate (an, k, l)             -> Mupdate (fi an, f k, List.map (fun (id, op, v) -> (g id, op, f v)) l)
@@ -1635,6 +1640,7 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Maddfield (_, _, c, i)                -> f (f accu c) i
   | Mremoveasset (_, i)                   -> f accu i
   | Mremovefield (_, _, c, i)             -> f (f accu c) i
+  | Mremoveall (_, _, a)                  -> f accu a
   | Mclear (_, v)                         -> f accu v
   | Mset (_, _, k, v)                     -> f (f accu v) k
   | Mupdate (_, k, l)                     -> List.fold_left (fun accu (_, _, v) -> f accu v) (f accu k) l
@@ -2122,6 +2128,10 @@ let fold_map_term
     let ce, ca = f accu c in
     let ie, ia = f ca i in
     g (Mremovefield (an, fn, ce, ie)), ia
+
+  | Mremoveall (an, fn, a) ->
+    let ae, aa = f accu a in
+    g (Mremoveall (an, fn, ae)), aa
 
   | Mclear (an, v) ->
     let ve, va = f accu v in
@@ -2740,6 +2750,7 @@ let replace_ident_model (f : kind_ident -> ident -> ident) (model : model) : mod
         | Update (an, l)        -> Update (f KIassetname an, List.map (fun (id, op, v) -> (f KIparamlambda id, op, for_mterm v)) l)
         | UpdateAdd (an, id)    -> UpdateAdd (f KIassetname an, f KIassetfield id)
         | UpdateRemove (an, id) -> UpdateRemove (f KIassetname an, f KIassetfield id)
+        | RemoveAll (an, id)    -> RemoveAll (f KIassetname an, f KIassetfield id)
         | ToKeys an             -> ToKeys (f KIassetname an)
         | ColToKeys an          -> ColToKeys (f KIassetname an)
         | Select (an, l, p)     -> Select (f KIassetname an, List.map (fun (id, t) -> f KIparamlambda id, t) l, for_mterm p)

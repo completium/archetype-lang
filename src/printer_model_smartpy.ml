@@ -162,6 +162,12 @@ let pp_model fmt (model : model) =
         fn
         an pp_str k
 
+    | RemoveAll (an, fn) ->
+      Format.fprintf fmt
+        "def remove_all_%s_%s (self, s : storage) : unit =@\n  \
+         #TODO@\n"
+        an fn
+
     | ToKeys an ->
       Format.fprintf fmt
         "def to_keys_%s (self):@\n  \
@@ -768,6 +774,15 @@ let pp_model fmt (model : model) =
         in
         pp fmt (an, fn, c, i)
 
+      | Mremoveall (an, fn, a) ->
+        let pp fmt (an, fn, a) =
+          Format.fprintf fmt "removeall_%a_%a (%a)"
+            pp_str an
+            pp_str fn
+            f a
+        in
+        pp fmt (an, fn, a)
+
       | Mclear (an, v) ->
         let pp fmt (an, v) =
           Format.fprintf fmt "self.clear_%a (%a)"
@@ -887,15 +902,12 @@ let pp_model fmt (model : model) =
         pp fmt (an, k, c)
 
 
-      (* list api effect *)
+      (* list api expression *)
 
       | Mlistprepend (_, c, a) ->
         Format.fprintf fmt "list_prepend (%a, %a)"
           f c
           f a
-
-
-      (* list api expression *)
 
       | Mlistcontains (_, c, a) ->
         Format.fprintf fmt "list_contains (%a, %a)"

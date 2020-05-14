@@ -544,6 +544,15 @@ let pp_mterm fmt (mt : mterm) =
       in
       pp fmt (an, fn, c, i)
 
+    | Mremoveall (an, fn, a) ->
+      let pp fmt (an, fn, a) =
+        Format.fprintf fmt "removeall_%a_%a (%a)"
+          pp_str an
+          pp_str fn
+          f a
+      in
+      pp fmt (an, fn, a)
+
     | Mclear (an, v) ->
       let pp fmt (an, v) =
         Format.fprintf fmt "clear_%a (%a)"
@@ -691,15 +700,12 @@ let pp_mterm fmt (mt : mterm) =
       pp fmt (an, k, c)
 
 
-    (* list api effect *)
+    (* list api expression *)
 
     | Mlistprepend (_, c, a) ->
       Format.fprintf fmt "list_prepend (%a, %a)"
         f c
         f a
-
-
-    (* list api expression *)
 
     | Mlistcontains (_, c, a) ->
       Format.fprintf fmt "list_contains (%a, %a)"
@@ -1136,6 +1142,7 @@ let pp_api_asset fmt = function
   | Update (an, l) -> Format.fprintf fmt "update\t%a with %a" pp_str an (pp_list ", " (fun fmt (id, op, v) -> Format.fprintf fmt "%s %a %a)" id pp_assignment_operator op pp_mterm v)) l
   | UpdateAdd (an, fn) -> pp_str fmt ("add\t " ^ an ^ " " ^ fn)
   | UpdateRemove (an, fn) -> pp_str fmt ("remove\t " ^ an ^ " " ^ fn)
+  | RemoveAll (an, fn) -> pp_str fmt ("removeall\t " ^ an ^ " " ^ fn)
   (* | UpdateClear (an, fn) -> pp_str fmt ("clear\t " ^ an ^ " " ^ fn) *)
   | ToKeys an -> pp_str fmt ("to_keys\t " ^ an)
   | ColToKeys an -> pp_str fmt ("col_to_keys\t " ^ an)

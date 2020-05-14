@@ -220,6 +220,12 @@ let pp_model fmt (model : model) =
         (pp_do_if (match c with | Partition -> true | _ -> false) (fun fmt -> Format.fprintf fmt "let s = remove_%s(s, key) in@\n")) ft
         an pp_str k an
 
+    | RemoveAll (an, fn) ->
+      Format.fprintf fmt
+        "let to_keys_%s_%s (s : storage) : storage =@\n  \
+         s (*TODO*)@\n"
+        an fn
+
     | ToKeys an ->
       Format.fprintf fmt
         "let to_keys_%s (s : storage) : storage =@\n  \
@@ -952,6 +958,15 @@ let pp_model fmt (model : model) =
         in
         pp fmt (an, i)
 
+      | Mremoveall (an, fn, a) ->
+        let pp fmt (an, fn, a) =
+          Format.fprintf fmt "removeall_%a_%a (%a)"
+            pp_str an
+            pp_str fn
+            f a
+        in
+        pp fmt (an, fn, a)
+
       | Mremovefield (an, fn, c, i) ->
         let cond, str =
           (match i.type_ with
@@ -1093,15 +1108,12 @@ let pp_model fmt (model : model) =
         pp fmt (an, k, c)
 
 
-      (* list api effect *)
+      (* list api expression *)
 
       | Mlistprepend (_, c, a) ->
         Format.fprintf fmt "list_prepend (%a, %a)"
           f c
           f a
-
-
-      (* list api expression *)
 
       | Mlistcontains (_, c, a) ->
         Format.fprintf fmt "list_contains (%a, %a)"

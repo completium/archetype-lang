@@ -776,6 +776,17 @@ let pp_model_internal fmt (model : model) b =
       in
       pp fmt (an, i)
 
+    | Mremoveall (an, fn, a) ->
+      let pp fmt (an, fn, a) =
+        Format.fprintf fmt "%s := removeall_%a_%a (%s, %a)"
+        const_storage
+          pp_str an
+          pp_str fn
+          const_storage
+          f a
+      in
+      pp fmt (an, fn, a)
+
     | Mremovefield (an, fn, c, i) ->
       let pp fmt (an, fn, c, i) =
         Format.fprintf fmt "%s := remove_%a_%a (%s, %a, %a)"
@@ -958,16 +969,13 @@ let pp_model_internal fmt (model : model) b =
       pp fmt (an, k, m)
 
 
-    (* list api effect *)
+    (* list api expression *)
 
     | Mlistprepend (t, c, a) ->
       Format.fprintf fmt "list_%a_prepend (%a, %a)"
         pp_type t
         f c
         f a
-
-
-    (* list api expression *)
 
     | Mlistcontains (t, c, a) ->
       Format.fprintf fmt "list_%a_contains (%a, %a)"
@@ -1610,6 +1618,24 @@ let pp_model_internal fmt (model : model) b =
         pp_btyp tt fn pp_btyp tt
         an fn
         (pp_do_if (match c with | Partition -> true | _ -> false) (fun fmt -> Format.fprintf fmt "s := remove_%s(s, removed_key);@\n")) ft
+
+    | RemoveAll (an, fn) ->
+      let _, t = Utils.get_asset_key model an in
+      let ft, _c = Utils.get_field_container model an fn in
+      let _kk, tt = Utils.get_asset_key model ft in
+      Format.fprintf fmt
+        "function removeall_%s_%s (const s : storage_type; const k : %a) : storage_type is@\n  \
+         begin@\n  \
+         const a : %s = get_%s(s, k);@\n  \
+         const l : list(%a) = a.%s;@\n  \
+         for i in list (l) block {@\n  \
+         s := remove_%s_%s(s, k, i)@\n  \
+         }@\n  \
+         end with (s)@\n"
+        an fn pp_btyp t
+        an an
+        pp_btyp tt fn
+        an fn
 
     (* | UpdateClear (an, fn) ->
        let k, t = Utils.get_asset_key model an in

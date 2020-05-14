@@ -52,6 +52,9 @@ let generate_api_storage ?(verif=false) (model : model) : model =
       | Mremovefield (asset_name, field_name, _, _) ->
         let (pa,_,_) = Utils.get_container_asset_key model asset_name field_name in
         [APIAsset (Remove pa); APIAsset (UpdateRemove (asset_name, field_name))]
+      | Mremoveall (asset_name, field_name, _) ->
+        let (pa,_,_) = Utils.get_container_asset_key model asset_name field_name in
+        [APIAsset (Get asset_name); APIAsset (Remove pa); APIAsset (UpdateRemove (asset_name, field_name)); APIAsset (RemoveAll (asset_name, field_name))]
       | Mclear (an , _) ->
         [APIAsset (Clear an)]
       | Mapifselect (asset_name, _, la, lb, _)
@@ -149,6 +152,7 @@ let generate_api_storage ?(verif=false) (model : model) : model =
                    | APIAsset (Update       (an, _))    -> an
                    | APIAsset (UpdateAdd    (an, _))    -> an
                    | APIAsset (UpdateRemove (an, _))    -> an
+                   | APIAsset (RemoveAll    (an, _))    -> an
                    | APIAsset (ToKeys        an)        -> an
                    | APIAsset (ColToKeys     an)        -> an
                    | APIAsset (Select       (an, _, _)) -> an
@@ -199,6 +203,7 @@ let generate_api_storage ?(verif=false) (model : model) : model =
                    | APIAsset   (Update        _) -> 17
                    | APIAsset   (UpdateAdd     _) -> 18
                    | APIAsset   (UpdateRemove  _) -> 19
+                   | APIAsset   (RemoveAll     _) -> 20
                    | APIAsset   (ToKeys        _) -> 21
                    | APIAsset   (Select        _) -> 22
                    | APIAsset   (Sort          _) -> 23

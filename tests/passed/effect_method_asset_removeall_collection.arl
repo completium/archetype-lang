@@ -1,0 +1,28 @@
+archetype effect_method_asset_removeall_collection
+
+asset o_asset identified by oid {
+  oid : int;
+}
+
+asset my_asset identified by id {
+  id     : string;
+  col    : o_asset collection;
+} initialized by {
+  {"id0"; []};
+  {"id1"; []};
+  {"id2"; []}
+}
+
+variable res : int = 0
+
+action pre_exec () {
+  effect {
+    my_asset["id0"].col.add({1})
+  }
+}
+
+action exec () {
+  effect {
+    my_asset["id0"].col.removeall()
+  }
+}

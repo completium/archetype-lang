@@ -1258,6 +1258,8 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
               ))
         [CUpdate f; CRm t]
 
+    | Mremoveall (_an, _fn, _a) -> error_not_translated "Mremoveall"
+
     | Mclear (n, _v) -> Tapp (loc_term (Tvar ("clear_"^(n))),[])
 
     | Mset (a, l, k, v) ->
@@ -1314,13 +1316,9 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
     | Mgetfrommap         _ -> error_not_translated "Mgetfrommap"
 
 
-    (* list api effect *)
-
-    | Mlistprepend        _ -> error_not_translated "Mlistprepend"
-
-
     (* list api expression *)
 
+    | Mlistprepend        _ -> error_not_translated "Mlistprepend"
     | Mlistcontains       _ -> error_not_translated "Mlistcontains"
     | Mlistcount          _ -> error_not_translated "Mlistcount"
     | Mlistnth            _ -> error_not_translated "Mlistnth"
