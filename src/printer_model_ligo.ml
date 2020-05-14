@@ -570,7 +570,7 @@ let pp_model_internal fmt (model : model) b =
         match l with
         | [] -> Format.fprintf fmt "(nil : %a)" pp_type mtt.type_
         | _ ->
-          Format.fprintf fmt "[%a]"
+          Format.fprintf fmt "(list [%a])"
             (pp_list "; " f) l
       end
 

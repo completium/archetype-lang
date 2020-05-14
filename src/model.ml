@@ -226,9 +226,8 @@ type ('id, 'term) mterm_node  =
   (* utils *)
   | Mcast             of type_ * type_ * 'term
   | Mgetfrommap       of ident * 'term * 'term
-  (* list api effect *)
-  | Mlistprepend      of type_ * 'term * 'term
   (* list api expression *)
+  | Mlistprepend      of type_ * 'term * 'term
   | Mlistcontains     of type_ * 'term * 'term
   | Mlistcount        of type_ * 'term
   | Mlistnth          of type_ * 'term * 'term
@@ -1042,9 +1041,8 @@ let cmp_mterm_node
     (* utils *)
     | Mcast (src1, dst1, v1), Mcast (src2, dst2, v2)                                   -> cmp_type src1 src2 && cmp_type dst1 dst2 && cmp v1 v2
     | Mgetfrommap (an1, k1, c1), Mgetfrommap (an2, k2, c2)                             -> cmp_ident an1 an2 && cmp k1 k2 && cmp c1 c2
-    (* list api effect *)
-    | Mlistprepend (t1, c1, a1), Mlistprepend (t2, c2, a2)                             -> cmp_type t1 t2 && cmp c1 c2 && cmp a1 a2
     (* list api expression *)
+    | Mlistprepend (t1, c1, a1), Mlistprepend (t2, c2, a2)                             -> cmp_type t1 t2 && cmp c1 c2 && cmp a1 a2
     | Mlistcontains (t1, c1, a1), Mlistcontains (t2, c2, a2)                           -> cmp_type t1 t2 && cmp c1 c2 && cmp a1 a2
     | Mlistcount (t1, c1), Mlistcount (t2, c2)                                         -> cmp_type t1 t2 && cmp c1 c2
     | Mlistnth (t1, c1, a1), Mlistnth (t2, c2, a2)                                     -> cmp_type t1 t2 && cmp c1 c2 && cmp a1 a2
@@ -1331,9 +1329,8 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   (* utils *)
   | Mcast (src, dst, v)            -> Mcast (ft src, ft dst, f v)
   | Mgetfrommap (an, k, c)         -> Mgetfrommap (fi an, f k, f c)
-  (* list api effect *)
-  | Mlistprepend (t, c, a)         -> Mlistprepend (ft t, f c, f a)
   (* list api expression *)
+  | Mlistprepend (t, c, a)         -> Mlistprepend (ft t, f c, f a)
   | Mlistcontains (t, c, a)        -> Mlistcontains (t, f c, f a)
   | Mlistcount (t, c)              -> Mlistcount (t, f c)
   | Mlistnth (t, c, a)             -> Mlistnth (t, f c, f a)
@@ -1656,9 +1653,8 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   (* utils *)
   | Mcast (_ , _, v)                      -> f accu v
   | Mgetfrommap (_, k, c)                 -> f (f accu k) c
-  (* list api effect *)
-  | Mlistprepend (_, c, a)                -> f (f accu c) a
   (* list api expression *)
+  | Mlistprepend (_, c, a)                -> f (f accu c) a
   | Mlistcontains (_, c, a)               -> f (f accu c) a
   | Mlistcount (_, c)                     -> f accu c
   | Mlistnth (_, c, a)                    -> f (f accu c) a
@@ -2236,15 +2232,12 @@ let fold_map_term
     g (Mgetfrommap (an, ke, ce)), ca
 
 
-  (* list api effect *)
+  (* list api expression *)
 
   | Mlistprepend (t, c, a) ->
     let ce, ca = f accu c in
     let ae, aa = f ca a in
     g (Mlistprepend (t, ce, ae)), aa
-
-
-  (* list api expression *)
 
   | Mlistcontains (t, c, a) ->
     let ce, ca = f accu c in

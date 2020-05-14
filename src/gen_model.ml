@@ -440,18 +440,25 @@ let to_model (ast : A.model) : M.model =
 
       (* List*)
 
-      | A.Pcall (Some p, A.Cconst (A.Ccontains), [AExpr q]) when is_list p ->
+      | A.Pcall (None, A.Cconst (A.Cprepend), [AExpr p; AExpr q]) when is_list p -> (
+          let fp = f p in
+          let fq = f q in
+          let t = extract_builtin_type_list fp in
+          M.Mlistprepend (t, fp, fq)
+        )
+
+      | A.Pcall (None, A.Cconst (A.Ccontains), [AExpr p; AExpr q]) when is_list p ->
         let fp = f p in
         let fq = f q in
         let t = extract_builtin_type_list fp in
         M.Mlistcontains (t, fp, fq)
 
-      | A.Pcall (Some p, A.Cconst (A.Ccount), []) when is_list p ->
+      | A.Pcall (None, A.Cconst (A.Ccount), [AExpr p]) when is_list p ->
         let fp = f p in
         let t = extract_builtin_type_list fp in
         M.Mlistcount (t, fp)
 
-      | A.Pcall (Some p, A.Cconst (A.Cnth), [AExpr q]) when is_list p ->
+      | A.Pcall (None, A.Cconst (A.Cnth), [AExpr p; AExpr q]) when is_list p ->
         let fp = f p in
         let fq = f q in
         let t = extract_builtin_type_list fp in
@@ -664,13 +671,6 @@ let to_model (ast : A.model) : M.model =
         let lambda_args, args = List.fold_right (fun (x, y, z) (l1, l2) -> ((unloc x, ptyp_to_type y)::l1, (f z)::l2)) l ([], []) in
         let asset_name = extract_asset_name fp in
         M.Mremoveif (asset_name, fp, lambda_args, lambda_body, args)
-
-      | A.Icall (Some p, A.Cconst (A.Cprepend), [AExpr q]) when is_list p -> (
-          let fp = f p in
-          let fq = f q in
-          let t = extract_builtin_type_list fp in
-          M.Mlistprepend (t, fp, fq)
-        )
 
       | A.Icall (aux, A.Cconst c, args) ->
         Format.eprintf "instr const unkown: %a with nb args: %d [%a] %s@."
