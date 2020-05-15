@@ -8,6 +8,7 @@ type error_desc =
   | CannotBuildAsset of string * string
   | ContainersInAssetContainers of string * string * string
   | NoEmptyContainerForInitAsset of string * string * container
+  | NoClearForPartitionAsset of ident
   | CallerNotSetInInit
   | NoEntrypoint
 
@@ -28,6 +29,9 @@ let pp_error_desc fmt = function
     Format.fprintf fmt "Field '%s' of '%s' asset is a %a, which must be initialized by an empty collection."
       fn an
       Printer_model.pp_container c
+
+  | NoClearForPartitionAsset an ->
+    Format.fprintf fmt "Clear is not allowed for asset '%s', because this asset is used in a partition." an
 
   | CallerNotSetInInit ->
     Format.fprintf fmt "'caller' is used in initialization of contract, please set caller value with '--set-caller-init'"
@@ -386,17 +390,16 @@ let check_partition_access (model : model) : model =
         else acc
       ) [] partitions in
   let emit_error loc a =
-    emit_error (
-      loc,
-      AssetPartitionnedby (a, get_partitions a));
+    emit_error (loc, a);
     true in
   (* woud need a model iterator here *)
   let raise_access_error () =
     let rec internal_raise (ctx : ctx_model) acc (t : mterm) =
       match t.node with
-      | Maddasset (a, _) when List.mem a partitionned_assets -> emit_error t.loc a
-      | Mremoveasset (a, _) when List.mem a partitionned_assets -> emit_error t.loc a
-      | Mremoveif(a, { node = (Mvarstorecol _); loc = _}, _, _, _) when List.mem a partitionned_assets -> emit_error t.loc a
+      | Maddasset (a, _) when List.mem a partitionned_assets -> emit_error t.loc (AssetPartitionnedby (a, get_partitions a))
+      | Mremoveasset (a, _) when List.mem a partitionned_assets -> emit_error t.loc (AssetPartitionnedby (a, get_partitions a))
+      | Mremoveif(a, { node = (Mvarstorecol _); loc = _}, _, _, _) when List.mem a partitionned_assets -> emit_error t.loc (AssetPartitionnedby (a, get_partitions a))
+      | Mclear (a, _) when List.mem a partitionned_assets -> emit_error t.loc (NoClearForPartitionAsset a)
       | _ -> fold_term (internal_raise ctx) acc t
     in
     let with_error = fold_model internal_raise model false in
