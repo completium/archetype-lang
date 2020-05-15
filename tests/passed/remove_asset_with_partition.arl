@@ -1,0 +1,22 @@
+archetype remove_asset_with_partition
+
+asset o_asset identified by oid {
+  oid : string;
+}
+
+asset my_asset identified by id {
+  id     : string;
+  col    : o_asset partition;
+} initialized by {
+  {"id0"; []};
+  {"id1"; []};
+  {"id2"; []}
+}
+
+variable res : int = 0
+
+action exec () {
+  effect {
+    my_asset.remove("oid")
+  }
+}

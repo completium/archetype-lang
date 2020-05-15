@@ -1,0 +1,17 @@
+archetype no_clear_for_asset_in_partition
+
+asset o_asset identified by oid {
+  oid : string;
+  v : int;
+}
+
+asset my_asset identified by id {
+  id     : string;
+  col    : o_asset partition;
+}
+
+action exec() {
+  effect {
+    o_asset.clear()
+  }
+}

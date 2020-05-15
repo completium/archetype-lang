@@ -779,7 +779,7 @@ let pp_model_internal fmt (model : model) b =
     | Mremoveall (an, fn, a) ->
       let pp fmt (an, fn, a) =
         Format.fprintf fmt "%s := removeall_%a_%a (%s, %a)"
-        const_storage
+          const_storage
           pp_str an
           pp_str fn
           const_storage
@@ -1507,25 +1507,33 @@ let pp_model_internal fmt (model : model) b =
 
     | Remove an ->
       let _, t = Utils.get_asset_key model an in
-      if Utils.is_asset_single_field model an then
-        Format.fprintf fmt
-          "function remove_%s (const s : storage_type; const key : %a) : storage_type is@\n  \
-           begin@\n    \
-           s.%s_assets := set_remove(key, s.%s_assets);@\n  \
-           end with (s)@\n"
-          an pp_btyp t
-          an an
-      else
-        Format.fprintf fmt
-          "function remove_%s (const s : storage_type; const key : %a) : storage_type is@\n  \
-           begin@\n    \
-           const map_local : map(%a, %s_storage) = s.%s_assets;@\n    \
-           remove key from map map_local;@\n    \
-           s.%s_assets := map_local;@\n  \
-           end with (s)@\n"
-          an pp_btyp t
-          pp_btyp t an an
-          an
+      let aps : (ident * ident) list =
+        begin
+          let asset = Utils.get_asset model an in
+          List.fold_left (fun accu (x : asset_item) ->
+              match x.original_type with
+              | Tcontainer (Tasset an, Partition) -> (unloc x.name, unloc an)::accu
+              | _ -> accu
+            ) [] asset.values
+        end
+      in
+      Format.fprintf fmt
+        "function remove_%s (const s : storage_type; const key : %a) : storage_type is@\n  \
+         begin@\n    \
+         %aremove key from %s s.%s_assets;@\n  \
+         end with (s)@\n"
+        an pp_btyp t
+        (fun fmt aps ->
+           match aps with
+           | [] -> ()
+           | _ ->
+             Format.fprintf fmt "const asset : %s_storage = get_force(key, s.%s_assets);@\n    " an an;
+             (pp_list "" (fun fmt (fn, fan : ident * ident) ->
+                  Format.fprintf fmt
+                    "for i in list (asset.%s) block {@\n      s := remove_%s(s, i)@\n    };@\n    "
+                    fn fan)) fmt aps
+        ) aps
+        (if Utils.is_asset_single_field model an then "set" else "map") an
 
     | Clear an ->
       let _, t = Utils.get_asset_key model an in
@@ -1540,39 +1548,8 @@ let pp_model_internal fmt (model : model) b =
         (if Utils.is_asset_single_field model an then "set" else "map")
         an
 
-
     | Update _ -> ()
-    (* | Update (an, l) ->
-       let index : int = get_preds_index_gen Printer_model_tools.cmp_update env.update_preds l in
-       let _, t = Utils.get_asset_key model an in
-       Format.fprintf fmt
-        "function update_%s_%i (const s : storage_type; const key : %a) : storage_type is@\n  \
-         begin@\n    \
-         const a : %s_storage = get_force(key, s.%s_assets);@\n    \
-         s.%s_assets[key] := a with record [%a];@\n  \
-         end with (s)@\n"
-        an index pp_btyp t
-        an an
-        an (pp_list "; " (fun fmt (id, op, v) ->
-            Format.fprintf fmt "%s = %a" id
-              (fun fmt _ ->
-                 match op with
-                 | ValueAssign -> (pp_mterm (mk_env ())) fmt v
-                 | PlusAssign  -> Format.fprintf fmt "a.%s + (%a)"   id (pp_mterm (mk_env ())) v
-                 | MinusAssign -> Format.fprintf fmt "a.%s - (%a)"   id (pp_mterm (mk_env ())) v
-                 | MultAssign  -> Format.fprintf fmt "a.%s * (%a)"   id (pp_mterm (mk_env ())) v
-                 | DivAssign   -> Format.fprintf fmt "a.%s / (%a)"   id (pp_mterm (mk_env ())) v
-                 | AndAssign   -> Format.fprintf fmt "a.%s and (%a)" id (pp_mterm (mk_env ())) v
-                 | OrAssign    -> Format.fprintf fmt "a.%s or (%a)"  id (pp_mterm (mk_env ())) v
-              ) ()
-          )) l *)
 
-    (* function add_my_asset_col (const s : storage_type; const asset_key : string; const b : o_asset) : storage_type is
-       begin
-        const asset_val : my_asset_storage = get_force(asset_key, s.my_asset_assets);
-        if not map_mem(b.oid, s.o_asset_assets) then failwith ("key does not exist") else skip;
-        s.my_asset_assets[asset_key] := asset_val with record[col = cons(b.oid, asset_val.col)];
-       end with (s) *)
     | UpdateAdd (an, fn) ->
       let _, t = Utils.get_asset_key model an in
       let ft, c = Utils.get_field_container model an fn in

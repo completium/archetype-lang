@@ -48,7 +48,17 @@ let generate_api_storage ?(verif=false) (model : model) : model =
         let (pa,_,_) = Utils.get_container_asset_key model asset_name field_name in
         [APIAsset (Add pa); APIAsset (UpdateAdd (asset_name, field_name))]
       | Mremoveasset (asset_name, _) ->
-        [APIAsset (Remove asset_name)]
+        let ans : ident list =
+          begin
+            let asset = Utils.get_asset model asset_name in
+            List.fold_left (fun accu (x : asset_item) ->
+                match x.original_type with
+                | Tcontainer (Tasset an, Partition) -> (unloc an)::accu
+                | _ -> accu
+              ) [] asset.values
+          end
+        in
+        List.map (fun x -> APIAsset (Remove x)) (asset_name::ans)
       | Mremovefield (asset_name, field_name, _, _) ->
         let (pa,_,_) = Utils.get_container_asset_key model asset_name field_name in
         [APIAsset (Remove pa); APIAsset (UpdateRemove (asset_name, field_name))]
