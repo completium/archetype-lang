@@ -201,6 +201,7 @@ let generate_target model =
   | Whyml ->
     model
     |> replace_whyml_ident
+    |> replace_assignfield_by_update
     |> process_asset_state
     |> remove_add_update
     |> merge_update
@@ -228,6 +229,7 @@ let generate_target model =
     |> replace_update_by_set
     |> remove_cmp_enum
     |> remove_cmp_bool
+    |> replace_dotassetfield_by_dot
     |> generate_api_storage ~verif:true
     |> output
 
