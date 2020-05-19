@@ -18,6 +18,7 @@ let emit_error (desc : error_desc) =
 let const_storage = "s_"
 let const_state = "state"
 let const_operations = "ops_"
+let const_result = "r_"
 
 type operator =
   | Equal
@@ -269,6 +270,7 @@ let pp_model_internal fmt (model : model) b =
 
     | Mapp (e, args) ->
       let pp fmt (e, args) =
+        let args = (mk_mterm (Mvarlocal (dumloc const_storage)) Tstorage)::args in
         Format.fprintf fmt "%a (%a)"
           pp_id e
           (pp_list ", " f) args
@@ -415,7 +417,9 @@ let pp_model_internal fmt (model : model) b =
       end
 
     | Mreturn x ->
-      Format.fprintf fmt "return %a"
+      Format.fprintf fmt "const %s : %a = %a;"
+        const_result
+        pp_type x.type_
         f x
 
     | Mlabel _ -> ()
@@ -2231,9 +2235,9 @@ let pp_model_internal fmt (model : model) b =
         (pp_mterm env) fs.body
         (if with_operations then const_operations else "(nil : list(operation))") const_storage
 
-    | Function (fs, _ret) ->
+    | Function (fs, ret) ->
       Format.fprintf fmt
-        "function %a(const %s : storage_type%a) : storage_type is@\n  \
+        "function %a(const %s : storage_type%a) : %a is@\n  \
          begin@\n  \
          @[%a@]@\n  \
          end with (%s)@\n"
@@ -2245,8 +2249,9 @@ let pp_model_internal fmt (model : model) b =
                pp_id id
                pp_type type_
            )) fs.args
+        pp_type ret
         (pp_mterm env) fs.body
-        const_storage
+        const_result
   in
 
   let pp_functions (env : env) (fmt : Format.formatter) _ =
