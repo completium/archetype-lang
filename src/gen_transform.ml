@@ -119,11 +119,11 @@ let build_col_asset (an : ident) =
   let type_col = Tcontainer (type_asset,Collection) in
   let type_view = Tcontainer (type_asset,View) in
   let col : mterm  = mk_mterm (Mvarstorecol dan) type_col in
-  mk_mterm (Mcast (type_col, type_view, col)) type_view
+  mk_mterm (Mcast (type_col, type_view, col)) type_view, type_asset
 
 let build_get (an : ident) v =
-  let col = build_col_asset an in
-  mk_mterm (Mget (an, col, v)) col.type_
+  let col, type_asset = build_col_asset an in
+  mk_mterm (Mget (an, col, v)) type_asset
 
 
 (* myasset.update k {f1 = v1; f2 = v2}
@@ -1764,6 +1764,18 @@ let extract_term_from_instruction f (model : model) : model =
   in
   Model.map_mterm_model aux model
 
+let replace_dotassetfield_by_dot (model : model) : model =
+  let rec aux ctx (mt : mterm) : mterm =
+    match mt.node with
+    | Mdotassetfield (an, k, fn) ->
+      begin
+        let get = build_get (unloc an) k in
+        mk_mterm (Mdot (get, fn)) mt.type_
+      end
+    | _ -> map_mterm (aux ctx) mt
+  in
+  Model.map_mterm_model aux model
+
 let remove_fun_dotasset (model : model) : model =
   let extract_fun_dotasset (mt: mterm) : mterm * (lident * mterm) list =
     let cpt : int ref = ref 0 in
@@ -2258,9 +2270,7 @@ let extract_item_collection_from_add_asset (model : model) : model =
                   (fun (fn, _ann, assetss) ->
                      assetss
                      |> List.map (fun asset ->
-                         let store_asset = mk_mterm (Mvarstorecol dan) (Tcontainer (Tasset dan, Collection)) in
-                         let src = mk_mterm (Mget (an, store_asset, k)) (Tasset dan) in
-                         (mk_mterm (Maddfield (an, fn, src, asset)) Tunit))
+                         (mk_mterm (Maddfield (an, fn, k, asset)) Tunit))
                   )
                 |> List.flatten
               in

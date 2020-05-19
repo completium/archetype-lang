@@ -151,6 +151,7 @@ let generate_target model =
     |> remove_duplicate_key
     |> Gen_transform.assign_loop_label
     |> remove_letin_from_expr
+    |> replace_dotassetfield_by_dot
     |> remove_fun_dotasset
     |> generate_api_storage
     |> output
