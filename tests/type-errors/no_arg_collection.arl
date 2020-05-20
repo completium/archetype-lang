@@ -1,0 +1,14 @@
+archetype no_arg_collection
+
+asset et identified by cid { cid: int; }
+
+asset e identified by eid {
+	eid			: string;
+	cells		: et collection;
+}
+
+action start (cl: et collection) {
+	effect {
+		var ev : e = { eid = "123"; cells = cl };
+	}
+}

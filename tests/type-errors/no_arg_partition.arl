@@ -1,0 +1,14 @@
+archetype no_arg_partition
+
+asset et identified by cid { cid: int; }
+
+asset e identified by eid {
+	eid			: string;
+	cells		: et partition;
+}
+
+action start (cl: et partition) {
+	effect {
+		var ev : e = { eid = "123"; cells = cl };
+	}
+}

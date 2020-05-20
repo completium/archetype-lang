@@ -1,0 +1,10 @@
+archetype langtest
+
+asset u identified by addr {
+	addr	: address;
+	mg		: rational;
+} with {
+	u1		: mg < 10.0 and mg > 0.0;
+}
+
+action start () { effect { () } }

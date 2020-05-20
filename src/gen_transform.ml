@@ -1007,13 +1007,13 @@ let remove_rational (model : model) : model =
         | _ -> dv
       ) |@ process_mterm) default_value
   in
+  let for_label_term (lt : label_term) : label_term =
+    {
+      lt with
+      term  = process_mterm lt.term;
+    }
+  in
   let process_specification (spec : specification) : specification =
-    let for_label_term (lt : label_term) : label_term =
-      {
-        lt with
-        term  = process_mterm lt.term;
-      }
-    in
     let for_predicate (p : predicate) : predicate =
       {
         p with
@@ -1088,7 +1088,8 @@ let remove_rational (model : model) : model =
                          { ai with
                            type_   = ai.type_   |> process_type;
                            default = ai.default |> Option.map process_mterm;
-                         })
+                         });
+           invariants = List.map for_label_term a.invariants;
           }
       | Dcontract c ->
         Dcontract
@@ -1427,7 +1428,7 @@ let replace_ident_model_val (model : model) : model =
 
 
 (* let replace_key_by_asset (model : model) : model =
-  let rec aux c (mt : mterm) : mterm =
+   let rec aux c (mt : mterm) : mterm =
     let mk n = mk_mterm n Tunit in
     let get an k = mk_mterm (Mget (an, Utils.get_asset_collection an, k)) (Tasset (dumloc an)) in
     match mt.node with
@@ -1457,8 +1458,8 @@ let replace_ident_model_val (model : model) : model =
       in
       mk (Mset (an, fns, nk, a))
     | _ -> map_mterm (aux c) mt
-  in
-  Model.map_mterm_model aux model *)
+   in
+   Model.map_mterm_model aux model *)
 
 let merge_update (model : model) : model =
   let contains l (ref, _, _) = List.fold_left (fun accu (id, _, _) -> accu || (String.equal (unloc ref) (unloc id))) false l in
