@@ -1272,7 +1272,6 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
         (List.map (fun f -> CUpdate f) l)
 
     | Mupdate             _ -> error_not_translated "Mupdate"
-    | Mremoveif           _ -> error_not_translated "Mremoveif"
     | Maddupdate          _ -> error_not_translated "Maddupdate"
 
 

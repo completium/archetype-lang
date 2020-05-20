@@ -173,7 +173,6 @@ let to_const = function
   | Cget            -> "get"
   | Cadd            -> "add"
   | Cremove         -> "remove"
-  | Cremoveif       -> "removeif"
   | Cclear          -> "clear"
   | Cremoveall      -> "removeall"
   | Cupdate         -> "update"

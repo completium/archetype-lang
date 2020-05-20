@@ -127,7 +127,6 @@ type const =
   | Cget
   | Cadd
   | Cremove
-  | Cremoveif
   | Cclear
   | Cremoveall
   | Cupdate

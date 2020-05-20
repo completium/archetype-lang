@@ -658,7 +658,6 @@ let methods : (string * method_) list =
     ("get"         , mk M.Cget          `OnlyFormula `Pure       `Partial (`Fixed [`Pk           ], Some `The));
     ("add"         , mk M.Cadd          `Both        `Effect     `Total   (`Fixed [`The          ], None));
     ("remove"      , mk M.Cremove       `Both        `Effect     `Total   (`Fixed [`Pk           ], None));
-    ("removeif"    , mk M.Cremoveif     `Both        `Effect     `Total   (`Fixed [`Pred true    ], None));
     ("clear"       , mk M.Cclear        `Both        `EffectView `Total   (`Fixed [              ], None));
     ("removeall"   , mk M.Cremoveall    `Both        `Effect     `Total   (`Fixed [              ], None));
     ("update"      , mk M.Cupdate       `Both        `Effect     `Total   (`Fixed [`Pk; `Ef true ], None));

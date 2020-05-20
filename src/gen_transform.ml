@@ -292,72 +292,6 @@ let extend_loop_iter (model : model) : model =
     map_mterm_model internal_map_inv_iter model in
   map_invariant_iter ()
 
-type loop_ctx = (lident, Ident.ident list) ctx_model_gen
-
-let extend_removeif (model : model) : model =
-  let loop_ids = ref [] in
-  let idx = ref 0 in
-  let rec internal_extend (ctx : loop_ctx) (t : mterm) : mterm =
-    match t.node with
-    | Mfor (i, c, b, Some lbl) ->
-      let new_ctx = { ctx with custom = ctx.custom @ [lbl] } in
-      mk_mterm (Mfor (i,
-                      internal_extend new_ctx c,
-                      internal_extend new_ctx b,
-                      Some lbl)) t.type_
-    | Mremoveif (asset, p, la, lb, a) ->
-      let lasset = dumloc asset in
-      let type_asset = Tasset lasset in
-
-      let assetv_str = dumloc (asset ^ "_") in
-      let asset_var = mk_mterm (Mvarlocal assetv_str) type_asset in
-
-      let key, key_type = Utils.get_asset_key model (unloc lasset) in
-      let asset_key : mterm = mk_mterm (Mdotassetfield (lasset, asset_var, dumloc key)) (Tbuiltin key_type) in
-
-      let assets_var_name = dumloc ("assets_") in
-      let type_assets = Tcontainer (type_asset, View) in
-      let assets_var = mk_mterm (Mvarlocal assets_var_name) type_assets in
-
-      let view : mterm = mk_mterm (Mcast (Tcontainer (type_asset, Collection), type_assets, p)) type_assets in
-      let select : mterm =  mk_mterm (Mselect (asset, view, la, lb, a) ) type_asset in
-
-      let remove : mterm = mk_mterm (Mremoveasset (asset, asset_key)) Tunit in
-
-      let id = "removeif_loop" ^ (string_of_int !idx) in
-      idx := succ !idx;
-      if List.length ctx.custom > 0 then
-        let upper_id = List.hd (List.rev ctx.custom) in
-        loop_ids := !loop_ids @ [upper_id,id]
-      else ();
-
-      let for_ = mk_mterm (Mfor (assetv_str, assets_var, remove, Some id)) Tunit in
-
-      let res : mterm__node = Mletin ([assets_var_name], select, Some type_assets, for_, None) in
-      mk_mterm res Tunit
-    | _ -> map_mterm (internal_extend ctx) t in
-  map_mterm_model_gen [] internal_extend model |>
-  fun m ->  {
-    m with
-    functions = List.map (fun (f : function__) -> {
-          f with
-          spec = Option.map (fun (v : specification) -> {
-                v with
-                postconditions = List.map (fun (postcondition : postcondition) -> {
-                      postcondition with
-                      invariants =
-                        List.fold_left (fun acc (inv : invariant) ->
-                            if List.mem_assoc (unloc inv.label) !loop_ids then
-                              let loop_id = List.assoc (unloc inv.label) !loop_ids in
-                              let loop_inv = { inv with label = dumloc loop_id } in
-                              acc @ [inv; loop_inv]
-                            else acc @ [inv]
-                          ) [] postcondition.invariants
-                    }) v.postconditions
-              }) f.spec
-        }) m.functions
-  }
-
 let process_single_field_storage (model : model) : model =
   match model.storage with
   | [i] ->
@@ -398,7 +332,6 @@ let check_partition_access (model : model) : model =
       match t.node with
       | Maddasset (a, _) when List.mem a partitionned_assets -> emit_error t.loc (AssetPartitionnedby (a, get_partitions a))
       | Mremoveasset (a, _) when List.mem a partitionned_assets -> emit_error t.loc (AssetPartitionnedby (a, get_partitions a))
-      | Mremoveif(a, { node = (Mvarstorecol _); loc = _}, _, _, _) when List.mem a partitionned_assets -> emit_error t.loc (AssetPartitionnedby (a, get_partitions a))
       | Mclear (a, _) when List.mem a partitionned_assets -> emit_error t.loc (NoClearForPartitionAsset a)
       | _ -> fold_term (internal_raise ctx) acc t
     in
@@ -1746,13 +1679,6 @@ let extract_term_from_instruction f (model : model) : model =
           ((id, op, ve)::xe, va @ xa)) l ([], []) in
       process (mk_mterm (Mupdate (an, ke, le)) mt.type_) (ka @ la)
 
-    | Mremoveif (an, c, la, lb, a) ->
-      let lbe, lba = f lb in
-      let ae, aa = List.fold_right (fun v (xe, xa) ->
-          let ve, va = f v in
-          (ve::xe, va @ xa)) a ([], []) in
-      process (mk_mterm (Mremoveif (an, c, la, lbe, ae)) mt.type_) (lba @ aa)
-
     | Maddupdate (an, k, l) ->
       let ke, ka = f k in
       let le, la = List.fold_right (fun (id, op, v) (xe, xa) ->
@@ -1986,11 +1912,6 @@ let add_contain_on_get (model : model) : model =
       | Mupdate (_an, k, l) ->
         let accu = f accu k in
         let accu = List.fold_right (fun (_, _, v) accu -> f accu v) l accu in
-        gg accu mt
-
-      | Mremoveif (_an, _c, _la, lb, a) ->
-        let accu = f accu lb in
-        let accu = List.fold_right (fun v accu -> f accu v) a accu in
         gg accu mt
 
       | Maddupdate (_an, k, l) ->

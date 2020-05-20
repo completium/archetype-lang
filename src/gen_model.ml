@@ -673,13 +673,6 @@ let to_model (ast : A.model) : M.model =
         let asset_name = extract_asset_name fp in
         M.Mupdate (asset_name, fk, fe)
 
-      | A.Icall (Some p, A.Cconst (A.Cremoveif), [AFun (_qi, _qtt, l, q)]) when is_asset_container p ->
-        let fp = f p in
-        let lambda_body = f q in
-        let lambda_args, args = List.fold_right (fun (x, y, z) (l1, l2) -> ((unloc x, ptyp_to_type y)::l1, (f z)::l2)) l ([], []) in
-        let asset_name = extract_asset_name fp in
-        M.Mremoveif (asset_name, fp, lambda_args, lambda_body, args)
-
       | A.Icall (aux, A.Cconst c, args) ->
         Format.eprintf "instr const unkown: %a with nb args: %d [%a] %s@."
           A.pp_const c

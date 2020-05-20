@@ -253,7 +253,6 @@ let compile (filename, channel) =
   |> raise_if_error post_model_error check_partition_access
   |> raise_if_error post_model_error check_containers_asset
   |> raise_if_error post_model_error check_empty_container_on_initializedby
-  |> raise_if_error post_model_error extend_removeif
   |> raise_if_error post_model_error check_and_replace_init_caller
   |> generate_target
 

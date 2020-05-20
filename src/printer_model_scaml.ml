@@ -1005,7 +1005,6 @@ let pp_model fmt (model : model) =
         pp fmt (c, k, v)
 
       | Mupdate _    -> emit_error (UnsupportedTerm ("update"))
-      | Mremoveif _  -> emit_error (UnsupportedTerm ("removeif"))
       | Maddupdate _ -> emit_error (UnsupportedTerm ("add_update"))
 
 

@@ -801,7 +801,6 @@ let pp_model fmt (model : model) =
         pp fmt (c, l, k, v)
 
       | Mupdate    _ -> emit_error (UnsupportedTerm ("Mupdate"))
-      | Mremoveif  _ -> emit_error (UnsupportedTerm ("Mremoveif"))
       | Maddupdate _ -> emit_error (UnsupportedTerm ("Maddupdate"))
 
 

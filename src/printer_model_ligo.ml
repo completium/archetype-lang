@@ -868,7 +868,6 @@ let pp_model_internal fmt (model : model) b =
       in
       pp fmt (an, k, l)
 
-    | Mremoveif _ -> emit_error (UnsupportedTerm ("removeif"))
     | Maddupdate _ -> emit_error (UnsupportedTerm ("addupdate"))
 
 

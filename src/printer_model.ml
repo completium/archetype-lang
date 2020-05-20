@@ -579,17 +579,6 @@ let pp_mterm fmt (mt : mterm) =
       in
       pp fmt (an, k, l)
 
-    | Mremoveif (an, c, la, lb, a) ->
-      let pp fmt (an, c, la, lb, a) =
-        Format.fprintf fmt "remove_if_%a (%a, ((%a) -> %a)(%a))"
-          pp_str an
-          f c
-          (pp_list ", " (fun fmt (id, t) -> Format.fprintf fmt "%s : %a" id pp_type t)) la
-          f lb
-          (pp_list ", " f) a
-      in
-      pp fmt (an, c, la, lb, a)
-
     | Maddupdate (an, k, l) ->
       let pp fmt (an, k, l) =
         Format.fprintf fmt "add_update_%a (%a, {%a})"
