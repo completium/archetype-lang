@@ -2792,7 +2792,7 @@ let for_lvalue (env : env) (e : PT.expr) : (M.lvalue * M.ptyp) option =
     Env.emit_error env (loc e, InvalidLValue); None
 
 (* -------------------------------------------------------------------- *)
-let rec for_instruction (env : env) (i : PT.expr) : env * M.instruction =
+let rec for_instruction_r (env : env) (i : PT.expr) : env * M.instruction =
   let module E = struct exception Failure end in
 
   let bailout () = raise E.Failure in
@@ -2841,8 +2841,8 @@ let rec for_instruction (env : env) (i : PT.expr) : env * M.instruction =
       end
 
     | Eseq (i1, i2) ->
-      let env, i1 = for_instruction env i1 in
-      let env, i2 = for_instruction env i2 in
+      let env, i1 = for_instruction_r env i1 in
+      let env, i2 = for_instruction_r env i2 in
       env, mkseq i1 i2
 
     | Eassign (op, plv, pe) -> begin
@@ -2921,22 +2921,9 @@ let rec for_instruction (env : env) (i : PT.expr) : env * M.instruction =
               Option.fold (fun env ty ->
                   Env.Local.push env (x, ty)
                 ) env e.M.type_
-            in for_instruction env e2) in
+            in for_instruction_r env e2) in
 
       env, mki (M.Iletin (x, e, body))
-
-    | Evar (x, ty, v) ->
-      let ty = Option.bind (for_type env) ty in
-      let v  = for_expr env ?ety:ty v in
-      let env =
-        let _ : bool = check_and_emit_name_free env x in
-        if Option.is_some v.M.type_ then
-          Env.Local.push env (x, Option.get v.M.type_)
-        else env
-
-      in
-
-      env, mki (M.Ideclvar (x, v))
 
     | Efor (lbl, x, e, i) ->
       let e, asset = for_asset_collection_expr expr_mode env (`Parsed e) in
@@ -3040,6 +3027,35 @@ let rec for_instruction (env : env) (i : PT.expr) : env * M.instruction =
 
   with E.Failure ->
     env, mki (Iseq [])
+
+(* -------------------------------------------------------------------- *)
+and for_instruction (env : env) (i : PT.expr) : env * M.instruction =
+  let mki ?label node : M.instruction =
+    M.{ node; label; loc = loc i; } in
+
+  let asblock = function M.{ node = Iseq is } -> is | _ as i -> [i] in
+
+  let rec get_vars (env : env) (i : PT.expr) =
+    match unloc i with
+    | Eseq ({ pldesc = Evar (x, ty, v) }, i) ->
+      let ty = Option.bind (for_type env) ty in
+      let v  = for_expr env ?ety:ty v in
+      let env =
+        let _ : bool = check_and_emit_name_free env x in
+        if Option.is_some v.M.type_ then
+          Env.Local.push env (x, Option.get v.M.type_)
+        else env in
+
+      let env, prelude, i = get_vars env i in
+
+      env, (mki (M.Ideclvar (x, v)) :: prelude), i
+
+    | _ -> env, [], i in
+
+  Env.inscope env (fun env ->
+    let env, prelude, i = get_vars env i in
+    let env, i = for_instruction_r env i in
+    env, mki (Iseq (prelude @ asblock i)))
 
 (* -------------------------------------------------------------------- *)
 let for_effect (env : env) (effect : PT.expr) =
