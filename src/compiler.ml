@@ -133,7 +133,6 @@ let generate_target model =
     |> merge_update
     |> remove_assign_operator
     |> extract_item_collection_from_add_asset
-    (* |> replace_update_by_set *)
     |> process_internal_string
     |> remove_rational
     |> abs_tez
@@ -146,7 +145,6 @@ let generate_target model =
     |> remove_label
     |> flat_sequence
     |> remove_cmp_bool
-    (* |> shallow_asset *)
     |> split_key_values
     |> remove_duplicate_key
     |> Gen_transform.assign_loop_label
@@ -287,14 +285,6 @@ let main () =
       "-t", Arg.String f, "<lang> Transcode to <lang> language";
       "--target", Arg.String f, " Same as -t";
       "--list-target", Arg.Unit (fun _ -> Format.printf "target available:@\n  ligo@\n  scaml@\n  whyml@\n  markdown@\n"; exit 0), " List available target languages";
-      (* "--storage-policy", Arg.String (fun s -> match s with
-          | "flat" -> Options.storage_policy := Flat
-          | "record" -> Options.storage_policy := Record
-          |  s ->
-            Format.eprintf
-              "Unknown policy %s (use record, flat)@." s;
-            exit 2), "<policy> Set storage policy";
-         "--list-storage-policy", Arg.Unit (fun _ -> Format.printf "storage policy available:@\n  record@\n  flat@\n"; exit 0), " List storage policy"; *)
       "-pt", Arg.Set Options.opt_pt, " Generate parse tree";
       "--parse-tree", Arg.Set Options.opt_pt, " Same as -pt";
       "-ext", Arg.Set Options.opt_ext, " Process extensions";
