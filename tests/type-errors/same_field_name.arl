@@ -12,7 +12,7 @@ asset asset2 {
 
 action anaction () {
   effect {
-    let a : int = 0 in
+    var a : int = 0;
     a := 1
   }
 }

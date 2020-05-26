@@ -13,24 +13,24 @@ asset my_asset identified by id {
 
 action exec () {
   effect {
-    let asset0_id = "id0" in
+    var asset0_id = "id0";
 
-    let my_asset_id = "id" in
+    var my_asset_id = "id";
     my_asset.add({ id = my_asset_id; value = 0; col = [] });
     my_asset.remove(my_asset_id);
     my_asset[my_asset_id].col.add({ id0 = asset0_id; value0 = 0 });
     my_asset[my_asset_id].col.remove(asset0_id);
     my_asset.update("key", {value += 2});
     my_asset.addupdate("key", {value += 3});
-    let v1 = my_asset[my_asset_id].value in
-    let v2 = my_asset.select(the.value > 0) in
-    let v3 = my_asset.sort(value) in
-    let v4 = my_asset.contains(my_asset_id) in
-    let v5 = my_asset.nth(0) in
-    let v6 = my_asset.count() in
-    let v7 = my_asset.sum(the.value) in
-    let v8 = my_asset.head(2) in
-    let v9 = my_asset.tail(2) in
+    var v1 = my_asset[my_asset_id].value;
+    var v2 = my_asset.select(the.value > 0);
+    var v3 = my_asset.sort(value);
+    var v4 = my_asset.contains(my_asset_id);
+    var v5 = my_asset.nth(0);
+    var v6 = my_asset.count();
+    var v7 = my_asset.sum(the.value);
+    var v8 = my_asset.head(2);
+    var v9 = my_asset.tail(2);
     require (true)
   }
 }

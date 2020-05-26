@@ -6,7 +6,7 @@ function f (i : int) : int {
 
 action main () {
   effect {
-    let v = result in
+    var v = result;
     ()
   }
 }

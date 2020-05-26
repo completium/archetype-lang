@@ -17,7 +17,7 @@ action exec () {
     f1: false;
   }
   effect {
-    let a : int = 0 in
+    var a : int = 0;
     a := 1
   }
 }

@@ -13,7 +13,7 @@ action exec () {
     f1: myasset["myid"].value <> 0;
   }
   effect {
-    let a : int = 0 in
+    var a : int = 0;
     a := 1
   }
 }
