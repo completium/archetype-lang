@@ -89,9 +89,9 @@ action pay_fee () {
     r5 : state = Running;
   }
   effect {
-    let nb_periods : int = (now - last_fee) / period in  (* div is euclidean *)
-    let due = nb_periods * fee in
-    let decrease : tez = min (transferred, due) in
+    var nb_periods : int = (now - last_fee) / period;  (* div is euclidean *)
+    var due = nb_periods * fee;
+    var decrease : tez = min (transferred, due);
     transfer decrease to insurer;
     transfer (transferred - decrease) to patient;
     last_fee += period * nb_periods     (* last_fee <> now because div is euclidean *)
@@ -108,7 +108,7 @@ action pay_consulation () {
     r6 : state = Running;
   }
   effect {
-    let decrease : tez = min (transferred, consultation_debt) in
+    var decrease : tez = min (transferred, consultation_debt);
     transfer decrease to insurer;
     transfer (transferred - decrease) to patient;
     consultation_debt -= decrease

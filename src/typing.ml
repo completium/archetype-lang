@@ -303,6 +303,7 @@ type error_desc =
   | NoSuchMethod                       of ident
   | NoSuchSecurityPredicate            of ident
   | NonCodeLabel                       of ident
+  | NoLetInInstruction
   | NonLoopLabel                       of ident
   | NotAKeyOfType
   | NotAnAssetType
@@ -445,6 +446,7 @@ let pp_error_desc fmt e =
   | NameIsAlreadyBound (i, Some l)     -> pp "Name is already bound: %a (previous definition: %s)" pp_ident i (Location.tostring l)
   | NoSuchMethod i                     -> pp "No such method: %a" pp_ident i
   | NoSuchSecurityPredicate i          -> pp "No such security predicate: %a" pp_ident i
+  | NoLetInInstruction                 -> pp "No Let In in instruction"
   | NonCodeLabel i                     -> pp "Not a code label: %a" pp_ident i
   | NonLoopLabel i                     -> pp "Not a loop label: %a" pp_ident i
   | NotAKeyOfType                      -> pp "pkey-of type expected"
@@ -2909,7 +2911,11 @@ let rec for_instruction_r (env : env) (i : PT.expr) : env * M.instruction =
       let env, cif = Option.get_dfl (env, mki (Iseq [])) cif in
       env, mki (M.Iif (c, cit, cif))
 
-    | Eletin (x, ty, e1, e2, eo) ->
+    | Eletin _ ->
+        Env.emit_error env (loc i, NoLetInInstruction);
+        bailout ()
+
+    (* | Eletin (x, ty, e1, e2, eo) ->
       if Option.is_some eo then
         Env.emit_error env (loc i, LetInElseInInstruction);
       let ty = Option.bind (for_type env) ty in
@@ -2923,7 +2929,7 @@ let rec for_instruction_r (env : env) (i : PT.expr) : env * M.instruction =
                 ) env e.M.type_
             in for_instruction_r env e2) in
 
-      env, mki (M.Iletin (x, e, body))
+      env, mki (M.Iletin (x, e, body)) *)
 
     | Efor (lbl, x, e, i) ->
       let e, asset = for_asset_collection_expr expr_mode env (`Parsed e) in

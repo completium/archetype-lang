@@ -1,0 +1,10 @@
+archetype simple3
+
+action exec() {
+  effect {
+    var a : int = 0;
+    require (true);
+    var b : int = 1;
+    require (a <> b)
+  }
+}
