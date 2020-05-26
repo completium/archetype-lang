@@ -3027,34 +3027,6 @@ let rec for_instruction_r (env : env) (i : PT.expr) : env * M.instruction =
     | Ereturn re ->
       env, mki (Ireturn (for_expr env re)) (* FIXME *)
 
-    | _ ->
-      Env.emit_error env (loc i, InvalidInstruction);
-      bailout ()
-
-  with E.Failure ->
-    env, mki (Iseq [])
-
-(* -------------------------------------------------------------------- *)
-and for_instruction (env : env) (i : PT.expr) : env * M.instruction =
-  let mki ?label node : M.instruction =
-    M.{ node; label; loc = loc i; } in
-
-  let asblock = function M.{ node = Iseq is } -> is | _ as i -> [i] in
-
-  let rec get_vars (env : env) (i : PT.expr) : _ * _ * PT.expr option =
-    match unloc i with
-    | Eseq (i1, i2) -> begin
-        let env, decls, i = get_vars env i1 in
-
-        match i with
-        | Some i ->
-            let lc = L.merge (L.loc i) (L.loc i2) in
-            env, decls, Some (mkloc lc (PT.Eseq (i, i2)))
-        | None   ->
-            let env, decls', i = get_vars env i2 in
-            env, (decls @ decls'), i
-    end
-
     | Evar (x, ty, v) ->
       let ty = Option.bind (for_type env) ty in
       let v  = for_expr env ?ety:ty v in
@@ -3064,15 +3036,18 @@ and for_instruction (env : env) (i : PT.expr) : env * M.instruction =
           Env.Local.push env (x, Option.get v.M.type_)
         else env in
 
-      env, [mki (M.Ideclvar (x, v))], None
+      env, mki (M.Ideclvar (x, v))
 
-    | _ -> env, [], Some i in
+    | _ ->
+      Env.emit_error env (loc i, InvalidInstruction);
+      bailout ()
 
-  Env.inscope env (fun env ->
-    let env, prelude, i = get_vars env i in
-    let env, i = Option.foldmap for_instruction_r env i in
-    let i = Option.get_dfl [] (Option.map asblock i) in
-    env, mki (Iseq (prelude @ i)))
+  with E.Failure ->
+    env, mki (Iseq [])
+
+(* -------------------------------------------------------------------- *)
+and for_instruction (env : env) (i : PT.expr) : env * M.instruction =
+  Env.inscope env (fun env -> for_instruction_r env i)
 
 (* -------------------------------------------------------------------- *)
 let for_effect (env : env) (effect : PT.expr) =
