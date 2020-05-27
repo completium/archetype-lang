@@ -117,6 +117,7 @@ let generate_target model =
     |> replace_declvar_by_letin
     |> cont !Options.opt_aes add_explicit_sort
     |> cont !Options.opt_skv split_key_values
+    |> cont !Options.opt_rcb remove_cmp_bool
     |> cont !Options.opt_nse remove_side_effect
     |> cont !Options.opt_evi eval_variable_initial_value
     |> cont !Options.opt_d check_if_asset_in_function
@@ -298,6 +299,8 @@ let main () =
       "--with-storage", Arg.Set Options.opt_ws, " Same as -ws";
       "-skv", Arg.Set Options.opt_skv, " Split key value of collection of asset";
       "--split-key-values", Arg.Set Options.opt_skv, " Same as -skv";
+      "-rcb", Arg.Set Options.opt_rcb, " Remove arithmetic operators for boolean";
+      "--remove-cmp-bool", Arg.Set Options.opt_rcb, " Same as -rcb";
       "-nse", Arg.Set Options.opt_nse, " Transform to no side effect";
       "--no-side-effect", Arg.Set Options.opt_nse, " Same as -nse";
       "-nr", Arg.Set Options.opt_nr, " Remove rational";

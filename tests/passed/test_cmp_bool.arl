@@ -1,0 +1,12 @@
+archetype test_cmp_bool
+
+action exec() {
+  effect {
+    require (true = true);
+    require ((true = true) = true);
+
+    var a : bool = true;
+    var b : bool = false;
+    require (a <> b);
+  }
+}

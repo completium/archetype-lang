@@ -851,16 +851,30 @@ let remove_enum_matchwith (model : model) : model =
 
 let remove_cmp_bool (model : model) : model =
   let rec aux c (mt : mterm) : mterm =
+    let f = aux c in
+    let not x = mk_mterm (Mnot x) (Tbuiltin Bbool) in
+    let vtrue = mk_mterm (Mbool true) (Tbuiltin Bbool) in
+    let vfalse = mk_mterm (Mbool false) (Tbuiltin Bbool) in
     match mt.node with
-    | Mequal (lhs, {node = Mbool true; _})  -> lhs
-    | Mequal (lhs, {node = Mbool false; _}) -> mk_mterm (Mnot lhs) (Tbuiltin Bbool)
-    | Mequal ({node = Mbool true; _}, rhs)  -> rhs
-    | Mequal ({node = Mbool false; _}, rhs) -> mk_mterm (Mnot rhs) (Tbuiltin Bbool)
+    | Mequal ({node = Mbool false; _}, {node = Mbool false; _})  -> vtrue
+    | Mequal ({node = Mbool false; _}, {node = Mbool true; _})   -> vfalse
+    | Mequal ({node = Mbool true; _},  {node = Mbool false; _})  -> vfalse
+    | Mequal ({node = Mbool true; _},  {node = Mbool true; _})   -> vtrue
 
-    | Mnequal (lhs, {node = Mbool true; _})  -> mk_mterm (Mnot lhs) (Tbuiltin Bbool)
-    | Mnequal (lhs, {node = Mbool false; _}) -> lhs
-    | Mnequal ({node = Mbool true; _}, rhs)  -> mk_mterm (Mnot rhs) (Tbuiltin Bbool)
-    | Mnequal ({node = Mbool false; _}, rhs) -> rhs
+    | Mnequal ({node = Mbool false; _}, {node = Mbool false; _}) -> vfalse
+    | Mnequal ({node = Mbool false; _}, {node = Mbool true; _})  -> vtrue
+    | Mnequal ({node = Mbool true; _},  {node = Mbool false; _}) -> vtrue
+    | Mnequal ({node = Mbool true; _},  {node = Mbool true; _})  -> vfalse
+
+    | Mequal (lhs, {node = Mbool true; _})  -> f lhs
+    | Mequal (lhs, {node = Mbool false; _}) -> not (f lhs)
+    | Mequal ({node = Mbool true; _}, rhs)  -> f rhs
+    | Mequal ({node = Mbool false; _}, rhs) -> not (f rhs)
+
+    | Mnequal (lhs, {node = Mbool true; _})  -> not (f lhs)
+    | Mnequal (lhs, {node = Mbool false; _}) -> f lhs
+    | Mnequal ({node = Mbool true; _}, rhs)  -> not (f rhs)
+    | Mnequal ({node = Mbool false; _}, rhs) -> f rhs
 
     | _ -> map_mterm (aux c) mt
   in
