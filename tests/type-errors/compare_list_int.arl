@@ -1,0 +1,9 @@
+archetype compare_list_int
+
+action exec() {
+  effect {
+    var a : int list = [0];
+    var b : int = 1;
+    require (a = b)
+  }
+}
