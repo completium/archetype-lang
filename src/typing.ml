@@ -1508,7 +1508,7 @@ let expr_mode = { em_kind = `Expr   ; em_pred = false; }
 let form_mode = { em_kind = `Formula; em_pred = false; }
 
 let rec for_xexpr
-    (mode : emode_t) ?(capture = true) (env : env) ?(ety : M.ptyp option) (tope : PT.expr)
+    (mode : emode_t) ?(capture = `Yes None) (env : env) ?(ety : M.ptyp option) (tope : PT.expr)
   =
   let for_xexpr = for_xexpr mode ~capture in
 
@@ -1566,8 +1566,15 @@ let rec for_xexpr
             if pvt = Some VLBefore then begin
               Env.emit_error env (loc tope, BeforeIrrelevant `Local); M.VTnone
             end else vt in
-          if not (capture) then
-            Env.emit_error env (loc tope, CannotCaptureLocal);
+
+          begin match capture with
+          | `No ->
+              Env.emit_error env (loc tope, CannotCaptureLocal);
+          | `Yes (Some lmap) ->
+              lmap := Mid.add (unloc x) (loc x, xty) !lmap
+          | `Yes None ->
+              () end;
+
           mk_sp (Some xty) (M.Pvar (vt, Vnone, x))
 
         | Some (`Global decl) -> begin
@@ -2456,23 +2463,31 @@ and for_gen_method_call mode env theloc (the, m, args)
       | `The ->
         M.AExpr (for_xexpr mode env ~ety:(Tasset asset.as_name) arg)
 
-      | `Pred capture ->
-        let env   = Env.Context.push env (unloc asset.as_name) in
-        let theid = mkloc (loc arg) Env.Context.the in
-        let thety = M.Tasset asset.as_name in
-        let mode  = { mode with em_pred = true; } in
-        M.AFun (theid, thety, [], for_xexpr ~capture mode env ~ety:M.vtbool arg)
+      | (`Pred capture | `RExpr capture) as sub -> begin
+          let env     = Env.Context.push env (unloc asset.as_name) in
+          let theid   = mkloc (loc arg) Env.Context.the in
+          let thety   = M.Tasset asset.as_name in
+          let mode    = match sub with `Pred _ -> { mode with em_pred = true; } | _ -> mode in
+          let map     = ref Mid.empty in
+          let lmap    = if capture then `Yes (Some map) else `No in
+          let body    = for_xexpr ~capture:lmap mode env ~ety:M.vtbool arg in
+          let closure = 
+            List.map
+              (fun (x, (loc, xty)) ->
+                let xterm = M.mk_sp ~loc ~type_:xty (M.Pvar (VTnone, Vnone, mkloc loc x)) in
+                (mkloc loc x, xty, xterm))
+              (Mid.bindings !map) in
 
-      | `RExpr capture ->
-        let env   = Env.Context.push env (unloc asset.as_name) in
-        let theid = mkloc (loc arg) Env.Context.the in
-        let thety = M.Tasset asset.as_name in
-        let e     = for_xexpr ~capture mode env arg in
+          begin match sub with
+          | `Pred  _ -> ()
+          | `RExpr _ ->
+              body.M.type_ |> Option.iter (fun ty ->
+                  if not (Type.is_numeric ty || Type.is_currency ty) then
+                    Env.emit_error env (loc arg, NumericExpressionExpected))
+          end;
 
-        e.M.type_ |> Option.iter (fun ty ->
-            if not (Type.is_numeric ty || Type.is_currency ty) then
-              Env.emit_error env (loc arg, NumericExpressionExpected));
-        M.AFun (theid, thety, [], e)
+          M.AFun (theid, thety, closure, body)
+        end
 
       | `Ef update ->
         M.AEffect (Option.get_dfl [] (for_arg_effect mode env ~update asset arg))
