@@ -82,6 +82,7 @@ let pp_model fmt (model : model) =
     | Baddress    -> Format.fprintf fmt "address"
     | Brole       -> Format.fprintf fmt "address"
     | Bcurrency   -> Format.fprintf fmt "tz"
+    | Bsignature  -> Format.fprintf fmt "signature"
     | Bkey        -> Format.fprintf fmt "key"
     | Bbytes      -> Format.fprintf fmt "bytes"
     | Bnat        -> Format.fprintf fmt "nat"

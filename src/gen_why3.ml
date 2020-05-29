@@ -541,6 +541,7 @@ let map_btype = function
   | M.Baddress       -> Tyaddr
   | M.Brole          -> Tyrole
   | M.Bcurrency      -> Tytez
+  | M.Bsignature     -> Tysignature
   | M.Bkey           -> Tykey
   | M.Bbytes         -> Tybytes
   | M.Bnat           -> Tyuint

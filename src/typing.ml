@@ -82,7 +82,9 @@ end = struct
         match bfrom, bto with
         | M.VTaddress, M.VTrole
         | M.VTrole   , M.VTaddress
-        | M.VTint    , M.VTrational -> true
+        | M.VTint    , M.VTrational
+        | M.VTbytes  , M.VTkey
+        | M.VTbytes  , M.VTsignature -> true
 
         | _, _ -> false
       end
@@ -718,12 +720,9 @@ let listops =
 (* -------------------------------------------------------------------- *)
 let cryptoops =
   List.map (fun (x, y) -> x, y, `Total, None, [M.vtbytes], M.vtbytes)
-    ["blake2b", M.Cblake2b;
-     "sha256", M.Csha256;
-     "sha512", M.Csha512]
+    ["blake2b", M.Cblake2b; "sha256", M.Csha256; "sha512", M.Csha512]
   @ ["check_signature", M.Cchecksignature,
-     `Total, None, [M.vtbytes; M.vtbytes; M.vtbytes], M.vtbool]
-(* TODO: filter 1st arg to key type and 2nd to signature type *)
+     `Total, None, [M.vtkey; M.vtsignature; M.vtbytes], M.vtbool]
 
 (* -------------------------------------------------------------------- *)
 let allops = coreops @ optionops @ listops @ cryptoops
@@ -830,6 +829,8 @@ let core_types = [
   ("date"     , M.vtdate           );
   ("tez"      , M.vtcurrency       );
   ("duration" , M.vtduration       );
+  ("signature", M.vtsignature      );
+  ("key"      , M.vtkey            );
   ("bytes"    , M.vtbytes          );
 ]
 

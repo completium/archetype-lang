@@ -39,6 +39,7 @@ let pp_model fmt (model : model) =
     | Baddress    -> Format.fprintf fmt "sp.TAddress"
     | Brole       -> Format.fprintf fmt "key_hash"
     | Bcurrency   -> Format.fprintf fmt "sp.TMutez"
+    | Bsignature  -> Format.fprintf fmt "sp.TSignature"
     | Bkey        -> Format.fprintf fmt "sp.TKey"
     | Bbytes      -> Format.fprintf fmt "sp.TBytes"
     | Bnat        -> Format.fprintf fmt "sp.TNat"

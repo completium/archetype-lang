@@ -48,6 +48,7 @@ let generate_storage (model : model) : model =
       | Brole       -> emit_error (NoInitExprFor "role")
       | Bcurrency   -> mk_mterm (Mcurrency (Big_int.zero_big_int, Tz)) (Tbuiltin b)
       | Bkey        -> emit_error (NoInitExprFor "key")
+      | Bsignature  -> emit_error (NoInitExprFor "signature")
       | Bbytes      -> mk_mterm (Mbytes ("0x0")) (Tbuiltin b)
       | Bnat        -> mk_mterm (Mint (Big_int.zero_big_int)) (Tbuiltin b)
     in

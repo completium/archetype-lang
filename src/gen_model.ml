@@ -49,6 +49,7 @@ let to_model (ast : A.model) : M.model =
     | A.VTaddress    -> M.Baddress
     | A.VTrole       -> M.Brole
     | A.VTcurrency   -> M.Bcurrency
+    | A.VTsignature  -> M.Bsignature
     | A.VTkey        -> M.Bkey
     | A.VTbytes      -> M.Bbytes
   in

@@ -152,6 +152,7 @@ let pp_type fmt typ =
       | Tycontract i  -> i
       | Tyrational    -> "rational"
       | Tyduration    -> "duration"
+      | Tysignature   -> "signature"
       | Tykey         -> "key"
       | Tystate       -> "state"
       | Tytuple l     -> "(" ^ (String.concat ", " (List.map typ_str l)) ^ ")"

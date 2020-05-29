@@ -28,6 +28,7 @@ type btyp =
   | Baddress
   | Brole
   | Bcurrency
+  | Bsignature
   | Bkey
   | Bbytes
   | Bnat

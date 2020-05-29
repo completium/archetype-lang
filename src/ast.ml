@@ -29,6 +29,7 @@ type vtyp =
   | VTrole
   | VTcurrency
   | VTkey
+  | VTsignature
   | VTbytes
 [@@deriving show {with_path = false}]
 
@@ -618,6 +619,7 @@ let vtstring     = Tbuiltin (VTstring    )
 let vtaddress    = Tbuiltin (VTaddress   )
 let vtrole       = Tbuiltin (VTrole      )
 let vtcurrency   = Tbuiltin (VTcurrency  )
+let vtsignature  = Tbuiltin (VTsignature )
 let vtkey        = Tbuiltin (VTkey       )
 let vtbytes      = Tbuiltin (VTbytes     )
 

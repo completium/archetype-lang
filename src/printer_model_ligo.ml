@@ -139,6 +139,7 @@ let pp_model_internal fmt (model : model) b =
     | Baddress    -> Format.fprintf fmt "address"
     | Brole       -> Format.fprintf fmt "address"
     | Bcurrency   -> Format.fprintf fmt "tez"
+    | Bsignature  -> Format.fprintf fmt "signature"
     | Bkey        -> Format.fprintf fmt "key"
     | Bbytes      -> Format.fprintf fmt "bytes"
     | Bnat        -> Format.fprintf fmt "nat"

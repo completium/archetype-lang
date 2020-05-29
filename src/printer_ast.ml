@@ -27,6 +27,7 @@ let pp_vtyp fmt = function
   | VTaddress    -> Format.fprintf fmt "address"
   | VTrole       -> Format.fprintf fmt "role"
   | VTcurrency   -> Format.fprintf fmt "tez"
+  | VTsignature  -> Format.fprintf fmt "signature"
   | VTkey        -> Format.fprintf fmt "key"
   | VTbytes      -> Format.fprintf fmt "bytes"
 

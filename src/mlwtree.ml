@@ -34,6 +34,7 @@ type 'i abstract_type =
   | Tydate
   | Tyduration
   | Tytez
+  | Tysignature
   | Tybytes
   | Tystorage
   | Tytransfers
@@ -294,6 +295,7 @@ let rec map_abstract_type (map_i : 'i1 -> 'i2) = function
   | Tyuint        -> Tyuint
   | Tyrational    -> Tyrational
   | Tyduration    -> Tyduration
+  | Tysignature   -> Tysignature
   | Tykey         -> Tykey
   | Tystate        -> Tystate
   | Tytuple l     -> Tytuple (List.map (map_abstract_type map_i) l)
