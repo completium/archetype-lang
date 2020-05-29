@@ -67,8 +67,6 @@ end = struct
 
   let rec support_eq = function
     | M.Tbuiltin _ -> true
-    | M.Tlist ty -> support_eq ty
-    | M.Toption ty -> support_eq ty
     | M.Tenum _ -> true
     | M.Ttuple tys -> List.for_all support_eq tys
     | _ -> false
@@ -1295,7 +1293,7 @@ let select_operator env loc (op, tys) =
             raise E.NoEq;
 
           if not (Type.compatible ~from_:t1 ~to_:t2) &&
-             not (Type.compatible ~from_:t2 ~to_:t2) then
+             not (Type.compatible ~from_:t2 ~to_:t1) then
             raise E.NoEq;
 
           Some ({ osl_sig = [t1; t2]; osl_ret = M.Tbuiltin M.VTbool; })
@@ -2933,8 +2931,8 @@ let rec for_instruction_r (env : env) (i : PT.expr) : env * M.instruction =
 
       env, mki (M.Iletin (x, e, body)) *)
 
-    | Efor (lbl, x, e, i) ->
-      let e = for_expr env e in
+    | Efor (lbl, x, pe, i) ->
+      let e = for_expr env pe in
 
       let kty =
         match e.M.type_ with
@@ -2947,7 +2945,7 @@ let rec for_instruction_r (env : env) (i : PT.expr) : env * M.instruction =
             Some ty
 
         | Some _ ->
-            assert false
+            Env.emit_error env (loc pe, NonIterable); None
 
         | None ->
             None in
