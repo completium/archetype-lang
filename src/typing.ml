@@ -2468,9 +2468,10 @@ and for_gen_method_call mode env theloc (the, m, args)
           let theid   = mkloc (loc arg) Env.Context.the in
           let thety   = M.Tasset asset.as_name in
           let mode    = match sub with `Pred _ -> { mode with em_pred = true; } | _ -> mode in
+          let ety     = match sub with `Pred _ -> Some M.vtbool | _ -> None in
           let map     = ref Mid.empty in
           let lmap    = if capture then `Yes (Some map) else `No in
-          let body    = for_xexpr ~capture:lmap mode env ~ety:M.vtbool arg in
+          let body    = for_xexpr ~capture:lmap mode env ?ety arg in
           let closure = 
             List.map
               (fun (x, (loc, xty)) ->
