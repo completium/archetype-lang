@@ -304,6 +304,7 @@ type error_desc =
   | NoSuchSecurityPredicate            of ident
   | NonCodeLabel                       of ident
   | NoLetInInstruction
+  | NonIterable
   | NonLoopLabel                       of ident
   | NotAKeyOfType
   | NotAnAssetType
@@ -448,6 +449,7 @@ let pp_error_desc fmt e =
   | NoSuchSecurityPredicate i          -> pp "No such security predicate: %a" pp_ident i
   | NoLetInInstruction                 -> pp "No Let In in instruction"
   | NonCodeLabel i                     -> pp "Not a code label: %a" pp_ident i
+  | NonIterable                        -> pp "Cannot iterate over"
   | NonLoopLabel i                     -> pp "Not a loop label: %a" pp_ident i
   | NotAKeyOfType                      -> pp "pkey-of type expected"
   | NotAnAssetType                     -> pp "Asset type expected"
@@ -837,7 +839,7 @@ let core_types = [
 module Env : sig
   type t
 
-  type label_kind = [`Plain | `Code | `Loop of ident]
+  type label_kind = [`Plain | `Code | `Loop of M.ptyp]
 
   type entry = [
     | `Label       of t * label_kind
@@ -938,7 +940,7 @@ module Env : sig
 end = struct
   type ecallback = error -> unit
 
-  type label_kind = [`Plain | `Code | `Loop of ident]
+  type label_kind = [`Plain | `Code | `Loop of M.ptyp]
 
   type entry = [
     | `Label       of t * label_kind
@@ -2932,27 +2934,38 @@ let rec for_instruction_r (env : env) (i : PT.expr) : env * M.instruction =
       env, mki (M.Iletin (x, e, body)) *)
 
     | Efor (lbl, x, e, i) ->
-      let e, asset = for_asset_collection_expr expr_mode env (`Parsed e) in
-      let asset = Option.map fst asset in
+      let e = for_expr env e in
+
+      let kty =
+        match e.M.type_ with
+        | Some (M.Tcontainer (M.Tasset asset, _)) ->
+            let asset = Env.Asset.get env (unloc asset) in
+            let pk = Option.get (get_field (unloc asset.as_pk) asset) in
+            Some pk.fd_type
+
+        | Some (M.Tlist ty) ->
+            Some ty
+
+        | Some _ ->
+            assert false
+
+        | None ->
+            None in
+
       let env, i = Env.inscope env (fun env ->
           let _ : bool = check_and_emit_name_free env x in
-          let env, aname =
-            if Option.is_some asset then
-              let asset = Option.get asset in
-              let nm = asset.as_name in
-              let pk = Option.get (get_field (unloc asset.as_pk) asset) in
-              let ty = pk.fd_type in
-              Env.Local.push env ~kind:`LoopIndex (x, ty), Some (unloc nm)
-            else env, None in
+          let env, lblty =
+            Option.foldmap (fun env kty ->
+              Env.Local.push env ~kind:`LoopIndex (x, kty), kty) env kty in
 
           let env =
-            match aname with
+            match lblty with
             | None ->
-              env
-            | Some aname ->
-              Option.fold (fun env lbl ->
+                env
+            | Some lblty ->
+                Option.fold (fun env lbl ->
                   if (check_and_emit_name_free env lbl) then
-                    Env.Label.push env (lbl, `Loop aname)
+                    Env.Label.push env (lbl, `Loop lblty)
                   else env) env lbl
           in for_instruction env i) in
 
@@ -3130,12 +3143,13 @@ let for_specification_item
           | None ->
             Env.emit_error env (loc lbl, UnknownLabel (unloc lbl));
             env
-          | Some (env, `Loop aname) ->
-            let ty = M.Tasset (mkloc (loc lbl) aname) in
-            let ty = M.Tcontainer (ty, M.View) in
-            let env = Env.Local.push env (mkloc coreloc "toiterate", ty) in
-            let env = Env.Local.push env (mkloc coreloc "iterated", ty) in
-            env
+          | Some (env, `Loop lblty) ->
+            Option.fold (fun env (aname, _) ->
+              let ty = M.Tasset (mkloc (loc lbl) (unloc aname)) in
+              let ty = M.Tcontainer (ty, M.View) in
+              let env = Env.Local.push env (mkloc coreloc "toiterate", ty) in
+              let env = Env.Local.push env (mkloc coreloc "iterated", ty) in
+              env) env (Type.as_asset_collection lblty)
           | Some (_, _) ->
             Env.emit_error env (loc lbl, NonLoopLabel (unloc lbl));
             env
