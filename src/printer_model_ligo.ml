@@ -1682,18 +1682,21 @@ let pp_model_internal fmt (model : model) b =
         (if single then "set" else "map") an
         pp_btyp t
 
-    | Select (an, _, f) ->
+    | Select (an, args, f) ->
+      let pp_arg fmt (arg_id, arg_type) =
+        Format.fprintf fmt "; const %s : %a" arg_id pp_type arg_type
+      in
       let k, t = Utils.get_asset_key model an in
       let i = get_preds_index env.select_preds f in
       Format.fprintf fmt
-        "function select_%s_%i (const s : storage_type; const l : list(%a)) : list(%a) is@\n  \
+        "function select_%s_%i (const s : storage_type; const l : list(%a)%a) : list(%a) is@\n  \
          begin@\n    \
          function aggregate (const accu : list(%a); const i : %a) : list(%a) is@\n      \
          begin@\n        \
          const the : %s = get_%s(s, i);@\n        \
          end with (if (%a) then cons(the.%s, accu) else accu);@\n    \
          end with (list_fold(aggregate, l, (nil : list(%a))))@\n"
-        an i pp_btyp t pp_btyp t
+        an i pp_btyp t (pp_list "" pp_arg) args pp_btyp t
         pp_btyp t pp_btyp t pp_btyp t
         an an
         (pp_mterm (mk_env ())) f k

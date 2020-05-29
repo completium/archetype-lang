@@ -60,6 +60,7 @@ erc20.arl \
 erc721.arl \
 escrow_penalty.arl \
 escrow_without_spec.arl \
+fizzy.arl \
 guarantee_fund.arl \
 health_care.arl \
 hello.arl \
@@ -80,7 +81,6 @@ animal_tracking.arl \
 autocallable.arl \
 escrow_basic.arl \
 escrow_simple.arl \
-fizzy.arl \
 ico.arl \
 miles_with_expiration.arl \
 voting_process.arl \

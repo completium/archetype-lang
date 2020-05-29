@@ -1,4 +1,4 @@
-archetype compare_list_int
+archetype compare_list_list
 
 action exec() {
   effect {
