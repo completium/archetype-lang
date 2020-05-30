@@ -1068,19 +1068,19 @@ let pp_model_internal fmt (model : model) b =
     (* crypto functions *)
 
     | Mblake2b x ->
-      Format.fprintf fmt "blake2b (%a)"
+      Format.fprintf fmt "Crypto.blake2b (%a)"
         f x
 
     | Msha256 x ->
-      Format.fprintf fmt "sha256 (%a)"
+      Format.fprintf fmt "Crypto.sha256 (%a)"
         f x
 
     | Msha512 x ->
-      Format.fprintf fmt "sha512 (%a)"
+      Format.fprintf fmt "Crypto.sha512 (%a)"
         f x
 
     | Mchecksignature (k, s, x) ->
-      Format.fprintf fmt "check_signature (%a, %a, %a)"
+      Format.fprintf fmt "Crypto.check (%a, %a, %a)"
         f k
         f s
         f x

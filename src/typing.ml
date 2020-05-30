@@ -83,8 +83,8 @@ end = struct
         | M.VTaddress, M.VTrole
         | M.VTrole   , M.VTaddress
         | M.VTint    , M.VTrational
-        | M.VTbytes  , M.VTkey
-        | M.VTbytes  , M.VTsignature -> true
+        | M.VTstring , M.VTkey
+        | M.VTstring , M.VTsignature -> true
 
         | _, _ -> false
       end
@@ -2472,7 +2472,7 @@ and for_gen_method_call mode env theloc (the, m, args)
           let map     = ref Mid.empty in
           let lmap    = if capture then `Yes (Some map) else `No in
           let body    = for_xexpr ~capture:lmap mode env ?ety arg in
-          let closure = 
+          let closure =
             List.map
               (fun (x, (loc, xty)) ->
                 let xterm = M.mk_sp ~loc ~type_:xty (M.Pvar (VTnone, Vnone, mkloc loc x)) in
