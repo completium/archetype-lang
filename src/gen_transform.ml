@@ -1531,7 +1531,11 @@ let process_asset_state (model : model) : model =
           let default = mk_mterm (Mvarenumval e_val) typ in
 
           let item = mk_asset_item name typ typ ~default:default in
-          { a with values = a.values @ [item]; state = None }
+          let init_items = List.map (fun (x : mterm) ->
+            match x.node with
+            | Masset l -> {x with node = Masset(l @ [default]) }
+            | _ -> x) a.init in
+          { a with values = a.values @ [item]; state = None; init = init_items }
         end
       | None -> a
     in

@@ -30,12 +30,12 @@ with {
   a2 : k >= 1;
   a3 : k <= 10;
 } initialized by {
-  { @toto; 4; true };
-  { @tata; 8; false }
+  { @tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg; 4; true };
+  { @tz1bfVgcJC4ukaQSHUe1EbrUd5SekXeP9CWk; 8; false }
 }
 
 action exec () {
   effect {
-    require(my_asset_all[@toto].b)
+    require(my_asset_all[@tz1Lc2qBKEWCBeDU8npG6zCeCqpmaegRi6Jg].b)
   }
 }
