@@ -89,30 +89,23 @@ voting_process.arl \
 VERIF_CONTRACTS="\
 auction_lazy.arl \
 auction_no_memory.arl \
-auction_zilliqa.arl \
 auction.arl \
 bond.arl \
 c3n.arl \
 certificate_generator.arl \
-certification_token.arl \
 clause_io_acceptance_of_delivery.arl \
-coase.arl \
 competition.arl \
 empty.arl \
-erc20.arl \
 erc721.arl \
 escrow_penalty.arl \
 escrow_without_spec.arl \
 guarantee_fund.arl \
 health_care.arl \
 hello.arl \
-miles_with_expiration_simple.arl \
 miles.arl \
 mini_dao.arl \
-mwe_medium.arl \
 perishable.arl \
 register_candidate.arl \
-register_vote.arl \
 sig_challenge.arl \
 zero_coupon_bond_with_insurance.arl \
 zero_coupon_bond.arl \
@@ -120,12 +113,19 @@ zero_coupon_bond.arl \
 
 REMAINED_VERIF_CONTRACTS="\
 animal_tracking.arl \
+auction_zilliqa.arl \
 autocallable.arl \
+certification_token.arl \
+coase.arl \
+erc20.arl \
 escrow_basic.arl \
 escrow_simple.arl \
 fizzy.arl \
 ico.arl \
+miles_with_expiration_simple.arl \
 miles_with_expiration.arl \
+mwe_medium.arl \
+register_vote.arl \
 voting_process.arl \
 "
 
