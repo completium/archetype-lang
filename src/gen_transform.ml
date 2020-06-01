@@ -1103,6 +1103,7 @@ let remove_rational (model : model) : model =
                            type_   = ai.type_   |> process_type;
                            default = ai.default |> Option.map process_mterm;
                          });
+           init = List.map process_mterm a.init;
            invariants = List.map for_label_term a.invariants;
           }
       | Dcontract c ->
@@ -1532,9 +1533,9 @@ let process_asset_state (model : model) : model =
 
           let item = mk_asset_item name typ typ ~default:default in
           let init_items = List.map (fun (x : mterm) ->
-            match x.node with
-            | Masset l -> {x with node = Masset(l @ [default]) }
-            | _ -> x) a.init in
+              match x.node with
+              | Masset l -> {x with node = Masset(l @ [default]) }
+              | _ -> x) a.init in
           { a with values = a.values @ [item]; state = None; init = init_items }
         end
       | None -> a

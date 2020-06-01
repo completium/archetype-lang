@@ -2282,10 +2282,10 @@ let pp_model_internal fmt (model : model) b =
   in
 
   let pp_storage_term env fmt _ =
-    match model.storage with
+  let l = List.filter (fun (x : storage_item) -> not x.const) model.storage in
+    match l with
     | []  -> pp_str fmt "Unit"
-    | l   ->
-      let l = List.filter (fun (x : storage_item) -> not x.const) l in
+    | _   ->
       Format.fprintf fmt "record %a end"
         (pp_list "; " (fun fmt (si : storage_item) ->
              Format.fprintf fmt "%a = %a" pp_id si.id (pp_mterm env) si.default )

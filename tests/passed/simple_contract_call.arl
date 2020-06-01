@@ -4,7 +4,7 @@ contract mycontract {
   action an_entry (str : string)
 }
 
-variable contract_i : mycontract = @KT1GabhR5P52hw6xs5P69BXJYAURaznhvN1k
+variable contract_i : mycontract = @KT1RNB9PXsnp7KMkiMrWNMRzPjuefSWojBAm
 
 action exec () {
   effect {

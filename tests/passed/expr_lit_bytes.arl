@@ -1,6 +1,6 @@
 archetype expr_lit_bytes
 
-variable res : bytes = 0x0
+variable res : bytes = 0x00
 
 action exec () {
   specification {
