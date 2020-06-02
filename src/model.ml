@@ -578,14 +578,10 @@ type 'id argument_gen = 'id * type_ * 'id mterm_gen option
 type argument = lident argument_gen
 [@@deriving show {with_path = false}]
 
-type source = Exo | Endo
-[@@deriving show {with_path = false}]
-
 type 'id function_struct_gen = {
   name: 'id;
   args: 'id argument_gen list;
   body: 'id mterm_gen;
-  src : source;
   loc : Location.t [@opaque];
 }
 [@@deriving show {with_path = false}]
@@ -840,8 +836,8 @@ let mk_contract ?(signatures=[]) ?init ?(loc=Location.dummy) name : 'id contract
 let mk_storage_item ?(const=false) ?(ghost = false) ?(loc = Location.dummy) id model_type typ default : 'id storage_item_gen =
   { id; model_type; typ; const; ghost; default; loc }
 
-let mk_function_struct ?(args = []) ?(loc = Location.dummy) ?(src = Exo) name body : function_struct =
-  { name; args; src; body; loc }
+let mk_function_struct ?(args = []) ?(loc = Location.dummy) name body : function_struct =
+  { name; args; body; loc }
 
 let mk_function ?spec node : 'id function__gen =
   { node; spec }
@@ -2970,7 +2966,6 @@ let replace_ident_model (f : kind_ident -> ident -> ident) (model : model) : mod
           name = g (match fn with | Function _ -> KIfunction | Entry _ -> KIaction) fs.name;
           args = List.map for_argument fs.args;
           body = for_mterm fs.body;
-          src  = fs.src;
           loc  = fs.loc;
         }
       in

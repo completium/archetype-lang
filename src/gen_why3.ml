@@ -2638,8 +2638,6 @@ let mk_preconds m args body : ((loc_term,loc_ident) abstract_formula) list =
       | _ -> acc
     ) [] args
 
-let is_src src (_,f,_) = f.M.src = src
-
 let mk_entry_require m idents =
   if M.Utils.with_trace m && List.length idents > 0 then
     let mk_entry_eq id = Teq (Tyint,
@@ -2664,7 +2662,7 @@ let mk_entry_require m idents =
     ]
   else []
 
-let add_raise_ctx args src m exn =
+(* let add_raise_ctx args src m exn =
   match src with
   | M.Endo ->
     begin
@@ -2695,11 +2693,11 @@ let add_raise_ctx args src m exn =
         else exn
       | _ -> exn
     end
-  | _ -> exn
+  | _ -> exn *)
 
 (* for now (src = `Endo) means the function is 'add_shallow_xxx' *)
-let mk_functions src m =
-  M.Utils.get_functions m |> List.filter (is_src src) |> List.map (
+let mk_functions m =
+  M.Utils.get_functions m |> List.map (
     fun ((v : M.specification option),
          (s : M.function_struct),
          (t : M.type_)) ->
@@ -2711,7 +2709,7 @@ let mk_functions src m =
         logic    = NoMod;
         args     = args;
         returns  = map_mtype t;
-        raises   = fold_exns m s.body |> List.map (add_raise_ctx args src m) |> List.map loc_term;
+        raises   = fold_exns m s.body (* |> List.map (add_raise_ctx args src m) *) |> List.map loc_term;
         variants = [];
         requires =
           (mk_entry_require m (M.Utils.get_callers m (unloc s.name))) @
@@ -2721,9 +2719,6 @@ let mk_functions src m =
         body     = flatten_if_fail m s.body;
       }
   )
-
-let mk_endo_functions = mk_functions M.Endo
-let mk_exo_functions = mk_functions M.Exo
 
 let mk_entries m =
   M.Utils.get_entries m |> List.map (
@@ -2791,8 +2786,7 @@ let to_whyml (m : M.model) : mlw_tree  =
   (*let partition_axioms = mk_partition_axioms m in*)
   let transfer         = if M.Utils.with_operations m then [mk_transfer ();mk_call()] else [] in
   let storage_api      = mk_storage_api m (records |> wdl) in
-  let endo             = mk_endo_functions m in
-  let functions        = mk_exo_functions m in
+  let functions        = mk_functions m in
   let entries          = mk_entries m |> List.map (process_no_fail m) in
   let usestorage       = mk_use_module storage_module in
   let loct : loc_mlw_tree = [{
@@ -2810,8 +2804,7 @@ let to_whyml (m : M.model) : mlw_tree  =
               axioms                 @
               (*partition_axioms       @*)
               transfer               @
-              storage_api            @
-              endo;
+              storage_api;
     };{
        name = cap (map_lident m.name);
        decls = [uselib;uselist;usestorage] @
