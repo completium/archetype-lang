@@ -139,6 +139,7 @@ let generate_target model =
     |> abs_tez
     |> replace_date_duration_by_timestamp
     |> eval_variable_initial_value
+    |> replace_dotassetfield_by_dot
     |> generate_storage
     |> replace_declvar_by_letin
     |> remove_enum_matchwith
@@ -146,11 +147,11 @@ let generate_target model =
     |> remove_label
     |> flat_sequence
     |> remove_cmp_bool
+    |> replace_api_view_by_col
     |> split_key_values
     |> remove_duplicate_key
     |> Gen_transform.assign_loop_label
     |> remove_letin_from_expr
-    |> replace_dotassetfield_by_dot
     |> remove_fun_dotasset
     |> generate_api_storage
     |> output

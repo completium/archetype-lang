@@ -68,21 +68,33 @@ let generate_api_storage ?(verif=false) (model : model) : model =
       | Mclear (an , _) ->
         [APIAsset (Clear an)]
       | Mapifselect (asset_name, _, la, lb, _)
+      | Mcselect (asset_name, la, lb, _) ->
+        [APIAsset (Get asset_name); APIAsset (Cselect (asset_name, la, lb))]
       | Mvselect (asset_name, _, la, lb, _) ->
         [APIAsset (Get asset_name); APIAsset (Vselect (asset_name, la, lb))]
       | Mapifsort (asset_name, _, l)
+      | Mcsort (asset_name, l) ->
+        [APIAsset (Get asset_name); APIAsset (Csort (asset_name, l))]
       | Mvsort (asset_name, _, l) ->
         [APIAsset (Get asset_name); APIAsset (Vsort (asset_name, l))]
       | Mapifcontains (asset_name, _, _)
+      | Mccontains (asset_name, _) ->
+        [APIAsset (Ccontains asset_name)]
       | Mvcontains (asset_name, _, _) ->
         [APIAsset (Vcontains asset_name)]
       | Mapifnth (asset_name, _, _)
+      | Mcnth (asset_name, _) ->
+        [APIAsset (Get asset_name); APIAsset (Cnth asset_name)]
       | Mvnth (asset_name, _, _) ->
         [APIAsset (Get asset_name); APIAsset (Vnth asset_name)]
       | Mapifcount (asset_name, _)
+      | Mccount (asset_name) ->
+        [APIAsset (Ccount asset_name)]
       | Mvcount (asset_name, _) ->
         [APIAsset (Vcount asset_name)]
       | Mapifsum (asset_name, _, p)
+      | Mcsum (asset_name, p) ->
+        [APIAsset (Get asset_name); APIAsset (Csum (asset_name, p.type_, p))]
       | Mvsum (asset_name, _, p) ->
         [APIAsset (Get asset_name); APIAsset (Vsum (asset_name, p.type_, p))]
       | Mshallow (asset_name, _) ->
@@ -94,7 +106,11 @@ let generate_api_storage ?(verif=false) (model : model) : model =
       | Mapifhead (asset_name, _, _)
       | Mvhead (asset_name, _, _) ->
         [APIAsset (Vhead asset_name)]
+      | Mchead (asset_name, _) ->
+        [APIAsset (Chead asset_name)]
       | Mapiftail (asset_name, _, _)
+      | Mctail (asset_name, _) ->
+        [APIAsset (Ctail asset_name)]
       | Mvtail (asset_name, _, _) ->
         [APIAsset (Vtail asset_name)]
       | Mcoltokeys asset_name ->

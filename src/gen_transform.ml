@@ -2250,6 +2250,56 @@ let check_if_asset_in_function (model : model) : model =
   List.iter for_function model.functions;
   model
 
+let replace_api_view_by_col (model : model) : model =
+  let is_col (c : mterm) =
+    match c with
+    | { node = Mcast (
+        (Tcontainer ((Tasset _), Collection)),
+        (Tcontainer ((Tasset _), View)),
+        { node = (Mvarstorecol _);
+          type_ = Tcontainer ((Tasset _), Collection); _});
+        type_ = Tcontainer ((Tasset _), View);
+        _} -> true
+    | _ -> false
+  in
+
+  let rec aux ctx (mt : mterm) : mterm =
+    match mt.node with
+    | Mvselect (an, c, args, body, vs) when is_col c ->
+      let body = aux ctx body in
+      let vs = List.map (aux ctx) vs in
+      mk_mterm (Mcselect (an, args, body, vs)) mt.type_
+
+    | Mvsort (an, c, l) when is_col c ->
+      mk_mterm (Mcsort (an, l)) mt.type_
+
+    | Mvcontains (an, c, k) when is_col c->
+      let k = aux ctx k in
+      mk_mterm (Mccontains (an, k)) mt.type_
+
+    | Mvnth (an, c, i) when is_col c ->
+      let i = aux ctx i in
+      mk_mterm (Mcnth (an, i)) mt.type_
+
+    | Mvcount (an, c) when is_col c ->
+      mk_mterm (Mccount (an)) mt.type_
+
+    | Mvsum (an, c, v) when is_col c ->
+      let v = aux ctx v in
+      mk_mterm (Mcsum (an, v)) mt.type_
+
+    | Mvhead (an, c, n) when is_col c ->
+      let n = aux ctx n in
+      mk_mterm (Mchead (an, n)) mt.type_
+
+    | Mvtail (an, c, n) when is_col c ->
+      let n = aux ctx n in
+      mk_mterm (Mctail (an, n)) mt.type_
+
+    | _ -> map_mterm (aux ctx) mt
+  in
+  Model.map_mterm_model aux model
+
 let replace_instr_verif (model : model) : model =
   let rec aux ctx (mt : mterm) : mterm =
     match mt.node with

@@ -16,7 +16,7 @@ action exec () {
     s0: res = 3;
   }
   effect {
-    var l = my_asset.select(value > 0).head(2);
+    var l = my_asset.head(2).head(2);
     var k = l.nth(1);
     res := my_asset[k].value
   }
