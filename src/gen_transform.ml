@@ -2305,7 +2305,7 @@ let replace_instr_verif (model : model) : model =
     match mt.node with
     | Mremoveasset (an, k) ->
       begin
-        let cond : mterm = mk_mterm (Mvcontains (an, build_col an, k)) (Tbuiltin Bbool) in
+        let cond : mterm = mk_mterm (Mccontains (an, k)) (Tbuiltin Bbool) in
         let get = build_get an k in
         let i : mterm = mk_mterm (Mremoveasset (an, get)) Tunit in
         let mif : mterm = mk_mterm (Mif (cond, i, None)) Tunit in
