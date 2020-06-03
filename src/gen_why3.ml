@@ -1280,24 +1280,32 @@ let rec map_mterm m ctx (mt : M.mterm) : loc_term =
 
     | Mget (an, _c, k) -> Tapp (loc_term (Tvar ("get_" ^ an)),[map_mterm m ctx k])
 
+    | Mcselect _ -> error_not_translated "Mcselect"
     | Mvselect (a, l, _la, lb, _a) ->
       let args = extract_args lb in
       let id = mk_select_name m a lb in
       let argids = args |> List.map (fun (e, _, _) -> e) |> List.map (map_mterm m ctx) in
       Tapp (loc_term (Tvar id), argids @ [map_mterm m ctx l; loc_term (mk_ac a)])
 
+    | Mcsort _ -> error_not_translated "Mcsort"
     | Mvsort               (a,c,l) -> Tsort (with_dummy_loc (mk_sort_clone_id a l),map_mterm m ctx c,loc_term (mk_ac a))
 
+    | Mccontains _ -> error_not_translated "Mccontains"
     | Mvcontains (a, _, r) -> Tapp (loc_term (Tvar ("contains_" ^ a)), [map_mterm m ctx r])
 
+    | Mcnth _ -> error_not_translated "Mcnth"
     | Mvnth                (n,c,k) -> Tapp (loc_term (Tvar ("nth_" ^ n)),[map_mterm m ctx c; map_mterm m ctx k])
+    | Mccount _ -> error_not_translated "Mccount"
     | Mvcount              (a,t) -> Tvcard (with_dummy_loc a, map_mterm m ctx t)
 
+    | Mcsum _ -> error_not_translated "Mcsum"
     | Mvsum          (a,v,f) ->
       let cloneid = mk_sum_clone_id m a f in
       let col = mk_ac_ctx a ctx in
       Tsum(with_dummy_loc cloneid,map_mterm m ctx v,col)
+    | Mchead _ -> error_not_translated "Mchead"
     | Mvhead (n,c,v) -> Thead(with_dummy_loc n, map_mterm m ctx v, map_mterm m ctx c)
+    | Mctail _ -> error_not_translated "Mctail"
     | Mvtail  (n,c,v) -> Ttail(with_dummy_loc n, map_mterm m ctx v, map_mterm m ctx c)
 
     (* utils *)

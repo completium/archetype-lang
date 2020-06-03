@@ -1119,6 +1119,15 @@ let pp_model fmt (model : model) =
         in
         pp fmt (an, c, k)
 
+      | Mcselect (an, la, lb, a) ->
+        let pp fmt (an, _la, lb, _a) =
+          Format.fprintf fmt "select_%a (%s, fun the -> %a)"
+            pp_str an
+            const_storage
+            f lb
+        in
+        pp fmt (an, la, lb, a)
+
       | Mvselect (an, c, la, lb, a) ->
         let pp fmt (an, c, _la, lb, _a) =
           Format.fprintf fmt "select_%a (%s, %a, fun the -> %a)"
@@ -1129,6 +1138,14 @@ let pp_model fmt (model : model) =
         in
         pp fmt (an, c, la, lb, a)
 
+      | Mcsort (an, l) ->
+        let pp fmt (an, l) =
+          Format.fprintf fmt "sort_%a (%a)"
+            pp_str an
+            (pp_list ", " (fun fmt (a, b) -> Format.fprintf fmt "%a %a" pp_ident a pp_sort_kind b)) l
+        in
+        pp fmt (an, l)
+
       | Mvsort (an, c, l) ->
         let pp fmt (an, c, l) =
           Format.fprintf fmt "sort_%a (%a, %a)"
@@ -1137,6 +1154,14 @@ let pp_model fmt (model : model) =
             (pp_list ", " (fun fmt (a, b) -> Format.fprintf fmt "%a %a" pp_ident a pp_sort_kind b)) l
         in
         pp fmt (an, c, l)
+
+      | Mccontains (an, i) ->
+        let pp fmt (an, i) =
+          Format.fprintf fmt "contains_%a (%a)"
+            pp_str an
+            f i
+        in
+        pp fmt (an, i)
 
       | Mvcontains (an, c, i) ->
         let pp fmt (an, c, i) =
@@ -1147,6 +1172,14 @@ let pp_model fmt (model : model) =
         in
         pp fmt (an, c, i)
 
+      | Mcnth (an, i) ->
+        let pp fmt (an, i) =
+          Format.fprintf fmt "nth_%a (%a)"
+            pp_str an
+            f i
+        in
+        pp fmt (an, i)
+
       | Mvnth (an, c, i) ->
         let pp fmt (an, c, i) =
           Format.fprintf fmt "nth_%a (%a, %a)"
@@ -1156,6 +1189,13 @@ let pp_model fmt (model : model) =
         in
         pp fmt (an, c, i)
 
+      | Mccount (an) ->
+        let pp fmt (an) =
+          Format.fprintf fmt "count_%a ()"
+            pp_str an
+        in
+        pp fmt (an)
+
       | Mvcount (an, c) ->
         let pp fmt (an, c) =
           Format.fprintf fmt "count_%a (%a)"
@@ -1163,6 +1203,14 @@ let pp_model fmt (model : model) =
             f c
         in
         pp fmt (an, c)
+
+      | Mcsum (an, _) -> (* TODO *)
+        let pp fmt (an) =
+          Format.fprintf fmt "sum_%a (%s)"
+            pp_str an
+            const_storage
+        in
+        pp fmt (an)
 
       | Mvsum (an, _, c) -> (* TODO *)
         let pp fmt (an, c) =
@@ -1173,10 +1221,20 @@ let pp_model fmt (model : model) =
         in
         pp fmt (an, c)
 
+      | Mchead (an, i) ->
+        Format.fprintf fmt "head_%a (%a)"
+          pp_str an
+          f i
+
       | Mvhead (an, c, i) ->
         Format.fprintf fmt "head_%a (%a, %a)"
           pp_str an
           f c
+          f i
+
+      | Mctail (an, i) ->
+        Format.fprintf fmt "tail_%a (%a)"
+          pp_str an
           f i
 
       | Mvtail (an, c, i) ->

@@ -601,6 +601,16 @@ let pp_mterm fmt (mt : mterm) =
       in
       pp fmt (an, c, k)
 
+    | Mcselect (an, la, lb, a) ->
+      let pp fmt (an, la, lb, a) =
+        Format.fprintf fmt "select_%a ((%a) -> %a)(%a)"
+          pp_str an
+          (pp_list ", " (fun fmt (id, t) -> Format.fprintf fmt "%s : %a" id pp_type t)) la
+          f lb
+          (pp_list ", " f) a
+      in
+      pp fmt (an, la, lb, a)
+
     | Mvselect (an, c, la, lb, a) ->
       let pp fmt (an, c, la, lb, a) =
         Format.fprintf fmt "select_%a (%a, ((%a) -> %a)(%a))"
@@ -612,6 +622,14 @@ let pp_mterm fmt (mt : mterm) =
       in
       pp fmt (an, c, la, lb, a)
 
+    | Mcsort (an, l) ->
+      let pp fmt (an, l) =
+        Format.fprintf fmt "sort_%a (%a)"
+          pp_str an
+          (pp_list ", " (fun fmt (a, b) -> Format.fprintf fmt "%a(%a)" pp_sort_kind b pp_ident a)) l
+      in
+      pp fmt (an, l)
+
     | Mvsort (an, c, l) ->
       let pp fmt (an, c, l) =
         Format.fprintf fmt "sort_%a (%a, %a)"
@@ -620,6 +638,14 @@ let pp_mterm fmt (mt : mterm) =
           (pp_list ", " (fun fmt (a, b) -> Format.fprintf fmt "%a(%a)" pp_sort_kind b pp_ident a)) l
       in
       pp fmt (an, c, l)
+
+    | Mccontains (an, i) ->
+      let pp fmt (an, i) =
+        Format.fprintf fmt "contains_%a (%a)"
+          pp_str an
+          f i
+      in
+      pp fmt (an, i)
 
     | Mvcontains (an, c, i) ->
       let pp fmt (an, c, i) =
@@ -630,6 +656,14 @@ let pp_mterm fmt (mt : mterm) =
       in
       pp fmt (an, c, i)
 
+    | Mcnth (an, i) ->
+      let pp fmt (an, i) =
+        Format.fprintf fmt "nth_%a (%a)"
+          pp_str an
+          f i
+      in
+      pp fmt (an, i)
+
     | Mvnth (an, c, i) ->
       let pp fmt (an, c, i) =
         Format.fprintf fmt "nth_%a (%a, %a)"
@@ -639,6 +673,13 @@ let pp_mterm fmt (mt : mterm) =
       in
       pp fmt (an, c, i)
 
+    | Mccount (an) ->
+      let pp fmt (an) =
+        Format.fprintf fmt "count_%a ()"
+          pp_str an
+      in
+      pp fmt (an)
+
     | Mvcount (an, c) ->
       let pp fmt (an, c) =
         Format.fprintf fmt "count_%a (%a)"
@@ -646,6 +687,14 @@ let pp_mterm fmt (mt : mterm) =
           f c
       in
       pp fmt (an, c)
+
+    | Mcsum (an, p) ->
+      let pp fmt (an, p) =
+        Format.fprintf fmt "sum_%a (%a)"
+          pp_str an
+          f p
+      in
+      pp fmt (an, p)
 
     | Mvsum (an, c, p) ->
       let pp fmt (an, c, p) =
@@ -656,10 +705,20 @@ let pp_mterm fmt (mt : mterm) =
       in
       pp fmt (an, c, p)
 
+    | Mchead (an, i) ->
+      Format.fprintf fmt "head_%a (%a)"
+        pp_str an
+        f i
+
     | Mvhead (an, c, i) ->
       Format.fprintf fmt "head_%a (%a, %a)"
         pp_str an
         f c
+        f i
+
+    | Mctail (an, i) ->
+      Format.fprintf fmt "tail_%a (%a)"
+        pp_str an
         f i
 
     | Mvtail (an, c, i) ->

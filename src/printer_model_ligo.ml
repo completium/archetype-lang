@@ -883,6 +883,16 @@ let pp_model_internal fmt (model : model) b =
       in
       pp fmt (an, c, k)
 
+    | Mcselect (an, la, lb, a) ->
+      let index : int = get_preds_index env.select_preds lb in
+      let pp fmt (an, _la, _lb, a) =
+        Format.fprintf fmt "select_%a_%i (%s, %a)"
+          pp_str an index
+          const_storage
+          (pp_list ", " f) a
+      in
+      pp fmt (an, la, lb, a)
+
     | Mvselect (an, c, la, lb, a) ->
       let index : int = get_preds_index env.select_preds lb in
       let pp fmt (an, c, _la, _lb, a) =
@@ -894,6 +904,15 @@ let pp_model_internal fmt (model : model) b =
       in
       pp fmt (an, c, la, lb, a)
 
+    | Mcsort (an, l) -> (* TODO *)
+      let pp fmt (an, l) =
+        Format.fprintf fmt "sort_%a_%a (%s)"
+          pp_str an
+          pp_postfix_sort l
+          const_storage
+      in
+      pp fmt (an, l)
+
     | Mvsort (an, c, l) -> (* TODO *)
       let pp fmt (an, c, l) =
         Format.fprintf fmt "sort_%a_%a (%s, %a)"
@@ -904,6 +923,15 @@ let pp_model_internal fmt (model : model) b =
       in
       pp fmt (an, c, l)
 
+    | Mccontains (an, i) ->
+      let pp fmt (an, i) =
+        Format.fprintf fmt "contains_%a (%s, %a)"
+          pp_str an
+          const_storage
+          f i
+      in
+      pp fmt (an, i)
+
     | Mvcontains (an, c, i) ->
       let pp fmt (an, c, i) =
         Format.fprintf fmt "contains_%a (%a, %a)"
@@ -912,6 +940,15 @@ let pp_model_internal fmt (model : model) b =
           f i
       in
       pp fmt (an, c, i)
+
+    | Mcnth (an, i) ->
+      let pp fmt (an, i) =
+        Format.fprintf fmt "nth_%a (%s, %a)"
+          pp_str an
+          const_storage
+          f i
+      in
+      pp fmt (an, i)
 
     | Mvnth (an, c, i) ->
       let pp fmt (an, c, i) =
@@ -923,6 +960,14 @@ let pp_model_internal fmt (model : model) b =
       in
       pp fmt (an, c, i)
 
+    | Mccount (an) ->
+      let pp fmt (an) =
+        Format.fprintf fmt "count_%a (%s)"
+          pp_str an
+          const_storage
+      in
+      pp fmt an
+
     | Mvcount (an, c) ->
       let pp fmt (an, c) =
         Format.fprintf fmt "count_%a (%a)"
@@ -930,6 +975,15 @@ let pp_model_internal fmt (model : model) b =
           f c
       in
       pp fmt (an, c)
+
+    | Mcsum (an, p) ->
+      let index : int = get_preds_index env.sum_preds p in
+      let pp fmt (an, _p) =
+        Format.fprintf fmt "sum_%a_%i (%s)"
+          pp_str an index
+          const_storage
+      in
+      pp fmt (an, p)
 
     | Mvsum (an, c, p) ->
       let index : int = get_preds_index env.sum_preds p in
@@ -941,10 +995,22 @@ let pp_model_internal fmt (model : model) b =
       in
       pp fmt (an, c, p)
 
+    | Mchead (an, i) ->
+      Format.fprintf fmt "head_%a (%s, %a)"
+        pp_str an
+        const_storage
+        f i
+
     | Mvhead (an, c, i) ->
       Format.fprintf fmt "head_%a (%a, %a)"
         pp_str an
         f c
+        f i
+
+    | Mctail (an, i) ->
+      Format.fprintf fmt "tail_%a (%s, %a)"
+        pp_str an
+        const_storage
         f i
 
     | Mvtail (an, c, i) ->

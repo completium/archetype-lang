@@ -216,13 +216,21 @@ type ('id, 'term) mterm_node  =
   | Maddupdate        of ident * 'term * ('id * assignment_operator * 'term) list
   (* asset api expression *)
   | Mget              of ident * 'term * 'term
+  | Mcselect          of ident * (ident * type_) list * 'term * 'term list (* asset_name, lambda (args, body, apply_args) *)
   | Mvselect          of ident * 'term * (ident * type_) list * 'term * 'term list (* asset_name, view, lambda (args, body, apply_args) *)
+  | Mcsort            of ident * (ident * sort_kind) list
   | Mvsort            of ident * 'term * (ident * sort_kind) list
+  | Mccontains        of ident * 'term
   | Mvcontains        of ident * 'term * 'term
+  | Mcnth             of ident * 'term
   | Mvnth             of ident * 'term * 'term
+  | Mccount           of ident
   | Mvcount           of ident * 'term
+  | Mcsum             of ident * 'term
   | Mvsum             of ident * 'term * 'term
+  | Mchead            of ident * 'term
   | Mvhead            of ident * 'term * 'term
+  | Mctail            of ident * 'term
   | Mvtail            of ident * 'term * 'term
   (* utils *)
   | Mcast             of type_ * type_ * 'term
@@ -1036,13 +1044,21 @@ let cmp_mterm_node
     | Maddupdate (an1, k1, l1), Maddupdate (an2, k2, l2)                               -> cmp_ident an1 an2 && cmp k1 k2 && List.for_all2 (fun (id1, op1, v1) (id2, op2, v2) -> cmpi id1 id2 && cmp_assign_op op1 op2 && cmp v1 v2) l1 l2
     (* asset api expression *)
     | Mget (an1, c1, k1), Mget (an2, c2, k2)                                           -> cmp_ident an1 an2 && cmp c1 c2 && cmp k1 k2
+    | Mcselect (an1, la1, lb1, a1), Mcselect (an2, la2, lb2, a2)                       -> cmp_ident an1 an2 && List.for_all2 (fun (i1, t1) (i2, t2) -> cmp_ident i1 i2 && cmp_type t1 t2) la1 la2 && cmp lb1 lb2 && List.for_all2 cmp a1 a2
     | Mvselect (an1, c1, la1, lb1, a1), Mvselect (an2, c2, la2, lb2, a2)               -> cmp_ident an1 an2 && cmp c1 c2 && List.for_all2 (fun (i1, t1) (i2, t2) -> cmp_ident i1 i2 && cmp_type t1 t2) la1 la2 && cmp lb1 lb2 && List.for_all2 cmp a1 a2
+    | Mcsort (an1, l1), Mcsort (an2, l2)                                               -> cmp_ident an1 an2 && List.for_all2 (fun (fn1, k1) (fn2, k2) -> cmp_ident fn1 fn2 && k1 = k2) l1 l2
     | Mvsort (an1, c1, l1), Mvsort (an2, c2, l2)                                       -> cmp_ident an1 an2 && cmp c1 c2 && List.for_all2 (fun (fn1, k1) (fn2, k2) -> cmp_ident fn1 fn2 && k1 = k2) l1 l2
+    | Mccontains (an1, i1), Mccontains (an2, i2)                                       -> cmp_ident an1 an2 && cmp i1 i2
     | Mvcontains (an1, c1, i1), Mvcontains (an2, c2, i2)                               -> cmp_ident an1 an2 && cmp c1 c2 && cmp i1 i2
+    | Mcnth (an1, i1), Mcnth (an2, i2)                                                 -> cmp_ident an1 an2 && cmp i1 i2
     | Mvnth (an1, c1, i1), Mvnth (an2, c2, i2)                                         -> cmp_ident an1 an2 && cmp c1 c2 && cmp i1 i2
+    | Mccount (an1), Mccount (an2)                                                     -> cmp_ident an1 an2
     | Mvcount (an1, c1), Mvcount (an2, c2)                                             -> cmp_ident an1 an2 && cmp c1 c2
+    | Mcsum (an1, p1), Mcsum (an2, p2)                                                 -> cmp_ident an1 an2 && cmp p1 p2
     | Mvsum (an1, c1, p1), Mvsum (an2, c2, p2)                                         -> cmp_ident an1 an2 && cmp c1 c2 && cmp p1 p2
+    | Mchead (an1, i1), Mchead (an2, i2)                                               -> cmp_ident an1 an2 && cmp i1 i2
     | Mvhead (an1, c1, i1), Mvhead (an2, c2, i2)                                       -> cmp_ident an1 an2 && cmp c1 c2 && cmp i1 i2
+    | Mctail (an1, i1), Mctail (an2, i2)                                               -> cmp_ident an1 an2 && cmp i1 i2
     | Mvtail (an1, c1, i1), Mvtail (an2, c2, i2)                                       -> cmp_ident an1 an2 && cmp c1 c2 && cmp i1 i2
     (* utils *)
     | Mcast (src1, dst1, v1), Mcast (src2, dst2, v2)                                   -> cmp_type src1 src2 && cmp_type dst1 dst2 && cmp v1 v2
@@ -1333,13 +1349,21 @@ let map_term_node_internal (fi : ident -> ident) (g : 'id -> 'id) (ft : type_ ->
   | Maddupdate (an, k, l)          -> Maddupdate (fi an, f k, List.map (fun (id, op, v) -> (g id, op, f v)) l)
   (* asset api expression *)
   | Mget (an, c, k)                -> Mget (fi an, f c, f k)
+  | Mcselect (an, la, lb, a)       -> Mcselect (fi an, List.map (fun (i, t) -> (fi i, ft t)) la, f lb, List.map f a)
   | Mvselect (an, c, la, lb, a)    -> Mvselect (fi an, f c, List.map (fun (i, t) -> (fi i, ft t)) la, f lb, List.map f a)
+  | Mcsort (an, l)                 -> Mcsort (fi an, l)
   | Mvsort (an, c, l)              -> Mvsort (fi an, f c, l)
+  | Mccontains (an, i)             -> Mccontains (fi an, f i)
   | Mvcontains (an, c, i)          -> Mvcontains (fi an, f c, f i)
+  | Mcnth (an, i)                  -> Mcnth (fi an, f i)
   | Mvnth (an, c, i)               -> Mvnth (fi an, f c, f i)
+  | Mccount (an)                   -> Mccount (fi an)
   | Mvcount (an, c)                -> Mvcount (fi an, f c)
+  | Mcsum (an, p)                  -> Mcsum (fi an, f p)
   | Mvsum (an, c, p)               -> Mvsum (fi an, f c, f p)
+  | Mchead (an, i)                 -> Mchead (fi an, f i)
   | Mvhead (an, c, i)              -> Mvhead (fi an, f c, f i)
+  | Mctail (an, i)                 -> Mctail (fi an, f i)
   | Mvtail (an, c, i)              -> Mvtail (fi an, f c, f i)
   (* utils *)
   | Mcast (src, dst, v)            -> Mcast (ft src, ft dst, f v)
@@ -1657,13 +1681,21 @@ let fold_term (f : 'a -> ('id mterm_gen) -> 'a) (accu : 'a) (term : 'id mterm_ge
   | Maddupdate (_, k, l)                  -> List.fold_left (fun accu (_, _, v) -> f accu v) (f accu k) l
   (* asset api expression *)
   | Mget (_, c, k)                        -> f (f accu c) k
+  | Mcselect (_, _, lb, a)                -> List.fold_left (fun accu x -> f accu x) (f accu lb) a
   | Mvselect (_, c, _, lb, a)             -> List.fold_left (fun accu x -> f accu x) (f (f accu c) lb) a
+  | Mcsort (_,_)                          -> accu
   | Mvsort (_, c,_)                       -> f accu c
+  | Mccontains (_, i)                     -> f accu i
   | Mvcontains (_, c, i)                  -> f (f accu c) i
+  | Mcnth (_, i)                          -> f accu i
   | Mvnth (_, c, i)                       -> f (f accu c) i
+  | Mccount (_)                           -> accu
   | Mvcount (_, c)                        -> f accu c
+  | Mcsum (_, p)                          -> f accu p
   | Mvsum (_, c, p)                       -> f (f accu c) p
+  | Mchead (_, i)                         -> f accu i
   | Mvhead (_, c, i)                      -> f (f accu c) i
+  | Mctail (_, i)                         -> f accu i
   | Mvtail (_, c, i)                      -> f (f accu c) i
   (* utils *)
   | Mcast (_ , _, v)                      -> f accu v
@@ -2181,6 +2213,17 @@ let fold_map_term
     let ke, ka = f ca k in
     g (Mget (an, ce, ke)), ka
 
+  | Mcselect (an, la, lb, a) ->
+    let lbe, lba = f accu lb in
+    let ae, aa =
+      List.fold_left
+        (fun (ae, accu) x ->
+           let xa, accu = f accu x in
+           xa::ae, accu) ([], lba) a
+      |> (fun (x, y) -> (List.rev x, y))
+    in
+    g (Mcselect (an, la, lbe, ae)), aa
+
   | Mvselect (an, c, la, lb, a) ->
     let ce, ca = f accu c in
     let lbe, lba = f ca lb in
@@ -2193,33 +2236,59 @@ let fold_map_term
     in
     g (Mvselect (an, ce, la, lbe, ae)), aa
 
+  | Mcsort (an, l) ->
+    g (Mcsort (an, l)), accu
+
   | Mvsort (an, c, l) ->
     let ce, ca = f accu c in
     g (Mvsort (an, ce, l)), ca
+
+  | Mccontains (an, i) ->
+    let ie, ia = f accu i in
+    g (Mccontains (an, ie)), ia
 
   | Mvcontains (an, c, i) ->
     let ce, ca = f accu c in
     let ie, ia = f ca i in
     g (Mvcontains (an, ce, ie)), ia
 
+  | Mcnth (an, i) ->
+    let ie, ia = f accu i in
+    g (Mcnth (an, ie)), ia
+
   | Mvnth (an, c, i) ->
     let ce, ca = f accu c in
     let ie, ia = f ca i in
     g (Mvnth (an, ce, ie)), ia
 
+  | Mccount (an) ->
+    g (Mccount an), accu
+
   | Mvcount (an, c) ->
     let ce, ca = f accu c in
     g (Mvcount (an, ce)), ca
+
+  | Mcsum (an, p) ->
+    let pe, pa = f accu p in
+    g (Mcsum (an, pe)), pa
 
   | Mvsum (an, c, p) ->
     let ce, ca = f accu c in
     let pe, pa = f ca p in
     g (Mvsum (an, ce, pe)), pa
 
+  | Mchead (an, i) ->
+    let ie, ia = f accu i in
+    g (Mchead (an, ie)), ia
+
   | Mvhead (an, c, i) ->
     let ce, ca = f accu c in
     let ie, ia = f ca i in
     g (Mvhead (an, ce, ie)), ia
+
+  | Mctail (an, i) ->
+    let ie, ia = f accu i in
+    g (Mctail (an, ie)), ia
 
   | Mvtail (an, c, i) ->
     let ce, ca = f accu c in
@@ -3815,7 +3884,7 @@ end = struct
       | (sc : api_storage) :: tl ->
         begin
           match typ, sc.node_item with
-          | SearchSelect, APIAsset (Vselect (a, _, t)) -> continue_internal_get_fun_idx tl acc a t
+          | SearchSelect, APIAsset (Cselect (a, _, t) | Vselect (a, _, t)) -> continue_internal_get_fun_idx tl acc a t
           | SearchSum, APIAsset (Vsum (a, _, t)) -> continue_internal_get_fun_idx tl acc a t
           | _ -> internal_get_fun_idx acc tl
         end
