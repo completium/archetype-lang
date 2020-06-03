@@ -889,7 +889,7 @@ let pp_model_internal fmt (model : model) b =
         Format.fprintf fmt "select_c_%a_%i (%s%a)"
           pp_str an index
           const_storage
-          (pp_list ", " f) a
+          (pp_list "" (pp_prefix ", " f)) a
       in
       pp fmt (an, la, lb, a)
 
