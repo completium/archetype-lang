@@ -1777,13 +1777,18 @@ let process_internal_string (model : model) : model =
   in
   Model.map_mterm_model aux model
 
-let build_get (an : ident) v =
+let build_col (an : ident) =
   let dan = dumloc an in
   let type_asset = Tasset dan in
   let type_col = Tcontainer (type_asset,Collection) in
   let type_view = Tcontainer (type_asset,View) in
   let col : mterm  = mk_mterm (Mvarstorecol dan) type_col in
-  let cast : mterm = mk_mterm (Mcast (type_col, type_view, col)) type_view in
+  mk_mterm (Mcast (type_col, type_view, col)) type_view
+
+let build_get (an : ident) v =
+  let dan = dumloc an in
+  let type_asset = Tasset dan in
+  let cast : mterm = build_col an in
   mk_mterm (Mget (an, cast, v)) type_asset
 
 let change_type_of_nth (model : model) : model =
@@ -2244,3 +2249,18 @@ let check_if_asset_in_function (model : model) : model =
   in
   List.iter for_function model.functions;
   model
+
+let replace_instr_verif (model : model) : model =
+  let rec aux ctx (mt : mterm) : mterm =
+    match mt.node with
+    | Mremoveasset (an, k) ->
+      begin
+        let cond : mterm = mk_mterm (Mcontains (an, build_col an, k)) (Tbuiltin Bbool) in
+        let get = build_get an k in
+        let i : mterm = mk_mterm (Mremoveasset (an, get)) Tunit in
+        let mif : mterm = mk_mterm (Mif (cond, i, None)) Tunit in
+        mif
+      end
+    | _ -> map_mterm (aux ctx) mt
+  in
+  Model.map_mterm_model aux model
